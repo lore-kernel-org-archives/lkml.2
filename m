@@ -1,66 +1,195 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755368Ab0JOAjK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Oct 2010 20:39:10 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:37669 "EHLO smtps.tip.net.au"
+	id S1755295Ab0JOAou (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Oct 2010 20:44:50 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:63336 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751073Ab0JOAjI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Oct 2010 20:39:08 -0400
-Date: Fri, 15 Oct 2010 11:38:54 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Emil Tantilov <emil.s.tantilov@intel.com>,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-Subject: linux-next: build failure after merge of the net tree
-Message-Id: <20101015113854.ae080284.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Fri__15_Oct_2010_11_38_54_+1100_PC7O/14KhnYCC3Kf"
+	id S1753539Ab0JOAos (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Oct 2010 20:44:48 -0400
+Date: Fri, 15 Oct 2010 02:42:40 +0200
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Cc: Marcelo Tosatti <mtosatti@redhat.com>, Adam Litke <agl@us.ibm.com>,
+        Avi Kivity <avi@redhat.com>, Hugh Dickins <hugh.dickins@tiscali.co.uk>,
+        Rik van Riel <riel@redhat.com>, Mel Gorman <mel@csn.ul.ie>,
+        Dave Hansen <dave@linux.vnet.ibm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Ingo Molnar <mingo@elte.hu>, Mike Travis <travis@sgi.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Chris Wright <chrisw@sous-sol.org>, bpicco@redhat.com,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Chris Mason <chris.mason@oracle.com>, Borislav Petkov <bp@alien8.de>
+Subject: Transparent Hugepage Support #31
+Message-ID: <20101015004240.GI5770@random.random>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__15_Oct_2010_11_38_54_+1100_PC7O/14KhnYCC3Kf
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+http://www.linux-kvm.org/wiki/images/9/9e/2010-forum-thp.pdf
 
-Hi all,
+http://git.kernel.org/?p=linux/kernel/git/andrea/aa.git;a=shortlog
 
-After merging the net tree, today's linux-next build (x86_64 allmodconfig)
-failed like this:
+first: git clone git://git.kernel.org/pub/scm/linux/kernel/git/andrea/aa.git
+or first: git clone --reference linux-2.6 git://git.kernel.org/pub/scm/linux/kernel/git/andrea/aa.git
+later: git fetch; git checkout -f origin/master
 
-drivers/net/ixgbe/ixgbe_main.c: In function 'ixgbe_configure_dcb':
-drivers/net/ixgbe/ixgbe_main.c:3377: error: implicit declaration of functio=
-n 'ixgbe_dcb_check_config'
+The tree is rebased and git pull won't work.
 
-Caused by commit f32f837b75233588cd4f8542214a30915ab7847b ("ixgbe: remove
-unused functions").
+http://www.kernel.org/pub/linux/kernel/people/andrea/patches/v2.6/2.6.36-rc/7transparent_hugepage-31/
+http://www.kernel.org/pub/linux/kernel/people/andrea/patches/v2.6/2.6.36-rc7/transparent_hugepage-31.gz
 
-Grep is your friend :-)
+Diff #30 -> #31:
 
-I have used the net tree from next-20101014 for today.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+ b/ksmd-khugepaged-freeze                     |   35 ++++-
 
---Signature=_Fri__15_Oct_2010_11_38_54_+1100_PC7O/14KhnYCC3Kf
-Content-Type: application/pgp-signature
+Sleep in wait_event_freezable.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
+ b/pte_alloc_trans_splitting                  |   24 +++-
 
-iQEcBAEBAgAGBQJMt6KeAAoJEDMEi1NhKgbscFoH/0aZ35n2FM6LdZKC5CHCCEcL
-1kb//TFxADVYW3gwoAx7YbEXtccslfSEmKmVzKZsy8stTYWIcRE/jpyjkjwJH7Pl
-Q419TlSHYEMhFTTikRhzVesZh3HCe5WpOVOBssdzBBUDxGsO2kxgfaB0wsk+5W2r
-qivwFf7gTYKZQqGKxbxC5NxOH9PpgWykMQcfoZyp/RRl8fpWyyrWmbz8EO4vP1Ub
-OpIGhIkabqqkCWxchJFBW9y4+bNbPEAvZguoVuvSKU1iEPhPRZ+ySNOwOid5hy04
-vbYsZ7PzS97cdzIN/n9UWUl0rYcRCwk86+k+wfGMW9Gek1c9ojTrsB8mgF1n5BU=
-=ItxM
------END PGP SIGNATURE-----
+Fix build problem with INTEL_TXT=y. (problem found by Naoya Horiguchi
+<n-horiguchi@ah.jp.nec.com>)
 
---Signature=_Fri__15_Oct_2010_11_38_54_+1100_PC7O/14KhnYCC3Kf--
+ b/transhuge_mapcount_debug                   |   34 +++++
+
+Add two VM_BUG_ON to verify invariants.
+
+ b/transparent-hugepage-per-node-meminfo      |   54 +++++++++
+
+Provide per-node meminfo from David Rientjes <rientjes@google.com>.
+
+ b/transparent_hugepage                       |   19 +--
+
+Fix memleak in case of fork vs split_huge_page race.
+
+Move a VM_BUG_ON inside a spinlock to avoid false positives.
+
+ b/transparent_hugepage_vmstat-anon_vma-chain |   12 --
+
+Fix /proc/vmstat when TRANSPARENT_HUGEPAGE=n (problem found by Anton
+Blanchard <anton@samba.org>).
+
+ b/vma_adjust_trans_huge                      |  161 +++++++++++++++++++++++++++
+
+A race condition could occur if qemu-kvm extends the vma when at least
+one ptes before vma-extension wasn't null, then khugepaged could
+collapse an hugepage before the KSM madvise run. Unlike most madvise
+that can work on anonymous memory (like MADV_DONTNEED calling
+zap_page_range that in turn will call split_huge_page_pmd) there is no
+pte mangling done whatsoever by the ksm_madvise, it just splits the
+vma in a way that can't fit an hugepage anymore, but without calling
+split_huge_page. That would then lead to a later fork to run
+copy_huge_pmd twice on the same hugepage (so boosting the mapcount
+twice). That would later trip a BUG_ON in split_huge_page when process
+quits as the number of hugepmd found by the rmap walk would be lower
+than the page_mapcount. No memory corruption or data corruption could
+happen and in fact this would result in memleak if there wasn't such
+BUG_ON. split_huge_page is very strict, changes for something to go
+wrong unnoticed are very low.
+
+For triggering it takes a combination of khugepaged just at the wrong
+time plus a combination of KSM madvise, and finally fork.
+
+Similar invariant breakage (leading to copy_huge_pmd running twice on
+the same hugepage) could have happened in case things like munmap run
+in the middle of a vma would succeed the first split_vma but fail the
+second one (no pte mangling would be invoked and the effect of the
+first succeeded split_vma wouldn't be rolled back).
+
+Fixing this from inside vma_adjust takes care of every one of these
+cases with a one liner change to mmap.c (that is optimized away at
+compile time if TRANSPARENT_HUGEPAGE=n).
+
+ compaction-migration-warning                 |   25 ----
+ free_pages-count                             |   60 ----------
+ free_pages-drain_all_pages                   |   62 ----------
+ free_pages-vmstat                            |  156 --------------------------
+ swapin-race-conditions                       |  152 -------------------------
+
+merged upstream.
+
+Full diffstat:
+
+ Documentation/vm/transhuge.txt        |  283 ++++
+ arch/alpha/include/asm/mman.h         |    2 
+ arch/mips/include/asm/mman.h          |    2 
+ arch/parisc/include/asm/mman.h        |    2 
+ arch/powerpc/mm/gup.c                 |   12 
+ arch/x86/include/asm/kvm_host.h       |    1 
+ arch/x86/include/asm/paravirt.h       |   23 
+ arch/x86/include/asm/paravirt_types.h |    6 
+ arch/x86/include/asm/pgtable-2level.h |    9 
+ arch/x86/include/asm/pgtable-3level.h |   23 
+ arch/x86/include/asm/pgtable.h        |  149 ++
+ arch/x86/include/asm/pgtable_64.h     |   28 
+ arch/x86/include/asm/pgtable_types.h  |    3 
+ arch/x86/kernel/paravirt.c            |    3 
+ arch/x86/kernel/tboot.c               |    2 
+ arch/x86/kernel/vm86_32.c             |    1 
+ arch/x86/kvm/mmu.c                    |   60 
+ arch/x86/kvm/paging_tmpl.h            |    4 
+ arch/x86/mm/gup.c                     |   28 
+ arch/x86/mm/pgtable.c                 |   66 
+ arch/xtensa/include/asm/mman.h        |    2 
+ drivers/base/node.c                   |   21 
+ fs/Kconfig                            |    2 
+ fs/exec.c                             |   44 
+ fs/proc/meminfo.c                     |   14 
+ fs/proc/page.c                        |   14 
+ include/asm-generic/mman-common.h     |    2 
+ include/asm-generic/pgtable.h         |  130 +
+ include/linux/compaction.h            |   13 
+ include/linux/gfp.h                   |   14 
+ include/linux/huge_mm.h               |  170 ++
+ include/linux/khugepaged.h            |   66 
+ include/linux/kvm_host.h              |    4 
+ include/linux/memory_hotplug.h        |   14 
+ include/linux/mm.h                    |  114 +
+ include/linux/mm_inline.h             |   19 
+ include/linux/mm_types.h              |    3 
+ include/linux/mmu_notifier.h          |   66 
+ include/linux/mmzone.h                |    1 
+ include/linux/page-flags.h            |   36 
+ include/linux/sched.h                 |    1 
+ include/linux/swap.h                  |    2 
+ kernel/fork.c                         |   12 
+ kernel/futex.c                        |   55 
+ mm/Kconfig                            |   38 
+ mm/Makefile                           |    1 
+ mm/compaction.c                       |   48 
+ mm/huge_memory.c                      | 2291 ++++++++++++++++++++++++++++++++++
+ mm/hugetlb.c                          |   69 -
+ mm/ksm.c                              |   52 
+ mm/madvise.c                          |    8 
+ mm/memcontrol.c                       |  138 +-
+ mm/memory-failure.c                   |    2 
+ mm/memory.c                           |  198 ++
+ mm/memory_hotplug.c                   |   14 
+ mm/mempolicy.c                        |   14 
+ mm/migrate.c                          |   12 
+ mm/mincore.c                          |    7 
+ mm/mmap.c                             |    7 
+ mm/mmu_notifier.c                     |   20 
+ mm/mprotect.c                         |   20 
+ mm/mremap.c                           |    8 
+ mm/page_alloc.c                       |   31 
+ mm/pagewalk.c                         |    1 
+ mm/rmap.c                             |  115 -
+ mm/sparse.c                           |    4 
+ mm/swap.c                             |  117 +
+ mm/swap_state.c                       |    6 
+ mm/swapfile.c                         |    2 
+ mm/vmscan.c                           |   89 -
+ mm/vmstat.c                           |    1 
+ virt/kvm/iommu.c                      |    2 
+ virt/kvm/kvm_main.c                   |   56 
+ 73 files changed, 4486 insertions(+), 411 deletions(-)
