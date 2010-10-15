@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755475Ab0JOJoq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Oct 2010 05:44:46 -0400
-Received: from [150.82.175.143] ([150.82.175.143]:37644 "EHLO
+	id S1755977Ab0JOJrw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Oct 2010 05:47:52 -0400
+Received: from [150.82.175.143] ([150.82.175.143]:37655 "EHLO
 	dhcpa11143.tky.aist.go.jp" rhost-flags-FAIL-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754757Ab0JOJon (ORCPT
+	by vger.kernel.org with ESMTP id S1755477Ab0JOJor (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Oct 2010 05:44:43 -0400
+	Fri, 15 Oct 2010 05:44:47 -0400
 From: Akinobu Mita <akinobu.mita@gmail.com>
 To: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
         Arnd Bergmann <arnd@arndb.de>, Christoph Hellwig <hch@infradead.org>,
         Andrew Morton <akpm@linux-foundation.org>
-Cc: Akinobu Mita <akinobu.mita@gmail.com>
-Subject: [PATCH 07/22] bitops: introduce little endian bitops for most architectures
-Date: Fri, 15 Oct 2010 18:46:06 +0900
-Message-Id: <1287135981-17604-8-git-send-email-akinobu.mita@gmail.com>
+Cc: Akinobu Mita <akinobu.mita@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org
+Subject: [PATCH 04/22] arm: introduce little endian bitops
+Date: Fri, 15 Oct 2010 18:46:03 +0900
+Message-Id: <1287135981-17604-5-git-send-email-akinobu.mita@gmail.com>
 X-Mailer: git-send-email 1.7.1.231.gd0b16
 In-Reply-To: <1287135981-17604-1-git-send-email-akinobu.mita@gmail.com>
 References: <1287135981-17604-1-git-send-email-akinobu.mita@gmail.com>
@@ -22,278 +24,96 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Introduce little endian bit operations to the architectures which
-do not have native little endian bit operations.
-
-These architectures can just include generic implementation
-(asm-generic/bitops/le.h).
+Introduce little endian bit operations by renaming native ext2 bit
+operations. The ext2 bit operations are kept by using little endian
+bit operations until the conversions are finished.
 
 Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
+Cc: Russell King <linux@arm.linux.org.uk>
+Cc: linux-arm-kernel@lists.infradead.org
 ---
- arch/alpha/include/asm/bitops.h              |    1 +
- arch/avr32/include/asm/bitops.h              |    1 +
- arch/blackfin/include/asm/bitops.h           |    1 +
- arch/cris/include/asm/bitops.h               |    1 +
- arch/frv/include/asm/bitops.h                |    1 +
- arch/h8300/include/asm/bitops.h              |    1 +
- arch/ia64/include/asm/bitops.h               |    1 +
- arch/m32r/include/asm/bitops.h               |    1 +
- arch/mips/include/asm/bitops.h               |    1 +
- arch/mn10300/include/asm/bitops.h            |    1 +
- arch/parisc/include/asm/bitops.h             |    1 +
- arch/sh/include/asm/bitops.h                 |    1 +
- arch/sparc/include/asm/bitops_32.h           |    1 +
- arch/sparc/include/asm/bitops_64.h           |    1 +
- arch/tile/include/asm/bitops.h               |    1 +
- arch/x86/include/asm/bitops.h                |    1 +
- arch/xtensa/include/asm/bitops.h             |    1 +
- include/asm-generic/bitops.h                 |    1 +
- include/asm-generic/bitops/ext2-non-atomic.h |    2 --
- include/asm-generic/bitops/minix-le.h        |    2 --
- 20 files changed, 18 insertions(+), 4 deletions(-)
+ arch/arm/include/asm/bitops.h |   46 +++++++++++++++++++++++++++++-----------
+ 1 files changed, 33 insertions(+), 13 deletions(-)
 
-diff --git a/arch/alpha/include/asm/bitops.h b/arch/alpha/include/asm/bitops.h
-index adfab8a..955fec7 100644
---- a/arch/alpha/include/asm/bitops.h
-+++ b/arch/alpha/include/asm/bitops.h
-@@ -454,6 +454,7 @@ sched_find_first_bit(const unsigned long b[2])
- 	return __ffs(tmp) + ofs;
- }
- 
-+#include <asm-generic/bitops/le.h>
- #include <asm-generic/bitops/ext2-non-atomic.h>
- 
- #define ext2_set_bit_atomic(l,n,a)   test_and_set_bit(n,a)
-diff --git a/arch/avr32/include/asm/bitops.h b/arch/avr32/include/asm/bitops.h
-index f7dd5f7..1c482fc 100644
---- a/arch/avr32/include/asm/bitops.h
-+++ b/arch/avr32/include/asm/bitops.h
-@@ -299,6 +299,7 @@ static inline int ffs(unsigned long word)
+diff --git a/arch/arm/include/asm/bitops.h b/arch/arm/include/asm/bitops.h
+index 338ff19..d8af4af 100644
+--- a/arch/arm/include/asm/bitops.h
++++ b/arch/arm/include/asm/bitops.h
+@@ -303,41 +303,61 @@ static inline int fls(int x)
  #include <asm-generic/bitops/hweight.h>
  #include <asm-generic/bitops/lock.h>
  
-+#include <asm-generic/bitops/le.h>
- #include <asm-generic/bitops/ext2-non-atomic.h>
- #include <asm-generic/bitops/ext2-atomic.h>
- #include <asm-generic/bitops/minix-le.h>
-diff --git a/arch/blackfin/include/asm/bitops.h b/arch/blackfin/include/asm/bitops.h
-index 3f7ef4d..1261078 100644
---- a/arch/blackfin/include/asm/bitops.h
-+++ b/arch/blackfin/include/asm/bitops.h
-@@ -25,6 +25,7 @@
- #include <asm-generic/bitops/const_hweight.h>
- #include <asm-generic/bitops/lock.h>
++#define __set_le_bit(nr, p)			\
++	__set_bit(WORD_BITOFF_TO_LE(nr), (p))
++#define __clear_le_bit(nr, p)			\
++	__clear_bit(WORD_BITOFF_TO_LE(nr), (p))
++#define __test_and_set_le_bit(nr, p)			\
++		__test_and_set_bit(WORD_BITOFF_TO_LE(nr), (p))
++#define test_and_set_le_bit(lock, nr, p)          \
++		test_and_set_bit(WORD_BITOFF_TO_LE(nr), (p))
++#define __test_and_clear_le_bit(nr, p)			\
++		__test_and_clear_bit(WORD_BITOFF_TO_LE(nr), (p))
++#define test_and_clear_le_bit(lock, nr, p)	\
++		test_and_clear_bit(WORD_BITOFF_TO_LE(nr), (p))
++#define test_le_bit(nr, p)			\
++		test_bit(WORD_BITOFF_TO_LE(nr), (p))
++#define find_first_zero_le_bit(p, sz)		\
++		_find_first_zero_bit_le(p, sz)
++#define find_next_zero_le_bit(p, sz, off)	\
++		_find_next_zero_bit_le(p, sz, off)
++#define find_next_le_bit(p, sz, off) \
++		_find_next_bit_le(p, sz, off)
+ /*
+  * Ext2 is defined to use little-endian byte ordering.
+  * These do not need to be atomic.
+  */
+ #define ext2_set_bit(nr,p)			\
+-		__test_and_set_bit(WORD_BITOFF_TO_LE(nr), (unsigned long *)(p))
++		__test_and_set_le_bit(nr, (unsigned long *)(p))
+ #define ext2_set_bit_atomic(lock,nr,p)          \
+-                test_and_set_bit(WORD_BITOFF_TO_LE(nr), (unsigned long *)(p))
++		test_and_set_le_bit(nr, (unsigned long *)(p))
+ #define ext2_clear_bit(nr,p)			\
+-		__test_and_clear_bit(WORD_BITOFF_TO_LE(nr), (unsigned long *)(p))
++		__test_and_clear_le_bit(nr, (unsigned long *)(p))
+ #define ext2_clear_bit_atomic(lock,nr,p)        \
+-                test_and_clear_bit(WORD_BITOFF_TO_LE(nr), (unsigned long *)(p))
++		test_and_clear_le_bit(nr, (unsigned long *)(p))
+ #define ext2_test_bit(nr,p)			\
+-		test_bit(WORD_BITOFF_TO_LE(nr), (unsigned long *)(p))
++		test_le_bit(nr, (unsigned long *)(p))
+ #define ext2_find_first_zero_bit(p,sz)		\
+-		_find_first_zero_bit_le(p,sz)
++		find_first_zero_le_bit((unsigned long *)(p), sz)
+ #define ext2_find_next_zero_bit(p,sz,off)	\
+-		_find_next_zero_bit_le(p,sz,off)
++		find_next_zero_le_bit((unsigned long *)(p), sz, off)
+ #define ext2_find_next_bit(p, sz, off) \
+-		_find_next_bit_le(p, sz, off)
++		find_next_le_bit((unsigned long *)(p), sz, off)
  
-+#include <asm-generic/bitops/le.h>
- #include <asm-generic/bitops/ext2-non-atomic.h>
- #include <asm-generic/bitops/ext2-atomic.h>
- #include <asm-generic/bitops/minix.h>
-diff --git a/arch/cris/include/asm/bitops.h b/arch/cris/include/asm/bitops.h
-index 9e69cfb..599ae67 100644
---- a/arch/cris/include/asm/bitops.h
-+++ b/arch/cris/include/asm/bitops.h
-@@ -154,6 +154,7 @@ static inline int test_and_change_bit(int nr, volatile unsigned long *addr)
- #include <asm-generic/bitops/find.h>
- #include <asm-generic/bitops/lock.h>
+ /*
+  * Minix is defined to use little-endian byte ordering.
+  * These do not need to be atomic.
+  */
+ #define minix_set_bit(nr,p)			\
+-		__set_bit(WORD_BITOFF_TO_LE(nr), (unsigned long *)(p))
++		__set_le_bit(nr, (unsigned long *)(p))
+ #define minix_test_bit(nr,p)			\
+-		test_bit(WORD_BITOFF_TO_LE(nr), (unsigned long *)(p))
++		test_le_bit(nr, (unsigned long *)(p))
+ #define minix_test_and_set_bit(nr,p)		\
+-		__test_and_set_bit(WORD_BITOFF_TO_LE(nr), (unsigned long *)(p))
++		__test_and_set_le_bit(nr, (unsigned long *)(p))
+ #define minix_test_and_clear_bit(nr,p)		\
+-		__test_and_clear_bit(WORD_BITOFF_TO_LE(nr), (unsigned long *)(p))
++		__test_and_clear_le_bit(nr, (unsigned long *)(p))
+ #define minix_find_first_zero_bit(p,sz)		\
+-		_find_first_zero_bit_le(p,sz)
++		find_first_zero_le_bit((unsigned long *)(p), sz)
  
-+#include <asm-generic/bitops/le.h>
- #include <asm-generic/bitops/ext2-non-atomic.h>
+ #endif /* __KERNEL__ */
  
- #define ext2_set_bit_atomic(l,n,a)   test_and_set_bit(n,a)
-diff --git a/arch/frv/include/asm/bitops.h b/arch/frv/include/asm/bitops.h
-index 50ae91b..2631917 100644
---- a/arch/frv/include/asm/bitops.h
-+++ b/arch/frv/include/asm/bitops.h
-@@ -401,6 +401,7 @@ int __ilog2_u64(u64 n)
- #include <asm-generic/bitops/hweight.h>
- #include <asm-generic/bitops/lock.h>
- 
-+#include <asm-generic/bitops/le.h>
- #include <asm-generic/bitops/ext2-non-atomic.h>
- 
- #define ext2_set_bit_atomic(lock,nr,addr)	test_and_set_bit  ((nr) ^ 0x18, (addr))
-diff --git a/arch/h8300/include/asm/bitops.h b/arch/h8300/include/asm/bitops.h
-index cb9ddf5..763094f 100644
---- a/arch/h8300/include/asm/bitops.h
-+++ b/arch/h8300/include/asm/bitops.h
-@@ -200,6 +200,7 @@ static __inline__ unsigned long __ffs(unsigned long word)
- #include <asm-generic/bitops/sched.h>
- #include <asm-generic/bitops/hweight.h>
- #include <asm-generic/bitops/lock.h>
-+#include <asm-generic/bitops/le.h>
- #include <asm-generic/bitops/ext2-non-atomic.h>
- #include <asm-generic/bitops/ext2-atomic.h>
- #include <asm-generic/bitops/minix.h>
-diff --git a/arch/ia64/include/asm/bitops.h b/arch/ia64/include/asm/bitops.h
-index 9da3df6..2cde4f0 100644
---- a/arch/ia64/include/asm/bitops.h
-+++ b/arch/ia64/include/asm/bitops.h
-@@ -456,6 +456,7 @@ static __inline__ unsigned long __arch_hweight64(unsigned long x)
- 
- #ifdef __KERNEL__
- 
-+#include <asm-generic/bitops/le.h>
- #include <asm-generic/bitops/ext2-non-atomic.h>
- 
- #define ext2_set_bit_atomic(l,n,a)	test_and_set_bit(n,a)
-diff --git a/arch/m32r/include/asm/bitops.h b/arch/m32r/include/asm/bitops.h
-index aaddf0d..681f7e8 100644
---- a/arch/m32r/include/asm/bitops.h
-+++ b/arch/m32r/include/asm/bitops.h
-@@ -266,6 +266,7 @@ static __inline__ int test_and_change_bit(int nr, volatile void * addr)
- 
- #ifdef __KERNEL__
- 
-+#include <asm-generic/bitops/le.h>
- #include <asm-generic/bitops/ext2-non-atomic.h>
- #include <asm-generic/bitops/ext2-atomic.h>
- #include <asm-generic/bitops/minix.h>
-diff --git a/arch/mips/include/asm/bitops.h b/arch/mips/include/asm/bitops.h
-index b0ce7ca..4795820 100644
---- a/arch/mips/include/asm/bitops.h
-+++ b/arch/mips/include/asm/bitops.h
-@@ -704,6 +704,7 @@ static inline int ffs(int word)
- #include <asm/arch_hweight.h>
- #include <asm-generic/bitops/const_hweight.h>
- 
-+#include <asm-generic/bitops/le.h>
- #include <asm-generic/bitops/ext2-non-atomic.h>
- #include <asm-generic/bitops/ext2-atomic.h>
- #include <asm-generic/bitops/minix.h>
-diff --git a/arch/mn10300/include/asm/bitops.h b/arch/mn10300/include/asm/bitops.h
-index 3f50e96..4688c08 100644
---- a/arch/mn10300/include/asm/bitops.h
-+++ b/arch/mn10300/include/asm/bitops.h
-@@ -233,6 +233,7 @@ int ffs(int x)
- #define ext2_clear_bit_atomic(lock, nr, addr) \
- 	test_and_clear_bit((nr), (addr))
- 
-+#include <asm-generic/bitops/le.h>
- #include <asm-generic/bitops/ext2-non-atomic.h>
- #include <asm-generic/bitops/minix-le.h>
- 
-diff --git a/arch/parisc/include/asm/bitops.h b/arch/parisc/include/asm/bitops.h
-index 7a6ea10..4b9e58d 100644
---- a/arch/parisc/include/asm/bitops.h
-+++ b/arch/parisc/include/asm/bitops.h
-@@ -222,6 +222,7 @@ static __inline__ int fls(int x)
- 
- #ifdef __KERNEL__
- 
-+#include <asm-generic/bitops/le.h>
- #include <asm-generic/bitops/ext2-non-atomic.h>
- 
- /* '3' is bits per byte */
-diff --git a/arch/sh/include/asm/bitops.h b/arch/sh/include/asm/bitops.h
-index 98511e4..9167810 100644
---- a/arch/sh/include/asm/bitops.h
-+++ b/arch/sh/include/asm/bitops.h
-@@ -94,6 +94,7 @@ static inline unsigned long ffz(unsigned long word)
- #include <asm-generic/bitops/hweight.h>
- #include <asm-generic/bitops/lock.h>
- #include <asm-generic/bitops/sched.h>
-+#include <asm-generic/bitops/le.h>
- #include <asm-generic/bitops/ext2-non-atomic.h>
- #include <asm-generic/bitops/ext2-atomic.h>
- #include <asm-generic/bitops/minix.h>
-diff --git a/arch/sparc/include/asm/bitops_32.h b/arch/sparc/include/asm/bitops_32.h
-index 9cf4ae0..5b3ab06 100644
---- a/arch/sparc/include/asm/bitops_32.h
-+++ b/arch/sparc/include/asm/bitops_32.h
-@@ -103,6 +103,7 @@ static inline void change_bit(unsigned long nr, volatile unsigned long *addr)
- #include <asm-generic/bitops/hweight.h>
- #include <asm-generic/bitops/lock.h>
- #include <asm-generic/bitops/find.h>
-+#include <asm-generic/bitops/le.h>
- #include <asm-generic/bitops/ext2-non-atomic.h>
- #include <asm-generic/bitops/ext2-atomic.h>
- #include <asm-generic/bitops/minix.h>
-diff --git a/arch/sparc/include/asm/bitops_64.h b/arch/sparc/include/asm/bitops_64.h
-index 766121a..9097862 100644
---- a/arch/sparc/include/asm/bitops_64.h
-+++ b/arch/sparc/include/asm/bitops_64.h
-@@ -89,6 +89,7 @@ static inline unsigned int __arch_hweight8(unsigned int w)
- 
- #ifdef __KERNEL__
- 
-+#include <asm-generic/bitops/le.h>
- #include <asm-generic/bitops/ext2-non-atomic.h>
- 
- #define ext2_set_bit_atomic(lock,nr,addr) \
-diff --git a/arch/tile/include/asm/bitops.h b/arch/tile/include/asm/bitops.h
-index 6d4f0ff..56b0355 100644
---- a/arch/tile/include/asm/bitops.h
-+++ b/arch/tile/include/asm/bitops.h
-@@ -122,6 +122,7 @@ static inline unsigned long __arch_hweight64(__u64 w)
- #include <asm-generic/bitops/lock.h>
- #include <asm-generic/bitops/find.h>
- #include <asm-generic/bitops/sched.h>
-+#include <asm-generic/bitops/le.h>
- #include <asm-generic/bitops/ext2-non-atomic.h>
- #include <asm-generic/bitops/minix.h>
- 
-diff --git a/arch/x86/include/asm/bitops.h b/arch/x86/include/asm/bitops.h
-index 903683b..c68bc10 100644
---- a/arch/x86/include/asm/bitops.h
-+++ b/arch/x86/include/asm/bitops.h
-@@ -456,6 +456,7 @@ static inline int fls(int x)
- 
- #ifdef __KERNEL__
- 
-+#include <asm-generic/bitops/le.h>
- #include <asm-generic/bitops/ext2-non-atomic.h>
- 
- #define ext2_set_bit_atomic(lock, nr, addr)			\
-diff --git a/arch/xtensa/include/asm/bitops.h b/arch/xtensa/include/asm/bitops.h
-index 6c39303..0475c11 100644
---- a/arch/xtensa/include/asm/bitops.h
-+++ b/arch/xtensa/include/asm/bitops.h
-@@ -106,6 +106,7 @@ static inline unsigned long __fls(unsigned long word)
- 
- #include <asm-generic/bitops/fls64.h>
- #include <asm-generic/bitops/find.h>
-+#include <asm-generic/bitops/le.h>
- #include <asm-generic/bitops/ext2-non-atomic.h>
- 
- #ifdef __XTENSA_EL__
-diff --git a/include/asm-generic/bitops.h b/include/asm-generic/bitops.h
-index a54f442..933710b 100644
---- a/include/asm-generic/bitops.h
-+++ b/include/asm-generic/bitops.h
-@@ -38,6 +38,7 @@
- 
- #include <asm-generic/bitops/atomic.h>
- #include <asm-generic/bitops/non-atomic.h>
-+#include <asm-generic/bitops/le.h>
- #include <asm-generic/bitops/ext2-non-atomic.h>
- #include <asm-generic/bitops/ext2-atomic.h>
- #include <asm-generic/bitops/minix.h>
-diff --git a/include/asm-generic/bitops/ext2-non-atomic.h b/include/asm-generic/bitops/ext2-non-atomic.h
-index 9c7bb9a..c4639dd 100644
---- a/include/asm-generic/bitops/ext2-non-atomic.h
-+++ b/include/asm-generic/bitops/ext2-non-atomic.h
-@@ -1,8 +1,6 @@
- #ifndef _ASM_GENERIC_BITOPS_EXT2_NON_ATOMIC_H_
- #define _ASM_GENERIC_BITOPS_EXT2_NON_ATOMIC_H_
- 
--#include <asm-generic/bitops/le.h>
--
- #define ext2_set_bit(nr,addr)	\
- 	__test_and_set_le_bit((nr), (unsigned long *)(addr))
- #define ext2_clear_bit(nr,addr)	\
-diff --git a/include/asm-generic/bitops/minix-le.h b/include/asm-generic/bitops/minix-le.h
-index ed0ae09..f366cfa 100644
---- a/include/asm-generic/bitops/minix-le.h
-+++ b/include/asm-generic/bitops/minix-le.h
-@@ -1,8 +1,6 @@
- #ifndef _ASM_GENERIC_BITOPS_MINIX_LE_H_
- #define _ASM_GENERIC_BITOPS_MINIX_LE_H_
- 
--#include <asm-generic/bitops/le.h>
--
- #define minix_test_and_set_bit(nr,addr)	\
- 	__test_and_set_le_bit((nr), (unsigned long *)(addr))
- #define minix_set_bit(nr,addr)		\
 -- 
 1.7.1.231.gd0b16
 
