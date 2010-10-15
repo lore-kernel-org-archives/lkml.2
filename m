@@ -1,49 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756589Ab0JORRV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Oct 2010 13:17:21 -0400
-Received: from usmamail.tilera.com ([72.1.168.231]:37591 "EHLO
-	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755298Ab0JORRV (ORCPT
+	id S1756610Ab0JORUV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Oct 2010 13:20:21 -0400
+Received: from smtp103.prem.mail.ac4.yahoo.com ([76.13.13.42]:20868 "HELO
+	smtp103.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1756161Ab0JORUS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Oct 2010 13:17:21 -0400
-Message-ID: <4CB88C9F.7040109@tilera.com>
-Date: Fri, 15 Oct 2010 13:17:19 -0400
-From: Chris Metcalf <cmetcalf@tilera.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.9) Gecko/20100915 Thunderbird/3.1.4
+	Fri, 15 Oct 2010 13:20:18 -0400
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+X-YMail-OSG: D8569iEVM1k22jZ2X7PhffiUF5okPVfs4UhKRk8QI.Bfj1h
+ imz1R7C_IzwFaxLde5BGJ.veDzP7oDad0lUfR2q4k6hOAlMIuJWKMBf5r8.h
+ F8xzqy1.LR29qlt33KN0ESyXfDkpWyTeSCPhQwSttBLG.FIiT4_uCOc0pBFd
+ dt1i425jO9lZDB6iFVR.rp0IB0MvMGS24gWIcVGHuZbhSiUzsfD.kbQzxF2Q
+ czFDNttJm7CxdybRnDY7E.hK4lbCF
+X-Yahoo-Newman-Property: ymail-3
+Date: Fri, 15 Oct 2010 12:20:13 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
+        "balbir@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>,
+        Greg Thelen <gthelen@google.com>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        Mel Gorman <mel@csn.ul.ie>,
+        "kosaki.motohiro@jp.fujitsu.com" <kosaki.motohiro@jp.fujitsu.com>
+Subject: Re: [RFC][PATCH 1/2] memcg: avoiding unnecessary get_page at
+ move_charge
+In-Reply-To: <20101015171109.d4575c95.kamezawa.hiroyu@jp.fujitsu.com>
+Message-ID: <alpine.DEB.2.00.1010151211040.24683@router.home>
+References: <20101015170627.e5033fa4.kamezawa.hiroyu@jp.fujitsu.com> <20101015171109.d4575c95.kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 04/14] arch/tile: change lower bound on syscall error
- return to -4095
-References: <cover.1287090280.git.cmetcalf@tilera.com> <a4dbc5ee52e8741522a2f87067b80116c6c7a934.1287090286.git.cmetcalf@tilera.com> <201010142322.20850.arnd@arndb.de>
-In-Reply-To: <201010142322.20850.arnd@arndb.de>
-Content-Type: text/plain; charset="ISO-8859-15"
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- On 10/14/2010 5:22 PM, Arnd Bergmann wrote:
-> On Thursday 14 October 2010 21:14:29 Chris Metcalf wrote:
->> Previously we were using -1023, which is fine for normal syscall
->> error returns, but the common value in use for other platforms
->> is -4095, and one Tilera-specific driver does use values in the
->> -1100 range, so tickled this bug.
-> The patch is ok, but note that any value above starting at 512 is meant
-> as kernel internal, so funny things may happen if a driver goes
-> beyond that for errors returned to the user.
->
-> Better use just the predefined error codes if possible.
+On Fri, 15 Oct 2010, KAMEZAWA Hiroyuki wrote:
 
-Thanks, good point.  In practice we've found that for the syscalls we use
-(e.g. pwrite) that are intended to return errors codes from our drivers the
-errors are in fact properly returned.  But I've filed a bug internally that
-we should review our usage of error codes and determine if there are more
-standard ways to handle this, e.g. return a Linux errno but allow passing a
-pointer to store a more specific hypervisor or driver error code in.
+> But above is called all under pte_offset_map_lock().
+> get_page_unless_zero() #1 is not necessary because we do all under a
+> pte_offset_map_lock().
 
--- 
-Chris Metcalf, Tilera Corp.
-http://www.tilera.com
+The two (ptl and refcount) are entirely different. The ptl is for
+protecting the page table. The refcount handles only the page.
+
+However, if the entry in the page table is pointing to the page then there
+must have been a refcount taken on the page. So if you know that the page
+is in the page table and you took the ptl then you can be sure that the
+page refcount will not become zero. Therefore get_page_unless_zero() will
+never fail and there is no need to take additional refcounts as long as
+the page table lock is held and the page is not removed from the page
+table.
+
+> Index: mmotm-1013/mm/vmscan.c
+> ===================================================================
+> --- mmotm-1013.orig/mm/vmscan.c
+> +++ mmotm-1013/mm/vmscan.c
+> @@ -1166,7 +1166,8 @@ static unsigned long clear_active_flags(
+>   * found will be decremented.
+>   *
+>   * Restrictions:
+> - * (1) Must be called with an elevated refcount on the page. This is a
+> + * (1) Must be called with an elevated refcount on the page, IOW, the
+> + *     caller must guarantee that there is a stable reference. This is a
+>   *     fundamentnal difference from isolate_lru_pages (which is called
+>   *     without a stable reference).
+>   * (2) the lru_lock must not be held.
+
+There is no need for this change since you have an elevated refcount.
+IMH The words "stable reference" may be confusing since the refcount may
+change. The elevated refcount protects against the freeing of the page.
 
