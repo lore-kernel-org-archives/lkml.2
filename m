@@ -1,44 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754210Ab0JOIW4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Oct 2010 04:22:56 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:37768 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753395Ab0JOIWz (ORCPT
+	id S1754248Ab0JOIaW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Oct 2010 04:30:22 -0400
+Received: from szxga03-in.huawei.com ([119.145.14.66]:50488 "EHLO
+	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753200Ab0JOIaV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Oct 2010 04:22:55 -0400
-From: Andi Kleen <andi@firstfloor.org>
-To: Jan Engelhardt <jengelh@medozas.de>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Eric Paris <eparis@redhat.com>,
-        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        agruen@suse.de, davem@davemloft.net
-Subject: Re: Process to push changes to include/linux/types.h
-References: <1287084892.3367.18.camel@dhcp231-212.rdu.redhat.com>
-	<20101014125458.9e51ac58.akpm@linux-foundation.org>
-	<alpine.LNX.2.01.1010142324400.31442@obet.zrqbmnf.qr>
-	<20101014143723.ffea0d8c.akpm@linux-foundation.org>
-	<alpine.LNX.2.01.1010142342400.31442@obet.zrqbmnf.qr>
-Date: Fri, 15 Oct 2010 10:22:49 +0200
-In-Reply-To: <alpine.LNX.2.01.1010142342400.31442@obet.zrqbmnf.qr> (Jan
-	Engelhardt's message of "Thu, 14 Oct 2010 23:50:34 +0200 (CEST)")
-Message-ID: <878w1zc1ba.fsf@basil.nowhere.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	Fri, 15 Oct 2010 04:30:21 -0400
+Date: Fri, 15 Oct 2010 16:30:13 +0800
+From: m00150988@huawei.com
+Subject: Re: [PATCH] fix oops in usbserial_cleanup function;
+To: linux-usb@vger.kernel.org, linux-usb@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        zihan@huawei.com, zihan@huawei.com, Lin Lei <Lin.Lei@huawei.com>,
+        Franko Fang <huananhu@huawei.com>, wangyeqi@huawei.com,
+        wangyeqi@huawei.com
+Message-id: <fadccdfb103f0.103f0fadccdfb@huawei.com>
+MIME-version: 1.0
+X-Mailer: iPlanet Messenger Express 5.2 HotFix 2.14 (built Aug  8 2006)
+Content-type: text/plain; charset=us-ascii
+Content-language: zh-CN
+Content-transfer-encoding: 7BIT
+Content-disposition: inline
+X-Accept-Language: zh-CN
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jan Engelhardt <jengelh@medozas.de> writes:
+From:ma rui <m00150988@huawei.com>
+1. I find this bug on OpenSUSE 11.3 which kernel version is 2.6.34, but the latest kernel version 2.6.36-rc7 aslo have this bug. This patch is based on
+the kernel of 2.6.36-rc7
+2. bug report:
+   a. Install huawei datacard dashboard on OpenSUSE 11.3
+   b. Plug in huawei datacard into OpenSUSE 11.3 which kernel version is 2.6.36-rc7
+   c. After the dashboard has detected the device, I pull out the usb datacard
+   d. Close dashboard,then kernel panic will happen in usbserial_clean function
 
-> I would be interested in knowing whether you - in whichever subsystems
-> you happen to be active - would even need aligned_u64. Right now,
-> the only users seem to be PPP and scsi_tgt besides Netfilter.
+Yes, the datacard exit without close the port. 
 
-Using aligned_u64 is good practice to avoid problems with the 
-32bit/64bit compat layer. I would recommend it to anyone 
-adding a new user space interface passing a 64bit value.
+But after the dashboard connect internet with hauwei datacard, then Hibernate/resume, the bug will happen too.
+Do you have any other good idea to resolve this bug,or please apply my patch,thanks. :)
 
--Andi
--- 
-ak@linux.intel.com -- Speaking for myself only.
+
+Signed-off-by: ma rui <m00150988@huawei.com>
+
+
+diff -uprN -X linux-2.6.36-rc7_orig/Documentation/dontdiff linux-2.6.36-rc7_orig/drivers/usb/serial/usb-serial.c linux-2.6.36-rc7/drivers/usb/serial/usb-serial.c
+--- linux-2.6.36-rc7_orig/drivers/usb/serial/usb-serial.c	2010-10-06 16:39:52.000000000 -0400
++++ linux-2.6.36-rc7/drivers/usb/serial/usb-serial.c	2010-10-15 01:57:36.000000000 -0400
+@@ -328,6 +328,16 @@ static void serial_cleanup(struct tty_st
+ 	/* The console is magical.  Do not hang up the console hardware
+ 	 * or there will be tears.
+ 	 */
++	if (NULL == port)
++		return;
++	mutex_lock(&port->serial->disc_mutex);
++	if (port->serial->disconnected) {
++		return_serial(port->serial);
++		mutex_unlock(&port->serial->disc_mutex);
++		return;
++	}
++	mutex_unlock(&port->serial->disc_mutex);
++
+ 	if (port->port.console)
+ 		return;
+ 
+
+
+
+
+
+
+
+
+----- Original Message ----- 
+From: "Greg KH" <greg@kroah.com>
+To: "marui" <m00150988@huawei.com>
+Cc: <linux-usb@vger.kernel.org>; <linux-kernel@vger.kernel.org>; <zihan@huawei.com>; "Lin Lei" <Lin.Lei@huawei.com>; "Franko Fang" <huananhu@huawei.com>; <wangyeqi@huawei.com>
+Sent: Friday, October 15, 2010 12:20 PM
+Subject: Re: [PATCH] fix oops in usbserial_cleanup function;
+
+
+> On Fri, Oct 15, 2010 at 11:50:56AM +0800, marui wrote:
+>> 1. I find this bug on OpenSUSE 11.3 which kernel vesion is 2.6.34, but the latest kernel vesion 2.6.36-rc7 aslo have this bug. This patch is based on the kernel of 2.6.36-rc7.
+>> 2. Bug report:
+>>    a. Install huawei datacard dashboard on OpenSUSE 11.3
+>>    b. Plug in huawei datacard into OpenSUSE 11.3 which kernel verison is 2.6.36-rc7
+>>    c. After the dashboard has detected the device, I  pull out the usb datacard
+>>    d. close datashboard,then kernel panic will happen in usbserial_cleanup function. 
+> 
+> What does the "dashboard" program do?  Hold the port open?
+> 
+>> 3. fix the bug:
+>>    I find usbserial_cleanup should judge the usb device wheher has been disconnected firtly.
+>> 
+>> 
+>> diff -uprN -X linux-2.6.36-rc7-orig/Documentation/dontdiff linux-2.6.36-rc7-orig/drivers/usb/serial/usb-serial.c linux-2.6.36-rc7/drivers/usb/serial/usb-serial.c
+>> 
+>> --- linux-2.6.36-rc7_orig/drivers/usb/serial/usb-serial.c 2010-10-06 16:39:52.000000000 -0400
+>> +++ linux-2.6.36-rc7/drivers/usb/serial/usb-serial.c 2010-10-14 20:59:47.000000000 -0400
+>> @@ -328,6 +328,20 @@ static void serial_cleanup(struct tty_st
+>>   /* The console is magical.  Do not hang up the console hardware
+>>    * or there will be tears.
+>>    */
+>> +        dbg("%s start\n",__func__);
+>> +        if(NULL == port)
+>> +        {
+>> +            dbg("%s NULL == port\n",__func__);
+>> +            return;
+> 
+> We don't need to keep the dbg statements here, do we?
+> 
+>> +        }
+>> + mutex_lock(&port->serial->disc_mutex);
+>> + if (port->serial->disconnected)
+>> +        {
+>> +                dbg("%s port->serial->disconnected\n",__func__);
+>> +                return_serial(port->serial);
+>> +  return;
+> 
+> You can't return with a lock held.
+> 
+>> +        }
+>> + mutex_unlock(&port->serial->disc_mutex);
+>>   if (port->port.console)
+>>    return;
+> 
+> Your tabs and spaces got all mixed up, and it can't be applied.  Also, I
+> need a "Signed-off-by:" line to be able to accept it.  Care to read the
+> file Documentation/SubmittingPatches for how to format a patch so we can
+> take it?
+> 
+> Also, run the patch through scripts/checkpatch.pl and resolve the coding
+> style issues before resending please.
+> 
+> thanks,
+> 
+> greg k-h
