@@ -1,37 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754716Ab0JOJNo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Oct 2010 05:13:44 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:41674 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752728Ab0JOJNn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Oct 2010 05:13:43 -0400
-Date: Fri, 15 Oct 2010 11:13:41 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: "Justin P. Mattock" <justinmattock@gmail.com>
-Cc: Finn Thain <fthain@telegraphics.com.au>, linux-kernel@vger.kernel.org
-Subject: Re: [RFC v5]Update broken web addresses in arch directory.
-In-Reply-To: <4CB7AD50.2010103@gmail.com>
-Message-ID: <alpine.LNX.2.00.1010151113010.6879@pobox.suse.cz>
-References: <1286225296-10070-1-git-send-email-justinmattock@gmail.com> <alpine.OSX.2.00.1010051146260.289@localhost> <4CB7AD50.2010103@gmail.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1754937Ab0JOJOV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Oct 2010 05:14:21 -0400
+Received: from smtp-out-cinco.uned.es ([62.204.192.119]:23638 "EHLO
+	smtp-out-cinco.uned.es" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752728Ab0JOJOU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Oct 2010 05:14:20 -0400
+X-IronPort-AV: E=Sophos;i="4.57,335,1283724000"; 
+   d="scan'208";a="15649704"
+Message-ID: <8d95806059c38bd5f1fdab9d5a99a336.squirrel@correo.uned.es>
+Date: Fri, 15 Oct 2010 11:14:18 +0200
+Subject: 
+From: "WESTERN UNION TRANSFER" <coie@madrid.uned.es>
+Reply-To: western-union.transfer02@w.cn
+User-Agent: SquirrelMail/1.4.21
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Priority: 3 (Normal)
+Importance: Normal
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 14 Oct 2010, Justin P. Mattock wrote:
 
-> hey jiri, whats the status of this? do you want to take this?
-> if so should I rebase the two patches to the current?
 
-Please rebase both patches (their most up-to-date versions) and send them 
-to me so that I could apply them. There has been way too much traffic 
-around this for me to follow :)
-
-Thanks,
 
 -- 
-Jiri Kosina
-SUSE Labs, Novell Inc.
+My working partner has helped me to send your
+first payment of US$7,500 to you as
+instructed by Mr. David Cameron and will
+keep sending you US$7,500 twice a week until
+the payment of (US$360,000) is completed
+within six months and here is the information
+below:
+
+MONEY TRANSFER CONTROL NUMBER (MTCN):
+291-371-8010
+
+SENDER'S NAME:Solomon Daniel
+AMOUNT: US$7,500
+
+To track your funds forward Western Union
+Money Transfer agent your Full Names and
+Mobile Number via Email to:
+
+Mr Gary Moore
+E-mail:western-union.transfer02@w.cn
+D/L: +447024044997
+
+Please direct all enquiring to:
+western-union.transfer02@w.cn
+
+Best Regards,
+Mr Gary Moore.
+
+
+
+
