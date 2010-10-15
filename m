@@ -1,203 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756770Ab0JOT56 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Oct 2010 15:57:58 -0400
-Received: from mgw2.diku.dk ([130.225.96.92]:46861 "EHLO mgw2.diku.dk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756188Ab0JOT55 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Oct 2010 15:57:57 -0400
-Date: Fri, 15 Oct 2010 21:57:54 +0200 (CEST)
-From: Julia Lawall <julia@diku.dk>
-To: walter harms <wharms@bfs.de>
-Cc: kernel-janitors@vger.kernel.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/7] drivers/staging: Return -ENOMEM on memory allocation
- failure
-In-Reply-To: <4CB86431.5000305@bfs.de>
-Message-ID: <Pine.LNX.4.64.1010152157440.29421@ask.diku.dk>
-References: <1287147610-8041-2-git-send-email-julia@diku.dk> <4CB86431.5000305@bfs.de>
+	id S1756814Ab0JOUDF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Oct 2010 16:03:05 -0400
+Received: from e33.co.us.ibm.com ([32.97.110.151]:46228 "EHLO
+	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756608Ab0JOUDD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Oct 2010 16:03:03 -0400
+Date: Fri, 15 Oct 2010 13:02:57 -0700
+From: Matt Helsley <matthltc@us.ibm.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Ingo Molnar <mingo@elte.hu>, Frederic Weisbecker <fweisbec@gmail.com>,
+        Jason Baron <jbaron@redhat.com>, linux-kernel@vger.kernel.org,
+        David Miller <davem@davemloft.net>, Mike Galbraith <efault@gmx.de>,
+        Matt Helsley <matthltc@us.ibm.com>
+Subject: Re: [RFC][PATCH 1/7] perf: Fix task refcount issues
+Message-ID: <20101015200257.GB4926@count0.beaverton.ibm.com>
+References: <20101014203404.222133139@chello.nl>
+ <20101014203625.278436085@chello.nl>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101014203625.278436085@chello.nl>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 15 Oct 2010, walter harms wrote:
-
-> This looks like a case for kasprintf().
-
-OK, I will take a look at it.
-
-julia
-
-> re
->  wh
+On Thu, Oct 14, 2010 at 10:34:05PM +0200, Peter Zijlstra wrote:
+> Currently it looks like find_lively_task_by_vpid() takes a task ref
+> and relies on find_get_context() to drop it.
 > 
-> Julia Lawall schrieb:
-> > From: Julia Lawall <julia@diku.dk>
-> > 
-> > Each of these functions defines a variable err and a variable retval.  err
-> > is always 0 and is returned in the error case.  At one point near the end
-> > of the function, retval is initialized to an error code.  For each
-> > function, the patch drops err, stores -ENOMEM in retval in two cases where
-> > memory allocation fails, and changes the return value in the error case
-> > from err to retval.
-> > 
-> > A simplified version of the semantic match that finds this problem is as
-> > follows: (http://coccinelle.lip6.fr/)
-> > 
-> > // <smpl>
-> > @@
-> > expression ret;
-> > expression x,e1,e2,e3;
-> > @@
-> > 
-> > ret = 0
-> > ... when != ret = e1
-> > *x = \(kmalloc\|kcalloc\|kzalloc\)(...)
-> > ... when != ret = e2
-> > if (x == NULL) { ... when != ret = e3
-> >   return ret;
-> > }
-> > // </smpl>
-> > 
-> > Signed-off-by: Julia Lawall <julia@diku.dk>
-> > 
-> > ---
-> >  drivers/staging/cx25821/cx25821-audio-upstream.c     |   11 +++++++----
-> >  drivers/staging/cx25821/cx25821-video-upstream-ch2.c |   11 +++++++----
-> >  drivers/staging/cx25821/cx25821-video-upstream.c     |   11 +++++++----
-> >  3 files changed, 21 insertions(+), 12 deletions(-)
-> > 
-> > diff -u -p a/drivers/staging/cx25821/cx25821-audio-upstream.c b/drivers/staging/cx25821/cx25821-audio-upstream.c
-> > --- a/drivers/staging/cx25821/cx25821-audio-upstream.c
-> > +++ b/drivers/staging/cx25821/cx25821-audio-upstream.c
-> > @@ -723,7 +723,6 @@ int cx25821_audio_upstream_init(struct c
-> >  {
-> >  	struct sram_channel *sram_ch;
-> >  	int retval = 0;
-> > -	int err = 0;
-> >  	int str_length = 0;
-> >  
-> >  	if (dev->_audio_is_running) {
-> > @@ -756,8 +755,10 @@ int cx25821_audio_upstream_init(struct c
-> >  		str_length = strlen(dev->input_audiofilename);
-> >  		dev->_audiofilename = kmalloc(str_length + 1, GFP_KERNEL);
-> >  
-> > -		if (!dev->_audiofilename)
-> > +		if (!dev->_audiofilename) {
-> > +			retval = -ENOMEM;
-> >  			goto error;
-> > +		}
-> >  
-> >  		memcpy(dev->_audiofilename, dev->input_audiofilename,
-> >  		       str_length + 1);
-> > @@ -770,8 +771,10 @@ int cx25821_audio_upstream_init(struct c
-> >  		str_length = strlen(_defaultAudioName);
-> >  		dev->_audiofilename = kmalloc(str_length + 1, GFP_KERNEL);
-> >  
-> > -		if (!dev->_audiofilename)
-> > +		if (!dev->_audiofilename) {
-> > +			retval = -ENOMEM;
-> >  			goto error;
-> > +		}
-> >  
-> >  		memcpy(dev->_audiofilename, _defaultAudioName, str_length + 1);
-> >  	}
-> > @@ -802,5 +805,5 @@ int cx25821_audio_upstream_init(struct c
-> >  error:
-> >  	cx25821_dev_unregister(dev);
-> >  
-> > -	return err;
-> > +	return retval;
-> >  }
-> > diff -u -p a/drivers/staging/cx25821/cx25821-video-upstream-ch2.c b/drivers/staging/cx25821/cx25821-video-upstream-ch2.c
-> > --- a/drivers/staging/cx25821/cx25821-video-upstream-ch2.c
-> > +++ b/drivers/staging/cx25821/cx25821-video-upstream-ch2.c
-> > @@ -747,7 +747,6 @@ int cx25821_vidupstream_init_ch2(struct 
-> >  	struct sram_channel *sram_ch;
-> >  	u32 tmp;
-> >  	int retval = 0;
-> > -	int err = 0;
-> >  	int data_frame_size = 0;
-> >  	int risc_buffer_size = 0;
-> >  	int str_length = 0;
-> > @@ -792,8 +791,10 @@ int cx25821_vidupstream_init_ch2(struct 
-> >  		str_length = strlen(dev->input_filename_ch2);
-> >  		dev->_filename_ch2 = kmalloc(str_length + 1, GFP_KERNEL);
-> >  
-> > -		if (!dev->_filename_ch2)
-> > +		if (!dev->_filename_ch2) {
-> > +			retval = -ENOMEM;
-> >  			goto error;
-> > +		}
-> >  
-> >  		memcpy(dev->_filename_ch2, dev->input_filename_ch2,
-> >  		       str_length + 1);
-> > @@ -801,8 +802,10 @@ int cx25821_vidupstream_init_ch2(struct 
-> >  		str_length = strlen(dev->_defaultname_ch2);
-> >  		dev->_filename_ch2 = kmalloc(str_length + 1, GFP_KERNEL);
-> >  
-> > -		if (!dev->_filename_ch2)
-> > +		if (!dev->_filename_ch2) {
-> > +			retval = -ENOMEM;
-> >  			goto error;
-> > +		}
-> >  
-> >  		memcpy(dev->_filename_ch2, dev->_defaultname_ch2,
-> >  		       str_length + 1);
-> > @@ -851,5 +854,5 @@ int cx25821_vidupstream_init_ch2(struct 
-> >        error:
-> >  	cx25821_dev_unregister(dev);
-> >  
-> > -	return err;
-> > +	return retval;
-> >  }
-> > diff -u -p a/drivers/staging/cx25821/cx25821-video-upstream.c b/drivers/staging/cx25821/cx25821-video-upstream.c
-> > --- a/drivers/staging/cx25821/cx25821-video-upstream.c
-> > +++ b/drivers/staging/cx25821/cx25821-video-upstream.c
-> > @@ -800,7 +800,6 @@ int cx25821_vidupstream_init_ch1(struct 
-> >  	struct sram_channel *sram_ch;
-> >  	u32 tmp;
-> >  	int retval = 0;
-> > -	int err = 0;
-> >  	int data_frame_size = 0;
-> >  	int risc_buffer_size = 0;
-> >  	int str_length = 0;
-> > @@ -844,16 +843,20 @@ int cx25821_vidupstream_init_ch1(struct 
-> >  		str_length = strlen(dev->input_filename);
-> >  		dev->_filename = kmalloc(str_length + 1, GFP_KERNEL);
-> >  
-> > -		if (!dev->_filename)
-> > +		if (!dev->_filename) {
-> > +			retval = -ENOMEM;
-> >  			goto error;
-> > +		}
-> >  
-> >  		memcpy(dev->_filename, dev->input_filename, str_length + 1);
-> >  	} else {
-> >  		str_length = strlen(dev->_defaultname);
-> >  		dev->_filename = kmalloc(str_length + 1, GFP_KERNEL);
-> >  
-> > -		if (!dev->_filename)
-> > +		if (!dev->_filename) {
-> > +			retval = -ENOMEM;
-> >  			goto error;
-> > +		}
-> >  
-> >  		memcpy(dev->_filename, dev->_defaultname, str_length + 1);
-> >  	}
-> > @@ -908,5 +911,5 @@ int cx25821_vidupstream_init_ch1(struct 
-> >  error:
-> >  	cx25821_dev_unregister(dev);
-> >  
-> > -	return err;
-> > +	return retval;
-> >  }
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe kernel-janitors" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > 
-> > 
+> The problem is that perf_event_create_kernel_counter() shouldn't be
+> dropping task refs.
+
+Doh.
+
+Looks good.
+
+Acked-by: Matt Helsley <matthltc@us.ibm.com>
+
+> Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> Cc: Frederic Weisbecker <fweisbec@gmail.com>
+> Cc: Matt Helsley <matthltc@us.ibm.com>
+> ---
+>  kernel/perf_event.c |    7 ++++---
+>  1 file changed, 4 insertions(+), 3 deletions(-)
 > 
+> Index: linux-2.6/kernel/perf_event.c
+> ===================================================================
+> --- linux-2.6.orig/kernel/perf_event.c
+> +++ linux-2.6/kernel/perf_event.c
+> @@ -2124,11 +2124,9 @@ find_get_context(struct pmu *pmu, struct
+>  		}
+>  	}
+> 
+> -	put_task_struct(task);
+>  	return ctx;
+> 
+>  errout:
+> -	put_task_struct(task);
+>  	return ERR_PTR(err);
+>  }
+> 
+> @@ -5536,7 +5534,7 @@ SYSCALL_DEFINE5(perf_event_open,
+>  	ctx = find_get_context(pmu, task, cpu);
+>  	if (IS_ERR(ctx)) {
+>  		err = PTR_ERR(ctx);
+> -		goto err_group_fd;
+> +		goto err_task;
+>  	}
+> 
+>  	/*
+> @@ -5632,6 +5630,9 @@ SYSCALL_DEFINE5(perf_event_open,
+> 
+>  err_context:
+>  	put_ctx(ctx);
+> +err_task:
+> +	if (task)
+> +		put_task_struct(task);
+>  err_group_fd:
+>  	fput_light(group_file, fput_needed);
+>  	free_event(event);
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
