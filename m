@@ -1,87 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756603Ab0JORqZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Oct 2010 13:46:25 -0400
-Received: from kroah.org ([198.145.64.141]:47889 "EHLO coco.kroah.org"
+	id S1756684Ab0JORq7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Oct 2010 13:46:59 -0400
+Received: from a.ns.miles-group.at ([95.130.255.143]:40422 "EHLO radon.swed.at"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756166Ab0JORqY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Oct 2010 13:46:24 -0400
-Date: Fri, 15 Oct 2010 10:12:17 -0700
-From: Greg KH <greg@kroah.com>
-To: T?nu Samuel <tonu@jes.ee>, linux-usb@vger.kernel.org
-Cc: linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: BUG: USB3.0 ?PD720200 complains about over-current
-Message-ID: <20101015171217.GA22299@kroah.com>
-References: <1286985669.4853.14.camel@x41.itrotid.ee>
+	id S1756645Ab0JORq6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Oct 2010 13:46:58 -0400
+/m: 
+From: Richard Weinberger <richard@nod.at>
+To: Toralf =?iso-8859-1?q?F=F6rster?= <toralf.foerster@gmx.de>
+Subject: Re: Fwd: Re: UML kernel crash of v2.6.36-rcX kernel
+Date: Fri, 15 Oct 2010 19:46:53 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.25.20-0.7-pae; KDE/4.4.4; i686; ; )
+References: <201010131328.06465.toralf.foerster@gmx.de> <201010151133.38170.toralf.foerster@gmx.de>
+In-Reply-To: <201010151133.38170.toralf.foerster@gmx.de>
+Cc: user-mode-linux-devel@lists.sourceforge.net,
+        Christoph Hellwig <hch@lst.de>, linux-kernel@vger.kernel.org
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1286985669.4853.14.camel@x41.itrotid.ee>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201010151946.53402.richard@nod.at>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 13, 2010 at 07:01:09PM +0300, T?nu Samuel wrote:
-> Hi!
+Hi!
+
+Can you please post more details.
+What exactly causes the crash?
+phpsysinfo does a lot of stuff.
+On my test bed it works fine.
+
+Am Freitag 15 Oktober 2010, 11:33:37 schrieben Sie:
+> Hello,
 > 
-> I know, this is place where only Gods speak and others not. But I am
-> sure there is something odd I found and someone here can take care of
-> it.
-
-For usb specific stuff like this, try using the
-linux-usb@vger.kernel.org mailing list.
-
-> In situation when nothing is connected to any USB ports Ubuntu 10.04.1
-> stock kernel complains:
-> spider@spider:~$ zcat /var/log/kern.log.2.gz | grep -i current | head
-> Sep 29 23:30:12 spider kernel: [    9.048388] hub 8-0:1.0: over-current
-> change on port 1
-> Sep 29 23:30:12 spider kernel: [    9.152036] hub 8-0:1.0: over-current
-> change on port 2
-> Sep 29 23:30:12 spider kernel: [    9.256038] hub 8-0:1.0: over-current
-> change on port 3
-> Sep 29 23:30:12 spider kernel: [    9.360037] hub 8-0:1.0: over-current
-> change on port 1
-> Sep 29 23:30:12 spider kernel: [    9.464036] hub 8-0:1.0: over-current
-> change on port 2
-> Sep 29 23:30:12 spider kernel: [    9.570621] hub 8-0:1.0: over-current
-> change on port 3
-> Sep 29 23:30:12 spider kernel: [    9.672037] hub 8-0:1.0: over-current
-> change on port 1
-> Sep 29 23:30:12 spider kernel: [    9.776038] hub 8-0:1.0: over-current
-> change on port 2
-> Sep 29 23:30:12 spider kernel: [    9.880049] hub 8-0:1.0: over-current
-> change on port 3
-> Sep 29 23:30:13 spider kernel: [    9.984041] hub 8-0:1.0: over-current
-> change on port 1
-> spider@spider:~$ 
+> git bisect gave :
 > 
-> This runs forever and makes computer busy forever just running those
-> messages. I verified same behavior exists with vanilla 2.6.35.7.
-> Disabling USB3.0 in BIOS turns off problem and all USB2 ports remain to
-> work. So probably this is xHCI driver who complains. I looked bit around
-> in source and see it is copied from USB2 code and possibly USB3 has
-> something different. I've read USB3 can supply more power, so possibly
-> something here has changed.
-
-Do you have the xhci driver loaded for the USB 3.0 controller?
-
-> My hardware:
+> tfoerste@n22 ~/devel/linux-2.6 $ git bisect bad
+> 365b18189789bfa1acd9939e6312b8a4b4577b28 is the first bad commit
+> commit 365b18189789bfa1acd9939e6312b8a4b4577b28
+> Author: Christoph Hellwig <hch@lst.de>
+> Date:   Wed Jul 7 18:53:25 2010 +0200
 > 
-> Motherboard ASUS M4A88T-I Deluxe
-> http://www.asus.com/product.aspx?P_ID=jGAoIFEziW5sPYy7
+>     add f_flags to struct statfs(64)
 > 
-> it has USB3 chip "NEC D720200F1" on it:
-> http://digi.physic.ut.ee/mw/images/d/de/20100926_digi_007.png
+>     Add a flags field to help glibc implementing statvfs(3) efficiently.
 > 
-> NEC is joined Renesas, so this is his link for datasheet etc:
-> http://www2.renesas.com/usb/en/product/upd720200.html
+>     We copy the flag values from glibc, and add a new ST_VALID flag to
+>     denote that f_flags is implemented.
 > 
-> If you propose patch, I can give him test run.
+>     Signed-off-by: Christoph Hellwig <hch@lst.de>
+>     Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+> 
+> :040000 040000 92f04bf96f0c6bb2df3ddea83a4a27c35985bdcc
+> 
+> e702d8dd95a3897e085bf3fe4919e2dd30a57b47 M      arch
+> 
+> :040000 040000 5705bba0e9a2a61112281f7bb1a1030ef9eb337e
+> 
+> 34fc3ea912581ae7923a15246291387bfc354e47 M      fs
+> 
+> :040000 040000 578a5bb0743aa85adfec7a25f82d440b2ea4db27
+> 
+> 7e96f95b6f1d6ccc9e004b560670638db66b8a93 M      include
+> 
+> 
+> BTW is UML dead ?
+> (I'm asking b/c there're so many different issues - compile errors or the
+> UML kernel crashes during start or during shutdown, independent of the
+> result of the wget issue I was investigating - there are 120 skip'ed
+> commits within the git bisect log beside 46 good and 15 bad commits and I
+> didn't saw any chance to fully automate the bisect)
 
-Any xhci developers have an idea?
+Hmm, I did a lot git bisects on UML 2.6.35 to 2.6.36.
+2.6.36-rc1 does not always compile. You need no apply f3c072a first.
+I've not seen any crashes during bootup nor shutdown. Can you provide some 
+more details?
 
-thanks,
-
-greg k-h
+Thanks,
+//richard
