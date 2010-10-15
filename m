@@ -1,82 +1,176 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756684Ab0JORq7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Oct 2010 13:46:59 -0400
-Received: from a.ns.miles-group.at ([95.130.255.143]:40422 "EHLO radon.swed.at"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756645Ab0JORq6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Oct 2010 13:46:58 -0400
-/m: 
-From: Richard Weinberger <richard@nod.at>
-To: Toralf =?iso-8859-1?q?F=F6rster?= <toralf.foerster@gmx.de>
-Subject: Re: Fwd: Re: UML kernel crash of v2.6.36-rcX kernel
-Date: Fri, 15 Oct 2010 19:46:53 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.25.20-0.7-pae; KDE/4.4.4; i686; ; )
-References: <201010131328.06465.toralf.foerster@gmx.de> <201010151133.38170.toralf.foerster@gmx.de>
-In-Reply-To: <201010151133.38170.toralf.foerster@gmx.de>
-Cc: user-mode-linux-devel@lists.sourceforge.net,
-        Christoph Hellwig <hch@lst.de>, linux-kernel@vger.kernel.org
+	id S1756705Ab0JORrD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Oct 2010 13:47:03 -0400
+Received: from smtp.opengridcomputing.com ([209.198.142.2]:44163 "EHLO
+	smtp.opengridcomputing.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756645Ab0JORrA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Oct 2010 13:47:00 -0400
+Message-ID: <4CB89393.6000207@opengridcomputing.com>
+Date: Fri, 15 Oct 2010 12:46:59 -0500
+From: Tom Tucker <tom@opengridcomputing.com>
+User-Agent: Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10.6; en-US; rv:1.9.2.9) Gecko/20100915 Lightning/1.0b2 Thunderbird/3.1.4
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+To: "J. Bruce Fields" <bfields@fieldses.org>
+CC: Tejun Heo <tj@kernel.org>, Trond Myklebust <Trond.Myklebust@netapp.com>,
+        linux-nfs@vger.kernel.org, lkml <linux-kernel@vger.kernel.org>,
+        Tom Tucker <tom@ogc.us>
+Subject: Re: [PATCH linux-2.6.36-rc7] sunrpc/xprtrdma: clean up workqueue
+ usage
+References: <4CB87807.7050108@kernel.org> <20101015171132.GA18869@fieldses.org>
+In-Reply-To: <20101015171132.GA18869@fieldses.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Message-Id: <201010151946.53402.richard@nod.at>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+  On 10/15/10 12:11 PM, J. Bruce Fields wrote:
+> Tom, could you take a look?
+>
+This looks reasonable to me.
 
-Can you please post more details.
-What exactly causes the crash?
-phpsysinfo does a lot of stuff.
-On my test bed it works fine.
+My bet is that it wasn't tested though due to hardware availability. I'll 
+test it this weekend and let you know how it goes.
 
-Am Freitag 15 Oktober 2010, 11:33:37 schrieben Sie:
-> Hello,
-> 
-> git bisect gave :
-> 
-> tfoerste@n22 ~/devel/linux-2.6 $ git bisect bad
-> 365b18189789bfa1acd9939e6312b8a4b4577b28 is the first bad commit
-> commit 365b18189789bfa1acd9939e6312b8a4b4577b28
-> Author: Christoph Hellwig <hch@lst.de>
-> Date:   Wed Jul 7 18:53:25 2010 +0200
-> 
->     add f_flags to struct statfs(64)
-> 
->     Add a flags field to help glibc implementing statvfs(3) efficiently.
-> 
->     We copy the flag values from glibc, and add a new ST_VALID flag to
->     denote that f_flags is implemented.
-> 
->     Signed-off-by: Christoph Hellwig <hch@lst.de>
->     Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
-> 
-> :040000 040000 92f04bf96f0c6bb2df3ddea83a4a27c35985bdcc
-> 
-> e702d8dd95a3897e085bf3fe4919e2dd30a57b47 M      arch
-> 
-> :040000 040000 5705bba0e9a2a61112281f7bb1a1030ef9eb337e
-> 
-> 34fc3ea912581ae7923a15246291387bfc354e47 M      fs
-> 
-> :040000 040000 578a5bb0743aa85adfec7a25f82d440b2ea4db27
-> 
-> 7e96f95b6f1d6ccc9e004b560670638db66b8a93 M      include
-> 
-> 
-> BTW is UML dead ?
-> (I'm asking b/c there're so many different issues - compile errors or the
-> UML kernel crashes during start or during shutdown, independent of the
-> result of the wget issue I was investigating - there are 120 skip'ed
-> commits within the git bisect log beside 46 good and 15 bad commits and I
-> didn't saw any chance to fully automate the bisect)
+Tom
+> --b.
+>
+> On Fri, Oct 15, 2010 at 05:49:27PM +0200, Tejun Heo wrote:
+>> * Create and use svc_rdma_wq instead of using the system workqueue and
+>>    flush_scheduled_work().  This workqueue is necessary to serve as
+>>    flushing domain for rdma->sc_work which is used to destroy itself
+>>    and thus can't be flushed explicitly.
+>>
+>> * Replace cancel_delayed_work() + flush_scheduled_work() with
+>>    cancel_delayed_work_sync().
+>>
+>> * Implement synchronous connect in xprt_rdma_connect() using
+>>    flush_delayed_work() on the rdma_connect work instead of using
+>>    flush_scheduled_work().
+>>
+>> This is to prepare for the deprecation and removal of
+>> flush_scheduled_work().
+>>
+>> Signed-off-by: Tejun Heo<tj@kernel.org>
+>> ---
+>>   net/sunrpc/xprtrdma/svc_rdma.c           |   11 ++++++++++-
+>>   net/sunrpc/xprtrdma/svc_rdma_transport.c |    6 +++++-
+>>   net/sunrpc/xprtrdma/transport.c          |    5 ++---
+>>   3 files changed, 17 insertions(+), 5 deletions(-)
+>>
+>> Index: work/net/sunrpc/xprtrdma/svc_rdma.c
+>> ===================================================================
+>> --- work.orig/net/sunrpc/xprtrdma/svc_rdma.c
+>> +++ work/net/sunrpc/xprtrdma/svc_rdma.c
+>> @@ -43,6 +43,7 @@
+>>   #include<linux/slab.h>
+>>   #include<linux/fs.h>
+>>   #include<linux/sysctl.h>
+>> +#include<linux/workqueue.h>
+>>   #include<linux/sunrpc/clnt.h>
+>>   #include<linux/sunrpc/sched.h>
+>>   #include<linux/sunrpc/svc_rdma.h>
+>> @@ -74,6 +75,8 @@ atomic_t rdma_stat_sq_prod;
+>>   struct kmem_cache *svc_rdma_map_cachep;
+>>   struct kmem_cache *svc_rdma_ctxt_cachep;
+>>
+>> +struct workqueue_struct *svc_rdma_wq;
+>> +
+>>   /*
+>>    * This function implements reading and resetting an atomic_t stat
+>>    * variable through read/write to a proc file. Any write to the file
+>> @@ -231,7 +234,7 @@ static ctl_table svcrdma_root_table[] =
+>>   void svc_rdma_cleanup(void)
+>>   {
+>>   	dprintk("SVCRDMA Module Removed, deregister RPC RDMA transport\n");
+>> -	flush_scheduled_work();
+>> +	destroy_workqueue(svc_rdma_wq);
+>>   	if (svcrdma_table_header) {
+>>   		unregister_sysctl_table(svcrdma_table_header);
+>>   		svcrdma_table_header = NULL;
+>> @@ -249,6 +252,11 @@ int svc_rdma_init(void)
+>>   	dprintk("\tsq_depth         : %d\n",
+>>   		svcrdma_max_requests * RPCRDMA_SQ_DEPTH_MULT);
+>>   	dprintk("\tmax_inline       : %d\n", svcrdma_max_req_size);
+>> +
+>> +	svc_rdma_wq = alloc_workqueue("svc_rdma", 0, 0);
+>> +	if (!svc_rdma_wq)
+>> +		return -ENOMEM;
+>> +
+>>   	if (!svcrdma_table_header)
+>>   		svcrdma_table_header =
+>>   			register_sysctl_table(svcrdma_root_table);
+>> @@ -283,6 +291,7 @@ int svc_rdma_init(void)
+>>   	kmem_cache_destroy(svc_rdma_map_cachep);
+>>    err0:
+>>   	unregister_sysctl_table(svcrdma_table_header);
+>> +	destroy_workqueue(svc_rdma_wq);
+>>   	return -ENOMEM;
+>>   }
+>>   MODULE_AUTHOR("Tom Tucker<tom@opengridcomputing.com>");
+>> Index: work/net/sunrpc/xprtrdma/svc_rdma_transport.c
+>> ===================================================================
+>> --- work.orig/net/sunrpc/xprtrdma/svc_rdma_transport.c
+>> +++ work/net/sunrpc/xprtrdma/svc_rdma_transport.c
+>> @@ -45,6 +45,7 @@
+>>   #include<linux/sched.h>
+>>   #include<linux/slab.h>
+>>   #include<linux/spinlock.h>
+>> +#include<linux/workqueue.h>
+>>   #include<rdma/ib_verbs.h>
+>>   #include<rdma/rdma_cm.h>
+>>   #include<linux/sunrpc/svc_rdma.h>
+>> @@ -89,6 +90,9 @@ struct svc_xprt_class svc_rdma_class = {
+>>   /* WR context cache. Created in svc_rdma.c  */
+>>   extern struct kmem_cache *svc_rdma_ctxt_cachep;
+>>
+>> +/* Workqueue created in svc_rdma.c */
+>> +extern struct workqueue_struct *svc_rdma_wq;
+>> +
+>>   struct svc_rdma_op_ctxt *svc_rdma_get_context(struct svcxprt_rdma *xprt)
+>>   {
+>>   	struct svc_rdma_op_ctxt *ctxt;
+>> @@ -1184,7 +1188,7 @@ static void svc_rdma_free(struct svc_xpr
+>>   	struct svcxprt_rdma *rdma =
+>>   		container_of(xprt, struct svcxprt_rdma, sc_xprt);
+>>   	INIT_WORK(&rdma->sc_work, __svc_rdma_free);
+>> -	schedule_work(&rdma->sc_work);
+>> +	queue_work(svc_rdma_wq,&rdma->sc_work);
+>>   }
+>>
+>>   static int svc_rdma_has_wspace(struct svc_xprt *xprt)
+>> Index: work/net/sunrpc/xprtrdma/transport.c
+>> ===================================================================
+>> --- work.orig/net/sunrpc/xprtrdma/transport.c
+>> +++ work/net/sunrpc/xprtrdma/transport.c
+>> @@ -237,8 +237,7 @@ xprt_rdma_destroy(struct rpc_xprt *xprt)
+>>
+>>   	dprintk("RPC:       %s: called\n", __func__);
+>>
+>> -	cancel_delayed_work(&r_xprt->rdma_connect);
+>> -	flush_scheduled_work();
+>> +	cancel_delayed_work_sync(&r_xprt->rdma_connect);
+>>
+>>   	xprt_clear_connected(xprt);
+>>
+>> @@ -460,7 +459,7 @@ xprt_rdma_connect(struct rpc_task *task)
+>>   	} else {
+>>   		schedule_delayed_work(&r_xprt->rdma_connect, 0);
+>>   		if (!RPC_IS_ASYNC(task))
+>> -			flush_scheduled_work();
+>> +			flush_delayed_work(&r_xprt->rdma_connect);
+>>   	}
+>>   }
+>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-nfs" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-Hmm, I did a lot git bisects on UML 2.6.35 to 2.6.36.
-2.6.36-rc1 does not always compile. You need no apply f3c072a first.
-I've not seen any crashes during bootup nor shutdown. Can you provide some 
-more details?
-
-Thanks,
-//richard
