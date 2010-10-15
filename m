@@ -1,84 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756083Ab0JODDa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Oct 2010 23:03:30 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:60048 "EHLO smtps.tip.net.au"
+	id S1756111Ab0JODED (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Oct 2010 23:04:03 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:36536 "EHLO mx3.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755644Ab0JODDa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Oct 2010 23:03:30 -0400
-Date: Fri, 15 Oct 2010 14:03:19 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Jan Engelhardt <jengelh@medozas.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Eric Paris <eparis@redhat.com>, linux-kernel@vger.kernel.org,
-        agruen@suse.de, davem@davemloft.net, andi@firstfloor.org
-Subject: Abbrevieated SHA1s (Was: Re: Process to push changes to
- include/linux/types.h)
-Message-Id: <20101015140319.3ddb06c3.sfr@canb.auug.org.au>
-In-Reply-To: <AANLkTik+NENndwKFSFQoVAr0qiBWg5HOsQdVPmtNaSjC@mail.gmail.com>
-References: <1287084892.3367.18.camel@dhcp231-212.rdu.redhat.com>
-	<20101014125458.9e51ac58.akpm@linux-foundation.org>
-	<alpine.LNX.2.01.1010142324400.31442@obet.zrqbmnf.qr>
-	<20101014143723.ffea0d8c.akpm@linux-foundation.org>
-	<alpine.LNX.2.01.1010142342400.31442@obet.zrqbmnf.qr>
-	<AANLkTik+NENndwKFSFQoVAr0qiBWg5HOsQdVPmtNaSjC@mail.gmail.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Fri__15_Oct_2010_14_03_19_+1100_FEdu7shq5C5jB5ZO"
+	id S1755644Ab0JODEB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Oct 2010 23:04:01 -0400
+Date: Fri, 15 Oct 2010 05:03:36 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Pekka Enberg <penberg@kernel.org>,
+        David Rientjes <rientjes@google.com>, Ingo Molnar <mingo@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Casey Dahlin <cdahlin@redhat.com>, x86@kernel.org,
+        linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [patch] x86: allow ZONE_DMA to be configurable
+Message-ID: <20101015030336.GB9640@elte.hu>
+References: <cbd8b37e-a1a3-4275-8acb-a76476211366@email.android.com>
+ <alpine.DEB.2.00.1010131832400.794@chino.kir.corp.google.com>
+ <4CB688F4.9040706@zytor.com>
+ <alpine.DEB.2.00.1010132140550.20995@chino.kir.corp.google.com>
+ <4CB7240E.9000905@zytor.com>
+ <AANLkTin-VOKXe6wcwt_r3bLcS6=WYJ4EAPPUZWLbEGQF@mail.gmail.com>
+ <4CB7418C.7010505@zytor.com>
+ <20101014183448.GA3187@elte.hu>
+ <20101014123511.d628f873.akpm@linux-foundation.org>
+ <1bdcb8fa-d858-4a79-ae28-de8c94d13f5f@email.android.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1bdcb8fa-d858-4a79-ae28-de8c94d13f5f@email.android.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__15_Oct_2010_14_03_19_+1100_FEdu7shq5C5jB5ZO
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
 
-Hi Linus,
+* H. Peter Anvin <hpa@zytor.com> wrote:
 
-On Thu, 14 Oct 2010 15:13:27 -0700 Linus Torvalds <torvalds@linux-foundatio=
-n.org> wrote:
->
-> Extended background for non-git people: git _internally_ only uses the
-> 160-bit SHA1 (which in its full ASCII form is 40 hex characters). But
-> because that is so human-unfriendly, there are various human-readable
-> ways to express it:
->=20
->  - Just a shortened unique version, usually 7-12 hex characters. 12
-> hex characters is already unique in practice for pretty much any
-> reasonable project, and is much easier to write.
+> I don't like the CONFIG_EXPERT prefix, just because it makes it hard 
+> to move things into and out of this rubric, and that's bad... 
 
-I have had one case I hit where an abbreviated SHA1 (which may have been
-only 7 hex chars) was unique in your tree, but not in linux-next :-(  I
-think it was unique after one more character, though.   Having this
-happen was a pain, because git reacted badly to being given a non-unique
-SHA1 to look up.  i.e. it did *not* say the expected "this sha1 is not
-unique".   However, now it does, so things are getting better.  It would
-probably be nice if it told you the "matching" objects ...
+Hm, i'm not sure i agree.
 
-So I would support using (at least) 12 char abbreviations in commit
-messages (and any other long lived context).
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+> (consider: "oh, that would mean this *huge* patch) ...
 
---Signature=_Fri__15_Oct_2010_14_03_19_+1100_FEdu7shq5C5jB5ZO
-Content-Type: application/pgp-signature
+If config options are present in many places in the source that's an 
+independent problem already.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
+Typically kconfig variables are used in a few places and any rename 
+patch makes it clear in all those places what happened: either a config 
+variable became obscure (moved into CONFIG_EXPERT's scope), *or* a 
+config variable became much less obscure (moved out of that scope) - 
+both important pieces of information, which i dont mind to see happen in 
+every place that gets affected.
 
-iQEcBAEBAgAGBQJMt8R3AAoJEDMEi1NhKgbsdHUH/RcvQ1/FG+YRBmgyFxiQsXgw
-CslFBHHlWEUb1dGpYiTA5Z5Hs5HRioX2Ddspj460JBPuX9xBg50cDf5KZwS4sALI
-n2QG4WfPhJdgBtuOqf9HykVWq1lG0zcOag7XCj/qMcVd7lAOeY9e3tSZX+xrtlAQ
-4bbXOiBUm/GIrLMDF20jEDg3Y5U+ytxzGSc98yHER51RQ0jzxfe8AghEDhrWczYe
-8hvm2fhDXzcOrRgCeY1weDhJc2LVPVRt6qFmU9yjC/3kK0jc9a/0C3H/tsqZ79AW
-u1W6n4W9/zHdhvs3q2C5j8nwY9dn/NX0lX+DievR2s+bLPJSEf1DUjHKqHhHQs0=
-=r7lK
------END PGP SIGNATURE-----
+Put differently: if we have a CONFIG_EXPERT_ kconfig variable in so many 
+places in the kernel that it creates a huge patch then we have some 
+other kind of problem: it either should not be an expert option (it's 
+too common or too important), or it should not be an option at all (it's 
+a perpetual build failure risk).
 
---Signature=_Fri__15_Oct_2010_14_03_19_+1100_FEdu7shq5C5jB5ZO--
+Also, historically we have not been moving kconfig variables in and out 
+of CONFIG_EMBEDDED all that often for this to be an issue in the future.
+
+> [...] not to mention that what is CONFIG_EXPERT on one platform may 
+> not be for another! [...]
+
+Dunno, that i'd consider more of a bug. If an architecture absolutely 
+needs to configure in or out a kernel feature then it should not be 
+under CONFIG_EXPERT on other architectures either: it only sets us up 
+for cross-arch build failures if say the CONFIG_EXPERT dependency is 
+present on x86.
+
+Or, if an architecture still wants it that way, it better be explicitly 
+aware that it's configuring in a little-tested kconfig switch of the 
+kerenl.
+
+I.e. something being an 'expert option' is synonymous with obscurity and 
+potential weirdness on at least one arch - which i dont see as 
+inherently wrong to be visible (via the name) on other architectures 
+either.
+
+Thanks,
+
+	Ingo
