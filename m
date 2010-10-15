@@ -1,63 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751451Ab0JOEZI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Oct 2010 00:25:08 -0400
-Received: from kroah.org ([198.145.64.141]:34388 "EHLO coco.kroah.org"
+	id S1752203Ab0JOE0G (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Oct 2010 00:26:06 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:51090 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750895Ab0JOEZF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Oct 2010 00:25:05 -0400
-Date: Thu, 14 Oct 2010 21:25:41 -0700
-From: Greg KH <greg@kroah.com>
-To: m00150988@huawei.com
-Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Franko Fang <huananhu@huawei.com>
-Subject: Re: [PATCH] fix oops in usbserial_cleanup function;
-Message-ID: <20101015042541.GA16134@kroah.com>
-References: <faf7c73f11ba6.11ba6faf7c73f@huawei.com>
+	id S1751136Ab0JOE0E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Oct 2010 00:26:04 -0400
+From: Eric Paris <eparis@redhat.com>
+Subject: [PATCH] types.h: define __aligned_u64 and expose to userspace
+To: linux-kernel@vger.kernel.org
+Cc: akpm@linux-foundation.org, jengelh@medozas.de, davem@davemloft.net,
+        andi@firstfloor.org
+Date: Fri, 15 Oct 2010 00:24:55 -0400
+Message-ID: <20101015042455.12772.27482.stgit@paris.rdu.redhat.com>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <faf7c73f11ba6.11ba6faf7c73f@huawei.com>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 15, 2010 at 12:14:37PM +0800, m00150988@huawei.com wrote:
-> From: marui <m00150988@huawei.com>
-> 
-> 1. I find this bug on OpenSUSE 11.3 which kernel vesion is 2.6.34, but the latest kernel vesion 2.6.36-rc7 aslo have this bug. This patch is based on the kernel of 2.6.36-rc7.
-> 2. Bug report:
->    a. Install huawei datacard dashboard on OpenSUSE 11.3
->    b. Plug in huawei datacard into OpenSUSE 11.3 which kernel verison is 2.6.36-rc7
->    c. After the dashboard has detected the device, I  pull out the usb datacard
->    d. close datashboard,then kernel panic will happen in usbserial_cleanup function. 
->  
->  
-> 3. fix the bug:
->    I find usbserial_cleanup should judge the usb device wheher has been disconnected firtly.
-> 
-> Signed-off-by: marui<m00150988@huawei.com>
+We currently have a kernel internal type called aligned_u64 which aligns
+__u64's on 8 bytes boundaries even on systems which would normally align
+them on 4 byte boundaries.  This patch creates a new type __aligned_u64
+which does the same thing but which is exposed to userspace rather than
+being kernel internal.
 
-I need a full name here please.
+Based-on-patch-by: Andreas Gruenbacher <agruen@suse.de>
+Signed-off-by: Eric Paris <eparis@redhat.com>
+---
 
-> --- linux-2.6.36-rc7_orig/drivers/usb/serial/usb-serial.c	2010-10-06 16:39:52.000000000 -0400
-> +++ linux-2.6.36-rc7/drivers/usb/serial/usb-serial.c	2010-10-14 20:59:47.000000000 -0400
-> @@ -328,6 +328,20 @@ static void serial_cleanup(struct tty_st
->  	/* The console is magical.  Do not hang up the console hardware
->  	 * or there will be tears.
->  	 */
-> +        dbg("%s start\n",__func__);
-> +        if(NULL == port)
-> +        {
-> +            dbg("%s NULL == port\n",__func__);
-> +            return;
-> +        }
-> +	mutex_lock(&port->serial->disc_mutex);
+ include/linux/types.h |    5 +++++
+ 1 files changed, 5 insertions(+), 0 deletions(-)
 
-Please read Documentation/CodingStyle for the tabs and brace placements
-you need to resolve.
+diff --git a/include/linux/types.h b/include/linux/types.h
+index 01a082f..194e90b 100644
+--- a/include/linux/types.h
++++ b/include/linux/types.h
+@@ -178,6 +178,11 @@ typedef __u64 __bitwise __be64;
+ typedef __u16 __bitwise __sum16;
+ typedef __u32 __bitwise __wsum;
+ 
++/* this is a special 64bit data type that is 8-byte aligned */
++#define __aligned_u64 __u64 __attribute__((aligned(8)))
++#define __aligned_be64 __be64 __attribute__((aligned(8)))
++#define __aligned_le64 __le64 __attribute__((aligned(8)))
++
+ #ifdef __KERNEL__
+ typedef unsigned __bitwise__ gfp_t;
+ typedef unsigned __bitwise__ fmode_t;
 
-thanks,
-
-greg k-h
