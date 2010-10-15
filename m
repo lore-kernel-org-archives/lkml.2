@@ -1,63 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932170Ab0JOQ6L (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Oct 2010 12:58:11 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:49555 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932103Ab0JOQ6J (ORCPT
+	id S932206Ab0JOQ6v (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Oct 2010 12:58:51 -0400
+Received: from mga02.intel.com ([134.134.136.20]:14822 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932103Ab0JOQ6u convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Oct 2010 12:58:09 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=from:to:subject:date:user-agent:cc:references:in-reply-to
-         :mime-version:content-type:content-transfer-encoding:message-id;
-        b=vZDa5/6jBwBn09Wv2roBDd9iJ6CPOqub4/lXAHfP+yLNwgEVvTq0wO7Vw8FO0eyYEj
-         +wa/rzdfPa/QStevxre14AJG1cXStswSVlI6uiV4TpFPujBoG6+BjR5YcGP4mmrXdaNU
-         Qdon8pBCQguOYzYty7D2OSzT4N7yeqSf0oroM=
-From: Christian Lamparter <chunkeey@googlemail.com>
-To: Tejun Heo <tj@kernel.org>
-Subject: Re: [PATCH v2.6.36-rc7] mac80211: cancel restart_work explicitly instead of depending on flush_scheduled_work()
-Date: Fri, 15 Oct 2010 18:58:44 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.36-rc7-wl+; KDE/4.4.5; x86_64; ; )
-Cc: Johannes Berg <johannes@sipsolutions.net>,
-        Linux Wireless List <linux-wireless@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        "John W. Linville" <linville@tuxdriver.com>
-References: <4CB874C0.8090003@kernel.org> <1287159715.1870.11.camel@Nokia-N900-51-1> <4CB883C9.6050104@kernel.org>
-In-Reply-To: <4CB883C9.6050104@kernel.org>
+	Fri, 15 Oct 2010 12:58:50 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.57,336,1283756400"; 
+   d="scan'208";a="564278936"
+From: "Tantilov, Emil S" <emil.s.tantilov@intel.com>
+To: Nikola Ciprich <extmaillist@linuxbox.cz>,
+        Linux kernel list <linux-kernel@vger.kernel.org>,
+        linux-net maillist <linux-net@vger.kernel.org>,
+        e1000-devel list <e1000-devel@lists.sourceforge.net>
+CC: "nikola.ciprich@linuxbox.cz" <nikola.ciprich@linuxbox.cz>
+Date: Fri, 15 Oct 2010 10:58:15 -0600
+Subject: RE: [E1000-devel] 2.6.36-rc7-git2 - panic/GPF: e1000e/vlans?
+Thread-Topic: [E1000-devel] 2.6.36-rc7-git2 - panic/GPF: e1000e/vlans?
+Thread-Index: ActrZbzEOLfxOuSFSX2i25WHdSB1jQAWuUfg
+Message-ID: <EA929A9653AAE14F841771FB1DE5A1366027CEFF1C@rrsmsx501.amr.corp.intel.com>
+References: <20101014052242.GA8998@pcnci.linuxbox.cz>
+In-Reply-To: <20101014052242.GA8998@pcnci.linuxbox.cz>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201010151858.45000.chunkeey@googlemail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 15 October 2010 18:39:37 Tejun Heo wrote:
-> Hello,
+>-----Original Message-----
+>From: Nikola Ciprich [mailto:extmaillist@linuxbox.cz]
+>Sent: Wednesday, October 13, 2010 10:23 PM
+>To: Linux kernel list; linux-net maillist; e1000-devel list
+>Cc: nikola.ciprich@linuxbox.cz
+>Subject: [E1000-devel] 2.6.36-rc7-git2 - panic/GPF: e1000e/vlans?
+>
+>Hi,
+>when I try to boot 2.6.36-rc7-git2 on one of my machines, it crashes while
+>setting up the network.
 
-> >> -    /*
-> >> -     * For key todo, it'll be empty by now but the work
-> >> -     * might still be scheduled.
-> >> -     */
-> >> -    flush_scheduled_work();
-> > 
-> > oops, todo work no longer exists...
-> > 
-> > Anyway, ACK.
-> 
-> Are you going to route this through wireless tree?  Shall I repost
-> with update patch description?
+Thanks for letting us know!
 
-wireless-testing/wireless-next has already such a patch:
-"mac80211: cancel restart_work in ieee80211_unregister_hw" (2010-08-25)
+>The setup is quite complex, with bonding, lots of vlans and 3 intel
+>adapters (system is quad x86_64)
 
-<http://git.kernel.org/?p=linux/kernel/git/linville/wireless-next-2.6.git;a=commit;h=258086a48b766d12a500f98834654ffa927ca475>
+Could you provide more details about the exact setup and the sequence of 
+commands that lead to the crash? If you can narrow it down to the actual 
+command that caused the crash that would be very helpful.
 
-John, can you please push to 2.6.36-rc8?
-(I know, I am _late_, but I didn't know about any potential problem
-in the mainline?)
+Also - are you testing from Linus or net-next tree? If you are not using 
+net-next, could you give it a try and see if you can reproduce it there?
 
-Best regards,
-	Chr
+>
+>snip of lspci:
+>06:00.0 Ethernet controller: Intel Corporation 80003ES2LAN Gigabit Ethernet
+>Controller (Copper) (rev 01)
+>06:00.1 Ethernet controller: Intel Corporation 80003ES2LAN Gigabit Ethernet
+>Controller (Copper) (rev 01)
+>09:00.0 Ethernet controller: Intel Corporation 82574L Gigabit Network
+>Connection
+
+Could you provide the output of lspci -vvv and a kernel config?
+
+Thanks,
+Emil
