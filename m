@@ -1,100 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756095Ab0JODhH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Oct 2010 23:37:07 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:52492 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755890Ab0JODhF convert rfc822-to-8bit (ORCPT
+	id S1756152Ab0JODo5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Oct 2010 23:44:57 -0400
+Received: from ipmail05.adl6.internode.on.net ([150.101.137.143]:20006 "EHLO
+	ipmail05.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755950Ab0JODoz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Oct 2010 23:37:05 -0400
-Date: Thu, 14 Oct 2010 18:37:10 -0300
-From: "Gustavo F. Padovan" <padovan@profusion.mobi>
-To: Nathan Holstein <nathan.holstein@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-bluetooth@vger.kernel.org
-Subject: Re: [PATCH] fix oops in l2cap_connect_req
-Message-ID: <20101014213709.GD9250@vigoh>
-References: <AANLkTi=CNW1pu-YdvmViqHxfw-_TDzvLkj15Ai_aANWo@mail.gmail.com>
+	Thu, 14 Oct 2010 23:44:55 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvsEAOhqt0x5Ld+3/2dsb2JhbAChIXK/cIVIBI9F
+Date: Fri, 15 Oct 2010 14:44:51 +1100
+From: Nick Piggin <npiggin@kernel.dk>
+To: Nick Piggin <npiggin@kernel.dk>
+Cc: Dave Chinner <david@fromorbit.com>, Christoph Hellwig <hch@infradead.org>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 17/18] fs: icache remove inode_lock
+Message-ID: <20101015034451.GA6827@amd>
+References: <1286515292-15882-18-git-send-email-david@fromorbit.com>
+ <20101013072058.GA3121@amd>
+ <20101013112552.GB16422@infradead.org>
+ <20101013123008.GA6067@amd>
+ <20101013232319.GZ4681@dastard>
+ <20101014090609.GB3144@amd>
+ <20101014144159.GA11972@infradead.org>
+ <20101015001443.GA3146@amd>
+ <20101015031343.GG4681@dastard>
+ <20101015033017.GA6750@amd>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
-In-Reply-To: <AANLkTi=CNW1pu-YdvmViqHxfw-_TDzvLkj15Ai_aANWo@mail.gmail.com>
+In-Reply-To: <20101015033017.GA6750@amd>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Nathan,
+On Fri, Oct 15, 2010 at 02:30:17PM +1100, Nick Piggin wrote:
+> On Fri, Oct 15, 2010 at 02:13:43PM +1100, Dave Chinner wrote:
+> >  You've shown it can be done, and that's great - it shows
+> > us the impact of making those changes, but they need to be analysed
+> > separately and treated on own their merits, not lumped with core
+> > locking changes necessary for store-free path walking.
+> 
+> Actually I didn't see anyone else object to doing this. Everybody
+> else it seems acknowledges that it needs to be done, and it gets
+> done naturally as a side effect of fine grained locking.
 
-* Nathan Holstein <nathan.holstein@gmail.com> [2010-10-14 18:37:53 -0400]:
+Let's just get back to this part, which seems to be one you have
+the most issues with maybe?
 
-> (Please keep me in the CC list, I'm not subscribed to lkml)
-> 
-> [1] L2CAP module dereferences an uninitialized pointer within l2cap_connect_req.
-> 
-> [2] I'm currently testing a 2.6.35 kernel on a Nexus One with backported
-> patches from bluetooth-2.6.  When testing against certain BT devices, I'm seeing
-> a null-pointer deref.  The crash is caused by this portion of commit e9aeb2dd:
-> 
-> @@ -2966,6 +2991,15 @@ sendresp:
->                                         L2CAP_INFO_REQ, sizeof(info), &info);
->         }
-> 
-> +       if (!(l2cap_pi(sk)->conf_state & L2CAP_CONF_REQ_SENT) &&
-> +                               result == L2CAP_CR_SUCCESS) {
-> +               u8 buf[128];
-> +               l2cap_pi(sk)->conf_state |= L2CAP_CONF_REQ_SENT;
-> +               l2cap_send_cmd(conn, l2cap_get_ident(conn), L2CAP_CONF_REQ,
-> +                                       l2cap_build_conf_req(sk, buf), buf);
-> +               l2cap_pi(sk)->num_conf_req++;
-> +       }
-> +
->         return 0;
->  }
-> 
-> Multiple error cases jump to the response & sendresp labels prior to
-> initializing
-> the "sk" variable.  In the case I'm currently seeing, the remote BT
-> device fails to
-> properly secure the ACL, making this crash 100% reproducible.
-> 
-> [3] Bluetooth, L2CAP
-> 
-> [4] This bug appears to be in the mainline 2.6.36-rc? kernel, in addition to
->  multiple Bluetooth development trees
-> 
-> The following patch fixes the crash.
-> 
-> 
->    --nathan
-> 
-> ---
-> In error cases when the ACL is insecure or we fail to allocate a new
-> struct sock, we jump to the "response" label.  If so, "sk" will be
-> uninitialized and the kernel crashes.
-> 
-> Signed-off-by: Nathan Holstein <nathan.holstein@gmail.com>
-> ---
->  net/bluetooth/l2cap.c |    4 ++--
->  1 files changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/net/bluetooth/l2cap.c b/net/bluetooth/l2cap.c
-> index d527b10..10ae0af 100644
-> --- a/net/bluetooth/l2cap.c
-> +++ b/net/bluetooth/l2cap.c
-> @@ -2911,7 +2911,7 @@ static inline int l2cap_connect_req(struct
-> l2cap_conn *conn, struct l2cap_cmd_hd
->  	struct l2cap_chan_list *list = &conn->chan_list;
->  	struct l2cap_conn_req *req = (struct l2cap_conn_req *) data;
->  	struct l2cap_conn_rsp rsp;
-> -	struct sock *parent, *uninitialized_var(sk);
-> +	struct sock *parent, *sk = 0;
+You're objecting to per-zone locks and per-zone LRUs for inode and
+dcache?
 
-Your fix is right, but please make *sk = NULL here.
-When I wrote that code I thought is was a false positive, but no, it's
-bug. :(
+Well I have told you why per-zone LRUs are needed, I can expand on
+any of the reasons if that is unclear. Per-zone locks I think come
+naturally at the same time and they will expose some fs bottlenecks,
+but that is simply how scalability development works.
+
+So, do you object to per-zone LRUs in particular, or per-zone locks?
+(Ie. the potentially changed reclaim pattern, or the increased
+parallelism).
+
+When you looked at this initially, you didn't understand how
+reclaim works. It will not fill up a zone with inodes and then start
+reclaiming all those inodes, leaving other nodes empty (unless that
+is how you configure the machine, but it isn't the default). It
+fills up inodes from all nodes (same as today) and it will start
+reclaiming from all nodes at about the same pressure when there is
+a shortage.
+
+Reclaim basically approximates LRU by scanning a little from the top
+of each LRU. When you have many thousands of objects, and reclaim is
+a really failable and dumb process anyway, then the perturbation of
+the reclaim pattern doesn't matter much. Our zone based page reclaim
+works exactly the same way.
+
+I don't think you can possibly be arguing against more scalable
+locking in reclaim, so perhaps you are also worried about increased
+parallelism in the filesystem callbacks from reclaim? I really can't
+see this being a big problem, any more than any other increased
+paralellism on fses or other subsystems caused by scaling vfs.
+
+There might be some interesting issues with different locking
+designs being hit in different ways, but really we can't stop
+progress and test all loads on all filesystems. The way forward is
+to fix the bottleneck in the filesystem, or the filesystem sucks
+so bad it can't handle it, then just put a lock in there and not
+peanalise others.
+
+It's not like I haven't tested it, I've spent the better part of
+the past year testing things. The I_FREEING batching stuff is one
+example where I found and fixed a small problem exposed by the
+reclaim changes.
 
 
--- 
-Gustavo F. Padovan
-ProFUSION embedded systems - http://profusion.mobi
