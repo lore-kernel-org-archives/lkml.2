@@ -1,128 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756885Ab0JOUIw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Oct 2010 16:08:52 -0400
-Received: from einhorn.in-berlin.de ([192.109.42.8]:41010 "EHLO
-	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756871Ab0JOUIu (ORCPT
+	id S1756915Ab0JOUKl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Oct 2010 16:10:41 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:60512 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756811Ab0JOUKi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Oct 2010 16:08:50 -0400
-X-Envelope-From: stefanr@s5r6.in-berlin.de
-Date: Fri, 15 Oct 2010 22:08:33 +0200 (CEST)
-From: Stefan Richter <stefanr@s5r6.in-berlin.de>
-Subject: cpufreq: circular lock dependency
-To: cpufreq@vger.kernel.org
-cc: Dave Jones <davej@redhat.com>, linux-kernel@vger.kernel.org
-Message-ID: <tkrat.91982a9a79eb3b59@s5r6.in-berlin.de>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; CHARSET=us-ascii
-Content-Disposition: INLINE
+	Fri, 15 Oct 2010 16:10:38 -0400
+X-Authority-Analysis: v=1.1 cv=iGF3DqghDyT/uy4mV2LvOKNXCATMSjL+tOl9cucoGVk= c=1 sm=0 a=OLfFi2HvT14A:10 a=bbbx4UPp9XUA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=20KFwNOVAAAA:8 a=7d_E57ReAAAA:8 a=meVymXHHAAAA:8 a=HzHanZfdLyP9a52u5xMA:9 a=oz3_3wr0uYdbuxPCfjoA:7 a=3kXR_uAJh6mK7Wzw6E7Ydi4HxXYA:4 a=jEp0ucaQiEUA:10 a=D6-X0JM3zdQA:10 a=jeBq3FmKZ4MA:10 a=2f6wSYwRqYdYxr1E:21 a=mOiUcPVj5S2go8GS:21 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Message-Id: <20101015201036.445509790@goodmis.org>
+User-Agent: quilt/0.48-1
+Date: Fri, 15 Oct 2010 16:09:52 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org
+Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Jason Baron <jbaron@redhat.com>
+Subject: [PATCH 3/9] jump label: Fix module __init section race
+References: <20101015200949.134732894@goodmis.org>
+Content-Disposition: inline; filename=0003-jump-label-Fix-module-__init-section-race.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Google says this is an old bug.
+From: Jason Baron <jbaron@redhat.com>
 
-Got it today when I switched from ondemand to performance by
-# echo performance > /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor
-for each of cpu0,1,2,3.
+Jump label uses is_module_text_address() to ensure that the module
+__init sections are valid before updating them. However, between the
+check for a valid module __init section and the subsequent jump
+label update, the module's __init section could be freed out from under
+us.
 
-=======================================================
-[ INFO: possible circular locking dependency detected ]
-2.6.36-rc7 #8
--------------------------------------------------------
-cpufreq-hi/11879 is trying to acquire lock:
-(s_active#93){++++.+}, at: [<ffffffff810f9314>] sysfs_hash_and_remove+0x53/0x77
+We fix this potential race by adding a notifier callback to the
+MODULE_STATE_LIVE state. This notifier is called *after* the __init
+section has been run but before it is going to be freed. In the
+callback, the jump label code zeros the key value for any __init jump
+code within the module, and we add a check for a non-zero key value when
+we update jump labels. In this way we require no additional data
+structures.
 
-but task is already holding lock:
-(dbs_mutex){+.+.+.}, at: [<ffffffffa0235f5b>] cpufreq_governor_dbs+0x372/0x423 [cpufreq_ondemand]
+Thanks to Mathieu Desnoyers for pointing out this race condition.
 
-which lock already depends on the new lock.
+Reported-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Signed-off-by: Jason Baron <jbaron@redhat.com>
+LKML-Reference: <c6f037b7598777668025ceedd9294212fd95fa34.1285965957.git.jbaron@redhat.com>
 
+[ Renamed remove_module_init() to remove_jump_label_module_init()
+  as suggested by Masami Hiramatsu. ]
 
-the existing dependency chain (in reverse order) is:
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ kernel/jump_label.c |   41 ++++++++++++++++++++++++++++++++++++++++-
+ 1 files changed, 40 insertions(+), 1 deletions(-)
 
--> #2 (dbs_mutex){+.+.+.}:
-[<ffffffff8105c704>] lock_acquire+0x5a/0x71
-[<ffffffff8133f214>] mutex_lock_nested+0x5c/0x2fa
-[<ffffffffa0235c67>] cpufreq_governor_dbs+0x7e/0x423 [cpufreq_ondemand]
-[<ffffffff812b6d23>] __cpufreq_governor+0xaa/0xe7
-[<ffffffff812b6e64>] __cpufreq_set_policy+0x104/0x142
-[<ffffffff812b878f>] store_scaling_governor+0x185/0x1c5
-[<ffffffff812b7d0d>] store+0x5f/0x84
-[<ffffffff810f9b00>] sysfs_write_file+0xf1/0x126
-[<ffffffff810ac246>] vfs_write+0xae/0x135
-[<ffffffff810ac391>] sys_write+0x47/0x6e
-[<ffffffff8100202b>] system_call_fastpath+0x16/0x1b
-
--> #1 (&per_cpu(cpu_policy_rwsem, cpu)){+.+.+.}:
-[<ffffffff8105c704>] lock_acquire+0x5a/0x71
-[<ffffffff8133f74a>] down_write+0x3f/0x60
-[<ffffffff812b6bee>] lock_policy_rwsem_write+0x48/0x78
-[<ffffffff812b7cee>] store+0x40/0x84
-[<ffffffff810f9b00>] sysfs_write_file+0xf1/0x126
-[<ffffffff810ac246>] vfs_write+0xae/0x135
-[<ffffffff810ac391>] sys_write+0x47/0x6e
-[<ffffffff8100202b>] system_call_fastpath+0x16/0x1b
-
--> #0 (s_active#93){++++.+}:
-[<ffffffff8105bfe7>] __lock_acquire+0x1169/0x182c
-[<ffffffff8105c704>] lock_acquire+0x5a/0x71
-[<ffffffff810fafcb>] sysfs_addrm_finish+0xd0/0x13f
-[<ffffffff810f9314>] sysfs_hash_and_remove+0x53/0x77
-[<ffffffff810fc324>] sysfs_remove_group+0x90/0xc8
-[<ffffffffa0235f72>] cpufreq_governor_dbs+0x389/0x423 [cpufreq_ondemand]
-[<ffffffff812b6d23>] __cpufreq_governor+0xaa/0xe7
-[<ffffffff812b6e4e>] __cpufreq_set_policy+0xee/0x142
-[<ffffffff812b878f>] store_scaling_governor+0x185/0x1c5
-[<ffffffff812b7d0d>] store+0x5f/0x84
-[<ffffffff810f9b00>] sysfs_write_file+0xf1/0x126
-[<ffffffff810ac246>] vfs_write+0xae/0x135
-[<ffffffff810ac391>] sys_write+0x47/0x6e
-[<ffffffff8100202b>] system_call_fastpath+0x16/0x1b
-
-other info that might help us debug this:
-
-4 locks held by cpufreq-hi/11879:
-#0:  (&buffer->mutex){+.+.+.}, at: [<ffffffff810f9a48>] sysfs_write_file+0x39/0x126
-#1:  (s_active#92){.+.+.+}, at: [<ffffffff810f9ae5>] sysfs_write_file+0xd6/0x126
-#2:  (&per_cpu(cpu_policy_rwsem, cpu)){+.+.+.}, at: [<ffffffff812b6bee>] lock_policy_rwsem_write+0x48/0x78
-#3:  (dbs_mutex){+.+.+.}, at: [<ffffffffa0235f5b>] cpufreq_governor_dbs+0x372/0x423 [cpufreq_ondemand]
-
-stack backtrace:
-Pid: 11879, comm: cpufreq-hi Not tainted 2.6.36-rc7 #8
-Call Trace:
-[<ffffffff8105a93c>] print_circular_bug+0xb3/0xc2
-[<ffffffff8105bfe7>] __lock_acquire+0x1169/0x182c
-[<ffffffff8102c70c>] ? get_parent_ip+0x11/0x42
-[<ffffffff81058be7>] ? lockdep_init_map+0x9f/0x4fe
-[<ffffffff8105c704>] lock_acquire+0x5a/0x71
-[<ffffffff810f9314>] ? sysfs_hash_and_remove+0x53/0x77
-[<ffffffff8104bc6d>] ? __init_waitqueue_head+0x35/0x48
-[<ffffffff810fafcb>] sysfs_addrm_finish+0xd0/0x13f
-[<ffffffff810f9314>] ? sysfs_hash_and_remove+0x53/0x77
-[<ffffffff8133f45b>] ? mutex_lock_nested+0x2a3/0x2fa
-[<ffffffff8105a007>] ? mark_held_locks+0x4d/0x6b
-[<ffffffff810f9314>] sysfs_hash_and_remove+0x53/0x77
-[<ffffffff810fc324>] sysfs_remove_group+0x90/0xc8
-[<ffffffffa0235f72>] cpufreq_governor_dbs+0x389/0x423 [cpufreq_ondemand]
-[<ffffffff8104f76a>] ? up_read+0x1e/0x38
-[<ffffffff8102c70c>] ? get_parent_ip+0x11/0x42
-[<ffffffff812b6d23>] __cpufreq_governor+0xaa/0xe7
-[<ffffffff812b6e4e>] __cpufreq_set_policy+0xee/0x142
-[<ffffffff812b878f>] store_scaling_governor+0x185/0x1c5
-[<ffffffff812b85bd>] ? handle_update+0x0/0xe
-[<ffffffff8133f74a>] ? down_write+0x3f/0x60
-[<ffffffff812b7d0d>] store+0x5f/0x84
-[<ffffffff810f9b00>] sysfs_write_file+0xf1/0x126
-[<ffffffff810ac246>] vfs_write+0xae/0x135
-[<ffffffff810ac391>] sys_write+0x47/0x6e
-[<ffffffff8100202b>] system_call_fastpath+0x16/0x1b
-
-
-
+diff --git a/kernel/jump_label.c b/kernel/jump_label.c
+index 7be868b..be9e105 100644
+--- a/kernel/jump_label.c
++++ b/kernel/jump_label.c
+@@ -168,7 +168,8 @@ void jump_label_update(unsigned long key, enum jump_label_type type)
+ 			count = e_module->nr_entries;
+ 			iter = e_module->table;
+ 			while (count--) {
+-				if (kernel_text_address(iter->code))
++				if (iter->key &&
++						kernel_text_address(iter->code))
+ 					arch_jump_label_transform(iter, type);
+ 				iter++;
+ 			}
+@@ -366,6 +367,39 @@ static void remove_jump_label_module(struct module *mod)
+ 	}
+ }
+ 
++static void remove_jump_label_module_init(struct module *mod)
++{
++	struct hlist_head *head;
++	struct hlist_node *node, *node_next, *module_node, *module_node_next;
++	struct jump_label_entry *e;
++	struct jump_label_module_entry *e_module;
++	struct jump_entry *iter;
++	int i, count;
++
++	/* if the module doesn't have jump label entries, just return */
++	if (!mod->num_jump_entries)
++		return;
++
++	for (i = 0; i < JUMP_LABEL_TABLE_SIZE; i++) {
++		head = &jump_label_table[i];
++		hlist_for_each_entry_safe(e, node, node_next, head, hlist) {
++			hlist_for_each_entry_safe(e_module, module_node,
++						  module_node_next,
++						  &(e->modules), hlist) {
++				if (e_module->mod != mod)
++					continue;
++				count = e_module->nr_entries;
++				iter = e_module->table;
++				while (count--) {
++					if (within_module_init(iter->code, mod))
++						iter->key = 0;
++					iter++;
++				}
++			}
++		}
++	}
++}
++
+ static int
+ jump_label_module_notify(struct notifier_block *self, unsigned long val,
+ 			 void *data)
+@@ -386,6 +420,11 @@ jump_label_module_notify(struct notifier_block *self, unsigned long val,
+ 		remove_jump_label_module(mod);
+ 		mutex_unlock(&jump_label_mutex);
+ 		break;
++	case MODULE_STATE_LIVE:
++		mutex_lock(&jump_label_mutex);
++		remove_jump_label_module_init(mod);
++		mutex_unlock(&jump_label_mutex);
++		break;
+ 	}
+ 	return ret;
+ }
 -- 
-Stefan Richter
--=====-==-=- =-=- -====
-http://arcgraph.de/sr/
+1.7.1
+
 
