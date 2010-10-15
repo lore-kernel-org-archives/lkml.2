@@ -1,17 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755958Ab0JOMzf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Oct 2010 08:55:35 -0400
-Received: from mgw2.diku.dk ([130.225.96.92]:56480 "EHLO mgw2.diku.dk"
+	id S1755972Ab0JOMzx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Oct 2010 08:55:53 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:56478 "EHLO mgw2.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754492Ab0JOMyK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754456Ab0JOMyK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 15 Oct 2010 08:54:10 -0400
 From: Julia Lawall <julia@diku.dk>
-To: linux-kernel@vger.kernel.org
-Cc: kernel-janitors@vger.kernel.org
-Subject: [PATCH 4/7] drivers/power/wm97xx_battery.c: Return -ENOMEM on memory allocation failure
-Date: Fri, 15 Oct 2010 15:00:07 +0200
-Message-Id: <1287147610-8041-4-git-send-email-julia@diku.dk>
+To: Christian Lamparter <chunkeey@googlemail.com>
+Cc: kernel-janitors@vger.kernel.org,
+        "John W. Linville" <linville@tuxdriver.com>,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 3/7] drivers/net/wireless/p54/eeprom.c: Return -ENOMEM on memory allocation failure
+Date: Fri, 15 Oct 2010 15:00:06 +0200
+Message-Id: <1287147610-8041-3-git-send-email-julia@diku.dk>
 X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -43,22 +46,22 @@ if (x == NULL) { ... when != ret = e3
 Signed-off-by: Julia Lawall <julia@diku.dk>
 
 ---
- drivers/power/wm97xx_battery.c |    4 +++-
+ drivers/net/wireless/p54/eeprom.c |    4 +++-
  1 file changed, 3 insertions(+), 1 deletion(-)
 
-diff -u -p a/drivers/power/wm97xx_battery.c b/drivers/power/wm97xx_battery.c
---- a/drivers/power/wm97xx_battery.c
-+++ b/drivers/power/wm97xx_battery.c
-@@ -215,8 +215,10 @@ static int __devinit wm97xx_bat_probe(st
- 		props++;	/* POWER_SUPPLY_PROP_VOLTAGE_MIN */
- 
- 	prop = kzalloc(props * sizeof(*prop), GFP_KERNEL);
--	if (!prop)
-+	if (!prop) {
+diff -u -p a/drivers/net/wireless/p54/eeprom.c b/drivers/net/wireless/p54/eeprom.c
+--- a/drivers/net/wireless/p54/eeprom.c
++++ b/drivers/net/wireless/p54/eeprom.c
+@@ -261,8 +261,10 @@ static int p54_generate_channel_lists(st
+ 	list->max_entries = max_channel_num;
+ 	list->channels = kzalloc(sizeof(struct p54_channel_entry) *
+ 				 max_channel_num, GFP_KERNEL);
+-	if (!list->channels)
++	if (!list->channels) {
 +		ret = -ENOMEM;
- 		goto err3;
+ 		goto free;
 +	}
  
- 	prop[i++] = POWER_SUPPLY_PROP_PRESENT;
- 	if (pdata->charge_gpio >= 0)
+ 	for (i = 0; i < max_channel_num; i++) {
+ 		if (i < priv->iq_autocal_len) {
 
