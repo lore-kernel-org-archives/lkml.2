@@ -1,62 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754855Ab0JOLgl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Oct 2010 07:36:41 -0400
-Received: from hera.kernel.org ([140.211.167.34]:50605 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752203Ab0JOLgk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Oct 2010 07:36:40 -0400
-Message-ID: <4CB83CC3.7090106@kernel.org>
-Date: Fri, 15 Oct 2010 13:36:35 +0200
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.9) Gecko/20100915 Lightning/1.0b2 Thunderbird/3.1.4
-MIME-Version: 1.0
-To: "Ed L. Cashin" <ecashin@coraid.com>, lkml <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH v2.6.36-rc7] aoe: don't use flush_scheduled_work()
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 15 Oct 2010 11:36:37 +0000 (UTC)
+	id S1754425Ab0JOLun (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Oct 2010 07:50:43 -0400
+Received: from casper.infradead.org ([85.118.1.10]:35624 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753475Ab0JOLum convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Oct 2010 07:50:42 -0400
+Subject: Re: [PATCH 3/4] sched: drop group_capacity to 1 only if local
+ group has extra capacity
+From: Peter Zijlstra <peterz@infradead.org>
+To: Nikhil Rao <ncrao@google.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Mike Galbraith <efault@gmx.de>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Venkatesh Pallipadi <venki@google.com>, linux-kernel@vger.kernel.org
+In-Reply-To: <1287035281-25579-1-git-send-email-ncrao@google.com>
+References: <1286996978-7007-4-git-send-email-ncrao@google.com>
+	 <1287035281-25579-1-git-send-email-ncrao@google.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Fri, 15 Oct 2010 13:50:23 +0200
+Message-ID: <1287143423.29097.1460.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-flush_scheduled_work() is deprecated and scheduled to be removed.
-Directly cancel aoedev->work on free instead of depending on
-flush_scheduled_works().
+On Wed, 2010-10-13 at 22:48 -0700, Nikhil Rao wrote:
+> Resending this patch since the original patch was munged. Thanks to Mike
+> Galbraith for pointing this out.
+> 
+> When SD_PREFER_SIBLING is set on a sched domain, drop group_capacity to 1
+> only if the local group has extra capacity. For niced task balancing, we pull
+> low weight tasks away from a sched group as long as there is capacity in other
+> groups. When all other groups are saturated, we do not drop capacity of the
+> niced group down to 1. This prevents active balance from kicking out the low
+> weight threads and which hurts system utilization.
+> 
+> Signed-off-by: Nikhil Rao <ncrao@google.com>
+> ---
+>  kernel/sched_fair.c |    8 ++++++--
+>  1 files changed, 6 insertions(+), 2 deletions(-)
+> 
+> diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
+> index 0dd1021..da0c688 100644
+> --- a/kernel/sched_fair.c
+> +++ b/kernel/sched_fair.c
+> @@ -2030,6 +2030,7 @@ struct sd_lb_stats {
+>  	unsigned long this_load;
+>  	unsigned long this_load_per_task;
+>  	unsigned long this_nr_running;
+> +	unsigned long this_group_capacity;
+>  
+>  	/* Statistics of the busiest group */
+>  	unsigned long max_load;
+> @@ -2546,15 +2547,18 @@ static inline void update_sd_lb_stats(struct sched_domain *sd, int this_cpu,
+>  		/*
+>  		 * In case the child domain prefers tasks go to siblings
+>  		 * first, lower the sg capacity to one so that we'll try
+> -		 * and move all the excess tasks away.
+> +		 * and move all the excess tasks away. We lower capacity only
+> +		 * if the local group can handle the extra capacity.
+>  		 */
+> -		if (prefer_sibling)
+> +		if (prefer_sibling && !local_group &&
+> +		    sds->this_nr_running < sds->this_group_capacity)
+>  			sgs.group_capacity = min(sgs.group_capacity, 1UL);
+>  
+>  		if (local_group) {
+>  			sds->this_load = sgs.avg_load;
+>  			sds->this = sg;
+>  			sds->this_nr_running = sgs.sum_nr_running;
+> +			sds->this_group_capacity = sgs.group_capacity;
+>  			sds->this_load_per_task = sgs.sum_weighted_load;
+>  		} else if (update_sd_pick_busiest(sd, sds, sg, &sgs, this_cpu)) {
+>  			sds->max_load = sgs.avg_load;
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
----
- drivers/block/aoe/aoedev.c |    4 +---
- 1 file changed, 1 insertion(+), 3 deletions(-)
 
-Index: work/drivers/block/aoe/aoedev.c
-===================================================================
---- work.orig/drivers/block/aoe/aoedev.c
-+++ work/drivers/block/aoe/aoedev.c
-@@ -102,6 +102,7 @@ aoedev_freedev(struct aoedev *d)
- {
- 	struct aoetgt **t, **e;
+OK, this thing confuses me, that changelog nor the comment actually seem
+to help with understanding this..
 
-+	cancel_work_sync(&d->work);
- 	if (d->gd) {
- 		aoedisk_rm_sysfs(d);
- 		del_gendisk(d->gd);
-@@ -135,7 +136,6 @@ aoedev_flush(const char __user *str, siz
- 		all = !strncmp(buf, "all", 3);
- 	}
-
--	flush_scheduled_work();
- 	spin_lock_irqsave(&devlist_lock, flags);
- 	dd = &devlist;
- 	while ((d = *dd)) {
-@@ -257,8 +257,6 @@ aoedev_exit(void)
- 	struct aoedev *d;
- 	ulong flags;
-
--	flush_scheduled_work();
--
- 	while ((d = devlist)) {
- 		devlist = d->next;
 
