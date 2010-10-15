@@ -1,74 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751502Ab0JOENV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Oct 2010 00:13:21 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:37824 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751003Ab0JOENS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Oct 2010 00:13:18 -0400
-Date: Fri, 15 Oct 2010 06:13:07 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>, linux-arch@vger.kernel.org,
-        Michal Marek <mmarek@suse.cz>,
-        linux-kbuild <linux-kbuild@vger.kernel.org>,
-        John Reiser <jreiser@bitwagon.com>
-Subject: Re: [PATCH][GIT PULL] ftrace: Rename config option
- HAVE_C_MCOUNT_RECORD to HAVE_C_RECORDMCOUNT
-Message-ID: <20101015041307.GA31764@elte.hu>
-References: <1287114319.23682.34.camel@gandalf.stny.rr.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1287114319.23682.34.camel@gandalf.stny.rr.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+	id S1751417Ab0JOEOj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Oct 2010 00:14:39 -0400
+Received: from szxga04-in.huawei.com ([119.145.14.67]:20606 "EHLO
+	szxga04-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750856Ab0JOEOi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Oct 2010 00:14:38 -0400
+Date: Fri, 15 Oct 2010 12:14:37 +0800
+From: m00150988@huawei.com
+Subject: [PATCH] fix oops in usbserial_cleanup function;
+To: linux-usb@vger.kernel.org, linux-usb@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Franko Fang <huananhu@huawei.com>, greg@kroah.com, greg@kroah.com
+Message-id: <faf7c73f11ba6.11ba6faf7c73f@huawei.com>
+MIME-version: 1.0
+X-Mailer: iPlanet Messenger Express 5.2 HotFix 2.14 (built Aug  8 2006)
+Content-type: text/plain; charset=us-ascii
+Content-language: zh-CN
+Content-transfer-encoding: 7BIT
+Content-disposition: inline
+X-Accept-Language: zh-CN
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: marui <m00150988@huawei.com>
 
-* Steven Rostedt <rostedt@goodmis.org> wrote:
+1. I find this bug on OpenSUSE 11.3 which kernel vesion is 2.6.34, but the latest kernel vesion 2.6.36-rc7 aslo have this bug. This patch is based on the kernel of 2.6.36-rc7.
+2. Bug report:
+   a. Install huawei datacard dashboard on OpenSUSE 11.3
+   b. Plug in huawei datacard into OpenSUSE 11.3 which kernel verison is 2.6.36-rc7
+   c. After the dashboard has detected the device, I  pull out the usb datacard
+   d. close datashboard,then kernel panic will happen in usbserial_cleanup function. 
+ 
+ 
+3. fix the bug:
+   I find usbserial_cleanup should judge the usb device wheher has been disconnected firtly.
 
-> 
-> Ingo,
-> 
-> Please pull the latest tip/perf/recordmcount-2 tree, which can be found at:
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-2.6-trace.git
-> tip/perf/recordmcount-2
-> 
-> 
-> Steven Rostedt (1):
->       ftrace: Rename config option HAVE_C_MCOUNT_RECORD to HAVE_C_RECORDMCOUNT
-> 
-> ----
->  Makefile             |    2 +-
->  arch/x86/Kconfig     |    2 +-
->  kernel/trace/Kconfig |    2 +-
->  3 files changed, 3 insertions(+), 3 deletions(-)
+Signed-off-by: marui<m00150988@huawei.com>
 
-The full diffstat (due to the previous commits) was:
 
- Makefile               |    6 +
- arch/x86/Kconfig       |    1 +
- kernel/trace/Kconfig   |    5 +
- scripts/Makefile       |    1 +
- scripts/Makefile.build |    4 +
- scripts/recordmcount.c |  345 +++++++++++++++++++++++++++++++++++++++++++++
- scripts/recordmcount.h |  366 ++++++++++++++++++++++++++++++++++++++++++++++++
- 7 files changed, 728 insertions(+), 0 deletions(-)
- create mode 100644 scripts/recordmcount.c
- create mode 100644 scripts/recordmcount.h
+--- linux-2.6.36-rc7_orig/drivers/usb/serial/usb-serial.c	2010-10-06 16:39:52.000000000 -0400
++++ linux-2.6.36-rc7/drivers/usb/serial/usb-serial.c	2010-10-14 20:59:47.000000000 -0400
+@@ -328,6 +328,20 @@ static void serial_cleanup(struct tty_st
+ 	/* The console is magical.  Do not hang up the console hardware
+ 	 * or there will be tears.
+ 	 */
++        dbg("%s start\n",__func__);
++        if(NULL == port)
++        {
++            dbg("%s NULL == port\n",__func__);
++            return;
++        }
++	mutex_lock(&port->serial->disc_mutex);
++	if (port->serial->disconnected)
++        {
++                dbg("%s port->serial->disconnected\n",__func__);
++                return_serial(port->serial);
++		return;
++        }
++	mutex_unlock(&port->serial->disc_mutex);
+ 	if (port->port.console)
+ 		return;
+ 
 
-Pulled, thanks a lot Steve!
-
-	Ingo
+ 
