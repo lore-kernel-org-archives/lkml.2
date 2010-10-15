@@ -1,59 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756556Ab0JORH0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Oct 2010 13:07:26 -0400
-Received: from claw.goop.org ([74.207.240.146]:48504 "EHLO claw.goop.org"
+	id S1756573Ab0JORMD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Oct 2010 13:12:03 -0400
+Received: from fieldses.org ([174.143.236.118]:52859 "EHLO fieldses.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755512Ab0JORHZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Oct 2010 13:07:25 -0400
-Message-ID: <4CB88A4C.1080305@goop.org>
-Date: Fri, 15 Oct 2010 10:07:24 -0700
-From: Jeremy Fitzhardinge <jeremy@goop.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc13 Lightning/1.0b3pre Thunderbird/3.1.4
+	id S1756371Ab0JORMC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Oct 2010 13:12:02 -0400
+Date: Fri, 15 Oct 2010 13:11:33 -0400
+To: Tejun Heo <tj@kernel.org>
+Cc: Trond Myklebust <Trond.Myklebust@netapp.com>, linux-nfs@vger.kernel.org,
+        lkml <linux-kernel@vger.kernel.org>, Tom Tucker <tom@ogc.us>
+Subject: Re: [PATCH linux-2.6.36-rc7] sunrpc/xprtrdma: clean up workqueue
+ usage
+Message-ID: <20101015171132.GA18869@fieldses.org>
+References: <4CB87807.7050108@kernel.org>
 MIME-Version: 1.0
-To: "H. Peter Anvin" <hpa@zytor.com>
-CC: "Xen-devel@lists.xensource.com" <Xen-devel@lists.xensource.com>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Jan Beulich <JBeulich@novell.com>,
-        Ian Campbell <Ian.Campbell@citrix.com>
-Subject: Re: [Xen-devel] [PATCH] x86: hold mm->page_table_lock while doing
- vmalloc_sync
-References: <4CB76E8B.2090309@goop.org>
-In-Reply-To: <4CB76E8B.2090309@goop.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4CB87807.7050108@kernel.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+From: "J. Bruce Fields" <bfields@fieldses.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- On 10/14/2010 01:56 PM, Jeremy Fitzhardinge wrote:
-> Take mm->page_table_lock while syncing the vmalloc region.  This prevents
-> a race with the Xen pagetable pin/unpin code, which expects that the
-> page_table_lock is already held.  If this race occurs, then Xen can see
-> an inconsistent page type (a page can either be read/write or a pagetable
-> page, and pin/unpin converts it between them), which will cause either
-> the pin or the set_p[gm]d to fail; either will crash the kernel.
+Tom, could you take a look?
 
-I've merged this into tip/x86/mm, which had some conflicting changes
-(and fixed up some whitespace issues in one of those changes):
+--b.
 
-The following changes since commit a416e9e1dde0fbcf20cda59df284cc0dcf2aadc4:
-
-  x86-32: Fix sparse warning for the __PHYSICAL_MASK calculation (2010-10-07 16:36:17 -0700)
-
-are available in the git repository at:
-  git://git.kernel.org/pub/scm/linux/kernel/git/jeremy/xen.git x86-mm
-
-Jeremy Fitzhardinge (2):
-      x86/mm: fix bogus whitespace in sync_global_pgds()
-      x86: hold mm->page_table_lock while doing vmalloc_sync
-
- arch/x86/include/asm/pgtable.h |    2 +
- arch/x86/mm/fault.c            |   11 ++++++++-
- arch/x86/mm/init_64.c          |   51 ++++++++++++++++++++++-----------------
- arch/x86/mm/pgtable.c          |   20 +++++++++++++--
- 4 files changed, 58 insertions(+), 26 deletions(-)
-
-	J
-
+On Fri, Oct 15, 2010 at 05:49:27PM +0200, Tejun Heo wrote:
+> * Create and use svc_rdma_wq instead of using the system workqueue and
+>   flush_scheduled_work().  This workqueue is necessary to serve as
+>   flushing domain for rdma->sc_work which is used to destroy itself
+>   and thus can't be flushed explicitly.
+> 
+> * Replace cancel_delayed_work() + flush_scheduled_work() with
+>   cancel_delayed_work_sync().
+> 
+> * Implement synchronous connect in xprt_rdma_connect() using
+>   flush_delayed_work() on the rdma_connect work instead of using
+>   flush_scheduled_work().
+> 
+> This is to prepare for the deprecation and removal of
+> flush_scheduled_work().
+> 
+> Signed-off-by: Tejun Heo <tj@kernel.org>
+> ---
+>  net/sunrpc/xprtrdma/svc_rdma.c           |   11 ++++++++++-
+>  net/sunrpc/xprtrdma/svc_rdma_transport.c |    6 +++++-
+>  net/sunrpc/xprtrdma/transport.c          |    5 ++---
+>  3 files changed, 17 insertions(+), 5 deletions(-)
+> 
+> Index: work/net/sunrpc/xprtrdma/svc_rdma.c
+> ===================================================================
+> --- work.orig/net/sunrpc/xprtrdma/svc_rdma.c
+> +++ work/net/sunrpc/xprtrdma/svc_rdma.c
+> @@ -43,6 +43,7 @@
+>  #include <linux/slab.h>
+>  #include <linux/fs.h>
+>  #include <linux/sysctl.h>
+> +#include <linux/workqueue.h>
+>  #include <linux/sunrpc/clnt.h>
+>  #include <linux/sunrpc/sched.h>
+>  #include <linux/sunrpc/svc_rdma.h>
+> @@ -74,6 +75,8 @@ atomic_t rdma_stat_sq_prod;
+>  struct kmem_cache *svc_rdma_map_cachep;
+>  struct kmem_cache *svc_rdma_ctxt_cachep;
+> 
+> +struct workqueue_struct *svc_rdma_wq;
+> +
+>  /*
+>   * This function implements reading and resetting an atomic_t stat
+>   * variable through read/write to a proc file. Any write to the file
+> @@ -231,7 +234,7 @@ static ctl_table svcrdma_root_table[] =
+>  void svc_rdma_cleanup(void)
+>  {
+>  	dprintk("SVCRDMA Module Removed, deregister RPC RDMA transport\n");
+> -	flush_scheduled_work();
+> +	destroy_workqueue(svc_rdma_wq);
+>  	if (svcrdma_table_header) {
+>  		unregister_sysctl_table(svcrdma_table_header);
+>  		svcrdma_table_header = NULL;
+> @@ -249,6 +252,11 @@ int svc_rdma_init(void)
+>  	dprintk("\tsq_depth         : %d\n",
+>  		svcrdma_max_requests * RPCRDMA_SQ_DEPTH_MULT);
+>  	dprintk("\tmax_inline       : %d\n", svcrdma_max_req_size);
+> +
+> +	svc_rdma_wq = alloc_workqueue("svc_rdma", 0, 0);
+> +	if (!svc_rdma_wq)
+> +		return -ENOMEM;
+> +
+>  	if (!svcrdma_table_header)
+>  		svcrdma_table_header =
+>  			register_sysctl_table(svcrdma_root_table);
+> @@ -283,6 +291,7 @@ int svc_rdma_init(void)
+>  	kmem_cache_destroy(svc_rdma_map_cachep);
+>   err0:
+>  	unregister_sysctl_table(svcrdma_table_header);
+> +	destroy_workqueue(svc_rdma_wq);
+>  	return -ENOMEM;
+>  }
+>  MODULE_AUTHOR("Tom Tucker <tom@opengridcomputing.com>");
+> Index: work/net/sunrpc/xprtrdma/svc_rdma_transport.c
+> ===================================================================
+> --- work.orig/net/sunrpc/xprtrdma/svc_rdma_transport.c
+> +++ work/net/sunrpc/xprtrdma/svc_rdma_transport.c
+> @@ -45,6 +45,7 @@
+>  #include <linux/sched.h>
+>  #include <linux/slab.h>
+>  #include <linux/spinlock.h>
+> +#include <linux/workqueue.h>
+>  #include <rdma/ib_verbs.h>
+>  #include <rdma/rdma_cm.h>
+>  #include <linux/sunrpc/svc_rdma.h>
+> @@ -89,6 +90,9 @@ struct svc_xprt_class svc_rdma_class = {
+>  /* WR context cache. Created in svc_rdma.c  */
+>  extern struct kmem_cache *svc_rdma_ctxt_cachep;
+> 
+> +/* Workqueue created in svc_rdma.c */
+> +extern struct workqueue_struct *svc_rdma_wq;
+> +
+>  struct svc_rdma_op_ctxt *svc_rdma_get_context(struct svcxprt_rdma *xprt)
+>  {
+>  	struct svc_rdma_op_ctxt *ctxt;
+> @@ -1184,7 +1188,7 @@ static void svc_rdma_free(struct svc_xpr
+>  	struct svcxprt_rdma *rdma =
+>  		container_of(xprt, struct svcxprt_rdma, sc_xprt);
+>  	INIT_WORK(&rdma->sc_work, __svc_rdma_free);
+> -	schedule_work(&rdma->sc_work);
+> +	queue_work(svc_rdma_wq, &rdma->sc_work);
+>  }
+> 
+>  static int svc_rdma_has_wspace(struct svc_xprt *xprt)
+> Index: work/net/sunrpc/xprtrdma/transport.c
+> ===================================================================
+> --- work.orig/net/sunrpc/xprtrdma/transport.c
+> +++ work/net/sunrpc/xprtrdma/transport.c
+> @@ -237,8 +237,7 @@ xprt_rdma_destroy(struct rpc_xprt *xprt)
+> 
+>  	dprintk("RPC:       %s: called\n", __func__);
+> 
+> -	cancel_delayed_work(&r_xprt->rdma_connect);
+> -	flush_scheduled_work();
+> +	cancel_delayed_work_sync(&r_xprt->rdma_connect);
+> 
+>  	xprt_clear_connected(xprt);
+> 
+> @@ -460,7 +459,7 @@ xprt_rdma_connect(struct rpc_task *task)
+>  	} else {
+>  		schedule_delayed_work(&r_xprt->rdma_connect, 0);
+>  		if (!RPC_IS_ASYNC(task))
+> -			flush_scheduled_work();
+> +			flush_delayed_work(&r_xprt->rdma_connect);
+>  	}
+>  }
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-nfs" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
