@@ -1,591 +1,590 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932282Ab0JOUhf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Oct 2010 16:37:35 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:2915 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756375Ab0JOUhe (ORCPT
+	id S932296Ab0JOUkP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Oct 2010 16:40:15 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:54125 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756535Ab0JOUkN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Oct 2010 16:37:34 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp02.nvidia.com on Fri, 15 Oct 2010 13:37:32 -0700
-From: achew@nvidia.com
-To: jmayo@nvidia.com, a.zummo@towertech.it, olof@lixom.net, greg@kroah.com,
-        mcuos.com@gmail.com
-Cc: linux-kernel@vger.kernel.org, linux-tegra@vger.kernel.org,
-        rtc-linux@googlegroups.com, Andrew Chew <achew@nvidia.com>
-Subject: [PATCH 1/1 V3] rtc: Add real-time clock driver for Tegra.
-Date: Fri, 15 Oct 2010 13:37:30 -0700
-Message-Id: <1287175050-20460-1-git-send-email-achew@nvidia.com>
-X-Mailer: git-send-email 1.7.0.4
-X-OriginalArrivalTime: 15 Oct 2010 20:37:30.0254 (UTC) FILETIME=[C995E2E0:01CB6CA8]
+	Fri, 15 Oct 2010 16:40:13 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=FE5NAFiFws1TcnPVokQOEf5OUK8/HWmaI+fkyv/WDf6gycz6STUkHf0jHP/nJhOcOV
+         Lrx51svw+dSjQ8g8ufnR1KIRAx94pzZzfV1vGmIre3d6i7Hl+cPd+gfFBclCPEOpPP8z
+         T5ciDGPRA2te9D24IpsdLv5czWDEWAheBjr5s=
+From: Marek Belisko <marek.belisko@gmail.com>
+To: Greg Kroah-Hartman <gregkh@suse.de>,
+        Marek Belisko <marek.belisko@gmail.com>, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Cc: Marek Belisko <marek.belisko@gmail.com>
+Subject: [PATCH] staging:ft1000: Remove dead code from ft1000_hw.c
+Date: Fri, 15 Oct 2010 22:15:28 +0200
+Message-Id: <1287173728-9798-1-git-send-email-marek.belisko@gmail.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andrew Chew <achew@nvidia.com>
-
-This is a platform driver that supports the built-in real-time clock on
-Tegra SOCs.
-
-Signed-off-by: Andrew Chew <achew@nvidia.com>
-Acked-by: Alessandro Zummo <a.zummo@towertech.it>
+Signed-off-by: Marek Belisko <marek.belisko@gmail.com>
 ---
-Applied Wan ZongShun's corrections.
-Applied Alessandro Zummo's corrections.
+ drivers/staging/ft1000/ft1000-usb/ft1000_hw.c |  267 +------------------------
+ 1 files changed, 6 insertions(+), 261 deletions(-)
 
- drivers/rtc/Kconfig     |   10 +
- drivers/rtc/Makefile    |    1 +
- drivers/rtc/rtc-tegra.c |  509 +++++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 520 insertions(+), 0 deletions(-)
- create mode 100644 drivers/rtc/rtc-tegra.c
-
-diff --git a/drivers/rtc/Kconfig b/drivers/rtc/Kconfig
-index 2432541..ca0da79 100644
---- a/drivers/rtc/Kconfig
-+++ b/drivers/rtc/Kconfig
-@@ -963,4 +963,14 @@ config RTC_DRV_JZ4740
- 	  This driver can also be buillt as a module. If so, the module
- 	  will be called rtc-jz4740.
+diff --git a/drivers/staging/ft1000/ft1000-usb/ft1000_hw.c b/drivers/staging/ft1000/ft1000-usb/ft1000_hw.c
+index 915c95c..e98db30 100644
+--- a/drivers/staging/ft1000/ft1000-usb/ft1000_hw.c
++++ b/drivers/staging/ft1000/ft1000-usb/ft1000_hw.c
+@@ -16,10 +16,6 @@
+ #include <linux/usb.h>
+ #include "ft1000_usb.h"
+ #include <linux/types.h>
+-//#include <asm/semaphore.h>		//aelias [-] reason : file moved
+-//#include <linux/semaphore.h>		//aelias [+] reason : file moved
+-//#include <asm/io.h>
+-//#include <linux/kthread.h>
  
-+config RTC_DRV_TEGRA
-+	tristate "NVIDIA Tegra Internal RTC driver"
-+	depends on RTC_CLASS && ARCH_TEGRA
-+	help
-+	  If you say yes here you get support for the
-+	  Tegra 200 series internal RTC module.
-+
-+	  This drive can also be built as a module. If so, the module
-+	  will be called rtc-tegra.
-+
- endif # RTC_CLASS
-diff --git a/drivers/rtc/Makefile b/drivers/rtc/Makefile
-index 4ff4b88..a7f3617 100644
---- a/drivers/rtc/Makefile
-+++ b/drivers/rtc/Makefile
-@@ -91,6 +91,7 @@ obj-$(CONFIG_RTC_DRV_STARFIRE)	+= rtc-starfire.o
- obj-$(CONFIG_RTC_DRV_STK17TA8)	+= rtc-stk17ta8.o
- obj-$(CONFIG_RTC_DRV_STMP)	+= rtc-stmp3xxx.o
- obj-$(CONFIG_RTC_DRV_SUN4V)	+= rtc-sun4v.o
-+obj-$(CONFIG_RTC_DRV_TEGRA)	+= rtc-tegra.o
- obj-$(CONFIG_RTC_DRV_TEST)	+= rtc-test.o
- obj-$(CONFIG_RTC_DRV_TWL4030)	+= rtc-twl.o
- obj-$(CONFIG_RTC_DRV_TX4939)	+= rtc-tx4939.o
-diff --git a/drivers/rtc/rtc-tegra.c b/drivers/rtc/rtc-tegra.c
-new file mode 100644
-index 0000000..6c4b2ed
---- /dev/null
-+++ b/drivers/rtc/rtc-tegra.c
-@@ -0,0 +1,509 @@
-+/*
-+ * An RTC driver for the NVIDIA Tegra 200 series internal RTC.
-+ *
-+ * Copyright (c) 2010, NVIDIA Corporation.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful, but WITHOUT
-+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-+ * more details.
-+ *
-+ * You should have received a copy of the GNU General Public License along
-+ * with this program; if not, write to the Free Software Foundation, Inc.,
-+ * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
-+ */
-+#include <linux/kernel.h>
-+#include <linux/init.h>
-+#include <linux/module.h>
-+#include <linux/slab.h>
-+#include <linux/irq.h>
-+#include <linux/io.h>
-+#include <linux/delay.h>
-+#include <linux/rtc.h>
-+#include <linux/platform_device.h>
-+
-+/* how many attempts to wait in tegra_rtc_wait_while_busy(). */
-+#define RTC_TEGRA_RETRIES 15
-+
-+/* STATUS: This bit is set when a write is initiated on the APB side. It is
-+ * cleared once the write completes in RTC 32KHz clock domain which could be
-+ * several thousands of APB clocks. This must be IDLE before a write is
-+ * initiated. Note that this bit is only for writes.
-+ * 0 = IDLE
-+ * 1 = BUSY
-+ */
-+#define RTC_TEGRA_REG_BUSY			0x004
-+#define RTC_TEGRA_REG_SECONDS			0x008
-+#define RTC_TEGRA_REG_SHADOW_SECONDS		0x00c
-+#define RTC_TEGRA_REG_MILLI_SECONDS		0x010
-+#define RTC_TEGRA_REG_SECONDS_ALARM0		0x014
-+#define RTC_TEGRA_REG_SECONDS_ALARM1		0x018
-+#define RTC_TEGRA_REG_MILLI_SECONDS_ALARM0	0x01c
-+#define RTC_TEGRA_REG_INTR_MASK			0x028
-+/* a write to this register performs a clear. reg=reg&(~x) */
-+#define RTC_TEGRA_REG_INTR_STATUS		0x02c
-+
-+/* bits in INTR_MASK */
-+#define RTC_TEGRA_INTR_MASK_MSEC_CDN_ALARM	(1<<4)
-+#define RTC_TEGRA_INTR_MASK_SEC_CDN_ALARM	(1<<3)
-+#define RTC_TEGRA_INTR_MASK_MSEC_ALARM		(1<<2)
-+#define RTC_TEGRA_INTR_MASK_SEC_ALARM1		(1<<1)
-+#define RTC_TEGRA_INTR_MASK_SEC_ALARM0		(1<<0)
-+
-+/* bits in INTR_STATUS */
-+#define RTC_TEGRA_INTR_STATUS_MSEC_CDN_ALARM	(1<<4)
-+#define RTC_TEGRA_INTR_STATUS_SEC_CDN_ALARM	(1<<3)
-+#define RTC_TEGRA_INTR_STATUS_MSEC_ALARM	(1<<2)
-+#define RTC_TEGRA_INTR_STATUS_SEC_ALARM1	(1<<1)
-+#define RTC_TEGRA_INTR_STATUS_SEC_ALARM0	(1<<0)
-+
-+struct tegra_rtc_info {
-+	struct platform_device	*pdev;
-+	struct rtc_device	*rtc_dev;
-+	void __iomem		*rtc_base; /* NULL if not initialized. */
-+	int			tegra_rtc_irq; /* alarm and periodic irq */
-+	spinlock_t		tegra_rtc_lock;
-+};
-+
-+/* check is hardware is accessing APB. */
-+static inline u32 tegra_rtc_check_busy(struct tegra_rtc_info *info)
-+{
-+	return readl(info->rtc_base + RTC_TEGRA_REG_BUSY);
-+}
-+
-+/* wait for hardware to be ready for writing.
-+ * do not call this inside the spin lock because it sleeps.
-+ */
-+static int tegra_rtc_wait_while_busy(struct device *dev)
-+{
-+	struct tegra_rtc_info *info = dev_get_drvdata(dev);
-+
-+	/* TODO: wait for busy then not busy to catch a leading edge. */
-+	int retries = RTC_TEGRA_RETRIES;
-+
-+	while (tegra_rtc_check_busy(info)) {
-+		if (!retries--) {
-+			dev_err(dev, "write failed:retry count exceeded.\n");
-+			return -ETIMEDOUT;
-+		}
-+		msleep(1);
-+	}
-+
-+	return 0;
-+}
-+
-+/* waits for the RTC to not be busy accessing APB, then write a single value. */
-+static int tegra_rtc_write_not_busy(struct device *dev, unsigned ofs, u32 value)
-+{
-+	struct tegra_rtc_info *info = dev_get_drvdata(dev);
-+	unsigned long sl_irq_flags;
-+	int ret;
-+
-+	spin_lock_irqsave(&info->tegra_rtc_lock, sl_irq_flags);
-+
-+	if (tegra_rtc_check_busy(info)) {
-+		spin_unlock_irqrestore(&info->tegra_rtc_lock, sl_irq_flags);
-+		ret = tegra_rtc_wait_while_busy(dev);
-+		if (ret)
-+			return ret;
-+		spin_lock_irqsave(&info->tegra_rtc_lock, sl_irq_flags);
-+	}
-+
-+	writel(value, info->rtc_base + ofs);
-+
-+	spin_unlock_irqrestore(&info->tegra_rtc_lock, sl_irq_flags);
-+
-+	return 0;
-+}
-+
-+
-+static int tegra_rtc_read_time(struct device *dev, struct rtc_time *tm)
-+{
-+	struct tegra_rtc_info *info = dev_get_drvdata(dev);
-+	unsigned long sec, msec;
-+	unsigned long sl_irq_flags;
-+
-+	spin_lock_irqsave(&info->tegra_rtc_lock, sl_irq_flags);
-+
-+	msec = readl(info->rtc_base + RTC_TEGRA_REG_MILLI_SECONDS);
-+	sec = readl(info->rtc_base + RTC_TEGRA_REG_SHADOW_SECONDS);
-+
-+	spin_unlock_irqrestore(&info->tegra_rtc_lock, sl_irq_flags);
-+
-+	rtc_time_to_tm(sec, tm);
-+
-+	dev_vdbg(dev, "time read as %lu. %d/%d/%d %d:%02u:%02u\n",
-+		sec,
-+		tm->tm_mon + 1,
-+		tm->tm_mday,
-+		tm->tm_year + 1900,
-+		tm->tm_hour,
-+		tm->tm_min,
-+		tm->tm_sec
-+	);
-+
-+	return 0;
-+}
-+
-+static int tegra_rtc_set_time(struct device *dev, struct rtc_time *tm)
-+{
-+	struct tegra_rtc_info *info = dev_get_drvdata(dev);
-+	unsigned long sec;
-+	int ret;
-+
-+	/* convert tm to seconds. */
-+	ret = rtc_valid_tm(tm);
-+	if (ret < 0)
-+		return ret;
-+
-+	rtc_tm_to_time(tm, &sec);
-+
-+	dev_vdbg(dev, "time set to %lu. %d/%d/%d %d:%02u:%02u\n",
-+		sec,
-+		tm->tm_mon+1,
-+		tm->tm_mday,
-+		tm->tm_year+1900,
-+		tm->tm_hour,
-+		tm->tm_min,
-+		tm->tm_sec
-+	);
-+
-+	/* seconds only written if wait succeeded. */
-+	ret = tegra_rtc_write_not_busy(dev, RTC_TEGRA_REG_SECONDS, sec);
-+
-+	dev_vdbg(dev, "time read back as %d\n",
-+		readl(info->rtc_base + RTC_TEGRA_REG_SECONDS));
-+
-+	return ret;
-+}
-+
-+static int tegra_rtc_read_alarm(struct device *dev, struct rtc_wkalrm *alarm)
-+{
-+	struct tegra_rtc_info *info = dev_get_drvdata(dev);
-+	unsigned long sec;
-+	unsigned long sl_irq_flags;
-+	unsigned tmp;
-+
-+	spin_lock_irqsave(&info->tegra_rtc_lock, sl_irq_flags);
-+
-+	sec = readl(info->rtc_base + RTC_TEGRA_REG_SECONDS_ALARM0);
-+
-+	spin_unlock_irqrestore(&info->tegra_rtc_lock, sl_irq_flags);
-+
-+	if (sec == 0) {
-+		/* alarm is disabled. */
-+		alarm->enabled = 0;
-+		alarm->time.tm_mon = -1;
-+		alarm->time.tm_mday = -1;
-+		alarm->time.tm_year = -1;
-+		alarm->time.tm_hour = -1;
-+		alarm->time.tm_min = -1;
-+		alarm->time.tm_sec = -1;
-+	} else {
-+		/* alarm is enabled. */
-+		alarm->enabled = 1;
-+		rtc_time_to_tm(sec, &alarm->time);
-+	}
-+
-+	tmp = readl(info->rtc_base + RTC_TEGRA_REG_INTR_STATUS);
-+	alarm->pending = (tmp & RTC_TEGRA_INTR_STATUS_SEC_ALARM0) != 0;
-+
-+	return 0;
-+}
-+
-+static int tegra_rtc_alarm_irq_enable(struct device *dev, unsigned int enabled)
-+{
-+	struct tegra_rtc_info *info = dev_get_drvdata(dev);
-+	unsigned status;
-+	unsigned long sl_irq_flags;
-+	int ret;
-+
-+	spin_lock_irqsave(&info->tegra_rtc_lock, sl_irq_flags);
-+
-+	if (tegra_rtc_check_busy(info)) { /* wait for the busy bit to clear. */
-+		spin_unlock_irqrestore(&info->tegra_rtc_lock, sl_irq_flags);
-+		ret = tegra_rtc_wait_while_busy(dev);
-+		if (ret)
-+			return ret;
-+		spin_lock_irqsave(&info->tegra_rtc_lock, sl_irq_flags);
-+	}
-+
-+	/* read the original value, and OR in the flag. */
-+	status = readl(info->rtc_base + RTC_TEGRA_REG_INTR_MASK);
-+	if (enabled)
-+		status |= RTC_TEGRA_INTR_MASK_SEC_ALARM0; /* set it */
-+	else
-+		status &= ~RTC_TEGRA_INTR_MASK_SEC_ALARM0; /* clear it */
-+
-+	writel(status, info->rtc_base + RTC_TEGRA_REG_INTR_MASK);
-+
-+	spin_unlock_irqrestore(&info->tegra_rtc_lock, sl_irq_flags);
-+
-+	return 0;
-+}
-+
-+static int tegra_rtc_set_alarm(struct device *dev, struct rtc_wkalrm *alarm)
-+{
-+	struct tegra_rtc_info *info = dev_get_drvdata(dev);
-+	int ret;
-+	unsigned long sec;
-+
-+	if (alarm->enabled)
-+		rtc_tm_to_time(&alarm->time, &sec);
-+	else
-+		sec = 0;
-+
-+	ret = tegra_rtc_write_not_busy(dev, RTC_TEGRA_REG_SECONDS_ALARM0, sec);
-+	dev_vdbg(dev, "alarm read back as %d\n",
-+		readl(info->rtc_base + RTC_TEGRA_REG_SECONDS_ALARM0));
-+
-+	/* if successfully written and alarm is enabled ... */
-+	if ((ret == 0) && sec) {
-+		tegra_rtc_alarm_irq_enable(dev, 1);
-+
-+		dev_vdbg(dev, "alarm set as %lu. %d/%d/%d %d:%02u:%02u\n",
-+			sec,
-+			alarm->time.tm_mon+1,
-+			alarm->time.tm_mday,
-+			alarm->time.tm_year+1900,
-+			alarm->time.tm_hour,
-+			alarm->time.tm_min,
-+			alarm->time.tm_sec);
-+	} else {
-+		/* disable alarm if 0 or write error. */
-+		dev_vdbg(dev, "alarm disabled\n");
-+		tegra_rtc_alarm_irq_enable(dev, 0);
-+	}
-+
-+	return ret;
-+}
-+
-+/* additional proc lines. */
-+static int tegra_rtc_proc(struct device *dev, struct seq_file *seq)
-+{
-+	if (!dev || !dev->driver)
-+		return 0;
-+
-+	return seq_printf(seq, "name\t\t: %s\n", dev_name(dev));
-+}
-+
-+static irqreturn_t tegra_rtc_irq_handler(int irq, void *data)
-+{
-+	struct device *dev = data;
-+	struct tegra_rtc_info *info = dev_get_drvdata(dev);
-+	unsigned long events = 0;
-+	unsigned status;
-+	unsigned long sl_irq_flags;
-+
-+	status = readl(info->rtc_base + RTC_TEGRA_REG_INTR_STATUS);
-+	if (status) {
-+		/* clear the interrupt masks and status on any irq. */
-+		spin_lock_irqsave(&info->tegra_rtc_lock, sl_irq_flags);
-+		writel(0, info->rtc_base + RTC_TEGRA_REG_INTR_MASK);
-+		writel(0xffffffff, info->rtc_base + RTC_TEGRA_REG_INTR_STATUS);
-+		spin_unlock_irqrestore(&info->tegra_rtc_lock, sl_irq_flags);
-+	}
-+
-+	/* check if Alarm */
-+	if ((status & RTC_TEGRA_INTR_STATUS_SEC_ALARM0))
-+		events |= RTC_IRQF | RTC_AF;
-+
-+	/* check if Periodic */
-+	if ((status & RTC_TEGRA_INTR_STATUS_SEC_CDN_ALARM))
-+		events |= RTC_IRQF | RTC_PF;
-+
-+	rtc_update_irq(info->rtc_dev, 1, events);
-+
-+	return IRQ_HANDLED;
-+}
-+
-+static struct rtc_class_ops tegra_rtc_ops = {
-+	.read_time	= tegra_rtc_read_time,
-+	.set_time	= tegra_rtc_set_time,
-+	.read_alarm	= tegra_rtc_read_alarm,
-+	.set_alarm	= tegra_rtc_set_alarm,
-+	.proc		= tegra_rtc_proc,
-+	.alarm_irq_enable = tegra_rtc_alarm_irq_enable,
-+};
-+
-+static int __devinit tegra_rtc_probe(struct platform_device *pdev)
-+{
-+	struct tegra_rtc_info *info;
-+	struct resource *res;
-+	int ret;
-+
-+	info = kzalloc(sizeof(struct tegra_rtc_info), GFP_KERNEL);
-+	if (!info)
-+		return -ENOMEM;
-+
-+	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+	if (!res) {
-+		dev_err(&pdev->dev,
-+			"Unable to allocate resources for device.\n");
-+		ret = -EBUSY;
-+		goto err_free_info;
-+	}
-+
-+	info->tegra_rtc_irq = platform_get_irq(pdev, 0);
-+	if (info->tegra_rtc_irq <= 0) {
-+		ret = -EBUSY;
-+		goto err_free_info;
-+	}
-+
-+	info->rtc_base = ioremap(res->start, resource_size(res));
-+	if (!info->rtc_base) {
-+		dev_err(&pdev->dev, "Unable to grab IOs for device.\n");
-+		ret = -EBUSY;
-+		goto err_free_info;
-+	}
-+
-+	/* set context info. */
-+	info->pdev = pdev;
-+	info->tegra_rtc_lock = __SPIN_LOCK_UNLOCKED(info->tegra_rtc_lock);
-+
-+	platform_set_drvdata(pdev, info);
-+
-+	/* clear out the hardware. */
-+	tegra_rtc_write_not_busy(&pdev->dev, RTC_TEGRA_REG_SECONDS_ALARM0, 0);
-+	tegra_rtc_write_not_busy(&pdev->dev, RTC_TEGRA_REG_INTR_STATUS,
-+				 0xffffffff);
-+	tegra_rtc_write_not_busy(&pdev->dev, RTC_TEGRA_REG_INTR_MASK, 0);
-+
-+	device_init_wakeup(&pdev->dev, 1);
-+
-+	info->rtc_dev = rtc_device_register(
-+		pdev->name, &pdev->dev, &tegra_rtc_ops, THIS_MODULE);
-+	if (IS_ERR(info->rtc_dev)) {
-+		ret = PTR_ERR(info->rtc_dev);
-+		info->rtc_dev = NULL;
-+		dev_err(&pdev->dev,
-+			"Unable to register device (err=%d).\n",
-+			ret);
-+		goto err_iounmap;
-+	}
-+
-+	ret = request_irq(info->tegra_rtc_irq, tegra_rtc_irq_handler,
-+		IRQF_TRIGGER_HIGH, "rtc alarm", &pdev->dev);
-+	if (ret) {
-+		dev_err(&pdev->dev,
-+			"Unable to request interrupt for device (err=%d).\n",
-+			ret);
-+		goto err_dev_unreg;
-+	}
-+
-+	dev_notice(&pdev->dev, "Tegra internal Real Time Clock\n");
-+
-+	return 0;
-+
-+err_dev_unreg:
-+	rtc_device_unregister(info->rtc_dev);
-+err_iounmap:
-+	iounmap(info->rtc_base);
-+err_free_info:
-+	kfree(info);
-+
-+	return ret;
-+}
-+
-+static int __devexit tegra_rtc_remove(struct platform_device *pdev)
-+{
-+	struct tegra_rtc_info *info = platform_get_drvdata(pdev);
-+
-+	free_irq(info->tegra_rtc_irq, &pdev->dev);
-+	rtc_device_unregister(info->rtc_dev);
-+	iounmap(info->rtc_base);
-+	kfree(info);
-+
-+	platform_set_drvdata(pdev, NULL);
-+
-+	return 0;
-+}
-+
-+#ifdef CONFIG_PM
-+static int tegra_rtc_suspend(struct platform_device *pdev, pm_message_t state)
-+{
-+	struct device *dev = &pdev->dev;
-+	struct tegra_rtc_info *info = platform_get_drvdata(pdev);
-+
-+	/* only use ALARM0 as a wake source. */
-+	writel(0xffffffff, info->rtc_base + RTC_TEGRA_REG_INTR_STATUS);
-+	writel(RTC_TEGRA_INTR_STATUS_SEC_ALARM0,
-+		info->rtc_base + RTC_TEGRA_REG_INTR_MASK);
-+
-+	dev_vdbg(dev, "alarm sec = %d\n",
-+		readl(info->rtc_base + RTC_TEGRA_REG_SECONDS_ALARM0));
-+
-+	dev_vdbg(dev, "Suspend (device_may_wakeup=%d) irq:%d\n",
-+		device_may_wakeup(dev), info->tegra_rtc_irq);
-+
-+	/* leave the alarms on as a wake source. */
-+	if (device_may_wakeup(dev))
-+		enable_irq_wake(info->tegra_rtc_irq);
-+
-+	return 0;
-+}
-+
-+static int tegra_rtc_resume(struct platform_device *pdev)
-+{
-+	struct device *dev = &pdev->dev;
-+	struct tegra_rtc_info *info = platform_get_drvdata(pdev);
-+	unsigned int intr_status;
-+
-+	/* clear */
-+	intr_status = readl(info->rtc_base + RTC_TEGRA_REG_INTR_STATUS);
-+	if (intr_status & RTC_TEGRA_INTR_STATUS_SEC_ALARM0) {
-+		tegra_rtc_write_not_busy(dev, RTC_TEGRA_REG_INTR_MASK, 0);
-+		tegra_rtc_write_not_busy(dev, RTC_TEGRA_REG_INTR_STATUS,
-+					 0xffffffff);
-+	}
-+
-+	dev_vdbg(dev, "Resume (device_may_wakeup=%d)\n",
-+		device_may_wakeup(dev));
-+	/* alarms were left on as a wake source, turn them off. */
-+	if (device_may_wakeup(dev))
-+		disable_irq_wake(info->tegra_rtc_irq);
-+
-+	return 0;
-+}
-+#endif
-+
-+static void tegra_rtc_shutdown(struct platform_device *pdev)
-+{
-+	dev_vdbg(&pdev->dev, "disabling interrupts.\n");
-+	tegra_rtc_alarm_irq_enable(&pdev->dev, 0);
-+}
-+
-+MODULE_ALIAS("platform:tegra_rtc");
-+static struct platform_driver tegra_rtc_driver = {
-+	.remove		= __devexit_p(tegra_rtc_remove),
-+	.shutdown	= tegra_rtc_shutdown,
-+	.driver		= {
-+		.name	= "tegra_rtc",
-+		.owner	= THIS_MODULE,
-+	},
-+#ifdef CONFIG_PM
-+	.suspend	= tegra_rtc_suspend,
-+	.resume		= tegra_rtc_resume,
-+#endif
-+};
-+
-+static int __init tegra_rtc_init(void)
-+{
-+	return platform_driver_probe(&tegra_rtc_driver, tegra_rtc_probe);
-+}
-+module_init(tegra_rtc_init);
-+
-+static void __exit tegra_rtc_exit(void)
-+{
-+	platform_driver_unregister(&tegra_rtc_driver);
-+}
-+module_exit(tegra_rtc_exit);
-+
-+MODULE_AUTHOR("Jon Mayo <jmayo@nvidia.com>");
-+MODULE_DESCRIPTION("driver for Tegra internal RTC");
-+MODULE_LICENSE("GPL");
+ #define HARLEY_READ_REGISTER     0x0
+ #define HARLEY_WRITE_REGISTER    0x01
+@@ -41,14 +37,6 @@ static int ft1000_start_xmit(struct sk_buff *skb, struct net_device *dev);
+ static int ft1000_open (struct net_device *dev);
+ static struct net_device_stats *ft1000_netdev_stats(struct net_device *dev);
+ static int ft1000_chkcard (struct ft1000_device *dev);
+-/*
+-static const struct net_device_ops ft1000net_ops = {
+-    .ndo_start_xmit = ft1000_start_xmit,
+-    .ndo_get_stats = ft1000_netdev_stats,
+-    .ndo_open = ft1000_open,
+-    .ndo_stop = ft1000_close,
+-};
+-*/
+ 
+ //Jim
+ 
+@@ -75,7 +63,6 @@ static void ft1000_control_complete(struct urb *urb)
+         DEBUG("NULL ft1000dev->dev, failure\n");
+         return ;
+     }
+-    //spin_lock(&ft1000dev->device_lock);
+ 
+     if(waitqueue_active(&ft1000dev->control_wait))
+     {
+@@ -83,7 +70,6 @@ static void ft1000_control_complete(struct urb *urb)
+     }
+ 
+     //DEBUG("FT1000_CONTROL_COMPLETE RETURNED\n");
+-    //spin_unlock(&ft1000dev->device_lock);
+ }
+ 
+ //---------------------------------------------------------------------------
+@@ -550,14 +536,11 @@ static void card_reset_dsp (struct ft1000_device *ft1000dev, BOOLEAN value)
+     {
+         DEBUG("Activate DSP\n");
+         status = ft1000_read_register(ft1000dev, &tempword, FT1000_REG_RESET);
+-#if 1
+-        tempword |= DSP_ENCRYPTED;
++        
++	tempword |= DSP_ENCRYPTED;
+         tempword &= ~DSP_UNENCRYPTED;
+-#else
+-        tempword |= DSP_UNENCRYPTED;
+-        tempword &= ~DSP_ENCRYPTED;
+-#endif
+-        status = ft1000_write_register(ft1000dev, tempword, FT1000_REG_RESET);
++        
++	status = ft1000_write_register(ft1000dev, tempword, FT1000_REG_RESET);
+         status = ft1000_read_register(ft1000dev, &tempword, FT1000_REG_RESET);
+         tempword &= ~EFUSE_MEM_DISABLE;
+         tempword &= ~DSP_RESET_BIT;
+@@ -589,16 +572,9 @@ void CardSendCommand(struct ft1000_device *ft1000dev, void *ptempbuffer, int siz
+     DEBUG("CardSendCommand: enter CardSendCommand... size=%d\n", size);
+ 
+     commandbuf =(unsigned char*) kmalloc(size+2, GFP_KERNEL);
+-    //memset((void*)commandbuf, 0, size+2);
+     memcpy((void*)commandbuf+2, (void*)ptempbuffer, size);
+ 
+     //DEBUG("CardSendCommand: Command Send\n");
+-    /***
+-    for (i=0; i<size+2; i++)
+-    {
+-        DEBUG("FT1000:ft1000_ChIoctl: data %d = 0x%x\n", i, *ptr++);
+-    }
+-    ***/
+ 
+     ft1000_read_register(ft1000dev, &temp, FT1000_REG_DOORBELL);
+ 
+@@ -728,51 +704,7 @@ static void ft1000_reset_asic (struct net_device *dev)
+     DEBUG("ft1000_hw: interrupt status register = 0x%x\n",tempword);
+ 
+ }
+-/*
+-//---------------------------------------------------------------------------
+-//
+-// Function:   ft1000_disable_interrupts
+-// Descripton: This function will disable all interrupts.
+-// Input:
+-//     dev    - device structure
+-// Output:
+-//     None.
+-//
+-//---------------------------------------------------------------------------
+-static void ft1000_disable_interrupts(struct net_device *dev) {
+-    FT1000_INFO *info = netdev_priv(dev);
+-    struct ft1000_device *ft1000dev = info->pFt1000Dev;
+-    u16 tempword;
+-
+-    DEBUG("ft1000_hw: ft1000_disable_interrupts()\n");
+-    ft1000_write_register (ft1000dev, ISR_MASK_ALL, FT1000_REG_SUP_IMASK);
+-    ft1000_read_register (ft1000dev, &tempword, FT1000_REG_SUP_IMASK);
+-    DEBUG("ft1000_hw:ft1000_disable_interrupts:current interrupt enable mask = 0x%x\n", tempword);
+-    info->InterruptsEnabled = FALSE;
+-}
+-
+-//---------------------------------------------------------------------------
+-//
+-// Function:   ft1000_enable_interrupts
+-// Descripton: This function will enable interrupts base on the current interrupt mask.
+-// Input:
+-//     dev    - device structure
+-// Output:
+-//     None.
+-//
+-//---------------------------------------------------------------------------
+-static void ft1000_enable_interrupts(struct net_device *dev) {
+-    FT1000_INFO *info = netdev_priv(dev);
+-    struct ft1000_device *ft1000dev = info->pFt1000Dev;
+-    u16 tempword;
+ 
+-    DEBUG("ft1000_hw:ft1000_enable_interrupts()\n");
+-    ft1000_write_register (ft1000dev, info->CurrentInterruptEnableMask, FT1000_REG_SUP_IMASK);
+-    ft1000_read_register (ft1000dev, &tempword, FT1000_REG_SUP_IMASK);
+-    DEBUG("ft1000_hw:ft1000_enable_interrupts:current interrupt enable mask = 0x%x\n", tempword);
+-    info->InterruptsEnabled = TRUE;
+-}
+-*/
+ 
+ //---------------------------------------------------------------------------
+ //
+@@ -797,7 +729,6 @@ static int ft1000_reset_card (struct net_device *dev)
+     info->fCondResetPend = 1;
+     info->CardReady = 0;
+     info->fProvComplete = 0;
+-    //ft1000_disable_interrupts(dev);
+ 
+     // Make sure we free any memory reserve for provisioning
+     while (list_empty(&info->prov_list) == 0) {
+@@ -814,76 +745,6 @@ static int ft1000_reset_card (struct net_device *dev)
+ 
+     info->DSPResetNum++;
+ 
+-#if 0
+-    DEBUG("ft1000_hw:ft1000_reset_card:resetting ASIC and DSP\n");
+-    ft1000_write_register (ft1000dev, (DSP_RESET_BIT | ASIC_RESET_BIT), FT1000_REG_RESET );
+-
+-
+-    // Copy DSP session record into info block if this is not a coldstart
+-    //if (ft1000_card_present == 1) {
+-        spin_lock_irqsave(&info->dpram_lock, flags);
+-
+-            ft1000_write_register(ft1000dev,  FT1000_DPRAM_MAG_RX_BASE, FT1000_REG_DPRAM_ADDR);
+-            for (i=0;i<MAX_DSP_SESS_REC/2; i++) {
+-                //info->DSPSess.MagRec[i] = inl(dev->base_addr+FT1000_REG_MAG_DPDATA);
+-                ft1000_read_dpram32(ft1000dev, FT1000_REG_MAG_DPDATA, (PCHAR)&(info->DSPSess.MagRec[i]), 4);
+-            }
+-
+-        spin_unlock_irqrestore(&info->dpram_lock, flags);
+-    //}
+-    info->squeseqnum = 0;
+-
+-    DEBUG("ft1000_hw:ft1000_reset_card:resetting ASIC\n");
+-    mdelay(10);
+-    //reset ASIC
+-    ft1000_reset_asic(dev);
+-
+-    info->DSPResetNum++;
+-
+-    DEBUG("ft1000_hw:ft1000_reset_card:downloading dsp image\n");
+-
+-
+-        // Put dsp in reset and take ASIC out of reset
+-        DEBUG("ft1000_hw:ft1000_reset_card:Put DSP in reset and take ASIC out of reset\n");
+-        ft1000_write_register (ft1000dev, DSP_RESET_BIT, FT1000_REG_RESET);
+-
+-        // Setting MAGNEMITE ASIC to big endian mode
+-        ft1000_write_register (ft1000dev, HOST_INTF_BE, FT1000_REG_SUP_CTRL);
+-
+-        // Take DSP out of reset
+-
+-           ft1000_read_register(ft1000dev, &tempword, FT1000_REG_RESET);
+-           tempword |= DSP_ENCRYPTED;
+-           tempword &= ~DSP_UNENCRYPTED;
+-           ft1000_write_register(ft1000dev, tempword, FT1000_REG_RESET);
+-           tempword &= ~EFUSE_MEM_DISABLE;
+-           ft1000_write_register(ft1000dev, tempword, FT1000_REG_RESET);
+-           tempword &= ~DSP_RESET_BIT;
+-           ft1000_write_register(ft1000dev, tempword, FT1000_REG_RESET);
+-
+-
+-        // FLARION_DSP_ACTIVE;
+-        mdelay(10);
+-        DEBUG("ft1000_hw:ft1000_reset_card:Take DSP out of reset\n");
+-
+-        // Wait for 0xfefe indicating dsp ready before starting download
+-        for (i=0; i<50; i++) {
+-            //tempword = ft1000_read_dpram_mag_16(dev, FT1000_MAG_DPRAM_FEFE, FT1000_MAG_DPRAM_FEFE_INDX);
+-            ft1000_read_dpram32 (ft1000dev, FT1000_MAG_DPRAM_FEFE_INDX, (PUCHAR)&templong, 4);
+-            if (tempword == 0xfefe) {
+-                break;
+-            }
+-            mdelay(20);
+-        }
+-
+-        if (i==50) {
+-            DEBUG("ft1000_hw:ft1000_reset_card:No FEFE detected from DSP\n");
+-            return FALSE;
+-        }
+-
+-
+-#endif
+-
+     DEBUG("ft1000_hw:ft1000_reset_card: call dsp_reload\n");
+     dsp_reload(ft1000dev);
+ 
+@@ -900,7 +761,6 @@ static int ft1000_reset_card (struct net_device *dev)
+ 
+ 
+     info->CardReady = 1;
+-    //ft1000_enable_interrupts(dev);
+ 
+     info->fCondResetPend = 0;
+     return TRUE;
+@@ -955,7 +815,6 @@ u16 init_ft1000_netdev(struct ft1000_device *ft1000dev)
+ 	return -ENOMEM;
+     }
+ 
+-    //pInfo = (PFT1000_INFO)netdev->priv;
+ 	pInfo = (FT1000_INFO *) netdev_priv (netdev);
+ 
+     //DEBUG("init_ft1000_netdev: gFt1000Info=%x, netdev=%x, ft1000dev=%x\n", gFt1000Info, netdev, ft1000dev);
+@@ -990,7 +849,6 @@ u16 init_ft1000_netdev(struct ft1000_device *ft1000dev)
+     else
+     {
+         //not the first inserted card, increase card number by 1
+-        /*gCardIndex ++;*/
+         pInfo->CardNumber = gCardIndex;
+         /*DEBUG("card number = %d\n", pInfo->CardNumber);*/ //mbelian
+     }
+@@ -1035,9 +893,6 @@ u16 init_ft1000_netdev(struct ft1000_device *ft1000dev)
+     netdev->stop = &ft1000_close;
+ #endif
+ 
+-    //netif_stop_queue(netdev); //mbelian
+-
+-
+     ft1000dev->net = netdev;
+ 
+ 
+@@ -1131,19 +986,6 @@ int reg_ft1000_netdev(struct ft1000_device *ft1000dev, struct usb_interface *int
+     //Create character device, implemented by Jim
+     ft1000_CreateDevice(ft1000dev);
+ 
+-    //INIT_LIST_HEAD(&pInfo->prov_list);
+-
+-
+-    //hard code MAC address for now
+-/**
+-    netdev->dev_addr[0] = 0;
+-    netdev->dev_addr[1] = 7;
+-    netdev->dev_addr[2] = 0x35;
+-    netdev->dev_addr[3] = 0x84;
+-    netdev->dev_addr[4] = 0;
+-    netdev->dev_addr[5] = 0x20 + pInfo->CardNumber;
+-**/
+-
+     DEBUG ("reg_ft1000_netdev returned\n");
+ 
+     pInfo->CardReady = 1;
+@@ -1177,14 +1019,12 @@ static void ft1000_usb_transmit_complete(struct urb *urb)
+     struct ft1000_device *ft1000dev = urb->context;
+ 
+     //DEBUG("ft1000_usb_transmit_complete entered\n");
+-// Jim   spin_lock(&ft1000dev->device_lock);
+ 
+     if (urb->status)
+         printk("%s: TX status %d\n", ft1000dev->net->name, urb->status);
+ 
+     netif_wake_queue(ft1000dev->net);
+ 
+-//Jim    spin_unlock(&ft1000dev->device_lock);
+     //DEBUG("Return from ft1000_usb_transmit_complete\n");
+ }
+ 
+@@ -1221,11 +1061,6 @@ static int ft1000_read_fifo_reg(struct ft1000_device *ft1000dev,unsigned int pip
+ 
+     spin_lock(&ft1000dev->device_lock);
+ 
+-    /*DECLARE_WAITQUEUE(wait, current);
+-    struct urb *urb;
+-    struct usb_ctrlrequest *dr;
+-    int status;*/
+-
+     if(in_interrupt())
+     {
+         spin_unlock(&ft1000dev->device_lock);
+@@ -1256,7 +1091,6 @@ static int ft1000_read_fifo_reg(struct ft1000_device *ft1000dev,unsigned int pip
+ 
+     init_waitqueue_head(&ft1000dev->control_wait);
+ 
+-    //current->state = TASK_INTERRUPTIBLE; //mbelian
+ 	set_current_state(TASK_INTERRUPTIBLE);
+ 
+     add_wait_queue(&ft1000dev->control_wait, &wait);
+@@ -1337,12 +1171,10 @@ static inline u16 ft1000_read_fifo_len (struct net_device *dev)
+     u16 temp;
+     u16 ret;
+ 
+-    //FT1000_INFO *info = (PFT1000_INFO)dev->priv;
+ 	FT1000_INFO *info = (FT1000_INFO *) netdev_priv (dev);
+     struct ft1000_device *ft1000dev = info->pFt1000Dev;
+ //    DEBUG("ft1000_read_fifo_len: enter ft1000dev %x\n", ft1000dev);			//aelias [-] reason: warning: format ???%x??? expects type ???unsigned int???, but argument 2 has type ???struct ft1000_device *???
+     DEBUG("ft1000_read_fifo_len: enter ft1000dev %p\n", ft1000dev);	//aelias [+] reason: up
+-    //ft1000_read_register(ft1000dev, &temp, FT1000_REG_MAG_UFSR);
+ 
+     ret = STATUS_SUCCESS;
+ 
+@@ -1405,45 +1237,6 @@ static int ft1000_copy_down_pkt (struct net_device *netdev, u8 *packet, u16 len)
+ 
+     //DEBUG("ft1000_copy_down_pkt() entered, len = %d\n", len);
+ 
+-#if 0
+-    // Check if there is room on the FIFO
+-    if ( len > ft1000_read_fifo_len (netdev) )
+-    {
+-         udelay(10);
+-         if ( len > ft1000_read_fifo_len (netdev) )
+-         {
+-             udelay(20);
+-         }
+-
+-         if ( len > ft1000_read_fifo_len (netdev) )
+-         {
+-             udelay(20);
+-         }
+-
+-         if ( len > ft1000_read_fifo_len (netdev) )
+-         {
+-             udelay(20);
+-         }
+-
+-         if ( len > ft1000_read_fifo_len (netdev) )
+-         {
+-             udelay(20);
+-         }
+-
+-         if ( len > ft1000_read_fifo_len (netdev) )
+-         {
+-             udelay(20);
+-         }
+-
+-         if ( len > ft1000_read_fifo_len (netdev) )
+-         {
+-            DEBUG("ft1000_hw:ft1000_copy_down_pkt:Transmit FIFO is fulli - pkt drop\n");
+-            pInfo->stats.tx_errors++;
+-            return STATUS_SUCCESS;
+-         }
+-    }
+-#endif
+-
+     count = sizeof (PSEUDO_HDR) + len;
+     if(count > MAX_BUF_SIZE)
+     {
+@@ -1472,8 +1265,6 @@ static int ft1000_copy_down_pkt (struct net_device *netdev, u8 *packet, u16 len)
+     *pTemp++ = checksum;
+     memcpy (&(pFt1000Dev->tx_buf[sizeof(PSEUDO_HDR)]), packet, len);
+ 
+-    //usb_init_urb(pFt1000Dev->tx_urb); //mbelian
+-
+     netif_stop_queue(netdev);
+ 
+     //DEBUG ("ft1000_copy_down_pkt: count = %d\n", count);
+@@ -1499,9 +1290,6 @@ static int ft1000_copy_down_pkt (struct net_device *netdev, u8 *packet, u16 len)
+     {
+ 		DEBUG("ft1000 failed tx_urb %d\n", ret);
+ 
+-   /*     pInfo->stats.tx_errors++;
+-
+-        netif_start_queue(netdev);  */  //mbelian
+ 		return STATUS_FAILURE;
+ 
+     }
+@@ -1552,7 +1340,6 @@ static int ft1000_start_xmit(struct sk_buff *skb, struct net_device *dev)
+     {
+         DEBUG("network driver is closed, return\n");
+         dev_kfree_skb(skb);
+-        //usb_kill_urb(pFt1000Dev->tx_urb); //mbelian
+         return STATUS_SUCCESS;
+     }
+ 
+@@ -1730,7 +1517,6 @@ static int ft1000_submit_rx_urb(PFT1000_INFO info)
+     int result;
+     struct ft1000_device *pFt1000Dev = info->pFt1000Dev;
+ 
+-    //netif_carrier_on(pFt1000Dev->net);
+ 
+     //DEBUG ("ft1000_submit_rx_urb entered: sizeof rx_urb is %d\n", sizeof(*pFt1000Dev->rx_urb));
+     if ( pFt1000Dev->status & FT1000_STATUS_CLOSING)
+@@ -1739,10 +1525,6 @@ static int ft1000_submit_rx_urb(PFT1000_INFO info)
+         //usb_kill_urb(pFt1000Dev->rx_urb); //mbelian
+         return STATUS_SUCCESS;
+     }
+-    //memset(pFt1000Dev->rx_urb, 0, sizeof(*pFt1000Dev->rx_urb));
+-    //usb_init_urb(pFt1000Dev->rx_urb);//mbelian
+-
+-    //spin_lock_init(&pFt1000Dev->rx_urb->lock);
+ 
+     usb_fill_bulk_urb(pFt1000Dev->rx_urb,
+             pFt1000Dev->dev,
+@@ -1797,8 +1579,6 @@ static int ft1000_open (struct net_device *dev)
+ 
+     netif_start_queue(dev);
+ 
+-    //netif_device_attach(dev);
+-
+     netif_carrier_on(dev); //mbelian
+ 
+     ft1000_submit_rx_urb(pInfo);
+@@ -1827,11 +1607,8 @@ int ft1000_close(struct net_device *net)
+     //DEBUG ("ft1000_close: netdev->refcnt=%d\n", net->refcnt);
+ 
+     ft1000dev->status |= FT1000_STATUS_CLOSING;
+-
++    
+     //DEBUG("ft1000_close: calling usb_kill_urb \n");
+-    //usb_kill_urb(ft1000dev->rx_urb);
+-    //usb_kill_urb(ft1000dev->tx_urb);
+-
+ 
+     DEBUG("ft1000_close: pInfo=%p, ft1000dev=%p\n", pInfo, ft1000dev);
+     netif_carrier_off(net);//mbelian
+@@ -1848,9 +1625,7 @@ int ft1000_close(struct net_device *net)
+ static struct net_device_stats *ft1000_netdev_stats(struct net_device *dev)
+ {
+ 	FT1000_INFO *info = (FT1000_INFO *) netdev_priv (dev);
+-    //struct ft1000_device *ft1000dev = info->pFt1000Dev;
+ 
+-    //return &(ft1000dev->stats);//mbelian
+ 	return &(info->stats); //mbelian
+ }
+ 
+@@ -1896,7 +1671,6 @@ static int ft1000_chkcard (struct ft1000_device *dev) {
+     // if the device is not present.
+     status = ft1000_read_register(dev, &tempword, FT1000_REG_ASIC_ID);
+     //DEBUG("ft1000_hw:ft1000_chkcard: read FT1000_REG_ASIC_ID = %x\n", tempword);
+-    //pxu if (tempword == 0xffff) {
+     if (tempword != 0x1b01 ){
+ 	dev->status |= FT1000_STATUS_CLOSING; //mbelian
+         DEBUG("ft1000_hw:ft1000_chkcard: Version = 0xffff Card not detected\n");
+@@ -1934,7 +1708,6 @@ static BOOLEAN ft1000_receive_cmd (struct ft1000_device *dev, u16 *pbuffer, int
+     }
+     else {
+         ppseudohdr = (u16 *)pbuffer;
+-        //spin_lock_irqsave (&info->dpram_lock, flags);
+         ft1000_write_register(dev, FT1000_DPRAM_MAG_RX_BASE, FT1000_REG_DPRAM_ADDR);
+         ret = ft1000_read_register(dev, pbuffer, FT1000_REG_MAG_DPDATAH);
+         //DEBUG("ft1000_hw:received data = 0x%x\n", *pbuffer);
+@@ -1958,7 +1731,6 @@ static BOOLEAN ft1000_receive_cmd (struct ft1000_device *dev, u16 *pbuffer, int
+             ret = ft1000_read_register(dev, &tempword, FT1000_REG_DPRAM_DATA);
+             *pbuffer = ntohs(tempword);
+         }
+-        //spin_unlock_irqrestore(&info->dpram_lock, flags);
+ 
+         // Check if pseudo header checksum is good
+         // Calculate pseudo header checksum
+@@ -1970,24 +1742,6 @@ static BOOLEAN ft1000_receive_cmd (struct ft1000_device *dev, u16 *pbuffer, int
+             return FALSE;
+         }
+ 
+-
+-#if 0
+-        DEBUG("ft1000_receive_cmd:pbuffer\n");
+-        for(i = 0; i < size; i+=5)
+-        {
+-            if( (i + 5) < size )
+-                DEBUG("0x%x, 0x%x, 0x%x, 0x%x, 0x%x\n", tempbuffer[i], tempbuffer[i+1], tempbuffer[i+2], tempbuffer[i+3], tempbuffer[i+4]);
+-            else
+-            {
+-                for (j = i; j < size; j++)
+-                DEBUG("0x%x ", tempbuffer[j]);
+-                DEBUG("\n");
+-                break;
+-            }
+-        }
+-
+-#endif
+-
+         return TRUE;
+     }
+ }
+@@ -2008,8 +1762,7 @@ static int ft1000_dsp_prov(void *arg)
+ 
+     DEBUG("*** DspProv Entered\n");
+ 
+-    while (         list_empty(&info->prov_list) == 0
+-                   /*&&  !kthread_should_stop()  */)
++    while (list_empty(&info->prov_list) == 0)
+     {
+ 	DEBUG("DSP Provisioning List Entry\n");
+ 
+@@ -2040,7 +1793,6 @@ static int ft1000_dsp_prov(void *arg)
+             len = *(u16 *)ptr->pprov_data;
+             len = htons(len);
+             len += PSEUDOSZ;
+-            //len = htons(len);
+ 
+             pmsg = (PUSHORT)ptr->pprov_data;
+             ppseudo_hdr = (PPSEUDO_HDR)pmsg;
+@@ -2091,7 +1843,6 @@ static int ft1000_proc_drvmsg (struct ft1000_device *dev, u16 size) {
+     PPSEUDO_HDR ppseudo_hdr;
+     PUSHORT pmsg;
+     u16 status;
+-    //struct timeval tv; //mbelian
+     union {
+         u8  byte[2];
+         u16 wrd;
+@@ -2105,8 +1856,6 @@ static int ft1000_proc_drvmsg (struct ft1000_device *dev, u16 size) {
+     status = ft1000_read_dpram32(dev, 0x200, cmdbuffer, size);
+ 
+ 
+-    //if (ft1000_receive_cmd(dev, &cmdbuffer[0], MAX_CMD_SQSIZE, &tempword))
+-    {
+ 
+ #ifdef JDEBUG
+         DEBUG("ft1000_proc_drvmsg:cmdbuffer\n");
+@@ -2354,7 +2103,6 @@ static int ft1000_proc_drvmsg (struct ft1000_device *dev, u16 size) {
+           break;
+         }
+ 
+-    }
+ 
+     status = STATUS_SUCCESS;
+ out:
+@@ -2367,8 +2115,6 @@ out:
+ 
+ int ft1000_poll(void* dev_id) {
+ 
+-    //FT1000_INFO *info = (PFT1000_INFO)((struct net_device *)dev_id)->priv;
+-    //struct ft1000_device *dev = (struct ft1000_device *)info->pFt1000Dev;
+     struct ft1000_device *dev = (struct ft1000_device *)dev_id;
+ 	FT1000_INFO *info = (FT1000_INFO *) netdev_priv (dev->net);
+ 
+@@ -2393,7 +2139,6 @@ int ft1000_poll(void* dev_id) {
+     status = ft1000_read_register (dev, &tempword, FT1000_REG_DOORBELL);
+    // DEBUG("ft1000_poll: read FT1000_REG_DOORBELL message 0x%x\n", tempword);
+ 
+-    //while ( (tempword) && (!status) ) {
+     if ( !status )
+     {
+ 
 -- 
-1.7.0.4
+1.7.1
 
