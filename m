@@ -1,135 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932246Ab0JORdv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Oct 2010 13:33:51 -0400
-Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:5776 "EHLO
-	ipmail04.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932103Ab0JORdu (ORCPT
+	id S932277Ab0JOReJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Oct 2010 13:34:09 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:1339 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932260Ab0JOReH convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Oct 2010 13:33:50 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvsEAO4suEx5Ld+3/2dsb2JhbAChI3LAS4VJBI9K
-Date: Sat, 16 Oct 2010 04:33:45 +1100
-From: Nick Piggin <npiggin@kernel.dk>
-To: Nick Piggin <npiggin@kernel.dk>
-Cc: Dave Chinner <david@fromorbit.com>, Christoph Hellwig <hch@infradead.org>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 17/18] fs: icache remove inode_lock
-Message-ID: <20101015173345.GA10731@amd>
-References: <20101014090609.GB3144@amd>
- <20101014144159.GA11972@infradead.org>
- <20101015001443.GA3146@amd>
- <20101015031343.GG4681@dastard>
- <20101015033017.GA6750@amd>
- <20101015034451.GA6827@amd>
- <20101015064150.GB7511@amd>
- <20101015105943.GE32255@dastard>
- <20101015130259.GA3207@amd>
- <20101015132938.GA3936@amd>
+	Fri, 15 Oct 2010 13:34:07 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=gKgkfEhmcbuIUO3xL1wcXVAzkoImX2S4ySKyPCreKDyrPQhdlJVrHXTaubV63n9ecr
+         gmM07X76YA00MDvWsj+g==
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101015132938.GA3936@amd>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1287163797.1998.107.camel@laptop>
+References: <4cb86b4c.41e9d80a.44e9.3e19@mx.google.com>
+	<1287163797.1998.107.camel@laptop>
+Date: Fri, 15 Oct 2010 19:34:01 +0200
+Message-ID: <AANLkTimGyMRHEDxBwgCEyQrfjSrp9tFj1J-xHpY0=f1u@mail.gmail.com>
+Subject: Re: [PATCH] perf_events: fix transaction recovery in group_sched_in()
+From: Stephane Eranian <eranian@google.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, paulus@samba.org,
+        davem@davemloft.net, fweisbec@gmail.com, perfmon2-devel@lists.sf.net,
+        eranian@gmail.com, robert.richter@amd.com
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Oct 16, 2010 at 12:29:38AM +1100, Nick Piggin wrote:
-> On Sat, Oct 16, 2010 at 12:03:00AM +1100, Nick Piggin wrote:
-> > On Fri, Oct 15, 2010 at 09:59:43PM +1100, Dave Chinner wrote:
-> > > My series uses i_lock only to protect i_state and i_ref. It does not
-> > > need to protect any more of the inode than that as other locks
-> > > protect the other list fields. As a result, it's still the inermost
-> > > lock and there are no trylocks in the code at all.
-> > We discussed it and I didn't think latencies would be any worse
-> > a problem than they are today. I agreed it may be an issue and
-> > pointed out there are ways forward to fix it.
-> 
-> BTW. if a few trylocks are your biggest issue, this is a joke. I told
-> you how they can be fixed with incremental patches on top of the series
-> (which basically whittle down the lock coverage of the old inode_lock,
-> and so IMO need to be done in small chunks well bisectable and with
-> good rationale). So why you didn't submit a couple of incremental
-> patches to do just that is beyond me.
-> 
-> I've had prototypes in my tree actually to do that from a while back,
-> but actually I'm thinking that using RCU may be a better way to go
-> now that Linus has agreed on it and we have sketched a design to do
-> slab-free-RCU.
-> 
-> Either way, it's much easier to compare pros and cons of each, when
-> they are done incrementally on top of the existing base.
-
-To illustrate my point, if it needs to be spelled out. If you rcu lock a
-list then locking can be quite changed. Starting with my basic first
-transform which has inode protected by i_lock:
-
-/* pass1, dumb */
-spin_lock(&inode->i_lock);
-spin_lock(&list_lock);
-list_del(&inode->list);
-
-...
-
-spin_lock(&list_lock);
-list_for_each_entry(inode, list) {
-    if (inode->blah ...) {
-      if (!spin_trylock(&inode->i_lock))
-          goto repeat; /* oh no, it's unmaintainable */
-      do_something(inode);
-   }
-}
-
-Common pattern, used by several of the inode lists, OK?
-
-/* pass2a, RCU optimised */
-rcu_read_lock()
-list_for_each_entry(inode, list) {
-    if (inode->blah ...) {
-      spin_lock(&inode->i_lock); /* no trylock. easy. */
-      if (unlikely(list_empty(&inode->i_list)))
-        continue;
-      do_something(inode);
-   }
-}
-
-
-/* pass2b, reduced i_lock width */
-/* no i_lock */
-spin_lock(&list_lock);
-list_del(&inode->list);
-
-...
-
-spin_lock(&list_lock);
-list_for_each_entry(inode, list) {
-    if (inode->blah ...) {
-      do_something(inode);
-   }
-}
-
-OK? Do you see a problem yet? Try turning into RCU.
-
-rcu_read_lock();
-list_for_each_entry(inode, list) {
-    if (inode->blah ...) {
-      spin_lock(&list_lock);
-      if (unlikely(list_empty(&inode->i_list)))
-        continue;
-      do_something(inode);
-   }
-}
-
-So you've saved one (extremely fine-grained, cache hot) lock in the
-slowpath, but you've exchanged a fine grained, cache hot lock in the
-fastpath for a more expensive lock. You've also lost the really nice
-(for maintainability and simplicity) ability to freeze all modifications
-to the inode with the single i_lock.
-
-So... you just happened to decide for yourself that your approach is
-better, just because. All your extensive trials and experiemnts with
-different locking orders lead you to believe that my preferred RCU
-approach is wrong and yours is right? Can you please share your working
-out with the rest of the class?
-
+On Fri, Oct 15, 2010 at 7:29 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Fri, 2010-10-15 at 16:54 +0200, Stephane Eranian wrote:
+>> The group_sched_in() function uses a transactional approach to schedule
+>> a group of events. In a group, either all events can be scheduled or
+>> none are. To schedule each event in, the function calls event_sched_in().
+>> In case of error, event_sched_out() is called on each event in the group.
+>>
+>> The problem is that event_sched_out() does not completely cancel the
+>> effects of event_sched_in(). Furthermore event_sched_out() changes the
+>> state of the event as if it had run which is not true is this particular
+>> case.
+>>
+>> Those inconsistencies impact time tracking fields and may lead to events
+>> in a group not all reporting the same time_enabled and time_running values.
+>> This is demonstrated with the example below:
+>>
+>> $ task -eunhalted_core_cycles,baclears,baclears -e unhalted_core_cycles,baclears,baclears sleep 5
+>> 1946101 unhalted_core_cycles (32.85% scaling, ena=829181, run=556827)
+>>   11423 baclears (32.85% scaling, ena=829181, run=556827)
+>>    7671 baclears (0.00% scaling, ena=556827, run=556827)
+>>
+>> 2250443 unhalted_core_cycles (57.83% scaling, ena=962822, run=405995)
+>>   11705 baclears (57.83% scaling, ena=962822, run=405995)
+>>   11705 baclears (57.83% scaling, ena=962822, run=405995)
+>>
+>> Notice that in the first group, the last baclears event does not
+>> report the same timings as its siblings.
+>>
+>> This issue comes from the fact that tstamp_stopped is updated
+>> by event_sched_out() as if the event had actually run.
+>>
+>> To solve the issue, we must ensure that, in case of error, there is
+>> no change in the event state whatsoever. That means timings must
+>> remain as they were when entering group_sched_in().
+>>
+>> To do this we defer updating tstamp_running until we know the
+>> transaction succeeded. Therefore, we have split event_sched_in()
+>> in two parts separating the update to tstamp_running.
+>>
+>> Similarly, in case of error, we do not want to update tstamp_stopped.
+>> Therefore, we have split event_sched_out() in two parts separating
+>> the update to tstamp_stopped.
+>>
+>> With this patch, we now get the following output:
+>>
+>> $ task -eunhalted_core_cycles,baclears,baclears -e unhalted_core_cycles,baclears,baclears sleep 5
+>> 2492050 unhalted_core_cycles (71.75% scaling, ena=1093330, run=308841)
+>>   11243 baclears (71.75% scaling, ena=1093330, run=308841)
+>>   11243 baclears (71.75% scaling, ena=1093330, run=308841)
+>>
+>> 1852746 unhalted_core_cycles (0.00% scaling, ena=784489, run=784489)
+>>    9253 baclears (0.00% scaling, ena=784489, run=784489)
+>>    9253 baclears (0.00% scaling, ena=784489, run=784489)
+>>
+>> Note that the uneven timing between groups is a side effect of
+>> the process spending most of its time sleeping, i.e., not enough
+>> event rotations (but that's a separate issue).
+>>
+>> Signed-off-by: Stephane Eranian <eranian@google.com>
+>
+> Yes, makes sense.. I'm a bit hesitant to slap a -stable tag on it due to
+> its size,.. Ingo, Paulus?
+>
+I was worried about the size too but I could not figure out another
+smaller way of doing this. An alternative would be to pass an
+extra argument to the function and call it twice.
