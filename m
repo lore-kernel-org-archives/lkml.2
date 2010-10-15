@@ -1,57 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756465Ab0JOQOP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Oct 2010 12:14:15 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:33440 "EHLO
+	id S1756404Ab0JOQSG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Oct 2010 12:18:06 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:47693 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756382Ab0JOQOL (ORCPT
+	with ESMTP id S1755648Ab0JOQSF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Oct 2010 12:14:11 -0400
-X-Authority-Analysis: v=1.1 cv=QISHQ+x4xS+apxgDHgAvNvlUjyrXCzYsHvuXcbPYiKg= c=1 sm=0 a=X4Jpp518rpoA:10 a=bbbx4UPp9XUA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=20KFwNOVAAAA:8 a=VwQbUJbxAAAA:8 a=meVymXHHAAAA:8 a=0bIBIenkJExowfLqrbsA:9 a=Je-kq4JMU9lsAuwowx6rxlHZxoUA:4 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+	Fri, 15 Oct 2010 12:18:05 -0400
+X-Authority-Analysis: v=1.1 cv=vbQZhf6WRU4XF+4tPWNJEMYU0N1CowIjcRZ/qR/IBDs= c=1 sm=0 a=nFyw1t5h3Z8A:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=2KOJt5I1aKuWXccGadUA:9 a=qsHKzknyuAMpx34wwq50Drp9-iUA:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
 X-Cloudmark-Score: 0
 X-Originating-IP: 67.242.120.143
-Message-Id: <20101015161409.316533201@goodmis.org>
-User-Agent: quilt/0.48-1
-Date: Fri, 15 Oct 2010 12:13:36 -0400
+Subject: Re: [PATCH][GIT PULL] ftrace: Rename config option
+ HAVE_C_MCOUNT_RECORD to HAVE_C_RECORDMCOUNT
 From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org
-Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Michal Marek <mmarek@suse.cz>, linux-kbuild@vger.kernel.org
-Subject: [PATCH 2/2] ftrace: Use objtree for C version of recordmcount
-References: <20101015161334.766423984@goodmis.org>
-Content-Disposition: inline; filename=0002-ftrace-Use-objtree-for-C-version-of-recordmcount.patch
+To: Ingo Molnar <mingo@elte.hu>
+Cc: =?ISO-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <20101015094119.GA21002@elte.hu>
+References: <1287114319.23682.34.camel@gandalf.stny.rr.com>
+	 <20101015041307.GA31764@elte.hu> <20101015073836.GA6870@elte.hu>
+	 <20101015094119.GA21002@elte.hu>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Fri, 15 Oct 2010 12:18:02 -0400
+Message-ID: <1287159482.23682.66.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Steven Rostedt <srostedt@redhat.com>
+On Fri, 2010-10-15 at 11:41 +0200, Ingo Molnar wrote:
+> * Ingo Molnar <mingo@elte.hu> wrote:
+> 
+> > FYI, a recent tracing change causes this new warning on latest -tip:
+> 
+> It appears it has been there for a longer time. So not caused by a 
+> recent commit - but it's a real warning nevertheless.
 
-The C version of recordmcount is compiled to a binary, which will
-end up located in the objtree. If the kernel is built with O=path,
-the srctree will not include the binary recordmcount caller.
+Ah, did you do a make clean after removing the recent commits and trying
+again? If not, the ftrace.o file will still contain the "mcount"
+reference and still cause the same issue.
 
-Cc: Michal Marek <mmarek@suse.cz>
-Cc: linux-kbuild@vger.kernel.org
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
----
- scripts/Makefile.build |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/scripts/Makefile.build b/scripts/Makefile.build
-index 4d03a7e..4db60b2 100644
---- a/scripts/Makefile.build
-+++ b/scripts/Makefile.build
-@@ -210,7 +210,7 @@ endif
- 
- ifdef CONFIG_FTRACE_MCOUNT_RECORD
- ifdef BUILD_C_RECORDMCOUNT
--cmd_record_mcount = $(srctree)/scripts/recordmcount "$(@)";
-+cmd_record_mcount = $(objtree)/scripts/recordmcount "$(@)";
- else
- cmd_record_mcount = set -e ; perl $(srctree)/scripts/recordmcount.pl "$(ARCH)" \
- 	"$(if $(CONFIG_CPU_BIG_ENDIAN),big,little)" \
--- 
-1.7.1
+-- Steve
 
 
