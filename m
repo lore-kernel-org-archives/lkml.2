@@ -1,28 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756077Ab0JODKa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Oct 2010 23:10:30 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:55454 "EHLO mx3.mail.elte.hu"
+	id S1756107Ab0JODNZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Oct 2010 23:13:25 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:57687 "EHLO mx2.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755523Ab0JODK3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Oct 2010 23:10:29 -0400
-Date: Fri, 15 Oct 2010 05:10:14 +0200
+	id S1754603Ab0JODNY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Oct 2010 23:13:24 -0400
+Date: Fri, 15 Oct 2010 05:13:14 +0200
 From: Ingo Molnar <mingo@elte.hu>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: David Rientjes <rientjes@google.com>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Casey Dahlin <cdahlin@redhat.com>, x86@kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch] x86: allow ZONE_DMA to be configurable
-Message-ID: <20101015031014.GC9640@elte.hu>
-References: <alpine.DEB.2.00.1010131713160.24646@chino.kir.corp.google.com>
- <20101014011056.a58bac55.akpm@linux-foundation.org>
- <alpine.DEB.2.00.1010141509270.3696@chino.kir.corp.google.com>
- <20101014153223.a710d70c.akpm@linux-foundation.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        "H . Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [GIT PULL] small instrumentation updates
+Message-ID: <20101015031314.GE9640@elte.hu>
+References: <1287085371-29177-1-git-send-regression-fweisbec@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20101014153223.a710d70c.akpm@linux-foundation.org>
+In-Reply-To: <1287085371-29177-1-git-send-regression-fweisbec@gmail.com>
 User-Agent: Mutt/1.5.20 (2009-08-17)
 X-ELTE-SpamScore: -2.0
 X-ELTE-SpamLevel: 
@@ -36,52 +33,31 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Andrew Morton <akpm@linux-foundation.org> wrote:
+* Frederic Weisbecker <fweisbec@gmail.com> wrote:
 
-> On Thu, 14 Oct 2010 15:15:28 -0700 (PDT)
-> David Rientjes <rientjes@google.com> wrote:
+> Ingo,
 > 
-> > On Thu, 14 Oct 2010, Andrew Morton wrote:
-> > 
-> > > > ZONE_DMA is unnecessary for a large number of machines that do not
-> > > > require addressing in the lower 16MB of memory because they do not use
-> > > > ISA devices with 16-bit address registers (plus one page byte register).
-> > > > 
-> > > > This patch allows users to disable ZONE_DMA for x86 if they know they
-> > > > will not be using such devices with their kernel.
-> > > > 
-> > > > This prevents the VM from unnecessarily reserving a ratio of memory
-> > > > (defaulting to 1/256th of system capacity) with lowmem_reserve_ratio
-> > > > for such allocations when it will never be used.
-> > > > 
-> > > 
-> > > I wonder how hard it would be to do this at runtime, probably with a
-> > > boot parameter.
-> > > 
-> > 
-> > A "no_zone_dma" boot parameter wouldn't allow us to achieve the text or 
-> > data savings that we see from disabling all three options in question 
-> > here.
+> Please pull the perf/core branch that can be found at:
 > 
-> True, but doing it at runtime is vastly more user-friendly.  Distros 
-> aren't doing to double the number of kernels they package for this 
-> option!
+> git://git.kernel.org/pub/scm/linux/kernel/git/frederic/random-tracing.git
+> 	perf/core
+> 
+> Thanks,
+> 	Frederic
+> ---
+> 
+> Borislav Petkov (1):
+>       tracing: Fix function-graph build warning on 32-bit
+> 
+> Frederic Weisbecker (1):
+>       x86: Barf when vmalloc and kmemcheck faults happen in NMI
+> 
+> 
+>  arch/x86/mm/fault.c                  |    4 ++++
+>  arch/x86/mm/kmemcheck/kmemcheck.c    |    2 ++
+>  kernel/trace/trace_functions_graph.c |    5 +++--
+>  3 files changed, 9 insertions(+), 2 deletions(-)
 
-Strongly agreed!
-
-Can we automate it perhaps? Drivers could express their zone needs, and 
-perhaps we can free up the zone if there's no relevant driver loaded by 
-the time we have booted up? If a hotplug driver arrives later on, is the 
-MM good enough for us to be able to reinstate the zone dynamically?
-
-Since we allocate top-down generally, the chance that the low zone is 
-100% filled up with pinned, unmovable kmalloc buffers is small, so this 
-solution could be practical - even if much of that zone is utilized 
-already. These low allocations are pretty small typically.
-
-We could also shrink the zone to an emergency amount, say 1MB, instead 
-of zapping it completely, or so.
-
-Thanks,
+Pulled, thanks a lot Frederic!
 
 	Ingo
