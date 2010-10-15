@@ -1,181 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755501Ab0JOLIm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Oct 2010 07:08:42 -0400
-Received: from canuck.infradead.org ([134.117.69.58]:42412 "EHLO
-	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751608Ab0JOLIk convert rfc822-to-8bit (ORCPT
+	id S1755661Ab0JOLIv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Oct 2010 07:08:51 -0400
+Received: from mtagate7.uk.ibm.com ([194.196.100.167]:48373 "EHLO
+	mtagate7.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755540Ab0JOLIu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Oct 2010 07:08:40 -0400
-Subject: Re: High CPU load when machine is idle (related to PROBLEM:
- Unusually high load average when idle in 2.6.35, 2.6.35.1 and later)
-From: Peter Zijlstra <peterz@infradead.org>
-To: Damien Wyart <damien.wyart@free.fr>
-Cc: Chase Douglas <chase.douglas@canonical.com>, Ingo Molnar <mingo@elte.hu>,
-        tmhikaru@gmail.com, Thomas Gleixner <tglx@linutronix.de>,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <20101014145813.GA2185@brouette>
-References: <20101014145813.GA2185@brouette>
+	Fri, 15 Oct 2010 07:08:50 -0400
+Subject: [PATCH] mutex: Introduce arch_mutex_cpu_relax()
+From: Gerald Schaefer <gerald.schaefer@de.ibm.com>
+Reply-To: gerald.schaefer@de.ibm.com
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        linux-s390 <linux-s390@vger.kernel.org>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>
+In-Reply-To: <1287140101.2547.6.camel@thinkpad>
+References: <1287070392.8344.15.camel@thinkpad>
+	 <1287071960.29097.284.camel@twins>	<1287077465.8344.47.camel@thinkpad>
+	 <1287078025.8344.56.camel@thinkpad>
+	 <20101014151349.826b5271.akpm@linux-foundation.org>
+	 <1287140101.2547.6.camel@thinkpad>
 Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Fri, 15 Oct 2010 13:08:22 +0200
-Message-ID: <1287140902.29097.1455.camel@twins>
+Date: Fri, 15 Oct 2010 13:07:35 +0200
+Message-ID: <1287140855.2547.18.camel@thinkpad>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-10-14 at 16:58 +0200, Damien Wyart wrote:
+From: Gerald Schaefer <gerald.schaefer@de.ibm.com>
 
-> - the commit 74f5187ac873042f502227701ed1727e7c5fbfa9 isolated by Tim
->   seems to be the culprit;
+The spinning mutex implementation uses cpu_relax() in busy loops as a
+compiler barrier. Depending on the architecture, cpu_relax() may do more
+than needed in this specific mutex spin loops. On System z we also give
+up the time slice of the virtual cpu in cpu_relax(), which prevents
+effective spinning on the mutex.
 
-Right, so I think I figured out what's happening.
+This patch replaces cpu_relax() in the spinning mutex code with
+arch_mutex_cpu_relax(), which can be defined by each architecture in
+include/asm/mutex.h. The default is still cpu_relax(), so this should
+not affect other architectures than System z for now.
 
-We're folding sucessive idles of the same cpu into the total idle
-number, which is inflating things.
-
-+/*
-+ * For NO_HZ we delay the active fold to the next LOAD_FREQ update.
-+ *
-+ * When making the ILB scale, we should try to pull this in as well.
-+ */
-+static atomic_long_t calc_load_tasks_idle;
-+
-+static void calc_load_account_idle(struct rq *this_rq)
-+{
-+       long delta;
-+
-+       delta = calc_load_fold_active(this_rq);
-+       if (delta)
-+               atomic_long_add(delta, &calc_load_tasks_idle);
-+}
-+
-+static long calc_load_fold_idle(void)
-+{
-+       long delta = 0;
-+
-+       /*
-+        * Its got a race, we don't care...
-+        */
-+       if (atomic_long_read(&calc_load_tasks_idle))
-+               delta = atomic_long_xchg(&calc_load_tasks_idle, 0);
-+
-+       return delta;
-+}
-
-
-If you look at that and imagine CPU1 going idle with 1 task blocked,
-then waking up due to unblocking, then going idle with that same task
-block, etc.. all before we fold_idle on an active cpu, then we can count
-that one task many times over.
-
-
-I haven't come up with a sane patch yet, hackery below, but that does
-let my 24-cpu system idle into load 0.0x instead of the constant 1.x it
-had before.
-
-
-Beware, utter hackery below.. lots of races not sure it matters but it
-ain't pretty..
-
-Anybody got a bright idea here?
-
+Signed-off-by: Gerald Schaefer <gerald.schaefer@de.ibm.com>
 ---
- kernel/sched.c          |   32 ++++++++++++++++++++++++++++++--
- kernel/sched_idletask.c |    1 +
- 2 files changed, 31 insertions(+), 2 deletions(-)
+ arch/s390/include/asm/mutex.h |    2 ++
+ include/linux/mutex.h         |    9 +++++++++
+ kernel/mutex.c                |    2 +-
+ kernel/sched.c                |    2 +-
+ 4 files changed, 13 insertions(+), 2 deletions(-)
 
-diff --git a/kernel/sched.c b/kernel/sched.c
-index 91c19db..ac4512d 100644
+--- a/arch/s390/include/asm/mutex.h
++++ b/arch/s390/include/asm/mutex.h
+@@ -7,3 +7,5 @@
+  */
+ 
+ #include <asm-generic/mutex-dec.h>
++
++#define arch_mutex_cpu_relax()	barrier()
+--- a/include/linux/mutex.h
++++ b/include/linux/mutex.h
+@@ -16,6 +16,7 @@
+ #include <linux/lockdep.h>
+ 
+ #include <asm/atomic.h>
++#include <asm/mutex.h>
+ 
+ /*
+  * Simple, straightforward mutexes with strict semantics:
+@@ -160,4 +161,12 @@ extern int mutex_trylock(struct mutex *l
+ extern void mutex_unlock(struct mutex *lock);
+ extern int atomic_dec_and_mutex_lock(atomic_t *cnt, struct mutex *lock);
+ 
++/*
++ * An architecture specific version of arch_mutex_cpu_relax() can be defined
++ * in include/asm/mutex.h.
++ */
++#ifndef arch_mutex_cpu_relax
++#define arch_mutex_cpu_relax()	cpu_relax()
++#endif
++
+ #endif
+--- a/kernel/mutex.c
++++ b/kernel/mutex.c
+@@ -199,7 +199,7 @@ __mutex_lock_common(struct mutex *lock,
+ 		 * memory barriers as we'll eventually observe the right
+ 		 * values at the cost of a few extra spins.
+ 		 */
+-		cpu_relax();
++		arch_mutex_cpu_relax();
+ 	}
+ #endif
+ 	spin_lock_mutex(&lock->wait_lock, flags);
 --- a/kernel/sched.c
 +++ b/kernel/sched.c
-@@ -521,6 +521,9 @@ struct rq {
- 	/* calc_load related fields */
- 	unsigned long calc_load_update;
- 	long calc_load_active;
-+#ifdef CONFIG_NO_HZ
-+	long calc_load_inactive;
-+#endif
+@@ -3888,7 +3888,7 @@ int mutex_spin_on_owner(struct mutex *lo
+ 		if (task_thread_info(rq->curr) != owner || need_resched())
+ 			return 0;
  
- #ifdef CONFIG_SCHED_HRTICK
- #ifdef CONFIG_SMP
-@@ -1817,6 +1820,7 @@ static void cfs_rq_set_shares(struct cfs_rq *cfs_rq, unsigned long shares)
- #endif
+-		cpu_relax();
++		arch_mutex_cpu_relax();
+ 	}
  
- static void calc_load_account_idle(struct rq *this_rq);
-+static void calc_load_account_nonidle(struct rq *this_rq);
- static void update_sysctl(void);
- static int get_update_sysctl_factor(void);
- static void update_cpu_load(struct rq *this_rq);
-@@ -2978,14 +2982,33 @@ static long calc_load_fold_active(struct rq *this_rq)
-  * When making the ILB scale, we should try to pull this in as well.
-  */
- static atomic_long_t calc_load_tasks_idle;
-+static cpumask_var_t calc_load_mask;
- 
- static void calc_load_account_idle(struct rq *this_rq)
- {
- 	long delta;
- 
- 	delta = calc_load_fold_active(this_rq);
--	if (delta)
-+	this_rq->calc_load_inactive = delta;
-+
-+	if (delta) {
- 		atomic_long_add(delta, &calc_load_tasks_idle);
-+		cpumask_set_cpu(cpu_of(this_rq), calc_load_mask);
-+	}
-+
-+	trace_printk("idle start: %d %Ld %Ld\n", cpu_of(this_rq), delta, 
-+			atomic_long_read(&calc_load_tasks_idle));
-+}
-+
-+static void calc_load_account_nonidle(struct rq *this_rq)
-+{
-+	if (cpumask_test_and_clear_cpu(cpu_of(this_rq), calc_load_mask)) {
-+		atomic_long_sub(this_rq->calc_load_inactive, &calc_load_tasks_idle);
-+		trace_printk("idle end: %d %Ld %Ld\n", cpu_of(this_rq),
-+				this_rq->calc_load_inactive,
-+				atomic_long_read(&calc_load_tasks_idle));
-+	} else
-+		trace_printk("idle end: %d\n", cpu_of(this_rq));
- }
- 
- static long calc_load_fold_idle(void)
-@@ -2995,8 +3018,12 @@ static long calc_load_fold_idle(void)
- 	/*
- 	 * Its got a race, we don't care...
- 	 */
--	if (atomic_long_read(&calc_load_tasks_idle))
-+	if (atomic_long_read(&calc_load_tasks_idle)) {
- 		delta = atomic_long_xchg(&calc_load_tasks_idle, 0);
-+		cpumask_clear(calc_load_mask);
-+	}
-+
-+	trace_printk("idle fold: %d %Ld\n", smp_processor_id(), delta);
- 
- 	return delta;
- }
-@@ -7935,6 +7962,7 @@ void __init sched_init(void)
- 	atomic_set(&nohz.load_balancer, nr_cpu_ids);
- 	atomic_set(&nohz.first_pick_cpu, nr_cpu_ids);
- 	atomic_set(&nohz.second_pick_cpu, nr_cpu_ids);
-+	zalloc_cpumask_var(&calc_load_mask, GFP_NOWAIT);
- #endif
- 	/* May be allocated at isolcpus cmdline parse time */
- 	if (cpu_isolated_map == NULL)
-diff --git a/kernel/sched_idletask.c b/kernel/sched_idletask.c
-index 9fa0f402..a7fa1aa 100644
---- a/kernel/sched_idletask.c
-+++ b/kernel/sched_idletask.c
-@@ -42,6 +42,7 @@ dequeue_task_idle(struct rq *rq, struct task_struct *p, int flags)
- 
- static void put_prev_task_idle(struct rq *rq, struct task_struct *prev)
- {
-+	calc_load_account_nonidle(rq);
- }
- 
- static void task_tick_idle(struct rq *rq, struct task_struct *curr, int queued)
+ 	return 1;
+
 
