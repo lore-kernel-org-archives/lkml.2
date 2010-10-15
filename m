@@ -1,63 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932699Ab0JOVWg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Oct 2010 17:22:36 -0400
-Received: from mail3.caviumnetworks.com ([12.108.191.235]:10782 "EHLO
-	mail3.caviumnetworks.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932650Ab0JOVWf (ORCPT
+	id S932696Ab0JOV0P (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Oct 2010 17:26:15 -0400
+Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:38540 "EHLO
+	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932123Ab0JOV0O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Oct 2010 17:22:35 -0400
-Message-ID: <4CB8C61A.2050008@caviumnetworks.com>
-Date: Fri, 15 Oct 2010 14:22:34 -0700
-From: David Daney <ddaney@caviumnetworks.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.12) Gecko/20100907 Fedora/3.0.7-1.fc12 Thunderbird/3.0.7
+	Fri, 15 Oct 2010 17:26:14 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Message-ID: <4CB8C6B3.9000308@jp.fujitsu.com>
+Date: Sat, 16 Oct 2010 06:25:07 +0900
+From: Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.9) Gecko/20100915 Thunderbird/3.1.4
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-CC: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Jason Baron <jbaron@redhat.com>, David Miller <davem@davemloft.net>
-Subject: Re: [PATCH 8/9] jump label: Make arch_jump_label_text_poke_early()
- optional
-References: <20101015200949.134732894@goodmis.org>	 <20101015201037.703989993@goodmis.org>  <1287176815.1998.117.camel@laptop> <1287176910.16971.2.camel@gandalf.stny.rr.com>
-In-Reply-To: <1287176910.16971.2.camel@gandalf.stny.rr.com>
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+To: Jesse Barnes <jbarnes@virtuousgeek.org>, Tejun Heo <tj@kernel.org>
+CC: linux-pci@vger.kernel.org, lkml <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2.6.36-rc7 2/2] shpchp: update workqueue usage
+References: <4CB86966.5020606@kernel.org>	<4CB8698A.8030202@kernel.org> <20101015125257.73e8d8df@jbarnes-desktop>
+In-Reply-To: <20101015125257.73e8d8df@jbarnes-desktop>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 15 Oct 2010 21:22:50.0935 (UTC) FILETIME=[1F3CDC70:01CB6CAF]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/15/2010 02:08 PM, Steven Rostedt wrote:
-> On Fri, 2010-10-15 at 23:06 +0200, Peter Zijlstra wrote:
->> On Fri, 2010-10-15 at 16:09 -0400, Steven Rostedt wrote:
->>> +
->>> +#ifdef HAVE_ARCH_JUMP_LABEL_TEXT_POKE_EARLY
->>>   extern void arch_jump_label_text_poke_early(jump_label_t addr);
->>> +#else
->>> +static inline void arch_jump_label_text_poke_early(jump_label_t addr) {}
->>> +#endif
->>> +
+(2010/10/16 4:52), Jesse Barnes wrote:
+> On Fri, 15 Oct 2010 16:47:38 +0200
+> Tejun Heo<tj@kernel.org>  wrote:
+>
+>> * Rename shpchp_wq to shpchp_ordered_wq and add non-ordered shpchp_wq
+>>    which is used instead of the system workqueue.  This is to remove
+>>    the use of flush_scheduled_work() which is deprecated and scheduled
+>>    for removal.
 >>
->> How often is this called, do we really need to avoid that call? It looks
->> like init code.
+>> * With cmwq in place, there's no point in creating workqueues lazily.
+>>    Create both shpchp_wq and shpchp_ordered_wq upfront.
+>>
+>> * Include workqueue.h from shpchp.h.
 >
-> Yeah, that's a good point.
+> Applied these two, thanks.  I think Kenji-san will probably let me know
+> if pciehp suddenly breaks as a result. :)
 >
-> What's the harm in doing a stub in the mips code here?
->
 
-Really the SPARC code (and any architectures added in the future with a 
-well defined optimal NOP) should be doing nothing here as well.
+Thank you for the patch. I'll review and test it.
+Yeah, I'll let you know if I find something, Jesse.
 
-So I could turn the question around and ask:  How many empty definitions 
-of this thing do you want in the tree?
+Regards,
+Kenji Kaneshige
 
-I will defer to Steven.  If he wants to push the empty stubs into all 
-the architectures, I will update the MIPS patch and he can remove/revert 
-the 'jump label: Make arch_jump_label_text_poke_early() optional' patch.
-
-Let me know which option you would prefer.
-
-David Daney
 
