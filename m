@@ -1,63 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756107Ab0JODNZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Oct 2010 23:13:25 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:57687 "EHLO mx2.mail.elte.hu"
+	id S1756153Ab0JODNa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Oct 2010 23:13:30 -0400
+Received: from e3.ny.us.ibm.com ([32.97.182.143]:59199 "EHLO e3.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754603Ab0JODNY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Oct 2010 23:13:24 -0400
-Date: Fri, 15 Oct 2010 05:13:14 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        "H . Peter Anvin" <hpa@zytor.com>,
+	id S1756119Ab0JODN0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Oct 2010 23:13:26 -0400
+X-Sieve: CMU Sieve 2.3
+X-Spam-TestScore: ALL_TRUSTED=-1.44,DNS_FROM_RFC_ABUSE=0.479
+X-Spam-TokenSummary: Bayes not run.
+X-Spam-Relay-Country: 
+From: Sonny Rao <sonnyrao@linux.vnet.ibm.com>
+To: linux-kernel@vger.kernel.org
+Cc: Sonny Rao <sonnyrao@linux.vnet.ibm.com>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [GIT PULL] small instrumentation updates
-Message-ID: <20101015031314.GE9640@elte.hu>
-References: <1287085371-29177-1-git-send-regression-fweisbec@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1287085371-29177-1-git-send-regression-fweisbec@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Robert Richter <robert.richter@amd.com>
+Subject: [PATCH] perf, document event modifiers
+Date: Thu, 14 Oct 2010 20:51:00 -0500
+Message-Id: <1287107460-12112-1-git-send-email-sonnyrao@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.5.6.5
+X-Xagent-From: sonnyrao@linux.vnet.ibm.com
+X-Xagent-To: sonnyrao@linux.vnet.ibm.com
+X-Xagent-Gateway: vmsdvm4.vnet.ibm.com (XAGENTU at VMSDVM4)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Existing documentation doesn't discuss event modifiers,
+so add a description of what's currently possible to
+the documentation of perf-list.
 
-* Frederic Weisbecker <fweisbec@gmail.com> wrote:
+Signed-off-by: Sonny Rao <sonnyrao@linux.vnet.ibm.com>
+---
+ tools/perf/Documentation/perf-list.txt |   17 +++++++++++++++++
+ 1 files changed, 17 insertions(+), 0 deletions(-)
 
-> Ingo,
-> 
-> Please pull the perf/core branch that can be found at:
-> 
-> git://git.kernel.org/pub/scm/linux/kernel/git/frederic/random-tracing.git
-> 	perf/core
-> 
-> Thanks,
-> 	Frederic
-> ---
-> 
-> Borislav Petkov (1):
->       tracing: Fix function-graph build warning on 32-bit
-> 
-> Frederic Weisbecker (1):
->       x86: Barf when vmalloc and kmemcheck faults happen in NMI
-> 
-> 
->  arch/x86/mm/fault.c                  |    4 ++++
->  arch/x86/mm/kmemcheck/kmemcheck.c    |    2 ++
->  kernel/trace/trace_functions_graph.c |    5 +++--
->  3 files changed, 9 insertions(+), 2 deletions(-)
+diff --git a/tools/perf/Documentation/perf-list.txt b/tools/perf/Documentation/perf-list.txt
+index 43e3dd2..399751b 100644
+--- a/tools/perf/Documentation/perf-list.txt
++++ b/tools/perf/Documentation/perf-list.txt
+@@ -15,6 +15,23 @@ DESCRIPTION
+ This command displays the symbolic event types which can be selected in the
+ various perf commands with the -e option.
 
-Pulled, thanks a lot Frederic!
++EVENT MODIFIERS
++---------------
++
++Events can optionally have a modifer by appending a colon and one or
++more modifiers.  Modifiers allow the user to restrict when events are
++counted with 'u' for user-space, 'k' for kernel, 'h' for hypervisor.
++
++The 'p' modifier can be used for specifying how precise the instruction
++address should be. The 'p' modifier is currently only implemented for
++Intel PEBS and can be specified multiple times:
++  0 - SAMPLE_IP can have arbitrary skid
++  1 - SAMPLE_IP must have constant skid
++  2 - SAMPLE_IP requested to have 0 skid
++  3 - SAMPLE_IP must have 0 skid
++
++The PEBS implementation now supports up to 2.
++
+ RAW HARDWARE EVENT DESCRIPTOR
+ -----------------------------
+ Even when an event is not available in a symbolic form within perf right now,
+-- 
+1.5.6.5
 
-	Ingo
