@@ -1,65 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752168Ab0JPApb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Oct 2010 20:45:31 -0400
-Received: from mx1.riseup.net ([204.13.164.18]:53704 "EHLO mx1.riseup.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751217Ab0JPApa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Oct 2010 20:45:30 -0400
-From: Francisco Jerez <currojerez@riseup.net>
-To: Dave Airlie <airlied@gmail.com>
-Cc: linux-kernel@vger.kernel.org,
-        =?UTF-8?q?Grzesiek=20S=C3=B3jka?= <pld@pfu.pl>,
-        dri-devel@lists.freedesktop.org
-Subject: [PATCHv2] agp/amd-k7: Allow binding user memory to the AGP GART.
-Date: Sat, 16 Oct 2010 02:45:15 +0200
-Message-Id: <1287189915-13341-1-git-send-email-currojerez@riseup.net>
-X-Mailer: git-send-email 1.6.4.4
-In-Reply-To: <1285715225-21449-1-git-send-email-currojerez@riseup.net>
-References: <1285715225-21449-1-git-send-email-currojerez@riseup.net>
+	id S1752112Ab0JPAy4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Oct 2010 20:54:56 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:41317 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751842Ab0JPAyz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Oct 2010 20:54:55 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=UJxbA+tVmSa9KTj/Umv5r1qNM/5HaMz5c2RcvKpyeGN6RjUcOYOxS5mgb77Huz8ijb
+         9x6jpOKal7k7kCR9OsTsfYzAJdZfe26usnIDwDoYp/t9YmqQ314pcP7pPbLhuBb6HbWy
+         qGTLU9OPCS7x1F+teIPoj1l/2tYQOafP4SFGw=
+Date: Fri, 15 Oct 2010 15:59:18 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Ingo Molnar <mingo@elte.hu>, Jason Baron <jbaron@redhat.com>,
+        linux-kernel@vger.kernel.org, David Miller <davem@davemloft.net>,
+        Mike Galbraith <efault@gmx.de>
+Subject: Re: [RFC][PATCH 6/7] perf: use jump_label to optimize the
+	scheduler hooks
+Message-ID: <20101015135915.GB5334@nowhere>
+References: <20101014203404.222133139@chello.nl> <20101014203625.552405859@chello.nl>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101014203625.552405859@chello.nl>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-TTM-based DRM drivers need to be able to bind user memory to the AGP
-aperture. This patch fixes the "[TTM] AGP Bind memory failed." errors
-and the subsequent fallout seen with the nouveau driver.
+On Thu, Oct 14, 2010 at 10:34:10PM +0200, Peter Zijlstra wrote:
+> 
+> Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
 
-Signed-off-by: Francisco Jerez <currojerez@riseup.net>
-Tested-by: Grzesiek Sójka <pld@pfu.pl>
----
-v2: "amd_remove_memory" bails out when it's given user memory, fix it too.
 
- drivers/char/agp/amd-k7-agp.c |    6 ++++--
- 1 files changed, 4 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/char/agp/amd-k7-agp.c b/drivers/char/agp/amd-k7-agp.c
-index b6b1568..b1b4362 100644
---- a/drivers/char/agp/amd-k7-agp.c
-+++ b/drivers/char/agp/amd-k7-agp.c
-@@ -309,7 +309,8 @@ static int amd_insert_memory(struct agp_memory *mem, off_t pg_start, int type)
- 
- 	num_entries = A_SIZE_LVL2(agp_bridge->current_size)->num_entries;
- 
--	if (type != 0 || mem->type != 0)
-+	if (type != mem->type ||
-+	    agp_bridge->driver->agp_type_to_mask_type(agp_bridge, type))
- 		return -EINVAL;
- 
- 	if ((pg_start + mem->page_count) > num_entries)
-@@ -348,7 +349,8 @@ static int amd_remove_memory(struct agp_memory *mem, off_t pg_start, int type)
- 	unsigned long __iomem *cur_gatt;
- 	unsigned long addr;
- 
--	if (type != 0 || mem->type != 0)
-+	if (type != mem->type ||
-+	    agp_bridge->driver->agp_type_to_mask_type(agp_bridge, type))
- 		return -EINVAL;
- 
- 	for (i = pg_start; i < (mem->page_count + pg_start); i++) {
--- 
-1.6.4.4
+Cool!
+
+Acked-by: Frederic Weisbecker <fweisbec@gmail.com>
 
