@@ -1,96 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756152Ab0JODo5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Oct 2010 23:44:57 -0400
-Received: from ipmail05.adl6.internode.on.net ([150.101.137.143]:20006 "EHLO
-	ipmail05.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755950Ab0JODoz (ORCPT
+	id S1756188Ab0JODpY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Oct 2010 23:45:24 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:53605 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755950Ab0JODpW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Oct 2010 23:44:55 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvsEAOhqt0x5Ld+3/2dsb2JhbAChIXK/cIVIBI9F
-Date: Fri, 15 Oct 2010 14:44:51 +1100
-From: Nick Piggin <npiggin@kernel.dk>
-To: Nick Piggin <npiggin@kernel.dk>
-Cc: Dave Chinner <david@fromorbit.com>, Christoph Hellwig <hch@infradead.org>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 17/18] fs: icache remove inode_lock
-Message-ID: <20101015034451.GA6827@amd>
-References: <1286515292-15882-18-git-send-email-david@fromorbit.com>
- <20101013072058.GA3121@amd>
- <20101013112552.GB16422@infradead.org>
- <20101013123008.GA6067@amd>
- <20101013232319.GZ4681@dastard>
- <20101014090609.GB3144@amd>
- <20101014144159.GA11972@infradead.org>
- <20101015001443.GA3146@amd>
- <20101015031343.GG4681@dastard>
- <20101015033017.GA6750@amd>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101015033017.GA6750@amd>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Thu, 14 Oct 2010 23:45:22 -0400
+X-Authority-Analysis: v=1.1 cv=iGF3DqghDyT/uy4mV2LvOKNXCATMSjL+tOl9cucoGVk= c=1 sm=0 a=uAHilOvrLegA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=VwQbUJbxAAAA:8 a=20KFwNOVAAAA:8 a=SyI_GHdlAAAA:8 a=meVymXHHAAAA:8 a=jHuFmyJ_mjdmhGms4lQA:9 a=LiGiQAwOm1te_utT3BXz0oWZ1g0A:4 a=PUjeQqilurYA:10 a=jEp0ucaQiEUA:10 a=UQxMgyrMzRwA:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: [PATCH][GIT PULL] ftrace: Rename config option
+ HAVE_C_MCOUNT_RECORD to HAVE_C_RECORDMCOUNT
+From: Steven Rostedt <rostedt@goodmis.org>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>, linux-arch@vger.kernel.org,
+        Michal Marek <mmarek@suse.cz>,
+        linux-kbuild <linux-kbuild@vger.kernel.org>,
+        John Reiser <jreiser@bitwagon.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Thu, 14 Oct 2010 23:45:19 -0400
+Message-ID: <1287114319.23682.34.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 15, 2010 at 02:30:17PM +1100, Nick Piggin wrote:
-> On Fri, Oct 15, 2010 at 02:13:43PM +1100, Dave Chinner wrote:
-> >  You've shown it can be done, and that's great - it shows
-> > us the impact of making those changes, but they need to be analysed
-> > separately and treated on own their merits, not lumped with core
-> > locking changes necessary for store-free path walking.
-> 
-> Actually I didn't see anyone else object to doing this. Everybody
-> else it seems acknowledges that it needs to be done, and it gets
-> done naturally as a side effect of fine grained locking.
 
-Let's just get back to this part, which seems to be one you have
-the most issues with maybe?
+Ingo,
 
-You're objecting to per-zone locks and per-zone LRUs for inode and
-dcache?
+Please pull the latest tip/perf/recordmcount-2 tree, which can be found at:
 
-Well I have told you why per-zone LRUs are needed, I can expand on
-any of the reasons if that is unclear. Per-zone locks I think come
-naturally at the same time and they will expose some fs bottlenecks,
-but that is simply how scalability development works.
+  git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-2.6-trace.git
+tip/perf/recordmcount-2
 
-So, do you object to per-zone LRUs in particular, or per-zone locks?
-(Ie. the potentially changed reclaim pattern, or the increased
-parallelism).
 
-When you looked at this initially, you didn't understand how
-reclaim works. It will not fill up a zone with inodes and then start
-reclaiming all those inodes, leaving other nodes empty (unless that
-is how you configure the machine, but it isn't the default). It
-fills up inodes from all nodes (same as today) and it will start
-reclaiming from all nodes at about the same pressure when there is
-a shortage.
+Steven Rostedt (1):
+      ftrace: Rename config option HAVE_C_MCOUNT_RECORD to HAVE_C_RECORDMCOUNT
 
-Reclaim basically approximates LRU by scanning a little from the top
-of each LRU. When you have many thousands of objects, and reclaim is
-a really failable and dumb process anyway, then the perturbation of
-the reclaim pattern doesn't matter much. Our zone based page reclaim
-works exactly the same way.
+----
+ Makefile             |    2 +-
+ arch/x86/Kconfig     |    2 +-
+ kernel/trace/Kconfig |    2 +-
+ 3 files changed, 3 insertions(+), 3 deletions(-)
+---------------------------
+commit cf4db2597ae93b60efc0a7a4ec08690b75d629b1
+Author: Steven Rostedt <srostedt@redhat.com>
+Date:   Thu Oct 14 23:32:44 2010 -0400
 
-I don't think you can possibly be arguing against more scalable
-locking in reclaim, so perhaps you are also worried about increased
-parallelism in the filesystem callbacks from reclaim? I really can't
-see this being a big problem, any more than any other increased
-paralellism on fses or other subsystems caused by scaling vfs.
+    ftrace: Rename config option HAVE_C_MCOUNT_RECORD to HAVE_C_RECORDMCOUNT
+    
+    The config option used by archs to let the build system know that
+    the C version of the recordmcount works for said arch is currently
+    called HAVE_C_MCOUNT_RECORD which enables BUILD_C_RECORDMCOUNT. To
+    be more consistent with the name that all archs may use, it has been
+    renamed to HAVE_C_RECORDMCOUNT. This will be less confusing since
+    we are building a C recordmcount and not a mcount_record.
+    
+    Suggested-by: Ingo Molnar <mingo@elte.hu>
+    Cc: <linux-arch@vger.kernel.org>
+    Cc: Michal Marek <mmarek@suse.cz>
+    Cc: linux-kbuild@vger.kernel.org
+    Cc: John Reiser <jreiser@bitwagon.com>
+    Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 
-There might be some interesting issues with different locking
-designs being hit in different ways, but really we can't stop
-progress and test all loads on all filesystems. The way forward is
-to fix the bottleneck in the filesystem, or the filesystem sucks
-so bad it can't handle it, then just put a lock in there and not
-peanalise others.
-
-It's not like I haven't tested it, I've spent the better part of
-the past year testing things. The I_FREEING batching stuff is one
-example where I found and fixed a small problem exposed by the
-reclaim changes.
+diff --git a/Makefile b/Makefile
+index 0dd3a8d..c2362c2 100644
+--- a/Makefile
++++ b/Makefile
+@@ -569,7 +569,7 @@ endif
+ ifdef CONFIG_FUNCTION_TRACER
+ KBUILD_CFLAGS	+= -pg
+ ifdef CONFIG_DYNAMIC_FTRACE
+-	ifdef CONFIG_HAVE_C_MCOUNT_RECORD
++	ifdef CONFIG_HAVE_C_RECORDMCOUNT
+ 		BUILD_C_RECORDMCOUNT := y
+ 		export BUILD_C_RECORDMCOUNT
+ 	endif
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index 788b50e..9815221 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -33,7 +33,7 @@ config X86
+ 	select HAVE_KRETPROBES
+ 	select HAVE_OPTPROBES
+ 	select HAVE_FTRACE_MCOUNT_RECORD
+-	select HAVE_C_MCOUNT_RECORD
++	select HAVE_C_RECORDMCOUNT
+ 	select HAVE_DYNAMIC_FTRACE
+ 	select HAVE_FUNCTION_TRACER
+ 	select HAVE_FUNCTION_GRAPH_TRACER
+diff --git a/kernel/trace/Kconfig b/kernel/trace/Kconfig
+index df00fbb..e550d2e 100644
+--- a/kernel/trace/Kconfig
++++ b/kernel/trace/Kconfig
+@@ -49,7 +49,7 @@ config HAVE_SYSCALL_TRACEPOINTS
+ 	help
+ 	  See Documentation/trace/ftrace-design.txt
+ 
+-config HAVE_C_MCOUNT_RECORD
++config HAVE_C_RECORDMCOUNT
+ 	bool
+ 	help
+ 	  C version of recordmcount available?
 
 
