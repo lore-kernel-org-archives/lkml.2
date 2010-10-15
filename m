@@ -1,96 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756025Ab0JOOXP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Oct 2010 10:23:15 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:47943 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755083Ab0JOOXN (ORCPT
+	id S1756164Ab0JOOXj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Oct 2010 10:23:39 -0400
+Received: from smtp110.prem.mail.ac4.yahoo.com ([76.13.13.93]:27038 "HELO
+	smtp110.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1756123Ab0JOOXh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Oct 2010 10:23:13 -0400
-Date: Fri, 15 Oct 2010 16:23:10 +0200
-From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: Felipe Contreras <felipe.contreras@gmail.com>
-Cc: linux-main <linux-kernel@vger.kernel.org>,
-        linux-arm <linux-arm-kernel@lists.infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Russell King <linux@arm.linux.org.uk>,
+	Fri, 15 Oct 2010 10:23:37 -0400
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+X-YMail-OSG: 58vkgN8VM1msS6HsFMBAn0RDCn_l6JQeOC4aArpB0esedGI
+ y9w9umztaqDaTtiK000YJ2HrjDeRxx6yfVN4YcET46qSDYAF48IrKSDY55Sv
+ 2Uth2Iodagq9vrAw4a0y99yGVMcFQZZVwzCDq2Ied_UF7Ouz9gxDTdtq_8Q3
+ OGXAKsZ_D.ASpPspjvYqwYsfpyhJcnGTH1ChS3usL1YvPpzoOpb6qL8g.6M8
+ 4nWlxeaPZFDfEdgGPzGiIa7dnpjx_
+X-Yahoo-Newman-Property: ymail-3
+Date: Fri, 15 Oct 2010 09:23:33 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: David Rientjes <rientjes@google.com>
+cc: Pekka Enberg <penberg@cs.helsinki.fi>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Richard Woodruff <r-woodruff2@ti.com>
-Subject: Re: [PATCH .36-rc8] arm: mm: allow, but warn, when issuing
-	ioremap() on RAM
-Message-ID: <20101015142310.GD16893@pengutronix.de>
-References: <1287152120-7201-1-git-send-email-felipe.contreras@gmail.com>
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        David Miller <davem@davemloft.net>, netdev <netdev@vger.kernel.org>,
+        Michael Chan <mchan@broadcom.com>,
+        Eilon Greenstein <eilong@broadcom.com>, Christoph Hellwig <hch@lst.de>,
+        LKML <linux-kernel@vger.kernel.org>, Nick Piggin <npiggin@kernel.dk>
+Subject: Re: [PATCH net-next] net:  allocate skbs on local node
+In-Reply-To: <alpine.DEB.2.00.1010131539440.27839@chino.kir.corp.google.com>
+Message-ID: <alpine.DEB.2.00.1010150922440.22598@router.home>
+References: <1286838210.30423.128.camel@edumazet-laptop> <1286839363.30423.130.camel@edumazet-laptop> <1286859925.30423.184.camel@edumazet-laptop> <20101011230322.f0f6dd47.akpm@linux-foundation.org> <1286866699.30423.234.camel@edumazet-laptop>
+ <20101012002435.f51f2c0e.akpm@linux-foundation.org> <1286869793.2732.24.camel@edumazet-laptop> <20101012005856.994bea6d.akpm@linux-foundation.org> <4CB441CB.2000708@cs.helsinki.fi> <alpine.DEB.2.00.1010120745360.31832@router.home>
+ <alpine.DEB.2.00.1010121234380.10165@chino.kir.corp.google.com> <alpine.DEB.2.00.1010131056180.29099@router.home> <alpine.DEB.2.00.1010131342310.15185@chino.kir.corp.google.com> <alpine.DEB.2.00.1010131642220.8351@router.home>
+ <alpine.DEB.2.00.1010131539440.27839@chino.kir.corp.google.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1287152120-7201-1-git-send-email-felipe.contreras@gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 15, 2010 at 05:15:20PM +0300, Felipe Contreras wrote:
-> From: Catalin Marinas <catalin.marinas@arm.com>
-> 
-> Drivers have been relying on this behavior, but done so wrongly.
-> However, rather than breaking drivers from .35 to .36, we should warn on
-> .36 and only break on .37. This way we give a chance for contributors to
-> fix the issues.
-> 
-> According to ARM, the behavior of having multiple mappings is
-> unspecified from ARMv6+. This causes real issues specially on modern
-> hardware, and specially with speculative prefetching. So drivers need to
-> be fixed.
-> 
-> Also, since current hardware has palliative meassures to deal with
-> multiple mappings with the same memory type but diferent cacheability
-> attributes, ensure that such restriction is taking place.
-> 
-> Cc: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
-> Cc: Russell King <linux@arm.linux.org.uk>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Cc: Richard Woodruff <r-woodruff2@ti.com>
-> Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
-> Signed-off-by: Felipe Contreras <felipe.contreras@gmail.com>
-> ---
->  arch/arm/mm/ioremap.c |    8 ++++++--
->  1 files changed, 6 insertions(+), 2 deletions(-)
-> 
-> diff --git a/arch/arm/mm/ioremap.c b/arch/arm/mm/ioremap.c
-> index ab50627..7dfd6dd 100644
-> --- a/arch/arm/mm/ioremap.c
-> +++ b/arch/arm/mm/ioremap.c
-> @@ -202,10 +202,14 @@ void __iomem * __arm_ioremap_pfn_caller(unsigned long pfn,
->  		return NULL;
->  
->  	/*
-> -	 * Don't allow RAM to be mapped - this causes problems with ARMv6+
-> +	 * This causes problems with ARMv6+. Will be disallowed soon.
-s/soon/for 2.6.37/ ?
 
-> +	 * Also avoid a second mapping with different shareability, which is
-> +	 * not supposed to work anyway.
->  	 */
->  	if (WARN_ON(pfn_valid(pfn)))
-> -		return NULL;
-> +		if (__LINUX_ARM_ARCH__ >= 6 &&
-> +		    (mtype != MT_DEVICE_CACHED && mtype != MT_DEVICE_WC))
-> +			mtype = MT_DEVICE_WC;
->  
->  	type = get_mem_type(mtype);
->  	if (!type)
-> -- 
-> 1.7.3.1.2.g7fe2b
-> 
-> 
+On Wed, 13 Oct 2010, David Rientjes wrote:
 
--- 
-Pengutronix e.K.                           | Uwe Kleine-König            |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+> On Wed, 13 Oct 2010, Christoph Lameter wrote:
+>
+> > > I was going to mention that as an idea, but I thought storing the metadata
+> > > for certain debugging features might differ from the two allocators so
+> > > substantially that it would be even more convoluted and difficult to
+> > > maintain?
+> >
+> > We could have some callbacks to store allocator specific metadata?
+> >
+>
+> It depends on whether we could share the same base for both slab (unified
+> allocator) and slub, which you snipped from your reply, that would make
+> this cleaner.
+
+I already said before that we should consider having a common base so I
+thought that was not necessary.
+
