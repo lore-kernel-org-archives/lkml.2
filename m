@@ -1,96 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754768Ab0JOJVq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Oct 2010 05:21:46 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:46854 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750889Ab0JOJVp (ORCPT
+	id S1754458Ab0JOJYM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Oct 2010 05:24:12 -0400
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:59495 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750905Ab0JOJYK convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Oct 2010 05:21:45 -0400
+	Fri, 15 Oct 2010 05:24:10 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=w2o40QxdbXBb+fKWsJ0aNpeNhQ2fKDUJTumwp/Zi1KURsrr4Pp8b3fA5uAiacYNHfe
-         OXaK7Kspr6pFmYAwbvWMrRFtGzFP/SZ4CmI6ztEV9iD9QIagg+FDCPI1b1W8pamGP81Z
-         ER7ty3Uq/6Qu1dkesuFLKRIjuEhrXkHbMl1aU=
-From: Marek Belisko <marek.belisko@gmail.com>
-To: Greg Kroah-Hartman <gregkh@suse.de>,
-        Marek Belisko <marek.belisko@gmail.com>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Cc: Marek Belisko <marek.belisko@gmail.com>
-Subject: [PATCH] staging:ft1000: Use specific error return code for reg_ft1000_netdev(). Signed-off-by: Marek Belisko <marek.belisko@gmail.com>
-Date: Fri, 15 Oct 2010 09:41:45 +0200
-Message-Id: <1287128505-15739-1-git-send-email-marek.belisko@gmail.com>
-X-Mailer: git-send-email 1.7.1
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=a9xqEge5jGbnruFaaprTaegydecWvryoDH74H0eRgLu8RHYIthGn0COUkDdylo9jLe
+         S8IaiDUuV1nM6esbnJoMJgYgOi3VXerqceOSkFv2hUAQLbFfc86IatEc7TKaemWihsBb
+         ElW6blF2AINf3X52nb88/pAD2wwtR22e7IwuI=
+MIME-Version: 1.0
+In-Reply-To: <1287128928.29097.1235.camel@twins>
+References: <AANLkTinNxzktyttzEjWSUPBiOUwh+4DUL0tmP7p1UiT5@mail.gmail.com>
+	<4CB75F05.9070505@linux.intel.com>
+	<AANLkTik5_TCXeGzTWBZzE8F0Cb2bQq-D228xDXk87rhP@mail.gmail.com>
+	<AANLkTi=vYFv+S=D6O06Nys4cjU7KHWv11d_VdLGmLyf6@mail.gmail.com>
+	<1287128928.29097.1235.camel@twins>
+Date: Fri, 15 Oct 2010 11:24:09 +0200
+Message-ID: <AANLkTikmfpbTXz3-H_UQUqvSULifPyyib3xwsv=RafvX@mail.gmail.com>
+Subject: Re: [REGRESSION] um: rcu_sched_state detected stall on CPU 0
+From: richard -rw- weinberger <richard.weinberger@gmail.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Pekka Enberg <penberg@kernel.org>,
+        Arjan van de Ven <arjan@linux.intel.com>, penberg@cs.helsinki.fi,
+        LKML <linux-kernel@vger.kernel.org>,
+        user-mode-linux-devel@lists.sourceforge.net,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Jeff Dike <jdike@addtoit.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
----
- drivers/staging/ft1000/ft1000-usb/ft1000_hw.c  |    6 +++---
- drivers/staging/ft1000/ft1000-usb/ft1000_usb.c |    4 +++-
- drivers/staging/ft1000/ft1000-usb/ft1000_usb.h |    2 +-
- 3 files changed, 7 insertions(+), 5 deletions(-)
+On Fri, Oct 15, 2010 at 9:48 AM, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Fri, 2010-10-15 at 10:02 +0300, Pekka Enberg wrote:
+>> On Fri, Oct 15, 2010 at 2:44 AM, richard -rw- weinberger
+>> <richard.weinberger@gmail.com> wrote:
+>> > On Thu, Oct 14, 2010 at 9:50 PM, Arjan van de Ven
+>> <arjan@linux.intel.com> wrote:
+>> >>  On 10/14/2010 11:27 AM, richard -rw- weinberger wrote:
+>> >>>
+>> >>> Hi Arjan!
+>> >>>
+>> >>> This commit causes some problems on UML.
+>> >>>
+>> >> that is extremely weird.
+>> >>>
+>> >>> The kernel freezes after a few seconds until it gets some input.
+>> >>> e.g: When I run top it stops refreshing the process list until i
+>> press a
+>> >>> button.
+>> >>
+>> >> a slab timer change (to not be as critical) causing global timer
+>> issues....
+>> >> that's very obviously not a problem with this patch.
+>> >> has this been seem anywhere except UML ?
+>> >
+>> > A small update:
+>> > It seems that CONFIG_NO_HZ is broken on UML. :-(
+>> >
+>> > CONFIG_NO_HZ + CONFIG_SLAB: works
+>> > CONFIG_NO_HZ + CONFIG_SLAB + your patch: broken
+>> > CONFIG_NO_HZ + CONFIG_SLUB: broken
+>> >
+>> > CONFIG_SLAB + your patch: works
+>> > CONFIG_SLAB: works
+>> > CONFIG_SLUB: works
+>>
+>> Thanks for testing! Thomas, Ingo, Peter, I'm not sure who maintains
+>> CONFIG_NO_HZ so I CC'd you. The problem here is that Arjan's
+>> deferrable timers patch in SLAB triggered something that looks like a
+>> latent bug with UML and NOHZ.
+>
+> Thomas does mostly, but if its UML specific, I guess its Jeff Dike
+> you'll be wanting to talk to, since he's the arch maintainer.
+>
 
-diff --git a/drivers/staging/ft1000/ft1000-usb/ft1000_hw.c b/drivers/staging/ft1000/ft1000-usb/ft1000_hw.c
-index 999abb6..3e1a6bf 100644
---- a/drivers/staging/ft1000/ft1000-usb/ft1000_hw.c
-+++ b/drivers/staging/ft1000/ft1000-usb/ft1000_hw.c
-@@ -1112,7 +1112,7 @@ err_net:
- // Notes:
- //
- //---------------------------------------------------------------------------
--u16 reg_ft1000_netdev(struct ft1000_device *ft1000dev, struct usb_interface *intf)
-+int reg_ft1000_netdev(struct ft1000_device *ft1000dev, struct usb_interface *intf)
- {
-     struct net_device *netdev;
-     FT1000_INFO *pInfo;
-@@ -1133,7 +1133,7 @@ u16 reg_ft1000_netdev(struct ft1000_device *ft1000dev, struct usb_interface *int
-     {
-         DEBUG("reg_ft1000_netdev: could not register network device\n");
-         free_netdev(netdev);
--        return STATUS_FAILURE;
-+	return rc;
-     }
- 
- 
-@@ -1162,7 +1162,7 @@ u16 reg_ft1000_netdev(struct ft1000_device *ft1000dev, struct usb_interface *int
-     pInfo->CardReady = 1;
- 
- 
--   return STATUS_SUCCESS;
-+	return 0;
- }
- 
- static int ft1000_reset(struct net_device *dev)
-diff --git a/drivers/staging/ft1000/ft1000-usb/ft1000_usb.c b/drivers/staging/ft1000/ft1000-usb/ft1000_usb.c
-index a2c415e..5fae954 100644
---- a/drivers/staging/ft1000/ft1000-usb/ft1000_usb.c
-+++ b/drivers/staging/ft1000/ft1000-usb/ft1000_usb.c
-@@ -191,7 +191,9 @@ static int ft1000_probe(struct usb_interface *interface,
- 
- 	DEBUG("ft1000_probe::Card Ready!!!! Registering network device\n");
- 
--	reg_ft1000_netdev(ft1000dev, interface);
-+	ret = reg_ft1000_netdev(ft1000dev, interface);
-+	if (ret)
-+		goto err_load;
- 
- 	pft1000info->NetDevRegDone = 1;
- 
-diff --git a/drivers/staging/ft1000/ft1000-usb/ft1000_usb.h b/drivers/staging/ft1000/ft1000-usb/ft1000_usb.h
-index 27ee304..ee54372 100644
---- a/drivers/staging/ft1000/ft1000-usb/ft1000_usb.h
-+++ b/drivers/staging/ft1000/ft1000-usb/ft1000_usb.h
-@@ -634,7 +634,7 @@ char *getfw (char *fn, size_t *pimgsz);
- int dsp_reload(struct ft1000_device *ft1000dev);
- u16 init_ft1000_netdev(struct ft1000_device *ft1000dev);
- struct usb_interface;
--u16 reg_ft1000_netdev(struct ft1000_device *ft1000dev, struct usb_interface *intf);
-+int reg_ft1000_netdev(struct ft1000_device *ft1000dev, struct usb_interface *intf);
- int ft1000_poll(void* dev_id);
- 
- void ft1000InitProc(struct net_device *dev);
+Jeff is the UML maintainer only in theory.
+He seems to be very busy and hasn't touched UML since 2008.
+Very sad...
+
 -- 
-1.7.1
-
+Thanks,
+//richard
