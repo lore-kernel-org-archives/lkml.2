@@ -1,69 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755389Ab0JON22 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Oct 2010 09:28:28 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:48626 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754384Ab0JON21 (ORCPT
+	id S1755519Ab0JON3o (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Oct 2010 09:29:44 -0400
+Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:45999 "EHLO
+	ipmail04.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754545Ab0JON3n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Oct 2010 09:28:27 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=cZnJBb+pDRh+Q0fm2N+BRVgmNQ8/H5Z+eVJbt7sqrXcANhl5sT7QM/IAgJQbt2VApn
-         vdwv/kHC4n4Ea6XcgLiQbUIc0OpoIeyASzpE5yumjLJ5r5XVVG3AHoX2B+UFjbG7btQr
-         EPVRGbl1kHFeaabjQram2uCvQDHbZ9I8l0vbM=
-From: zhangyd <zhangyd6@gmail.com>
-To: dwmw2@infradead.org
-Cc: w.sang@pengutronix.de, Artem.Bityutskiy@nokia.com, ladis@linux-mips.org,
-        jkosina@suse.cz, linux-mtd@lists.infradead.org,
-        linux-kernel@vger.kernel.org, zhangyd <zhangyd6@gmail.com>
-Subject: [PATCH] [MTD] [CHIPS]  Add JEDEC probe support for the SST38VF6401 flash chip
-Date: Wed, 13 Oct 2010 13:54:42 -0400
-Message-Id: <1286992482-6009-1-git-send-email-zhangyd6@gmail.com>
-X-Mailer: git-send-email 1.7.2.3
+	Fri, 15 Oct 2010 09:29:43 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvsEACrxt0x5Ld+3/2dsb2JhbAChIHK+LIVJBI9K
+Date: Sat, 16 Oct 2010 00:29:38 +1100
+From: Nick Piggin <npiggin@kernel.dk>
+To: Nick Piggin <npiggin@kernel.dk>
+Cc: Dave Chinner <david@fromorbit.com>, Christoph Hellwig <hch@infradead.org>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 17/18] fs: icache remove inode_lock
+Message-ID: <20101015132938.GA3936@amd>
+References: <20101013232319.GZ4681@dastard>
+ <20101014090609.GB3144@amd>
+ <20101014144159.GA11972@infradead.org>
+ <20101015001443.GA3146@amd>
+ <20101015031343.GG4681@dastard>
+ <20101015033017.GA6750@amd>
+ <20101015034451.GA6827@amd>
+ <20101015064150.GB7511@amd>
+ <20101015105943.GE32255@dastard>
+ <20101015130259.GA3207@amd>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101015130259.GA3207@amd>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add SST38VF6401(64Mbit) chip to jedec_probe. Sorry for the wrong description of the flash size in last patch. 
+On Sat, Oct 16, 2010 at 12:03:00AM +1100, Nick Piggin wrote:
+> On Fri, Oct 15, 2010 at 09:59:43PM +1100, Dave Chinner wrote:
+> > My series uses i_lock only to protect i_state and i_ref. It does not
+> > need to protect any more of the inode than that as other locks
+> > protect the other list fields. As a result, it's still the inermost
+> > lock and there are no trylocks in the code at all.
+> We discussed it and I didn't think latencies would be any worse
+> a problem than they are today. I agreed it may be an issue and
+> pointed out there are ways forward to fix it.
 
-Signed-off-by: yidong zhang<zhangyd6@gmail.com>
----
- drivers/mtd/chips/jedec_probe.c |   13 +++++++++++++
- 1 files changed, 13 insertions(+), 0 deletions(-)
+BTW. if a few trylocks are your biggest issue, this is a joke. I told
+you how they can be fixed with incremental patches on top of the series
+(which basically whittle down the lock coverage of the old inode_lock,
+and so IMO need to be done in small chunks well bisectable and with
+good rationale). So why you didn't submit a couple of incremental
+patches to do just that is beyond me.
 
-diff --git a/drivers/mtd/chips/jedec_probe.c b/drivers/mtd/chips/jedec_probe.c
-index d72a5fb..b7a1016 100644
---- a/drivers/mtd/chips/jedec_probe.c
-+++ b/drivers/mtd/chips/jedec_probe.c
-@@ -163,6 +163,7 @@
- #define SST49LF030A	0x001C
- #define SST49LF040A	0x0051
- #define SST49LF080A	0x005B
-+#define SST38VF6401	0x536B
- #define SST36VF3203	0x7354
- 
- /* Toshiba */
-@@ -1569,6 +1570,18 @@ static const struct amd_flash_info jedec_table[] = {
- 		}
- 	}, {
- 		.mfr_id		= CFI_MFR_ST,
-+		.dev_id		= SST38VF6401,
-+		.name		= "SST 38VF6401",
-+		.devtypes	= CFI_DEVICETYPE_X16,
-+		.uaddr		= MTD_UADDR_0X0AAA_0x555,
-+		.dev_size	= SIZE_8MiB,
-+		.cmd_set	= P_ID_AMD_STD,
-+		.nr_regions	= 1,
-+		.regions	= {
-+			ERASEINFO(0x10000,128),
-+		}
-+	}, {
-+		.mfr_id		= CFI_MFR_ST,
- 		.dev_id		= M29F800AB,
- 		.name		= "ST M29F800AB",
- 		.devtypes	= CFI_DEVICETYPE_X16|CFI_DEVICETYPE_X8,
--- 
-1.7.2.3
+I've had prototypes in my tree actually to do that from a while back,
+but actually I'm thinking that using RCU may be a better way to go
+now that Linus has agreed on it and we have sketched a design to do
+slab-free-RCU.
+
+Either way, it's much easier to compare pros and cons of each, when
+they are done incrementally on top of the existing base.
 
