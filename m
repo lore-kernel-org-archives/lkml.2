@@ -1,57 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756419Ab0JOPpO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Oct 2010 11:45:14 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:44673 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756336Ab0JOPpM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Oct 2010 11:45:12 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:subject
-         :content-type:content-transfer-encoding;
-        b=q+6nHKZ3UEWUzY672N5knCmk0dbO/LjCkhjwTlov1nBShP24XtKvm2czYkjGyVzQjE
-         /4+LLyJSebplRhfFrQAwm0sJwOKFsiqIj2A4C/49SK4FLEfFvAcPMmd4IzLYNtVeMwVw
-         CkJdKu8RxO1i2aKPYxcJJ0EcbawAKrGHsSVgM=
-Message-ID: <4CB876FB.3020508@gmail.com>
-Date: Fri, 15 Oct 2010 23:44:59 +0800
-From: Wan ZongShun <mcuos.com@gmail.com>
-User-Agent: Thunderbird 2.0.0.24 (X11/20100411)
+	id S1755742Ab0JOPte (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Oct 2010 11:49:34 -0400
+Received: from hera.kernel.org ([140.211.167.34]:46630 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755296Ab0JOPtd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Oct 2010 11:49:33 -0400
+Message-ID: <4CB87807.7050108@kernel.org>
+Date: Fri, 15 Oct 2010 17:49:27 +0200
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.9) Gecko/20100915 Lightning/1.0b2 Thunderbird/3.1.4
 MIME-Version: 1.0
-To: Russell King <linux@arm.linux.org.uk>,
-        Linux ARM <linux-arm-kernel@lists.infradead.org>,
-        linux-kernel@vger.kernel.org, yachen@nuvoton.com
-Subject: [PATCH] arm/nuc900: disable hardware cursor setting
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Trond Myklebust <Trond.Myklebust@netapp.com>, linux-nfs@vger.kernel.org,
+        lkml <linux-kernel@vger.kernel.org>
+Subject: [PATCH linux-2.6.36-rc7] sunrpc/xprtrdma: clean up workqueue usage
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 15 Oct 2010 15:49:31 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Russell,
+* Create and use svc_rdma_wq instead of using the system workqueue and
+  flush_scheduled_work().  This workqueue is necessary to serve as
+  flushing domain for rdma->sc_work which is used to destroy itself
+  and thus can't be flushed explicitly.
 
-Currently, the nuc900 lcd driver did not implement controlling
-hardware cursor function, so enabling it which results in penal upper left 64x64 
-part has been shown in black, so I disable it.
+* Replace cancel_delayed_work() + flush_scheduled_work() with
+  cancel_delayed_work_sync().
 
-Signed-off-by: Wan ZongShun <mcuos.com@gmail.com>
+* Implement synchronous connect in xprt_rdma_connect() using
+  flush_delayed_work() on the rdma_connect work instead of using
+  flush_scheduled_work().
+
+This is to prepare for the deprecation and removal of
+flush_scheduled_work().
+
+Signed-off-by: Tejun Heo <tj@kernel.org>
 ---
-  arch/arm/mach-w90x900/dev.c |    2 +-
-  1 files changed, 1 insertions(+), 1 deletions(-)
+ net/sunrpc/xprtrdma/svc_rdma.c           |   11 ++++++++++-
+ net/sunrpc/xprtrdma/svc_rdma_transport.c |    6 +++++-
+ net/sunrpc/xprtrdma/transport.c          |    5 ++---
+ 3 files changed, 17 insertions(+), 5 deletions(-)
 
-diff --git a/arch/arm/mach-w90x900/dev.c b/arch/arm/mach-w90x900/dev.c
-index 5b0c38a..e1d262c 100644
---- a/arch/arm/mach-w90x900/dev.c
-+++ b/arch/arm/mach-w90x900/dev.c
-@@ -438,7 +438,7 @@ static struct nuc900fb_display nuc900_lcd_info[] = {
-  		.upper_margin	= 18,
-  		.lower_margin	= 4,
-  		.vsync_len	= 1,
--		.dccs		= 0x8e00041a,
-+		.dccs		= 0x0e00041a,
-  		.devctl		= 0x060800c0,
-  		.fbctrl		= 0x00a000a0,
-  		.scale		= 0x04000400,
--- 
-1.6.3.3
+Index: work/net/sunrpc/xprtrdma/svc_rdma.c
+===================================================================
+--- work.orig/net/sunrpc/xprtrdma/svc_rdma.c
++++ work/net/sunrpc/xprtrdma/svc_rdma.c
+@@ -43,6 +43,7 @@
+ #include <linux/slab.h>
+ #include <linux/fs.h>
+ #include <linux/sysctl.h>
++#include <linux/workqueue.h>
+ #include <linux/sunrpc/clnt.h>
+ #include <linux/sunrpc/sched.h>
+ #include <linux/sunrpc/svc_rdma.h>
+@@ -74,6 +75,8 @@ atomic_t rdma_stat_sq_prod;
+ struct kmem_cache *svc_rdma_map_cachep;
+ struct kmem_cache *svc_rdma_ctxt_cachep;
+
++struct workqueue_struct *svc_rdma_wq;
++
+ /*
+  * This function implements reading and resetting an atomic_t stat
+  * variable through read/write to a proc file. Any write to the file
+@@ -231,7 +234,7 @@ static ctl_table svcrdma_root_table[] =
+ void svc_rdma_cleanup(void)
+ {
+ 	dprintk("SVCRDMA Module Removed, deregister RPC RDMA transport\n");
+-	flush_scheduled_work();
++	destroy_workqueue(svc_rdma_wq);
+ 	if (svcrdma_table_header) {
+ 		unregister_sysctl_table(svcrdma_table_header);
+ 		svcrdma_table_header = NULL;
+@@ -249,6 +252,11 @@ int svc_rdma_init(void)
+ 	dprintk("\tsq_depth         : %d\n",
+ 		svcrdma_max_requests * RPCRDMA_SQ_DEPTH_MULT);
+ 	dprintk("\tmax_inline       : %d\n", svcrdma_max_req_size);
++
++	svc_rdma_wq = alloc_workqueue("svc_rdma", 0, 0);
++	if (!svc_rdma_wq)
++		return -ENOMEM;
++
+ 	if (!svcrdma_table_header)
+ 		svcrdma_table_header =
+ 			register_sysctl_table(svcrdma_root_table);
+@@ -283,6 +291,7 @@ int svc_rdma_init(void)
+ 	kmem_cache_destroy(svc_rdma_map_cachep);
+  err0:
+ 	unregister_sysctl_table(svcrdma_table_header);
++	destroy_workqueue(svc_rdma_wq);
+ 	return -ENOMEM;
+ }
+ MODULE_AUTHOR("Tom Tucker <tom@opengridcomputing.com>");
+Index: work/net/sunrpc/xprtrdma/svc_rdma_transport.c
+===================================================================
+--- work.orig/net/sunrpc/xprtrdma/svc_rdma_transport.c
++++ work/net/sunrpc/xprtrdma/svc_rdma_transport.c
+@@ -45,6 +45,7 @@
+ #include <linux/sched.h>
+ #include <linux/slab.h>
+ #include <linux/spinlock.h>
++#include <linux/workqueue.h>
+ #include <rdma/ib_verbs.h>
+ #include <rdma/rdma_cm.h>
+ #include <linux/sunrpc/svc_rdma.h>
+@@ -89,6 +90,9 @@ struct svc_xprt_class svc_rdma_class = {
+ /* WR context cache. Created in svc_rdma.c  */
+ extern struct kmem_cache *svc_rdma_ctxt_cachep;
+
++/* Workqueue created in svc_rdma.c */
++extern struct workqueue_struct *svc_rdma_wq;
++
+ struct svc_rdma_op_ctxt *svc_rdma_get_context(struct svcxprt_rdma *xprt)
+ {
+ 	struct svc_rdma_op_ctxt *ctxt;
+@@ -1184,7 +1188,7 @@ static void svc_rdma_free(struct svc_xpr
+ 	struct svcxprt_rdma *rdma =
+ 		container_of(xprt, struct svcxprt_rdma, sc_xprt);
+ 	INIT_WORK(&rdma->sc_work, __svc_rdma_free);
+-	schedule_work(&rdma->sc_work);
++	queue_work(svc_rdma_wq, &rdma->sc_work);
+ }
+
+ static int svc_rdma_has_wspace(struct svc_xprt *xprt)
+Index: work/net/sunrpc/xprtrdma/transport.c
+===================================================================
+--- work.orig/net/sunrpc/xprtrdma/transport.c
++++ work/net/sunrpc/xprtrdma/transport.c
+@@ -237,8 +237,7 @@ xprt_rdma_destroy(struct rpc_xprt *xprt)
+
+ 	dprintk("RPC:       %s: called\n", __func__);
+
+-	cancel_delayed_work(&r_xprt->rdma_connect);
+-	flush_scheduled_work();
++	cancel_delayed_work_sync(&r_xprt->rdma_connect);
+
+ 	xprt_clear_connected(xprt);
+
+@@ -460,7 +459,7 @@ xprt_rdma_connect(struct rpc_task *task)
+ 	} else {
+ 		schedule_delayed_work(&r_xprt->rdma_connect, 0);
+ 		if (!RPC_IS_ASYNC(task))
+-			flush_scheduled_work();
++			flush_delayed_work(&r_xprt->rdma_connect);
+ 	}
+ }
+
