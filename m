@@ -1,49 +1,328 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756271Ab0JOOiw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Oct 2010 10:38:52 -0400
-Received: from canuck.infradead.org ([134.117.69.58]:49832 "EHLO
-	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754702Ab0JOOiv convert rfc822-to-8bit (ORCPT
+	id S1756281Ab0JOOkJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Oct 2010 10:40:09 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:51911 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755298Ab0JOOkI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Oct 2010 10:38:51 -0400
-Subject: Re: [PATCH 5/8] x86: Add IRQ_TIME_ACCOUNTING in x86 -v4
-From: Peter Zijlstra <peterz@infradead.org>
-To: Venkatesh Pallipadi <venki@google.com>
-Cc: Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        linux-kernel@vger.kernel.org, Paul Turner <pjt@google.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>
-In-Reply-To: <1286237003-12406-6-git-send-email-venki@google.com>
-References: <1286237003-12406-1-git-send-email-venki@google.com>
-	 <1286237003-12406-6-git-send-email-venki@google.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Fri, 15 Oct 2010 16:38:31 +0200
-Message-ID: <1287153511.29097.1522.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	Fri, 15 Oct 2010 10:40:08 -0400
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: [PATCH] apds9802als: add runtime PM support
+To: linux-kernel@vger.kernel.org, akpm@linux-foundation.org
+Date: Fri, 15 Oct 2010 14:47:25 +0100
+Message-ID: <20101015134713.25557.44608.stgit@localhost.localdomain>
+User-Agent: StGIT/0.14.3
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-10-04 at 17:03 -0700, Venkatesh Pallipadi wrote:
-> @@ -801,6 +805,7 @@ void mark_tsc_unstable(char *reason)
->         if (!tsc_unstable) {
->                 tsc_unstable = 1;
->                 sched_clock_stable = 0;
-> +               disable_sched_clock_irqtime();
->                 printk(KERN_INFO "Marking TSC unstable due to %s\n", reason);
->                 /* Change only the rating, when not registered */
->                 if (clocksource_tsc.mult) 
+From: Hong Liu <hong.liu@intel.com>
 
-I think we can be less strict that this and keep it enabled for
-everything with constant tsc and nonstop tsc.
 
-Since we're using it strictly per-cpu the cross-cpu sync isn't really
-important, all we need it to know the per-cpu value doesn't go all
-screwy on us.
+    Update the driver for the needed runtime power features. Remove the old
+    user controlled power functions.
 
+    Signed-off-by: Hong Liu <hong.liu@intel.com>
+    Signed-off-by: Alan Cox <alan@linux.intel.com>
+---
+
+ drivers/misc/apds9802als.c |  158 ++++++++++++++++++++++++++------------------
+ 1 files changed, 94 insertions(+), 64 deletions(-)
+
+
+diff --git a/drivers/misc/apds9802als.c b/drivers/misc/apds9802als.c
+index fbe4960..15f9436 100644
+--- a/drivers/misc/apds9802als.c
++++ b/drivers/misc/apds9802als.c
+@@ -29,19 +29,16 @@
+ #include <linux/delay.h>
+ #include <linux/mutex.h>
+ #include <linux/sysfs.h>
+-#include <linux/hwmon-sysfs.h>
++#include <linux/pm_runtime.h>
+ 
+ #define ALS_MIN_RANGE_VAL 1
+ #define ALS_MAX_RANGE_VAL 2
+ #define POWER_STA_ENABLE 1
+ #define POWER_STA_DISABLE 0
+-#define APDS9802ALS_I2C_ADDR 0x29
+ 
+ #define DRIVER_NAME "apds9802als"
+ 
+ struct als_data {
+-	struct device *hwmon_dev;
+-	bool needresume;
+ 	struct mutex mutex;
+ };
+ 
+@@ -60,29 +57,64 @@ static ssize_t als_sensing_range_show(struct device *dev,
+ 		return sprintf(buf, "65535\n");
+ }
+ 
++static int als_wait_for_data_ready(struct device *dev)
++{
++	struct i2c_client *client = to_i2c_client(dev);
++	int ret;
++	int retry = 10;
++
++	do {
++		msleep(30);
++		ret = i2c_smbus_read_byte_data(client, 0x86);
++	} while (!(ret & 0x80) && retry--);
++
++	if (!retry) {
++		dev_warn(dev, "timeout waiting for data ready\n");
++		return -ETIMEDOUT;
++	}
++
++	return 0;
++}
++
+ static ssize_t als_lux0_input_data_show(struct device *dev,
+ 			struct device_attribute *attr, char *buf)
+ {
+ 	struct i2c_client *client = to_i2c_client(dev);
+ 	struct als_data *data = i2c_get_clientdata(client);
+-	unsigned int ret_val;
++	int ret_val;
+ 	int temp;
+ 
+ 	/* Protect against parallel reads */
++	pm_runtime_get_sync(dev);
+ 	mutex_lock(&data->mutex);
+-	temp = i2c_smbus_read_byte_data(client, 0x8C);/*LSB data*/
++
++	/* clear EOC interrupt status */
++	i2c_smbus_write_byte(client, 0x40);
++	/* start measurement */
++	temp = i2c_smbus_read_byte_data(client, 0x81);
++	i2c_smbus_write_byte_data(client, 0x81, temp | 0x08);
++
++	ret_val = als_wait_for_data_ready(dev);
++	if (ret_val < 0)
++		goto failed;
++
++	temp = i2c_smbus_read_byte_data(client, 0x8C); /* LSB data */
+ 	if (temp < 0) {
+ 		ret_val = temp;
+ 		goto failed;
+ 	}
+-	ret_val = i2c_smbus_read_byte_data(client, 0x8D);/*MSB data*/
++	ret_val = i2c_smbus_read_byte_data(client, 0x8D); /* MSB data */
+ 	if (ret_val < 0)
+ 		goto failed;
++
+ 	mutex_unlock(&data->mutex);
+-	ret_val = (ret_val << 8) | temp;
+-	return sprintf(buf, "%d\n", ret_val);
++	pm_runtime_put_sync(dev);
++
++	temp = (ret_val << 8) | temp;
++	return sprintf(buf, "%d\n", temp);
+ failed:
+ 	mutex_unlock(&data->mutex);
++	pm_runtime_put_sync(dev);
+ 	return ret_val;
+ }
+ 
+@@ -104,9 +136,10 @@ static ssize_t als_sensing_range_store(struct device *dev,
+ 	else
+ 		return -ERANGE;
+ 
++	pm_runtime_get_sync(dev);
++
+ 	/* Make sure nobody else reads/modifies/writes 0x81 while we
+ 	   are active */
+-
+ 	mutex_lock(&data->mutex);
+ 
+ 	ret_val = i2c_smbus_read_byte_data(client, 0x81);
+@@ -116,34 +149,25 @@ static ssize_t als_sensing_range_store(struct device *dev,
+ 	/* Reset the bits before setting them */
+ 	ret_val = ret_val & 0xFA;
+ 
+-	if (val == 1) /* Setting the continous measurement up to 4k LUX */
+-		ret_val = (ret_val | 0x05);
+-	else /* Setting the continous measurement up to 64k LUX*/
+-		ret_val = (ret_val | 0x04);
++	if (val == 1) /* Setting detection range up to 4k LUX */
++		ret_val = (ret_val | 0x01);
++	else /* Setting detection range up to 64k LUX*/
++		ret_val = (ret_val | 0x00);
+ 
+ 	ret_val = i2c_smbus_write_byte_data(client, 0x81, ret_val);
++
+ 	if (ret_val >= 0) {
+ 		/* All OK */
+ 		mutex_unlock(&data->mutex);
++		pm_runtime_put_sync(dev);
+ 		return count;
+ 	}
+ fail:
+ 	mutex_unlock(&data->mutex);
++	pm_runtime_put_sync(dev);
+ 	return ret_val;
+ }
+ 
+-static ssize_t als_power_status_show(struct device *dev,
+-			struct device_attribute *attr, char *buf)
+-{
+-	struct i2c_client *client = to_i2c_client(dev);
+-	int ret_val;
+-	ret_val = i2c_smbus_read_byte_data(client, 0x80);
+-	if (ret_val < 0)
+-		return ret_val;
+-	ret_val = ret_val & 0x01;
+-	return sprintf(buf, "%d\n", ret_val);
+-}
+-
+ static int als_set_power_state(struct i2c_client *client, bool on_off)
+ {
+ 	int ret_val;
+@@ -163,39 +187,13 @@ fail:
+ 	return ret_val;
+ }
+ 
+-static ssize_t als_power_status_store(struct device *dev,
+-		struct device_attribute *attr, const char *buf, size_t count)
+-{
+-	struct i2c_client *client = to_i2c_client(dev);
+-	struct als_data *data = i2c_get_clientdata(client);
+-	unsigned long val;
+-	int ret_val;
+-
+-	if (strict_strtoul(buf, 10, &val))
+-		return -EINVAL;
+-	if (val == POWER_STA_ENABLE) {
+-		ret_val = als_set_power_state(client, true);
+-		data->needresume = true;
+-	} else if (val == POWER_STA_DISABLE) {
+-		ret_val = als_set_power_state(client, false);
+-		data->needresume = false;
+-	} else
+-		return -EINVAL;
+-	if (ret_val < 0)
+-		return ret_val;
+-	return count;
+-}
+-
+ static DEVICE_ATTR(lux0_sensor_range, S_IRUGO | S_IWUSR,
+ 	als_sensing_range_show, als_sensing_range_store);
+ static DEVICE_ATTR(lux0_input, S_IRUGO, als_lux0_input_data_show, NULL);
+-static DEVICE_ATTR(power_state, S_IRUGO | S_IWUSR,
+-	als_power_status_show, als_power_status_store);
+ 
+ static struct attribute *mid_att_als[] = {
+ 	&dev_attr_lux0_sensor_range.attr,
+ 	&dev_attr_lux0_input.attr,
+-	&dev_attr_power_state.attr,
+ 	NULL
+ };
+ 
+@@ -213,15 +211,21 @@ static int als_set_default_config(struct i2c_client *client)
+ 		dev_err(&client->dev, "failed default switch on write\n");
+ 		return ret_val;
+ 	}
+-	/* Continous from 1Lux to 64k Lux */
+-	ret_val = i2c_smbus_write_byte_data(client, 0x81, 0x04);
++	/* detection range: 1~64K Lux, maunal measurement */
++	ret_val = i2c_smbus_write_byte_data(client, 0x81, 0x08);
+ 	if (ret_val < 0)
+ 		dev_err(&client->dev, "failed default LUX on write\n");
++
++	/*  We always get 0 for the 1st measurement after system power on,
++	 *  so make sure it is finished before user asks for data.
++	 */
++	als_wait_for_data_ready(&client->dev);
++
+ 	return ret_val;
+ }
+ 
+-static int  apds9802als_probe(struct i2c_client *client,
+-					const struct i2c_device_id *id)
++static int apds9802als_probe(struct i2c_client *client,
++			     const struct i2c_device_id *id)
+ {
+ 	int res;
+ 	struct als_data *data;
+@@ -237,11 +241,14 @@ static int  apds9802als_probe(struct i2c_client *client,
+ 		dev_err(&client->dev, "device create file failed\n");
+ 		goto als_error1;
+ 	}
+-	dev_info(&client->dev,
+-		"%s apds9802als: ALS chip found\n", client->name);
++	dev_info(&client->dev, "ALS chip found\n");
+ 	als_set_default_config(client);
+-	data->needresume = true;
+ 	mutex_init(&data->mutex);
++
++	pm_runtime_enable(&client->dev);
++	pm_runtime_get(&client->dev);
++	pm_runtime_put(&client->dev);
++
+ 	return res;
+ als_error1:
+ 	i2c_set_clientdata(client, NULL);
+@@ -252,6 +259,8 @@ als_error1:
+ static int apds9802als_remove(struct i2c_client *client)
+ {
+ 	struct als_data *data = i2c_get_clientdata(client);
++
++	als_set_power_state(client, false);
+ 	sysfs_remove_group(&client->dev.kobj, &m_als_gr);
+ 	kfree(data);
+ 	return 0;
+@@ -265,13 +274,34 @@ static int apds9802als_suspend(struct i2c_client *client, pm_message_t mesg)
+ 
+ static int apds9802als_resume(struct i2c_client *client)
+ {
+-	struct als_data *data = i2c_get_clientdata(client);
++	als_set_default_config(client);
++
++	pm_runtime_get(&client->dev);
++	pm_runtime_put(&client->dev);
++	return 0;
++}
++
++static int apds9802als_runtime_suspend(struct device *dev)
++{
++	struct i2c_client *client = to_i2c_client(dev);
++
++	als_set_power_state(client, false);
++	return 0;
++}
++
++static int apds9802als_runtime_resume(struct device *dev)
++{
++	struct i2c_client *client = to_i2c_client(dev);
+ 
+-	if (data->needresume == true)
+-		als_set_power_state(client, true);
++	als_set_power_state(client, true);
+ 	return 0;
+ }
+ 
++static const struct dev_pm_ops apds9802als_pm_ops = {
++	.runtime_suspend = apds9802als_runtime_suspend,
++	.runtime_resume = apds9802als_runtime_resume,
++};
++
+ static struct i2c_device_id apds9802als_id[] = {
+ 	{ DRIVER_NAME, 0 },
+ 	{ }
+@@ -281,8 +311,8 @@ MODULE_DEVICE_TABLE(i2c, apds9802als_id);
+ 
+ static struct i2c_driver apds9802als_driver = {
+ 	.driver = {
+-	.name = DRIVER_NAME,
+-	.owner = THIS_MODULE,
++		.name = DRIVER_NAME,
++		.pm = &apds9802als_pm_ops,
+ 	},
+ 	.probe = apds9802als_probe,
+ 	.remove = apds9802als_remove,
 
