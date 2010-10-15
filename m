@@ -1,59 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755581Ab0JOMoS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Oct 2010 08:44:18 -0400
-Received: from va3ehsobe006.messaging.microsoft.com ([216.32.180.16]:26880
-	"EHLO VA3EHSOBE006.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754210Ab0JOMoP (ORCPT
+	id S1755225Ab0JOMqP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Oct 2010 08:46:15 -0400
+Received: from tx2ehsobe004.messaging.microsoft.com ([65.55.88.14]:33515 "EHLO
+	TX2EHSOBE008.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754301Ab0JOMqO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Oct 2010 08:44:15 -0400
-X-SpamScore: -15
-X-BigFish: VPS-15(zzbb2cK1432N98dN4015L2f55kzz1202hzzz32i2a8h62h)
+	Fri, 15 Oct 2010 08:46:14 -0400
+X-SpamScore: -14
+X-BigFish: VPS-14(zzbb2cK1432N98dNzz1202hzz8275bh8275dhz32i2a8h62h)
 X-Spam-TCS-SCL: 1:0
-X-WSS-ID: 0LAC0P7-02-DBR-02
+X-WSS-ID: 0LAC0SR-01-5HU-02
 X-M-MSG: 
-Date: Fri, 15 Oct 2010 14:43:57 +0200
+Date: Fri, 15 Oct 2010 14:46:05 +0200
 From: Robert Richter <robert.richter@amd.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+To: Anand Gadiyar <gadiyar@ti.com>
+CC: "oprofile-list@lists.sf.net" <oprofile-list@lists.sf.net>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Matt Helsley <matthltc@us.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Matt Fleming <matt@console-pimps.org>
-Subject: Re: linux-next: manual merge of the oprofile tree with the tip tree
-Message-ID: <20101015124357.GC5969@erda.amd.com>
-References: <20101012131828.5fedf1bf.sfr@canb.auug.org.au>
+        Matt Fleming <matt@console-pimps.org>,
+        Will Deacon <will.deacon@arm.com>
+Subject: Re: [PATCH 1/2] oprofile: include platform_device.h to fix build
+ break
+Message-ID: <20101015124604.GD5969@erda.amd.com>
+References: <1287070303-32404-1-git-send-email-gadiyar@ti.com>
+ <1287070303-32404-2-git-send-email-gadiyar@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <20101012131828.5fedf1bf.sfr@canb.auug.org.au>
+In-Reply-To: <1287070303-32404-2-git-send-email-gadiyar@ti.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 X-Reverse-DNS: ausb3extmailp02.amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11.10.10 22:18:28, Stephen Rothwell wrote:
-
-> Today's linux-next merge of the oprofile tree got a conflict in
-> arch/arm/oprofile/common.c between commit
-> 38a81da2205f94e8a2a834b51a6b99c91fc7c2e8 ("perf events: Clean up pid
-> passing") from the tip tree and commit
-> 3d90a00763b51e1db344a7430c966be723b67a29 ("oprofile: Abstract the
-> perf-events backend") from the oprofile tree.
+On 14.10.10 11:31:43, Anand Gadiyar wrote:
+> oprofile_perf.c needs to include platform_device.h
+> Otherwise we get the following build break.
 > 
-> The latter moved the code modified by the former, so I used the version
-> of this file from the oprofile tree.  I also applied the effect of the
-> tip tree patch to the new file drivers/oprofile/oprofile_perf.c:
+>   CC      arch/arm/oprofile/../../../drivers/oprofile/oprofile_perf.o
+> arch/arm/oprofile/../../../drivers/oprofile/oprofile_perf.c:192: warning: 'struct platform_device' declared inside parameter list
+> arch/arm/oprofile/../../../drivers/oprofile/oprofile_perf.c:192: warning: its scope is only this definition or declaration, which is probably not what you want
+> arch/arm/oprofile/../../../drivers/oprofile/oprofile_perf.c:201: warning: 'struct platform_device' declared inside parameter list
+> arch/arm/oprofile/../../../drivers/oprofile/oprofile_perf.c:210: error: variable 'oprofile_driver' has initializer but incomplete type
+> arch/arm/oprofile/../../../drivers/oprofile/oprofile_perf.c:211: error: unknown field 'driver' specified in initializer
+> arch/arm/oprofile/../../../drivers/oprofile/oprofile_perf.c:211: error: extra brace group at end of initializer
+> arch/arm/oprofile/../../../drivers/oprofile/oprofile_perf.c:211: error: (near initialization for 'oprofile_driver')
+> arch/arm/oprofile/../../../drivers/oprofile/oprofile_perf.c:213: warning: excess elements in struct initializer
+> arch/arm/oprofile/../../../drivers/oprofile/oprofile_perf.c:213: warning: (near initialization for 'oprofile_driver')
+> arch/arm/oprofile/../../../drivers/oprofile/oprofile_perf.c:214: error: unknown field 'resume' specified in initializer
+> arch/arm/oprofile/../../../drivers/oprofile/oprofile_perf.c:214: warning: excess elements in struct initializer
+> arch/arm/oprofile/../../../drivers/oprofile/oprofile_perf.c:214: warning: (near initialization for 'oprofile_driver')
+> arch/arm/oprofile/../../../drivers/oprofile/oprofile_perf.c:215: error: unknown field 'suspend' specified in initializer
+> arch/arm/oprofile/../../../drivers/oprofile/oprofile_perf.c:215: warning: excess elements in struct initializer
+> arch/arm/oprofile/../../../drivers/oprofile/oprofile_perf.c:215: warning: (near initialization for 'oprofile_driver')
+> arch/arm/oprofile/../../../drivers/oprofile/oprofile_perf.c: In function 'init_driverfs':
+> 
+> Signed-off-by: Anand Gadiyar <gadiyar@ti.com>
+> Cc: Matt Fleming <matt@console-pimps.org>
+> Cc: Will Deacon <will.deacon@arm.com>
+> Cc: Robert Richter <robert.richter@amd.com>
 
-Stephen,
-
-I merged both trees and updated my oprofile for-next branch. They
-should merge now without conflicts.
-
-Thanks,
+I applied both patches to the oprofile/core branch. Thanks Anand.
 
 -Robert
 
