@@ -1,72 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752677Ab0JPQXX (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Oct 2010 12:23:23 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:34145 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750923Ab0JPQXW (ORCPT
+	id S1752495Ab0JPQ23 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Oct 2010 12:28:29 -0400
+Received: from canuck.infradead.org ([134.117.69.58]:37840 "EHLO
+	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750811Ab0JPQ22 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Oct 2010 12:23:22 -0400
-X-Authority-Analysis: v=1.1 cv=QISHQ+x4xS+apxgDHgAvNvlUjyrXCzYsHvuXcbPYiKg= c=1 sm=0 a=oxfdMyKVvtIA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=meVymXHHAAAA:8 a=ugVbe7CR-f__F_sOD2cA:9 a=Ww225aQhw8PxHZ6wtuYA:7 a=sAx0yup1IeeJ89cr4sbwLrkBvdcA:4 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=EdeJrhyXjyw6oHMG:21 a=oQiLyiSq-J0mkhEG:21 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: [PATCH 3/9] jump label: Fix module __init section race
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Jason Baron <jbaron@redhat.com>, Peter Zijlstra <peterz@infradead.org>
-In-Reply-To: <20101016062304.GA10748@elte.hu>
-References: <20101015200949.134732894@goodmis.org>
-	 <20101015201036.445509790@goodmis.org>
-	 <1287194942.16971.39.camel@gandalf.stny.rr.com>
-	 <20101016062304.GA10748@elte.hu>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Sat, 16 Oct 2010 12:23:19 -0400
-Message-ID: <1287246199.16971.54.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	Sat, 16 Oct 2010 12:28:28 -0400
+Date: Sat, 16 Oct 2010 12:28:25 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: Nick Piggin <npiggin@kernel.dk>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Dave Chinner <david@fromorbit.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 01/17] kernel: add bl_list
+Message-ID: <20101016162825.GA20086@infradead.org>
+References: <1285762729-17928-1-git-send-email-david@fromorbit.com>
+ <1285762729-17928-2-git-send-email-david@fromorbit.com>
+ <20100929215208.b0206460.akpm@linux-foundation.org>
+ <20101016075521.GJ19147@amd>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101016075521.GJ19147@amd>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by canuck.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2010-10-16 at 08:23 +0200, Ingo Molnar wrote:
-> * Steven Rostedt <rostedt@goodmis.org> wrote:
+On Sat, Oct 16, 2010 at 06:55:21PM +1100, Nick Piggin wrote:
+> > > +static inline void INIT_HLIST_BL_NODE(struct hlist_bl_node *h)
+> > > +{
+> > > +	h->next = NULL;
+> > > +	h->pprev = NULL;
+> > > +}
+> > 
+> > No need to shout.
 > 
-> > On Fri, 2010-10-15 at 16:09 -0400, Steven Rostedt wrote:
-> > 
-> > > --- a/kernel/jump_label.c
-> > > +++ b/kernel/jump_label.c
-> > > @@ -168,7 +168,8 @@ void jump_label_update(unsigned long key, enum jump_label_type type)
-> > >  			count = e_module->nr_entries;
-> > >  			iter = e_module->table;
-> > >  			while (count--) {
-> > > -				if (kernel_text_address(iter->code))
-> > > +				if (iter->key &&
-> > > +						kernel_text_address(iter->code))
-> > 
-> > Peter, I know you hated this, but the alternative is either:
-> > 
-> > 				if (iter->key &&
-> > 				    kernel_text_address(iter->code))
-> > 
-> > or break 80 chars. All three seem bad (although I don't mind breaking 
-> > 80 chars for this). But I'll leave it for now.
-> 
-> No, the proper alternative is to move the body of the iteration into a 
-> jump_label_update_entry() inline function ...
-> 
-> Nobody is forcing you to start yet another iteration 4 indentations 
-> deep. We have functions for a reason.
+> Just following the rest of the lists.
 
-Jason,
-
-Could you send me another version of this patch with the second
-iteration wrapped in a function.
-
-Thanks,
-
--- Steve
-
+Yes, just following hlist is logical.  Anyway, I don't think this
+or the poisoning value really matter very much.
 
