@@ -1,47 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754586Ab0JPTxX (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Oct 2010 15:53:23 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:52671 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754149Ab0JPTxW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Oct 2010 15:53:22 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Paul Stewart <pstew@google.com>
-Subject: Re: [PATCH] ath9k: Convert to new PCI PM framework
-Date: Sat, 16 Oct 2010 21:52:24 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.36-rc8-rjw+; KDE/4.4.4; x86_64; ; )
-Cc: "Luis R. Rodriguez" <lrodriguez@atheros.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "Linux-pm mailing list" <linux-pm@lists.linux-foundation.org>,
-        linux-wireless@vger.kernel.org, ath9k-devel@venema.h4ckr.net
-References: <201010160036.17653.rjw@sisk.pl> <AANLkTimXXERRCYEjzQbcii6XW8wbjNfN-eWigU7Wi_Lv@mail.gmail.com>
-In-Reply-To: <AANLkTimXXERRCYEjzQbcii6XW8wbjNfN-eWigU7Wi_Lv@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201010162152.24344.rjw@sisk.pl>
+	id S1754651Ab0JPT6K (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Oct 2010 15:58:10 -0400
+Received: from asmtpout025.mac.com ([17.148.16.100]:35056 "EHLO
+	asmtpout025.mac.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754163Ab0JPT6J (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 16 Oct 2010 15:58:09 -0400
+MIME-version: 1.0
+Content-transfer-encoding: 7BIT
+Content-type: text/plain; charset=us-ascii
+X-Proofpoint-Spam-Details: rule=notspam policy=default score=0 spamscore=0
+ ipscore=0 suspectscore=5 phishscore=0 bulkscore=0 adultscore=0 classifier=spam
+ adjust=0 reason=mlx engine=6.0.2-1004200000 definitions=main-1010160108
+X-Proofpoint-Virus-Version: vendor=fsecure
+ engine=2.50.10432:5.2.15,1.0.148,0.0.0000
+ definitions=2010-10-16_07:2010-10-15,2010-10-16,1970-01-01 signatures=0
+From: Elvis Dowson <elvis.dowson@mac.com>
+Subject: Alternate git repo servers
+Date: Sat, 16 Oct 2010 23:57:49 +0400
+Message-id: <2D81AEF9-2724-4187-8D69-1C1282ADBCC9@mac.com>
+To: Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+X-Mailer: Apple Mail (2.1081)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday, October 16, 2010, Paul Stewart wrote:
-> On Fri, Oct 15, 2010 at 3:36 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> > From: Rafael J. Wysocki <rjw@sisk.pl>
-> >
-> > The ath9k driver uses the legacy PCI power management (suspend
-> > and resume) callbacks that apparently cause intermittent problems
-> > to happen (the adapter sometimes doesn't resume correctly on my
-> > Acer Ferrari One).  Make it use the new PCI PM and let the PCI core
-> > code handle the PCI-specific details of power transitions.
-> I'm curious.  What sort of behavior did you get when the device fails
-> to resume correctly?  Every now and then I've been getting bad
-> accesses to 0x7000 every now and then -- after that any reads to PCI
-> registers return all f's.
+Hi,
+     Are there any alternate git servers for the following repos, the existing one are very slow for me (at 20kbps), while I have an 8MBps downlink speed.
 
-Yes, this sort of matches my experience.  Even the config space isn't
-really accessible after a failure to resume.
+git://git.kernel.org/pub/scm/linux/kernel/git/tmlind/linux-omap-2.6.git
 
-Thanks,
-Rafael
+git://git.kernel.org/pub/scm/linux/kernel/git/luca/wl12xx.git 
+
+Elvis Dowson
