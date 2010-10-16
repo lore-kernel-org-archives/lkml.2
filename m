@@ -1,57 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753392Ab0JPH4y (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Oct 2010 03:56:54 -0400
-Received: from ipmail06.adl2.internode.on.net ([150.101.137.129]:34726 "EHLO
+	id S1753415Ab0JPH5E (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Oct 2010 03:57:04 -0400
+Received: from ipmail06.adl2.internode.on.net ([150.101.137.129]:41809 "EHLO
 	ipmail06.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753033Ab0JPH4w (ORCPT
+	by vger.kernel.org with ESMTP id S1753214Ab0JPH5B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Oct 2010 03:56:52 -0400
+	Sat, 16 Oct 2010 03:57:01 -0400
 X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvsEAFP1uEx5LcB2/2dsb2JhbAChMXK8eIVJBA
-Date: Sat, 16 Oct 2010 18:56:50 +1100
+X-IronPort-Anti-Spam-Result: AvsEAFP1uEx5LcB2/2dsb2JhbAChMXK8eIJ3glIE
+Date: Sat, 16 Oct 2010 18:56:58 +1100
 From: Nick Piggin <npiggin@kernel.dk>
-To: Dave Chinner <david@fromorbit.com>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 07/18] exofs: use iput() for inode reference count
- decrements
-Message-ID: <20101016075650.GM19147@amd>
-References: <1286515292-15882-1-git-send-email-david@fromorbit.com>
- <1286515292-15882-8-git-send-email-david@fromorbit.com>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: Dave Chinner <david@fromorbit.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 03/18] fs: Implement lazy LRU updates for inodes.
+Message-ID: <20101016075658.GN19147@amd>
+References: <1286928961-15157-1-git-send-email-david@fromorbit.com>
+ <1286928961-15157-4-git-send-email-david@fromorbit.com>
+ <20101013133213.GC5263@infradead.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1286515292-15882-8-git-send-email-david@fromorbit.com>
+In-Reply-To: <20101013133213.GC5263@infradead.org>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 08, 2010 at 04:21:21PM +1100, Dave Chinner wrote:
-> From: Dave Chinner <dchinner@redhat.com>
+On Wed, Oct 13, 2010 at 09:32:13AM -0400, Christoph Hellwig wrote:
+> >  			 */
+> >  			redirty_tail(inode);
+> > -		} else if (atomic_read(&inode->i_count)) {
+> > -			/*
+> > -			 * The inode is clean, inuse
+> > -			 */
+> > -			list_move(&inode->i_list, &inode_in_use);
+> >  		} else {
+> > -			/*
+> > -			 * The inode is clean, unused
+> > -			 */
+> > -			list_move(&inode->i_list, &inode_unused);
+> > +			/* The inode is clean */
+> > +			list_del_init(&inode->i_list);
+> > +			inode_lru_list_add(inode);
 > 
-> Direct modification of the inode reference count is a no-no. Convert
-> the exofs decrements to call iput() instead of acting directly on
-> i_count.
+> Just noticed this when reviewing a later patch: why do we lose the
+> i_count check here?  There's no point in adding an inode that is still
+> in use onto the LRU - we'll just remove it again once we find it
+> during LRU scanning.
 
-Could this go to exofs maintainer and get merged as a bugfix?
+I did it this way because we're already holding the lock. But with the
+inode and lru lists locked seperately in a subsequent patch, it is
+better to check the count, I agree.
 
-> 
-> Signed-off-by: Dave Chinner <dchinner@redhat.com>
-> ---
->  fs/exofs/inode.c |    4 ++--
->  1 files changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/fs/exofs/inode.c b/fs/exofs/inode.c
-> index b631ff3..0fb4d4c 100644
-> --- a/fs/exofs/inode.c
-> +++ b/fs/exofs/inode.c
-> @@ -1101,7 +1101,7 @@ static void create_done(struct exofs_io_state *ios, void *p)
->  
->  	set_obj_created(oi);
->  
-> -	atomic_dec(&inode->i_count);
-> +	iput(inode);
->  	wake_up(&oi->i_wq);
->  }
->  
