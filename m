@@ -1,69 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752552Ab0JPCQN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Oct 2010 22:16:13 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:42856 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752355Ab0JPCQM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Oct 2010 22:16:12 -0400
-X-Authority-Analysis: v=1.1 cv=vbQZhf6WRU4XF+4tPWNJEMYU0N1CowIjcRZ/qR/IBDs= c=1 sm=0 a=gJRBYOTBAWgA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=qdpvMonyYMaConWHANkA:9 a=yPJJauQzswNFJ6AmKDNUDZiiK0sA:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: [PATCH 4/9] jump label: Fix deadlock b/w jump_label_mutex vs.
- text_mutex
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Jason Baron <jbaron@redhat.com>
-In-Reply-To: <1287176134.1998.113.camel@laptop>
-References: <20101015200949.134732894@goodmis.org>
-	 <20101015201036.691801067@goodmis.org>  <1287176134.1998.113.camel@laptop>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Fri, 15 Oct 2010 22:16:10 -0400
-Message-ID: <1287195370.16971.41.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1752585Ab0JPCXA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Oct 2010 22:23:00 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:12279 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752230Ab0JPCW6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Oct 2010 22:22:58 -0400
+From: Don Zickus <dzickus@redhat.com>
+To: mingo@elte.hu
+Cc: andi@firstfloor.org, robert.richter@amd.com, linux-kernel@vger.kernel.org,
+        peterz@infradead.org, ying.huang@intel.com,
+        Don Zickus <dzickus@redhat.com>
+Subject: [PATCH 0/5] x86, NMI: give NMI handler a face-lift
+Date: Fri, 15 Oct 2010 22:22:13 -0400
+Message-Id: <1287195738-3136-1-git-send-email-dzickus@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-10-15 at 22:55 +0200, Peter Zijlstra wrote:
-> On Fri, 2010-10-15 at 16:09 -0400, Steven Rostedt wrote:
-> > +void jump_label_lock(void)
-> > +{
-> > +       mutex_lock(&jump_label_mutex);
-> > +}
-> > +
-> 
-> > +++ b/kernel/kprobes.c
-> > @@ -1145,13 +1145,16 @@ int __kprobes register_kprobe(struct kprobe *p)
-> >                 return ret;
-> >  
-> >         preempt_disable();
-> > +       jump_label_lock();
-> 
-> How exactly does that work?
+Restructuring the nmi handler to be more readable and simpler.
 
-Ouch! Good catch!
+This is just laying the ground work for future improvements in this area.
 
-I'll do the James Bottomley and blame jet lag ;-)
+I know people were complaining about having DIE_NMI and DIE_NMI_IPI, but
+for now it is consistent with what was there before.  Hopefully, we can
+modify the notifier chain to make it smarter and combine the two events.
 
--- Steve
+I also left out one of Huang's patch until we figure out how we are going
+to proceed with a new notifier.
 
-> 
-> >         if (!kernel_text_address((unsigned long) p->addr) ||
-> >             in_kprobes_functions((unsigned long) p->addr) ||
-> >             ftrace_text_reserved(p->addr, p->addr) ||
-> >             jump_label_text_reserved(p->addr, p->addr)) {
-> >                 preempt_enable();
-> > +               jump_label_unlock();
-> >                 return -EINVAL;
-> >         }
-> > +       jump_label_unlock(); 
+Tested 32-bit and 64-bit on AMD and Intel machines.
 
+Cheers,
+Don
+
+Huang Ying (5):
+  x86, NMI: Add NMI symbol constants and rename memory parity to PCI
+    SERR
+  x86, NMI: Add touch_nmi_watchdog to io_check_error delay
+  x86, NMI: Rewrite NMI handler
+  x86, NMI: Allow NMI reason io port (0x61) to be processed on any CPU
+  x86, NMI: Remove do_nmi_callback logic
+
+ arch/x86/include/asm/mach_traps.h |   12 +++-
+ arch/x86/include/asm/nmi.h        |   10 +++-
+ arch/x86/kernel/apic/hw_nmi.c     |    1 -
+ arch/x86/kernel/apic/nmi.c        |   29 +-------
+ arch/x86/kernel/cpu/perf_event.c  |    1 -
+ arch/x86/kernel/traps.c           |  141 ++++++++++++++++++++----------------
+ arch/x86/oprofile/nmi_int.c       |    1 -
+ arch/x86/oprofile/nmi_timer_int.c |    2 +-
+ drivers/char/ipmi/ipmi_watchdog.c |    2 +-
+ drivers/watchdog/hpwdt.c          |    2 +-
+ 10 files changed, 102 insertions(+), 99 deletions(-)
+
+-- 
+1.7.2.3
 
