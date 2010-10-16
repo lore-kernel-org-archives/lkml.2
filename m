@@ -1,54 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751498Ab0JPOsS (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Oct 2010 10:48:18 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:54202 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750776Ab0JPOsQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Oct 2010 10:48:16 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:content-type:date:message-id:mime-version
-         :x-mailer:content-transfer-encoding;
-        b=JSRoqY79tE1WQjJ0R33E7DWY/qMyz3DLp0rCzDeNs7q4D7fX+7ZpHnyxa07Ke1XNrT
-         rRGfOZDhLTJ/I9X5tSFC8GzHy4325xVP3WavxEcwhrCmlooaso/VJMChLs4NkfyvKdKv
-         EOA7ctGaJKANRZEy8vPFjtIVGctpoUzVGgT+Y=
-Subject: [PATCH] USB: imx21-hcd - fix off by one resource size calculation
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel <linux-kernel@vger.kernel.org>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>, Martin Fuzzey <mfuzzey@gmail.com>,
-        linux-usb@vger.kernel.org
-Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 16 Oct 2010 22:48:08 +0800
-Message-ID: <1287240488.2831.1.camel@phoenix>
+	id S1751583Ab0JPPGn (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Oct 2010 11:06:43 -0400
+Received: from xenotime.net ([72.52.115.56]:48266 "HELO xenotime.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1750965Ab0JPPGl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 16 Oct 2010 11:06:41 -0400
+Date: Sat, 16 Oct 2010 08:06:37 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+To: "werner" <w.landgraf@ru.ru>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: 2.6.36-rc1 problems
+Message-Id: <20101016080637.dd74533f.rdunlap@xenotime.net>
+In-Reply-To: <web-387129929@zbackend1.aha.ru>
+References: <web-387129929@zbackend1.aha.ru>
+Organization: YPO4
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
+Hi,
+
+2 things:
+
+a.  Please test & report on something more current.
+
+b.  Please post errors & warnings so that they are listed without extra
+line breaks.  This is messy.
+
+
+On Fri, 15 Oct 2010 19:23:38 -0400 werner wrote:
+
+> drivers/staging/comedi/drivers/das08_cs.c:225: error: 
+> 'struct pcmcia_device' has
+> no member named 'io'
+
+That should all be on one (long) line.
+
 ---
- drivers/usb/host/imx21-hcd.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/usb/host/imx21-hcd.c b/drivers/usb/host/imx21-hcd.c
-index 2264c99..e49b75a 100644
---- a/drivers/usb/host/imx21-hcd.c
-+++ b/drivers/usb/host/imx21-hcd.c
-@@ -1906,7 +1906,7 @@ failed_clock_set:
- failed_clock_get:
- 	iounmap(imx21->regs);
- failed_ioremap:
--	release_mem_region(res->start, res->end - res->start);
-+	release_mem_region(res->start, resource_size(res));
- failed_request_mem:
- 	remove_debug_files(imx21);
- 	usb_put_hcd(hcd);
--- 
-1.7.0.4
-
-
-
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
