@@ -1,89 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752486Ab0JPBnu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Oct 2010 21:43:50 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:63273 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752339Ab0JPBnt (ORCPT
+	id S1752532Ab0JPBof (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Oct 2010 21:44:35 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:58426 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752404Ab0JPBoe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Oct 2010 21:43:49 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=DwcTyY8keK1AtBmdbK4JfE/ubMok2f6cSQixTXAjOSlQT6+zrN+9weYZCs6tiEOBnp
-         6k6JEmjpbjwRVpCrCzZYlE/hC44vkh5EaE4GgSDIivqd3/f5G13fMRQQeZsi4njd+yJ3
-         PxIVIsXFjWCgjYRIrjX2Wz8m847WxK3jAepWU=
-From: Marek Belisko <marek.belisko@gmail.com>
-To: Greg Kroah-Hartman <gregkh@suse.de>,
-        Marek Belisko <marek.belisko@gmail.com>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Cc: Marek Belisko <marek.belisko@gmail.com>
-Subject: [PATCH 1/7] staging:ft1000: Remove MEDIAMSG typedef usage.
-Date: Fri, 15 Oct 2010 14:12:58 +0200
-Message-Id: <1287144784-3359-1-git-send-email-marek.belisko@gmail.com>
-X-Mailer: git-send-email 1.7.1
+	Fri, 15 Oct 2010 21:44:34 -0400
+Date: Sat, 16 Oct 2010 02:44:30 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Kyle McMartin <kyle@mcmartin.ca>
+Cc: torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
+        takata@linux-m32r.org, linux-m32r@ml.linux-m32r.org
+Subject: Re: [PATCH 2/4] m32r: get_user takes an lvalue, not a pointer
+Message-ID: <20101016014430.GS19804@ZenIV.linux.org.uk>
+References: <20101016010952.GQ8332@bombadil.infradead.org>
+ <20101016011709.GT8332@bombadil.infradead.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101016011709.GT8332@bombadil.infradead.org>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Marek Belisko <marek.belisko@gmail.com>
----
- drivers/staging/ft1000/ft1000-usb/ft1000_hw.c  |    4 ++--
- drivers/staging/ft1000/ft1000-usb/ft1000_usb.h |    5 ++---
- 2 files changed, 4 insertions(+), 5 deletions(-)
+On Fri, Oct 15, 2010 at 09:17:09PM -0400, Kyle McMartin wrote:
+>  static int prev_insn(struct pt_regs *regs)
+>  {
+>  	u16 inst;
+> -	if (get_user(&inst, (u16 __user *)(regs->bpc - 2)))
+> +	if (get_user(inst, (u16 __user *)(regs->bpc - 2)))
 
-diff --git a/drivers/staging/ft1000/ft1000-usb/ft1000_hw.c b/drivers/staging/ft1000/ft1000-usb/ft1000_hw.c
-index e98db30..f88dcf0 100644
---- a/drivers/staging/ft1000/ft1000-usb/ft1000_hw.c
-+++ b/drivers/staging/ft1000/ft1000-usb/ft1000_hw.c
-@@ -1836,7 +1836,7 @@ static int ft1000_proc_drvmsg (struct ft1000_device *dev, u16 size) {
- 	FT1000_INFO *info = (FT1000_INFO *) netdev_priv (dev->net);
-     u16 msgtype;
-     u16 tempword;
--    PMEDIAMSG pmediamsg;
-+	struct media_msg *pmediamsg;
-     PDSPINITMSG pdspinitmsg;
-     PDRVMSG pdrvmsg;
-     u16 i;
-@@ -1879,7 +1879,7 @@ static int ft1000_proc_drvmsg (struct ft1000_device *dev, u16 size) {
-             case MEDIA_STATE: {
-                 DEBUG("ft1000_proc_drvmsg:Command message type = MEDIA_STATE");
- 
--                pmediamsg = (PMEDIAMSG)&cmdbuffer[0];
-+		pmediamsg = (struct media_msg *)&cmdbuffer[0];
-                 if (info->ProgConStat != 0xFF) {
-                     if (pmediamsg->state) {
-                         DEBUG("Media is up\n");
-diff --git a/drivers/staging/ft1000/ft1000-usb/ft1000_usb.h b/drivers/staging/ft1000/ft1000-usb/ft1000_usb.h
-index ee54372..bfd43fd 100644
---- a/drivers/staging/ft1000/ft1000-usb/ft1000_usb.h
-+++ b/drivers/staging/ft1000/ft1000-usb/ft1000_usb.h
-@@ -51,7 +51,7 @@
- 
- 
- 
--typedef struct _MEDIAMSG {
-+struct media_msg {
- 	PSEUDO_HDR pseudo;
- 	u16 type;
- 	u16 length;
-@@ -61,7 +61,7 @@ typedef struct _MEDIAMSG {
- 	u32 gateway;
- 	u32 dns_1;
- 	u32 dns_2;
--} __attribute__ ((packed)) MEDIAMSG, *PMEDIAMSG;
-+} __attribute__ ((packed));
- 
- typedef struct _DSPINITMSG {
-     PSEUDO_HDR pseudo;
-@@ -97,7 +97,6 @@ typedef struct _PROV_RECORD {
- } PROV_RECORD, *PPROV_RECORD;
- 
- /*end of Jim*/
--
- #define DEBUG(args...) printk(KERN_INFO args)
- 
- #define UCHAR               u8
--- 
-1.7.1
-
+Ouch...  ACKed, my fuckup.
