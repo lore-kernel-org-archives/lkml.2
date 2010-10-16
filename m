@@ -1,71 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754149Ab0JPVJ1 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Oct 2010 17:09:27 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:51361 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752744Ab0JPVJ0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Oct 2010 17:09:26 -0400
-Date: Sat, 16 Oct 2010 14:10:19 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: "Ted Ts'o" <tytso@mit.edu>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: jbd2: Convert jbd2_slab_create_sem to mutex
-Message-Id: <20101016141019.a7bb4d83.akpm@linux-foundation.org>
-In-Reply-To: <alpine.LFD.2.00.1010162231480.2496@localhost6.localdomain6>
-References: <alpine.LFD.2.00.1010162231480.2496@localhost6.localdomain6>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1754528Ab0JPVLe (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Oct 2010 17:11:34 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:57159 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753341Ab0JPVLd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 16 Oct 2010 17:11:33 -0400
+X-User-Agent: K-9 Mail for Android
+References: <20101016065206.GO4681@dastard> <20101016192027.GA6883@infradead.org>
+In-Reply-To: <20101016192027.GA6883@infradead.org>
+MIME-Version: 1.0
+Content-Type: text/plain;
+ charset=utf-8
+Content-Transfer-Encoding: 8bit
+Subject: Re: ima: use of radix tree cache indexing == massive waste of memory?
+From: "H. Peter Anvin" <hpa@zytor.com>
+Date: Sat, 16 Oct 2010 14:10:29 -0700
+To: Christoph Hellwig <hch@infradead.org>, Dave Chinner <david@fromorbit.com>
+CC: linux-kernel@vger.kernel.org, Mimi Zohar <zohar@us.ibm.com>,
+        warthog9@kernel.org, devel@lists.fedoraprojet.org
+Message-ID: <ebc4973c-6c11-4397-b8b0-c212a27abce4@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 16 Oct 2010 22:34:39 +0200 (CEST) Thomas Gleixner <tglx@linutronix.de> wrote:
+I'm confused ... what makes you think we are?  This might have been an unintentional misconfiguration...
 
-> jbd2_slab_create_sem is used as a mutex, so make it one.
-> 
-> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-> ---
->  fs/jbd2/journal.c |    8 ++++----
->  1 file changed, 4 insertions(+), 4 deletions(-)
-> 
-> Index: linux-next/fs/jbd2/journal.c
-> ===================================================================
-> --- linux-next.orig/fs/jbd2/journal.c
-> +++ linux-next/fs/jbd2/journal.c
-> @@ -1838,7 +1838,7 @@ size_t journal_tag_bytes(journal_t *jour
->   */
->  #define JBD2_MAX_SLABS 8
->  static struct kmem_cache *jbd2_slab[JBD2_MAX_SLABS];
-> -static DECLARE_MUTEX(jbd2_slab_create_sem);
-> +static DEFINE_MUTEX(jbd2_slab_create_mutex);
->  
->  static const char *jbd2_slab_names[JBD2_MAX_SLABS] = {
->  	"jbd2_1k", "jbd2_2k", "jbd2_4k", "jbd2_8k",
-> @@ -1870,16 +1870,16 @@ static int jbd2_journal_create_slab(size
->  
->  	if (unlikely(i < 0))
->  		i = 0;
-> -	down(&jbd2_slab_create_sem);
-> +	mutex_lock(&jbd2_slab_create_mutex);
->  	if (jbd2_slab[i]) {
-> -		up(&jbd2_slab_create_sem);
-> +		mutex_unlock(&jbd2_slab_create_mutex);
->  		return 0;	/* Already created */
->  	}
->  
->  	slab_size = 1 << (i+10);
->  	jbd2_slab[i] = kmem_cache_create(jbd2_slab_names[i], slab_size,
->  					 slab_size, 0, NULL);
-> -	up(&jbd2_slab_create_sem);
-> +	mutex_unlock(&jbd2_slab_create_mutex);
->  	if (!jbd2_slab[i]) {
->  		printk(KERN_EMERG "JBD2: no memory for jbd2_slab cache\n");
->  		return -ENOMEM;
+"Christoph Hellwig" <hch@infradead.org> wrote:
 
-gad, whodidthat.
+>Besides the algorithmic problems with ima, why is kernel.org using
+>IMA to start with?  Except for IBM looking for a reason to jusity why
+>TPM isn't a completely waster of ressources it's pointless.  And it was
+>only merged under the premise that it would not affect innocent normal
+>users.
+>
 
-We may as well make it local to jbd2_journal_create_slab() also.
+-- 
+Sent from my mobile phone.  Please pardon any lack of formatting.
