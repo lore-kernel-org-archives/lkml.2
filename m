@@ -1,51 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753567Ab0JPH5U (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Oct 2010 03:57:20 -0400
-Received: from ipmail06.adl2.internode.on.net ([150.101.137.129]:41809 "EHLO
+	id S1753639Ab0JPH5d (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Oct 2010 03:57:33 -0400
+Received: from ipmail06.adl2.internode.on.net ([150.101.137.129]:41874 "EHLO
 	ipmail06.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753502Ab0JPH5S (ORCPT
+	by vger.kernel.org with ESMTP id S1753375Ab0JPH5a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Oct 2010 03:57:18 -0400
+	Sat, 16 Oct 2010 03:57:30 -0400
 X-IronPort-Anti-Spam-Filtered: true
 X-IronPort-Anti-Spam-Result: AvsEAFP1uEx5LcB2/2dsb2JhbAChMXK8eIVJBI9K
-Date: Sat, 16 Oct 2010 18:57:17 +1100
+Date: Sat, 16 Oct 2010 18:57:28 +1100
 From: Nick Piggin <npiggin@kernel.dk>
 To: Dave Chinner <david@fromorbit.com>
 Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 17/18] fs: icache remove inode_lock
-Message-ID: <20101016075717.GR19147@amd>
-References: <1286515292-15882-1-git-send-email-david@fromorbit.com>
- <1286515292-15882-18-git-send-email-david@fromorbit.com>
+Subject: Re: [PATCH 18/18] fs: do not assign default i_ino in new_inode
+Message-ID: <20101016075728.GT19147@amd>
+References: <1286928961-15157-1-git-send-email-david@fromorbit.com>
+ <1286928961-15157-19-git-send-email-david@fromorbit.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1286515292-15882-18-git-send-email-david@fromorbit.com>
+In-Reply-To: <1286928961-15157-19-git-send-email-david@fromorbit.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 08, 2010 at 04:21:31PM +1100, Dave Chinner wrote:
-> From: Dave Chinner <dchinner@redhat.com>
+On Wed, Oct 13, 2010 at 11:16:01AM +1100, Dave Chinner wrote:
+> From: Christoph Hellwig <hch@lst.de>
 > 
-> All the functionality that the inode_lock protected has now been
-> wrapped up in new independent locks and/or functionality. Hence the
-> inode_lock does not serve a purpose any longer and hence can now be
-> removed.
-> 
-> Based on work originally done by Nick Piggin.
+> Instead of always assigning an increasing inode number in new_inode
+> move the call to assign it into those callers that actually need it.
+> For now callers that need it is estimated conservatively, that is
+> the call is added to all filesystems that do not assign an i_ino
+> by themselves.  For a few more filesystems we can avoid assigning
+> any inode number given that they aren't user visible, and for others
+> it could be done lazily when an inode number is actually needed,
+> but that's left for later patches.
 
-I don't really agree with how this is structured, doing lock splitups
-and changes and things under the inode_lock and then lifting it here.
-
-If nothing else, than the practical implication that any locking
-problem in the patchset is going to bisect down to this patch.
-
-My approach of being ultra conservative in the initial breaking steps,
-then removing inode_lock, then implementing more aggressive locking
-and less trivial transforms IMO is the better way to go. It has worked
-very well for me doing both the inode and the dcache work, and it has
-made it easy to understand and debug.
-
+My patch for this reduces churn by just adding a new function instead.
+The last_ino allocator is really fast now, so IMO it was not worth
+the churn to go through filesystems; just let them do it.
 
