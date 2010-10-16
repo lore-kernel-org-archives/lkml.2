@@ -1,82 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754998Ab0JPUFU (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Oct 2010 16:05:20 -0400
-Received: from netrider.rowland.org ([192.131.102.5]:57216 "HELO
-	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754627Ab0JPUFR (ORCPT
+	id S1754757Ab0JPU01 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Oct 2010 16:26:27 -0400
+Received: from asmtpout030.mac.com ([17.148.16.105]:36610 "EHLO
+	asmtpout030.mac.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754121Ab0JPU0Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Oct 2010 16:05:17 -0400
-Date: Sat, 16 Oct 2010 16:05:17 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@netrider.rowland.org
-To: Stefan Richter <stefanr@s5r6.in-berlin.de>
-cc: David Brownell <david-b@pacbell.net>, USB list <linux-usb@vger.kernel.org>,
-        Kernel development list <linux-kernel@vger.kernel.org>
-Subject: Re: 2.6.36-rc7: NULL pointer dereference in ehci_clear_tt_buffer_complete
-In-Reply-To: <4CBA0089.2060700@s5r6.in-berlin.de>
-Message-ID: <Pine.LNX.4.44L0.1010161600240.21391-100000@netrider.rowland.org>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Sat, 16 Oct 2010 16:26:25 -0400
+MIME-version: 1.0
+Content-transfer-encoding: 7BIT
+Content-type: text/plain; charset=us-ascii
+X-Proofpoint-Spam-Details: rule=notspam policy=default score=0 spamscore=0
+ ipscore=0 suspectscore=5 phishscore=0 bulkscore=0 adultscore=0 classifier=spam
+ adjust=0 reason=mlx engine=6.0.2-1004200000 definitions=main-1010160114
+X-Proofpoint-Virus-Version: vendor=fsecure
+ engine=2.50.10432:5.2.15,1.0.148,0.0.0000
+ definitions=2010-10-16_07:2010-10-15,2010-10-16,1970-01-01 signatures=0
+Subject: Re: Alternate git repo servers
+From: Elvis Dowson <elvis.dowson@mac.com>
+In-reply-to: <2D81AEF9-2724-4187-8D69-1C1282ADBCC9@mac.com>
+Date: Sun, 17 Oct 2010 00:25:44 +0400
+Message-id: <7B26AF36-809D-4044-AC14-0CB7985E2D50@mac.com>
+References: <2D81AEF9-2724-4187-8D69-1C1282ADBCC9@mac.com>
+To: Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+X-Mailer: Apple Mail (2.1081)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 16 Oct 2010, Stefan Richter wrote:
+Hi,
 
-> Alan Stern wrote:
-> > On Thu, 14 Oct 2010, Stefan Richter wrote:
-> > 
-> >> Alan Stern wrote:
-> >>> Stefan, is it possible for you to tell whether this really does work?
-> >> That will be hard.  So far I was unable to reproduce the oops; still running
-> >> unmodified 2.6.36-rc7.
-> > 
-> > Was this on an SMP machine?
+On Oct 16, 2010, at 11:57 PM, Elvis Dowson wrote:
+
+> Are there any alternate git servers for the following repos, the existing one are very slow for me (at 20kbps), while I have an 8MBps downlink speed.
 > 
-> Yes.
+> git://git.kernel.org/pub/scm/linux/kernel/git/tmlind/linux-omap-2.6.git
 > 
-> > If yes, the untested patch below may help
-> > trigger the oops.  To use it, insert (but don't mount) a memory card
-> > into the card reader, and use dd to copy a large amount of data from
-> > the card to /dev/null.  While that's running, unplug either the monitor
-> > or the card reader.  You may want to do this at a VT console so you can
-> > see directly when the delay occurs.
-> > 
-> > Alan Stern
-> > 
-> > 
-> > 
-> > Index: usb-2.6/drivers/usb/core/message.c
-> > ===================================================================
-> > --- usb-2.6.orig/drivers/usb/core/message.c
-> > +++ usb-2.6/drivers/usb/core/message.c
-> > @@ -323,8 +323,13 @@ static void sg_complete(struct urb *urb)
-> >  	/* on the last completion, signal usb_sg_wait() */
-> >  	io->bytes += urb->actual_length;
-> >  	io->count--;
-> > -	if (!io->count)
-> > +	if (!io->count) {
-> > +		if (status == -ECONNRESET) {
-> > +			printk(KERN_ERR "Delaying for test\n");
-> > +			mdelay(600);
-> > +		}
-> >  		complete(&io->complete);
-> > +	}
-> >  
-> >  	spin_unlock(&io->lock);
-> >  }
-> > 
-> 
-> I did so today on 2.6.36-rc8, without your other patch.  I was still unable to
-> reproduce the bug.  Forget the whole thing as unreproducible?
+> git://git.kernel.org/pub/scm/linux/kernel/git/luca/wl12xx.git 
 
-What I said above wasn't quite right.  This won't help trigger the 
-oops, but it should trigger the line saying something like
+I just tried switching protocols from git to http, and http works with a 938KiB/s download rate, compared to 20KiB/s using the git protocol. 
 
-	ehci_hcd 0000:00:12.2: qh ffff880208f07af0 (#00) state 5
+Kinda of the opposite of what one would expect. 
 
-That's the real bug.
-
-Alan Stern
-
+Elvis Dowson
