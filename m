@@ -1,73 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754968Ab0JPVMR (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Oct 2010 17:12:17 -0400
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:34695 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753341Ab0JPVMQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Oct 2010 17:12:16 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=Rra2irbrkC/A9NYc7JFw99+rTAXlHJf1n9Wp/8GKjPpIe//J70FrRl+YbxTnqMLFSa
-         L4UqKXVGkSc0aua4FEZy+rXWjonhDxpG0GjEVmOP7wi4dfdqLzJ/qc05agU5HOEUGMBA
-         ewLYEMCyJhKgy6aH1bOIFT+w+5B6LQmctdhlI=
-MIME-Version: 1.0
-In-Reply-To: <4CB9DA37.6080504@gmail.com>
-References: <1287235613-1545-1-git-send-email-tdent48227@gmail.com>
-	<1287235613-1545-2-git-send-email-tdent48227@gmail.com>
-	<4CB9D854.7050806@gmail.com>
-	<4CB9DA37.6080504@gmail.com>
-Date: Sat, 16 Oct 2010 17:12:15 -0400
-Message-ID: <AANLkTimgXSNPrQwnDoPhERmc+JsK50x0uEmrD5kq+wux@mail.gmail.com>
-Subject: Re: [PATCH 02/05] Drivers: char: impi: Makefile: replace the use of
- <module>-objs with <module>-y
-From: Tracey Dent <tdent48227@gmail.com>
-To: Jiri Slaby <jirislaby@gmail.com>
-Cc: gregkh@suse.de, alan@lxorguk.ukuu.org.uk, akpm@linux-foundation.org,
-        mhw@wittsend.com, minyard@acm.org,
-        openipmi-developer@lists.sourceforge.net, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1755711Ab0JPVUL (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Oct 2010 17:20:11 -0400
+Received: from smtp.gentoo.org ([140.211.166.183]:47325 "EHLO smtp.gentoo.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754164Ab0JPVUJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 16 Oct 2010 17:20:09 -0400
+From: Mike Frysinger <vapier@gentoo.org>
+To: linux-mmc@vger.kernel.org, Adrian Hunter <adrian.hunter@nokia.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: uclinux-dist-devel@blackfin.uclinux.org, linux-kernel@vger.kernel.org,
+        David Brownell <dbrownell@users.sourceforge.net>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Anton Vorontsov <avorontsov@mvista.com>,
+        Ernst Schwab <eschwab@online.de>, Sonic Zhang <sonic.zhang@analog.com>,
+        Chris Ball <cjb@laptop.org>
+Subject: [PATCH] MMC:mmc_spi: Recover from CRC error for SD read/write operation over SPI.
+Date: Sat, 16 Oct 2010 17:19:36 -0400
+Message-Id: <1287263976-9578-1-git-send-email-vapier@gentoo.org>
+X-Mailer: git-send-email 1.7.3.1
+In-Reply-To: <20100827203639.GT23079@void.printf.net>
+References: <20100827203639.GT23079@void.printf.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/16/10, Jiri Slaby <jirislaby@gmail.com> wrote:
-> On 10/16/2010 06:52 PM, Jiri Slaby wrote:
->> On 10/16/2010 03:26 PM, Tracey Dent wrote:
->>> Changed <module>-objs to <module>-y in Makefile.
->>>
->>> Signed-off-by: Tracey Dent <tdent48227@gmail.com>
->>> ---
->>>  drivers/char/ipmi/Makefile |    2 +-
->>>  1 files changed, 1 insertions(+), 1 deletions(-)
->>>
->>> diff --git a/drivers/char/ipmi/Makefile b/drivers/char/ipmi/Makefile
->>> index eb8a1a8..16a9364 100644
->>> --- a/drivers/char/ipmi/Makefile
->>> +++ b/drivers/char/ipmi/Makefile
->>> @@ -2,7 +2,7 @@
->>>  # Makefile for the ipmi drivers.
->>>  #
->>>
->>> -ipmi_si-objs := ipmi_si_intf.o ipmi_kcs_sm.o ipmi_smic_sm.o ipmi_bt_sm.o
->>> +ipmi_si-y := ipmi_si_intf.o ipmi_kcs_sm.o ipmi_smic_sm.o ipmi_bt_sm.o
->>
->> NACK (and all of these). This will try to build 4 modules instead of
->> one. Read Documentation/kbuild/makefiles.txt
->
-> Please disregard my NACK, I misread the patch.
->
+From: Sonic Zhang <sonic.zhang@analog.com>
 
-Okay, no problem. So instead of getting your NACK does it get a ACK by you?
+SPI bus is not reliable on all platforms when doing large data transfer.
+Current mmc spi driver fails SD read/write command immediately, if
+occasional CRC error is reported by SD device. This patch makes the
+operation recover from the CRC error by doing last SD command again.
+The retry count is set to 5 to ensure the driver pass any stress test.
 
-> regards,
-> --
-> js
->
+Signed-off-by: Sonic Zhang <sonic.zhang@analog.com>
+[cjb: fixed merge conflict against current Linus]
+Signed-off-by: Chris Ball <cjb@laptop.org>
+Signed-off-by: Mike Frysinger <vapier@gentoo.org>
+---
+Andrew: we posted this months ago with no feedback ... could you pick it up ?
 
-Thanks,
+ drivers/mmc/host/mmc_spi.c |   22 ++++++++++++++++++++++
+ 1 files changed, 22 insertions(+), 0 deletions(-)
 
-Tracey D
+diff --git a/drivers/mmc/host/mmc_spi.c b/drivers/mmc/host/mmc_spi.c
+index 62a3582..fbd673e 100644
+--- a/drivers/mmc/host/mmc_spi.c
++++ b/drivers/mmc/host/mmc_spi.c
+@@ -1055,6 +1055,8 @@ static void mmc_spi_request(struct mmc_host *mmc, struct mmc_request *mrq)
+ {
+ 	struct mmc_spi_host	*host = mmc_priv(mmc);
+ 	int			status = -EINVAL;
++	int			crc_retry = 5;
++	struct mmc_command	stop;
+ 
+ #ifdef DEBUG
+ 	/* MMC core and layered drivers *MUST* issue SPI-aware commands */
+@@ -1087,10 +1089,30 @@ static void mmc_spi_request(struct mmc_host *mmc, struct mmc_request *mrq)
+ 	/* request exclusive bus access */
+ 	spi_bus_lock(host->spi->master);
+ 
++ crc_recover:
+ 	/* issue command; then optionally data and stop */
+ 	status = mmc_spi_command_send(host, mrq, mrq->cmd, mrq->data != NULL);
+ 	if (status == 0 && mrq->data) {
+ 		mmc_spi_data_do(host, mrq->cmd, mrq->data, mrq->data->blksz);
++
++		/*
++		 * SPI bus is not reliable when doing large data transfer.
++		 * If occasional crc error is reported by SD device when do
++		 * data read/write over SPI, it can be recovered by doing
++		 * last SD command again. The retry count is set to 5 to
++		 * ensure the driver pass any stress test.
++		 */
++		if (mrq->data->error == -EILSEQ && crc_retry) {
++			stop.opcode = MMC_STOP_TRANSMISSION;
++			stop.arg = 0;
++			stop.flags = MMC_RSP_SPI_R1B | MMC_RSP_R1B | MMC_CMD_AC;
++
++			status = mmc_spi_command_send(host, mrq, &stop, 0);
++			crc_retry--;
++			mrq->data->error = 0;
++			goto crc_recover;
++		}
++
+ 		if (mrq->stop)
+ 			status = mmc_spi_command_send(host, mrq, mrq->stop, 0);
+ 		else
+-- 
+1.7.3.1
+
