@@ -1,45 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754099Ab0JPS6e (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Oct 2010 14:58:34 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:35291
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753612Ab0JPS6d (ORCPT
+	id S1754087Ab0JPTUc (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Oct 2010 15:20:32 -0400
+Received: from canuck.infradead.org ([134.117.69.58]:50368 "EHLO
+	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753682Ab0JPTUb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Oct 2010 14:58:33 -0400
-Date: Sat, 16 Oct 2010 11:58:55 -0700 (PDT)
-Message-Id: <20101016.115855.179956240.davem@davemloft.net>
-To: randy.dunlap@oracle.com
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        akpm@linux-foundation.org, jgarzik@pobox.com
-Subject: Re: [PATCH -next] net: move MII outside of NET_ETHERNET, fix
- kconfig warning
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20101013181859.fc3a96fd.randy.dunlap@oracle.com>
-References: <20101013181859.fc3a96fd.randy.dunlap@oracle.com>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Sat, 16 Oct 2010 15:20:31 -0400
+Date: Sat, 16 Oct 2010 15:20:27 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: Dave Chinner <david@fromorbit.com>
+Cc: linux-kernel@vger.kernel.org, Mimi Zohar <zohar@us.ibm.com>,
+        warthog9@kernel.org, hpa@zytor.com, devel@lists.fedoraprojet.org
+Subject: Re: ima: use of radix tree cache indexing == massive waste of memory?
+Message-ID: <20101016192027.GA6883@infradead.org>
+References: <20101016065206.GO4681@dastard>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101016065206.GO4681@dastard>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by canuck.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Randy Dunlap <randy.dunlap@oracle.com>
-Date: Wed, 13 Oct 2010 18:18:59 -0700
+Besides the algorithmic problems with ima, why is kernel.org using
+IMA to start with?  Except for IBM looking for a reason to jusity why
+TPM isn't a completely waster of ressources it's pointless.  And it was
+only merged under the premise that it would not affect innocent normal
+users.
 
-> From: Randy Dunlap <randy.dunlap@oracle.com>
-> 
-> We have USB, PCMCIA, and gigabit ethernet drivers that select
-> MII even though NET_ETHERNET is not enabled, so make MII not
-> be dependent on NET_ETHERNET.  It is still dependent on NET
-> and NETDEVICES.
-> 
-> Fixes kconfig unmet dependency warning (shortened, was very long string):
- ...
-> Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
-> Acked-by: Jeff Garzik <jgarzik@pobox.com> [2006-NOV-30]
-
-Applied, and I added your infiniband patch too.
-
-Thanks Randy.
