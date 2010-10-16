@@ -1,86 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756554Ab0JPW0a (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Oct 2010 18:26:30 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:52470 "EHLO smtps.tip.net.au"
+	id S1756636Ab0JPWaI (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Oct 2010 18:30:08 -0400
+Received: from smtp.gentoo.org ([140.211.166.183]:48999 "EHLO smtp.gentoo.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756371Ab0JPW03 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Oct 2010 18:26:29 -0400
-Date: Sun, 17 Oct 2010 09:26:21 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Linux Kernel Development <linux-kernel@vger.kernel.org>
-Subject: Re: Build regressions/improvements in v2.6.36-rc8
-Message-Id: <20101017092621.67ac74e0.sfr@canb.auug.org.au>
-In-Reply-To: <alpine.DEB.2.00.1010161722120.30415@ayla.of.borg>
-References: <alpine.DEB.2.00.1010161656590.12912@ayla.of.borg>
-	<alpine.DEB.2.00.1010161722120.30415@ayla.of.borg>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Sun__17_Oct_2010_09_26_21_+1100_m/pDEIFo7/P.Q_Rf"
+	id S1756379Ab0JPWaH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 16 Oct 2010 18:30:07 -0400
+From: Mike Frysinger <vapier@gentoo.org>
+To: linux-bluetooth@vger.kernel.org, Marcel Holtmann <marcel@holtmann.org>
+Cc: uclinux-dist-devel@blackfin.uclinux.org, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        steven miao <realmz6@gmail.com>
+Subject: [PATCH] bluetooth: fix unaligned access to l2cap conf data
+Date: Sat, 16 Oct 2010 18:29:47 -0400
+Message-Id: <1287268187-9628-1-git-send-email-vapier@gentoo.org>
+X-Mailer: git-send-email 1.7.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Sun__17_Oct_2010_09_26_21_+1100_m/pDEIFo7/P.Q_Rf
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+From: steven miao <realmz6@gmail.com>
 
-Hi Geert,
+In function l2cap_get_conf_opt() and l2cap_add_conf_opt() the address of
+opt->val sometimes is not at the edge of 2-bytes/4-bytes, so 2-bytes/4 bytes
+access will cause data misalignment exeception.  Use get_unaligned_le16/32
+and put_unaligned_le16/32 function to avoid data misalignment execption.
 
-On Sat, 16 Oct 2010 17:31:34 +0200 (CEST) Geert Uytterhoeven <geert@linux-m=
-68k.org> wrote:
->
-> On Sat, 16 Oct 2010, Geert Uytterhoeven wrote:
-> > 162 regressions:
-> > 	src/fs/9p/vfs_inode.c: error: implicit declaration of function 'inode_=
-setattr':  =3D> 1267
-> > 	src/include/linux/vgaarb.h: error: asm/vga.h: No such file or director=
-y:  =3D> 34:21
->=20
-> These two are reported for m68k/allmodconfig:
-> http://kisskb.ellerman.id.au/kisskb/buildresult/3387901/, but I cannot
-> reproduce them.
+Signed-off-by: steven miao <realmz6@gmail.com>
+Signed-off-by: Mike Frysinger <vapier@gentoo.org>
+---
+was posted a month ago with no feedback ...
 
-Neither of those errors are reported in the above build result ...
+ net/bluetooth/l2cap.c |    8 ++++----
+ 1 files changed, 4 insertions(+), 4 deletions(-)
 
-That first error was first reported on Aug 11
-(http://kisskb.ellerman.id.au/kisskb/buildresult/3021626/) but seems to
-have be fixed by Aug 12
-(http://kisskb.ellerman.id.au/kisskb/buildresult/3022316/).  See commit
-8cef9c67356eca3e6502444c8075a06c86872abf ("v9fs: fixup for inode_setattr
-being removed"), one of mine.
+diff --git a/net/bluetooth/l2cap.c b/net/bluetooth/l2cap.c
+index 0b54b7d..65bcdc1 100644
+--- a/net/bluetooth/l2cap.c
++++ b/net/bluetooth/l2cap.c
+@@ -2401,11 +2401,11 @@ static inline int l2cap_get_conf_opt(void **ptr, int *type, int *olen, unsigned
+ 		break;
+ 
+ 	case 2:
+-		*val = __le16_to_cpu(*((__le16 *) opt->val));
++		*val = get_unaligned_le16(opt->val);
+ 		break;
+ 
+ 	case 4:
+-		*val = __le32_to_cpu(*((__le32 *) opt->val));
++		*val = get_unaligned_le32(opt->val);
+ 		break;
+ 
+ 	default:
+@@ -2432,11 +2432,11 @@ static void l2cap_add_conf_opt(void **ptr, u8 type, u8 len, unsigned long val)
+ 		break;
+ 
+ 	case 2:
+-		*((__le16 *) opt->val) = cpu_to_le16(val);
++		put_unaligned_le16(cpu_to_le16(val), opt->val);
+ 		break;
+ 
+ 	case 4:
+-		*((__le32 *) opt->val) = cpu_to_le32(val);
++		put_unaligned_le32(cpu_to_le32(val), opt->val);
+ 		break;
+ 
+ 	default:
+-- 
+1.7.3.1
 
-That second error was first reported on Aug 6
-(http://kisskb.ellerman.id.au/kisskb/buildresult/3012805/) but seems to
-have been fixed by Aug 13
-(http://kisskb.ellerman.id.au/kisskb/buildresult/3026080/).  Indeed it is
-fixed by commit 71beefe8c0b9e12ed4ac9fe13b98a035ddeaf8eb ("vgaarb: drop
-vga.h include") which was in response to a report from you.
-
-So, I suspect that there maybe something wrong with the reports you are
-working from.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Sun__17_Oct_2010_09_26_21_+1100_m/pDEIFo7/P.Q_Rf
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQEcBAEBAgAGBQJMuiaNAAoJEDMEi1NhKgbspZUIAIKH2CCGun+4ytwrobOgeDyw
-bkUZnDQF4gAT72aRChTPxU1d0FQaeloB9fw6sgcOqyRUOWVuZg9dSNuMjUbYbpiJ
-Zy3SUSXRVKcg5QHEeMnm2eKbvWSHEDH0hHKFeoucW+54vM8uX0Iy/I8bYrum7BiJ
-shfIsZ7mOz4zy9/Gis/n2rhaGOqIO85PGf8nbHle4gNx+EsgGWDgt5ieWJBOJ5dA
-SiSjS0OOJSqWW0/EuJZf11Y8KGQA1RpuC0VIMlnYHaV3oTssK+z9BJ208q5q6Ro0
-lwV8ati3RTIaBXMVYRyP793NkMq9zInBvx8BUY9+GZ+wtxaW8R1FNTQseamPqsE=
-=JVIu
------END PGP SIGNATURE-----
-
---Signature=_Sun__17_Oct_2010_09_26_21_+1100_m/pDEIFo7/P.Q_Rf--
