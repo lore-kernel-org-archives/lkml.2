@@ -1,59 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752622Ab0JPCkT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Oct 2010 22:40:19 -0400
-Received: from gate.crashing.org ([63.228.1.57]:45831 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752355Ab0JPCkS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Oct 2010 22:40:18 -0400
-Subject: Re: [PATCH] ARM: allow, but warn, when issuing ioremap() on RAM
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Greg KH <greg@kroah.com>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Arnd Hannemann <arnd@arndnet.de>, Hemant Pedanekar <hemantp@ti.com>,
-        Felipe Contreras <felipe.contreras@gmail.com>,
-        linux-main <linux-kernel@vger.kernel.org>,
-        Uwe =?ISO-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        Han Jonghun <jonghun79.han@gmail.com>,
-        linux-arm <linux-arm-kernel@lists.infradead.org>
-In-Reply-To: <20101009000046.GA30616@kroah.com>
-References: <1286444662-16843-1-git-send-email-felipe.contreras@gmail.com>
-	 <20101007192245.GC26435@n2100.arm.linux.org.uk>
-	 <AANLkTikQKY7pOobD+==uT5Cy0poT=O5wDMKtbVyJVNbO@mail.gmail.com>
-	 <20101008175308.GA10975@n2100.arm.linux.org.uk>
-	 <AANLkTi=ERZjVDS=Q7aw1zA23KF68irUP3vvKLZw5meBU@mail.gmail.com>
-	 <20101008230451.GB10975@n2100.arm.linux.org.uk>
-	 <20101008232539.GA28697@kroah.com>
-	 <20101008234448.GD10975@n2100.arm.linux.org.uk>
-	 <20101009000046.GA30616@kroah.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 16 Oct 2010 13:39:49 +1100
-Message-ID: <1287196789.2370.3.camel@pasglop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1752654Ab0JPCmg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Oct 2010 22:42:36 -0400
+Received: from smtp.srv.ualberta.ca ([129.128.5.19]:55443 "EHLO
+	mail7.srv.ualberta.ca" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752355Ab0JPCmf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Oct 2010 22:42:35 -0400
+Date: Fri, 15 Oct 2010 20:42:35 -0600 (Mountain Daylight Time)
+From: Marc Aurele La France <tsi@ualberta.ca>
+Reply-To: linux-kernel@vger.kernel.org, tsi@ualberta.ca
+To: linux-kernel@vger.kernel.org, Len Brown <len.brown@intel.com>
+Subject: Re: x86_64 2.6.35.* kernels and Intel Xeon X5550
+In-Reply-To: <alpine.WNT.2.00.1010071055420.1672@cluij.ucs.ualberta.ca>
+Message-ID: <alpine.WNT.1.10.1010152030320.280@tsi>
+References: <alpine.WNT.2.00.1010071055420.1672@cluij.ucs.ualberta.ca>
+User-Agent: Alpine 1.10 (WNT 962 2008-03-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; format=flowed; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-10-08 at 17:00 -0700, Greg KH wrote:
-> 
-> But you can't expect that you make this change, and not fix up the
-> drivers, and people would be happy, right?  The rule for API changes
-> like this, or anything, is that the person making the change fixes the
-> other drivers, and that seems to be the issue here.
-> 
-> Any pointers to patches where people have fixed up the drivers?
+On Thu, 7 Oct 2010, Marc Aurele La France wrote:
 
-Greg, this is true for normal API changes. In this case, this is silent
-data corruption, I think Russell is absolutely right. That exact same
-issues have been giving me nightmares on powerpc, mostly due to
-(fortunately extremely rare) broken chipsets doing non coherent DMA on
-processors that do not allow you architecturally to double map memory
-with different attributes.
+> I administer a cluster composed of a mixture of various Opteron models and 
+> Intel Xeon X5550's.  The 2.6.34.*, and prior, kernels run fine on all of 
+> them.  The 2.6.35 series also runs fine on the Opterons, but not on the 
+> Xeon's.  All of these are CONFIG_GENERIC_CPU kernels.
 
-Cheers,
-Ben.
+> On the Xeon's, 2.6.35 hangs early on, upon the first test of trace events 
+> (in kernel/trace/trace_events.c:event_trace_self_tests()).  When disabling 
+> all tracing, debugging, etc., it still hangs but slightly later.  The 
+> megaraid_sas module is loaded, detects the adapter, but never gets around to 
+> registering it with the SCSI layer.
 
+> Core2-specific kernels also hang the same way, as do UP kernels.  I've tried 
+> backing out certain commits that seemed likely candidates, but have yet to 
+> stumble upon the one (or more) that is causing this.
 
+> Does anyone have any ideas?
+
+This is due to "CONFIG_INTEL_IDLE=y".  "m" or "n", the hang doesn't occur.
+
+Of the kernels I've tested, INTEL_IDLE first appears in 2.6.34-git15.  So, 
+technically, this is not a regression against 2.6.34.
+
+This does, however, amount to a vote of non-confidence against intel_idle.c.
+
+Marc.
+
++----------------------------------+----------------------------------+
+|  Marc Aurele La France           |  work:   1-780-492-9310          |
+|  Academic Information and        |  fax:    1-780-492-1729          |
+|    Communications Technologies   |  email:  tsi@ualberta.ca         |
+|  352 General Services Building   +----------------------------------+
+|  University of Alberta           |                                  |
+|  Edmonton, Alberta               |    Standard disclaimers apply    |
+|  T6G 2H1                         |                                  |
+|  CANADA                          |                                  |
++----------------------------------+----------------------------------+
