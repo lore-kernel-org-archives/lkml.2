@@ -1,59 +1,192 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752585Ab0JPCXA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Oct 2010 22:23:00 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:12279 "EHLO mx1.redhat.com"
+	id S1752627Ab0JPCXD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Oct 2010 22:23:03 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:6071 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752230Ab0JPCW6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Oct 2010 22:22:58 -0400
+	id S1752362Ab0JPCXA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Oct 2010 22:23:00 -0400
 From: Don Zickus <dzickus@redhat.com>
 To: mingo@elte.hu
 Cc: andi@firstfloor.org, robert.richter@amd.com, linux-kernel@vger.kernel.org,
         peterz@infradead.org, ying.huang@intel.com,
         Don Zickus <dzickus@redhat.com>
-Subject: [PATCH 0/5] x86, NMI: give NMI handler a face-lift
-Date: Fri, 15 Oct 2010 22:22:13 -0400
-Message-Id: <1287195738-3136-1-git-send-email-dzickus@redhat.com>
+Subject: [PATCH 1/5] x86, NMI: Add NMI symbol constants and rename memory parity to PCI SERR
+Date: Fri, 15 Oct 2010 22:22:14 -0400
+Message-Id: <1287195738-3136-2-git-send-email-dzickus@redhat.com>
+In-Reply-To: <1287195738-3136-1-git-send-email-dzickus@redhat.com>
+References: <1287195738-3136-1-git-send-email-dzickus@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Restructuring the nmi handler to be more readable and simpler.
+From: Huang Ying <ying.huang@intel.com>
 
-This is just laying the ground work for future improvements in this area.
+Replace the NMI related magic numbers with symbol constants.
 
-I know people were complaining about having DIE_NMI and DIE_NMI_IPI, but
-for now it is consistent with what was there before.  Hopefully, we can
-modify the notifier chain to make it smarter and combine the two events.
+memory parity error is only valid for IBM PC-AT, newer machine use
+bit 7 (0x80) of 0x61 port for PCI SERR. While memory error is usually
+reported via MCE. So corresponding function name and kernel log string
+is changed.
 
-I also left out one of Huang's patch until we figure out how we are going
-to proceed with a new notifier.
+But on some machines, PCI SERR line is still used to report memory
+errors. This is used by EDAC, so corresponding EDAC call is reserved.
 
-Tested 32-bit and 64-bit on AMD and Intel machines.
+v3:
 
-Cheers,
-Don
+- Merge adding symbol constants and renaming patches
 
-Huang Ying (5):
-  x86, NMI: Add NMI symbol constants and rename memory parity to PCI
-    SERR
-  x86, NMI: Add touch_nmi_watchdog to io_check_error delay
-  x86, NMI: Rewrite NMI handler
-  x86, NMI: Allow NMI reason io port (0x61) to be processed on any CPU
-  x86, NMI: Remove do_nmi_callback logic
+v2:
 
- arch/x86/include/asm/mach_traps.h |   12 +++-
- arch/x86/include/asm/nmi.h        |   10 +++-
- arch/x86/kernel/apic/hw_nmi.c     |    1 -
- arch/x86/kernel/apic/nmi.c        |   29 +-------
- arch/x86/kernel/cpu/perf_event.c  |    1 -
- arch/x86/kernel/traps.c           |  141 ++++++++++++++++++++----------------
- arch/x86/oprofile/nmi_int.c       |    1 -
- arch/x86/oprofile/nmi_timer_int.c |    2 +-
- drivers/char/ipmi/ipmi_watchdog.c |    2 +-
- drivers/watchdog/hpwdt.c          |    2 +-
- 10 files changed, 102 insertions(+), 99 deletions(-)
+- EDAC call in pci_serr_error is reserved.
 
+Signed-off-by: Huang Ying <ying.huang@intel.com>
+Signed-off-by: Don Zickus <dzickus@redhat.com>
+---
+ arch/x86/include/asm/mach_traps.h |   12 ++++++++-
+ arch/x86/kernel/traps.c           |   51 +++++++++++++++++++------------------
+ 2 files changed, 37 insertions(+), 26 deletions(-)
+
+diff --git a/arch/x86/include/asm/mach_traps.h b/arch/x86/include/asm/mach_traps.h
+index f792060..72a8b52 100644
+--- a/arch/x86/include/asm/mach_traps.h
++++ b/arch/x86/include/asm/mach_traps.h
+@@ -7,9 +7,19 @@
+ 
+ #include <asm/mc146818rtc.h>
+ 
++#define NMI_REASON_PORT		0x61
++
++#define NMI_REASON_SERR		0x80
++#define NMI_REASON_IOCHK	0x40
++#define NMI_REASON_MASK		(NMI_REASON_SERR | NMI_REASON_IOCHK)
++
++#define NMI_REASON_CLEAR_SERR	0x04
++#define NMI_REASON_CLEAR_IOCHK	0x08
++#define NMI_REASON_CLEAR_MASK	0x0f
++
+ static inline unsigned char get_nmi_reason(void)
+ {
+-	return inb(0x61);
++	return inb(NMI_REASON_PORT);
+ }
+ 
+ static inline void reassert_nmi(void)
+diff --git a/arch/x86/kernel/traps.c b/arch/x86/kernel/traps.c
+index 60788de..e04e59b 100644
+--- a/arch/x86/kernel/traps.c
++++ b/arch/x86/kernel/traps.c
+@@ -301,15 +301,15 @@ gp_in_kernel:
+ }
+ 
+ static notrace __kprobes void
+-mem_parity_error(unsigned char reason, struct pt_regs *regs)
++pci_serr_error(unsigned char reason, struct pt_regs *regs)
+ {
+-	printk(KERN_EMERG
+-		"Uhhuh. NMI received for unknown reason %02x on CPU %d.\n",
+-			reason, smp_processor_id());
+-
+-	printk(KERN_EMERG
+-		"You have some hardware problem, likely on the PCI bus.\n");
++	pr_emerg("NMI: PCI system error (SERR) for reason %02x on CPU %d.\n",
++		 reason, smp_processor_id());
+ 
++	/*
++	 * On some machines, PCI SERR line is used to report memory
++	 * errors. EDAC makes use of it.
++	 */
+ #if defined(CONFIG_EDAC)
+ 	if (edac_handler_set()) {
+ 		edac_atomic_assert_error();
+@@ -320,11 +320,11 @@ mem_parity_error(unsigned char reason, struct pt_regs *regs)
+ 	if (panic_on_unrecovered_nmi)
+ 		panic("NMI: Not continuing");
+ 
+-	printk(KERN_EMERG "Dazed and confused, but trying to continue\n");
++	pr_emerg("Dazed and confused, but trying to continue\n");
+ 
+-	/* Clear and disable the memory parity error line. */
+-	reason = (reason & 0xf) | 4;
+-	outb(reason, 0x61);
++	/* Clear and disable the PCI SERR error line. */
++	reason = (reason & NMI_REASON_CLEAR_MASK) | NMI_REASON_CLEAR_SERR;
++	outb(reason, NMI_REASON_PORT);
+ }
+ 
+ static notrace __kprobes void
+@@ -332,22 +332,24 @@ io_check_error(unsigned char reason, struct pt_regs *regs)
+ {
+ 	unsigned long i;
+ 
+-	printk(KERN_EMERG "NMI: IOCK error (debug interrupt?)\n");
++	pr_emerg(
++	"NMI: IOCK error (debug interrupt?) for reason %02x on CPU %d.\n",
++		 reason, smp_processor_id());
+ 	show_registers(regs);
+ 
+ 	if (panic_on_io_nmi)
+ 		panic("NMI IOCK error: Not continuing");
+ 
+ 	/* Re-enable the IOCK line, wait for a few seconds */
+-	reason = (reason & 0xf) | 8;
+-	outb(reason, 0x61);
++	reason = (reason & NMI_REASON_CLEAR_MASK) | NMI_REASON_CLEAR_IOCHK;
++	outb(reason, NMI_REASON_PORT);
+ 
+ 	i = 2000;
+ 	while (--i)
+ 		udelay(1000);
+ 
+-	reason &= ~8;
+-	outb(reason, 0x61);
++	reason &= ~NMI_REASON_CLEAR_IOCHK;
++	outb(reason, NMI_REASON_PORT);
+ }
+ 
+ static notrace __kprobes void
+@@ -366,15 +368,14 @@ unknown_nmi_error(unsigned char reason, struct pt_regs *regs)
+ 		return;
+ 	}
+ #endif
+-	printk(KERN_EMERG
+-		"Uhhuh. NMI received for unknown reason %02x on CPU %d.\n",
+-			reason, smp_processor_id());
++	pr_emerg("Uhhuh. NMI received for unknown reason %02x on CPU %d.\n",
++		 reason, smp_processor_id());
+ 
+-	printk(KERN_EMERG "Do you have a strange power saving mode enabled?\n");
++	pr_emerg("Do you have a strange power saving mode enabled?\n");
+ 	if (panic_on_unrecovered_nmi)
+ 		panic("NMI: Not continuing");
+ 
+-	printk(KERN_EMERG "Dazed and confused, but trying to continue\n");
++	pr_emerg("Dazed and confused, but trying to continue\n");
+ }
+ 
+ static notrace __kprobes void default_do_nmi(struct pt_regs *regs)
+@@ -388,7 +389,7 @@ static notrace __kprobes void default_do_nmi(struct pt_regs *regs)
+ 	if (!cpu)
+ 		reason = get_nmi_reason();
+ 
+-	if (!(reason & 0xc0)) {
++	if (!(reason & NMI_REASON_MASK)) {
+ 		if (notify_die(DIE_NMI_IPI, "nmi_ipi", regs, reason, 2, SIGINT)
+ 								== NOTIFY_STOP)
+ 			return;
+@@ -418,9 +419,9 @@ static notrace __kprobes void default_do_nmi(struct pt_regs *regs)
+ 		return;
+ 
+ 	/* AK: following checks seem to be broken on modern chipsets. FIXME */
+-	if (reason & 0x80)
+-		mem_parity_error(reason, regs);
+-	if (reason & 0x40)
++	if (reason & NMI_REASON_SERR)
++		pci_serr_error(reason, regs);
++	if (reason & NMI_REASON_IOCHK)
+ 		io_check_error(reason, regs);
+ #ifdef CONFIG_X86_32
+ 	/*
 -- 
 1.7.2.3
 
