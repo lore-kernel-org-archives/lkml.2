@@ -1,54 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755480Ab0JPUwQ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Oct 2010 16:52:16 -0400
-Received: from 64.mail-out.ovh.net ([91.121.185.65]:37535 "HELO
-	64.mail-out.ovh.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754278Ab0JPUwP (ORCPT
+	id S1755677Ab0JPU7L (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Oct 2010 16:59:11 -0400
+Received: from sj-iport-4.cisco.com ([171.68.10.86]:3781 "EHLO
+	sj-iport-4.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754940Ab0JPU7K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Oct 2010 16:52:15 -0400
-Message-ID: <4CBA107B.3000508@example.com>
-Date: Sat, 16 Oct 2010 22:52:11 +0200
-From: Piotr Hosowicz <piotr@hosowicz.com>
-Reply-To: piotr@hosowicz.com
-Organization: hosowicz.com
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.12) Gecko/20100917 Icedove/3.0.8
+	Sat, 16 Oct 2010 16:59:10 -0400
+Authentication-Results: sj-iport-4.cisco.com; dkim=neutral (message not signed) header.i=none
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Av0EAPOuuUyrR7H+/2dsb2JhbACacYY5caRgm26FSQSEVIV2hQI
+X-IronPort-AV: E=Sophos;i="4.57,340,1283731200"; 
+   d="scan'208";a="201888958"
+From: Roland Dreier <rdreier@cisco.com>
+To: Miles Lane <miles.lane@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Ben Skeggs <bskeggs@redhat.com>,
+        Maarten Maathuis <madman2003@gmail.com>
+Subject: Re: 2.6.36-rc8 -- drivers/built-in.o: In function `nouveau_acpi_edid': (.text+0xf7c04): undefined reference to `acpi_video_get_edid'
+References: <AANLkTik8pvkueU8YyUwjODz53QnurUqKycaTYJ-McYqB@mail.gmail.com>
+X-Message-Flag: Warning: May contain useful information
+Date: Sat, 16 Oct 2010 13:58:50 -0700
+In-Reply-To: <AANLkTik8pvkueU8YyUwjODz53QnurUqKycaTYJ-McYqB@mail.gmail.com>
+	(Miles Lane's message of "Thu, 14 Oct 2010 22:46:51 -0400")
+Message-ID: <adad3r9hn1x.fsf@cisco.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
-To: Elvis Dowson <elvis.dowson@mac.com>
-CC: Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: Alternate git repo servers
-References: <2D81AEF9-2724-4187-8D69-1C1282ADBCC9@mac.com> <7B26AF36-809D-4044-AC14-0CB7985E2D50@mac.com> <4CBA0D1C.6000805@example.com> <52F86985-723A-40BB-9C3E-2CC11A49BD2A@mac.com>
-In-Reply-To: <52F86985-723A-40BB-9C3E-2CC11A49BD2A@mac.com>
-Content-Type: text/plain; charset=ISO-8859-2; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Ovh-Tracer-Id: 1187824402436288906
-X-Ovh-Remote: 83.6.195.253 (abbf253.neoplus.adsl.tpnet.pl)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-Spam-Check: DONE|U 0.5/N
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 16.10.2010 22:43, Elvis Dowson wrote:
+ > drivers/built-in.o: In function `nouveau_acpi_edid':
+ > (.text+0xf7c04): undefined reference to `acpi_video_get_edid'
+ > make: *** [.tmp_vmlinux1] Error 1
 
-> Yes, just type
->
-> git clone http://git.kernel.org/pub/scm/linux/kernel/git/tmlind/linux-omap-2.6.git
->
-> Are you also experiencing slowness with the git protocol with the servers on git.kernel.org&  gitorious.org.
+The problem is:
 
-I had it some days ago with kernel.org, but I substituted the host part 
-with some different hostname, I saw that other announed a minute ago 
-with some git-pull request on LKML - and it worked, it could be pure luck.
+ > CONFIG_ACPI=y
+ > CONFIG_ACPI_VIDEO=m
 
-Thanks,
+but
 
-Piotr Hosowicz
+ > CONFIG_DRM_NOUVEAU=y
 
--- 
-- Czy jest cukier w kostkach ?
-- Nie ma.
-- A jakas inna tania bombonierka? Dla tesciowej.
-NP: Creedence Clearwater Revival - Graveyard Train
-NB: 2.6.36-rc8-git3
+So the built-in nouveau code tries to reference the modular acpi video
+code.  I'm not sure what the correct fix is... does the following make
+things work?
+
+ drivers/gpu/drm/nouveau/Makefile |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/gpu/drm/nouveau/Makefile b/drivers/gpu/drm/nouveau/Makefile
+index e9b06e4..4e295b5 100644
+--- a/drivers/gpu/drm/nouveau/Makefile
++++ b/drivers/gpu/drm/nouveau/Makefile
+@@ -28,6 +28,6 @@ nouveau-y := nouveau_drv.o nouveau_state.o nouveau_channel.o nouveau_mem.o \
+ nouveau-$(CONFIG_DRM_NOUVEAU_DEBUG) += nouveau_debugfs.o
+ nouveau-$(CONFIG_COMPAT) += nouveau_ioc32.o
+ nouveau-$(CONFIG_DRM_NOUVEAU_BACKLIGHT) += nouveau_backlight.o
+-nouveau-$(CONFIG_ACPI) += nouveau_acpi.o
++nouveau-$(CONFIG_ACPI_VIDEO) += nouveau_acpi.o
+ 
+ obj-$(CONFIG_DRM_NOUVEAU)+= nouveau.o
