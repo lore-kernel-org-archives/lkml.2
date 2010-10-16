@@ -1,85 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756507Ab0JPWOm (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Oct 2010 18:14:42 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:52854 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756169Ab0JPWOl convert rfc822-to-8bit (ORCPT
+	id S1756710Ab0JPWOq (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Oct 2010 18:14:46 -0400
+Received: from xenotime.net ([72.52.115.56]:40371 "HELO xenotime.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1756568Ab0JPWOo convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Oct 2010 18:14:41 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Christian Casteyde <casteyde.christian@free.fr>
-Subject: Re: [Bug #17361] Random kmemcheck errors and kernel freeze on 2.6.36-rc*
-Date: Sun, 17 Oct 2010 00:13:36 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.36-rc8-rjw+; KDE/4.4.4; x86_64; ; )
-References: <v0Rsc8XZnFC.A.-xF.oqfsMB@chimera> <201010102140.26584.rjw@sisk.pl> <201010112330.35921.casteyde.christian@free.fr>
-In-Reply-To: <201010112330.35921.casteyde.christian@free.fr>
-MIME-Version: 1.0
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Kernel Testers List <kernel-testers@vger.kernel.org>
-Content-Type: Text/Plain;
-  charset="utf-8"
+	Sat, 16 Oct 2010 18:14:44 -0400
+Date: Sat, 16 Oct 2010 15:14:42 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
+        Linux Kernel Development <linux-kernel@vger.kernel.org>
+Subject: Re: Build regressions/improvements in v2.6.36-rc8
+Message-Id: <20101016151442.a21769f6.rdunlap@xenotime.net>
+In-Reply-To: <alpine.DEB.2.00.1010161722120.30415@ayla.of.borg>
+References: <alpine.DEB.2.00.1010161656590.12912@ayla.of.borg>
+	<alpine.DEB.2.00.1010161722120.30415@ayla.of.borg>
+Organization: YPO4
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
-Message-Id: <201010170013.36208.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, October 11, 2010, Christian Casteyde wrote:
-> Hello
+On Sat, 16 Oct 2010 17:31:34 +0200 (CEST) Geert Uytterhoeven wrote:
 
-Hi,
-
-> Well, I would like to find the real commit, but I don't know how to do that.
-> I'm not so used to using other branches than Linus' one.
+> 	Hi Stephen,
 > 
-> From the commit hash, how do I find:
-> - the git tree I should use to bisect more?
-> - the initial good and bad marks?
-> And can I bisect only that branch on top of my current kernel source directory?
-
-Yes, you can.  In this particular case the merge says that the series started
-with commit "x86: Fix keeping track of AMD C1E" and ended with
-"x86, xsave: Cleanup return codes in check_for_xstate()".
-
-Now, you can do
-
-$ git log --oneline v2.6.35.. | grep "x86: Fix keeping track of AMD C1E"
-
-and you get this information:
-
-e8c534e x86: Fix keeping track of AMD C1E
-
-Similarly, this command
-
-$ git log --oneline v2.6.35.. | grep "x86, xsave: Cleanup return codes in check_for_xstate()"
-
-returns
-
-d6d4d42 x86, xsave: Cleanup return codes in check_for_xstate()
-
-so you probably need to bisect between commits d6d4d42 (presumably good)
-and e8c534e (presumably bad).
-
-However, it still is better to do "checkout d6d4d42" and see if that kernel is
-good (and analogously for d6d4d42) to start with.
-
-Thanks,
-Rafael
-
-
-> Le dimanche 10 octobre 2010 21:40:26, vous avez écrit :
-> > On Sunday, October 10, 2010, Christian Casteyde wrote:
-> > > Still present with 2.6.37-rc7
-> > > I think I managed to bisect it however:
-> > > 
-> > > 0f477dd0851bdcee82923da66a7fc4a44cb1bc3d is the first bad commit
-> > 
-> > This is a merge, so it most likely is not the real first bad commit.
-> > 
-> > Could you check the commits on the branch merged by it?
-> > 
-> > Rafael
+> On Sat, 16 Oct 2010, Geert Uytterhoeven wrote:
+> > 162 regressions:
+> > 	src/fs/9p/vfs_inode.c: error: implicit declaration of function 'inode_setattr':  => 1267
+> > 	src/include/linux/vgaarb.h: error: asm/vga.h: No such file or directory:  => 34:21
 > 
+> These two are reported for m68k/allmodconfig:
+> http://kisskb.ellerman.id.au/kisskb/buildresult/3387901/, but I cannot
+> reproduce them.
 > 
+> Moreover, there's no call to inode_setattr on line 1267 of
+> src/fs/9p/vfs_inode.c.
+> The same is true for line 34 of include/linux/vgaarb.h.
+> 
+> For the second failure, I know it's been fixed since
+> 71beefe8c0b9e12ed4ac9fe13b98a035ddeaf8eb.
+> 
+> Do you know what's happening here?
 
+I can't see why that's happening, but then I can't find a function or macro
+named 'inode_setattr' in the -rc8 kernel source tree at all.
+Maybe it's a constructed name (i.e., with ##, stringify)?
+
+BTW, do you use LC_ALL=C when doing builds?  I'd like to be able to read
+messages like this one:
+
+src/Documentation/spi/spidev_test.c:56: warning: (near initialization for ‘tr’): 1 warnings in 1 logs
+
+
+
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
