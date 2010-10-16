@@ -1,312 +1,364 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753597Ab0JPIOy (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Oct 2010 04:14:54 -0400
-Received: from bld-mail13.adl6.internode.on.net ([150.101.137.98]:37706 "EHLO
+	id S1754055Ab0JPITv (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Oct 2010 04:19:51 -0400
+Received: from bld-mail12.adl6.internode.on.net ([150.101.137.97]:50737 "EHLO
 	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752425Ab0JPIOr (ORCPT
+	with ESMTP id S1753521Ab0JPIOz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Oct 2010 04:14:47 -0400
+	Sat, 16 Oct 2010 04:14:55 -0400
 From: Dave Chinner <david@fromorbit.com>
 To: linux-fsdevel@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org
-Subject: Inode Lock Scalability V4
-Date: Sat, 16 Oct 2010 19:13:54 +1100
-Message-Id: <1287216853-17634-1-git-send-email-david@fromorbit.com>
+Subject: [PATCH 05/19] fs: inode split IO and LRU lists
+Date: Sat, 16 Oct 2010 19:13:59 +1100
+Message-Id: <1287216853-17634-6-git-send-email-david@fromorbit.com>
 X-Mailer: git-send-email 1.7.1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <1287216853-17634-1-git-send-email-david@fromorbit.com>
+References: <1287216853-17634-1-git-send-email-david@fromorbit.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch set is derived from Nick Piggin's VFS scalability tree.
-there doesn't appear to be any push to get that tree into shape for
-.37, so this is an attempt to start the process of finer grained
-review of the series for upstream inclusion. I'm hitting VFS lock
-contention problems with XFS on 8-16p machines now, so I need to get
-this stuff moving.
+From: Nick Piggin <npiggin@suse.de>
 
-This patch set is just the basic inode_lock breakup patches plus a
-few more simple changes to the inode code. It stops short of
-introducing RCU inode freeing because those changes are not
-completely baked yet.
+The use of the same inode list structure (inode->i_list) for two
+different list constructs with different lifecycles and purposes
+makes it impossible to separate the locking of the different
+operations. Therefore, to enable the separation of the locking of
+the writeback and reclaim lists, split the inode->i_list into two
+separate lists dedicated to their specific tracking functions.
 
-As a result, the full inode handling improvements of Nick's patch
-set are not realised with this short series. However, my own testing
-indicates that the amount of lock traffic and contention is down by
-an order of magnitude on an 8-way box for parallel inode create and
-unlink workloads, so there is still significant improvements from
-just this patch set.
+Signed-off-by: Nick Piggin <npiggin@suse.de>
+Signed-off-by: Dave Chinner <dchinner@redhat.com>
+Reviewed-by: Christoph Hellwig <hch@lst.de>
+---
+ fs/block_dev.c            |    4 ++--
+ fs/fs-writeback.c         |   27 ++++++++++++++-------------
+ fs/inode.c                |   40 ++++++++++++++++++++++------------------
+ fs/nilfs2/mdt.c           |    3 ++-
+ include/linux/fs.h        |    3 ++-
+ include/linux/writeback.h |    1 -
+ mm/backing-dev.c          |    6 +++---
+ 7 files changed, 45 insertions(+), 39 deletions(-)
 
-Version 2 of this series is a complete rework of the original patch
-series.  Nick's original code nested list locks inside the the
-inode->i_lock, resulting in a large mess of trylock operations to
-get locks out of order all over the place. In many cases, the reason
-fo this lock ordering is removed later on in Nick's series as
-cleanups are introduced.
+diff --git a/fs/block_dev.c b/fs/block_dev.c
+index 501eab5..63b1c4c 100644
+--- a/fs/block_dev.c
++++ b/fs/block_dev.c
+@@ -58,8 +58,8 @@ static void bdev_inode_switch_bdi(struct inode *inode,
+ {
+ 	spin_lock(&inode_lock);
+ 	inode->i_data.backing_dev_info = dst;
+-	if (inode->i_state & I_DIRTY)
+-		list_move(&inode->i_list, &dst->wb.b_dirty);
++	if (!list_empty(&inode->i_wb_list))
++		list_move(&inode->i_wb_list, &dst->wb.b_dirty);
+ 	spin_unlock(&inode_lock);
+ }
+ 
+diff --git a/fs/fs-writeback.c b/fs/fs-writeback.c
+index 33e9857..92d73b6 100644
+--- a/fs/fs-writeback.c
++++ b/fs/fs-writeback.c
+@@ -172,11 +172,11 @@ static void redirty_tail(struct inode *inode)
+ 	if (!list_empty(&wb->b_dirty)) {
+ 		struct inode *tail;
+ 
+-		tail = list_entry(wb->b_dirty.next, struct inode, i_list);
++		tail = list_entry(wb->b_dirty.next, struct inode, i_wb_list);
+ 		if (time_before(inode->dirtied_when, tail->dirtied_when))
+ 			inode->dirtied_when = jiffies;
+ 	}
+-	list_move(&inode->i_list, &wb->b_dirty);
++	list_move(&inode->i_wb_list, &wb->b_dirty);
+ }
+ 
+ /*
+@@ -186,7 +186,7 @@ static void requeue_io(struct inode *inode)
+ {
+ 	struct bdi_writeback *wb = &inode_to_bdi(inode)->wb;
+ 
+-	list_move(&inode->i_list, &wb->b_more_io);
++	list_move(&inode->i_wb_list, &wb->b_more_io);
+ }
+ 
+ static void inode_sync_complete(struct inode *inode)
+@@ -227,14 +227,15 @@ static void move_expired_inodes(struct list_head *delaying_queue,
+ 	int do_sb_sort = 0;
+ 
+ 	while (!list_empty(delaying_queue)) {
+-		inode = list_entry(delaying_queue->prev, struct inode, i_list);
++		inode = list_entry(delaying_queue->prev,
++						struct inode, i_wb_list);
+ 		if (older_than_this &&
+ 		    inode_dirtied_after(inode, *older_than_this))
+ 			break;
+ 		if (sb && sb != inode->i_sb)
+ 			do_sb_sort = 1;
+ 		sb = inode->i_sb;
+-		list_move(&inode->i_list, &tmp);
++		list_move(&inode->i_wb_list, &tmp);
+ 	}
+ 
+ 	/* just one sb in list, splice to dispatch_queue and we're done */
+@@ -245,12 +246,12 @@ static void move_expired_inodes(struct list_head *delaying_queue,
+ 
+ 	/* Move inodes from one superblock together */
+ 	while (!list_empty(&tmp)) {
+-		inode = list_entry(tmp.prev, struct inode, i_list);
++		inode = list_entry(tmp.prev, struct inode, i_wb_list);
+ 		sb = inode->i_sb;
+ 		list_for_each_prev_safe(pos, node, &tmp) {
+-			inode = list_entry(pos, struct inode, i_list);
++			inode = list_entry(pos, struct inode, i_wb_list);
+ 			if (inode->i_sb == sb)
+-				list_move(&inode->i_list, dispatch_queue);
++				list_move(&inode->i_wb_list, dispatch_queue);
+ 		}
+ 	}
+ }
+@@ -415,7 +416,7 @@ writeback_single_inode(struct inode *inode, struct writeback_control *wbc)
+ 			 * does not move dirty inodes to the LRU and dirty
+ 			 * inodes are removed from the LRU during scanning.
+ 			 */
+-			list_del_init(&inode->i_list);
++			list_del_init(&inode->i_wb_list);
+ 			if (!atomic_read(&inode->i_count))
+ 				inode_lru_list_add(inode);
+ 		}
+@@ -466,7 +467,7 @@ static int writeback_sb_inodes(struct super_block *sb, struct bdi_writeback *wb,
+ 	while (!list_empty(&wb->b_io)) {
+ 		long pages_skipped;
+ 		struct inode *inode = list_entry(wb->b_io.prev,
+-						 struct inode, i_list);
++						 struct inode, i_wb_list);
+ 
+ 		if (inode->i_sb != sb) {
+ 			if (only_this_sb) {
+@@ -537,7 +538,7 @@ void writeback_inodes_wb(struct bdi_writeback *wb,
+ 
+ 	while (!list_empty(&wb->b_io)) {
+ 		struct inode *inode = list_entry(wb->b_io.prev,
+-						 struct inode, i_list);
++						 struct inode, i_wb_list);
+ 		struct super_block *sb = inode->i_sb;
+ 
+ 		if (!pin_sb_for_writeback(sb)) {
+@@ -676,7 +677,7 @@ static long wb_writeback(struct bdi_writeback *wb,
+ 		spin_lock(&inode_lock);
+ 		if (!list_empty(&wb->b_more_io))  {
+ 			inode = list_entry(wb->b_more_io.prev,
+-						struct inode, i_list);
++						struct inode, i_wb_list);
+ 			trace_wbc_writeback_wait(&wbc, wb->bdi);
+ 			inode_wait_for_writeback(inode);
+ 		}
+@@ -990,7 +991,7 @@ void __mark_inode_dirty(struct inode *inode, int flags)
+ 			}
+ 
+ 			inode->dirtied_when = jiffies;
+-			list_move(&inode->i_list, &bdi->wb.b_dirty);
++			list_move(&inode->i_wb_list, &bdi->wb.b_dirty);
+ 		}
+ 	}
+ out:
+diff --git a/fs/inode.c b/fs/inode.c
+index 5dd74b4..fd65368 100644
+--- a/fs/inode.c
++++ b/fs/inode.c
+@@ -72,7 +72,7 @@ static unsigned int i_hash_shift __read_mostly;
+  * allowing for low-overhead inode sync() operations.
+  */
+ 
+-LIST_HEAD(inode_unused);
++static LIST_HEAD(inode_lru);
+ static struct hlist_head *inode_hashtable __read_mostly;
+ 
+ /*
+@@ -272,6 +272,7 @@ EXPORT_SYMBOL(__destroy_inode);
+ 
+ void destroy_inode(struct inode *inode)
+ {
++	BUG_ON(!list_empty(&inode->i_lru));
+ 	__destroy_inode(inode);
+ 	if (inode->i_sb->s_op->destroy_inode)
+ 		inode->i_sb->s_op->destroy_inode(inode);
+@@ -290,7 +291,8 @@ void inode_init_once(struct inode *inode)
+ 	INIT_HLIST_NODE(&inode->i_hash);
+ 	INIT_LIST_HEAD(&inode->i_dentry);
+ 	INIT_LIST_HEAD(&inode->i_devices);
+-	INIT_LIST_HEAD(&inode->i_list);
++	INIT_LIST_HEAD(&inode->i_wb_list);
++	INIT_LIST_HEAD(&inode->i_lru);
+ 	INIT_RADIX_TREE(&inode->i_data.page_tree, GFP_ATOMIC);
+ 	spin_lock_init(&inode->i_data.tree_lock);
+ 	spin_lock_init(&inode->i_data.i_mmap_lock);
+@@ -322,14 +324,16 @@ void __iget(struct inode *inode)
+ 
+ void inode_lru_list_add(struct inode *inode)
+ {
+-	list_add(&inode->i_list, &inode_unused);
+-	percpu_counter_inc(&nr_inodes_unused);
++	if (list_empty(&inode->i_lru)) {
++		list_add(&inode->i_lru, &inode_lru);
++		percpu_counter_inc(&nr_inodes_unused);
++	}
+ }
+ 
+ void inode_lru_list_del(struct inode *inode)
+ {
+-	if (!list_empty(&inode->i_list)) {
+-		list_del_init(&inode->i_list);
++	if (!list_empty(&inode->i_lru)) {
++		list_del_init(&inode->i_lru);
+ 		percpu_counter_dec(&nr_inodes_unused);
+ 	}
+ }
+@@ -375,8 +379,8 @@ static void dispose_list(struct list_head *head)
+ 	while (!list_empty(head)) {
+ 		struct inode *inode;
+ 
+-		inode = list_first_entry(head, struct inode, i_list);
+-		list_del_init(&inode->i_list);
++		inode = list_first_entry(head, struct inode, i_lru);
++		list_del_init(&inode->i_lru);
+ 
+ 		evict(inode);
+ 
+@@ -421,7 +425,7 @@ static int invalidate_list(struct list_head *head, struct list_head *dispose)
+ 		if (!atomic_read(&inode->i_count)) {
+ 			WARN_ON(inode->i_state & I_NEW);
+ 			inode->i_state |= I_FREEING;
+-			list_move(&inode->i_list, dispose);
++			list_move(&inode->i_lru, dispose);
+ 			percpu_counter_dec(&nr_inodes_unused);
+ 			continue;
+ 		}
+@@ -496,10 +500,10 @@ static void prune_icache(int nr_to_scan)
+ 	for (nr_scanned = 0; nr_scanned < nr_to_scan; nr_scanned++) {
+ 		struct inode *inode;
+ 
+-		if (list_empty(&inode_unused))
++		if (list_empty(&inode_lru))
+ 			break;
+ 
+-		inode = list_entry(inode_unused.prev, struct inode, i_list);
++		inode = list_entry(inode_lru.prev, struct inode, i_lru);
+ 
+ 		/*
+ 		 * Referenced or dirty inodes are still in use. Give them
+@@ -507,14 +511,14 @@ static void prune_icache(int nr_to_scan)
+ 		 */
+ 		if (atomic_read(&inode->i_count) ||
+ 		    (inode->i_state & ~I_REFERENCED)) {
+-			list_del_init(&inode->i_list);
++			list_del_init(&inode->i_lru);
+ 			percpu_counter_dec(&nr_inodes_unused);
+ 			continue;
+ 		}
+ 
+ 		/* recently referenced inodes get one more pass */
+ 		if (inode->i_state & I_REFERENCED) {
+-			list_move(&inode->i_list, &inode_unused);
++			list_move(&inode->i_lru, &inode_lru);
+ 			inode->i_state &= ~I_REFERENCED;
+ 			continue;
+ 		}
+@@ -533,11 +537,12 @@ static void prune_icache(int nr_to_scan)
+ 			 * on it.
+ 			 */
+ 			if (!can_unuse(inode)) {
+-				list_move(&inode->i_list, &inode_unused);
++				list_move(&inode->i_lru, &inode_lru);
+ 				continue;
+ 			}
+ 		}
+-		list_move(&inode->i_list, &freeable);
++		list_move(&inode->i_lru, &freeable);
++		list_del_init(&inode->i_wb_list);
+ 		WARN_ON(inode->i_state & I_NEW);
+ 		inode->i_state |= I_FREEING;
+ 		percpu_counter_dec(&nr_inodes_unused);
+@@ -1268,10 +1273,8 @@ static void iput_final(struct inode *inode)
+ 	if (!drop) {
+ 		if (sb->s_flags & MS_ACTIVE) {
+ 			inode->i_state |= I_REFERENCED;
+-			if (!(inode->i_state & (I_DIRTY|I_SYNC))) {
+-				list_del_init(&inode->i_list);
++			if (!(inode->i_state & (I_DIRTY|I_SYNC)))
+ 				inode_lru_list_add(inode);
+-			}
+ 			spin_unlock(&inode_lock);
+ 			return;
+ 		}
+@@ -1284,6 +1287,7 @@ static void iput_final(struct inode *inode)
+ 		inode->i_state &= ~I_WILL_FREE;
+ 		hlist_del_init(&inode->i_hash);
+ 	}
++	list_del_init(&inode->i_wb_list);
+ 	WARN_ON(inode->i_state & I_NEW);
+ 	inode->i_state |= I_FREEING;
+ 
+diff --git a/fs/nilfs2/mdt.c b/fs/nilfs2/mdt.c
+index d01aff4..62756b4 100644
+--- a/fs/nilfs2/mdt.c
++++ b/fs/nilfs2/mdt.c
+@@ -504,7 +504,8 @@ nilfs_mdt_new_common(struct the_nilfs *nilfs, struct super_block *sb,
+ #endif
+ 		inode->dirtied_when = 0;
+ 
+-		INIT_LIST_HEAD(&inode->i_list);
++		INIT_LIST_HEAD(&inode->i_wb_list);
++		INIT_LIST_HEAD(&inode->i_lru);
+ 		INIT_LIST_HEAD(&inode->i_sb_list);
+ 		inode->i_state = 0;
+ #endif
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index af1d516..90d2b47 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -725,7 +725,8 @@ struct posix_acl;
+ 
+ struct inode {
+ 	struct hlist_node	i_hash;
+-	struct list_head	i_list;		/* backing dev IO list */
++	struct list_head	i_wb_list;	/* backing dev IO list */
++	struct list_head	i_lru;		/* inode LRU list */
+ 	struct list_head	i_sb_list;
+ 	struct list_head	i_dentry;
+ 	unsigned long		i_ino;
+diff --git a/include/linux/writeback.h b/include/linux/writeback.h
+index f956b66..242b6f8 100644
+--- a/include/linux/writeback.h
++++ b/include/linux/writeback.h
+@@ -10,7 +10,6 @@
+ struct backing_dev_info;
+ 
+ extern spinlock_t inode_lock;
+-extern struct list_head inode_unused;
+ 
+ /*
+  * fs/fs-writeback.c
+diff --git a/mm/backing-dev.c b/mm/backing-dev.c
+index 65d4204..15d5097 100644
+--- a/mm/backing-dev.c
++++ b/mm/backing-dev.c
+@@ -74,11 +74,11 @@ static int bdi_debug_stats_show(struct seq_file *m, void *v)
+ 
+ 	nr_wb = nr_dirty = nr_io = nr_more_io = 0;
+ 	spin_lock(&inode_lock);
+-	list_for_each_entry(inode, &wb->b_dirty, i_list)
++	list_for_each_entry(inode, &wb->b_dirty, i_wb_list)
+ 		nr_dirty++;
+-	list_for_each_entry(inode, &wb->b_io, i_list)
++	list_for_each_entry(inode, &wb->b_io, i_wb_list)
+ 		nr_io++;
+-	list_for_each_entry(inode, &wb->b_more_io, i_list)
++	list_for_each_entry(inode, &wb->b_more_io, i_wb_list)
+ 		nr_more_io++;
+ 	spin_unlock(&inode_lock);
+ 
+-- 
+1.7.1
 
-As a result I've pulled in several of the cleanups and re-ordered
-the series such that cleanups, factoring and list splitting are done
-before any of the locking changes. Instead of converting the inode
-state flags first, I've converted them last, ensuring that
-manipulations are kept inside other locks rather than outside them.
-
-The series is made up of the following steps:
-
-	- inode counters are made per-cpu
-	- inode LRU manipulations are made lazy
-	- i_list is split into two lists (grows inode by 2
-	  pointers), one for tracking lru status, one for writeback
-	  status
-	- reference counting is factored, then renamed and locked
-	  differently
-	- inode hash operations are factored, then locked per bucket
-	- superblock inode listis locked per-superblock
-	- inode LRU is locked via a global lock
-		- unclear what the best way to split this up from
-		  here is, so no attempt is made to optimise
-		  further.
-	- inode IO list are locked via a per-BDI lock
-		- further analysis needed to determine the next step
-		  in optimising this list. It is extremely contended
-		  under parallel workloads because foreground
-		  throttling (balance_dirty_pages) causes unbound
-		  writeback parallelism and contention. Fixing the
-		  unbound parallelism, I think, is a more important
-		  first optimisation step than making the list
-		  per-cpu.
-	- lock i_state operations with i_lock
-	- convert last_ino allocation to a percpu counter
-	- protect iunique counter with it's own lock
-	- remove inode_lock
-	- factor destroying an inode into dispose_one_inode() which
-	  is called from reclaim, dispose_list and iput_final.
-
-None of the patcheѕ are unchanged, and several of them are new or
-completely rewritten, so any previous testing is completely
-invalidated. I have not tried to optimise locking by using trylock
-loops - anywhere that requires out-of-order locking drops locks and
-regains the locks needed for the next operation. This approach
-simplified the code and lead to several improvments in the patch
-series (e.g. moving inode->i_lock inside writeback_single_inode(),
-and the dispose_one_inode factoring) that would have gone unnoticed
-if I'd gone down the same trylock loop path that Nick used.
-
-I've done some testing so far on ext3, ext4 and XFS (mostly sanity
-and lock_stat profile testing), but I have not tested any other
-filesystems. IOWs, it is light on testing at this point. I'm sending
-out for review now that it passes basic sanity tests so that
-comments on the reworked approach can be made.
-
-Version 4:
-- re-added inode reference count check in writeback_single_inode()
-  when the inode is clean and only attempt to add the inode to the
-  LRU if the inodis unreferenced.
-- moved hash_bl_[un]lock into hlist_bl.h introductory patch.
-- updated documentation and comments still referencing i_count
-- updated documentation and comments still referencing inode_lock
-- removed a couple of unneeded include files.
-- writeback_single_inode() and sync_inode are now the same, so fold
-  writeback_single_inode() into sync_inode.
-- moved lock ordering comments around into the patches that
-  introduce the locks or change the ordering.
-- cleaned up dispose_one_inode comments and layout.
-- added patch to start of series to move bdev inodes around bdi's
-  as they change the bdi in the inode mapping during the final put
-  of the bdev. Changes to this new code propagate throw the subsequent
-  scalability patches.
-
-Version 3:
-- whitespace fix in inode_init_early.
-- dropped patch that moves inodes around bdi lists as problem is now
-  fixed in mainline.
-- added comments explaining lazy inode LRU manipulations.
-- added inode_lru_list_{add,del} helpers much earlier to avoid
-  needing to export then unexport inode counters.
-- renamed i_io to i_wb_list.
-- removed iref_locked and just open code internal inode reference
-  increments.
-- added a WARN_ON() condition to detect iref() being called without
-  a pre-existing reference count.
-- added kerneldoc comment to iref().
-- dropped iref_read() wrapper function patch
-- killed the inode_hash_bucket wrapper, use hlist_bl_head directly
-- moved spin_[un]lock_bucket wrappers to list_bl.h, and renamed them
-  hlist_bl_[un]lock()
-- added inode_unhashed() helper function.
-- documented use of I_FREEING to ensure removal from inode lru and
-  writeback lists is kept sane when the inode is being freed.
-- added inode_wb_list_del() helper to avoid exporting the
-  inode_to_bdi() function.
-- added comments to explain why we need to set the i_state field
-  before adding new inodes to various lists
-- renamed last_ino_get() to get_next_ino().
-- kept invalidate_list/dispose_list pairing for invalidate_inodes(),
-  but changed the dispose list to use the i_sb_list pointer in the
-  inode instead of the i_lru to avoid needing to take the
-  inode_lru_lock for every inode on the superblock list.
-- added patch from Christoph Hellwig to spilt up inode_add_to_lists.
-  Modified the new function names to match the naming convention
-  used by all the other list helpers in inode.c, and added a
-  matching inode_sb_list_del() function for symmetry.
-- added patch from Christoph Hellwig to move inode number assignment
-  in get_new_inode() to the callers that don't directly assign an
-  inode number.
-
-Version 2:
-- complete rework of series
-
-----
-
-The following changes since commit cb655d0f3d57c23db51b981648e452988c0223f9:
-
-  Linux 2.6.36-rc7 (2010-10-06 13:39:52 -0700)
-
-are available in the git repository at:
-  git://git.kernel.org/pub/scm/linux/kernel/git/dgc/xfsdev.git inode-scale
-
-Christoph Hellwig (2):
-      fs: split __inode_add_to_list
-      fs: do not assign default i_ino in new_inode
-
-Dave Chinner (12):
-      fs: switch bdev inode bdi's correctly
-      fs: Convert nr_inodes and nr_unused to per-cpu counters
-      fs: Clean up inode reference counting
-      exofs: use iput() for inode reference count decrements
-      fs: rework icount to be a locked variable
-      fs: Factor inode hash operations into functions
-      fs: Introduce per-bucket inode hash locks
-      fs: add a per-superblock lock for the inode list
-      fs: split locking of inode writeback and LRU lists
-      fs: Protect inode->i_state with the inode->i_lock
-      fs: icache remove inode_lock
-      fs: Reduce inode I_FREEING and factor inode disposal
-
-Eric Dumazet (1):
-      fs: introduce a per-cpu last_ino allocator
-
-Nick Piggin (4):
-      kernel: add bl_list
-      fs: Implement lazy LRU updates for inodes.
-      fs: inode split IO and LRU lists
-      fs: Make iunique independent of inode_lock
-
- Documentation/filesystems/Locking        |    2 +-
- Documentation/filesystems/porting        |    8 +-
- Documentation/filesystems/vfs.txt        |   16 +-
- arch/powerpc/platforms/cell/spufs/file.c |    2 +-
- drivers/infiniband/hw/ipath/ipath_fs.c   |    1 +
- drivers/infiniband/hw/qib/qib_fs.c       |    1 +
- drivers/misc/ibmasm/ibmasmfs.c           |    1 +
- drivers/oprofile/oprofilefs.c            |    1 +
- drivers/usb/core/inode.c                 |    1 +
- drivers/usb/gadget/f_fs.c                |    1 +
- drivers/usb/gadget/inode.c               |    1 +
- fs/9p/vfs_inode.c                        |    5 +-
- fs/affs/inode.c                          |    2 +-
- fs/afs/dir.c                             |    2 +-
- fs/anon_inodes.c                         |    8 +-
- fs/autofs4/inode.c                       |    1 +
- fs/bfs/dir.c                             |    2 +-
- fs/binfmt_misc.c                         |    1 +
- fs/block_dev.c                           |   42 ++-
- fs/btrfs/inode.c                         |   18 +-
- fs/buffer.c                              |    2 +-
- fs/ceph/mds_client.c                     |    2 +-
- fs/cifs/inode.c                          |    2 +-
- fs/coda/dir.c                            |    2 +-
- fs/configfs/inode.c                      |    1 +
- fs/debugfs/inode.c                       |    1 +
- fs/drop_caches.c                         |   19 +-
- fs/exofs/inode.c                         |    6 +-
- fs/exofs/namei.c                         |    2 +-
- fs/ext2/namei.c                          |    2 +-
- fs/ext3/ialloc.c                         |    4 +-
- fs/ext3/namei.c                          |    2 +-
- fs/ext4/ialloc.c                         |    4 +-
- fs/ext4/mballoc.c                        |    1 +
- fs/ext4/namei.c                          |    2 +-
- fs/freevxfs/vxfs_inode.c                 |    1 +
- fs/fs-writeback.c                        |  234 +++++----
- fs/fuse/control.c                        |    1 +
- fs/gfs2/ops_inode.c                      |    2 +-
- fs/hfs/hfs_fs.h                          |    2 +-
- fs/hfs/inode.c                           |    2 +-
- fs/hfsplus/dir.c                         |    2 +-
- fs/hfsplus/hfsplus_fs.h                  |    2 +-
- fs/hfsplus/inode.c                       |    2 +-
- fs/hpfs/inode.c                          |    2 +-
- fs/hugetlbfs/inode.c                     |    1 +
- fs/inode.c                               |  781 +++++++++++++++++++-----------
- fs/internal.h                            |   11 +
- fs/jffs2/dir.c                           |    4 +-
- fs/jfs/jfs_txnmgr.c                      |    2 +-
- fs/jfs/namei.c                           |    2 +-
- fs/libfs.c                               |    2 +-
- fs/locks.c                               |    2 +-
- fs/logfs/dir.c                           |    2 +-
- fs/logfs/inode.c                         |    2 +-
- fs/logfs/readwrite.c                     |    2 +-
- fs/minix/namei.c                         |    2 +-
- fs/namei.c                               |    2 +-
- fs/nfs/dir.c                             |    2 +-
- fs/nfs/getroot.c                         |    2 +-
- fs/nfs/inode.c                           |    4 +-
- fs/nfs/nfs4state.c                       |    2 +-
- fs/nfs/write.c                           |    2 +-
- fs/nilfs2/gcdat.c                        |    1 +
- fs/nilfs2/gcinode.c                      |   22 +-
- fs/nilfs2/mdt.c                          |    5 +-
- fs/nilfs2/namei.c                        |    2 +-
- fs/nilfs2/segment.c                      |    2 +-
- fs/nilfs2/the_nilfs.h                    |    2 +-
- fs/notify/inode_mark.c                   |   46 +-
- fs/notify/mark.c                         |    1 -
- fs/notify/vfsmount_mark.c                |    1 -
- fs/ntfs/inode.c                          |   10 +-
- fs/ntfs/super.c                          |    6 +-
- fs/ocfs2/dlmfs/dlmfs.c                   |    2 +
- fs/ocfs2/inode.c                         |    2 +-
- fs/ocfs2/namei.c                         |    2 +-
- fs/pipe.c                                |    2 +
- fs/proc/base.c                           |    2 +
- fs/proc/proc_sysctl.c                    |    2 +
- fs/quota/dquot.c                         |   32 +-
- fs/ramfs/inode.c                         |    1 +
- fs/reiserfs/namei.c                      |    2 +-
- fs/reiserfs/stree.c                      |    2 +-
- fs/reiserfs/xattr.c                      |    2 +-
- fs/smbfs/inode.c                         |    2 +-
- fs/super.c                               |    1 +
- fs/sysv/namei.c                          |    2 +-
- fs/ubifs/dir.c                           |    2 +-
- fs/ubifs/super.c                         |    2 +-
- fs/udf/inode.c                           |    2 +-
- fs/udf/namei.c                           |    2 +-
- fs/ufs/namei.c                           |    2 +-
- fs/xfs/linux-2.6/xfs_buf.c               |    1 +
- fs/xfs/linux-2.6/xfs_iops.c              |    6 +-
- fs/xfs/linux-2.6/xfs_trace.h             |    2 +-
- fs/xfs/xfs_inode.h                       |    3 +-
- include/linux/backing-dev.h              |    3 +
- include/linux/fs.h                       |   43 ++-
- include/linux/list_bl.h                  |  146 ++++++
- include/linux/poison.h                   |    2 +
- include/linux/writeback.h                |    4 -
- ipc/mqueue.c                             |    3 +-
- kernel/cgroup.c                          |    1 +
- kernel/futex.c                           |    2 +-
- kernel/sysctl.c                          |    4 +-
- mm/backing-dev.c                         |   29 +-
- mm/filemap.c                             |    6 +-
- mm/rmap.c                                |    6 +-
- mm/shmem.c                               |    7 +-
- net/socket.c                             |    3 +-
- net/sunrpc/rpc_pipe.c                    |    1 +
- security/inode.c                         |    1 +
- security/selinux/selinuxfs.c             |    1 +
- 114 files changed, 1108 insertions(+), 575 deletions(-)
- create mode 100644 include/linux/list_bl.h
