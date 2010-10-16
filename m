@@ -1,49 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750861Ab0JPEKB (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Oct 2010 00:10:01 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:37009 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750953Ab0JPEKA (ORCPT
+	id S1751011Ab0JPEVK (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Oct 2010 00:21:10 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:42349 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750738Ab0JPEVJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Oct 2010 00:10:00 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=RnciyBMIGGM4j5IWUj2JITg8RVzk9tgfFLiLvtNsdB2Q93ZnjUEhKebfyVxAM8byIX
-         i8sUpJjUPZnIgHNnMgN9rAogE/+7RIOuZI3D25NzSy9Ac6fxZE/a6TM0ohGm9d8SwLXM
-         hIsKdPt1ZD4owNhoEaTOYudimHqQ5dH/Fd9HI=
-From: Tracey Dent <tdent48227@gmail.com>
-To: sage@newdream.net
-Cc: ecashin@coraid.com, yehuda@hq.newdream.net, linux-kernel@vger.kernel.org,
-        Tracey Dent <tdent48227@gmail.com>
-Subject: [PATCH 2/2] Drivers: block: aoe: Makefile: replace the use of <module>-objs with <module>-y
-Date: Sat, 16 Oct 2010 00:09:41 -0400
-Message-Id: <1287202181-2196-2-git-send-email-tdent48227@gmail.com>
-X-Mailer: git-send-email 1.7.3.1.104.gc752e
-In-Reply-To: <1287202181-2196-1-git-send-email-tdent48227@gmail.com>
-References: <1287202181-2196-1-git-send-email-tdent48227@gmail.com>
+	Sat, 16 Oct 2010 00:21:09 -0400
+X-Authority-Analysis: v=1.1 cv=iGF3DqghDyT/uy4mV2LvOKNXCATMSjL+tOl9cucoGVk= c=1 sm=0 a=gJRBYOTBAWgA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=2cm5xCx161y6UMzlayUA:9 a=N8ckFn2HAuoKe4o_Q-sA:7 a=0ck0U6dx2AcDFxBRjaYDZYUun5QA:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [PATCH 4/9] jump label: Fix deadlock b/w jump_label_mutex vs.
+ text_mutex
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Jason Baron <jbaron@redhat.com>
+In-Reply-To: <1287195949.16971.45.camel@gandalf.stny.rr.com>
+References: <20101015200949.134732894@goodmis.org>
+	 <20101015201036.691801067@goodmis.org>  <1287176134.1998.113.camel@laptop>
+	 <1287195949.16971.45.camel@gandalf.stny.rr.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Sat, 16 Oct 2010 00:21:06 -0400
+Message-ID: <1287202866.16971.47.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Changed <module>-objs to <module>-y in Makefile.
+On Fri, 2010-10-15 at 22:25 -0400, Steven Rostedt wrote:
+> On Fri, 2010-10-15 at 22:55 +0200, Peter Zijlstra wrote:
+> > On Fri, 2010-10-15 at 16:09 -0400, Steven Rostedt wrote:
+> > > +void jump_label_lock(void)
+> > > +{
+> > > +       mutex_lock(&jump_label_mutex);
+> > > +}
+> > > +
+> > 
+> > > +++ b/kernel/kprobes.c
+> > > @@ -1145,13 +1145,16 @@ int __kprobes register_kprobe(struct kprobe *p)
+> > >                 return ret;
+> > >  
+> > >         preempt_disable();
+> > > +       jump_label_lock();
+> > 
+> > How exactly does that work?
+> > 
+> 
+> This patch should fix it (compiled tested only). If all agree, I'll add
+> it to the series.
 
-Signed-off-by: Tracey Dent <tdent48227@gmail.com>
----
- drivers/block/aoe/Makefile |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+Well, I just did more than compile test it. I booted first without this
+patch, and added a kprobe and lockdep spewed its guts about this
+condition. Then I applied the patch, compiled and rebooted, tried the
+probe again, and lockdep stayed quiet :-)
 
-diff --git a/drivers/block/aoe/Makefile b/drivers/block/aoe/Makefile
-index e76d997..06ea82c 100644
---- a/drivers/block/aoe/Makefile
-+++ b/drivers/block/aoe/Makefile
-@@ -3,4 +3,4 @@
- #
- 
- obj-$(CONFIG_ATA_OVER_ETH)	+= aoe.o
--aoe-objs := aoeblk.o aoechr.o aoecmd.o aoedev.o aoemain.o aoenet.o
-+aoe-y := aoeblk.o aoechr.o aoecmd.o aoedev.o aoemain.o aoenet.o
--- 
-1.7.3.1.104.gc752e
+-- Steve
+
+
+> diff --git a/kernel/kprobes.c b/kernel/kprobes.c
+> index d45d72e..0dbd328 100644
+> --- a/kernel/kprobes.c
+> +++ b/kernel/kprobes.c
+> @@ -1144,17 +1144,13 @@ int __kprobes register_kprobe(struct kprobe *p)
+>  	if (ret)
+>  		return ret;
+>  
+> -	preempt_disable();
+>  	jump_label_lock();
+> +	preempt_disable();
+>  	if (!kernel_text_address((unsigned long) p->addr) ||
+>  	    in_kprobes_functions((unsigned long) p->addr) ||
+>  	    ftrace_text_reserved(p->addr, p->addr) ||
+> -	    jump_label_text_reserved(p->addr, p->addr)) {
+> -		preempt_enable();
+> -		jump_label_unlock();
+> -		return -EINVAL;
+> -	}
+> -	jump_label_unlock();
+> +	    jump_label_text_reserved(p->addr, p->addr))
+> +		goto fail_with_jump_label;
+>  
+>  	/* User can pass only KPROBE_FLAG_DISABLED to register_kprobe */
+>  	p->flags &= KPROBE_FLAG_DISABLED;
+> @@ -1168,10 +1164,9 @@ int __kprobes register_kprobe(struct kprobe *p)
+>  		 * We must hold a refcount of the probed module while updating
+>  		 * its code to prohibit unexpected unloading.
+>  		 */
+> -		if (unlikely(!try_module_get(probed_mod))) {
+> -			preempt_enable();
+> -			return -EINVAL;
+> -		}
+> +		if (unlikely(!try_module_get(probed_mod)))
+> +			goto fail_with_jump_label;
+> +
+>  		/*
+>  		 * If the module freed .init.text, we couldn't insert
+>  		 * kprobes in there.
+> @@ -1179,11 +1174,11 @@ int __kprobes register_kprobe(struct kprobe *p)
+>  		if (within_module_init((unsigned long)p->addr, probed_mod) &&
+>  		    probed_mod->state != MODULE_STATE_COMING) {
+>  			module_put(probed_mod);
+> -			preempt_enable();
+> -			return -EINVAL;
+> +			goto fail_with_jump_label;
+>  		}
+>  	}
+>  	preempt_enable();
+> +	jump_label_unlock();
+>  
+>  	p->nmissed = 0;
+>  	INIT_LIST_HEAD(&p->list);
+> @@ -1225,6 +1220,11 @@ out:
+>  		module_put(probed_mod);
+>  
+>  	return ret;
+> +
+> +fail_with_jump_label:
+> +	preempt_enable();
+> +	jump_label_unlock();
+> +	return -EINVAL;
+>  }
+>  EXPORT_SYMBOL_GPL(register_kprobe);
+>  
+> 
+
 
