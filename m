@@ -1,81 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754266Ab0JPTrO (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Oct 2010 15:47:14 -0400
-Received: from casper.infradead.org ([85.118.1.10]:51026 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754079Ab0JPTrN convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Oct 2010 15:47:13 -0400
-Subject: Re: [RFC tg_shares_up improvements - v1 00/12] [RFC tg_shares_up -
- v1 00/12] Reducing cost of tg->shares distribution
-From: Peter Zijlstra <peterz@infradead.org>
-To: pjt@google.com
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Srivatsa Vaddagiri <vatsa@in.ibm.com>,
-        Chris Friesen <cfriesen@nortel.com>,
-        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
-        Pierre Bourdon <pbourdon@excellency.fr>,
-        Bharata B Rao <bharata@linux.vnet.ibm.com>
-In-Reply-To: <20101016044349.830426011@google.com>
-References: <20101016044349.830426011@google.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Sat, 16 Oct 2010 21:46:54 +0200
-Message-ID: <1287258414.1998.133.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	id S1754586Ab0JPTxX (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Oct 2010 15:53:23 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:52671 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754149Ab0JPTxW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 16 Oct 2010 15:53:22 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Paul Stewart <pstew@google.com>
+Subject: Re: [PATCH] ath9k: Convert to new PCI PM framework
+Date: Sat, 16 Oct 2010 21:52:24 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.36-rc8-rjw+; KDE/4.4.4; x86_64; ; )
+Cc: "Luis R. Rodriguez" <lrodriguez@atheros.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "Linux-pm mailing list" <linux-pm@lists.linux-foundation.org>,
+        linux-wireless@vger.kernel.org, ath9k-devel@venema.h4ckr.net
+References: <201010160036.17653.rjw@sisk.pl> <AANLkTimXXERRCYEjzQbcii6XW8wbjNfN-eWigU7Wi_Lv@mail.gmail.com>
+In-Reply-To: <AANLkTimXXERRCYEjzQbcii6XW8wbjNfN-eWigU7Wi_Lv@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201010162152.24344.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-10-15 at 21:43 -0700, pjt@google.com wrote:
-> Hi all,
-> 
-> Peter previously posted a patchset that attempted to improve the problem of
-> task_group share distribution.  This is something that has been a long-time
-> pain point for group scheduling.  The existing algorithm considers
-> distributions on a per-cpu-per-domain basis and carries a fairly high update
-> overhead, especially on larger machines.
-> 
-> I was previously looking at improving this using Fenwick trees to allow a
-> single sum without the exorbitant cost but then Peter's idea above was better :).
-> 
-> The kernel is that by monitoring the average contribution to load on a
-> per-cpu-per-taskgroup basis we can distribute the weight for which we are
-> expected to consume.
-> 
-> This set extends the original posting with a focus on increased fairness and
-> reduced convergence (to true average) time.  In particular the case of large
-> over-commit in the case of a distributed wake-up is a concern which is now
-> fairly well addressed.
-> 
-> Obviously everything's experimental but it should be stable/fair.
+On Saturday, October 16, 2010, Paul Stewart wrote:
+> On Fri, Oct 15, 2010 at 3:36 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> > From: Rafael J. Wysocki <rjw@sisk.pl>
+> >
+> > The ath9k driver uses the legacy PCI power management (suspend
+> > and resume) callbacks that apparently cause intermittent problems
+> > to happen (the adapter sometimes doesn't resume correctly on my
+> > Acer Ferrari One).  Make it use the new PCI PM and let the PCI core
+> > code handle the PCI-specific details of power transitions.
+> I'm curious.  What sort of behavior did you get when the device fails
+> to resume correctly?  Every now and then I've been getting bad
+> accesses to 0x7000 every now and then -- after that any reads to PCI
+> registers return all f's.
 
-I like what you've done with it, my only worry is 10/12 where you allow
-for extra updates to the global state -- I think they should be fairly
-limited in number, and I can see the need for the update if we get too
-far out of whack, but it is something to look at while testing this
-stuff.
+Yes, this sort of matches my experience.  Even the config space isn't
+really accessible after a failure to resume.
 
-> TODO:
-> - Validate any RT interaction
-
-I don't think there's anything to worry about there, the only
-interaction which there is between this and the rt scheduling classes is
-the initial sharing of the load-avg window, but you 'cure' that in 7/12.
-
-(I think that sysctl wants a _us postfix someplace and we thus want some
-NSEC_PER_USEC multiplication in there).
-
-> - Continue collecting/analyzing performance and fairness data
-
-Yes please ;-), I'll try and run this on some machines as well.
-
-> - Should the shares period just be the sched_latency?
-
-Interesting idea.. lets keep it a separate sysctl for now for easy
-tuning, if things settle down and we're still good in that range we can
-consider merging them.
-
-
+Thanks,
+Rafael
