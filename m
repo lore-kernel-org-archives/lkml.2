@@ -1,96 +1,267 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753155Ab0JPKE4 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Oct 2010 06:04:56 -0400
-Received: from bld-mail14.adl6.internode.on.net ([150.101.137.99]:32906 "EHLO
-	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751266Ab0JPKEz (ORCPT
+	id S1753208Ab0JPKLb (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Oct 2010 06:11:31 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:34135 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751266Ab0JPKLa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Oct 2010 06:04:55 -0400
-Date: Sat, 16 Oct 2010 21:04:41 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 03/19] fs: Convert nr_inodes and nr_unused to per-cpu
- counters
-Message-ID: <20101016100441.GP4681@dastard>
-References: <1287216853-17634-1-git-send-email-david@fromorbit.com>
- <1287216853-17634-4-git-send-email-david@fromorbit.com>
- <1287217776.2799.69.camel@edumazet-laptop>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1287217776.2799.69.camel@edumazet-laptop>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Sat, 16 Oct 2010 06:11:30 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=U2fMV8bY/hZXZdpXl3wDg5JbyjQq7vHFVBQ//vOlTLhbH7C7lzgNc573YNzquouMd0
+         f7qu3Ti/IK1HNqPszrH4tS6vftA2lidtWUast2T8C+Ayqk7S00tZup3PNq8zdLvq7UN3
+         ZZo8M45LULB/oEGZmi6ey+vo93uY5NwJHhJis=
+From: Andy Shevchenko <andy.shevchenko@gmail.com>
+To: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@suse.de>,
+        Andy Shevchenko <andy.shevchenko@gmail.com>
+Subject: [PATCH 1/3] staging: batman-adv: remove useless addr_to_string()
+Date: Sat, 16 Oct 2010 13:11:10 +0300
+Message-Id: <11c47095d961ba40ad95ecf995094e78e4d96fdf.1287223789.git.andy.shevchenko@gmail.com>
+X-Mailer: git-send-email 1.7.2.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Oct 16, 2010 at 10:29:36AM +0200, Eric Dumazet wrote:
-> Le samedi 16 octobre 2010 à 19:13 +1100, Dave Chinner a écrit :
-> > From: Dave Chinner <dchinner@redhat.com>
-> > 
-> > The number of inodes allocated does not need to be tied to the
-> > addition or removal of an inode to/from a list. If we are not tied
-> > to a list lock, we could update the counters when inodes are
-> > initialised or destroyed, but to do that we need to convert the
-> > counters to be per-cpu (i.e. independent of a lock). This means that
-> > we have the freedom to change the list/locking implementation
-> > without needing to care about the counters.
-> > 
-> > Based on a patch originally from Eric Dumazet.
-> > 
-> > Signed-off-by: Dave Chinner <dchinner@redhat.com>
-> > Reviewed-by: Christoph Hellwig <hch@lst.de>
-> > ---
-> 
-> NACK
-> 
-> Some people believe percpu_counter object is the right answer to such
-> distributed counters, because the loop is done on 'online' cpus instead
-> of 'possible' cpus. "It must be better if number of possible cpus is
-> 4096 and only one or two cpus are online"...
-> 
-> But if we do this loop only on rare events, like
-> "cat /proc/sys/fs/inode-nr", then the percpu_counter() is more
-> expensive, because percpu_add() _is_ more expensive :
-> 
-> - Its a function call and lot of instructions/cycles per call, while
-> this_cpu_inc(nr_inodes) is a single instruction, using no register on
-> x86.
-> 
-> - Its possibly accessing a shared spinlock and counter when the percpu
-> counter reaches the batch limit.
-> 
-> 
-> To recap : nr_inodes is not a counter that needs to be estimated in real
-> time, since we have not limit on number of inodes in the machine (limit
-> is the memory allocator).
-> 
-> Unless someone can prove "cat /proc/sys/fs/inode-nr" must be performed
-> thousand of times per second on their setup, the choice I made to scale
-> nr_inodes is better over the 'obvious percpu_counter choice'
+Since all *printf() methods in the kernel understand '%pM' modifier the
+conversion to the string is useless beforehand.
 
-get_nr_inodes_unused() is called on every single shrinker call. i.e.
-for every 128 inodes we attempt to reclaim. Given that I'm seeing
-inode reclaim rate in the order of a million per second on a 8p box,
-that meets your criteria for using the generic percpu counter
-infrastructure.
+Additionally this patch decreases batman_if structure by 20 bytes.
 
-Also, get_nr_inodes() is also called by get_nr_dirty_inodes(), which is
-called by the high level inode writeback code, so will typically be
-called in the order of tens of times per second, and the number of
-calls increased depending on the number of filesystems that are
-active. It's still much higher frequency than your "cat
-/proc/sys/fs/inode-nr" example indicates it might be called.
+Signed-off-by: Andy Shevchenko <andy.shevchenko@gmail.com>
+---
+ drivers/staging/batman-adv/hard-interface.c |    2 --
+ drivers/staging/batman-adv/main.c           |    5 -----
+ drivers/staging/batman-adv/main.h           |    2 --
+ drivers/staging/batman-adv/originator.c     |   16 ++++++----------
+ drivers/staging/batman-adv/routing.c        |    4 ++--
+ drivers/staging/batman-adv/send.c           |    8 ++++----
+ drivers/staging/batman-adv/types.h          |    1 -
+ drivers/staging/batman-adv/vis.c            |   15 ++++-----------
+ 8 files changed, 16 insertions(+), 37 deletions(-)
 
-So I'd say that by your reasoning, the choice of using the generic
-percpu counters is the right one to make.
-
-Cheers,
-
-Dave.
+diff --git a/drivers/staging/batman-adv/hard-interface.c b/drivers/staging/batman-adv/hard-interface.c
+index 7b77cf2..80cfa86 100644
+--- a/drivers/staging/batman-adv/hard-interface.c
++++ b/drivers/staging/batman-adv/hard-interface.c
+@@ -159,8 +159,6 @@ static bool hardif_is_iface_up(struct batman_if *batman_if)
+ 
+ static void update_mac_addresses(struct batman_if *batman_if)
+ {
+-	addr_to_string(batman_if->addr_str, batman_if->net_dev->dev_addr);
+-
+ 	memcpy(((struct batman_packet *)(batman_if->packet_buff))->orig,
+ 	       batman_if->net_dev->dev_addr, ETH_ALEN);
+ 	memcpy(((struct batman_packet *)(batman_if->packet_buff))->prev_sender,
+diff --git a/drivers/staging/batman-adv/main.c b/drivers/staging/batman-adv/main.c
+index 580ca02..0587940 100644
+--- a/drivers/staging/batman-adv/main.c
++++ b/drivers/staging/batman-adv/main.c
+@@ -145,11 +145,6 @@ void dec_module_count(void)
+ 	module_put(THIS_MODULE);
+ }
+ 
+-int addr_to_string(char *buff, uint8_t *addr)
+-{
+-	return sprintf(buff, "%pM", addr);
+-}
+-
+ /* returns 1 if they are the same originator */
+ 
+ int compare_orig(void *data1, void *data2)
+diff --git a/drivers/staging/batman-adv/main.h b/drivers/staging/batman-adv/main.h
+index ca97589..5e3f516 100644
+--- a/drivers/staging/batman-adv/main.h
++++ b/drivers/staging/batman-adv/main.h
+@@ -58,7 +58,6 @@
+ 
+ #define PACKBUFF_SIZE 2000
+ #define LOG_BUF_LEN 8192	  /* has to be a power of 2 */
+-#define ETH_STR_LEN 20
+ 
+ #define VIS_INTERVAL 5000	/* 5 seconds */
+ 
+@@ -136,7 +135,6 @@ int mesh_init(struct net_device *soft_iface);
+ void mesh_free(struct net_device *soft_iface);
+ void inc_module_count(void);
+ void dec_module_count(void);
+-int addr_to_string(char *buff, uint8_t *addr);
+ int compare_orig(void *data1, void *data2);
+ int choose_orig(void *data, int32_t size);
+ int is_my_mac(uint8_t *addr);
+diff --git a/drivers/staging/batman-adv/originator.c b/drivers/staging/batman-adv/originator.c
+index c530df1..dd98f58 100644
+--- a/drivers/staging/batman-adv/originator.c
++++ b/drivers/staging/batman-adv/originator.c
+@@ -315,7 +315,6 @@ int orig_seq_print_text(struct seq_file *seq, void *offset)
+ 	int last_seen_secs;
+ 	int last_seen_msecs;
+ 	unsigned long flags;
+-	char orig_str[ETH_STR_LEN], router_str[ETH_STR_LEN];
+ 
+ 	if ((!bat_priv->primary_if) ||
+ 	    (bat_priv->primary_if->if_status != IF_ACTIVE)) {
+@@ -329,10 +328,10 @@ int orig_seq_print_text(struct seq_file *seq, void *offset)
+ 				  net_dev->name);
+ 	}
+ 
+-	seq_printf(seq, "[B.A.T.M.A.N. adv %s%s, MainIF/MAC: %s/%s (%s)]\n",
++	seq_printf(seq, "[B.A.T.M.A.N. adv %s%s, MainIF/MAC: %s/%pM (%s)]\n",
+ 		   SOURCE_VERSION, REVISION_VERSION_STR,
+ 		   bat_priv->primary_if->net_dev->name,
+-		   bat_priv->primary_if->addr_str, net_dev->name);
++		   bat_priv->primary_if->net_dev->dev_addr, net_dev->name);
+ 	seq_printf(seq, "  %-15s %s (%s/%i) %17s [%10s]: %20s ...\n",
+ 		   "Originator", "last-seen", "#", TQ_MAX_VALUE, "Nexthop",
+ 		   "outgoingIF", "Potential nexthops");
+@@ -349,21 +348,18 @@ int orig_seq_print_text(struct seq_file *seq, void *offset)
+ 		if (orig_node->router->tq_avg == 0)
+ 			continue;
+ 
+-		addr_to_string(orig_str, orig_node->orig);
+-		addr_to_string(router_str, orig_node->router->addr);
+ 		last_seen_secs = jiffies_to_msecs(jiffies -
+ 						orig_node->last_valid) / 1000;
+ 		last_seen_msecs = jiffies_to_msecs(jiffies -
+ 						orig_node->last_valid) % 1000;
+ 
+-		seq_printf(seq, "%-17s %4i.%03is   (%3i) %17s [%10s]:",
+-			   orig_str, last_seen_secs, last_seen_msecs,
+-			   orig_node->router->tq_avg, router_str,
++		seq_printf(seq, "%pM %4i.%03is   (%3i) %pM [%10s]:",
++			   orig_node->orig, last_seen_secs, last_seen_msecs,
++			   orig_node->router->tq_avg, orig_node->router->addr,
+ 			   orig_node->router->if_incoming->net_dev->name);
+ 
+ 		list_for_each_entry(neigh_node, &orig_node->neigh_list, list) {
+-			addr_to_string(orig_str, neigh_node->addr);
+-			seq_printf(seq, " %17s (%3i)", orig_str,
++			seq_printf(seq, " %pM (%3i)", neigh_node->addr,
+ 					   neigh_node->tq_avg);
+ 		}
+ 
+diff --git a/drivers/staging/batman-adv/routing.c b/drivers/staging/batman-adv/routing.c
+index 58aa99e..9010263 100644
+--- a/drivers/staging/batman-adv/routing.c
++++ b/drivers/staging/batman-adv/routing.c
+@@ -554,11 +554,11 @@ void receive_bat_packet(struct ethhdr *ethhdr,
+ 					    batman_packet->orig) ? 1 : 0);
+ 
+ 	bat_dbg(DBG_BATMAN, bat_priv,
+-		"Received BATMAN packet via NB: %pM, IF: %s [%s] "
++		"Received BATMAN packet via NB: %pM, IF: %s [%pM] "
+ 		"(from OG: %pM, via prev OG: %pM, seqno %d, tq %d, "
+ 		"TTL %d, V %d, IDF %d)\n",
+ 		ethhdr->h_source, if_incoming->net_dev->name,
+-		if_incoming->addr_str, batman_packet->orig,
++		if_incoming->net_dev->dev_addr, batman_packet->orig,
+ 		batman_packet->prev_sender, batman_packet->seqno,
+ 		batman_packet->tq, batman_packet->ttl, batman_packet->version,
+ 		has_directlink_flag);
+diff --git a/drivers/staging/batman-adv/send.c b/drivers/staging/batman-adv/send.c
+index 5d57ef5..1d78bc5 100644
+--- a/drivers/staging/batman-adv/send.c
++++ b/drivers/staging/batman-adv/send.c
+@@ -135,13 +135,13 @@ static void send_packet_to_if(struct forw_packet *forw_packet,
+ 							    "Forwarding"));
+ 		bat_dbg(DBG_BATMAN, bat_priv,
+ 			"%s %spacket (originator %pM, seqno %d, TQ %d, TTL %d,"
+-			" IDF %s) on interface %s [%s]\n",
++			" IDF %s) on interface %s [%pM]\n",
+ 			fwd_str, (packet_num > 0 ? "aggregated " : ""),
+ 			batman_packet->orig, ntohl(batman_packet->seqno),
+ 			batman_packet->tq, batman_packet->ttl,
+ 			(batman_packet->flags & DIRECTLINK ?
+ 			 "on" : "off"),
+-			batman_if->net_dev->name, batman_if->addr_str);
++			batman_if->net_dev->name, batman_if->net_dev->dev_addr);
+ 
+ 		buff_pos += sizeof(struct batman_packet) +
+ 			(batman_packet->num_hna * ETH_ALEN);
+@@ -183,12 +183,12 @@ static void send_packet(struct forw_packet *forw_packet)
+ 		/* FIXME: what about aggregated packets ? */
+ 		bat_dbg(DBG_BATMAN, bat_priv,
+ 			"%s packet (originator %pM, seqno %d, TTL %d) "
+-			"on interface %s [%s]\n",
++			"on interface %s [%pM]\n",
+ 			(forw_packet->own ? "Sending own" : "Forwarding"),
+ 			batman_packet->orig, ntohl(batman_packet->seqno),
+ 			batman_packet->ttl,
+ 			forw_packet->if_incoming->net_dev->name,
+-			forw_packet->if_incoming->addr_str);
++			forw_packet->if_incoming->net_dev->dev_addr);
+ 
+ 		/* skb is only used once and than forw_packet is free'd */
+ 		send_skb_packet(forw_packet->skb, forw_packet->if_incoming,
+diff --git a/drivers/staging/batman-adv/types.h b/drivers/staging/batman-adv/types.h
+index bb5827f..f3f7366 100644
+--- a/drivers/staging/batman-adv/types.h
++++ b/drivers/staging/batman-adv/types.h
+@@ -37,7 +37,6 @@ struct batman_if {
+ 	struct list_head list;
+ 	int16_t if_num;
+ 	char if_status;
+-	char addr_str[ETH_STR_LEN];
+ 	struct net_device *net_dev;
+ 	atomic_t seqno;
+ 	atomic_t frag_seqno;
+diff --git a/drivers/staging/batman-adv/vis.c b/drivers/staging/batman-adv/vis.c
+index 6b102a3..8f21649 100644
+--- a/drivers/staging/batman-adv/vis.c
++++ b/drivers/staging/batman-adv/vis.c
+@@ -130,15 +130,13 @@ static ssize_t vis_data_read_prim_sec(char *buff, struct hlist_head *if_list)
+ {
+ 	struct if_list_entry *entry;
+ 	struct hlist_node *pos;
+-	char tmp_addr_str[ETH_STR_LEN];
+ 	size_t len = 0;
+ 
+ 	hlist_for_each_entry(entry, pos, if_list, list) {
+ 		if (entry->primary)
+ 			len += sprintf(buff + len, "PRIMARY, ");
+ 		else {
+-			addr_to_string(tmp_addr_str, entry->addr);
+-			len += sprintf(buff + len,  "SEC %s, ", tmp_addr_str);
++			len += sprintf(buff + len,  "SEC %pM, ", entry->addr);
+ 		}
+ 	}
+ 
+@@ -165,12 +163,9 @@ static size_t vis_data_count_prim_sec(struct hlist_head *if_list)
+ static ssize_t vis_data_read_entry(char *buff, struct vis_info_entry *entry,
+ 				   uint8_t *src, bool primary)
+ {
+-	char to[18];
+-
+ 	/* maximal length: max(4+17+2, 3+17+1+3+2) == 26 */
+-	addr_to_string(to, entry->dest);
+ 	if (primary && entry->quality == 0)
+-		return sprintf(buff, "HNA %s, ", to);
++		return sprintf(buff, "HNA %pM, ", entry->dest);
+ 	else if (compare_orig(entry->src, src))
+ 		return sprintf(buff, "TQ %s %d, ", to, entry->quality);
+ 
+@@ -190,7 +185,6 @@ int vis_seq_print_text(struct seq_file *seq, void *offset)
+ 	struct if_list_entry *entry;
+ 	struct hlist_node *pos, *n;
+ 	int i;
+-	char tmp_addr_str[ETH_STR_LEN];
+ 	unsigned long flags;
+ 	int vis_server = atomic_read(&bat_priv->vis_mode);
+ 	size_t buff_pos, buf_size;
+@@ -255,9 +249,8 @@ int vis_seq_print_text(struct seq_file *seq, void *offset)
+ 		}
+ 
+ 		hlist_for_each_entry(entry, pos, &vis_if_list, list) {
+-			addr_to_string(tmp_addr_str, entry->addr);
+-			buff_pos += sprintf(buff + buff_pos, "%s,",
+-					    tmp_addr_str);
++			buff_pos += sprintf(buff + buff_pos, "%pM,",
++					    entry->addr);
+ 
+ 			for (i = 0; i < packet->entries; i++)
+ 				buff_pos += vis_data_read_entry(buff + buff_pos,
 -- 
-Dave Chinner
-david@fromorbit.com
+1.7.2.3
+
