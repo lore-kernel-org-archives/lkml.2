@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756912Ab0JPXNZ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Oct 2010 19:13:25 -0400
+	id S1756925Ab0JPXNe (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Oct 2010 19:13:34 -0400
 Received: from mail-bw0-f46.google.com ([209.85.214.46]:58388 "EHLO
 	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756877Ab0JPXNM (ORCPT
+	with ESMTP id S1756887Ab0JPXNb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Oct 2010 19:13:12 -0400
+	Sat, 16 Oct 2010 19:13:31 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=GRbb1uFA/aQTi90/BTYUOdfmI3I12fMZZhMBAW80HnW4Ymcc6WiFSKt3zb42cP6lDP
-         3zou+bmfP3ghDbw4v4MapksPV70e3l0VaK6R5W0lFiADk+BikOlTyDQ6dKwYqEW0cfDx
-         /5k3EHQSXpy2g51VBSo7du1Wrk0b9AhQ9E8xQ=
+        b=r4NF7GfLErRUqgXrRhwFcEhVPXk3FUk0YOB4oXrI05KKL9MNVw/fa4Q3suBZLdkHad
+         NVfypNvFB+R27ajrTB32ZVVXSmxFIikhzip+zkguo/+M4QSkdJSwJIkkDAJXUJEe10gZ
+         H20z3hOS5r8YyswEZ/l7YTO9kBhCg5F3V2w5A=
 From: Maxim Levitsky <maximlevitsky@gmail.com>
 To: Alex Dubov <oakad@yahoo.com>
 Cc: Andrew Morton <akpm@linux-foundation.org>,
         LKML <linux-kernel@vger.kernel.org>,
         Maxim Levitsky <maximlevitsky@gmail.com>
-Subject: [PATCH 3/6] memstick: jmb38x: Driver rework.
-Date: Sun, 17 Oct 2010 01:12:51 +0200
-Message-Id: <1287270774-18796-4-git-send-email-maximlevitsky@gmail.com>
+Subject: [PATCH 4/6] memstick: add support for legacy memorysticks
+Date: Sun, 17 Oct 2010 01:12:52 +0200
+Message-Id: <1287270774-18796-5-git-send-email-maximlevitsky@gmail.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1287270774-18796-1-git-send-email-maximlevitsky@gmail.com>
 References: <1287270774-18796-1-git-send-email-maximlevitsky@gmail.com>
@@ -28,1753 +28,2550 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Many of driver parts were rewritten, code simplified,
-a lot of debbuging code added.
+Huge thanks for Alex Dubov for code that this is based on and for lot,
+really lot of help he gave me in understanding MemorySticks and
+implementing this driver.  His help made this driver possible.
 
-Tested with ms standard and ms pro cards.
+As any code that works with user data this driver isn't recommened to use
+with valuable data.
 
-DMA is now used for all transfers by default.
-(except < 8 TPC that are written through TPC_P0/1)
-That is used to work around hardware bug.
+It tries its best though to avoid data corruption and possible damage to
+the card.
 
-Clock setup fixed as suggested, serial IO works now.
-
-No performance regressions (even a small improvement).
+Tested with MS DUO 64 MB card on Ricoh and Jmicron reader.
 
 Signed-off-by: Maxim Levitsky <maximlevitsky@gmail.com>
+Acked-by: Alex Dubov <oakad@yahoo.com>
 ---
- drivers/memstick/host/jmb38x_ms.c | 1198 ++++++++++++++++++-------------------
- drivers/memstick/host/jmb38x_ms.h |  200 ++++++
- 2 files changed, 775 insertions(+), 623 deletions(-)
- create mode 100644 drivers/memstick/host/jmb38x_ms.h
+ MAINTAINERS                      |    5 +
+ drivers/memstick/core/Kconfig    |   12 +
+ drivers/memstick/core/Makefile   |    2 +-
+ drivers/memstick/core/ms_block.c | 2232 ++++++++++++++++++++++++++++++++++++++
+ drivers/memstick/core/ms_block.h |  229 ++++
+ 5 files changed, 2479 insertions(+), 1 deletions(-)
+ create mode 100644 drivers/memstick/core/ms_block.c
+ create mode 100644 drivers/memstick/core/ms_block.h
 
-diff --git a/drivers/memstick/host/jmb38x_ms.c b/drivers/memstick/host/jmb38x_ms.c
-index f2b894c..4ee68b2 100644
---- a/drivers/memstick/host/jmb38x_ms.c
-+++ b/drivers/memstick/host/jmb38x_ms.c
-@@ -2,6 +2,7 @@
-  *  jmb38x_ms.c - JMicron jmb38x MemoryStick card reader
-  *
-  *  Copyright (C) 2008 Alex Dubov <oakad@yahoo.com>
-+ *  Copyright (C) 2010 Maxim Levitsky <maximlevitsky@gmail.com>
-  *
-  * This program is free software; you can redistribute it and/or modify
-  * it under the terms of the GNU General Public License version 2 as
-@@ -17,746 +18,672 @@
- #include <linux/highmem.h>
- #include <linux/memstick.h>
- #include <linux/slab.h>
+diff --git a/MAINTAINERS b/MAINTAINERS
+index 9c7c41c..4ff3fce 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -5448,6 +5448,11 @@ W:	http://tifmxx.berlios.de/
+ S:	Maintained
+ F:	drivers/memstick/host/tifm_ms.c
+ 
++SONY MEMORYSTICK STANDARD SUPPORT
++M:	Maxim Levitsky <maximlevitsky@gmail.com>
++S:	Maintained
++F:	drivers/memstick/core/ms_block.*
++
+ SOUND
+ M:	Jaroslav Kysela <perex@perex.cz>
+ M:	Takashi Iwai <tiwai@suse.de>
+diff --git a/drivers/memstick/core/Kconfig b/drivers/memstick/core/Kconfig
+index 95f1814..f79f2a8 100644
+--- a/drivers/memstick/core/Kconfig
++++ b/drivers/memstick/core/Kconfig
+@@ -24,3 +24,15 @@ config MSPRO_BLOCK
+ 	  support. This provides a block device driver, which you can use
+ 	  to mount the filesystem. Almost everyone wishing MemoryStick
+ 	  support should say Y or M here.
++
++config MS_BLOCK
++	tristate "MemoryStick Standard device driver"
++	depends on BLOCK && EXPERIMENTAL
++	help
++	  Say Y here to enable the MemoryStick Standard device driver
++	  support. This provides a block device driver, which you can use
++	  to mount the filesystem.
++	  This driver works with old (bulky) MemoryStick and MemoryStick Duo
++	  but not PRO. Say Y if you have such card.
++	  Driver is new and not yet well tested, thus it can damage your card
++	  (even permanently)
+diff --git a/drivers/memstick/core/Makefile b/drivers/memstick/core/Makefile
+index 8b2b529..19d960b 100644
+--- a/drivers/memstick/core/Makefile
++++ b/drivers/memstick/core/Makefile
+@@ -7,5 +7,5 @@ ifeq ($(CONFIG_MEMSTICK_DEBUG),y)
+ endif
+ 
+ obj-$(CONFIG_MEMSTICK)		+= memstick.o
 -
--#define DRIVER_NAME "jmb38x_ms"
-+#include "jmb38x_ms.h"
- 
- static int no_dma;
--module_param(no_dma, bool, 0644);
--
--enum {
--	DMA_ADDRESS       = 0x00,
--	BLOCK             = 0x04,
--	DMA_CONTROL       = 0x08,
--	TPC_P0            = 0x0c,
--	TPC_P1            = 0x10,
--	TPC               = 0x14,
--	HOST_CONTROL      = 0x18,
--	DATA              = 0x1c,
--	STATUS            = 0x20,
--	INT_STATUS        = 0x24,
--	INT_STATUS_ENABLE = 0x28,
--	INT_SIGNAL_ENABLE = 0x2c,
--	TIMER             = 0x30,
--	TIMER_CONTROL     = 0x34,
--	PAD_OUTPUT_ENABLE = 0x38,
--	PAD_PU_PD         = 0x3c,
--	CLOCK_DELAY       = 0x40,
--	ADMA_ADDRESS      = 0x44,
--	CLOCK_CONTROL     = 0x48,
--	LED_CONTROL       = 0x4c,
--	VERSION           = 0x50
--};
-+static int debug;
- 
--struct jmb38x_ms_host {
--	struct jmb38x_ms        *chip;
--	void __iomem            *addr;
--	spinlock_t              lock;
--	struct tasklet_struct   notify;
--	int                     id;
--	char                    host_id[32];
--	int                     irq;
--	unsigned int            block_pos;
--	unsigned long           timeout_jiffies;
--	struct timer_list       timer;
--	struct memstick_request *req;
--	unsigned char           cmd_flags;
--	unsigned char           io_pos;
--	unsigned int            io_word[2];
--};
--
--struct jmb38x_ms {
--	struct pci_dev        *pdev;
--	int                   host_cnt;
--	struct memstick_host  *hosts[];
--};
--
--#define BLOCK_COUNT_MASK       0xffff0000
--#define BLOCK_SIZE_MASK        0x00000fff
--
--#define DMA_CONTROL_ENABLE     0x00000001
--
--#define TPC_DATA_SEL           0x00008000
--#define TPC_DIR                0x00004000
--#define TPC_WAIT_INT           0x00002000
--#define TPC_GET_INT            0x00000800
--#define TPC_CODE_SZ_MASK       0x00000700
--#define TPC_DATA_SZ_MASK       0x00000007
--
--#define HOST_CONTROL_TDELAY_EN 0x00040000
--#define HOST_CONTROL_HW_OC_P   0x00010000
--#define HOST_CONTROL_RESET_REQ 0x00008000
--#define HOST_CONTROL_REI       0x00004000
--#define HOST_CONTROL_LED       0x00000400
--#define HOST_CONTROL_FAST_CLK  0x00000200
--#define HOST_CONTROL_RESET     0x00000100
--#define HOST_CONTROL_POWER_EN  0x00000080
--#define HOST_CONTROL_CLOCK_EN  0x00000040
--#define HOST_CONTROL_REO       0x00000008
--#define HOST_CONTROL_IF_SHIFT  4
--
--#define HOST_CONTROL_IF_SERIAL 0x0
--#define HOST_CONTROL_IF_PAR4   0x1
--#define HOST_CONTROL_IF_PAR8   0x3
--
--#define STATUS_BUSY             0x00080000
--#define STATUS_MS_DAT7          0x00040000
--#define STATUS_MS_DAT6          0x00020000
--#define STATUS_MS_DAT5          0x00010000
--#define STATUS_MS_DAT4          0x00008000
--#define STATUS_MS_DAT3          0x00004000
--#define STATUS_MS_DAT2          0x00002000
--#define STATUS_MS_DAT1          0x00001000
--#define STATUS_MS_DAT0          0x00000800
--#define STATUS_HAS_MEDIA        0x00000400
--#define STATUS_FIFO_EMPTY       0x00000200
--#define STATUS_FIFO_FULL        0x00000100
--#define STATUS_MS_CED           0x00000080
--#define STATUS_MS_ERR           0x00000040
--#define STATUS_MS_BRQ           0x00000020
--#define STATUS_MS_CNK           0x00000001
--
--#define INT_STATUS_TPC_ERR      0x00080000
--#define INT_STATUS_CRC_ERR      0x00040000
--#define INT_STATUS_TIMER_TO     0x00020000
--#define INT_STATUS_HSK_TO       0x00010000
--#define INT_STATUS_ANY_ERR      0x00008000
--#define INT_STATUS_FIFO_WRDY    0x00000080
--#define INT_STATUS_FIFO_RRDY    0x00000040
--#define INT_STATUS_MEDIA_OUT    0x00000010
--#define INT_STATUS_MEDIA_IN     0x00000008
--#define INT_STATUS_DMA_BOUNDARY 0x00000004
--#define INT_STATUS_EOTRAN       0x00000002
--#define INT_STATUS_EOTPC        0x00000001
--
--#define INT_STATUS_ALL          0x000f801f
--
--#define PAD_OUTPUT_ENABLE_MS  0x0F3F
--
--#define PAD_PU_PD_OFF         0x7FFF0000
--#define PAD_PU_PD_ON_MS_SOCK0 0x5f8f0000
--#define PAD_PU_PD_ON_MS_SOCK1 0x0f0f0000
--
--#define CLOCK_CONTROL_40MHZ   0x00000001
--#define CLOCK_CONTROL_50MHZ   0x0000000a
--#define CLOCK_CONTROL_60MHZ   0x00000008
--#define CLOCK_CONTROL_62_5MHZ 0x0000000c
--#define CLOCK_CONTROL_OFF     0x00000000
--
--#define PCI_CTL_CLOCK_DLY_ADDR   0x000000b0
--#define PCI_CTL_CLOCK_DLY_MASK_A 0x00000f00
--#define PCI_CTL_CLOCK_DLY_MASK_B 0x0000f000
--
--enum {
--	CMD_READY    = 0x01,
--	FIFO_READY   = 0x02,
--	REG_DATA     = 0x04,
--	DMA_DATA     = 0x08
--};
--
--static unsigned int jmb38x_ms_read_data(struct jmb38x_ms_host *host,
--					unsigned char *buf, unsigned int length)
-+/* Read a register*/
-+static inline u32 j38ms_read_reg(struct j38ms_host *host, int address)
- {
--	unsigned int off = 0;
-+	u32 value =  readl(host->addr + address);
-+	dbg_reg(host, "reg 0x%02x == 0x%08x", address, value);
-+	return value;
-+}
- 
--	while (host->io_pos && length) {
--		buf[off++] = host->io_word[0] & 0xff;
--		host->io_word[0] >>= 8;
--		length--;
--		host->io_pos--;
--	}
-+/* Write a register */
-+static inline void j38ms_write_reg(struct j38ms_host *host,
-+						int address, u32 value)
-+{
-+	dbg_reg(host, "reg 0x%02x <- 0x%08x", address, cpu_to_le32(value));
-+	writel(value, host->addr + address);
-+}
- 
--	if (!length)
--		return off;
-+/* Read a register without endiannes conversion*/
-+static inline u32 j38ms_read_reg_raw(struct j38ms_host *host, int address)
-+{
-+	u32 value =  __raw_readl(host->addr + address);
-+	dbg_reg(host, "reg 0x%02x == 0x%08x", address, cpu_to_le32(value));
-+	return value;
-+}
- 
--	while (!(STATUS_FIFO_EMPTY & readl(host->addr + STATUS))) {
--		if (length < 4)
--			break;
--		*(unsigned int *)(buf + off) = __raw_readl(host->addr + DATA);
--		length -= 4;
--		off += 4;
--	}
--
--	if (length
--	    && !(STATUS_FIFO_EMPTY & readl(host->addr + STATUS))) {
--		host->io_word[0] = readl(host->addr + DATA);
--		for (host->io_pos = 4; host->io_pos; --host->io_pos) {
--			buf[off++] = host->io_word[0] & 0xff;
--			host->io_word[0] >>= 8;
--			length--;
--			if (!length)
--				break;
--		}
--	}
-+/* Write a register without endiannes conversion */
-+static inline void j38ms_write_reg_raw(struct j38ms_host *host,
-+						int address, u32 value)
-+{
-+	dbg_reg(host, "reg 0x%02x <- 0x%08x", address, value);
-+	__raw_writel(value, host->addr + address);
-+}
- 
--	return off;
-+/* Set specific bits in a register*/
-+static inline void j38ms_set_reg_mask(struct j38ms_host *host,
-+						int address, u32 mask)
-+{
-+	u32 reg = readl(host->addr + address);
-+	dbg_reg(host, "reg 0x%02x |= 0x%08x (old =0x%08x)", address, mask, reg);
-+	writel(reg | mask , host->addr + address);
- }
- 
--static unsigned int jmb38x_ms_read_reg_data(struct jmb38x_ms_host *host,
--					    unsigned char *buf,
--					    unsigned int length)
-+/* Clear specific bits in a register*/
-+static inline void j38ms_clear_reg_mask(struct j38ms_host *host,
-+						int address, u32 mask)
- {
--	unsigned int off = 0;
-+	u32 reg = readl(host->addr + address);
-+	dbg_reg(host, "reg 0x%02x &= 0x%08x (old = 0x%08x, mask = 0x%08x)",
-+						address, ~mask, reg, mask);
-+	writel(reg & ~mask, host->addr + address);
-+}
- 
--	while (host->io_pos > 4 && length) {
--		buf[off++] = host->io_word[0] & 0xff;
--		host->io_word[0] >>= 8;
--		length--;
--		host->io_pos--;
-+/* Reads one DWORD via PIO. returns -EAGAIN if fifo is empty */
-+static inline int j38ms_read_fifo_dword_pio(struct j38ms_host *host, u32 *dword)
-+{
-+	if (unlikely(j38ms_read_reg(host, STATUS) & STATUS_FIFO_EMPTY)) {
-+		dbg(host, "PIO: FIFO empty");
-+		return -EAGAIN;
- 	}
- 
--	if (!length)
--		return off;
-+	*dword = j38ms_read_reg_raw(host, DATA);
-+	dbg(host, "PIO: read: %08x", *dword);
-+	return 0;
-+}
- 
--	while (host->io_pos && length) {
--		buf[off++] = host->io_word[1] & 0xff;
--		host->io_word[1] >>= 8;
--		length--;
--		host->io_pos--;
-+/* Writes one DWORD via PIO. returns -EAGAIN if fifo is full */
-+static inline int j38ms_write_fifo_dword_pio(struct j38ms_host *host, u32 dword)
-+{
-+	if (unlikely(j38ms_read_reg(host, STATUS) & STATUS_FIFO_FULL)) {
-+		dbg(host, "PIO: FIFO full");
-+		return -EAGAIN;
- 	}
- 
--	return off;
-+	dbg(host, "PIO: writing: %08x", dword);
-+	j38ms_write_reg_raw(host, DATA, dword);
-+	return 0;
- }
- 
--static unsigned int jmb38x_ms_write_data(struct jmb38x_ms_host *host,
--					 unsigned char *buf,
--					 unsigned int length)
-+/* Read TPC data using PIO */
-+static unsigned int j38ms_read_fifo_pio(struct j38ms_host *host,
-+				unsigned char *buf, unsigned int length)
- {
--	unsigned int off = 0;
-+	unsigned int orig_len = length;
-+	unsigned char tmp_buf[4];
- 
--	if (host->io_pos) {
--		while (host->io_pos < 4 && length) {
--			host->io_word[0] |=  buf[off++] << (host->io_pos * 8);
--			host->io_pos++;
--			length--;
--		}
-+	/* Read bytes from last saved part */
-+	if (host->pio_tmp_buf_len) {
-+		int count = min(host->pio_tmp_buf_len, length);
-+		memcpy(buf, host->pio_tmp_buf, count);
-+		buf += count;
-+		length -= count;
- 	}
- 
--	if (host->io_pos == 4
--	    && !(STATUS_FIFO_FULL & readl(host->addr + STATUS))) {
--		writel(host->io_word[0], host->addr + DATA);
--		host->io_pos = 0;
--		host->io_word[0] = 0;
--	} else if (host->io_pos) {
--		return off;
--	}
-+	/* Read aligned data*/
-+	for (; length >= 4 ; buf += 4, length -= 4)
-+		if (j38ms_read_fifo_dword_pio(host, (u32 *)buf))
-+			return orig_len - length;
- 
--	if (!length)
--		return off;
-+	/* Read last 4 bytes, and
-+			save unconsumed part of it to the pio_tmp_buf */
-+	if (length && !j38ms_read_fifo_dword_pio(host, (u32 *)tmp_buf)) {
- 
--	while (!(STATUS_FIFO_FULL & readl(host->addr + STATUS))) {
--		if (length < 4)
--			break;
--
--		__raw_writel(*(unsigned int *)(buf + off),
--			     host->addr + DATA);
--		length -= 4;
--		off += 4;
--	}
--
--	switch (length) {
--	case 3:
--		host->io_word[0] |= buf[off + 2] << 16;
--		host->io_pos++;
--	case 2:
--		host->io_word[0] |= buf[off + 1] << 8;
--		host->io_pos++;
--	case 1:
--		host->io_word[0] |= buf[off];
--		host->io_pos++;
-+		host->pio_tmp_buf_len = 4 - length;
-+		memcpy(buf, tmp_buf, length);
-+		memcpy(host->pio_tmp_buf,
-+				tmp_buf + length, host->pio_tmp_buf_len);
-+		length = 0;
- 	}
- 
--	off += host->io_pos;
--
--	return off;
-+	return orig_len - length;
- }
- 
--static unsigned int jmb38x_ms_write_reg_data(struct jmb38x_ms_host *host,
--					     unsigned char *buf,
--					     unsigned int length)
-+/* Write TPC data through normal PIO fifo */
-+static unsigned int j38ms_write_fifo_pio(struct j38ms_host *host,
-+					 unsigned char *buf,
-+					 unsigned int length)
- {
--	unsigned int off = 0;
--
--	while (host->io_pos < 4 && length) {
--		host->io_word[0] &= ~(0xff << (host->io_pos * 8));
--		host->io_word[0] |=  buf[off++] << (host->io_pos * 8);
--		host->io_pos++;
--		length--;
-+	unsigned int orig_len = length;
-+
-+	/* Complete the last saved bytes*/
-+	if (host->pio_tmp_buf_len) {
-+		int count = min(4 - host->pio_tmp_buf_len, length);
-+		memcpy(host->pio_tmp_buf + host->pio_tmp_buf_len, buf, count);
-+		buf += count;
-+		length -= count;
-+
-+		if (host->pio_tmp_buf_len == 4) {
-+			if (j38ms_write_fifo_dword_pio(
-+					host, *(u32 *)host->pio_tmp_buf))
-+				return orig_len - length;
-+			else
-+				host->pio_tmp_buf_len = 0;
-+		}
- 	}
- 
--	if (!length)
--		return off;
-+	/* Write aligned data to hardware */
-+	for (; length >= 4 ; length -= 4, buf += 4)
-+		if (j38ms_write_fifo_dword_pio(host, *(u32 *)buf))
-+			return orig_len - length;
- 
--	while (host->io_pos < 8 && length) {
--		host->io_word[1] &= ~(0xff << (host->io_pos * 8));
--		host->io_word[1] |=  buf[off++] << (host->io_pos * 8);
--		host->io_pos++;
--		length--;
-+	/* Save last 3-1 bytes to buffer, because we can't send them now*/
-+	if (length) {
-+		memset(host->pio_tmp_buf, 0, 4);
-+		memcpy(host->pio_tmp_buf, buf, length);
-+		host->pio_tmp_buf_len = length;
- 	}
- 
--	return off;
-+	return orig_len - length;
- }
- 
--static int jmb38x_ms_transfer_data(struct jmb38x_ms_host *host)
-+
-+/* Transfer data between current request and FIFO */
-+static void j38ms_transfer_pio(struct j38ms_host *host)
- {
--	unsigned int length;
--	unsigned int off;
--	unsigned int t_size, p_cnt;
- 	unsigned char *buf;
--	struct page *pg;
-+	unsigned int len;
- 	unsigned long flags = 0;
- 
--	if (host->req->long_data) {
--		length = host->req->sg.length - host->block_pos;
--		off = host->req->sg.offset + host->block_pos;
--	} else {
--		length = host->req->data_len - host->block_pos;
--		off = 0;
--	}
-+	if (host->req->long_data)
-+		local_irq_save(flags);
- 
--	while (length) {
--		unsigned int uninitialized_var(p_off);
-+	dbg_v(host, "PIO: new transfer");
- 
-+	while (1) {
- 		if (host->req->long_data) {
--			pg = nth_page(sg_page(&host->req->sg),
--				      off >> PAGE_SHIFT);
--			p_off = offset_in_page(off);
--			p_cnt = PAGE_SIZE - p_off;
--			p_cnt = min(p_cnt, length);
--
--			local_irq_save(flags);
--			buf = kmap_atomic(pg, KM_BIO_SRC_IRQ) + p_off;
-+			if (!sg_miter_next(&host->pio_sg_iter))
-+				break;
-+
-+			buf = host->pio_sg_iter.addr;
-+			len = host->pio_sg_iter.length;
- 		} else {
--			buf = host->req->data + host->block_pos;
--			p_cnt = host->req->data_len - host->block_pos;
-+			buf = host->req->data + host->pio_offset;
-+			len = host->req->data_len - host->pio_offset;
-+
-+			if (!len)
-+				break;
- 		}
- 
--		if (host->req->data_dir == WRITE)
--			t_size = !(host->cmd_flags & REG_DATA)
--				 ? jmb38x_ms_write_data(host, buf, p_cnt)
--				 : jmb38x_ms_write_reg_data(host, buf, p_cnt);
--		else
--			t_size = !(host->cmd_flags & REG_DATA)
--				 ? jmb38x_ms_read_data(host, buf, p_cnt)
--				 : jmb38x_ms_read_reg_data(host, buf, p_cnt);
-+		len = host->req->data_dir == WRITE ?
-+			j38ms_write_fifo_pio(host, buf, len) :
-+			j38ms_read_fifo_pio(host, buf, len);
- 
--		if (host->req->long_data) {
--			kunmap_atomic(buf - p_off, KM_BIO_SRC_IRQ);
--			local_irq_restore(flags);
--		}
-+		if (host->req->long_data)
-+			host->pio_sg_iter.consumed = len;
-+		else
-+			host->pio_offset += len;
- 
--		if (!t_size)
--			break;
--		host->block_pos += t_size;
--		length -= t_size;
--		off += t_size;
-+		dbg(host, "PIO: transfered %d bytes", len);
-+		if (!len)
-+			goto exit;
- 	}
- 
--	if (!length && host->req->data_dir == WRITE) {
--		if (host->cmd_flags & REG_DATA) {
--			writel(host->io_word[0], host->addr + TPC_P0);
--			writel(host->io_word[1], host->addr + TPC_P1);
--		} else if (host->io_pos) {
--			writel(host->io_word[0], host->addr + DATA);
--		}
-+	/* Write last non-complete dword of the data */
-+	if (host->req->data_dir == WRITE && host->pio_tmp_buf_len) {
-+		if (!j38ms_write_fifo_dword_pio(host,
-+						*(u32 *)host->pio_tmp_buf))
-+			host->pio_tmp_buf_len = 0;
- 	}
-+exit:
-+	if (host->req->long_data) {
-+		sg_miter_stop(&host->pio_sg_iter);
-+		local_irq_restore(flags);
-+	}
-+}
-+
-+/* Read short TPC data (up to 8 bytes) via 2 special registers*/
-+static void j38ms_read_tpc_inline(struct j38ms_host *host)
-+{
-+       *(u32 *)(host->req->data + 0) = j38ms_read_reg_raw(host, TPC_P0);
-+       *(u32 *)(host->req->data + 4) = j38ms_read_reg_raw(host, TPC_P1);
-+}
- 
--	return length;
-+/* Write short TPC data (up to 8 bytes) through 2 special registers */
-+static void j38ms_write_tpc_inline(struct j38ms_host *host)
-+{
-+	j38ms_write_reg_raw(host, TPC_P0, *(u32 *)(host->req->data + 0));
-+	j38ms_write_reg_raw(host, TPC_P1, *(u32 *)(host->req->data + 4));
- }
- 
--static int jmb38x_ms_issue_cmd(struct memstick_host *msh)
-+/*
-+ * Start execution of a TPC:
-+ * NOTES:
-+ *
-+ * PIO writes trigger wierd hardware bug that causes DMA writes
-+ *  to fail.
-+ *
-+ * length alignmemt:
-+ *	Short (<=8) TPC don't have any alignment problems.
-+ *	DMA read/writes must be 4 aligned
-+ *	PIO _reads_ must be aligned. Writes can be not aligned
-+ *
-+ */
-+
-+static int j38ms_execute_tpc(struct j38ms_host *host)
- {
--	struct jmb38x_ms_host *host = memstick_priv(msh);
--	unsigned char *data;
--	unsigned int data_len, cmd, t_val;
-+	u32 cmd = 0, t_val;
-+	unsigned int data_len = host->req->long_data ?
-+		host->req->sg.length : host->req->data_len;
-+	bool is_read = host->req->data_dir == READ;
-+	dma_addr_t dma_address;
- 
--	if (!(STATUS_HAS_MEDIA & readl(host->addr + STATUS))) {
--		dev_dbg(&msh->dev, "no media status\n");
-+	if (host->dead) {
- 		host->req->error = -ETIME;
-+		return 0;
-+	}
-+
-+	if (!(j38ms_read_reg(host, STATUS) & STATUS_HAS_MEDIA)) {
-+		dbg(host, "IO: card removed, refusing to send TPC");
-+		host->req->error = -ENODEV;
- 		return host->req->error;
- 	}
- 
--	dev_dbg(&msh->dev, "control %08x\n", readl(host->addr + HOST_CONTROL));
--	dev_dbg(&msh->dev, "status %08x\n", readl(host->addr + INT_STATUS));
--	dev_dbg(&msh->dev, "hstatus %08x\n", readl(host->addr + STATUS));
-+	if (data_len > BLOCK_SIZE_MASK) {
-+		dbg(host, "IO: too long TPC (len: %d)", data_len);
-+		host->req->error = -ENOSYS;
-+		return host->req->error;
-+	}
- 
--	host->cmd_flags = 0;
--	host->block_pos = 0;
--	host->io_pos = 0;
--	host->io_word[0] = 0;
--	host->io_word[1] = 0;
-+	dbg(host, "IO: Start execution of %s",
-+		memstick_debug_get_tpc_name(host->req->tpc));
- 
--	cmd = host->req->tpc << 16;
--	cmd |= TPC_DATA_SEL;
- 
--	if (host->req->data_dir == READ)
--		cmd |= TPC_DIR;
--	if (host->req->need_card_int)
--		cmd |= TPC_WAIT_INT;
-+	dbg_v(host, "host control: %08x", j38ms_read_reg(host, HOST_CONTROL));
-+	dbg_v(host, "int status: %08x", j38ms_read_reg(host, INT_STATUS));
-+	dbg_v(host, "card status: %08x", j38ms_read_reg(host, STATUS));
- 
--	data = host->req->data;
-+	host->req->error = 0;
-+	host->cmd_flags = 0;
- 
--	if (!no_dma)
--		host->cmd_flags |= DMA_DATA;
-+	cmd = host->req->tpc << 16;
-+	if (is_read)
-+		cmd |= TPC_DIR;
- 
--	if (host->req->long_data) {
--		data_len = host->req->sg.length;
--	} else {
--		data_len = host->req->data_len;
--		host->cmd_flags &= ~DMA_DATA;
-+	if (host->req->need_card_int) {
-+		dbg_v(host, "IO: Will wait for card interrupt");
-+		cmd |= TPC_WAIT_INT;
-+		/* No, the TPC_GET_INT doesn't work.... */
- 	}
- 
--	if (data_len <= 8) {
--		cmd &= ~(TPC_DATA_SEL | 0xf);
-+	/* Special case for short TPCs */
-+	if (!host->req->long_data && data_len <= 8) {
-+		dbg(host, "IO: Using 8 byte register window");
- 		host->cmd_flags |= REG_DATA;
- 		cmd |= data_len & 0xf;
--		host->cmd_flags &= ~DMA_DATA;
-+
-+		if (!is_read)
-+			j38ms_write_tpc_inline(host);
-+		goto exec;
- 	}
- 
--	if (host->cmd_flags & DMA_DATA) {
--		if (1 != pci_map_sg(host->chip->pdev, &host->req->sg, 1,
--				    host->req->data_dir == READ
--				    ? PCI_DMA_FROMDEVICE
--				    : PCI_DMA_TODEVICE)) {
--			host->req->error = -ENOMEM;
--			return host->req->error;
-+	/* Otherwise use internal fifo*/
-+	cmd |= TPC_DATA_SEL;
-+
-+	if (data_len & 0x03) {
-+		dbg(host, "Hardware doesn't support not-aligned len TPCs!");
-+		host->req->error = -ENOSYS;
-+		return host->req->error;
-+	}
-+
-+	/* DMA */
-+	if (!no_dma) {
-+
-+		dbg(host, "IO: Using DMA");
-+		host->cmd_flags |= DMA_DATA;
-+
-+		if (host->req->long_data) {
-+
-+			if (pci_map_sg(host->chip->pdev,
-+				&host->req->sg, 1, is_read
-+				? PCI_DMA_FROMDEVICE : PCI_DMA_TODEVICE) != 1) {
-+
-+				dbg(host, "IO: DMA map failed");
-+				host->req->error = -ENOMEM;
-+				return host->req->error;
-+			}
-+
-+			/* We really shouldn't pretend we support that case */
-+			if (sg_dma_len(&host->req->sg) != data_len) {
-+				dbg(host, "IO: DMA len mismatch");
-+				host->req->error = -EFAULT;
-+				return host->req->error;
-+			}
-+
-+			dma_address = sg_dma_address(&host->req->sg);
-+
-+		} else {
-+			if (!is_read)
-+				memcpy(host->dma_bounce_page,
-+					host->req->data, data_len);
-+			dma_address = host->dma_bus_address;
- 		}
--		data_len = sg_dma_len(&host->req->sg);
--		writel(sg_dma_address(&host->req->sg),
--		       host->addr + DMA_ADDRESS);
--		writel(((1 << 16) & BLOCK_COUNT_MASK)
--		       | (data_len & BLOCK_SIZE_MASK),
--		       host->addr + BLOCK);
--		writel(DMA_CONTROL_ENABLE, host->addr + DMA_CONTROL);
--	} else if (!(host->cmd_flags & REG_DATA)) {
--		writel(((1 << 16) & BLOCK_COUNT_MASK)
--		       | (data_len & BLOCK_SIZE_MASK),
--		       host->addr + BLOCK);
--			t_val = readl(host->addr + INT_STATUS_ENABLE);
--			t_val |= host->req->data_dir == READ
--				 ? INT_STATUS_FIFO_RRDY
--				 : INT_STATUS_FIFO_WRDY;
--
--			writel(t_val, host->addr + INT_STATUS_ENABLE);
--			writel(t_val, host->addr + INT_SIGNAL_ENABLE);
-+
-+		j38ms_write_reg(host, BLOCK, data_len | BLOCK_COUNT_1BLOCK);
-+		j38ms_write_reg(host, DMA_ADDRESS, dma_address);
-+		j38ms_write_reg(host, DMA_CONTROL, DMA_CONTROL_ENABLE);
-+	/* PIO */
- 	} else {
--		cmd &= ~(TPC_DATA_SEL | 0xf);
--		host->cmd_flags |= REG_DATA;
--		cmd |= data_len & 0xf;
- 
--		if (host->req->data_dir == WRITE) {
--			jmb38x_ms_transfer_data(host);
--			writel(host->io_word[0], host->addr + TPC_P0);
--			writel(host->io_word[1], host->addr + TPC_P1);
--		}
--	}
-+		dbg(host, "IO: Using PIO");
-+		host->cmd_flags |= PIO_DATA;
- 
--	mod_timer(&host->timer, jiffies + host->timeout_jiffies);
--	writel(HOST_CONTROL_LED | readl(host->addr + HOST_CONTROL),
--	       host->addr + HOST_CONTROL);
--	host->req->error = 0;
-+		host->pio_offset = 0;
-+		host->pio_tmp_buf_len = 0;
-+		memset(host->pio_tmp_buf, 0, 4);
-+
-+		if (host->req->long_data)
-+			sg_miter_start(&host->pio_sg_iter,
-+				&host->req->sg, 1, SG_MITER_ATOMIC |
-+				(is_read ? SG_MITER_FROM_SG : SG_MITER_TO_SG));
- 
--	writel(cmd, host->addr + TPC);
--	dev_dbg(&msh->dev, "executing TPC %08x, len %x\n", cmd, data_len);
-+		/* Enable FIFO empty interrupts */
-+		t_val = is_read ? INT_STATUS_FIFO_RRDY : INT_STATUS_FIFO_WRDY;
- 
-+		j38ms_write_reg(host, BLOCK, data_len | BLOCK_COUNT_1BLOCK);
-+		j38ms_set_reg_mask(host, INT_SIGNAL_ENABLE, t_val);
-+		j38ms_set_reg_mask(host, INT_STATUS_ENABLE, t_val);
-+	}
-+exec:
-+	mod_timer(&host->timer, jiffies + host->timeout_jiffies);
-+
-+	/* Let the TPC fly... */
-+	j38ms_write_reg(host, TPC, cmd);
-+	j38ms_set_reg_mask(host, HOST_CONTROL, HOST_CONTROL_LED);
- 	return 0;
- }
- 
--static void jmb38x_ms_complete_cmd(struct memstick_host *msh, int last)
-+/* Cleanups execution of current TPC */
-+static void j38ms_complete_tpc(struct memstick_host *msh)
- {
--	struct jmb38x_ms_host *host = memstick_priv(msh);
--	unsigned int t_val = 0;
--	int rc;
--
-+	struct j38ms_host *host = memstick_priv(msh);
- 	del_timer(&host->timer);
- 
--	dev_dbg(&msh->dev, "c control %08x\n",
--		readl(host->addr + HOST_CONTROL));
--	dev_dbg(&msh->dev, "c status %08x\n",
--		readl(host->addr + INT_STATUS));
--	dev_dbg(&msh->dev, "c hstatus %08x\n", readl(host->addr + STATUS));
-+	dbg(host, "IO: TPC complete (error : %d)", host->req->error);
- 
--	host->req->int_reg = readl(host->addr + STATUS) & 0xff;
-+	j38ms_write_reg(host, BLOCK, 0);
-+	j38ms_write_reg(host, DMA_CONTROL, 0);
- 
--	writel(0, host->addr + BLOCK);
--	writel(0, host->addr + DMA_CONTROL);
-+	dbg_v(host, "host control: %08x", j38ms_read_reg(host, HOST_CONTROL));
-+	dbg_v(host, "int status: %08x", j38ms_read_reg(host, INT_STATUS));
-+	dbg_v(host, "card status: %08x", j38ms_read_reg(host, STATUS));
-+
-+	if (host->req->need_card_int)
-+		host->req->int_reg = j38ms_read_reg(host, STATUS) & 0xFF;
- 
- 	if (host->cmd_flags & DMA_DATA) {
--		pci_unmap_sg(host->chip->pdev, &host->req->sg, 1,
--			     host->req->data_dir == READ
--			     ? PCI_DMA_FROMDEVICE : PCI_DMA_TODEVICE);
--	} else {
--		t_val = readl(host->addr + INT_STATUS_ENABLE);
--		if (host->req->data_dir == READ)
--			t_val &= ~INT_STATUS_FIFO_RRDY;
--		else
--			t_val &= ~INT_STATUS_FIFO_WRDY;
-+		if (host->req->long_data)
-+			pci_unmap_sg(host->chip->pdev, &host->req->sg, 1,
-+				host->req->data_dir == READ
-+				? PCI_DMA_FROMDEVICE : PCI_DMA_TODEVICE);
-+		else if (host->req->data_dir == READ)
-+			memcpy(host->req->data,
-+				host->dma_bounce_page, host->req->data_len);
- 
--		writel(t_val, host->addr + INT_STATUS_ENABLE);
--		writel(t_val, host->addr + INT_SIGNAL_ENABLE);
--	}
-+	} else if (host->cmd_flags & PIO_DATA) {
-+		u32 t_val = INT_STATUS_FIFO_RRDY | INT_STATUS_FIFO_WRDY;
- 
--	writel((~HOST_CONTROL_LED) & readl(host->addr + HOST_CONTROL),
--	       host->addr + HOST_CONTROL);
-+		/* This is not known well */
-+		j38ms_clear_reg_mask(host, INT_STATUS_ENABLE, t_val);
- 
--	if (!last) {
--		do {
--			rc = memstick_next_req(msh, &host->req);
--		} while (!rc && jmb38x_ms_issue_cmd(msh));
--	} else {
--		do {
--			rc = memstick_next_req(msh, &host->req);
--			if (!rc)
--				host->req->error = -ETIME;
--		} while (!rc);
-+		/* This disables the IRQ to host, really */
-+		j38ms_clear_reg_mask(host, INT_SIGNAL_ENABLE, t_val);
- 	}
-+
-+	j38ms_clear_reg_mask(host, HOST_CONTROL, HOST_CONTROL_LED);
- }
- 
--static irqreturn_t jmb38x_ms_isr(int irq, void *dev_id)
-+/* Interrupt handler */
-+static irqreturn_t j38ms_isr(int irq, void *dev_id)
- {
- 	struct memstick_host *msh = dev_id;
--	struct jmb38x_ms_host *host = memstick_priv(msh);
--	unsigned int irq_status;
-+	struct j38ms_host *host = memstick_priv(msh);
-+	u32 irq_status;
- 
- 	spin_lock(&host->lock);
--	irq_status = readl(host->addr + INT_STATUS);
--	dev_dbg(&host->chip->pdev->dev, "irq_status = %08x\n", irq_status);
-+	irq_status = j38ms_read_reg(host, INT_STATUS);
-+
- 	if (irq_status == 0 || irq_status == (~0)) {
- 		spin_unlock(&host->lock);
- 		return IRQ_NONE;
- 	}
- 
--	if (host->req) {
--		if (irq_status & INT_STATUS_ANY_ERR) {
--			if (irq_status & INT_STATUS_CRC_ERR)
--				host->req->error = -EILSEQ;
--			else
--				host->req->error = -ETIME;
--		} else {
--			if (host->cmd_flags & DMA_DATA) {
--				if (irq_status & INT_STATUS_EOTRAN)
--					host->cmd_flags |= FIFO_READY;
--			} else {
--				if (irq_status & (INT_STATUS_FIFO_RRDY
--						  | INT_STATUS_FIFO_WRDY))
--					jmb38x_ms_transfer_data(host);
--
--				if (irq_status & INT_STATUS_EOTRAN) {
--					jmb38x_ms_transfer_data(host);
--					host->cmd_flags |= FIFO_READY;
--				}
--			}
-+	dbg(host, "IRQ: status: %08x", irq_status);
- 
--			if (irq_status & INT_STATUS_EOTPC) {
--				host->cmd_flags |= CMD_READY;
--				if (host->cmd_flags & REG_DATA) {
--					if (host->req->data_dir == READ) {
--						host->io_word[0]
--							= readl(host->addr
--								+ TPC_P0);
--						host->io_word[1]
--							= readl(host->addr
--								+ TPC_P1);
--						host->io_pos = 8;
--
--						jmb38x_ms_transfer_data(host);
--					}
--					host->cmd_flags |= FIFO_READY;
--				}
--			}
-+	if (irq_status & INT_STATUS_ANY_ERR)
-+		dbg(host, "IRQ: error");
-+
-+	if (irq_status & INT_STATUS_FIFO_RRDY)
-+		dbg(host, "IRQ: FIFO is now ready for reading");
-+
-+	if (irq_status & INT_STATUS_FIFO_WRDY)
-+		dbg(host, "IRQ: FIFO is now ready for writing");
-+
-+	if (irq_status & INT_STATUS_EOTRAN)
-+		dbg(host, "IRQ: FIFO IO tranfer done");
-+
-+	if (irq_status & INT_STATUS_EOTPC)
-+		dbg(host, "IRQ: TPC complete");
-+
-+	if (!host->req)
-+		goto out;
-+
-+	/* Errors */
-+	if (irq_status & INT_STATUS_ANY_ERR) {
-+		host->req->error =
-+			(irq_status & INT_STATUS_CRC_ERR) ? -EILSEQ : -EIO;
-+		goto out;
-+	}
-+
-+	/* End of TPC interrupt */
-+	if (irq_status & INT_STATUS_EOTPC) {
-+		host->cmd_flags |= CMD_READY;
-+
-+		if (host->cmd_flags & REG_DATA) {
-+			if (host->req->data_dir == READ)
-+				j38ms_read_tpc_inline(host);
-+			host->cmd_flags |= FIFO_READY;
- 		}
- 	}
- 
-+	/* Fifo handling */
-+	if (irq_status & INT_STATUS_EOTRAN)
-+		host->cmd_flags |= FIFO_READY;
-+	else if (irq_status & (INT_STATUS_FIFO_RRDY | INT_STATUS_FIFO_WRDY))
-+		if (host->cmd_flags & PIO_DATA)
-+			j38ms_transfer_pio(host);
-+
-+out:
- 	if (irq_status & (INT_STATUS_MEDIA_IN | INT_STATUS_MEDIA_OUT)) {
--		dev_dbg(&host->chip->pdev->dev, "media changed\n");
-+		dbg(host, "IRQ: media changed");
- 		memstick_detect_change(msh);
- 	}
- 
--	writel(irq_status, host->addr + INT_STATUS);
-+	/* Yes, interrupt status is cleared by setting the bits as usual */
-+	j38ms_write_reg(host, INT_STATUS, irq_status);
- 
--	if (host->req
--	    && (((host->cmd_flags & CMD_READY)
--		 && (host->cmd_flags & FIFO_READY))
--		|| host->req->error))
--		jmb38x_ms_complete_cmd(msh, 0);
-+	if (host->req && (((host->cmd_flags & CMD_READY)
-+		&& (host->cmd_flags & FIFO_READY)) || host->req->error)) {
-+		j38ms_complete_tpc(msh);
-+		tasklet_schedule(&host->tasklet);
-+	}
- 
- 	spin_unlock(&host->lock);
- 	return IRQ_HANDLED;
- }
- 
--static void jmb38x_ms_abort(unsigned long data)
-+/* Timer that is executed in absense of the interrupt */
-+static void j38ms_irq_timeout(unsigned long data)
- {
--	struct memstick_host *msh = (struct memstick_host *)data;
--	struct jmb38x_ms_host *host = memstick_priv(msh);
-+	struct j38ms_host *host = (struct j38ms_host *)data;
- 	unsigned long flags;
- 
--	dev_dbg(&host->chip->pdev->dev, "abort\n");
-+	dbg(host, "interrupt timeout");
-+
- 	spin_lock_irqsave(&host->lock, flags);
- 	if (host->req) {
- 		host->req->error = -ETIME;
--		jmb38x_ms_complete_cmd(msh, 0);
-+		j38ms_complete_tpc(host->msh);
-+		tasklet_schedule(&host->tasklet);
- 	}
-+
- 	spin_unlock_irqrestore(&host->lock, flags);
- }
- 
--static void jmb38x_ms_req_tasklet(unsigned long data)
-+static void j38ms_submit_tasklet(unsigned long data)
- {
--	struct memstick_host *msh = (struct memstick_host *)data;
--	struct jmb38x_ms_host *host = memstick_priv(msh);
-+	struct j38ms_host *host = (struct j38ms_host *)data;
- 	unsigned long flags;
--	int rc;
- 
- 	spin_lock_irqsave(&host->lock, flags);
--	if (!host->req) {
--		do {
--			rc = memstick_next_req(msh, &host->req);
--			dev_dbg(&host->chip->pdev->dev, "tasklet req %d\n", rc);
--		} while (!rc && jmb38x_ms_issue_cmd(msh));
--	}
-+	j38ms_next_request(host);
- 	spin_unlock_irqrestore(&host->lock, flags);
- }
- 
--static void jmb38x_ms_dummy_submit(struct memstick_host *msh)
-+/* Asks for next request from upper layer and starts its execution */
-+static void j38ms_next_request(struct j38ms_host *host)
- {
--	return;
-+	while (!memstick_next_req(host->msh, &host->req))
-+		if (!j38ms_execute_tpc(host))
-+			return;
- }
- 
--static void jmb38x_ms_submit_req(struct memstick_host *msh)
-+/* hardware reset */
-+static int j38ms_reset(struct j38ms_host *host, u32 reset_bit)
- {
--	struct jmb38x_ms_host *host = memstick_priv(msh);
-+	int i;
-+	j38ms_set_reg_mask(host,
-+			HOST_CONTROL, reset_bit | HOST_CONTROL_CLOCK_EN);
- 
--	tasklet_schedule(&host->notify);
-+	for (i = 0; i < 20; ++i) {
-+		if (!(j38ms_read_reg(host, HOST_CONTROL) & reset_bit))
-+			break;
-+		ndelay(20);
-+	}
-+	return (j38ms_read_reg(host, HOST_CONTROL) & reset_bit) ? EIO : 0;
- }
- 
--static int jmb38x_ms_reset(struct jmb38x_ms_host *host)
-+/* Enable/disable the device */
-+static int j38ms_power_device(struct j38ms_host *host, bool enable)
- {
--	int cnt;
-+	int error;
- 
--	writel(HOST_CONTROL_RESET_REQ | HOST_CONTROL_CLOCK_EN
--	       | readl(host->addr + HOST_CONTROL),
--	       host->addr + HOST_CONTROL);
--	mmiowb();
-+	if (enable) {
- 
--	for (cnt = 0; cnt < 20; ++cnt) {
--		if (!(HOST_CONTROL_RESET_REQ
--		      & readl(host->addr + HOST_CONTROL)))
--			goto reset_next;
-+		error = j38ms_reset(host, HOST_CONTROL_RESET_REQ);
-+		error = j38ms_reset(host, HOST_CONTROL_RESET);
- 
--		ndelay(20);
--	}
--	dev_dbg(&host->chip->pdev->dev, "reset_req timeout\n");
--	/* return -EIO; */
-+		if (error)
-+			return error;
- 
--reset_next:
--	writel(HOST_CONTROL_RESET | HOST_CONTROL_CLOCK_EN
--	       | readl(host->addr + HOST_CONTROL),
--	       host->addr + HOST_CONTROL);
--	mmiowb();
-+		j38ms_write_reg(host, INT_SIGNAL_ENABLE, INT_STATUS_ALL);
-+		j38ms_write_reg(host, INT_STATUS_ENABLE, INT_STATUS_ALL);
-+		j38ms_write_reg(host, CLOCK_CONTROL, CLOCK_CONTROL_RESET);
- 
--	for (cnt = 0; cnt < 20; ++cnt) {
--		if (!(HOST_CONTROL_RESET
--		      & readl(host->addr + HOST_CONTROL)))
--			goto reset_ok;
-+		j38ms_write_reg(host, HOST_CONTROL,
-+			HOST_CONTROL_POWER_EN |
-+			HOST_CONTROL_CLOCK_EN |
-+			HOST_CONTROL_HW_OC_P |
-+			HOST_CONTROL_TDELAY_EN |
-+			HOST_CONTROL_BSY_TIME);
-+
-+		j38ms_write_reg(host, PAD_PU_PD, host->id ?
-+			PAD_PU_PD_ON_MS_SOCK1 : PAD_PU_PD_ON_MS_SOCK0);
-+
-+		j38ms_write_reg(host, PAD_OUTPUT_ENABLE, PAD_OUTPUT_ENABLE_MS);
-+
-+	} else {
-+		j38ms_clear_reg_mask(host, HOST_CONTROL,
-+			HOST_CONTROL_POWER_EN | HOST_CONTROL_CLOCK_EN);
-+		j38ms_write_reg(host, PAD_OUTPUT_ENABLE, 0);
-+		j38ms_write_reg(host, PAD_PU_PD, PAD_PU_PD_OFF);
-+		j38ms_write_reg(host, CLOCK_CONTROL, CLOCK_CONTROL_OFF);
- 
--		ndelay(20);
- 	}
--	dev_dbg(&host->chip->pdev->dev, "reset timeout\n");
--	return -EIO;
-+	msleep(100);
-+	return 0;
-+}
-+
-+/* Switch interface */
-+static int j38ms_set_interface(struct j38ms_host *host, int interface)
-+{
-+	u32 host_ctl = j38ms_read_reg(host, HOST_CONTROL);
-+	u32 clock_ctl = CLOCK_CONTROL_40MHZ;
-+	u32 clock_delay;
-+
-+	host_ctl &= ~HOST_CONTROL_IF_MASK;
-+	pci_read_config_dword(host->chip->pdev, PCI_CTL_CLOCK_DLY_ADDR,
-+				&clock_delay);
-+
-+	clock_delay &= host->id ? ~PCI_CTL_CLOCK_DLY_MASK_B
-+				: ~PCI_CTL_CLOCK_DLY_MASK_A;
-+
-+	if (interface == MEMSTICK_SERIAL) {
-+
-+		host_ctl |= HOST_CONTROL_IF_SERIAL;
-+		clock_ctl = CLOCK_CONTROL_40MHZ;
-+
-+		host_ctl &= ~HOST_CONTROL_FAST_CLK;
-+		host_ctl &= ~HOST_CONTROL_REO;
-+		host_ctl |= HOST_CONTROL_REI;
-+
-+	} else if (interface == MEMSTICK_PAR4) {
-+
-+		host_ctl |= HOST_CONTROL_IF_PAR4;
-+		clock_ctl = CLOCK_CONTROL_40MHZ;
-+
-+		host_ctl |= HOST_CONTROL_FAST_CLK;
-+		host_ctl |= HOST_CONTROL_REO;
-+		host_ctl &= ~HOST_CONTROL_REI;
-+
-+		clock_delay |= host->id ? (4 << 12) : (4 << 8);
-+
-+	} else if (interface == MEMSTICK_PAR8) {
-+
-+		host_ctl |= HOST_CONTROL_IF_PAR8;
-+		clock_ctl = CLOCK_CONTROL_50MHZ;
-+
-+		host_ctl |= HOST_CONTROL_FAST_CLK;
-+		host_ctl &= ~HOST_CONTROL_REO;
-+		host_ctl &= ~HOST_CONTROL_REI;
-+	} else
-+		return -EINVAL;
- 
--reset_ok:
--	mmiowb();
--	writel(INT_STATUS_ALL, host->addr + INT_SIGNAL_ENABLE);
--	writel(INT_STATUS_ALL, host->addr + INT_STATUS_ENABLE);
-+	j38ms_write_reg(host, HOST_CONTROL, host_ctl);
-+	j38ms_write_reg(host, CLOCK_CONTROL, clock_ctl);
-+
-+	pci_write_config_dword(host->chip->pdev,
-+		PCI_CTL_CLOCK_DLY_ADDR, clock_delay);
-+
-+	host->interface = interface;
- 	return 0;
- }
- 
--static int jmb38x_ms_set_param(struct memstick_host *msh,
-+/* external interface: control hardware settings */
-+static int j38ms_set_param(struct memstick_host *msh,
- 			       enum memstick_param param,
- 			       int value)
- {
--	struct jmb38x_ms_host *host = memstick_priv(msh);
--	unsigned int host_ctl = readl(host->addr + HOST_CONTROL);
--	unsigned int clock_ctl = CLOCK_CONTROL_40MHZ, clock_delay = 0;
--	int rc = 0;
-+	struct j38ms_host *host = memstick_priv(msh);
- 
- 	switch (param) {
- 	case MEMSTICK_POWER:
--		if (value == MEMSTICK_POWER_ON) {
--			rc = jmb38x_ms_reset(host);
--			if (rc)
--				return rc;
--
--			host_ctl = 7;
--			host_ctl |= HOST_CONTROL_POWER_EN
--				    | HOST_CONTROL_CLOCK_EN
--				    | HOST_CONTROL_HW_OC_P
--				    | HOST_CONTROL_TDELAY_EN;
--			writel(host_ctl, host->addr + HOST_CONTROL);
--
--			writel(host->id ? PAD_PU_PD_ON_MS_SOCK1
--					: PAD_PU_PD_ON_MS_SOCK0,
--			       host->addr + PAD_PU_PD);
--
--			writel(PAD_OUTPUT_ENABLE_MS,
--			       host->addr + PAD_OUTPUT_ENABLE);
--
--			msleep(10);
--			dev_dbg(&host->chip->pdev->dev, "power on\n");
--		} else if (value == MEMSTICK_POWER_OFF) {
--			host_ctl &= ~(HOST_CONTROL_POWER_EN
--				      | HOST_CONTROL_CLOCK_EN);
--			writel(host_ctl, host->addr +  HOST_CONTROL);
--			writel(0, host->addr + PAD_OUTPUT_ENABLE);
--			writel(PAD_PU_PD_OFF, host->addr + PAD_PU_PD);
--			dev_dbg(&host->chip->pdev->dev, "power off\n");
--		} else
--			return -EINVAL;
--		break;
-+		return j38ms_power_device(host, (value == MEMSTICK_POWER_ON));
- 	case MEMSTICK_INTERFACE:
--		host_ctl &= ~(3 << HOST_CONTROL_IF_SHIFT);
--		pci_read_config_dword(host->chip->pdev,
--				      PCI_CTL_CLOCK_DLY_ADDR,
--				      &clock_delay);
--		clock_delay &= host->id ? ~PCI_CTL_CLOCK_DLY_MASK_B
--					: ~PCI_CTL_CLOCK_DLY_MASK_A;
--
--		if (value == MEMSTICK_SERIAL) {
--			host_ctl &= ~HOST_CONTROL_FAST_CLK;
--			host_ctl &= ~HOST_CONTROL_REO;
--			host_ctl |= HOST_CONTROL_IF_SERIAL
--				    << HOST_CONTROL_IF_SHIFT;
--			host_ctl |= HOST_CONTROL_REI;
--			clock_ctl = CLOCK_CONTROL_40MHZ;
--		} else if (value == MEMSTICK_PAR4) {
--			host_ctl |= HOST_CONTROL_FAST_CLK | HOST_CONTROL_REO;
--			host_ctl |= HOST_CONTROL_IF_PAR4
--				    << HOST_CONTROL_IF_SHIFT;
--			host_ctl &= ~HOST_CONTROL_REI;
--			clock_ctl = CLOCK_CONTROL_40MHZ;
--			clock_delay |= host->id ? (4 << 12) : (4 << 8);
--		} else if (value == MEMSTICK_PAR8) {
--			host_ctl |= HOST_CONTROL_FAST_CLK;
--			host_ctl |= HOST_CONTROL_IF_PAR8
--				    << HOST_CONTROL_IF_SHIFT;
--			host_ctl &= ~(HOST_CONTROL_REI | HOST_CONTROL_REO);
--			clock_ctl = CLOCK_CONTROL_50MHZ;
--		} else
--			return -EINVAL;
--
--		writel(host_ctl, host->addr + HOST_CONTROL);
--		writel(clock_ctl, host->addr + CLOCK_CONTROL);
--		pci_write_config_dword(host->chip->pdev,
--				       PCI_CTL_CLOCK_DLY_ADDR,
--				       clock_delay);
--		break;
-+		return j38ms_set_interface(host, value);
-+	default:
-+		return -EINVAL;
- 	};
--	return 0;
-+}
-+
-+/* external interface: Submit new request from upper layer */
-+static void j38ms_submit_req(struct memstick_host *msh)
-+{
-+	struct j38ms_host *host = memstick_priv(msh);
-+	if (!host->req)
-+		tasklet_schedule(&host->tasklet);
- }
- 
- #ifdef CONFIG_PM
- 
--static int jmb38x_ms_suspend(struct pci_dev *dev, pm_message_t state)
-+static int j38ms_suspend(struct pci_dev *dev, pm_message_t state)
- {
--	struct jmb38x_ms *jm = pci_get_drvdata(dev);
-+	struct j38ms *jm = pci_get_drvdata(dev);
- 	int cnt;
- 
- 	for (cnt = 0; cnt < jm->host_cnt; ++cnt) {
-@@ -772,9 +699,9 @@ static int jmb38x_ms_suspend(struct pci_dev *dev, pm_message_t state)
- 	return 0;
- }
- 
--static int jmb38x_ms_resume(struct pci_dev *dev)
-+static int j38ms_resume(struct pci_dev *dev)
- {
--	struct jmb38x_ms *jm = pci_get_drvdata(dev);
-+	struct j38ms *jm = pci_get_drvdata(dev);
- 	int rc;
- 
- 	pci_set_power_state(dev, PCI_D0);
-@@ -799,12 +726,12 @@ static int jmb38x_ms_resume(struct pci_dev *dev)
- 
- #else
- 
--#define jmb38x_ms_suspend NULL
--#define jmb38x_ms_resume NULL
-+#define j38ms_suspend NULL
-+#define j38ms_resume NULL
- 
- #endif /* CONFIG_PM */
- 
--static int jmb38x_ms_count_slots(struct pci_dev *pdev)
-+static int j38ms_count_slots(struct pci_dev *pdev)
- {
- 	int cnt, rc = 0;
- 
-@@ -814,23 +741,23 @@ static int jmb38x_ms_count_slots(struct pci_dev *pdev)
- 
- 		if (256 != pci_resource_len(pdev, cnt))
- 			break;
--
- 		++rc;
- 	}
- 	return rc;
- }
- 
--static struct memstick_host *jmb38x_ms_alloc_host(struct jmb38x_ms *jm, int cnt)
-+static struct memstick_host *j38ms_alloc_host(struct j38ms *jm, int cnt)
- {
- 	struct memstick_host *msh;
--	struct jmb38x_ms_host *host;
-+	struct j38ms_host *host;
- 
--	msh = memstick_alloc_host(sizeof(struct jmb38x_ms_host),
-+	msh = memstick_alloc_host(sizeof(struct j38ms_host),
- 				  &jm->pdev->dev);
- 	if (!msh)
- 		return NULL;
- 
- 	host = memstick_priv(msh);
-+	host->msh = msh;
- 	host->chip = jm;
- 	host->addr = ioremap(pci_resource_start(jm->pdev, cnt),
- 			     pci_resource_len(jm->pdev, cnt));
-@@ -842,39 +769,53 @@ static struct memstick_host *jmb38x_ms_alloc_host(struct jmb38x_ms *jm, int cnt)
- 	snprintf(host->host_id, sizeof(host->host_id), DRIVER_NAME ":slot%d",
- 		 host->id);
- 	host->irq = jm->pdev->irq;
--	host->timeout_jiffies = msecs_to_jiffies(1000);
- 
--	tasklet_init(&host->notify, jmb38x_ms_req_tasklet, (unsigned long)msh);
--	msh->request = jmb38x_ms_submit_req;
--	msh->set_param = jmb38x_ms_set_param;
-+	msh->request = j38ms_submit_req;
-+	msh->set_param = j38ms_set_param;
- 
- 	msh->caps = MEMSTICK_CAP_PAR4 | MEMSTICK_CAP_PAR8;
- 
--	setup_timer(&host->timer, jmb38x_ms_abort, (unsigned long)msh);
-+	host->timeout_jiffies = msecs_to_jiffies(1000);
-+	setup_timer(&host->timer, j38ms_irq_timeout, (unsigned long)host);
-+	tasklet_init(&host->tasklet, j38ms_submit_tasklet, (unsigned long)host);
-+
-+	host->dma_bounce_page = pci_alloc_consistent(
-+				jm->pdev, PAGE_SIZE, &host->dma_bus_address);
- 
--	if (!request_irq(host->irq, jmb38x_ms_isr, IRQF_SHARED, host->host_id,
-+	if (!host->dma_bounce_page)
-+		goto err_out_free;
-+
-+	if (!request_irq(host->irq, j38ms_isr, IRQF_SHARED, host->host_id,
- 			 msh))
- 		return msh;
- 
- 	iounmap(host->addr);
-+
- err_out_free:
-+	if (host->dma_bounce_page)
-+		pci_free_consistent(jm->pdev, PAGE_SIZE,
-+			host->dma_bounce_page, host->dma_bus_address);
- 	kfree(msh);
- 	return NULL;
- }
- 
--static void jmb38x_ms_free_host(struct memstick_host *msh)
-+static void j38ms_free_host(struct memstick_host *msh)
- {
--	struct jmb38x_ms_host *host = memstick_priv(msh);
-+	struct j38ms_host *host = memstick_priv(msh);
- 
- 	free_irq(host->irq, msh);
- 	iounmap(host->addr);
-+
-+	pci_free_consistent(host->chip->pdev, PAGE_SIZE,
-+		host->dma_bounce_page, host->dma_bus_address);
-+
- 	memstick_free_host(msh);
- }
- 
--static int jmb38x_ms_probe(struct pci_dev *pdev,
-+static int j38ms_probe(struct pci_dev *pdev,
- 			   const struct pci_device_id *dev_id)
- {
--	struct jmb38x_ms *jm;
-+	struct j38ms *jm;
- 	int pci_dev_busy = 0;
- 	int rc, cnt;
- 
-@@ -897,14 +838,14 @@ static int jmb38x_ms_probe(struct pci_dev *pdev,
- 	pci_read_config_dword(pdev, 0xac, &rc);
- 	pci_write_config_dword(pdev, 0xac, rc | 0x00470000);
- 
--	cnt = jmb38x_ms_count_slots(pdev);
-+	cnt = j38ms_count_slots(pdev);
- 	if (!cnt) {
- 		rc = -ENODEV;
- 		pci_dev_busy = 1;
- 		goto err_out;
- 	}
- 
--	jm = kzalloc(sizeof(struct jmb38x_ms)
-+	jm = kzalloc(sizeof(struct j38ms)
- 		     + cnt * sizeof(struct memstick_host *), GFP_KERNEL);
- 	if (!jm) {
- 		rc = -ENOMEM;
-@@ -916,14 +857,14 @@ static int jmb38x_ms_probe(struct pci_dev *pdev,
- 	pci_set_drvdata(pdev, jm);
- 
- 	for (cnt = 0; cnt < jm->host_cnt; ++cnt) {
--		jm->hosts[cnt] = jmb38x_ms_alloc_host(jm, cnt);
-+		jm->hosts[cnt] = j38ms_alloc_host(jm, cnt);
- 		if (!jm->hosts[cnt])
- 			break;
- 
- 		rc = memstick_add_host(jm->hosts[cnt]);
- 
- 		if (rc) {
--			jmb38x_ms_free_host(jm->hosts[cnt]);
-+			j38ms_free_host(jm->hosts[cnt]);
- 			jm->hosts[cnt] = NULL;
- 			break;
- 		}
-@@ -944,10 +885,10 @@ err_out:
- 	return rc;
- }
- 
--static void jmb38x_ms_remove(struct pci_dev *dev)
-+static void j38ms_remove(struct pci_dev *dev)
- {
--	struct jmb38x_ms *jm = pci_get_drvdata(dev);
--	struct jmb38x_ms_host *host;
-+	struct j38ms *jm = pci_get_drvdata(dev);
-+	struct j38ms_host *host;
- 	int cnt;
- 	unsigned long flags;
- 
-@@ -957,23 +898,28 @@ static void jmb38x_ms_remove(struct pci_dev *dev)
- 
- 		host = memstick_priv(jm->hosts[cnt]);
- 
--		jm->hosts[cnt]->request = jmb38x_ms_dummy_submit;
--		tasklet_kill(&host->notify);
--		writel(0, host->addr + INT_SIGNAL_ENABLE);
--		writel(0, host->addr + INT_STATUS_ENABLE);
--		mmiowb();
--		dev_dbg(&jm->pdev->dev, "interrupts off\n");
-+		tasklet_kill(&host->tasklet);
-+
- 		spin_lock_irqsave(&host->lock, flags);
-+		host->dead = true;
-+
-+		j38ms_write_reg(host, INT_SIGNAL_ENABLE, 0);
-+		j38ms_write_reg(host, INT_STATUS_ENABLE, 0);
-+
-+		mmiowb();
-+		dbg(host, "interrupts off");
-+
- 		if (host->req) {
- 			host->req->error = -ETIME;
--			jmb38x_ms_complete_cmd(jm->hosts[cnt], 1);
-+			j38ms_complete_tpc(jm->hosts[cnt]);
- 		}
-+
- 		spin_unlock_irqrestore(&host->lock, flags);
- 
- 		memstick_remove_host(jm->hosts[cnt]);
--		dev_dbg(&jm->pdev->dev, "host removed\n");
-+		dbg(host, "host removed");
- 
--		jmb38x_ms_free_host(jm->hosts[cnt]);
-+		j38ms_free_host(jm->hosts[cnt]);
- 	}
- 
- 	pci_set_drvdata(dev, NULL);
-@@ -982,35 +928,41 @@ static void jmb38x_ms_remove(struct pci_dev *dev)
- 	kfree(jm);
- }
- 
--static struct pci_device_id jmb38x_ms_id_tbl [] = {
-+static struct pci_device_id j38ms_id_tbl[] = {
- 	{ PCI_VENDOR_ID_JMICRON, PCI_DEVICE_ID_JMICRON_JMB38X_MS, PCI_ANY_ID,
- 	  PCI_ANY_ID, 0, 0, 0 },
- 	{ }
- };
- 
--static struct pci_driver jmb38x_ms_driver = {
-+static struct pci_driver j38ms_driver = {
- 	.name = DRIVER_NAME,
--	.id_table = jmb38x_ms_id_tbl,
--	.probe = jmb38x_ms_probe,
--	.remove = jmb38x_ms_remove,
--	.suspend = jmb38x_ms_suspend,
--	.resume = jmb38x_ms_resume
-+	.id_table = j38ms_id_tbl,
-+	.probe = j38ms_probe,
-+	.remove = j38ms_remove,
-+	.suspend = j38ms_suspend,
-+	.resume = j38ms_resume
- };
- 
--static int __init jmb38x_ms_init(void)
-+static int __init j38ms_init(void)
- {
--	return pci_register_driver(&jmb38x_ms_driver);
-+	return pci_register_driver(&j38ms_driver);
- }
- 
--static void __exit jmb38x_ms_exit(void)
-+static void __exit j38ms_exit(void)
- {
--	pci_unregister_driver(&jmb38x_ms_driver);
-+	pci_unregister_driver(&j38ms_driver);
- }
- 
- MODULE_AUTHOR("Alex Dubov");
--MODULE_DESCRIPTION("JMicron jmb38x MemoryStick driver");
-+MODULE_DESCRIPTION("JMicron jm38x_ms MemoryStick driver");
- MODULE_LICENSE("GPL");
--MODULE_DEVICE_TABLE(pci, jmb38x_ms_id_tbl);
-+MODULE_DEVICE_TABLE(pci, j38ms_id_tbl);
-+
-+module_param(debug, int, S_IRUGO | S_IWUSR);
-+MODULE_PARM_DESC(debug, "Debug level (0-3)");
-+
-+module_param(no_dma, bool, 0644);
-+MODULE_PARM_DESC(no_dma, "Disable the dma");
- 
--module_init(jmb38x_ms_init);
--module_exit(jmb38x_ms_exit);
-+module_init(j38ms_init);
-+module_exit(j38ms_exit);
-diff --git a/drivers/memstick/host/jmb38x_ms.h b/drivers/memstick/host/jmb38x_ms.h
++obj-$(CONFIG_MS_BLOCK)		+= ms_block.o
+ obj-$(CONFIG_MSPRO_BLOCK)	+= mspro_block.o
+diff --git a/drivers/memstick/core/ms_block.c b/drivers/memstick/core/ms_block.c
 new file mode 100644
-index 0000000..0d83365
+index 0000000..75ec529
 --- /dev/null
-+++ b/drivers/memstick/host/jmb38x_ms.h
-@@ -0,0 +1,200 @@
++++ b/drivers/memstick/core/ms_block.c
+@@ -0,0 +1,2232 @@
 +/*
-+ *  jmb38x_ms.c - JMicron jmb38x MemoryStick card reader
++ *  ms_block.c - Sony MemoryStick (legacy) storage support
 + *
-+ *  Copyright (C) 2008 Alex Dubov <oakad@yahoo.com>
++ *  Copyright (C) 2007 Alex Dubov <oakad@yahoo.com>
 + *  Copyright (C) 2010 Maxim Levitsky <maximlevitsky@gmail.com>
 + *
 + * This program is free software; you can redistribute it and/or modify
 + * it under the terms of the GNU General Public License version 2 as
 + * published by the Free Software Foundation.
 + *
++ * Special thanks to Carlos Corbacho for providing various MemoryStick cards
++ * that made this driver possible.
++ *
 + */
 +
-+#define DRIVER_NAME "jmb38x_ms"
++#include <linux/blkdev.h>
++#include <linux/mm.h>
++#include <linux/idr.h>
++#include <linux/hdreg.h>
++#include <linux/kthread.h>
++#include <linux/delay.h>
++#include <linux/slab.h>
++#include <linux/random.h>
++#include <linux/memstick.h>
++#include <linux/bitmap.h>
++#include <linux/scatterlist.h>
++#include <linux/sched.h>
++#include <linux/jiffies.h>
++#include "ms_block.h"
 +
-+/* physical address of a page for DMA */
-+#define	DMA_ADDRESS            0x00
++static int major;
++static int debug;
++static int cache_flush_timeout = 1000;
++static bool verify_writes;
 +
-+/* controls the size of the TPC */
-+#define	BLOCK                  0x04
-+#define BLOCK_COUNT_MASK        0xffff0000
-+#define BLOCK_COUNT_1BLOCK      0x00010000
-+#define BLOCK_SIZE_MASK         0x00000fff
 +
-+/* Enables the DMA */
-+#define	DMA_CONTROL            0x08
-+#define DMA_CONTROL_ENABLE      0x00000001
++/*
++ * Advance scatterlist by 'consumed' bytes
++ * Returns new scatterlist, or NULL if can't advance that much
++ */
++static struct scatterlist *sg_advance(struct scatterlist *sg, int consumed)
++{
++	while (consumed >= sg->length) {
++		consumed -= sg->length;
 +
-+/* A window for small TPCs to send the contents inline */
-+#define	TPC_P0                 0x0c
-+#define	TPC_P1                 0x10
++		sg = sg_next(sg);
++		if (!sg)
++			break;
++	}
 +
-+/* TPC execution register */
-+#define	TPC                    0x14
-+#define TPC_DATA_SEL            0x00008000
-+#define TPC_DIR                 0x00004000
-+#define TPC_WAIT_INT            0x00002000
-+#define TPC_GET_INT             0x00000800
-+#define TPC_CODE_SZ_MASK        0x00000700
-+#define TPC_DATA_SZ_MASK        0x00000007
++	WARN_ON(!sg && consumed);
 +
-+/* General device settings */
-+#define	HOST_CONTROL           0x18
-+#define HOST_CONTROL_TDELAY_EN  0x00040000
-+#define HOST_CONTROL_HW_OC_P    0x00010000
-+#define HOST_CONTROL_RESET_REQ  0x00008000
-+#define HOST_CONTROL_REI        0x00004000
-+#define HOST_CONTROL_LED        0x00000400
-+#define HOST_CONTROL_FAST_CLK   0x00000200
-+#define HOST_CONTROL_RESET      0x00000100
-+#define HOST_CONTROL_POWER_EN   0x00000080
-+#define HOST_CONTROL_IF_PAR4    0x00000010
-+#define HOST_CONTROL_IF_PAR8    0x00000030
-+#define HOST_CONTROL_IF_MASK    0x00000030
-+#define HOST_CONTROL_CLOCK_EN   0x00000040
-+#define HOST_CONTROL_REO        0x00000008
-+#define HOST_CONTROL_BSY_TIME	0x00000007
-+#define HOST_CONTROL_IF_SERIAL  0x00000000
++	if (!sg)
++		return NULL;
 +
-+/* IO window for PIO access to internal FIFO*/
-+#define	DATA                   0x1c
++	sg->offset += consumed;
++	sg->length -= consumed;
 +
-+/* MS status */
-+#define	STATUS                 0x20
-+#define STATUS_BUSY             0x00080000
-+#define STATUS_MS_DAT7          0x00040000
-+#define STATUS_MS_DAT6          0x00020000
-+#define STATUS_MS_DAT5          0x00010000
-+#define STATUS_MS_DAT4          0x00008000
-+#define STATUS_MS_DAT3          0x00004000
-+#define STATUS_MS_DAT2          0x00002000
-+#define STATUS_MS_DAT1          0x00001000
-+#define STATUS_MS_DAT0          0x00000800
-+#define STATUS_HAS_MEDIA        0x00000400
-+#define STATUS_FIFO_EMPTY       0x00000200
-+#define STATUS_FIFO_FULL        0x00000100
-+#define STATUS_MS_CED           0x00000080
-+#define STATUS_MS_ERR           0x00000040
-+#define STATUS_MS_BRQ           0x00000020
-+#define STATUS_MS_CNK           0x00000001
++	if (sg->offset >= PAGE_SIZE) {
++		struct page *page =
++			nth_page(sg_page(sg), sg->offset / PAGE_SIZE);
++		sg_set_page(sg, page, sg->length, sg->offset % PAGE_SIZE);
++	}
 +
-+/* Device status */
-+#define	INT_STATUS             0x24
-+#define INT_STATUS_TPC_ERR      0x00080000
-+#define INT_STATUS_CRC_ERR      0x00040000
-+#define INT_STATUS_TIMER_TO     0x00020000
-+#define INT_STATUS_HSK_TO       0x00010000
-+#define INT_STATUS_ANY_ERR      0x00008000
-+#define INT_STATUS_FIFO_WRDY    0x00000080
-+#define INT_STATUS_FIFO_RRDY    0x00000040
-+#define INT_STATUS_MEDIA_OUT    0x00000010
-+#define INT_STATUS_MEDIA_IN     0x00000008
-+#define INT_STATUS_DMA_BOUNDARY 0x00000004
-+#define INT_STATUS_EOTRAN       0x00000002
-+#define INT_STATUS_EOTPC        0x00000001
-+#define INT_STATUS_ALL          0x000f801f
++	return sg;
++}
 +
-+/* Interrupt enable - ???*/
-+#define	INT_STATUS_ENABLE      0x28
++/* Calculate number of sg entries in sg list */
++static int sg_nents(struct scatterlist *sg)
++{
++	int nents = 0;
++	while (sg) {
++		nents++;
++		sg = sg_next(sg);
++	}
 +
-+/* Interrupt enable*/
-+#define	INT_SIGNAL_ENABLE      0x2c
++	return nents;
++}
 +
-+/* Current timer value */
-+#define	TIMER                  0x30
++/* Calculate total lenght of scatterlist */
++static int sg_total_len(struct scatterlist *sg)
++{
++	int len = 0;
++	while (sg) {
++		len += sg->length;
++		sg = sg_next(sg);
++	}
++	return len;
++}
 +
-+/* Enable/disable the timer */
-+#define	TIMER_CONTROL          0x34
++/* Compare contents of an sg to a buffer */
++static bool sg_compare_to_buffer(struct scatterlist *sg, u8 *buffer, size_t len)
++{
++	unsigned long flags;
++	int retval = 0;
++	struct sg_mapping_iter miter;
 +
-+/* Output pad enable */
-+#define	PAD_OUTPUT_ENABLE      0x38
-+#define PAD_OUTPUT_ENABLE_MS    0x0F3F
++	if (sg_total_len(sg) < len)
++		return 1;
 +
-+/* Ouput pad pull-up, pull-down control */
-+#define	PAD_PU_PD              0x3c
-+#define PAD_PU_PD_OFF           0x7fff0000
-+#define PAD_PU_PD_ON_MS_SOCK0   0x5f8f0000
-+#define PAD_PU_PD_ON_MS_SOCK1   0x0f0f0000
++	local_irq_save(flags);
++	sg_miter_start(&miter, sg, sg_nents(sg),
++				SG_MITER_ATOMIC | SG_MITER_FROM_SG);
 +
-+/* Internal clock delay */
-+#define	CLOCK_DELAY            0x40
++	while (sg_miter_next(&miter) && len > 0) {
 +
-+/* ??? */
-+#define	ADMA_ADDRESS           0x44
++		int cmplen = min(miter.length, len);
++		if (memcmp(miter.addr, buffer, cmplen)) {
++			retval = 1;
++			break;
++		}
 +
-+/* Set the device clock */
-+#define	CLOCK_CONTROL          0x48
-+#define CLOCK_CONTROL_RESET     0x00000008
-+#define CLOCK_CONTROL_40MHZ     0x00000009
-+#define CLOCK_CONTROL_50MHZ     0x0000000a
-+#define CLOCK_CONTROL_62_5MHZ   0x0000000c
-+#define CLOCK_CONTROL_OFF       0x00000000
++		buffer += cmplen;
++		len -= cmplen;
++	}
 +
-+/* Led blink period */
-+#define	LED_CONTROL            0x4c
++	sg_miter_stop(&miter);
++	local_irq_restore(flags);
++	return retval;
++}
 +
-+/* Hardware version */
-+#define	VERSION                0x50
++/* Get zone at which block with logical address 'lba' lives
++ * Flash is broken into zones.
++ * Each zone consists of 512 eraseblocks, out of which in first
++ * zone 494 are used and 496 are for all following zones.
++ * Therefore zone #0 hosts blocks 0-493, zone #1 blocks 494-988, etc...
++*/
++static int msb_get_zone_from_lba(int lba)
++{
++	if (lba < 494)
++		return 0;
++	return ((lba - 494) / 496) + 1;
++}
 +
-+#define PCI_CTL_CLOCK_DLY_ADDR   0x000000b0
-+#define PCI_CTL_CLOCK_DLY_MASK_A 0x00000f00
-+#define PCI_CTL_CLOCK_DLY_MASK_B 0x0000f000
++/* Get zone of physical block. Trivial */
++static int msb_get_zone_from_pba(int pba)
++{
++	return pba / MS_BLOCKS_IN_ZONE;
++}
 +
-+struct j38ms_host {
-+	struct j38ms            *chip;
-+	struct memstick_host    *msh;
-+	void __iomem            *addr;
-+	bool                    dead;
-+	spinlock_t              lock;
-+	int                     id;
-+	char                    host_id[32];
-+	int                     irq;
-+	struct memstick_request *req;
-+	unsigned char           cmd_flags;
-+	struct timer_list       timer;
-+	struct tasklet_struct	tasklet;
-+	unsigned long		timeout_jiffies;
-+	int                     interface;
++/* Debug test to validate free block counts */
++#ifdef DEBUG
++static int msb_validate_used_block_bitmap(struct msb_data *msb)
++{
++	int total_free_blocks = 0;
++	int i;
 +
-+	/* PIO state */
-+	struct sg_mapping_iter  pio_sg_iter;
-+	unsigned char		pio_offset;
-+	unsigned char           pio_tmp_buf[4];
-+	unsigned int            pio_tmp_buf_len;
++	for (i = 0 ; i < msb->zone_count ; i++)
++		total_free_blocks += msb->free_block_count[i];
 +
-+	/* DMA bounce buffer */
-+	void			*dma_bounce_page;
-+	dma_addr_t		dma_bus_address;
++	if (msb->block_count - bitmap_weight(msb->used_blocks_bitmap,
++					msb->block_count) == total_free_blocks)
++		return 0;
 +
++	ms_printk("BUG: free block counts don't match the bitmap");
++	msb->read_only = true;
++	return -EINVAL;
++}
++#endif
++
++/* Mark physical block as used */
++static void msb_mark_block_used(struct msb_data *msb, int pba)
++{
++	int zone = msb_get_zone_from_pba(pba);
++
++	if (test_bit(pba, msb->used_blocks_bitmap)) {
++		ms_printk("BUG: attempt to mark "
++			"already used pba %d as used", pba);
++		msb->read_only = true;
++		return;
++	}
++
++#ifdef DEBUG
++	if (msb_validate_used_block_bitmap(msb))
++		return;
++#endif
++	set_bit(pba, msb->used_blocks_bitmap);
++	msb->free_block_count[zone]--;
++}
++
++/* Mark physical block as free */
++static void msb_mark_block_unused(struct msb_data *msb, int pba)
++{
++	int zone = msb_get_zone_from_pba(pba);
++
++	if (!test_bit(pba, msb->used_blocks_bitmap)) {
++		ms_printk("BUG: attempt to mark "
++				"already unused pba %d as unused" , pba);
++		msb->read_only = true;
++		return;
++	}
++
++#ifdef DEBUG
++	if (msb_validate_used_block_bitmap(msb))
++		return;
++#endif
++	clear_bit(pba, msb->used_blocks_bitmap);
++	msb->free_block_count[zone]++;
++}
++
++/*
++ * Create a sg that spans page from current scatterlist
++ * used by read/write functions
++ */
++static void msb_set_sg(struct msb_data *msb, struct scatterlist *sg)
++{
++	int offset = msb->current_sg->offset + msb->sg_offset;
++	struct page *page = nth_page(sg_page(msb->current_sg),
++						offset >> PAGE_SHIFT);
++	sg_init_table(sg, 1);
++	sg_set_page(sg, page, msb->page_size, offset_in_page(offset));
++}
++
++/* Advances the current sg by one page. Returns error if can't */
++static int msb_advance_sg(struct msb_data *msb)
++{
++	msb->sg_offset += msb->page_size;
++
++	if (msb->sg_offset & (msb->page_size - 1)) {
++		ms_printk("BUG: sg not aligned");
++		return -EINVAL;
++	}
++
++	if (msb->sg_offset > msb->current_sg->length) {
++		dbg("BUG: sg overrun");
++		return -EINVAL;
++	}
++
++	if (msb->sg_offset == msb->current_sg->length) {
++		msb->current_sg = sg_next(msb->current_sg);
++		msb->sg_offset = 0;
++	}
++
++	if (!msb->current_sg)
++		return -EINVAL;
++	return 0;
++}
++
++/*
++ * This function is a handler for reads of one page from device.
++ * Writes output to msb->current_sg, takes sector address from msb->reg.param
++ * Can also be used to read extra data only. Set params accordintly.
++ */
++static int h_msb_read_page(struct memstick_dev *card,
++				 struct memstick_request **mrq)
++{
++	struct msb_data *msb = memstick_get_drvdata(card);
++	struct scatterlist sg;
++	u8 command, intreg;
++
++	memstick_allocate_request(card, mrq);
++	if ((*mrq)->error) {
++		dbg("read_page, unknown error");
++		return memstick_complete_request(card, *mrq, 0);
++	}
++again:
++	switch (card->state) {
++	case 0: /* Write the sector address */
++		if (!memstick_write_regs(card,
++			offsetof(struct ms_register, param),
++			sizeof(struct ms_param_register),
++			(unsigned char *)&msb->regs.param,
++			*mrq))
++			return 0;
++		break;
++
++	case 1: /* Execute the read command*/
++		command = MS_CMD_BLOCK_READ;
++		memstick_init_req(*mrq, MS_TPC_SET_CMD, &command, 1);
++		break;
++
++	case 2: /* send INT request */
++		if (memstick_read_int_reg(card, *mrq, -1))
++			break;
++		card->state++;
++
++	case 3: /* get result of the INT request*/
++		intreg = (*mrq)->data[0];
++		msb->regs.status.interrupt = intreg;
++
++		if (intreg & MEMSTICK_INT_CMDNAK)
++			return memstick_complete_request(card, *mrq, -EIO);
++
++		if (!(intreg & MEMSTICK_INT_CED)) {
++			card->state--;
++			goto again;
++		}
++
++		memstick_read_int_reg_cleanup(card);
++
++		if (intreg & MEMSTICK_INT_ERR)
++			card->state++;
++		else
++			card->state = 6;
++
++		goto again;
++
++	case 4: /* read the status register to understand source of the INT_ERR */
++		if (!memstick_read_regs(card,
++			offsetof(struct ms_register, status),
++			sizeof(struct ms_status_register),
++			*mrq))
++			return 0;
++		break;
++
++	case 5: /* get results of status check */
++		msb->regs.status = *(struct ms_status_register *)(*mrq)->data;
++		card->state++;
++
++	case 6: /* Send extra data read request */
++		if (!memstick_read_regs(card,
++			offsetof(struct ms_register, extra_data),
++			sizeof(struct ms_extra_data_register),
++			*mrq))
++			return 0;
++		break;
++
++	case 7: /* Save result of extra data request */
++		msb->regs.extra_data =
++			*(struct ms_extra_data_register *) (*mrq)->data;
++		card->state++;
++
++	case 8: /* Send the  MS_TPC_READ_LONG_DATA to read IO buffer */
++
++		/* Skip that state if we only read the oob */
++		if (msb->regs.param.cp == MEMSTICK_CP_EXTRA) {
++			card->state++;
++			goto again;
++		}
++
++		msb_set_sg(msb, &sg);
++		memstick_init_req_sg(*mrq, MS_TPC_READ_LONG_DATA, &sg);
++		break;
++
++	case 9: /* check validity of data buffer & done */
++
++		if (!(msb->regs.status.interrupt & MEMSTICK_INT_ERR))
++			return memstick_complete_request(card, *mrq, 0);
++
++		if (msb->regs.status.status1 & MEMSTICK_UNCORR_ERROR) {
++			dbg("read_page: uncorrectable error");
++			return memstick_complete_request(card, *mrq, -EBADMSG);
++		}
++
++		if (msb->regs.status.status1 & MEMSTICK_CORR_ERROR) {
++			dbg("read_page: correctable error");
++			return memstick_complete_request(card, *mrq, -EUCLEAN);
++		} else {
++			dbg("read_page: INT error, but no status error bits");
++			return memstick_complete_request(card, *mrq, -EIO);
++		}
++	default:
++		BUG();
++	}
++	card->state++;
++	return 0;
++}
++
++/*
++ * Handler of writes of exactly one block.
++ * Takes address from msb->regs.param. Writes same extra data to blocks, also taken
++ * from msb->regs.extra
++ * Returns -EBADMSG if write fails due to uncorrectable error, or -EIO if
++ * device refuses to take the command or something else
++ */
++static int h_msb_write_block(struct memstick_dev *card,
++				 struct memstick_request **mrq)
++{
++	struct msb_data *msb = memstick_get_drvdata(card);
++	struct scatterlist sg;
++	u8 intreg, command;
++
++	memstick_allocate_request(card, mrq);
++	if ((*mrq)->error)
++		return memstick_complete_request(card, *mrq, 0);
++
++again:
++	switch (card->state) {
++
++	/* HACK: align write on 4 boundary to workaround Jmicron limitation
++	 * It doen't make sense to use ALIGN here, because its very hardware
++	   specific anyway
++	*/
++
++	case 0: /* write param register*/
++		if (!memstick_write_regs(card,
++			offsetof(struct ms_register, param),
++			sizeof(struct ms_param_register) +
++			sizeof(struct ms_extra_data_register) + 2,
++			(unsigned char *)&msb->regs.param,
++			*mrq))
++			return 0;
++		break;
++
++	case 1: /* execute the write command*/
++		command = MS_CMD_BLOCK_WRITE;
++		memstick_init_req(*mrq, MS_TPC_SET_CMD, &command, 1);
++		break;
++
++	case 2: /* send INT request */
++		if (memstick_read_int_reg(card, *mrq, -1))
++			break;
++		card->state++;
++
++	case 3: /* read INT response */
++		intreg = (*mrq)->data[0];
++		msb->regs.status.interrupt = intreg;
++
++		/* errors mean out of here, and fast... */
++		if (intreg & (MEMSTICK_INT_CMDNAK))
++			return memstick_complete_request(card, *mrq, -EIO);
++
++		if (intreg & MEMSTICK_INT_ERR)
++			return memstick_complete_request(card, *mrq, -EBADMSG);
++
++
++		/* for last page we need to poll CED */
++		if (msb->current_page == msb->pages_in_block) {
++			if (intreg & MEMSTICK_INT_CED)
++				return memstick_complete_request(card, *mrq, 0);
++			card->state--;
++			goto again;
++
++		}
++
++		/* for non-last page we need BREQ before writing next chunk */
++		if (!(intreg & MEMSTICK_INT_BREQ)) {
++			card->state--;
++			goto again;
++		}
++
++		memstick_read_int_reg_cleanup(card);
++		card->state++;
++
++	case 4: /* send the MS_TPC_WRITE_LONG_DATA to perform the write*/
++		msb_set_sg(msb, &sg);
++		memstick_init_req_sg(*mrq, MS_TPC_WRITE_LONG_DATA, &sg);
++		(*mrq)->need_card_int = 1;
++		break;
++
++	case 5: /* Switch to next page + go back to int polling */
++		msb->current_page++;
++
++		if (msb->current_page < msb->pages_in_block) {
++			if (msb_advance_sg(msb)) {
++				ms_printk(
++				"BUG: out of data while writing block!");
++				return memstick_complete_request(card,
++								*mrq, -EFAULT);
++			}
++		}
++		card->state = 2;
++		goto again;
++	default:
++		BUG();
++	}
++	card->state++;
++	return 0;
++}
++
++/*
++ * This function is used to send simple IO requests to device that consist
++ * of register write + command
++ */
++static int h_msb_send_command(struct memstick_dev *card,
++				 struct memstick_request **mrq)
++{
++	struct msb_data *msb = memstick_get_drvdata(card);
++	u8 intreg;
++	int len;
++
++	memstick_allocate_request(card, mrq);
++	if ((*mrq)->error) {
++		dbg("send_command: unknown error");
++		return memstick_complete_request(card, *mrq, 0);
++	}
++
++again:
++	switch (card->state) {
++	case 0: /* write regs */
++		len = sizeof(struct ms_param_register);
++		if (msb->command_need_oob)
++			/* See h_msb_write_block */
++			len += (sizeof(struct ms_extra_data_register) + 2);
++
++		if (!memstick_write_regs(card,
++			offsetof(struct ms_register, param),
++			len,
++			(unsigned char *)&msb->regs.param,
++			*mrq))
++			return 0;
++		break;
++
++	case 1: /* execute the command*/
++		memstick_init_req(*mrq, MS_TPC_SET_CMD, &msb->command_value, 1);
++		break;
++
++	case 2: /* send INT request */
++		if (memstick_read_int_reg(card, *mrq, -1))
++			break;
++		card->state++;
++
++	case 3: /* poll for int bits */
++		intreg = (*mrq)->data[0];
++
++		if (intreg & MEMSTICK_INT_CMDNAK)
++			return memstick_complete_request(card, *mrq, -EIO);
++		if (intreg & MEMSTICK_INT_ERR)
++			return memstick_complete_request(card, *mrq, -EBADMSG);
++
++
++		if (!(intreg & MEMSTICK_INT_CED)) {
++			card->state--;
++			goto again;
++		}
++
++		memstick_read_int_reg_cleanup(card);
++		return memstick_complete_request(card, *mrq, 0);
++	}
++	card->state++;
++	return 0;
++}
++
++/* Small handler for card reset */
++static int h_msb_reset(struct memstick_dev *card,
++				 struct memstick_request **mrq)
++{
++	u8 command = MS_CMD_RESET;
++
++	memstick_allocate_request(card, mrq);
++	if ((*mrq)->error)
++		return memstick_complete_request(card, *mrq, 0);
++
++	switch (card->state) {
++	case 0:
++		memstick_init_req(*mrq, MS_TPC_SET_CMD, &command, 1);
++		(*mrq)->need_card_int = 0;
++		break;
++	case 1:
++		return memstick_complete_request(card, *mrq, 0);
++	}
++	card->state++;
++	return 0;
++}
++
++/* This handler is used to do serial->parallel switch */
++static int h_msb_parallel_switch(struct memstick_dev *card,
++					struct memstick_request **mrq)
++{
++	struct msb_data *msb = memstick_get_drvdata(card);
++	struct memstick_host *host = card->host;
++
++	memstick_allocate_request(card, mrq);
++	if ((*mrq)->error) {
++		dbg("parallel_switch: error");
++		msb->regs.param.system &= ~MEMSTICK_SYS_PAM;
++		return memstick_complete_request(card, *mrq, 0);
++	}
++
++	switch (card->state) {
++
++	case 0: /* Set the parallel interface on memstick side */
++		msb->regs.param.system |= MEMSTICK_SYS_PAM;
++
++		if (!memstick_write_regs(card,
++			offsetof(struct ms_register, param),
++			1,
++			(unsigned char *)&msb->regs.param,
++			*mrq))
++			return 0;
++		break;
++
++	case 1: /* Set parallel interface on our side + send a dummy request
++			to see if card responds */
++		host->set_param(host, MEMSTICK_INTERFACE, MEMSTICK_PAR4);
++		memstick_init_req(&card->current_mrq, MS_TPC_GET_INT, NULL, 1);
++		break;
++
++	case 2:
++		return memstick_complete_request(card, *mrq, 0);
++	}
++	card->state++;
++	return 0;
++}
++
++static int msb_switch_to_parallel(struct msb_data *msb);
++
++/* Reset the card, to guard against hw errors beeing treated as bad blocks */
++static int msb_reset(struct msb_data *msb)
++{
++	bool was_parallel = msb->regs.param.system & MEMSTICK_SYS_PAM;
++	struct memstick_dev *card = msb->card;
++	struct memstick_host *host = card->host;
++	int error;
++
++	memstick_invalidate_reg_window(card);
++
++	/* Reset the controller */
++	host->set_param(host, MEMSTICK_POWER, MEMSTICK_POWER_OFF);
++	msleep(100);
++	host->set_param(host, MEMSTICK_POWER, MEMSTICK_POWER_ON);
++	host->set_param(host, MEMSTICK_INTERFACE, MEMSTICK_SERIAL);
++
++
++	/* Reset the card */
++	msb->regs.param.system = MEMSTICK_SYS_BAMD;
++	error = memstick_run_state_machine(card, h_msb_reset);
++	if (error) {
++		dbg("Failed to reset the card");
++		msb->read_only = true;
++		return -ENODEV;
++	}
++
++	/* Set parallel mode */
++	if (was_parallel)
++		msb_switch_to_parallel(msb);
++	return 0;
++}
++
++/* Attempts to switch interface to parallel mode */
++static int msb_switch_to_parallel(struct msb_data *msb)
++{
++	int error;
++
++	error = memstick_run_state_machine(msb->card, h_msb_parallel_switch);
++	if (error) {
++		ms_printk("Switch to parallel failed");
++		msb->regs.param.system &= ~MEMSTICK_SYS_PAM;
++		msb_reset(msb);
++		return -EFAULT;
++	}
++
++	msb->card->caps |= MEMSTICK_CAP_AUTO_GET_INT;
++	return 0;
++}
++
++/* Changes overwrite flag on a page */
++static int msb_set_overwrite_flag(struct msb_data *msb,
++						u16 pba, u8 page, u8 flag)
++{
++	if (msb->read_only)
++		return -EROFS;
++
++	msb->regs.param.block_address = cpu_to_be16(pba);
++	msb->regs.param.page_address = page;
++	msb->regs.param.cp = MEMSTICK_CP_OVERWRITE;
++	msb->regs.extra_data.overwrite_flag = flag;
++	msb->command_value = MS_CMD_BLOCK_WRITE;
++	msb->command_need_oob = true;
++
++	dbg_verbose("changing overwrite flag to %02x for sector %d, page %d",
++							flag, pba, page);
++	return memstick_run_state_machine(msb->card, h_msb_send_command);
++}
++
++static int msb_mark_bad(struct msb_data *msb, int pba)
++{
++	ms_printk("marking pba %d as bad", pba);
++	msb_reset(msb);
++	return msb_set_overwrite_flag(
++			msb, pba, 0, 0xFF & ~MEMSTICK_OVERWRITE_BKST);
++}
++
++static int msb_mark_page_bad(struct msb_data *msb, int pba, int page)
++{
++	dbg("marking page %d of pba %d as bad", page, pba);
++	msb_reset(msb);
++	return msb_set_overwrite_flag(msb,
++		pba, page, ~MEMSTICK_OVERWRITE_PGST0);
++}
++
++/* Erases one physical block */
++static int msb_erase_block(struct msb_data *msb, u16 pba)
++{
++	int error, try;
++	if (msb->read_only)
++		return -EROFS;
++
++	dbg_verbose("erasing pba %d", pba);
++
++	for (try = 1 ; try < 3 ; try++) {
++		msb->regs.param.block_address = cpu_to_be16(pba);
++		msb->regs.param.page_address = 0;
++		msb->regs.param.cp = MEMSTICK_CP_BLOCK;
++		msb->command_value = MS_CMD_BLOCK_ERASE;
++		msb->command_need_oob = false;
++
++
++		error = memstick_run_state_machine(msb->card,
++							h_msb_send_command);
++		if (!error || msb_reset(msb))
++			break;
++	}
++
++	if (error) {
++		ms_printk("erase failed, marking pba %d as bad", pba);
++		msb_mark_bad(msb, pba);
++	}
++
++	dbg_verbose("erase success, marking pba %d as unused", pba);
++	msb_mark_block_unused(msb, pba);
++	set_bit(pba, msb->erased_blocks_bitmap);
++	return error;
++}
++
++/* Reads one page from device */
++static int msb_read_page(struct msb_data *msb,
++	u16 pba, u8 page, struct ms_extra_data_register *extra,
++						struct scatterlist *sg)
++{
++	int try, error;
++
++	if (sg && sg->length < msb->page_size) {
++		ms_printk(
++			"BUG: attempt to read pba %d page %d with too small sg",
++								pba, page);
++		return -EINVAL;
++	}
++
++	if (pba == MS_BLOCK_INVALID) {
++		u8 *ptr;
++		unsigned long flags;
++
++		dbg_verbose("read unmapped sector. returning 0xFF");
++
++		local_irq_save(flags);
++		ptr = kmap_atomic(sg_page(sg), KM_IRQ0) + sg->offset;
++		memset(ptr, 0xFF, msb->page_size);
++		kunmap_atomic(ptr - sg->offset, KM_IRQ0);
++		local_irq_restore(flags);
++
++		if (extra)
++			memset(extra, 0xFF, sizeof(*extra));
++		return 0;
++	}
++
++	if (pba >= msb->block_count) {
++		ms_printk("BUG: attempt to read beyond"
++					" the end of the card at pba %d", pba);
++		return -EINVAL;
++	}
++
++	for (try = 1 ; try < 3 ; try++) {
++		msb->regs.param.block_address = cpu_to_be16(pba);
++		msb->regs.param.page_address = page;
++		msb->regs.param.cp = MEMSTICK_CP_PAGE;
++
++		msb->current_sg = sg;
++		msb->sg_offset = 0;
++		error = memstick_run_state_machine(msb->card, h_msb_read_page);
++
++
++		if (error == -EUCLEAN) {
++			ms_printk("correctable error on pba %d, page %d",
++				pba, page);
++			error = 0;
++		}
++
++		if (!error && extra)
++			*extra = msb->regs.extra_data;
++
++		if (!error || msb_reset(msb))
++			break;
++
++	}
++
++	/* Mark bad pages */
++	if (error == -EBADMSG) {
++		ms_printk("uncorrectable error on read of pba %d, page %d",
++			pba, page);
++
++		if (msb->regs.extra_data.overwrite_flag &
++					MEMSTICK_OVERWRITE_PGST0)
++			msb_mark_page_bad(msb, pba, page);
++		return -EBADMSG;
++	}
++
++	if (error)
++		ms_printk("read of pba %d, page %d failed with error %d",
++			pba, page, error);
++	return error;
++}
++
++/* Reads oob of page only */
++static int msb_read_oob(struct msb_data *msb, u16 pba, u16 page,
++	struct ms_extra_data_register *extra)
++{
++	int error;
++	BUG_ON(!extra);
++
++	msb->regs.param.block_address = cpu_to_be16(pba);
++	msb->regs.param.page_address = page;
++	msb->regs.param.cp = MEMSTICK_CP_EXTRA;
++
++	if (pba > msb->block_count) {
++		ms_printk("BUG: attempt to read beyond"
++					" the end of card at pba %d", pba);
++		return -EINVAL;
++	}
++
++	error = memstick_run_state_machine(msb->card, h_msb_read_page);
++	*extra = msb->regs.extra_data;
++
++	if (error == -EUCLEAN) {
++		ms_printk("correctable error on pba %d, page %d",
++			pba, page);
++		return 0;
++	}
++
++	return error;
++}
++
++
++/* Reads a block and compares it with data contained in scatterlist orig_sg */
++static bool msb_verify_block(struct msb_data *msb, u16 pba,
++					struct scatterlist *orig_sg)
++{
++	struct scatterlist sg;
++	int page = 0, error;
++
++	while (page < msb->pages_in_block) {
++		sg_init_one(&sg, msb->block_buffer +
++					page * msb->page_size, msb->page_size);
++
++		error = msb_read_page(msb, pba, page, NULL, &sg);
++		if (error)
++			return -EIO;
++		page++;
++	}
++
++	if (sg_compare_to_buffer(orig_sg, msb->block_buffer, msb->block_size))
++		return -EIO;
++	return 0;
++}
++
++/* Writes exectly one block + oob */
++static int msb_write_block(struct msb_data *msb,
++			u16 pba, u32 lba, struct scatterlist *sg)
++{
++	int error, current_try = 1;
++	BUG_ON(sg->length < msb->page_size);
++
++	if (msb->read_only)
++		return -EROFS;
++
++	if (sg_total_len(sg) < msb->block_size) {
++		ms_printk("BUG: write: sg underrrun");
++		return -EINVAL;
++	}
++
++	if (pba == MS_BLOCK_INVALID) {
++		ms_printk(
++			"BUG: write: attempt to write MS_BLOCK_INVALID block");
++		return -EINVAL;
++	}
++
++	if (pba >= msb->block_count || lba >= msb->logical_block_count) {
++		ms_printk(
++		"BUG: write: attempt to write beyond the end of device");
++		return -EINVAL;
++	}
++
++	if (msb_get_zone_from_lba(lba) != msb_get_zone_from_pba(pba)) {
++		ms_printk("BUG: write: lba zone mismatch");
++		return -EINVAL;
++	}
++
++	if (pba == msb->boot_block_locations[0] ||
++		pba == msb->boot_block_locations[1]) {
++		ms_printk("BUG: write: attempt to write to boot blocks!");
++		return -EINVAL;
++	}
++
++	while (1) {
++
++		if (msb->read_only)
++			return -EROFS;
++
++		msb->regs.param.cp = MEMSTICK_CP_BLOCK;
++		msb->regs.param.page_address = 0;
++		msb->regs.param.block_address = cpu_to_be16(pba);
++
++		msb->regs.extra_data.management_flag = 0xFF;
++		msb->regs.extra_data.overwrite_flag = 0xF8;
++		msb->regs.extra_data.logical_address = cpu_to_be16(lba);
++
++		msb->current_sg = sg;
++		msb->current_page = 0;
++		msb->sg_offset = 0;
++
++		error = memstick_run_state_machine(msb->card,
++							h_msb_write_block);
++
++		/* Sector we just wrote to is assumed erased since its pba
++			was erased. If it wasn't erased, write will succeed
++			and will just clear the bits that were set in the block
++			thus test that what we have written,
++			matches what we expect.
++			We do trust the blocks that we erased */
++		if (!error && (verify_writes ||
++				!test_bit(pba, msb->erased_blocks_bitmap)))
++			error = msb_verify_block(msb, pba, sg);
++
++		if (!error)
++			break;
++
++		if (current_try > 1 || msb_reset(msb))
++			break;
++
++		ms_printk("write failed, trying to erase the pba %d", pba);
++		error = msb_erase_block(msb, pba);
++		if (error)
++			break;
++
++		current_try++;
++	}
++	return error;
++}
++
++/* Finds a free block for write replacement */
++static u16 msb_get_free_block(struct msb_data *msb, int zone)
++{
++	u16 pos;
++	int pba = zone * MS_BLOCKS_IN_ZONE;
++	int i;
++
++	get_random_bytes(&pos, sizeof(pos));
++
++	if (!msb->free_block_count[zone]) {
++		ms_printk("NO free blocks in the zone %d, to use for a write, "
++			"(media is WORN out) switching to RO mode", zone);
++		msb->read_only = true;
++		return MS_BLOCK_INVALID;
++	}
++
++	pos %= msb->free_block_count[zone];
++
++	dbg_verbose("have %d choices for a free block, selected randomally: %d",
++		msb->free_block_count[zone], pos);
++
++	pba = find_next_zero_bit(msb->used_blocks_bitmap,
++							msb->block_count, pba);
++	for (i = 0 ; i < pos ; ++i)
++		pba = find_next_zero_bit(msb->used_blocks_bitmap,
++						msb->block_count, pba + 1);
++
++	dbg_verbose("result of the free blocks scan: pba %d", pba);
++
++	if (pba == msb->block_count || (msb_get_zone_from_pba(pba)) != zone) {
++		ms_printk("BUG: cant get a free block");
++		msb->read_only = true;
++		return MS_BLOCK_INVALID;
++	}
++
++	msb_mark_block_used(msb, pba);
++	return pba;
++}
++
++static int msb_update_block(struct msb_data *msb, u16 lba,
++	struct scatterlist *sg)
++{
++	u16 pba, new_pba;
++	int error, try;
++
++	pba = msb->lba_to_pba_table[lba];
++	dbg_verbose("start of a block update at lba  %d, pba %d", lba, pba);
++
++	if (pba != MS_BLOCK_INVALID) {
++		dbg_verbose("setting the update flag on the block");
++		msb_set_overwrite_flag(msb, pba, 0,
++				0xFF & ~MEMSTICK_OVERWRITE_UDST);
++	}
++
++	for (try = 0 ; try < 3 ; try++) {
++		new_pba = msb_get_free_block(msb,
++			msb_get_zone_from_lba(lba));
++
++		if (new_pba == MS_BLOCK_INVALID) {
++			error = -EIO;
++			goto out;
++		}
++
++		dbg_verbose("block update: writing updated block to the pba %d",
++								new_pba);
++		error = msb_write_block(msb, new_pba, lba, sg);
++		if (error == -EBADMSG) {
++			msb_mark_bad(msb, new_pba);
++			continue;
++		}
++
++		if (error)
++			goto out;
++
++		dbg_verbose("block update: erasing the old block");
++		msb_erase_block(msb, pba);
++		msb->lba_to_pba_table[lba] = new_pba;
++		return 0;
++	}
++out:
++	if (error) {
++		ms_printk("block update error after %d tries, "
++						"switching to r/o mode", try);
++		msb->read_only = true;
++	}
++	return error;
++}
++
++/* Converts endiannes in the boot block for easy use */
++static void msb_fix_boot_page_endianness(struct ms_boot_page *p)
++{
++	p->header.block_id = be16_to_cpu(p->header.block_id);
++	p->header.format_reserved = be16_to_cpu(p->header.format_reserved);
++	p->entry.disabled_block.start_addr
++		= be32_to_cpu(p->entry.disabled_block.start_addr);
++	p->entry.disabled_block.data_size
++		= be32_to_cpu(p->entry.disabled_block.data_size);
++	p->entry.cis_idi.start_addr
++		= be32_to_cpu(p->entry.cis_idi.start_addr);
++	p->entry.cis_idi.data_size
++		= be32_to_cpu(p->entry.cis_idi.data_size);
++	p->attr.block_size = be16_to_cpu(p->attr.block_size);
++	p->attr.number_of_blocks = be16_to_cpu(p->attr.number_of_blocks);
++	p->attr.number_of_effective_blocks
++		= be16_to_cpu(p->attr.number_of_effective_blocks);
++	p->attr.page_size = be16_to_cpu(p->attr.page_size);
++	p->attr.memory_manufacturer_code
++		= be16_to_cpu(p->attr.memory_manufacturer_code);
++	p->attr.memory_device_code = be16_to_cpu(p->attr.memory_device_code);
++	p->attr.implemented_capacity
++		= be16_to_cpu(p->attr.implemented_capacity);
++	p->attr.controller_number = be16_to_cpu(p->attr.controller_number);
++	p->attr.controller_function = be16_to_cpu(p->attr.controller_function);
++}
++
++static int msb_read_boot_blocks(struct msb_data *msb)
++{
++	int pba = 0;
++	struct scatterlist sg;
++	struct ms_extra_data_register extra;
++	struct ms_boot_page *page;
++
++	msb->boot_block_locations[0] = MS_BLOCK_INVALID;
++	msb->boot_block_locations[1] = MS_BLOCK_INVALID;
++	msb->boot_block_count = 0;
++
++	dbg_verbose("Start of a scan for the boot blocks");
++
++	if (!msb->boot_page) {
++		page = kmalloc(sizeof(struct ms_boot_page) * 2, GFP_KERNEL);
++		if (!page)
++			return -ENOMEM;
++
++		msb->boot_page = page;
++	}
++
++	msb->block_count = MS_BLOCK_MAX_BOOT_ADDR;
++
++	for (pba = 0 ; pba < MS_BLOCK_MAX_BOOT_ADDR ; pba++) {
++
++		sg_init_one(&sg, page, sizeof(*page));
++		if (msb_read_page(msb, pba, 0, &extra, &sg)) {
++			dbg("boot scan: can't read pba %d", pba);
++			continue;
++		}
++
++		if (extra.management_flag & MEMSTICK_MANAGEMENT_SYSFLG) {
++			dbg("managment flag doesn't indicate boot block %d",
++									pba);
++			continue;
++		}
++
++		if (be16_to_cpu(page->header.block_id) != MS_BLOCK_BOOT_ID) {
++			dbg("the pba at %d doesn' contain boot block ID", pba);
++			continue;
++		}
++
++		msb_fix_boot_page_endianness(page);
++		msb->boot_block_locations[msb->boot_block_count] = pba;
++
++		page++;
++		msb->boot_block_count++;
++
++		if (msb->boot_block_count == 2)
++			break;
++	}
++
++	if (!msb->boot_block_count) {
++		ms_printk("media doesn't contain master page, aborting");
++		return -EIO;
++	}
++
++	dbg_verbose("End of scan for boot blocks");
++	return 0;
++}
++
++static int msb_read_bad_block_table(struct msb_data *msb, int block_nr)
++{
++	struct ms_boot_page *boot_block;
++	struct scatterlist sg;
++	struct scatterlist *sg_ptr = &sg;
++	u16 *buffer = NULL;
++
++	int i, error = 0;
++	int data_size, data_offset, page, page_offset, size_to_read;
++	u16 pba;
++
++	BUG_ON(block_nr > 1);
++
++	boot_block = &msb->boot_page[block_nr];
++	pba = msb->boot_block_locations[block_nr];
++
++	if (msb->boot_block_locations[block_nr] == MS_BLOCK_INVALID)
++		return -EINVAL;
++
++	data_size = boot_block->entry.disabled_block.data_size;
++	data_offset = sizeof(struct ms_boot_page) +
++			boot_block->entry.disabled_block.start_addr;
++	if (!data_size)
++		return 0;
++
++	page = data_offset / msb->page_size;
++	page_offset = data_offset % msb->page_size;
++	size_to_read =
++		DIV_ROUND_UP(data_size + page_offset, msb->page_size) *
++			msb->page_size;
++
++	dbg("reading bad block of boot block at pba %d, offset %d len %d",
++		pba, data_offset, data_size);
++
++	buffer = kzalloc(size_to_read, GFP_KERNEL);
++	if (!buffer)
++		return -ENOMEM;
++
++	/* Read the buffer */
++	sg_init_one(&sg, buffer, size_to_read);
++
++	while (sg_ptr) {
++		error = msb_read_page(msb, pba, page, NULL, sg_ptr);
++		if (error)
++			goto out;
++
++		sg_ptr = sg_advance(sg_ptr, msb->page_size);
++		page++;
++		if (page == msb->pages_in_block) {
++			ms_printk(
++			"bad block table extends beyond the boot block");
++			break;
++		}
++	}
++
++	/* Process the bad block table */
++	for (i = page_offset ; i < data_size / sizeof(u16) ; i++) {
++
++		u16 bad_block = be16_to_cpu(buffer[i]);
++
++		if (bad_block >= msb->block_count) {
++			dbg("bad block table contains invalid block %d",
++								bad_block);
++			continue;
++		}
++
++		if (test_bit(bad_block, msb->used_blocks_bitmap))  {
++			dbg("duplicate bad block %d in the table",
++				bad_block);
++			continue;
++		}
++
++		dbg("block %d is marked as factory bad", bad_block);
++		msb_mark_block_used(msb, bad_block);
++	}
++out:
++	kfree(buffer);
++	return error;
++}
++
++static int msb_ftl_initialize(struct msb_data *msb)
++{
++	int i;
++
++	if (msb->ftl_initialized)
++		return 0;
++
++	msb->zone_count = msb->block_count / MS_BLOCKS_IN_ZONE;
++	msb->logical_block_count = msb->zone_count * 496 - 2;
++
++	msb->used_blocks_bitmap = kzalloc(msb->block_count / 8, GFP_KERNEL);
++	msb->erased_blocks_bitmap = kzalloc(msb->block_count / 8, GFP_KERNEL);
++	msb->lba_to_pba_table =
++		kmalloc(msb->logical_block_count * sizeof(u16), GFP_KERNEL);
++
++	if (!msb->used_blocks_bitmap || !msb->lba_to_pba_table ||
++						!msb->erased_blocks_bitmap) {
++		kfree(msb->used_blocks_bitmap);
++		kfree(msb->lba_to_pba_table);
++		kfree(msb->erased_blocks_bitmap);
++		return -ENOMEM;
++	}
++
++	for (i = 0 ; i < msb->zone_count ; i++)
++		msb->free_block_count[i] = MS_BLOCKS_IN_ZONE;
++
++	memset(msb->lba_to_pba_table, MS_BLOCK_INVALID,
++			msb->logical_block_count * sizeof(u16));
++
++	dbg("initial FTL tables created. Zone count = %d, "
++					"Logical block count = %d",
++		msb->zone_count, msb->logical_block_count);
++
++	msb->ftl_initialized = true;
++	return 0;
++}
++
++static int msb_ftl_scan(struct msb_data *msb)
++{
++	u16 pba, lba, other_block;
++	u8 overwrite_flag, managment_flag, other_overwrite_flag;
++	int error;
++	struct ms_extra_data_register extra;
++	u8 *overwrite_flags = kzalloc(msb->block_count, GFP_KERNEL);
++
++	if (!overwrite_flags)
++		return -ENOMEM;
++
++	dbg("Start of media scanning");
++	for (pba = 0 ; pba < msb->block_count ; pba++) {
++
++		if (pba == msb->boot_block_locations[0] ||
++			pba == msb->boot_block_locations[1]) {
++			dbg_verbose("pba %05d -> [boot block]", pba);
++			msb_mark_block_used(msb, pba);
++			continue;
++		}
++
++		if (test_bit(pba, msb->used_blocks_bitmap)) {
++			dbg_verbose("pba %05d -> [factory bad]", pba);
++			continue;
++		}
++
++		error = msb_read_oob(msb, pba, 0, &extra);
++
++		/* can't trust the page if we can't read the oob */
++		if (error == -EBADMSG) {
++			ms_printk(
++			"oob of pba %d damaged, will try to erase it", pba);
++			msb_mark_block_used(msb, pba);
++			msb_erase_block(msb, pba);
++			continue;
++		} else if (error)
++			return error;
++
++		lba = be16_to_cpu(extra.logical_address);
++		managment_flag = extra.management_flag;
++		overwrite_flag = extra.overwrite_flag;
++		overwrite_flags[pba] = overwrite_flag;
++
++		/* Skip bad blocks */
++		if (!(overwrite_flag & MEMSTICK_OVERWRITE_BKST)) {
++			dbg("pba %05d -> [BAD]", pba);
++			msb_mark_block_used(msb, pba);
++			continue;
++		}
++
++		/* Skip system/drm blocks */
++		if ((managment_flag & MEMSTICK_MANAGMENT_FLAG_NORMAL) !=
++			MEMSTICK_MANAGMENT_FLAG_NORMAL) {
++			dbg("pba %05d -> [reserved managment flag %02x]",
++							pba, managment_flag);
++			msb_mark_block_used(msb, pba);
++			continue;
++		}
++
++		/* Erase temporary tables */
++		if (!(managment_flag & MEMSTICK_MANAGEMENT_ATFLG)) {
++			dbg("pba %05d -> [temp table] - will erase", pba);
++
++			msb_mark_block_used(msb, pba);
++			msb_erase_block(msb, pba);
++			continue;
++		}
++
++		if (lba == MS_BLOCK_INVALID) {
++			dbg_verbose("pba %05d -> [free]", pba);
++			continue;
++		}
++
++		msb_mark_block_used(msb, pba);
++
++		/* Block has LBA not according to zoning*/
++		if (msb_get_zone_from_lba(lba) != msb_get_zone_from_pba(pba)) {
++			ms_printk("pba %05d -> [bad lba %05d] - will erase",
++								pba, lba);
++			msb_erase_block(msb, pba);
++			continue;
++		}
++
++		/* No collisions - great */
++		if (msb->lba_to_pba_table[lba] == MS_BLOCK_INVALID) {
++			dbg_verbose("pba %05d -> [lba %05d]", pba, lba);
++			msb->lba_to_pba_table[lba] = pba;
++			continue;
++		}
++
++		other_block = msb->lba_to_pba_table[lba];
++		other_overwrite_flag = overwrite_flags[other_block];
++
++		ms_printk("Collision between pba %d and pba %d",
++			pba, other_block);
++
++		if (!(overwrite_flag & MEMSTICK_OVERWRITE_UDST)) {
++			ms_printk("pba %d is marked as stable, use it", pba);
++			msb_erase_block(msb, other_block);
++			msb->lba_to_pba_table[lba] = pba;
++			continue;
++		}
++
++		if (!(other_overwrite_flag & MEMSTICK_OVERWRITE_UDST)) {
++			ms_printk("pba %d is marked as stable, use it",
++								other_block);
++			msb_erase_block(msb, pba);
++			continue;
++		}
++
++		ms_printk("collision between blocks %d and %d with"
++		" without stable flag set on both, erasing pba %d",
++				pba, other_block, other_block);
++
++		msb_erase_block(msb, other_block);
++		msb->lba_to_pba_table[lba] = pba;
++	}
++
++	dbg("End of media scanning");
++	kfree(overwrite_flags);
++	return 0;
++}
++
++static void msb_cache_flush_timer(unsigned long data)
++{
++	struct msb_data *msb = (struct msb_data *)data;
++	msb->need_flush_cache = true;
++	wake_up_process(msb->io_thread);
++}
++
++
++static void msb_cache_discard(struct msb_data *msb)
++{
++	if (msb->cache_block_lba == MS_BLOCK_INVALID)
++		return;
++
++	del_timer_sync(&msb->cache_flush_timer);
++
++	dbg_verbose("Discarding the write cache");
++	msb->cache_block_lba = MS_BLOCK_INVALID;
++	bitmap_zero(&msb->valid_cache_bitmap, msb->pages_in_block);
++}
++
++static int msb_cache_init(struct msb_data *msb)
++{
++	setup_timer(&msb->cache_flush_timer, msb_cache_flush_timer,
++		(unsigned long)msb);
++
++	if (!msb->cache)
++		msb->cache = kzalloc(msb->block_size, GFP_KERNEL);
++	if (!msb->cache)
++		return -ENOMEM;
++
++	msb_cache_discard(msb);
++	return 0;
++}
++
++static int msb_cache_flush(struct msb_data *msb)
++{
++	struct scatterlist sg;
++	struct ms_extra_data_register extra;
++	int page, offset, error;
++	u16 pba, lba;
++
++	if (msb->read_only)
++		return -EROFS;
++
++	if (msb->cache_block_lba == MS_BLOCK_INVALID)
++		return 0;
++
++	lba = msb->cache_block_lba;
++	pba = msb->lba_to_pba_table[lba];
++
++	dbg_verbose("Flushing the write cache of pba %d (LBA %d)",
++						pba, msb->cache_block_lba);
++
++	/* Read all missing pages in cache */
++	for (page = 0 ; page < msb->pages_in_block ; page++) {
++
++		if (test_bit(page, &msb->valid_cache_bitmap))
++			continue;
++
++		offset = page * msb->page_size;
++		sg_init_one(&sg, msb->cache + offset , msb->page_size);
++
++
++		dbg_verbose("reading non-present sector %d of cache block %d",
++			page, lba);
++		error = msb_read_page(msb, pba, page, &extra, &sg);
++
++		/* Bad pages are copied with 00 page status */
++		if (error == -EBADMSG) {
++			ms_printk("read error on sector %d, contents probably"
++				" damaged", page);
++			continue;
++		}
++
++		if (error)
++			return error;
++
++		if ((extra.overwrite_flag & MEMSTICK_OV_PG_NORMAL) !=
++							MEMSTICK_OV_PG_NORMAL) {
++			dbg("page %d is marked as bad", page);
++			continue;
++		}
++
++		set_bit(page, &msb->valid_cache_bitmap);
++	}
++
++	/* Write the cache now */
++	sg_init_one(&sg, msb->cache , msb->block_size);
++	error = msb_update_block(msb, msb->cache_block_lba, &sg);
++	pba = msb->lba_to_pba_table[msb->cache_block_lba];
++
++	/* Mark invalid pages */
++	if (!error) {
++		for (page = 0 ; page < msb->pages_in_block ; page++) {
++
++			if (test_bit(page, &msb->valid_cache_bitmap))
++				continue;
++
++			dbg("marking page %d as containing damaged data",
++				page);
++			msb_set_overwrite_flag(msb,
++				pba , page, 0xFF & ~MEMSTICK_OV_PG_NORMAL);
++		}
++	}
++
++	msb_cache_discard(msb);
++	return error;
++}
++
++static int msb_cache_write(struct msb_data *msb, int lba,
++		int page, bool add_to_cache_only, struct scatterlist *sg)
++{
++	int error;
++	if (msb->read_only)
++		return -EROFS;
++
++	if (msb->cache_block_lba == MS_BLOCK_INVALID ||
++						lba != msb->cache_block_lba)
++		if (add_to_cache_only)
++			return 0;
++
++	/* If we need to write different block */
++	if (msb->cache_block_lba != MS_BLOCK_INVALID &&
++						lba != msb->cache_block_lba) {
++		dbg_verbose("first flush the cache");
++		error = msb_cache_flush(msb);
++		if (error)
++			return error;
++	}
++
++	if (msb->cache_block_lba  == MS_BLOCK_INVALID) {
++		msb->cache_block_lba  = lba;
++		mod_timer(&msb->cache_flush_timer,
++			jiffies + msecs_to_jiffies(cache_flush_timeout));
++	}
++
++	dbg_verbose("Write of LBA %d page %d to cache ", lba, page);
++
++	sg_copy_to_buffer(sg, 1, msb->cache + page * msb->page_size,
++			msb->page_size);
++	set_bit(page, &msb->valid_cache_bitmap);
++	return 0;
++}
++
++static int msb_cache_read(struct msb_data *msb, int lba,
++					int page, struct scatterlist *sg)
++{
++	int pba = msb->lba_to_pba_table[lba];
++	int error = 0;
++
++	if (lba == msb->cache_block_lba &&
++			test_bit(page, &msb->valid_cache_bitmap)) {
++
++		dbg_verbose("Read of LBA %d (pba %d) sector %d from cache",
++							lba, pba, page);
++		sg_copy_from_buffer(sg, 1,
++			msb->cache + msb->page_size * page,
++							msb->page_size);
++	} else {
++		dbg_verbose("Read of LBA %d (pba %d) sector %d from device",
++							lba, pba, page);
++
++		error = msb_read_page(msb, pba, page, NULL, sg);
++		if (error)
++			return error;
++
++		msb_cache_write(msb, lba, page, true, sg);
++	}
++	return error;
++}
++
++/* Emulated geometry table
++ * This table content isn't that importaint,
++ * One could put here different values, providing that they still
++ * cover whole disk.
++ * 64 MB entry is what windows reports for my 64M memstick */
++
++static const struct chs_entry chs_table[] = {
++/*        size sectors cylynders  heads */
++	{ 4,    16,    247,       2  },
++	{ 8,    16,    495,       2  },
++	{ 16,   16,    495,       4  },
++	{ 32,   16,    991,       4  },
++	{ 64,   16,    991,       8  },
++	{128,   16,    991,       16 },
++	{ 0 }
 +};
 +
-+struct j38ms {
-+	struct pci_dev        *pdev;
-+	int                   host_cnt;
-+	struct memstick_host  *hosts[];
++/* Load information about the card */
++static int msb_init_card(struct memstick_dev *card)
++{
++	struct msb_data *msb = memstick_get_drvdata(card);
++	struct memstick_host *host = card->host;
++	struct ms_boot_page *boot_block;
++	int error = 0, i, raw_size_in_megs;
++
++	card->caps = 0;
++
++	if (card->id.class >= MEMSTICK_CLASS_ROM &&
++				card->id.class <= MEMSTICK_CLASS_ROM)
++		msb->read_only = true;
++
++	error = msb_reset(msb);
++	if (error)
++		return error;
++
++	msb->page_size = sizeof(struct ms_boot_page);
++
++	/* Read the boot page */
++	error = msb_read_boot_blocks(msb);
++	if (error)
++		return -EIO;
++
++	boot_block = &msb->boot_page[0];
++
++	/* Save intersting attributes from boot page */
++	msb->block_count = boot_block->attr.number_of_blocks;
++	msb->page_size = boot_block->attr.page_size;
++
++	msb->pages_in_block = boot_block->attr.block_size * 2;
++	msb->block_size = msb->page_size * msb->pages_in_block;
++
++	if (msb->page_size > PAGE_SIZE) {
++		/* this is nonsensional, so don't bother */
++		dbg("device page %d size isn't supported", msb->page_size);
++		return -EINVAL;
++	}
++
++	msb->block_buffer = kzalloc(msb->block_size, GFP_KERNEL);
++	if (!msb->block_buffer)
++		return -ENOMEM;
++
++	raw_size_in_megs = (msb->block_size * msb->block_count) >> 20;
++
++	for (i = 0 ; chs_table[i].size ; i++) {
++
++		if (chs_table[i].size != raw_size_in_megs)
++			continue;
++
++		msb->geometry.cylinders = chs_table[i].cyl;
++		msb->geometry.heads = chs_table[i].head;
++		msb->geometry.sectors = chs_table[i].sec;
++		break;
++	}
++
++	if (boot_block->attr.transfer_supporting == 1)
++		card->caps |= MEMSTICK_CAP_PAR4;
++
++	if (boot_block->attr.device_type & 0x03)
++		msb->read_only = true;
++
++	dbg("Total block count = %d", msb->block_count);
++	dbg("Each block consists of %d pages", msb->pages_in_block);
++	dbg("Page size = %d bytes", msb->page_size);
++	dbg("Parallel mode supported: %d", !!(card->caps & MEMSTICK_CAP_PAR4));
++	dbg("Read only: %d", msb->read_only);
++
++	/* Now we can switch the interface */
++	if (host->caps & card->caps & MEMSTICK_CAP_PAR4)
++		msb_switch_to_parallel(msb);
++
++
++	error = msb_cache_init(msb);
++	if (error)
++		return error;
++
++	error = msb_ftl_initialize(msb);
++	if (error)
++		return error;
++
++
++	/* Read the bad block table */
++	error = msb_read_bad_block_table(msb, 0);
++
++	if (error && error != -ENOMEM) {
++		dbg("failed to read bad block table from primary boot block,"
++							" trying from backup");
++		error = msb_read_bad_block_table(msb, 1);
++	}
++
++	if (error)
++		return error;
++
++	/* *drum roll* Scan the media */
++	error = msb_ftl_scan(msb);
++	if (error) {
++		ms_printk("Scan of media failed");
++		return error;
++	}
++
++	return 0;
++
++}
++
++static int msb_do_write_request(struct msb_data *msb, int lba,
++		int page, struct scatterlist *sg, int *sucessfuly_written)
++{
++	int error = 0;
++	*sucessfuly_written = 0;
++
++	while (sg) {
++		if (page == 0 && sg_total_len(sg) >= msb->block_size) {
++
++			if (msb->cache_block_lba == lba)
++				msb_cache_discard(msb);
++
++			dbg_verbose("Writing whole lba %d", lba);
++			error = msb_update_block(msb, lba, sg);
++			if (error)
++				return error;
++
++			sg = sg_advance(sg, msb->block_size);
++			*sucessfuly_written += msb->block_size;
++			lba++;
++			continue;
++		}
++
++		error = msb_cache_write(msb, lba, page, false, sg);
++		if (error)
++			return error;
++
++		sg = sg_advance(sg, msb->page_size);
++		*sucessfuly_written += msb->page_size;
++
++		page++;
++		if (page == msb->pages_in_block) {
++			page = 0;
++			lba++;
++		}
++	}
++	return 0;
++}
++
++static int msb_do_read_request(struct msb_data *msb, int lba,
++		int page, struct scatterlist *sg, int *sucessfuly_read)
++{
++	int error = 0;
++	*sucessfuly_read = 0;
++
++	while (sg) {
++
++		error = msb_cache_read(msb, lba, page, sg);
++		if (error)
++			return error;
++
++		sg = sg_advance(sg, msb->page_size);
++		*sucessfuly_read += msb->page_size;
++
++		page++;
++		if (page == msb->pages_in_block) {
++			page = 0;
++			lba++;
++		}
++	}
++	return 0;
++}
++
++static int msb_io_thread(void *data)
++{
++	struct msb_data *msb = data;
++	int page, error, len;
++	sector_t lba;
++	unsigned long flags;
++
++	dbg("IO: thread started");
++
++	while (1) {
++
++		if (kthread_should_stop()) {
++			if (msb->req)
++				blk_requeue_request(msb->queue, msb->req);
++			break;
++		}
++
++		spin_lock_irqsave(&msb->q_lock, flags);
++
++		if (msb->need_flush_cache) {
++			msb->need_flush_cache = false;
++			spin_unlock_irqrestore(&msb->q_lock, flags);
++			msb_cache_flush(msb);
++			continue;
++		}
++
++		if (!msb->req) {
++			msb->req = blk_fetch_request(msb->queue);
++
++			if (!msb->req) {
++				dbg_verbose("IO: no more requests, sleeping");
++				set_current_state(TASK_INTERRUPTIBLE);
++				spin_unlock_irqrestore(&msb->q_lock, flags);
++				schedule();
++				dbg_verbose("IO: thread woken up");
++				continue;
++			}
++		}
++
++		spin_unlock_irqrestore(&msb->q_lock, flags);
++
++		/* If card was removed meanwhile */
++		if (!msb->req)
++			continue;
++
++		/* process the request */
++		dbg_verbose("IO: thread processing new request");
++		blk_rq_map_sg(msb->queue, msb->req, msb->req_sg);
++
++		lba = blk_rq_pos(msb->req);
++
++		sector_div(lba, msb->page_size / 512);
++		page = do_div(lba, msb->pages_in_block);
++
++		if (rq_data_dir(msb->req) == READ)
++			error = msb_do_read_request(
++					msb, lba, page, msb->req_sg, &len);
++		else
++			error = msb_do_write_request(
++					msb, lba, page, msb->req_sg, &len);
++
++		spin_lock_irqsave(&msb->q_lock, flags);
++
++		if (len)
++			if (!__blk_end_request(msb->req, 0, len))
++				msb->req = NULL;
++
++		if (error && msb->req) {
++			dbg_verbose("IO: ending one sector "
++					"of the request with error");
++			if (!__blk_end_request(msb->req, error, msb->page_size))
++				msb->req = NULL;
++		}
++
++		if (msb->req)
++			dbg_verbose("IO: request still pending");
++
++		spin_unlock_irqrestore(&msb->q_lock, flags);
++	}
++	return 0;
++}
++
++static DEFINE_IDR(msb_disk_idr);
++static DEFINE_MUTEX(msb_disk_lock);
++
++static int msb_bd_open(struct block_device *bdev, fmode_t mode)
++{
++	struct gendisk *disk = bdev->bd_disk;
++	struct msb_data *msb = disk->private_data;
++
++	dbg_verbose("block device open");
++
++	mutex_lock(&msb_disk_lock);
++
++	if (msb && msb->card)
++		msb->usage_count++;
++
++	mutex_unlock(&msb_disk_lock);
++	return 0;
++}
++
++static void msb_data_clear(struct msb_data *msb)
++{
++	kfree(msb->boot_page);
++	kfree(msb->used_blocks_bitmap);
++	kfree(msb->lba_to_pba_table);
++	kfree(msb->cache);
++	msb->card = NULL;
++}
++
++static int msb_disk_release(struct gendisk *disk)
++{
++	struct msb_data *msb = disk->private_data;
++	int disk_id = MINOR(disk_devt(disk)) >> MS_BLOCK_PART_SHIFT;
++
++	dbg_verbose("block device release");
++
++	mutex_lock(&msb_disk_lock);
++
++	if (msb) {
++		if (msb->usage_count)
++			msb->usage_count--;
++
++		if (!msb->usage_count) {
++			kfree(msb);
++			disk->private_data = NULL;
++			idr_remove(&msb_disk_idr, disk_id);
++			put_disk(disk);
++		}
++	}
++	mutex_unlock(&msb_disk_lock);
++	return 0;
++}
++
++static int msb_bd_release(struct gendisk *disk, fmode_t mode)
++{
++	return msb_disk_release(disk);
++}
++
++static int msb_bd_getgeo(struct block_device *bdev,
++				 struct hd_geometry *geo)
++{
++	struct msb_data *msb = bdev->bd_disk->private_data;
++	*geo = msb->geometry;
++	return 0;
++}
++
++static int msb_prepare_req(struct request_queue *q, struct request *req)
++{
++	if (req->cmd_type != REQ_TYPE_FS &&
++				req->cmd_type != REQ_TYPE_BLOCK_PC) {
++		blk_dump_rq_flags(req, "MS unsupported request");
++		return BLKPREP_KILL;
++	}
++	req->cmd_flags |= REQ_DONTPREP;
++	return BLKPREP_OK;
++}
++
++static void msb_submit_req(struct request_queue *q)
++{
++	struct memstick_dev *card = q->queuedata;
++	struct msb_data *msb = memstick_get_drvdata(card);
++	struct request *req = NULL;
++
++	dbg_verbose("Submit request");
++
++	if (msb->card_dead) {
++		dbg("Refusing requests on removed card");
++
++		WARN_ON(msb->io_thread);
++
++		while ((req = blk_fetch_request(q)) != NULL)
++			__blk_end_request_all(req, -ENODEV);
++		return;
++	}
++
++	if (msb->req)
++		return;
++
++	if (msb->io_thread)
++		wake_up_process(msb->io_thread);
++}
++
++static int msb_check_card(struct memstick_dev *card)
++{
++	struct msb_data *msb = memstick_get_drvdata(card);
++	return (msb->card_dead == 0);
++}
++
++static void msb_stop(struct memstick_dev *card)
++{
++	struct msb_data *msb = memstick_get_drvdata(card);
++	unsigned long flags;
++	struct task_struct *io_thread;
++
++	dbg("Stopping all msblock IO");
++
++	/* Just stop the IO thread.
++	   Be carefull not to race against submit_request
++	   If it is called, all pending requests will be processed by
++	   the IO thread as soon as msb_start is called */
++
++	spin_lock_irqsave(&msb->q_lock, flags);
++	blk_stop_queue(msb->queue);
++	io_thread = msb->io_thread;
++	msb->io_thread = NULL;
++	spin_unlock_irqrestore(&msb->q_lock, flags);
++
++	del_timer_sync(&msb->cache_flush_timer);
++
++	if (io_thread)
++		kthread_stop(io_thread);
++}
++
++static void msb_start(struct memstick_dev *card)
++{
++	struct msb_data *msb = memstick_get_drvdata(card);
++	unsigned long flags;
++	int disk_id = MINOR(disk_devt(msb->disk)) >> MS_BLOCK_PART_SHIFT;
++
++	dbg("Resuming IO from msblock");
++
++	spin_lock_irqsave(&msb->q_lock, flags);
++	if (msb->io_thread || msb->card_dead) {
++		spin_unlock_irqrestore(&msb->q_lock, flags);
++		return;
++	}
++	spin_unlock_irqrestore(&msb->q_lock, flags);
++
++	/* Kick cache flush anyway, its harmless */
++	msb->need_flush_cache = true;
++
++	msb->io_thread = kthread_run(msb_io_thread, msb, "kms_block%d",
++		disk_id);
++
++	spin_lock_irqsave(&msb->q_lock, flags);
++	blk_start_queue(msb->queue);
++	spin_unlock_irqrestore(&msb->q_lock, flags);
++}
++
++static const struct block_device_operations msb_bdops = {
++	.open    = msb_bd_open,
++	.release = msb_bd_release,
++	.getgeo  = msb_bd_getgeo,
++	.owner   = THIS_MODULE
 +};
 +
-+enum {
-+	CMD_READY    = 0x01,
-+	FIFO_READY   = 0x02,
++/* Registers the block device */
++static int msb_init_disk(struct memstick_dev *card)
++{
++	struct msb_data *msb = memstick_get_drvdata(card);
++	struct memstick_host *host = card->host;
++	int rc, disk_id;
++	u64 limit = BLK_BOUNCE_HIGH;
++	unsigned long capacity;
 +
-+	REG_DATA     = 0x04,
-+	DMA_DATA     = 0x08,
-+	PIO_DATA     = 0x10
++	if (host->dev.dma_mask && *(host->dev.dma_mask))
++		limit = *(host->dev.dma_mask);
++
++	mutex_lock(&msb_disk_lock);
++
++	if (!idr_pre_get(&msb_disk_idr, GFP_KERNEL)) {
++		mutex_unlock(&msb_disk_lock);
++		return -ENOMEM;
++	}
++
++	rc = idr_get_new(&msb_disk_idr, card, &disk_id);
++	mutex_unlock(&msb_disk_lock);
++
++	if (rc)
++		return rc;
++
++	if ((disk_id << MS_BLOCK_PART_SHIFT) > 255) {
++		rc = -ENOSPC;
++		goto out_release_id;
++	}
++
++	msb->disk = alloc_disk(1 << MS_BLOCK_PART_SHIFT);
++	if (!msb->disk) {
++		rc = -ENOMEM;
++		goto out_release_id;
++	}
++
++	msb->queue = blk_init_queue(msb_submit_req, &msb->q_lock);
++	if (!msb->queue) {
++		rc = -ENOMEM;
++		goto out_put_disk;
++	}
++
++	msb->queue->queuedata = card;
++	blk_queue_prep_rq(msb->queue, msb_prepare_req);
++
++	blk_queue_bounce_limit(msb->queue, limit);
++	blk_queue_max_hw_sectors(msb->queue, MS_BLOCK_MAX_PAGES);
++	blk_queue_max_segments(msb->queue, MS_BLOCK_MAX_SEGS);
++	blk_queue_max_segment_size(msb->queue,
++				   MS_BLOCK_MAX_PAGES * msb->page_size);
++	msb->disk->major = major;
++	msb->disk->first_minor = disk_id << MS_BLOCK_PART_SHIFT;
++	msb->disk->fops = &msb_bdops;
++	msb->usage_count = 1;
++	msb->disk->private_data = msb;
++	msb->disk->queue = msb->queue;
++	msb->disk->driverfs_dev = &card->dev;
++	sg_init_table(msb->req_sg, MS_BLOCK_MAX_SEGS+1);
++
++	sprintf(msb->disk->disk_name, "msblk%d", disk_id);
++
++	blk_queue_logical_block_size(msb->queue, msb->page_size);
++
++	capacity = msb->pages_in_block * msb->logical_block_count;
++	capacity *= (msb->page_size / 512);
++
++	set_capacity(msb->disk, capacity);
++	dbg("Set total disk size to %lu sectors", capacity);
++
++	if (msb->read_only)
++		set_disk_ro(msb->disk, 1);
++
++	msb_start(card);
++	add_disk(msb->disk);
++	dbg("Disk added");
++	return 0;
++
++out_put_disk:
++	put_disk(msb->disk);
++out_release_id:
++	mutex_lock(&msb_disk_lock);
++	idr_remove(&msb_disk_idr, disk_id);
++	mutex_unlock(&msb_disk_lock);
++	return rc;
++}
++
++static int msb_probe(struct memstick_dev *card)
++{
++	struct msb_data *msb;
++	int rc = 0;
++
++	msb = kzalloc(sizeof(struct msb_data), GFP_KERNEL);
++	if (!msb)
++		return -ENOMEM;
++	memstick_set_drvdata(card, msb);
++	msb->card = card;
++	spin_lock_init(&msb->q_lock);
++
++	rc = msb_init_card(card);
++	if (rc)
++		goto out_free;
++
++	rc = msb_init_disk(card);
++	if (!rc) {
++		card->check = msb_check_card;
++		card->stop = msb_stop;
++		card->start = msb_start;
++		return 0;
++	}
++out_free:
++	memstick_set_drvdata(card, NULL);
++	msb_data_clear(msb);
++	kfree(msb);
++	return rc;
++}
++
++static void msb_remove(struct memstick_dev *card)
++{
++	struct msb_data *msb = memstick_get_drvdata(card);
++	unsigned long flags;
++
++	if (msb->io_thread)
++		msb_stop(card);
++
++	dbg("Removing the disk device");
++
++	/* Take care of unhandled + new requests from now on */
++	spin_lock_irqsave(&msb->q_lock, flags);
++	msb->card_dead = true;
++	blk_start_queue(msb->queue);
++	spin_unlock_irqrestore(&msb->q_lock, flags);
++
++	/* Remove the disk */
++	del_gendisk(msb->disk);
++	blk_cleanup_queue(msb->queue);
++	msb->queue = NULL;
++
++	mutex_lock(&msb_disk_lock);
++	msb_data_clear(msb);
++	mutex_unlock(&msb_disk_lock);
++
++	msb_disk_release(msb->disk);
++	memstick_set_drvdata(card, NULL);
++}
++
++#ifdef CONFIG_PM
++
++static int msb_suspend(struct memstick_dev *card, pm_message_t state)
++{
++	msb_stop(card);
++	return 0;
++}
++
++static int msb_resume(struct memstick_dev *card)
++{
++	struct msb_data *msb = memstick_get_drvdata(card);
++	struct msb_data *new_msb = NULL;
++	bool card_dead = true;
++
++#ifndef CONFIG_MEMSTICK_UNSAFE_RESUME
++	msb->card_dead = true;
++	return 0;
++#endif
++	mutex_lock(&card->host->lock);
++
++	new_msb = kzalloc(sizeof(struct msb_data), GFP_KERNEL);
++	if (!new_msb)
++		goto out;
++
++	new_msb->card = card;
++	memstick_set_drvdata(card, new_msb);
++
++	if (msb_init_card(card))
++		goto out;
++
++	if (msb->block_size != new_msb->block_size)
++		goto out;
++
++	if (memcmp(msb->boot_page, new_msb->boot_page,
++					sizeof(struct ms_boot_page)))
++		goto out;
++
++	if (msb->logical_block_count != new_msb->logical_block_count ||
++		memcmp(msb->lba_to_pba_table, new_msb->lba_to_pba_table,
++						msb->logical_block_count))
++		goto out;
++
++	if (msb->block_count != new_msb->block_count ||
++		memcmp(msb->used_blocks_bitmap, new_msb->used_blocks_bitmap,
++							msb->block_count / 8))
++		goto out;
++
++	card_dead = false;
++out:
++	if (card_dead)
++		dbg("Card was removed/replaced during suspend");
++
++	msb->card_dead = card_dead;
++	memstick_set_drvdata(card, msb);
++
++	if (new_msb) {
++		msb_data_clear(new_msb);
++		kfree(new_msb);
++	}
++
++	msb_start(card);
++	mutex_unlock(&card->host->lock);
++	return 0;
++}
++#else
++
++#define msb_suspend NULL
++#define msb_resume NULL
++
++#endif /* CONFIG_PM */
++
++static struct memstick_device_id msb_id_tbl[] = {
++	{MEMSTICK_MATCH_ALL, MEMSTICK_TYPE_LEGACY, MEMSTICK_CATEGORY_STORAGE,
++	 MEMSTICK_CLASS_FLASH},
++
++	{MEMSTICK_MATCH_ALL, MEMSTICK_TYPE_LEGACY, MEMSTICK_CATEGORY_STORAGE,
++	 MEMSTICK_CLASS_ROM},
++
++	{MEMSTICK_MATCH_ALL, MEMSTICK_TYPE_LEGACY, MEMSTICK_CATEGORY_STORAGE,
++	 MEMSTICK_CLASS_RO},
++
++	{MEMSTICK_MATCH_ALL, MEMSTICK_TYPE_LEGACY, MEMSTICK_CATEGORY_STORAGE,
++	 MEMSTICK_CLASS_WP},
++
++	{MEMSTICK_MATCH_ALL, MEMSTICK_TYPE_DUO, MEMSTICK_CATEGORY_STORAGE_DUO,
++	 MEMSTICK_CLASS_DUO},
++	{}
++};
++MODULE_DEVICE_TABLE(memstick, msb_id_tbl);
++
++
++static struct memstick_driver msb_driver = {
++	.driver = {
++		.name  = DRIVER_NAME,
++		.owner = THIS_MODULE
++	},
++	.id_table = msb_id_tbl,
++	.probe    = msb_probe,
++	.remove   = msb_remove,
++	.suspend  = msb_suspend,
++	.resume   = msb_resume
 +};
 +
-+#define __dbg(host, level, format, ...) \
++static int __init msb_init(void)
++{
++	int rc = -ENOMEM;
++
++	rc = register_blkdev(major, DRIVER_NAME);
++	if (rc < 0) {
++		printk(KERN_ERR DRIVER_NAME ": failed to register "
++		       "major %d, error %d\n", major, rc);
++		return rc;
++	}
++	if (!major)
++		major = rc;
++
++	rc = memstick_register_driver(&msb_driver);
++	if (rc)
++		unregister_blkdev(major, DRIVER_NAME);
++	return rc;
++}
++
++static void __exit msb_exit(void)
++{
++	memstick_unregister_driver(&msb_driver);
++	unregister_blkdev(major, DRIVER_NAME);
++	idr_destroy(&msb_disk_idr);
++}
++
++module_init(msb_init);
++module_exit(msb_exit);
++
++module_param(major, int, S_IRUGO);
++MODULE_PARM_DESC(major, "Major to use for block device (default auto)");
++
++module_param(cache_flush_timeout, int, S_IRUGO);
++MODULE_PARM_DESC(cache_flush_timeout,
++				"Cache flush timeout in msec (1000 default)");
++module_param(debug, int, S_IRUGO | S_IWUSR);
++MODULE_PARM_DESC(debug, "Debug level (0-3)");
++
++module_param(verify_writes, bool, S_IRUGO);
++MODULE_PARM_DESC(verify_writes, "Read back and check all data that is written");
++
++MODULE_LICENSE("GPL");
++MODULE_AUTHOR("Alex Dubov");
++MODULE_AUTHOR("Maxim Levitsky");
++MODULE_DESCRIPTION("Sony MemoryStick block device driver");
+diff --git a/drivers/memstick/core/ms_block.h b/drivers/memstick/core/ms_block.h
+new file mode 100644
+index 0000000..492bfef
+--- /dev/null
++++ b/drivers/memstick/core/ms_block.h
+@@ -0,0 +1,229 @@
++/*
++ *  ms_block.h - Sony MemoryStick (legacy) storage support
++ *
++ *  Copyright (C) 2007 Alex Dubov <oakad@yahoo.com>
++ *  Copyright (C) 2010 Maxim Levitsky <maximlevitsky@gmail.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ * Special thanks to Carlos Corbacho for providing various MemoryStick cards
++ * that made this driver possible.
++ *
++ */
++
++#ifndef MS_BLOCK_NEW_H
++#define MS_BLOCK_NEW_H
++
++#define MS_BLOCK_MAX_SEGS      32
++#define MS_BLOCK_MAX_PAGES     ((2 << 16) - 1)
++
++#define MS_BLOCK_MAX_BOOT_ADDR 0x000c
++#define MS_BLOCK_BOOT_ID       0x0001
++#define MS_BLOCK_INVALID       0xffff
++#define MS_MAX_ZONES           16
++#define MS_BLOCKS_IN_ZONE      512
++
++#define MS_BLOCK_MAP_LINE_SZ   16
++#define MS_BLOCK_PART_SHIFT    3
++
++
++#define MEMSTICK_UNCORR_ERROR (MEMSTICK_STATUS1_UCFG | \
++		MEMSTICK_STATUS1_UCEX | MEMSTICK_STATUS1_UCDT)
++
++#define MEMSTICK_CORR_ERROR (MEMSTICK_STATUS1_FGER | MEMSTICK_STATUS1_EXER | \
++	MEMSTICK_STATUS1_DTER)
++
++#define MEMSTICK_INT_ERROR (MEMSTICK_INT_CMDNAK | MEMSTICK_INT_ERR)
++
++#define MEMSTICK_OVERWRITE_FLAG_NORMAL \
++	(MEMSTICK_OVERWRITE_PGST1 | \
++	MEMSTICK_OVERWRITE_PGST0  | \
++	MEMSTICK_OVERWRITE_BKST)
++
++#define MEMSTICK_OV_PG_NORMAL \
++	(MEMSTICK_OVERWRITE_PGST1 | MEMSTICK_OVERWRITE_PGST0)
++
++#define MEMSTICK_MANAGMENT_FLAG_NORMAL \
++	(MEMSTICK_MANAGEMENT_SYSFLG |  \
++	MEMSTICK_MANAGEMENT_SCMS1   |  \
++	MEMSTICK_MANAGEMENT_SCMS0)     \
++
++struct ms_boot_header {
++	unsigned short block_id;
++	unsigned short format_reserved;
++	unsigned char  reserved0[184];
++	unsigned char  data_entry;
++	unsigned char  reserved1[179];
++} __packed;
++
++
++struct ms_system_item {
++	unsigned int  start_addr;
++	unsigned int  data_size;
++	unsigned char data_type_id;
++	unsigned char reserved[3];
++} __packed;
++
++struct ms_system_entry {
++	struct ms_system_item disabled_block;
++	struct ms_system_item cis_idi;
++	unsigned char         reserved[24];
++} __packed;
++
++struct ms_boot_attr_info {
++	unsigned char      memorystick_class;
++	unsigned char      format_unique_value1;
++	unsigned short     block_size;
++	unsigned short     number_of_blocks;
++	unsigned short     number_of_effective_blocks;
++	unsigned short     page_size;
++	unsigned char      extra_data_size;
++	unsigned char      format_unique_value2;
++	unsigned char      assembly_time[8];
++	unsigned char      format_unique_value3;
++	unsigned char      serial_number[3];
++	unsigned char      assembly_manufacturer_code;
++	unsigned char      assembly_model_code[3];
++	unsigned short     memory_manufacturer_code;
++	unsigned short     memory_device_code;
++	unsigned short     implemented_capacity;
++	unsigned char      format_unique_value4[2];
++	unsigned char      vcc;
++	unsigned char      vpp;
++	unsigned short     controller_number;
++	unsigned short     controller_function;
++	unsigned char      reserved0[9];
++	unsigned char      transfer_supporting;
++	unsigned short     format_unique_value5;
++	unsigned char      format_type;
++	unsigned char      memorystick_application;
++	unsigned char      device_type;
++	unsigned char      reserved1[22];
++	unsigned char      format_uniqure_value6[2];
++	unsigned char      reserved2[15];
++} __packed;
++
++struct ms_cis_idi {
++	unsigned short general_config;
++	unsigned short logical_cylinders;
++	unsigned short reserved0;
++	unsigned short logical_heads;
++	unsigned short track_size;
++	unsigned short page_size;
++	unsigned short pages_per_track;
++	unsigned short msw;
++	unsigned short lsw;
++	unsigned short reserved1;
++	unsigned char  serial_number[20];
++	unsigned short buffer_type;
++	unsigned short buffer_size_increments;
++	unsigned short long_command_ecc;
++	unsigned char  firmware_version[28];
++	unsigned char  model_name[18];
++	unsigned short reserved2[5];
++	unsigned short pio_mode_number;
++	unsigned short dma_mode_number;
++	unsigned short field_validity;
++	unsigned short current_logical_cylinders;
++	unsigned short current_logical_heads;
++	unsigned short current_pages_per_track;
++	unsigned int   current_page_capacity;
++	unsigned short mutiple_page_setting;
++	unsigned int   addressable_pages;
++	unsigned short single_word_dma;
++	unsigned short multi_word_dma;
++	unsigned char  reserved3[128];
++} __packed;
++
++
++struct ms_boot_page {
++	struct ms_boot_header    header;
++	struct ms_system_entry   entry;
++	struct ms_boot_attr_info attr;
++} __packed;
++
++struct msb_data {
++	unsigned int			usage_count;
++	struct memstick_dev		*card;
++	struct gendisk			*disk;
++	struct request_queue		*queue;
++	spinlock_t			q_lock;
++	struct hd_geometry		geometry;
++	struct attribute_group		attr_group;
++	struct request			*req;
++
++	/* IO */
++	struct task_struct		*io_thread;
++	bool				card_dead;
++
++	/* Media properties */
++	struct ms_boot_page		*boot_page;
++	u16				boot_block_locations[2];
++	int				boot_block_count;
++
++	bool				read_only;
++	unsigned short			page_size;
++	int				block_size;
++	int				pages_in_block;
++	int				zone_count;
++	int				block_count;
++	int				logical_block_count;
++
++	/* FTL tables */
++	unsigned long			*used_blocks_bitmap;
++	unsigned long			*erased_blocks_bitmap;
++	u16				*lba_to_pba_table;
++	int				free_block_count[MS_MAX_ZONES];
++	bool				ftl_initialized;
++
++	/* Cache */
++	unsigned char			*cache;
++	unsigned long			valid_cache_bitmap;
++	int				cache_block_lba;
++	bool				need_flush_cache;
++	struct timer_list		cache_flush_timer;
++
++
++	struct scatterlist		req_sg[MS_BLOCK_MAX_SEGS+1];
++	unsigned char			*block_buffer;
++
++	/* handler's local data */
++	u8				command_value;
++	bool				command_need_oob;
++	struct scatterlist		*current_sg;
++	int				sg_offset;
++
++	struct ms_register		regs;
++	int				current_page;
++};
++
++
++struct chs_entry {
++	unsigned long size;
++	unsigned char sec;
++	unsigned short cyl;
++	unsigned char head;
++};
++
++static int msb_reset(struct msb_data *msb);
++
++
++#define DRIVER_NAME "ms_block"
++
++#define ms_printk(format, ...) \
++	printk(KERN_INFO DRIVER_NAME ": " format "\n", ## __VA_ARGS__)
++
++#define __dbg(level, format, ...) \
 +	do { \
 +		if (debug >= level) \
-+			printk(KERN_DEBUG \
-+				"%s: " format "\n", dev_name(&host->msh->dev) \
-+					 , ## __VA_ARGS__); \
-+		else \
-+			dev_dbg(&host->msh->dev, format, ## __VA_ARGS__); \
++			printk(KERN_DEBUG DRIVER_NAME \
++				": " format "\n", ## __VA_ARGS__); \
 +	} while (0)
 +
-+#define dbg(host, format, ...)		__dbg(host, 1, format, ## __VA_ARGS__)
-+#define dbg_v(host, format, ...)	__dbg(host, 2, format, ## __VA_ARGS__)
-+#define dbg_reg(host, format, ...)	__dbg(host, 3, format, ## __VA_ARGS__)
 +
-+static void j38ms_next_request(struct j38ms_host *host);
++#define dbg(format, ...)		__dbg(1, format, ## __VA_ARGS__)
++#define dbg_verbose(format, ...)	__dbg(2, format, ## __VA_ARGS__)
++
++#endif
 -- 
 1.7.1
 
