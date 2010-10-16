@@ -1,26 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752971Ab0JPGXX (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Oct 2010 02:23:23 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:43467 "EHLO mx3.mail.elte.hu"
+	id S1752990Ab0JPG1i (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Oct 2010 02:27:38 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:54148 "EHLO mx2.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752026Ab0JPGXW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Oct 2010 02:23:22 -0400
-Date: Sat, 16 Oct 2010 08:23:04 +0200
+	id S1752026Ab0JPG1h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 16 Oct 2010 02:27:37 -0400
+Date: Sat, 16 Oct 2010 08:27:25 +0200
 From: Ingo Molnar <mingo@elte.hu>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Jason Baron <jbaron@redhat.com>, Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [PATCH 3/9] jump label: Fix module __init section race
-Message-ID: <20101016062304.GA10748@elte.hu>
-References: <20101015200949.134732894@goodmis.org>
- <20101015201036.445509790@goodmis.org>
- <1287194942.16971.39.camel@gandalf.stny.rr.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>, Jason Baron <jbaron@redhat.com>,
+        linux-kernel@vger.kernel.org, David Miller <davem@davemloft.net>,
+        Mike Galbraith <efault@gmx.de>, Steven Rostedt <rostedt@goodmis.org>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [RFC][PATCH 7/7] perf: Optimize sw events
+Message-ID: <20101016062725.GB10748@elte.hu>
+References: <20101014203404.222133139@chello.nl>
+ <20101014203625.609332490@chello.nl>
+ <1287134043.29097.1331.camel@twins>
+ <1287154627.29097.1524.camel@twins>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1287194942.16971.39.camel@gandalf.stny.rr.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1287154627.29097.1524.camel@twins>
 User-Agent: Mutt/1.5.20 (2009-08-17)
 X-ELTE-SpamScore: -2.0
 X-ELTE-SpamLevel: 
@@ -34,33 +37,55 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Steven Rostedt <rostedt@goodmis.org> wrote:
+* Peter Zijlstra <peterz@infradead.org> wrote:
 
-> On Fri, 2010-10-15 at 16:09 -0400, Steven Rostedt wrote:
+> On Fri, 2010-10-15 at 11:16 +0200, Peter Zijlstra wrote:
+> > On Thu, 2010-10-14 at 22:34 +0200, Peter Zijlstra wrote:
+> > 
+> > > Index: linux-2.6/include/linux/perf_event.h
+> > > ===================================================================
+> > > --- linux-2.6.orig/include/linux/perf_event.h
+> > > +++ linux-2.6/include/linux/perf_event.h
+> > > @@ -1013,15 +1013,17 @@ static inline void perf_fetch_caller_reg
+> > >  static inline void
+> > >  perf_sw_event(u32 event_id, u64 nr, int nmi, struct pt_regs *regs, u64 addr)
+> > >  {
+> > > -	if (atomic_read(&perf_swevent_enabled[event_id])) {
+> > > -		struct pt_regs hot_regs;
+> > > +	struct pt_regs hot_regs;
+> > >  
+> > > -		if (!regs) {
+> > > -			perf_fetch_caller_regs(&hot_regs);
+> > > -			regs = &hot_regs;
+> > > -		}
+> > > -		__perf_sw_event(event_id, nr, nmi, regs, addr);
+> > > +	JUMP_LABEL(&perf_swevent_enabled[event_id], have_event);
+> > > +	return;
+> > > +
+> > > +have_event:
+> > > +	if (!regs) {
+> > > +		perf_fetch_caller_regs(&hot_regs);
+> > > +		regs = &hot_regs;
+> > >  	}
+> > > +	__perf_sw_event(event_id, nr, nmi, regs, addr);
+> > >  }
+> > >  
+> > 
+> > OK, so it appears I only compile tested this bit without jump_label
+> > support, with that bit added back this horribly fails to compile like:
+> > 
+> > In file included from /usr/src/linux-2.6/arch/x86/mm/fault.c:13:
+> > /usr/src/linux-2.6/include/linux/perf_event.h: In function ‘perf_sw_event.clone.0’:
+> > /usr/src/linux-2.6/include/linux/perf_event.h:1018: warning: asm operand 0 probably doesn’t match constraints
+> > /usr/src/linux-2.6/include/linux/perf_event.h:1018: error: impossible constraint in ‘asm’
+> > 
 > 
-> > --- a/kernel/jump_label.c
-> > +++ b/kernel/jump_label.c
-> > @@ -168,7 +168,8 @@ void jump_label_update(unsigned long key, enum jump_label_type type)
-> >  			count = e_module->nr_entries;
-> >  			iter = e_module->table;
-> >  			while (count--) {
-> > -				if (kernel_text_address(iter->code))
-> > +				if (iter->key &&
-> > +						kernel_text_address(iter->code))
+> Ah, figured it out, it needs __attribute__((always_inline)), otherwise
+> we end up with multiple keys for one label, which will clealy not work.
 > 
-> Peter, I know you hated this, but the alternative is either:
-> 
-> 				if (iter->key &&
-> 				    kernel_text_address(iter->code))
-> 
-> or break 80 chars. All three seem bad (although I don't mind breaking 
-> 80 chars for this). But I'll leave it for now.
+> I thought we had a __force_inline macro but I can't seem to find that.
 
-No, the proper alternative is to move the body of the iteration into a 
-jump_label_update_entry() inline function ...
-
-Nobody is forcing you to start yet another iteration 4 indentations 
-deep. We have functions for a reason.
+It's called __always_inline.
 
 Thanks,
 
