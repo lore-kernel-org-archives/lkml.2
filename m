@@ -1,63 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754112Ab0JPJ3X (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Oct 2010 05:29:23 -0400
-Received: from ipmail06.adl2.internode.on.net ([150.101.137.129]:48787 "EHLO
+	id S1754135Ab0JPJar (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Oct 2010 05:30:47 -0400
+Received: from ipmail06.adl2.internode.on.net ([150.101.137.129]:41368 "EHLO
 	ipmail06.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753174Ab0JPJ3V (ORCPT
+	by vger.kernel.org with ESMTP id S1753174Ab0JPJap (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Oct 2010 05:29:21 -0400
+	Sat, 16 Oct 2010 05:30:45 -0400
 X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvsEAGsKuUx5LcB2/2dsb2JhbAChMXK8X4VJBA
-Date: Sat, 16 Oct 2010 20:29:16 +1100
+X-IronPort-Anti-Spam-Result: AvsEAO4NuUx5LcB2/2dsb2JhbAChMXK8WYVJBA
+Date: Sat, 16 Oct 2010 20:30:43 +1100
 From: Nick Piggin <npiggin@kernel.dk>
 To: Dave Chinner <david@fromorbit.com>
 Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 04/19] fs: Implement lazy LRU updates for inodes.
-Message-ID: <20101016092916.GA32197@amd>
+Subject: Re: [PATCH 01/19] fs: switch bdev inode bdi's correctly
+Message-ID: <20101016093043.GB32197@amd>
 References: <1287216853-17634-1-git-send-email-david@fromorbit.com>
- <1287216853-17634-5-git-send-email-david@fromorbit.com>
+ <1287216853-17634-2-git-send-email-david@fromorbit.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1287216853-17634-5-git-send-email-david@fromorbit.com>
+In-Reply-To: <1287216853-17634-2-git-send-email-david@fromorbit.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Oct 16, 2010 at 07:13:58PM +1100, Dave Chinner wrote:
-> @@ -502,11 +527,15 @@ static void prune_icache(int nr_to_scan)
->  			iput(inode);
->  			spin_lock(&inode_lock);
->  
-> -			if (inode != list_entry(inode_unused.next,
-> -						struct inode, i_list))
-> -				continue;	/* wrong inode or list_empty */
-> -			if (!can_unuse(inode))
-> +			/*
-> +			 * if we can't reclaim this inode immediately, give it
-> +			 * another pass through the free list so we don't spin
-> +			 * on it.
-> +			 */
-> +			if (!can_unuse(inode)) {
-> +				list_move(&inode->i_list, &inode_unused);
->  				continue;
-> +			}
->  		}
->  		list_move(&inode->i_list, &freeable);
->  		WARN_ON(inode->i_state & I_NEW);
+On Sat, Oct 16, 2010 at 07:13:55PM +1100, Dave Chinner wrote:
+> From: Dave Chinner <dchinner@redhat.com>
+> 
+> bdev inodes can remain dirty even after their last close. Hence the
+> BDI associated with the bdev->inode gets modified duringthe last
+> close to point to the default BDI. However, the bdev inode still
+> needs to be moved to the dirty lists of the new BDI, otherwise it
+> will corrupt the writeback list is was left on.
+> 
+> Add a new function bdev_inode_switch_bdi() to move all the bdi state
+> from the old bdi to the new one safely. This is only a temporary
+> measure until the bdev inode<->bdi lifecycle problems are sorted
+> out.
+> 
+> Signed-off-by: Dave Chinner <dchinner@redhat.com>
 
-This is a bug, actually 2 bugs, which is why I omitted it in the version
-you picked up. I agree we want the optimisation though, so I've added it
-back in my tree.
-
-After you iput() and then re take the inode lock, you can't reference
-the inode because you don't know what happened to it. You need to keep
-that pointer check to verify it is still there.
-
-Secondly, iput sets I_REFERENCED, so you can't leave can_unuse
-unmodified otherwise then it's basically always a false negative. It
-needs to check for (i_state & ~I_REFERENCED)
-
-
+Nice to see you and Christoph eliminated the need for that bdev:inode
+hack in my tree. Looks good.
