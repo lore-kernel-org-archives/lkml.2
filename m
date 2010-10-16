@@ -1,50 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752574Ab0JPCJY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Oct 2010 22:09:24 -0400
-Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:18664 "EHLO
-	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752016Ab0JPCJW (ORCPT
+	id S1752516Ab0JPCJG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Oct 2010 22:09:06 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:39456 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752230Ab0JPCJF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Oct 2010 22:09:22 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvsEAMOjuEx5LcUp/2dsb2JhbAChMHK/IoVJBI9K
-Date: Sat, 16 Oct 2010 13:09:18 +1100
-From: Nick Piggin <npiggin@kernel.dk>
-To: Nick Piggin <npiggin@kernel.dk>
-Cc: Christoph Hellwig <hch@infradead.org>, Dave Chinner <david@fromorbit.com>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 17/18] fs: icache remove inode_lock
-Message-ID: <20101016020918.GA5294@amd>
-References: <20101015031343.GG4681@dastard>
- <20101015033017.GA6750@amd>
- <20101015034451.GA6827@amd>
- <20101015064150.GB7511@amd>
- <20101015105943.GE32255@dastard>
- <20101015130259.GA3207@amd>
- <20101015132938.GA3936@amd>
- <20101015173345.GA10731@amd>
- <20101015175247.GA6737@infradead.org>
- <20101015180219.GA11110@amd>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101015180219.GA11110@amd>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Fri, 15 Oct 2010 22:09:05 -0400
+X-Authority-Analysis: v=1.1 cv=vbQZhf6WRU4XF+4tPWNJEMYU0N1CowIjcRZ/qR/IBDs= c=1 sm=0 a=oxfdMyKVvtIA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=4ygZsKZSzpjnLENBWhcA:9 a=m_kzBTd7mtMYG9Mk9bIA:7 a=vwJMCOI6rHpkYf64OroTVPF4gxkA:4 a=PUjeQqilurYA:10 a=3fnNVC67pfuRrqLZ:21 a=bAfJD-BQkgxZctko:21 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [PATCH 3/9] jump label: Fix module __init section race
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org
+Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Jason Baron <jbaron@redhat.com>, Peter Zijlstra <peterz@infradead.org>
+In-Reply-To: <20101015201036.445509790@goodmis.org>
+References: <20101015200949.134732894@goodmis.org>
+	 <20101015201036.445509790@goodmis.org>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Fri, 15 Oct 2010 22:09:02 -0400
+Message-ID: <1287194942.16971.39.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Oct 16, 2010 at 05:02:19AM +1100, Nick Piggin wrote:
-> On Fri, Oct 15, 2010 at 01:52:47PM -0400, Christoph Hellwig wrote:
-> > Thanks for trying to get back to a technical discussion.  Maybe we
-> > can just move the technical comments to direct replies to the patches
-> > and leave this not very helpful subthread behind?
-> 
-> I had plenty of other technical comments which you ignored about
-> per-zone shrinkers and stragegy to merge the overall series. If you
-> are going to keep claiming these are show stoppers, please address
-> my comments there too.
+On Fri, 2010-10-15 at 16:09 -0400, Steven Rostedt wrote:
 
-Ping?
+> --- a/kernel/jump_label.c
+> +++ b/kernel/jump_label.c
+> @@ -168,7 +168,8 @@ void jump_label_update(unsigned long key, enum jump_label_type type)
+>  			count = e_module->nr_entries;
+>  			iter = e_module->table;
+>  			while (count--) {
+> -				if (kernel_text_address(iter->code))
+> +				if (iter->key &&
+> +						kernel_text_address(iter->code))
+
+Peter, I know you hated this, but the alternative is either:
+
+				if (iter->key &&
+				    kernel_text_address(iter->code))
+
+or break 80 chars. All three seem bad (although I don't mind breaking 80
+chars for this). But I'll leave it for now.
+
+-- Steve
+
+>  					arch_jump_label_transform(iter, type);
+>  				iter++;
+>  			}
+> @@ -366,6 +367,39 @@ static void remove_jump_label_module(struct module *mod)
+>  	}
+>  }
+
 
