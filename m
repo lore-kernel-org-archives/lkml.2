@@ -1,53 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753488Ab0JPRmL (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Oct 2010 13:42:11 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:34477 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753072Ab0JPRmJ convert rfc822-to-8bit (ORCPT
+	id S1753358Ab0JPRzV (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Oct 2010 13:55:21 -0400
+Received: from ipmail05.adl6.internode.on.net ([150.101.137.143]:31920 "EHLO
+	ipmail05.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752673Ab0JPRzU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Oct 2010 13:42:09 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:reply-to:to:subject:date:user-agent:mime-version:content-type
-         :content-transfer-encoding:message-id;
-        b=f0uVOkC8Hu0BxXBySbFNPlyTXzArMsm2935l3i8Ba3Z5r8COOEMSsJknpj24lU+ln4
-         zfeIXI+AXx3Dspf0ZgQiZoN3qwikdXSIpnLlssdd4Aw1y9JUM08Z716VntY/0jdlkFk0
-         Yve7+KMPry89kAjFzlrCpreFYch2+7A+Sw/LQ=
-From: Maciej Rutecki <maciej.rutecki@gmail.com>
-Reply-To: maciej.rutecki@gmail.com
-To: Linux Kernel <linux-kernel@vger.kernel.org>, linux-fsdevel@vger.kernel.org
-Subject: [2.6.36-rc8] ERROR: "dump_write" [fs/binfmt_aout.ko] undefined!
-Date: Sat, 16 Oct 2010 19:42:02 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.36-rc7; KDE/4.4.5; i686; ; )
+	Sat, 16 Oct 2010 13:55:20 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AmQEAD+BuUx5LcB2gWdsb2JhbAChMBYBARYiIsBrhUkE
+Date: Sun, 17 Oct 2010 04:55:15 +1100
+From: Nick Piggin <npiggin@kernel.dk>
+To: Dave Chinner <david@fromorbit.com>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: Inode Lock Scalability V4
+Message-ID: <20101016175515.GA6868@amd>
+References: <1287216853-17634-1-git-send-email-david@fromorbit.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201010161942.03081.maciej.rutecki@gmail.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1287216853-17634-1-git-send-email-david@fromorbit.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear all
+On Sat, Oct 16, 2010 at 07:13:54PM +1100, Dave Chinner wrote:
+> Version 2 of this series is a complete rework of the original patch
+> series.  Nick's original code nested list locks inside the the
+> inode->i_lock, resulting in a large mess of trylock operations to
+> get locks out of order all over the place. In many cases, the reason
+> fo this lock ordering is removed later on in Nick's series as
+> cleanups are introduced.
 
-During compiling 2.6.36-rc8:
-CC [M]  net/wireless/wext-compat.o
-  CC [M]  net/wireless/wext-sme.o
-  CC [M]  net/wireless/lib80211.o
-  LD [M]  net/wireless/cfg80211.o
-  Building modules, stage 2.
-  MODPOST 344 modules
-ERROR: "dump_write" [fs/binfmt_aout.ko] undefined!
-ERROR: "dump_seek" [fs/binfmt_aout.ko] undefined!
-make[2]: *** [__modpost] Błąd 1
-make[1]: *** [modules] Błąd 2
-make[1]: Opuszczenie katalogu `/usr/src/linux-2.6.36-rc8'
-make: *** [debian/stamp/build/kernel] Błąd 2
+I think you must misunderstand how my patchset is structured. It is not
+that it was simply thrown together with cleanups piled on top of crap as
+I discovered new ways to fix trylocks.
 
-Three different machines (laptop, PC and virtualbox), the same problem.
+It is structured so that for the first steps, each (semi-)independent
+aspect of inode_lock's concurrency protection is taken over by a new
+lock. I've just made these locks dumb globals for simplicity at this
+point.
 
-Regards
--- 
-Maciej Rutecki
-http://www.maciek.unixy.pl
+Often, the required locking of these different aspects of the icache
+overlap. Also inode_lock remains in place until the end. This makes lock
+ordering get ugly.
+
+But the point is that once we get past the trylocks and actually have
+the locks held, it is relatively easy to demonstrate that the protection
+provided is exactly what inode_lock provided.
+
+After inode_lock is removed, I start to scale the locks properly and
+introduce more complicated transforms to the code to improve the
+locking. I really like how I split it up.
+
+In your patch set you've basically pulled all these steps into the
+inode_lock splitting itself. This is my first big objection.
+
+Second I actually prefer how I cover all the icache state of an inode
+with i_lock. You have avoided some coverage in the interest of reducing
+lock ordering complexity, but as I have demonstrated RCU tends to work
+as well for this too (and is mostly all solved in the second half of my
+series).
+
+
+> This patch set is just the basic inode_lock breakup patches plus a
+> few more simple changes to the inode code. It stops short of
+> introducing RCU inode freeing because those changes are not
+> completely baked yet.
+
+It also doesn't contain per-zone locking and lrus, or scalability of
+superblock list locking.
+
+And while the rcu-walk path walking is not fully baked, it has been
+reviewed by Linus and is in pretty good shape. So I prefer to utilise
+RCU locking here too, seeing as we know it will go in.
+
+I much prefer to fix all of the problematic global locks in icache up
+front and do the icache merge in a single release so we don't have
+locking changes there stringing out over several releases.
+
