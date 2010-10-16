@@ -1,190 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752264Ab0JPAj0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Oct 2010 20:39:26 -0400
-Received: from e5.ny.us.ibm.com ([32.97.182.145]:47979 "EHLO e5.ny.us.ibm.com"
+	id S1752305Ab0JPAj1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Oct 2010 20:39:27 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:58495 "EHLO e9.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752065Ab0JPAjB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752069Ab0JPAjB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 15 Oct 2010 20:39:01 -0400
 From: John Stultz <john.stultz@linaro.org>
 To: LKML <linux-kernel@vger.kernel.org>
-Cc: John Stultz <john.stultz@linaro.org>,
+Cc: Richard Cochran <richardcochran@gmail.com>,
+        Richard Cochran <richard.cochran@omicron.at>,
+        John Stultz <john.stultz@linaro.org>,
         Alessandro Zummo <a.zummo@towertech.it>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Richard Cochran <richardcochran@gmail.com>
-Subject: [PATCH 5/6] [RFC] RTC: Remove UIE emulation
-Date: Fri, 15 Oct 2010 17:38:54 -0700
-Message-Id: <1287189535-24649-6-git-send-email-john.stultz@linaro.org>
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [PATCH 1/6] [RFC] posix clocks: dynamic clock ids.
+Date: Fri, 15 Oct 2010 17:38:50 -0700
+Message-Id: <1287189535-24649-2-git-send-email-john.stultz@linaro.org>
 X-Mailer: git-send-email 1.6.0.4
-In-Reply-To: <1287189535-24649-5-git-send-email-john.stultz@linaro.org>
+In-Reply-To: <1287189535-24649-1-git-send-email-john.stultz@linaro.org>
 References: <1287189535-24649-1-git-send-email-john.stultz@linaro.org>
- <1287189535-24649-2-git-send-email-john.stultz@linaro.org>
- <1287189535-24649-3-git-send-email-john.stultz@linaro.org>
- <1287189535-24649-4-git-send-email-john.stultz@linaro.org>
- <1287189535-24649-5-git-send-email-john.stultz@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since we provide UIE interrupts via a rtc_timer, the old
-emulation code can be removed.
+From: Richard Cochran <richardcochran@gmail.com>
 
-Note: I assume this is ok, but there may be corner cases I'm missing.
+This patch augments the POSIX clock code to offer a dynamic clock
+creation method. Instead of registering a hard coded clock ID, modules
+may call create_posix_clock(), which returns a new clock ID.
+
+Signed-off-by: Richard Cochran <richard.cochran@omicron.at>
+
+This patch still has un-addressed lifetime issues pointed out by
+Alan Cox. More work is needed here, but for now this provides the
+functionality needed for the following patches.
 
 Signed-off-by: John Stultz <john.stultz@linaro.org>
 CC: Alessandro Zummo <a.zummo@towertech.it>
 CC: Thomas Gleixner <tglx@linutronix.de>
 CC: Richard Cochran <richardcochran@gmail.com>
 ---
- drivers/rtc/rtc-dev.c |  104 -------------------------------------------------
- include/linux/rtc.h   |   12 ------
- 2 files changed, 0 insertions(+), 116 deletions(-)
+ include/linux/posix-timers.h |    7 ++++++-
+ include/linux/time.h         |    2 ++
+ kernel/posix-timers.c        |   41 ++++++++++++++++++++++++++++++++++-------
+ 3 files changed, 42 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/rtc/rtc-dev.c b/drivers/rtc/rtc-dev.c
-index 62227cd..212b16e 100644
---- a/drivers/rtc/rtc-dev.c
-+++ b/drivers/rtc/rtc-dev.c
-@@ -46,105 +46,6 @@ static int rtc_dev_open(struct inode *inode, struct file *file)
- 	return err;
- }
- 
--#ifdef CONFIG_RTC_INTF_DEV_UIE_EMUL
--/*
-- * Routine to poll RTC seconds field for change as often as possible,
-- * after first RTC_UIE use timer to reduce polling
-- */
--static void rtc_uie_task(struct work_struct *work)
--{
--	struct rtc_device *rtc =
--		container_of(work, struct rtc_device, uie_task);
--	struct rtc_time tm;
--	int num = 0;
--	int err;
--
--	err = rtc_read_time(rtc, &tm);
--
--	spin_lock_irq(&rtc->irq_lock);
--	if (rtc->stop_uie_polling || err) {
--		rtc->uie_task_active = 0;
--	} else if (rtc->oldsecs != tm.tm_sec) {
--		num = (tm.tm_sec + 60 - rtc->oldsecs) % 60;
--		rtc->oldsecs = tm.tm_sec;
--		rtc->uie_timer.expires = jiffies + HZ - (HZ/10);
--		rtc->uie_timer_active = 1;
--		rtc->uie_task_active = 0;
--		add_timer(&rtc->uie_timer);
--	} else if (schedule_work(&rtc->uie_task) == 0) {
--		rtc->uie_task_active = 0;
--	}
--	spin_unlock_irq(&rtc->irq_lock);
--	if (num)
--		rtc_update_irq(rtc, num, RTC_UF | RTC_IRQF);
--}
--static void rtc_uie_timer(unsigned long data)
--{
--	struct rtc_device *rtc = (struct rtc_device *)data;
--	unsigned long flags;
--
--	spin_lock_irqsave(&rtc->irq_lock, flags);
--	rtc->uie_timer_active = 0;
--	rtc->uie_task_active = 1;
--	if ((schedule_work(&rtc->uie_task) == 0))
--		rtc->uie_task_active = 0;
--	spin_unlock_irqrestore(&rtc->irq_lock, flags);
--}
--
--static int clear_uie(struct rtc_device *rtc)
--{
--	spin_lock_irq(&rtc->irq_lock);
--	if (rtc->uie_irq_active) {
--		rtc->stop_uie_polling = 1;
--		if (rtc->uie_timer_active) {
--			spin_unlock_irq(&rtc->irq_lock);
--			del_timer_sync(&rtc->uie_timer);
--			spin_lock_irq(&rtc->irq_lock);
--			rtc->uie_timer_active = 0;
--		}
--		if (rtc->uie_task_active) {
--			spin_unlock_irq(&rtc->irq_lock);
--			flush_scheduled_work();
--			spin_lock_irq(&rtc->irq_lock);
--		}
--		rtc->uie_irq_active = 0;
--	}
--	spin_unlock_irq(&rtc->irq_lock);
--	return 0;
--}
--
--static int set_uie(struct rtc_device *rtc)
--{
--	struct rtc_time tm;
--	int err;
--
--	err = rtc_read_time(rtc, &tm);
--	if (err)
--		return err;
--	spin_lock_irq(&rtc->irq_lock);
--	if (!rtc->uie_irq_active) {
--		rtc->uie_irq_active = 1;
--		rtc->stop_uie_polling = 0;
--		rtc->oldsecs = tm.tm_sec;
--		rtc->uie_task_active = 1;
--		if (schedule_work(&rtc->uie_task) == 0)
--			rtc->uie_task_active = 0;
--	}
--	rtc->irq_data = 0;
--	spin_unlock_irq(&rtc->irq_lock);
--	return 0;
--}
--
--int rtc_dev_update_irq_enable_emul(struct rtc_device *rtc, unsigned int enabled)
--{
--	if (enabled)
--		return set_uie(rtc);
--	else
--		return clear_uie(rtc);
--}
--EXPORT_SYMBOL(rtc_dev_update_irq_enable_emul);
--
--#endif /* CONFIG_RTC_INTF_DEV_UIE_EMUL */
- 
- static ssize_t
- rtc_dev_read(struct file *file, char __user *buf, size_t count, loff_t *ppos)
-@@ -493,11 +394,6 @@ void rtc_dev_prepare(struct rtc_device *rtc)
- 
- 	rtc->dev.devt = MKDEV(MAJOR(rtc_devt), rtc->id);
- 
--#ifdef CONFIG_RTC_INTF_DEV_UIE_EMUL
--	INIT_WORK(&rtc->uie_task, rtc_uie_task);
--	setup_timer(&rtc->uie_timer, rtc_uie_timer, (unsigned long)rtc);
--#endif
--
- 	cdev_init(&rtc->char_dev, &rtc_dev_fops);
- 	rtc->char_dev.owner = rtc->owner;
- }
-diff --git a/include/linux/rtc.h b/include/linux/rtc.h
-index 3acfbea..7350748 100644
---- a/include/linux/rtc.h
-+++ b/include/linux/rtc.h
-@@ -203,18 +203,6 @@ struct rtc_device
- 	struct hrtimer pie_timer; /* sub second exp, so needs hrtimer */
- 	int pie_enabled;
- 	struct work_struct irqwork;
--
--
--#ifdef CONFIG_RTC_INTF_DEV_UIE_EMUL
--	struct work_struct uie_task;
--	struct timer_list uie_timer;
--	/* Those fields are protected by rtc->irq_lock */
--	unsigned int oldsecs;
--	unsigned int uie_irq_active:1;
--	unsigned int stop_uie_polling:1;
--	unsigned int uie_task_active:1;
--	unsigned int uie_timer_active:1;
--#endif
+diff --git a/include/linux/posix-timers.h b/include/linux/posix-timers.h
+index 3e23844..a9e601a 100644
+--- a/include/linux/posix-timers.h
++++ b/include/linux/posix-timers.h
+@@ -67,6 +67,7 @@ struct k_itimer {
  };
- #define to_rtc_device(d) container_of(d, struct rtc_device, dev)
  
+ struct k_clock {
++	clockid_t id;
+ 	int res;		/* in nanoseconds */
+ 	int (*clock_getres) (const clockid_t which_clock, struct timespec *tp);
+ 	int (*clock_set) (const clockid_t which_clock, struct timespec * tp);
+@@ -84,7 +85,11 @@ struct k_clock {
+ 			   struct itimerspec * cur_setting);
+ };
+ 
+-void register_posix_clock(const clockid_t clock_id, struct k_clock *new_clock);
++/* Regsiter a posix clock with a "well known" clock id. */
++int register_posix_clock(const clockid_t id, struct k_clock *clock);
++
++/* Create a new posix clock with a dynamic clock id. */
++clockid_t create_posix_clock(struct k_clock *clock);
+ 
+ /* error handlers for timer_create, nanosleep and settime */
+ int do_posix_clock_nonanosleep(const clockid_t, int flags, struct timespec *,
+diff --git a/include/linux/time.h b/include/linux/time.h
+index 9f15ac7..914c48d 100644
+--- a/include/linux/time.h
++++ b/include/linux/time.h
+@@ -299,6 +299,8 @@ struct itimerval {
+ #define CLOCKS_MASK			(CLOCK_REALTIME | CLOCK_MONOTONIC)
+ #define CLOCKS_MONO			CLOCK_MONOTONIC
+ 
++#define CLOCK_INVALID			-1
++
+ /*
+  * The various flags for setting POSIX.1b interval timers:
+  */
+diff --git a/kernel/posix-timers.c b/kernel/posix-timers.c
+index 9ca4973..2f88d0b 100644
+--- a/kernel/posix-timers.c
++++ b/kernel/posix-timers.c
+@@ -132,6 +132,8 @@ static DEFINE_SPINLOCK(idr_lock);
+  */
+ 
+ static struct k_clock posix_clocks[MAX_CLOCKS];
++static DECLARE_BITMAP(clocks_map, MAX_CLOCKS);
++static DEFINE_MUTEX(clocks_mux); /* protects 'posix_clocks' and 'clocks_map' */
+ 
+ /*
+  * These ones are defined below.
+@@ -476,18 +478,43 @@ static struct pid *good_sigevent(sigevent_t * event)
+ 	return task_pid(rtn);
+ }
+ 
+-void register_posix_clock(const clockid_t clock_id, struct k_clock *new_clock)
++int register_posix_clock(const clockid_t id, struct k_clock *clock)
+ {
+-	if ((unsigned) clock_id >= MAX_CLOCKS) {
+-		printk("POSIX clock register failed for clock_id %d\n",
+-		       clock_id);
+-		return;
+-	}
++	struct k_clock *kc;
++	int err = 0;
+ 
+-	posix_clocks[clock_id] = *new_clock;
++	mutex_lock(&clocks_mux);
++	if (test_bit(id, clocks_map)) {
++		pr_err("clock_id %d already registered\n", id);
++		err = -EBUSY;
++		goto out;
++	}
++	kc = &posix_clocks[id];
++	*kc = *clock;
++	kc->id = id;
++	set_bit(id, clocks_map);
++out:
++	mutex_unlock(&clocks_mux);
++	return err;
+ }
+ EXPORT_SYMBOL_GPL(register_posix_clock);
+ 
++clockid_t create_posix_clock(struct k_clock *clock)
++{
++	clockid_t id;
++
++	mutex_lock(&clocks_mux);
++	id = find_first_zero_bit(clocks_map, MAX_CLOCKS);
++	mutex_unlock(&clocks_mux);
++
++	if (id < MAX_CLOCKS) {
++		register_posix_clock(id, clock);
++		return id;
++	}
++	return CLOCK_INVALID;
++}
++EXPORT_SYMBOL_GPL(create_posix_clock);
++
+ static struct k_itimer * alloc_posix_timer(void)
+ {
+ 	struct k_itimer *tmr;
 -- 
 1.6.0.4
 
