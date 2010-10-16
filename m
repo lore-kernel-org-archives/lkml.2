@@ -1,55 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751282Ab0JPE0r (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Oct 2010 00:26:47 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:40900 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750845Ab0JPE0q (ORCPT
+	id S1751391Ab0JPEdW (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Oct 2010 00:33:22 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:57080 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751177Ab0JPEdV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Oct 2010 00:26:46 -0400
+	Sat, 16 Oct 2010 00:33:21 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=to:subject:message-id:from:date;
-        b=FN5KN1XxbxkJuvmL7eZOlPImDNLfM2O5q/Cy7yaTp9Sx7WS2yzhJ7Nu+zqjTQQS100
-         p+MrIUtLnBJOzLxudvwBG0XECq8QXZBXAWAelQlmWb6uwCgBLS2lYPGU9vWMJC9a4xmf
-         Inu4dQUSKSs59ywK1Xn75wW0Cscjx91TUb/sc=
-To: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
-        ralf@linux-mips.org, viro@ftp.linux.org.uk
-Subject: [MIPS] Fix compile failure in 2.6.36-rc8 on 32-bit MIPS
-Message-Id: <E1P6yLw-0007i6-SH@localhost>
-From: Shane McDonald <mcdonald.shane@gmail.com>
-Date: Fri, 15 Oct 2010 22:26:40 -0600
+        h=date:from:to:cc:subject:message-id:mime-version:content-type
+         :content-disposition:user-agent;
+        b=VoutuSpi+jAhcbR0+halCQQt4bQSUZuVLyJuaIWuqzRVBb0dJ0P0GEE27G12C+lr5Y
+         JsjaPAnYbzTVDlWtjqRlkyLlCR3keI8NhT/CkRXsccqM0sylo/2TFjb+HAwOYWjis+el
+         QhyBGtSeolKLmrKBTADN4k8+9G6nnslWjwt+E=
+Date: Sat, 16 Oct 2010 12:33:31 +0800
+From: Dave Young <hidave.darkstar@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: linux-mm@kvack.org, kvm@vger.kernel.org
+Subject: [PATCH 1/2] Add vzalloc shortcut
+Message-ID: <20101016043331.GA3177@darkstar>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There was a typo in commit d27240b, MIPS: Sanitize restart logics,
-that causes a compile failure in 2.6.36-rc8 on 32-bit MIPS systems.
-This patch corrects that typo.
+Add vzalloc for convinience of vmalloc-then-memset-zero case 
 
-Signed-off-by: Shane McDonald <mcdonald.shane@gmail.com>
-Cc: Al Viro <viro@zeniv.linux.org.uk>
-Cc: linux-kernel@vger.kernel.org
-Cc: linux-arch@vger.kernel.org
-Cc: linux-mips@linux-mips.org
-Cc: Ralf Baechle <ralf@linux-mips.org>
+Use __GFP_ZERO in vzalloc to zero fill the allocated memory.
+
+Signed-off-by: Dave Young <hidave.darkstar@gmail.com>
 ---
- arch/mips/kernel/scall32-o32.S |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ include/linux/vmalloc.h |    1 +
+ mm/vmalloc.c            |   13 +++++++++++++
+ 2 files changed, 14 insertions(+)
 
-diff --git a/arch/mips/kernel/scall32-o32.S b/arch/mips/kernel/scall32-o32.S
-index 58fb2bc..fbaabad 100644
---- a/arch/mips/kernel/scall32-o32.S
-+++ b/arch/mips/kernel/scall32-o32.S
-@@ -63,7 +63,7 @@ stack_done:
- 	sw	t0, PT_R7(sp)		# set error flag
- 	beqz	t0, 1f
+--- linux-2.6.orig/include/linux/vmalloc.h	2010-08-22 15:31:38.000000000 +0800
++++ linux-2.6/include/linux/vmalloc.h	2010-10-16 10:50:54.739996121 +0800
+@@ -53,6 +53,7 @@ static inline void vmalloc_init(void)
+ #endif
  
--	lw	t1, PR_R2(sp)		# syscall number
-+	lw	t1, PT_R2(sp)		# syscall number
- 	negu	v0			# error
- 	sw	t1, PT_R0(sp)		# save it for syscall restarting
- 1:	sw	v0, PT_R2(sp)		# result
--- 
-1.6.2.4
-
+ extern void *vmalloc(unsigned long size);
++extern void *vzalloc(unsigned long size);
+ extern void *vmalloc_user(unsigned long size);
+ extern void *vmalloc_node(unsigned long size, int node);
+ extern void *vmalloc_exec(unsigned long size);
+--- linux-2.6.orig/mm/vmalloc.c	2010-08-22 15:31:39.000000000 +0800
++++ linux-2.6/mm/vmalloc.c	2010-10-16 10:51:57.126665918 +0800
+@@ -1604,6 +1604,19 @@ void *vmalloc(unsigned long size)
+ EXPORT_SYMBOL(vmalloc);
+ 
+ /**
++ *	vzalloc  -  allocate virtually contiguous memory with zero filled
++ *	@size:		allocation size
++ *	Allocate enough pages to cover @size from the page level
++ *	allocator and map them into contiguous kernel virtual space.
++ */
++void *vzalloc(unsigned long size)
++{
++	return __vmalloc_node(size, 1, GFP_KERNEL | __GFP_HIGHMEM | __GFP_ZERO,
++				PAGE_KERNEL, -1, __builtin_return_address(0));
++}
++EXPORT_SYMBOL(vzalloc);
++
++/**
+  * vmalloc_user - allocate zeroed virtually contiguous memory for userspace
+  * @size: allocation size
+  *
