@@ -1,70 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754150Ab0JPJb2 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Oct 2010 05:31:28 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:41168 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751628Ab0JPJb1 (ORCPT
+	id S1754127Ab0JPJnp (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Oct 2010 05:43:45 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:61719 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753342Ab0JPJnn convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Oct 2010 05:31:27 -0400
+	Sat, 16 Oct 2010 05:43:43 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=Lbe/9/8f2qk+QsM17i0sWRDD3BeuLGoX0GlvN6qJSRO72pXrpCGG56pxVusVP0Ulgn
-         ZEXCd5aORTkCdWcNwIGdjcPVZL/MBnzRDkG0o6MZYW6+tiT+3YHkMkcL69KdvQH66Fhm
-         Es8zSnFLh4Guuoa4OXY2ko9Xm4Jpf1e5f3vf8=
-Subject: Re: [PATCH 16/17] fs: Convert nr_inodes to a per-cpu counter
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Nick Piggin <npiggin@kernel.dk>, Dave Chinner <david@fromorbit.com>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-In-Reply-To: <20101016020744.366bd9c6.akpm@linux-foundation.org>
-References: <1285762729-17928-1-git-send-email-david@fromorbit.com>
-	 <1285762729-17928-17-git-send-email-david@fromorbit.com>
-	 <20100929215322.ff635d3e.akpm@linux-foundation.org>
-	 <20100930061039.GX5665@dastard> <20101016075510.GH19147@amd>
-	 <1287217748.2799.68.camel@edumazet-laptop>
-	 <20101016020744.366bd9c6.akpm@linux-foundation.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 16 Oct 2010 11:31:15 +0200
-Message-ID: <1287221475.2799.123.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 8bit
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=hAyXurAXoVN/27CAgtoJ3QLqP46KqJ4hGJzdRrf5WMea+LfWWCJ1rCAYaS46YDI5jD
+         uJIY68u3R6ZG50ukve+Am/uSck6pIaxNdlpDXGuG9VDxXLYiKgICWJvWtS6FfUf6/+YF
+         P5I8XmS4zFFOtfg7GnarWpT9j0ZiUsCldI1Vs=
+MIME-Version: 1.0
+In-Reply-To: <1287196789.2370.3.camel@pasglop>
+References: <1286444662-16843-1-git-send-email-felipe.contreras@gmail.com>
+	<20101007192245.GC26435@n2100.arm.linux.org.uk>
+	<AANLkTikQKY7pOobD+==uT5Cy0poT=O5wDMKtbVyJVNbO@mail.gmail.com>
+	<20101008175308.GA10975@n2100.arm.linux.org.uk>
+	<AANLkTi=ERZjVDS=Q7aw1zA23KF68irUP3vvKLZw5meBU@mail.gmail.com>
+	<20101008230451.GB10975@n2100.arm.linux.org.uk>
+	<20101008232539.GA28697@kroah.com>
+	<20101008234448.GD10975@n2100.arm.linux.org.uk>
+	<20101009000046.GA30616@kroah.com>
+	<1287196789.2370.3.camel@pasglop>
+Date: Sat, 16 Oct 2010 12:43:42 +0300
+Message-ID: <AANLkTi=a4XOfOZ=cPey5eK2DXUY3eXo=b-rOUVKz1n2C@mail.gmail.com>
+Subject: Re: [PATCH] ARM: allow, but warn, when issuing ioremap() on RAM
+From: Felipe Contreras <felipe.contreras@gmail.com>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Greg KH <greg@kroah.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Arnd Hannemann <arnd@arndnet.de>, Hemant Pedanekar <hemantp@ti.com>,
+        linux-main <linux-kernel@vger.kernel.org>,
+        =?UTF-8?Q?Uwe_Kleine=2DK=C3=B6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Han Jonghun <jonghun79.han@gmail.com>,
+        linux-arm <linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le samedi 16 octobre 2010 à 02:07 -0700, Andrew Morton a écrit :
-> On Sat, 16 Oct 2010 10:29:08 +0200 Eric Dumazet <eric.dumazet@gmail.com> wrote:
-> > Some people believe percpu_counter object is the right answer to such
-> > distributed counters, because the loop is done on 'online' cpus instead
-> > of 'possible' cpus. "It must be better if number of possible cpus is
-> > 4096 and only one or two cpus are online"...
-> > 
-> > But if we do this loop only on rare events, like
-> > "cat /proc/sys/fs/inode-nr", then the percpu_counter() is more
-> > expensive, because percpu_add() _is_ more expensive :
-> > 
-> > - Its a function call and lot of instructions/cycles per call, while
-> > this_cpu_inc(nr_inodes) is a single instruction, using no register on
-> > x86.
-> 
-> You want an inlined percpu_counter_inc() then write one!  Bonus points
-> for writing this_cpu_add_return() and doing it without a
-> preempt_disable().  It collapses to just a few instructions.
-> 
+2010/10/16 Benjamin Herrenschmidt <benh@kernel.crashing.org>:
+> On Fri, 2010-10-08 at 17:00 -0700, Greg KH wrote:
+>>
+>> But you can't expect that you make this change, and not fix up the
+>> drivers, and people would be happy, right?  The rule for API changes
+>> like this, or anything, is that the person making the change fixes the
+>> other drivers, and that seems to be the issue here.
+>>
+>> Any pointers to patches where people have fixed up the drivers?
+>
+> Greg, this is true for normal API changes. In this case, this is silent
+> data corruption, I think Russell is absolutely right. That exact same
+> issues have been giving me nightmares on powerpc, mostly due to
+> (fortunately extremely rare) broken chipsets doing non coherent DMA on
+> processors that do not allow you architecturally to double map memory
+> with different attributes.
 
-A few instructions, but no guarantee of false sharing eviction.
+Yes, but the kernel could have a mechanism, like the constant memory
+allocator so that people can configure a certain amount of RAM, like
+CONFIG_CMA_RESERVE_SIZE, and then drivers could request blocks from
+there which are not mapped as kernel memory. The constant memory
+allocator could map them at the same time they are requested by
+drivers with different attributes.
 
-Each time one cpu dirties the percpu_counter object, it slow down other
-cpus because they need to fetch the cache line again.
-
-Btw, I believe my previous patch against include/linux/percpu_counter.h
-was lost. Are you sure I am the right guy to work on percpu_counter
-infra ? If yes I can implement your inlined idea.
-
-Thanks
-
-
+-- 
+Felipe Contreras
