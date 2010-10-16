@@ -1,47 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753050Ab0JPGkf (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Oct 2010 02:40:35 -0400
-Received: from zone0.gcu-squad.org ([212.85.147.21]:43426 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752943Ab0JPGkd (ORCPT
+	id S1753097Ab0JPGkp (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Oct 2010 02:40:45 -0400
+Received: from ipmail06.adl2.internode.on.net ([150.101.137.129]:60040 "EHLO
+	ipmail06.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753078Ab0JPGkn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Oct 2010 02:40:33 -0400
-Date: Sat, 16 Oct 2010 08:40:18 +0200
-From: Jean Delvare <khali@linux-fr.org>
-To: Jesse Barnes <jbarnes@virtuousgeek.org>
-Cc: Seth Heasley <seth.heasley@intel.com>, linux-kernel@vger.kernel.org,
-        linux-pci@vger.kernel.org, linux-i2c@vger.kernel.org
-Subject: Re: [PATCH 2.6.35.4] irq: irq and pci_ids patch for Intel Patsburg
-Message-ID: <20101016084018.58671452@endymion.delvare>
-In-Reply-To: <20101015125428.01120a8d@jbarnes-desktop>
-References: <201009241606.11840.seth.heasley@intel.com>
-	<201010041327.15170.seth.heasley@intel.com>
-	<20101015125428.01120a8d@jbarnes-desktop>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Sat, 16 Oct 2010 02:40:43 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvsEAL7juEx5LcB2/2dsb2JhbAChMXK9TIVJBI9K
+Date: Sat, 16 Oct 2010 17:40:41 +1100
+From: Nick Piggin <npiggin@kernel.dk>
+To: Nick Piggin <npiggin@kernel.dk>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Dave Chinner <david@fromorbit.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] fs: inode per-cpu last_ino allocator
+Message-ID: <20101016064041.GB4383@amd>
+References: <1285762729-17928-1-git-send-email-david@fromorbit.com>
+ <1285762729-17928-16-git-send-email-david@fromorbit.com>
+ <20100929215312.5fcb6976.akpm@linux-foundation.org>
+ <1285824982.5211.675.camel@edumazet-laptop>
+ <1285833189.2615.31.camel@edumazet-laptop>
+ <20100930011417.6ca16ed7.akpm@linux-foundation.org>
+ <1285842136.2615.251.camel@edumazet-laptop>
+ <20100930094558.97c9afa2.akpm@linux-foundation.org>
+ <1285867685.2615.865.camel@edumazet-laptop>
+ <20101016063604.GA4383@amd>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101016063604.GA4383@amd>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 15 Oct 2010 12:54:28 -0700, Jesse Barnes wrote:
-> On Mon, 4 Oct 2010 13:27:14 -0700
-> Seth Heasley <seth.heasley@intel.com> wrote:
-> > This patch updates the defines for Intel devices in include/linux/pci_ids.h, referenced in arch/x86/pci/irq.c and drivers/i2c/busses/i2c-i801.c, reflecting approved legal branding, and using fuller code-names for products under development.
-> >  
-> > Signed-off-by: Seth Heasley <seth.heasley@intel.com>
+On Sat, Oct 16, 2010 at 05:36:04PM +1100, Nick Piggin wrote:
+> On Thu, Sep 30, 2010 at 07:28:05PM +0200, Eric Dumazet wrote:
+> > [PATCH] fs: inode per-cpu last_ino allocator
 > 
-> Applied this update, thanks.
-> 
-> Note that going forward I don't expect (or want!) patches to convert
-> the development names into marketing names.  We should just add new
-> stuff with the development names (before the product ships) and leave
-> them that way to avoid unnecessary churn.
+> Thanks Eric, this looks good. You didn't seem to add a comment about
+> preempt safety that Andrew wanted, but I'll add it.
 
-Fine with me, as long as it is the actual names and not obscure
-3-letter shortcuts.
+Oh I beg your pardon, you added preempt disable in the code. Much safer,
+thanks.
 
--- 
-Jean Delvare
