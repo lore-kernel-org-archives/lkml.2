@@ -1,63 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751557Ab0JPQQg (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Oct 2010 12:16:36 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:43899 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750738Ab0JPQQf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Oct 2010 12:16:35 -0400
-Date: Sat, 16 Oct 2010 18:16:27 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>, Robin Holt <holt@sgi.com>,
-        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: ftrace does not work on cpus > 999.
-Message-ID: <20101016161627.GA3567@elte.hu>
-References: <20101016131505.GW14064@sgi.com>
- <20101016144529.GA5384@nowhere>
- <1287242272.16971.53.camel@gandalf.stny.rr.com>
+	id S1752069Ab0JPQTR (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Oct 2010 12:19:17 -0400
+Received: from canuck.infradead.org ([134.117.69.58]:32936 "EHLO
+	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750817Ab0JPQTP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 16 Oct 2010 12:19:15 -0400
+Date: Sat, 16 Oct 2010 12:19:14 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: Nick Piggin <npiggin@kernel.dk>
+Cc: Christoph Hellwig <hch@infradead.org>, Dave Chinner <david@fromorbit.com>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 14/18] fs: Protect inode->i_state with th einode->i_lock
+Message-ID: <20101016161914.GD16861@infradead.org>
+References: <1286515292-15882-1-git-send-email-david@fromorbit.com>
+ <1286515292-15882-15-git-send-email-david@fromorbit.com>
+ <20101008074932.GC24089@infradead.org>
+ <20101008080428.GW4681@dastard>
+ <20101008081843.GB17577@infradead.org>
+ <20101016075709.GP19147@amd>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1287242272.16971.53.camel@gandalf.stny.rr.com>
+In-Reply-To: <20101016075709.GP19147@amd>
 User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by canuck.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Steven Rostedt <rostedt@goodmis.org> wrote:
-
-> On Sat, 2010-10-16 at 16:45 +0200, Frederic Weisbecker wrote:
+On Sat, Oct 16, 2010 at 06:57:09PM +1100, Nick Piggin wrote:
+> > > Ah, done thinking now! I was so the i_state field had been set
+> > > before the inode was added to various lists and potentially
+> > > accessable to other threads. I should probably add a comment to that
+> > > effect, right?
+> > 
+> > Yes, please.
 > 
-> > diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-> > index 9ec59f5..3565f9e 100644
-> > --- a/kernel/trace/trace.c
-> > +++ b/kernel/trace/trace.c
-> > @@ -3999,7 +3999,7 @@ static void tracing_init_debugfs_percpu(long cpu)
-> >  	/* strlen(cpu) + MAX(log10(cpu)) + '\0' */
-> >  	char cpu_dir[7];
-> >  
-> > -	if (cpu > 999 || cpu < 0)
-> > +	if (cpu < 0)
-> >  		return;
-> >  
-> >  	sprintf(cpu_dir, "cpu%ld", cpu);
+> This is due to i_lock not covering all the icache state of the inode,
+> so you have to make these synchronisation changes like this.
 > 
-> You need to change the size of cpu_dir, otherwise this will overflow.
+> I much prefer such proposals to go at the end of my series, where I
+> will probably nack them (and use rcu instead if the remaining trylocks
+> are such a big issue).
 
-If you change it to 30 that ought to be enough, as long as cpu_id's fit 
-into u64. (I think we wont overflow that in my lifetime.)
+To get back to the context - what it changes is setting up i_state =
+I_NEW before adding the inode to the sb-list and the hash.  Making
+sure objects are fully set up before adding to a list is always a good
+idea, and really has nothing to do with RCU.
 
-> The other case is to dynamically allocate cpu_dir.
-
-Please tell me that is a joke ...
-
-	Ingo
