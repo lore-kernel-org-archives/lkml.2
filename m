@@ -1,42 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752961Ab0JPQcJ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Oct 2010 12:32:09 -0400
-Received: from canuck.infradead.org ([134.117.69.58]:55172 "EHLO
-	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752525Ab0JPQcI (ORCPT
+	id S1753065Ab0JPQcM (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Oct 2010 12:32:12 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:39076 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752770Ab0JPQcK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Oct 2010 12:32:08 -0400
-Date: Sat, 16 Oct 2010 12:32:06 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: Nick Piggin <npiggin@kernel.dk>
-Cc: Dave Chinner <david@fromorbit.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 02/19] kernel: add bl_list
-Message-ID: <20101016163206.GE20086@infradead.org>
-References: <1287216853-17634-1-git-send-email-david@fromorbit.com>
- <1287216853-17634-3-git-send-email-david@fromorbit.com>
- <20101016095150.GA7142@amd>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101016095150.GA7142@amd>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by canuck.infradead.org
-	See http://www.infradead.org/rpr.html
+	Sat, 16 Oct 2010 12:32:10 -0400
+X-Authority-Analysis: v=1.1 cv=iGF3DqghDyT/uy4mV2LvOKNXCATMSjL+tOl9cucoGVk= c=1 sm=0 a=nEQxJ46sMH0A:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=meVymXHHAAAA:8 a=1Hv7G4Pumze-xx9hY4IA:9 a=ILAiYs52hs8_enR2rMUA:7 a=Iso8LrINrPF3ZXGBug8G22B9ZOMA:4 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: ftrace does not work on cpus > 999.
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>, Robin Holt <holt@sgi.com>,
+        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org
+In-Reply-To: <20101016161627.GA3567@elte.hu>
+References: <20101016131505.GW14064@sgi.com> <20101016144529.GA5384@nowhere>
+	 <1287242272.16971.53.camel@gandalf.stny.rr.com>
+	 <20101016161627.GA3567@elte.hu>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Sat, 16 Oct 2010 12:32:08 -0400
+Message-ID: <1287246728.16971.62.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Oct 16, 2010 at 08:51:50PM +1100, Nick Piggin wrote:
-> I don't know why Christoph asked for these; he's usually against
-> obfuscating wrapper functions.
+On Sat, 2010-10-16 at 18:16 +0200, Ingo Molnar wrote:
+> * Steven Rostedt <rostedt@goodmis.org> wrote:
 > 
-> bit_spin_lock is fine in callers so please leave it at that.
-> Other users may not want a spinlock, or might want to use
-> bit_spin_is_locked, bit_spin_trylock etc.
+> > On Sat, 2010-10-16 at 16:45 +0200, Frederic Weisbecker wrote:
+> > 
+> > > diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
+> > > index 9ec59f5..3565f9e 100644
+> > > --- a/kernel/trace/trace.c
+> > > +++ b/kernel/trace/trace.c
+> > > @@ -3999,7 +3999,7 @@ static void tracing_init_debugfs_percpu(long cpu)
+> > >  	/* strlen(cpu) + MAX(log10(cpu)) + '\0' */
+> > >  	char cpu_dir[7];
+> > >  
+> > > -	if (cpu > 999 || cpu < 0)
+> > > +	if (cpu < 0)
+> > >  		return;
+> > >  
+> > >  	sprintf(cpu_dir, "cpu%ld", cpu);
+> > 
+> > You need to change the size of cpu_dir, otherwise this will overflow.
+> 
+> If you change it to 30 that ought to be enough, as long as cpu_id's fit 
+> into u64. (I think we wont overflow that in my lifetime.)
 
-See the comments on the previous posting of this.  It provides a useful
-abtraction.  And yes, eventually we might need more wrappers, but
-we can add them as needed.
+And might as well make it static then, as we seem to be doing with
+sched_param.
+
+> 
+> > The other case is to dynamically allocate cpu_dir.
+> 
+> Please tell me that is a joke ...
+
+Why? It handles all cases and is only executed once at boot up. I'll
+admit it was a little over engineered, and setting a new max of 30 chars
+should be fine too. But no reason for it to be a joke.
+
+-- Steve
+
 
