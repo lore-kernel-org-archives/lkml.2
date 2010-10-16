@@ -1,88 +1,210 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756729Ab0JPON4 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Oct 2010 10:13:56 -0400
-Received: from silver.sucs.swan.ac.uk ([137.44.10.1]:60963 "EHLO
-	silver.sucs.swan.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756401Ab0JPONy (ORCPT
+	id S1751177Ab0JPOT2 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Oct 2010 10:19:28 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:34223 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750747Ab0JPOT0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Oct 2010 10:13:54 -0400
-Date: Sat, 16 Oct 2010 15:13:22 +0100
-From: Sitsofe Wheeler <sitsofe@yahoo.com>
-To: Alexey Starikovskiy <astarikovskiy@suse.de>, Len Brown <lenb@kernel.org>,
-        Zhang Rui <rui.zhang@intel.com>
-Cc: Matthew Garrett <mjg@redhat.com>, David Zeuthen <davidz@redhat.com>,
-        Richard Hughes <richard@hughsie.com>, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Returning ACPI_BATTERY_VALUE_UNKNOWN to userspace
-Message-ID: <20101016141321.GA11054@sucs.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	Sat, 16 Oct 2010 10:19:26 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=NHBzG638Dosc7KpZ9BILoKzOChue38tM7ghGtonxKHzz1NEhHPcv8ZKE8JrRkGr5j7
+         TnAki5p5VMxC6r+B7oGMErnkIa+9G8OqP3U4gVtLoL0Km4/qJ2zOc3HTjkgfeaKIYHbB
+         xMllZQfmeP5h5rifVwXx6ay6ktV8jrRCZk/dw=
+Subject: [PATCH] percpu_counter : add percpu_counter_add_fast()
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Nick Piggin <npiggin@kernel.dk>, Dave Chinner <david@fromorbit.com>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Christoph Lameter <cl@linux-foundation.org>
+In-Reply-To: <1287221475.2799.123.camel@edumazet-laptop>
+References: <1285762729-17928-1-git-send-email-david@fromorbit.com>
+	 <1285762729-17928-17-git-send-email-david@fromorbit.com>
+	 <20100929215322.ff635d3e.akpm@linux-foundation.org>
+	 <20100930061039.GX5665@dastard> <20101016075510.GH19147@amd>
+	 <1287217748.2799.68.camel@edumazet-laptop>
+	 <20101016020744.366bd9c6.akpm@linux-foundation.org>
+	 <1287221475.2799.123.camel@edumazet-laptop>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sat, 16 Oct 2010 16:19:14 +0200
+Message-ID: <1287238754.2799.376.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Andrew
 
-I have an EeePC 900 with a battery/BIOS that does not report the rate at
-which it charges/discharges. When I look at
-/proc/acpi/battery/BAT0/state this is what is reported:
+I based following patch against linux-2.6, I dont know if previous
+Christoph patch is in a git tree. I'll respin it eventually.
 
-present:                 yes
-capacity state:          ok
-charging state:          charging
-present rate:            unknown
-remaining capacity:      3120 mAh
-present voltage:         7889 mV
+Thanks
 
-However looking at /sys/class/power_supply/BAT0/current_now reports:
+[PATCH] percpu_counter : percpu_counter_add_fast()
 
--1000
+The current way to change a percpu_counter is to call
+percpu_counter_add(), which is a bit expensive.
+(More than 40 instructions, possible false sharing, ...)
 
-Why -1000? I think it's because it's -1 * 1000 == -1000! In
-drivers/acpi/battery.c, ACPI_BATTERY_VALUE_UNKNOWN is defined as being
-0xFFFFFFFF. As rate_now is a signed int variable when it is assigned
-ACPI_BATTERY_VALUE_UNKNOWN its value is -1. However, before the value is
-returned via sysfs it is multiplied by 1000:
-http://lxr.linux.no/linux+v2.6.35.7/drivers/acpi/battery.c#L222
-(http://lxr.linux.no/linux+v2.6.35.7/drivers/acpi/battery.c#L524 shows
-that acpi_battery_get_property will be called via sysfs).
+When we dont need to maintain the approximate value of the
+percpu_counter (aka fbc->count), and dont need a "s64" wide counter but
+a regular "int" or "long" one, we can use this new function : 
+percpu_counter_add_fast()
 
-If the above is a correct interpretation, this behaviour was introduced
-when sysfs battery support was added in commit
-http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commit;h=d7380965752505951668e85de59c128d1d6fd21f
-so it has effectively been always been this way.
+This function is pretty fast : 
+- One instruction on x86 SMP, no register pressure.
+- Is safe in preempt enabled contexts.
+- No lock acquisition, less false sharing.
 
-However, looking at the code for the userspace power reporting tool
-upower shows that it is not expecting to test against -1000 - it is
-trying to test against 0xffff:
-http://cgit.freedesktop.org/DeviceKit/upower/tree/src/linux/up-device-supply.c?id=UPOWER_0_9_6#n583
-. Unfortunately, it's not clear that testing 0xffff is ever the right
-thing to do. I wrote the following test program:
+Users of this percpu_counter variant should not use
+percpu_counter_read() or percpu_counter_read_positive() anymore, only
+percpu_counter_sum{_positive}() variant.
 
-#include <stdio.h>
-#include <math.h>
-int main(void) {
-	double minusone = -1;
-	double sysfs = -1000;
-	double hex_kernel = (int) 0xffffffff;
-	double hex_tested = 0xffff;
-	double energy_rate = fabs(sysfs / 1000000.0);
-	double energy_rate_minusone = fabs(minusone / 1000000.0);
-	printf("%f %f %f %f %f %f\n", minusone, sysfs, hex_kernel, hex_tested, energy_rate, energy_rate_minusone);
-	return 0;
-}
+Note: we could add later irqsafe variant, still one instruction on x86
+SMP...
 
-Which output the following:
+Suggested-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+CC: Christoph Lameter <cl@linux-foundation.org>
+CC: Nick Piggin <npiggin@kernel.dk>
+CC: Dave Chinner <david@fromorbit.com>
+---
+ include/linux/percpu_counter.h |   36 +++++++++++++++++++++++++++----
+ lib/percpu_counter.c           |   12 +++++-----
+ 2 files changed, 38 insertions(+), 10 deletions(-)
 
--1.000000 -1000.000000 -1.000000 65535.000000 0.001000 0.000001
+diff --git a/include/linux/percpu_counter.h b/include/linux/percpu_counter.h
+index 8a7d510..b9f4cc1 100644
+--- a/include/linux/percpu_counter.h
++++ b/include/linux/percpu_counter.h
+@@ -3,7 +3,9 @@
+ /*
+  * A simple "approximate counter" for use in ext2 and ext3 superblocks.
+  *
+- * WARNING: these things are HUGE.  4 kbytes per counter on 32-way P4.
++ * WARNING: these things are big.  sizeof(long) bytes per possible cpu per counter.
++ * For a 64 cpus 64bit machine :
++ *	64*8 (512) bytes + sizeof(struct percpu_counter)
+  */
+ 
+ #include <linux/spinlock.h>
+@@ -21,7 +23,7 @@ struct percpu_counter {
+ #ifdef CONFIG_HOTPLUG_CPU
+ 	struct list_head list;	/* All percpu_counters are on a list */
+ #endif
+-	s32 __percpu *counters;
++	long __percpu *counters;
+ };
+ 
+ extern int percpu_counter_batch;
+@@ -38,7 +40,7 @@ int __percpu_counter_init(struct percpu_counter *fbc, s64 amount,
+ 
+ void percpu_counter_destroy(struct percpu_counter *fbc);
+ void percpu_counter_set(struct percpu_counter *fbc, s64 amount);
+-void __percpu_counter_add(struct percpu_counter *fbc, s64 amount, s32 batch);
++void __percpu_counter_add(struct percpu_counter *fbc, s64 amount, long batch);
+ s64 __percpu_counter_sum(struct percpu_counter *fbc);
+ int percpu_counter_compare(struct percpu_counter *fbc, s64 rhs);
+ 
+@@ -47,6 +49,24 @@ static inline void percpu_counter_add(struct percpu_counter *fbc, s64 amount)
+ 	__percpu_counter_add(fbc, amount, percpu_counter_batch);
+ }
+ 
++/**
++ * percpu_counter_add_fast - fast variant of percpu_counter_add
++ * @fbc: pointer to percpu_counter
++ * @amount: value to add to counter
++ *
++ * Add amount to a percpu_counter object, without approximate (fbc->count)
++ * estimation / correction.
++ * Notes :
++ * - This fast version is limited to "long" counters, not "s64".
++ * - It is preempt safe, but not IRQ safe (on UP)
++ * - Use of percpu_counter_read{_positive}() is discouraged.
++ * - fbc->count accumulates the counters from offlined cpus.
++ */
++static inline void percpu_counter_add_fast(struct percpu_counter *fbc, long amount)
++{
++	this_cpu_add(*fbc->counters, amount);
++}
++
+ static inline s64 percpu_counter_sum_positive(struct percpu_counter *fbc)
+ {
+ 	s64 ret = __percpu_counter_sum(fbc);
+@@ -118,7 +138,15 @@ percpu_counter_add(struct percpu_counter *fbc, s64 amount)
+ }
+ 
+ static inline void
+-__percpu_counter_add(struct percpu_counter *fbc, s64 amount, s32 batch)
++percpu_counter_add_fast(struct percpu_counter *fbc, long amount)
++{
++	preempt_disable();
++	fbc->count += amount;
++	preempt_enable();
++}
++
++static inline void
++__percpu_counter_add(struct percpu_counter *fbc, s64 amount, long batch)
+ {
+ 	percpu_counter_add(fbc, amount);
+ }
+diff --git a/lib/percpu_counter.c b/lib/percpu_counter.c
+index ec9048e..93d50a5 100644
+--- a/lib/percpu_counter.c
++++ b/lib/percpu_counter.c
+@@ -18,7 +18,7 @@ void percpu_counter_set(struct percpu_counter *fbc, s64 amount)
+ 
+ 	spin_lock(&fbc->lock);
+ 	for_each_possible_cpu(cpu) {
+-		s32 *pcount = per_cpu_ptr(fbc->counters, cpu);
++		long *pcount = per_cpu_ptr(fbc->counters, cpu);
+ 		*pcount = 0;
+ 	}
+ 	fbc->count = amount;
+@@ -26,10 +26,10 @@ void percpu_counter_set(struct percpu_counter *fbc, s64 amount)
+ }
+ EXPORT_SYMBOL(percpu_counter_set);
+ 
+-void __percpu_counter_add(struct percpu_counter *fbc, s64 amount, s32 batch)
++void __percpu_counter_add(struct percpu_counter *fbc, s64 amount, long batch)
+ {
+ 	s64 count;
+-	s32 *pcount;
++	long *pcount;
+ 	int cpu = get_cpu();
+ 
+ 	pcount = per_cpu_ptr(fbc->counters, cpu);
+@@ -58,7 +58,7 @@ s64 __percpu_counter_sum(struct percpu_counter *fbc)
+ 	spin_lock(&fbc->lock);
+ 	ret = fbc->count;
+ 	for_each_online_cpu(cpu) {
+-		s32 *pcount = per_cpu_ptr(fbc->counters, cpu);
++		long *pcount = per_cpu_ptr(fbc->counters, cpu);
+ 		ret += *pcount;
+ 	}
+ 	spin_unlock(&fbc->lock);
+@@ -72,7 +72,7 @@ int __percpu_counter_init(struct percpu_counter *fbc, s64 amount,
+ 	spin_lock_init(&fbc->lock);
+ 	lockdep_set_class(&fbc->lock, key);
+ 	fbc->count = amount;
+-	fbc->counters = alloc_percpu(s32);
++	fbc->counters = alloc_percpu(long);
+ 	if (!fbc->counters)
+ 		return -ENOMEM;
+ #ifdef CONFIG_HOTPLUG_CPU
+@@ -123,7 +123,7 @@ static int __cpuinit percpu_counter_hotcpu_callback(struct notifier_block *nb,
+ 	cpu = (unsigned long)hcpu;
+ 	mutex_lock(&percpu_counters_lock);
+ 	list_for_each_entry(fbc, &percpu_counters, list) {
+-		s32 *pcount;
++		long *pcount;
+ 		unsigned long flags;
+ 
+ 		spin_lock_irqsave(&fbc->lock, flags);
 
-Given that at least upower (which is already deployed) will need to be
-changed, I'm unsure as to where fixes for this should go. Was it really
-the intent for userspace to test for -1000 instead of -1 to determine
-an unknown rate?
 
--- 
-Sitsofe | http://sucs.org/~sits/
