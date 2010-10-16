@@ -1,82 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753358Ab0JPRzV (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Oct 2010 13:55:21 -0400
-Received: from ipmail05.adl6.internode.on.net ([150.101.137.143]:31920 "EHLO
-	ipmail05.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752673Ab0JPRzU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Oct 2010 13:55:20 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AmQEAD+BuUx5LcB2gWdsb2JhbAChMBYBARYiIsBrhUkE
-Date: Sun, 17 Oct 2010 04:55:15 +1100
-From: Nick Piggin <npiggin@kernel.dk>
-To: Dave Chinner <david@fromorbit.com>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: Inode Lock Scalability V4
-Message-ID: <20101016175515.GA6868@amd>
-References: <1287216853-17634-1-git-send-email-david@fromorbit.com>
+	id S1753505Ab0JPSPo (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Oct 2010 14:15:44 -0400
+Received: from mout6.freenet.de ([195.4.92.96]:35338 "EHLO mout6.freenet.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753030Ab0JPSPn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 16 Oct 2010 14:15:43 -0400
+Message-ID: <4CB9EBC3.4070905@freenet.de>
+Date: Sat, 16 Oct 2010 20:15:31 +0200
+From: Patrick Ringl <patrick_@freenet.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.11) Gecko/20100713 Thunderbird/3.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1287216853-17634-1-git-send-email-david@fromorbit.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: netdev@vger.kernel.org
+CC: linux-kernel@vger.kernel.org, herbert@gondor.hengli.com.au,
+        bridge@lists.linux-foundation.org
+Subject: 2.6.36-rc7: net/bridge causes temporary network I/O lockups [2]
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Oct 16, 2010 at 07:13:54PM +1100, Dave Chinner wrote:
-> Version 2 of this series is a complete rework of the original patch
-> series.  Nick's original code nested list locks inside the the
-> inode->i_lock, resulting in a large mess of trylock operations to
-> get locks out of order all over the place. In many cases, the reason
-> fo this lock ordering is removed later on in Nick's series as
-> cleanups are introduced.
+Hi,
 
-I think you must misunderstand how my patchset is structured. It is not
-that it was simply thrown together with cleanups piled on top of crap as
-I discovered new ways to fix trylocks.
+okay I narrowed down the issue. I watched all function calls of the 
+'bridge' module with the help of a small systemtap probe of mine. I 
+first traced a timespan where the issue did not occur, then one where it 
+did and composed an intersection of these two:
 
-It is structured so that for the first steps, each (semi-)independent
-aspect of inode_lock's concurrency protection is taken over by a new
-lock. I've just made these locks dumb globals for simplicity at this
-point.
+br_fdb_cleanup
+br_flood
+br_flood_forward
+br_ip4_multicast_add_group
+br_ip4_multicast_alloc_query
+br_ip4_multicast_leave_group
+br_ip6_multicast_alloc_query
+br_mdb_get
+br_multicast_alloc_query
+br_multicast_flood
+br_multicast_forward
+br_multicast_ipv4_rcv
+br_multicast_port_query_expired
+br_multicast_query_expired
+br_multicast_rcv
+__br_multicast_send_query
+br_multicast_send_query
 
-Often, the required locking of these different aspects of the icache
-overlap. Also inode_lock remains in place until the end. This makes lock
-ordering get ugly.
+igmp_hdr
+ip_hdrlen
+ipv6_addr_copy
+ipv6_addr_set
+ipv6_eth_mc_map
+ipv6_hdr
 
-But the point is that once we get past the trylocks and actually have
-the locks held, it is relatively easy to demonstrate that the protection
-provided is exactly what inode_lock provided.
+maybe_deliver
+netdev_alloc_skb
+netdev_alloc_skb_ip_align
 
-After inode_lock is removed, I start to scale the locks properly and
-introduce more complicated transforms to the code to improve the
-locking. I really like how I split it up.
+skb_checksum_complete
+__skb_pull
+__skb_push
+skb_reserve
+skb_reset_transport_header
+skb_set_network_header
+skb_set_transport_header
 
-In your patch set you've basically pulled all these steps into the
-inode_lock splitting itself. This is my first big objection.
+These are the function calls that are exclusively called during the 
+'nonfunctional'-timespan.
 
-Second I actually prefer how I cover all the icache state of an inode
-with i_lock. You have avoided some coverage in the interest of reducing
-lock ordering complexity, but as I have demonstrated RCU tends to work
-as well for this too (and is mostly all solved in the second half of my
-series).
+This again gave me the idea to use tcpdump and watch out for igmp and 
+v6. Well, and that is also where the issue is coming from.
 
+Once a multicast membership query (igmp) arrives, A multicast listener 
+query (icmpv6) is sent.
+  From my understanding of the bridge code br_flood will propgate the 
+packet to all nodes (simple multicast) and this is also where things 
+stop working. Systemtap itself and thus in my case function calls of the 
+bridge module are not delayed, but something needs to be wrong in the 
+multicast handling of the bridge interface, since as pointed out in my 
+previous email with 2.6.32 everything is working fine.
 
-> This patch set is just the basic inode_lock breakup patches plus a
-> few more simple changes to the inode code. It stops short of
-> introducing RCU inode freeing because those changes are not
-> completely baked yet.
+Can anyone reconfirm this issue, or give a helping hand in how to 
+proceed further?
 
-It also doesn't contain per-zone locking and lrus, or scalability of
-superblock list locking.
+PS: Herbert, I've seen your changes for 2.6.34 which I think are 
+responsible for this behavior (even 2.6.33 here works fine. Anything 
+containing your multicast-related fixed breaks here).
+Could you specifically take a look into it and/or tell me how I can help 
+you?
 
-And while the rcu-walk path walking is not fully baked, it has been
-reviewed by Linus and is in pretty good shape. So I prefer to utilise
-RCU locking here too, seeing as we know it will go in.
+PPS: Again please CC back to me, since I am not subscribed
 
-I much prefer to fix all of the problematic global locks in icache up
-front and do the icache merge in a single release so we don't have
-locking changes there stringing out over several releases.
+regards,
+Patrick
 
