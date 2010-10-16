@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752918Ab0JPEze (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Oct 2010 00:55:34 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:55932 "EHLO
+	id S1752958Ab0JPE4E (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Oct 2010 00:56:04 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:31368 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751361Ab0JPExm (ORCPT
+	with ESMTP id S1751474Ab0JPExl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Oct 2010 00:53:42 -0400
+	Sat, 16 Oct 2010 00:53:41 -0400
 DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
 	h=message-id:references:user-agent:date:from:to:cc:subject:content-disposition;
-	b=tu89r/5CrYEsu2zDzbnKibM6aGQFQqj0VFGmZo6cWlqLrtjq/jUUcvEUVcTP9CRt9
-	0dAc8FX1ANf5/D+ZnNCqw==
-Message-Id: <20101016045119.283300445@google.com>
+	b=pXTtPEoYogt8pkbcz/ohZd424kket0pvYjvZtabEcv0sICYmm5Byo3yAX1QbB5pRI
+	In2/s77ifDSyz9XVEToig==
+Message-Id: <20101016045118.984362327@google.com>
 References: <20101016044349.830426011@google.com>
 User-Agent: quilt/0.46-1
-Date: Fri, 15 Oct 2010 21:44:00 -0700
+Date: Fri, 15 Oct 2010 21:43:56 -0700
 From: pjt@google.com
 To: linux-kernel@vger.kernel.org
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
@@ -23,97 +23,81 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
         Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
         Pierre Bourdon <pbourdon@excellency.fr>, Paul Turner <pjt@google.com>,
         Bharata B Rao <bharata@linux.vnet.ibm.com>
-Subject: [RFC tg_shares_up improvements - v1 11/12] sched: update tg->shares after cpu.shares write
-Content-Disposition: inline; filename=sched-tg-fix_group_set_shares.patch
+Subject: [RFC tg_shares_up improvements - v1 07/12] sched: add sysctl_sched_shares_window
+Content-Disposition: inline; filename=sched-tg-add-shares_window_sysctl.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Formerly sched_group_set_shares would force a rebalance by overflowing domain
-share sums.  Now that per-cpu averages are maintained we can set the true value
-by issuing an update_cfs_shares() following a tg->shares update.
+Introduce a new sysctl for the shares window and disambiguate it from
+sched_time_avg.
 
-Also initialize tg se->load to 0 for consistency since we'll now set correct
-weights on enqueue.
+A 10ms window appears to be a good compromise between accuracy and performance.
 
-Signed-off-by: Paul Turner <pjt@google.com?>
+Signed-off-by: Paul Turner <pjt@google.com>
 
 ---
- kernel/sched.c |   42 +++++++++++-------------------------------
- 1 file changed, 11 insertions(+), 31 deletions(-)
+ include/linux/sched.h |    1 +
+ kernel/sched_fair.c   |    8 +++++++-
+ kernel/sysctl.c       |    7 +++++++
+ 3 files changed, 15 insertions(+), 1 deletion(-)
 
-Index: kernel/sched.c
+Index: kernel/sched_fair.c
 ===================================================================
---- kernel/sched.c.orig
-+++ kernel/sched.c
-@@ -7575,7 +7575,7 @@ static void init_tg_cfs_entry(struct tas
- 		se->cfs_rq = parent->my_q;
+--- kernel/sched_fair.c.orig
++++ kernel/sched_fair.c
+@@ -89,6 +89,12 @@ unsigned int normalized_sysctl_sched_wak
  
- 	se->my_q = cfs_rq;
--	update_load_set(&se->load, tg->shares);
-+	update_load_set(&se->load, 0);
- 	se->parent = parent;
- }
- #endif
-@@ -8194,37 +8194,12 @@ void sched_move_task(struct task_struct 
- #endif /* CONFIG_CGROUP_SCHED */
+ const_debug unsigned int sysctl_sched_migration_cost = 500000UL;
  
- #ifdef CONFIG_FAIR_GROUP_SCHED
--static void __set_se_shares(struct sched_entity *se, unsigned long shares)
--{
--	struct cfs_rq *cfs_rq = se->cfs_rq;
--	int on_rq;
--
--	on_rq = se->on_rq;
--	if (on_rq)
--		dequeue_entity(cfs_rq, se, 0);
--
--	update_load_set(&se->load, shares);
--
--	if (on_rq)
--		enqueue_entity(cfs_rq, se, 0);
--}
--
--static void set_se_shares(struct sched_entity *se, unsigned long shares)
--{
--	struct cfs_rq *cfs_rq = se->cfs_rq;
--	struct rq *rq = cfs_rq->rq;
--	unsigned long flags;
--
--	raw_spin_lock_irqsave(&rq->lock, flags);
--	__set_se_shares(se, shares);
--	raw_spin_unlock_irqrestore(&rq->lock, flags);
--}
--
- static DEFINE_MUTEX(shares_mutex);
- 
- int sched_group_set_shares(struct task_group *tg, unsigned long shares)
- {
- 	int i;
-+	unsigned long flags;
- 
- 	/*
- 	 * We can't change the weight of the root cgroup.
-@@ -8243,10 +8218,15 @@ int sched_group_set_shares(struct task_g
- 
- 	tg->shares = shares;
- 	for_each_possible_cpu(i) {
--		/*
--		 * force a rebalance
--		 */
--		set_se_shares(tg->se[i], shares);
-+		struct rq *rq = cpu_rq(i);
-+		struct sched_entity *se;
++/*
++ * The usage window over which average use is computed for shares
++ * distribution.
++ */
++unsigned int __read_mostly sysctl_sched_shares_window = 10000000UL;
 +
-+		se = tg->se[i];
-+		/* Propagate contribution to hierarchy */
-+		raw_spin_lock_irqsave(&rq->lock, flags);
-+		for_each_sched_entity(se)
-+			update_cfs_shares(group_cfs_rq(se), 0);
-+		raw_spin_unlock_irqrestore(&rq->lock, flags);
- 	}
+ static const struct sched_class fair_sched_class;
  
- done:
+ /**************************************************************
+@@ -688,7 +694,7 @@ account_entity_dequeue(struct cfs_rq *cf
+ #if defined CONFIG_SMP && defined CONFIG_FAIR_GROUP_SCHED
+ static void update_cfs_load(struct cfs_rq *cfs_rq)
+ {
+-	u64 period = sched_avg_period();
++	u64 period = sysctl_sched_shares_window;
+ 	u64 now, delta;
+ 	unsigned long load = cfs_rq->load.weight;
+ 
+Index: include/linux/sched.h
+===================================================================
+--- include/linux/sched.h.orig
++++ include/linux/sched.h
+@@ -1883,6 +1883,7 @@ extern unsigned int sysctl_sched_migrati
+ extern unsigned int sysctl_sched_nr_migrate;
+ extern unsigned int sysctl_sched_time_avg;
+ extern unsigned int sysctl_timer_migration;
++extern unsigned int sysctl_sched_shares_window;
+ 
+ int sched_proc_update_handler(struct ctl_table *table, int write,
+ 		void __user *buffer, size_t *length,
+Index: kernel/sysctl.c
+===================================================================
+--- kernel/sysctl.c.orig
++++ kernel/sysctl.c
+@@ -337,6 +337,13 @@ static struct ctl_table kern_table[] = {
+ 		.proc_handler	= proc_dointvec,
+ 	},
+ 	{
++		.procname	= "sched_shares_window",
++		.data		= &sysctl_sched_shares_window,
++		.maxlen		= sizeof(unsigned int),
++		.mode		= 0644,
++		.proc_handler	= proc_dointvec,
++	},
++	{
+ 		.procname	= "timer_migration",
+ 		.data		= &sysctl_timer_migration,
+ 		.maxlen		= sizeof(unsigned int),
 
 -- 
 
