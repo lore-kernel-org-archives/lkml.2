@@ -1,51 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756741Ab0JPWyM (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Oct 2010 18:54:12 -0400
-Received: from va3ehsobe006.messaging.microsoft.com ([216.32.180.16]:31382
-	"EHLO VA3EHSOBE009.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756602Ab0JPWyL convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Oct 2010 18:54:11 -0400
-X-SpamScore: -1
-X-BigFish: VPS-1(zb95Izzz1202hzz8275dhz2fh2a8h67h)
-X-Spam-TCS-SCL: 6:0
-X-Forefront-Antispam-Report: KIP:(null);UIP:(null);(null);(null)
-From: "White, Mary" <MShaw@pahouse.net>
-Date: Sat, 16 Oct 2010 18:54:04 -0400
-Subject: Account Upgrade Notification
-Thread-Topic: Account Upgrade Notification
-Thread-Index: AQHLbYUGQxjaULtjdk2LmXRinjpMBw==
-Message-ID: <CB1D58ECE1D6CF418B14D7E976C08B9202326013BF19@MBXCLS.pahouse.net>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1756779Ab0JPXBt (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Oct 2010 19:01:49 -0400
+Received: from void.printf.net ([89.145.121.20]:56212 "EHLO void.printf.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755980Ab0JPXBs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 16 Oct 2010 19:01:48 -0400
+Date: Sun, 17 Oct 2010 00:01:30 +0100
+From: Chris Ball <cjb@laptop.org>
+To: Mike Frysinger <vapier@gentoo.org>
+Cc: linux-mmc@vger.kernel.org, Adrian Hunter <adrian.hunter@nokia.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        uclinux-dist-devel@blackfin.uclinux.org, linux-kernel@vger.kernel.org,
+        David Brownell <dbrownell@users.sourceforge.net>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Anton Vorontsov <avorontsov@mvista.com>,
+        Ernst Schwab <eschwab@online.de>, Sonic Zhang <sonic.zhang@analog.com>
+Subject: Re: [PATCH] MMC:mmc_spi: Recover from CRC error for SD read/write
+	operation over SPI.
+Message-ID: <20101016230129.GA21304@void.printf.net>
+References: <20100827203639.GT23079@void.printf.net> <1287263976-9578-1-git-send-email-vapier@gentoo.org>
 MIME-Version: 1.0
-To: Undisclosed recipients:;
-X-GFI-SMTP-Submission: 1
-X-GFI-SMTP-HelloDomain: exchhub2.pahouse.net
-X-GFI-SMTP-RemoteIP: 172.23.127.23
-X-Reverse-DNS: mail.messaging.microsoft.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1287263976-9578-1-git-send-email-vapier@gentoo.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sat, Oct 16, 2010 at 05:19:36PM -0400, Mike Frysinger wrote:
+> Andrew: we posted this months ago with no feedback ... could you pick it up ?
 
+Sorry, my fault for missing this -- I've pushed it to mmc-next now,
+with minor language changes.
 
+Thanks,
 
-We have upgraded to 100MG Email Space.
- 
-Login into your account to confirm if your account is still active.
-
-Click the lick below to login into your account for confirmation and upgrade.
-
-http://www.westmun.org/forms/use/admin/form1.html
-
-Note: If you have not been upgraded, click the Upgrade To 
-
-100MG check box.
-
+-- 
+Chris Ball   <cjb@laptop.org>   <http://printf.net/>
+One Laptop Per Child
