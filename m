@@ -1,64 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756719Ab0JPWbe (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Oct 2010 18:31:34 -0400
-Received: from smtp.gentoo.org ([140.211.166.183]:45069 "EHLO smtp.gentoo.org"
+	id S1756737Ab0JPWcp (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Oct 2010 18:32:45 -0400
+Received: from mx1.melware.net ([78.47.171.162]:58480 "EHLO mx1.melware.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756472Ab0JPWbd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Oct 2010 18:31:33 -0400
-From: Mike Frysinger <vapier@gentoo.org>
-To: linux-mtd@lists.infradead.org, David Woodhouse <dwmw2@infradead.org>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Alan Cox <alan@linux.intel.com>
-Subject: [PATCH] mtd/maps: gpio-addr-flash: fix warnings and make more portable
-Date: Sat, 16 Oct 2010 18:31:14 -0400
-Message-Id: <1287268274-9750-1-git-send-email-vapier@gentoo.org>
-X-Mailer: git-send-email 1.7.3.1
+	id S1756407Ab0JPWco (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 16 Oct 2010 18:32:44 -0400
+Date: Sun, 17 Oct 2010 00:32:43 +0200 (CEST)
+From: Armin Schindler <armin@melware.de>
+To: Tejun Heo <tj@kernel.org>
+cc: Karsten Keil <isdn@linux-pingi.de>, lkml <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH v2.6.36-rc7] isdn/eicon: don't call flush_scheduled_work()
+ from diva_os_remove_soft_isr()
+In-Reply-To: <4CB9A478.5040501@kernel.org>
+Message-ID: <alpine.DEB.2.00.1010170031270.29490@justus.melware.de>
+References: <4CB84FAF.5080608@kernel.org> <alpine.DEB.2.00.1010161441040.27329@justus.melware.de> <4CB9A478.5040501@kernel.org>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+Organization: Cytronics & Melware
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As reported on lkml, building this module for HIMEM systems spews warnings
-about mismatch in pointer types.  Further, we need to use ioremap() in order
-to properly access the flash memory on most systems rather than just doing
-it directly.
+On Sat, 16 Oct 2010, Tejun Heo wrote:
+> Hello,
+>
+> On 10/16/2010 02:42 PM, Armin Schindler wrote:
+>> On Fri, 15 Oct 2010, Tejun Heo wrote:
+>>> diva doesn't use workqueue and there is no reason to flush the system
+>>> workqueue from diva_os_remove_soft_isr().  Remove it.
+>>>
+>>> This is to prepare for the deprecation and removal of
+>>> flush_scheduled_work().
+>>
+>> This is a leftover. Thanks.
+>>
+>> Acked-by: Armin Schindler <armin@melware.de>
+>
+> Thank you.  Are you gonna route this patch or shall I push it through
+> wq tree?
 
-Reported-by: Alan Cox <alan@linux.intel.com>
-Signed-off-by: Mike Frysinger <vapier@gentoo.org>
----
- drivers/mtd/maps/gpio-addr-flash.c |   10 +++++++---
- 1 files changed, 7 insertions(+), 3 deletions(-)
+It's your patch ;-)
 
-diff --git a/drivers/mtd/maps/gpio-addr-flash.c b/drivers/mtd/maps/gpio-addr-flash.c
-index 32e89d7..af5707a 100644
---- a/drivers/mtd/maps/gpio-addr-flash.c
-+++ b/drivers/mtd/maps/gpio-addr-flash.c
-@@ -208,10 +208,14 @@ static int __devinit gpio_flash_probe(struct platform_device *pdev)
- 	if (!state)
- 		return -ENOMEM;
- 
-+	/*
-+	 * We cast start/end to known types in the boards file, so cast
-+	 * away their pointer types here to the known types (gpios->xxx).
-+	 */
- 	state->gpio_count     = gpios->end;
--	state->gpio_addrs     = (void *)gpios->start;
-+	state->gpio_addrs     = (void *)(unsigned long)gpios->start;
- 	state->gpio_values    = (void *)(state + 1);
--	state->win_size       = memory->end - memory->start + 1;
-+	state->win_size       = resource_size(memory);
- 	memset(state->gpio_values, 0xff, arr_size);
- 
- 	state->map.name       = DRIVER_NAME;
-@@ -221,7 +225,7 @@ static int __devinit gpio_flash_probe(struct platform_device *pdev)
- 	state->map.copy_to    = gf_copy_to;
- 	state->map.bankwidth  = pdata->width;
- 	state->map.size       = state->win_size * (1 << state->gpio_count);
--	state->map.virt       = (void __iomem *)memory->start;
-+	state->map.virt       = ioremap_nocache(memory->start, state->map.size);
- 	state->map.phys       = NO_XIP;
- 	state->map.map_priv_1 = (unsigned long)state;
- 
--- 
-1.7.3.1
+Armin
 
