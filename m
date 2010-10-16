@@ -1,55 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756620Ab0JPNr5 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Oct 2010 09:47:57 -0400
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:56747 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756451Ab0JPNrz convert rfc822-to-8bit (ORCPT
+	id S1756586Ab0JPN4w (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Oct 2010 09:56:52 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:41662 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754747Ab0JPN4v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Oct 2010 09:47:55 -0400
+	Sat, 16 Oct 2010 09:56:51 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=YIK7ILUcpT2KdAZfws/aj17Z5IkN0Qs0ELmb+EvHCtKXFJIA6a3FkL/DutyrfIAyO1
-         WojeMemWu3Xc2zyQvH3b9NB5kXmUWeBw0pv5LswTtCu4EavQYpT+umDTSA1ov+Cya4bO
-         L/DLLtYvZHh/+LBt0geYxlNSNPPE2YrLieZPM=
-MIME-Version: 1.0
-In-Reply-To: <m2aamepa5s.fsf@igel.home>
-References: <1287135981-17604-1-git-send-email-akinobu.mita@gmail.com>
-	<1287135981-17604-23-git-send-email-akinobu.mita@gmail.com>
-	<201010151253.15653.arnd@arndb.de>
-	<AANLkTi=cA=yf7NmPVKXaZdoTBYmwdmy_frk7b_feG-WG@mail.gmail.com>
-	<m262x24j2y.fsf@igel.home>
-	<AANLkTimHYYLZHOxgco3jotD7ikVhaPh8FVcSqeZwtrVc@mail.gmail.com>
-	<AANLkTimtyW8AbOj+w=mjPbpP1j0LB9JXdo7cb=nQAXQ8@mail.gmail.com>
-	<m2aamepa5s.fsf@igel.home>
-Date: Sat, 16 Oct 2010 22:47:49 +0900
-Message-ID: <AANLkTimB77RRcJfNcX-w7E+mKiKmNzR661SrP8G09y7A@mail.gmail.com>
-Subject: Re: [PATCH 22/22] bitops: remove minix bitops from asm/bitops.h
-From: Akinobu Mita <akinobu.mita@gmail.com>
-To: Andreas Schwab <schwab@linux-m68k.org>
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>, Arnd Bergmann <arnd@arndb.de>,
-        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        Christoph Hellwig <hch@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Linux/m68k" <linux-m68k@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
+        b=dOMLpaz33woxJv6hlfndkiD30sPSFhTfIhgjgNO7iVW2zoBOH2MotbQRME5xLhrUXL
+         Ypmkgg9HgSGt5cMU0GSG/FvOf9FrzVrDR6HOKJdHmrpfBTAhWskD46e/Y32jrGhJDNxZ
+         QsDNu5x4k2333ftaTqAkY4B0WWy6z5QMgI3GM=
+From: Tracey Dent <tdent48227@gmail.com>
+To: herbert@gondor.hengli.com.au
+Cc: davem@davemloft.net, linux-kernel@vger.kernel.org,
+        Tracey Dent <tdent48227@gmail.com>
+Subject: [PATCH 02/02] Drivers: crypto: amcc: Makefile: replace the use of <module>-objs with <module>-y
+Date: Sat, 16 Oct 2010 09:49:23 -0400
+Message-Id: <1287236963-1705-2-git-send-email-tdent48227@gmail.com>
+X-Mailer: git-send-email 1.7.3.1.104.gc752e
+In-Reply-To: <1287236963-1705-1-git-send-email-tdent48227@gmail.com>
+References: <1287236963-1705-1-git-send-email-tdent48227@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/10/16 Andreas Schwab <schwab@linux-m68k.org>:
-> Akinobu Mita <akinobu.mita@gmail.com> writes:
->
->> m68knommu is big-endian minixfs but m68k (mmu) is little-endian minixfs
->> if I read arch/m68k/include/asm/bitops_{mm,no}.h correctly.
->
-> Don't be confused by ^16, this is for the 16bit/32bit indexing
-> correction.  The nommu version uses big-endian 32bit indexing which yet
-> another format.
+Changed <module>-objs to <module>-y in Makefile.
 
-Oh, I see. I misunderstood.
+Signed-off-by: Tracey Dent <tdent48227@gmail.com>
+---
+ drivers/crypto/amcc/Makefile |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-So we need a special handling for it to keep compatibility.
+diff --git a/drivers/crypto/amcc/Makefile b/drivers/crypto/amcc/Makefile
+index aa376e8..5c0c62b 100644
+--- a/drivers/crypto/amcc/Makefile
++++ b/drivers/crypto/amcc/Makefile
+@@ -1,2 +1,2 @@
+ obj-$(CONFIG_CRYPTO_DEV_PPC4XX) += crypto4xx.o
+-crypto4xx-objs :=  crypto4xx_core.o crypto4xx_alg.o crypto4xx_sa.o
++crypto4xx-y :=  crypto4xx_core.o crypto4xx_alg.o crypto4xx_sa.o
+-- 
+1.7.3.1.104.gc752e
+
