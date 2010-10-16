@@ -1,50 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751922Ab0JOXyw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Oct 2010 19:54:52 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:38417 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751800Ab0JOXyu convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Oct 2010 19:54:50 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:from:date
-         :x-google-sender-auth:message-id:subject:to:cc:content-type
-         :content-transfer-encoding;
-        b=qmUtb0/MKjiza7R5m/0vW8NrHoTdK3Chr0gX7yIgsRcbyBsfcOkv6oVCcaQyn6qSgn
-         3LCAWZ9slDZqqEuu6QjVX+1Rn9UzIMUEiXdIKCNYoCYYk8z2jug25VGgSuIpHc+TvnWe
-         ESciMwzk3ZOVBZ6usCnm3Ly2aWMkglO66XFTw=
+	id S1751793Ab0JPACU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Oct 2010 20:02:20 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:51754 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750830Ab0JPACS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Oct 2010 20:02:18 -0400
+Date: Fri, 15 Oct 2010 17:02:08 -0700
+From: "Darrick J. Wong" <djwong@us.ibm.com>
+To: Christoph Hellwig <hch@lst.de>
+Cc: Ric Wheeler <rwheeler@redhat.com>,
+        Andreas Dilger <adilger.kernel@dilger.ca>, "Ted Ts'o" <tytso@mit.edu>,
+        Mingming Cao <cmm@us.ibm.com>, linux-ext4 <linux-ext4@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Keith Mannthey <kmannth@us.ibm.com>, Mingming Cao <mcao@us.ibm.com>,
+        Tejun Heo <tj@kernel.org>, Josef Bacik <josef@redhat.com>,
+        Mike Snitzer <snitzer@redhat.com>
+Subject: Re: Performance testing of various barrier reduction patches [was:
+	Re: [RFC v4] ext4: Coordinate fsync requests]
+Message-ID: <20101016000208.GH25624@tux1.beaverton.ibm.com>
+Reply-To: djwong@us.ibm.com
+References: <20100823183119.GA28105@tux1.beaverton.ibm.com> <20100923232527.GB25624@tux1.beaverton.ibm.com> <B0A8EB94-E2F7-4268-AE99-C4A7402E880D@dilger.ca> <20100927230111.GV25555@tux1.beaverton.ibm.com> <20101008212606.GE25624@tux1.beaverton.ibm.com> <4CAF937C.4020500@redhat.com> <20101011202020.GF25624@tux1.beaverton.ibm.com> <20101012141455.GA27572@lst.de> <20101015233904.GG25624@tux1.beaverton.ibm.com> <20101015234041.GB1035@lst.de>
 MIME-Version: 1.0
-In-Reply-To: <201010160036.17653.rjw@sisk.pl>
-References: <201010160036.17653.rjw@sisk.pl>
-From: "Luis R. Rodriguez" <lrodriguez@atheros.com>
-Date: Fri, 15 Oct 2010 16:54:29 -0700
-X-Google-Sender-Auth: -H7qGeJGDEIb2k4xIp9E6cvGGwM
-Message-ID: <AANLkTimdatos1psRnp_Es=q8iOe9aQE_aVARLpm18efb@mail.gmail.com>
-Subject: Re: [PATCH] ath9k: Convert to new PCI PM framework
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
-        linux-wireless@vger.kernel.org, ath9k-devel@venema.h4ckr.net
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101015234041.GB1035@lst.de>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 15, 2010 at 3:36 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> From: Rafael J. Wysocki <rjw@sisk.pl>
->
-> The ath9k driver uses the legacy PCI power management (suspend
-> and resume) callbacks that apparently cause intermittent problems
-> to happen (the adapter sometimes doesn't resume correctly on my
-> Acer Ferrari One).  Make it use the new PCI PM and let the PCI core
-> code handle the PCI-specific details of power transitions.
->
-> Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+On Sat, Oct 16, 2010 at 01:40:41AM +0200, Christoph Hellwig wrote:
+> On Fri, Oct 15, 2010 at 04:39:04PM -0700, Darrick J. Wong wrote:
+> > On Tue, Oct 12, 2010 at 04:14:55PM +0200, Christoph Hellwig wrote:
+> > > I still think adding code to every filesystem to optimize for a rather
+> > > stupid use case is not a good idea.  I dropped out a bit from the
+> > > thread in the middle, but what was the real use case for lots of
+> > > concurrent fsyncs on the same inode again?
+> > 
+> > The use case I'm looking at is concurrent fsyncs on /different/ inodes,
+> > actually.  We have _n_ different processes, each writing (and fsyncing) its own
+> > separate file on the same filesystem.
+> > 
+> > iirc, ext4_sync_file is called with the inode mutex held, which prevents
+> > concurrent fsyncs on the same inode.
+> 
+> Indeed.  Although we could drop it at least for the cache flush
+> call.  We already do this for block devices.
 
-Do you know when these hooks were added? If it fixes an issue should
-this go for stable?
+<nod>
 
- Luis
+Unfortunately, the patch immediately triggers the BUG at
+drivers/scsi/scsi_lib.c:1064:
+ /*
+  * BLOCK_PC requests may transfer data, in which case they must
+  * a bio attached to them.  Or they might contain a SCSI command
+  * that does not transfer data, in which case they may optionally
+  * submit a request without an attached bio.
+  */
+ if (req->bio) {
+         int ret;
+
+         BUG_ON(!req->nr_phys_segments);
+
+--D
