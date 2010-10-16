@@ -1,48 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753494Ab0JPH5N (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Oct 2010 03:57:13 -0400
+	id S1753567Ab0JPH5U (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Oct 2010 03:57:20 -0400
 Received: from ipmail06.adl2.internode.on.net ([150.101.137.129]:41809 "EHLO
 	ipmail06.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753464Ab0JPH5L (ORCPT
+	by vger.kernel.org with ESMTP id S1753502Ab0JPH5S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Oct 2010 03:57:11 -0400
+	Sat, 16 Oct 2010 03:57:18 -0400
 X-IronPort-Anti-Spam-Filtered: true
 X-IronPort-Anti-Spam-Result: AvsEAFP1uEx5LcB2/2dsb2JhbAChMXK8eIVJBI9K
-Date: Sat, 16 Oct 2010 18:57:09 +1100
+Date: Sat, 16 Oct 2010 18:57:17 +1100
 From: Nick Piggin <npiggin@kernel.dk>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: Dave Chinner <david@fromorbit.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 14/18] fs: Protect inode->i_state with th einode->i_lock
-Message-ID: <20101016075709.GP19147@amd>
+To: Dave Chinner <david@fromorbit.com>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 17/18] fs: icache remove inode_lock
+Message-ID: <20101016075717.GR19147@amd>
 References: <1286515292-15882-1-git-send-email-david@fromorbit.com>
- <1286515292-15882-15-git-send-email-david@fromorbit.com>
- <20101008074932.GC24089@infradead.org>
- <20101008080428.GW4681@dastard>
- <20101008081843.GB17577@infradead.org>
+ <1286515292-15882-18-git-send-email-david@fromorbit.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20101008081843.GB17577@infradead.org>
+In-Reply-To: <1286515292-15882-18-git-send-email-david@fromorbit.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 08, 2010 at 04:18:43AM -0400, Christoph Hellwig wrote:
-> > 
-> > Ah, done thinking now! I was so the i_state field had been set
-> > before the inode was added to various lists and potentially
-> > accessable to other threads. I should probably add a comment to that
-> > effect, right?
+On Fri, Oct 08, 2010 at 04:21:31PM +1100, Dave Chinner wrote:
+> From: Dave Chinner <dchinner@redhat.com>
 > 
-> Yes, please.
+> All the functionality that the inode_lock protected has now been
+> wrapped up in new independent locks and/or functionality. Hence the
+> inode_lock does not serve a purpose any longer and hence can now be
+> removed.
+> 
+> Based on work originally done by Nick Piggin.
 
-This is due to i_lock not covering all the icache state of the inode,
-so you have to make these synchronisation changes like this.
+I don't really agree with how this is structured, doing lock splitups
+and changes and things under the inode_lock and then lifting it here.
 
-I much prefer such proposals to go at the end of my series, where I
-will probably nack them (and use rcu instead if the remaining trylocks
-are such a big issue).
+If nothing else, than the practical implication that any locking
+problem in the patchset is going to bisect down to this patch.
+
+My approach of being ultra conservative in the initial breaking steps,
+then removing inode_lock, then implementing more aggressive locking
+and less trivial transforms IMO is the better way to go. It has worked
+very well for me doing both the inode and the dcache work, and it has
+made it easy to understand and debug.
+
 
