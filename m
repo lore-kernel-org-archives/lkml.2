@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756946Ab0JPXNp (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Oct 2010 19:13:45 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:63462 "EHLO
+	id S1756812Ab0JPXVy (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Oct 2010 19:21:54 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:57910 "EHLO
 	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756888Ab0JPXNc (ORCPT
+	with ESMTP id S1756736Ab0JPXVx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Oct 2010 19:13:32 -0400
+	Sat, 16 Oct 2010 19:21:53 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=XRhh1HyF0GxVh/jSZDQtCw9/tuFqX7uU1OI5q7T65JkLP0fwHkpsmG3lxg222JN/Xa
-         IZ6B8GeDnujlvthjcC6JI1plXjZI5hTMg0Z7I3mKb3wkMfm61z+JRDaYc1hMk+ri9LXw
-         P9Jc56NXEJfQyBooSTNN0Nl0CPpg1/lB6tvPE=
+        b=CTZSm9iWbTIKk1z5TMKDjUVsCVGhLqGLqh7r6GVmoiOVjMTtaLHSIM3OUOF93KiH20
+         +THqb7YkFHL6tdId80a0NvJHAeUwwEcTGTlIf00OgqqweaDtEeLIGNHvsDyrBss8TGAz
+         cxOda8W/Q1rzLF8wLLGP+jm3faXxOuCEncPEQ=
 From: Maxim Levitsky <maximlevitsky@gmail.com>
 To: Alex Dubov <oakad@yahoo.com>
 Cc: Andrew Morton <akpm@linux-foundation.org>,
         LKML <linux-kernel@vger.kernel.org>,
         Maxim Levitsky <maximlevitsky@gmail.com>
-Subject: [PATCH 5/6] memstick: mspro_block: refactoring.
-Date: Sun, 17 Oct 2010 01:12:53 +0200
-Message-Id: <1287270774-18796-6-git-send-email-maximlevitsky@gmail.com>
+Subject: [PATCH 6/6] memstick: stop passing useless pointer to card->current_mrq + refactoring
+Date: Sun, 17 Oct 2010 01:12:54 +0200
+Message-Id: <1287270774-18796-7-git-send-email-maximlevitsky@gmail.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1287270774-18796-1-git-send-email-maximlevitsky@gmail.com>
 References: <1287270774-18796-1-git-send-email-maximlevitsky@gmail.com>
@@ -28,1548 +28,1838 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch is a result of my attempt to make mspro_block to use the
-new helpers I wrote for my ms_block
+Now that both card drivers use new support code that can be safely done.
+In addition to that few handlers in memstick.c are converted to new style.
+register window is now completely dynamic, and nobody but register read/write
+functions send the MS_TPC_SET_RW_REG_ADRS.
 
-Among the way, I added support for CMDEX, a new feature of PRO sticks,
-and that gives nice speed improvments.
+In addition to that, I did more cosmetic refactoring, and few fixes
+there and there.
 
 Signed-off-by: Maxim Levitsky <maximlevitsky@gmail.com>
 ---
- drivers/memstick/core/mspro_block.c | 1097 +++++++++++++++--------------------
- drivers/memstick/core/mspro_block.h |  176 ++++++
- 2 files changed, 653 insertions(+), 620 deletions(-)
- create mode 100644 drivers/memstick/core/mspro_block.h
+ drivers/memstick/core/memstick.c    |  611 +++++++++++++++++------------------
+ drivers/memstick/core/ms_block.c    |  166 +++++-----
+ drivers/memstick/core/mspro_block.c |  185 +++++------
+ drivers/memstick/core/mspro_block.h |    2 +-
+ include/linux/memstick.h            |   57 ++--
+ 5 files changed, 484 insertions(+), 537 deletions(-)
 
-diff --git a/drivers/memstick/core/mspro_block.c b/drivers/memstick/core/mspro_block.c
-index d3f1a08..c589d26 100644
---- a/drivers/memstick/core/mspro_block.c
-+++ b/drivers/memstick/core/mspro_block.c
-@@ -2,6 +2,7 @@
-  *  Sony MemoryStick Pro storage support
-  *
-  *  Copyright (C) 2007 Alex Dubov <oakad@yahoo.com>
-+ *  Copyright (C) 2010 Maxim Levitsky <maximlevitsky@gmail.com>
-  *
-  * This program is free software; you can redistribute it and/or modify
-  * it under the terms of the GNU General Public License version 2 as
-@@ -11,7 +12,6 @@
-  * that made this driver possible.
-  *
-  */
--
- #include <linux/blkdev.h>
- #include <linux/idr.h>
- #include <linux/hdreg.h>
-@@ -20,158 +20,14 @@
- #include <linux/slab.h>
- #include <linux/smp_lock.h>
- #include <linux/memstick.h>
--
--#define DRIVER_NAME "mspro_block"
-+#include "mspro_block.h"
- 
- static int major;
--module_param(major, int, 0644);
--
--#define MSPRO_BLOCK_MAX_SEGS  32
--#define MSPRO_BLOCK_MAX_PAGES ((2 << 16) - 1)
--
--#define MSPRO_BLOCK_SIGNATURE        0xa5c3
--#define MSPRO_BLOCK_MAX_ATTRIBUTES   41
--
--#define MSPRO_BLOCK_PART_SHIFT 3
--
--enum {
--	MSPRO_BLOCK_ID_SYSINFO         = 0x10,
--	MSPRO_BLOCK_ID_MODELNAME       = 0x15,
--	MSPRO_BLOCK_ID_MBR             = 0x20,
--	MSPRO_BLOCK_ID_PBR16           = 0x21,
--	MSPRO_BLOCK_ID_PBR32           = 0x22,
--	MSPRO_BLOCK_ID_SPECFILEVALUES1 = 0x25,
--	MSPRO_BLOCK_ID_SPECFILEVALUES2 = 0x26,
--	MSPRO_BLOCK_ID_DEVINFO         = 0x30
--};
--
--struct mspro_sys_attr {
--	size_t                  size;
--	void                    *data;
--	unsigned char           id;
--	char                    name[32];
--	struct device_attribute dev_attr;
--};
--
--struct mspro_attr_entry {
--	__be32 address;
--	__be32 size;
--	unsigned char id;
--	unsigned char reserved[3];
--} __attribute__((packed));
--
--struct mspro_attribute {
--	__be16 signature;
--	unsigned short          version;
--	unsigned char           count;
--	unsigned char           reserved[11];
--	struct mspro_attr_entry entries[];
--} __attribute__((packed));
--
--struct mspro_sys_info {
--	unsigned char  class;
--	unsigned char  reserved0;
--	__be16 block_size;
--	__be16 block_count;
--	__be16 user_block_count;
--	__be16 page_size;
--	unsigned char  reserved1[2];
--	unsigned char  assembly_date[8];
--	__be32 serial_number;
--	unsigned char  assembly_maker_code;
--	unsigned char  assembly_model_code[3];
--	__be16 memory_maker_code;
--	__be16 memory_model_code;
--	unsigned char  reserved2[4];
--	unsigned char  vcc;
--	unsigned char  vpp;
--	__be16 controller_number;
--	__be16 controller_function;
--	__be16 start_sector;
--	__be16 unit_size;
--	unsigned char  ms_sub_class;
--	unsigned char  reserved3[4];
--	unsigned char  interface_type;
--	__be16 controller_code;
--	unsigned char  format_type;
--	unsigned char  reserved4;
--	unsigned char  device_type;
--	unsigned char  reserved5[7];
--	unsigned char  mspro_id[16];
--	unsigned char  reserved6[16];
--} __attribute__((packed));
--
--struct mspro_mbr {
--	unsigned char boot_partition;
--	unsigned char start_head;
--	unsigned char start_sector;
--	unsigned char start_cylinder;
--	unsigned char partition_type;
--	unsigned char end_head;
--	unsigned char end_sector;
--	unsigned char end_cylinder;
--	unsigned int  start_sectors;
--	unsigned int  sectors_per_partition;
--} __attribute__((packed));
--
--struct mspro_specfile {
--	char           name[8];
--	char           ext[3];
--	unsigned char  attr;
--	unsigned char  reserved[10];
--	unsigned short time;
--	unsigned short date;
--	unsigned short cluster;
--	unsigned int   size;
--} __attribute__((packed));
--
--struct mspro_devinfo {
--	__be16 cylinders;
--	__be16 heads;
--	__be16 bytes_per_track;
--	__be16 bytes_per_sector;
--	__be16 sectors_per_track;
--	unsigned char  reserved[6];
--} __attribute__((packed));
--
--struct mspro_block_data {
--	struct memstick_dev   *card;
--	unsigned int          usage_count;
--	unsigned int          caps;
--	struct gendisk        *disk;
--	struct request_queue  *queue;
--	struct request        *block_req;
--	spinlock_t            q_lock;
--
--	unsigned short        page_size;
--	unsigned short        cylinders;
--	unsigned short        heads;
--	unsigned short        sectors_per_track;
--
--	unsigned char         system;
--	unsigned char         read_only:1,
--			      eject:1,
--			      has_request:1,
--			      data_dir:1,
--			      active:1;
--	unsigned char         transfer_cmd;
--
--	int                   (*mrq_handler)(struct memstick_dev *card,
--					     struct memstick_request **mrq);
--
--	struct attribute_group attr_group;
--
--	struct scatterlist    req_sg[MSPRO_BLOCK_MAX_SEGS];
--	unsigned int          seg_count;
--	unsigned int          current_seg;
--	unsigned int          current_page;
--};
-+static int debug;
- 
- static DEFINE_IDR(mspro_block_disk_idr);
- static DEFINE_MUTEX(mspro_block_disk_lock);
- 
--static int mspro_block_complete_req(struct memstick_dev *card, int error);
--
- /*** Block device ***/
- 
- static int mspro_block_bd_open(struct block_device *bdev, fmode_t mode)
-@@ -180,7 +36,6 @@ static int mspro_block_bd_open(struct block_device *bdev, fmode_t mode)
- 	struct mspro_block_data *msb = disk->private_data;
- 	int rc = -ENXIO;
- 
--	lock_kernel();
- 	mutex_lock(&mspro_block_disk_lock);
- 
- 	if (msb && msb->card) {
-@@ -192,8 +47,6 @@ static int mspro_block_bd_open(struct block_device *bdev, fmode_t mode)
- 	}
- 
- 	mutex_unlock(&mspro_block_disk_lock);
--	unlock_kernel();
--
- 	return rc;
- }
- 
-@@ -218,16 +71,13 @@ static int mspro_block_disk_release(struct gendisk *disk)
- 	}
- 
- 	mutex_unlock(&mspro_block_disk_lock);
--
+diff --git a/drivers/memstick/core/memstick.c b/drivers/memstick/core/memstick.c
+index 4c457ae..a2be4e0 100644
+--- a/drivers/memstick/core/memstick.c
++++ b/drivers/memstick/core/memstick.c
+@@ -202,61 +202,207 @@ static int memstick_dummy_check(struct memstick_dev *card)
  	return 0;
  }
  
- static int mspro_block_bd_release(struct gendisk *disk, fmode_t mode)
- {
- 	int ret;
--	lock_kernel();
- 	ret = mspro_block_disk_release(disk);
--	unlock_kernel();
- 	return ret;
- }
- 
-@@ -522,263 +372,483 @@ static sysfs_show_t mspro_block_attr_show(unsigned char tag)
-  * finished (and request processor should come back some time later).
+-/**
+- * memstick_detect_change - schedule media detection on memstick host
+- * @host - host to use
++/*
++ * Functions prefixed with "h_" are protocol callbacks. They can be called from
++ * interrupt context. Return value of 0 means that request processing is still
++ * ongoing, while special error value of -EAGAIN means that current request is
++ * finished (and request processor should come back some time later).
   */
- 
--static int h_mspro_block_req_init(struct memstick_dev *card,
--				  struct memstick_request **mrq)
-+static int h_mspro_block_reset(struct memstick_dev *card,
-+					struct memstick_request **mrq)
+-void memstick_detect_change(struct memstick_host *host)
++
++static int h_memstick_read_dev_id(struct memstick_dev *card)
  {
- 	struct mspro_block_data *msb = memstick_get_drvdata(card);
-+	struct ms_status_register *status;
-+	u8 intreg;
- 
--	*mrq = &card->current_mrq;
--	card->next_request = msb->mrq_handler;
--	return 0;
--}
-+	memstick_allocate_request(card, mrq);
-+	if ((*mrq)->error) {
-+		dbg(card, "Error here");
-+		return memstick_complete_request(card, *mrq, 0);
-+	}
- 
--static int h_mspro_block_default(struct memstick_dev *card,
--				 struct memstick_request **mrq)
--{
--	return mspro_block_complete_req(card, (*mrq)->error);
--}
-+again:
+-	queue_work(workqueue, &host->media_checker);
++	struct ms_id_register id_reg;
++	struct memstick_request *mrq = &card->current_mrq;
++
++	if (mrq->error)
++		return memstick_state_machine_exit(card, -EIO);
++
 +	switch (card->state) {
++	case 0:
++		if (!memstick_read_regs(card,
++			offsetof(struct ms_register, id),
++			sizeof(struct ms_id_register)))
++			return 0;
++		break;
++	case 1:
++		memcpy(&id_reg, mrq->data, sizeof(id_reg));
++		card->id.match_flags = MEMSTICK_MATCH_ALL;
++		card->id.type = id_reg.type;
++		card->id.category = id_reg.category;
++		card->id.class = id_reg.class;
++		dev_dbg(&card->dev, "if_mode = %02x\n", id_reg.if_mode);
++		return memstick_state_machine_exit(card, 0);
++	}
++
++	card->state++;
++	return 0;
+ }
+-EXPORT_SYMBOL(memstick_detect_change);
  
--static int h_mspro_block_default_bad(struct memstick_dev *card,
+-/**
+- * memstick_next_req - called by host driver to obtain next request to process
+- * @host - host to use
+- * @mrq - pointer to stick the request to
+- *
+- * Host calls this function from idle state (*mrq == NULL) or after finishing
+- * previous request (*mrq should point to it). If previous request was
+- * unsuccessful, it is retried for predetermined number of times. Return value
+- * of 0 means that new request was assigned to the host.
+- */
+-int memstick_next_req(struct memstick_host *host, struct memstick_request **mrq)
++static int h_memstick_default_bad(struct memstick_dev *card)
+ {
+-	int rc = -ENXIO;
++	return -ENXIO;
++}
+ 
+-	if ((*mrq) && (*mrq)->error && host->retries) {
+-		(*mrq)->error = rc;
+-		host->retries--;
+-		return 0;
++static void memstick_invalidate_reg_window(struct memstick_dev *card)
++{
++	memset(&card->reg_addr, 0, sizeof(card->reg_addr));
++}
++
++static struct memstick_dev *memstick_alloc_card(struct memstick_host *host)
++{
++	struct memstick_dev *card = kzalloc(sizeof(struct memstick_dev),
++					    GFP_KERNEL);
++	struct memstick_dev *old_card = host->card;
++
++	if (card) {
++		card->host = host;
++		dev_set_name(&card->dev, "%s", dev_name(&host->dev));
++		card->dev.parent = &host->dev;
++		card->dev.bus = &memstick_bus_type;
++		card->dev.release = memstick_free_card;
++		card->check = memstick_dummy_check;
++		card->next_request = h_memstick_default_bad;
++		init_completion(&card->mrq_complete);
++		host->card = card;
++
++		if (memstick_run_state_machine(card,
++						h_memstick_read_dev_id, true))
++			goto err_out;
+ 	}
++	host->card = old_card;
++	return card;
++err_out:
++	host->card = old_card;
++	kfree(card);
++	return NULL;
++}
+ 
+-	if (host->card && host->card->next_request)
+-		rc = host->card->next_request(host->card, mrq);
++static int memstick_power_on(struct memstick_host *host)
++{
++	int rc = host->set_param(host, MEMSTICK_POWER, MEMSTICK_POWER_ON);
+ 
+ 	if (!rc)
+-		host->retries = cmd_retries > 1 ? cmd_retries - 1 : 1;
+-	else
+-		*mrq = NULL;
++		rc = host->set_param(host, MEMSTICK_INTERFACE, MEMSTICK_SERIAL);
+ 
+ 	return rc;
+ }
+-EXPORT_SYMBOL(memstick_next_req);
++
++static void memstick_check(struct work_struct *work)
++{
++	struct memstick_host *host = container_of(work, struct memstick_host,
++						  media_checker);
++	struct memstick_dev *card;
++
++	dev_dbg(&host->dev, "memstick_check started\n");
++	mutex_lock(&host->lock);
++	if (!host->card) {
++		if (memstick_power_on(host))
++			goto out_power_off;
++	} else if (host->card->stop) {
++		host->card->stop(host->card);
++		memstick_invalidate_reg_window(host->card);
++	}
++
++	card = memstick_alloc_card(host);
++
++	if (!card) {
++		if (host->card) {
++			device_unregister(&host->card->dev);
++			host->card = NULL;
++		}
++	} else {
++		dev_dbg(&host->dev, "new card %02x, %02x, %02x\n",
++			card->id.type, card->id.category, card->id.class);
++		if (host->card) {
++			if (!memstick_dev_match(host->card, &card->id)
++			    || !(host->card->check(host->card))) {
++				device_unregister(&host->card->dev);
++				host->card = NULL;
++			} else if (host->card->start)
++				host->card->start(host->card);
++		}
++
++		if (!host->card) {
++			host->card = card;
++			if (device_register(&card->dev)) {
++				kfree(host->card);
++				host->card = NULL;
++			}
++		} else
++			kfree(card);
++	}
++
++out_power_off:
++	if (!host->card)
++		host->set_param(host, MEMSTICK_POWER, MEMSTICK_POWER_OFF);
++
++	mutex_unlock(&host->lock);
++	dev_dbg(&host->dev, "memstick_check finished\n");
++}
++
++
++/*** card driver interface ***/
+ 
+ /**
+- * memstick_new_req - notify the host that some requests are pending
+- * @host - host to use
++ * memstick_register_driver - register new card driver
++ * @drv - the driver info structure
+  */
+-void memstick_new_req(struct memstick_host *host)
++int memstick_register_driver(struct memstick_driver *drv)
+ {
+-	if (host->card) {
+-		host->retries = cmd_retries;
+-		INIT_COMPLETION(host->card->mrq_complete);
+-		host->request(host);
+-	}
++	drv->driver.bus = &memstick_bus_type;
++
++	return driver_register(&drv->driver);
++}
++EXPORT_SYMBOL(memstick_register_driver);
++
++/**
++ * memstick_unregister_driver - unregister a card driver
++ * usually called on card driver unload
++ * @drv - the driver info structure
++ */
++void memstick_unregister_driver(struct memstick_driver *drv)
++{
++	driver_unregister(&drv->driver);
++}
++EXPORT_SYMBOL(memstick_unregister_driver);
++
++/**
++ * memstick_run_state_machine - runs IO state machine
++ * DON'T call from state machine code!
++ * Usefull for blocking IO in the card drivers.
++ * @card - card to use
++ * @state_func - the state machine
++ * @sync - if true, will wait till state machine exits using
++ * memstick_state_machine_exit
++ */
++int memstick_run_state_machine(struct memstick_dev *card,
++	int   (*state_func)(struct memstick_dev *card), bool sync)
++{
++	/* Init everything to prevent stale data from creeping in */
++	memset(&card->current_mrq, 0, sizeof(card->current_mrq));
++	card->int_polling = false;
++	card->state = 0;
++
++	WARN_ON(card->state_machine_running);
++	WARN_ON(card->next_request != h_memstick_default_bad);
++
++	card->next_request = state_func;
++	card->state_machine_running = true;
++
++	card->host->retries = cmd_retries;
++	INIT_COMPLETION(card->mrq_complete);
++	card->host->request(card->host);
++
++	if (!sync)
++		return 0;
++
++	wait_for_completion(&card->mrq_complete);
++	return card->current_mrq.error;
+ }
+-EXPORT_SYMBOL(memstick_new_req);
++EXPORT_SYMBOL(memstick_run_state_machine);
++
++
++/*** functions to be called by state machines ***/
+ 
+ /**
+  * memstick_init_req_sg - set request fields needed for bulk data transfer
+@@ -264,9 +410,12 @@ EXPORT_SYMBOL(memstick_new_req);
+  * @tpc - memstick Transport Protocol Command
+  * @sg - TPC argument
+  */
+-void memstick_init_req_sg(struct memstick_request *mrq, unsigned char tpc,
++void memstick_init_req_sg(struct memstick_dev *card, unsigned char tpc,
+ 			  const struct scatterlist *sg)
+ {
++	struct memstick_request *mrq = &card->current_mrq;
++	WARN_ON(!card->state_machine_running);
++
+ 	mrq->tpc = tpc;
+ 	if (tpc & 8)
+ 		mrq->data_dir = WRITE;
+@@ -280,6 +429,9 @@ void memstick_init_req_sg(struct memstick_request *mrq, unsigned char tpc,
+ 		mrq->need_card_int = 1;
+ 	else
+ 		mrq->need_card_int = 0;
++
++	if (tpc != MS_TPC_GET_INT)
++		card->int_polling = false;
+ }
+ EXPORT_SYMBOL(memstick_init_req_sg);
+ 
+@@ -294,9 +446,12 @@ EXPORT_SYMBOL(memstick_init_req_sg);
+  * in size) allows us to just copy the value between request structure and
+  * user supplied buffer.
+  */
+-void memstick_init_req(struct memstick_request *mrq, unsigned char tpc,
++void memstick_init_req(struct memstick_dev *card, unsigned char tpc,
+ 		       const void *buf, size_t length)
+ {
++	struct memstick_request *mrq = &card->current_mrq;
++	WARN_ON(!card->state_machine_running);
++
+ 	mrq->tpc = tpc;
+ 	if (tpc & 8)
+ 		mrq->data_dir = WRITE;
+@@ -316,152 +471,38 @@ void memstick_init_req(struct memstick_request *mrq, unsigned char tpc,
+ }
+ EXPORT_SYMBOL(memstick_init_req);
+ 
+-/*
+- * Functions prefixed with "h_" are protocol callbacks. They can be called from
+- * interrupt context. Return value of 0 means that request processing is still
+- * ongoing, while special error value of -EAGAIN means that current request is
+- * finished (and request processor should come back some time later).
+- */
+-
+-static int h_memstick_read_dev_id(struct memstick_dev *card,
+-				  struct memstick_request **mrq)
+-{
+-	struct ms_id_register id_reg;
+-
+-	if (!(*mrq)) {
+-		memstick_init_req(&card->current_mrq, MS_TPC_READ_REG, NULL,
+-				  sizeof(struct ms_id_register));
+-		*mrq = &card->current_mrq;
+-		return 0;
+-	} else {
+-		if (!(*mrq)->error) {
+-			memcpy(&id_reg, (*mrq)->data, sizeof(id_reg));
+-			card->id.match_flags = MEMSTICK_MATCH_ALL;
+-			card->id.type = id_reg.type;
+-			card->id.category = id_reg.category;
+-			card->id.class = id_reg.class;
+-			dev_dbg(&card->dev, "if_mode = %02x\n", id_reg.if_mode);
+-		}
+-		complete(&card->mrq_complete);
+-		return -EAGAIN;
+-	}
+-}
+-
+-static int h_memstick_set_rw_addr(struct memstick_dev *card,
+-				  struct memstick_request **mrq)
+-{
+-	if (!(*mrq)) {
+-		memstick_init_req(&card->current_mrq, MS_TPC_SET_RW_REG_ADRS,
+-				  (char *)&card->reg_addr,
+-				  sizeof(card->reg_addr));
+-		*mrq = &card->current_mrq;
+-		return 0;
+-	} else {
+-		complete(&card->mrq_complete);
+-		return -EAGAIN;
+-	}
+-}
+-
+-
+-static int h_memstick_default_bad(struct memstick_dev *card,
 -				     struct memstick_request **mrq)
 -{
 -	return -ENXIO;
 -}
-+	case 0: /* send request for INT reg */
-+		if (memstick_read_int_reg(card, *mrq, 10000))
-+			break;
-+		card->state++;
- 
--static int h_mspro_block_get_ro(struct memstick_dev *card,
--				struct memstick_request **mrq)
+-
+-/**
+- * memstick_set_rw_addr - issue SET_RW_REG_ADDR request and wait for it to
+- *                        complete
+- * @card - media device to use
+- */
+-int memstick_set_rw_addr(struct memstick_dev *card)
 -{
--	struct mspro_block_data *msb = memstick_get_drvdata(card);
-+	case 1: /* process the INT reg and loop if nessesary */
-+		intreg = (*mrq)->data[0];
- 
--	if (!(*mrq)->error) {
--		if ((*mrq)->data[offsetof(struct ms_status_register, status0)]
--		    & MEMSTICK_STATUS0_WP)
--			msb->read_only = 1;
--		else
--			msb->read_only = 0;
-+		if (intreg & MEMSTICK_INT_ERR) {
-+			if ((intreg & MEMSTICK_INT_CMDNAK)) {
-+				msb->read_only = true;
-+				return memstick_complete_request(card, *mrq, 0);
-+			}
-+			return memstick_complete_request(card, *mrq, -EIO);
-+		}
-+
-+		if (intreg & MEMSTICK_INT_CMDNAK)
-+			return memstick_complete_request(card, *mrq, -EIO);
-+
-+
-+		if (!(intreg & MEMSTICK_INT_CED)) {
-+			card->state--;
-+			goto again;
-+		}
-+
-+		memstick_read_int_reg_cleanup(card);
-+		card->state++;
-+
-+	case 2: /* read the R/O status */
-+
-+		if (!memstick_read_regs(card,
-+			offsetof(struct mspro_register, status),
-+			sizeof(struct ms_status_register),
-+			*mrq))
-+			return 0;
-+		break;
-+
-+	case 3: /* process the result & done */
-+		status = (struct ms_status_register *)(*mrq)->data;
-+		msb->read_only = status->status0 & MEMSTICK_STATUS0_WP;
-+		return memstick_complete_request(card, *mrq, 0);
- 	}
- 
--	return mspro_block_complete_req(card, (*mrq)->error);
-+	card->state++;
-+	return 0;
-+
- }
- 
--static int h_mspro_block_wait_for_ced(struct memstick_dev *card,
--				      struct memstick_request **mrq)
-+static int h_mspro_block_switch_interface(struct memstick_dev *card,
-+					struct memstick_request **mrq)
- {
--	dev_dbg(&card->dev, "wait for ced: value %x\n", (*mrq)->data[0]);
-+	struct mspro_block_data *msb = memstick_get_drvdata(card);
-+	int error;
-+	memstick_allocate_request(card, mrq);
-+	if ((*mrq)->error)
-+		return memstick_complete_request(card, *mrq, 0);
-+
-+	switch (card->state) {
- 
--	if (!(*mrq)->error) {
--		if ((*mrq)->data[0] & (MEMSTICK_INT_CMDNAK | MEMSTICK_INT_ERR))
--			(*mrq)->error = -EFAULT;
--		else if (!((*mrq)->data[0] & MEMSTICK_INT_CED))
-+	case 0: /* send switch command to the device */
-+		if (!memstick_write_regs(card,
-+			offsetof(struct mspro_register, param),
-+			1,
-+			&msb->system,
-+			*mrq))
- 			return 0;
-+		break;
-+
-+	case 1: /* switch the host intrface + send dummy read to verify that */
-+		/* connection works */
-+		error = card->host->set_param(card->host,
-+				MEMSTICK_INTERFACE, msb->target_interface);
-+		if (error)
-+			return memstick_complete_request(card, *mrq, -EFAULT);
-+
-+		memstick_init_req(*mrq, MS_TPC_GET_INT, NULL, 1);
-+		break;
-+
-+	case 2: /* done */
-+		return memstick_complete_request(card, *mrq, 0);
-+
- 	}
- 
--	return mspro_block_complete_req(card, (*mrq)->error);
-+	card->state++;
-+	return 0;
- }
- 
-+/* State machine that handles the IO. Heart of the driver */
- static int h_mspro_block_transfer_data(struct memstick_dev *card,
- 				       struct memstick_request **mrq)
- {
- 	struct mspro_block_data *msb = memstick_get_drvdata(card);
--	unsigned char t_val = 0;
-+	unsigned char intreg = 0, command;
- 	struct scatterlist t_sg = { 0 };
-+	unsigned long flags;
-+	int error;
- 	size_t t_offset;
- 
--	if ((*mrq)->error)
--		return mspro_block_complete_req(card, (*mrq)->error);
-+	memstick_allocate_request(card, mrq);
- 
--	switch ((*mrq)->tpc) {
--	case MS_TPC_WRITE_REG:
--		memstick_init_req(*mrq, MS_TPC_SET_CMD, &msb->transfer_cmd, 1);
--		(*mrq)->need_card_int = 1;
--		return 0;
--	case MS_TPC_SET_CMD:
--		t_val = (*mrq)->int_reg;
--		memstick_init_req(*mrq, MS_TPC_GET_INT, NULL, 1);
--		if (msb->caps & MEMSTICK_CAP_AUTO_GET_INT)
--			goto has_int_reg;
--		return 0;
--	case MS_TPC_GET_INT:
--		t_val = (*mrq)->data[0];
--has_int_reg:
--		if (t_val & (MEMSTICK_INT_CMDNAK | MEMSTICK_INT_ERR)) {
--			t_val = MSPRO_CMD_STOP;
--			memstick_init_req(*mrq, MS_TPC_SET_CMD, &t_val, 1);
--			card->next_request = h_mspro_block_default;
--			return 0;
-+	if ((*mrq)->error) {
-+		dbg(card, "IO: error (%d) executing %s", (*mrq)->error,
-+			memstick_debug_get_tpc_name((*mrq)->tpc));
-+		msb->io_error = true;
-+		card->state = 5;
-+	}
-+again:
-+	switch (card->state) {
-+
-+	case 0: /* send read/write command + args */
-+		memstick_init_req(*mrq, MS_TPC_EX_SET_CMD,
-+					&msb->arg, sizeof(msb->arg));
-+		break;
-+
-+	case 1: /* read the INT register */
-+		if (memstick_read_int_reg(card, *mrq, -1))
-+			break;
-+		card->state++;
-+
-+	case 2: /* process the int register */
-+		intreg = (*mrq)->data[0];
-+
-+		if (intreg & (MEMSTICK_INT_CMDNAK | MEMSTICK_INT_ERR)) {
-+			dbg(card, "IO: card I/O error");
-+			card->state = 5;
-+			msb->io_error = true;
-+			goto again;
- 		}
- 
--		if (msb->current_page
--		    == (msb->req_sg[msb->current_seg].length
--			/ msb->page_size)) {
--			msb->current_page = 0;
--			msb->current_seg++;
+-	card->next_request = h_memstick_set_rw_addr;
+-	memstick_new_req(card->host);
+-	wait_for_completion(&card->mrq_complete);
 -
--			if (msb->current_seg == msb->seg_count) {
--				if (t_val & MEMSTICK_INT_CED) {
--					return mspro_block_complete_req(card,
--									0);
--				} else {
--					card->next_request
--						= h_mspro_block_wait_for_ced;
--					memstick_init_req(*mrq, MS_TPC_GET_INT,
--							  NULL, 1);
--					return 0;
--				}
-+		/* we need CED for last page */
-+		if (!msb->current_sg) {
-+			if (!(intreg & MEMSTICK_INT_CED)) {
-+				card->state--;
-+				goto again;
- 			}
-+
-+			memstick_read_int_reg_cleanup(card);
-+			card->state = 6;
-+			goto again;
- 		}
- 
--		if (!(t_val & MEMSTICK_INT_BREQ)) {
--			memstick_init_req(*mrq, MS_TPC_GET_INT, NULL, 1);
--			return 0;
-+		/* And BREQ for non last... */
-+		if (!(intreg & MEMSTICK_INT_BREQ)) {
-+			card->state--;
-+			goto again;
- 		}
- 
--		t_offset = msb->req_sg[msb->current_seg].offset;
--		t_offset += msb->current_page * msb->page_size;
-+		memstick_read_int_reg_cleanup(card);
-+		card->state++;
-+
-+	case 3: /* init transfer of the data */
-+		t_offset = msb->current_sg->offset;
-+		t_offset += msb->current_sg_offset;
- 
-+		sg_init_table(&t_sg, 1);
- 		sg_set_page(&t_sg,
--			    nth_page(sg_page(&(msb->req_sg[msb->current_seg])),
--				     t_offset >> PAGE_SHIFT),
--			    msb->page_size, offset_in_page(t_offset));
-+			nth_page(sg_page(msb->current_sg),
-+			t_offset >> PAGE_SHIFT),
-+			msb->page_size,
-+			offset_in_page(t_offset));
- 
- 		memstick_init_req_sg(*mrq, msb->data_dir == READ
- 					   ? MS_TPC_READ_LONG_DATA
- 					   : MS_TPC_WRITE_LONG_DATA,
- 				     &t_sg);
- 		(*mrq)->need_card_int = 1;
--		return 0;
--	case MS_TPC_READ_LONG_DATA:
--	case MS_TPC_WRITE_LONG_DATA:
--		msb->current_page++;
--		if (msb->caps & MEMSTICK_CAP_AUTO_GET_INT) {
--			t_val = (*mrq)->int_reg;
--			goto has_int_reg;
--		} else {
--			memstick_init_req(*mrq, MS_TPC_GET_INT, NULL, 1);
--			return 0;
-+		break;
-+
-+	case 4: /* switch to next page */
-+		msb->current_sg_offset += msb->page_size;
-+		msb->data_transferred += msb->page_size;
-+
-+		if (msb->current_sg_offset == msb->current_sg->length) {
-+			msb->current_sg_offset = 0;
-+			msb->current_sg = sg_next(msb->current_sg);
- 		}
- 
-+		card->state = 1;
-+		goto again;
-+
-+	case 5: /* after a error send STOP command */
-+		command = MSPRO_CMD_STOP;
-+		memstick_init_req(*mrq, MS_TPC_SET_CMD, &command, 1);
-+		break;
-+
-+	case 6: /* request complete - get next one*/
-+		spin_lock_irqsave(&msb->q_lock, flags);
-+
-+		if (msb->io_error)
-+			(*mrq)->error = -EIO;
-+
-+		if (msb->block_req) {
-+			mspro_block_complete_req(card, (*mrq)->error);
-+			error = mspro_block_issue_req(card);
-+
-+			if (!msb->block_req) {
-+				dbg_v(card, "IO: out of requests");
-+				memstick_complete_request(card, *mrq, 0);
-+				spin_unlock_irqrestore(&msb->q_lock, flags);
-+				return -EAGAIN;
-+			}
-+
-+			spin_unlock_irqrestore(&msb->q_lock, flags);
-+			(*mrq)->error = 0;
-+			card->state = 0;
-+			goto again;
-+
-+		} else {
-+			spin_unlock_irqrestore(&msb->q_lock, flags);
-+			return memstick_complete_request(card, *mrq, 0);
-+		}
- 	default:
- 		BUG();
- 	}
-+
-+	card->state++;
-+	return 0;
- }
- 
--/*** Data transfer ***/
-+/* Common helper that prepares state for IO (read, write, read attributes) */
-+static int mspro_block_setup_io(struct memstick_dev *card, int direction,
-+				int sector, int pages, unsigned char command)
-+{
-+	struct mspro_block_data *msb = memstick_get_drvdata(card);
-+
-+	msb->current_sg_offset = 0;
-+	msb->current_sg = msb->req_sg;
-+	msb->data_transferred = 0;
-+	msb->io_error = false;
-+
-+	msb->arg.command = command;
-+	msb->arg.data_count = cpu_to_be16(pages);
-+	msb->arg.data_address = cpu_to_be32(sector);
-+	msb->data_dir = direction;
-+	return 0;
-+}
- 
--static int mspro_block_issue_req(struct memstick_dev *card, int chunk)
-+/*
-+ * Start execution of next block request,
-+ * or continue execution of the current one
-+ */
-+static int mspro_block_issue_req(struct memstick_dev *card)
- {
- 	struct mspro_block_data *msb = memstick_get_drvdata(card);
--	sector_t t_sec;
--	unsigned int count;
--	struct mspro_param_register param;
--
--try_again:
--	while (chunk) {
--		msb->current_page = 0;
--		msb->current_seg = 0;
--		msb->seg_count = blk_rq_map_sg(msb->block_req->q,
--					       msb->block_req,
--					       msb->req_sg);
--
--		if (!msb->seg_count) {
--			chunk = __blk_end_request_cur(msb->block_req, -ENOMEM);
--			continue;
-+	sector_t sec;
-+	bool is_read;
-+	unsigned int pages;
-+again:
-+	/* get next request from block core if we don't have one */
-+	if (!msb->block_req) {
-+		dbg(card, "IO: fetching new request from block queue");
-+		msb->block_req = blk_fetch_request(msb->queue);
-+		if (!msb->block_req) {
-+			dbg(card, "IO: failed, because queue is empty");
-+			return -EAGAIN;
- 		}
-+	}
- 
--		t_sec = blk_rq_pos(msb->block_req) << 9;
--		sector_div(t_sec, msb->page_size);
-+	sec = blk_rq_pos(msb->block_req) << 9;
-+	sector_div(sec, msb->page_size);
-+	pages = blk_rq_bytes(msb->block_req) / msb->page_size;
- 
--		count = blk_rq_bytes(msb->block_req);
--		count /= msb->page_size;
-+	if (!blk_rq_map_sg(msb->block_req->q, msb->block_req, msb->req_sg)) {
-+		dbg(card, "IO: out of memory");
-+		if (!__blk_end_request_cur(msb->block_req, -ENOMEM))
-+			msb->block_req = NULL;
-+		goto again;
-+	}
- 
--		param.system = msb->system;
--		param.data_count = cpu_to_be16(count);
--		param.data_address = cpu_to_be32((uint32_t)t_sec);
--		param.tpc_param = 0;
-+	is_read = rq_data_dir(msb->block_req) == READ;
- 
--		msb->data_dir = rq_data_dir(msb->block_req);
--		msb->transfer_cmd = msb->data_dir == READ
--				    ? MSPRO_CMD_READ_DATA
--				    : MSPRO_CMD_WRITE_DATA;
-+	mspro_block_setup_io(card, rq_data_dir(msb->block_req), sec, pages,
-+		is_read ? MSPRO_CMD_READ_DATA : MSPRO_CMD_WRITE_DATA);
- 
--		dev_dbg(&card->dev, "data transfer: cmd %x, "
--			"lba %x, count %x\n", msb->transfer_cmd,
--			be32_to_cpu(param.data_address), count);
-+	dbg(card, "IO: %s: lba %x, pages %x", is_read ? "read" : "write",
-+					(unsigned int)sec, pages);
- 
--		card->next_request = h_mspro_block_req_init;
--		msb->mrq_handler = h_mspro_block_transfer_data;
--		memstick_init_req(&card->current_mrq, MS_TPC_WRITE_REG,
--				  &param, sizeof(param));
--		memstick_new_req(card->host);
--		return 0;
-+	/* can't use memstick_run_state_machine because we don't block */
-+	card->next_request = h_mspro_block_transfer_data;
-+	return 0;
-+}
-+
-+/*
-+ * Completes execution of current block request.
-+ *  After execution of this function, the msb->block_req might or might not
-+ *  be NULL. If it is, it means we don't have any more requests to process
-+ */
-+static void mspro_block_complete_req(struct memstick_dev *card, int error)
-+{
-+	struct mspro_block_data *msb = memstick_get_drvdata(card);
-+
-+	dbg(card, "IO: transferred %d bytes ", msb->data_transferred);
-+
-+	if (msb->data_transferred) {
-+		if (!__blk_end_request(msb->block_req, 0,
-+						msb->data_transferred))
-+			msb->block_req = NULL;
- 	}
- 
--	dev_dbg(&card->dev, "blk_fetch\n");
--	msb->block_req = blk_fetch_request(msb->queue);
--	if (!msb->block_req) {
--		dev_dbg(&card->dev, "issue end\n");
--		return -EAGAIN;
-+	if (error && msb->block_req) {
-+		dbg(card, "IO: failure (%d) of transfter of one sector", error);
-+		if (!__blk_end_request(msb->block_req, 0, msb->page_size))
-+			msb->block_req = NULL;
- 	}
-+}
-+
-+/* Read data from attribute space */
-+static int mspro_block_read_attribute(struct memstick_dev *card,
-+					int offset, void *buffer, int len)
-+{
-+	struct mspro_block_data *msb = memstick_get_drvdata(card);
- 
--	dev_dbg(&card->dev, "trying again\n");
--	chunk = 1;
--	goto try_again;
-+	dbg(card, "reading attribute space at offset %08x, size %d",
-+								offset, len);
-+	sg_init_one(&msb->req_sg[0], buffer, len);
-+	mspro_block_setup_io(card, READ, offset / msb->page_size,
-+				len / msb->page_size, MSPRO_CMD_READ_ATRB);
-+	return memstick_run_state_machine(card, h_mspro_block_transfer_data);
- }
- 
--static int mspro_block_complete_req(struct memstick_dev *card, int error)
-+/* Memory allocated for attributes by this function should be freed by
-+ * mspro_block_data_clear, no matter if the initialization process succeded
-+ * or failed.
-+ */
-+static int mspro_block_read_attributes(struct memstick_dev *card)
- {
- 	struct mspro_block_data *msb = memstick_get_drvdata(card);
--	int chunk, cnt;
--	unsigned int t_len = 0;
--	unsigned long flags;
-+	struct mspro_attribute *attr = NULL;
-+	struct mspro_sys_attr *s_attr = NULL;
- 
--	spin_lock_irqsave(&msb->q_lock, flags);
--	dev_dbg(&card->dev, "complete %d, %d\n", msb->has_request ? 1 : 0,
--		error);
-+	unsigned char *buffer = NULL;
-+	unsigned int buffer_size, new_buffer_size, buffer_address = 0;
-+	unsigned int attr_size, attr_addr, attr_page_offset;
- 
--	if (msb->has_request) {
--		/* Nothing to do - not really an error */
--		if (error == -EAGAIN)
--			error = 0;
-+	int cnt, error, attr_count;
- 
--		if (error || (card->current_mrq.tpc == MSPRO_CMD_STOP)) {
--			if (msb->data_dir == READ) {
--				for (cnt = 0; cnt < msb->current_seg; cnt++)
--					t_len += msb->req_sg[cnt].length
--						 / msb->page_size;
-+	/* Allocate initial buffer */
-+	buffer_size = msb->page_size;
-+	buffer_address = 0;
-+	buffer = kmalloc(buffer_size, GFP_KERNEL);
-+	if (!buffer)
-+		return -ENOMEM;
- 
--					if (msb->current_page)
--						t_len += msb->current_page - 1;
-+	/* Read the attribute list */
-+	error = mspro_block_read_attribute(card, 0, buffer, buffer_size);
-+	if (error)
-+		goto out_free_buffer;
- 
--					t_len *= msb->page_size;
--			}
--		} else
--			t_len = blk_rq_bytes(msb->block_req);
-+	attr = kmalloc(buffer_size, GFP_KERNEL);
-+	if (!attr)
-+		goto out_free_buffer;
-+	memcpy(attr, buffer, buffer_size);
-+
-+
-+	/* Test it for sanity */
-+	if (be16_to_cpu(attr->signature) != MSPRO_BLOCK_SIGNATURE) {
-+		printk(KERN_ERR "%s: unrecognized device signature %x\n",
-+		       dev_name(&card->dev), be16_to_cpu(attr->signature));
-+		error = -ENODEV;
-+		goto out_free_buffer;
-+	}
- 
--		dev_dbg(&card->dev, "transferred %x (%d)\n", t_len, error);
-+	if (attr->count > MSPRO_BLOCK_MAX_ATTRIBUTES)
-+		printk(KERN_WARNING "%s: way too many attribute entries\n",
-+		       dev_name(&card->dev));
- 
--		if (error && !t_len)
--			t_len = blk_rq_cur_bytes(msb->block_req);
-+	attr_count = min((int)attr->count, (int)MSPRO_BLOCK_MAX_ATTRIBUTES);
- 
--		chunk = __blk_end_request(msb->block_req, error, t_len);
-+	/* Allocate attribute group */
-+	error = -ENOMEM;
-+	msb->attr_group.attrs = kzalloc((attr_count + 1) *
-+					sizeof(struct attribute), GFP_KERNEL);
-+	if (!msb->attr_group.attrs)
-+		goto out_free_buffer;
-+
-+	msb->attr_group.name = "media_attributes";
-+
-+	/* Read all other attributes */
-+	for (cnt = 0; cnt < attr_count; ++cnt) {
-+
-+		/* Create new sysfs attribute */
-+		s_attr = kzalloc(sizeof(struct mspro_sys_attr), GFP_KERNEL);
-+		error = -ENOMEM;
-+		if (!s_attr)
-+			goto out_free_buffer;
- 
--		error = mspro_block_issue_req(card, chunk);
-+		sysfs_attr_init(&s_attr->dev_attr.attr);
-+		s_attr->dev_attr.attr.name = s_attr->name;
-+		s_attr->dev_attr.attr.mode = S_IRUGO;
-+		s_attr->id = attr->entries[cnt].id;
-+		s_attr->dev_attr.show = mspro_block_attr_show(s_attr->id);
- 
--		if (!error)
--			goto out;
-+		if (mspro_block_attr_name(s_attr->id))
-+			snprintf(s_attr->name, sizeof(s_attr->name), "%s",
-+				 mspro_block_attr_name(attr->entries[cnt].id));
- 		else
--			msb->has_request = 0;
--	} else {
--		if (!error)
--			error = -EAGAIN;
-+			snprintf(s_attr->name, sizeof(s_attr->name),
-+				 "attr_x%02x", attr->entries[cnt].id);
-+
-+		msb->attr_group.attrs[cnt] = &s_attr->dev_attr.attr;
-+
-+
-+		attr_addr = be32_to_cpu(attr->entries[cnt].address);
-+		attr_size = be32_to_cpu(attr->entries[cnt].size);
-+		attr_page_offset = attr_addr % msb->page_size;
-+
-+		if (!attr_size)
-+			continue;
-+
-+		dbg(card, "adding attribute %d: id %x, address %x, size %x",
-+			cnt, s_attr->id, attr_addr, attr_size);
-+
-+		s_attr->size = attr_size;
-+		s_attr->data = kmalloc(attr_size, GFP_KERNEL);
-+		if (!s_attr->data) {
-+			error = -ENOMEM;
-+			goto out_free_buffer;
-+		}
-+
-+		/* If we already read that attribute as part of last one,
-+								use that */
-+		if (round_down(attr_addr, msb->page_size) == buffer_address &&
-+		    attr_addr + attr_size <= buffer_address + buffer_size) {
-+
-+			memcpy(s_attr->data, buffer + attr_page_offset,
-+								attr_size);
-+			continue;
-+		}
-+
-+		/* Reallocate buffer if nessesary */
-+		new_buffer_size = roundup(attr_page_offset + attr_size,
-+								msb->page_size);
-+		buffer_address = round_down(attr_addr, msb->page_size);
-+
-+		if (new_buffer_size > buffer_size) {
-+			kfree(buffer);
-+			buffer_size = new_buffer_size;
-+			buffer = kmalloc(buffer_size, GFP_KERNEL);
-+			if (!buffer)
-+				goto out_free_buffer;
-+
-+		}
-+
-+		/* Finaly read and save the attrubute */
-+		error = mspro_block_read_attribute(card,
-+			buffer_address,
-+			buffer, new_buffer_size);
-+		memcpy(s_attr->data, buffer + attr_page_offset, attr_size);
- 	}
- 
--	card->next_request = h_mspro_block_default_bad;
--	complete_all(&card->mrq_complete);
--out:
--	spin_unlock_irqrestore(&msb->q_lock, flags);
-+	error = 0;
-+out_free_buffer:
-+	kfree(buffer);
-+	kfree(attr);
- 	return error;
- }
- 
-+/*
-+ * This pauses driver.
-+ * Makes sure that driver won't send any commands to the device
-+ */
- static void mspro_block_stop(struct memstick_dev *card)
- {
- 	struct mspro_block_data *msb = memstick_get_drvdata(card);
-@@ -787,7 +857,7 @@ static void mspro_block_stop(struct memstick_dev *card)
- 
- 	while (1) {
- 		spin_lock_irqsave(&msb->q_lock, flags);
--		if (!msb->has_request) {
-+		if (!msb->block_req) {
- 			blk_stop_queue(msb->queue);
- 			rc = 1;
- 		}
-@@ -800,6 +870,7 @@ static void mspro_block_stop(struct memstick_dev *card)
- 	}
- }
- 
-+/* This undoes effects of mspro_block_stop */
- static void mspro_block_start(struct memstick_dev *card)
- {
- 	struct mspro_block_data *msb = memstick_get_drvdata(card);
-@@ -829,348 +900,129 @@ static void mspro_block_submit_req(struct request_queue *q)
- 	struct mspro_block_data *msb = memstick_get_drvdata(card);
- 	struct request *req = NULL;
- 
--	if (msb->has_request)
-+	dbg(card, "IO: block layer submits us new request");
-+
-+	if (msb->block_req) {
-+		dbg(card, "IO: Already have an request");
- 		return;
-+	}
- 
- 	if (msb->eject) {
-+		dbg(card, "IO: Refusing requests on removed card");
- 		while ((req = blk_fetch_request(q)) != NULL)
- 			__blk_end_request_all(req, -ENODEV);
--
- 		return;
- 	}
- 
--	msb->has_request = 1;
--	if (mspro_block_issue_req(card, 0))
--		msb->has_request = 0;
+-	return card->current_mrq.error;
 -}
+-EXPORT_SYMBOL(memstick_set_rw_addr);
 -
--/*** Initialization ***/
 -
--static int mspro_block_wait_for_ced(struct memstick_dev *card)
+-/**
+- * memstick_allocate_request - create new request for use in request handler
+- * @card - card to use
+- * @mrq - request to initialize
+- */
+-void memstick_allocate_request(struct memstick_dev *card,
+-					struct memstick_request **mrq)
 -{
--	struct mspro_block_data *msb = memstick_get_drvdata(card);
+-	if (*mrq == NULL) {
+-		*mrq = &card->current_mrq;
+-		(*mrq)->error = 0;
+-		(*mrq)->need_card_int = 0;
+-		card->int_polling = false;
+-		card->state = 0;
+-	}
+-}
+-EXPORT_SYMBOL(memstick_allocate_request);
 -
--	card->next_request = h_mspro_block_req_init;
--	msb->mrq_handler = h_mspro_block_wait_for_ced;
--	memstick_init_req(&card->current_mrq, MS_TPC_GET_INT, NULL, 1);
+-/**
+- * memstick_complete_req - signal that request is completed
+- * @card - card to use
+- * @mrq - request to use
+- * @error - result of the request
+- *
+- * Card drivers can use that function to signal end of request
+- */
+-int memstick_complete_request(struct memstick_dev *card,
+-			struct memstick_request *req, int error)
+-{
+-	if (error)
+-		req->error = error;
+-
+-	card->state = -1;
+-	card->int_polling = false;
+-	card->next_request = h_memstick_default_bad;
+-
+-	/* Invalidate reg window on errors */
+-	if (req->error)
+-		memstick_invalidate_reg_window(card);
+-
+-	complete(&card->mrq_complete);
+-	return -EAGAIN;
+-}
+-EXPORT_SYMBOL(memstick_complete_request);
+-
+ /**
+  * memstick_read_int_reg - read INT status from the card
+  * if last request already contains the int flags, will return 0
+  * returns 1 if new request was initialized
+- * Will artifictially return MEMSTICK_INT_CMDNAK if this function was
+- * called more that once in 300 msecs without memstick_finish_int_request
+- * in between
++ * Will artifictially return MEMSTICK_INT_CMDNAK if more that 'timeout' msecs
++ * passed after last MS_TPC_GET_INT request (and no requests in between)
++ * if timeout == -1, then it is set to default value of 300 msec
+  * @card - card to use
+- * @req - request to use
++ * @timeout - the timeout. if -1, then uses default
+  */
+ 
+-int memstick_read_int_reg(struct memstick_dev *card,
+-				struct memstick_request *req, long timeout)
++int memstick_read_int_reg(struct memstick_dev *card, long timeout)
+ {
++	struct memstick_request *mrq = &card->current_mrq;
++	WARN_ON(!card->state_machine_running);
+ 
+ 	if (!card->int_polling) {
+ 		card->int_timeout = jiffies +
+ 			msecs_to_jiffies(timeout == -1 ? 300 : timeout);
+ 		card->int_polling = true;
+ 	} else if (time_after(jiffies, card->int_timeout)) {
+-		req->data[0] = MEMSTICK_INT_CMDNAK;
++		mrq->data[0] = MEMSTICK_INT_CMDNAK;
+ 		return 0;
+ 	}
+ 
+ 	if (((card->caps | card->host->caps) & MEMSTICK_CAP_AUTO_GET_INT) &&
+-							req->need_card_int) {
+-		BUG_ON(req->error);
+-		req->data[0] = req->int_reg;
+-		req->need_card_int = 0;
++				mrq->need_card_int && !mrq->error) {
++		mrq->data[0] = mrq->int_reg;
++		mrq->need_card_int = false;
+ 		return 0;
+ 	} else {
+-		memstick_init_req(req, MS_TPC_GET_INT, NULL, 1);
++		memstick_init_req(card, MS_TPC_GET_INT, NULL, 1);
+ 		return 1;
+ 	}
+ }
+@@ -469,19 +510,6 @@ EXPORT_SYMBOL(memstick_read_int_reg);
+ 
+ 
+ /**
+- * memstick_read_int_reg_cleanup - cleanup after series of calls to
+- * memstick_read_int_reg. Used to cancel timeout.
+- * Use this if you use memstick_read_int_reg
+- * @card - card to use
+- */
+-void memstick_read_int_reg_cleanup(struct memstick_dev *card)
+-{
+-	card->int_polling = false;
+-}
+-EXPORT_SYMBOL(memstick_read_int_reg_cleanup);
+-
+-
+-/**
+  * memstick_read_regs - read the ms registers
+  * If there is need to change the R/W window,
+  * it will create the MS_TPC_SET_RW_REG_ADRS request and return 0,
+@@ -492,9 +520,10 @@ EXPORT_SYMBOL(memstick_read_int_reg_cleanup);
+  * @req - request to use
+  */
+ 
+-int memstick_read_regs(struct memstick_dev *card, int offset, int len,
+-	struct memstick_request *req)
++int memstick_read_regs(struct memstick_dev *card, int offset, int len)
+ {
++	WARN_ON(!card->state_machine_running);
++
+ 	if (card->reg_addr.r_offset != offset ||
+ 					card->reg_addr.r_length != len) {
+ 		card->reg_addr.r_offset = offset;
+@@ -508,12 +537,12 @@ int memstick_read_regs(struct memstick_dev *card, int offset, int len,
+ 			card->reg_addr.w_length = sizeof(struct ms_id_register);
+ 		}
+ 
+-		memstick_init_req(req, MS_TPC_SET_RW_REG_ADRS, &card->reg_addr,
++		memstick_init_req(card, MS_TPC_SET_RW_REG_ADRS, &card->reg_addr,
+ 			sizeof(card->reg_addr));
+ 		return 0;
+ 	}
+ 
+-	memstick_init_req(req, MS_TPC_READ_REG, NULL, len);
++	memstick_init_req(card, MS_TPC_READ_REG, NULL, len);
+ 	return 1;
+ }
+ EXPORT_SYMBOL(memstick_read_regs);
+@@ -527,11 +556,12 @@ EXPORT_SYMBOL(memstick_read_regs);
+  * @offset - offset of first register to read
+  * @len - number of bytes to read
+  * @buf - the register data to write
+- * @req - request to use
+  */
+-int memstick_write_regs(struct memstick_dev *card, int offset, int len,
+-	char *buf, struct memstick_request *req)
++int memstick_write_regs(struct memstick_dev *card,
++					int offset, int len, void *buf)
+ {
++	WARN_ON(!card->state_machine_running);
++
+ 	if (card->reg_addr.w_offset != offset ||
+ 					card->reg_addr.w_length != len) {
+ 		card->reg_addr.w_offset = offset;
+@@ -546,35 +576,47 @@ int memstick_write_regs(struct memstick_dev *card, int offset, int len,
+ 			card->reg_addr.r_length = sizeof(struct ms_id_register);
+ 		}
+ 
+-		memstick_init_req(req, MS_TPC_SET_RW_REG_ADRS, &card->reg_addr,
++		memstick_init_req(card, MS_TPC_SET_RW_REG_ADRS, &card->reg_addr,
+ 			sizeof(card->reg_addr));
+ 		return 0;
+ 	}
+ 
+-	memstick_init_req(req, MS_TPC_WRITE_REG, buf, len);
++	memstick_init_req(card, MS_TPC_WRITE_REG, buf, len);
+ 	return 1;
+ }
+ EXPORT_SYMBOL(memstick_write_regs);
+ 
+ 
+ /**
+- * memstick_run_state_machine - runs state machine untill it calls
+- * memstick_complete_request.
+- * Usefull for blocking IO in the card drivers.
++ * memstick_state_machine_exit - signal that request is completed
+  * @card - card to use
+- * state_func - the state machine
++ * @mrq - request to use
++ * @error - result of the request
++ *
++ * State machines call this to signal quit
+  */
+-int memstick_run_state_machine(struct memstick_dev *card,
+-	int   (*state_func)(struct memstick_dev *card,
+-					struct memstick_request **mrq))
++int memstick_state_machine_exit(struct memstick_dev *card, int error)
+ {
+-	card->next_request = state_func;
 -	memstick_new_req(card->host);
 -	wait_for_completion(&card->mrq_complete);
 -	return card->current_mrq.error;
-+	if (mspro_block_issue_req(card)) {
-+		dbg(card, "IO: Falure to issue request");
-+		msb->block_req = NULL;
-+	} else
-+		memstick_new_req(card->host);
- }
- 
--static int mspro_block_set_interface(struct memstick_dev *card,
--				     unsigned char sys_reg)
-+/* Reset the card */
-+static int mspro_block_reset(struct memstick_dev *card, bool full)
- {
- 	struct memstick_host *host = card->host;
- 	struct mspro_block_data *msb = memstick_get_drvdata(card);
--	struct mspro_param_register param = {
--		.system = sys_reg,
--		.data_count = 0,
--		.data_address = 0,
--		.tpc_param = 0
--	};
-+	int error;
- 
--	card->next_request = h_mspro_block_req_init;
--	msb->mrq_handler = h_mspro_block_default;
--	memstick_init_req(&card->current_mrq, MS_TPC_WRITE_REG, &param,
--			  sizeof(param));
--	memstick_new_req(host);
--	wait_for_completion(&card->mrq_complete);
--	return card->current_mrq.error;
 -}
-+	dbg(card, "resetting the card");
+-EXPORT_SYMBOL(memstick_run_state_machine);
++	struct memstick_request *mrq = &card->current_mrq;
++	WARN_ON(!card->state_machine_running);
++
++	/* Invalidate reg window on errors */
  
--static int mspro_block_switch_interface(struct memstick_dev *card)
--{
--	struct memstick_host *host = card->host;
--	struct mspro_block_data *msb = memstick_get_drvdata(card);
--	int rc = 0;
-+	msb->system = MEMSTICK_SYS_SERIAL;
++	if (error)
++		memstick_invalidate_reg_window(card);
++
++	/* Save return value */
++	mrq->error = error;
++	card->next_request = h_memstick_default_bad;
++
++	/* Place guards against bugs */
++	card->state = -1;
++	card->state_machine_running = false;
++
++	complete(&card->mrq_complete);
++	return -ENXIO;
++}
++EXPORT_SYMBOL(memstick_state_machine_exit);
  
--try_again:
--	if (msb->caps & MEMSTICK_CAP_PAR4)
--		rc = mspro_block_set_interface(card, MEMSTICK_SYS_PAR4);
--	else
--		return 0;
+ static const char *tpc_names[] = {
+ 	"MS_TPC_READ_MG_STATUS",
+@@ -605,120 +647,35 @@ EXPORT_SYMBOL(memstick_debug_get_tpc_name);
+ 
+ 
+ /**
+- * memstick_invalidate_reg_window - invalidate the card register
+- * read/write window (start, len)
+- * Use when not certain if card still remembers it
++ * memstick_reset_card - power cycles the card
++ * @card - card to use
+  */
+-void memstick_invalidate_reg_window(struct memstick_dev *card)
++int memstick_reset_card(struct memstick_dev *card)
+ {
+-	memset(&card->reg_addr, 0, sizeof(card->reg_addr));
+-}
+-EXPORT_SYMBOL(memstick_invalidate_reg_window);
++	int error;
++	struct memstick_host *host = card->host;
+ 
++	memstick_invalidate_reg_window(card);
+ 
 +	error = host->set_param(host, MEMSTICK_POWER, MEMSTICK_POWER_OFF);
 +	if (error)
 +		return error;
+ 
+-static struct memstick_dev *memstick_alloc_card(struct memstick_host *host)
+-{
+-	struct memstick_dev *card = kzalloc(sizeof(struct memstick_dev),
+-					    GFP_KERNEL);
+-	struct memstick_dev *old_card = host->card;
+-	struct ms_id_register id_reg;
+-
+-	if (card) {
+-		card->host = host;
+-		dev_set_name(&card->dev, "%s", dev_name(&host->dev));
+-		card->dev.parent = &host->dev;
+-		card->dev.bus = &memstick_bus_type;
+-		card->dev.release = memstick_free_card;
+-		card->check = memstick_dummy_check;
+-
+-		card->reg_addr.r_offset = offsetof(struct ms_register, id);
+-		card->reg_addr.r_length = sizeof(id_reg);
+-		card->reg_addr.w_offset = offsetof(struct ms_register, id);
+-		card->reg_addr.w_length = sizeof(id_reg);
+-
+-		init_completion(&card->mrq_complete);
+-
+-		host->card = card;
+-		if (memstick_set_rw_addr(card))
+-			goto err_out;
+-
+-		card->next_request = h_memstick_read_dev_id;
+-		memstick_new_req(host);
+-		wait_for_completion(&card->mrq_complete);
+-
+-		if (card->current_mrq.error)
+-			goto err_out;
+-	}
+-	host->card = old_card;
+-	return card;
+-err_out:
+-	host->card = old_card;
+-	kfree(card);
+-	return NULL;
+-}
 +	msleep(50);
  
--	if (rc) {
--		printk(KERN_WARNING
--		       "%s: could not switch to 4-bit mode, error %d\n",
--		       dev_name(&card->dev), rc);
--		return 0;
--	}
+-static int memstick_power_on(struct memstick_host *host)
+-{
+-	int rc = host->set_param(host, MEMSTICK_POWER, MEMSTICK_POWER_ON);
 +	error = host->set_param(host, MEMSTICK_POWER, MEMSTICK_POWER_ON);
 +	if (error)
 +		return error;
  
--	msb->system = MEMSTICK_SYS_PAR4;
--	host->set_param(host, MEMSTICK_INTERFACE, MEMSTICK_PAR4);
--	printk(KERN_INFO "%s: switching to 4-bit parallel mode\n",
--	       dev_name(&card->dev));
--
--	if (msb->caps & MEMSTICK_CAP_PAR8) {
--		rc = mspro_block_set_interface(card, MEMSTICK_SYS_PAR8);
--
--		if (!rc) {
--			msb->system = MEMSTICK_SYS_PAR8;
--			host->set_param(host, MEMSTICK_INTERFACE,
--					MEMSTICK_PAR8);
--			printk(KERN_INFO
--			       "%s: switching to 8-bit parallel mode\n",
--			       dev_name(&card->dev));
--		} else
--			printk(KERN_WARNING
--			       "%s: could not switch to 8-bit mode, error %d\n",
--			       dev_name(&card->dev), rc);
--	}
+-	if (!rc)
+-		rc = host->set_param(host, MEMSTICK_INTERFACE, MEMSTICK_SERIAL);
 +	error = host->set_param(host, MEMSTICK_INTERFACE, MEMSTICK_SERIAL);
 +	if (error)
 +		return error;
  
--	card->next_request = h_mspro_block_req_init;
--	msb->mrq_handler = h_mspro_block_default;
--	memstick_init_req(&card->current_mrq, MS_TPC_GET_INT, NULL, 1);
--	memstick_new_req(card->host);
--	wait_for_completion(&card->mrq_complete);
--	rc = card->current_mrq.error;
-+	msleep(150);
+-	return rc;
++	return 0;
+ }
++EXPORT_SYMBOL(memstick_reset_card);
  
--	if (rc) {
--		printk(KERN_WARNING
--		       "%s: interface error, trying to fall back to serial\n",
--		       dev_name(&card->dev));
--		msb->system = MEMSTICK_SYS_SERIAL;
+-static void memstick_check(struct work_struct *work)
+-{
+-	struct memstick_host *host = container_of(work, struct memstick_host,
+-						  media_checker);
+-	struct memstick_dev *card;
+-
+-	dev_dbg(&host->dev, "memstick_check started\n");
+-	mutex_lock(&host->lock);
+-	if (!host->card) {
+-		if (memstick_power_on(host))
+-			goto out_power_off;
+-	} else if (host->card->stop)
+-		host->card->stop(host->card);
+-
+-	card = memstick_alloc_card(host);
+-
+-	if (!card) {
+-		if (host->card) {
+-			device_unregister(&host->card->dev);
+-			host->card = NULL;
+-		}
+-	} else {
+-		dev_dbg(&host->dev, "new card %02x, %02x, %02x\n",
+-			card->id.type, card->id.category, card->id.class);
+-		if (host->card) {
+-			if (memstick_set_rw_addr(host->card)
+-			    || !memstick_dev_match(host->card, &card->id)
+-			    || !(host->card->check(host->card))) {
+-				device_unregister(&host->card->dev);
+-				host->card = NULL;
+-			} else if (host->card->start)
+-				host->card->start(host->card);
+-		}
+-
+-		if (!host->card) {
+-			host->card = card;
+-			if (device_register(&card->dev)) {
+-				kfree(host->card);
+-				host->card = NULL;
+-			}
+-		} else
+-			kfree(card);
+-	}
+-
+-out_power_off:
+-	if (!host->card)
 -		host->set_param(host, MEMSTICK_POWER, MEMSTICK_POWER_OFF);
--		msleep(10);
--		host->set_param(host, MEMSTICK_POWER, MEMSTICK_POWER_ON);
--		host->set_param(host, MEMSTICK_INTERFACE, MEMSTICK_SERIAL);
 -
--		rc = memstick_set_rw_addr(card);
--		if (!rc)
--			rc = mspro_block_set_interface(card, msb->system);
--
--		if (!rc) {
--			msleep(150);
--			rc = mspro_block_wait_for_ced(card);
--			if (rc)
--				return rc;
--
--			if (msb->caps & MEMSTICK_CAP_PAR8) {
--				msb->caps &= ~MEMSTICK_CAP_PAR8;
--				goto try_again;
--			}
--		}
-+	/* Invalidate the register window */
-+	memstick_invalidate_reg_window(card);
-+
-+	error = memstick_run_state_machine(card, h_mspro_block_reset);
-+	if (error) {
-+		dbg(card, "card reset failure");
-+		return error;
- 	}
--	return rc;
-+
-+	return mspro_block_switch_interface(card);
+-	mutex_unlock(&host->lock);
+-	dev_dbg(&host->dev, "memstick_check finished\n");
+-}
++/*** host driver interface ***/
+ 
+ /**
+  * memstick_alloc_host - allocate a memstick_host structure
+@@ -837,20 +794,48 @@ void memstick_resume_host(struct memstick_host *host)
  }
+ EXPORT_SYMBOL(memstick_resume_host);
  
--/* Memory allocated for attributes by this function should be freed by
-- * mspro_block_data_clear, no matter if the initialization process succeded
-- * or failed.
-- */
--static int mspro_block_read_attributes(struct memstick_dev *card)
-+/* Attempts to switch to faster interface. Clears capablity flags if fails */
-+static int mspro_block_switch_interface(struct memstick_dev *card)
+-int memstick_register_driver(struct memstick_driver *drv)
++/**
++ * memstick_detect_change - schedule media detection on memstick host
++ * @host - host to use
++ */
++void memstick_detect_change(struct memstick_host *host)
  {
-+	struct memstick_host *host = card->host;
- 	struct mspro_block_data *msb = memstick_get_drvdata(card);
--	struct mspro_param_register param = {
--		.system = msb->system,
--		.data_count = cpu_to_be16(1),
--		.data_address = 0,
--		.tpc_param = 0
--	};
--	struct mspro_attribute *attr = NULL;
--	struct mspro_sys_attr *s_attr = NULL;
--	unsigned char *buffer = NULL;
--	int cnt, rc, attr_count;
--	unsigned int addr;
--	unsigned short page_count;
-+	int error = 0;
- 
--	attr = kmalloc(msb->page_size, GFP_KERNEL);
--	if (!attr)
--		return -ENOMEM;
+-	drv->driver.bus = &memstick_bus_type;
 -
--	sg_init_one(&msb->req_sg[0], attr, msb->page_size);
--	msb->seg_count = 1;
--	msb->current_seg = 0;
--	msb->current_page = 0;
--	msb->data_dir = READ;
--	msb->transfer_cmd = MSPRO_CMD_READ_ATRB;
--
--	card->next_request = h_mspro_block_req_init;
--	msb->mrq_handler = h_mspro_block_transfer_data;
--	memstick_init_req(&card->current_mrq, MS_TPC_WRITE_REG, &param,
--			  sizeof(param));
--	memstick_new_req(card->host);
--	wait_for_completion(&card->mrq_complete);
--	if (card->current_mrq.error) {
--		rc = card->current_mrq.error;
--		goto out_free_attr;
--	}
--
--	if (be16_to_cpu(attr->signature) != MSPRO_BLOCK_SIGNATURE) {
--		printk(KERN_ERR "%s: unrecognized device signature %x\n",
--		       dev_name(&card->dev), be16_to_cpu(attr->signature));
--		rc = -ENODEV;
--		goto out_free_attr;
--	}
--
--	if (attr->count > MSPRO_BLOCK_MAX_ATTRIBUTES) {
--		printk(KERN_WARNING "%s: way too many attribute entries\n",
--		       dev_name(&card->dev));
--		attr_count = MSPRO_BLOCK_MAX_ATTRIBUTES;
--	} else
--		attr_count = attr->count;
-+	if (!(card->caps & host->caps & MEMSTICK_CAP_PAR4))
-+		return 0;
- 
--	msb->attr_group.attrs = kzalloc((attr_count + 1)
--					* sizeof(struct attribute),
--					GFP_KERNEL);
--	if (!msb->attr_group.attrs) {
--		rc = -ENOMEM;
--		goto out_free_attr;
--	}
--	msb->attr_group.name = "media_attributes";
-+	dbg(card, "trying to switch to parallel 4 bit inteface");
- 
--	buffer = kmalloc(msb->page_size, GFP_KERNEL);
--	if (!buffer) {
--		rc = -ENOMEM;
--		goto out_free_attr;
-+	msb->system = MEMSTICK_SYS_PAR4;
-+	msb->target_interface = MEMSTICK_PAR4;
-+	error = memstick_run_state_machine(card,
-+						h_mspro_block_switch_interface);
-+	if (error) {
-+		dbg(card, "failure to switch to parallel 4 bit inteface");
-+		card->caps &= ~MEMSTICK_CAP_PAR4;
-+		return mspro_block_reset(card, true);
- 	}
--	memcpy(buffer, (char *)attr, msb->page_size);
--	page_count = 1;
--
--	for (cnt = 0; cnt < attr_count; ++cnt) {
--		s_attr = kzalloc(sizeof(struct mspro_sys_attr), GFP_KERNEL);
--		if (!s_attr) {
--			rc = -ENOMEM;
--			goto out_free_buffer;
--		}
--
--		msb->attr_group.attrs[cnt] = &s_attr->dev_attr.attr;
--		addr = be32_to_cpu(attr->entries[cnt].address);
--		rc = be32_to_cpu(attr->entries[cnt].size);
--		dev_dbg(&card->dev, "adding attribute %d: id %x, address %x, "
--			"size %x\n", cnt, attr->entries[cnt].id, addr, rc);
--		s_attr->id = attr->entries[cnt].id;
--		if (mspro_block_attr_name(s_attr->id))
--			snprintf(s_attr->name, sizeof(s_attr->name), "%s",
--				 mspro_block_attr_name(attr->entries[cnt].id));
--		else
--			snprintf(s_attr->name, sizeof(s_attr->name),
--				 "attr_x%02x", attr->entries[cnt].id);
--
--		sysfs_attr_init(&s_attr->dev_attr.attr);
--		s_attr->dev_attr.attr.name = s_attr->name;
--		s_attr->dev_attr.attr.mode = S_IRUGO;
--		s_attr->dev_attr.show = mspro_block_attr_show(s_attr->id);
- 
--		if (!rc)
--			continue;
--
--		s_attr->size = rc;
--		s_attr->data = kmalloc(rc, GFP_KERNEL);
--		if (!s_attr->data) {
--			rc = -ENOMEM;
--			goto out_free_buffer;
--		}
--
--		if (((addr / msb->page_size)
--		     == be32_to_cpu(param.data_address))
--		    && (((addr + rc - 1) / msb->page_size)
--			== be32_to_cpu(param.data_address))) {
--			memcpy(s_attr->data, buffer + addr % msb->page_size,
--			       rc);
--			continue;
--		}
--
--		if (page_count <= (rc / msb->page_size)) {
--			kfree(buffer);
--			page_count = (rc / msb->page_size) + 1;
--			buffer = kmalloc(page_count * msb->page_size,
--					 GFP_KERNEL);
--			if (!buffer) {
--				rc = -ENOMEM;
--				goto out_free_attr;
--			}
--		}
--
--		param.system = msb->system;
--		param.data_count = cpu_to_be16((rc / msb->page_size) + 1);
--		param.data_address = cpu_to_be32(addr / msb->page_size);
--		param.tpc_param = 0;
--
--		sg_init_one(&msb->req_sg[0], buffer,
--			    be16_to_cpu(param.data_count) * msb->page_size);
--		msb->seg_count = 1;
--		msb->current_seg = 0;
--		msb->current_page = 0;
--		msb->data_dir = READ;
--		msb->transfer_cmd = MSPRO_CMD_READ_ATRB;
--
--		dev_dbg(&card->dev, "reading attribute pages %x, %x\n",
--			be32_to_cpu(param.data_address),
--			be16_to_cpu(param.data_count));
--
--		card->next_request = h_mspro_block_req_init;
--		msb->mrq_handler = h_mspro_block_transfer_data;
--		memstick_init_req(&card->current_mrq, MS_TPC_WRITE_REG,
--				  (char *)&param, sizeof(param));
--		memstick_new_req(card->host);
--		wait_for_completion(&card->mrq_complete);
--		if (card->current_mrq.error) {
--			rc = card->current_mrq.error;
--			goto out_free_buffer;
--		}
-+	if (!(card->caps & host->caps & MEMSTICK_CAP_PAR8))
-+		return 0;
- 
--		memcpy(s_attr->data, buffer + addr % msb->page_size, rc);
-+	msb->system = MEMSTICK_SYS_PAR8;
-+	msb->target_interface = MEMSTICK_PAR8;
-+	dbg(card, "trying to switch to parallel 8 bit inteface");
-+	error = memstick_run_state_machine(card,
-+					h_mspro_block_switch_interface);
-+	if (error) {
-+		dbg(card, "failure to switch to parallel 8 bit inteface");
-+		card->caps &= ~MEMSTICK_CAP_PAR8;
-+		return mspro_block_reset(card, true);
- 	}
- 
--	rc = 0;
--out_free_buffer:
--	kfree(buffer);
--out_free_attr:
--	kfree(attr);
--	return rc;
-+	return error;
+-	return driver_register(&drv->driver);
++	queue_work(workqueue, &host->media_checker);
  }
+-EXPORT_SYMBOL(memstick_register_driver);
++EXPORT_SYMBOL(memstick_detect_change);
  
- static int mspro_block_init_card(struct memstick_dev *card)
+-void memstick_unregister_driver(struct memstick_driver *drv)
++/**
++ * memstick_next_req - called by host driver to obtain next request to process
++ * @host - host to use
++ * @mrq - pointer to stick the request to
++ *
++ * Host calls this function from idle state (*mrq == NULL) or after finishing
++ * previous request (*mrq should point to it). If previous request was
++ * unsuccessful, it is retried for predetermined number of times. Return value
++ * of 0 means that new request was assigned to the host.
++ */
++int memstick_next_req(struct memstick_host *host, struct memstick_request **mrq)
  {
- 	struct mspro_block_data *msb = memstick_get_drvdata(card);
--	struct memstick_host *host = card->host;
- 	int rc = 0;
+-	driver_unregister(&drv->driver);
+-}
+-EXPORT_SYMBOL(memstick_unregister_driver);
++	int rc = -ENXIO;
++
++	if ((*mrq) && (*mrq)->error && host->retries) {
++		(*mrq)->error = rc;
++		host->retries--;
++		return 0;
++	}
++
++	if (host->card && host->card->next_request)
++		rc = host->card->next_request(host->card);
  
--	msb->system = MEMSTICK_SYS_SERIAL;
--	card->reg_addr.r_offset = offsetof(struct mspro_register, status);
--	card->reg_addr.r_length = sizeof(struct ms_status_register);
--	card->reg_addr.w_offset = offsetof(struct mspro_register, param);
--	card->reg_addr.w_length = sizeof(struct mspro_param_register);
++	if (!rc) {
++		*mrq = &host->card->current_mrq;
++		host->retries = cmd_retries > 1 ? cmd_retries - 1 : 1;
++	} else
++		*mrq = NULL;
++
++	return rc;
++}
++EXPORT_SYMBOL(memstick_next_req);
+ 
+ static int __init memstick_init(void)
+ {
+diff --git a/drivers/memstick/core/ms_block.c b/drivers/memstick/core/ms_block.c
+index 75ec529..9a9aa3a 100644
+--- a/drivers/memstick/core/ms_block.c
++++ b/drivers/memstick/core/ms_block.c
+@@ -241,17 +241,17 @@ static int msb_advance_sg(struct msb_data *msb)
+  * Writes output to msb->current_sg, takes sector address from msb->reg.param
+  * Can also be used to read extra data only. Set params accordintly.
+  */
+-static int h_msb_read_page(struct memstick_dev *card,
+-				 struct memstick_request **mrq)
++static int h_msb_read_page(struct memstick_dev *card)
+ {
+ 	struct msb_data *msb = memstick_get_drvdata(card);
++	struct memstick_request *mrq = &card->current_mrq;
++
+ 	struct scatterlist sg;
+ 	u8 command, intreg;
+ 
+-	memstick_allocate_request(card, mrq);
+-	if ((*mrq)->error) {
++	if (mrq->error) {
+ 		dbg("read_page, unknown error");
+-		return memstick_complete_request(card, *mrq, 0);
++		return memstick_state_machine_exit(card, mrq->error);
+ 	}
+ again:
+ 	switch (card->state) {
+@@ -259,35 +259,32 @@ again:
+ 		if (!memstick_write_regs(card,
+ 			offsetof(struct ms_register, param),
+ 			sizeof(struct ms_param_register),
+-			(unsigned char *)&msb->regs.param,
+-			*mrq))
++			(unsigned char *)&msb->regs.param))
+ 			return 0;
+ 		break;
+ 
+ 	case 1: /* Execute the read command*/
+ 		command = MS_CMD_BLOCK_READ;
+-		memstick_init_req(*mrq, MS_TPC_SET_CMD, &command, 1);
++		memstick_init_req(card, MS_TPC_SET_CMD, &command, 1);
+ 		break;
+ 
+ 	case 2: /* send INT request */
+-		if (memstick_read_int_reg(card, *mrq, -1))
++		if (memstick_read_int_reg(card, -1))
+ 			break;
+ 		card->state++;
+ 
+ 	case 3: /* get result of the INT request*/
+-		intreg = (*mrq)->data[0];
++		intreg = mrq->data[0];
+ 		msb->regs.status.interrupt = intreg;
+ 
+ 		if (intreg & MEMSTICK_INT_CMDNAK)
+-			return memstick_complete_request(card, *mrq, -EIO);
++			return memstick_state_machine_exit(card, -EIO);
+ 
+ 		if (!(intreg & MEMSTICK_INT_CED)) {
+ 			card->state--;
+ 			goto again;
+ 		}
+ 
+-		memstick_read_int_reg_cleanup(card);
 -
--	if (memstick_set_rw_addr(card))
--		return -EIO;
--
--	msb->caps = host->caps;
-+	/* TODO: can't we know what card supports from attributes? */
-+	card->caps = MEMSTICK_CAP_PAR4 | MEMSTICK_CAP_PAR8;
+ 		if (intreg & MEMSTICK_INT_ERR)
+ 			card->state++;
+ 		else
+@@ -298,26 +295,24 @@ again:
+ 	case 4: /* read the status register to understand source of the INT_ERR */
+ 		if (!memstick_read_regs(card,
+ 			offsetof(struct ms_register, status),
+-			sizeof(struct ms_status_register),
+-			*mrq))
++			sizeof(struct ms_status_register)))
+ 			return 0;
+ 		break;
  
--	msleep(150);
--	rc = mspro_block_wait_for_ced(card);
-+	rc = mspro_block_reset(card, false);
- 	if (rc)
- 		return rc;
+ 	case 5: /* get results of status check */
+-		msb->regs.status = *(struct ms_status_register *)(*mrq)->data;
++		msb->regs.status = *(struct ms_status_register *)mrq->data;
+ 		card->state++;
  
--	rc = mspro_block_switch_interface(card);
--	if (rc)
--		return rc;
--
--	dev_dbg(&card->dev, "card activated\n");
-+	dbg(card, "card activated");
- 	if (msb->system != MEMSTICK_SYS_SERIAL)
--		msb->caps |= MEMSTICK_CAP_AUTO_GET_INT;
--
--	card->next_request = h_mspro_block_req_init;
--	msb->mrq_handler = h_mspro_block_get_ro;
--	memstick_init_req(&card->current_mrq, MS_TPC_READ_REG, NULL,
--			  sizeof(struct ms_status_register));
--	memstick_new_req(card->host);
--	wait_for_completion(&card->mrq_complete);
--	if (card->current_mrq.error)
--		return card->current_mrq.error;
-+		card->caps |= MEMSTICK_CAP_AUTO_GET_INT;
+ 	case 6: /* Send extra data read request */
+ 		if (!memstick_read_regs(card,
+ 			offsetof(struct ms_register, extra_data),
+-			sizeof(struct ms_extra_data_register),
+-			*mrq))
++			sizeof(struct ms_extra_data_register)))
+ 			return 0;
+ 		break;
  
--	dev_dbg(&card->dev, "card r/w status %d\n", msb->read_only ? 0 : 1);
-+	dbg(card, "card r/w status %d", msb->read_only ? 0 : 1);
+ 	case 7: /* Save result of extra data request */
+ 		msb->regs.extra_data =
+-			*(struct ms_extra_data_register *) (*mrq)->data;
++			*(struct ms_extra_data_register *) mrq->data;
+ 		card->state++;
  
- 	msb->page_size = 512;
- 	rc = mspro_block_read_attributes(card);
- 	if (rc)
- 		return rc;
+ 	case 8: /* Send the  MS_TPC_READ_LONG_DATA to read IO buffer */
+@@ -329,25 +324,25 @@ again:
+ 		}
  
--	dev_dbg(&card->dev, "attributes loaded\n");
-+	dbg(card, "attributes loaded");
+ 		msb_set_sg(msb, &sg);
+-		memstick_init_req_sg(*mrq, MS_TPC_READ_LONG_DATA, &sg);
++		memstick_init_req_sg(card, MS_TPC_READ_LONG_DATA, &sg);
+ 		break;
+ 
+ 	case 9: /* check validity of data buffer & done */
+ 
+ 		if (!(msb->regs.status.interrupt & MEMSTICK_INT_ERR))
+-			return memstick_complete_request(card, *mrq, 0);
++			return memstick_state_machine_exit(card, 0);
+ 
+ 		if (msb->regs.status.status1 & MEMSTICK_UNCORR_ERROR) {
+ 			dbg("read_page: uncorrectable error");
+-			return memstick_complete_request(card, *mrq, -EBADMSG);
++			return memstick_state_machine_exit(card, -EBADMSG);
+ 		}
+ 
+ 		if (msb->regs.status.status1 & MEMSTICK_CORR_ERROR) {
+ 			dbg("read_page: correctable error");
+-			return memstick_complete_request(card, *mrq, -EUCLEAN);
++			return memstick_state_machine_exit(card, -EUCLEAN);
+ 		} else {
+ 			dbg("read_page: INT error, but no status error bits");
+-			return memstick_complete_request(card, *mrq, -EIO);
++			return memstick_state_machine_exit(card, -EIO);
+ 		}
+ 	default:
+ 		BUG();
+@@ -363,16 +358,16 @@ again:
+  * Returns -EBADMSG if write fails due to uncorrectable error, or -EIO if
+  * device refuses to take the command or something else
+  */
+-static int h_msb_write_block(struct memstick_dev *card,
+-				 struct memstick_request **mrq)
++static int h_msb_write_block(struct memstick_dev *card)
+ {
+ 	struct msb_data *msb = memstick_get_drvdata(card);
++	struct memstick_request *mrq = &card->current_mrq;
++
+ 	struct scatterlist sg;
+ 	u8 intreg, command;
+ 
+-	memstick_allocate_request(card, mrq);
+-	if ((*mrq)->error)
+-		return memstick_complete_request(card, *mrq, 0);
++	if (mrq->error)
++		return memstick_state_machine_exit(card, mrq->error);
+ 
+ again:
+ 	switch (card->state) {
+@@ -387,37 +382,36 @@ again:
+ 			offsetof(struct ms_register, param),
+ 			sizeof(struct ms_param_register) +
+ 			sizeof(struct ms_extra_data_register) + 2,
+-			(unsigned char *)&msb->regs.param,
+-			*mrq))
++			(unsigned char *)&msb->regs.param))
+ 			return 0;
+ 		break;
+ 
+ 	case 1: /* execute the write command*/
+ 		command = MS_CMD_BLOCK_WRITE;
+-		memstick_init_req(*mrq, MS_TPC_SET_CMD, &command, 1);
++		memstick_init_req(card, MS_TPC_SET_CMD, &command, 1);
+ 		break;
+ 
+ 	case 2: /* send INT request */
+-		if (memstick_read_int_reg(card, *mrq, -1))
++		if (memstick_read_int_reg(card, -1))
+ 			break;
+ 		card->state++;
+ 
+ 	case 3: /* read INT response */
+-		intreg = (*mrq)->data[0];
++		intreg = mrq->data[0];
+ 		msb->regs.status.interrupt = intreg;
+ 
+ 		/* errors mean out of here, and fast... */
+ 		if (intreg & (MEMSTICK_INT_CMDNAK))
+-			return memstick_complete_request(card, *mrq, -EIO);
++			return memstick_state_machine_exit(card, -EIO);
+ 
+ 		if (intreg & MEMSTICK_INT_ERR)
+-			return memstick_complete_request(card, *mrq, -EBADMSG);
++			return memstick_state_machine_exit(card, -EBADMSG);
+ 
+ 
+ 		/* for last page we need to poll CED */
+ 		if (msb->current_page == msb->pages_in_block) {
+ 			if (intreg & MEMSTICK_INT_CED)
+-				return memstick_complete_request(card, *mrq, 0);
++				return memstick_state_machine_exit(card, 0);
+ 			card->state--;
+ 			goto again;
+ 
+@@ -429,13 +423,12 @@ again:
+ 			goto again;
+ 		}
+ 
+-		memstick_read_int_reg_cleanup(card);
+ 		card->state++;
+ 
+ 	case 4: /* send the MS_TPC_WRITE_LONG_DATA to perform the write*/
+ 		msb_set_sg(msb, &sg);
+-		memstick_init_req_sg(*mrq, MS_TPC_WRITE_LONG_DATA, &sg);
+-		(*mrq)->need_card_int = 1;
++		memstick_init_req_sg(card, MS_TPC_WRITE_LONG_DATA, &sg);
++		mrq->need_card_int = 1;
+ 		break;
+ 
+ 	case 5: /* Switch to next page + go back to int polling */
+@@ -445,8 +438,8 @@ again:
+ 			if (msb_advance_sg(msb)) {
+ 				ms_printk(
+ 				"BUG: out of data while writing block!");
+-				return memstick_complete_request(card,
+-								*mrq, -EFAULT);
++				return memstick_state_machine_exit(
++								card, -EFAULT);
+ 			}
+ 		}
+ 		card->state = 2;
+@@ -462,17 +455,17 @@ again:
+  * This function is used to send simple IO requests to device that consist
+  * of register write + command
+  */
+-static int h_msb_send_command(struct memstick_dev *card,
+-				 struct memstick_request **mrq)
++static int h_msb_send_command(struct memstick_dev *card)
+ {
+ 	struct msb_data *msb = memstick_get_drvdata(card);
++	struct memstick_request *mrq = &card->current_mrq;
++
+ 	u8 intreg;
+ 	int len;
+ 
+-	memstick_allocate_request(card, mrq);
+-	if ((*mrq)->error) {
++	if (mrq->error) {
+ 		dbg("send_command: unknown error");
+-		return memstick_complete_request(card, *mrq, 0);
++		return memstick_state_machine_exit(card, mrq->error);
+ 	}
+ 
+ again:
+@@ -486,27 +479,26 @@ again:
+ 		if (!memstick_write_regs(card,
+ 			offsetof(struct ms_register, param),
+ 			len,
+-			(unsigned char *)&msb->regs.param,
+-			*mrq))
++			(unsigned char *)&msb->regs.param))
+ 			return 0;
+ 		break;
+ 
+ 	case 1: /* execute the command*/
+-		memstick_init_req(*mrq, MS_TPC_SET_CMD, &msb->command_value, 1);
++		memstick_init_req(card, MS_TPC_SET_CMD, &msb->command_value, 1);
+ 		break;
+ 
+ 	case 2: /* send INT request */
+-		if (memstick_read_int_reg(card, *mrq, -1))
++		if (memstick_read_int_reg(card, -1))
+ 			break;
+ 		card->state++;
+ 
+ 	case 3: /* poll for int bits */
+-		intreg = (*mrq)->data[0];
++		intreg = mrq->data[0];
+ 
+ 		if (intreg & MEMSTICK_INT_CMDNAK)
+-			return memstick_complete_request(card, *mrq, -EIO);
++			return memstick_state_machine_exit(card, -EIO);
+ 		if (intreg & MEMSTICK_INT_ERR)
+-			return memstick_complete_request(card, *mrq, -EBADMSG);
++			return memstick_state_machine_exit(card, -EBADMSG);
+ 
+ 
+ 		if (!(intreg & MEMSTICK_INT_CED)) {
+@@ -514,47 +506,45 @@ again:
+ 			goto again;
+ 		}
+ 
+-		memstick_read_int_reg_cleanup(card);
+-		return memstick_complete_request(card, *mrq, 0);
++		return memstick_state_machine_exit(card, 0);
+ 	}
+ 	card->state++;
  	return 0;
--
  }
  
- static int mspro_block_init_disk(struct memstick_dev *card)
-@@ -1202,6 +1054,7 @@ static int mspro_block_init_disk(struct memstick_dev *card)
- 	msb->cylinders = be16_to_cpu(dev_info->cylinders);
- 	msb->heads = be16_to_cpu(dev_info->heads);
- 	msb->sectors_per_track = be16_to_cpu(dev_info->sectors_per_track);
-+	sg_init_table(msb->req_sg, MSPRO_BLOCK_MAX_SEGS);
+ /* Small handler for card reset */
+-static int h_msb_reset(struct memstick_dev *card,
+-				 struct memstick_request **mrq)
++static int h_msb_reset(struct memstick_dev *card)
+ {
+ 	u8 command = MS_CMD_RESET;
++	struct memstick_request *mrq = &card->current_mrq;
+ 
+-	memstick_allocate_request(card, mrq);
+-	if ((*mrq)->error)
+-		return memstick_complete_request(card, *mrq, 0);
++	if (mrq->error)
++		return memstick_state_machine_exit(card, mrq->error);
+ 
+ 	switch (card->state) {
+ 	case 0:
+-		memstick_init_req(*mrq, MS_TPC_SET_CMD, &command, 1);
+-		(*mrq)->need_card_int = 0;
++		memstick_init_req(card, MS_TPC_SET_CMD, &command, 1);
++		mrq->need_card_int = 0;
+ 		break;
+ 	case 1:
+-		return memstick_complete_request(card, *mrq, 0);
++		return memstick_state_machine_exit(card, 0);
+ 	}
+ 	card->state++;
+ 	return 0;
+ }
+ 
+ /* This handler is used to do serial->parallel switch */
+-static int h_msb_parallel_switch(struct memstick_dev *card,
+-					struct memstick_request **mrq)
++static int h_msb_parallel_switch(struct memstick_dev *card)
+ {
+ 	struct msb_data *msb = memstick_get_drvdata(card);
++	struct memstick_request *mrq = &card->current_mrq;
++
+ 	struct memstick_host *host = card->host;
+ 
+-	memstick_allocate_request(card, mrq);
+-	if ((*mrq)->error) {
++	if (mrq->error) {
+ 		dbg("parallel_switch: error");
+ 		msb->regs.param.system &= ~MEMSTICK_SYS_PAM;
+-		return memstick_complete_request(card, *mrq, 0);
++		return memstick_state_machine_exit(card, mrq->error);
+ 	}
+ 
+ 	switch (card->state) {
+@@ -565,19 +555,18 @@ static int h_msb_parallel_switch(struct memstick_dev *card,
+ 		if (!memstick_write_regs(card,
+ 			offsetof(struct ms_register, param),
+ 			1,
+-			(unsigned char *)&msb->regs.param,
+-			*mrq))
++			(unsigned char *)&msb->regs.param))
+ 			return 0;
+ 		break;
+ 
+ 	case 1: /* Set parallel interface on our side + send a dummy request
+ 			to see if card responds */
+ 		host->set_param(host, MEMSTICK_INTERFACE, MEMSTICK_PAR4);
+-		memstick_init_req(&card->current_mrq, MS_TPC_GET_INT, NULL, 1);
++		memstick_init_req(card, MS_TPC_GET_INT, NULL, 1);
+ 		break;
+ 
+ 	case 2:
+-		return memstick_complete_request(card, *mrq, 0);
++		return memstick_state_machine_exit(card, 0);
+ 	}
+ 	card->state++;
+ 	return 0;
+@@ -590,21 +579,15 @@ static int msb_reset(struct msb_data *msb)
+ {
+ 	bool was_parallel = msb->regs.param.system & MEMSTICK_SYS_PAM;
+ 	struct memstick_dev *card = msb->card;
+-	struct memstick_host *host = card->host;
+ 	int error;
+ 
+-	memstick_invalidate_reg_window(card);
+-
+-	/* Reset the controller */
+-	host->set_param(host, MEMSTICK_POWER, MEMSTICK_POWER_OFF);
+-	msleep(100);
+-	host->set_param(host, MEMSTICK_POWER, MEMSTICK_POWER_ON);
+-	host->set_param(host, MEMSTICK_INTERFACE, MEMSTICK_SERIAL);
+-
+-
+ 	/* Reset the card */
+ 	msb->regs.param.system = MEMSTICK_SYS_BAMD;
+-	error = memstick_run_state_machine(card, h_msb_reset);
++	error = memstick_reset_card(card);
++
++	if (!error)
++		error = memstick_run_state_machine(card, h_msb_reset, true);
++
+ 	if (error) {
+ 		dbg("Failed to reset the card");
+ 		msb->read_only = true;
+@@ -622,7 +605,8 @@ static int msb_switch_to_parallel(struct msb_data *msb)
+ {
+ 	int error;
+ 
+-	error = memstick_run_state_machine(msb->card, h_msb_parallel_switch);
++	error = memstick_run_state_machine(msb->card,
++						h_msb_parallel_switch, true);
+ 	if (error) {
+ 		ms_printk("Switch to parallel failed");
+ 		msb->regs.param.system &= ~MEMSTICK_SYS_PAM;
+@@ -650,7 +634,7 @@ static int msb_set_overwrite_flag(struct msb_data *msb,
+ 
+ 	dbg_verbose("changing overwrite flag to %02x for sector %d, page %d",
+ 							flag, pba, page);
+-	return memstick_run_state_machine(msb->card, h_msb_send_command);
++	return memstick_run_state_machine(msb->card, h_msb_send_command, true);
+ }
+ 
+ static int msb_mark_bad(struct msb_data *msb, int pba)
+@@ -687,7 +671,7 @@ static int msb_erase_block(struct msb_data *msb, u16 pba)
+ 
+ 
+ 		error = memstick_run_state_machine(msb->card,
+-							h_msb_send_command);
++						h_msb_send_command, true);
+ 		if (!error || msb_reset(msb))
+ 			break;
+ 	}
+@@ -747,7 +731,8 @@ static int msb_read_page(struct msb_data *msb,
+ 
+ 		msb->current_sg = sg;
+ 		msb->sg_offset = 0;
+-		error = memstick_run_state_machine(msb->card, h_msb_read_page);
++		error = memstick_run_state_machine(msb->card,
++						h_msb_read_page, true);
+ 
+ 
+ 		if (error == -EUCLEAN) {
+@@ -798,7 +783,7 @@ static int msb_read_oob(struct msb_data *msb, u16 pba, u16 page,
+ 		return -EINVAL;
+ 	}
+ 
+-	error = memstick_run_state_machine(msb->card, h_msb_read_page);
++	error = memstick_run_state_machine(msb->card, h_msb_read_page, true);
+ 	*extra = msb->regs.extra_data;
+ 
+ 	if (error == -EUCLEAN) {
+@@ -889,7 +874,7 @@ static int msb_write_block(struct msb_data *msb,
+ 		msb->sg_offset = 0;
+ 
+ 		error = memstick_run_state_machine(msb->card,
+-							h_msb_write_block);
++						h_msb_write_block, true);
+ 
+ 		/* Sector we just wrote to is assumed erased since its pba
+ 			was erased. If it wasn't erased, write will succeed
+@@ -2108,6 +2093,7 @@ static int msb_resume(struct memstick_dev *card)
+ 
+ 	new_msb->card = card;
+ 	memstick_set_drvdata(card, new_msb);
++	spin_lock_init(&new_msb->q_lock);
+ 
+ 	if (msb_init_card(card))
+ 		goto out;
+diff --git a/drivers/memstick/core/mspro_block.c b/drivers/memstick/core/mspro_block.c
+index c589d26..c575f26 100644
+--- a/drivers/memstick/core/mspro_block.c
++++ b/drivers/memstick/core/mspro_block.c
+@@ -372,40 +372,38 @@ static sysfs_show_t mspro_block_attr_show(unsigned char tag)
+  * finished (and request processor should come back some time later).
+  */
+ 
+-static int h_mspro_block_reset(struct memstick_dev *card,
+-					struct memstick_request **mrq)
++static int h_mspro_block_reset(struct memstick_dev *card)
+ {
+ 	struct mspro_block_data *msb = memstick_get_drvdata(card);
+ 	struct ms_status_register *status;
++	struct memstick_request *mrq = &card->current_mrq;
++
+ 	u8 intreg;
+ 
+-	memstick_allocate_request(card, mrq);
+-	if ((*mrq)->error) {
+-		dbg(card, "Error here");
+-		return memstick_complete_request(card, *mrq, 0);
+-	}
++	if (mrq->error)
++		return memstick_state_machine_exit(card, mrq->error);
+ 
+ again:
+ 	switch (card->state) {
+ 
+ 	case 0: /* send request for INT reg */
+-		if (memstick_read_int_reg(card, *mrq, 10000))
++		if (memstick_read_int_reg(card, 10000))
+ 			break;
+ 		card->state++;
+ 
+ 	case 1: /* process the INT reg and loop if nessesary */
+-		intreg = (*mrq)->data[0];
++		intreg = mrq->data[0];
+ 
+ 		if (intreg & MEMSTICK_INT_ERR) {
+ 			if ((intreg & MEMSTICK_INT_CMDNAK)) {
+ 				msb->read_only = true;
+-				return memstick_complete_request(card, *mrq, 0);
++				return memstick_state_machine_exit(card, 0);
+ 			}
+-			return memstick_complete_request(card, *mrq, -EIO);
++			return memstick_state_machine_exit(card, -EIO);
+ 		}
+ 
+ 		if (intreg & MEMSTICK_INT_CMDNAK)
+-			return memstick_complete_request(card, *mrq, -EIO);
++			return memstick_state_machine_exit(card, -EIO);
+ 
+ 
+ 		if (!(intreg & MEMSTICK_INT_CED)) {
+@@ -413,22 +411,20 @@ again:
+ 			goto again;
+ 		}
+ 
+-		memstick_read_int_reg_cleanup(card);
+ 		card->state++;
+ 
+ 	case 2: /* read the R/O status */
+ 
+ 		if (!memstick_read_regs(card,
+ 			offsetof(struct mspro_register, status),
+-			sizeof(struct ms_status_register),
+-			*mrq))
++			sizeof(struct ms_status_register)))
+ 			return 0;
+ 		break;
+ 
+ 	case 3: /* process the result & done */
+-		status = (struct ms_status_register *)(*mrq)->data;
++		status = (struct ms_status_register *)mrq->data;
+ 		msb->read_only = status->status0 & MEMSTICK_STATUS0_WP;
+-		return memstick_complete_request(card, *mrq, 0);
++		return memstick_state_machine_exit(card, 0);
+ 	}
+ 
+ 	card->state++;
+@@ -436,14 +432,14 @@ again:
+ 
+ }
+ 
+-static int h_mspro_block_switch_interface(struct memstick_dev *card,
+-					struct memstick_request **mrq)
++static int h_mspro_block_switch_interface(struct memstick_dev *card)
+ {
+ 	struct mspro_block_data *msb = memstick_get_drvdata(card);
++	struct memstick_request *mrq = &card->current_mrq;
++
+ 	int error;
+-	memstick_allocate_request(card, mrq);
+-	if ((*mrq)->error)
+-		return memstick_complete_request(card, *mrq, 0);
++	if (mrq->error)
++		return memstick_state_machine_exit(card, mrq->error);
+ 
+ 	switch (card->state) {
+ 
+@@ -451,8 +447,7 @@ static int h_mspro_block_switch_interface(struct memstick_dev *card,
+ 		if (!memstick_write_regs(card,
+ 			offsetof(struct mspro_register, param),
+ 			1,
+-			&msb->system,
+-			*mrq))
++			&msb->system))
+ 			return 0;
+ 		break;
+ 
+@@ -461,13 +456,13 @@ static int h_mspro_block_switch_interface(struct memstick_dev *card,
+ 		error = card->host->set_param(card->host,
+ 				MEMSTICK_INTERFACE, msb->target_interface);
+ 		if (error)
+-			return memstick_complete_request(card, *mrq, -EFAULT);
++			return memstick_state_machine_exit(card, -EFAULT);
+ 
+-		memstick_init_req(*mrq, MS_TPC_GET_INT, NULL, 1);
++		memstick_init_req(card, MS_TPC_GET_INT, NULL, 1);
+ 		break;
+ 
+ 	case 2: /* done */
+-		return memstick_complete_request(card, *mrq, 0);
++		return memstick_state_machine_exit(card, 0);
+ 
+ 	}
+ 
+@@ -476,21 +471,20 @@ static int h_mspro_block_switch_interface(struct memstick_dev *card,
+ }
+ 
+ /* State machine that handles the IO. Heart of the driver */
+-static int h_mspro_block_transfer_data(struct memstick_dev *card,
+-				       struct memstick_request **mrq)
++static int h_mspro_block_transfer_data(struct memstick_dev *card)
+ {
+ 	struct mspro_block_data *msb = memstick_get_drvdata(card);
++	struct memstick_request *mrq = &card->current_mrq;
++
+ 	unsigned char intreg = 0, command;
+ 	struct scatterlist t_sg = { 0 };
+ 	unsigned long flags;
+ 	int error;
+ 	size_t t_offset;
+ 
+-	memstick_allocate_request(card, mrq);
+-
+-	if ((*mrq)->error) {
+-		dbg(card, "IO: error (%d) executing %s", (*mrq)->error,
+-			memstick_debug_get_tpc_name((*mrq)->tpc));
++	if (mrq->error) {
++		dbg(card, "IO: error (%d) executing %s", mrq->error,
++			memstick_debug_get_tpc_name(mrq->tpc));
+ 		msb->io_error = true;
+ 		card->state = 5;
+ 	}
+@@ -498,17 +492,17 @@ again:
+ 	switch (card->state) {
+ 
+ 	case 0: /* send read/write command + args */
+-		memstick_init_req(*mrq, MS_TPC_EX_SET_CMD,
++		memstick_init_req(card, MS_TPC_EX_SET_CMD,
+ 					&msb->arg, sizeof(msb->arg));
+ 		break;
+ 
+ 	case 1: /* read the INT register */
+-		if (memstick_read_int_reg(card, *mrq, -1))
++		if (memstick_read_int_reg(card, -1))
+ 			break;
+ 		card->state++;
+ 
+ 	case 2: /* process the int register */
+-		intreg = (*mrq)->data[0];
++		intreg = mrq->data[0];
+ 
+ 		if (intreg & (MEMSTICK_INT_CMDNAK | MEMSTICK_INT_ERR)) {
+ 			dbg(card, "IO: card I/O error");
+@@ -524,7 +518,6 @@ again:
+ 				goto again;
+ 			}
+ 
+-			memstick_read_int_reg_cleanup(card);
+ 			card->state = 6;
+ 			goto again;
+ 		}
+@@ -535,7 +528,6 @@ again:
+ 			goto again;
+ 		}
+ 
+-		memstick_read_int_reg_cleanup(card);
+ 		card->state++;
+ 
+ 	case 3: /* init transfer of the data */
+@@ -549,11 +541,11 @@ again:
+ 			msb->page_size,
+ 			offset_in_page(t_offset));
+ 
+-		memstick_init_req_sg(*mrq, msb->data_dir == READ
++		memstick_init_req_sg(card, msb->data_dir == READ
+ 					   ? MS_TPC_READ_LONG_DATA
+ 					   : MS_TPC_WRITE_LONG_DATA,
+ 				     &t_sg);
+-		(*mrq)->need_card_int = 1;
++		mrq->need_card_int = 1;
+ 		break;
+ 
+ 	case 4: /* switch to next page */
+@@ -570,34 +562,36 @@ again:
+ 
+ 	case 5: /* after a error send STOP command */
+ 		command = MSPRO_CMD_STOP;
+-		memstick_init_req(*mrq, MS_TPC_SET_CMD, &command, 1);
++		memstick_init_req(card, MS_TPC_SET_CMD, &command, 1);
+ 		break;
+ 
+ 	case 6: /* request complete - get next one*/
+ 		spin_lock_irqsave(&msb->q_lock, flags);
+ 
+ 		if (msb->io_error)
+-			(*mrq)->error = -EIO;
++			mrq->error = -EIO;
+ 
+ 		if (msb->block_req) {
+-			mspro_block_complete_req(card, (*mrq)->error);
+-			error = mspro_block_issue_req(card);
++			mspro_block_complete_req(card, mrq->error);
++			error = mspro_block_issue_req(card, false);
++
++			if (error) {
++				WARN_ON(msb->block_req);
+ 
+-			if (!msb->block_req) {
+ 				dbg_v(card, "IO: out of requests");
+-				memstick_complete_request(card, *mrq, 0);
++				error = memstick_state_machine_exit(card, 0);
+ 				spin_unlock_irqrestore(&msb->q_lock, flags);
+-				return -EAGAIN;
++				return error;
+ 			}
+ 
+ 			spin_unlock_irqrestore(&msb->q_lock, flags);
+-			(*mrq)->error = 0;
++			mrq->error = 0;
+ 			card->state = 0;
+ 			goto again;
+ 
+ 		} else {
+ 			spin_unlock_irqrestore(&msb->q_lock, flags);
+-			return memstick_complete_request(card, *mrq, 0);
++			return memstick_state_machine_exit(card, 0);
+ 		}
+ 	default:
+ 		BUG();
+@@ -629,7 +623,7 @@ static int mspro_block_setup_io(struct memstick_dev *card, int direction,
+  * Start execution of next block request,
+  * or continue execution of the current one
+  */
+-static int mspro_block_issue_req(struct memstick_dev *card)
++static int mspro_block_issue_req(struct memstick_dev *card, bool first)
+ {
+ 	struct mspro_block_data *msb = memstick_get_drvdata(card);
+ 	sector_t sec;
+@@ -642,10 +636,17 @@ again:
+ 		msb->block_req = blk_fetch_request(msb->queue);
+ 		if (!msb->block_req) {
+ 			dbg(card, "IO: failed, because queue is empty");
+-			return -EAGAIN;
++			return -ENXIO;
+ 		}
+ 	}
+ 
++	if (msb->eject) {
++		dbg(card, "IO: Refusing request, because card is removed");
++		__blk_end_request_all(msb->block_req, -ENODEV);
++		msb->block_req = NULL;
++		goto again;
++	}
++
+ 	sec = blk_rq_pos(msb->block_req) << 9;
+ 	sector_div(sec, msb->page_size);
+ 	pages = blk_rq_bytes(msb->block_req) / msb->page_size;
+@@ -665,15 +666,14 @@ again:
+ 	dbg(card, "IO: %s: lba %x, pages %x", is_read ? "read" : "write",
+ 					(unsigned int)sec, pages);
+ 
+-	/* can't use memstick_run_state_machine because we don't block */
+-	card->next_request = h_mspro_block_transfer_data;
++	if (first)
++		memstick_run_state_machine(card,
++					h_mspro_block_transfer_data, false);
+ 	return 0;
+ }
+ 
+ /*
+- * Completes execution of current block request.
+- *  After execution of this function, the msb->block_req might or might not
+- *  be NULL. If it is, it means we don't have any more requests to process
++ * Completes execution of current block request
+  */
+ static void mspro_block_complete_req(struct memstick_dev *card, int error)
+ {
+@@ -705,7 +705,8 @@ static int mspro_block_read_attribute(struct memstick_dev *card,
+ 	sg_init_one(&msb->req_sg[0], buffer, len);
+ 	mspro_block_setup_io(card, READ, offset / msb->page_size,
+ 				len / msb->page_size, MSPRO_CMD_READ_ATRB);
+-	return memstick_run_state_machine(card, h_mspro_block_transfer_data);
++	return memstick_run_state_machine(card,
++					h_mspro_block_transfer_data, true);
+ }
+ 
+ /* Memory allocated for attributes by this function should be freed by
+@@ -724,7 +725,7 @@ static int mspro_block_read_attributes(struct memstick_dev *card)
+ 
+ 	int cnt, error, attr_count;
+ 
+-	/* Allocate initial buffer */
++	/* Allocate cache buffer */
+ 	buffer_size = msb->page_size;
+ 	buffer_address = 0;
+ 	buffer = kmalloc(buffer_size, GFP_KERNEL);
+@@ -898,61 +899,42 @@ static void mspro_block_submit_req(struct request_queue *q)
+ {
+ 	struct memstick_dev *card = q->queuedata;
+ 	struct mspro_block_data *msb = memstick_get_drvdata(card);
+-	struct request *req = NULL;
+-
+-	dbg(card, "IO: block layer submits us new request");
++	int error;
+ 
+ 	if (msb->block_req) {
+-		dbg(card, "IO: Already have an request");
++		dbg_v(card,
++			"IO: block layer submits request, while we have one");
+ 		return;
+ 	}
+ 
+-	if (msb->eject) {
+-		dbg(card, "IO: Refusing requests on removed card");
+-		while ((req = blk_fetch_request(q)) != NULL)
+-			__blk_end_request_all(req, -ENODEV);
+-		return;
+-	}
++	dbg(card, "IO: block layer wakes us up for request processing");
+ 
+-	if (mspro_block_issue_req(card)) {
+-		dbg(card, "IO: Falure to issue request");
+-		msb->block_req = NULL;
+-	} else
+-		memstick_new_req(card->host);
++	error = mspro_block_issue_req(card, true);
++	WARN_ON(error && msb->block_req != NULL);
+ }
+ 
+ /* Reset the card */
+-static int mspro_block_reset(struct memstick_dev *card, bool full)
++static int mspro_block_reset(struct memstick_dev *card)
+ {
+-	struct memstick_host *host = card->host;
+ 	struct mspro_block_data *msb = memstick_get_drvdata(card);
+ 	int error;
+ 
+ 	dbg(card, "resetting the card");
+ 
+ 	msb->system = MEMSTICK_SYS_SERIAL;
++	error = memstick_reset_card(card);
+ 
+-	error = host->set_param(host, MEMSTICK_POWER, MEMSTICK_POWER_OFF);
+-	if (error)
+-		return error;
+-	msleep(50);
+-
+-	error = host->set_param(host, MEMSTICK_POWER, MEMSTICK_POWER_ON);
+-	if (error)
+-		return error;
+-
+-	error = host->set_param(host, MEMSTICK_INTERFACE, MEMSTICK_SERIAL);
+-	if (error)
++	if (error) {
++		dbg(card, "host controller reset failed");
+ 		return error;
++	}
+ 
+ 	msleep(150);
++	error = memstick_run_state_machine(card,
++				h_mspro_block_reset, true);
+ 
+-	/* Invalidate the register window */
+-	memstick_invalidate_reg_window(card);
+-
+-	error = memstick_run_state_machine(card, h_mspro_block_reset);
+ 	if (error) {
+-		dbg(card, "card reset failure");
++		dbg(card, "card reset failed");
+ 		return error;
+ 	}
+ 
+@@ -974,11 +956,11 @@ static int mspro_block_switch_interface(struct memstick_dev *card)
+ 	msb->system = MEMSTICK_SYS_PAR4;
+ 	msb->target_interface = MEMSTICK_PAR4;
+ 	error = memstick_run_state_machine(card,
+-						h_mspro_block_switch_interface);
++					h_mspro_block_switch_interface, true);
+ 	if (error) {
+ 		dbg(card, "failure to switch to parallel 4 bit inteface");
+ 		card->caps &= ~MEMSTICK_CAP_PAR4;
+-		return mspro_block_reset(card, true);
++		return mspro_block_reset(card);
+ 	}
+ 
+ 	if (!(card->caps & host->caps & MEMSTICK_CAP_PAR8))
+@@ -988,11 +970,11 @@ static int mspro_block_switch_interface(struct memstick_dev *card)
+ 	msb->target_interface = MEMSTICK_PAR8;
+ 	dbg(card, "trying to switch to parallel 8 bit inteface");
+ 	error = memstick_run_state_machine(card,
+-					h_mspro_block_switch_interface);
++				h_mspro_block_switch_interface, true);
+ 	if (error) {
+ 		dbg(card, "failure to switch to parallel 8 bit inteface");
+ 		card->caps &= ~MEMSTICK_CAP_PAR8;
+-		return mspro_block_reset(card, true);
++		return mspro_block_reset(card);
+ 	}
+ 
+ 	return error;
+@@ -1006,7 +988,7 @@ static int mspro_block_init_card(struct memstick_dev *card)
+ 	/* TODO: can't we know what card supports from attributes? */
+ 	card->caps = MEMSTICK_CAP_PAR4 | MEMSTICK_CAP_PAR8;
+ 
+-	rc = mspro_block_reset(card, false);
++	rc = mspro_block_reset(card);
+ 	if (rc)
+ 		return rc;
+ 
+@@ -1058,10 +1040,13 @@ static int mspro_block_init_disk(struct memstick_dev *card)
  
  	msb->page_size = be16_to_cpu(sys_info->unit_size);
  
-@@ -1257,7 +1110,7 @@ static int mspro_block_init_disk(struct memstick_dev *card)
- 	capacity *= be16_to_cpu(sys_info->block_size);
- 	capacity *= msb->page_size >> 9;
- 	set_capacity(msb->disk, capacity);
--	dev_dbg(&card->dev, "capacity set %ld\n", capacity);
-+	dbg(card, "capacity set %ld", capacity);
- 
- 	add_disk(msb->disk);
- 	msb->active = 1;
-@@ -1345,7 +1198,7 @@ static void mspro_block_remove(struct memstick_dev *card)
- 	spin_unlock_irqrestore(&msb->q_lock, flags);
- 
- 	del_gendisk(msb->disk);
--	dev_dbg(&card->dev, "mspro block remove\n");
-+	dbg(card, "mspro block remove");
- 
- 	blk_cleanup_queue(msb->queue);
- 	msb->queue = NULL;
-@@ -1485,6 +1338,10 @@ static void __exit mspro_block_exit(void)
- module_init(mspro_block_init);
- module_exit(mspro_block_exit);
- 
-+module_param(major, int, 0644);
-+module_param(debug, int, 0644);
+-	if (!idr_pre_get(&mspro_block_disk_idr, GFP_KERNEL))
++	mutex_lock(&mspro_block_disk_lock);
 +
++	if (!idr_pre_get(&mspro_block_disk_idr, GFP_KERNEL)) {
++		mutex_unlock(&mspro_block_disk_lock);
+ 		return -ENOMEM;
++	}
+ 
+-	mutex_lock(&mspro_block_disk_lock);
+ 	rc = idr_get_new(&mspro_block_disk_idr, card, &disk_id);
+ 	mutex_unlock(&mspro_block_disk_lock);
+ 
+@@ -1250,6 +1235,8 @@ static int mspro_block_resume(struct memstick_dev *card)
+ 
+ 	new_msb->card = card;
+ 	memstick_set_drvdata(card, new_msb);
++	spin_lock_init(&new_msb->q_lock);
 +
- MODULE_LICENSE("GPL");
- MODULE_AUTHOR("Alex Dubov");
- MODULE_DESCRIPTION("Sony MemoryStickPro block device driver");
+ 	if (mspro_block_init_card(card))
+ 		goto out_free;
+ 
 diff --git a/drivers/memstick/core/mspro_block.h b/drivers/memstick/core/mspro_block.h
-new file mode 100644
-index 0000000..86a340d
---- /dev/null
+index 86a340d..120f306 100644
+--- a/drivers/memstick/core/mspro_block.h
 +++ b/drivers/memstick/core/mspro_block.h
-@@ -0,0 +1,176 @@
-+/*
-+ *  Sony MemoryStick Pro storage support
-+ *
-+ *  Copyright (C) 2007 Alex Dubov <oakad@yahoo.com>
-+ *  Copyright (C) 2010 Maxim Levitsky <maximlevitsky@gmail.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * Special thanks to Carlos Corbacho for providing various MemoryStick cards
-+ * that made this driver possible.
-+ *
-+ */
+@@ -160,7 +160,7 @@ struct mspro_block_data {
+ 
+ static void mspro_block_complete_req(struct memstick_dev *card, int error);
+ static int mspro_block_switch_interface(struct memstick_dev *card);
+-static int mspro_block_issue_req(struct memstick_dev *card);
++static int mspro_block_issue_req(struct memstick_dev *card, bool first);
+ 
+ #define __dbg(card, level, format, ...) \
+ 	do { \
+diff --git a/include/linux/memstick.h b/include/linux/memstick.h
+index bb61bfc..6328913 100644
+--- a/include/linux/memstick.h
++++ b/include/linux/memstick.h
+@@ -256,11 +256,11 @@ struct memstick_device_id {
+  * and besides waiting, the host driver must read the INT register
+  * (via data lines)
+  *
+- * In addition to that if hardware is 'smart', it could be able to read
+- * the INT register even in parallel mode by sending MS_TPC_GET_INT
+- * by itself. This capablility is indicated by host via
+- * MEMSTICK_CAP_AUTO_GET_INT.
+- * Then serial mode behavier must be the same as parallel
++ * In addition to that if hardware is 'smart', and is able to read
++ * the INT register even in serial mode by sending MS_TPC_GET_INT
++ * by itself (This capablility is indicated by host via
++ * MEMSTICK_CAP_AUTO_GET_INT),
++ * then the serial mode behavier must be the same as the parallel.
+  */
+ struct memstick_request {
+ 	unsigned char tpc;
+@@ -288,20 +288,20 @@ struct memstick_dev {
+ 	/* Check that media driver is still willing to operate the device. */
+ 	int                      (*check)(struct memstick_dev *card);
+ 	/* Get next request from the media driver.                         */
+-	int                      (*next_request)(struct memstick_dev *card,
+-						 struct memstick_request **mrq);
++	int                      (*next_request)(struct memstick_dev *card);
+ 	/* Tell the media driver to stop doing things                      */
+ 	void                     (*stop)(struct memstick_dev *card);
+ 	/* Allow the media driver to continue                              */
+ 	void                     (*start)(struct memstick_dev *card);
+ 
+ 	struct device            dev;
++	int			 caps;
+ 
+-	/* Private area for request processing */
++	/* Private area for state machines */
+ 	bool			 int_polling;
+ 	unsigned long		 int_timeout;
+ 	int			 state;
+-	int			 caps;
++	bool			 state_machine_running;
+ };
+ 
+ struct memstick_host {
+@@ -338,9 +338,6 @@ struct memstick_driver {
+ 	struct device_driver      driver;
+ };
+ 
+-int memstick_register_driver(struct memstick_driver *drv);
+-void memstick_unregister_driver(struct memstick_driver *drv);
+-
+ struct memstick_host *memstick_alloc_host(unsigned int extra,
+ 					  struct device *dev);
+ 
+@@ -350,40 +347,32 @@ void memstick_free_host(struct memstick_host *host);
+ void memstick_detect_change(struct memstick_host *host);
+ void memstick_suspend_host(struct memstick_host *host);
+ void memstick_resume_host(struct memstick_host *host);
+-
+-void memstick_init_req_sg(struct memstick_request *mrq, unsigned char tpc,
+-			  const struct scatterlist *sg);
+-void memstick_init_req(struct memstick_request *mrq, unsigned char tpc,
+-		       const void *buf, size_t length);
+ int memstick_next_req(struct memstick_host *host,
+ 		      struct memstick_request **mrq);
+-void memstick_new_req(struct memstick_host *host);
+-
+-int memstick_set_rw_addr(struct memstick_dev *card);
+ 
+ /* Helpers for high level drivers */
+-void memstick_allocate_request(struct memstick_dev *card,
+-					struct memstick_request **mrq);
+ 
+-int memstick_complete_request(struct memstick_dev *card,
+-			struct memstick_request *req, int error);
++int memstick_register_driver(struct memstick_driver *drv);
++void memstick_unregister_driver(struct memstick_driver *drv);
 +
-+#define DRIVER_NAME "mspro_block"
-+
-+#define MSPRO_BLOCK_MAX_SEGS  32
-+#define MSPRO_BLOCK_MAX_PAGES ((2 << 16) - 1)
-+
-+#define MSPRO_BLOCK_SIGNATURE        0xa5c3
-+#define MSPRO_BLOCK_MAX_ATTRIBUTES   41
-+
-+#define MSPRO_BLOCK_PART_SHIFT 3
-+
-+enum {
-+	MSPRO_BLOCK_ID_SYSINFO         = 0x10,
-+	MSPRO_BLOCK_ID_MODELNAME       = 0x15,
-+	MSPRO_BLOCK_ID_MBR             = 0x20,
-+	MSPRO_BLOCK_ID_PBR16           = 0x21,
-+	MSPRO_BLOCK_ID_PBR32           = 0x22,
-+	MSPRO_BLOCK_ID_SPECFILEVALUES1 = 0x25,
-+	MSPRO_BLOCK_ID_SPECFILEVALUES2 = 0x26,
-+	MSPRO_BLOCK_ID_DEVINFO         = 0x30
-+};
-+
-+struct mspro_sys_attr {
-+	size_t                  size;
-+	void                    *data;
-+	unsigned char           id;
-+	char                    name[32];
-+	struct device_attribute dev_attr;
-+};
-+
-+struct mspro_attr_entry {
-+	__be32 address;
-+	__be32 size;
-+	unsigned char id;
-+	unsigned char reserved[3];
-+} __packed;
-+
-+struct mspro_attribute {
-+	__be16 signature;
-+	unsigned short          version;
-+	unsigned char           count;
-+	unsigned char           reserved[11];
-+	struct mspro_attr_entry entries[];
-+} __packed;
-+
-+struct mspro_sys_info {
-+	unsigned char  class;
-+	unsigned char  reserved0;
-+	__be16 block_size;
-+	__be16 block_count;
-+	__be16 user_block_count;
-+	__be16 page_size;
-+	unsigned char  reserved1[2];
-+	unsigned char  assembly_date[8];
-+	__be32 serial_number;
-+	unsigned char  assembly_maker_code;
-+	unsigned char  assembly_model_code[3];
-+	__be16 memory_maker_code;
-+	__be16 memory_model_code;
-+	unsigned char  reserved2[4];
-+	unsigned char  vcc;
-+	unsigned char  vpp;
-+	__be16 controller_number;
-+	__be16 controller_function;
-+	__be16 start_sector;
-+	__be16 unit_size;
-+	unsigned char  ms_sub_class;
-+	unsigned char  reserved3[4];
-+	unsigned char  interface_type;
-+	__be16 controller_code;
-+	unsigned char  format_type;
-+	unsigned char  reserved4;
-+	unsigned char  device_type;
-+	unsigned char  reserved5[7];
-+	unsigned char  mspro_id[16];
-+	unsigned char  reserved6[16];
-+} __packed;
-+
-+struct mspro_mbr {
-+	unsigned char boot_partition;
-+	unsigned char start_head;
-+	unsigned char start_sector;
-+	unsigned char start_cylinder;
-+	unsigned char partition_type;
-+	unsigned char end_head;
-+	unsigned char end_sector;
-+	unsigned char end_cylinder;
-+	unsigned int  start_sectors;
-+	unsigned int  sectors_per_partition;
-+} __packed;
-+
-+struct mspro_specfile {
-+	char           name[8];
-+	char           ext[3];
-+	unsigned char  attr;
-+	unsigned char  reserved[10];
-+	unsigned short time;
-+	unsigned short date;
-+	unsigned short cluster;
-+	unsigned int   size;
-+} __packed;
-+
-+struct mspro_devinfo {
-+	__be16 cylinders;
-+	__be16 heads;
-+	__be16 bytes_per_track;
-+	__be16 bytes_per_sector;
-+	__be16 sectors_per_track;
-+	unsigned char  reserved[6];
-+} __packed;
-+
-+
-+
-+struct mspro_block_data {
-+	struct memstick_dev              *card;
-+	unsigned int                     usage_count;
-+	unsigned int                     caps;
-+	struct gendisk                   *disk;
-+	struct request_queue             *queue;
-+	struct request                   *block_req;
-+	spinlock_t                       q_lock;
-+	struct scatterlist               req_sg[MSPRO_BLOCK_MAX_SEGS];
-+
-+	unsigned char                    read_only:1;
-+	unsigned char                    eject:1;
-+	unsigned char                    active:1;
-+
-+	/* Media info */
-+	struct attribute_group           attr_group;
-+	unsigned short                   page_size;
-+	unsigned short                   cylinders;
-+	unsigned short                   heads;
-+	unsigned short                   sectors_per_track;
-+
-+	/* Handlers state */
-+	unsigned char                    system;
-+	struct mspro_cmdex_argument      arg;
-+
-+	struct scatterlist               *current_sg;
-+	unsigned int                     current_sg_offset;
-+	unsigned int	                 data_transferred;
-+	unsigned char                    data_dir:1;
-+	unsigned int                     target_interface;
-+	bool                             io_error;
-+};
-+
-+static void mspro_block_complete_req(struct memstick_dev *card, int error);
-+static int mspro_block_switch_interface(struct memstick_dev *card);
-+static int mspro_block_issue_req(struct memstick_dev *card);
-+
-+#define __dbg(card, level, format, ...) \
-+	do { \
-+		if (debug >= level) \
-+			printk(KERN_DEBUG \
-+				"%s: " format "\n", dev_name(&card->dev) \
-+					 , ## __VA_ARGS__); \
-+		else \
-+			dev_dbg(&card->dev, format, ## __VA_ARGS__); \
-+	} while (0)
-+
-+#define dbg(card, format, ...)		__dbg(card, 1, format, ## __VA_ARGS__)
-+#define dbg_v(card, format, ...)	__dbg(card, 2, format, ## __VA_ARGS__)
++int memstick_run_state_machine(struct memstick_dev *card,
++	int   (*next_request)(struct memstick_dev *card), bool async);
+ 
+-int memstick_read_int_reg(struct memstick_dev *card,
+-			struct memstick_request *req, long timeout);
++void memstick_init_req_sg(struct memstick_dev *card, unsigned char tpc,
++			  const struct scatterlist *sg);
++void memstick_init_req(struct memstick_dev *card, unsigned char tpc,
++		       const void *buf, size_t length);
+ 
+-void memstick_read_int_reg_cleanup(struct memstick_dev *card);
++int memstick_read_int_reg(struct memstick_dev *card, long timeout);
+ 
+-int memstick_read_regs(struct memstick_dev *card, int offset, int len,
+-	struct memstick_request *req);
++int memstick_read_regs(struct memstick_dev *card, int offset, int len);
+ 
+ int memstick_write_regs(struct memstick_dev *card, int offset, int len,
+-	char *buf, struct memstick_request *req);
++	void *buf);
+ 
+-void memstick_invalidate_reg_window(struct memstick_dev *card);
++int memstick_state_machine_exit(struct memstick_dev *card, int error);
+ 
+-int memstick_run_state_machine(struct memstick_dev *card,
+-	int   (*next_request)(struct memstick_dev *card,
+-				struct memstick_request **mrq));
++int memstick_reset_card(struct memstick_dev *card);
+ 
+ const char *memstick_debug_get_tpc_name(int tpc);
+ 
 -- 
 1.7.1
 
