@@ -1,71 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752578Ab0JPGwR (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Oct 2010 02:52:17 -0400
-Received: from bld-mail17.adl2.internode.on.net ([150.101.137.102]:34812 "EHLO
-	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751940Ab0JPGwQ (ORCPT
+	id S1752911Ab0JPG65 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Oct 2010 02:58:57 -0400
+Received: from w166.z064002130.bos-ma.dsl.cnc.net ([64.2.130.166]:47332 "EHLO
+	bamsi-mail.bamsi.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752388Ab0JPG64 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Oct 2010 02:52:16 -0400
-Date: Sat, 16 Oct 2010 17:52:06 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: linux-kernel@vger.kernel.org
-Cc: Mimi Zohar <zohar@us.ibm.com>
-Subject: ima: use of radix tree cache indexing == massive waste of memory?
-Message-ID: <20101016065206.GO4681@dastard>
+	Sat, 16 Oct 2010 02:58:56 -0400
+X-Greylist: delayed 325 seconds by postgrey-1.27 at vger.kernel.org; Sat, 16 Oct 2010 02:58:56 EDT
+From: "Marrese, Marilyn" <mmarrese@bamsi.org>
+Date: Sat, 16 Oct 2010 01:30:52 -0400
+Subject: Good Day
+Thread-Topic: Good Day
+Thread-Index: AQHLbPNMaVJQ3t34okSbXfuLk9D6+A==
+Message-ID: <E62ADB63F1D1834AAA8DFF764376BFAA1FE428213E@bamsi-mail.bamsi.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Folks,
+Good Day
 
-I was doing a quick check of kernel.org memory usage and behaviour
-after the recent outage that occurred. I just noticed that slabtop
-was reportingi an awfully high usage of radix tree nodes:
+I am Marrese Marilyn Secretary to Mr. Paul Wolfenden, Manager of formal ABN AMRO BANK which has been bought out by the RBS BANK 250 Bishopsgate, London EC2M 4AA . I have a business proposal valued at GBP£21,000,000.00 (Twenty-One Million Pounds) from  my Branch.Get back to me to enable me furnish you with full information concerning this letter via by email. Email: paul_rbs@mail2consultant.com<mailto:paul_rbs@mail2consultant.com>
 
-  OBJS ACTIVE  USE OBJ SIZE  SLABS OBJ/SLAB CACHE SIZE NAME                   
-4200331 2778082  66%    0.55K 144839       29   2317424K radix_tree_node
-2321500 2060290  88%    1.00K  72581       32   2322592K xfs_inode
-2235648 2069791  92%    0.12K  69864       32    279456K iint_cache
+Regards.
+NOTE = direct your response to this email for more information and for the sake of confidentiality [ paul_rbs@mail2consultant.com<mailto:paul_rbs@mail2consultant.com>]
 
-That is, 2.7M radix tree nodes are allocated, and the cache itself
-is consuming 2.3GB of RAM. I know that the XFS inodei caches are
-indexed by radix tree node, but for 2 million cached inodes that
-would mean a density of 1 inode per radix tree node, which for a
-system with 16M inodes in the filsystems is an impossibly low
-density. The worst I've seen in a production system like kernel.org
-is about 20-25% density, which would mean about 150âˆ’200k radix tree
-nodes for that many inodes. So it's not the inode cache.
+________________________________
+This email is intended only for the addressee or a person authorized to receive for the addressee. It may contain information that is privileged, confidential, or otherwise protected from use and disclosure by federal regulation (42 CFR). If you are not the intended recipient, you are hereby notified that any review, disclosure, copying, or dissemination of this information; taking any action based on its contents; or other use is strictly prohibited. If you have received this communication in error, please notify the sender immediately by reply email and delete/destroy the message.
 
-There's about 5GB of cached pages, so there's a few hundred thousand
-nodes there, but even considering that there's still roughly 2
-million nodes unaccounted for.
-
-So I looked up what the iint_cache was. It appears to used for storing
-per-inode IMA information, and uses a radix tree for indexing.
-It uses the *address* of the struct inode as the indexing key. That
-means the key space is extremely sparse - for XFS the struct inode
-addresses are approximately 1000 bytes apart, which means the
-closest the radix tree index keys get is ~1000. Which means
-that there is a single entry per radix tree leaf node, so the radix
-tree is using roughly 550 bytes for every 120byte structure being
-cached. For the above example, it's probably wasting close to 1GB of
-RAM....
-
-IOWs, it looks to me like the choice a a radix tree for indexing the
-IMA structures is probably the worst choice that could be made from
-a memory usage point of view. Is there any specific reason this
-cache uses radix trees, or can it be converted to use btrees or
-rbtrees to stop it wasting so much memory?
-
-Cheers,
-
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+If the information contained in this communication has been disclosed to you with consent from records whose confidentiality is protected by federal regulation, you are prohibited from further disclosure of its content without the specific written consent of the person to whom the information pertains or as otherwise permitted by federal regulation. A general authorization for release is not sufficient for this purpose. Thank you.
