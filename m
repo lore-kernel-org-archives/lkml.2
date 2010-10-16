@@ -1,87 +1,198 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754186Ab0JPLOj (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Oct 2010 07:14:39 -0400
-Received: from fmmailgate03.web.de ([217.72.192.234]:45090 "EHLO
-	fmmailgate03.web.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753800Ab0JPLOh (ORCPT
+	id S1754252Ab0JPLfj (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Oct 2010 07:35:39 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:43593 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753295Ab0JPLfg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Oct 2010 07:14:37 -0400
-Message-ID: <4CB9891B.4060606@web.de>
-Date: Sat, 16 Oct 2010 13:14:35 +0200
-From: Jan Kiszka <jan.kiszka@web.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
+	Sat, 16 Oct 2010 07:35:36 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:content-transfer-encoding
+         :in-reply-to:user-agent;
+        b=Ct00iRhvH3vWcqdGXpyobv1f5HwshQGN73KO/xywCv9ziaz7eFbofVjpZaxQUxdhHb
+         kWoTkTgHxc91zP7BU18nvw4Vp29E6xBF7MuT4ZYAS9uPd+d/QkxVqBM7eBSjjCwpTzL9
+         JwFq/znZ968TPUd/+m+MqdQo8OXJv591XHCdI=
+Date: Sat, 16 Oct 2010 13:35:21 +0200
+From: Marcin Slusarz <marcin.slusarz@gmail.com>
+To: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Cc: Greg KH <gregkh@suse.de>, Randy Dunlap <randy.dunlap@oracle.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, lud <linux-usb@vger.kernel.org>,
+        Andiry Xu <andiry.xu@amd.com>, Dong Nguyen <dong.nguyen@amd.com>,
+        Libin Yang <libin.yang@amd.com>
+Subject: Re: [PATCH] usb: Fix linker errors with CONFIG_PM=n
+Message-ID: <20101016113521.GA2786@joi.lan>
+References: <20101015205756.GA1757@xanatos>
+ <20101015215915.GA25942@xanatos>
+ <20101015222301.GA4080@joi.lan>
+ <20101015232629.GA26031@xanatos>
 MIME-Version: 1.0
-To: "David S. Miller" <davem@davemloft.net>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        i4ldeveloper@listserv.isdn4linux.de,
-        Linux Netdev List <netdev@vger.kernel.org>,
-        Karsten Keil <isdn@linux-pingi.de>
-Subject: [PATCH] CAPI: Silence lockdep warning on get_capi_appl_by_nr usage
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V01U2FsdGVkX19a1SFtV/lTFptgNVoAK6JualuIzpCyoFoxyzs8
-	mJKP/PQRGcorae9ugldVl1mkyqhAPQfGByV3TXuPWynueLpjPP
-	Rosx7sEvU=
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20101015232629.GA26031@xanatos>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As long as we hold capi_controller_lock, we can safely access
-capi_applications without RCU protection as no one can modify the
-application list underneath us. Introduce an RCU-free
-__get_capi_appl_by_nr for this purpose. This silences lockdep warnings
-on suspicious rcu_dereference usage.
+On Fri, Oct 15, 2010 at 04:26:29PM -0700, Sarah Sharp wrote:
+> On Sat, Oct 16, 2010 at 12:23:01AM +0200, Marcin Slusarz wrote:
+> > On Fri, Oct 15, 2010 at 02:59:15PM -0700, Sarah Sharp wrote:
+> > > diff --git a/drivers/usb/host/xhci.h b/drivers/usb/host/xhci.h
+> > > index c08928a..93d3bf4 100644
+> > > --- a/drivers/usb/host/xhci.h
+> > > +++ b/drivers/usb/host/xhci.h
+> > > @@ -1405,8 +1405,15 @@ int xhci_init(struct usb_hcd *hcd);
+> > >  int xhci_run(struct usb_hcd *hcd);
+> > >  void xhci_stop(struct usb_hcd *hcd);
+> > >  void xhci_shutdown(struct usb_hcd *hcd);
+> > > +
+> > > +#ifdef	CONFIG_PM
+> > >  int xhci_suspend(struct xhci_hcd *xhci);
+> > >  int xhci_resume(struct xhci_hcd *xhci, bool hibernated);
+> > > +#else
+> > > +#define	xhci_suspend	NULL
+> > > +#define	xhci_resume	NULL
+> > > +#endif
+> > > +
+> > 
+> > "static inline int xhci_suspend(struct xhci_hcd *) {}"
+> > has the same effect but saves types
+> 
+> That doesn't have the same effect.  Since those functions are only used
+> as function pointers, the original patch compiles to less code when
+> CONFIG_PM=n.  
 
-Signed-off-by: Jan Kiszka <jan.kiszka@web.de>
+xhci_suspend is not called through function pointer. xhci_bus_suspend is.
+
+> Also, the original version will cause an oops if those
+> functions are ever called when CONFIG_PM=n, which would indicate a bug
+> in the callee (something we would rather catch anyway).  This is the
+> style that other USB host controller drivers use, like EHCI.
+> 
+> I don't understand what you mean by "saves types".  Is there something
+> I've missed?
+
+Depending on CONFIG_PM xhci_suspend is a function or a constant.
+If someone in the future would decide to call this function directly, without
+CONFIG_PM, he would fail with "error: called object ‘0u’ is not a function".
+So, strictly speaking, this patch is not losing type informations. It's just wrong.
+
+Sometimes people are tempted to do something like this:
+#define xhci_suspend(X) (-EINVAL)
+or when "function" does not return anything:
+#define void_fun(X) do {} while (0)
+or even worse:
+#define void fun(X) {}
+
+And this loses type information.
+
+Without CONFIG_PM sloppy developer could call this "function" like this:
+struct whatever *p = xhci_suspend("foo bar");
+and it would compile fine. Defining it as
+static inline int xhci_suspend(struct xhci_hcd *) { return -EINVAL; }
+would prevent it.
+
+But in this particular case I think the cleanest solutions is to just ifdef
+everything out, without fallbacks. There's only one caller of xhci_suspend
+and it's wrongly guarded by CONFIG_PM. Let's just fix.
+
 ---
- drivers/isdn/capi/kcapi.c |   19 ++++++++++++++-----
- 1 files changed, 14 insertions(+), 5 deletions(-)
+From: Marcin Slusarz <marcin.slusarz@gmail.com>
+Subject: [PATCH] usb/xhci: fix !CONFIG_PM compile/link errors
 
-diff --git a/drivers/isdn/capi/kcapi.c b/drivers/isdn/capi/kcapi.c
-index 2648d39..2c535d8 100644
---- a/drivers/isdn/capi/kcapi.c
-+++ b/drivers/isdn/capi/kcapi.c
-@@ -99,6 +99,16 @@ static inline struct capi_ctr *get_capi_ctr_by_nr(u16 contr)
- 	return capi_controller[contr - 1];
+drivers/usb/host/xhci.c:675: error: implicit declaration of function 'usb_root_hub_lost_power'
+
+ERROR: "xhci_bus_resume" [drivers/usb/host/xhci-hcd.ko] undefined!
+ERROR: "xhci_bus_suspend" [drivers/usb/host/xhci-hcd.ko] undefined!
+
+Signed-off-by: Marcin Slusarz <marcin.slusarz@gmail.com>
+---
+ drivers/usb/host/xhci-hub.c |    5 -----
+ drivers/usb/host/xhci-pci.c |    2 ++
+ drivers/usb/host/xhci.c     |    2 ++
+ drivers/usb/host/xhci.h     |    4 ++++
+ 4 files changed, 8 insertions(+), 5 deletions(-)
+
+diff --git a/drivers/usb/host/xhci-hub.c b/drivers/usb/host/xhci-hub.c
+index 7f2f63c..ac63141 100644
+--- a/drivers/usb/host/xhci-hub.c
++++ b/drivers/usb/host/xhci-hub.c
+@@ -742,9 +742,4 @@ int xhci_bus_resume(struct usb_hcd *hcd)
+ 	return 0;
  }
  
-+static inline struct capi20_appl *__get_capi_appl_by_nr(u16 applid)
-+{
-+	WARN_ON_ONCE(!mutex_is_locked(&capi_controller_lock));
-+
-+	if (applid - 1 >= CAPI_MAXAPPL)
-+		return NULL;
-+
-+	return capi_applications[applid - 1];
-+}
-+
- static inline struct capi20_appl *get_capi_appl_by_nr(u16 applid)
+-#else
+-
+-#define	xhci_bus_suspend	NULL
+-#define	xhci_bus_resume		NULL
+-
+ #endif
+diff --git a/drivers/usb/host/xhci-pci.c b/drivers/usb/host/xhci-pci.c
+index bb668a8..d10b45d 100644
+--- a/drivers/usb/host/xhci-pci.c
++++ b/drivers/usb/host/xhci-pci.c
+@@ -189,8 +189,10 @@ static const struct hc_driver xhci_pci_hc_driver = {
+ 	/* Root hub support */
+ 	.hub_control =		xhci_hub_control,
+ 	.hub_status_data =	xhci_hub_status_data,
++#ifdef CONFIG_PM
+ 	.bus_suspend =		xhci_bus_suspend,
+ 	.bus_resume =		xhci_bus_resume,
++#endif
+ };
+ 
+ /*-------------------------------------------------------------------------*/
+diff --git a/drivers/usb/host/xhci.c b/drivers/usb/host/xhci.c
+index 33d0034..c9fc85a 100644
+--- a/drivers/usb/host/xhci.c
++++ b/drivers/usb/host/xhci.c
+@@ -551,6 +551,7 @@ void xhci_shutdown(struct usb_hcd *hcd)
+ 		    xhci_readl(xhci, &xhci->op_regs->status));
+ }
+ 
++#ifdef CONFIG_PM
+ static void xhci_save_registers(struct xhci_hcd *xhci)
  {
- 	if (applid - 1 >= CAPI_MAXAPPL)
-@@ -186,10 +196,9 @@ static void notify_up(u32 contr)
- 		ctr->state = CAPI_CTR_RUNNING;
+ 	xhci->s3.command = xhci_readl(xhci, &xhci->op_regs->command);
+@@ -760,6 +761,7 @@ int xhci_resume(struct xhci_hcd *xhci, bool hibernated)
+ 	spin_unlock_irq(&xhci->lock);
+ 	return 0;
+ }
++#endif
  
- 		for (applid = 1; applid <= CAPI_MAXAPPL; applid++) {
--			ap = get_capi_appl_by_nr(applid);
--			if (!ap)
--				continue;
--			register_appl(ctr, applid, &ap->rparam);
-+			ap = __get_capi_appl_by_nr(applid);
-+			if (ap)
-+				register_appl(ctr, applid, &ap->rparam);
- 		}
+ /*-------------------------------------------------------------------------*/
  
- 		wake_up_interruptible_all(&ctr->state_wait_queue);
-@@ -216,7 +225,7 @@ static void ctr_down(struct capi_ctr *ctr, int new_state)
- 	memset(ctr->serial, 0, sizeof(ctr->serial));
- 
- 	for (applid = 1; applid <= CAPI_MAXAPPL; applid++) {
--		ap = get_capi_appl_by_nr(applid);
-+		ap = __get_capi_appl_by_nr(applid);
- 		if (ap)
- 			capi_ctr_put(ctr);
- 	}
+diff --git a/drivers/usb/host/xhci.h b/drivers/usb/host/xhci.h
+index c08928a..6f6ee54 100644
+--- a/drivers/usb/host/xhci.h
++++ b/drivers/usb/host/xhci.h
+@@ -1405,8 +1405,10 @@ int xhci_init(struct usb_hcd *hcd);
+ int xhci_run(struct usb_hcd *hcd);
+ void xhci_stop(struct usb_hcd *hcd);
+ void xhci_shutdown(struct usb_hcd *hcd);
++#ifdef CONFIG_PM
+ int xhci_suspend(struct xhci_hcd *xhci);
+ int xhci_resume(struct xhci_hcd *xhci, bool hibernated);
++#endif
+ int xhci_get_frame(struct usb_hcd *hcd);
+ irqreturn_t xhci_irq(struct usb_hcd *hcd);
+ irqreturn_t xhci_msi_irq(int irq, struct usb_hcd *hcd);
+@@ -1481,8 +1483,10 @@ void xhci_ring_ep_doorbell(struct xhci_hcd *xhci, unsigned int slot_id,
+ int xhci_hub_control(struct usb_hcd *hcd, u16 typeReq, u16 wValue, u16 wIndex,
+ 		char *buf, u16 wLength);
+ int xhci_hub_status_data(struct usb_hcd *hcd, char *buf);
++#ifdef CONFIG_PM
+ int xhci_bus_suspend(struct usb_hcd *hcd);
+ int xhci_bus_resume(struct usb_hcd *hcd);
++#endif
+ u32 xhci_port_state_to_neutral(u32 state);
+ int xhci_find_slot_id_by_port(struct xhci_hcd *xhci, u16 port);
+ void xhci_ring_device(struct xhci_hcd *xhci, int slot_id);
 -- 
-1.7.1
+1.7.3
+
