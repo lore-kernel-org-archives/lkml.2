@@ -1,103 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752225Ab0JPPiV (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Oct 2010 11:38:21 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:44245 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751766Ab0JPPiU (ORCPT
+	id S1752311Ab0JPPr3 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Oct 2010 11:47:29 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:50732 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751987Ab0JPPr2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Oct 2010 11:38:20 -0400
+	Sat, 16 Oct 2010 11:47:28 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=smieOfx4fCDtWdBdNkYshCsHtmr1h7DTrOxKxobllkxnRlLhZz75ad1Xy6a9Sx3loV
-         rZkstDlAPF0MtGsibKcnKRBFnePCeg+fQ88E2XSlf0lU0tDPqRYf9WaoWAwQIfVeKrJu
-         DAk8GrnNmG4mnQnNd1u83k/Fr8CwKRGSz2uZc=
-Message-ID: <4CB9C6FF.9060707@gmail.com>
-Date: Sat, 16 Oct 2010 08:38:39 -0700
-From: "Justin P. Mattock" <justinmattock@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:2.0b5pre) Gecko/20100827 Thunderbird/3.2a1pre
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=jzC/5jZLb1Guk36qjofoM47Y2TQP1yn1fX8pc547UoRJcVjsWcWb016edqeaehBIGV
+         NWpEgjPfIWX0skGXAnjtqxWoOCD/SRIyPdnRI8hJJR4LLQVWuOITafSND9FlGucYnau7
+         A03ECtw88lRZhZqzTQZcucYCuxWsFoGr//pww=
+Date: Sat, 16 Oct 2010 16:45:33 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Robin Holt <holt@sgi.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@redhat.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: ftrace does not work on cpus > 999.
+Message-ID: <20101016144529.GA5384@nowhere>
+References: <20101016131505.GW14064@sgi.com>
 MIME-Version: 1.0
-To: Finn Thain <fthain@telegraphics.com.au>
-CC: trivial@kernel.org, jkosina@suse.cz, linux-kernel@vger.kernel.org,
-        "Maciej W. Rozycki" <macro@linux-mips.org>,
-        Randy Dunlap <rdunlap@xenotime.net>
-Subject: Re: [PATCH 1/2 v6]Update broken web addresses in arch directory.
-References: <1287169117-7374-1-git-send-email-justinmattock@gmail.com> <alpine.OSX.2.00.1010161759140.293@localhost>
-In-Reply-To: <alpine.OSX.2.00.1010161759140.293@localhost>
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101016131505.GW14064@sgi.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/16/2010 12:48 AM, Finn Thain wrote:
->
-> On Fri, 15 Oct 2010, Justin P. Mattock wrote:
->
->> index 3499fad..0fd6a08 100644
->> --- a/arch/arm/mach-pxa/am200epd.c
->> +++ b/arch/arm/mach-pxa/am200epd.c
->> @@ -10,7 +10,7 @@
->>    * Layout is based on skeletonfb.c by James Simmons and Geert Uytterhoeven.
->>    *
->>    * This work was made possible by help and equipment support from E-Ink
->> - * Corporation. http://support.eink.com/community
->> + * Corporation. http://www.support.eink.com/
->
-> These are both dead links now. The old one is is in the web archive
-> anyway.
->
->
->>    *
->>    * This driver is written to be used with the Metronome display controller.
->>    * on the AM200 EPD prototype kit/development kit with an E-Ink 800x600
->> diff --git a/arch/arm/mach-pxa/am300epd.c b/arch/arm/mach-pxa/am300epd.c
->> index 993d75e..01aa021 100644
->> --- a/arch/arm/mach-pxa/am300epd.c
->> +++ b/arch/arm/mach-pxa/am300epd.c
->> @@ -8,7 +8,7 @@
->>    * more details.
->>    *
->>    * This work was made possible by help and equipment support from E-Ink
->> - * Corporation. http://support.eink.com/community
->> + * Corporation. http://www.support.eink.com/
->
-> Same here.
->
->
->>    *
->>    * This driver is written to be used with the Broadsheet display controller.
->>    * on the AM300 EPD prototype kit/development kit with an E-Ink 800x600
->
->> diff --git a/arch/powerpc/include/asm/hydra.h b/arch/powerpc/include/asm/hydra.h
->> index 1ad4eed..d529a2c 100644
->> --- a/arch/powerpc/include/asm/hydra.h
->> +++ b/arch/powerpc/include/asm/hydra.h
->> @@ -10,7 +10,7 @@
->>    *
->>    *	© Copyright 1995 Apple Computer, Inc. All rights reserved.
->>    *
->> - *  It's available online from http://chrp.apple.com/MacTech.pdf.
->> + *  It's available online from http://www.cpu.lu/~mlan/ftp/MacTech.pdf.
->
-> You should remove the trailing "." or else insert angle brackets.
->
->
->>    *  You can obtain paper copies of this book from computer bookstores or by
->>    *  writing Morgan Kaufmann Publishers, Inc., 340 Pine Street, Sixth Floor, San
->>    *  Francisco, CA 94104. Reference ISBN 1-55860-393-X.
->
->
-> Thanks.
->
-> Finn
+On Sat, Oct 16, 2010 at 08:15:05AM -0500, Robin Holt wrote:
+> Just started looking into using ftrace to identify a difficult to diagnose
+> userland set of processes when I noticed that the .../trace/per_cpu
+> directory only contains entries for cpus 0-999.  I have not looked at
+> what else may not work.  For the cpus that are listed, I am able to grep
+> trace buffer information so it is mostly working.
+> 
+> I will be away from email for most of today, but may get back to this
+> tonight.  If there are any suggestions, I will happily give them a try.
+> 
+> Thanks,
+> Robin
 
 
-alright..  before I resend both of these.. if anybody see's anything 
-else let me know..
+Oh!
 
-cheers,
+Can you please try that?
 
-Justin P. Mattock
+Thanks.
+
+
+diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
+index 9ec59f5..3565f9e 100644
+--- a/kernel/trace/trace.c
++++ b/kernel/trace/trace.c
+@@ -3999,7 +3999,7 @@ static void tracing_init_debugfs_percpu(long cpu)
+ 	/* strlen(cpu) + MAX(log10(cpu)) + '\0' */
+ 	char cpu_dir[7];
+ 
+-	if (cpu > 999 || cpu < 0)
++	if (cpu < 0)
+ 		return;
+ 
+ 	sprintf(cpu_dir, "cpu%ld", cpu);
+
+
