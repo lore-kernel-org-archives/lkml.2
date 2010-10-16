@@ -1,87 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752934Ab0JPQiy (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Oct 2010 12:38:54 -0400
-Received: from hera.kernel.org ([140.211.167.34]:53284 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751063Ab0JPQiw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Oct 2010 12:38:52 -0400
-Date: Sat, 16 Oct 2010 16:38:14 GMT
-From: tip-bot for Anand Gadiyar <gadiyar@ti.com>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        linus.walleij@stericsson.com, linux@arm.linux.org.uk, gadiyar@ti.com,
-        tglx@linutronix.de, mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        linus.walleij@stericsson.com, linux@arm.linux.org.uk, gadiyar@ti.com,
-        tglx@linutronix.de, mingo@elte.hu
-In-Reply-To: <1287077397-21781-1-git-send-email-gadiyar@ti.com>
-References: <1287077397-21781-1-git-send-email-gadiyar@ti.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:irq/core] genirq, ARM: Fix boot on ARM platforms
-Message-ID: <tip-05d0ca85c91013d5f73c43fb566bde09a9718019@git.kernel.org>
-Git-Commit-ID: 05d0ca85c91013d5f73c43fb566bde09a9718019
-X-Mailer: tip-git-log-daemon
+	id S1752124Ab0JPQwn (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Oct 2010 12:52:43 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:35172 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751063Ab0JPQwm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 16 Oct 2010 12:52:42 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:x-enigmail-version:content-type
+         :content-transfer-encoding;
+        b=RrB20hht6SWQrDUoTldzRBDPshrtjactZ/zQxpKl38L5EKbv1xwTHqnH/kpZo3gW3C
+         0LFevkz1oddMl5wV6bvli5pn3tz2n+EffHangcM+08h47EmfeF0AX+yw/HfiTnvQn2um
+         fDcaqCRjG7CtKw/WQgqnfJXHNviogTaSywl1U=
+Message-ID: <4CB9D854.7050806@gmail.com>
+Date: Sat, 16 Oct 2010 18:52:36 +0200
+From: Jiri Slaby <jirislaby@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.9) Gecko/20100914 SUSE/3.1.4 Thunderbird/3.1.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sat, 16 Oct 2010 16:38:15 +0000 (UTC)
+To: Tracey Dent <tdent48227@gmail.com>
+CC: gregkh@suse.de, alan@lxorguk.ukuu.org.uk, akpm@linux-foundation.org,
+        mhw@wittsend.com, minyard@acm.org,
+        openipmi-developer@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 02/05] Drivers: char: impi: Makefile: replace the use
+ of <module>-objs with <module>-y
+References: <1287235613-1545-1-git-send-email-tdent48227@gmail.com> <1287235613-1545-2-git-send-email-tdent48227@gmail.com>
+In-Reply-To: <1287235613-1545-2-git-send-email-tdent48227@gmail.com>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-2
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  05d0ca85c91013d5f73c43fb566bde09a9718019
-Gitweb:     http://git.kernel.org/tip/05d0ca85c91013d5f73c43fb566bde09a9718019
-Author:     Anand Gadiyar <gadiyar@ti.com>
-AuthorDate: Thu, 14 Oct 2010 22:59:57 +0530
-Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Sat, 16 Oct 2010 18:22:03 +0200
+On 10/16/2010 03:26 PM, Tracey Dent wrote:
+> Changed <module>-objs to <module>-y in Makefile.
+> 
+> Signed-off-by: Tracey Dent <tdent48227@gmail.com>
+> ---
+>  drivers/char/ipmi/Makefile |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/char/ipmi/Makefile b/drivers/char/ipmi/Makefile
+> index eb8a1a8..16a9364 100644
+> --- a/drivers/char/ipmi/Makefile
+> +++ b/drivers/char/ipmi/Makefile
+> @@ -2,7 +2,7 @@
+>  # Makefile for the ipmi drivers.
+>  #
+>  
+> -ipmi_si-objs := ipmi_si_intf.o ipmi_kcs_sm.o ipmi_smic_sm.o ipmi_bt_sm.o
+> +ipmi_si-y := ipmi_si_intf.o ipmi_kcs_sm.o ipmi_smic_sm.o ipmi_bt_sm.o
 
-genirq, ARM: Fix boot on ARM platforms
+NACK (and all of these). This will try to build 4 modules instead of
+one. Read Documentation/kbuild/makefiles.txt
 
-Commit b683de2b3 in linux-next as of 20101014 (genirq: Query
-arch for number of early descriptors) seems to have broken
-bootup on several ARM boards - my beagleboard gives the
-following dump with earlyprintk:
-
- NR_IRQS:402
- Unable to handle kernel NULL pointer dereference at virtual
- address 00000028 pgd = c0004000
- [00000028] *pgd=00000000
- Internal error: Oops: 5 [#1]
- last sysfs file:
- Modules linked in:
- CPU: 0    Not tainted
- (2.6.36-rc7-next-20101014-linux-next-20101012+ #40) PC is at
- init_IRQ+0x14/0x48 LR is at start_kernel+0x150/0x2c0
- [...]
-
-We seem to be using desc->status without assigning desc to
-anything. Fix this by adding back the code that was originally
-there.
-
-Signed-off-by: Anand Gadiyar <gadiyar@ti.com>
-Tested-by: Linus Walleij <linus.walleij@stericsson.com>
-Cc: Russell King <linux@arm.linux.org.uk>
-Cc: linux-arm-kernel@lists.infradead.org
-LKML-Reference: <1287077397-21781-1-git-send-email-gadiyar@ti.com>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
----
- arch/arm/kernel/irq.c |    4 +++-
- 1 files changed, 3 insertions(+), 1 deletions(-)
-
-diff --git a/arch/arm/kernel/irq.c b/arch/arm/kernel/irq.c
-index 5456d11..0e65d7e 100644
---- a/arch/arm/kernel/irq.c
-+++ b/arch/arm/kernel/irq.c
-@@ -157,8 +157,10 @@ void __init init_IRQ(void)
- 	struct irq_desc *desc;
- 	int irq;
- 
--	for (irq = 0; irq < nr_irqs; irq++)
-+	for (irq = 0; irq < nr_irqs; irq++) {
-+		desc = irq_to_desc_alloc_node(irq, 0);
- 		desc->status |= IRQ_NOREQUEST | IRQ_NOPROBE;
-+	}
- 
- 	init_arch_irq();
- }
+regards,
+-- 
+js
