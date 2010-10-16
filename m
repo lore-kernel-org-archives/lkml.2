@@ -1,74 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753699Ab0JPSus (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Oct 2010 14:50:48 -0400
-Received: from tango.tkos.co.il ([62.219.50.35]:56736 "EHLO tango.tkos.co.il"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753547Ab0JPSur (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Oct 2010 14:50:47 -0400
-Date: Sat, 16 Oct 2010 20:49:20 +0200
-From: Baruch Siach <baruch@tkos.co.il>
-To: Dinh.Nguyen@freescale.com
-Cc: linux-kernel@vger.kernel.org, amit.kucheria@canonical.com,
-        linux@arm.linux.org.uk, s.hauer@pengutronix.de,
-        grant.likely@secretlab.ca, linux-arm-kernel@lists.infradead.org,
-        daniel@caiaq.de, u.kleine-koenig@pengutronix.de,
-        xiao-lizhang@freescale.com, valentin.longchamp@epfl.ch
-Subject: Re: [PATCH 1/2] ARM: imx: Add wake functionality to GPIO
-Message-ID: <20101016184919.GC6225@tarshish>
-References: <1287173908-25758-1-git-send-email-Dinh.Nguyen@freescale.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1287173908-25758-1-git-send-email-Dinh.Nguyen@freescale.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1754099Ab0JPS6e (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Oct 2010 14:58:34 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:35291
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753612Ab0JPS6d (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 16 Oct 2010 14:58:33 -0400
+Date: Sat, 16 Oct 2010 11:58:55 -0700 (PDT)
+Message-Id: <20101016.115855.179956240.davem@davemloft.net>
+To: randy.dunlap@oracle.com
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        akpm@linux-foundation.org, jgarzik@pobox.com
+Subject: Re: [PATCH -next] net: move MII outside of NET_ETHERNET, fix
+ kconfig warning
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20101013181859.fc3a96fd.randy.dunlap@oracle.com>
+References: <20101013181859.fc3a96fd.randy.dunlap@oracle.com>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dinh,
+From: Randy Dunlap <randy.dunlap@oracle.com>
+Date: Wed, 13 Oct 2010 18:18:59 -0700
 
-On Fri, Oct 15, 2010 at 03:18:27PM -0500, Dinh.Nguyen@freescale.com wrote:
-> From: Dinh Nguyen <Dinh.Nguyen@freescale.com>
+> From: Randy Dunlap <randy.dunlap@oracle.com>
 > 
-> Add function definition for irq_chip.set_wake to enable GPIO to
-> wake-up the system.
+> We have USB, PCMCIA, and gigabit ethernet drivers that select
+> MII even though NET_ETHERNET is not enabled, so make MII not
+> be dependent on NET_ETHERNET.  It is still dependent on NET
+> and NETDEVICES.
 > 
-> Signed-off-by: Dinh Nguyen <Dinh.Nguyen@freescale.com>
-> ---
->  arch/arm/plat-mxc/gpio.c              |   35 +++++++++++++++++++++++++++++++++
->  arch/arm/plat-mxc/include/mach/gpio.h |    3 ++
->  2 files changed, 38 insertions(+), 0 deletions(-)
-> 
-> diff --git a/arch/arm/plat-mxc/gpio.c b/arch/arm/plat-mxc/gpio.c
-> index 57ec4a8..7647ba3 100644
-> --- a/arch/arm/plat-mxc/gpio.c
-> +++ b/arch/arm/plat-mxc/gpio.c
+> Fixes kconfig unmet dependency warning (shortened, was very long string):
+ ...
+> Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
+> Acked-by: Jeff Garzik <jgarzik@pobox.com> [2006-NOV-30]
 
-[snip]
+Applied, and I added your infiniband patch too.
 
-> diff --git a/arch/arm/plat-mxc/include/mach/gpio.h 
-> b/arch/arm/plat-mxc/include/mach/gpio.h
-> index af33b74..dba3768 100644
-> --- a/arch/arm/plat-mxc/include/mach/gpio.h
-> +++ b/arch/arm/plat-mxc/include/mach/gpio.h
-> @@ -39,6 +39,9 @@ struct mxc_gpio_port {
->  	struct gpio_chip chip;
->  	u32 both_edges;
->  	spinlock_t lock;
-> +	u32 suspend_wakeup;
-> +	u32 saved_wakeup;
-> +
-
-Unneeded blank line.
-
->  };
->  
->  int mxc_gpio_init(struct mxc_gpio_port*, int);
-
-baruch
-
--- 
-                                                     ~. .~   Tk Open Systems
-=}------------------------------------------------ooO--U--Ooo------------{=
-   - baruch@tkos.co.il - tel: +972.2.679.5364, http://www.tkos.co.il -
+Thanks Randy.
