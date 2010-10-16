@@ -1,54 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752049Ab0JPPbi (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Oct 2010 11:31:38 -0400
-Received: from jacques.telenet-ops.be ([195.130.132.50]:46605 "EHLO
-	jacques.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751052Ab0JPPbh (ORCPT
+	id S1752095Ab0JPPcg (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Oct 2010 11:32:36 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:57623 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751052Ab0JPPcf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Oct 2010 11:31:37 -0400
-Date: Sat, 16 Oct 2010 17:31:34 +0200 (CEST)
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-cc: Linux Kernel Development <linux-kernel@vger.kernel.org>
-Subject: Re: Build regressions/improvements in v2.6.36-rc8
-In-Reply-To: <alpine.DEB.2.00.1010161656590.12912@ayla.of.borg>
-Message-ID: <alpine.DEB.2.00.1010161722120.30415@ayla.of.borg>
-References: <alpine.DEB.2.00.1010161656590.12912@ayla.of.borg>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Sat, 16 Oct 2010 11:32:35 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=UFoiE851YX1BB+OtrCcYhyMvhzTi+GnmlUpFDBDCKUZaujTmbdgHaom14eZQVXvOjM
+         8590IBgVYEpfRBdhulMTiEvEzOckTEyV5m0s0DDucShiCnYIbeSnK6eBCYO41jvM/fzs
+         LOIEcvlJI+/FhyTY1Cys4Jn3HvUglTU3UwOWk=
+Date: Sat, 16 Oct 2010 19:32:30 +0400
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: "Maciej W. Rozycki" <macro@linux-mips.org>
+Cc: Don Zickus <dzickus@redhat.com>, Andi Kleen <andi@firstfloor.org>,
+        mingo@elte.hu, fweisbec@gmail.com, robert.richter@amd.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC] arch generic way to trigger unknown NMIs
+Message-ID: <20101016153229.GA6763@lenovo>
+References: <20101007030807.GA4076@redhat.com> <20101007072641.GE5010@basil.fritz.box> <20101007140112.GN10663@redhat.com> <alpine.LFD.2.00.1010072342170.15889@eddie.linux-mips.org> <20101010202357.GA28938@lenovo> <alpine.LFD.2.00.1010160822250.15889@eddie.linux-mips.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LFD.2.00.1010160822250.15889@eddie.linux-mips.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-	Hi Stephen,
+On Sat, Oct 16, 2010 at 08:24:35AM +0100, Maciej W. Rozycki wrote:
+> On Mon, 11 Oct 2010, Cyrill Gorcunov wrote:
+> 
+> > We have send_IPI_self which can't be used for NMI delivery mode (ie with
+> > self shortland) but still can be used as say (didn't test)
+> 
+>  So what's stopping send_IPI_self() from being used for an NMI?  Can't the 
+> function be updated/fixed to support these if there's a need?
+> 
+>   Maciej
+> 
 
-On Sat, 16 Oct 2010, Geert Uytterhoeven wrote:
-> 162 regressions:
-> 	src/fs/9p/vfs_inode.c: error: implicit declaration of function 'inode_setattr':  => 1267
-> 	src/include/linux/vgaarb.h: error: asm/vga.h: No such file or directory:  => 34:21
+ Hi Maciej, the send_IPI_self could be modified to send NMI (at moment it
+uses self shortcut with fixed delivery mode). The question is rather if
+we need it without a real caller yet. When Don's patch gets merged we
+will have a real caller then and could update send_IPI_self to support
+NMI delivery mode. Something like that :)
 
-These two are reported for m68k/allmodconfig:
-http://kisskb.ellerman.id.au/kisskb/buildresult/3387901/, but I cannot
-reproduce them.
-
-Moreover, there's no call to inode_setattr on line 1267 of
-src/fs/9p/vfs_inode.c.
-The same is true for line 34 of include/linux/vgaarb.h.
-
-For the second failure, I know it's been fixed since
-71beefe8c0b9e12ed4ac9fe13b98a035ddeaf8eb.
-
-Do you know what's happening here?
-
-Gr{oetje,eeting}s,
-
-						Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-							    -- Linus Torvalds
+  Cyrill
