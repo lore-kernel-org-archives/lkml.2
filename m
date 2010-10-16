@@ -1,62 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754983Ab0JPUeu (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Oct 2010 16:34:50 -0400
-Received: from www.tglx.de ([62.245.132.106]:47198 "EHLO www.tglx.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754528Ab0JPUet (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Oct 2010 16:34:49 -0400
-Date: Sat, 16 Oct 2010 22:34:39 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: "Ted Ts'o" <tytso@mit.edu>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: jbd2: Convert jbd2_slab_create_sem to mutex
-Message-ID: <alpine.LFD.2.00.1010162231480.2496@localhost6.localdomain6>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1755315Ab0JPUfe (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Oct 2010 16:35:34 -0400
+Received: from einhorn.in-berlin.de ([192.109.42.8]:48253 "EHLO
+	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754686Ab0JPUfd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 16 Oct 2010 16:35:33 -0400
+X-Envelope-From: stefanr@s5r6.in-berlin.de
+Message-ID: <4CBA0C8C.6050909@s5r6.in-berlin.de>
+Date: Sat, 16 Oct 2010 22:35:24 +0200
+From: Stefan Richter <stefanr@s5r6.in-berlin.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.8.1.23) Gecko/20100627 SeaMonkey/1.1.18
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Alan Stern <stern@rowland.harvard.edu>
+CC: David Brownell <david-b@pacbell.net>, USB list <linux-usb@vger.kernel.org>,
+        Kernel development list <linux-kernel@vger.kernel.org>
+Subject: Re: 2.6.36-rc7: NULL pointer dereference in ehci_clear_tt_buffer_complete
+References: <Pine.LNX.4.44L0.1010161600240.21391-100000@netrider.rowland.org>
+In-Reply-To: <Pine.LNX.4.44L0.1010161600240.21391-100000@netrider.rowland.org>
+X-Enigmail-Version: 0.96.0
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-jbd2_slab_create_sem is used as a mutex, so make it one.
+Alan Stern wrote:
+> On Sat, 16 Oct 2010, Stefan Richter wrote:
+>> Alan Stern wrote:
+>>> --- usb-2.6.orig/drivers/usb/core/message.c
+>>> +++ usb-2.6/drivers/usb/core/message.c
+>>> @@ -323,8 +323,13 @@ static void sg_complete(struct urb *urb)
+>>>  	/* on the last completion, signal usb_sg_wait() */
+>>>  	io->bytes += urb->actual_length;
+>>>  	io->count--;
+>>> -	if (!io->count)
+>>> +	if (!io->count) {
+>>> +		if (status == -ECONNRESET) {
+>>> +			printk(KERN_ERR "Delaying for test\n");
+>>> +			mdelay(600);
+>>> +		}
+>>>  		complete(&io->complete);
+>>> +	}
+>>>  
+>>>  	spin_unlock(&io->lock);
+>>>  }
+>>>
+>> I did so today on 2.6.36-rc8, without your other patch.  I was still unable to
+>> reproduce the bug.  Forget the whole thing as unreproducible?
+> 
+> What I said above wasn't quite right.  This won't help trigger the 
+> oops, but it should trigger the line saying something like
+> 
+> 	ehci_hcd 0000:00:12.2: qh ffff880208f07af0 (#00) state 5
+> 
+> That's the real bug.
 
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
----
- fs/jbd2/journal.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+# grep ' qh ' /var/log/messages
+Oct 11 22:29:21 stein kernel: ehci_hcd 0000:00:12.2: qh ffff880208f07af0 (#00)
+state 5
 
-Index: linux-next/fs/jbd2/journal.c
-===================================================================
---- linux-next.orig/fs/jbd2/journal.c
-+++ linux-next/fs/jbd2/journal.c
-@@ -1838,7 +1838,7 @@ size_t journal_tag_bytes(journal_t *jour
-  */
- #define JBD2_MAX_SLABS 8
- static struct kmem_cache *jbd2_slab[JBD2_MAX_SLABS];
--static DECLARE_MUTEX(jbd2_slab_create_sem);
-+static DEFINE_MUTEX(jbd2_slab_create_mutex);
- 
- static const char *jbd2_slab_names[JBD2_MAX_SLABS] = {
- 	"jbd2_1k", "jbd2_2k", "jbd2_4k", "jbd2_8k",
-@@ -1870,16 +1870,16 @@ static int jbd2_journal_create_slab(size
- 
- 	if (unlikely(i < 0))
- 		i = 0;
--	down(&jbd2_slab_create_sem);
-+	mutex_lock(&jbd2_slab_create_mutex);
- 	if (jbd2_slab[i]) {
--		up(&jbd2_slab_create_sem);
-+		mutex_unlock(&jbd2_slab_create_mutex);
- 		return 0;	/* Already created */
- 	}
- 
- 	slab_size = 1 << (i+10);
- 	jbd2_slab[i] = kmem_cache_create(jbd2_slab_names[i], slab_size,
- 					 slab_size, 0, NULL);
--	up(&jbd2_slab_create_sem);
-+	mutex_unlock(&jbd2_slab_create_mutex);
- 	if (!jbd2_slab[i]) {
- 		printk(KERN_EMERG "JBD2: no memory for jbd2_slab cache\n");
- 		return -ENOMEM;
+I.e. there was none anymore since the one which I reported on Monday.
+-- 
+Stefan Richter
+-=====-==-=- =-=- =----
+http://arcgraph.de/sr/
