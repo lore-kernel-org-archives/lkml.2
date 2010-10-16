@@ -1,50 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752836Ab0JPDln (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Oct 2010 23:41:43 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:57079 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752777Ab0JPDll (ORCPT
+	id S1752840Ab0JPDqT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Oct 2010 23:46:19 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:45820 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752663Ab0JPDqS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Oct 2010 23:41:41 -0400
+	Fri, 15 Oct 2010 23:46:18 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer;
-        b=Eh6nr59zCqvc27eL+4t5YEqt7292uWUt4JX7J6/H0G2JaV9bFmz9pdp62LMP6cS7nY
-         Yy3uwtlqm73PEF2hvASmKrgmMfjbER7wMkKKH3V2eBMVKSILhV6HjZdOdsuXiYFfiq48
-         zQ76eis5nGPt/NLPuLqeF0v3/SfkN5+n/bEN0=
-From: Tracey Dent <tdent48227@gmail.com>
-To: jgarzik@pobox.com
-Cc: linux-kernel@vger.kernel.org, avorontsov@ru.mvista.com,
-        linux-ide@vger.kernel.org, Tracey Dent <tdent48227@gmail.com>
-Subject: [PATCH] Drivers: ata: Makefile: replace the use of <module>-objs with <module>-y
-Date: Fri, 15 Oct 2010 23:41:33 -0400
-Message-Id: <1287200493-2024-1-git-send-email-tdent48227@gmail.com>
-X-Mailer: git-send-email 1.7.3.1.104.gc752e
+        b=MSOnz6eAPRjMaZG8JCQD0KYysn0HCR3o/DLYB1IsAlsDLXOPHe1XLdJ1+fG7v54jj2
+         W1jQ5T3HXZfZhNH/e36DioBqp4Ra2XvFt4Qf1uX5hpwznhAw6P4g7gwrzSpi7CIZx6BD
+         ZHiK9Mk2xDwp54Mcf7d7GPIxepYouWbSIsn24=
+From: Namhyung Kim <namhyung@gmail.com>
+To: Alexander Viro <viro@zeniv.linux.org.uk>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] fs/buffer.c: remove duplicated assignment on b_private
+Date: Sat, 16 Oct 2010 12:40:33 +0900
+Message-Id: <1287200433-2895-1-git-send-email-namhyung@gmail.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Changed <module>-objs to <module>-y in Makefile.
+bh->b_private is initialized within init_buffer(), thus the
+assignment should be redundant. Remove it.
 
-Signed-off-by: Tracey Dent <tdent48227@gmail.com>
+Signed-off-by: Namhyung Kim <namhyung@gmail.com>
 ---
- drivers/ata/Makefile |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ fs/buffer.c |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/ata/Makefile b/drivers/ata/Makefile
-index ccd461b..c501af5 100644
---- a/drivers/ata/Makefile
-+++ b/drivers/ata/Makefile
-@@ -99,7 +99,7 @@ obj-$(CONFIG_ATA_GENERIC)	+= ata_generic.o
- # Should be last libata driver
- obj-$(CONFIG_PATA_LEGACY)	+= pata_legacy.o
+diff --git a/fs/buffer.c b/fs/buffer.c
+index 3e7dca2..133ae58 100644
+--- a/fs/buffer.c
++++ b/fs/buffer.c
+@@ -905,7 +905,6 @@ try_again:
  
--libata-objs	:= libata-core.o libata-scsi.o libata-eh.o libata-transport.o
-+libata-y	:= libata-core.o libata-scsi.o libata-eh.o libata-transport.o
- libata-$(CONFIG_ATA_SFF)	+= libata-sff.o
- libata-$(CONFIG_SATA_PMP)	+= libata-pmp.o
- libata-$(CONFIG_ATA_ACPI)	+= libata-acpi.o
+ 		bh->b_state = 0;
+ 		atomic_set(&bh->b_count, 0);
+-		bh->b_private = NULL;
+ 		bh->b_size = size;
+ 
+ 		/* Link the buffer to its page */
 -- 
-1.7.3.1.104.gc752e
+1.7.0.4
 
