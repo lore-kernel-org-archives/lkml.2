@@ -1,57 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755231Ab0JPMkI (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Oct 2010 08:40:08 -0400
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:51917 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754300Ab0JPMkE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Oct 2010 08:40:04 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=i2TPIIjpc8/IaP6w9lNGh2tnAm1mD6rJBhdnOOQAoBql1Xzr8VzyE1IbS6DaTyArUa
-         SMBlGyeF8VA05DY4z7ya0Rrqp/cA8jjeLHVQDnW5WBPAIX288V3mTcPcd17g9NsauA4S
-         N35ZiLyXVjnz17riayQ3Z62YgyJMPtqHd1JEE=
+	id S1755431Ab0JPMmu (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Oct 2010 08:42:50 -0400
+Received: from mx1.melware.net ([78.47.171.162]:54770 "EHLO mx1.melware.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754300Ab0JPMmt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 16 Oct 2010 08:42:49 -0400
+Date: Sat, 16 Oct 2010 14:42:48 +0200 (CEST)
+From: Armin Schindler <armin@melware.de>
+To: Tejun Heo <tj@kernel.org>
+cc: Karsten Keil <isdn@linux-pingi.de>, lkml <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH v2.6.36-rc7] isdn/eicon: don't call flush_scheduled_work()
+ from diva_os_remove_soft_isr()
+In-Reply-To: <4CB84FAF.5080608@kernel.org>
+Message-ID: <alpine.DEB.2.00.1010161441040.27329@justus.melware.de>
+References: <4CB84FAF.5080608@kernel.org>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+Organization: Cytronics & Melware
 MIME-Version: 1.0
-In-Reply-To: <AANLkTimHYYLZHOxgco3jotD7ikVhaPh8FVcSqeZwtrVc@mail.gmail.com>
-References: <1287135981-17604-1-git-send-email-akinobu.mita@gmail.com>
-	<1287135981-17604-23-git-send-email-akinobu.mita@gmail.com>
-	<201010151253.15653.arnd@arndb.de>
-	<AANLkTi=cA=yf7NmPVKXaZdoTBYmwdmy_frk7b_feG-WG@mail.gmail.com>
-	<m262x24j2y.fsf@igel.home>
-	<AANLkTimHYYLZHOxgco3jotD7ikVhaPh8FVcSqeZwtrVc@mail.gmail.com>
-Date: Sat, 16 Oct 2010 21:40:03 +0900
-Message-ID: <AANLkTimtyW8AbOj+w=mjPbpP1j0LB9JXdo7cb=nQAXQ8@mail.gmail.com>
-Subject: Re: [PATCH 22/22] bitops: remove minix bitops from asm/bitops.h
-From: Akinobu Mita <akinobu.mita@gmail.com>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Andreas Schwab <schwab@linux-m68k.org>, Arnd Bergmann <arnd@arndb.de>,
-        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        Christoph Hellwig <hch@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Linux/m68k" <linux-m68k@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; format=flowed; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/10/16 Geert Uytterhoeven <geert@linux-m68k.org>:
-> On Sat, Oct 16, 2010 at 10:50, Andreas Schwab <schwab@linux-m68k.org> wrote:
->> Geert Uytterhoeven <geert@linux-m68k.org> writes:
->>
->>> Funny, m68k uses the little endian minix file system?
->>>
->>> Perhaps this was due to minix using the ext2 accessors? And ext2 being
->>> switched from big to little endian ext2 on m68k, without anyone
->>> noticing the impact
->>> on minix?
->>
->> m68k has always used big-endian minixfs and the minix bitops were always
->> independent of the ext2 ones.
+On Fri, 15 Oct 2010, Tejun Heo wrote:
+> diva doesn't use workqueue and there is no reason to flush the system
+> workqueue from diva_os_remove_soft_isr().  Remove it.
 >
-> Thanks for confirming!
+> This is to prepare for the deprecation and removal of
+> flush_scheduled_work().
 
-m68knommu is big-endian minixfs but m68k (mmu) is little-endian minixfs
-if I read arch/m68k/include/asm/bitops_{mm,no}.h correctly.
+This is a leftover. Thanks.
+
+Acked-by: Armin Schindler <armin@melware.de>
+
+> Signed-off-by: Tejun Heo <tj@kernel.org>
+> ---
+> drivers/isdn/hardware/eicon/divasmain.c |    2 --
+> 1 file changed, 2 deletions(-)
+>
+> Index: work/drivers/isdn/hardware/eicon/divasmain.c
+> ===================================================================
+> --- work.orig/drivers/isdn/hardware/eicon/divasmain.c
+> +++ work/drivers/isdn/hardware/eicon/divasmain.c
+> @@ -15,7 +15,6 @@
+> #include <asm/uaccess.h>
+> #include <asm/io.h>
+> #include <linux/ioport.h>
+> -#include <linux/workqueue.h>
+> #include <linux/pci.h>
+> #include <linux/interrupt.h>
+> #include <linux/list.h>
+> @@ -546,7 +545,6 @@ void diva_os_remove_soft_isr(diva_os_sof
+> 		void *mem;
+>
+> 		tasklet_kill(&pdpc->divas_task);
+> -		flush_scheduled_work();
+> 		mem = psoft_isr->object;
+> 		psoft_isr->object = NULL;
+> 		diva_os_free(0, mem);
+>
