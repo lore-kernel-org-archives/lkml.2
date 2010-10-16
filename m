@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753444Ab0JPIOq (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Oct 2010 04:14:46 -0400
-Received: from bld-mail19.adl2.internode.on.net ([150.101.137.104]:54062 "EHLO
+	id S1753678Ab0JPIO6 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Oct 2010 04:14:58 -0400
+Received: from bld-mail15.adl6.internode.on.net ([150.101.137.100]:50158 "EHLO
 	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752425Ab0JPIOo (ORCPT
+	with ESMTP id S1753485Ab0JPIOz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Oct 2010 04:14:44 -0400
+	Sat, 16 Oct 2010 04:14:55 -0400
 From: Dave Chinner <david@fromorbit.com>
 To: linux-fsdevel@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH 07/19] exofs: use iput() for inode reference count decrements
-Date: Sat, 16 Oct 2010 19:14:01 +1100
-Message-Id: <1287216853-17634-8-git-send-email-david@fromorbit.com>
+Subject: [PATCH 01/19] fs: switch bdev inode bdi's correctly
+Date: Sat, 16 Oct 2010 19:13:55 +1100
+Message-Id: <1287216853-17634-2-git-send-email-david@fromorbit.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1287216853-17634-1-git-send-email-david@fromorbit.com>
 References: <1287216853-17634-1-git-send-email-david@fromorbit.com>
@@ -22,38 +22,87 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Dave Chinner <dchinner@redhat.com>
 
-Direct modification of the inode reference count is a no-no. Convert
-the exofs decrements to call iput() instead of acting directly on
-i_count.
+bdev inodes can remain dirty even after their last close. Hence the
+BDI associated with the bdev->inode gets modified duringthe last
+close to point to the default BDI. However, the bdev inode still
+needs to be moved to the dirty lists of the new BDI, otherwise it
+will corrupt the writeback list is was left on.
+
+Add a new function bdev_inode_switch_bdi() to move all the bdi state
+from the old bdi to the new one safely. This is only a temporary
+measure until the bdev inode<->bdi lifecycle problems are sorted
+out.
 
 Signed-off-by: Dave Chinner <dchinner@redhat.com>
-Reviewed-by: Christoph Hellwig <hch@lst.de>
 ---
- fs/exofs/inode.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+ fs/block_dev.c |   26 +++++++++++++++++++++-----
+ 1 files changed, 21 insertions(+), 5 deletions(-)
 
-diff --git a/fs/exofs/inode.c b/fs/exofs/inode.c
-index b631ff3..0fb4d4c 100644
---- a/fs/exofs/inode.c
-+++ b/fs/exofs/inode.c
-@@ -1101,7 +1101,7 @@ static void create_done(struct exofs_io_state *ios, void *p)
+diff --git a/fs/block_dev.c b/fs/block_dev.c
+index 50e8c85..501eab5 100644
+--- a/fs/block_dev.c
++++ b/fs/block_dev.c
+@@ -48,6 +48,21 @@ inline struct block_device *I_BDEV(struct inode *inode)
  
- 	set_obj_created(oi);
+ EXPORT_SYMBOL(I_BDEV);
  
--	atomic_dec(&inode->i_count);
-+	iput(inode);
- 	wake_up(&oi->i_wq);
- }
- 
-@@ -1161,7 +1161,7 @@ struct inode *exofs_new_inode(struct inode *dir, int mode)
- 	ios->cred = oi->i_cred;
- 	ret = exofs_sbi_create(ios);
- 	if (ret) {
--		atomic_dec(&inode->i_count);
-+		iput(inode);
- 		exofs_put_io_state(ios);
- 		return ERR_PTR(ret);
- 	}
++/*
++ * move the inode from it's current bdi to the a new bdi. if the inode is dirty
++ * we need to move it onto the dirty list of @dst so that the inode is always
++ * on the right list.
++ */
++static void bdev_inode_switch_bdi(struct inode *inode,
++			struct backing_dev_info *dst)
++{
++	spin_lock(&inode_lock);
++	inode->i_data.backing_dev_info = dst;
++	if (inode->i_state & I_DIRTY)
++		list_move(&inode->i_list, &dst->wb.b_dirty);
++	spin_unlock(&inode_lock);
++}
++
+ static sector_t max_block(struct block_device *bdev)
+ {
+ 	sector_t retval = ~((sector_t)0);
+@@ -1390,7 +1405,7 @@ static int __blkdev_get(struct block_device *bdev, fmode_t mode, int for_part)
+ 				bdi = blk_get_backing_dev_info(bdev);
+ 				if (bdi == NULL)
+ 					bdi = &default_backing_dev_info;
+-				bdev->bd_inode->i_data.backing_dev_info = bdi;
++				bdev_inode_switch_bdi(bdev->bd_inode, bdi);
+ 			}
+ 			if (bdev->bd_invalidated)
+ 				rescan_partitions(disk, bdev);
+@@ -1405,8 +1420,8 @@ static int __blkdev_get(struct block_device *bdev, fmode_t mode, int for_part)
+ 			if (ret)
+ 				goto out_clear;
+ 			bdev->bd_contains = whole;
+-			bdev->bd_inode->i_data.backing_dev_info =
+-			   whole->bd_inode->i_data.backing_dev_info;
++			bdev_inode_switch_bdi(bdev->bd_inode,
++				whole->bd_inode->i_data.backing_dev_info);
+ 			bdev->bd_part = disk_get_part(disk, partno);
+ 			if (!(disk->flags & GENHD_FL_UP) ||
+ 			    !bdev->bd_part || !bdev->bd_part->nr_sects) {
+@@ -1439,7 +1454,7 @@ static int __blkdev_get(struct block_device *bdev, fmode_t mode, int for_part)
+ 	disk_put_part(bdev->bd_part);
+ 	bdev->bd_disk = NULL;
+ 	bdev->bd_part = NULL;
+-	bdev->bd_inode->i_data.backing_dev_info = &default_backing_dev_info;
++	bdev_inode_switch_bdi(bdev->bd_inode, &default_backing_dev_info);
+ 	if (bdev != bdev->bd_contains)
+ 		__blkdev_put(bdev->bd_contains, mode, 1);
+ 	bdev->bd_contains = NULL;
+@@ -1533,7 +1548,8 @@ static int __blkdev_put(struct block_device *bdev, fmode_t mode, int for_part)
+ 		disk_put_part(bdev->bd_part);
+ 		bdev->bd_part = NULL;
+ 		bdev->bd_disk = NULL;
+-		bdev->bd_inode->i_data.backing_dev_info = &default_backing_dev_info;
++		bdev_inode_switch_bdi(bdev->bd_inode,
++					&default_backing_dev_info);
+ 		if (bdev != bdev->bd_contains)
+ 			victim = bdev->bd_contains;
+ 		bdev->bd_contains = NULL;
 -- 
 1.7.1
 
