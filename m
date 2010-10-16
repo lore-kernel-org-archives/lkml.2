@@ -1,228 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752174Ab0JPAjC (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Oct 2010 20:39:02 -0400
-Received: from e37.co.us.ibm.com ([32.97.110.158]:60187 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751217Ab0JPAjA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Oct 2010 20:39:00 -0400
+	id S1752235Ab0JPAjY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Oct 2010 20:39:24 -0400
+Received: from e6.ny.us.ibm.com ([32.97.182.146]:49320 "EHLO e6.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751993Ab0JPAjB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Oct 2010 20:39:01 -0400
 From: John Stultz <john.stultz@linaro.org>
 To: LKML <linux-kernel@vger.kernel.org>
-Cc: John Stultz <john.stultz@linaro.org>,
-        Alessandro Zummo <a.zummo@towertech.it>,
+Cc: John Stultz <johnstul@us.ibm.com>, Alessandro Zummo <a.zummo@towertech.it>,
         Thomas Gleixner <tglx@linutronix.de>,
         Richard Cochran <richardcochran@gmail.com>
-Subject: [PATCH 2/6] [RFC] Introduce timerlist infrastructure.
-Date: Fri, 15 Oct 2010 17:38:51 -0700
-Message-Id: <1287189535-24649-3-git-send-email-john.stultz@linaro.org>
+Subject: [PATCH 0/6] [RFC] A posix clock/timer interface to the RTC
+Date: Fri, 15 Oct 2010 17:38:49 -0700
+Message-Id: <1287189535-24649-1-git-send-email-john.stultz@linaro.org>
 X-Mailer: git-send-email 1.6.0.4
-In-Reply-To: <1287189535-24649-2-git-send-email-john.stultz@linaro.org>
-References: <1287189535-24649-1-git-send-email-john.stultz@linaro.org>
- <1287189535-24649-2-git-send-email-john.stultz@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The timerlist infrastructure is a thin layer over the rbtree
-code that implements a simple list of timers sorted by an
-expires value, and a getnext function that provides a pointer
-to the earliest timer.
+From: John Stultz <johnstul@us.ibm.com>
 
-This infrastructure allows drivers and other kernel infrastructure
-to easily implement timers without duplicating code.
 
-Suggestions or feedback would be appreciated.
+This patchset allows the RTC to be managed via the posix_clocks/timers
+interface. This allows applications to program timer events that will 
+wake the system from suspend state. If the system is not suspended, the
+timers fire like normal posix timers.
 
-Signed-off-by: John Stultz <john.stultz@linaro.org>
+Currently, if an application wants to trigger a RTC alarm to wake up
+from suspend, they must use the sysfs wakealarm interface or the rtc
+chardev RTC_WKALM_SET ioctl. The limitation with this interface is
+that it is fairly hardware oriented, so multiple applications cannot
+set an RTC alarm without overwriting any previous alarms set by other
+applications.
+
+The in-kernel posix interface allows for the kernel to manage a list
+of timers that control when the alarm is fired, so applications
+do not need to coordinate access to the alarm hardware.
+
+My earlier proof-of-concept hack/patch for this work (see
+http://lwn.net/Articles/405986/ ) did not get much review from the 
+RTC folks, so I've carried on reworking a number of layers of code
+in order to make this functionality something that could possibly be
+upstreamed in the future.
+
+The patches are still fairly rough, but together they do function, so
+while there is still work to be done, I wanted to send this out again
+so folks had an idea of the scope of the work and could make
+suggestions as to where I've gone wrong. :)
+
+So please let me know what you think.
+
+thanks
+-john
+
+
 CC: Alessandro Zummo <a.zummo@towertech.it>
 CC: Thomas Gleixner <tglx@linutronix.de>
 CC: Richard Cochran <richardcochran@gmail.com>
----
- include/linux/timerlist.h |   37 ++++++++++++++
- lib/Makefile              |    2 +-
- lib/timerlist.c           |  115 +++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 153 insertions(+), 1 deletions(-)
+
+
+John Stultz (5):
+  [RFC] Introduce timerlist infrastructure.
+  [RFC] hrtimers: Convert hrtimers to use timerlist infrastructure
+  [RFC] RTC: Rework RTC code to use timerlist for events
+  [RFC] RTC: Remove UIE emulation
+  [RFC] RTC: Add posix clock/timer interface
+
+Richard Cochran (1):
+  [RFC] posix clocks: dynamic clock ids.
+
+ drivers/rtc/Makefile         |    2 +-
+ drivers/rtc/class.c          |   23 ++
+ drivers/rtc/interface.c      |  453 +++++++++++++++++++++---------------------
+ drivers/rtc/posix.c          |  274 +++++++++++++++++++++++++
+ drivers/rtc/rtc-dev.c        |  104 ----------
+ drivers/rtc/rtc-lib.c        |   26 +++
+ drivers/rtc/rtc-sysfs.c      |   10 +
+ include/linux/hrtimer.h      |   32 ++--
+ include/linux/posix-timers.h |    9 +-
+ include/linux/rtc.h          |   49 +++--
+ include/linux/time.h         |    2 +
+ include/linux/timerlist.h    |   37 ++++
+ kernel/hrtimer.c             |   86 +++-----
+ kernel/posix-timers.c        |   41 +++-
+ kernel/time/timer_list.c     |    8 +-
+ lib/Makefile                 |    2 +-
+ lib/timerlist.c              |  115 +++++++++++
+ 17 files changed, 843 insertions(+), 430 deletions(-)
+ create mode 100644 drivers/rtc/posix.c
  create mode 100644 include/linux/timerlist.h
  create mode 100644 lib/timerlist.c
-
-diff --git a/include/linux/timerlist.h b/include/linux/timerlist.h
-new file mode 100644
-index 0000000..c46b28a
---- /dev/null
-+++ b/include/linux/timerlist.h
-@@ -0,0 +1,37 @@
-+#ifndef _LINUX_TIMERLIST_H
-+#define _LINUX_TIMERLIST_H
-+
-+#include <linux/rbtree.h>
-+#include <linux/ktime.h>
-+
-+
-+struct timerlist_node {
-+	struct rb_node node;
-+	ktime_t expires;
-+};
-+
-+struct timerlist_head {
-+	struct rb_root head;
-+	struct timerlist_node *next;
-+};
-+
-+
-+extern void timerlist_add(struct timerlist_head *head,
-+				struct timerlist_node *node);
-+extern void timerlist_del(struct timerlist_head *head,
-+				struct timerlist_node *node);
-+extern struct timerlist_node *timerlist_getnext(struct timerlist_head *head);
-+extern struct timerlist_node *timerlist_iterate_next(
-+						struct timerlist_node *node);
-+
-+static inline void timerlist_init(struct timerlist_node *node)
-+{
-+	RB_CLEAR_NODE(&node->node);
-+}
-+
-+static inline void timerlist_init_head(struct timerlist_head *head)
-+{
-+	head->head = RB_ROOT;
-+	head->next = NULL;
-+}
-+#endif /* _LINUX_TIMERLIST_H */
-diff --git a/lib/Makefile b/lib/Makefile
-index e6a3763..8b475cf 100644
---- a/lib/Makefile
-+++ b/lib/Makefile
-@@ -8,7 +8,7 @@ KBUILD_CFLAGS = $(subst -pg,,$(ORIG_CFLAGS))
- endif
- 
- lib-y := ctype.o string.o vsprintf.o cmdline.o \
--	 rbtree.o radix-tree.o dump_stack.o \
-+	 rbtree.o radix-tree.o dump_stack.o timerlist.o\
- 	 idr.o int_sqrt.o extable.o prio_tree.o \
- 	 sha1.o irq_regs.o reciprocal_div.o argv_split.o \
- 	 proportions.o prio_heap.o ratelimit.o show_mem.o \
-diff --git a/lib/timerlist.c b/lib/timerlist.c
-new file mode 100644
-index 0000000..3301b45
---- /dev/null
-+++ b/lib/timerlist.c
-@@ -0,0 +1,115 @@
-+/*
-+ *  Generic Timer-list
-+ *
-+ *  Manages a simple list of timers, ordered by expiration time.
-+ *  Uses rbtrees for quick list adds and expiration.
-+ *
-+ *  NOTE: All of the following functions need to be serialized
-+ *  to avoid races. No locking is done by this libary code.
-+ *
-+ *  This program is free software; you can redistribute it and/or modify
-+ *  it under the terms of the GNU General Public License as published by
-+ *  the Free Software Foundation; either version 2 of the License, or
-+ *  (at your option) any later version.
-+ *
-+ *  This program is distributed in the hope that it will be useful,
-+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ *  GNU General Public License for more details.
-+ *
-+ *  You should have received a copy of the GNU General Public License
-+ *  along with this program; if not, write to the Free Software
-+ *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-+ */
-+
-+#include <linux/timerlist.h>
-+#include <linux/rbtree.h>
-+
-+/**
-+ * timerlist_add - Adds timer to timerlist.
-+ *
-+ * @head: head of timerlist
-+ * @node: timer node to be added
-+ *
-+ * Adds the timer node to the timerlist, sorted by the
-+ * node's expires value.
-+ */
-+void timerlist_add(struct timerlist_head *head, struct timerlist_node *node)
-+{
-+	struct rb_node **p = &head->head.rb_node;
-+	struct rb_node *parent = NULL;
-+	struct timerlist_node  *ptr;
-+
-+	/* Make sure we don't add nodes that are already added */
-+	WARN_ON_ONCE(!RB_EMPTY_NODE(&node->node));
-+
-+	while (*p) {
-+		parent = *p;
-+		ptr = rb_entry(parent, struct timerlist_node, node);
-+		if (node->expires.tv64 < ptr->expires.tv64)
-+			p = &(*p)->rb_left;
-+		else
-+			p = &(*p)->rb_right;
-+	}
-+	rb_link_node(&node->node, parent, p);
-+	rb_insert_color(&node->node, &head->head);
-+
-+	if (!head->next || node->expires.tv64 < head->next->expires.tv64)
-+		head->next = node;
-+}
-+
-+/**
-+ * timerlist_del - Removes a timer from the timerlist.
-+ *
-+ * @head: head of timerlist
-+ * @node: timer node to be removed
-+ *
-+ * Removes the timer node from the timerlist.
-+ */
-+void timerlist_del(struct timerlist_head *head, struct timerlist_node *node)
-+{
-+	WARN_ON_ONCE(RB_EMPTY_NODE(&node->node));
-+
-+	/* update next pointer */
-+	if (head->next == node)
-+		head->next = rb_entry(rb_next(&node->node),
-+					struct timerlist_node, node);
-+	rb_erase(&node->node, &head->head);
-+	RB_CLEAR_NODE(&node->node);
-+}
-+
-+
-+/**
-+ * timerlist_getnext - Returns the timer with the earlies expiration time
-+ *
-+ * @head: head of timerlist
-+ *
-+ * Returns a pointer to the timer node that has the
-+ * earliest expiration time.
-+ */
-+struct timerlist_node *timerlist_getnext(struct timerlist_head *head)
-+{
-+	return head->next;
-+}
-+
-+
-+/**
-+ * timerlist_iterate_next - Returns the timer after the provided timer
-+ *
-+ * @node: Pointer to a timer.
-+ *
-+ * Provides the timer that is after the given node. This is used, when
-+ * necessary, to iterate through the list of timers in a timer list
-+ * without modifying the list.
-+ */
-+struct timerlist_node *timerlist_iterate_next(struct timerlist_node *node)
-+{
-+	struct rb_node *next;
-+
-+	if (!node)
-+		return NULL;
-+	next = rb_next(&node->node);
-+	if (!next)
-+		return NULL;
-+	return container_of(next, struct timerlist_node, node);
-+}
--- 
-1.6.0.4
-
