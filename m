@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752914Ab0JPEyn (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Oct 2010 00:54:43 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:55943 "EHLO
+	id S1752123Ab0JPExn (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Oct 2010 00:53:43 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:31363 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752170Ab0JPExo (ORCPT
+	with ESMTP id S1751234Ab0JPExk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Oct 2010 00:53:44 -0400
+	Sat, 16 Oct 2010 00:53:40 -0400
 DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
 	h=message-id:references:user-agent:date:from:to:cc:subject:content-disposition;
-	b=mAtZrqQ7B3V7BWnSNYCkdc33pcQ3K5ezvA60H8u55L1/YWfAnHd6vgxUyNT+CQLSc
-	7iV7mpAECj2+rmcI6pW/A==
-Message-Id: <20101016045118.832209343@google.com>
+	b=nbGzyTVySQ4tkiR8ShehcNx/w3XYH+4fUbln24L8tV64Nx+4TK9H6UNV+nwe2I4ty
+	1gWgssHa7Cr+P2kzzjIXA==
+Message-Id: <20101016045118.759663035@google.com>
 References: <20101016044349.830426011@google.com>
 User-Agent: quilt/0.46-1
-Date: Fri, 15 Oct 2010 21:43:54 -0700
+Date: Fri, 15 Oct 2010 21:43:53 -0700
 From: pjt@google.com
 To: linux-kernel@vger.kernel.org
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
@@ -23,148 +23,111 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
         Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
         Pierre Bourdon <pbourdon@excellency.fr>, Paul Turner <pjt@google.com>,
         Bharata B Rao <bharata@linux.vnet.ibm.com>
-Subject: [RFC tg_shares_up improvements - v1 05/12] sched: fix update_cfs_load synchronization
-Content-Disposition: inline; filename=sched-tg-fix-update_cfs_load.patch
+Subject: [RFC tg_shares_up improvements - v1 04/12] sched: fix load corruption from update_cfs_shares
+Content-Disposition: inline; filename=sched-tg-fix-update_cfs_shares.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Using cfs_rq->nr_running is not sufficient to synchronize update_cfs_load with
-the put path since nr_running accounting occurs at deactivation.
+as part of enqueue_entity both a new entity weight and its contribution to the
+queuing cfs_rq / rq are updated.  Since update_cfs_shares will only update the
+queueing weights when the entity is on_rq (which in this case it is not yet),
+there's a dependency loop here:
 
-It's also not safe to make the removal decision based on load_avg as this fails
-with both high periods and low shares.  Resolve this by clipping history at 8
-foldings.
+update_cfs_shares needs account_entity_enqueue to update cfs_rq->load.weight
+account_entity_enqueue needs the updated weight for the queuing cfs_rq load[*]
 
-Note: the above will always occur from update_shares() since in the 
-last-task-sleep-case that task will still be cfs_rq->curr when update_cfs_load is 
-called.
+Fix this and avoid spurious dequeue/enqueues by issuing update_cfs_shares as
+if we had accounted the enqueue already.
+
+This was also resulting in rq->load corruption previously.
+
+[*]: this dependency also exists when using the group cfs_rq w/ 
+update_cfs_shares as the weight of the enqueued entity changes without the
+load being updated.
 
 Signed-off-by: Paul Turner <pjt@google.com>
-
 ---
- kernel/sched.c      |    2 +-
- kernel/sched_fair.c |   33 +++++++++++++++++++++------------
- 2 files changed, 22 insertions(+), 13 deletions(-)
+ kernel/sched_fair.c |   16 ++++++++--------
+ 1 file changed, 8 insertions(+), 8 deletions(-)
 
 Index: kernel/sched_fair.c
 ===================================================================
 --- kernel/sched_fair.c.orig
 +++ kernel/sched_fair.c
-@@ -674,10 +674,11 @@ account_entity_dequeue(struct cfs_rq *cf
+@@ -718,7 +718,7 @@ static void reweight_entity(struct cfs_r
+ 		account_entity_enqueue(cfs_rq, se);
  }
  
- #if defined CONFIG_SMP && defined CONFIG_FAIR_GROUP_SCHED
--static void update_cfs_load(struct cfs_rq *cfs_rq, int lb)
-+static void update_cfs_load(struct cfs_rq *cfs_rq)
+-static void update_cfs_shares(struct cfs_rq *cfs_rq)
++static void update_cfs_shares(struct cfs_rq *cfs_rq, long weight_delta)
  {
- 	u64 period = sched_avg_period();
- 	u64 now, delta;
-+	unsigned long load = cfs_rq->load.weight;
- 
- 	if (!cfs_rq)
+ 	struct task_group *tg;
+ 	struct sched_entity *se;
+@@ -732,7 +732,7 @@ static void update_cfs_shares(struct cfs
+ 	if (!se)
  		return;
-@@ -685,9 +686,19 @@ static void update_cfs_load(struct cfs_r
- 	now = rq_of(cfs_rq)->clock;
- 	delta = now - cfs_rq->load_stamp;
  
-+	/* truncate load history at 4 idle periods */
-+	if (cfs_rq->load_stamp > cfs_rq->load_last &&
-+	    now - cfs_rq->load_last > 4 * period) {
-+		cfs_rq->load_period = 0;
-+		cfs_rq->load_avg = 0;
-+	}
-+
- 	cfs_rq->load_stamp = now;
- 	cfs_rq->load_period += delta;
--	cfs_rq->load_avg += delta * cfs_rq->load.weight;
-+	if (load) {
-+		cfs_rq->load_last = now;
-+		cfs_rq->load_avg += delta * load;
-+	}
+-	load = cfs_rq->load.weight;
++	load = cfs_rq->load.weight + weight_delta;
  
- 	while (cfs_rq->load_period > period) {
- 		/*
-@@ -700,10 +711,8 @@ static void update_cfs_load(struct cfs_r
- 		cfs_rq->load_avg /= 2;
- 	}
- 
--	if (lb && !cfs_rq->nr_running) {
--		if (cfs_rq->load_avg < (period / 8))
--			list_del_leaf_cfs_rq(cfs_rq);
--	}
-+	if (!cfs_rq->curr && !cfs_rq->nr_running && !cfs_rq->load_avg)
-+		list_del_leaf_cfs_rq(cfs_rq);
- }
- 
- static void reweight_entity(struct cfs_rq *cfs_rq, struct sched_entity *se,
-@@ -750,7 +759,7 @@ static void update_cfs_shares(struct cfs
- 	reweight_entity(cfs_rq_of(se), se, shares);
- }
- #else /* CONFIG_FAIR_GROUP_SCHED */
--static inline void update_cfs_load(struct cfs_rq *cfs_rq, int lb)
-+static inline void update_cfs_load(struct cfs_rq *cfs_rq)
+ 	load_weight = atomic_read(&tg->load_weight);
+ 	load_weight -= cfs_rq->load_contribution;
+@@ -754,7 +754,7 @@ static inline void update_cfs_load(struc
  {
  }
  
-@@ -880,7 +889,7 @@ enqueue_entity(struct cfs_rq *cfs_rq, st
- 	 * Update run-time statistics of the 'current'.
+-static inline void update_cfs_shares(struct cfs_rq *cfs_rq)
++static inline void update_cfs_shares(struct cfs_rq *cfs_rq, long weight_delta)
+ {
+ }
+ #endif /* CONFIG_FAIR_GROUP_SCHED */
+@@ -881,8 +881,8 @@ enqueue_entity(struct cfs_rq *cfs_rq, st
  	 */
  	update_curr(cfs_rq);
--	update_cfs_load(cfs_rq, 0);
-+	update_cfs_load(cfs_rq);
- 	update_cfs_shares(cfs_rq_of(se), se->load.weight);
+ 	update_cfs_load(cfs_rq, 0);
++	update_cfs_shares(cfs_rq_of(se), se->load.weight);
  	account_entity_enqueue(cfs_rq, se);
+-	update_cfs_shares(cfs_rq_of(se));
  
-@@ -941,7 +950,7 @@ dequeue_entity(struct cfs_rq *cfs_rq, st
- 	if (se != cfs_rq->curr)
- 		__dequeue_entity(cfs_rq, se);
- 	se->on_rq = 0;
--	update_cfs_load(cfs_rq, 0);
-+	update_cfs_load(cfs_rq);
+ 	if (flags & ENQUEUE_WAKEUP) {
+ 		place_entity(cfs_rq, se, 0);
+@@ -944,7 +944,7 @@ dequeue_entity(struct cfs_rq *cfs_rq, st
+ 	update_cfs_load(cfs_rq, 0);
  	account_entity_dequeue(cfs_rq, se);
  	update_min_vruntime(cfs_rq);
- 	update_cfs_shares(cfs_rq_of(se), 0);
-@@ -1176,7 +1185,7 @@ enqueue_task_fair(struct rq *rq, struct 
- 	for_each_sched_entity(se) {
+-	update_cfs_shares(cfs_rq_of(se));
++	update_cfs_shares(cfs_rq_of(se), 0);
+ 
+ 	/*
+ 	 * Normalize the entity after updating the min_vruntime because the
+@@ -1177,7 +1177,7 @@ enqueue_task_fair(struct rq *rq, struct 
  		struct cfs_rq *cfs_rq = cfs_rq_of(se);
  
--		update_cfs_load(cfs_rq, 0);
-+		update_cfs_load(cfs_rq);
- 		update_cfs_shares(cfs_rq, 0);
+ 		update_cfs_load(cfs_rq, 0);
+-		update_cfs_shares(cfs_rq);
++		update_cfs_shares(cfs_rq, 0);
  	}
  
-@@ -1206,7 +1215,7 @@ static void dequeue_task_fair(struct rq 
- 	for_each_sched_entity(se) {
+ 	hrtick_update(rq);
+@@ -1207,7 +1207,7 @@ static void dequeue_task_fair(struct rq 
  		struct cfs_rq *cfs_rq = cfs_rq_of(se);
  
--		update_cfs_load(cfs_rq, 0);
-+		update_cfs_load(cfs_rq);
- 		update_cfs_shares(cfs_rq, 0);
+ 		update_cfs_load(cfs_rq, 0);
+-		update_cfs_shares(cfs_rq);
++		update_cfs_shares(cfs_rq, 0);
  	}
  
-@@ -2019,7 +2028,7 @@ static int tg_shares_up(struct task_grou
- 	raw_spin_lock_irqsave(&rq->lock, flags);
+ 	hrtick_update(rq);
+@@ -2030,7 +2030,7 @@ static int tg_shares_up(struct task_grou
+ 	 * We need to update shares after updating tg->load_weight in
+ 	 * order to adjust the weight of groups with long running tasks.
+ 	 */
+-	update_cfs_shares(cfs_rq);
++	update_cfs_shares(cfs_rq, 0);
  
- 	update_rq_clock(rq);
--	update_cfs_load(cfs_rq, 1);
-+	update_cfs_load(cfs_rq);
+ 	raw_spin_unlock_irqrestore(&rq->lock, flags);
  
- 	load_avg = div64_u64(cfs_rq->load_avg, cfs_rq->load_period+1);
- 	load_avg -= cfs_rq->load_contribution;
-Index: kernel/sched.c
-===================================================================
---- kernel/sched.c.orig
-+++ kernel/sched.c
-@@ -357,7 +357,7 @@ struct cfs_rq {
- 
- 	u64 load_avg;
- 	u64 load_period;
--	u64 load_stamp;
-+	u64 load_stamp, load_last;
- 
- 	unsigned long load_contribution;
- #endif
 
 -- 
 
