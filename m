@@ -1,85 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753075Ab0JPHjw (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Oct 2010 03:39:52 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:42423 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752951Ab0JPHjv (ORCPT
+	id S1753115Ab0JPHqx (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Oct 2010 03:46:53 -0400
+Received: from vms173003pub.verizon.net ([206.46.173.3]:48533 "EHLO
+	vms173003pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752884Ab0JPHqw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Oct 2010 03:39:51 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=from:to:subject:date:user-agent:cc:references:in-reply-to
-         :mime-version:content-type:content-transfer-encoding:message-id;
-        b=dQqQvoUYG9XH1A6ZMrSAtRi0QhsPh9Cep62dwO5G9aAIpGV3pJfZwCyVQiXg7CXgZ+
-         PMfKGDpsCzALH4C9R01zWExLjHxDs/SbG8Sgm5icWEkUkm9DeWXSwaANYiqek5zYVhOf
-         +jISHJCn9ZwyNiji3E3uhO91vnUL7UAHUl5vg=
-From: Christian Lamparter <chunkeey@googlemail.com>
-To: Julia Lawall <julia@diku.dk>
-Subject: Re: [PATCH 3/7] drivers/net/wireless/p54/eeprom.c: Return -ENOMEM on memory allocation failure
-Date: Fri, 15 Oct 2010 17:49:07 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.36-rc7-wl+; KDE/4.4.5; x86_64; ; )
-Cc: kernel-janitors@vger.kernel.org,
-        "John W. Linville" <linville@tuxdriver.com>,
-        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-References: <1287147610-8041-3-git-send-email-julia@diku.dk>
-In-Reply-To: <1287147610-8041-3-git-send-email-julia@diku.dk>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201010151749.07851.chunkeey@googlemail.com>
+	Sat, 16 Oct 2010 03:46:52 -0400
+Date: Sat, 16 Oct 2010 03:46:46 -0400 (EDT)
+From: Len Brown <lenb@kernel.org>
+X-X-Sender: lenb@localhost.localdomain
+To: linux-kernel@vger.kernel.org, tsi@ualberta.ca
+Subject: Re: x86_64 2.6.35.* kernels and Intel Xeon X5550
+In-reply-to: <alpine.WNT.1.10.1010152030320.280@tsi>
+Message-id: <alpine.LFD.2.00.1010160338280.2238@localhost.localdomain>
+References: <alpine.WNT.2.00.1010071055420.1672@cluij.ucs.ualberta.ca>
+ <alpine.WNT.1.10.1010152030320.280@tsi>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+MIME-version: 1.0
+Content-type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 15 October 2010 15:00:06 Julia Lawall wrote:
-> From: Julia Lawall <julia@diku.dk>
-> 
-> In this code, 0 is returned on memory allocation failure, even though other
-> failures return -ENOMEM or other similar values.
-> 
-> A simplified version of the semantic match that finds this problem is as
-> follows: (http://coccinelle.lip6.fr/)
-> 
-> // <smpl>
-> @@
-> expression ret;
-> expression x,e1,e2,e3;
-> @@
-> 
-> ret = 0
-> ... when != ret = e1
-> *x = \(kmalloc\|kcalloc\|kzalloc\)(...)
-> ... when != ret = e2
-> if (x == NULL) { ... when != ret = e3
->   return ret;
-> }
-> // </smpl>
-> 
-> Signed-off-by: Julia Lawall <julia@diku.dk>
-Cc: <stable@kernel.org>
-Acked-by: Christian Lamparter <chunkeey@googlemail.com>
 
-> ---
->  drivers/net/wireless/p54/eeprom.c |    4 +++-
->  1 file changed, 3 insertions(+), 1 deletion(-)
-> 
-> diff -u -p a/drivers/net/wireless/p54/eeprom.c b/drivers/net/wireless/p54/eeprom.c
-> --- a/drivers/net/wireless/p54/eeprom.c
-> +++ b/drivers/net/wireless/p54/eeprom.c
-> @@ -261,8 +261,10 @@ static int p54_generate_channel_lists(st
->  	list->max_entries = max_channel_num;
->  	list->channels = kzalloc(sizeof(struct p54_channel_entry) *
->  				 max_channel_num, GFP_KERNEL);
-> -	if (!list->channels)
-> +	if (!list->channels) {
-> +		ret = -ENOMEM;
->  		goto free;
-> +	}
->  
->  	for (i = 0; i < max_channel_num; i++) {
->  		if (i < priv->iq_autocal_len) {
-> 
-> 
+> > On the Xeon's, 2.6.35 hangs early on, upon the first test of trace events
+> > (in kernel/trace/trace_events.c:event_trace_self_tests()).  When disabling
+> > all tracing, debugging, etc., it still hangs but slightly later.  The
+> > megaraid_sas module is loaded, detects the adapter, but never gets around to
+> > registering it with the SCSI layer.
+
+> This is due to "CONFIG_INTEL_IDLE=y".
+
+Please file a bug report at bugzilla.kernel.org and assign it to me.
+
+Please reproduce using an upstream 2.6.36-rc8 kernel.
+
+Boot a CONFIG_INTEL_IDLE=n kernel and to the bug report...
+
+attach the output from acpidump
+'cat /proc/cpuinfo'
+'grep . /sys/devices/system/cpu/cpu*/cpuidle/*/*'
+'lspci'
+
+Then boot a CONFIG_INTEL_IDLE=y kernel and see what is the highest N that
+boots when you boot with "intel_idle.max_cstate=N"  (0 will disable
+the driver completely) and if any of them boot, for the highest N,
+attach to the bug report the complete dmesg and the output from
+'grep . /sys/devices/system/cpu/cpu*/cpuidle/*/*'
+
+thanks,
+-Len Brown, Intel Open Source Technology Center
