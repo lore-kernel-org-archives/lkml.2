@@ -1,57 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754802Ab0JPUDy (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Oct 2010 16:03:54 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:52692 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754079Ab0JPUDx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Oct 2010 16:03:53 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: "Luis R. Rodriguez" <lrodriguez@atheros.com>
-Subject: Re: [PATCH] ath9k: Convert to new PCI PM framework
-Date: Sat, 16 Oct 2010 22:02:52 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.36-rc8-rjw+; KDE/4.4.4; x86_64; ; )
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        "Linux-pm mailing list" <linux-pm@lists.linux-foundation.org>,
-        linux-wireless@vger.kernel.org, ath9k-devel@venema.h4ckr.net
-References: <201010160036.17653.rjw@sisk.pl> <AANLkTimdatos1psRnp_Es=q8iOe9aQE_aVARLpm18efb@mail.gmail.com>
-In-Reply-To: <AANLkTimdatos1psRnp_Es=q8iOe9aQE_aVARLpm18efb@mail.gmail.com>
+	id S1754998Ab0JPUFU (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Oct 2010 16:05:20 -0400
+Received: from netrider.rowland.org ([192.131.102.5]:57216 "HELO
+	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754627Ab0JPUFR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 16 Oct 2010 16:05:17 -0400
+Date: Sat, 16 Oct 2010 16:05:17 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@netrider.rowland.org
+To: Stefan Richter <stefanr@s5r6.in-berlin.de>
+cc: David Brownell <david-b@pacbell.net>, USB list <linux-usb@vger.kernel.org>,
+        Kernel development list <linux-kernel@vger.kernel.org>
+Subject: Re: 2.6.36-rc7: NULL pointer dereference in ehci_clear_tt_buffer_complete
+In-Reply-To: <4CBA0089.2060700@s5r6.in-berlin.de>
+Message-ID: <Pine.LNX.4.44L0.1010161600240.21391-100000@netrider.rowland.org>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201010162202.52766.rjw@sisk.pl>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday, October 16, 2010, Luis R. Rodriguez wrote:
-> On Fri, Oct 15, 2010 at 3:36 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> > From: Rafael J. Wysocki <rjw@sisk.pl>
-> >
-> > The ath9k driver uses the legacy PCI power management (suspend
-> > and resume) callbacks that apparently cause intermittent problems
-> > to happen (the adapter sometimes doesn't resume correctly on my
-> > Acer Ferrari One).  Make it use the new PCI PM and let the PCI core
-> > code handle the PCI-specific details of power transitions.
-> >
-> > Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+On Sat, 16 Oct 2010, Stefan Richter wrote:
+
+> Alan Stern wrote:
+> > On Thu, 14 Oct 2010, Stefan Richter wrote:
+> > 
+> >> Alan Stern wrote:
+> >>> Stefan, is it possible for you to tell whether this really does work?
+> >> That will be hard.  So far I was unable to reproduce the oops; still running
+> >> unmodified 2.6.36-rc7.
+> > 
+> > Was this on an SMP machine?
 > 
-> Do you know when these hooks were added?
+> Yes.
+> 
+> > If yes, the untested patch below may help
+> > trigger the oops.  To use it, insert (but don't mount) a memory card
+> > into the card reader, and use dd to copy a large amount of data from
+> > the card to /dev/null.  While that's running, unplug either the monitor
+> > or the card reader.  You may want to do this at a VT console so you can
+> > see directly when the delay occurs.
+> > 
+> > Alan Stern
+> > 
+> > 
+> > 
+> > Index: usb-2.6/drivers/usb/core/message.c
+> > ===================================================================
+> > --- usb-2.6.orig/drivers/usb/core/message.c
+> > +++ usb-2.6/drivers/usb/core/message.c
+> > @@ -323,8 +323,13 @@ static void sg_complete(struct urb *urb)
+> >  	/* on the last completion, signal usb_sg_wait() */
+> >  	io->bytes += urb->actual_length;
+> >  	io->count--;
+> > -	if (!io->count)
+> > +	if (!io->count) {
+> > +		if (status == -ECONNRESET) {
+> > +			printk(KERN_ERR "Delaying for test\n");
+> > +			mdelay(600);
+> > +		}
+> >  		complete(&io->complete);
+> > +	}
+> >  
+> >  	spin_unlock(&io->lock);
+> >  }
+> > 
+> 
+> I did so today on 2.6.36-rc8, without your other patch.  I was still unable to
+> reproduce the bug.  Forget the whole thing as unreproducible?
 
-Well, which ones?  If you're asking about the new framework, it's been there
-since 2.6.29 and is a recommended way of implementing PM hooks now.
+What I said above wasn't quite right.  This won't help trigger the 
+oops, but it should trigger the line saying something like
 
-Please have a look at Documentation/power/pci.txt. :-)
+	ehci_hcd 0000:00:12.2: qh ffff880208f07af0 (#00) state 5
 
-> If it fixes an issue should this go for stable?
+That's the real bug.
 
-I'm not 100% sure it fixes everything yet, although I hasn't been able to
-reproduce the problem with it applied, so far.
+Alan Stern
 
-So, I don't think it's -stable material at this point.  However, it should be
-done anyway at one point, so it very well can be done right now, given that I
-have the hardware to test it. :-)
-
-Thanks,
-Rafael
