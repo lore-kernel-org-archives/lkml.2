@@ -1,99 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753545Ab0JPSdC (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Oct 2010 14:33:02 -0400
-Received: from www.tglx.de ([62.245.132.106]:32824 "EHLO www.tglx.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753085Ab0JPSdB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Oct 2010 14:33:01 -0400
-Date: Sat, 16 Oct 2010 20:32:41 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Anand Gadiyar <gadiyar@ti.com>
-cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Ingo Molnar <mingo@elte.hu>, Russell King <linux@arm.linux.org.uk>
-Subject: Re: [PATCH RFC] arm: genirq: fix boot on arm platforms
-In-Reply-To: <1287077397-21781-1-git-send-email-gadiyar@ti.com>
-Message-ID: <alpine.LFD.2.00.1010162029310.2496@localhost6.localdomain6>
-References: <1287077397-21781-1-git-send-email-gadiyar@ti.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1753840Ab0JPSkw (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Oct 2010 14:40:52 -0400
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:60976 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753429Ab0JPSkv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 16 Oct 2010 14:40:51 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=GGlB7vpVeJWhrMhl6xJx9V3ZNcS6QNn40H8PPf17bRmW/Vki+lTNGNCg6YJKpVr0oc
+         hhiuK7KnttbsiJZBd17/n7AvZZEJVqsg6czUTUZ8IDv/U/ag1ZnJehcIqRSSvcsF6mi8
+         D+3db2PS7+7CccyYqTtpP1LLyMpg7elRSOmWo=
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <20101016182037.GA26090@elte.hu>
+References: <1287195738-3136-4-git-send-email-dzickus@redhat.com>
+	<tip-e21f3e4957f4a55f546873605a5caa59556bb144@git.kernel.org>
+	<1287250157.1998.124.camel@laptop>
+	<20101016182037.GA26090@elte.hu>
+Date: Sat, 16 Oct 2010 21:40:50 +0300
+Message-ID: <AANLkTimGLSNRcYxY3G41xHAa=0q1jmdL-peP-a0knzV9@mail.gmail.com>
+Subject: Re: [tip:perf/core] x86, NMI: Rewrite NMI handler
+From: Anca Emanuel <anca.emanuel@gmail.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Peter Zijlstra <peterz@infradead.org>, mingo@redhat.com, hpa@zytor.com,
+        ying.huang@intel.com, linux-kernel@vger.kernel.org, tglx@linutronix.de,
+        dzickus@redhat.com, linux-tip-commits@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 14 Oct 2010, Anand Gadiyar wrote:
+>> NACK!
+>>
+>> I object to the DIE_NMI_IPI existance..
+>
+> Ok - i've zapped the commits for the time being.
 
-> Commit b683de2b3 in linux-next as of 20101014 (genirq: Query
-> arch for number of early descriptors) seems to have broken
-> bootup on several ARM boards - my beagleboard gives the
-> following dump with earlyprintk.
-> 
-> NR_IRQS:402
-> Unable to handle kernel NULL pointer dereference at virtual address 00000028
-> pgd = c0004000
-> [00000028] *pgd=00000000
-> Internal error: Oops: 5 [#1]
-> last sysfs file:
-> Modules linked in:
-> CPU: 0    Not tainted  (2.6.36-rc7-next-20101014-linux-next-20101012+ #40)
-> PC is at init_IRQ+0x14/0x48
-> LR is at start_kernel+0x150/0x2c0
-> pc : [<c000b474>]    lr : [<c0008944>]    psr: 800001d3
-> sp : c0927fd0  ip : 000008d0  fp : 00000000
-> r10: 00000000  r9 : 411fc083  r8 : 8002ca24
-> r7 : c092a80c  r6 : c0439c44  r5 : c0439c48  r4 : c0979ac0
-> r3 : 00000001  r2 : 00000000  r1 : 00000001  r0 : 00000000
-> Flags: Nzcv  IRQs off  FIQs off  Mode SVC_32  ISA ARM  Segment kernel
-> Control: 10c5387f  Table: 80004019  DAC: 00000015
-> Process swapper (pid: 0, stack limit = 0xc09262f0)
-> Stack: (0xc0927fd0 to 0xc0928000)
-> 7fc0:                                     00000192 c0008944 c00085bc 00000000
-> 7fe0: 00000000 c0439c48 00000000 10c5387d c0979c5c 80008034 00000000 00000000
-> [<c000b474>] (init_IRQ+0x14/0x48) from [<c0008944>] (start_kernel+0x150/0x2c0)
-> [<c0008944>] (start_kernel+0x150/0x2c0) from [<80008034>] (0x80008034)
-> Code: e3a03000 ea000004 e3a02000 e2833001 (e5921028)
-> ---[ end trace 1b75b31a2719ed1c ]---
-> Kernel panic - not syncing: Attempted to kill the idle task!
-> 
-> We seem to be using desc->status without assigning desc to
-> anything. Fix this by adding back the code that was originally
-> there.
+Hi, Peter.
 
-Yeah, sorry. That was my fault. I applied a patch only half.
-
-Find below the missing chunk, which makes next boot on my ARM boards
-again.
-
-Thanks,
-
-	tglx
----
-diff --git a/arch/arm/include/asm/hw_irq.h b/arch/arm/include/asm/hw_irq.h
-index 90831f6..5586b7c 100644
---- a/arch/arm/include/asm/hw_irq.h
-+++ b/arch/arm/include/asm/hw_irq.h
-@@ -24,4 +24,6 @@ void set_irq_flags(unsigned int irq, unsigned int flags);
- #define IRQF_PROBE	(1 << 1)
- #define IRQF_NOAUTOEN	(1 << 2)
- 
-+#define ARCH_IRQ_INIT_FLAGS	(IRQ_NOREQUEST | IRQ_NOPROBE)
-+
- #endif
-diff --git a/arch/arm/kernel/irq.c b/arch/arm/kernel/irq.c
-index 5456d11..36ad3be 100644
---- a/arch/arm/kernel/irq.c
-+++ b/arch/arm/kernel/irq.c
-@@ -154,12 +154,6 @@ void set_irq_flags(unsigned int irq, unsigned int iflags)
- 
- void __init init_IRQ(void)
- {
--	struct irq_desc *desc;
--	int irq;
--
--	for (irq = 0; irq < nr_irqs; irq++)
--		desc->status |= IRQ_NOREQUEST | IRQ_NOPROBE;
--
- 	init_arch_irq();
- }
- 
+If you have any ideas how things can be better, I want to see them.
+Some code please.
