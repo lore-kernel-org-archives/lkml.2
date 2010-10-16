@@ -1,52 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753416Ab0JPR3d (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Oct 2010 13:29:33 -0400
-Received: from casper.infradead.org ([85.118.1.10]:53926 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753094Ab0JPR33 convert rfc822-to-8bit (ORCPT
+	id S1753250Ab0JPRe3 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Oct 2010 13:34:29 -0400
+Received: from ipmail05.adl6.internode.on.net ([150.101.137.143]:47718 "EHLO
+	ipmail05.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751448Ab0JPRe2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Oct 2010 13:29:29 -0400
-Subject: Re: [tip:perf/core] x86, NMI: Rewrite NMI handler
-From: Peter Zijlstra <peterz@infradead.org>
-To: mingo@redhat.com, hpa@zytor.com, ying.huang@intel.com,
-        linux-kernel@vger.kernel.org, tglx@linutronix.de, dzickus@redhat.com,
-        mingo@elte.hu
-Cc: linux-tip-commits@vger.kernel.org
-In-Reply-To: <tip-e21f3e4957f4a55f546873605a5caa59556bb144@git.kernel.org>
-References: <1287195738-3136-4-git-send-email-dzickus@redhat.com>
-	 <tip-e21f3e4957f4a55f546873605a5caa59556bb144@git.kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Sat, 16 Oct 2010 19:29:17 +0200
-Message-ID: <1287250157.1998.124.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	Sat, 16 Oct 2010 13:34:28 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AmQEALp9uUx5LcB2gWdsb2JhbAChMBYBARYiIsBEhUkE
+Date: Sun, 17 Oct 2010 04:34:22 +1100
+From: Nick Piggin <npiggin@kernel.dk>
+To: Nick Piggin <npiggin@kernel.dk>
+Cc: Christoph Hellwig <hch@infradead.org>, Dave Chinner <david@fromorbit.com>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 04/19] fs: Implement lazy LRU updates for inodes.
+Message-ID: <20101016173422.GA6840@amd>
+References: <1287216853-17634-1-git-send-email-david@fromorbit.com>
+ <1287216853-17634-5-git-send-email-david@fromorbit.com>
+ <20101016092916.GA32197@amd>
+ <20101016165930.GA20626@infradead.org>
+ <20101016172924.GA3519@amd>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101016172924.GA3519@amd>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2010-10-16 at 16:36 +0000, tip-bot for Huang Ying wrote:
-> Commit-ID:  e21f3e4957f4a55f546873605a5caa59556bb144
-> Gitweb:     http://git.kernel.org/tip/e21f3e4957f4a55f546873605a5caa59556bb144
-> Author:     Huang Ying <ying.huang@intel.com>
-> AuthorDate: Fri, 15 Oct 2010 22:22:16 -0400
-> Committer:  Ingo Molnar <mingo@elte.hu>
-> CommitDate: Sat, 16 Oct 2010 15:01:27 +0200
+On Sun, Oct 17, 2010 at 04:29:24AM +1100, Nick Piggin wrote:
+> On Sat, Oct 16, 2010 at 12:59:30PM -0400, Christoph Hellwig wrote:
+> > I don't think the pointer check will work either.  By the time we retake
+> > the lru lock the inode might already have been reaped through a call
+> > to invalidate_inodes.  There's no way we can do anything with it after
 > 
-> x86, NMI: Rewrite NMI handler
+> I don't think you're right. If we re take inode_lock, ensure it is on
+> the LRU, and call the can_unuse checks, there is no more problem than
+> the regular loop taking items from the LRU, AFAIKS.
 > 
-> The original NMI handler is quite outdated in many aspects. This
-> patch tries to fix it.
+> > iput.  What we could do is using variant of can_unuse to decide to move
+> > the inode to the front of the lru before doing the iput.  That way
+> > we'll get to it next after retaking the lru lock if it's still there.
 > 
-> The order to process the NMI sources are changed as follow:
-> 
->  notify_die(DIE_NMI_IPI);
->  notify_die(DIE_NMI);
->  /* process io port 0x61 */
->  nmi_watchdog_touch();
->  unknown_nmi();
+> This might actually be the better approach anyway (even for upstream)
+> -- it means we don't have to worry about the "check head element"
+> heuristic of the LRU check which could get false negatives if there is
+> a lot of concurrency on the LRU.
 
-NACK!
+Oh hmm, but then you do have the double lock of the LRU lock.
 
-I object to the DIE_NMI_IPI existance..
+if (can_unuse_after_iput(inode)) {
+  spin_lock(&inode_lock);
+  list_move(inode, list tail)
+  spin_unlock(&inode_lock);
+}
+iput(inode);
+spin_lock(&inode_lock);
+
+Is that worth it?
+
