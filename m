@@ -1,62 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752654Ab0JPCmg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Oct 2010 22:42:36 -0400
-Received: from smtp.srv.ualberta.ca ([129.128.5.19]:55443 "EHLO
-	mail7.srv.ualberta.ca" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752355Ab0JPCmf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Oct 2010 22:42:35 -0400
-Date: Fri, 15 Oct 2010 20:42:35 -0600 (Mountain Daylight Time)
-From: Marc Aurele La France <tsi@ualberta.ca>
-Reply-To: linux-kernel@vger.kernel.org, tsi@ualberta.ca
-To: linux-kernel@vger.kernel.org, Len Brown <len.brown@intel.com>
-Subject: Re: x86_64 2.6.35.* kernels and Intel Xeon X5550
-In-Reply-To: <alpine.WNT.2.00.1010071055420.1672@cluij.ucs.ualberta.ca>
-Message-ID: <alpine.WNT.1.10.1010152030320.280@tsi>
-References: <alpine.WNT.2.00.1010071055420.1672@cluij.ucs.ualberta.ca>
-User-Agent: Alpine 1.10 (WNT 962 2008-03-14)
+	id S1752716Ab0JPDAk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Oct 2010 23:00:40 -0400
+Received: from mail.wdtv.com ([66.118.69.84]:53910 "EHLO mail.wdtv.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752606Ab0JPDAj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Oct 2010 23:00:39 -0400
+From: Gene Heskett <gene.heskett@gmail.com>
+To: LKML <linux-kernel@vger.kernel.org>
+Subject: Probably a repeat.
+Date: Fri, 15 Oct 2010 23:00:34 -0400
+User-Agent: KMail/1.13.5 (Linux/2.6.35.7; KDE/4.5.2; i686; ; )
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; format=flowed; charset=US-ASCII
+Content-Type: Text/Plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201010152300.34879.gene.heskett@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 7 Oct 2010, Marc Aurele La France wrote:
+Greetings;
 
-> I administer a cluster composed of a mixture of various Opteron models and 
-> Intel Xeon X5550's.  The 2.6.34.*, and prior, kernels run fine on all of 
-> them.  The 2.6.35 series also runs fine on the Opterons, but not on the 
-> Xeon's.  All of these are CONFIG_GENERIC_CPU kernels.
+Trying to build a 2.6.36-rc8, ends up here:
 
-> On the Xeon's, 2.6.35 hangs early on, upon the first test of trace events 
-> (in kernel/trace/trace_events.c:event_trace_self_tests()).  When disabling 
-> all tracing, debugging, etc., it still hangs but slightly later.  The 
-> megaraid_sas module is loaded, detects the adapter, but never gets around to 
-> registering it with the SCSI layer.
+  Building modules, stage 2.
+  MODPOST 1248 modules
+ERROR: "dump_seek" [fs/binfmt_aout.ko] undefined!
+ERROR: "dump_write" [fs/binfmt_aout.ko] undefined!
 
-> Core2-specific kernels also hang the same way, as do UP kernels.  I've tried 
-> backing out certain commits that seemed likely candidates, but have yet to 
-> stumble upon the one (or more) that is causing this.
+plus a couple section miss-matches, and of course it bailed out.  Next?
 
-> Does anyone have any ideas?
+Thanks.
 
-This is due to "CONFIG_INTEL_IDLE=y".  "m" or "n", the hang doesn't occur.
-
-Of the kernels I've tested, INTEL_IDLE first appears in 2.6.34-git15.  So, 
-technically, this is not a regression against 2.6.34.
-
-This does, however, amount to a vote of non-confidence against intel_idle.c.
-
-Marc.
-
-+----------------------------------+----------------------------------+
-|  Marc Aurele La France           |  work:   1-780-492-9310          |
-|  Academic Information and        |  fax:    1-780-492-1729          |
-|    Communications Technologies   |  email:  tsi@ualberta.ca         |
-|  352 General Services Building   +----------------------------------+
-|  University of Alberta           |                                  |
-|  Edmonton, Alberta               |    Standard disclaimers apply    |
-|  T6G 2H1                         |                                  |
-|  CANADA                          |                                  |
-+----------------------------------+----------------------------------+
+-- 
+Cheers, Gene
+"There are four boxes to be used in defense of liberty:
+ soap, ballot, jury, and ammo. Please use in that order."
+-Ed Howdershelt (Author)
+Whenever a system becomes completely defined, some damn fool discovers
+something which either abolishes the system or expands it beyond 
+recognition.
