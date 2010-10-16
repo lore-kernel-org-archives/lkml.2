@@ -1,74 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751720Ab0JPPRz (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Oct 2010 11:17:55 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:38752 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751223Ab0JPPRy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Oct 2010 11:17:54 -0400
-X-Authority-Analysis: v=1.1 cv=iGF3DqghDyT/uy4mV2LvOKNXCATMSjL+tOl9cucoGVk= c=1 sm=0 a=nEQxJ46sMH0A:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=p_xzYSLjkpEMSUq1a8MA:9 a=vISfD-sDvw5_1qUcmbz-bcLQnNgA:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: ftrace does not work on cpus > 999.
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Robin Holt <holt@sgi.com>, Ingo Molnar <mingo@redhat.com>,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <20101016144529.GA5384@nowhere>
-References: <20101016131505.GW14064@sgi.com> <20101016144529.GA5384@nowhere>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Sat, 16 Oct 2010 11:17:52 -0400
-Message-ID: <1287242272.16971.53.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1751957Ab0JPPY0 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Oct 2010 11:24:26 -0400
+Received: from a.ns.miles-group.at ([95.130.255.143]:55110 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751027Ab0JPPYZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 16 Oct 2010 11:24:25 -0400
+/m: 
+From: Richard Weinberger <richard@nod.at>
+To: akpm@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org, jdike@addtoit.com,
+        user-mode-linux-devel@lists.sourceforge.net, arjan@linux.intel.com,
+        penberg@cs.helsinki.fi, peterz@infradead.org,
+        Richard Weinberger <richard@nod.at>
+Subject: [PATCH 1/1] um: fix global timer issue when using CONFIG_NO_HZ
+Date: Sat, 16 Oct 2010 17:23:58 +0200
+Message-Id: <1287242638-20968-1-git-send-email-richard@nod.at>
+X-Mailer: git-send-email 1.6.6.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2010-10-16 at 16:45 +0200, Frederic Weisbecker wrote:
+This fixes a issue which was introduced by fe2cc53e.
+timeval_to_ns() returns long long and not int.
+Due to that UML's timer did not work proper and caused timer freezes.
 
-> diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-> index 9ec59f5..3565f9e 100644
-> --- a/kernel/trace/trace.c
-> +++ b/kernel/trace/trace.c
-> @@ -3999,7 +3999,7 @@ static void tracing_init_debugfs_percpu(long cpu)
->  	/* strlen(cpu) + MAX(log10(cpu)) + '\0' */
->  	char cpu_dir[7];
->  
-> -	if (cpu > 999 || cpu < 0)
-> +	if (cpu < 0)
->  		return;
->  
->  	sprintf(cpu_dir, "cpu%ld", cpu);
+LKML-Reference: <AANLkTik5_TCXeGzTWBZzE8F0Cb2bQq-D228xDXk87rhP () mail ! gmail ! com>
+Signed-off-by: Richard Weinberger <richard@nod.at>
+---
+ arch/um/os-Linux/time.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-You need to change the size of cpu_dir, otherwise this will overflow.
-
-The other case is to dynamically allocate cpu_dir.
-
-	char *cpu_dir;
-	int count = cpu;
-	int size;
-
-	if (cpu < 0)
-		return;
-
-	/* log10 sizeof cpu */
-	for (size = 0; count > 0; count /= 10, size++)
-		;
-
-	cpu_dir = kmalloc(size + 4, GFP_KERNEL);
-
-	if (!cpu_dir)
-		return;
-
-	snprintf(cpu_dir, size + 4, "cpu%ld", cpu);
-
-	[...]
-
-	kfree(cpu_dir);
-
--- Steve
-
+diff --git a/arch/um/os-Linux/time.c b/arch/um/os-Linux/time.c
+index dec5678..6e3359d 100644
+--- a/arch/um/os-Linux/time.c
++++ b/arch/um/os-Linux/time.c
+@@ -60,7 +60,7 @@ static inline long long timeval_to_ns(const struct timeval *tv)
+ long long disable_timer(void)
+ {
+ 	struct itimerval time = ((struct itimerval) { { 0, 0 }, { 0, 0 } });
+-	int remain, max = UM_NSEC_PER_SEC / UM_HZ;
++	long long remain, max = UM_NSEC_PER_SEC / UM_HZ;
+ 
+ 	if (setitimer(ITIMER_VIRTUAL, &time, &time) < 0)
+ 		printk(UM_KERN_ERR "disable_timer - setitimer failed, "
+-- 
+1.6.6.1
 
