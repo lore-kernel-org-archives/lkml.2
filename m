@@ -1,71 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756636Ab0JPWaI (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Oct 2010 18:30:08 -0400
-Received: from smtp.gentoo.org ([140.211.166.183]:48999 "EHLO smtp.gentoo.org"
+	id S1756719Ab0JPWbe (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Oct 2010 18:31:34 -0400
+Received: from smtp.gentoo.org ([140.211.166.183]:45069 "EHLO smtp.gentoo.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756379Ab0JPWaH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Oct 2010 18:30:07 -0400
+	id S1756472Ab0JPWbd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 16 Oct 2010 18:31:33 -0400
 From: Mike Frysinger <vapier@gentoo.org>
-To: linux-bluetooth@vger.kernel.org, Marcel Holtmann <marcel@holtmann.org>
-Cc: uclinux-dist-devel@blackfin.uclinux.org, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        steven miao <realmz6@gmail.com>
-Subject: [PATCH] bluetooth: fix unaligned access to l2cap conf data
-Date: Sat, 16 Oct 2010 18:29:47 -0400
-Message-Id: <1287268187-9628-1-git-send-email-vapier@gentoo.org>
+To: linux-mtd@lists.infradead.org, David Woodhouse <dwmw2@infradead.org>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Alan Cox <alan@linux.intel.com>
+Subject: [PATCH] mtd/maps: gpio-addr-flash: fix warnings and make more portable
+Date: Sat, 16 Oct 2010 18:31:14 -0400
+Message-Id: <1287268274-9750-1-git-send-email-vapier@gentoo.org>
 X-Mailer: git-send-email 1.7.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: steven miao <realmz6@gmail.com>
+As reported on lkml, building this module for HIMEM systems spews warnings
+about mismatch in pointer types.  Further, we need to use ioremap() in order
+to properly access the flash memory on most systems rather than just doing
+it directly.
 
-In function l2cap_get_conf_opt() and l2cap_add_conf_opt() the address of
-opt->val sometimes is not at the edge of 2-bytes/4-bytes, so 2-bytes/4 bytes
-access will cause data misalignment exeception.  Use get_unaligned_le16/32
-and put_unaligned_le16/32 function to avoid data misalignment execption.
-
-Signed-off-by: steven miao <realmz6@gmail.com>
+Reported-by: Alan Cox <alan@linux.intel.com>
 Signed-off-by: Mike Frysinger <vapier@gentoo.org>
 ---
-was posted a month ago with no feedback ...
+ drivers/mtd/maps/gpio-addr-flash.c |   10 +++++++---
+ 1 files changed, 7 insertions(+), 3 deletions(-)
 
- net/bluetooth/l2cap.c |    8 ++++----
- 1 files changed, 4 insertions(+), 4 deletions(-)
-
-diff --git a/net/bluetooth/l2cap.c b/net/bluetooth/l2cap.c
-index 0b54b7d..65bcdc1 100644
---- a/net/bluetooth/l2cap.c
-+++ b/net/bluetooth/l2cap.c
-@@ -2401,11 +2401,11 @@ static inline int l2cap_get_conf_opt(void **ptr, int *type, int *olen, unsigned
- 		break;
+diff --git a/drivers/mtd/maps/gpio-addr-flash.c b/drivers/mtd/maps/gpio-addr-flash.c
+index 32e89d7..af5707a 100644
+--- a/drivers/mtd/maps/gpio-addr-flash.c
++++ b/drivers/mtd/maps/gpio-addr-flash.c
+@@ -208,10 +208,14 @@ static int __devinit gpio_flash_probe(struct platform_device *pdev)
+ 	if (!state)
+ 		return -ENOMEM;
  
- 	case 2:
--		*val = __le16_to_cpu(*((__le16 *) opt->val));
-+		*val = get_unaligned_le16(opt->val);
- 		break;
++	/*
++	 * We cast start/end to known types in the boards file, so cast
++	 * away their pointer types here to the known types (gpios->xxx).
++	 */
+ 	state->gpio_count     = gpios->end;
+-	state->gpio_addrs     = (void *)gpios->start;
++	state->gpio_addrs     = (void *)(unsigned long)gpios->start;
+ 	state->gpio_values    = (void *)(state + 1);
+-	state->win_size       = memory->end - memory->start + 1;
++	state->win_size       = resource_size(memory);
+ 	memset(state->gpio_values, 0xff, arr_size);
  
- 	case 4:
--		*val = __le32_to_cpu(*((__le32 *) opt->val));
-+		*val = get_unaligned_le32(opt->val);
- 		break;
+ 	state->map.name       = DRIVER_NAME;
+@@ -221,7 +225,7 @@ static int __devinit gpio_flash_probe(struct platform_device *pdev)
+ 	state->map.copy_to    = gf_copy_to;
+ 	state->map.bankwidth  = pdata->width;
+ 	state->map.size       = state->win_size * (1 << state->gpio_count);
+-	state->map.virt       = (void __iomem *)memory->start;
++	state->map.virt       = ioremap_nocache(memory->start, state->map.size);
+ 	state->map.phys       = NO_XIP;
+ 	state->map.map_priv_1 = (unsigned long)state;
  
- 	default:
-@@ -2432,11 +2432,11 @@ static void l2cap_add_conf_opt(void **ptr, u8 type, u8 len, unsigned long val)
- 		break;
- 
- 	case 2:
--		*((__le16 *) opt->val) = cpu_to_le16(val);
-+		put_unaligned_le16(cpu_to_le16(val), opt->val);
- 		break;
- 
- 	case 4:
--		*((__le32 *) opt->val) = cpu_to_le32(val);
-+		put_unaligned_le32(cpu_to_le32(val), opt->val);
- 		break;
- 
- 	default:
 -- 
 1.7.3.1
 
