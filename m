@@ -1,92 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755711Ab0JPVUL (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Oct 2010 17:20:11 -0400
-Received: from smtp.gentoo.org ([140.211.166.183]:47325 "EHLO smtp.gentoo.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754164Ab0JPVUJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Oct 2010 17:20:09 -0400
-From: Mike Frysinger <vapier@gentoo.org>
-To: linux-mmc@vger.kernel.org, Adrian Hunter <adrian.hunter@nokia.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: uclinux-dist-devel@blackfin.uclinux.org, linux-kernel@vger.kernel.org,
-        David Brownell <dbrownell@users.sourceforge.net>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Anton Vorontsov <avorontsov@mvista.com>,
-        Ernst Schwab <eschwab@online.de>, Sonic Zhang <sonic.zhang@analog.com>,
-        Chris Ball <cjb@laptop.org>
-Subject: [PATCH] MMC:mmc_spi: Recover from CRC error for SD read/write operation over SPI.
-Date: Sat, 16 Oct 2010 17:19:36 -0400
-Message-Id: <1287263976-9578-1-git-send-email-vapier@gentoo.org>
-X-Mailer: git-send-email 1.7.3.1
-In-Reply-To: <20100827203639.GT23079@void.printf.net>
-References: <20100827203639.GT23079@void.printf.net>
+	id S1755913Ab0JPVWM (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Oct 2010 17:22:12 -0400
+Received: from zfrontend2.aha.ru ([195.2.83.148]:59377 "EHLO aha.ru"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754228Ab0JPVWL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 16 Oct 2010 17:22:11 -0400
+From: "werner" <w.landgraf@ru.ru>
+Subject: 2.6.36-rc1 problems , 2.6.36-rc2 problems 
+To: linux-kernel@vger.kernel.org, rdunlap@xenotime.net, lenb@kernel.org
+X-Mailer: CommuniGate Pro WebUser Interface v.4.3.12
+Date: Sat, 16 Oct 2010 17:22:07 -0400
+Message-ID: <web-387466750@zbackend1.aha.ru>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII;
+	format=flowed
+Content-Transfer-Encoding: 7BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Sonic Zhang <sonic.zhang@analog.com>
+By any stupidness, linux-kernel@vger.kernel.org 
+ blacklisted my homecomputer's domain 
+guyane.dyn-o-saur.com , so that the original mails, 
+already some time ago, didnt go away, and I found them 
+before-yesterday and sent them by another e-mailer, ru.ru 
+.  During copying the mails thereto, can have occured some 
+problems with the format of the lines.
 
-SPI bus is not reliable on all platforms when doing large data transfer.
-Current mmc spi driver fails SD read/write command immediately, if
-occasional CRC error is reported by SD device. This patch makes the
-operation recover from the CRC error by doing last SD command again.
-The retry count is set to 5 to ensure the driver pass any stress test.
+The responsables of these kernel modules / drivers will 
+quickly see what they already corrected. On the other 
+hand, at least a part of these modules didn't compile 
+until -rc7 , because when I re-switched 'on' all of them, 
+still came error messages thus I had to switch them 'off' 
+again.  Which of these modules, I don't me remember.   The 
+programmies of these modules, should check if/that they 
+corrected these errors, and on the next compilation I try 
+to switch on all modules.
 
-Signed-off-by: Sonic Zhang <sonic.zhang@analog.com>
-[cjb: fixed merge conflict against current Linus]
-Signed-off-by: Chris Ball <cjb@laptop.org>
-Signed-off-by: Mike Frysinger <vapier@gentoo.org>
+wl
 ---
-Andrew: we posted this months ago with no feedback ... could you pick it up ?
-
- drivers/mmc/host/mmc_spi.c |   22 ++++++++++++++++++++++
- 1 files changed, 22 insertions(+), 0 deletions(-)
-
-diff --git a/drivers/mmc/host/mmc_spi.c b/drivers/mmc/host/mmc_spi.c
-index 62a3582..fbd673e 100644
---- a/drivers/mmc/host/mmc_spi.c
-+++ b/drivers/mmc/host/mmc_spi.c
-@@ -1055,6 +1055,8 @@ static void mmc_spi_request(struct mmc_host *mmc, struct mmc_request *mrq)
- {
- 	struct mmc_spi_host	*host = mmc_priv(mmc);
- 	int			status = -EINVAL;
-+	int			crc_retry = 5;
-+	struct mmc_command	stop;
- 
- #ifdef DEBUG
- 	/* MMC core and layered drivers *MUST* issue SPI-aware commands */
-@@ -1087,10 +1089,30 @@ static void mmc_spi_request(struct mmc_host *mmc, struct mmc_request *mrq)
- 	/* request exclusive bus access */
- 	spi_bus_lock(host->spi->master);
- 
-+ crc_recover:
- 	/* issue command; then optionally data and stop */
- 	status = mmc_spi_command_send(host, mrq, mrq->cmd, mrq->data != NULL);
- 	if (status == 0 && mrq->data) {
- 		mmc_spi_data_do(host, mrq->cmd, mrq->data, mrq->data->blksz);
-+
-+		/*
-+		 * SPI bus is not reliable when doing large data transfer.
-+		 * If occasional crc error is reported by SD device when do
-+		 * data read/write over SPI, it can be recovered by doing
-+		 * last SD command again. The retry count is set to 5 to
-+		 * ensure the driver pass any stress test.
-+		 */
-+		if (mrq->data->error == -EILSEQ && crc_retry) {
-+			stop.opcode = MMC_STOP_TRANSMISSION;
-+			stop.arg = 0;
-+			stop.flags = MMC_RSP_SPI_R1B | MMC_RSP_R1B | MMC_CMD_AC;
-+
-+			status = mmc_spi_command_send(host, mrq, &stop, 0);
-+			crc_retry--;
-+			mrq->data->error = 0;
-+			goto crc_recover;
-+		}
-+
- 		if (mrq->stop)
- 			status = mmc_spi_command_send(host, mrq, mrq->stop, 0);
- 		else
--- 
-1.7.3.1
-
+Professional hosting for everyone - http://www.host.ru
