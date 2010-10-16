@@ -1,46 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754757Ab0JPU01 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Oct 2010 16:26:27 -0400
-Received: from asmtpout030.mac.com ([17.148.16.105]:36610 "EHLO
-	asmtpout030.mac.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754121Ab0JPU0Z (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Oct 2010 16:26:25 -0400
-MIME-version: 1.0
-Content-transfer-encoding: 7BIT
-Content-type: text/plain; charset=us-ascii
-X-Proofpoint-Spam-Details: rule=notspam policy=default score=0 spamscore=0
- ipscore=0 suspectscore=5 phishscore=0 bulkscore=0 adultscore=0 classifier=spam
- adjust=0 reason=mlx engine=6.0.2-1004200000 definitions=main-1010160114
-X-Proofpoint-Virus-Version: vendor=fsecure
- engine=2.50.10432:5.2.15,1.0.148,0.0.0000
- definitions=2010-10-16_07:2010-10-15,2010-10-16,1970-01-01 signatures=0
-Subject: Re: Alternate git repo servers
-From: Elvis Dowson <elvis.dowson@mac.com>
-In-reply-to: <2D81AEF9-2724-4187-8D69-1C1282ADBCC9@mac.com>
-Date: Sun, 17 Oct 2010 00:25:44 +0400
-Message-id: <7B26AF36-809D-4044-AC14-0CB7985E2D50@mac.com>
-References: <2D81AEF9-2724-4187-8D69-1C1282ADBCC9@mac.com>
-To: Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-X-Mailer: Apple Mail (2.1081)
+	id S1754983Ab0JPUeu (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Oct 2010 16:34:50 -0400
+Received: from www.tglx.de ([62.245.132.106]:47198 "EHLO www.tglx.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754528Ab0JPUet (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 16 Oct 2010 16:34:49 -0400
+Date: Sat, 16 Oct 2010 22:34:39 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: "Ted Ts'o" <tytso@mit.edu>
+cc: Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: jbd2: Convert jbd2_slab_create_sem to mutex
+Message-ID: <alpine.LFD.2.00.1010162231480.2496@localhost6.localdomain6>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+jbd2_slab_create_sem is used as a mutex, so make it one.
 
-On Oct 16, 2010, at 11:57 PM, Elvis Dowson wrote:
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+---
+ fs/jbd2/journal.c |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-> Are there any alternate git servers for the following repos, the existing one are very slow for me (at 20kbps), while I have an 8MBps downlink speed.
-> 
-> git://git.kernel.org/pub/scm/linux/kernel/git/tmlind/linux-omap-2.6.git
-> 
-> git://git.kernel.org/pub/scm/linux/kernel/git/luca/wl12xx.git 
-
-I just tried switching protocols from git to http, and http works with a 938KiB/s download rate, compared to 20KiB/s using the git protocol. 
-
-Kinda of the opposite of what one would expect. 
-
-Elvis Dowson
+Index: linux-next/fs/jbd2/journal.c
+===================================================================
+--- linux-next.orig/fs/jbd2/journal.c
++++ linux-next/fs/jbd2/journal.c
+@@ -1838,7 +1838,7 @@ size_t journal_tag_bytes(journal_t *jour
+  */
+ #define JBD2_MAX_SLABS 8
+ static struct kmem_cache *jbd2_slab[JBD2_MAX_SLABS];
+-static DECLARE_MUTEX(jbd2_slab_create_sem);
++static DEFINE_MUTEX(jbd2_slab_create_mutex);
+ 
+ static const char *jbd2_slab_names[JBD2_MAX_SLABS] = {
+ 	"jbd2_1k", "jbd2_2k", "jbd2_4k", "jbd2_8k",
+@@ -1870,16 +1870,16 @@ static int jbd2_journal_create_slab(size
+ 
+ 	if (unlikely(i < 0))
+ 		i = 0;
+-	down(&jbd2_slab_create_sem);
++	mutex_lock(&jbd2_slab_create_mutex);
+ 	if (jbd2_slab[i]) {
+-		up(&jbd2_slab_create_sem);
++		mutex_unlock(&jbd2_slab_create_mutex);
+ 		return 0;	/* Already created */
+ 	}
+ 
+ 	slab_size = 1 << (i+10);
+ 	jbd2_slab[i] = kmem_cache_create(jbd2_slab_names[i], slab_size,
+ 					 slab_size, 0, NULL);
+-	up(&jbd2_slab_create_sem);
++	mutex_unlock(&jbd2_slab_create_mutex);
+ 	if (!jbd2_slab[i]) {
+ 		printk(KERN_EMERG "JBD2: no memory for jbd2_slab cache\n");
+ 		return -ENOMEM;
