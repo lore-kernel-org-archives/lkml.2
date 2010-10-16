@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752955Ab0JPEzw (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Oct 2010 00:55:52 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:55928 "EHLO
+	id S1752918Ab0JPEze (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Oct 2010 00:55:34 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:55932 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751482Ab0JPExl (ORCPT
+	with ESMTP id S1751361Ab0JPExm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Oct 2010 00:53:41 -0400
+	Sat, 16 Oct 2010 00:53:42 -0400
 DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=message-id:user-agent:date:from:to:cc:subject;
-	b=NednaLeBm8MB2znnNodIWmk/Jl3ElNfubzvwk/sOJaozAItR03CeJ7jyGgWSm/IHw
-	23o4yFU+F7lePX9Xcp9pQ==
-Message-Id: <20101016044349.830426011@google.com>
+	h=message-id:references:user-agent:date:from:to:cc:subject:content-disposition;
+	b=tu89r/5CrYEsu2zDzbnKibM6aGQFQqj0VFGmZo6cWlqLrtjq/jUUcvEUVcTP9CRt9
+	0dAc8FX1ANf5/D+ZnNCqw==
+Message-Id: <20101016045119.283300445@google.com>
+References: <20101016044349.830426011@google.com>
 User-Agent: quilt/0.46-1
-Date: Fri, 15 Oct 2010 21:43:49 -0700
+Date: Fri, 15 Oct 2010 21:44:00 -0700
 From: pjt@google.com
 To: linux-kernel@vger.kernel.org
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
@@ -22,59 +23,97 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
         Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
         Pierre Bourdon <pbourdon@excellency.fr>, Paul Turner <pjt@google.com>,
         Bharata B Rao <bharata@linux.vnet.ibm.com>
-Subject: [RFC tg_shares_up improvements - v1 00/12] [RFC tg_shares_up - v1 00/12] Reducing cost of tg->shares distribution
+Subject: [RFC tg_shares_up improvements - v1 11/12] sched: update tg->shares after cpu.shares write
+Content-Disposition: inline; filename=sched-tg-fix_group_set_shares.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+Formerly sched_group_set_shares would force a rebalance by overflowing domain
+share sums.  Now that per-cpu averages are maintained we can set the true value
+by issuing an update_cfs_shares() following a tg->shares update.
 
-Peter previously posted a patchset that attempted to improve the problem of
-task_group share distribution.  This is something that has been a long-time
-pain point for group scheduling.  The existing algorithm considers
-distributions on a per-cpu-per-domain basis and carries a fairly high update
-overhead, especially on larger machines.
+Also initialize tg se->load to 0 for consistency since we'll now set correct
+weights on enqueue.
 
-I was previously looking at improving this using Fenwick trees to allow a
-single sum without the exorbitant cost but then Peter's idea above was better :).
+Signed-off-by: Paul Turner <pjt@google.com?>
 
-The kernel is that by monitoring the average contribution to load on a
-per-cpu-per-taskgroup basis we can distribute the weight for which we are
-expected to consume.
+---
+ kernel/sched.c |   42 +++++++++++-------------------------------
+ 1 file changed, 11 insertions(+), 31 deletions(-)
 
-This set extends the original posting with a focus on increased fairness and
-reduced convergence (to true average) time.  In particular the case of large
-over-commit in the case of a distributed wake-up is a concern which is now
-fairly well addressed.
+Index: kernel/sched.c
+===================================================================
+--- kernel/sched.c.orig
++++ kernel/sched.c
+@@ -7575,7 +7575,7 @@ static void init_tg_cfs_entry(struct tas
+ 		se->cfs_rq = parent->my_q;
+ 
+ 	se->my_q = cfs_rq;
+-	update_load_set(&se->load, tg->shares);
++	update_load_set(&se->load, 0);
+ 	se->parent = parent;
+ }
+ #endif
+@@ -8194,37 +8194,12 @@ void sched_move_task(struct task_struct 
+ #endif /* CONFIG_CGROUP_SCHED */
+ 
+ #ifdef CONFIG_FAIR_GROUP_SCHED
+-static void __set_se_shares(struct sched_entity *se, unsigned long shares)
+-{
+-	struct cfs_rq *cfs_rq = se->cfs_rq;
+-	int on_rq;
+-
+-	on_rq = se->on_rq;
+-	if (on_rq)
+-		dequeue_entity(cfs_rq, se, 0);
+-
+-	update_load_set(&se->load, shares);
+-
+-	if (on_rq)
+-		enqueue_entity(cfs_rq, se, 0);
+-}
+-
+-static void set_se_shares(struct sched_entity *se, unsigned long shares)
+-{
+-	struct cfs_rq *cfs_rq = se->cfs_rq;
+-	struct rq *rq = cfs_rq->rq;
+-	unsigned long flags;
+-
+-	raw_spin_lock_irqsave(&rq->lock, flags);
+-	__set_se_shares(se, shares);
+-	raw_spin_unlock_irqrestore(&rq->lock, flags);
+-}
+-
+ static DEFINE_MUTEX(shares_mutex);
+ 
+ int sched_group_set_shares(struct task_group *tg, unsigned long shares)
+ {
+ 	int i;
++	unsigned long flags;
+ 
+ 	/*
+ 	 * We can't change the weight of the root cgroup.
+@@ -8243,10 +8218,15 @@ int sched_group_set_shares(struct task_g
+ 
+ 	tg->shares = shares;
+ 	for_each_possible_cpu(i) {
+-		/*
+-		 * force a rebalance
+-		 */
+-		set_se_shares(tg->se[i], shares);
++		struct rq *rq = cpu_rq(i);
++		struct sched_entity *se;
++
++		se = tg->se[i];
++		/* Propagate contribution to hierarchy */
++		raw_spin_lock_irqsave(&rq->lock, flags);
++		for_each_sched_entity(se)
++			update_cfs_shares(group_cfs_rq(se), 0);
++		raw_spin_unlock_irqrestore(&rq->lock, flags);
+ 	}
+ 
+ done:
 
-Obviously everything's experimental but it should be stable/fair.
-
-Some motivation:
-
-24 thread intel box, 150 active cgroups, multiple threads/group, load at ~90% (10 second sample):
-tip:
-     2.64%  [k] tg_shares_up <!>
-     0.15%  [k] __set_se_shares
-
-patched:
-     0.02%  [k] update_cfs_load
-     0.01%  [k] update_cpu_load
-     0.00%  [k] update_cfs_shares
-
-Some fairness coverage for the above at: http://rs5.risingnet.net/~pjt/patches/shares_data_v1.txt
-
-Note: The last patch is fairly obviously a temporary debug patch, I only
-include it as it interfaces with some analysis scripts I'm simultaneously
-trying to publish for the purposes of validating this series.  Since this
-approach estimates the share distribution, the spread between issued shares
-and target is an important factor until people are happy with the patchset
-
-Paul
-
-TODO:
-- Validate any RT interaction
-- Continue collecting/analyzing performance and fairness data
-- Should the shares period just be the sched_latency?
-
-
+-- 
 
