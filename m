@@ -1,51 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751898Ab0JQFT7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Oct 2010 01:19:59 -0400
-Received: from out1.smtp.messagingengine.com ([66.111.4.25]:37778 "EHLO
-	out1.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751400Ab0JQFT5 (ORCPT
+	id S1752008Ab0JQF27 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Oct 2010 01:28:59 -0400
+Received: from ksp.mff.cuni.cz ([195.113.26.206]:46057 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750833Ab0JQF26 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Oct 2010 01:19:57 -0400
-X-Sasl-enc: sy1xdECWHkxq0gs1JjXNrenaioqaXApduMD7uQhhJ7P7 1287292796
-Date: Sun, 17 Oct 2010 03:19:53 -0200
-From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Sitsofe Wheeler <sitsofe@yahoo.com>, Matthew Garrett <mjg59@srcf.ucam.org>,
-        Len Brown <lenb@kernel.org>, Zhang Rui <rui.zhang@intel.com>,
-        David Zeuthen <davidz@redhat.com>,
-        Richard Hughes <richard@hughsie.com>, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ACPI / Battery: Return -ENODATA for unknown values in
- get_property() (was: Re: Returning ACPI_BATTERY ...)
-Message-ID: <20101017051953.GA3430@khazad-dum.debian.net>
-References: <20101016141321.GA11054@sucs.org>
- <201010170105.33274.rjw@sisk.pl>
+	Sun, 17 Oct 2010 01:28:58 -0400
+Date: Sat, 16 Oct 2010 15:31:05 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: Man Spaz <man.spaz@ymail.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: Tips on debugging suspend/resume failure
+Message-ID: <20101016133105.GB1806@ucw.cz>
+References: <103889.39682.qm@web120217.mail.ne1.yahoo.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <201010170105.33274.rjw@sisk.pl>
-X-GPG-Fingerprint: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
- 1CDB 0FE3
+In-Reply-To: <103889.39682.qm@web120217.mail.ne1.yahoo.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 17 Oct 2010, Rafael J. Wysocki wrote:
-> In fact, the driver is supposed to return -ENODATA in that case, which will
-> result in the read from /sys/class/power_supply/BAT0/current_now fail (I guess
-> upower should be able to cope with that).
+Hi!
 
-ENODATA?  Shouldn't it be ENXIO?  There is no non-blocking data stream
-involved in a sysfs attribute.
+> I have a machine x86 arch with no serial port, only console. I have a suspend/resume (mem, not hibernate) problem (not sure which one it is, if something fails on the suspend, or the resume fails - but it does seem to go to sleep) that doesn't suspend nor resume at all, using stock standard x86_64 kernel.
+> 
+> I compiled everything as a module and removed all unnecessary ones, so I cannot isolate the problem to a specific driver. This very same machine had no problems with <2.6.34.2 kernels.
+> 
+> But the question remains, how to get debug out? Is there a dmesg buffer that can persist if DRAM is being refreshed perhaps? Is there another way to skin this mongrel, I mean cat?
+>
 
-Of course, the RIGHT thing would be to not expose in sysfs attributes
-that are unsupported by the firmware/hardware in the first place, but
-that's easier said than done.
+git bisect ?
 
+Also you could try to blink keyboard leds, beep the speaker or debug
+using 'hang/reboot' trick.
+
+									Pavel
 -- 
-  "One disk to rule them all, One disk to find them. One disk to bring
-  them all and in the darkness grind them. In the Land of Redmond
-  where the shadows lie." -- The Silicon Valley Tarot
-  Henrique Holschuh
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
