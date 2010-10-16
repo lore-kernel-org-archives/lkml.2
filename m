@@ -1,232 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756398Ab0JPWGu (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Oct 2010 18:06:50 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:58167 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755926Ab0JPWGt (ORCPT
+	id S1756507Ab0JPWOm (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Oct 2010 18:14:42 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:52854 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756169Ab0JPWOl convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Oct 2010 18:06:49 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:reply-to:to:cc:content-type:date:message-id
-         :mime-version:x-mailer:content-transfer-encoding;
-        b=uY5O7yXI77HmG0kLOwFZGlL268uqxOaXhHLRx2pJ1/IWIbQXrM4KEMjGQUXTK7evEO
-         Xm4Ok3/wuBs1j6NiAyx/lrJyuDb3R6q3xBD+9RHFCIFO3HLLvqfatYvhlobWpoont7MK
-         AHGH1kWO7B5Rk9Ns+hhQXv/I5pJvDn6+3NdW0=
-Subject: [PATCH] Staging/cxt1e1: multiple definition of max_mtu fix
-From: Bob Beers <bob.beers@gmail.com>
-Reply-To: bob.beers@gmail.com
-To: gregkh@suse.de
-Cc: napohybelskurwysynom2010@gmail.com, akpm@linux-foundation.org,
-        mm-commits@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain
-Date: Sat, 16 Oct 2010 18:06:36 -0400
-Message-Id: <1287266797.16929.4.camel@tjeff3.edgeaccess.net>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.12.3 (2.12.3-8.el5_2.3) 
-Content-Transfer-Encoding: 7bit
+	Sat, 16 Oct 2010 18:14:41 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Christian Casteyde <casteyde.christian@free.fr>
+Subject: Re: [Bug #17361] Random kmemcheck errors and kernel freeze on 2.6.36-rc*
+Date: Sun, 17 Oct 2010 00:13:36 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.36-rc8-rjw+; KDE/4.4.4; x86_64; ; )
+References: <v0Rsc8XZnFC.A.-xF.oqfsMB@chimera> <201010102140.26584.rjw@sisk.pl> <201010112330.35921.casteyde.christian@free.fr>
+In-Reply-To: <201010112330.35921.casteyde.christian@free.fr>
+MIME-Version: 1.0
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Kernel Testers List <kernel-testers@vger.kernel.org>
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201010170013.36208.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-eliminate multiple definition of max_mtu by renaming
- with cxt1e1_ prefix, similarly rename max_mru
+On Monday, October 11, 2010, Christian Casteyde wrote:
+> Hello
 
-Signed-off-by: Bob Beers <bbeers@gmail.com>
----
+Hi,
 
- drivers/staging/cxt1e1/linux.c     |   20 ++++++++++----------
- drivers/staging/cxt1e1/musycc.c    |   22 +++++++++++-----------
- drivers/staging/cxt1e1/pmcc4_drv.c |   14 +++++++-------
- drivers/staging/cxt1e1/sbeproc.c   |    8 ++++----
- 4 files changed, 32 insertions(+), 32 deletions(-)
+> Well, I would like to find the real commit, but I don't know how to do that.
+> I'm not so used to using other branches than Linus' one.
+> 
+> From the commit hash, how do I find:
+> - the git tree I should use to bisect more?
+> - the initial good and bad marks?
+> And can I bisect only that branch on top of my current kernel source directory?
 
-diff --git a/drivers/staging/cxt1e1/linux.c b/drivers/staging/cxt1e1/linux.c
-index eb0f4bd..589b765 100644
---- a/drivers/staging/cxt1e1/linux.c
-+++ b/drivers/staging/cxt1e1/linux.c
-@@ -112,13 +112,13 @@ int         log_level = LOG_ERROR;
- int         log_level_default = LOG_ERROR;
- module_param(log_level, int, 0444);
+Yes, you can.  In this particular case the merge says that the series started
+with commit "x86: Fix keeping track of AMD C1E" and ended with
+"x86, xsave: Cleanup return codes in check_for_xstate()".
 
--int         max_mru = MUSYCC_MRU;
-+int         cxt1e1_max_mru = MUSYCC_MRU;
- int         max_mru_default = MUSYCC_MRU;
--module_param(max_mru, int, 0444);
-+module_param(cxt1e1_max_mru, int, 0444);
+Now, you can do
 
--int         max_mtu = MUSYCC_MTU;
-+int         cxt1e1_max_mtu = MUSYCC_MTU;
- int         max_mtu_default = MUSYCC_MTU;
--module_param(max_mtu, int, 0444);
-+module_param(cxt1e1_max_mtu, int, 0444);
+$ git log --oneline v2.6.35.. | grep "x86: Fix keeping track of AMD C1E"
 
- int         max_txdesc_used = MUSYCC_TXDESC_MIN;
- int         max_txdesc_default = MUSYCC_TXDESC_MIN;
-@@ -1118,12 +1118,12 @@ c4_mod_init (void)
-     if (log_level != log_level_default)
-         pr_info("NOTE: driver parameter <log_level> changed from default %d to %d.\n",
-                 log_level_default, log_level);
--    if (max_mru != max_mru_default)
--        pr_info("NOTE: driver parameter <max_mru> changed from default %d to %d.\n",
--                max_mru_default, max_mru);
--    if (max_mtu != max_mtu_default)
--        pr_info("NOTE: driver parameter <max_mtu> changed from default %d to %d.\n",
--                max_mtu_default, max_mtu);
-+       if (cxt1e1_max_mru != max_mru_default)
-+               pr_info("NOTE: driver parameter <cxt1e1_max_mru> changed from default %d to %d.\n",
-+                               max_mru_default, cxt1e1_max_mru);
-+       if (cxt1e1_max_mtu != max_mtu_default)
-+               pr_info("NOTE: driver parameter <cxt1e1_max_mtu> changed from default %d to %d.\n",
-+                               max_mtu_default, cxt1e1_max_mtu);
-     if (max_rxdesc_used != max_rxdesc_default)
-     {
-         if (max_rxdesc_used > 2000)
-diff --git a/drivers/staging/cxt1e1/musycc.c b/drivers/staging/cxt1e1/musycc.c
-index 12c76a5..fdde35a 100644
---- a/drivers/staging/cxt1e1/musycc.c
-+++ b/drivers/staging/cxt1e1/musycc.c
-@@ -99,8 +99,8 @@ extern ci_t *c4_list;
- extern int  drvr_state;
- extern int  log_level;
+and you get this information:
 
--extern int  max_mru;
--extern int  max_mtu;
-+extern int  cxt1e1_max_mru;
-+extern int  cxt1e1_max_mtu;
- extern int  max_rxdesc_used;
- extern int  max_txdesc_used;
- extern ci_t *CI;                /* dummy pointr to board ZEROE's data - DEBUG
-@@ -819,7 +819,7 @@ musycc_init_port (mpi_t * pi)
-                                 MUSYCC_PCD_TX_DRIVEN);
+e8c534e x86: Fix keeping track of AMD C1E
 
-     /* Message length descriptor */
--    pi->regram->mld = __constant_cpu_to_le32 (max_mru | (max_mru << 16));
-+       pi->regram->mld = __constant_cpu_to_le32 (cxt1e1_max_mru | (cxt1e1_max_mru << 16));
-     FLUSH_MEM_WRITE ();
+Similarly, this command
 
-     musycc_serv_req (pi, SR_GROUP_INIT | SR_RX_DIRECTION);
-@@ -913,17 +913,17 @@ musycc_init (ci_t * ci)
+$ git log --oneline v2.6.35.. | grep "x86, xsave: Cleanup return codes in check_for_xstate()"
 
-     /* sanity check settable parameters */
+returns
 
--    if (max_mru > 0xffe)
-+       if (cxt1e1_max_mru > 0xffe)
-     {
-         pr_warning("Maximum allowed MRU exceeded, resetting %d to %d.\n",
--                   max_mru, 0xffe);
--        max_mru = 0xffe;
-+                                  cxt1e1_max_mru, 0xffe);
-+               cxt1e1_max_mru = 0xffe;
-     }
--    if (max_mtu > 0xffe)
-+       if (cxt1e1_max_mtu > 0xffe)
-     {
-         pr_warning("Maximum allowed MTU exceeded, resetting %d to %d.\n",
--                   max_mtu, 0xffe);
--        max_mtu = 0xffe;
-+                                  cxt1e1_max_mtu, 0xffe);
-+               cxt1e1_max_mtu = 0xffe;
-     }
- #ifdef SBE_WAN256T3_ENABLE
-     for (i = 0; i < MUSYCC_NPORTS; i++)
-@@ -1172,7 +1172,7 @@ musycc_bh_rx_eom (mpi_t * pi, int gchan)
- #endif                              /*** CONFIG_SBE_WAN256T3_NCOMM ***/
+d6d4d42 x86, xsave: Cleanup return codes in check_for_xstate()
 
-             {
--                if ((m2 = OS_mem_token_alloc (max_mru)))
-+                               if ((m2 = OS_mem_token_alloc (cxt1e1_max_mru)))
-                 {
-                     /* substitute the mbuf+cluster */
-                     md->mem_token = m2;
-@@ -1204,7 +1204,7 @@ musycc_bh_rx_eom (mpi_t * pi, int gchan)
-             ch->s.rx_length_errors++;
-         }
-         FLUSH_MEM_WRITE ();
--        status = max_mru;
-+               status = cxt1e1_max_mru;
-         if (ch->p.chan_mode == CFG_CH_PROTO_TRANS)
-             status |= EOBIRQ_ENABLE;
-         md->status = cpu_to_le32 (status);
-diff --git a/drivers/staging/cxt1e1/pmcc4_drv.c b/drivers/staging/cxt1e1/pmcc4_drv.c
-index 9f730e6..be8618f 100644
---- a/drivers/staging/cxt1e1/pmcc4_drv.c
-+++ b/drivers/staging/cxt1e1/pmcc4_drv.c
-@@ -136,8 +136,8 @@ void        musycc_update_timeslots (mpi_t *);
+so you probably need to bisect between commits d6d4d42 (presumably good)
+and e8c534e (presumably bad).
 
- extern void musycc_update_tx_thp (mch_t *);
- extern int  log_level;
--extern int  max_mru;
--extern int  max_mtu;
-+extern int  cxt1e1_max_mru;
-+extern int  cxt1e1_max_mtu;
- extern int  max_rxdesc_used, max_rxdesc_default;
- extern int  max_txdesc_used, max_txdesc_default;
+However, it still is better to do "checkout d6d4d42" and see if that kernel is
+good (and analogously for d6d4d42) to start with.
 
-@@ -1047,7 +1047,7 @@ c4_set_port (ci_t * ci, int portnum)
-                                 MUSYCC_PCD_RXDATA_RISING);
-
-     /* Message length descriptor */
--    pi->regram->mld = __constant_cpu_to_le32 (max_mru | (max_mru << 16));
-+       pi->regram->mld = __constant_cpu_to_le32 (cxt1e1_max_mru | (cxt1e1_max_mru << 16));
-
-     /* tsm algorithm */
-     for (i = 0; i < 32; i++)
-@@ -1434,9 +1434,9 @@ c4_chan_up (ci_t * ci, int channum)
-     ch->mdr = OS_kmalloc (sizeof (struct mdesc) * rxnum);
-     ch->mdt = OS_kmalloc (sizeof (struct mdesc) * txnum);
-     if (ch->p.chan_mode == CFG_CH_PROTO_TRANS)
--        tmp = __constant_cpu_to_le32 (max_mru | EOBIRQ_ENABLE);
-+               tmp = __constant_cpu_to_le32 (cxt1e1_max_mru | EOBIRQ_ENABLE);
-     else
--        tmp = __constant_cpu_to_le32 (max_mru);
-+               tmp = __constant_cpu_to_le32 (cxt1e1_max_mru);
-
-     for (i = 0, md = ch->mdr; i < rxnum; i++, md++)
-     {
-@@ -1449,11 +1449,11 @@ c4_chan_up (ci_t * ci, int channum)
-         }
-         md->next = cpu_to_le32 (OS_vtophys (md->snext));
-
--        if (!(m = OS_mem_token_alloc (max_mru)))
-+               if (!(m = OS_mem_token_alloc (cxt1e1_max_mru)))
-         {
-             if (log_level >= LOG_MONITOR)
-                 pr_info("%s: c4_chan_up[%d] - token alloc failure, size = %d.\n",
--                        ci->devname, channum, max_mru);
-+                                               ci->devname, channum, cxt1e1_max_mru);
-             goto errfree;
-         }
-         md->mem_token = m;
-diff --git a/drivers/staging/cxt1e1/sbeproc.c b/drivers/staging/cxt1e1/sbeproc.c
-index 4f4dcd3..9405b7a 100644
---- a/drivers/staging/cxt1e1/sbeproc.c
-+++ b/drivers/staging/cxt1e1/sbeproc.c
-@@ -172,17 +172,17 @@ sbecom_proc_get_sbe_info (char *buffer, char **start, off_t offset,
-
- #ifdef SBE_PMCC4_ENABLE
-     {
--        extern int max_mru;
-+               extern int cxt1e1_max_mru;
- #if 0
-         extern int max_chans_used;
--        extern int max_mtu;
-+        extern int cxt1e1_max_mtu;
- #endif
-         extern int max_rxdesc_used, max_txdesc_used;
-
--        len += sprintf (buffer + len, "\nmax_mru:         %d\n", max_mru);
-+        len += sprintf (buffer + len, "\ncxt1e1_max_mru:         %d\n", cxt1e1_max_mru);
- #if 0
-         len += sprintf (buffer + len, "\nmax_chans_used:  %d\n", max_chans_used);
--        len += sprintf (buffer + len, "max_mtu:         %d\n", max_mtu);
-+        len += sprintf (buffer + len, "cxt1e1_max_mtu:         %d\n", cxt1e1_max_mtu);
- #endif
-         len += sprintf (buffer + len, "max_rxdesc_used: %d\n", max_rxdesc_used);
-         len += sprintf (buffer + len, "max_txdesc_used: %d\n", max_txdesc_used);
---
-1.5.5.6
+Thanks,
+Rafael
 
 
+> Le dimanche 10 octobre 2010 21:40:26, vous avez écrit :
+> > On Sunday, October 10, 2010, Christian Casteyde wrote:
+> > > Still present with 2.6.37-rc7
+> > > I think I managed to bisect it however:
+> > > 
+> > > 0f477dd0851bdcee82923da66a7fc4a44cb1bc3d is the first bad commit
+> > 
+> > This is a merge, so it most likely is not the real first bad commit.
+> > 
+> > Could you check the commits on the branch merged by it?
+> > 
+> > Rafael
+> 
+> 
 
