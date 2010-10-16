@@ -1,267 +1,365 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753208Ab0JPKLb (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Oct 2010 06:11:31 -0400
+	id S1753402Ab0JPKLf (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Oct 2010 06:11:35 -0400
 Received: from mail-ew0-f46.google.com ([209.85.215.46]:34135 "EHLO
 	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751266Ab0JPKLa (ORCPT
+	with ESMTP id S1751266Ab0JPKLc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Oct 2010 06:11:30 -0400
+	Sat, 16 Oct 2010 06:11:32 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=U2fMV8bY/hZXZdpXl3wDg5JbyjQq7vHFVBQ//vOlTLhbH7C7lzgNc573YNzquouMd0
-         f7qu3Ti/IK1HNqPszrH4tS6vftA2lidtWUast2T8C+Ayqk7S00tZup3PNq8zdLvq7UN3
-         ZZo8M45LULB/oEGZmi6ey+vo93uY5NwJHhJis=
+        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
+        b=tB4PhDR+XOu99Cc2mO4B6r7oHkoEZQXiySae8Bt1DBvo8p7AbsZRPDkOa6thv1Beku
+         3pMjdL3HMR8FYEGOPWmLP0Bjf4iS9NasbA7NBVnijBdWXURJClQTDxgRY6IadkHNdDB7
+         uYq48YZYgu2JxXnNcPbAm5DQyvNHjlmw02aEQ=
 From: Andy Shevchenko <andy.shevchenko@gmail.com>
 To: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@suse.de>,
         Andy Shevchenko <andy.shevchenko@gmail.com>
-Subject: [PATCH 1/3] staging: batman-adv: remove useless addr_to_string()
-Date: Sat, 16 Oct 2010 13:11:10 +0300
-Message-Id: <11c47095d961ba40ad95ecf995094e78e4d96fdf.1287223789.git.andy.shevchenko@gmail.com>
+Subject: [PATCH 3/3] staging: wlags49_h2: remove useless DbgHwAddr() method
+Date: Sat, 16 Oct 2010 13:11:12 +0300
+Message-Id: <474c67434fc73f5085d7793b8be5d36ea617663c.1287223789.git.andy.shevchenko@gmail.com>
 X-Mailer: git-send-email 1.7.2.3
+In-Reply-To: <11c47095d961ba40ad95ecf995094e78e4d96fdf.1287223789.git.andy.shevchenko@gmail.com>
+References: <11c47095d961ba40ad95ecf995094e78e4d96fdf.1287223789.git.andy.shevchenko@gmail.com>
+In-Reply-To: <11c47095d961ba40ad95ecf995094e78e4d96fdf.1287223789.git.andy.shevchenko@gmail.com>
+References: <11c47095d961ba40ad95ecf995094e78e4d96fdf.1287223789.git.andy.shevchenko@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since all *printf() methods in the kernel understand '%pM' modifier the
-conversion to the string is useless beforehand.
-
-Additionally this patch decreases batman_if structure by 20 bytes.
+There is no needs to prepare string for MAC addresses beforehand, due to
+kernel's *printf() have '%pM' format option.
 
 Signed-off-by: Andy Shevchenko <andy.shevchenko@gmail.com>
 ---
- drivers/staging/batman-adv/hard-interface.c |    2 --
- drivers/staging/batman-adv/main.c           |    5 -----
- drivers/staging/batman-adv/main.h           |    2 --
- drivers/staging/batman-adv/originator.c     |   16 ++++++----------
- drivers/staging/batman-adv/routing.c        |    4 ++--
- drivers/staging/batman-adv/send.c           |    8 ++++----
- drivers/staging/batman-adv/types.h          |    1 -
- drivers/staging/batman-adv/vis.c            |   15 ++++-----------
- 8 files changed, 16 insertions(+), 37 deletions(-)
+ drivers/staging/wlags49_h2/wl_main.c   |   73 +++++++++++++++++++-------------
+ drivers/staging/wlags49_h2/wl_netdev.c |    3 +-
+ drivers/staging/wlags49_h2/wl_util.c   |   70 +++++++-----------------------
+ drivers/staging/wlags49_h2/wl_util.h   |    5 --
+ drivers/staging/wlags49_h2/wl_wext.c   |    9 ++--
+ 5 files changed, 66 insertions(+), 94 deletions(-)
 
-diff --git a/drivers/staging/batman-adv/hard-interface.c b/drivers/staging/batman-adv/hard-interface.c
-index 7b77cf2..80cfa86 100644
---- a/drivers/staging/batman-adv/hard-interface.c
-+++ b/drivers/staging/batman-adv/hard-interface.c
-@@ -159,8 +159,6 @@ static bool hardif_is_iface_up(struct batman_if *batman_if)
+diff --git a/drivers/staging/wlags49_h2/wl_main.c b/drivers/staging/wlags49_h2/wl_main.c
+index d0b5062..6d45ab3 100644
+--- a/drivers/staging/wlags49_h2/wl_main.c
++++ b/drivers/staging/wlags49_h2/wl_main.c
+@@ -466,7 +466,10 @@ int wl_insert( struct net_device *dev )
+ //;?        DBG_PARAM( DbgInfo, PARM_NAME_CREATE_IBSS, "\"%s\"", PARM_CREATE_IBSS );
+ //;?        DBG_PARAM( DbgInfo, PARM_NAME_MULTICAST_RX, "\"%s\"", PARM_MULTICAST_RX );
+ //;?        DBG_PARAM( DbgInfo, PARM_NAME_MAX_SLEEP, "%d", PARM_MAX_SLEEP );
+-//;?        DBG_PARAM( DbgInfo, PARM_NAME_NETWORK_ADDR, "\"%s\"", DbgHwAddr( PARM_NETWORK_ADDR ));
++/*
++	DBG_PARAM(DbgInfo, PARM_NAME_NETWORK_ADDR, "\"%pM\"",
++			PARM_NETWORK_ADDR);
++ */
+ //;?        DBG_PARAM( DbgInfo, PARM_NAME_AUTHENTICATION, "%d", PARM_AUTHENTICATION );
+ //;?        DBG_PARAM( DbgInfo, PARM_NAME_OWN_ATIM_WINDOW, "%d", PARM_OWN_ATIM_WINDOW );
+ //;?        DBG_PARAM( DbgInfo, PARM_NAME_PM_HOLDOVER_DURATION, "%d", PARM_PM_HOLDOVER_DURATION );
+@@ -493,12 +496,18 @@ int wl_insert( struct net_device *dev )
+ 	DBG_PARAM( DbgInfo, PARM_NAME_TX_RATE4, "%d", PARM_TX_RATE4 );
+ 	DBG_PARAM( DbgInfo, PARM_NAME_TX_RATE5, "%d", PARM_TX_RATE5 );
+ 	DBG_PARAM( DbgInfo, PARM_NAME_TX_RATE6, "%d", PARM_TX_RATE6 );
+-	DBG_PARAM( DbgInfo, PARM_NAME_WDS_ADDRESS1, "\"%s\"", DbgHwAddr( PARM_WDS_ADDRESS1 ));
+-	DBG_PARAM( DbgInfo, PARM_NAME_WDS_ADDRESS2, "\"%s\"", DbgHwAddr( PARM_WDS_ADDRESS2 ));
+-	DBG_PARAM( DbgInfo, PARM_NAME_WDS_ADDRESS3, "\"%s\"", DbgHwAddr( PARM_WDS_ADDRESS3 ));
+-	DBG_PARAM( DbgInfo, PARM_NAME_WDS_ADDRESS4, "\"%s\"", DbgHwAddr( PARM_WDS_ADDRESS4 ));
+-	DBG_PARAM( DbgInfo, PARM_NAME_WDS_ADDRESS5, "\"%s\"", DbgHwAddr( PARM_WDS_ADDRESS5 ));
+-	DBG_PARAM( DbgInfo, PARM_NAME_WDS_ADDRESS6, "\"%s\"", DbgHwAddr( PARM_WDS_ADDRESS6 ));
++	DBG_PARAM(DbgInfo, PARM_NAME_WDS_ADDRESS1, "\"%pM\"",
++			PARM_WDS_ADDRESS1);
++	DBG_PARAM(DbgInfo, PARM_NAME_WDS_ADDRESS2, "\"%pM\"",
++			PARM_WDS_ADDRESS2);
++	DBG_PARAM(DbgInfo, PARM_NAME_WDS_ADDRESS3, "\"%pM\"",
++			PARM_WDS_ADDRESS3);
++	DBG_PARAM(DbgInfo, PARM_NAME_WDS_ADDRESS4, "\"%pM\"",
++			PARM_WDS_ADDRESS4);
++	DBG_PARAM(DbgInfo, PARM_NAME_WDS_ADDRESS5, "\"%pM\"",
++			PARM_WDS_ADDRESS5);
++	DBG_PARAM(DbgInfo, PARM_NAME_WDS_ADDRESS6, "\"%pM\"",
++			PARM_WDS_ADDRESS6);
+ #endif /* USE_WDS */
+ #endif /* HCF_AP */
  
- static void update_mac_addresses(struct batman_if *batman_if)
- {
--	addr_to_string(batman_if->addr_str, batman_if->net_dev->dev_addr);
--
- 	memcpy(((struct batman_packet *)(batman_if->packet_buff))->orig,
- 	       batman_if->net_dev->dev_addr, ETH_ALEN);
- 	memcpy(((struct batman_packet *)(batman_if->packet_buff))->prev_sender,
-diff --git a/drivers/staging/batman-adv/main.c b/drivers/staging/batman-adv/main.c
-index 580ca02..0587940 100644
---- a/drivers/staging/batman-adv/main.c
-+++ b/drivers/staging/batman-adv/main.c
-@@ -145,11 +145,6 @@ void dec_module_count(void)
- 	module_put(THIS_MODULE);
- }
+@@ -1170,7 +1179,7 @@ int 			rc;
+ 		return hcf_status;
+ 	}
+ 	memcpy( lp->MACAddress, &lp->ltvRecord.u.u8[0], ETH_ALEN );
+-	DBG_TRACE( DbgInfo, "Card MAC Address: %s\n", DbgHwAddr( lp->MACAddress ));
++	DBG_TRACE(DbgInfo, "Card MAC Address: %pM\n", lp->MACAddress);
  
--int addr_to_string(char *buff, uint8_t *addr)
+ 	/* Write out configuration to the device, enable, and reconnect. However,
+ 	   only reconnect if in AP mode. For STA mode, need to wait for passive scan
+@@ -1921,8 +1930,10 @@ int wl_put_ltv( struct wl_private *lp )
+ 	}
+ 
+ 	/* Own MAC Address */
+-	//DBG_TRACE( DbgInfo, "MAC Address                       : %s\n",
+-	//           DbgHwAddr( lp->MACAddress ));
++/*
++	DBG_TRACE(DbgInfo, "MAC Address                       : %pM\n",
++			lp->MACAddress);
++ */
+ 
+ 	if ( WVLAN_VALID_MAC_ADDRESS( lp->MACAddress )) {
+ 		/* Make the MAC address valid by:
+@@ -3033,8 +3044,8 @@ void wl_process_mailbox( struct wl_private *lp )
+ 						   aps[num_aps].capability );
+ 				DBG_TRACE( DbgInfo, "SSID Length     : 0x%04x\n",
+ 						   aps[num_aps].ssid_len );
+-				DBG_TRACE( DbgInfo, "BSSID           : %s\n",
+-						   DbgHwAddr( aps[num_aps].bssid ));
++				DBG_TRACE(DbgInfo, "BSSID           : %pM\n",
++						   aps[num_aps].bssid);
+ 
+ 				if ( aps[num_aps].ssid_len != 0 ) {
+ 					DBG_TRACE( DbgInfo, "SSID            : %s.\n",
+@@ -3093,29 +3104,29 @@ void wl_process_mailbox( struct wl_private *lp )
+ 				DBG_TRACE( DbgInfo, "(%s) durID       : 0x%04x.\n",
+ 						   lp->dev->name, probe_rsp->durID );
+ 
+-				DBG_TRACE( DbgInfo, "(%s) address1    : %s\n",
+-						   lp->dev->name, DbgHwAddr( probe_rsp->address1 ));
++				DBG_TRACE(DbgInfo, "(%s) address1    : %pM\n",
++					lp->dev->name, probe_rsp->address1);
+ 
+-				DBG_TRACE( DbgInfo, "(%s) address2    : %s\n",
+-						   lp->dev->name, DbgHwAddr( probe_rsp->address2 ));
++				DBG_TRACE(DbgInfo, "(%s) address2    : %pM\n",
++					lp->dev->name, probe_rsp->address2);
+ 
+-				DBG_TRACE( DbgInfo, "(%s) BSSID       : %s\n",
+-						   lp->dev->name, DbgHwAddr( probe_rsp->BSSID ));
++				DBG_TRACE(DbgInfo, "(%s) BSSID       : %pM\n",
++					lp->dev->name, probe_rsp->BSSID);
+ 
+ 				DBG_TRACE( DbgInfo, "(%s) sequence    : 0x%04x.\n",
+ 						   lp->dev->name, probe_rsp->sequence );
+ 
+-				DBG_TRACE( DbgInfo, "(%s) address4    : %s\n",
+-						   lp->dev->name, DbgHwAddr( probe_rsp->address4 ));
++				DBG_TRACE(DbgInfo, "(%s) address4    : %pM\n",
++					lp->dev->name, probe_rsp->address4);
+ 
+ 				DBG_TRACE( DbgInfo, "(%s) datalength  : 0x%04x.\n",
+ 						   lp->dev->name, probe_rsp->dataLength );
+ 
+-				DBG_TRACE( DbgInfo, "(%s) DA          : %s\n",
+-						   lp->dev->name, DbgHwAddr( probe_rsp->DA ));
++				DBG_TRACE(DbgInfo, "(%s) DA          : %pM\n",
++					lp->dev->name, probe_rsp->DA);
+ 
+-				DBG_TRACE( DbgInfo, "(%s) SA          : %s\n",
+-						   lp->dev->name, DbgHwAddr( probe_rsp->SA ));
++				DBG_TRACE(DbgInfo, "(%s) SA          : %pM\n",
++					lp->dev->name, probe_rsp->SA);
+ 
+ 				//DBG_TRACE( DbgInfo, "(%s) lenType     : 0x%04x.\n",
+ 				//           lp->dev->name, probe_rsp->lenType );
+@@ -3283,12 +3294,12 @@ void wl_process_mailbox( struct wl_private *lp )
+ 				break;
+ 			}
+ 
+-			DBG_TRACE( DbgInfo, "STA Address        : %s\n",
+-					   DbgHwAddr( as->staAddr ));
++			DBG_TRACE(DbgInfo, "STA Address        : %pM\n",
++					   as->staAddr);
+ 
+ 			if (( as->assocStatus == 2 )  && ( as->len == 8 )) {
+-				DBG_TRACE( DbgInfo, "Old AP Address     : %s\n",
+-						   DbgHwAddr( as->oldApAddr ));
++				DBG_TRACE(DbgInfo, "Old AP Address     : %pM\n",
++						   as->oldApAddr);
+ 			}
+ 		}
+ 
+@@ -3327,9 +3338,11 @@ void wl_process_mailbox( struct wl_private *lp )
+ 				break;
+ 			}
+ 
+-			DBG_TRACE( DbgInfo, "STA Address     : %s\n", DbgHwAddr( ss->staAddr ));
++			DBG_TRACE(DbgInfo, "STA Address     : %pM\n",
++					ss->staAddr);
+ 
+-			DBG_TRACE( DbgInfo, "Reason          : 0x%04x \n", ss->reason );
++			DBG_TRACE(DbgInfo, "Reason          : 0x%04x\n",
++					ss->reason);
+ 		}
+ 
+ 		break;
+diff --git a/drivers/staging/wlags49_h2/wl_netdev.c b/drivers/staging/wlags49_h2/wl_netdev.c
+index 954bece..cf917e6 100644
+--- a/drivers/staging/wlags49_h2/wl_netdev.c
++++ b/drivers/staging/wlags49_h2/wl_netdev.c
+@@ -1071,8 +1071,7 @@ void wl_multicast( struct net_device *dev )
+         DBG_PRINT( "  mc_count: %d\n", netdev_mc_count(dev));
+ 
+ 	netdev_for_each_mc_addr(ha, dev)
+-            DBG_PRINT("    %s (%d)\n", DbgHwAddr(ha->addr),
+-		      dev->addr_len);
++	DBG_PRINT("    %pM (%d)\n", ha->addr, dev->addr_len);
+     }
+ #endif /* DBG */
+ 
+diff --git a/drivers/staging/wlags49_h2/wl_util.c b/drivers/staging/wlags49_h2/wl_util.c
+index 4521c9f..3b6f5a5 100644
+--- a/drivers/staging/wlags49_h2/wl_util.c
++++ b/drivers/staging/wlags49_h2/wl_util.c
+@@ -315,40 +315,6 @@ void key_string2key( char *ks, KEY_STRCT *key )
+ 
+ 
+ 
+-#if DBG
+-/*******************************************************************************
+- *	DbgHwAddr()
+- *******************************************************************************
+- *
+- *  DESCRIPTION:
+- *
+- *      Convert a hardware ethernet address to a character string
+- *
+- *  PARAMETERS:
+- *
+- *      hwAddr  - an ethernet address
+- *
+- *  RETURNS:
+- *
+- *      a pointer to a string representing the ethernet address
+- *
+- ******************************************************************************/
+-const char *DbgHwAddr(unsigned char *hwAddr)
 -{
--	return sprintf(buff, "%pM", addr);
--}
+-    static char     buffer[18];
+-    /*------------------------------------------------------------------------*/
 -
- /* returns 1 if they are the same originator */
- 
- int compare_orig(void *data1, void *data2)
-diff --git a/drivers/staging/batman-adv/main.h b/drivers/staging/batman-adv/main.h
-index ca97589..5e3f516 100644
---- a/drivers/staging/batman-adv/main.h
-+++ b/drivers/staging/batman-adv/main.h
-@@ -58,7 +58,6 @@
- 
- #define PACKBUFF_SIZE 2000
- #define LOG_BUF_LEN 8192	  /* has to be a power of 2 */
--#define ETH_STR_LEN 20
- 
- #define VIS_INTERVAL 5000	/* 5 seconds */
- 
-@@ -136,7 +135,6 @@ int mesh_init(struct net_device *soft_iface);
- void mesh_free(struct net_device *soft_iface);
- void inc_module_count(void);
- void dec_module_count(void);
--int addr_to_string(char *buff, uint8_t *addr);
- int compare_orig(void *data1, void *data2);
- int choose_orig(void *data, int32_t size);
- int is_my_mac(uint8_t *addr);
-diff --git a/drivers/staging/batman-adv/originator.c b/drivers/staging/batman-adv/originator.c
-index c530df1..dd98f58 100644
---- a/drivers/staging/batman-adv/originator.c
-+++ b/drivers/staging/batman-adv/originator.c
-@@ -315,7 +315,6 @@ int orig_seq_print_text(struct seq_file *seq, void *offset)
- 	int last_seen_secs;
- 	int last_seen_msecs;
- 	unsigned long flags;
--	char orig_str[ETH_STR_LEN], router_str[ETH_STR_LEN];
- 
- 	if ((!bat_priv->primary_if) ||
- 	    (bat_priv->primary_if->if_status != IF_ACTIVE)) {
-@@ -329,10 +328,10 @@ int orig_seq_print_text(struct seq_file *seq, void *offset)
- 				  net_dev->name);
- 	}
- 
--	seq_printf(seq, "[B.A.T.M.A.N. adv %s%s, MainIF/MAC: %s/%s (%s)]\n",
-+	seq_printf(seq, "[B.A.T.M.A.N. adv %s%s, MainIF/MAC: %s/%pM (%s)]\n",
- 		   SOURCE_VERSION, REVISION_VERSION_STR,
- 		   bat_priv->primary_if->net_dev->name,
--		   bat_priv->primary_if->addr_str, net_dev->name);
-+		   bat_priv->primary_if->net_dev->dev_addr, net_dev->name);
- 	seq_printf(seq, "  %-15s %s (%s/%i) %17s [%10s]: %20s ...\n",
- 		   "Originator", "last-seen", "#", TQ_MAX_VALUE, "Nexthop",
- 		   "outgoingIF", "Potential nexthops");
-@@ -349,21 +348,18 @@ int orig_seq_print_text(struct seq_file *seq, void *offset)
- 		if (orig_node->router->tq_avg == 0)
- 			continue;
- 
--		addr_to_string(orig_str, orig_node->orig);
--		addr_to_string(router_str, orig_node->router->addr);
- 		last_seen_secs = jiffies_to_msecs(jiffies -
- 						orig_node->last_valid) / 1000;
- 		last_seen_msecs = jiffies_to_msecs(jiffies -
- 						orig_node->last_valid) % 1000;
- 
--		seq_printf(seq, "%-17s %4i.%03is   (%3i) %17s [%10s]:",
--			   orig_str, last_seen_secs, last_seen_msecs,
--			   orig_node->router->tq_avg, router_str,
-+		seq_printf(seq, "%pM %4i.%03is   (%3i) %pM [%10s]:",
-+			   orig_node->orig, last_seen_secs, last_seen_msecs,
-+			   orig_node->router->tq_avg, orig_node->router->addr,
- 			   orig_node->router->if_incoming->net_dev->name);
- 
- 		list_for_each_entry(neigh_node, &orig_node->neigh_list, list) {
--			addr_to_string(orig_str, neigh_node->addr);
--			seq_printf(seq, " %17s (%3i)", orig_str,
-+			seq_printf(seq, " %pM (%3i)", neigh_node->addr,
- 					   neigh_node->tq_avg);
- 		}
- 
-diff --git a/drivers/staging/batman-adv/routing.c b/drivers/staging/batman-adv/routing.c
-index 58aa99e..9010263 100644
---- a/drivers/staging/batman-adv/routing.c
-+++ b/drivers/staging/batman-adv/routing.c
-@@ -554,11 +554,11 @@ void receive_bat_packet(struct ethhdr *ethhdr,
- 					    batman_packet->orig) ? 1 : 0);
- 
- 	bat_dbg(DBG_BATMAN, bat_priv,
--		"Received BATMAN packet via NB: %pM, IF: %s [%s] "
-+		"Received BATMAN packet via NB: %pM, IF: %s [%pM] "
- 		"(from OG: %pM, via prev OG: %pM, seqno %d, tq %d, "
- 		"TTL %d, V %d, IDF %d)\n",
- 		ethhdr->h_source, if_incoming->net_dev->name,
--		if_incoming->addr_str, batman_packet->orig,
-+		if_incoming->net_dev->dev_addr, batman_packet->orig,
- 		batman_packet->prev_sender, batman_packet->seqno,
- 		batman_packet->tq, batman_packet->ttl, batman_packet->version,
- 		has_directlink_flag);
-diff --git a/drivers/staging/batman-adv/send.c b/drivers/staging/batman-adv/send.c
-index 5d57ef5..1d78bc5 100644
---- a/drivers/staging/batman-adv/send.c
-+++ b/drivers/staging/batman-adv/send.c
-@@ -135,13 +135,13 @@ static void send_packet_to_if(struct forw_packet *forw_packet,
- 							    "Forwarding"));
- 		bat_dbg(DBG_BATMAN, bat_priv,
- 			"%s %spacket (originator %pM, seqno %d, TQ %d, TTL %d,"
--			" IDF %s) on interface %s [%s]\n",
-+			" IDF %s) on interface %s [%pM]\n",
- 			fwd_str, (packet_num > 0 ? "aggregated " : ""),
- 			batman_packet->orig, ntohl(batman_packet->seqno),
- 			batman_packet->tq, batman_packet->ttl,
- 			(batman_packet->flags & DIRECTLINK ?
- 			 "on" : "off"),
--			batman_if->net_dev->name, batman_if->addr_str);
-+			batman_if->net_dev->name, batman_if->net_dev->dev_addr);
- 
- 		buff_pos += sizeof(struct batman_packet) +
- 			(batman_packet->num_hna * ETH_ALEN);
-@@ -183,12 +183,12 @@ static void send_packet(struct forw_packet *forw_packet)
- 		/* FIXME: what about aggregated packets ? */
- 		bat_dbg(DBG_BATMAN, bat_priv,
- 			"%s packet (originator %pM, seqno %d, TTL %d) "
--			"on interface %s [%s]\n",
-+			"on interface %s [%pM]\n",
- 			(forw_packet->own ? "Sending own" : "Forwarding"),
- 			batman_packet->orig, ntohl(batman_packet->seqno),
- 			batman_packet->ttl,
- 			forw_packet->if_incoming->net_dev->name,
--			forw_packet->if_incoming->addr_str);
-+			forw_packet->if_incoming->net_dev->dev_addr);
- 
- 		/* skb is only used once and than forw_packet is free'd */
- 		send_skb_packet(forw_packet->skb, forw_packet->if_incoming,
-diff --git a/drivers/staging/batman-adv/types.h b/drivers/staging/batman-adv/types.h
-index bb5827f..f3f7366 100644
---- a/drivers/staging/batman-adv/types.h
-+++ b/drivers/staging/batman-adv/types.h
-@@ -37,7 +37,6 @@ struct batman_if {
- 	struct list_head list;
- 	int16_t if_num;
- 	char if_status;
--	char addr_str[ETH_STR_LEN];
- 	struct net_device *net_dev;
- 	atomic_t seqno;
- 	atomic_t frag_seqno;
-diff --git a/drivers/staging/batman-adv/vis.c b/drivers/staging/batman-adv/vis.c
-index 6b102a3..8f21649 100644
---- a/drivers/staging/batman-adv/vis.c
-+++ b/drivers/staging/batman-adv/vis.c
-@@ -130,15 +130,13 @@ static ssize_t vis_data_read_prim_sec(char *buff, struct hlist_head *if_list)
- {
- 	struct if_list_entry *entry;
- 	struct hlist_node *pos;
--	char tmp_addr_str[ETH_STR_LEN];
- 	size_t len = 0;
- 
- 	hlist_for_each_entry(entry, pos, if_list, list) {
- 		if (entry->primary)
- 			len += sprintf(buff + len, "PRIMARY, ");
- 		else {
--			addr_to_string(tmp_addr_str, entry->addr);
--			len += sprintf(buff + len,  "SEC %s, ", tmp_addr_str);
-+			len += sprintf(buff + len,  "SEC %pM, ", entry->addr);
- 		}
- 	}
- 
-@@ -165,12 +163,9 @@ static size_t vis_data_count_prim_sec(struct hlist_head *if_list)
- static ssize_t vis_data_read_entry(char *buff, struct vis_info_entry *entry,
- 				   uint8_t *src, bool primary)
- {
--	char to[18];
+-	sprintf(buffer, "%pM", hwAddr);
 -
- 	/* maximal length: max(4+17+2, 3+17+1+3+2) == 26 */
--	addr_to_string(to, entry->dest);
- 	if (primary && entry->quality == 0)
--		return sprintf(buff, "HNA %s, ", to);
-+		return sprintf(buff, "HNA %pM, ", entry->dest);
- 	else if (compare_orig(entry->src, src))
- 		return sprintf(buff, "TQ %s %d, ", to, entry->quality);
+-    return buffer;
+-} // DbgHwAddr
+-/*============================================================================*/
+-
+-#endif /* DBG */
+-
+-
+-
+-
+ /*******************************************************************************
+  *	wl_has_wep()
+  *******************************************************************************
+@@ -1132,29 +1098,29 @@ void wl_process_probe_response( struct wl_private *lp )
+             DBG_TRACE( DbgInfo, "(%s) durID       : 0x%04x.\n", lp->dev->name,
+                     probe_rsp->durID );
  
-@@ -190,7 +185,6 @@ int vis_seq_print_text(struct seq_file *seq, void *offset)
- 	struct if_list_entry *entry;
- 	struct hlist_node *pos, *n;
- 	int i;
--	char tmp_addr_str[ETH_STR_LEN];
- 	unsigned long flags;
- 	int vis_server = atomic_read(&bat_priv->vis_mode);
- 	size_t buff_pos, buf_size;
-@@ -255,9 +249,8 @@ int vis_seq_print_text(struct seq_file *seq, void *offset)
- 		}
+-            DBG_TRACE( DbgInfo, "(%s) address1    : %s\n", lp->dev->name,
+-                    DbgHwAddr( probe_rsp->address1 ));
++		DBG_TRACE(DbgInfo, "(%s) address1    : %pM\n", lp->dev->name,
++			probe_rsp->address1);
  
- 		hlist_for_each_entry(entry, pos, &vis_if_list, list) {
--			addr_to_string(tmp_addr_str, entry->addr);
--			buff_pos += sprintf(buff + buff_pos, "%s,",
--					    tmp_addr_str);
-+			buff_pos += sprintf(buff + buff_pos, "%pM,",
-+					    entry->addr);
+-            DBG_TRACE( DbgInfo, "(%s) address2    : %s\n", lp->dev->name,
+-                    DbgHwAddr( probe_rsp->address2 ));
++		DBG_TRACE(DbgInfo, "(%s) address2    : %pM\n", lp->dev->name,
++			probe_rsp->address2);
  
- 			for (i = 0; i < packet->entries; i++)
- 				buff_pos += vis_data_read_entry(buff + buff_pos,
+-            DBG_TRACE( DbgInfo, "(%s) BSSID       : %s\n", lp->dev->name,
+-                    DbgHwAddr( probe_rsp->BSSID ));
++		DBG_TRACE(DbgInfo, "(%s) BSSID       : %pM\n", lp->dev->name,
++			probe_rsp->BSSID);
+ 
+             DBG_TRACE( DbgInfo, "(%s) sequence    : 0x%04x.\n", lp->dev->name,
+                     probe_rsp->sequence );
+ 
+-            DBG_TRACE( DbgInfo, "(%s) address4    : %s\n", lp->dev->name,
+-                    DbgHwAddr( probe_rsp->address4 ));
++		DBG_TRACE(DbgInfo, "(%s) address4    : %pM\n", lp->dev->name,
++			probe_rsp->address4);
+ 
+             DBG_TRACE( DbgInfo, "(%s) datalength  : 0x%04x.\n", lp->dev->name,
+                     probe_rsp->dataLength );
+ 
+-            DBG_TRACE( DbgInfo, "(%s) DA          : %s\n", lp->dev->name,
+-                    DbgHwAddr( probe_rsp->DA ));
++		DBG_TRACE(DbgInfo, "(%s) DA          : %pM\n", lp->dev->name,
++			probe_rsp->DA);
+ 
+-            DBG_TRACE( DbgInfo, "(%s) SA          : %s\n", lp->dev->name,
+-                    DbgHwAddr( probe_rsp->SA ));
++		DBG_TRACE(DbgInfo, "(%s) SA          : %pM\n", lp->dev->name,
++			probe_rsp->SA);
+ 
+ #ifdef WARP
+ 
+@@ -1382,12 +1348,11 @@ void wl_process_assoc_status( struct wl_private *lp )
+             break;
+         }
+ 
+-        DBG_TRACE( DbgInfo, "STA Address        : %s\n",
+-                    DbgHwAddr( assoc_stat->staAddr ));
++	DBG_TRACE(DbgInfo, "STA Address        : %pM\n", assoc_stat->staAddr);
+ 
+         if(( assoc_stat->assocStatus == 2 )  && ( assoc_stat->len == 8 )) {
+-            DBG_TRACE( DbgInfo, "Old AP Address     : %s\n",
+-                        DbgHwAddr( assoc_stat->oldApAddr ));
++		DBG_TRACE(DbgInfo, "Old AP Address     : %pM\n",
++			assoc_stat->oldApAddr);
+         }
+     }
+ 
+@@ -1458,9 +1423,8 @@ void wl_process_security_status( struct wl_private *lp )
+             break;
+         }
+ 
+-        DBG_TRACE( DbgInfo, "STA Address     : %s\n",
+-                   DbgHwAddr( sec_stat->staAddr ));
+-        DBG_TRACE( DbgInfo, "Reason          : 0x%04x \n", sec_stat->reason );
++	DBG_TRACE(DbgInfo, "STA Address     : %pM\n", sec_stat->staAddr);
++	DBG_TRACE(DbgInfo, "Reason          : 0x%04x\n", sec_stat->reason);
+ 
+     }
+ 
+diff --git a/drivers/staging/wlags49_h2/wl_util.h b/drivers/staging/wlags49_h2/wl_util.h
+index ba537a6..2661bcd 100644
+--- a/drivers/staging/wlags49_h2/wl_util.h
++++ b/drivers/staging/wlags49_h2/wl_util.h
+@@ -77,11 +77,6 @@ void wl_endian_translate_event( ltv_t *pLtv );
+ 
+ int wl_has_wep( IFBP ifbp );
+ 
+-
+-#if DBG
+-const char *DbgHwAddr( unsigned char *hwAddr );
+-#endif // DBG
+-
+ hcf_8   wl_parse_ds_ie( PROBE_RESP *probe_rsp );
+ hcf_8 * wl_parse_wpa_ie( PROBE_RESP *probe_rsp, hcf_16 *length );
+ hcf_8 * wl_print_wpa_ie( hcf_8 *buffer, int length );
+diff --git a/drivers/staging/wlags49_h2/wl_wext.c b/drivers/staging/wlags49_h2/wl_wext.c
+index 06467f1..9e5da08 100644
+--- a/drivers/staging/wlags49_h2/wl_wext.c
++++ b/drivers/staging/wlags49_h2/wl_wext.c
+@@ -789,7 +789,8 @@ static int wireless_get_ap_list (struct net_device *dev, struct iw_request_info
+ 				memcpy( hwa[count].sa_data,
+ 						(*p)/*lp->scan_results*/.APTable[count].bssid, ETH_ALEN );
+ #else  //;?why use BSSID and bssid as names in seemingly very comparable situations
+-				DBG_PRINT( "BSSID: %s\n", DbgHwAddr( (*p)/*lp->probe_results*/.ProbeTable[count].BSSID ));
++				DBG_PRINT("BSSID: %pM\n",
++						(*p).ProbeTable[count].BSSID);
+ 				memcpy( hwa[count].sa_data,
+ 						(*p)/*lp->probe_results*/.ProbeTable[count].BSSID, ETH_ALEN );
+ #endif // WARP
+@@ -3937,9 +3938,9 @@ void wl_wext_event_mic_failed( struct net_device *dev )
+ 			 a problem in future versions of the supplicant, if they ever
+ 			 actually parse these parameters */
+ #if DBG
+-	sprintf( msg, "MLME-MICHAELMICFAILURE.indication(keyid=%d %scast addr="
+-			 "%s)", key_idx, addr1[0] & 0x01 ? "broad" : "uni",
+-			 DbgHwAddr( addr2 ));
++	sprintf(msg, "MLME-MICHAELMICFAILURE.indication(keyid=%d %scast "
++			"addr=%pM)", key_idx, addr1[0] & 0x01 ? "broad" : "uni",
++			addr2);
+ #endif
+ 	wrqu.data.length = strlen( msg );
+ 	wireless_send_event( dev, IWEVCUSTOM, &wrqu, msg );
 -- 
 1.7.2.3
 
