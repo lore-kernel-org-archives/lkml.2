@@ -1,93 +1,190 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752235Ab0JPAjY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Oct 2010 20:39:24 -0400
-Received: from e6.ny.us.ibm.com ([32.97.182.146]:49320 "EHLO e6.ny.us.ibm.com"
+	id S1752264Ab0JPAj0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Oct 2010 20:39:26 -0400
+Received: from e5.ny.us.ibm.com ([32.97.182.145]:47979 "EHLO e5.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751993Ab0JPAjB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752065Ab0JPAjB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 15 Oct 2010 20:39:01 -0400
 From: John Stultz <john.stultz@linaro.org>
 To: LKML <linux-kernel@vger.kernel.org>
-Cc: John Stultz <johnstul@us.ibm.com>, Alessandro Zummo <a.zummo@towertech.it>,
+Cc: John Stultz <john.stultz@linaro.org>,
+        Alessandro Zummo <a.zummo@towertech.it>,
         Thomas Gleixner <tglx@linutronix.de>,
         Richard Cochran <richardcochran@gmail.com>
-Subject: [PATCH 0/6] [RFC] A posix clock/timer interface to the RTC
-Date: Fri, 15 Oct 2010 17:38:49 -0700
-Message-Id: <1287189535-24649-1-git-send-email-john.stultz@linaro.org>
+Subject: [PATCH 5/6] [RFC] RTC: Remove UIE emulation
+Date: Fri, 15 Oct 2010 17:38:54 -0700
+Message-Id: <1287189535-24649-6-git-send-email-john.stultz@linaro.org>
 X-Mailer: git-send-email 1.6.0.4
+In-Reply-To: <1287189535-24649-5-git-send-email-john.stultz@linaro.org>
+References: <1287189535-24649-1-git-send-email-john.stultz@linaro.org>
+ <1287189535-24649-2-git-send-email-john.stultz@linaro.org>
+ <1287189535-24649-3-git-send-email-john.stultz@linaro.org>
+ <1287189535-24649-4-git-send-email-john.stultz@linaro.org>
+ <1287189535-24649-5-git-send-email-john.stultz@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: John Stultz <johnstul@us.ibm.com>
+Since we provide UIE interrupts via a rtc_timer, the old
+emulation code can be removed.
 
+Note: I assume this is ok, but there may be corner cases I'm missing.
 
-This patchset allows the RTC to be managed via the posix_clocks/timers
-interface. This allows applications to program timer events that will 
-wake the system from suspend state. If the system is not suspended, the
-timers fire like normal posix timers.
-
-Currently, if an application wants to trigger a RTC alarm to wake up
-from suspend, they must use the sysfs wakealarm interface or the rtc
-chardev RTC_WKALM_SET ioctl. The limitation with this interface is
-that it is fairly hardware oriented, so multiple applications cannot
-set an RTC alarm without overwriting any previous alarms set by other
-applications.
-
-The in-kernel posix interface allows for the kernel to manage a list
-of timers that control when the alarm is fired, so applications
-do not need to coordinate access to the alarm hardware.
-
-My earlier proof-of-concept hack/patch for this work (see
-http://lwn.net/Articles/405986/ ) did not get much review from the 
-RTC folks, so I've carried on reworking a number of layers of code
-in order to make this functionality something that could possibly be
-upstreamed in the future.
-
-The patches are still fairly rough, but together they do function, so
-while there is still work to be done, I wanted to send this out again
-so folks had an idea of the scope of the work and could make
-suggestions as to where I've gone wrong. :)
-
-So please let me know what you think.
-
-thanks
--john
-
-
+Signed-off-by: John Stultz <john.stultz@linaro.org>
 CC: Alessandro Zummo <a.zummo@towertech.it>
 CC: Thomas Gleixner <tglx@linutronix.de>
 CC: Richard Cochran <richardcochran@gmail.com>
+---
+ drivers/rtc/rtc-dev.c |  104 -------------------------------------------------
+ include/linux/rtc.h   |   12 ------
+ 2 files changed, 0 insertions(+), 116 deletions(-)
 
+diff --git a/drivers/rtc/rtc-dev.c b/drivers/rtc/rtc-dev.c
+index 62227cd..212b16e 100644
+--- a/drivers/rtc/rtc-dev.c
++++ b/drivers/rtc/rtc-dev.c
+@@ -46,105 +46,6 @@ static int rtc_dev_open(struct inode *inode, struct file *file)
+ 	return err;
+ }
+ 
+-#ifdef CONFIG_RTC_INTF_DEV_UIE_EMUL
+-/*
+- * Routine to poll RTC seconds field for change as often as possible,
+- * after first RTC_UIE use timer to reduce polling
+- */
+-static void rtc_uie_task(struct work_struct *work)
+-{
+-	struct rtc_device *rtc =
+-		container_of(work, struct rtc_device, uie_task);
+-	struct rtc_time tm;
+-	int num = 0;
+-	int err;
+-
+-	err = rtc_read_time(rtc, &tm);
+-
+-	spin_lock_irq(&rtc->irq_lock);
+-	if (rtc->stop_uie_polling || err) {
+-		rtc->uie_task_active = 0;
+-	} else if (rtc->oldsecs != tm.tm_sec) {
+-		num = (tm.tm_sec + 60 - rtc->oldsecs) % 60;
+-		rtc->oldsecs = tm.tm_sec;
+-		rtc->uie_timer.expires = jiffies + HZ - (HZ/10);
+-		rtc->uie_timer_active = 1;
+-		rtc->uie_task_active = 0;
+-		add_timer(&rtc->uie_timer);
+-	} else if (schedule_work(&rtc->uie_task) == 0) {
+-		rtc->uie_task_active = 0;
+-	}
+-	spin_unlock_irq(&rtc->irq_lock);
+-	if (num)
+-		rtc_update_irq(rtc, num, RTC_UF | RTC_IRQF);
+-}
+-static void rtc_uie_timer(unsigned long data)
+-{
+-	struct rtc_device *rtc = (struct rtc_device *)data;
+-	unsigned long flags;
+-
+-	spin_lock_irqsave(&rtc->irq_lock, flags);
+-	rtc->uie_timer_active = 0;
+-	rtc->uie_task_active = 1;
+-	if ((schedule_work(&rtc->uie_task) == 0))
+-		rtc->uie_task_active = 0;
+-	spin_unlock_irqrestore(&rtc->irq_lock, flags);
+-}
+-
+-static int clear_uie(struct rtc_device *rtc)
+-{
+-	spin_lock_irq(&rtc->irq_lock);
+-	if (rtc->uie_irq_active) {
+-		rtc->stop_uie_polling = 1;
+-		if (rtc->uie_timer_active) {
+-			spin_unlock_irq(&rtc->irq_lock);
+-			del_timer_sync(&rtc->uie_timer);
+-			spin_lock_irq(&rtc->irq_lock);
+-			rtc->uie_timer_active = 0;
+-		}
+-		if (rtc->uie_task_active) {
+-			spin_unlock_irq(&rtc->irq_lock);
+-			flush_scheduled_work();
+-			spin_lock_irq(&rtc->irq_lock);
+-		}
+-		rtc->uie_irq_active = 0;
+-	}
+-	spin_unlock_irq(&rtc->irq_lock);
+-	return 0;
+-}
+-
+-static int set_uie(struct rtc_device *rtc)
+-{
+-	struct rtc_time tm;
+-	int err;
+-
+-	err = rtc_read_time(rtc, &tm);
+-	if (err)
+-		return err;
+-	spin_lock_irq(&rtc->irq_lock);
+-	if (!rtc->uie_irq_active) {
+-		rtc->uie_irq_active = 1;
+-		rtc->stop_uie_polling = 0;
+-		rtc->oldsecs = tm.tm_sec;
+-		rtc->uie_task_active = 1;
+-		if (schedule_work(&rtc->uie_task) == 0)
+-			rtc->uie_task_active = 0;
+-	}
+-	rtc->irq_data = 0;
+-	spin_unlock_irq(&rtc->irq_lock);
+-	return 0;
+-}
+-
+-int rtc_dev_update_irq_enable_emul(struct rtc_device *rtc, unsigned int enabled)
+-{
+-	if (enabled)
+-		return set_uie(rtc);
+-	else
+-		return clear_uie(rtc);
+-}
+-EXPORT_SYMBOL(rtc_dev_update_irq_enable_emul);
+-
+-#endif /* CONFIG_RTC_INTF_DEV_UIE_EMUL */
+ 
+ static ssize_t
+ rtc_dev_read(struct file *file, char __user *buf, size_t count, loff_t *ppos)
+@@ -493,11 +394,6 @@ void rtc_dev_prepare(struct rtc_device *rtc)
+ 
+ 	rtc->dev.devt = MKDEV(MAJOR(rtc_devt), rtc->id);
+ 
+-#ifdef CONFIG_RTC_INTF_DEV_UIE_EMUL
+-	INIT_WORK(&rtc->uie_task, rtc_uie_task);
+-	setup_timer(&rtc->uie_timer, rtc_uie_timer, (unsigned long)rtc);
+-#endif
+-
+ 	cdev_init(&rtc->char_dev, &rtc_dev_fops);
+ 	rtc->char_dev.owner = rtc->owner;
+ }
+diff --git a/include/linux/rtc.h b/include/linux/rtc.h
+index 3acfbea..7350748 100644
+--- a/include/linux/rtc.h
++++ b/include/linux/rtc.h
+@@ -203,18 +203,6 @@ struct rtc_device
+ 	struct hrtimer pie_timer; /* sub second exp, so needs hrtimer */
+ 	int pie_enabled;
+ 	struct work_struct irqwork;
+-
+-
+-#ifdef CONFIG_RTC_INTF_DEV_UIE_EMUL
+-	struct work_struct uie_task;
+-	struct timer_list uie_timer;
+-	/* Those fields are protected by rtc->irq_lock */
+-	unsigned int oldsecs;
+-	unsigned int uie_irq_active:1;
+-	unsigned int stop_uie_polling:1;
+-	unsigned int uie_task_active:1;
+-	unsigned int uie_timer_active:1;
+-#endif
+ };
+ #define to_rtc_device(d) container_of(d, struct rtc_device, dev)
+ 
+-- 
+1.6.0.4
 
-John Stultz (5):
-  [RFC] Introduce timerlist infrastructure.
-  [RFC] hrtimers: Convert hrtimers to use timerlist infrastructure
-  [RFC] RTC: Rework RTC code to use timerlist for events
-  [RFC] RTC: Remove UIE emulation
-  [RFC] RTC: Add posix clock/timer interface
-
-Richard Cochran (1):
-  [RFC] posix clocks: dynamic clock ids.
-
- drivers/rtc/Makefile         |    2 +-
- drivers/rtc/class.c          |   23 ++
- drivers/rtc/interface.c      |  453 +++++++++++++++++++++---------------------
- drivers/rtc/posix.c          |  274 +++++++++++++++++++++++++
- drivers/rtc/rtc-dev.c        |  104 ----------
- drivers/rtc/rtc-lib.c        |   26 +++
- drivers/rtc/rtc-sysfs.c      |   10 +
- include/linux/hrtimer.h      |   32 ++--
- include/linux/posix-timers.h |    9 +-
- include/linux/rtc.h          |   49 +++--
- include/linux/time.h         |    2 +
- include/linux/timerlist.h    |   37 ++++
- kernel/hrtimer.c             |   86 +++-----
- kernel/posix-timers.c        |   41 +++-
- kernel/time/timer_list.c     |    8 +-
- lib/Makefile                 |    2 +-
- lib/timerlist.c              |  115 +++++++++++
- 17 files changed, 843 insertions(+), 430 deletions(-)
- create mode 100644 drivers/rtc/posix.c
- create mode 100644 include/linux/timerlist.h
- create mode 100644 lib/timerlist.c
