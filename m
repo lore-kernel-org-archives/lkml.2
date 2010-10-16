@@ -1,47 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755590Ab0JPNJe (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Oct 2010 09:09:34 -0400
-Received: from hera.kernel.org ([140.211.167.34]:42249 "EHLO hera.kernel.org"
+	id S1756202Ab0JPNMZ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Oct 2010 09:12:25 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:54535 "EHLO mx2.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754300Ab0JPNJd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Oct 2010 09:09:33 -0400
-Message-ID: <4CB9A478.5040501@kernel.org>
-Date: Sat, 16 Oct 2010 15:11:20 +0200
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.9) Gecko/20100915 Lightning/1.0b2 Thunderbird/3.1.4
+	id S1754571Ab0JPNMY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 16 Oct 2010 09:12:24 -0400
+Date: Sat, 16 Oct 2010 15:11:54 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Andrea Gelmini <andrea.gelmini@gelma.net>
+Cc: linux-kernel@vger.kernel.org, Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Subject: Re: [PATCH] kernel: trace: trace_kprobe.c: removed duplicated
+ #include
+Message-ID: <20101016131154.GC8751@elte.hu>
+References: <1287170842-20279-1-git-send-email-andrea.gelmini@gelma.net>
 MIME-Version: 1.0
-To: Armin Schindler <armin@melware.de>
-CC: Karsten Keil <isdn@linux-pingi.de>, lkml <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH v2.6.36-rc7] isdn/eicon: don't call flush_scheduled_work()
- from diva_os_remove_soft_isr()
-References: <4CB84FAF.5080608@kernel.org> <alpine.DEB.2.00.1010161441040.27329@justus.melware.de>
-In-Reply-To: <alpine.DEB.2.00.1010161441040.27329@justus.melware.de>
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sat, 16 Oct 2010 13:08:55 +0000 (UTC)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1287170842-20279-1-git-send-email-andrea.gelmini@gelma.net>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0074]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
 
-On 10/16/2010 02:42 PM, Armin Schindler wrote:
-> On Fri, 15 Oct 2010, Tejun Heo wrote:
->> diva doesn't use workqueue and there is no reason to flush the system
->> workqueue from diva_os_remove_soft_isr().  Remove it.
->>
->> This is to prepare for the deprecation and removal of
->> flush_scheduled_work().
+* Andrea Gelmini <andrea.gelmini@gelma.net> wrote:
+
+> Removed linux/uaccess.h
 > 
-> This is a leftover. Thanks.
+> Signed-off-by: Andrea Gelmini <andrea.gelmini@gelma.net>
+> ---
+>  kernel/trace/trace_kprobe.c |    3 +--
+>  1 files changed, 1 insertions(+), 2 deletions(-)
 > 
-> Acked-by: Armin Schindler <armin@melware.de>
+> diff --git a/kernel/trace/trace_kprobe.c b/kernel/trace/trace_kprobe.c
+> index 544301d..c5fb747 100644
+> --- a/kernel/trace/trace_kprobe.c
+> +++ b/kernel/trace/trace_kprobe.c
+> @@ -18,7 +18,6 @@
+>   */
+>  
+>  #include <linux/module.h>
+> -#include <linux/uaccess.h>
+>  #include <linux/kprobes.h>
+>  #include <linux/seq_file.h>
+>  #include <linux/slab.h>
+> @@ -479,7 +478,7 @@ struct probe_arg {
+>  struct trace_probe {
+>  	struct list_head	list;
+>  	struct kretprobe	rp;	/* Use rp.kp for kprobe use */
+> -	unsigned long 		nhit;
+> +	unsigned long		nhit;
+>  	unsigned int		flags;	/* For TP_FLAG_* */
+>  	const char		*symbol;	/* symbol name */
+>  	struct ftrace_event_class	class;
 
-Thank you.  Are you gonna route this patch or shall I push it through
-wq tree?
+If you look at the actual code there's also other problems with the 
+vertical spacing of this and other structures (fetch_param, fetch_type, 
+trace_kprobe, etc.) defined here. Would be nice if you could check the 
+whole file and fix those too.
 
--- 
-tejun
+Thanks,
+
+	Ingo
