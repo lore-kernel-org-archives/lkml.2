@@ -1,146 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751787Ab0JQXXx (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Oct 2010 19:23:53 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:55047 "EHLO ogre.sisk.pl"
+	id S1751863Ab0JQXb6 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Oct 2010 19:31:58 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:49042 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751083Ab0JQXXw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Oct 2010 19:23:52 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: "Linux-pm mailing list" <linux-pm@lists.linux-foundation.org>
-Subject: [PATCH] PM / Wakeup: Show wakeup sources statistics in debugfs
-Date: Mon, 18 Oct 2010 01:22:35 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.36-rc8-rjw+; KDE/4.4.4; x86_64; ; )
-Cc: Alan Stern <stern@rowland.harvard.edu>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "Greg Kroah-Hartman" <gregkh@suse.de>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
+	id S1751411Ab0JQXb4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 17 Oct 2010 19:31:56 -0400
+Date: Mon, 18 Oct 2010 10:31:52 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Kevin Hilman <khilman@deeprootsystems.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Sekhar Nori <nsekhar@ti.com>, Nicolas Pitre <nicolas.pitre@linaro.org>
+Subject: linux-next: manual merge of the davinci tree with the arm tree
+Message-Id: <20101018103152.33fa12cd.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Message-Id: <201010180122.35382.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rafael J. Wysocki <rjw@sisk.pl>
+Hi Kevin,
 
-There may be wakeup sources that aren't associated with any devices
-and their statistics information won't be available from sysfs. Also,
-for debugging purposes it is convenient to have all of the wakeup
-sources statistics available from one place.  For these reasons,
-introduce new file "wakeup_sources" in debugfs containing those
-statistics.
+Today's linux-next merge of the davinci tree got a conflicts in
+arch/arm/mach-davinci/board-da830-evm.c and
+arch/arm/mach-davinci/board-da850-evm.c between commit
+861bd81ee62a0d6759144c22909a8a3938951656 ("arm: remove
+machine_desc.io_pg_offst and .phys_io") from the arm tree and commit
+48ea89eabee96019a4a84615af921f8703320abb ("davinci: introduce support for
+AM1x ARM9 microprocessors") from the davinci tree.
 
-Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
----
+Just context changes,  I fixed them up (see below) and can carry the fix
+as necessary.
+-- 
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-The patch is on top of suspend-2.6/linux-next.
-
-Thanks,
-Rafael
-
----
- drivers/base/power/wakeup.c |   85 ++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 85 insertions(+)
-
-Index: linux-2.6/drivers/base/power/wakeup.c
-===================================================================
---- linux-2.6.orig/drivers/base/power/wakeup.c
-+++ linux-2.6/drivers/base/power/wakeup.c
-@@ -11,6 +11,8 @@
- #include <linux/sched.h>
- #include <linux/capability.h>
- #include <linux/suspend.h>
-+#include <linux/seq_file.h>
-+#include <linux/debugfs.h>
- 
- #include "power.h"
- 
-@@ -617,3 +619,86 @@ bool pm_save_wakeup_count(unsigned int c
- 		pm_wakeup_update_hit_counts();
- 	return ret;
- }
-+
-+static struct dentry *wakeup_sources_stats_dentry;
-+
-+/**
-+ * print_wakeup_source_stats - Print wakeup source statistics information.
-+ * @m: seq_file to print the statistics into.
-+ * @ws: Wakeup source object to print the statistics for.
-+ */
-+static int print_wakeup_source_stats(struct seq_file *m,
-+				     struct wakeup_source *ws)
-+{
-+	unsigned long flags;
-+	ktime_t total_time;
-+	ktime_t max_time;
-+	unsigned long active_count;
-+	ktime_t active_time;
-+	int ret;
-+
-+	spin_lock_irqsave(&ws->lock, flags);
-+
-+	total_time = ws->total_time;
-+	max_time = ws->max_time;
-+	active_count = ws->active_count;
-+	if (ws->active) {
-+		active_time = ktime_sub(ktime_get(), ws->last_time);
-+		total_time = ktime_add(total_time, active_time);
-+		if (active_time.tv64 > max_time.tv64)
-+			max_time = active_time;
-+	} else {
-+		active_time = ktime_set(0, 0);
-+	}
-+
-+	ret = seq_printf(m, "%-12s\t%lu\t\t%lu\t\t%lu\t\t"
-+			"%lld\t\t%lld\t\t%lld\t\t%lld\n",
-+			ws->name, active_count, ws->event_count, ws->hit_count,
-+			ktime_to_ms(active_time), ktime_to_ms(total_time),
-+			ktime_to_ms(max_time), ktime_to_ms(ws->last_time));
-+
-+	spin_unlock_irqrestore(&ws->lock, flags);
-+
-+	return ret;
-+}
-+
-+/**
-+ * wakeup_sources_stats_show - Print wakeup sources statistics information.
-+ * @m: seq_file to print the statistics into.
-+ */
-+static int wakeup_sources_stats_show(struct seq_file *m, void *unused)
-+{
-+	struct wakeup_source *ws;
-+
-+	seq_puts(m, "name\t\tactive_count\tevent_count\thit_count\t"
-+		"active_since\ttotal_time\tmax_time\tlast_change\n");
-+
-+	rcu_read_lock();
-+	list_for_each_entry_rcu(ws, &wakeup_sources, entry)
-+		print_wakeup_source_stats(m, ws);
-+	rcu_read_unlock();
-+
-+	return 0;
-+}
-+
-+static int wakeup_sources_stats_open(struct inode *inode, struct file *file)
-+{
-+	return single_open(file, wakeup_sources_stats_show, NULL);
-+}
-+
-+static const struct file_operations wakeup_sources_stats_fops = {
-+	.owner = THIS_MODULE,
-+	.open = wakeup_sources_stats_open,
-+	.read = seq_read,
-+	.llseek = seq_lseek,
-+	.release = single_release,
-+};
-+
-+static int __init wakeup_sources_debugfs_init(void)
-+{
-+	wakeup_sources_stats_dentry = debugfs_create_file("wakeup_sources",
-+			S_IRUGO, NULL, NULL, &wakeup_sources_stats_fops);
-+	return 0;
-+}
-+
-+postcore_initcall(wakeup_sources_debugfs_init);
+diff --cc arch/arm/mach-davinci/board-da830-evm.c
+index 7f3cdbf,1bb89d3..0000000
+--- a/arch/arm/mach-davinci/board-da830-evm.c
++++ b/arch/arm/mach-davinci/board-da830-evm.c
+@@@ -596,7 -608,9 +608,7 @@@ static void __init da830_evm_map_io(voi
+  	da830_init();
+  }
+  
+- MACHINE_START(DAVINCI_DA830_EVM, "DaVinci DA830/OMAP-L137 EVM")
++ MACHINE_START(DAVINCI_DA830_EVM, "DaVinci DA830/OMAP-L137/AM17x EVM")
+ -	.phys_io	= IO_PHYS,
+ -	.io_pg_offst	= (__IO_ADDRESS(IO_PHYS) >> 18) & 0xfffc,
+  	.boot_params	= (DA8XX_DDR_BASE + 0x100),
+  	.map_io		= da830_evm_map_io,
+  	.init_irq	= cp_intc_init,
+diff --cc arch/arm/mach-davinci/board-da850-evm.c
+index b26f5cb,ef97c7f..0000000
+--- a/arch/arm/mach-davinci/board-da850-evm.c
++++ b/arch/arm/mach-davinci/board-da850-evm.c
+@@@ -816,7 -868,9 +868,7 @@@ static void __init da850_evm_map_io(voi
+  	da850_init();
+  }
+  
+- MACHINE_START(DAVINCI_DA850_EVM, "DaVinci DA850/OMAP-L138 EVM")
++ MACHINE_START(DAVINCI_DA850_EVM, "DaVinci DA850/OMAP-L138/AM18x EVM")
+ -	.phys_io	= IO_PHYS,
+ -	.io_pg_offst	= (__IO_ADDRESS(IO_PHYS) >> 18) & 0xfffc,
+  	.boot_params	= (DA8XX_DDR_BASE + 0x100),
+  	.map_io		= da850_evm_map_io,
+  	.init_irq	= cp_intc_init,
