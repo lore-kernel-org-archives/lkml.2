@@ -1,66 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755215Ab0JQMdz (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Oct 2010 08:33:55 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:44961 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752022Ab0JQMdy (ORCPT
+	id S1756177Ab0JQNGo (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Oct 2010 09:06:44 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:50388 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753521Ab0JQNGn convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Oct 2010 08:33:54 -0400
-Date: Sun, 17 Oct 2010 13:33:36 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Felipe Contreras <felipe.contreras@gmail.com>
-Cc: Catalin Marinas <catalin.marinas@arm.com>,
+	Sun, 17 Oct 2010 09:06:43 -0400
+From: "Woodruff, Richard" <r-woodruff2@ti.com>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>
+CC: Arnd Hannemann <arnd@arndnet.de>, "Pedanekar, Hemant" <hemantp@ti.com>,
+        Greg KH <greg@kroah.com>,
+        Felipe Contreras <felipe.contreras@gmail.com>,
         linux-main <linux-kernel@vger.kernel.org>,
-        linux-arm <linux-arm-kernel@lists.infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+        =?iso-8859-1?Q?Uwe_Kleine-K=F6nig?= 
 	<u.kleine-koenig@pengutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Richard Woodruff <r-woodruff2@ti.com>
-Subject: Re: [PATCH .36-rc8] arm: mm: allow, but warn, when issuing
-	ioremap() on RAM
-Message-ID: <20101017123336.GA24108@n2100.arm.linux.org.uk>
-References: <1287152120-7201-1-git-send-email-felipe.contreras@gmail.com> <1287153021.27165.6.camel@e102109-lin.cambridge.arm.com> <20101015194255.GA12981@n2100.arm.linux.org.uk> <AANLkTinmAy13niqRKrray1Gk4hkr19tA2gWwYbfnFoh7@mail.gmail.com> <20101015201453.GB12981@n2100.arm.linux.org.uk> <AANLkTimyEZp4ygmM7WeES3h5bixBNF2rY0x==x7SZ+GQ@mail.gmail.com>
+        Han Jonghun <jonghun79.han@gmail.com>,
+        linux-arm <linux-arm-kernel@lists.infradead.org>
+Date: Sun, 17 Oct 2010 08:05:35 -0500
+Subject: RE: [PATCH] ARM: allow, but warn, when issuing ioremap() on RAM
+Thread-Topic: [PATCH] ARM: allow, but warn, when issuing ioremap() on RAM
+Thread-Index: Acts3TqUzA45InBWS1Oa1Ig47eJsqQBG1CEg
+Message-ID: <13B9B4C6EF24D648824FF11BE896716203D76F71F4@dlee02.ent.ti.com>
+References: <1286444662-16843-1-git-send-email-felipe.contreras@gmail.com>
+	<20101007192245.GC26435@n2100.arm.linux.org.uk>
+	<AANLkTikQKY7pOobD+==uT5Cy0poT=O5wDMKtbVyJVNbO@mail.gmail.com>
+	<20101008175308.GA10975@n2100.arm.linux.org.uk>
+ <1287196588.2370.1.camel@pasglop>
+In-Reply-To: <1287196588.2370.1.camel@pasglop>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTimyEZp4ygmM7WeES3h5bixBNF2rY0x==x7SZ+GQ@mail.gmail.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Oct 17, 2010 at 03:06:44PM +0300, Felipe Contreras wrote:
-> On Fri, Oct 15, 2010 at 11:14 PM, Russell King - ARM Linux
-> <linux@arm.linux.org.uk> wrote:
-> > On Fri, Oct 15, 2010 at 11:00:40PM +0300, Felipe Contreras wrote:
-> >> On Fri, Oct 15, 2010 at 10:42 PM, Russell King - ARM Linux
-> >> <linux@arm.linux.org.uk> wrote:
-> >> > As soon as the first ARM merge hits during the merge window, I'll be
-> >> > restoring the 'always fail' behaviour.
-> >>
-> >> Ok, are you going to merge also your patch to use memblock for the
-> >> initialization? Many drivers could certainly use that to fix the
-> >> issue.
-> >
-> > There's a lot of work going on with memblock in x86-land which impacts
-> > ARM and means major conflicts for that patch - I think first we'll have
-> > to deal with the fallout from that (iow, finding out what's been broken
-> > by this activity and fix that), and then I'll have to re-do my patch from
-> > the beginning.
-> >
-> > Technically, following the rules, that means it has to miss this merge
-> > window - so it looks like it's going to take another six months to solve
-> > this issue (three months to get the memblock patch in, and another three
-> > months for driver fixes to find their way through.)
-> 
-> I don't think that's a good idea. Drivers would not have a way to get
-> fixed, even for .37.
-> 
-> Are these x86 changes in some branch?
 
-Yes but I've no idea where they are, and neither do I know exactly what
-they are - they've never been copied to me or the ARM lists.  I'll just
-wait for them to appear via Linus' tree in this merge window, and as I
-said above, then fix the resulting breakage from them.
+> From: linux-arm-kernel-bounces@lists.infradead.org [mailto:linux-arm-
+> kernel-bounces@lists.infradead.org] On Behalf Of Benjamin
+> Herrenschmidt
+
+> > If you want the old way back, apply pressure to silicon vendors and
+> > ARM Ltd to change the architecture to lift this restriction - which
+> > will probably mean doing away with aggressive speculative
+> prefetching
+> > so that it's possible to predict what will be in the cache at any
+> > point in time.
+>
+> Note that we have the exact same problem on powerpc. The only sane
+> solution is that SoCs designed around such cores or versions of the
+> architecture should be fully DMA coherent to avoid the need for funky
+> mapping attributes. Anything else is garbage HW, but sadly, it looks
+> like way too many idiots still find jobs as HW designers.
+
+ARM has always been a rawer (and cheaper) environment than many other CPU architectures. Until maybe this year coherency was never even an option provided in the hardware. The vast majority of the systems currently in mass production in 2010 and before don't have coherency.  The software has to handle all the details.
+
+Starting today and onwards coherency options will start to be seen in high end. It seems likely some of the old external IP won't be compliant and likely have bugs undercutting it.
+
+People from high ends like x86 and PPC have different expectations and problems. Your chip set nightmares are our standard in some areas. In my narrow experience PPC pioneered many techniques 15 years back which are now just coming into ARM. They are coming in at a much reduced power and cost footprint.
+
+Regards,
+Richard W.
+
