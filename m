@@ -1,47 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932443Ab0JQKnA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Oct 2010 06:43:00 -0400
-Received: from canuck.infradead.org ([134.117.69.58]:33106 "EHLO
-	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932281Ab0JQKm7 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Oct 2010 06:42:59 -0400
-Subject: Re: [tip:perf/core] x86, NMI: Rewrite NMI handler
-From: Peter Zijlstra <peterz@infradead.org>
-To: Don Zickus <dzickus@redhat.com>
-Cc: mingo@redhat.com, hpa@zytor.com, ying.huang@intel.com,
-        linux-kernel@vger.kernel.org, tglx@linutronix.de, mingo@elte.hu,
-        linux-tip-commits@vger.kernel.org
-In-Reply-To: <20101017004641.GB4140@redhat.com>
-References: <1287195738-3136-4-git-send-email-dzickus@redhat.com>
-	 <tip-e21f3e4957f4a55f546873605a5caa59556bb144@git.kernel.org>
-	 <1287250157.1998.124.camel@laptop>  <20101017004641.GB4140@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Sun, 17 Oct 2010 12:42:43 +0200
-Message-ID: <1287312163.1998.158.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	id S932458Ab0JQKoU (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Oct 2010 06:44:20 -0400
+Received: from www.tglx.de ([62.245.132.106]:35336 "EHLO www.tglx.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932281Ab0JQKoT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 17 Oct 2010 06:44:19 -0400
+Date: Sun, 17 Oct 2010 12:44:07 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+cc: Arthur Kepner <akepner@sgi.com>, LKML <linux-kernel@vger.kernel.org>,
+        x86@kernel.org, Jesse Barnes <jbarnes@virtuousgeek.org>
+Subject: Re: [RFC/PATCHv2] x86/irq: round-robin distribution of irqs to cpus
+ w/in node
+In-Reply-To: <m1eicennfu.fsf@fess.ebiederm.org>
+Message-ID: <alpine.LFD.2.00.1010171201410.2496@localhost6.localdomain6>
+References: <20100927203448.GC30050@sgi.com> <alpine.LFD.2.00.1009272236430.2416@localhost6.localdomain6> <20100927220113.GD30050@sgi.com> <alpine.LFD.2.00.1009280003300.2416@localhost6.localdomain6> <m1hbhalo1o.fsf@fess.ebiederm.org>
+ <alpine.LFD.2.00.1009280957150.2416@localhost6.localdomain6> <m1eicennfu.fsf@fess.ebiederm.org>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2010-10-16 at 20:46 -0400, Don Zickus wrote:
+Eric,
 
-> Hmm, well to his defense, he isn't adding DIE_NMI_IPI.  That code is
-> already there.  He is just re-arranging it, making it look painfully
-> obvious the die_chain probably isn't as efficient as it should be.
+On Tue, 28 Sep 2010, Eric W. Biederman wrote:
+> Thomas Gleixner <tglx@linutronix.de> writes:
+> >> My gut feel says that the real answer is to delay assigning a vector
+> >> to an irq until request_irq().  At which point we will know that someone
+> >> at least wants to use the irq.
+
+Looked a bit deeper into the users. Quite a bunch do
+
+       pci_enable_msix();
+       request_irqs();
+
+in their probe function. There is no sign of making them per cpu or
+node. mlx4 is one of them. No sign of anything related to nodes or cpus in
+the whole driver.
+
+Even if the driver does not request the irqs from the probe function,
+why does it need to do the msi/msix setup in the probe function at
+all?
+
+Wouldn't it be sufficient to do that at open() right before the
+interrupts are requested.
+
+> > Right. So the solution would be:
+> >
+> > create_irq allocates an irq number + irq descriptor, nothing else
+> >
+> > chip->startup() will setup the vector and chip->shutdown releases
+> > it. That requires to change the return value of chip->startup to int,
+> > so we can return an error code, but that can be done in course of the
+> > overhaul I'm working on. 
+> >
+> > Right now I prefer not to add more crap to io_apic.c, it's horrible
+> > enough already. I'll fix that with the cleanup.
 > 
-> I think a bunch of us agree that we need to revamp the NMI notifier to
-> make it less wasteful.  I was hoping we could do that in a separate patch
-> that would be layered on top of Huangs.
-> 
-> Would you object to at least consider having this patch series in a
-> work-in-progress git branch that we can build on top of, with the final
-> outcome containing an nmi notifier that meets your expectations?
+> Understood.  It has taken a couple of years before this bug finally
+> bit anyone waiting a release or two to get it fixed properly seems
+> reasonable.
 
-What's the point of keeping it in a git tree? Its just a few patches.
+That needs some real work on drivers :)
 
-We've spend more time talking about this than it would take to actually
-do the patch that kills DIE_NMI_IPI.
+> pci_enable_msix all in it's own way is fixable, but it has
+> few enough callers < 80 that it is also fixable.
+
+The fundamental flaw of arch_setup_msi_irqs() is 
+
+  node = dev_to_node(&dev->dev);
+
+That's the only node information we get. So we put everything on a
+single node.
+
+What we really need is a node entry in struct msi_desc, which gets
+assigned from struct msix_entry in msix_setup_entries().
+
+Thoughts ?
+
+	 tglx
