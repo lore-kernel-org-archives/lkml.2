@@ -1,117 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932485Ab0JQSF7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Oct 2010 14:05:59 -0400
-Received: from [69.28.251.93] ([69.28.251.93]:56187 "EHLO b32.net"
-	rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S932456Ab0JQSF6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Oct 2010 14:05:58 -0400
-From: Kevin Cernekee <cernekee@gmail.com>
-To: Ralf Baechle <ralf@linux-mips.org>
-Cc: <ffainelli@freebox.fr>, <linux-mips@linux-mips.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: [PATCH v2 2/9] MIPS: Add BMIPS processor types to Kconfig
-Date: Sun, 17 Oct 2010 10:56:53 -0700
-Message-Id: <584a8c475b66c7ccdd112fb6afda8491@localhost>
-User-Agent: vim 7.2
+	id S932463Ab0JQSHB (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Oct 2010 14:07:01 -0400
+Received: from mx1.fusionio.com ([64.244.102.30]:40261 "EHLO mx1.fusionio.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932255Ab0JQSHA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 17 Oct 2010 14:07:00 -0400
+X-ASG-Debug-ID: 1287338818-6959414b0001-xx1T2L
+X-Barracuda-Envelope-From: JAxboe@fusionio.com
+Message-ID: <4CBB3B3D.5050800@fusionio.com>
+Date: Sun, 17 Oct 2010 20:06:53 +0200
+From: Jens Axboe <jaxboe@fusionio.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+CC: Dan Carpenter <error27@gmail.com>,
+        "kernel-janitors@vger.kernel.org" <kernel-janitors@vger.kernel.org>,
+        Linux Kernel Development <linux-kernel@vger.kernel.org>,
+        "cbe-oss-dev@lists.ozlabs.org" <cbe-oss-dev@lists.ozlabs.org>
+Subject: Re: [PATCH] block: Turn bvec_k{un,}map_irq() into static inline 
+ functions
+References: <alpine.DEB.2.00.1010171335400.919@ayla.of.borg>
+X-ASG-Orig-Subj: Re: [PATCH] block: Turn bvec_k{un,}map_irq() into static inline 
+ functions
+In-Reply-To: <alpine.DEB.2.00.1010171335400.919@ayla.of.borg>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
+X-Barracuda-Start-Time: 1287338818
+X-Barracuda-URL: http://10.101.1.180:8000/cgi-mod/mark.cgi
+X-Barracuda-Bayes: INNOCENT GLOBAL 0.4877 1.0000 0.0000
+X-Barracuda-Spam-Score: 0.00
+X-Barracuda-Spam-Status: No, SCORE=0.00 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.43966
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[v2: add "VIPER" marketing name for BMIPS4350]
+On 2010-10-17 13:38, Geert Uytterhoeven wrote:
+> Convert bvec_k{un,}map_irq() from macros to static inline functions if
+> !CONFIG_HIGHMEM, so we can easier detect mistakes like the one fixed in
+> 93055c31045a2d5599ec613a0c6cdcefc481a460 ("ps3disk: passing wrong variable to
+> bvec_kunmap_irq()")
 
-Add processor feature definitions for BMIPS3300, BMIPS4350, BMIPS4380,
-and BMIPS5000.
+Does this cause any warnings on the existing kernel? It's the same issue
+we have with the kunmap_atomic() API, and they are generally used to map
+structures etc as well. So char * isn't necessarily always a good
+choice, and hence the "fix" there is to just check whether a page struct
+is being passed in or not.
 
-Signed-off-by: Kevin Cernekee <cernekee@gmail.com>
----
- arch/mips/Kconfig |   63 +++++++++++++++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 63 insertions(+), 0 deletions(-)
+OK, so did a quick grep, and there's just the two users of it. So pretty
+straight forward, I'll add your patch. Thanks!
 
-diff --git a/arch/mips/Kconfig b/arch/mips/Kconfig
-index 5526faa..f161e9f 100644
---- a/arch/mips/Kconfig
-+++ b/arch/mips/Kconfig
-@@ -1332,6 +1332,57 @@ config CPU_CAVIUM_OCTEON
- 	  can have up to 16 Mips64v2 cores and 8 integrated gigabit ethernets.
- 	  Full details can be found at http://www.caviumnetworks.com.
- 
-+config CPU_BMIPS3300
-+	bool "BMIPS3300"
-+	depends on SYS_HAS_CPU_BMIPS3300
-+	select DMA_NONCOHERENT
-+	select IRQ_CPU
-+	select SWAP_IO_SPACE
-+	select SYS_SUPPORTS_32BIT_KERNEL
-+	select WEAK_ORDERING
-+	help
-+	  Broadcom BMIPS3300 processors.
-+
-+config CPU_BMIPS4350
-+	bool "BMIPS4350"
-+	depends on SYS_HAS_CPU_BMIPS4350
-+	select CPU_SUPPORTS_32BIT_KERNEL
-+	select DMA_NONCOHERENT
-+	select IRQ_CPU
-+	select SWAP_IO_SPACE
-+	select SYS_SUPPORTS_SMP
-+	select SYS_SUPPORTS_HOTPLUG_CPU
-+	select WEAK_ORDERING
-+	help
-+	  Broadcom BMIPS4350 ("VIPER") processors.
-+
-+config CPU_BMIPS4380
-+	bool "BMIPS4380"
-+	depends on SYS_HAS_CPU_BMIPS4380
-+	select CPU_SUPPORTS_32BIT_KERNEL
-+	select DMA_NONCOHERENT
-+	select IRQ_CPU
-+	select SWAP_IO_SPACE
-+	select SYS_SUPPORTS_SMP
-+	select SYS_SUPPORTS_HOTPLUG_CPU
-+	select WEAK_ORDERING
-+	help
-+	  Broadcom BMIPS4380 processors.
-+
-+config CPU_BMIPS5000
-+	bool "BMIPS5000"
-+	depends on SYS_HAS_CPU_BMIPS5000
-+	select CPU_SUPPORTS_32BIT_KERNEL
-+	select CPU_SUPPORTS_HIGHMEM
-+	select DMA_NONCOHERENT
-+	select IRQ_CPU
-+	select SWAP_IO_SPACE
-+	select SYS_SUPPORTS_SMP
-+	select SYS_SUPPORTS_HOTPLUG_CPU
-+	select WEAK_ORDERING
-+	help
-+	  Broadcom BMIPS5000 processors.
-+
- endchoice
- 
- if CPU_LOONGSON2F
-@@ -1450,6 +1501,18 @@ config SYS_HAS_CPU_SB1
- config SYS_HAS_CPU_CAVIUM_OCTEON
- 	bool
- 
-+config SYS_HAS_CPU_BMIPS3300
-+	bool
-+
-+config SYS_HAS_CPU_BMIPS4350
-+	bool
-+
-+config SYS_HAS_CPU_BMIPS4380
-+	bool
-+
-+config SYS_HAS_CPU_BMIPS5000
-+	bool
-+
- #
- # CPU may reorder R->R, R->W, W->R, W->W
- # Reordering beyond LL and SC is handled in WEAK_REORDERING_BEYOND_LLSC
 -- 
-1.7.0.4
+Jens Axboe
 
