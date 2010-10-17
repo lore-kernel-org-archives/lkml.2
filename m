@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932695Ab0JQTzZ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Oct 2010 15:55:25 -0400
-Received: from mgw2.diku.dk ([130.225.96.92]:47806 "EHLO mgw2.diku.dk"
+	id S932712Ab0JQT4S (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Oct 2010 15:56:18 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:47833 "EHLO mgw2.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932613Ab0JQTzY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Oct 2010 15:55:24 -0400
-Date: Sun, 17 Oct 2010 21:55:21 +0200 (CEST)
+	id S932613Ab0JQT4R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 17 Oct 2010 15:56:17 -0400
+Date: Sun, 17 Oct 2010 21:56:15 +0200 (CEST)
 From: Julia Lawall <julia@diku.dk>
 To: Joe Perches <joe@perches.com>
-Cc: Sage Weil <sage@newdream.net>, kernel-janitors@vger.kernel.org,
-        ceph-devel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 2/3] fs/ceph/xattr.c: Use kmemdup
-In-Reply-To: <1287341657.20968.61.camel@Joe-Laptop>
-Message-ID: <Pine.LNX.4.64.1010172154400.394@ask.diku.dk>
+Cc: David Woodhouse <dwmw2@infradead.org>, linux-mtd@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 3/3] fs/jffs2/dir.c: Use kmemdup
+In-Reply-To: <1287341849.20968.62.camel@Joe-Laptop>
+Message-ID: <Pine.LNX.4.64.1010172155240.394@ask.diku.dk>
 References: <1287341311-11161-1-git-send-email-julia@diku.dk> 
- <1287341311-11161-3-git-send-email-julia@diku.dk> <1287341657.20968.61.camel@Joe-Laptop>
+ <1287341311-11161-4-git-send-email-julia@diku.dk> <1287341849.20968.62.camel@Joe-Laptop>
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
@@ -46,21 +46,26 @@ statement S;
 Signed-off-by: Julia Lawall <julia@diku.dk>
 
 ---
- fs/ceph/xattr.c |    3 +--
+ fs/jffs2/dir.c |    3 +--
  1 file changed, 1 insertion(+), 2 deletions(-)
 
-diff -u -p a/fs/ceph/xattr.c b/fs/ceph/xattr.c
---- a/fs/ceph/xattr.c
-+++ b/fs/ceph/xattr.c
-@@ -716,10 +716,9 @@ int ceph_setxattr(struct dentry *dentry,
+diff -u -p a/fs/jffs2/dir.c b/fs/jffs2/dir.c
+--- a/fs/jffs2/dir.c
++++ b/fs/jffs2/dir.c
+@@ -367,7 +367,7 @@ static int jffs2_symlink (struct inode *
+ 	}
  
- 	/* preallocate memory for xattr name, value, index node */
- 	err = -ENOMEM;
--	newname = kmalloc(name_len + 1, GFP_NOFS);
-+	newname = kmemdup(name, name_len + 1, GFP_NOFS);
- 	if (!newname)
- 		goto out;
--	memcpy(newname, name, name_len + 1);
+ 	/* We use f->target field to store the target path. */
+-	f->target = kmalloc(targetlen + 1, GFP_KERNEL);
++	f->target = kmemdup(target, targetlen + 1, GFP_KERNEL);
+ 	if (!f->target) {
+ 		printk(KERN_WARNING "Can't allocate %d bytes of memory\n", targetlen + 1);
+ 		mutex_unlock(&f->sem);
+@@ -376,7 +376,6 @@ static int jffs2_symlink (struct inode *
+ 		goto fail;
+ 	}
  
- 	if (val_len) {
- 		newval = kmalloc(val_len + 1, GFP_NOFS);
+-	memcpy(f->target, target, targetlen + 1);
+ 	D1(printk(KERN_DEBUG "jffs2_symlink: symlink's target '%s' cached\n", (char *)f->target));
+ 
+ 	/* No data here. Only a metadata node, which will be
