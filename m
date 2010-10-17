@@ -1,56 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751635Ab0JQWgv (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Oct 2010 18:36:51 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:55013 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751335Ab0JQWgu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Oct 2010 18:36:50 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: "Justin P. Mattock" <justinmattock@gmail.com>
-Subject: Re: [Bug #19392] WARNING: at drivers/net/wireless/ath/ath5k/base.c:3475 ath5k_bss_info_changed+0x44/0x168 [ath5k]()
-Date: Mon, 18 Oct 2010 00:35:35 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.36-rc8-rjw+; KDE/4.4.4; x86_64; ; )
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Kernel Testers List <kernel-testers@vger.kernel.org>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>,
-        Florian Mickler <florian@mickler.org>,
-        Dominik Brodowski <linux@dominikbrodowski.net>,
-        Johannes Berg <johannes@sipsolutions.net>
-References: <TP5BfCZNRXD.A._8.uj1uMB@chimera> <7N-qxsaxKCN.A.YpC.ok1uMB@chimera> <4CBB6E29.9090808@gmail.com>
-In-Reply-To: <4CBB6E29.9090808@gmail.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
+	id S1751262Ab0JQWzI (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Oct 2010 18:55:08 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:55212 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750921Ab0JQWzG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 17 Oct 2010 18:55:06 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=WAzHGNwieHD1ZeeZJ21+lL3tCpppQMOmITTf047ek02QsiBbWKqKqHT3X7Pc5T4WI5
+         mPCkpMGIiUSKaeUTXpUijJuijqjKC4JwVO/GkYX4eLF+Tw7pjb/8TG36jMQCW1yPYgR0
+         kiLaPyQRpA/ZMUn0rU4iIAfvYYLEq8Chhlg1g=
+Subject: Re: [PATCH 0/6] Results of my work on memorystick subsystem
+From: Maxim Levitsky <maximlevitsky@gmail.com>
+To: Alex Dubov <oakad@yahoo.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <1287270774-18796-1-git-send-email-maximlevitsky@gmail.com>
+References: <1287270774-18796-1-git-send-email-maximlevitsky@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 18 Oct 2010 00:55:01 +0200
+Message-ID: <1287356101.25869.1.camel@maxim-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
-Message-Id: <201010180035.36080.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday, October 17, 2010, Justin P. Mattock wrote:
-> On 10/17/2010 01:21 PM, Rafael J. Wysocki wrote:
-> > This message has been generated automatically as a part of a summary report
-> > of recent regressions.
-> >
-> > The following bug entry is on the current list of known regressions
-> > from 2.6.35.  Please verify if it still should be listed and let the tracking team
-> > know (either way).
-> >
-> >
-> > Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=19392
-> > Subject		: WARNING: at drivers/net/wireless/ath/ath5k/base.c:3475 ath5k_bss_info_changed+0x44/0x168 [ath5k]()
-> > Submitter	: Justin Mattock<justinmattock@gmail.com>
-> > Date		: 2010-09-28 22:30 (20 days old)
-> > Message-ID	:<AANLkTim5WCGKPvEkOkO_YnMF9pg8mvLfQoFBNUFpfa_k@mail.gmail.com>
-> > References	: http://marc.info/?l=linux-kernel&m=128571307018635&w=2
-> >
-> >
-> >
+On Sun, 2010-10-17 at 01:12 +0200, Maxim Levitsky wrote:
+> Hi,
+> 
+> Here is a result of lot of work I did improving the memorystick
+> subsystem and its drivers.
+Comments?
+Flames?
+Suggestions?
+
+Best regards,
+	Maxim Levitsky
+
+> 
+> patch #1 add common code to memorystick core that makes card drivers easier
+> to understand
+> 
+> patch #2 just add a driver for my card reader
+> 
+> patch #3 reworks the Jmicron driver.
+> I can write a novel about the problems I had to go through with this device
+> (mostly hardware bugs I belive).
+> So I refactored the driver and added a lot of debug output future users.
+> Currently both MS and MSPro work fine.
+> 
+> patch #4 adds support for lagacy memorysticks.
+> Everything just works, not a single corruption this far.
+> 
+> patch #5, is what I did recently.
+> I rewrote large chunks on mspro_blk.c to use the common code I added in patch #1.
+> I also added lot of debug code, comments.
+> 
+> patch #6 adds more cleanups.
+> 
+> Now register window changes are completely hidden and automatic.
+> Functions that state machines call are explictly marked as so,
+> and that assumption is tested.
+> the card->current_mrq isn't passed as a pointer to functions
+> as this just complicates the code.
+> 
+> Code is tested with 2 mspro cards and one MS card.
+> 
+> Thanks again to Alex for his work.
+> 
+> ***Changes from V1 ***
+> 
+> * Fixed brown paper bug in memstick core.
+> memset had its 2 and 3 arguments swapped.
+> 
+> * Cleaned a lot the PIO code in my r592 driver.
+> Now it finally looks sane.
+> Also tested it throughfully.
+> 
+> * Endiannes fixes in Jmicron driver and r592
+> 
+> Best regards,
+> 	Maxim Levitsky
+> 
+> ***Appendix***
+> 
+> Jmicron hardware bugs (the novel):
+> 
+> #1: FIFO write ready bit in INT status register is stuck to 1.
+>    It is stuck forever as soon as fifo
+>    is used for writing even once.
+>    Therefore if interrupt is shared (and here it is), its easy
+>    to 'service' the device while it doesn't need any service
 > 
 > 
-> yeah it's still here...(I can try and play with this, but who knows..)
+> #2: Its not possible to stuff the FIFO before TPC transfer.
+>    One really have to wait for write ready interrupt, even though the write ready status is stuck.
+> 
+> 
+> #3: TPCs with non 4 aligned length woes:
+>    Facts:
+> 
+>    * non 4 aligned DMA write hangs the system hard, maybe on bus level.
+> 
+>    * PIO read succedes but controller truncates the data stored in the FIFO to closest 4 byte boundary.
+>    That is if you read 26 bytes, it will save 24 bytes in the FIFO
+> 
+>    * PIO non-aligned write work, expect that they sometimes hose the DMA.... (regardless of the alignment)
+> 
+>    * TPC_P0, TPC_P1 not aligned transfters work just fine despite a statement in the datasheet
+>    that they are undefined.... (only mention of this problem)
+> 
+> 
+> #4: As soon as write PIO is used, then later write DMA fails.
+>    Facts:
+> 
+>    * This is triggered only by PIO write of registers
+>    (only happens in ms_block.c when it writes param + oob. Thats why mspro_blk isn't affected)
+>    Doing short DMA writes is a nice workaround.
+> 
+>    * Doing PIO writes in h_msb_read_page don't cause the problem.
+>      Therefore the bug causing sequence should be similiar to h_msb_write_block:
+> 
+>        1. PIO write of param + extra (10 bytes) or even padded to 12 or 16 bytes
+>        2. inline write (TPC_P0) of MS_CMD_BLOCK_WRITE + wait for int
+>        3. read of INT register via STATUS
+>        3. DMA write of MS_TPC_WRITE_LONG_DATA
+>        4. DMA write of MS_TPC_WRITE_LONG_DATA
+>            ---------timeout-----------
+>  
+>    * In fact first DMA write succedes, but next one fails, and so do all following writes
+> 
+>    * The problem persits till reboot, and shows up even if PIO isn't used again.
+>    Other way to "fix" it, is to put device in D3 and back to D0
+> 
+>    * Serial/parallel mode don't affect anything.
+> 
+>    After bug reproduction:
+> 
+>     * DMA writes stop working completely, therefore mspro_blk looses writes as well
+> 
+>     * PIO still works just fine. Its possible just to load the driver without dma support, and it works correctly.
+> 
+>     * DMA reads work just fine.
+> 
+> #5: Auto_Get_INT feature just doesn't work.
+>    Datasheet says that intreg is placed to TPC_P0, but that doesn't happen....
+>    card status register is 0.
+> 
 
-Thanks for the update.
 
-Rafael
