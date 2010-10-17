@@ -1,56 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757237Ab0JQOl0 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Oct 2010 10:41:26 -0400
+	id S1757343Ab0JQOlh (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Oct 2010 10:41:37 -0400
 Received: from mail-ew0-f46.google.com ([209.85.215.46]:61194 "EHLO
 	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757120Ab0JQOlW (ORCPT
+	with ESMTP id S1757262Ab0JQOla (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Oct 2010 10:41:22 -0400
+	Sun, 17 Oct 2010 10:41:30 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer;
-        b=Qnb1Jl8vXwvoOvWOeUliLwyR8HyBadfUWcATHRgFHTi+OX479zl3LhlVyXgyO3eIuC
-         COMustObz3jIU8pJ8XqKjknVdzVfuDOp3d4rnqDHF3L3DuxI46lDibbSa+FV1rT2GhBu
-         SJf/esjnfItK0PCTPjt1lKbssE4/z/sPegFOY=
+        b=ZWnct0Jad/hK7X6h8Inz8r7ofgMYRf7hjmT+akg+9b8pKizyXYEJ2aSMYoZlYQ0eSL
+         0Ewitg3lZVolR8Ns0zNCVa1MWqzav3dMZOfsxcmf9mFPJFaQFPFLFQg9mzud51VWgtth
+         OttFPRCsQMaC9Zg4C7vrBEPflqs4oQxeesBX0=
 From: Vasiliy Kulikov <segooon@gmail.com>
 To: kernel-janitors@vger.kernel.org
-Cc: Clemens Ladisch <clemens@ladisch.de>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Tejun Heo <tj@kernel.org>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 2/8] char: hpet: fix information leak to userland
-Date: Sun, 17 Oct 2010 18:41:16 +0400
-Message-Id: <1287326477-7940-1-git-send-email-segooon@gmail.com>
+Cc: Dominik Brodowski <linux@dominikbrodowski.net>,
+        "Gustavo F. Padovan" <padovan@profusion.mobi>,
+        Marcel Holtmann <marcel@holtmann.org>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        "David S. Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org
+Subject: [PATCH 4/8] char: pcmcia: synclink_cs: fix information leak to userland
+Date: Sun, 17 Oct 2010 18:41:24 +0400
+Message-Id: <1287326485-8028-1-git-send-email-segooon@gmail.com>
 X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Structure info is copied to userland with some padding fields unitialized.
+Structure new_line is copied to userland with some padding fields unitialized.
 It leads to leaking of stack memory.
 
 Signed-off-by: Vasiliy Kulikov <segooon@gmail.com>
 ---
  Compile tested.
 
- drivers/char/hpet.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+ drivers/char/pcmcia/synclink_cs.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/char/hpet.c b/drivers/char/hpet.c
-index a4eee32..f6722ef 100644
---- a/drivers/char/hpet.c
-+++ b/drivers/char/hpet.c
-@@ -581,6 +581,7 @@ hpet_ioctl_common(struct hpet_dev *devp, int cmd, unsigned long arg,
- 		break;
- 	case HPET_INFO:
- 		{
-+			memset(info, 0, sizeof(*info));
- 			if (devp->hd_ireqfreq)
- 				info->hi_ireqfreq =
- 					hpet_time_div(hpetp, devp->hd_ireqfreq);
+diff --git a/drivers/char/pcmcia/synclink_cs.c b/drivers/char/pcmcia/synclink_cs.c
+index db9efbe..bfc10f8 100644
+--- a/drivers/char/pcmcia/synclink_cs.c
++++ b/drivers/char/pcmcia/synclink_cs.c
+@@ -4091,6 +4091,8 @@ static int hdlcdev_ioctl(struct net_device *dev, struct ifreq *ifr, int cmd)
+ 	if (cmd != SIOCWANDEV)
+ 		return hdlc_ioctl(dev, ifr, cmd);
+ 
++	memset(&new_line, 0, size);
++
+ 	switch(ifr->ifr_settings.type) {
+ 	case IF_GET_IFACE: /* return current sync_serial_settings */
+ 
 -- 
 1.7.0.4
 
