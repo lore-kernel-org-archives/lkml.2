@@ -1,54 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756908Ab0JQAD7 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Oct 2010 20:03:59 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:41873 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756871Ab0JQAD6 (ORCPT
+	id S1756968Ab0JQAf6 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Oct 2010 20:35:58 -0400
+Received: from bld-mail15.adl6.internode.on.net ([150.101.137.100]:39517 "EHLO
+	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1756937Ab0JQAf5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Oct 2010 20:03:58 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:content-type;
-        b=To02/md5wDZj6y4SG3iBID3+x2zD8Jkfs7Gt24PjDe+HBTT/mH7Tb7GcAoovIqWVYy
-         AtY2XmlRWyRTMiR6jXBeK/uLR4UYH36oSDSC+tWsTqXmoRHMqt5BnQLS2Mog7CflVbzA
-         W+XmGGJuU0u7/9bkkq0WYYoWcL7Nr11s6KTPg=
+	Sat, 16 Oct 2010 20:35:57 -0400
+Date: Sun, 17 Oct 2010 11:35:26 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
+        Mimi Zohar <zohar@us.ibm.com>, warthog9@kernel.org,
+        devel@lists.fedoraprojet.org
+Subject: Re: ima: use of radix tree cache indexing == massive waste of
+ memory?
+Message-ID: <20101017003526.GA29677@dastard>
+References: <20101016065206.GO4681@dastard>
+ <20101016192027.GA6883@infradead.org>
+ <ebc4973c-6c11-4397-b8b0-c212a27abce4@email.android.com>
 MIME-Version: 1.0
-Date: Sat, 16 Oct 2010 18:08:55 -0500
-Message-ID: <AANLkTikBeA2PRoPc7_eLRXCd0cf4u1SV-B_ePYoB_Kt1@mail.gmail.com>
-Subject: repeated drive messages why?
-From: Caleb Cushing <xenoterracide@gmail.com>
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <ebc4973c-6c11-4397-b8b0-c212a27abce4@email.android.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ever since I switched to new hard drives and mdraid I get this in my
-logs sever times a day and I don't know why. Is it a problem? (not on
-list, please cc me)
+On Sat, Oct 16, 2010 at 02:10:29PM -0700, H. Peter Anvin wrote:
+> "Christoph Hellwig" <hch@infradead.org> wrote:
+> >Besides the algorithmic problems with ima, why is kernel.org using
+> >IMA to start with?  Except for IBM looking for a reason to jusity why
+> >TPM isn't a completely waster of ressources it's pointless.  And it was
+> >only merged under the premise that it would not affect innocent normal
+> >users.
+>
+> I'm confused ... what makes you think we are?  This might have
+> been an unintentional misconfiguration...
 
-EXT4-fs (md1): re-mounted. Opts: commit=0
-EXT4-fs (md2): re-mounted. Opts: commit=0
-EXT4-fs (md3): re-mounted. Opts: commit=0
-ata1.00: configured for UDMA/133
-ata1: EH complete
-EXT4-fs (md1): re-mounted. Opts: commit=0
-EXT4-fs (md2): re-mounted. Opts: commit=0
-EXT4-fs (md3): re-mounted. Opts: commit=0
-ata1.00: configured for UDMA/133
-ata1: EH complete
-EXT4-fs (md1): re-mounted. Opts: commit=0
-EXT4-fs (md2): re-mounted. Opts: commit=0
-EXT4-fs (md3): re-mounted. Opts: commit=0
-ata1.00: configured for UDMA/133
-ata1: EH complete
-EXT4-fs (md1): re-mounted. Opts: commit=0
-EXT4-fs (md2): re-mounted. Opts: commit=0
-EXT4-fs (md3): re-mounted. Opts: commit=0
+It's enabled in the kernel that is running:
 
+$ grep CONFIG_IMA /boot/config-2.6.34.7-56.fc11.x86_64
+CONFIG_IMA=y
+CONFIG_IMA_MEASURE_PCR_IDX=10
+CONFIG_IMA_AUDIT=y
+CONFIG_IMA_LSM_RULES=y
+$
 
+and it's using lots of memory, so if you're not actually using it I
+think it should be disabled.
+
+If this is a stock fedora config, then they've got some work to
+do....
+
+Cheers,
+
+Dave.
 -- 
-Caleb Cushing
-
-http://xenoterracide.com
+Dave Chinner
+david@fromorbit.com
