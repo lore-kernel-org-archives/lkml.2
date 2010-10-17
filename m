@@ -1,120 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757255Ab0JQCUQ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Oct 2010 22:20:16 -0400
-Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:37419 "EHLO
+	id S1757263Ab0JQCZm (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Oct 2010 22:25:42 -0400
+Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:34745 "EHLO
 	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757211Ab0JQCUO (ORCPT
+	by vger.kernel.org with ESMTP id S1757211Ab0JQCZl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Oct 2010 22:20:14 -0400
+	Sat, 16 Oct 2010 22:25:41 -0400
 X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: ApYEAAL5uUx5LcB2gWdsb2JhbAChKRYBARYiIsILhUkEhQw
-Date: Sun, 17 Oct 2010 13:20:09 +1100
+X-IronPort-Anti-Spam-Result: ApYEAAL5uUx5LcB2gWdsb2JhbAChKRYBARYiIsILgneCUgQ
+Date: Sun, 17 Oct 2010 13:25:39 +1100
 From: Nick Piggin <npiggin@kernel.dk>
 To: Dave Chinner <david@fromorbit.com>
 Cc: Nick Piggin <npiggin@kernel.dk>, Christoph Hellwig <hch@infradead.org>,
         linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 13/18] fs: split locking of inode writeback and LRU
-  lists
-Message-ID: <20101017022009.GD3162@amd>
+Subject: Re: [PATCH 11/18] fs: Introduce per-bucket inode hash locks
+Message-ID: <20101017022539.GA3317@amd>
 References: <1286515292-15882-1-git-send-email-david@fromorbit.com>
- <1286515292-15882-14-git-send-email-david@fromorbit.com>
- <20101008074243.GB24089@infradead.org>
- <20101008080018.GV4681@dastard>
- <20101008081816.GA17577@infradead.org>
- <20101016075713.GQ19147@amd>
- <20101016162021.GE16861@infradead.org>
- <20101016171948.GD3240@amd>
- <20101017010023.GC29677@dastard>
+ <1286515292-15882-12-git-send-email-david@fromorbit.com>
+ <20101008185409.GA29251@infradead.org>
+ <20101016075703.GO19147@amd>
+ <20101016161642.GC16861@infradead.org>
+ <20101016171213.GC3240@amd>
+ <20101017004610.GB29677@dastard>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20101017010023.GC29677@dastard>
+In-Reply-To: <20101017004610.GB29677@dastard>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Oct 17, 2010 at 12:00:23PM +1100, Dave Chinner wrote:
-> On Sun, Oct 17, 2010 at 04:19:48AM +1100, Nick Piggin wrote:
-> > On Sat, Oct 16, 2010 at 12:20:21PM -0400, Christoph Hellwig wrote:
-> > > On Sat, Oct 16, 2010 at 06:57:13PM +1100, Nick Piggin wrote:
-> > > > > That needs some documentation both in the changelog and in the code
-> > > > > I think.
+On Sun, Oct 17, 2010 at 11:46:10AM +1100, Dave Chinner wrote:
+> On Sun, Oct 17, 2010 at 04:12:13AM +1100, Nick Piggin wrote:
+> > On Sat, Oct 16, 2010 at 12:16:42PM -0400, Christoph Hellwig wrote:
+> > > On Sat, Oct 16, 2010 at 06:57:03PM +1100, Nick Piggin wrote:
+> > > > > duplicating these helpers in the dcache code aswell.  IMHO they
+> > > > > should simple operate directly on the hlist_bl_head, as that's
+> > > > > what it was designed for.  I also don't really see any point in
+> > > > > wrapping the hlist_bl_head as inode_hash_bucket.  If the bucket naming
+> > > > > is important we could rename the hlist_bl stuff to bl_hash, and the
+> > > > > hlist_bl_head could become bl_hash_bucket.
 > > > > 
-> > > > This is another instance where the irregular i_lock locking is making
-> > > > these little subtleties to the locking. I think that is actually much
-> > > > worse for maintainence/complexity than a few trylocks which can be
-> > > > mostly removed with rcu anyway (which are obvious because of the well
-> > > > documented lock order).
+> > > > It was done because someone, like -rt, might want more than one bit of
+> > > > memory to implement a lock. They would have to make a few other
+> > > > changes, granted, but this helps reduce a lot of churn.
+> > > > 
+> > > > I didn't see the point of a layer of dumb wrappers for hlist_bl_head
+> > > > locking. Just reproducing bit spin and wait locks in wrappers when we
+> > > > already have good functions for them.
 > > > 
-> > > Care to explain why?
+> > > With the changes Dave implemented based on my suggestions we now have
+> > > an abstract locked hash list data type.  It has the normal hash list
+> > > operations plus lock/unlock operations.
 > > 
-> > OK.
-> > 
-> > 
-> > >  The I_FREEING and co checks are how we do things
-> > > all over the icache for a long time.
-> > 
-> > That's missing my point. My point is that the semantics of icache
-> > concurrency here are changed from the old inode_lock model. With
-> > my design, holding i_lock on an inode is equivalent (stronger,
-> > actually) to holding inode_lock which is an important part of
-> > making small correct steps.
+> > That's ugly. It just hides the locking. If a bit of casting bothers
+> > you then put it in a function where it is used like I did.
 > 
-> That doesn't necesarily make it better, Nick.
+> I much prefer the abstraction from an end-user point of view. Asking
+> every developer to understand the intricacies of locking the
+> hlist_bl structures is asking them to get it wrong.
 
-I argue that it does. Today you protect the icache state of an
-inode with inode_lock; in my model you can do it with i_lock.
-
-A single particular inode is most often the thing you are interested in,
-so once you take i_lock on it, you safely know that you can lift
-inode_lock away.
+Asking them to understand that 0 bit is to be used for locking? If
+they don't understand that they shouldn't be doing kernel programming,
+let alone trying to implement advanced scalability with bl lists.
+Really.
 
 
-> The existing of I_FREEING checks in the writeback code is an
-> exception rather than the rule - it was the only list traversal
-> where an inode in the I_FREEING state was unacceptable and it
-> special cased that with an undocumented BUG_ON(inode->i_state &
-> I_FREEING).  i only found this and understood it as a result of
-> tripping over it while testing this patch.
-> 
-> The change I made to allow handling the I_FREEING case in this code
-> in exactly the same way as every other inode list traversal is a
-> significant improvement. it also greatly simplified the i_state
-> locking patches in this area. Any by the end of the series, the
-> behaviour of setting I_FREEING before disposing of the inode is well
-> documented, consistently implemented, and protected by a commented
-> BUG_ON to ensure the rule is always followed in future.
-> 
-> IMO, removing an undocumented special case landmine is a much
-> better solution than continuing to hide it and hoping no-one treads on
-> it....
+> Providing
+> locking wrappers that are exactly what users need so they don't have
+> to care about it is, IMO, the right thing to do.
 
-You blew up said land mine because your locking model did not provide
-the same coverage as the inode_lock that was lifted away.
-
-I'm not saying that particular "landmine" could not go away, I'm saying
-that it was exploded because of the irregular locking that your patches
-introduce. That is what I don't like.
-
-Now I repeat again. There are some possible upsides of reducing i_lock
-coverage (like improving lock ordering). I _never_ said I was totally
-against them. I said I want to wait in the series until the inode_lock
-is lifted, and they can be proposed as individual, bisectable small
-changes rather than being lumped in with lock splitting.
-
-In fact, before I realised that I could make use of RCU-inodes due to
-the rcu-walk work going on, I was experimenting exactly with reducing
-i_lock widths like you have been doing to reduce the ordering
-complexity. You can do it in a few patches of a couple of dozen lines
-each. But I decided the complexity and potential for undetected problems
-from making the locking less regular is just not worth it when you can
-use RCU for mostly the same job.
-
-I would be willing to be proven wrong on that, but I would like to be
-proven wrong with a 40 line patch that does nothing but moves i_lock
-out of a particular data structure manipulation, and then adds in these
-required hunks like the above. That way it is far easier to bisect,
-review, and audit the rest of the code for other exposed landmines.
+Hiding the type of lock, and hiding the fact that it sets the low bit?
+I don't agree. We don't have synchronization in our data structures,
+where possible, because it is just restrictive or goes wrong when people
+don't think enough about the locking.
 
