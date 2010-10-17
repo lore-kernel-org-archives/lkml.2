@@ -1,46 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753260Ab0JQGUI (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Oct 2010 02:20:08 -0400
-Received: from smtp.gentoo.org ([140.211.166.183]:37988 "EHLO smtp.gentoo.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751277Ab0JQGUH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Oct 2010 02:20:07 -0400
-From: Mike Frysinger <vapier@gentoo.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: device-drivers-devel@blackfin.uclinux.org,
-        uclinux-dist-devel@blackfin.uclinux.org, linux-kernel@vger.kernel.org,
-        Michael Hennerich <michael.hennerich@analog.com>
-Subject: [PATCH] ad525x_dpot: default to off
-Date: Sun, 17 Oct 2010 02:22:25 -0400
-Message-Id: <1287296545-21822-1-git-send-email-vapier@gentoo.org>
-X-Mailer: git-send-email 1.7.3.1
+	id S1753644Ab0JQGUz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Oct 2010 02:20:55 -0400
+Received: from mailhub.stratus.com ([134.111.1.17]:45572 "EHLO
+	mailhub4.stratus.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751849Ab0JQGUy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 17 Oct 2010 02:20:54 -0400
+From: Bandan Das <bandan.das@stratus.com>
+To: David Miller <davem@davemloft.net>
+Cc: LKML <linux-kernel@vger.kernel.org>, NetDev <netdev@vger.kernel.org>,
+        joe@perches.com, Eric Dumazet <eric.dumazet@gmail.com>,
+        Bandan Das <bandan.das@stratus.com>
+Subject: [PATCH 0/2] bonding: checkpatch.pl cleanups in bond_3ad.c
+Date: Sun, 17 Oct 2010 02:19:57 -0400
+Message-Id: <1287296399-25142-1-git-send-email-bandan.das@stratus.com>
+X-Mailer: git-send-email 1.7.2.3
+X-OriginalArrivalTime: 17 Oct 2010 06:20:46.0347 (UTC) FILETIME=[6F4BA5B0:01CB6DC3]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Michael Hennerich <michael.hennerich@analog.com>
+Just some cleanups based on errors/warnings reported by checkpatch.pl.
+There are still a ton of lines greater than 80 chars and I tried to fix 
+a few that I came across.
 
-No reason for this to be enabled by default.
+Bandan Das (2):
+  bonding: cleanup : add space around operators
+  bonding: cleanup: remove braces from single block statements
 
-Signed-off-by: Michael Hennerich <michael.hennerich@analog.com>
-Signed-off-by: Mike Frysinger <vapier@gentoo.org>
----
- drivers/misc/Kconfig |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+ drivers/net/bonding/bond_3ad.c |  274 ++++++++++++++++++++--------------------
+ 1 files changed, 139 insertions(+), 135 deletions(-)
 
-diff --git a/drivers/misc/Kconfig b/drivers/misc/Kconfig
-index b743312..7691f89 100644
---- a/drivers/misc/Kconfig
-+++ b/drivers/misc/Kconfig
-@@ -16,6 +16,7 @@ if MISC_DEVICES
- config AD525X_DPOT
- 	tristate "Analog Devices Digital Potentiometers"
- 	depends on (I2C || SPI) && SYSFS
-+	default n
- 	help
- 	  If you say yes here, you get support for the Analog Devices
- 	  AD5258, AD5259, AD5251, AD5252, AD5253, AD5254, AD5255
 -- 
-1.7.3.1
+Bandan
+
 
