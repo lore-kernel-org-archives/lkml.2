@@ -1,60 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757233Ab0JQCET (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Oct 2010 22:04:19 -0400
-Received: from xenotime.net ([72.52.115.56]:39464 "HELO xenotime.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1756602Ab0JQCES (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Oct 2010 22:04:18 -0400
-Date: Sat, 16 Oct 2010 19:04:16 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-To: Stephen Hemminger <shemminger@vyatta.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: Random compiler errors
-Message-Id: <20101016190416.bdbfc69f.rdunlap@xenotime.net>
-In-Reply-To: <20101016174854.4b8eec07@s6510>
-References: <20101016174854.4b8eec07@s6510>
-Organization: YPO4
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1757225Ab0JQCGg (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Oct 2010 22:06:36 -0400
+Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:31195 "EHLO
+	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756602Ab0JQCGf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 16 Oct 2010 22:06:35 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: ApYEAEL1uUx5LcB2gWdsb2JhbAChKRYBARYiIsF4gneCUgQ
+Date: Sun, 17 Oct 2010 13:06:33 +1100
+From: Nick Piggin <npiggin@kernel.dk>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: Nick Piggin <npiggin@kernel.dk>, Dave Chinner <david@fromorbit.com>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 11/18] fs: Introduce per-bucket inode hash locks
+Message-ID: <20101017020633.GB3162@amd>
+References: <1286515292-15882-1-git-send-email-david@fromorbit.com>
+ <1286515292-15882-12-git-send-email-david@fromorbit.com>
+ <20101008185409.GA29251@infradead.org>
+ <20101016075703.GO19147@amd>
+ <20101016161642.GC16861@infradead.org>
+ <20101016171213.GC3240@amd>
+ <20101017004515.GB1614@infradead.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101017004515.GB1614@infradead.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 16 Oct 2010 17:48:54 -0700 Stephen Hemminger wrote:
-
-> Not sure why this is happening, but lately when building kernels
-> I am getting non-reproducible cases of gcc failure. There are no
-> messages in system log. Cosmic rays? Bad memory?
-
-I haven't had these personally, but from reading lkml over the past
-N years, these are usually due to memory or disk/storage problems.
-
-
->   CC      arch/x86/kernel/xsave.o
->   CC      arch/x86/kernel/ptrace.o
-> arch/x86/kernel/ptrace.c:1416: internal compiler error: Bus error
-> Please submit a full bug report,
-> with preprocessed source if appropriate.
-> See <file:///usr/share/doc/gcc-4.4/README.Bugs> for instructions.
-> make[2]: *** [arch/x86/kernel/ptrace.o] Error 1
-> make[1]: *** [arch/x86/kernel] Error 2
-> make: *** [arch/x86] Error 2
+On Sat, Oct 16, 2010 at 08:45:15PM -0400, Christoph Hellwig wrote:
+> On Sun, Oct 17, 2010 at 04:12:13AM +1100, Nick Piggin wrote:
+> > > With the changes Dave implemented based on my suggestions we now have
+> > > an abstract locked hash list data type.  It has the normal hash list
+> > > operations plus lock/unlock operations.
+> > 
+> > That's ugly. It just hides the locking. If a bit of casting bothers
+> > you then put it in a function where it is used like I did.
 > 
-> $ make
->   CHK     include/linux/version.h
->   CHK     include/generated/utsrelease.h
->   CALL    scripts/checksyscalls.sh
->   CHK     include/generated/compile.h
->   CC      arch/x86/kernel/ptrace.o
->   CC      arch/x86/kernel/tls.o
->   CC      arch/x86/kernel/step.o
->   CC      arch/x86/kernel/tboot.o
-> --
+> Exposing the implementation details of which bit of a pointer can
+> be used as lock when cast to an unsigned long to every user of an
+> abstract type is what I would consider ugly, and on similar issues
+> I've certainly not been the only one.
 
+The low bit.
 
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+ 
+> > >  So if e.g. the -rt folks need
+> > > real locks in there there is one single place they need to touch
+> > > instead of every user.  Similarly if we want to add lockdep support
+> > > there is just one place to touch.
+> > 
+> > It's unnecessary.
+> 
+> What, lockdep support?
+
+Yes. It would be stupid to do lockdep support for bit spinlocks in all
+places where they are used. What should be done (and there is work
+towards) is to be able to change the bit spinlock API (or add a new one)
+so that external lockdep data structure can be given.
+
