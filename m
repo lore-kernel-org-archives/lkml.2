@@ -1,61 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932597Ab0JQTRK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Oct 2010 15:17:10 -0400
-Received: from www.tglx.de ([62.245.132.106]:40332 "EHLO www.tglx.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932457Ab0JQTRJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Oct 2010 15:17:09 -0400
-Date: Sun, 17 Oct 2010 21:13:48 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: LKML <linux-kernel@vger.kernel.org>
-cc: Patrizio Bassi <patrizio.bassi@gmail.com>, Len Brown <lenb@kernel.org>,
-        Suresh Siddha <suresh.b.siddha@intel.com>
-Subject: Re: [Bug 20032] New: 2.6.36-rc7 continuos kernel panics due to of
- cpu_idle (and cpu_intel_idle)
-In-Reply-To: <bug-20032-6666@https.bugzilla.kernel.org/>
-Message-ID: <alpine.LFD.2.00.1010172106340.2496@localhost6.localdomain6>
-References: <bug-20032-6666@https.bugzilla.kernel.org/>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S932617Ab0JQTT4 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Oct 2010 15:19:56 -0400
+Received: from xenotime.net ([72.52.115.56]:39259 "HELO xenotime.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S932392Ab0JQTTz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 17 Oct 2010 15:19:55 -0400
+Date: Sun, 17 Oct 2010 12:19:53 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+To: Mike Frysinger <vapier@gentoo.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        device-drivers-devel@blackfin.uclinux.org,
+        uclinux-dist-devel@blackfin.uclinux.org, linux-kernel@vger.kernel.org,
+        Michael Hennerich <michael.hennerich@analog.com>
+Subject: Re: [PATCH] ad525x_dpot: default to off
+Message-Id: <20101017121953.40831b35.rdunlap@xenotime.net>
+In-Reply-To: <1287296545-21822-1-git-send-email-vapier@gentoo.org>
+References: <1287296545-21822-1-git-send-email-vapier@gentoo.org>
+Organization: YPO4
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Back to mail/lkml
+On Sun, 17 Oct 2010 02:22:25 -0400 Mike Frysinger wrote:
 
-On Sun, 10 Oct 2010, bugzilla-daemon@bugzilla.kernel.org wrote:
-
-> Subject    : 2.6.36-rc7 continuos kernel panics due to of cpu_idle (and
-> cpu_intel_idle)
-> Submitter  : Patrizio Bassi <patrizio.bassi@gmail.com>
-> Date       : 2010-10-08 18:23
-> Message-ID : AANLkTi=2irM5tM2rNC5wHVV=Nw4cs_CK59pvXDD+Y5Dz@mail.gmail.com
-> References : http://marc.info/?l=linux-kernel&m=128656222919323&w=2
+> From: Michael Hennerich <michael.hennerich@analog.com>
 > 
-> This entry is being used for tracking a regression from 2.6.35.  Please don't
-> close it until the problem is fixed in the mainline.
->
->> I have strong suspects around CONFIG_CPU_IDLE setting provoking
->> several kernel panics. All panics have the cpu_idle function involved.
->> I don't know how to reproduce, it happened every 2-3 hrs using firefox browser.
->> 
->> System with 2.6.35.5 is totally stable.
->> 
->> I took a snapshot of a panic here:
->> http://www.patriziobassi.it/downloads/DSC03364.JPG
+> No reason for this to be enabled by default.
 
-The machine crashes in __alloc_skb called from
-neigh_timer_handler. Which makes no sense at all. That looks more like
-memory corruption.
+The default is automatically 'n', so please explain (more) why this is
+needed...?
 
->> 
->> Situation is dramatically worse when CONFIG_INTEL_IDLE is set.
->> Here panic happens even during startup.
+> 
+> Signed-off-by: Michael Hennerich <michael.hennerich@analog.com>
+> Signed-off-by: Mike Frysinger <vapier@gentoo.org>
+> ---
+>  drivers/misc/Kconfig |    1 +
+>  1 files changed, 1 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/misc/Kconfig b/drivers/misc/Kconfig
+> index b743312..7691f89 100644
+> --- a/drivers/misc/Kconfig
+> +++ b/drivers/misc/Kconfig
+> @@ -16,6 +16,7 @@ if MISC_DEVICES
+>  config AD525X_DPOT
+>  	tristate "Analog Devices Digital Potentiometers"
+>  	depends on (I2C || SPI) && SYSFS
+> +	default n
+>  	help
+>  	  If you say yes here, you get support for the Analog Devices
+>  	  AD5258, AD5259, AD5251, AD5252, AD5253, AD5254, AD5255
+> -- 
 
-Len, Suresh ???
-
-Thanks,
-
-	tglx
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
