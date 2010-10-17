@@ -1,64 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757044Ab0JQKw1 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Oct 2010 06:52:27 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:37961 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750911Ab0JQKw0 convert rfc822-to-8bit (ORCPT
+	id S1757058Ab0JQLC2 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Oct 2010 07:02:28 -0400
+Received: from canuck.infradead.org ([134.117.69.58]:55587 "EHLO
+	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751386Ab0JQLC1 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Oct 2010 06:52:26 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:from:date
-         :x-google-sender-auth:message-id:subject:to:cc:content-type
-         :content-transfer-encoding;
-        b=Jx4uIcD5rusrz3Mu/Bbv/l1ivXwtyBL2J11cHwc5dPOrCSDR2UtM3NgZJn0RwTPjKL
-         2lKGLO7/YEHq2SyjFVBHz40GESNG22jB+tBL7T3jdGMeyV0vSuxtPCccdWxEDy0AUMFk
-         K8PTA7xdxfvLdxv6wGRH4N6oN08g2aqWgLAqo=
-MIME-Version: 1.0
-In-Reply-To: <1287311875.1998.156.camel@laptop>
-References: <1287302737-3507-1-git-send-email-vapier@gentoo.org>
- <1287303678.20968.37.camel@Joe-Laptop> <AANLkTimmSRS3eVsW4EZUxnE_rfjeqmmgGnjtWbn3J_nY@mail.gmail.com>
- <1287310889.1998.153.camel@laptop> <AANLkTin6H2AbL_Kr4XCtPOr+SQRxi0tKKF3puY4gybNu@mail.gmail.com>
- <1287311875.1998.156.camel@laptop>
-From: Mike Frysinger <vapier@gentoo.org>
-Date: Sun, 17 Oct 2010 06:52:04 -0400
-X-Google-Sender-Auth: U4WqfW2XWuB9B8x7BGH7sb0WJvk
-Message-ID: <AANLkTik8yz_e2b+h8n0=40ar6G82Oior9O0XJ5u-uT0W@mail.gmail.com>
-Subject: Re: [PATCH] checkpatch: allow single space before labels
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Joe Perches <joe@perches.com>, Andy Whitcroft <apw@canonical.com>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+	Sun, 17 Oct 2010 07:02:27 -0400
+Subject: Re: ima: use of radix tree cache indexing == massive waste of
+ memory?
+From: Peter Zijlstra <peterz@infradead.org>
+To: Mimi Zohar <zohar@linux.vnet.ibm.com>
+Cc: Christoph Hellwig <hch@infradead.org>, Dave Chinner <david@fromorbit.com>,
+        linux-kernel@vger.kernel.org, Mimi Zohar <zohar@us.ibm.com>,
+        warthog9@kernel.org, hpa@zytor.com, devel@lists.fedoraprojet.org
+In-Reply-To: <1287295077.3020.83.camel@localhost.localdomain>
+References: <20101016065206.GO4681@dastard>
+	 <20101016192027.GA6883@infradead.org>
+	 <1287295077.3020.83.camel@localhost.localdomain>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 8BIT
+Date: Sun, 17 Oct 2010 13:02:12 +0200
+Message-ID: <1287313332.1998.172.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Oct 17, 2010 at 06:37, Peter Zijlstra wrote:
-> On Sun, 2010-10-17 at 06:30 -0400, Mike Frysinger wrote:
->> On Sun, Oct 17, 2010 at 06:21, Peter Zijlstra wrote:
->> > On Sun, 2010-10-17 at 04:24 -0400, Mike Frysinger wrote:
->> >> feel free to extend however as long as the end result is no warnings
->> >> for " foo:" ;).
->> >
->> > I utterly detest those indented labels and am eradicating them wherever
->> > I notice them. There's really no sane reason to use them what so ever.
->> > Diff can be taught not to get confused about them, see my earlier email.
->>
->> sure, with enough shell code thrown at a problem, you can do anything.
->>  the change that started these warnings was for an unrelated check.
->> no one proposed warning on indented labels, nor is there any statement
->> at all in the coding style on these.
->>
->> considering you highlighted the biggest reason (diff by default does
->> not handle them properly), i think that invalidates against your "no
->> sane reason" statement.
->
-> I think telling people to change their diff rules (--show-c-function
-> isn't default enabled either) is a lot better option than to uglify the
-> source. These indented labels are totally annoying when reading code.
+On Sun, 2010-10-17 at 01:57 -0400, Mimi Zohar wrote:
+> On Sat, 2010-10-16 at 15:20 -0400, Christoph Hellwig wrote:
+> > Besides the algorithmic problems with ima, why is kernel.org using
+> > IMA to start with?  Except for IBM looking for a reason to jusity why
+> > TPM isn't a completely waster of ressources it's pointless.  And it was
+> > only merged under the premise that it would not affect innocent normal
+> > users.
+> > 
+> 
+> Can we keep this at the design level please? When IMA is enabled, it
+> needs to store information on a per inode basis, yet has to wait to
+> late_initcall() for the TPM, at which point some inodes would have
+> already been created.  
 
-and that is your opinion on the matter.  mine happens to go the
-opposite way.  i prefer the single space when reading code.
--mike
+Being build (CONFIG_IMA=y) is not the same as default enabled. Is there
+a way to build this stuff and not have it enabled?
