@@ -1,70 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756177Ab0JQNGo (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Oct 2010 09:06:44 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:50388 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753521Ab0JQNGn convert rfc822-to-8bit (ORCPT
+	id S1756529Ab0JQNKV (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Oct 2010 09:10:21 -0400
+Received: from out1.smtp.messagingengine.com ([66.111.4.25]:45947 "EHLO
+	out1.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754873Ab0JQNKT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Oct 2010 09:06:43 -0400
-From: "Woodruff, Richard" <r-woodruff2@ti.com>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>
-CC: Arnd Hannemann <arnd@arndnet.de>, "Pedanekar, Hemant" <hemantp@ti.com>,
-        Greg KH <greg@kroah.com>,
-        Felipe Contreras <felipe.contreras@gmail.com>,
-        linux-main <linux-kernel@vger.kernel.org>,
-        =?iso-8859-1?Q?Uwe_Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        Han Jonghun <jonghun79.han@gmail.com>,
-        linux-arm <linux-arm-kernel@lists.infradead.org>
-Date: Sun, 17 Oct 2010 08:05:35 -0500
-Subject: RE: [PATCH] ARM: allow, but warn, when issuing ioremap() on RAM
-Thread-Topic: [PATCH] ARM: allow, but warn, when issuing ioremap() on RAM
-Thread-Index: Acts3TqUzA45InBWS1Oa1Ig47eJsqQBG1CEg
-Message-ID: <13B9B4C6EF24D648824FF11BE896716203D76F71F4@dlee02.ent.ti.com>
-References: <1286444662-16843-1-git-send-email-felipe.contreras@gmail.com>
-	<20101007192245.GC26435@n2100.arm.linux.org.uk>
-	<AANLkTikQKY7pOobD+==uT5Cy0poT=O5wDMKtbVyJVNbO@mail.gmail.com>
-	<20101008175308.GA10975@n2100.arm.linux.org.uk>
- <1287196588.2370.1.camel@pasglop>
-In-Reply-To: <1287196588.2370.1.camel@pasglop>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+	Sun, 17 Oct 2010 09:10:19 -0400
+X-Sasl-enc: qVgFTJxuJ+cdeUocq5eoMyV+Gs2W3D46CGkqqmhDczhh 1287321018
+Date: Sun, 17 Oct 2010 11:10:16 -0200
+From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+To: Sitsofe Wheeler <sitsofe@yahoo.com>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Matthew Garrett <mjg59@srcf.ucam.org>,
+        Len Brown <lenb@kernel.org>, Zhang Rui <rui.zhang@intel.com>,
+        David Zeuthen <davidz@redhat.com>,
+        Richard Hughes <richard@hughsie.com>, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ACPI / Battery: Return -ENODATA for unknown values in
+ get_property()
+Message-ID: <20101017131016.GB13015@khazad-dum.debian.net>
+References: <20101016141321.GA11054@sucs.org>
+ <201010170105.33274.rjw@sisk.pl>
+ <20101017051953.GA3430@khazad-dum.debian.net>
+ <20101017095940.GA4077@sucs.org>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101017095940.GA4077@sucs.org>
+X-GPG-Fingerprint: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
+ 1CDB 0FE3
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sun, 17 Oct 2010, Sitsofe Wheeler wrote:
+> On Sun, Oct 17, 2010 at 03:19:53AM -0200, Henrique de Moraes Holschuh wrote:
+> > On Sun, 17 Oct 2010, Rafael J. Wysocki wrote:
+> > > In fact, the driver is supposed to return -ENODATA in that case, which will
+> > > result in the read from /sys/class/power_supply/BAT0/current_now
+> > > fail (I guess upower should be able to cope with that).
+> >
+> > ENODATA?  Shouldn't it be ENXIO?  There is no non-blocking data stream
+> > involved in a sysfs attribute.
+> 
+> Using ENODATA and ENXIO appears to solve the problem (upower reports a
+> rate of 0.0). However when plugging the battery in after previously only
+> being on AC power none of the /sys/class/power_supply/BAT0/uevent:*
+> files are created so upower never realises a battery has been plugged
+> in. A further issue with ENXIO is is the following repeatedly appears in
+> dmesg:
 
-> From: linux-arm-kernel-bounces@lists.infradead.org [mailto:linux-arm-
-> kernel-bounces@lists.infradead.org] On Behalf Of Benjamin
-> Herrenschmidt
+You might have broken firmware that does not issue a notify when a battery
+is plugged.  But it has been a long time, I don't recall if the battery
+driver handles hotplugging without the help of the dock/bay driver (it
+should, AFAIK).
 
-> > If you want the old way back, apply pressure to silicon vendors and
-> > ARM Ltd to change the architecture to lift this restriction - which
-> > will probably mean doing away with aggressive speculative
-> prefetching
-> > so that it's possible to predict what will be in the cache at any
-> > point in time.
->
-> Note that we have the exact same problem on powerpc. The only sane
-> solution is that SoCs designed around such cores or versions of the
-> architecture should be fully DMA coherent to avoid the need for funky
-> mapping attributes. Anything else is garbage HW, but sadly, it looks
-> like way too many idiots still find jobs as HW designers.
+> power_supply BAT0: driver failed to report `current_now' property
 
-ARM has always been a rawer (and cheaper) environment than many other CPU architectures. Until maybe this year coherency was never even an option provided in the hardware. The vast majority of the systems currently in mass production in 2010 and before don't have coherency.  The software has to handle all the details.
+And it keeps silent if it gets ENODATA?
 
-Starting today and onwards coherency options will start to be seen in high end. It seems likely some of the old external IP won't be compliant and likely have bugs undercutting it.
-
-People from high ends like x86 and PPC have different expectations and problems. Your chip set nightmares are our standard in some areas. In my narrow experience PPC pioneered many techniques 15 years back which are now just coming into ARM. They are coming in at a much reduced power and cost footprint.
-
-Regards,
-Richard W.
-
+-- 
+  "One disk to rule them all, One disk to find them. One disk to bring
+  them all and in the darkness grind them. In the Land of Redmond
+  where the shadows lie." -- The Silicon Valley Tarot
+  Henrique Holschuh
