@@ -1,29 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751262Ab0JQWzI (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Oct 2010 18:55:08 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:55212 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750921Ab0JQWzG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Oct 2010 18:55:06 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=WAzHGNwieHD1ZeeZJ21+lL3tCpppQMOmITTf047ek02QsiBbWKqKqHT3X7Pc5T4WI5
-         mPCkpMGIiUSKaeUTXpUijJuijqjKC4JwVO/GkYX4eLF+Tw7pjb/8TG36jMQCW1yPYgR0
-         kiLaPyQRpA/ZMUn0rU4iIAfvYYLEq8Chhlg1g=
-Subject: Re: [PATCH 0/6] Results of my work on memorystick subsystem
-From: Maxim Levitsky <maximlevitsky@gmail.com>
-To: Alex Dubov <oakad@yahoo.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <1287270774-18796-1-git-send-email-maximlevitsky@gmail.com>
-References: <1287270774-18796-1-git-send-email-maximlevitsky@gmail.com>
+	id S1751774Ab0JQXTM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Oct 2010 19:19:12 -0400
+Received: from gate.crashing.org ([63.228.1.57]:56361 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751217Ab0JQXTL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 17 Oct 2010 19:19:11 -0400
+Subject: RE: [PATCH] ARM: allow, but warn, when issuing ioremap() on RAM
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: "Woodruff, Richard" <r-woodruff2@ti.com>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Arnd Hannemann <arnd@arndnet.de>, "Pedanekar, Hemant" <hemantp@ti.com>,
+        Greg KH <greg@kroah.com>,
+        Felipe Contreras <felipe.contreras@gmail.com>,
+        linux-main <linux-kernel@vger.kernel.org>,
+        Uwe =?ISO-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Han Jonghun <jonghun79.han@gmail.com>,
+        linux-arm <linux-arm-kernel@lists.infradead.org>
+In-Reply-To: <13B9B4C6EF24D648824FF11BE896716203D76F71F4@dlee02.ent.ti.com>
+References: <1286444662-16843-1-git-send-email-felipe.contreras@gmail.com>
+	 <20101007192245.GC26435@n2100.arm.linux.org.uk>
+	 <AANLkTikQKY7pOobD+==uT5Cy0poT=O5wDMKtbVyJVNbO@mail.gmail.com>
+	 <20101008175308.GA10975@n2100.arm.linux.org.uk>
+	 <1287196588.2370.1.camel@pasglop>
+	 <13B9B4C6EF24D648824FF11BE896716203D76F71F4@dlee02.ent.ti.com>
 Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 18 Oct 2010 00:55:01 +0200
-Message-ID: <1287356101.25869.1.camel@maxim-laptop>
+Date: Mon, 18 Oct 2010 10:17:01 +1100
+Message-ID: <1287357421.2370.19.camel@pasglop>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
@@ -31,127 +35,43 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2010-10-17 at 01:12 +0200, Maxim Levitsky wrote:
-> Hi,
+On Sun, 2010-10-17 at 08:05 -0500, Woodruff, Richard wrote:
+> ARM has always been a rawer (and cheaper) environment than many other
+> CPU architectures. Until maybe this year coherency was never even an
+> option provided in the hardware. The vast majority of the systems
+> currently in mass production in 2010 and before don't have coherency.
+> The software has to handle all the details.
 > 
-> Here is a result of lot of work I did improving the memorystick
-> subsystem and its drivers.
-Comments?
-Flames?
-Suggestions?
+> Starting today and onwards coherency options will start to be seen in
+> high end. It seems likely some of the old external IP won't be
+> compliant and likely have bugs undercutting it.
+> 
+> People from high ends like x86 and PPC have different expectations and
+> problems. Your chip set nightmares are our standard in some areas. In
+> my narrow experience PPC pioneered many techniques 15 years back which
+> are now just coming into ARM. They are coming in at a much reduced
+> power and cost footprint. 
 
-Best regards,
-	Maxim Levitsky
+This is all quite possible the the fact remains that at the end of the
+day, if you're going to have a speculative memory model with prefetch
+and your architecture (rightfully so) disallows aliasing of mappings
+with different cache attributes, then you are screwed the minute your
+devices do non-coherent DMA :-)
 
-> 
-> patch #1 add common code to memorystick core that makes card drivers easier
-> to understand
-> 
-> patch #2 just add a driver for my card reader
-> 
-> patch #3 reworks the Jmicron driver.
-> I can write a novel about the problems I had to go through with this device
-> (mostly hardware bugs I belive).
-> So I refactored the driver and added a lot of debug output future users.
-> Currently both MS and MSPro work fine.
-> 
-> patch #4 adds support for lagacy memorysticks.
-> Everything just works, not a single corruption this far.
-> 
-> patch #5, is what I did recently.
-> I rewrote large chunks on mspro_blk.c to use the common code I added in patch #1.
-> I also added lot of debug code, comments.
-> 
-> patch #6 adds more cleanups.
-> 
-> Now register window changes are completely hidden and automatic.
-> Functions that state machines call are explictly marked as so,
-> and that assumption is tested.
-> the card->current_mrq isn't passed as a pointer to functions
-> as this just complicates the code.
-> 
-> Code is tested with 2 mspro cards and one MS card.
-> 
-> Thanks again to Alex for his work.
-> 
-> ***Changes from V1 ***
-> 
-> * Fixed brown paper bug in memstick core.
-> memset had its 2 and 3 arguments swapped.
-> 
-> * Cleaned a lot the PIO code in my r592 driver.
-> Now it finally looks sane.
-> Also tested it throughfully.
-> 
-> * Endiannes fixes in Jmicron driver and r592
-> 
-> Best regards,
-> 	Maxim Levitsky
-> 
-> ***Appendix***
-> 
-> Jmicron hardware bugs (the novel):
-> 
-> #1: FIFO write ready bit in INT status register is stuck to 1.
->    It is stuck forever as soon as fifo
->    is used for writing even once.
->    Therefore if interrupt is shared (and here it is), its easy
->    to 'service' the device while it doesn't need any service
-> 
-> 
-> #2: Its not possible to stuff the FIFO before TPC transfer.
->    One really have to wait for write ready interrupt, even though the write ready status is stuck.
-> 
-> 
-> #3: TPCs with non 4 aligned length woes:
->    Facts:
-> 
->    * non 4 aligned DMA write hangs the system hard, maybe on bus level.
-> 
->    * PIO read succedes but controller truncates the data stored in the FIFO to closest 4 byte boundary.
->    That is if you read 26 bytes, it will save 24 bytes in the FIFO
-> 
->    * PIO non-aligned write work, expect that they sometimes hose the DMA.... (regardless of the alignment)
-> 
->    * TPC_P0, TPC_P1 not aligned transfters work just fine despite a statement in the datasheet
->    that they are undefined.... (only mention of this problem)
-> 
-> 
-> #4: As soon as write PIO is used, then later write DMA fails.
->    Facts:
-> 
->    * This is triggered only by PIO write of registers
->    (only happens in ms_block.c when it writes param + oob. Thats why mspro_blk isn't affected)
->    Doing short DMA writes is a nice workaround.
-> 
->    * Doing PIO writes in h_msb_read_page don't cause the problem.
->      Therefore the bug causing sequence should be similiar to h_msb_write_block:
-> 
->        1. PIO write of param + extra (10 bytes) or even padded to 12 or 16 bytes
->        2. inline write (TPC_P0) of MS_CMD_BLOCK_WRITE + wait for int
->        3. read of INT register via STATUS
->        3. DMA write of MS_TPC_WRITE_LONG_DATA
->        4. DMA write of MS_TPC_WRITE_LONG_DATA
->            ---------timeout-----------
->  
->    * In fact first DMA write succedes, but next one fails, and so do all following writes
-> 
->    * The problem persits till reboot, and shows up even if PIO isn't used again.
->    Other way to "fix" it, is to put device in D3 and back to D0
-> 
->    * Serial/parallel mode don't affect anything.
-> 
->    After bug reproduction:
-> 
->     * DMA writes stop working completely, therefore mspro_blk looses writes as well
-> 
->     * PIO still works just fine. Its possible just to load the driver without dma support, and it works correctly.
-> 
->     * DMA reads work just fine.
-> 
-> #5: Auto_Get_INT feature just doesn't work.
->    Datasheet says that intreg is placed to TPC_P0, but that doesn't happen....
->    card status register is 0.
-> 
+As Russell says, the only proper way to do that would be to set aside
+memory at boot. That or provide a way to take chunks out of the linear
+mapping, which may or may not be possible, I don't know how ARM does it
+well enough. On some 32-bit powerpc's unfortunately, that would meant
+taking whole 256M chunks out due to the way we implement it.
+
+The main problem is usually related to the linear mapping using some
+form of huge pages, I suppose this is the same for you here.
+
+Now of course, you always have the un-satisfactory options of disabling
+speculation/prefetch and/or disabling the use of such huge pages in the
+linear mapping, which makes unmapping chunks of it a lot easier.
+
+Cheers,
+Ben.
 
 
