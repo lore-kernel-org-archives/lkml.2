@@ -1,54 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757337Ab0JQOm2 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Oct 2010 10:42:28 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:61194 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757214Ab0JQOlf (ORCPT
+	id S1757161Ab0JQOvD (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Oct 2010 10:51:03 -0400
+Received: from silver.sucs.swan.ac.uk ([137.44.10.1]:36907 "EHLO
+	silver.sucs.swan.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756759Ab0JQOvB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Oct 2010 10:41:35 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=E4zgiEcUsWFFJZFrgjUdkzItDKUoFz2WQ89ObahBn1td1YlqE2indPn3HKq+nmMo+X
-         sLOOUWVOa2o90jzw3AOxOsm1CGc5A83GPebNRve3kgPHa8pwzuM12hxvae+2wRWLoSn4
-         7VD236UrKUGvCWlYg71msI60OlNSFfhChcScY=
-From: Vasiliy Kulikov <segooon@gmail.com>
-To: kernel-janitors@vger.kernel.org
-Cc: Andrew Morton <akpm@linux-foundation.org>, Julia Lawall <julia@diku.dk>,
-        Tejun Heo <tj@kernel.org>, Arnd Bergmann <arnd@arndb.de>,
+	Sun, 17 Oct 2010 10:51:01 -0400
+Date: Sun, 17 Oct 2010 15:50:25 +0100
+From: Sitsofe Wheeler <sitsofe@yahoo.com>
+To: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Matthew Garrett <mjg59@srcf.ucam.org>,
+        Len Brown <lenb@kernel.org>, Zhang Rui <rui.zhang@intel.com>,
+        David Zeuthen <davidz@redhat.com>,
+        Richard Hughes <richard@hughsie.com>, linux-acpi@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 5/8] char: ppdev: fix information leak to userland
-Date: Sun, 17 Oct 2010 18:41:28 +0400
-Message-Id: <1287326489-8071-1-git-send-email-segooon@gmail.com>
-X-Mailer: git-send-email 1.7.0.4
+Subject: Re: [PATCH] ACPI / Battery: Return -ENODATA for unknown values in
+	get_property()
+Message-ID: <20101017145025.GA32599@sucs.org>
+References: <20101016141321.GA11054@sucs.org> <201010170105.33274.rjw@sisk.pl> <20101017051953.GA3430@khazad-dum.debian.net> <20101017095940.GA4077@sucs.org> <20101017131016.GB13015@khazad-dum.debian.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101017131016.GB13015@khazad-dum.debian.net>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Structure par_timeout is copied to userland with some padding fields unitialized.
-Field tv_usec has type __kernel_suseconds_t, it differs from tv_sec's type on
-some architectures.  It leads to leaking of stack memory.
+On Sun, Oct 17, 2010 at 11:10:16AM -0200, Henrique de Moraes Holschuh wrote:
+> On Sun, 17 Oct 2010, Sitsofe Wheeler wrote:
+> > 
+> > Using ENODATA and ENXIO appears to solve the problem (upower reports a
+> > rate of 0.0). However when plugging the battery in after previously only
+> > being on AC power none of the /sys/class/power_supply/BAT0/uevent:*
+> > files are created so upower never realises a battery has been plugged
+> 
+> You might have broken firmware that does not issue a notify when a battery
+> is plugged.  But it has been a long time, I don't recall if the battery
+> driver handles hotplugging without the help of the dock/bay driver (it
+> should, AFAIK).
 
-Signed-off-by: Vasiliy Kulikov <segooon@gmail.com>
----
- Compile tested.
+Battery hotplug works fine without these patches. I should have said -
+the uevent devices are there with a vanilla kernel no matter how many
+times the battery is plugged in or unplugged (that's how I knew they
+were missing with the patches added :) I am guessing some part of the
+kernel/udev cannot handle being told ENODATA or ENXIO and bails out
+before those nodes would be made.
 
- drivers/char/ppdev.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+> > in. A further issue with ENXIO is is the following repeatedly appears in
+> > dmesg:
+> > power_supply BAT0: driver failed to report `current_now' property
+> 
+> And it keeps silent if it gets ENODATA?
 
-diff --git a/drivers/char/ppdev.c b/drivers/char/ppdev.c
-index 723152d..f176dba 100644
---- a/drivers/char/ppdev.c
-+++ b/drivers/char/ppdev.c
-@@ -613,6 +613,7 @@ static int pp_do_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
- 
- 	case PPGETTIME:
- 		to_jiffies = pp->pdev->timeout;
-+		memset(&par_timeout, 0, sizeof(par_timeout));
- 		par_timeout.tv_sec = to_jiffies / HZ;
- 		par_timeout.tv_usec = (to_jiffies % (long)HZ) * (1000000/HZ);
- 		if (copy_to_user (argp, &par_timeout, sizeof(struct timeval)))
+Yes.
+
 -- 
-1.7.0.4
-
+Sitsofe | http://sucs.org/~sits/
