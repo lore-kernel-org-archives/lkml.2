@@ -1,43 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752008Ab0JQF27 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Oct 2010 01:28:59 -0400
-Received: from ksp.mff.cuni.cz ([195.113.26.206]:46057 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750833Ab0JQF26 (ORCPT
+	id S1752092Ab0JQFdw (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Oct 2010 01:33:52 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:55575 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751472Ab0JQFdu convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Oct 2010 01:28:58 -0400
-Date: Sat, 16 Oct 2010 15:31:05 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: Man Spaz <man.spaz@ymail.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: Tips on debugging suspend/resume failure
-Message-ID: <20101016133105.GB1806@ucw.cz>
-References: <103889.39682.qm@web120217.mail.ne1.yahoo.com>
+	Sun, 17 Oct 2010 01:33:50 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=PPqNMAlX/mvawAnxlsGcAmxHPugScy37bF3kI0FOGRmPRIREvAbWkikP3eVxdB9fRk
+         iwVpwUSZITa70FO7YAbNTJecPpa84/mvPiWOtji5EMbDd0EBIGtfJIhr9CWRuGblEmHz
+         kF8Q3WxYxz1k8BRG3cqHrbPcITuou1yrahKz0=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <103889.39682.qm@web120217.mail.ne1.yahoo.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20101015171225.70d4ca8f.kamezawa.hiroyu@jp.fujitsu.com>
+References: <20101015170627.e5033fa4.kamezawa.hiroyu@jp.fujitsu.com>
+	<20101015171225.70d4ca8f.kamezawa.hiroyu@jp.fujitsu.com>
+Date: Sun, 17 Oct 2010 14:33:50 +0900
+Message-ID: <AANLkTimDRuE9oBpj6h13wFKazuOzOm8UbFdM+qhbc0On@mail.gmail.com>
+Subject: Re: [RFC][PATCH 2/2] memcg: new lock for mutual execution of
+ account_move and file stats
+From: Minchan Kim <minchan.kim@gmail.com>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
+        "balbir@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>,
+        Greg Thelen <gthelen@google.com>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
-
-> I have a machine x86 arch with no serial port, only console. I have a suspend/resume (mem, not hibernate) problem (not sure which one it is, if something fails on the suspend, or the resume fails - but it does seem to go to sleep) that doesn't suspend nor resume at all, using stock standard x86_64 kernel.
-> 
-> I compiled everything as a module and removed all unnecessary ones, so I cannot isolate the problem to a specific driver. This very same machine had no problems with <2.6.34.2 kernels.
-> 
-> But the question remains, how to get debug out? Is there a dmesg buffer that can persist if DRAM is being refreshed perhaps? Is there another way to skin this mongrel, I mean cat?
+On Fri, Oct 15, 2010 at 5:12 PM, KAMEZAWA Hiroyuki
+<kamezawa.hiroyu@jp.fujitsu.com> wrote:
+> From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 >
+> When we try to enhance page's status update to support other flags,
+> one of problem is updating status from IRQ context.
+>
+> Now, mem_cgroup_update_file_stat() takes lock_page_cgroup() to avoid
+> race with _account move_. IOW, there are no races with charge/uncharge
+> in nature. Considering an update from IRQ context, it seems better
+> to disable IRQ at lock_page_cgroup() to avoid deadlock.
+>
+> But lock_page_cgroup() is used too widerly and adding IRQ disable
+> there makes the performance bad. To avoid the big hammer, this patch
+> adds a new lock for update_stat().
+>
+> This lock is for mutual execustion of updating stat and accout moving.
+> This adds a new lock to move_account..so, this makes move_account slow.
+> But considering trade-off, I think it's acceptable.
+>
+> A score of moving 8GB anon pages, 8cpu Xeon(3.1GHz) is here.
+>
+> [before patch] (mmotm + optimization patch (#1 in this series)
+> [root@bluextal kamezawa]# time echo 2257 > /cgroup/B/tasks
+>
+> real    0m0.694s
+> user    0m0.000s
+> sys     0m0.683s
+>
+> [After patch]
+> [root@bluextal kamezawa]# time echo 2238 > /cgroup/B/tasks
+>
+> real    0m0.741s
+> user    0m0.000s
+> sys     0m0.730s
+>
+> This moves 8Gbytes == 2048k pages. But no bad effects to codes
+> other than "move".
+>
+> Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 
-git bisect ?
+It looks good than old approach.
+Just a below nitpick.
 
-Also you could try to blink keyboard leds, beep the speaker or debug
-using 'hang/reboot' trick.
+> ---
+>  include/linux/page_cgroup.h |   29 +++++++++++++++++++++++++++++
+>  mm/memcontrol.c             |   11 +++++++++--
+>  2 files changed, 38 insertions(+), 2 deletions(-)
+>
+> Index: mmotm-1013/include/linux/page_cgroup.h
+> ===================================================================
+> --- mmotm-1013.orig/include/linux/page_cgroup.h
+> +++ mmotm-1013/include/linux/page_cgroup.h
+> @@ -36,6 +36,7 @@ struct page_cgroup *lookup_page_cgroup(s
+>  enum {
+>        /* flags for mem_cgroup */
+>        PCG_LOCK,  /* page cgroup is locked */
+> +       PCG_LOCK_STATS, /* page cgroup's stat accounting flags are locked */
 
-									Pavel
+Hmm, I think naming isn't a good. Aren't both for stat?
+As I understand, Both are used for stat.
+One is just used by charge/uncharge and the other is used by
+pdate_file_stat/move_account.
+If you guys who are expert in mcg feel it with easy, I am not against.
+But at least, mcg-not-familiar people like me don't feel it comfortable.
+
+
+
+
+
 -- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+Kind regards,
+Minchan Kim
