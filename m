@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932575Ab0JQSmP (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Oct 2010 14:42:15 -0400
-Received: from mgw2.diku.dk ([130.225.96.92]:50840 "EHLO mgw2.diku.dk"
+	id S932602Ab0JQSma (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Oct 2010 14:42:30 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:50835 "EHLO mgw2.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932502Ab0JQSmN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Oct 2010 14:42:13 -0400
+	id S932524Ab0JQSmM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 17 Oct 2010 14:42:12 -0400
 From: Julia Lawall <julia@diku.dk>
-To: David Woodhouse <dwmw2@infradead.org>
-Cc: kernel-janitors@vger.kernel.org, linux-mtd@lists.infradead.org,
+To: Sage Weil <sage@newdream.net>
+Cc: kernel-janitors@vger.kernel.org, ceph-devel@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 3/3] fs/jffs2/dir.c: Use kasprintf
-Date: Sun, 17 Oct 2010 20:48:31 +0200
-Message-Id: <1287341311-11161-4-git-send-email-julia@diku.dk>
+Subject: [PATCH 2/3] fs/ceph/xattr.c: Use kasprintf
+Date: Sun, 17 Oct 2010 20:48:30 +0200
+Message-Id: <1287341311-11161-3-git-send-email-julia@diku.dk>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1287341311-11161-1-git-send-email-julia@diku.dk>
 References: <1287341311-11161-1-git-send-email-julia@diku.dk>
@@ -48,28 +48,23 @@ statement S;
 Signed-off-by: Julia Lawall <julia@diku.dk>
 
 ---
- fs/jffs2/dir.c |    3 +--
+ fs/ceph/xattr.c |    3 +--
  1 file changed, 1 insertion(+), 2 deletions(-)
 
-diff --git a/fs/jffs2/dir.c b/fs/jffs2/dir.c
-index ed78a3c..8ee5675 100644
---- a/fs/jffs2/dir.c
-+++ b/fs/jffs2/dir.c
-@@ -367,7 +367,7 @@ static int jffs2_symlink (struct inode *dir_i, struct dentry *dentry, const char
- 	}
+diff --git a/fs/ceph/xattr.c b/fs/ceph/xattr.c
+index 70e9199..b8dd1f0 100644
+--- a/fs/ceph/xattr.c
++++ b/fs/ceph/xattr.c
+@@ -716,10 +716,9 @@ int ceph_setxattr(struct dentry *dentry, const char *name,
  
- 	/* We use f->target field to store the target path. */
--	f->target = kmalloc(targetlen + 1, GFP_KERNEL);
-+	f->target = kasprintf(GFP_KERNEL, "%s", target);
- 	if (!f->target) {
- 		printk(KERN_WARNING "Can't allocate %d bytes of memory\n", targetlen + 1);
- 		mutex_unlock(&f->sem);
-@@ -376,7 +376,6 @@ static int jffs2_symlink (struct inode *dir_i, struct dentry *dentry, const char
- 		goto fail;
- 	}
+ 	/* preallocate memory for xattr name, value, index node */
+ 	err = -ENOMEM;
+-	newname = kmalloc(name_len + 1, GFP_NOFS);
++	newname = kasprintf(GFP_NOFS, "%s", name);
+ 	if (!newname)
+ 		goto out;
+-	memcpy(newname, name, name_len + 1);
  
--	memcpy(f->target, target, targetlen + 1);
- 	D1(printk(KERN_DEBUG "jffs2_symlink: symlink's target '%s' cached\n", (char *)f->target));
- 
- 	/* No data here. Only a metadata node, which will be
+ 	if (val_len) {
+ 		newval = kmalloc(val_len + 1, GFP_NOFS);
 
