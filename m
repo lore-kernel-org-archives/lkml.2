@@ -1,56 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932843Ab0JQUrs (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Oct 2010 16:47:48 -0400
-Received: from mailf.cpenet.com.ar ([201.251.13.25]:56693 "EHLO
-	mailf.cpenet.com.ar" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932785Ab0JQUrr (ORCPT
+	id S932893Ab0JQUuz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Oct 2010 16:50:55 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:55327
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932825Ab0JQUuy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Oct 2010 16:47:47 -0400
-X-Greylist: delayed 7948 seconds by postgrey-1.27 at vger.kernel.org; Sun, 17 Oct 2010 16:47:46 EDT
-Message-ID: <0b08e299392ac31366e353aa8da439b5.squirrel@www.cpenet.com.ar>
-Date: Sun, 17 Oct 2010 15:31:27 -0300
-Subject: 20GM
-From: helpdesk@upgrade.org
-To: info@update.org
-Reply-To: helpdeskstaff41@yahoo.com.hk
-User-Agent: SquirrelMail/1.4.21
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Priority: 3 (Normal)
-Importance: Normal
+	Sun, 17 Oct 2010 16:50:54 -0400
+Date: Sun, 17 Oct 2010 13:51:16 -0700 (PDT)
+Message-Id: <20101017.135116.39183656.davem@davemloft.net>
+To: joe@perches.com
+Cc: masa-korg@dsn.okisemi.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH net-next] drivers/net/pch_gbe: Use
+ DEFINE_PCI_DEVICE_TABLE
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1287086150.1117.608.camel@Joe-Laptop>
+References: <1287086150.1117.608.camel@Joe-Laptop>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Joe Perches <joe@perches.com>
+Date: Thu, 14 Oct 2010 12:55:50 -0700
 
+> Use the standard macro to put this table in __devinitconst.
+> 
+> Compiled, untested.
+> 
+> Signed-off-by: Joe Perches <joe@perches.com>
 
-
-Dear Webmail Account User,
-
-Warning
-Code : ACCOUNTHELPID67788980
-
-This message was sent automatically by a program on Webmail admin center
-which periodically checks the size of inbox, The program is run
-automatically to ensure no user inbox grows too large. If your inbox
-becomes too large, you will be unable to receive new emails. Just before
-this message was sent, you are currently running on 20.9 GB, You have
-has exceeded the storage limit which is 20GB.
-To help us re-set your Account SPACE on our database prior to maintain
-your INBOX, you must reply to this e-mail providing us your the Below
-information:
-
-bgdsnice: E-mail : ... ... ...... ... ... ... ... ... ... ... ... ...
-Username/ID : ... ... ...... ... ... ..
-Current Password : ... ... ... ... ... ... ..Retype
-Password: ... ... ... ... ... ... ..
-
->From this point you will be unable to receive new email as it will be
-returned to the sender, Provide the above information to enable us help
-reset your webmail immediately.
-
-Thank you for your cooperation.
-Webmail Help Desk. System Administrator.
-
+Applied, thanks.
