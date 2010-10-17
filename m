@@ -1,73 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755826Ab0JQIBJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Oct 2010 04:01:09 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:52051 "EHLO
+	id S1755621Ab0JQIC3 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Oct 2010 04:02:29 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:41001 "EHLO
 	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754863Ab0JQIBH convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1753124Ab0JQIC1 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Oct 2010 04:01:07 -0400
+	Sun, 17 Oct 2010 04:02:27 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=mime-version:sender:in-reply-to:references:date
          :x-google-sender-auth:message-id:subject:from:to:cc:content-type
          :content-transfer-encoding;
-        b=SGuuAD/puxkf8Or26d3uI6BVRH5EVB3SPfjKwL79gP9U2m6Y4ZzkrPOerBUu1/MJH8
-         frFm8NfzyK0/9e55aTR9Ewmx7133dLOk/CPFrq7D8f1Cn9XBV11BbKHEHAq5lkbP4SYR
-         sG5RGt3qo4aONm7+4a3M4uD/xpeqCOUDi0aPs=
+        b=ryexEwlSU+wgIpey58VzFvphvN/enwUw4mFDqeGHtCVv1G9p9s9gA2xzgO8EZ7Aa21
+         6o5iprCjOYO9Kx57JAUp4dNyqqAzaoYq2PwHCMWvRnvWhghT11jngn5Np3F4QwMfSlek
+         qGqVBTbZ1HTzRDnHAzjl27jeLnASojAyUrj7A=
 MIME-Version: 1.0
-In-Reply-To: <20101017092621.67ac74e0.sfr@canb.auug.org.au>
+In-Reply-To: <20101016151442.a21769f6.rdunlap@xenotime.net>
 References: <alpine.DEB.2.00.1010161656590.12912@ayla.of.borg>
 	<alpine.DEB.2.00.1010161722120.30415@ayla.of.borg>
-	<20101017092621.67ac74e0.sfr@canb.auug.org.au>
-Date: Sun, 17 Oct 2010 10:01:03 +0200
-X-Google-Sender-Auth: s-RG6ZCsfNWLfnSWGgZkhmCrnrg
-Message-ID: <AANLkTi=ZFUkXebqw9-NUzT48KK58PyaJF7DSpxKJeGm8@mail.gmail.com>
+	<20101016151442.a21769f6.rdunlap@xenotime.net>
+Date: Sun, 17 Oct 2010 10:02:25 +0200
+X-Google-Sender-Auth: QDHj3JLi_qeecPfWMalkjZ-jcjs
+Message-ID: <AANLkTinLBfAqRtd22MJtN+-LYsfvPSnRWcS97iM2PGJy@mail.gmail.com>
 Subject: Re: Build regressions/improvements in v2.6.36-rc8
 From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Linux Kernel Development <linux-kernel@vger.kernel.org>
+To: Randy Dunlap <rdunlap@xenotime.net>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
+        Linux Kernel Development <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Oct 17, 2010 at 00:26, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> On Sat, 16 Oct 2010 17:31:34 +0200 (CEST) Geert Uytterhoeven <geert@linux-m68k.org> wrote:
->> On Sat, 16 Oct 2010, Geert Uytterhoeven wrote:
->> > 162 regressions:
->> >     src/fs/9p/vfs_inode.c: error: implicit declaration of function 'inode_setattr':  => 1267
->> >     src/include/linux/vgaarb.h: error: asm/vga.h: No such file or directory:  => 34:21
->>
->> These two are reported for m68k/allmodconfig:
->> http://kisskb.ellerman.id.au/kisskb/buildresult/3387901/, but I cannot
->> reproduce them.
+On Sun, Oct 17, 2010 at 00:14, Randy Dunlap <rdunlap@xenotime.net> wrote:
+> BTW, do you use LC_ALL=C when doing builds?  I'd like to be able to read
+> messages like this one:
 >
-> Neither of those errors are reported in the above build result ...
+> src/Documentation/spi/spidev_test.c:56: warning: (near initialization for â€˜trâ€™): 1 warnings in 1 logs
 
-Strange...
-
-$ wget http://kisskb.ellerman.id.au/kisskb/buildresult/3387901/; grep
-inode_set index.html
---2010-10-17 09:59:35--
-http://kisskb.ellerman.id.au/kisskb/buildresult/3387901/
-Resolving kisskb.ellerman.id.au... 203.10.76.25
-Connecting to kisskb.ellerman.id.au|203.10.76.25|:80... connected.
-HTTP request sent, awaiting response... 200 OK
-Length: 272362 (266K) [text/html]
-Saving to: `index.html'
-
-100%[=====================================================================>]
-272,362     67.8K/s   in 3.9s
-
-2010-10-17 09:59:39 (67.8 KB/s) - `index.html' saved [272362/272362]
-
-/scratch/kisskb/src/fs/9p/vfs_inode.c:1267: error: implicit
-declaration of function &#39;inode_setattr&#39;
-$
-
-Yep, it's there.
+I just grab the logs from the linux-next build service.
 
 Gr{oetje,eeting}s,
 
