@@ -1,61 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751881Ab0JQXfn (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Oct 2010 19:35:43 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:43983 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751411Ab0JQXfm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Oct 2010 19:35:42 -0400
-Date: Mon, 18 Oct 2010 10:35:40 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Daniel Walker <dwalker@fifo99.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jeremy Kerr <jeremy.kerr@canonical.com>,
-        Jeff Ohlstein <johlstei@codeaurora.org>
-Subject: linux-next: manual merge of the msm tree with the arm tree
-Message-Id: <20101018103540.7bd9c535.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1751893Ab0JQXj0 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Oct 2010 19:39:26 -0400
+Received: from bld-mail13.adl6.internode.on.net ([150.101.137.98]:56056 "EHLO
+	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751111Ab0JQXjZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 17 Oct 2010 19:39:25 -0400
+Date: Mon, 18 Oct 2010 10:39:21 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: Nick Piggin <npiggin@kernel.dk>
+Cc: Christoph Hellwig <hch@infradead.org>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 17/19] fs: Reduce inode I_FREEING and factor inode
+ disposal
+Message-ID: <20101017233921.GF29677@dastard>
+References: <1287216853-17634-1-git-send-email-david@fromorbit.com>
+ <1287216853-17634-18-git-send-email-david@fromorbit.com>
+ <20101017013047.GA4394@infradead.org>
+ <20101017024923.GA6453@amd>
+ <20101017041313.GJ32255@dastard>
+ <20101017043514.GA21802@amd>
+ <20101017051310.GA22060@amd>
+ <20101017065245.GE29677@dastard>
+ <20101017070519.GA24641@amd>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101017070519.GA24641@amd>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Daniel,
+On Sun, Oct 17, 2010 at 06:05:19PM +1100, Nick Piggin wrote:
+> On Sun, Oct 17, 2010 at 05:52:45PM +1100, Dave Chinner wrote:
+> > > A really quick grep reveals cifs is using GlobalSMBSeslock inside i_lock
+> > > too.
+> > 
+> > I'm having a grep-fail day. Where is that one?
+> 
+> Uh, inside one of the 6 places that i_lock is taken in cifs. The only
+> non-trivial one, not surprisingly.
 
-Today's linux-next merge of the msm tree got a conflict in
-arch/arm/mach-msm/include/mach/debug-macro.S between commit
-08a610d9ef5394525b0328da0162d7b58c982cc4 ("arm: return both physical and
-virtual addresses from addruart") from the arm tree and commit
-46fe5f29e3062f681cc3cf07a604d82396faea89 ("msm: allow uart to be
-conditionally disabled") from the msm tree.
+It's two function calls away from the use of i_lock, in a different file.
+A quick grep on a warm, sunny Sunday afternoon between walking the
+dog and heading down to the pub for a beer and dinner isn't going to
+find that. :/
 
-Just context changes.  I fixed it up (see below) and can carry the fix as
-necessary.
--- 
+Anyway, this one looks fairly easy to fix as the code that locks
+GlobalSMBSeslock is only called from this location. I'll code up a
+patch to fix it.
+
 Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
 
-diff --cc arch/arm/mach-msm/include/mach/debug-macro.S
-index 3c35b0d,238c4f1..0000000
---- a/arch/arm/mach-msm/include/mach/debug-macro.S
-+++ b/arch/arm/mach-msm/include/mach/debug-macro.S
-@@@ -19,11 -19,13 +19,11 @@@
-  #include <mach/hardware.h>
-  #include <mach/msm_iomap.h>
-  
-- #ifdef CONFIG_MSM_DEBUG_UART
-+ #ifdef CONFIG_HAS_MSM_DEBUG_UART_PHYS
- -	.macro	addruart, rx, tmp
- +	.macro	addruart, rp, rv
-  	@ see if the MMU is enabled and select appropriate base address
- -	mrc	p15, 0, \rx, c1, c0
- -	tst	\rx, #1
- -	ldreq	\rx, =MSM_DEBUG_UART_PHYS
- -	ldrne	\rx, =MSM_DEBUG_UART_BASE
- +	ldr	\rp, =MSM_DEBUG_UART_PHYS
- +	ldr	\rv, =MSM_DEBUG_UART_BASE
-  	.endm
-  
-  	.macro	senduart,rd,rx
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
