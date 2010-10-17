@@ -1,52 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757074Ab0JQArq (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Oct 2010 20:47:46 -0400
-Received: from canuck.infradead.org ([134.117.69.58]:33171 "EHLO
-	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757032Ab0JQAro (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Oct 2010 20:47:44 -0400
-Date: Sat, 16 Oct 2010 20:47:42 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: Nick Piggin <npiggin@kernel.dk>
-Cc: Christoph Hellwig <hch@infradead.org>, Dave Chinner <david@fromorbit.com>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 04/19] fs: Implement lazy LRU updates for inodes.
-Message-ID: <20101017004742.GD1614@infradead.org>
-References: <1287216853-17634-1-git-send-email-david@fromorbit.com>
- <1287216853-17634-5-git-send-email-david@fromorbit.com>
- <20101016092916.GA32197@amd>
- <20101016165930.GA20626@infradead.org>
- <20101016172924.GA3519@amd>
- <20101016173422.GA6840@amd>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101016173422.GA6840@amd>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by canuck.infradead.org
-	See http://www.infradead.org/rpr.html
+	id S1757086Ab0JQAs7 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Oct 2010 20:48:59 -0400
+Received: from mail.vyatta.com ([76.74.103.46]:43026 "EHLO mail.vyatta.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757021Ab0JQAs6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 16 Oct 2010 20:48:58 -0400
+Date: Sat, 16 Oct 2010 17:48:54 -0700
+From: Stephen Hemminger <shemminger@vyatta.com>
+To: linux-kernel@vger.kernel.org
+Subject: Random compiler errors
+Message-ID: <20101016174854.4b8eec07@s6510>
+Organization: Vyatta
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Oct 17, 2010 at 04:34:22AM +1100, Nick Piggin wrote:
-> > This might actually be the better approach anyway (even for upstream)
-> > -- it means we don't have to worry about the "check head element"
-> > heuristic of the LRU check which could get false negatives if there is
-> > a lot of concurrency on the LRU.
-> 
-> Oh hmm, but then you do have the double lock of the LRU lock.
-> 
-> if (can_unuse_after_iput(inode)) {
->   spin_lock(&inode_lock);
->   list_move(inode, list tail)
->   spin_unlock(&inode_lock);
-> }
-> iput(inode);
-> spin_lock(&inode_lock);
-> 
-> Is that worth it?
+Not sure why this is happening, but lately when building kernels
+I am getting non-reproducible cases of gcc failure. There are no
+messages in system log. Cosmic rays? Bad memory?
 
-Probably not.
+  CC      arch/x86/kernel/xsave.o
+  CC      arch/x86/kernel/ptrace.o
+arch/x86/kernel/ptrace.c:1416: internal compiler error: Bus error
+Please submit a full bug report,
+with preprocessed source if appropriate.
+See <file:///usr/share/doc/gcc-4.4/README.Bugs> for instructions.
+make[2]: *** [arch/x86/kernel/ptrace.o] Error 1
+make[1]: *** [arch/x86/kernel] Error 2
+make: *** [arch/x86] Error 2
+
+$ make
+  CHK     include/linux/version.h
+  CHK     include/generated/utsrelease.h
+  CALL    scripts/checksyscalls.sh
+  CHK     include/generated/compile.h
+  CC      arch/x86/kernel/ptrace.o
+  CC      arch/x86/kernel/tls.o
+  CC      arch/x86/kernel/step.o
+  CC      arch/x86/kernel/tboot.o
