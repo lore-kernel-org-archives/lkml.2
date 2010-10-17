@@ -1,81 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932467Ab0JQOv5 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Oct 2010 10:51:57 -0400
+	id S1757207Ab0JQOwC (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Oct 2010 10:52:02 -0400
 Received: from mail-ew0-f46.google.com ([209.85.215.46]:34172 "EHLO
 	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932211Ab0JQOvy (ORCPT
+	with ESMTP id S932211Ab0JQOv7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Oct 2010 10:51:54 -0400
+	Sun, 17 Oct 2010 10:51:59 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer;
-        b=sYYnzfTtV5B0PDG1zI2IYu/V64vrWkPQVbMFj53Hgcrie0XnfN4dqr60JeHD7O02nT
-         P7yTriUC4qup2EZkEXM/4/M4/OSZE5fpZfhUwzslTWl1CJISqnmPa8lN4H2nALYVk2ux
-         Jhr741dNy/sGVb/ajFj18fiDyd0B7Xtj1RZxs=
+        b=VjEXROiePDcNBWsIpeFdRAxdHwz1g4DhJCUfE9Q6b3hUw7zjkxPEGKz8+JKmAZhnNL
+         mNsnFfuQ7YXTF/aZT5UN1Iy/+gJagv4LkLzMDc44pxhnisw6xxBztOs1GpZ2PIyZgIpC
+         Q27bt5GO3BssaZ76034cf85lOHEPcC42xdGcg=
 From: Vasiliy Kulikov <segooon@gmail.com>
 To: kernel-janitors@vger.kernel.org
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        Daniel Drake <dsd@laptop.org>, linux-kernel@vger.kernel.org
-Subject: [PATCH] x86: kernel: olpc-xo1: fix error handling code
-Date: Sun, 17 Oct 2010 18:51:46 +0400
-Message-Id: <1287327106-9111-1-git-send-email-segooon@gmail.com>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>, William Hubbs <w.d.hubbs@gmail.com>,
+        Samuel Thibault <samuel.thibault@ens-lyon.org>,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] staging: speakup: fix leaks of sysfs groups
+Date: Sun, 17 Oct 2010 18:51:53 +0400
+Message-Id: <1287327114-9201-1-git-send-email-segooon@gmail.com>
 X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If anything failed during initialization then setup_bases() should
-call pci_disable_device().  Also reference got from pci_get_device()
-should be freed with pci_dev_put().
+speakup_kobj_init() and speakup_kobj_exit() didn't remove
+i18n_attr_group and main_attr_group sysfs groups.
 
 Signed-off-by: Vasiliy Kulikov <segooon@gmail.com>
 ---
- arch/x86/kernel/olpc-xo1.c |   12 +++++++++---
- 1 files changed, 9 insertions(+), 3 deletions(-)
+ drivers/staging/speakup/kobjects.c |   18 ++++++++++++++----
+ 1 files changed, 14 insertions(+), 4 deletions(-)
 
-diff --git a/arch/x86/kernel/olpc-xo1.c b/arch/x86/kernel/olpc-xo1.c
-index f5442c0..05331cf 100644
---- a/arch/x86/kernel/olpc-xo1.c
-+++ b/arch/x86/kernel/olpc-xo1.c
-@@ -71,20 +71,25 @@ static int __devinit setup_bases(struct pci_dev *pdev)
- 	r = pci_request_region(pdev, ACPI_BAR, DRV_NAME);
- 	if (r) {
- 		dev_err(&pdev->dev, "can't alloc PCI BAR #%d\n", ACPI_BAR);
--		return r;
-+		goto err_disable;
+diff --git a/drivers/staging/speakup/kobjects.c b/drivers/staging/speakup/kobjects.c
+index e12b0e7..cc79f9e 100644
+--- a/drivers/staging/speakup/kobjects.c
++++ b/drivers/staging/speakup/kobjects.c
+@@ -989,24 +989,34 @@ int speakup_kobj_init(void)
+ 
+ 	speakup_kobj = kobject_create_and_add("speakup", accessibility_kobj);
+ 	if (!speakup_kobj) {
+-		kobject_put(accessibility_kobj);
+-		return -ENOMEM;
++		retval = -ENOMEM;
++		goto err_acc;
  	}
  
- 	r = pci_request_region(pdev, PMS_BAR, DRV_NAME);
- 	if (r) {
- 		dev_err(&pdev->dev, "can't alloc PCI BAR #%d\n", PMS_BAR);
--		pci_release_region(pdev, ACPI_BAR);
--		return r;
-+		goto err_region1;
- 	}
+ 	/* Create the files associated with this kobject */
+ 	retval = sysfs_create_group(speakup_kobj, &main_attr_group);
+ 	if (retval)
+-		speakup_kobj_exit();
++		goto err_speakup;
  
- 	acpi_base = pci_resource_start(pdev, ACPI_BAR);
- 	pms_base = pci_resource_start(pdev, PMS_BAR);
- 
- 	return 0;
+ 	retval = sysfs_create_group(speakup_kobj, &i18n_attr_group);
+ 	if (retval)
+-		speakup_kobj_exit();
++		goto err_group;
 +
-+err_region1:
-+	pci_release_region(pdev, ACPI_BAR);
-+err_disable:
-+	pci_disable_device(pdev);
-+	return r;
++	return 0;
+ 
++err_group:
++	sysfs_remove_group(speakup_kobj, &main_attr_group);
++err_speakup:
++	kobject_put(speakup_kobj);
++err_acc:
++	kobject_put(accessibility_kobj);
+ 	return retval;
  }
  
- static int __devinit olpc_xo1_probe(struct platform_device *pdev)
-@@ -98,6 +103,7 @@ static int __devinit olpc_xo1_probe(struct platform_device *pdev)
- 		return -ENODEV;
- 
- 	r = setup_bases(pcidev);
-+	pci_dev_put(pcidev);
- 	if (r)
- 		return r;
- 
+ void speakup_kobj_exit(void)
+ {
++	sysfs_remove_group(speakup_kobj, &i18n_attr_group);
++	sysfs_remove_group(speakup_kobj, &main_attr_group);
+ 	kobject_put(speakup_kobj);
+ 	kobject_put(accessibility_kobj);
+ }
 -- 
 1.7.0.4
 
