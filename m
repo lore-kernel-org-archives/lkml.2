@@ -1,123 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752761Ab0JQFvW (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Oct 2010 01:51:22 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:57743 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751849Ab0JQFvV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Oct 2010 01:51:21 -0400
-Date: Sun, 17 Oct 2010 07:51:12 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Robert Richter <robert.richter@amd.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "oprofile-list@lists.sourceforge.net" 
-	<oprofile-list@lists.sourceforge.net>
-Subject: Re: [GIT PULL] oprofile updates for v2.6.37
-Message-ID: <20101017055112.GA9072@elte.hu>
-References: <20101015134710.GF5969@erda.amd.com>
+	id S932083Ab0JQF42 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Oct 2010 01:56:28 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:54984 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751959Ab0JQF41 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 17 Oct 2010 01:56:27 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=JuEQJgUrheVtzj5eMF777EDarxeg73Q4zxqsulHKgIzeCjSPS/lJfKfZtAdq1uuYiD
+         19Aitmg/15WPZQRLnW8eDljTnMnU0ZHSNs38DEOEMHF9Gk2J+2IlJ14XKblUs0ZlAVcc
+         Aww2u+1IVdIV161XFQgx6N34f7u4ahIi6G9Sg=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101015134710.GF5969@erda.amd.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+In-Reply-To: <1287177279-30876-5-git-send-email-gthelen@google.com>
+References: <1287177279-30876-1-git-send-email-gthelen@google.com>
+	<1287177279-30876-5-git-send-email-gthelen@google.com>
+Date: Sun, 17 Oct 2010 14:56:20 +0900
+Message-ID: <AANLkTimosH8egHCY1BJ_8DisweJDm1VwxXJ=sGzxUJJe@mail.gmail.com>
+Subject: Re: [PATCH v2 04/11] memcg: disable softirq in lock_page_cgroup()
+From: Minchan Kim <minchan.kim@gmail.com>
+To: Greg Thelen <gthelen@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, containers@lists.osdl.org,
+        Andrea Righi <arighi@develer.com>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Ciju Rajan K <ciju@linux.vnet.ibm.com>,
+        David Rientjes <rientjes@google.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sat, Oct 16, 2010 at 6:14 AM, Greg Thelen <gthelen@google.com> wrote:
+> If pages are being migrated from a memcg, then updates to that
+> memcg's page statistics are protected by grabbing a bit spin lock
+> using lock_page_cgroup().  In an upcoming commit memcg dirty page
+> accounting will be updating memcg page accounting (specifically:
+> num writeback pages) from softirq.  Avoid a deadlocking nested
+> spin lock attempt by disabling softirq on the local processor
+> when grabbing the page_cgroup bit_spin_lock in lock_page_cgroup().
+> This avoids the following deadlock:
+> statistic
+>      CPU 0             CPU 1
+>                    inc_file_mapped
+>                    rcu_read_lock
+>  start move
+>  synchronize_rcu
+>                    lock_page_cgroup
+>                      softirq
+>                      test_clear_page_writeback
+>                      mem_cgroup_dec_page_stat(NR_WRITEBACK)
+>                      rcu_read_lock
+>                      lock_page_cgroup   /* deadlock */
+>                      unlock_page_cgroup
+>                      rcu_read_unlock
+>                    unlock_page_cgroup
+>                    rcu_read_unlock
+>
+> By disabling softirq in lock_page_cgroup, nested calls are avoided.
+> The softirq would be delayed until after inc_file_mapped enables
+> softirq when calling unlock_page_cgroup().
+>
+> The normal, fast path, of memcg page stat updates typically
+> does not need to call lock_page_cgroup(), so this change does
+> not affect the performance of the common case page accounting.
+>
+> Signed-off-by: Andrea Righi <arighi@develer.com>
+> Signed-off-by: Greg Thelen <gthelen@google.com>
+> ---
+>  include/linux/page_cgroup.h |    6 ++++++
+>  1 files changed, 6 insertions(+), 0 deletions(-)
+>
+> diff --git a/include/linux/page_cgroup.h b/include/linux/page_cgroup.h
+> index b59c298..0585546 100644
+> --- a/include/linux/page_cgroup.h
+> +++ b/include/linux/page_cgroup.h
+> @@ -3,6 +3,8 @@
+>
+>  #ifdef CONFIG_CGROUP_MEM_RES_CTLR
+>  #include <linux/bit_spinlock.h>
+> +#include <linux/hardirq.h>
+> +
+>  /*
+>  * Page Cgroup can be considered as an extended mem_map.
+>  * A page_cgroup page is associated with every page descriptor. The
+> @@ -119,12 +121,16 @@ static inline enum zone_type page_cgroup_zid(struct page_cgroup *pc)
+>
+>  static inline void lock_page_cgroup(struct page_cgroup *pc)
+>  {
+> +       /* This routine is only deadlock safe from softirq or lower. */
+> +       VM_BUG_ON(in_irq());
+> +       local_bh_disable();
+>        bit_spin_lock(PCG_LOCK, &pc->flags);
+>  }
+>
+>  static inline void unlock_page_cgroup(struct page_cgroup *pc)
+>  {
+>        bit_spin_unlock(PCG_LOCK, &pc->flags);
+> +       local_bh_enable();
+>  }
+>
+>  #else /* CONFIG_CGROUP_MEM_RES_CTLR */
+> --
+> 1.7.1
+>
+>
 
-* Robert Richter <robert.richter@amd.com> wrote:
+Please, see recent Kame's patch.
+http://lkml.org/lkml/2010/10/15/54
 
-> Ingo,
-> 
-> please pull for tip/perf/core:
-> 
->  git://git.kernel.org/pub/scm/linux/kernel/git/rric/oprofile.git core
-> 
-> The main part here is the generalization of the perf event backend
-> (currently arm and sh archs). Patches are for v2.6.37.
-> 
-> I did already a merge with tip/perf/core, so it should merge without
-> conflicts.
-> 
-> There are still my oprofile x86 updates pending (mainly AMD IBS) that
-> require my APIC patches to be applied to tip. As soon as they are in
-> tip I will update the oprofile tree and send a further pull request.
-> 
-> Thanks,
-> 
-> -Robert
-> 
-> The following changes since commit 0fdf13606b67f830559abdaad15980c7f4f05ec4:
-> 
-> Anand Gadiyar (2):
->       oprofile: include platform_device.h to fix build break
->       oprofile: fix linker errors
-> 
-> Jiri Olsa (2):
->       oprofile, x86: Using struct stack_frame for 64bit processes dump
->       oprofile, x86: Adding backtrace dump for 32bit process in compat mode
-> 
-> Matt Fleming (7):
->       perf: Add helper function to return number of counters
->       perf: New helper function for pmu name
->       oprofile: Make op_name_from_perf_id() global
->       ARM: oprofile: Rename op_arm to oprofile_perf
->       ARM: oprofile: Move non-ARM code into separate init/exit
->       oprofile: Abstract the perf-events backend
->       sh: oprofile: Use perf-events oprofile backend
-> 
-> Robert Richter (17):
->       oprofile, arm: initialize perf_event pointers with NULL
->       Merge branch 'oprofile/urgent' into oprofile/core
->       oprofile, x86: Simplify init/exit functions
->       oprofile, ARM: Use oprofile_arch_exit() to cleanup on failure
->       oprofile, ARM: Rework op_create_counter()
->       oprofile, ARM: Remove some goto statements
->       oprofile: Remove duplicate code around __oprofilefs_create_file()
->       Merge branch 'oprofile/urgent' (early part) into oprofile/perf
->       oprofile, ARM: Release resources on failure
->       Merge branch 'oprofile/core' (early part) into oprofile/perf
->       oprofile, ARM: Remove some goto statements
->       oprofile, ARM: Rework op_create_counter()
->       oprofile, ARM: Use oprofile_arch_exit() to cleanup on failure
->       Merge branch 'oprofile/perf' into oprofile/core
->       oprofile: disable write access to oprofilefs while profiler is running
->       Merge remote branch 'tip/perf/core' into oprofile/core
->       oprofile: make !CONFIG_PM function stubs static inline
-> 
-> Will Deacon (2):
->       oprofile: don't call arch exit code from init code on failure
->       ARM: oprofile: fix and simplify init/exit functions
-> 
->  arch/arm/kernel/perf_event.c      |    6 +
->  arch/arm/oprofile/Makefile        |    4 +
->  arch/arm/oprofile/common.c        |  311 +----------------------------------
->  arch/sh/Kconfig                   |   13 ++
->  arch/sh/kernel/perf_event.c       |   18 ++
->  arch/sh/oprofile/Makefile         |    4 +
->  arch/sh/oprofile/common.c         |  115 +++-----------
->  arch/sh/oprofile/op_impl.h        |   33 ----
->  arch/x86/oprofile/backtrace.c     |   70 +++++++--
->  arch/x86/oprofile/nmi_int.c       |    9 +-
->  drivers/oprofile/oprof.c          |   32 +---
->  drivers/oprofile/oprof.h          |    2 +-
->  drivers/oprofile/oprofile_files.c |    7 +-
->  drivers/oprofile/oprofile_perf.c  |  328 +++++++++++++++++++++++++++++++++++++
->  drivers/oprofile/oprofilefs.c     |   54 +++----
->  include/linux/oprofile.h          |    7 +
->  include/linux/perf_event.h        |    2 +
->  kernel/perf_event.c               |    5 +
->  18 files changed, 510 insertions(+), 510 deletions(-)
->  delete mode 100644 arch/sh/oprofile/op_impl.h
->  create mode 100644 drivers/oprofile/oprofile_perf.c
-
-Pulled, thanks a lot Robert!
-
-	Ingo
+-- 
+Kind regards,
+Minchan Kim
