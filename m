@@ -1,48 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932403Ab0JQKeb (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Oct 2010 06:34:31 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:40779 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932281Ab0JQKea (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Oct 2010 06:34:30 -0400
-Message-ID: <4CBAD111.3070406@redhat.com>
-Date: Sun, 17 Oct 2010 12:33:53 +0200
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc13 Lightning/1.0b3pre Thunderbird/3.1.4
-MIME-Version: 1.0
-To: Gleb Natapov <gleb@redhat.com>
-CC: kvm@vger.kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        mingo@elte.hu, a.p.zijlstra@chello.nl, tglx@linutronix.de,
-        hpa@zytor.com, riel@redhat.com, cl@linux-foundation.org,
-        mtosatti@redhat.com
-Subject: Re: [PATCH v7 03/12] Retry fault before vmentry
-References: <1287048176-2563-1-git-send-email-gleb@redhat.com> <1287048176-2563-4-git-send-email-gleb@redhat.com>
-In-Reply-To: <1287048176-2563-4-git-send-email-gleb@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S932394Ab0JQKiG (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Oct 2010 06:38:06 -0400
+Received: from casper.infradead.org ([85.118.1.10]:51764 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932281Ab0JQKiE convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 17 Oct 2010 06:38:04 -0400
+Subject: Re: [PATCH] checkpatch: allow single space before labels
+From: Peter Zijlstra <peterz@infradead.org>
+To: Mike Frysinger <vapier@gentoo.org>
+Cc: Joe Perches <joe@perches.com>, Andy Whitcroft <apw@canonical.com>,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <AANLkTin6H2AbL_Kr4XCtPOr+SQRxi0tKKF3puY4gybNu@mail.gmail.com>
+References: <1287302737-3507-1-git-send-email-vapier@gentoo.org>
+	 <1287303678.20968.37.camel@Joe-Laptop>
+	 <AANLkTimmSRS3eVsW4EZUxnE_rfjeqmmgGnjtWbn3J_nY@mail.gmail.com>
+	 <1287310889.1998.153.camel@laptop>
+	 <AANLkTin6H2AbL_Kr4XCtPOr+SQRxi0tKKF3puY4gybNu@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Sun, 17 Oct 2010 12:37:55 +0200
+Message-ID: <1287311875.1998.156.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  On 10/14/2010 11:22 AM, Gleb Natapov wrote:
-> When page is swapped in it is mapped into guest memory only after guest
-> tries to access it again and generate another fault. To save this fault
-> we can map it immediately since we know that guest is going to access
-> the page. Do it only when tdp is enabled for now. Shadow paging case is
-> more complicated. CR[034] and EFER registers should be switched before
-> doing mapping and then switched back.
->
-> +void kvm_arch_async_page_ready(struct kvm_vcpu *vcpu, struct kvm_async_pf *work)
-> +{
-> +	if (!vcpu->arch.mmu.direct_map || is_error_page(work->page))
-> +		return;
-> +	vcpu->arch.mmu.page_fault(vcpu, work->gva, 0, true);
-> +}
+On Sun, 2010-10-17 at 06:30 -0400, Mike Frysinger wrote:
+> On Sun, Oct 17, 2010 at 06:21, Peter Zijlstra wrote:
+> > On Sun, 2010-10-17 at 04:24 -0400, Mike Frysinger wrote:
+> >> feel free to extend however as long as the end result is no warnings
+> >> for " foo:" ;).
+> >
+> > I utterly detest those indented labels and am eradicating them wherever
+> > I notice them. There's really no sane reason to use them what so ever.
+> > Diff can be taught not to get confused about them, see my earlier email.
+> 
+> sure, with enough shell code thrown at a problem, you can do anything.
+>  the change that started these warnings was for an unrelated check.
+> no one proposed warning on indented labels, nor is there any statement
+> at all in the coding style on these.
+> 
+> considering you highlighted the biggest reason (diff by default does
+> not handle them properly), i think that invalidates against your "no
+> sane reason" statement.
 
-Missing mmu_topup_memory_caches().
+I think telling people to change their diff rules (--show-c-function
+isn't default enabled either) is a lot better option than to uglify the
+source. These indented labels are totally annoying when reading code.
 
 
--- 
-error compiling committee.c: too many arguments to function
+
 
