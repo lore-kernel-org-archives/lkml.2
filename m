@@ -1,53 +1,188 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757405Ab0JQQIX (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Oct 2010 12:08:23 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:42014 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757020Ab0JQQIW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Oct 2010 12:08:22 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=N1dxlUxaBdbmrQzeieUbb3MP2W+McD/SVIdNX/WzcaI15GXxq9D41OSBNs2a7ZM933
-         qX1ZKnJ4ncb/fFuPijeJPNaVECIaxRaw8jBEeSPuONIYqpC/k7hDDATV1zE3zqLqj39s
-         ElunZnte1fjSbMm6HQL57yc/FREDCyBVeMsdU=
-Date: Sun, 17 Oct 2010 20:08:16 +0400
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: "Maciej W. Rozycki" <macro@linux-mips.org>
-Cc: Don Zickus <dzickus@redhat.com>, Andi Kleen <andi@firstfloor.org>,
-        mingo@elte.hu, fweisbec@gmail.com, robert.richter@amd.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC] arch generic way to trigger unknown NMIs
-Message-ID: <20101017160816.GC7925@lenovo>
-References: <20101007072641.GE5010@basil.fritz.box> <20101007140112.GN10663@redhat.com> <alpine.LFD.2.00.1010072342170.15889@eddie.linux-mips.org> <20101010202357.GA28938@lenovo> <alpine.LFD.2.00.1010160822250.15889@eddie.linux-mips.org> <20101016153229.GA6763@lenovo> <alpine.LFD.2.00.1010161710290.15889@eddie.linux-mips.org> <20101016163657.GB6763@lenovo> <alpine.LFD.2.00.1010170055260.15889@eddie.linux-mips.org> <20101017085828.GA7925@lenovo>
+	id S1757412Ab0JQQON (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Oct 2010 12:14:13 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:48907 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757025Ab0JQQOM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 17 Oct 2010 12:14:12 -0400
+Date: Sun, 17 Oct 2010 18:13:42 +0200
+From: Gleb Natapov <gleb@redhat.com>
+To: kvm@vger.kernel.org
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, avi@redhat.com,
+        mingo@elte.hu, a.p.zijlstra@chello.nl, tglx@linutronix.de,
+        hpa@zytor.com, riel@redhat.com, cl@linux-foundation.org,
+        mtosatti@redhat.com
+Subject: Re: [PATCH v7 03/12] Retry fault before vmentry
+Message-ID: <20101017161342.GB16865@redhat.com>
+References: <1287048176-2563-1-git-send-email-gleb@redhat.com>
+ <1287048176-2563-4-git-send-email-gleb@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20101017085828.GA7925@lenovo>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1287048176-2563-4-git-send-email-gleb@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Oct 17, 2010 at 12:58:28PM +0400, Cyrill Gorcunov wrote:
-...
-> >  How different is it to the other two send_IPI shorthand calls?  Or the 
-> > fully-fledged one?  I gather from this thread they already handle NMIs 
-> > properly, so what is there within that cannot simply be copied over to 
-> > this one?
-> > 
-> >   Maciej
-> > 
-> 
->  Hmm, good question ;) I thought about 82489dx which required level
-> trigger mode for nmi delivery, new (or present day) apics always
-> use edge trigger mode so indeed there is no need for level assert/deassert.
-> 
->   Cyrill
+When page is swapped in it is mapped into guest memory only after guest
+tries to access it again and generate another fault. To save this fault
+we can map it immediately since we know that guest is going to access
+the page. Do it only when tdp is enabled for now. Shadow paging case is
+more complicated. CR[034] and EFER registers should be switched before
+doing mapping and then switched back.
 
-I'll try to cook a patch for this.
+Acked-by: Rik van Riel <riel@redhat.com>
+Signed-off-by: Gleb Natapov <gleb@redhat.com>
+---
 
-  Cyrill
+Please use this one instead. Need to call kvm_mmu_reload() in kvm_arch_async_page_ready()
+
+diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
+index 043e29e..96aca44 100644
+--- a/arch/x86/include/asm/kvm_host.h
++++ b/arch/x86/include/asm/kvm_host.h
+@@ -241,7 +241,7 @@ struct kvm_mmu {
+ 	void (*new_cr3)(struct kvm_vcpu *vcpu);
+ 	void (*set_cr3)(struct kvm_vcpu *vcpu, unsigned long root);
+ 	unsigned long (*get_cr3)(struct kvm_vcpu *vcpu);
+-	int (*page_fault)(struct kvm_vcpu *vcpu, gva_t gva, u32 err);
++	int (*page_fault)(struct kvm_vcpu *vcpu, gva_t gva, u32 err, bool no_apf);
+ 	void (*inject_page_fault)(struct kvm_vcpu *vcpu);
+ 	void (*free)(struct kvm_vcpu *vcpu);
+ 	gpa_t (*gva_to_gpa)(struct kvm_vcpu *vcpu, gva_t gva, u32 access,
+@@ -839,6 +839,8 @@ void kvm_arch_async_page_not_present(struct kvm_vcpu *vcpu,
+ 				     struct kvm_async_pf *work);
+ void kvm_arch_async_page_present(struct kvm_vcpu *vcpu,
+ 				 struct kvm_async_pf *work);
++void kvm_arch_async_page_ready(struct kvm_vcpu *vcpu,
++			       struct kvm_async_pf *work);
+ extern bool kvm_find_async_pf_gfn(struct kvm_vcpu *vcpu, gfn_t gfn);
+ 
+ #endif /* _ASM_X86_KVM_HOST_H */
+diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+index f01e89a..11d152b 100644
+--- a/arch/x86/kvm/mmu.c
++++ b/arch/x86/kvm/mmu.c
+@@ -2568,7 +2568,7 @@ static gpa_t nonpaging_gva_to_gpa_nested(struct kvm_vcpu *vcpu, gva_t vaddr,
+ }
+ 
+ static int nonpaging_page_fault(struct kvm_vcpu *vcpu, gva_t gva,
+-				u32 error_code)
++				u32 error_code, bool no_apf)
+ {
+ 	gfn_t gfn;
+ 	int r;
+@@ -2604,8 +2604,8 @@ static bool can_do_async_pf(struct kvm_vcpu *vcpu)
+ 	return kvm_x86_ops->interrupt_allowed(vcpu);
+ }
+ 
+-static bool try_async_pf(struct kvm_vcpu *vcpu, gfn_t gfn, gva_t gva,
+-			 pfn_t *pfn)
++static bool try_async_pf(struct kvm_vcpu *vcpu, bool no_apf, gfn_t gfn,
++			 gva_t gva, pfn_t *pfn)
+ {
+ 	bool async;
+ 
+@@ -2616,7 +2616,7 @@ static bool try_async_pf(struct kvm_vcpu *vcpu, gfn_t gfn, gva_t gva,
+ 
+ 	put_page(pfn_to_page(*pfn));
+ 
+-	if (can_do_async_pf(vcpu)) {
++	if (!no_apf && can_do_async_pf(vcpu)) {
+ 		trace_kvm_try_async_get_page(async, *pfn);
+ 		if (kvm_find_async_pf_gfn(vcpu, gfn)) {
+ 			trace_kvm_async_pf_doublefault(gva, gfn);
+@@ -2631,8 +2631,8 @@ static bool try_async_pf(struct kvm_vcpu *vcpu, gfn_t gfn, gva_t gva,
+ 	return false;
+ }
+ 
+-static int tdp_page_fault(struct kvm_vcpu *vcpu, gva_t gpa,
+-				u32 error_code)
++static int tdp_page_fault(struct kvm_vcpu *vcpu, gva_t gpa, u32 error_code,
++			  bool no_apf)
+ {
+ 	pfn_t pfn;
+ 	int r;
+@@ -2654,7 +2654,7 @@ static int tdp_page_fault(struct kvm_vcpu *vcpu, gva_t gpa,
+ 	mmu_seq = vcpu->kvm->mmu_notifier_seq;
+ 	smp_rmb();
+ 
+-	if (try_async_pf(vcpu, gfn, gpa, &pfn))
++	if (try_async_pf(vcpu, no_apf, gfn, gpa, &pfn))
+ 		return 0;
+ 
+ 	/* mmio */
+@@ -3317,7 +3317,7 @@ int kvm_mmu_page_fault(struct kvm_vcpu *vcpu, gva_t cr2, u32 error_code)
+ 	int r;
+ 	enum emulation_result er;
+ 
+-	r = vcpu->arch.mmu.page_fault(vcpu, cr2, error_code);
++	r = vcpu->arch.mmu.page_fault(vcpu, cr2, error_code, false);
+ 	if (r < 0)
+ 		goto out;
+ 
+diff --git a/arch/x86/kvm/paging_tmpl.h b/arch/x86/kvm/paging_tmpl.h
+index c45376d..d6b281e 100644
+--- a/arch/x86/kvm/paging_tmpl.h
++++ b/arch/x86/kvm/paging_tmpl.h
+@@ -527,8 +527,8 @@ out_gpte_changed:
+  *  Returns: 1 if we need to emulate the instruction, 0 otherwise, or
+  *           a negative value on error.
+  */
+-static int FNAME(page_fault)(struct kvm_vcpu *vcpu, gva_t addr,
+-			       u32 error_code)
++static int FNAME(page_fault)(struct kvm_vcpu *vcpu, gva_t addr, u32 error_code,
++			     bool no_apf)
+ {
+ 	int write_fault = error_code & PFERR_WRITE_MASK;
+ 	int user_fault = error_code & PFERR_USER_MASK;
+@@ -569,7 +569,7 @@ static int FNAME(page_fault)(struct kvm_vcpu *vcpu, gva_t addr,
+ 	mmu_seq = vcpu->kvm->mmu_notifier_seq;
+ 	smp_rmb();
+ 
+-	if (try_async_pf(vcpu, walker.gfn, addr, &pfn))
++	if (try_async_pf(vcpu, no_apf, walker.gfn, addr, &pfn))
+ 		return 0;
+ 
+ 	/* mmio */
+diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+index 09e72fc..9b178ee 100644
+--- a/arch/x86/kvm/x86.c
++++ b/arch/x86/kvm/x86.c
+@@ -6131,6 +6131,20 @@ void kvm_set_rflags(struct kvm_vcpu *vcpu, unsigned long rflags)
+ }
+ EXPORT_SYMBOL_GPL(kvm_set_rflags);
+ 
++void kvm_arch_async_page_ready(struct kvm_vcpu *vcpu, struct kvm_async_pf *work)
++{
++	int r;
++
++	if (!vcpu->arch.mmu.direct_map || is_error_page(work->page))
++		return;
++
++	r = kvm_mmu_reload(vcpu);
++	if (unlikely(r))
++		return;
++
++	vcpu->arch.mmu.page_fault(vcpu, work->gva, 0, true);
++}
++
+ static inline u32 kvm_async_pf_hash_fn(gfn_t gfn)
+ {
+ 	return hash_32(gfn & 0xffffffff, order_base_2(ASYNC_PF_PER_VCPU));
+diff --git a/virt/kvm/async_pf.c b/virt/kvm/async_pf.c
+index 857d634..e97eae9 100644
+--- a/virt/kvm/async_pf.c
++++ b/virt/kvm/async_pf.c
+@@ -132,6 +132,8 @@ void kvm_check_async_pf_completion(struct kvm_vcpu *vcpu)
+ 	list_del(&work->link);
+ 	spin_unlock(&vcpu->async_pf.lock);
+ 
++	if (work->page)
++		kvm_arch_async_page_ready(vcpu, work);
+ 	kvm_arch_async_page_present(vcpu, work);
+ 
+ 	list_del(&work->queue);
+--
+			Gleb.
