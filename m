@@ -1,112 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752397Ab0JQFfv (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Oct 2010 01:35:51 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:46277 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751357Ab0JQFfu convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Oct 2010 01:35:50 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=CK66cAzUg2Cm3p8wC3nU9bXKT71J6Wb8GBHnVIC8zRUVdj+Fg7HLLMKwsAYKyMh9p/
-         sntz/oai9LBOAjhUzMcavgpb6ltcp8rtnj0aVCDtWZR7T33fu1a+uQ/8ws4WNx1knmQn
-         pqCL05cjLhj7DJA8861Gf9RVQP3hg5l+3Q7aE=
+	id S1752661Ab0JQFkm (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Oct 2010 01:40:42 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:55903 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751445Ab0JQFkl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 17 Oct 2010 01:40:41 -0400
+Date: Sun, 17 Oct 2010 07:40:08 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, kernel@lists.fedoraproject.org,
+        Mimi Zohar <zohar@us.ibm.com>, warthog9@kernel.org,
+        Dave Chinner <david@fromorbit.com>, linux-kernel@vger.kernel.org,
+        Serge Hallyn <serue@us.ibm.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        James Morris <jmorris@namei.org>, Kyle McMartin <kyle@mcmartin.ca>
+Subject: Re: ima: use of radix tree cache indexing == massive waste of memory?
+Message-ID: <20101017054008.GA16383@elte.hu>
+References: <20101016065206.GO4681@dastard>
+ <20101016192027.GA6883@infradead.org>
+ <ebc4973c-6c11-4397-b8b0-c212a27abce4@email.android.com>
+ <20101017004945.GE1614@infradead.org>
 MIME-Version: 1.0
-In-Reply-To: <AANLkTimDRuE9oBpj6h13wFKazuOzOm8UbFdM+qhbc0On@mail.gmail.com>
-References: <20101015170627.e5033fa4.kamezawa.hiroyu@jp.fujitsu.com>
-	<20101015171225.70d4ca8f.kamezawa.hiroyu@jp.fujitsu.com>
-	<AANLkTimDRuE9oBpj6h13wFKazuOzOm8UbFdM+qhbc0On@mail.gmail.com>
-Date: Sun, 17 Oct 2010 14:35:47 +0900
-Message-ID: <AANLkTikTMhf9NrLxdrw4Sqi8QiqaVOcfVBQWZWw6s6Vw@mail.gmail.com>
-Subject: Re: [RFC][PATCH 2/2] memcg: new lock for mutual execution of
- account_move and file stats
-From: Minchan Kim <minchan.kim@gmail.com>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
-        "balbir@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>,
-        Greg Thelen <gthelen@google.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101017004945.GE1614@infradead.org>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Oct 17, 2010 at 2:33 PM, Minchan Kim <minchan.kim@gmail.com> wrote:
-> On Fri, Oct 15, 2010 at 5:12 PM, KAMEZAWA Hiroyuki
-> <kamezawa.hiroyu@jp.fujitsu.com> wrote:
->> From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
->>
->> When we try to enhance page's status update to support other flags,
->> one of problem is updating status from IRQ context.
->>
->> Now, mem_cgroup_update_file_stat() takes lock_page_cgroup() to avoid
->> race with _account move_. IOW, there are no races with charge/uncharge
->> in nature. Considering an update from IRQ context, it seems better
->> to disable IRQ at lock_page_cgroup() to avoid deadlock.
->>
->> But lock_page_cgroup() is used too widerly and adding IRQ disable
->> there makes the performance bad. To avoid the big hammer, this patch
->> adds a new lock for update_stat().
->>
->> This lock is for mutual execustion of updating stat and accout moving.
->> This adds a new lock to move_account..so, this makes move_account slow.
->> But considering trade-off, I think it's acceptable.
->>
->> A score of moving 8GB anon pages, 8cpu Xeon(3.1GHz) is here.
->>
->> [before patch] (mmotm + optimization patch (#1 in this series)
->> [root@bluextal kamezawa]# time echo 2257 > /cgroup/B/tasks
->>
->> real    0m0.694s
->> user    0m0.000s
->> sys     0m0.683s
->>
->> [After patch]
->> [root@bluextal kamezawa]# time echo 2238 > /cgroup/B/tasks
->>
->> real    0m0.741s
->> user    0m0.000s
->> sys     0m0.730s
->>
->> This moves 8Gbytes == 2048k pages. But no bad effects to codes
->> other than "move".
->>
->> Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
->
-> It looks good than old approach.
-> Just a below nitpick.
->
->> ---
->>  include/linux/page_cgroup.h |   29 +++++++++++++++++++++++++++++
->>  mm/memcontrol.c             |   11 +++++++++--
->>  2 files changed, 38 insertions(+), 2 deletions(-)
->>
->> Index: mmotm-1013/include/linux/page_cgroup.h
->> ===================================================================
->> --- mmotm-1013.orig/include/linux/page_cgroup.h
->> +++ mmotm-1013/include/linux/page_cgroup.h
->> @@ -36,6 +36,7 @@ struct page_cgroup *lookup_page_cgroup(s
->>  enum {
->>        /* flags for mem_cgroup */
->>        PCG_LOCK,  /* page cgroup is locked */
->> +       PCG_LOCK_STATS, /* page cgroup's stat accounting flags are locked */
->
-> Hmm, I think naming isn't a good. Aren't both for stat?
-> As I understand, Both are used for stat.
-> One is just used by charge/uncharge and the other is used by
-> pdate_file_stat/move_account.
-> If you guys who are expert in mcg feel it with easy, I am not against.
-> But at least, mcg-not-familiar people like me don't feel it comfortable.
->
 
-And I think this patch would be better to be part of Greg Thelen's series.
+* Christoph Hellwig <hch@infradead.org> wrote:
 
--- 
-Kind regards,
-Minchan Kim
+> On Sat, Oct 16, 2010 at 02:10:29PM -0700, H. Peter Anvin wrote:
+>
+> > "Christoph Hellwig" <hch@infradead.org> wrote:
+> >
+> > > Besides the algorithmic problems with ima, why is kernel.org using 
+> > > IMA to start with?  Except for IBM looking for a reason to jusity 
+> > > why TPM isn't a completely waster of ressources it's pointless.  
+> > > And it was only merged under the premise that it would not affect 
+> > > innocent normal users.
+> >
+> > I'm confused ... what makes you think we are?  This might have been 
+> > an unintentional misconfiguration...
+> 
+> I didn't mean to imply you enabled it intentionally.  In fact it looks 
+> like the inode tracking in IMA is always on once it's compiled in, 
+> which totally defeats the purpose of doing it's on iternal inode 
+> tracking instead of bloating the inode what they originally proposed.  
+> IMA really needs a kernel parameter to only enabled this crap when 
+> people actually use it.
+
+That is true.
+
+> And whoever turned it on in Fedora needs some serious wahcking.
+
+And that is false.
+
+This security feature was merged upstream last year, it's not in 
+drivers/staging/ and the Kconfig help text does not contain any warning 
+that this is 'crap', so how were the Fedora people supposed to know?
+
+If you are suggesting that distribution kernel maintainers should not 
+trust upstream kernel feature decisions and are expected to do a line by 
+line review of the ~40,000 commits that go upstream every year, to make 
+sure there's no hidden 'crap' in them (and failing that be labeled 
+incompetent idiots), then you are out of your mind.
+
+It's just not possible to do that nor is it reasonable or efficient: 
+crap should be caught via hierarchical filtering: when the developer 
+posts the first patches to lkml, or when it merged into a maintainer 
+tree, or when it goes upstream or when it is upstream and then, as the 
+very last (and most expensive) line of defense, it will be caught when 
+it gets exposure in distributions. Which seems to be precisely what 
+happened here.
+
+Fact is that Kyle did Linux a _favor_ by enabling the feature in Fedora, 
+as it allowed the bug/inefficiency/crap to be found by Dave. Linux got 
+richer as a result as we learned about a bug that affects many people. 
+Your gratuitous insults against him are highly misguided.
+
+Thanks,
+
+	Ingo
