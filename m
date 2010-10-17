@@ -1,66 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932418Ab0JQSFn (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Oct 2010 14:05:43 -0400
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:44264 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757380Ab0JQSFm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Oct 2010 14:05:42 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :content-type:content-transfer-encoding;
-        b=AjLsbdlN+12wBI//jFyfmMEeR9x0CrdxuNldr7pR6q6CEN0y1m5Kay9ZCp63wA/fuN
-         CE+idX8lb0Pc3gNzSaTstbHWqof8VqKZYrJ41XJU2e73aL8R+zFIKxpK427bJ6jBk+aY
-         KYuK9d6H36qgEukdwRrc824+ZddV7blYQn770=
-Message-ID: <4CBB3B24.2000106@gmail.com>
-Date: Sun, 17 Oct 2010 14:06:28 -0400
-From: Benjamin Poirier <benjamin.poirier@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.12) Gecko/20100913 Icedove/3.0.7
+	id S932485Ab0JQSF7 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Oct 2010 14:05:59 -0400
+Received: from [69.28.251.93] ([69.28.251.93]:56187 "EHLO b32.net"
+	rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S932456Ab0JQSF6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 17 Oct 2010 14:05:58 -0400
+From: Kevin Cernekee <cernekee@gmail.com>
+To: Ralf Baechle <ralf@linux-mips.org>
+Cc: <ffainelli@freebox.fr>, <linux-mips@linux-mips.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: [PATCH v2 2/9] MIPS: Add BMIPS processor types to Kconfig
+Date: Sun, 17 Oct 2010 10:56:53 -0700
+Message-Id: <584a8c475b66c7ccdd112fb6afda8491@localhost>
+User-Agent: vim 7.2
 MIME-Version: 1.0
-To: bridge@lists.linux-foundation.org
-CC: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: EAPOL bridging
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+[v2: add "VIPER" marketing name for BMIPS4350]
 
-I have some trouble bridging EAPOL frames. I'd like to do this to allow 
-wired 802.1x authentication from within a kvm virtual machine. I have 
-the following setup:
+Add processor feature definitions for BMIPS3300, BMIPS4350, BMIPS4380,
+and BMIPS5000.
 
-kvm -- tap0 -- br0 -- eth1 -- 802.1x authenticator (switch) -- more network
+Signed-off-by: Kevin Cernekee <cernekee@gmail.com>
+---
+ arch/mips/Kconfig |   63 +++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 63 insertions(+), 0 deletions(-)
 
-and it doesn't work. I've added a few logging rules to ebtables. I only 
-see an EAPOL frame going through the INPUT chain of tap0. It seems to be 
-dropped by the bridge. The EAPOL frame is an ethernet link local 
-multicast frame with destination address 01-80-C2-00-00-03, "IEEE Std 
-802.1X PAE address".
+diff --git a/arch/mips/Kconfig b/arch/mips/Kconfig
+index 5526faa..f161e9f 100644
+--- a/arch/mips/Kconfig
++++ b/arch/mips/Kconfig
+@@ -1332,6 +1332,57 @@ config CPU_CAVIUM_OCTEON
+ 	  can have up to 16 Mips64v2 cores and 8 integrated gigabit ethernets.
+ 	  Full details can be found at http://www.caviumnetworks.com.
+ 
++config CPU_BMIPS3300
++	bool "BMIPS3300"
++	depends on SYS_HAS_CPU_BMIPS3300
++	select DMA_NONCOHERENT
++	select IRQ_CPU
++	select SWAP_IO_SPACE
++	select SYS_SUPPORTS_32BIT_KERNEL
++	select WEAK_ORDERING
++	help
++	  Broadcom BMIPS3300 processors.
++
++config CPU_BMIPS4350
++	bool "BMIPS4350"
++	depends on SYS_HAS_CPU_BMIPS4350
++	select CPU_SUPPORTS_32BIT_KERNEL
++	select DMA_NONCOHERENT
++	select IRQ_CPU
++	select SWAP_IO_SPACE
++	select SYS_SUPPORTS_SMP
++	select SYS_SUPPORTS_HOTPLUG_CPU
++	select WEAK_ORDERING
++	help
++	  Broadcom BMIPS4350 ("VIPER") processors.
++
++config CPU_BMIPS4380
++	bool "BMIPS4380"
++	depends on SYS_HAS_CPU_BMIPS4380
++	select CPU_SUPPORTS_32BIT_KERNEL
++	select DMA_NONCOHERENT
++	select IRQ_CPU
++	select SWAP_IO_SPACE
++	select SYS_SUPPORTS_SMP
++	select SYS_SUPPORTS_HOTPLUG_CPU
++	select WEAK_ORDERING
++	help
++	  Broadcom BMIPS4380 processors.
++
++config CPU_BMIPS5000
++	bool "BMIPS5000"
++	depends on SYS_HAS_CPU_BMIPS5000
++	select CPU_SUPPORTS_32BIT_KERNEL
++	select CPU_SUPPORTS_HIGHMEM
++	select DMA_NONCOHERENT
++	select IRQ_CPU
++	select SWAP_IO_SPACE
++	select SYS_SUPPORTS_SMP
++	select SYS_SUPPORTS_HOTPLUG_CPU
++	select WEAK_ORDERING
++	help
++	  Broadcom BMIPS5000 processors.
++
+ endchoice
+ 
+ if CPU_LOONGSON2F
+@@ -1450,6 +1501,18 @@ config SYS_HAS_CPU_SB1
+ config SYS_HAS_CPU_CAVIUM_OCTEON
+ 	bool
+ 
++config SYS_HAS_CPU_BMIPS3300
++	bool
++
++config SYS_HAS_CPU_BMIPS4350
++	bool
++
++config SYS_HAS_CPU_BMIPS4380
++	bool
++
++config SYS_HAS_CPU_BMIPS5000
++	bool
++
+ #
+ # CPU may reorder R->R, R->W, W->R, W->W
+ # Reordering beyond LL and SC is handled in WEAK_REORDERING_BEYOND_LLSC
+-- 
+1.7.0.4
 
-I've looked at http://standards.ieee.org/regauth/groupmac/tutorial.html, 
-which says that frames with a destination in the range 01-80-C2-00-00-00 
-to 01-80-C2-00-00-0F should not be forwarded by standard conformant 
-bridges. I've also looked at net/bridge/br_input.c and br_handle_frame() 
-seems quite intent on "bending" the standard when STP is disabled, but 
-only for 01-80-C2-00-00-00. However there are more applications that use 
-similar addresses, EAPOL included: 
-http://standards.ieee.org/regauth/groupmac/Standard_Group_MAC_Address_assignments.pdf
-
-Given the current state of affairs, would it be acceptable to make the 
-code more permissive by forwarding all the range of reserved group 
-addresses when STP is disabled? If not, what would be the way to go 
-about enabling 802.1x authentication from within a virtual machine?
-
-BTW, it seems this issue has been raised before, 
-https://lists.linux-foundation.org/pipermail/bridge/2007-November/005629.html
-with the conclusion that
-> Despite what the standards say, many users are using bridging code for invisible
-> firewalls etc, and in those cases they want STP and EAPOL frames to be forwarded.
-
-Thanks,
--Ben
