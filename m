@@ -1,60 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757161Ab0JQOvD (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Oct 2010 10:51:03 -0400
-Received: from silver.sucs.swan.ac.uk ([137.44.10.1]:36907 "EHLO
-	silver.sucs.swan.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756759Ab0JQOvB (ORCPT
+	id S1757261Ab0JQOvp (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Oct 2010 10:51:45 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:34172 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756759Ab0JQOvo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Oct 2010 10:51:01 -0400
-Date: Sun, 17 Oct 2010 15:50:25 +0100
-From: Sitsofe Wheeler <sitsofe@yahoo.com>
-To: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Matthew Garrett <mjg59@srcf.ucam.org>,
-        Len Brown <lenb@kernel.org>, Zhang Rui <rui.zhang@intel.com>,
-        David Zeuthen <davidz@redhat.com>,
-        Richard Hughes <richard@hughsie.com>, linux-acpi@vger.kernel.org,
+	Sun, 17 Oct 2010 10:51:44 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=bbdMvWa/9JHVF6mDQZumodqwmUcw72imizZz7ez7bNaQJ/R35JNE2DTpicD2ws3t9W
+         95GEPI7sVX+vA4tzl3ucEm76E6cDviknlPoYDUsw/I259HsgTaTeB4ZpZSq2uG2lHebM
+         WDDF6TNgQCV7Hb/bAoQGjm2KTNFoZCPQfX9go=
+From: Vasiliy Kulikov <segooon@gmail.com>
+To: kernel-janitors@vger.kernel.org
+Cc: David Brown <davidb@codeaurora.org>,
+        Daniel Walker <dwalker@codeaurora.org>,
+        Bryan Huntsman <bryanh@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Stepan Moskovchenko <stepanm@codeaurora.org>,
+        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ACPI / Battery: Return -ENODATA for unknown values in
-	get_property()
-Message-ID: <20101017145025.GA32599@sucs.org>
-References: <20101016141321.GA11054@sucs.org> <201010170105.33274.rjw@sisk.pl> <20101017051953.GA3430@khazad-dum.debian.net> <20101017095940.GA4077@sucs.org> <20101017131016.GB13015@khazad-dum.debian.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101017131016.GB13015@khazad-dum.debian.net>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Subject: [PATCH] arm: mach-msm: fix error handling in msm_iommu_probe()
+Date: Sun, 17 Oct 2010 18:51:37 +0400
+Message-Id: <1287327097-9025-1-git-send-email-segooon@gmail.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Oct 17, 2010 at 11:10:16AM -0200, Henrique de Moraes Holschuh wrote:
-> On Sun, 17 Oct 2010, Sitsofe Wheeler wrote:
-> > 
-> > Using ENODATA and ENXIO appears to solve the problem (upower reports a
-> > rate of 0.0). However when plugging the battery in after previously only
-> > being on AC power none of the /sys/class/power_supply/BAT0/uevent:*
-> > files are created so upower never realises a battery has been plugged
-> 
-> You might have broken firmware that does not issue a notify when a battery
-> is plugged.  But it has been a long time, I don't recall if the battery
-> driver handles hotplugging without the help of the dock/bay driver (it
-> should, AFAIK).
+msm_iommu_probe() didn't free mem_region and mapped IO.
+Also if request_mem_region() failed then error handling
+code dereferenced NULL pointer.
 
-Battery hotplug works fine without these patches. I should have said -
-the uevent devices are there with a vanilla kernel no matter how many
-times the battery is plugged in or unplugged (that's how I knew they
-were missing with the patches added :) I am guessing some part of the
-kernel/udev cannot handle being told ENODATA or ENXIO and bails out
-before those nodes would be made.
+Signed-off-by: Vasiliy Kulikov <segooon@gmail.com>
+---
+ arch/arm/mach-msm/iommu_dev.c |   22 +++++++++++++---------
+ 1 files changed, 13 insertions(+), 9 deletions(-)
 
-> > in. A further issue with ENXIO is is the following repeatedly appears in
-> > dmesg:
-> > power_supply BAT0: driver failed to report `current_now' property
-> 
-> And it keeps silent if it gets ENODATA?
-
-Yes.
-
+diff --git a/arch/arm/mach-msm/iommu_dev.c b/arch/arm/mach-msm/iommu_dev.c
+index c33ae78..9019cee 100644
+--- a/arch/arm/mach-msm/iommu_dev.c
++++ b/arch/arm/mach-msm/iommu_dev.c
+@@ -128,7 +128,7 @@ static void msm_iommu_reset(void __iomem *base)
+ 
+ static int msm_iommu_probe(struct platform_device *pdev)
+ {
+-	struct resource *r;
++	struct resource *r, *r2;
+ 	struct clk *iommu_clk;
+ 	struct msm_iommu_drvdata *drvdata;
+ 	struct msm_iommu_dev *iommu_dev = pdev->dev.platform_data;
+@@ -183,27 +183,27 @@ static int msm_iommu_probe(struct platform_device *pdev)
+ 
+ 		len = r->end - r->start + 1;
+ 
+-		r = request_mem_region(r->start, len, r->name);
+-		if (!r) {
++		r2 = request_mem_region(r->start, len, r->name);
++		if (!r2) {
+ 			pr_err("Could not request memory region: "
+ 			"start=%p, len=%d\n", (void *) r->start, len);
+ 			ret = -EBUSY;
+ 			goto fail;
+ 		}
+ 
+-		regs_base = ioremap(r->start, len);
++		regs_base = ioremap(r2->start, len);
+ 
+ 		if (!regs_base) {
+ 			pr_err("Could not ioremap: start=%p, len=%d\n",
+-				 (void *) r->start, len);
++				 (void *) r2->start, len);
+ 			ret = -EBUSY;
+-			goto fail;
++			goto fail_mem;
+ 		}
+ 
+ 		irq = platform_get_irq_byname(pdev, "secure_irq");
+ 		if (irq < 0) {
+ 			ret = -ENODEV;
+-			goto fail;
++			goto fail_io;
+ 		}
+ 
+ 		mb();
+@@ -211,14 +211,14 @@ static int msm_iommu_probe(struct platform_device *pdev)
+ 		if (GET_IDR(regs_base) == 0) {
+ 			pr_err("Invalid IDR value detected\n");
+ 			ret = -ENODEV;
+-			goto fail;
++			goto fail_io;
+ 		}
+ 
+ 		ret = request_irq(irq, msm_iommu_fault_handler, 0,
+ 				"msm_iommu_secure_irpt_handler", drvdata);
+ 		if (ret) {
+ 			pr_err("Request IRQ %d failed with ret=%d\n", irq, ret);
+-			goto fail;
++			goto fail_io;
+ 		}
+ 
+ 		msm_iommu_reset(regs_base);
+@@ -237,6 +237,10 @@ static int msm_iommu_probe(struct platform_device *pdev)
+ 
+ 	return 0;
+ 
++fail_io:
++	iounmap(regs_base);
++fail_mem:
++	release_mem_region(r->start, len);
+ fail:
+ 	kfree(drvdata);
+ 	return ret;
 -- 
-Sitsofe | http://sucs.org/~sits/
+1.7.0.4
+
