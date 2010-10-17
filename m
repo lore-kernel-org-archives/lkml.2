@@ -1,58 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932073Ab0JQCJy (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Oct 2010 22:09:54 -0400
-Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:53831 "EHLO
-	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757211Ab0JQCJx (ORCPT
+	id S1757243Ab0JQCMJ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Oct 2010 22:12:09 -0400
+Received: from bld-mail13.adl6.internode.on.net ([150.101.137.98]:58879 "EHLO
+	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1757228Ab0JQCMH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Oct 2010 22:09:53 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: ApYEAEL1uUx5LcB2gWdsb2JhbAChKRYBARYiIsF4hUkE
-Date: Sun, 17 Oct 2010 13:09:51 +1100
-From: Nick Piggin <npiggin@kernel.dk>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: Nick Piggin <npiggin@kernel.dk>, Dave Chinner <david@fromorbit.com>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 04/19] fs: Implement lazy LRU updates for inodes.
-Message-ID: <20101017020951.GC3162@amd>
-References: <1287216853-17634-1-git-send-email-david@fromorbit.com>
- <1287216853-17634-5-git-send-email-david@fromorbit.com>
- <20101016092916.GA32197@amd>
- <20101016165930.GA20626@infradead.org>
- <20101016172924.GA3519@amd>
- <20101017004710.GC1614@infradead.org>
+	Sat, 16 Oct 2010 22:12:07 -0400
+Date: Sun, 17 Oct 2010 13:11:38 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: "J.H." <warthog9@kernel.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Christoph Hellwig <hch@infradead.org>,
+        linux-kernel@vger.kernel.org, Mimi Zohar <zohar@us.ibm.com>,
+        devel@lists.fedoraprojet.org
+Subject: Re: ima: use of radix tree cache indexing == massive waste of
+ memory?
+Message-ID: <20101017021138.GG32255@dastard>
+References: <20101016065206.GO4681@dastard>
+ <20101016192027.GA6883@infradead.org>
+ <ebc4973c-6c11-4397-b8b0-c212a27abce4@email.android.com>
+ <20101017003526.GA29677@dastard>
+ <4CBA4933.1080108@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20101017004710.GC1614@infradead.org>
+In-Reply-To: <4CBA4933.1080108@kernel.org>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Oct 16, 2010 at 08:47:10PM -0400, Christoph Hellwig wrote:
-> On Sun, Oct 17, 2010 at 04:29:24AM +1100, Nick Piggin wrote:
-> > > I don't think the pointer check will work either.  By the time we retake
-> > > the lru lock the inode might already have been reaped through a call
-> > > to invalidate_inodes.  There's no way we can do anything with it after
-> > 
-> > I don't think you're right. If we re take inode_lock, ensure it is on
-> > the LRU, and call the can_unuse checks, there is no more problem than
-> > the regular loop taking items from the LRU, AFAIKS.
-> 
-> As long as we have the global inode lock it should indeed be safe.
-> But once we have a separate lru lock (global or per-zone, with or
-> without i_lock during the addition) there is nothing preventing the
-> inode from getting reused and re-added to the lru in the meantime.
-> Sure this is an extremly unlikely case, but there is no locking to
-> prevent it once inode_lock is gone.
+On Sat, Oct 16, 2010 at 05:54:11PM -0700, J.H. wrote:
+> There does seem to be a boot option to disable it, but it seems to be on
+> by default if it's compiled in, and it's not like it's obvious that this
+> is there and chewing up resources, is there a way to find out how much
+> memory this is chewing up?
 
-No. There is nothing preventing that exact reuse from happening in
-mainline _today_ either, because the inode_lock is dropped there too.
+$ grep iint_cache /proc/slabinfo | awk '// { print $2 * ($4 + 560) / 1048576 "MiB" }'
+1164.91MiB
+$
 
-The point is that it is a heuristic that works (apparently) most of the
-time but if it gets it wrong then it's not a big deal, it's only the LRU
-position anyway. It would work exactly the same with separate global or
-per-zone lru locks.
+$ while [ 1 ]; do
+> grep iint_cache /proc/slabinfo | awk '// { print $2 * ($4 + 560) / 1048576 "MiB" }'
+> sleep 5
+> done
+955.706MiB
+937.438MiB
+928.851MiB
+920.912MiB
+919.067MiB
+919.086MiB
+919.111MiB
+.....
 
+This is only with about 1.2M inodes cached - yesterday I saw the
+inode cache grow to 3.5M inodes during an rsync run....
+
+Also, it's doing a good job of fragmenting the radix tree node cache
+- it's currently at 50% population - 3.8M entries, 1.9M in use. i.e.
+wasting another ~1GB of RAM itself right now....
+
+Cheers,
+
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
