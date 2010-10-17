@@ -1,55 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932262Ab0JQJwu (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Oct 2010 05:52:50 -0400
-Received: from canuck.infradead.org ([134.117.69.58]:55817 "EHLO
-	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932168Ab0JQJwt convert rfc822-to-8bit (ORCPT
+	id S932301Ab0JQKAR (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Oct 2010 06:00:17 -0400
+Received: from silver.sucs.swan.ac.uk ([137.44.10.1]:50410 "EHLO
+	silver.sucs.swan.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932212Ab0JQKAP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Oct 2010 05:52:49 -0400
-Subject: Re: [RFC][PATCH 6/7] perf: use jump_label to optimize the
- scheduler hooks
-From: Peter Zijlstra <peterz@infradead.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>, Jason Baron <jbaron@redhat.com>,
-        linux-kernel@vger.kernel.org, David Miller <davem@davemloft.net>,
-        Mike Galbraith <efault@gmx.de>
-In-Reply-To: <20101014203625.552405859@chello.nl>
-References: <20101014203404.222133139@chello.nl>
-	 <20101014203625.552405859@chello.nl>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Sun, 17 Oct 2010 11:52:39 +0200
-Message-ID: <1287309159.1998.146.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	Sun, 17 Oct 2010 06:00:15 -0400
+Date: Sun, 17 Oct 2010 10:59:40 +0100
+From: Sitsofe Wheeler <sitsofe@yahoo.com>
+To: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Matthew Garrett <mjg59@srcf.ucam.org>,
+        Len Brown <lenb@kernel.org>, Zhang Rui <rui.zhang@intel.com>,
+        David Zeuthen <davidz@redhat.com>,
+        Richard Hughes <richard@hughsie.com>, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ACPI / Battery: Return -ENODATA for unknown values in
+	get_property()
+Message-ID: <20101017095940.GA4077@sucs.org>
+References: <20101016141321.GA11054@sucs.org> <201010170105.33274.rjw@sisk.pl> <20101017051953.GA3430@khazad-dum.debian.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101017051953.GA3430@khazad-dum.debian.net>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-10-14 at 22:34 +0200, Peter Zijlstra wrote:
-> +static inline void perf_event_task_sched_in(struct task_struct *task)
-> +{
-> +       JUMP_LABEL(&perf_task_events, have_events);
-> +       return;
-> +
-> +have_events:
-> +       __perf_event_task_sched_in(task);
-> +} 
+On Sun, Oct 17, 2010 at 03:19:53AM -0200, Henrique de Moraes Holschuh wrote:
+> On Sun, 17 Oct 2010, Rafael J. Wysocki wrote:
+> > In fact, the driver is supposed to return -ENODATA in that case, which will
+> > result in the read from /sys/class/power_supply/BAT0/current_now
+> > fail (I guess upower should be able to cope with that).
+>
+> ENODATA?  Shouldn't it be ENXIO?  There is no non-blocking data stream
+> involved in a sysfs attribute.
 
-OK, so I hate the JUMP_LABEL() interface for it means we have to keep
-writing these silly stubs.
+Using ENODATA and ENXIO appears to solve the problem (upower reports a
+rate of 0.0). However when plugging the battery in after previously only
+being on AC power none of the /sys/class/power_supply/BAT0/uevent:*
+files are created so upower never realises a battery has been plugged
+in. A further issue with ENXIO is is the following repeatedly appears in
+dmesg:
 
-How about something like:
+power_supply BAT0: driver failed to report `current_now' property
 
-#define COND_STMT(key, stmt)					\
-do {								\
-	__label__ jl_enabled;					\
-	JUMP_LABEL(key, jl_enabled);				\
-	if (0) {						\
-jl_enabled:							\
-		stmt;						\
-	}							\
-} while (0)
+> Of course, the RIGHT thing would be to not expose in sysfs attributes
+> that are unsupported by the firmware/hardware in the first place, but
+> that's easier said than done.
 
+My understanding is that this very hard to do because you can't tell if
+the problem was transient (battery settling) or permanent (feature not
+supported).
 
+-- 
+Sitsofe | http://sucs.org/~sits/
