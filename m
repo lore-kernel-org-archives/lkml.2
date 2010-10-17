@@ -1,55 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751605Ab0JQE5o (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Oct 2010 00:57:44 -0400
-Received: from mail.wdtv.com ([66.118.69.84]:49192 "EHLO mail.wdtv.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750929Ab0JQE5n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Oct 2010 00:57:43 -0400
-From: gene heskett <gheskett@wdtv.com>
-To: maciej.rutecki@gmail.com
-Subject: Re: [2.6.36-rc8] ERROR: "dump_write" [fs/binfmt_aout.ko] undefined!
-Date: Sun, 17 Oct 2010 00:50:57 -0400
-User-Agent: KMail/1.13.5 (Linux/2.6.35.7; KDE/4.5.2; i686; ; )
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>, linux-fsdevel@vger.kernel.org
-References: <201010161942.03081.maciej.rutecki@gmail.com>
-In-Reply-To: <201010161942.03081.maciej.rutecki@gmail.com>
+	id S1751796Ab0JQFNR (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Oct 2010 01:13:17 -0400
+Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:2304 "EHLO
+	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751243Ab0JQFNQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 17 Oct 2010 01:13:16 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: ApYEAPYiukx5LcB2gWdsb2JhbAChKhYBARYiIsJKhUkEj0w
+Date: Sun, 17 Oct 2010 16:13:10 +1100
+From: Nick Piggin <npiggin@kernel.dk>
+To: Nick Piggin <npiggin@kernel.dk>
+Cc: Dave Chinner <david@fromorbit.com>, Christoph Hellwig <hch@infradead.org>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 17/19] fs: Reduce inode I_FREEING and factor inode
+ disposal
+Message-ID: <20101017051310.GA22060@amd>
+References: <1287216853-17634-1-git-send-email-david@fromorbit.com>
+ <1287216853-17634-18-git-send-email-david@fromorbit.com>
+ <20101017013047.GA4394@infradead.org>
+ <20101017024923.GA6453@amd>
+ <20101017041313.GJ32255@dastard>
+ <20101017043514.GA21802@amd>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8bit
-Message-Id: <201010170050.57530.gheskett@wdtv.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101017043514.GA21802@amd>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday, October 16, 2010, Maciej Rutecki wrote:
->Dear all
->
->During compiling 2.6.36-rc8:
->CC [M]  net/wireless/wext-compat.o
->  CC [M]  net/wireless/wext-sme.o
->  CC [M]  net/wireless/lib80211.o
->  LD [M]  net/wireless/cfg80211.o
->  Building modules, stage 2.
->  MODPOST 344 modules
->ERROR: "dump_write" [fs/binfmt_aout.ko] undefined!
->ERROR: "dump_seek" [fs/binfmt_aout.ko] undefined!
->make[2]: *** [__modpost] Błąd 1
->make[1]: *** [modules] Błąd 2
->make[1]: Opuszczenie katalogu `/usr/src/linux-2.6.36-rc8'
->make: *** [debian/stamp/build/kernel] Błąd 2
->
->Three different machines (laptop, PC and virtualbox), the same problem.
->
->Regards
+On Sun, Oct 17, 2010 at 03:35:14PM +1100, Nick Piggin wrote:
+> On Sun, Oct 17, 2010 at 03:13:13PM +1100, Dave Chinner wrote:
+> > On Sun, Oct 17, 2010 at 01:49:23PM +1100, Nick Piggin wrote:
+> > > On Sat, Oct 16, 2010 at 09:30:47PM -0400, Christoph Hellwig wrote:
+> > > > >   * inode->i_lock is *always* the innermost lock.
+> > > > >   *
+> > > > > + * inode->i_lock is *always* the innermost lock.
+> > > > > + *
+> > > > 
+> > > > No need to repeat, we got it..
+> > > 
+> > > Except that I didn't see where you fixed all the places where it is
+> > > *not* the innermost lock. Like for example places that take dcache_lock
+> > > inside i_lock.
+> > 
+> > I can't find any code outside of ceph where the dcache_lock is used
+> > within 200 lines of code of the inode->i_lock. The ceph code is not
+> > nesting them, though.
+> 
+> You mustn't have looked very hard? From ceph:
+> 
+>        spin_unlock(&dcache_lock);
+>        spin_unlock(&inode->i_lock);
+> 
+> (and yes, acquisition side does go in i_lock->dcache_lock order)
 
-That makes at least 2 of us with this problem, but I don't believe I'm 
-sharp enough in my dotage to fix it.
+A really quick grep reveals cifs is using GlobalSMBSeslock inside i_lock
+too.
 
--- 
-Cheers, Gene
-"There are four boxes to be used in defense of liberty:
- soap, ballot, jury, and ammo. Please use in that order."
--Ed Howdershelt (Author)
-Computer programmers do it byte by byte.
+Everything uses i_size seqlock inside it, but I guess that's *always*
+the inner innermost lock so it doesn't really count.
+ 
