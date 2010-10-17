@@ -1,119 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932736Ab0JQUQL (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Oct 2010 16:16:11 -0400
-Received: from casper.infradead.org ([85.118.1.10]:50221 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932724Ab0JQUQJ (ORCPT
+	id S932731Ab0JQUSw (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Oct 2010 16:18:52 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:38619 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932692Ab0JQUSv convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Oct 2010 16:16:09 -0400
-Message-ID: <4CBB5974.8060907@infradead.org>
-Date: Sun, 17 Oct 2010 18:15:48 -0200
-From: Mauro Carvalho Chehab <mchehab@infradead.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100827 Red Hat/3.1.3-1.el6 Lightning/1.0b2 Thunderbird/3.1.3
+	Sun, 17 Oct 2010 16:18:51 -0400
+From: "Igor M. Liplianin" <liplianin@me.by>
+To: Mauro Carvalho Chehab <mchehab@redhat.com>
+Subject: Re: [GIT PATCHES FOR 2.6.37]  Support for NetUP Dual DVB-T/C CI RF card V.2
+Date: Sun, 17 Oct 2010 23:18:40 +0300
+User-Agent: KMail/1.13.3 (Linux/2.6.35-smp+; KDE/4.4.3; i686; ; )
+Cc: linux-media@vger.kernel.org, Abylai Ospan <aospan@netup.ru>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+References: <201010171955.18806.liplianin@me.by> <4CBB37DC.6050507@infradead.org> <4CBB3994.7060509@redhat.com>
+In-Reply-To: <4CBB3994.7060509@redhat.com>
 MIME-Version: 1.0
-To: Kusanagi Kouichi <slash@ac.auone-net.jp>
-CC: Andy Walls <awalls@md.metrocast.net>, Steven Toth <stoth@kernellabs.com>,
-        Douglas Schilling Landgraf <dougsland@redhat.com>,
-        "David T. L. Wong" <davidtlwong@gmail.com>,
-        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] cx23885: Use enum for board type definitions.
-References: <20100816123012.9C5FC62C03A@msa106.auone-net.jp>
-In-Reply-To: <20100816123012.9C5FC62C03A@msa106.auone-net.jp>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-SRS-Rewrite: SMTP reverse-path rewritten from <mchehab@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201010172318.40892.liplianin@me.by>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em 16-08-2010 09:30, Kusanagi Kouichi escreveu:
-> Signed-off-by: Kusanagi Kouichi <slash@ac.auone-net.jp>
-> ---
->  drivers/media/video/cx23885/cx23885.h |   62 +++++++++++++++++----------------
->  1 files changed, 32 insertions(+), 30 deletions(-)
-
-There's not much gain on converting it to enum. In a matter of fact, keeping the
-numbers is the way we do on other drivers, since, for some broken hardware without
-eeprom, we may need to force the usage of a certain device number, and we don't want
-that such number would change from kernel version to kernel version.
-
-I'm not sure if we have any case on cx23885, but it is better to keep the same 
-philosophy, as this may be needed in some future, if not needed currently.
-
+В сообщении от 17 октября 2010 20:59:48 автор Mauro Carvalho Chehab написал:
+> Em 17-10-2010 15:52, Mauro Carvalho Chehab escreveu:
+> > Em 17-10-2010 14:55, Igor M. Liplianin escreveu:
+> >> Patches to support for NetUP Dual DVB-T/C-CI RF from NetUP Inc.
+> >> 
+> >>         http://linuxtv.org/wiki/index.php/NetUP_Dual_DVB_T_C_CI_RF
+> >> 
+> >> Version 2,  Altera FPGA firmware download module reworked.
+> >> 
+> >> Features:
+> >> 
+> >> PCI-e x1
+> >> Supports two DVB-T/DVB-C transponders simultaneously
+> >> Supports two analog audio/video channels simultaneously
+> >> Independent descrambling of two transponders
+> >> Hardware PID filtering
+> >> 
+> >> Components:
+> >> 
+> >> Conexant CX23885
+> >> STM STV0367 low-power and ultra-compact combo DVB-T/C single-chip
+> >> receiver Xceive XC5000 silicon TV tuner
+> >> Altera FPGA for Common Interafce
+> >> 
+> >> The following changes since commit 1c8c51f7413ec522c7b729c8ebc5ce815fb7d4a8:
+> >>   V4L/DVB: drivers/media/IR/ene_ir.c: fix NULL dereference (2010-10-17
+> >>   09:50:42 -0200)
+> >> 
+> >> are available in the git repository at:
+> >>   http://udev.netup.ru/git/v4l-dvb.git netup-for-media-tree-2
+> >> 
+> >> Abylay Ospan (6):
+> >>       cx23885: Altera FPGA CI interface reworked.
+> >>       stv0367: change default value for AGC register.
+> >>       stv0367: implement uncorrected blocks counter.
+> >>       cx23885, cimax2.c: Fix case of two CAM insertion irq.
+> >>       Fix CI code for NetUP Dual  DVB-T/C CI RF card
+> >>       Force xc5000 firmware loading for NetUP Dual  DVB-T/C CI RF card
+> >> 
+> >> Igor M. Liplianin (14):
+> >>       Altera FPGA firmware download module.
+> >>       Altera FPGA based CI driver module.
+> >>       Support for stv0367 multi-standard demodulator.
+> >>       xc5000: add support for DVB-C tuning.
+> >>       Initial commit to support NetUP Dual DVB-T/C CI RF card.
+> >>       cx23885: implement tuner_bus parameter for cx23885_board
+> >>       structure. cx23885: implement num_fds_portb, num_fds_portc
+> >>       parameters for cx23885_board structure. stv0367: Fix potential
+> >>       divide error
+> >>       cx23885: remove duplicate set interrupt mask
+> >>       stv0367: coding style corrections
+> >>       cx25840: Fix subdev registration and typo in cx25840-core.c
+> >>       cx23885: 0xe becomes 0xc again for NetUP Dual DVB-S2
+> >>       cx23885: disable MSI for NetUP cards, otherwise CI is not working
+> >>       cx23885, altera-ci: enable all PID's less than 0x20 in hardware
+> >>       PID filter.
+> >>  
+> >>  drivers/media/common/tuners/xc5000.c        |   18 +
+> >>  drivers/media/dvb/frontends/Kconfig         |    7 +
+> >>  drivers/media/dvb/frontends/Makefile        |    1 +
+> >>  drivers/media/dvb/frontends/stv0367.c       | 3419
+> >>  +++++++++++++++++++++++++ drivers/media/dvb/frontends/stv0367.h      
+> >>  |   62 +
+> >>  drivers/media/dvb/frontends/stv0367_priv.h  |  211 ++
+> >>  drivers/media/dvb/frontends/stv0367_regs.h  | 3614
+> >>  +++++++++++++++++++++++++++ drivers/media/video/cx23885/Kconfig       
+> >>   |   12 +-
+> >>  drivers/media/video/cx23885/Makefile        |    1 +
+> >>  drivers/media/video/cx23885/altera-ci.c     |  841 +++++++
+> >>  drivers/media/video/cx23885/altera-ci.h     |  102 +
+> >>  drivers/media/video/cx23885/cimax2.c        |   24 +-
+> >>  drivers/media/video/cx23885/cx23885-cards.c |  116 +-
+> >>  drivers/media/video/cx23885/cx23885-core.c  |   35 +-
+> >>  drivers/media/video/cx23885/cx23885-dvb.c   |  175 ++-
+> >>  drivers/media/video/cx23885/cx23885-reg.h   |    1 +
+> >>  drivers/media/video/cx23885/cx23885-video.c |    7 +-
+> >>  drivers/media/video/cx23885/cx23885.h       |    7 +-
+> >>  drivers/media/video/cx25840/cx25840-core.c  |    4 +-
+> >>  drivers/misc/Kconfig                        |    1 +
+> >>  drivers/misc/Makefile                       |    1 +
+> >>  drivers/misc/stapl-altera/Kconfig           |    8 +
+> >>  drivers/misc/stapl-altera/Makefile          |    3 +
+> >>  drivers/misc/stapl-altera/altera.c          | 2603 +++++++++++++++++++
+> >>  drivers/misc/stapl-altera/jbicomp.c         |  163 ++
+> >>  drivers/misc/stapl-altera/jbiexprt.h        |   32 +
+> >>  drivers/misc/stapl-altera/jbijtag.c         | 1038 ++++++++
+> >>  drivers/misc/stapl-altera/jbijtag.h         |   83 +
+> >>  drivers/misc/stapl-altera/jbistub.c         |   70 +
+> >>  include/misc/altera.h                       |   49 +
+> >>  30 files changed, 12674 insertions(+), 34 deletions(-)
+> >>  create mode 100644 drivers/media/dvb/frontends/stv0367.c
+> >>  create mode 100644 drivers/media/dvb/frontends/stv0367.h
+> >>  create mode 100644 drivers/media/dvb/frontends/stv0367_priv.h
+> >>  create mode 100644 drivers/media/dvb/frontends/stv0367_regs.h
+> >>  create mode 100644 drivers/media/video/cx23885/altera-ci.c
+> >>  create mode 100644 drivers/media/video/cx23885/altera-ci.h
+> >>  create mode 100644 drivers/misc/stapl-altera/Kconfig
+> >>  create mode 100644 drivers/misc/stapl-altera/Makefile
+> >>  create mode 100644 drivers/misc/stapl-altera/altera.c
+> >>  create mode 100644 drivers/misc/stapl-altera/jbicomp.c
+> >>  create mode 100644 drivers/misc/stapl-altera/jbiexprt.h
+> >>  create mode 100644 drivers/misc/stapl-altera/jbijtag.c
+> >>  create mode 100644 drivers/misc/stapl-altera/jbijtag.h
+> >>  create mode 100644 drivers/misc/stapl-altera/jbistub.c
+> >>  create mode 100644 include/misc/altera.h
+> > 
+> > There are still a few issues at FPGA patch.
 > 
-> diff --git a/drivers/media/video/cx23885/cx23885.h b/drivers/media/video/cx23885/cx23885.h
-> index ed94b17..55dc282 100644
-> --- a/drivers/media/video/cx23885/cx23885.h
-> +++ b/drivers/media/video/cx23885/cx23885.h
-> @@ -54,36 +54,38 @@
->  
->  #define BUFFER_TIMEOUT     (HZ)  /* 0.5 seconds */
->  
-> -#define CX23885_BOARD_NOAUTO               UNSET
-> -#define CX23885_BOARD_UNKNOWN                  0
-> -#define CX23885_BOARD_HAUPPAUGE_HVR1800lp      1
-> -#define CX23885_BOARD_HAUPPAUGE_HVR1800        2
-> -#define CX23885_BOARD_HAUPPAUGE_HVR1250        3
-> -#define CX23885_BOARD_DVICO_FUSIONHDTV_5_EXP   4
-> -#define CX23885_BOARD_HAUPPAUGE_HVR1500Q       5
-> -#define CX23885_BOARD_HAUPPAUGE_HVR1500        6
-> -#define CX23885_BOARD_HAUPPAUGE_HVR1200        7
-> -#define CX23885_BOARD_HAUPPAUGE_HVR1700        8
-> -#define CX23885_BOARD_HAUPPAUGE_HVR1400        9
-> -#define CX23885_BOARD_DVICO_FUSIONHDTV_7_DUAL_EXP 10
-> -#define CX23885_BOARD_DVICO_FUSIONHDTV_DVB_T_DUAL_EXP 11
-> -#define CX23885_BOARD_LEADTEK_WINFAST_PXDVR3200_H 12
-> -#define CX23885_BOARD_COMPRO_VIDEOMATE_E650F   13
-> -#define CX23885_BOARD_TBS_6920                 14
-> -#define CX23885_BOARD_TEVII_S470               15
-> -#define CX23885_BOARD_DVBWORLD_2005            16
-> -#define CX23885_BOARD_NETUP_DUAL_DVBS2_CI      17
-> -#define CX23885_BOARD_HAUPPAUGE_HVR1270        18
-> -#define CX23885_BOARD_HAUPPAUGE_HVR1275        19
-> -#define CX23885_BOARD_HAUPPAUGE_HVR1255        20
-> -#define CX23885_BOARD_HAUPPAUGE_HVR1210        21
-> -#define CX23885_BOARD_MYGICA_X8506             22
-> -#define CX23885_BOARD_MAGICPRO_PROHDTVE2       23
-> -#define CX23885_BOARD_HAUPPAUGE_HVR1850        24
-> -#define CX23885_BOARD_COMPRO_VIDEOMATE_E800    25
-> -#define CX23885_BOARD_HAUPPAUGE_HVR1290        26
-> -#define CX23885_BOARD_MYGICA_X8558PRO          27
-> -#define CX23885_BOARD_LEADTEK_WINFAST_PXTV1200 28
-> +enum {
-> +	CX23885_BOARD_NOAUTO = UNSET,
-> +	CX23885_BOARD_UNKNOWN = 0,
-> +	CX23885_BOARD_HAUPPAUGE_HVR1800lp,
-> +	CX23885_BOARD_HAUPPAUGE_HVR1800,
-> +	CX23885_BOARD_HAUPPAUGE_HVR1250,
-> +	CX23885_BOARD_DVICO_FUSIONHDTV_5_EXP,
-> +	CX23885_BOARD_HAUPPAUGE_HVR1500Q,
-> +	CX23885_BOARD_HAUPPAUGE_HVR1500,
-> +	CX23885_BOARD_HAUPPAUGE_HVR1200,
-> +	CX23885_BOARD_HAUPPAUGE_HVR1700,
-> +	CX23885_BOARD_HAUPPAUGE_HVR1400,
-> +	CX23885_BOARD_DVICO_FUSIONHDTV_7_DUAL_EXP,
-> +	CX23885_BOARD_DVICO_FUSIONHDTV_DVB_T_DUAL_EXP,
-> +	CX23885_BOARD_LEADTEK_WINFAST_PXDVR3200_H,
-> +	CX23885_BOARD_COMPRO_VIDEOMATE_E650F,
-> +	CX23885_BOARD_TBS_6920,
-> +	CX23885_BOARD_TEVII_S470,
-> +	CX23885_BOARD_DVBWORLD_2005,
-> +	CX23885_BOARD_NETUP_DUAL_DVBS2_CI,
-> +	CX23885_BOARD_HAUPPAUGE_HVR1270,
-> +	CX23885_BOARD_HAUPPAUGE_HVR1275,
-> +	CX23885_BOARD_HAUPPAUGE_HVR1255,
-> +	CX23885_BOARD_HAUPPAUGE_HVR1210,
-> +	CX23885_BOARD_MYGICA_X8506,
-> +	CX23885_BOARD_MAGICPRO_PROHDTVE2,
-> +	CX23885_BOARD_HAUPPAUGE_HVR1850,
-> +	CX23885_BOARD_COMPRO_VIDEOMATE_E800,
-> +	CX23885_BOARD_HAUPPAUGE_HVR1290,
-> +	CX23885_BOARD_MYGICA_X8558PRO,
-> +	CX23885_BOARD_LEADTEK_WINFAST_PXTV1200
-> +};
->  
->  #define GPIO_0 0x00000001
->  #define GPIO_1 0x00000002
+> In time: I didn't analyse the rest of the series, just the first patch, as
+> they're likely to have (some) of the problems pointed at fpga. After
+> having this driver fully fixed, I'll review the other patches. So, feel
+> free to fix issues close to the ones I've pointed at the other patches as
+> well.
+> 
+> Thanks,
+> Mauro.
 
+So, soon will be Verson number 3.
+
+The fist patch is the eldest, so I'm returning to nine month ago.
+It's adapted to kernel user-space application, and all that legacy issues was from it.
+Other patches not related and written from scratch(well, almost).
+The driver took much effort from me, look at aggregate size of code.
+Also need to mention it's already functional and tested on real hardware.
+
+Thank you for giving attention,
+Igor. 
