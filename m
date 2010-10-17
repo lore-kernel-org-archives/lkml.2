@@ -1,49 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757203Ab0JQBdx (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Oct 2010 21:33:53 -0400
-Received: from sj-iport-6.cisco.com ([171.71.176.117]:4764 "EHLO
-	sj-iport-6.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757162Ab0JQBdw (ORCPT
+	id S1757209Ab0JQBxy (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Oct 2010 21:53:54 -0400
+Received: from bld-mail12.adl6.internode.on.net ([150.101.137.97]:45772 "EHLO
+	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1757169Ab0JQBxx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Oct 2010 21:33:52 -0400
-Authentication-Results: sj-iport-6.cisco.com; dkim=neutral (message not signed) header.i=none
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Av0EAN/vuUxAaMHG/2dsb2JhbACacYY5caZImzyFSQSEVIV2hQI
-X-IronPort-AV: E=Sophos;i="4.57,341,1283731200"; 
-   d="scan'208";a="605181962"
-From: Roland Dreier <rdreier@cisco.com>
-To: Miles Lane <miles.lane@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Ben Skeggs <bskeggs@redhat.com>,
-        Maarten Maathuis <madman2003@gmail.com>
-Subject: Re: 2.6.36-rc8 -- drivers/built-in.o: In function `nouveau_acpi_edid': (.text+0xf7c04): undefined reference to `acpi_video_get_edid'
-References: <AANLkTik8pvkueU8YyUwjODz53QnurUqKycaTYJ-McYqB@mail.gmail.com>
-	<adad3r9hn1x.fsf@cisco.com>
-	<AANLkTinsmKABCCmS77MX4UH4NPG2UnQKtoGEcp6hooBJ@mail.gmail.com>
-X-Message-Flag: Warning: May contain useful information
-Date: Sat, 16 Oct 2010 18:33:32 -0700
-In-Reply-To: <AANLkTinsmKABCCmS77MX4UH4NPG2UnQKtoGEcp6hooBJ@mail.gmail.com>
-	(Miles Lane's message of "Sat, 16 Oct 2010 21:00:35 -0400")
-Message-ID: <aday69xfvrn.fsf@cisco.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
+	Sat, 16 Oct 2010 21:53:53 -0400
+Date: Sun, 17 Oct 2010 12:53:49 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: Nick Piggin <npiggin@kernel.dk>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 04/19] fs: Implement lazy LRU updates for inodes.
+Message-ID: <20101017015349.GF32255@dastard>
+References: <1287216853-17634-1-git-send-email-david@fromorbit.com>
+ <1287216853-17634-5-git-send-email-david@fromorbit.com>
+ <20101016092916.GA32197@amd>
+ <20101016165930.GA20626@infradead.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101016165930.GA20626@infradead.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- > I tried with your patch applied and got this:
- > 
- > drivers/built-in.o: In function `load_vbios_acpi':
- > nouveau_bios.c:(.text+0xa9cdf): undefined reference to
- > `nouveau_acpi_rom_supported'
+On Sat, Oct 16, 2010 at 12:59:30PM -0400, Christoph Hellwig wrote:
+> On Sat, Oct 16, 2010 at 08:29:16PM +1100, Nick Piggin wrote:
+> > On Sat, Oct 16, 2010 at 07:13:58PM +1100, Dave Chinner wrote:
+> > > @@ -502,11 +527,15 @@ static void prune_icache(int nr_to_scan)
+> > >  			iput(inode);
+> > >  			spin_lock(&inode_lock);
+> > >  
+> > > -			if (inode != list_entry(inode_unused.next,
+> > > -						struct inode, i_list))
+> > > -				continue;	/* wrong inode or list_empty */
+> > > -			if (!can_unuse(inode))
+> > > +			/*
+> > > +			 * if we can't reclaim this inode immediately, give it
+> > > +			 * another pass through the free list so we don't spin
+> > > +			 * on it.
+> > > +			 */
+> > > +			if (!can_unuse(inode)) {
+> > > +				list_move(&inode->i_list, &inode_unused);
+> > >  				continue;
+> > > +			}
+> > >  		}
+> > >  		list_move(&inode->i_list, &freeable);
+> > >  		WARN_ON(inode->i_state & I_NEW);
+> > 
+> > This is a bug, actually 2 bugs, which is why I omitted it in the version
+> > you picked up. I agree we want the optimisation though, so I've added it
+> > back in my tree.
+> > 
+> > After you iput() and then re take the inode lock, you can't reference
+> > the inode because you don't know what happened to it. You need to keep
+> > that pointer check to verify it is still there.
+> 
+> I don't think the pointer check will work either.  By the time we retake
+> the lru lock the inode might already have been reaped through a call
+> to invalidate_inodes.  There's no way we can do anything with it after
+> iput.  What we could do is using variant of can_unuse to decide to move
+> the inode to the front of the lru before doing the iput.  That way
+> we'll get to it next after retaking the lru lock if it's still there.
 
-I see, it's not that simple... you'd have to change the CONFIG_ACPI
-tests in nouveau_drv.h to be testing CONFIG_ACPI_VIDEO really.
+But as Nick pointed out I_REFERENCED will be set, and so it'll move
+to the back of the list next time around it we leave it on the list.
+If we race with another reclaimer, it'll see a reference count, and
+move it to the back of the list without clearing the I_REFERENCED
+flag we set.
 
- > When I set CONFIG_DRM_NOUVEAU=m rather than =y, I got this:
+IOWs, there does not seem to any point to me in keeping the can_unuse()
+optimisation. All it really is doing is repeating the behaviour that
+will occur if we leave the inode where it is on the list and run the
+loop again. If we really care that it counts as two scanned items
+now, we can add a scan count back in after the iput() call....
 
-If you drop my patch and set CONFIG_DRM_NOUVEAU=m, does it work?
-It seems to me that it should.
+Cheers,
 
- - R.
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
