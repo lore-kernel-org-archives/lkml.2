@@ -1,56 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932394Ab0JQKiG (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Oct 2010 06:38:06 -0400
-Received: from casper.infradead.org ([85.118.1.10]:51764 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932281Ab0JQKiE convert rfc822-to-8bit (ORCPT
+	id S932443Ab0JQKnA (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Oct 2010 06:43:00 -0400
+Received: from canuck.infradead.org ([134.117.69.58]:33106 "EHLO
+	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932281Ab0JQKm7 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Oct 2010 06:38:04 -0400
-Subject: Re: [PATCH] checkpatch: allow single space before labels
+	Sun, 17 Oct 2010 06:42:59 -0400
+Subject: Re: [tip:perf/core] x86, NMI: Rewrite NMI handler
 From: Peter Zijlstra <peterz@infradead.org>
-To: Mike Frysinger <vapier@gentoo.org>
-Cc: Joe Perches <joe@perches.com>, Andy Whitcroft <apw@canonical.com>,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <AANLkTin6H2AbL_Kr4XCtPOr+SQRxi0tKKF3puY4gybNu@mail.gmail.com>
-References: <1287302737-3507-1-git-send-email-vapier@gentoo.org>
-	 <1287303678.20968.37.camel@Joe-Laptop>
-	 <AANLkTimmSRS3eVsW4EZUxnE_rfjeqmmgGnjtWbn3J_nY@mail.gmail.com>
-	 <1287310889.1998.153.camel@laptop>
-	 <AANLkTin6H2AbL_Kr4XCtPOr+SQRxi0tKKF3puY4gybNu@mail.gmail.com>
+To: Don Zickus <dzickus@redhat.com>
+Cc: mingo@redhat.com, hpa@zytor.com, ying.huang@intel.com,
+        linux-kernel@vger.kernel.org, tglx@linutronix.de, mingo@elte.hu,
+        linux-tip-commits@vger.kernel.org
+In-Reply-To: <20101017004641.GB4140@redhat.com>
+References: <1287195738-3136-4-git-send-email-dzickus@redhat.com>
+	 <tip-e21f3e4957f4a55f546873605a5caa59556bb144@git.kernel.org>
+	 <1287250157.1998.124.camel@laptop>  <20101017004641.GB4140@redhat.com>
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 8BIT
-Date: Sun, 17 Oct 2010 12:37:55 +0200
-Message-ID: <1287311875.1998.156.camel@laptop>
+Date: Sun, 17 Oct 2010 12:42:43 +0200
+Message-ID: <1287312163.1998.158.camel@laptop>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2010-10-17 at 06:30 -0400, Mike Frysinger wrote:
-> On Sun, Oct 17, 2010 at 06:21, Peter Zijlstra wrote:
-> > On Sun, 2010-10-17 at 04:24 -0400, Mike Frysinger wrote:
-> >> feel free to extend however as long as the end result is no warnings
-> >> for " foo:" ;).
-> >
-> > I utterly detest those indented labels and am eradicating them wherever
-> > I notice them. There's really no sane reason to use them what so ever.
-> > Diff can be taught not to get confused about them, see my earlier email.
+On Sat, 2010-10-16 at 20:46 -0400, Don Zickus wrote:
+
+> Hmm, well to his defense, he isn't adding DIE_NMI_IPI.  That code is
+> already there.  He is just re-arranging it, making it look painfully
+> obvious the die_chain probably isn't as efficient as it should be.
 > 
-> sure, with enough shell code thrown at a problem, you can do anything.
->  the change that started these warnings was for an unrelated check.
-> no one proposed warning on indented labels, nor is there any statement
-> at all in the coding style on these.
+> I think a bunch of us agree that we need to revamp the NMI notifier to
+> make it less wasteful.  I was hoping we could do that in a separate patch
+> that would be layered on top of Huangs.
 > 
-> considering you highlighted the biggest reason (diff by default does
-> not handle them properly), i think that invalidates against your "no
-> sane reason" statement.
+> Would you object to at least consider having this patch series in a
+> work-in-progress git branch that we can build on top of, with the final
+> outcome containing an nmi notifier that meets your expectations?
 
-I think telling people to change their diff rules (--show-c-function
-isn't default enabled either) is a lot better option than to uglify the
-source. These indented labels are totally annoying when reading code.
+What's the point of keeping it in a git tree? Its just a few patches.
 
-
-
-
+We've spend more time talking about this than it would take to actually
+do the patch that kills DIE_NMI_IPI.
