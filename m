@@ -1,66 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932383Ab0JQOvv (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Oct 2010 10:51:51 -0400
+	id S932467Ab0JQOv5 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Oct 2010 10:51:57 -0400
 Received: from mail-ew0-f46.google.com ([209.85.215.46]:34172 "EHLO
 	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932211Ab0JQOvr (ORCPT
+	with ESMTP id S932211Ab0JQOvy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Oct 2010 10:51:47 -0400
+	Sun, 17 Oct 2010 10:51:54 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer;
-        b=OJuGruAvFgpPookEplPn3iU5CAOXUakyLiAAjjgXrVrmrt1jcnupP24ukOJiODkaww
-         x8sd6j8fMAjOBemwxY1ohfujI4i/YxE73zDPgygM3fX24/UXU+ecJ8GfJ5RmfCugVr66
-         Gc7PxMvi27Jy1vGjluUB+Vd4QwViIQ2CyhYPA=
+        b=sYYnzfTtV5B0PDG1zI2IYu/V64vrWkPQVbMFj53Hgcrie0XnfN4dqr60JeHD7O02nT
+         P7yTriUC4qup2EZkEXM/4/M4/OSZE5fpZfhUwzslTWl1CJISqnmPa8lN4H2nALYVk2ux
+         Jhr741dNy/sGVb/ajFj18fiDyd0B7Xtj1RZxs=
 From: Vasiliy Kulikov <segooon@gmail.com>
 To: kernel-janitors@vger.kernel.org
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Vivek Mahajan <vivek.mahajan@freescale.com>,
-        Kumar Gala <galak@kernel.crashing.org>,
-        Harninder Rai <harninder.rai@freescale.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org
-Subject: [PATCH] powerpc: sysdev: fix signedness bug
-Date: Sun, 17 Oct 2010 18:51:41 +0400
-Message-Id: <1287327102-9068-1-git-send-email-segooon@gmail.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        Daniel Drake <dsd@laptop.org>, linux-kernel@vger.kernel.org
+Subject: [PATCH] x86: kernel: olpc-xo1: fix error handling code
+Date: Sun, 17 Oct 2010 18:51:46 +0400
+Message-Id: <1287327106-9111-1-git-send-email-segooon@gmail.com>
 X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-sram_params.sram_size and sram_params.sram_offset were unsigned.
-If get_cache_sram_size() or get_cache_sram_offset() returns error code
-then it is not seen to the caller.  Made sram_size and sram_offset signed.
+If anything failed during initialization then setup_bases() should
+call pci_disable_device().  Also reference got from pci_get_device()
+should be freed with pci_dev_put().
 
 Signed-off-by: Vasiliy Kulikov <segooon@gmail.com>
 ---
- arch/powerpc/sysdev/fsl_85xx_l2ctlr.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+ arch/x86/kernel/olpc-xo1.c |   12 +++++++++---
+ 1 files changed, 9 insertions(+), 3 deletions(-)
 
-diff --git a/arch/powerpc/sysdev/fsl_85xx_l2ctlr.c b/arch/powerpc/sysdev/fsl_85xx_l2ctlr.c
-index cc8d655..23b85ac 100644
---- a/arch/powerpc/sysdev/fsl_85xx_l2ctlr.c
-+++ b/arch/powerpc/sysdev/fsl_85xx_l2ctlr.c
-@@ -94,14 +94,14 @@ static int __devinit mpc85xx_l2ctlr_of_probe(struct platform_device *dev,
- 	l2cache_size = *prop;
- 
- 	sram_params.sram_size  = get_cache_sram_size();
--	if (sram_params.sram_size <= 0) {
-+	if ((int)sram_params.sram_size <= 0) {
- 		dev_err(&dev->dev,
- 			"Entire L2 as cache, Aborting Cache-SRAM stuff\n");
- 		return -EINVAL;
+diff --git a/arch/x86/kernel/olpc-xo1.c b/arch/x86/kernel/olpc-xo1.c
+index f5442c0..05331cf 100644
+--- a/arch/x86/kernel/olpc-xo1.c
++++ b/arch/x86/kernel/olpc-xo1.c
+@@ -71,20 +71,25 @@ static int __devinit setup_bases(struct pci_dev *pdev)
+ 	r = pci_request_region(pdev, ACPI_BAR, DRV_NAME);
+ 	if (r) {
+ 		dev_err(&pdev->dev, "can't alloc PCI BAR #%d\n", ACPI_BAR);
+-		return r;
++		goto err_disable;
  	}
  
- 	sram_params.sram_offset  = get_cache_sram_offset();
--	if (sram_params.sram_offset <= 0) {
-+	if ((int64_t)sram_params.sram_offset <= 0) {
- 		dev_err(&dev->dev,
- 			"Entire L2 as cache, provide a valid sram offset\n");
- 		return -EINVAL;
+ 	r = pci_request_region(pdev, PMS_BAR, DRV_NAME);
+ 	if (r) {
+ 		dev_err(&pdev->dev, "can't alloc PCI BAR #%d\n", PMS_BAR);
+-		pci_release_region(pdev, ACPI_BAR);
+-		return r;
++		goto err_region1;
+ 	}
+ 
+ 	acpi_base = pci_resource_start(pdev, ACPI_BAR);
+ 	pms_base = pci_resource_start(pdev, PMS_BAR);
+ 
+ 	return 0;
++
++err_region1:
++	pci_release_region(pdev, ACPI_BAR);
++err_disable:
++	pci_disable_device(pdev);
++	return r;
+ }
+ 
+ static int __devinit olpc_xo1_probe(struct platform_device *pdev)
+@@ -98,6 +103,7 @@ static int __devinit olpc_xo1_probe(struct platform_device *pdev)
+ 		return -ENODEV;
+ 
+ 	r = setup_bases(pcidev);
++	pci_dev_put(pcidev);
+ 	if (r)
+ 		return r;
+ 
 -- 
 1.7.0.4
 
