@@ -1,77 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751774Ab0JQXTM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Oct 2010 19:19:12 -0400
-Received: from gate.crashing.org ([63.228.1.57]:56361 "EHLO gate.crashing.org"
+	id S1751787Ab0JQXXx (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Oct 2010 19:23:53 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:55047 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751217Ab0JQXTL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Oct 2010 19:19:11 -0400
-Subject: RE: [PATCH] ARM: allow, but warn, when issuing ioremap() on RAM
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: "Woodruff, Richard" <r-woodruff2@ti.com>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Arnd Hannemann <arnd@arndnet.de>, "Pedanekar, Hemant" <hemantp@ti.com>,
-        Greg KH <greg@kroah.com>,
-        Felipe Contreras <felipe.contreras@gmail.com>,
-        linux-main <linux-kernel@vger.kernel.org>,
-        Uwe =?ISO-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        Han Jonghun <jonghun79.han@gmail.com>,
-        linux-arm <linux-arm-kernel@lists.infradead.org>
-In-Reply-To: <13B9B4C6EF24D648824FF11BE896716203D76F71F4@dlee02.ent.ti.com>
-References: <1286444662-16843-1-git-send-email-felipe.contreras@gmail.com>
-	 <20101007192245.GC26435@n2100.arm.linux.org.uk>
-	 <AANLkTikQKY7pOobD+==uT5Cy0poT=O5wDMKtbVyJVNbO@mail.gmail.com>
-	 <20101008175308.GA10975@n2100.arm.linux.org.uk>
-	 <1287196588.2370.1.camel@pasglop>
-	 <13B9B4C6EF24D648824FF11BE896716203D76F71F4@dlee02.ent.ti.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 18 Oct 2010 10:17:01 +1100
-Message-ID: <1287357421.2370.19.camel@pasglop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S1751083Ab0JQXXw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 17 Oct 2010 19:23:52 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: "Linux-pm mailing list" <linux-pm@lists.linux-foundation.org>
+Subject: [PATCH] PM / Wakeup: Show wakeup sources statistics in debugfs
+Date: Mon, 18 Oct 2010 01:22:35 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.36-rc8-rjw+; KDE/4.4.4; x86_64; ; )
+Cc: Alan Stern <stern@rowland.harvard.edu>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "Greg Kroah-Hartman" <gregkh@suse.de>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201010180122.35382.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2010-10-17 at 08:05 -0500, Woodruff, Richard wrote:
-> ARM has always been a rawer (and cheaper) environment than many other
-> CPU architectures. Until maybe this year coherency was never even an
-> option provided in the hardware. The vast majority of the systems
-> currently in mass production in 2010 and before don't have coherency.
-> The software has to handle all the details.
-> 
-> Starting today and onwards coherency options will start to be seen in
-> high end. It seems likely some of the old external IP won't be
-> compliant and likely have bugs undercutting it.
-> 
-> People from high ends like x86 and PPC have different expectations and
-> problems. Your chip set nightmares are our standard in some areas. In
-> my narrow experience PPC pioneered many techniques 15 years back which
-> are now just coming into ARM. They are coming in at a much reduced
-> power and cost footprint. 
+From: Rafael J. Wysocki <rjw@sisk.pl>
 
-This is all quite possible the the fact remains that at the end of the
-day, if you're going to have a speculative memory model with prefetch
-and your architecture (rightfully so) disallows aliasing of mappings
-with different cache attributes, then you are screwed the minute your
-devices do non-coherent DMA :-)
+There may be wakeup sources that aren't associated with any devices
+and their statistics information won't be available from sysfs. Also,
+for debugging purposes it is convenient to have all of the wakeup
+sources statistics available from one place.  For these reasons,
+introduce new file "wakeup_sources" in debugfs containing those
+statistics.
 
-As Russell says, the only proper way to do that would be to set aside
-memory at boot. That or provide a way to take chunks out of the linear
-mapping, which may or may not be possible, I don't know how ARM does it
-well enough. On some 32-bit powerpc's unfortunately, that would meant
-taking whole 256M chunks out due to the way we implement it.
+Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+---
 
-The main problem is usually related to the linear mapping using some
-form of huge pages, I suppose this is the same for you here.
+The patch is on top of suspend-2.6/linux-next.
 
-Now of course, you always have the un-satisfactory options of disabling
-speculation/prefetch and/or disabling the use of such huge pages in the
-linear mapping, which makes unmapping chunks of it a lot easier.
+Thanks,
+Rafael
 
-Cheers,
-Ben.
+---
+ drivers/base/power/wakeup.c |   85 ++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 85 insertions(+)
 
-
+Index: linux-2.6/drivers/base/power/wakeup.c
+===================================================================
+--- linux-2.6.orig/drivers/base/power/wakeup.c
++++ linux-2.6/drivers/base/power/wakeup.c
+@@ -11,6 +11,8 @@
+ #include <linux/sched.h>
+ #include <linux/capability.h>
+ #include <linux/suspend.h>
++#include <linux/seq_file.h>
++#include <linux/debugfs.h>
+ 
+ #include "power.h"
+ 
+@@ -617,3 +619,86 @@ bool pm_save_wakeup_count(unsigned int c
+ 		pm_wakeup_update_hit_counts();
+ 	return ret;
+ }
++
++static struct dentry *wakeup_sources_stats_dentry;
++
++/**
++ * print_wakeup_source_stats - Print wakeup source statistics information.
++ * @m: seq_file to print the statistics into.
++ * @ws: Wakeup source object to print the statistics for.
++ */
++static int print_wakeup_source_stats(struct seq_file *m,
++				     struct wakeup_source *ws)
++{
++	unsigned long flags;
++	ktime_t total_time;
++	ktime_t max_time;
++	unsigned long active_count;
++	ktime_t active_time;
++	int ret;
++
++	spin_lock_irqsave(&ws->lock, flags);
++
++	total_time = ws->total_time;
++	max_time = ws->max_time;
++	active_count = ws->active_count;
++	if (ws->active) {
++		active_time = ktime_sub(ktime_get(), ws->last_time);
++		total_time = ktime_add(total_time, active_time);
++		if (active_time.tv64 > max_time.tv64)
++			max_time = active_time;
++	} else {
++		active_time = ktime_set(0, 0);
++	}
++
++	ret = seq_printf(m, "%-12s\t%lu\t\t%lu\t\t%lu\t\t"
++			"%lld\t\t%lld\t\t%lld\t\t%lld\n",
++			ws->name, active_count, ws->event_count, ws->hit_count,
++			ktime_to_ms(active_time), ktime_to_ms(total_time),
++			ktime_to_ms(max_time), ktime_to_ms(ws->last_time));
++
++	spin_unlock_irqrestore(&ws->lock, flags);
++
++	return ret;
++}
++
++/**
++ * wakeup_sources_stats_show - Print wakeup sources statistics information.
++ * @m: seq_file to print the statistics into.
++ */
++static int wakeup_sources_stats_show(struct seq_file *m, void *unused)
++{
++	struct wakeup_source *ws;
++
++	seq_puts(m, "name\t\tactive_count\tevent_count\thit_count\t"
++		"active_since\ttotal_time\tmax_time\tlast_change\n");
++
++	rcu_read_lock();
++	list_for_each_entry_rcu(ws, &wakeup_sources, entry)
++		print_wakeup_source_stats(m, ws);
++	rcu_read_unlock();
++
++	return 0;
++}
++
++static int wakeup_sources_stats_open(struct inode *inode, struct file *file)
++{
++	return single_open(file, wakeup_sources_stats_show, NULL);
++}
++
++static const struct file_operations wakeup_sources_stats_fops = {
++	.owner = THIS_MODULE,
++	.open = wakeup_sources_stats_open,
++	.read = seq_read,
++	.llseek = seq_lseek,
++	.release = single_release,
++};
++
++static int __init wakeup_sources_debugfs_init(void)
++{
++	wakeup_sources_stats_dentry = debugfs_create_file("wakeup_sources",
++			S_IRUGO, NULL, NULL, &wakeup_sources_stats_fops);
++	return 0;
++}
++
++postcore_initcall(wakeup_sources_debugfs_init);
