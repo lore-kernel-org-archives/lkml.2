@@ -1,46 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757058Ab0JQLC2 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Oct 2010 07:02:28 -0400
-Received: from canuck.infradead.org ([134.117.69.58]:55587 "EHLO
-	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751386Ab0JQLC1 convert rfc822-to-8bit (ORCPT
+	id S1751710Ab0JQLig (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Oct 2010 07:38:36 -0400
+Received: from brigitte.telenet-ops.be ([195.130.137.66]:40667 "EHLO
+	brigitte.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751178Ab0JQLif (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Oct 2010 07:02:27 -0400
-Subject: Re: ima: use of radix tree cache indexing == massive waste of
- memory?
-From: Peter Zijlstra <peterz@infradead.org>
-To: Mimi Zohar <zohar@linux.vnet.ibm.com>
-Cc: Christoph Hellwig <hch@infradead.org>, Dave Chinner <david@fromorbit.com>,
-        linux-kernel@vger.kernel.org, Mimi Zohar <zohar@us.ibm.com>,
-        warthog9@kernel.org, hpa@zytor.com, devel@lists.fedoraprojet.org
-In-Reply-To: <1287295077.3020.83.camel@localhost.localdomain>
-References: <20101016065206.GO4681@dastard>
-	 <20101016192027.GA6883@infradead.org>
-	 <1287295077.3020.83.camel@localhost.localdomain>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Sun, 17 Oct 2010 13:02:12 +0200
-Message-ID: <1287313332.1998.172.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	Sun, 17 Oct 2010 07:38:35 -0400
+Date: Sun, 17 Oct 2010 13:38:32 +0200 (CEST)
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Jens Axboe <jaxboe@fusionio.com>
+cc: Dan Carpenter <error27@gmail.com>, kernel-janitors@vger.kernel.org,
+        Linux Kernel Development <linux-kernel@vger.kernel.org>,
+        cbe-oss-dev@lists.ozlabs.org
+Subject: [PATCH] block: Turn bvec_k{un,}map_irq() into static inline
+ functions
+Message-ID: <alpine.DEB.2.00.1010171335400.919@ayla.of.borg>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2010-10-17 at 01:57 -0400, Mimi Zohar wrote:
-> On Sat, 2010-10-16 at 15:20 -0400, Christoph Hellwig wrote:
-> > Besides the algorithmic problems with ima, why is kernel.org using
-> > IMA to start with?  Except for IBM looking for a reason to jusity why
-> > TPM isn't a completely waster of ressources it's pointless.  And it was
-> > only merged under the premise that it would not affect innocent normal
-> > users.
-> > 
-> 
-> Can we keep this at the design level please? When IMA is enabled, it
-> needs to store information on a per inode basis, yet has to wait to
-> late_initcall() for the TPM, at which point some inodes would have
-> already been created.  
+Convert bvec_k{un,}map_irq() from macros to static inline functions if
+!CONFIG_HIGHMEM, so we can easier detect mistakes like the one fixed in
+93055c31045a2d5599ec613a0c6cdcefc481a460 ("ps3disk: passing wrong variable to
+bvec_kunmap_irq()")
 
-Being build (CONFIG_IMA=y) is not the same as default enabled. Is there
-a way to build this stuff and not have it enabled?
+Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+---
+Compile-tested on m68k only. Not on ppc64 with the old ps3disk.
+
+ include/linux/bio.h |   11 +++++++++--
+ 1 files changed, 9 insertions(+), 2 deletions(-)
+
+diff --git a/include/linux/bio.h b/include/linux/bio.h
+index 5274103..fa5d49e 100644
+--- a/include/linux/bio.h
++++ b/include/linux/bio.h
+@@ -346,8 +346,15 @@ static inline void bvec_kunmap_irq(char *buffer, unsigned long *flags)
+ }
+ 
+ #else
+-#define bvec_kmap_irq(bvec, flags)	(page_address((bvec)->bv_page) + (bvec)->bv_offset)
+-#define bvec_kunmap_irq(buf, flags)	do { *(flags) = 0; } while (0)
++static inline char *bvec_kmap_irq(struct bio_vec *bvec, unsigned long *flags)
++{
++	return page_address(bvec->bv_page) + bvec->bv_offset;
++}
++
++static inline void bvec_kunmap_irq(char *buffer, unsigned long *flags)
++{
++	*flags = 0;
++}
+ #endif
+ 
+ static inline char *__bio_kmap_irq(struct bio *bio, unsigned short idx,
+-- 
+1.7.0.4
+
+Gr{oetje,eeting}s,
+
+						Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+							    -- Linus Torvalds
