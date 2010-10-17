@@ -1,77 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754008Ab0JQGYW (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Oct 2010 02:24:22 -0400
-Received: from e3.ny.us.ibm.com ([32.97.182.143]:49299 "EHLO e3.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751849Ab0JQGYV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Oct 2010 02:24:21 -0400
-Date: Sun, 17 Oct 2010 10:54:54 +0530
-From: Balbir Singh <balbir@linux.vnet.ibm.com>
-To: pjt@google.com
-Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@elte.hu>, Srivatsa Vaddagiri <vatsa@in.ibm.com>,
-        Chris Friesen <cfriesen@nortel.com>,
-        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
-        Pierre Bourdon <pbourdon@excellency.fr>,
-        Bharata B Rao <bharata@linux.vnet.ibm.com>
-Subject: Re: [RFC tg_shares_up improvements - v1 00/12] [RFC tg_shares_up -
- v1 00/12] Reducing cost of tg->shares distribution
-Message-ID: <20101017052454.GA21273@balbir.in.ibm.com>
-Reply-To: balbir@linux.vnet.ibm.com
-References: <20101016044349.830426011@google.com>
+	id S1753202Ab0JQGeS (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Oct 2010 02:34:18 -0400
+Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:16556 "EHLO
+	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751015Ab0JQGeQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 17 Oct 2010 02:34:16 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: ApYEAMY0ukx5LcB2gWdsb2JhbAChKhYBARYiIsJ/hUkE
+Date: Sun, 17 Oct 2010 17:34:11 +1100
+From: Nick Piggin <npiggin@kernel.dk>
+To: Dave Chinner <david@fromorbit.com>
+Cc: Nick Piggin <npiggin@kernel.dk>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: Inode Lock Scalability V4
+Message-ID: <20101017063411.GA23596@amd>
+References: <1287216853-17634-1-git-send-email-david@fromorbit.com>
+ <20101016175515.GA6868@amd>
+ <20101017024759.GI32255@dastard>
+ <20101017025533.GA6482@amd>
+ <20101017061042.GK32255@dastard>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20101016044349.830426011@google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20101017061042.GK32255@dastard>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* pjt@google.com <pjt@google.com> [2010-10-15 21:43:49]:
+On Sun, Oct 17, 2010 at 05:10:42PM +1100, Dave Chinner wrote:
+> On Sun, Oct 17, 2010 at 01:55:33PM +1100, Nick Piggin wrote:
+> > On Sun, Oct 17, 2010 at 01:47:59PM +1100, Dave Chinner wrote:
+> > > On Sun, Oct 17, 2010 at 04:55:15AM +1100, Nick Piggin wrote:
+> > > > On Sat, Oct 16, 2010 at 07:13:54PM +1100, Dave Chinner wrote:
+> > > > > This patch set is just the basic inode_lock breakup patches plus a
+> > > > > few more simple changes to the inode code. It stops short of
+> > > > > introducing RCU inode freeing because those changes are not
+> > > > > completely baked yet.
+> > > > 
+> > > > It also doesn't contain per-zone locking and lrus, or scalability of
+> > > > superblock list locking.
+> > > 
+> > > Sure - that's all explained in the description of what the series
+> > > actually contains later on. 
+> > > 
+> > > > And while the rcu-walk path walking is not fully baked, it has been
+> > > > reviewed by Linus and is in pretty good shape. So I prefer to utilise
+> > > > RCU locking here too, seeing as we know it will go in.
+> > > 
+> > > I deliberately left out the RCU changes as we know that the version
+> > > that is in your tree causes siginificant performance regressions for
+> > > single threaded and some parallel workloads on small (<=8p)
+> > > machines.
+> > 
+> > The worst-case microbenchmark is not a "significant performance
+> > regression". It is a worst case demonstration. With the parallel
+> > workloads, are you referring to your postmark xfs workload? It was
+> > actually due to lazy LRU, IIRC.
+> 
+> Actually, I wasn't refering to the regressions I reported from
+> fs_mark runs on XFS - I was refering to your "worse case
+> demonstration" numbers and the comments made during the discussion
+> that followed.  It wasn't clear to me what the plan was to use
 
-> Hi all,
-> 
-> Peter previously posted a patchset that attempted to improve the problem of
-> task_group share distribution.  This is something that has been a long-time
-> pain point for group scheduling.  The existing algorithm considers
-> distributions on a per-cpu-per-domain basis and carries a fairly high update
-> overhead, especially on larger machines.
-> 
-> I was previously looking at improving this using Fenwick trees to allow a
-> single sum without the exorbitant cost but then Peter's idea above was better :).
->
-> The kernel is that by monitoring the average contribution to load on a
-> per-cpu-per-taskgroup basis we can distribute the weight for which we are
-> expected to consume.
-> 
-> This set extends the original posting with a focus on increased fairness and
-> reduced convergence (to true average) time.  In particular the case of large
-> over-commit in the case of a distributed wake-up is a concern which is now
-> fairly well addressed.
-> 
-> Obviously everything's experimental but it should be stable/fair.
-> 
-> Some motivation:
-> 
-> 24 thread intel box, 150 active cgroups, multiple threads/group, load at ~90% (10 second sample):
-> tip:
->      2.64%  [k] tg_shares_up <!>
->      0.15%  [k] __set_se_shares
-> 
-> patched:
->      0.02%  [k] update_cfs_load
->      0.01%  [k] update_cpu_load
->      0.00%  [k] update_cfs_shares
-> 
-> Some fairness coverage for the above at: http://rs5.risingnet.net/~pjt/patches/shares_data_v1.txt
->
+OK, so why do you keep saying RCU changes aren't agreed on? There was a
+lot of discussion about this an we reached agreement.  Really, you blame
+me for delaying things and keep obstructing things yourself about things
+that have already been discussed and you haven't followed.
 
-The results do sound interesting, could I recommend that you try to
-get 1000 cgroups or so, with half of them as active and half inactive.
-I'd also suggest tracking system and user time at the cgroup level.
+And Christoph with his endless rubbish about not doing scalability
+changes because he has "ideas" about changing the global hashes, and
+then telling me I'm deliberately delaying things.  Of course never
+actually offering up any real substance or trying to address my points
+that I reply with _every_ single time he drops this "oh let's wait and I
+have some ideas about the hash" into the argument.
 
--- 
-	Three Cheers,
-	Balbir
+It's really rude.
+
+
+> SLAB_DESTROY_BY_RCU or not and the commit messages didn't help,
+> so I left it out because I was not about to bite off more than I
+> could chew for .37.
+
+I don't understand. It's already bitten off. It's already there.
+Linus was ready to pull the whole thing in fact, but I wanted
+to wait to get more people on board.
+
+I've also raised a lot of concerns about how your series is structured,
+how you want to merge it, the locking design, and how it will delay
+things further and just require all the same testing from the same
+people I have been asking.
+
+
+> As it is, the lazy LRU code doesn't appear to cause any fs_mark
+> performance regressions in the testing I've done of my series on
+> either ext4 or XFS.
+
+I think it does, with the double movement of the inodes in that
+reclaim path. I wasn't able to reproduce your results exactly,
+however I did see some slowdowns with that in inode intensive
+workloads.
+
+
+> Hence I don't think that was the cause of any of
+> the performance problems I originally measured using fs_mark.
+> 
+> And you are right that it wasn't RCU overhead, because....
+
+Yep.
+
