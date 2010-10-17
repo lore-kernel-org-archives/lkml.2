@@ -1,85 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754494Ab0JQMGz (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Oct 2010 08:06:55 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:55657 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753045Ab0JQMGy convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Oct 2010 08:06:54 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=tDJqL3SSUVxS4aiwyPZ8E2QbtEjmuskf4TXIxvqMCVvopcRq+HlbDn7xB3ANyNEzNz
-         otSAeS+1OsY+5OFbkpZT0RB4EZFuKj2VTs6VAeh+0kMQe+3VzIGvjf4WMZWnQ5V/hvHG
-         lLPfjdbau3xLIjIpz1x384yxUFbOtm6khCx2E=
+	id S1753522Ab0JQMPg (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Oct 2010 08:15:36 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:4357 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751893Ab0JQMPf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 17 Oct 2010 08:15:35 -0400
+Message-ID: <4CBAE8E2.1060704@redhat.com>
+Date: Sun, 17 Oct 2010 14:15:30 +0200
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc13 Lightning/1.0b3pre Thunderbird/3.1.4
 MIME-Version: 1.0
-In-Reply-To: <20101015201453.GB12981@n2100.arm.linux.org.uk>
-References: <1287152120-7201-1-git-send-email-felipe.contreras@gmail.com>
-	<1287153021.27165.6.camel@e102109-lin.cambridge.arm.com>
-	<20101015194255.GA12981@n2100.arm.linux.org.uk>
-	<AANLkTinmAy13niqRKrray1Gk4hkr19tA2gWwYbfnFoh7@mail.gmail.com>
-	<20101015201453.GB12981@n2100.arm.linux.org.uk>
-Date: Sun, 17 Oct 2010 15:06:44 +0300
-Message-ID: <AANLkTimyEZp4ygmM7WeES3h5bixBNF2rY0x==x7SZ+GQ@mail.gmail.com>
-Subject: Re: [PATCH .36-rc8] arm: mm: allow, but warn, when issuing ioremap()
- on RAM
-From: Felipe Contreras <felipe.contreras@gmail.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Catalin Marinas <catalin.marinas@arm.com>,
-        linux-main <linux-kernel@vger.kernel.org>,
-        linux-arm <linux-arm-kernel@lists.infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        =?UTF-8?Q?Uwe_Kleine=2DK=C3=B6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Richard Woodruff <r-woodruff2@ti.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Dave Young <hidave.darkstar@gmail.com>
+CC: kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [BUG] kvm: guest can not startup due to triple fault
+References: <20101017085416.GA1758@darkstar>	<4CBAC342.1010609@redhat.com> <AANLkTin6qJYEqOc_97EVWkK1Kt1zNSvXtfVeYuk9fyJ8@mail.gmail.com>
+In-Reply-To: <AANLkTin6qJYEqOc_97EVWkK1Kt1zNSvXtfVeYuk9fyJ8@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 15, 2010 at 11:14 PM, Russell King - ARM Linux
-<linux@arm.linux.org.uk> wrote:
-> On Fri, Oct 15, 2010 at 11:00:40PM +0300, Felipe Contreras wrote:
->> On Fri, Oct 15, 2010 at 10:42 PM, Russell King - ARM Linux
->> <linux@arm.linux.org.uk> wrote:
->> > As soon as the first ARM merge hits during the merge window, I'll be
->> > restoring the 'always fail' behaviour.
->>
->> Ok, are you going to merge also your patch to use memblock for the
->> initialization? Many drivers could certainly use that to fix the
->> issue.
+  On 10/17/2010 12:14 PM, Dave Young wrote:
+> On Sun, Oct 17, 2010 at 5:34 PM, Avi Kivity<avi@redhat.com>  wrote:
+> >    On 10/17/2010 10:54 AM, Dave Young wrote:
+> >>
+> >>  linux guest can not startup normally, qemu keep rebooting.
+> >>
+> >>  host&    guest both use linux-2.6.36-rc8+ kernel
+> >>
+> >>  Add a dump_stack in x86.c around EXIT_SHUTDOWN code, I got:
+> >>  [ 3924.503041] Pid: 1685, comm: qemu-system-x86 Not tainted 2.6.36-rc8+
+> >>  #62
+> >>  [ 3924.503045] Call Trace:
+> >>  [ 3924.503055]  [<ffffffffa0176047>] handle_triple_fault+0x11/0x26
+> >>  [kvm_intel]
+> >>  [ 3924.503060]  [<ffffffffa01772d2>] vmx_handle_exit+0x3df/0x474
+> >>  [kvm_intel]
+> >>  [ 3924.503080]  [<ffffffffa021f203>] kvm_arch_vcpu_ioctl_run+0x95f/0xc43
+> >>  [kvm]
+> >>  [ 3924.503087]  [<ffffffff81503e54>] ? __mutex_unlock_slowpath+0x11c/0x131
+> >>  [ 3924.503101]  [<ffffffffa021e1f9>] ? kvm_arch_vcpu_load+0x90/0xe6 [kvm]
+> >>  [ 3924.503112]  [<ffffffffa0210faf>] kvm_vcpu_ioctl+0x109/0x54a [kvm]
+> >>  [ 3924.503117]  [<ffffffff810bee76>] ?
+> >>  fire_user_return_notifiers+0x2c/0x36
+> >>  [ 3924.503122]  [<ffffffff8106be93>] ? trace_hardirqs_on+0xd/0xf
+> >>  [ 3924.503127]  [<ffffffff81002789>] ? do_notify_resume+0x717/0x73d
+> >>  [ 3924.503131]  [<ffffffff8103994e>] ? finish_task_switch+0x69/0xda
+> >>  [ 3924.503135]  [<ffffffff8110628c>] do_vfs_ioctl+0x4c3/0x50d
+> >>  [ 3924.503139]  [<ffffffff8110632b>] sys_ioctl+0x55/0x77
+> >>  [ 3924.503142]  [<ffffffff81002c02>] system_call_fastpath+0x16/0x1b
+> >>
+> >>  Anyone can help on this?
+> >
+> >  Please provide a trace (trace-cmd record -e kvm) leading to the failure.
+> >
 >
-> There's a lot of work going on with memblock in x86-land which impacts
-> ARM and means major conflicts for that patch - I think first we'll have
-> to deal with the fallout from that (iow, finding out what's been broken
-> by this activity and fix that), and then I'll have to re-do my patch from
-> the beginning.
+> Hi, please see:
+> http://userweb.kernel.org/~davey/tmp/trace.dat
 >
-> Technically, following the rules, that means it has to miss this merge
-> window - so it looks like it's going to take another six months to solve
-> this issue (three months to get the memblock patch in, and another three
-> months for driver fixes to find their way through.)
 
-I don't think that's a good idea. Drivers would not have a way to get
-fixed, even for .37.
-
-Are these x86 changes in some branch? Would it help if I try to port
-your patch on top of that? IOW; is there any chance of getting these
-drivers fixed on .37?
-
-If not, I guess people would have to revert the patch that disables
-ioremap() on RAM on their trees.
-
-> I find these timescales (12 months) rather unacceptable to fix a problem
-> such as this.  Makes me wonder why I even bother trying.
-
-As I said, if the warning was merged on .35 (or even before) I think
-things would have gone smoother, but I guess we'll see on .36 what
-happens.
+Was this done with an old version of trace-cmd?  Please use the latest 
+git.  Make sure you have udis86 and udis86-devel installed when you 
+build it.
 
 -- 
-Felipe Contreras
+error compiling committee.c: too many arguments to function
+
