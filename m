@@ -1,55 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757424Ab0JQQlr (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Oct 2010 12:41:47 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:35102 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757411Ab0JQQlq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Oct 2010 12:41:46 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=mZTFiqmuuyvLPvwp45xWfpZOY+J0cnQ8VNYClKKyPk1AyI/onxmuI19zuDEEF9QkO5
-         3ziTUYMGOnrgLZcdWWAEUPc2GOnusl/IyB60nPDsaBk68sVd6Kea3nniIRFdhYhGjact
-         xZc8JK/82uGCN0eywJ80MCcYivvEDom68/tkI=
-From: Namhyung Kim <namhyung@gmail.com>
-To: Ralf Baechle <ralf@linux-mips.org>, linux-mips@linux-mips.org
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] MIPS: Fix build failure on asm/fcntl.h
-Date: Mon, 18 Oct 2010 01:41:39 +0900
-Message-Id: <1287333699-1254-1-git-send-email-namhyung@gmail.com>
-X-Mailer: git-send-email 1.7.0.4
+	id S1757428Ab0JQQzB (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Oct 2010 12:55:01 -0400
+Received: from mail.perches.com ([173.55.12.10]:2991 "EHLO mail.perches.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757371Ab0JQQzA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 17 Oct 2010 12:55:00 -0400
+Subject: Re: [PATCH] checkpatch: allow single space before labels
+From: Joe Perches <joe@perches.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Mike Frysinger <vapier@gentoo.org>, Andy Whitcroft <apw@canonical.com>,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <1287310889.1998.153.camel@laptop>
+References: <1287302737-3507-1-git-send-email-vapier@gentoo.org>
+	 <1287303678.20968.37.camel@Joe-Laptop>
+	 <AANLkTimmSRS3eVsW4EZUxnE_rfjeqmmgGnjtWbn3J_nY@mail.gmail.com>
+	 <1287310889.1998.153.camel@laptop>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sun, 17 Oct 2010 09:54:58 -0700
+Message-ID: <1287334498.20968.53.camel@Joe-Laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  CC      security/integrity/ima/ima_fs.o
-In file included from linux/include/linux/fcntl.h:4:0,
-                 from linux/security/integrity/ima/ima_fs.c:18:
-linux/arch/mips/include/asm/fcntl.h:63:2: error: expected specifier-qualifier-list before 'off_t'
-make[3]: *** [security/integrity/ima/ima_fs.o] Error 1
-make[2]: *** [security/integrity/ima/ima_fs.o] Error 2
-make[1]: *** [sub-make] Error 2
-make: *** [all] Error 2
+On Sun, 2010-10-17 at 12:21 +0200, Peter Zijlstra wrote:
+> On Sun, 2010-10-17 at 04:24 -0400, Mike Frysinger wrote:
+> > feel free to extend however as long as the end result is no warnings
+> > for " foo:" ;).
+> I utterly detest those indented labels and am eradicating them wherever
+> I notice them. There's really no sane reason to use them what so ever.
+> Diff can be taught not to get confused about them, see my earlier email.
 
-Signed-off-by: Namhyung Kim <namhyung@gmail.com>
----
- arch/mips/include/asm/fcntl.h |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+Your choice.
 
-diff --git a/arch/mips/include/asm/fcntl.h b/arch/mips/include/asm/fcntl.h
-index e482fe9..75edded 100644
---- a/arch/mips/include/asm/fcntl.h
-+++ b/arch/mips/include/asm/fcntl.h
-@@ -56,6 +56,7 @@
-  */
- 
- #ifdef CONFIG_32BIT
-+#include <linux/types.h>
- 
- struct flock {
- 	short	l_type;
--- 
-1.7.0.4
+There are a half dozen or so in sched.c
+
+There are 5000 or so single space indented labels.
+There are 35000 or so labels without any indent.
+
+His choice too no?
 
