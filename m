@@ -1,45 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757086Ab0JQAs7 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Oct 2010 20:48:59 -0400
-Received: from mail.vyatta.com ([76.74.103.46]:43026 "EHLO mail.vyatta.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757021Ab0JQAs6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Oct 2010 20:48:58 -0400
-Date: Sat, 16 Oct 2010 17:48:54 -0700
-From: Stephen Hemminger <shemminger@vyatta.com>
-To: linux-kernel@vger.kernel.org
-Subject: Random compiler errors
-Message-ID: <20101016174854.4b8eec07@s6510>
-Organization: Vyatta
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1757111Ab0JQAtw (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Oct 2010 20:49:52 -0400
+Received: from canuck.infradead.org ([134.117.69.58]:51459 "EHLO
+	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757072Ab0JQAtv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 16 Oct 2010 20:49:51 -0400
+Date: Sat, 16 Oct 2010 20:49:45 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Christoph Hellwig <hch@infradead.org>, Dave Chinner <david@fromorbit.com>,
+        linux-kernel@vger.kernel.org, Mimi Zohar <zohar@us.ibm.com>,
+        warthog9@kernel.org, kernel@lists.fedoraproject.org
+Subject: Re: ima: use of radix tree cache indexing == massive waste of memory?
+Message-ID: <20101017004945.GE1614@infradead.org>
+References: <20101016065206.GO4681@dastard>
+ <20101016192027.GA6883@infradead.org>
+ <ebc4973c-6c11-4397-b8b0-c212a27abce4@email.android.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <ebc4973c-6c11-4397-b8b0-c212a27abce4@email.android.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by canuck.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Not sure why this is happening, but lately when building kernels
-I am getting non-reproducible cases of gcc failure. There are no
-messages in system log. Cosmic rays? Bad memory?
+On Sat, Oct 16, 2010 at 02:10:29PM -0700, H. Peter Anvin wrote:
+> I'm confused ... what makes you think we are?  This might have been an unintentional misconfiguration...
 
-  CC      arch/x86/kernel/xsave.o
-  CC      arch/x86/kernel/ptrace.o
-arch/x86/kernel/ptrace.c:1416: internal compiler error: Bus error
-Please submit a full bug report,
-with preprocessed source if appropriate.
-See <file:///usr/share/doc/gcc-4.4/README.Bugs> for instructions.
-make[2]: *** [arch/x86/kernel/ptrace.o] Error 1
-make[1]: *** [arch/x86/kernel] Error 2
-make: *** [arch/x86] Error 2
+I didn't mean to imply you enabled it intentionally.  In fact it looks
+like the inode tracking in IMA is always on once it's compiled in, which
+totally defeats the purpose of doing it's on iternal inode tracking
+instead of bloating the inode what they originally proposed.  IMA really
+needs a kernel parameter to only enabled this crap when people actually
+use it.
 
-$ make
-  CHK     include/linux/version.h
-  CHK     include/generated/utsrelease.h
-  CALL    scripts/checksyscalls.sh
-  CHK     include/generated/compile.h
-  CC      arch/x86/kernel/ptrace.o
-  CC      arch/x86/kernel/tls.o
-  CC      arch/x86/kernel/step.o
-  CC      arch/x86/kernel/tboot.o
+And whoever turned it on in Fedora needs some serious wahcking.
+
