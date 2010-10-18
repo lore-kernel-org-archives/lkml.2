@@ -1,178 +1,208 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932801Ab0JRPlz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Oct 2010 11:41:55 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:57963 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932167Ab0JRPlx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Oct 2010 11:41:53 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: codalist@TELEMANN.coda.cs.cmu.edu,
-        ksummit-2010-discuss@lists.linux-foundation.org
-Subject: [v2] Remaining BKL users, what to do
-Date: Mon, 18 Oct 2010 17:42:06 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.35-16-generic; KDE/4.3.2; x86_64; ; )
-Cc: autofs@linux.kernel.org, linux-media@vger.kernel.org,
-        dri-devel@lists.freedesktop.org, Christoph Hellwig <hch@infradead.org>,
-        Mikulas Patocka <mikulas@artax.karlin.mff.cuni.cz>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Petr Vandrovec <vandrove@vc.cvut.cz>, Anders Larsen <al@alarsen.net>,
-        Jan Kara <jack@suse.cz>, Evgeniy Dushistov <dushistov@mail.ru>,
-        Ingo Molnar <mingo@elte.hu>, netdev@vger.kernel.org,
-        Samuel Ortiz <samuel@sortiz.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        Andrew Hendry <andrew.hendry@gmail.com>,
-        David Miller <davem@davemloft.net>, Jan Harkes <jaharkes@cs.cmu.edu>,
-        Bryan Schumaker <bjschuma@netapp.com>
-References: <201009161632.59210.arnd@arndb.de>
-In-Reply-To: <201009161632.59210.arnd@arndb.de>
+	id S1756905Ab0JRPnE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Oct 2010 11:43:04 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:51831 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756864Ab0JRPnC (ORCPT
+	<rfc822;<linux-kernel@vger.kernel.org>>);
+	Mon, 18 Oct 2010 11:43:02 -0400
+Date: Mon, 18 Oct 2010 11:41:39 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>
+Cc: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com,
+        Jeremy.Fitzhardinge@citrix.com
+Subject: Re: [PATCH v3 02/10] xen: remap GSIs as pirqs when running as
+ initial domain
+Message-ID: <20101018154139.GB27373@dumpdata.com>
+References: <alpine.DEB.2.00.1010121043030.2422@kaball-desktop>
+ <1286901770-8612-2-git-send-email-Stefano.Stabellini@eu.citrix.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201010181742.06678.arnd@arndb.de>
-X-Provags-ID: V02:K0:pSnB9rTTk0Wjcu0Lxh71tavU4twJxvMQzOlQYrJQL8r
- WLZNoCnCsUITI50PSYAKS8RZ/WWyKtxgFe/QcFqzMx1c1Bfm+L
- Oc8dmddr2QG9uCPQMXZjiEyjbTy2K3WX9QsKM9dqxxSOePsik5
- pMA+5HsvMFlM0bYa73Z8NGS/fMQAQruaTOwBpfooeGSxUzwau7
- T7kY8wCnCermQBFdD33qg==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1286901770-8612-2-git-send-email-Stefano.Stabellini@eu.citrix.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a update on the current progress for the BKL removal, reflecting
-what is currently in linux-next.
-
-Maybe we can briefly discuss this at the kernel summit to decide if we
-want a quick death of the BKL, i.e. fixing/disabling/staging-out the
-remaining users in 2.6.38 or rather leave them there indefinitely.
-
-On Thursday 16 September 2010, Arnd Bergmann wrote:
-> The big kernel lock is gone from almost all code in linux-next, this is
-> the status of what I think will happen to the remaining users:
+On Tue, Oct 12, 2010 at 05:42:42PM +0100, Stefano Stabellini wrote:
+> From: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
 > 
-> drivers/gpu/drm/i810/{i810,i830}_dma.c:
-> 	Fixable, but needs someone with the hardware to test. Can probably be
-> 	marked CONFIG_BROKEN_ON_SMP if nobody cares.
+> Implement xen_register_gsi to setup the correct triggering and polarity
+> properties of a gsi.
+> Implement xen_register_pirq to register a particular gsi as pirq and
+> receive interrupts as events.
+> Call xen_setup_pirqs to register all the legacy ISA irqs as pirqs.
+> 
+> Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+> Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+> ---
+>  arch/x86/include/asm/xen/pci.h  |    7 ++
+>  arch/x86/pci/xen.c              |  132 +++++++++++++++++++++++++++++++++++++++
+>  drivers/xen/events.c            |   13 ++++
+>  include/xen/interface/physdev.h |   10 +++
+>  4 files changed, 162 insertions(+), 0 deletions(-)
+> 
+> diff --git a/arch/x86/include/asm/xen/pci.h b/arch/x86/include/asm/xen/pci.h
+> index f89a42a..2329b3e 100644
+> --- a/arch/x86/include/asm/xen/pci.h
+> +++ b/arch/x86/include/asm/xen/pci.h
+> @@ -13,6 +13,13 @@ static inline int pci_xen_hvm_init(void)
+>  	return -1;
+>  }
+>  #endif
+> +#if defined(CONFIG_XEN_DOM0)
+> +void __init xen_setup_pirqs(void);
+> +#else
+> +static inline void __init xen_setup_pirqs(void)
+> +{
+> +}
+> +#endif
+>  
+>  #if defined(CONFIG_PCI_MSI)
+>  #if defined(CONFIG_PCI_XEN)
+> diff --git a/arch/x86/pci/xen.c b/arch/x86/pci/xen.c
+> index fb20d05..5d87774 100644
+> --- a/arch/x86/pci/xen.c
+> +++ b/arch/x86/pci/xen.c
+> @@ -262,3 +262,135 @@ int __init pci_xen_hvm_init(void)
+>  #endif
+>  	return 0;
+>  }
+> +
+> +#ifdef CONFIG_XEN_DOM0
+> +static int xen_register_pirq(u32 gsi, int triggering)
+> +{
+> +	int rc, irq;
+> +	struct physdev_map_pirq map_irq;
+> +	int shareable = 0;
+> +	char *name;
+> +
+> +	if (!xen_pv_domain())
+> +		return -1;
+> +
+> +	if (triggering == ACPI_EDGE_SENSITIVE) {
+> +		shareable = 0;
+> +		name = "ioapic-edge";
+> +	} else {
+> +		shareable = 1;
+> +		name = "ioapic-level";
+> +	}
+> +
+> +	irq = xen_allocate_pirq(gsi, shareable, name);
+> +
+> +	printk(KERN_DEBUG "xen: --> irq=%d\n", irq);
+> +
+> +	if (irq < 0)
+> +		goto out;
+> +
+> +	map_irq.domid = DOMID_SELF;
+> +	map_irq.type = MAP_PIRQ_TYPE_GSI;
+> +	map_irq.index = gsi;
+> +	map_irq.pirq = irq;
+> +
+> +	rc = HYPERVISOR_physdev_op(PHYSDEVOP_map_pirq, &map_irq);
+> +	if (rc) {
+> +		printk(KERN_WARNING "xen map irq failed %d\n", rc);
+> +		return -1;
+> +	}
+> +
+> +out:
+> +	return irq;
+> +}
+> +
+> +static int xen_register_gsi(u32 gsi, int triggering, int polarity)
+> +{
+> +	int rc, irq;
+> +	struct physdev_setup_gsi setup_gsi;
+> +
+> +	if (!xen_pv_domain())
+> +		return -1;
+> +
+> +	printk(KERN_DEBUG "xen: registering gsi %u triggering %d polarity %d\n",
+> +			gsi, triggering, polarity);
+> +
+> +	irq = xen_register_pirq(gsi, triggering);
+> +
+> +	setup_gsi.gsi = gsi;
+> +	setup_gsi.triggering = (triggering == ACPI_EDGE_SENSITIVE ? 0 : 1);
+> +	setup_gsi.polarity = (polarity == ACPI_ACTIVE_HIGH ? 0 : 1);
+> +
+> +	rc = HYPERVISOR_physdev_op(PHYSDEVOP_setup_gsi, &setup_gsi);
+> +	if (rc == -EEXIST)
+> +		printk(KERN_INFO "Already setup the GSI :%d\n", gsi);
+> +	else if (rc) {
+> +		printk(KERN_ERR "Failed to setup GSI :%d, err_code:%d\n",
+> +				gsi, rc);
+> +	}
+> +
+> +	return irq;
+> +}
+> +
+> +static __init void xen_setup_acpi_sci(void)
+> +{
+> +	int rc;
+> +	int trigger, polarity;
+> +	int gsi = acpi_sci_override_gsi;
+> +
+> +	if (!gsi)
+> +		return;
 
-Still open, no good solution for this.
+Should this be 'if (gsi >= 0)' ? I haven't seen any machine
+with the GSI at IRQ 0, but perhaps it would be possible?
 
-> drivers/media/video (V4L):
-> 	Mauro is working on it, some drivers get moved to staging while the
-> 	others get fixed. An easy workaround would be possible by adding
-> 	per-driver mutexes, but Mauro wants to it properly by locking all
-> 	the right places.
+> +
+> +	rc = acpi_get_override_irq(gsi, &trigger, &polarity);
+> +	if (rc)
+> +		return;
 
-Progressing well, patches are being worked on.
+We don't want to report the error? Say a printk?
 
-> fs/adfs:
-> 	Probably not hard to fix, but needs someone to test it.
-> 	adfs has only seen janitorial fixes for the last 5 years.
-> 	Do we know of any users?
+> +	trigger = trigger ? ACPI_LEVEL_SENSITIVE : ACPI_EDGE_SENSITIVE;
+> +	polarity = polarity ? ACPI_ACTIVE_LOW : ACPI_ACTIVE_HIGH;
+> +	
+> +	printk("xen: sci override: global_irq=%d trigger=%d polarity=%d\n",
+> +			gsi, trigger, polarity);
+> +
+> +	gsi = xen_register_gsi(gsi, trigger, polarity);
+> +	printk("xen: acpi sci %d\n", gsi);
 
-Nobody replied.
+KERN_INFO ?
+> +
+> +	return;
+> +}
+> +
+> +static int acpi_register_gsi_xen(struct device *dev, u32 gsi,
+> +				 int trigger, int polarity)
+> +{
+> +	return xen_register_gsi(gsi, trigger, polarity);
+> +}
+> +
+> +static int __init pci_xen_initial_domain(void)
+> +{
+> +	xen_setup_acpi_sci();
+> +	__acpi_register_gsi = acpi_register_gsi_xen;
+> +
+> +	return 0;
+> +}
+> +
+> +void __init xen_setup_pirqs(void)
+> +{
+> +	int irq;
+> +
+> +	pci_xen_initial_domain();
+> +
+> +	if (0 == nr_ioapics) {
 
-> fs/autofs:
-> 	Pretty much dead, replaced by autofs4. I'd suggest moving this
-> 	to drivers/staging in 2.6.37 and letting it die there.
+This function is only called for the Dom0 case, so under
+what conditions would we have a machine with zero IO APICs?
 
-Now in staging.
+And do we actually support machines with no IO APICs?
+(would Xen run under such ancient hardware?)
 
-> fs/coda:
-> 	Coda seems to have an active community, but not all of their
-> 	code is actually part of linux (pioctl!), while the last official
-> 	release is missing many of the cleanups that were don in Linux.
-> 	Not sure what to do, if someone is interested, the best way might
-> 	be a fresh start with a merger of the mainline linux and the
-> 	coda.cs.cmu.edu	codebase in drivers/staging.
-> 	Just removing the BKL without the Coda community seems like a heap
-> 	of pointless work.
-
-Jan Harkes showed interest, looks like this will get fixed eventually,
-but probably not in time for 2.6.37.
-
-> fs/freevxfs:
-> 	Uses the BKL in readdir and lookup, should be easy to fix. Christoph?
-
-Still waiting for confirmation from Christoph Hellwig that the BKL
-is not needed here. I can do the patch to remove it then.
-
-> fs/hpfs:
-> 	Looks fixable, if anyone cares. Maybe it's time for retirement in
-> 	drivers/staging though. The web page only has a Link to the
-> 	linux-2.2 version.
-
-No replies.
-
-> fs/lockd:
-> 	Trond writes that he has someone working on BKL removal here.
-
-Bryan Schumaker took care of this, looks like the locking is independent
-of the fs/locks.c locking now, although it still uses the BKL internally.
-
-I assume that this will get fixed as well, doesn't seem hard. As long
-as lockd uses the BKL, both nfs and nfsd depend on the BKL implicitly.
-
-> fs/locks.c:
-> 	Patch is under discussion, blocked by work on fs/lockd currently.
-
-No longer blocked now, both lockd and ceph can deal with this converted
-to spinlocks. I will follow up with the final patch once they hit mainline.
-
-> fs/ncpfs:
-> 	Should be fixable if Petr still cares about it. Otherwise suggest
-> 	moving to drivers/staging if there are no users left.
-
-Fixed by Petr Vandrovec.
-
-> fs/qnx4:
-> 	Should be easy to fix, there are only a few places in the code that
-> 	use the BKL. Anders?
-
-Anders Larsen volunteered.
-
-> fs/smbfs:
-> 	Last I heard this was considered obsolete. Should be move it to
-> 	drivers/staging now?
-
-Now in staging.
-
-> fs/udf:
-> 	Not completely trivial, but probably necessary to fix. Project web
-> 	site is dead, I hope that Jan Kara can be motivated to fix it though.
-
-Jan Kara volunteered to do it.
-
-> fs/ufs:
-> 	Evgeniy Dushistov is maintaining this, I hope he can take care of
-> 	getting rid of the BKL in UFS.
-
-No replies.
-
-> kernel/trace/blktrace.c:
-> 	Should be easy. Ingo? Steven?
-
-Done.
-
-> net/appletalk:
-> net/ipx/af_ipx.c:
-> net/irda/af_irda.c:
-> 	Can probably be saved from retirement in drivers/staging if the
-> 	maintainers still care.
-
-Samuel Ortiz fixed irda.
-
-David Miller volunteered to do appletalk and ipx.
-
-> net/x25:
-> 	Andrew Hendry has started working on it.
-
-Patches have shown up in -next now, I suppose Andrew will finish it soon.
-
-Out of the remaining modules, I guess i810/i830, adfs, hpfs and ufs might end
-up not getting fixed at all, we can either mark them non-SMP or move them
-to drivers/staging once all the others are done.
-
-	Arnd
+> +		for (irq = 0; irq < NR_IRQS_LEGACY; irq++)
+> +			xen_allocate_pirq(irq, 0, "xt-pic");
+> +		return;
+> +	}
+> +
