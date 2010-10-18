@@ -1,68 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932325Ab0JRTJv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Oct 2010 15:09:51 -0400
-Received: from mail.perches.com ([173.55.12.10]:3019 "EHLO mail.perches.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755101Ab0JRTJu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Oct 2010 15:09:50 -0400
-Subject: Re: [PATCH] checkpatch: allow single space before labels
-From: Joe Perches <joe@perches.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Mike Frysinger <vapier@gentoo.org>, "Ted Ts'o" <tytso@mit.edu>,
-        Andy Whitcroft <apw@canonical.com>, linux-kernel@vger.kernel.org
-In-Reply-To: <1287426752.1998.2099.camel@laptop>
-References: <1287302737-3507-1-git-send-email-vapier@gentoo.org>
-	 <1287303678.20968.37.camel@Joe-Laptop>
-	 <AANLkTimmSRS3eVsW4EZUxnE_rfjeqmmgGnjtWbn3J_nY@mail.gmail.com>
-	 <1287310889.1998.153.camel@laptop> <1287334498.20968.53.camel@Joe-Laptop>
-	 <1287343839.1998.699.camel@laptop>
-	 <AANLkTikaxf-Fh9qUxsXNO5=r+SoxbzYXvCjFcHQLcXjy@mail.gmail.com>
-	 <1287345710.1998.735.camel@laptop>
-	 <AANLkTimixEGQTYrM7ShodtKeC97e0uPNRhWQn8F+-Nui@mail.gmail.com>
-	 <20101018143935.GA4120@thunk.org> <20101018145400.GD4120@thunk.org>
-	 <1287413933.29097.1608.camel@twins>
-	 <AANLkTin2joSMdqn_HKzQDHuV5cbwbLAB2hJi7Uj8yEHK@mail.gmail.com>
-	 <1287426752.1998.2099.camel@laptop>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 18 Oct 2010 12:09:47 -0700
-Message-ID: <1287428987.20968.156.camel@Joe-Laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S1756112Ab0JRTKg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Oct 2010 15:10:36 -0400
+Received: from c-67-162-90-113.hsd1.in.comcast.net ([67.162.90.113]:36231 "HELO
+	kosh.dhis.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1753507Ab0JRTKf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Oct 2010 15:10:35 -0400
+Message-ID: <20101018191034.21165.qmail@kosh.dhis.org>
+From: pacman@kosh.dhis.org
+Subject: Re: PROBLEM: memory corrupting bug, bisected to 6dda9d55
+To: mel@csn.ul.ie (Mel Gorman)
+Date: Mon, 18 Oct 2010 14:10:33 -0500 (GMT+5)
+Cc: akpm@linux-foundation.org (Andrew Morton), linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org
+In-Reply-To: <20101018113331.GB30667@csn.ul.ie>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-10-18 at 20:32 +0200, Peter Zijlstra wrote:
-> On Mon, 2010-10-18 at 14:21 -0400, Mike Frysinger wrote:
-> > sounds like an ACK for Joe's patch
+Mel Gorman writes:
+> 
+> A bit but I still don't know why it would cause corruption. Maybe this is still
+> a caching issue but the difference in timing between list_add and list_add_tail
+> is enough to hide the bug. It's also possible there are some registers
+> ioremapped after the memmap array and reading them is causing some
+> problem.
 
-I didn't submit a patch, I suggested a possible improvement to
-your patch.  If you agree with it, you could resubmit.
+I've been doing a lot more tests and I'm sure that 6dda9d55 is not really
+responsible. It just happens to provoke the bug in my particular setup.
+Whatever it is, it's very sensitive to small changes.
 
-> There are checks I don't really like, for those I simply ignore its
-> output, I suggest others do the same.
+At the end of free_all_bootmem, the free list for order 9 has 4 entries.
+Which one is at the head of the list depends on whether 6dda9d55 is applied
+or not. If page number 130048 is at the head of the list, it gets used fairly
+soon, and everything's fine. The alternative is that page number 64512 is at
+the head of the list, so it gets used fairly soon, and corruption occurs.
 
-Seems sensible.
+> 
+> Andrew, what is the right thing to do here? We could flail around looking
+> for explanations as to why the bug causes a user buffer corruption but never
+> get an answer or do we go with this patch, preferably before 2.6.36 releases?
 
-Mike, checkpatch does already allow a single space to precede
-a label but there's a conflict between the leading spaces test
-and this test below it, so something like your patch is useful.
+I've been flailing around quite a bit. Here's my latest result:
 
-----------------
-#goto labels aren't indented, allow a single space however
-		if ($line=~/^.\s+[A-Za-z\d_]+:(?![0-9]+)/ and
-		   !($line=~/^. [A-Za-z\d_]+:/) and !($line=~/^.\s+default:/)) {
-			WARN("labels should not be indented\n" . $herecurr);
-		}
-----------------
+Since I can view the corruption with md5sum /sbin/e2fsck, I know it's in a
+clean cached page. So I made an extra copy of /sbin/e2fsck, which won't be
+loaded into memory during boot. So now after the corruption happens, I can
+  cmp -l /sbin/e2fsck good-e2fsck
+for a quick look at the changed bytes. Much easier than provoking a segfault
+under gdb.
 
-The leading space test may be overly noisy.
-Maybe Andy can fix it a different way.
+Then I got really creative and wrote a cmp replacement which mmaps the files
+and reports the physical addresses from /proc/self/pagemap of the pages that
+don't match. And the consistent result is that physical pages 64604 and 64609
+(both in the range of the order=9 64512) have wrong contents. And the
+corruption is always a single word 128 bytes after the start of the page.
+Physical addresses 0x0fc5c080 and 0x0fc61080 are hit every time.
 
-About 1% (~500) of the labels in the kernel source tree use
-leading tabs.  I think that label style is harder for me to
-visually scan and find, but it's probably not code I'd change
-just for conformity.
+The values of the corrupted words, observed in 5 consecutive boots, were:
+  at 0fc5c080   at 0fc61080
+  -----------   -----------
+  c3540000      92510000
+  565c0000      23590000
+  c85b0000      97580000
+  d15f0000      9e5c0000
+  d95b0000      a8580000
 
+The low 16 bits are all 0 and the upper 16 bits seem randomly distributed.
+But look at the differences:
+
+  c3540000 - 92510000 = 31030000
+  565c0000 - 23590000 = 33030000
+  c85b0000 - 97580000 = 31030000
+  d15f0000 - 9e5c0000 = 33030000
+  d95b0000 - a8580000 = 31030000
+
+This means something... but I don't know what.
+
+In a completely different method of investigation, I went back a few stable
+kernels, got 2.6.33.7 and applied 6dda9d55 to it, thinking that if 6dda9d55
+only reveals a pre-existing bug, I could bisect it using 6dda9d55 as a
+bug-revealing assistant. The bug appeared when running 2.6.33.7 with 6dda9d55
+applied. That was discouraging.
+
+>This patch fixes the problem by ensuring we are not reading a possibly
+>invalid location of memory. It's not clear why the read causes
+>corruption but one way or the other it is a buggy read.
+
+At least that part of the explanation is wrong. Where's the buggy read?
+The action taken by the 6dda9d55 version of __free_one_page looks perfectly
+legitimate to me. Page numbers:
+
+[129024       ] [130048       ]   order=10
+[129024 129536] [130048 130560]   order=9
+
+130048 is being freed. 130560 is not free. 129024 (the higher_buddy) is
+already free at order=10. So 130048 is being pushed to the tail of the free
+list, on the speculation that 130560 might soon be free and then the whole
+thing will form an order=11 free page, the only problem being that order=11
+is too high so that later merge will never happen. It's not useful, and maybe
+not conceptually valid to say that 129024 is the buddy of 130048, but it is
+an existing page, and the only way it wouldn't be is if the total memory size
+was not a multiple of 1<<(MAX_ORDER-1) pages
+
+-- 
+Alan Curry
