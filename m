@@ -1,64 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933170Ab0JRT2O (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Oct 2010 15:28:14 -0400
-Received: from hera.kernel.org ([140.211.167.34]:58893 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755040Ab0JRT2M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Oct 2010 15:28:12 -0400
-Date: Mon, 18 Oct 2010 19:27:36 GMT
-From: tip-bot for Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        a.p.zijlstra@chello.nl, tglx@linutronix.de, venki@google.com,
-        mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        a.p.zijlstra@chello.nl, tglx@linutronix.de, mingo@elte.hu,
-        venki@google.com
-In-Reply-To: <1286237003-12406-3-git-send-email-venki@google.com>
-References: <1286237003-12406-3-git-send-email-venki@google.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] sched: Export account_system_vtime()
-Message-ID: <tip-b7dadc38797584f6203386da1947ed5edf516646@git.kernel.org>
-Git-Commit-ID: b7dadc38797584f6203386da1947ed5edf516646
-X-Mailer: tip-git-log-daemon
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 18 Oct 2010 19:27:36 +0000 (UTC)
+	id S933098Ab0JRT3j (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Oct 2010 15:29:39 -0400
+Received: from relais.videotron.ca ([24.201.245.36]:40399 "EHLO
+	relais.videotron.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754457Ab0JRT3i (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Oct 2010 15:29:38 -0400
+MIME-version: 1.0
+Content-transfer-encoding: 7BIT
+Content-type: TEXT/PLAIN; charset=US-ASCII
+Date: Mon, 18 Oct 2010 15:29:36 -0400 (EDT)
+From: Nicolas Pitre <nico@fluxnic.net>
+X-X-Sender: nico@xanadu.home
+To: Daniel Walker <dwalker@fifo99.com>
+Cc: Russell King <rmk@arm.linux.org.uk>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Jeremy Kerr <jeremy.kerr@canonical.com>,
+        Jeff Ohlstein <johlstei@codeaurora.org>
+Subject: Re: linux-next: manual merge of the msm tree with the arm tree
+In-reply-to: <1287427572.4105.22.camel@c-dwalke-linux.qualcomm.com>
+Message-id: <alpine.LFD.2.00.1010181525000.2764@xanadu.home>
+References: <20101018103540.7bd9c535.sfr@canb.auug.org.au>
+ <20101018110207.131b56ee.sfr@canb.auug.org.au>
+ <20101018081520.GA10551@flint.arm.linux.org.uk>
+ <1287422792.4105.14.camel@c-dwalke-linux.qualcomm.com>
+ <20101018182044.GA558@flint.arm.linux.org.uk>
+ <1287427572.4105.22.camel@c-dwalke-linux.qualcomm.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  b7dadc38797584f6203386da1947ed5edf516646
-Gitweb:     http://git.kernel.org/tip/b7dadc38797584f6203386da1947ed5edf516646
-Author:     Ingo Molnar <mingo@elte.hu>
-AuthorDate: Mon, 18 Oct 2010 20:00:37 +0200
-Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Mon, 18 Oct 2010 20:52:30 +0200
+On Mon, 18 Oct 2010, Daniel Walker wrote:
 
-sched: Export account_system_vtime()
+> On Mon, 2010-10-18 at 19:20 +0100, Russell King wrote:
+> > On Mon, Oct 18, 2010 at 10:26:32AM -0700, Daniel Walker wrote:
+> > > On Mon, 2010-10-18 at 09:15 +0100, Russell King wrote:
+> > > > On Mon, Oct 18, 2010 at 11:02:07AM +1100, Stephen Rothwell wrote:
+> > > > > [ Just cc'ing Russell, sorry about that]
+> > > > > 
+> > > > > On Mon, 18 Oct 2010 10:35:40 +1100 Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> > > > > >
+> > > > > > Hi Daniel,
+> > > > > > 
+> > > > > > Today's linux-next merge of the msm tree got a conflict in
+> > > > > > arch/arm/mach-msm/include/mach/debug-macro.S between commit
+> > > > > > 08a610d9ef5394525b0328da0162d7b58c982cc4 ("arm: return both physical and
+> > > > > > virtual addresses from addruart") from the arm tree and commit
+> > > > > > 46fe5f29e3062f681cc3cf07a604d82396faea89 ("msm: allow uart to be
+> > > > > > conditionally disabled") from the msm tree.
+> > > > > > 
+> > > > > > Just context changes.  I fixed it up (see below) and can carry the fix as
+> > > > > > necessary.
+> > > > 
+> > > > Thanks, but I don't think there's much which can be done about these.
+> > > > Changes such as 08a610d affect all ARM sub-architectures, and as they're
+> > > > spread across multiple git trees...
+> > > > 
+> > > > I think there's going to be some problems during this forthcoming merge
+> > > > window.
+> > > 
+> > > Would be nice to get CC'd ...
+> > > 
+> > > Ideally this patch should have been broken up and sent individually to
+> > > each maintainer .. Then I could manage this within my own tree..
+> > 
+> > Err no.  It is one complete change which can't be broken up sensibly.
+> > Breaking it up will mean either you lose functionality or you break
+> > your build.
+> 
+> 
+> Ok, well in that case why not accept this immediately after the merge
+> window? A point when everything is quiet, and most of the tree's are
+> empty?
 
-KVM uses it for example:
+RMK has his own merge window which closes about at the same time as 
+Linus' one opens.  We thought this was happening last week and therefore 
+this change was supposed to be the last one.
 
- ERROR: "account_system_vtime" [arch/x86/kvm/kvm.ko] undefined!
+> Well how about I merge this change into my tree ?
 
-Cc: Venkatesh Pallipadi <venki@google.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-LKML-Reference: <1286237003-12406-3-git-send-email-venki@google.com>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
----
- kernel/sched.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+If you ask RMK to merge your tree in his that would be much simpler to 
+add this change in a single pass afterwards.
 
-diff --git a/kernel/sched.c b/kernel/sched.c
-index 567f5cb..5998222 100644
---- a/kernel/sched.c
-+++ b/kernel/sched.c
-@@ -1991,6 +1991,7 @@ void account_system_vtime(struct task_struct *curr)
- 
- 	local_irq_restore(flags);
- }
-+EXPORT_SYMBOL_GPL(account_system_vtime);
- 
- static void sched_irq_time_avg_update(struct rq *rq, u64 curr_irq_time)
- {
+
+Nicolas
