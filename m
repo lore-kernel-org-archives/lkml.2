@@ -1,97 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933563Ab0JRWmd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Oct 2010 18:42:33 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:51505 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933093Ab0JRWm3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Oct 2010 18:42:29 -0400
-Date: Mon, 18 Oct 2010 15:41:37 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Neil Brown <neilb@suse.de>
-Cc: Wu Fengguang <fengguang.wu@intel.com>, Rik van Riel <riel@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "Li, Shaohua" <shaohua.li@intel.com>
-Subject: Re: Deadlock possibly caused by too_many_isolated.
-Message-Id: <20101018154137.90f5325f.akpm@linux-foundation.org>
-In-Reply-To: <20101019093142.509d6947@notabene>
-References: <20100915091118.3dbdc961@notabene>
-	<4C90139A.1080809@redhat.com>
-	<20100915122334.3fa7b35f@notabene>
-	<20100915082843.GA17252@localhost>
-	<20100915184434.18e2d933@notabene>
-	<20101018151459.2b443221@notabene>
-	<20101018161504.GB29500@localhost>
-	<20101018145859.eee1ae33.akpm@linux-foundation.org>
-	<20101019093142.509d6947@notabene>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S933538Ab0JRWmT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Oct 2010 18:42:19 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:58955 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933378Ab0JRWmQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Oct 2010 18:42:16 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Chris Vine <chris@cvine.freeserve.co.uk>
+Subject: Re: [Bug #20172] Lenovo S12 2.6.36-rc7 lockup
+Date: Tue, 19 Oct 2010 00:41:25 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.36-rc8-rjw+; KDE/4.4.4; x86_64; ; )
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Kernel Testers List <kernel-testers@vger.kernel.org>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>,
+        Florian Mickler <florian@mickler.org>
+References: <TP5BfCZNRXD.A._8.uj1uMB@chimera> <7N-qxsaxKCN.A.31B.Pk1uMB@chimera> <20101018233404.0e9f4ddb@laptop.homenet>
+In-Reply-To: <20101018233404.0e9f4ddb@laptop.homenet>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201010190041.25215.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 19 Oct 2010 09:31:42 +1100
-Neil Brown <neilb@suse.de> wrote:
-
-> On Mon, 18 Oct 2010 14:58:59 -0700
-> Andrew Morton <akpm@linux-foundation.org> wrote:
-> 
-> > On Tue, 19 Oct 2010 00:15:04 +0800
-> > Wu Fengguang <fengguang.wu@intel.com> wrote:
+On Tuesday, October 19, 2010, Chris Vine wrote:
+> On Sun, 17 Oct 2010 22:21:44 +0200 (CEST)
+> "Rafael J. Wysocki" <rjw@sisk.pl> wrote:
+> > This message has been generated automatically as a part of a summary
+> > report of recent regressions.
 > > 
-> > > Neil find that if too_many_isolated() returns true while performing
-> > > direct reclaim we can end up waiting for other threads to complete their
-> > > direct reclaim.  If those threads are allowed to enter the FS or IO to
-> > > free memory, but this thread is not, then it is possible that those
-> > > threads will be waiting on this thread and so we get a circular
-> > > deadlock.
-> > > 
-> > > some task enters direct reclaim with GFP_KERNEL
-> > >   => too_many_isolated() false
-> > >     => vmscan and run into dirty pages
-> > >       => pageout()
-> > >         => take some FS lock
-> > > 	  => fs/block code does GFP_NOIO allocation
-> > > 	    => enter direct reclaim again
-> > > 	      => too_many_isolated() true
-> > > 		=> waiting for others to progress, however the other
-> > > 		   tasks may be circular waiting for the FS lock..
-
-I'm assuming that the last four "=>"'s here should have been indented
-another stop.
-
-> > > The fix is to let !__GFP_IO and !__GFP_FS direct reclaims enjoy higher
-> > > priority than normal ones, by honouring them higher throttle threshold.
-> > > 
-> > > Now !GFP_IOFS reclaims won't be waiting for GFP_IOFS reclaims to
-> > > progress. They will be blocked only when there are too many concurrent
-> > > !GFP_IOFS reclaims, however that's very unlikely because the IO-less
-> > > direct reclaims is able to progress much more faster, and they won't
-> > > deadlock each other. The threshold is raised high enough for them, so
-> > > that there can be sufficient parallel progress of !GFP_IOFS reclaims.
+> > The following bug entry is on the current list of known regressions
+> > from 2.6.35.  Please verify if it still should be listed and let the
+> > tracking team know (either way).
 > > 
-> > I'm not sure that this is really a full fix.  Torsten's analysis does
-> > appear to point at the real bug: raid1 has code paths which allocate
-> > more than a single element from a mempool without starting IO against
-> > previous elements.
+> > 
+> > Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=20172
+> > Subject		: Lenovo S12 2.6.36-rc7 lockup
+> > Submitter	: Chris Vine <chris@cvine.freeserve.co.uk>
+> > Date		: 2010-10-10 12:59 (8 days old)
+> > Message-ID	: <20101010135912.76eb61b7@boulder.homenet>
+> > References	:
+> > http://marc.info/?l=linux-kernel&m=128671620721712&w=2
 > 
-> ... point at "a" real bug.
-> 
-> I think there are two bugs here.
-> The raid1 bug that Torsten mentions is certainly real (and has been around
-> for an embarrassingly long time).
-> The bug that I identified in too_many_isolated is also a real bug and can be
-> triggered without md/raid1 in the mix.
-> So this is not a 'full fix' for every bug in the kernel :-), but it could
-> well be a full fix for this particular bug.
-> 
+> This bug is still present in 2.6.36-rc8.
 
-Can we just delete the too_many_isolated() logic?  (Crappy comment
-describes what the code does but not why it does it).
+Thanks for the update.
 
+Rafael
