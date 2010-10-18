@@ -1,78 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757876Ab0JRXZU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Oct 2010 19:25:20 -0400
-Received: from mga11.intel.com ([192.55.52.93]:57475 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756509Ab0JRXZS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Oct 2010 19:25:18 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.57,347,1283756400"; 
-   d="scan'208";a="848443504"
-Date: Tue, 19 Oct 2010 01:25:02 +0200
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Brian Harring <ferringb@gmail.com>
-Cc: linux-kernel@vger.kernel.org, richard.rojfors@pelagicore.com
-Subject: Re: [PATCH] add platform_data only if non NULL
-Message-ID: <20101018232501.GA16761@sortiz-mobl>
-References: <20101004015056.GA22095@hrair>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101004015056.GA22095@hrair>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S932764Ab0JRXcu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Oct 2010 19:32:50 -0400
+Received: from relais.videotron.ca ([24.201.245.36]:9821 "EHLO
+	relais.videotron.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756509Ab0JRXct (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Oct 2010 19:32:49 -0400
+MIME-version: 1.0
+Content-transfer-encoding: 7BIT
+Content-type: TEXT/PLAIN; charset=US-ASCII
+Date: Mon, 18 Oct 2010 19:32:48 -0400 (EDT)
+From: Nicolas Pitre <nico@fluxnic.net>
+X-X-Sender: nico@xanadu.home
+To: Daniel Walker <dwalker@fifo99.com>
+Cc: Russell King <rmk@arm.linux.org.uk>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        lkml <linux-kernel@vger.kernel.org>,
+        Jeremy Kerr <jeremy.kerr@canonical.com>,
+        Jeff Ohlstein <johlstei@codeaurora.org>
+Subject: Re: linux-next: manual merge of the msm tree with the arm tree
+In-reply-to: <1287443346.5588.120.camel@c-dwalke-linux.qualcomm.com>
+Message-id: <alpine.LFD.2.00.1010181923450.2764@xanadu.home>
+References: <20101018103540.7bd9c535.sfr@canb.auug.org.au>
+ <20101018110207.131b56ee.sfr@canb.auug.org.au>
+ <20101018081520.GA10551@flint.arm.linux.org.uk>
+ <1287422792.4105.14.camel@c-dwalke-linux.qualcomm.com>
+ <20101018182044.GA558@flint.arm.linux.org.uk>
+ <1287427572.4105.22.camel@c-dwalke-linux.qualcomm.com>
+ <alpine.LFD.2.00.1010181525000.2764@xanadu.home>
+ <1287432774.5588.5.camel@c-dwalke-linux.qualcomm.com>
+ <20101018205847.GB23642@flint.arm.linux.org.uk>
+ <1287437362.5588.57.camel@c-dwalke-linux.qualcomm.com>
+ <20101018215815.GC23642@flint.arm.linux.org.uk>
+ <1287440826.5588.83.camel@c-dwalke-linux.qualcomm.com>
+ <alpine.LFD.2.00.1010181833440.2764@xanadu.home>
+ <1287443346.5588.120.camel@c-dwalke-linux.qualcomm.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Brian,
+On Mon, 18 Oct 2010, Daniel Walker wrote:
 
-On Sun, Oct 03, 2010 at 06:50:56PM -0700, Brian Harring wrote:
-> If a NULL or 0 size platform_data is added, the underlying dup results in a pointer into nullspace- meaning drivers can't do null checks for platform_data.
+> On Mon, 2010-10-18 at 18:35 -0400, Nicolas Pitre wrote:
 > 
-> This fixes an oops during probing for drivers/net/ks8842, and drivers/mmc/host/sdhci-pltform when the mfd is timberdale
+> > > git show 08a610d9ef5394525b0328da0162d7b58c982cc4 | ./scripts/get_maintainer.pl | wc
+> > >      58     163    2169
+> > > 
+> > > That's the patch we're actually discussing too. It's about one CC per
+> > > file modified.
+> > 
+> > What is a mailing list for, then?  Why are you subscribed?
 > 
-Patch applied, without the paranoid setting :) Many thanks.
+> I'm subscribes to review code .. Do you read every patch that cross the
+> arm list?
 
-Cheers,
-Samuel.
+No, But I do read every email subject, and most patch messages.  Only 
+those subjects I know for sure I have no interest in I do delete right 
+away.
 
+And being a human I sometimes screw up and let something I should have 
+paid attention fall through the cracks.  When that happens I simply fix 
+the issue after the fact and send a patch, and then life goes on.
 
-> Signed-off-by: Brian Harring <ferringb@gmail.com>
-> ---
->  drivers/mfd/mfd-core.c |   13 +++++++++----
->  1 files changed, 9 insertions(+), 4 deletions(-)
-> 
-> diff --git a/drivers/mfd/mfd-core.c b/drivers/mfd/mfd-core.c
-> index 1823a57..eee73a8 100644
-> --- a/drivers/mfd/mfd-core.c
-> +++ b/drivers/mfd/mfd-core.c
-> @@ -38,10 +38,15 @@ static int mfd_add_device(struct device *parent, int id,
->  	pdev->dev.parent = parent;
->  	platform_set_drvdata(pdev, cell->driver_data);
->  
-> -	ret = platform_device_add_data(pdev,
-> -			cell->platform_data, cell->data_size);
-> -	if (ret)
-> -		goto fail_res;
-> +	if (cell->data_size) {
-> +		ret = platform_device_add_data(pdev,
-> +				cell->platform_data, cell->data_size);
-> +		if (ret)
-> +			goto fail_res;
-> +	} else {
-> +		/* potentially nulled already, just being paranoid. */
-> +		pdev->dev.platform_data = NULL;
-> +	}
->  
->  	for (r = 0; r < cell->num_resources; r++) {
->  		res[r].name = cell->resources[r].name;
-> -- 
-> 1.7.2
-> 
+If you don't want to actually follow the mailing list traffic, you can 
+at least filter it by flagging those messages that contain a patch which 
+touches one of those files you do care about.
 
 
-
--- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+Nicolas
