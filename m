@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755392Ab0JRLfu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Oct 2010 07:35:50 -0400
-Received: from canuck.infradead.org ([134.117.69.58]:60278 "EHLO
-	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755261Ab0JRLfp (ORCPT
+	id S1755425Ab0JRLgO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Oct 2010 07:36:14 -0400
+Received: from casper.infradead.org ([85.118.1.10]:36535 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755331Ab0JRLft (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Oct 2010 07:35:45 -0400
-Message-Id: <20101018112433.556591568@chello.nl>
+	Mon, 18 Oct 2010 07:35:49 -0400
+Message-Id: <20101018112951.023478582@chello.nl>
 User-Agent: quilt/0.47-1
-Date: Mon, 18 Oct 2010 13:24:33 +0200
+Date: Mon, 18 Oct 2010 13:24:47 +0200
 From: Peter Zijlstra <a.p.zijlstra@chello.nl>
 To: Andrea Arcangeli <aarcange@redhat.com>, Avi Kivity <avi@redhat.com>,
         Thomas Gleixner <tglx@linutronix.de>, Rik van Riel <riel@redhat.com>,
@@ -23,47 +23,123 @@ Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Paul McKenney <paulmck@linux.vnet.ibm.com>,
         Yanmin Zhang <yanmin_zhang@linux.intel.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>
-Subject: [PATCH 00/20] mm: Preemptibility -v5
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Tony Luck <tony.luck@intel.com>
+Subject: [PATCH 14/20] ia64: Preemptible mmu_gather
+References: <20101018112433.556591568@chello.nl>
+Content-Disposition: inline; filename=mm-preempt-tlb-gather-ia64.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch-set makes part of the mm a lot more preemptible. It converts
-i_mmap_lock and anon_vma->lock to mutexes and makes mmu_gather fully
-preemptible.
+Fix up the ia64 mmu_gather code to conform to the new API.
 
-The main motivation was making mm_take_all_locks() preemptible, since it
-appears people are nesting hundreds of spinlocks there.
+Cc: Tony Luck <tony.luck@intel.com>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+---
+ arch/ia64/include/asm/tlb.h |   39 ++++++++++++++++++++++++---------------
+ 1 file changed, 24 insertions(+), 15 deletions(-)
 
-The side-effects are that can finally make mmu_gather preemptible,
-something which lots of people have wanted to do for a long time.
-
-It also gets us anon_vma refcounting, which seems to result in a nice
-cleanup of the anon_vma lifetime rules wrt KSM and compaction.
-
-This patch-set it build and boot-tested on x86_64 (a previous version was
-also tested on Dave's Niagra2 machines, and I suppose s390 was too when
-Martin provided the conversion patch for his arch).
-
-There are no known architectures left unconverted.
-
-Yanmin ran the -v3 posting through the comprehensive Intel test farm
-and didn't find any regressions.
-
-( Not included in this posting are the 4 Sparc64 patches that implement
-  gup_fast, those can be applied separately after this series gets
-  anywhere. )
-
-The full series (including the Sparc64 gup_fast bits) also available in -git
-form from (against Linus' tree as of about an hour ago):
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/peterz/linux-2.6-mmu_preempt.git mmu_preempt
-
-DaveM mentioned some sparc64 trouble with the -v4 posting, this turned out to
-be a false positive as unpatched kernels also are having trouble on his
-machines.
-
-Linus, Andrew, Stephen, can we add this to -next for .37?
+Index: linux-2.6/arch/ia64/include/asm/tlb.h
+===================================================================
+--- linux-2.6.orig/arch/ia64/include/asm/tlb.h
++++ linux-2.6/arch/ia64/include/asm/tlb.h
+@@ -47,21 +47,21 @@
+ #include <asm/machvec.h>
+ 
+ #ifdef CONFIG_SMP
+-# define FREE_PTE_NR		2048
+ # define tlb_fast_mode(tlb)	((tlb)->nr == ~0U)
+ #else
+-# define FREE_PTE_NR		0
+ # define tlb_fast_mode(tlb)	(1)
+ #endif
+ 
+ struct mmu_gather {
+ 	struct mm_struct	*mm;
+ 	unsigned int		nr;		/* == ~0U => fast mode */
++	unsigned int		max;
+ 	unsigned char		fullmm;		/* non-zero means full mm flush */
+ 	unsigned char		need_flush;	/* really unmapped some PTEs? */
+ 	unsigned long		start_addr;
+ 	unsigned long		end_addr;
+-	struct page 		*pages[FREE_PTE_NR];
++	struct page		**pages;
++	struct page		*local[8];
+ };
+ 
+ struct ia64_tr_entry {
+@@ -90,9 +90,6 @@ extern struct ia64_tr_entry *ia64_idtrs[
+ #define RR_RID_MASK	0x00000000ffffff00L
+ #define RR_TO_RID(val) 	((val >> 8) & 0xffffff)
+ 
+-/* Users of the generic TLB shootdown code must declare this storage space. */
+-DECLARE_PER_CPU(struct mmu_gather, mmu_gathers);
+-
+ /*
+  * Flush the TLB for address range START to END and, if not in fast mode, release the
+  * freed pages that where gathered up to this point.
+@@ -147,15 +144,23 @@ ia64_tlb_flush_mmu (struct mmu_gather *t
+ 	}
+ }
+ 
+-/*
+- * Return a pointer to an initialized struct mmu_gather.
+- */
+-static inline struct mmu_gather *
+-tlb_gather_mmu (struct mm_struct *mm, unsigned int full_mm_flush)
++static inline void __tlb_alloc_pages(struct mmu_gather *tlb)
+ {
+-	struct mmu_gather *tlb = &get_cpu_var(mmu_gathers);
++	unsigned long addr = __get_free_pages(GFP_ATOMIC, 0);
++
++	if (addr) {
++		tlb->pages = (void *)addr;
++		tlb->max = PAGE_SIZE / sizeof(void *);
++	}
++}
+ 
++
++static inline void
++tlb_gather_mmu (struct mmu_gather *tlb, struct mm_struct *mm, unsigned int full_mm_flush)
++{
+ 	tlb->mm = mm;
++	tlb->max = ARRAY_SIZE(tlb->local);
++	tlb->pages = tlb->local;
+ 	/*
+ 	 * Use fast mode if only 1 CPU is online.
+ 	 *
+@@ -172,7 +177,6 @@ tlb_gather_mmu (struct mm_struct *mm, un
+ 	tlb->nr = (num_online_cpus() == 1) ? ~0U : 0;
+ 	tlb->fullmm = full_mm_flush;
+ 	tlb->start_addr = ~0UL;
+-	return tlb;
+ }
+ 
+ /*
+@@ -191,7 +195,8 @@ tlb_finish_mmu (struct mmu_gather *tlb, 
+ 	/* keep the page table cache within bounds */
+ 	check_pgt_cache();
+ 
+-	put_cpu_var(mmu_gathers);
++	if (tlb->pages != tlb->local)
++		free_pages((unsigned long)tlb->pages, 0);
+ }
+ 
+ /*
+@@ -208,8 +213,12 @@ tlb_remove_page (struct mmu_gather *tlb,
+ 		free_page_and_swap_cache(page);
+ 		return;
+ 	}
++
++	if (!tlb->nr && tlb->pages == tlb->local)
++		__tlb_alloc_pages(tlb);
++
+ 	tlb->pages[tlb->nr++] = page;
+-	if (tlb->nr >= FREE_PTE_NR)
++	if (tlb->nr >= tlb->max)
+ 		ia64_tlb_flush_mmu(tlb, tlb->start_addr, tlb->end_addr);
+ }
+ 
 
 
