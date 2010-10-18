@@ -1,109 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755667Ab0JRNfL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Oct 2010 09:35:11 -0400
-Received: from relay2.sgi.com ([192.48.179.30]:60179 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754275Ab0JRNfJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Oct 2010 09:35:09 -0400
-Date: Mon, 18 Oct 2010 08:35:08 -0500
-From: Robin Holt <holt@sgi.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: [Patch] Incoming XPC channel messages can come in after the
- channel's partition structures have been torn down.
-Message-ID: <20101018133508.GC14064@sgi.com>
+	id S1755745Ab0JRNfl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Oct 2010 09:35:41 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:55615 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755690Ab0JRNfk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Oct 2010 09:35:40 -0400
+Date: Mon, 18 Oct 2010 14:35:02 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ohad Ben-Cohen <ohad@wizery.com>, Hari Kanigeri <h-kanigeri2@ti.com>,
+        Suman Anna <s-anna@ti.com>, Benoit Cousson <b-cousson@ti.com>,
+        Tony Lindgren <tony@atomide.com>, Greg KH <greg@kroah.com>,
+        linux-kernel@vger.kernel.org, Grant Likely <grant.likely@secretlab.ca>,
+        akpm@linux-foundation.org, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 0/3] Add OMAP hardware spinlock misc driver
+Message-ID: <20101018133502.GA12449@n2100.arm.linux.org.uk>
+References: <1287387875-14168-1-git-send-email-ohad@wizery.com> <1287406015.29097.1579.camel@twins>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1287406015.29097.1579.camel@twins>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Oct 18, 2010 at 02:46:55PM +0200, Peter Zijlstra wrote:
+> On Mon, 2010-10-18 at 09:44 +0200, Ohad Ben-Cohen wrote:
+> > OMAP4 introduces a Spinlock hardware module, which provides hardware
+> > assistance for synchronization and mutual exclusion between heterogeneous
+> > processors and those not operating under a single, shared operating system
+> > (e.g. OMAP4 has dual Cortex-A9, dual Cortex-M3 and a C64x+ DSP). 
+> 
+> I just have to ask... was it really easier to build silicon than to
+> agree on a spinlock ABI?
 
-Under some workloads, some channel messages have been observed being
-delayed on the sending side past the point where the receiving side
-has been able to tear down its partition structures.  This condition is
-already detected in xpc_handle_activate_IRQ_uv(), but that information
-is not given to xpc_handle_activate_mq_msg_uv().  As a result,
-xpc_handle_activate_mq_msg_uv() assumes the structures still exist and
-references them.
+I'm not really sure what point you're trying to make, but if you're
+suggesting that Linux's spinlock should be exposed to these other
+processors, you're completely off your rocker.
 
-Signed-off-by: Robin Holt <holt@sgi.com>
+Doing so would set the kernels spinlock API in stone, which is really
+something you don't want to do.  Not only that, but it would mean that
+software written for the M3 and DSP would have to know about the GPL'd
+spinlock layout, and I suspect that would cause major licencing headaches.
 
----
-
- drivers/misc/sgi-xp/xpc_uv.c |   17 +++++++++++++++++
- 1 file changed, 17 insertions(+)
-
-diff --git a/drivers/misc/sgi-xp/xpc_uv.c b/drivers/misc/sgi-xp/xpc_uv.c
-index 1f59ee2..17bbacb 100644
---- a/drivers/misc/sgi-xp/xpc_uv.c
-+++ b/drivers/misc/sgi-xp/xpc_uv.c
-@@ -417,6 +417,7 @@ xpc_process_activate_IRQ_rcvd_uv(void)
- static void
- xpc_handle_activate_mq_msg_uv(struct xpc_partition *part,
- 			      struct xpc_activate_mq_msghdr_uv *msg_hdr,
-+			      int part_setup,
- 			      int *wakeup_hb_checker)
- {
- 	unsigned long irq_flags;
-@@ -481,6 +482,9 @@ xpc_handle_activate_mq_msg_uv(struct xpc_partition *part,
- 	case XPC_ACTIVATE_MQ_MSG_CHCTL_CLOSEREQUEST_UV: {
- 		struct xpc_activate_mq_msg_chctl_closerequest_uv *msg;
- 
-+		if (!part_setup)
-+			break;
-+
- 		msg = container_of(msg_hdr, struct
- 				   xpc_activate_mq_msg_chctl_closerequest_uv,
- 				   hdr);
-@@ -497,6 +501,9 @@ xpc_handle_activate_mq_msg_uv(struct xpc_partition *part,
- 	case XPC_ACTIVATE_MQ_MSG_CHCTL_CLOSEREPLY_UV: {
- 		struct xpc_activate_mq_msg_chctl_closereply_uv *msg;
- 
-+		if (!part_setup)
-+			break;
-+
- 		msg = container_of(msg_hdr, struct
- 				   xpc_activate_mq_msg_chctl_closereply_uv,
- 				   hdr);
-@@ -511,6 +518,9 @@ xpc_handle_activate_mq_msg_uv(struct xpc_partition *part,
- 	case XPC_ACTIVATE_MQ_MSG_CHCTL_OPENREQUEST_UV: {
- 		struct xpc_activate_mq_msg_chctl_openrequest_uv *msg;
- 
-+		if (!part_setup)
-+			break;
-+
- 		msg = container_of(msg_hdr, struct
- 				   xpc_activate_mq_msg_chctl_openrequest_uv,
- 				   hdr);
-@@ -528,6 +538,9 @@ xpc_handle_activate_mq_msg_uv(struct xpc_partition *part,
- 	case XPC_ACTIVATE_MQ_MSG_CHCTL_OPENREPLY_UV: {
- 		struct xpc_activate_mq_msg_chctl_openreply_uv *msg;
- 
-+		if (!part_setup)
-+			break;
-+
- 		msg = container_of(msg_hdr, struct
- 				   xpc_activate_mq_msg_chctl_openreply_uv, hdr);
- 		args = &part->remote_openclose_args[msg->ch_number];
-@@ -545,6 +558,9 @@ xpc_handle_activate_mq_msg_uv(struct xpc_partition *part,
- 	case XPC_ACTIVATE_MQ_MSG_CHCTL_OPENCOMPLETE_UV: {
- 		struct xpc_activate_mq_msg_chctl_opencomplete_uv *msg;
- 
-+		if (!part_setup)
-+			break;
-+
- 		msg = container_of(msg_hdr, struct
- 				xpc_activate_mq_msg_chctl_opencomplete_uv, hdr);
- 		spin_lock_irqsave(&part->chctl_lock, irq_flags);
-@@ -621,6 +637,7 @@ xpc_handle_activate_IRQ_uv(int irq, void *dev_id)
- 
- 			part_referenced = xpc_part_ref(part);
- 			xpc_handle_activate_mq_msg_uv(part, msg_hdr,
-+						      part_referenced,
- 						      &wakeup_hb_checker);
- 			if (part_referenced)
- 				xpc_part_deref(part);
+In any case, Linux's spinlock API (or more accurately, the ARM exclusive
+access instructions) relies upon hardware coherency support (a piece of
+hardware called an exclusive monitor) which isn't present on the M3 nor
+DSP processors.  So there's no way to ensure that updates from the M3
+and DSP are atomic wrt the A9 updates.
