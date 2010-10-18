@@ -1,126 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754807Ab0JRJqv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Oct 2010 05:46:51 -0400
-Received: from relay03-haj2.antispameurope.com ([83.246.65.53]:55352 "EHLO
-	relay03-haj2.antispameurope.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754783Ab0JRJqt (ORCPT
+	id S1754761Ab0JRJ4D (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Oct 2010 05:56:03 -0400
+Received: from nwd2mail10.analog.com ([137.71.25.55]:35394 "EHLO
+	nwd2mail10.analog.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753245Ab0JRJ4B convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Oct 2010 05:46:49 -0400
-Message-ID: <4CBC177E.8020407@iis.fraunhofer.de>
-Date: Mon, 18 Oct 2010 11:46:38 +0200
-From: Manuel Stahl <manuel.stahl@iis.fraunhofer.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.9) Gecko/20100915 Lightning/1.0b2 Thunderbird/3.1.4
+	Mon, 18 Oct 2010 05:56:01 -0400
+X-IronPort-AV: E=Sophos;i="4.57,345,1283745600"; 
+   d="scan'208";a="23490905"
+From: "Hennerich, Michael" <Michael.Hennerich@analog.com>
+To: Jean Delvare <khali@linux-fr.org>, Mike Frysinger <vapier@gentoo.org>
+CC: "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "uclinux-dist-devel@blackfin.uclinux.org" 
+	<uclinux-dist-devel@blackfin.uclinux.org>,
+        "device-drivers-devel@blackfin.uclinux.org" 
+	<device-drivers-devel@blackfin.uclinux.org>
+Date: Mon, 18 Oct 2010 10:55:57 +0100
+Subject: RE: [PATCH] i2c: add irq_flags to board info
+Thread-Topic: [PATCH] i2c: add irq_flags to board info
+Thread-Index: Actun46RGdZ6rpJ9RvGJoedpZWWtBgABGtSw
+Message-ID: <544AC56F16B56944AEC3BD4E3D5917713094520EDB@LIMKCMBX1.ad.analog.com>
+References: <1287359019-1476-1-git-send-email-vapier@gentoo.org>
+ <20101018103610.77b7e605@endymion.delvare>
+In-Reply-To: <20101018103610.77b7e605@endymion.delvare>
+Accept-Language: de-DE, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: de-DE, en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Greg KH <greg@kroah.com>
-CC: linux-serial@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH resend] Add sc16is7x2 driver
-References: <4CAD818B.2070603@iis.fraunhofer.de> <20101014190133.GB1009@kroah.com> <4CB801B2.808@iis.fraunhofer.de> <20101015142709.GA18905@kroah.com> <4CB86E8F.3060907@iis.fraunhofer.de> <20101015164922.GB21576@kroah.com>
-In-Reply-To: <20101015164922.GB21576@kroah.com>
-Content-Type: multipart/mixed;
- boundary="------------060103070301000404050208"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------060103070301000404050208
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: quoted-printable
-X-MIME-Autoconverted: from 8bit to quoted-printable by iis.fhg.de id LAA29476
-
-On 15.10.2010 18:49, Greg KH wrote:
-> On Fri, Oct 15, 2010 at 05:09:03PM +0200, Manuel Stahl wrote:
->> On 15.10.2010 16:27, Greg KH wrote:
->>> On Fri, Oct 15, 2010 at 09:24:34AM +0200, Manuel Stahl wrote:
->>>> On 14.10.2010 21:01, Greg KH wrote:
->>>>> On Thu, Oct 07, 2010 at 10:15:07AM +0200, Manuel Stahl wrote:
->>>>>> --- /dev/null
->>>>>> +++ b/include/linux/spi/sc16is7x2.h
->>>>>> @@ -0,0 +1,17 @@
->>>>>> +#ifndef LINUX_SPI_SC16IS752_H
->>>>>> +#define LINUX_SPI_SC16IS752_H
->>>>>> +
->>>>>> +#define SC16IS7X2_NR_GPIOS 8
->>>>>> +
->>>>>> +struct sc16is7x2_platform_data {
->>>>>> +	unsigned int	uartclk;
->>>>>> +	/* uart line number of the first channel */
->>>>>> +	unsigned	uart_base;
->>>>>> +	/* number assigned to the first GPIO */
->>>>>> +	unsigned	gpio_base;
->>>>>> +	char		*label;
->>>>>> +	/* list of GPIO names (array length =3D SC16IS7X2_NR_GPIOS) */
->>>>>> +	const char	*const *names;
->>>>>> +};
->>>>>> +
->>>>>> +#endif
->>>>>
->>>>> Why is this needed in a .h file?  What other .c file uses this defi=
-ne
->>>>> and structure?
->>>>>
->>>>> thanks,
->>>>>
->>>>> greg k-h
->>>>
->>>> The board setup code can pass information about the uart and gpio
->>>> enumeration.
->>>
->>> What "board setup code"?  I don't see that here in the patch anywhere.
->>
->> SPI devices are generally set up for a specific hardware board. I.e. f=
-or
->> some ARM boards there is setup code in
->> linux/arch/arm/mach-at91/board-<xyz>.c
->>
->> I use the sc16is7x2 for a board that is not yet in vanilla, so the boa=
-rd
->> setup code is not included in the patch.
+Jean Delvare wrote on 2010-10-18:
+> Hi Mike,
 >
-> Then why not add this header (or move it to the header file) when your
-> board setup code is merged?  No need to have it there now, right?
+> On Sun, 17 Oct 2010 19:43:39 -0400, Mike Frysinger wrote:
+>> From: Michael Hennerich <michael.hennerich@analog.com>
+>>
+>> These flags can be optionally defined - slave drivers may use them as
+>> flags argument for request_irq().  In case they are left uninitialized
+>> they will default to zero, and therefore shouldn't cause problems.
+>>
+>> This allows us to avoid having to add dedicated platform init code
+>> just to call set_irq_type()
+>
+> Do you have examples of this? Can we see a preview of the amount of
+> cleanups this patch would allow?
 
-Cause everyone who want's to use this driver for his board needs the=20
-header. The board I use is a prototype, nearly the same as some Atmel=20
-Demo board, but with the sc16is752 attached to the SPI port. Therefore I=20
-don't see any benefit in publishing my board setup code.
+Examples can be found in various board setup files:
 
-> Care to resend this driver changed that way?
+One example arch/sh/boards/mach-ecovec24/setup.c:
 
-As I said the header definitely belongs to the driver, not to the board.
+static struct i2c_board_info ts_i2c_clients = {
+        I2C_BOARD_INFO("tsc2007", 0x48),
+        .type           = "tsc2007",
+        .platform_data  = &tsc2007_info,
+        .irq            = IRQ0,
+};
 
-Regards,
---=20
-Manuel Stahl
-Fraunhofer-Institut IIS
-Leistungsoptimierte Systeme
+[--snip--]
 
-Nordostpark 93
-D90411 N=FCrnberg
-Telefon  +49 (0)911/58061-6419
-Fax      +49 (0)911/58061-6398
-E-Mail   manuel.stahl@iis.fraunhofer.de
+                /* enable TouchScreen */
+                i2c_register_board_info(0, &ts_i2c_clients, 1);
+                set_irq_type(IRQ0, IRQ_TYPE_LEVEL_LOW);
 
-http://www.iis.fraunhofer.de
-http://www.smart-power.fraunhofer.de
+>> -- which doesn't work very well when coupled with module drivers.
+>
+> I don't quite get what you mean here.
 
---------------060103070301000404050208
-Content-Type: text/x-vcard; charset=utf-8;
- name="manuel_stahl.vcf"
-Content-Disposition: attachment;
- filename="manuel_stahl.vcf"
-Content-Transfer-Encoding: 7bit
+Since the driver doesn't setup the irq_type itself you need to do it
+manually in advance using set_irq_type().
+This happens most likely from your paltform setup/configuration file.
 
-begin:vcard
-fn:Manuel Stahl
-n:Stahl;Manuel
-email;internet:manuel.stahl@iis.fraunhofer.de
-tel;work:+49 911 58061-6419
-x-mozilla-html:FALSE
-version:2.1
-end:vcard
+Assuming the driver is built as a module, this code gets executed unconditionally,
+no matter if the driver gets finally loaded or not.
+
+Assuming you have several drivers build as modules, using the same irq but with
+different irq types, you run into problems here.
+
+There are some development boards featuring extension options, which all plug on the same
+socket but required different drivers/irq types.
+
+The ideal way is therefore to pass the irq_flags together with the SPI/I2C board info.
+
+>> It also matches behavior of some other frameworks like IDE and UIO.
+>
+> This is certainly a good point.
+>
+>>
+>> Signed-off-by: Michael Hennerich <michael.hennerich@analog.com>
+>> Signed-off-by: Mike Frysinger <vapier@gentoo.org>
+>> ---
+>>  drivers/i2c/i2c-core.c |    1 +
+>>  include/linux/i2c.h    |    4 ++++
+>>  2 files changed, 5 insertions(+), 0 deletions(-)
+>> diff --git a/drivers/i2c/i2c-core.c b/drivers/i2c/i2c-core.c index
+>> bea4c50..830528f 100644
+>> --- a/drivers/i2c/i2c-core.c
+>> +++ b/drivers/i2c/i2c-core.c
+>> @@ -540,6 +540,7 @@ i2c_new_device(struct i2c_adapter *adap, struct
+> i2c_board_info const *info)
+>>      client->flags = info->flags;
+>>      client->addr = info->addr;
+>>      client->irq = info->irq;
+>> +    client->irq_flags = info->irq_flags;
+>>
+>>      strlcpy(client->name, info->type, sizeof(client->name));
+>> diff --git a/include/linux/i2c.h b/include/linux/i2c.h index
+>> 4bae0b7..e6248c1 100644
+>> --- a/include/linux/i2c.h
+>> +++ b/include/linux/i2c.h
+>> @@ -189,6 +189,7 @@ struct i2c_driver {
+>>   * @driver: device's driver, hence pointer to access routines * @dev:
+>>   Driver model device node for the slave. * @irq: indicates the IRQ
+>>   generated by this device (if any) + * @irq_flags: The flags passed to
+>>   request_irq() * @detected: member of an i2c_driver.clients list or
+>>   i2c-core's *       userspace_devices list *
+>> @@ -206,6 +207,7 @@ struct i2c_client {
+>>      struct i2c_driver *driver;      /* and our access routines      */      struct
+>>  device dev;         /* the device structure         */      int irq;                        /* irq issued by
+>>  device              */ +    unsigned long irq_flags;        /* flags used by the irq        */
+>>      struct list_head detected; }; #define to_i2c_client(d)
+>>  container_of(d, struct i2c_client, dev) @@
+>> -237,6 +239,7 @@ static inline void i2c_set_clientdata(struct
+> i2c_client *dev, void *data)
+>>   * @archdata: copied into i2c_client.dev.archdata * @of_node: pointer
+>>   to OpenFirmware device node * @irq: stored in i2c_client.irq + *
+>>   @irq_flags: The flags passed to request_irq() for i2c_client.irq * *
+>>   I2C doesn't actually support hardware probing, although controllers
+>>   and * devices may be able to use I2C_SMBUS_QUICK to tell whether or
+>> not there's @@ -259,6 +262,7 @@ struct i2c_board_info {
+>>      struct device_node *of_node; #endif     int             irq; +  unsigned
+>>  long        irq_flags; };
+>>
+>>  /**
+>
+>
+
+Greetings,
+Michael
+
+Analog Devices GmbH      Wilhelm-Wagenfeld-Str. 6      80807 Muenchen
+Sitz der Gesellschaft Muenchen, Registergericht Muenchen HRB 4036 Geschaeftsfuehrer Thomas Wessel, William A. Martin, Margaret Seif
 
 
---------------060103070301000404050208--
