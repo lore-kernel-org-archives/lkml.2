@@ -1,60 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756845Ab0JRVAV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Oct 2010 17:00:21 -0400
-Received: from smtp.srv.ualberta.ca ([129.128.5.19]:64856 "EHLO
-	mail7.srv.ualberta.ca" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750806Ab0JRVAT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Oct 2010 17:00:19 -0400
-Date: Mon, 18 Oct 2010 15:00:05 -0600 (Mountain Daylight Time)
-From: Marc Aurele La France <tsi@ualberta.ca>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Kernel Testers List <kernel-testers@vger.kernel.org>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>,
-        Florian Mickler <florian@mickler.org>, len.brown@intel.com
-Subject: Re: [Bug #20002] x86_64 2.6.35.* kernels and Intel Xeon X5550
-In-Reply-To: <u4vap2zcaSM.A.IDF.Wx1uMB@chimera>
-Message-ID: <alpine.WNT.2.00.1010181456500.1680@cluij.ucs.ualberta.ca>
-References: <1SnkuNVk0vO.A.E9E.Qx1uMB@chimera> <u4vap2zcaSM.A.IDF.Wx1uMB@chimera>
-User-Agent: Alpine 2.00 (WNT 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+	id S933286Ab0JRVAj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Oct 2010 17:00:39 -0400
+Received: from gate.crashing.org ([63.228.1.57]:60005 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932335Ab0JRVAi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Oct 2010 17:00:38 -0400
+Subject: Re: PROBLEM: memory corrupting bug, bisected to 6dda9d55
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Mel Gorman <mel@csn.ul.ie>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linuxppc-dev@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org, pacman@kosh.dhis.org,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Christoph Lameter <cl@linux.com>, Yinghai Lu <yinghai@kernel.org>
+In-Reply-To: <20101013144044.GS30667@csn.ul.ie>
+References: <20101009095718.1775.qmail@kosh.dhis.org>
+	 <20101011143022.GD30667@csn.ul.ie>
+	 <20101011140039.15a2c78d.akpm@linux-foundation.org>
+	 <20101013144044.GS30667@csn.ul.ie>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 19 Oct 2010 07:59:10 +1100
+Message-ID: <1287435550.2341.7.camel@pasglop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 17 Oct 2010, Rafael J. Wysocki wrote:
+On Wed, 2010-10-13 at 15:40 +0100, Mel Gorman wrote:
+> 
+> This is somewhat contrived but I can see how it might happen even on one
+> CPU particularly if the L1 cache is virtual and is loose about checking
+> physical tags.
+> 
+> > How sensitive/vulnerable is PPC32 to such things?
+> > 
+> 
+> I can not tell you specifically but if the above scenario is in any way
+> plausible, I believe it would depend on what sort of L1 cache the CPU
+> has. Maybe this particular version has a virtual cache with no physical
+> tagging and is depending on the OS not to make virtual aliasing mistakes.
 
-> This message has been generated automatically as a part of a report
-> of regressions introduced between 2.6.34 and 2.6.35.
+Nah, ppc doesn't have problems with cache aliases, it all looks
+physically tagged to the programmer (tho there's subtleties but none
+that explains the reported behaviour).
 
-> The following bug entry is on the current list of known regressions
-> introduced between 2.6.34 and 2.6.35.  Please verify if it still should
-> be listed and let the tracking team know (either way).
+Looks like real memory corruption to me.
 
-> Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=20002
-> Subject		: x86_64 2.6.35.* kernels and Intel Xeon X5550
-> Submitter	: Marc Aurele La France <tsi@ualberta.ca>
-> Date		: 2010-10-07 17:17 (11 days old)
-> Message-ID	: <alpine.WNT.2.00.1010071055420.1672@cluij.ucs.ualberta.ca>
-> References	: http://marc.info/?l=linux-kernel&m=128647187628706&w=2
+Cheers,
+Ben.
 
-Please delete this report, as it has been cloned as 20722, in an attempt 
-to remove the regression tag, as I cannot do so myself.  Obviously, a lot 
-of damage/lobotomies have been done to this BZ implementation compared to 
-the one I know.
 
-Marc.
-
-+----------------------------------+----------------------------------+
-|  Marc Aurele La France           |  work:   1-780-492-9310          |
-|  Academic Information and        |  fax:    1-780-492-1729          |
-|    Communications Technologies   |  email:  tsi@ualberta.ca         |
-|  352 General Services Building   +----------------------------------+
-|  University of Alberta           |                                  |
-|  Edmonton, Alberta               |    Standard disclaimers apply    |
-|  T6G 2H1                         |                                  |
-|  CANADA                          |                                  |
-+----------------------------------+----------------------------------+
