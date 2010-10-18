@@ -1,103 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757418Ab0JRTSL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Oct 2010 15:18:11 -0400
-Received: from hera.kernel.org ([140.211.167.34]:59354 "EHLO hera.kernel.org"
+	id S1757551Ab0JRTSY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Oct 2010 15:18:24 -0400
+Received: from hera.kernel.org ([140.211.167.34]:59360 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754961Ab0JRTSI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Oct 2010 15:18:08 -0400
-Date: Mon, 18 Oct 2010 19:17:35 GMT
-From: tip-bot for Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        a.p.zijlstra@chello.nl, mitake@dcl.info.waseda.ac.jp, vojtech@ucw.cz,
-        fweisbec@gmail.com, dtor@mail.ru, tglx@linutronix.de, mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        a.p.zijlstra@chello.nl, mitake@dcl.info.waseda.ac.jp, vojtech@ucw.cz,
-        fweisbec@gmail.com, dtor@mail.ru, tglx@linutronix.de, mingo@elte.hu
-In-Reply-To: <1286958626-986-1-git-send-email-mitake@dcl.info.waseda.ac.jp>
-References: <1286958626-986-1-git-send-email-mitake@dcl.info.waseda.ac.jp>
+	id S1757470Ab0JRTSX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Oct 2010 15:18:23 -0400
+Date: Mon, 18 Oct 2010 19:17:58 GMT
+From: tip-bot for Stephane Eranian <eranian@google.com>
+Cc: linux-kernel@vger.kernel.org, eranian@google.com, hpa@zytor.com,
+        mingo@redhat.com, a.p.zijlstra@chello.nl, tglx@linutronix.de,
+        mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, eranian@google.com,
+        linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl,
+        tglx@linutronix.de, mingo@elte.hu
+In-Reply-To: <4cb856dc.51edd80a.5ae0.38fb@mx.google.com>
+References: <4cb856dc.51edd80a.5ae0.38fb@mx.google.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:core/locking] lockdep: Check the depth of subclass
-Message-ID: <tip-4ba053c04aece1f4734056f21b751eee47ea3fb1@git.kernel.org>
-Git-Commit-ID: 4ba053c04aece1f4734056f21b751eee47ea3fb1
+Subject: [tip:perf/core] perf_events: Fix bogus context time tracking
+Message-ID: <tip-c530ccd9a1864a44a7ff35826681229ce9f2357a@git.kernel.org>
+Git-Commit-ID: c530ccd9a1864a44a7ff35826681229ce9f2357a
 X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 18 Oct 2010 19:17:36 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 18 Oct 2010 19:17:59 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  4ba053c04aece1f4734056f21b751eee47ea3fb1
-Gitweb:     http://git.kernel.org/tip/4ba053c04aece1f4734056f21b751eee47ea3fb1
-Author:     Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>
-AuthorDate: Wed, 13 Oct 2010 17:30:26 +0900
+Commit-ID:  c530ccd9a1864a44a7ff35826681229ce9f2357a
+Gitweb:     http://git.kernel.org/tip/c530ccd9a1864a44a7ff35826681229ce9f2357a
+Author:     Stephane Eranian <eranian@google.com>
+AuthorDate: Fri, 15 Oct 2010 15:26:01 +0200
 Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Mon, 18 Oct 2010 18:44:26 +0200
+CommitDate: Mon, 18 Oct 2010 19:58:46 +0200
 
-lockdep: Check the depth of subclass
+perf_events: Fix bogus context time tracking
 
-Current look_up_lock_class() doesn't check the parameter "subclass".
-This rarely rises problems because the main caller of this function,
-register_lock_class(), checks it.
+You can only call update_context_time() when the context
+is active, i.e., the thread it is attached to is still running.
 
-But register_lock_class() is not the only function which calls
-look_up_lock_class(). lock_set_class() and its callees also call it.
-And lock_set_class() doesn't check this parameter.
+However, perf_event_read() can be called even when the context
+is inactive, e.g., user read() the counters. The call to
+update_context_time() must be conditioned on the status of
+the context, otherwise, bogus time_enabled, time_running may
+be returned. Here is an example on AMD64. The task program
+is an example from libpfm4. The -p prints deltas every 1s.
 
-This will rise problems when the the value of subclass is larger than
-MAX_LOCKDEP_SUBCLASSES. Because the address (used as the key of class)
-caliculated with too large subclass has a probability to point
-another key in different lock_class_key.
+$ task -p -e cpu_clk_unhalted sleep 5
+    2,266,610 cpu_clk_unhalted (0.00% scaling, ena=2,158,982, run=2,158,982)
+	    0 cpu_clk_unhalted (0.00% scaling, ena=2,158,982, run=2,158,982)
+	    0 cpu_clk_unhalted (0.00% scaling, ena=2,158,982, run=2,158,982)
+	    0 cpu_clk_unhalted (0.00% scaling, ena=2,158,982, run=2,158,982)
+	    0 cpu_clk_unhalted (0.00% scaling, ena=2,158,982, run=2,158,982)
+5,242,358,071 cpu_clk_unhalted (99.95% scaling, ena=5,000,359,984, run=2,319,270)
 
-Of course this problem depends on the memory layout and
-occurs with really low probability.
+Whereas if you don't read deltas, e.g., no call to perf_event_read() until
+the process terminates:
 
-Signed-off-by: Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>
-Cc: Dmitry Torokhov <dtor@mail.ru>
-Cc: Vojtech Pavlik <vojtech@ucw.cz>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
+$ task -e cpu_clk_unhalted sleep 5
+    2,497,783 cpu_clk_unhalted (0.00% scaling, ena=2,376,899, run=2,376,899)
+
+Notice that time_enable, time_running are bogus in the first example
+causing bogus scaling.
+
+This patch fixes the problem, by conditionally calling update_context_time()
+in perf_event_read().
+
+Signed-off-by: Stephane Eranian <eranian@google.com>
 Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-LKML-Reference: <1286958626-986-1-git-send-email-mitake@dcl.info.waseda.ac.jp>
+Cc: stable@kernel.org
+LKML-Reference: <4cb856dc.51edd80a.5ae0.38fb@mx.google.com>
 Signed-off-by: Ingo Molnar <mingo@elte.hu>
 ---
- kernel/lockdep.c |   18 ++++++++++--------
- 1 files changed, 10 insertions(+), 8 deletions(-)
+ kernel/perf_event.c |    8 +++++++-
+ 1 files changed, 7 insertions(+), 1 deletions(-)
 
-diff --git a/kernel/lockdep.c b/kernel/lockdep.c
-index bc4d328..42ba65d 100644
---- a/kernel/lockdep.c
-+++ b/kernel/lockdep.c
-@@ -639,6 +639,16 @@ look_up_lock_class(struct lockdep_map *lock, unsigned int subclass)
+diff --git a/kernel/perf_event.c b/kernel/perf_event.c
+index 1ec3916..e7eeba1 100644
+--- a/kernel/perf_event.c
++++ b/kernel/perf_event.c
+@@ -1780,7 +1780,13 @@ static u64 perf_event_read(struct perf_event *event)
+ 		unsigned long flags;
+ 
+ 		raw_spin_lock_irqsave(&ctx->lock, flags);
+-		update_context_time(ctx);
++		/*
++		 * may read while context is not active
++		 * (e.g., thread is blocked), in that case
++		 * we cannot update context time
++		 */
++		if (ctx->is_active)
++			update_context_time(ctx);
+ 		update_event_times(event);
+ 		raw_spin_unlock_irqrestore(&ctx->lock, flags);
  	}
- #endif
- 
-+	if (unlikely(subclass >= MAX_LOCKDEP_SUBCLASSES)) {
-+		debug_locks_off();
-+		printk(KERN_ERR
-+			"BUG: looking up invalid subclass: %u\n", subclass);
-+		printk(KERN_ERR
-+			"turning off the locking correctness validator.\n");
-+		dump_stack();
-+		return NULL;
-+	}
-+
- 	/*
- 	 * Static locks do not have their class-keys yet - for them the key
- 	 * is the lock object itself:
-@@ -2745,14 +2755,6 @@ static int __lock_acquire(struct lockdep_map *lock, unsigned int subclass,
- 	if (DEBUG_LOCKS_WARN_ON(!irqs_disabled()))
- 		return 0;
- 
--	if (unlikely(subclass >= MAX_LOCKDEP_SUBCLASSES)) {
--		debug_locks_off();
--		printk("BUG: MAX_LOCKDEP_SUBCLASSES too low!\n");
--		printk("turning off the locking correctness validator.\n");
--		dump_stack();
--		return 0;
--	}
--
- 	if (lock->key == &__lockdep_no_validate__)
- 		check = 1;
- 
