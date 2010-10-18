@@ -1,590 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933377Ab0JRXdP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Oct 2010 19:33:15 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:10901 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933130Ab0JRXdN (ORCPT
+	id S1757722Ab0JRXib (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Oct 2010 19:38:31 -0400
+Received: from alerce.vps.bitfolk.com ([212.13.194.134]:1275 "EHLO
+	alerce.vps.bitfolk.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753931Ab0JRXia (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Oct 2010 19:33:13 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp03.nvidia.com on Mon, 18 Oct 2010 16:33:12 -0700
-From: achew@nvidia.com
-To: jmayo@nvidia.com, a.zummo@towertech.it, olof@lixom.net, greg@kroah.com,
-        mcuos.com@gmail.com, konkers@google.com
-Cc: linux-kernel@vger.kernel.org, linux-tegra@vger.kernel.org,
-        rtc-linux@googlegroups.com, Andrew Chew <achew@nvidia.com>
-Subject: [PATCH 1/1 V4] rtc: Add real-time clock driver for Tegra.
-Date: Mon, 18 Oct 2010 16:33:16 -0700
-Message-Id: <1287444796-27008-1-git-send-email-achew@nvidia.com>
-X-Mailer: git-send-email 1.7.0.4
-X-OriginalArrivalTime: 18 Oct 2010 23:33:12.0684 (UTC) FILETIME=[D49A4AC0:01CB6F1C]
+	Mon, 18 Oct 2010 19:38:30 -0400
+Date: Mon, 18 Oct 2010 20:38:09 -0300
+From: Leandro Lucarella <luca@llucax.com.ar>
+To: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: David Miller <davem@davemloft.net>, jon.maloy@ericsson.com,
+        tipc-discussion@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, Neil Horman <nhorman@tuxdriver.com>
+Subject: Re: Linux 2.6.35/TIPC 2.0 ABI breaking changes
+Message-ID: <20101018233809.GY8781@llucax.com.ar>
+References: <20101018150422.GV8781@llucax.com.ar>
+ <20101018184628.GX8781@llucax.com.ar>
+ <AANLkTimKbOreV4Fuyw3TbCrk9aa5yBZQSuRbo3Vdx=Q1@mail.gmail.com>
+ <20101018.151708.193712688.davem@davemloft.net>
+ <4CBCD429.8090306@windriver.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4CBCD429.8090306@windriver.com>
+X-Paranoid: Just because you're paranoid, don't mean they're not after you.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andrew Chew <achew@nvidia.com>
+Paul Gortmaker, el 18 de octubre a las 19:11 me escribiste:
+> On 10-10-18 06:17 PM, David Miller wrote:
+> > From: Paul Gortmaker<paul.gortmaker@windriver.com>
+> > Date: Mon, 18 Oct 2010 16:42:33 -0400
+> > 
+> >> If you have access to the user space code in question, you can just
+> >> switch behaviour semantics based on the results of a uname call, knowing
+> >> that this change was included in versions since approx last Feb.  There
+> >> is also /proc/version which can be parsed manually if you prefer.
+> > 
+> > Requiring userspace to check kernel versioning information in order
+> > to user an exported userspace API correctly is _ALWAYS_ _WRONG_.
+> > 
+> > You cannot and must not make backwards incompatible changes to
+> > userspace interfaces.
+> 
+> What I think has happened here (and I'll double check this
+> tomorrow, since it is before I started assisting with tipc)
+> is that a backwards incompatible change *did* inadvertently
+> creep in via these two (related) commits:
+> 
+> --------------
+> commit d88dca79d3852a3623f606f781e013d61486828a
+> Author: Neil Horman <nhorman@tuxdriver.com>
+> Date:   Mon Mar 8 12:20:58 2010 -0800
+> 
+>     tipc: fix endianness on tipc subscriber messages
+> --------------
+> 
+> and
+> 
+> ---------------
+> commit c6537d6742985da1fbf12ae26cde6a096fd35b5c
+> Author: Jon Paul Maloy <jon.maloy@ericsson.com>
+> Date:   Tue Apr 6 11:40:52 2010 +0000
+> 
+>     TIPC: Updated topology subscription protocol according to latest spec
+> ---------------
 
-This is a platform driver that supports the built-in real-time clock on
-Tegra SOCs.
+Exactly. The damage is already done, the thing now is how to proceed.
+What I'm doing right now is exactly that, use uname(2) to see what
+kernel version is running and act according. Act according means, check
+how with which tipc.h header the program was compiled (pre or post
+2.6.35), compare against the current running kernel version, fix the BO
+of subscriptions and fix the filter flags using my own constants
+TIPC_SUB_SERVICE_V1 and TIPC_SUB_SERVICE_V2. Is not trivial, is not
+nice.
 
-Signed-off-by: Andrew Chew <achew@nvidia.com>
-Acked-by: Alessandro Zummo <a.zummo@towertech.it>
-Acked-by: Wan ZongShun <mcuos.com@gmail.com>
----
-Applied Alessandro Zummo's corrections.
-Applied Wan ZongShun's corrections.
-Jon Mayo addressed comments by Erik Gilling, to wit:
-  Removed RTC_TEGRA_RETRIES.
-  Renamed macros to match the prefix used in the rest of the code.
-  Improved function comments to provide more detail.
-  Implemented the TODO in tegra_rtc_wait_while_busy(), commented.
-  Removed tegra_rtc_write_not_busy.
-  Fixed several places where tegra_rtc_check_busy() was called before a call to
-    tegra_rtc_wait_while_busy().
-  Removed locks on some read-only accesses.
-  Commented the lock in tegra_rtc_read_time() to explain why it was necessary.
-  Fixed race in tegra_rtc_alarm_irq_enable()
-  Protect tegra_rtc_irq_handler() with a busy check that uses udelay().
-  Fixed a race with clearing of all interrupts.  Only clear the ones that
-    activated the interrupt.
-  Added request_mem_region() (and a corresponding release_mem_region()).
-  Protected tegra_rtc_suspend() with a busy flag check.
-In addition:
-  Removed unnecessary status/interrupt code from tegra_rtc_resume().
-  Fixed all races and bad behavior with waiting/sleeping between spinlocks.
+And worse, as I said, for other languages bindings, specially those that
+can't directly include a .h, there is no easy solution at all.
 
- drivers/rtc/Kconfig     |   10 +
- drivers/rtc/Makefile    |    1 +
- drivers/rtc/rtc-tegra.c |  488 +++++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 499 insertions(+), 0 deletions(-)
- create mode 100644 drivers/rtc/rtc-tegra.c
+> Based on Leandro's info, I think it comes down to userspace
+> not knowing exactly where to find these bits anymore:
+> 
+> #define TIPC_SUB_SERVICE       0x00    /* Filter for service availability    */
+> #define TIPC_SUB_PORTS         0x01    /* Filter for port availability  */
+> #define TIPC_SUB_CANCEL         0x04    /* Cancel a subscription         */
+> 
+> ...because it doesn't know if there is the old auto endian
+>  swap thing being done or not being done.
 
-diff --git a/drivers/rtc/Kconfig b/drivers/rtc/Kconfig
-index 2432541..ca0da79 100644
---- a/drivers/rtc/Kconfig
-+++ b/drivers/rtc/Kconfig
-@@ -963,4 +963,14 @@ config RTC_DRV_JZ4740
- 	  This driver can also be buillt as a module. If so, the module
- 	  will be called rtc-jz4740.
- 
-+config RTC_DRV_TEGRA
-+	tristate "NVIDIA Tegra Internal RTC driver"
-+	depends on RTC_CLASS && ARCH_TEGRA
-+	help
-+	  If you say yes here you get support for the
-+	  Tegra 200 series internal RTC module.
-+
-+	  This drive can also be built as a module. If so, the module
-+	  will be called rtc-tegra.
-+
- endif # RTC_CLASS
-diff --git a/drivers/rtc/Makefile b/drivers/rtc/Makefile
-index 4ff4b88..a7f3617 100644
---- a/drivers/rtc/Makefile
-+++ b/drivers/rtc/Makefile
-@@ -91,6 +91,7 @@ obj-$(CONFIG_RTC_DRV_STARFIRE)	+= rtc-starfire.o
- obj-$(CONFIG_RTC_DRV_STK17TA8)	+= rtc-stk17ta8.o
- obj-$(CONFIG_RTC_DRV_STMP)	+= rtc-stmp3xxx.o
- obj-$(CONFIG_RTC_DRV_SUN4V)	+= rtc-sun4v.o
-+obj-$(CONFIG_RTC_DRV_TEGRA)	+= rtc-tegra.o
- obj-$(CONFIG_RTC_DRV_TEST)	+= rtc-test.o
- obj-$(CONFIG_RTC_DRV_TWL4030)	+= rtc-twl.o
- obj-$(CONFIG_RTC_DRV_TX4939)	+= rtc-tx4939.o
-diff --git a/drivers/rtc/rtc-tegra.c b/drivers/rtc/rtc-tegra.c
-new file mode 100644
-index 0000000..2fc31aa
---- /dev/null
-+++ b/drivers/rtc/rtc-tegra.c
-@@ -0,0 +1,488 @@
-+/*
-+ * An RTC driver for the NVIDIA Tegra 200 series internal RTC.
-+ *
-+ * Copyright (c) 2010, NVIDIA Corporation.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful, but WITHOUT
-+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-+ * more details.
-+ *
-+ * You should have received a copy of the GNU General Public License along
-+ * with this program; if not, write to the Free Software Foundation, Inc.,
-+ * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
-+ */
-+#include <linux/kernel.h>
-+#include <linux/init.h>
-+#include <linux/module.h>
-+#include <linux/slab.h>
-+#include <linux/irq.h>
-+#include <linux/io.h>
-+#include <linux/delay.h>
-+#include <linux/rtc.h>
-+#include <linux/platform_device.h>
-+
-+/* set to 1 = busy every eight 32kHz clocks during copy of sec+msec to AHB */
-+#define TEGRA_RTC_REG_BUSY			0x004
-+#define TEGRA_RTC_REG_SECONDS			0x008
-+/* when msec is read, the seconds are buffered into shadow seconds. */
-+#define TEGRA_RTC_REG_SHADOW_SECONDS		0x00c
-+#define TEGRA_RTC_REG_MILLI_SECONDS		0x010
-+#define TEGRA_RTC_REG_SECONDS_ALARM0		0x014
-+#define TEGRA_RTC_REG_SECONDS_ALARM1		0x018
-+#define TEGRA_RTC_REG_MILLI_SECONDS_ALARM0	0x01c
-+#define TEGRA_RTC_REG_INTR_MASK			0x028
-+/* write 1 bits to clear status bits */
-+#define TEGRA_RTC_REG_INTR_STATUS		0x02c
-+
-+/* bits in INTR_MASK */
-+#define TEGRA_RTC_INTR_MASK_MSEC_CDN_ALARM	(1<<4)
-+#define TEGRA_RTC_INTR_MASK_SEC_CDN_ALARM	(1<<3)
-+#define TEGRA_RTC_INTR_MASK_MSEC_ALARM		(1<<2)
-+#define TEGRA_RTC_INTR_MASK_SEC_ALARM1		(1<<1)
-+#define TEGRA_RTC_INTR_MASK_SEC_ALARM0		(1<<0)
-+
-+/* bits in INTR_STATUS */
-+#define TEGRA_RTC_INTR_STATUS_MSEC_CDN_ALARM	(1<<4)
-+#define TEGRA_RTC_INTR_STATUS_SEC_CDN_ALARM	(1<<3)
-+#define TEGRA_RTC_INTR_STATUS_MSEC_ALARM	(1<<2)
-+#define TEGRA_RTC_INTR_STATUS_SEC_ALARM1	(1<<1)
-+#define TEGRA_RTC_INTR_STATUS_SEC_ALARM0	(1<<0)
-+
-+struct tegra_rtc_info {
-+	struct platform_device	*pdev;
-+	struct rtc_device	*rtc_dev;
-+	void __iomem		*rtc_base; /* NULL if not initialized. */
-+	int			tegra_rtc_irq; /* alarm and periodic irq */
-+	spinlock_t		tegra_rtc_lock;
-+};
-+
-+/* RTC hardware is busy when it is updating its values over AHB once
-+ * every eight 32kHz clocks (~250uS).
-+ * outside of these updates the CPU is free to write.
-+ * CPU is always free to read.
-+ */
-+static inline u32 tegra_rtc_check_busy(struct tegra_rtc_info *info)
-+{
-+	return readl(info->rtc_base + TEGRA_RTC_REG_BUSY) & 1;
-+}
-+
-+/* Wait for hardware to be ready for writing.
-+ * This function tries to maximize the amount of time before the next update.
-+ * It does this by waiting for the RTC to become busy with its periodic update,
-+ * then returning once the RTC first becomes not busy.
-+ * This periodic update (where the seconds and milliseconds are copied to the
-+ * AHB side) occurs every eight 32kHz clocks (~250uS).
-+ * The behavior of this function allows us to make some assumptions without
-+ * introducing a race, because 250uS is plenty of time to read/write a value.
-+ */
-+static int tegra_rtc_wait_while_busy(struct device *dev)
-+{
-+	struct tegra_rtc_info *info = dev_get_drvdata(dev);
-+
-+	int retries = 500; /* ~490 us is the worst case, ~250 us is best. */
-+
-+	/* first wait for the RTC to become busy. this is when it
-+	 * posts its updated seconds+msec registers to AHB side. */
-+	while (tegra_rtc_check_busy(info)) {
-+		if (!retries--)
-+			goto retry_failed;
-+		udelay(1);
-+	}
-+
-+	/* now we have about 250 us to manipulate registers */
-+	return 0;
-+
-+retry_failed:
-+	dev_err(dev, "write failed:retry count exceeded.\n");
-+	return -ETIMEDOUT;
-+}
-+
-+static int tegra_rtc_read_time(struct device *dev, struct rtc_time *tm)
-+{
-+	struct tegra_rtc_info *info = dev_get_drvdata(dev);
-+	unsigned long sec, msec;
-+	unsigned long sl_irq_flags;
-+
-+	/* RTC hardware copies seconds to shadow seconds when a read
-+	 * of milliseconds occurs. use a lock to keep other threads out. */
-+	spin_lock_irqsave(&info->tegra_rtc_lock, sl_irq_flags);
-+
-+	msec = readl(info->rtc_base + TEGRA_RTC_REG_MILLI_SECONDS);
-+	sec = readl(info->rtc_base + TEGRA_RTC_REG_SHADOW_SECONDS);
-+
-+	spin_unlock_irqrestore(&info->tegra_rtc_lock, sl_irq_flags);
-+
-+	rtc_time_to_tm(sec, tm);
-+
-+	dev_vdbg(dev, "time read as %lu. %d/%d/%d %d:%02u:%02u\n",
-+		sec,
-+		tm->tm_mon + 1,
-+		tm->tm_mday,
-+		tm->tm_year + 1900,
-+		tm->tm_hour,
-+		tm->tm_min,
-+		tm->tm_sec
-+	);
-+
-+	return 0;
-+}
-+
-+static int tegra_rtc_set_time(struct device *dev, struct rtc_time *tm)
-+{
-+	struct tegra_rtc_info *info = dev_get_drvdata(dev);
-+	unsigned long sec;
-+	int ret;
-+
-+	/* convert tm to seconds. */
-+	ret = rtc_valid_tm(tm);
-+	if (ret)
-+		return ret;
-+
-+	rtc_tm_to_time(tm, &sec);
-+
-+	dev_vdbg(dev, "time set to %lu. %d/%d/%d %d:%02u:%02u\n",
-+		sec,
-+		tm->tm_mon+1,
-+		tm->tm_mday,
-+		tm->tm_year+1900,
-+		tm->tm_hour,
-+		tm->tm_min,
-+		tm->tm_sec
-+	);
-+
-+	/* seconds only written if wait succeeded. */
-+	ret = tegra_rtc_wait_while_busy(dev);
-+	if (!ret)
-+		writel(sec, info->rtc_base + TEGRA_RTC_REG_SECONDS);
-+
-+	dev_vdbg(dev, "time read back as %d\n",
-+		readl(info->rtc_base + TEGRA_RTC_REG_SECONDS));
-+
-+	return ret;
-+}
-+
-+static int tegra_rtc_read_alarm(struct device *dev, struct rtc_wkalrm *alarm)
-+{
-+	struct tegra_rtc_info *info = dev_get_drvdata(dev);
-+	unsigned long sec;
-+	unsigned tmp;
-+
-+	sec = readl(info->rtc_base + TEGRA_RTC_REG_SECONDS_ALARM0);
-+
-+	if (sec == 0) {
-+		/* alarm is disabled. */
-+		alarm->enabled = 0;
-+		alarm->time.tm_mon = -1;
-+		alarm->time.tm_mday = -1;
-+		alarm->time.tm_year = -1;
-+		alarm->time.tm_hour = -1;
-+		alarm->time.tm_min = -1;
-+		alarm->time.tm_sec = -1;
-+	} else {
-+		/* alarm is enabled. */
-+		alarm->enabled = 1;
-+		rtc_time_to_tm(sec, &alarm->time);
-+	}
-+
-+	tmp = readl(info->rtc_base + TEGRA_RTC_REG_INTR_STATUS);
-+	alarm->pending = (tmp & TEGRA_RTC_INTR_STATUS_SEC_ALARM0) != 0;
-+
-+	return 0;
-+}
-+
-+static int tegra_rtc_alarm_irq_enable(struct device *dev, unsigned int enabled)
-+{
-+	struct tegra_rtc_info *info = dev_get_drvdata(dev);
-+	unsigned status;
-+	unsigned long sl_irq_flags;
-+
-+	tegra_rtc_wait_while_busy(dev);
-+	spin_lock_irqsave(&info->tegra_rtc_lock, sl_irq_flags);
-+
-+	/* read the original value, and OR in the flag. */
-+	status = readl(info->rtc_base + TEGRA_RTC_REG_INTR_MASK);
-+	if (enabled)
-+		status |= TEGRA_RTC_INTR_MASK_SEC_ALARM0; /* set it */
-+	else
-+		status &= ~TEGRA_RTC_INTR_MASK_SEC_ALARM0; /* clear it */
-+
-+	writel(status, info->rtc_base + TEGRA_RTC_REG_INTR_MASK);
-+
-+	spin_unlock_irqrestore(&info->tegra_rtc_lock, sl_irq_flags);
-+
-+	return 0;
-+}
-+
-+static int tegra_rtc_set_alarm(struct device *dev, struct rtc_wkalrm *alarm)
-+{
-+	struct tegra_rtc_info *info = dev_get_drvdata(dev);
-+	unsigned long sec;
-+
-+	if (alarm->enabled)
-+		rtc_tm_to_time(&alarm->time, &sec);
-+	else
-+		sec = 0;
-+
-+	tegra_rtc_wait_while_busy(dev);
-+	writel(sec, info->rtc_base + TEGRA_RTC_REG_SECONDS_ALARM0);
-+	dev_vdbg(dev, "alarm read back as %d\n",
-+		readl(info->rtc_base + TEGRA_RTC_REG_SECONDS_ALARM0));
-+
-+	/* if successfully written and alarm is enabled ... */
-+	if (sec) {
-+		tegra_rtc_alarm_irq_enable(dev, 1);
-+
-+		dev_vdbg(dev, "alarm set as %lu. %d/%d/%d %d:%02u:%02u\n",
-+			sec,
-+			alarm->time.tm_mon+1,
-+			alarm->time.tm_mday,
-+			alarm->time.tm_year+1900,
-+			alarm->time.tm_hour,
-+			alarm->time.tm_min,
-+			alarm->time.tm_sec);
-+	} else {
-+		/* disable alarm if 0 or write error. */
-+		dev_vdbg(dev, "alarm disabled\n");
-+		tegra_rtc_alarm_irq_enable(dev, 0);
-+	}
-+
-+	return 0;
-+}
-+
-+static int tegra_rtc_proc(struct device *dev, struct seq_file *seq)
-+{
-+	if (!dev || !dev->driver)
-+		return 0;
-+
-+	return seq_printf(seq, "name\t\t: %s\n", dev_name(dev));
-+}
-+
-+static irqreturn_t tegra_rtc_irq_handler(int irq, void *data)
-+{
-+	struct device *dev = data;
-+	struct tegra_rtc_info *info = dev_get_drvdata(dev);
-+	unsigned long events = 0;
-+	unsigned status;
-+	unsigned long sl_irq_flags;
-+
-+	status = readl(info->rtc_base + TEGRA_RTC_REG_INTR_STATUS);
-+	if (status) {
-+		/* clear the interrupt masks and status on any irq. */
-+		tegra_rtc_wait_while_busy(dev);
-+		spin_lock_irqsave(&info->tegra_rtc_lock, sl_irq_flags);
-+		writel(0, info->rtc_base + TEGRA_RTC_REG_INTR_MASK);
-+		writel(status, info->rtc_base + TEGRA_RTC_REG_INTR_STATUS);
-+		spin_unlock_irqrestore(&info->tegra_rtc_lock, sl_irq_flags);
-+	}
-+
-+	/* check if Alarm */
-+	if ((status & TEGRA_RTC_INTR_STATUS_SEC_ALARM0))
-+		events |= RTC_IRQF | RTC_AF;
-+
-+	/* check if Periodic */
-+	if ((status & TEGRA_RTC_INTR_STATUS_SEC_CDN_ALARM))
-+		events |= RTC_IRQF | RTC_PF;
-+
-+	rtc_update_irq(info->rtc_dev, 1, events);
-+
-+	return IRQ_HANDLED;
-+}
-+
-+static struct rtc_class_ops tegra_rtc_ops = {
-+	.read_time	= tegra_rtc_read_time,
-+	.set_time	= tegra_rtc_set_time,
-+	.read_alarm	= tegra_rtc_read_alarm,
-+	.set_alarm	= tegra_rtc_set_alarm,
-+	.proc		= tegra_rtc_proc,
-+	.alarm_irq_enable = tegra_rtc_alarm_irq_enable,
-+};
-+
-+static int __devinit tegra_rtc_probe(struct platform_device *pdev)
-+{
-+	struct tegra_rtc_info *info;
-+	struct resource *res;
-+	int ret;
-+
-+	info = kzalloc(sizeof(struct tegra_rtc_info), GFP_KERNEL);
-+	if (!info)
-+		return -ENOMEM;
-+
-+	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+	if (!res) {
-+		dev_err(&pdev->dev,
-+			"Unable to allocate resources for device.\n");
-+		ret = -EBUSY;
-+		goto err_free_info;
-+	}
-+
-+	if (!request_mem_region(res->start, resource_size(res), pdev->name)) {
-+		dev_err(&pdev->dev,
-+			"Unable to request mem region for device.\n");
-+		ret = -EBUSY;
-+		goto err_free_info;
-+	}
-+
-+	info->tegra_rtc_irq = platform_get_irq(pdev, 0);
-+	if (info->tegra_rtc_irq <= 0) {
-+		ret = -EBUSY;
-+		goto err_release_mem_region;
-+	}
-+
-+	info->rtc_base = ioremap_nocache(res->start, resource_size(res));
-+	if (!info->rtc_base) {
-+		dev_err(&pdev->dev, "Unable to grab IOs for device.\n");
-+		ret = -EBUSY;
-+		goto err_release_mem_region;
-+	}
-+
-+	/* set context info. */
-+	info->pdev = pdev;
-+	info->tegra_rtc_lock = __SPIN_LOCK_UNLOCKED(info->tegra_rtc_lock);
-+
-+	platform_set_drvdata(pdev, info);
-+
-+	/* clear out the hardware. */
-+	writel(0, info->rtc_base + TEGRA_RTC_REG_SECONDS_ALARM0);
-+	writel(0xffffffff, info->rtc_base + TEGRA_RTC_REG_INTR_STATUS);
-+	writel(0, info->rtc_base + TEGRA_RTC_REG_INTR_MASK);
-+
-+	device_init_wakeup(&pdev->dev, 1);
-+
-+	info->rtc_dev = rtc_device_register(
-+		pdev->name, &pdev->dev, &tegra_rtc_ops, THIS_MODULE);
-+	if (IS_ERR(info->rtc_dev)) {
-+		ret = PTR_ERR(info->rtc_dev);
-+		info->rtc_dev = NULL;
-+		dev_err(&pdev->dev,
-+			"Unable to register device (err=%d).\n",
-+			ret);
-+		goto err_iounmap;
-+	}
-+
-+	ret = request_irq(info->tegra_rtc_irq, tegra_rtc_irq_handler,
-+		IRQF_TRIGGER_HIGH, "rtc alarm", &pdev->dev);
-+	if (ret) {
-+		dev_err(&pdev->dev,
-+			"Unable to request interrupt for device (err=%d).\n",
-+			ret);
-+		goto err_dev_unreg;
-+	}
-+
-+	dev_notice(&pdev->dev, "Tegra internal Real Time Clock\n");
-+
-+	return 0;
-+
-+err_dev_unreg:
-+	rtc_device_unregister(info->rtc_dev);
-+err_iounmap:
-+	iounmap(info->rtc_base);
-+err_release_mem_region:
-+	release_mem_region(res->start, resource_size(res));
-+err_free_info:
-+	kfree(info);
-+
-+	return ret;
-+}
-+
-+static int __devexit tegra_rtc_remove(struct platform_device *pdev)
-+{
-+	struct tegra_rtc_info *info = platform_get_drvdata(pdev);
-+	struct resource *res;
-+
-+	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+	if (!res)
-+		return -EBUSY;
-+
-+	free_irq(info->tegra_rtc_irq, &pdev->dev);
-+	rtc_device_unregister(info->rtc_dev);
-+	iounmap(info->rtc_base);
-+	release_mem_region(res->start, resource_size(res));
-+	kfree(info);
-+
-+	platform_set_drvdata(pdev, NULL);
-+
-+	return 0;
-+}
-+
-+#ifdef CONFIG_PM
-+static int tegra_rtc_suspend(struct platform_device *pdev, pm_message_t state)
-+{
-+	struct device *dev = &pdev->dev;
-+	struct tegra_rtc_info *info = platform_get_drvdata(pdev);
-+
-+	tegra_rtc_wait_while_busy(dev);
-+
-+	/* only use ALARM0 as a wake source. */
-+	writel(0xffffffff, info->rtc_base + TEGRA_RTC_REG_INTR_STATUS);
-+	writel(TEGRA_RTC_INTR_STATUS_SEC_ALARM0,
-+		info->rtc_base + TEGRA_RTC_REG_INTR_MASK);
-+
-+	dev_vdbg(dev, "alarm sec = %d\n",
-+		readl(info->rtc_base + TEGRA_RTC_REG_SECONDS_ALARM0));
-+
-+	dev_vdbg(dev, "Suspend (device_may_wakeup=%d) irq:%d\n",
-+		device_may_wakeup(dev), info->tegra_rtc_irq);
-+
-+	/* leave the alarms on as a wake source. */
-+	if (device_may_wakeup(dev))
-+		enable_irq_wake(info->tegra_rtc_irq);
-+
-+	return 0;
-+}
-+
-+static int tegra_rtc_resume(struct platform_device *pdev)
-+{
-+	struct device *dev = &pdev->dev;
-+	struct tegra_rtc_info *info = platform_get_drvdata(pdev);
-+
-+	dev_vdbg(dev, "Resume (device_may_wakeup=%d)\n",
-+		device_may_wakeup(dev));
-+	/* alarms were left on as a wake source, turn them off. */
-+	if (device_may_wakeup(dev))
-+		disable_irq_wake(info->tegra_rtc_irq);
-+
-+	return 0;
-+}
-+#endif
-+
-+static void tegra_rtc_shutdown(struct platform_device *pdev)
-+{
-+	dev_vdbg(&pdev->dev, "disabling interrupts.\n");
-+	tegra_rtc_alarm_irq_enable(&pdev->dev, 0);
-+}
-+
-+MODULE_ALIAS("platform:tegra_rtc");
-+static struct platform_driver tegra_rtc_driver = {
-+	.remove		= __devexit_p(tegra_rtc_remove),
-+	.shutdown	= tegra_rtc_shutdown,
-+	.driver		= {
-+		.name	= "tegra_rtc",
-+		.owner	= THIS_MODULE,
-+	},
-+#ifdef CONFIG_PM
-+	.suspend	= tegra_rtc_suspend,
-+	.resume		= tegra_rtc_resume,
-+#endif
-+};
-+
-+static int __init tegra_rtc_init(void)
-+{
-+	return platform_driver_probe(&tegra_rtc_driver, tegra_rtc_probe);
-+}
-+module_init(tegra_rtc_init);
-+
-+static void __exit tegra_rtc_exit(void)
-+{
-+	platform_driver_unregister(&tegra_rtc_driver);
-+}
-+module_exit(tegra_rtc_exit);
-+
-+MODULE_AUTHOR("Jon Mayo <jmayo@nvidia.com>");
-+MODULE_DESCRIPTION("driver for Tegra internal RTC");
-+MODULE_LICENSE("GPL");
+There are, at least, 2 problems here. One is the auto endian swap (which
+I knew it existed just because of this issue). But the auto endian swap
+is not fully backward compatible either AFAIK, at least I tried Gentoo's
+kernel 2.6.22 r5 and the topology services doesn't work with NBO (I
+don't know if is a bug introduced by Gentoo, or a bug in the kernel or
+what else). So just changing the BO and claiming backward compatibility
+(even when is only at source code level) is not entirely true (unless is
+a Gentoo issue of course, which I should probably check).
+
+The other problem is TIPC_SUB_SERVICE changed it value from 2 to 0. In
+TIPC 1.x it was a flag set in the filter member of a subscription. In
+TIPC 2.0 is the absence of TIPC_SUB_PORTS. The change seems reasonable,
+as TIPC_SUB_SERVICE and TIPC_SUB_PORTS were mutually exclusive and you
+had to use one always, but the result is an API and *ABI* change. You
+can't use an old TIPC application without changing the code and
+recompiling using a tipc.h header from 2.6.35 or newer. And then, if you
+need to reboot with an older kernel, the new compiled application won't
+work with the old kernel.
+
+A third problem, much less critical but which I find annoying, is that
+an inconsistency was introduced. In kernels older than 2.6.35 (TIPC 1.6)
+you used HBO for all the TIPC data structures, addresses, port names,
+port sequences, port ids, subscriptions, events. Now, subscriptions and
+events go in NBO (which contains port sequences and port ids), but when
+binding a port name/sequence, you have to use HBO. Is true that
+a subscription is supposed to be a network message and the port name you
+bind to is not, but is at least inconsistent with AF_INET, where all you
+do uses NBO.
+
+> Assuming it is possible to do so in some non-kludgy way,
+> it sounds like we want to be looking into an in-kernel change
+> that ensures the older user space binaries get their
+> functionality restored then?
+
+I think the most reasonable way to do this was to use a different port
+name for the topology service for TIPC 2.0, and keep the old TIPC 1.x
+topology service at the same port name it was, and using the same
+interface as it did. Adding new constants TIPC_TOP_SRV2 and
+TIPC_SUB_SERVICE2 (for example) would have been enough to keep backward
+compatibility and allow a new clean interface. The old topology service
+could be deprecated and completely removed some time in a distant
+future. You could even add some #ifdef TIPC_1_COMPATIBILITY to make sure
+people using the old interface is aware of that and update to the new
+one.
+
 -- 
-1.7.0.4
-
+Leandro Lucarella (AKA luca)                     http://llucax.com.ar/
+----------------------------------------------------------------------
+GPG Key: 5F5A8D05 (F8CD F9A7 BF00 5431 4145  104C 949E BFB6 5F5A 8D05)
+----------------------------------------------------------------------
+If you do not change your beliefs
+Your life will always be like this
