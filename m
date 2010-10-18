@@ -1,55 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933535Ab0JRXHh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Oct 2010 19:07:37 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:35091 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755405Ab0JRXHg convert rfc822-to-8bit (ORCPT
+	id S933548Ab0JRXId (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Oct 2010 19:08:33 -0400
+Received: from nm10.bullet.mail.ne1.yahoo.com ([98.138.90.73]:26347 "HELO
+	nm10.bullet.mail.ne1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1755487Ab0JRXIb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Oct 2010 19:07:36 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :content-type:content-transfer-encoding;
-        b=Y6dAHvm9sQVLdLW6zTFhQvcUc7s1t7qFJ+xaTA/t+qIy9SHmPtsZ7XvnBgFuWoSyKX
-         KKcJwNZJDcZ7GJSv3LyvcREG5Wlr9qEMq5clwHIFX2F6OM2Zff0b0pmFwe79h64/51CK
-         Bj+qFykdT0vhR62LUSsbIyoswNKVRTbY8kqfQ=
-MIME-Version: 1.0
-In-Reply-To: <20101018103729.GA4122@linux.vnet.ibm.com>
-References: <20100831082307.064687027@linux.vnet.ibm.com> <20100831083844.043619334@linux.vnet.ibm.com>
- <AANLkTikCLHh5Uz-DRq9ws78We+SwCAqdurA6HfuJh-8Y@mail.gmail.com> <20101018103729.GA4122@linux.vnet.ibm.com>
-From: Mike Frysinger <vapier.adi@gmail.com>
-Date: Mon, 18 Oct 2010 19:07:13 -0400
-Message-ID: <AANLkTikKJ25L=6b2resz+0SAg7ZYL5j=rHG7Lg4kFbwd@mail.gmail.com>
-Subject: Re: [PATCH 2/2] initramfs: Fix initramfs size calculation
-To: Hendrik Brueckner <brueckner@linux.vnet.ibm.com>,
-        Mike Frysinger <vapier.adi@gmail.com>, mmarek@suse.cz,
-        Sam Ravnborg <sam@ravnborg.org>,
-        Michael Holzheu <holzheu@linux.vnet.ibm.com>, tabbott@ksplice.com,
-        vda.linux@googlemail.com, hpa@linux.intel.com,
-        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        heiko.carstens@de.ibm.com, schwidefsky@de.ibm.com
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Mon, 18 Oct 2010 19:08:31 -0400
+X-Yahoo-Newman-Id: 722776.10004.bm@omp1014.mail.ne1.yahoo.com
+X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
+X-YMail-OSG: TA9l8lkVM1mt.4SkPTAd8b6xYyobwLWK44bUNsttJp6wwLS
+ euCyXS4OATd0DV2w3Q4TX1WRoDpenEMEWVubG6pfI_WVz5hxy2NaUbwutky.
+ cr.ye_4hbnpNvjNRT7gj5hGielOyrHiAyHtaIO_82S5gh69FFzWZ7T4DN9iy
+ WcxnJcKX_IaV5qFpt0RbJ9rUeoQIxy4a6LBzXWXYYwXy0rffqeGi9e9ejuWp
+ NQ8vTPIdXdYcJfMQdHyHg5vBD_jtYKs5R8H1mUpsoQMRuHWCIBFk5ikBisr7
+ YsVAkMz0bSeebk3K9miJH61Va1KxfZfQt0.WhZIGFvh7EcDYWH13.R2AXAf6
+ 75.LVgz.qkkD7ZW4ks0k-
+X-Yahoo-Newman-Property: ymail-3
+Subject: Re: [RFCv3 20/21] tcm: Add Kbuild and Kconfig for drivers/target
+	and Documentation/target/
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+In-Reply-To: <20101018154859.66b71121.randy.dunlap@oracle.com>
+References: <1287441559-20129-1-git-send-email-nab@linux-iscsi.org>
+	 <20101018154859.66b71121.randy.dunlap@oracle.com>
+Content-Type: text/plain
+Date: Mon, 18 Oct 2010 16:03:42 -0700
+Message-Id: <1287443022.14039.198.camel@haakon2.linux-iscsi.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.22.3.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 18, 2010 at 06:37, Hendrik Brueckner wrote:
-> On Sun, Oct 17, 2010 at 02:28:11PM -0400, Mike Frysinger wrote:
->> On Tue, Aug 31, 2010 at 04:23, Hendrik Brueckner wrote:
->> i'm pretty sure this breaks on every symbol-prefixed arch.  at least,
->> it broke every Blackfin board:
->> init/built-in.o: In function `populate_rootfs':
->> init/initramfs.c:(.init.text+0x2548): undefined reference to `__initramfs_size'
->> init/initramfs.c:(.init.text+0x254e): undefined reference to `__initramfs_size'
->> make: *** [.tmp_vmlinux1] Error 1
->>
->> look at VMLINUX_SYMBOL() in the vmlinux.lds.h file
->
-> Thanks for your feedback.  Could you try the patch below and let me know
-> if it works for your Blackfin board.
+On Mon, 2010-10-18 at 15:48 -0700, Randy Dunlap wrote:
+> On Mon, 18 Oct 2010 15:39:19 -0700 Nicholas A. Bellinger wrote:
+> 
+> > From: Nicholas Bellinger <nab@linux-iscsi.org>
+> > 
+> > Add TCM Kbuild and Kconfig files and update drivers/ to pick up drivers/target.
+> > Add Docmentation/target/ for tcm_mod_builder.py script for generating new
+> > TCM v4 fabric modules functional ConfigFS skeletons.
+> > 
+> > Signed-off-by: Nicholas A. Bellinger <nab@linux-iscsi.org>
+> > ---
+> >  Documentation/target/tcm_mod_builder.py  | 1094 ++++++++++++++++++++++++++++++
+> >  Documentation/target/tcm_mod_builder.txt |  145 ++++
+> >  drivers/Kconfig                          |    2 +
+> >  drivers/Makefile                         |    1 +
+> >  drivers/target/Kbuild                    |   27 +
+> >  drivers/target/Kconfig                   |   34 +
+> >  6 files changed, 1303 insertions(+), 0 deletions(-)
+> >  create mode 100755 Documentation/target/tcm_mod_builder.py
+> >  create mode 100644 Documentation/target/tcm_mod_builder.txt
+> >  create mode 100644 drivers/target/Kbuild
+> >  create mode 100644 drivers/target/Kconfig
+> 
+> 
+> > diff --git a/drivers/target/Kconfig b/drivers/target/Kconfig
+> > new file mode 100644
+> > index 0000000..5c37653
+> > --- /dev/null
+> > +++ b/drivers/target/Kconfig
+> > @@ -0,0 +1,34 @@
+> > +config TARGET_CORE
+> > +        tristate "Generic Target Core Mod (TCM) and ConfigFS Infrastructure"
+> > +	select CONFIGFS_FS
+> 
+> Indentation: use tabs, not spaces.
+> 
 
-negative.  same error.  vmlinux.lds.h might need to be switched to
-CONFIG_SYMBOL_PREFIX.
--mike
+Whoops, fixed.  Thanks for spotting this..
+
+> > +        default m
+> 
+> Don't enable random drivers/modules.
+> Let the user or defconfig do that.
+
+Understood, changing to 'default n'.
+
+Thanks!
+
+--nab
+
