@@ -1,56 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755618Ab0JRScj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Oct 2010 14:32:39 -0400
-Received: from casper.infradead.org ([85.118.1.10]:57739 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754898Ab0JRSci convert rfc822-to-8bit (ORCPT
+	id S1757618Ab0JRScs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Oct 2010 14:32:48 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:35176 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754954Ab0JRSci convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 18 Oct 2010 14:32:38 -0400
-Subject: Re: [PATCH] checkpatch: allow single space before labels
-From: Peter Zijlstra <peterz@infradead.org>
-To: Mike Frysinger <vapier@gentoo.org>
-Cc: "Ted Ts'o" <tytso@mit.edu>, Joe Perches <joe@perches.com>,
-        Andy Whitcroft <apw@canonical.com>, linux-kernel@vger.kernel.org
-In-Reply-To: <AANLkTin2joSMdqn_HKzQDHuV5cbwbLAB2hJi7Uj8yEHK@mail.gmail.com>
-References: <1287302737-3507-1-git-send-email-vapier@gentoo.org>
-	 <1287303678.20968.37.camel@Joe-Laptop>
-	 <AANLkTimmSRS3eVsW4EZUxnE_rfjeqmmgGnjtWbn3J_nY@mail.gmail.com>
-	 <1287310889.1998.153.camel@laptop> <1287334498.20968.53.camel@Joe-Laptop>
-	 <1287343839.1998.699.camel@laptop>
-	 <AANLkTikaxf-Fh9qUxsXNO5=r+SoxbzYXvCjFcHQLcXjy@mail.gmail.com>
-	 <1287345710.1998.735.camel@laptop>
-	 <AANLkTimixEGQTYrM7ShodtKeC97e0uPNRhWQn8F+-Nui@mail.gmail.com>
-	 <20101018143935.GA4120@thunk.org> <20101018145400.GD4120@thunk.org>
-	 <1287413933.29097.1608.camel@twins>
-	 <AANLkTin2joSMdqn_HKzQDHuV5cbwbLAB2hJi7Uj8yEHK@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 18 Oct 2010 14:32:23 -0200
+From: "Gustavo F. Padovan" <padovan@profusion.mobi>
+To: Harvey Harrison <harvey.harrison@gmail.com>
+Cc: Mike Frysinger <vapier@gentoo.org>, linux-bluetooth@vger.kernel.org,
+        Marcel Holtmann <marcel@holtmann.org>,
+        uclinux-dist-devel@blackfin.uclinux.org, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        steven miao <realmz6@gmail.com>
+Subject: Re: [PATCH] bluetooth: fix unaligned access to l2cap conf data
+Message-ID: <20101018163223.GC2468@vigoh>
+References: <1287268187-9628-1-git-send-email-vapier@gentoo.org>
+ <AANLkTinMSbhTkH0zQn_YO7hFF7zkuv-Gj-B0BUFWy5nP@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
 Content-Transfer-Encoding: 8BIT
-Date: Mon, 18 Oct 2010 20:32:32 +0200
-Message-ID: <1287426752.1998.2099.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+In-Reply-To: <AANLkTinMSbhTkH0zQn_YO7hFF7zkuv-Gj-B0BUFWy5nP@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-10-18 at 14:21 -0400, Mike Frysinger wrote:
-> On Mon, Oct 18, 2010 at 10:58, Peter Zijlstra wrote:
-> > On Mon, 2010-10-18 at 10:54 -0400, Ted Ts'o wrote:
-> >> Note that there is absolutely nothing about how labels should be
-> >> indented in CodingStyle at all, and I very much resist code
-> >> straightjackets being imposed by checkpatch.pl implementors.
-> >>
-> >> Can we please stop this nonsense?
+Hi Harvey,
+
+* Harvey Harrison <harvey.harrison@gmail.com> [2010-10-18 11:17:28 -0700]:
+
+> On Sat, Oct 16, 2010 at 3:29 PM, Mike Frysinger <vapier@gentoo.org> wrote:
+> > From: steven miao <realmz6@gmail.com>
 > >
-> > 1) ignoring checkpatch over taste is good
-> > 2) by 1) its impossible to get checkpatch right
-> > 3) therefore pure checkpatch patches are nonsense
+> >
+> >        case 2:
+> > -               *((__le16 *) opt->val) = cpu_to_le16(val);
+> > +               put_unaligned_le16(cpu_to_le16(val), opt->val);
+> >                break;
+> >
 > 
-> sounds like an ACK for Joe's patch
+> I think you wanted:
+> put_unaligned_le16(val, opt->val);
 
-No its quite the reverse, by acking joe's patch I loose checkpatch
-functionality I like.
+I fixed that in the tree. Thanks for the report. 
 
-There are checks I don't really like, for those I simply ignore its
-output, I suggest others do the same.
+-- 
+Gustavo F. Padovan
+ProFUSION embedded systems - http://profusion.mobi
