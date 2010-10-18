@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755496Ab0JRLir (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Oct 2010 07:38:47 -0400
-Received: from canuck.infradead.org ([134.117.69.58]:60269 "EHLO
+	id S1755552Ab0JRLiF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Oct 2010 07:38:05 -0400
+Received: from canuck.infradead.org ([134.117.69.58]:60275 "EHLO
 	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755299Ab0JRLfm (ORCPT
+	with ESMTP id S1755313Ab0JRLfo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Oct 2010 07:35:42 -0400
-Message-Id: <20101018112950.350508259@chello.nl>
+	Mon, 18 Oct 2010 07:35:44 -0400
+Message-Id: <20101018112950.798606061@chello.nl>
 User-Agent: quilt/0.47-1
-Date: Mon, 18 Oct 2010 13:24:35 +0200
+Date: Mon, 18 Oct 2010 13:24:43 +0200
 From: Peter Zijlstra <a.p.zijlstra@chello.nl>
 To: Andrea Arcangeli <aarcange@redhat.com>, Avi Kivity <avi@redhat.com>,
         Thomas Gleixner <tglx@linutronix.de>, Rik van Riel <riel@redhat.com>,
@@ -23,53 +23,107 @@ Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Paul McKenney <paulmck@linux.vnet.ibm.com>,
         Yanmin Zhang <yanmin_zhang@linux.intel.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>
-Subject: [PATCH 02/20] mm: Improve page_lock_anon_vma() comment
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>
+Subject: [PATCH 10/20] s390: preemptible mmu_gather
 References: <20101018112433.556591568@chello.nl>
-Content-Disposition: inline; filename=mm-page_lock_anon_vma-comment.patch
+Content-Disposition: inline; filename=martin-mm-preempt-tlb-gather-s390.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A slightly more verbose comment to go along with the trickery in
-page_lock_anon_vma().
+From: Martin Schwidefsky <schwidefsky@de.ibm.com>
 
-Reviewed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Adapt the stand-alone s390 mmu_gather implementation to the new
+preemptible mmu_gather interface.
+
+Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
 Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Acked-by: Mel Gorman <mel@csn.ul.ie>
-LKML-Reference: <1271158226.4807.1107.camel@twins>
 ---
- mm/rmap.c |   18 ++++++++++++++++--
- 1 file changed, 16 insertions(+), 2 deletions(-)
+ arch/s390/include/asm/tlb.h |   43 +++++++++++++++++++++++++------------------
+ 1 file changed, 25 insertions(+), 18 deletions(-)
 
-Index: linux-2.6/mm/rmap.c
+Index: linux-2.6/arch/s390/include/asm/tlb.h
 ===================================================================
---- linux-2.6.orig/mm/rmap.c
-+++ linux-2.6/mm/rmap.c
-@@ -311,8 +311,22 @@ void __init anon_vma_init(void)
+--- linux-2.6.orig/arch/s390/include/asm/tlb.h
++++ linux-2.6/arch/s390/include/asm/tlb.h
+@@ -28,44 +28,50 @@
+ #include <asm/smp.h>
+ #include <asm/tlbflush.h>
+ 
+-#ifndef CONFIG_SMP
+-#define TLB_NR_PTRS	1
+-#else
+-#define TLB_NR_PTRS	508
+-#endif
+-
+ struct mmu_gather {
+ 	struct mm_struct *mm;
+ 	unsigned int fullmm;
+ 	unsigned int nr_ptes;
+ 	unsigned int nr_pxds;
+-	void *array[TLB_NR_PTRS];
++	unsigned int max;
++	void **array;
++	void *local[8];
+ };
+ 
+-DECLARE_PER_CPU(struct mmu_gather, mmu_gathers);
+-
+-static inline struct mmu_gather *tlb_gather_mmu(struct mm_struct *mm,
+-						unsigned int full_mm_flush)
++static inline void __tlb_alloc_pages(struct mmu_gather *tlb)
+ {
+-	struct mmu_gather *tlb = &get_cpu_var(mmu_gathers);
++	unsigned long addr = __get_free_pages(GFP_ATOMIC, 0);
++
++	if (addr) {
++		tlb->array = (void *) addr;
++		tlb->max = PAGE_SIZE / sizeof(void *);
++	}
++}
+ 
++static inline void tlb_gather_mmu(struct mmu_gather *tlb,
++				  struct mm_struct *mm,
++				  unsigned int full_mm_flush)
++{
+ 	tlb->mm = mm;
++	tlb->max = ARRAY_SIZE(tlb->local);
++	tlb->array = tlb->local;
+ 	tlb->fullmm = full_mm_flush;
+-	tlb->nr_ptes = 0;
+-	tlb->nr_pxds = TLB_NR_PTRS;
+ 	if (tlb->fullmm)
+ 		__tlb_flush_mm(mm);
+-	return tlb;
++	else
++		__tlb_alloc_pages(tlb);
++	tlb->nr_ptes = 0;
++	tlb->nr_pxds = tlb->max;
+ }
+ 
+ static inline void tlb_flush_mmu(struct mmu_gather *tlb,
+ 				 unsigned long start, unsigned long end)
+ {
+-	if (!tlb->fullmm && (tlb->nr_ptes > 0 || tlb->nr_pxds < TLB_NR_PTRS))
++	if (!tlb->fullmm && (tlb->nr_ptes > 0 || tlb->nr_pxds < tlb->max))
+ 		__tlb_flush_mm(tlb->mm);
+ 	while (tlb->nr_ptes > 0)
+ 		pte_free(tlb->mm, tlb->array[--tlb->nr_ptes]);
+-	while (tlb->nr_pxds < TLB_NR_PTRS)
++	while (tlb->nr_pxds < tlb->max)
+ 		/* pgd_free frees the pointer as region or segment table */
+ 		pgd_free(tlb->mm, tlb->array[tlb->nr_pxds++]);
+ }
+@@ -78,7 +84,8 @@ static inline void tlb_finish_mmu(struct
+ 	/* keep the page table cache within bounds */
+ 	check_pgt_cache();
+ 
+-	put_cpu_var(mmu_gathers);
++	if (tlb->array != tlb->local)
++		free_pages((unsigned long) tlb->array, 0);
  }
  
  /*
-- * Getting a lock on a stable anon_vma from a page off the LRU is
-- * tricky: page_lock_anon_vma rely on RCU to guard against the races.
-+ * Getting a lock on a stable anon_vma from a page off the LRU is tricky!
-+ *
-+ * Since there is no serialization what so ever against page_remove_rmap()
-+ * the best this function can do is return a locked anon_vma that might
-+ * have been relevant to this page.
-+ *
-+ * The page might have been remapped to a different anon_vma or the anon_vma
-+ * returned may already be freed (and even reused).
-+ *
-+ * All users of this function must be very careful when walking the anon_vma
-+ * chain and verify that the page in question is indeed mapped in it
-+ * [ something equivalent to page_mapped_in_vma() ].
-+ *
-+ * Since anon_vma's slab is DESTROY_BY_RCU and we know from page_remove_rmap()
-+ * that the anon_vma pointer from page->mapping is valid if there is a
-+ * mapcount, we can dereference the anon_vma after observing those.
-  */
- struct anon_vma *page_lock_anon_vma(struct page *page)
- {
 
 
