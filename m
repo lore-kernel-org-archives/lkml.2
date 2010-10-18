@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753676Ab0JRGVu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Oct 2010 02:21:50 -0400
-Received: from bld-mail15.adl6.internode.on.net ([150.101.137.100]:37428 "EHLO
+	id S1753982Ab0JRGWH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Oct 2010 02:22:07 -0400
+Received: from bld-mail19.adl2.internode.on.net ([150.101.137.104]:52909 "EHLO
 	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753593Ab0JRGVs (ORCPT
+	with ESMTP id S1753867Ab0JRGWB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Oct 2010 02:21:48 -0400
+	Mon, 18 Oct 2010 02:22:01 -0400
 From: Dave Chinner <david@fromorbit.com>
 To: linux-fsdevel@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH 19/20] fs: Reduce inode I_FREEING and factor inode disposal
-Date: Mon, 18 Oct 2010 17:20:55 +1100
-Message-Id: <1287382856-29529-20-git-send-email-david@fromorbit.com>
+Subject: [PATCH 09/20] fs: Factor inode hash operations into functions
+Date: Mon, 18 Oct 2010 17:20:45 +1100
+Message-Id: <1287382856-29529-10-git-send-email-david@fromorbit.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1287382856-29529-1-git-send-email-david@fromorbit.com>
 References: <1287382856-29529-1-git-send-email-david@fromorbit.com>
@@ -22,212 +22,164 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Dave Chinner <dchinner@redhat.com>
 
-Inode reclaim can push many inodes into the I_FREEING state before
-it actually frees them. During the time it gathers these inodes, it
-can call iput(), invalidate_mapping_pages, be preempted, etc. As a
-result, holding inodes in I_FREEING can cause pauses.
-
-After the inode scalability work, there is not a big reason to batch
-up inodes to reclaim them, so we can dispose them as they are found
-from the LRU.
-
-Unmount does a very similar reclaim process via invalidate_list(),
-but currently uses the i_lru list to aggregate inodes for a batched
-disposal. This requires taking the inode_lru_lock for every inode we
-want to dispose. Instead, take the inodes off the superblock inode
-list (as we already hold the lock) and use i_sb_list as the
-aggregator for inodes to dispose to reduce lock traffic.
-
-Further, iput_final() does the same inode cleanup as reclaim and
-unmount, so convert them all to use a single function for destroying
-inodes. This is written such that the callers can optimise list
-removals to avoid unneccessary lock round trips when removing inodes
-from lists.
+Before replacing the inode hash locking with a more scalable
+mechanism, factor the removal of the inode from the hashes rather
+than open coding it in several places.
 
 Based on a patch originally from Nick Piggin.
 
 Signed-off-by: Dave Chinner <dchinner@redhat.com>
+Reviewed-by: Christoph Hellwig <hch@lst.de>
 ---
- fs/inode.c |   99 +++++++++++++++++++++++++++++++-----------------------------
- 1 files changed, 51 insertions(+), 48 deletions(-)
+ fs/inode.c |  100 +++++++++++++++++++++++++++++++++--------------------------
+ 1 files changed, 56 insertions(+), 44 deletions(-)
 
 diff --git a/fs/inode.c b/fs/inode.c
-index 79b95f6..adcd1f3 100644
+index 7d3f2c5..ba365ef 100644
 --- a/fs/inode.c
 +++ b/fs/inode.c
-@@ -49,8 +49,8 @@
-  *
-  * sb inode lock
-  *   inode_lru_lock
-- *     wb->b_lock
-- *       inode->i_lock
-+ *   wb->b_lock
-+ *     inode->i_lock
-  *
-  * wb->b_lock
-  *   sb_lock (pin sb for writeback)
-@@ -483,6 +483,39 @@ static void evict(struct inode *inode)
+@@ -359,6 +359,59 @@ void inode_lru_list_del(struct inode *inode)
+ 	}
  }
  
- /*
-+ * Free the inode passed in, removing it from the lists it is still connected
-+ * to but avoiding unnecessary lock round-trips for the lists it is no longer
-+ * on.
-+ *
-+ * An inode must already be marked I_FREEING so that we avoid the inode being
-+ * moved back onto lists if we race with other code that manipulates the lists
-+ * (e.g. writeback_single_inode). The caller
-+ */
-+static void dispose_one_inode(struct inode *inode)
++static unsigned long hash(struct super_block *sb, unsigned long hashval)
 +{
-+	BUG_ON(!(inode->i_state & I_FREEING));
++	unsigned long tmp;
 +
-+	/*
-+	 * move the inode off the IO lists and LRU once
-+	 * I_FREEING is set so that it won't get moved back on
-+	 * there if it is dirty.
-+	 */
-+	if (!list_empty(&inode->i_wb_list))
-+		inode_wb_list_del(inode);
-+	if (!list_empty(&inode->i_lru))
-+		inode_lru_list_del(inode);
-+	if (!list_empty(&inode->i_sb_list))
-+		inode_sb_list_del(inode);
-+
-+	evict(inode);
-+
-+	remove_inode_hash(inode);
-+	wake_up_inode(inode);
-+	BUG_ON(inode->i_state != (I_FREEING | I_CLEAR));
-+	destroy_inode(inode);
++	tmp = (hashval * (unsigned long)sb) ^ (GOLDEN_RATIO_PRIME + hashval) /
++			L1_CACHE_BYTES;
++	tmp = tmp ^ ((tmp ^ GOLDEN_RATIO_PRIME) >> I_HASHBITS);
++	return tmp & I_HASHMASK;
 +}
 +
-+/*
-  * dispose_list - dispose of the contents of a local list
-  * @head: the head of the list to free
-  *
-@@ -494,16 +527,10 @@ static void dispose_list(struct list_head *head)
- 	while (!list_empty(head)) {
- 		struct inode *inode;
- 
--		inode = list_first_entry(head, struct inode, i_lru);
--		list_del_init(&inode->i_lru);
--
--		evict(inode);
--
--		remove_inode_hash(inode);
--		inode_sb_list_del(inode);
-+		inode = list_first_entry(head, struct inode, i_sb_list);
-+		list_del_init(&inode->i_sb_list);
- 
--		wake_up_inode(inode);
--		destroy_inode(inode);
-+		dispose_one_inode(inode);
- 	}
- }
- 
-@@ -544,17 +571,8 @@ static int invalidate_list(struct super_block *sb, struct list_head *head,
- 			inode->i_state |= I_FREEING;
- 			spin_unlock(&inode->i_lock);
- 
--			/*
--			 * move the inode off the IO lists and LRU once
--			 * I_FREEING is set so that it won't get moved back on
--			 * there if it is dirty.
--			 */
--			inode_wb_list_del(inode);
--
--			spin_lock(&inode_lru_lock);
--			list_move(&inode->i_lru, dispose);
--			percpu_counter_dec(&nr_inodes_unused);
--			spin_unlock(&inode_lru_lock);
-+			/* save a lock round trip by removing the inode here. */
-+			list_move(&inode->i_sb_list, dispose);
- 			continue;
- 		}
- 		spin_unlock(&inode->i_lock);
-@@ -573,17 +591,17 @@ static int invalidate_list(struct super_block *sb, struct list_head *head,
-  */
- int invalidate_inodes(struct super_block *sb)
- {
--	int busy;
- 	LIST_HEAD(throw_away);
-+	int busy;
- 
- 	down_write(&iprune_sem);
- 	spin_lock(&sb->s_inodes_lock);
- 	fsnotify_unmount_inodes(&sb->s_inodes);
- 	busy = invalidate_list(sb, &sb->s_inodes, &throw_away);
- 	spin_unlock(&sb->s_inodes_lock);
-+	up_write(&iprune_sem);
- 
- 	dispose_list(&throw_away);
--	up_write(&iprune_sem);
- 
- 	return busy;
- }
-@@ -607,7 +625,6 @@ EXPORT_SYMBOL(invalidate_inodes);
-  */
- static void prune_icache(int nr_to_scan)
- {
--	LIST_HEAD(freeable);
- 	int nr_scanned;
- 	unsigned long reap = 0;
- 
-@@ -666,15 +683,15 @@ static void prune_icache(int nr_to_scan)
- 		inode->i_state |= I_FREEING;
- 		spin_unlock(&inode->i_lock);
- 
--		/*
--		 * move the inode off the io lists and lru once
--		 * i_freeing is set so that it won't get moved back on
--		 * there if it is dirty.
--		 */
--		inode_wb_list_del(inode);
--
--		list_move(&inode->i_lru, &freeable);
-+		/* save a lock round trip by removing the inode here. */
-+		list_del_init(&inode->i_lru);
- 		percpu_counter_dec(&nr_inodes_unused);
-+		spin_unlock(&inode_lru_lock);
++/**
++ *	__insert_inode_hash - hash an inode
++ *	@inode: unhashed inode
++ *	@hashval: unsigned long value used to locate this object in the
++ *		inode_hashtable.
++ *
++ *	Add an inode to the inode hash for this superblock.
++ */
++void __insert_inode_hash(struct inode *inode, unsigned long hashval)
++{
++	struct hlist_head *head = inode_hashtable + hash(inode->i_sb, hashval);
++	spin_lock(&inode_lock);
++	hlist_add_head(&inode->i_hash, head);
++	spin_unlock(&inode_lock);
++}
++EXPORT_SYMBOL(__insert_inode_hash);
 +
-+		dispose_one_inode(inode);
-+		cond_resched();
++/**
++ *	__remove_inode_hash - remove an inode from the hash
++ *	@inode: inode to unhash
++ *
++ *	Remove an inode from the superblock. inode->i_lock must be
++ *	held.
++ */
++static void __remove_inode_hash(struct inode *inode)
++{
++	hlist_del_init(&inode->i_hash);
++}
 +
-+		spin_lock(&inode_lru_lock);
- 	}
- 	if (current_is_kswapd())
- 		__count_vm_events(KSWAPD_INODESTEAL, reap);
-@@ -682,7 +699,6 @@ static void prune_icache(int nr_to_scan)
- 		__count_vm_events(PGINODESTEAL, reap);
- 	spin_unlock(&inode_lru_lock);
++/**
++ *	remove_inode_hash - remove an inode from the hash
++ *	@inode: inode to unhash
++ *
++ *	Remove an inode from the superblock.
++ */
++void remove_inode_hash(struct inode *inode)
++{
++	spin_lock(&inode_lock);
++	hlist_del_init(&inode->i_hash);
++	spin_unlock(&inode_lock);
++}
++EXPORT_SYMBOL(remove_inode_hash);
++
+ void end_writeback(struct inode *inode)
+ {
+ 	might_sleep();
+@@ -406,7 +459,7 @@ static void dispose_list(struct list_head *head)
+ 		evict(inode);
  
--	dispose_list(&freeable);
- 	up_read(&iprune_sem);
+ 		spin_lock(&inode_lock);
+-		hlist_del_init(&inode->i_hash);
++		__remove_inode_hash(inode);
+ 		list_del_init(&inode->i_sb_list);
+ 		spin_unlock(&inode_lock);
+ 
+@@ -658,16 +711,6 @@ repeat:
+ 	return node ? inode : NULL;
  }
  
-@@ -1432,20 +1448,7 @@ static void iput_final(struct inode *inode)
- 	inode->i_state |= I_FREEING;
- 	spin_unlock(&inode->i_lock);
- 
--	/*
--	 * After we delete the inode from the LRU and IO lists here, we avoid
--	 * moving dirty inodes back onto the LRU now because I_FREEING is set
--	 * and hence writeback_single_inode() won't move the inode around.
--	 */
--	inode_wb_list_del(inode);
--	inode_lru_list_del(inode);
+-static unsigned long hash(struct super_block *sb, unsigned long hashval)
+-{
+-	unsigned long tmp;
 -
--	inode_sb_list_del(inode);
--	evict(inode);
--	remove_inode_hash(inode);
--	wake_up_inode(inode);
--	BUG_ON(inode->i_state != (I_FREEING | I_CLEAR));
--	destroy_inode(inode);
-+	dispose_one_inode(inode);
+-	tmp = (hashval * (unsigned long)sb) ^ (GOLDEN_RATIO_PRIME + hashval) /
+-			L1_CACHE_BYTES;
+-	tmp = tmp ^ ((tmp ^ GOLDEN_RATIO_PRIME) >> I_HASHBITS);
+-	return tmp & I_HASHMASK;
+-}
+-
+ static inline void
+ __inode_add_to_lists(struct super_block *sb, struct hlist_head *head,
+ 			struct inode *inode)
+@@ -1234,36 +1277,6 @@ int insert_inode_locked4(struct inode *inode, unsigned long hashval,
  }
+ EXPORT_SYMBOL(insert_inode_locked4);
  
- /**
+-/**
+- *	__insert_inode_hash - hash an inode
+- *	@inode: unhashed inode
+- *	@hashval: unsigned long value used to locate this object in the
+- *		inode_hashtable.
+- *
+- *	Add an inode to the inode hash for this superblock.
+- */
+-void __insert_inode_hash(struct inode *inode, unsigned long hashval)
+-{
+-	struct hlist_head *head = inode_hashtable + hash(inode->i_sb, hashval);
+-	spin_lock(&inode_lock);
+-	hlist_add_head(&inode->i_hash, head);
+-	spin_unlock(&inode_lock);
+-}
+-EXPORT_SYMBOL(__insert_inode_hash);
+-
+-/**
+- *	remove_inode_hash - remove an inode from the hash
+- *	@inode: inode to unhash
+- *
+- *	Remove an inode from the superblock.
+- */
+-void remove_inode_hash(struct inode *inode)
+-{
+-	spin_lock(&inode_lock);
+-	hlist_del_init(&inode->i_hash);
+-	spin_unlock(&inode_lock);
+-}
+-EXPORT_SYMBOL(remove_inode_hash);
+ 
+ int generic_delete_inode(struct inode *inode)
+ {
+@@ -1319,6 +1332,7 @@ static void iput_final(struct inode *inode)
+ 		WARN_ON(inode->i_state & I_NEW);
+ 		inode->i_state &= ~I_WILL_FREE;
+ 		hlist_del_init(&inode->i_hash);
++		__remove_inode_hash(inode);
+ 	}
+ 	list_del_init(&inode->i_wb_list);
+ 	WARN_ON(inode->i_state & I_NEW);
+@@ -1334,9 +1348,7 @@ static void iput_final(struct inode *inode)
+ 	list_del_init(&inode->i_sb_list);
+ 	spin_unlock(&inode_lock);
+ 	evict(inode);
+-	spin_lock(&inode_lock);
+-	hlist_del_init(&inode->i_hash);
+-	spin_unlock(&inode_lock);
++	remove_inode_hash(inode);
+ 	wake_up_inode(inode);
+ 	BUG_ON(inode->i_state != (I_FREEING | I_CLEAR));
+ 	destroy_inode(inode);
 -- 
 1.7.1
 
