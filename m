@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755314Ab0JRLfo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Oct 2010 07:35:44 -0400
-Received: from canuck.infradead.org ([134.117.69.58]:60265 "EHLO
-	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755261Ab0JRLfl (ORCPT
+	id S1755438Ab0JRLiD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Oct 2010 07:38:03 -0400
+Received: from casper.infradead.org ([85.118.1.10]:36524 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755332Ab0JRLfp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Oct 2010 07:35:41 -0400
-Message-Id: <20101018112950.460692615@chello.nl>
+	Mon, 18 Oct 2010 07:35:45 -0400
+Message-Id: <20101018112950.628492776@chello.nl>
 User-Agent: quilt/0.47-1
-Date: Mon, 18 Oct 2010 13:24:37 +0200
+Date: Mon, 18 Oct 2010 13:24:40 +0200
 From: Peter Zijlstra <a.p.zijlstra@chello.nl>
 To: Andrea Arcangeli <aarcange@redhat.com>, Avi Kivity <avi@redhat.com>,
         Thomas Gleixner <tglx@linutronix.de>, Rik van Riel <riel@redhat.com>,
@@ -23,151 +23,338 @@ Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Paul McKenney <paulmck@linux.vnet.ibm.com>,
         Yanmin Zhang <yanmin_zhang@linux.intel.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>
-Subject: [PATCH 04/20] mm: Move anon_vma ref out from under CONFIG_KSM
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Russell King <rmk@arm.linux.org.uk>, Paul Mundt <lethal@linux-sh.org>,
+        Jeff Dike <jdike@addtoit.com>, Tony Luck <tony.luck@intel.com>
+Subject: [PATCH 07/20] mm: Preemptible mmu_gather
 References: <20101018112433.556591568@chello.nl>
-Content-Disposition: inline; filename=mm-anon_vma-ref.patch
+Content-Disposition: inline; filename=mm-preempt-tlb-gather.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We need an anon_vma refcount for preemptible anon_vma->lock.
+Make mmu_gather preemptible by using a small on stack list and use
+an option allocation to speed things up.
 
+Preemptible mmu_gather is desired in general and usable once
+i_mmap_lock becomes a mutex. Doing it before the mutex conversion
+saves us from having to rework the code by moving the mmu_gather
+bits inside the i_mmap_lock.
+
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: David Miller <davem@davemloft.net>
+Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
+Cc: Russell King <rmk@arm.linux.org.uk>
+Cc: Paul Mundt <lethal@linux-sh.org>
+Cc: Jeff Dike <jdike@addtoit.com>
+Cc: Tony Luck <tony.luck@intel.com>
 Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Acked-by: Mel Gorman <mel@csn.ul.ie>
 ---
- include/linux/rmap.h |   40 ++++------------------------------------
- mm/rmap.c            |   14 ++++++--------
- 2 files changed, 10 insertions(+), 44 deletions(-)
+ fs/exec.c                 |   10 ++++-----
+ include/asm-generic/tlb.h |   51 +++++++++++++++++++++++++++++-----------------
+ include/linux/mm.h        |    2 -
+ mm/memory.c               |   27 +++++-------------------
+ mm/mmap.c                 |   16 +++++++-------
+ 5 files changed, 53 insertions(+), 53 deletions(-)
 
-Index: linux-2.6/include/linux/rmap.h
+Index: linux-2.6/fs/exec.c
 ===================================================================
---- linux-2.6.orig/include/linux/rmap.h
-+++ linux-2.6/include/linux/rmap.h
-@@ -27,18 +27,15 @@
- struct anon_vma {
- 	spinlock_t lock;	/* Serialize access to vma list */
- 	struct anon_vma *root;	/* Root of this anon_vma tree */
--#if defined(CONFIG_KSM) || defined(CONFIG_MIGRATION)
--
+--- linux-2.6.orig/fs/exec.c
++++ linux-2.6/fs/exec.c
+@@ -504,7 +504,7 @@ static int shift_arg_pages(struct vm_are
+ 	unsigned long length = old_end - old_start;
+ 	unsigned long new_start = old_start - shift;
+ 	unsigned long new_end = old_end - shift;
+-	struct mmu_gather *tlb;
++	struct mmu_gather tlb;
+ 
+ 	BUG_ON(new_start > new_end);
+ 
+@@ -530,12 +530,12 @@ static int shift_arg_pages(struct vm_are
+ 		return -ENOMEM;
+ 
+ 	lru_add_drain();
+-	tlb = tlb_gather_mmu(mm, 0);
++	tlb_gather_mmu(&tlb, mm, 0);
+ 	if (new_end > old_start) {
+ 		/*
+ 		 * when the old and new regions overlap clear from new_end.
+ 		 */
+-		free_pgd_range(tlb, new_end, old_end, new_end,
++		free_pgd_range(&tlb, new_end, old_end, new_end,
+ 			vma->vm_next ? vma->vm_next->vm_start : 0);
+ 	} else {
+ 		/*
+@@ -544,10 +544,10 @@ static int shift_arg_pages(struct vm_are
+ 		 * have constraints on va-space that make this illegal (IA64) -
+ 		 * for the others its just a little faster.
+ 		 */
+-		free_pgd_range(tlb, old_start, old_end, new_end,
++		free_pgd_range(&tlb, old_start, old_end, new_end,
+ 			vma->vm_next ? vma->vm_next->vm_start : 0);
+ 	}
+-	tlb_finish_mmu(tlb, new_end, old_end);
++	tlb_finish_mmu(&tlb, new_end, old_end);
+ 
  	/*
--	 * The external_refcount is taken by either KSM or page migration
--	 * to take a reference to an anon_vma when there is no
-+	 * The refcount is taken on an anon_vma when there is no
- 	 * guarantee that the vma of page tables will exist for
- 	 * the duration of the operation. A caller that takes
- 	 * the reference is responsible for clearing up the
- 	 * anon_vma if they are the last user on release
- 	 */
--	atomic_t external_refcount;
--#endif
-+	atomic_t refcount;
-+
- 	/*
- 	 * NOTE: the LSB of the head.next is set by
- 	 * mm_take_all_locks() _after_ taking the above lock. So the
-@@ -71,41 +68,12 @@ struct anon_vma_chain {
+ 	 * Shrink the vma to just the new range.  Always succeeds.
+Index: linux-2.6/include/asm-generic/tlb.h
+===================================================================
+--- linux-2.6.orig/include/asm-generic/tlb.h
++++ linux-2.6/include/asm-generic/tlb.h
+@@ -22,14 +22,8 @@
+  * and page free order so much..
+  */
+ #ifdef CONFIG_SMP
+-  #ifdef ARCH_FREE_PTR_NR
+-    #define FREE_PTR_NR   ARCH_FREE_PTR_NR
+-  #else
+-    #define FREE_PTE_NR	506
+-  #endif
+   #define tlb_fast_mode(tlb) ((tlb)->nr == ~0U)
+ #else
+-  #define FREE_PTE_NR	1
+   #define tlb_fast_mode(tlb) 1
+ #endif
+ 
+@@ -39,30 +33,48 @@
+ struct mmu_gather {
+ 	struct mm_struct	*mm;
+ 	unsigned int		nr;	/* set to ~0U means fast mode */
++	unsigned int		max;	/* nr < max */
+ 	unsigned int		need_flush;/* Really unmapped some ptes? */
+ 	unsigned int		fullmm; /* non-zero means full mm flush */
+-	struct page *		pages[FREE_PTE_NR];
++#ifdef HAVE_ARCH_MMU_GATHER
++	struct arch_mmu_gather	arch;
++#endif
++	struct page		**pages;
++	struct page		*local[8];
  };
  
- #ifdef CONFIG_MMU
--#if defined(CONFIG_KSM) || defined(CONFIG_MIGRATION)
--static inline void anonvma_external_refcount_init(struct anon_vma *anon_vma)
--{
--	atomic_set(&anon_vma->external_refcount, 0);
--}
--
--static inline int anonvma_external_refcount(struct anon_vma *anon_vma)
--{
--	return atomic_read(&anon_vma->external_refcount);
--}
--
- static inline void get_anon_vma(struct anon_vma *anon_vma)
- {
--	atomic_inc(&anon_vma->external_refcount);
-+	atomic_inc(&anon_vma->refcount);
- }
+-/* Users of the generic TLB shootdown code must declare this storage space. */
+-DECLARE_PER_CPU(struct mmu_gather, mmu_gathers);
++static inline void __tlb_alloc_pages(struct mmu_gather *tlb)
++{
++	unsigned long addr = __get_free_pages(GFP_ATOMIC, 0);
++
++	if (addr) {
++		tlb->pages = (void *)addr;
++		tlb->max = PAGE_SIZE / sizeof(struct page *);
++	}
++}
  
- void put_anon_vma(struct anon_vma *);
--#else
--static inline void anonvma_external_refcount_init(struct anon_vma *anon_vma)
--{
--}
--
--static inline int anonvma_external_refcount(struct anon_vma *anon_vma)
--{
--	return 0;
--}
--
--static inline void get_anon_vma(struct anon_vma *anon_vma)
--{
--}
--
--static inline void put_anon_vma(struct anon_vma *anon_vma)
--{
--}
--#endif /* CONFIG_KSM */
- 
- static inline struct anon_vma *page_anon_vma(struct page *page)
- {
-Index: linux-2.6/mm/rmap.c
-===================================================================
---- linux-2.6.orig/mm/rmap.c
-+++ linux-2.6/mm/rmap.c
-@@ -268,7 +268,7 @@ static void anon_vma_unlink(struct anon_
- 	list_del(&anon_vma_chain->same_anon_vma);
- 
- 	/* We must garbage collect the anon_vma if it's empty */
--	empty = list_empty(&anon_vma->head) && !anonvma_external_refcount(anon_vma);
-+	empty = list_empty(&anon_vma->head) && !atomic_read(&anon_vma->refcount);
- 	anon_vma_unlock(anon_vma);
- 
- 	if (empty) {
-@@ -299,7 +299,7 @@ static void anon_vma_ctor(void *data)
- 	struct anon_vma *anon_vma = data;
- 
- 	spin_lock_init(&anon_vma->lock);
--	anonvma_external_refcount_init(anon_vma);
-+	atomic_set(&anon_vma->refcount, 0);
- 	INIT_LIST_HEAD(&anon_vma->head);
- }
- 
-@@ -1441,7 +1441,6 @@ int try_to_munlock(struct page *page)
- 		return try_to_unmap_file(page, TTU_MUNLOCK);
- }
- 
--#if defined(CONFIG_KSM) || defined(CONFIG_MIGRATION)
- /*
-  * Drop an anon_vma refcount, freeing the anon_vma and anon_vma->root
-  * if necessary.  Be careful to do all the tests under the lock.  Once
-@@ -1450,8 +1449,8 @@ int try_to_munlock(struct page *page)
+ /* tlb_gather_mmu
+  *	Return a pointer to an initialized struct mmu_gather.
   */
- void put_anon_vma(struct anon_vma *anon_vma)
+-static inline struct mmu_gather *
+-tlb_gather_mmu(struct mm_struct *mm, unsigned int full_mm_flush)
++static inline void
++tlb_gather_mmu(struct mmu_gather *tlb, struct mm_struct *mm, unsigned int full_mm_flush)
  {
--	BUG_ON(atomic_read(&anon_vma->external_refcount) <= 0);
--	if (atomic_dec_and_lock(&anon_vma->external_refcount, &anon_vma->root->lock)) {
-+	BUG_ON(atomic_read(&anon_vma->refcount) <= 0);
-+	if (atomic_dec_and_lock(&anon_vma->refcount, &anon_vma->root->lock)) {
- 		struct anon_vma *root = anon_vma->root;
- 		int empty = list_empty(&anon_vma->head);
- 		int last_root_user = 0;
-@@ -1462,8 +1461,8 @@ void put_anon_vma(struct anon_vma *anon_
- 		 * the refcount on the root and check if we need to free it.
- 		 */
- 		if (empty && anon_vma != root) {
--			BUG_ON(atomic_read(&root->external_refcount) <= 0);
--			last_root_user = atomic_dec_and_test(&root->external_refcount);
-+			BUG_ON(atomic_read(&root->refcount) <= 0);
-+			last_root_user = atomic_dec_and_test(&root->refcount);
- 			root_empty = list_empty(&root->head);
- 		}
- 		anon_vma_unlock(anon_vma);
-@@ -1475,7 +1474,6 @@ void put_anon_vma(struct anon_vma *anon_
- 		}
+-	struct mmu_gather *tlb = &get_cpu_var(mmu_gathers);
+-
+ 	tlb->mm = mm;
+ 
+-	/* Use fast mode if only one CPU is online */
+-	tlb->nr = num_online_cpus() > 1 ? 0U : ~0U;
++	tlb->max = ARRAY_SIZE(tlb->local);
++	tlb->pages = tlb->local;
++
++	if (num_online_cpus() > 1) {
++		tlb->nr = 0;
++		__tlb_alloc_pages(tlb);
++	} else /* Use fast mode if only one CPU is online */
++		tlb->nr = ~0U;
+ 
+ 	tlb->fullmm = full_mm_flush;
+ 
+-	return tlb;
++#ifdef HAVE_ARCH_MMU_GATHER
++	tlb->arch = ARCH_MMU_GATHER_INIT;
++#endif
+ }
+ 
+ static inline void
+@@ -75,6 +87,8 @@ tlb_flush_mmu(struct mmu_gather *tlb, un
+ 	if (!tlb_fast_mode(tlb)) {
+ 		free_pages_and_swap_cache(tlb->pages, tlb->nr);
+ 		tlb->nr = 0;
++		if (tlb->pages == tlb->local)
++			__tlb_alloc_pages(tlb);
  	}
  }
--#endif
  
- #ifdef CONFIG_MIGRATION
+@@ -90,7 +104,8 @@ tlb_finish_mmu(struct mmu_gather *tlb, u
+ 	/* keep the page table cache within bounds */
+ 	check_pgt_cache();
+ 
+-	put_cpu_var(mmu_gathers);
++	if (tlb->pages != tlb->local)
++		free_pages((unsigned long)tlb->pages, 0);
+ }
+ 
+ /* tlb_remove_page
+@@ -106,7 +121,7 @@ static inline void tlb_remove_page(struc
+ 		return;
+ 	}
+ 	tlb->pages[tlb->nr++] = page;
+-	if (tlb->nr >= FREE_PTE_NR)
++	if (tlb->nr >= tlb->max)
+ 		tlb_flush_mmu(tlb, 0, 0);
+ }
+ 
+Index: linux-2.6/include/linux/mm.h
+===================================================================
+--- linux-2.6.orig/include/linux/mm.h
++++ linux-2.6/include/linux/mm.h
+@@ -769,7 +769,7 @@ int zap_vma_ptes(struct vm_area_struct *
+ 		unsigned long size);
+ unsigned long zap_page_range(struct vm_area_struct *vma, unsigned long address,
+ 		unsigned long size, struct zap_details *);
+-unsigned long unmap_vmas(struct mmu_gather **tlb,
++unsigned long unmap_vmas(struct mmu_gather *tlb,
+ 		struct vm_area_struct *start_vma, unsigned long start_addr,
+ 		unsigned long end_addr, unsigned long *nr_accounted,
+ 		struct zap_details *);
+Index: linux-2.6/mm/memory.c
+===================================================================
+--- linux-2.6.orig/mm/memory.c
++++ linux-2.6/mm/memory.c
+@@ -1093,17 +1093,14 @@ static unsigned long unmap_page_range(st
+  * ensure that any thus-far unmapped pages are flushed before unmap_vmas()
+  * drops the lock and schedules.
+  */
+-unsigned long unmap_vmas(struct mmu_gather **tlbp,
++unsigned long unmap_vmas(struct mmu_gather *tlb,
+ 		struct vm_area_struct *vma, unsigned long start_addr,
+ 		unsigned long end_addr, unsigned long *nr_accounted,
+ 		struct zap_details *details)
+ {
+ 	long zap_work = ZAP_BLOCK_SIZE;
+-	unsigned long tlb_start = 0;	/* For tlb_finish_mmu */
+-	int tlb_start_valid = 0;
+ 	unsigned long start = start_addr;
+ 	spinlock_t *i_mmap_lock = details? details->i_mmap_lock: NULL;
+-	int fullmm = (*tlbp)->fullmm;
+ 	struct mm_struct *mm = vma->vm_mm;
+ 
+ 	mmu_notifier_invalidate_range_start(mm, start_addr, end_addr);
+@@ -1124,11 +1121,6 @@ unsigned long unmap_vmas(struct mmu_gath
+ 			untrack_pfn_vma(vma, 0, 0);
+ 
+ 		while (start != end) {
+-			if (!tlb_start_valid) {
+-				tlb_start = start;
+-				tlb_start_valid = 1;
+-			}
+-
+ 			if (unlikely(is_vm_hugetlb_page(vma))) {
+ 				/*
+ 				 * It is undesirable to test vma->vm_file as it
+@@ -1149,7 +1141,7 @@ unsigned long unmap_vmas(struct mmu_gath
+ 
+ 				start = end;
+ 			} else
+-				start = unmap_page_range(*tlbp, vma,
++				start = unmap_page_range(tlb, vma,
+ 						start, end, &zap_work, details);
+ 
+ 			if (zap_work > 0) {
+@@ -1157,19 +1149,13 @@ unsigned long unmap_vmas(struct mmu_gath
+ 				break;
+ 			}
+ 
+-			tlb_finish_mmu(*tlbp, tlb_start, start);
+-
+ 			if (need_resched() ||
+ 				(i_mmap_lock && spin_needbreak(i_mmap_lock))) {
+-				if (i_mmap_lock) {
+-					*tlbp = NULL;
++				if (i_mmap_lock)
+ 					goto out;
+-				}
+ 				cond_resched();
+ 			}
+ 
+-			*tlbp = tlb_gather_mmu(vma->vm_mm, fullmm);
+-			tlb_start_valid = 0;
+ 			zap_work = ZAP_BLOCK_SIZE;
+ 		}
+ 	}
+@@ -1189,16 +1175,15 @@ unsigned long zap_page_range(struct vm_a
+ 		unsigned long size, struct zap_details *details)
+ {
+ 	struct mm_struct *mm = vma->vm_mm;
+-	struct mmu_gather *tlb;
++	struct mmu_gather tlb;
+ 	unsigned long end = address + size;
+ 	unsigned long nr_accounted = 0;
+ 
+ 	lru_add_drain();
+-	tlb = tlb_gather_mmu(mm, 0);
++	tlb_gather_mmu(&tlb, mm, 0);
+ 	update_hiwater_rss(mm);
+ 	end = unmap_vmas(&tlb, vma, address, end, &nr_accounted, details);
+-	if (tlb)
+-		tlb_finish_mmu(tlb, address, end);
++	tlb_finish_mmu(&tlb, address, end);
+ 	return end;
+ }
+ 
+Index: linux-2.6/mm/mmap.c
+===================================================================
+--- linux-2.6.orig/mm/mmap.c
++++ linux-2.6/mm/mmap.c
+@@ -1896,17 +1896,17 @@ static void unmap_region(struct mm_struc
+ 		unsigned long start, unsigned long end)
+ {
+ 	struct vm_area_struct *next = prev? prev->vm_next: mm->mmap;
+-	struct mmu_gather *tlb;
++	struct mmu_gather tlb;
+ 	unsigned long nr_accounted = 0;
+ 
+ 	lru_add_drain();
+-	tlb = tlb_gather_mmu(mm, 0);
++	tlb_gather_mmu(&tlb, mm, 0);
+ 	update_hiwater_rss(mm);
+ 	unmap_vmas(&tlb, vma, start, end, &nr_accounted, NULL);
+ 	vm_unacct_memory(nr_accounted);
+-	free_pgtables(tlb, vma, prev? prev->vm_end: FIRST_USER_ADDRESS,
++	free_pgtables(&tlb, vma, prev? prev->vm_end: FIRST_USER_ADDRESS,
+ 				 next? next->vm_start: 0);
+-	tlb_finish_mmu(tlb, start, end);
++	tlb_finish_mmu(&tlb, start, end);
+ }
+ 
  /*
+@@ -2247,7 +2247,7 @@ EXPORT_SYMBOL(do_brk);
+ /* Release all mmaps. */
+ void exit_mmap(struct mm_struct *mm)
+ {
+-	struct mmu_gather *tlb;
++	struct mmu_gather tlb;
+ 	struct vm_area_struct *vma;
+ 	unsigned long nr_accounted = 0;
+ 	unsigned long end;
+@@ -2272,14 +2272,14 @@ void exit_mmap(struct mm_struct *mm)
+ 
+ 	lru_add_drain();
+ 	flush_cache_mm(mm);
+-	tlb = tlb_gather_mmu(mm, 1);
++	tlb_gather_mmu(&tlb, mm, 1);
+ 	/* update_hiwater_rss(mm) here? but nobody should be looking */
+ 	/* Use -1 here to ensure all VMAs in the mm are unmapped */
+ 	end = unmap_vmas(&tlb, vma, 0, -1, &nr_accounted, NULL);
+ 	vm_unacct_memory(nr_accounted);
+ 
+-	free_pgtables(tlb, vma, FIRST_USER_ADDRESS, 0);
+-	tlb_finish_mmu(tlb, 0, end);
++	free_pgtables(&tlb, vma, FIRST_USER_ADDRESS, 0);
++	tlb_finish_mmu(&tlb, 0, end);
+ 
+ 	/*
+ 	 * Walk the list again, actually closing and freeing it,
 
 
