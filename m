@@ -1,156 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755947Ab0JRNzI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Oct 2010 09:55:08 -0400
-Received: from lo.gmane.org ([80.91.229.12]:54873 "EHLO lo.gmane.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755921Ab0JRNzF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Oct 2010 09:55:05 -0400
-X-Injected-Via-Gmane: http://gmane.org/
+	id S1755971Ab0JRNzK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Oct 2010 09:55:10 -0400
+Received: from mail.bugwerft.de ([212.112.241.193]:50585 "EHLO
+	mail.bugwerft.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755803Ab0JRNzE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Oct 2010 09:55:04 -0400
+From: Daniel Mack <zonque@gmail.com>
 To: linux-kernel@vger.kernel.org
-From: Darius Augulis <augulis.darius@gmail.com>
-Subject: Re: [PATCH 2/9 v2] ARM: S3C64XX: add nand support for mach-real6410
-Date: Mon, 18 Oct 2010 16:50:45 +0300
-Message-ID: <4CBC50B5.5090006@gmail.com>
-References: <20100929192354.25307.40197.stgit@darius-desktop> <20100929193134.25307.65614.stgit@darius-desktop> <04a401cb6ec7$b8291b00$287b5100$%kim@samsung.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Complaints-To: usenet@dough.gmane.org
-X-Gmane-NNTP-Posting-Host: 85-255-63-153.ip.kis.lt
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.12) Gecko/20100915 Thunderbird/3.0.8
-In-Reply-To: <04a401cb6ec7$b8291b00$287b5100$%kim@samsung.com>
-Cc: linux-arm-kernel@lists.infradead.org
+Cc: s.neumann@raumfeld.com, linux-input@vger.kernel.org,
+        Daniel Mack <zonque@gmail.com>, Dmitry Torokhov <dtor@mail.ru>
+Subject: [PATCH 1/2] input: fix Ooops with EVIOCGABS/EVIOCSABS on devices without absinfo
+Date: Mon, 18 Oct 2010 15:45:23 +0200
+Message-Id: <1287409524-3032-1-git-send-email-zonque@gmail.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/18/2010 04:23 PM, Kukjin Kim wrote:
-> Darius Augulis wrote:
->>
->> Add nand device support and mtd partition table
->> for mach-real6410
->>
->> Signed-off-by: Darius Augulis<augulis.darius@gmail.com>
->> ---
->>
->> Changelog since v1:
->>   - Changed dependency on other patches
->>
->>   arch/arm/mach-s3c64xx/Kconfig         |    1 +
->>   arch/arm/mach-s3c64xx/mach-real6410.c |   40
->> +++++++++++++++++++++++++++++++++
->>   2 files changed, 41 insertions(+), 0 deletions(-)
->>
->> diff --git a/arch/arm/mach-s3c64xx/Kconfig b/arch/arm/mach-s3c64xx/Kconfig
->> index 3bbd418..e4aede1 100644
->> --- a/arch/arm/mach-s3c64xx/Kconfig
->> +++ b/arch/arm/mach-s3c64xx/Kconfig
->> @@ -106,6 +106,7 @@ config MACH_REAL6410
->>   	select S3C64XX_SETUP_SDHCI
->>   	select S3C_DEV_FB
->>   	select S3C64XX_SETUP_FB_24BPP
->> +	select S3C_DEV_NAND
->>   	help
->>   	  Machine support for the CoreWind REAL6410
->>
->> diff --git a/arch/arm/mach-s3c64xx/mach-real6410.c b/arch/arm/mach-
->> s3c64xx/mach-real6410.c
->> index bed75d2..9fd943d 100644
->> --- a/arch/arm/mach-s3c64xx/mach-real6410.c
->> +++ b/arch/arm/mach-s3c64xx/mach-real6410.c
->> @@ -19,6 +19,8 @@
->>   #include<linux/kernel.h>
->>   #include<linux/list.h>
->>   #include<linux/dm9000.h>
->> +#include<linux/mtd/mtd.h>
->> +#include<linux/mtd/partitions.h>
->>   #include<linux/platform_device.h>
->>   #include<linux/serial_core.h>
->>   #include<linux/types.h>
->> @@ -37,6 +39,7 @@
->>   #include<plat/cpu.h>
->>   #include<plat/devs.h>
->>   #include<plat/fb.h>
->> +#include<plat/nand.h>
->>   #include<plat/regs-serial.h>
->>
->>   #include<video/platform_lcd.h>
->> @@ -147,11 +150,47 @@ static struct s3c_fb_platdata real6410_lcd_pdata
->> __initdata = {
->>   	.vidcon1	= VIDCON1_INV_HSYNC | VIDCON1_INV_VSYNC,
->>   };
->>
->> +static struct mtd_partition real6410_nand_part[] = {
->> +	[0] = {
->> +		.name	= "uboot",
->> +		.size	= SZ_1M,
->> +		.offset	= 0,
->> +	},
->> +	[1] = {
->> +		.name	= "kernel",
->> +		.size	= SZ_2M,
->> +		.offset	= SZ_1M,
->> +	},
->> +	[2] = {
->> +		.name	= "rootfs",
->> +		.size	= MTDPART_SIZ_FULL,
->> +		.offset	= SZ_1M + SZ_2M,
->> +	},
->> +};
->> +
->> +static struct s3c2410_nand_set real6410_nand_sets[] = {
->> +	[0] = {
->> +		.name		= "nand",
->> +		.nr_chips	= 1,
->> +		.nr_partitions	= ARRAY_SIZE(real6410_nand_part),
->> +		.partitions	= real6410_nand_part,
->> +	},
->> +};
->> +
->> +static struct s3c2410_platform_nand real6410_nand_info = {
->> +	.tacls		= 25,
->> +	.twrph0		= 55,
->> +	.twrph1		= 40,
->> +	.nr_sets	= ARRAY_SIZE(real6410_nand_sets),
->> +	.sets		= real6410_nand_sets,
->> +};
->> +
->>   static struct platform_device *real6410_devices[] __initdata = {
->>   	&real6410_device_eth,
->>   	&s3c_device_hsmmc0,
->>   	&s3c_device_hsmmc1,
->>   	&s3c_device_fb,
->> +	&s3c_device_nand,
->>   };
->>
->>   static void __init real6410_map_io(void)
->> @@ -249,6 +288,7 @@ static void __init real6410_machine_init(void)
->>   		real6410_lcd_pdata.win[0]->win_mode.yres);
->>
->>   	s3c_fb_set_platdata(&real6410_lcd_pdata);
->> +	s3c_nand_set_platdata(&real6410_nand_info);
->>
->>   	/* configure nCS1 width to 16 bits */
->>
-> Where is 'END' of patch mark?
-> maybe broken your patch file...?
+This fixes a regression introduced by the dynamic allocation of absinfo
+for input devices. We need to bail out early for input devices which
+don't have absolute axis.
 
-Confused. What 'END' mark are you missing?
-All patches are sent by stg mail, all apply fine, no conflict or other 
-messages from stgit.
-Please explain what you mean.
+Oct 18 14:44:52 jup kernel: [  929.664303] Pid: 2989, comm: input Not tainted 2.6.36-rc8+ #14 MS-7260/MS-7260
+Oct 18 14:44:52 jup kernel: [  929.664318] EIP: 0060:[<c12bdc01>] EFLAGS: 00010246 CPU: 0
+Oct 18 14:44:52 jup kernel: [  929.664331] EIP is at evdev_ioctl+0x4f8/0x59f
+Oct 18 14:44:52 jup kernel: [  929.664341] EAX: 00000040 EBX: 00000000 ECX: 00000006 EDX: f45a1efc
+Oct 18 14:44:52 jup kernel: [  929.664355] ESI: 00000000 EDI: f45a1efc EBP: f45a1f24 ESP: f45a1eb8
+Oct 18 14:44:52 jup kernel: [  929.664369]  DS: 007b ES: 007b FS: 00d8 GS: 0033 SS: 0068
+Oct 18 14:44:52 jup kernel: [  929.664402]  f470da74 f6a30e78 f462c240 00000018 bfe4a260 00000000 f45b06fc 00000000
+Oct 18 14:44:52 jup kernel: [  929.664429] <0> 000000c4 b769d000 c3544620 f470da74 f45b06fc f45b06fc f45a1f38 c107dd1f
+Oct 18 14:44:52 jup kernel: [  929.664458] <0> f4710b74 000000c4 00000000 00000000 00000000 0000029d 00000a74 f4710b74
+Oct 18 14:44:52 jup kernel: [  929.664500]  [<c107dd1f>] ? handle_mm_fault+0x2be/0x59a
+Oct 18 14:44:52 jup kernel: [  929.664513]  [<c12bd709>] ? evdev_ioctl+0x0/0x59f
+Oct 18 14:44:52 jup kernel: [  929.664524]  [<c1099d30>] ? do_vfs_ioctl+0x494/0x4d9
+Oct 18 14:44:52 jup kernel: [  929.664538]  [<c10432a1>] ? up_read+0x16/0x29
+Oct 18 14:44:52 jup kernel: [  929.664550]  [<c101c818>] ? do_page_fault+0x2ff/0x32d
+Oct 18 14:44:52 jup kernel: [  929.664564]  [<c108d048>] ? do_sys_open+0xc5/0xcf
+Oct 18 14:44:52 jup kernel: [  929.664575]  [<c1099db6>] ? sys_ioctl+0x41/0x61
+Oct 18 14:44:52 jup kernel: [  929.664587]  [<c1002710>] ? sysenter_do_call+0x12/0x36
+Oct 18 14:44:52 jup kernel: [  929.684570] ---[ end trace 11b83e923bd8f2bb ]---
 
->
-> Others, looks ok to me.
->
-> Thanks.
->
-> Best regards,
-> Kgene.
-> --
-> Kukjin Kim<kgene.kim@samsung.com>, Senior Engineer,
-> SW Solution Development Team, Samsung Electronics Co., Ltd.
->
+Signed-off-by: Daniel Mack <zonque@gmail.com>
+Cc: Dmitry Torokhov <dtor@mail.ru>
+Cc: Sven Neumann <s.neumann@raumfeld.com>
+---
+ drivers/input/evdev.c |    6 ++++++
+ 1 files changed, 6 insertions(+), 0 deletions(-)
 
+diff --git a/drivers/input/evdev.c b/drivers/input/evdev.c
+index c908c5f..afb64cf 100644
+--- a/drivers/input/evdev.c
++++ b/drivers/input/evdev.c
+@@ -669,6 +669,9 @@ static long evdev_do_ioctl(struct file *file, unsigned int cmd,
+ 
+ 		if ((_IOC_NR(cmd) & ~ABS_MAX) == _IOC_NR(EVIOCGABS(0))) {
+ 
++			if (!dev->absinfo)
++				return -EINVAL;
++
+ 			t = _IOC_NR(cmd) & ABS_MAX;
+ 			abs = dev->absinfo[t];
+ 
+@@ -684,6 +687,9 @@ static long evdev_do_ioctl(struct file *file, unsigned int cmd,
+ 
+ 		if ((_IOC_NR(cmd) & ~ABS_MAX) == _IOC_NR(EVIOCSABS(0))) {
+ 
++			if (!dev->absinfo)
++				return -EINVAL;
++
+ 			t = _IOC_NR(cmd) & ABS_MAX;
+ 
+ 			if (copy_from_user(&abs, p, min_t(size_t,
+-- 
+1.7.1
 
