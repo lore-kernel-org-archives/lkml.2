@@ -1,47 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932809Ab0JRQUL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Oct 2010 12:20:11 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:53212 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755199Ab0JRQUJ (ORCPT
+	id S932954Ab0JRQVM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Oct 2010 12:21:12 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:42414 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932335Ab0JRQVK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Oct 2010 12:20:09 -0400
-Date: Mon, 18 Oct 2010 12:19:24 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: codalist@TELEMANN.coda.cs.cmu.edu,
-        ksummit-2010-discuss@lists.linux-foundation.org,
-        autofs@linux.kernel.org, linux-media@vger.kernel.org,
-        dri-devel@lists.freedesktop.org, Christoph Hellwig <hch@infradead.org>,
-        Mikulas Patocka <mikulas@artax.karlin.mff.cuni.cz>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Petr Vandrovec <vandrove@vc.cvut.cz>, Anders Larsen <al@alarsen.net>,
-        Jan Kara <jack@suse.cz>, Evgeniy Dushistov <dushistov@mail.ru>,
-        Ingo Molnar <mingo@elte.hu>, netdev@vger.kernel.org,
-        Samuel Ortiz <samuel@sortiz.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        Andrew Hendry <andrew.hendry@gmail.com>,
-        David Miller <davem@davemloft.net>, Jan Harkes <jaharkes@cs.cmu.edu>,
-        Bryan Schumaker <bjschuma@netapp.com>
-Subject: Re: [v2] Remaining BKL users, what to do
-Message-ID: <20101018161924.GA9571@infradead.org>
-References: <201009161632.59210.arnd@arndb.de>
- <201010181742.06678.arnd@arndb.de>
+	Mon, 18 Oct 2010 12:21:10 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:mime-version:content-type
+         :content-disposition:user-agent;
+        b=vFkCzYeNgnA3vFp4XoIob7i5WPJXohrWTfiSotNFf5FezNmRTsTN3mLTlhlyhDJ1fp
+         gWvoYSwvIGTbSmpok0Vp/2vfsbkIx7kmWX6rvUmekoUg7oVRe+B4fIAgKfg9nHiPo84q
+         hKtk4QEJBjJalAGfX7JbzcN8cl4nBNJPXrJuk=
+Date: Mon, 18 Oct 2010 09:20:59 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-input@vger.kernel.org, Daniel Mack <zonque@gmail.com>
+Subject: [git pull] Input updates for 2.6.36-rc8
+Message-ID: <20101018162058.GA16552@core.coreip.homeip.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <201010181742.06678.arnd@arndb.de>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Before we get into all these fringe drivers:
+[Resending with the proper version in subject.]
 
- - I've not seen any progrss on ->get_sb BKL removal for a while
- - locks.c is probably a higher priorit, too.
+Hi Linus,
 
+Please pull from:
+
+	git://git.kernel.org/pub/scm/linux/kernel/git/dtor/input.git for-linus
+or
+	master.kernel.org:/pub/scm/linux/kernel/git/dtor/input.git for-linus
+
+to receive 2 important bug fixes to the evdev input handler. I hope it
+is not too late to make 2.6.36...
+
+Changelog:
+---------
+
+Daniel Mack (2):
+      Input: evdev - fix Ooops in EVIOCGABS/EVIOCSABS
+      Input: evdev - fix EVIOCSABS regression
+
+
+Diffstat:
+--------
+
+ drivers/input/evdev.c |    8 +++++++-
+ 1 files changed, 7 insertions(+), 1 deletions(-)
+
+Thanks,
+Dmitry
