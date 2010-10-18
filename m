@@ -1,65 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933085Ab0JRSeU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Oct 2010 14:34:20 -0400
-Received: from relay2.sgi.com ([192.48.179.30]:53649 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1755239Ab0JRSeT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Oct 2010 14:34:19 -0400
-Date: Mon, 18 Oct 2010 13:34:17 -0500
-From: Robin Holt <holt@sgi.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Robin Holt <holt@sgi.com>, David Miller <davem@davemloft.net>, w@1wt.eu,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        kuznet@ms2.inr.ac.ru, pekkas@netcore.fi, jmorris@namei.org,
-        yoshfuji@linux-ipv6.org, kaber@trash.net
-Subject: Re: [Patch] Limit sysctl_tcp_mem and sysctl_udp_mem initializers
- to prevent integer overflows.
-Message-ID: <20101018183417.GH14064@sgi.com>
-References: <20101002112405.951704198@gulag1.americas.sgi.com>
- <20101002112419.248437367@gulag1.americas.sgi.com>
- <20101005.145032.25126909.davem@davemloft.net>
- <20101018174339.GC14068@sgi.com>
- <1287424348.2359.1.camel@edumazet-laptop>
+	id S933113Ab0JRSek (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Oct 2010 14:34:40 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:36760 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933099Ab0JRSei convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Oct 2010 14:34:38 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=cOGEvknTUSRX+epr1d/LjpzokyYArr39IIEngZQDKA84XsYsk7PNWwSXGHZCgOr/We
+         o29rI/DiBS5q0bvoXCcbFBs6l9AkYs8hGio9ME1moAkUpoXiATFmjLKb9qcn20r9YMrk
+         5vSKU0G7UuIj2DjN+f+Cl35ianKyYhv4KrHdU=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1287424348.2359.1.camel@edumazet-laptop>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <4CBC4F4E.5010305@pobox.com>
+References: <17ebecce124618ddf83ec6fe8e526f93@localhost>
+	<17d8d27a2356640a4359f1a7dcbb3b42@localhost>
+	<4CBC4F4E.5010305@pobox.com>
+Date: Mon, 18 Oct 2010 11:34:37 -0700
+Message-ID: <AANLkTinpry=XG-ZDgXJK-VB6QkBL2TO4-vrsV5Tc1eEs@mail.gmail.com>
+Subject: Re: [PATCH resend 5/9] MIPS: sync after cacheflush
+From: Kevin Cernekee <cernekee@gmail.com>
+To: Shinya Kuribayashi <skuribay@pobox.com>
+Cc: Ralf Baechle <ralf@linux-mips.org>, linux-mips@linux-mips.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 18, 2010 at 07:52:28PM +0200, Eric Dumazet wrote:
-> Le lundi 18 octobre 2010 à 12:43 -0500, Robin Holt a écrit :
-> > On Tue, Oct 05, 2010 at 02:50:32PM -0700, David Miller wrote:
-> > > From: Robin Holt <holt@sgi.com>
-> > > Date: Sat, 02 Oct 2010 06:24:06 -0500
-> > > 
-> > > > Subject: [Patch] Limit sysctl_tcp_mem and sysctl_udp_mem initializers to prevent integer overflows.
-> > > > 
-> > > > On a 16TB x86_64 machine, sysctl_tcp_mem[2], sysctl_udp_mem[2], and
-> > > > sysctl_sctp_mem[2] can integer overflow.  Set limit such that they are
-> > > > maximized without overflowing.
-> > > > 
-> > > > Signed-off-by: Robin Holt <holt@sgi.com>
-> > > 
-> > > Robin please resubmit this with the SCTP bits included.
-> > 
-> > David,
-> > 
-> > I did not mean to blow you off.  I was not going to resubmit because
-> > Eric's patch is the preferred direction.  I had been given an indication
-> > that my patch was preferred, but that indicator changed.
-> > 
-> 
-> Maybe there is some misunderstanding.
-> 
-> My patch was for net-next kernels (not before 2.6.37), while yours was
-> applicable to previous kernels.
+On Mon, Oct 18, 2010 at 6:44 AM, Shinya Kuribayashi <skuribay@pobox.com> wrote:
+> I suspect that SYNC insn alone is still not enough, insn't it? Â In
+> such systems with that 'deep' write buffer and data incoherency is
+> visibly observed, there sill may be data write transactions floating
+> in the internal bus system.
+>
+> To make sure that all data (data inside processor's write buffer and
+> data floating in the internal bus system), we need the following
+> three steps:
+>
+> 1. Flush data cache
+> 2. Uncached, dummy load operation from _DRAM_ (not somewhere else)
+> 3. then SYNC instruction
 
-Ah.  I will resubmit then.
+Some systems do require additional steps along those lines, e.g.
 
-Sorry for the confusion,
-Robin
+# ifdef CONFIG_SGI_IP28
+#  define fast_iob()				\
+	__asm__ __volatile__(			\
+		".set	push\n\t"		\
+		".set	noreorder\n\t"		\
+		"lw	$0,%0\n\t"		\
+		"sync\n\t"			\
+		"lw	$0,%0\n\t"		\
+		".set	pop"			\
+		: /* no output */		\
+		: "m" (*(int *)CKSEG1ADDR(0x1fa00004)) \
+		: "memory")
+
+Maybe it would be better to use iob() instead of __sync() directly, so
+that it is easy to add extra steps for the CPUs that need them.  DEC
+and Loongson have custom __wbflush() implementations, and something
+similar could be added for your processor to implement the uncached
+dummy load.
+
+What do you think?
