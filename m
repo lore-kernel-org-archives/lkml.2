@@ -1,42 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751750Ab0JRFCu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Oct 2010 01:02:50 -0400
-Received: from hera.kernel.org ([140.211.167.34]:49672 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750942Ab0JRFCt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Oct 2010 01:02:49 -0400
-Message-ID: <4CBBD4F6.2080506@kernel.org>
-Date: Mon, 18 Oct 2010 07:02:46 +0200
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.9) Gecko/20100915 Lightning/1.0b2 Thunderbird/3.1.4
+	id S1751359Ab0JRFDh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Oct 2010 01:03:37 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:40192 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750718Ab0JRFDf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Oct 2010 01:03:35 -0400
+Date: Mon, 18 Oct 2010 06:03:49 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Liam Girdwood <lrg@slimlogic.co.uk>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Peter Hsiang <Peter.Hsiang@maxim-ic.com>
+Subject: Re: linux-next: build failure after merge of the sound-asoc tree
+Message-ID: <20101018050348.GA23975@opensource.wolfsonmicro.com>
+References: <20101018142934.65f5d0fa.sfr@canb.auug.org.au>
 MIME-Version: 1.0
-To: Jesse Barnes <jbarnes@virtuousgeek.org>
-CC: linux-pci@vger.kernel.org, lkml <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2.6.36-rc7 2/2] shpchp: update workqueue usage
-References: <4CB86966.5020606@kernel.org>	<4CB8698A.8030202@kernel.org> <20101017200347.5ca09aed@jbarnes-desktop>
-In-Reply-To: <20101017200347.5ca09aed@jbarnes-desktop>
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 18 Oct 2010 05:02:48 +0000 (UTC)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101018142934.65f5d0fa.sfr@canb.auug.org.au>
+X-Cookie: Q:	How do you keep a moron in suspense?
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Mon, Oct 18, 2010 at 02:29:34PM +1100, Stephen Rothwell wrote:
 
-On 10/18/2010 05:03 AM, Jesse Barnes wrote:
-> ...and dropped again.  Hadn't realized they depend on stuff from your
-> workqueue tree.  Please just include them there assuming Kenji-san
-> doesn't nack them.
-> 
-> Acked-by: Jesse Barnes <jbarnes@virtuousgeek.org>
+> Please, please build test what you are submitting.
 
-Ah, sorry about that.  I for some reason thought alloc_ordered_queue()
-was already mainline.  I'll route this through the wq tree.
+> I have used the sound-asoc tree from next-20101015 for today.
 
-Thank you.
-
--- 
-tejun
+Pushed a reversion of the MAX98088 driver so this will be fixed
+tomorrow.
