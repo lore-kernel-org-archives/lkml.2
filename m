@@ -1,67 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933581Ab0JRX7S (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Oct 2010 19:59:18 -0400
-Received: from mga09.intel.com ([134.134.136.24]:36032 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933468Ab0JRX7Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Oct 2010 19:59:16 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.57,347,1283756400"; 
-   d="scan'208";a="668607342"
-Subject: Re: [UnifiedV4 00/16] The Unified slab allocator (V4)
-From: "Alex,Shi" <alex.shi@intel.com>
-To: Christoph Lameter <cl@linux.com>
-Cc: "Wu, Fengguang" <fengguang.wu@intel.com>,
-        Pekka Enberg <penberg@kernel.org>,
-        Pekka Enberg <penberg@cs.helsinki.fi>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        David Rientjes <rientjes@google.com>, Mel Gorman <mel@csn.ul.ie>,
-        "npiggin@kernel.dk" <npiggin@kernel.dk>,
-        "yanmin_zhang@linux.intel.com" <yanmin_zhang@linux.intel.com>,
-        "Chen, Tim C" <tim.c.chen@intel.com>,
-        "Li, Shaohua" <shaohua.li@intel.com>
-In-Reply-To: <alpine.DEB.2.00.1010181249540.2092@router.home>
-References: <20101005185725.088808842@linux.com>
-	 <AANLkTinPU4T59PvDH1wX2Rcy7beL=TvmHOZh_wWuBU-T@mail.gmail.com>
-	 <20101006123753.GA17674@localhost> <1286936472.31597.50.camel@debian>
-	 <alpine.DEB.2.00.1010181249540.2092@router.home>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 19 Oct 2010 08:01:44 +0800
-Message-ID: <1287446504.24927.4.camel@debian>
+	id S933615Ab0JRX7h (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Oct 2010 19:59:37 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:33207 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S932867Ab0JRX7g (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Oct 2010 19:59:36 -0400
+Date: Tue, 19 Oct 2010 00:58:19 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: David Miller <davem@davemloft.net>
+Cc: paul.gortmaker@windriver.com, luca@llucax.com.ar, jon.maloy@ericsson.com,
+        tipc-discussion@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org
+Subject: Re: Linux 2.6.35/TIPC 2.0 ABI breaking changes
+Message-ID: <20101019005819.24c8d373@lxorguk.ukuu.org.uk>
+In-Reply-To: <20101018.151708.193712688.davem@davemloft.net>
+References: <20101018150422.GV8781@llucax.com.ar>
+	<20101018184628.GX8781@llucax.com.ar>
+	<AANLkTimKbOreV4Fuyw3TbCrk9aa5yBZQSuRbo3Vdx=Q1@mail.gmail.com>
+	<20101018.151708.193712688.davem@davemloft.net>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-10-19 at 02:00 +0800, Christoph Lameter wrote:
-> On Wed, 13 Oct 2010, Alex,Shi wrote:
-> 
-> > I got the code from
-> > git://git.kernel.org/pub/scm/linux/kernel/git/christoph/slab.git unified
-> > on branch "origin/unified" and do a patch base on 36-rc7 kernel. Then I
-> > tested the patch on our 2P/4P core2 machines and 2P NHM, 2P WSM
-> > machines. Most of benchmark have no clear improvement or regression. The
-> > testing benchmarks is listed here.
-> > http://kernel-perf.sourceforge.net/about_tests.php
-> 
-> Ah. Thanks. The tests needs to show a clear benefit for this to be a
-> viable solution. They did earlier without all the NUMA queuing on SMP.
-> 
-> > BTW, I save several time kernel panic in fio testing:
-> > ===================
-> > > Pid: 776, comm: kswapd0 Not tainted 2.6.36-rc7-unified #1 X8DTN/X8DTN
-> > > > RIP: 0010:[<ffffffff810cc21c>]  [<ffffffff810cc21c>] slab_alloc
-> > > > +0x562/0x6f2
-> 
-> Cannot see the error message? I guess this is the result of a BUG_ON()?
-> I'll try to run that fio test first.
-> 
-Can not see error messages since the machine hang when any ops appear.
-And the panic ops just pop up randomly, don't know how to reproduce it
-now. 
+On Mon, 18 Oct 2010 15:17:08 -0700 (PDT)
+David Miller <davem@davemloft.net> wrote:
 
+> From: Paul Gortmaker <paul.gortmaker@windriver.com>
+> Date: Mon, 18 Oct 2010 16:42:33 -0400
+> 
+> > If you have access to the user space code in question, you can just
+> > switch behaviour semantics based on the results of a uname call, knowing
+> > that this change was included in versions since approx last Feb.  There
+> > is also /proc/version which can be parsed manually if you prefer.
+> 
+> Requiring userspace to check kernel versioning information in order
+> to user an exported userspace API correctly is _ALWAYS_ _WRONG_.
+> 
+> You cannot and must not make backwards incompatible changes to
+> userspace interfaces.
+> 
+> Really, you can't.
 
+In which case given that most distros are shipping older stuff and care
+about ABI stability presumably the bug should get fixed for 2.6.36 ?
