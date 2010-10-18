@@ -1,74 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756110Ab0JROEx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Oct 2010 10:04:53 -0400
-Received: from mgw2.diku.dk ([130.225.96.92]:33893 "EHLO mgw2.diku.dk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755976Ab0JROEu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Oct 2010 10:04:50 -0400
-From: Julia Lawall <julia@diku.dk>
-To: Paul Gortmaker <p_gortmaker@yahoo.com>
-Cc: kernel-janitors@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 2/2] drivers/net/ax88796.c: Return error code in failure
-Date: Mon, 18 Oct 2010 16:11:14 +0200
-Message-Id: <1287411074-19825-2-git-send-email-julia@diku.dk>
-X-Mailer: git-send-email 1.7.1
+	id S1756082Ab0JROGZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Oct 2010 10:06:25 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:54747 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755086Ab0JROGY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Oct 2010 10:06:24 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=xyjkK5zUdyymbHaj6dhsFizhglVMfOdwpy9jkn7ITHrA/E0HxcnikPwuQuHJV6wZaC
+         PFn+1VSaSJ7OuBebThnoarwuy+NVKqj/JfU7Bgj6ceBETg2jzmcKjv4tdF2eeN69Ftyv
+         4eN2k8sr/TCjV4zJFDuRf/7yDhLSSy/BoHi6Y=
+Subject: Re: [PATCH 0/6] Results of my work on memorystick subsystem
+From: Maxim Levitsky <maximlevitsky@gmail.com>
+To: Alex Dubov <oakad@yahoo.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <451805.21484.qm@web37607.mail.mud.yahoo.com>
+References: <451805.21484.qm@web37607.mail.mud.yahoo.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 18 Oct 2010 16:06:19 +0200
+Message-ID: <1287410779.20229.9.camel@maxim-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In this code, 0 is returned on failure, even though other
-failures return -ENOMEM or other similar values.
+On Mon, 2010-10-18 at 00:05 -0700, Alex Dubov wrote:
+> --- On Sun, 17/10/10, Maxim Levitsky <maximlevitsky@gmail.com> wrote:
+> 
+> > > 
+> > > Here is a result of lot of work I did improving the
+> > memorystick
+> > > subsystem and its drivers.
+> > Comments?
+> > Flames?
+> > Suggestions?
+> > 
+> 
+> My opinion is, that in the current form your patches are completely
+> unworkable.
+> 
+> I suggest a following approach, consisting of 3 clearly separated steps:
+> 
+> Step 1 - a set of functional patches to jmicron driver.
+> Step 2 - a set of functional patches to mspro driver.
+> Step 3 - common code elimination (the whole thing is not that large, it
+> can tolerate some code duplication).
+> 
+> When we done with this, we can discuss whatever cosmetic changes you want
+> to do (moving stuff around and , possibly, renaming, which I don't see as
+> necessary at all).
+Alex,
+In jmicron driver I did move functions around and renamed them.
+I am not against doing that in separate patch.
 
-A simplified version of the semantic match that finds this problem is as
-follows: (http://coccinelle.lip6.fr/)
+But for mspro driver, it would be really hard for me to split it.
+I have rewritten a lot of code there.
+Can't we just review the end result instead of the patch?
 
-// <smpl>
-@a@
-identifier alloc;
-identifier ret;
-constant C;
-expression x;
-@@
+To split the patches, I pretty much need to rewrite the whole thing once
+gain.
+I don't want to do that.
 
-x = alloc(...);
-if (x == NULL) { <+... \(ret = -C; \| return -C; \) ...+> }
-
-@@
-identifier f, a.alloc;
-expression ret;
-expression x,e1,e2,e3;
-@@
-
-ret = 0
-... when != ret = e1
-*x = alloc(...)
-... when != ret = e2
-if (x == NULL) { ... when != ret = e3
-  return ret;
-}
-// </smpl>
-
-Signed-off-by: Julia Lawall <julia@diku.dk>
-
----
-Another call to platform_get_resource in the same function uses -ENXIO, so
-I have used the same value here.
-
- drivers/net/ax88796.c |    1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/drivers/net/ax88796.c b/drivers/net/ax88796.c
-index 20e946b..b6da4cf 100644
---- a/drivers/net/ax88796.c
-+++ b/drivers/net/ax88796.c
-@@ -864,6 +864,7 @@ static int ax_probe(struct platform_device *pdev)
- 	res = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
- 	if (res == NULL) {
- 		dev_err(&pdev->dev, "no IRQ specified\n");
-+		ret = -ENXIO;
- 		goto exit_mem;
- 	}
- 
+Best regards,
+	Maxim Levitsky
 
