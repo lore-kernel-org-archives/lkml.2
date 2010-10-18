@@ -1,77 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932770Ab0JRV7d (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Oct 2010 17:59:33 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:38501 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757482Ab0JRV7c (ORCPT
+	id S1757800Ab0JRWAr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Oct 2010 18:00:47 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:38878 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756125Ab0JRWAq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Oct 2010 17:59:32 -0400
-Date: Mon, 18 Oct 2010 14:58:59 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Wu Fengguang <fengguang.wu@intel.com>
-Cc: Neil Brown <neilb@suse.de>, Rik van Riel <riel@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "Li, Shaohua" <shaohua.li@intel.com>
-Subject: Re: Deadlock possibly caused by too_many_isolated.
-Message-Id: <20101018145859.eee1ae33.akpm@linux-foundation.org>
-In-Reply-To: <20101018161504.GB29500@localhost>
-References: <20100915091118.3dbdc961@notabene>
-	<4C90139A.1080809@redhat.com>
-	<20100915122334.3fa7b35f@notabene>
-	<20100915082843.GA17252@localhost>
-	<20100915184434.18e2d933@notabene>
-	<20101018151459.2b443221@notabene>
-	<20101018161504.GB29500@localhost>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 18 Oct 2010 18:00:46 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
+         :references:user-agent:mime-version:content-type;
+        b=kYBjPS2tFp3oKxcZX+OGXXZhpM/f9rzRswkvAM+Cm7NMAI4+aAGD9HtKUO98WR84cd
+         wX9AU/bWXl5V++0/+uQg==
+Date: Mon, 18 Oct 2010 15:00:36 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: "H. Peter Anvin" <hpa@zytor.com>
+cc: Thomas Gleixner <tglx@linutronix.de>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>
+Subject: Re: [PATCH 1/2] x86: Cleanup TIF value gaps in shift range
+In-Reply-To: <4CBCBF9D.1060409@zytor.com>
+Message-ID: <alpine.DEB.2.00.1010181451030.18444@chino.kir.corp.google.com>
+References: <1287434158-24362-1-git-send-regression-fweisbec@gmail.com> <alpine.DEB.2.00.1010181340080.10965@chino.kir.corp.google.com> <alpine.LFD.2.00.1010182320440.6815@localhost6.localdomain6> <4CBCBBFC.1090500@zytor.com>
+ <alpine.DEB.2.00.1010181431440.15782@chino.kir.corp.google.com> <4CBCBF9D.1060409@zytor.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 19 Oct 2010 00:15:04 +0800
-Wu Fengguang <fengguang.wu@intel.com> wrote:
+On Mon, 18 Oct 2010, H. Peter Anvin wrote:
 
-> Neil find that if too_many_isolated() returns true while performing
-> direct reclaim we can end up waiting for other threads to complete their
-> direct reclaim.  If those threads are allowed to enter the FS or IO to
-> free memory, but this thread is not, then it is possible that those
-> threads will be waiting on this thread and so we get a circular
-> deadlock.
+> > It's not insane if there is no other way to ascertain that information.  
+> > If it's available through sysfs or debugfs (and, even better, documented 
+> > as part of the API in Documentation/ABI), then I don't think anyone would 
+> > object to changing a log message.  But I don't think all log messages 
+> > should be fair game under some general principle if they are being changed 
+> > (instead of just extending it) without a compelling reason, such as 
+> > technically being incorrect in its present form.
 > 
-> some task enters direct reclaim with GFP_KERNEL
->   => too_many_isolated() false
->     => vmscan and run into dirty pages
->       => pageout()
->         => take some FS lock
-> 	  => fs/block code does GFP_NOIO allocation
-> 	    => enter direct reclaim again
-> 	      => too_many_isolated() true
-> 		=> waiting for others to progress, however the other
-> 		   tasks may be circular waiting for the FS lock..
+> YES IT IS.  In fact, it is completely and totally bananas bonkers.
 > 
-> The fix is to let !__GFP_IO and !__GFP_FS direct reclaims enjoy higher
-> priority than normal ones, by honouring them higher throttle threshold.
+> By not pushing for a proper maintainable ABI, you will have an
+> indefinite forward compatibility problem, and when predictably it
+> breaks, you'll complain.  This is, however, backwards -- the right thing
+> would have been to say "I need this, this isn't available, I should add
+> a maintainable API and push it upstream", and perhaps add log parsing as
+> a backwards-compatibility solution.
 > 
-> Now !GFP_IOFS reclaims won't be waiting for GFP_IOFS reclaims to
-> progress. They will be blocked only when there are too many concurrent
-> !GFP_IOFS reclaims, however that's very unlikely because the IO-less
-> direct reclaims is able to progress much more faster, and they won't
-> deadlock each other. The threshold is raised high enough for them, so
-> that there can be sufficient parallel progress of !GFP_IOFS reclaims.
 
-I'm not sure that this is really a full fix.  Torsten's analysis does
-appear to point at the real bug: raid1 has code paths which allocate
-more than a single element from a mempool without starting IO against
-previous elements.
+The problem is deciding what should be an ABI and what shouldn't an ABI 
+when it isn't clear.  It would be great if everything that is logged or 
+shown to userspace would be part of an ABI and would be available no 
+matter how much information is emitted to the log.  That's not scalable, 
+so we have to decide what userspace may depend on and design ABIs that 
+provide that information in an extendable way that won't break or become 
+obsoleted in the foreseeable future.
 
-Giving these allocations the ability to dip further into reserves will
-make occurrence of the bug less likely, but if enough threads all do
-this at the same time, that reserve will be exhausted and we're back to
-square one?
+Since we can't do that for everything and we have no idea what users will 
+find to parse from the dmesg, I'm advocating that if a change is proposed, 
+like was in this case with ti->flags, and someone has a usecase where the 
+information isn't available in any other way, that they speak up and come 
+up with a maintainable solution so that we've identified the parties 
+involved and can change that log message if necessary.  I only think that 
+should be done, though, when there is a compelling reason for the change.
 
+I think that was done in this case by suggesting an alternative (printing, 
+at minimum, "M" when a thread has TIF_MEMDIE set instead of the raw flag 
+bits), but I don't think the change itself was compelling enough that it 
+has to be done.  That doesn't mean doing the change I suggested wasn't 
+still appropriate, but at least it was known as a prerequisite before 
+something like this should be merged.
