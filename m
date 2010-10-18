@@ -1,142 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755189Ab0JRLfa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Oct 2010 07:35:30 -0400
-Received: from canuck.infradead.org ([134.117.69.58]:60219 "EHLO
-	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754694Ab0JRLf3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Oct 2010 07:35:29 -0400
-Message-Id: <20101018112951.341395896@chello.nl>
-User-Agent: quilt/0.47-1
-Date: Mon, 18 Oct 2010 13:24:53 +0200
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Andrea Arcangeli <aarcange@redhat.com>, Avi Kivity <avi@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Rik van Riel <riel@redhat.com>,
-        Ingo Molnar <mingo@elte.hu>, akpm@linux-foundation.org,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        David Miller <davem@davemloft.net>,
-        Hugh Dickins <hugh.dickins@tiscali.co.uk>, Mel Gorman <mel@csn.ul.ie>,
-        Nick Piggin <npiggin@kernel.dk>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Yanmin Zhang <yanmin_zhang@linux.intel.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>
-Subject: [PATCH 20/20] mm: Optimize page_lock_anon_vma() fast-path
-References: <20101018112433.556591568@chello.nl>
-Content-Disposition: inline; filename=mm-opt-page_lock_anon_vma.patch
+	id S1755203Ab0JRLkr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Oct 2010 07:40:47 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:3290 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755143Ab0JRLkq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Oct 2010 07:40:46 -0400
+Date: Mon, 18 Oct 2010 13:40:42 +0200 (CEST)
+From: Lukas Czerner <lczerner@redhat.com>
+X-X-Sender: lukas@dhcp-lab-213.englab.brq.redhat.com
+To: Lukas Czerner <lczerner@redhat.com>
+cc: Ric Wheeler <rwheeler@redhat.com>, Jeff Moyer <jmoyer@redhat.com>,
+        Eric Sandeen <esandeen@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: Discard benchmarking tool for SSD's and thinly provisioned
+ devices
+In-Reply-To: <alpine.LFD.2.00.1010181247330.6517@dhcp-lab-213.englab.brq.redhat.com>
+Message-ID: <alpine.LFD.2.00.1010181336130.6517@dhcp-lab-213.englab.brq.redhat.com>
+References: <alpine.LFD.2.00.1010181247330.6517@dhcp-lab-213.englab.brq.redhat.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Optimize the page_lock_anon_vma() fast path to be one LOCKed op,
-instead of two.
+On Mon, 18 Oct 2010, Lukas Czerner wrote:
 
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
----
- mm/rmap.c |   71 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++----
- 1 file changed, 67 insertions(+), 4 deletions(-)
+> Hi all,
+> 
+> I would like to present you a tool for benchmarking discard performance
+> on SSD's and thinly provisioned devices (or virtually any device
+> supporting TRIM command).
+> 
+> You can download the tool here:
+> 
+> http://sourceforge.net/projects/test-discard/
+> 
+> there is also git repository available.
+> 
+> The tool is called "test-discard" (yes, very imaginative I know).
+> 
+> 
+> DESCRIPTION
+> -----------
+>   This is a simple tool for benchmarking device discard (TRIM)
+> performance. According to benchmark parameters the tool will
+> repetitively call BLKDISCARD ioctl on the specified device with
+> specified parameters collecting performance statistics.
+> 
+>   You can specify several parameter for the test. First of all you can
+> specify the overall amount of Bytes to discard, the bigger the value
+> is, the bigger discard ranges you can test, the more precise result
+> you will obtain, and the longer will the test take. Then you can
+> specify device LBA to start with discard test and record size. There
+> are three modes of the test: sequential test, random I/O test and test
+> where we are discarding already discarded blocks (discard2).
+> 
+>   There is also support for automated testing of range of record sizes.
+> You just need to specify starting, ending and step record size and the
+> tool will automatically survey the whole range. In addition you can get
+> more script-friendly output for using this tool in scripts.
+> 
+>   You can also generate nice graphs with gnuplot (script included), but
+> you will probably need to alter it to match your needs.
+> 
+> 
+> FUNCTION PRINCIPLE
+> ------------------
+>   Invoke ioctl with BLKDISCARD flag and defined range repetitively until
+> the specified amount of data is discarded. Running time of each ioctl
+> invocation is measured and stored (also min and max) as well as number
+> of invocations and range size.From collected data we can compute
+> average ioctl running time, overall ioctl running time (sum) and
+> throughput.
+> 
+>   In random IO mode discard range is not determined sequentially but
+> picked randomly anywhere on the disk, but it is of course aligned to
+> the range_size. Already discarded blocks are stored in the list. Before
+> each discard operation random block is generated and added to the list,
+> possibly altered if the block was already discarded. There is one
+> limitation though, if the record size is to low and disk size is too
+> high, only a part of disk will be used. To be specific :
+> 
+> 	max_tested_disk_size = INT_MAX * record_size;
+> 
+> 
+> Please, see README file included in sources for more information.
+> 
+> 
+> WARNING
+> -------
+>  * !!!! It WILL DESTROY all your data on the device !!!!
+>  * I am using the tool quite often, thus it was properly tested and
+>    should be stable, though I do NOT PROVIDE ANY WARRANTY.
+> 
+> 
+> Thanks!
+> 
+> -Lukas
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
 
-Index: linux-2.6/mm/rmap.c
-===================================================================
---- linux-2.6.orig/mm/rmap.c
-+++ linux-2.6/mm/rmap.c
-@@ -357,20 +357,75 @@ out:
- 	return anon_vma;
- }
- 
-+/*
-+ * Similar to page_get_anon_vma() except it locks the anon_vma.
-+ *
-+ * Its a little more complex as it tries to keep the fast path to a single
-+ * atomic op -- the trylock. If we fail the trylock, we fall back to getting a
-+ * reference like with page_get_anon_vma() and then block on the mutex.
-+ */
- struct anon_vma *page_lock_anon_vma(struct page *page)
- {
--	struct anon_vma *anon_vma = page_get_anon_vma(page);
-+	struct anon_vma *anon_vma = NULL;
-+	unsigned long anon_mapping;
-+
-+	rcu_read_lock();
-+	anon_mapping = (unsigned long) ACCESS_ONCE(page->mapping);
-+	if ((anon_mapping & PAGE_MAPPING_FLAGS) != PAGE_MAPPING_ANON)
-+		goto out;
-+	if (!page_mapped(page))
-+		goto out;
-+
-+	anon_vma = (struct anon_vma *) (anon_mapping - PAGE_MAPPING_ANON);
-+	if (mutex_trylock(&anon_vma->root->lock)) {
-+		/*
-+		 * If we observe a !0 refcount, then holding the lock ensures
-+		 * the anon_vma will not go away, see __put_anon_vma().
-+		 */
-+		if (!atomic_read(&anon_vma->refcount)) {
-+			anon_vma_unlock(anon_vma);
-+			anon_vma = NULL;
-+		}
-+		goto out;
-+	}
- 
--	if (anon_vma)
--		anon_vma_lock(anon_vma);
-+	/* trylock failed, we got to sleep */
-+	if (!atomic_inc_not_zero(&anon_vma->refcount)) {
-+		anon_vma = NULL;
-+		goto out;
-+	}
-+
-+	if (!page_mapped(page)) {
-+		put_anon_vma(anon_vma);
-+		anon_vma = NULL;
-+		goto out;
-+	}
-+
-+	/* we pinned the anon_vma, its safe to sleep */
-+	rcu_read_unlock();
-+	anon_vma_lock(anon_vma);
-+
-+	if (atomic_dec_and_test(&anon_vma->refcount)) {
-+		/*
-+		 * Oops, we held the last refcount, release the lock
-+		 * and bail -- can't simply use put_anon_vma() because
-+		 * we'll deadlock on the anon_vma_lock() recursion.
-+		 */
-+		anon_vma_unlock(anon_vma);
-+		__put_anon_vma(anon_vma);
-+		anon_vma = NULL;
-+	}
- 
- 	return anon_vma;
-+
-+out:
-+	rcu_read_unlock();
-+	return anon_vma;
- }
- 
- void page_unlock_anon_vma(struct anon_vma *anon_vma)
- {
- 	anon_vma_unlock(anon_vma);
--	put_anon_vma(anon_vma);
- }
- 
- /*
-@@ -1462,6 +1517,14 @@ int try_to_munlock(struct page *page)
- 
- void __put_anon_vma(struct anon_vma *anon_vma)
- {
-+	/*
-+	 * Synchronize against page_lock_anon_vma() such that
-+	 * we can safely hold the lock without the anon_vma getting
-+	 * freed.
-+	 */
-+	anon_vma_lock(anon_vma);
-+	anon_vma_unlock(anon_vma);
-+
- 	if (anon_vma->root != anon_vma)
- 		put_anon_vma(anon_vma->root);
- 	anon_vma_free(anon_vma);
+Also note that there might be some devices with buggy firmware which may
+be damaged beyond repair by the TRIM command, especially with TRIM
+performed in random IO pattern (from first-hand experience).
 
-
+-Lukas
