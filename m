@@ -1,78 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755043Ab0JRKzh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Oct 2010 06:55:37 -0400
-Received: from cantor.suse.de ([195.135.220.2]:58078 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755025Ab0JRKzf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Oct 2010 06:55:35 -0400
-Date: Mon, 18 Oct 2010 12:54:38 +0200
-From: Jan Kara <jack@suse.cz>
-To: Namhyung Kim <namhyung@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
-        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] jbd: Convert atomic_inc() to get_bh()
-Message-ID: <20101018105438.GI3826@quack.suse.cz>
-References: <1287216662-4267-1-git-send-email-namhyung@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1287216662-4267-1-git-send-email-namhyung@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1755024Ab0JRK41 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Oct 2010 06:56:27 -0400
+Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:24826 "EHLO
+	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754394Ab0JRK40 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Oct 2010 06:56:26 -0400
+Message-ID: <000b01cb6eb3$1afcfd60$66f8800a@maildom.okisemi.com>
+From: "Masayuki Ohtake" <masa-korg@dsn.okisemi.com>
+To: "Wolfgang Grandegger" <wg@grandegger.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        "Wolfram Sang" <w.sang@pengutronix.de>,
+        "Christian Pellegrin" <chripell@fsfe.org>,
+        "Barry Song" <21cnbao@gmail.com>,
+        "Samuel Ortiz" <sameo@linux.intel.com>,
+        <socketcan-core@lists.berlios.de>,
+        "ML netdev" <netdev@vger.kernel.org>,
+        "ML linux-kernel" <linux-kernel@vger.kernel.org>
+Cc: <andrew.chih.howe.khor@intel.com>, "Wang, Qi" <qi.wang@intel.com>,
+        "Foster, Margie" <margie.foster@intel.com>,
+        "Wang, Yong Y" <yong.y.wang@intel.com>,
+        "Ewe, Kok Howg" <kok.howg.ewe@intel.com>,
+        "Tomoya MORINAGA" <morinaga526@dsn.okisemi.com>,
+        "Intel OTC" <joel.clark@intel.com>
+Subject: [MeeGo-Dev] can: How to set bitrate
+Date: Mon, 18 Oct 2010 19:56:19 +0900
+X-Priority: 3
+X-MSMail-Priority: Normal
+X-Mailer: Microsoft Outlook Express 6.00.2800.1983
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2800.1983
+X-Hosting-Pf: 0
+X-NAI-Spam-Score: 1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat 16-10-10 17:11:02, Namhyung Kim wrote:
-> Convert atomic_inc(&bh->b_count) to get_bh(bh) for consistency.
-  Thanks. Merged.
+I want to test our Socket CAN driver(for Topcliff) on Meego1.0.
 
-								Honza
-> 
-> Signed-off-by: Namhyung Kim <namhyung@gmail.com>
-> ---
->  fs/jbd/checkpoint.c |    4 ++--
->  fs/jbd/commit.c     |    2 +-
->  2 files changed, 3 insertions(+), 3 deletions(-)
-> 
-> diff --git a/fs/jbd/checkpoint.c b/fs/jbd/checkpoint.c
-> index 05a38b9..e4b87bc 100644
-> --- a/fs/jbd/checkpoint.c
-> +++ b/fs/jbd/checkpoint.c
-> @@ -221,7 +221,7 @@ restart:
->  			goto restart;
->  		}
->  		if (buffer_locked(bh)) {
-> -			atomic_inc(&bh->b_count);
-> +			get_bh(bh);
->  			spin_unlock(&journal->j_list_lock);
->  			jbd_unlock_bh_state(bh);
->  			wait_on_buffer(bh);
-> @@ -283,7 +283,7 @@ static int __process_buffer(journal_t *journal, struct journal_head *jh,
->  	int ret = 0;
->  
->  	if (buffer_locked(bh)) {
-> -		atomic_inc(&bh->b_count);
-> +		get_bh(bh);
->  		spin_unlock(&journal->j_list_lock);
->  		jbd_unlock_bh_state(bh);
->  		wait_on_buffer(bh);
-> diff --git a/fs/jbd/commit.c b/fs/jbd/commit.c
-> index 95d8c11..1a9d033 100644
-> --- a/fs/jbd/commit.c
-> +++ b/fs/jbd/commit.c
-> @@ -611,7 +611,7 @@ void journal_commit_transaction(journal_t *journal)
->  		/* Bump b_count to prevent truncate from stumbling over
->                     the shadowed buffer!  @@@ This can go if we ever get
->                     rid of the BJ_IO/BJ_Shadow pairing of buffers. */
-> -		atomic_inc(&jh2bh(jh)->b_count);
-> +		get_bh(jh2bh(jh));
->  
->  		/* Make a temporary IO buffer with which to write it out
->                     (this will requeue both the metadata buffer and the
-> -- 
-> 1.7.0.4
-> 
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+For setting bitrate, I tried to install "iproute2". But the build failed.
+
+================================================
+[root@localhost iproute2-2.6.33]# make
+sh configure
+TC schedulers
+ ATM no
+ IPT using iptables
+make[1]: Entering directory `/root/iproute2-2.6.33/lib'
+
+<omission>
+
+ude  -o arpd arpd.c ../lib/libnetlink.a ../lib/libutil.a -ldb -lpthread
+arpd.c:19:20: error: db_185.h: No such file or directory
+arpd.c:42: error: expected '=', ',', ';', 'asm' or '__attribute__' before '*' token
+arpd.c: In function 'do_one_request':
+arpd.c:304: error: 'DBT' undeclared (first use in this function)
+arpd.c:304: error: (Each undeclared identifier is reported only once
+arpd.c:304: error: for each function it appears in.)
+arpd.c:304: error: expected ';' before 'dbkey'
+arpd.c:308: error: 'dbase' undeclared (first use in this function)
+arpd.c:338: error: 'dbkey' undeclared (first use in this function)
+arpd.c:341: error: 'dbdat' undeclared (first use in this function)
+arpd.c: In function 'get_arp_pkt':
+arpd.c:485: error: 'DBT' undeclared (first use in this function)
+arpd.c:485: error: expected ';' before 'dbkey'
+arpd.c:517: error: 'dbkey' undeclared (first use in this function)
+arpd.c:520: error: 'dbase' undeclared (first use in this function)
+arpd.c:520: error: 'dbdat' undeclared (first use in this function)
+arpd.c: In function 'main':
+arpd.c:670: error: 'dbase' undeclared (first use in this function)
+arpd.c:670: warning: implicit declaration of function 'dbopen'
+arpd.c:670: error: 'DB_HASH' undeclared (first use in this function)
+arpd.c:680: error: 'DBT' undeclared (first use in this function)
+arpd.c:680: error: expected ';' before 'dbkey'
+arpd.c:682: error: 'dbkey' undeclared (first use in this function)
+arpd.c:712: error: 'dbdat' undeclared (first use in this function)
+arpd.c:728: error: expected ';' before 'dbkey'
+arpd.c:730: error: 'R_NEXT' undeclared (first use in this function)
+make[1]: *** [arpd] Error 1
+make[1]: Leaving directory `/root/iproute2/misc'
+make: *** [all] Error 2
+[root@localhost iproute2]#
+================================================
+
+Do you know how to set bitrate on Meego?
+
+
+Thanks, Ohtake(OKISemi)
+
+
+
