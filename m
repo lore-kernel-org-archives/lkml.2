@@ -1,51 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756640Ab0JRPJJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Oct 2010 11:09:09 -0400
-Received: from out1.smtp.messagingengine.com ([66.111.4.25]:39479 "EHLO
-	out1.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753388Ab0JRPJI (ORCPT
+	id S932233Ab0JRPJ3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Oct 2010 11:09:29 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:53469 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756159Ab0JRPJ2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Oct 2010 11:09:08 -0400
-X-Sasl-enc: NOD9efgN1ewFJvW2XJgDaxgIaPZnf0K+vJcczmw7keDZ 1287414546
-Message-ID: <4CBC635C.6030500@ladisch.de>
-Date: Mon, 18 Oct 2010 17:10:20 +0200
-From: Clemens Ladisch <clemens@ladisch.de>
-User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
+	Mon, 18 Oct 2010 11:09:28 -0400
+Date: Mon, 18 Oct 2010 11:09:20 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: Eric Paris <eparis@redhat.com>
+Cc: "Ted Ts'o" <tytso@mit.edu>, Peter Zijlstra <peterz@infradead.org>,
+        Eric Paris <eparis@parisplace.org>,
+        Mimi Zohar <zohar@linux.vnet.ibm.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        Dave Chinner <david@fromorbit.com>, linux-kernel@vger.kernel.org,
+        Mimi Zohar <zohar@us.ibm.com>, warthog9@kernel.org, hpa@zytor.com
+Subject: Re: ima: use of radix tree cache indexing == massive waste of memory?
+Message-ID: <20101018150920.GA24907@infradead.org>
 MIME-Version: 1.0
-To: Vasiliy Kulikov <segooon@gmail.com>
-CC: kernel-janitors@vger.kernel.org,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Tejun Heo <tj@kernel.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/8] char: hpet: fix information leak to userland
-References: <1287326477-7940-1-git-send-email-segooon@gmail.com>
-In-Reply-To: <1287326477-7940-1-git-send-email-segooon@gmail.com>
 Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Vasiliy Kulikov wrote:
-> Structure info is copied to userland with some padding fields unitialized.
-> It leads to leaking of stack memory.
+> It can be turned on any time inside the initrd without loss of integrity
+> assuming the kernel and initrd were both measured and stored in a TPM
+> PCR.  I'm willing to agree that the usefulness might be limited, but it
+> isn't non-existant.  I'm going to make a note to look at other ways to
+> cut down the memory usage.
 
-> --- a/drivers/char/hpet.c
-> +++ b/drivers/char/hpet.c
-> @@ -581,6 +581,7 @@ hpet_ioctl_common(struct hpet_dev *devp, int cmd, unsigned long arg,
->  		break;
->  	case HPET_INFO:
->  		{
-> +			memset(info, 0, sizeof(*info));
->  			if (devp->hd_ireqfreq)
->  				info->hi_ireqfreq =
->  					hpet_time_div(hpetp, devp->hd_ireqfreq);
+It's not just memory overhead - it also adds another global reasource
+and global lock for every inode allocation/freeing.  That's okay if
+people actually want to use IMA - but if you do it everywhere it's
+a real PITA.
 
-This makes the following assignment "info->hi_ireqfreq = 0;" superfluous.
-
-
-Regards,
-Clemens
+If there's seriously no way to fix it up to not cause harm by default
+just extending the inode is the much better way to go.  But given
+that it's already in distros with a kABI I suspect some people will
+be interested in fixing it for people instead of forcing this overhead
+on their customers for years.  We might want to just piggyback on that.
