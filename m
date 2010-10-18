@@ -1,35 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751359Ab0JRFDh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Oct 2010 01:03:37 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:40192 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750718Ab0JRFDf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Oct 2010 01:03:35 -0400
-Date: Mon, 18 Oct 2010 06:03:49 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Liam Girdwood <lrg@slimlogic.co.uk>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Peter Hsiang <Peter.Hsiang@maxim-ic.com>
-Subject: Re: linux-next: build failure after merge of the sound-asoc tree
-Message-ID: <20101018050348.GA23975@opensource.wolfsonmicro.com>
-References: <20101018142934.65f5d0fa.sfr@canb.auug.org.au>
+	id S1751791Ab0JRFEQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Oct 2010 01:04:16 -0400
+Received: from hera.kernel.org ([140.211.167.34]:49702 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750840Ab0JRFEP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Oct 2010 01:04:15 -0400
+Message-ID: <4CBBD529.8060600@kernel.org>
+Date: Mon, 18 Oct 2010 07:03:37 +0200
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.9) Gecko/20100915 Lightning/1.0b2 Thunderbird/3.1.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101018142934.65f5d0fa.sfr@canb.auug.org.au>
-X-Cookie: Q:	How do you keep a moron in suspense?
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+CC: lkml <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
+        Wu Fengguang <fengguang.wu@intel.com>, Michal Hocko <mhocko@suse.cz>
+Subject: Re: [PATCH v2.6.36-rc7] memory_hotplug: drop spurious calls to flush_scheduled_work()
+References: <4CB8725B.9010200@kernel.org> <20101018090123.5afe4abf.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20101018090123.5afe4abf.kamezawa.hiroyu@jp.fujitsu.com>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 18 Oct 2010 05:03:40 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 18, 2010 at 02:29:34PM +1100, Stephen Rothwell wrote:
+Hello,
 
-> Please, please build test what you are submitting.
+On 10/18/2010 02:01 AM, KAMEZAWA Hiroyuki wrote:
+> On Fri, 15 Oct 2010 17:25:15 +0200
+> Tejun Heo <tj@kernel.org> wrote:
+> 
+>> lru_add_drain_all() uses schedule_on_each_cpu() which is synchronous.
+>> There is no reason to call flush_scheduled_work() after
+>> lru_add_drain_all().  Drop the spurious calls.
+>>
+>> This is to prepare for the deprecation and removal of
+>> flush_scheduled_work().
+>>
+>> Signed-off-by: Tejun Heo <tj@kernel.org>
+> Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 
-> I have used the sound-asoc tree from next-20101015 for today.
+Through which tree should this be routed?  Shall I route this via the
+wq tree?
 
-Pushed a reversion of the MAX98088 driver so this will be fixed
-tomorrow.
+Thank you.
+
+-- 
+tejun
