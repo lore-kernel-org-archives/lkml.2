@@ -1,17 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932298Ab0JRPCp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Oct 2010 11:02:45 -0400
-Received: from canuck.infradead.org ([134.117.69.58]:52427 "EHLO
-	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753388Ab0JRPCo convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Oct 2010 11:02:44 -0400
+	id S932352Ab0JRPDd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Oct 2010 11:03:33 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:37602 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753388Ab0JRPDc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Oct 2010 11:03:32 -0400
 Subject: Re: ima: use of radix tree cache indexing == massive waste of
  memory?
-From: Peter Zijlstra <peterz@infradead.org>
+From: Eric Paris <eparis@redhat.com>
 To: "Ted Ts'o" <tytso@mit.edu>
-Cc: Eric Paris <eparis@redhat.com>, Eric Paris <eparis@parisplace.org>,
+Cc: Peter Zijlstra <peterz@infradead.org>, Eric Paris <eparis@parisplace.org>,
         Mimi Zohar <zohar@linux.vnet.ibm.com>,
         Christoph Hellwig <hch@infradead.org>,
         Dave Chinner <david@fromorbit.com>, linux-kernel@vger.kernel.org,
@@ -27,11 +26,10 @@ References: <20101016065206.GO4681@dastard>
 	 <1287324983.2530.35.camel@localhost.localdomain>
 	 <1287403048.29097.1553.camel@twins>  <20101018145930.GE4120@thunk.org>
 Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Mon, 18 Oct 2010 17:02:02 +0200
-Message-ID: <1287414122.29097.1611.camel@twins>
+Date: Mon, 18 Oct 2010 11:02:53 -0400
+Message-ID: <1287414173.2530.44.camel@localhost.localdomain>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -52,7 +50,11 @@ On Mon, 2010-10-18 at 10:59 -0400, Ted Ts'o wrote:
 > In other words, turning on IMA via a boot option seems to be the only
 > thing that makes any sense at all.
 
-Fine with me.. I simply understood there was a requirement for post-boot
-enablement and tried to come up with a solution for that.
+It can be turned on any time inside the initrd without loss of integrity
+assuming the kernel and initrd were both measured and stored in a TPM
+PCR.  I'm willing to agree that the usefulness might be limited, but it
+isn't non-existant.  I'm going to make a note to look at other ways to
+cut down the memory usage.
 
+-Eric
 
