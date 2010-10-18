@@ -1,59 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753454Ab0JRGVm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Oct 2010 02:21:42 -0400
-Received: from bld-mail14.adl6.internode.on.net ([150.101.137.99]:44796 "EHLO
-	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753343Ab0JRGVj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Oct 2010 02:21:39 -0400
-From: Dave Chinner <david@fromorbit.com>
-To: linux-fsdevel@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH 07/20] exofs: use iput() for inode reference count decrements
-Date: Mon, 18 Oct 2010 17:20:43 +1100
-Message-Id: <1287382856-29529-8-git-send-email-david@fromorbit.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1287382856-29529-1-git-send-email-david@fromorbit.com>
-References: <1287382856-29529-1-git-send-email-david@fromorbit.com>
+	id S1753880Ab0JRGZP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Oct 2010 02:25:15 -0400
+Received: from smtp.gentoo.org ([140.211.166.183]:40105 "EHLO smtp.gentoo.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753335Ab0JRGZN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Oct 2010 02:25:13 -0400
+From: Mike Frysinger <vapier@gentoo.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Sam Ravnborg <sam@ravnborg.org>,
+        Jeremy Fitzhardinge <jeremy@xensource.com>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Alan Jenkins <alan-jenkins@tuffmail.co.uk>
+Subject: [PATCH] vmlinux.lds.h: gather .data..shared_aligned sections in DATA_DATA
+Date: Mon, 18 Oct 2010 02:27:31 -0400
+Message-Id: <1287383251-28427-1-git-send-email-vapier@gentoo.org>
+X-Mailer: git-send-email 1.7.3.1
+In-Reply-To: <AANLkTilVZ3GCU_hsfVNeR4oG6ETREb9UeJ0Cv_5hSwVZ@mail.gmail.com>
+References: <AANLkTilVZ3GCU_hsfVNeR4oG6ETREb9UeJ0Cv_5hSwVZ@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dave Chinner <dchinner@redhat.com>
+With the recent change "net: remove time limit in process_backlog()",
+the softnet_data variable changed from "DEFINE_PER_CPU()" to
+"DEFINE_PER_CPU_ALIGNED()" which moved it from the .data section to
+the .data.shared_align section.  I'm not saying this patch is wrong,
+just that is what caused me to notice this larger problem.  No one
+else in the kernel is using this aligned macro variant, so I imagine
+that's why no one has noticed yet.
 
-Direct modification of the inode reference count is a no-no. Convert
-the exofs decrements to call iput() instead of acting directly on
-i_count.
+Since .data.shared_align isnt declared in any vmlinux files that I can
+see, the linker just places it last.  This "just works" for most
+people, but when building a ROM kernel on Blackfin systems, it causes
+section overlap errors:
+bfin-uclinux-ld.real:
+	section .init.data [00000000202e06b8 -> 00000000202e48b7] overlaps
+	section .data.shared_aligned [00000000202e06b8 -> 00000000202e0723]
+I imagine other arches which support the ROM config option and thus do
+funky placement would see similar issues ...
 
-Signed-off-by: Dave Chinner <dchinner@redhat.com>
-Reviewed-by: Christoph Hellwig <hch@lst.de>
+On x86, it is stuck in a dedicated section at the end:
+ [8] .data             PROGBITS ffffffff810ec000 2ec0000303a8 00 WA 0 0 4096
+ [9] .data.shared_alig PROGBITS ffffffff8111c3c0 31c3c00000c8 00 WA 0 0 64
+
+So mark sure we include this section in the DATA_DATA macro so that
+it is placed in the right location.
+
+Signed-off-by: Mike Frysinger <vapier@gentoo.org>
 ---
- fs/exofs/inode.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+note: this was reported back in May, patch posted in Aug, and no feedback since
 
-diff --git a/fs/exofs/inode.c b/fs/exofs/inode.c
-index b631ff3..0fb4d4c 100644
---- a/fs/exofs/inode.c
-+++ b/fs/exofs/inode.c
-@@ -1101,7 +1101,7 @@ static void create_done(struct exofs_io_state *ios, void *p)
- 
- 	set_obj_created(oi);
- 
--	atomic_dec(&inode->i_count);
-+	iput(inode);
- 	wake_up(&oi->i_wq);
- }
- 
-@@ -1161,7 +1161,7 @@ struct inode *exofs_new_inode(struct inode *dir, int mode)
- 	ios->cred = oi->i_cred;
- 	ret = exofs_sbi_create(ios);
- 	if (ret) {
--		atomic_dec(&inode->i_count);
-+		iput(inode);
- 		exofs_put_io_state(ios);
- 		return ERR_PTR(ret);
- 	}
+ include/asm-generic/vmlinux.lds.h |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
+
+diff --git a/include/asm-generic/vmlinux.lds.h b/include/asm-generic/vmlinux.lds.h
+index 7657a3b..75b6b58 100644
+--- a/include/asm-generic/vmlinux.lds.h
++++ b/include/asm-generic/vmlinux.lds.h
+@@ -150,6 +150,7 @@
+ #define DATA_DATA							\
+ 	*(.data)							\
+ 	*(.ref.data)							\
++	*(.data..shared_aligned) /* percpu related */			\
+ 	DEV_KEEP(init.data)						\
+ 	DEV_KEEP(exit.data)						\
+ 	CPU_KEEP(init.data)						\
 -- 
-1.7.1
+1.7.3.1
 
