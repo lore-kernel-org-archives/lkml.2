@@ -1,64 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757601Ab0JRSCJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Oct 2010 14:02:09 -0400
-Received: from smarthost02.mail.zen.net.uk ([212.23.3.141]:60895 "EHLO
-	smarthost02.mail.zen.net.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754809Ab0JRSCH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Oct 2010 14:02:07 -0400
-Message-ID: <4CBC8B99.60806@cyconix.com>
-Date: Mon, 18 Oct 2010 19:02:01 +0100
-From: Tom Brown <sa212+emis@cyconix.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-GB; rv:1.9.2.9) Gecko/20100915 Lightning/1.0b2 Thunderbird/3.1.4
+	id S1757541Ab0JRSDs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Oct 2010 14:03:48 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:57350 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754621Ab0JRSDr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Oct 2010 14:03:47 -0400
+Date: Mon, 18 Oct 2010 14:03:12 -0400
+From: Don Zickus <dzickus@redhat.com>
+To: DDD <dongdong.deng@windriver.com>
+Cc: tglx@linutronix.de, hpa@zytor.com, mingo@elte.hu, x86@kernel.org,
+        linux-kernel@vger.kernel.org, bruce.ashfield@windriver.com
+Subject: Re: [PATCH] x86: avoid calling arch_trigger_all_cpu_backtrace() at
+ the same time on SMP
+Message-ID: <20101018180312.GA2935@redhat.com>
+References: <1286793111-27579-1-git-send-email-dongdong.deng@windriver.com>
+ <4CBC28BF.4090203@windriver.com>
 MIME-Version: 1.0
-To: LKML <linux-kernel@vger.kernel.org>
-CC: Stefan Richter <stefanr@s5r6.in-berlin.de>,
-        Yong Zhang <yong.zhang@windriver.com>, Arnd Bergmann <arnd@arndb.de>
-Subject: Re: Question: how to copy to user space from a tasklet
-References: <4CB6DEC4.4040408@cyconix.com> <4CB7ED67.2000407@s5r6.in-berlin.de> <4CBC6BA0.60507@cyconix.com> <4CBC7D62.6040408@s5r6.in-berlin.de>
-In-Reply-To: <4CBC7D62.6040408@s5r6.in-berlin.de>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-Smarthost02-IP: [82.70.243.134]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4CBC28BF.4090203@windriver.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 18/10/2010 18:01, Stefan Richter wrote:
-> Tom Brown wrote:
->> Thanks, think I'm there:
->>
->> 1 - The user calls mmap() with a specific offset to flag that he wants a
->> DMA buffer
->>
->> 2 - I then 'vmalloc' the buffer, and call 'setPageReserved' for each page
->>
->> I then step over each page, and:
->>
->> 3 - call 'vmalloc_to_pfn' to get a PFN for each page, and then
->>
->> 4 - call 'remap_page_range' for that page (I instead call
->> 'remap_pfn_range' for kernels>= 2.6.10, but I'm on 2.6.9)
->>
->> This gives me the buffer, and the interrupt handler then just uses
->> 'memcpy' to copy data to the user.
->
-> I would have thought of a bunch of alloc_page() and vm_insert_page() but I
-> don't know if vm_insert_page exists in 2.6.9 and if it honors user limits.
+On Mon, Oct 18, 2010 at 07:00:15PM +0800, DDD wrote:
+> CC to Ingo's mingo@elte.hu and add some code explains for this patch.
+> 
+> Dongdong
+> 
+> 
+> Dongdong Deng wrote:
+> >The spin_lock_debug/rcu_cpu_stall detector uses
+> >trigger_all_cpu_backtrace() to dump cpu backtrace.
+> >Therefore it is possible that trigger_all_cpu_backtrace()
+> >could be called at the same time on different CPUs, which
+> >triggers and 'unknown reason NMI' warning. The following case
+> >illustrates the problem:
 
-It turns out that I'm getting occasional
+The patch seems reasonable.  I can queue it up.  Ingo wrote the original
+code and knows which spin locks to use better than me, perhaps he can find
+a moment to comment.
 
-"BUG: unable to handle kernel paging request at virtual address 
-...[buffer address]"
+Cheers,
+Don
 
-oops when the driver attempts to 'memcpy' to the buffer, so I think 
-'setPageReserved' is probably not the right thing to do.  This is 
-strange - it's almost as if 'setPageReserved' stops the page being 
-swapped out, but the kernel doesn't know this.
-
-I'll look into alloc_page/vm_insert_page instead.
-
-Thanks -
-
-Tom
+> >
+> >      CPU1                    CPU2                     ...   CPU N
+> >                       trigger_all_cpu_backtrace()
+> >                       set "backtrace_mask" to cpu mask
+> >                               |
+> >generate NMI interrupts  generate NMI interrupts       ...
+> >    \                          |                               /
+> >     \                         |                              /
+> >   The "backtrace_mask" will be cleaned by the first NMI interrupt
+> >  at nmi_watchdog_tick(), then the following NMI interrupts generated
+> >by other cpus's arch_trigger_all_cpu_backtrace() will be took as
+> >unknown reason NMI interrupts.
+> >
+> >This patch uses a lock to avoid the problem, and stop the
+> >arch_trigger_all_cpu_backtrace() calling to avoid dumping double cpu
+> >backtrace info when there is already a trigger_all_cpu_backtrace()
+> >in progress.
+> >
+> >Signed-off-by: Dongdong Deng <dongdong.deng@windriver.com>
+> >Reviewed-by: Bruce Ashfield <bruce.ashfield@windriver.com>
+> >CC: Thomas Gleixner <tglx@linutronix.de>
+> >CC: Ingo Molnar <mingo@redhat.com>
+> >CC: "H. Peter Anvin" <hpa@zytor.com>
+> >CC: x86@kernel.org
+> >CC: linux-kernel@vger.kernel.org
+> >---
+> > arch/x86/kernel/apic/hw_nmi.c |   14 ++++++++++++++
+> > arch/x86/kernel/apic/nmi.c    |   14 ++++++++++++++
+> > 2 files changed, 28 insertions(+), 0 deletions(-)
+> >
+> >diff --git a/arch/x86/kernel/apic/hw_nmi.c b/arch/x86/kernel/apic/hw_nmi.c
+> >index cefd694..3aea0a5 100644
+> >--- a/arch/x86/kernel/apic/hw_nmi.c
+> >+++ b/arch/x86/kernel/apic/hw_nmi.c
+> >@@ -29,6 +29,16 @@ u64 hw_nmi_get_sample_period(void)
+> > void arch_trigger_all_cpu_backtrace(void)
+> > {
+> > 	int i;
+> >+	static arch_spinlock_t lock = __ARCH_SPIN_LOCK_UNLOCKED;
+> 
+> Why an arch spin lock vs just using a raw spin lock?
+> for example. static DEFINE_RAW_SPINLOCK(lock);
+> 
+> The spin_lock_debug detector was used in raw_spinlock too.
+> 
+> arch_trigger_all_cpu_backtrace() -->
+>   raw_spin_lock(lock)      -->
+>   _raw_spin_lock(lock)     -->
+>   __raw_spin_lock(lock)    -->
+>   do_raw_spin_lock(lock)   -->
+>   __spin_lock_debug(lock)  -->
+>   trigger_all_cpu_backtrace()
+> 
+> Therefor, we have to use arch spin lock here.
+> 
+> 
+> 
+> >+	unsigned long flags;
+> >+
+> >+	local_irq_save(flags);
+> 
+> Why have to save the irq's here?
+> 
+> When the arch_trigger_all_cpu_backtrace() was triggered by
+> "spin_lock()"'s spin_lock_debug detector, it is possible that
+> the irq is enabled, thus we have to save and disable it here.
+> 
+> 
+> 
+> >+	if (!arch_spin_trylock(&lock))
+> >+		/*
+> >+		 * If there is already a trigger_all_cpu_backtrace()
+> >+		 * in progress, don't output double cpu dump infos.
+> >+		 */
+> >+		goto out_restore_irq;
+> > 	cpumask_copy(to_cpumask(backtrace_mask), cpu_online_mask);
+> >@@ -41,6 +51,10 @@ void arch_trigger_all_cpu_backtrace(void)
+> > 			break;
+> > 		mdelay(1);
+> > 	}
+> >+
+> >+	arch_spin_unlock(&lock);
+> >+out_restore_irq:
+> >+	local_irq_restore(flags);
+> > }
+> > static int __kprobes
+> >diff --git a/arch/x86/kernel/apic/nmi.c b/arch/x86/kernel/apic/nmi.c
+> >index a43f71c..5fa8a13 100644
+> >--- a/arch/x86/kernel/apic/nmi.c
+> >+++ b/arch/x86/kernel/apic/nmi.c
+> >@@ -552,6 +552,16 @@ int do_nmi_callback(struct pt_regs *regs, int cpu)
+> > void arch_trigger_all_cpu_backtrace(void)
+> > {
+> > 	int i;
+> >+	static arch_spinlock_t lock = __ARCH_SPIN_LOCK_UNLOCKED;
+> >+	unsigned long flags;
+> >+
+> >+	local_irq_save(flags);
+> >+	if (!arch_spin_trylock(&lock))
+> >+		/*
+> >+		 * If there is already a trigger_all_cpu_backtrace()
+> >+		 * in progress, don't output double cpu dump infos.
+> >+		 */
+> >+		goto out_restore_irq;
+> > 	cpumask_copy(to_cpumask(backtrace_mask), cpu_online_mask);
+> >@@ -564,4 +574,8 @@ void arch_trigger_all_cpu_backtrace(void)
+> > 			break;
+> > 		mdelay(1);
+> > 	}
+> >+
+> >+	arch_spin_unlock(&lock);
+> >+out_restore_irq:
+> >+	local_irq_restore(flags);
+> > }
+> 
+> 
+> 
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
