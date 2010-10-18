@@ -1,157 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754408Ab0JRKJT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Oct 2010 06:09:19 -0400
-Received: from smtp104.sbc.mail.re3.yahoo.com ([66.196.96.80]:38517 "HELO
-	smtp104.sbc.mail.re3.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1753245Ab0JRKJR (ORCPT
+	id S1754785Ab0JRKMX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Oct 2010 06:12:23 -0400
+Received: from casper.infradead.org ([85.118.1.10]:33092 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754236Ab0JRKMW convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Oct 2010 06:09:17 -0400
-X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
-X-YMail-OSG: v1XvbGMVM1khWTV93Hys_N6bQPygQz7PX_gtxL_oMb9oN1.
- 5XGBwLLfJ.57uXJOGDJYKqtNBww6WLcZ2QPOL5Nubj9XBeUy6I_sPGjs7Cjp
- 9S4I_iSNfkpMExiocFgXQVsF2ZLW5_XPHb13ITf0sEPPQtv1tcKV.ntlb53G
- mNpUu7rrRRSkUOKDV5pBmJ5YqCfIPsY.x1fDNU95CxpUYfTse9fpXC0bLhRe
- b9zm8tBS7127vK8v3cTsQufbNSSBltwe.GtGa9pfxDIwcSvbzpNWex5uRpgy
- Jp63EtX49uxmCt__XZzBygyWUp42onIgCuL48EO99Co7o2LrDXgiAXFW9Abq
- v0Cdd0zNOTJZl8hCMILl.lA0ZXqb6bigRwTMAr6_rrmwboVfyj5XimGqCEno
- 478e8SvFe6nNhJCvVjsZbsLZVBv6jliZQCtb0KFY.eYCTYKJnMZinuw--
-X-Yahoo-Newman-Property: ymail-3
-Subject: [ANNOUNCE] TCM/LIO v4.0.0-rc5 for 2.6.36-rc8
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: linux-scsi <linux-scsi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Cc: James Bottomley <James.Bottomley@HansenPartnership.com>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Mike Christie <michaelc@cs.wisc.edu>,
-        Boaz Harrosh <bharrosh@panasas.com>,
-        Joel Becker <joel.becker@oracle.com>,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        Hannes Reinecke <hare@suse.de>, Christoph Hellwig <hch@lst.de>
-Content-Type: text/plain
-Date: Mon, 18 Oct 2010 03:04:28 -0700
-Message-Id: <1287396268.14039.120.camel@haakon2.linux-iscsi.org>
+	Mon, 18 Oct 2010 06:12:22 -0400
+Subject: Re: [sparc build bug] Re: [tip:perf/core] irq: Add tracepoint to
+ softirq_raise
+From: Peter Zijlstra <peterz@infradead.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Ingo Molnar <mingo@elte.hu>, mathieu.desnoyers@efficios.com,
+        sanagi.koki@jp.fujitsu.com, fweisbec@gmail.com, rostedt@goodmis.org,
+        nhorman@tuxdriver.com, scott.a.mcmillan@intel.com, tglx@linutronix.de,
+        laijs@cn.fujitsu.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        eric.dumazet@gmail.com, kaneshige.kenji@jp.fujitsu.com,
+        davem@davemloft.net, izumi.taku@jp.fujitsu.com,
+        kosaki.motohiro@jp.fujitsu.com, linux-tip-commits@vger.kernel.org,
+        Heiko Carstens <heiko.carstens@de.ibm.com>
+In-Reply-To: <1287395077.29097.1543.camel@twins>
+References: <4C724298.4050509@jp.fujitsu.com>
+	 <tip-2bf2160d8805de64308e2e7c3cd97813cb58ed2f@git.kernel.org>
+	 <20100908112529.GA25931@elte.hu>  <1287395077.29097.1543.camel@twins>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Mon, 18 Oct 2010 12:11:47 +0200
+Message-ID: <1287396707.29097.1544.camel@twins>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.22.3.1 
-Content-Transfer-Encoding: 7bit
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Greetings all,
+On Mon, 2010-10-18 at 11:44 +0200, Peter Zijlstra wrote:
+> On Wed, 2010-09-08 at 13:25 +0200, Ingo Molnar wrote:
+> > * tip-bot for Lai Jiangshan <laijs@cn.fujitsu.com> wrote:
+> > 
+> > > Commit-ID:  2bf2160d8805de64308e2e7c3cd97813cb58ed2f
+> > > Gitweb:     http://git.kernel.org/tip/2bf2160d8805de64308e2e7c3cd97813cb58ed2f
+> > > Author:     Lai Jiangshan <laijs@cn.fujitsu.com>
+> > > AuthorDate: Mon, 23 Aug 2010 18:42:48 +0900
+> > > Committer:  Frederic Weisbecker <fweisbec@gmail.com>
+> > > CommitDate: Tue, 7 Sep 2010 17:49:34 +0200
+> > > 
+> > > irq: Add tracepoint to softirq_raise
+> > > 
+> > > Add a tracepoint for tracing when softirq action is raised.
+> > > 
+> > > This and the existing tracepoints complete softirq's tracepoints:
+> > > softirq_raise, softirq_entry and softirq_exit.
+> > > 
+> > > And when this tracepoint is used in combination with
+> > > the softirq_entry tracepoint we can determine
+> > > the softirq raise latency.
+> > > 
+> > > Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+> > > Acked-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+> > > Acked-by: Neil Horman <nhorman@tuxdriver.com>
+> > > Cc: David Miller <davem@davemloft.net>
+> > > Cc: Kaneshige Kenji <kaneshige.kenji@jp.fujitsu.com>
+> > > Cc: Izumo Taku <izumi.taku@jp.fujitsu.com>
+> > > Cc: Kosaki Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> > > Cc: Lai Jiangshan <laijs@cn.fujitsu.com>
+> > > Cc: Scott Mcmillan <scott.a.mcmillan@intel.com>
+> > > Cc: Steven Rostedt <rostedt@goodmis.org>
+> > > Cc: Eric Dumazet <eric.dumazet@gmail.com>
+> > > LKML-Reference: <4C724298.4050509@jp.fujitsu.com>
+> > > [ factorize softirq events with DECLARE_EVENT_CLASS ]
+> > > Signed-off-by: Koki Sanagi <sanagi.koki@jp.fujitsu.com>
+> > > Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+> > > ---
+> > >  include/linux/interrupt.h  |    8 +++++++-
+> > >  include/trace/events/irq.h |   26 ++++++++++++++++++++++++--
+> > >  2 files changed, 31 insertions(+), 3 deletions(-)
+> > 
 
-It is my honor to announce that TCM/LIO v4.0.0-rc5 for v2.6.36-rc8 has
-been tagged and pushed into lio-core-2.6.git/lio-4.0 on kernel.org.  It
-has been almost exactly one month since v4.0.0-rc4 was released, and
-development has continued to be quite busy as some of the new v4.0
-emulation features are been shaken out on linux-scsi.  This released
-includes the following major items:
+> I could build sparc64_defconfig, but s390 is broken for me by this...
 
-	*) Add proper TCM/pSCSI BIDI-COMMAND passthrough (Boaz Harrosh assist)
-	*) Allow MappedLUNs with non existent struct se_lun, which allowed
-	   us to drop the struct config_group_operations->check_link() call
-	   alltogether (Joel Becker assist)
-	*) Add UNMAP and Block Limits VPD page support (Martin Petersen assist)
-	*) Add Thin Provisioning VPD page emulation (Martin Petersen assist)
-	*) Add proper extended CDB support with by default 32-bit CDBs.
-	   (Martin Petersen and Boaz Harrosh assist)
-	*) Add WRITE_SAME_16 and WRITE_SAME_32 w/ UNMAP-1 support (Martin Petersen assist)
-	*) Add target_fabric_tf_ops_check() sanity checks at TCM fabric module
-	   registration time
-	*) Unify TCM subsysystem CDB emulation for INQUIRY, READ_CAPACITY*, UNMAP,
-	   WRITE_SAME_* and SYNCHRONIZE_CACHE (Christoph Hellwig assist)
-	*) Add struct se_dev_limits for subsystem ->create_virtdevice()
-	   (Christoph Hellwig assist)
 
-At this point I will be accepting bugfixes and other cleanups recommened
-by community members to v4.0 for .37 mainline in the next two weeks, and
-will be pushing new features bits into v4.1 for .38 as the remaining .37
-items are resolved.
+the below makes s390 build again, not sure its completely safe for all
+configs though...
 
-Once again, a big thanks go out to the community members involved in
-this release.  Thank you!
+Heiko?
 
---nab
+---
+ arch/s390/include/asm/hardirq.h |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
 
-Nicholas Bellinger (48):
-  tcm: Convert split CDB code to put_unaligned_be*
-  tcm: Add support for BIDI-COMMAND passthrough
-  tcm/pscsi: Add proper BIDI-COMMAND passthrough to SCSI MidLayer
-  tcm: Add XDWRITEREAD_10 passthrough support
-  tcm: Convert VARIABLE_LENGTH_CMD to use scsi_varlen_cdb_length()
-  tcm/fileio: Convert to iov allocations for fd_do_readv() and
-    fd_do_writev()
-  tcm: Allow MappedLUNs with non existent struct se_lun
-  tcm: Drop unused target_fabric_port_check_link()
-  tcm: Fix NULL pointer dereference for target_fabric_port_attrs[]
-  tcm: Remove struct list_head lookup from
-    core_dev_[add,del]_initiator_node_lun_acl()
-  tcm: Add Thin Provisioning / UNMAP emulation and Block Limits VPD
-    page
-  tcm/iblock: Add UNMAP / Block DISCARD support
-  tcm/fileio: Add UNMAP / Block DISCARD support
-  tcm: Remove unnecessary typecasts in FILEIO, IBLOCK, pSCSI, RAMDISK
-    and STGT subsystem plugins
-  tcm: Fix incorrect data_length checks for Block Limits VPD page
-    emulation
-  tcm: Rename device attribute emulate_tpe to emulate_tpu
-  tcm: Add Thin Provisioning VPD page emulation
-  tcm/iblock,fileio: Fill in remaining Block Limits VPD from rq->limits
-  tcm: Fix BIDI-Command bug with pSCSI passthrough
-  tcm: Add support for CDBs greater than TCM_MAX_COMMAND_SIZE bytes
-  tcm: Fix bug in *_subsystem set_configfs_dev_params() buffer copy
-  tcm: Add WRITE_SAME_16 emulation and passthrough support
-  tcm/iblock,fileio: Add WRITE_SAME_16 w/ UNMAP=1 bit support
-  tcm: Minor cleanups for UNMAP debugging code
-  tcm: Add support for SA WRITE_SAME_32
-  tcm: Add missing TGCS_DATA_SG_IO_CDB assignment for XDWRITEREAD_32
-  tcm: Remove legacy struct se_device->dev_generate_cdb()
-  tcm: Remove unused struct target_core_fabric_ops->dev_del_lun()
-  tcm: Add target_fabric_tf_ops_check() sanity checks
-  tcm_loop: Add missing NOPs for struct target_core_fabric_ops
-  tcm: Fix hardcoded size bug for struct
-    se_transport_task->__t_task_cdb[]
-  tcm: Unify subsystem plugin control CDB emulation
-  tcm: Convert IBLOCK, FILEIO and RAMDISK subsystem code to
-    transport_emulate_control_cdb()
-  tcm: Move WRITE_SAME_* emulation into transport_emulate_control_cdb()
-  tcm: Move SYNCHRONIZE_CACHE_* emulation into
-    transport_emulate_control_cdb()
-  tcm: Fix printk() + sector_t conversion spec build warning:
-  tcm: Move transport_emulate_control_cdb() into
-    __transport_execute_tasks()
-  tcm: Unify INQUIRY subsystem plugin handling
-  tcm: Unify READ_CAPACITY_* subsystem plugin handling
-  tcm: Unify UNMAP and WRITE_SAME w/ UNMAP=1 subsystem plugin handling
-  tcm: Unify SYNCHRONIZE_CACHE_* subsystem plugin handling
-  tcm: Drop struct se_subsystem_api->create_virtdevice_from_fd()
-  tcm: Convert UNMAP + WRITE_SAME_* to IBLOCK only support
-  tcm/fileio: Drop igrab() and iput() usage
-  tcm: Preload virtual backstore INQUIRY Product Model and Revision
-  tcm/fileio: Drop unnecessary inode assignment conditional
-  tcm: Add struct se_dev_limits for subsystem ->create_virtdevice()
-  lio-core v4.0.0-rc5
-
- drivers/target/lio-target/iscsi_target_version.h |    2 +-
- drivers/target/target_core_configfs.c            |  259 ++++++--
- drivers/target/target_core_device.c              |  197 +++++--
- drivers/target/target_core_fabric_configfs.c     |   50 +-
- drivers/target/target_core_file.c                |  297 +++------
- drivers/target/target_core_iblock.c              |  380 +++--------
- drivers/target/target_core_pscsi.c               |  297 ++++++----
- drivers/target/target_core_pscsi.h               |    7 +-
- drivers/target/target_core_rd.c                  |  255 ++------
- drivers/target/target_core_scdb.c                |   57 +--
- drivers/target/target_core_stgt.c                |  107 +--
- drivers/target/target_core_tpg.c                 |    8 -
- drivers/target/target_core_transport.c           |  767 ++++++++++++++++++----
- drivers/target/tcm_loop/tcm_loop_configfs.c      |   10 +-
- drivers/target/tcm_loop/tcm_loop_fabric.c        |   23 +-
- drivers/target/tcm_loop/tcm_loop_fabric.h        |    9 +-
- include/target/target_core_base.h                |   31 +-
- include/target/target_core_device.h              |    9 +-
- include/target/target_core_fabric_ops.h          |    1 -
- include/target/target_core_transport.h           |   61 +-
- 20 files changed, 1595 insertions(+), 1232 deletions(-)
-
+diff --git a/arch/s390/include/asm/hardirq.h
+b/arch/s390/include/asm/hardirq.h
+index 498bc38..9558a71 100644
+--- a/arch/s390/include/asm/hardirq.h
++++ b/arch/s390/include/asm/hardirq.h
+@@ -15,7 +15,6 @@
+ #include <linux/threads.h>
+ #include <linux/sched.h>
+ #include <linux/cache.h>
+-#include <linux/interrupt.h>
+ #include <asm/lowcore.h>
+ 
+ #define local_softirq_pending() (S390_lowcore.softirq_pending)
 
