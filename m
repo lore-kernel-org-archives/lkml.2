@@ -1,66 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757779Ab0JRVSI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Oct 2010 17:18:08 -0400
-Received: from www.tglx.de ([62.245.132.106]:58921 "EHLO www.tglx.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756050Ab0JRVSF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Oct 2010 17:18:05 -0400
-Date: Mon, 18 Oct 2010 23:17:53 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Yinghai Lu <yinghai@kernel.org>
-cc: Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] x86, irq: Check if irq is remapped before freeing irte
-In-Reply-To: <alpine.LFD.2.00.1010182304050.6815@localhost6.localdomain6>
-Message-ID: <alpine.LFD.2.00.1010182311110.6815@localhost6.localdomain6>
-References: <4CBCB274.7010108@kernel.org> <alpine.LFD.2.00.1010182304050.6815@localhost6.localdomain6>
+	id S1757768Ab0JRVSH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Oct 2010 17:18:07 -0400
+Received: from relais.videotron.ca ([24.201.245.36]:43883 "EHLO
+	relais.videotron.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754609Ab0JRVSE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Oct 2010 17:18:04 -0400
+MIME-version: 1.0
+Content-transfer-encoding: 7BIT
+Content-type: TEXT/PLAIN; charset=US-ASCII
+Date: Mon, 18 Oct 2010 17:17:54 -0400 (EDT)
+From: Nicolas Pitre <nico@fluxnic.net>
+X-X-Sender: nico@xanadu.home
+To: Daniel Walker <dwalker@fifo99.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, Russell King <rmk@arm.linux.org.uk>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Jeremy Kerr <jeremy.kerr@canonical.com>,
+        Jeff Ohlstein <johlstei@codeaurora.org>
+Subject: Re: linux-next: manual merge of the msm tree with the arm tree
+In-reply-to: <1287435928.5588.37.camel@c-dwalke-linux.qualcomm.com>
+Message-id: <alpine.LFD.2.00.1010181714090.2764@xanadu.home>
+References: <20101018103540.7bd9c535.sfr@canb.auug.org.au>
+ <201010182219.25890.arnd@arndb.de>
+ <1287434251.5588.23.camel@c-dwalke-linux.qualcomm.com>
+ <201010182248.36078.arnd@arndb.de>
+ <1287435928.5588.37.camel@c-dwalke-linux.qualcomm.com>
 User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, 18 Oct 2010, Daniel Walker wrote:
+
+> I guess your assuming I send my pull request after Russell's, which
+> isn't necessarily true, and I'd rather not have that dependency if I
+> don't have to. 
+
+Look, we're not establishing a straight rule here -- just figuring out a 
+way to move forward.  What we're asking you to do is either ask RMK to 
+pull your tree now, or wait until RMK's tree has hit mainline so you can 
+pull Linus' tree and fix the issue yourself before asking Linus to pull, 
+or whatever.  Is some collaboration on your part for this particular 
+issue too much to ask for?
 
 
-On Mon, 18 Oct 2010, Thomas Gleixner wrote:
-
-> On Mon, 18 Oct 2010, Yinghai Lu wrote:
-> > 
-> > Index: linux-2.6/drivers/pci/intr_remapping.c
-> > ===================================================================
-> > --- linux-2.6.orig/drivers/pci/intr_remapping.c
-> > +++ linux-2.6/drivers/pci/intr_remapping.c
-> > @@ -60,7 +60,7 @@ int get_irte(int irq, struct irte *entry
-> >  	unsigned long flags;
-> >  	int index;
-> >  
-> > -	if (!entry || !irq_iommu)
-> > +	if (!entry || !irq_iommu || !irq_iommu->iommu)
-> >  		return -1;
-> 
-> Hmm, why do we need this? This is only called from
-> ir_ioapic_set_affinity() and ir_msi_set_affinity().
-> 
-> We should never end up there when intr_remapping=off, right ?
-
-Thinking more about it, this check is actively bogus. The call sites do:
-
-        struct irte irte;
-
-        if (get_irte(irq, &irte))
-                return -1;
-
-So entry _CANNOT_ be NULL.
-
-And in fact we should change get_irte() to
-
-get_irte(struct irq_2_iommu *irq_iommu, struct irte *entry)
-
-The call site already knows about it. No need to lookup irq_iommu
-based on the irq number.
-
-Thanks,
-
-	tglx
+Nicolas
