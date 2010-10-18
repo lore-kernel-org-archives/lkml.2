@@ -1,39 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757731Ab0JRTzw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Oct 2010 15:55:52 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:59524 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757446Ab0JRTzv (ORCPT
+	id S933167Ab0JRUCa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Oct 2010 16:02:30 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:44015 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755870Ab0JRUC3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Oct 2010 15:55:51 -0400
-Date: Mon, 18 Oct 2010 12:55:45 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Mike Miller <mike.miller@hp.com>
-Cc: Jens Axboe <axboe@kernel.dk>, LKML <linux-kernel@vger.kernel.org>,
-        LKML-scsi <linux-scsi@vger.kernel.org>
-Subject: Re: [PATCH 1/1] cciss: fix PCI IDs for new Smart Array controllers
-Message-Id: <20101018125545.908d97d4.akpm@linux-foundation.org>
-In-Reply-To: <20101018185307.GA11223@beardog.cce.hp.com>
-References: <20101018185307.GA11223@beardog.cce.hp.com>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 18 Oct 2010 16:02:29 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:cc:content-type;
+        b=Jxl2kyRRiVE2iwi4YbSr0P1Elnz26MtTHZVeHiFhKUGpi1J6wSy5xNvU9Vpt/0vg6o
+         pa937hPTxe7jSodHEBnUH5bUlhys2AixPKSXTKWIDoolqZKQNPTG0vzTQ9IbTQZaq/pu
+         aFMuLuBEpOpZX0iWzu3ETEDru1BQ3gXlr4Urc=
+MIME-Version: 1.0
+Date: Mon, 18 Oct 2010 23:02:14 +0300
+Message-ID: <AANLkTimdNFZwao_dCnAq2D=obq_Qccn-M8mNvUeoecc2@mail.gmail.com>
+Subject: Latest memblock patches
+From: Felipe Contreras <felipe.contreras@gmail.com>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 18 Oct 2010 13:53:07 -0500
-Mike Miller <mike.miller@hp.com> wrote:
+Hi,
 
-> Patch 1 of 1
-> cciss: fix PCI IDs for new controllers
-> 
-> This patch fixes the botched up PCI IDs of new controllers. Please consider
-> this patch for inclusion.
-> 
+Russell is worried that the latest memblock patches or x86 are going
+to affect ARM negatively. I would like to try them to find out if
+that's the case.
 
-What was botched up about it?
+Do you know if there's a branch available somewhere with the memblock
+patches that will be merged on .37?
 
-What are the runtime effects of this change?
+Cheers.
+
+-- 
+Felipe Contreras
