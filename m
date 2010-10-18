@@ -1,69 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751527Ab0JRExB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Oct 2010 00:53:01 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:33163 "EHLO smtps.tip.net.au"
+	id S1751750Ab0JRFCu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Oct 2010 01:02:50 -0400
+Received: from hera.kernel.org ([140.211.167.34]:49672 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750767Ab0JREw7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Oct 2010 00:52:59 -0400
-Date: Mon, 18 Oct 2010 15:52:49 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Jeremy Fitzhardinge <jeremy@goop.org>,
-        Xen Devel <Xen-devel@lists.xensource.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus <torvalds@linux-foundation.org>
-Subject: linux-next: manual merge of the xen tree with the swiotlb-xen tree
-Message-Id: <20101018155249.d9267bfe.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Mon__18_Oct_2010_15_52_49_+1100_OFumicP2HvSJO2Sw"
+	id S1750942Ab0JRFCt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Oct 2010 01:02:49 -0400
+Message-ID: <4CBBD4F6.2080506@kernel.org>
+Date: Mon, 18 Oct 2010 07:02:46 +0200
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.9) Gecko/20100915 Lightning/1.0b2 Thunderbird/3.1.4
+MIME-Version: 1.0
+To: Jesse Barnes <jbarnes@virtuousgeek.org>
+CC: linux-pci@vger.kernel.org, lkml <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2.6.36-rc7 2/2] shpchp: update workqueue usage
+References: <4CB86966.5020606@kernel.org>	<4CB8698A.8030202@kernel.org> <20101017200347.5ca09aed@jbarnes-desktop>
+In-Reply-To: <20101017200347.5ca09aed@jbarnes-desktop>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 18 Oct 2010 05:02:48 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__18_Oct_2010_15_52_49_+1100_OFumicP2HvSJO2Sw
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hello,
 
-Hi all,
+On 10/18/2010 05:03 AM, Jesse Barnes wrote:
+> ...and dropped again.  Hadn't realized they depend on stuff from your
+> workqueue tree.  Please just include them there assuming Kenji-san
+> doesn't nack them.
+> 
+> Acked-by: Jesse Barnes <jbarnes@virtuousgeek.org>
 
-Today's linux-next merge of the xen tree got conplex conflicts in
-drivers/xen/events.c between several commits from the swiotlb-xen tree
-and several commits from the xen tree.
+Ah, sorry about that.  I for some reason thought alloc_ordered_queue()
+was already mainline.  I'll route this through the wq tree.
 
-I am unqualified to fix this mess, sorry.  I am dropping the xen tree
-for today (and only not dropping the swiotlb-xen tree because that would
-be too much work).
+Thank you.
 
-I wonder, of course, why I have seen nothing in either of these trees
-until today (less than a week before the merge window opens).
-
-Please sort this mess out.  I will drop the swiotlb-xen tree as well
-tomorrow if nothing has changed.
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Mon__18_Oct_2010_15_52_49_+1100_OFumicP2HvSJO2Sw
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQEcBAEBAgAGBQJMu9KhAAoJEDMEi1NhKgbsAUAH/0FBRyzgC5zzt2HbrDAuPCQw
-BapDaGdeW8JrOKlI+EZJDgdkEAb2shDuQg5R4Bqr+vSDinbsNUilhdMC7aMceEpz
-YwyjbSsRkcrpHK49wggKwKFhL/spz29VOc6BwWfg6CDjXiMtxG3xlAgSxiGcc3AV
-mKEf0hglqxpXkCbWBbVjO2zWPI4Nbk1lMf+3zGLYFFEjx8/Gi1bWATOobqXoO0We
-x4AFnzH0Oc9vrrrf/6uZOA2bJPkCXEbpQYhp0jLqKGWkj9lr0lYWFgygb0t6JUQK
-gLUvbOEhikF23lRHKDXJWmIH4ia/Zw+oIZLajbun00wt58artT5chmgZGbmi4IU=
-=T2d1
------END PGP SIGNATURE-----
-
---Signature=_Mon__18_Oct_2010_15_52_49_+1100_OFumicP2HvSJO2Sw--
+-- 
+tejun
