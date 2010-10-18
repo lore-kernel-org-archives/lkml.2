@@ -1,79 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932558Ab0JRWW4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Oct 2010 18:22:56 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:54623 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755118Ab0JRWWz (ORCPT
+	id S1757103Ab0JRW1Z (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Oct 2010 18:27:25 -0400
+Received: from usindmx04.hds.com ([207.126.252.15]:59427 "EHLO
+	usindmx04.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753565Ab0JRW1Y convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Oct 2010 18:22:55 -0400
-Message-ID: <4CBCC8B3.7030706@kernel.org>
-Date: Mon, 18 Oct 2010 15:22:43 -0700
-From: Yinghai Lu <yinghai@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.12) Gecko/20100914 SUSE/3.0.8 Thunderbird/3.0.8
-MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
+	Mon, 18 Oct 2010 18:27:24 -0400
+From: Seiji Aguchi <seiji.aguchi@hds.com>
+To: "simon.kagstrom@netinsight.net" <simon.kagstrom@netinsight.net>,
+        "David.Woodhouse@intel.com" <David.Woodhouse@intel.com>,
+        "anders.grafstrom@netinsight.net" <anders.grafstrom@netinsight.net>,
+        "Artem.Bityutskiy@nokia.com" <Artem.Bityutskiy@nokia.com>,
+        "kosaki.motohiro@jp.fujitsu.com" <kosaki.motohiro@jp.fujitsu.com>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "jason.wessel@windriver.com" <jason.wessel@windriver.com>,
+        "jslaby@suse.cz" <jslaby@suse.cz>,
+        "jmorris@namei.org" <jmorris@namei.org>,
+        "eparis@redhat.com" <eparis@redhat.com>, "hch@lst.de" <hch@lst.de>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] x86, irq: Check if irq is remapped before freeing irte
-References: <4CBCB274.7010108@kernel.org> <alpine.LFD.2.00.1010182304050.6815@localhost6.localdomain6> <alpine.LFD.2.00.1010182311110.6815@localhost6.localdomain6>
-In-Reply-To: <alpine.LFD.2.00.1010182311110.6815@localhost6.localdomain6>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+CC: "dle-develop@lists.sourceforge.net" 
+	<dle-develop@lists.sourceforge.net>,
+        Satoru Moriya <satoru.moriya@hds.com>
+Date: Mon, 18 Oct 2010 18:24:11 -0400
+Subject: [RFC][Patch] Adding kmsg_dump() to
+ reboot/halt/poweroff/emergency_restart path
+Thread-Topic: [RFC][Patch] Adding kmsg_dump() to
+ reboot/halt/poweroff/emergency_restart path
+Thread-Index: ActvETT/9p9PowcwTqeInxIjhQPHfgAAAVeA
+Message-ID: <5C4C569E8A4B9B42A84A977CF070A35B2C11B4B724@USINDEVS01.corp.hds.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/18/2010 02:17 PM, Thomas Gleixner wrote:
-> 
-> 
-> On Mon, 18 Oct 2010, Thomas Gleixner wrote:
-> 
->> On Mon, 18 Oct 2010, Yinghai Lu wrote:
->>>
->>> Index: linux-2.6/drivers/pci/intr_remapping.c
->>> ===================================================================
->>> --- linux-2.6.orig/drivers/pci/intr_remapping.c
->>> +++ linux-2.6/drivers/pci/intr_remapping.c
->>> @@ -60,7 +60,7 @@ int get_irte(int irq, struct irte *entry
->>>  	unsigned long flags;
->>>  	int index;
->>>  
->>> -	if (!entry || !irq_iommu)
->>> +	if (!entry || !irq_iommu || !irq_iommu->iommu)
->>>  		return -1;
->>
->> Hmm, why do we need this? This is only called from
->> ir_ioapic_set_affinity() and ir_msi_set_affinity().
->>
->> We should never end up there when intr_remapping=off, right ?
-> 
-> Thinking more about it, this check is actively bogus. The call sites do:
-> 
->         struct irte irte;
-> 
->         if (get_irte(irq, &irte))
->                 return -1;
-> 
-> So entry _CANNOT_ be NULL.
-> 
-> And in fact we should change get_irte() to
-> 
-> get_irte(struct irq_2_iommu *irq_iommu, struct irte *entry)
-> 
-> The call site already knows about it. No need to lookup irq_iommu
-> based on the irq number.
+Hi,
 
-looks like all irq-irte related API could replace "int irq" to "struct irq_2_iommu *irq_iommu"
+Final messages from reboot, halt and poweroff aren't output to disk because klogd/syslogd 
+has been killed and root file system has been turned read-only.
 
-extern int get_irte(int irq, struct irte *entry);
-extern int modify_irte(int irq, struct irte *irte_modified);
-extern int alloc_irte(struct intel_iommu *iommu, int irq, u16 count);
-extern int set_irte_irq(int irq, struct intel_iommu *iommu, u16 index,
-                        u16 sub_handle);
-extern int map_irq_to_irte_handle(int irq, u16 *sub_handle);
-extern int free_irte(int irq);
+Final messages from emergency_restart aren't output to disk as well because system may
+reboot before klogd/syslogd outputs messages to disk.
 
-Thanks
+Therefore, it is better to put kmsg_dumper in reboot/halt/poweroff/emergency_restart path.
+Any comments/advices are welcome.
 
-Yinghai
+Seiji
+
+ Signed-off-by: Seiji Aguchi <seiji.aguchi@hds.com>
+
+---
+ include/linux/kmsg_dump.h |    4 ++++
+ kernel/printk.c           |    4 ++++
+ kernel/sys.c              |    6 ++++++
+ 3 files changed, 14 insertions(+), 0 deletions(-)
+
+diff --git a/include/linux/kmsg_dump.h b/include/linux/kmsg_dump.h
+index 24b4414..2a0d7d6 100644
+--- a/include/linux/kmsg_dump.h
++++ b/include/linux/kmsg_dump.h
+@@ -18,6 +18,10 @@ enum kmsg_dump_reason {
+ 	KMSG_DUMP_OOPS,
+ 	KMSG_DUMP_PANIC,
+ 	KMSG_DUMP_KEXEC,
++	KMSG_DUMP_RESTART,
++	KMSG_DUMP_HALT,
++	KMSG_DUMP_POWEROFF,
++	KMSG_DUMP_EMERG,
+ };
+ 
+ /**
+diff --git a/kernel/printk.c b/kernel/printk.c
+index 6d6b09f..6a63848 100644
+--- a/kernel/printk.c
++++ b/kernel/printk.c
+@@ -1516,6 +1516,10 @@ static const char const *kmsg_reasons[] = {
+ 	[KMSG_DUMP_OOPS]	= "oops",
+ 	[KMSG_DUMP_PANIC]	= "panic",
+ 	[KMSG_DUMP_KEXEC]	= "kexec",
++	[KMSG_DUMP_RESTART]	= "restart",
++	[KMSG_DUMP_HALT]	= "halt",
++	[KMSG_DUMP_POWEROFF]	= "poweroff",
++	[KMSG_DUMP_EMERG]	= "emergency_restart",
+ };
+ 
+ static const char *kmsg_to_str(enum kmsg_dump_reason reason)
+diff --git a/kernel/sys.c b/kernel/sys.c
+index 7f5a0cd..3eab886 100644
+--- a/kernel/sys.c
++++ b/kernel/sys.c
+@@ -43,6 +43,8 @@
+ #include <linux/kprobes.h>
+ #include <linux/user_namespace.h>
+ 
++#include <linux/kmsg_dump.h>
++
+ #include <asm/uaccess.h>
+ #include <asm/io.h>
+ #include <asm/unistd.h>
+@@ -285,6 +287,7 @@ out_unlock:
+  */
+ void emergency_restart(void)
+ {
++	kmsg_dump(KMSG_DUMP_EMERG);
+ 	machine_emergency_restart();
+ }
+ EXPORT_SYMBOL_GPL(emergency_restart);
+@@ -312,6 +315,7 @@ void kernel_restart(char *cmd)
+ 		printk(KERN_EMERG "Restarting system.\n");
+ 	else
+ 		printk(KERN_EMERG "Restarting system with command '%s'.\n", cmd);
++	kmsg_dump(KMSG_DUMP_RESTART);
+ 	machine_restart(cmd);
+ }
+ EXPORT_SYMBOL_GPL(kernel_restart);
+@@ -333,6 +337,7 @@ void kernel_halt(void)
+ 	kernel_shutdown_prepare(SYSTEM_HALT);
+ 	sysdev_shutdown();
+ 	printk(KERN_EMERG "System halted.\n");
++	kmsg_dump(KMSG_DUMP_HALT);
+ 	machine_halt();
+ }
+ 
+@@ -351,6 +356,7 @@ void kernel_power_off(void)
+ 	disable_nonboot_cpus();
+ 	sysdev_shutdown();
+ 	printk(KERN_EMERG "Power down.\n");
++	kmsg_dump(KMSG_DUMP_POWEROFF);
+ 	machine_power_off();
+ }
+ EXPORT_SYMBOL_GPL(kernel_power_off);
+-- 
+1.7.2.2
+
