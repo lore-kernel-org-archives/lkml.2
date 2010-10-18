@@ -1,110 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756112Ab0JRTKg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Oct 2010 15:10:36 -0400
-Received: from c-67-162-90-113.hsd1.in.comcast.net ([67.162.90.113]:36231 "HELO
-	kosh.dhis.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1753507Ab0JRTKf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Oct 2010 15:10:35 -0400
-Message-ID: <20101018191034.21165.qmail@kosh.dhis.org>
-From: pacman@kosh.dhis.org
-Subject: Re: PROBLEM: memory corrupting bug, bisected to 6dda9d55
-To: mel@csn.ul.ie (Mel Gorman)
-Date: Mon, 18 Oct 2010 14:10:33 -0500 (GMT+5)
-Cc: akpm@linux-foundation.org (Andrew Morton), linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org
-In-Reply-To: <20101018113331.GB30667@csn.ul.ie>
+	id S1755842Ab0JRTLA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Oct 2010 15:11:00 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:32951 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754457Ab0JRTK7 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Oct 2010 15:10:59 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:from:date
+         :x-google-sender-auth:message-id:subject:to:cc:content-type
+         :content-transfer-encoding;
+        b=UQtVEbqm7NmgzD5ksgXURZ9zoQPrgPXZSPloYbZI0Wj9bw/fT4Qc88VEdgg1xf3lM0
+         ens4vB4QLxgM/4yx9p171KyuciO5hxsG5ajUTU8sTD8QLvhz0aZhMVvBjfLdakhWlxFW
+         eO1gDzwlUr5lOV+z15K2QiLfCCWO5gVu0YQo4=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20101018163223.GC2468@vigoh>
+References: <1287268187-9628-1-git-send-email-vapier@gentoo.org>
+ <AANLkTinMSbhTkH0zQn_YO7hFF7zkuv-Gj-B0BUFWy5nP@mail.gmail.com> <20101018163223.GC2468@vigoh>
+From: Mike Frysinger <vapier@gentoo.org>
+Date: Mon, 18 Oct 2010 15:10:36 -0400
+X-Google-Sender-Auth: hzPwani11aa7yGhtZ8a6_sGA510
+Message-ID: <AANLkTin3Tx8jyR47G3SNbP_zFJ+tGdR6FtraHmM2T79j@mail.gmail.com>
+Subject: Re: [PATCH] bluetooth: fix unaligned access to l2cap conf data
+To: "Gustavo F. Padovan" <padovan@profusion.mobi>
+Cc: Harvey Harrison <harvey.harrison@gmail.com>,
+        linux-bluetooth@vger.kernel.org, Marcel Holtmann <marcel@holtmann.org>,
+        uclinux-dist-devel@blackfin.uclinux.org, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        steven miao <realmz6@gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mel Gorman writes:
-> 
-> A bit but I still don't know why it would cause corruption. Maybe this is still
-> a caching issue but the difference in timing between list_add and list_add_tail
-> is enough to hide the bug. It's also possible there are some registers
-> ioremapped after the memmap array and reading them is causing some
-> problem.
+On Mon, Oct 18, 2010 at 12:32, Gustavo F. Padovan wrote:
+> * Harvey Harrison <harvey.harrison@gmail.com> [2010-10-18 11:17:28 -0700]:
+>> On Sat, Oct 16, 2010 at 3:29 PM, Mike Frysinger <vapier@gentoo.org> wrote:
+>> > From: steven miao <realmz6@gmail.com>
+>> >
+>> >        case 2:
+>> > -               *((__le16 *) opt->val) = cpu_to_le16(val);
+>> > +               put_unaligned_le16(cpu_to_le16(val), opt->val);
+>> >                break;
+>>
+>> I think you wanted:
+>> put_unaligned_le16(val, opt->val);
+>
+> I fixed that in the tree. Thanks for the report.
 
-I've been doing a lot more tests and I'm sure that 6dda9d55 is not really
-responsible. It just happens to provoke the bug in my particular setup.
-Whatever it is, it's very sensitive to small changes.
-
-At the end of free_all_bootmem, the free list for order 9 has 4 entries.
-Which one is at the head of the list depends on whether 6dda9d55 is applied
-or not. If page number 130048 is at the head of the list, it gets used fairly
-soon, and everything's fine. The alternative is that page number 64512 is at
-the head of the list, so it gets used fairly soon, and corruption occurs.
-
-> 
-> Andrew, what is the right thing to do here? We could flail around looking
-> for explanations as to why the bug causes a user buffer corruption but never
-> get an answer or do we go with this patch, preferably before 2.6.36 releases?
-
-I've been flailing around quite a bit. Here's my latest result:
-
-Since I can view the corruption with md5sum /sbin/e2fsck, I know it's in a
-clean cached page. So I made an extra copy of /sbin/e2fsck, which won't be
-loaded into memory during boot. So now after the corruption happens, I can
-  cmp -l /sbin/e2fsck good-e2fsck
-for a quick look at the changed bytes. Much easier than provoking a segfault
-under gdb.
-
-Then I got really creative and wrote a cmp replacement which mmaps the files
-and reports the physical addresses from /proc/self/pagemap of the pages that
-don't match. And the consistent result is that physical pages 64604 and 64609
-(both in the range of the order=9 64512) have wrong contents. And the
-corruption is always a single word 128 bytes after the start of the page.
-Physical addresses 0x0fc5c080 and 0x0fc61080 are hit every time.
-
-The values of the corrupted words, observed in 5 consecutive boots, were:
-  at 0fc5c080   at 0fc61080
-  -----------   -----------
-  c3540000      92510000
-  565c0000      23590000
-  c85b0000      97580000
-  d15f0000      9e5c0000
-  d95b0000      a8580000
-
-The low 16 bits are all 0 and the upper 16 bits seem randomly distributed.
-But look at the differences:
-
-  c3540000 - 92510000 = 31030000
-  565c0000 - 23590000 = 33030000
-  c85b0000 - 97580000 = 31030000
-  d15f0000 - 9e5c0000 = 33030000
-  d95b0000 - a8580000 = 31030000
-
-This means something... but I don't know what.
-
-In a completely different method of investigation, I went back a few stable
-kernels, got 2.6.33.7 and applied 6dda9d55 to it, thinking that if 6dda9d55
-only reveals a pre-existing bug, I could bisect it using 6dda9d55 as a
-bug-revealing assistant. The bug appeared when running 2.6.33.7 with 6dda9d55
-applied. That was discouraging.
-
->This patch fixes the problem by ensuring we are not reading a possibly
->invalid location of memory. It's not clear why the read causes
->corruption but one way or the other it is a buggy read.
-
-At least that part of the explanation is wrong. Where's the buggy read?
-The action taken by the 6dda9d55 version of __free_one_page looks perfectly
-legitimate to me. Page numbers:
-
-[129024       ] [130048       ]   order=10
-[129024 129536] [130048 130560]   order=9
-
-130048 is being freed. 130560 is not free. 129024 (the higher_buddy) is
-already free at order=10. So 130048 is being pushed to the tail of the free
-list, on the speculation that 130560 might soon be free and then the whole
-thing will form an order=11 free page, the only problem being that order=11
-is too high so that later merge will never happen. It's not useful, and maybe
-not conceptually valid to say that 129024 is the buddy of 130048, but it is
-an existing page, and the only way it wouldn't be is if the total memory size
-was not a multiple of 1<<(MAX_ORDER-1) pages
-
--- 
-Alan Curry
+i guess you fixed the 32bit one too ?
+  put_unaligned_le32(cpu_to_le32(val), opt->val);
+-mike
