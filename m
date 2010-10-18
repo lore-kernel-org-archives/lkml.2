@@ -1,167 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757620Ab0JRSM5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Oct 2010 14:12:57 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:45777 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754961Ab0JRSM4 (ORCPT
+	id S1757632Ab0JRSNs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Oct 2010 14:13:48 -0400
+Received: from smtp107.prem.mail.ac4.yahoo.com ([76.13.13.46]:30448 "HELO
+	smtp107.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1755007Ab0JRSNr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Oct 2010 14:12:56 -0400
-Date: Mon, 18 Oct 2010 20:12:53 +0200
-From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: Dinh.Nguyen@freescale.com
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux@arm.linux.org.uk, s.hauer@pengutronix.de,
-        valentin.longchamp@epfl.ch, daniel@caiaq.de, grant.likely@secretlab.ca,
-        bryan.wu@canonical.com, amit.kucheria@canonical.com,
-        xiao-lizhang@freescale.com
-Subject: Re: [PATCHv2 2/2] ARM: imx: Add gpio-keys to mx51 babbage board
-Message-ID: <20101018181253.GI12363@pengutronix.de>
-References: <1287419731-7885-1-git-send-email-Dinh.Nguyen@freescale.com> <1287419731-7885-2-git-send-email-Dinh.Nguyen@freescale.com>
+	Mon, 18 Oct 2010 14:13:47 -0400
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+X-YMail-OSG: McC.TNEVM1mMbD35zsLdHH9EBk6eTXsmEXD2GLkKtTFFxV8
+ _z_A-
+X-Yahoo-Newman-Property: ymail-3
+Date: Mon, 18 Oct 2010 13:13:42 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Mel Gorman <mel@csn.ul.ie>
+cc: Pekka Enberg <penberg@kernel.org>, Pekka Enberg <penberg@cs.helsinki.fi>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        David Rientjes <rientjes@google.com>, npiggin@kernel.dk,
+        yanmin_zhang@linux.intel.com
+Subject: Re: [UnifiedV4 00/16] The Unified slab allocator (V4)
+In-Reply-To: <20101013141455.GQ30667@csn.ul.ie>
+Message-ID: <alpine.DEB.2.00.1010181305000.2092@router.home>
+References: <20101005185725.088808842@linux.com> <AANLkTinPU4T59PvDH1wX2Rcy7beL=TvmHOZh_wWuBU-T@mail.gmail.com> <alpine.DEB.2.00.1010061054410.31538@router.home> <20101013141455.GQ30667@csn.ul.ie>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1287419731-7885-2-git-send-email-Dinh.Nguyen@freescale.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Dinh,
+On Wed, 13 Oct 2010, Mel Gorman wrote:
 
-On Mon, Oct 18, 2010 at 11:35:31AM -0500, Dinh.Nguyen@freescale.com wrote:
-> From: Dinh Nguyen <Dinh.Nguyen@freescale.com>
-> 
-> Add functionality for the power button on MX51 Babbage board.
-> 
-> Signed-off-by: Dinh Nguyen <Dinh.Nguyen@freescale.com>
-> ---
->  arch/arm/configs/mx51_defconfig             |    1 +
->  arch/arm/mach-mx5/board-mx51_babbage.c      |   33 +++++++++++++++++++++++++++
->  arch/arm/plat-mxc/include/mach/iomux-mx51.h |    4 ++-
->  3 files changed, 37 insertions(+), 1 deletions(-)
-> 
-> diff --git a/arch/arm/configs/mx51_defconfig b/arch/arm/configs/mx51_defconfig
-> index a665ecb..f46f87e 100644
-> --- a/arch/arm/configs/mx51_defconfig
-> +++ b/arch/arm/configs/mx51_defconfig
-> @@ -81,6 +81,7 @@ CONFIG_FEC=y
->  CONFIG_INPUT_FF_MEMLESS=m
->  # CONFIG_INPUT_MOUSEDEV_PSAUX is not set
->  CONFIG_INPUT_EVDEV=y
-> +CONFIG_KEYBOARD_GPIO=y
->  CONFIG_INPUT_EVBUG=m
->  CONFIG_MOUSE_PS2=m
->  CONFIG_MOUSE_PS2_ELANTECH=y
-nice
+> Minimally, I see the same sort of hackbench socket performance regression
+> as reported elsewhere (10-15% regression). Otherwise, it isn't particularly
+> exciting results. The machine is very basic - 2 socket, 4 cores, x86-64,
+> 2G RAM. Macine model is an IBM BladeCenter HS20. Processor is Xeon but I'm
+> not sure exact what model. It appears to be from around the P4 times.
 
-> diff --git a/arch/arm/mach-mx5/board-mx51_babbage.c b/arch/arm/mach-mx5/board-mx51_babbage.c
-> index 6e384d9..0dded49 100644
-> --- a/arch/arm/mach-mx5/board-mx51_babbage.c
-> +++ b/arch/arm/mach-mx5/board-mx51_babbage.c
-> @@ -16,7 +16,11 @@
->  #include <linux/gpio.h>
->  #include <linux/delay.h>
->  #include <linux/io.h>
-> +#include <linux/interrupt.h>
-> +#include <linux/irq.h>
->  #include <linux/fsl_devices.h>
-> +#include <linux/gpio_keys.h>
-> +#include <linux/input.h>
->  
->  #include <mach/common.h>
->  #include <mach/hardware.h>
-> @@ -36,6 +40,7 @@
->  #define BABBAGE_USB_HUB_RESET	(0*32 + 7)	/* GPIO_1_7 */
->  #define BABBAGE_USBH1_STP	(0*32 + 27)	/* GPIO_1_27 */
->  #define BABBAGE_PHY_RESET (1*32 +5)	/* GPIO_2_5 */
-> +#define BABBAGE_POWER_KEY	(1*32 + 21)	/* GPIO_2_21 */
->  
->  /* USB_CTRL_1 */
->  #define MX51_USB_CTRL_1_OFFSET			0x10
-> @@ -45,8 +50,33 @@
->  #define	MX51_USB_PLL_DIV_19_2_MHZ	0x01
->  #define	MX51_USB_PLL_DIV_24_MHZ	0x02
->  
-> +static struct gpio_keys_button babbage_buttons[] = {
-> +	{
-> +		.gpio		= BABBAGE_POWER_KEY,
-> +		.code		= BTN_0,
-> +		.desc		= "PWR",
-> +		.active_low	= 1,
-> +		.wakeup		= 1,
-> +	},
-> +};
-> +
-> +static struct gpio_keys_platform_data babbage_button_data = {
-> +	.buttons	= babbage_buttons,
-> +	.nbuttons	= ARRAY_SIZE(babbage_buttons),
-> +};
-> +
-> +static struct platform_device babbage_button_device = {
-> +	.name		= "gpio-keys",
-> +	.id		= -1,
-> +	.num_resources	= 0,
-> +	.dev		= {
-> +		.platform_data	= &babbage_button_data,
-> +	}
-> +};
-> +
->  static struct platform_device *devices[] __initdata = {
->  	&mxc_fec_device,
-> +	&babbage_button_device,
-I think this won't fit on top of Sascha's tree as it has a patch that
-changed the way the fec is registered.
+Looks not good. Something must still be screwed up. Trouble is to find
+time to do this work. When working on SLAB we had a team to implement the
+NUMA stuff and deal with the performance issues.
 
->  };
->  
->  static struct pad_desc mx51babbage_pads[] = {
-> @@ -93,6 +123,9 @@ static struct pad_desc mx51babbage_pads[] = {
->  
->  	/* USB HUB reset line*/
->  	MX51_PAD_GPIO_1_7__GPIO_1_7,
-> +
-> +	/* Power Key */
-> +	MX51_PAD_EIM_A27__GPIO_2_21,
->  };
->  
->  /* Serial ports */
-> diff --git a/arch/arm/plat-mxc/include/mach/iomux-mx51.h b/arch/arm/plat-mxc/include/mach/iomux-mx51.h
-> index 21bfa46..05f62a4 100644
-> --- a/arch/arm/plat-mxc/include/mach/iomux-mx51.h
-> +++ b/arch/arm/plat-mxc/include/mach/iomux-mx51.h
-> @@ -31,6 +31,8 @@ typedef enum iomux_config {
->  	IOMUX_CONFIG_SION = 0x1 << 4,   /* LOOPBACK:MUX SION bit */
->  } iomux_pin_cfg_t;
->  
-> +#define IOMUX_TO_IRQ(pin)	(MXC_GPIO_IRQ_START + pin)
-> +
-This isn't used.  (Didn't check patch 1, it should go there if it is
-needed.)
+> Christoph, in particular while it tests netperf, it is not binding to any
+> particular CPU (although it can), server and client are running on the local
+> machine (which has particular performance characterisitcs of its own) and
+> the tests is STREAM, not RR so the tarball is not a replacement for more
+> targetting testing or workload-specific testing. Still, it should catch
+> some of the common snags before getting into specific workloads without
+> taking an extraordinary amount of time to complete. sysbench might take a
+> long time for many-core machines, limit the number of threads it tests with
+> OLTP_MAX_THREADS in the config file.
 
->  /* Pad control groupings */
->  #define MX51_UART1_PAD_CTRL	(PAD_CTL_HYS | PAD_CTL_PKE | PAD_CTL_PUE | \
->  				PAD_CTL_DSE_HIGH)
-> @@ -102,7 +104,7 @@ typedef enum iomux_config {
->  #define MX51_PAD_EIM_A24__GPIO_2_18             IOMUX_PAD(0x450, 0x0bc, 1, 0x0,   0, NO_PAD_CTRL)
->  #define MX51_PAD_EIM_A25__GPIO_2_19             IOMUX_PAD(0x454, 0x0c0, 1, 0x0,   0, NO_PAD_CTRL)
->  #define MX51_PAD_EIM_A26__GPIO_2_20             IOMUX_PAD(0x458, 0x0c4, 1, 0x0,   0, NO_PAD_CTRL)
-> -#define MX51_PAD_EIM_A27__GPIO_2_21             IOMUX_PAD(0x45c, 0x0c8, 1, 0x0,   0, NO_PAD_CTRL)
-> +#define MX51_PAD_EIM_A27__GPIO_2_21             IOMUX_PAD(0x45c, 0x0c8, 1, 0x0,   0, MX51_I2C_PAD_CTRL)
-This looks wrong.  Isn't there a MX51_GPIO_PAD_CTRL?
->  #define MX51_PAD_EIM_EB0__EIM_EB0               IOMUX_PAD(0x460, 0x0cc, 0, 0x0,   0, NO_PAD_CTRL)
->  #define MX51_PAD_EIM_EB1__EIM_EB1               IOMUX_PAD(0x464, 0x0d0, 0, 0x0,   0, NO_PAD_CTRL)
->  #define MX51_PAD_EIM_EB2__GPIO_2_22             IOMUX_PAD(0x468, 0x0d4, 1, 0x0,   0, NO_PAD_CTRL)
+That should not matter too much. The performance results should replicate
+SLABs caching behavior and I do not see that in the tests.
 
-Best regards
-Uwe
+> NETPERF UDP
+>                    netperf-udp       netperf-udp          udp-slub
+>                   slab-vanilla      slub-vanilla      unified-v4r1
+>       64    52.23 ( 0.00%)*    53.80 ( 2.92%)     50.56 (-3.30%)               1.36%             1.00%             1.00%
+>      128   103.70 ( 0.00%)    107.43 ( 3.47%)    101.23 (-2.44%)
+>      256   208.62 ( 0.00%)*   212.15 ( 1.66%)    202.35 (-3.10%)               1.73%             1.00%             1.00%
+>     1024   814.86 ( 0.00%)    827.42 ( 1.52%)    799.13 (-1.97%)
+>     2048  1585.65 ( 0.00%)   1614.76 ( 1.80%)   1563.52 (-1.42%)
+>     3312  2512.44 ( 0.00%)   2556.70 ( 1.73%)   2460.37 (-2.12%)
+>     4096  3016.81 ( 0.00%)*  3058.16 ( 1.35%)   2901.87 (-3.96%)               1.15%             1.00%             1.00%
+>     8192  5384.46 ( 0.00%)   5092.95 (-5.72%)   4912.71 (-9.60%)
+>    16384  8091.96 ( 0.00%)*  8249.26 ( 1.91%)   8004.40 (-1.09%)               1.70%             1.00%             1.00%
 
--- 
-Pengutronix e.K.                           | Uwe Kleine-König            |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+
+Seems that we lost some of the netperf wins.
+
+> SYSBENCH
+>             sysbench-slab-vanilla-sysbenchsysbench-slub-vanilla-sysbench     sysbench-slub
+>                   slab-vanilla      slub-vanilla      unified-v4r1
+>            1  7521.24 ( 0.00%)  7719.38 ( 2.57%)  7589.13 ( 0.89%)
+>            2 14872.85 ( 0.00%) 15275.09 ( 2.63%) 15054.08 ( 1.20%)
+>            3 16502.53 ( 0.00%) 16676.53 ( 1.04%) 16465.69 (-0.22%)
+>            4 17831.19 ( 0.00%) 17900.09 ( 0.38%) 17819.03 (-0.07%)
+>            5 18158.40 ( 0.00%) 18432.74 ( 1.49%) 18341.99 ( 1.00%)
+>            6 18673.68 ( 0.00%) 18878.41 ( 1.08%) 18614.92 (-0.32%)
+>            7 17689.75 ( 0.00%) 17871.89 ( 1.02%) 17633.19 (-0.32%)
+>            8 16885.68 ( 0.00%) 16838.37 (-0.28%) 16498.41 (-2.35%)
+
+Same here. Seems that we combined the worst of both.
