@@ -1,99 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751931Ab0JRFFJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Oct 2010 01:05:09 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:52509 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751002Ab0JRFFI (ORCPT
+	id S1751409Ab0JRFSy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Oct 2010 01:18:54 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:40978 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750718Ab0JRFSx convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Oct 2010 01:05:08 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: Neil Brown <neilb@suse.de>, Wu Fengguang <fengguang.wu@intel.com>
-Subject: Re: Deadlock possibly caused by too_many_isolated.
-Cc: kosaki.motohiro@jp.fujitsu.com, Rik van Riel <riel@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Li Shaohua <shaohua.li@intel.com>
-In-Reply-To: <20101018151459.2b443221@notabene>
-References: <20100915184434.18e2d933@notabene> <20101018151459.2b443221@notabene>
-Message-Id: <20101018140116.3AE8.A69D9226@jp.fujitsu.com>
+	Mon, 18 Oct 2010 01:18:53 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=FopXb1Htlgg9Q66d6m4XmuIGfmUuPhQI9SWrHyYMw5wwZwTvmi2kYzYWECiLqZSJ1U
+         oUpqdAlUKxTwKWT2UAjGe9bYCc71+X+i+CtuU6GFa/dKwBQkIy9R3fnIE6v2ZVaflDCn
+         3zxUS9fxdgqxxYpN7e/hevsbg5CPwRRYx73QY=
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Becky! ver. 2.50.07 [ja]
-Date: Mon, 18 Oct 2010 14:04:57 +0900 (JST)
+In-Reply-To: <20101018093533.abd4c8ee.kamezawa.hiroyu@jp.fujitsu.com>
+References: <20101013121527.8ec6a769.kamezawa.hiroyu@jp.fujitsu.com>
+	<20101013121829.c3320944.kamezawa.hiroyu@jp.fujitsu.com>
+	<AANLkTingNmxT6ww_VB_K=rjsgR+dHANLnyNkwV1Myvnk@mail.gmail.com>
+	<20101018093533.abd4c8ee.kamezawa.hiroyu@jp.fujitsu.com>
+Date: Mon, 18 Oct 2010 14:18:52 +0900
+Message-ID: <AANLkTikt+kq2LHZNSJAN3EQwYALdYtGuOAXfVghN-7oY@mail.gmail.com>
+Subject: Re: [RFC][PATCH 3/3] alloc contig pages with migration.
+From: Minchan Kim <minchan.kim@gmail.com>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Wed, 15 Sep 2010 18:44:34 +1000
-> Neil Brown <neilb@suse.de> wrote:
-> 
-> > On Wed, 15 Sep 2010 16:28:43 +0800
-> > Wu Fengguang <fengguang.wu@intel.com> wrote:
-> > 
-> > > Neil,
-> > > 
-> > > Sorry for the rushed and imaginary ideas this morning..
-> > > 
-> > > > @@ -1101,6 +1101,12 @@ static unsigned long shrink_inactive_lis
-> > > >  	int lumpy_reclaim = 0;
-> > > >  
-> > > >  	while (unlikely(too_many_isolated(zone, file, sc))) {
-> > > > +		if ((sc->gfp_mask & GFP_IOFS) != GFP_IOFS)
-> > > > +			/* Not allowed to do IO, so mustn't wait
-> > > > +			 * on processes that might try to
-> > > > +			 */
-> > > > +			return SWAP_CLUSTER_MAX;
-> > > > +
-> > > 
-> > > The above patch should behavior like this: it returns SWAP_CLUSTER_MAX
-> > > to cheat all the way up to believe "enough pages have been reclaimed".
-> > > So __alloc_pages_direct_reclaim() see non-zero *did_some_progress and
-> > > go on to call get_page_from_freelist(). That normally fails because
-> > > the task didn't really scanned the LRU lists. However it does have the
-> > > possibility to succeed -- when so many processes are doing concurrent
-> > > direct reclaims, it may luckily get one free page reclaimed by other
-> > > tasks. What's more, if it does fail to get a free page, the upper
-> > > layer __alloc_pages_slowpath() will be repeat recalling
-> > > __alloc_pages_direct_reclaim(). So, sooner or later it will succeed in
-> > > "stealing" a free page reclaimed by other tasks.
-> > > 
-> > > In summary, the patch behavior for !__GFP_IO/FS is
-> > > - won't do any page reclaim
-> > > - won't fail the page allocation (unexpected)
-> > > - will wait and steal one free page from others (unreasonable)
-> > > 
-> > > So it will address the problem you encountered, however it sounds
-> > > pretty unexpected and illogical behavior, right?
-> > > 
-> > > I believe this patch will address the problem equally well.
-> > > What do you think?
-> > 
-> > Thank you for the detailed explanation.  Is agree with your reasoning and
-> > now understand why your patch is sufficient.
-> > 
-> > I will get it tested and let you know how that goes.
-> 
-> (sorry this has taken a month to follow up).
-> 
-> Testing shows that this patch seems to work.
-> The test load (essentially kernbench) doesn't deadlock any more, though it
-> does get bogged down thrashing in swap so it doesn't make a lot more
-> progress :-)  I guess that is to be expected.
-> 
-> One observation is that the kernbench generated 10%-20% more context switches
-> with the patch than without.  Is that to be expected?
-> 
-> Do you have plans for sending this patch upstream?
+On Mon, Oct 18, 2010 at 9:35 AM, KAMEZAWA Hiroyuki
+<kamezawa.hiroyu@jp.fujitsu.com> wrote:
+>> > + * @node:       the node from which memory is allocated. "-1" means anywhere.
+>> > + * @no_search: if true, "hint" is not a hint, requirement.
+>>
+>> As I said previous, how about "strict" or "ALLOC_FIXED" like MAP_FIXED?
+>>
+>
+> If "range" is an argument, ALLOC_FIXED is not necessary. I'll add "range".
 
-Wow, I had thought this patch has been merged already. Wu, can you please
-repost this one? and please add my and Neil's ack tag.
+Sounds good.
 
-Thanks.
+>
+>> > + *
+>> > + * Search an area of @size in the physical memory map and checks wheter
+>>
+>> Typo
+>> whether
+>>
+>> > + * we can create a contigous free space. If it seems possible, try to
+>> > + * create contigous space with page migration. If no_search==true, we just try
+>> > + * to allocate [hint, hint+size) range of pages as contigous block.
+>> > + *
+>> > + * Returns a page of the beginning of contiguous block. At failure, NULL
+>> > + * is returned. Each page in the area is set to page_count() = 1. Because
+>>
+>> Why do you mention page_count() = 1?
+>> Do users of this function have to know it?
+>
+> A user can free any page within the range for his purpose.
+
+I think it's not a good idea if we allow handling of page by page, not
+for page-chunk requested by user.
+By mistake, free_contig_pages could have a trouble to free pages.
+Why do you support the feature?  Do you have any motivation?
 
 
-
+-- 
+Kind regards,
+Minchan Kim
