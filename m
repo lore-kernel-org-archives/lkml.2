@@ -1,150 +1,467 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755196Ab0JRLdr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Oct 2010 07:33:47 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:34713 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755183Ab0JRLdp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Oct 2010 07:33:45 -0400
-Date: Mon, 18 Oct 2010 12:33:31 +0100
-From: Mel Gorman <mel@csn.ul.ie>
-To: pacman@kosh.dhis.org
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org
-Subject: Re: PROBLEM: memory corrupting bug, bisected to 6dda9d55
-Message-ID: <20101018113331.GB30667@csn.ul.ie>
-References: <20101013144044.GS30667@csn.ul.ie> <20101013175205.21187.qmail@kosh.dhis.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20101013175205.21187.qmail@kosh.dhis.org>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+	id S1755259Ab0JRLfi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Oct 2010 07:35:38 -0400
+Received: from canuck.infradead.org ([134.117.69.58]:60251 "EHLO
+	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755193Ab0JRLff (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Oct 2010 07:35:35 -0400
+Message-Id: <20101018112951.078864796@chello.nl>
+User-Agent: quilt/0.47-1
+Date: Mon, 18 Oct 2010 13:24:48 +0200
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Andrea Arcangeli <aarcange@redhat.com>, Avi Kivity <avi@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Rik van Riel <riel@redhat.com>,
+        Ingo Molnar <mingo@elte.hu>, akpm@linux-foundation.org,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        David Miller <davem@davemloft.net>,
+        Hugh Dickins <hugh.dickins@tiscali.co.uk>, Mel Gorman <mel@csn.ul.ie>,
+        Nick Piggin <npiggin@kernel.dk>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Yanmin Zhang <yanmin_zhang@linux.intel.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>
+Subject: [PATCH 15/20] mm, powerpc: Move the RCU page-table freeing into generic code
+References: <20101018112433.556591568@chello.nl>
+Content-Disposition: inline; filename=mm-preempt-tlb-gather-rcu.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 13, 2010 at 12:52:05PM -0500, pacman@kosh.dhis.org wrote:
-> Mel Gorman writes:
-> > 
-> > On Mon, Oct 11, 2010 at 02:00:39PM -0700, Andrew Morton wrote:
-> > > 
-> > > It's corruption of user memory, which is unusual.  I'd be wondering if
-> > > there was a pre-existing bug which 6dda9d55bf545013597 has exposed -
-> > > previously the corruption was hitting something harmless.  Something
-> > > like a missed CPU cache writeback or invalidate operation.
-> > > 
-> > 
-> > This seems somewhat plausible although it's hard to tell for sure. But
-> > lets say we had the following situation in memory
-> > 
-> > [<----MAX_ORDER_NR_PAGES---->][<----MAX_ORDER_NR_PAGES---->]
-> > INITRD                        memmap array
-> 
-> I don't use initrd, so this isn't exactly what happened here. But it could be
-> close. Let me throw out some more information and see if it triggers any
-> ideas.
-> 
+In case other architectures require RCU freed page-tables to implement
+gup_fast() and software filled hashes and similar things, provide the
+means to do so by moving the logic into generic code.
 
-Ok.
-
-> First, I tried a new test after seeing the corruption happen:
-> # md5sum /sbin/e2fsck ; echo 1 > /proc/sys/vm/drop_caches ; md5sum /sbin/e2fsck
-> And got 2 different answers. The second answer was the correct one.
-> 
-> Since applying the suggested patch which changed MAX_ORDER-1 to MAX_ORDER-2,
-> I've been trying to isolate exactly when the corruption happens. Since I
-> don't know much about kernel code, my main method is stuffing the area full
-> of printk's.
-> 
-> First I duplicated the affected function __free_one_page, since it's inlined
-> at 2 different places, so I could apply the patch to just one of them. This
-> proved that the problem is happening when called from free_one_page.
-> 
-> The patch which fixes (or at least covers up) the bug will only matter when
-> order==MAX_ORDER-2, otherwise everything is the same. So I added a lot of
-> printk's to show what's happening when order==MAX_ORDER-2. I found that, very
-> repeatably, 126 such instances occur during boot, and 61 of them pass the
-> page_is_buddy(higher_page, higher_buddy, order + 1) test, causing them to
-> call list_add_tail.
-> 
-> Next, since the bug appears when this code decides to call list_add_tail,
-> I made my own wrapper for list_add_tail, which allowed me to force some of
-> the calls to do list_add instead. Eventually I found that of the 61 calls,
-> the last one makes the difference. Allowing the first 60 calls to go through
-> to list_add_tail, and switching the last one to list_add, the symptom goes
-> away.
-> 
-> dump_stack() for that last call gave me a backtrace like this:
-> [c0303e80] [c0008124] show_stack+0x4c/0x144 (unreliable)
-> [c0303ec0] [c0068a84] free_one_page+0x28c/0x5b0
-> [c0303f20] [c0069588] __free_pages_ok+0xf8/0x120
-> [c0303f40] [c02d28c8] free_all_bootmem_core+0xf0/0x1f8
-> [c0303f70] [c02d29fc] free_all_bootmem+0x2c/0x6c
-> [c0303f90] [c02cc7dc] mem_init+0x70/0x2ac
-> [c0303fc0] [c02c66a4] start_kernel+0x150/0x27c
-> [c0303ff0] [00003438] 0x3438
-> 
-> And this might be interesting: the PFN of the page being added in that
-> critical 61st call is 130048, which exactly matches the number of available
-> pages:
-> 
->   free_area_init_node: node 0, pgdat c02fee6c, node_mem_map c0330000
->     DMA zone: 1024 pages used for memmap
->     DMA zone: 0 pages reserved
->     DMA zone: 130048 pages, LIFO batch:31
->   Built 1 zonelists in Zone order, mobility grouping on.  Total pages: 130048
-> 
-> Suspicious?
-> 
-
-A bit but I still don't know why it would cause corruption. Maybe this is still
-a caching issue but the difference in timing between list_add and list_add_tail
-is enough to hide the bug. It's also possible there are some registers
-ioremapped after the memmap array and reading them is causing some
-problem.
-
-Andrew, what is the right thing to do here? We could flail around looking
-for explanations as to why the bug causes a user buffer corruption but never
-get an answer or do we go with this patch, preferably before 2.6.36 releases?
-
-==== CUT HERE ====
-mm, page-allocator: Do not check the state of a non-existant buddy during free
-
-There is a bug in commit [6dda9d55: page allocator: reduce fragmentation
-in buddy allocator by adding buddies that are merging to the tail of the
-free lists] that means a buddy at order MAX_ORDER is checked for
-merging. A page of this order never exists so at times, an effectively
-random piece of memory is being checked.
-
-Alan Curry has reported that this is causing memory corruption in userspace
-data on a PPC32 platform (http://lkml.org/lkml/2010/10/9/32). It is not clear
-why this is happening. It could be a cache coherency problem where pages
-mapped in both user and kernel space are getting different cache lines due
-to the bad read from kernel space (http://lkml.org/lkml/2010/10/13/179). It
-could also be that there are some special registers being io-remapped at
-the end of the memmap array and that a read has special meaning on them.
-Compiler bugs have been ruled out because the assembly before and after
-the patch looks relatively harmless.
-
-This patch fixes the problem by ensuring we are not reading a possibly
-invalid location of memory. It's not clear why the read causes
-corruption but one way or the other it is a buggy read.
-
-Signed-off-by: Mel Gorman <mel@csn.ul.ie>
+Requested-by: David Miller <davem@davemloft.net>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
 ---
- mm/page_alloc.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ arch/Kconfig                       |    3 +
+ arch/powerpc/Kconfig               |    1 
+ arch/powerpc/include/asm/pgalloc.h |   21 ++++++-
+ arch/powerpc/include/asm/tlb.h     |   10 ---
+ arch/powerpc/mm/pgtable.c          |   98 -------------------------------------
+ arch/powerpc/mm/tlb_hash32.c       |    3 -
+ arch/powerpc/mm/tlb_hash64.c       |    3 -
+ arch/powerpc/mm/tlb_nohash.c       |    3 -
+ include/asm-generic/tlb.h          |   57 +++++++++++++++++++--
+ mm/memory.c                        |   77 +++++++++++++++++++++++++++++
+ 10 files changed, 151 insertions(+), 125 deletions(-)
 
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index a8cfa9c..93cef41 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -530,7 +530,7 @@ static inline void __free_one_page(struct page *page,
- 	 * so it's less likely to be used soon and more likely to be merged
- 	 * as a higher order page
- 	 */
--	if ((order < MAX_ORDER-1) && pfn_valid_within(page_to_pfn(buddy))) {
-+	if ((order < MAX_ORDER-2) && pfn_valid_within(page_to_pfn(buddy))) {
- 		struct page *higher_page, *higher_buddy;
- 		combined_idx = __find_combined_index(page_idx, order);
- 		higher_page = page + combined_idx - page_idx;
+Index: linux-2.6/arch/powerpc/include/asm/pgalloc.h
+===================================================================
+--- linux-2.6.orig/arch/powerpc/include/asm/pgalloc.h
++++ linux-2.6/arch/powerpc/include/asm/pgalloc.h
+@@ -31,14 +31,29 @@ static inline void pte_free(struct mm_st
+ #endif
+ 
+ #ifdef CONFIG_SMP
+-extern void pgtable_free_tlb(struct mmu_gather *tlb, void *table, unsigned shift);
+-extern void pte_free_finish(struct mmu_gather *tlb);
++struct mmu_gather;
++extern void tlb_remove_table(struct mmu_gather *, void *);
++
++static inline void pgtable_free_tlb(struct mmu_gather *tlb, void *table, int shift)
++{
++	unsigned long pgf = (unsigned long)table;
++	BUG_ON(shift > MAX_PGTABLE_INDEX_SIZE);
++	pgf |= shift;
++	tlb_remove_table(tlb, (void *)pgf);
++}
++
++static inline void __tlb_remove_table(void *_table)
++{
++	void *table = (void *)((unsigned long)_table & ~MAX_PGTABLE_INDEX_SIZE);
++	unsigned shift = (unsigned long)_table & MAX_PGTABLE_INDEX_SIZE;
++
++	pgtable_free(table, shift);
++}
+ #else /* CONFIG_SMP */
+ static inline void pgtable_free_tlb(struct mmu_gather *tlb, void *table, unsigned shift)
+ {
+ 	pgtable_free(table, shift);
+ }
+-static inline void pte_free_finish(struct mmu_gather *tlb) { }
+ #endif /* !CONFIG_SMP */
+ 
+ static inline void __pte_free_tlb(struct mmu_gather *tlb, struct page *ptepage,
+Index: linux-2.6/arch/powerpc/include/asm/tlb.h
+===================================================================
+--- linux-2.6.orig/arch/powerpc/include/asm/tlb.h
++++ linux-2.6/arch/powerpc/include/asm/tlb.h
+@@ -28,16 +28,6 @@
+ #define tlb_start_vma(tlb, vma)	do { } while (0)
+ #define tlb_end_vma(tlb, vma)	do { } while (0)
+ 
+-#define HAVE_ARCH_MMU_GATHER 1
+-
+-struct pte_freelist_batch;
+-
+-struct arch_mmu_gather {
+-	struct pte_freelist_batch *batch;
+-};
+-
+-#define ARCH_MMU_GATHER_INIT (struct arch_mmu_gather){ .batch = NULL, }
+-
+ extern void tlb_flush(struct mmu_gather *tlb);
+ 
+ /* Get the generic bits... */
+Index: linux-2.6/arch/powerpc/mm/pgtable.c
+===================================================================
+--- linux-2.6.orig/arch/powerpc/mm/pgtable.c
++++ linux-2.6/arch/powerpc/mm/pgtable.c
+@@ -33,104 +33,6 @@
+ 
+ #include "mmu_decl.h"
+ 
+-#ifdef CONFIG_SMP
+-
+-/*
+- * Handle batching of page table freeing on SMP. Page tables are
+- * queued up and send to be freed later by RCU in order to avoid
+- * freeing a page table page that is being walked without locks
+- */
+-
+-static unsigned long pte_freelist_forced_free;
+-
+-struct pte_freelist_batch
+-{
+-	struct rcu_head	rcu;
+-	unsigned int	index;
+-	unsigned long	tables[0];
+-};
+-
+-#define PTE_FREELIST_SIZE \
+-	((PAGE_SIZE - sizeof(struct pte_freelist_batch)) \
+-	  / sizeof(unsigned long))
+-
+-static void pte_free_smp_sync(void *arg)
+-{
+-	/* Do nothing, just ensure we sync with all CPUs */
+-}
+-
+-/* This is only called when we are critically out of memory
+- * (and fail to get a page in pte_free_tlb).
+- */
+-static void pgtable_free_now(void *table, unsigned shift)
+-{
+-	pte_freelist_forced_free++;
+-
+-	smp_call_function(pte_free_smp_sync, NULL, 1);
+-
+-	pgtable_free(table, shift);
+-}
+-
+-static void pte_free_rcu_callback(struct rcu_head *head)
+-{
+-	struct pte_freelist_batch *batch =
+-		container_of(head, struct pte_freelist_batch, rcu);
+-	unsigned int i;
+-
+-	for (i = 0; i < batch->index; i++) {
+-		void *table = (void *)(batch->tables[i] & ~MAX_PGTABLE_INDEX_SIZE);
+-		unsigned shift = batch->tables[i] & MAX_PGTABLE_INDEX_SIZE;
+-
+-		pgtable_free(table, shift);
+-	}
+-
+-	free_page((unsigned long)batch);
+-}
+-
+-static void pte_free_submit(struct pte_freelist_batch *batch)
+-{
+-	call_rcu_sched(&batch->rcu, pte_free_rcu_callback);
+-}
+-
+-void pgtable_free_tlb(struct mmu_gather *tlb, void *table, unsigned shift)
+-{
+-	struct pte_freelist_batch **batchp = &tlb->arch.batch;
+-	unsigned long pgf;
+-
+-	if (atomic_read(&tlb->mm->mm_users) < 2) {
+-		pgtable_free(table, shift);
+-		return;
+-	}
+-
+-	if (*batchp == NULL) {
+-		*batchp = (struct pte_freelist_batch *)__get_free_page(GFP_ATOMIC);
+-		if (*batchp == NULL) {
+-			pgtable_free_now(table, shift);
+-			return;
+-		}
+-		(*batchp)->index = 0;
+-	}
+-	BUG_ON(shift > MAX_PGTABLE_INDEX_SIZE);
+-	pgf = (unsigned long)table | shift;
+-	(*batchp)->tables[(*batchp)->index++] = pgf;
+-	if ((*batchp)->index == PTE_FREELIST_SIZE) {
+-		pte_free_submit(*batchp);
+-		*batchp = NULL;
+-	}
+-}
+-
+-void pte_free_finish(struct mmu_gather *tlb)
+-{
+-	struct pte_freelist_batch **batchp = &tlb->arch.batch;
+-
+-	if (*batchp == NULL)
+-		return;
+-	pte_free_submit(*batchp);
+-	*batchp = NULL;
+-}
+-
+-#endif /* CONFIG_SMP */
+-
+ static inline int is_exec_fault(void)
+ {
+ 	return current->thread.regs && TRAP(current->thread.regs) == 0x400;
+Index: linux-2.6/arch/powerpc/mm/tlb_hash32.c
+===================================================================
+--- linux-2.6.orig/arch/powerpc/mm/tlb_hash32.c
++++ linux-2.6/arch/powerpc/mm/tlb_hash32.c
+@@ -71,9 +71,6 @@ void tlb_flush(struct mmu_gather *tlb)
+ 		 */
+ 		_tlbia();
+ 	}
+-
+-	/* Push out batch of freed page tables */
+-	pte_free_finish(tlb);
+ }
+ 
+ /*
+Index: linux-2.6/arch/powerpc/mm/tlb_hash64.c
+===================================================================
+--- linux-2.6.orig/arch/powerpc/mm/tlb_hash64.c
++++ linux-2.6/arch/powerpc/mm/tlb_hash64.c
+@@ -165,9 +165,6 @@ void tlb_flush(struct mmu_gather *tlb)
+ 		__flush_tlb_pending(tlbbatch);
+ 
+ 	put_cpu_var(ppc64_tlb_batch);
+-
+-	/* Push out batch of freed page tables */
+-	pte_free_finish(tlb);
+ }
+ 
+ /**
+Index: linux-2.6/arch/powerpc/mm/tlb_nohash.c
+===================================================================
+--- linux-2.6.orig/arch/powerpc/mm/tlb_nohash.c
++++ linux-2.6/arch/powerpc/mm/tlb_nohash.c
+@@ -299,9 +299,6 @@ EXPORT_SYMBOL(flush_tlb_range);
+ void tlb_flush(struct mmu_gather *tlb)
+ {
+ 	flush_tlb_mm(tlb->mm);
+-
+-	/* Push out batch of freed page tables */
+-	pte_free_finish(tlb);
+ }
+ 
+ /*
+Index: linux-2.6/include/asm-generic/tlb.h
+===================================================================
+--- linux-2.6.orig/include/asm-generic/tlb.h
++++ linux-2.6/include/asm-generic/tlb.h
+@@ -27,6 +27,49 @@
+   #define tlb_fast_mode(tlb) 1
+ #endif
+ 
++#ifdef CONFIG_HAVE_RCU_TABLE_FREE
++/*
++ * Semi RCU freeing of the page directories.
++ *
++ * This is needed by some architectures to implement software pagetable walkers.
++ *
++ * gup_fast() and other software pagetable walkers do a lockless page-table
++ * walk and therefore needs some synchronization with the freeing of the page
++ * directories. The chosen means to accomplish that is by disabling IRQs over
++ * the walk.
++ *
++ * Architectures that use IPIs to flush TLBs will then automagically DTRT,
++ * since we unlink the page, flush TLBs, free the page. Since the disabling of
++ * IRQs delays the copmletion of the TLB flush we can never observe an already
++ * freed page.
++ *
++ * Architectures that do not have this (PPC) need to delay the freeing by some
++ * other means, this is that means.
++ *
++ * What we do is batch the freed directory pages (tables) and RCU free them.
++ * We use the sched RCU variant, as that guarantees that IRQ/preempt disabling
++ * holds off grace periods.
++ *
++ * However, in order to batch these pages we need to allocate storage, this
++ * allocation is deep inside the MM code and can thus easily fail on memory
++ * pressure. To guarantee progress we fall back to single table freeing, see
++ * the implementation of tlb_remove_table_one().
++ *
++ */
++struct mmu_table_batch {
++	struct rcu_head		rcu;
++	unsigned int		nr;
++	void			*tables[0];
++};
++
++#define MAX_TABLE_BATCH		\
++	((PAGE_SIZE - sizeof(struct mmu_table_batch)) / sizeof(void *))
++
++extern void tlb_table_flush(struct mmu_gather *tlb);
++extern void tlb_remove_table(struct mmu_gather *tlb, void *table);
++
++#endif
++
+ /* struct mmu_gather is an opaque type used by the mm code for passing around
+  * any data needed by arch specific code for tlb_remove_page.
+  */
+@@ -36,11 +79,12 @@ struct mmu_gather {
+ 	unsigned int		max;	/* nr < max */
+ 	unsigned int		need_flush;/* Really unmapped some ptes? */
+ 	unsigned int		fullmm; /* non-zero means full mm flush */
+-#ifdef HAVE_ARCH_MMU_GATHER
+-	struct arch_mmu_gather	arch;
+-#endif
+ 	struct page		**pages;
+ 	struct page		*local[8];
++
++#ifdef CONFIG_HAVE_RCU_TABLE_FREE
++	struct mmu_table_batch	*batch;
++#endif
+ };
+ 
+ static inline void __tlb_alloc_pages(struct mmu_gather *tlb)
+@@ -72,8 +116,8 @@ tlb_gather_mmu(struct mmu_gather *tlb, s
+ 
+ 	tlb->fullmm = full_mm_flush;
+ 
+-#ifdef HAVE_ARCH_MMU_GATHER
+-	tlb->arch = ARCH_MMU_GATHER_INIT;
++#ifdef CONFIG_HAVE_RCU_TABLE_FREE
++	tlb->batch = NULL;
+ #endif
+ }
+ 
+@@ -84,6 +128,9 @@ tlb_flush_mmu(struct mmu_gather *tlb, un
+ 		return;
+ 	tlb->need_flush = 0;
+ 	tlb_flush(tlb);
++#ifdef CONFIG_HAVE_RCU_TABLE_FREE
++	tlb_table_flush(tlb);
++#endif
+ 	if (!tlb_fast_mode(tlb)) {
+ 		free_pages_and_swap_cache(tlb->pages, tlb->nr);
+ 		tlb->nr = 0;
+Index: linux-2.6/mm/memory.c
+===================================================================
+--- linux-2.6.orig/mm/memory.c
++++ linux-2.6/mm/memory.c
+@@ -193,6 +193,83 @@ static void check_sync_rss_stat(struct t
+ 
+ #endif
+ 
++#ifdef CONFIG_HAVE_RCU_TABLE_FREE
++
++/*
++ * See the comment near struct mmu_table_batch.
++ */
++
++static void tlb_remove_table_smp_sync(void *arg)
++{
++	/* Simply deliver the interrupt */
++}
++
++static void tlb_remove_table_one(void *table)
++{
++	/*
++	 * This isn't an RCU grace period and hence the page-tables cannot be
++	 * assumed to be actually RCU-freed.
++	 *
++	 * It is however sufficient for software page-table walkers that rely on
++	 * IRQ disabling. See the comment near struct mmu_table_batch.
++	 */
++	smp_call_function(tlb_remove_table_smp_sync, NULL, 1);
++	__tlb_remove_table(table);
++}
++
++static void tlb_remove_table_rcu(struct rcu_head *head)
++{
++	struct mmu_table_batch *batch;
++	int i;
++
++	batch = container_of(head, struct mmu_table_batch, rcu);
++
++	for (i = 0; i < batch->nr; i++)
++		__tlb_remove_table(batch->tables[i]);
++
++	free_page((unsigned long)batch);
++}
++
++void tlb_table_flush(struct mmu_gather *tlb)
++{
++	struct mmu_table_batch **batch = &tlb->batch;
++
++	if (*batch) {
++		call_rcu_sched(&(*batch)->rcu, tlb_remove_table_rcu);
++		*batch = NULL;
++	}
++}
++
++void tlb_remove_table(struct mmu_gather *tlb, void *table)
++{
++	struct mmu_table_batch **batch = &tlb->batch;
++
++	tlb->need_flush = 1;
++
++	/*
++	 * When there's less then two users of this mm there cannot be a
++	 * concurrent page-table walk.
++	 */
++	if (atomic_read(&tlb->mm->mm_users) < 2) {
++		__tlb_remove_table(table);
++		return;
++	}
++
++	if (*batch == NULL) {
++		*batch = (struct mmu_table_batch *)__get_free_page(GFP_ATOMIC);
++		if (*batch == NULL) {
++			tlb_remove_table_one(table);
++			return;
++		}
++		(*batch)->nr = 0;
++	}
++	(*batch)->tables[(*batch)->nr++] = table;
++	if ((*batch)->nr == MAX_TABLE_BATCH)
++		tlb_table_flush(tlb);
++}
++
++#endif
++
+ /*
+  * If a p?d_bad entry is found while walking page tables, report
+  * the error, before resetting entry to p?d_none.  Usually (but
+Index: linux-2.6/arch/Kconfig
+===================================================================
+--- linux-2.6.orig/arch/Kconfig
++++ linux-2.6/arch/Kconfig
+@@ -158,4 +158,7 @@ config HAVE_PERF_EVENTS_NMI
+ 	  subsystem.  Also has support for calculating CPU cycle events
+ 	  to determine how many clock cycles in a given period.
+ 
++config HAVE_RCU_TABLE_FREE
++	bool
++
+ source "kernel/gcov/Kconfig"
+Index: linux-2.6/arch/powerpc/Kconfig
+===================================================================
+--- linux-2.6.orig/arch/powerpc/Kconfig
++++ linux-2.6/arch/powerpc/Kconfig
+@@ -141,6 +141,7 @@ config PPC
+ 	select HAVE_PERF_EVENTS
+ 	select HAVE_REGS_AND_STACK_ACCESS_API
+ 	select HAVE_HW_BREAKPOINT if PERF_EVENTS && PPC_BOOK3S_64
++	select HAVE_RCU_TABLE_FREE if PPC64
+ 
+ config EARLY_PRINTK
+ 	bool
+
+
