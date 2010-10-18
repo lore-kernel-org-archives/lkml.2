@@ -1,172 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757541Ab0JRSDs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Oct 2010 14:03:48 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:57350 "EHLO mx1.redhat.com"
+	id S1757584Ab0JRSI1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Oct 2010 14:08:27 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:53181 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754621Ab0JRSDr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Oct 2010 14:03:47 -0400
-Date: Mon, 18 Oct 2010 14:03:12 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: DDD <dongdong.deng@windriver.com>
-Cc: tglx@linutronix.de, hpa@zytor.com, mingo@elte.hu, x86@kernel.org,
-        linux-kernel@vger.kernel.org, bruce.ashfield@windriver.com
-Subject: Re: [PATCH] x86: avoid calling arch_trigger_all_cpu_backtrace() at
- the same time on SMP
-Message-ID: <20101018180312.GA2935@redhat.com>
-References: <1286793111-27579-1-git-send-email-dongdong.deng@windriver.com>
- <4CBC28BF.4090203@windriver.com>
+	id S1754927Ab0JRSI0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Oct 2010 14:08:26 -0400
+Message-ID: <4CBC8C98.1090802@zytor.com>
+Date: Mon, 18 Oct 2010 11:06:16 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc13 Thunderbird/3.1.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4CBC28BF.4090203@windriver.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Eric Paris <eparis@redhat.com>
+CC: Kyle McMartin <kyle@mcmartin.ca>, James Morris <jmorris@namei.org>,
+        Christoph Hellwig <hch@infradead.org>, kernel@lists.fedoraproject.org,
+        Mimi Zohar <zohar@us.ibm.com>, warthog9@kernel.org,
+        Dave Chinner <david@fromorbit.com>, linux-kernel@vger.kernel.org,
+        Serge Hallyn <serue@us.ibm.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>, mingo@elte.hu
+Subject: Re: ima: use of radix tree cache indexing == massive waste of memory?
+References: <20101016065206.GO4681@dastard>	 <20101016192027.GA6883@infradead.org>	 <ebc4973c-6c11-4397-b8b0-c212a27abce4@email.android.com>	 <20101017004945.GE1614@infradead.org> <20101017054008.GA16383@elte.hu>	 <20101017184652.GB28060@infradead.org>	 <alpine.LRH.2.00.1010181127480.9476@tundra.namei.org>	 <20101018062530.GD8332@bombadil.infradead.org> <1287420534.2530.67.camel@localhost.localdomain>
+In-Reply-To: <1287420534.2530.67.camel@localhost.localdomain>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 18, 2010 at 07:00:15PM +0800, DDD wrote:
-> CC to Ingo's mingo@elte.hu and add some code explains for this patch.
+On 10/18/2010 09:48 AM, Eric Paris wrote:
 > 
-> Dongdong
+> 1) IMA uses radix trees which end up wasting 500 bytes per inode because
+> the key is too sparse.  I've got a patch which uses an rbtree instead
+> I'm testing and will send along shortly.  I found it funny working on
+> the patch to see that Documentation/rbtree.txt says "This differs from
+> radix trees (which are used to efficiently store sparse arrays and thus
+> use long integer indexes to insert/access/delete nodes)"  Which flys in
+> the face of this report.
 > 
-> 
-> Dongdong Deng wrote:
-> >The spin_lock_debug/rcu_cpu_stall detector uses
-> >trigger_all_cpu_backtrace() to dump cpu backtrace.
-> >Therefore it is possible that trigger_all_cpu_backtrace()
-> >could be called at the same time on different CPUs, which
-> >triggers and 'unknown reason NMI' warning. The following case
-> >illustrates the problem:
 
-The patch seems reasonable.  I can queue it up.  Ingo wrote the original
-code and knows which spin locks to use better than me, perhaps he can find
-a moment to comment.
+Radix trees can efficiently store data associated with sparse keys *as
+long as the keys are clustered*.  For random key distributions, they
+perform horribly.
 
-Cheers,
-Don
-
-> >
-> >      CPU1                    CPU2                     ...   CPU N
-> >                       trigger_all_cpu_backtrace()
-> >                       set "backtrace_mask" to cpu mask
-> >                               |
-> >generate NMI interrupts  generate NMI interrupts       ...
-> >    \                          |                               /
-> >     \                         |                              /
-> >   The "backtrace_mask" will be cleaned by the first NMI interrupt
-> >  at nmi_watchdog_tick(), then the following NMI interrupts generated
-> >by other cpus's arch_trigger_all_cpu_backtrace() will be took as
-> >unknown reason NMI interrupts.
-> >
-> >This patch uses a lock to avoid the problem, and stop the
-> >arch_trigger_all_cpu_backtrace() calling to avoid dumping double cpu
-> >backtrace info when there is already a trigger_all_cpu_backtrace()
-> >in progress.
-> >
-> >Signed-off-by: Dongdong Deng <dongdong.deng@windriver.com>
-> >Reviewed-by: Bruce Ashfield <bruce.ashfield@windriver.com>
-> >CC: Thomas Gleixner <tglx@linutronix.de>
-> >CC: Ingo Molnar <mingo@redhat.com>
-> >CC: "H. Peter Anvin" <hpa@zytor.com>
-> >CC: x86@kernel.org
-> >CC: linux-kernel@vger.kernel.org
-> >---
-> > arch/x86/kernel/apic/hw_nmi.c |   14 ++++++++++++++
-> > arch/x86/kernel/apic/nmi.c    |   14 ++++++++++++++
-> > 2 files changed, 28 insertions(+), 0 deletions(-)
-> >
-> >diff --git a/arch/x86/kernel/apic/hw_nmi.c b/arch/x86/kernel/apic/hw_nmi.c
-> >index cefd694..3aea0a5 100644
-> >--- a/arch/x86/kernel/apic/hw_nmi.c
-> >+++ b/arch/x86/kernel/apic/hw_nmi.c
-> >@@ -29,6 +29,16 @@ u64 hw_nmi_get_sample_period(void)
-> > void arch_trigger_all_cpu_backtrace(void)
-> > {
-> > 	int i;
-> >+	static arch_spinlock_t lock = __ARCH_SPIN_LOCK_UNLOCKED;
-> 
-> Why an arch spin lock vs just using a raw spin lock?
-> for example. static DEFINE_RAW_SPINLOCK(lock);
-> 
-> The spin_lock_debug detector was used in raw_spinlock too.
-> 
-> arch_trigger_all_cpu_backtrace() -->
->   raw_spin_lock(lock)      -->
->   _raw_spin_lock(lock)     -->
->   __raw_spin_lock(lock)    -->
->   do_raw_spin_lock(lock)   -->
->   __spin_lock_debug(lock)  -->
->   trigger_all_cpu_backtrace()
-> 
-> Therefor, we have to use arch spin lock here.
-> 
-> 
-> 
-> >+	unsigned long flags;
-> >+
-> >+	local_irq_save(flags);
-> 
-> Why have to save the irq's here?
-> 
-> When the arch_trigger_all_cpu_backtrace() was triggered by
-> "spin_lock()"'s spin_lock_debug detector, it is possible that
-> the irq is enabled, thus we have to save and disable it here.
-> 
-> 
-> 
-> >+	if (!arch_spin_trylock(&lock))
-> >+		/*
-> >+		 * If there is already a trigger_all_cpu_backtrace()
-> >+		 * in progress, don't output double cpu dump infos.
-> >+		 */
-> >+		goto out_restore_irq;
-> > 	cpumask_copy(to_cpumask(backtrace_mask), cpu_online_mask);
-> >@@ -41,6 +51,10 @@ void arch_trigger_all_cpu_backtrace(void)
-> > 			break;
-> > 		mdelay(1);
-> > 	}
-> >+
-> >+	arch_spin_unlock(&lock);
-> >+out_restore_irq:
-> >+	local_irq_restore(flags);
-> > }
-> > static int __kprobes
-> >diff --git a/arch/x86/kernel/apic/nmi.c b/arch/x86/kernel/apic/nmi.c
-> >index a43f71c..5fa8a13 100644
-> >--- a/arch/x86/kernel/apic/nmi.c
-> >+++ b/arch/x86/kernel/apic/nmi.c
-> >@@ -552,6 +552,16 @@ int do_nmi_callback(struct pt_regs *regs, int cpu)
-> > void arch_trigger_all_cpu_backtrace(void)
-> > {
-> > 	int i;
-> >+	static arch_spinlock_t lock = __ARCH_SPIN_LOCK_UNLOCKED;
-> >+	unsigned long flags;
-> >+
-> >+	local_irq_save(flags);
-> >+	if (!arch_spin_trylock(&lock))
-> >+		/*
-> >+		 * If there is already a trigger_all_cpu_backtrace()
-> >+		 * in progress, don't output double cpu dump infos.
-> >+		 */
-> >+		goto out_restore_irq;
-> > 	cpumask_copy(to_cpumask(backtrace_mask), cpu_online_mask);
-> >@@ -564,4 +574,8 @@ void arch_trigger_all_cpu_backtrace(void)
-> > 			break;
-> > 		mdelay(1);
-> > 	}
-> >+
-> >+	arch_spin_unlock(&lock);
-> >+out_restore_irq:
-> >+	local_irq_restore(flags);
-> > }
-> 
-> 
-> 
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+	-hpa
