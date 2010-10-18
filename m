@@ -1,80 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753780Ab0JRIKF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Oct 2010 04:10:05 -0400
-Received: from TYO202.gate.nec.co.jp ([202.32.8.206]:63201 "EHLO
-	tyo202.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751590Ab0JRIKD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Oct 2010 04:10:03 -0400
-Message-ID: <4CBC00B3.7090603@ce.jp.nec.com>
-Date: Mon, 18 Oct 2010 17:09:23 +0900
-From: "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc13 Thunderbird/3.1.4
+	id S1753604Ab0JRIMC (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Oct 2010 04:12:02 -0400
+Received: from claw.goop.org ([74.207.240.146]:41303 "EHLO claw.goop.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751935Ab0JRIL7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Oct 2010 04:11:59 -0400
+Message-ID: <4CBC014D.7070302@goop.org>
+Date: Mon, 18 Oct 2010 01:11:57 -0700
+From: Jeremy Fitzhardinge <jeremy@goop.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc13 Lightning/1.0b3pre Thunderbird/3.1.4
 MIME-Version: 1.0
-To: Hannes Reinecke <hare@suse.de>
-CC: device-mapper development <dm-devel@redhat.com>,
-        Kiyoshi Ueda <k-ueda@ct.jp.nec.com>, michaelc@cs.wisc.edu,
-        tytso@mit.edu, linux-scsi@vger.kernel.org,
-        Mike Snitzer <snitzer@redhat.com>, jaxboe@fusionio.com, jack@suse.cz,
-        vst@vlnb.net, linux-kernel@vger.kernel.org, swhiteho@redhat.com,
-        linux-raid@vger.kernel.org, linux-ide@vger.kernel.org,
-        James.Bottomley@suse.de, chris.mason@oracle.com,
-        konishi.ryusuke@lab.ntt.co.jp, linux-fsdevel@vger.kernel.org,
-        Tejun Heo <tj@kernel.org>, rwheeler@redhat.com,
-        Christoph Hellwig <hch@lst.de>, Sergei Shtylyov <sshtylyov@mvista.com>
-Subject: Re: [RFC] training mpath to discern between SCSI errors
-References: <20100825155918.GB8509@redhat.com>	<4C7B984E.4070802@suse.de>	<4C7B9F14.9080900@mvista.com>	<4C7BA670.2060303@suse.de> <4C7BC5B4.3010707@suse.de>
-In-Reply-To: <4C7BC5B4.3010707@suse.de>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: Xen Devel <Xen-devel@lists.xensource.com>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus <torvalds@linux-foundation.org>
+Subject: Re: linux-next: manual merge of the xen tree with the swiotlb-xen
+ tree
+References: <20101018155249.d9267bfe.sfr@canb.auug.org.au>
+In-Reply-To: <20101018155249.d9267bfe.sfr@canb.auug.org.au>
+Content-Type: text/plain; charset=ISO-8859-15
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Hannes,
+ On 10/17/2010 09:52 PM, Stephen Rothwell wrote:
+> Hi all,
+>
+> Today's linux-next merge of the xen tree got conplex conflicts in
+> drivers/xen/events.c between several commits from the swiotlb-xen tree
+> and several commits from the xen tree.
+>
+> I am unqualified to fix this mess, sorry.  I am dropping the xen tree
+> for today (and only not dropping the swiotlb-xen tree because that would
+> be too much work).
 
-Thank you for working on this issue and sorry for very late reply...
+Argh, sorry, I should have coordinated with Konrad.  I'd merged my tree
+into linux-next to make sure it was OK, but I guess I overlooked something.
 
-(08/30/10 23:52), Hannes Reinecke wrote:
-> From: Hannes Reinecke <hare@suse.de>
-> Date: Mon, 30 Aug 2010 16:21:10 +0200
-> Subject: [RFC][PATCH] scsi: Detailed I/O errors
-> 
-> Instead of just passing 'EIO' for any I/O errors we should be
-> notifying the upper layers with some more details about the cause
-> of this error.
-> This patch updates the possible I/O errors to:
-> 
-> - ENOLINK: Link failure between host and target
-> - EIO: Retryable I/O error
-> - EREMOTEIO: Non-retryable I/O error
-> 
-> 'Retryable' in this context means that an I/O error _might_ be
-> restricted to the I_T_L nexus (vulgo: path), so retrying on another
-> nexus / path might succeed.
+> I wonder, of course, why I have seen nothing in either of these trees
+> until today (less than a week before the merge window opens).
 
-Does 'retryable' of EIO mean retryable in multipath layer?
-If so, what is the difference between EIO and ENOLINK?
+I had found Xen regressions that had made it into linux-next and wanted
+to sort those out before adding anything else to the mix.
 
-I've heard of a case where just retrying within path-group is
-preferred to (relatively costly) switching group.
-So, if EIO (or other error code) can be used to indicate such type
-of errors, it's nice.
+> Please sort this mess out.  I will drop the swiotlb-xen tree as well
+> tomorrow if nothing has changed.
 
-
-Also (although this might be a bit off topic from your patch),
-can we expand such a distinction to what should be logged?
-Currently, it's difficult to distinguish important SCSI/block errors
-and less important ones in kernel log.
-For example, when I get a link failure on sda, kernel prints something
-like below, regardless of whether the I/O is recovered by multipathing or not:
-  end_request: I/O error, dev sda, sector XXXXX
-
-Setting REQ_QUIET in dm-multipath could mask the message
-but also other important ones in SCSI.
-
+Will do.
 
 Thanks,
--- 
-Jun'ichi Nomura, NEC Corporation
+    J
+
