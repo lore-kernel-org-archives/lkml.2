@@ -1,152 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754761Ab0JRJ4D (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Oct 2010 05:56:03 -0400
-Received: from nwd2mail10.analog.com ([137.71.25.55]:35394 "EHLO
-	nwd2mail10.analog.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753245Ab0JRJ4B convert rfc822-to-8bit (ORCPT
+	id S1753741Ab0JRKB1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Oct 2010 06:01:27 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:45377 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751431Ab0JRKB0 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Oct 2010 05:56:01 -0400
-X-IronPort-AV: E=Sophos;i="4.57,345,1283745600"; 
-   d="scan'208";a="23490905"
-From: "Hennerich, Michael" <Michael.Hennerich@analog.com>
-To: Jean Delvare <khali@linux-fr.org>, Mike Frysinger <vapier@gentoo.org>
-CC: "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "uclinux-dist-devel@blackfin.uclinux.org" 
-	<uclinux-dist-devel@blackfin.uclinux.org>,
-        "device-drivers-devel@blackfin.uclinux.org" 
-	<device-drivers-devel@blackfin.uclinux.org>
-Date: Mon, 18 Oct 2010 10:55:57 +0100
-Subject: RE: [PATCH] i2c: add irq_flags to board info
-Thread-Topic: [PATCH] i2c: add irq_flags to board info
-Thread-Index: Actun46RGdZ6rpJ9RvGJoedpZWWtBgABGtSw
-Message-ID: <544AC56F16B56944AEC3BD4E3D5917713094520EDB@LIMKCMBX1.ad.analog.com>
-References: <1287359019-1476-1-git-send-email-vapier@gentoo.org>
- <20101018103610.77b7e605@endymion.delvare>
-In-Reply-To: <20101018103610.77b7e605@endymion.delvare>
-Accept-Language: de-DE, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: de-DE, en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Mon, 18 Oct 2010 06:01:26 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=NSgQcuNBhnlQ3UIEQB2ulrWzdeGMcSw4YR0u+ZC9H0xwEL7clrmVGJO9Lin6m8YbEz
+         p/QX6HJj9kcK5zWG76GQ==
 MIME-Version: 1.0
+In-Reply-To: <1287310023.1998.150.camel@laptop>
+References: <1286946421-32202-1-git-send-regression-fweisbec@gmail.com>
+	<1286946421-32202-3-git-send-regression-fweisbec@gmail.com>
+	<1286954453.29097.58.camel@twins>
+	<AANLkTinhGrdGyLaOGtXPktQM2uQ_0M9XQ1GjtBAYf+LY@mail.gmail.com>
+	<20101014112000.GA5336@nowhere>
+	<AANLkTimVPNntcSexdRnkvd+4VdGf2HU+rM7Zhyu=i7CS@mail.gmail.com>
+	<20101015225722.GA5354@nowhere>
+	<1287310023.1998.150.camel@laptop>
+Date: Mon, 18 Oct 2010 12:01:18 +0200
+Message-ID: <AANLkTi=Ja1Yem9Nkdz06_ZxtvxGZUPbGYqusfcf3iN-G@mail.gmail.com>
+Subject: Re: [RFC PATCH 2/9] perf: Add ability to dump user regs
+From: Stephane Eranian <eranian@google.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        Tom Zanussi <tzanussi@gmail.com>,
+        Masami Hiramatsu <mhiramat@redhat.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Robert Richter <robert.richter@amd.com>,
+        David Miller <davem@davemloft.net>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jean Delvare wrote on 2010-10-18:
-> Hi Mike,
+On Sun, Oct 17, 2010 at 12:07 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Sat, 2010-10-16 at 00:58 +0200, Frederic Weisbecker wrote:
+>> > Yes, PEBS does not capture the entire state.
+>> >
+>> > Here is what you get on Intel Core:
+>> >         u64 flags, ip;
+>> >         u64 ax, bx, cx, dx;
+>> >         u64 si, di, bp, sp;
+>> >         u64 r8,  r9,  r10, r11;
+>> >         u64 r12, r13, r14, r15;
 >
-> On Sun, 17 Oct 2010 19:43:39 -0400, Mike Frysinger wrote:
->> From: Michael Hennerich <michael.hennerich@analog.com>
->>
->> These flags can be optionally defined - slave drivers may use them as
->> flags argument for request_irq().  In case they are left uninitialized
->> they will default to zero, and therefore shouldn't cause problems.
->>
->> This allows us to avoid having to add dedicated platform init code
->> just to call set_irq_type()
+>> Ok, that seems to cover most of the state. I guess few people care
+>> about cs, ds, es, fs, gs, most of the time.
 >
-> Do you have examples of this? Can we see a preview of the amount of
-> cleanups this patch would allow?
-
-Examples can be found in various board setup files:
-
-One example arch/sh/boards/mach-ecovec24/setup.c:
-
-static struct i2c_board_info ts_i2c_clients = {
-        I2C_BOARD_INFO("tsc2007", 0x48),
-        .type           = "tsc2007",
-        .platform_data  = &tsc2007_info,
-        .irq            = IRQ0,
-};
-
-[--snip--]
-
-                /* enable TouchScreen */
-                i2c_register_board_info(0, &ts_i2c_clients, 1);
-                set_irq_type(IRQ0, IRQ_TYPE_LEVEL_LOW);
-
->> -- which doesn't work very well when coupled with module drivers.
+> Yeah, except if you want to profile wine or something like that ;-)
 >
-> I don't quite get what you mean here.
+That means that if you want the segment registers, then you cannot
+use PEBS. I think you could catch that when the event is created.
 
-Since the driver doesn't setup the irq_type itself you need to do it
-manually in advance using set_irq_type().
-This happens most likely from your paltform setup/configuration file.
-
-Assuming the driver is built as a module, this code gets executed unconditionally,
-no matter if the driver gets finally loaded or not.
-
-Assuming you have several drivers build as modules, using the same irq but with
-different irq types, you run into problems here.
-
-There are some development boards featuring extension options, which all plug on the same
-socket but required different drivers/irq types.
-
-The ideal way is therefore to pass the irq_flags together with the SPI/I2C board info.
-
->> It also matches behavior of some other frameworks like IDE and UIO.
->
-> This is certainly a good point.
->
->>
->> Signed-off-by: Michael Hennerich <michael.hennerich@analog.com>
->> Signed-off-by: Mike Frysinger <vapier@gentoo.org>
->> ---
->>  drivers/i2c/i2c-core.c |    1 +
->>  include/linux/i2c.h    |    4 ++++
->>  2 files changed, 5 insertions(+), 0 deletions(-)
->> diff --git a/drivers/i2c/i2c-core.c b/drivers/i2c/i2c-core.c index
->> bea4c50..830528f 100644
->> --- a/drivers/i2c/i2c-core.c
->> +++ b/drivers/i2c/i2c-core.c
->> @@ -540,6 +540,7 @@ i2c_new_device(struct i2c_adapter *adap, struct
-> i2c_board_info const *info)
->>      client->flags = info->flags;
->>      client->addr = info->addr;
->>      client->irq = info->irq;
->> +    client->irq_flags = info->irq_flags;
->>
->>      strlcpy(client->name, info->type, sizeof(client->name));
->> diff --git a/include/linux/i2c.h b/include/linux/i2c.h index
->> 4bae0b7..e6248c1 100644
->> --- a/include/linux/i2c.h
->> +++ b/include/linux/i2c.h
->> @@ -189,6 +189,7 @@ struct i2c_driver {
->>   * @driver: device's driver, hence pointer to access routines * @dev:
->>   Driver model device node for the slave. * @irq: indicates the IRQ
->>   generated by this device (if any) + * @irq_flags: The flags passed to
->>   request_irq() * @detected: member of an i2c_driver.clients list or
->>   i2c-core's *       userspace_devices list *
->> @@ -206,6 +207,7 @@ struct i2c_client {
->>      struct i2c_driver *driver;      /* and our access routines      */      struct
->>  device dev;         /* the device structure         */      int irq;                        /* irq issued by
->>  device              */ +    unsigned long irq_flags;        /* flags used by the irq        */
->>      struct list_head detected; }; #define to_i2c_client(d)
->>  container_of(d, struct i2c_client, dev) @@
->> -237,6 +239,7 @@ static inline void i2c_set_clientdata(struct
-> i2c_client *dev, void *data)
->>   * @archdata: copied into i2c_client.dev.archdata * @of_node: pointer
->>   to OpenFirmware device node * @irq: stored in i2c_client.irq + *
->>   @irq_flags: The flags passed to request_irq() for i2c_client.irq * *
->>   I2C doesn't actually support hardware probing, although controllers
->>   and * devices may be able to use I2C_SMBUS_QUICK to tell whether or
->> not there's @@ -259,6 +262,7 @@ struct i2c_board_info {
->>      struct device_node *of_node; #endif     int             irq; +  unsigned
->>  long        irq_flags; };
->>
->>  /**
->
->
-
-Greetings,
-Michael
-
-Analog Devices GmbH      Wilhelm-Wagenfeld-Str. 6      80807 Muenchen
-Sitz der Gesellschaft Muenchen, Registergericht Muenchen HRB 4036 Geschaeftsfuehrer Thomas Wessel, William A. Martin, Margaret Seif
-
-
+The other problem here is how to name registers at the API level.
+You would be introducing architecture-specific register names
+in perf_event.h. There is no such a thing today.
