@@ -1,113 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753713Ab0JRMBt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Oct 2010 08:01:49 -0400
-Received: from zone0.gcu-squad.org ([212.85.147.21]:48239 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753437Ab0JRMBs (ORCPT
+	id S1753835Ab0JRMFp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Oct 2010 08:05:45 -0400
+Received: from canuck.infradead.org ([134.117.69.58]:58936 "EHLO
+	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752953Ab0JRMFn convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Oct 2010 08:01:48 -0400
-Date: Mon, 18 Oct 2010 14:01:36 +0200
-From: Jean Delvare <khali@linux-fr.org>
-To: "Hennerich, Michael" <Michael.Hennerich@analog.com>
-Cc: Mike Frysinger <vapier@gentoo.org>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "uclinux-dist-devel@blackfin.uclinux.org" 
-	<uclinux-dist-devel@blackfin.uclinux.org>,
-        "device-drivers-devel@blackfin.uclinux.org" 
-	<device-drivers-devel@blackfin.uclinux.org>,
-        David Brownell <david-b@pacbell.net>
-Subject: Re: [PATCH] i2c: add irq_flags to board info
-Message-ID: <20101018140136.2b44d29e@endymion.delvare>
-In-Reply-To: <544AC56F16B56944AEC3BD4E3D5917713094520EDB@LIMKCMBX1.ad.analog.com>
-References: <1287359019-1476-1-git-send-email-vapier@gentoo.org>
-	<20101018103610.77b7e605@endymion.delvare>
-	<544AC56F16B56944AEC3BD4E3D5917713094520EDB@LIMKCMBX1.ad.analog.com>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
+	Mon, 18 Oct 2010 08:05:43 -0400
+Subject: Re: [PATCH 5/9] jump label: Add
+ register_jump_label_key/unregister_jump_label_key
+From: Peter Zijlstra <peterz@infradead.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Jason Baron <jbaron@redhat.com>
+In-Reply-To: <1287177215.1998.121.camel@laptop>
+References: <20101015200949.134732894@goodmis.org>
+	 <20101015201036.923619508@goodmis.org>  <1287176595.1998.116.camel@laptop>
+	 <1287176974.16971.3.camel@gandalf.stny.rr.com>
+	 <1287177215.1998.121.camel@laptop>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Mon, 18 Oct 2010 14:05:21 +0200
+Message-ID: <1287403521.29097.1554.camel@twins>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Michael,
-
-On Mon, 18 Oct 2010 10:55:57 +0100, Hennerich, Michael wrote:
-> Jean Delvare wrote on 2010-10-18:
-> > Hi Mike,
-> >
-> > On Sun, 17 Oct 2010 19:43:39 -0400, Mike Frysinger wrote:
-> >> From: Michael Hennerich <michael.hennerich@analog.com>
-> >>
-> >> These flags can be optionally defined - slave drivers may use them as
-> >> flags argument for request_irq().  In case they are left uninitialized
-> >> they will default to zero, and therefore shouldn't cause problems.
-> >>
-> >> This allows us to avoid having to add dedicated platform init code
-> >> just to call set_irq_type()
-> >
-> > Do you have examples of this? Can we see a preview of the amount of
-> > cleanups this patch would allow?
+On Fri, 2010-10-15 at 23:13 +0200, Peter Zijlstra wrote:
+> On Fri, 2010-10-15 at 17:09 -0400, Steven Rostedt wrote:
+> > On Fri, 2010-10-15 at 23:03 +0200, Peter Zijlstra wrote:
+> > 
+> > > Urgh, this sucks.. :-(
+> > > 
+> > > So now we have to actually track all JUMP_LABEL() sites and call
+> > > register muck on them.. even though we already track them through the
+> > > special data section.
+> > > 
+> > > Is there really no way around this?
+> > 
+> > I'll take a look to see if we can monkey with magic and automate it.
 > 
-> Examples can be found in various board setup files:
+> So the problem is something like:
 > 
-> One example arch/sh/boards/mach-ecovec24/setup.c:
+> core kernel:
 > 
-> static struct i2c_board_info ts_i2c_clients = {
->         I2C_BOARD_INFO("tsc2007", 0x48),
->         .type           = "tsc2007",
->         .platform_data  = &tsc2007_info,
->         .irq            = IRQ0,
-> };
+>  jump_label_enable()
 > 
-> [--snip--]
+> module:
 > 
->                 /* enable TouchScreen */
->                 i2c_register_board_info(0, &ts_i2c_clients, 1);
->                 set_irq_type(IRQ0, IRQ_TYPE_LEVEL_LOW);
-
-This example doesn't quite match the patch description. There's no
-"dedicated platform init code just to call set_irq_type()", as you
-already have platform code to call i2c_register_board_info(). It's
-really only calling set_irq_type() from platform code vs. from driver
-code.
-
-> >> -- which doesn't work very well when coupled with module drivers.
-> >
-> > I don't quite get what you mean here.
+>  JUMP_LABEL()
 > 
-> Since the driver doesn't setup the irq_type itself you need to do it
-> manually in advance using set_irq_type().
-> This happens most likely from your paltform setup/configuration file.
+> And then because we don't have a proper __jump_table section, the
+> jump_label_enable() won't properly work?
 > 
-> Assuming the driver is built as a module, this code gets executed unconditionally,
-> no matter if the driver gets finally loaded or not.
-> 
-> Assuming you have several drivers build as modules, using the same irq but with
-> different irq types, you run into problems here.
+> Why not let jump_label_enable() add a dummy entry with the enabled bit
+> and once you load the module merge the real entry into it.
 
-I do not get why.
-
-You're not going to register several I2C devices using the same IRQ but
-requiring different IRQ flags anyway, as it wouldn't work. So you'll
-have to only register the I2C devices which are actually present on the
-system. Setting the IRQ type at the same time or deferring this action
-to the driver(s) doesn't make any difference then, does it?
-
-> There are some development boards featuring extension options, which all plug on the same
-> socket but required different drivers/irq types.
-
-How do you figure out which extension option is plugged? You can't
-instantiate an I2C device which isn't present, so you must have a way
-to know what extension option is used, to instantiate the right I2C
-device at the right address.
-
-> The ideal way is therefore to pass the irq_flags together with the SPI/I2C board info.
-
-All I see so far is two data structures made slightly larger, for no
-actual benefit.
-
--- 
-Jean Delvare
+Or actually use the value of the key pointer.. it would mean either
+standardizing the size (int/atomic_t would work), or using a version of
+the fallback JUMP_LABEL implementation to sort out the type issues.
