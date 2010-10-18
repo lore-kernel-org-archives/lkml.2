@@ -1,59 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933329Ab0JRUsm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Oct 2010 16:48:42 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:51210 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755183Ab0JRUsk (ORCPT
+	id S933339Ab0JRUtA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Oct 2010 16:49:00 -0400
+Received: from smtp.srv.ualberta.ca ([129.128.5.19]:61760 "EHLO
+	mail1.srv.ualberta.ca" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755183Ab0JRUs6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Oct 2010 16:48:40 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Daniel Walker <dwalker@fifo99.com>
-Subject: Re: linux-next: manual merge of the msm tree with the arm tree
-Date: Mon, 18 Oct 2010 22:48:35 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.36-rc7-next-20101015+; KDE/4.5.1; x86_64; ; )
-Cc: Nicolas Pitre <nico@fluxnic.net>, Russell King <rmk@arm.linux.org.uk>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Jeremy Kerr <jeremy.kerr@canonical.com>,
-        Jeff Ohlstein <johlstei@codeaurora.org>
-References: <20101018103540.7bd9c535.sfr@canb.auug.org.au> <201010182219.25890.arnd@arndb.de> <1287434251.5588.23.camel@c-dwalke-linux.qualcomm.com>
-In-Reply-To: <1287434251.5588.23.camel@c-dwalke-linux.qualcomm.com>
+	Mon, 18 Oct 2010 16:48:58 -0400
+Date: Mon, 18 Oct 2010 14:48:59 -0600 (Mountain Daylight Time)
+From: Marc Aurele La France <tsi@ualberta.ca>
+Reply-To: linux-kernel@vger.kernel.org, tsi@ualberta.ca
+To: Len Brown <lenb@kernel.org>
+cc: linux-kernel@vger.kernel.org
+Subject: Re: x86_64 2.6.35.* kernels and Intel Xeon X5550
+In-Reply-To: <alpine.LFD.2.00.1010160338280.2238@localhost.localdomain>
+Message-ID: <alpine.WNT.2.00.1010181440110.1680@cluij.ucs.ualberta.ca>
+References: <alpine.WNT.2.00.1010071055420.1672@cluij.ucs.ualberta.ca> <alpine.WNT.1.10.1010152030320.280@tsi> <alpine.LFD.2.00.1010160338280.2238@localhost.localdomain>
+User-Agent: Alpine 2.00 (WNT 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201010182248.36078.arnd@arndb.de>
-X-Provags-ID: V02:K0:g09Gm4s46xL+tsqRezm5VpW6YmBwOevDoysERbMBQiI
- 382BUsYGWeAnA2/y+z78DAeK8Ig/5gGx0GTvaQn4MxGBqm0g4/
- udScW8j0mygBoQrtu3LGLiXDTgAesFod0WV5aC4RN2UfNzXU8G
- S9P1cKruBmpwcIcIS8e+VY9obw/JyE4UjJx2Z1B1cW5UKlp1+R
- n2UMXbcKR4vNLtntpIApQ==
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 18 October 2010 22:37:31 Daniel Walker wrote:
-> > When you know that Russell does not rebase his tree, you can pull his
-> > tree into yours whenever a change hits his tree that impacts you in
-> > a major way. You shouldn't do this too frequently, but it's a good way
-> > to resolve conflicts like this one.
-> 
-> If I did that all of Russell's changesets would get mixed with mine when
-> I send the pull request .. That would just create confusion .. It's OK
-> if Russell sends my commits to Linus, but I'm not going to send
-> Russell's commits.
+On Sat, 16 Oct 2010, Len Brown wrote:
 
-Actually both are ok, as long as you as the sub-maintainer send your
-pull request after Russell's tree has been merged and you don't
-ask anyone else to pull your tree who has not pulled Russell's tree
-explicitly or implicitly through Linus.
+>>> On the Xeon's, 2.6.35 hangs early on, upon the first test of trace events
+>>> (in kernel/trace/trace_events.c:event_trace_self_tests()).  When disabling
+>>> all tracing, debugging, etc., it still hangs but slightly later.  The
+>>> megaraid_sas module is loaded, detects the adapter, but never gets around to
+>>> registering it with the SCSI layer.
 
-git-request-pull is smart enough to list only the changesets that
-are not in the upstream tree, as will git "log your-branch...upstream"
-or "git diff your-branch upstream".
+>> This is due to "CONFIG_INTEL_IDLE=y".
 
-The other option you have is to ask Russell to pull your tree
-at an early enough time, which also works if you did the occasional
-pull from him before that.
+> Please file a bug report at bugzilla.kernel.org and assign it to me.
 
-	Arnd
+> Please reproduce using an upstream 2.6.36-rc8 kernel.
+
+> Boot a CONFIG_INTEL_IDLE=n kernel and to the bug report...
+
+> attach the output from acpidump
+> 'cat /proc/cpuinfo'
+> 'grep . /sys/devices/system/cpu/cpu*/cpuidle/*/*'
+> 'lspci'
+
+> Then boot a CONFIG_INTEL_IDLE=y kernel and see what is the highest N that
+> boots when you boot with "intel_idle.max_cstate=N"  (0 will disable
+> the driver completely) and if any of them boot, for the highest N,
+> attach to the bug report the complete dmesg and the output from
+> 'grep . /sys/devices/system/cpu/cpu*/cpuidle/*/*'
+
+> thanks,
+> -Len Brown, Intel Open Source Technology Center
+
+Done.  However, due to finger-checks BZ won't let me correct, you'll need 
+to ignore the initial descriptions of the attachments.  Look at 
+"[details]" instead.
+
+Marc.
+
++----------------------------------+----------------------------------+
+|  Marc Aurele La France           |  work:   1-780-492-9310          |
+|  Academic Information and        |  fax:    1-780-492-1729          |
+|    Communications Technologies   |  email:  tsi@ualberta.ca         |
+|  352 General Services Building   +----------------------------------+
+|  University of Alberta           |                                  |
+|  Edmonton, Alberta               |    Standard disclaimers apply    |
+|  T6G 2H1                         |                                  |
+|  CANADA                          |                                  |
++----------------------------------+----------------------------------+
