@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933100Ab0JRTYT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Oct 2010 15:24:19 -0400
-Received: from hera.kernel.org ([140.211.167.34]:35217 "EHLO hera.kernel.org"
+	id S933119Ab0JRTYk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Oct 2010 15:24:40 -0400
+Received: from hera.kernel.org ([140.211.167.34]:35229 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932134Ab0JRTYR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Oct 2010 15:24:17 -0400
-Date: Mon, 18 Oct 2010 19:23:51 GMT
+	id S932134Ab0JRTYj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Oct 2010 15:24:39 -0400
+Date: Mon, 18 Oct 2010 19:24:13 GMT
 From: tip-bot for Nikhil Rao <ncrao@google.com>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
         a.p.zijlstra@chello.nl, ncrao@google.com, tglx@linutronix.de,
@@ -14,167 +14,101 @@ Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
 Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
         ncrao@google.com, a.p.zijlstra@chello.nl, tglx@linutronix.de,
         mingo@elte.hu
-In-Reply-To: <1287173550-30365-4-git-send-email-ncrao@google.com>
-References: <1287173550-30365-4-git-send-email-ncrao@google.com>
+In-Reply-To: <1287173550-30365-5-git-send-email-ncrao@google.com>
+References: <1287173550-30365-5-git-send-email-ncrao@google.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] sched: Force balancing on newidle balance if local group has capacity
-Message-ID: <tip-fab476228ba37907ad75216d0fd9732ada9c119e@git.kernel.org>
-Git-Commit-ID: fab476228ba37907ad75216d0fd9732ada9c119e
+Subject: [tip:sched/core] sched: Drop group_capacity to 1 only if local group has extra capacity
+Message-ID: <tip-75dd321d79d495a0ee579e6249ebc38ddbb2667f@git.kernel.org>
+Git-Commit-ID: 75dd321d79d495a0ee579e6249ebc38ddbb2667f
 X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 18 Oct 2010 19:23:51 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 18 Oct 2010 19:24:13 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  fab476228ba37907ad75216d0fd9732ada9c119e
-Gitweb:     http://git.kernel.org/tip/fab476228ba37907ad75216d0fd9732ada9c119e
+Commit-ID:  75dd321d79d495a0ee579e6249ebc38ddbb2667f
+Gitweb:     http://git.kernel.org/tip/75dd321d79d495a0ee579e6249ebc38ddbb2667f
 Author:     Nikhil Rao <ncrao@google.com>
-AuthorDate: Fri, 15 Oct 2010 13:12:29 -0700
+AuthorDate: Fri, 15 Oct 2010 13:12:30 -0700
 Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Mon, 18 Oct 2010 20:52:18 +0200
+CommitDate: Mon, 18 Oct 2010 20:52:19 +0200
 
-sched: Force balancing on newidle balance if local group has capacity
+sched: Drop group_capacity to 1 only if local group has extra capacity
 
-This patch forces a load balance on a newly idle cpu when the local group has
-extra capacity and the busiest group does not have any. It improves system
-utilization when balancing tasks with a large weight differential.
+When SD_PREFER_SIBLING is set on a sched domain, drop group_capacity to 1
+only if the local group has extra capacity. The extra check prevents the case
+where you always pull from the heaviest group when it is already under-utilized
+(possible with a large weight task outweighs the tasks on the system).
 
-Under certain situations, such as a niced down task (i.e. nice = -15) in the
-presence of nr_cpus NICE0 tasks, the niced task lands on a sched group and
-kicks away other tasks because of its large weight. This leads to sub-optimal
-utilization of the machine. Even though the sched group has capacity, it does
-not pull tasks because sds.this_load >> sds.max_load, and f_b_g() returns NULL.
+For example, consider a 16-cpu quad-core quad-socket machine with MC and NUMA
+scheduling domains. Let's say we spawn 15 nice0 tasks and one nice-15 task,
+and each task is running on one core. In this case, we observe the following
+events when balancing at the NUMA domain:
 
-With this patch, if the local group has extra capacity, we shortcut the checks
-in f_b_g() and try to pull a task over. A sched group has extra capacity if the
-group capacity is greater than the number of running tasks in that group.
+- find_busiest_group() will always pick the sched group containing the niced
+  task to be the busiest group.
+- find_busiest_queue() will then always pick one of the cpus running the
+  nice0 task (never picks the cpu with the nice -15 task since
+  weighted_cpuload > imbalance).
+- The load balancer fails to migrate the task since it is the running task
+  and increments sd->nr_balance_failed.
+- It repeats the above steps a few more times until sd->nr_balance_failed > 5,
+  at which point it kicks off the active load balancer, wakes up the migration
+  thread and kicks the nice 0 task off the cpu.
 
-Thanks to Mike Galbraith for discussions leading to this patch and for the
-insight to reuse SD_NEWIDLE_BALANCE.
+The load balancer doesn't stop until we kick out all nice 0 tasks from
+the sched group, leaving you with 3 idle cpus and one cpu running the
+nice -15 task.
+
+When balancing at the NUMA domain, we drop sgs.group_capacity to 1 if the child
+domain (in this case MC) has SD_PREFER_SIBLING set.  Subsequent load checks are
+not relevant because the niced task has a very large weight.
+
+In this patch, we add an extra condition to the "if(prefer_sibling)" check in
+update_sd_lb_stats(). We drop the capacity of a group only if the local group
+has extra capacity, ie. nr_running < group_capacity. This patch preserves the
+original intent of the prefer_siblings check (to spread tasks across the system
+in low utilization scenarios) and fixes the case above.
+
+It helps in the following ways:
+- In low utilization cases (where nr_tasks << nr_cpus), we still drop
+  group_capacity down to 1 if we prefer siblings.
+- On very busy systems (where nr_tasks >> nr_cpus), sgs.nr_running will most
+  likely be > sgs.group_capacity.
+- When balancing large weight tasks, if the local group does not have extra
+  capacity, we do not pick the group with the niced task as the busiest group.
+  This prevents failed balances, active migration and the under-utilization
+  described above.
 
 Signed-off-by: Nikhil Rao <ncrao@google.com>
 Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-LKML-Reference: <1287173550-30365-4-git-send-email-ncrao@google.com>
+LKML-Reference: <1287173550-30365-5-git-send-email-ncrao@google.com>
 Signed-off-by: Ingo Molnar <mingo@elte.hu>
 ---
- kernel/sched_fair.c |   28 +++++++++++++++++++++++++---
- 1 files changed, 25 insertions(+), 3 deletions(-)
+ kernel/sched_fair.c |    9 +++++++--
+ 1 files changed, 7 insertions(+), 2 deletions(-)
 
 diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
-index 3656480..032b548 100644
+index 032b548..f1c615f 100644
 --- a/kernel/sched_fair.c
 +++ b/kernel/sched_fair.c
-@@ -1764,6 +1764,10 @@ static void pull_task(struct rq *src_rq, struct task_struct *p,
- 	set_task_cpu(p, this_cpu);
- 	activate_task(this_rq, p, 0);
- 	check_preempt_curr(this_rq, p, 0);
-+
-+	/* re-arm NEWIDLE balancing when moving tasks */
-+	src_rq->avg_idle = this_rq->avg_idle = 2*sysctl_sched_migration_cost;
-+	this_rq->idle_stamp = 0;
- }
+@@ -2554,9 +2554,14 @@ static inline void update_sd_lb_stats(struct sched_domain *sd, int this_cpu,
+ 		/*
+ 		 * In case the child domain prefers tasks go to siblings
+ 		 * first, lower the sg capacity to one so that we'll try
+-		 * and move all the excess tasks away.
++		 * and move all the excess tasks away. We lower the capacity
++		 * of a group only if the local group has the capacity to fit
++		 * these excess tasks, i.e. nr_running < group_capacity. The
++		 * extra check prevents the case where you always pull from the
++		 * heaviest group when it is already under-utilized (possible
++		 * with a large weight task outweighs the tasks on the system).
+ 		 */
+-		if (prefer_sibling)
++		if (prefer_sibling && !local_group && sds->this_has_capacity)
+ 			sgs.group_capacity = min(sgs.group_capacity, 1UL);
  
- /*
-@@ -2030,12 +2034,14 @@ struct sd_lb_stats {
- 	unsigned long this_load;
- 	unsigned long this_load_per_task;
- 	unsigned long this_nr_running;
-+	unsigned long this_has_capacity;
- 
- 	/* Statistics of the busiest group */
- 	unsigned long max_load;
- 	unsigned long busiest_load_per_task;
- 	unsigned long busiest_nr_running;
- 	unsigned long busiest_group_capacity;
-+	unsigned long busiest_has_capacity;
- 
- 	int group_imb; /* Is there imbalance in this sd */
- #if defined(CONFIG_SCHED_MC) || defined(CONFIG_SCHED_SMT)
-@@ -2058,6 +2064,7 @@ struct sg_lb_stats {
- 	unsigned long sum_weighted_load; /* Weighted load of group's tasks */
- 	unsigned long group_capacity;
- 	int group_imb; /* Is there an imbalance in the group ? */
-+	int group_has_capacity; /* Is there extra capacity in the group? */
- };
- 
- /**
-@@ -2456,6 +2463,9 @@ static inline void update_sg_lb_stats(struct sched_domain *sd,
- 	sgs->group_capacity = DIV_ROUND_CLOSEST(group->cpu_power, SCHED_LOAD_SCALE);
- 	if (!sgs->group_capacity)
- 		sgs->group_capacity = fix_small_capacity(sd, group);
-+
-+	if (sgs->group_capacity > sgs->sum_nr_running)
-+		sgs->group_has_capacity = 1;
- }
- 
- /**
-@@ -2554,12 +2564,14 @@ static inline void update_sd_lb_stats(struct sched_domain *sd, int this_cpu,
- 			sds->this = sg;
- 			sds->this_nr_running = sgs.sum_nr_running;
- 			sds->this_load_per_task = sgs.sum_weighted_load;
-+			sds->this_has_capacity = sgs.group_has_capacity;
- 		} else if (update_sd_pick_busiest(sd, sds, sg, &sgs, this_cpu)) {
- 			sds->max_load = sgs.avg_load;
- 			sds->busiest = sg;
- 			sds->busiest_nr_running = sgs.sum_nr_running;
- 			sds->busiest_group_capacity = sgs.group_capacity;
- 			sds->busiest_load_per_task = sgs.sum_weighted_load;
-+			sds->busiest_has_capacity = sgs.group_has_capacity;
- 			sds->group_imb = sgs.group_imb;
- 		}
- 
-@@ -2756,6 +2768,7 @@ static inline void calculate_imbalance(struct sd_lb_stats *sds, int this_cpu,
- 		return fix_small_imbalance(sds, this_cpu, imbalance);
- 
- }
-+
- /******* find_busiest_group() helpers end here *********************/
- 
- /**
-@@ -2807,6 +2820,11 @@ find_busiest_group(struct sched_domain *sd, int this_cpu,
- 	 * 4) This group is more busy than the avg busieness at this
- 	 *    sched_domain.
- 	 * 5) The imbalance is within the specified limit.
-+	 *
-+	 * Note: when doing newidle balance, if the local group has excess
-+	 * capacity (i.e. nr_running < group_capacity) and the busiest group
-+	 * does not have any capacity, we force a load balance to pull tasks
-+	 * to the local group. In this case, we skip past checks 3, 4 and 5.
- 	 */
- 	if (!(*balance))
- 		goto ret;
-@@ -2818,6 +2836,11 @@ find_busiest_group(struct sched_domain *sd, int this_cpu,
- 	if (!sds.busiest || sds.busiest_nr_running == 0)
- 		goto out_balanced;
- 
-+	/*  SD_BALANCE_NEWIDLE trumps SMP nice when underutilized */
-+	if (idle == CPU_NEWLY_IDLE && sds.this_has_capacity &&
-+			!sds.busiest_has_capacity)
-+		goto force_balance;
-+
- 	if (sds.this_load >= sds.max_load)
- 		goto out_balanced;
- 
-@@ -2829,6 +2852,7 @@ find_busiest_group(struct sched_domain *sd, int this_cpu,
- 	if (100 * sds.max_load <= sd->imbalance_pct * sds.this_load)
- 		goto out_balanced;
- 
-+force_balance:
- 	/* Looks like there is an imbalance. Compute it */
- 	calculate_imbalance(&sds, this_cpu, imbalance);
- 	return sds.busiest;
-@@ -3162,10 +3186,8 @@ static void idle_balance(int this_cpu, struct rq *this_rq)
- 		interval = msecs_to_jiffies(sd->balance_interval);
- 		if (time_after(next_balance, sd->last_balance + interval))
- 			next_balance = sd->last_balance + interval;
--		if (pulled_task) {
--			this_rq->idle_stamp = 0;
-+		if (pulled_task)
- 			break;
--		}
- 	}
- 
- 	raw_spin_lock(&this_rq->lock);
+ 		if (local_group) {
