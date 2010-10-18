@@ -1,67 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753345Ab0JRA5Y (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Oct 2010 20:57:24 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:20036 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752663Ab0JRA5X (ORCPT
+	id S1753435Ab0JRA5m (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Oct 2010 20:57:42 -0400
+Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:37427 "EHLO
+	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753335Ab0JRA5k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Oct 2010 20:57:23 -0400
-Date: Mon, 18 Oct 2010 09:57:25 +0900
-From: Kukjin Kim <kgene.kim@samsung.com>
-Subject: RE: linux-next: manual merge of the s5p tree with the arm tree
-In-reply-to: <20101018105046.368420c2.sfr@canb.auug.org.au>
-To: "'Stephen Rothwell'" <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "'Jeremy Kerr'" <jeremy.kerr@canonical.com>,
-        "'Lorenzo Pieralisi'" <lorenzo.pieralisi@arm.com>,
-        "'Jason Wang'" <jason77.wang@gmail.com>,
-        "'Tony Lindgren'" <tony@atomide.com>,
-        "'Russell King'" <rmk@arm.linux.org.uk>
-Message-id: <03f901cb6e5f$6ff5f690$4fe1e3b0$%kim@samsung.com>
-MIME-version: 1.0
-X-Mailer: Microsoft Office Outlook 12.0
-Content-type: text/plain; charset=us-ascii
-Content-language: ko
-Content-transfer-encoding: 7BIT
-Thread-index: ActuViSStBpa6GSdTXSHZzSbBIWgXAAB0GKQ
-References: <20101018105046.368420c2.sfr@canb.auug.org.au>
+	Sun, 17 Oct 2010 20:57:40 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Mon, 18 Oct 2010 09:52:14 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Greg Thelen <gthelen@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, containers@lists.osdl.org,
+        Andrea Righi <arighi@develer.com>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Ciju Rajan K <ciju@linux.vnet.ibm.com>,
+        David Rientjes <rientjes@google.com>
+Subject: Re: [PATCH v2 08/11] memcg: CPU hotplug lockdep warning fix
+Message-Id: <20101018095214.967d431b.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <1287177279-30876-9-git-send-email-gthelen@google.com>
+References: <1287177279-30876-1-git-send-email-gthelen@google.com>
+	<1287177279-30876-9-git-send-email-gthelen@google.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Stephen Rothwell wrote:
+On Fri, 15 Oct 2010 14:14:36 -0700
+Greg Thelen <gthelen@google.com> wrote:
+
+> From: Balbir Singh <balbir@linux.vnet.ibm.com>
 > 
-> Hi Kukjin,
+> memcg has lockdep warnings (sleep inside rcu lock)
 > 
-Hi Stephen :-)
-
-> Today's linux-next merge of the s5p tree got a conflict in
-> arch/arm/mach-s5p6440/include/mach/debug-macro.S between commit
-> 08a610d9ef5394525b0328da0162d7b58c982cc4 ("arm: return both physical and
-> virtual addresses from addruart") from the arm tree and commit
-> 29159b7dd244def6e0073ff0e2d4cbb59599187f ("ARM: S5P64X0: Add S5P64X0
-> (S5P6440 and S5P6450) initialization support") from the s5p tree.
+> From: Balbir Singh <balbir@linux.vnet.ibm.com>
 > 
-Hmm...ok...
-
-> The latter removed the file modified by the former.  I did that.
+> Recent move to get_online_cpus() ends up calling get_online_cpus() from
+> mem_cgroup_read_stat(). However mem_cgroup_read_stat() is called under rcu
+> lock. get_online_cpus() can sleep. The dirty limit patches expose
+> this BUG more readily due to their usage of mem_cgroup_page_stat()
 > 
-Ok.
+> This patch address this issue as identified by lockdep and moves the
+> hotplug protection to a higher layer. This might increase the time
+> required to hotplug, but not by much.
+> 
+> Warning messages
+> 
+> BUG: sleeping function called from invalid context at kernel/cpu.c:62
+> in_atomic(): 0, irqs_disabled(): 0, pid: 6325, name: pagetest
+> 2 locks held by pagetest/6325:
+> do_page_fault+0x27d/0x4a0
+> mem_cgroup_page_stat+0x0/0x23f
+> Pid: 6325, comm: pagetest Not tainted 2.6.36-rc5-mm1+ #201
+> Call Trace:
+> [<ffffffff81041224>] __might_sleep+0x12d/0x131
+> [<ffffffff8104f4af>] get_online_cpus+0x1c/0x51
+> [<ffffffff8110eedb>] mem_cgroup_read_stat+0x27/0xa3
+> [<ffffffff811125d2>] mem_cgroup_page_stat+0x131/0x23f
+> [<ffffffff811124a1>] ? mem_cgroup_page_stat+0x0/0x23f
+> [<ffffffff810d57c3>] global_dirty_limits+0x42/0xf8
+> [<ffffffff810d58b3>] throttle_vm_writeout+0x3a/0xb4
+> [<ffffffff810dc2f8>] shrink_zone+0x3e6/0x3f8
+> [<ffffffff81074a35>] ? ktime_get_ts+0xb2/0xbf
+> [<ffffffff810dd1aa>] do_try_to_free_pages+0x106/0x478
+> [<ffffffff810dd601>] try_to_free_mem_cgroup_pages+0xe5/0x14c
+> [<ffffffff8110f947>] mem_cgroup_hierarchical_reclaim+0x314/0x3a2
+> [<ffffffff81111b31>] __mem_cgroup_try_charge+0x29b/0x593
+> [<ffffffff8111194a>] ? __mem_cgroup_try_charge+0xb4/0x593
+> [<ffffffff81071258>] ? local_clock+0x40/0x59
+> [<ffffffff81009015>] ? sched_clock+0x9/0xd
+> [<ffffffff810710d5>] ? sched_clock_local+0x1c/0x82
+> [<ffffffff8111398a>] mem_cgroup_charge_common+0x4b/0x76
+> [<ffffffff81141469>] ? bio_add_page+0x36/0x38
+> [<ffffffff81113ba9>] mem_cgroup_cache_charge+0x1f4/0x214
+> [<ffffffff810cd195>] add_to_page_cache_locked+0x4a/0x148
+> ....
+> 
+> Acked-by: Greg Thelen <gthelen@google.com>
+> Signed-off-by: Balbir Singh <balbir@linux.vnet.ibm.com>
 
-> The appropriate part of the above arm commit needs to be done for the new
-> file arch/arm/mach-s5p64x0/include/mach/debug-macro.S .  Unfortunately, I
-> am unqualified to do that ...
-
-I see...so may I do only fix
-arch/arm/mach-s5p64x0/include/mach/debug-macro.S in my tree?
-Or...need to fix other things?
-
-Anyway, thanks for your linux-next ;-)
-
-Best regards,
-Kgene.
---
-Kukjin Kim <kgene.kim@samsung.com>, Senior Engineer,
-SW Solution Development Team, Samsung Electronics Co., Ltd.
+Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 
