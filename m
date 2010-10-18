@@ -1,71 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933355Ab0JRVaY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Oct 2010 17:30:24 -0400
-Received: from hera.kernel.org ([140.211.167.34]:33744 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755704Ab0JRVaX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Oct 2010 17:30:23 -0400
-References: <4CBCB274.7010108@kernel.org> <alpine.LFD.2.00.1010182304050.6815@localhost6.localdomain6> <alpine.LFD.2.00.1010182311110.6815@localhost6.localdomain6>
-In-Reply-To: <alpine.LFD.2.00.1010182311110.6815@localhost6.localdomain6>
-Mime-Version: 1.0 (iPhone Mail 8B117)
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain;
-	charset=us-ascii
-Message-Id: <54A1618A-3DAC-43A7-8FCD-1EE8992F7413@kernel.org>
-Cc: Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-X-Mailer: iPhone Mail (8B117)
-From: Yinghai <yinghai@kernel.org>
-Subject: Re: [PATCH] x86, irq: Check if irq is remapped before freeing irte
-Date: Mon, 18 Oct 2010 14:28:18 -0700
+	id S933367Ab0JRVah (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Oct 2010 17:30:37 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:22630 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757630Ab0JRVaf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Oct 2010 17:30:35 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
+         :references:user-agent:mime-version:content-type;
+        b=PWgtdbHzJDZhuQ/ksmYjXiAyfuv6nA5n4liCJiT5j9XB4CWQuHCkt1dE3USNnkcYpY
+         O3498SbuNQbeLwLSbblg==
+Date: Mon, 18 Oct 2010 14:30:25 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
 To: Thomas Gleixner <tglx@linutronix.de>
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.3 (hera.kernel.org [140.211.167.34]); Mon, 18 Oct 2010 21:30:06 +0000 (UTC)
+cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [PATCH 1/2] x86: Cleanup TIF value gaps in shift range
+In-Reply-To: <alpine.LFD.2.00.1010182320440.6815@localhost6.localdomain6>
+Message-ID: <alpine.DEB.2.00.1010181430220.15782@chino.kir.corp.google.com>
+References: <1287434158-24362-1-git-send-regression-fweisbec@gmail.com> <alpine.DEB.2.00.1010181340080.10965@chino.kir.corp.google.com> <alpine.LFD.2.00.1010182320440.6815@localhost6.localdomain6>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, 18 Oct 2010, Thomas Gleixner wrote:
 
+> I agree in general, but this is stupid as hell. No fcking interface
+> should exposed kernel internal flag bits just as hex values and no
+> fcking luser space should rely on it to be a subject of no change.
+> 
+> Seriously, if we can't even change TIF_* bits anymore then we are
+> doing something wrong. That's a pure kernel internal affair and
+> subject to change.
+> 
 
-On Oct 18, 2010, at 2:17 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
-
-> 
-> 
-> On Mon, 18 Oct 2010, Thomas Gleixner wrote:
-> 
->> On Mon, 18 Oct 2010, Yinghai Lu wrote:
->>> 
->>> Index: linux-2.6/drivers/pci/intr_remapping.c
->>> ===================================================================
->>> --- linux-2.6.orig/drivers/pci/intr_remapping.c
->>> +++ linux-2.6/drivers/pci/intr_remapping.c
->>> @@ -60,7 +60,7 @@ int get_irte(int irq, struct irte *entry
->>>    unsigned long flags;
->>>    int index;
->>> 
->>> -    if (!entry || !irq_iommu)
->>> +    if (!entry || !irq_iommu || !irq_iommu->iommu)
->>>        return -1;
->> 
->> Hmm, why do we need this? This is only called from
->> ir_ioapic_set_affinity() and ir_msi_set_affinity().
->> 
->> We should never end up there when intr_remapping=off, right ?
-> 
-> Thinking more about it, this check is actively bogus. The call sites do:
-> 
->        struct irte irte;
-> 
->        if (get_irte(irq, &irte))
->                return -1;
-> 
-> So entry _CANNOT_ be NULL.
-> 
-> And in fact we should change get_irte() to
-> 
-> get_irte(struct irq_2_iommu *irq_iommu, struct irte *entry)
-> 
-> The call site already knows about it. No need to lookup irq_iommu
-> based on the irq number.
-
-Yes
+I agree, and when I added them to the show_state() dumps, I should have 
+probably enumerated the bits of interest to userspace and printed them 
+much like taint flags: use 'M' for my bit of interest, TIF_MEMDIE, which 
+gives access to memory reserves.  We care a _lot_ about detecting hung 
+tasks that have that bit set because it usually indicates a VM problem 
+where we've allowed complete depletion of memory reserves.  There's no 
+other way to detect that, so we need to export TIF_MEMDIE somehow and if 
+that's by doing (ti->flags & TIF_MEMDIE) ? "M" : "" then that's fine by 
+me.  I hope we can do that before changing its value, though.
