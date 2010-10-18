@@ -1,160 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754260Ab0JRHm4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Oct 2010 03:42:56 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:50447 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1754166Ab0JRHmz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Oct 2010 03:42:55 -0400
-Message-ID: <4CBBFA7F.1010109@cn.fujitsu.com>
-Date: Mon, 18 Oct 2010 15:42:55 +0800
-From: Miao Xie <miaox@cn.fujitsu.com>
-Reply-To: miaox@cn.fujitsu.com
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: "Ma, Ling" <ling.ma@intel.com>
-CC: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>,
-        Andi Kleen <andi@firstfloor.org>, Thomas Gleixner <tglx@linutronix.de>,
-        "Zhao, Yakui" <yakui.zhao@intel.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH V2 -tip] lib,x86_64: improve the performance of memcpy()
- for unaligned copy
-References: <4CAEC81C.1070108@cn.fujitsu.com> <C10D3FB0CD45994C8A51FEC1227CE22F15C916E769@shsmsx502.ccr.corp.intel.com> <4CAEDE0D.2040009@cn.fujitsu.com> <4CB62543.7000605@zytor.com> <C10D3FB0CD45994C8A51FEC1227CE22F15CC203E71@shsmsx502.ccr.corp.intel.com> <4CBBE7FB.2060303@cn.fujitsu.com> <C10D3FB0CD45994C8A51FEC1227CE22F15D77721FD@shsmsx502.ccr.corp.intel.com> <4CBBEA7F.7010604@cn.fujitsu.com> <C10D3FB0CD45994C8A51FEC1227CE22F15D777221E@shsmsx502.ccr.corp.intel.com>
-In-Reply-To: <C10D3FB0CD45994C8A51FEC1227CE22F15D777221E@shsmsx502.ccr.corp.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1753863Ab0JRHu1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Oct 2010 03:50:27 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:37682 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751299Ab0JRHu0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Oct 2010 03:50:26 -0400
+From: Ohad Ben-Cohen <ohad@wizery.com>
+To: <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>
+Cc: <akpm@linux-foundation.org>, Greg KH <greg@kroah.com>,
+        Tony Lindgren <tony@atomide.com>, Benoit Cousson <b-cousson@ti.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Hari Kanigeri <h-kanigeri2@ti.com>, Suman Anna <s-anna@ti.com>,
+        Ohad Ben-Cohen <ohad@wizery.com>
+Subject: [PATCH 0/3] Add OMAP hardware spinlock misc driver
+Date: Mon, 18 Oct 2010 09:44:32 +0200
+Message-Id: <1287387875-14168-1-git-send-email-ohad@wizery.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 18 Oct 2010 14:43:32 +0800, Ma, Ling wrote:
-> "wp		: yes
-> flags		: fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush dts acpi mmx fxsr sse sse2 ss ht tm pbe syscall nx lm constant_tsc arch_perfmon pebs bts rep_good aperfmperf pni dtes64 monitor ds_cpl est tm2 ssse3 cx16 xtpr pdcm sse4_1 lahf_lm"
->
-> rep_good will cause memcpy jump to memcpy_c, so not run this patch,
-> we may continue to do further optimization on it later.
+OMAP4 introduces a Spinlock hardware module, which provides hardware
+assistance for synchronization and mutual exclusion between heterogeneous
+processors and those not operating under a single, shared operating system
+(e.g. OMAP4 has dual Cortex-A9, dual Cortex-M3 and a C64x+ DSP).
 
-Yes, but in fact, the performance of memcpy_c is not better on some micro-architecture(such as:
-Wolfdale-3M, ), especially in the unaligned cases, so we need do optimization for it, and I think
-the first step of optimization is optimizing the original code of memcpy().
+The intention of this hardware module is to allow remote processors,
+that have no alternative mechanism to accomplish synchronization and mutual
+exclusion operations, to share resources (such as memory and/or any other
+hardware resource).
 
-> BTW the improvement is only from core2 shift register optimization,
-> but for most previous cpus shift register is very sensitive because of decode stage.
-> I have test Atom, Opteron, and Nocona, new patch is still better.
+This patchset adds a new misc driver for this OMAP hwspinlock module.
 
-I think we can add a flag to make this improvement only valid for Core2 or other CPU like it,
-just like X86_FEATURE_REP_GOOD.
+Currently there are two users for this driver:
 
-Regards
-Miao
+1. Inter-Processor Communications: on OMAP4, cpu-intensive multimedia
+tasks are offloaded by the host to the remote M3 and/or C64x+ slave
+processors.
 
->
-> Thanks
-> Ling
->
-> -----Original Message-----
-> From: Miao Xie [mailto:miaox@cn.fujitsu.com]
-> Sent: Monday, October 18, 2010 2:35 PM
-> To: Ma, Ling
-> Cc: H. Peter Anvin; Ingo Molnar; Andi Kleen; Thomas Gleixner; Zhao, Yakui; Linux Kernel
-> Subject: Re: [PATCH V2 -tip] lib,x86_64: improve the performance of memcpy() for unaligned copy
->
-> On Mon, 18 Oct 2010 14:27:40 +0800, Ma, Ling wrote:
->> Could please send out cpu info for this cpu model.
->
-> processor	: 0
-> vendor_id	: GenuineIntel
-> cpu family	: 6
-> model		: 23
-> model name	: Intel(R) Core(TM)2 Duo CPU     E7300  @ 2.66GHz
-> stepping	: 6
-> cpu MHz		: 1603.000
-> cache size	: 3072 KB
-> physical id	: 0
-> siblings	: 2
-> core id		: 0
-> cpu cores	: 2
-> apicid		: 0
-> initial apicid	: 0
-> fpu		: yes
-> fpu_exception	: yes
-> cpuid level	: 10
-> wp		: yes
-> flags		: fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush dts acpi mmx fxsr sse sse2 ss ht tm pbe syscall nx lm constant_tsc arch_perfmon pebs bts rep_good aperfmperf pni dtes64 monitor ds_cpl est tm2 ssse3 cx16 xtpr pdcm sse4_1 lahf_lm
-> bogomips	: 5319.99
-> clflush size	: 64
-> cache_alignment	: 64
-> address sizes	: 36 bits physical, 48 bits virtual
-> power management:
->
-> Thanks
-> Miao
->
->>
->> Thanks
->> Ling
->>
->> -----Original Message-----
->> From: Miao Xie [mailto:miaox@cn.fujitsu.com]
->> Sent: Monday, October 18, 2010 2:24 PM
->> To: Ma, Ling
->> Cc: H. Peter Anvin; Ingo Molnar; Andi Kleen; Thomas Gleixner; Zhao, Yakui; Linux Kernel
->> Subject: Re: [PATCH V2 -tip] lib,x86_64: improve the performance of memcpy() for unaligned copy
->>
->> On Fri, 15 Oct 2010 03:43:53 +0800, Ma, Ling wrote:
->>> Attachment includes memcpy-kernel.c(cc -O2 memcpy-kernel.c -o
->>> memcpy-kernel), and unaligned test cases on Atom.
->>
->> I have tested on my Core2 Duo machine with your benchmark tool. Attachment is the test result. But the result is different with yours on Atom, It seems the performance is better with this patch.
->>
->> According to these two different result, maybe we need optimize memcpy() by CPU model.
->>
->> Thanks
->> Miao
->>
->>>
->>> Thanks
->>> Ling
->>>
->>> -----Original Message-----
->>> From: Ma, Ling
->>> Sent: Thursday, October 14, 2010 9:14 AM
->>> To: 'H. Peter Anvin'; miaox@cn.fujitsu.com
->>> Cc: Ingo Molnar; Andi Kleen; Thomas Gleixner; Zhao, Yakui; Linux
->>> Kernel
->>> Subject: RE: [PATCH V2 -tip] lib,x86_64: improve the performance of
->>> memcpy() for unaligned copy
->>>
->>> Sure, I will post benchmark tool and benchmark on Atom 64bit soon.
->>>
->>> Thanks
->>> Ling
->>>
->>> -----Original Message-----
->>> From: H. Peter Anvin [mailto:hpa@zytor.com]
->>> Sent: Thursday, October 14, 2010 5:32 AM
->>> To: miaox@cn.fujitsu.com
->>> Cc: Ma, Ling; Ingo Molnar; Andi Kleen; Thomas Gleixner; Zhao, Yakui;
->>> Linux Kernel
->>> Subject: Re: [PATCH V2 -tip] lib,x86_64: improve the performance of
->>> memcpy() for unaligned copy
->>>
->>> On 10/08/2010 02:02 AM, Miao Xie wrote:
->>>> On Fri, 8 Oct 2010 15:42:45 +0800, Ma, Ling wrote:
->>>>> Could you please give us full address for each comparison result,we will do some tests on my machine.
->>>>> For unaligned cases older cpus will crossing cache line and slow down caused by load and store, but for nhm, no necessary to care about it.
->>>>> By the way in kernel 64bit mode, our access mode should be around 8byte aligned.
->>>>
->>>> Would you need my benchmark tool? I think it is helpful for your test.
->>>>
->>>
->>> If you could post the benchmark tool that would be great.
->>>
->>> 	-hpa
->>
->>
->>
->
->
->
+To achieve fast message-based communications, a minimal kernel support
+is needed to deliver messages arriving from a remote processor to the
+appropriate user process.
+
+This communication is based on simple data structures that are shared between
+the remote processors, and access to it is synchronized using the hwspinlock
+module (to allow the remote processor to directly place new messages in this
+shared data structure).
+
+This OMAP IPC system, called Syslink, is being actively developed by TI and
+will be gradually submitted upstream.
+
+2. OMAP I2C driver: On some OMAP4 boards, the I2C bus is shared between
+the A9 and the M3, and the hwspinlock is used to synchronize access to it.
+
+
+Patches are against linux-omap-2.6 master, which is 2.6.36-rc8 plus
+2.6.37 omap material (needed for the omap specific patches in this set).
+
+Tested on OMAP4 blaze.
+
+Contributions
+=============
+
+Previous versions of this driver circulated in linux-omap several times,
+and received substantial attention and contribution from many developers
+(see [1][2][3][4][5][6]):
+
+Simon Que did the initial implementation and pushed several iterations
+Benoit Cousson provided extensive review, help, improvements and hwmod support
+Hari Kanigeri helped out when Simon was away
+Sanjeev Premi, Santosh Shilimkar and Nishanth Menon did lots of review
+
+I'd like to thank Benoit Cousson, Steve Krueger, Hari Kanigeri,
+Nourredine Hamoudi and Richard Woodruff for useful discussions about
+the OMAP Spinlock requirements and use-cases.
+
+Relevant linux-omap threads:
+
+[1] http://thread.gmane.org/gmane.linux.ports.arm.omap/38755
+[2] http://thread.gmane.org/gmane.linux.ports.arm.omap/38917
+[3] http://thread.gmane.org/gmane.linux.ports.arm.omap/39187
+[4] http://thread.gmane.org/gmane.linux.ports.arm.omap/39365
+[5] http://thread.gmane.org/gmane.linux.ports.arm.omap/39815
+[6] http://thread.gmane.org/gmane.linux.ports.arm.omap/40901
+
+Changes since the last linux-omap iteration:
+
+1. Disable interrupts and preemption when the lock is taken.
+   This is required in order to minimize the period of time in which
+   the other core might be spinning on this lock, trying to take it.
+   Otherwise the other core will be polling the omap interconnect for
+   too long, which would prevent other transactions from being executed.
+   spin_trylock_irqsave is used to achieve this, with a dedicated spinlock
+   (per hwspinlock). This also makes the hwspinlock primitive SMP-safe (but
+   you shouldn't use this primitive to achieve synchronizations between
+   different contexts on the same local processor, of course).
+
+2. Add memory barriers
+   The hwspinlock is used to achieve mutual exclusion when accessing some
+   shared memory data. To guarantee that the memory operations, performed
+   inside the critical section, are not reordered by the processor outside
+   that critical section, we must use explicit memory barriers.
+
+3. Provide three different locking API: trylock, lock_timeout, and lock,
+   and implement them on top of each other (in that order). For the timeout
+   API, use a jiffies-based parameter, instead of number of attempts.
+
+4. Relax the OMAP interconnect between two subsequent lock() attempts,
+   as recommended by the hw spec.
+
+5. Move driver to drivers/misc, do some general cleanups and documentation
+
+6. Use runtime PM get/put API to couple the number of locks that have being
+   requested with the runtime PM's usage_count of the underlying device
+
+Benoit Cousson (1):
+  OMAP4: hwmod data: Add hwspinlock
+
+Simon Que (2):
+  drivers: misc: add omap_hwspinlock driver
+  omap: add hwspinlock device
+
+ Documentation/misc-devices/omap_hwspinlock.txt |  199 +++++++++
+ arch/arm/mach-omap2/Makefile                   |    1 +
+ arch/arm/mach-omap2/hwspinlock.c               |   67 +++
+ arch/arm/mach-omap2/omap_hwmod_44xx_data.c     |   63 +++
+ drivers/misc/Kconfig                           |   10 +
+ drivers/misc/Makefile                          |    1 +
+ drivers/misc/omap_hwspinlock.c                 |  555 ++++++++++++++++++++++++
+ include/linux/omap_hwspinlock.h                |  108 +++++
+ 8 files changed, 1004 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/misc-devices/omap_hwspinlock.txt
+ create mode 100644 arch/arm/mach-omap2/hwspinlock.c
+ create mode 100644 drivers/misc/omap_hwspinlock.c
+ create mode 100644 include/linux/omap_hwspinlock.h
 
