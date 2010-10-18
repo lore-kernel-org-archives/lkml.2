@@ -1,80 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933014Ab0JRSAw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Oct 2010 14:00:52 -0400
-Received: from smtp108.prem.mail.ac4.yahoo.com ([76.13.13.47]:27480 "HELO
-	smtp108.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1752208Ab0JRSAv (ORCPT
+	id S1757586Ab0JRSBh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Oct 2010 14:01:37 -0400
+Received: from e32.co.us.ibm.com ([32.97.110.150]:33374 "EHLO
+	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754540Ab0JRSBg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Oct 2010 14:00:51 -0400
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-X-YMail-OSG: 58Y_4jIVM1lZtOxXUv95qPbD3LUuJLR6x3HXts1XStII6cp
- nUoM-
-X-Yahoo-Newman-Property: ymail-3
-Date: Mon, 18 Oct 2010 13:00:46 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: "Alex,Shi" <alex.shi@intel.com>
-cc: "Wu, Fengguang" <fengguang.wu@intel.com>,
-        Pekka Enberg <penberg@kernel.org>,
-        Pekka Enberg <penberg@cs.helsinki.fi>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        David Rientjes <rientjes@google.com>, Mel Gorman <mel@csn.ul.ie>,
-        "npiggin@kernel.dk" <npiggin@kernel.dk>,
-        "yanmin_zhang@linux.intel.com" <yanmin_zhang@linux.intel.com>,
-        "Chen, Tim C" <tim.c.chen@intel.com>,
-        "Li, Shaohua" <shaohua.li@intel.com>
-Subject: Re: [UnifiedV4 00/16] The Unified slab allocator (V4)
-In-Reply-To: <1286936472.31597.50.camel@debian>
-Message-ID: <alpine.DEB.2.00.1010181249540.2092@router.home>
-References: <20101005185725.088808842@linux.com>  <AANLkTinPU4T59PvDH1wX2Rcy7beL=TvmHOZh_wWuBU-T@mail.gmail.com>  <20101006123753.GA17674@localhost> <1286936472.31597.50.camel@debian>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Mon, 18 Oct 2010 14:01:36 -0400
+Subject: Re: [PATCH 1/6] [RFC] posix clocks: dynamic clock ids.
+From: john stultz <johnstul@us.ibm.com>
+To: Richard Cochran <richardcochran@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Richard Cochran <richard.cochran@omicron.at>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        Thomas Gleixner <tglx@linutronix.de>
+In-Reply-To: <20101018142748.GA5767@riccoc20.at.omicron.at>
+References: <1287189535-24649-1-git-send-email-john.stultz@linaro.org>
+	 <1287189535-24649-2-git-send-email-john.stultz@linaro.org>
+	 <20101018142748.GA5767@riccoc20.at.omicron.at>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 18 Oct 2010 11:01:16 -0700
+Message-ID: <1287424876.2758.0.camel@localhost.localdomain>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 13 Oct 2010, Alex,Shi wrote:
+On Mon, 2010-10-18 at 16:27 +0200, Richard Cochran wrote:
+> On Fri, Oct 15, 2010 at 05:38:50PM -0700, John Stultz wrote:
+> > From: Richard Cochran <richardcochran@gmail.com>
+> > 
+> > This patch augments the POSIX clock code to offer a dynamic clock
+> > creation method. Instead of registering a hard coded clock ID, modules
+> > may call create_posix_clock(), which returns a new clock ID.
+> > 
+> > Signed-off-by: Richard Cochran <richard.cochran@omicron.at>
+> > 
+> > This patch still has un-addressed lifetime issues pointed out by
+> > Alan Cox. More work is needed here, but for now this provides the
+> > functionality needed for the following patches.
+> 
+> I am working on a fully dynamic clock implementation in the style
+> suggested by Alan. Using it would change some details in this RTC
+> patch series, but not the general idea.
+> 
+> Should I post the dynamic clock stuff all by itself for review?
 
-> I got the code from
-> git://git.kernel.org/pub/scm/linux/kernel/git/christoph/slab.git unified
-> on branch "origin/unified" and do a patch base on 36-rc7 kernel. Then I
-> tested the patch on our 2P/4P core2 machines and 2P NHM, 2P WSM
-> machines. Most of benchmark have no clear improvement or regression. The
-> testing benchmarks is listed here.
-> http://kernel-perf.sourceforge.net/about_tests.php
+Yea, that'd be great!
 
-Ah. Thanks. The tests needs to show a clear benefit for this to be a
-viable solution. They did earlier without all the NUMA queuing on SMP.
+thanks!
+-john
 
-> BTW, I save several time kernel panic in fio testing:
-> ===================
-> > Pid: 776, comm: kswapd0 Not tainted 2.6.36-rc7-unified #1 X8DTN/X8DTN
-> > > RIP: 0010:[<ffffffff810cc21c>]  [<ffffffff810cc21c>] slab_alloc
-> > > +0x562/0x6f2
-
-Cannot see the error message? I guess this is the result of a BUG_ON()?
-I'll try to run that fio test first.
-
-> kswapd0: page allocation failure. order:0, mode:0xd0
-> Pid: 714, comm: kswapd0 Not tainted 2.6.36-rc7-unified #1
-> Call Trace:
-> [<ffffffff8109fcf4>] ? __alloc_pages_nodemask+0x63f/0x6c7
-> [<ffffffff8100328e>] ? apic_timer_interrupt+0xe/0x20
-> [<ffffffff810cc6f7>] ? new_slab+0xac/0x277
-> [<ffffffff810cce1e>] ? slab_alloc+0x55c/0x6e8
-> [<ffffffff810ce58b>] ? shared_caches+0x31/0xd9
-> [<ffffffff810ce110>] ? __kmalloc+0xb0/0xff
-> [<ffffffff810ce58b>] ? shared_caches+0x31/0xd9
-> [<ffffffff810ce649>] ? expire_alien_caches+0x16/0x8d
-> [<ffffffff810cde25>] ? kmem_cache_expire_all+0xf6/0x14d
-
-Expiration needs to get the gfp flags from the reclaim context. And we
-now have more allocations in a reclaim context.
-
-> slab_unreclaimable:2963060kB kernel_stack:1016kB pagetables:656kB
-
-3GB unreclaimable.... Memory leak.
 
