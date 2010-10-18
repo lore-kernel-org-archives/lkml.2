@@ -1,65 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751876Ab0JRCUp (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Oct 2010 22:20:45 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:37070 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750961Ab0JRCUo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Oct 2010 22:20:44 -0400
-Date: Mon, 18 Oct 2010 13:20:35 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Jesse Barnes <jbarnes@virtuousgeek.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Tejun Heo <tj@kernel.org>
-Subject: linux-next: build failure after merge of the pci tree
-Message-Id: <20101018132035.c506beff.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Mon__18_Oct_2010_13_20_35_+1100_AQt/+2pjJahigIjU"
+	id S1751477Ab0JRCi6 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Oct 2010 22:38:58 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:55823 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750945Ab0JRCi6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 17 Oct 2010 22:38:58 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=Xu1GiQc3NBcR7ZoBdvG4pvwvFDCaN2lVcEU/BzjiltVvXx9qDwGDLKnx27mPnF2SRR
+         DMm81WARx9OxRu22W1B+34TJoZuRLhexFea7YXU0yFI1vDKF5hEbaZsMI/ODqF4Tg2Oe
+         Rf0Ak7GoaniURVWOuqRnjuSPyNHgjgInzyZVM=
+Date: Mon, 18 Oct 2010 10:43:35 +0800
+From: =?utf-8?Q?Am=C3=A9rico?= Wang <xiyou.wangcong@gmail.com>
+To: Alex Elsayed <eternaleye@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: scripts/extract-ikconfig only works on uncompressed and
+ CONFIG_KERNEL_GZIP kernels
+Message-ID: <20101018024335.GB5281@cr0.nay.redhat.com>
+References: <loom.20101018T024559-314@post.gmane.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <loom.20101018T024559-314@post.gmane.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__18_Oct_2010_13_20_35_+1100_AQt/+2pjJahigIjU
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Mon, Oct 18, 2010 at 12:48:46AM +0000, Alex Elsayed wrote:
+>I have a kernel that was compiled with LZMA compression (CONFIG_KERNEL_LZMA). I
+>wish to extract the .config from it without running it, but the script to do so
+>does not support such kernels. How could I go about fixing this, so that the
+>script supports other compression modes than just gzip?
+>
 
-Hi Jesse,
-
-After merging the pci tree, today's linux-next build (x86_64 allmodconfig)
-failed like this:
-
-drivers/pci/hotplug/pciehp_core.c: In function 'pcied_init':
-drivers/pci/hotplug/pciehp_core.c:348: error: implicit declaration of funct=
-ion 'alloc_ordered_workqueue'
-
-That function is not declared anywhere except the (yet to be merged)
-workqueues tree.
-
-I have used the pci tree from next-20101015 for today.
-
-Please build test what you are exporting for merging into linux-next.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Mon__18_Oct_2010_13_20_35_+1100_AQt/+2pjJahigIjU
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQEcBAEBAgAGBQJMu67zAAoJEDMEi1NhKgbseDQH/jz9883mp9hgFBGwjuaeS9IL
-kFIocjjMPqfxGQxn3iH8CB+GrbeOb8q81Bv8o04iWbODItHyMCwGawiJPjfd/fzG
-wbQQU1F89PU1zVnIco7Ni8GQN/MdwHaHlAl5d7NTZNpLr6ge5fiLIGPXNuBnYWpV
-eEtxL204k9XQ4Ud0n0GpZL4LMgV6+QU5mLYESAhNLnvt2HiH1/z6HtdWdZMjcUR0
-KbTrUUU7E5FIJBqMIAJscDLOkuLoEbr36g2cXfhFH/tXfsptChqZNqHsslcsGlj5
-k9kWZgvhKAWDpjgjg7FCvHlRJ4rnLuzQcDkciLeEbXP3xvCKZEW2+dhmRqcecBE=
-=LOda
------END PGP SIGNATURE-----
-
---Signature=_Mon__18_Oct_2010_13_20_35_+1100_AQt/+2pjJahigIjU--
+I am not surprised at all, that program looks for gzip signature,
+which is gzip only apparently. :)
