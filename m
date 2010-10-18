@@ -1,255 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755374Ab0JRNW5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Oct 2010 09:22:57 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:36501 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750876Ab0JRNW4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Oct 2010 09:22:56 -0400
-Date: Mon, 18 Oct 2010 15:22:23 +0200
-From: Gleb Natapov <gleb@redhat.com>
-To: kvm@vger.kernel.org
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, avi@redhat.com,
-        mingo@elte.hu, a.p.zijlstra@chello.nl, tglx@linutronix.de,
-        hpa@zytor.com, riel@redhat.com, cl@linux-foundation.org,
-        mtosatti@redhat.com
-Subject: Re: [PATCH v7 04/12] Add memory slot versioning and use it to
- provide fast guest write interface
-Message-ID: <20101018132223.GB10207@redhat.com>
-References: <1287048176-2563-1-git-send-email-gleb@redhat.com>
- <1287048176-2563-5-git-send-email-gleb@redhat.com>
+	id S1755505Ab0JRNXD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Oct 2010 09:23:03 -0400
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:61199 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750876Ab0JRNXA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Oct 2010 09:23:00 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=d2dVn73a771tHl8dVP29VxTC9A0ugSnWDr7j299eLofJOW8PVj7SkxmO75lMujaaD5
+         TPyciAJAKR+L90JwdrHYit2B+a1krbhKuF3QAe+i6okwb1Wm/A0GrOPe68js3oq7/3To
+         5HyJexFQbbqS8rJof+bj2wqlxjTLoD/J+fEnY=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1287048176-2563-5-git-send-email-gleb@redhat.com>
+In-Reply-To: <20101018092650.GC26183@n2100.arm.linux.org.uk>
+References: <1287135981-17604-1-git-send-email-akinobu.mita@gmail.com>
+	<1287135981-17604-5-git-send-email-akinobu.mita@gmail.com>
+	<20101018092650.GC26183@n2100.arm.linux.org.uk>
+Date: Mon, 18 Oct 2010 22:22:59 +0900
+Message-ID: <AANLkTi=1w9uV81CagrE53xEYkMaFh_3cM_+ybctT2ng4@mail.gmail.com>
+Subject: Re: [PATCH 04/22] arm: introduce little endian bitops
+From: Akinobu Mita <akinobu.mita@gmail.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        Arnd Bergmann <arnd@arndb.de>, Christoph Hellwig <hch@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-arm-kernel@lists.infradead.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Keep track of memslots changes by keeping generation number in memslots
-structure. Provide kvm_write_guest_cached() function that skips
-gfn_to_hva() translation if memslots was not changed since previous
-invocation.
+2010/10/18 Russell King - ARM Linux <linux@arm.linux.org.uk>:
+> On Fri, Oct 15, 2010 at 06:46:03PM +0900, Akinobu Mita wrote:
+>> Introduce little endian bit operations by renaming native ext2 bit
+>> operations. The ext2 bit operations are kept by using little endian
+>> bit operations until the conversions are finished.
+>
+> Can you explain why we need another level of indirection rather than
+> using asm-generic/bitops/le.h, asm-generic/bitops/minix.h and
+> asm-generic/bitops/ext2-non-atomic.h ?
 
-Acked-by: Rik van Riel <riel@redhat.com>
-Signed-off-by: Gleb Natapov <gleb@redhat.com>
----
+Sorry for not CCing the cover letter of this patch series.
 
-arch/x86/kvm/x86.c also changes slots. Forgot to update generation
-there.
+Currently there are no common little-endian bit operations for all
+architectures, although some architectures implicitly include
+asm-generic/bitops/le.h through asm-generic/bitops/minix-le.h or
+asm-generic/bitops/ext2-non-atomic.h.
 
-diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-index bee71ec..bcc48bc 100644
---- a/arch/x86/kvm/x86.c
-+++ b/arch/x86/kvm/x86.c
-@@ -3193,6 +3193,7 @@ int kvm_vm_ioctl_get_dirty_log(struct kvm *kvm,
- 		}
- 		memcpy(slots, kvm->memslots, sizeof(struct kvm_memslots));
- 		slots->memslots[log->slot].dirty_bitmap = dirty_bitmap;
-+		slots->generation++;
- 
- 		old_slots = kvm->memslots;
- 		rcu_assign_pointer(kvm->memslots, slots);
-diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
-index 9a9b017..dda88f2 100644
---- a/include/linux/kvm_host.h
-+++ b/include/linux/kvm_host.h
-@@ -199,6 +199,7 @@ struct kvm_irq_routing_table {};
- 
- struct kvm_memslots {
- 	int nmemslots;
-+	u64 generation;
- 	struct kvm_memory_slot memslots[KVM_MEMORY_SLOTS +
- 					KVM_PRIVATE_MEM_SLOTS];
- };
-@@ -352,12 +353,18 @@ int kvm_write_guest_page(struct kvm *kvm, gfn_t gfn, const void *data,
- 			 int offset, int len);
- int kvm_write_guest(struct kvm *kvm, gpa_t gpa, const void *data,
- 		    unsigned long len);
-+int kvm_write_guest_cached(struct kvm *kvm, struct gfn_to_hva_cache *ghc,
-+			   void *data, unsigned long len);
-+int kvm_gfn_to_hva_cache_init(struct kvm *kvm, struct gfn_to_hva_cache *ghc,
-+			      gpa_t gpa);
- int kvm_clear_guest_page(struct kvm *kvm, gfn_t gfn, int offset, int len);
- int kvm_clear_guest(struct kvm *kvm, gpa_t gpa, unsigned long len);
- struct kvm_memory_slot *gfn_to_memslot(struct kvm *kvm, gfn_t gfn);
- int kvm_is_visible_gfn(struct kvm *kvm, gfn_t gfn);
- unsigned long kvm_host_page_size(struct kvm *kvm, gfn_t gfn);
- void mark_page_dirty(struct kvm *kvm, gfn_t gfn);
-+void mark_page_dirty_in_slot(struct kvm *kvm, struct kvm_memory_slot *memslot,
-+			     gfn_t gfn);
- 
- void kvm_vcpu_block(struct kvm_vcpu *vcpu);
- void kvm_vcpu_on_spin(struct kvm_vcpu *vcpu);
-diff --git a/include/linux/kvm_types.h b/include/linux/kvm_types.h
-index 7ac0d4e..fa7cc72 100644
---- a/include/linux/kvm_types.h
-+++ b/include/linux/kvm_types.h
-@@ -67,4 +67,11 @@ struct kvm_lapic_irq {
- 	u32 dest_id;
- };
- 
-+struct gfn_to_hva_cache {
-+	u64 generation;
-+	gpa_t gpa;
-+	unsigned long hva;
-+	struct kvm_memory_slot *memslot;
-+};
-+
- #endif /* __KVM_TYPES_H__ */
-diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
-index 238079e..5d57ec9 100644
---- a/virt/kvm/kvm_main.c
-+++ b/virt/kvm/kvm_main.c
-@@ -687,6 +687,7 @@ skip_lpage:
- 		memcpy(slots, kvm->memslots, sizeof(struct kvm_memslots));
- 		if (mem->slot >= slots->nmemslots)
- 			slots->nmemslots = mem->slot + 1;
-+		slots->generation++;
- 		slots->memslots[mem->slot].flags |= KVM_MEMSLOT_INVALID;
- 
- 		old_memslots = kvm->memslots;
-@@ -723,6 +724,7 @@ skip_lpage:
- 	memcpy(slots, kvm->memslots, sizeof(struct kvm_memslots));
- 	if (mem->slot >= slots->nmemslots)
- 		slots->nmemslots = mem->slot + 1;
-+	slots->generation++;
- 
- 	/* actual memory is freed via old in kvm_free_physmem_slot below */
- 	if (!npages) {
-@@ -853,10 +855,10 @@ int kvm_is_error_hva(unsigned long addr)
- }
- EXPORT_SYMBOL_GPL(kvm_is_error_hva);
- 
--struct kvm_memory_slot *gfn_to_memslot(struct kvm *kvm, gfn_t gfn)
-+static struct kvm_memory_slot *__gfn_to_memslot(struct kvm_memslots *slots,
-+						gfn_t gfn)
- {
- 	int i;
--	struct kvm_memslots *slots = kvm_memslots(kvm);
- 
- 	for (i = 0; i < slots->nmemslots; ++i) {
- 		struct kvm_memory_slot *memslot = &slots->memslots[i];
-@@ -867,6 +869,11 @@ struct kvm_memory_slot *gfn_to_memslot(struct kvm *kvm, gfn_t gfn)
- 	}
- 	return NULL;
- }
-+
-+struct kvm_memory_slot *gfn_to_memslot(struct kvm *kvm, gfn_t gfn)
-+{
-+	return __gfn_to_memslot(kvm_memslots(kvm), gfn);
-+}
- EXPORT_SYMBOL_GPL(gfn_to_memslot);
- 
- int kvm_is_visible_gfn(struct kvm *kvm, gfn_t gfn)
-@@ -929,12 +936,9 @@ int memslot_id(struct kvm *kvm, gfn_t gfn)
- 	return memslot - slots->memslots;
- }
- 
--static unsigned long gfn_to_hva_many(struct kvm *kvm, gfn_t gfn,
-+static unsigned long gfn_to_hva_many(struct kvm_memory_slot *slot, gfn_t gfn,
- 				     gfn_t *nr_pages)
- {
--	struct kvm_memory_slot *slot;
--
--	slot = gfn_to_memslot(kvm, gfn);
- 	if (!slot || slot->flags & KVM_MEMSLOT_INVALID)
- 		return bad_hva();
- 
-@@ -946,7 +950,7 @@ static unsigned long gfn_to_hva_many(struct kvm *kvm, gfn_t gfn,
- 
- unsigned long gfn_to_hva(struct kvm *kvm, gfn_t gfn)
- {
--	return gfn_to_hva_many(kvm, gfn, NULL);
-+	return gfn_to_hva_many(gfn_to_memslot(kvm, gfn), gfn, NULL);
- }
- EXPORT_SYMBOL_GPL(gfn_to_hva);
- 
-@@ -1063,7 +1067,7 @@ int gfn_to_page_many_atomic(struct kvm *kvm, gfn_t gfn, struct page **pages,
- 	unsigned long addr;
- 	gfn_t entry;
- 
--	addr = gfn_to_hva_many(kvm, gfn, &entry);
-+	addr = gfn_to_hva_many(gfn_to_memslot(kvm, gfn), gfn, &entry);
- 	if (kvm_is_error_hva(addr))
- 		return -1;
- 
-@@ -1247,6 +1251,47 @@ int kvm_write_guest(struct kvm *kvm, gpa_t gpa, const void *data,
- 	return 0;
- }
- 
-+int kvm_gfn_to_hva_cache_init(struct kvm *kvm, struct gfn_to_hva_cache *ghc,
-+			      gpa_t gpa)
-+{
-+	struct kvm_memslots *slots = kvm_memslots(kvm);
-+	int offset = offset_in_page(gpa);
-+	gfn_t gfn = gpa >> PAGE_SHIFT;
-+
-+	ghc->gpa = gpa;
-+	ghc->generation = slots->generation;
-+	ghc->memslot = __gfn_to_memslot(slots, gfn);
-+	ghc->hva = gfn_to_hva_many(ghc->memslot, gfn, NULL);
-+	if (!kvm_is_error_hva(ghc->hva))
-+		ghc->hva += offset;
-+	else
-+		return -EFAULT;
-+
-+	return 0;
-+}
-+EXPORT_SYMBOL_GPL(kvm_gfn_to_hva_cache_init);
-+
-+int kvm_write_guest_cached(struct kvm *kvm, struct gfn_to_hva_cache *ghc,
-+			   void *data, unsigned long len)
-+{
-+	struct kvm_memslots *slots = kvm_memslots(kvm);
-+	int r;
-+
-+	if (slots->generation != ghc->generation)
-+		kvm_gfn_to_hva_cache_init(kvm, ghc, ghc->gpa);
-+	
-+	if (kvm_is_error_hva(ghc->hva))
-+		return -EFAULT;
-+
-+	r = copy_to_user((void __user *)ghc->hva, data, len);
-+	if (r)
-+		return -EFAULT;
-+	mark_page_dirty_in_slot(kvm, ghc->memslot, ghc->gpa >> PAGE_SHIFT);
-+
-+	return 0;
-+}
-+EXPORT_SYMBOL_GPL(kvm_write_guest_cached);
-+
- int kvm_clear_guest_page(struct kvm *kvm, gfn_t gfn, int offset, int len)
- {
- 	return kvm_write_guest_page(kvm, gfn, empty_zero_page, offset, len);
-@@ -1272,11 +1317,9 @@ int kvm_clear_guest(struct kvm *kvm, gpa_t gpa, unsigned long len)
- }
- EXPORT_SYMBOL_GPL(kvm_clear_guest);
- 
--void mark_page_dirty(struct kvm *kvm, gfn_t gfn)
-+void mark_page_dirty_in_slot(struct kvm *kvm, struct kvm_memory_slot *memslot,
-+			     gfn_t gfn)
- {
--	struct kvm_memory_slot *memslot;
--
--	memslot = gfn_to_memslot(kvm, gfn);
- 	if (memslot && memslot->dirty_bitmap) {
- 		unsigned long rel_gfn = gfn - memslot->base_gfn;
- 
-@@ -1284,6 +1327,14 @@ void mark_page_dirty(struct kvm *kvm, gfn_t gfn)
- 	}
- }
- 
-+void mark_page_dirty(struct kvm *kvm, gfn_t gfn)
-+{
-+	struct kvm_memory_slot *memslot;
-+
-+	memslot = gfn_to_memslot(kvm, gfn);
-+	mark_page_dirty_in_slot(kvm, memslot, gfn);
-+}
-+
- /*
-  * The vCPU has executed a HLT instruction with in-kernel mode enabled.
-  */
---
-			Gleb.
+So some drivers (net/rds/cong.c and virt/kvm/kvm_main.c) need to
+include asm/bitops/le.h directly. When I tried to remove the
+direct inclusion of asm-generic/bitops/le.h by using ext2_*(),
+several people prefer another solution like this patch series does.
+
+This patch series introduces little-endian bit operations for
+all architectures and convert all ext2 non-atomic bit operations
+and minix bit operations to use little-endian bit operations.
+it enables to remove ext2 non-atomic and minix bit operations
+from asm/bitops.h. The reason they should be removed from
+asm/bitops.h is as follows:
+
+For ext2 non-atomic bit operations, they are used for little-endian
+byte order bitmap access by some filesystems and modules.
+But using ext2_*() functions on a module other than ext2 filesystem
+makes someone feel strange.
+
+For minix bit operations, they are only used by minix filesystem
+and useless by other modules. Because byte order of inode and block
+bitmap is defferent on each architectures.
+
+There are several issues including arm part. So I'm now fixing them.
