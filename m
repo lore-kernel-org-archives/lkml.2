@@ -1,79 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932280Ab0JROho (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Oct 2010 10:37:44 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:7534 "EHLO mx1.redhat.com"
+	id S932660Ab0JROir (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Oct 2010 10:38:47 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:39037 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932223Ab0JROhl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Oct 2010 10:37:41 -0400
+	id S932440Ab0JROhw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Oct 2010 10:37:52 -0400
 From: Steven Whitehouse <swhiteho@redhat.com>
 To: linux-kernel@vger.kernel.org, cluster-devel@redhat.com
 Cc: Steven Whitehouse <swhiteho@redhat.com>
-Subject: [PATCH 09/22] GFS2: Use new workqueue scheme
-Date: Mon, 18 Oct 2010 15:15:33 +0100
-Message-Id: <1287411346-17855-10-git-send-email-swhiteho@redhat.com>
+Subject: [PATCH 17/22] GFS2: Fix spectator umount issue
+Date: Mon, 18 Oct 2010 15:15:41 +0100
+Message-Id: <1287411346-17855-18-git-send-email-swhiteho@redhat.com>
 In-Reply-To: <1287411346-17855-1-git-send-email-swhiteho@redhat.com>
 References: <1287411346-17855-1-git-send-email-swhiteho@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The recovery workqueue can be freezable since
-we want it to finish what it is doing if the system is to
-be frozen (although why you'd want to freeze a cluster node
-is beyond me since it will result in it being ejected from
-the cluster). It does still make sense for single node
-GFS2 filesystems though.
-
-The glock workqueue will benefit from being able to run more
-work items concurrently. A test running postmark shows
-improved performance and multi-threaded workloads are likely
-to benefit even more. It needs to be high priority because
-the latency directly affects the latency of filesystem glock
-operations.
-
-The delete workqueue is similar to the recovery workqueue in
-that it must not get blocked by memory allocations, and may
-run for a long time.
-
-Potentially other GFS2 threads might also be converted to
-workqueues, but I'll leave that for a later patch.
+The tests further down the recovery function relating to
+unlocking the journal need to be updated to match the
+intial test. Also, a test in the umount code which was
+surplus to requirements has been removed. Umounting
+spectator mounts now works correctly, as expected.
 
 Signed-off-by: Steven Whitehouse <swhiteho@redhat.com>
-Acked-by: Tejun Heo <tj@kernel.org>
 
 diff --git a/fs/gfs2/glock.c b/fs/gfs2/glock.c
-index 8e478e2..c3f2a5c 100644
+index c3f2a5c..8777885 100644
 --- a/fs/gfs2/glock.c
 +++ b/fs/gfs2/glock.c
-@@ -1783,10 +1783,12 @@ int __init gfs2_glock_init(void)
+@@ -1517,7 +1517,7 @@ static void clear_glock(struct gfs2_glock *gl)
+ 	spin_unlock(&lru_lock);
+ 
+ 	spin_lock(&gl->gl_spin);
+-	if (find_first_holder(gl) == NULL && gl->gl_state != LM_ST_UNLOCKED)
++	if (gl->gl_state != LM_ST_UNLOCKED)
+ 		handle_callback(gl, LM_ST_UNLOCKED, 0);
+ 	spin_unlock(&gl->gl_spin);
+ 	gfs2_glock_hold(gl);
+diff --git a/fs/gfs2/recovery.c b/fs/gfs2/recovery.c
+index 666548e..f2a02ed 100644
+--- a/fs/gfs2/recovery.c
++++ b/fs/gfs2/recovery.c
+@@ -455,12 +455,13 @@ void gfs2_recover_func(struct work_struct *work)
+ 	int ro = 0;
+ 	unsigned int pass;
+ 	int error;
++	int jlocked = 0;
+ 
+ 	if (sdp->sd_args.ar_spectator ||
+ 	    (jd->jd_jid != sdp->sd_lockstruct.ls_jid)) {
+ 		fs_info(sdp, "jid=%u: Trying to acquire journal lock...\n",
+ 			jd->jd_jid);
+-
++		jlocked = 1;
+ 		/* Acquire the journal lock so we can do recovery */
+ 
+ 		error = gfs2_glock_nq_num(sdp, jd->jd_jid, &gfs2_journal_glops,
+@@ -555,13 +556,12 @@ void gfs2_recover_func(struct work_struct *work)
+ 			jd->jd_jid, t);
  	}
- #endif
  
--	glock_workqueue = create_workqueue("glock_workqueue");
-+	glock_workqueue = alloc_workqueue("glock_workqueue", WQ_RESCUER |
-+					  WQ_HIGHPRI | WQ_FREEZEABLE, 0);
- 	if (IS_ERR(glock_workqueue))
- 		return PTR_ERR(glock_workqueue);
--	gfs2_delete_workqueue = create_workqueue("delete_workqueue");
-+	gfs2_delete_workqueue = alloc_workqueue("delete_workqueue", WQ_RESCUER |
-+						WQ_FREEZEABLE, 0);
- 	if (IS_ERR(gfs2_delete_workqueue)) {
- 		destroy_workqueue(glock_workqueue);
- 		return PTR_ERR(gfs2_delete_workqueue);
-diff --git a/fs/gfs2/main.c b/fs/gfs2/main.c
-index b1e9630..1c8bbf2 100644
---- a/fs/gfs2/main.c
-+++ b/fs/gfs2/main.c
-@@ -140,7 +140,7 @@ static int __init init_gfs2_fs(void)
+-	if (jd->jd_jid != sdp->sd_lockstruct.ls_jid)
+-		gfs2_glock_dq_uninit(&ji_gh);
+-
+ 	gfs2_recovery_done(sdp, jd->jd_jid, LM_RD_SUCCESS);
  
- 	error = -ENOMEM;
- 	gfs_recovery_wq = alloc_workqueue("gfs_recovery",
--					  WQ_NON_REENTRANT | WQ_RESCUER, 0);
-+					  WQ_RESCUER | WQ_FREEZEABLE, 0);
- 	if (!gfs_recovery_wq)
- 		goto fail_wq;
+-	if (jd->jd_jid != sdp->sd_lockstruct.ls_jid)
++	if (jlocked) {
++		gfs2_glock_dq_uninit(&ji_gh);
+ 		gfs2_glock_dq_uninit(&j_gh);
++	}
  
+ 	fs_info(sdp, "jid=%u: Done\n", jd->jd_jid);
+ 	goto done;
+@@ -569,7 +569,7 @@ void gfs2_recover_func(struct work_struct *work)
+ fail_gunlock_tr:
+ 	gfs2_glock_dq_uninit(&t_gh);
+ fail_gunlock_ji:
+-	if (jd->jd_jid != sdp->sd_lockstruct.ls_jid) {
++	if (jlocked) {
+ 		gfs2_glock_dq_uninit(&ji_gh);
+ fail_gunlock_j:
+ 		gfs2_glock_dq_uninit(&j_gh);
 -- 
 1.7.1.1
 
