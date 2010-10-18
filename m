@@ -1,69 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932973Ab0JRQjb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Oct 2010 12:39:31 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:34926 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755406Ab0JRQja (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Oct 2010 12:39:30 -0400
-Date: Mon, 18 Oct 2010 09:38:37 -0700
-From: Stephen Hemminger <shemminger@linux-foundation.org>
-To: Benjamin Poirier <benjamin.poirier@gmail.com>
-Cc: bridge@lists.linux-foundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [Bridge] EAPOL bridging
-Message-ID: <20101018093837.26bb149a@nehalam>
-In-Reply-To: <4CBB3B24.2000106@gmail.com>
-References: <4CBB3B24.2000106@gmail.com>
-Organization: Linux Foundation
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-pc-linux-gnu)
+	id S1757380Ab0JRQtp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Oct 2010 12:49:45 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:37250 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752133Ab0JRQto (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Oct 2010 12:49:44 -0400
+Subject: Re: ima: use of radix tree cache indexing == massive waste of
+ memory?
+From: Eric Paris <eparis@redhat.com>
+To: Kyle McMartin <kyle@mcmartin.ca>
+Cc: James Morris <jmorris@namei.org>, Christoph Hellwig <hch@infradead.org>,
+        kernel@lists.fedoraproject.org, Mimi Zohar <zohar@us.ibm.com>,
+        warthog9@kernel.org, Dave Chinner <david@fromorbit.com>,
+        linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
+        Serge Hallyn <serue@us.ibm.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>, mingo@elte.hu
+In-Reply-To: <20101018062530.GD8332@bombadil.infradead.org>
+References: <20101016065206.GO4681@dastard>
+	 <20101016192027.GA6883@infradead.org>
+	 <ebc4973c-6c11-4397-b8b0-c212a27abce4@email.android.com>
+	 <20101017004945.GE1614@infradead.org> <20101017054008.GA16383@elte.hu>
+	 <20101017184652.GB28060@infradead.org>
+	 <alpine.LRH.2.00.1010181127480.9476@tundra.namei.org>
+	 <20101018062530.GD8332@bombadil.infradead.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 18 Oct 2010 12:48:54 -0400
+Message-ID: <1287420534.2530.67.camel@localhost.localdomain>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 17 Oct 2010 14:06:28 -0400
-Benjamin Poirier <benjamin.poirier@gmail.com> wrote:
+On Mon, 2010-10-18 at 02:25 -0400, Kyle McMartin wrote:
+> If someone gives me a good reason why Fedora actually needs this
+> enabled, I'm going to apply the following patch to our kernel so that
+> IMA is globally an opt-in feature... Otherwise I'm inclined to just
+> disable it.
 
-> Hello,
-> 
-> I have some trouble bridging EAPOL frames. I'd like to do this to allow 
-> wired 802.1x authentication from within a kvm virtual machine. I have 
-> the following setup:
-> 
-> kvm -- tap0 -- br0 -- eth1 -- 802.1x authenticator (switch) -- more network
-> 
-> and it doesn't work. I've added a few logging rules to ebtables. I only 
-> see an EAPOL frame going through the INPUT chain of tap0. It seems to be 
-> dropped by the bridge. The EAPOL frame is an ethernet link local 
-> multicast frame with destination address 01-80-C2-00-00-03, "IEEE Std 
-> 802.1X PAE address".
-> 
-> I've looked at http://standards.ieee.org/regauth/groupmac/tutorial.html, 
-> which says that frames with a destination in the range 01-80-C2-00-00-00 
-> to 01-80-C2-00-00-0F should not be forwarded by standard conformant 
-> bridges. I've also looked at net/bridge/br_input.c and br_handle_frame() 
-> seems quite intent on "bending" the standard when STP is disabled, but 
-> only for 01-80-C2-00-00-00. However there are more applications that use 
-> similar addresses, EAPOL included: 
-> http://standards.ieee.org/regauth/groupmac/Standard_Group_MAC_Address_assignments.pdf
-> 
-> Given the current state of affairs, would it be acceptable to make the 
-> code more permissive by forwarding all the range of reserved group 
-> addresses when STP is disabled? If not, what would be the way to go 
-> about enabling 802.1x authentication from within a virtual machine?
-> 
-> BTW, it seems this issue has been raised before, 
-> https://lists.linux-foundation.org/pipermail/bridge/2007-November/005629.html
-> with the conclusion that
-> > Despite what the standards say, many users are using bridging code for invisible
-> > firewalls etc, and in those cases they want STP and EAPOL frames to be forwarded.
+I'll can address this on the fedora list, but I think this is the wrong
+approach.  IMA is supposed to be of negligible impact when not 'enabled'
+and I believe the right solution is to fix places where that isn't true.
+At the moment 3 have been identified.
 
-I would just take off the last byte (dest check).
+1) IMA uses radix trees which end up wasting 500 bytes per inode because
+the key is too sparse.  I've got a patch which uses an rbtree instead
+I'm testing and will send along shortly.  I found it funny working on
+the patch to see that Documentation/rbtree.txt says "This differs from
+radix trees (which are used to efficiently store sparse arrays and thus
+use long integer indexes to insert/access/delete nodes)"  Which flys in
+the face of this report.
+
+2) IMA creates an entire integrity structure for every inode even when
+most or all of this structure will not be needed.
+
+3) IMA serializes bringing inodes into and out of core because it takes
+a spinlock() when adding or removing the integrity structure to the
+radix/rbtree.
+
+I've got a patch for #1 and think 2 and 3 are relatively simple to fix
+as well.  Certainly #2 is, and I think that will lead to a solution to
+#3.
 
 
+> diff --git a/security/integrity/ima/ima_iint.c b/security/integrity/ima/ima_iint.c
+> index afba4ae..767f026 100644
+> --- a/security/integrity/ima/ima_iint.c
+> +++ b/security/integrity/ima/ima_iint.c
 
--- 
+> @@ -139,6 +139,11 @@ static void init_once(void *foo)
+>  
+>  static int __init ima_iintcache_init(void)
+>  {
+> +	extern int ima_enabled;
+
+extern in a .c file?  didn't you already expose this in the
+appropriate .h file?
+
+> +
+> +	if (!ima_enabled)
+> +		return 0;
+> +
+>  	iint_cache =
+>  	    kmem_cache_create("iint_cache", sizeof(struct ima_iint_cache), 0,
+>  			      SLAB_PANIC, init_once);
+> diff --git a/security/integrity/ima/ima_main.c b/security/integrity/ima/ima_main.c
+> index e662b89..92e084c 100644
+> --- a/security/integrity/ima/ima_main.c
+> +++ b/security/integrity/ima/ima_main.c
+> @@ -26,6 +26,7 @@
+>  #include "ima.h"
+>  
+>  int ima_initialized;
+> +int ima_enabled = 0;
+
+initializing a global?
+
+>  
+>  char *ima_hash = "sha1";
+>  static int __init hash_setup(char *str)
+
+
