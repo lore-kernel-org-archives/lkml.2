@@ -1,69 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757588Ab0JRR60 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Oct 2010 13:58:26 -0400
-Received: from mgw2.diku.dk ([130.225.96.92]:45623 "EHLO mgw2.diku.dk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754540Ab0JRR6Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Oct 2010 13:58:25 -0400
-Date: Mon, 18 Oct 2010 19:58:23 +0200 (CEST)
-From: Julia Lawall <julia@diku.dk>
-To: Joe Perches <joe@perches.com>
-Cc: walter harms <wharms@bfs.de>, devel@driverdev.osuosl.org, gregkh@suse.de,
-        kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/3] drivers/staging/cx25821: Use kstrdup
-In-Reply-To: <1287424542.20968.121.camel@Joe-Laptop>
-Message-ID: <Pine.LNX.4.64.1010181957520.15744@ask.diku.dk>
-References: <1287341311-11161-1-git-send-email-julia@diku.dk> 
- <1287341311-11161-2-git-send-email-julia@diku.dk> <4CBBF407.7060705@bfs.de>
-  <Pine.LNX.4.64.1010181019370.22530@ask.diku.dk> <4CBC12EC.60109@bfs.de> 
- <Pine.LNX.4.64.1010181421240.25099@ask.diku.dk>  <1287423539.20968.115.camel@Joe-Laptop>
-  <Pine.LNX.4.64.1010181942570.15744@ask.diku.dk> <1287424542.20968.121.camel@Joe-Laptop>
+	id S1757510Ab0JRR7d (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Oct 2010 13:59:33 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:54425 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751762Ab0JRR7c (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Oct 2010 13:59:32 -0400
+Date: Mon, 18 Oct 2010 13:59:16 -0200
+From: "Gustavo F. Padovan" <padovan@profusion.mobi>
+To: Marcel Holtmann <marcel@holtmann.org>
+Cc: Mike Frysinger <vapier@gentoo.org>, linux-bluetooth@vger.kernel.org,
+        uclinux-dist-devel@blackfin.uclinux.org, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        steven miao <realmz6@gmail.com>
+Subject: Re: [PATCH] bluetooth: fix unaligned access to l2cap conf data
+Message-ID: <20101018155916.GB2468@vigoh>
+References: <1287268187-9628-1-git-send-email-vapier@gentoo.org>
+ <1287402706.3316.126.camel@aeonflux>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1287402706.3316.126.camel@aeonflux>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 18 Oct 2010, Joe Perches wrote:
+Hi Mike,
 
-> On Mon, 2010-10-18 at 19:44 +0200, Julia Lawall wrote:
-> > On Mon, 18 Oct 2010, Joe Perches wrote:
+* Marcel Holtmann <marcel@holtmann.org> [2010-10-18 13:51:46 +0200]:
+
+> Hi Mike,
+> 
+> > In function l2cap_get_conf_opt() and l2cap_add_conf_opt() the address of
+> > opt->val sometimes is not at the edge of 2-bytes/4-bytes, so 2-bytes/4 bytes
+> > access will cause data misalignment exeception.  Use get_unaligned_le16/32
+> > and put_unaligned_le16/32 function to avoid data misalignment execption.
 > > 
-> > > Perhaps it's more readable code to recheck the
-> > > field name flag and introduce a temporary
-> > > char *fname so the slightly unusual reuse of
-> > > 	field = kstrdup(field, GFP)
-> > > becomes
-> > > 	field = kstrdup(fname, GFP)
-> > 
-> > Before I had a local variable filename.  I preferred that because I felt 
-> > uneasy about putting both statically and dynamically allocated memory in 
-> > the same field.  But it does mean adding a new local variable.
+> > Signed-off-by: steven miao <realmz6@gmail.com>
+> > Signed-off-by: Mike Frysinger <vapier@gentoo.org>
+> > ---
+> > was posted a month ago with no feedback ...
 > 
-> I think readability is better using a temporary.
-> 
-> > I'm not sure to understand "recheck the field name flag", though.
-> 
-> Sorry, poor wording.  I meant using this style:
-> 
-> 	if (field && *field)
-> 		foo
-> 	else if (field)
-> 		bar
-> 	else
-> 		baz
-> 
-> instead of:
-> 
-> 	if (field) {
-> 		if (*field)
-> 			foo
-> 		else
-> 			bar
-> 	} else
-> 		baz
+> must have slipped through. However I don't remember it being on
+> linux-bluetooth at all. Maybe it was on the other mailing lists :(
 
-OK :)  I'll do that.
+Actually I remember it, but it got lost by some way. :(
 
-julia
+> 
+> Acked-by: Marcel Holtmann <marcel@holtmann.org>
+
+Applied, thanks.
+
+-- 
+Gustavo F. Padovan
+ProFUSION embedded systems - http://profusion.mobi
