@@ -1,62 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753151Ab0JRAtr (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Oct 2010 20:49:47 -0400
-Received: from tundra.namei.org ([65.99.196.166]:55844 "EHLO tundra.namei.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752663Ab0JRAtr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Oct 2010 20:49:47 -0400
-Date: Mon, 18 Oct 2010 11:49:02 +1100 (EST)
-From: James Morris <jmorris@namei.org>
-To: Christoph Hellwig <hch@infradead.org>
-cc: Ingo Molnar <mingo@elte.hu>, Kyle McMartin <kyle@mcmartin.ca>,
-        kernel@lists.fedoraproject.org, Mimi Zohar <zohar@us.ibm.com>,
-        warthog9@kernel.org, Dave Chinner <david@fromorbit.com>,
-        linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
-        Serge Hallyn <serue@us.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: ima: use of radix tree cache indexing == massive waste of
- memory?
-In-Reply-To: <20101017184652.GB28060@infradead.org>
-Message-ID: <alpine.LRH.2.00.1010181127480.9476@tundra.namei.org>
-References: <20101016065206.GO4681@dastard> <20101016192027.GA6883@infradead.org> <ebc4973c-6c11-4397-b8b0-c212a27abce4@email.android.com> <20101017004945.GE1614@infradead.org> <20101017054008.GA16383@elte.hu> <20101017184652.GB28060@infradead.org>
-User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1753266Ab0JRAuG (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Oct 2010 20:50:06 -0400
+Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:37023 "EHLO
+	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752693Ab0JRAuD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 17 Oct 2010 20:50:03 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Mon, 18 Oct 2010 09:44:37 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Greg Thelen <gthelen@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, containers@lists.osdl.org,
+        Andrea Righi <arighi@develer.com>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Ciju Rajan K <ciju@linux.vnet.ibm.com>,
+        David Rientjes <rientjes@google.com>
+Subject: Re: [PATCH v2 04/11] memcg: disable softirq in lock_page_cgroup()
+Message-Id: <20101018094437.e12aae49.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <1287177279-30876-5-git-send-email-gthelen@google.com>
+References: <1287177279-30876-1-git-send-email-gthelen@google.com>
+	<1287177279-30876-5-git-send-email-gthelen@google.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 17 Oct 2010, Christoph Hellwig wrote:
+On Fri, 15 Oct 2010 14:14:32 -0700
+Greg Thelen <gthelen@google.com> wrote:
 
-> Especially as our merge requirements for security/ are a lot lower than
-> for the rest of the kernel given that James is very afraid of getting
-> whacked by Linux for not mering things.
+> If pages are being migrated from a memcg, then updates to that
+> memcg's page statistics are protected by grabbing a bit spin lock
+> using lock_page_cgroup().  In an upcoming commit memcg dirty page
+> accounting will be updating memcg page accounting (specifically:
+> num writeback pages) from softirq.  Avoid a deadlocking nested
+> spin lock attempt by disabling softirq on the local processor
+> when grabbing the page_cgroup bit_spin_lock in lock_page_cgroup().
+> This avoids the following deadlock:
+> statistic
+>       CPU 0             CPU 1
+>                     inc_file_mapped
+>                     rcu_read_lock
+>   start move
+>   synchronize_rcu
+>                     lock_page_cgroup
+>                       softirq
+>                       test_clear_page_writeback
+>                       mem_cgroup_dec_page_stat(NR_WRITEBACK)
+>                       rcu_read_lock
+>                       lock_page_cgroup   /* deadlock */
+>                       unlock_page_cgroup
+>                       rcu_read_unlock
+>                     unlock_page_cgroup
+>                     rcu_read_unlock
+> 
+> By disabling softirq in lock_page_cgroup, nested calls are avoided.
+> The softirq would be delayed until after inc_file_mapped enables
+> softirq when calling unlock_page_cgroup().
+> 
+> The normal, fast path, of memcg page stat updates typically
+> does not need to call lock_page_cgroup(), so this change does
+> not affect the performance of the common case page accounting.
+> 
+> Signed-off-by: Andrea Righi <arighi@develer.com>
+> Signed-off-by: Greg Thelen <gthelen@google.com>
 
-I think historically you'll see that I'm not afraid of getting whacked by 
-Linus.
+I have a patch for this problem.
+So, could you reorder patch as
 
-A procedure for merging security features has been adopted by consensus, 
-based on suggestions from Arjan, with the aim of preventing the literally 
-endless arguments which arise from security feature discussions.  It's 
-sometimes referred to as the Arjan protocol, essentially:
+	1,2,3,5,6,7,8,9,10,11 
 
-  If the feature correctly implements a well-defined security goal, meets 
-  user needs without incurring unreasonable overheads, passes technical 
-  review, and is supported by competent developers, then it is likely to 
-  be merged.
+I'll post an add-on patch."12"
 
-If you disagree with a specific feature, you need to step up while it's 
-being reviewed and make a case against it according to the above criteria.
+move_charge performance improbement patches will be posted later.
 
-If you disagree with the protocol, then you need to come up with a better 
-one, and probably implement it yourself, to the satisfaction of all 
-parties.
+Thanks,
+-Kame
 
-
-
-- James
--- 
-James Morris
-<jmorris@namei.org>
