@@ -1,278 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751397Ab0JRElA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Oct 2010 00:41:00 -0400
-Received: from TYO202.gate.nec.co.jp ([202.32.8.206]:39135 "EHLO
-	tyo202.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751105Ab0JREk7 (ORCPT
+	id S1751367Ab0JREns (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Oct 2010 00:43:48 -0400
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:48996 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750767Ab0JREnq convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Oct 2010 00:40:59 -0400
-Date: Mon, 18 Oct 2010 13:29:01 +0900
-From: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "balbir@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>,
-        Greg Thelen <gthelen@google.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        Mel Gorman <mel@csn.ul.ie>,
-        "kosaki.motohiro@jp.fujitsu.com" <kosaki.motohiro@jp.fujitsu.com>,
-        Christoph Lameter <cl@linux.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-Subject: Re: [RFC][PATCH 1/2] memcg: avoiding unnecessary get_page at
- move_charge
-Message-Id: <20101018132901.a05808d1.nishimura@mxp.nes.nec.co.jp>
-In-Reply-To: <20101015171109.d4575c95.kamezawa.hiroyu@jp.fujitsu.com>
-References: <20101015170627.e5033fa4.kamezawa.hiroyu@jp.fujitsu.com>
-	<20101015171109.d4575c95.kamezawa.hiroyu@jp.fujitsu.com>
-Organization: NEC Soft, Ltd.
-X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 18 Oct 2010 00:43:46 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=K+cEhYly++H4J11AOnp12utxgWIpoNNuKqFs6aafL9UoVFOFEtwjOwWOF4foE1sXFI
+         wC8ApNmXn95vImfUZJWpjh4yJDYQUVH2U9iPKOHe5gYDF3CRZqXfLFEbC+v6H/yEsYmr
+         XynSDdUpXBOsKVCtPX+F3bDKaI9Udn0IklCE0=
+MIME-Version: 1.0
+In-Reply-To: <4CBAE8E2.1060704@redhat.com>
+References: <20101017085416.GA1758@darkstar>
+	<4CBAC342.1010609@redhat.com>
+	<AANLkTin6qJYEqOc_97EVWkK1Kt1zNSvXtfVeYuk9fyJ8@mail.gmail.com>
+	<4CBAE8E2.1060704@redhat.com>
+Date: Mon, 18 Oct 2010 12:43:45 +0800
+Message-ID: <AANLkTi=5yGPmZxZY7T_oeyJ4xS+RWt7cY4WD=78fbo7v@mail.gmail.com>
+Subject: Re: [BUG] kvm: guest can not startup due to triple fault
+From: Dave Young <hidave.darkstar@gmail.com>
+To: Avi Kivity <avi@redhat.com>
+Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 15 Oct 2010 17:11:09 +0900
-KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+On Sun, Oct 17, 2010 at 8:15 PM, Avi Kivity <avi@redhat.com> wrote:
+>  On 10/17/2010 12:14 PM, Dave Young wrote:
+>>
+>> On Sun, Oct 17, 2010 at 5:34 PM, Avi Kivity<avi@redhat.com>  wrote:
+>> >    On 10/17/2010 10:54 AM, Dave Young wrote:
+>> >>
+>> >>  linux guest can not startup normally, qemu keep rebooting.
+>> >>
+>> >>  host&    guest both use linux-2.6.36-rc8+ kernel
+>> >>
+>> >>  Add a dump_stack in x86.c around EXIT_SHUTDOWN code, I got:
+>> >>  [ 3924.503041] Pid: 1685, comm: qemu-system-x86 Not tainted
+>> >> 2.6.36-rc8+
+>> >>  #62
+>> >>  [ 3924.503045] Call Trace:
+>> >>  [ 3924.503055]  [<ffffffffa0176047>] handle_triple_fault+0x11/0x26
+>> >>  [kvm_intel]
+>> >>  [ 3924.503060]  [<ffffffffa01772d2>] vmx_handle_exit+0x3df/0x474
+>> >>  [kvm_intel]
+>> >>  [ 3924.503080]  [<ffffffffa021f203>]
+>> >> kvm_arch_vcpu_ioctl_run+0x95f/0xc43
+>> >>  [kvm]
+>> >>  [ 3924.503087]  [<ffffffff81503e54>] ?
+>> >> __mutex_unlock_slowpath+0x11c/0x131
+>> >>  [ 3924.503101]  [<ffffffffa021e1f9>] ? kvm_arch_vcpu_load+0x90/0xe6
+>> >> [kvm]
+>> >>  [ 3924.503112]  [<ffffffffa0210faf>] kvm_vcpu_ioctl+0x109/0x54a [kvm]
+>> >>  [ 3924.503117]  [<ffffffff810bee76>] ?
+>> >>  fire_user_return_notifiers+0x2c/0x36
+>> >>  [ 3924.503122]  [<ffffffff8106be93>] ? trace_hardirqs_on+0xd/0xf
+>> >>  [ 3924.503127]  [<ffffffff81002789>] ? do_notify_resume+0x717/0x73d
+>> >>  [ 3924.503131]  [<ffffffff8103994e>] ? finish_task_switch+0x69/0xda
+>> >>  [ 3924.503135]  [<ffffffff8110628c>] do_vfs_ioctl+0x4c3/0x50d
+>> >>  [ 3924.503139]  [<ffffffff8110632b>] sys_ioctl+0x55/0x77
+>> >>  [ 3924.503142]  [<ffffffff81002c02>] system_call_fastpath+0x16/0x1b
+>> >>
+>> >>  Anyone can help on this?
+>> >
+>> >  Please provide a trace (trace-cmd record -e kvm) leading to the
+>> > failure.
+>> >
+>>
+>> Hi, please see:
+>> http://userweb.kernel.org/~davey/tmp/trace.dat
+>>
+>
+> Was this done with an old version of trace-cmd?  Please use the latest git.
+>  Make sure you have udis86 and udis86-devel installed when you build it.
 
-> From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> 
-> CC'ed to Mel and Chrisotph, KOSAKi because I wanted to be double-cheked
-> that I miss something important at isolate_lru_page().
-> 
-> Checking perofrmance of memcg's move_account with perf, you may notice
-> that put_page() is too much.
-> #
-> # Overhead  Command      Shared Object                                 Symbol
-> # ........  .......  .................  .....................................
-> #
->     14.24%     echo  [kernel.kallsyms]  [k] put_page
->     12.80%     echo  [kernel.kallsyms]  [k] isolate_lru_page
->      9.67%     echo  [kernel.kallsyms]  [k] is_target_pte_for_mc
->      8.11%     echo  [kernel.kallsyms]  [k] ____pagevec_lru_add
->      7.22%     echo  [kernel.kallsyms]  [k] putback_lru_page
-> 
-> This is because mc_handle_present_pte() do get_page(). Then,
-> page->count is updated 4 times.
-> 	get_page_unless_zero() #1
-> 	isolate_lru_page()
-> 	putback_lru_page()
-> 	put_page()
-> 
-> But above is called all under pte_offset_map_lock().
-> get_page_unless_zero() #1 is not necessary because we do all under a
-> pte_offset_map_lock().
-> 
-> isolate_lru_page()'s comment says 
->  # Restrictions:
->  # (1) Must be called with an elevated refcount on the page. This is a
->  #     fundamentnal difference from isolate_lru_pages (which is called
->  #     without a stable reference).
-> 
-> So, current implemnation does get_page_unless_zero() explicitly but
-> holding pte_lock() implies a stable reference. I removed #1.
-> 
-> Then, Performance will be
-> [Before Patch]
-> [root@bluextal kamezawa]# time echo 2530 > /cgroup/B/tasks
-> 
-> real    0m0.792s
-> user    0m0.000s
-> sys     0m0.780s
-> 
-> [After Patch]
-> [root@bluextal kamezawa]# time echo 2257 > /cgroup/B/tasks
-> 
-> real    0m0.694s
-> user    0m0.000s
-> sys     0m0.683s
-> 
-Very nice!
+Hi, the trace-cmd was build from git version, but without udis86.
 
-Some nitpicks.
+I updated trace.dat on the same url, is it a correct one?
 
-> perf's log is
->     10.82%     echo  [kernel.kallsyms]  [k] isolate_lru_page
->     10.01%     echo  [kernel.kallsyms]  [k] mem_cgroup_move_account
->      8.75%     echo  [kernel.kallsyms]  [k] is_target_pte_for_mc
->      8.52%     echo  [kernel.kallsyms]  [k] ____pagevec_lru_add
->      6.90%     echo  [kernel.kallsyms]  [k] putback_lru_page
->      6.36%     echo  [kernel.kallsyms]  [k] mem_cgroup_add_lru_list
->      6.22%     echo  [kernel.kallsyms]  [k] mem_cgroup_del_lru_list
->      5.68%     echo  [kernel.kallsyms]  [k] lookup_page_cgroup
->      5.28%     echo  [kernel.kallsyms]  [k] __lru_cache_add
->      5.00%     echo  [kernel.kallsyms]  [k] release_pages
->      3.79%     echo  [kernel.kallsyms]  [k] _raw_spin_lock_irq
->      3.52%     echo  [kernel.kallsyms]  [k] memcg_check_events
->      3.38%     echo  [kernel.kallsyms]  [k] bit_spin_lock
->      3.25%     echo  [kernel.kallsyms]  [k] put_page
-> 
-> seems nice. I updated isolate_lru_page()'s comment, too.
-> 
-> # Note: isolate_lru_page() is necessary before account move for avoinding
->         memcg's LRU manipulation.
-> 
-> Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> ---
->  mm/memcontrol.c |   63 +++++++++++++++++++++++++++++++++++---------------------
->  mm/vmscan.c     |    3 +-
->  2 files changed, 42 insertions(+), 24 deletions(-)
-> 
-> Index: mmotm-1013/mm/memcontrol.c
-> ===================================================================
-> --- mmotm-1013.orig/mm/memcontrol.c
-> +++ mmotm-1013/mm/memcontrol.c
-> @@ -1169,7 +1169,6 @@ static void mem_cgroup_end_move(struct m
->   *			  under hierarchy of moving cgroups. This is for
->   *			  waiting at hith-memory prressure caused by "move".
->   */
-> -
->  static bool mem_cgroup_stealed(struct mem_cgroup *mem)
->  {
->  	VM_BUG_ON(!rcu_read_lock_held());
-> @@ -4471,11 +4470,14 @@ one_by_one:
->   * Returns
->   *   0(MC_TARGET_NONE): if the pte is not a target for move charge.
->   *   1(MC_TARGET_PAGE): if the page corresponding to this pte is a target for
-> - *     move charge. if @target is not NULL, the page is stored in target->page
-> - *     with extra refcnt got(Callers should handle it).
-> + *     move charge and it's mapped.. if @target is not NULL, the page is
-> + *     stored in target->pagewithout extra refcnt.
-                               ^^ needs ' '.
-
->   *   2(MC_TARGET_SWAP): if the swap entry corresponding to this pte is a
->   *     target for charge migration. if @target is not NULL, the entry is stored
->   *     in target->ent.
-> + *   3(MC_TARGET_UNMAPPED_PAGE): if the page corresponding to this pte is a
-> + *     target for move charge. if @target is not NULL, the page is stored in
-> + *     target->page with extra refcnt got(Callers should handle it).
->   *
->   * Called with pte lock held.
->   */
-> @@ -4486,8 +4488,9 @@ union mc_target {
->  
->  enum mc_target_type {
->  	MC_TARGET_NONE,	/* not used */
-> -	MC_TARGET_PAGE,
-> +	MC_TARGET_PAGE, /* a page mapped */
->  	MC_TARGET_SWAP,
-> +	MC_TARGET_UNMAPPED_PAGE, /* a page unmapped */
->  };
->  
-I prefer the order of "MC_TARGET_PAGE", "MC_TARGET_UNMAPPED_PAGE", and "MC_TARGET_SWAP".
-
->  static struct page *mc_handle_present_pte(struct vm_area_struct *vma,
-> @@ -4504,9 +4507,10 @@ static struct page *mc_handle_present_pt
->  	} else if (!move_file())
->  		/* we ignore mapcount for file pages */
->  		return NULL;
-> -	if (!get_page_unless_zero(page))
-> -		return NULL;
-> -
-> +	/*
-> + 	 * Because we're under pte_lock and the page is mapped,
-> +	 * get_page() isn't necessary
-> +	 */
->  	return page;
->  }
->  
-> @@ -4570,14 +4574,18 @@ static int is_target_pte_for_mc(struct v
->  	struct page *page = NULL;
->  	struct page_cgroup *pc;
->  	int ret = 0;
-> +	bool present = true;
->  	swp_entry_t ent = { .val = 0 };
->  
->  	if (pte_present(ptent))
->  		page = mc_handle_present_pte(vma, addr, ptent);
-> -	else if (is_swap_pte(ptent))
-> -		page = mc_handle_swap_pte(vma, addr, ptent, &ent);
-> -	else if (pte_none(ptent) || pte_file(ptent))
-> -		page = mc_handle_file_pte(vma, addr, ptent, &ent);
-> +	else {
-> +		present = false;
-> +	 	if (is_swap_pte(ptent))
-> +			page = mc_handle_swap_pte(vma, addr, ptent, &ent);
-> +		else if (pte_none(ptent) || pte_file(ptent))
-> +			page = mc_handle_file_pte(vma, addr, ptent, &ent);
-> +	}
->  
->  	if (!page && !ent.val)
->  		return 0;
-> @@ -4589,11 +4597,15 @@ static int is_target_pte_for_mc(struct v
->  		 * the lock.
->  		 */
->  		if (PageCgroupUsed(pc) && pc->mem_cgroup == mc.from) {
-> -			ret = MC_TARGET_PAGE;
-> +			if (present)
-> +				ret = MC_TARGET_PAGE;
-> +			else
-> +				ret = MC_TARGET_UNMAPPED_PAGE;
->  			if (target)
->  				target->page = page;
->  		}
-> -		if (!ret || !target)
-> +		/* We got refcnt but the page is not for target */
-> +		if (!present && (!ret || !target))
->  			put_page(page);
->  	}
->  	/* There is a swap entry and a page doesn't exist or isn't charged */
-> @@ -4780,19 +4792,24 @@ retry:
->  		type = is_target_pte_for_mc(vma, addr, ptent, &target);
->  		switch (type) {
->  		case MC_TARGET_PAGE:
-> +		case MC_TARGET_UNMAPPED_PAGE:
->  			page = target.page;
-> -			if (isolate_lru_page(page))
-> -				goto put;
-> -			pc = lookup_page_cgroup(page);
-> -			if (!mem_cgroup_move_account(pc,
-> +			if (!isolate_lru_page(page)) {
-> +				pc = lookup_page_cgroup(page);
-> +				if (!mem_cgroup_move_account(pc,
->  						mc.from, mc.to, false)) {
-> -				mc.precharge--;
-> -				/* we uncharge from mc.from later. */
-> -				mc.moved_charge++;
-> +					mc.precharge--;
-> +					/* we uncharge from mc.from later. */
-> +					mc.moved_charge++;
-> +				}
-> +				putback_lru_page(page);
->  			}
-> -			putback_lru_page(page);
-> -put:			/* is_target_pte_for_mc() gets the page */
-> -			put_page(page);
-> +			/*
-> +			 * Because we holds pte_lock, we have a stable reference			 * to the page if mapped. If not mapped, we have an
-
-You need a new line :)
+>
+> --
+> error compiling committee.c: too many arguments to function
+>
+>
 
 
-Thanks,
-Daisuke Nishimura.
 
-> +			 * elevated refcnt. drop it.
-> +			 */
-> +			if (type == MC_TARGET_UNMAPPED_PAGE)
-> +				put_page(page);
->  			break;
->  		case MC_TARGET_SWAP:
->  			ent = target.ent;
-> Index: mmotm-1013/mm/vmscan.c
-> ===================================================================
-> --- mmotm-1013.orig/mm/vmscan.c
-> +++ mmotm-1013/mm/vmscan.c
-> @@ -1166,7 +1166,8 @@ static unsigned long clear_active_flags(
->   * found will be decremented.
->   *
->   * Restrictions:
-> - * (1) Must be called with an elevated refcount on the page. This is a
-> + * (1) Must be called with an elevated refcount on the page, IOW, the
-> + *     caller must guarantee that there is a stable reference. This is a
->   *     fundamentnal difference from isolate_lru_pages (which is called
->   *     without a stable reference).
->   * (2) the lru_lock must not be held.
-> 
+-- 
+Regards
+dave
