@@ -1,67 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932530Ab0JRW1j (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Oct 2010 18:27:39 -0400
-Received: from fifo99.com ([67.223.236.141]:57476 "EHLO fifo99.com"
+	id S1756339Ab0JRWbt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Oct 2010 18:31:49 -0400
+Received: from www.tglx.de ([62.245.132.106]:38057 "EHLO www.tglx.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757604Ab0JRW1h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Oct 2010 18:27:37 -0400
-Subject: Re: linux-next: manual merge of the msm tree with the arm tree
-From: Daniel Walker <dwalker@fifo99.com>
-To: Russell King <rmk@arm.linux.org.uk>
-Cc: Nicolas Pitre <nico@fluxnic.net>, Stephen Rothwell <sfr@canb.auug.org.au>,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jeremy Kerr <jeremy.kerr@canonical.com>,
-        Jeff Ohlstein <johlstei@codeaurora.org>
-In-Reply-To: <20101018215815.GC23642@flint.arm.linux.org.uk>
-References: <20101018103540.7bd9c535.sfr@canb.auug.org.au>
-	 <20101018110207.131b56ee.sfr@canb.auug.org.au>
-	 <20101018081520.GA10551@flint.arm.linux.org.uk>
-	 <1287422792.4105.14.camel@c-dwalke-linux.qualcomm.com>
-	 <20101018182044.GA558@flint.arm.linux.org.uk>
-	 <1287427572.4105.22.camel@c-dwalke-linux.qualcomm.com>
-	 <alpine.LFD.2.00.1010181525000.2764@xanadu.home>
-	 <1287432774.5588.5.camel@c-dwalke-linux.qualcomm.com>
-	 <20101018205847.GB23642@flint.arm.linux.org.uk>
-	 <1287437362.5588.57.camel@c-dwalke-linux.qualcomm.com>
-	 <20101018215815.GC23642@flint.arm.linux.org.uk>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 18 Oct 2010 15:27:06 -0700
-Message-ID: <1287440826.5588.83.camel@c-dwalke-linux.qualcomm.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1755421Ab0JRWbs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Oct 2010 18:31:48 -0400
+Date: Tue, 19 Oct 2010 00:31:40 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Yinghai Lu <yinghai@kernel.org>
+cc: Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] x86, irq: Check if irq is remapped before freeing irte
+In-Reply-To: <4CBCC8B3.7030706@kernel.org>
+Message-ID: <alpine.LFD.2.00.1010190029180.6815@localhost6.localdomain6>
+References: <4CBCB274.7010108@kernel.org> <alpine.LFD.2.00.1010182304050.6815@localhost6.localdomain6> <alpine.LFD.2.00.1010182311110.6815@localhost6.localdomain6> <4CBCC8B3.7030706@kernel.org>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-10-18 at 22:58 +0100, Russell King wrote:
-> On Mon, Oct 18, 2010 at 02:29:22PM -0700, Daniel Walker wrote:
-> > That's why we have get_maintainer.pl, it adds in all the CC's
-> > automatically ..
+On Mon, 18 Oct 2010, Yinghai Lu wrote:
+
+> On 10/18/2010 02:17 PM, Thomas Gleixner wrote:
+> > 
+> > 
+> > On Mon, 18 Oct 2010, Thomas Gleixner wrote:
+> > 
+> >> On Mon, 18 Oct 2010, Yinghai Lu wrote:
+> >>>
+> >>> Index: linux-2.6/drivers/pci/intr_remapping.c
+> >>> ===================================================================
+> >>> --- linux-2.6.orig/drivers/pci/intr_remapping.c
+> >>> +++ linux-2.6/drivers/pci/intr_remapping.c
+> >>> @@ -60,7 +60,7 @@ int get_irte(int irq, struct irte *entry
+> >>>  	unsigned long flags;
+> >>>  	int index;
+> >>>  
+> >>> -	if (!entry || !irq_iommu)
+> >>> +	if (!entry || !irq_iommu || !irq_iommu->iommu)
+> >>>  		return -1;
+> >>
+> >> Hmm, why do we need this? This is only called from
+> >> ir_ioapic_set_affinity() and ir_msi_set_affinity().
+
+That does not answer that question !
+
+> >> We should never end up there when intr_remapping=off, right ?
+> > 
+> > Thinking more about it, this check is actively bogus. The call sites do:
+> > 
+> >         struct irte irte;
+> > 
+> >         if (get_irte(irq, &irte))
+> >                 return -1;
+> > 
+> > So entry _CANNOT_ be NULL.
+> > 
+> > And in fact we should change get_irte() to
+> > 
+> > get_irte(struct irq_2_iommu *irq_iommu, struct irte *entry)
+> > 
+> > The call site already knows about it. No need to lookup irq_iommu
+> > based on the irq number.
 > 
-> $ git diff-tree -u 861bd81ee62a0d6759144c22909a8a3938951656 | scripts/get_maintainer.pl |wc 
->     209     624    8021
+> looks like all irq-irte related API could replace "int irq" to "struct irq_2_iommu *irq_iommu"
 > 
-> 209 recipients / 8K of To:/CC: is reasonable?
+> extern int get_irte(int irq, struct irte *entry);
+> extern int modify_irte(int irq, struct irte *irte_modified);
+> extern int alloc_irte(struct intel_iommu *iommu, int irq, u16 count);
+> extern int set_irte_irq(int irq, struct intel_iommu *iommu, u16 index,
+>                         u16 sub_handle);
+> extern int map_irq_to_irte_handle(int irq, u16 *sub_handle);
+> extern int free_irte(int irq);
 
+Probably, but we need to figure out which functions need which checks
+instead of having either redundant or superflous ones there.
 
-The answer is not "The tool doesn't work like I want, so screw it." If
-the tool doesn't work like we want, then we need to fix the tool not
-just walk away. Not to mention that the people involved in making these
-patches should still be CC'ing people even if this tool is just helping
-them out instead of actually doing it for them.
+Thanks,
 
-What it's showing you is anyone that's ever modified those files.. You
-just need the people who maintain the files.
-
-how about this,
-
-git show 08a610d9ef5394525b0328da0162d7b58c982cc4 | ./scripts/get_maintainer.pl | wc
-     58     163    2169
-
-That's the patch we're actually discussing too. It's about one CC per
-file modified.
-
-Daniel
-
+	tglx
