@@ -1,332 +1,344 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754092Ab0JRGZp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Oct 2010 02:25:45 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:46696 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754084Ab0JRGZn (ORCPT
+	id S1753812Ab0JRG03 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Oct 2010 02:26:29 -0400
+Received: from bld-mail18.adl2.internode.on.net ([150.101.137.103]:46943 "EHLO
+	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753352Ab0JRGVk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Oct 2010 02:25:43 -0400
-Date: Mon, 18 Oct 2010 02:25:30 -0400
-From: Kyle McMartin <kyle@mcmartin.ca>
-To: James Morris <jmorris@namei.org>
-Cc: Christoph Hellwig <hch@infradead.org>, kernel@lists.fedoraproject.org,
-        Mimi Zohar <zohar@us.ibm.com>, warthog9@kernel.org,
-        Dave Chinner <david@fromorbit.com>, linux-kernel@vger.kernel.org,
-        Kyle McMartin <kyle@mcmartin.ca>, "H. Peter Anvin" <hpa@zytor.com>,
-        Serge Hallyn <serue@us.ibm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>, mingo@elte.hu,
-        eparis@redhat.com
-Subject: Re: ima: use of radix tree cache indexing == massive waste of memory?
-Message-ID: <20101018062530.GD8332@bombadil.infradead.org>
-References: <20101016065206.GO4681@dastard>
- <20101016192027.GA6883@infradead.org>
- <ebc4973c-6c11-4397-b8b0-c212a27abce4@email.android.com>
- <20101017004945.GE1614@infradead.org>
- <20101017054008.GA16383@elte.hu>
- <20101017184652.GB28060@infradead.org>
- <alpine.LRH.2.00.1010181127480.9476@tundra.namei.org>
+	Mon, 18 Oct 2010 02:21:40 -0400
+From: Dave Chinner <david@fromorbit.com>
+To: linux-fsdevel@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Subject: Inode Lock Scalability V5
+Date: Mon, 18 Oct 2010 17:20:36 +1100
+Message-Id: <1287382856-29529-1-git-send-email-david@fromorbit.com>
+X-Mailer: git-send-email 1.7.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LRH.2.00.1010181127480.9476@tundra.namei.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If someone gives me a good reason why Fedora actually needs this
-enabled, I'm going to apply the following patch to our kernel so that
-IMA is globally an opt-in feature... Otherwise I'm inclined to just
-disable it.
+Note: Version 5 is for a serious bug fix - the inode hash lookup and
+insertion is not atomic once the inode_lock is taken away. Details
+are in the change log.
 
-(But the more I look at this, the more it looks like a completely niche
- option that has little use outside of three-letter agencies.)
+[ Nick, this bug is also in the vfs-scale tree.]
 
-I regret not looking at this more closely when it was enabled,
-(although, in my defence, when the option first showed up, I left it
-off...)
+--
 
-It's probably way more heavyweight than necessary, as I think in most
-cases the iint_initalized test will cover the call into IMA. But better
-safe than sorry or something and there's a bunch of other cases where
--ENOMEM will leak back up from failing kmem_cache_alloc, iirc.
+This patch set is derived from Nick Piggin's VFS scalability tree.
+there doesn't appear to be any push to get that tree into shape for
+.37, so this is an attempt to start the process of finer grained
+review of the series for upstream inclusion. I'm hitting VFS lock
+contention problems with XFS on 8-16p machines now, so I need to get
+this stuff moving.
 
-regards, Kyle
+This patch set is just the basic inode_lock breakup patches plus a
+few more simple changes to the inode code. It stops short of
+introducing RCU inode freeing because those changes are not
+completely baked yet.
 
----
-From: Kyle McMartin <kyle@mcmartin.ca>
-Date: Mon, 18 Oct 2010 02:08:35 -0400
-Subject: [PATCH] ima: allow it to be completely disabled (and default to off)
+As a result, the full inode handling improvements of Nick's patch
+set are not realised with this short series. However, my own testing
+indicates that the amount of lock traffic and contention is down by
+an order of magnitude on an 8-way box for parallel inode create and
+unlink workloads, so there is still significant improvements from
+just this patch set.
 
-Allow IMA to be entirely disabled, don't even bother calling into
-the provided hooks, and avoid initializing caches.
+Version 2 of this series is a complete rework of the original patch
+series.  Nick's original code nested list locks inside the the
+inode->i_lock, resulting in a large mess of trylock operations to
+get locks out of order all over the place. In many cases, the reason
+fo this lock ordering is removed later on in Nick's series as
+cleanups are introduced.
 
-(A lot of the hooks will test iint_initialized, and so this doubly
- disables them, since the iint cache won't be enabled. But hey, we
- avoid a pointless branch...)
+As a result I've pulled in several of the cleanups and re-ordered
+the series such that cleanups, factoring and list splitting are done
+before any of the locking changes. Instead of converting the inode
+state flags first, I've converted them last, ensuring that
+manipulations are kept inside other locks rather than outside them.
 
-Signed-off-by: Kyle McMartin <kyle@redhat.com>
----
- include/linux/ima.h               |   66 +++++++++++++++++++++++++++++++++----
- security/integrity/ima/ima_iint.c |   13 +++++--
- security/integrity/ima/ima_main.c |   34 +++++++++++++------
- 3 files changed, 91 insertions(+), 22 deletions(-)
+The series is made up of the following steps:
 
-diff --git a/include/linux/ima.h b/include/linux/ima.h
-index 975837e..2fa456d 100644
---- a/include/linux/ima.h
-+++ b/include/linux/ima.h
-@@ -14,13 +14,65 @@
- struct linux_binprm;
- 
- #ifdef CONFIG_IMA
--extern int ima_bprm_check(struct linux_binprm *bprm);
--extern int ima_inode_alloc(struct inode *inode);
--extern void ima_inode_free(struct inode *inode);
--extern int ima_file_check(struct file *file, int mask);
--extern void ima_file_free(struct file *file);
--extern int ima_file_mmap(struct file *file, unsigned long prot);
--extern void ima_counts_get(struct file *file);
-+
-+extern int ima_enabled;
-+
-+extern int __ima_bprm_check(struct linux_binprm *bprm);
-+extern int __ima_inode_alloc(struct inode *inode);
-+extern void __ima_inode_free(struct inode *inode);
-+extern int __ima_file_check(struct file *file, int mask);
-+extern void __ima_file_free(struct file *file);
-+extern int __ima_file_mmap(struct file *file, unsigned long prot);
-+extern void __ima_counts_get(struct file *file);
-+
-+static inline int ima_bprm_check(struct linux_binprm *bprm)
-+{
-+	if (ima_enabled)
-+		return __ima_bprm_check(bprm);
-+	return 0;
-+}
-+
-+static inline int ima_inode_alloc(struct inode *inode)
-+{
-+	if (ima_enabled)
-+		return __ima_inode_alloc(inode);
-+	return 0;
-+}
-+
-+static inline void ima_inode_free(struct inode *inode)
-+{
-+	if (ima_enabled)
-+		__ima_inode_free(inode);
-+	return;
-+}
-+
-+static inline int ima_file_check(struct file *file, int mask)
-+{
-+	if (ima_enabled)
-+		return __ima_file_check(file, mask);
-+	return 0;
-+}
-+
-+static inline void ima_file_free(struct file *file)
-+{
-+	if (ima_enabled)
-+		__ima_file_free(file);
-+	return;
-+}
-+
-+static inline int ima_file_mmap(struct file *file, unsigned long prot)
-+{
-+	if (ima_enabled)
-+		return __ima_file_mmap(file, prot);
-+	return 0;
-+}
-+
-+static inline void ima_counts_get(struct file *file)
-+{
-+	if (ima_enabled)
-+		return __ima_counts_get(file);
-+	return;
-+}
- 
- #else
- static inline int ima_bprm_check(struct linux_binprm *bprm)
-diff --git a/security/integrity/ima/ima_iint.c b/security/integrity/ima/ima_iint.c
-index afba4ae..767f026 100644
---- a/security/integrity/ima/ima_iint.c
-+++ b/security/integrity/ima/ima_iint.c
-@@ -46,10 +46,10 @@ out:
- }
- 
- /**
-- * ima_inode_alloc - allocate an iint associated with an inode
-+ * __ima_inode_alloc - allocate an iint associated with an inode
-  * @inode: pointer to the inode
-  */
--int ima_inode_alloc(struct inode *inode)
-+int __ima_inode_alloc(struct inode *inode)
- {
- 	struct ima_iint_cache *iint = NULL;
- 	int rc = 0;
-@@ -107,12 +107,12 @@ void iint_rcu_free(struct rcu_head *rcu_head)
- }
- 
- /**
-- * ima_inode_free - called on security_inode_free
-+ * __ima_inode_free - called on security_inode_free
-  * @inode: pointer to the inode
-  *
-  * Free the integrity information(iint) associated with an inode.
-  */
--void ima_inode_free(struct inode *inode)
-+void __ima_inode_free(struct inode *inode)
- {
- 	struct ima_iint_cache *iint;
- 
-@@ -139,6 +139,11 @@ static void init_once(void *foo)
- 
- static int __init ima_iintcache_init(void)
- {
-+	extern int ima_enabled;
-+
-+	if (!ima_enabled)
-+		return 0;
-+
- 	iint_cache =
- 	    kmem_cache_create("iint_cache", sizeof(struct ima_iint_cache), 0,
- 			      SLAB_PANIC, init_once);
-diff --git a/security/integrity/ima/ima_main.c b/security/integrity/ima/ima_main.c
-index e662b89..92e084c 100644
---- a/security/integrity/ima/ima_main.c
-+++ b/security/integrity/ima/ima_main.c
-@@ -26,6 +26,7 @@
- #include "ima.h"
- 
- int ima_initialized;
-+int ima_enabled = 0;
- 
- char *ima_hash = "sha1";
- static int __init hash_setup(char *str)
-@@ -36,6 +37,14 @@ static int __init hash_setup(char *str)
- }
- __setup("ima_hash=", hash_setup);
- 
-+static int __init ima_enable(char *str)
-+{
-+	if (strncmp(str, "on", 2) == 0)
-+		ima_enabled = 1;
-+	return 1;
-+}
-+__setup("ima=", ima_enable);
-+
- struct ima_imbalance {
- 	struct hlist_node node;
- 	unsigned long fsmagic;
-@@ -130,7 +139,7 @@ static void ima_inc_counts(struct ima_iint_cache *iint, fmode_t mode)
- }
- 
- /*
-- * ima_counts_get - increment file counts
-+ * __ima_counts_get - increment file counts
-  *
-  * Maintain read/write counters for all files, but only
-  * invalidate the PCR for measured files:
-@@ -140,7 +149,7 @@ static void ima_inc_counts(struct ima_iint_cache *iint, fmode_t mode)
-  * 	  could result in a file measurement error.
-  *
-  */
--void ima_counts_get(struct file *file)
-+void __ima_counts_get(struct file *file)
- {
- 	struct dentry *dentry = file->f_path.dentry;
- 	struct inode *inode = dentry->d_inode;
-@@ -204,13 +213,13 @@ static void ima_dec_counts(struct ima_iint_cache *iint, struct inode *inode,
- }
- 
- /**
-- * ima_file_free - called on __fput()
-+ * __ima_file_free - called on __fput()
-  * @file: pointer to file structure being freed
-  *
-  * Flag files that changed, based on i_version;
-  * and decrement the iint readcount/writecount.
-  */
--void ima_file_free(struct file *file)
-+void __ima_file_free(struct file *file)
- {
- 	struct inode *inode = file->f_dentry->d_inode;
- 	struct ima_iint_cache *iint;
-@@ -255,7 +264,7 @@ out:
- }
- 
- /**
-- * ima_file_mmap - based on policy, collect/store measurement.
-+ * __ima_file_mmap - based on policy, collect/store measurement.
-  * @file: pointer to the file to be measured (May be NULL)
-  * @prot: contains the protection that will be applied by the kernel.
-  *
-@@ -265,7 +274,7 @@ out:
-  * Return 0 on success, an error code on failure.
-  * (Based on the results of appraise_measurement().)
-  */
--int ima_file_mmap(struct file *file, unsigned long prot)
-+int __ima_file_mmap(struct file *file, unsigned long prot)
- {
- 	int rc;
- 
-@@ -278,7 +287,7 @@ int ima_file_mmap(struct file *file, unsigned long prot)
- }
- 
- /**
-- * ima_bprm_check - based on policy, collect/store measurement.
-+ * __ima_bprm_check - based on policy, collect/store measurement.
-  * @bprm: contains the linux_binprm structure
-  *
-  * The OS protects against an executable file, already open for write,
-@@ -290,7 +299,7 @@ int ima_file_mmap(struct file *file, unsigned long prot)
-  * Return 0 on success, an error code on failure.
-  * (Based on the results of appraise_measurement().)
-  */
--int ima_bprm_check(struct linux_binprm *bprm)
-+int __ima_bprm_check(struct linux_binprm *bprm)
- {
- 	int rc;
- 
-@@ -300,7 +309,7 @@ int ima_bprm_check(struct linux_binprm *bprm)
- }
- 
- /**
-- * ima_path_check - based on policy, collect/store measurement.
-+ * __ima_path_check - based on policy, collect/store measurement.
-  * @file: pointer to the file to be measured
-  * @mask: contains MAY_READ, MAY_WRITE or MAY_EXECUTE
-  *
-@@ -309,7 +318,7 @@ int ima_bprm_check(struct linux_binprm *bprm)
-  * Always return 0 and audit dentry_open failures.
-  * (Return code will be based upon measurement appraisal.)
-  */
--int ima_file_check(struct file *file, int mask)
-+int __ima_file_check(struct file *file, int mask)
- {
- 	int rc;
- 
-@@ -318,12 +327,15 @@ int ima_file_check(struct file *file, int mask)
- 				 FILE_CHECK);
- 	return 0;
- }
--EXPORT_SYMBOL_GPL(ima_file_check);
-+EXPORT_SYMBOL_GPL(__ima_file_check);
- 
- static int __init init_ima(void)
- {
- 	int error;
- 
-+	if (!ima_enabled)
-+		return 0;
-+
- 	error = ima_init();
- 	ima_initialized = 1;
- 	return error;
--- 
-1.7.3.1
+	- inode counters are made per-cpu
+	- inode LRU manipulations are made lazy
+	- i_list is split into two lists (grows inode by 2
+	  pointers), one for tracking lru status, one for writeback
+	  status
+	- reference counting is factored, then renamed and locked
+	  differently
+	- inode hash operations are factored, then locked per bucket
+	- superblock inode listis locked per-superblock
+	- inode LRU is locked via a global lock
+		- unclear what the best way to split this up from
+		  here is, so no attempt is made to optimise
+		  further.
+		- Currently not showing signs of contention under
+		  any workload on an 8p machine.
+	- inode IO list are locked via a per-BDI lock
+		- further analysis needed to determine the next step
+		  in optimising this list. It is extremely contended
+		  under parallel workloads because foreground
+		  throttling (balance_dirty_pages) causes unbound
+		  writeback parallelism and contention. Fixing the
+		  unbound parallelism, I think, is a more important
+		  first optimisation step than making the list
+		  per-cpu.
+	- lock i_state operations with i_lock
+	- convert last_ino allocation to a percpu counter
+	- protect iunique counter with it's own lock
+	- remove inode_lock
+	- factor destroying an inode into dispose_one_inode() which
+	  is called from reclaim, dispose_list and iput_final.
 
+None of the patcheѕ are unchanged, and several of them are new or
+completely rewritten, so any previous testing is completely
+invalidated. I have not tried to optimise locking by using trylock
+loops - anywhere that requires out-of-order locking drops locks and
+regains the locks needed for the next operation. This approach
+simplified the code and lead to several improvments in the patch
+series (e.g. moving inode->i_lock inside writeback_single_inode(),
+and the dispose_one_inode factoring) that would have gone unnoticed
+if I'd gone down the same trylock loop path that Nick used.
+
+I've done some testing so far on ext3, ext4 and XFS (mostly sanity
+and lock_stat profile testing), but I have not tested any other
+filesystems. IOWs, it is light on testing at this point. I'm sending
+out for review now that it passes basic sanity tests so that
+comments on the reworked approach can be made.
+
+Version 5:
+- removed buggy can_unuse() optimisation in prune_icache that the
+  lazy LRU code exposes.
+- Christoph found a nasty bug in the new hash locking code where the
+  hash lock is dropped between the lookup and insert in
+  get_new_inode[_fast](). This lookup and insert needs to be atomic,
+  so it needs fixing. Thanks to Christoph for finding and fixing
+  the bug.
+
+  Detailed changes:
+	- iunique rework moved forward in the series to before the
+	  inode hash locking changes
+	- new patch to move inode reference on successful lookup
+	  back inside find_inode[_fast]()
+	- moved splitting of inode_add_to_lists forward to before
+	  the inode hash locking changes
+	- modified the intorudction of the new inode hash list locks
+	  to be taken outside find_inode[_fast]() and held until the
+	  new inode is inserted into the hash. They cover the same
+	  scope as the inode_lock covered. This is the bug fix.
+
+Version 4:
+- re-added inode reference count check in writeback_single_inode()
+  when the inode is clean and only attempt to add the inode to the
+  LRU if the inodis unreferenced.
+- moved hash_bl_[un]lock into hlist_bl.h introductory patch.
+- updated documentation and comments still referencing i_count
+- updated documentation and comments still referencing inode_lock
+- removed a couple of unneeded include files.
+- writeback_single_inode() and sync_inode are now the same, so fold
+  writeback_single_inode() into sync_inode.
+- moved lock ordering comments around into the patches that
+  introduce the locks or change the ordering.
+- cleaned up dispose_one_inode comments and layout.
+- added patch to start of series to move bdev inodes around bdi's
+  as they change the bdi in the inode mapping during the final put
+  of the bdev. Changes to this new code propagate throw the subsequent
+  scalability patches.
+
+Version 3:
+- whitespace fix in inode_init_early.
+- dropped patch that moves inodes around bdi lists as problem is now
+  fixed in mainline.
+- added comments explaining lazy inode LRU manipulations.
+- added inode_lru_list_{add,del} helpers much earlier to avoid
+  needing to export then unexport inode counters.
+- renamed i_io to i_wb_list.
+- removed iref_locked and just open code internal inode reference
+  increments.
+- added a WARN_ON() condition to detect iref() being called without
+  a pre-existing reference count.
+- added kerneldoc comment to iref().
+- dropped iref_read() wrapper function patch
+- killed the inode_hash_bucket wrapper, use hlist_bl_head directly
+- moved spin_[un]lock_bucket wrappers to list_bl.h, and renamed them
+  hlist_bl_[un]lock()
+- added inode_unhashed() helper function.
+- documented use of I_FREEING to ensure removal from inode lru and
+  writeback lists is kept sane when the inode is being freed.
+- added inode_wb_list_del() helper to avoid exporting the
+  inode_to_bdi() function.
+- added comments to explain why we need to set the i_state field
+  before adding new inodes to various lists
+- renamed last_ino_get() to get_next_ino().
+- kept invalidate_list/dispose_list pairing for invalidate_inodes(),
+  but changed the dispose list to use the i_sb_list pointer in the
+  inode instead of the i_lru to avoid needing to take the
+  inode_lru_lock for every inode on the superblock list.
+- added patch from Christoph Hellwig to spilt up inode_add_to_lists.
+  Modified the new function names to match the naming convention
+  used by all the other list helpers in inode.c, and added a
+  matching inode_sb_list_del() function for symmetry.
+- added patch from Christoph Hellwig to move inode number assignment
+  in get_new_inode() to the callers that don't directly assign an
+  inode number.
+
+Version 2:
+- complete rework of series
+
+--
+
+The following changes since commit cb655d0f3d57c23db51b981648e452988c0223f9:
+
+  Linux 2.6.36-rc7 (2010-10-06 13:39:52 -0700)
+
+are available in the git repository at:
+  git://git.kernel.org/pub/scm/linux/kernel/git/dgc/xfsdev.git inode-scale
+
+Christoph Hellwig (4):
+      fs: Stop abusing find_inode_fast in iunique
+      fs: move i_ref increments into find_inode/find_inode_fast
+      fs: remove inode_add_to_list/__inode_add_to_list
+      fs: do not assign default i_ino in new_inode
+
+Dave Chinner (12):
+      fs: switch bdev inode bdi's correctly
+      fs: Convert nr_inodes and nr_unused to per-cpu counters
+      fs: Clean up inode reference counting
+      exofs: use iput() for inode reference count decrements
+      fs: rework icount to be a locked variable
+      fs: Factor inode hash operations into functions
+      fs: Introduce per-bucket inode hash locks
+      fs: add a per-superblock lock for the inode list
+      fs: split locking of inode writeback and LRU lists
+      fs: Protect inode->i_state with the inode->i_lock
+      fs: icache remove inode_lock
+      fs: Reduce inode I_FREEING and factor inode disposal
+
+Eric Dumazet (1):
+      fs: introduce a per-cpu last_ino allocator
+
+Nick Piggin (3):
+      kernel: add bl_list
+      fs: Implement lazy LRU updates for inodes
+      fs: inode split IO and LRU lists
+
+ Documentation/filesystems/Locking        |    2 +-
+ Documentation/filesystems/porting        |    8 +-
+ Documentation/filesystems/vfs.txt        |   16 +-
+ arch/powerpc/platforms/cell/spufs/file.c |    2 +-
+ drivers/infiniband/hw/ipath/ipath_fs.c   |    1 +
+ drivers/infiniband/hw/qib/qib_fs.c       |    1 +
+ drivers/misc/ibmasm/ibmasmfs.c           |    1 +
+ drivers/oprofile/oprofilefs.c            |    1 +
+ drivers/usb/core/inode.c                 |    1 +
+ drivers/usb/gadget/f_fs.c                |    1 +
+ drivers/usb/gadget/inode.c               |    1 +
+ fs/9p/vfs_inode.c                        |    5 +-
+ fs/affs/inode.c                          |    2 +-
+ fs/afs/dir.c                             |    2 +-
+ fs/anon_inodes.c                         |    8 +-
+ fs/autofs4/inode.c                       |    1 +
+ fs/bfs/dir.c                             |    2 +-
+ fs/binfmt_misc.c                         |    1 +
+ fs/block_dev.c                           |   42 ++-
+ fs/btrfs/inode.c                         |   18 +-
+ fs/buffer.c                              |    2 +-
+ fs/ceph/mds_client.c                     |    2 +-
+ fs/cifs/inode.c                          |    2 +-
+ fs/coda/dir.c                            |    2 +-
+ fs/configfs/inode.c                      |    1 +
+ fs/debugfs/inode.c                       |    1 +
+ fs/drop_caches.c                         |   19 +-
+ fs/exofs/inode.c                         |    6 +-
+ fs/exofs/namei.c                         |    2 +-
+ fs/ext2/namei.c                          |    2 +-
+ fs/ext3/ialloc.c                         |    4 +-
+ fs/ext3/namei.c                          |    2 +-
+ fs/ext4/ialloc.c                         |    4 +-
+ fs/ext4/mballoc.c                        |    1 +
+ fs/ext4/namei.c                          |    2 +-
+ fs/freevxfs/vxfs_inode.c                 |    1 +
+ fs/fs-writeback.c                        |  235 +++++----
+ fs/fuse/control.c                        |    1 +
+ fs/gfs2/ops_inode.c                      |    2 +-
+ fs/hfs/hfs_fs.h                          |    2 +-
+ fs/hfs/inode.c                           |    2 +-
+ fs/hfsplus/dir.c                         |    2 +-
+ fs/hfsplus/hfsplus_fs.h                  |    2 +-
+ fs/hfsplus/inode.c                       |    2 +-
+ fs/hpfs/inode.c                          |    2 +-
+ fs/hugetlbfs/inode.c                     |    1 +
+ fs/inode.c                               |  819 +++++++++++++++++++-----------
+ fs/internal.h                            |   11 +
+ fs/jffs2/dir.c                           |    4 +-
+ fs/jfs/jfs_txnmgr.c                      |    2 +-
+ fs/jfs/namei.c                           |    2 +-
+ fs/libfs.c                               |    2 +-
+ fs/locks.c                               |    2 +-
+ fs/logfs/dir.c                           |    2 +-
+ fs/logfs/inode.c                         |    2 +-
+ fs/logfs/readwrite.c                     |    2 +-
+ fs/minix/namei.c                         |    2 +-
+ fs/namei.c                               |    2 +-
+ fs/nfs/dir.c                             |    2 +-
+ fs/nfs/getroot.c                         |    2 +-
+ fs/nfs/inode.c                           |    4 +-
+ fs/nfs/nfs4state.c                       |    2 +-
+ fs/nfs/write.c                           |    2 +-
+ fs/nilfs2/gcdat.c                        |    1 +
+ fs/nilfs2/gcinode.c                      |   22 +-
+ fs/nilfs2/mdt.c                          |    5 +-
+ fs/nilfs2/namei.c                        |    2 +-
+ fs/nilfs2/segment.c                      |    2 +-
+ fs/nilfs2/the_nilfs.h                    |    2 +-
+ fs/notify/inode_mark.c                   |   46 +-
+ fs/notify/mark.c                         |    1 -
+ fs/notify/vfsmount_mark.c                |    1 -
+ fs/ntfs/inode.c                          |   10 +-
+ fs/ntfs/super.c                          |    6 +-
+ fs/ocfs2/dlmfs/dlmfs.c                   |    2 +
+ fs/ocfs2/inode.c                         |    2 +-
+ fs/ocfs2/namei.c                         |    2 +-
+ fs/pipe.c                                |    2 +
+ fs/proc/base.c                           |    2 +
+ fs/proc/proc_sysctl.c                    |    2 +
+ fs/quota/dquot.c                         |   32 +-
+ fs/ramfs/inode.c                         |    1 +
+ fs/reiserfs/namei.c                      |    2 +-
+ fs/reiserfs/stree.c                      |    2 +-
+ fs/reiserfs/xattr.c                      |    2 +-
+ fs/smbfs/inode.c                         |    2 +-
+ fs/super.c                               |    1 +
+ fs/sysv/namei.c                          |    2 +-
+ fs/ubifs/dir.c                           |    2 +-
+ fs/ubifs/super.c                         |    2 +-
+ fs/udf/inode.c                           |    2 +-
+ fs/udf/namei.c                           |    2 +-
+ fs/ufs/namei.c                           |    2 +-
+ fs/xfs/linux-2.6/xfs_buf.c               |    1 +
+ fs/xfs/linux-2.6/xfs_iops.c              |    6 +-
+ fs/xfs/linux-2.6/xfs_trace.h             |    2 +-
+ fs/xfs/xfs_inode.h                       |    3 +-
+ include/linux/backing-dev.h              |    3 +
+ include/linux/fs.h                       |   43 +-
+ include/linux/list_bl.h                  |  146 ++++++
+ include/linux/poison.h                   |    2 +
+ include/linux/writeback.h                |    4 -
+ ipc/mqueue.c                             |    3 +-
+ kernel/cgroup.c                          |    1 +
+ kernel/futex.c                           |    2 +-
+ kernel/sysctl.c                          |    4 +-
+ mm/backing-dev.c                         |   29 +-
+ mm/filemap.c                             |    6 +-
+ mm/rmap.c                                |    6 +-
+ mm/shmem.c                               |    7 +-
+ net/socket.c                             |    3 +-
+ net/sunrpc/rpc_pipe.c                    |    1 +
+ security/inode.c                         |    1 +
+ security/selinux/selinuxfs.c             |    1 +
+ 114 files changed, 1115 insertions(+), 607 deletions(-)
+ create mode 100644 include/linux/list_bl.h
