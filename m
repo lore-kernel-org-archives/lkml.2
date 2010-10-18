@@ -1,125 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754201Ab0JRGeg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Oct 2010 02:34:36 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:63064 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1753240Ab0JRGef (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Oct 2010 02:34:35 -0400
-Message-ID: <4CBBEA7F.7010604@cn.fujitsu.com>
-Date: Mon, 18 Oct 2010 14:34:39 +0800
-From: Miao Xie <miaox@cn.fujitsu.com>
-Reply-To: miaox@cn.fujitsu.com
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: "Ma, Ling" <ling.ma@intel.com>
-CC: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>,
-        Andi Kleen <andi@firstfloor.org>, Thomas Gleixner <tglx@linutronix.de>,
-        "Zhao, Yakui" <yakui.zhao@intel.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH V2 -tip] lib,x86_64: improve the performance of memcpy()
- for unaligned copy
-References: <4CAEC81C.1070108@cn.fujitsu.com> <C10D3FB0CD45994C8A51FEC1227CE22F15C916E769@shsmsx502.ccr.corp.intel.com> <4CAEDE0D.2040009@cn.fujitsu.com> <4CB62543.7000605@zytor.com> <C10D3FB0CD45994C8A51FEC1227CE22F15CC203E71@shsmsx502.ccr.corp.intel.com> <4CBBE7FB.2060303@cn.fujitsu.com> <C10D3FB0CD45994C8A51FEC1227CE22F15D77721FD@shsmsx502.ccr.corp.intel.com>
-In-Reply-To: <C10D3FB0CD45994C8A51FEC1227CE22F15D77721FD@shsmsx502.ccr.corp.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1753796Ab0JRGfs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Oct 2010 02:35:48 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:38223 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753240Ab0JRGfr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Oct 2010 02:35:47 -0400
+Date: Mon, 18 Oct 2010 17:35:43 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Felix Fietkau <nbd@openwrt.org>
+Subject: linux-next: manual merge of the bkl-llseek tree with the wireless
+ tree
+Message-Id: <20101018173543.c33530e9.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 18 Oct 2010 14:27:40 +0800, Ma, Ling wrote:
-> Could please send out cpu info for this cpu model.
+Hi Arnd,
 
-processor	: 0
-vendor_id	: GenuineIntel
-cpu family	: 6
-model		: 23
-model name	: Intel(R) Core(TM)2 Duo CPU     E7300  @ 2.66GHz
-stepping	: 6
-cpu MHz		: 1603.000
-cache size	: 3072 KB
-physical id	: 0
-siblings	: 2
-core id		: 0
-cpu cores	: 2
-apicid		: 0
-initial apicid	: 0
-fpu		: yes
-fpu_exception	: yes
-cpuid level	: 10
-wp		: yes
-flags		: fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush dts acpi mmx fxsr sse sse2 ss ht tm pbe syscall nx lm constant_tsc arch_perfmon pebs bts rep_good aperfmperf pni dtes64 monitor ds_cpl est tm2 ssse3 cx16 xtpr pdcm sse4_1 lahf_lm
-bogomips	: 5319.99
-clflush size	: 64
-cache_alignment	: 64
-address sizes	: 36 bits physical, 48 bits virtual
-power management:
+Today's linux-next merge of the bkl-llseek tree got a conflict in
+drivers/net/wireless/ath/ath9k/debug.c between commit
+772d5515635fef5bc7a9d0efee785b58b0181ee5 ("ath9k: make rate control
+debugfs stats per station") from the wireless tree and commit
+6038f373a3dc1f1c26496e60b6c40b164716f07e ("llseek: automatically
+add .llseek fop") from the bkl-llseek tree.
 
-Thanks
-Miao
+The former moved some of the code modified by the latter to another file.
 
->
-> Thanks
-> Ling
->
-> -----Original Message-----
-> From: Miao Xie [mailto:miaox@cn.fujitsu.com]
-> Sent: Monday, October 18, 2010 2:24 PM
-> To: Ma, Ling
-> Cc: H. Peter Anvin; Ingo Molnar; Andi Kleen; Thomas Gleixner; Zhao, Yakui; Linux Kernel
-> Subject: Re: [PATCH V2 -tip] lib,x86_64: improve the performance of memcpy() for unaligned copy
->
-> On Fri, 15 Oct 2010 03:43:53 +0800, Ma, Ling wrote:
->> Attachment includes memcpy-kernel.c(cc -O2 memcpy-kernel.c -o
->> memcpy-kernel), and unaligned test cases on Atom.
->
-> I have tested on my Core2 Duo machine with your benchmark tool. Attachment is the test result. But the result is different with yours on Atom, It seems the performance is better with this patch.
->
-> According to these two different result, maybe we need optimize memcpy() by CPU model.
->
-> Thanks
-> Miao
->
->>
->> Thanks
->> Ling
->>
->> -----Original Message-----
->> From: Ma, Ling
->> Sent: Thursday, October 14, 2010 9:14 AM
->> To: 'H. Peter Anvin'; miaox@cn.fujitsu.com
->> Cc: Ingo Molnar; Andi Kleen; Thomas Gleixner; Zhao, Yakui; Linux
->> Kernel
->> Subject: RE: [PATCH V2 -tip] lib,x86_64: improve the performance of
->> memcpy() for unaligned copy
->>
->> Sure, I will post benchmark tool and benchmark on Atom 64bit soon.
->>
->> Thanks
->> Ling
->>
->> -----Original Message-----
->> From: H. Peter Anvin [mailto:hpa@zytor.com]
->> Sent: Thursday, October 14, 2010 5:32 AM
->> To: miaox@cn.fujitsu.com
->> Cc: Ma, Ling; Ingo Molnar; Andi Kleen; Thomas Gleixner; Zhao, Yakui;
->> Linux Kernel
->> Subject: Re: [PATCH V2 -tip] lib,x86_64: improve the performance of
->> memcpy() for unaligned copy
->>
->> On 10/08/2010 02:02 AM, Miao Xie wrote:
->>> On Fri, 8 Oct 2010 15:42:45 +0800, Ma, Ling wrote:
->>>> Could you please give us full address for each comparison result,we will do some tests on my machine.
->>>> For unaligned cases older cpus will crossing cache line and slow down caused by load and store, but for nhm, no necessary to care about it.
->>>> By the way in kernel 64bit mode, our access mode should be around 8byte aligned.
->>>
->>> Would you need my benchmark tool? I think it is helpful for your test.
->>>
->>
->> If you could post the benchmark tool that would be great.
->>
->> 	-hpa
->
->
->
+I added this merge fix patch:
 
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Mon, 18 Oct 2010 17:33:25 +1100
+Subject: [PATCH] ath9k: fix up for .llseek fop change
+
+Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+---
+ drivers/net/wireless/ath/ath9k/rc.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/net/wireless/ath/ath9k/rc.c b/drivers/net/wireless/ath/ath9k/rc.c
+index 0cee90c..e4c1ea3 100644
+--- a/drivers/net/wireless/ath/ath9k/rc.c
++++ b/drivers/net/wireless/ath/ath9k/rc.c
+@@ -1582,7 +1582,8 @@ static ssize_t read_file_rcstat(struct file *file, char __user *user_buf,
+ static const struct file_operations fops_rcstat = {
+ 	.read = read_file_rcstat,
+ 	.open = ath9k_debugfs_open,
+-	.owner = THIS_MODULE
++	.owner = THIS_MODULE,
++	.llseek = default_llseek,
+ };
+ 
+ static void ath_rate_add_sta_debugfs(void *priv, void *priv_sta,
+-- 
+1.7.1
+
+-- 
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
