@@ -1,70 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756176Ab0JRS64 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Oct 2010 14:58:56 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:55861 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755878Ab0JRS6z convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Oct 2010 14:58:55 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=C4J6kd/AHPgAVEZ+v1iKfqlS3B6ErVFTD5QbVpAAXTEhX138djRMhp2CUAlCXTaXFj
-         382mGxoMCyUyOddOBcNr+pP4s3QmP3cZgSNviteDuQZP59P9HrCOMArEwX5BUyonPrSo
-         eoYSyLH7loBBP5hivYf+Ze/A7H2Fdy5u9c88o=
+	id S1756262Ab0JRTBj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Oct 2010 15:01:39 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:12615 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755878Ab0JRTBi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Oct 2010 15:01:38 -0400
+Message-ID: <4CBC9969.30005@redhat.com>
+Date: Mon, 18 Oct 2010 17:00:57 -0200
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100827 Red Hat/3.1.3-1.el6 Lightning/1.0b2 Thunderbird/3.1.3
 MIME-Version: 1.0
-In-Reply-To: <4CBB4D4F.8010904@cs.helsinki.fi>
-References: <1287242638-20968-1-git-send-email-richard@nod.at>
-	<4CBB4D4F.8010904@cs.helsinki.fi>
-Date: Mon, 18 Oct 2010 21:58:53 +0300
-X-Google-Sender-Auth: t8XMj5QrUZSkr9gseWrZRS9KzGs
-Message-ID: <AANLkTinPG1J280HMDkg4bhO-9evW2T86c8FKfhk84ZhR@mail.gmail.com>
-Subject: Re: [PATCH 1/1] um: fix global timer issue when using CONFIG_NO_HZ
-From: Pekka Enberg <penberg@kernel.org>
-To: Pekka Enberg <penberg@cs.helsinki.fi>
-Cc: Richard Weinberger <richard@nod.at>, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, jdike@addtoit.com,
-        user-mode-linux-devel@lists.sourceforge.net, arjan@linux.intel.com,
-        peterz@infradead.org
+To: Hans Verkuil <hverkuil@xs4all.nl>
+CC: Andrew Morton <akpm@linux-foundation.org>, Valdis.Kletnieks@vt.edu,
+        linux-kernel@vger.kernel.org, linux-media@vger.kernel.org
+Subject: Re: mmotm 2010-10-13 - GSPCA SPCA561 webcam driver broken
+References: <201010140044.o9E0iuR3029069@imap1.linux-foundation.org> <201010151202.31629.hverkuil@xs4all.nl> <4CB84393.3020205@redhat.com> <201010151423.52318.hverkuil@xs4all.nl>
+In-Reply-To: <201010151423.52318.hverkuil@xs4all.nl>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Oct 17, 2010 at 10:23 PM, Pekka Enberg <penberg@cs.helsinki.fi> wrote:
-> On 16.10.2010 18.23, Richard Weinberger wrote:
+Em 15-10-2010 09:23, Hans Verkuil escreveu:
+> On Friday, October 15, 2010 14:05:39 Mauro Carvalho Chehab wrote:
+>> Em 15-10-2010 07:02, Hans Verkuil escreveu:
+>>> On Friday, October 15, 2010 11:05:26 Andrew Morton wrote:
+>>>> On Fri, 15 Oct 2010 10:45:45 +0200 Hans Verkuil <hverkuil@xs4all.nl> wrote:
+>>>>
+>>>>> On Thursday, October 14, 2010 22:06:29 Valdis.Kletnieks@vt.edu wrote:
+>>>>>> On Wed, 13 Oct 2010 17:13:25 PDT, akpm@linux-foundation.org said:
+>>>>>>> The mm-of-the-moment snapshot 2010-10-13-17-13 has been uploaded to
+>>>
+>>> Mauro, is this something for you to fix?
 >>
->> This fixes a issue which was introduced by fe2cc53e.
->> timeval_to_ns() returns long long and not int.
->> Due to that UML's timer did not work proper and caused timer freezes.
+>> I have a patch fixing this conflict already:
 >>
->> LKML-Reference:<AANLkTik5_TCXeGzTWBZzE8F0Cb2bQq-D228xDXk87rhP () mail !
->> gmail ! com>
->> Signed-off-by: Richard Weinberger<richard@nod.at>
->> ---
->>  arch/um/os-Linux/time.c |    2 +-
->>  1 files changed, 1 insertions(+), 1 deletions(-)
+>> http://git.linuxtv.org/mchehab/sbtvd.git?a=commit;h=88164fbe701a0a16e9044b74443dddb6188b54cc
 >>
->> diff --git a/arch/um/os-Linux/time.c b/arch/um/os-Linux/time.c
->> index dec5678..6e3359d 100644
->> --- a/arch/um/os-Linux/time.c
->> +++ b/arch/um/os-Linux/time.c
->> @@ -60,7 +60,7 @@ static inline long long timeval_to_ns(const struct
->> timeval *tv)
->>  long long disable_timer(void)
->>  {
->>        struct itimerval time = ((struct itimerval) { { 0, 0 }, { 0, 0 }
->> });
->> -       int remain, max = UM_NSEC_PER_SEC / UM_HZ;
->> +       long long remain, max = UM_NSEC_PER_SEC / UM_HZ;
->>
->>        if (setitimer(ITIMER_VIRTUAL,&time,&time)<  0)
->>                printk(UM_KERN_ERR "disable_timer - setitimer failed, "
->
-> Acked-by: Pekka Enberg <penberg@kernel.org>
+>> The patch is currently on a separate tree, that I'm using to test some experimental
+>> drivers for Brazilian Digital TV system (SBTVD). I'm planning to merge this patch, among
+>> with other patches I received for .37 during this weekend.
+> 
+> No, this patch isn't sufficient. It backs out the wrong code but doesn't put
+> in the 'video_is_registered()' if statements that were in my original patch.
+> 
+> Those are really needed.
 
-Andrew, do you mind picking this patch up?
+Ok, I've re-done the conflict fix patch:
+
+http://git.kernel.org/?p=linux/kernel/git/mchehab/linux-next.git;a=commitdiff;h=f9fccbad2a67668240edeaa6ada5aea2281d10b3
+
+Cheers,
+Mauro.
