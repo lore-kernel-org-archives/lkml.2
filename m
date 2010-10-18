@@ -1,119 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933332Ab0JRVLB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Oct 2010 17:11:01 -0400
-Received: from gate.crashing.org ([63.228.1.57]:36567 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933126Ab0JRVLA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Oct 2010 17:11:00 -0400
-Subject: Re: PROBLEM: memory corrupting bug, bisected to 6dda9d55
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: pacman@kosh.dhis.org
-Cc: Mel Gorman <mel@csn.ul.ie>, linux-mm@kvack.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
-In-Reply-To: <20101018191034.21165.qmail@kosh.dhis.org>
-References: <20101018191034.21165.qmail@kosh.dhis.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 19 Oct 2010 08:10:05 +1100
-Message-ID: <1287436205.2341.14.camel@pasglop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1756757Ab0JRVLt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Oct 2010 17:11:49 -0400
+Received: from relais.videotron.ca ([24.201.245.36]:33503 "EHLO
+	relais.videotron.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750806Ab0JRVLs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Oct 2010 17:11:48 -0400
+MIME-version: 1.0
+Content-transfer-encoding: 7BIT
+Content-type: TEXT/PLAIN; charset=US-ASCII
+Date: Mon, 18 Oct 2010 17:11:47 -0400 (EDT)
+From: Nicolas Pitre <nico@fluxnic.net>
+X-X-Sender: nico@xanadu.home
+To: Daniel Walker <dwalker@fifo99.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, Russell King <rmk@arm.linux.org.uk>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Jeremy Kerr <jeremy.kerr@canonical.com>,
+        Jeff Ohlstein <johlstei@codeaurora.org>
+Subject: Re: linux-next: manual merge of the msm tree with the arm tree
+In-reply-to: <1287434251.5588.23.camel@c-dwalke-linux.qualcomm.com>
+Message-id: <alpine.LFD.2.00.1010181657380.2764@xanadu.home>
+References: <20101018103540.7bd9c535.sfr@canb.auug.org.au>
+ <alpine.LFD.2.00.1010181525000.2764@xanadu.home>
+ <1287432774.5588.5.camel@c-dwalke-linux.qualcomm.com>
+ <201010182219.25890.arnd@arndb.de>
+ <1287434251.5588.23.camel@c-dwalke-linux.qualcomm.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-10-18 at 14:10 -0500, pacman@kosh.dhis.org wrote:
+On Mon, 18 Oct 2010, Daniel Walker wrote:
 
-> I've been flailing around quite a bit. Here's my latest result:
-> 
-> Since I can view the corruption with md5sum /sbin/e2fsck, I know it's in a
-> clean cached page. So I made an extra copy of /sbin/e2fsck, which won't be
-> loaded into memory during boot. So now after the corruption happens, I can
->   cmp -l /sbin/e2fsck good-e2fsck
-> for a quick look at the changed bytes. Much easier than provoking a segfault
-> under gdb.
-> 
-> Then I got really creative and wrote a cmp replacement which mmaps the files
-> and reports the physical addresses from /proc/self/pagemap of the pages that
-> don't match. And the consistent result is that physical pages 64604 and 64609
-> (both in the range of the order=9 64512) have wrong contents. And the
-> corruption is always a single word 128 bytes after the start of the page.
-> Physical addresses 0x0fc5c080 and 0x0fc61080 are hit every time.
+> I think the term "merge window" is a little mis-leading here.. Your
+> describing development. To me the term merge window is indicating a
+> short period when you get changes in, not the whole -rc cycle.
 
- .../...
+There are overlaps.  The two-week merge window is for subsystem 
+maintainers to push their stuff to Linus.  Obviously those subsystem 
+maintainers must have merge windows of their own prior pushing their 
+tree to Linus.  This is a pipeline.
 
-You can do something fun... like a timer interrupt that peeks at those
-physical addresses from the linear mapping for example, and try to find
-out "when" they get set to the wrong value (you should observe the load
-from disk, then the corruption, unless they end up being loaded
-incorrectly (ie. dma coherency problem ?) ...
+And folks let's not get too excited about this.  The idea of having this 
+change at the end of RMK's merge window is to catch most (if not all) 
+ARM targets being affected.  Last time I checked this affected something 
+like 367 machines.  This is not a catastrophic issue if support for one 
+or two machines get merged outside of RMK's tree and a build error 
+happens for them once in Linus' tree.  The fix should be obvious and the 
+-rc period is long enough to fix those things.  Or the merge actually 
+flags a conflict that should be trivial to fix as Stephen did in 
+linux-next.
 
->From there, you might be able to close onto the culprit a bit more, for
-example, try using the DABR register to set data access breakpoints
-shortly before the corruption spot. AFAIK, On those old 32-bit CPUs, you
-can set whether you want it to break on a real or a virtual address.
-
-You can also sprinkle tests for the page content through the code if
-that doesn't work to try to "close in" on the culprit (for example if
-it's a case of stray DMA, like a network driver bug or such).
-
-Cheers,
-Ben.
+Merge conflicts do happen.  If those conflicts remain small and trivial 
+this is _fine_.
 
 
-> The values of the corrupted words, observed in 5 consecutive boots, were:
->   at 0fc5c080   at 0fc61080
->   -----------   -----------
->   c3540000      92510000
->   565c0000      23590000
->   c85b0000      97580000
->   d15f0000      9e5c0000
->   d95b0000      a8580000
-> 
-> The low 16 bits are all 0 and the upper 16 bits seem randomly distributed.
-> But look at the differences:
-> 
->   c3540000 - 92510000 = 31030000
->   565c0000 - 23590000 = 33030000
->   c85b0000 - 97580000 = 31030000
->   d15f0000 - 9e5c0000 = 33030000
->   d95b0000 - a8580000 = 31030000
-> 
-> This means something... but I don't know what.
-> 
-> In a completely different method of investigation, I went back a few stable
-> kernels, got 2.6.33.7 and applied 6dda9d55 to it, thinking that if 6dda9d55
-> only reveals a pre-existing bug, I could bisect it using 6dda9d55 as a
-> bug-revealing assistant. The bug appeared when running 2.6.33.7 with 6dda9d55
-> applied. That was discouraging.
-> 
-> >This patch fixes the problem by ensuring we are not reading a possibly
-> >invalid location of memory. It's not clear why the read causes
-> >corruption but one way or the other it is a buggy read.
-> 
-> At least that part of the explanation is wrong. Where's the buggy read?
-> The action taken by the 6dda9d55 version of __free_one_page looks perfectly
-> legitimate to me. Page numbers:
-> 
-> [129024       ] [130048       ]   order=10
-> [129024 129536] [130048 130560]   order=9
-> 
-> 130048 is being freed. 130560 is not free. 129024 (the higher_buddy) is
-> already free at order=10. So 130048 is being pushed to the tail of the free
-> list, on the speculation that 130560 might soon be free and then the whole
-> thing will form an order=11 free page, the only problem being that order=11
-> is too high so that later merge will never happen. It's not useful, and maybe
-> not conceptually valid to say that 129024 is the buddy of 130048, but it is
-> an existing page, and the only way it wouldn't be is if the total memory size
-> was not a multiple of 1<<(MAX_ORDER-1) pages
-> 
-> -- 
-> Alan Curry
-> _______________________________________________
-> Linuxppc-dev mailing list
-> Linuxppc-dev@lists.ozlabs.org
-> https://lists.ozlabs.org/listinfo/linuxppc-dev
-
-
+Nicolas
