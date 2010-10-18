@@ -1,102 +1,307 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757754Ab0JRUmi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Oct 2010 16:42:38 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:42768 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754961Ab0JRUmg convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Oct 2010 16:42:36 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=Fvd1NAEqatCOoKdD/ITeqSvWUS82U0d2PPcB/msmwB61NLw3ttBfZGxaOz4mDwlTUg
-         gs6IX6AAg87M0ED/+WiG7B0EXuFHzXvip8Eu37v1MXzxdVr5YfsRi7RU2v+W+1bUmhRC
-         6unEwekZGtzPQF1tJWCOaDxIMJFdbg+PKPgI8=
+	id S1754908Ab0JRUnp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Oct 2010 16:43:45 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:41165 "EHLO mgw2.diku.dk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750910Ab0JRUnn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Oct 2010 16:43:43 -0400
+Date: Mon, 18 Oct 2010 22:43:40 +0200 (CEST)
+From: Julia Lawall <julia@diku.dk>
+To: Joe Perches <joe@perches.com>
+Cc: walter harms <wharms@bfs.de>, devel@driverdev.osuosl.org, gregkh@suse.de,
+        kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/3] drivers/staging/cx25821: Use kstrdup
+In-Reply-To: <1287423539.20968.115.camel@Joe-Laptop>
+Message-ID: <Pine.LNX.4.64.1010182243260.22877@ask.diku.dk>
+References: <1287341311-11161-1-git-send-email-julia@diku.dk> 
+ <1287341311-11161-2-git-send-email-julia@diku.dk> <4CBBF407.7060705@bfs.de>
+  <Pine.LNX.4.64.1010181019370.22530@ask.diku.dk> <4CBC12EC.60109@bfs.de> 
+ <Pine.LNX.4.64.1010181421240.25099@ask.diku.dk> <1287423539.20968.115.camel@Joe-Laptop>
 MIME-Version: 1.0
-In-Reply-To: <20101018184628.GX8781@llucax.com.ar>
-References: <20100927163823.GD2834@integratech.com.ar>
-	<29C1DC0826876849BDD9F1C67ABA2943090B67EC@ala-mail09.corp.ad.wrs.com>
-	<20100929153805.GG2834@integratech.com.ar>
-	<29C1DC0826876849BDD9F1C67ABA29430914AC18@ala-mail09.corp.ad.wrs.com>
-	<20101001150034.GS8781@llucax.com.ar>
-	<0434463FDA60A94FA978ACA44617682DEE843EDD79@EUSAACMS0702.eamcs.ericsson.se>
-	<20101001162346.GV8781@llucax.com.ar>
-	<4CA69F18.7000005@amln.net>
-	<0434463FDA60A94FA978ACA44617682DEE8446A03B@EUSAACMS0702.eamcs.ericsson.se>
-	<20101018150422.GV8781@llucax.com.ar>
-	<20101018184628.GX8781@llucax.com.ar>
-Date: Mon, 18 Oct 2010 16:42:33 -0400
-X-Google-Sender-Auth: zlqVceqb4B7Hd0zX76pkYTKEuok
-Message-ID: <AANLkTimKbOreV4Fuyw3TbCrk9aa5yBZQSuRbo3Vdx=Q1@mail.gmail.com>
-Subject: Re: Linux 2.6.35/TIPC 2.0 ABI breaking changes [was: TIPC 2.0 and TIPC_SUB_SERVICE]
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-To: Leandro Lucarella <luca@llucax.com.ar>
-Cc: Jon Maloy <jon.maloy@ericsson.com>, davem@redhat.com,
-        "tipc-discussion@lists.sourceforge.net" 
-	<tipc-discussion@lists.sourceforge.net>,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 18, 2010 at 2:46 PM, Leandro Lucarella <luca@llucax.com.ar> wrote:
-> Leandro Lucarella, el 18 de octubre a las 12:04 me escribiste:
->> This means D can't be used to write code that uses TIPC if you target
->> kernels >= 2.6.35 (unless they write their own bindings, or at least use
->> a custom TIPC_SUB_SERVICE constant). I could change the TIPC_SUB_SERVICE
->> value, but then people using older kernels will be screwed. Another
->> option is to use the version statement (kind of like C's #ifdef):
->>
->>       version (TIPC_2_0)
->>               const TIPC_SUB_SERVICE = 0x00;
->>       else
->>               const TIPC_SUB_SERVICE = 0x02;
->
-> I keep finding problems with this change. Another, no D-related, problem
-> with this change is old code could be silently (and very subtly) broken
-> if they check for TIPC_SUB_SERVICE as a flag with something like:
->
->        if (s.filter & TIPC_SUB_SERVICE)
->                /* do something */
->
-> Because TIPC_SUB_SERVICE has changed its semantics, not just its value,
-> and the new value (0x00) will give you always 0 in that test. This one
-> is really tricky, because the application code will fail silently, there
-> will be no dmesg indication of a failure, nor the connection to the
-> topology service be closed. You might get a compiler warning if you're
-> lucky.
+>From nobody Sun Oct 17 20:14:32 CEST 2010
+From: Julia Lawall <julia@diku.dk>
+To: Greg Kroah-Hartman <gregkh@suse.de>
+Cc: devel@driverdev.osuosl.org,linux-kernel@vger.kernel.org
+Subject: [PATCH 1/3] drivers/staging/cx25821: Use kstrdup
 
-If you have access to the user space code in question, you can just
-switch behaviour semantics based on the results of a uname call, knowing
-that this change was included in versions since approx last Feb.  There
-is also /proc/version which can be parsed manually if you prefer.
+Rewrite the initialization of a dev field.  In the original code, in each
+case there was a kmalloc followed by a memcpy, as illustrated by the
+semantic patch below.  In the case that the provided string was the empty
+string, the allocated memory was then overwritten with a constant string,
+causing a memory leak.  Finally, there was no provision for returning
+-ENOMEM in case of failure of the memory allocation.  Indeed, the return
+value in an error case was err, a variable that was never initialized to
+anything other than 0.
 
-If you have kernel code/modules, you can do the same/similar things with
-the KERNEL_VERSION and its support macros.
+The following patch rewrites the above code to first select a string based
+on various conditions, and then to copy it into a newly allocated memory
+region, using kstrdup.  This decreases subtantially the code size
+and removes the memory leak.  The instruction for getting the length of the
+string and the associated variable declaration are also deleted.
 
-In either case, you don't have to restrict yourself to information that is
-specific to and/or exported just from TIPC itself.
+The patch also drops err, changes the return value to retval, which in each
+file was already initialized elsewhere to an error code, and initializes
+retval to -ENOMEM when kstrdup fails.
 
-Hope that helps,
-Paul.
+The semantic patch that motivated this transformation is:
+(http://coccinelle.lip6.fr/)
 
->
-> --
-> Leandro Lucarella (AKA luca)                     http://llucax.com.ar/
-> ----------------------------------------------------------------------
-> GPG Key: 5F5A8D05 (F8CD F9A7 BF00 5431 4145  104C 949E BFB6 5F5A 8D05)
-> ----------------------------------------------------------------------
-> Novocaine for the soul
-> you better give me something
-> to fill the hole
-> before I sputter out
-> --
-> To unsubscribe from this list: send the line "unsubscribe netdev" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
+// <smpl>
+@@
+expression a,flag,len;
+expression arg,e1,e2;
+statement S;
+@@
+
+  len = strlen(arg)
+  ... when != len = e1
+      when != arg = e2
+  a =
+-  \(kmalloc\|kzalloc\)(len+1,flag)
++  kstrdup(arg,flag)
+  <... when != a
+  if (a == NULL || ...) S
+  ...>
+- memcpy(a,arg,len+1);
+// </smpl>
+
+Signed-off-by: Julia Lawall <julia@diku.dk>
+
+---
+This patch makes quite a lot of changes and is only compile tested.
+As compared to the previous version, the local variable filename is readded
+and the nested ifs in the second and third file are reorganized.
+
+ drivers/staging/cx25821/cx25821-audio-upstream.c     |   35 +++--------
+ drivers/staging/cx25821/cx25821-video-upstream-ch2.c |   58 +++++++------------
+ drivers/staging/cx25821/cx25821-video-upstream.c     |   55 +++++++-----------
+ 3 files changed, 54 insertions(+), 94 deletions(-)
+
+diff --git a/drivers/staging/cx25821/cx25821-audio-upstream.c b/drivers/staging/cx25821/cx25821-audio-upstream.c
+index 27087db..252aa49 100644
+--- a/drivers/staging/cx25821/cx25821-audio-upstream.c
++++ b/drivers/staging/cx25821/cx25821-audio-upstream.c
+@@ -723,8 +723,7 @@ int cx25821_audio_upstream_init(struct cx25821_dev *dev, int channel_select)
+ {
+ 	struct sram_channel *sram_ch;
+ 	int retval = 0;
+-	int err = 0;
+-	int str_length = 0;
++	char *filename;
+ 
+ 	if (dev->_audio_is_running) {
+ 		printk(KERN_WARNING "Audio Channel is still running so return!\n");
+@@ -752,28 +751,14 @@ int cx25821_audio_upstream_init(struct cx25821_dev *dev, int channel_select)
+ 	dev->_audio_lines_count = LINES_PER_AUDIO_BUFFER;
+ 	_line_size = AUDIO_LINE_SIZE;
+ 
+-	if (dev->input_audiofilename) {
+-		str_length = strlen(dev->input_audiofilename);
+-		dev->_audiofilename = kmalloc(str_length + 1, GFP_KERNEL);
+-
+-		if (!dev->_audiofilename)
+-			goto error;
+-
+-		memcpy(dev->_audiofilename, dev->input_audiofilename,
+-		       str_length + 1);
+-
+-		/* Default if filename is empty string */
+-		if (strcmp(dev->input_audiofilename, "") == 0)
+-			dev->_audiofilename = "/root/audioGOOD.wav";
+-
+-	} else {
+-		str_length = strlen(_defaultAudioName);
+-		dev->_audiofilename = kmalloc(str_length + 1, GFP_KERNEL);
+-
+-		if (!dev->_audiofilename)
+-			goto error;
+-
+-		memcpy(dev->_audiofilename, _defaultAudioName, str_length + 1);
++	if (!dev->input_audiofilename || *dev->input_audiofilename == 0)
++		filename = _defaultAudioName;
++	else
++		filename = dev->input_audiofilename;
++	dev->_audiofilename = kstrdup(filename, GFP_KERNEL);
++	if (!dev->_audiofilename) {
++		retval = -ENOMEM;
++		goto error;
+ 	}
+ 
+ 	retval =
+@@ -802,5 +787,5 @@ int cx25821_audio_upstream_init(struct cx25821_dev *dev, int channel_select)
+ error:
+ 	cx25821_dev_unregister(dev);
+ 
+-	return err;
++	return retval;
+ }
+diff --git a/drivers/staging/cx25821/cx25821-video-upstream-ch2.c b/drivers/staging/cx25821/cx25821-video-upstream-ch2.c
+index d12dbb5..3d276c1 100644
+--- a/drivers/staging/cx25821/cx25821-video-upstream-ch2.c
++++ b/drivers/staging/cx25821/cx25821-video-upstream-ch2.c
+@@ -747,10 +747,9 @@ int cx25821_vidupstream_init_ch2(struct cx25821_dev *dev, int channel_select,
+ 	struct sram_channel *sram_ch;
+ 	u32 tmp;
+ 	int retval = 0;
+-	int err = 0;
+ 	int data_frame_size = 0;
+ 	int risc_buffer_size = 0;
+-	int str_length = 0;
++	char *filename;
+ 
+ 	if (dev->_is_running_ch2) {
+ 		printk("Video Channel is still running so return!\n");
+@@ -788,39 +787,26 @@ int cx25821_vidupstream_init_ch2(struct cx25821_dev *dev, int channel_select,
+ 	risc_buffer_size =
+ 	    dev->_isNTSC_ch2 ? NTSC_RISC_BUF_SIZE : PAL_RISC_BUF_SIZE;
+ 
+-	if (dev->input_filename_ch2) {
+-		str_length = strlen(dev->input_filename_ch2);
+-		dev->_filename_ch2 = kmalloc(str_length + 1, GFP_KERNEL);
+-
+-		if (!dev->_filename_ch2)
+-			goto error;
+-
+-		memcpy(dev->_filename_ch2, dev->input_filename_ch2,
+-		       str_length + 1);
+-	} else {
+-		str_length = strlen(dev->_defaultname_ch2);
+-		dev->_filename_ch2 = kmalloc(str_length + 1, GFP_KERNEL);
+-
+-		if (!dev->_filename_ch2)
+-			goto error;
+-
+-		memcpy(dev->_filename_ch2, dev->_defaultname_ch2,
+-		       str_length + 1);
+-	}
+-
+-       /* Default if filename is empty string */
+-	if (strcmp(dev->input_filename_ch2, "") == 0) {
+-		if (dev->_isNTSC_ch2) {
+-			dev->_filename_ch2 =
+-			    (dev->_pixel_format_ch2 ==
+-			     PIXEL_FRMT_411) ? "/root/vid411.yuv" :
+-			    "/root/vidtest.yuv";
+-		} else {
+-			dev->_filename_ch2 =
+-			    (dev->_pixel_format_ch2 ==
+-			     PIXEL_FRMT_411) ? "/root/pal411.yuv" :
+-			    "/root/pal422.yuv";
+-		}
++	if (dev->input_filename_ch2 && *dev->input_filename_ch2 == 0) {
++		/* Default if filename is empty string */
++		if (dev->_isNTSC_ch2)
++			filename =
++				(dev->_pixel_format_ch2 == PIXEL_FRMT_411) ?
++				"/root/vid411.yuv" :
++				"/root/vidtest.yuv";
++		else
++			filename =
++				(dev->_pixel_format_ch2 == PIXEL_FRMT_411) ?
++				"/root/pal411.yuv" :
++				"/root/pal422.yuv";
++	} else if (dev->input_filename_ch2)
++		filename = dev->input_filename_ch2;
++	else
++		filename = dev->_defaultname_ch2;
++	dev->_filename_ch2 = kstrdup(filename, GFP_KERNEL);
++	if (!dev->_filename_ch2) {
++		retval = -ENOMEM;
++		goto error;
+ 	}
+ 
+ 	retval =
+@@ -851,5 +837,5 @@ int cx25821_vidupstream_init_ch2(struct cx25821_dev *dev, int channel_select,
+       error:
+ 	cx25821_dev_unregister(dev);
+ 
+-	return err;
++	return retval;
+ }
+diff --git a/drivers/staging/cx25821/cx25821-video-upstream.c b/drivers/staging/cx25821/cx25821-video-upstream.c
+index 756a820..465c2b2 100644
+--- a/drivers/staging/cx25821/cx25821-video-upstream.c
++++ b/drivers/staging/cx25821/cx25821-video-upstream.c
+@@ -800,10 +800,9 @@ int cx25821_vidupstream_init_ch1(struct cx25821_dev *dev, int channel_select,
+ 	struct sram_channel *sram_ch;
+ 	u32 tmp;
+ 	int retval = 0;
+-	int err = 0;
+ 	int data_frame_size = 0;
+ 	int risc_buffer_size = 0;
+-	int str_length = 0;
++	char *filename;
+ 
+ 	if (dev->_is_running) {
+ 		printk(KERN_INFO "Video Channel is still running so return!\n");
+@@ -840,37 +839,27 @@ int cx25821_vidupstream_init_ch1(struct cx25821_dev *dev, int channel_select,
+ 	risc_buffer_size =
+ 	    dev->_isNTSC ? NTSC_RISC_BUF_SIZE : PAL_RISC_BUF_SIZE;
+ 
+-	if (dev->input_filename) {
+-		str_length = strlen(dev->input_filename);
+-		dev->_filename = kmalloc(str_length + 1, GFP_KERNEL);
+-
+-		if (!dev->_filename)
+-			goto error;
+-
+-		memcpy(dev->_filename, dev->input_filename, str_length + 1);
+-	} else {
+-		str_length = strlen(dev->_defaultname);
+-		dev->_filename = kmalloc(str_length + 1, GFP_KERNEL);
+-
+-		if (!dev->_filename)
+-			goto error;
+-
+-		memcpy(dev->_filename, dev->_defaultname, str_length + 1);
+-	}
++	if (dev->input_filename && *dev->input_filename == 0) {
++		/* Default if filename is empty string */
++		if (dev->_isNTSC)
++			filename =
++				(dev->_pixel_format == PIXEL_FRMT_411) ?
++				"/root/vid411.yuv" :
++				"/root/vidtest.yuv";
++		else
++			filename =
++				(dev->_pixel_format == PIXEL_FRMT_411) ?
++				"/root/pal411.yuv" :
++				"/root/pal422.yuv";
++	} else if (dev->input_filename)
++		filename = dev->input_filename;
++	else
++		filename = dev->_defaultname;
+ 
+-	/* Default if filename is empty string */
+-	if (strcmp(dev->input_filename, "") == 0) {
+-		if (dev->_isNTSC) {
+-			dev->_filename =
+-			    (dev->_pixel_format ==
+-			     PIXEL_FRMT_411) ? "/root/vid411.yuv" :
+-			    "/root/vidtest.yuv";
+-		} else {
+-			dev->_filename =
+-			    (dev->_pixel_format ==
+-			     PIXEL_FRMT_411) ? "/root/pal411.yuv" :
+-			    "/root/pal422.yuv";
+-		}
++	dev->_filename = kstrdup(filename, GFP_KERNEL);
++	if (!dev->_filename) {
++		retval = -ENOMEM;
++		goto error;
+ 	}
+ 
+ 	dev->_is_running = 0;
+@@ -908,5 +897,5 @@ int cx25821_vidupstream_init_ch1(struct cx25821_dev *dev, int channel_select,
+ error:
+ 	cx25821_dev_unregister(dev);
+ 
+-	return err;
++	return retval;
+ }
