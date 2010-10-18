@@ -1,92 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755024Ab0JRK41 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Oct 2010 06:56:27 -0400
-Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:24826 "EHLO
-	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754394Ab0JRK40 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Oct 2010 06:56:26 -0400
-Message-ID: <000b01cb6eb3$1afcfd60$66f8800a@maildom.okisemi.com>
-From: "Masayuki Ohtake" <masa-korg@dsn.okisemi.com>
-To: "Wolfgang Grandegger" <wg@grandegger.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        "Wolfram Sang" <w.sang@pengutronix.de>,
-        "Christian Pellegrin" <chripell@fsfe.org>,
-        "Barry Song" <21cnbao@gmail.com>,
-        "Samuel Ortiz" <sameo@linux.intel.com>,
-        <socketcan-core@lists.berlios.de>,
-        "ML netdev" <netdev@vger.kernel.org>,
-        "ML linux-kernel" <linux-kernel@vger.kernel.org>
-Cc: <andrew.chih.howe.khor@intel.com>, "Wang, Qi" <qi.wang@intel.com>,
-        "Foster, Margie" <margie.foster@intel.com>,
-        "Wang, Yong Y" <yong.y.wang@intel.com>,
-        "Ewe, Kok Howg" <kok.howg.ewe@intel.com>,
-        "Tomoya MORINAGA" <morinaga526@dsn.okisemi.com>,
-        "Intel OTC" <joel.clark@intel.com>
-Subject: [MeeGo-Dev] can: How to set bitrate
-Date: Mon, 18 Oct 2010 19:56:19 +0900
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.2800.1983
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2800.1983
-X-Hosting-Pf: 0
-X-NAI-Spam-Score: 1
+	id S1754984Ab0JRK6H (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Oct 2010 06:58:07 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:45620 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753675Ab0JRK6G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Oct 2010 06:58:06 -0400
+Date: Mon, 18 Oct 2010 12:57:07 +0200
+From: Jan Kara <jack@suse.cz>
+To: Namhyung Kim <namhyung@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
+        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] jbd: Cleanup __process_buffer()
+Message-ID: <20101018105707.GJ3826@quack.suse.cz>
+References: <1287217814-5782-1-git-send-email-namhyung@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1287217814-5782-1-git-send-email-namhyung@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I want to test our Socket CAN driver(for Topcliff) on Meego1.0.
+On Sat 16-10-10 17:30:14, Namhyung Kim wrote:
+> Change initial value of 'ret' to 1 and set to 0 only if nothing
+> happens actually.
+  The result is 3 removed lines and I find the code readability the same
+before and after the patch. So it's IMHO an unnecessary code churn. So I'm
+sorry but I'm not taking the patch.
 
-For setting bitrate, I tried to install "iproute2". But the build failed.
-
-================================================
-[root@localhost iproute2-2.6.33]# make
-sh configure
-TC schedulers
- ATM no
- IPT using iptables
-make[1]: Entering directory `/root/iproute2-2.6.33/lib'
-
-<omission>
-
-ude  -o arpd arpd.c ../lib/libnetlink.a ../lib/libutil.a -ldb -lpthread
-arpd.c:19:20: error: db_185.h: No such file or directory
-arpd.c:42: error: expected '=', ',', ';', 'asm' or '__attribute__' before '*' token
-arpd.c: In function 'do_one_request':
-arpd.c:304: error: 'DBT' undeclared (first use in this function)
-arpd.c:304: error: (Each undeclared identifier is reported only once
-arpd.c:304: error: for each function it appears in.)
-arpd.c:304: error: expected ';' before 'dbkey'
-arpd.c:308: error: 'dbase' undeclared (first use in this function)
-arpd.c:338: error: 'dbkey' undeclared (first use in this function)
-arpd.c:341: error: 'dbdat' undeclared (first use in this function)
-arpd.c: In function 'get_arp_pkt':
-arpd.c:485: error: 'DBT' undeclared (first use in this function)
-arpd.c:485: error: expected ';' before 'dbkey'
-arpd.c:517: error: 'dbkey' undeclared (first use in this function)
-arpd.c:520: error: 'dbase' undeclared (first use in this function)
-arpd.c:520: error: 'dbdat' undeclared (first use in this function)
-arpd.c: In function 'main':
-arpd.c:670: error: 'dbase' undeclared (first use in this function)
-arpd.c:670: warning: implicit declaration of function 'dbopen'
-arpd.c:670: error: 'DB_HASH' undeclared (first use in this function)
-arpd.c:680: error: 'DBT' undeclared (first use in this function)
-arpd.c:680: error: expected ';' before 'dbkey'
-arpd.c:682: error: 'dbkey' undeclared (first use in this function)
-arpd.c:712: error: 'dbdat' undeclared (first use in this function)
-arpd.c:728: error: expected ';' before 'dbkey'
-arpd.c:730: error: 'R_NEXT' undeclared (first use in this function)
-make[1]: *** [arpd] Error 1
-make[1]: Leaving directory `/root/iproute2/misc'
-make: *** [all] Error 2
-[root@localhost iproute2]#
-================================================
-
-Do you know how to set bitrate on Meego?
-
-
-Thanks, Ohtake(OKISemi)
-
-
-
+								Honza
+> 
+> Signed-off-by: Namhyung Kim <namhyung@gmail.com>
+> ---
+>  fs/jbd/checkpoint.c |    9 +++------
+>  1 files changed, 3 insertions(+), 6 deletions(-)
+> 
+> diff --git a/fs/jbd/checkpoint.c b/fs/jbd/checkpoint.c
+> index e4b87bc..0a687a6 100644
+> --- a/fs/jbd/checkpoint.c
+> +++ b/fs/jbd/checkpoint.c
+> @@ -280,7 +280,7 @@ static int __process_buffer(journal_t *journal, struct journal_head *jh,
+>  			struct buffer_head **bhs, int *batch_count)
+>  {
+>  	struct buffer_head *bh = jh2bh(jh);
+> -	int ret = 0;
+> +	int ret = 1;
+>  
+>  	if (buffer_locked(bh)) {
+>  		get_bh(bh);
+> @@ -290,7 +290,6 @@ static int __process_buffer(journal_t *journal, struct journal_head *jh,
+>  		/* the journal_head may have gone by now */
+>  		BUFFER_TRACE(bh, "brelse");
+>  		__brelse(bh);
+> -		ret = 1;
+>  	} else if (jh->b_transaction != NULL) {
+>  		transaction_t *t = jh->b_transaction;
+>  		tid_t tid = t->t_tid;
+> @@ -299,9 +298,7 @@ static int __process_buffer(journal_t *journal, struct journal_head *jh,
+>  		jbd_unlock_bh_state(bh);
+>  		log_start_commit(journal, tid);
+>  		log_wait_commit(journal, tid);
+> -		ret = 1;
+>  	} else if (!buffer_dirty(bh)) {
+> -		ret = 1;
+>  		if (unlikely(buffer_write_io_error(bh)))
+>  			ret = -EIO;
+>  		J_ASSERT_JH(jh, !buffer_jbddirty(bh));
+> @@ -330,8 +327,8 @@ static int __process_buffer(journal_t *journal, struct journal_head *jh,
+>  		if (*batch_count == NR_BATCH) {
+>  			spin_unlock(&journal->j_list_lock);
+>  			__flush_batch(journal, bhs, batch_count);
+> -			ret = 1;
+> -		}
+> +		} else
+> +			ret = 0;
+>  	}
+>  	return ret;
+>  }
+> -- 
+> 1.7.0.4
+> 
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
