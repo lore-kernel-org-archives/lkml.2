@@ -1,66 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756510Ab0JROxo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Oct 2010 10:53:44 -0400
-Received: from thunk.org ([69.25.196.29]:43314 "EHLO thunker.thunk.org"
+	id S1756583Ab0JRO4N (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Oct 2010 10:56:13 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:44696 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755598Ab0JROxn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Oct 2010 10:53:43 -0400
-Date: Mon, 18 Oct 2010 10:54:00 -0400
-From: "Ted Ts'o" <tytso@mit.edu>
-To: Mike Frysinger <vapier@gentoo.org>, Peter Zijlstra <peterz@infradead.org>,
-        Joe Perches <joe@perches.com>, Andy Whitcroft <apw@canonical.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] checkpatch: allow single space before labels
-Message-ID: <20101018145400.GD4120@thunk.org>
-Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
-	Mike Frysinger <vapier@gentoo.org>,
-	Peter Zijlstra <peterz@infradead.org>,
-	Joe Perches <joe@perches.com>, Andy Whitcroft <apw@canonical.com>,
-	linux-kernel@vger.kernel.org
-References: <1287302737-3507-1-git-send-email-vapier@gentoo.org>
- <1287303678.20968.37.camel@Joe-Laptop>
- <AANLkTimmSRS3eVsW4EZUxnE_rfjeqmmgGnjtWbn3J_nY@mail.gmail.com>
- <1287310889.1998.153.camel@laptop>
- <1287334498.20968.53.camel@Joe-Laptop>
- <1287343839.1998.699.camel@laptop>
- <AANLkTikaxf-Fh9qUxsXNO5=r+SoxbzYXvCjFcHQLcXjy@mail.gmail.com>
- <1287345710.1998.735.camel@laptop>
- <AANLkTimixEGQTYrM7ShodtKeC97e0uPNRhWQn8F+-Nui@mail.gmail.com>
- <20101018143935.GA4120@thunk.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101018143935.GA4120@thunk.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on thunker.thunk.org); SAEximRunCond expanded to false
+	id S1755598Ab0JRO4L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Oct 2010 10:56:11 -0400
+Date: Tue, 19 Oct 2010 01:55:59 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Andrea Arcangeli <aarcange@redhat.com>, Avi Kivity <avi@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Rik van Riel <riel@redhat.com>,
+        Ingo Molnar <mingo@elte.hu>, akpm@linux-foundation.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        David Miller <davem@davemloft.net>,
+        Hugh Dickins <hugh.dickins@tiscali.co.uk>, Mel Gorman <mel@csn.ul.ie>,
+        Nick Piggin <npiggin@kernel.dk>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Yanmin Zhang <yanmin_zhang@linux.intel.com>
+Subject: Re: [PATCH 00/20] mm: Preemptibility -v5
+Message-Id: <20101019015559.78f20716.sfr@canb.auug.org.au>
+In-Reply-To: <20101018112433.556591568@chello.nl>
+References: <20101018112433.556591568@chello.nl>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Tue__19_Oct_2010_01_55_59_+1100_sS5b+GtoRrtBdBpR"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 18, 2010 at 10:39:35AM -0400, Ted Ts'o wrote:
-> On Sun, Oct 17, 2010 at 04:26:25PM -0400, Mike Frysinger wrote:
-> > On Sun, Oct 17, 2010 at 16:01, Peter Zijlstra wrote:
-> > > On Sun, 2010-10-17 at 15:49 -0400, Mike Frysinger wrote:
-> > >> sounds like a good reason to shut up the new unintended warnings
-> > >
-> > > I'm failing to see any logic there, old code doesn't generate warnings,
-> > > its new code that would, and new code should never have any whitespace
-> > > in front of labels.
-> > 
-> > it's a waste of time to massage code to one person's opinion
-> 
-> +1
-> 
-> It's not in CondingStyle; I prefer to outdent labels by one tab stop:
+--Signature=_Tue__19_Oct_2010_01_55_59_+1100_sS5b+GtoRrtBdBpR
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Note that there is absolutely nothing about how labels should be
-indented in CodingStyle at all, and I very much resist code
-straightjackets being imposed by checkpatch.pl implementors.
+Hi Peter,
 
-Can we please stop this nonsense?
+On Mon, 18 Oct 2010 13:24:33 +0200 Peter Zijlstra <a.p.zijlstra@chello.nl> =
+wrote:
+>
+> Linus, Andrew, Stephen, can we add this to -next for .37?
 
-						- Ted
+Well it is late (the merge window will open in a couple of days, I
+suspect) but this is version 5 of these patches (so they have had better
+review than most).  So, if Andrew or Linus want this stuff in .37, I will
+add the tree, otherwise it would just be adding confusion for all the
+code that will be integrated in .37.
 
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Tue__19_Oct_2010_01_55_59_+1100_sS5b+GtoRrtBdBpR
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iQEcBAEBAgAGBQJMvF//AAoJEDMEi1NhKgbsDowH/jih56BkCPCf/Sj3fe51IjSy
+KAUXpr9t8auYaMlMs1AzMgPDkuSHYlY4BpauwFUMK+GH7l/UgZMqZWNJ7QIBvPt1
+ujDX6UyjsMydxpX4sFxgW+Yn/DNCAjGuC9DiH4kinHeHElqnlW4kAPiEaYK554xJ
+uba8MABYn3aROROKG+DwReli/ixxf3YqumafIc973ToY8P9WqdJM6jVVj7CzzRb/
+wPf0Q4IGMdt5GADx3EoLLk2HzoQXBl+uur1f+IT/wxl1SOYmKw5LfgRwRw9EwuY3
+5/cx4WueSEjMnp7RusqpwLrClhrSPVtzNeN9B1lmSLMjF6NwTlGThHSkA25ViJM=
+=o+y8
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__19_Oct_2010_01_55_59_+1100_sS5b+GtoRrtBdBpR--
