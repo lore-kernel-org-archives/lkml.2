@@ -1,58 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757744Ab0JRUjf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Oct 2010 16:39:35 -0400
-Received: from mail80c7.megamailservers.com ([69.49.98.180]:51062 "EHLO
-	mail80c7.megamailservers.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756071Ab0JRUjd (ORCPT
+	id S1757754Ab0JRUmi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Oct 2010 16:42:38 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:42768 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754961Ab0JRUmg convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Oct 2010 16:39:33 -0400
-X-Greylist: delayed 1984 seconds by postgrey-1.27 at vger.kernel.org; Mon, 18 Oct 2010 16:39:33 EDT
-X-Authenticated-User: paulkf.microgate.com
-Message-ID: <4CBCB7BA.5080601@microgate.com>
-Date: Mon, 18 Oct 2010 15:10:18 -0600
-From: Paul Fulghum <paulkf@microgate.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.1.11) Gecko/20100711 Thunderbird/3.0.6
+	Mon, 18 Oct 2010 16:42:36 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=Fvd1NAEqatCOoKdD/ITeqSvWUS82U0d2PPcB/msmwB61NLw3ttBfZGxaOz4mDwlTUg
+         gs6IX6AAg87M0ED/+WiG7B0EXuFHzXvip8Eu37v1MXzxdVr5YfsRi7RU2v+W+1bUmhRC
+         6unEwekZGtzPQF1tJWCOaDxIMJFdbg+PKPgI8=
 MIME-Version: 1.0
-To: Vasiliy Kulikov <segooon@gmail.com>
-CC: kernel-janitors@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
-        Alan Cox <alan@linux.intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 7/8] char: synclink_gt: fix information leak to userland
-References: <1287326496-8178-1-git-send-email-segooon@gmail.com>
-In-Reply-To: <1287326496-8178-1-git-send-email-segooon@gmail.com>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-CSC: 0
-X-CHA: v=1.1 cv=Rh3jrC7cCk45g8Q2OvB8BL1DmyOUGk8APGuZ8sVT15E= c=1 sm=1
-		a=o-tqvJvPIRUA:10 a=IkcTkHD0fZMA:10 a=IzlbXlj4Xhqf7W9accngow==:17
-		a=ijWuk3ZyAAAA:8 a=pGLkceISAAAA:8 a=0fOZRVO8yji8SAe3r2IA:9
-		a=Vt4wwhwmeILJhamx5PzZzB4Ez68A:4 a=QEXdDO2ut3YA:10 a=vr08yV7lTEoA:10
-		a=M2bT9TDNGrIA:10 a=aUOK4Wo89ZcA:10 a=UEqaQSiRgn0A:10 a=oBK5D_4X9z4A:10
-		a=NGcOuUOJdRAA:10 a=xBexlFGNibAA:10 a=fEugV1Gw4pQA:10 a=MSl-tDqOz04A:10
-		a=IzlbXlj4Xhqf7W9accngow==:117
+In-Reply-To: <20101018184628.GX8781@llucax.com.ar>
+References: <20100927163823.GD2834@integratech.com.ar>
+	<29C1DC0826876849BDD9F1C67ABA2943090B67EC@ala-mail09.corp.ad.wrs.com>
+	<20100929153805.GG2834@integratech.com.ar>
+	<29C1DC0826876849BDD9F1C67ABA29430914AC18@ala-mail09.corp.ad.wrs.com>
+	<20101001150034.GS8781@llucax.com.ar>
+	<0434463FDA60A94FA978ACA44617682DEE843EDD79@EUSAACMS0702.eamcs.ericsson.se>
+	<20101001162346.GV8781@llucax.com.ar>
+	<4CA69F18.7000005@amln.net>
+	<0434463FDA60A94FA978ACA44617682DEE8446A03B@EUSAACMS0702.eamcs.ericsson.se>
+	<20101018150422.GV8781@llucax.com.ar>
+	<20101018184628.GX8781@llucax.com.ar>
+Date: Mon, 18 Oct 2010 16:42:33 -0400
+X-Google-Sender-Auth: zlqVceqb4B7Hd0zX76pkYTKEuok
+Message-ID: <AANLkTimKbOreV4Fuyw3TbCrk9aa5yBZQSuRbo3Vdx=Q1@mail.gmail.com>
+Subject: Re: Linux 2.6.35/TIPC 2.0 ABI breaking changes [was: TIPC 2.0 and TIPC_SUB_SERVICE]
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+To: Leandro Lucarella <luca@llucax.com.ar>
+Cc: Jon Maloy <jon.maloy@ericsson.com>, davem@redhat.com,
+        "tipc-discussion@lists.sourceforge.net" 
+	<tipc-discussion@lists.sourceforge.net>,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Oct 18, 2010 at 2:46 PM, Leandro Lucarella <luca@llucax.com.ar> wrote:
+> Leandro Lucarella, el 18 de octubre a las 12:04 me escribiste:
+>> This means D can't be used to write code that uses TIPC if you target
+>> kernels >= 2.6.35 (unless they write their own bindings, or at least use
+>> a custom TIPC_SUB_SERVICE constant). I could change the TIPC_SUB_SERVICE
+>> value, but then people using older kernels will be screwed. Another
+>> option is to use the version statement (kind of like C's #ifdef):
+>>
+>>       version (TIPC_2_0)
+>>               const TIPC_SUB_SERVICE = 0x00;
+>>       else
+>>               const TIPC_SUB_SERVICE = 0x02;
+>
+> I keep finding problems with this change. Another, no D-related, problem
+> with this change is old code could be silently (and very subtly) broken
+> if they check for TIPC_SUB_SERVICE as a flag with something like:
+>
+>        if (s.filter & TIPC_SUB_SERVICE)
+>                /* do something */
+>
+> Because TIPC_SUB_SERVICE has changed its semantics, not just its value,
+> and the new value (0x00) will give you always 0 in that test. This one
+> is really tricky, because the application code will fail silently, there
+> will be no dmesg indication of a failure, nor the connection to the
+> topology service be closed. You might get a compiler warning if you're
+> lucky.
 
-Acked-by: Paul Fulghum <paulkf@microgate.com>
+If you have access to the user space code in question, you can just
+switch behaviour semantics based on the results of a uname call, knowing
+that this change was included in versions since approx last Feb.  There
+is also /proc/version which can be parsed manually if you prefer.
 
-On 10/17/2010 8:41 AM, Vasiliy Kulikov wrote:
-> Structures tmp_params and new_line are copied to userland with some padding
-> fields unitialized.  It leads to leaking of stack memory.
-> 
-> Signed-off-by: Vasiliy Kulikov <segooon@gmail.com>
+If you have kernel code/modules, you can do the same/similar things with
+the KERNEL_VERSION and its support macros.
 
+In either case, you don't have to restrict yourself to information that is
+specific to and/or exported just from TIPC itself.
 
--- 
-Paul Fulghum
-MicroGate Systems, Ltd.
-=Customer Driven, by Design=
-(800)444-1982
-(512)345-7791 (Direct)
-(512)343-9046 (Fax)
-Central Time Zone (GMT -6h)
-www.microgate.com
+Hope that helps,
+Paul.
+
+>
+> --
+> Leandro Lucarella (AKA luca)                     http://llucax.com.ar/
+> ----------------------------------------------------------------------
+> GPG Key: 5F5A8D05 (F8CD F9A7 BF00 5431 4145  104C 949E BFB6 5F5A 8D05)
+> ----------------------------------------------------------------------
+> Novocaine for the soul
+> you better give me something
+> to fill the hole
+> before I sputter out
+> --
+> To unsubscribe from this list: send the line "unsubscribe netdev" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
