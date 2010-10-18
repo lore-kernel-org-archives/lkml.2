@@ -1,73 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756082Ab0JROGZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Oct 2010 10:06:25 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:54747 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755086Ab0JROGY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Oct 2010 10:06:24 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=xyjkK5zUdyymbHaj6dhsFizhglVMfOdwpy9jkn7ITHrA/E0HxcnikPwuQuHJV6wZaC
-         PFn+1VSaSJ7OuBebThnoarwuy+NVKqj/JfU7Bgj6ceBETg2jzmcKjv4tdF2eeN69Ftyv
-         4eN2k8sr/TCjV4zJFDuRf/7yDhLSSy/BoHi6Y=
-Subject: Re: [PATCH 0/6] Results of my work on memorystick subsystem
-From: Maxim Levitsky <maximlevitsky@gmail.com>
-To: Alex Dubov <oakad@yahoo.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <451805.21484.qm@web37607.mail.mud.yahoo.com>
-References: <451805.21484.qm@web37607.mail.mud.yahoo.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 18 Oct 2010 16:06:19 +0200
-Message-ID: <1287410779.20229.9.camel@maxim-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S1756114Ab0JROHE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Oct 2010 10:07:04 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:60234 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755086Ab0JROHC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Oct 2010 10:07:02 -0400
+Message-ID: <4CBC547A.8080700@redhat.com>
+Date: Mon, 18 Oct 2010 16:06:50 +0200
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc13 Lightning/1.0b3pre Thunderbird/3.1.4
+MIME-Version: 1.0
+To: Dave Young <hidave.darkstar@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>
+CC: Jan Kiszka <jan.kiszka@web.de>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [BUG] kvm: guest can not startup due to triple fault
+References: <AANLkTin6qJYEqOc_97EVWkK1Kt1zNSvXtfVeYuk9fyJ8@mail.gmail.com> <4CBAE8E2.1060704@redhat.com> <AANLkTi=5yGPmZxZY7T_oeyJ4xS+RWt7cY4WD=78fbo7v@mail.gmail.com> <4CBBF3C8.9070104@web.de> <4CBC1047.6010501@redhat.com> <20101018125803.GA2497@darkstar> <4CBC4B06.3030300@redhat.com> <20101018134508.GA11885@darkstar> <4CBC4FA9.90406@redhat.com> <4CBC5097.1020105@redhat.com> <20101018135813.GA20316@darkstar>
+In-Reply-To: <20101018135813.GA20316@darkstar>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-10-18 at 00:05 -0700, Alex Dubov wrote:
-> --- On Sun, 17/10/10, Maxim Levitsky <maximlevitsky@gmail.com> wrote:
-> 
-> > > 
-> > > Here is a result of lot of work I did improving the
-> > memorystick
-> > > subsystem and its drivers.
-> > Comments?
-> > Flames?
-> > Suggestions?
-> > 
-> 
-> My opinion is, that in the current form your patches are completely
-> unworkable.
-> 
-> I suggest a following approach, consisting of 3 clearly separated steps:
-> 
-> Step 1 - a set of functional patches to jmicron driver.
-> Step 2 - a set of functional patches to mspro driver.
-> Step 3 - common code elimination (the whole thing is not that large, it
-> can tolerate some code duplication).
-> 
-> When we done with this, we can discuss whatever cosmetic changes you want
-> to do (moving stuff around and , possibly, renaming, which I don't see as
-> necessary at all).
-Alex,
-In jmicron driver I did move functions around and renamed them.
-I am not against doing that in separate patch.
+  On 10/18/2010 03:58 PM, Dave Young wrote:
+> >
+> >  Please patch hardware_setup() to show the value of
+> >  boot_cpu_has(X86_FEATURE_NX).
+>
+> It's 0
 
-But for mspro driver, it would be really hard for me to split it.
-I have rewritten a lot of code there.
-Can't we just review the end result instead of the patch?
+Well, that's ridiculous.  Looking back at your /proc/cpuinfo:
 
-To split the patches, I pretty much need to rewrite the whole thing once
-gain.
-I don't want to do that.
+> processor	: 0
+> flags		: fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush dts acpi mmx fxsr sse sse2 ss ht tm pbe syscall lm constant_tsc arch_perfmon pebs bts rep_good aperfmperf pni dtes64 monitor ds_cpl vmx est tm2 ssse3 cx16 xtpr pdcm lahf_lm ida dts tpr_shadow vnmi flexpriority
+>
+> processor	: 1
+> flags		: fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush dts acpi mmx fxsr sse sse2 ss ht tm pbe syscall nx lm constant_tsc arch_perfmon pebs bts rep_good aperfmperf pni dtes64 monitor ds_cpl vmx est tm2 ssse3 cx16 xtpr pdcm lahf_lm ida dts tpr_shadow vnmi flexpriority
 
-Best regards,
-	Maxim Levitsky
+processor 0 doesn't have nx.
+
+Ingo, Peter, any ideas?  Where did the missing feature go?
+
+-- 
+error compiling committee.c: too many arguments to function
 
