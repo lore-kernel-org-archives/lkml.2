@@ -1,80 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755987Ab0JRNzs (ORCPT <rfc822;w@1wt.eu>);
+	id S1756014Ab0JRNzu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Oct 2010 09:55:50 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:49183 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755160Ab0JRNzs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 18 Oct 2010 09:55:48 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:32756 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755160Ab0JRNzq (ORCPT
-	<rfc822;<linux-kernel@vger.kernel.org>>);
-	Mon, 18 Oct 2010 09:55:46 -0400
-Date: Mon, 18 Oct 2010 09:55:12 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Jeremy Fitzhardinge <jeremy@goop.org>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
-        Xen Devel <Xen-devel@lists.xensource.com>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus <torvalds@linux-foundation.org>
-Subject: Re: linux-next: manual merge of the xen tree with the swiotlb-xen
- tree
-Message-ID: <20101018135512.GA19999@dumpdata.com>
-References: <20101018155249.d9267bfe.sfr@canb.auug.org.au>
- <4CBC014D.7070302@goop.org>
+Date: Mon, 18 Oct 2010 14:55:36 +0100
+From: Mel Gorman <mel@csn.ul.ie>
+To: Christian Ehrhardt <ehrhardt@linux.vnet.ibm.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-fsdevel@vger.kernel.org,
+        Linux Kernel List <linux-kernel@vger.kernel.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Subject: Re: [PATCH 0/8] Reduce latencies and improve overall reclaim
+	efficiency v2
+Message-ID: <20101018135535.GC30667@csn.ul.ie>
+References: <1284553671-31574-1-git-send-email-mel@csn.ul.ie> <4CB721A1.4010508@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-In-Reply-To: <4CBC014D.7070302@goop.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <4CB721A1.4010508@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 18, 2010 at 01:11:57AM -0700, Jeremy Fitzhardinge wrote:
->  On 10/17/2010 09:52 PM, Stephen Rothwell wrote:
-> > Hi all,
-> >
-> > Today's linux-next merge of the xen tree got conplex conflicts in
-> > drivers/xen/events.c between several commits from the swiotlb-xen tree
-> > and several commits from the xen tree.
-> >
-> > I am unqualified to fix this mess, sorry.  I am dropping the xen tree
-> > for today (and only not dropping the swiotlb-xen tree because that would
-> > be too much work).
+On Thu, Oct 14, 2010 at 05:28:33PM +0200, Christian Ehrhardt wrote:
 
-Ugh. Let me revert the branch to pull this from to what it was a week ago.
-That way Jeremy's tree should not have any trouble.
+> Seing the patches Mel sent a few weeks ago I realized that this series
+> might be at least partially related to my reports in 1Q 2010 - so I ran my
+> testcase on a few kernels to provide you with some more backing data.
 
+Thanks very much for revisiting this.
+
+> Results are always the average of three iozone runs as it is known to be somewhat noisy - especially when affected by the issue I try to show here.
+> As discussed in detail in older threads the setup uses 16 disks and scales the number of concurrent iozone processes.
+> Processes are evenly distributed so that it always is one process per disk.
+> In the past we reported 40% to 80% degradation for the sequential read case based on 2.6.32 which can still be seen.
+> What we found was that the allocations for page cache with GFP_COLD flag loop a long time between try_to_free, get_page, reclaim as free makes some progress and due to that GFP_COLD allocations can loop and retry.
+> In addition my case had no writes at all, which forced congestion_wait to wait the full timeout all the time.
 > 
-> Argh, sorry, I should have coordinated with Konrad.  I'd merged my tree
-> into linux-next to make sure it was OK, but I guess I overlooked something.
+> Kernel (git)                   4          8         16   deviation #16 case                           comment
+> linux-2.6.30              902694    1396073    1892624                 base                              base
+> linux-2.6.32              752008     990425     932938               -50.7%     impact as reported in 1Q 2010
+> linux-2.6.35               63532      71573      64083               -96.6%                    got even worse
+> linux-2.6.35.6            176485     174442     212102               -88.8%  fixes useful, but still far away
+> linux-2.6.36-rc4-trace    119683     188997     187012               -90.1%                         still bad 
+
+FWIW, I wouldn't expect the trace kernel to help. It's only adding the
+markers but not doing anything useful with them.
+
+> linux-2.6.36-rc4-fix      884431    1114073    1470659               -22.3%            Mels fixes help a lot!
 > 
-> > I wonder, of course, why I have seen nothing in either of these trees
-> > until today (less than a week before the merge window opens).
-
-That is my fault. I thought the merge window was this _week_ so I happily
-pushed the trigger button.
-
-Since I seem to have a knack for making mistakes, let me get some clarification
-so that I won't do it again.
-
-When is it Ok for me to put in the #linux-next, new stable features (so
-reviewed, acked, etc)? a) Is it post rc7? b) Or is it when Linus releases
-the kernel and Linus's merge window opens?
-
-I was thinking it is a), b/c if it would be b), then there is just two weeks
-to fix any fallout that might happen due to merging of vast new features.
-
+> So much from the case that I used when I reported the issue earlier this year.
+> The short summary is that the patch series from Mel helps a lot for my test case.
 > 
-> I had found Xen regressions that had made it into linux-next and wanted
-> to sort those out before adding anything else to the mix.
-> 
-> > Please sort this mess out.  I will drop the swiotlb-xen tree as well
-> > tomorrow if nothing has changed.
-> 
-> Will do.
 
-Sorry about this. Will definitly work this out.
+This is good to hear. We're going in the right direction at least.
 
+> So I guess Mel you now want some traces of the last two cases right?
+> Could you give me some minimal advice what/how you would exactly need.
 > 
-> Thanks,
->     J
+
+Yes please. Please do something like the following before the test
+
+mount -t debugfs none /sys/kernel/debug
+echo 1 > /sys/kernel/debug/tracing/events/vmscan/enable
+echo 1 > /sys/kernel/debug/tracing/events/writeback/writeback_congestion_wait/enable
+echo 1 > /sys/kernel/debug/tracing/events/writeback/writeback_wait_iff_congested/enable
+cat /sys/kernel/debug/tracing/trace_pipe > trace.log &
+
+rerun the test, gzip trace.log and drop it on some publicly accessible
+webserver. I can rerun the analysis scripts and see if something odd
+falls out.
+
+> In addition it worked really fine, so you can add both, however you like.
+> Reported-by: <ehrhardt@linux.vnet.ibm.com>
+> Tested-by: <ehrhardt@linux.vnet.ibm.com>
+> 
+> Note: it might be worth to mention that the write case improved a lot since 2.6.30.
+> Not directly related to the read degradations, but with up to 150% (write) 272% (rewrite).
+> Therefore not everything is bad :-) 
+> 
+
+Every cloud has a silver lining I guess :)
+
+> Any further comments or questions?
+> 
+
+The log might help me further in figuring out how and why we are losing
+time. When/if the patches move from -mm to mainline, it'd also be worth
+retesting as there is some churn in this area and we need to know whether
+we are heading in the right direction or not. If all goes according to plan,
+kernel 2.6.37-rc1 will be of interest. Thanks again.
+
+-- 
+Mel Gorman
+Part-time Phd Student                          Linux Technology Center
+University of Limerick                         IBM Dublin Software Lab
