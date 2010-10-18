@@ -1,38 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753620Ab0JRGbA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Oct 2010 02:31:00 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:62078 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753352Ab0JRGa7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Oct 2010 02:30:59 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:from:date
-         :x-google-sender-auth:message-id:subject:to:cc:content-type;
-        b=Hj1tgsAx0l0wVSjBh9X7wMYT0BtN/SbLkrryWZV+R39n2XNLRt4Z9T2OrLZ85m9nJd
-         dIrKPZ7wmtkAeFJlvgTN5jf1wofuzCRGpE+Tl4Sp20ERiLUx4N9vC3bST4tqNz3HoO4d
-         /KYxIezJcLnn+rTWtPyY/Vew5uT6x4td4t+j8=
+	id S1754041Ab0JRGeO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Oct 2010 02:34:14 -0400
+Received: from hera.kernel.org ([140.211.167.34]:47568 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753240Ab0JRGeM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Oct 2010 02:34:12 -0400
+Message-ID: <4CBBEA61.5000507@kernel.org>
+Date: Mon, 18 Oct 2010 08:34:09 +0200
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.9) Gecko/20100915 Lightning/1.0b2 Thunderbird/3.1.4
 MIME-Version: 1.0
-In-Reply-To: <1287383251-28427-1-git-send-email-vapier@gentoo.org>
-References: <AANLkTilVZ3GCU_hsfVNeR4oG6ETREb9UeJ0Cv_5hSwVZ@mail.gmail.com> <1287383251-28427-1-git-send-email-vapier@gentoo.org>
-From: Mike Frysinger <vapier@gentoo.org>
-Date: Mon, 18 Oct 2010 02:30:37 -0400
-X-Google-Sender-Auth: r7Ya9Vd1qfgW8m2e3mENJIP_g2Q
-Message-ID: <AANLkTin5e8mORKCgq1ArkLiTfYkrrPAGaO07rYpwO73s@mail.gmail.com>
-Subject: Re: [PATCH] vmlinux.lds.h: gather .data..shared_aligned sections in DATA_DATA
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Sam Ravnborg <sam@ravnborg.org>,
-        Jeremy Fitzhardinge <jeremy@xensource.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Alan Jenkins <alan-jenkins@tuffmail.co.uk>
-Content-Type: text/plain; charset=UTF-8
+To: Jesse Barnes <jbarnes@virtuousgeek.org>
+CC: linux-pci@vger.kernel.org, lkml <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2.6.36-rc7 2/2] shpchp: update workqueue usage
+References: <4CB86966.5020606@kernel.org>	<4CB8698A.8030202@kernel.org> <20101017200347.5ca09aed@jbarnes-desktop> <4CBBD4F6.2080506@kernel.org>
+In-Reply-To: <4CBBD4F6.2080506@kernel.org>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 18 Oct 2010 06:34:12 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sam: i'm not trying to steal credit here ... if you want me to resend
-with you as author + sob, lemme know.  i'd just like this issue fixed
-already since 2.6.35 shipped with this broken setup.
--mike
+On 10/18/2010 07:02 AM, Tejun Heo wrote:
+> Hello,
+> 
+> On 10/18/2010 05:03 AM, Jesse Barnes wrote:
+>> ...and dropped again.  Hadn't realized they depend on stuff from your
+>> workqueue tree.  Please just include them there assuming Kenji-san
+>> doesn't nack them.
+>>
+>> Acked-by: Jesse Barnes <jbarnes@virtuousgeek.org>
+> 
+> Ah, sorry about that.  I for some reason thought alloc_ordered_queue()
+> was already mainline.  I'll route this through the wq tree.
+
+Both patches applied to wq#for-next.  Thank you.
+
+-- 
+tejun
