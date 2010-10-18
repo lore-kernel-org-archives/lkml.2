@@ -1,294 +1,255 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755294Ab0JRNS4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Oct 2010 09:18:56 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:56030 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755045Ab0JRNSz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Oct 2010 09:18:55 -0400
-Date: Mon, 18 Oct 2010 22:18:41 +0900
-From: Kukjin Kim <kgene.kim@samsung.com>
-Subject: RE: [PATCH 1/9] ARM: S3C64XX: add frame buffer support for
- mach-real6410
-In-reply-to: <20100929193047.25307.35558.stgit@darius-desktop>
-To: "'Darius Augulis'" <augulis.darius@gmail.com>,
-        linux-arm-kernel@lists.infradead.org
-Cc: paulius.zaleckas@gmail.com, linux-kernel@vger.kernel.org,
-        ben-linux@fluff.org
-Message-id: <04a301cb6ec6$fda2dc80$f8e89580$%kim@samsung.com>
-MIME-version: 1.0
-X-Mailer: Microsoft Office Outlook 12.0
-Content-type: text/plain; charset=utf-8
-Content-language: ko
-Content-transfer-encoding: 7BIT
-Thread-index: ActgDOsTWdXo/9RuQpuXHPuMXud0GAOuMCoQ
-References: <20100929192354.25307.40197.stgit@darius-desktop>
- <20100929193047.25307.35558.stgit@darius-desktop>
+	id S1755374Ab0JRNW5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Oct 2010 09:22:57 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:36501 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750876Ab0JRNW4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Oct 2010 09:22:56 -0400
+Date: Mon, 18 Oct 2010 15:22:23 +0200
+From: Gleb Natapov <gleb@redhat.com>
+To: kvm@vger.kernel.org
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, avi@redhat.com,
+        mingo@elte.hu, a.p.zijlstra@chello.nl, tglx@linutronix.de,
+        hpa@zytor.com, riel@redhat.com, cl@linux-foundation.org,
+        mtosatti@redhat.com
+Subject: Re: [PATCH v7 04/12] Add memory slot versioning and use it to
+ provide fast guest write interface
+Message-ID: <20101018132223.GB10207@redhat.com>
+References: <1287048176-2563-1-git-send-email-gleb@redhat.com>
+ <1287048176-2563-5-git-send-email-gleb@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1287048176-2563-5-git-send-email-gleb@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Darius Augulis wrote:
-> 
-> Add support for frame buffer device for mach-real6410.
-> Patch also adds support for feature string parsing
-> for real6410. The feature string is kernel command
-> line passed and currently lets select only LCD
-> configuration. At the moment there is support for
-> two LCD configurations - 4.3" and 7.0". Feature
-> parser is mach-mini2440 based.
-> 
-> Signed-off-by: Darius Augulis <augulis.darius@gmail.com>
-> ---
->  arch/arm/mach-s3c64xx/Kconfig         |    2
->  arch/arm/mach-s3c64xx/mach-real6410.c |  146
-> ++++++++++++++++++++++++++++++++-
->  2 files changed, 143 insertions(+), 5 deletions(-)
-> 
-> diff --git a/arch/arm/mach-s3c64xx/Kconfig b/arch/arm/mach-s3c64xx/Kconfig
-> index 1e4d78a..3bbd418 100644
-> --- a/arch/arm/mach-s3c64xx/Kconfig
-> +++ b/arch/arm/mach-s3c64xx/Kconfig
-> @@ -104,6 +104,8 @@ config MACH_REAL6410
->  	select S3C_DEV_HSMMC
->  	select S3C_DEV_HSMMC1
->  	select S3C64XX_SETUP_SDHCI
-> +	select S3C_DEV_FB
-> +	select S3C64XX_SETUP_FB_24BPP
->  	help
->  	  Machine support for the CoreWind REAL6410
-> 
-> diff --git a/arch/arm/mach-s3c64xx/mach-real6410.c b/arch/arm/mach-
-> s3c64xx/mach-real6410.c
-> index e130379..bed75d2 100644
-> --- a/arch/arm/mach-s3c64xx/mach-real6410.c
-> +++ b/arch/arm/mach-s3c64xx/mach-real6410.c
-> @@ -12,24 +12,35 @@
->   *
->  */
-> 
-> -#include <linux/kernel.h>
-> -#include <linux/types.h>
-> +#include <linux/init.h>
+Keep track of memslots changes by keeping generation number in memslots
+structure. Provide kvm_write_guest_cached() function that skips
+gfn_to_hva() translation if memslots was not changed since previous
+invocation.
 
-You did add <linux/init.h> and
+Acked-by: Rik van Riel <riel@redhat.com>
+Signed-off-by: Gleb Natapov <gleb@redhat.com>
+---
 
->  #include <linux/interrupt.h>
-> +#include <linux/fb.h>
-> +#include <linux/gpio.h>
-> +#include <linux/kernel.h>
->  #include <linux/list.h>
-> -#include <linux/init.h>
+arch/x86/kvm/x86.c also changes slots. Forgot to update generation
+there.
 
-remove <linux/init.h>...why?
-
->  #include <linux/dm9000.h>
-> -#include <linux/serial_core.h>
->  #include <linux/platform_device.h>
-> +#include <linux/serial_core.h>
-
-Same...you removed <linux/serial_core.h> and added it.
-
-> +#include <linux/types.h>
-
-Same...you removed it and added.
-
-> +
->  #include <asm/mach-types.h>
->  #include <asm/mach/arch.h>
->  #include <asm/mach/map.h>
-> +
->  #include <mach/map.h>
-> -#include <mach/s3c6410.h>
-> +#include <mach/regs-fb.h>
-> +#include <mach/regs-gpio.h>
-> +#include <mach/regs-modem.h>
->  #include <mach/regs-srom.h>
-> +#include <mach/s3c6410.h>
-> +
->  #include <plat/cpu.h>
->  #include <plat/devs.h>
-> +#include <plat/fb.h>
->  #include <plat/regs-serial.h>
-> 
-> +#include <video/platform_lcd.h>
-> +
->  #define UCON (S3C2410_UCON_DEFAULT | S3C2410_UCON_UCLK)
->  #define ULCON (S3C2410_LCON_CS8 | S3C2410_LCON_PNONE | S3C2410_LCON_STOPB)
->  #define UFCON (S3C2410_UFCON_RXTRIG8 | S3C2410_UFCON_FIFOMODE)
-> @@ -99,22 +110,145 @@ static struct platform_device real6410_device_eth = {
->  	},
->  };
-> 
-> +static struct s3c_fb_pd_win real6410_fb_win[] = {
-> +	{
-> +		.win_mode	= {	/* 4.3" 480x272 */
-> +			.left_margin	= 3,
-> +			.right_margin	= 2,
-> +			.upper_margin	= 1,
-> +			.lower_margin	= 1,
-> +			.hsync_len	= 40,
-> +			.vsync_len	= 1,
-> +			.xres		= 480,
-> +			.yres		= 272,
-> +		},
-> +		.max_bpp	= 32,
-> +		.default_bpp	= 16,
-> +	}, {
-> +		.win_mode	= {	/* 7.0" 800x480 */
-> +			.left_margin	= 8,
-> +			.right_margin	= 13,
-> +			.upper_margin	= 7,
-> +			.lower_margin	= 5,
-> +			.hsync_len	= 3,
-> +			.vsync_len	= 1,
-> +			.xres		= 800,
-> +			.yres		= 480,
-> +		},
-> +		.max_bpp	= 32,
-> +		.default_bpp	= 16,
-> +	},
-> +};
-> +
-> +static struct s3c_fb_platdata real6410_lcd_pdata __initdata = {
-> +	.setup_gpio	= s3c64xx_fb_gpio_setup_24bpp,
-> +	.win[0]		= &real6410_fb_win[0],
-> +	.vidcon0	= VIDCON0_VIDOUT_RGB | VIDCON0_PNRMODE_RGB,
-> +	.vidcon1	= VIDCON1_INV_HSYNC | VIDCON1_INV_VSYNC,
-> +};
-> +
->  static struct platform_device *real6410_devices[] __initdata = {
->  	&real6410_device_eth,
->  	&s3c_device_hsmmc0,
->  	&s3c_device_hsmmc1,
-> +	&s3c_device_fb,
->  };
-> 
->  static void __init real6410_map_io(void)
->  {
-> +	u32 tmp;
-> +
->  	s3c64xx_init_io(NULL, 0);
->  	s3c24xx_init_clocks(12000000);
->  	s3c24xx_init_uarts(real6410_uartcfgs, ARRAY_SIZE(real6410_uartcfgs));
-> +
-> +	/* set the LCD type */
-> +	tmp = __raw_readl(S3C64XX_SPCON);
-> +	tmp &= ~S3C64XX_SPCON_LCD_SEL_MASK;
-> +	tmp |= S3C64XX_SPCON_LCD_SEL_RGB;
-> +	__raw_writel(tmp, S3C64XX_SPCON);
-> +
-> +	/* remove the LCD bypass */
-> +	tmp = __raw_readl(S3C64XX_MODEM_MIFPCON);
-> +	tmp &= ~MIFPCON_LCD_BYPASS;
-> +	__raw_writel(tmp, S3C64XX_MODEM_MIFPCON);
-
-Hmm...I'm not sure whether above functionality is in map_io()
-
-> +}
-> +
-> +/*
-> + * real6410_features string
-> + *
-> + * 0-9 LCD configuration
-> + *
-> + */
-> +static char real6410_features_str[12] __initdata = "0";
-> +
-> +static int __init real6410_features_setup(char *str)
-> +{
-> +	if (str)
-> +		strlcpy(real6410_features_str, str,
-> +			sizeof(real6410_features_str));
-> +	return 1;
-> +}
-> +
-> +__setup("real6410=", real6410_features_setup);
-> +
-> +#define FEATURE_SCREEN (1 << 0)
-> +
-> +struct real6410_features_t {
-> +	int done;
-> +	int lcd_index;
-> +};
-> +
-> +static void real6410_parse_features(
-> +		struct real6410_features_t *features,
-> +		const char *features_str)
-
-+static void real6410_parse_features(struct real6410_features_t *features,
-+				    const char *features_str)
-
-> +{
-> +	const char *fp = features_str;
-> +
-> +	features->done = 0;
-> +	features->lcd_index = 0;
-> +
-> +	while (*fp) {
-> +		char f = *fp++;
-> +
-> +		switch (f) {
-> +		case '0'...'9':	/* tft screen */
-> +			if (features->done & FEATURE_SCREEN) {
-> +				printk(KERN_INFO "REAL6410: '%c' ignored, "
-> +					"screen type already set\n", f);
-> +			} else {
-> +				int li = f - '0';
-> +				if (li >= ARRAY_SIZE(real6410_fb_win))
-> +					printk(KERN_INFO "REAL6410: '%c' out "
-> +						"of range LCD mode\n", f);
-> +				else {
-> +					features->lcd_index = li;
-> +				}
-> +			}
-> +			features->done |= FEATURE_SCREEN;
-> +			break;
-> +		}
-> +	}
->  }
-> 
->  static void __init real6410_machine_init(void)
->  {
->  	u32 cs1;
-> +	struct real6410_features_t features = { 0 };
-> +
-> +	printk(KERN_INFO "REAL6410: Option string real6410=%s\n",
-> +			real6410_features_str);
-> +
-> +	/* Parse the feature string */
-> +	real6410_parse_features(&features, real6410_features_str);
-> +
-> +	real6410_lcd_pdata.win[0] = &real6410_fb_win[features.lcd_index];
-> +
-> +	printk(KERN_INFO "REAL6410: selected LCD display is %dx%d\n",
-> +		real6410_lcd_pdata.win[0]->win_mode.xres,
-> +		real6410_lcd_pdata.win[0]->win_mode.yres);
-> +
-> +	s3c_fb_set_platdata(&real6410_lcd_pdata);
-> 
->  	/* configure nCS1 width to 16 bits */
-> 
-> @@ -136,6 +270,8 @@ static void __init real6410_machine_init(void)
->  		(4 << S3C64XX_SROM_BCX__TCOS__SHIFT) |
->  		(0 << S3C64XX_SROM_BCX__TACS__SHIFT), S3C64XX_SROM_BC1);
-> 
-> +	gpio_request(S3C64XX_GPF(15), "LCD power");
-> +
-
-Just requesting it is enough?
-
->  	platform_add_devices(real6410_devices, ARRAY_SIZE(real6410_devices));
->  }
-> 
-
-
-Thanks.
-
-Best regards,
-Kgene.
+diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+index bee71ec..bcc48bc 100644
+--- a/arch/x86/kvm/x86.c
++++ b/arch/x86/kvm/x86.c
+@@ -3193,6 +3193,7 @@ int kvm_vm_ioctl_get_dirty_log(struct kvm *kvm,
+ 		}
+ 		memcpy(slots, kvm->memslots, sizeof(struct kvm_memslots));
+ 		slots->memslots[log->slot].dirty_bitmap = dirty_bitmap;
++		slots->generation++;
+ 
+ 		old_slots = kvm->memslots;
+ 		rcu_assign_pointer(kvm->memslots, slots);
+diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
+index 9a9b017..dda88f2 100644
+--- a/include/linux/kvm_host.h
++++ b/include/linux/kvm_host.h
+@@ -199,6 +199,7 @@ struct kvm_irq_routing_table {};
+ 
+ struct kvm_memslots {
+ 	int nmemslots;
++	u64 generation;
+ 	struct kvm_memory_slot memslots[KVM_MEMORY_SLOTS +
+ 					KVM_PRIVATE_MEM_SLOTS];
+ };
+@@ -352,12 +353,18 @@ int kvm_write_guest_page(struct kvm *kvm, gfn_t gfn, const void *data,
+ 			 int offset, int len);
+ int kvm_write_guest(struct kvm *kvm, gpa_t gpa, const void *data,
+ 		    unsigned long len);
++int kvm_write_guest_cached(struct kvm *kvm, struct gfn_to_hva_cache *ghc,
++			   void *data, unsigned long len);
++int kvm_gfn_to_hva_cache_init(struct kvm *kvm, struct gfn_to_hva_cache *ghc,
++			      gpa_t gpa);
+ int kvm_clear_guest_page(struct kvm *kvm, gfn_t gfn, int offset, int len);
+ int kvm_clear_guest(struct kvm *kvm, gpa_t gpa, unsigned long len);
+ struct kvm_memory_slot *gfn_to_memslot(struct kvm *kvm, gfn_t gfn);
+ int kvm_is_visible_gfn(struct kvm *kvm, gfn_t gfn);
+ unsigned long kvm_host_page_size(struct kvm *kvm, gfn_t gfn);
+ void mark_page_dirty(struct kvm *kvm, gfn_t gfn);
++void mark_page_dirty_in_slot(struct kvm *kvm, struct kvm_memory_slot *memslot,
++			     gfn_t gfn);
+ 
+ void kvm_vcpu_block(struct kvm_vcpu *vcpu);
+ void kvm_vcpu_on_spin(struct kvm_vcpu *vcpu);
+diff --git a/include/linux/kvm_types.h b/include/linux/kvm_types.h
+index 7ac0d4e..fa7cc72 100644
+--- a/include/linux/kvm_types.h
++++ b/include/linux/kvm_types.h
+@@ -67,4 +67,11 @@ struct kvm_lapic_irq {
+ 	u32 dest_id;
+ };
+ 
++struct gfn_to_hva_cache {
++	u64 generation;
++	gpa_t gpa;
++	unsigned long hva;
++	struct kvm_memory_slot *memslot;
++};
++
+ #endif /* __KVM_TYPES_H__ */
+diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
+index 238079e..5d57ec9 100644
+--- a/virt/kvm/kvm_main.c
++++ b/virt/kvm/kvm_main.c
+@@ -687,6 +687,7 @@ skip_lpage:
+ 		memcpy(slots, kvm->memslots, sizeof(struct kvm_memslots));
+ 		if (mem->slot >= slots->nmemslots)
+ 			slots->nmemslots = mem->slot + 1;
++		slots->generation++;
+ 		slots->memslots[mem->slot].flags |= KVM_MEMSLOT_INVALID;
+ 
+ 		old_memslots = kvm->memslots;
+@@ -723,6 +724,7 @@ skip_lpage:
+ 	memcpy(slots, kvm->memslots, sizeof(struct kvm_memslots));
+ 	if (mem->slot >= slots->nmemslots)
+ 		slots->nmemslots = mem->slot + 1;
++	slots->generation++;
+ 
+ 	/* actual memory is freed via old in kvm_free_physmem_slot below */
+ 	if (!npages) {
+@@ -853,10 +855,10 @@ int kvm_is_error_hva(unsigned long addr)
+ }
+ EXPORT_SYMBOL_GPL(kvm_is_error_hva);
+ 
+-struct kvm_memory_slot *gfn_to_memslot(struct kvm *kvm, gfn_t gfn)
++static struct kvm_memory_slot *__gfn_to_memslot(struct kvm_memslots *slots,
++						gfn_t gfn)
+ {
+ 	int i;
+-	struct kvm_memslots *slots = kvm_memslots(kvm);
+ 
+ 	for (i = 0; i < slots->nmemslots; ++i) {
+ 		struct kvm_memory_slot *memslot = &slots->memslots[i];
+@@ -867,6 +869,11 @@ struct kvm_memory_slot *gfn_to_memslot(struct kvm *kvm, gfn_t gfn)
+ 	}
+ 	return NULL;
+ }
++
++struct kvm_memory_slot *gfn_to_memslot(struct kvm *kvm, gfn_t gfn)
++{
++	return __gfn_to_memslot(kvm_memslots(kvm), gfn);
++}
+ EXPORT_SYMBOL_GPL(gfn_to_memslot);
+ 
+ int kvm_is_visible_gfn(struct kvm *kvm, gfn_t gfn)
+@@ -929,12 +936,9 @@ int memslot_id(struct kvm *kvm, gfn_t gfn)
+ 	return memslot - slots->memslots;
+ }
+ 
+-static unsigned long gfn_to_hva_many(struct kvm *kvm, gfn_t gfn,
++static unsigned long gfn_to_hva_many(struct kvm_memory_slot *slot, gfn_t gfn,
+ 				     gfn_t *nr_pages)
+ {
+-	struct kvm_memory_slot *slot;
+-
+-	slot = gfn_to_memslot(kvm, gfn);
+ 	if (!slot || slot->flags & KVM_MEMSLOT_INVALID)
+ 		return bad_hva();
+ 
+@@ -946,7 +950,7 @@ static unsigned long gfn_to_hva_many(struct kvm *kvm, gfn_t gfn,
+ 
+ unsigned long gfn_to_hva(struct kvm *kvm, gfn_t gfn)
+ {
+-	return gfn_to_hva_many(kvm, gfn, NULL);
++	return gfn_to_hva_many(gfn_to_memslot(kvm, gfn), gfn, NULL);
+ }
+ EXPORT_SYMBOL_GPL(gfn_to_hva);
+ 
+@@ -1063,7 +1067,7 @@ int gfn_to_page_many_atomic(struct kvm *kvm, gfn_t gfn, struct page **pages,
+ 	unsigned long addr;
+ 	gfn_t entry;
+ 
+-	addr = gfn_to_hva_many(kvm, gfn, &entry);
++	addr = gfn_to_hva_many(gfn_to_memslot(kvm, gfn), gfn, &entry);
+ 	if (kvm_is_error_hva(addr))
+ 		return -1;
+ 
+@@ -1247,6 +1251,47 @@ int kvm_write_guest(struct kvm *kvm, gpa_t gpa, const void *data,
+ 	return 0;
+ }
+ 
++int kvm_gfn_to_hva_cache_init(struct kvm *kvm, struct gfn_to_hva_cache *ghc,
++			      gpa_t gpa)
++{
++	struct kvm_memslots *slots = kvm_memslots(kvm);
++	int offset = offset_in_page(gpa);
++	gfn_t gfn = gpa >> PAGE_SHIFT;
++
++	ghc->gpa = gpa;
++	ghc->generation = slots->generation;
++	ghc->memslot = __gfn_to_memslot(slots, gfn);
++	ghc->hva = gfn_to_hva_many(ghc->memslot, gfn, NULL);
++	if (!kvm_is_error_hva(ghc->hva))
++		ghc->hva += offset;
++	else
++		return -EFAULT;
++
++	return 0;
++}
++EXPORT_SYMBOL_GPL(kvm_gfn_to_hva_cache_init);
++
++int kvm_write_guest_cached(struct kvm *kvm, struct gfn_to_hva_cache *ghc,
++			   void *data, unsigned long len)
++{
++	struct kvm_memslots *slots = kvm_memslots(kvm);
++	int r;
++
++	if (slots->generation != ghc->generation)
++		kvm_gfn_to_hva_cache_init(kvm, ghc, ghc->gpa);
++	
++	if (kvm_is_error_hva(ghc->hva))
++		return -EFAULT;
++
++	r = copy_to_user((void __user *)ghc->hva, data, len);
++	if (r)
++		return -EFAULT;
++	mark_page_dirty_in_slot(kvm, ghc->memslot, ghc->gpa >> PAGE_SHIFT);
++
++	return 0;
++}
++EXPORT_SYMBOL_GPL(kvm_write_guest_cached);
++
+ int kvm_clear_guest_page(struct kvm *kvm, gfn_t gfn, int offset, int len)
+ {
+ 	return kvm_write_guest_page(kvm, gfn, empty_zero_page, offset, len);
+@@ -1272,11 +1317,9 @@ int kvm_clear_guest(struct kvm *kvm, gpa_t gpa, unsigned long len)
+ }
+ EXPORT_SYMBOL_GPL(kvm_clear_guest);
+ 
+-void mark_page_dirty(struct kvm *kvm, gfn_t gfn)
++void mark_page_dirty_in_slot(struct kvm *kvm, struct kvm_memory_slot *memslot,
++			     gfn_t gfn)
+ {
+-	struct kvm_memory_slot *memslot;
+-
+-	memslot = gfn_to_memslot(kvm, gfn);
+ 	if (memslot && memslot->dirty_bitmap) {
+ 		unsigned long rel_gfn = gfn - memslot->base_gfn;
+ 
+@@ -1284,6 +1327,14 @@ void mark_page_dirty(struct kvm *kvm, gfn_t gfn)
+ 	}
+ }
+ 
++void mark_page_dirty(struct kvm *kvm, gfn_t gfn)
++{
++	struct kvm_memory_slot *memslot;
++
++	memslot = gfn_to_memslot(kvm, gfn);
++	mark_page_dirty_in_slot(kvm, memslot, gfn);
++}
++
+ /*
+  * The vCPU has executed a HLT instruction with in-kernel mode enabled.
+  */
 --
-Kukjin Kim <kgene.kim@samsung.com>, Senior Engineer,
-SW Solution Development Team, Samsung Electronics Co., Ltd.
-
+			Gleb.
