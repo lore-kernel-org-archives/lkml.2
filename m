@@ -1,151 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755229Ab0JRMb0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Oct 2010 08:31:26 -0400
-Received: from nwd2mail10.analog.com ([137.71.25.55]:1434 "EHLO
-	nwd2mail10.analog.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753547Ab0JRMbZ convert rfc822-to-8bit (ORCPT
+	id S1755303Ab0JRMcl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Oct 2010 08:32:41 -0400
+Received: from canuck.infradead.org ([134.117.69.58]:39769 "EHLO
+	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750868Ab0JRMck convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Oct 2010 08:31:25 -0400
-X-IronPort-AV: E=Sophos;i="4.57,345,1283745600"; 
-   d="scan'208";a="23498636"
-From: "Hennerich, Michael" <Michael.Hennerich@analog.com>
-To: Jean Delvare <khali@linux-fr.org>
-CC: Mike Frysinger <vapier@gentoo.org>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "uclinux-dist-devel@blackfin.uclinux.org" 
-	<uclinux-dist-devel@blackfin.uclinux.org>,
-        "device-drivers-devel@blackfin.uclinux.org" 
-	<device-drivers-devel@blackfin.uclinux.org>,
-        David Brownell <david-b@pacbell.net>
-Date: Mon, 18 Oct 2010 13:31:21 +0100
-Subject: RE: [PATCH] i2c: add irq_flags to board info
-Thread-Topic: [PATCH] i2c: add irq_flags to board info
-Thread-Index: ActuvEIgGYJ4bhy5TCqGxqxiPA1aqQAAFwCQ
-Message-ID: <544AC56F16B56944AEC3BD4E3D5917713094520FA6@LIMKCMBX1.ad.analog.com>
-References: <1287359019-1476-1-git-send-email-vapier@gentoo.org>
-	<20101018103610.77b7e605@endymion.delvare>
-	<544AC56F16B56944AEC3BD4E3D5917713094520EDB@LIMKCMBX1.ad.analog.com>
- <20101018140136.2b44d29e@endymion.delvare>
-In-Reply-To: <20101018140136.2b44d29e@endymion.delvare>
-Accept-Language: de-DE, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: de-DE, en-US
-Content-Type: text/plain; charset="us-ascii"
+	Mon, 18 Oct 2010 08:32:40 -0400
+Subject: Re: High CPU load when machine is idle (related to PROBLEM:
+ Unusually high load average when idle in 2.6.35, 2.6.35.1 and later)
+From: Peter Zijlstra <peterz@infradead.org>
+To: Damien Wyart <damien.wyart@free.fr>
+Cc: Chase Douglas <chase.douglas@canonical.com>, Ingo Molnar <mingo@elte.hu>,
+        tmhikaru@gmail.com, Thomas Gleixner <tglx@linutronix.de>,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <1287140902.29097.1455.camel@twins>
+References: <20101014145813.GA2185@brouette>
+	 <1287140902.29097.1455.camel@twins>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+Date: Mon, 18 Oct 2010 14:32:20 +0200
+Message-ID: <1287405140.29097.1577.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jean Delvare wrote on 2010-10-18:
-> Hi Michael,
->
-> On Mon, 18 Oct 2010 10:55:57 +0100, Hennerich, Michael wrote:
->> Jean Delvare wrote on 2010-10-18:
->>> Hi Mike,
->>>
->>> On Sun, 17 Oct 2010 19:43:39 -0400, Mike Frysinger wrote:
->>>> From: Michael Hennerich <michael.hennerich@analog.com>
->>>>
->>>> These flags can be optionally defined - slave drivers may use them as
->>>> flags argument for request_irq().  In case they are left
->>>> uninitialized they will default to zero, and therefore shouldn't
->>>> cause problems.
->>>>
->>>> This allows us to avoid having to add dedicated platform init
->>>> code just to call set_irq_type()
->>>
->>> Do you have examples of this? Can we see a preview of the amount
->>> of cleanups this patch would allow?
->>
->> Examples can be found in various board setup files:
->>
->> One example arch/sh/boards/mach-ecovec24/setup.c:
->>
->> static struct i2c_board_info ts_i2c_clients = {
->>         I2C_BOARD_INFO("tsc2007", 0x48),
->>         .type           = "tsc2007",
->>         .platform_data  = &tsc2007_info,
->>         .irq            = IRQ0,
->> };
->>
->> [--snip--]
->>
->>                 /* enable TouchScreen */
->>                 i2c_register_board_info(0, &ts_i2c_clients, 1);
->>                 set_irq_type(IRQ0, IRQ_TYPE_LEVEL_LOW);
->
-> This example doesn't quite match the patch description. There's no
-> "dedicated platform init code just to call set_irq_type()", as you
-> already have platform code to call i2c_register_board_info(). It's
-> really only calling set_irq_type() from platform code vs. from driver
-> code.
+On Fri, 2010-10-15 at 13:08 +0200, Peter Zijlstra wrote:
+> On Thu, 2010-10-14 at 16:58 +0200, Damien Wyart wrote:
+> 
+> > - the commit 74f5187ac873042f502227701ed1727e7c5fbfa9 isolated by Tim
+> >   seems to be the culprit;
+> 
+> Right, so I think I figured out what's happening.
+> 
+> We're folding sucessive idles of the same cpu into the total idle
+> number, which is inflating things.
+> 
+> +/*
+> + * For NO_HZ we delay the active fold to the next LOAD_FREQ update.
+> + *
+> + * When making the ILB scale, we should try to pull this in as well.
+> + */
+> +static atomic_long_t calc_load_tasks_idle;
+> +
+> +static void calc_load_account_idle(struct rq *this_rq)
+> +{
+> +       long delta;
+> +
+> +       delta = calc_load_fold_active(this_rq);
+> +       if (delta)
+> +               atomic_long_add(delta, &calc_load_tasks_idle);
+> +}
+> +
+> +static long calc_load_fold_idle(void)
+> +{
+> +       long delta = 0;
+> +
+> +       /*
+> +        * Its got a race, we don't care...
+> +        */
+> +       if (atomic_long_read(&calc_load_tasks_idle))
+> +               delta = atomic_long_xchg(&calc_load_tasks_idle, 0);
+> +
+> +       return delta;
+> +}
+> 
+> 
+> If you look at that and imagine CPU1 going idle with 1 task blocked,
+> then waking up due to unblocking, then going idle with that same task
+> block, etc.. all before we fold_idle on an active cpu, then we can count
+> that one task many times over.
+> 
+OK, I came up with the below, but its not quite working, load continues
+to decrease even though I've got a make -j64 running..
 
-In the past I also saw initcalls just doing set_irq_type(), to make drivers happy.
-That doesn't pass the right irq_flags along with request_irq().
+Thomas, Chase, any clue?
 
->>>> -- which doesn't work very well when coupled with module drivers.
->>>
->>> I don't quite get what you mean here.
->>
->> Since the driver doesn't setup the irq_type itself you need to do it
->> manually in advance using set_irq_type().
->> This happens most likely from your paltform setup/configuration file.
->>
->> Assuming the driver is built as a module, this code gets executed
->> unconditionally, no matter if the driver gets finally loaded or not.
->>
->> Assuming you have several drivers build as modules, using the same irq
->> but with different irq types, you run into problems here.
->
-> I do not get why.
->
-> You're not going to register several I2C devices using the same IRQ
-> but requiring different IRQ flags anyway, as it wouldn't work. So
-> you'll have to only register the I2C devices which are actually
-> present on the system. Setting the IRQ type at the same time or
-> deferring this action to the driver(s) doesn't make any difference then, does it?
+---
+ kernel/sched.c          |   31 +++++++++++++++++++++++++------
+ kernel/sched_idletask.c |    1 +
+ 2 files changed, 26 insertions(+), 6 deletions(-)
 
-If I remember correctly i2c as well as spi doesn't check for irq conflicts in irqs passed with
-struct i2c/spi_board_info. So you can have multiple drivers build as modules all using the same
-irq number but with different flags.
-
-The user decides which add-on module is plugged onto the processor board, by loading the appropriate
-driver module.
-
->> There are some development boards featuring extension options, which
->> all plug on the same socket but required different drivers/irq types.
->
-> How do you figure out which extension option is plugged? You can't
-> instantiate an I2C device which isn't present, so you must have a way
-> to know what extension option is used, to instantiate the right I2C
-> device at the right address.
-
-The user decides.
-The platform code provides resources for all potential boards being used.
-And here is exactly the conflict.
-
->> The ideal way is therefore to pass the irq_flags together with the
-> SPI/I2C board info.
->
-> All I see so far is two data structures made slightly larger, for no
-> actual benefit.
-
-I don't see a reason why i2c/spi bus drivers should be different from other bus drivers.
-The platform_device bus driver allows you to pass IORESOURCE_IRQ | IORESOURCE_IRQ_LOWLEVEL with flags
-in struct resource.
-
-There are drivers that work around this deficiency, by adding irq_flags to the bus clients dev.platform_data
-See include/linux/spi/ads7846.h for one example.
-
-Greetings,
-Michael
-
-Analog Devices GmbH      Wilhelm-Wagenfeld-Str. 6      80807 Muenchen
-Sitz der Gesellschaft Muenchen, Registergericht Muenchen HRB 4036 Geschaeftsfuehrer Thomas Wessel, William A. Martin, Margaret Seif
-
+diff --git a/kernel/sched.c b/kernel/sched.c
+index 3312c64..a56446b 100644
+--- a/kernel/sched.c
++++ b/kernel/sched.c
+@@ -521,6 +521,10 @@ struct rq {
+ 	/* calc_load related fields */
+ 	unsigned long calc_load_update;
+ 	long calc_load_active;
++#ifdef CONFIG_NO_HZ
++	long calc_load_idle;
++	int calc_load_seq;
++#endif
+ 
+ #ifdef CONFIG_SCHED_HRTICK
+ #ifdef CONFIG_SMP
+@@ -1817,6 +1821,7 @@ static void cfs_rq_set_shares(struct cfs_rq *cfs_rq, unsigned long shares)
+ #endif
+ 
+ static void calc_load_account_idle(struct rq *this_rq);
++static void calc_load_account_nonidle(struct rq *this_rq);
+ static void update_sysctl(void);
+ static int get_update_sysctl_factor(void);
+ static void update_cpu_load(struct rq *this_rq);
+@@ -2978,14 +2983,25 @@ static long calc_load_fold_active(struct rq *this_rq)
+  * When making the ILB scale, we should try to pull this in as well.
+  */
+ static atomic_long_t calc_load_tasks_idle;
++static atomic_t calc_load_seq;
+ 
+ static void calc_load_account_idle(struct rq *this_rq)
+ {
+-	long delta;
++	long idle;
+ 
+-	delta = calc_load_fold_active(this_rq);
+-	if (delta)
+-		atomic_long_add(delta, &calc_load_tasks_idle);
++	idle = calc_load_fold_active(this_rq);
++	this_rq->calc_load_idle = idle;
++
++	if (idle) {
++		this_rq->calc_load_seq = atomic_read(&calc_load_seq);
++		atomic_long_add(idle, &calc_load_tasks_idle);
++	}
++}
++
++static void calc_load_account_nonidle(struct rq *this_rq)
++{
++	if (atomic_read(&calc_load_seq) == this_rq->calc_load_seq)
++		atomic_long_sub(this_rq->calc_load_idle, &calc_load_tasks_idle);
+ }
+ 
+ static long calc_load_fold_idle(void)
+@@ -2993,10 +3009,13 @@ static long calc_load_fold_idle(void)
+ 	long delta = 0;
+ 
+ 	/*
+-	 * Its got a race, we don't care...
++	 * Its got races, we don't care... its only statistics after all.
+ 	 */
+-	if (atomic_long_read(&calc_load_tasks_idle))
++	if (atomic_long_read(&calc_load_tasks_idle)) {
+ 		delta = atomic_long_xchg(&calc_load_tasks_idle, 0);
++		if (delta)
++			atomic_inc(&calc_load_seq);
++	}
+ 
+ 	return delta;
+ }
+diff --git a/kernel/sched_idletask.c b/kernel/sched_idletask.c
+index 9fa0f402..a7fa1aa 100644
+--- a/kernel/sched_idletask.c
++++ b/kernel/sched_idletask.c
+@@ -42,6 +42,7 @@ dequeue_task_idle(struct rq *rq, struct task_struct *p, int flags)
+ 
+ static void put_prev_task_idle(struct rq *rq, struct task_struct *prev)
+ {
++	calc_load_account_nonidle(rq);
+ }
+ 
+ static void task_tick_idle(struct rq *rq, struct task_struct *curr, int queued)
 
