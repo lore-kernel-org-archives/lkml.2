@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753293Ab0JRGVb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Oct 2010 02:21:31 -0400
-Received: from bld-mail14.adl6.internode.on.net ([150.101.137.99]:44745 "EHLO
+	id S1753676Ab0JRGVu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Oct 2010 02:21:50 -0400
+Received: from bld-mail15.adl6.internode.on.net ([150.101.137.100]:37428 "EHLO
 	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751299Ab0JRGV3 (ORCPT
+	with ESMTP id S1753593Ab0JRGVs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Oct 2010 02:21:29 -0400
+	Mon, 18 Oct 2010 02:21:48 -0400
 From: Dave Chinner <david@fromorbit.com>
 To: linux-fsdevel@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH 03/20] fs: Convert nr_inodes and nr_unused to per-cpu counters
-Date: Mon, 18 Oct 2010 17:20:39 +1100
-Message-Id: <1287382856-29529-4-git-send-email-david@fromorbit.com>
+Subject: [PATCH 19/20] fs: Reduce inode I_FREEING and factor inode disposal
+Date: Mon, 18 Oct 2010 17:20:55 +1100
+Message-Id: <1287382856-29529-20-git-send-email-david@fromorbit.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1287382856-29529-1-git-send-email-david@fromorbit.com>
 References: <1287382856-29529-1-git-send-email-david@fromorbit.com>
@@ -22,278 +22,212 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Dave Chinner <dchinner@redhat.com>
 
-The number of inodes allocated does not need to be tied to the
-addition or removal of an inode to/from a list. If we are not tied
-to a list lock, we could update the counters when inodes are
-initialised or destroyed, but to do that we need to convert the
-counters to be per-cpu (i.e. independent of a lock). This means that
-we have the freedom to change the list/locking implementation
-without needing to care about the counters.
+Inode reclaim can push many inodes into the I_FREEING state before
+it actually frees them. During the time it gathers these inodes, it
+can call iput(), invalidate_mapping_pages, be preempted, etc. As a
+result, holding inodes in I_FREEING can cause pauses.
 
-Based on a patch originally from Eric Dumazet.
+After the inode scalability work, there is not a big reason to batch
+up inodes to reclaim them, so we can dispose them as they are found
+from the LRU.
+
+Unmount does a very similar reclaim process via invalidate_list(),
+but currently uses the i_lru list to aggregate inodes for a batched
+disposal. This requires taking the inode_lru_lock for every inode we
+want to dispose. Instead, take the inodes off the superblock inode
+list (as we already hold the lock) and use i_sb_list as the
+aggregator for inodes to dispose to reduce lock traffic.
+
+Further, iput_final() does the same inode cleanup as reclaim and
+unmount, so convert them all to use a single function for destroying
+inodes. This is written such that the callers can optimise list
+removals to avoid unneccessary lock round trips when removing inodes
+from lists.
+
+Based on a patch originally from Nick Piggin.
 
 Signed-off-by: Dave Chinner <dchinner@redhat.com>
-Reviewed-by: Christoph Hellwig <hch@lst.de>
 ---
- fs/fs-writeback.c  |    5 +--
- fs/inode.c         |   64 ++++++++++++++++++++++++++++++++++++---------------
- include/linux/fs.h |    4 ++-
- kernel/sysctl.c    |    4 +-
- 4 files changed, 52 insertions(+), 25 deletions(-)
+ fs/inode.c |   99 +++++++++++++++++++++++++++++++-----------------------------
+ 1 files changed, 51 insertions(+), 48 deletions(-)
 
-diff --git a/fs/fs-writeback.c b/fs/fs-writeback.c
-index ab38fef..58a95b7 100644
---- a/fs/fs-writeback.c
-+++ b/fs/fs-writeback.c
-@@ -723,7 +723,7 @@ static long wb_check_old_data_flush(struct bdi_writeback *wb)
- 	wb->last_old_flush = jiffies;
- 	nr_pages = global_page_state(NR_FILE_DIRTY) +
- 			global_page_state(NR_UNSTABLE_NFS) +
--			(inodes_stat.nr_inodes - inodes_stat.nr_unused);
-+			get_nr_dirty_inodes();
- 
- 	if (nr_pages) {
- 		struct wb_writeback_work work = {
-@@ -1090,8 +1090,7 @@ void writeback_inodes_sb(struct super_block *sb)
- 
- 	WARN_ON(!rwsem_is_locked(&sb->s_umount));
- 
--	work.nr_pages = nr_dirty + nr_unstable +
--			(inodes_stat.nr_inodes - inodes_stat.nr_unused);
-+	work.nr_pages = nr_dirty + nr_unstable + get_nr_dirty_inodes();
- 
- 	bdi_queue_work(sb->s_bdi, &work);
- 	wait_for_completion(&done);
 diff --git a/fs/inode.c b/fs/inode.c
-index 8646433..b3b6a4b 100644
+index 79b95f6..adcd1f3 100644
 --- a/fs/inode.c
 +++ b/fs/inode.c
-@@ -103,8 +103,41 @@ static DECLARE_RWSEM(iprune_sem);
-  */
- struct inodes_stat_t inodes_stat;
- 
-+static struct percpu_counter nr_inodes __cacheline_aligned_in_smp;
-+static struct percpu_counter nr_inodes_unused __cacheline_aligned_in_smp;
-+
- static struct kmem_cache *inode_cachep __read_mostly;
- 
-+static inline int get_nr_inodes(void)
-+{
-+	return percpu_counter_sum_positive(&nr_inodes);
-+}
-+
-+static inline int get_nr_inodes_unused(void)
-+{
-+	return percpu_counter_sum_positive(&nr_inodes_unused);
-+}
-+
-+int get_nr_dirty_inodes(void)
-+{
-+	int nr_dirty = get_nr_inodes() - get_nr_inodes_unused();
-+	return nr_dirty > 0 ? nr_dirty : 0;
-+
-+}
-+
-+/*
-+ * Handle nr_inode sysctl
-+ */
-+#if defined(CONFIG_SYSCTL) && defined(CONFIG_PROC_FS)
-+int proc_nr_inodes(ctl_table *table, int write,
-+		   void __user *buffer, size_t *lenp, loff_t *ppos)
-+{
-+	inodes_stat.nr_inodes = get_nr_inodes();
-+	inodes_stat.nr_unused = get_nr_inodes_unused();
-+	return proc_dointvec(table, write, buffer, lenp, ppos);
-+}
-+#endif
-+
- static void wake_up_inode(struct inode *inode)
- {
- 	/*
-@@ -192,6 +225,8 @@ int inode_init_always(struct super_block *sb, struct inode *inode)
- 	inode->i_fsnotify_mask = 0;
- #endif
- 
-+	percpu_counter_inc(&nr_inodes);
-+
- 	return 0;
- out:
- 	return -ENOMEM;
-@@ -232,6 +267,7 @@ void __destroy_inode(struct inode *inode)
- 	if (inode->i_default_acl && inode->i_default_acl != ACL_NOT_CACHED)
- 		posix_acl_release(inode->i_default_acl);
- #endif
-+	percpu_counter_dec(&nr_inodes);
- }
- EXPORT_SYMBOL(__destroy_inode);
- 
-@@ -286,7 +322,7 @@ void __iget(struct inode *inode)
- 
- 	if (!(inode->i_state & (I_DIRTY|I_SYNC)))
- 		list_move(&inode->i_list, &inode_in_use);
--	inodes_stat.nr_unused--;
-+	percpu_counter_dec(&nr_inodes_unused);
- }
- 
- void end_writeback(struct inode *inode)
-@@ -327,8 +363,6 @@ static void evict(struct inode *inode)
-  */
- static void dispose_list(struct list_head *head)
- {
--	int nr_disposed = 0;
--
- 	while (!list_empty(head)) {
- 		struct inode *inode;
- 
-@@ -344,11 +378,7 @@ static void dispose_list(struct list_head *head)
- 
- 		wake_up_inode(inode);
- 		destroy_inode(inode);
--		nr_disposed++;
- 	}
--	spin_lock(&inode_lock);
--	inodes_stat.nr_inodes -= nr_disposed;
--	spin_unlock(&inode_lock);
+@@ -49,8 +49,8 @@
+  *
+  * sb inode lock
+  *   inode_lru_lock
+- *     wb->b_lock
+- *       inode->i_lock
++ *   wb->b_lock
++ *     inode->i_lock
+  *
+  * wb->b_lock
+  *   sb_lock (pin sb for writeback)
+@@ -483,6 +483,39 @@ static void evict(struct inode *inode)
  }
  
  /*
-@@ -357,7 +387,7 @@ static void dispose_list(struct list_head *head)
- static int invalidate_list(struct list_head *head, struct list_head *dispose)
- {
- 	struct list_head *next;
--	int busy = 0, count = 0;
-+	int busy = 0;
++ * Free the inode passed in, removing it from the lists it is still connected
++ * to but avoiding unnecessary lock round-trips for the lists it is no longer
++ * on.
++ *
++ * An inode must already be marked I_FREEING so that we avoid the inode being
++ * moved back onto lists if we race with other code that manipulates the lists
++ * (e.g. writeback_single_inode). The caller
++ */
++static void dispose_one_inode(struct inode *inode)
++{
++	BUG_ON(!(inode->i_state & I_FREEING));
++
++	/*
++	 * move the inode off the IO lists and LRU once
++	 * I_FREEING is set so that it won't get moved back on
++	 * there if it is dirty.
++	 */
++	if (!list_empty(&inode->i_wb_list))
++		inode_wb_list_del(inode);
++	if (!list_empty(&inode->i_lru))
++		inode_lru_list_del(inode);
++	if (!list_empty(&inode->i_sb_list))
++		inode_sb_list_del(inode);
++
++	evict(inode);
++
++	remove_inode_hash(inode);
++	wake_up_inode(inode);
++	BUG_ON(inode->i_state != (I_FREEING | I_CLEAR));
++	destroy_inode(inode);
++}
++
++/*
+  * dispose_list - dispose of the contents of a local list
+  * @head: the head of the list to free
+  *
+@@ -494,16 +527,10 @@ static void dispose_list(struct list_head *head)
+ 	while (!list_empty(head)) {
+ 		struct inode *inode;
  
- 	next = head->next;
- 	for (;;) {
-@@ -383,13 +413,11 @@ static int invalidate_list(struct list_head *head, struct list_head *dispose)
- 			list_move(&inode->i_list, dispose);
- 			WARN_ON(inode->i_state & I_NEW);
- 			inode->i_state |= I_FREEING;
--			count++;
-+			percpu_counter_dec(&nr_inodes_unused);
- 			continue;
- 		}
- 		busy = 1;
+-		inode = list_first_entry(head, struct inode, i_lru);
+-		list_del_init(&inode->i_lru);
+-
+-		evict(inode);
+-
+-		remove_inode_hash(inode);
+-		inode_sb_list_del(inode);
++		inode = list_first_entry(head, struct inode, i_sb_list);
++		list_del_init(&inode->i_sb_list);
+ 
+-		wake_up_inode(inode);
+-		destroy_inode(inode);
++		dispose_one_inode(inode);
  	}
--	/* only unused inodes may be cached with i_count zero */
--	inodes_stat.nr_unused -= count;
- 	return busy;
  }
  
-@@ -448,7 +476,6 @@ static int can_unuse(struct inode *inode)
+@@ -544,17 +571,8 @@ static int invalidate_list(struct super_block *sb, struct list_head *head,
+ 			inode->i_state |= I_FREEING;
+ 			spin_unlock(&inode->i_lock);
+ 
+-			/*
+-			 * move the inode off the IO lists and LRU once
+-			 * I_FREEING is set so that it won't get moved back on
+-			 * there if it is dirty.
+-			 */
+-			inode_wb_list_del(inode);
+-
+-			spin_lock(&inode_lru_lock);
+-			list_move(&inode->i_lru, dispose);
+-			percpu_counter_dec(&nr_inodes_unused);
+-			spin_unlock(&inode_lru_lock);
++			/* save a lock round trip by removing the inode here. */
++			list_move(&inode->i_sb_list, dispose);
+ 			continue;
+ 		}
+ 		spin_unlock(&inode->i_lock);
+@@ -573,17 +591,17 @@ static int invalidate_list(struct super_block *sb, struct list_head *head,
+  */
+ int invalidate_inodes(struct super_block *sb)
+ {
+-	int busy;
+ 	LIST_HEAD(throw_away);
++	int busy;
+ 
+ 	down_write(&iprune_sem);
+ 	spin_lock(&sb->s_inodes_lock);
+ 	fsnotify_unmount_inodes(&sb->s_inodes);
+ 	busy = invalidate_list(sb, &sb->s_inodes, &throw_away);
+ 	spin_unlock(&sb->s_inodes_lock);
++	up_write(&iprune_sem);
+ 
+ 	dispose_list(&throw_away);
+-	up_write(&iprune_sem);
+ 
+ 	return busy;
+ }
+@@ -607,7 +625,6 @@ EXPORT_SYMBOL(invalidate_inodes);
+  */
  static void prune_icache(int nr_to_scan)
  {
- 	LIST_HEAD(freeable);
--	int nr_pruned = 0;
+-	LIST_HEAD(freeable);
  	int nr_scanned;
  	unsigned long reap = 0;
  
-@@ -484,9 +511,8 @@ static void prune_icache(int nr_to_scan)
- 		list_move(&inode->i_list, &freeable);
- 		WARN_ON(inode->i_state & I_NEW);
+@@ -666,15 +683,15 @@ static void prune_icache(int nr_to_scan)
  		inode->i_state |= I_FREEING;
--		nr_pruned++;
-+		percpu_counter_dec(&nr_inodes_unused);
+ 		spin_unlock(&inode->i_lock);
+ 
+-		/*
+-		 * move the inode off the io lists and lru once
+-		 * i_freeing is set so that it won't get moved back on
+-		 * there if it is dirty.
+-		 */
+-		inode_wb_list_del(inode);
+-
+-		list_move(&inode->i_lru, &freeable);
++		/* save a lock round trip by removing the inode here. */
++		list_del_init(&inode->i_lru);
+ 		percpu_counter_dec(&nr_inodes_unused);
++		spin_unlock(&inode_lru_lock);
++
++		dispose_one_inode(inode);
++		cond_resched();
++
++		spin_lock(&inode_lru_lock);
  	}
--	inodes_stat.nr_unused -= nr_pruned;
  	if (current_is_kswapd())
  		__count_vm_events(KSWAPD_INODESTEAL, reap);
- 	else
-@@ -518,7 +544,7 @@ static int shrink_icache_memory(struct shrinker *shrink, int nr, gfp_t gfp_mask)
- 			return -1;
- 		prune_icache(nr);
- 	}
--	return (inodes_stat.nr_unused / 100) * sysctl_vfs_cache_pressure;
-+	return (get_nr_inodes_unused() / 100) * sysctl_vfs_cache_pressure;
+@@ -682,7 +699,6 @@ static void prune_icache(int nr_to_scan)
+ 		__count_vm_events(PGINODESTEAL, reap);
+ 	spin_unlock(&inode_lru_lock);
+ 
+-	dispose_list(&freeable);
+ 	up_read(&iprune_sem);
  }
  
- static struct shrinker icache_shrinker = {
-@@ -595,7 +621,6 @@ static inline void
- __inode_add_to_lists(struct super_block *sb, struct hlist_head *head,
- 			struct inode *inode)
- {
--	inodes_stat.nr_inodes++;
- 	list_add(&inode->i_list, &inode_in_use);
- 	list_add(&inode->i_sb_list, &sb->s_inodes);
- 	if (head)
-@@ -1215,7 +1240,7 @@ static void iput_final(struct inode *inode)
- 	if (!drop) {
- 		if (!(inode->i_state & (I_DIRTY|I_SYNC)))
- 			list_move(&inode->i_list, &inode_unused);
--		inodes_stat.nr_unused++;
-+		percpu_counter_inc(&nr_inodes_unused);
- 		if (sb->s_flags & MS_ACTIVE) {
- 			spin_unlock(&inode_lock);
- 			return;
-@@ -1227,14 +1252,13 @@ static void iput_final(struct inode *inode)
- 		spin_lock(&inode_lock);
- 		WARN_ON(inode->i_state & I_NEW);
- 		inode->i_state &= ~I_WILL_FREE;
--		inodes_stat.nr_unused--;
-+		percpu_counter_dec(&nr_inodes_unused);
- 		hlist_del_init(&inode->i_hash);
- 	}
- 	list_del_init(&inode->i_list);
- 	list_del_init(&inode->i_sb_list);
- 	WARN_ON(inode->i_state & I_NEW);
+@@ -1432,20 +1448,7 @@ static void iput_final(struct inode *inode)
  	inode->i_state |= I_FREEING;
--	inodes_stat.nr_inodes--;
- 	spin_unlock(&inode_lock);
- 	evict(inode);
- 	spin_lock(&inode_lock);
-@@ -1503,6 +1527,8 @@ void __init inode_init(void)
- 					 SLAB_MEM_SPREAD),
- 					 init_once);
- 	register_shrinker(&icache_shrinker);
-+	percpu_counter_init(&nr_inodes, 0);
-+	percpu_counter_init(&nr_inodes_unused, 0);
+ 	spin_unlock(&inode->i_lock);
  
- 	/* Hash may have been set up in inode_init_early */
- 	if (!hashdist)
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index 63d069b..1fb92f9 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -407,6 +407,7 @@ extern struct files_stat_struct files_stat;
- extern int get_max_files(void);
- extern int sysctl_nr_open;
- extern struct inodes_stat_t inodes_stat;
-+extern int get_nr_dirty_inodes(void);
- extern int leases_enable, lease_break_time;
- 
- struct buffer_head;
-@@ -2474,7 +2475,8 @@ ssize_t simple_attr_write(struct file *file, const char __user *buf,
- struct ctl_table;
- int proc_nr_files(struct ctl_table *table, int write,
- 		  void __user *buffer, size_t *lenp, loff_t *ppos);
+-	/*
+-	 * After we delete the inode from the LRU and IO lists here, we avoid
+-	 * moving dirty inodes back onto the LRU now because I_FREEING is set
+-	 * and hence writeback_single_inode() won't move the inode around.
+-	 */
+-	inode_wb_list_del(inode);
+-	inode_lru_list_del(inode);
 -
-+int proc_nr_inodes(struct ctl_table *table, int write,
-+		   void __user *buffer, size_t *lenp, loff_t *ppos);
- int __init get_filesystem_list(char *buf);
+-	inode_sb_list_del(inode);
+-	evict(inode);
+-	remove_inode_hash(inode);
+-	wake_up_inode(inode);
+-	BUG_ON(inode->i_state != (I_FREEING | I_CLEAR));
+-	destroy_inode(inode);
++	dispose_one_inode(inode);
+ }
  
- #define ACC_MODE(x) ("\004\002\006\006"[(x)&O_ACCMODE])
-diff --git a/kernel/sysctl.c b/kernel/sysctl.c
-index f88552c..33d1733 100644
---- a/kernel/sysctl.c
-+++ b/kernel/sysctl.c
-@@ -1340,14 +1340,14 @@ static struct ctl_table fs_table[] = {
- 		.data		= &inodes_stat,
- 		.maxlen		= 2*sizeof(int),
- 		.mode		= 0444,
--		.proc_handler	= proc_dointvec,
-+		.proc_handler	= proc_nr_inodes,
- 	},
- 	{
- 		.procname	= "inode-state",
- 		.data		= &inodes_stat,
- 		.maxlen		= 7*sizeof(int),
- 		.mode		= 0444,
--		.proc_handler	= proc_dointvec,
-+		.proc_handler	= proc_nr_inodes,
- 	},
- 	{
- 		.procname	= "file-nr",
+ /**
 -- 
 1.7.1
 
