@@ -1,90 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755800Ab0JRSpH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Oct 2010 14:45:07 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:7069 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752208Ab0JRSpE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Oct 2010 14:45:04 -0400
-Subject: Re: ima: use of radix tree cache indexing == massive waste of
- memory?
-From: Eric Paris <eparis@redhat.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Kyle McMartin <kyle@mcmartin.ca>, James Morris <jmorris@namei.org>,
-        Christoph Hellwig <hch@infradead.org>, kernel@lists.fedoraproject.org,
-        Mimi Zohar <zohar@us.ibm.com>, warthog9@kernel.org,
-        Dave Chinner <david@fromorbit.com>, linux-kernel@vger.kernel.org,
-        "H. Peter Anvin" <hpa@zytor.com>, Serge Hallyn <serue@us.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-In-Reply-To: <20101018181916.GB12372@elte.hu>
-References: <20101016192027.GA6883@infradead.org>
-	 <ebc4973c-6c11-4397-b8b0-c212a27abce4@email.android.com>
-	 <20101017004945.GE1614@infradead.org> <20101017054008.GA16383@elte.hu>
-	 <20101017184652.GB28060@infradead.org>
-	 <alpine.LRH.2.00.1010181127480.9476@tundra.namei.org>
-	 <20101018062530.GD8332@bombadil.infradead.org>
-	 <1287420534.2530.67.camel@localhost.localdomain>
-	 <AANLkTi=h6-qMtk9Kf0TRUfqjuBau+_FhKAMZOd_MZHrn@mail.gmail.com>
-	 <1287425596.2530.70.camel@localhost.localdomain>
-	 <20101018181916.GB12372@elte.hu>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 18 Oct 2010 14:43:37 -0400
-Message-ID: <1287427417.2530.72.camel@localhost.localdomain>
+	id S1755921Ab0JRSqL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Oct 2010 14:46:11 -0400
+Received: from g6t0186.atlanta.hp.com ([15.193.32.63]:8157 "EHLO
+	g6t0186.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754205Ab0JRSqJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Oct 2010 14:46:09 -0400
+Date: Mon, 18 Oct 2010 13:53:07 -0500
+From: Mike Miller <mike.miller@hp.com>
+To: Andrew Morton <akpm@linux-foundation.org>, Jens Axboe <axboe@kernel.dk>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        LKML-scsi <linux-scsi@vger.kernel.org>
+Subject: [PATCH 1/1] cciss: fix PCI IDs for new Smart Array controllers
+Message-ID: <20101018185307.GA11223@beardog.cce.hp.com>
 Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-10-18 at 20:19 +0200, Ingo Molnar wrote:
-> * Eric Paris <eparis@redhat.com> wrote:
-> 
-> > On Mon, 2010-10-18 at 10:56 -0700, Linus Torvalds wrote:
-> > > On Mon, Oct 18, 2010 at 9:48 AM, Eric Paris <eparis@redhat.com> wrote:
-> > > >
-> > > > 1) IMA uses radix trees which end up wasting 500 bytes per inode because
-> > > > the key is too sparse.  I've got a patch which uses an rbtree instead
-> > > > I'm testing and will send along shortly.  I found it funny working on
-> > > > the patch to see that Documentation/rbtree.txt says "This differs from
-> > > > radix trees (which are used to efficiently store sparse arrays and thus
-> > > > use long integer indexes to insert/access/delete nodes)"  Which flys in
-> > > > the face of this report.
-> > > 
-> > > Please. Look at the report more carefully.
-> > > 
-> > > The radix tree memory use is disgusting. Yes. But it is absolutely NOT
-> > > sufficient to try to just fix that part. Go back, look at the original
-> > > report email, and this line in particular:
-> > > 
-> > >    2235648 2069791  92%    0.12K  69864       32    279456K iint_cache
-> > > 
-> > > There's 2.2 million iint_cache allocations too, each 128 bytes in
-> > > size. That's still a quarter _gigabyte_ of crap that adds zero value
-> > > at all.
-> > 
-> > That was #2 in my list of things to fix:
-> >
-> > 2) IMA creates an entire integrity structure for every inode even when most or all 
-> > of this structure will not be needed.
-> > 
-> > I'm stating with #1 since that was 2G of wasted space (thus far my switch to 
-> > rbtree seems to be surviving an xfstest) so I expect to send the patch this 
-> > afternoon.  #2 should attack the size of the iint_cache entries.  #3 should attack 
-> > the scalability.  I'm certainly hoping I didn't miss part of the report....
-> 
-> I think it would be fair to argue that #2 is the thing that should be fixed first 
-> and foremost - before touching any data structure details.
-> 
-> Because if you fix #2 then all the other items will become no-op to 99.9% of the 
-> people who are affected by this bug today.
-> 
-> It's also probably a much simpler fix for -stable, so should be done first, etc.
-> 
-> If you do the data structure changes first then #2 will likely not be backportable 
-> standalone and #1 will be risky to backport - creating nasty dependencies.
+Patch 1 of 1
+cciss: fix PCI IDs for new controllers
 
-Good point.  I'll keep that in mind and possibly reorder.
+This patch fixes the botched up PCI IDs of new controllers. Please consider
+this patch for inclusion.
 
--Eric
+Signed-off-by: Mike Miller <mike.miller@hp.com>
 
+diff --git a/drivers/block/cciss.c b/drivers/block/cciss.c
+index 5e4fadc..48c4af1 100644
+--- a/drivers/block/cciss.c
++++ b/drivers/block/cciss.c
+@@ -105,11 +105,12 @@ static const struct pci_device_id cciss_pci_device_id[] = {
+ 	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSE,     0x103C, 0x3249},
+ 	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSE,     0x103C, 0x324A},
+ 	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSE,     0x103C, 0x324B},
+-	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSE,     0x103C, 0x3250},
+-	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSE,     0x103C, 0x3251},
+-	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSE,     0x103C, 0x3252},
+-	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSE,     0x103C, 0x3253},
+-	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSE,     0x103C, 0x3254},
++	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSF,     0x103C, 0x3350},
++	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSF,     0x103C, 0x3351},
++	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSF,     0x103C, 0x3352},
++	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSF,     0x103C, 0x3353},
++	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSF,     0x103C, 0x3354},
++	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSF,     0x103C, 0x3355},
+ 	{0,}
+ };
+ 
+@@ -149,11 +150,12 @@ static struct board_type products[] = {
+ 	{0x3249103C, "Smart Array P812", &SA5_access},
+ 	{0x324A103C, "Smart Array P712m", &SA5_access},
+ 	{0x324B103C, "Smart Array P711m", &SA5_access},
+-	{0x3250103C, "Smart Array", &SA5_access},
+-	{0x3251103C, "Smart Array", &SA5_access},
+-	{0x3252103C, "Smart Array", &SA5_access},
+-	{0x3253103C, "Smart Array", &SA5_access},
+-	{0x3254103C, "Smart Array", &SA5_access},
++	{0x3350103C, "Smart Array", &SA5_access},
++	{0x3351103C, "Smart Array", &SA5_access},
++	{0x3352103C, "Smart Array", &SA5_access},
++	{0x3353103C, "Smart Array", &SA5_access},
++	{0x3354103C, "Smart Array", &SA5_access},
++	{0x3355103C, "Smart Array", &SA5_access},
+ };
+ 
+ /* How long to wait (in milliseconds) for board to go into simple mode */
+diff --git a/include/linux/pci_ids.h b/include/linux/pci_ids.h
+index 10d3330..0a5dcb5 100644
+--- a/include/linux/pci_ids.h
++++ b/include/linux/pci_ids.h
+@@ -739,6 +739,7 @@
+ #define PCI_DEVICE_ID_HP_CISSC		0x3230
+ #define PCI_DEVICE_ID_HP_CISSD		0x3238
+ #define PCI_DEVICE_ID_HP_CISSE		0x323a
++#define PCI_DEVICE_ID_HP_CISSF		0x323b
+ #define PCI_DEVICE_ID_HP_ZX2_IOC	0x4031
+ 
+ #define PCI_VENDOR_ID_PCTECH		0x1042
