@@ -1,967 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757894Ab0JRXlR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Oct 2010 19:41:17 -0400
-Received: from a.ns.miles-group.at ([95.130.255.143]:35232 "EHLO radon.swed.at"
+	id S932734Ab0JRXoF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Oct 2010 19:44:05 -0400
+Received: from gate.crashing.org ([63.228.1.57]:44164 "EHLO gate.crashing.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754707Ab0JRXlQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Oct 2010 19:41:16 -0400
-/m: 
-From: Richard Weinberger <richard@nod.at>
-To: dhowells@redhat.com
-Subject: linux-next: user mode linux build failure
-Date: Tue, 19 Oct 2010 01:41:10 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.25.20-0.7-pae; KDE/4.4.4; i686; ; )
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-next@vger.kernel.org
-MIME-Version: 1.0
-Content-Type: Multipart/Mixed;
-  boundary="Boundary-00=_WsNvMWxFjz2hJOp"
-Message-Id: <201010190141.10365.richard@nod.at>
+	id S1754707Ab0JRXoE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Oct 2010 19:44:04 -0400
+Subject: Re: Odd NFS related SIGBUS (& possible fix)
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Trond Myklebust <Trond.Myklebust@netapp.com>
+Cc: Nick Piggin <npiggin@kernel.dk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Al Viro <viro@ZenIV.linux.org.uk>, linux-fsdevel@vger.kernel.org
+In-Reply-To: <1285966635.2463.149.camel@pasglop>
+References: <1285734825.14081.87.camel@pasglop>
+	 <1285956768.30373.39.camel@heimdal.trondhjem.org>
+	 <1285958104.30373.41.camel@heimdal.trondhjem.org>
+	 <1285966635.2463.149.camel@pasglop>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 19 Oct 2010 10:43:25 +1100
+Message-ID: <1287445405.2341.43.camel@pasglop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Boundary-00=_WsNvMWxFjz2hJOp
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
+On Sat, 2010-10-02 at 06:57 +1000, Benjamin Herrenschmidt wrote:
+> On Fri, 2010-10-01 at 14:35 -0400, Trond Myklebust wrote:
+> > On Fri, 2010-10-01 at 14:12 -0400, Trond Myklebust wrote:
+> > > However, it looks to me as if the right thing to do when the
+> > > page->mapping has changed would be to do the same thing as
+> > > block_page_mkwrite(), and just return VM_FAULT_NOPAGE so that the VM can
+> > > retry the fault.
+> > > IMO: We should only SIGBUS if the calls to nfs_flush_incompatible()
+> > > and/or nfs_updatepage() fail.
+> > > 
+> > > Cheers
+> > >   Trond
+> > 
+> > IOW: Something like the following patch.
+> 
+> Thanks, I'll try it but it will have to wait about 10 days as I'm off on
+> vacation.
+> 
+> I'll see if somebody here can do some tests while I'm away
 
-Hi!
+BTW. I got some reports from testers that the patch fixes the issue.
 
-df9ee292 (Fix IRQ flag handling naming) breaks um build.
-Build log is attached.
+Thanks !
 
-Thanks,
-//richard
+Cheers,
+Ben.
 
---Boundary-00=_WsNvMWxFjz2hJOp
-Content-Type: text/x-log;
-  charset="UTF-8";
-  name="build.log"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
-	filename="build.log"
+> Cheers,
+> Ben.
+> 
+> > Cheers
+> >   Trond
+> > 
+> > ---------------------------------------------------------------------------
+> > NFS: Don't SIGBUS if nfs_vm_page_mkwrite races with a cache invalidation
+> > 
+> > From: Trond Myklebust <Trond.Myklebust@netapp.com>
+> > 
+> > In the case where we lock the page, and then find out that the page has
+> > been thrown out of the page cache, we should just return VM_FAULT_NOPAGE.
+> > This is what block_page_mkwrite() does in these situations.
+> > 
+> > Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+> > ---
+> > 
+> >  fs/nfs/file.c |   17 ++++++++---------
+> >  1 files changed, 8 insertions(+), 9 deletions(-)
+> > 
+> > 
+> > diff --git a/fs/nfs/file.c b/fs/nfs/file.c
+> > index 05bf3c0..6d95e24 100644
+> > --- a/fs/nfs/file.c
+> > +++ b/fs/nfs/file.c
+> > @@ -551,7 +551,7 @@ static int nfs_vm_page_mkwrite(struct vm_area_struct *vma, struct vm_fault *vmf)
+> >  	struct file *filp = vma->vm_file;
+> >  	struct dentry *dentry = filp->f_path.dentry;
+> >  	unsigned pagelen;
+> > -	int ret = -EINVAL;
+> > +	int ret = VM_FAULT_NOPAGE;
+> >  	struct address_space *mapping;
+> >  
+> >  	dfprintk(PAGECACHE, "NFS: vm_page_mkwrite(%s/%s(%ld), offset %lld)\n",
+> > @@ -567,21 +567,20 @@ static int nfs_vm_page_mkwrite(struct vm_area_struct *vma, struct vm_fault *vmf)
+> >  	if (mapping != dentry->d_inode->i_mapping)
+> >  		goto out_unlock;
+> >  
+> > -	ret = 0;
+> >  	pagelen = nfs_page_length(page);
+> >  	if (pagelen == 0)
+> >  		goto out_unlock;
+> >  
+> > -	ret = nfs_flush_incompatible(filp, page);
+> > -	if (ret != 0)
+> > -		goto out_unlock;
+> > +	ret = VM_FAULT_LOCKED;
+> > +	if (nfs_flush_incompatible(filp, page) == 0 &&
+> > +	    nfs_updatepage(filp, page, 0, pagelen) == 0)
+> > +		goto out;
+> >  
+> > -	ret = nfs_updatepage(filp, page, 0, pagelen);
+> > +	ret = VM_FAULT_SIGBUS;
+> >  out_unlock:
+> > -	if (!ret)
+> > -		return VM_FAULT_LOCKED;
+> >  	unlock_page(page);
+> > -	return VM_FAULT_SIGBUS;
+> > +out:
+> > +	return ret;
+> >  }
+> >  
+> >  static const struct vm_operations_struct nfs_file_vm_ops = {
+> > 
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> > the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> > Please read the FAQ at  http://www.tux.org/lkml/
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-make[1]: `arch/um/sys-i386/user-offsets.s' is up to date.
-  CHK     include/linux/version.h
-  CHK     include/generated/utsrelease.h
-  CALL    scripts/checksyscalls.sh
-  CHK     include/generated/compile.h
-  CC      init/version.o
-In file included from /media/data1/linux-next/arch/um/include/asm/fixmap.h:5,
-                 from /media/data1/linux-next/arch/um/include/shared/um_uaccess.h:10,
-                 from /media/data1/linux-next/arch/um/include/asm/uaccess.h:41,
-                 from /media/data1/linux-next/arch/um/include/asm/thread_info.h:13,
-                 from include/linux/thread_info.h:56,
-                 from include/linux/preempt.h:9,
-                 from include/linux/spinlock.h:50,
-                 from include/linux/seqlock.h:29,
-                 from include/linux/time.h:8,
-                 from include/linux/stat.h:60,
-                 from include/linux/module.h:10,
-                 from init/version.c:10:
-/media/data1/linux-next/arch/um/include/asm/system.h:11:1: warning: "local_save_flags" redefined
-In file included from /media/data1/linux-next/arch/um/sys-i386/shared/sysdep/system.h:11,
-                 from /media/data1/linux-next/arch/um/include/asm/system.h:4,
-                 from /media/data1/linux-next/arch/um/include/asm/fixmap.h:5,
-                 from /media/data1/linux-next/arch/um/include/shared/um_uaccess.h:10,
-                 from /media/data1/linux-next/arch/um/include/asm/uaccess.h:41,
-                 from /media/data1/linux-next/arch/um/include/asm/thread_info.h:13,
-                 from include/linux/thread_info.h:56,
-                 from include/linux/preempt.h:9,
-                 from include/linux/spinlock.h:50,
-                 from include/linux/seqlock.h:29,
-                 from include/linux/time.h:8,
-                 from include/linux/stat.h:60,
-                 from include/linux/module.h:10,
-                 from init/version.c:10:
-include/linux/irqflags.h:143:1: warning: this is the location of the previous definition
-In file included from /media/data1/linux-next/arch/um/include/asm/fixmap.h:5,
-                 from /media/data1/linux-next/arch/um/include/shared/um_uaccess.h:10,
-                 from /media/data1/linux-next/arch/um/include/asm/uaccess.h:41,
-                 from /media/data1/linux-next/arch/um/include/asm/thread_info.h:13,
-                 from include/linux/thread_info.h:56,
-                 from include/linux/preempt.h:9,
-                 from include/linux/spinlock.h:50,
-                 from include/linux/seqlock.h:29,
-                 from include/linux/time.h:8,
-                 from include/linux/stat.h:60,
-                 from include/linux/module.h:10,
-                 from init/version.c:10:
-/media/data1/linux-next/arch/um/include/asm/system.h:13:1: warning: "local_irq_restore" redefined
-In file included from /media/data1/linux-next/arch/um/sys-i386/shared/sysdep/system.h:11,
-                 from /media/data1/linux-next/arch/um/include/asm/system.h:4,
-                 from /media/data1/linux-next/arch/um/include/asm/fixmap.h:5,
-                 from /media/data1/linux-next/arch/um/include/shared/um_uaccess.h:10,
-                 from /media/data1/linux-next/arch/um/include/asm/uaccess.h:41,
-                 from /media/data1/linux-next/arch/um/include/asm/thread_info.h:13,
-                 from include/linux/thread_info.h:56,
-                 from include/linux/preempt.h:9,
-                 from include/linux/spinlock.h:50,
-                 from include/linux/seqlock.h:29,
-                 from include/linux/time.h:8,
-                 from include/linux/stat.h:60,
-                 from include/linux/module.h:10,
-                 from init/version.c:10:
-include/linux/irqflags.h:142:1: warning: this is the location of the previous definition
-In file included from /media/data1/linux-next/arch/um/include/asm/fixmap.h:5,
-                 from /media/data1/linux-next/arch/um/include/shared/um_uaccess.h:10,
-                 from /media/data1/linux-next/arch/um/include/asm/uaccess.h:41,
-                 from /media/data1/linux-next/arch/um/include/asm/thread_info.h:13,
-                 from include/linux/thread_info.h:56,
-                 from include/linux/preempt.h:9,
-                 from include/linux/spinlock.h:50,
-                 from include/linux/seqlock.h:29,
-                 from include/linux/time.h:8,
-                 from include/linux/stat.h:60,
-                 from include/linux/module.h:10,
-                 from init/version.c:10:
-/media/data1/linux-next/arch/um/include/asm/system.h:16:1: warning: "local_irq_save" redefined
-In file included from /media/data1/linux-next/arch/um/sys-i386/shared/sysdep/system.h:11,
-                 from /media/data1/linux-next/arch/um/include/asm/system.h:4,
-                 from /media/data1/linux-next/arch/um/include/asm/fixmap.h:5,
-                 from /media/data1/linux-next/arch/um/include/shared/um_uaccess.h:10,
-                 from /media/data1/linux-next/arch/um/include/asm/uaccess.h:41,
-                 from /media/data1/linux-next/arch/um/include/asm/thread_info.h:13,
-                 from include/linux/thread_info.h:56,
-                 from include/linux/preempt.h:9,
-                 from include/linux/spinlock.h:50,
-                 from include/linux/seqlock.h:29,
-                 from include/linux/time.h:8,
-                 from include/linux/stat.h:60,
-                 from include/linux/module.h:10,
-                 from init/version.c:10:
-include/linux/irqflags.h:138:1: warning: this is the location of the previous definition
-In file included from /media/data1/linux-next/arch/um/include/asm/fixmap.h:5,
-                 from /media/data1/linux-next/arch/um/include/shared/um_uaccess.h:10,
-                 from /media/data1/linux-next/arch/um/include/asm/uaccess.h:41,
-                 from /media/data1/linux-next/arch/um/include/asm/thread_info.h:13,
-                 from include/linux/thread_info.h:56,
-                 from include/linux/preempt.h:9,
-                 from include/linux/spinlock.h:50,
-                 from include/linux/seqlock.h:29,
-                 from include/linux/time.h:8,
-                 from include/linux/stat.h:60,
-                 from include/linux/module.h:10,
-                 from init/version.c:10:
-/media/data1/linux-next/arch/um/include/asm/system.h:19:1: warning: "local_irq_enable" redefined
-In file included from /media/data1/linux-next/arch/um/sys-i386/shared/sysdep/system.h:11,
-                 from /media/data1/linux-next/arch/um/include/asm/system.h:4,
-                 from /media/data1/linux-next/arch/um/include/asm/fixmap.h:5,
-                 from /media/data1/linux-next/arch/um/include/shared/um_uaccess.h:10,
-                 from /media/data1/linux-next/arch/um/include/asm/uaccess.h:41,
-                 from /media/data1/linux-next/arch/um/include/asm/thread_info.h:13,
-                 from include/linux/thread_info.h:56,
-                 from include/linux/preempt.h:9,
-                 from include/linux/spinlock.h:50,
-                 from include/linux/seqlock.h:29,
-                 from include/linux/time.h:8,
-                 from include/linux/stat.h:60,
-                 from include/linux/module.h:10,
-                 from init/version.c:10:
-include/linux/irqflags.h:136:1: warning: this is the location of the previous definition
-In file included from /media/data1/linux-next/arch/um/include/asm/fixmap.h:5,
-                 from /media/data1/linux-next/arch/um/include/shared/um_uaccess.h:10,
-                 from /media/data1/linux-next/arch/um/include/asm/uaccess.h:41,
-                 from /media/data1/linux-next/arch/um/include/asm/thread_info.h:13,
-                 from include/linux/thread_info.h:56,
-                 from include/linux/preempt.h:9,
-                 from include/linux/spinlock.h:50,
-                 from include/linux/seqlock.h:29,
-                 from include/linux/time.h:8,
-                 from include/linux/stat.h:60,
-                 from include/linux/module.h:10,
-                 from init/version.c:10:
-/media/data1/linux-next/arch/um/include/asm/system.h:20:1: warning: "local_irq_disable" redefined
-In file included from /media/data1/linux-next/arch/um/sys-i386/shared/sysdep/system.h:11,
-                 from /media/data1/linux-next/arch/um/include/asm/system.h:4,
-                 from /media/data1/linux-next/arch/um/include/asm/fixmap.h:5,
-                 from /media/data1/linux-next/arch/um/include/shared/um_uaccess.h:10,
-                 from /media/data1/linux-next/arch/um/include/asm/uaccess.h:41,
-                 from /media/data1/linux-next/arch/um/include/asm/thread_info.h:13,
-                 from include/linux/thread_info.h:56,
-                 from include/linux/preempt.h:9,
-                 from include/linux/spinlock.h:50,
-                 from include/linux/seqlock.h:29,
-                 from include/linux/time.h:8,
-                 from include/linux/stat.h:60,
-                 from include/linux/module.h:10,
-                 from init/version.c:10:
-include/linux/irqflags.h:137:1: warning: this is the location of the previous definition
-In file included from /media/data1/linux-next/arch/um/include/asm/fixmap.h:5,
-                 from /media/data1/linux-next/arch/um/include/shared/um_uaccess.h:10,
-                 from /media/data1/linux-next/arch/um/include/asm/uaccess.h:41,
-                 from /media/data1/linux-next/arch/um/include/asm/thread_info.h:13,
-                 from include/linux/thread_info.h:56,
-                 from include/linux/preempt.h:9,
-                 from include/linux/spinlock.h:50,
-                 from include/linux/seqlock.h:29,
-                 from include/linux/time.h:8,
-                 from include/linux/stat.h:60,
-                 from include/linux/module.h:10,
-                 from init/version.c:10:
-/media/data1/linux-next/arch/um/include/asm/system.h:22:1: warning: "irqs_disabled" redefined
-In file included from /media/data1/linux-next/arch/um/sys-i386/shared/sysdep/system.h:11,
-                 from /media/data1/linux-next/arch/um/include/asm/system.h:4,
-                 from /media/data1/linux-next/arch/um/include/asm/fixmap.h:5,
-                 from /media/data1/linux-next/arch/um/include/shared/um_uaccess.h:10,
-                 from /media/data1/linux-next/arch/um/include/asm/uaccess.h:41,
-                 from /media/data1/linux-next/arch/um/include/asm/thread_info.h:13,
-                 from include/linux/thread_info.h:56,
-                 from include/linux/preempt.h:9,
-                 from include/linux/spinlock.h:50,
-                 from include/linux/seqlock.h:29,
-                 from include/linux/time.h:8,
-                 from include/linux/stat.h:60,
-                 from include/linux/module.h:10,
-                 from init/version.c:10:
-include/linux/irqflags.h:144:1: warning: this is the location of the previous definition
-  LD      init/built-in.o
-  CC      arch/um/kernel/physmem.o
-In file included from /media/data1/linux-next/arch/um/include/asm/fixmap.h:5,
-                 from /media/data1/linux-next/arch/um/include/shared/um_uaccess.h:10,
-                 from /media/data1/linux-next/arch/um/include/asm/uaccess.h:41,
-                 from /media/data1/linux-next/arch/um/include/asm/thread_info.h:13,
-                 from include/linux/thread_info.h:56,
-                 from include/linux/preempt.h:9,
-                 from include/linux/spinlock.h:50,
-                 from include/linux/mmzone.h:7,
-                 from include/linux/bootmem.h:7,
-                 from arch/um/kernel/physmem.c:6:
-/media/data1/linux-next/arch/um/include/asm/system.h:11:1: warning: "local_save_flags" redefined
-In file included from /media/data1/linux-next/arch/um/sys-i386/shared/sysdep/system.h:11,
-                 from /media/data1/linux-next/arch/um/include/asm/system.h:4,
-                 from /media/data1/linux-next/arch/um/include/asm/fixmap.h:5,
-                 from /media/data1/linux-next/arch/um/include/shared/um_uaccess.h:10,
-                 from /media/data1/linux-next/arch/um/include/asm/uaccess.h:41,
-                 from /media/data1/linux-next/arch/um/include/asm/thread_info.h:13,
-                 from include/linux/thread_info.h:56,
-                 from include/linux/preempt.h:9,
-                 from include/linux/spinlock.h:50,
-                 from include/linux/mmzone.h:7,
-                 from include/linux/bootmem.h:7,
-                 from arch/um/kernel/physmem.c:6:
-include/linux/irqflags.h:143:1: warning: this is the location of the previous definition
-In file included from /media/data1/linux-next/arch/um/include/asm/fixmap.h:5,
-                 from /media/data1/linux-next/arch/um/include/shared/um_uaccess.h:10,
-                 from /media/data1/linux-next/arch/um/include/asm/uaccess.h:41,
-                 from /media/data1/linux-next/arch/um/include/asm/thread_info.h:13,
-                 from include/linux/thread_info.h:56,
-                 from include/linux/preempt.h:9,
-                 from include/linux/spinlock.h:50,
-                 from include/linux/mmzone.h:7,
-                 from include/linux/bootmem.h:7,
-                 from arch/um/kernel/physmem.c:6:
-/media/data1/linux-next/arch/um/include/asm/system.h:13:1: warning: "local_irq_restore" redefined
-In file included from /media/data1/linux-next/arch/um/sys-i386/shared/sysdep/system.h:11,
-                 from /media/data1/linux-next/arch/um/include/asm/system.h:4,
-                 from /media/data1/linux-next/arch/um/include/asm/fixmap.h:5,
-                 from /media/data1/linux-next/arch/um/include/shared/um_uaccess.h:10,
-                 from /media/data1/linux-next/arch/um/include/asm/uaccess.h:41,
-                 from /media/data1/linux-next/arch/um/include/asm/thread_info.h:13,
-                 from include/linux/thread_info.h:56,
-                 from include/linux/preempt.h:9,
-                 from include/linux/spinlock.h:50,
-                 from include/linux/mmzone.h:7,
-                 from include/linux/bootmem.h:7,
-                 from arch/um/kernel/physmem.c:6:
-include/linux/irqflags.h:142:1: warning: this is the location of the previous definition
-In file included from /media/data1/linux-next/arch/um/include/asm/fixmap.h:5,
-                 from /media/data1/linux-next/arch/um/include/shared/um_uaccess.h:10,
-                 from /media/data1/linux-next/arch/um/include/asm/uaccess.h:41,
-                 from /media/data1/linux-next/arch/um/include/asm/thread_info.h:13,
-                 from include/linux/thread_info.h:56,
-                 from include/linux/preempt.h:9,
-                 from include/linux/spinlock.h:50,
-                 from include/linux/mmzone.h:7,
-                 from include/linux/bootmem.h:7,
-                 from arch/um/kernel/physmem.c:6:
-/media/data1/linux-next/arch/um/include/asm/system.h:16:1: warning: "local_irq_save" redefined
-In file included from /media/data1/linux-next/arch/um/sys-i386/shared/sysdep/system.h:11,
-                 from /media/data1/linux-next/arch/um/include/asm/system.h:4,
-                 from /media/data1/linux-next/arch/um/include/asm/fixmap.h:5,
-                 from /media/data1/linux-next/arch/um/include/shared/um_uaccess.h:10,
-                 from /media/data1/linux-next/arch/um/include/asm/uaccess.h:41,
-                 from /media/data1/linux-next/arch/um/include/asm/thread_info.h:13,
-                 from include/linux/thread_info.h:56,
-                 from include/linux/preempt.h:9,
-                 from include/linux/spinlock.h:50,
-                 from include/linux/mmzone.h:7,
-                 from include/linux/bootmem.h:7,
-                 from arch/um/kernel/physmem.c:6:
-include/linux/irqflags.h:138:1: warning: this is the location of the previous definition
-In file included from /media/data1/linux-next/arch/um/include/asm/fixmap.h:5,
-                 from /media/data1/linux-next/arch/um/include/shared/um_uaccess.h:10,
-                 from /media/data1/linux-next/arch/um/include/asm/uaccess.h:41,
-                 from /media/data1/linux-next/arch/um/include/asm/thread_info.h:13,
-                 from include/linux/thread_info.h:56,
-                 from include/linux/preempt.h:9,
-                 from include/linux/spinlock.h:50,
-                 from include/linux/mmzone.h:7,
-                 from include/linux/bootmem.h:7,
-                 from arch/um/kernel/physmem.c:6:
-/media/data1/linux-next/arch/um/include/asm/system.h:19:1: warning: "local_irq_enable" redefined
-In file included from /media/data1/linux-next/arch/um/sys-i386/shared/sysdep/system.h:11,
-                 from /media/data1/linux-next/arch/um/include/asm/system.h:4,
-                 from /media/data1/linux-next/arch/um/include/asm/fixmap.h:5,
-                 from /media/data1/linux-next/arch/um/include/shared/um_uaccess.h:10,
-                 from /media/data1/linux-next/arch/um/include/asm/uaccess.h:41,
-                 from /media/data1/linux-next/arch/um/include/asm/thread_info.h:13,
-                 from include/linux/thread_info.h:56,
-                 from include/linux/preempt.h:9,
-                 from include/linux/spinlock.h:50,
-                 from include/linux/mmzone.h:7,
-                 from include/linux/bootmem.h:7,
-                 from arch/um/kernel/physmem.c:6:
-include/linux/irqflags.h:136:1: warning: this is the location of the previous definition
-In file included from /media/data1/linux-next/arch/um/include/asm/fixmap.h:5,
-                 from /media/data1/linux-next/arch/um/include/shared/um_uaccess.h:10,
-                 from /media/data1/linux-next/arch/um/include/asm/uaccess.h:41,
-                 from /media/data1/linux-next/arch/um/include/asm/thread_info.h:13,
-                 from include/linux/thread_info.h:56,
-                 from include/linux/preempt.h:9,
-                 from include/linux/spinlock.h:50,
-                 from include/linux/mmzone.h:7,
-                 from include/linux/bootmem.h:7,
-                 from arch/um/kernel/physmem.c:6:
-/media/data1/linux-next/arch/um/include/asm/system.h:20:1: warning: "local_irq_disable" redefined
-In file included from /media/data1/linux-next/arch/um/sys-i386/shared/sysdep/system.h:11,
-                 from /media/data1/linux-next/arch/um/include/asm/system.h:4,
-                 from /media/data1/linux-next/arch/um/include/asm/fixmap.h:5,
-                 from /media/data1/linux-next/arch/um/include/shared/um_uaccess.h:10,
-                 from /media/data1/linux-next/arch/um/include/asm/uaccess.h:41,
-                 from /media/data1/linux-next/arch/um/include/asm/thread_info.h:13,
-                 from include/linux/thread_info.h:56,
-                 from include/linux/preempt.h:9,
-                 from include/linux/spinlock.h:50,
-                 from include/linux/mmzone.h:7,
-                 from include/linux/bootmem.h:7,
-                 from arch/um/kernel/physmem.c:6:
-include/linux/irqflags.h:137:1: warning: this is the location of the previous definition
-In file included from /media/data1/linux-next/arch/um/include/asm/fixmap.h:5,
-                 from /media/data1/linux-next/arch/um/include/shared/um_uaccess.h:10,
-                 from /media/data1/linux-next/arch/um/include/asm/uaccess.h:41,
-                 from /media/data1/linux-next/arch/um/include/asm/thread_info.h:13,
-                 from include/linux/thread_info.h:56,
-                 from include/linux/preempt.h:9,
-                 from include/linux/spinlock.h:50,
-                 from include/linux/mmzone.h:7,
-                 from include/linux/bootmem.h:7,
-                 from arch/um/kernel/physmem.c:6:
-/media/data1/linux-next/arch/um/include/asm/system.h:22:1: warning: "irqs_disabled" redefined
-In file included from /media/data1/linux-next/arch/um/sys-i386/shared/sysdep/system.h:11,
-                 from /media/data1/linux-next/arch/um/include/asm/system.h:4,
-                 from /media/data1/linux-next/arch/um/include/asm/fixmap.h:5,
-                 from /media/data1/linux-next/arch/um/include/shared/um_uaccess.h:10,
-                 from /media/data1/linux-next/arch/um/include/asm/uaccess.h:41,
-                 from /media/data1/linux-next/arch/um/include/asm/thread_info.h:13,
-                 from include/linux/thread_info.h:56,
-                 from include/linux/preempt.h:9,
-                 from include/linux/spinlock.h:50,
-                 from include/linux/mmzone.h:7,
-                 from include/linux/bootmem.h:7,
-                 from arch/um/kernel/physmem.c:6:
-include/linux/irqflags.h:144:1: warning: this is the location of the previous definition
-  CC      arch/um/kernel/process.o
-In file included from /media/data1/linux-next/arch/um/include/asm/fixmap.h:5,
-                 from /media/data1/linux-next/arch/um/include/shared/um_uaccess.h:10,
-                 from /media/data1/linux-next/arch/um/include/asm/uaccess.h:41,
-                 from /media/data1/linux-next/arch/um/include/asm/thread_info.h:13,
-                 from include/linux/thread_info.h:56,
-                 from include/linux/preempt.h:9,
-                 from include/linux/hardirq.h:4,
-                 from arch/um/kernel/process.c:9:
-/media/data1/linux-next/arch/um/include/asm/system.h:11:1: warning: "local_save_flags" redefined
-In file included from /media/data1/linux-next/arch/um/sys-i386/shared/sysdep/system.h:11,
-                 from /media/data1/linux-next/arch/um/include/asm/system.h:4,
-                 from /media/data1/linux-next/arch/um/include/asm/fixmap.h:5,
-                 from /media/data1/linux-next/arch/um/include/shared/um_uaccess.h:10,
-                 from /media/data1/linux-next/arch/um/include/asm/uaccess.h:41,
-                 from /media/data1/linux-next/arch/um/include/asm/thread_info.h:13,
-                 from include/linux/thread_info.h:56,
-                 from include/linux/preempt.h:9,
-                 from include/linux/hardirq.h:4,
-                 from arch/um/kernel/process.c:9:
-include/linux/irqflags.h:143:1: warning: this is the location of the previous definition
-In file included from /media/data1/linux-next/arch/um/include/asm/fixmap.h:5,
-                 from /media/data1/linux-next/arch/um/include/shared/um_uaccess.h:10,
-                 from /media/data1/linux-next/arch/um/include/asm/uaccess.h:41,
-                 from /media/data1/linux-next/arch/um/include/asm/thread_info.h:13,
-                 from include/linux/thread_info.h:56,
-                 from include/linux/preempt.h:9,
-                 from include/linux/hardirq.h:4,
-                 from arch/um/kernel/process.c:9:
-/media/data1/linux-next/arch/um/include/asm/system.h:13:1: warning: "local_irq_restore" redefined
-In file included from /media/data1/linux-next/arch/um/sys-i386/shared/sysdep/system.h:11,
-                 from /media/data1/linux-next/arch/um/include/asm/system.h:4,
-                 from /media/data1/linux-next/arch/um/include/asm/fixmap.h:5,
-                 from /media/data1/linux-next/arch/um/include/shared/um_uaccess.h:10,
-                 from /media/data1/linux-next/arch/um/include/asm/uaccess.h:41,
-                 from /media/data1/linux-next/arch/um/include/asm/thread_info.h:13,
-                 from include/linux/thread_info.h:56,
-                 from include/linux/preempt.h:9,
-                 from include/linux/hardirq.h:4,
-                 from arch/um/kernel/process.c:9:
-include/linux/irqflags.h:142:1: warning: this is the location of the previous definition
-In file included from /media/data1/linux-next/arch/um/include/asm/fixmap.h:5,
-                 from /media/data1/linux-next/arch/um/include/shared/um_uaccess.h:10,
-                 from /media/data1/linux-next/arch/um/include/asm/uaccess.h:41,
-                 from /media/data1/linux-next/arch/um/include/asm/thread_info.h:13,
-                 from include/linux/thread_info.h:56,
-                 from include/linux/preempt.h:9,
-                 from include/linux/hardirq.h:4,
-                 from arch/um/kernel/process.c:9:
-/media/data1/linux-next/arch/um/include/asm/system.h:16:1: warning: "local_irq_save" redefined
-In file included from /media/data1/linux-next/arch/um/sys-i386/shared/sysdep/system.h:11,
-                 from /media/data1/linux-next/arch/um/include/asm/system.h:4,
-                 from /media/data1/linux-next/arch/um/include/asm/fixmap.h:5,
-                 from /media/data1/linux-next/arch/um/include/shared/um_uaccess.h:10,
-                 from /media/data1/linux-next/arch/um/include/asm/uaccess.h:41,
-                 from /media/data1/linux-next/arch/um/include/asm/thread_info.h:13,
-                 from include/linux/thread_info.h:56,
-                 from include/linux/preempt.h:9,
-                 from include/linux/hardirq.h:4,
-                 from arch/um/kernel/process.c:9:
-include/linux/irqflags.h:138:1: warning: this is the location of the previous definition
-In file included from /media/data1/linux-next/arch/um/include/asm/fixmap.h:5,
-                 from /media/data1/linux-next/arch/um/include/shared/um_uaccess.h:10,
-                 from /media/data1/linux-next/arch/um/include/asm/uaccess.h:41,
-                 from /media/data1/linux-next/arch/um/include/asm/thread_info.h:13,
-                 from include/linux/thread_info.h:56,
-                 from include/linux/preempt.h:9,
-                 from include/linux/hardirq.h:4,
-                 from arch/um/kernel/process.c:9:
-/media/data1/linux-next/arch/um/include/asm/system.h:19:1: warning: "local_irq_enable" redefined
-In file included from /media/data1/linux-next/arch/um/sys-i386/shared/sysdep/system.h:11,
-                 from /media/data1/linux-next/arch/um/include/asm/system.h:4,
-                 from /media/data1/linux-next/arch/um/include/asm/fixmap.h:5,
-                 from /media/data1/linux-next/arch/um/include/shared/um_uaccess.h:10,
-                 from /media/data1/linux-next/arch/um/include/asm/uaccess.h:41,
-                 from /media/data1/linux-next/arch/um/include/asm/thread_info.h:13,
-                 from include/linux/thread_info.h:56,
-                 from include/linux/preempt.h:9,
-                 from include/linux/hardirq.h:4,
-                 from arch/um/kernel/process.c:9:
-include/linux/irqflags.h:136:1: warning: this is the location of the previous definition
-In file included from /media/data1/linux-next/arch/um/include/asm/fixmap.h:5,
-                 from /media/data1/linux-next/arch/um/include/shared/um_uaccess.h:10,
-                 from /media/data1/linux-next/arch/um/include/asm/uaccess.h:41,
-                 from /media/data1/linux-next/arch/um/include/asm/thread_info.h:13,
-                 from include/linux/thread_info.h:56,
-                 from include/linux/preempt.h:9,
-                 from include/linux/hardirq.h:4,
-                 from arch/um/kernel/process.c:9:
-/media/data1/linux-next/arch/um/include/asm/system.h:20:1: warning: "local_irq_disable" redefined
-In file included from /media/data1/linux-next/arch/um/sys-i386/shared/sysdep/system.h:11,
-                 from /media/data1/linux-next/arch/um/include/asm/system.h:4,
-                 from /media/data1/linux-next/arch/um/include/asm/fixmap.h:5,
-                 from /media/data1/linux-next/arch/um/include/shared/um_uaccess.h:10,
-                 from /media/data1/linux-next/arch/um/include/asm/uaccess.h:41,
-                 from /media/data1/linux-next/arch/um/include/asm/thread_info.h:13,
-                 from include/linux/thread_info.h:56,
-                 from include/linux/preempt.h:9,
-                 from include/linux/hardirq.h:4,
-                 from arch/um/kernel/process.c:9:
-include/linux/irqflags.h:137:1: warning: this is the location of the previous definition
-In file included from /media/data1/linux-next/arch/um/include/asm/fixmap.h:5,
-                 from /media/data1/linux-next/arch/um/include/shared/um_uaccess.h:10,
-                 from /media/data1/linux-next/arch/um/include/asm/uaccess.h:41,
-                 from /media/data1/linux-next/arch/um/include/asm/thread_info.h:13,
-                 from include/linux/thread_info.h:56,
-                 from include/linux/preempt.h:9,
-                 from include/linux/hardirq.h:4,
-                 from arch/um/kernel/process.c:9:
-/media/data1/linux-next/arch/um/include/asm/system.h:22:1: warning: "irqs_disabled" redefined
-In file included from /media/data1/linux-next/arch/um/sys-i386/shared/sysdep/system.h:11,
-                 from /media/data1/linux-next/arch/um/include/asm/system.h:4,
-                 from /media/data1/linux-next/arch/um/include/asm/fixmap.h:5,
-                 from /media/data1/linux-next/arch/um/include/shared/um_uaccess.h:10,
-                 from /media/data1/linux-next/arch/um/include/asm/uaccess.h:41,
-                 from /media/data1/linux-next/arch/um/include/asm/thread_info.h:13,
-                 from include/linux/thread_info.h:56,
-                 from include/linux/preempt.h:9,
-                 from include/linux/hardirq.h:4,
-                 from arch/um/kernel/process.c:9:
-include/linux/irqflags.h:144:1: warning: this is the location of the previous definition
-  CC      arch/um/kernel/ptrace.o
-In file included from /media/data1/linux-next/arch/um/include/asm/fixmap.h:5,
-                 from /media/data1/linux-next/arch/um/include/shared/um_uaccess.h:10,
-                 from /media/data1/linux-next/arch/um/include/asm/uaccess.h:41,
-                 from /media/data1/linux-next/arch/um/include/asm/thread_info.h:13,
-                 from include/linux/thread_info.h:56,
-                 from include/linux/preempt.h:9,
-                 from include/linux/spinlock.h:50,
-                 from include/linux/seqlock.h:29,
-                 from include/linux/time.h:8,
-                 from include/linux/timex.h:56,
-                 from include/linux/sched.h:56,
-                 from include/linux/audit.h:362,
-                 from arch/um/kernel/ptrace.c:6:
-/media/data1/linux-next/arch/um/include/asm/system.h:11:1: warning: "local_save_flags" redefined
-In file included from /media/data1/linux-next/arch/um/sys-i386/shared/sysdep/system.h:11,
-                 from /media/data1/linux-next/arch/um/include/asm/system.h:4,
-                 from /media/data1/linux-next/arch/um/include/asm/fixmap.h:5,
-                 from /media/data1/linux-next/arch/um/include/shared/um_uaccess.h:10,
-                 from /media/data1/linux-next/arch/um/include/asm/uaccess.h:41,
-                 from /media/data1/linux-next/arch/um/include/asm/thread_info.h:13,
-                 from include/linux/thread_info.h:56,
-                 from include/linux/preempt.h:9,
-                 from include/linux/spinlock.h:50,
-                 from include/linux/seqlock.h:29,
-                 from include/linux/time.h:8,
-                 from include/linux/timex.h:56,
-                 from include/linux/sched.h:56,
-                 from include/linux/audit.h:362,
-                 from arch/um/kernel/ptrace.c:6:
-include/linux/irqflags.h:143:1: warning: this is the location of the previous definition
-In file included from /media/data1/linux-next/arch/um/include/asm/fixmap.h:5,
-                 from /media/data1/linux-next/arch/um/include/shared/um_uaccess.h:10,
-                 from /media/data1/linux-next/arch/um/include/asm/uaccess.h:41,
-                 from /media/data1/linux-next/arch/um/include/asm/thread_info.h:13,
-                 from include/linux/thread_info.h:56,
-                 from include/linux/preempt.h:9,
-                 from include/linux/spinlock.h:50,
-                 from include/linux/seqlock.h:29,
-                 from include/linux/time.h:8,
-                 from include/linux/timex.h:56,
-                 from include/linux/sched.h:56,
-                 from include/linux/audit.h:362,
-                 from arch/um/kernel/ptrace.c:6:
-/media/data1/linux-next/arch/um/include/asm/system.h:13:1: warning: "local_irq_restore" redefined
-In file included from /media/data1/linux-next/arch/um/sys-i386/shared/sysdep/system.h:11,
-                 from /media/data1/linux-next/arch/um/include/asm/system.h:4,
-                 from /media/data1/linux-next/arch/um/include/asm/fixmap.h:5,
-                 from /media/data1/linux-next/arch/um/include/shared/um_uaccess.h:10,
-                 from /media/data1/linux-next/arch/um/include/asm/uaccess.h:41,
-                 from /media/data1/linux-next/arch/um/include/asm/thread_info.h:13,
-                 from include/linux/thread_info.h:56,
-                 from include/linux/preempt.h:9,
-                 from include/linux/spinlock.h:50,
-                 from include/linux/seqlock.h:29,
-                 from include/linux/time.h:8,
-                 from include/linux/timex.h:56,
-                 from include/linux/sched.h:56,
-                 from include/linux/audit.h:362,
-                 from arch/um/kernel/ptrace.c:6:
-include/linux/irqflags.h:142:1: warning: this is the location of the previous definition
-In file included from /media/data1/linux-next/arch/um/include/asm/fixmap.h:5,
-                 from /media/data1/linux-next/arch/um/include/shared/um_uaccess.h:10,
-                 from /media/data1/linux-next/arch/um/include/asm/uaccess.h:41,
-                 from /media/data1/linux-next/arch/um/include/asm/thread_info.h:13,
-                 from include/linux/thread_info.h:56,
-                 from include/linux/preempt.h:9,
-                 from include/linux/spinlock.h:50,
-                 from include/linux/seqlock.h:29,
-                 from include/linux/time.h:8,
-                 from include/linux/timex.h:56,
-                 from include/linux/sched.h:56,
-                 from include/linux/audit.h:362,
-                 from arch/um/kernel/ptrace.c:6:
-/media/data1/linux-next/arch/um/include/asm/system.h:16:1: warning: "local_irq_save" redefined
-In file included from /media/data1/linux-next/arch/um/sys-i386/shared/sysdep/system.h:11,
-                 from /media/data1/linux-next/arch/um/include/asm/system.h:4,
-                 from /media/data1/linux-next/arch/um/include/asm/fixmap.h:5,
-                 from /media/data1/linux-next/arch/um/include/shared/um_uaccess.h:10,
-                 from /media/data1/linux-next/arch/um/include/asm/uaccess.h:41,
-                 from /media/data1/linux-next/arch/um/include/asm/thread_info.h:13,
-                 from include/linux/thread_info.h:56,
-                 from include/linux/preempt.h:9,
-                 from include/linux/spinlock.h:50,
-                 from include/linux/seqlock.h:29,
-                 from include/linux/time.h:8,
-                 from include/linux/timex.h:56,
-                 from include/linux/sched.h:56,
-                 from include/linux/audit.h:362,
-                 from arch/um/kernel/ptrace.c:6:
-include/linux/irqflags.h:138:1: warning: this is the location of the previous definition
-In file included from /media/data1/linux-next/arch/um/include/asm/fixmap.h:5,
-                 from /media/data1/linux-next/arch/um/include/shared/um_uaccess.h:10,
-                 from /media/data1/linux-next/arch/um/include/asm/uaccess.h:41,
-                 from /media/data1/linux-next/arch/um/include/asm/thread_info.h:13,
-                 from include/linux/thread_info.h:56,
-                 from include/linux/preempt.h:9,
-                 from include/linux/spinlock.h:50,
-                 from include/linux/seqlock.h:29,
-                 from include/linux/time.h:8,
-                 from include/linux/timex.h:56,
-                 from include/linux/sched.h:56,
-                 from include/linux/audit.h:362,
-                 from arch/um/kernel/ptrace.c:6:
-/media/data1/linux-next/arch/um/include/asm/system.h:19:1: warning: "local_irq_enable" redefined
-In file included from /media/data1/linux-next/arch/um/sys-i386/shared/sysdep/system.h:11,
-                 from /media/data1/linux-next/arch/um/include/asm/system.h:4,
-                 from /media/data1/linux-next/arch/um/include/asm/fixmap.h:5,
-                 from /media/data1/linux-next/arch/um/include/shared/um_uaccess.h:10,
-                 from /media/data1/linux-next/arch/um/include/asm/uaccess.h:41,
-                 from /media/data1/linux-next/arch/um/include/asm/thread_info.h:13,
-                 from include/linux/thread_info.h:56,
-                 from include/linux/preempt.h:9,
-                 from include/linux/spinlock.h:50,
-                 from include/linux/seqlock.h:29,
-                 from include/linux/time.h:8,
-                 from include/linux/timex.h:56,
-                 from include/linux/sched.h:56,
-                 from include/linux/audit.h:362,
-                 from arch/um/kernel/ptrace.c:6:
-include/linux/irqflags.h:136:1: warning: this is the location of the previous definition
-In file included from /media/data1/linux-next/arch/um/include/asm/fixmap.h:5,
-                 from /media/data1/linux-next/arch/um/include/shared/um_uaccess.h:10,
-                 from /media/data1/linux-next/arch/um/include/asm/uaccess.h:41,
-                 from /media/data1/linux-next/arch/um/include/asm/thread_info.h:13,
-                 from include/linux/thread_info.h:56,
-                 from include/linux/preempt.h:9,
-                 from include/linux/spinlock.h:50,
-                 from include/linux/seqlock.h:29,
-                 from include/linux/time.h:8,
-                 from include/linux/timex.h:56,
-                 from include/linux/sched.h:56,
-                 from include/linux/audit.h:362,
-                 from arch/um/kernel/ptrace.c:6:
-/media/data1/linux-next/arch/um/include/asm/system.h:20:1: warning: "local_irq_disable" redefined
-In file included from /media/data1/linux-next/arch/um/sys-i386/shared/sysdep/system.h:11,
-                 from /media/data1/linux-next/arch/um/include/asm/system.h:4,
-                 from /media/data1/linux-next/arch/um/include/asm/fixmap.h:5,
-                 from /media/data1/linux-next/arch/um/include/shared/um_uaccess.h:10,
-                 from /media/data1/linux-next/arch/um/include/asm/uaccess.h:41,
-                 from /media/data1/linux-next/arch/um/include/asm/thread_info.h:13,
-                 from include/linux/thread_info.h:56,
-                 from include/linux/preempt.h:9,
-                 from include/linux/spinlock.h:50,
-                 from include/linux/seqlock.h:29,
-                 from include/linux/time.h:8,
-                 from include/linux/timex.h:56,
-                 from include/linux/sched.h:56,
-                 from include/linux/audit.h:362,
-                 from arch/um/kernel/ptrace.c:6:
-include/linux/irqflags.h:137:1: warning: this is the location of the previous definition
-In file included from /media/data1/linux-next/arch/um/include/asm/fixmap.h:5,
-                 from /media/data1/linux-next/arch/um/include/shared/um_uaccess.h:10,
-                 from /media/data1/linux-next/arch/um/include/asm/uaccess.h:41,
-                 from /media/data1/linux-next/arch/um/include/asm/thread_info.h:13,
-                 from include/linux/thread_info.h:56,
-                 from include/linux/preempt.h:9,
-                 from include/linux/spinlock.h:50,
-                 from include/linux/seqlock.h:29,
-                 from include/linux/time.h:8,
-                 from include/linux/timex.h:56,
-                 from include/linux/sched.h:56,
-                 from include/linux/audit.h:362,
-                 from arch/um/kernel/ptrace.c:6:
-/media/data1/linux-next/arch/um/include/asm/system.h:22:1: warning: "irqs_disabled" redefined
-In file included from /media/data1/linux-next/arch/um/sys-i386/shared/sysdep/system.h:11,
-                 from /media/data1/linux-next/arch/um/include/asm/system.h:4,
-                 from /media/data1/linux-next/arch/um/include/asm/fixmap.h:5,
-                 from /media/data1/linux-next/arch/um/include/shared/um_uaccess.h:10,
-                 from /media/data1/linux-next/arch/um/include/asm/uaccess.h:41,
-                 from /media/data1/linux-next/arch/um/include/asm/thread_info.h:13,
-                 from include/linux/thread_info.h:56,
-                 from include/linux/preempt.h:9,
-                 from include/linux/spinlock.h:50,
-                 from include/linux/seqlock.h:29,
-                 from include/linux/time.h:8,
-                 from include/linux/timex.h:56,
-                 from include/linux/sched.h:56,
-                 from include/linux/audit.h:362,
-                 from arch/um/kernel/ptrace.c:6:
-include/linux/irqflags.h:144:1: warning: this is the location of the previous definition
-  CC      arch/um/kernel/reboot.o
-In file included from /media/data1/linux-next/arch/um/include/asm/fixmap.h:5,
-                 from /media/data1/linux-next/arch/um/include/shared/um_uaccess.h:10,
-                 from /media/data1/linux-next/arch/um/include/asm/uaccess.h:41,
-                 from /media/data1/linux-next/arch/um/include/asm/thread_info.h:13,
-                 from include/linux/thread_info.h:56,
-                 from include/linux/preempt.h:9,
-                 from include/linux/spinlock.h:50,
-                 from include/linux/seqlock.h:29,
-                 from include/linux/time.h:8,
-                 from include/linux/timex.h:56,
-                 from include/linux/sched.h:56,
-                 from arch/um/kernel/reboot.c:6:
-/media/data1/linux-next/arch/um/include/asm/system.h:11:1: warning: "local_save_flags" redefined
-In file included from /media/data1/linux-next/arch/um/sys-i386/shared/sysdep/system.h:11,
-                 from /media/data1/linux-next/arch/um/include/asm/system.h:4,
-                 from /media/data1/linux-next/arch/um/include/asm/fixmap.h:5,
-                 from /media/data1/linux-next/arch/um/include/shared/um_uaccess.h:10,
-                 from /media/data1/linux-next/arch/um/include/asm/uaccess.h:41,
-                 from /media/data1/linux-next/arch/um/include/asm/thread_info.h:13,
-                 from include/linux/thread_info.h:56,
-                 from include/linux/preempt.h:9,
-                 from include/linux/spinlock.h:50,
-                 from include/linux/seqlock.h:29,
-                 from include/linux/time.h:8,
-                 from include/linux/timex.h:56,
-                 from include/linux/sched.h:56,
-                 from arch/um/kernel/reboot.c:6:
-include/linux/irqflags.h:143:1: warning: this is the location of the previous definition
-In file included from /media/data1/linux-next/arch/um/include/asm/fixmap.h:5,
-                 from /media/data1/linux-next/arch/um/include/shared/um_uaccess.h:10,
-                 from /media/data1/linux-next/arch/um/include/asm/uaccess.h:41,
-                 from /media/data1/linux-next/arch/um/include/asm/thread_info.h:13,
-                 from include/linux/thread_info.h:56,
-                 from include/linux/preempt.h:9,
-                 from include/linux/spinlock.h:50,
-                 from include/linux/seqlock.h:29,
-                 from include/linux/time.h:8,
-                 from include/linux/timex.h:56,
-                 from include/linux/sched.h:56,
-                 from arch/um/kernel/reboot.c:6:
-/media/data1/linux-next/arch/um/include/asm/system.h:13:1: warning: "local_irq_restore" redefined
-In file included from /media/data1/linux-next/arch/um/sys-i386/shared/sysdep/system.h:11,
-                 from /media/data1/linux-next/arch/um/include/asm/system.h:4,
-                 from /media/data1/linux-next/arch/um/include/asm/fixmap.h:5,
-                 from /media/data1/linux-next/arch/um/include/shared/um_uaccess.h:10,
-                 from /media/data1/linux-next/arch/um/include/asm/uaccess.h:41,
-                 from /media/data1/linux-next/arch/um/include/asm/thread_info.h:13,
-                 from include/linux/thread_info.h:56,
-                 from include/linux/preempt.h:9,
-                 from include/linux/spinlock.h:50,
-                 from include/linux/seqlock.h:29,
-                 from include/linux/time.h:8,
-                 from include/linux/timex.h:56,
-                 from include/linux/sched.h:56,
-                 from arch/um/kernel/reboot.c:6:
-include/linux/irqflags.h:142:1: warning: this is the location of the previous definition
-In file included from /media/data1/linux-next/arch/um/include/asm/fixmap.h:5,
-                 from /media/data1/linux-next/arch/um/include/shared/um_uaccess.h:10,
-                 from /media/data1/linux-next/arch/um/include/asm/uaccess.h:41,
-                 from /media/data1/linux-next/arch/um/include/asm/thread_info.h:13,
-                 from include/linux/thread_info.h:56,
-                 from include/linux/preempt.h:9,
-                 from include/linux/spinlock.h:50,
-                 from include/linux/seqlock.h:29,
-                 from include/linux/time.h:8,
-                 from include/linux/timex.h:56,
-                 from include/linux/sched.h:56,
-                 from arch/um/kernel/reboot.c:6:
-/media/data1/linux-next/arch/um/include/asm/system.h:16:1: warning: "local_irq_save" redefined
-In file included from /media/data1/linux-next/arch/um/sys-i386/shared/sysdep/system.h:11,
-                 from /media/data1/linux-next/arch/um/include/asm/system.h:4,
-                 from /media/data1/linux-next/arch/um/include/asm/fixmap.h:5,
-                 from /media/data1/linux-next/arch/um/include/shared/um_uaccess.h:10,
-                 from /media/data1/linux-next/arch/um/include/asm/uaccess.h:41,
-                 from /media/data1/linux-next/arch/um/include/asm/thread_info.h:13,
-                 from include/linux/thread_info.h:56,
-                 from include/linux/preempt.h:9,
-                 from include/linux/spinlock.h:50,
-                 from include/linux/seqlock.h:29,
-                 from include/linux/time.h:8,
-                 from include/linux/timex.h:56,
-                 from include/linux/sched.h:56,
-                 from arch/um/kernel/reboot.c:6:
-include/linux/irqflags.h:138:1: warning: this is the location of the previous definition
-In file included from /media/data1/linux-next/arch/um/include/asm/fixmap.h:5,
-                 from /media/data1/linux-next/arch/um/include/shared/um_uaccess.h:10,
-                 from /media/data1/linux-next/arch/um/include/asm/uaccess.h:41,
-                 from /media/data1/linux-next/arch/um/include/asm/thread_info.h:13,
-                 from include/linux/thread_info.h:56,
-                 from include/linux/preempt.h:9,
-                 from include/linux/spinlock.h:50,
-                 from include/linux/seqlock.h:29,
-                 from include/linux/time.h:8,
-                 from include/linux/timex.h:56,
-                 from include/linux/sched.h:56,
-                 from arch/um/kernel/reboot.c:6:
-/media/data1/linux-next/arch/um/include/asm/system.h:19:1: warning: "local_irq_enable" redefined
-In file included from /media/data1/linux-next/arch/um/sys-i386/shared/sysdep/system.h:11,
-                 from /media/data1/linux-next/arch/um/include/asm/system.h:4,
-                 from /media/data1/linux-next/arch/um/include/asm/fixmap.h:5,
-                 from /media/data1/linux-next/arch/um/include/shared/um_uaccess.h:10,
-                 from /media/data1/linux-next/arch/um/include/asm/uaccess.h:41,
-                 from /media/data1/linux-next/arch/um/include/asm/thread_info.h:13,
-                 from include/linux/thread_info.h:56,
-                 from include/linux/preempt.h:9,
-                 from include/linux/spinlock.h:50,
-                 from include/linux/seqlock.h:29,
-                 from include/linux/time.h:8,
-                 from include/linux/timex.h:56,
-                 from include/linux/sched.h:56,
-                 from arch/um/kernel/reboot.c:6:
-include/linux/irqflags.h:136:1: warning: this is the location of the previous definition
-In file included from /media/data1/linux-next/arch/um/include/asm/fixmap.h:5,
-                 from /media/data1/linux-next/arch/um/include/shared/um_uaccess.h:10,
-                 from /media/data1/linux-next/arch/um/include/asm/uaccess.h:41,
-                 from /media/data1/linux-next/arch/um/include/asm/thread_info.h:13,
-                 from include/linux/thread_info.h:56,
-                 from include/linux/preempt.h:9,
-                 from include/linux/spinlock.h:50,
-                 from include/linux/seqlock.h:29,
-                 from include/linux/time.h:8,
-                 from include/linux/timex.h:56,
-                 from include/linux/sched.h:56,
-                 from arch/um/kernel/reboot.c:6:
-/media/data1/linux-next/arch/um/include/asm/system.h:20:1: warning: "local_irq_disable" redefined
-In file included from /media/data1/linux-next/arch/um/sys-i386/shared/sysdep/system.h:11,
-                 from /media/data1/linux-next/arch/um/include/asm/system.h:4,
-                 from /media/data1/linux-next/arch/um/include/asm/fixmap.h:5,
-                 from /media/data1/linux-next/arch/um/include/shared/um_uaccess.h:10,
-                 from /media/data1/linux-next/arch/um/include/asm/uaccess.h:41,
-                 from /media/data1/linux-next/arch/um/include/asm/thread_info.h:13,
-                 from include/linux/thread_info.h:56,
-                 from include/linux/preempt.h:9,
-                 from include/linux/spinlock.h:50,
-                 from include/linux/seqlock.h:29,
-                 from include/linux/time.h:8,
-                 from include/linux/timex.h:56,
-                 from include/linux/sched.h:56,
-                 from arch/um/kernel/reboot.c:6:
-include/linux/irqflags.h:137:1: warning: this is the location of the previous definition
-In file included from /media/data1/linux-next/arch/um/include/asm/fixmap.h:5,
-                 from /media/data1/linux-next/arch/um/include/shared/um_uaccess.h:10,
-                 from /media/data1/linux-next/arch/um/include/asm/uaccess.h:41,
-                 from /media/data1/linux-next/arch/um/include/asm/thread_info.h:13,
-                 from include/linux/thread_info.h:56,
-                 from include/linux/preempt.h:9,
-                 from include/linux/spinlock.h:50,
-                 from include/linux/seqlock.h:29,
-                 from include/linux/time.h:8,
-                 from include/linux/timex.h:56,
-                 from include/linux/sched.h:56,
-                 from arch/um/kernel/reboot.c:6:
-/media/data1/linux-next/arch/um/include/asm/system.h:22:1: warning: "irqs_disabled" redefined
-In file included from /media/data1/linux-next/arch/um/sys-i386/shared/sysdep/system.h:11,
-                 from /media/data1/linux-next/arch/um/include/asm/system.h:4,
-                 from /media/data1/linux-next/arch/um/include/asm/fixmap.h:5,
-                 from /media/data1/linux-next/arch/um/include/shared/um_uaccess.h:10,
-                 from /media/data1/linux-next/arch/um/include/asm/uaccess.h:41,
-                 from /media/data1/linux-next/arch/um/include/asm/thread_info.h:13,
-                 from include/linux/thread_info.h:56,
-                 from include/linux/preempt.h:9,
-                 from include/linux/spinlock.h:50,
-                 from include/linux/seqlock.h:29,
-                 from include/linux/time.h:8,
-                 from include/linux/timex.h:56,
-                 from include/linux/sched.h:56,
-                 from arch/um/kernel/reboot.c:6:
-include/linux/irqflags.h:144:1: warning: this is the location of the previous definition
-  CC      arch/um/kernel/sigio.o
-In file included from /media/data1/linux-next/arch/um/include/asm/fixmap.h:5,
-                 from /media/data1/linux-next/arch/um/include/shared/um_uaccess.h:10,
-                 from /media/data1/linux-next/arch/um/include/asm/uaccess.h:41,
-                 from /media/data1/linux-next/arch/um/include/asm/thread_info.h:13,
-                 from include/linux/thread_info.h:56,
-                 from include/linux/preempt.h:9,
-                 from include/linux/interrupt.h:8,
-                 from arch/um/kernel/sigio.c:6:
-/media/data1/linux-next/arch/um/include/asm/system.h:11:1: warning: "local_save_flags" redefined
-In file included from /media/data1/linux-next/arch/um/sys-i386/shared/sysdep/system.h:11,
-                 from /media/data1/linux-next/arch/um/include/asm/system.h:4,
-                 from /media/data1/linux-next/arch/um/include/asm/fixmap.h:5,
-                 from /media/data1/linux-next/arch/um/include/shared/um_uaccess.h:10,
-                 from /media/data1/linux-next/arch/um/include/asm/uaccess.h:41,
-                 from /media/data1/linux-next/arch/um/include/asm/thread_info.h:13,
-                 from include/linux/thread_info.h:56,
-                 from include/linux/preempt.h:9,
-                 from include/linux/interrupt.h:8,
-                 from arch/um/kernel/sigio.c:6:
-include/linux/irqflags.h:143:1: warning: this is the location of the previous definition
-In file included from /media/data1/linux-next/arch/um/include/asm/fixmap.h:5,
-                 from /media/data1/linux-next/arch/um/include/shared/um_uaccess.h:10,
-                 from /media/data1/linux-next/arch/um/include/asm/uaccess.h:41,
-                 from /media/data1/linux-next/arch/um/include/asm/thread_info.h:13,
-                 from include/linux/thread_info.h:56,
-                 from include/linux/preempt.h:9,
-                 from include/linux/interrupt.h:8,
-                 from arch/um/kernel/sigio.c:6:
-/media/data1/linux-next/arch/um/include/asm/system.h:13:1: warning: "local_irq_restore" redefined
-In file included from /media/data1/linux-next/arch/um/sys-i386/shared/sysdep/system.h:11,
-                 from /media/data1/linux-next/arch/um/include/asm/system.h:4,
-                 from /media/data1/linux-next/arch/um/include/asm/fixmap.h:5,
-                 from /media/data1/linux-next/arch/um/include/shared/um_uaccess.h:10,
-                 from /media/data1/linux-next/arch/um/include/asm/uaccess.h:41,
-                 from /media/data1/linux-next/arch/um/include/asm/thread_info.h:13,
-                 from include/linux/thread_info.h:56,
-                 from include/linux/preempt.h:9,
-                 from include/linux/interrupt.h:8,
-                 from arch/um/kernel/sigio.c:6:
-include/linux/irqflags.h:142:1: warning: this is the location of the previous definition
-In file included from /media/data1/linux-next/arch/um/include/asm/fixmap.h:5,
-                 from /media/data1/linux-next/arch/um/include/shared/um_uaccess.h:10,
-                 from /media/data1/linux-next/arch/um/include/asm/uaccess.h:41,
-                 from /media/data1/linux-next/arch/um/include/asm/thread_info.h:13,
-                 from include/linux/thread_info.h:56,
-                 from include/linux/preempt.h:9,
-                 from include/linux/interrupt.h:8,
-                 from arch/um/kernel/sigio.c:6:
-/media/data1/linux-next/arch/um/include/asm/system.h:16:1: warning: "local_irq_save" redefined
-In file included from /media/data1/linux-next/arch/um/sys-i386/shared/sysdep/system.h:11,
-                 from /media/data1/linux-next/arch/um/include/asm/system.h:4,
-                 from /media/data1/linux-next/arch/um/include/asm/fixmap.h:5,
-                 from /media/data1/linux-next/arch/um/include/shared/um_uaccess.h:10,
-                 from /media/data1/linux-next/arch/um/include/asm/uaccess.h:41,
-                 from /media/data1/linux-next/arch/um/include/asm/thread_info.h:13,
-                 from include/linux/thread_info.h:56,
-                 from include/linux/preempt.h:9,
-                 from include/linux/interrupt.h:8,
-                 from arch/um/kernel/sigio.c:6:
-include/linux/irqflags.h:138:1: warning: this is the location of the previous definition
-In file included from /media/data1/linux-next/arch/um/include/asm/fixmap.h:5,
-                 from /media/data1/linux-next/arch/um/include/shared/um_uaccess.h:10,
-                 from /media/data1/linux-next/arch/um/include/asm/uaccess.h:41,
-                 from /media/data1/linux-next/arch/um/include/asm/thread_info.h:13,
-                 from include/linux/thread_info.h:56,
-                 from include/linux/preempt.h:9,
-                 from include/linux/interrupt.h:8,
-                 from arch/um/kernel/sigio.c:6:
-/media/data1/linux-next/arch/um/include/asm/system.h:19:1: warning: "local_irq_enable" redefined
-In file included from /media/data1/linux-next/arch/um/sys-i386/shared/sysdep/system.h:11,
-                 from /media/data1/linux-next/arch/um/include/asm/system.h:4,
-                 from /media/data1/linux-next/arch/um/include/asm/fixmap.h:5,
-                 from /media/data1/linux-next/arch/um/include/shared/um_uaccess.h:10,
-                 from /media/data1/linux-next/arch/um/include/asm/uaccess.h:41,
-                 from /media/data1/linux-next/arch/um/include/asm/thread_info.h:13,
-                 from include/linux/thread_info.h:56,
-                 from include/linux/preempt.h:9,
-                 from include/linux/interrupt.h:8,
-                 from arch/um/kernel/sigio.c:6:
-include/linux/irqflags.h:136:1: warning: this is the location of the previous definition
-In file included from /media/data1/linux-next/arch/um/include/asm/fixmap.h:5,
-                 from /media/data1/linux-next/arch/um/include/shared/um_uaccess.h:10,
-                 from /media/data1/linux-next/arch/um/include/asm/uaccess.h:41,
-                 from /media/data1/linux-next/arch/um/include/asm/thread_info.h:13,
-                 from include/linux/thread_info.h:56,
-                 from include/linux/preempt.h:9,
-                 from include/linux/interrupt.h:8,
-                 from arch/um/kernel/sigio.c:6:
-/media/data1/linux-next/arch/um/include/asm/system.h:20:1: warning: "local_irq_disable" redefined
-In file included from /media/data1/linux-next/arch/um/sys-i386/shared/sysdep/system.h:11,
-                 from /media/data1/linux-next/arch/um/include/asm/system.h:4,
-                 from /media/data1/linux-next/arch/um/include/asm/fixmap.h:5,
-                 from /media/data1/linux-next/arch/um/include/shared/um_uaccess.h:10,
-                 from /media/data1/linux-next/arch/um/include/asm/uaccess.h:41,
-                 from /media/data1/linux-next/arch/um/include/asm/thread_info.h:13,
-                 from include/linux/thread_info.h:56,
-                 from include/linux/preempt.h:9,
-                 from include/linux/interrupt.h:8,
-                 from arch/um/kernel/sigio.c:6:
-include/linux/irqflags.h:137:1: warning: this is the location of the previous definition
-In file included from /media/data1/linux-next/arch/um/include/asm/fixmap.h:5,
-                 from /media/data1/linux-next/arch/um/include/shared/um_uaccess.h:10,
-                 from /media/data1/linux-next/arch/um/include/asm/uaccess.h:41,
-                 from /media/data1/linux-next/arch/um/include/asm/thread_info.h:13,
-                 from include/linux/thread_info.h:56,
-                 from include/linux/preempt.h:9,
-                 from include/linux/interrupt.h:8,
-                 from arch/um/kernel/sigio.c:6:
-/media/data1/linux-next/arch/um/include/asm/system.h:22:1: warning: "irqs_disabled" redefined
-In file included from /media/data1/linux-next/arch/um/sys-i386/shared/sysdep/system.h:11,
-                 from /media/data1/linux-next/arch/um/include/asm/system.h:4,
-                 from /media/data1/linux-next/arch/um/include/asm/fixmap.h:5,
-                 from /media/data1/linux-next/arch/um/include/shared/um_uaccess.h:10,
-                 from /media/data1/linux-next/arch/um/include/asm/uaccess.h:41,
-                 from /media/data1/linux-next/arch/um/include/asm/thread_info.h:13,
-                 from include/linux/thread_info.h:56,
-                 from include/linux/preempt.h:9,
-                 from include/linux/interrupt.h:8,
-                 from arch/um/kernel/sigio.c:6:
-include/linux/irqflags.h:144:1: warning: this is the location of the previous definition
-arch/um/kernel/sigio.c: In function 'sigio_interrupt':
-arch/um/kernel/sigio.c:19: error: 'SIGIO_WRITE_IRQ' undeclared (first use in this function)
-arch/um/kernel/sigio.c:19: error: (Each undeclared identifier is reported only once
-arch/um/kernel/sigio.c:19: error: for each function it appears in.)
-arch/um/kernel/sigio.c: In function 'write_sigio_irq':
-arch/um/kernel/sigio.c:27: error: 'SIGIO_WRITE_IRQ' undeclared (first use in this function)
-make[1]: *** [arch/um/kernel/sigio.o] Error 1
-make: *** [arch/um/kernel] Error 2
 
---Boundary-00=_WsNvMWxFjz2hJOp--
