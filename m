@@ -1,114 +1,185 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933283Ab0JRUg3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Oct 2010 16:36:29 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:62239 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933157Ab0JRUg2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Oct 2010 16:36:28 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:x-mailer-version
-         :in-reply-to:references;
-        b=UYj++jGdcZy/+is2pju51fz1u8a0DoDzCUaRL/TP18yc6a9mdAVcU3ELAHFWTkg3E8
-         6XHZk4xZX5+IPVFTrSjYZLemAPbW9dDJ/tJuRtOeqU/uYs+p0FfHiTijWek6xRox/zwe
-         CxHSPNK7JATLJStkmI6HqNRCmqeQD8SCcjExg=
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH 2/2] x86: Remove stale TIF_DEBUG
-Date: Mon, 18 Oct 2010 22:35:58 +0200
-Message-Id: <1287434158-24362-2-git-send-regression-fweisbec@gmail.com>
-X-Mailer: git-send-regression
-X-Mailer-version: 0.1, "The maintainer couldn't reproduce after one week full time debugging" special version.
-In-Reply-To: <1287434158-24362-1-git-send-regression-fweisbec@gmail.com>
-References: <1287434158-24362-1-git-send-regression-fweisbec@gmail.com>
+	id S933305Ab0JRUhx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Oct 2010 16:37:53 -0400
+Received: from mout6.freenet.de ([195.4.92.96]:46176 "EHLO mout6.freenet.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933203Ab0JRUhw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Oct 2010 16:37:52 -0400
+Message-ID: <4CBCB014.9080108@freenet.de>
+Date: Mon, 18 Oct 2010 22:37:40 +0200
+From: Patrick Ringl <patrick_@freenet.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.11) Gecko/20100713 Thunderbird/3.0.6
+MIME-Version: 1.0
+To: Herbert Xu <herbert@gondor.hengli.com.au>
+CC: Patrick Ringl <patrick_@freenet.de>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, bridge@lists.linux-foundation.org
+Subject: Re: 2.6.36-rc7: net/bridge causes temporary network I/O lockups [2]
+References: <4CB9EBC3.4070905@freenet.de> <20101018161656.GA2403@gondor.apana.org.au>
+In-Reply-To: <20101018161656.GA2403@gondor.apana.org.au>
+Content-Type: multipart/mixed;
+ boundary="------------000701080606070908060701"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The last user was ptrace breakpoints, which doesn't use that
-since 2.6.33.
+This is a multi-part message in MIME format.
+--------------000701080606070908060701
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: H. Peter Anvin <hpa@zytor.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
----
- arch/x86/include/asm/thread_info.h |   15 ++++++---------
- arch/x86/kernel/process_32.c       |    2 +-
- arch/x86/kernel/process_64.c       |    2 +-
- 3 files changed, 8 insertions(+), 11 deletions(-)
+On 10/18/2010 06:16 PM, Herbert Xu wrote:
+> On Sat, Oct 16, 2010 at 08:15:31PM +0200, Patrick Ringl wrote:
+>    
+>> Hi,
+>>
+>> okay I narrowed down the issue. I watched all function calls of the
+>> 'bridge' module with the help of a small systemtap probe of mine. I
+>> first traced a timespan where the issue did not occur, then one where it
+>> did and composed an intersection of these two:
+>>      
+> I can't reproduce this problem here so I'll need your help to
+> track it down.
+>
+> Can you see if you can relate the lock-ups to specific events
+> such as a particular packet being sent through the bridge?
+>    
+The problem is definitely somewhere in the 2.6.34 commit regarding IGMP 
+snooping (when disabling it, everything works). I have attached a 
+tcpdump log of data coming through the bridge and data coming through an 
+attached port (eth1). The lockups are easily spotted, since I use mtr to 
+constantly ping the problematic machine, and there aren't any 
+incoming/outgoing packets during the lockup.
+> If we can recreate the problem on demand that that helps us to
+> find the root cause.
+>
+> You mentioned that you took packet dumps on the system.  If you
+> can show us the packets through the bridge and its ports when
+> the problem occurs that would be great.
+>
+> Thanks,
+>    
+Anything else I could possibly provide? :-)
 
-diff --git a/arch/x86/include/asm/thread_info.h b/arch/x86/include/asm/thread_info.h
-index 0bbf6f9..445cf3c 100644
---- a/arch/x86/include/asm/thread_info.h
-+++ b/arch/x86/include/asm/thread_info.h
-@@ -88,13 +88,12 @@ struct thread_info {
- #define TIF_IA32		17	/* 32bit process */
- #define TIF_FORK		18	/* ret_from_fork */
- #define TIF_MEMDIE		19	/* is terminating due to OOM killer */
--#define TIF_DEBUG		20	/* uses debug registers */
--#define TIF_IO_BITMAP		21	/* uses I/O bitmap */
--#define TIF_FREEZE		22	/* is freezing for suspend */
--#define TIF_FORCED_TF		23	/* true if TF in eflags artificially */
--#define TIF_BLOCKSTEP		24	/* set when we want DEBUGCTLMSR_BTF */
--#define TIF_LAZY_MMU_UPDATES	25	/* task is updating the mmu lazily */
--#define TIF_SYSCALL_TRACEPOINT	26	/* syscall tracepoint instrumentation */
-+#define TIF_IO_BITMAP		20	/* uses I/O bitmap */
-+#define TIF_FREEZE		21	/* is freezing for suspend */
-+#define TIF_FORCED_TF		22	/* true if TF in eflags artificially */
-+#define TIF_BLOCKSTEP		23	/* set when we want DEBUGCTLMSR_BTF */
-+#define TIF_LAZY_MMU_UPDATES	24	/* task is updating the mmu lazily */
-+#define TIF_SYSCALL_TRACEPOINT	25	/* syscall tracepoint instrumentation */
- 
- #define _TIF_SYSCALL_TRACE	(1 << TIF_SYSCALL_TRACE)
- #define _TIF_NOTIFY_RESUME	(1 << TIF_NOTIFY_RESUME)
-@@ -110,7 +109,6 @@ struct thread_info {
- #define _TIF_NOTSC		(1 << TIF_NOTSC)
- #define _TIF_IA32		(1 << TIF_IA32)
- #define _TIF_FORK		(1 << TIF_FORK)
--#define _TIF_DEBUG		(1 << TIF_DEBUG)
- #define _TIF_IO_BITMAP		(1 << TIF_IO_BITMAP)
- #define _TIF_FREEZE		(1 << TIF_FREEZE)
- #define _TIF_FORCED_TF		(1 << TIF_FORCED_TF)
-@@ -148,7 +146,6 @@ struct thread_info {
- 	(_TIF_IO_BITMAP|_TIF_NOTSC|_TIF_BLOCKSTEP)
- 
- #define _TIF_WORK_CTXSW_PREV (_TIF_WORK_CTXSW|_TIF_USER_RETURN_NOTIFY)
--#define _TIF_WORK_CTXSW_NEXT (_TIF_WORK_CTXSW|_TIF_DEBUG)
- 
- #define PREEMPT_ACTIVE		0x10000000
- 
-diff --git a/arch/x86/kernel/process_32.c b/arch/x86/kernel/process_32.c
-index 96586c3..44726fb 100644
---- a/arch/x86/kernel/process_32.c
-+++ b/arch/x86/kernel/process_32.c
-@@ -350,7 +350,7 @@ __switch_to(struct task_struct *prev_p, struct task_struct *next_p)
- 	 * Now maybe handle debug registers and/or IO bitmaps
- 	 */
- 	if (unlikely(task_thread_info(prev_p)->flags & _TIF_WORK_CTXSW_PREV ||
--		     task_thread_info(next_p)->flags & _TIF_WORK_CTXSW_NEXT))
-+		     task_thread_info(next_p)->flags & _TIF_WORK_CTXSW))
- 		__switch_to_xtra(prev_p, next_p, tss);
- 
- 	/* If we're going to preload the fpu context, make sure clts
-diff --git a/arch/x86/kernel/process_64.c b/arch/x86/kernel/process_64.c
-index b3d7a3a..399760d 100644
---- a/arch/x86/kernel/process_64.c
-+++ b/arch/x86/kernel/process_64.c
-@@ -484,7 +484,7 @@ __switch_to(struct task_struct *prev_p, struct task_struct *next_p)
- 	/*
- 	 * Now maybe reload the debug registers and handle I/O bitmaps
- 	 */
--	if (unlikely(task_thread_info(next_p)->flags & _TIF_WORK_CTXSW_NEXT ||
-+	if (unlikely(task_thread_info(next_p)->flags & _TIF_WORK_CTXSW ||
- 		     task_thread_info(prev_p)->flags & _TIF_WORK_CTXSW_PREV))
- 		__switch_to_xtra(prev_p, next_p, tss);
- 
--- 
-1.6.2.3
+regards,
+Patrick
 
+--------------000701080606070908060701
+Content-Type: application/octet-stream;
+ name="dump_br0"
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment;
+ filename="dump_br0"
+
+1MOyoQIABAAAAAAAAAAAAP//AAABAAAAHa28TMVGCwBOAAAATgAAANhdTIB5bwAeZREzIAgA
+RQAAQKv1AAABAYpiwKgBA8CoARIIAMV6DAMmggAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAB2tvEznRgsATgAAAE4AAAAAHmURMyDYXUyAeW8IAEUAAEBeuAAAQAGYn8Co
+ARLAqAEDAADNegwDJoIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAdrbxM
+3EgLAE4AAABOAAAA2F1MgHlvAB5lETMgCABFAABAq/YAAAEBimHAqAEDwKgBEggA+7NRXaru
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHa28TP1ICwBOAAAATgAAAAAe
+ZREzINhdTIB5bwgARQAAQF65AABAAZiewKgBEsCoAQMAAAO0UV2q7gAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAB6tvExYRAsATgAAAE4AAADYXUyAeW8AHmURMyAIAEUA
+AECr9wAAAQGKYMCoAQPAqAESCADEegwDJ4IAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAerbxMeUQLAE4AAABOAAAAAB5lETMg2F1MgHlvCABFAABAXroAAEABmJ3AqAES
+wKgBAwAAzHoMAyeCAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHq28TCtL
+CwBOAAAATgAAANhdTIB5bwAeZREzIAgARQAAQKv4AAABAYpfwKgBA8CoARIIAPqzUV2r7gAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAB6tvExMSwsATgAAAE4AAAAAHmUR
+MyDYXUyAeW8IAEUAAEBeuwAAQAGYnMCoARLAqAEDAAACtFFdq+4AAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAfrbxMSBQJAC4AAAAuAAAAAQBeAAAB2F1MgHlvCABGwAAg
+AABAAAECBBcAAAAA4AAAAZQEAAARZO6bAAAAAB+tvExnFAkAVgAAAFYAAAAzMwAAAADYXUyA
+eW+G3WAAAAAgAAABAAAAAAAAAAAAAAAAAAAAAP8CAAAAAAAAAAAAAAAAAAE6AAUCAAAAAIIA
+esED6AAAAAAAAAAAAAAAAAAAAAAAAB+tvExLRQsATgAAAE4AAADYXUyAeW8AHmURMyAIAEUA
+AECr+QAAAQGKXsCoAQPAqAESCADDegwDKIIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAfrbxMbUULAE4AAABOAAAAAB5lETMg2F1MgHlvCABFAABAXrwAAEABmJvAqAES
+wKgBAwAAy3oMAyiCAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAH628TO9M
+CwBOAAAATgAAANhdTIB5bwAeZREzIAgARQAAQKv6AAABAYpdwKgBA8CoARIIAPmzUV2s7gAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAB+tvEwQTQsATgAAAE4AAAAAHmUR
+MyDYXUyAeW8IAEUAAEBevQAAQAGYmsCoARLAqAEDAAABtFFdrO4AAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAgrbxMC0YLAE4AAABOAAAA2F1MgHlvAB5lETMgCABFAABA
+q/sAAAEBilzAqAEDwKgBEggAwnoMAymCAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAIK28TCxGCwBOAAAATgAAAAAeZREzINhdTIB5bwgARQAAQF6+AABAAZiZwKgBEsCo
+AQMAAMp6DAMpggAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACCtvEzATgsA
+TgAAAE4AAADYXUyAeW8AHmURMyAIAEUAAECr/AAAAQGKW8CoAQPAqAESCAD4s1Fdre4AAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgrbxM4k4LAE4AAABOAAAAAB5lETMg
+2F1MgHlvCABFAABAXr8AAEABmJjAqAESwKgBAwAAALRRXa3uAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAJa28TOtfDAAuAAAALgAAAAEAXgAAAgAbnv6nBAgARsAAIAAA
+QAABAkJrwKgBAuAAAAKUBAAAFgAJ/eAAAAImrbxMxz0AAC4AAAAuAAAAAQBeAAD7AB5lETMg
+CABGwAAgAABAAAECQXHAqAED4AAA+5QEAAAWAAkE4AAA+yatvEyJDggALgAAAC4AAAABAF4A
+ABYAG57+pwQIAEbAACAAAEAAAQJCV8CoAQLgAAAWlAQAABYACengAAAWNa28TJUIDAA8AAAA
+PAAAAP///////wAeZREzIAgGAAEIAAYEAAEAHmURMyDAqAEDAAAAAAAAwKgBEgAAAAAAAAAA
+AAAAAAAAy4X/pjWtvEynCAwAKgAAACoAAAAAHmURMyDYXUyAeW8IBgABCAAGBAAC2F1MgHlv
+wKgBEgAeZREzIMCoAQM1rbxMXA4MAE4AAABOAAAA2F1MgHlvAB5lETMgCABFAABArCUAAAEB
+ijLAqAEDwKgBEggArXoMAz6CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+Na28TIEODABOAAAATgAAAAAeZREzINhdTIB5bwgARQAAQF7AAABAAZiXwKgBEsCoAQMAALV6
+DAM+ggAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADWtvEy5DgwATgAAAE4A
+AADYXUyAeW8AHmURMyAIAEUAAECsJgAAAQGKMcCoAQPAqAESCADjs1Fdwu4AAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA1rbxMww4MAE4AAABOAAAAAB5lETMg2F1MgHlv
+CABFAABAXsEAAEABmJbAqAESwKgBAwAA67NRXcLuAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAANq28TAm/CwBOAAAATgAAANhdTIB5bwAeZREzIAgARQAAQKwnAAABAYow
+wKgBA8CoARIIAKx6DAM/ggAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADat
+vEwrvwsATgAAAE4AAAAAHmURMyDYXUyAeW8IAEUAAEBewgAAQAGYlcCoARLAqAEDAAC0egwD
+P4IAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA2rbxMpdULAE4AAABOAAAA
+2F1MgHlvAB5lETMgCABFAABArCgAAAEBii/AqAEDwKgBEggA4rNRXcPuAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAANq28TMjVCwBOAAAATgAAAAAeZREzINhdTIB5bwgA
+RQAAQF7DAABAAZiUwKgBEsCoAQMAAOqzUV3D7gAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAA==
+--------------000701080606070908060701
+Content-Type: application/octet-stream;
+ name="dump_eth1"
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment;
+ filename="dump_eth1"
+
+1MOyoQIABAAAAAAAAAAAAP//AAABAAAAHa28TKxGCwBOAAAATgAAANhdTIB5bwAeZREzIAgA
+RQAAQKv1AAABAYpiwKgBA8CoARIIAMV6DAMmggAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAB2tvEztRgsATgAAAE4AAAAAHmURMyDYXUyAeW8IAEUAAEBeuAAAQAGYn8Co
+ARLAqAEDAADNegwDJoIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAdrbxM
+w0gLAE4AAABOAAAA2F1MgHlvAB5lETMgCABFAABAq/YAAAEBimHAqAEDwKgBEggA+7NRXaru
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHa28TANJCwBOAAAATgAAAAAe
+ZREzINhdTIB5bwgARQAAQF65AABAAZiewKgBEsCoAQMAAAO0UV2q7gAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAB6tvEw+RAsATgAAAE4AAADYXUyAeW8AHmURMyAIAEUA
+AECr9wAAAQGKYMCoAQPAqAESCADEegwDJ4IAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAerbxMf0QLAE4AAABOAAAAAB5lETMg2F1MgHlvCABFAABAXroAAEABmJ3AqAES
+wKgBAwAAzHoMAyeCAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHq28TBFL
+CwBOAAAATgAAANhdTIB5bwAeZREzIAgARQAAQKv4AAABAYpfwKgBA8CoARIIAPqzUV2r7gAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAB6tvExSSwsATgAAAE4AAAAAHmUR
+MyDYXUyAeW8IAEUAAEBeuwAAQAGYnMCoARLAqAEDAAACtFFdq+4AAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAfrbxMMkULAE4AAABOAAAA2F1MgHlvAB5lETMgCABFAABA
+q/kAAAEBil7AqAEDwKgBEggAw3oMAyiCAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAH628THNFCwBOAAAATgAAAAAeZREzINhdTIB5bwgARQAAQF68AABAAZibwKgBEsCo
+AQMAAMt6DAMoggAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAB+tvEzVTAsA
+TgAAAE4AAADYXUyAeW8AHmURMyAIAEUAAECr+gAAAQGKXcCoAQPAqAESCAD5s1FdrO4AAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAfrbxMFk0LAE4AAABOAAAAAB5lETMg
+2F1MgHlvCABFAABAXr0AAEABmJrAqAESwKgBAwAAAbRRXazuAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAIK28TPFFCwBOAAAATgAAANhdTIB5bwAeZREzIAgARQAAQKv7
+AAABAYpcwKgBA8CoARIIAMJ6DAMpggAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAACCtvEwyRgsATgAAAE4AAAAAHmURMyDYXUyAeW8IAEUAAEBevgAAQAGYmcCoARLAqAED
+AADKegwDKYIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgrbxMp04LAE4A
+AABOAAAA2F1MgHlvAB5lETMgCABFAABAq/wAAAEBilvAqAEDwKgBEggA+LNRXa3uAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIK28TOhOCwBOAAAATgAAAAAeZREzINhd
+TIB5bwgARQAAQF6/AABAAZiYwKgBEsCoAQMAAAC0UV2t7gAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAACCtvEwbWg0ALgAAAC4AAAABAF4AAAHYXUyAeW8IAEbAACAAAEAA
+AQIEFwAAAADgAAABlAQAABFk7psAAAAAIK28TCpaDQBWAAAAVgAAADMzAAAAANhdTIB5b4bd
+YAAAACAAAAEAAAAAAAAAAAAAAAAAAAAA/wIAAAAAAAAAAAAAAAAAAToABQIAAAAAggB6wQPo
+AAAAAAAAAAAAAAAAAAAAAAAAJa28TMlfDAA8AAAAPAAAAAEAXgAAAgAbnv6nBAgARsAAIAAA
+QAABAkJrwKgBAuAAAAKUBAAAFgAJ/eAAAAIAAAAAAAAAAAAARP3WKSatvEylPQAAPAAAADwA
+AAABAF4AAPsAHmURMyAIAEbAACAAAEAAAQJBccCoAQPgAAD7lAQAABYACQTgAAD7AAAAAAAA
+AAAAAHykwK0mrbxMZw4IADwAAAA8AAAAAQBeAAAWABue/qcECABGwAAgAABAAAECQlfAqAEC
+4AAAFpQEAAAWAAnp4AAAFgAAAAAAAAAAAADAFD2YNa28TIcIDAA8AAAAPAAAAP///////wAe
+ZREzIAgGAAEIAAYEAAEAHmURMyDAqAEDAAAAAAAAwKgBEgAAAAAAAAAAAAAAAAAAy4X/pjWt
+vEytCAwAKgAAACoAAAAAHmURMyDYXUyAeW8IBgABCAAGBAAC2F1MgHlvwKgBEgAeZREzIMCo
+AQM1rbxMQw4MAE4AAABOAAAA2F1MgHlvAB5lETMgCABFAABArCUAAAEBijLAqAEDwKgBEggA
+rXoMAz6CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAANa28TIgODABOAAAA
+TgAAAAAeZREzINhdTIB5bwgARQAAQF7AAABAAZiXwKgBEsCoAQMAALV6DAM+ggAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADWtvEyzDgwATgAAAE4AAADYXUyAeW8AHmUR
+MyAIAEUAAECsJgAAAQGKMcCoAQPAqAESCADjs1Fdwu4AAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAA1rbxMxg4MAE4AAABOAAAAAB5lETMg2F1MgHlvCABFAABAXsEAAEAB
+mJbAqAESwKgBAwAA67NRXcLuAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+Nq28TPG+CwBOAAAATgAAANhdTIB5bwAeZREzIAgARQAAQKwnAAABAYowwKgBA8CoARIIAKx6
+DAM/ggAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADatvEwxvwsATgAAAE4A
+AAAAHmURMyDYXUyAeW8IAEUAAEBewgAAQAGYlcCoARLAqAEDAAC0egwDP4IAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA2rbxMjdULAE4AAABOAAAA2F1MgHlvAB5lETMg
+CABFAABArCgAAAEBii/AqAEDwKgBEggA4rNRXcPuAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAANq28TM7VCwBOAAAATgAAAAAeZREzINhdTIB5bwgARQAAQF7DAABAAZiU
+wKgBEsCoAQMAAOqzUV3D7gAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==
+--------------000701080606070908060701--
