@@ -1,219 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757596Ab0JRSKf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Oct 2010 14:10:35 -0400
-Received: from smtp-out.google.com ([74.125.121.35]:25934 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754853Ab0JRSKd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Oct 2010 14:10:33 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=from:to:cc:subject:references:date:in-reply-to:message-id:
-	user-agent:mime-version:content-type;
-	b=T2WcYkSjlpYawwm6wplOuJDspLHA/FgYSYzgTXBzGRumhs7bAlyw1xTN8Yrym8nI4
-	/CgqA3CqQiy6Vhi428+Fg==
-From: Greg Thelen <gthelen@google.com>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, containers@lists.osdl.org,
-        Andrea Righi <arighi@develer.com>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-Subject: Re: [PATCH 00/10] memcg: per cgroup dirty page accounting
-References: <1286175485-30643-1-git-send-email-gthelen@google.com>
-	<20101018145636.806446aa.kamezawa.hiroyu@jp.fujitsu.com>
-Date: Mon, 18 Oct 2010 11:09:26 -0700
-In-Reply-To: <20101018145636.806446aa.kamezawa.hiroyu@jp.fujitsu.com>
-	(KAMEZAWA Hiroyuki's message of "Mon, 18 Oct 2010 14:56:36 +0900")
-Message-ID: <xr93d3r79xux.fsf@ninji.mtv.corp.google.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
+	id S933054Ab0JRSMQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Oct 2010 14:12:16 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:47426 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754914Ab0JRSMP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Oct 2010 14:12:15 -0400
+Date: Mon, 18 Oct 2010 20:11:36 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Eric Paris <eparis@redhat.com>, Kyle McMartin <kyle@mcmartin.ca>,
+        James Morris <jmorris@namei.org>,
+        Christoph Hellwig <hch@infradead.org>, kernel@lists.fedoraproject.org,
+        Mimi Zohar <zohar@us.ibm.com>, warthog9@kernel.org,
+        Dave Chinner <david@fromorbit.com>, linux-kernel@vger.kernel.org,
+        Serge Hallyn <serue@us.ibm.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: ima: use of radix tree cache indexing == massive waste of memory?
+Message-ID: <20101018181136.GA12372@elte.hu>
+References: <20101016065206.GO4681@dastard>
+ <20101016192027.GA6883@infradead.org>
+ <ebc4973c-6c11-4397-b8b0-c212a27abce4@email.android.com>
+ <20101017004945.GE1614@infradead.org>
+ <20101017054008.GA16383@elte.hu>
+ <20101017184652.GB28060@infradead.org>
+ <alpine.LRH.2.00.1010181127480.9476@tundra.namei.org>
+ <20101018062530.GD8332@bombadil.infradead.org>
+ <1287420534.2530.67.camel@localhost.localdomain>
+ <4CBC8C98.1090802@zytor.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4CBC8C98.1090802@zytor.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> writes:
 
-> On Sun,  3 Oct 2010 23:57:55 -0700
-> Greg Thelen <gthelen@google.com> wrote:
->
->> Greg Thelen (10):
->>   memcg: add page_cgroup flags for dirty page tracking
->>   memcg: document cgroup dirty memory interfaces
->>   memcg: create extensible page stat update routines
->>   memcg: disable local interrupts in lock_page_cgroup()
->>   memcg: add dirty page accounting infrastructure
->>   memcg: add kernel calls for memcg dirty page stats
->>   memcg: add dirty limits to mem_cgroup
->>   memcg: add cgroupfs interface to memcg dirty limits
->>   writeback: make determine_dirtyable_memory() static.
->>   memcg: check memcg dirty limits in page writeback
->
-> Greg, this is a patch on your set.
->
->  mmotm-1014 
->  - memcg-reduce-lock-hold-time-during-charge-moving.patch
->    (I asked Andrew to drop this)
->  + your 1,2,3,5,6,7,8,9,10 (dropped patch "4")
->
-> I'm grad if you merge this to your set as replacement of "4".
-> I'll prepare a performance improvement patch and post it if this dirty_limit
-> patches goes to -mm.
+* H. Peter Anvin <hpa@zytor.com> wrote:
 
-Thanks for the patch.  I will merge your patch (below) as a replacement
-of memcg dirty limits patch #4 and repost the entire series.
+> On 10/18/2010 09:48 AM, Eric Paris wrote:
+> 
+> > 1) IMA uses radix trees which end up wasting 500 bytes per inode because the key 
+> > is too sparse.  I've got a patch which uses an rbtree instead I'm testing and 
+> > will send along shortly.  I found it funny working on the patch to see that 
+> > Documentation/rbtree.txt says "This differs from radix trees (which are used to 
+> > efficiently store sparse arrays and thus use long integer indexes to 
+> > insert/access/delete nodes)" Which flys in the face of this report.
+> 
+> Radix trees can efficiently store data associated with sparse keys *as long as the 
+> keys are clustered*.  For random key distributions, they perform horribly.
 
-> Thank you for your work.
->
-> ==
-> From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
->
-> Now, at supporing dirty limit, there is a deadlock problem in accounting.
->
->  1. If pages are being migrated from a memcg, then updates to that
-> memcg page statistics are protected by grabbing a bit spin lock
-> using lock_page_cgroup().  In recent changes of dirty page accounting
-> is updating memcg page accounting (specifically: num writeback pages)
-> from IRQ context (softirq).  Avoid a deadlocking nested spin lock attempt
-> by irq on the local processor when grabbing the page_cgroup.
->
->  2. lock for update_stat is used only for avoiding race with move_account().
-> So, IRQ awareness of lock_page_cgroup() itself is not a problem. The problem
-> is in update_stat() and move_account().
->
-> Then, this reworks locking scheme of update_stat() and move_account() by
-> adding new lock bit PCG_MOVE_LOCK, which is always taken under IRQ disable.
->
-> Trade-off
->   * using lock_page_cgroup() + disable IRQ has some impacts on performance
->     and I think it's bad to disable IRQ when it's not necessary.
->   * adding a new lock makes move_account() slow. Score is here.
->
-> Peformance Impact: moving a 8G anon process.
->
-> Before:
-> 	real    0m0.792s
-> 	user    0m0.000s
-> 	sys     0m0.780s
->
-> After:
-> 	real    0m0.854s
-> 	user    0m0.000s
-> 	sys     0m0.842s
->
-> This score is bad but planned patches for optimization can reduce
-> this impact.
->
-> Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> ---
->  include/linux/page_cgroup.h |   31 ++++++++++++++++++++++++++++---
->  mm/memcontrol.c             |    9 +++++++--
->  2 files changed, 35 insertions(+), 5 deletions(-)
->
-> Index: dirty_limit_new/include/linux/page_cgroup.h
-> ===================================================================
-> --- dirty_limit_new.orig/include/linux/page_cgroup.h
-> +++ dirty_limit_new/include/linux/page_cgroup.h
-> @@ -35,15 +35,18 @@ struct page_cgroup *lookup_page_cgroup(s
->  
->  enum {
->  	/* flags for mem_cgroup */
-> -	PCG_LOCK,  /* page cgroup is locked */
-> +	PCG_LOCK,  /* Lock for pc->mem_cgroup and following bits. */
->  	PCG_CACHE, /* charged as cache */
->  	PCG_USED, /* this object is in use. */
-> -	PCG_ACCT_LRU, /* page has been accounted for */
-> +	PCG_MIGRATION, /* under page migration */
-> +	/* flags for mem_cgroup and file and I/O status */
-> +	PCG_MOVE_LOCK, /* For race between move_account v.s. following bits */
->  	PCG_FILE_MAPPED, /* page is accounted as "mapped" */
->  	PCG_FILE_DIRTY, /* page is dirty */
->  	PCG_FILE_WRITEBACK, /* page is under writeback */
->  	PCG_FILE_UNSTABLE_NFS, /* page is NFS unstable */
-> -	PCG_MIGRATION, /* under page migration */
-> +	/* No lock in page_cgroup */
-> +	PCG_ACCT_LRU, /* page has been accounted for (under lru_lock) */
->  };
->  
->  #define TESTPCGFLAG(uname, lname)			\
-> @@ -119,6 +122,10 @@ static inline enum zone_type page_cgroup
->  
->  static inline void lock_page_cgroup(struct page_cgroup *pc)
->  {
-> +	/*
-> +	 * Don't take this lock in IRQ context.
-> +	 * This lock is for pc->mem_cgroup, USED, CACHE, MIGRATION
-> +	 */
->  	bit_spin_lock(PCG_LOCK, &pc->flags);
->  }
->  
-> @@ -127,6 +134,24 @@ static inline void unlock_page_cgroup(st
->  	bit_spin_unlock(PCG_LOCK, &pc->flags);
->  }
->  
-> +static inline void move_lock_page_cgroup(struct page_cgroup *pc,
-> +	unsigned long *flags)
-> +{
-> +	/*
-> +	 * We know updates to pc->flags of page cache's stats are from both of
-> +	 * usual context or IRQ context. Disable IRQ to avoid deadlock.
-> +	 */
-> +	local_irq_save(*flags);
-> +	bit_spin_lock(PCG_MOVE_LOCK, &pc->flags);
-> +}
-> +
-> +static inline void move_unlock_page_cgroup(struct page_cgroup *pc,
-> +	unsigned long *flags)
-> +{
-> +	bit_spin_unlock(PCG_MOVE_LOCK, &pc->flags);
-> +	local_irq_restore(*flags);
-> +}
-> +
->  #else /* CONFIG_CGROUP_MEM_RES_CTLR */
->  struct page_cgroup;
->  
-> Index: dirty_limit_new/mm/memcontrol.c
-> ===================================================================
-> --- dirty_limit_new.orig/mm/memcontrol.c
-> +++ dirty_limit_new/mm/memcontrol.c
-> @@ -1784,6 +1784,7 @@ void mem_cgroup_update_page_stat(struct 
->  	struct mem_cgroup *mem;
->  	struct page_cgroup *pc = lookup_page_cgroup(page);
->  	bool need_unlock = false;
-> +	unsigned long uninitialized_var(flags);
->  
->  	if (unlikely(!pc))
->  		return;
-> @@ -1795,7 +1796,7 @@ void mem_cgroup_update_page_stat(struct 
->  	/* pc->mem_cgroup is unstable ? */
->  	if (unlikely(mem_cgroup_stealed(mem))) {
->  		/* take a lock against to access pc->mem_cgroup */
-> -		lock_page_cgroup(pc);
-> +		move_lock_page_cgroup(pc, &flags);
->  		need_unlock = true;
->  		mem = pc->mem_cgroup;
->  		if (!mem || !PageCgroupUsed(pc))
-> @@ -1856,7 +1857,7 @@ void mem_cgroup_update_page_stat(struct 
->  
->  out:
->  	if (unlikely(need_unlock))
-> -		unlock_page_cgroup(pc);
-> +		move_unlock_page_cgroup(pc, &flags);
->  	rcu_read_unlock();
->  	return;
->  }
-> @@ -2426,9 +2427,13 @@ static int mem_cgroup_move_account(struc
->  		struct mem_cgroup *from, struct mem_cgroup *to, bool uncharge)
->  {
->  	int ret = -EINVAL;
-> +	unsigned long flags;
-> +
->  	lock_page_cgroup(pc);
->  	if (PageCgroupUsed(pc) && pc->mem_cgroup == from) {
-> +		move_lock_page_cgroup(pc, &flags);
->  		__mem_cgroup_move_account(pc, from, to, uncharge);
-> +		move_unlock_page_cgroup(pc, &flags);
->  		ret = 0;
->  	}
->  	unlock_page_cgroup(pc);
+For random key distributions hash and rbtree data structures are pretty good 
+choices.
+
+But the (much) more fundamental question is to turn the non-trivial allocation 
+overhead of this opt-in feature into truly opt-in overhead.
+
+Thanks,
+
+	Ingo
