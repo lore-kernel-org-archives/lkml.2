@@ -1,50 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933049Ab0JRSRb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Oct 2010 14:17:31 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:46947 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753507Ab0JRSRa convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Oct 2010 14:17:30 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=aac6WjfvELaSegrxQwg3kEZWULs4W9BAWktA7QJo63CAJy0HKdZTcW3x2Tl1FoSlrS
-         iztva+BRIKVxMiBElV5kwS2Jq12J/Hv88VnqxTNi9DTpuz3af/wEg/I8nv+T8sYcP2wV
-         sXDevInu8oFzXA0xJir1dI6tRQ1yGUSCgugdQ=
-MIME-Version: 1.0
-In-Reply-To: <1287268187-9628-1-git-send-email-vapier@gentoo.org>
-References: <1287268187-9628-1-git-send-email-vapier@gentoo.org>
-Date: Mon, 18 Oct 2010 11:17:28 -0700
-Message-ID: <AANLkTinMSbhTkH0zQn_YO7hFF7zkuv-Gj-B0BUFWy5nP@mail.gmail.com>
-Subject: Re: [PATCH] bluetooth: fix unaligned access to l2cap conf data
-From: Harvey Harrison <harvey.harrison@gmail.com>
-To: Mike Frysinger <vapier@gentoo.org>
-Cc: linux-bluetooth@vger.kernel.org, Marcel Holtmann <marcel@holtmann.org>,
-        uclinux-dist-devel@blackfin.uclinux.org, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        steven miao <realmz6@gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S1757635Ab0JRSS1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Oct 2010 14:18:27 -0400
+Received: from e5.ny.us.ibm.com ([32.97.182.145]:54677 "EHLO e5.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753439Ab0JRSS0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Oct 2010 14:18:26 -0400
+Subject: Re: ima: use of radix tree cache indexing == massive waste of
+ memory?
+From: Mimi Zohar <zohar@linux.vnet.ibm.com>
+To: Dave Chinner <david@fromorbit.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Kyle McMartin <kyle@mcmartin.ca>, James Morris <jmorris@namei.org>,
+        Christoph Hellwig <hch@infradead.org>, kernel@lists.fedoraproject.org,
+        Mimi Zohar <zohar@us.ibm.com>, warthog9@kernel.org,
+        linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
+        Serge Hallyn <serue@us.ibm.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>, mingo@elte.hu
+In-Reply-To: <20101018092917.GJ29677@dastard>
+References: <20101016065206.GO4681@dastard>
+	 <20101016192027.GA6883@infradead.org>
+	 <ebc4973c-6c11-4397-b8b0-c212a27abce4@email.android.com>
+	 <20101017004945.GE1614@infradead.org> <20101017054008.GA16383@elte.hu>
+	 <20101017184652.GB28060@infradead.org>
+	 <alpine.LRH.2.00.1010181127480.9476@tundra.namei.org>
+	 <20101018062530.GD8332@bombadil.infradead.org>
+	 <20101017233620.0db45dd9.akpm@linux-foundation.org>
+	 <20101018092917.GJ29677@dastard>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 18 Oct 2010 09:31:00 -0400
+Message-ID: <1287408660.2516.2.camel@localhost.localdomain>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 (2.30.3-1.fc13) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Oct 16, 2010 at 3:29 PM, Mike Frysinger <vapier@gentoo.org> wrote:
-> From: steven miao <realmz6@gmail.com>
->
->
->        case 2:
-> -               *((__le16 *) opt->val) = cpu_to_le16(val);
-> +               put_unaligned_le16(cpu_to_le16(val), opt->val);
->                break;
->
+On Mon, 2010-10-18 at 20:29 +1100, Dave Chinner wrote:
+> On Sun, Oct 17, 2010 at 11:36:20PM -0700, Andrew Morton wrote:
+> > On Mon, 18 Oct 2010 02:25:30 -0400 Kyle McMartin <kyle@mcmartin.ca> wrote:
+> > 
+> > > Subject: [PATCH] ima: allow it to be completely disabled (and default to off)
+> > 
+> > Good enough as a short-term thing I guess.
+> > 
+> > But the memory consumption which David described is plain nuttiness and
+> > needs to be fixed, presumably by using a more appropriate data structure
+> > for lookups.
+> > 
+> > However unless I missed it, nobody has yet stated that they intend to
+> > fix this?
+> 
+> I think Eric said he is going to look at it.
+> 
+> Cheers,
+> 
+> Dave.
 
-I think you wanted:
-put_unaligned_le16(val, opt->val);
+Am looking at it as well.
 
-Cheers,
+Mimi
 
-Harvey
