@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754005Ab0JRGWx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Oct 2010 02:22:53 -0400
-Received: from bld-mail13.adl6.internode.on.net ([150.101.137.98]:43088 "EHLO
+	id S1753944Ab0JRGWG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Oct 2010 02:22:06 -0400
+Received: from bld-mail17.adl2.internode.on.net ([150.101.137.102]:41704 "EHLO
 	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753490Ab0JRGWB (ORCPT
+	with ESMTP id S1753626Ab0JRGVu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Oct 2010 02:22:01 -0400
+	Mon, 18 Oct 2010 02:21:50 -0400
 From: Dave Chinner <david@fromorbit.com>
 To: linux-fsdevel@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH 17/20] fs: introduce a per-cpu last_ino allocator
-Date: Mon, 18 Oct 2010 17:20:53 +1100
-Message-Id: <1287382856-29529-18-git-send-email-david@fromorbit.com>
+Subject: [PATCH 11/20] fs: move i_ref increments into find_inode/find_inode_fast
+Date: Mon, 18 Oct 2010 17:20:47 +1100
+Message-Id: <1287382856-29529-12-git-send-email-david@fromorbit.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1287382856-29529-1-git-send-email-david@fromorbit.com>
 References: <1287382856-29529-1-git-send-email-david@fromorbit.com>
@@ -20,95 +20,104 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Eric Dumazet <eric.dumazet@gmail.com>
+From: Christoph Hellwig <hch@lst.de>
 
-new_inode() dirties a contended cache line to get increasing
-inode numbers. This limits performance on workloads that cause
-significant parallel inode allocation.
+Now that iunique is not abusing find_inode anymore we can move the i_ref
+increment back to where it belongs.
 
-Solve this problem by using a per_cpu variable fed by the shared
-last_ino in batches of 1024 allocations.  This reduces contention on
-the shared last_ino, and give same spreading ino numbers than before
-(i.e. same wraparound after 2^32 allocations).
-
-Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
-Signed-off-by: Nick Piggin <npiggin@suse.de>
+Signed-off-by: Christoph Hellwig <hch@lst.de>
 Signed-off-by: Dave Chinner <dchinner@redhat.com>
-Reviewed-by: Christoph Hellwig <hch@lst.de>
 ---
- fs/inode.c |   45 ++++++++++++++++++++++++++++++++++++++-------
- 1 files changed, 38 insertions(+), 7 deletions(-)
+ fs/inode.c |   30 +++++++++++-------------------
+ 1 files changed, 11 insertions(+), 19 deletions(-)
 
 diff --git a/fs/inode.c b/fs/inode.c
-index 8ee3636..0198110 100644
+index 0128f82..d45c908 100644
 --- a/fs/inode.c
 +++ b/fs/inode.c
-@@ -822,6 +822,43 @@ repeat:
- 	return NULL;
+@@ -657,11 +657,9 @@ static struct shrinker icache_shrinker = {
+ };
+ 
+ static void __wait_on_freeing_inode(struct inode *inode);
++
+ /*
+  * Called with the inode lock held.
+- * NOTE: we are not increasing the inode-refcount, you must take a reference
+- * by hand after calling find_inode now! This simplifies iunique and won't
+- * add any additional branch in the common code.
+  */
+ static struct inode *find_inode(struct super_block *sb,
+ 				struct hlist_head *head,
+@@ -681,9 +679,12 @@ repeat:
+ 			__wait_on_freeing_inode(inode);
+ 			goto repeat;
+ 		}
+-		break;
++		spin_lock(&inode->i_lock);
++		inode->i_ref++;
++		spin_unlock(&inode->i_lock);
++		return inode;
+ 	}
+-	return node ? inode : NULL;
++	return NULL;
  }
  
-+/*
-+ * Each cpu owns a range of LAST_INO_BATCH numbers.
-+ * 'shared_last_ino' is dirtied only once out of LAST_INO_BATCH allocations,
-+ * to renew the exhausted range.
-+ *
-+ * This does not significantly increase overflow rate because every CPU can
-+ * consume at most LAST_INO_BATCH-1 unused inode numbers. So there is
-+ * NR_CPUS*(LAST_INO_BATCH-1) wastage. At 4096 and 1024, this is ~0.1% of the
-+ * 2^32 range, and is a worst-case. Even a 50% wastage would only increase
-+ * overflow rate by 2x, which does not seem too significant.
-+ *
-+ * On a 32bit, non LFS stat() call, glibc will generate an EOVERFLOW
-+ * error if st_ino won't fit in target struct field. Use 32bit counter
-+ * here to attempt to avoid that.
-+ */
-+#define LAST_INO_BATCH 1024
-+static DEFINE_PER_CPU(unsigned int, last_ino);
-+
-+static unsigned int get_next_ino(void)
-+{
-+	unsigned int *p = &get_cpu_var(last_ino);
-+	unsigned int res = *p;
-+
-+#ifdef CONFIG_SMP
-+	if (unlikely((res & (LAST_INO_BATCH-1)) == 0)) {
-+		static atomic_t shared_last_ino;
-+		int next = atomic_add_return(LAST_INO_BATCH, &shared_last_ino);
-+
-+		res = next - LAST_INO_BATCH;
-+	}
-+#endif
-+
-+	*p = ++res;
-+	put_cpu_var(last_ino);
-+	return res;
-+}
-+
- /**
-  *	new_inode 	- obtain an inode
-  *	@sb: superblock
-@@ -836,12 +873,6 @@ repeat:
-  */
- struct inode *new_inode(struct super_block *sb)
- {
--	/*
--	 * On a 32bit, non LFS stat() call, glibc will generate an EOVERFLOW
--	 * error if st_ino won't fit in target struct field. Use 32bit counter
--	 * here to attempt to avoid that.
--	 */
--	static unsigned int last_ino;
- 	struct inode *inode;
+ /*
+@@ -706,9 +707,12 @@ repeat:
+ 			__wait_on_freeing_inode(inode);
+ 			goto repeat;
+ 		}
+-		break;
++		spin_lock(&inode->i_lock);
++		inode->i_ref++;
++		spin_unlock(&inode->i_lock);
++		return inode;
+ 	}
+-	return node ? inode : NULL;
++	return NULL;
+ }
  
- 	spin_lock_prefetch(&inode_lock);
-@@ -853,7 +884,7 @@ struct inode *new_inode(struct super_block *sb)
- 		 * set the inode state before we make the inode accessible to
- 		 * the outside world.
+ static inline void
+@@ -853,9 +857,6 @@ static struct inode *get_new_inode(struct super_block *sb,
+ 		 * us. Use the old inode instead of the one we just
+ 		 * allocated.
  		 */
--		inode->i_ino = ++last_ino;
-+		inode->i_ino = get_next_ino();
- 		inode->i_state = 0;
- 		__inode_sb_list_add(inode);
+-		spin_lock(&old->i_lock);
+-		old->i_ref++;
+-		spin_unlock(&old->i_lock);
  		spin_unlock(&inode_lock);
+ 		destroy_inode(inode);
+ 		inode = old;
+@@ -902,9 +903,6 @@ static struct inode *get_new_inode_fast(struct super_block *sb,
+ 		 * us. Use the old inode instead of the one we just
+ 		 * allocated.
+ 		 */
+-		spin_lock(&old->i_lock);
+-		old->i_ref++;
+-		spin_unlock(&old->i_lock);
+ 		spin_unlock(&inode_lock);
+ 		destroy_inode(inode);
+ 		inode = old;
+@@ -1022,9 +1020,6 @@ static struct inode *ifind(struct super_block *sb,
+ 	spin_lock(&inode_lock);
+ 	inode = find_inode(sb, head, test, data);
+ 	if (inode) {
+-		spin_lock(&inode->i_lock);
+-		inode->i_ref++;
+-		spin_unlock(&inode->i_lock);
+ 		spin_unlock(&inode_lock);
+ 		if (likely(wait))
+ 			wait_on_inode(inode);
+@@ -1057,9 +1052,6 @@ static struct inode *ifind_fast(struct super_block *sb,
+ 	spin_lock(&inode_lock);
+ 	inode = find_inode_fast(sb, head, ino);
+ 	if (inode) {
+-		spin_lock(&inode->i_lock);
+-		inode->i_ref++;
+-		spin_unlock(&inode->i_lock);
+ 		spin_unlock(&inode_lock);
+ 		wait_on_inode(inode);
+ 		return inode;
 -- 
 1.7.1
 
