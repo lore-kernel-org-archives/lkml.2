@@ -1,65 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756058Ab0JROAR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Oct 2010 10:00:17 -0400
-Received: from emroute3.ornl.gov ([160.91.4.110]:44644 "EHLO emroute3.ornl.gov"
+	id S1756041Ab0JROE3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Oct 2010 10:04:29 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:42400 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755172Ab0JROAP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Oct 2010 10:00:15 -0400
-X-Greylist: delayed 3133 seconds by postgrey-1.27 at vger.kernel.org; Mon, 18 Oct 2010 10:00:15 EDT
-Date: Mon, 18 Oct 2010 09:08:00 -0400
-From: David Dillow <dillowda@ornl.gov>
-Subject: Re: DMA sync question
-In-reply-to: <AANLkTimvHRLr5YaCxeuLpQPMW7tY7cHsF9RrrSuMOmgS@mail.gmail.com>
-To: Bart Van Assche <bvanassche@acm.org>
-Cc: "rolandd@cisco.com" <rolandd@cisco.com>,
-        "linux-rdma@vger.kernel.org" <linux-rdma@vger.kernel.org>,
-        linux-kernel@vger.kernel.org
-Message-id: <1287407280.10438.44.camel@lap75545.ornl.gov>
-Organization: Oak Ridge National Laboratory
-MIME-version: 1.0
-X-Mailer: Evolution 2.30.3 (2.30.3-1.fc13)
-Content-type: text/plain; charset=UTF-8
-Content-transfer-encoding: 7bit
-References: <1287285925-11710-1-git-send-email-dillowda@ornl.gov>
- <1287285925-11710-3-git-send-email-dillowda@ornl.gov>
- <AANLkTimvHRLr5YaCxeuLpQPMW7tY7cHsF9RrrSuMOmgS@mail.gmail.com>
+	id S1755979Ab0JROE2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Oct 2010 10:04:28 -0400
+Date: Mon, 18 Oct 2010 10:03:39 -0400
+From: Jason Baron <jbaron@redhat.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: Re: [PATCH 5/9] jump label: Add
+	register_jump_label_key/unregister_jump_label_key
+Message-ID: <20101018140339.GA2814@redhat.com>
+References: <20101015200949.134732894@goodmis.org> <20101015201036.923619508@goodmis.org> <1287176595.1998.116.camel@laptop> <1287176974.16971.3.camel@gandalf.stny.rr.com> <1287177215.1998.121.camel@laptop> <1287403521.29097.1554.camel@twins>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1287403521.29097.1554.camel@twins>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-10-18 at 06:11 -0400, Bart Van Assche wrote:
-> On Sun, Oct 17, 2010 at 5:25 AM, David Dillow <dillowda@ornl.gov> wrote:
-> > [ ... ]
-> > +static int srp_response_common(struct srp_target_port *target, s32 req_delta,
-> > +                              void *rsp, int len)
-[ ... ]
-> > +
-> > +       ib_dma_sync_single_for_cpu(dev, iu->dma, len, DMA_TO_DEVICE);
-> > +       memcpy(iu->buf, rsp, len);
-> > +       ib_dma_sync_single_for_device(dev, iu->dma, len, DMA_TO_DEVICE);
-> > [ ... ]
-
-> Hi Dave,
+On Mon, Oct 18, 2010 at 02:05:21PM +0200, Peter Zijlstra wrote:
+> On Fri, 2010-10-15 at 23:13 +0200, Peter Zijlstra wrote:
+> > On Fri, 2010-10-15 at 17:09 -0400, Steven Rostedt wrote:
+> > > On Fri, 2010-10-15 at 23:03 +0200, Peter Zijlstra wrote:
+> > > 
+> > > > Urgh, this sucks.. :-(
+> > > > 
+> > > > So now we have to actually track all JUMP_LABEL() sites and call
+> > > > register muck on them.. even though we already track them through the
+> > > > special data section.
+> > > > 
+> > > > Is there really no way around this?
+> > > 
+> > > I'll take a look to see if we can monkey with magic and automate it.
+> > 
+> > So the problem is something like:
+> > 
+> > core kernel:
+> > 
+> >  jump_label_enable()
+> > 
+> > module:
+> > 
+> >  JUMP_LABEL()
+> > 
+> > And then because we don't have a proper __jump_table section, the
+> > jump_label_enable() won't properly work?
+> > 
+> > Why not let jump_label_enable() add a dummy entry with the enabled bit
+> > and once you load the module merge the real entry into it.
 > 
-> As far as I can see the above sync call applies to a buffer in the
-> tx_ring[]. Data in that buffer is only modified by the CPU and never
-> by the HCA. So why is the above sync call present ? Is that call
-> necessary ?
-
-In this instance, I copied existing practice from srp_queuecommand().
-
-Documentation/DMA-API.txt seems to indicate we don't need the initial
-*_sync_for_cpu() since the device never writes to the buffer, but I seem
-to have an old memory that says we should do it anyways.
-
-Perhaps LKML can clear it up -- do we need to call *_sync_for_cpu()
-after a *sync_for_device(), even if the device never writes to the
-buffer?
--- 
-Dave Dillow
-National Center for Computational Science
-Oak Ridge National Laboratory
-(865) 241-6602 office
+> Or actually use the value of the key pointer.. it would mean either
+> standardizing the size (int/atomic_t would work), or using a version of
+> the fallback JUMP_LABEL implementation to sort out the type issues.
 
 
+So I initially implmented this as 'jump_label_enable()' would add a new
+entry for the key, if it didn't already exist. However, I was concerned
+about the case where module 'a' defined the key variable, and then
+module 'b' did the enable/disable, and then module 'a' was removed and
+thus the key value could be re-used, and module's 'b' key would mean
+something different.
+
+However, I'm not sure that is possible - since module 'b' would have
+symbol dependency on module 'a', and thus module 'a' could not be
+unloaded before module 'b'.
+
+Thus, when a module is freed, I think we can scan all the keys and check
+if any key is contained within the text section of the module that is
+about to be freed. If so, we simply remove that key entry. does this
+make sense?
+
+thanks,
+
+-Jason
