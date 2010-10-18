@@ -1,74 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756583Ab0JRO4N (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Oct 2010 10:56:13 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:44696 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755598Ab0JRO4L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Oct 2010 10:56:11 -0400
-Date: Tue, 19 Oct 2010 01:55:59 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Andrea Arcangeli <aarcange@redhat.com>, Avi Kivity <avi@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Rik van Riel <riel@redhat.com>,
-        Ingo Molnar <mingo@elte.hu>, akpm@linux-foundation.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        David Miller <davem@davemloft.net>,
-        Hugh Dickins <hugh.dickins@tiscali.co.uk>, Mel Gorman <mel@csn.ul.ie>,
-        Nick Piggin <npiggin@kernel.dk>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Yanmin Zhang <yanmin_zhang@linux.intel.com>
-Subject: Re: [PATCH 00/20] mm: Preemptibility -v5
-Message-Id: <20101019015559.78f20716.sfr@canb.auug.org.au>
-In-Reply-To: <20101018112433.556591568@chello.nl>
-References: <20101018112433.556591568@chello.nl>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Tue__19_Oct_2010_01_55_59_+1100_sS5b+GtoRrtBdBpR"
+	id S1756666Ab0JRO4e (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Oct 2010 10:56:34 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:55943 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755564Ab0JRO4e (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Oct 2010 10:56:34 -0400
+Date: Mon, 18 Oct 2010 16:56:20 +0200
+From: Wolfram Sang <w.sang@pengutronix.de>
+To: zhangyd <zhangyd6@gmail.com>
+Cc: dwmw2@infradead.org, Artem.Bityutskiy@nokia.com, ladis@linux-mips.org,
+        linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mtd: chips: Add SST38VF640x NOR-flashes
+Message-ID: <20101018145620.GA22538@pengutronix.de>
+References: <1287454010-2718-1-git-send-email-zhangyd6@gmail.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="45Z9DzgjV8m4Oswq"
+Content-Disposition: inline
+In-Reply-To: <1287454010-2718-1-git-send-email-zhangyd6@gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: wsa@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__19_Oct_2010_01_55_59_+1100_sS5b+GtoRrtBdBpR
-Content-Type: text/plain; charset=US-ASCII
+
+--45Z9DzgjV8m4Oswq
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-Hi Peter,
+On Mon, Oct 18, 2010 at 10:06:50PM -0400, zhangyd wrote:
+> Du to the wrong sector size description(The actual sector size is
+> 8KBytes/sector, but the reporting size is 64KBytes/sector),you can get
+> the wrong size of the memory. So they should be moved to the jedec_probe.
+>=20
+> Signed-off-by: yidong zhang<zhangyd6@gmail.com>
 
-On Mon, 18 Oct 2010 13:24:33 +0200 Peter Zijlstra <a.p.zijlstra@chello.nl> =
-wrote:
->
-> Linus, Andrew, Stephen, can we add this to -next for .37?
-
-Well it is late (the merge window will open in a couple of days, I
-suspect) but this is version 5 of these patches (so they have had better
-review than most).  So, if Andrew or Linus want this stuff in .37, I will
-add the tree, otherwise it would just be adding confusion for all the
-code that will be integrated in .37.
+NACK as long as Guillaume has not finished updating the SST-support for CFI=
+=2E He
+said he is working on this at the moment, let's give him a chance to finish=
+ :)
 
 --=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+Pengutronix e.K.                           | Wolfram Sang                |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
 
---Signature=_Tue__19_Oct_2010_01_55_59_+1100_sS5b+GtoRrtBdBpR
-Content-Type: application/pgp-signature
+--45Z9DzgjV8m4Oswq
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+Content-Disposition: inline
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
+Version: GnuPG v1.4.9 (GNU/Linux)
 
-iQEcBAEBAgAGBQJMvF//AAoJEDMEi1NhKgbsDowH/jih56BkCPCf/Sj3fe51IjSy
-KAUXpr9t8auYaMlMs1AzMgPDkuSHYlY4BpauwFUMK+GH7l/UgZMqZWNJ7QIBvPt1
-ujDX6UyjsMydxpX4sFxgW+Yn/DNCAjGuC9DiH4kinHeHElqnlW4kAPiEaYK554xJ
-uba8MABYn3aROROKG+DwReli/ixxf3YqumafIc973ToY8P9WqdJM6jVVj7CzzRb/
-wPf0Q4IGMdt5GADx3EoLLk2HzoQXBl+uur1f+IT/wxl1SOYmKw5LfgRwRw9EwuY3
-5/cx4WueSEjMnp7RusqpwLrClhrSPVtzNeN9B1lmSLMjF6NwTlGThHSkA25ViJM=
-=o+y8
+iEYEARECAAYFAky8YBQACgkQD27XaX1/VRtz6ACeMLJleCWrFki71rpj+0ELYala
+A8sAnA6Frg62shANhZn7xEW1196rHBxr
+=P1xd
 -----END PGP SIGNATURE-----
 
---Signature=_Tue__19_Oct_2010_01_55_59_+1100_sS5b+GtoRrtBdBpR--
+--45Z9DzgjV8m4Oswq--
