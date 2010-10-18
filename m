@@ -1,130 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933149Ab0JRT0f (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Oct 2010 15:26:35 -0400
-Received: from hera.kernel.org ([140.211.167.34]:58822 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933101Ab0JRT0d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Oct 2010 15:26:33 -0400
-Date: Mon, 18 Oct 2010 19:26:04 GMT
-From: tip-bot for Venkatesh Pallipadi <venki@google.com>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        a.p.zijlstra@chello.nl, tglx@linutronix.de, mingo@elte.hu,
-        venki@google.com
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        a.p.zijlstra@chello.nl, tglx@linutronix.de, venki@google.com,
-        mingo@elte.hu
-In-Reply-To: <1286237003-12406-6-git-send-email-venki@google.com>
-References: <1286237003-12406-6-git-send-email-venki@google.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] x86: Add IRQ_TIME_ACCOUNTING
-Message-ID: <tip-e82b8e4ea4f3dffe6e7939f90e78da675fcc450e@git.kernel.org>
-Git-Commit-ID: e82b8e4ea4f3dffe6e7939f90e78da675fcc450e
-X-Mailer: tip-git-log-daemon
+	id S1757702Ab0JRT0R (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Oct 2010 15:26:17 -0400
+Received: from Mycroft.westnet.com ([216.187.52.7]:42969 "EHLO
+	mycroft.westnet.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755975Ab0JRT0M (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Oct 2010 15:26:12 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 18 Oct 2010 19:26:04 +0000 (UTC)
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+Message-ID: <19644.40666.197005.18146@quad.stoffel.home>
+Date: Mon, 18 Oct 2010 15:24:10 -0400
+From: "John Stoffel" <john@stoffel.org>
+To: Mimi Zohar <zohar@linux.vnet.ibm.com>
+Cc: Kyle McMartin <kyle@mcmartin.ca>, James Morris <jmorris@namei.org>,
+        Christoph Hellwig <hch@infradead.org>, kernel@lists.fedoraproject.org,
+        Mimi Zohar <zohar@us.ibm.com>, warthog9@kernel.org,
+        Dave Chinner <david@fromorbit.com>, linux-kernel@vger.kernel.org,
+        "H. Peter Anvin" <hpa@zytor.com>, Serge Hallyn <serue@us.ibm.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>, mingo@elte.hu,
+        eparis@redhat.com
+Subject: Re: ima: use of radix tree cache indexing == massive waste of memory?
+In-Reply-To: <1287417785.2516.53.camel@localhost.localdomain>
+References: <20101016065206.GO4681@dastard>
+	<20101016192027.GA6883@infradead.org>
+	<ebc4973c-6c11-4397-b8b0-c212a27abce4@email.android.com>
+	<20101017004945.GE1614@infradead.org>
+	<20101017054008.GA16383@elte.hu>
+	<20101017184652.GB28060@infradead.org>
+	<alpine.LRH.2.00.1010181127480.9476@tundra.namei.org>
+	<20101018062530.GD8332@bombadil.infradead.org>
+	<1287417785.2516.53.camel@localhost.localdomain>
+X-Mailer: VM 8.1.1 under 23.2.1 (x86_64-pc-linux-gnu)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  e82b8e4ea4f3dffe6e7939f90e78da675fcc450e
-Gitweb:     http://git.kernel.org/tip/e82b8e4ea4f3dffe6e7939f90e78da675fcc450e
-Author:     Venkatesh Pallipadi <venki@google.com>
-AuthorDate: Mon, 4 Oct 2010 17:03:20 -0700
-Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Mon, 18 Oct 2010 20:52:25 +0200
+>>>>> "Mimi" == Mimi Zohar <zohar@linux.vnet.ibm.com> writes:
 
-x86: Add IRQ_TIME_ACCOUNTING
+Mimi> On Mon, 2010-10-18 at 02:25 -0400, Kyle McMartin wrote:
+>> If someone gives me a good reason why Fedora actually needs this
+>> enabled, I'm going to apply the following patch to our kernel so that
+>> IMA is globally an opt-in feature... Otherwise I'm inclined to just
+>> disable it.
 
-This patch adds IRQ_TIME_ACCOUNTING option on x86 and runtime enables it
-when TSC is enabled.
+Mimi> Am hoping others will chime in.
 
-This change just enables fine grained irq time accounting, isn't used yet.
-Following patches use it for different purposes.
+I'll chime in.  I run Debian Squeeze and Ubuntu 10.10 and neither of
+them seem to have this monstrosity enabled at all, which is good.  It
+should default to OFF and have a big fat warning saying it's a memory
+pig.
 
-Signed-off-by: Venkatesh Pallipadi <venki@google.com>
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-LKML-Reference: <1286237003-12406-6-git-send-email-venki@google.com>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
----
- Documentation/kernel-parameters.txt |    4 ++++
- arch/x86/Kconfig                    |   11 +++++++++++
- arch/x86/kernel/tsc.c               |    8 ++++++++
- 3 files changed, 23 insertions(+), 0 deletions(-)
+>> (But the more I look at this, the more it looks like a completely niche
+>> option that has little use outside of three-letter agencies.)
+>> 
+>> I regret not looking at this more closely when it was enabled,
+>> (although, in my defence, when the option first showed up, I left it
+>> off...)
+>> 
+>> It's probably way more heavyweight than necessary, as I think in most
+>> cases the iint_initalized test will cover the call into IMA. But better
+>> safe than sorry or something and there's a bunch of other cases where
+>> -ENOMEM will leak back up from failing kmem_cache_alloc, iirc.
+>> 
+>> regards, Kyle
 
-diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-index 8dd7248..ed05a4a 100644
---- a/Documentation/kernel-parameters.txt
-+++ b/Documentation/kernel-parameters.txt
-@@ -2435,6 +2435,10 @@ and is between 256 and 4096 characters. It is defined in the file
- 			disables clocksource verification at runtime.
- 			Used to enable high-resolution timer mode on older
- 			hardware, and in virtualized environment.
-+			[x86] noirqtime: Do not use TSC to do irq accounting.
-+			Used to run time disable IRQ_TIME_ACCOUNTING on any
-+			platforms where RDTSC is slow and this accounting
-+			can add overhead.
- 
- 	turbografx.map[2|3]=	[HW,JOY]
- 			TurboGraFX parallel port interface
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index cea0cd9..f4c70c2 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -795,6 +795,17 @@ config SCHED_MC
- 	  making when dealing with multi-core CPU chips at a cost of slightly
- 	  increased overhead in some places. If unsure say N here.
- 
-+config IRQ_TIME_ACCOUNTING
-+	bool "Fine granularity task level IRQ time accounting"
-+	default n
-+	---help---
-+	  Select this option to enable fine granularity task irq time
-+	  accounting. This is done by reading a timestamp on each
-+	  transitions between softirq and hardirq state, so there can be a
-+	  small performance impact.
-+
-+	  If in doubt, say N here.
-+
- source "kernel/Kconfig.preempt"
- 
- config X86_UP_APIC
-diff --git a/arch/x86/kernel/tsc.c b/arch/x86/kernel/tsc.c
-index 26a863a..a1c2cd7 100644
---- a/arch/x86/kernel/tsc.c
-+++ b/arch/x86/kernel/tsc.c
-@@ -104,10 +104,14 @@ int __init notsc_setup(char *str)
- 
- __setup("notsc", notsc_setup);
- 
-+static int no_sched_irq_time;
-+
- static int __init tsc_setup(char *str)
- {
- 	if (!strcmp(str, "reliable"))
- 		tsc_clocksource_reliable = 1;
-+	if (!strncmp(str, "noirqtime", 9))
-+		no_sched_irq_time = 1;
- 	return 1;
- }
- 
-@@ -801,6 +805,7 @@ void mark_tsc_unstable(char *reason)
- 	if (!tsc_unstable) {
- 		tsc_unstable = 1;
- 		sched_clock_stable = 0;
-+		disable_sched_clock_irqtime();
- 		printk(KERN_INFO "Marking TSC unstable due to %s\n", reason);
- 		/* Change only the rating, when not registered */
- 		if (clocksource_tsc.mult)
-@@ -987,6 +992,9 @@ void __init tsc_init(void)
- 	/* now allow native_sched_clock() to use rdtsc */
- 	tsc_disabled = 0;
- 
-+	if (!no_sched_irq_time)
-+		enable_sched_clock_irqtime();
-+
- 	lpj = ((u64)tsc_khz * 1000);
- 	do_div(lpj, HZ);
- 	lpj_fine = lpj;
+Mimi> Thanks, will compile/test patch.
+
+>From what I'm reading, it's not even useful unless you have TPM
+hardware?  
+
+I dunno... I'm just hesitant to use this or SElinux because the
+hassles are not worth the payoff.  
+
+John
