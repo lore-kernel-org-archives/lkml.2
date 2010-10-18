@@ -1,27 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933567Ab0JRWim (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Oct 2010 18:38:42 -0400
-Received: from smtp103.sbc.mail.ac4.yahoo.com ([76.13.13.242]:45638 "HELO
-	smtp103.sbc.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S933558Ab0JRWij (ORCPT
+	id S933575Ab0JRWiv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Oct 2010 18:38:51 -0400
+Received: from smtp104.sbc.mail.re3.yahoo.com ([66.196.96.80]:40236 "HELO
+	smtp104.sbc.mail.re3.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S933493Ab0JRWit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Oct 2010 18:38:39 -0400
+	Mon, 18 Oct 2010 18:38:49 -0400
 X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
-X-YMail-OSG: EWZ5Pw4VM1njBHqX6rLW.CRdynhIhQ0Hrba4uEMmoxxgkDz
- H82HbuNBA_JsORjqPoy87.FgpvC8nv1_4iPKAsy90.W3KDNUk1tgxEvRmYLG
- cGILAGZ89WYXcdvlYfBf2LhiCBNeMV3GLmWC9Hs4JQgJlikJYHKUPFhTheNo
- XB8o_p3uMBRDkknycnVni0kA2pS0ZUOLCLVnLHLxB8_zY7_KYbP49Od1MdOY
- tltCRCNA_39GSKTry83m0ox4M7MaEvEoERTX3H8snGoS5bGROvvFUseCIA.Q
- HRIr0jb7MfLIBo9T96NAlt9nM173P
+X-YMail-OSG: cB8gNzAVM1nsEk6Ve472CYey1t.RiZ0tvQ_OMV29w2BmrJM
+ jvZNtHZHmPUi03i1MglNH08UNXDtLwKbOPhm5_WvIOnx5GgxXfiOPaTW8798
+ L7vQvhvlbJiPCzobP6nRETSs.u94eWhkbGLTfLMkvKC7e5Px4wQ7SY6gFUYA
+ RpzyQAuCL3zXNkbg2dZwXItQZHsQOgxS47l1blXBfI1F5emmju3EEu4IaQIJ
+ EbNpRKtHat.h_LbuMwzJquPWRLjXjft5ZtiwLAHDVZ_TFpNe2qP_F779lHvA
+ nUNhu4lr4FBgSxUdg58VSxWPIQNzM.IgBLP_HI2ID4zeG1IRdbFLXs56QGzq
+ QAC7K73BGR_OWo3d8S5jnegvDBK45ERM4_.Uhf1SRoKF2zQi0_UTOBtxascD
+ d0hia7QvHcAnVbZNqutRzyXaXbIuZeMZopIKYtGWhfwEJdwd.zPSV3w--
 X-Yahoo-Newman-Property: ymail-3
 From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
 To: linux-scsi <linux-scsi@vger.kernel.org>,
         linux-kernel <linux-kernel@vger.kernel.org>
 Cc: Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [RFCv3 15/21] tcm: Add IBLOCK subsystem plugin
-Date: Mon, 18 Oct 2010 15:38:34 -0700
-Message-Id: <1287441514-20015-1-git-send-email-nab@linux-iscsi.org>
+Subject: [RFCv3 16/21] tcm: Add PSCSI subsystem plugin
+Date: Mon, 18 Oct 2010 15:38:43 -0700
+Message-Id: <1287441523-20035-1-git-send-email-nab@linux-iscsi.org>
 X-Mailer: git-send-email 1.5.6.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -29,30 +31,30 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-This patch adds the TCM/IBLOCK subsystem plugin for accessing struct block_device
-with an emulated SPC-3 control path from Linux/BLOCK code using struct bio.  The
-also includes WriteCache and FUA Write emulation to struct block_device using
-block/blk-barrier.c:blkdev_issue_flush()
+This patch adds the PSCSI subsystem plugin for accessing struct scsi_device
+using struct request from upstream Linux/SCSI code.  This subsystem plugin
+follows a passthrough design, and does not provide and control CDB emulation
+for the registered struct scsi_device backstores.  This subsystem plugin also
+allows the export of both TYPE_DISk and non TYPE_DISK struct scsi_devices.
 
 Signed-off-by: Nicholas A. Bellinger <nab@linux-iscsi.org>
 ---
- drivers/target/target_core_iblock.c |  995 +++++++++++++++++++++++++++++++++++
- drivers/target/target_core_iblock.h |   44 ++
- 2 files changed, 1039 insertions(+), 0 deletions(-)
- create mode 100644 drivers/target/target_core_iblock.c
- create mode 100644 drivers/target/target_core_iblock.h
+ drivers/target/target_core_pscsi.c | 1583 ++++++++++++++++++++++++++++++++++++
+ drivers/target/target_core_pscsi.h |   73 ++
+ 2 files changed, 1656 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/target/target_core_pscsi.c
+ create mode 100644 drivers/target/target_core_pscsi.h
 
-diff --git a/drivers/target/target_core_iblock.c b/drivers/target/target_core_iblock.c
+diff --git a/drivers/target/target_core_pscsi.c b/drivers/target/target_core_pscsi.c
 new file mode 100644
-index 0000000..e7840da
+index 0000000..52b7bbd
 --- /dev/null
-+++ b/drivers/target/target_core_iblock.c
-@@ -0,0 +1,995 @@
++++ b/drivers/target/target_core_pscsi.c
+@@ -0,0 +1,1583 @@
 +/*******************************************************************************
-+ * Filename:  target_core_iblock.c
++ * Filename:  target_core_pscsi.c
 + *
-+ * This file contains the Storage Engine  <-> Linux BlockIO transport
-+ * specific functions.
++ * This file contains the generic target mode <-> Linux SCSI subsystem plugin.
 + *
 + * Copyright (c) 2003, 2004, 2005 PyX Technologies, Inc.
 + * Copyright (c) 2005, 2006, 2007 SBE, Inc.
@@ -80,537 +82,864 @@ index 0000000..e7840da
 +#include <linux/version.h>
 +#include <linux/string.h>
 +#include <linux/timer.h>
-+#include <linux/fs.h>
 +#include <linux/blkdev.h>
++#include <linux/blk_types.h>
 +#include <linux/slab.h>
 +#include <linux/spinlock.h>
 +#include <linux/smp_lock.h>
-+#include <linux/bio.h>
 +#include <linux/genhd.h>
++#include <linux/cdrom.h>
 +#include <linux/file.h>
 +#include <scsi/scsi.h>
++#include <scsi/scsi_device.h>
++#include <scsi/scsi_cmnd.h>
 +#include <scsi/scsi_host.h>
 +
 +#include <target/target_core_base.h>
 +#include <target/target_core_device.h>
 +#include <target/target_core_transport.h>
 +
-+#include "target_core_iblock.h"
++#include "target_core_pscsi.h"
 +
-+#if 0
-+#define DEBUG_IBLOCK(x...) printk(x)
-+#else
-+#define DEBUG_IBLOCK(x...)
-+#endif
++#define ISPRINT(a)  ((a >= ' ') && (a <= '~'))
 +
-+static struct se_subsystem_api iblock_template;
++static struct se_subsystem_api pscsi_template;
 +
-+static void __iblock_get_dev_info(struct iblock_dev *, char *, int *);
-+static void iblock_bio_done(struct bio *, int);
++static void pscsi_req_done(struct request *, int);
++static void __pscsi_get_dev_info(struct pscsi_dev_virt *, char *, int *);
 +
-+/*	iblock_attach_hba(): (Part of se_subsystem_api_t template)
++/*	pscsi_get_sh():
 + *
 + *
 + */
-+static int iblock_attach_hba(struct se_hba *hba, u32 host_id)
++static struct Scsi_Host *pscsi_get_sh(u32 host_no)
 +{
-+	struct iblock_hba *ib_host;
++	struct Scsi_Host *sh = NULL;
 +
-+	ib_host = kzalloc(sizeof(struct iblock_hba), GFP_KERNEL);
-+	if (!(ib_host)) {
-+		printk(KERN_ERR "Unable to allocate memory for"
-+				" struct iblock_hba\n");
-+		return -ENOMEM;
++	sh = scsi_host_lookup(host_no);
++	if (IS_ERR(sh)) {
++		printk(KERN_ERR "Unable to locate SCSI HBA with Host ID:"
++				" %u\n", host_no);
++		return NULL;
 +	}
 +
-+	ib_host->iblock_host_id = host_id;
++	return sh;
++}
 +
-+	atomic_set(&hba->left_queue_depth, IBLOCK_HBA_QUEUE_DEPTH);
-+	atomic_set(&hba->max_queue_depth, IBLOCK_HBA_QUEUE_DEPTH);
-+	hba->hba_ptr = (void *) ib_host;
++/*	pscsi_attach_hba():
++ *
++ * 	pscsi_get_sh() used scsi_host_lookup() to locate struct Scsi_Host.
++ *	from the passed SCSI Host ID.
++ */
++static int pscsi_attach_hba(struct se_hba *hba, u32 host_id)
++{
++	int hba_depth;
++	struct pscsi_hba_virt *phv;
 +
-+	printk(KERN_INFO "CORE_HBA[%d] - TCM iBlock HBA Driver %s on"
++	phv = kzalloc(sizeof(struct pscsi_hba_virt), GFP_KERNEL);
++	if (!(phv)) {
++		printk(KERN_ERR "Unable to allocate struct pscsi_hba_virt\n");
++		return -1;
++	}
++	phv->phv_host_id = host_id;
++	phv->phv_mode = PHV_VIRUTAL_HOST_ID;
++	hba_depth = PSCSI_VIRTUAL_HBA_DEPTH;
++	atomic_set(&hba->left_queue_depth, hba_depth);
++	atomic_set(&hba->max_queue_depth, hba_depth);
++
++	hba->hba_ptr = (void *)phv;
++
++	printk(KERN_INFO "CORE_HBA[%d] - TCM SCSI HBA Driver %s on"
 +		" Generic Target Core Stack %s\n", hba->hba_id,
-+		IBLOCK_VERSION, TARGET_CORE_MOD_VERSION);
-+
-+	printk(KERN_INFO "CORE_HBA[%d] - Attached iBlock HBA: %u to Generic"
-+		" Target Core TCQ Depth: %d\n", hba->hba_id,
-+		ib_host->iblock_host_id, atomic_read(&hba->max_queue_depth));
++		PSCSI_VERSION, TARGET_CORE_MOD_VERSION);
++	printk(KERN_INFO "CORE_HBA[%d] - Attached SCSI HBA to Generic"
++		" Target Core with TCQ Depth: %d\n", hba->hba_id,
++		atomic_read(&hba->max_queue_depth));
 +
 +	return 0;
 +}
 +
-+/*	iblock_detach_hba(): (Part of se_subsystem_api_t template)
++/*	pscsi_detach_hba(): (Part of se_subsystem_api_t template)
 + *
 + *
 + */
-+static int iblock_detach_hba(struct se_hba *hba)
++static int pscsi_detach_hba(struct se_hba *hba)
 +{
-+	struct iblock_hba *ib_host;
++	struct pscsi_hba_virt *phv = (struct pscsi_hba_virt *)hba->hba_ptr;
++	struct Scsi_Host *scsi_host = phv->phv_lld_host;
 +
-+	if (!hba->hba_ptr) {
-+		printk(KERN_ERR "hba->hba_ptr is NULL!\n");
-+		return -1;
-+	}
-+	ib_host = hba->hba_ptr;
++	if (scsi_host) {
++		scsi_host_put(scsi_host);
 +
-+	printk(KERN_INFO "CORE_HBA[%d] - Detached iBlock HBA: %u from Generic"
-+		" Target Core\n", hba->hba_id, ib_host->iblock_host_id);
++		printk(KERN_INFO "CORE_HBA[%d] - Detached SCSI HBA: %s from"
++			" Generic Target Core\n", hba->hba_id,
++			(scsi_host->hostt->name) ? (scsi_host->hostt->name) :
++			"Unknown");
++	} else
++		printk(KERN_INFO "CORE_HBA[%d] - Detached Virtual SCSI HBA"
++			" from Generic Target Core\n", hba->hba_id);
 +
-+	kfree(ib_host);
++	kfree(phv);
 +	hba->hba_ptr = NULL;
 +
 +	return 0;
 +}
 +
-+static void *iblock_allocate_virtdevice(struct se_hba *hba, const char *name)
++static int pscsi_pmode_enable_hba(struct se_hba *hba, unsigned long mode_flag)
 +{
-+	struct iblock_dev *ib_dev = NULL;
-+	struct iblock_hba *ib_host = hba->hba_ptr;
++	struct pscsi_hba_virt *phv = (struct pscsi_hba_virt *)hba->hba_ptr;
++	struct Scsi_Host *sh = phv->phv_lld_host;
++	int hba_depth = PSCSI_VIRTUAL_HBA_DEPTH;
++	/*
++	 * Release the struct Scsi_Host
++	 */
++	if (!(mode_flag)) {
++		if (!(sh))
++			return 0;
 +
-+	ib_dev = kzalloc(sizeof(struct iblock_dev), GFP_KERNEL);
-+	if (!(ib_dev)) {
-+		printk(KERN_ERR "Unable to allocate struct iblock_dev\n");
-+		return NULL;
++		phv->phv_lld_host = NULL;
++		phv->phv_mode = PHV_VIRUTAL_HOST_ID;
++		atomic_set(&hba->left_queue_depth, hba_depth);
++		atomic_set(&hba->max_queue_depth, hba_depth);
++
++		printk(KERN_INFO "CORE_HBA[%d] - Disabled pSCSI HBA Passthrough"
++			" %s\n", hba->hba_id, (sh->hostt->name) ?
++			(sh->hostt->name) : "Unknown");
++
++		scsi_host_put(sh);
++		return 0;
 +	}
-+	ib_dev->ibd_host = ib_host;
++	/*
++	 * Otherwise, locate struct Scsi_Host from the original passed
++	 * pSCSI Host ID and enable for phba mode
++	 */
++	sh = pscsi_get_sh(phv->phv_host_id);
++	if (!(sh)) {
++		printk(KERN_ERR "pSCSI: Unable to locate SCSI Host for"
++			" phv_host_id: %d\n", phv->phv_host_id);
++		return -1;
++	}
++	/*
++	 * Usually the SCSI LLD will use the hostt->can_queue value to define
++	 * its HBA TCQ depth.  Some other drivers (like 2.6 megaraid) don't set
++	 * this at all and set sh->can_queue at runtime.
++	 */
++	hba_depth = (sh->hostt->can_queue > sh->can_queue) ?
++		sh->hostt->can_queue : sh->can_queue;
 +
-+	printk(KERN_INFO  "IBLOCK: Allocated ib_dev for %s\n", name);
++	atomic_set(&hba->left_queue_depth, hba_depth);
++	atomic_set(&hba->max_queue_depth, hba_depth);
 +
-+	return ib_dev;
++	phv->phv_lld_host = sh;
++	phv->phv_mode = PHV_LLD_SCSI_HOST_NO;
++
++	printk(KERN_INFO "CORE_HBA[%d] - Enabled pSCSI HBA Passthrough %s\n",
++		hba->hba_id, (sh->hostt->name) ? (sh->hostt->name) : "Unknown");
++
++	return 1;
 +}
 +
-+static int __iblock_do_sync_cache(struct se_device *);
-+
-+static struct se_device *iblock_create_virtdevice(
++/*	pscsi_add_device_to_list():
++ *
++ *
++ */
++static struct se_device *pscsi_add_device_to_list(
 +	struct se_hba *hba,
 +	struct se_subsystem_dev *se_dev,
-+	void *p)
++	struct pscsi_dev_virt *pdv,
++	struct scsi_device *sd,
++	int dev_flags)
 +{
-+	struct iblock_dev *ib_dev = p;
 +	struct se_device *dev;
 +	struct se_dev_limits dev_limits;
-+	struct block_device *bd = NULL;
 +	struct request_queue *q;
 +	struct queue_limits *limits;
-+	u32 dev_flags = 0;
 +
-+	if (!(ib_dev)) {
-+		printk(KERN_ERR "Unable to locate struct iblock_dev parameter\n");
-+		return 0;
-+	}
 +	memset(&dev_limits, 0, sizeof(struct se_dev_limits));
 +	/*
-+	 * These settings need to be made tunable..
++	 * Some pseudo SCSI HBAs do not fill in sector_size
++	 * correctly. (See ide-scsi.c)  So go ahead and setup sane
++	 * values.
 +	 */
-+	ib_dev->ibd_bio_set = bioset_create(32, 64);
-+	if (!(ib_dev->ibd_bio_set)) {
-+		printk(KERN_ERR "IBLOCK: Unable to create bioset()\n");
-+		return 0;
-+	}
-+	printk(KERN_INFO "IBLOCK: Created bio_set()\n");
-+	/*
-+	 * iblock_check_configfs_dev_params() ensures that ib_dev->ibd_udev_path
-+	 * must already have been set in order for echo 1 > $HBA/$DEV/enable to run.
-+	 */
-+	printk(KERN_INFO  "IBLOCK: Claiming struct block_device: %s\n",
-+			ib_dev->ibd_udev_path);
++	if (!sd->sector_size) {
++		switch (sd->type) {
++		case TYPE_DISK:
++			sd->sector_size = 512;
++			break;
++		case TYPE_ROM:
++			sd->sector_size = 2048;
++			break;
++		case TYPE_TAPE: /* The Tape may not be in the drive */
++			break;
++		case TYPE_MEDIUM_CHANGER: /* Control CDBs only */
++			break;
++		default:
++			printk(KERN_ERR "Unable to set sector_size for %d\n",
++					sd->type);
++			return NULL;
++		}
 +
-+	bd = open_bdev_exclusive(ib_dev->ibd_udev_path,
-+			FMODE_WRITE|FMODE_READ, ib_dev);
-+	if (!(bd))
-+		goto failed;
++		if (sd->sector_size) {
++			printk(KERN_ERR "Set broken SCSI Device"
++				" %d:%d:%d sector_size to %d\n", sd->channel,
++				sd->id, sd->lun, sd->sector_size);
++		}
++	}
++
++	if (!sd->queue_depth) {
++		sd->queue_depth = PSCSI_DEFAULT_QUEUEDEPTH;
++
++		printk(KERN_ERR "Set broken SCSI Device %d:%d:%d"
++			" queue_depth to %d\n", sd->channel, sd->id,
++				sd->lun, sd->queue_depth);
++	}
 +	/*
 +	 * Setup the local scope queue_limits from struct request_queue->limits
 +	 * to pass into transport_add_device_to_core_hba() as struct se_dev_limits.
 +	 */
-+	q = bdev_get_queue(bd);
++	q = sd->request_queue;
 +	limits = &dev_limits.limits;
-+	limits->logical_block_size = bdev_logical_block_size(bd);	
-+	limits->max_hw_sectors = queue_max_hw_sectors(q);
-+	limits->max_sectors = queue_max_sectors(q);
-+	dev_limits.max_cdb_len = TCM_MAX_COMMAND_SIZE;
-+	dev_limits.hw_queue_depth = IBLOCK_MAX_DEVICE_QUEUE_DEPTH;
-+	dev_limits.queue_depth = IBLOCK_DEVICE_QUEUE_DEPTH;
-+
-+	dev_flags = DF_CLAIMED_BLOCKDEV;
-+	ib_dev->ibd_major = MAJOR(bd->bd_dev);
-+	ib_dev->ibd_minor = MINOR(bd->bd_dev);
-+	ib_dev->ibd_bd = bd;
-+	ib_dev->ibd_flags |= IBDF_BDEV_EXCLUSIVE;
++	limits->logical_block_size = sd->sector_size;
++	limits->max_hw_sectors = (sd->host->max_sectors > queue_max_hw_sectors(q)) ?
++				  queue_max_hw_sectors(q) : sd->host->max_sectors; 
++	limits->max_sectors = (sd->host->max_sectors > queue_max_sectors(q)) ?
++				  queue_max_sectors(q) : sd->host->max_sectors;
++	dev_limits.max_cdb_len = PSCSI_MAX_CDB_SIZE;
++	dev_limits.hw_queue_depth = sd->queue_depth;
++	dev_limits.queue_depth = sd->queue_depth;
 +	/*
-+	 * Pass dev_flags for linux_blockdevice_claim() or
-+	 * linux_blockdevice_claim() from the usage above.
++	 * Set the pointer pdv->pdv_sd to from passed struct scsi_device,
++	 * which has already been referenced with Linux SCSI code with
++	 * scsi_device_get() in this file's pscsi_create_virtdevice().
 +	 *
-+	 * Note that transport_add_device_to_core_hba() will call
-+	 * linux_blockdevice_release() internally on failure to
-+	 * call bd_release() on the referenced struct block_device.
++	 * The passthrough operations called by the transport_add_device_*
++	 * function below will require this pointer to be set for passthroug
++	 *  ops.
++	 *
++	 * For the shutdown case in pscsi_free_device(), this struct
++	 * scsi_device  reference is released with Linux SCSI code
++	 * scsi_device_put() and the pdv->pdv_sd cleared.
 +	 */
-+	dev = transport_add_device_to_core_hba(hba,
-+			&iblock_template, se_dev, dev_flags, (void *)ib_dev,
-+			&dev_limits, "IBLOCK", IBLOCK_VERSION);
-+	if (!(dev))
-+		goto failed;
++	pdv->pdv_sd = sd;
 +
-+	ib_dev->ibd_depth = dev->queue_depth;
-+	/*
-+	 * Check if the underlying struct block_device supports the
-+	 * block/blk-barrier.c:blkdev_issue_flush() call, depending upon
-+	 * which the SCSI mode page bits for WriteCache=1 and DPOFUA=1
-+	 * will be enabled by TCM Core.
-+	 */
-+	if (__iblock_do_sync_cache(dev) == 0)
-+		ib_dev->ibd_flags |= IBDF_BDEV_ISSUE_FLUSH;
-+	/*
-+	 * Check if the underlying struct block_device request_queue supports
-+	 * the QUEUE_FLAG_DISCARD bit for UNMAP/WRITE_SAME in SCSI + TRIM
-+	 * in ATA and we need to set TPE=1
-+	 */
-+	if (blk_queue_discard(bdev_get_queue(bd))) {
-+		struct request_queue *q = bdev_get_queue(bd);
-+
-+		DEV_ATTRIB(dev)->max_unmap_lba_count =
-+				q->limits.max_discard_sectors;
-+		/*
-+		 * Currently hardcoded to 1 in Linux/SCSI code..
-+		 */
-+		DEV_ATTRIB(dev)->max_unmap_block_desc_count = 1;
-+		DEV_ATTRIB(dev)->unmap_granularity =
-+				q->limits.discard_granularity;
-+		DEV_ATTRIB(dev)->unmap_granularity_alignment =
-+				q->limits.discard_alignment;
-+
-+		printk(KERN_INFO "IBLOCK: BLOCK Discard support available,"
-+				" disabled by default\n");
-+	}
-+
-+	return dev;
-+
-+failed:
-+	if (ib_dev->ibd_bio_set) {
-+		bioset_free(ib_dev->ibd_bio_set);
-+		ib_dev->ibd_bio_set = NULL;
-+	}
-+	ib_dev->ibd_bd = NULL;
-+	ib_dev->ibd_major = 0;
-+	ib_dev->ibd_minor = 0;
-+	return NULL;
-+}
-+
-+/*	iblock_activate_device(): (Part of se_subsystem_api_t template)
-+ *
-+ *
-+ */
-+static int iblock_activate_device(struct se_device *dev)
-+{
-+	struct iblock_dev *ib_dev = dev->dev_ptr;
-+	struct iblock_hba *ib_hba = ib_dev->ibd_host;
-+
-+	printk(KERN_INFO "CORE_iBLOCK[%u] - Activating Device with TCQ: %d at"
-+		" Major: %d Minor %d\n", ib_hba->iblock_host_id,
-+		ib_dev->ibd_depth, ib_dev->ibd_major, ib_dev->ibd_minor);
-+
-+	return 0;
-+}
-+
-+/*	iblock_deactivate_device(): (Part of se_subsystem_api_t template)
-+ *
-+ *
-+ */
-+static void iblock_deactivate_device(struct se_device *dev)
-+{
-+	struct iblock_dev *ib_dev = dev->dev_ptr;
-+	struct iblock_hba *ib_hba = ib_dev->ibd_host;
-+
-+	printk(KERN_INFO "CORE_iBLOCK[%u] - Deactivating Device with TCQ: %d"
-+		" at Major: %d Minor %d\n", ib_hba->iblock_host_id,
-+		ib_dev->ibd_depth, ib_dev->ibd_major, ib_dev->ibd_minor);
-+}
-+
-+static void iblock_free_device(void *p)
-+{
-+	struct iblock_dev *ib_dev = p;
-+
-+	if (ib_dev->ibd_bd) {
-+		printk(KERN_INFO "IBLOCK: Releasing Major:Minor - %d:%d\n",
-+			ib_dev->ibd_major, ib_dev->ibd_minor);
-+
-+		if (ib_dev->ibd_flags & IBDF_BDEV_EXCLUSIVE)
-+			close_bdev_exclusive(ib_dev->ibd_bd,
-+				FMODE_WRITE|FMODE_READ);
-+		else
-+			linux_blockdevice_release(ib_dev->ibd_major,
-+					ib_dev->ibd_minor, ib_dev->ibd_bd);
-+		ib_dev->ibd_bd = NULL;
-+	}
-+
-+	if (ib_dev->ibd_bio_set) {
-+		DEBUG_IBLOCK("Calling bioset_free ib_dev->ibd_bio_set: %p\n",
-+				ib_dev->ibd_bio_set);
-+		bioset_free(ib_dev->ibd_bio_set);
-+	}
-+
-+	kfree(ib_dev);
-+}
-+
-+static int iblock_transport_complete(struct se_task *task)
-+{
-+	return 0;
-+}
-+
-+/*	iblock_allocate_request(): (Part of se_subsystem_api_t template)
-+ *
-+ *
-+ */
-+static void *iblock_allocate_request(
-+	struct se_task *task,
-+	struct se_device *dev)
-+{
-+	struct iblock_req *ib_req;
-+
-+	ib_req = kmalloc(sizeof(struct iblock_req), GFP_KERNEL);
-+	if (!(ib_req)) {
-+		printk(KERN_ERR "Unable to allocate memory for struct iblock_req\n");
++	dev = transport_add_device_to_core_hba(hba, &pscsi_template,
++				se_dev, dev_flags, (void *)pdv,
++				&dev_limits, NULL, NULL);
++	if (!(dev)) {
++		pdv->pdv_sd = NULL;
 +		return NULL;
 +	}
 +
-+	ib_req->ib_dev = dev->dev_ptr;
-+	return (void *)ib_req;
-+}
-+
-+static unsigned long long iblock_emulate_read_cap_with_block_size(
-+	struct se_device *dev,
-+	struct block_device *bd,
-+	struct request_queue *q)
-+{
-+	unsigned long long blocks_long = (div_u64(i_size_read(bd->bd_inode), 
-+					bdev_logical_block_size(bd)) - 1);
-+	u32 block_size = bdev_logical_block_size(bd);
-+
-+	if (block_size == DEV_ATTRIB(dev)->block_size)
-+		return blocks_long;
-+
-+	switch (block_size) {
-+	case 4096:
-+		switch (DEV_ATTRIB(dev)->block_size) {
-+		case 2048:
-+			blocks_long <<= 1;
-+			break;
-+		case 1024:
-+			blocks_long <<= 2;
-+			break;
-+		case 512:
-+			blocks_long <<= 3;
-+		default:
-+			break;
-+		}
-+		break;
-+	case 2048:
-+		switch (DEV_ATTRIB(dev)->block_size) {
-+		case 4096:
-+			blocks_long >>= 1;
-+			break;
-+		case 1024:
-+			blocks_long <<= 1;
-+			break;
-+		case 512:
-+			blocks_long <<= 2;
-+			break;
-+		default:
-+			break;
-+		}
-+		break;
-+	case 1024:
-+		switch (DEV_ATTRIB(dev)->block_size) {
-+		case 4096:
-+			blocks_long >>= 2;
-+			break;
-+		case 2048:
-+			blocks_long >>= 1;
-+			break;
-+		case 512:
-+			blocks_long <<= 1;
-+			break;
-+		default:
-+			break;
-+		}
-+		break;
-+	case 512:
-+		switch (DEV_ATTRIB(dev)->block_size) {
-+		case 4096:
-+			blocks_long >>= 3;
-+			break;
-+		case 2048:
-+			blocks_long >>= 2;
-+			break;
-+		case 1024:
-+			blocks_long >>= 1;
-+			break;
-+		default:
-+			break;
-+		}
-+		break;
-+	default:
-+		break;
-+	}
-+
-+	return blocks_long;
-+}
-+
-+static int __iblock_do_sync_cache(struct se_device *dev)
-+{
-+	struct iblock_dev *ib_dev = (struct iblock_dev *)dev->dev_ptr;
-+	int ret;
-+
-+	ret = blkdev_issue_flush(ib_dev->ibd_bd, GFP_KERNEL, NULL,
-+				BLKDEV_IFL_WAIT);
-+	if (ret != 0) {
-+		printk(KERN_ERR "IBLOCK: block_issue_flush() failed: %d\n", ret);
-+		return -1;
-+	}
-+	DEBUG_IBLOCK("IBLOCK: Called block_issue_flush()\n");
-+	return 0;
-+}
-+
-+/*
-+ * Called by target_core_transport():transport_emulate_control_cdb()
-+ * to emulate SYCHRONIZE_CACHE_*
-+ */
-+void iblock_emulate_sync_cache(struct se_task *task)
-+{
-+	struct se_cmd *cmd = TASK_CMD(task);
-+	int ret, immed = (T_TASK(cmd)->t_task_cdb[1] & 0x2);
 +	/*
-+	 * If the Immediate bit is set, queue up the GOOD response
-+	 * for this SYNCHRONIZE_CACHE op
++	 * For TYPE_TAPE, attempt to determine blocksize with MODE_SENSE.
 +	 */
-+	if (immed)
-+		transport_complete_sync_cache(cmd, 1);
-+	/*
-+	 * block/blk-barrier.c:block_issue_flush() does not support a
-+	 * LBA + Range synchronization method, so for this case we
-+	 * have to flush the entire cache.
-+	 */
-+	ret = __iblock_do_sync_cache(cmd->se_dev);
-+	if (ret < 0) {
-+		if (!(immed))
-+			transport_complete_sync_cache(cmd, 0);
-+		return;
-+	}
++	if (sd->type == TYPE_TAPE) {
++		unsigned char *buf = NULL, cdb[MAX_COMMAND_SIZE];
++		struct se_cmd *cmd;
++		u32 blocksize;
 +
-+	if (!(immed))
-+		transport_complete_sync_cache(cmd, 1);
-+}
++		memset(cdb, 0, MAX_COMMAND_SIZE);
++		cdb[0] = MODE_SENSE;
++		cdb[4] = 0x0c; /* 12 bytes */
 +
-+/*
-+ * Tell TCM Core that we are capable of WriteCache emulation for
-+ * an underlying struct se_device.
-+ */
-+int iblock_emulated_write_cache(struct se_device *dev)
-+{
-+	struct iblock_dev *ib_dev = (struct iblock_dev *)dev->dev_ptr;
-+	/*
-+	 * Only return WCE if ISSUE_FLUSH is supported
-+	 */	
-+	return (ib_dev->ibd_flags & IBDF_BDEV_ISSUE_FLUSH) ? 1 : 0;
-+}
++		cmd = transport_allocate_passthrough(&cdb[0],
++				DMA_FROM_DEVICE, 0, NULL, 0, 12, dev);
++		if (!(cmd)) {
++			printk(KERN_ERR "Unable to determine blocksize for"
++				" TYPE_TAPE\n");
++			goto out;
++		}
 +
-+int iblock_emulated_dpo(struct se_device *dev)
-+{
-+	return 0;
-+}
++		if (transport_generic_passthrough(cmd) < 0) {
++			printk(KERN_ERR "Unable to determine blocksize for"
++				" TYPE_TAPE\n");
++			goto out;
++		}
 +
-+/*
-+ * Tell TCM Core that we will be emulating Forced Unit Access (FUA) for WRITEs
-+ * for TYPE_DISK.
-+ */
-+int iblock_emulated_fua_write(struct se_device *dev)
-+{
-+	struct iblock_dev *ib_dev = (struct iblock_dev *)dev->dev_ptr;
-+	/*
-+	 * Only return FUA WRITE if ISSUE_FLUSH is supported
-+	 */
-+	return (ib_dev->ibd_flags & IBDF_BDEV_ISSUE_FLUSH) ? 1 : 0;
-+}
++		buf = (unsigned char *)T_TASK(cmd)->t_task_buf;
++		blocksize = (buf[9] << 16) | (buf[10] << 8) | (buf[11]);
 +
-+int iblock_emulated_fua_read(struct se_device *dev)
-+{
-+	return 0;
-+}
-+
-+static int iblock_do_task(struct se_task *task)
-+{
-+	struct se_device *dev = task->task_se_cmd->se_dev;
-+	struct iblock_req *req = (struct iblock_req *)task->transport_req;
-+	struct iblock_dev *ibd = (struct iblock_dev *)req->ib_dev;
-+	struct request_queue *q = bdev_get_queue(ibd->ibd_bd);
-+	struct bio *bio = req->ib_bio, *nbio = NULL;
-+	int write = (TASK_CMD(task)->data_direction == DMA_TO_DEVICE);
-+	int ret;
-+
-+	while (bio) {
-+		nbio = bio->bi_next;
-+		bio->bi_next = NULL;
-+		DEBUG_IBLOCK("Calling submit_bio() task: %p bio: %p"
-+			" bio->bi_sector: %llu\n", task, bio, bio->bi_sector);
-+
-+		submit_bio(write, bio);
-+		bio = nbio;
-+	}
-+
-+	if (q->unplug_fn)
-+		q->unplug_fn(q);
-+	/*
-+	 * Check for Forced Unit Access WRITE emulation
-+	 */
-+	if ((DEV_ATTRIB(dev)->emulate_write_cache > 0) &&
-+	    (DEV_ATTRIB(dev)->emulate_fua_write > 0) &&
-+	    write && T_TASK(task->task_se_cmd)->t_tasks_fua) {
 +		/*
-+		 * We might need to be a bit smarter here
-+		 * and return some sense data to let the initiator
-+		 * know the FUA WRITE cache sync failed..?
++		 * If MODE_SENSE still returns zero, set the default value
++		 * to 1024.
 +		 */
-+		ret = __iblock_do_sync_cache(dev);
-+		if (ret < 0) {
-+			printk(KERN_ERR "__iblock_do_sync_cache()"
-+				" failed for FUA Write\n");
++		sd->sector_size = blocksize;
++		if (!(sd->sector_size))
++			sd->sector_size = 1024;
++
++		transport_passthrough_release(cmd);
++	}
++out:
++	return dev;
++}
++
++static void *pscsi_allocate_virtdevice(struct se_hba *hba, const char *name)
++{
++	struct pscsi_dev_virt *pdv;
++
++	pdv = kzalloc(sizeof(struct pscsi_dev_virt), GFP_KERNEL);
++	if (!(pdv)) {
++		printk(KERN_ERR "Unable to allocate memory for struct pscsi_dev_virt\n");
++		return NULL;
++	}
++	pdv->pdv_se_hba = hba;
++
++	printk(KERN_INFO "PSCSI: Allocated pdv: %p for %s\n", pdv, name);
++	return (void *)pdv;
++}
++
++/*
++ * Called with struct Scsi_Host->host_lock called.
++ */
++static struct se_device *pscsi_create_type_disk(
++	struct scsi_device *sd,
++	struct pscsi_dev_virt *pdv,
++	struct se_subsystem_dev *se_dev,
++	struct se_hba *hba)
++{
++	struct se_device *dev;
++	struct pscsi_hba_virt *phv = (struct pscsi_hba_virt *)pdv->pdv_se_hba->hba_ptr;
++	struct Scsi_Host *sh = sd->host;
++	struct block_device *bd;
++	u32 dev_flags = 0;
++
++	if (scsi_device_get(sd)) {
++		printk(KERN_ERR "scsi_device_get() failed for %d:%d:%d:%d\n",
++			sh->host_no, sd->channel, sd->id, sd->lun);
++		spin_unlock_irq(sh->host_lock);
++		return NULL;
++	}
++	spin_unlock_irq(sh->host_lock);
++	/*
++	 * Claim exclusive struct block_device access to struct scsi_device
++	 * for TYPE_DISK using supplied udev_path
++	 */
++	bd = open_bdev_exclusive(se_dev->se_dev_udev_path,
++				FMODE_WRITE|FMODE_READ, pdv);
++	if (!(bd)) {
++		printk("pSCSI: open_bdev_exclusive() failed\n");
++		scsi_device_put(sd);
++		return NULL;
++	}
++	pdv->pdv_bd = bd;
++
++	dev = pscsi_add_device_to_list(hba, se_dev, pdv, sd, dev_flags);
++	if (!(dev)) {
++		close_bdev_exclusive(pdv->pdv_bd, FMODE_WRITE|FMODE_READ);
++		scsi_device_put(sd);
++		return NULL;
++	}
++	printk(KERN_INFO "CORE_PSCSI[%d] - Added TYPE_DISK for %d:%d:%d:%d\n",
++		phv->phv_host_id, sh->host_no, sd->channel, sd->id, sd->lun);
++
++	return dev;
++}
++
++/*
++ * Called with struct Scsi_Host->host_lock called.
++ */
++static struct se_device *pscsi_create_type_rom(
++	struct scsi_device *sd,
++	struct pscsi_dev_virt *pdv,
++	struct se_subsystem_dev *se_dev,
++	struct se_hba *hba)
++{
++	struct se_device *dev;
++	struct pscsi_hba_virt *phv = (struct pscsi_hba_virt *)pdv->pdv_se_hba->hba_ptr;
++	struct Scsi_Host *sh = sd->host;
++	u32 dev_flags = 0;
++
++	if (scsi_device_get(sd)) {
++		printk(KERN_ERR "scsi_device_get() failed for %d:%d:%d:%d\n",
++			sh->host_no, sd->channel, sd->id, sd->lun);
++		spin_unlock_irq(sh->host_lock);
++		return NULL;
++	}
++	spin_unlock_irq(sh->host_lock);
++
++	dev = pscsi_add_device_to_list(hba, se_dev, pdv, sd, dev_flags);
++	if (!(dev)) {
++		scsi_device_put(sd);
++		return NULL;
++	}
++	printk(KERN_INFO "CORE_PSCSI[%d] - Added Type: %s for %d:%d:%d:%d\n",
++		phv->phv_host_id, scsi_device_type(sd->type), sh->host_no,
++		sd->channel, sd->id, sd->lun);
++
++	return dev;
++}
++
++/*
++ *Called with struct Scsi_Host->host_lock called.
++ */
++static struct se_device *pscsi_create_type_other(
++	struct scsi_device *sd,
++	struct pscsi_dev_virt *pdv,
++	struct se_subsystem_dev *se_dev,
++	struct se_hba *hba)
++{
++	struct se_device *dev;
++	struct pscsi_hba_virt *phv = (struct pscsi_hba_virt *)pdv->pdv_se_hba->hba_ptr;
++	struct Scsi_Host *sh = sd->host;
++	u32 dev_flags = 0;
++
++	spin_unlock_irq(sh->host_lock);
++	dev = pscsi_add_device_to_list(hba, se_dev, pdv, sd, dev_flags);
++	if (!(dev))
++		return NULL;
++
++	printk(KERN_INFO "CORE_PSCSI[%d] - Added Type: %s for %d:%d:%d:%d\n",
++		phv->phv_host_id, scsi_device_type(sd->type), sh->host_no,
++		sd->channel, sd->id, sd->lun);
++
++	return dev;
++}
++
++static struct se_device *pscsi_create_virtdevice(
++	struct se_hba *hba,
++	struct se_subsystem_dev *se_dev,
++	void *p)
++{
++	struct pscsi_dev_virt *pdv = (struct pscsi_dev_virt *)p;
++	struct se_device *dev;
++	struct scsi_device *sd;
++	struct pscsi_hba_virt *phv = (struct pscsi_hba_virt *)hba->hba_ptr;
++	struct Scsi_Host *sh = phv->phv_lld_host;
++	int legacy_mode_enable = 0;
++
++	if (!(pdv)) {
++		printk(KERN_ERR "Unable to locate struct pscsi_dev_virt"
++				" parameter\n");
++		return NULL;
++	}
++	/*
++	 * If not running in PHV_LLD_SCSI_HOST_NO mode, locate the
++	 * struct Scsi_Host we will need to bring the TCM/pSCSI object online
++	 */
++	if (!(sh)) {
++		if (phv->phv_mode == PHV_LLD_SCSI_HOST_NO) {
++			printk(KERN_ERR "pSCSI: Unable to locate struct"
++				" Scsi_Host for PHV_LLD_SCSI_HOST_NO\n");
++			return NULL;
++		}
++		/*
++		 * For the newer PHV_VIRUTAL_HOST_ID struct scsi_device
++		 * reference, we enforce that udev_path has been set
++		 */
++		if (!(se_dev->su_dev_flags & SDF_USING_UDEV_PATH)) {
++			printk(KERN_ERR "pSCSI: udev_path attribute has not"
++				" been set before ENABLE=1\n");
++			return NULL;
++		}
++		/*
++		 * If no scsi_host_id= was passed for PHV_VIRUTAL_HOST_ID,
++		 * use the original TCM hba ID to reference Linux/SCSI Host No
++		 * and enable for PHV_LLD_SCSI_HOST_NO mode.
++		 */
++		if (!(pdv->pdv_flags & PDF_HAS_VIRT_HOST_ID)) {
++			spin_lock(&hba->device_lock);
++			if (!(list_empty(&hba->hba_dev_list))) {
++				printk(KERN_ERR "pSCSI: Unable to set hba_mode"
++					" with active devices\n");
++				spin_unlock(&hba->device_lock);
++				return NULL;
++			}
++			spin_unlock(&hba->device_lock);
++
++			if (pscsi_pmode_enable_hba(hba, 1) != 1)
++				return NULL;
++
++			legacy_mode_enable = 1;
++			hba->hba_flags |= HBA_FLAGS_PSCSI_MODE;
++			sh = phv->phv_lld_host;
++		} else {
++			sh = pscsi_get_sh(pdv->pdv_host_id);
++			if (!(sh)) {
++				printk(KERN_ERR "pSCSI: Unable to locate"
++					" pdv_host_id: %d\n", pdv->pdv_host_id);
++				return NULL;
++			}
++		}
++	} else {
++		if (phv->phv_mode == PHV_VIRUTAL_HOST_ID) {
++			printk(KERN_ERR "pSCSI: PHV_VIRUTAL_HOST_ID set while"
++				" struct Scsi_Host exists\n");
++			return NULL;
 +		}
 +	}
++
++	spin_lock_irq(sh->host_lock);
++	list_for_each_entry(sd, &sh->__devices, siblings) {
++		if ((pdv->pdv_channel_id != sd->channel) ||
++		    (pdv->pdv_target_id != sd->id) ||
++		    (pdv->pdv_lun_id != sd->lun))
++			continue;
++		/*
++		 * Functions will release the held struct scsi_host->host_lock
++		 * before calling calling pscsi_add_device_to_list() to register
++		 * struct scsi_device with target_core_mod.
++		 */
++		switch (sd->type) {
++		case TYPE_DISK:
++			dev = pscsi_create_type_disk(sd, pdv, se_dev, hba);
++			break;
++		case TYPE_ROM:
++			dev = pscsi_create_type_rom(sd, pdv, se_dev, hba);
++			break;
++		default:
++			dev = pscsi_create_type_other(sd, pdv, se_dev, hba);
++			break;
++		}
++
++		if (!(dev)) {
++			if (phv->phv_mode == PHV_VIRUTAL_HOST_ID)
++				scsi_host_put(sh);
++			else if (legacy_mode_enable) {
++				pscsi_pmode_enable_hba(hba, 0);
++				hba->hba_flags &= ~HBA_FLAGS_PSCSI_MODE;
++			}
++			pdv->pdv_sd = NULL;
++			return NULL;
++		}
++		return dev;
++	}
++	spin_unlock_irq(sh->host_lock);
++
++	printk(KERN_ERR "pSCSI: Unable to locate %d:%d:%d:%d\n", sh->host_no,
++		pdv->pdv_channel_id,  pdv->pdv_target_id, pdv->pdv_lun_id);
++
++	if (phv->phv_mode == PHV_VIRUTAL_HOST_ID)
++		scsi_host_put(sh);
++	else if (legacy_mode_enable) {
++		pscsi_pmode_enable_hba(hba, 0);
++		hba->hba_flags &= ~HBA_FLAGS_PSCSI_MODE;
++	}
++
++	return NULL;
++}
++
++/*	pscsi_activate_device(): (Part of se_subsystem_api_t template)
++ *
++ *
++ */
++static int pscsi_activate_device(struct se_device *dev)
++{
++	struct pscsi_dev_virt *pdv = dev->dev_ptr;
++	struct pscsi_hba_virt *phv = pdv->pdv_se_hba->hba_ptr;
++	struct scsi_device *sd = pdv->pdv_sd;
++	struct Scsi_Host *sh = sd->host;
++
++	printk(KERN_INFO "CORE_PSCSI[%d] - Activating Device with TCQ: %d at"
++		" SCSI Location (Host/Channel/Target/LUN) %d/%d/%d/%d\n",
++		phv->phv_host_id, sd->queue_depth, sh->host_no, sd->channel,
++		sd->id, sd->lun);
++
++	return 0;
++}
++
++/*	pscsi_deactivate_device(): (Part of se_subsystem_api_t template)
++ *
++ *
++ */
++static void pscsi_deactivate_device(struct se_device *dev)
++{
++	struct pscsi_dev_virt *pdv = dev->dev_ptr;
++	struct pscsi_hba_virt *phv = pdv->pdv_se_hba->hba_ptr;
++	struct scsi_device *sd = pdv->pdv_sd;
++	struct Scsi_Host *sh = sd->host;
++
++	printk(KERN_INFO "CORE_PSCSI[%d] - Deactivating Device with TCQ: %d at"
++		" SCSI Location (Host/Channel/Target/LUN) %d/%d/%d/%d\n",
++		phv->phv_host_id, sd->queue_depth, sh->host_no, sd->channel,
++		sd->id, sd->lun);
++}
++
++/*	pscsi_free_device(): (Part of se_subsystem_api_t template)
++ *
++ *
++ */
++static void pscsi_free_device(void *p)
++{
++	struct pscsi_dev_virt *pdv = p;
++	struct pscsi_hba_virt *phv = pdv->pdv_se_hba->hba_ptr;
++	struct scsi_device *sd = pdv->pdv_sd;
++
++	if (sd) {
++		/*
++		 * Release exclusive pSCSI internal struct block_device claim for
++		 * struct scsi_device with TYPE_DISK from pscsi_create_type_disk()
++		 */
++		if ((sd->type == TYPE_DISK) && pdv->pdv_bd) {
++        		close_bdev_exclusive(pdv->pdv_bd,
++					FMODE_WRITE|FMODE_READ);
++			pdv->pdv_bd = NULL;
++		}
++		/*
++		 * For HBA mode PHV_LLD_SCSI_HOST_NO, release the reference
++		 * to struct Scsi_Host now.
++		 */
++		if ((phv->phv_mode == PHV_LLD_SCSI_HOST_NO) &&
++		    (phv->phv_lld_host != NULL))
++			scsi_host_put(phv->phv_lld_host);
++
++		if ((sd->type == TYPE_DISK) || (sd->type == TYPE_ROM))
++			scsi_device_put(sd);
++
++		pdv->pdv_sd = NULL;
++	}
++
++	kfree(pdv);
++}
++
++/*	pscsi_transport_complete():
++ *
++ *
++ */
++static int pscsi_transport_complete(struct se_task *task)
++{
++	struct pscsi_dev_virt *pdv = task->se_dev->dev_ptr;
++	struct scsi_device *sd = pdv->pdv_sd;
++	int result;
++	struct pscsi_plugin_task *pt = task->transport_req;
++	unsigned char *cdb = &pt->pscsi_cdb[0];
++
++	result = pt->pscsi_result;
++	/*
++	 * Hack to make sure that Write-Protect modepage is set if R/O mode is
++	 * forced.
++	 */
++	if (((cdb[0] == MODE_SENSE) || (cdb[0] == MODE_SENSE_10)) &&
++	     (status_byte(result) << 1) == SAM_STAT_GOOD) {
++		if (!TASK_CMD(task)->se_deve)
++			goto after_mode_sense;
++
++		if (TASK_CMD(task)->se_deve->lun_flags &
++				TRANSPORT_LUNFLAGS_READ_ONLY) {
++			unsigned char *buf = (unsigned char *)
++				T_TASK(task->task_se_cmd)->t_task_buf;
++
++			if (cdb[0] == MODE_SENSE_10) {
++				if (!(buf[3] & 0x80))
++					buf[3] |= 0x80;
++			} else {
++				if (!(buf[2] & 0x80))
++					buf[2] |= 0x80;
++			}
++		}
++	}
++after_mode_sense:
++
++	if (sd->type != TYPE_TAPE)
++		goto after_mode_select;
++
++	/*
++	 * Hack to correctly obtain the initiator requested blocksize for
++	 * TYPE_TAPE.  Since this value is dependent upon each tape media,
++	 * struct scsi_device->sector_size will not contain the correct value
++	 * by default, so we go ahead and set it so
++	 * TRANSPORT(dev)->get_blockdev() returns the correct value to the
++	 * storage engine.
++	 */
++	if (((cdb[0] == MODE_SELECT) || (cdb[0] == MODE_SELECT_10)) &&
++	      (status_byte(result) << 1) == SAM_STAT_GOOD) {
++		unsigned char *buf;
++		struct scatterlist *sg = task->task_sg;
++		u16 bdl;
++		u32 blocksize;
++
++		buf = sg_virt(&sg[0]);
++		if (!(buf)) {
++			printk(KERN_ERR "Unable to get buf for scatterlist\n");
++			goto after_mode_select;
++		}
++
++		if (cdb[0] == MODE_SELECT)
++			bdl = (buf[3]);
++		else
++			bdl = (buf[6] << 8) | (buf[7]);
++
++		if (!bdl)
++			goto after_mode_select;
++
++		if (cdb[0] == MODE_SELECT)
++			blocksize = (buf[9] << 16) | (buf[10] << 8) |
++					(buf[11]);
++		else
++			blocksize = (buf[13] << 16) | (buf[14] << 8) |
++					(buf[15]);
++
++		sd->sector_size = blocksize;
++	}
++after_mode_select:
++
++	if (status_byte(result) & CHECK_CONDITION)
++		return 1;
++
++	return 0;
++}
++
++/*	pscsi_allocate_request(): (Part of se_subsystem_api_t template)
++ *
++ *
++ */
++static void *pscsi_allocate_request(
++	struct se_task *task,
++	struct se_device *dev)
++{
++	struct se_cmd *cmd = task->task_se_cmd;
++	struct pscsi_plugin_task *pt;
++	unsigned char *cdb = T_TASK(cmd)->t_task_cdb;
++
++	pt = kzalloc(sizeof(struct pscsi_plugin_task), GFP_KERNEL);
++	if (!(pt)) {
++		printk(KERN_ERR "Unable to allocate struct pscsi_plugin_task\n");
++		return NULL;
++	}
++	/*
++	 * If TCM Core is signaling a > TCM_MAX_COMMAND_SIZE allocation,
++	 * allocate the extended CDB buffer for per struct se_task context
++	 * pt->pscsi_cdb now.
++	 */
++	if (cmd->se_cmd_flags & SCF_ECDB_ALLOCATION) {
++		/*
++		 * PSCSI_MAX_CDB_SIZE is currently set to 240 bytes which
++		 * allows the largest OSD CDB sizes again.
++		 */
++		if (scsi_command_size(cdb) > PSCSI_MAX_CDB_SIZE) {
++			printk(KERN_ERR "pSCSI: Received CDB of size: %u larger"
++				" than PSCSI_MAX_CDB_SIZE: %u\n",
++				scsi_command_size(cdb), PSCSI_MAX_CDB_SIZE);
++			return NULL;
++		}
++
++		pt->pscsi_cdb = kzalloc(scsi_command_size(cdb), GFP_KERNEL);
++		if (!(pt->pscsi_cdb)) {
++			printk(KERN_ERR "pSCSI: Unable to allocate extended"
++					" pt->pscsi_cdb\n");
++			return NULL;
++		}
++	} else
++		pt->pscsi_cdb = &pt->__pscsi_cdb[0];
++
++	return pt;
++}
++
++static inline void pscsi_blk_init_request(
++	struct se_task *task,
++	struct pscsi_plugin_task *pt,
++	struct request *req,
++	int bidi_read)
++{
++	/*
++	 * Defined as "scsi command" in include/linux/blkdev.h.
++	 */
++	req->cmd_type = REQ_TYPE_BLOCK_PC;
++	/*
++	 * For the extra BIDI-COMMAND READ struct request we do not
++	 * need to setup the remaining structure members
++	 */
++	if (bidi_read)
++		return;
++	/*
++	 * Setup the done function pointer for struct request,
++	 * also set the end_io_data pointer.to struct se_task.
++	 */
++	req->end_io = pscsi_req_done;
++	req->end_io_data = (void *)task;
++	/*
++	 * Load the referenced struct se_task's SCSI CDB into
++	 * include/linux/blkdev.h:struct request->cmd
++	 */
++	req->cmd_len = scsi_command_size(pt->pscsi_cdb);
++	req->cmd = &pt->pscsi_cdb[0];
++	/*
++	 * Setup pointer for outgoing sense data.
++	 */
++	req->sense = (void *)&pt->pscsi_sense[0];
++	req->sense_len = 0;
++}
++
++/*
++ * Used for pSCSI data payloads for all *NON* SCF_SCSI_DATA_SG_IO_CDB
++*/
++static int pscsi_blk_get_request(struct se_task *task)
++{
++	struct pscsi_plugin_task *pt = task->transport_req;
++	struct pscsi_dev_virt *pdv = task->se_dev->dev_ptr;
++
++	pt->pscsi_req = blk_get_request(pdv->pdv_sd->request_queue,
++			(pt->pscsi_direction == DMA_TO_DEVICE), GFP_KERNEL);
++	if (!(pt->pscsi_req) || IS_ERR(pt->pscsi_req)) {
++		printk(KERN_ERR "PSCSI: blk_get_request() failed: %ld\n",
++				IS_ERR(pt->pscsi_req));
++		return PYX_TRANSPORT_LU_COMM_FAILURE;
++	}
++	/*
++	 * Setup the newly allocated struct request for REQ_TYPE_BLOCK_PC,
++	 * and setup rq callback, CDB and sense.
++	 */
++	pscsi_blk_init_request(task, pt, pt->pscsi_req, 0);
++	return 0;
++}
++
++/*      pscsi_do_task(): (Part of se_subsystem_api_t template)
++ *
++ *
++ */
++static int pscsi_do_task(struct se_task *task)
++{
++	struct pscsi_plugin_task *pt = task->transport_req;
++	struct pscsi_dev_virt *pdv = task->se_dev->dev_ptr;
++	/*
++	 * Set the struct request->timeout value based on peripheral
++	 * device type from SCSI.
++	 */
++	if (pdv->pdv_sd->type == TYPE_DISK)
++		pt->pscsi_req->timeout = PS_TIMEOUT_DISK;
++	else
++		pt->pscsi_req->timeout = PS_TIMEOUT_OTHER;
++
++	pt->pscsi_req->retries = PS_RETRY;
++	/*
++	 * Queue the struct request into the struct scsi_device->request_queue.
++	 */
++	blk_execute_rq_nowait(pdv->pdv_sd->request_queue, NULL,
++			      pt->pscsi_req, 1, pscsi_req_done);
 +
 +	return PYX_TRANSPORT_SENT_TO_TRANSPORT;
 +}
 +
-+static int iblock_do_discard(struct se_device *dev, sector_t lba, u32 range)
++/*	pscsi_free_task(): (Part of se_subsystem_api_t template)
++ *
++ *
++ */
++static void pscsi_free_task(struct se_task *task)
 +{
-+	struct iblock_dev *ibd = dev->dev_ptr;
-+	struct block_device *bd = ibd->ibd_bd;
-+	int barrier = 0;
-+	
-+	return blkdev_issue_discard(bd, lba, range, GFP_KERNEL, barrier);
-+}
-+
-+static void iblock_free_task(struct se_task *task)
-+{
-+	struct iblock_req *req = task->transport_req;
-+
++	struct pscsi_plugin_task *pt = task->transport_req;
++	/*
++	 * Release the extended CDB allocation from pscsi_allocate_request()
++	 * if one exists.
++	 */
++	if (task->task_se_cmd->se_cmd_flags & SCF_ECDB_ALLOCATION)
++		kfree(pt->pscsi_cdb);
 +	/*
 +	 * We do not release the bio(s) here associated with this task, as
-+	 * this is handled by bio_put() and iblock_bio_destructor().
++	 * this is handled by bio_put() and pscsi_bi_endio().
 +	 */
-+
-+	kfree(req);
-+	task->transport_req = NULL;
++	kfree(pt);
 +}
 +
-+static ssize_t iblock_set_configfs_dev_params(struct se_hba *hba,
-+					       struct se_subsystem_dev *se_dev,
-+					       const char *page, ssize_t count)
++static ssize_t pscsi_set_configfs_dev_params(struct se_hba *hba,
++	struct se_subsystem_dev *se_dev,
++	const char *page,
++	ssize_t count)
 +{
-+	struct iblock_dev *ib_dev = se_dev->se_dev_su_ptr;
++	struct pscsi_dev_virt *pdv = se_dev->se_dev_su_ptr;
++	struct pscsi_hba_virt *phv = hba->hba_ptr;
 +	char *buf, *cur, *ptr, *ptr2;
-+	unsigned long force;
-+	int params = 0, ret = 0;
++	unsigned long scsi_host_id, scsi_channel_id;
++	unsigned long scsi_target_id, scsi_lun_id;
++	int params = 0, ret;
 +	/*
 +	 * Make sure we take into account the NULL terminator when copying
 +	 * the const buffer here..
@@ -618,8 +947,8 @@ index 0000000..e7840da
 +	buf = kzalloc(count + 1, GFP_KERNEL);
 +	if (!(buf)) {
 +		printk(KERN_ERR "Unable to allocate memory for temporary"
-+			" buffer\n");
-+		return 0;
++				" buffer\n");
++		return -ENOMEM;
 +	}
 +	memcpy(buf, page, count);
 +	cur = buf;
@@ -632,37 +961,76 @@ index 0000000..e7840da
 +		*ptr = '\0';
 +		ptr++;
 +
-+		ptr2 = strstr(cur, "udev_path");
++		ptr2 = strstr(cur, "scsi_host_id");
 +		if ((ptr2)) {
 +			transport_check_dev_params_delim(ptr, &cur);
-+			ptr = strstrip(ptr);
-+			if (ib_dev->ibd_bd) {
-+				printk(KERN_ERR "Unable to set udev_path= while"
-+					" ib_dev->ibd_bd exists\n");
-+				params = 0;
-+				goto out;
++			if (phv->phv_mode == PHV_LLD_SCSI_HOST_NO) {
++				printk(KERN_ERR "PSCSI[%d]: Unable to accept"
++					" scsi_host_id while phv_mode =="
++					" PHV_LLD_SCSI_HOST_NO\n",
++					phv->phv_host_id);
++				break;
 +			}
-+
-+			ret = snprintf(ib_dev->ibd_udev_path, SE_UDEV_PATH_LEN,
-+				"%s", ptr);
-+			printk(KERN_INFO "IBLOCK: Referencing UDEV path: %s\n",
-+					ib_dev->ibd_udev_path);
-+			ib_dev->ibd_flags |= IBDF_HAS_UDEV_PATH;
++			ret = strict_strtoul(ptr, 0, &scsi_host_id);
++			if (ret < 0) {
++				printk(KERN_ERR "strict_strtoul() failed for"
++					" scsi_hostl_id=\n");
++				break;
++			}
++			pdv->pdv_host_id = (int)scsi_host_id;
++			printk(KERN_INFO "PSCSI[%d]: Referencing SCSI Host ID:"
++				" %d\n", phv->phv_host_id, pdv->pdv_host_id);
++			pdv->pdv_flags |= PDF_HAS_VIRT_HOST_ID;
 +			params++;
 +			continue;
 +		}
-+		ptr2 = strstr(cur, "force");
++		ptr2 = strstr(cur, "scsi_channel_id");
 +		if ((ptr2)) {
 +			transport_check_dev_params_delim(ptr, &cur);
-+			ret = strict_strtoul(ptr, 0, &force);
++			ret = strict_strtoul(ptr, 0, &scsi_channel_id);
 +			if (ret < 0) {
-+				printk(KERN_ERR "strict_strtoul() failed"
-+					" for force=\n");
++				printk(KERN_ERR "strict_strtoul() failed for"
++					" scsi_channel_id=\n");
 +				break;
 +			}
-+			ib_dev->ibd_force = (int)force;
-+			printk(KERN_INFO "IBLOCK: Set force=%d\n",
-+				ib_dev->ibd_force);
++			pdv->pdv_channel_id = (int)scsi_channel_id;
++			printk(KERN_INFO "PSCSI[%d]: Referencing SCSI Channel"
++				" ID: %d\n",  phv->phv_host_id,
++				pdv->pdv_channel_id);
++			pdv->pdv_flags |= PDF_HAS_CHANNEL_ID;
++			params++;
++			continue;
++		}
++		ptr2 = strstr(cur, "scsi_target_id");
++		if ((ptr2)) {
++			transport_check_dev_params_delim(ptr, &cur);
++			ret = strict_strtoul(ptr, 0, &scsi_target_id);
++			if (ret < 0) {
++				printk("strict_strtoul() failed for"
++					" strict_strtoul()\n");
++				break;
++			}
++			pdv->pdv_target_id = (int)scsi_target_id;
++			printk(KERN_INFO "PSCSI[%d]: Referencing SCSI Target"
++				" ID: %d\n", phv->phv_host_id,
++				pdv->pdv_target_id);
++			pdv->pdv_flags |= PDF_HAS_TARGET_ID;
++			params++;
++			continue;
++		}
++		ptr2 = strstr(cur, "scsi_lun_id");
++		if ((ptr2)) {
++			transport_check_dev_params_delim(ptr, &cur);
++			ret = strict_strtoul(ptr, 0, &scsi_lun_id);
++			if (ret < 0) {
++				printk("strict_strtoul() failed for"
++					" scsi_lun_id=\n");
++				break;
++			}
++			pdv->pdv_lun_id = (int)scsi_lun_id;
++			printk(KERN_INFO "PSCSI[%d]: Referencing SCSI LUN ID:"
++				" %d\n", phv->phv_host_id, pdv->pdv_lun_id);
++			pdv->pdv_flags |= PDF_HAS_LUN_ID;
 +			params++;
 +		} else
 +			cur = NULL;
@@ -673,199 +1041,274 @@ index 0000000..e7840da
 +	return (params) ? count : -EINVAL;
 +}
 +
-+static ssize_t iblock_check_configfs_dev_params(
++static ssize_t pscsi_check_configfs_dev_params(
 +	struct se_hba *hba,
 +	struct se_subsystem_dev *se_dev)
 +{
-+	struct iblock_dev *ibd = se_dev->se_dev_su_ptr;
++	struct pscsi_dev_virt *pdv = se_dev->se_dev_su_ptr;
 +
-+	if (!(ibd->ibd_flags & IBDF_HAS_UDEV_PATH)) {
-+		printk(KERN_ERR "Missing udev_path= parameters for IBLOCK\n");
++	if (!(pdv->pdv_flags & PDF_HAS_CHANNEL_ID) ||
++	    !(pdv->pdv_flags & PDF_HAS_TARGET_ID) ||
++	    !(pdv->pdv_flags & PDF_HAS_LUN_ID)) {
++		printk(KERN_ERR "Missing scsi_channel_id=, scsi_target_id= and"
++			" scsi_lun_id= parameters\n");
 +		return -1;
 +	}
 +
 +	return 0;
 +}
 +
-+static ssize_t iblock_show_configfs_dev_params(
++static ssize_t pscsi_show_configfs_dev_params(
 +	struct se_hba *hba,
 +	struct se_subsystem_dev *se_dev,
 +	char *page)
 +{
-+	struct iblock_dev *ibd = se_dev->se_dev_su_ptr;
++	struct pscsi_dev_virt *pdv = se_dev->se_dev_su_ptr;
 +	int bl = 0;
 +
-+	__iblock_get_dev_info(ibd, page, &bl);
++	__pscsi_get_dev_info(pdv, page, &bl);
 +	return (ssize_t)bl;
 +}
 +
-+static void iblock_get_plugin_info(void *p, char *b, int *bl)
++static void pscsi_get_plugin_info(void *p, char *b, int *bl)
 +{
-+	*bl += sprintf(b + *bl, "TCM iBlock Plugin %s\n", IBLOCK_VERSION);
++	*bl += sprintf(b + *bl, "TCM SCSI Plugin %s\n", PSCSI_VERSION);
 +}
 +
-+static void iblock_get_hba_info(struct se_hba *hba, char *b, int *bl)
++static void pscsi_get_hba_info(struct se_hba *hba, char *b, int *bl)
 +{
-+	struct iblock_hba *ib_host = (struct iblock_hba *)hba->hba_ptr;
++	struct pscsi_hba_virt *phv = hba->hba_ptr;
++	struct Scsi_Host *sh = phv->phv_lld_host;
 +
-+	*bl += sprintf(b + *bl, "SE Host ID: %u  iBlock Host ID: %u\n",
-+		hba->hba_id, ib_host->iblock_host_id);
-+	*bl += sprintf(b + *bl, "        TCM iBlock HBA\n");
++	*bl += sprintf(b + *bl, "Core Host ID: %u  PHV Host ID: %u\n",
++		 hba->hba_id, phv->phv_host_id);
++	if (sh)
++		*bl += sprintf(b + *bl, "        SCSI HBA ID %u: %s  <local>\n",
++			sh->host_no, (sh->hostt->name) ?
++			(sh->hostt->name) : "Unknown");
 +}
 +
-+static void iblock_get_dev_info(struct se_device *dev, char *b, int *bl)
++static void pscsi_get_dev_info(struct se_device *dev, char *b, int *bl)
 +{
-+	struct iblock_dev *ibd = dev->dev_ptr;
++	struct pscsi_dev_virt *pdv = dev->dev_ptr;
 +
-+	__iblock_get_dev_info(ibd, b, bl);
++	__pscsi_get_dev_info(pdv, b, bl);
 +}
 +
-+static void __iblock_get_dev_info(struct iblock_dev *ibd, char *b, int *bl)
++static void __pscsi_get_dev_info(struct pscsi_dev_virt *pdv, char *b, int *bl)
 +{
-+	char buf[BDEVNAME_SIZE];
-+	struct block_device *bd = ibd->ibd_bd;
++	struct pscsi_hba_virt *phv = pdv->pdv_se_hba->hba_ptr;
++	struct scsi_device *sd = pdv->pdv_sd;
++	unsigned char host_id[16];
++	int i;
 +
-+	if (bd)
-+		*bl += sprintf(b + *bl, "iBlock device: %s",
-+				bdevname(bd, buf));
-+	if (ibd->ibd_flags & IBDF_HAS_UDEV_PATH) {
-+		*bl += sprintf(b + *bl, "  UDEV PATH: %s\n",
-+				ibd->ibd_udev_path);
-+	} else
++	if (phv->phv_mode == PHV_VIRUTAL_HOST_ID)
++		snprintf(host_id, 16, "%d", pdv->pdv_host_id);
++	else
++		snprintf(host_id, 16, "PHBA Mode");
++
++	*bl += sprintf(b + *bl, "SCSI Device Bus Location:"
++		" Channel ID: %d Target ID: %d LUN: %d Host ID: %s\n",
++		pdv->pdv_channel_id, pdv->pdv_target_id, pdv->pdv_lun_id,
++		host_id);
++
++	if (sd) {
++		*bl += sprintf(b + *bl, "        ");
++		*bl += sprintf(b + *bl, "Vendor: ");
++		for (i = 0; i < 8; i++) {
++			if (ISPRINT(sd->vendor[i]))   /* printable character? */
++				*bl += sprintf(b + *bl, "%c", sd->vendor[i]);
++			else
++				*bl += sprintf(b + *bl, " ");
++		}
++		*bl += sprintf(b + *bl, " Model: ");
++		for (i = 0; i < 16; i++) {
++			if (ISPRINT(sd->model[i]))   /* printable character ? */
++				*bl += sprintf(b + *bl, "%c", sd->model[i]);
++			else
++				*bl += sprintf(b + *bl, " ");
++		}
++		*bl += sprintf(b + *bl, " Rev: ");
++		for (i = 0; i < 4; i++) {
++			if (ISPRINT(sd->rev[i]))   /* printable character ? */
++				*bl += sprintf(b + *bl, "%c", sd->rev[i]);
++			else
++				*bl += sprintf(b + *bl, " ");
++		}
 +		*bl += sprintf(b + *bl, "\n");
-+
-+	*bl += sprintf(b + *bl, "        ");
-+	if (bd) {
-+		*bl += sprintf(b + *bl, "Major: %d Minor: %d  %s\n",
-+			ibd->ibd_major, ibd->ibd_minor, (!bd->bd_contains) ?
-+			"" : (bd->bd_holder == (struct iblock_dev *)ibd) ?
-+			"CLAIMED: IBLOCK" : "CLAIMED: OS");
-+	} else {
-+		*bl += sprintf(b + *bl, "Major: %d Minor: %d\n",
-+			ibd->ibd_major, ibd->ibd_minor);
 +	}
 +}
 +
-+static void iblock_bio_destructor(struct bio *bio)
++static void pscsi_bi_endio(struct bio *bio, int error)
 +{
-+	struct se_task *task = bio->bi_private;
-+	struct iblock_dev *ib_dev = task->se_dev->dev_ptr;
-+
-+	bio_free(bio, ib_dev->ibd_bio_set);
++	bio_put(bio);
 +}
 +
-+static struct bio *iblock_get_bio(
-+	struct se_task *task,
-+	struct iblock_req *ib_req,
-+	struct iblock_dev *ib_dev,
-+	int *ret,
-+	sector_t lba,
-+	u32 sg_num)
++static inline struct bio *pscsi_get_bio(struct pscsi_dev_virt *pdv, int sg_num)
 +{
 +	struct bio *bio;
-+
-+	bio = bio_alloc_bioset(GFP_NOIO, sg_num, ib_dev->ibd_bio_set);
++	/*
++	 * Use bio_malloc() following the comment in for bio -> struct request
++	 * in block/blk-core.c:blk_make_request()
++	 */
++	bio = bio_kmalloc(GFP_KERNEL, sg_num);
 +	if (!(bio)) {
-+		printk(KERN_ERR "Unable to allocate memory for bio\n");
-+		*ret = PYX_TRANSPORT_OUT_OF_MEMORY_RESOURCES;
++		printk(KERN_ERR "PSCSI: bio_kmalloc() failed\n");
 +		return NULL;
 +	}
++	bio->bi_end_io = pscsi_bi_endio;
 +
-+	DEBUG_IBLOCK("Allocated bio: %p task_sg_num: %u using ibd_bio_set:"
-+		" %p\n", bio, task->task_sg_num, ib_dev->ibd_bio_set);
-+	DEBUG_IBLOCK("Allocated bio: %p task_size: %u\n", bio, task->task_size);
-+
-+	bio->bi_bdev = ib_dev->ibd_bd;
-+	bio->bi_private = (void *) task;
-+	bio->bi_destructor = iblock_bio_destructor;
-+	bio->bi_end_io = &iblock_bio_done;
-+	bio->bi_sector = lba;
-+	atomic_inc(&ib_req->ib_bio_cnt);
-+
-+	DEBUG_IBLOCK("Set bio->bi_sector: %llu\n", bio->bi_sector);
-+	DEBUG_IBLOCK("Set ib_req->ib_bio_cnt: %d\n",
-+			atomic_read(&ib_req->ib_bio_cnt));
 +	return bio;
 +}
 +
-+static int iblock_map_task_SG(struct se_task *task)
++#if 0
++#define DEBUG_PSCSI(x...) printk(x)
++#else
++#define DEBUG_PSCSI(x...)
++#endif
++
++static int __pscsi_map_task_SG(
++	struct se_task *task,
++	struct scatterlist *task_sg,
++	u32 task_sg_num,
++	int bidi_read)
 +{
-+	struct se_cmd *cmd = task->task_se_cmd;
-+	struct se_device *dev = SE_DEV(cmd);
-+	struct iblock_dev *ib_dev = task->se_dev->dev_ptr;
-+	struct iblock_req *ib_req = task->transport_req;
++	struct pscsi_plugin_task *pt = task->transport_req;
++	struct pscsi_dev_virt *pdv = task->se_dev->dev_ptr;
 +	struct bio *bio = NULL, *hbio = NULL, *tbio = NULL;
++	struct page *page;
 +	struct scatterlist *sg;
-+	int ret = 0;
-+	u32 i, sg_num = task->task_sg_num;
-+	sector_t block_lba;
++	u32 data_len = task->task_size, i, len, bytes, off;
++	int nr_pages = (task->task_size + task_sg[0].offset +
++			PAGE_SIZE - 1) >> PAGE_SHIFT;
++	int nr_vecs = 0, ret = 0;
++	int rw = (TASK_CMD(task)->data_direction == DMA_TO_DEVICE);
++
++	if (!task->task_size)
++		return 0;
 +	/*
-+	 * Do starting conversion up from non 512-byte blocksize with
-+	 * struct se_task SCSI blocksize into Linux/Block 512 units for BIO.
++	 * For SCF_SCSI_DATA_SG_IO_CDB, Use fs/bio.c:bio_add_page() to setup
++	 * the bio_vec maplist from TC< struct se_mem -> task->task_sg ->
++	 * struct scatterlist memory.  The struct se_task->task_sg[] currently needs
++	 * to be attached to struct bios for submission to Linux/SCSI using
++	 * struct request to struct scsi_device->request_queue.
++	 *
++	 * Note that this will be changing post v2.6.28 as Target_Core_Mod/pSCSI
++	 * is ported to upstream SCSI passthrough functionality that accepts
++	 * struct scatterlist->page_link or struct page as a paraemeter.
 +	 */
-+	if (DEV_ATTRIB(dev)->block_size == 4096)
-+		block_lba = (task->task_lba << 3);
-+	else if (DEV_ATTRIB(dev)->block_size == 2048)
-+		block_lba = (task->task_lba << 2);
-+	else if (DEV_ATTRIB(dev)->block_size == 1024)
-+		block_lba = (task->task_lba << 1);
-+	else if (DEV_ATTRIB(dev)->block_size == 512)
-+		block_lba = task->task_lba;
-+	else {
-+		printk(KERN_ERR "Unsupported SCSI -> BLOCK LBA conversion:"
-+				" %u\n", DEV_ATTRIB(dev)->block_size);
-+		return PYX_TRANSPORT_LU_COMM_FAILURE;
-+	}
++	DEBUG_PSCSI("PSCSI: nr_pages: %d\n", nr_pages);
 +
-+	atomic_set(&ib_req->ib_bio_cnt, 0);
++	for_each_sg(task_sg, sg, task_sg_num, i) {
++		page = sg_page(sg);
++		off = sg->offset;
++		len = sg->length;
 +
-+	bio = iblock_get_bio(task, ib_req, ib_dev, &ret, block_lba, sg_num);
-+	if (!(bio))
-+		return ret;
++		DEBUG_PSCSI("PSCSI: i: %d page: %p len: %d off: %d\n", i,
++			page, len, off);
 +
-+	ib_req->ib_bio = bio;
-+	hbio = tbio = bio;
-+	/*
-+	 * Use fs/bio.c:bio_add_pages() to setup the bio_vec maplist
-+	 * from TCM struct se_mem -> task->task_sg -> struct scatterlist memory.
-+	 */
-+	for_each_sg(task->task_sg, sg, task->task_sg_num, i) {
-+		DEBUG_IBLOCK("task: %p bio: %p Calling bio_add_page(): page:"
-+			" %p len: %u offset: %u\n", task, bio, sg_page(sg),
-+				sg->length, sg->offset);
-+again:
-+		ret = bio_add_page(bio, sg_page(sg), sg->length, sg->offset);
-+		if (ret != sg->length) {
++		while (len > 0 && data_len > 0) {
++			bytes = min_t(unsigned int, len, PAGE_SIZE - off);
++			bytes = min(bytes, data_len);
 +
-+			DEBUG_IBLOCK("*** Set bio->bi_sector: %llu\n",
-+					bio->bi_sector);
-+			DEBUG_IBLOCK("** task->task_size: %u\n",
-+					task->task_size);
-+			DEBUG_IBLOCK("*** bio->bi_max_vecs: %u\n",
-+					bio->bi_max_vecs);
-+			DEBUG_IBLOCK("*** bio->bi_vcnt: %u\n",
-+					bio->bi_vcnt);
++			if (!(bio)) {
++				nr_vecs = min_t(int, BIO_MAX_PAGES, nr_pages);
++				nr_pages -= nr_vecs;
++				/*
++				 * Calls bio_kmalloc() and sets bio->bi_end_io()
++				 */
++				bio = pscsi_get_bio(pdv, nr_vecs);
++				if (!(bio))
++					goto fail;
 +
-+			bio = iblock_get_bio(task, ib_req, ib_dev, &ret,
-+						block_lba, sg_num);
-+			if (!(bio))
++				if (rw)
++					bio->bi_rw |= REQ_WRITE;
++
++				DEBUG_PSCSI("PSCSI: Allocated bio: %p,"
++					" dir: %s nr_vecs: %d\n", bio,
++					(rw) ? "rw" : "r", nr_vecs);
++				/*
++				 * Set *hbio pointer to handle the case:
++				 * nr_pages > BIO_MAX_PAGES, where additional
++				 * bios need to be added to complete a given
++				 * struct se_task
++				 */
++				if (!hbio)
++					hbio = tbio = bio;
++				else
++					tbio = tbio->bi_next = bio;
++			}
++
++			DEBUG_PSCSI("PSCSI: Calling bio_add_pc_page() i: %d"
++				" bio: %p page: %p len: %d off: %d\n", i, bio,
++				page, len, off);
++
++			ret = bio_add_pc_page(pdv->pdv_sd->request_queue,
++					bio, page, bytes, off);
++			if (ret != bytes)
 +				goto fail;
 +
-+			tbio = tbio->bi_next = bio;
-+			DEBUG_IBLOCK("-----------------> Added +1 bio: %p to"
-+				" list, Going to again\n", bio);
-+			goto again;
++			DEBUG_PSCSI("PSCSI: bio->bi_vcnt: %d nr_vecs: %d\n",
++				bio->bi_vcnt, nr_vecs);
++
++			if (bio->bi_vcnt > nr_vecs) {
++				DEBUG_PSCSI("PSCSI: Reached bio->bi_vcnt max:"
++					" %d i: %d bio: %p, allocating another"
++					" bio\n", bio->bi_vcnt, i, bio);
++				/*
++				 * Clear the pointer so that another bio will
++				 * be allocated with pscsi_get_bio() above, the
++				 * current bio has already been set *tbio and
++				 * bio->bi_next.
++				 */
++				bio = NULL;
++			}
++
++			page++;
++			len -= bytes;
++			data_len -= bytes;
++			off = 0;
 +		}
-+		/* Always in 512 byte units for Linux/Block */
-+		block_lba += sg->length >> IBLOCK_LBA_SHIFT;
-+		sg_num--;
-+		DEBUG_IBLOCK("task: %p bio-add_page() passed!, decremented"
-+			" sg_num to %u\n", task, sg_num);
-+		DEBUG_IBLOCK("task: %p bio_add_page() passed!, increased lba"
-+				" to %llu\n", task, block_lba);
-+		DEBUG_IBLOCK("task: %p bio_add_page() passed!, bio->bi_vcnt:"
-+				" %u\n", task, bio->bi_vcnt);
 +	}
++	/*
++	 * Setup the primary pt->pscsi_req used for non BIDI and BIDI-COMMAND
++	 * primary SCSI WRITE poayload mapped for struct se_task->task_sg[]
++	 */
++	if (!(bidi_read)) {
++		/*
++		 * Starting with v2.6.31, call blk_make_request() passing in *hbio to
++		 * allocate the pSCSI task a struct request.
++		 */
++		pt->pscsi_req = blk_make_request(pdv->pdv_sd->request_queue,
++					hbio, GFP_KERNEL);
++		if (!(pt->pscsi_req)) {
++			printk(KERN_ERR "pSCSI: blk_make_request() failed\n");
++			goto fail;
++		}
++		/*
++		 * Setup the newly allocated struct request for REQ_TYPE_BLOCK_PC,
++		 * and setup rq callback, CDB and sense.
++		 */
++		pscsi_blk_init_request(task, pt, pt->pscsi_req, 0);
++
++		return task->task_sg_num;
++	}
++	/*
++	 * Setup the secondary pt->pscsi_req_bidi used for the extra BIDI-COMMAND
++	 * SCSI READ paylaod mapped for struct se_task->task_sg_bidi[]
++	 */
++	pt->pscsi_req_bidi = blk_make_request(pdv->pdv_sd->request_queue,
++					hbio, GFP_KERNEL);
++	if (!(pt->pscsi_req_bidi)) {
++		printk(KERN_ERR "pSCSI: blk_make_request() failed for BIDI\n");
++		goto fail;
++	}
++	pscsi_blk_init_request(task, pt, pt->pscsi_req_bidi, 1);
++	/*
++	 * Setup the magic BIDI-COMMAND ->next_req pointer to the original
++	 * pt->pscsi_req.
++	 */	
++	pt->pscsi_req->next_rq = pt->pscsi_req_bidi;
 +
 +	return task->task_sg_num;
 +fail:
@@ -873,226 +1316,403 @@ index 0000000..e7840da
 +		bio = hbio;
 +		hbio = hbio->bi_next;
 +		bio->bi_next = NULL;
-+		bio_put(bio);
++		bio_endio(bio, 0);
 +	}
 +	return ret;
 +}
 +
-+static int iblock_CDB_none(struct se_task *task, u32 size)
++static int pscsi_map_task_SG(struct se_task *task)
++{
++	int ret;
++	/*
++	 * Setup the main struct request for the task->task_sg[] payload
++	 */
++
++	ret = __pscsi_map_task_SG(task, task->task_sg, task->task_sg_num, 0);
++	if (ret < 0)
++		return ret;
++
++	if (!(task->task_sg_bidi))
++		return ret;
++	/*
++	 * If present, set up the extra BIDI-COMMAND SCSI READ
++	 * struct request and payload.
++	 */
++	return __pscsi_map_task_SG(task, task->task_sg_bidi,
++				task->task_sg_num, 1);
++}
++
++/*	pscsi_map_task_non_SG():
++ *
++ *
++ */
++static int pscsi_map_task_non_SG(struct se_task *task)
++{
++	struct se_cmd *cmd = TASK_CMD(task);
++	struct pscsi_plugin_task *pt = task->transport_req;
++	struct pscsi_dev_virt *pdv = task->se_dev->dev_ptr;
++	int ret = 0;
++
++	if (!task->task_size)
++		return 0;
++
++	ret = blk_rq_map_kern(pdv->pdv_sd->request_queue,
++			pt->pscsi_req, T_TASK(cmd)->t_task_buf,
++			task->task_size, GFP_KERNEL);
++	if (ret < 0) {
++		printk(KERN_ERR "PSCSI: blk_rq_map_kern() failed: %d\n", ret);
++		return PYX_TRANSPORT_LU_COMM_FAILURE;
++	}
++	return 0;
++}
++
++static int pscsi_CDB_none(struct se_task *task, u32 size)
++{
++	struct pscsi_plugin_task *pt = task->transport_req;
++
++	pt->pscsi_direction = DMA_NONE;
++
++	return pscsi_blk_get_request(task);
++}
++
++/*	pscsi_CDB_read_non_SG():
++ *
++ *
++ */
++static int pscsi_CDB_read_non_SG(struct se_task *task, u32 size)
++{
++	struct pscsi_plugin_task *pt = task->transport_req;
++
++	pt->pscsi_direction = DMA_FROM_DEVICE;
++
++	if (pscsi_blk_get_request(task) < 0)
++		return PYX_TRANSPORT_LU_COMM_FAILURE;
++
++	return pscsi_map_task_non_SG(task);
++}
++
++/*	pscsi_CDB_read_SG():
++ *
++ *
++ */
++static int pscsi_CDB_read_SG(struct se_task *task, u32 size)
++{
++	struct pscsi_plugin_task *pt = task->transport_req;
++
++	pt->pscsi_direction = DMA_FROM_DEVICE;
++	/*
++	 * pscsi_map_task_SG() calls block/blk-core.c:blk_make_request()
++	 * for >= v2.6.31 pSCSI
++	 */
++	if (pscsi_map_task_SG(task) < 0)
++		return PYX_TRANSPORT_LU_COMM_FAILURE;
++
++	return task->task_sg_num;
++}
++
++/*	pscsi_CDB_write_non_SG():
++ *
++ *
++ */
++static int pscsi_CDB_write_non_SG(struct se_task *task, u32 size)
++{
++	struct pscsi_plugin_task *pt = task->transport_req;
++
++	pt->pscsi_direction = DMA_TO_DEVICE;
++
++	if (pscsi_blk_get_request(task) < 0)
++		return PYX_TRANSPORT_LU_COMM_FAILURE;
++
++	return pscsi_map_task_non_SG(task);
++}
++
++/*	pscsi_CDB_write_SG():
++ *
++ *
++ */
++static int pscsi_CDB_write_SG(struct se_task *task, u32 size)
++{
++	struct pscsi_plugin_task *pt = task->transport_req;
++
++	pt->pscsi_direction = DMA_TO_DEVICE;
++	/*
++	 * pscsi_map_task_SG() calls block/blk-core.c:blk_make_request()
++	 * for >= v2.6.31 pSCSI
++	 */
++	if (pscsi_map_task_SG(task) < 0)
++		return PYX_TRANSPORT_LU_COMM_FAILURE;
++
++	return task->task_sg_num;
++}
++
++/*	pscsi_check_lba():
++ *
++ *
++ */
++static int pscsi_check_lba(unsigned long long lba, struct se_device *dev)
 +{
 +	return 0;
 +}
 +
-+static int iblock_CDB_read_non_SG(struct se_task *task, u32 size)
-+{
-+	return 0;
-+}
-+
-+static int iblock_CDB_read_SG(struct se_task *task, u32 size)
-+{
-+	return iblock_map_task_SG(task);
-+}
-+
-+static int iblock_CDB_write_non_SG(struct se_task *task, u32 size)
-+{
-+	return 0;
-+}
-+
-+static int iblock_CDB_write_SG(struct se_task *task, u32 size)
-+{
-+	return iblock_map_task_SG(task);
-+}
-+
-+static int iblock_check_lba(unsigned long long lba, struct se_device *dev)
-+{
-+	return 0;
-+}
-+
-+static int iblock_check_for_SG(struct se_task *task)
++/*	pscsi_check_for_SG():
++ *
++ *
++ */
++static int pscsi_check_for_SG(struct se_task *task)
 +{
 +	return task->task_sg_num;
 +}
 +
-+static unsigned char *iblock_get_cdb(struct se_task *task)
++/*	pscsi_get_cdb():
++ *
++ *
++ */
++static unsigned char *pscsi_get_cdb(struct se_task *task)
 +{
-+	struct iblock_req *req = task->transport_req;
++	struct pscsi_plugin_task *pt = task->transport_req;
 +
-+	return req->ib_scsi_cdb;
++	return pt->pscsi_cdb;
 +}
 +
-+static u32 iblock_get_device_rev(struct se_device *dev)
++/*	pscsi_get_sense_buffer():
++ *
++ *
++ */
++static unsigned char *pscsi_get_sense_buffer(struct se_task *task)
 +{
-+	return SCSI_SPC_2; /* Returns SPC-3 in Initiator Data */
++	struct pscsi_plugin_task *pt = task->transport_req;
++
++	return (unsigned char *)&pt->pscsi_sense[0];
 +}
 +
-+static u32 iblock_get_device_type(struct se_device *dev)
++/*	pscsi_get_device_rev():
++ *
++ *
++ */
++static u32 pscsi_get_device_rev(struct se_device *dev)
 +{
-+	return TYPE_DISK;
++	struct pscsi_dev_virt *pdv = dev->dev_ptr;
++	struct scsi_device *sd = pdv->pdv_sd;
++
++	return (sd->scsi_level - 1) ? sd->scsi_level - 1 : 1;
 +}
 +
-+static u32 iblock_get_dma_length(u32 task_size, struct se_device *dev)
++/*	pscsi_get_device_type():
++ *
++ *
++ */
++static u32 pscsi_get_device_type(struct se_device *dev)
++{
++	struct pscsi_dev_virt *pdv = dev->dev_ptr;
++	struct scsi_device *sd = pdv->pdv_sd;
++
++	return sd->type;
++}
++
++/*	pscsi_get_dma_length():
++ *
++ *
++ */
++static u32 pscsi_get_dma_length(u32 task_size, struct se_device *dev)
 +{
 +	return PAGE_SIZE;
 +}
 +
-+static sector_t iblock_get_blocks(struct se_device *dev)
++/*	pscsi_handle_SAM_STATUS_failures():
++ *
++ *
++ */
++static inline void pscsi_process_SAM_status(
++	struct se_task *task,
++	struct pscsi_plugin_task *pt)
 +{
-+	struct iblock_dev *ibd = dev->dev_ptr;
-+	struct block_device *bd = ibd->ibd_bd;
-+	struct request_queue *q = bdev_get_queue(bd);
-+	
-+	return iblock_emulate_read_cap_with_block_size(dev, bd, q);
-+}
-+
-+static void iblock_bio_done(struct bio *bio, int err)
-+{
-+	struct se_task *task = (struct se_task *)bio->bi_private;
-+	struct iblock_req *ibr = (struct iblock_req *)task->transport_req;
-+
-+	err = test_bit(BIO_UPTODATE, &bio->bi_flags) ? err : -EIO;
-+	if (err != 0) {
-+		printk(KERN_ERR "test_bit(BIO_UPTODATE) failed for bio: %p,"
-+			" err: %d\n", bio, err);
-+		transport_complete_task(task, 0);
-+		goto out;
++	task->task_scsi_status = status_byte(pt->pscsi_result);
++	if ((task->task_scsi_status)) {
++		task->task_scsi_status <<= 1;
++		printk(KERN_INFO "PSCSI Status Byte exception at task: %p CDB:"
++			" 0x%02x Result: 0x%08x\n", task, pt->pscsi_cdb[0],
++			pt->pscsi_result);
 +	}
-+	DEBUG_IBLOCK("done[%p] bio: %p task_lba: %llu bio_lba: %llu err=%d\n",
-+		task, bio, task->task_lba, bio->bi_sector, err);
-+	/*
-+	 * bio_put() will call iblock_bio_destructor() to release the bio back
-+	 * to ibr->ib_bio_set.
-+	 */
-+	bio_put(bio);
 +
-+	/*
-+	 * Wait to complete the task until the last bio as completed.
-+	 */
-+	if (!(atomic_dec_and_test(&ibr->ib_bio_cnt)))
-+		goto out;
++	switch (host_byte(pt->pscsi_result)) {
++	case DID_OK:
++		transport_complete_task(task, (!task->task_scsi_status));
++		break;
++	default:
++		printk(KERN_INFO "PSCSI Host Byte exception at task: %p CDB:"
++			" 0x%02x Result: 0x%08x\n", task, pt->pscsi_cdb[0],
++			pt->pscsi_result);
++		task->task_scsi_status = SAM_STAT_CHECK_CONDITION;
++		task->task_error_status = PYX_TRANSPORT_UNKNOWN_SAM_OPCODE;
++		TASK_CMD(task)->transport_error_status =
++					PYX_TRANSPORT_UNKNOWN_SAM_OPCODE;
++		transport_complete_task(task, 0);
++		break;
++	}
 +
-+	ibr->ib_bio = NULL;
-+	transport_complete_task(task, (!err));
-+out:
 +	return;
 +}
 +
-+static struct se_subsystem_api iblock_template = {
-+	.name			= "iblock",
-+	.type			= IBLOCK,
-+	.transport_type		= TRANSPORT_PLUGIN_VHBA_PDEV,
++static void pscsi_req_done(struct request *req, int uptodate)
++{
++	struct se_task *task = req->end_io_data;
++	struct pscsi_plugin_task *pt = task->transport_req;
++
++	pt->pscsi_result = req->errors;
++	pt->pscsi_resid = req->resid_len;
++
++	pscsi_process_SAM_status(task, pt);
++
++	if (req->next_rq != NULL) {
++		__blk_put_request(req->q, req->next_rq);
++		pt->pscsi_req_bidi = NULL;
++	}
++
++	__blk_put_request(req->q, req);
++	pt->pscsi_req = NULL;
++}
++
++static struct se_subsystem_api pscsi_template = {
++	.name			= "pscsi",
++	.type			= PSCSI,
++	.transport_type		= TRANSPORT_PLUGIN_PHBA_PDEV,
 +	.external_submod	= 1,
-+	.cdb_none		= iblock_CDB_none,
-+	.cdb_read_non_SG	= iblock_CDB_read_non_SG,
-+	.cdb_read_SG		= iblock_CDB_read_SG,
-+	.cdb_write_non_SG	= iblock_CDB_write_non_SG,
-+	.cdb_write_SG		= iblock_CDB_write_SG,
-+	.attach_hba		= iblock_attach_hba,
-+	.detach_hba		= iblock_detach_hba,
-+	.allocate_virtdevice	= iblock_allocate_virtdevice,
-+	.create_virtdevice	= iblock_create_virtdevice,
-+	.activate_device	= iblock_activate_device,
-+	.deactivate_device	= iblock_deactivate_device,
-+	.free_device		= iblock_free_device,
-+	.dpo_emulated		= iblock_emulated_dpo,
-+	.fua_write_emulated	= iblock_emulated_fua_write,
-+	.fua_read_emulated	= iblock_emulated_fua_read,
-+	.write_cache_emulated	= iblock_emulated_write_cache,
-+	.transport_complete	= iblock_transport_complete,
-+	.allocate_request	= iblock_allocate_request,
-+	.do_task		= iblock_do_task,
-+	.do_discard		= iblock_do_discard,
-+	.do_sync_cache		= iblock_emulate_sync_cache,
-+	.free_task		= iblock_free_task,
-+	.check_configfs_dev_params = iblock_check_configfs_dev_params,
-+	.set_configfs_dev_params = iblock_set_configfs_dev_params,
-+	.show_configfs_dev_params = iblock_show_configfs_dev_params,
-+	.get_plugin_info	= iblock_get_plugin_info,
-+	.get_hba_info		= iblock_get_hba_info,
-+	.get_dev_info		= iblock_get_dev_info,
-+	.check_lba		= iblock_check_lba,
-+	.check_for_SG		= iblock_check_for_SG,
-+	.get_cdb		= iblock_get_cdb,
-+	.get_device_rev		= iblock_get_device_rev,
-+	.get_device_type	= iblock_get_device_type,
-+	.get_dma_length		= iblock_get_dma_length,
-+	.get_blocks		= iblock_get_blocks,
++	.cdb_none		= pscsi_CDB_none,
++	.cdb_read_non_SG	= pscsi_CDB_read_non_SG,
++	.cdb_read_SG		= pscsi_CDB_read_SG,
++	.cdb_write_non_SG	= pscsi_CDB_write_non_SG,
++	.cdb_write_SG		= pscsi_CDB_write_SG,
++	.attach_hba		= pscsi_attach_hba,
++	.detach_hba		= pscsi_detach_hba,
++	.pmode_enable_hba	= pscsi_pmode_enable_hba,
++	.activate_device	= pscsi_activate_device,
++	.deactivate_device	= pscsi_deactivate_device,
++	.allocate_virtdevice	= pscsi_allocate_virtdevice,
++	.create_virtdevice	= pscsi_create_virtdevice,
++	.free_device		= pscsi_free_device,
++	.transport_complete	= pscsi_transport_complete,
++	.allocate_request	= pscsi_allocate_request,
++	.do_task		= pscsi_do_task,
++	.free_task		= pscsi_free_task,
++	.check_configfs_dev_params = pscsi_check_configfs_dev_params,
++	.set_configfs_dev_params = pscsi_set_configfs_dev_params,
++	.show_configfs_dev_params = pscsi_show_configfs_dev_params,
++	.get_plugin_info	= pscsi_get_plugin_info,
++	.get_hba_info		= pscsi_get_hba_info,
++	.get_dev_info		= pscsi_get_dev_info,
++	.check_lba		= pscsi_check_lba,
++	.check_for_SG		= pscsi_check_for_SG,
++	.get_cdb		= pscsi_get_cdb,
++	.get_sense_buffer	= pscsi_get_sense_buffer,
++	.get_device_rev		= pscsi_get_device_rev,
++	.get_device_type	= pscsi_get_device_type,
++	.get_dma_length		= pscsi_get_dma_length,
 +	.write_pending		= NULL,
 +};
 +
-+int __init iblock_module_init(void)
++int __init pscsi_module_init(void)
 +{
 +	int ret;
 +
-+	INIT_LIST_HEAD(&iblock_template.sub_api_list);
++	INIT_LIST_HEAD(&pscsi_template.sub_api_list);
 +
-+	ret = transport_subsystem_register(&iblock_template, THIS_MODULE);
++	ret = transport_subsystem_register(&pscsi_template, THIS_MODULE);
 +	if (ret < 0)
 +		return ret;
 +
 +	return 0;
 +}
 +
-+void iblock_module_exit(void)
++void pscsi_module_exit(void)
 +{
-+	transport_subsystem_release(&iblock_template);
++	transport_subsystem_release(&pscsi_template);
 +}
 +
-+MODULE_DESCRIPTION("TCM IBLOCK subsystem plugin");
++MODULE_DESCRIPTION("TCM PSCSI subsystem plugin");
 +MODULE_AUTHOR("nab@Linux-iSCSI.org");
 +MODULE_LICENSE("GPL");
 +
-+module_init(iblock_module_init);
-+module_exit(iblock_module_exit);
-diff --git a/drivers/target/target_core_iblock.h b/drivers/target/target_core_iblock.h
++module_init(pscsi_module_init);
++module_exit(pscsi_module_exit);
+diff --git a/drivers/target/target_core_pscsi.h b/drivers/target/target_core_pscsi.h
 new file mode 100644
-index 0000000..3582aac
+index 0000000..e7f07e3
 --- /dev/null
-+++ b/drivers/target/target_core_iblock.h
-@@ -0,0 +1,44 @@
-+#ifndef TARGET_CORE_IBLOCK_H
-+#define TARGET_CORE_IBLOCK_H
++++ b/drivers/target/target_core_pscsi.h
+@@ -0,0 +1,73 @@
++#ifndef TARGET_CORE_PSCSI_H
++#define TARGET_CORE_PSCSI_H
 +
-+#define IBLOCK_VERSION		"4.0"
++#define PSCSI_VERSION		"v4.0"
++#define PSCSI_VIRTUAL_HBA_DEPTH	2048
 +
-+#define IBLOCK_HBA_QUEUE_DEPTH	512
-+#define IBLOCK_DEVICE_QUEUE_DEPTH	32
-+#define IBLOCK_MAX_DEVICE_QUEUE_DEPTH	128
-+#define IBLOCK_MAX_CDBS		16
-+#define IBLOCK_LBA_SHIFT	9
++/* used in pscsi_find_alloc_len() */
++#ifndef INQUIRY_DATA_SIZE
++#define INQUIRY_DATA_SIZE	0x24
++#endif
++
++/* Maximum extended CDB size for handling OSD passthrough */
++#define PSCSI_MAX_CDB_SIZE	240
++
++/* used in pscsi_add_device_to_list() */
++#define PSCSI_DEFAULT_QUEUEDEPTH	1
++
++#define PS_RETRY		5
++#define PS_TIMEOUT_DISK		(15*HZ)
++#define PS_TIMEOUT_OTHER	(500*HZ)
 +
 +extern struct se_global *se_global;
++extern struct block_device *linux_blockdevice_claim(int, int, void *);
++extern int linux_blockdevice_release(int, int, struct block_device *);
++extern int linux_blockdevice_check(int, int);
 +
-+struct iblock_req {
-+	unsigned char ib_scsi_cdb[TCM_MAX_COMMAND_SIZE];
-+	atomic_t ib_bio_cnt;
-+	u32	ib_sg_count;
-+	void	*ib_buf;
-+	struct bio *ib_bio;
-+	struct iblock_dev *ib_dev;
++#include <linux/device.h>
++#include <scsi/scsi_driver.h>
++#include <scsi/scsi_device.h>
++#include <linux/kref.h>
++#include <linux/kobject.h>
++
++struct pscsi_plugin_task {
++	unsigned char *pscsi_cdb;
++	unsigned char __pscsi_cdb[TCM_MAX_COMMAND_SIZE];
++	unsigned char pscsi_sense[SCSI_SENSE_BUFFERSIZE];
++	int	pscsi_direction;
++	int	pscsi_result;
++	u32	pscsi_resid;
++	struct request *pscsi_req;
++	struct request *pscsi_req_bidi;
 +} ____cacheline_aligned;
 +
-+#define IBDF_HAS_UDEV_PATH		0x01
-+#define IBDF_HAS_FORCE			0x02
-+#define IBDF_BDEV_EXCLUSIVE		0x04
-+#define IBDF_BDEV_ISSUE_FLUSH		0x08
++#define PDF_HAS_CHANNEL_ID	0x01
++#define PDF_HAS_TARGET_ID	0x02
++#define PDF_HAS_LUN_ID		0x04
++#define PDF_HAS_VPD_UNIT_SERIAL 0x08
++#define PDF_HAS_VPD_DEV_IDENT	0x10
++#define PDF_HAS_VIRT_HOST_ID	0x20	
 +
-+struct iblock_dev {
-+	unsigned char ibd_udev_path[SE_UDEV_PATH_LEN];
-+	int	ibd_force;
-+	int	ibd_major;
-+	int	ibd_minor;
-+	u32	ibd_depth;
-+	u32	ibd_flags;
-+	struct bio_set	*ibd_bio_set;
-+	struct block_device *ibd_bd;
-+	struct iblock_hba *ibd_host;
++struct pscsi_dev_virt {
++	int	pdv_flags;
++	int	pdv_host_id;
++	int	pdv_channel_id;
++	int	pdv_target_id;
++	int	pdv_lun_id;
++	struct block_device *pdv_bd;
++	struct scsi_device *pdv_sd;
++	struct se_hba *pdv_se_hba;
 +} ____cacheline_aligned;
 +
-+struct iblock_hba {
-+	int		iblock_host_id;
++typedef enum phv_modes {
++	PHV_VIRUTAL_HOST_ID,
++	PHV_LLD_SCSI_HOST_NO
++} phv_modes_t;
++
++struct pscsi_hba_virt {
++	int			phv_host_id;
++	phv_modes_t		phv_mode;
++	struct Scsi_Host	*phv_lld_host;
 +} ____cacheline_aligned;
 +
-+#endif /* TARGET_CORE_IBLOCK_H */
++#endif   /*** TARGET_CORE_PSCSI_H ***/
 -- 
 1.7.3.1
 
