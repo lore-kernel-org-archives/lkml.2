@@ -1,88 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933098Ab0JRT3j (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Oct 2010 15:29:39 -0400
-Received: from relais.videotron.ca ([24.201.245.36]:40399 "EHLO
-	relais.videotron.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754457Ab0JRT3i (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Oct 2010 15:29:38 -0400
-MIME-version: 1.0
-Content-transfer-encoding: 7BIT
-Content-type: TEXT/PLAIN; charset=US-ASCII
-Date: Mon, 18 Oct 2010 15:29:36 -0400 (EDT)
-From: Nicolas Pitre <nico@fluxnic.net>
-X-X-Sender: nico@xanadu.home
-To: Daniel Walker <dwalker@fifo99.com>
-Cc: Russell King <rmk@arm.linux.org.uk>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Jeremy Kerr <jeremy.kerr@canonical.com>,
-        Jeff Ohlstein <johlstei@codeaurora.org>
-Subject: Re: linux-next: manual merge of the msm tree with the arm tree
-In-reply-to: <1287427572.4105.22.camel@c-dwalke-linux.qualcomm.com>
-Message-id: <alpine.LFD.2.00.1010181525000.2764@xanadu.home>
-References: <20101018103540.7bd9c535.sfr@canb.auug.org.au>
- <20101018110207.131b56ee.sfr@canb.auug.org.au>
- <20101018081520.GA10551@flint.arm.linux.org.uk>
- <1287422792.4105.14.camel@c-dwalke-linux.qualcomm.com>
- <20101018182044.GA558@flint.arm.linux.org.uk>
- <1287427572.4105.22.camel@c-dwalke-linux.qualcomm.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1757678Ab0JRTbm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Oct 2010 15:31:42 -0400
+Received: from a.ns.miles-group.at ([95.130.255.143]:56471 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754457Ab0JRTbl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Oct 2010 15:31:41 -0400
+/m: 
+From: Richard Weinberger <richard@nod.at>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: Re: [uml-devel] [PATCH 1/1] hostfs: fix UML crash
+Date: Mon, 18 Oct 2010 21:31:33 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.25.20-0.7-pae; KDE/4.4.4; i686; ; )
+Cc: Andrew Morton <akpm@linux-foundation.org>, toralf.foerster@gmx.de,
+        jdike@addtoit.com, linux-kernel@vger.kernel.org,
+        user-mode-linux-devel@lists.sourceforge.net, viro@zeniv.linux.org.uk
+References: <1287419814-20086-1-git-send-email-richard@nod.at> <20101018114039.503233da.akpm@linux-foundation.org> <AANLkTimpmcZEV-V6rhZtJXnXLdtB_HRTxM+ExM-YyWmh@mail.gmail.com>
+In-Reply-To: <AANLkTimpmcZEV-V6rhZtJXnXLdtB_HRTxM+ExM-YyWmh@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201010182131.33385.richard@nod.at>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 18 Oct 2010, Daniel Walker wrote:
-
-> On Mon, 2010-10-18 at 19:20 +0100, Russell King wrote:
-> > On Mon, Oct 18, 2010 at 10:26:32AM -0700, Daniel Walker wrote:
-> > > On Mon, 2010-10-18 at 09:15 +0100, Russell King wrote:
-> > > > On Mon, Oct 18, 2010 at 11:02:07AM +1100, Stephen Rothwell wrote:
-> > > > > [ Just cc'ing Russell, sorry about that]
-> > > > > 
-> > > > > On Mon, 18 Oct 2010 10:35:40 +1100 Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> > > > > >
-> > > > > > Hi Daniel,
-> > > > > > 
-> > > > > > Today's linux-next merge of the msm tree got a conflict in
-> > > > > > arch/arm/mach-msm/include/mach/debug-macro.S between commit
-> > > > > > 08a610d9ef5394525b0328da0162d7b58c982cc4 ("arm: return both physical and
-> > > > > > virtual addresses from addruart") from the arm tree and commit
-> > > > > > 46fe5f29e3062f681cc3cf07a604d82396faea89 ("msm: allow uart to be
-> > > > > > conditionally disabled") from the msm tree.
-> > > > > > 
-> > > > > > Just context changes.  I fixed it up (see below) and can carry the fix as
-> > > > > > necessary.
-> > > > 
-> > > > Thanks, but I don't think there's much which can be done about these.
-> > > > Changes such as 08a610d affect all ARM sub-architectures, and as they're
-> > > > spread across multiple git trees...
-> > > > 
-> > > > I think there's going to be some problems during this forthcoming merge
-> > > > window.
-> > > 
-> > > Would be nice to get CC'd ...
-> > > 
-> > > Ideally this patch should have been broken up and sent individually to
-> > > each maintainer .. Then I could manage this within my own tree..
+Am Montag 18 Oktober 2010, 21:22:31 schrieb Geert Uytterhoeven:
+> On Mon, Oct 18, 2010 at 20:40, Andrew Morton <akpm@linux-foundation.org> 
+wrote:
+> > On Mon, 18 Oct 2010 18:36:54 +0200 Richard Weinberger <richard@nod.at> 
+wrote:
+> >> 365b1818 resized f_spare within struct statfs.
+> >> hostfs accesses f_spare directly and needs an update.
+> >> 
+> >> Signed-off-by: Richard Weinberger <richard@nod.at>
+> >> Reported-by: Toralf F__rster <toralf.foerster@gmx.de>
+> >> Tested-by: Toralf F__rster <toralf.foerster@gmx.de>
+> >> ---
+> >>  fs/hostfs/hostfs_user.c |    2 +-
+> >>  1 files changed, 1 insertions(+), 1 deletions(-)
+> >> 
+> >> diff --git a/fs/hostfs/hostfs_user.c b/fs/hostfs/hostfs_user.c
+> >> index 6777aa0..ce2f168 100644
+> >> --- a/fs/hostfs/hostfs_user.c
+> >> +++ b/fs/hostfs/hostfs_user.c
+> >> @@ -388,6 +388,6 @@ int do_statfs(char *root, long *bsize_out, long long
+> >> *blocks_out, spare_out[1] = buf.f_spare[1];
+> >>       spare_out[2] = buf.f_spare[2];
+> >>       spare_out[3] = buf.f_spare[3];
+> >> -     spare_out[4] = buf.f_spare[4];
+> >> +
+> >>       return 0;
+> >>  }
 > > 
-> > Err no.  It is one complete change which can't be broken up sensibly.
-> > Breaking it up will mean either you lose functionality or you break
-> > your build.
+> > Thanks.
+> > 
+> > Is there any reason for hostfs to be playing with the f_spare field at
+> > all?
 > 
+> It just copies it from struct statfs64 on the host to struct kstatfs
+> on the guest.
+> Probably a memcpy() is more future-safe, if it's combined with a
+> BUILD_BUG_ON(sizeof(statfs64.f_spare) != sizeof(kstatfs.f_spare)).
 > 
-> Ok, well in that case why not accept this immediately after the merge
-> window? A point when everything is quiet, and most of the tree's are
-> empty?
+> Still, currently it doesn't copy the recently added f_flags field.
+> To protect against future changes like that, an explicit
+> BUILD_BUG_ON(sizeof(kstatfs.f_spare) != 4*sizeof(long)) may be even
+> better...
 
-RMK has his own merge window which closes about at the same time as 
-Linus' one opens.  We thought this was happening last week and therefore 
-this change was supposed to be the last one.
+Anyway, why do we need to copy f_spare from the host to the guest?
+I'm quite sure it can be omitted.
 
-> Well how about I merge this change into my tree ?
-
-If you ask RMK to merge your tree in his that would be much simpler to 
-add this change in a single pass afterwards.
-
-
-Nicolas
+Thanks,
+//richard
