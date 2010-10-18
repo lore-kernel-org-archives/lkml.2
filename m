@@ -1,85 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756224Ab0JROpW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Oct 2010 10:45:22 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:49707 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755421Ab0JROpV (ORCPT
+	id S1755990Ab0JROsV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Oct 2010 10:48:21 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:49100 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753953Ab0JROsU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Oct 2010 10:45:21 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: "Russell King - ARM Linux" <linux@arm.linux.org.uk>
-Subject: Re: [PATCH 04/22] arm: introduce little endian bitops
-Date: Mon, 18 Oct 2010 16:45:12 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.35-16-generic; KDE/4.3.2; x86_64; ; )
-Cc: Akinobu Mita <akinobu.mita@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org, Christoph Hellwig <hch@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-arm-kernel@lists.infradead.org
-References: <1287135981-17604-1-git-send-email-akinobu.mita@gmail.com> <AANLkTi=1w9uV81CagrE53xEYkMaFh_3cM_+ybctT2ng4@mail.gmail.com> <20101018135616.GB12449@n2100.arm.linux.org.uk>
-In-Reply-To: <20101018135616.GB12449@n2100.arm.linux.org.uk>
+	Mon, 18 Oct 2010 10:48:20 -0400
+Date: Mon, 18 Oct 2010 10:48:17 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Christoph Hellwig <hch@infradead.org>, Dave Chinner <david@fromorbit.com>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 19/19] fs: do not assign default i_ino in new_inode
+Message-ID: <20101018144817.GA14369@infradead.org>
+References: <1287216853-17634-1-git-send-email-david@fromorbit.com>
+ <1287216853-17634-20-git-send-email-david@fromorbit.com>
+ <1287220153.2799.101.camel@edumazet-laptop>
+ <20101016163517.GF20086@infradead.org>
+ <1287393099.2409.8.camel@edumazet-laptop>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201010181645.13349.arnd@arndb.de>
-X-Provags-ID: V02:K0:/d1j4k/0Z2cnStQFdW9vC1Hv5ILHyD8s1tUJNleumG/
- nUyoeVvGU7RLid+Tcek7KvYANQ96NwsI/yPcu4Zv6OXo1/8TCE
- xzrns86Z2DKSwfgde6XXfzHUBOczRi3vW3iA8L2jJLr3PHzdKE
- BzAVQdXsxBy1CuevShqtrYw1bLsdXL1ks4gvMPaa9XJzTUx8XD
- alrS6v9G7PAJgAwEEvr1Q==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1287393099.2409.8.camel@edumazet-laptop>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 18 October 2010, Russell King - ARM Linux wrote:
-> le.h provides:
+On Mon, Oct 18, 2010 at 11:11:39AM +0200, Eric Dumazet wrote:
+> This is what we call code factorization. I wont call it evil.
 > 
->         generic___set_le_bit
->         generic___test_and_set_le_bit
->         ...
+> If we want to change get_next_ino(void) implementation to 
+> get_next_ino(struct inode *), or even get_next_inode(struct inode
+> *inode, struct super_block *sb)
+>  then we must go through all fs after your patch to add the new
+> parameter.
 > 
-> Your new patches provide:
-> 
->         __set_le_bit
->         __test_and_set_le_bit
-> 
-> Would it not be better to have le.h provide one set of these LE bitops
-> (called either generic___set_le_bit or __set_le_bit - which ever you
-> prefer), and then have everyone using those common names (including
-> minix-le.h and ext2-non-atomic.h) rather than adding a whole series of
-> new bitop macros to the current mess?
+> I proposed an implementation on get_next_ino() on 32bit arches, with no
+> per_cpu and shared counter, assuming we know the inode pointer. With
+> your patch, it become very difficult to implement such an idea.
 
-One optimization I can think of for the ARM headers would be to only
-define find_first_zero_le_bit, find_next_zero_le_bit and find_next_le_bit
-in arch/arm/include/asm/bitops.h and take the other definitions from
-asm-generic/bitops/le.h, which encloses then duplicate ones in #ifdef.
-
-> To put it another way, if we're providing a set of guaranteed-little-endian
-> bitops, I'd like to see ARM doing this:
-> 
-> #define __test_and_set_le_bit(nr,p) ...
-> 
-> #include <asm-generic/bitops/minix-le.h>
-> #include <asm-generic/bitops/ext2-non-atomic.h>
-> 
-> where ext2-non-atomic.h could just be:
-> 
-> #define ext2_set_bit(nr,addr) __test_and_set_le_bit((nr),(unsigned long *)(addr))
-
-Note that patches 20 and 22 of the series completely eliminate the
-the minix and ext2 definitions, putting them into architecture independent
-code in those two file systems where they belong.
-
-Adding the new definitions in patch 4 is just a logical step before removing
-the old definitions in the later patches while maintaining bisectability.
-
-> What I'm trying to say is please don't make the existing mess of bitops
-> any worse than it currently is.
-
-The series currently adds 20 lines to the arm code (could be reduced to
-6 lines), but removes 26 lines which are essentially architecture
-independent and shouldn't be there to start with. I'd call that the
-opposite of making the mess worse.
-
-	Arnd
+Why?  You now have all call sites that care and can trivially change
+them to whatever argument they need.
