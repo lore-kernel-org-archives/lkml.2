@@ -1,49 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933371Ab0JRVgL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Oct 2010 17:36:11 -0400
-Received: from smtp-out.google.com ([74.125.121.35]:25487 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750806Ab0JRVgJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Oct 2010 17:36:09 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
-         :references:user-agent:mime-version:content-type;
-        b=KLCnQCMYzJLW106i050oRASiaLveEoFb8wW7Ts75PQXiAWq3ymx9pt/wuISPMDgRvm
-         qMpFP6Ibd/xKs1L1aU0A==
-Date: Mon, 18 Oct 2010 14:36:03 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: "H. Peter Anvin" <hpa@zytor.com>
-cc: Thomas Gleixner <tglx@linutronix.de>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>
-Subject: Re: [PATCH 1/2] x86: Cleanup TIF value gaps in shift range
-In-Reply-To: <4CBCBBFC.1090500@zytor.com>
-Message-ID: <alpine.DEB.2.00.1010181431440.15782@chino.kir.corp.google.com>
-References: <1287434158-24362-1-git-send-regression-fweisbec@gmail.com> <alpine.DEB.2.00.1010181340080.10965@chino.kir.corp.google.com> <alpine.LFD.2.00.1010182320440.6815@localhost6.localdomain6> <4CBCBBFC.1090500@zytor.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S933384Ab0JRVgR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Oct 2010 17:36:17 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:58803 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750806Ab0JRVgP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Oct 2010 17:36:15 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Mikael Pettersson <mikpe@it.uu.se>
+Subject: Re: [Bug #19072] [2.6.36-rc regression] occasional complete system hangs on sparc64 SMP
+Date: Mon, 18 Oct 2010 23:35:26 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.36-rc8-rjw+; KDE/4.4.4; x86_64; ; )
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Kernel Testers List <kernel-testers@vger.kernel.org>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>,
+        Florian Mickler <florian@mickler.org>
+References: <TP5BfCZNRXD.A._8.uj1uMB@chimera> <7N-qxsaxKCN.A.i4C.yk1uMB@chimera> <19643.64049.949858.105680@pilspetsen.it.uu.se>
+In-Reply-To: <19643.64049.949858.105680@pilspetsen.it.uu.se>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201010182335.26603.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 18 Oct 2010, H. Peter Anvin wrote:
-
-> The problem is that someone exports something as debugging information,
-> then someone else suddenly thinks it's an ABI.  I believe the same
-> complainant in the past has objected to changing of formatting in dmesg,
-> which is equally insane.
+On Monday, October 18, 2010, Mikael Pettersson wrote:
+> On Sun, 17 Oct 2010 22:21:42 +0200 (CEST), Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> > The following bug entry is on the current list of known regressions
+> > from 2.6.35.  Please verify if it still should be listed and let the tracking team
+> > know (either way).
+> > 
+> > 
+> > Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=3D19072
+> > Subject		: [2.6.36-rc regression] occasional complete system hangs on sparc=
+> > 64 SMP
+> > Submitter	: Mikael Pettersson <mikpe@it.uu.se>
+> > Date		: 2010-09-23 17:02 (25 days old)
+> > Message-ID	: <<19611.34846.813757.309183@pilspetsen.it.uu.se>>
+> > References	: http://marc.info/?l=3Dlinux-kernel&m=3D128526136531048&w=3D2
 > 
+> I've not been able to reproduce it yet with 2.6.36-rc7, but there's
+> been no known recent bugfix in this area so whether the bug is fixed
+> or not is unknown.  If I've not been able to reproduce it on -rc7 or
+> -rc8 after next weekend we could close the bug.
 
-It's not insane if there is no other way to ascertain that information.  
-If it's available through sysfs or debugfs (and, even better, documented 
-as part of the API in Documentation/ABI), then I don't think anyone would 
-object to changing a log message.  But I don't think all log messages 
-should be fair game under some general principle if they are being changed 
-(instead of just extending it) without a compelling reason, such as 
-technically being incorrect in its present form.
+OK, please close the bug when you think it's time or let me know if you can't
+close it yourself.
+
+Thanks,
+Rafael
