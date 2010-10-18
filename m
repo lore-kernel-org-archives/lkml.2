@@ -1,139 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754152Ab0JRHmh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Oct 2010 03:42:37 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:35839 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753818Ab0JRHmg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Oct 2010 03:42:36 -0400
-Date: Mon, 18 Oct 2010 09:42:33 +0200
-From: Sascha Hauer <s.hauer@pengutronix.de>
-To: Dinh.Nguyen@freescale.com
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux@arm.linux.org.uk, u.kleine-koenig@pengutronix.de,
-        valentin.longchamp@epfl.ch, daniel@caiaq.de, grant.likely@secretlab.ca,
-        amit.kucheria@canonical.com, xiao-lizhang@freescale.com
-Subject: Re: [PATCH 1/2] ARM: imx: Add wake functionality to GPIO
-Message-ID: <20101018074233.GF28242@pengutronix.de>
-References: <1287173908-25758-1-git-send-email-Dinh.Nguyen@freescale.com>
+	id S1754260Ab0JRHm4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Oct 2010 03:42:56 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:50447 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1754166Ab0JRHmz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Oct 2010 03:42:55 -0400
+Message-ID: <4CBBFA7F.1010109@cn.fujitsu.com>
+Date: Mon, 18 Oct 2010 15:42:55 +0800
+From: Miao Xie <miaox@cn.fujitsu.com>
+Reply-To: miaox@cn.fujitsu.com
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1287173908-25758-1-git-send-email-Dinh.Nguyen@freescale.com>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 09:39:48 up 106 days, 22:50, 15 users,  load average: 0.27, 0.38,
-	0.31
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: sha@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+To: "Ma, Ling" <ling.ma@intel.com>
+CC: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>,
+        Andi Kleen <andi@firstfloor.org>, Thomas Gleixner <tglx@linutronix.de>,
+        "Zhao, Yakui" <yakui.zhao@intel.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH V2 -tip] lib,x86_64: improve the performance of memcpy()
+ for unaligned copy
+References: <4CAEC81C.1070108@cn.fujitsu.com> <C10D3FB0CD45994C8A51FEC1227CE22F15C916E769@shsmsx502.ccr.corp.intel.com> <4CAEDE0D.2040009@cn.fujitsu.com> <4CB62543.7000605@zytor.com> <C10D3FB0CD45994C8A51FEC1227CE22F15CC203E71@shsmsx502.ccr.corp.intel.com> <4CBBE7FB.2060303@cn.fujitsu.com> <C10D3FB0CD45994C8A51FEC1227CE22F15D77721FD@shsmsx502.ccr.corp.intel.com> <4CBBEA7F.7010604@cn.fujitsu.com> <C10D3FB0CD45994C8A51FEC1227CE22F15D777221E@shsmsx502.ccr.corp.intel.com>
+In-Reply-To: <C10D3FB0CD45994C8A51FEC1227CE22F15D777221E@shsmsx502.ccr.corp.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Mon, 18 Oct 2010 14:43:32 +0800, Ma, Ling wrote:
+> "wp		: yes
+> flags		: fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush dts acpi mmx fxsr sse sse2 ss ht tm pbe syscall nx lm constant_tsc arch_perfmon pebs bts rep_good aperfmperf pni dtes64 monitor ds_cpl est tm2 ssse3 cx16 xtpr pdcm sse4_1 lahf_lm"
+>
+> rep_good will cause memcpy jump to memcpy_c, so not run this patch,
+> we may continue to do further optimization on it later.
 
-On Fri, Oct 15, 2010 at 03:18:27PM -0500, Dinh.Nguyen@freescale.com wrote:
-> From: Dinh Nguyen <Dinh.Nguyen@freescale.com>
-> 
-> Add function definition for irq_chip.set_wake to enable GPIO to
-> wake-up the system.
-> 
-> Signed-off-by: Dinh Nguyen <Dinh.Nguyen@freescale.com>
-> ---
->  arch/arm/plat-mxc/gpio.c              |   35 +++++++++++++++++++++++++++++++++
->  arch/arm/plat-mxc/include/mach/gpio.h |    3 ++
->  2 files changed, 38 insertions(+), 0 deletions(-)
-> 
-> diff --git a/arch/arm/plat-mxc/gpio.c b/arch/arm/plat-mxc/gpio.c
-> index 57ec4a8..7647ba3 100644
-> --- a/arch/arm/plat-mxc/gpio.c
-> +++ b/arch/arm/plat-mxc/gpio.c
-> @@ -20,9 +20,11 @@
->   */
->  
->  #include <linux/init.h>
-> +#include <linux/interrupt.h>
->  #include <linux/io.h>
->  #include <linux/irq.h>
->  #include <linux/gpio.h>
-> +#include <mach/gpio.h>
->  #include <mach/hardware.h>
->  #include <asm-generic/bug.h>
->  
-> @@ -201,11 +203,44 @@ static void mx2_gpio_irq_handler(u32 irq, struct irq_desc *desc)
->  	}
->  }
->  
-> +/*
-> + * Set interrupt number "irq" in the GPIO as a wake-up source.
-> + * While system is running, all registered GPIO interrupts need to have
-> + * wake-up enabled. When system is suspended, only selected GPIO interrupts
-> + * need to have wake-up enabled.
-> + * @param  irq          interrupt source number
-> + * @param  enable       enable as wake-up if equal to non-zero
-> + * @return       This function returns 0 on success.
-> + */
-> +static int gpio_set_wake_irq(u32 irq, u32 enable)
-> +{
-> +	u32 gpio = irq_to_gpio(irq);
-> +	u32 gpio_idx = gpio & 0x1F;
-> +	struct mxc_gpio_port *port = &mxc_gpio_ports[gpio / 32];
-> +
-> +	if (enable) {
-> +		port->suspend_wakeup |= (1 << gpio_idx);
-> +		if (port->irq_high && (gpio_idx >= 16))
-> +			enable_irq_wake(port->irq_high);
-> +		else
-> +			enable_irq_wake(port->irq);
-> +	} else {
-> +		port->suspend_wakeup &= ~(1 << gpio_idx);
-> +		if (port->irq_high && (gpio_idx >= 16))
-> +			disable_irq_wake(port->irq_high);
-> +		else
-> +			disable_irq_wake(port->irq);
-> +	}
-> +
-> +	return 0;
-> +}
-> +
->  static struct irq_chip gpio_irq_chip = {
->  	.ack = gpio_ack_irq,
->  	.mask = gpio_mask_irq,
->  	.unmask = gpio_unmask_irq,
->  	.set_type = gpio_set_irq_type,
-> +	.set_wake = gpio_set_wake_irq,
->  };
->  
->  static void _set_gpio_direction(struct gpio_chip *chip, unsigned offset,
-> diff --git a/arch/arm/plat-mxc/include/mach/gpio.h b/arch/arm/plat-mxc/include/mach/gpio.h
-> index af33b74..dba3768 100644
-> --- a/arch/arm/plat-mxc/include/mach/gpio.h
-> +++ b/arch/arm/plat-mxc/include/mach/gpio.h
-> @@ -39,6 +39,9 @@ struct mxc_gpio_port {
->  	struct gpio_chip chip;
->  	u32 both_edges;
->  	spinlock_t lock;
-> +	u32 suspend_wakeup;
+Yes, but in fact, the performance of memcpy_c is not better on some micro-architecture(such as:
+Wolfdale-3M, ), especially in the unaligned cases, so we need do optimization for it, and I think
+the first step of optimization is optimizing the original code of memcpy().
 
-This variable seems unused.
+> BTW the improvement is only from core2 shift register optimization,
+> but for most previous cpus shift register is very sensitive because of decode stage.
+> I have test Atom, Opteron, and Nocona, new patch is still better.
 
-> +	u32 saved_wakeup;
-> +
->  };
+I think we can add a flag to make this improvement only valid for Core2 or other CPU like it,
+just like X86_FEATURE_REP_GOOD.
 
-Please remove that empty line.
+Regards
+Miao
 
-Sascha
+>
+> Thanks
+> Ling
+>
+> -----Original Message-----
+> From: Miao Xie [mailto:miaox@cn.fujitsu.com]
+> Sent: Monday, October 18, 2010 2:35 PM
+> To: Ma, Ling
+> Cc: H. Peter Anvin; Ingo Molnar; Andi Kleen; Thomas Gleixner; Zhao, Yakui; Linux Kernel
+> Subject: Re: [PATCH V2 -tip] lib,x86_64: improve the performance of memcpy() for unaligned copy
+>
+> On Mon, 18 Oct 2010 14:27:40 +0800, Ma, Ling wrote:
+>> Could please send out cpu info for this cpu model.
+>
+> processor	: 0
+> vendor_id	: GenuineIntel
+> cpu family	: 6
+> model		: 23
+> model name	: Intel(R) Core(TM)2 Duo CPU     E7300  @ 2.66GHz
+> stepping	: 6
+> cpu MHz		: 1603.000
+> cache size	: 3072 KB
+> physical id	: 0
+> siblings	: 2
+> core id		: 0
+> cpu cores	: 2
+> apicid		: 0
+> initial apicid	: 0
+> fpu		: yes
+> fpu_exception	: yes
+> cpuid level	: 10
+> wp		: yes
+> flags		: fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush dts acpi mmx fxsr sse sse2 ss ht tm pbe syscall nx lm constant_tsc arch_perfmon pebs bts rep_good aperfmperf pni dtes64 monitor ds_cpl est tm2 ssse3 cx16 xtpr pdcm sse4_1 lahf_lm
+> bogomips	: 5319.99
+> clflush size	: 64
+> cache_alignment	: 64
+> address sizes	: 36 bits physical, 48 bits virtual
+> power management:
+>
+> Thanks
+> Miao
+>
+>>
+>> Thanks
+>> Ling
+>>
+>> -----Original Message-----
+>> From: Miao Xie [mailto:miaox@cn.fujitsu.com]
+>> Sent: Monday, October 18, 2010 2:24 PM
+>> To: Ma, Ling
+>> Cc: H. Peter Anvin; Ingo Molnar; Andi Kleen; Thomas Gleixner; Zhao, Yakui; Linux Kernel
+>> Subject: Re: [PATCH V2 -tip] lib,x86_64: improve the performance of memcpy() for unaligned copy
+>>
+>> On Fri, 15 Oct 2010 03:43:53 +0800, Ma, Ling wrote:
+>>> Attachment includes memcpy-kernel.c(cc -O2 memcpy-kernel.c -o
+>>> memcpy-kernel), and unaligned test cases on Atom.
+>>
+>> I have tested on my Core2 Duo machine with your benchmark tool. Attachment is the test result. But the result is different with yours on Atom, It seems the performance is better with this patch.
+>>
+>> According to these two different result, maybe we need optimize memcpy() by CPU model.
+>>
+>> Thanks
+>> Miao
+>>
+>>>
+>>> Thanks
+>>> Ling
+>>>
+>>> -----Original Message-----
+>>> From: Ma, Ling
+>>> Sent: Thursday, October 14, 2010 9:14 AM
+>>> To: 'H. Peter Anvin'; miaox@cn.fujitsu.com
+>>> Cc: Ingo Molnar; Andi Kleen; Thomas Gleixner; Zhao, Yakui; Linux
+>>> Kernel
+>>> Subject: RE: [PATCH V2 -tip] lib,x86_64: improve the performance of
+>>> memcpy() for unaligned copy
+>>>
+>>> Sure, I will post benchmark tool and benchmark on Atom 64bit soon.
+>>>
+>>> Thanks
+>>> Ling
+>>>
+>>> -----Original Message-----
+>>> From: H. Peter Anvin [mailto:hpa@zytor.com]
+>>> Sent: Thursday, October 14, 2010 5:32 AM
+>>> To: miaox@cn.fujitsu.com
+>>> Cc: Ma, Ling; Ingo Molnar; Andi Kleen; Thomas Gleixner; Zhao, Yakui;
+>>> Linux Kernel
+>>> Subject: Re: [PATCH V2 -tip] lib,x86_64: improve the performance of
+>>> memcpy() for unaligned copy
+>>>
+>>> On 10/08/2010 02:02 AM, Miao Xie wrote:
+>>>> On Fri, 8 Oct 2010 15:42:45 +0800, Ma, Ling wrote:
+>>>>> Could you please give us full address for each comparison result,we will do some tests on my machine.
+>>>>> For unaligned cases older cpus will crossing cache line and slow down caused by load and store, but for nhm, no necessary to care about it.
+>>>>> By the way in kernel 64bit mode, our access mode should be around 8byte aligned.
+>>>>
+>>>> Would you need my benchmark tool? I think it is helpful for your test.
+>>>>
+>>>
+>>> If you could post the benchmark tool that would be great.
+>>>
+>>> 	-hpa
+>>
+>>
+>>
+>
+>
+>
 
--- 
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
