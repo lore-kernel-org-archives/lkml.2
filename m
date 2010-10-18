@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754172Ab0JRG0n (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Oct 2010 02:26:43 -0400
-Received: from bld-mail19.adl2.internode.on.net ([150.101.137.104]:52608 "EHLO
-	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751983Ab0JRGVb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1753214Ab0JRGVb (ORCPT <rfc822;w@1wt.eu>);
 	Mon, 18 Oct 2010 02:21:31 -0400
+Received: from bld-mail15.adl6.internode.on.net ([150.101.137.100]:37316 "EHLO
+	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751515Ab0JRGV3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Oct 2010 02:21:29 -0400
 From: Dave Chinner <david@fromorbit.com>
 To: linux-fsdevel@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH 01/20] fs: switch bdev inode bdi's correctly
-Date: Mon, 18 Oct 2010 17:20:37 +1100
-Message-Id: <1287382856-29529-2-git-send-email-david@fromorbit.com>
+Subject: [PATCH 02/20] kernel: add bl_list
+Date: Mon, 18 Oct 2010 17:20:38 +1100
+Message-Id: <1287382856-29529-3-git-send-email-david@fromorbit.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1287382856-29529-1-git-send-email-david@fromorbit.com>
 References: <1287382856-29529-1-git-send-email-david@fromorbit.com>
@@ -20,90 +20,186 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dave Chinner <dchinner@redhat.com>
+From: Nick Piggin <npiggin@suse.de>
 
-bdev inodes can remain dirty even after their last close. Hence the
-BDI associated with the bdev->inode gets modified duringthe last
-close to point to the default BDI. However, the bdev inode still
-needs to be moved to the dirty lists of the new BDI, otherwise it
-will corrupt the writeback list is was left on.
+Introduce a type of hlist that can support the use of the lowest bit
+in the hlist_head. This will be subsequently used to implement
+per-bucket bit spinlock for inode hashes.
 
-Add a new function bdev_inode_switch_bdi() to move all the bdi state
-from the old bdi to the new one safely. This is only a temporary
-measure until the bdev inode<->bdi lifecycle problems are sorted
-out.
-
+Reviewed-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Reviewed-by: Andi Kleen <ak@linux.intel.com>
+Signed-off-by: Nick Piggin <npiggin@suse.de>
 Signed-off-by: Dave Chinner <dchinner@redhat.com>
-Reviewed-by: Christoph Hellwig <hch@lst.de>
 ---
- fs/block_dev.c |   26 +++++++++++++++++++++-----
- 1 files changed, 21 insertions(+), 5 deletions(-)
+ include/linux/list_bl.h |  145 +++++++++++++++++++++++++++++++++++++++++++++++
+ include/linux/poison.h  |    2 +
+ 2 files changed, 147 insertions(+), 0 deletions(-)
+ create mode 100644 include/linux/list_bl.h
 
-diff --git a/fs/block_dev.c b/fs/block_dev.c
-index 50e8c85..501eab5 100644
---- a/fs/block_dev.c
-+++ b/fs/block_dev.c
-@@ -48,6 +48,21 @@ inline struct block_device *I_BDEV(struct inode *inode)
- 
- EXPORT_SYMBOL(I_BDEV);
- 
+diff --git a/include/linux/list_bl.h b/include/linux/list_bl.h
+new file mode 100644
+index 0000000..0d791ff
+--- /dev/null
++++ b/include/linux/list_bl.h
+@@ -0,0 +1,145 @@
++#ifndef _LINUX_LIST_BL_H
++#define _LINUX_LIST_BL_H
++
++#include <linux/list.h>
++#include <linux/bit_spinlock.h>
++
 +/*
-+ * move the inode from it's current bdi to the a new bdi. if the inode is dirty
-+ * we need to move it onto the dirty list of @dst so that the inode is always
-+ * on the right list.
++ * Special version of lists, where head of the list has a bit spinlock
++ * in the lowest bit. This is useful for scalable hash tables without
++ * increasing memory footprint overhead.
++ *
++ * For modification operations, the 0 bit of hlist_bl_head->first
++ * pointer must be set.
 + */
-+static void bdev_inode_switch_bdi(struct inode *inode,
-+			struct backing_dev_info *dst)
++
++#if defined(CONFIG_SMP) || defined(CONFIG_DEBUG_SPINLOCK)
++#define LIST_BL_LOCKMASK	1UL
++#else
++#define LIST_BL_LOCKMASK	0UL
++#endif
++
++#ifdef CONFIG_DEBUG_LIST
++#define LIST_BL_BUG_ON(x) BUG_ON(x)
++#else
++#define LIST_BL_BUG_ON(x)
++#endif
++
++
++struct hlist_bl_head {
++	struct hlist_bl_node *first;
++};
++
++struct hlist_bl_node {
++	struct hlist_bl_node *next, **pprev;
++};
++#define INIT_HLIST_BL_HEAD(ptr) \
++	((ptr)->first = NULL)
++
++static inline void init_hlist_bl_node(struct hlist_bl_node *h)
 +{
-+	spin_lock(&inode_lock);
-+	inode->i_data.backing_dev_info = dst;
-+	if (inode->i_state & I_DIRTY)
-+		list_move(&inode->i_list, &dst->wb.b_dirty);
-+	spin_unlock(&inode_lock);
++	h->next = NULL;
++	h->pprev = NULL;
 +}
 +
- static sector_t max_block(struct block_device *bdev)
- {
- 	sector_t retval = ~((sector_t)0);
-@@ -1390,7 +1405,7 @@ static int __blkdev_get(struct block_device *bdev, fmode_t mode, int for_part)
- 				bdi = blk_get_backing_dev_info(bdev);
- 				if (bdi == NULL)
- 					bdi = &default_backing_dev_info;
--				bdev->bd_inode->i_data.backing_dev_info = bdi;
-+				bdev_inode_switch_bdi(bdev->bd_inode, bdi);
- 			}
- 			if (bdev->bd_invalidated)
- 				rescan_partitions(disk, bdev);
-@@ -1405,8 +1420,8 @@ static int __blkdev_get(struct block_device *bdev, fmode_t mode, int for_part)
- 			if (ret)
- 				goto out_clear;
- 			bdev->bd_contains = whole;
--			bdev->bd_inode->i_data.backing_dev_info =
--			   whole->bd_inode->i_data.backing_dev_info;
-+			bdev_inode_switch_bdi(bdev->bd_inode,
-+				whole->bd_inode->i_data.backing_dev_info);
- 			bdev->bd_part = disk_get_part(disk, partno);
- 			if (!(disk->flags & GENHD_FL_UP) ||
- 			    !bdev->bd_part || !bdev->bd_part->nr_sects) {
-@@ -1439,7 +1454,7 @@ static int __blkdev_get(struct block_device *bdev, fmode_t mode, int for_part)
- 	disk_put_part(bdev->bd_part);
- 	bdev->bd_disk = NULL;
- 	bdev->bd_part = NULL;
--	bdev->bd_inode->i_data.backing_dev_info = &default_backing_dev_info;
-+	bdev_inode_switch_bdi(bdev->bd_inode, &default_backing_dev_info);
- 	if (bdev != bdev->bd_contains)
- 		__blkdev_put(bdev->bd_contains, mode, 1);
- 	bdev->bd_contains = NULL;
-@@ -1533,7 +1548,8 @@ static int __blkdev_put(struct block_device *bdev, fmode_t mode, int for_part)
- 		disk_put_part(bdev->bd_part);
- 		bdev->bd_part = NULL;
- 		bdev->bd_disk = NULL;
--		bdev->bd_inode->i_data.backing_dev_info = &default_backing_dev_info;
-+		bdev_inode_switch_bdi(bdev->bd_inode,
-+					&default_backing_dev_info);
- 		if (bdev != bdev->bd_contains)
- 			victim = bdev->bd_contains;
- 		bdev->bd_contains = NULL;
++#define hlist_bl_entry(ptr, type, member) container_of(ptr, type, member)
++
++static inline int hlist_bl_unhashed(const struct hlist_bl_node *h)
++{
++	return !h->pprev;
++}
++
++static inline struct hlist_bl_node *hlist_bl_first(struct hlist_bl_head *h)
++{
++	return (struct hlist_bl_node *)
++		((unsigned long)h->first & ~LIST_BL_LOCKMASK);
++}
++
++static inline void hlist_bl_set_first(struct hlist_bl_head *h,
++					struct hlist_bl_node *n)
++{
++	LIST_BL_BUG_ON((unsigned long)n & LIST_BL_LOCKMASK);
++	LIST_BL_BUG_ON(!bit_spin_is_locked(0, (unsigned long *)&h->first));
++	h->first = (struct hlist_bl_node *)((unsigned long)n | LIST_BL_LOCKMASK);
++}
++
++static inline int hlist_bl_empty(const struct hlist_bl_head *h)
++{
++	return !((unsigned long)h->first & ~LIST_BL_LOCKMASK);
++}
++
++static inline void hlist_bl_add_head(struct hlist_bl_node *n,
++					struct hlist_bl_head *h)
++{
++	struct hlist_bl_node *first = hlist_bl_first(h);
++
++	n->next = first;
++	if (first)
++		first->pprev = &n->next;
++	n->pprev = &h->first;
++	hlist_bl_set_first(h, n);
++}
++
++static inline void __hlist_bl_del(struct hlist_bl_node *n)
++{
++	struct hlist_bl_node *next = n->next;
++	struct hlist_bl_node **pprev = n->pprev;
++
++	LIST_BL_BUG_ON((unsigned long)n & LIST_BL_LOCKMASK);
++
++	/* pprev may be `first`, so be careful not to lose the lock bit */
++	*pprev = (struct hlist_bl_node *)
++			((unsigned long)next |
++			 ((unsigned long)*pprev & LIST_BL_LOCKMASK));
++	if (next)
++		next->pprev = pprev;
++}
++
++static inline void hlist_bl_del(struct hlist_bl_node *n)
++{
++	__hlist_bl_del(n);
++	n->next = BL_LIST_POISON1;
++	n->pprev = BL_LIST_POISON2;
++}
++
++static inline void hlist_bl_del_init(struct hlist_bl_node *n)
++{
++	if (!hlist_bl_unhashed(n)) {
++		__hlist_bl_del(n);
++		init_hlist_bl_node(n);
++	}
++}
++
++/**
++ * hlist_bl_for_each_entry	- iterate over list of given type
++ * @tpos:	the type * to use as a loop cursor.
++ * @pos:	the &struct hlist_node to use as a loop cursor.
++ * @head:	the head for your list.
++ * @member:	the name of the hlist_node within the struct.
++ *
++ */
++#define hlist_bl_for_each_entry(tpos, pos, head, member)		\
++	for (pos = hlist_bl_first(head);				\
++	     pos &&							\
++		({ tpos = hlist_bl_entry(pos, typeof(*tpos), member); 1; }); \
++	     pos = pos->next)
++
++#endif
++
++/**
++ * hlist_bl_lock	- lock a hash list
++ * @h:	hash list head to lock
++ */
++static inline void hlist_bl_lock(struct hlist_bl_head *h)
++{
++	bit_spin_lock(0, (unsigned long *)h);
++}
++
++/**
++ * hlist_bl_unlock	- unlock a hash list
++ * @h:	hash list head to unlock
++ */
++static inline void hlist_bl_unlock(struct hlist_bl_head *h)
++{
++	__bit_spin_unlock(0, (unsigned long *)h);
++}
+diff --git a/include/linux/poison.h b/include/linux/poison.h
+index 2110a81..d367d39 100644
+--- a/include/linux/poison.h
++++ b/include/linux/poison.h
+@@ -22,6 +22,8 @@
+ #define LIST_POISON1  ((void *) 0x00100100 + POISON_POINTER_DELTA)
+ #define LIST_POISON2  ((void *) 0x00200200 + POISON_POINTER_DELTA)
+ 
++#define BL_LIST_POISON1  ((void *) 0x00300300 + POISON_POINTER_DELTA)
++#define BL_LIST_POISON2  ((void *) 0x00400400 + POISON_POINTER_DELTA)
+ /********** include/linux/timer.h **********/
+ /*
+  * Magic number "tsta" to indicate a static timer initializer
 -- 
 1.7.1
 
