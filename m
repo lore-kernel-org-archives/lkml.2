@@ -1,41 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932452Ab0JRV6k (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Oct 2010 17:58:40 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:47667 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756125Ab0JRV6j (ORCPT
+	id S932770Ab0JRV7d (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Oct 2010 17:59:33 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:38501 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757482Ab0JRV7c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Oct 2010 17:58:39 -0400
-Date: Mon, 18 Oct 2010 22:58:15 +0100
-From: Russell King <rmk@arm.linux.org.uk>
-To: Daniel Walker <dwalker@fifo99.com>
-Cc: Nicolas Pitre <nico@fluxnic.net>, Stephen Rothwell <sfr@canb.auug.org.au>,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jeremy Kerr <jeremy.kerr@canonical.com>,
-        Jeff Ohlstein <johlstei@codeaurora.org>
-Subject: Re: linux-next: manual merge of the msm tree with the arm tree
-Message-ID: <20101018215815.GC23642@flint.arm.linux.org.uk>
-References: <20101018103540.7bd9c535.sfr@canb.auug.org.au> <20101018110207.131b56ee.sfr@canb.auug.org.au> <20101018081520.GA10551@flint.arm.linux.org.uk> <1287422792.4105.14.camel@c-dwalke-linux.qualcomm.com> <20101018182044.GA558@flint.arm.linux.org.uk> <1287427572.4105.22.camel@c-dwalke-linux.qualcomm.com> <alpine.LFD.2.00.1010181525000.2764@xanadu.home> <1287432774.5588.5.camel@c-dwalke-linux.qualcomm.com> <20101018205847.GB23642@flint.arm.linux.org.uk> <1287437362.5588.57.camel@c-dwalke-linux.qualcomm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1287437362.5588.57.camel@c-dwalke-linux.qualcomm.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	Mon, 18 Oct 2010 17:59:32 -0400
+Date: Mon, 18 Oct 2010 14:58:59 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Wu Fengguang <fengguang.wu@intel.com>
+Cc: Neil Brown <neilb@suse.de>, Rik van Riel <riel@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "Li, Shaohua" <shaohua.li@intel.com>
+Subject: Re: Deadlock possibly caused by too_many_isolated.
+Message-Id: <20101018145859.eee1ae33.akpm@linux-foundation.org>
+In-Reply-To: <20101018161504.GB29500@localhost>
+References: <20100915091118.3dbdc961@notabene>
+	<4C90139A.1080809@redhat.com>
+	<20100915122334.3fa7b35f@notabene>
+	<20100915082843.GA17252@localhost>
+	<20100915184434.18e2d933@notabene>
+	<20101018151459.2b443221@notabene>
+	<20101018161504.GB29500@localhost>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 18, 2010 at 02:29:22PM -0700, Daniel Walker wrote:
-> That's why we have get_maintainer.pl, it adds in all the CC's
-> automatically ..
+On Tue, 19 Oct 2010 00:15:04 +0800
+Wu Fengguang <fengguang.wu@intel.com> wrote:
 
-$ git diff-tree -u 861bd81ee62a0d6759144c22909a8a3938951656 | scripts/get_maintainer.pl |wc 
-    209     624    8021
+> Neil find that if too_many_isolated() returns true while performing
+> direct reclaim we can end up waiting for other threads to complete their
+> direct reclaim.  If those threads are allowed to enter the FS or IO to
+> free memory, but this thread is not, then it is possible that those
+> threads will be waiting on this thread and so we get a circular
+> deadlock.
+> 
+> some task enters direct reclaim with GFP_KERNEL
+>   => too_many_isolated() false
+>     => vmscan and run into dirty pages
+>       => pageout()
+>         => take some FS lock
+> 	  => fs/block code does GFP_NOIO allocation
+> 	    => enter direct reclaim again
+> 	      => too_many_isolated() true
+> 		=> waiting for others to progress, however the other
+> 		   tasks may be circular waiting for the FS lock..
+> 
+> The fix is to let !__GFP_IO and !__GFP_FS direct reclaims enjoy higher
+> priority than normal ones, by honouring them higher throttle threshold.
+> 
+> Now !GFP_IOFS reclaims won't be waiting for GFP_IOFS reclaims to
+> progress. They will be blocked only when there are too many concurrent
+> !GFP_IOFS reclaims, however that's very unlikely because the IO-less
+> direct reclaims is able to progress much more faster, and they won't
+> deadlock each other. The threshold is raised high enough for them, so
+> that there can be sufficient parallel progress of !GFP_IOFS reclaims.
 
-209 recipients / 8K of To:/CC: is reasonable?
+I'm not sure that this is really a full fix.  Torsten's analysis does
+appear to point at the real bug: raid1 has code paths which allocate
+more than a single element from a mempool without starting IO against
+previous elements.
 
--- 
-Russell King
- Linux kernel    2.6 ARM Linux   - http://www.arm.linux.org.uk/
- maintainer of:
+Giving these allocations the ability to dip further into reserves will
+make occurrence of the bug less likely, but if enough threads all do
+this at the same time, that reserve will be exhausted and we're back to
+square one?
+
