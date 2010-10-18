@@ -1,45 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933326Ab0JRVtv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Oct 2010 17:49:51 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:58395 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753913Ab0JRVtu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Oct 2010 17:49:50 -0400
-Message-ID: <4CBCA452.6070804@mvista.com>
-Date: Mon, 18 Oct 2010 23:47:30 +0400
-From: Sergei Shtylyov <sshtylyov@mvista.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.9) Gecko/20100915 Thunderbird/3.1.4
+	id S1756606Ab0JRV4c (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Oct 2010 17:56:32 -0400
+Received: from www.tglx.de ([62.245.132.106]:55051 "EHLO www.tglx.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755064Ab0JRV4b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Oct 2010 17:56:31 -0400
+Date: Mon, 18 Oct 2010 23:55:44 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Andrew Morton <akpm@linux-foundation.org>
+cc: Mel Gorman <mel@csn.ul.ie>, pacman@kosh.dhis.org, linux-mm@kvack.org,
+        LKML <linux-kernel@vger.kernel.org>, linuxppc-dev@lists.ozlabs.org,
+        Helmut Grohne <helmut@subdivi.de>
+Subject: Re: PROBLEM: memory corrupting bug, bisected to 6dda9d55
+In-Reply-To: <20101018123750.ef7d6d48.akpm@linux-foundation.org>
+Message-ID: <alpine.LFD.2.00.1010182342490.6815@localhost6.localdomain6>
+References: <20101013144044.GS30667@csn.ul.ie> <20101013175205.21187.qmail@kosh.dhis.org> <20101018113331.GB30667@csn.ul.ie> <20101018123750.ef7d6d48.akpm@linux-foundation.org>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-To: Tatyana Brokhman <tlinder@codeaurora.org>
-CC: linux-usb@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Jacob Pan <jacob.jun.pan@intel.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/3] usb: USB3.0 ch11 definitions
-References: <1287414160-12307-1-git-send-email-tlinder@codeaurora.org>
-In-Reply-To: <1287414160-12307-1-git-send-email-tlinder@codeaurora.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+On Mon, 18 Oct 2010, Andrew Morton wrote:
 
-On 18-10-2010 19:02, Tatyana Brokhman wrote:
+> On Mon, 18 Oct 2010 12:33:31 +0100
+> Mel Gorman <mel@csn.ul.ie> wrote:
+> 
+> > A bit but I still don't know why it would cause corruption. Maybe this is still
+> > a caching issue but the difference in timing between list_add and list_add_tail
+> > is enough to hide the bug. It's also possible there are some registers
+> > ioremapped after the memmap array and reading them is causing some
+> > problem.
+> > 
+> > Andrew, what is the right thing to do here? We could flail around looking
+> > for explanations as to why the bug causes a user buffer corruption but never
+> > get an answer or do we go with this patch, preferably before 2.6.36 releases?
+> 
+> Well, you've spotted a bug so I'd say we fix it asap.
+> 
+> It's a bit of a shame that we lose the only known way of reproducing a
+> different bug, but presumably that will come back and bite someone else
+> one day, and we'll fix it then :(
 
-> Adding hub SuperSpeed usb definitions as defined by ch10 of the USB3.0
-> spec.
+I might be completely one off as usual, but this thing reminds me of a
+bug I stared at yesterday night:
 
-    So it's chapter 10 or 11? ;-)
+    http://permalink.gmane.org/gmane.linux.kernel/1049605
 
-> This patch is a preparation for adding SuperSpeed support to the dummy_hcd.
+Reporter Cc'ed
 
-> Signed-off-by: Tatyana Brokhman<tlinder@codeaurora.org>
+Thanks,
 
-[...]
-
-WBR, Sergei
+	tglx
