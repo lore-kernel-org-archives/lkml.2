@@ -1,20 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756079Ab0JROEu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Oct 2010 10:04:50 -0400
-Received: from mgw2.diku.dk ([130.225.96.92]:33887 "EHLO mgw2.diku.dk"
+	id S1756110Ab0JROEx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Oct 2010 10:04:53 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:33893 "EHLO mgw2.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755979Ab0JROEs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Oct 2010 10:04:48 -0400
+	id S1755976Ab0JROEu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Oct 2010 10:04:50 -0400
 From: Julia Lawall <julia@diku.dk>
-To: Liam Girdwood <lrg@slimlogic.co.uk>
-Cc: kernel-janitors@vger.kernel.org,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 1/2] sound/soc/davinci/davinci-mcasp.c: Return error code in failure
-Date: Mon, 18 Oct 2010 16:11:13 +0200
-Message-Id: <1287411074-19825-1-git-send-email-julia@diku.dk>
+To: Paul Gortmaker <p_gortmaker@yahoo.com>
+Cc: kernel-janitors@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 2/2] drivers/net/ax88796.c: Return error code in failure
+Date: Mon, 18 Oct 2010 16:11:14 +0200
+Message-Id: <1287411074-19825-2-git-send-email-julia@diku.dk>
 X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -55,30 +53,22 @@ if (x == NULL) { ... when != ret = e3
 Signed-off-by: Julia Lawall <julia@diku.dk>
 
 ---
-Another call to platform_get_resource in the same function returns -ENODEV
-on error, so I have used that value.
+Another call to platform_get_resource in the same function uses -ENXIO, so
+I have used the same value here.
 
- sound/soc/davinci/davinci-mcasp.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/net/ax88796.c |    1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/sound/soc/davinci/davinci-mcasp.c b/sound/soc/davinci/davinci-mcasp.c
-index c8e97dc..86918ee 100644
---- a/sound/soc/davinci/davinci-mcasp.c
-+++ b/sound/soc/davinci/davinci-mcasp.c
-@@ -898,6 +898,7 @@ static int davinci_mcasp_probe(struct platform_device *pdev)
- 	res = platform_get_resource(pdev, IORESOURCE_DMA, 0);
- 	if (!res) {
- 		dev_err(&pdev->dev, "no DMA resource\n");
-+		ret = -ENODEV;
- 		goto err_release_region;
- 	}
- 
-@@ -912,6 +913,7 @@ static int davinci_mcasp_probe(struct platform_device *pdev)
- 	res = platform_get_resource(pdev, IORESOURCE_DMA, 1);
- 	if (!res) {
- 		dev_err(&pdev->dev, "no DMA resource\n");
-+		ret = -ENODEV;
- 		goto err_release_region;
+diff --git a/drivers/net/ax88796.c b/drivers/net/ax88796.c
+index 20e946b..b6da4cf 100644
+--- a/drivers/net/ax88796.c
++++ b/drivers/net/ax88796.c
+@@ -864,6 +864,7 @@ static int ax_probe(struct platform_device *pdev)
+ 	res = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
+ 	if (res == NULL) {
+ 		dev_err(&pdev->dev, "no IRQ specified\n");
++		ret = -ENXIO;
+ 		goto exit_mem;
  	}
  
 
