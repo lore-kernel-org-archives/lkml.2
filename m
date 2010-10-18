@@ -1,41 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757314Ab0JRQgJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Oct 2010 12:36:09 -0400
-Received: from smtp101.prem.mail.ac4.yahoo.com ([76.13.13.40]:23477 "HELO
-	smtp101.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751362Ab0JRQgI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Oct 2010 12:36:08 -0400
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-X-YMail-OSG: hSXmL_cVM1lFulzBZVkf6j6sz6XHKYQfXJg7DFUqL8FKqoO
- 9aClbDsPj52LPenpbXeCMY_0xPMqStT_XGktFbjjixFTk_A7FX6dLr3fBUHe
- ihxNPZY4pIXfeSTJ1YgWTZYTtt7SLqVdE_LIuGHTbCaKqTtx52ZzMeWptgxE
- XCME2iI2gA6Gr.W_ZAyvxfNJp4bC8hJ06fiIRpwxa3fkN5Toq6X4_aLqFMvA
- .L6oOXuyOZx.z1RUTi3Zx7zgftTt3irBD
-X-Yahoo-Newman-Property: ymail-3
-Date: Mon, 18 Oct 2010 11:36:04 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Dave Young <hidave.darkstar@gmail.com>
-cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org, kvm@vger.kernel.org,
-        akpm@linux-foundation.org
-Subject: Re: [PATCH 1/2] Add vzalloc shortcut
-In-Reply-To: <20101016043331.GA3177@darkstar>
-Message-ID: <alpine.DEB.2.00.1010181135290.2092@router.home>
-References: <20101016043331.GA3177@darkstar>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1757394Ab0JRQiB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Oct 2010 12:38:01 -0400
+Received: from a.ns.miles-group.at ([95.130.255.143]:53138 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751362Ab0JRQiA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Oct 2010 12:38:00 -0400
+/m: 
+From: Richard Weinberger <richard@nod.at>
+To: akpm@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org, jdike@addtoit.com,
+        user-mode-linux-devel@lists.sourceforge.net, viro@zeniv.linux.org.uk,
+        toralf.foerster@gmx.de, Richard Weinberger <richard@nod.at>
+Subject: [PATCH 1/1] hostfs: fix UML crash
+Date: Mon, 18 Oct 2010 18:36:54 +0200
+Message-Id: <1287419814-20086-1-git-send-email-richard@nod.at>
+X-Mailer: git-send-email 1.6.6.1
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 16 Oct 2010, Dave Young wrote:
+365b1818 resized f_spare within struct statfs.
+hostfs accesses f_spare directly and needs an update.
 
-> Add vzalloc for convinience of vmalloc-then-memset-zero case
+Signed-off-by: Richard Weinberger <richard@nod.at>
+Reported-by: Toralf Förster <toralf.foerster@gmx.de>
+Tested-by: Toralf Förster <toralf.foerster@gmx.de>
+---
+ fs/hostfs/hostfs_user.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Reviewed-by: Christoph Lameter <cl@linux.com>
-
-Wish we would also have vzalloc_node() but I guess that can wait.
+diff --git a/fs/hostfs/hostfs_user.c b/fs/hostfs/hostfs_user.c
+index 6777aa0..ce2f168 100644
+--- a/fs/hostfs/hostfs_user.c
++++ b/fs/hostfs/hostfs_user.c
+@@ -388,6 +388,6 @@ int do_statfs(char *root, long *bsize_out, long long *blocks_out,
+ 	spare_out[1] = buf.f_spare[1];
+ 	spare_out[2] = buf.f_spare[2];
+ 	spare_out[3] = buf.f_spare[3];
+-	spare_out[4] = buf.f_spare[4];
++
+ 	return 0;
+ }
+-- 
+1.6.6.1
 
