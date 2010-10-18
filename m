@@ -1,107 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755537Ab0JRN3K (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Oct 2010 09:29:10 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:57648 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754457Ab0JRN3I (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Oct 2010 09:29:08 -0400
-Date: Mon, 18 Oct 2010 22:29:26 +0900
-From: Kukjin Kim <kgene.kim@samsung.com>
-Subject: RE: [PATCH 3/9] ARM: S3C64XX: add touchscreen support for mach-real6410
-In-reply-to: <20100929193322.25307.67196.stgit@darius-desktop>
-To: "'Darius Augulis'" <augulis.darius@gmail.com>,
-        linux-arm-kernel@lists.infradead.org
-Cc: paulius.zaleckas@gmail.com, linux-kernel@vger.kernel.org,
-        ben-linux@fluff.org
-Message-id: <04a501cb6ec8$7e719a80$7b54cf80$%kim@samsung.com>
-MIME-version: 1.0
-X-Mailer: Microsoft Office Outlook 12.0
-Content-type: text/plain; charset=utf-8
-Content-language: ko
-Content-transfer-encoding: 7BIT
-Thread-index: ActgDTpZyzd++4tAQJmH7IaBJ2OZLgOur4xQ
-References: <20100929192354.25307.40197.stgit@darius-desktop>
- <20100929193322.25307.67196.stgit@darius-desktop>
+	id S1755667Ab0JRNfL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Oct 2010 09:35:11 -0400
+Received: from relay2.sgi.com ([192.48.179.30]:60179 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754275Ab0JRNfJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Oct 2010 09:35:09 -0400
+Date: Mon, 18 Oct 2010 08:35:08 -0500
+From: Robin Holt <holt@sgi.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: [Patch] Incoming XPC channel messages can come in after the
+ channel's partition structures have been torn down.
+Message-ID: <20101018133508.GC14064@sgi.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Darius Augulis wrote:
-> 
-> Add touchscreen device support for mach-real6410
-> 
-> Signed-off-by: Darius Augulis <augulis.darius@gmail.com>
-> ---
->  arch/arm/mach-s3c64xx/Kconfig         |    2 ++
->  arch/arm/mach-s3c64xx/mach-real6410.c |   11 +++++++++++
->  2 files changed, 13 insertions(+), 0 deletions(-)
-> 
-> diff --git a/arch/arm/mach-s3c64xx/Kconfig b/arch/arm/mach-s3c64xx/Kconfig
-> index e4aede1..b706b80 100644
-> --- a/arch/arm/mach-s3c64xx/Kconfig
-> +++ b/arch/arm/mach-s3c64xx/Kconfig
-> @@ -107,6 +107,8 @@ config MACH_REAL6410
->  	select S3C_DEV_FB
->  	select S3C64XX_SETUP_FB_24BPP
->  	select S3C_DEV_NAND
-> +	select SAMSUNG_DEV_ADC
-> +	select SAMSUNG_DEV_TS
->  	help
->  	  Machine support for the CoreWind REAL6410
-> 
-> diff --git a/arch/arm/mach-s3c64xx/mach-real6410.c b/arch/arm/mach-
-> s3c64xx/mach-real6410.c
-> index 9fd943d..bad6990 100644
-> --- a/arch/arm/mach-s3c64xx/mach-real6410.c
-> +++ b/arch/arm/mach-s3c64xx/mach-real6410.c
-> @@ -36,11 +36,13 @@
->  #include <mach/regs-srom.h>
->  #include <mach/s3c6410.h>
-> 
-> +#include <plat/adc.h>
->  #include <plat/cpu.h>
->  #include <plat/devs.h>
->  #include <plat/fb.h>
->  #include <plat/nand.h>
->  #include <plat/regs-serial.h>
-> +#include <plat/ts.h>
-> 
->  #include <video/platform_lcd.h>
-> 
-> @@ -191,6 +193,14 @@ static struct platform_device *real6410_devices[]
-> __initdata = {
->  	&s3c_device_hsmmc1,
->  	&s3c_device_fb,
->  	&s3c_device_nand,
-> +	&s3c_device_adc,
-> +	&s3c_device_ts,
-> +};
-> +
-> +static struct s3c2410_ts_mach_info s3c_ts_platform __initdata = {
-> +	.delay			= 10000,
-> +	.presc			= 49,
-> +	.oversampling_shift	= 2,
->  };
-> 
->  static void __init real6410_map_io(void)
-> @@ -289,6 +299,7 @@ static void __init real6410_machine_init(void)
-> 
->  	s3c_fb_set_platdata(&real6410_lcd_pdata);
->  	s3c_nand_set_platdata(&real6410_nand_info);
-> +	s3c24xx_ts_set_platdata(&s3c_ts_platform);
-> 
->  	/* configure nCS1 width to 16 bits */
-> 
 
-No need to add 's3c_adc_setname("s3c64xx-adc")' in mach-s3c64xx?
+Under some workloads, some channel messages have been observed being
+delayed on the sending side past the point where the receiving side
+has been able to tear down its partition structures.  This condition is
+already detected in xpc_handle_activate_IRQ_uv(), but that information
+is not given to xpc_handle_activate_mq_msg_uv().  As a result,
+xpc_handle_activate_mq_msg_uv() assumes the structures still exist and
+references them.
 
-Thanks.
+Signed-off-by: Robin Holt <holt@sgi.com>
 
-Best regards,
-Kgene.
---
-Kukjin Kim <kgene.kim@samsung.com>, Senior Engineer,
-SW Solution Development Team, Samsung Electronics Co., Ltd.
+---
 
+ drivers/misc/sgi-xp/xpc_uv.c |   17 +++++++++++++++++
+ 1 file changed, 17 insertions(+)
+
+diff --git a/drivers/misc/sgi-xp/xpc_uv.c b/drivers/misc/sgi-xp/xpc_uv.c
+index 1f59ee2..17bbacb 100644
+--- a/drivers/misc/sgi-xp/xpc_uv.c
++++ b/drivers/misc/sgi-xp/xpc_uv.c
+@@ -417,6 +417,7 @@ xpc_process_activate_IRQ_rcvd_uv(void)
+ static void
+ xpc_handle_activate_mq_msg_uv(struct xpc_partition *part,
+ 			      struct xpc_activate_mq_msghdr_uv *msg_hdr,
++			      int part_setup,
+ 			      int *wakeup_hb_checker)
+ {
+ 	unsigned long irq_flags;
+@@ -481,6 +482,9 @@ xpc_handle_activate_mq_msg_uv(struct xpc_partition *part,
+ 	case XPC_ACTIVATE_MQ_MSG_CHCTL_CLOSEREQUEST_UV: {
+ 		struct xpc_activate_mq_msg_chctl_closerequest_uv *msg;
+ 
++		if (!part_setup)
++			break;
++
+ 		msg = container_of(msg_hdr, struct
+ 				   xpc_activate_mq_msg_chctl_closerequest_uv,
+ 				   hdr);
+@@ -497,6 +501,9 @@ xpc_handle_activate_mq_msg_uv(struct xpc_partition *part,
+ 	case XPC_ACTIVATE_MQ_MSG_CHCTL_CLOSEREPLY_UV: {
+ 		struct xpc_activate_mq_msg_chctl_closereply_uv *msg;
+ 
++		if (!part_setup)
++			break;
++
+ 		msg = container_of(msg_hdr, struct
+ 				   xpc_activate_mq_msg_chctl_closereply_uv,
+ 				   hdr);
+@@ -511,6 +518,9 @@ xpc_handle_activate_mq_msg_uv(struct xpc_partition *part,
+ 	case XPC_ACTIVATE_MQ_MSG_CHCTL_OPENREQUEST_UV: {
+ 		struct xpc_activate_mq_msg_chctl_openrequest_uv *msg;
+ 
++		if (!part_setup)
++			break;
++
+ 		msg = container_of(msg_hdr, struct
+ 				   xpc_activate_mq_msg_chctl_openrequest_uv,
+ 				   hdr);
+@@ -528,6 +538,9 @@ xpc_handle_activate_mq_msg_uv(struct xpc_partition *part,
+ 	case XPC_ACTIVATE_MQ_MSG_CHCTL_OPENREPLY_UV: {
+ 		struct xpc_activate_mq_msg_chctl_openreply_uv *msg;
+ 
++		if (!part_setup)
++			break;
++
+ 		msg = container_of(msg_hdr, struct
+ 				   xpc_activate_mq_msg_chctl_openreply_uv, hdr);
+ 		args = &part->remote_openclose_args[msg->ch_number];
+@@ -545,6 +558,9 @@ xpc_handle_activate_mq_msg_uv(struct xpc_partition *part,
+ 	case XPC_ACTIVATE_MQ_MSG_CHCTL_OPENCOMPLETE_UV: {
+ 		struct xpc_activate_mq_msg_chctl_opencomplete_uv *msg;
+ 
++		if (!part_setup)
++			break;
++
+ 		msg = container_of(msg_hdr, struct
+ 				xpc_activate_mq_msg_chctl_opencomplete_uv, hdr);
+ 		spin_lock_irqsave(&part->chctl_lock, irq_flags);
+@@ -621,6 +637,7 @@ xpc_handle_activate_IRQ_uv(int irq, void *dev_id)
+ 
+ 			part_referenced = xpc_part_ref(part);
+ 			xpc_handle_activate_mq_msg_uv(part, msg_hdr,
++						      part_referenced,
+ 						      &wakeup_hb_checker);
+ 			if (part_referenced)
+ 				xpc_part_deref(part);
