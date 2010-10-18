@@ -1,57 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753604Ab0JRIMC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Oct 2010 04:12:02 -0400
-Received: from claw.goop.org ([74.207.240.146]:41303 "EHLO claw.goop.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751935Ab0JRIL7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Oct 2010 04:11:59 -0400
-Message-ID: <4CBC014D.7070302@goop.org>
-Date: Mon, 18 Oct 2010 01:11:57 -0700
-From: Jeremy Fitzhardinge <jeremy@goop.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc13 Lightning/1.0b3pre Thunderbird/3.1.4
-MIME-Version: 1.0
+	id S1753737Ab0JRIPs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Oct 2010 04:15:48 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:55058 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751343Ab0JRIPr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Oct 2010 04:15:47 -0400
+Date: Mon, 18 Oct 2010 09:15:20 +0100
+From: Russell King <rmk@arm.linux.org.uk>
 To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: Xen Devel <Xen-devel@lists.xensource.com>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus <torvalds@linux-foundation.org>
-Subject: Re: linux-next: manual merge of the xen tree with the swiotlb-xen
- tree
-References: <20101018155249.d9267bfe.sfr@canb.auug.org.au>
-In-Reply-To: <20101018155249.d9267bfe.sfr@canb.auug.org.au>
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
+Cc: Daniel Walker <dwalker@fifo99.com>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Jeremy Kerr <jeremy.kerr@canonical.com>,
+        Jeff Ohlstein <johlstei@codeaurora.org>
+Subject: Re: linux-next: manual merge of the msm tree with the arm tree
+Message-ID: <20101018081520.GA10551@flint.arm.linux.org.uk>
+References: <20101018103540.7bd9c535.sfr@canb.auug.org.au> <20101018110207.131b56ee.sfr@canb.auug.org.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101018110207.131b56ee.sfr@canb.auug.org.au>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- On 10/17/2010 09:52 PM, Stephen Rothwell wrote:
-> Hi all,
->
-> Today's linux-next merge of the xen tree got conplex conflicts in
-> drivers/xen/events.c between several commits from the swiotlb-xen tree
-> and several commits from the xen tree.
->
-> I am unqualified to fix this mess, sorry.  I am dropping the xen tree
-> for today (and only not dropping the swiotlb-xen tree because that would
-> be too much work).
+On Mon, Oct 18, 2010 at 11:02:07AM +1100, Stephen Rothwell wrote:
+> [ Just cc'ing Russell, sorry about that]
+> 
+> On Mon, 18 Oct 2010 10:35:40 +1100 Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> >
+> > Hi Daniel,
+> > 
+> > Today's linux-next merge of the msm tree got a conflict in
+> > arch/arm/mach-msm/include/mach/debug-macro.S between commit
+> > 08a610d9ef5394525b0328da0162d7b58c982cc4 ("arm: return both physical and
+> > virtual addresses from addruart") from the arm tree and commit
+> > 46fe5f29e3062f681cc3cf07a604d82396faea89 ("msm: allow uart to be
+> > conditionally disabled") from the msm tree.
+> > 
+> > Just context changes.  I fixed it up (see below) and can carry the fix as
+> > necessary.
 
-Argh, sorry, I should have coordinated with Konrad.  I'd merged my tree
-into linux-next to make sure it was OK, but I guess I overlooked something.
+Thanks, but I don't think there's much which can be done about these.
+Changes such as 08a610d affect all ARM sub-architectures, and as they're
+spread across multiple git trees...
 
-> I wonder, of course, why I have seen nothing in either of these trees
-> until today (less than a week before the merge window opens).
+I think there's going to be some problems during this forthcoming merge
+window.
 
-I had found Xen regressions that had made it into linux-next and wanted
-to sort those out before adding anything else to the mix.
-
-> Please sort this mess out.  I will drop the swiotlb-xen tree as well
-> tomorrow if nothing has changed.
-
-Will do.
-
-Thanks,
-    J
-
+-- 
+Russell King
+ Linux kernel    2.6 ARM Linux   - http://www.arm.linux.org.uk/
+ maintainer of:
