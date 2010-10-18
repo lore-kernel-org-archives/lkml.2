@@ -1,89 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757690Ab0JRUDv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Oct 2010 16:03:51 -0400
-Received: from a.ns.miles-group.at ([95.130.255.143]:48901 "EHLO radon.swed.at"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754954Ab0JRUDu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Oct 2010 16:03:50 -0400
-/m: 
-From: Richard Weinberger <richard@nod.at>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Subject: Re: [uml-devel] [PATCH 1/1] hostfs: fix UML crash
-Date: Mon, 18 Oct 2010 22:03:42 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.25.20-0.7-pae; KDE/4.4.4; i686; ; )
-Cc: Andrew Morton <akpm@linux-foundation.org>, toralf.foerster@gmx.de,
-        jdike@addtoit.com, linux-kernel@vger.kernel.org,
-        user-mode-linux-devel@lists.sourceforge.net, viro@zeniv.linux.org.uk
-References: <1287419814-20086-1-git-send-email-richard@nod.at> <201010182131.33385.richard@nod.at> <AANLkTim1sUog=5cDRHRxRhg6P0QKCe-SkNMTAgmNa3Qt@mail.gmail.com>
-In-Reply-To: <AANLkTim1sUog=5cDRHRxRhg6P0QKCe-SkNMTAgmNa3Qt@mail.gmail.com>
+	id S933189Ab0JRUE0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Oct 2010 16:04:26 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:64925 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932257Ab0JRUEZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Oct 2010 16:04:25 -0400
+Message-ID: <4CBCA833.7090104@kernel.org>
+Date: Mon, 18 Oct 2010 13:04:03 -0700
+From: Yinghai Lu <yinghai@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.12) Gecko/20100914 SUSE/3.0.8 Thunderbird/3.0.8
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
+To: Felipe Contreras <felipe.contreras@gmail.com>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: Latest memblock patches
+References: <AANLkTimdNFZwao_dCnAq2D=obq_Qccn-M8mNvUeoecc2@mail.gmail.com>
+In-Reply-To: <AANLkTimdNFZwao_dCnAq2D=obq_Qccn-M8mNvUeoecc2@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-Message-Id: <201010182203.42690.richard@nod.at>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Montag 18 Oktober 2010, 21:43:44 schrieb Geert Uytterhoeven:
-> On Mon, Oct 18, 2010 at 21:31, Richard Weinberger <richard@nod.at> wrote:
-> > Am Montag 18 Oktober 2010, 21:22:31 schrieb Geert Uytterhoeven:
-> >> On Mon, Oct 18, 2010 at 20:40, Andrew Morton <akpm@linux-foundation.org>
-> > 
-> > wrote:
-> >> > On Mon, 18 Oct 2010 18:36:54 +0200 Richard Weinberger <richard@nod.at>
-> > 
-> > wrote:
-> >> >> 365b1818 resized f_spare within struct statfs.
-> >> >> hostfs accesses f_spare directly and needs an update.
-> >> >> 
-> >> >> Signed-off-by: Richard Weinberger <richard@nod.at>
-> >> >> Reported-by: Toralf F__rster <toralf.foerster@gmx.de>
-> >> >> Tested-by: Toralf F__rster <toralf.foerster@gmx.de>
-> >> >> ---
-> >> >>  fs/hostfs/hostfs_user.c |    2 +-
-> >> >>  1 files changed, 1 insertions(+), 1 deletions(-)
-> >> >> 
-> >> >> diff --git a/fs/hostfs/hostfs_user.c b/fs/hostfs/hostfs_user.c
-> >> >> index 6777aa0..ce2f168 100644
-> >> >> --- a/fs/hostfs/hostfs_user.c
-> >> >> +++ b/fs/hostfs/hostfs_user.c
-> >> >> @@ -388,6 +388,6 @@ int do_statfs(char *root, long *bsize_out, long
-> >> >> long *blocks_out, spare_out[1] = buf.f_spare[1];
-> >> >>       spare_out[2] = buf.f_spare[2];
-> >> >>       spare_out[3] = buf.f_spare[3];
-> >> >> -     spare_out[4] = buf.f_spare[4];
-> >> >> +
-> >> >>       return 0;
-> >> >>  }
-> >> > 
-> >> > Thanks.
-> >> > 
-> >> > Is there any reason for hostfs to be playing with the f_spare field at
-> >> > all?
-> >> 
-> >> It just copies it from struct statfs64 on the host to struct kstatfs
-> >> on the guest.
-> >> Probably a memcpy() is more future-safe, if it's combined with a
-> >> BUILD_BUG_ON(sizeof(statfs64.f_spare) != sizeof(kstatfs.f_spare)).
-> >> 
-> >> Still, currently it doesn't copy the recently added f_flags field.
-> >> To protect against future changes like that, an explicit
-> >> BUILD_BUG_ON(sizeof(kstatfs.f_spare) != 4*sizeof(long)) may be even
-> >> better...
-
-IMHO using kstatfs within ubd_user.c is not very nice because is a internal 
-kernel struct.
-
-> > Anyway, why do we need to copy f_spare from the host to the guest?
-> > I'm quite sure it can be omitted.
+On 10/18/2010 01:02 PM, Felipe Contreras wrote:
+> Hi,
 > 
-> I guess it wants to preserve fields that are added in the future,
-> which may be useful
-> if the host is more recent than the guest.
+> Russell is worried that the latest memblock patches or x86 are going
+> to affect ARM negatively. I would like to try them to find out if
+> that's the case.
+> 
+> Do you know if there's a branch available somewhere with the memblock
+> patches that will be merged on .37?
 
-Good point!
+please check
 
-Thanks,
-//richard
+git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git core/memblock
+
+Thanks
+
+Yinghai Lu
