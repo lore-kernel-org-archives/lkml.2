@@ -1,75 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752465Ab0JRICU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Oct 2010 04:02:20 -0400
-Received: from mga03.intel.com ([143.182.124.21]:25545 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750718Ab0JRICS convert rfc822-to-8bit (ORCPT
+	id S1753533Ab0JRICk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Oct 2010 04:02:40 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:59916 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752853Ab0JRICi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Oct 2010 04:02:18 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.57,345,1283756400"; 
-   d="scan'208";a="337241265"
-From: "Ma, Ling" <ling.ma@intel.com>
-To: "miaox@cn.fujitsu.com" <miaox@cn.fujitsu.com>
-CC: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>,
-        Andi Kleen <andi@firstfloor.org>, Thomas Gleixner <tglx@linutronix.de>,
-        "Zhao, Yakui" <yakui.zhao@intel.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Date: Mon, 18 Oct 2010 16:01:13 +0800
-Subject: RE: [PATCH V2 -tip] lib,x86_64: improve the performance of memcpy()
- for unaligned copy
-Thread-Topic: [PATCH V2 -tip] lib,x86_64: improve the performance of
- memcpy() for unaligned copy
-Thread-Index: ActumBOryPSVrRnfRkuCOEAzxNLDhQAAUYtQ
-Message-ID: <C10D3FB0CD45994C8A51FEC1227CE22F15D77722D0@shsmsx502.ccr.corp.intel.com>
-References: <4CAEC81C.1070108@cn.fujitsu.com>
- <C10D3FB0CD45994C8A51FEC1227CE22F15C916E769@shsmsx502.ccr.corp.intel.com>
- <4CAEDE0D.2040009@cn.fujitsu.com> <4CB62543.7000605@zytor.com>
- <C10D3FB0CD45994C8A51FEC1227CE22F15CC203E71@shsmsx502.ccr.corp.intel.com>
- <4CBBE7FB.2060303@cn.fujitsu.com>
- <C10D3FB0CD45994C8A51FEC1227CE22F15D77721FD@shsmsx502.ccr.corp.intel.com>
- <4CBBEA7F.7010604@cn.fujitsu.com>
- <C10D3FB0CD45994C8A51FEC1227CE22F15D777221E@shsmsx502.ccr.corp.intel.com>
- <4CBBFA7F.1010109@cn.fujitsu.com>
-In-Reply-To: <4CBBFA7F.1010109@cn.fujitsu.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Mon, 18 Oct 2010 04:02:38 -0400
+Date: Mon, 18 Oct 2010 10:02:31 +0200
+From: Sascha Hauer <s.hauer@pengutronix.de>
+To: Vasiliy Kulikov <segooon@gmail.com>
+Cc: kernel-janitors@vger.kernel.org, Dan Williams <dan.j.williams@intel.com>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] dma: imx-dma: fix signedness bug
+Message-ID: <20101018080230.GH28242@pengutronix.de>
+References: <1287327110-9158-1-git-send-email-segooon@gmail.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1287327110-9158-1-git-send-email-segooon@gmail.com>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 10:02:13 up 106 days, 23:13, 24 users,  load average: 0.35, 0.35,
+	0.36
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: sha@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sun, Oct 17, 2010 at 06:51:50PM +0400, Vasiliy Kulikov wrote:
+> mxdmac->channel was unsigned, so check (imxdmac->channel < 0) for
+> failed imx_dma_request_by_prio() made no sence.  Explicitly check
+> signed values.
+> 
+> Signed-off-by: Vasiliy Kulikov <segooon@gmail.com>
 
+Acked-by: Sascha Hauer <s.hauer@pengutronix.de>
 
+> ---
+>  drivers/dma/imx-dma.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/dma/imx-dma.c b/drivers/dma/imx-dma.c
+> index 346be62..75d870f 100644
+> --- a/drivers/dma/imx-dma.c
+> +++ b/drivers/dma/imx-dma.c
+> @@ -335,7 +335,7 @@ static int __init imxdma_probe(struct platform_device *pdev)
+>  
+>  		imxdmac->imxdma_channel = imx_dma_request_by_prio("dmaengine",
+>  				DMA_PRIO_MEDIUM);
+> -		if (imxdmac->channel < 0)
+> +		if ((int)imxdmac->channel < 0)
+>  			goto err_init;
+>  
+>  		imx_dma_setup_handlers(imxdmac->imxdma_channel,
+> -- 
+> 1.7.0.4
+> 
+> 
 
->> rep_good will cause memcpy jump to memcpy_c, so not run this patch,
->> we may continue to do further optimization on it later.
-
->Yes, but in fact, the performance of memcpy_c is not better on some micro-architecture(such as:
->Wolfdale-3M, ), especially in the unaligned cases, so we need do optimization for it, and I think
->the first step of optimization is optimizing the original code of memcpy().
-
-As mentioned above , we will optimize further memcpy_c soon.
-Two reasons : 
-  1. movs instruction need long lantency to startup
-  2. movs instruction is not good for unaligned case.
-  
->> BTW the improvement is only from core2 shift register optimization,
->> but for most previous cpus shift register is very sensitive because of decode stage. 
->> I have test Atom, Opteron, and Nocona, new patch is still better.
-
->I think we can add a flag to make this improvement only valid for Core2 or other CPU like it,
->just like X86_FEATURE_REP_GOOD.
-
-We should optimize core2 in memcpy_c function in future, I think.
-
-Thanks
-Ling
-
-
+-- 
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
