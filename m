@@ -1,62 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754893Ab0JRKku (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Oct 2010 06:40:50 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:36317 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753507Ab0JRKks (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Oct 2010 06:40:48 -0400
-Date: Mon, 18 Oct 2010 19:39:57 +0900
-From: Kukjin Kim <kgene.kim@samsung.com>
-Subject: RE: linux-next: manual merge of the s5p tree with the arm tree
-In-reply-to: <20101018105046.368420c2.sfr@canb.auug.org.au>
-To: "'Stephen Rothwell'" <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "'Jeremy Kerr'" <jeremy.kerr@canonical.com>,
-        "'Lorenzo Pieralisi'" <lorenzo.pieralisi@arm.com>,
-        "'Jason Wang'" <jason77.wang@gmail.com>,
-        "'Tony Lindgren'" <tony@atomide.com>,
-        "'Russell King'" <rmk@arm.linux.org.uk>
-Message-id: <048201cb6eb0$d0f2bea0$72d83be0$%kim@samsung.com>
-MIME-version: 1.0
-X-Mailer: Microsoft Office Outlook 12.0
-Content-type: text/plain; charset=us-ascii
-Content-language: ko
-Content-transfer-encoding: 7BIT
-Thread-index: ActuViSStBpa6GSdTXSHZzSbBIWgXAAWmBhQ
-References: <20101018105046.368420c2.sfr@canb.auug.org.au>
+	id S1754929Ab0JRKrn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Oct 2010 06:47:43 -0400
+Received: from cantor.suse.de ([195.135.220.2]:57870 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754531Ab0JRKrl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Oct 2010 06:47:41 -0400
+Date: Mon, 18 Oct 2010 12:46:43 +0200
+From: Jan Kara <jack@suse.cz>
+To: Akinobu Mita <akinobu.mita@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        Arnd Bergmann <arnd@arndb.de>, Christoph Hellwig <hch@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>
+Subject: Re: [PATCH 16/22] udf: use little endian bitops
+Message-ID: <20101018104643.GG3826@quack.suse.cz>
+References: <1287135981-17604-1-git-send-email-akinobu.mita@gmail.com>
+ <1287135981-17604-17-git-send-email-akinobu.mita@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1287135981-17604-17-git-send-email-akinobu.mita@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Stephen wrote:
+On Fri 15-10-10 18:46:15, Akinobu Mita wrote:
+> As a preparation for removing ext2 non-atomic bit operations from
+> asm/bitops.h. This converts ext2 non-atomic bit operations to
+> little endian bit operations.
 > 
-> Hi Kukjin,
+> Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
+> Cc: Jan Kara <jack@suse.cz>
+  Acked-by: Jan Kara <jack@suse.cz>
+
+								Honza
+
+> ---
+>  fs/udf/balloc.c |   11 +++++++----
+>  1 files changed, 7 insertions(+), 4 deletions(-)
 > 
-Hi Stephen,
-
-> Today's linux-next merge of the s5p tree got a conflict in
-> arch/arm/mach-s5p6440/include/mach/debug-macro.S between commit
-> 08a610d9ef5394525b0328da0162d7b58c982cc4 ("arm: return both physical and
-> virtual addresses from addruart") from the arm tree and commit
-> 29159b7dd244def6e0073ff0e2d4cbb59599187f ("ARM: S5P64X0: Add S5P64X0
-> (S5P6440 and S5P6450) initialization support") from the s5p tree.
+> diff --git a/fs/udf/balloc.c b/fs/udf/balloc.c
+> index b608efa..e55aff9 100644
+> --- a/fs/udf/balloc.c
+> +++ b/fs/udf/balloc.c
+> @@ -27,11 +27,14 @@
+>  #include "udf_i.h"
+>  #include "udf_sb.h"
+>  
+> -#define udf_clear_bit(nr, addr) ext2_clear_bit(nr, addr)
+> -#define udf_set_bit(nr, addr) ext2_set_bit(nr, addr)
+> -#define udf_test_bit(nr, addr) ext2_test_bit(nr, addr)
+> +#define udf_clear_bit(nr, addr)	\
+> +	__test_and_clear_le_bit(nr, (unsigned long *)(addr))
+> +#define udf_set_bit(nr, addr)	\
+> +	__test_and_set_le_bit(nr, (unsigned long *)(addr))
+> +#define udf_test_bit(nr, addr)	\
+> +	test_le_bit(nr, (unsigned long *)(addr))
+>  #define udf_find_next_one_bit(addr, size, offset) \
+> -		ext2_find_next_bit(addr, size, offset)
+> +	find_next_le_bit((unsigned long *)(addr), size, offset)
+>  
+>  static int read_block_bitmap(struct super_block *sb,
+>  			     struct udf_bitmap *bitmap, unsigned int block,
+> -- 
+> 1.7.1.231.gd0b16
 > 
-> The latter removed the file modified by the former.  I did that.
-> 
-> The appropriate part of the above arm commit needs to be done for the new
-> file arch/arm/mach-s5p64x0/include/mach/debug-macro.S .  Unfortunately, I
-> am unqualified to do that ...
-
-I fixed it up and finished test on the board also..if any problems, please
-let me know.
-
-Thanks.
-
-Best regards,
-Kgene.
---
-Kukjin Kim <kgene.kim@samsung.com>, Senior Engineer,
-SW Solution Development Team, Samsung Electronics Co., Ltd.
-
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
