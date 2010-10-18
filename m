@@ -1,51 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751791Ab0JRFEQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Oct 2010 01:04:16 -0400
-Received: from hera.kernel.org ([140.211.167.34]:49702 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750840Ab0JRFEP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Oct 2010 01:04:15 -0400
-Message-ID: <4CBBD529.8060600@kernel.org>
-Date: Mon, 18 Oct 2010 07:03:37 +0200
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.9) Gecko/20100915 Lightning/1.0b2 Thunderbird/3.1.4
+	id S1751931Ab0JRFFJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Oct 2010 01:05:09 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:52509 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751002Ab0JRFFI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Oct 2010 01:05:08 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: Neil Brown <neilb@suse.de>, Wu Fengguang <fengguang.wu@intel.com>
+Subject: Re: Deadlock possibly caused by too_many_isolated.
+Cc: kosaki.motohiro@jp.fujitsu.com, Rik van Riel <riel@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Li Shaohua <shaohua.li@intel.com>
+In-Reply-To: <20101018151459.2b443221@notabene>
+References: <20100915184434.18e2d933@notabene> <20101018151459.2b443221@notabene>
+Message-Id: <20101018140116.3AE8.A69D9226@jp.fujitsu.com>
 MIME-Version: 1.0
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-CC: lkml <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
-        Wu Fengguang <fengguang.wu@intel.com>, Michal Hocko <mhocko@suse.cz>
-Subject: Re: [PATCH v2.6.36-rc7] memory_hotplug: drop spurious calls to flush_scheduled_work()
-References: <4CB8725B.9010200@kernel.org> <20101018090123.5afe4abf.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20101018090123.5afe4abf.kamezawa.hiroyu@jp.fujitsu.com>
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="US-ASCII"
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 18 Oct 2010 05:03:40 +0000 (UTC)
+X-Mailer: Becky! ver. 2.50.07 [ja]
+Date: Mon, 18 Oct 2010 14:04:57 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-
-On 10/18/2010 02:01 AM, KAMEZAWA Hiroyuki wrote:
-> On Fri, 15 Oct 2010 17:25:15 +0200
-> Tejun Heo <tj@kernel.org> wrote:
+> On Wed, 15 Sep 2010 18:44:34 +1000
+> Neil Brown <neilb@suse.de> wrote:
 > 
->> lru_add_drain_all() uses schedule_on_each_cpu() which is synchronous.
->> There is no reason to call flush_scheduled_work() after
->> lru_add_drain_all().  Drop the spurious calls.
->>
->> This is to prepare for the deprecation and removal of
->> flush_scheduled_work().
->>
->> Signed-off-by: Tejun Heo <tj@kernel.org>
-> Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> > On Wed, 15 Sep 2010 16:28:43 +0800
+> > Wu Fengguang <fengguang.wu@intel.com> wrote:
+> > 
+> > > Neil,
+> > > 
+> > > Sorry for the rushed and imaginary ideas this morning..
+> > > 
+> > > > @@ -1101,6 +1101,12 @@ static unsigned long shrink_inactive_lis
+> > > >  	int lumpy_reclaim = 0;
+> > > >  
+> > > >  	while (unlikely(too_many_isolated(zone, file, sc))) {
+> > > > +		if ((sc->gfp_mask & GFP_IOFS) != GFP_IOFS)
+> > > > +			/* Not allowed to do IO, so mustn't wait
+> > > > +			 * on processes that might try to
+> > > > +			 */
+> > > > +			return SWAP_CLUSTER_MAX;
+> > > > +
+> > > 
+> > > The above patch should behavior like this: it returns SWAP_CLUSTER_MAX
+> > > to cheat all the way up to believe "enough pages have been reclaimed".
+> > > So __alloc_pages_direct_reclaim() see non-zero *did_some_progress and
+> > > go on to call get_page_from_freelist(). That normally fails because
+> > > the task didn't really scanned the LRU lists. However it does have the
+> > > possibility to succeed -- when so many processes are doing concurrent
+> > > direct reclaims, it may luckily get one free page reclaimed by other
+> > > tasks. What's more, if it does fail to get a free page, the upper
+> > > layer __alloc_pages_slowpath() will be repeat recalling
+> > > __alloc_pages_direct_reclaim(). So, sooner or later it will succeed in
+> > > "stealing" a free page reclaimed by other tasks.
+> > > 
+> > > In summary, the patch behavior for !__GFP_IO/FS is
+> > > - won't do any page reclaim
+> > > - won't fail the page allocation (unexpected)
+> > > - will wait and steal one free page from others (unreasonable)
+> > > 
+> > > So it will address the problem you encountered, however it sounds
+> > > pretty unexpected and illogical behavior, right?
+> > > 
+> > > I believe this patch will address the problem equally well.
+> > > What do you think?
+> > 
+> > Thank you for the detailed explanation.  Is agree with your reasoning and
+> > now understand why your patch is sufficient.
+> > 
+> > I will get it tested and let you know how that goes.
+> 
+> (sorry this has taken a month to follow up).
+> 
+> Testing shows that this patch seems to work.
+> The test load (essentially kernbench) doesn't deadlock any more, though it
+> does get bogged down thrashing in swap so it doesn't make a lot more
+> progress :-)  I guess that is to be expected.
+> 
+> One observation is that the kernbench generated 10%-20% more context switches
+> with the patch than without.  Is that to be expected?
+> 
+> Do you have plans for sending this patch upstream?
 
-Through which tree should this be routed?  Shall I route this via the
-wq tree?
+Wow, I had thought this patch has been merged already. Wu, can you please
+repost this one? and please add my and Neil's ack tag.
 
-Thank you.
+Thanks.
 
--- 
-tejun
+
+
