@@ -1,27 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933519Ab0JRWiG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Oct 2010 18:38:06 -0400
-Received: from smtp128.sbc.mail.sp1.yahoo.com ([69.147.65.187]:33847 "HELO
-	smtp128.sbc.mail.sp1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S933505Ab0JRWiA (ORCPT
+	id S933454Ab0JRWiO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Oct 2010 18:38:14 -0400
+Received: from smtp105.sbc.mail.ac4.yahoo.com ([76.13.13.244]:45849 "HELO
+	smtp105.sbc.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S933522Ab0JRWiK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Oct 2010 18:38:00 -0400
+	Mon, 18 Oct 2010 18:38:10 -0400
 X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
-X-YMail-OSG: ZN8TXJwVM1mFYpyquH_aXyy1jSxAO_Sy.YMJdtwzmPWkRL9
- 6pFsn6p8oHFlhvW6DCLP4uJjzGqloz2cQ.j.xqmWm2dEVYpbvWWD7hPHEpti
- jd6HB3ybuZ9VeeNTwGu3w_vuYWYHLP4mKvkq_nHncaweiWfeuw84Tyj8LxK6
- MRQjh0L3SliddpeD8qynDbQgOt3eZ1e86JyVJ4YktNL3qT4yhFEI3Atevic5
- IHMPAwvJu4o908c8cB46IJdJF58Ifr6tVHr35YhmieCrY4pCTEhvs0iOgv59
- 4yJR7Wl0i5fXHD.b8nKDFuDNKN1V8XLiYf7enPWeVOQYpwlLSgZja58zu
+X-YMail-OSG: aw0ud_EVM1k5X9OLpE0nJtldgSRrbKO_I2.xiXK.GXWyjbo
+ arbidvEzn8owp4c_MxCNmqnZA.vyGBZJqv5CN7NESoRIqWNuJG0h2pRHIyDP
+ JQtyoR8sPCR_CKCEDVIFVKx3P_UCLF7eifCSsC1_lWLE9QoWhmGubrh4ywLM
+ sjD6NmpOnfkI6tY9Cn4vgNyO7EPDSZCJTrqscl1kHn4Wg69.vS7ZxffEb6hb
+ S_dro7z4IGaPsyTgiKl2kzBCRPW9SQMHlh0WfPiaYaaofKHWkmI6Z3PwpMqt
+ GXStTfmn3QnQ4DCIElWTSP_aBVN.MwNQQ7DOKbaLlAm691VeN82J0MMNxajo
+ 9bMdu
 X-Yahoo-Newman-Property: ymail-3
 From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
 To: linux-scsi <linux-scsi@vger.kernel.org>,
         linux-kernel <linux-kernel@vger.kernel.org>
 Cc: Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [RFCv3 11/21] tcm: Add Task Management infrastructure
-Date: Mon, 18 Oct 2010 15:37:58 -0700
-Message-Id: <1287441478-19935-1-git-send-email-nab@linux-iscsi.org>
+Subject: [RFCv3 12/21] tcm: Add UNIT_ATTENTION infrastructure support
+Date: Mon, 18 Oct 2010 15:38:06 -0700
+Message-Id: <1287441486-19955-1-git-send-email-nab@linux-iscsi.org>
 X-Mailer: git-send-email 1.5.6.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -29,28 +30,27 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-This patch adds SPC-3 task management infrastructure and functionality for
-LUN_RESET with TASK_ABORTED status (TAS) and in combination with handling
-Persistent Reservation PREEMPT_AND_ABORT service action.
+This patch adds support for SPC-3 compliant UNIT Attention emulation that is used
+by Persistent Reservations, ALUA, and TCM fabric module code.
 
 Signed-off-by: Nicholas A. Bellinger <nab@linux-iscsi.org>
 ---
- drivers/target/target_core_tmr.c |  405 ++++++++++++++++++++++++++++++++++++++
- include/target/target_core_tmr.h |   43 ++++
- 2 files changed, 448 insertions(+), 0 deletions(-)
- create mode 100644 drivers/target/target_core_tmr.c
- create mode 100644 include/target/target_core_tmr.h
+ drivers/target/target_core_ua.c |  332 +++++++++++++++++++++++++++++++++++++++
+ drivers/target/target_core_ua.h |   36 +++++
+ 2 files changed, 368 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/target/target_core_ua.c
+ create mode 100644 drivers/target/target_core_ua.h
 
-diff --git a/drivers/target/target_core_tmr.c b/drivers/target/target_core_tmr.c
+diff --git a/drivers/target/target_core_ua.c b/drivers/target/target_core_ua.c
 new file mode 100644
-index 0000000..34f53de
+index 0000000..a2ef346
 --- /dev/null
-+++ b/drivers/target/target_core_tmr.c
-@@ -0,0 +1,405 @@
++++ b/drivers/target/target_core_ua.c
+@@ -0,0 +1,332 @@
 +/*******************************************************************************
-+ * Filename:  target_core_tmr.c
++ * Filename: target_core_ua.c
 + *
-+ * This file contains SPC-3 task management infrastructure
++ * This file contains logic for SPC-3 Unit Attention emulation
 + *
 + * Copyright (c) 2009,2010 Rising Tide Systems
 + * Copyright (c) 2009,2010 Linux-iSCSI.org
@@ -76,431 +76,351 @@ index 0000000..34f53de
 +#include <linux/version.h>
 +#include <linux/slab.h>
 +#include <linux/spinlock.h>
-+#include <linux/list.h>
 +#include <scsi/scsi.h>
 +#include <scsi/scsi_cmnd.h>
 +
 +#include <target/target_core_base.h>
 +#include <target/target_core_device.h>
-+#include <target/target_core_tmr.h>
 +#include <target/target_core_transport.h>
 +#include <target/target_core_fabric_ops.h>
 +#include <target/target_core_configfs.h>
 +
 +#include "target_core_alua.h"
++#include "target_core_hba.h"
 +#include "target_core_pr.h"
++#include "target_core_ua.h"
 +
-+#define DEBUG_LUN_RESET
-+#ifdef DEBUG_LUN_RESET
-+#define DEBUG_LR(x...) printk(KERN_INFO x)
-+#else
-+#define DEBUG_LR(x...)
-+#endif
-+
-+struct se_tmr_req *core_tmr_alloc_req(
-+	struct se_cmd *se_cmd,
-+	void *fabric_tmr_ptr,
-+	u8 function)
-+{
-+	struct se_tmr_req *tmr;
-+
-+	tmr = kmem_cache_zalloc(se_tmr_req_cache, GFP_KERNEL);
-+	if (!(tmr)) {
-+		printk(KERN_ERR "Unable to allocate struct se_tmr_req\n");
-+		return ERR_PTR(-ENOMEM);
-+	}
-+	tmr->task_cmd = se_cmd;
-+	tmr->fabric_tmr_ptr = fabric_tmr_ptr;
-+	tmr->function = function;
-+	INIT_LIST_HEAD(&tmr->tmr_list);
-+
-+	return tmr;
-+}
-+EXPORT_SYMBOL(core_tmr_alloc_req);
-+
-+/*
-+ * Called with struct se_device->se_tmr_lock held.
-+ */
-+void __core_tmr_release_req(
-+	struct se_tmr_req *tmr)
-+{
-+	list_del(&tmr->tmr_list);
-+	kmem_cache_free(se_tmr_req_cache, tmr);
-+}
-+
-+void core_tmr_release_req(
-+	struct se_tmr_req *tmr)
-+{
-+	struct se_device *dev = tmr->tmr_dev;
-+
-+	spin_lock(&dev->se_tmr_lock);
-+	__core_tmr_release_req(tmr);
-+	spin_unlock(&dev->se_tmr_lock);
-+}
-+
-+static void core_tmr_handle_tas_abort(
-+	struct se_node_acl *tmr_nacl,
++int core_scsi3_ua_check(
 +	struct se_cmd *cmd,
-+	int tas,
-+	int fe_count)
++	unsigned char *cdb)
 +{
-+	if (!(fe_count)) {
-+		transport_cmd_finish_abort(cmd, 1);
++	struct se_dev_entry *deve;
++	struct se_session *sess = cmd->se_sess;
++	struct se_node_acl *nacl;
++
++	if (!(sess))
++		return 0;
++
++	nacl = sess->se_node_acl;
++	if (!(nacl))
++		return 0;
++
++	deve = &nacl->device_list[cmd->orig_fe_lun];
++	if (!(atomic_read(&deve->ua_count)))
++		return 0;
++	/*
++	 * From sam4r14, section 5.14 Unit attention condition:
++	 *
++	 * a) if an INQUIRY command enters the enabled command state, the
++	 *    device server shall process the INQUIRY command and shall neither
++	 *    report nor clear any unit attention condition;
++	 * b) if a REPORT LUNS command enters the enabled command state, the
++	 *    device server shall process the REPORT LUNS command and shall not
++	 *    report any unit attention condition;
++	 * e) if a REQUEST SENSE command enters the enabled command state while
++	 *    a unit attention condition exists for the SCSI initiator port
++	 *    associated with the I_T nexus on which the REQUEST SENSE command
++	 *    was received, then the device server shall process the command
++	 *    and either:
++	 */
++	switch (cdb[0]) {
++	case INQUIRY:
++	case REPORT_LUNS:
++	case REQUEST_SENSE:
++		return 0;
++	default:
++		return -1;
++	}
++
++	return -1;
++}
++
++int core_scsi3_ua_allocate(
++	struct se_node_acl *nacl,
++	u32 unpacked_lun,
++	u8 asc,
++	u8 ascq)
++{
++	struct se_dev_entry *deve;
++	struct se_ua *ua, *ua_p, *ua_tmp;
++	/*
++	 * PASSTHROUGH OPS
++	 */
++	if (!(nacl))
++		return -1;
++
++	ua = kmem_cache_zalloc(se_ua_cache, GFP_ATOMIC);
++	if (!(ua)) {
++		printk(KERN_ERR "Unable to allocate struct se_ua\n");
++		return -1;
++	}
++	INIT_LIST_HEAD(&ua->ua_dev_list);
++	INIT_LIST_HEAD(&ua->ua_nacl_list);
++
++	ua->ua_nacl = nacl;
++	ua->ua_asc = asc;
++	ua->ua_ascq = ascq;
++
++	spin_lock_irq(&nacl->device_list_lock);
++	deve = &nacl->device_list[unpacked_lun];
++
++	spin_lock(&deve->ua_lock);
++	list_for_each_entry_safe(ua_p, ua_tmp, &deve->ua_list, ua_nacl_list) {
++		/*
++		 * Do not report the same UNIT ATTENTION twice..
++		 */
++		if ((ua_p->ua_asc == asc) && (ua_p->ua_ascq == ascq)) {
++			spin_unlock(&deve->ua_lock);
++			spin_unlock_irq(&nacl->device_list_lock);
++			kmem_cache_free(se_ua_cache, ua);
++			return 0;
++		}
++		/*
++		 * Attach the highest priority Unit Attention to
++		 * the head of the list following sam4r14,
++		 * Section 5.14 Unit Attention Condition:
++		 *
++		 * POWER ON, RESET, OR BUS DEVICE RESET OCCURRED highest
++		 * POWER ON OCCURRED or
++		 * DEVICE INTERNAL RESET
++		 * SCSI BUS RESET OCCURRED or
++		 * MICROCODE HAS BEEN CHANGED or
++		 * protocol specific
++		 * BUS DEVICE RESET FUNCTION OCCURRED
++		 * I_T NEXUS LOSS OCCURRED
++		 * COMMANDS CLEARED BY POWER LOSS NOTIFICATION
++		 * all others                                    Lowest
++		 *
++		 * Each of the ASCQ codes listed above are defined in
++		 * the 29h ASC family, see spc4r17 Table D.1
++		 */
++		if (ua_p->ua_asc == 0x29) {
++			if ((asc == 0x29) && (ascq > ua_p->ua_ascq))
++				list_add(&ua->ua_nacl_list,
++						&deve->ua_list);
++			else
++				list_add_tail(&ua->ua_nacl_list,
++						&deve->ua_list);
++		} else if (ua_p->ua_asc == 0x2a) {
++			/*
++			 * Incoming Family 29h ASCQ codes will override
++			 * Family 2AHh ASCQ codes for Unit Attention condition.
++			 */
++			if ((asc == 0x29) || (ascq > ua_p->ua_asc))
++				list_add(&ua->ua_nacl_list,
++					&deve->ua_list);
++			else
++				list_add_tail(&ua->ua_nacl_list,
++						&deve->ua_list);
++		} else
++			list_add_tail(&ua->ua_nacl_list,
++				&deve->ua_list);
++		spin_unlock(&deve->ua_lock);
++		spin_unlock_irq(&nacl->device_list_lock);
++
++		atomic_inc(&deve->ua_count);
++		smp_mb__after_atomic_inc();
++		return 0;
++	}
++	list_add_tail(&ua->ua_nacl_list, &deve->ua_list);
++	spin_unlock(&deve->ua_lock);
++	spin_unlock_irq(&nacl->device_list_lock);
++
++	printk(KERN_INFO "[%s]: Allocated UNIT ATTENTION, mapped LUN: %u, ASC:"
++		" 0x%02x, ASCQ: 0x%02x\n",
++		TPG_TFO(nacl->se_tpg)->get_fabric_name(), unpacked_lun,
++		asc, ascq);
++
++	atomic_inc(&deve->ua_count);
++	smp_mb__after_atomic_inc();
++	return 0;
++}
++
++void core_scsi3_ua_release_all(
++	struct se_dev_entry *deve)
++{
++	struct se_ua *ua, *ua_p;
++
++	spin_lock(&deve->ua_lock);
++	list_for_each_entry_safe(ua, ua_p, &deve->ua_list, ua_nacl_list) {
++		list_del(&ua->ua_nacl_list);
++		kmem_cache_free(se_ua_cache, ua);
++
++		atomic_dec(&deve->ua_count);
++		smp_mb__after_atomic_dec();
++	}
++	spin_unlock(&deve->ua_lock);
++}
++
++void core_scsi3_ua_for_check_condition(
++	struct se_cmd *cmd,
++	u8 *asc,
++	u8 *ascq)
++{
++	struct se_device *dev = SE_DEV(cmd);
++	struct se_dev_entry *deve;
++	struct se_session *sess = cmd->se_sess;
++	struct se_node_acl *nacl;
++	struct se_ua *ua = NULL, *ua_p;
++	int head = 1;
++
++	if (!(sess))
++		return;
++
++	nacl = sess->se_node_acl;
++	if (!(nacl))
++		return;
++
++	spin_lock_irq(&nacl->device_list_lock);
++	deve = &nacl->device_list[cmd->orig_fe_lun];
++	if (!(atomic_read(&deve->ua_count))) {
++		spin_unlock_irq(&nacl->device_list_lock);
 +		return;
 +	}
 +	/*
-+	 * TASK ABORTED status (TAS) bit support
-+	*/
-+	if (((tmr_nacl != NULL) &&
-+	     (tmr_nacl == cmd->se_sess->se_node_acl)) || tas)
-+		transport_send_task_abort(cmd);
++	 * The highest priority Unit Attentions are placed at the head of the
++	 * struct se_dev_entry->ua_list, and will be returned in CHECK_CONDITION +
++	 * sense data for the received CDB.
++	 */
++	spin_lock(&deve->ua_lock);
++	list_for_each_entry_safe(ua, ua_p, &deve->ua_list, ua_nacl_list) {
++		/*
++		 * For ua_intlck_ctrl code not equal to 00b, only report the
++		 * highest priority UNIT_ATTENTION and ASC/ASCQ without
++		 * clearing it.
++		 */
++		if (DEV_ATTRIB(dev)->emulate_ua_intlck_ctrl != 0) {
++			*asc = ua->ua_asc;
++			*ascq = ua->ua_ascq;
++			break;
++		}
++		/*
++		 * Otherwise for the default 00b, release the UNIT ATTENTION
++		 * condition.  Return the ASC/ASCQ of the higest priority UA
++		 * (head of the list) in the outgoing CHECK_CONDITION + sense.
++		 */
++		if (head) {
++			*asc = ua->ua_asc;
++			*ascq = ua->ua_ascq;
++			head = 0;
++		}
++		list_del(&ua->ua_nacl_list);
++		kmem_cache_free(se_ua_cache, ua);
 +
-+	transport_cmd_finish_abort(cmd, 0);
++		atomic_dec(&deve->ua_count);
++		smp_mb__after_atomic_dec();
++	}
++	spin_unlock(&deve->ua_lock);
++	spin_unlock_irq(&nacl->device_list_lock);
++
++	printk(KERN_INFO "[%s]: %s UNIT ATTENTION condition with"
++		" INTLCK_CTRL: %d, mapped LUN: %u, got CDB: 0x%02x"
++		" reported ASC: 0x%02x, ASCQ: 0x%02x\n",
++		TPG_TFO(nacl->se_tpg)->get_fabric_name(),
++		(DEV_ATTRIB(dev)->emulate_ua_intlck_ctrl != 0) ? "Reporting" :
++		"Releasing", DEV_ATTRIB(dev)->emulate_ua_intlck_ctrl,
++		cmd->orig_fe_lun, T_TASK(cmd)->t_task_cdb[0], *asc, *ascq);
 +}
 +
-+int core_tmr_lun_reset(
-+	struct se_device *dev,
-+	struct se_tmr_req *tmr,
-+	struct list_head *preempt_and_abort_list,
-+	struct se_cmd *prout_cmd)
++int core_scsi3_ua_clear_for_request_sense(
++	struct se_cmd *cmd,
++	u8 *asc,
++	u8 *ascq)
 +{
-+	struct se_cmd *cmd;
-+	struct se_queue_req *qr, *qr_tmp;
-+	struct se_node_acl *tmr_nacl = NULL;
-+	struct se_portal_group *tmr_tpg = NULL;
-+	struct se_queue_obj *qobj = dev->dev_queue_obj;
-+	struct se_tmr_req *tmr_p, *tmr_pp;
-+	struct se_task *task, *task_tmp;
-+	unsigned long flags;
-+	int fe_count, state, tas;
-+	/*
-+	 * TASK_ABORTED status bit, this is configurable via ConfigFS
-+	 * struct se_device attributes.  spc4r17 section 7.4.6 Control mode page
-+	 *
-+	 * A task aborted status (TAS) bit set to zero specifies that aborted
-+	 * tasks shall be terminated by the device server without any response
-+	 * to the application client. A TAS bit set to one specifies that tasks
-+	 * aborted by the actions of an I_T nexus other than the I_T nexus on
-+	 * which the command was received shall be completed with TASK ABORTED
-+	 * status (see SAM-4).
-+	 */
-+	tas = DEV_ATTRIB(dev)->emulate_tas;
-+	/*
-+	 * Determine if this se_tmr is coming from a $FABRIC_MOD
-+	 * or struct se_device passthrough..
-+	 */
-+	if (tmr && tmr->task_cmd && tmr->task_cmd->se_sess) {
-+		tmr_nacl = tmr->task_cmd->se_sess->se_node_acl;
-+		tmr_tpg = tmr->task_cmd->se_sess->se_tpg;
-+		if (tmr_nacl && tmr_tpg) {
-+			DEBUG_LR("LUN_RESET: TMR caller fabric: %s"
-+				" initiator port %s\n",
-+				TPG_TFO(tmr_tpg)->get_fabric_name(),
-+				tmr_nacl->initiatorname);
-+		}
++	struct se_dev_entry *deve;
++	struct se_session *sess = cmd->se_sess;
++	struct se_node_acl *nacl;
++	struct se_ua *ua = NULL, *ua_p;
++	int head = 1;
++
++	if (!(sess))
++		return -1;
++
++	nacl = sess->se_node_acl;
++	if (!(nacl))
++		return -1;
++
++	spin_lock_irq(&nacl->device_list_lock);
++	deve = &nacl->device_list[cmd->orig_fe_lun];
++	if (!(atomic_read(&deve->ua_count))) {
++		spin_unlock_irq(&nacl->device_list_lock);
++		return -1;
 +	}
-+	DEBUG_LR("LUN_RESET: %s starting for [%s], tas: %d\n",
-+		(preempt_and_abort_list) ? "Preempt" : "TMR",
-+		TRANSPORT(dev)->name, tas);
 +	/*
-+	 * Release all pending and outgoing TMRs aside from the received
-+	 * LUN_RESET tmr..
++	 * The highest priority Unit Attentions are placed at the head of the
++	 * struct se_dev_entry->ua_list.  The First (and hence highest priority)
++	 * ASC/ASCQ will be returned in REQUEST_SENSE payload data for the
++	 * matching struct se_lun.
++	 *
++	 * Once the returning ASC/ASCQ values are set, we go ahead and
++	 * release all of the Unit Attention conditions for the assoicated
++	 * struct se_lun.
 +	 */
-+	spin_lock(&dev->se_tmr_lock);
-+	list_for_each_entry_safe(tmr_p, tmr_pp, &dev->dev_tmr_list, tmr_list) {
-+		/*
-+		 * Allow the received TMR to return with FUNCTION_COMPLETE.
-+		 */
-+		if (tmr && (tmr_p == tmr))
-+			continue;
-+
-+		cmd = tmr_p->task_cmd;
-+		if (!(cmd)) {
-+			printk(KERN_ERR "Unable to locate struct se_cmd for TMR\n");
-+			continue;
++	spin_lock(&deve->ua_lock);
++	list_for_each_entry_safe(ua, ua_p, &deve->ua_list, ua_nacl_list) {
++		if (head) {
++			*asc = ua->ua_asc;
++			*ascq = ua->ua_ascq;
++			head = 0;
 +		}
-+		/*
-+		 * If this function was called with a valid pr_res_key
-+		 * parameter (eg: for PROUT PREEMPT_AND_ABORT service action
-+		 * skip non regisration key matching TMRs.
-+		 */
-+		if ((preempt_and_abort_list != NULL) &&
-+		    (core_scsi3_check_cdb_abort_and_preempt(
-+					preempt_and_abort_list, cmd) != 0))
-+			continue;
-+		spin_unlock(&dev->se_tmr_lock);
++		list_del(&ua->ua_nacl_list);
++		kmem_cache_free(se_ua_cache, ua);
 +
-+		spin_lock_irqsave(&T_TASK(cmd)->t_state_lock, flags);
-+		if (!(atomic_read(&T_TASK(cmd)->t_transport_active))) {
-+			spin_unlock_irqrestore(&T_TASK(cmd)->t_state_lock, flags);
-+			spin_lock(&dev->se_tmr_lock);
-+			continue;
-+		}
-+		if (cmd->t_state == TRANSPORT_ISTATE_PROCESSING) {
-+			spin_unlock_irqrestore(&T_TASK(cmd)->t_state_lock, flags);
-+			spin_lock(&dev->se_tmr_lock);
-+			continue;
-+		}
-+		DEBUG_LR("LUN_RESET: %s releasing TMR %p Function: 0x%02x,"
-+			" Response: 0x%02x, t_state: %d\n",
-+			(preempt_and_abort_list) ? "Preempt" : "", tmr_p,
-+			tmr_p->function, tmr_p->response, cmd->t_state);
-+		spin_unlock_irqrestore(&T_TASK(cmd)->t_state_lock, flags);
-+
-+		transport_cmd_finish_abort_tmr(cmd);
-+		spin_lock(&dev->se_tmr_lock);
++		atomic_dec(&deve->ua_count);
++		smp_mb__after_atomic_dec();
 +	}
-+	spin_unlock(&dev->se_tmr_lock);
-+	/*
-+	 * Complete outstanding struct se_task CDBs with TASK_ABORTED SAM status.
-+	 * This is following sam4r17, section 5.6 Aborting commands, Table 38
-+	 * for TMR LUN_RESET:
-+	 *
-+	 * a) "Yes" indicates that each command that is aborted on an I_T nexus
-+	 * other than the one that caused the SCSI device condition is
-+	 * completed with TASK ABORTED status, if the TAS bit is set to one in
-+	 * the Control mode page (see SPC-4). "No" indicates that no status is
-+	 * returned for aborted commands.
-+	 *
-+	 * d) If the logical unit reset is caused by a particular I_T nexus
-+	 * (e.g., by a LOGICAL UNIT RESET task management function), then "yes"
-+	 * (TASK_ABORTED status) applies.
-+	 *
-+	 * Otherwise (e.g., if triggered by a hard reset), "no"
-+	 * (no TASK_ABORTED SAM status) applies.
-+	 *
-+	 * Note that this seems to be independent of TAS (Task Aborted Status)
-+	 * in the Control Mode Page.
-+	 */
-+	spin_lock_irqsave(&dev->execute_task_lock, flags);
-+	list_for_each_entry_safe(task, task_tmp, &dev->state_task_list,
-+				t_state_list) {
-+		if (!(TASK_CMD(task))) {
-+			printk(KERN_ERR "TASK_CMD(task) is NULL!\n");
-+			continue;
-+		}
-+		cmd = TASK_CMD(task);
++	spin_unlock(&deve->ua_lock);
++	spin_unlock_irq(&nacl->device_list_lock);
 +
-+		if (!T_TASK(cmd)) {
-+			printk(KERN_ERR "T_TASK(cmd) is NULL for task: %p cmd:"
-+				" %p ITT: 0x%08x\n", task, cmd,
-+				CMD_TFO(cmd)->get_task_tag(cmd));
-+			continue;
-+		}
-+		/*
-+		 * For PREEMPT_AND_ABORT usage, only process commands
-+		 * with a matching reservation key.
-+		 */
-+		if ((preempt_and_abort_list != NULL) &&
-+		    (core_scsi3_check_cdb_abort_and_preempt(
-+					preempt_and_abort_list, cmd) != 0))
-+			continue;
-+		/*
-+		 * Not aborting PROUT PREEMPT_AND_ABORT CDB..
-+		 */
-+		if (prout_cmd == cmd)
-+			continue;
++	printk(KERN_INFO "[%s]: Released UNIT ATTENTION condition, mapped"
++		" LUN: %u, got REQUEST_SENSE reported ASC: 0x%02x,"
++		" ASCQ: 0x%02x\n", TPG_TFO(nacl->se_tpg)->get_fabric_name(),
++		cmd->orig_fe_lun, *asc, *ascq);
 +
-+		list_del(&task->t_state_list);
-+		atomic_set(&task->task_state_active, 0);
-+		spin_unlock_irqrestore(&dev->execute_task_lock, flags);
-+
-+		spin_lock_irqsave(&T_TASK(cmd)->t_state_lock, flags);
-+		DEBUG_LR("LUN_RESET: %s cmd: %p se_fabric_cmd_ptr: %p task: %p"
-+			" ITT/CmdSN: 0x%08x/0x%08x, i_state: %d, t_state/"
-+			"def_t_state: %d/%d cdb: 0x%02x\n",
-+			(preempt_and_abort_list) ? "Preempt" : "", cmd,
-+			cmd->se_fabric_cmd_ptr, task,
-+			CMD_TFO(cmd)->get_task_tag(cmd), 0,
-+			CMD_TFO(cmd)->get_cmd_state(cmd), cmd->t_state,
-+			cmd->deferred_t_state, T_TASK(cmd)->t_task_cdb[0]);
-+		DEBUG_LR("LUN_RESET: ITT[0x%08x] - pr_res_key: 0x%016Lx"
-+			" t_task_cdbs: %d t_task_cdbs_left: %d"
-+			" t_task_cdbs_sent: %d -- t_transport_active: %d"
-+			" t_transport_stop: %d t_transport_sent: %d\n",
-+			CMD_TFO(cmd)->get_task_tag(cmd), cmd->pr_res_key,
-+			T_TASK(cmd)->t_task_cdbs,
-+			atomic_read(&T_TASK(cmd)->t_task_cdbs_left),
-+			atomic_read(&T_TASK(cmd)->t_task_cdbs_sent),
-+			atomic_read(&T_TASK(cmd)->t_transport_active),
-+			atomic_read(&T_TASK(cmd)->t_transport_stop),
-+			atomic_read(&T_TASK(cmd)->t_transport_sent));
-+
-+		if (atomic_read(&task->task_active)) {
-+			atomic_set(&task->task_stop, 1);
-+			spin_unlock_irqrestore(
-+				&T_TASK(cmd)->t_state_lock, flags);
-+
-+			DEBUG_LR("LUN_RESET: Waiting for task: %p to shutdown"
-+				" for dev: %p\n", task, dev);
-+			wait_for_completion(&task->task_stop_comp);
-+			DEBUG_LR("LUN_RESET Completed task: %p shutdown for"
-+				" dev: %p\n", task, dev);
-+			spin_lock_irqsave(&T_TASK(cmd)->t_state_lock, flags);
-+			atomic_dec(&T_TASK(cmd)->t_task_cdbs_left);
-+
-+			atomic_set(&task->task_active, 0);
-+			atomic_set(&task->task_stop, 0);
-+		}
-+		__transport_stop_task_timer(task, &flags);
-+
-+		if (!(atomic_dec_and_test(&T_TASK(cmd)->t_task_cdbs_ex_left))) {
-+			spin_unlock_irqrestore(
-+					&T_TASK(cmd)->t_state_lock, flags);
-+			DEBUG_LR("LUN_RESET: Skipping task: %p, dev: %p for"
-+				" t_task_cdbs_ex_left: %d\n", task, dev,
-+				atomic_read(&T_TASK(cmd)->t_task_cdbs_ex_left));
-+
-+			spin_lock_irqsave(&dev->execute_task_lock, flags);
-+			continue;
-+		}
-+		fe_count = atomic_read(&T_TASK(cmd)->t_fe_count);
-+
-+		if (atomic_read(&T_TASK(cmd)->t_transport_active)) {
-+			DEBUG_LR("LUN_RESET: got t_transport_active = 1 for"
-+				" task: %p, t_fe_count: %d dev: %p\n", task,
-+				fe_count, dev);
-+			spin_unlock_irqrestore(&T_TASK(cmd)->t_state_lock,
-+						flags);
-+			core_tmr_handle_tas_abort(tmr_nacl, cmd, tas, fe_count);
-+
-+			spin_lock_irqsave(&dev->execute_task_lock, flags);
-+			continue;
-+		}
-+		DEBUG_LR("LUN_RESET: Got t_transport_active = 0 for task: %p,"
-+			" t_fe_count: %d dev: %p\n", task, fe_count, dev);
-+		spin_unlock_irqrestore(&T_TASK(cmd)->t_state_lock, flags);
-+		core_tmr_handle_tas_abort(tmr_nacl, cmd, tas, fe_count);
-+
-+		spin_lock_irqsave(&dev->execute_task_lock, flags);
-+	}
-+	spin_unlock_irqrestore(&dev->execute_task_lock, flags);
-+	/*
-+	 * Release all commands remaining in the struct se_device cmd queue.
-+	 *
-+	 * This follows the same logic as above for the struct se_device
-+	 * struct se_task state list, where commands are returned with
-+	 * TASK_ABORTED status, if there is an outstanding $FABRIC_MOD
-+	 * reference, otherwise the struct se_cmd is released.
-+	 */
-+	spin_lock_irqsave(&qobj->cmd_queue_lock, flags);
-+	list_for_each_entry_safe(qr, qr_tmp, &qobj->qobj_list, qr_list) {
-+		cmd = (struct se_cmd *)qr->cmd;
-+		if (!(cmd)) {
-+			/*
-+			 * Skip these for non PREEMPT_AND_ABORT usage..
-+			 */
-+			if (preempt_and_abort_list != NULL)
-+				continue;
-+
-+			atomic_dec(&qobj->queue_cnt);
-+			list_del(&qr->qr_list);
-+			kfree(qr);
-+			continue;
-+		}
-+		/*
-+		 * For PREEMPT_AND_ABORT usage, only process commands
-+		 * with a matching reservation key.
-+		 */
-+		if ((preempt_and_abort_list != NULL) &&
-+		    (core_scsi3_check_cdb_abort_and_preempt(
-+					preempt_and_abort_list, cmd) != 0))
-+			continue;
-+		/*
-+		 * Not aborting PROUT PREEMPT_AND_ABORT CDB..
-+		 */
-+		if (prout_cmd == cmd)
-+			continue;
-+
-+		atomic_dec(&T_TASK(cmd)->t_transport_queue_active);
-+		atomic_dec(&qobj->queue_cnt);
-+		list_del(&qr->qr_list);
-+		spin_unlock_irqrestore(&qobj->cmd_queue_lock, flags);
-+
-+		state = qr->state;
-+		kfree(qr);
-+
-+		DEBUG_LR("LUN_RESET: %s from Device Queue: cmd: %p t_state:"
-+			" %d t_fe_count: %d\n", (preempt_and_abort_list) ?
-+			"Preempt" : "", cmd, state,
-+			atomic_read(&T_TASK(cmd)->t_fe_count));
-+
-+		core_tmr_handle_tas_abort(tmr_nacl, cmd, tas,
-+				atomic_read(&T_TASK(cmd)->t_fe_count));
-+		spin_lock_irqsave(&qobj->cmd_queue_lock, flags);
-+	}
-+	spin_unlock_irqrestore(&qobj->cmd_queue_lock, flags);
-+	/*
-+	 * Clear any legacy SPC-2 reservation when called during
-+	 * LOGICAL UNIT RESET
-+	 */
-+	if (!(preempt_and_abort_list) &&
-+	     (dev->dev_flags & DF_SPC2_RESERVATIONS)) {
-+		spin_lock(&dev->dev_reservation_lock);
-+		dev->dev_reserved_node_acl = NULL;
-+		dev->dev_flags &= ~DF_SPC2_RESERVATIONS;
-+		spin_unlock(&dev->dev_reservation_lock);
-+		printk(KERN_INFO "LUN_RESET: SCSI-2 Released reservation\n");	
-+	}	
-+
-+	spin_lock(&dev->stats_lock);
-+	dev->num_resets++;
-+	spin_unlock(&dev->stats_lock);
-+
-+	DEBUG_LR("LUN_RESET: %s for [%s] Complete\n",
-+			(preempt_and_abort_list) ? "Preempt" : "TMR",
-+			TRANSPORT(dev)->name);
-+	return 0;
++	return (head) ? -1 : 0;
 +}
-diff --git a/include/target/target_core_tmr.h b/include/target/target_core_tmr.h
+diff --git a/drivers/target/target_core_ua.h b/drivers/target/target_core_ua.h
 new file mode 100644
-index 0000000..6c8248b
+index 0000000..6e6b034
 --- /dev/null
-+++ b/include/target/target_core_tmr.h
-@@ -0,0 +1,43 @@
-+#ifndef TARGET_CORE_TMR_H
-+#define TARGET_CORE_TMR_H
++++ b/drivers/target/target_core_ua.h
+@@ -0,0 +1,36 @@
++#ifndef TARGET_CORE_UA_H
 +
-+/* task management function values */
-+#ifdef ABORT_TASK
-+#undef ABORT_TASK
-+#endif /* ABORT_TASK */
-+#define ABORT_TASK				1
-+#ifdef ABORT_TASK_SET
-+#undef ABORT_TASK_SET
-+#endif /* ABORT_TASK_SET */
-+#define ABORT_TASK_SET				2
-+#ifdef CLEAR_ACA
-+#undef CLEAR_ACA
-+#endif /* CLEAR_ACA */
-+#define CLEAR_ACA				3
-+#ifdef CLEAR_TASK_SET
-+#undef CLEAR_TASK_SET
-+#endif /* CLEAR_TASK_SET */
-+#define CLEAR_TASK_SET				4
-+#define LUN_RESET				5
-+#define TARGET_WARM_RESET			6
-+#define TARGET_COLD_RESET			7
-+#define TASK_REASSIGN				8
++/*
++ * From spc4r17, Table D.1: ASC and ASCQ Assignement
++ */
++#define ASCQ_29H_POWER_ON_RESET_OR_BUS_DEVICE_RESET_OCCURED	0x00
++#define ASCQ_29H_POWER_ON_OCCURRED				0x01
++#define ASCQ_29H_SCSI_BUS_RESET_OCCURED				0x02
++#define ASCQ_29H_BUS_DEVICE_RESET_FUNCTION_OCCURRED		0x03
++#define ASCQ_29H_DEVICE_INTERNAL_RESET				0x04
++#define ASCQ_29H_TRANSCEIVER_MODE_CHANGED_TO_SINGLE_ENDED	0x05
++#define ASCQ_29H_TRANSCEIVER_MODE_CHANGED_TO_LVD		0x06
++#define ASCQ_29H_NEXUS_LOSS_OCCURRED				0x07
 +
-+/* task management response values */
-+#define TMR_FUNCTION_COMPLETE			0
-+#define TMR_TASK_DOES_NOT_EXIST			1
-+#define TMR_LUN_DOES_NOT_EXIST			2
-+#define TMR_TASK_STILL_ALLEGIANT		3
-+#define TMR_TASK_FAILOVER_NOT_SUPPORTED		4
-+#define TMR_TASK_MGMT_FUNCTION_NOT_SUPPORTED	5
-+#define TMR_FUNCTION_AUTHORIZATION_FAILED	6
-+#define TMR_FUNCTION_REJECTED			255
++#define ASCQ_2AH_PARAMETERS_CHANGED				0x00
++#define ASCQ_2AH_MODE_PARAMETERS_CHANGED			0x01
++#define ASCQ_2AH_LOG_PARAMETERS_CHANGED				0x02
++#define ASCQ_2AH_RESERVATIONS_PREEMPTED				0x03
++#define ASCQ_2AH_RESERVATIONS_RELEASED				0x04
++#define ASCQ_2AH_REGISTRATIONS_PREEMPTED			0x05
++#define ASCQ_2AH_ASYMMETRIC_ACCESS_STATE_CHANGED		0x06
++#define ASCQ_2AH_IMPLICT_ASYMMETRIC_ACCESS_STATE_TRANSITION_FAILED 0x07
++#define ASCQ_2AH_PRIORITY_CHANGED				0x08
 +
-+extern struct kmem_cache *se_tmr_req_cache;
++#define ASCQ_2CH_PREVIOUS_RESERVATION_CONFLICT_STATUS		0x09
 +
-+extern struct se_tmr_req *core_tmr_alloc_req(struct se_cmd *, void *, u8);
-+extern void core_tmr_release_req(struct se_tmr_req *);
-+extern int core_tmr_lun_reset(struct se_device *, struct se_tmr_req *,
-+				struct list_head *, struct se_cmd *);
++extern struct kmem_cache *se_ua_cache;
 +
-+#endif /* TARGET_CORE_TMR_H */
++extern int core_scsi3_ua_check(struct se_cmd *, unsigned char *);
++extern int core_scsi3_ua_allocate(struct se_node_acl *, u32, u8, u8);
++extern void core_scsi3_ua_release_all(struct se_dev_entry *);
++extern void core_scsi3_ua_for_check_condition(struct se_cmd *, u8 *, u8 *);
++extern int core_scsi3_ua_clear_for_request_sense(struct se_cmd *,
++						u8 *, u8 *);
++
++#endif /* TARGET_CORE_UA_H */
 -- 
 1.7.3.1
 
