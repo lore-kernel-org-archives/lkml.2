@@ -1,86 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757632Ab0JRSNs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Oct 2010 14:13:48 -0400
-Received: from smtp107.prem.mail.ac4.yahoo.com ([76.13.13.46]:30448 "HELO
-	smtp107.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1755007Ab0JRSNr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Oct 2010 14:13:47 -0400
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-X-YMail-OSG: McC.TNEVM1mMbD35zsLdHH9EBk6eTXsmEXD2GLkKtTFFxV8
- _z_A-
-X-Yahoo-Newman-Property: ymail-3
-Date: Mon, 18 Oct 2010 13:13:42 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Mel Gorman <mel@csn.ul.ie>
-cc: Pekka Enberg <penberg@kernel.org>, Pekka Enberg <penberg@cs.helsinki.fi>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        David Rientjes <rientjes@google.com>, npiggin@kernel.dk,
-        yanmin_zhang@linux.intel.com
-Subject: Re: [UnifiedV4 00/16] The Unified slab allocator (V4)
-In-Reply-To: <20101013141455.GQ30667@csn.ul.ie>
-Message-ID: <alpine.DEB.2.00.1010181305000.2092@router.home>
-References: <20101005185725.088808842@linux.com> <AANLkTinPU4T59PvDH1wX2Rcy7beL=TvmHOZh_wWuBU-T@mail.gmail.com> <alpine.DEB.2.00.1010061054410.31538@router.home> <20101013141455.GQ30667@csn.ul.ie>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S933077Ab0JRSOW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Oct 2010 14:14:22 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:52969 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933049Ab0JRSOV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Oct 2010 14:14:21 -0400
+Subject: Re: ima: use of radix tree cache indexing == massive waste of
+ memory?
+From: Eric Paris <eparis@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Kyle McMartin <kyle@mcmartin.ca>, James Morris <jmorris@namei.org>,
+        Christoph Hellwig <hch@infradead.org>, kernel@lists.fedoraproject.org,
+        Mimi Zohar <zohar@us.ibm.com>, warthog9@kernel.org,
+        Dave Chinner <david@fromorbit.com>, linux-kernel@vger.kernel.org,
+        "H. Peter Anvin" <hpa@zytor.com>, Serge Hallyn <serue@us.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>, mingo@elte.hu
+In-Reply-To: <AANLkTi=h6-qMtk9Kf0TRUfqjuBau+_FhKAMZOd_MZHrn@mail.gmail.com>
+References: <20101016065206.GO4681@dastard>
+	 <20101016192027.GA6883@infradead.org>
+	 <ebc4973c-6c11-4397-b8b0-c212a27abce4@email.android.com>
+	 <20101017004945.GE1614@infradead.org> <20101017054008.GA16383@elte.hu>
+	 <20101017184652.GB28060@infradead.org>
+	 <alpine.LRH.2.00.1010181127480.9476@tundra.namei.org>
+	 <20101018062530.GD8332@bombadil.infradead.org>
+	 <1287420534.2530.67.camel@localhost.localdomain>
+	 <AANLkTi=h6-qMtk9Kf0TRUfqjuBau+_FhKAMZOd_MZHrn@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 18 Oct 2010 14:13:16 -0400
+Message-ID: <1287425596.2530.70.camel@localhost.localdomain>
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 13 Oct 2010, Mel Gorman wrote:
+On Mon, 2010-10-18 at 10:56 -0700, Linus Torvalds wrote:
+> On Mon, Oct 18, 2010 at 9:48 AM, Eric Paris <eparis@redhat.com> wrote:
+> >
+> > 1) IMA uses radix trees which end up wasting 500 bytes per inode because
+> > the key is too sparse.  I've got a patch which uses an rbtree instead
+> > I'm testing and will send along shortly.  I found it funny working on
+> > the patch to see that Documentation/rbtree.txt says "This differs from
+> > radix trees (which are used to efficiently store sparse arrays and thus
+> > use long integer indexes to insert/access/delete nodes)"  Which flys in
+> > the face of this report.
+> 
+> Please. Look at the report more carefully.
+> 
+> The radix tree memory use is disgusting. Yes. But it is absolutely NOT
+> sufficient to try to just fix that part. Go back, look at the original
+> report email, and this line in particular:
+> 
+>    2235648 2069791  92%    0.12K  69864       32    279456K iint_cache
+> 
+> There's 2.2 million iint_cache allocations too, each 128 bytes in
+> size. That's still a quarter _gigabyte_ of crap that adds zero value
+> at all.
 
-> Minimally, I see the same sort of hackbench socket performance regression
-> as reported elsewhere (10-15% regression). Otherwise, it isn't particularly
-> exciting results. The machine is very basic - 2 socket, 4 cores, x86-64,
-> 2G RAM. Macine model is an IBM BladeCenter HS20. Processor is Xeon but I'm
-> not sure exact what model. It appears to be from around the P4 times.
+That was #2 in my list of things to fix:
+2) IMA creates an entire integrity structure for every inode even when
+most or all of this structure will not be needed.
 
-Looks not good. Something must still be screwed up. Trouble is to find
-time to do this work. When working on SLAB we had a team to implement the
-NUMA stuff and deal with the performance issues.
+I'm stating with #1 since that was 2G of wasted space (thus far my
+switch to rbtree seems to be surviving an xfstest) so I expect to send
+the patch this afternoon.  #2 should attack the size of the iint_cache
+entries.  #3 should attack the scalability.  I'm certainly hoping I
+didn't miss part of the report....
 
-> Christoph, in particular while it tests netperf, it is not binding to any
-> particular CPU (although it can), server and client are running on the local
-> machine (which has particular performance characterisitcs of its own) and
-> the tests is STREAM, not RR so the tarball is not a replacement for more
-> targetting testing or workload-specific testing. Still, it should catch
-> some of the common snags before getting into specific workloads without
-> taking an extraordinary amount of time to complete. sysbench might take a
-> long time for many-core machines, limit the number of threads it tests with
-> OLTP_MAX_THREADS in the config file.
+-Eric
 
-That should not matter too much. The performance results should replicate
-SLABs caching behavior and I do not see that in the tests.
-
-> NETPERF UDP
->                    netperf-udp       netperf-udp          udp-slub
->                   slab-vanilla      slub-vanilla      unified-v4r1
->       64    52.23 ( 0.00%)*    53.80 ( 2.92%)     50.56 (-3.30%)               1.36%             1.00%             1.00%
->      128   103.70 ( 0.00%)    107.43 ( 3.47%)    101.23 (-2.44%)
->      256   208.62 ( 0.00%)*   212.15 ( 1.66%)    202.35 (-3.10%)               1.73%             1.00%             1.00%
->     1024   814.86 ( 0.00%)    827.42 ( 1.52%)    799.13 (-1.97%)
->     2048  1585.65 ( 0.00%)   1614.76 ( 1.80%)   1563.52 (-1.42%)
->     3312  2512.44 ( 0.00%)   2556.70 ( 1.73%)   2460.37 (-2.12%)
->     4096  3016.81 ( 0.00%)*  3058.16 ( 1.35%)   2901.87 (-3.96%)               1.15%             1.00%             1.00%
->     8192  5384.46 ( 0.00%)   5092.95 (-5.72%)   4912.71 (-9.60%)
->    16384  8091.96 ( 0.00%)*  8249.26 ( 1.91%)   8004.40 (-1.09%)               1.70%             1.00%             1.00%
-
-
-Seems that we lost some of the netperf wins.
-
-> SYSBENCH
->             sysbench-slab-vanilla-sysbenchsysbench-slub-vanilla-sysbench     sysbench-slub
->                   slab-vanilla      slub-vanilla      unified-v4r1
->            1  7521.24 ( 0.00%)  7719.38 ( 2.57%)  7589.13 ( 0.89%)
->            2 14872.85 ( 0.00%) 15275.09 ( 2.63%) 15054.08 ( 1.20%)
->            3 16502.53 ( 0.00%) 16676.53 ( 1.04%) 16465.69 (-0.22%)
->            4 17831.19 ( 0.00%) 17900.09 ( 0.38%) 17819.03 (-0.07%)
->            5 18158.40 ( 0.00%) 18432.74 ( 1.49%) 18341.99 ( 1.00%)
->            6 18673.68 ( 0.00%) 18878.41 ( 1.08%) 18614.92 (-0.32%)
->            7 17689.75 ( 0.00%) 17871.89 ( 1.02%) 17633.19 (-0.32%)
->            8 16885.68 ( 0.00%) 16838.37 (-0.28%) 16498.41 (-2.35%)
-
-Same here. Seems that we combined the worst of both.
