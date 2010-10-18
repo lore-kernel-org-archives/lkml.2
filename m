@@ -1,189 +1,372 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750984Ab0JREPN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Oct 2010 00:15:13 -0400
-Received: from cantor.suse.de ([195.135.220.2]:48353 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750718Ab0JREPM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Oct 2010 00:15:12 -0400
-Date: Mon, 18 Oct 2010 15:14:59 +1100
-From: Neil Brown <neilb@suse.de>
-To: Wu Fengguang <fengguang.wu@intel.com>
-Cc: Rik van Riel <riel@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Li Shaohua <shaohua.li@intel.com>
-Subject: Re: Deadlock possibly caused by too_many_isolated.
-Message-ID: <20101018151459.2b443221@notabene>
-In-Reply-To: <20100915184434.18e2d933@notabene>
-References: <20100915091118.3dbdc961@notabene>
-	<4C90139A.1080809@redhat.com>
-	<20100915122334.3fa7b35f@notabene>
-	<20100915082843.GA17252@localhost>
-	<20100915184434.18e2d933@notabene>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1751139Ab0JRETm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Oct 2010 00:19:42 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:48875 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750827Ab0JRETk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Oct 2010 00:19:40 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=LdhmlZiz8vBqwRPV9PlNBzqv5QP/KfdvkJZG2B7EenFild2/gY03cZoAsJnZjtyy9K
+         bcRduiIJMunNSRasDnjlC2HeiwrXNXahyehIxShgpLGFHnEozSelL2KzQljGhKb+LI5A
+         JFQdOcWV82fzxqLaX4SpMlKW3PSkPUX3nLa4s=
+From: Namhyung Kim <namhyung@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>, Ankita Garg <ankita@in.ibm.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH] lkdtm: prefix enum constants
+Date: Mon, 18 Oct 2010 13:19:34 +0900
+Message-Id: <1287375574-8139-1-git-send-email-namhyung@gmail.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 15 Sep 2010 18:44:34 +1000
-Neil Brown <neilb@suse.de> wrote:
+Prefix cname and ctype constants with CN/CT_. This is especially for
+the conflict on BUG which causes a build break if arch defines it as
+a inline function, i.e. MIPS.
 
-> On Wed, 15 Sep 2010 16:28:43 +0800
-> Wu Fengguang <fengguang.wu@intel.com> wrote:
-> 
-> > Neil,
-> > 
-> > Sorry for the rushed and imaginary ideas this morning..
-> > 
-> > > @@ -1101,6 +1101,12 @@ static unsigned long shrink_inactive_lis
-> > >  	int lumpy_reclaim = 0;
-> > >  
-> > >  	while (unlikely(too_many_isolated(zone, file, sc))) {
-> > > +		if ((sc->gfp_mask & GFP_IOFS) != GFP_IOFS)
-> > > +			/* Not allowed to do IO, so mustn't wait
-> > > +			 * on processes that might try to
-> > > +			 */
-> > > +			return SWAP_CLUSTER_MAX;
-> > > +
-> > 
-> > The above patch should behavior like this: it returns SWAP_CLUSTER_MAX
-> > to cheat all the way up to believe "enough pages have been reclaimed".
-> > So __alloc_pages_direct_reclaim() see non-zero *did_some_progress and
-> > go on to call get_page_from_freelist(). That normally fails because
-> > the task didn't really scanned the LRU lists. However it does have the
-> > possibility to succeed -- when so many processes are doing concurrent
-> > direct reclaims, it may luckily get one free page reclaimed by other
-> > tasks. What's more, if it does fail to get a free page, the upper
-> > layer __alloc_pages_slowpath() will be repeat recalling
-> > __alloc_pages_direct_reclaim(). So, sooner or later it will succeed in
-> > "stealing" a free page reclaimed by other tasks.
-> > 
-> > In summary, the patch behavior for !__GFP_IO/FS is
-> > - won't do any page reclaim
-> > - won't fail the page allocation (unexpected)
-> > - will wait and steal one free page from others (unreasonable)
-> > 
-> > So it will address the problem you encountered, however it sounds
-> > pretty unexpected and illogical behavior, right?
-> > 
-> > I believe this patch will address the problem equally well.
-> > What do you think?
-> 
-> Thank you for the detailed explanation.  Is agree with your reasoning and
-> now understand why your patch is sufficient.
-> 
-> I will get it tested and let you know how that goes.
+Signed-off-by: Namhyung Kim <namhyung@gmail.com>
+---
+ drivers/misc/lkdtm.c |  128 +++++++++++++++++++++++++-------------------------
+ 1 files changed, 64 insertions(+), 64 deletions(-)
 
-(sorry this has taken a month to follow up).
-
-Testing shows that this patch seems to work.
-The test load (essentially kernbench) doesn't deadlock any more, though it
-does get bogged down thrashing in swap so it doesn't make a lot more
-progress :-)  I guess that is to be expected.
-
-One observation is that the kernbench generated 10%-20% more context switches
-with the patch than without.  Is that to be expected?
-
-Do you have plans for sending this patch upstream?
-
-Thanks,
-NeilBrown
-
-
-> 
-> Thanks,
-> NeilBrown
-> 
-> 
-> > 
-> > Thanks,
-> > Fengguang
-> > ---
-> > 
-> > mm: Avoid possible deadlock caused by too_many_isolated()
-> > 
-> > Neil finds that if too_many_isolated() returns true while performing
-> > direct reclaim we can end up waiting for other threads to complete their
-> > direct reclaim.  If those threads are allowed to enter the FS or IO to
-> > free memory, but this thread is not, then it is possible that those
-> > threads will be waiting on this thread and so we get a circular
-> > deadlock.
-> > 
-> > some task enters direct reclaim with GFP_KERNEL
-> >   => too_many_isolated() false
-> >     => vmscan and run into dirty pages
-> >       => pageout()
-> >         => take some FS lock
-> > 	  => fs/block code does GFP_NOIO allocation
-> > 	    => enter direct reclaim again
-> > 	      => too_many_isolated() true
-> > 		=> waiting for others to progress, however the other
-> > 		   tasks may be circular waiting for the FS lock..
-> > 
-> > The fix is to let !__GFP_IO and !__GFP_FS direct reclaims enjoy higher
-> > priority than normal ones, by honouring them higher throttle threshold.
-> > 
-> > Now !__GFP_IO/FS reclaims won't be waiting for __GFP_IO/FS reclaims to
-> > progress. They will be blocked only when there are too many concurrent
-> > !__GFP_IO/FS reclaims, however that's very unlikely because the IO-less
-> > direct reclaims is able to progress much more faster, and they won't
-> > deadlock each other. The threshold is raised high enough for them, so
-> > that there can be sufficient parallel progress of !__GFP_IO/FS reclaims.
-> > 
-> > Reported-by: NeilBrown <neilb@suse.de>
-> > Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
-> > ---
-> >  mm/vmscan.c |    5 ++++-
-> >  1 file changed, 4 insertions(+), 1 deletion(-)
-> > 
-> > --- linux-next.orig/mm/vmscan.c	2010-09-15 11:58:58.000000000 +0800
-> > +++ linux-next/mm/vmscan.c	2010-09-15 15:36:14.000000000 +0800
-> > @@ -1141,36 +1141,39 @@ int isolate_lru_page(struct page *page)
-> >  	return ret;
-> >  }
-> >  
-> >  /*
-> >   * Are there way too many processes in the direct reclaim path already?
-> >   */
-> >  static int too_many_isolated(struct zone *zone, int file,
-> >  		struct scan_control *sc)
-> >  {
-> >  	unsigned long inactive, isolated;
-> > +	int ratio;
-> >  
-> >  	if (current_is_kswapd())
-> >  		return 0;
-> >  
-> >  	if (!scanning_global_lru(sc))
-> >  		return 0;
-> >  
-> >  	if (file) {
-> >  		inactive = zone_page_state(zone, NR_INACTIVE_FILE);
-> >  		isolated = zone_page_state(zone, NR_ISOLATED_FILE);
-> >  	} else {
-> >  		inactive = zone_page_state(zone, NR_INACTIVE_ANON);
-> >  		isolated = zone_page_state(zone, NR_ISOLATED_ANON);
-> >  	}
-> >  
-> > -	return isolated > inactive;
-> > +	ratio = sc->gfp_mask & (__GFP_IO | __GFP_FS) ? 1 : 8;
-> > +
-> > +	return isolated > inactive * ratio;
-> >  }
-> >  
-> >  /*
-> >   * TODO: Try merging with migrations version of putback_lru_pages
-> >   */
-> >  static noinline_for_stack void
-> >  putback_lru_pages(struct zone *zone, struct scan_control *sc,
-> >  				unsigned long nr_anon, unsigned long nr_file,
-> >  				struct list_head *page_list)
-> >  {
-> 
+diff --git a/drivers/misc/lkdtm.c b/drivers/misc/lkdtm.c
+index ef34de7..e6c964f 100644
+--- a/drivers/misc/lkdtm.c
++++ b/drivers/misc/lkdtm.c
+@@ -52,32 +52,32 @@
+ #define REC_NUM_DEFAULT 10
+ 
+ enum cname {
+-	INVALID,
+-	INT_HARDWARE_ENTRY,
+-	INT_HW_IRQ_EN,
+-	INT_TASKLET_ENTRY,
+-	FS_DEVRW,
+-	MEM_SWAPOUT,
+-	TIMERADD,
+-	SCSI_DISPATCH_CMD,
+-	IDE_CORE_CP,
+-	DIRECT,
++	CN_INVALID,
++	CN_INT_HARDWARE_ENTRY,
++	CN_INT_HW_IRQ_EN,
++	CN_INT_TASKLET_ENTRY,
++	CN_FS_DEVRW,
++	CN_MEM_SWAPOUT,
++	CN_TIMERADD,
++	CN_SCSI_DISPATCH_CMD,
++	CN_IDE_CORE_CP,
++	CN_DIRECT,
+ };
+ 
+ enum ctype {
+-	NONE,
+-	PANIC,
+-	BUG,
+-	EXCEPTION,
+-	LOOP,
+-	OVERFLOW,
+-	CORRUPT_STACK,
+-	UNALIGNED_LOAD_STORE_WRITE,
+-	OVERWRITE_ALLOCATION,
+-	WRITE_AFTER_FREE,
+-	SOFTLOCKUP,
+-	HARDLOCKUP,
+-	HUNG_TASK,
++	CT_NONE,
++	CT_PANIC,
++	CT_BUG,
++	CT_EXCEPTION,
++	CT_LOOP,
++	CT_OVERFLOW,
++	CT_CORRUPT_STACK,
++	CT_UNALIGNED_LOAD_STORE_WRITE,
++	CT_OVERWRITE_ALLOCATION,
++	CT_WRITE_AFTER_FREE,
++	CT_SOFTLOCKUP,
++	CT_HARDLOCKUP,
++	CT_HUNG_TASK,
+ };
+ 
+ static char* cp_name[] = {
+@@ -117,8 +117,8 @@ static char* cpoint_type;
+ static int cpoint_count = DEFAULT_COUNT;
+ static int recur_count = REC_NUM_DEFAULT;
+ 
+-static enum cname cpoint = INVALID;
+-static enum ctype cptype = NONE;
++static enum cname cpoint = CN_INVALID;
++static enum ctype cptype = CT_NONE;
+ static int count = DEFAULT_COUNT;
+ 
+ module_param(recur_count, int, 0644);
+@@ -207,12 +207,12 @@ static enum ctype parse_cp_type(const char *what, size_t count)
+ 			return i + 1;
+ 	}
+ 
+-	return NONE;
++	return CT_NONE;
+ }
+ 
+ static const char *cp_type_to_str(enum ctype type)
+ {
+-	if (type == NONE || type < 0 || type > ARRAY_SIZE(cp_type))
++	if (type == CT_NONE || type < 0 || type > ARRAY_SIZE(cp_type))
+ 		return "None";
+ 
+ 	return cp_type[type - 1];
+@@ -220,7 +220,7 @@ static const char *cp_type_to_str(enum ctype type)
+ 
+ static const char *cp_name_to_str(enum cname name)
+ {
+-	if (name == INVALID || name < 0 || name > ARRAY_SIZE(cp_name))
++	if (name == CN_INVALID || name < 0 || name > ARRAY_SIZE(cp_name))
+ 		return "INVALID";
+ 
+ 	return cp_name[name - 1];
+@@ -245,7 +245,7 @@ static int lkdtm_parse_commandline(void)
+ 		return -EINVAL;
+ 
+ 	cptype = parse_cp_type(cpoint_type, strlen(cpoint_type));
+-	if (cptype == NONE)
++	if (cptype == CT_NONE)
+ 		return -EINVAL;
+ 
+ 	for (i = 0; i < ARRAY_SIZE(cp_name); i++) {
+@@ -274,30 +274,30 @@ static int recursive_loop(int a)
+ static void lkdtm_do_action(enum ctype which)
+ {
+ 	switch (which) {
+-	case PANIC:
++	case CT_PANIC:
+ 		panic("dumptest");
+ 		break;
+-	case BUG:
++	case CT_BUG:
+ 		BUG();
+ 		break;
+-	case EXCEPTION:
++	case CT_EXCEPTION:
+ 		*((int *) 0) = 0;
+ 		break;
+-	case LOOP:
++	case CT_LOOP:
+ 		for (;;)
+ 			;
+ 		break;
+-	case OVERFLOW:
++	case CT_OVERFLOW:
+ 		(void) recursive_loop(0);
+ 		break;
+-	case CORRUPT_STACK: {
++	case CT_CORRUPT_STACK: {
+ 		volatile u32 data[8];
+ 		volatile u32 *p = data;
+ 
+ 		p[12] = 0x12345678;
+ 		break;
+ 	}
+-	case UNALIGNED_LOAD_STORE_WRITE: {
++	case CT_UNALIGNED_LOAD_STORE_WRITE: {
+ 		static u8 data[5] __attribute__((aligned(4))) = {1, 2,
+ 				3, 4, 5};
+ 		u32 *p;
+@@ -309,7 +309,7 @@ static void lkdtm_do_action(enum ctype which)
+ 		*p = val;
+ 		 break;
+ 	}
+-	case OVERWRITE_ALLOCATION: {
++	case CT_OVERWRITE_ALLOCATION: {
+ 		size_t len = 1020;
+ 		u32 *data = kmalloc(len, GFP_KERNEL);
+ 
+@@ -317,7 +317,7 @@ static void lkdtm_do_action(enum ctype which)
+ 		kfree(data);
+ 		break;
+ 	}
+-	case WRITE_AFTER_FREE: {
++	case CT_WRITE_AFTER_FREE: {
+ 		size_t len = 1024;
+ 		u32 *data = kmalloc(len, GFP_KERNEL);
+ 
+@@ -326,21 +326,21 @@ static void lkdtm_do_action(enum ctype which)
+ 		memset(data, 0x78, len);
+ 		break;
+ 	}
+-	case SOFTLOCKUP:
++	case CT_SOFTLOCKUP:
+ 		preempt_disable();
+ 		for (;;)
+ 			cpu_relax();
+ 		break;
+-	case HARDLOCKUP:
++	case CT_HARDLOCKUP:
+ 		local_irq_disable();
+ 		for (;;)
+ 			cpu_relax();
+ 		break;
+-	case HUNG_TASK:
++	case CT_HUNG_TASK:
+ 		set_current_state(TASK_UNINTERRUPTIBLE);
+ 		schedule();
+ 		break;
+-	case NONE:
++	case CT_NONE:
+ 	default:
+ 		break;
+ 	}
+@@ -363,43 +363,43 @@ static int lkdtm_register_cpoint(enum cname which)
+ {
+ 	int ret;
+ 
+-	cpoint = INVALID;
++	cpoint = CN_INVALID;
+ 	if (lkdtm.entry != NULL)
+ 		unregister_jprobe(&lkdtm);
+ 
+ 	switch (which) {
+-	case DIRECT:
++	case CN_DIRECT:
+ 		lkdtm_do_action(cptype);
+ 		return 0;
+-	case INT_HARDWARE_ENTRY:
++	case CN_INT_HARDWARE_ENTRY:
+ 		lkdtm.kp.symbol_name = "do_IRQ";
+ 		lkdtm.entry = (kprobe_opcode_t*) jp_do_irq;
+ 		break;
+-	case INT_HW_IRQ_EN:
++	case CN_INT_HW_IRQ_EN:
+ 		lkdtm.kp.symbol_name = "handle_IRQ_event";
+ 		lkdtm.entry = (kprobe_opcode_t*) jp_handle_irq_event;
+ 		break;
+-	case INT_TASKLET_ENTRY:
++	case CN_INT_TASKLET_ENTRY:
+ 		lkdtm.kp.symbol_name = "tasklet_action";
+ 		lkdtm.entry = (kprobe_opcode_t*) jp_tasklet_action;
+ 		break;
+-	case FS_DEVRW:
++	case CN_FS_DEVRW:
+ 		lkdtm.kp.symbol_name = "ll_rw_block";
+ 		lkdtm.entry = (kprobe_opcode_t*) jp_ll_rw_block;
+ 		break;
+-	case MEM_SWAPOUT:
++	case CN_MEM_SWAPOUT:
+ 		lkdtm.kp.symbol_name = "shrink_inactive_list";
+ 		lkdtm.entry = (kprobe_opcode_t*) jp_shrink_inactive_list;
+ 		break;
+-	case TIMERADD:
++	case CN_TIMERADD:
+ 		lkdtm.kp.symbol_name = "hrtimer_start";
+ 		lkdtm.entry = (kprobe_opcode_t*) jp_hrtimer_start;
+ 		break;
+-	case SCSI_DISPATCH_CMD:
++	case CN_SCSI_DISPATCH_CMD:
+ 		lkdtm.kp.symbol_name = "scsi_dispatch_cmd";
+ 		lkdtm.entry = (kprobe_opcode_t*) jp_scsi_dispatch_cmd;
+ 		break;
+-	case IDE_CORE_CP:
++	case CN_IDE_CORE_CP:
+ #ifdef CONFIG_IDE
+ 		lkdtm.kp.symbol_name = "generic_ide_ioctl";
+ 		lkdtm.entry = (kprobe_opcode_t*) jp_generic_ide_ioctl;
+@@ -416,7 +416,7 @@ static int lkdtm_register_cpoint(enum cname which)
+ 	cpoint = which;
+ 	if ((ret = register_jprobe(&lkdtm)) < 0) {
+ 		printk(KERN_INFO "lkdtm: Couldn't register jprobe\n");
+-		cpoint = INVALID;
++		cpoint = CN_INVALID;
+ 	}
+ 
+ 	return ret;
+@@ -445,7 +445,7 @@ static ssize_t do_register_entry(enum cname which, struct file *f,
+ 	cptype = parse_cp_type(buf, count);
+ 	free_page((unsigned long) buf);
+ 
+-	if (cptype == NONE)
++	if (cptype == CT_NONE)
+ 		return -EINVAL;
+ 
+ 	err = lkdtm_register_cpoint(which);
+@@ -487,49 +487,49 @@ static int lkdtm_debugfs_open(struct inode *inode, struct file *file)
+ static ssize_t int_hardware_entry(struct file *f, const char __user *buf,
+ 		size_t count, loff_t *off)
+ {
+-	return do_register_entry(INT_HARDWARE_ENTRY, f, buf, count, off);
++	return do_register_entry(CN_INT_HARDWARE_ENTRY, f, buf, count, off);
+ }
+ 
+ static ssize_t int_hw_irq_en(struct file *f, const char __user *buf,
+ 		size_t count, loff_t *off)
+ {
+-	return do_register_entry(INT_HW_IRQ_EN, f, buf, count, off);
++	return do_register_entry(CN_INT_HW_IRQ_EN, f, buf, count, off);
+ }
+ 
+ static ssize_t int_tasklet_entry(struct file *f, const char __user *buf,
+ 		size_t count, loff_t *off)
+ {
+-	return do_register_entry(INT_TASKLET_ENTRY, f, buf, count, off);
++	return do_register_entry(CN_INT_TASKLET_ENTRY, f, buf, count, off);
+ }
+ 
+ static ssize_t fs_devrw_entry(struct file *f, const char __user *buf,
+ 		size_t count, loff_t *off)
+ {
+-	return do_register_entry(FS_DEVRW, f, buf, count, off);
++	return do_register_entry(CN_FS_DEVRW, f, buf, count, off);
+ }
+ 
+ static ssize_t mem_swapout_entry(struct file *f, const char __user *buf,
+ 		size_t count, loff_t *off)
+ {
+-	return do_register_entry(MEM_SWAPOUT, f, buf, count, off);
++	return do_register_entry(CN_MEM_SWAPOUT, f, buf, count, off);
+ }
+ 
+ static ssize_t timeradd_entry(struct file *f, const char __user *buf,
+ 		size_t count, loff_t *off)
+ {
+-	return do_register_entry(TIMERADD, f, buf, count, off);
++	return do_register_entry(CN_TIMERADD, f, buf, count, off);
+ }
+ 
+ static ssize_t scsi_dispatch_cmd_entry(struct file *f,
+ 		const char __user *buf, size_t count, loff_t *off)
+ {
+-	return do_register_entry(SCSI_DISPATCH_CMD, f, buf, count, off);
++	return do_register_entry(CN_SCSI_DISPATCH_CMD, f, buf, count, off);
+ }
+ 
+ static ssize_t ide_core_cp_entry(struct file *f, const char __user *buf,
+ 		size_t count, loff_t *off)
+ {
+-	return do_register_entry(IDE_CORE_CP, f, buf, count, off);
++	return do_register_entry(CN_IDE_CORE_CP, f, buf, count, off);
+ }
+ 
+ /* Special entry to just crash directly. Available without KPROBEs */
+@@ -557,7 +557,7 @@ static ssize_t direct_entry(struct file *f, const char __user *user_buf,
+ 
+ 	type = parse_cp_type(buf, count);
+ 	free_page((unsigned long) buf);
+-	if (type == NONE)
++	if (type == CT_NONE)
+ 		return -EINVAL;
+ 
+ 	printk(KERN_INFO "lkdtm: Performing direct entry %s\n",
+@@ -640,7 +640,7 @@ static int __init lkdtm_module_init(void)
+ 		goto out_err;
+ 	}
+ 
+-	if (cpoint != INVALID && cptype != NONE) {
++	if (cpoint != CN_INVALID && cptype != CT_NONE) {
+ 		ret = lkdtm_register_cpoint(cpoint);
+ 		if (ret < 0) {
+ 			printk(KERN_INFO "lkdtm: Invalid crash point %d\n",
+-- 
+1.7.0.4
 
