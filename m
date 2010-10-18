@@ -1,292 +1,191 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755277Ab0JRMZM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Oct 2010 08:25:12 -0400
-Received: from mgw2.diku.dk ([130.225.96.92]:37652 "EHLO mgw2.diku.dk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751839Ab0JRMZK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Oct 2010 08:25:10 -0400
-Date: Mon, 18 Oct 2010 14:25:04 +0200 (CEST)
-From: Julia Lawall <julia@diku.dk>
-To: walter harms <wharms@bfs.de>
-Cc: kernel-janitors@vger.kernel.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org, gregkh@suse.de
-Subject: Re: [PATCH 1/3] drivers/staging/cx25821: Use kstrdup
-In-Reply-To: <4CBC12EC.60109@bfs.de>
-Message-ID: <Pine.LNX.4.64.1010181421240.25099@ask.diku.dk>
-References: <1287341311-11161-1-git-send-email-julia@diku.dk>
- <1287341311-11161-2-git-send-email-julia@diku.dk> <4CBBF407.7060705@bfs.de>
- <Pine.LNX.4.64.1010181019370.22530@ask.diku.dk> <4CBC12EC.60109@bfs.de>
+	id S1755291Ab0JRM0G (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Oct 2010 08:26:06 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:44159 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751839Ab0JRM0E convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Oct 2010 08:26:04 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=Vjb+gbx6UaOXeHEGx738sYXXoLpeVwgeWuZLSy28pI8trsy0Z+OPqDJWfrbV2RpkWT
+         TVUI6+bhsxcs3hPT1CHM9YNyBCm5lfoEVKuqXLSIxOVupKHsnUusYv8Hy9v3aGdcUQrW
+         +d8H5y/mqMMfiRt/EdDS7EmtzVm2no+nweUZ4=
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <20101006230400.GR2433@linux.vnet.ibm.com>
+References: <201008112340.o7BNenDe021017@imap1.linux-foundation.org>
+	<10167.1281629887@localhost>
+	<AANLkTim2Z=f0-=-+FEWPAdGrMdQXFWcQbKi0JCs_1KGK@mail.gmail.com>
+	<20101006230400.GR2433@linux.vnet.ibm.com>
+Date: Mon, 18 Oct 2010 14:26:02 +0200
+Message-ID: <AANLkTikRa8vq0GBv29LaYcudta-3LWV0tcHdcCwskvB3@mail.gmail.com>
+Subject: Re: mmotm 2010-08-11 - RCU whinge during very early boot
+From: Zdenek Kabelac <zdenek.kabelac@gmail.com>
+To: paulmck@linux.vnet.ibm.com
+Cc: Valdis.Kletnieks@vt.edu, Andrew Morton <akpm@linux-foundation.org>,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rewrite the initialization of a dev field.  In the original code, in each
-case there was a kmalloc followed by a memcpy, as illustrated by the
-semantic patch below.  In the case that the provided string was the empty
-string, the allocated memory was then overwritten with a constant string,
-causing a memory leak.  Finally, there was no provision for returning
--ENOMEM in case of failure of the memory allocation.  Indeed, the return
-value in an error case was err, a variable that was never initialized to
-anything other than 0.
+2010/10/7 Paul E. McKenney <paulmck@linux.vnet.ibm.com>:
+> On Tue, Oct 05, 2010 at 12:05:13PM +0200, Zdenek Kabelac wrote:
+>> 2010/8/12  <Valdis.Kletnieks@vt.edu>:
+>> > On Wed, 11 Aug 2010 16:10:49 PDT, akpm@linux-foundation.org said:
+>> >> The mm-of-the-moment snapshot 2010-08-11-16-10 has been uploaded to
+>> >>
+>> >>    http://userweb.kernel.org/~akpm/mmotm/
+>> >
+>> > Throws a RCU complaint.  Hopefully somebody on the cc: list knows what it is about...
+>> >
+>> > [    0.026136] CPU0: Intel(R) Core(TM)2 Duo CPU     P8700  @ 2.53GHz stepping 0a
+>> > [    0.028399] NMI watchdog enabled, takes one hw-pmu counter.
+>> > [    0.030019] lockdep: fixing up alternatives.
+>> > [    0.031178]
+>> > [    0.031179] ===================================================
+>> > [    0.031182] [ INFO: suspicious rcu_dereference_check() usage. ]
+>> > [    0.031184] ---------------------------------------------------
+>> > [    0.031187] kernel/sched.c:618 invoked rcu_dereference_check() without protection!
+>> > [    0.031189]
+>> > [    0.031189] other info that might help us debug this:
+>> > [    0.031190]
+>> > [    0.031192]
+>> > [    0.031193] rcu_scheduler_active = 1, debug_locks = 1
+>> > [    0.031195] 3 locks held by kworker/0:0/4:
+>> > [    0.031197]  #0:  (events){+.+.+.}, at: [<ffffffff810504ca>] process_one_work+0x1b6/0x37d
+>> > [    0.031210]  #1:  ((&c_idle.work)){+.+.+.}, at: [<ffffffff810504ca>] process_one_work+0x1b6/0x37d
+>> > [    0.031217]  #2:  (&rq->lock){-.-...}, at: [<ffffffff81b5f9b8>] init_idle+0x2b/0x114
+>> > [    0.031225]
+>> > [    0.031226] stack backtrace:
+>> > [    0.031229] Pid: 4, comm: kworker/0:0 Not tainted 2.6.35-mmotm0811 #1
+>> > [    0.031232] Call Trace:
+>> > [    0.031237]  [<ffffffff810661eb>] lockdep_rcu_dereference+0x9d/0xa5
+>> > [    0.031242]  [<ffffffff8102b751>] task_group+0x7b/0x8a
+>> > [    0.031246]  [<ffffffff81b5f9b8>] ? init_idle+0x2b/0x114
+>> > [    0.031250]  [<ffffffff8102b775>] set_task_rq+0x15/0x6e
+>> > [    0.031253]  [<ffffffff81b5fa5e>] init_idle+0xd1/0x114
+>> > [    0.031257]  [<ffffffff81b5fb44>] fork_idle+0x8e/0x9d
+>> > [    0.031261]  [<ffffffff81b5de6f>] do_fork_idle+0x17/0x28
+>> > [    0.031265]  [<ffffffff8105052b>] process_one_work+0x217/0x37d
+>> > [    0.031269]  [<ffffffff810504ca>] ? process_one_work+0x1b6/0x37d
+>> > [    0.031273]  [<ffffffff81b5de58>] ? do_fork_idle+0x0/0x28
+>> > [    0.031277]  [<ffffffff81051775>] worker_thread+0x17e/0x251
+>> > [    0.031281]  [<ffffffff810515f7>] ? worker_thread+0x0/0x251
+>> > [    0.031285]  [<ffffffff8105544a>] kthread+0x7d/0x85
+>> > [    0.031290]  [<ffffffff81003554>] kernel_thread_helper+0x4/0x10
+>> > [    0.031295]  [<ffffffff81558d80>] ? restore_args+0x0/0x30
+>> > [    0.031299]  [<ffffffff810553cd>] ? kthread+0x0/0x85
+>> > [    0.031303]  [<ffffffff81003550>] ? kernel_thread_helper+0x0/0x10
+>> > [    0.031333] Booting Node   0, Processors  #1 Ok.
+>> > [    0.103111] NMI watchdog enabled, takes one hw-pmu counter.
+>> > [    0.104013] Brought up 2 CPUs
+>> >
+>>
+>> I'm still seeing this INFO message on my vanilla 2.6.36-rc kernel.
+>>
+>> ----------------------
+>>
+>> ftrace: converting mcount calls to 0f 1f 44 00 00
+>> ftrace: allocating 16045 entries in 63 pages
+>> Setting APIC routing to flat
+>> ..TIMER: vector=0x30 apic1=0 pin1=2 apic2=-1 pin2=-1
+>> CPU0: Intel(R) Core(TM)2 Duo CPU     T7500  @ 2.20GHz stepping 0a
+>> NMI watchdog enabled, takes one hw-pmu counter.
+>> lockdep: fixing up alternatives.
+>>
 
-The following patch rewrites the above code to first select a string based
-on various conditions, and then to copy it into a newly allocated memory
-region, using kstrdup.  This decreases subtantially the code size
-and removes the memory leak.  The instruction for getting the length of the
-string and the associated variable declaration are also deleted.
 
-The patch also drops err, changes the return value to retval, which in each
-file was already initialized elsewhere to an error code, and initializes
-retval to -ENOMEM when kstrdup fails.
+> Hello, Zdenek,
+>
+> I believe that the following patch from Peter Z. should address this.
+>
+>                                                        Thanx, Paul
+>
 
-The semantic patch that motivated this transformation is:
-(http://coccinelle.lip6.fr/)
 
-// <smpl>
-@@
-expression a,flag,len;
-expression arg,e1,e2;
-statement S;
-@@
+> ------------------------------------------------------------------------
+>
+> commit e3dd67d97b3c2aad366b845c797745a78efaf90d
+> Author: Peter Zijlstra <peterz@infradead.org>
+> Date:   Thu Sep 16 17:50:31 2010 +0200
+>
+>    sched: fix RCU lockdep splat from task_group()
+>
+>    This addresses the following RCU lockdep splat:
+...
+>    So insert an RCU read-side critical section to avoid the complaint.
+>
+>    Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+>    Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+>
+> diff --git a/kernel/sched.c b/kernel/sched.c
+> index 09b574e..40e065e 100644
+> --- a/kernel/sched.c
+> +++ b/kernel/sched.c
+> @@ -5331,7 +5331,19 @@ void __cpuinit init_idle(struct task_struct *idle, int cpu)
+>        idle->se.exec_start = sched_clock();
+>
+>        cpumask_copy(&idle->cpus_allowed, cpumask_of(cpu));
+> +       /*
+> +        * We're having a chicken and egg problem, even though we are
+> +        * holding rq->lock, the cpu isn't yet set to this cpu so the
+> +        * lockdep check in task_group() will fail.
+> +        *
+> +        * Similar case to sched_fork(). / Alternatively we could
+> +        * use task_rq_lock() here and obtain the other rq->lock.
+> +        *
+> +        * Silence PROVE_RCU
+> +        */
+> +       rcu_read_lock();
+>        __set_task_cpu(idle, cpu);
+> +       rcu_read_unlock();
+>
+>        rq->curr = rq->idle = idle;
+>  #if defined(CONFIG_SMP) && defined(__ARCH_WANT_UNLOCKED_CTXSW)
+>
 
-  len = strlen(arg)
-  ... when != len = e1
-      when != arg = e2
-  a =
--  \(kmalloc\|kzalloc\)(len+1,flag)
-+  kstrdup(arg,flag)
-  <... when != a
-  if (a == NULL || ...) S
-  ...>
-- memcpy(a,arg,len+1);
-// </smpl>
 
-Signed-off-by: Julia Lawall <julia@diku.dk>
 
----
-This patch makes quite a lot of changes and is only compile tested.
-As compared to the previous version, this uses kstrdup and it stores the 
-selected string in the same field in which it will ultimately allocate new 
-memory and copy the selected string.
+I'm using kernel patched with this patch - but I still get this error
+- though at different place:
+(not really sure how it is related - but of course the RCU complain
+disappeared during  boot).
 
-diff --git a/drivers/staging/cx25821/cx25821-audio-upstream.c b/drivers/staging/cx25821/cx25821-audio-upstream.c
-index 27087db..180840f 100644
---- a/drivers/staging/cx25821/cx25821-audio-upstream.c
-+++ b/drivers/staging/cx25821/cx25821-audio-upstream.c
-@@ -723,8 +723,6 @@ int cx25821_audio_upstream_init(struct cx25821_dev *dev, int channel_select)
- {
- 	struct sram_channel *sram_ch;
- 	int retval = 0;
--	int err = 0;
--	int str_length = 0;
- 
- 	if (dev->_audio_is_running) {
- 		printk(KERN_WARNING "Audio Channel is still running so return!\n");
-@@ -752,28 +750,14 @@ int cx25821_audio_upstream_init(struct cx25821_dev *dev, int channel_select)
- 	dev->_audio_lines_count = LINES_PER_AUDIO_BUFFER;
- 	_line_size = AUDIO_LINE_SIZE;
- 
--	if (dev->input_audiofilename) {
--		str_length = strlen(dev->input_audiofilename);
--		dev->_audiofilename = kmalloc(str_length + 1, GFP_KERNEL);
--
--		if (!dev->_audiofilename)
--			goto error;
--
--		memcpy(dev->_audiofilename, dev->input_audiofilename,
--		       str_length + 1);
--
--		/* Default if filename is empty string */
--		if (strcmp(dev->input_audiofilename, "") == 0)
--			dev->_audiofilename = "/root/audioGOOD.wav";
--
--	} else {
--		str_length = strlen(_defaultAudioName);
--		dev->_audiofilename = kmalloc(str_length + 1, GFP_KERNEL);
--
--		if (!dev->_audiofilename)
--			goto error;
--
--		memcpy(dev->_audiofilename, _defaultAudioName, str_length + 1);
-+	if (!dev->input_audiofilename || *dev->input_audiofilename == 0)
-+		dev->_audiofilename = _defaultAudioName;
-+	else
-+		dev->_audiofilename = dev->input_audiofilename;
-+	dev->_audiofilename = kstrdup(dev->_audiofilename, GFP_KERNEL);
-+	if (!dev->_audiofilename) {
-+		retval = -ENOMEM;
-+		goto error;
- 	}
- 
- 	retval =
-@@ -802,5 +786,5 @@ int cx25821_audio_upstream_init(struct cx25821_dev *dev, int channel_select)
- error:
- 	cx25821_dev_unregister(dev);
- 
--	return err;
-+	return retval;
- }
-diff --git a/drivers/staging/cx25821/cx25821-video-upstream-ch2.c b/drivers/staging/cx25821/cx25821-video-upstream-ch2.c
-index d12dbb5..2a9c430 100644
---- a/drivers/staging/cx25821/cx25821-video-upstream-ch2.c
-+++ b/drivers/staging/cx25821/cx25821-video-upstream-ch2.c
-@@ -747,10 +747,8 @@ int cx25821_vidupstream_init_ch2(struct cx25821_dev *dev, int channel_select,
- 	struct sram_channel *sram_ch;
- 	u32 tmp;
- 	int retval = 0;
--	int err = 0;
- 	int data_frame_size = 0;
- 	int risc_buffer_size = 0;
--	int str_length = 0;
- 
- 	if (dev->_is_running_ch2) {
- 		printk("Video Channel is still running so return!\n");
-@@ -789,38 +787,26 @@ int cx25821_vidupstream_init_ch2(struct cx25821_dev *dev, int channel_select,
- 	    dev->_isNTSC_ch2 ? NTSC_RISC_BUF_SIZE : PAL_RISC_BUF_SIZE;
- 
- 	if (dev->input_filename_ch2) {
--		str_length = strlen(dev->input_filename_ch2);
--		dev->_filename_ch2 = kmalloc(str_length + 1, GFP_KERNEL);
--
--		if (!dev->_filename_ch2)
--			goto error;
--
--		memcpy(dev->_filename_ch2, dev->input_filename_ch2,
--		       str_length + 1);
--	} else {
--		str_length = strlen(dev->_defaultname_ch2);
--		dev->_filename_ch2 = kmalloc(str_length + 1, GFP_KERNEL);
--
--		if (!dev->_filename_ch2)
--			goto error;
--
--		memcpy(dev->_filename_ch2, dev->_defaultname_ch2,
--		       str_length + 1);
--	}
--
--       /* Default if filename is empty string */
--	if (strcmp(dev->input_filename_ch2, "") == 0) {
--		if (dev->_isNTSC_ch2) {
--			dev->_filename_ch2 =
--			    (dev->_pixel_format_ch2 ==
--			     PIXEL_FRMT_411) ? "/root/vid411.yuv" :
--			    "/root/vidtest.yuv";
--		} else {
--			dev->_filename_ch2 =
--			    (dev->_pixel_format_ch2 ==
--			     PIXEL_FRMT_411) ? "/root/pal411.yuv" :
--			    "/root/pal422.yuv";
--		}
-+		/* Default if filename is empty string */
-+		if (*dev->input_filename_ch2 == 0) {
-+			if (dev->_isNTSC_ch2)
-+				dev->_filename_ch2 =
-+					(dev->_pixel_format_ch2 ==
-+					PIXEL_FRMT_411) ? "/root/vid411.yuv" :
-+					"/root/vidtest.yuv";
-+			else
-+				dev->_filename_ch2 =
-+					(dev->_pixel_format_ch2 ==
-+					PIXEL_FRMT_411) ? "/root/pal411.yuv" :
-+					"/root/pal422.yuv";
-+		} else
-+			dev->_filename_ch2 = dev->input_filename_ch2;
-+	} else
-+		dev->_filename_ch2 = dev->_defaultname_ch2;
-+	dev->_filename_ch2 = kstrdup(dev->_filename_ch2, GFP_KERNEL);
-+	if (!dev->_filename_ch2) {
-+		retval = -ENOMEM;
-+		goto error;
- 	}
- 
- 	retval =
-@@ -851,5 +837,5 @@ int cx25821_vidupstream_init_ch2(struct cx25821_dev *dev, int channel_select,
-       error:
- 	cx25821_dev_unregister(dev);
- 
--	return err;
-+	return retval;
- }
-diff --git a/drivers/staging/cx25821/cx25821-video-upstream.c b/drivers/staging/cx25821/cx25821-video-upstream.c
-index 756a820..58e67f2 100644
---- a/drivers/staging/cx25821/cx25821-video-upstream.c
-+++ b/drivers/staging/cx25821/cx25821-video-upstream.c
-@@ -800,10 +800,8 @@ int cx25821_vidupstream_init_ch1(struct cx25821_dev *dev, int channel_select,
- 	struct sram_channel *sram_ch;
- 	u32 tmp;
- 	int retval = 0;
--	int err = 0;
- 	int data_frame_size = 0;
- 	int risc_buffer_size = 0;
--	int str_length = 0;
- 
- 	if (dev->_is_running) {
- 		printk(KERN_INFO "Video Channel is still running so return!\n");
-@@ -841,36 +839,27 @@ int cx25821_vidupstream_init_ch1(struct cx25821_dev *dev, int channel_select,
- 	    dev->_isNTSC ? NTSC_RISC_BUF_SIZE : PAL_RISC_BUF_SIZE;
- 
- 	if (dev->input_filename) {
--		str_length = strlen(dev->input_filename);
--		dev->_filename = kmalloc(str_length + 1, GFP_KERNEL);
--
--		if (!dev->_filename)
--			goto error;
--
--		memcpy(dev->_filename, dev->input_filename, str_length + 1);
--	} else {
--		str_length = strlen(dev->_defaultname);
--		dev->_filename = kmalloc(str_length + 1, GFP_KERNEL);
--
--		if (!dev->_filename)
--			goto error;
--
--		memcpy(dev->_filename, dev->_defaultname, str_length + 1);
--	}
--
--	/* Default if filename is empty string */
--	if (strcmp(dev->input_filename, "") == 0) {
--		if (dev->_isNTSC) {
--			dev->_filename =
--			    (dev->_pixel_format ==
--			     PIXEL_FRMT_411) ? "/root/vid411.yuv" :
--			    "/root/vidtest.yuv";
--		} else {
--			dev->_filename =
--			    (dev->_pixel_format ==
--			     PIXEL_FRMT_411) ? "/root/pal411.yuv" :
--			    "/root/pal422.yuv";
--		}
-+		/* Default if filename is empty string */
-+		if (*dev->input_filename == 0) {
-+			if (dev->_isNTSC)
-+				dev->_filename =
-+					(dev->_pixel_format ==
-+					PIXEL_FRMT_411) ? "/root/vid411.yuv" :
-+					"/root/vidtest.yuv";
-+			else
-+				dev->_filename =
-+					(dev->_pixel_format ==
-+					PIXEL_FRMT_411) ? "/root/pal411.yuv" :
-+					"/root/pal422.yuv";
-+		} else
-+			dev->_filename = dev->input_filename;
-+	} else
-+		dev->_filename = dev->_defaultname;
-+
-+	dev->_filename = kstrdup(dev->_filename, GFP_KERNEL);
-+	if (!dev->_filename) {
-+		retval = -ENOMEM;
-+		goto error;
- 	}
- 
- 	dev->_is_running = 0;
-@@ -908,5 +897,5 @@ int cx25821_vidupstream_init_ch1(struct cx25821_dev *dev, int channel_select,
- error:
- 	cx25821_dev_unregister(dev);
- 
--	return err;
-+	return retval;
- }
+===================================================
+[ INFO: suspicious rcu_dereference_check() usage. ]
+---------------------------------------------------
+kernel/sched.c:618 invoked rcu_dereference_check() without protection!
+
+other info that might help us debug this:
+
+
+rcu_scheduler_active = 1, debug_locks = 0
+1 lock held by make/6137:
+ #0:  (&rq->lock){......}, at: [<ffffffff810487d7>] task_fork_fair+0x67/0x180
+
+stack backtrace:
+Pid: 6137, comm: make Not tainted 2.6.36-rc8-00024-ga7ac73b #6
+Call Trace:
+ [<ffffffff81089b7b>] lockdep_rcu_dereference+0xbb/0xc0
+ [<ffffffff8103e605>] set_task_rq+0x2f5/0x300
+ [<ffffffff810488db>] task_fork_fair+0x16b/0x180
+ [<ffffffff8104b634>] sched_fork+0xe4/0x280
+ [<ffffffff8104fa55>] copy_process+0x6e5/0x13d0
+ [<ffffffff81119809>] ? __do_fault+0x3b9/0x4b0
+ [<ffffffff810507fb>] do_fork+0x8b/0x490
+ [<ffffffff8111d6b6>] ? handle_mm_fault+0x196/0xa90
+ [<ffffffff8147dc2d>] ? retint_swapgs+0xe/0x13
+ [<ffffffff8147dc2d>] ? retint_swapgs+0xe/0x13
+ [<ffffffff8100c395>] sys_vfork+0x25/0x30
+ [<ffffffff81003583>] stub_vfork+0x13/0x20
+ [<ffffffff810031db>] ? system_call_fastpath+0x16/0x1b
+loop: module loaded
+
+
+Zdenek
