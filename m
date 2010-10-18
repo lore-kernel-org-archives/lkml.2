@@ -1,76 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754851Ab0JRKWv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Oct 2010 06:22:51 -0400
-Received: from webhosting01.bon.m2soft.com ([195.38.20.32]:34256 "EHLO
-	webhosting01.bon.m2soft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754827Ab0JRKWt (ORCPT
+	id S1754814Ab0JRK0v (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Oct 2010 06:26:51 -0400
+Received: from mtagate3.uk.ibm.com ([194.196.100.163]:36253 "EHLO
+	mtagate3.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752853Ab0JRK0u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Oct 2010 06:22:49 -0400
-Date: Mon, 18 Oct 2010 12:19:34 +0200
-From: Nicolas Kaiser <nikai@nikai.net>
-To: Eric Moore <Eric.Moore@lsi.com>
-Cc: support@lsi.com, DL-MPTFusionLinux@lsi.com, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] fusion: fix module parameter descriptions
-Message-ID: <20101018121934.3c01bb55@absol.kitzblitz>
-Organization: -
-X-Face: "fF&[w2"Nws:JNH4'g|:gVhgGKLhj|X}}&w&V?]0=,7n`jy8D6e[Jh=7+ca|4~t5e[ItpL5
- N'y~Mvi-vJm`"1T5fi1^b!&EG]6nW~C!FN},=$G?^U2t~n[3;u\"5-|~H{-5]IQ2
-X-Mailer: Claws Mail (Linux)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 18 Oct 2010 06:26:50 -0400
+Date: Mon, 18 Oct 2010 12:26:42 +0200
+From: Heiko Carstens <heiko.carstens@de.ibm.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@elte.hu>, mathieu.desnoyers@efficios.com,
+        sanagi.koki@jp.fujitsu.com, fweisbec@gmail.com, rostedt@goodmis.org,
+        nhorman@tuxdriver.com, scott.a.mcmillan@intel.com, tglx@linutronix.de,
+        laijs@cn.fujitsu.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        eric.dumazet@gmail.com, kaneshige.kenji@jp.fujitsu.com,
+        davem@davemloft.net, izumi.taku@jp.fujitsu.com,
+        kosaki.motohiro@jp.fujitsu.com, linux-tip-commits@vger.kernel.org
+Subject: Re: [sparc build bug] Re: [tip:perf/core] irq: Add tracepoint to
+ softirq_raise
+Message-ID: <20101018102641.GA2324@osiris.boeblingen.de.ibm.com>
+References: <4C724298.4050509@jp.fujitsu.com>
+ <tip-2bf2160d8805de64308e2e7c3cd97813cb58ed2f@git.kernel.org>
+ <20100908112529.GA25931@elte.hu>
+ <1287395077.29097.1543.camel@twins>
+ <1287396707.29097.1544.camel@twins>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1287396707.29097.1544.camel@twins>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix module parameter descriptions that line wrap within quotes.
+On Mon, Oct 18, 2010 at 12:11:47PM +0200, Peter Zijlstra wrote:
+> > I could build sparc64_defconfig, but s390 is broken for me by this...
+> 
+> 
+> the below makes s390 build again, not sure its completely safe for all
+> configs though...
+> 
+> Heiko?
 
-Signed-off-by: Nicolas Kaiser <nikai@nikai.net>
----
- drivers/message/fusion/mptbase.c |   16 ++++++++--------
- 1 files changed, 8 insertions(+), 8 deletions(-)
+We have a similar patch in our git tree to fix this issue:
 
-diff --git a/drivers/message/fusion/mptbase.c b/drivers/message/fusion/mptbase.c
-index 6837a8e..2b3519d 100644
---- a/drivers/message/fusion/mptbase.c
-+++ b/drivers/message/fusion/mptbase.c
-@@ -83,18 +83,18 @@ MODULE_VERSION(my_VERSION);
+http://git390.marist.edu/cgi-bin/gitweb.cgi?p=linux-2.6.git;a=commitdiff;h=b722c7e6ce9b52b58a5488aacfd90936a2720dd9
+
+(link valid until the next rebase ;)
  
- static int mpt_msi_enable_spi;
- module_param(mpt_msi_enable_spi, int, 0);
--MODULE_PARM_DESC(mpt_msi_enable_spi, " Enable MSI Support for SPI \
--		controllers (default=0)");
-+MODULE_PARM_DESC(mpt_msi_enable_spi, " Enable MSI Support for SPI"
-+		" controllers (default=0)");
- 
- static int mpt_msi_enable_fc;
- module_param(mpt_msi_enable_fc, int, 0);
--MODULE_PARM_DESC(mpt_msi_enable_fc, " Enable MSI Support for FC \
--		controllers (default=0)");
-+MODULE_PARM_DESC(mpt_msi_enable_fc, " Enable MSI Support for FC"
-+		" controllers (default=0)");
- 
- static int mpt_msi_enable_sas;
- module_param(mpt_msi_enable_sas, int, 0);
--MODULE_PARM_DESC(mpt_msi_enable_sas, " Enable MSI Support for SAS \
--		controllers (default=0)");
-+MODULE_PARM_DESC(mpt_msi_enable_sas, " Enable MSI Support for SAS"
-+		" controllers (default=0)");
- 
- 
- static int mpt_channel_mapping;
-@@ -105,8 +105,8 @@ static int mpt_debug_level;
- static int mpt_set_debug_level(const char *val, struct kernel_param *kp);
- module_param_call(mpt_debug_level, mpt_set_debug_level, param_get_int,
- 		  &mpt_debug_level, 0600);
--MODULE_PARM_DESC(mpt_debug_level, " debug level - refer to mptdebug.h \
--	- (default=0)");
-+MODULE_PARM_DESC(mpt_debug_level, " debug level - refer to mptdebug.h"
-+	" - (default=0)");
- 
- int mpt_fwfault_debug;
- EXPORT_SYMBOL(mpt_fwfault_debug);
--- 
-1.7.2.2
+> ---
+>  arch/s390/include/asm/hardirq.h |    1 -
+>  1 files changed, 0 insertions(+), 1 deletions(-)
+> 
+> diff --git a/arch/s390/include/asm/hardirq.h
+> b/arch/s390/include/asm/hardirq.h
+> index 498bc38..9558a71 100644
+> --- a/arch/s390/include/asm/hardirq.h
+> +++ b/arch/s390/include/asm/hardirq.h
+> @@ -15,7 +15,6 @@
+>  #include <linux/threads.h>
+>  #include <linux/sched.h>
+>  #include <linux/cache.h>
+> -#include <linux/interrupt.h>
+>  #include <asm/lowcore.h>
+>  
+>  #define local_softirq_pending() (S390_lowcore.softirq_pending)
+> 
