@@ -1,68 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755779Ab0JRNoF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Oct 2010 09:44:05 -0400
-Received: from casper.infradead.org ([85.118.1.10]:55332 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755092Ab0JRNoE convert rfc822-to-8bit (ORCPT
+	id S1755851Ab0JRNo4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Oct 2010 09:44:56 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:46196 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755832Ab0JRNoy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Oct 2010 09:44:04 -0400
-Subject: Re: [PATCH 0/3] Add OMAP hardware spinlock misc driver
-From: Peter Zijlstra <peterz@infradead.org>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Ohad Ben-Cohen <ohad@wizery.com>, Hari Kanigeri <h-kanigeri2@ti.com>,
-        Suman Anna <s-anna@ti.com>, Benoit Cousson <b-cousson@ti.com>,
-        Tony Lindgren <tony@atomide.com>, Greg KH <greg@kroah.com>,
-        linux-kernel@vger.kernel.org, Grant Likely <grant.likely@secretlab.ca>,
-        akpm@linux-foundation.org, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-In-Reply-To: <20101018133502.GA12449@n2100.arm.linux.org.uk>
-References: <1287387875-14168-1-git-send-email-ohad@wizery.com>
-	 <1287406015.29097.1579.camel@twins>
-	 <20101018133502.GA12449@n2100.arm.linux.org.uk>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Mon, 18 Oct 2010 15:43:37 +0200
-Message-ID: <1287409417.29097.1598.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	Mon, 18 Oct 2010 09:44:54 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=RyI5hi8BKwsxucfhHtkmxGX8GqCaSEr9tkE9i11KLi1JCPAlUXknITpjsNndedd9Z0
+         Se3i3VoJamq6FLJn0RvCLShqkyUrH1W+Jcc/kIHg+R00Lq1yWzHUhuGJzCBmWe3rRsdB
+         POvejoDAYxeJUH7+UqNjGDuu4vyDl/1Y4pMLU=
+Date: Mon, 18 Oct 2010 21:45:08 +0800
+From: Dave Young <hidave.darkstar@gmail.com>
+To: Avi Kivity <avi@redhat.com>
+Cc: Jan Kiszka <jan.kiszka@web.de>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [BUG] kvm: guest can not startup due to triple fault
+Message-ID: <20101018134508.GA11885@darkstar>
+References: <20101017085416.GA1758@darkstar>
+ <4CBAC342.1010609@redhat.com>
+ <AANLkTin6qJYEqOc_97EVWkK1Kt1zNSvXtfVeYuk9fyJ8@mail.gmail.com>
+ <4CBAE8E2.1060704@redhat.com>
+ <AANLkTi=5yGPmZxZY7T_oeyJ4xS+RWt7cY4WD=78fbo7v@mail.gmail.com>
+ <4CBBF3C8.9070104@web.de>
+ <4CBC1047.6010501@redhat.com>
+ <20101018125803.GA2497@darkstar>
+ <4CBC4B06.3030300@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4CBC4B06.3030300@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-10-18 at 14:35 +0100, Russell King - ARM Linux wrote:
-> On Mon, Oct 18, 2010 at 02:46:55PM +0200, Peter Zijlstra wrote:
-> > On Mon, 2010-10-18 at 09:44 +0200, Ohad Ben-Cohen wrote:
-> > > OMAP4 introduces a Spinlock hardware module, which provides hardware
-> > > assistance for synchronization and mutual exclusion between heterogeneous
-> > > processors and those not operating under a single, shared operating system
-> > > (e.g. OMAP4 has dual Cortex-A9, dual Cortex-M3 and a C64x+ DSP). 
-> > 
-> > I just have to ask... was it really easier to build silicon than to
-> > agree on a spinlock ABI?
+On Mon, Oct 18, 2010 at 03:26:30PM +0200, Avi Kivity wrote:
+>  On 10/18/2010 02:58 PM, Dave Young wrote:
+> >>
+> >>  It's secondary_startup_64 enabling efer.sce and efer.nx.
+> >>
+> >>  Dave, please post your /proc/cpuinfo.  Is your host running with NX
+> >>  disabled?
+> >
+> >I see nx bit in /proc/cpuinfo, Actually I don't know how to disable it.
 > 
-> I'm not really sure what point you're trying to make, but if you're
-> suggesting that Linux's spinlock should be exposed to these other
-> processors, you're completely off your rocker.
+> Strange.
+> 
+> Please patch arch/x86/kvm/x86.c to printk efer_reserved_bits (a
+> global), efer (an argument) and old_efer (a local), and post the
+> results.
 
-Of course not, that would indeed be utterly silly, nor would it serve
-any purpose, the Linux kernel spinlocks are internal spinlocks and need
-not interact with anything out side of it.
+I add printk before kvm_mmu_reset_context(vcpu), correct? get following value:
 
-But for the purpose of communicating with a heterogeneous CPU/DSP it
-would make perfect sense to specify a spinlock ABI. Creating specific
-hardware just to serialise between these components seems like overkill.
+[ 3228.468325] efer_reserved_bits = 0xfffffffffffffafe
+[ 3228.468328] efer = 0x100
+[ 3228.468330] old_efer = 0x0
 
-> In any case, Linux's spinlock API (or more accurately, the ARM exclusive
-> access instructions) relies upon hardware coherency support (a piece of
-> hardware called an exclusive monitor) which isn't present on the M3 nor
-> DSP processors.  So there's no way to ensure that updates from the M3
-> and DSP are atomic wrt the A9 updates.
-
-Right, so the problem is that there simply is no way to do atomic memory
-access from these auxiliary processing units wrt the main CPU? Seeing as
-they operate on the same memory space, wouldn't it make sense to have
-them cache-coherent and thus provide atomicy guarantees through that?
-
-But that's water under the bridge, and your last paragraph does indeed
-answer my question.
