@@ -1,72 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755905Ab0JRNuz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Oct 2010 09:50:55 -0400
-Received: from mail-px0-f174.google.com ([209.85.212.174]:46313 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755153Ab0JRNuw (ORCPT
+	id S1755840Ab0JRNwn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Oct 2010 09:52:43 -0400
+Received: from b-pb-sasl-quonix.pobox.com ([208.72.237.35]:33048 "EHLO
+	sasl.smtp.pobox.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755721Ab0JRNwm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Oct 2010 09:50:52 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=VMI7QWRQp0PRoD/nmkWoq7RUJH9AAHtGZ5gGnasdyerGuPO+bpYS+Yhmza10KP39mD
-         baX2kIa1syth8Or9TyxqfTpqS78SHpP9flQ+ZbJBzRj4I4rVw1GboynfjkK5ZXUumpN+
-         Inl6gzpdYnxutcitNVxH8wcBmGe0TG5nMDMSs=
-Date: Mon, 18 Oct 2010 21:51:08 +0800
-From: Dave Young <hidave.darkstar@gmail.com>
-To: Avi Kivity <avi@redhat.com>
-Cc: Jan Kiszka <jan.kiszka@web.de>, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [BUG] kvm: guest can not startup due to triple fault
-Message-ID: <20101018135107.GA16154@darkstar>
-References: <4CBAC342.1010609@redhat.com>
- <AANLkTin6qJYEqOc_97EVWkK1Kt1zNSvXtfVeYuk9fyJ8@mail.gmail.com>
- <4CBAE8E2.1060704@redhat.com>
- <AANLkTi=5yGPmZxZY7T_oeyJ4xS+RWt7cY4WD=78fbo7v@mail.gmail.com>
- <4CBBF3C8.9070104@web.de>
- <4CBC1047.6010501@redhat.com>
- <20101018125803.GA2497@darkstar>
- <4CBC4B06.3030300@redhat.com>
- <20101018134508.GA11885@darkstar>
- <4CBC4FA9.90406@redhat.com>
+	Mon, 18 Oct 2010 09:52:42 -0400
+X-Greylist: delayed 461 seconds by postgrey-1.27 at vger.kernel.org; Mon, 18 Oct 2010 09:52:42 EDT
+DomainKey-Signature: a=rsa-sha1; c=nofws; d=pobox.com; h=message-id:date
+	:from:mime-version:to:cc:subject:references:in-reply-to
+	:content-type:content-transfer-encoding; q=dns; s=sasl; b=CGbMU6
+	gj9fSDC4P+F0OV8gLZQJ95VHBo1Iv70PI3UE3ZW09IuBdyHpC/2xqCFHvziMeJ83
+	/ThNb+yzhZVasualigwhFl1xr3wFBkYkPOKo83rmcevlWXavVbEw/sFOPsOuHp3I
+	NIfk7Ay2/tY+1DlTpL9+MQe7qU0FinNdhtJGM=
+Message-ID: <4CBC4F4E.5010305@pobox.com>
+Date: Mon, 18 Oct 2010 22:44:46 +0900
+From: Shinya Kuribayashi <skuribay@pobox.com>
+User-Agent: Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10.6; en-US;
+ rv:1.9.1.14) Gecko/20101005 Thunderbird/3.0.9
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4CBC4FA9.90406@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Kevin Cernekee <cernekee@gmail.com>
+CC: Ralf Baechle <ralf@linux-mips.org>, linux-mips@linux-mips.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH resend 5/9] MIPS: sync after cacheflush
+References: <17ebecce124618ddf83ec6fe8e526f93@localhost>
+ <17d8d27a2356640a4359f1a7dcbb3b42@localhost>
+In-Reply-To: <17d8d27a2356640a4359f1a7dcbb3b42@localhost>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Pobox-Relay-ID: E506C1CE-DABD-11DF-94DD-89B3016DD5F0-47602734!b-pb-sasl-quonix.pobox.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 18, 2010 at 03:46:17PM +0200, Avi Kivity wrote:
->  On 10/18/2010 03:45 PM, Dave Young wrote:
-> >On Mon, Oct 18, 2010 at 03:26:30PM +0200, Avi Kivity wrote:
-> >>   On 10/18/2010 02:58 PM, Dave Young wrote:
-> >>  >>
-> >>  >>   It's secondary_startup_64 enabling efer.sce and efer.nx.
-> >>  >>
-> >>  >>   Dave, please post your /proc/cpuinfo.  Is your host running with NX
-> >>  >>   disabled?
-> >>  >
-> >>  >I see nx bit in /proc/cpuinfo, Actually I don't know how to disable it.
-> >>
-> >>  Strange.
-> >>
-> >>  Please patch arch/x86/kvm/x86.c to printk efer_reserved_bits (a
-> >>  global), efer (an argument) and old_efer (a local), and post the
-> >>  results.
-> >
-> >I add printk before kvm_mmu_reset_context(vcpu), correct? get following value:
-> >
-> 
-> Add it at the beginning please, otherwise we'll miss the important
-> one due to an early return.
+On 10/17/10 6:22 AM, Kevin Cernekee wrote:
+> On processors with deep write buffers, it is likely that many cycles
+> will pass between a CACHE instruction and the time the data actually
+> gets written out to DRAM.  Add a SYNC instruction to ensure that the
+> buffers get emptied before the flush functions return.
+>
+> Actual problem seen in the wild:
+>
+> 1) dma_alloc_coherent() allocates cached memory
+>
+> 2) memset() is called to clear the new pages
+>
+> 3) dma_cache_wback_inv() is called to flush the zero data out to memory
+>
+> 4) dma_alloc_coherent() returns an uncached (kseg1) pointer to the
+> freshly allocated pages
+>
+> 5) Caller writes data through the kseg1 pointer
+>
+> 6) Buffered writeback data finally gets flushed out to DRAM
+>
+> 7) Part of caller's data is inexplicably zeroed out
+>
+> This patch adds SYNC between steps 3 and 4, which fixed the problem.
+>
+> Signed-off-by: Kevin Cernekee<cernekee@gmail.com>
+> ---
+>   arch/mips/mm/c-r4k.c |    4 ++++
+>   1 files changed, 4 insertions(+), 0 deletions(-)
+>
+> diff --git a/arch/mips/mm/c-r4k.c b/arch/mips/mm/c-r4k.c
+> index 6721ee2..05c3de3 100644
+> --- a/arch/mips/mm/c-r4k.c
+> +++ b/arch/mips/mm/c-r4k.c
+> @@ -605,6 +605,7 @@ static void r4k_dma_cache_wback_inv(unsigned long addr, unsigned long size)
+>   			r4k_blast_scache();
+>   		else
+>   			blast_scache_range(addr, addr + size);
+> +		__sync();
+>   		return;
+>   	}
+>
 
-here it is:
+Basically, agreed.  I have similar workarounds when initiating DMA,
+where we need to flush out data to DRAM before starting DMA trans-
+actions.  Looks like similar situations.
 
-[ 3679.616500] efer_reserved_bits = 0xfffffffffffffafe
-[ 3679.616504] efer = 0xd01
-[ 3679.616506] old_efer = 0x500
+But I have a concern.
 
+I suspect that SYNC insn alone is still not enough, insn't it?  In
+such systems with that 'deep' write buffer and data incoherency is
+visibly observed, there sill may be data write transactions floating
+in the internal bus system.
+
+To make sure that all data (data inside processor's write buffer and
+data floating in the internal bus system), we need the following
+three steps:
+
+1. Flush data cache
+2. Uncached, dummy load operation from _DRAM_ (not somewhere else)
+3. then SYNC instruction
+
+With these steps, data in write buffer will be pushed out of the
+processor's write buffer, wait for uncached load operation to be
+completed, and then finally the pipeline gets cleared.  Thoughts?
+
+   Shinya
