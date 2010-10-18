@@ -1,209 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933479Ab0JRW4N (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Oct 2010 18:56:13 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:64375 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756086Ab0JRW4L (ORCPT
+	id S1757827Ab0JRXAP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Oct 2010 19:00:15 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:42438 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754207Ab0JRXAM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Oct 2010 18:56:11 -0400
-Date: Mon, 18 Oct 2010 15:54:26 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-Cc: linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [RFCv3 20/21] tcm: Add Kbuild and Kconfig for drivers/target
- and Documentation/target/
-Message-Id: <20101018155426.957b8c21.randy.dunlap@oracle.com>
-In-Reply-To: <1287441559-20129-1-git-send-email-nab@linux-iscsi.org>
-References: <1287441559-20129-1-git-send-email-nab@linux-iscsi.org>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 18 Oct 2010 19:00:12 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=eso6dppH0JkknCJdo8bxeVCpYWUCr9cdWJM90QXH5cK3xqe1cb1qyBQG3jmHWSNaMD
+         xLyBoQFcxozty1SnKGsIpoiog0emFO6f5adDTLTzg8jhniRiiSmwKH8P3pCTT/aZq6z4
+         kZeui8r8qpssOD0ny/sZa0ly7ypVucuF1kqp0=
+MIME-Version: 1.0
+In-Reply-To: <20101018184346.GD27089@kroah.com>
+References: <201009161632.59210.arnd@arndb.de>
+	<201010181742.06678.arnd@arndb.de>
+	<20101018184346.GD27089@kroah.com>
+Date: Tue, 19 Oct 2010 09:00:09 +1000
+Message-ID: <AANLkTin2KPNNXvwcWphhM-5qexB14FS7M7ezkCCYCZ2H@mail.gmail.com>
+Subject: Re: [Ksummit-2010-discuss] [v2] Remaining BKL users, what to do
+From: Dave Airlie <airlied@gmail.com>
+To: Greg KH <greg@kroah.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, codalist@telemann.coda.cs.cmu.edu,
+        ksummit-2010-discuss@lists.linux-foundation.org,
+        autofs@linux.kernel.org, Jan Harkes <jaharkes@cs.cmu.edu>,
+        Samuel Ortiz <samuel@sortiz.org>, Jan Kara <jack@suse.cz>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        netdev@vger.kernel.org, Anders Larsen <al@alarsen.net>,
+        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        Bryan Schumaker <bjschuma@netapp.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        Petr Vandrovec <vandrove@vc.cvut.cz>,
+        Mikulas Patocka <mikulas@artax.karlin.mff.cuni.cz>,
+        linux-fsdevel@vger.kernel.org, Evgeniy Dushistov <dushistov@mail.ru>,
+        Ingo Molnar <mingo@elte.hu>, Andrew Hendry <andrew.hendry@gmail.com>,
+        linux-media@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 18 Oct 2010 15:39:19 -0700 Nicholas A. Bellinger wrote:
+On Tue, Oct 19, 2010 at 4:43 AM, Greg KH <greg@kroah.com> wrote:
+> On Mon, Oct 18, 2010 at 05:42:06PM +0200, Arnd Bergmann wrote:
+>>
+>> Out of the remaining modules, I guess i810/i830, adfs, hpfs and ufs might end
+>> up not getting fixed at all, we can either mark them non-SMP or move them
+>> to drivers/staging once all the others are done.
+>
+> I recommend moving them to staging, and then retire them from there if
+> no one steps up to maintain them.
 
-> From: Nicholas Bellinger <nab@linux-iscsi.org>
+I think this sets a bad precedent, these drivers work fine. Removing
+BKL from them is hard, and involves finding and booting hw that
+developers don't have much time/interest in at the moment. Anyone who
+has access to the i810 hw and has time to work out the locking has
+more important things to be doing with modern hw, however it doesn't
+mean we should just drop support for old drivers because they don't
+have active maintainers. Removing the BKL from the kernel is a great
+goal, but breaking userspace ABI by removing drivers isn't.
 
-
-> diff --git a/Documentation/target/tcm_mod_builder.txt b/Documentation/target/tcm_mod_builder.txt
-> new file mode 100644
-> index 0000000..b829e83
-> --- /dev/null
-> +++ b/Documentation/target/tcm_mod_builder.txt
-> @@ -0,0 +1,145 @@
-> +>>>>>>>>>> The TCM v4 fabric module script generator <<<<<<<<<<
-> +
-> +Greetings all,
-> +
-> +This document is intended to be a mini-HOWTO for using the tcm_mod_builder.py
-> +script to generate a brand new functional TCM v4 fabric .ko module of your very own,
-> +that once built can be immediately be loaded to start access the new TCM/ConfigFS
-> +fabric skeleton, by simplying using:
-
-                       simply
-
-> +
-> +	modprobe $TCM_NEW_MOD
-> +	mkdir -p /sys/kernel/config/target/$TCM_NEW_MOD
-> +
-> +This script will create a new drivers/target/$TCM_NEW_MOD/, and will do the following
-> +
-> +	*) Generate new API callers for drivers/target/target_core_fabric_configs.c logic
-> +	   ->make_nodeacl(), ->drop_nodeacl(), ->make_tpg(), ->drop_tpg()
-> +	   ->make_wwn(), ->drop_wwn().  These are created into $TCM_NEW_MOD/$TCM_NEW_MOD_configfs.c
-> +	*) Generate basic infrastructure for loading/unloading LKMs and TCM/ConfigFS fabric module
-> +	   using a skeleton struct target_core_fabric_ops API template.
-> +	*) Based on user defined T10 Proto_Ident for the new fabric module being built,
-> +	   the TransportID / Initiator and Target WWPN related handlers for
-> +	   SPC-3 persistent reservation are automatically generated in $TCM_NEW_MOD/$TCM_NEW_MOD_fabric.c
-> +	   using drivers/target/target_core_fabric_lib.c logic.
-> +	*) NOP API calls for all other Data I/O path and fabric dependent attribute logic
-> +	   in $TCM_NEW_MOD/$TCM_NEW_MOD_fabric.c
-> +
-> +tcm_mod_builder.py depends upon the mandatory '-p $PROTO_IDENT' and '-m
-> +$FABRIC_MOD_name' paramters, and actually running the script looks like:
-
-                     parameters,
-
-> +
-> +target:/mnt/sdb/lio-core-2.6.git/Documentation/target# python tcm_mod_builder.py -p iSCSI -m tcm_nab5000
-> +tcm_dir: /mnt/sdb/lio-core-2.6.git/Documentation/target/../../
-> +Set fabric_mod_name: tcm_nab5000
-> +Set fabric_mod_dir:
-> +/mnt/sdb/lio-core-2.6.git/Documentation/target/../../drivers/target/tcm_nab5000
-> +Using proto_ident: iSCSI
-> +Creating fabric_mod_dir:
-> +/mnt/sdb/lio-core-2.6.git/Documentation/target/../../drivers/target/tcm_nab5000
-> +Writing file:
-> +/mnt/sdb/lio-core-2.6.git/Documentation/target/../../drivers/target/tcm_nab5000/tcm_nab5000_base.h
-> +Using tcm_mod_scan_fabric_ops:
-> +/mnt/sdb/lio-core-2.6.git/Documentation/target/../../include/target/target_core_fabric_ops.h
-> +Writing file:
-> +/mnt/sdb/lio-core-2.6.git/Documentation/target/../../drivers/target/tcm_nab5000/tcm_nab5000_fabric.c
-> +Writing file:
-> +/mnt/sdb/lio-core-2.6.git/Documentation/target/../../drivers/target/tcm_nab5000/tcm_nab5000_fabric.h
-> +Writing file:
-> +/mnt/sdb/lio-core-2.6.git/Documentation/target/../../drivers/target/tcm_nab5000/tcm_nab5000_configfs.c
-> +Writing file:
-> +/mnt/sdb/lio-core-2.6.git/Documentation/target/../../drivers/target/tcm_nab5000/Kbuild
-> +Writing file:
-> +/mnt/sdb/lio-core-2.6.git/Documentation/target/../../drivers/target/tcm_nab5000/Kconfig
-> +Would you like to add tcm_nab5000to drivers/target/Kbuild..? [yes,no]: yes
-> +Would you like to add tcm_nab5000to drivers/target/Kconfig..? [yes,no]: yes
-> +
-> +At the end of tcm_mod_builder.py. the script will ask to add the following
-
-                                .py,
-
-> +line for to drivers/target/Kbuild:
-
-   line to
-
-> +
-> +	obj-$(CONFIG_TCM_NAB5000)       += tcm_nab5000/
-> +
-> +and the same for drivers/target/Kconfig:
-> +
-> +	source "drivers/target/tcm_nab5000/Kconfig"
-> +
-> +*) Run 'make menuconfig' and select the new CONFIG_TCM_NAB5000 item:
-> +
-> +	<M>   TCM_NAB5000 fabric module                   
-> +
-> +*) Build using 'make modules', once completed you will have:
-> +
-> +target:/mnt/sdb/lio-core-2.6.git# ls -la drivers/target/tcm_nab5000/
-> +total 1348
-> +drwxr-xr-x 2 root root   4096 2010-10-05 03:23 .
-> +drwxr-xr-x 9 root root   4096 2010-10-05 03:22 ..
-> +-rw-r--r-- 1 root root    282 2010-10-05 03:22 Kbuild
-> +-rw-r--r-- 1 root root    171 2010-10-05 03:22 Kconfig
-> +-rw-r--r-- 1 root root     49 2010-10-05 03:23 modules.order
-> +-rw-r--r-- 1 root root    738 2010-10-05 03:22 tcm_nab5000_base.h
-> +-rw-r--r-- 1 root root   9096 2010-10-05 03:22 tcm_nab5000_configfs.c
-> +-rw-r--r-- 1 root root 191200 2010-10-05 03:23 tcm_nab5000_configfs.o
-> +-rw-r--r-- 1 root root  40504 2010-10-05 03:23 .tcm_nab5000_configfs.o.cmd
-> +-rw-r--r-- 1 root root   5414 2010-10-05 03:22 tcm_nab5000_fabric.c
-> +-rw-r--r-- 1 root root   2016 2010-10-05 03:22 tcm_nab5000_fabric.h
-> +-rw-r--r-- 1 root root 190932 2010-10-05 03:23 tcm_nab5000_fabric.o
-> +-rw-r--r-- 1 root root  40713 2010-10-05 03:23 .tcm_nab5000_fabric.o.cmd
-> +-rw-r--r-- 1 root root 401861 2010-10-05 03:23 tcm_nab5000.ko
-> +-rw-r--r-- 1 root root    265 2010-10-05 03:23 .tcm_nab5000.ko.cmd
-> +-rw-r--r-- 1 root root    459 2010-10-05 03:23 tcm_nab5000.mod.c
-> +-rw-r--r-- 1 root root  23896 2010-10-05 03:23 tcm_nab5000.mod.o
-> +-rw-r--r-- 1 root root  22655 2010-10-05 03:23 .tcm_nab5000.mod.o.cmd
-> +-rw-r--r-- 1 root root 379022 2010-10-05 03:23 tcm_nab5000.o
-> +-rw-r--r-- 1 root root    211 2010-10-05 03:23 .tcm_nab5000.o.cmd
-> +
-> +*) Load the new module, create a lun_0 configfs group, and add new TCM Core
-> +   IBLOCK backstore symlink to port:
-> +
-> +target:/mnt/sdb/lio-core-2.6.git# insmod drivers/target/tcm_nab5000.ko
-> +target:/mnt/sdb/lio-core-2.6.git# mkdir -p /sys/kernel/config/target/nab5000/iqn.foo/tpgt_1/lun/lun_0
-> +target:/mnt/sdb/lio-core-2.6.git# cd /sys/kernel/config/target/nab5000/iqn.foo/tpgt_1/lun/lun_0/
-> +target:/sys/kernel/config/target/nab5000/iqn.foo/tpgt_1/lun/lun_0# ln -s /sys/kernel/config/target/core/iblock_0/lvm_test0 nab5000_port
-> +
-> +target:/sys/kernel/config/target/nab5000/iqn.foo/tpgt_1/lun/lun_0# cd -
-> +target:/mnt/sdb/lio-core-2.6.git# tree /sys/kernel/config/target/nab5000/
-> +/sys/kernel/config/target/nab5000/
-> +|-- discovery_auth
-> +|-- iqn.foo
-> +|   `-- tpgt_1
-> +|       |-- acls
-> +|       |-- attrib
-> +|       |-- lun
-> +|       |   `-- lun_0
-> +|       |       |-- alua_tg_pt_gp
-> +|       |       |-- alua_tg_pt_offline
-> +|       |       |-- alua_tg_pt_status
-> +|       |       |-- alua_tg_pt_write_md
-> +|	|	`-- nab5000_port -> ../../../../../../target/core/iblock_0/lvm_test0
-> +|       |-- np
-> +|       `-- param
-> +`-- version
-> +
-> +target:/mnt/sdb/lio-core-2.6.git# lsmod
-> +Module                  Size  Used by
-> +tcm_nab5000             3935  4 
-> +iscsi_target_mod      193211  0 
-> +target_core_stgt        8090  0 
-> +target_core_pscsi      11122  1 
-> +target_core_file        9172  2 
-> +target_core_iblock      9280  1 
-> +target_core_mod       228575  31
-> +tcm_nab5000,iscsi_target_mod,target_core_stgt,target_core_pscsi,target_core_file,target_core_iblock
-> +libfc                  73681  0 
-> +scsi_debug             56265  0 
-> +scsi_tgt                8666  1 target_core_stgt
-> +configfs               20644  2 target_core_mod
-> +
-> +----------------------------------------------------------------------
-> +
-> +Future TODO items:
-> +
-> +	*) Add more T10 proto_idents 
-> +	*) Make tcm_mod_dump_fabric_ops() smater and generate function pointer
-
-	                                  smarter
-
-> +	   defs directly from include/target/target_core_fabric_ops.h:struct target_core_fabric_ops 
-> +	   structure members.
-> +
-> +October 5th, 2010
-> +Nicholas A. Bellinger <nab@linux-iscsi.org>
-
-
-I don't get it, but then I haven't followed the scsi target development closely.
-
-Why the intermediate step of the python script?  I.e., why generate
-source & build/make files?
-
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+Dave.
