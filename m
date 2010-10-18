@@ -1,60 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932954Ab0JRQVM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Oct 2010 12:21:12 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:42414 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932335Ab0JRQVK (ORCPT
+	id S932983Ab0JRQVT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Oct 2010 12:21:19 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:53239 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932715Ab0JRQVR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Oct 2010 12:21:10 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mime-version:content-type
-         :content-disposition:user-agent;
-        b=vFkCzYeNgnA3vFp4XoIob7i5WPJXohrWTfiSotNFf5FezNmRTsTN3mLTlhlyhDJ1fp
-         gWvoYSwvIGTbSmpok0Vp/2vfsbkIx7kmWX6rvUmekoUg7oVRe+B4fIAgKfg9nHiPo84q
-         hKtk4QEJBjJalAGfX7JbzcN8cl4nBNJPXrJuk=
-Date: Mon, 18 Oct 2010 09:20:59 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linux-input@vger.kernel.org, Daniel Mack <zonque@gmail.com>
-Subject: [git pull] Input updates for 2.6.36-rc8
-Message-ID: <20101018162058.GA16552@core.coreip.homeip.net>
+	Mon, 18 Oct 2010 12:21:17 -0400
+Date: Mon, 18 Oct 2010 12:21:05 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: Nick Piggin <npiggin@kernel.dk>, Dave Chinner <david@fromorbit.com>,
+        Christoph Hellwig <hch@infradead.org>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 11/18] fs: Introduce per-bucket inode hash locks
+Message-ID: <20101018162105.GB9571@infradead.org>
+References: <1286515292-15882-1-git-send-email-david@fromorbit.com>
+ <1286515292-15882-12-git-send-email-david@fromorbit.com>
+ <20101008185409.GA29251@infradead.org>
+ <20101016075703.GO19147@amd>
+ <20101016161642.GC16861@infradead.org>
+ <20101016171213.GC3240@amd>
+ <20101017004610.GB29677@dastard>
+ <20101017022539.GA3317@amd>
+ <87iq0za32l.fsf@basil.nowhere.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <87iq0za32l.fsf@basil.nowhere.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[Resending with the proper version in subject.]
+On Mon, Oct 18, 2010 at 06:16:50PM +0200, Andi Kleen wrote:
+> > Hiding the type of lock, and hiding the fact that it sets the low bit?
+> > I don't agree. We don't have synchronization in our data structures,
+> > where possible, because it is just restrictive or goes wrong when people
+> > don't think enough about the locking.
+> 
+> I fully agree. The old skb lists in networking made this mistake
+> long ago and it was a big problem, until people essentially stopped 
+> using it (always using __ variants) and it was eventually removed.
+> 
+> Magic locking in data structures is usually a bad idea.
 
-Hi Linus,
+Err, there is no implicit locking in the calls to hlist_*.  There
+is just two small wrappers for the bit-lock/unlock so that the callers
+don't have to know how the lock is overloaded onto the pointer in the
+list head.  
 
-Please pull from:
-
-	git://git.kernel.org/pub/scm/linux/kernel/git/dtor/input.git for-linus
-or
-	master.kernel.org:/pub/scm/linux/kernel/git/dtor/input.git for-linus
-
-to receive 2 important bug fixes to the evdev input handler. I hope it
-is not too late to make 2.6.36...
-
-Changelog:
----------
-
-Daniel Mack (2):
-      Input: evdev - fix Ooops in EVIOCGABS/EVIOCSABS
-      Input: evdev - fix EVIOCSABS regression
-
-
-Diffstat:
---------
-
- drivers/input/evdev.c |    8 +++++++-
- 1 files changed, 7 insertions(+), 1 deletions(-)
-
-Thanks,
-Dmitry
