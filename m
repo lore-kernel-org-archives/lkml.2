@@ -1,114 +1,273 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933119Ab0JRTYk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Oct 2010 15:24:40 -0400
-Received: from hera.kernel.org ([140.211.167.34]:35229 "EHLO hera.kernel.org"
+	id S933138Ab0JRTZH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Oct 2010 15:25:07 -0400
+Received: from hera.kernel.org ([140.211.167.34]:35249 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932134Ab0JRTYj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Oct 2010 15:24:39 -0400
-Date: Mon, 18 Oct 2010 19:24:13 GMT
-From: tip-bot for Nikhil Rao <ncrao@google.com>
+	id S932134Ab0JRTZF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Oct 2010 15:25:05 -0400
+Date: Mon, 18 Oct 2010 19:24:35 GMT
+From: tip-bot for Venkatesh Pallipadi <venki@google.com>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        a.p.zijlstra@chello.nl, ncrao@google.com, tglx@linutronix.de,
-        mingo@elte.hu
+        a.p.zijlstra@chello.nl, tglx@linutronix.de, mingo@elte.hu,
+        venki@google.com
 Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        ncrao@google.com, a.p.zijlstra@chello.nl, tglx@linutronix.de,
+        a.p.zijlstra@chello.nl, tglx@linutronix.de, venki@google.com,
         mingo@elte.hu
-In-Reply-To: <1287173550-30365-5-git-send-email-ncrao@google.com>
-References: <1287173550-30365-5-git-send-email-ncrao@google.com>
+In-Reply-To: <1286237003-12406-2-git-send-email-venki@google.com>
+References: <1286237003-12406-2-git-send-email-venki@google.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] sched: Drop group_capacity to 1 only if local group has extra capacity
-Message-ID: <tip-75dd321d79d495a0ee579e6249ebc38ddbb2667f@git.kernel.org>
-Git-Commit-ID: 75dd321d79d495a0ee579e6249ebc38ddbb2667f
+Subject: [tip:sched/core] sched: Fix softirq time accounting
+Message-ID: <tip-75e1056f5c57050415b64cb761a3acc35d91f013@git.kernel.org>
+Git-Commit-ID: 75e1056f5c57050415b64cb761a3acc35d91f013
 X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 18 Oct 2010 19:24:13 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 18 Oct 2010 19:24:36 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  75dd321d79d495a0ee579e6249ebc38ddbb2667f
-Gitweb:     http://git.kernel.org/tip/75dd321d79d495a0ee579e6249ebc38ddbb2667f
-Author:     Nikhil Rao <ncrao@google.com>
-AuthorDate: Fri, 15 Oct 2010 13:12:30 -0700
+Commit-ID:  75e1056f5c57050415b64cb761a3acc35d91f013
+Gitweb:     http://git.kernel.org/tip/75e1056f5c57050415b64cb761a3acc35d91f013
+Author:     Venkatesh Pallipadi <venki@google.com>
+AuthorDate: Mon, 4 Oct 2010 17:03:16 -0700
 Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Mon, 18 Oct 2010 20:52:19 +0200
+CommitDate: Mon, 18 Oct 2010 20:52:20 +0200
 
-sched: Drop group_capacity to 1 only if local group has extra capacity
+sched: Fix softirq time accounting
 
-When SD_PREFER_SIBLING is set on a sched domain, drop group_capacity to 1
-only if the local group has extra capacity. The extra check prevents the case
-where you always pull from the heaviest group when it is already under-utilized
-(possible with a large weight task outweighs the tasks on the system).
+Peter Zijlstra found a bug in the way softirq time is accounted in
+VIRT_CPU_ACCOUNTING on this thread:
 
-For example, consider a 16-cpu quad-core quad-socket machine with MC and NUMA
-scheduling domains. Let's say we spawn 15 nice0 tasks and one nice-15 task,
-and each task is running on one core. In this case, we observe the following
-events when balancing at the NUMA domain:
+   http://lkml.indiana.edu/hypermail//linux/kernel/1009.2/01366.html
 
-- find_busiest_group() will always pick the sched group containing the niced
-  task to be the busiest group.
-- find_busiest_queue() will then always pick one of the cpus running the
-  nice0 task (never picks the cpu with the nice -15 task since
-  weighted_cpuload > imbalance).
-- The load balancer fails to migrate the task since it is the running task
-  and increments sd->nr_balance_failed.
-- It repeats the above steps a few more times until sd->nr_balance_failed > 5,
-  at which point it kicks off the active load balancer, wakes up the migration
-  thread and kicks the nice 0 task off the cpu.
+The problem is, softirq processing uses local_bh_disable internally. There
+is no way, later in the flow, to differentiate between whether softirq is
+being processed or is it just that bh has been disabled. So, a hardirq when bh
+is disabled results in time being wrongly accounted as softirq.
 
-The load balancer doesn't stop until we kick out all nice 0 tasks from
-the sched group, leaving you with 3 idle cpus and one cpu running the
-nice -15 task.
+Looking at the code a bit more, the problem exists in !VIRT_CPU_ACCOUNTING
+as well. As account_system_time() in normal tick based accouting also uses
+softirq_count, which will be set even when not in softirq with bh disabled.
 
-When balancing at the NUMA domain, we drop sgs.group_capacity to 1 if the child
-domain (in this case MC) has SD_PREFER_SIBLING set.  Subsequent load checks are
-not relevant because the niced task has a very large weight.
+Peter also suggested solution of using 2*SOFTIRQ_OFFSET as irq count
+for local_bh_{disable,enable} and using just SOFTIRQ_OFFSET while softirq
+processing. The patch below does that and adds API in_serving_softirq() which
+returns whether we are currently processing softirq or not.
 
-In this patch, we add an extra condition to the "if(prefer_sibling)" check in
-update_sd_lb_stats(). We drop the capacity of a group only if the local group
-has extra capacity, ie. nr_running < group_capacity. This patch preserves the
-original intent of the prefer_siblings check (to spread tasks across the system
-in low utilization scenarios) and fixes the case above.
+Also changes one of the usages of softirq_count in net/sched/cls_cgroup.c
+to in_serving_softirq.
 
-It helps in the following ways:
-- In low utilization cases (where nr_tasks << nr_cpus), we still drop
-  group_capacity down to 1 if we prefer siblings.
-- On very busy systems (where nr_tasks >> nr_cpus), sgs.nr_running will most
-  likely be > sgs.group_capacity.
-- When balancing large weight tasks, if the local group does not have extra
-  capacity, we do not pick the group with the niced task as the busiest group.
-  This prevents failed balances, active migration and the under-utilization
-  described above.
+Looks like many usages of in_softirq really want in_serving_softirq. Those
+changes can be made individually on a case by case basis.
 
-Signed-off-by: Nikhil Rao <ncrao@google.com>
+Signed-off-by: Venkatesh Pallipadi <venki@google.com>
 Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-LKML-Reference: <1287173550-30365-5-git-send-email-ncrao@google.com>
+LKML-Reference: <1286237003-12406-2-git-send-email-venki@google.com>
 Signed-off-by: Ingo Molnar <mingo@elte.hu>
 ---
- kernel/sched_fair.c |    9 +++++++--
- 1 files changed, 7 insertions(+), 2 deletions(-)
+ include/linux/hardirq.h |    5 ++++
+ include/linux/sched.h   |    6 ++--
+ kernel/sched.c          |    2 +-
+ kernel/softirq.c        |   51 +++++++++++++++++++++++++++++++---------------
+ net/sched/cls_cgroup.c  |    2 +-
+ 5 files changed, 44 insertions(+), 22 deletions(-)
 
-diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
-index 032b548..f1c615f 100644
---- a/kernel/sched_fair.c
-+++ b/kernel/sched_fair.c
-@@ -2554,9 +2554,14 @@ static inline void update_sd_lb_stats(struct sched_domain *sd, int this_cpu,
- 		/*
- 		 * In case the child domain prefers tasks go to siblings
- 		 * first, lower the sg capacity to one so that we'll try
--		 * and move all the excess tasks away.
-+		 * and move all the excess tasks away. We lower the capacity
-+		 * of a group only if the local group has the capacity to fit
-+		 * these excess tasks, i.e. nr_running < group_capacity. The
-+		 * extra check prevents the case where you always pull from the
-+		 * heaviest group when it is already under-utilized (possible
-+		 * with a large weight task outweighs the tasks on the system).
- 		 */
--		if (prefer_sibling)
-+		if (prefer_sibling && !local_group && sds->this_has_capacity)
- 			sgs.group_capacity = min(sgs.group_capacity, 1UL);
+diff --git a/include/linux/hardirq.h b/include/linux/hardirq.h
+index d5b3876..e37a77c 100644
+--- a/include/linux/hardirq.h
++++ b/include/linux/hardirq.h
+@@ -64,6 +64,8 @@
+ #define HARDIRQ_OFFSET	(1UL << HARDIRQ_SHIFT)
+ #define NMI_OFFSET	(1UL << NMI_SHIFT)
  
- 		if (local_group) {
++#define SOFTIRQ_DISABLE_OFFSET	(2 * SOFTIRQ_OFFSET)
++
+ #ifndef PREEMPT_ACTIVE
+ #define PREEMPT_ACTIVE_BITS	1
+ #define PREEMPT_ACTIVE_SHIFT	(NMI_SHIFT + NMI_BITS)
+@@ -82,10 +84,13 @@
+ /*
+  * Are we doing bottom half or hardware interrupt processing?
+  * Are we in a softirq context? Interrupt context?
++ * in_softirq - Are we currently processing softirq or have bh disabled?
++ * in_serving_softirq - Are we currently processing softirq?
+  */
+ #define in_irq()		(hardirq_count())
+ #define in_softirq()		(softirq_count())
+ #define in_interrupt()		(irq_count())
++#define in_serving_softirq()	(softirq_count() & SOFTIRQ_OFFSET)
+ 
+ /*
+  * Are we in NMI context?
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index cdf5669..8744e50 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -2366,9 +2366,9 @@ extern int __cond_resched_lock(spinlock_t *lock);
+ 
+ extern int __cond_resched_softirq(void);
+ 
+-#define cond_resched_softirq() ({				\
+-	__might_sleep(__FILE__, __LINE__, SOFTIRQ_OFFSET);	\
+-	__cond_resched_softirq();				\
++#define cond_resched_softirq() ({					\
++	__might_sleep(__FILE__, __LINE__, SOFTIRQ_DISABLE_OFFSET);	\
++	__cond_resched_softirq();					\
+ })
+ 
+ /*
+diff --git a/kernel/sched.c b/kernel/sched.c
+index 771b518..089be8a 100644
+--- a/kernel/sched.c
++++ b/kernel/sched.c
+@@ -3422,7 +3422,7 @@ void account_system_time(struct task_struct *p, int hardirq_offset,
+ 	tmp = cputime_to_cputime64(cputime);
+ 	if (hardirq_count() - hardirq_offset)
+ 		cpustat->irq = cputime64_add(cpustat->irq, tmp);
+-	else if (softirq_count())
++	else if (in_serving_softirq())
+ 		cpustat->softirq = cputime64_add(cpustat->softirq, tmp);
+ 	else
+ 		cpustat->system = cputime64_add(cpustat->system, tmp);
+diff --git a/kernel/softirq.c b/kernel/softirq.c
+index 07b4f1b..988dfbe 100644
+--- a/kernel/softirq.c
++++ b/kernel/softirq.c
+@@ -77,11 +77,21 @@ void wakeup_softirqd(void)
+ }
+ 
+ /*
++ * preempt_count and SOFTIRQ_OFFSET usage:
++ * - preempt_count is changed by SOFTIRQ_OFFSET on entering or leaving
++ *   softirq processing.
++ * - preempt_count is changed by SOFTIRQ_DISABLE_OFFSET (= 2 * SOFTIRQ_OFFSET)
++ *   on local_bh_disable or local_bh_enable.
++ * This lets us distinguish between whether we are currently processing
++ * softirq and whether we just have bh disabled.
++ */
++
++/*
+  * This one is for softirq.c-internal use,
+  * where hardirqs are disabled legitimately:
+  */
+ #ifdef CONFIG_TRACE_IRQFLAGS
+-static void __local_bh_disable(unsigned long ip)
++static void __local_bh_disable(unsigned long ip, unsigned int cnt)
+ {
+ 	unsigned long flags;
+ 
+@@ -95,32 +105,43 @@ static void __local_bh_disable(unsigned long ip)
+ 	 * We must manually increment preempt_count here and manually
+ 	 * call the trace_preempt_off later.
+ 	 */
+-	preempt_count() += SOFTIRQ_OFFSET;
++	preempt_count() += cnt;
+ 	/*
+ 	 * Were softirqs turned off above:
+ 	 */
+-	if (softirq_count() == SOFTIRQ_OFFSET)
++	if (softirq_count() == cnt)
+ 		trace_softirqs_off(ip);
+ 	raw_local_irq_restore(flags);
+ 
+-	if (preempt_count() == SOFTIRQ_OFFSET)
++	if (preempt_count() == cnt)
+ 		trace_preempt_off(CALLER_ADDR0, get_parent_ip(CALLER_ADDR1));
+ }
+ #else /* !CONFIG_TRACE_IRQFLAGS */
+-static inline void __local_bh_disable(unsigned long ip)
++static inline void __local_bh_disable(unsigned long ip, unsigned int cnt)
+ {
+-	add_preempt_count(SOFTIRQ_OFFSET);
++	add_preempt_count(cnt);
+ 	barrier();
+ }
+ #endif /* CONFIG_TRACE_IRQFLAGS */
+ 
+ void local_bh_disable(void)
+ {
+-	__local_bh_disable((unsigned long)__builtin_return_address(0));
++	__local_bh_disable((unsigned long)__builtin_return_address(0),
++				SOFTIRQ_DISABLE_OFFSET);
+ }
+ 
+ EXPORT_SYMBOL(local_bh_disable);
+ 
++static void __local_bh_enable(unsigned int cnt)
++{
++	WARN_ON_ONCE(in_irq());
++	WARN_ON_ONCE(!irqs_disabled());
++
++	if (softirq_count() == cnt)
++		trace_softirqs_on((unsigned long)__builtin_return_address(0));
++	sub_preempt_count(cnt);
++}
++
+ /*
+  * Special-case - softirqs can safely be enabled in
+  * cond_resched_softirq(), or by __do_softirq(),
+@@ -128,12 +149,7 @@ EXPORT_SYMBOL(local_bh_disable);
+  */
+ void _local_bh_enable(void)
+ {
+-	WARN_ON_ONCE(in_irq());
+-	WARN_ON_ONCE(!irqs_disabled());
+-
+-	if (softirq_count() == SOFTIRQ_OFFSET)
+-		trace_softirqs_on((unsigned long)__builtin_return_address(0));
+-	sub_preempt_count(SOFTIRQ_OFFSET);
++	__local_bh_enable(SOFTIRQ_DISABLE_OFFSET);
+ }
+ 
+ EXPORT_SYMBOL(_local_bh_enable);
+@@ -147,13 +163,13 @@ static inline void _local_bh_enable_ip(unsigned long ip)
+ 	/*
+ 	 * Are softirqs going to be turned on now:
+ 	 */
+-	if (softirq_count() == SOFTIRQ_OFFSET)
++	if (softirq_count() == SOFTIRQ_DISABLE_OFFSET)
+ 		trace_softirqs_on(ip);
+ 	/*
+ 	 * Keep preemption disabled until we are done with
+ 	 * softirq processing:
+  	 */
+- 	sub_preempt_count(SOFTIRQ_OFFSET - 1);
++	sub_preempt_count(SOFTIRQ_DISABLE_OFFSET - 1);
+ 
+ 	if (unlikely(!in_interrupt() && local_softirq_pending()))
+ 		do_softirq();
+@@ -198,7 +214,8 @@ asmlinkage void __do_softirq(void)
+ 	pending = local_softirq_pending();
+ 	account_system_vtime(current);
+ 
+-	__local_bh_disable((unsigned long)__builtin_return_address(0));
++	__local_bh_disable((unsigned long)__builtin_return_address(0),
++				SOFTIRQ_OFFSET);
+ 	lockdep_softirq_enter();
+ 
+ 	cpu = smp_processor_id();
+@@ -245,7 +262,7 @@ restart:
+ 	lockdep_softirq_exit();
+ 
+ 	account_system_vtime(current);
+-	_local_bh_enable();
++	__local_bh_enable(SOFTIRQ_OFFSET);
+ }
+ 
+ #ifndef __ARCH_HAS_DO_SOFTIRQ
+diff --git a/net/sched/cls_cgroup.c b/net/sched/cls_cgroup.c
+index 78ef2c5..37dff78 100644
+--- a/net/sched/cls_cgroup.c
++++ b/net/sched/cls_cgroup.c
+@@ -123,7 +123,7 @@ static int cls_cgroup_classify(struct sk_buff *skb, struct tcf_proto *tp,
+ 	 * calls by looking at the number of nested bh disable calls because
+ 	 * softirqs always disables bh.
+ 	 */
+-	if (softirq_count() != SOFTIRQ_OFFSET) {
++	if (in_serving_softirq()) {
+ 		/* If there is an sk_classid we'll use that. */
+ 		if (!skb->sk)
+ 			return -1;
