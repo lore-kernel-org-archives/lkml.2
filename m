@@ -1,55 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754298Ab0JRIfD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Oct 2010 04:35:03 -0400
-Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:43869 "EHLO kernel.dk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751920Ab0JRIfB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Oct 2010 04:35:01 -0400
-Message-ID: <4CBC06B2.7070107@kernel.dk>
-Date: Mon, 18 Oct 2010 10:34:58 +0200
-From: Jens Axboe <axboe@kernel.dk>
-MIME-Version: 1.0
-To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-CC: kosaki.motohiro@jp.fujitsu.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v4] blk: fix a wrong accounting of hd_struct->in_flight
-References: <4CB40281.1020403@jp.fujitsu.com> <4CB41A27.5080001@kernel.dk> <4CB6FC1C.3050801@jp.fujitsu.com> <4CB6FDB7.5010501@kernel.dk> <4CB8135E.1030100@jp.fujitsu.com> <4CB82720.8040708@kernel.dk> <4CBC0524.7060804@jp.fujitsu.com>
-In-Reply-To: <4CBC0524.7060804@jp.fujitsu.com>
-Content-Type: text/plain; charset=ISO-2022-JP
+	id S1754418Ab0JRIgU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Oct 2010 04:36:20 -0400
+Received: from zone0.gcu-squad.org ([212.85.147.21]:11075 "EHLO
+	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751920Ab0JRIgT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Oct 2010 04:36:19 -0400
+Date: Mon, 18 Oct 2010 10:36:10 +0200
+From: Jean Delvare <khali@linux-fr.org>
+To: Mike Frysinger <vapier@gentoo.org>
+Cc: linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
+        uclinux-dist-devel@blackfin.uclinux.org,
+        device-drivers-devel@blackfin.uclinux.org,
+        Michael Hennerich <michael.hennerich@analog.com>
+Subject: Re: [PATCH] i2c: add irq_flags to board info
+Message-ID: <20101018103610.77b7e605@endymion.delvare>
+In-Reply-To: <1287359019-1476-1-git-send-email-vapier@gentoo.org>
+References: <1287359019-1476-1-git-send-email-vapier@gentoo.org>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2010-10-18 10:28, Yasuaki Ishimatsu wrote:
-> Hi Jens,
+Hi Mike,
+
+On Sun, 17 Oct 2010 19:43:39 -0400, Mike Frysinger wrote:
+> From: Michael Hennerich <michael.hennerich@analog.com>
 > 
->> This looks good! To quiesce the queue, something like the below.
->> Completely untested.
+> These flags can be optionally defined - slave drivers may use them as
+> flags argument for request_irq().  In case they are left uninitialized
+> they will default to zero, and therefore shouldn't cause problems.
 > 
-> Thank you for your advice.
-> I applied your idea to the patch.
+> This allows us to avoid having to add dedicated platform init code just
+> to call set_irq_type()
 
-But you changed it, though:
+Do you have examples of this? Can we see a preview of the amount of
+cleanups this patch would allow?
 
->  	if (old_ptbl) {
->  		rcu_assign_pointer(old_ptbl->last_lookup, NULL);
-> +		spin_lock_irq(q->queue_lock);
-> +		elv_quiesce_start(q);
->  		call_rcu(&old_ptbl->rcu_head, disk_free_ptbl_rcu_cb);
-> +		elv_quiesce_end(q);
-> +		spin_unlock_irq(q->queue_lock);
->  	}
->  }
+> -- which doesn't work very well when coupled with
+> module drivers.
 
-That is not going to work. The point is to start the drain period
-before, then end it when the callback has gone through. By placing it
-just after the call_rcu() call, there's no guarentee that the RCU grace
-period has elapsed. That is why I placed it inside the rcu callback. Why
-did you move it?
+I don't quite get what you mean here.
 
-For the above to work, you'd need to use synchronize_rcu() instead.
+> It also matches behavior of some other frameworks like
+> IDE and UIO.
+
+This is certainly a good point.
+
+> 
+> Signed-off-by: Michael Hennerich <michael.hennerich@analog.com>
+> Signed-off-by: Mike Frysinger <vapier@gentoo.org>
+> ---
+>  drivers/i2c/i2c-core.c |    1 +
+>  include/linux/i2c.h    |    4 ++++
+>  2 files changed, 5 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/i2c/i2c-core.c b/drivers/i2c/i2c-core.c
+> index bea4c50..830528f 100644
+> --- a/drivers/i2c/i2c-core.c
+> +++ b/drivers/i2c/i2c-core.c
+> @@ -540,6 +540,7 @@ i2c_new_device(struct i2c_adapter *adap, struct i2c_board_info const *info)
+>  	client->flags = info->flags;
+>  	client->addr = info->addr;
+>  	client->irq = info->irq;
+> +	client->irq_flags = info->irq_flags;
+>  
+>  	strlcpy(client->name, info->type, sizeof(client->name));
+>  
+> diff --git a/include/linux/i2c.h b/include/linux/i2c.h
+> index 4bae0b7..e6248c1 100644
+> --- a/include/linux/i2c.h
+> +++ b/include/linux/i2c.h
+> @@ -189,6 +189,7 @@ struct i2c_driver {
+>   * @driver: device's driver, hence pointer to access routines
+>   * @dev: Driver model device node for the slave.
+>   * @irq: indicates the IRQ generated by this device (if any)
+> + * @irq_flags: The flags passed to request_irq()
+>   * @detected: member of an i2c_driver.clients list or i2c-core's
+>   *	userspace_devices list
+>   *
+> @@ -206,6 +207,7 @@ struct i2c_client {
+>  	struct i2c_driver *driver;	/* and our access routines	*/
+>  	struct device dev;		/* the device structure		*/
+>  	int irq;			/* irq issued by device		*/
+> +	unsigned long irq_flags;	/* flags used by the irq 	*/
+>  	struct list_head detected;
+>  };
+>  #define to_i2c_client(d) container_of(d, struct i2c_client, dev)
+> @@ -237,6 +239,7 @@ static inline void i2c_set_clientdata(struct i2c_client *dev, void *data)
+>   * @archdata: copied into i2c_client.dev.archdata
+>   * @of_node: pointer to OpenFirmware device node
+>   * @irq: stored in i2c_client.irq
+> + * @irq_flags: The flags passed to request_irq() for i2c_client.irq
+>   *
+>   * I2C doesn't actually support hardware probing, although controllers and
+>   * devices may be able to use I2C_SMBUS_QUICK to tell whether or not there's
+> @@ -259,6 +262,7 @@ struct i2c_board_info {
+>  	struct device_node *of_node;
+>  #endif
+>  	int		irq;
+> +	unsigned long	irq_flags;
+>  };
+>  
+>  /**
+
 
 -- 
-Jens Axboe
-
+Jean Delvare
