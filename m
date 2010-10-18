@@ -1,192 +1,258 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757511Ab0JRRes (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Oct 2010 13:34:48 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:37244 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753807Ab0JRRer (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Oct 2010 13:34:47 -0400
-Date: Mon, 18 Oct 2010 13:34:25 -0400
-From: Kyle McMartin <kyle@mcmartin.ca>
-To: Eric Paris <eparis@redhat.com>
-Cc: Kyle McMartin <kyle@mcmartin.ca>, James Morris <jmorris@namei.org>,
-        Christoph Hellwig <hch@infradead.org>, kernel@lists.fedoraproject.org,
-        Mimi Zohar <zohar@us.ibm.com>, warthog9@kernel.org,
-        Dave Chinner <david@fromorbit.com>, linux-kernel@vger.kernel.org,
-        "H. Peter Anvin" <hpa@zytor.com>, Serge Hallyn <serue@us.ibm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>, mingo@elte.hu
-Subject: Re: ima: use of radix tree cache indexing == massive waste of memory?
-Message-ID: <20101018173425.GF8332@bombadil.infradead.org>
-References: <20101016065206.GO4681@dastard>
- <20101016192027.GA6883@infradead.org>
- <ebc4973c-6c11-4397-b8b0-c212a27abce4@email.android.com>
- <20101017004945.GE1614@infradead.org>
- <20101017054008.GA16383@elte.hu>
- <20101017184652.GB28060@infradead.org>
- <alpine.LRH.2.00.1010181127480.9476@tundra.namei.org>
- <20101018062530.GD8332@bombadil.infradead.org>
- <1287420534.2530.67.camel@localhost.localdomain>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1287420534.2530.67.camel@localhost.localdomain>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1757559Ab0JRRjD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Oct 2010 13:39:03 -0400
+Received: from mail.perches.com ([173.55.12.10]:3006 "EHLO mail.perches.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757535Ab0JRRjC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Oct 2010 13:39:02 -0400
+Subject: Re: [PATCH 1/3] drivers/staging/cx25821: Use kstrdup
+From: Joe Perches <joe@perches.com>
+To: Julia Lawall <julia@diku.dk>
+Cc: walter harms <wharms@bfs.de>, devel@driverdev.osuosl.org, gregkh@suse.de,
+        kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <Pine.LNX.4.64.1010181421240.25099@ask.diku.dk>
+References: <1287341311-11161-1-git-send-email-julia@diku.dk>
+	 <1287341311-11161-2-git-send-email-julia@diku.dk> <4CBBF407.7060705@bfs.de>
+	 <Pine.LNX.4.64.1010181019370.22530@ask.diku.dk> <4CBC12EC.60109@bfs.de>
+	 <Pine.LNX.4.64.1010181421240.25099@ask.diku.dk>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 18 Oct 2010 10:38:59 -0700
+Message-ID: <1287423539.20968.115.camel@Joe-Laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 18, 2010 at 12:48:54PM -0400, Eric Paris wrote:
->
-
-A Red Hatter pointed out that ima_enabled needs to be exported for
-modular users of IMA (like NFS...) and also Eric's points lead me to
-think maybe just rolling them into the hooks might be a better solution
-in the interim for Fedora 14, and we'll pull in the rbtree and other
-fixes post-release and can talk about switching the toggle.
-
-Thanks to you all for being so responsive about these issues.
-
-regards, Kyle
+Perhaps it's more readable code to recheck the
+field name flag and introduce a temporary
+char *fname so the slightly unusual reuse of
+	field = kstrdup(field, GFP)
+becomes
+	field = kstrdup(fname, GFP)
 
 ---
+ drivers/staging/cx25821/cx25821-audio-upstream.c   |   34 +++---------
+ .../staging/cx25821/cx25821-video-upstream-ch2.c   |   55 +++++++-------------
+ drivers/staging/cx25821/cx25821-video-upstream.c   |   53 +++++++------------
+ 3 files changed, 47 insertions(+), 95 deletions(-)
 
- security/integrity/ima/ima.h      |    1 +
- security/integrity/ima/ima_iint.c |    9 +++++++++
- security/integrity/ima/ima_main.c |   24 +++++++++++++++++++++---
- 3 files changed, 31 insertions(+), 3 deletions(-)
-
-diff --git a/security/integrity/ima/ima.h b/security/integrity/ima/ima.h
-index 3fbcd1d..65c3977 100644
---- a/security/integrity/ima/ima.h
-+++ b/security/integrity/ima/ima.h
-@@ -37,6 +37,7 @@ enum tpm_pcrs { TPM_PCR0 = 0, TPM_PCR8 = 8 };
- /* set during initialization */
- extern int iint_initialized;
- extern int ima_initialized;
-+extern int ima_enabled;
- extern int ima_used_chip;
- extern char *ima_hash;
- 
-diff --git a/security/integrity/ima/ima_iint.c b/security/integrity/ima/ima_iint.c
-index afba4ae..3d191ef 100644
---- a/security/integrity/ima/ima_iint.c
-+++ b/security/integrity/ima/ima_iint.c
-@@ -54,6 +54,9 @@ int ima_inode_alloc(struct inode *inode)
- 	struct ima_iint_cache *iint = NULL;
- 	int rc = 0;
- 
-+	if (!ima_enabled)
-+		return 0;
-+
- 	iint = kmem_cache_alloc(iint_cache, GFP_NOFS);
- 	if (!iint)
- 		return -ENOMEM;
-@@ -116,6 +119,9 @@ void ima_inode_free(struct inode *inode)
+diff --git a/drivers/staging/cx25821/cx25821-audio-upstream.c b/drivers/staging/cx25821/cx25821-audio-upstream.c
+index 27087db..180840f 100644
+--- a/drivers/staging/cx25821/cx25821-audio-upstream.c
++++ b/drivers/staging/cx25821/cx25821-audio-upstream.c
+@@ -723,8 +723,6 @@ int cx25821_audio_upstream_init(struct cx25821_dev *dev, int channel_select)
  {
- 	struct ima_iint_cache *iint;
+ 	struct sram_channel *sram_ch;
+ 	int retval = 0;
+-	int err = 0;
+-	int str_length = 0;
  
-+	if (!ima_enabled)
-+		return;
-+
- 	spin_lock(&ima_iint_lock);
- 	iint = radix_tree_delete(&ima_iint_store, (unsigned long)inode);
- 	spin_unlock(&ima_iint_lock);
-@@ -139,6 +145,9 @@ static void init_once(void *foo)
+ 	if (dev->_audio_is_running) {
+ 		printk(KERN_WARNING "Audio Channel is still running so return!\n");
+@@ -752,28 +750,14 @@ int cx25821_audio_upstream_init(struct cx25821_dev *dev, int channel_select)
+ 	dev->_audio_lines_count = LINES_PER_AUDIO_BUFFER;
+ 	_line_size = AUDIO_LINE_SIZE;
  
- static int __init ima_iintcache_init(void)
- {
-+	if (!ima_enabled)
-+		return 0;
-+
- 	iint_cache =
- 	    kmem_cache_create("iint_cache", sizeof(struct ima_iint_cache), 0,
- 			      SLAB_PANIC, init_once);
-diff --git a/security/integrity/ima/ima_main.c b/security/integrity/ima/ima_main.c
-index e662b89..6e91905 100644
---- a/security/integrity/ima/ima_main.c
-+++ b/security/integrity/ima/ima_main.c
-@@ -26,6 +26,7 @@
- #include "ima.h"
+-	if (dev->input_audiofilename) {
+-		str_length = strlen(dev->input_audiofilename);
+-		dev->_audiofilename = kmalloc(str_length + 1, GFP_KERNEL);
+-
+-		if (!dev->_audiofilename)
+-			goto error;
+-
+-		memcpy(dev->_audiofilename, dev->input_audiofilename,
+-		       str_length + 1);
+-
+-		/* Default if filename is empty string */
+-		if (strcmp(dev->input_audiofilename, "") == 0)
+-			dev->_audiofilename = "/root/audioGOOD.wav";
+-
+-	} else {
+-		str_length = strlen(_defaultAudioName);
+-		dev->_audiofilename = kmalloc(str_length + 1, GFP_KERNEL);
+-
+-		if (!dev->_audiofilename)
+-			goto error;
+-
+-		memcpy(dev->_audiofilename, _defaultAudioName, str_length + 1);
++	if (!dev->input_audiofilename || *dev->input_audiofilename == 0)
++		dev->_audiofilename = _defaultAudioName;
++	else
++		dev->_audiofilename = dev->input_audiofilename;
++	dev->_audiofilename = kstrdup(dev->_audiofilename, GFP_KERNEL);
++	if (!dev->_audiofilename) {
++		retval = -ENOMEM;
++		goto error;
+ 	}
  
- int ima_initialized;
-+int ima_enabled;
+ 	retval =
+@@ -802,5 +786,5 @@ int cx25821_audio_upstream_init(struct cx25821_dev *dev, int channel_select)
+ error:
+ 	cx25821_dev_unregister(dev);
  
- char *ima_hash = "sha1";
- static int __init hash_setup(char *str)
-@@ -36,6 +37,14 @@ static int __init hash_setup(char *str)
+-	return err;
++	return retval;
  }
- __setup("ima_hash=", hash_setup);
+diff --git a/drivers/staging/cx25821/cx25821-video-upstream-ch2.c b/drivers/staging/cx25821/cx25821-video-upstream-ch2.c
+index d12dbb5..fa7cd70 100644
+--- a/drivers/staging/cx25821/cx25821-video-upstream-ch2.c
++++ b/drivers/staging/cx25821/cx25821-video-upstream-ch2.c
+@@ -747,10 +747,9 @@ int cx25821_vidupstream_init_ch2(struct cx25821_dev *dev, int channel_select,
+ 	struct sram_channel *sram_ch;
+ 	u32 tmp;
+ 	int retval = 0;
+-	int err = 0;
+ 	int data_frame_size = 0;
+ 	int risc_buffer_size = 0;
+-	int str_length = 0;
++	char *fname;
  
-+static int __init ima_enable(char *str)
-+{
-+	if (strncmp(str, "on", 2) == 0)
-+		ima_enabled = 1;
-+	return 1;
-+}
-+__setup("ima=", ima_enable);
+ 	if (dev->_is_running_ch2) {
+ 		printk("Video Channel is still running so return!\n");
+@@ -788,39 +787,23 @@ int cx25821_vidupstream_init_ch2(struct cx25821_dev *dev, int channel_select,
+ 	risc_buffer_size =
+ 	    dev->_isNTSC_ch2 ? NTSC_RISC_BUF_SIZE : PAL_RISC_BUF_SIZE;
+ 
+-	if (dev->input_filename_ch2) {
+-		str_length = strlen(dev->input_filename_ch2);
+-		dev->_filename_ch2 = kmalloc(str_length + 1, GFP_KERNEL);
+-
+-		if (!dev->_filename_ch2)
+-			goto error;
+-
+-		memcpy(dev->_filename_ch2, dev->input_filename_ch2,
+-		       str_length + 1);
+-	} else {
+-		str_length = strlen(dev->_defaultname_ch2);
+-		dev->_filename_ch2 = kmalloc(str_length + 1, GFP_KERNEL);
+-
+-		if (!dev->_filename_ch2)
+-			goto error;
+-
+-		memcpy(dev->_filename_ch2, dev->_defaultname_ch2,
+-		       str_length + 1);
+-	}
+-
+-       /* Default if filename is empty string */
+-	if (strcmp(dev->input_filename_ch2, "") == 0) {
+-		if (dev->_isNTSC_ch2) {
+-			dev->_filename_ch2 =
+-			    (dev->_pixel_format_ch2 ==
+-			     PIXEL_FRMT_411) ? "/root/vid411.yuv" :
+-			    "/root/vidtest.yuv";
+-		} else {
+-			dev->_filename_ch2 =
+-			    (dev->_pixel_format_ch2 ==
+-			     PIXEL_FRMT_411) ? "/root/pal411.yuv" :
+-			    "/root/pal422.yuv";
+-		}
++	if (dev->input_filename_ch2 && *dev->input_filename_ch2)
++		fname = dev->input_filename_ch2;
++	else if (dev->input_filename_ch2) {
++		/* Default if filename is empty string */
++		if (dev->_isNTSC_ch2)
++			fname = (dev->_pixel_format_ch2 == PIXEL_FRMT_411) ?
++				"/root/vid411.yuv" : "/root/vidtest.yuv";
++		else
++			fname = (dev->_pixel_format_ch2 == PIXEL_FRMT_411) ?
++				"/root/pal411.yuv" : "/root/pal422.yuv";
++	} else
++		fname = dev->_defaultname_ch2;
 +
- struct ima_imbalance {
- 	struct hlist_node node;
- 	unsigned long fsmagic;
-@@ -148,7 +157,7 @@ void ima_counts_get(struct file *file)
- 	struct ima_iint_cache *iint;
- 	int rc;
++	dev->_filename_ch2 = kstrdup(fname, GFP_KERNEL);
++	if (!dev->_filename_ch2) {
++		retval = -ENOMEM;
++		goto error;
+ 	}
  
--	if (!iint_initialized || !S_ISREG(inode->i_mode))
-+	if (!ima_enabled || !iint_initialized || !S_ISREG(inode->i_mode))
- 		return;
- 	iint = ima_iint_find_get(inode);
- 	if (!iint)
-@@ -215,7 +224,7 @@ void ima_file_free(struct file *file)
- 	struct inode *inode = file->f_dentry->d_inode;
- 	struct ima_iint_cache *iint;
+ 	retval =
+@@ -851,5 +834,5 @@ int cx25821_vidupstream_init_ch2(struct cx25821_dev *dev, int channel_select,
+       error:
+ 	cx25821_dev_unregister(dev);
  
--	if (!iint_initialized || !S_ISREG(inode->i_mode))
-+	if (!ima_enabled || !iint_initialized || !S_ISREG(inode->i_mode))
- 		return;
- 	iint = ima_iint_find_get(inode);
- 	if (!iint)
-@@ -269,7 +278,7 @@ int ima_file_mmap(struct file *file, unsigned long prot)
- {
- 	int rc;
+-	return err;
++	return retval;
+ }
+diff --git a/drivers/staging/cx25821/cx25821-video-upstream.c b/drivers/staging/cx25821/cx25821-video-upstream.c
+index 756a820..d51c6c1 100644
+--- a/drivers/staging/cx25821/cx25821-video-upstream.c
++++ b/drivers/staging/cx25821/cx25821-video-upstream.c
+@@ -800,10 +800,9 @@ int cx25821_vidupstream_init_ch1(struct cx25821_dev *dev, int channel_select,
+ 	struct sram_channel *sram_ch;
+ 	u32 tmp;
+ 	int retval = 0;
+-	int err = 0;
+ 	int data_frame_size = 0;
+ 	int risc_buffer_size = 0;
+-	int str_length = 0;
++	char *fname;
  
--	if (!file)
-+	if (!ima_enabled || !file)
- 		return 0;
- 	if (prot & PROT_EXEC)
- 		rc = process_measurement(file, file->f_dentry->d_name.name,
-@@ -294,6 +303,9 @@ int ima_bprm_check(struct linux_binprm *bprm)
- {
- 	int rc;
+ 	if (dev->_is_running) {
+ 		printk(KERN_INFO "Video Channel is still running so return!\n");
+@@ -840,37 +839,23 @@ int cx25821_vidupstream_init_ch1(struct cx25821_dev *dev, int channel_select,
+ 	risc_buffer_size =
+ 	    dev->_isNTSC ? NTSC_RISC_BUF_SIZE : PAL_RISC_BUF_SIZE;
  
-+	if (!ima_enabled)
-+		return 0;
+-	if (dev->input_filename) {
+-		str_length = strlen(dev->input_filename);
+-		dev->_filename = kmalloc(str_length + 1, GFP_KERNEL);
+-
+-		if (!dev->_filename)
+-			goto error;
+-
+-		memcpy(dev->_filename, dev->input_filename, str_length + 1);
+-	} else {
+-		str_length = strlen(dev->_defaultname);
+-		dev->_filename = kmalloc(str_length + 1, GFP_KERNEL);
+-
+-		if (!dev->_filename)
+-			goto error;
+-
+-		memcpy(dev->_filename, dev->_defaultname, str_length + 1);
+-	}
+-
+-	/* Default if filename is empty string */
+-	if (strcmp(dev->input_filename, "") == 0) {
+-		if (dev->_isNTSC) {
+-			dev->_filename =
+-			    (dev->_pixel_format ==
+-			     PIXEL_FRMT_411) ? "/root/vid411.yuv" :
+-			    "/root/vidtest.yuv";
+-		} else {
+-			dev->_filename =
+-			    (dev->_pixel_format ==
+-			     PIXEL_FRMT_411) ? "/root/pal411.yuv" :
+-			    "/root/pal422.yuv";
+-		}
++	if (dev->input_filename && *dev->input_filename)
++		fname = dev->input_filename;
++	else if (dev->input_filename) {
++		/* Default if filename is empty string */
++		if (dev->_isNTSC)
++			fname = (dev->_pixel_format == PIXEL_FRMT_411) ?
++				"/root/vid411.yuv" : "/root/vidtest.yuv";
++		else
++			fname = (dev->_pixel_format == PIXEL_FRMT_411) ?
++				"/root/pal411.yuv" : "/root/pal422.yuv";
++	} else
++		fname = dev->_defaultname;
 +
- 	rc = process_measurement(bprm->file, bprm->filename,
- 				 MAY_EXEC, BPRM_CHECK);
- 	return 0;
-@@ -313,6 +325,9 @@ int ima_file_check(struct file *file, int mask)
- {
- 	int rc;
++	dev->_filename = kstrdup(fname, GFP_KERNEL);
++	if (!dev->_filename) {
++		retval = -ENOMEM;
++		goto error;
+ 	}
  
-+	if (!ima_enabled)
-+		return 0;
-+
- 	rc = process_measurement(file, file->f_dentry->d_name.name,
- 				 mask & (MAY_READ | MAY_WRITE | MAY_EXEC),
- 				 FILE_CHECK);
-@@ -324,6 +339,9 @@ static int __init init_ima(void)
- {
- 	int error;
+ 	dev->_is_running = 0;
+@@ -908,5 +893,5 @@ int cx25821_vidupstream_init_ch1(struct cx25821_dev *dev, int channel_select,
+ error:
+ 	cx25821_dev_unregister(dev);
  
-+	if (!ima_enabled)
-+		return 0;
-+
- 	error = ima_init();
- 	ima_initialized = 1;
- 	return error;
--- 
-1.7.3.1
+-	return err;
++	return retval;
+ }
+
 
