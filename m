@@ -1,84 +1,168 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757176Ab0JRP6z (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Oct 2010 11:58:55 -0400
-Received: from casper.infradead.org ([85.118.1.10]:39572 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755280Ab0JRP6y convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Oct 2010 11:58:54 -0400
-Subject: Re: [PATCH 0/3] Add OMAP hardware spinlock misc driver
-From: Peter Zijlstra <peterz@infradead.org>
-To: Catalin Marinas <catalin.marinas@arm.com>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Ohad Ben-Cohen <ohad@wizery.com>, Hari Kanigeri <h-kanigeri2@ti.com>,
-        Suman Anna <s-anna@ti.com>, Benoit Cousson <b-cousson@ti.com>,
-        Tony Lindgren <tony@atomide.com>, Greg KH <greg@kroah.com>,
-        linux-kernel@vger.kernel.org, Grant Likely <grant.likely@secretlab.ca>,
-        akpm@linux-foundation.org, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-In-Reply-To: <tnxaambh52q.fsf@e102109-lin.cambridge.arm.com>
-References: <1287387875-14168-1-git-send-email-ohad@wizery.com>
-	 <1287406015.29097.1579.camel@twins>
-	 <20101018133502.GA12449@n2100.arm.linux.org.uk>
-	 <1287409417.29097.1598.camel@twins>
-	 <tnxeibnh67q.fsf@e102109-lin.cambridge.arm.com>
-	 <1287415929.29097.1616.camel@twins>
-	 <tnxaambh52q.fsf@e102109-lin.cambridge.arm.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Mon, 18 Oct 2010 17:58:39 +0200
-Message-ID: <1287417519.1998.1943.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	id S932928Ab0JRQIG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Oct 2010 12:08:06 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:18491 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932864Ab0JRQIE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Oct 2010 12:08:04 -0400
+Date: Mon, 18 Oct 2010 13:34:03 -0200
+From: Marcelo Tosatti <mtosatti@redhat.com>
+To: Gleb Natapov <gleb@redhat.com>
+Cc: kvm@vger.kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        avi@redhat.com, mingo@elte.hu, a.p.zijlstra@chello.nl,
+        tglx@linutronix.de, hpa@zytor.com, riel@redhat.com,
+        cl@linux-foundation.org
+Subject: Re: [PATCH v7 00/12] KVM: Add host swap event notifications for PV
+ guest
+Message-ID: <20101018153402.GA2067@amt.cnet>
+References: <1287048176-2563-1-git-send-email-gleb@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1287048176-2563-1-git-send-email-gleb@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-10-18 at 16:51 +0100, Catalin Marinas wrote:
-> Peter Zijlstra <peterz@infradead.org> wrote:
-> > On Mon, 2010-10-18 at 16:27 +0100, Catalin Marinas wrote:
-> >> Peter Zijlstra <peterz@infradead.org> wrote:
-> >> > On Mon, 2010-10-18 at 14:35 +0100, Russell King - ARM Linux wrote:
-> >> >> In any case, Linux's spinlock API (or more accurately, the ARM exclusive
-> >> >> access instructions) relies upon hardware coherency support (a piece of
-> >> >> hardware called an exclusive monitor) which isn't present on the M3 nor
-> >> >> DSP processors.  So there's no way to ensure that updates from the M3
-> >> >> and DSP are atomic wrt the A9 updates.
-> >> >
-> >> > Right, so the problem is that there simply is no way to do atomic memory
-> >> > access from these auxiliary processing units wrt the main CPU? Seeing as
-> >> > they operate on the same memory space, wouldn't it make sense to have
-> >> > them cache-coherent and thus provide atomicy guarantees through that?
-> >> 
-> >> With cache coherency you may get atomicity of writes or reads but
-> >> usually not atomic modifications.
-
-Right, so you forgot the qualifying part of your stmt: on ARM.
-
-> > Sure, but you can 'easily' extend your coherency protocols with support
-> > for things like ll/sc (or larger transactions).
-> >
-> > Have ll bring the cacheline into exclusive state and tag it, then
-> > anything that demotes the cacheline will clear the tag and make sc fail.
+On Thu, Oct 14, 2010 at 11:22:44AM +0200, Gleb Natapov wrote:
+> KVM virtualizes guest memory by means of shadow pages or HW assistance
+> like NPT/EPT. Not all memory used by a guest is mapped into the guest
+> address space or even present in a host memory at any given time.
+> When vcpu tries to access memory page that is not mapped into the guest
+> address space KVM is notified about it. KVM maps the page into the guest
+> address space and resumes vcpu execution. If the page is swapped out from
+> the host memory vcpu execution is suspended till the page is swapped
+> into the memory again. This is inefficient since vcpu can do other work
+> (run other task or serve interrupts) while page gets swapped in.
 > 
-> For the ll/sc operations on ARM (exclusive load/store) there is a
-> per-CPU local exclusive monitor and a (virtual) global one. The global
-> one may either be a separate piece of hardware or emulated via cache
-> lines as you said. 
+> The patch series tries to mitigate this problem by introducing two
+> mechanisms. The first one is used with non-PV guest and it works like
+> this: when vcpu tries to access swapped out page it is halted and
+> requested page is swapped in by another thread. That way vcpu can still
+> process interrupts while io is happening in parallel and, with any luck,
+> interrupt will cause the guest to schedule another task on the vcpu, so
+> it will have work to do instead of waiting for the page to be swapped in.
+> 
+> The second mechanism introduces PV notification about swapped page state to
+> a guest (asynchronous page fault). Instead of halting vcpu upon access to
+> swapped out page and hoping that some interrupt will cause reschedule we
+> immediately inject asynchronous page fault to the vcpu.  PV aware guest
+> knows that upon receiving such exception it should schedule another task
+> to run on the vcpu. Current task is put to sleep until another kind of
+> asynchronous page fault is received that notifies the guest that page
+> is now in the host memory, so task that waits for it can run again.
+> 
+> To measure performance benefits I use a simple benchmark program (below)
+> that starts number of threads. Some of them do work (increment counter),
+> others access huge array in random location trying to generate host page
+> faults. The size of the array is smaller then guest memory bug bigger
+> then host memory so we are guarantied that host will swap out part of
+> the array.
+> 
+> I ran the benchmark on three setups: with current kvm.git (master),
+> with my patch series + non-pv guest (nonpv) and with my patch series +
+> pv guest (pv).
+> 
+> Each guest had 4 cpus and 2G memory and was launched inside 512M memory
+> container. The command line was "./bm -f 4 -w 4 -t 60" (run 4 faulting
+> threads and 4 working threads for a minute).
+> 
+> Below is the total amount of "work" each guest managed to do
+> (average of 10 runs):
+>          total work    std error
+> master: 122789420615 (3818565029)
+> nonpv:  138455939001 (773774299)
+> pv:     234351846135 (10461117116)
+> 
+> Changes:
+>  v1->v2
+>    Use MSR instead of hypercall.
+>    Move most of the code into arch independent place.
+>    halt inside a guest instead of doing "wait for page" hypercall if
+>     preemption is disabled.
+>  v2->v3
+>    Use MSR from range 0x4b564dxx.
+>    Add slot version tracking.
+>    Support migration by restarting all guest processes after migration.
+>    Drop patch that tract preemptability for non-preemptable kernels
+>     due to performance concerns. Send async PF to non-preemptable
+>     guests only when vcpu is executing userspace code.
+>  v3->v4
+>   Provide alternative page fault handler in PV guest instead of adding hook to
+>    standard page fault handler and patch it out on non-PV guests.
+>   Allow only limited number of outstanding async page fault per vcpu.
+>   Unify  gfn_to_pfn and gfn_to_pfn_async code.
+>   Cancel outstanding slow work on reset.
+>  v4->v5
+>   Move async pv cpu initialization into cpu hotplug notifier.
+>   Use GFP_NOWAIT instead of GFP_ATOMIC for allocation that shouldn't sleep
+>   Process KVM_REQ_MMU_SYNC even in page_fault_other_cr3() before changing
+>    cr3 back
+>  v5->v6
+>   To many. Will list only major changes here.
+>   Replace slow work with work queues.
+>   Halt vcpu for non-pv guests.
+>   Handle async PF in nested SVM mode.
+>   Do not prefault swapped in page for non tdp case.
+>  v6->v7
+>   Fix "GUP fail in work thread" problem
+>   Do prefault only if mmu is in direct map mode
+>   Use cpu->request to ask for vcpu halt (drop optimization that tried to
+>    skip non-present apf injection if page is swapped in before next vmentry)
+>   Keep track of synthetic halt in separate state to prevent it from leaking
+>    during migration.
+>   Fix memslot tracking problems.
+>   More documentation.
+>   Other small comments are addressed
+> 
+> Gleb Natapov (12):
+>   Add get_user_pages() variant that fails if major fault is required.
+>   Halt vcpu if page it tries to access is swapped out.
+>   Retry fault before vmentry
+>   Add memory slot versioning and use it to provide fast guest write interface
+>   Move kvm_smp_prepare_boot_cpu() from kvmclock.c to kvm.c.
+>   Add PV MSR to enable asynchronous page faults delivery.
+>   Add async PF initialization to PV guest.
+>   Handle async PF in a guest.
+>   Inject asynchronous page fault into a PV guest if page is swapped out.
+>   Handle async PF in non preemptable context
+>   Let host know whether the guest can handle async PF in non-userspace context.
+>   Send async PF when guest is not in userspace too.
+> 
+>  Documentation/kernel-parameters.txt |    3 +
+>  Documentation/kvm/cpuid.txt         |    3 +
+>  Documentation/kvm/msr.txt           |   36 ++++-
+>  arch/x86/include/asm/kvm_host.h     |   28 +++-
+>  arch/x86/include/asm/kvm_para.h     |   24 +++
+>  arch/x86/include/asm/traps.h        |    1 +
+>  arch/x86/kernel/entry_32.S          |   10 +
+>  arch/x86/kernel/entry_64.S          |    3 +
+>  arch/x86/kernel/kvm.c               |  315 +++++++++++++++++++++++++++++++++++
+>  arch/x86/kernel/kvmclock.c          |   13 +--
+>  arch/x86/kvm/Kconfig                |    1 +
+>  arch/x86/kvm/Makefile               |    1 +
+>  arch/x86/kvm/mmu.c                  |   61 ++++++-
+>  arch/x86/kvm/paging_tmpl.h          |    8 +-
+>  arch/x86/kvm/svm.c                  |   45 ++++-
+>  arch/x86/kvm/x86.c                  |  192 +++++++++++++++++++++-
+>  fs/ncpfs/mmap.c                     |    2 +
+>  include/linux/kvm.h                 |    1 +
+>  include/linux/kvm_host.h            |   39 +++++
+>  include/linux/kvm_types.h           |    7 +
+>  include/linux/mm.h                  |    5 +
+>  include/trace/events/kvm.h          |   95 +++++++++++
+>  mm/filemap.c                        |    3 +
+>  mm/memory.c                         |   31 +++-
+>  mm/shmem.c                          |    8 +-
+>  virt/kvm/Kconfig                    |    3 +
+>  virt/kvm/async_pf.c                 |  213 +++++++++++++++++++++++
+>  virt/kvm/async_pf.h                 |   36 ++++
+>  virt/kvm/kvm_main.c                 |  132 ++++++++++++---
+>  29 files changed, 1255 insertions(+), 64 deletions(-)
+>  create mode 100644 virt/kvm/async_pf.c
+>  create mode 100644 virt/kvm/async_pf.h
 
-> But if you need synchronisation with a CPU (or DSP)
-> like Cortex-M3 which doesn't have any built-in caches, you can only get
-> atomic operations on the main processor (A9) but not on the M3 (as you
-> can't have a cache line in exclusive state on the M3).
-
-Right, and I take it that modifying the M3 to participate in the full
-coherency/exclusive monitor thing would have been more work.
-
-> The M3 may have a local exclusive monitor (like the main CPU) but it
-> isn't cleared by memory accesses from the main CPU.
-
-Sounds like asking for trouble if you ask me ;-)
-
-
+Applied, thanks.
 
