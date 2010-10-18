@@ -1,342 +1,205 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757739Ab0JRUKZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Oct 2010 16:10:25 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:62953 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756062Ab0JRUKY (ORCPT
+	id S933185Ab0JRULJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Oct 2010 16:11:09 -0400
+Received: from cpoproxy3-pub.bluehost.com ([67.222.54.6]:53153 "HELO
+	cpoproxy3-pub.bluehost.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1756004Ab0JRULH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Oct 2010 16:10:24 -0400
-Date: Mon, 18 Oct 2010 18:10:14 -0200
-From: "Gustavo F. Padovan" <padovan@profusion.mobi>
-To: "Savoy, Pavan" <pavan_savoy@ti.com>
-Cc: "marcel@holtmann.org" <marcel@holtmann.org>,
-        "linux-bluetooth@vger.kernel.org" <linux-bluetooth@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] Bluetooth: btwilink driver
-Message-ID: <20101018201014.GH2468@vigoh>
-References: <1287176299-19313-1-git-send-email-pavan_savoy@ti.com>
- <20101018194811.GG2468@vigoh>
- <19F8576C6E063C45BE387C64729E739404AA4E759A@dbde02.ent.ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <19F8576C6E063C45BE387C64729E739404AA4E759A@dbde02.ent.ti.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Mon, 18 Oct 2010 16:11:07 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
+	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
+	b=XPTC0PZNgLHCXSv64v76QljpNKz/EvYp88mR9bwepvexLHDyU1A4SLEZ3ohsCCQUGm6Rsa/u130ygsZBaAzJ0PxpiW8dp1AEs9d/e9KwZpdImMTS02IiO6h2DZMpPoy5;
+Date: Mon, 18 Oct 2010 13:10:10 -0700
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+To: Bjorn Helgaas <bjorn.helgaas@hp.com>
+Cc: Ram Pai <linuxram@us.ibm.com>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org, clemens@ladisch.de,
+        Yinghai Lu <yinghai@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [RFC v2 PATCH 1/1] PCI: override BIOS/firmware resource
+ allocation
+Message-ID: <20101018131010.0e4771eb@jbarnes-desktop>
+In-Reply-To: <201010121301.54402.bjorn.helgaas@hp.com>
+References: <20101006225834.GE2945@ram-laptop>
+	<201010081416.57454.bjorn.helgaas@hp.com>
+	<20101012070515.GA549@ram-laptop>
+	<201010121301.54402.bjorn.helgaas@hp.com>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.174.193.198 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Savoy, Pavan <pavan_savoy@ti.com> [2010-10-19 01:23:54 +0530]:
+On Tue, 12 Oct 2010 13:01:54 -0600
+Bjorn Helgaas <bjorn.helgaas@hp.com> wrote:
 
+> On Tuesday, October 12, 2010 01:05:15 am Ram Pai wrote:
+> > On Fri, Oct 08, 2010 at 02:16:57PM -0600, Bjorn Helgaas wrote:
+> > > On Friday, October 08, 2010 11:32:24 am Ram Pai wrote:
+> > > > On Thu, Oct 07, 2010 at 03:41:04PM -0600, Bjorn Helgaas wrote:
+> > > > > On Thursday, October 07, 2010 02:42:13 pm Ram Pai wrote:
+> > > > > > On Wed, Oct 06, 2010 at 10:13:02PM -0600, Bjorn Helgaas wrote:
+> > > > > > > On Wed, Oct 06, 2010 at 05:30:41PM -0700, Ram Pai wrote:
+> > > > > > > > On Wed, Oct 06, 2010 at 05:39:53PM -0600, Bjorn Helgaas wrote:
+> > > > > > > > > On Wed, Oct 06, 2010 at 03:58:34PM -0700, Ram Pai wrote:
+> > > > > > > > > >         PCI: override BIOS/firmware memory resource allocation
+> > > > > > > > > > 		through command line parameters
+> > > > > > > > > > 
+> > > > > > > > > > 	Platforms that are unaware of  SRIOV  BARs  fail to allocate MMIO
+> > > > > > > > > > 	resources  to SRIOV PCIe  devices. Hence  on  such  platforms the
+> > > > > > > > > > 	OS fails to  enable  SRIOV.
+> > > > > > > > > > 	Some  platforms  where  BIOS/uEFI resource   allocations  conflict
+> > > > > > > > > > 	the conflicting devices are disabled.
+> > > > > > > > > > 
+> > > > > > > > > > 	Ideally we  would  want  the  OS  to detect and fix automatically
+> > > > > > > > > > 	such problems and conflicts.  However previous  attempts to do so
+> > > > > > > > > > 	have led to regression on legacy platforms.
+> > > > > > > > > 
+> > > > > > > > > I'm sorry to be a nay-sayer, but I think we just haven't tried hard
+> > > > > > > > > enough.  Our ACPI/PCI/e820 resource management is not well integrated,
+> > > > > > > > > and I suspect if we straightened that out, we could avoid some of the
+> > > > > > > > > regressions we saw with previous attempts.
+> > > > > > > > 
+> > > > > > > > Can you be more specific as to what can be done to fix it automatically?
+> > > > > > > > 
+> > > > > > > > Neither accepting this approach nor telling what needs to be straightened out
+> > > > > > > > to automatically fix all the systems out there, is just a deadend.
+> > > > > > > 
+> > > > > > > Yeah, I guess that wasn't really fair, sorry.  And keep in mind that I'm
+> > > > > > > not the PCI maintainer, so these are just my opinions, nothing like an
+> > > > > > > official "nack."
+> > > > > > > 
+> > > > > > > I did look at this dmesg log from the thread you referenced:
+> > > > > > >     http://marc.info/?l=linux-kernel&m=127178918128740&w=2
+> > > > > > > but it looks to me like we just completely botched it.  I don't see an
+> > > > > > > SRIOV device or anything else that didn't have resources, so as far as I
+> > > > > > > can tell, we started with working resource assignments from the BIOS,
+> > > > > > > threw them away, and started over from scratch.  We failed because we
+> > > > > > > tried to assign I/O port space to bridges with nothing behind them, and
+> > > > > > > there was nothing left by the time we got to the 0000:09:04.0 device
+> > > > > > > that actually *did* need the space.
+> > > > > > 
+> > > > > > hmm.. is that possible? Yinghai's patch sized the resource requirement of each
+> > > > > > of the bridges, before actually allocating them. Which means a bridge with
+> > > > > > no device behind it would not get any i/o space.
+> > > > > 
+> > > > > Here's what I see in the dmesg log referenced above:
+> > > > > 
+> > > > >     ACPI: PCI Root Bridge [PCI0] (0000:00)
+> > > > >     pci_root PNP0A08:00: host bridge window [io 0x0000-0x0cf7]
+> > > > >     pci_root PNP0A08:00: host bridge window [io 0x0d00-0xffff]
+> > > > >     pci 0000:00:1c.0: PCI bridge to [bus 04-09]
+> > > > >     pci 0000:00:1c.0:   bridge window [io 0xd000-0xdfff]
+> > > > >     pci 0000:04:00.0: PCI bridge to [bus 05-09]
+> > > > >     pci 0000:04:00.0:   bridge window [io 0xd000-0xdfff]
+> > > > >     pci 0000:05:01.0: PCI bridge to [bus 08-09]
+> > > > >     pci 0000:05:01.0:   bridge window [io 0xd000-0xdfff]
+> > > > >     pci 0000:08:00.0: PCI bridge to [bus 09-09]
+> > > > >     pci 0000:08:00.0:   bridge window [io 0xd000-0xdfff]
+> > > > >     pci 0000:09:04.0: found [13f6:8788] class 000401 header type 00
+> > > > >     pci 0000:09:04.0: reg 10: [io  0xd800-0xd8ff]
+> > > > >     pci 0000:05:02.0: PCI bridge to [bus 07-07]
+> > > > >     pci 0000:05:02.0:   bridge window [io 0xf000-0x0000] (disabled)
+> > > > >     pci 0000:05:03.0: PCI bridge to [bus 06-06]
+> > > > >     pci 0000:05:03.0:   bridge window [io 0xf000-0x0000] (disabled)
+> > > > >     
+> > > > > The above is the state as we got it from BIOS.  Despite all the bridges,
+> > > > > 09:04.0 is the only device below the 00:1c.0 bridge, and it requires only
+> > > > > 0x100 I/O ports.
+> > > > > 
+> > > > > There are no devices on buses 06 (below 05:03.0) or 07 (below 05:02.0).
+> > > > > 
+> > > > > I didn't look at Yinghai's patch to figure out *why*, but it sure looks like
+> > > > > we released the 09:04.0 space, then tried to assign 0x2000 ports to 05:01.0 
+> > > > > (which needs 0x100 and had 0x1000 originally), 0x1000 to 05:02.0 (which needs
+> > > > > none), and 0x1000 to 05:03.0 (which also needs none):
+> > > > > 
+> > > > >     PCI: No. 3 try to assign unassigned res
+> > > > >     release child resource [io  0xd800-0xd8ff]
+> > > > >     pci 0000:08:00.0: resource 7 [io 0xd000-0xdfff] released
+> > > > >     pci 0000:04:00.0: BAR 7: can't assign io (size 0x4000)
+> > > > >     pci 0000:05:01.0: BAR 7: can't assign io (size 0x2000)
+> > > > >     pci 0000:05:02.0: BAR 7: can't assign io (size 0x1000)
+> > > > >     pci 0000:05:03.0: BAR 7: can't assign io (size 0x1000)
+> > > > >     pci 0000:08:00.0: BAR 7: can't assign io (size 0x1000)
+> > > > 
+> > > > Actually the message preceeding to them  are even more surprising:
+> > > > 
+> > > > Apr 20 20:31:42 [kernel] pci 0000:04:00.0: BAR 8: can't assign mem (size
+> > > > 0xc00000)
+> > > > Apr 20 20:31:42 [kernel] pci 0000:05:01.0: BAR 8: can't assign mem (size
+> > > > 0x200000)
+> > > > Apr 20 20:31:42 [kernel] pci 0000:05:01.0: BAR 9: can't assign mem pref
+> > > > (size 0x200000)
+> > > > Apr 20 20:31:42 [kernel] pci 0000:05:02.0: BAR 8: can't assign mem (size
+> > > > 0x400000)
+> > > > Apr 20 20:31:42 [kernel] pci 0000:05:03.0: BAR 7: can't assign io (size
+> > > > 0x1000)
+> > > > 
+> > > > Do these bridges have IOV BARs and those BARs are demanding i/o resources?
+> > > > Something is really funny with this machine. Or I am reading this wrong?
+> > > 
+> > > I don't see anything strange about the machine, but I don't understand
+> > > what Yinghai's patch was doing.  The lspci output is here:
+> > >     http://marc.info/?l=linux-pci&m=127184080929189&w=2
+> > > 
+> > > I don't see any SRIOV devices, and this kernel wasn't built with IOV
+> > > support anyway.  The messages above are attempts to assign resources
+> > > for bridge windows.
+> > > 
+> > > But the only real device in the whole hierarchy behind 00:1c.0
+> > > is 09:04.0, which doesn't require memory space, so I have no idea
+> > > why we're trying to open memory windows.
+> > 
+> > I dont understand the code much. But there is some alignment 
+> > constraints on the memory and io space dictated by the PCI code in 
+> > pbus_size_io() and pbus_size_mem(), a constraint that ends up 
+> > associating a minimum of 4096 bytes io window and 
+> > nearly about 2MB mem window to a bridge irrespective of the 
+> > requirements of the devices behind the bridge. That sounds like a
+> > bug to me. But I don't know if those are valid constraints either.
+> > Any idea?
 > 
-> > -----Original Message-----
-> > From: Gustavo F. Padovan [mailto:pao@profusion.mobi] On Behalf Of Gustavo F.
-> > Padovan
-> > Sent: Monday, October 18, 2010 2:48 PM
-> > To: Savoy, Pavan
-> > Cc: marcel@holtmann.org; linux-bluetooth@vger.kernel.org; linux-
-> > kernel@vger.kernel.org
-> > Subject: Re: [PATCH] Bluetooth: btwilink driver
-> >
-> > Hi Pavan,
-> >
-> > * pavan_savoy@ti.com <pavan_savoy@ti.com> [2010-10-15 16:58:19 -0400]:
-> >
-> > > From: Pavan Savoy <pavan_savoy@ti.com>
-> > >
-> > > Gustavo, Marcel,
-> > >
-> > > Renaming the patch, since the driver is renamed to btwilink.
-> > > Thanks for the comments,
-> > > Please review and provide your comments on this version of patch,
-> > >
-> > > -- patch description --
-> > >
-> > > This is the bluetooth protocol driver for the TI WiLink7 chipsets.
-> > > Texas Instrument's WiLink chipsets combine wireless technologies
-> > > like BT, FM, GPS and WLAN onto a single chip.
-> > >
-> > > This Bluetooth driver works on top of the TI_ST shared transport
-> > > line discipline driver which also allows other drivers like
-> > > FM V4L2 and GPS character driver to make use of the same UART interface.
-> > >
-> > > Kconfig and Makefile modifications to enable the Bluetooth
-> > > driver for Texas Instrument's WiLink 7 chipset.
-> > >
-> > > Signed-off-by: Pavan Savoy <pavan_savoy@ti.com>
-> > > ---
-> > >  drivers/bluetooth/Kconfig    |   10 +
-> > >  drivers/bluetooth/Makefile   |    1 +
-> > >  drivers/bluetooth/btwilink.c |  424
-> > ++++++++++++++++++++++++++++++++++++++++++
-> > >  3 files changed, 435 insertions(+), 0 deletions(-)
-> > >  create mode 100644 drivers/bluetooth/btwilink.c
-> > >
-> > > diff --git a/drivers/bluetooth/Kconfig b/drivers/bluetooth/Kconfig
-> > > index 02deef4..e0d67dd 100644
-> > > --- a/drivers/bluetooth/Kconfig
-> > > +++ b/drivers/bluetooth/Kconfig
-> > > @@ -219,4 +219,14 @@ config BT_ATH3K
-> > >       Say Y here to compile support for "Atheros firmware download driver"
-> > >       into the kernel or say M to compile it as module (ath3k).
-> > >
-> > > +config BT_WILINK
-> > > +   tristate "BlueZ bluetooth driver for TI ST"
-> > > +   depends on TI_ST
-> > > +   help
-> > > +     This enables the Bluetooth driver for Texas Instrument's BT/FM/GPS
-> > > +     combo devices. This makes use of shared transport line discipline
-> > > +     core driver to communicate with the BT core of the combo chip.
-> > > +
-> > > +     Say Y here to compile support for Texas Instrument's WiLink7 driver
-> > > +     into the kernel or say M to compile it as module.
-> > >  endmenu
-> > > diff --git a/drivers/bluetooth/Makefile b/drivers/bluetooth/Makefile
-> > > index 71bdf13..f4460f4 100644
-> > > --- a/drivers/bluetooth/Makefile
-> > > +++ b/drivers/bluetooth/Makefile
-> > > @@ -18,6 +18,7 @@ obj-$(CONFIG_BT_HCIBTSDIO)        += btsdio.o
-> > >  obj-$(CONFIG_BT_ATH3K)             += ath3k.o
-> > >  obj-$(CONFIG_BT_MRVL)              += btmrvl.o
-> > >  obj-$(CONFIG_BT_MRVL_SDIO) += btmrvl_sdio.o
-> > > +obj-$(CONFIG_BT_WILINK)            += btwilink.o
-> > >
-> > >  btmrvl-y                   := btmrvl_main.o
-> > >  btmrvl-$(CONFIG_DEBUG_FS)  += btmrvl_debugfs.o
-> > > diff --git a/drivers/bluetooth/btwilink.c b/drivers/bluetooth/btwilink.c
-> > > new file mode 100644
-> > > index 0000000..f67791f
-> > > --- /dev/null
-> > > +++ b/drivers/bluetooth/btwilink.c
-> > > @@ -0,0 +1,424 @@
-> > > +/*
-> > > + *  Texas Instrument's Bluetooth Driver For Shared Transport.
-> > > + *
-> > > + *  Bluetooth Driver acts as interface between HCI CORE and
-> > > + *  TI Shared Transport Layer.
-> > > + *
-> > > + *  Copyright (C) 2009-2010 Texas Instruments
-> > > + *  Author: Raja Mani <raja_mani@ti.com>
-> > > + * Pavan Savoy <pavan_savoy@ti.com>
-> > > + *
-> > > + *  This program is free software; you can redistribute it and/or modify
-> > > + *  it under the terms of the GNU General Public License version 2 as
-> > > + *  published by the Free Software Foundation.
-> > > + *
-> > > + *  This program is distributed in the hope that it will be useful,
-> > > + *  but WITHOUT ANY WARRANTY; without even the implied warranty of
-> > > + *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> > > + *  GNU General Public License for more details.
-> > > + *
-> > > + *  You should have received a copy of the GNU General Public License
-> > > + *  along with this program; if not, write to the Free Software
-> > > + *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307
-> > USA
-> > > + *
-> > > + */
-> > > +
-> > > +#include <linux/platform_device.h>
-> > > +#include <net/bluetooth/bluetooth.h>
-> > > +#include <net/bluetooth/hci_core.h>
-> > > +
-> > > +#include <linux/ti_wilink_st.h>
-> > > +
-> > > +/* Bluetooth Driver Version */
-> > > +#define VERSION               "1.0"
-> > > +
-> > > +/* Defines number of seconds to wait for reg completion
-> > > + * callback getting called from ST (in case,registration
-> > > + * with ST returns PENDING status)
-> > > + */
-> > > +#define BT_REGISTER_TIMEOUT   6000 /* 6 sec */
-> > > +
-> > > +/**
-> > > + * struct ti_st - BT driver operation structure
-> > > + * @hdev: hci device pointer which binds to bt driver
-> > > + * @flags: used locally,to maintain various BT driver status
-> > > + * @streg_cbdata: to hold ST registration callback status
-> > > + * @st_write: write function pointer of ST driver
-> > > + * @wait_reg_completion - completion sync between ti_st_open
-> > > + * and ti_st_registration_completion_cb.
-> > > + */
-> > > +struct ti_st {
-> > > +   struct hci_dev *hdev;
-> > > +   char streg_cbdata;
-> > > +   long (*st_write) (struct sk_buff *);
-> > > +   struct completion wait_reg_completion;
-> > > +};
-> > > +
-> > > +static int reset;
-> > > +
-> > > +/* Increments HCI counters based on pocket ID (cmd,acl,sco) */
-> > > +static inline void ti_st_tx_complete(struct ti_st *hst, int pkt_type)
-> > > +{
-> > > +   struct hci_dev *hdev;
-> > > +   hdev = hst->hdev;
-> > > +
-> > > +   /* Update HCI stat counters */
-> > > +   switch (pkt_type) {
-> > > +   case HCI_COMMAND_PKT:
-> > > +           hdev->stat.cmd_tx++;
-> > > +           break;
-> > > +
-> > > +   case HCI_ACLDATA_PKT:
-> > > +           hdev->stat.acl_tx++;
-> > > +           break;
-> > > +
-> > > +   case HCI_SCODATA_PKT:
-> > > +           hdev->stat.sco_tx++;
-> > > +           break;
-> > > +   }
-> > > +}
-> > > +
-> > > +/* ------- Interfaces to Shared Transport ------ */
-> > > +
-> > > +/* Called by ST layer to indicate protocol registration completion
-> > > + * status.ti_st_open() function will wait for signal from this
-> > > + * API when st_register() function returns ST_PENDING.
-> > > + */
-> > > +static void st_registration_completion_cb(void *priv_data, char data)
-> > > +{
-> > > +   struct ti_st *lhst = (struct ti_st *)priv_data;
-> >
-> > Blank line here.
-> >
-> > > +   /* ti_st_open() function needs value of 'data' to know
-> > > +    * the registration status(success/fail),So have a back
-> > > +    * up of it.
-> > > +    */
-> > > +   lhst->streg_cbdata = data;
-> > > +
-> > > +   /* Got a feedback from ST for BT driver registration
-> > > +    * request.Wackup ti_st_open() function to continue
-> > > +    * it's open operation.
-> > > +    */
-> > > +   complete(&lhst->wait_reg_completion);
-> > > +}
-> > > +
-> > > +/* Called by Shared Transport layer when receive data is
-> > > + * available */
-> > > +static long st_receive(void *priv_data, struct sk_buff *skb)
-> > > +{
-> > > +   int err;
-> > > +   struct ti_st *lhst = (struct ti_st *)priv_data;
-> > > +
-> > > +   if (!skb)
-> > > +           return -EFAULT;
-> > > +
-> > > +   if (!lhst) {
-> > > +           kfree_skb(skb);
-> > > +           return -EFAULT;
-> > > +   }
-> > > +
-> > > +   skb->dev = (struct net_device *)lhst->hdev;
-> > > +
-> > > +   /* Forward skb to HCI CORE layer */
-> > > +   err = hci_recv_frame(skb);
-> > > +   if (err) {
-> > > +           kfree_skb(skb);
-> > > +           BT_ERR("Unable to push skb to HCI CORE(%d)", err);
-> >
-> > s/CORE/core/
-> >
-> > > +           return err;
-> > > +   }
-> > > +
-> > > +   lhst->hdev->stat.byte_rx += skb->len;
-> > > +   return 0;
-> > > +}
-> > > +
-> > > +/* ------- Interfaces to HCI layer ------ */
-> > > +/* protocol structure registered with shared transport */
-> > > +static struct st_proto_s ti_st_proto = {
-> > > +   .type = ST_BT,
-> > > +   .recv = st_receive,
-> > > +   .reg_complete_cb = st_registration_completion_cb,
-> > > +   .priv_data = NULL,
-> > > +};
-> > > +
-> > > +/* Called from HCI core to initialize the device */
-> > > +static int ti_st_open(struct hci_dev *hdev)
-> > > +{
-> > > +   unsigned long timeleft;
-> > > +   struct ti_st *hst;
-> > > +   int err;
-> > > +
-> > > +   BT_DBG("%s %p", hdev->name, hdev);
-> > > +
-> > > +   /* provide contexts for callbacks from ST */
-> > > +   hst = hdev->driver_data;
-> > > +   ti_st_proto.priv_data = hst;
-> > > +
-> > > +   err = st_register(&ti_st_proto);
-> > > +   if (err == -EINPROGRESS) {
-> > > +           /* Prepare wait-for-completion handler data structures.
-> > > +            * Needed to syncronize this and st_registration_completion_cb()
-> > > +            * functions.
-> > > +            */
-> > > +           init_completion(&hst->wait_reg_completion);
-> > > +
-> > > +           /* Reset ST registration callback status flag , this value
-> > > +            * will be updated in ti_st_registration_completion_cb()
-> > > +            * function whenever it called from ST driver.
-> > > +            */
-> > > +           hst->streg_cbdata = -EINPROGRESS;
-> > > +
-> > > +           /* ST is busy with other protocol registration(may be busy with
-> > > +            * firmware download).So,Wait till the registration callback
-> > > +            * (passed as a argument to st_register() function) getting
-> > > +            * called from ST.
-> > > +            */
-> > > +           BT_DBG(" waiting for reg completion signal from ST");
-> > > +
-> > > +           timeleft = wait_for_completion_timeout
-> > > +                   (&hst->wait_reg_completion,
-> > > +                    msecs_to_jiffies(BT_REGISTER_TIMEOUT));
-> > > +           if (!timeleft) {
-> > > +                   BT_ERR("Timeout(%d sec),didn't get reg"
-> > > +                                   "completion signal from ST",
-> > > +                                   BT_REGISTER_TIMEOUT / 1000);
-> >
-> > How does this get printed. "...regcompletion..." ?
-> >
-> > > +                   return -ETIMEDOUT;
-> > > +           }
-> > > +
-> > > +           /* Is ST registration callback called with ERROR value? */
-> > > +           if (hst->streg_cbdata != 0) {
-> > > +                   BT_ERR("ST reg completion CB called with invalid"
-> > > +                                   "status %d", hst->streg_cbdata);
-> > > +                   return -EAGAIN;
-> > > +           }
-> > > +           err = 0;
-> > > +   } else if (err == -EPERM) {
-> > > +           BT_ERR("st_register failed %d", err);
-> > > +           return -EAGAIN;
-> >
-> > Why? if -EPERM return -EAGAIN?
-> >
-> > > +   }
-> > > +
-> > > +   /* Do we have proper ST write function? */
-> > > +   if (ti_st_proto.write != NULL) {
-> > > +           /* We need this pointer for sending any Bluetooth pkts */
-> > > +           hst->st_write = ti_st_proto.write;
-> >
-> > I asked in the other e-mail:  Who sets ti_st_proto.write()? I didn't get
-> > this.
+> I think memory windows comes in 1MB chunks and I/O in 4096 port chunks.
+> There are some bridges that support smaller I/O windows (search for
+> "en1k" in drivers/pci/quirks.c), but it looks like we don't take that
+> into account when allocating space.
 > 
-> The write function is set by the TI-ST driver.
-> This was in order to avoid another EXPORT_SYMBOL(st_write) or so.
-> So, as soon as some protocol driver registers to shared transport driver, the
-> registration function inside the driver will set it's write function to this
-> function pointer.
+> And of course, there's no requirement to enable the window at all if
+> we don't have any downstream devices.
+> 
+> > > This is what I meant about "we haven't tried hard enough yet."  I'd
+> > > rather spend time fixing the problems like this, than just putting the
+> > > buggy code in and adding a kernel parameter to enable it.  That
+> > > guarantees that we'll never get enough testing to really shake it
+> > > out.
+> > 
+> > Ok. I am no fan of kernel parameters either. However I am afraid 
+> > we will attract furious looks as and when someone regresses. 
+> 
+> Yep, I'm used to that :-)
 
-The usual approach is to export the symbol and use it inside your
-driver. That is what most of our drivers do (if not all of them).
-So I recommend you to change that in your driver.
+So where do we stand with this machine's problem?
+
+Ram, do you have other machines that require your override patch?
+
+Until we understand what's failing and why, I'm hesitant to apply a
+patch that will work around the problem but require an extra kernel
+parameter.
+
+Our general approach is to avoid overwriting the BIOS provided
+configuration, and when we do, to use available e820 and PnP data to
+figure out where to put things, in addition to allocating space in a
+similar way to Windows to avoid hitting undiscovered platform bugs
+(i.e. Bjorn's recent patchset).
+
+So while I'm not totally opposed to this patch, I'd feel much better
+about it if we really understood how the failing machines were failing
+before we try to workaround potential BIOS limitations.
 
 -- 
-Gustavo F. Padovan
-ProFUSION embedded systems - http://profusion.mobi
+Jesse Barnes, Intel Open Source Technology Center
