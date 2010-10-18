@@ -1,54 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755903Ab0JRSsL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Oct 2010 14:48:11 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:45738 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755059Ab0JRSsK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Oct 2010 14:48:10 -0400
-Message-ID: <4CBC964B.6000605@zytor.com>
-Date: Mon, 18 Oct 2010 11:47:39 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc13 Thunderbird/3.1.4
-MIME-Version: 1.0
-To: Avi Kivity <avi@redhat.com>
-CC: Dave Young <hidave.darkstar@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Jan Kiszka <jan.kiszka@web.de>, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [BUG] kvm: guest can not startup due to triple fault
-References: <AANLkTin6qJYEqOc_97EVWkK1Kt1zNSvXtfVeYuk9fyJ8@mail.gmail.com> <4CBAE8E2.1060704@redhat.com> <AANLkTi=5yGPmZxZY7T_oeyJ4xS+RWt7cY4WD=78fbo7v@mail.gmail.com> <4CBBF3C8.9070104@web.de> <4CBC1047.6010501@redhat.com> <20101018125803.GA2497@darkstar> <4CBC4B06.3030300@redhat.com> <20101018134508.GA11885@darkstar> <4CBC4FA9.90406@redhat.com> <4CBC5097.1020105@redhat.com> <20101018135813.GA20316@darkstar> <4CBC547A.8080700@redhat.com>
-In-Reply-To: <4CBC547A.8080700@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1756026Ab0JRSxS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Oct 2010 14:53:18 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:61192 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755694Ab0JRSxQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Oct 2010 14:53:16 -0400
+X-Authority-Analysis: v=1.1 cv=QISHQ+x4xS+apxgDHgAvNvlUjyrXCzYsHvuXcbPYiKg= c=1 sm=0 a=G0887j_XUbsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=VwQbUJbxAAAA:8 a=20KFwNOVAAAA:8 a=meVymXHHAAAA:8 a=WxeYqwZE9sgaEedjxjQA:9 a=eMqUIF2LdeiKly0AJdoA:7 a=ngE_fJCJClL8bYJCE89bRmVuRzwA:4 a=PUjeQqilurYA:10 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: [PATCH][GIT PULL] ftrace: Remove recursion between recordmcount
+ and scripts/mod/empty
+From: Steven Rostedt <rostedt@goodmis.org>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Ingo Molnar <mingo@elte.hu>, Frederic Weisbecker <fweisbec@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Michal Marek <mmarek@suse.cz>, linux-kbuild@vger.kernel.org,
+        Sam Ravnborg <sam@ravnborg.org>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Mon, 18 Oct 2010 14:53:09 -0400
+Message-ID: <1287427989.16971.304.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/18/2010 07:06 AM, Avi Kivity wrote:
->   On 10/18/2010 03:58 PM, Dave Young wrote:
->>>
->>>  Please patch hardware_setup() to show the value of
->>>  boot_cpu_has(X86_FEATURE_NX).
->>
->> It's 0
-> 
-> Well, that's ridiculous.  Looking back at your /proc/cpuinfo:
-> 
->> processor	: 0
->> flags		: fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush dts acpi mmx fxsr sse sse2 ss ht tm pbe syscall lm constant_tsc arch_perfmon pebs bts rep_good aperfmperf pni dtes64 monitor ds_cpl vmx est tm2 ssse3 cx16 xtpr pdcm lahf_lm ida dts tpr_shadow vnmi flexpriority
->>
->> processor	: 1
->> flags		: fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush dts acpi mmx fxsr sse sse2 ss ht tm pbe syscall nx lm constant_tsc arch_perfmon pebs bts rep_good aperfmperf pni dtes64 monitor ds_cpl vmx est tm2 ssse3 cx16 xtpr pdcm lahf_lm ida dts tpr_shadow vnmi flexpriority
-> 
-> processor 0 doesn't have nx.
-> 
-> Ingo, Peter, any ideas?  Where did the missing feature go?
-> 
 
-I don't see the original report -- in particular I can't see the kernel
-version -- but I suspect this *might* be an instance of the same bug
-fixed in mainline by checkin d900329e20f4476db6461752accebcf7935a8055
-(for backporting 1dedefd1a066a795a87afca9c0236e1a94de9bf6 is also
-needed; these both should be in -stable or on the way there.)
+Ingo,
 
-	-hpa
+Please pull the latest tip/perf/recordmcount tree, which can be found at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-2.6-trace.git
+tip/perf/recordmcount
+
+
+Steven Rostedt (1):
+      ftrace: Remove recursion between recordmcount and scripts/mod/empty
+
+----
+ scripts/Makefile.build |    6 +++++-
+ 1 files changed, 5 insertions(+), 1 deletions(-)
+---------------------------
+commit 0ae78b8f70eccd69febf70c688d15ae1253303e0
+Author: Steven Rostedt <srostedt@redhat.com>
+Date:   Mon Oct 18 14:42:00 2010 -0400
+
+    ftrace: Remove recursion between recordmcount and scripts/mod/empty
+    
+    When DYNAMIC_FTRACE is enabled and we use the C version of recordmcount,
+    all objects are run through the recordmcount program to create a
+    separate section that stores all the callers of mcount.
+    
+    The build process has a special file: scripts/mod/empty.o. This is
+    built from empty.c which is literally an empty file (except for a
+    single comment). This file is used to find information about the target
+    elf format, like endianness and word size.
+    
+    The problem comes up when we need to build recordmcount. The
+    build process requires that empty.o is built first. The build rules
+    for empty.o will try to execute recordmcount on the empty.o file.
+    We get an error that recordmcount does not exist.
+    
+    To avoid this recursion, the build file will skip running recordmcount
+    if the file that it is building is script/mod/empty.o.
+    
+    Perhaps a new rule is needed, or we may open-code empty.o build.
+    
+    Reported-by: Ingo Molnar <mingo@elte.hu>
+    Tested-by: Ingo Molnar <mingo@elte.hu>
+    Cc: Michal Marek <mmarek@suse.cz>
+    Cc: linux-kbuild@vger.kernel.org
+    Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+
+diff --git a/scripts/Makefile.build b/scripts/Makefile.build
+index 4db60b2..9f2d5b4 100644
+--- a/scripts/Makefile.build
++++ b/scripts/Makefile.build
+@@ -210,7 +210,11 @@ endif
+ 
+ ifdef CONFIG_FTRACE_MCOUNT_RECORD
+ ifdef BUILD_C_RECORDMCOUNT
+-cmd_record_mcount = $(objtree)/scripts/recordmcount "$(@)";
++# Due to recursion, we must skip the empty.o file
++#  TBD: Find a better way to do this.
++cmd_record_mcount = if [ $(@) != "scripts/mod/empty.o" ]; then			\
++			$(objtree)/scripts/recordmcount "$(@)";			\
++		    fi;
+ else
+ cmd_record_mcount = set -e ; perl $(srctree)/scripts/recordmcount.pl "$(ARCH)" \
+ 	"$(if $(CONFIG_CPU_BIG_ENDIAN),big,little)" \
+
+
