@@ -1,258 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757559Ab0JRRjD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Oct 2010 13:39:03 -0400
-Received: from mail.perches.com ([173.55.12.10]:3006 "EHLO mail.perches.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757535Ab0JRRjC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Oct 2010 13:39:02 -0400
-Subject: Re: [PATCH 1/3] drivers/staging/cx25821: Use kstrdup
-From: Joe Perches <joe@perches.com>
-To: Julia Lawall <julia@diku.dk>
-Cc: walter harms <wharms@bfs.de>, devel@driverdev.osuosl.org, gregkh@suse.de,
-        kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org
-In-Reply-To: <Pine.LNX.4.64.1010181421240.25099@ask.diku.dk>
-References: <1287341311-11161-1-git-send-email-julia@diku.dk>
-	 <1287341311-11161-2-git-send-email-julia@diku.dk> <4CBBF407.7060705@bfs.de>
-	 <Pine.LNX.4.64.1010181019370.22530@ask.diku.dk> <4CBC12EC.60109@bfs.de>
-	 <Pine.LNX.4.64.1010181421240.25099@ask.diku.dk>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 18 Oct 2010 10:38:59 -0700
-Message-ID: <1287423539.20968.115.camel@Joe-Laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S1757531Ab0JRRi5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Oct 2010 13:38:57 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:56700 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755465Ab0JRRi4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Oct 2010 13:38:56 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Christoph Hellwig <hch@infradead.org>
+Subject: Re: [v2] Remaining BKL users, what to do
+Date: Mon, 18 Oct 2010 19:38:26 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.36-rc7-next-20101015+; KDE/4.5.1; x86_64; ; )
+Cc: codalist@TELEMANN.coda.cs.cmu.edu,
+        ksummit-2010-discuss@lists.linux-foundation.org,
+        autofs@linux.kernel.org, linux-media@vger.kernel.org,
+        dri-devel@lists.freedesktop.org,
+        Mikulas Patocka <mikulas@artax.karlin.mff.cuni.cz>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Petr Vandrovec <vandrove@vc.cvut.cz>, Anders Larsen <al@alarsen.net>,
+        Jan Kara <jack@suse.cz>, Evgeniy Dushistov <dushistov@mail.ru>,
+        Ingo Molnar <mingo@elte.hu>, netdev@vger.kernel.org,
+        Samuel Ortiz <samuel@sortiz.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        Andrew Hendry <andrew.hendry@gmail.com>,
+        David Miller <davem@davemloft.net>, Jan Harkes <jaharkes@cs.cmu.edu>,
+        Bryan Schumaker <bjschuma@netapp.com>
+References: <201009161632.59210.arnd@arndb.de> <201010181742.06678.arnd@arndb.de> <20101018161924.GA9571@infradead.org>
+In-Reply-To: <20101018161924.GA9571@infradead.org>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201010181938.27076.arnd@arndb.de>
+X-Provags-ID: V02:K0:ntn3C7G5536uH5rgMWnLdKqpiPdBxRsP95JcLNhdKR0
+ Mr4WWEUStt1l8CIvFYSQjcsm/+vNPLqJRwjl2kFNI/qPkebifK
+ BwEO6ynWsbcWJVr+7NByMEQHgFHhEtyBY1bvICfRgKBLXm0nz2
+ XgX4HRBk8bxvuqKEKRGuWODo8U89Zvn6RJ6wwjxAuHZSlycen2
+ 1+fwyeEruNbjC1ex5HY3g==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Perhaps it's more readable code to recheck the
-field name flag and introduce a temporary
-char *fname so the slightly unusual reuse of
-	field = kstrdup(field, GFP)
-becomes
-	field = kstrdup(fname, GFP)
+On Monday 18 October 2010 18:19:24 Christoph Hellwig wrote:
+> Before we get into all these fringe drivers:
+> 
+>  - I've not seen any progrss on ->get_sb BKL removal for a while
 
+Not sure what you mean. Jan Blunck did the pushdown into get_sb
+last year, which is included into linux-next through my bkl/vfs
+tree. Subsequent patches remove it from most file systems along with
+the other BKL uses in them. If you like, I can post the series
+once more, but it has been posted a few times now.
+
+>  - locks.c is probably a higher priorit, too.
+
+As mentioned in the list, I expect the trivial final patch to
+be applied in 2.6.37-rc1 after Linus has pulled the trees that
+this depends on (bkl/vfs, nfs, nfsd, ceph), see below.
+
+This is currently not in -next because of the prerequisites.
+
+	Arnd
 ---
- drivers/staging/cx25821/cx25821-audio-upstream.c   |   34 +++---------
- .../staging/cx25821/cx25821-video-upstream-ch2.c   |   55 +++++++-------------
- drivers/staging/cx25821/cx25821-video-upstream.c   |   53 +++++++------------
- 3 files changed, 47 insertions(+), 95 deletions(-)
 
-diff --git a/drivers/staging/cx25821/cx25821-audio-upstream.c b/drivers/staging/cx25821/cx25821-audio-upstream.c
-index 27087db..180840f 100644
---- a/drivers/staging/cx25821/cx25821-audio-upstream.c
-+++ b/drivers/staging/cx25821/cx25821-audio-upstream.c
-@@ -723,8 +723,6 @@ int cx25821_audio_upstream_init(struct cx25821_dev *dev, int channel_select)
+diff --git a/fs/Kconfig b/fs/Kconfig
+index c386a9f..25ce2dc 100644
+--- a/fs/Kconfig
++++ b/fs/Kconfig
+@@ -50,7 +50,6 @@ endif # BLOCK
+ config FILE_LOCKING
+ 	bool "Enable POSIX file locking API" if EMBEDDED
+ 	default y
+-	select BKL
+ 	help
+ 	  This option enables standard file locking support, required
+           for filesystems like NFS and for the flock() system
+diff --git a/fs/locks.c b/fs/locks.c
+index 8b2b6ad..02b6e0e 100644
+--- a/fs/locks.c
++++ b/fs/locks.c
+@@ -142,6 +142,7 @@ int lease_break_time = 45;
+ 
+ static LIST_HEAD(file_lock_list);
+ static LIST_HEAD(blocked_list);
++static DEFINE_SPINLOCK(file_lock_lock);
+ 
+ /*
+  * Protects the two list heads above, plus the inode->i_flock list
+@@ -149,13 +150,13 @@ static LIST_HEAD(blocked_list);
+  */
+ void lock_flocks(void)
  {
- 	struct sram_channel *sram_ch;
- 	int retval = 0;
--	int err = 0;
--	int str_length = 0;
- 
- 	if (dev->_audio_is_running) {
- 		printk(KERN_WARNING "Audio Channel is still running so return!\n");
-@@ -752,28 +750,14 @@ int cx25821_audio_upstream_init(struct cx25821_dev *dev, int channel_select)
- 	dev->_audio_lines_count = LINES_PER_AUDIO_BUFFER;
- 	_line_size = AUDIO_LINE_SIZE;
- 
--	if (dev->input_audiofilename) {
--		str_length = strlen(dev->input_audiofilename);
--		dev->_audiofilename = kmalloc(str_length + 1, GFP_KERNEL);
--
--		if (!dev->_audiofilename)
--			goto error;
--
--		memcpy(dev->_audiofilename, dev->input_audiofilename,
--		       str_length + 1);
--
--		/* Default if filename is empty string */
--		if (strcmp(dev->input_audiofilename, "") == 0)
--			dev->_audiofilename = "/root/audioGOOD.wav";
--
--	} else {
--		str_length = strlen(_defaultAudioName);
--		dev->_audiofilename = kmalloc(str_length + 1, GFP_KERNEL);
--
--		if (!dev->_audiofilename)
--			goto error;
--
--		memcpy(dev->_audiofilename, _defaultAudioName, str_length + 1);
-+	if (!dev->input_audiofilename || *dev->input_audiofilename == 0)
-+		dev->_audiofilename = _defaultAudioName;
-+	else
-+		dev->_audiofilename = dev->input_audiofilename;
-+	dev->_audiofilename = kstrdup(dev->_audiofilename, GFP_KERNEL);
-+	if (!dev->_audiofilename) {
-+		retval = -ENOMEM;
-+		goto error;
- 	}
- 
- 	retval =
-@@ -802,5 +786,5 @@ int cx25821_audio_upstream_init(struct cx25821_dev *dev, int channel_select)
- error:
- 	cx25821_dev_unregister(dev);
- 
--	return err;
-+	return retval;
+-	lock_kernel();
++	spin_lock(&file_lock_lock);
  }
-diff --git a/drivers/staging/cx25821/cx25821-video-upstream-ch2.c b/drivers/staging/cx25821/cx25821-video-upstream-ch2.c
-index d12dbb5..fa7cd70 100644
---- a/drivers/staging/cx25821/cx25821-video-upstream-ch2.c
-+++ b/drivers/staging/cx25821/cx25821-video-upstream-ch2.c
-@@ -747,10 +747,9 @@ int cx25821_vidupstream_init_ch2(struct cx25821_dev *dev, int channel_select,
- 	struct sram_channel *sram_ch;
- 	u32 tmp;
- 	int retval = 0;
--	int err = 0;
- 	int data_frame_size = 0;
- 	int risc_buffer_size = 0;
--	int str_length = 0;
-+	char *fname;
+ EXPORT_SYMBOL_GPL(lock_flocks);
  
- 	if (dev->_is_running_ch2) {
- 		printk("Video Channel is still running so return!\n");
-@@ -788,39 +787,23 @@ int cx25821_vidupstream_init_ch2(struct cx25821_dev *dev, int channel_select,
- 	risc_buffer_size =
- 	    dev->_isNTSC_ch2 ? NTSC_RISC_BUF_SIZE : PAL_RISC_BUF_SIZE;
- 
--	if (dev->input_filename_ch2) {
--		str_length = strlen(dev->input_filename_ch2);
--		dev->_filename_ch2 = kmalloc(str_length + 1, GFP_KERNEL);
--
--		if (!dev->_filename_ch2)
--			goto error;
--
--		memcpy(dev->_filename_ch2, dev->input_filename_ch2,
--		       str_length + 1);
--	} else {
--		str_length = strlen(dev->_defaultname_ch2);
--		dev->_filename_ch2 = kmalloc(str_length + 1, GFP_KERNEL);
--
--		if (!dev->_filename_ch2)
--			goto error;
--
--		memcpy(dev->_filename_ch2, dev->_defaultname_ch2,
--		       str_length + 1);
--	}
--
--       /* Default if filename is empty string */
--	if (strcmp(dev->input_filename_ch2, "") == 0) {
--		if (dev->_isNTSC_ch2) {
--			dev->_filename_ch2 =
--			    (dev->_pixel_format_ch2 ==
--			     PIXEL_FRMT_411) ? "/root/vid411.yuv" :
--			    "/root/vidtest.yuv";
--		} else {
--			dev->_filename_ch2 =
--			    (dev->_pixel_format_ch2 ==
--			     PIXEL_FRMT_411) ? "/root/pal411.yuv" :
--			    "/root/pal422.yuv";
--		}
-+	if (dev->input_filename_ch2 && *dev->input_filename_ch2)
-+		fname = dev->input_filename_ch2;
-+	else if (dev->input_filename_ch2) {
-+		/* Default if filename is empty string */
-+		if (dev->_isNTSC_ch2)
-+			fname = (dev->_pixel_format_ch2 == PIXEL_FRMT_411) ?
-+				"/root/vid411.yuv" : "/root/vidtest.yuv";
-+		else
-+			fname = (dev->_pixel_format_ch2 == PIXEL_FRMT_411) ?
-+				"/root/pal411.yuv" : "/root/pal422.yuv";
-+	} else
-+		fname = dev->_defaultname_ch2;
-+
-+	dev->_filename_ch2 = kstrdup(fname, GFP_KERNEL);
-+	if (!dev->_filename_ch2) {
-+		retval = -ENOMEM;
-+		goto error;
- 	}
- 
- 	retval =
-@@ -851,5 +834,5 @@ int cx25821_vidupstream_init_ch2(struct cx25821_dev *dev, int channel_select,
-       error:
- 	cx25821_dev_unregister(dev);
- 
--	return err;
-+	return retval;
+ void unlock_flocks(void)
+ {
+-	unlock_kernel();
++	spin_unlock(&file_lock_lock);
  }
-diff --git a/drivers/staging/cx25821/cx25821-video-upstream.c b/drivers/staging/cx25821/cx25821-video-upstream.c
-index 756a820..d51c6c1 100644
---- a/drivers/staging/cx25821/cx25821-video-upstream.c
-+++ b/drivers/staging/cx25821/cx25821-video-upstream.c
-@@ -800,10 +800,9 @@ int cx25821_vidupstream_init_ch1(struct cx25821_dev *dev, int channel_select,
- 	struct sram_channel *sram_ch;
- 	u32 tmp;
- 	int retval = 0;
--	int err = 0;
- 	int data_frame_size = 0;
- 	int risc_buffer_size = 0;
--	int str_length = 0;
-+	char *fname;
+ EXPORT_SYMBOL_GPL(unlock_flocks);
  
- 	if (dev->_is_running) {
- 		printk(KERN_INFO "Video Channel is still running so return!\n");
-@@ -840,37 +839,23 @@ int cx25821_vidupstream_init_ch1(struct cx25821_dev *dev, int channel_select,
- 	risc_buffer_size =
- 	    dev->_isNTSC ? NTSC_RISC_BUF_SIZE : PAL_RISC_BUF_SIZE;
- 
--	if (dev->input_filename) {
--		str_length = strlen(dev->input_filename);
--		dev->_filename = kmalloc(str_length + 1, GFP_KERNEL);
--
--		if (!dev->_filename)
--			goto error;
--
--		memcpy(dev->_filename, dev->input_filename, str_length + 1);
--	} else {
--		str_length = strlen(dev->_defaultname);
--		dev->_filename = kmalloc(str_length + 1, GFP_KERNEL);
--
--		if (!dev->_filename)
--			goto error;
--
--		memcpy(dev->_filename, dev->_defaultname, str_length + 1);
--	}
--
--	/* Default if filename is empty string */
--	if (strcmp(dev->input_filename, "") == 0) {
--		if (dev->_isNTSC) {
--			dev->_filename =
--			    (dev->_pixel_format ==
--			     PIXEL_FRMT_411) ? "/root/vid411.yuv" :
--			    "/root/vidtest.yuv";
--		} else {
--			dev->_filename =
--			    (dev->_pixel_format ==
--			     PIXEL_FRMT_411) ? "/root/pal411.yuv" :
--			    "/root/pal422.yuv";
--		}
-+	if (dev->input_filename && *dev->input_filename)
-+		fname = dev->input_filename;
-+	else if (dev->input_filename) {
-+		/* Default if filename is empty string */
-+		if (dev->_isNTSC)
-+			fname = (dev->_pixel_format == PIXEL_FRMT_411) ?
-+				"/root/vid411.yuv" : "/root/vidtest.yuv";
-+		else
-+			fname = (dev->_pixel_format == PIXEL_FRMT_411) ?
-+				"/root/pal411.yuv" : "/root/pal422.yuv";
-+	} else
-+		fname = dev->_defaultname;
-+
-+	dev->_filename = kstrdup(fname, GFP_KERNEL);
-+	if (!dev->_filename) {
-+		retval = -ENOMEM;
-+		goto error;
- 	}
- 
- 	dev->_is_running = 0;
-@@ -908,5 +893,5 @@ int cx25821_vidupstream_init_ch1(struct cx25821_dev *dev, int channel_select,
- error:
- 	cx25821_dev_unregister(dev);
- 
--	return err;
-+	return retval;
- }
-
-
