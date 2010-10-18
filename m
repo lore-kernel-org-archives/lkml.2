@@ -1,185 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933305Ab0JRUhx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Oct 2010 16:37:53 -0400
-Received: from mout6.freenet.de ([195.4.92.96]:46176 "EHLO mout6.freenet.de"
+	id S933334Ab0JRUiF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Oct 2010 16:38:05 -0400
+Received: from fifo99.com ([67.223.236.141]:59182 "EHLO fifo99.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933203Ab0JRUhw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Oct 2010 16:37:52 -0400
-Message-ID: <4CBCB014.9080108@freenet.de>
-Date: Mon, 18 Oct 2010 22:37:40 +0200
-From: Patrick Ringl <patrick_@freenet.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.11) Gecko/20100713 Thunderbird/3.0.6
-MIME-Version: 1.0
-To: Herbert Xu <herbert@gondor.hengli.com.au>
-CC: Patrick Ringl <patrick_@freenet.de>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, bridge@lists.linux-foundation.org
-Subject: Re: 2.6.36-rc7: net/bridge causes temporary network I/O lockups [2]
-References: <4CB9EBC3.4070905@freenet.de> <20101018161656.GA2403@gondor.apana.org.au>
-In-Reply-To: <20101018161656.GA2403@gondor.apana.org.au>
-Content-Type: multipart/mixed;
- boundary="------------000701080606070908060701"
+	id S933316Ab0JRUiC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Oct 2010 16:38:02 -0400
+Subject: Re: linux-next: manual merge of the msm tree with the arm tree
+From: Daniel Walker <dwalker@fifo99.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Nicolas Pitre <nico@fluxnic.net>, Russell King <rmk@arm.linux.org.uk>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Jeremy Kerr <jeremy.kerr@canonical.com>,
+        Jeff Ohlstein <johlstei@codeaurora.org>
+In-Reply-To: <201010182219.25890.arnd@arndb.de>
+References: <20101018103540.7bd9c535.sfr@canb.auug.org.au>
+	 <alpine.LFD.2.00.1010181525000.2764@xanadu.home>
+	 <1287432774.5588.5.camel@c-dwalke-linux.qualcomm.com>
+	 <201010182219.25890.arnd@arndb.de>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 18 Oct 2010 13:37:31 -0700
+Message-ID: <1287434251.5588.23.camel@c-dwalke-linux.qualcomm.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------000701080606070908060701
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+On Mon, 2010-10-18 at 22:19 +0200, Arnd Bergmann wrote:
+> On Monday 18 October 2010 22:12:54 Daniel Walker wrote:
+> > On Mon, 2010-10-18 at 15:29 -0400, Nicolas Pitre wrote:
+> > 
+> > > > Ok, well in that case why not accept this immediately after the merge
+> > > > window? A point when everything is quiet, and most of the tree's are
+> > > > empty?
+> > > 
+> > > RMK has his own merge window which closes about at the same time as 
+> > > Linus' one opens.  We thought this was happening last week and therefore 
+> > > this change was supposed to be the last one.
+> > 
+> > It seems like that could potentially make these kinds of problem worse,
+> > since your merging things immediately before sending them to Linus. Like
+> > right now we only have a fairly short amount of time to correct this
+> > conflict. 
+> 
+> What Nicolas was talking about is the *end* of the merge window, not the
+> start. This is how all sensible maintainer trees work: you get to
+> merge stuff into the maintainer tree for a number of weeks (some start
+> at -rc1, other start a bit later). When Linus tells people to get ready
+> for the release, the subsystem goes into regression fix mode and when
+> Linus opens his merge window, everything should be reasonably stable.
 
-On 10/18/2010 06:16 PM, Herbert Xu wrote:
-> On Sat, Oct 16, 2010 at 08:15:31PM +0200, Patrick Ringl wrote:
->    
->> Hi,
->>
->> okay I narrowed down the issue. I watched all function calls of the
->> 'bridge' module with the help of a small systemtap probe of mine. I
->> first traced a timespan where the issue did not occur, then one where it
->> did and composed an intersection of these two:
->>      
-> I can't reproduce this problem here so I'll need your help to
-> track it down.
->
-> Can you see if you can relate the lock-ups to specific events
-> such as a particular packet being sent through the bridge?
->    
-The problem is definitely somewhere in the 2.6.34 commit regarding IGMP 
-snooping (when disabling it, everything works). I have attached a 
-tcpdump log of data coming through the bridge and data coming through an 
-attached port (eth1). The lockups are easily spotted, since I use mtr to 
-constantly ping the problematic machine, and there aren't any 
-incoming/outgoing packets during the lockup.
-> If we can recreate the problem on demand that that helps us to
-> find the root cause.
->
-> You mentioned that you took packet dumps on the system.  If you
-> can show us the packets through the bridge and its ports when
-> the problem occurs that would be great.
->
-> Thanks,
->    
-Anything else I could possibly provide? :-)
+I think the term "merge window" is a little mis-leading here.. Your
+describing development. To me the term merge window is indicating a
+short period when you get changes in, not the whole -rc cycle.
 
-regards,
-Patrick
+> > > > Well how about I merge this change into my tree ?
+> > > 
+> > > If you ask RMK to merge your tree in his that would be much simpler to 
+> > > add this change in a single pass afterwards.
+> > 
+> > I can do that , but would I still be able to merge stuff into my tree?
+> > Seems like I could, Russell would just clean up the conflict and my tree
+> > would just move forward like it has been already , and I would send the
+> > whole thing to Linus.
+> 
+> When you know that Russell does not rebase his tree, you can pull his
+> tree into yours whenever a change hits his tree that impacts you in
+> a major way. You shouldn't do this too frequently, but it's a good way
+> to resolve conflicts like this one.
 
---------------000701080606070908060701
-Content-Type: application/octet-stream;
- name="dump_br0"
-Content-Transfer-Encoding: base64
-Content-Disposition: attachment;
- filename="dump_br0"
+If I did that all of Russell's changesets would get mixed with mine when
+I send the pull request .. That would just create confusion .. It's OK
+if Russell sends my commits to Linus, but I'm not going to send
+Russell's commits.
 
-1MOyoQIABAAAAAAAAAAAAP//AAABAAAAHa28TMVGCwBOAAAATgAAANhdTIB5bwAeZREzIAgA
-RQAAQKv1AAABAYpiwKgBA8CoARIIAMV6DAMmggAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAB2tvEznRgsATgAAAE4AAAAAHmURMyDYXUyAeW8IAEUAAEBeuAAAQAGYn8Co
-ARLAqAEDAADNegwDJoIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAdrbxM
-3EgLAE4AAABOAAAA2F1MgHlvAB5lETMgCABFAABAq/YAAAEBimHAqAEDwKgBEggA+7NRXaru
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHa28TP1ICwBOAAAATgAAAAAe
-ZREzINhdTIB5bwgARQAAQF65AABAAZiewKgBEsCoAQMAAAO0UV2q7gAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAB6tvExYRAsATgAAAE4AAADYXUyAeW8AHmURMyAIAEUA
-AECr9wAAAQGKYMCoAQPAqAESCADEegwDJ4IAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAerbxMeUQLAE4AAABOAAAAAB5lETMg2F1MgHlvCABFAABAXroAAEABmJ3AqAES
-wKgBAwAAzHoMAyeCAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHq28TCtL
-CwBOAAAATgAAANhdTIB5bwAeZREzIAgARQAAQKv4AAABAYpfwKgBA8CoARIIAPqzUV2r7gAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAB6tvExMSwsATgAAAE4AAAAAHmUR
-MyDYXUyAeW8IAEUAAEBeuwAAQAGYnMCoARLAqAEDAAACtFFdq+4AAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAfrbxMSBQJAC4AAAAuAAAAAQBeAAAB2F1MgHlvCABGwAAg
-AABAAAECBBcAAAAA4AAAAZQEAAARZO6bAAAAAB+tvExnFAkAVgAAAFYAAAAzMwAAAADYXUyA
-eW+G3WAAAAAgAAABAAAAAAAAAAAAAAAAAAAAAP8CAAAAAAAAAAAAAAAAAAE6AAUCAAAAAIIA
-esED6AAAAAAAAAAAAAAAAAAAAAAAAB+tvExLRQsATgAAAE4AAADYXUyAeW8AHmURMyAIAEUA
-AECr+QAAAQGKXsCoAQPAqAESCADDegwDKIIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAfrbxMbUULAE4AAABOAAAAAB5lETMg2F1MgHlvCABFAABAXrwAAEABmJvAqAES
-wKgBAwAAy3oMAyiCAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAH628TO9M
-CwBOAAAATgAAANhdTIB5bwAeZREzIAgARQAAQKv6AAABAYpdwKgBA8CoARIIAPmzUV2s7gAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAB+tvEwQTQsATgAAAE4AAAAAHmUR
-MyDYXUyAeW8IAEUAAEBevQAAQAGYmsCoARLAqAEDAAABtFFdrO4AAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAgrbxMC0YLAE4AAABOAAAA2F1MgHlvAB5lETMgCABFAABA
-q/sAAAEBilzAqAEDwKgBEggAwnoMAymCAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAIK28TCxGCwBOAAAATgAAAAAeZREzINhdTIB5bwgARQAAQF6+AABAAZiZwKgBEsCo
-AQMAAMp6DAMpggAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACCtvEzATgsA
-TgAAAE4AAADYXUyAeW8AHmURMyAIAEUAAECr/AAAAQGKW8CoAQPAqAESCAD4s1Fdre4AAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgrbxM4k4LAE4AAABOAAAAAB5lETMg
-2F1MgHlvCABFAABAXr8AAEABmJjAqAESwKgBAwAAALRRXa3uAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAJa28TOtfDAAuAAAALgAAAAEAXgAAAgAbnv6nBAgARsAAIAAA
-QAABAkJrwKgBAuAAAAKUBAAAFgAJ/eAAAAImrbxMxz0AAC4AAAAuAAAAAQBeAAD7AB5lETMg
-CABGwAAgAABAAAECQXHAqAED4AAA+5QEAAAWAAkE4AAA+yatvEyJDggALgAAAC4AAAABAF4A
-ABYAG57+pwQIAEbAACAAAEAAAQJCV8CoAQLgAAAWlAQAABYACengAAAWNa28TJUIDAA8AAAA
-PAAAAP///////wAeZREzIAgGAAEIAAYEAAEAHmURMyDAqAEDAAAAAAAAwKgBEgAAAAAAAAAA
-AAAAAAAAy4X/pjWtvEynCAwAKgAAACoAAAAAHmURMyDYXUyAeW8IBgABCAAGBAAC2F1MgHlv
-wKgBEgAeZREzIMCoAQM1rbxMXA4MAE4AAABOAAAA2F1MgHlvAB5lETMgCABFAABArCUAAAEB
-ijLAqAEDwKgBEggArXoMAz6CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-Na28TIEODABOAAAATgAAAAAeZREzINhdTIB5bwgARQAAQF7AAABAAZiXwKgBEsCoAQMAALV6
-DAM+ggAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADWtvEy5DgwATgAAAE4A
-AADYXUyAeW8AHmURMyAIAEUAAECsJgAAAQGKMcCoAQPAqAESCADjs1Fdwu4AAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA1rbxMww4MAE4AAABOAAAAAB5lETMg2F1MgHlv
-CABFAABAXsEAAEABmJbAqAESwKgBAwAA67NRXcLuAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAANq28TAm/CwBOAAAATgAAANhdTIB5bwAeZREzIAgARQAAQKwnAAABAYow
-wKgBA8CoARIIAKx6DAM/ggAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADat
-vEwrvwsATgAAAE4AAAAAHmURMyDYXUyAeW8IAEUAAEBewgAAQAGYlcCoARLAqAEDAAC0egwD
-P4IAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA2rbxMpdULAE4AAABOAAAA
-2F1MgHlvAB5lETMgCABFAABArCgAAAEBii/AqAEDwKgBEggA4rNRXcPuAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAANq28TMjVCwBOAAAATgAAAAAeZREzINhdTIB5bwgA
-RQAAQF7DAABAAZiUwKgBEsCoAQMAAOqzUV3D7gAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAA==
---------------000701080606070908060701
-Content-Type: application/octet-stream;
- name="dump_eth1"
-Content-Transfer-Encoding: base64
-Content-Disposition: attachment;
- filename="dump_eth1"
+Daniel
 
-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
---------------000701080606070908060701--
