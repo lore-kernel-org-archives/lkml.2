@@ -1,76 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751355Ab0JREvz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Oct 2010 00:51:55 -0400
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:42209 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750827Ab0JREvx convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Oct 2010 00:51:53 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=khgM71IROKAW0ROYggtZ7y2ePrbRDuO/i8Muz/s9cdWcNPAYy2Hv2s3Dz6/YtHSzO8
-         xsIWEOmWh5ovMa2WBjlZ0kKkib6OgmLy/LAhNdQwFc1sXDMyLd66vLTeQSLjrd/ENKg8
-         s+k5HUq1MutBR8aSD8UYXE1ssdRm18HX7Fi6o=
-MIME-Version: 1.0
-In-Reply-To: <201010151312.30843.arnd@arndb.de>
-References: <1287135981-17604-1-git-send-email-akinobu.mita@gmail.com>
-	<1287135981-17604-4-git-send-email-akinobu.mita@gmail.com>
-	<201010151312.30843.arnd@arndb.de>
-Date: Mon, 18 Oct 2010 13:51:52 +0900
-Message-ID: <AANLkTi=H+c0drWP20JhSs74+V3q2aChgTA1L86pT=FzH@mail.gmail.com>
-Subject: Re: [PATCH 03/22] s390: introduce little endian bitops
-From: Akinobu Mita <akinobu.mita@gmail.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        Christoph Hellwig <hch@infradead.org>,
+	id S1751527Ab0JRExB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Oct 2010 00:53:01 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:33163 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750767Ab0JREw7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Oct 2010 00:52:59 -0400
+Date: Mon, 18 Oct 2010 15:52:49 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Jeremy Fitzhardinge <jeremy@goop.org>,
+        Xen Devel <Xen-devel@lists.xensource.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>, linux390@de.ibm.com,
-        linux-s390@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+        Linus <torvalds@linux-foundation.org>
+Subject: linux-next: manual merge of the xen tree with the swiotlb-xen tree
+Message-Id: <20101018155249.d9267bfe.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Mon__18_Oct_2010_15_52_49_+1100_OFumicP2HvSJO2Sw"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/10/15 Arnd Bergmann <arnd@arndb.de>:
-> On Friday 15 October 2010, Akinobu Mita wrote:
->> +#define __set_le_bit(nr, addr) \
->> +       __set_bit((nr)^(__BITOPS_WORDSIZE - 8), (addr))
->> +#define __clear_le_bit(nr, addr)       \
->> +       __clear_bit((nr)^(__BITOPS_WORDSIZE - 8), (addr))
->> +#define __test_and_set_le_bit(nr, addr)        \
->> +       __test_and_set_bit((nr)^(__BITOPS_WORDSIZE - 8), (addr))
->> +#define test_and_set_le_bit(lock, nr, addr)    \
->> +       test_and_set_bit((nr)^(__BITOPS_WORDSIZE - 8), (addr))
->> +#define __test_and_clear_le_bit(nr, addr)      \
->> +       __test_and_clear_bit((nr)^(__BITOPS_WORDSIZE - 8), (addr))
->> +#define test_and_clear_le_bit(lock, nr, addr)  \
->> +       test_and_clear_bit((nr)^(__BITOPS_WORDSIZE - 8), (addr))
->> +#define test_le_bit(nr, addr)  \
->> +       test_bit((nr)^(__BITOPS_WORDSIZE - 8), (addr))
->
-> The test_and_clear_le_bit and test_and_set_le_bit calling conventions
-> are a little surprising here. I would not pass the lock argument
-> here but leave that to the ext2 wrapper:
->
-> #define test_and_set_le_bit(nr, addr)    \
->       test_and_set_bit((nr)^(__BITOPS_WORDSIZE - 8), (addr))
-> #define test_and_clear_le_bit(nr, addr)  \
->       test_and_clear_bit((nr)^(__BITOPS_WORDSIZE - 8), (addr))
->
-> #define ext2_set_bit_atomic(lock, nr, addr)       \
->       test_and_set_le_bit((nr), (unsigned long *)(addr))
-> #define ext2_clear_bit_atomic(lock, nr, addr)     \
->       test_and_clear_le_bit((nr), (unsigned long *)(addr))
->
-> Same thing on arm and m68k.
+--Signature=_Mon__18_Oct_2010_15_52_49_+1100_OFumicP2HvSJO2Sw
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Oops,
-test_and_{set,clear}_le_bit() is only used by ext2_{set,clear}_bit_atomic
-and I had one additional patch that cleans up these definisions across
-the architectures. So I didn't realize that mistake when I did cross
-compile.
+Hi all,
+
+Today's linux-next merge of the xen tree got conplex conflicts in
+drivers/xen/events.c between several commits from the swiotlb-xen tree
+and several commits from the xen tree.
+
+I am unqualified to fix this mess, sorry.  I am dropping the xen tree
+for today (and only not dropping the swiotlb-xen tree because that would
+be too much work).
+
+I wonder, of course, why I have seen nothing in either of these trees
+until today (less than a week before the merge window opens).
+
+Please sort this mess out.  I will drop the swiotlb-xen tree as well
+tomorrow if nothing has changed.
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Mon__18_Oct_2010_15_52_49_+1100_OFumicP2HvSJO2Sw
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iQEcBAEBAgAGBQJMu9KhAAoJEDMEi1NhKgbsAUAH/0FBRyzgC5zzt2HbrDAuPCQw
+BapDaGdeW8JrOKlI+EZJDgdkEAb2shDuQg5R4Bqr+vSDinbsNUilhdMC7aMceEpz
+YwyjbSsRkcrpHK49wggKwKFhL/spz29VOc6BwWfg6CDjXiMtxG3xlAgSxiGcc3AV
+mKEf0hglqxpXkCbWBbVjO2zWPI4Nbk1lMf+3zGLYFFEjx8/Gi1bWATOobqXoO0We
+x4AFnzH0Oc9vrrrf/6uZOA2bJPkCXEbpQYhp0jLqKGWkj9lr0lYWFgygb0t6JUQK
+gLUvbOEhikF23lRHKDXJWmIH4ia/Zw+oIZLajbun00wt58artT5chmgZGbmi4IU=
+=T2d1
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__18_Oct_2010_15_52_49_+1100_OFumicP2HvSJO2Sw--
