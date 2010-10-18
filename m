@@ -1,71 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933054Ab0JRSMQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Oct 2010 14:12:16 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:47426 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754914Ab0JRSMP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Oct 2010 14:12:15 -0400
-Date: Mon, 18 Oct 2010 20:11:36 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Eric Paris <eparis@redhat.com>, Kyle McMartin <kyle@mcmartin.ca>,
-        James Morris <jmorris@namei.org>,
-        Christoph Hellwig <hch@infradead.org>, kernel@lists.fedoraproject.org,
-        Mimi Zohar <zohar@us.ibm.com>, warthog9@kernel.org,
-        Dave Chinner <david@fromorbit.com>, linux-kernel@vger.kernel.org,
-        Serge Hallyn <serue@us.ibm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: ima: use of radix tree cache indexing == massive waste of memory?
-Message-ID: <20101018181136.GA12372@elte.hu>
-References: <20101016065206.GO4681@dastard>
- <20101016192027.GA6883@infradead.org>
- <ebc4973c-6c11-4397-b8b0-c212a27abce4@email.android.com>
- <20101017004945.GE1614@infradead.org>
- <20101017054008.GA16383@elte.hu>
- <20101017184652.GB28060@infradead.org>
- <alpine.LRH.2.00.1010181127480.9476@tundra.namei.org>
- <20101018062530.GD8332@bombadil.infradead.org>
- <1287420534.2530.67.camel@localhost.localdomain>
- <4CBC8C98.1090802@zytor.com>
+	id S1757620Ab0JRSM5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Oct 2010 14:12:57 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:45777 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754961Ab0JRSM4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Oct 2010 14:12:56 -0400
+Date: Mon, 18 Oct 2010 20:12:53 +0200
+From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: Dinh.Nguyen@freescale.com
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux@arm.linux.org.uk, s.hauer@pengutronix.de,
+        valentin.longchamp@epfl.ch, daniel@caiaq.de, grant.likely@secretlab.ca,
+        bryan.wu@canonical.com, amit.kucheria@canonical.com,
+        xiao-lizhang@freescale.com
+Subject: Re: [PATCHv2 2/2] ARM: imx: Add gpio-keys to mx51 babbage board
+Message-ID: <20101018181253.GI12363@pengutronix.de>
+References: <1287419731-7885-1-git-send-email-Dinh.Nguyen@freescale.com> <1287419731-7885-2-git-send-email-Dinh.Nguyen@freescale.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <4CBC8C98.1090802@zytor.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1287419731-7885-2-git-send-email-Dinh.Nguyen@freescale.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello Dinh,
 
-* H. Peter Anvin <hpa@zytor.com> wrote:
-
-> On 10/18/2010 09:48 AM, Eric Paris wrote:
+On Mon, Oct 18, 2010 at 11:35:31AM -0500, Dinh.Nguyen@freescale.com wrote:
+> From: Dinh Nguyen <Dinh.Nguyen@freescale.com>
 > 
-> > 1) IMA uses radix trees which end up wasting 500 bytes per inode because the key 
-> > is too sparse.  I've got a patch which uses an rbtree instead I'm testing and 
-> > will send along shortly.  I found it funny working on the patch to see that 
-> > Documentation/rbtree.txt says "This differs from radix trees (which are used to 
-> > efficiently store sparse arrays and thus use long integer indexes to 
-> > insert/access/delete nodes)" Which flys in the face of this report.
+> Add functionality for the power button on MX51 Babbage board.
 > 
-> Radix trees can efficiently store data associated with sparse keys *as long as the 
-> keys are clustered*.  For random key distributions, they perform horribly.
+> Signed-off-by: Dinh Nguyen <Dinh.Nguyen@freescale.com>
+> ---
+>  arch/arm/configs/mx51_defconfig             |    1 +
+>  arch/arm/mach-mx5/board-mx51_babbage.c      |   33 +++++++++++++++++++++++++++
+>  arch/arm/plat-mxc/include/mach/iomux-mx51.h |    4 ++-
+>  3 files changed, 37 insertions(+), 1 deletions(-)
+> 
+> diff --git a/arch/arm/configs/mx51_defconfig b/arch/arm/configs/mx51_defconfig
+> index a665ecb..f46f87e 100644
+> --- a/arch/arm/configs/mx51_defconfig
+> +++ b/arch/arm/configs/mx51_defconfig
+> @@ -81,6 +81,7 @@ CONFIG_FEC=y
+>  CONFIG_INPUT_FF_MEMLESS=m
+>  # CONFIG_INPUT_MOUSEDEV_PSAUX is not set
+>  CONFIG_INPUT_EVDEV=y
+> +CONFIG_KEYBOARD_GPIO=y
+>  CONFIG_INPUT_EVBUG=m
+>  CONFIG_MOUSE_PS2=m
+>  CONFIG_MOUSE_PS2_ELANTECH=y
+nice
 
-For random key distributions hash and rbtree data structures are pretty good 
-choices.
+> diff --git a/arch/arm/mach-mx5/board-mx51_babbage.c b/arch/arm/mach-mx5/board-mx51_babbage.c
+> index 6e384d9..0dded49 100644
+> --- a/arch/arm/mach-mx5/board-mx51_babbage.c
+> +++ b/arch/arm/mach-mx5/board-mx51_babbage.c
+> @@ -16,7 +16,11 @@
+>  #include <linux/gpio.h>
+>  #include <linux/delay.h>
+>  #include <linux/io.h>
+> +#include <linux/interrupt.h>
+> +#include <linux/irq.h>
+>  #include <linux/fsl_devices.h>
+> +#include <linux/gpio_keys.h>
+> +#include <linux/input.h>
+>  
+>  #include <mach/common.h>
+>  #include <mach/hardware.h>
+> @@ -36,6 +40,7 @@
+>  #define BABBAGE_USB_HUB_RESET	(0*32 + 7)	/* GPIO_1_7 */
+>  #define BABBAGE_USBH1_STP	(0*32 + 27)	/* GPIO_1_27 */
+>  #define BABBAGE_PHY_RESET (1*32 +5)	/* GPIO_2_5 */
+> +#define BABBAGE_POWER_KEY	(1*32 + 21)	/* GPIO_2_21 */
+>  
+>  /* USB_CTRL_1 */
+>  #define MX51_USB_CTRL_1_OFFSET			0x10
+> @@ -45,8 +50,33 @@
+>  #define	MX51_USB_PLL_DIV_19_2_MHZ	0x01
+>  #define	MX51_USB_PLL_DIV_24_MHZ	0x02
+>  
+> +static struct gpio_keys_button babbage_buttons[] = {
+> +	{
+> +		.gpio		= BABBAGE_POWER_KEY,
+> +		.code		= BTN_0,
+> +		.desc		= "PWR",
+> +		.active_low	= 1,
+> +		.wakeup		= 1,
+> +	},
+> +};
+> +
+> +static struct gpio_keys_platform_data babbage_button_data = {
+> +	.buttons	= babbage_buttons,
+> +	.nbuttons	= ARRAY_SIZE(babbage_buttons),
+> +};
+> +
+> +static struct platform_device babbage_button_device = {
+> +	.name		= "gpio-keys",
+> +	.id		= -1,
+> +	.num_resources	= 0,
+> +	.dev		= {
+> +		.platform_data	= &babbage_button_data,
+> +	}
+> +};
+> +
+>  static struct platform_device *devices[] __initdata = {
+>  	&mxc_fec_device,
+> +	&babbage_button_device,
+I think this won't fit on top of Sascha's tree as it has a patch that
+changed the way the fec is registered.
 
-But the (much) more fundamental question is to turn the non-trivial allocation 
-overhead of this opt-in feature into truly opt-in overhead.
+>  };
+>  
+>  static struct pad_desc mx51babbage_pads[] = {
+> @@ -93,6 +123,9 @@ static struct pad_desc mx51babbage_pads[] = {
+>  
+>  	/* USB HUB reset line*/
+>  	MX51_PAD_GPIO_1_7__GPIO_1_7,
+> +
+> +	/* Power Key */
+> +	MX51_PAD_EIM_A27__GPIO_2_21,
+>  };
+>  
+>  /* Serial ports */
+> diff --git a/arch/arm/plat-mxc/include/mach/iomux-mx51.h b/arch/arm/plat-mxc/include/mach/iomux-mx51.h
+> index 21bfa46..05f62a4 100644
+> --- a/arch/arm/plat-mxc/include/mach/iomux-mx51.h
+> +++ b/arch/arm/plat-mxc/include/mach/iomux-mx51.h
+> @@ -31,6 +31,8 @@ typedef enum iomux_config {
+>  	IOMUX_CONFIG_SION = 0x1 << 4,   /* LOOPBACK:MUX SION bit */
+>  } iomux_pin_cfg_t;
+>  
+> +#define IOMUX_TO_IRQ(pin)	(MXC_GPIO_IRQ_START + pin)
+> +
+This isn't used.  (Didn't check patch 1, it should go there if it is
+needed.)
 
-Thanks,
+>  /* Pad control groupings */
+>  #define MX51_UART1_PAD_CTRL	(PAD_CTL_HYS | PAD_CTL_PKE | PAD_CTL_PUE | \
+>  				PAD_CTL_DSE_HIGH)
+> @@ -102,7 +104,7 @@ typedef enum iomux_config {
+>  #define MX51_PAD_EIM_A24__GPIO_2_18             IOMUX_PAD(0x450, 0x0bc, 1, 0x0,   0, NO_PAD_CTRL)
+>  #define MX51_PAD_EIM_A25__GPIO_2_19             IOMUX_PAD(0x454, 0x0c0, 1, 0x0,   0, NO_PAD_CTRL)
+>  #define MX51_PAD_EIM_A26__GPIO_2_20             IOMUX_PAD(0x458, 0x0c4, 1, 0x0,   0, NO_PAD_CTRL)
+> -#define MX51_PAD_EIM_A27__GPIO_2_21             IOMUX_PAD(0x45c, 0x0c8, 1, 0x0,   0, NO_PAD_CTRL)
+> +#define MX51_PAD_EIM_A27__GPIO_2_21             IOMUX_PAD(0x45c, 0x0c8, 1, 0x0,   0, MX51_I2C_PAD_CTRL)
+This looks wrong.  Isn't there a MX51_GPIO_PAD_CTRL?
+>  #define MX51_PAD_EIM_EB0__EIM_EB0               IOMUX_PAD(0x460, 0x0cc, 0, 0x0,   0, NO_PAD_CTRL)
+>  #define MX51_PAD_EIM_EB1__EIM_EB1               IOMUX_PAD(0x464, 0x0d0, 0, 0x0,   0, NO_PAD_CTRL)
+>  #define MX51_PAD_EIM_EB2__GPIO_2_22             IOMUX_PAD(0x468, 0x0d4, 1, 0x0,   0, NO_PAD_CTRL)
 
-	Ingo
+Best regards
+Uwe
+
+-- 
+Pengutronix e.K.                           | Uwe Kleine-König            |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
