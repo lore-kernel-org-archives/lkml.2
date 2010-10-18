@@ -1,105 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757380Ab0JRQtp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Oct 2010 12:49:45 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:37250 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752133Ab0JRQto (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Oct 2010 12:49:44 -0400
-Subject: Re: ima: use of radix tree cache indexing == massive waste of
- memory?
-From: Eric Paris <eparis@redhat.com>
-To: Kyle McMartin <kyle@mcmartin.ca>
-Cc: James Morris <jmorris@namei.org>, Christoph Hellwig <hch@infradead.org>,
-        kernel@lists.fedoraproject.org, Mimi Zohar <zohar@us.ibm.com>,
-        warthog9@kernel.org, Dave Chinner <david@fromorbit.com>,
-        linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
-        Serge Hallyn <serue@us.ibm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>, mingo@elte.hu
-In-Reply-To: <20101018062530.GD8332@bombadil.infradead.org>
-References: <20101016065206.GO4681@dastard>
-	 <20101016192027.GA6883@infradead.org>
-	 <ebc4973c-6c11-4397-b8b0-c212a27abce4@email.android.com>
-	 <20101017004945.GE1614@infradead.org> <20101017054008.GA16383@elte.hu>
-	 <20101017184652.GB28060@infradead.org>
-	 <alpine.LRH.2.00.1010181127480.9476@tundra.namei.org>
-	 <20101018062530.GD8332@bombadil.infradead.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 18 Oct 2010 12:48:54 -0400
-Message-ID: <1287420534.2530.67.camel@localhost.localdomain>
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S932934Ab0JRQuQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Oct 2010 12:50:16 -0400
+Received: from smtp.srv.ualberta.ca ([129.128.5.19]:53609 "EHLO
+	mail2.srv.ualberta.ca" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752771Ab0JRQuN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Oct 2010 12:50:13 -0400
+Date: Mon, 18 Oct 2010 10:46:25 -0600 (Mountain Daylight Time)
+From: Marc Aurele La France <tsi@ualberta.ca>
+Reply-To: linux-kernel@vger.kernel.org, tsi@ualberta.ca
+To: Len Brown <lenb@kernel.org>
+cc: linux-kernel@vger.kernel.org
+Subject: Re: x86_64 2.6.35.* kernels and Intel Xeon X5550
+In-Reply-To: <alpine.LFD.2.00.1010160338280.2238@localhost.localdomain>
+Message-ID: <alpine.WNT.2.00.1010181043550.1696@cluij.ucs.ualberta.ca>
+References: <alpine.WNT.2.00.1010071055420.1672@cluij.ucs.ualberta.ca> <alpine.WNT.1.10.1010152030320.280@tsi> <alpine.LFD.2.00.1010160338280.2238@localhost.localdomain>
+User-Agent: Alpine 2.00 (WNT 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-10-18 at 02:25 -0400, Kyle McMartin wrote:
-> If someone gives me a good reason why Fedora actually needs this
-> enabled, I'm going to apply the following patch to our kernel so that
-> IMA is globally an opt-in feature... Otherwise I'm inclined to just
-> disable it.
+On Sat, 16 Oct 2010, Len Brown wrote:
 
-I'll can address this on the fedora list, but I think this is the wrong
-approach.  IMA is supposed to be of negligible impact when not 'enabled'
-and I believe the right solution is to fix places where that isn't true.
-At the moment 3 have been identified.
+>>> On the Xeon's, 2.6.35 hangs early on, upon the first test of trace events
+>>> (in kernel/trace/trace_events.c:event_trace_self_tests()).  When disabling
+>>> all tracing, debugging, etc., it still hangs but slightly later.  The
+>>> megaraid_sas module is loaded, detects the adapter, but never gets around to
+>>> registering it with the SCSI layer.
 
-1) IMA uses radix trees which end up wasting 500 bytes per inode because
-the key is too sparse.  I've got a patch which uses an rbtree instead
-I'm testing and will send along shortly.  I found it funny working on
-the patch to see that Documentation/rbtree.txt says "This differs from
-radix trees (which are used to efficiently store sparse arrays and thus
-use long integer indexes to insert/access/delete nodes)"  Which flys in
-the face of this report.
+>> This is due to "CONFIG_INTEL_IDLE=y".
 
-2) IMA creates an entire integrity structure for every inode even when
-most or all of this structure will not be needed.
+> Please file a bug report at bugzilla.kernel.org and assign it to me.
 
-3) IMA serializes bringing inodes into and out of core because it takes
-a spinlock() when adding or removing the integrity structure to the
-radix/rbtree.
+> Please reproduce using an upstream 2.6.36-rc8 kernel.
 
-I've got a patch for #1 and think 2 and 3 are relatively simple to fix
-as well.  Certainly #2 is, and I think that will lead to a solution to
-#3.
+> Boot a CONFIG_INTEL_IDLE=n kernel and to the bug report...
 
+> attach the output from acpidump
+> 'cat /proc/cpuinfo'
+> 'grep . /sys/devices/system/cpu/cpu*/cpuidle/*/*'
+> 'lspci'
 
-> diff --git a/security/integrity/ima/ima_iint.c b/security/integrity/ima/ima_iint.c
-> index afba4ae..767f026 100644
-> --- a/security/integrity/ima/ima_iint.c
-> +++ b/security/integrity/ima/ima_iint.c
+> Then boot a CONFIG_INTEL_IDLE=y kernel and see what is the highest N that
+> boots when you boot with "intel_idle.max_cstate=N"  (0 will disable
+> the driver completely) and if any of them boot, for the highest N,
+> attach to the bug report the complete dmesg and the output from
+> 'grep . /sys/devices/system/cpu/cpu*/cpuidle/*/*'
 
-> @@ -139,6 +139,11 @@ static void init_once(void *foo)
->  
->  static int __init ima_iintcache_init(void)
->  {
-> +	extern int ima_enabled;
+I've gathered all the data, but the kernel's BZ is borked at the moment, 
+so this'll have to wait.
 
-extern in a .c file?  didn't you already expose this in the
-appropriate .h file?
+Marc.
 
-> +
-> +	if (!ima_enabled)
-> +		return 0;
-> +
->  	iint_cache =
->  	    kmem_cache_create("iint_cache", sizeof(struct ima_iint_cache), 0,
->  			      SLAB_PANIC, init_once);
-> diff --git a/security/integrity/ima/ima_main.c b/security/integrity/ima/ima_main.c
-> index e662b89..92e084c 100644
-> --- a/security/integrity/ima/ima_main.c
-> +++ b/security/integrity/ima/ima_main.c
-> @@ -26,6 +26,7 @@
->  #include "ima.h"
->  
->  int ima_initialized;
-> +int ima_enabled = 0;
-
-initializing a global?
-
->  
->  char *ima_hash = "sha1";
->  static int __init hash_setup(char *str)
-
-
++----------------------------------+----------------------------------+
+|  Marc Aurele La France           |  work:   1-780-492-9310          |
+|  Academic Information and        |  fax:    1-780-492-1729          |
+|    Communications Technologies   |  email:  tsi@ualberta.ca         |
+|  352 General Services Building   +----------------------------------+
+|  University of Alberta           |                                  |
+|  Edmonton, Alberta               |    Standard disclaimers apply    |
+|  T6G 2H1                         |                                  |
+|  CANADA                          |                                  |
++----------------------------------+----------------------------------+
