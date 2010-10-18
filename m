@@ -1,86 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757012Ab0JRPia (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Oct 2010 11:38:30 -0400
-Received: from smtp103.sbc.mail.gq1.yahoo.com ([67.195.15.62]:23099 "HELO
-	smtp103.sbc.mail.gq1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1755921Ab0JRPi2 (ORCPT
+	id S932758Ab0JRPju (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Oct 2010 11:39:50 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:59080 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932167Ab0JRPjs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Oct 2010 11:38:28 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=pacbell.net;
-  h=DKIM-Signature:Received:X-Yahoo-SMTP:X-YMail-OSG:X-Yahoo-Newman-Property:Subject:From:To:Cc:In-Reply-To:References:Content-Type:Date:Message-ID:Mime-Version:X-Mailer:Content-Transfer-Encoding;
-  b=1bPbgMPW5RndkjhwhbQP9M1tgLgCRIMk8VCDqXdrp5hRsmGv7Yn4YJh1TiOcMETOnx317SAJ0JjdQKi6ud9SY3rAOy/R2jR+DJY+uwwXGyXPHl1jLGBVFxQlnazwKHqQkHVbz4jOKH+/U+KOSR4H8xIIFSPTB/sf6WV8KsDldl8=  ;
-X-Yahoo-SMTP: 2V1ThQ.swBDh24fWwg9PZFuY7TTwFsTuVtXZ.8DKSgQ-
-X-YMail-OSG: Eesc3dkVM1nMNZuSh1sTCBf.BiEksZW5dw6eEBKvFHsznb6
- t24AsbBJwOzsjVc8_1bmh9c1l179fJhcdgFHoOUX84vlthO33X.1Cbi9oPuP
- j1WunL7PUWvAdpwfYWXrJy0ueFvapZVmFFj.U.FYzNg7S93ozl1_wzKXhrMU
- CWw5hXxYCqeo.c_IHM7TWnJLiTxDr5xzWxy8oBmQgAPiMKKDm1h6keBmrPDK
- 0BAjO.UJzRQ0YonCb8Vc1mIpnJC9YnnnEPRccYI97FdO_pY2L4aKXnhaLpDr
- 2iQZ8J1U0ySQ0EiQuH5yaJxo-
-X-Yahoo-Newman-Property: ymail-3
-Subject: Re: [PATCH] i2c: add irq_flags to board info
-From: David Brownell <david-b@pacbell.net>
-To: Jean Delvare <khali@linux-fr.org>
-Cc: "Hennerich, Michael" <Michael.Hennerich@analog.com>,
-        Mike Frysinger <vapier@gentoo.org>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "uclinux-dist-devel@blackfin.uclinux.org" 
-	<uclinux-dist-devel@blackfin.uclinux.org>,
-        "device-drivers-devel@blackfin.uclinux.org" 
-	<device-drivers-devel@blackfin.uclinux.org>
-In-Reply-To: <20101018163357.659efe25@endymion.delvare>
-References: <1287359019-1476-1-git-send-email-vapier@gentoo.org>
-	 <20101018103610.77b7e605@endymion.delvare>
-	 <544AC56F16B56944AEC3BD4E3D5917713094520EDB@LIMKCMBX1.ad.analog.com>
-	 <20101018140136.2b44d29e@endymion.delvare>
-	 <544AC56F16B56944AEC3BD4E3D5917713094520FA6@LIMKCMBX1.ad.analog.com>
-	 <20101018163357.659efe25@endymion.delvare>
-Content-Type: text/plain; charset="ISO-8859-1"
-Date: Mon, 18 Oct 2010 08:38:25 -0700
-Message-ID: <1287416305.2038.70.camel@helium>
+	Mon, 18 Oct 2010 11:39:48 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=qyms6WO1tkSnnh3XtkQdzMDNxhkJxrd6gT6QYzMPhhBP4edlaAJui2aTAHi09XOCIV
+         Bfy+MfQy8KTJz4knpDSZu2jqOJygSWueWRaUWNeCgz8euIGtwu0Jzflhaw3bw1IPDU2z
+         ULfcr3okzlaaTA0X3dyw6++QlOjVussCI4Sk4=
+Subject: Re: [PATCH] percpu_counter : add percpu_counter_add_fast()
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Christoph Lameter <cl@linux.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Nick Piggin <npiggin@kernel.dk>,
+        Dave Chinner <david@fromorbit.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <alpine.DEB.2.00.1010181015290.755@router.home>
+References: <1285762729-17928-1-git-send-email-david@fromorbit.com>
+	 <1285762729-17928-17-git-send-email-david@fromorbit.com>
+	 <20100929215322.ff635d3e.akpm@linux-foundation.org>
+	 <20100930061039.GX5665@dastard> <20101016075510.GH19147@amd>
+	 <1287217748.2799.68.camel@edumazet-laptop>
+	 <20101016020744.366bd9c6.akpm@linux-foundation.org>
+	 <1287221475.2799.123.camel@edumazet-laptop>
+	 <1287238754.2799.376.camel@edumazet-laptop>
+	 <alpine.DEB.2.00.1010181015290.755@router.home>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 18 Oct 2010 17:39:40 +0200
+Message-ID: <1287416380.2409.13.camel@edumazet-laptop>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-10-18 at 16:33 +0200, Jean Delvare wrote:
-
-
+Le lundi 18 octobre 2010 à 10:24 -0500, Christoph Lameter a écrit :
+> On Sat, 16 Oct 2010, Eric Dumazet wrote:
 > 
-> This is an interesting point. David, you're the one who added irq to
-> struct i2c_client, you didn't add irq_flags then, did you have a good
-> reason not to?
-
-There was no evident need to do so.  The problem wasn't characterizing
-the IRQ, but knowing what IRQ was associated with a given I2C chip.  The
-IRQs would, as a rule, only have one behavior, known in advance by the
-I2C chip's driver ... if it only had a way to know client->irq ...
-
-In one model of IRQ setup (like PC BIOS), it's handled before drivers
-do more than request the IRQ, and drivers just cope. irq_flags not
-needed ... it's often a hardware-to-driver convention, likely matching
-I2C chip defaults.  (Or more awkwardly, coping with whatever trigger
-mode the platform uses).
-
-In another model, drivers configure their chips according to desired
-mode (level low, for the most common example, or edge triggered, etc)
-and again, irq_flags not needed, but in this case the platform code
-would have had *nothing* do do with such mode setup.
-
-
-
+> > I based following patch against linux-2.6, I dont know if previous
+> > Christoph patch is in a git tree. I'll respin it eventually.
 > 
-> > There are drivers that work around this deficiency, by adding irq_flags to the bus clients dev.platform_data
-> > See include/linux/spi/ads7846.h for one example.
+> The prior patch was accepted by Andrew.
+> 
+> > + * - It is preempt safe, but not IRQ safe (on UP)
+> 
+> The IRQ safeness depends on the arch. this_cpu_add() in general only
+> guarantees safety against preemption. It so happens that the x86
+> implementation is irq safe as well.
+> 
+> The IRQ safety for UP is therefore not an issue if you use this_cpu_add().
+> 
 
-Not a good example; that was changed earlier this year and, from a quick
-glance, may not have tried much to avoid that change.  The driver had
-worked for years with that alleged "deficiency".
+Nope, on UP, we dont use a per_cpu field, just a "s64 count".
+
+struct percpu_counter {
+        s64 count;
+};
 
 
-- Dave
+
+> If you want to guarantee irqsafeness then use irqsafe_cpu_add() instead.
+> It generates the same code on x86 for SMP but takes care of the UP issues.
+> 
+> > +static inline void percpu_counter_add_fast(struct percpu_counter *fbc, long amount)
+> > +{
+> > +	this_cpu_add(*fbc->counters, amount);
+> > +}
+> 
+> What happens in case of counter overflow?
+> 
+
+Nothing special, as I stated the usuable width of such counters would be
+restricted to a long, not an s64.
+
+It should be enough to count "number of inodes, of sockets, ..."
+
+
 
