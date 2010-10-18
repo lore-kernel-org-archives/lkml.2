@@ -1,102 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754486Ab0JRItc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Oct 2010 04:49:32 -0400
-Received: from smtp.nokia.com ([192.100.105.134]:34445 "EHLO
-	mgw-mx09.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751826Ab0JRItb convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Oct 2010 04:49:31 -0400
-From: <samu.p.onkalo@nokia.com>
-To: <khali@linux-fr.org>
-CC: <tony@atomide.com>, <linux-i2c@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Date: Mon, 18 Oct 2010 10:48:00 +0200
-Subject: RE: [PATCH 0/2] Short timeout for I2C transfers
-Thread-Topic: [PATCH 0/2] Short timeout for I2C transfers
-Thread-Index: ActsZ82pnIa0WGfKSjazAey3yqUnswCOGxXQ
-Message-ID: <62697B07E9803846BC582181BD6FB6B835EFD27C35@NOK-EUMSG-02.mgdnok.nokia.com>
-References: <1286977510-16702-1-git-send-email-samu.p.onkalo@nokia.com>
- <20101015145149.2f688c9d@endymion.delvare>
-In-Reply-To: <20101015145149.2f688c9d@endymion.delvare>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1754498Ab0JRIzu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Oct 2010 04:55:50 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:1027 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752925Ab0JRIzs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Oct 2010 04:55:48 -0400
+Message-ID: <4CBC0B8C.7030003@redhat.com>
+Date: Mon, 18 Oct 2010 10:55:40 +0200
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc13 Lightning/1.0b3pre Thunderbird/3.1.4
 MIME-Version: 1.0
-X-OriginalArrivalTime: 18 Oct 2010 08:49:03.0825 (UTC) FILETIME=[5104CC10:01CB6EA1]
-X-Nokia-AV: Clean
+To: Jan Kiszka <jan.kiszka@web.de>, Steven Rostedt <rostedt@goodmis.org>
+CC: Dave Young <hidave.darkstar@gmail.com>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [BUG] kvm: guest can not startup due to triple fault
+References: <20101017085416.GA1758@darkstar>	<4CBAC342.1010609@redhat.com>	<AANLkTin6qJYEqOc_97EVWkK1Kt1zNSvXtfVeYuk9fyJ8@mail.gmail.com>	<4CBAE8E2.1060704@redhat.com> <AANLkTi=5yGPmZxZY7T_oeyJ4xS+RWt7cY4WD=78fbo7v@mail.gmail.com> <4CBBF3C8.9070104@web.de>
+In-Reply-To: <4CBBF3C8.9070104@web.de>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+  On 10/18/2010 09:14 AM, Jan Kiszka wrote:
+> Am 18.10.2010 06:43, Dave Young wrote:
+> >  On Sun, Oct 17, 2010 at 8:15 PM, Avi Kivity<avi@redhat.com>  wrote:
+> >>   On 10/17/2010 12:14 PM, Dave Young wrote:
+> >>>
+> >>>  On Sun, Oct 17, 2010 at 5:34 PM, Avi Kivity<avi@redhat.com>   wrote:
+> >>>>     On 10/17/2010 10:54 AM, Dave Young wrote:
+> >>>>>
+> >>>>>   linux guest can not startup normally, qemu keep rebooting.
+> >>>>>
+> >>>>>   host&     guest both use linux-2.6.36-rc8+ kernel
+> >>>>>
+> >>>>>   Add a dump_stack in x86.c around EXIT_SHUTDOWN code, I got:
+> >>>>>   [ 3924.503041] Pid: 1685, comm: qemu-system-x86 Not tainted
+> >>>>>  2.6.36-rc8+
+> >>>>>   #62
+> >>>>>   [ 3924.503045] Call Trace:
+> >>>>>   [ 3924.503055]  [<ffffffffa0176047>] handle_triple_fault+0x11/0x26
+> >>>>>   [kvm_intel]
+> >>>>>   [ 3924.503060]  [<ffffffffa01772d2>] vmx_handle_exit+0x3df/0x474
+> >>>>>   [kvm_intel]
+> >>>>>   [ 3924.503080]  [<ffffffffa021f203>]
+> >>>>>  kvm_arch_vcpu_ioctl_run+0x95f/0xc43
+> >>>>>   [kvm]
+> >>>>>   [ 3924.503087]  [<ffffffff81503e54>] ?
+> >>>>>  __mutex_unlock_slowpath+0x11c/0x131
+> >>>>>   [ 3924.503101]  [<ffffffffa021e1f9>] ? kvm_arch_vcpu_load+0x90/0xe6
+> >>>>>  [kvm]
+> >>>>>   [ 3924.503112]  [<ffffffffa0210faf>] kvm_vcpu_ioctl+0x109/0x54a [kvm]
+> >>>>>   [ 3924.503117]  [<ffffffff810bee76>] ?
+> >>>>>   fire_user_return_notifiers+0x2c/0x36
+> >>>>>   [ 3924.503122]  [<ffffffff8106be93>] ? trace_hardirqs_on+0xd/0xf
+> >>>>>   [ 3924.503127]  [<ffffffff81002789>] ? do_notify_resume+0x717/0x73d
+> >>>>>   [ 3924.503131]  [<ffffffff8103994e>] ? finish_task_switch+0x69/0xda
+> >>>>>   [ 3924.503135]  [<ffffffff8110628c>] do_vfs_ioctl+0x4c3/0x50d
+> >>>>>   [ 3924.503139]  [<ffffffff8110632b>] sys_ioctl+0x55/0x77
+> >>>>>   [ 3924.503142]  [<ffffffff81002c02>] system_call_fastpath+0x16/0x1b
+> >>>>>
+> >>>>>   Anyone can help on this?
+> >>>>
+> >>>>   Please provide a trace (trace-cmd record -e kvm) leading to the
+> >>>>  failure.
+> >>>>
+> >>>
+> >>>  Hi, please see:
+> >>>  http://userweb.kernel.org/~davey/tmp/trace.dat
+> >>>
+> >>
+> >>  Was this done with an old version of trace-cmd?  Please use the latest git.
+> >>   Make sure you have udis86 and udis86-devel installed when you build it.
+> >
+> >  Hi, the trace-cmd was build from git version, but without udis86.
+> >
+> >  I updated trace.dat on the same url, is it a correct one?
+> >
+>
+> IIUC, plugin_kvm is only involved in reporting, not recording, so udis86
+> shouldn't matter.
+>
+> I had a look out of curiosity (just managed to make my trace tools work
+> smoothly), and the data is properly parsed by kernelshark here. There is
+> a strange NMI storm going on right before the triple fault (on some MSR
+> write) hits the fan.
 
+Doesn't parse here.  I get a bus error.
 
->-----Original Message-----
->From: ext Jean Delvare [mailto:khali@linux-fr.org]
->Sent: 15 October, 2010 15:52
->To: Onkalo Samu.P (Nokia-MS/Tampere)
->Cc: tony@atomide.com; linux-i2c@vger.kernel.org; linux-
->kernel@vger.kernel.org
->Subject: Re: [PATCH 0/2] Short timeout for I2C transfers
->
->Hi Samu,
->
->On Wed, 13 Oct 2010 16:45:08 +0300, Samu Onkalo wrote:
->> There are chips which doesn't work perfectly in certain
->> I2C operations. For example lp5523 led driver chip causes
->> always I2C timeout when SW reset is commanded to the chip.
->
->The timeout is a symptom as the controller level. What is the root
->cause at the LP5523 device level? What exactly happens on the wire?
->
+Steven, is trace.dat meant to be transportable?  What does it depend on?
 
-Chip seems to release ACK signal too soon causing rising edge while
-SCL is high. This violates bus protocol and causes timeout at the
-controller. It is no recognized as ACK nor NACK.
+Jan, can you upload your parsed data somewhere?  I want to have a look 
+as well.
 
->I am asking because maybe some of the already available protocol
->mangling flags would work for you, in particular I2C_M_IGNORE_NAK. See
->Documentation/i2c/i2c-protocol.
->
->> Patches add a possibility to tell that this access is likely
->> to cause time out and there is no need to wait normal time.
->> For example in omap time out is 1 second and the bus is reserved
->> all the time.
->
->You should ask yourself whether a 1 second timeout is a sane thing to
->have in the first place.
-
-hmm.. 1 second is quite long time out for i2c.
-
->
->You should also check why you hit the timeout condition. Ideally the
->hardware would report problems as they happen, quickly, rather than
->having to rely on the driver's timeout mechanism. The timeout should
->really only be a safety mechanism, for when the bus controller itself
->misbehaves at the hardware level.
->
->> By setting I2C_M_SHORT_TIMEOUT flag to i2c-message, adapter is
->> requested to use shorter timeout.
->>
->> Samu Onkalo (2):
->>   drivers: i2c-core: Add a flag to allow short timeout
->>   drivers: i2c-omap: Add support for shorten I2C timeout
->>
->>  drivers/i2c/busses/i2c-omap.c |    9 ++++++++-
->>  drivers/i2c/i2c-core.c        |    2 +-
->>  include/linux/i2c.h           |    1 +
->>  3 files changed, 10 insertions(+), 2 deletions(-)
->
->I'm skeptical. If you know that the transfer will "fail" and you don't
->care, why do you want to wait a short time, rather than not waiting at
->all?
-
-Well, at least some time should be spend to allow bits to go out.
-Maybe controller provides something for that.
-
--Samu
+-- 
+error compiling committee.c: too many arguments to function
 
