@@ -1,23 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752416Ab0JRACJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Oct 2010 20:02:09 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:38475 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751859Ab0JRACI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Oct 2010 20:02:08 -0400
-Date: Mon, 18 Oct 2010 11:02:07 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Daniel Walker <dwalker@fifo99.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jeremy Kerr <jeremy.kerr@canonical.com>,
-        Jeff Ohlstein <johlstei@codeaurora.org>,
-        Russell King <rmk@arm.linux.org.uk>
-Subject: Re: linux-next: manual merge of the msm tree with the arm tree
-Message-Id: <20101018110207.131b56ee.sfr@canb.auug.org.au>
-In-Reply-To: <20101018103540.7bd9c535.sfr@canb.auug.org.au>
-References: <20101018103540.7bd9c535.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+	id S1752243Ab0JRAGv (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Oct 2010 20:06:51 -0400
+Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:34903 "EHLO
+	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751830Ab0JRAGu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 17 Oct 2010 20:06:50 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Mon, 18 Oct 2010 09:01:23 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: lkml <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
+        Wu Fengguang <fengguang.wu@intel.com>, Michal Hocko <mhocko@suse.cz>
+Subject: Re: [PATCH v2.6.36-rc7] memory_hotplug: drop spurious calls to
+ flush_scheduled_work()
+Message-Id: <20101018090123.5afe4abf.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <4CB8725B.9010200@kernel.org>
+References: <4CB8725B.9010200@kernel.org>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
@@ -25,49 +28,16 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[ Just cc'ing Russell, sorry about that]
+On Fri, 15 Oct 2010 17:25:15 +0200
+Tejun Heo <tj@kernel.org> wrote:
 
-On Mon, 18 Oct 2010 10:35:40 +1100 Stephen Rothwell <sfr@canb.auug.org.au> wrote:
->
-> Hi Daniel,
+> lru_add_drain_all() uses schedule_on_each_cpu() which is synchronous.
+> There is no reason to call flush_scheduled_work() after
+> lru_add_drain_all().  Drop the spurious calls.
 > 
-> Today's linux-next merge of the msm tree got a conflict in
-> arch/arm/mach-msm/include/mach/debug-macro.S between commit
-> 08a610d9ef5394525b0328da0162d7b58c982cc4 ("arm: return both physical and
-> virtual addresses from addruart") from the arm tree and commit
-> 46fe5f29e3062f681cc3cf07a604d82396faea89 ("msm: allow uart to be
-> conditionally disabled") from the msm tree.
+> This is to prepare for the deprecation and removal of
+> flush_scheduled_work().
 > 
-> Just context changes.  I fixed it up (see below) and can carry the fix as
-> necessary.
-> -- 
-> Cheers,
-> Stephen Rothwell                    sfr@canb.auug.org.au
-> 
-> diff --cc arch/arm/mach-msm/include/mach/debug-macro.S
-> index 3c35b0d,238c4f1..0000000
-> --- a/arch/arm/mach-msm/include/mach/debug-macro.S
-> +++ b/arch/arm/mach-msm/include/mach/debug-macro.S
-> @@@ -19,11 -19,13 +19,11 @@@
->   #include <mach/hardware.h>
->   #include <mach/msm_iomap.h>
->   
-> - #ifdef CONFIG_MSM_DEBUG_UART
-> + #ifdef CONFIG_HAS_MSM_DEBUG_UART_PHYS
->  -	.macro	addruart, rx, tmp
->  +	.macro	addruart, rp, rv
->   	@ see if the MMU is enabled and select appropriate base address
->  -	mrc	p15, 0, \rx, c1, c0
->  -	tst	\rx, #1
->  -	ldreq	\rx, =MSM_DEBUG_UART_PHYS
->  -	ldrne	\rx, =MSM_DEBUG_UART_BASE
->  +	ldr	\rp, =MSM_DEBUG_UART_PHYS
->  +	ldr	\rv, =MSM_DEBUG_UART_BASE
->   	.endm
->   
->   	.macro	senduart,rd,rx
+> Signed-off-by: Tejun Heo <tj@kernel.org>
+Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 
--- 
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
