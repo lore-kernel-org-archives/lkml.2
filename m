@@ -1,54 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755745Ab0JRNfl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Oct 2010 09:35:41 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:55615 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755690Ab0JRNfk (ORCPT
+	id S1755740Ab0JRNiz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Oct 2010 09:38:55 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:59283 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754955Ab0JRNiy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Oct 2010 09:35:40 -0400
-Date: Mon, 18 Oct 2010 14:35:02 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ohad Ben-Cohen <ohad@wizery.com>, Hari Kanigeri <h-kanigeri2@ti.com>,
-        Suman Anna <s-anna@ti.com>, Benoit Cousson <b-cousson@ti.com>,
-        Tony Lindgren <tony@atomide.com>, Greg KH <greg@kroah.com>,
-        linux-kernel@vger.kernel.org, Grant Likely <grant.likely@secretlab.ca>,
-        akpm@linux-foundation.org, linux-omap@vger.kernel.org,
+	Mon, 18 Oct 2010 09:38:54 -0400
+Date: Mon, 18 Oct 2010 22:39:13 +0900
+From: Kukjin Kim <kgene.kim@samsung.com>
+Subject: RE: [PATCH 4/9] ARM: S3C64XX: add USB host support for mach-real6410
+In-reply-to: <20100929193346.25307.75373.stgit@darius-desktop>
+To: "'Darius Augulis'" <augulis.darius@gmail.com>,
         linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 0/3] Add OMAP hardware spinlock misc driver
-Message-ID: <20101018133502.GA12449@n2100.arm.linux.org.uk>
-References: <1287387875-14168-1-git-send-email-ohad@wizery.com> <1287406015.29097.1579.camel@twins>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1287406015.29097.1579.camel@twins>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+Cc: paulius.zaleckas@gmail.com, linux-kernel@vger.kernel.org,
+        ben-linux@fluff.org
+Message-id: <04a601cb6ec9$db82dee0$92889ca0$%kim@samsung.com>
+MIME-version: 1.0
+X-Mailer: Microsoft Office Outlook 12.0
+Content-type: text/plain; charset=utf-8
+Content-language: ko
+Content-transfer-encoding: 7BIT
+Thread-index: ActgDUWtatvFAYmbS9+voEty7+7okgOu8VBg
+References: <20100929192354.25307.40197.stgit@darius-desktop>
+ <20100929193346.25307.75373.stgit@darius-desktop>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 18, 2010 at 02:46:55PM +0200, Peter Zijlstra wrote:
-> On Mon, 2010-10-18 at 09:44 +0200, Ohad Ben-Cohen wrote:
-> > OMAP4 introduces a Spinlock hardware module, which provides hardware
-> > assistance for synchronization and mutual exclusion between heterogeneous
-> > processors and those not operating under a single, shared operating system
-> > (e.g. OMAP4 has dual Cortex-A9, dual Cortex-M3 and a C64x+ DSP). 
+Darius Augulis wrote:
 > 
-> I just have to ask... was it really easier to build silicon than to
-> agree on a spinlock ABI?
+> Add USB host device support for mach-real6410
+> 
+> Signed-off-by: Darius Augulis <augulis.darius@gmail.com>
+> ---
+>  arch/arm/mach-s3c64xx/Kconfig         |    1 +
+>  arch/arm/mach-s3c64xx/mach-real6410.c |    1 +
+>  2 files changed, 2 insertions(+), 0 deletions(-)
+> 
+> diff --git a/arch/arm/mach-s3c64xx/Kconfig b/arch/arm/mach-s3c64xx/Kconfig
+> index b706b80..c05ae12 100644
+> --- a/arch/arm/mach-s3c64xx/Kconfig
+> +++ b/arch/arm/mach-s3c64xx/Kconfig
+> @@ -109,6 +109,7 @@ config MACH_REAL6410
+>  	select S3C_DEV_NAND
+>  	select SAMSUNG_DEV_ADC
+>  	select SAMSUNG_DEV_TS
+> +	select S3C_DEV_USB_HOST
+>  	help
+>  	  Machine support for the CoreWind REAL6410
+> 
+> diff --git a/arch/arm/mach-s3c64xx/mach-real6410.c b/arch/arm/mach-
+> s3c64xx/mach-real6410.c
+> index bad6990..00e7d7e 100644
+> --- a/arch/arm/mach-s3c64xx/mach-real6410.c
+> +++ b/arch/arm/mach-s3c64xx/mach-real6410.c
+> @@ -195,6 +195,7 @@ static struct platform_device *real6410_devices[]
+> __initdata = {
+>  	&s3c_device_nand,
+>  	&s3c_device_adc,
+>  	&s3c_device_ts,
+> +	&s3c_device_ohci,
+>  };
+> 
+>  static struct s3c2410_ts_mach_info s3c_ts_platform __initdata = {
 
-I'm not really sure what point you're trying to make, but if you're
-suggesting that Linux's spinlock should be exposed to these other
-processors, you're completely off your rocker.
+No need any gpio configuration for it?
 
-Doing so would set the kernels spinlock API in stone, which is really
-something you don't want to do.  Not only that, but it would mean that
-software written for the M3 and DSP would have to know about the GPL'd
-spinlock layout, and I suspect that would cause major licencing headaches.
+Thanks.
 
-In any case, Linux's spinlock API (or more accurately, the ARM exclusive
-access instructions) relies upon hardware coherency support (a piece of
-hardware called an exclusive monitor) which isn't present on the M3 nor
-DSP processors.  So there's no way to ensure that updates from the M3
-and DSP are atomic wrt the A9 updates.
+Best regards,
+Kgene.
+--
+Kukjin Kim <kgene.kim@samsung.com>, Senior Engineer,
+SW Solution Development Team, Samsung Electronics Co., Ltd.
+
