@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755368Ab0JRLfs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Oct 2010 07:35:48 -0400
-Received: from canuck.infradead.org ([134.117.69.58]:60277 "EHLO
-	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755331Ab0JRLfp (ORCPT
+	id S1755412Ab0JRLfv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Oct 2010 07:35:51 -0400
+Received: from casper.infradead.org ([85.118.1.10]:36528 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755333Ab0JRLfq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Oct 2010 07:35:45 -0400
-Message-Id: <20101018112950.408611009@chello.nl>
+	Mon, 18 Oct 2010 07:35:46 -0400
+Message-Id: <20101018112951.290525086@chello.nl>
 User-Agent: quilt/0.47-1
-Date: Mon, 18 Oct 2010 13:24:36 +0200
+Date: Mon, 18 Oct 2010 13:24:52 +0200
 From: Peter Zijlstra <a.p.zijlstra@chello.nl>
 To: Andrea Arcangeli <aarcange@redhat.com>, Avi Kivity <avi@redhat.com>,
         Thomas Gleixner <tglx@linutronix.de>, Rik van Riel <riel@redhat.com>,
@@ -24,124 +24,224 @@ Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
         Paul McKenney <paulmck@linux.vnet.ibm.com>,
         Yanmin Zhang <yanmin_zhang@linux.intel.com>,
         Stephen Rothwell <sfr@canb.auug.org.au>
-Subject: [PATCH 03/20] mm: Rename drop_anon_vma to put_anon_vma
+Subject: [PATCH 19/20] mm: Extended batches for generic mmu_gather
 References: <20101018112433.556591568@chello.nl>
-Content-Disposition: inline; filename=put_anon_vma.patch
+Content-Disposition: inline; filename=mm-tlb_gather-more-batch.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The normal code pattern used in the kernel is: get/put.
+Instead of using a single batch (the small on-stack, or an allocated
+page), try and extend the batch every time it runs out and only flush
+once either the extend fails or we're done.
 
+Requested-by: Nick Piggin <npiggin@suse.de>
 Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
 ---
- include/linux/rmap.h |    4 ++--
- mm/ksm.c             |   10 +++++-----
- mm/migrate.c         |    2 +-
- mm/rmap.c            |    4 ++--
- 4 files changed, 10 insertions(+), 10 deletions(-)
+ include/asm-generic/tlb.h |  122 ++++++++++++++++++++++++++++++----------------
+ 1 file changed, 82 insertions(+), 40 deletions(-)
 
-Index: linux-2.6/include/linux/rmap.h
+Index: linux-2.6/include/asm-generic/tlb.h
 ===================================================================
---- linux-2.6.orig/include/linux/rmap.h
-+++ linux-2.6/include/linux/rmap.h
-@@ -87,7 +87,7 @@ static inline void get_anon_vma(struct a
- 	atomic_inc(&anon_vma->external_refcount);
- }
+--- linux-2.6.orig/include/asm-generic/tlb.h
++++ linux-2.6/include/asm-generic/tlb.h
+@@ -17,16 +17,6 @@
+ #include <asm/pgalloc.h>
+ #include <asm/tlbflush.h>
  
--void drop_anon_vma(struct anon_vma *);
-+void put_anon_vma(struct anon_vma *);
- #else
- static inline void anonvma_external_refcount_init(struct anon_vma *anon_vma)
- {
-@@ -102,7 +102,7 @@ static inline void get_anon_vma(struct a
- {
- }
- 
--static inline void drop_anon_vma(struct anon_vma *anon_vma)
-+static inline void put_anon_vma(struct anon_vma *anon_vma)
- {
- }
- #endif /* CONFIG_KSM */
-Index: linux-2.6/mm/ksm.c
-===================================================================
---- linux-2.6.orig/mm/ksm.c
-+++ linux-2.6/mm/ksm.c
-@@ -307,11 +307,11 @@ static void hold_anon_vma(struct rmap_it
- 	get_anon_vma(anon_vma);
- }
- 
--static void ksm_drop_anon_vma(struct rmap_item *rmap_item)
-+static void ksm_put_anon_vma(struct rmap_item *rmap_item)
- {
- 	struct anon_vma *anon_vma = rmap_item->anon_vma;
- 
--	drop_anon_vma(anon_vma);
-+	put_anon_vma(anon_vma);
- }
- 
+-/*
+- * For UP we don't need to worry about TLB flush
+- * and page free order so much..
+- */
+-#ifdef CONFIG_SMP
+-  #define tlb_fast_mode(tlb) ((tlb)->nr == ~0U)
+-#else
+-  #define tlb_fast_mode(tlb) 1
+-#endif
+-
+ #ifdef CONFIG_HAVE_RCU_TABLE_FREE
  /*
-@@ -396,7 +396,7 @@ static void break_cow(struct rmap_item *
- 	 * It is not an accident that whenever we want to break COW
- 	 * to undo, we also need to drop a reference to the anon_vma.
- 	 */
--	ksm_drop_anon_vma(rmap_item);
-+	ksm_put_anon_vma(rmap_item);
+  * Semi RCU freeing of the page directories.
+@@ -70,31 +60,66 @@ extern void tlb_remove_table(struct mmu_
  
- 	down_read(&mm->mmap_sem);
- 	if (ksm_test_exit(mm))
-@@ -451,7 +451,7 @@ static void remove_node_from_stable_tree
- 			ksm_pages_sharing--;
- 		else
- 			ksm_pages_shared--;
--		ksm_drop_anon_vma(rmap_item);
-+		ksm_put_anon_vma(rmap_item);
- 		rmap_item->address &= PAGE_MASK;
- 		cond_resched();
- 	}
-@@ -539,7 +539,7 @@ static void remove_rmap_item_from_tree(s
- 		else
- 			ksm_pages_shared--;
+ #endif
  
--		ksm_drop_anon_vma(rmap_item);
-+		ksm_put_anon_vma(rmap_item);
- 		rmap_item->address &= PAGE_MASK;
- 
- 	} else if (rmap_item->address & UNSTABLE_FLAG) {
-Index: linux-2.6/mm/migrate.c
-===================================================================
---- linux-2.6.orig/mm/migrate.c
-+++ linux-2.6/mm/migrate.c
-@@ -683,7 +683,7 @@ rcu_unlock:
- 
- 	/* Drop an anon_vma reference if we took one */
- 	if (anon_vma)
--		drop_anon_vma(anon_vma);
-+		put_anon_vma(anon_vma);
- 
- 	if (rcu_locked)
- 		rcu_read_unlock();
-Index: linux-2.6/mm/rmap.c
-===================================================================
---- linux-2.6.orig/mm/rmap.c
-+++ linux-2.6/mm/rmap.c
-@@ -274,7 +274,7 @@ static void anon_vma_unlink(struct anon_
- 	if (empty) {
- 		/* We no longer need the root anon_vma */
- 		if (anon_vma->root != anon_vma)
--			drop_anon_vma(anon_vma->root);
-+			put_anon_vma(anon_vma->root);
- 		anon_vma_free(anon_vma);
- 	}
- }
-@@ -1448,7 +1448,7 @@ int try_to_munlock(struct page *page)
-  * we know we are the last user, nobody else can get a reference and we
-  * can do the freeing without the lock.
++struct mmu_gather_batch {
++	struct mmu_gather_batch	*next;
++	unsigned int		nr;
++	unsigned int		max;
++	struct page		*pages[0];
++};
++
++#define MAX_GATHER_BATCH	\
++	((PAGE_SIZE - sizeof(struct mmu_gather_batch)) / sizeof(void *))
++
+ /* struct mmu_gather is an opaque type used by the mm code for passing around
+  * any data needed by arch specific code for tlb_remove_page.
   */
--void drop_anon_vma(struct anon_vma *anon_vma)
-+void put_anon_vma(struct anon_vma *anon_vma)
+ struct mmu_gather {
+ 	struct mm_struct	*mm;
+-	unsigned int		nr;	/* set to ~0U means fast mode */
+-	unsigned int		max;	/* nr < max */
+-	unsigned int		need_flush;/* Really unmapped some ptes? */
+-	unsigned int		fullmm; /* non-zero means full mm flush */
+-	struct page		**pages;
+-	struct page		*local[8];
++	unsigned int		need_flush : 1,	/* Did free PTEs */
++				fast_mode  : 1; /* No batching   */
++	unsigned int		fullmm;		/* Flush full mm */
++
++	struct mmu_gather_batch *active;
++	struct mmu_gather_batch	local;
++	struct page		*__pages[8];
+ 
+ #ifdef CONFIG_HAVE_RCU_TABLE_FREE
+ 	struct mmu_table_batch	*batch;
+ #endif
+ };
+ 
+-static inline void __tlb_alloc_pages(struct mmu_gather *tlb)
++/*
++ * For UP we don't need to worry about TLB flush
++ * and page free order so much..
++ */
++#ifdef CONFIG_SMP
++  #define tlb_fast_mode(tlb) (tlb->fast_mode)
++#else
++  #define tlb_fast_mode(tlb) 1
++#endif
++
++static inline int tlb_next_batch(struct mmu_gather *tlb)
  {
- 	BUG_ON(atomic_read(&anon_vma->external_refcount) <= 0);
- 	if (atomic_dec_and_lock(&anon_vma->external_refcount, &anon_vma->root->lock)) {
+-	unsigned long addr = __get_free_pages(GFP_ATOMIC, 0);
++	struct mmu_gather_batch *batch;
+ 
+-	if (addr) {
+-		tlb->pages = (void *)addr;
+-		tlb->max = PAGE_SIZE / sizeof(struct page *);
++	batch = tlb->active;
++	if (batch->next) {
++		tlb->active = batch->next;
++		return 1;
+ 	}
++
++	batch = (void *)__get_free_pages(GFP_ATOMIC, 0);
++	if (!batch)
++		return 0;
++
++	batch->next = NULL;
++	batch->nr   = 0;
++	batch->max  = MAX_GATHER_BATCH;
++
++	tlb->active->next = batch;
++	tlb->active = batch;
++
++	return 1;
+ }
+ 
+ /* tlb_gather_mmu
+@@ -105,17 +130,16 @@ tlb_gather_mmu(struct mmu_gather *tlb, s
+ {
+ 	tlb->mm = mm;
+ 
+-	tlb->max = ARRAY_SIZE(tlb->local);
+-	tlb->pages = tlb->local;
+-
+-	if (num_online_cpus() > 1) {
+-		tlb->nr = 0;
+-		__tlb_alloc_pages(tlb);
+-	} else /* Use fast mode if only one CPU is online */
+-		tlb->nr = ~0U;
+-
++	tlb->need_flush = 0;
++	if (num_online_cpus() == 1)
++		tlb->fast_mode = 1;
+ 	tlb->fullmm = full_mm_flush;
+ 
++	tlb->local.next = NULL;
++	tlb->local.nr   = 0;
++	tlb->local.max  = ARRAY_SIZE(tlb->__pages);
++	tlb->active     = &tlb->local;
++
+ #ifdef CONFIG_HAVE_RCU_TABLE_FREE
+ 	tlb->batch = NULL;
+ #endif
+@@ -124,6 +148,8 @@ tlb_gather_mmu(struct mmu_gather *tlb, s
+ static inline void
+ tlb_flush_mmu(struct mmu_gather *tlb, unsigned long start, unsigned long end)
+ {
++	struct mmu_gather_batch *batch;
++
+ 	if (!tlb->need_flush)
+ 		return;
+ 	tlb->need_flush = 0;
+@@ -131,12 +157,14 @@ tlb_flush_mmu(struct mmu_gather *tlb, un
+ #ifdef CONFIG_HAVE_RCU_TABLE_FREE
+ 	tlb_table_flush(tlb);
+ #endif
+-	if (!tlb_fast_mode(tlb)) {
+-		free_pages_and_swap_cache(tlb->pages, tlb->nr);
+-		tlb->nr = 0;
+-		if (tlb->pages == tlb->local)
+-			__tlb_alloc_pages(tlb);
++	if (tlb_fast_mode(tlb))
++		return;
++
++	for (batch = &tlb->local; batch; batch = batch->next) {
++		free_pages_and_swap_cache(batch->pages, batch->nr);
++		batch->nr = 0;
+ 	}
++	tlb->active = &tlb->local;
+ }
+ 
+ /* tlb_finish_mmu
+@@ -146,13 +174,18 @@ tlb_flush_mmu(struct mmu_gather *tlb, un
+ static inline void
+ tlb_finish_mmu(struct mmu_gather *tlb, unsigned long start, unsigned long end)
+ {
++	struct mmu_gather_batch *batch, *next;
++
+ 	tlb_flush_mmu(tlb, start, end);
+ 
+ 	/* keep the page table cache within bounds */
+ 	check_pgt_cache();
+ 
+-	if (tlb->pages != tlb->local)
+-		free_pages((unsigned long)tlb->pages, 0);
++	for (batch = tlb->local.next; batch; batch = next) {
++		next = batch->next;
++		free_pages((unsigned long)batch, 0);
++	}
++	tlb->local.next = NULL;
+ }
+ 
+ /* tlb_remove_page
+@@ -162,14 +195,23 @@ tlb_finish_mmu(struct mmu_gather *tlb, u
+  */
+ static inline void tlb_remove_page(struct mmu_gather *tlb, struct page *page)
+ {
++	struct mmu_gather_batch *batch;
++
+ 	tlb->need_flush = 1;
++
+ 	if (tlb_fast_mode(tlb)) {
+ 		free_page_and_swap_cache(page);
+ 		return;
+ 	}
+-	tlb->pages[tlb->nr++] = page;
+-	if (tlb->nr >= tlb->max)
+-		tlb_flush_mmu(tlb, 0, 0);
++
++	batch = tlb->active;
++	if (batch->nr == batch->max) {
++		if (!tlb_next_batch(tlb))
++			tlb_flush_mmu(tlb, 0, 0);
++		batch = tlb->active;
++	}
++
++	batch->pages[batch->nr++] = page;
+ }
+ 
+ /**
 
 
