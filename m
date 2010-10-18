@@ -1,60 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757506Ab0JRR1J (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Oct 2010 13:27:09 -0400
-Received: from fifo99.com ([67.223.236.141]:51395 "EHLO fifo99.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751362Ab0JRR1H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Oct 2010 13:27:07 -0400
-Subject: Re: linux-next: manual merge of the msm tree with the arm tree
-From: Daniel Walker <dwalker@fifo99.com>
-To: Russell King <rmk@arm.linux.org.uk>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Jeremy Kerr <jeremy.kerr@canonical.com>,
-        Jeff Ohlstein <johlstei@codeaurora.org>
-In-Reply-To: <20101018081520.GA10551@flint.arm.linux.org.uk>
-References: <20101018103540.7bd9c535.sfr@canb.auug.org.au>
-	 <20101018110207.131b56ee.sfr@canb.auug.org.au>
-	 <20101018081520.GA10551@flint.arm.linux.org.uk>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 18 Oct 2010 10:26:32 -0700
-Message-ID: <1287422792.4105.14.camel@c-dwalke-linux.qualcomm.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1757567Ab0JRR1b (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Oct 2010 13:27:31 -0400
+Received: from e32.co.us.ibm.com ([32.97.110.150]:50878 "EHLO
+	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757551Ab0JRR12 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Oct 2010 13:27:28 -0400
+From: Nishanth Aravamudan <nacc@us.ibm.com>
+To: nacc@us.ibm.com
+Cc: miltonm@bga.com, Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>,
+        =?UTF-8?q?Andr=C3=A9=20Goddard=20Rosa?= <andre.goddard@gmail.com>,
+        Tejun Heo <tj@kernel.org>, linuxppc-dev@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 5/7] ppc/dart: iommu table cleanup
+Date: Mon, 18 Oct 2010 10:27:02 -0700
+Message-Id: <1287422825-14999-6-git-send-email-nacc@us.ibm.com>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1287422825-14999-1-git-send-email-nacc@us.ibm.com>
+References: <1287422825-14999-1-git-send-email-nacc@us.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-10-18 at 09:15 +0100, Russell King wrote:
-> On Mon, Oct 18, 2010 at 11:02:07AM +1100, Stephen Rothwell wrote:
-> > [ Just cc'ing Russell, sorry about that]
-> > 
-> > On Mon, 18 Oct 2010 10:35:40 +1100 Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> > >
-> > > Hi Daniel,
-> > > 
-> > > Today's linux-next merge of the msm tree got a conflict in
-> > > arch/arm/mach-msm/include/mach/debug-macro.S between commit
-> > > 08a610d9ef5394525b0328da0162d7b58c982cc4 ("arm: return both physical and
-> > > virtual addresses from addruart") from the arm tree and commit
-> > > 46fe5f29e3062f681cc3cf07a604d82396faea89 ("msm: allow uart to be
-> > > conditionally disabled") from the msm tree.
-> > > 
-> > > Just context changes.  I fixed it up (see below) and can carry the fix as
-> > > necessary.
-> 
-> Thanks, but I don't think there's much which can be done about these.
-> Changes such as 08a610d affect all ARM sub-architectures, and as they're
-> spread across multiple git trees...
-> 
-> I think there's going to be some problems during this forthcoming merge
-> window.
+No need to set the device tree device_node pci node iommu pointer, its
+only used for dlpar remove.
 
-Would be nice to get CC'd ...
+Signed-off-by: Milton Miller <miltonm@bga.com>
+Signed-off-by: Nishanth Aravamudan <nacc@us.ibm.com>
+---
+ arch/powerpc/sysdev/dart_iommu.c |    9 +--------
+ 1 files changed, 1 insertions(+), 8 deletions(-)
 
-Ideally this patch should have been broken up and sent individually to
-each maintainer .. Then I could manage this within my own tree..
-
-Daniel
+diff --git a/arch/powerpc/sysdev/dart_iommu.c b/arch/powerpc/sysdev/dart_iommu.c
+index 17cf15e..8e9e06a 100644
+--- a/arch/powerpc/sysdev/dart_iommu.c
++++ b/arch/powerpc/sysdev/dart_iommu.c
+@@ -312,17 +312,10 @@ static void pci_dma_dev_setup_dart(struct pci_dev *dev)
+ 
+ static void pci_dma_bus_setup_dart(struct pci_bus *bus)
+ {
+-	struct device_node *dn;
+-
+ 	if (!iommu_table_dart_inited) {
+ 		iommu_table_dart_inited = 1;
+ 		iommu_table_dart_setup();
+ 	}
+-
+-	dn = pci_bus_to_OF_node(bus);
+-
+-	if (dn)
+-		PCI_DN(dn)->iommu_table = &iommu_table_dart;
+ }
+ 
+ static bool dart_device_on_pcie(struct device *dev)
+@@ -373,7 +366,7 @@ void __init iommu_init_early_dart(void)
+ 	if (dn == NULL) {
+ 		dn = of_find_compatible_node(NULL, "dart", "u4-dart");
+ 		if (dn == NULL)
+-			goto bail;
++			return;	/* use default direct_dma_ops */
+ 		dart_is_u4 = 1;
+ 	}
+ 
+-- 
+1.7.1
 
