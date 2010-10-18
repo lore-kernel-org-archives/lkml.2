@@ -1,50 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932944Ab0JRQai (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Oct 2010 12:30:38 -0400
-Received: from caiajhbdcahe.dreamhost.com ([208.97.132.74]:33099 "EHLO
-	homiemail-a6.g.dreamhost.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750800Ab0JRQai (ORCPT
+	id S1757251Ab0JRQeI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Oct 2010 12:34:08 -0400
+Received: from va3ehsobe005.messaging.microsoft.com ([216.32.180.31]:23879
+	"EHLO VA3EHSOBE005.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750925Ab0JRQeH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Oct 2010 12:30:38 -0400
-Subject: [PATCH] drm: include missing types header to drm_mode.h
-From: Davidlohr Bueso <dave@gnu.org>
-Reply-To: dave@gnu.org
-To: Dave Airlie <airlied@redhat.com>, Dave Airlie <airlied@linux.ie>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        dri-devel <dri-devel@lists.freedesktop.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 18 Oct 2010 13:30:28 -0300
-Message-ID: <1287419428.7945.7.camel@cowboy>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	Mon, 18 Oct 2010 12:34:07 -0400
+X-SpamScore: 0
+X-BigFish: VS0(zzzz1202hzz8275bhz2dh2a8h62h)
+X-Spam-TCS-SCL: 1:0
+X-Forefront-Antispam-Report: KIP:(null);UIP:(null);(null);(null)
+From: <Dinh.Nguyen@freescale.com>
+To: <linux-kernel@vger.kernel.org>
+CC: <linux-arm-kernel@lists.infradead.org>, <linux@arm.linux.org.uk>,
+        <s.hauer@pengutronix.de>, <u.kleine-koenig@pengutronix.de>,
+        <valentin.longchamp@epfl.ch>, <daniel@caiaq.de>,
+        <grant.likely@secretlab.ca>, <bryan.wu@canonical.com>,
+        <amit.kucheria@canonical.com>, <xiao-lizhang@freescale.com>,
+        Dinh Nguyen <Dinh.Nguyen@freescale.com>
+Subject: [PATCHv2 1/2] ARM: imx: Add wake functionality to GPIO
+Date: Mon, 18 Oct 2010 11:35:30 -0500
+Message-ID: <1287419731-7885-1-git-send-email-Dinh.Nguyen@freescale.com>
+X-Mailer: git-send-email 1.6.0.4
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Reverse-DNS: az33egw02.freescale.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-drm: include missing types header to drm_mode.h
+From: Dinh Nguyen <Dinh.Nguyen@freescale.com>
 
-Signed-off-by: Davidlohr Bueso <dave@gnu.org>
+Add function definition for irq_chip.set_wake to enable GPIO to
+wake-up the system.
+
+Signed-off-by: Dinh Nguyen <Dinh.Nguyen@freescale.com>
 ---
- include/drm/drm_mode.h |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
+ arch/arm/plat-mxc/gpio.c              |   34 +++++++++++++++++++++++++++++++++
+ arch/arm/plat-mxc/include/mach/gpio.h |    1 +
+ 2 files changed, 35 insertions(+), 0 deletions(-)
 
-diff --git a/include/drm/drm_mode.h b/include/drm/drm_mode.h
-index 0fc7397..eddd7f4 100644
---- a/include/drm/drm_mode.h
-+++ b/include/drm/drm_mode.h
-@@ -24,6 +24,8 @@
-  * IN THE SOFTWARE.
+diff --git a/arch/arm/plat-mxc/gpio.c b/arch/arm/plat-mxc/gpio.c
+index 57ec4a8..0788af5 100644
+--- a/arch/arm/plat-mxc/gpio.c
++++ b/arch/arm/plat-mxc/gpio.c
+@@ -20,6 +20,7 @@
   */
  
-+#include <linux/types.h>
-+
- #ifndef _DRM_MODE_H
- #define _DRM_MODE_H
+ #include <linux/init.h>
++#include <linux/interrupt.h>
+ #include <linux/io.h>
+ #include <linux/irq.h>
+ #include <linux/gpio.h>
+@@ -201,11 +202,44 @@ static void mx2_gpio_irq_handler(u32 irq, struct irq_desc *desc)
+ 	}
+ }
  
++/*
++ * Set interrupt number "irq" in the GPIO as a wake-up source.
++ * While system is running, all registered GPIO interrupts need to have
++ * wake-up enabled. When system is suspended, only selected GPIO interrupts
++ * need to have wake-up enabled.
++ * @param  irq          interrupt source number
++ * @param  enable       enable as wake-up if equal to non-zero
++ * @return       This function returns 0 on success.
++ */
++static int gpio_set_wake_irq(u32 irq, u32 enable)
++{
++	u32 gpio = irq_to_gpio(irq);
++	u32 gpio_idx = gpio & 0x1F;
++	struct mxc_gpio_port *port = &mxc_gpio_ports[gpio / 32];
++
++	if (enable) {
++		port->suspend_wakeup |= (1 << gpio_idx);
++		if (port->irq_high && (gpio_idx >= 16))
++			enable_irq_wake(port->irq_high);
++		else
++			enable_irq_wake(port->irq);
++	} else {
++		port->suspend_wakeup &= ~(1 << gpio_idx);
++		if (port->irq_high && (gpio_idx >= 16))
++			disable_irq_wake(port->irq_high);
++		else
++			disable_irq_wake(port->irq);
++	}
++
++	return 0;
++}
++
+ static struct irq_chip gpio_irq_chip = {
+ 	.ack = gpio_ack_irq,
+ 	.mask = gpio_mask_irq,
+ 	.unmask = gpio_unmask_irq,
+ 	.set_type = gpio_set_irq_type,
++	.set_wake = gpio_set_wake_irq,
+ };
+ 
+ static void _set_gpio_direction(struct gpio_chip *chip, unsigned offset,
+diff --git a/arch/arm/plat-mxc/include/mach/gpio.h b/arch/arm/plat-mxc/include/mach/gpio.h
+index af33b74..133150e 100644
+--- a/arch/arm/plat-mxc/include/mach/gpio.h
++++ b/arch/arm/plat-mxc/include/mach/gpio.h
+@@ -39,6 +39,7 @@ struct mxc_gpio_port {
+ 	struct gpio_chip chip;
+ 	u32 both_edges;
+ 	spinlock_t lock;
++	u32 suspend_wakeup;
+ };
+ 
+ int mxc_gpio_init(struct mxc_gpio_port*, int);
 -- 
-1.7.0.4
-
+1.6.0.4
 
 
