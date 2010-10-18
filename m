@@ -1,63 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752380Ab0JRAI3 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Oct 2010 20:08:29 -0400
-Received: from bld-mail16.adl2.internode.on.net ([150.101.137.101]:58070 "EHLO
-	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751896Ab0JRAI2 (ORCPT
+	id S1752599Ab0JRAZV (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Oct 2010 20:25:21 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:44394 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751830Ab0JRAZU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Oct 2010 20:08:28 -0400
-Date: Mon, 18 Oct 2010 11:07:47 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: Eric Paris <eparis@parisplace.org>
-Cc: Peter Zijlstra <peterz@infradead.org>, eparis@redhat.com,
-        Mimi Zohar <zohar@linux.vnet.ibm.com>,
-        Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
-        Mimi Zohar <zohar@us.ibm.com>, warthog9@kernel.org, hpa@zytor.com,
-        devel@lists.fedoraprojet.org
-Subject: Re: ima: use of radix tree cache indexing == massive waste of
- memory?
-Message-ID: <20101018000747.GH29677@dastard>
-References: <20101016065206.GO4681@dastard>
- <20101016192027.GA6883@infradead.org>
- <1287295077.3020.83.camel@localhost.localdomain>
- <1287313332.1998.172.camel@laptop>
- <AANLkTinNbF9=5Ojn8kKEvSkGbpqQw+DGKyRWhAD1AYZK@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTinNbF9=5Ojn8kKEvSkGbpqQw+DGKyRWhAD1AYZK@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Sun, 17 Oct 2010 20:25:20 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Mon, 18 Oct 2010 09:19:48 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Minchan Kim <minchan.kim@gmail.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
+        "balbir@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>,
+        Greg Thelen <gthelen@google.com>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>
+Subject: Re: [RFC][PATCH 2/2] memcg: new lock for mutual execution of
+ account_move and file stats
+Message-Id: <20101018091948.6314175a.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <AANLkTikTMhf9NrLxdrw4Sqi8QiqaVOcfVBQWZWw6s6Vw@mail.gmail.com>
+References: <20101015170627.e5033fa4.kamezawa.hiroyu@jp.fujitsu.com>
+	<20101015171225.70d4ca8f.kamezawa.hiroyu@jp.fujitsu.com>
+	<AANLkTimDRuE9oBpj6h13wFKazuOzOm8UbFdM+qhbc0On@mail.gmail.com>
+	<AANLkTikTMhf9NrLxdrw4Sqi8QiqaVOcfVBQWZWw6s6Vw@mail.gmail.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Oct 17, 2010 at 09:12:47AM -0400, Eric Paris wrote:
-> We could split this into 2 structures, thus greatly shrinking the size
-> of the structure needed for the default/disabled case, but it doesn't
+On Sun, 17 Oct 2010 14:35:47 +0900
+Minchan Kim <minchan.kim@gmail.com> wrote:
 
-I don't think the 128 byte structure is a big problem. If this is
-too much overhead, then add a boot parameter to enable storage of
-IMA information that defaults to disabled. That way it can be
-compiled in with no runtime overhead at all and only those that want
-to use can turn it on.
+> On Sun, Oct 17, 2010 at 2:33 PM, Minchan Kim <minchan.kim@gmail.com> wrote:
+> > On Fri, Oct 15, 2010 at 5:12 PM, KAMEZAWA Hiroyuki
+> > <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+> >> From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> >>
+> >> When we try to enhance page's status update to support other flags,
+> >> one of problem is updating status from IRQ context.
+> >>
+> >> Now, mem_cgroup_update_file_stat() takes lock_page_cgroup() to avoid
+> >> race with _account move_. IOW, there are no races with charge/uncharge
+> >> in nature. Considering an update from IRQ context, it seems better
+> >> to disable IRQ at lock_page_cgroup() to avoid deadlock.
+> >>
+> >> But lock_page_cgroup() is used too widerly and adding IRQ disable
+> >> there makes the performance bad. To avoid the big hammer, this patch
+> >> adds a new lock for update_stat().
+> >>
+> >> This lock is for mutual execustion of updating stat and accout moving.
+> >> This adds a new lock to move_account..so, this makes move_account slow.
+> >> But considering trade-off, I think it's acceptable.
+> >>
+> >> A score of moving 8GB anon pages, 8cpu Xeon(3.1GHz) is here.
+> >>
+> >> [before patch] (mmotm + optimization patch (#1 in this series)
+> >> [root@bluextal kamezawa]# time echo 2257 > /cgroup/B/tasks
+> >>
+> >> real    0m0.694s
+> >> user    0m0.000s
+> >> sys     0m0.683s
+> >>
+> >> [After patch]
+> >> [root@bluextal kamezawa]# time echo 2238 > /cgroup/B/tasks
+> >>
+> >> real    0m0.741s
+> >> user    0m0.000s
+> >> sys     0m0.730s
+> >>
+> >> This moves 8Gbytes == 2048k pages. But no bad effects to codes
+> >> other than "move".
+> >>
+> >> Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> >
+> > It looks good than old approach.
+> > Just a below nitpick.
+> >
+> >> ---
+> >>  include/linux/page_cgroup.h |   29 +++++++++++++++++++++++++++++
+> >>  mm/memcontrol.c             |   11 +++++++++--
+> >>  2 files changed, 38 insertions(+), 2 deletions(-)
+> >>
+> >> Index: mmotm-1013/include/linux/page_cgroup.h
+> >> ===================================================================
+> >> --- mmotm-1013.orig/include/linux/page_cgroup.h
+> >> +++ mmotm-1013/include/linux/page_cgroup.h
+> >> @@ -36,6 +36,7 @@ struct page_cgroup *lookup_page_cgroup(s
+> >>  enum {
+> >>        /* flags for mem_cgroup */
+> >>        PCG_LOCK,  /* page cgroup is locked */
+> >> +       PCG_LOCK_STATS, /* page cgroup's stat accounting flags are locked */
+> >
+> > Hmm, I think naming isn't a good. Aren't both for stat?
 
-> help the fact that the suggested structure for storage (the radix
-> tree) is apparently quite inefficient.  I'd love to hear other
-> suggestions for a better structure....
+PCG_LOCK is for page_cgroup->mem_cgroup, not for stat.
 
-You've just answered the question I asked in my bug posting.  Use an
-rbtree or btree instead if you want to use the address of the struct
-inode as the lookup key.  If you want to use a denser key such as
-inode->i_ino, you're going to need to handle duplicates which means
-you still can't use a radix tree.
 
-Hence I think a btree or rbtree is your simplest solution as there
-are library functions for implementing them.
+But hmm...how about
+{
+  PCG_LOCK  /* For CACEH, USED and pc->mem_cgroup */
+  PCG_CACHE
+  PCG_USED
+  PCG_ACCT_LRU /* no lock is used */
+  PCG_MOVE_FLAGS_LOCK  /* For MAPPED and I/O flags v.s account_move races*/
+  PCG_FILE_MAPPED,
+  ..
+  PCG_MIGRATION, /* For remembering Page Migration */
+}
 
-Cheers,
+Anyway, documentation should be updated.
+...
 
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+
+> > As I understand, Both are used for stat.
+> > One is just used by charge/uncharge and the other is used by
+> > pdate_file_stat/move_account.
+> > If you guys who are expert in mcg feel it with easy, I am not against.
+> > But at least, mcg-not-familiar people like me don't feel it comfortable.
+> >
+> 
+> And I think this patch would be better to be part of Greg Thelen's series.
+> 
+
+Hmm. Greg, can you merge my new version (I'll post today) into your series ?
+
+Thanks,
+-Kame
+
+
+
