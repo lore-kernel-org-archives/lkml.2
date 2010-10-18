@@ -1,84 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932108Ab0JROPK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Oct 2010 10:15:10 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:47454 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756136Ab0JROPI convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Oct 2010 10:15:08 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=Gm7y7uGC710zCMTT7u4WAk+Z7bm3QMf2v0XjL/vrtghv4g4c23f/MxI2BAzDENoRCh
-         /zF81vsIzp7NDI2/VX7UeXlKOguK+0l4if4DRp/Pu0dkOlWgt8RrHQc2NRUwnxnI33hj
-         U2Wjeo91w39H9H5OXQtMNwdB2hzVickui4/c0=
+	id S932161Ab0JROPf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Oct 2010 10:15:35 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:19148 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756103Ab0JROPe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Oct 2010 10:15:34 -0400
+Date: Mon, 18 Oct 2010 10:14:55 -0400
+From: Jason Baron <jbaron@redhat.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [PATCH 3/9] jump label: Fix module __init section race
+Message-ID: <20101018141454.GB2814@redhat.com>
+References: <20101015200949.134732894@goodmis.org> <20101015201036.445509790@goodmis.org> <1287194942.16971.39.camel@gandalf.stny.rr.com> <20101016062304.GA10748@elte.hu> <1287246199.16971.54.camel@gandalf.stny.rr.com>
 MIME-Version: 1.0
-In-Reply-To: <4CBC55FB.30205@redhat.com>
-References: <AANLkTin6qJYEqOc_97EVWkK1Kt1zNSvXtfVeYuk9fyJ8@mail.gmail.com>
-	<4CBAE8E2.1060704@redhat.com>
-	<AANLkTi=5yGPmZxZY7T_oeyJ4xS+RWt7cY4WD=78fbo7v@mail.gmail.com>
-	<4CBBF3C8.9070104@web.de>
-	<4CBC1047.6010501@redhat.com>
-	<20101018125803.GA2497@darkstar>
-	<4CBC4B06.3030300@redhat.com>
-	<20101018134508.GA11885@darkstar>
-	<4CBC4FA9.90406@redhat.com>
-	<4CBC5097.1020105@redhat.com>
-	<20101018135813.GA20316@darkstar>
-	<4CBC547A.8080700@redhat.com>
-	<AANLkTi=htiXrjAnQcm7=Rha+PYQA7iibn3WFRzyx_Owq@mail.gmail.com>
-	<4CBC55FB.30205@redhat.com>
-Date: Mon, 18 Oct 2010 22:15:05 +0800
-Message-ID: <AANLkTikKf1XnbWXm6TqSeQe_fUVjeSR0J8DTvcEy3xcP@mail.gmail.com>
-Subject: Re: [BUG] kvm: guest can not startup due to triple fault
-From: Dave Young <hidave.darkstar@gmail.com>
-To: Avi Kivity <avi@redhat.com>
-Cc: Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
-        Jan Kiszka <jan.kiszka@web.de>, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1287246199.16971.54.camel@gandalf.stny.rr.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 18, 2010 at 10:13 PM, Avi Kivity <avi@redhat.com> wrote:
->  On 10/18/2010 04:11 PM, Dave Young wrote:
->>
->> On Mon, Oct 18, 2010 at 10:06 PM, Avi Kivity<avi@redhat.com>  wrote:
->> >    On 10/18/2010 03:58 PM, Dave Young wrote:
->> >>
->> >>  >
->> >>  >    Please patch hardware_setup() to show the value of
->> >>  >    boot_cpu_has(X86_FEATURE_NX).
->> >>
->> >>  It's 0
->>
->> Please wait, I reply too quick, actually it boots two times fine then
->> one time fail.
->
-> What boots fine?  The guest?
+On Sat, Oct 16, 2010 at 12:23:19PM -0400, Steven Rostedt wrote:
+> On Sat, 2010-10-16 at 08:23 +0200, Ingo Molnar wrote:
+> > * Steven Rostedt <rostedt@goodmis.org> wrote:
+> > 
+> > > On Fri, 2010-10-15 at 16:09 -0400, Steven Rostedt wrote:
+> > > 
+> > > > --- a/kernel/jump_label.c
+> > > > +++ b/kernel/jump_label.c
+> > > > @@ -168,7 +168,8 @@ void jump_label_update(unsigned long key, enum jump_label_type type)
+> > > >  			count = e_module->nr_entries;
+> > > >  			iter = e_module->table;
+> > > >  			while (count--) {
+> > > > -				if (kernel_text_address(iter->code))
+> > > > +				if (iter->key &&
+> > > > +						kernel_text_address(iter->code))
+> > > 
+> > > Peter, I know you hated this, but the alternative is either:
+> > > 
+> > > 				if (iter->key &&
+> > > 				    kernel_text_address(iter->code))
+> > > 
+> > > or break 80 chars. All three seem bad (although I don't mind breaking 
+> > > 80 chars for this). But I'll leave it for now.
+> > 
+> > No, the proper alternative is to move the body of the iteration into a 
+> > jump_label_update_entry() inline function ...
+> > 
+> > Nobody is forcing you to start yet another iteration 4 indentations 
+> > deep. We have functions for a reason.
+> 
+> Jason,
+> 
+> Could you send me another version of this patch with the second
+> iteration wrapped in a function.
+> 
+> Thanks,
+> 
+> -- Steve
+> 
+> 
 
-Yes the guest
+sure. I going to re-spin this whole series - there are a bunch of
+changes. Hopefully, I can drop the whole register/unregister notion as
+Peter suggested.
 
->
->> The printk only happen once. So to make sure the result I retested
->> several times, can not get the print as well.
->
-> boot_cpu_has() is called only when the kvm module is inserted.
+thanks,
 
-Oh, then I need to test again.
-
->
-> --
-> error compiling committee.c: too many arguments to function
->
->
-
-
-
--- 
-Regards
-dave
+-Jason
