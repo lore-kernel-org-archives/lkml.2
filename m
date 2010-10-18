@@ -1,64 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752473Ab0JRDG6 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Oct 2010 23:06:58 -0400
-Received: from mga11.intel.com ([192.55.52.93]:36932 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751054Ab0JRDG5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Oct 2010 23:06:57 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.57,344,1283756400"; 
-   d="scan'208";a="617651545"
-Subject: Re: [tip:perf/core] x86, NMI: Rewrite NMI handler
-From: Huang Ying <ying.huang@intel.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Don Zickus <dzickus@redhat.com>, "mingo@redhat.com" <mingo@redhat.com>,
-        "hpa@zytor.com" <hpa@zytor.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "mingo@elte.hu" <mingo@elte.hu>,
-        "linux-tip-commits@vger.kernel.org" 
-	<linux-tip-commits@vger.kernel.org>
-In-Reply-To: <1287312163.1998.158.camel@laptop>
-References: <1287195738-3136-4-git-send-email-dzickus@redhat.com>
-	 <tip-e21f3e4957f4a55f546873605a5caa59556bb144@git.kernel.org>
-	 <1287250157.1998.124.camel@laptop>  <20101017004641.GB4140@redhat.com>
-	 <1287312163.1998.158.camel@laptop>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 18 Oct 2010 11:06:54 +0800
-Message-ID: <1287371214.31526.23.camel@yhuang-dev>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S1752321Ab0JRDMn (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Oct 2010 23:12:43 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:64499 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751054Ab0JRDMn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 17 Oct 2010 23:12:43 -0400
+Message-ID: <4CBBBB34.7060702@cn.fujitsu.com>
+Date: Mon, 18 Oct 2010 11:12:52 +0800
+From: Miao Xie <miaox@cn.fujitsu.com>
+Reply-To: miaox@cn.fujitsu.com
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: "H. Peter Anvin" <hpa@zytor.com>
+CC: "Ma, Ling" <ling.ma@intel.com>, Ingo Molnar <mingo@redhat.com>,
+        Andi Kleen <andi@firstfloor.org>, Thomas Gleixner <tglx@linutronix.de>,
+        "Zhao, Yakui" <yakui.zhao@intel.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH V2 -tip] lib,x86_64: improve the performance of memcpy()
+ for unaligned copy
+References: <4CAEC81C.1070108@cn.fujitsu.com> <C10D3FB0CD45994C8A51FEC1227CE22F15C916E769@shsmsx502.ccr.corp.intel.com> <4CAEDE0D.2040009@cn.fujitsu.com> <4CB62543.7000605@zytor.com>
+In-Reply-To: <4CB62543.7000605@zytor.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2010-10-17 at 18:42 +0800, Peter Zijlstra wrote:
-> On Sat, 2010-10-16 at 20:46 -0400, Don Zickus wrote:
-> 
-> > Hmm, well to his defense, he isn't adding DIE_NMI_IPI.  That code is
-> > already there.  He is just re-arranging it, making it look painfully
-> > obvious the die_chain probably isn't as efficient as it should be.
-> > 
-> > I think a bunch of us agree that we need to revamp the NMI notifier to
-> > make it less wasteful.  I was hoping we could do that in a separate patch
-> > that would be layered on top of Huangs.
-> > 
-> > Would you object to at least consider having this patch series in a
-> > work-in-progress git branch that we can build on top of, with the final
-> > outcome containing an nmi notifier that meets your expectations?
-> 
-> What's the point of keeping it in a git tree? Its just a few patches.
-> 
-> We've spend more time talking about this than it would take to actually
-> do the patch that kills DIE_NMI_IPI.
+On Wed, 13 Oct 2010 14:31:47 -0700, H. Peter Anvin wrote:
+> On 10/08/2010 02:02 AM, Miao Xie wrote:
+>> On Fri, 8 Oct 2010 15:42:45 +0800, Ma, Ling wrote:
+>>> Could you please give us full address for each comparison result,we will do some tests on my machine.
+>>> For unaligned cases older cpus will crossing cache line and slow down caused by load and store, but for nhm, no necessary to care about it.
+>>> By the way in kernel 64bit mode, our access mode should be around 8byte aligned.
+>>
+>> Would you need my benchmark tool? I think it is helpful for your test.
+>>
+>
+> If you could post the benchmark tool that would be great.
 
-You can kill DIE_NMI_IPI. But you will add at least NMI_PRIORITY_LOCAL
-(like DIE_NMI_IPI), NMI_PRIORITY_GLOBAL (like original DIE_NMI). So
-thing is similar, just moved from one place to another place.
+The following is the URL of the benchmark tool that I have posted.
+   http://marc.info/?l=linux-kernel&m=128652854608425&q=p3
 
-Best Regards,
-Huang Ying
-
-
+Thanks
+Miao
