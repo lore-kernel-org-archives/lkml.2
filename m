@@ -1,67 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756666Ab0JRO4e (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Oct 2010 10:56:34 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:55943 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755564Ab0JRO4e (ORCPT
+	id S1756647Ab0JRO7P (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Oct 2010 10:59:15 -0400
+Received: from casper.infradead.org ([85.118.1.10]:54407 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756159Ab0JRO7O convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Oct 2010 10:56:34 -0400
-Date: Mon, 18 Oct 2010 16:56:20 +0200
-From: Wolfram Sang <w.sang@pengutronix.de>
-To: zhangyd <zhangyd6@gmail.com>
-Cc: dwmw2@infradead.org, Artem.Bityutskiy@nokia.com, ladis@linux-mips.org,
-        linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mtd: chips: Add SST38VF640x NOR-flashes
-Message-ID: <20101018145620.GA22538@pengutronix.de>
-References: <1287454010-2718-1-git-send-email-zhangyd6@gmail.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="45Z9DzgjV8m4Oswq"
-Content-Disposition: inline
-In-Reply-To: <1287454010-2718-1-git-send-email-zhangyd6@gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: wsa@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Mon, 18 Oct 2010 10:59:14 -0400
+Subject: Re: [PATCH] checkpatch: allow single space before labels
+From: Peter Zijlstra <peterz@infradead.org>
+To: "Ted Ts'o" <tytso@mit.edu>
+Cc: Mike Frysinger <vapier@gentoo.org>, Joe Perches <joe@perches.com>,
+        Andy Whitcroft <apw@canonical.com>, linux-kernel@vger.kernel.org
+In-Reply-To: <20101018145400.GD4120@thunk.org>
+References: <1287302737-3507-1-git-send-email-vapier@gentoo.org>
+	 <1287303678.20968.37.camel@Joe-Laptop>
+	 <AANLkTimmSRS3eVsW4EZUxnE_rfjeqmmgGnjtWbn3J_nY@mail.gmail.com>
+	 <1287310889.1998.153.camel@laptop> <1287334498.20968.53.camel@Joe-Laptop>
+	 <1287343839.1998.699.camel@laptop>
+	 <AANLkTikaxf-Fh9qUxsXNO5=r+SoxbzYXvCjFcHQLcXjy@mail.gmail.com>
+	 <1287345710.1998.735.camel@laptop>
+	 <AANLkTimixEGQTYrM7ShodtKeC97e0uPNRhWQn8F+-Nui@mail.gmail.com>
+	 <20101018143935.GA4120@thunk.org>  <20101018145400.GD4120@thunk.org>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Mon, 18 Oct 2010 16:58:53 +0200
+Message-ID: <1287413933.29097.1608.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, 2010-10-18 at 10:54 -0400, Ted Ts'o wrote:
+> Note that there is absolutely nothing about how labels should be
+> indented in CodingStyle at all, and I very much resist code
+> straightjackets being imposed by checkpatch.pl implementors.
+> 
+> Can we please stop this nonsense? 
 
---45Z9DzgjV8m4Oswq
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+1) ignoring checkpatch over taste is good
+2) by 1) its impossible to get checkpatch right
+3) therefore pure checkpatch patches are nonsense
 
-On Mon, Oct 18, 2010 at 10:06:50PM -0400, zhangyd wrote:
-> Du to the wrong sector size description(The actual sector size is
-> 8KBytes/sector, but the reporting size is 64KBytes/sector),you can get
-> the wrong size of the memory. So they should be moved to the jedec_probe.
->=20
-> Signed-off-by: yidong zhang<zhangyd6@gmail.com>
+So can we agree that checkpatch is ok in its current form, and we should
+simply administer physical violence towards checkpatch wankers?
 
-NACK as long as Guillaume has not finished updating the SST-support for CFI=
-=2E He
-said he is working on this at the moment, let's give him a chance to finish=
- :)
+PS. I frequently practise 2).
+PPS. I find your preferred label indenting truly hideous.
 
---=20
-Pengutronix e.K.                           | Wolfram Sang                |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-
---45Z9DzgjV8m4Oswq
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-Content-Disposition: inline
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.9 (GNU/Linux)
-
-iEYEARECAAYFAky8YBQACgkQD27XaX1/VRtz6ACeMLJleCWrFki71rpj+0ELYala
-A8sAnA6Frg62shANhZn7xEW1196rHBxr
-=P1xd
------END PGP SIGNATURE-----
-
---45Z9DzgjV8m4Oswq--
