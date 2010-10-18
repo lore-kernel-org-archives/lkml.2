@@ -1,76 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932129Ab0JROXi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Oct 2010 10:23:38 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:53189 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755167Ab0JROXg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S932183Ab0JROXj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Oct 2010 10:23:39 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:43908
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755845Ab0JROXg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 18 Oct 2010 10:23:36 -0400
-Message-ID: <4CBC585B.6010207@redhat.com>
-Date: Mon, 18 Oct 2010 09:23:23 -0500
-From: Eric Sandeen <sandeen@redhat.com>
-User-Agent: Thunderbird 2.0.0.24 (Macintosh/20100228)
-MIME-Version: 1.0
-To: Namhyung Kim <namhyung@gmail.com>
-CC: Jan Kara <jack@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
-        Andreas Dilger <adilger.kernel@dilger.ca>, linux-ext4@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ext3: Fix debug messages in ext3_group_extend()
-References: <1287245483-3557-1-git-send-email-namhyung@gmail.com>
-In-Reply-To: <1287245483-3557-1-git-send-email-namhyung@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Date: Mon, 18 Oct 2010 07:23:59 -0700 (PDT)
+Message-Id: <20101018.072359.104044884.davem@davemloft.net>
+To: awalls@md.metrocast.net
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, kuznet@ms2.inr.ac.ru,
+        jmorris@namei.org, kaber@trash.net
+Subject: Re: [PATCH] IPv4: route.c: Change checks against 0xffffffff to
+ ipv4_is_lbcast()
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1287364282.2320.20.camel@morgan.silverblock.net>
+References: <1287364282.2320.20.camel@morgan.silverblock.net>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Namhyung Kim wrote:
-> Fix a typo, break long lines and use E3FSBLK on ext3_fsblk_t.
+From: Andy Walls <awalls@md.metrocast.net>
+Date: Sun, 17 Oct 2010 21:11:22 -0400
 
-ext4 could use this treatment as well.
-
-> Signed-off-by: Namhyung Kim <namhyung@gmail.com>
-> ---
->  fs/ext3/resize.c |   13 +++++++------
->  1 files changed, 7 insertions(+), 6 deletions(-)
 > 
-> diff --git a/fs/ext3/resize.c b/fs/ext3/resize.c
-> index 0ccd7b1..e746d30 100644
-> --- a/fs/ext3/resize.c
-> +++ b/fs/ext3/resize.c
-> @@ -977,7 +977,8 @@ int ext3_group_extend(struct super_block *sb, struct ext3_super_block *es,
->  	o_blocks_count = le32_to_cpu(es->s_blocks_count);
->  
->  	if (test_opt(sb, DEBUG))
-> -		printk(KERN_DEBUG "EXT3-fs: extending last group from "E3FSBLK" uto "E3FSBLK" blocks\n",
-> +		printk(KERN_DEBUG "EXT3-fs: extending last group from "E3FSBLK
-> +		       " upto "E3FSBLK" blocks\n",
->  		       o_blocks_count, n_blocks_count);
->  
->  	if (n_blocks_count == 0 || n_blocks_count == o_blocks_count)
-> @@ -985,7 +986,7 @@ int ext3_group_extend(struct super_block *sb, struct ext3_super_block *es,
->  
->  	if (n_blocks_count > (sector_t)(~0ULL) >> (sb->s_blocksize_bits - 9)) {
->  		printk(KERN_ERR "EXT3-fs: filesystem on %s:"
-> -			" too large to resize to %lu blocks safely\n",
-> +			" too large to resize to "E3FSBLK" blocks safely\n",
->  			sb->s_id, n_blocks_count);
->  		if (sizeof(sector_t) < 8)
->  			ext3_warning(sb, __func__,
-> @@ -1065,11 +1066,11 @@ int ext3_group_extend(struct super_block *sb, struct ext3_super_block *es,
->  	es->s_blocks_count = cpu_to_le32(o_blocks_count + add);
->  	ext3_journal_dirty_metadata(handle, EXT3_SB(sb)->s_sbh);
->  	mutex_unlock(&EXT3_SB(sb)->s_resize_lock);
-> -	ext3_debug("freeing blocks %lu through "E3FSBLK"\n", o_blocks_count,
-> -		   o_blocks_count + add);
-> +	ext3_debug("freeing blocks "E3FSBLK" through "E3FSBLK"\n",
-> +		   o_blocks_count, o_blocks_count + add);
->  	ext3_free_blocks_sb(handle, sb, o_blocks_count, add, &freed_blocks);
-> -	ext3_debug("freed blocks "E3FSBLK" through "E3FSBLK"\n", o_blocks_count,
-> -		   o_blocks_count + add);
-> +	ext3_debug("freed blocks "E3FSBLK" through "E3FSBLK"\n",
-> +		   o_blocks_count, o_blocks_count + add);
->  	if ((err = ext3_journal_stop(handle)))
->  		goto exit_put;
->  	if (test_opt(sb, DEBUG))
+> Change a few checks against the hardcoded broadcast address,
+> 0xffffffff, to ipv4_is_lbcast().  Remove some existing checks
+> using ipv4_is_lbcast() that are now obviously superfluous.
+> 
+> Signed-off-by: Andy Walls <awalls@md.metrocast.net>
 
+Applied.
