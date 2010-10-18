@@ -1,82 +1,338 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757646Ab0JRSOL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Oct 2010 14:14:11 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:58441 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755239Ab0JRSOJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Oct 2010 14:14:09 -0400
-Message-ID: <4CBC8E02.6070109@kernel.org>
-Date: Mon, 18 Oct 2010 11:12:18 -0700
-From: "J.H." <warthog9@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.12) Gecko/20100907 Fedora/3.0.7-1.fc12 Lightning/1.0b2pre Thunderbird/3.0.7
-MIME-Version: 1.0
-To: Dave Chinner <david@fromorbit.com>
-CC: "H. Peter Anvin" <hpa@zytor.com>, Christoph Hellwig <hch@infradead.org>,
-        linux-kernel@vger.kernel.org, Mimi Zohar <zohar@us.ibm.com>,
-        devel@lists.fedoraprojet.org
-Subject: Re: ima: use of radix tree cache indexing == massive waste of memory?
-References: <20101016065206.GO4681@dastard> <20101016192027.GA6883@infradead.org> <ebc4973c-6c11-4397-b8b0-c212a27abce4@email.android.com> <20101017003526.GA29677@dastard> <4CBA4933.1080108@kernel.org> <20101017021138.GG32255@dastard>
-In-Reply-To: <20101017021138.GG32255@dastard>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-1
+	id S933088Ab0JRSOw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Oct 2010 14:14:52 -0400
+Received: from e6.ny.us.ibm.com ([32.97.182.146]:51189 "EHLO e6.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755349Ab0JRSOv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Oct 2010 14:14:51 -0400
+Subject: Re: ima: use of radix tree cache indexing == massive waste of
+ memory?
+From: Mimi Zohar <zohar@linux.vnet.ibm.com>
+To: Kyle McMartin <kyle@mcmartin.ca>
+Cc: James Morris <jmorris@namei.org>, Christoph Hellwig <hch@infradead.org>,
+        kernel@lists.fedoraproject.org, Mimi Zohar <zohar@us.ibm.com>,
+        warthog9@kernel.org, Dave Chinner <david@fromorbit.com>,
+        linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
+        Serge Hallyn <serue@us.ibm.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>, mingo@elte.hu,
+        eparis@redhat.com
+In-Reply-To: <20101018062530.GD8332@bombadil.infradead.org>
+References: <20101016065206.GO4681@dastard>
+	 <20101016192027.GA6883@infradead.org>
+	 <ebc4973c-6c11-4397-b8b0-c212a27abce4@email.android.com>
+	 <20101017004945.GE1614@infradead.org> <20101017054008.GA16383@elte.hu>
+	 <20101017184652.GB28060@infradead.org>
+	 <alpine.LRH.2.00.1010181127480.9476@tundra.namei.org>
+	 <20101018062530.GD8332@bombadil.infradead.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 18 Oct 2010 12:03:05 -0400
+Message-ID: <1287417785.2516.53.camel@localhost.localdomain>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 (2.30.3-1.fc13) 
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.3 (shards.monkeyblade.net [198.137.202.13]); Mon, 18 Oct 2010 11:12:46 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/16/2010 07:11 PM, Dave Chinner wrote:
-> On Sat, Oct 16, 2010 at 05:54:11PM -0700, J.H. wrote:
->> There does seem to be a boot option to disable it, but it seems to be on
->> by default if it's compiled in, and it's not like it's obvious that this
->> is there and chewing up resources, is there a way to find out how much
->> memory this is chewing up?
+On Mon, 2010-10-18 at 02:25 -0400, Kyle McMartin wrote:
+> If someone gives me a good reason why Fedora actually needs this
+> enabled, I'm going to apply the following patch to our kernel so that
+> IMA is globally an opt-in feature... Otherwise I'm inclined to just
+> disable it.
+
+Am hoping others will chime in.
+
+> (But the more I look at this, the more it looks like a completely niche
+>  option that has little use outside of three-letter agencies.)
 > 
-> $ grep iint_cache /proc/slabinfo | awk '// { print $2 * ($4 + 560) / 1048576 "MiB" }'
-> 1164.91MiB
-> $
-
-Exciting, I saw that too.  Not sure I'm going to get to do a reboot on
-master before Kernel summit (and it's OS upgrade) but I'm re-compiling
-the kernel with IMA disabled.
-
-Master's live backup machine was chewing nearly 4G of memory, and
-if/when I flip some of the big frontend machines over this is going to
-be a completely unacceptable waste of memory.
-
-For the record I'm really not happy or keen on having to maintain a
-custom kernel just to get this disabled, but if it's going to save me 4G
-on a single quiet machine I can only assumes it's going to save me
-several 10s of gigs on some of the bigger machines.
-
-> $ while [ 1 ]; do
->> grep iint_cache /proc/slabinfo | awk '// { print $2 * ($4 + 560) / 1048576 "MiB" }'
->> sleep 5
->> done
-> 955.706MiB
-> 937.438MiB
-> 928.851MiB
-> 920.912MiB
-> 919.067MiB
-> 919.086MiB
-> 919.111MiB
-> .....
+> I regret not looking at this more closely when it was enabled,
+> (although, in my defence, when the option first showed up, I left it
+> off...)
 > 
-> This is only with about 1.2M inodes cached - yesterday I saw the
-> inode cache grow to 3.5M inodes during an rsync run....
+> It's probably way more heavyweight than necessary, as I think in most
+> cases the iint_initalized test will cover the call into IMA. But better
+> safe than sorry or something and there's a bunch of other cases where
+> -ENOMEM will leak back up from failing kmem_cache_alloc, iirc.
 > 
-> Also, it's doing a good job of fragmenting the radix tree node cache
-> - it's currently at 50% population - 3.8M entries, 1.9M in use. i.e.
-> wasting another ~1GB of RAM itself right now....
+> regards, Kyle
 
-Ouch, thanks for giving us a heads up on it, definately not something I
-expected to quietly creep in and bite me.  I should have a solution, if
-one I'm not happy with, in the short term.  Hopefully Fedora/upstream
-will have a better solution soon.
+Thanks, will compile/test patch.
 
-For the record I liked the explicit opt-in that was mentioned vs. and
-automatic opt-in without disable we have now.
+Mimi
 
-- John 'Warthog9' Hawley
+> ---
+> From: Kyle McMartin <kyle@mcmartin.ca>
+> Date: Mon, 18 Oct 2010 02:08:35 -0400
+> Subject: [PATCH] ima: allow it to be completely disabled (and default to off)
+> 
+> Allow IMA to be entirely disabled, don't even bother calling into
+> the provided hooks, and avoid initializing caches.
+> 
+> (A lot of the hooks will test iint_initialized, and so this doubly
+>  disables them, since the iint cache won't be enabled. But hey, we
+>  avoid a pointless branch...)
+> 
+> Signed-off-by: Kyle McMartin <kyle@redhat.com>
+> ---
+>  include/linux/ima.h               |   66 +++++++++++++++++++++++++++++++++----
+>  security/integrity/ima/ima_iint.c |   13 +++++--
+>  security/integrity/ima/ima_main.c |   34 +++++++++++++------
+>  3 files changed, 91 insertions(+), 22 deletions(-)
+> 
+> diff --git a/include/linux/ima.h b/include/linux/ima.h
+> index 975837e..2fa456d 100644
+> --- a/include/linux/ima.h
+> +++ b/include/linux/ima.h
+> @@ -14,13 +14,65 @@
+>  struct linux_binprm;
+> 
+>  #ifdef CONFIG_IMA
+> -extern int ima_bprm_check(struct linux_binprm *bprm);
+> -extern int ima_inode_alloc(struct inode *inode);
+> -extern void ima_inode_free(struct inode *inode);
+> -extern int ima_file_check(struct file *file, int mask);
+> -extern void ima_file_free(struct file *file);
+> -extern int ima_file_mmap(struct file *file, unsigned long prot);
+> -extern void ima_counts_get(struct file *file);
+> +
+> +extern int ima_enabled;
+> +
+> +extern int __ima_bprm_check(struct linux_binprm *bprm);
+> +extern int __ima_inode_alloc(struct inode *inode);
+> +extern void __ima_inode_free(struct inode *inode);
+> +extern int __ima_file_check(struct file *file, int mask);
+> +extern void __ima_file_free(struct file *file);
+> +extern int __ima_file_mmap(struct file *file, unsigned long prot);
+> +extern void __ima_counts_get(struct file *file);
+> +
+> +static inline int ima_bprm_check(struct linux_binprm *bprm)
+> +{
+> +	if (ima_enabled)
+> +		return __ima_bprm_check(bprm);
+> +	return 0;
+> +}
+> +
+> +static inline int ima_inode_alloc(struct inode *inode)
+> +{
+> +	if (ima_enabled)
+> +		return __ima_inode_alloc(inode);
+> +	return 0;
+> +}
+> +
+> +static inline void ima_inode_free(struct inode *inode)
+> +{
+> +	if (ima_enabled)
+> +		__ima_inode_free(inode);
+> +	return;
+> +}
+> +
+> +static inline int ima_file_check(struct file *file, int mask)
+> +{
+> +	if (ima_enabled)
+> +		return __ima_file_check(file, mask);
+> +	return 0;
+> +}
+> +
+> +static inline void ima_file_free(struct file *file)
+> +{
+> +	if (ima_enabled)
+> +		__ima_file_free(file);
+> +	return;
+> +}
+> +
+> +static inline int ima_file_mmap(struct file *file, unsigned long prot)
+> +{
+> +	if (ima_enabled)
+> +		return __ima_file_mmap(file, prot);
+> +	return 0;
+> +}
+> +
+> +static inline void ima_counts_get(struct file *file)
+> +{
+> +	if (ima_enabled)
+> +		return __ima_counts_get(file);
+> +	return;
+> +}
+> 
+>  #else
+>  static inline int ima_bprm_check(struct linux_binprm *bprm)
+> diff --git a/security/integrity/ima/ima_iint.c b/security/integrity/ima/ima_iint.c
+> index afba4ae..767f026 100644
+> --- a/security/integrity/ima/ima_iint.c
+> +++ b/security/integrity/ima/ima_iint.c
+> @@ -46,10 +46,10 @@ out:
+>  }
+> 
+>  /**
+> - * ima_inode_alloc - allocate an iint associated with an inode
+> + * __ima_inode_alloc - allocate an iint associated with an inode
+>   * @inode: pointer to the inode
+>   */
+> -int ima_inode_alloc(struct inode *inode)
+> +int __ima_inode_alloc(struct inode *inode)
+>  {
+>  	struct ima_iint_cache *iint = NULL;
+>  	int rc = 0;
+> @@ -107,12 +107,12 @@ void iint_rcu_free(struct rcu_head *rcu_head)
+>  }
+> 
+>  /**
+> - * ima_inode_free - called on security_inode_free
+> + * __ima_inode_free - called on security_inode_free
+>   * @inode: pointer to the inode
+>   *
+>   * Free the integrity information(iint) associated with an inode.
+>   */
+> -void ima_inode_free(struct inode *inode)
+> +void __ima_inode_free(struct inode *inode)
+>  {
+>  	struct ima_iint_cache *iint;
+> 
+> @@ -139,6 +139,11 @@ static void init_once(void *foo)
+> 
+>  static int __init ima_iintcache_init(void)
+>  {
+> +	extern int ima_enabled;
+> +
+> +	if (!ima_enabled)
+> +		return 0;
+> +
+>  	iint_cache =
+>  	    kmem_cache_create("iint_cache", sizeof(struct ima_iint_cache), 0,
+>  			      SLAB_PANIC, init_once);
+> diff --git a/security/integrity/ima/ima_main.c b/security/integrity/ima/ima_main.c
+> index e662b89..92e084c 100644
+> --- a/security/integrity/ima/ima_main.c
+> +++ b/security/integrity/ima/ima_main.c
+> @@ -26,6 +26,7 @@
+>  #include "ima.h"
+> 
+>  int ima_initialized;
+> +int ima_enabled = 0;
+> 
+>  char *ima_hash = "sha1";
+>  static int __init hash_setup(char *str)
+> @@ -36,6 +37,14 @@ static int __init hash_setup(char *str)
+>  }
+>  __setup("ima_hash=", hash_setup);
+> 
+> +static int __init ima_enable(char *str)
+> +{
+> +	if (strncmp(str, "on", 2) == 0)
+> +		ima_enabled = 1;
+> +	return 1;
+> +}
+> +__setup("ima=", ima_enable);
+> +
+>  struct ima_imbalance {
+>  	struct hlist_node node;
+>  	unsigned long fsmagic;
+> @@ -130,7 +139,7 @@ static void ima_inc_counts(struct ima_iint_cache *iint, fmode_t mode)
+>  }
+> 
+>  /*
+> - * ima_counts_get - increment file counts
+> + * __ima_counts_get - increment file counts
+>   *
+>   * Maintain read/write counters for all files, but only
+>   * invalidate the PCR for measured files:
+> @@ -140,7 +149,7 @@ static void ima_inc_counts(struct ima_iint_cache *iint, fmode_t mode)
+>   * 	  could result in a file measurement error.
+>   *
+>   */
+> -void ima_counts_get(struct file *file)
+> +void __ima_counts_get(struct file *file)
+>  {
+>  	struct dentry *dentry = file->f_path.dentry;
+>  	struct inode *inode = dentry->d_inode;
+> @@ -204,13 +213,13 @@ static void ima_dec_counts(struct ima_iint_cache *iint, struct inode *inode,
+>  }
+> 
+>  /**
+> - * ima_file_free - called on __fput()
+> + * __ima_file_free - called on __fput()
+>   * @file: pointer to file structure being freed
+>   *
+>   * Flag files that changed, based on i_version;
+>   * and decrement the iint readcount/writecount.
+>   */
+> -void ima_file_free(struct file *file)
+> +void __ima_file_free(struct file *file)
+>  {
+>  	struct inode *inode = file->f_dentry->d_inode;
+>  	struct ima_iint_cache *iint;
+> @@ -255,7 +264,7 @@ out:
+>  }
+> 
+>  /**
+> - * ima_file_mmap - based on policy, collect/store measurement.
+> + * __ima_file_mmap - based on policy, collect/store measurement.
+>   * @file: pointer to the file to be measured (May be NULL)
+>   * @prot: contains the protection that will be applied by the kernel.
+>   *
+> @@ -265,7 +274,7 @@ out:
+>   * Return 0 on success, an error code on failure.
+>   * (Based on the results of appraise_measurement().)
+>   */
+> -int ima_file_mmap(struct file *file, unsigned long prot)
+> +int __ima_file_mmap(struct file *file, unsigned long prot)
+>  {
+>  	int rc;
+> 
+> @@ -278,7 +287,7 @@ int ima_file_mmap(struct file *file, unsigned long prot)
+>  }
+> 
+>  /**
+> - * ima_bprm_check - based on policy, collect/store measurement.
+> + * __ima_bprm_check - based on policy, collect/store measurement.
+>   * @bprm: contains the linux_binprm structure
+>   *
+>   * The OS protects against an executable file, already open for write,
+> @@ -290,7 +299,7 @@ int ima_file_mmap(struct file *file, unsigned long prot)
+>   * Return 0 on success, an error code on failure.
+>   * (Based on the results of appraise_measurement().)
+>   */
+> -int ima_bprm_check(struct linux_binprm *bprm)
+> +int __ima_bprm_check(struct linux_binprm *bprm)
+>  {
+>  	int rc;
+> 
+> @@ -300,7 +309,7 @@ int ima_bprm_check(struct linux_binprm *bprm)
+>  }
+> 
+>  /**
+> - * ima_path_check - based on policy, collect/store measurement.
+> + * __ima_path_check - based on policy, collect/store measurement.
+>   * @file: pointer to the file to be measured
+>   * @mask: contains MAY_READ, MAY_WRITE or MAY_EXECUTE
+>   *
+> @@ -309,7 +318,7 @@ int ima_bprm_check(struct linux_binprm *bprm)
+>   * Always return 0 and audit dentry_open failures.
+>   * (Return code will be based upon measurement appraisal.)
+>   */
+> -int ima_file_check(struct file *file, int mask)
+> +int __ima_file_check(struct file *file, int mask)
+>  {
+>  	int rc;
+> 
+> @@ -318,12 +327,15 @@ int ima_file_check(struct file *file, int mask)
+>  				 FILE_CHECK);
+>  	return 0;
+>  }
+> -EXPORT_SYMBOL_GPL(ima_file_check);
+> +EXPORT_SYMBOL_GPL(__ima_file_check);
+> 
+>  static int __init init_ima(void)
+>  {
+>  	int error;
+> 
+> +	if (!ima_enabled)
+> +		return 0;
+> +
+>  	error = ima_init();
+>  	ima_initialized = 1;
+>  	return error;
+
+
