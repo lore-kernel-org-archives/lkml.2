@@ -1,105 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756014Ab0JRNzu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Oct 2010 09:55:50 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:49183 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755160Ab0JRNzs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Oct 2010 09:55:48 -0400
-Date: Mon, 18 Oct 2010 14:55:36 +0100
-From: Mel Gorman <mel@csn.ul.ie>
-To: Christian Ehrhardt <ehrhardt@linux.vnet.ibm.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        linux-fsdevel@vger.kernel.org,
-        Linux Kernel List <linux-kernel@vger.kernel.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Subject: Re: [PATCH 0/8] Reduce latencies and improve overall reclaim
-	efficiency v2
-Message-ID: <20101018135535.GC30667@csn.ul.ie>
-References: <1284553671-31574-1-git-send-email-mel@csn.ul.ie> <4CB721A1.4010508@linux.vnet.ibm.com>
+	id S1756022Ab0JRN43 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Oct 2010 09:56:29 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:54543 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755160Ab0JRN41 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Oct 2010 09:56:27 -0400
+Date: Mon, 18 Oct 2010 14:56:16 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Akinobu Mita <akinobu.mita@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        Arnd Bergmann <arnd@arndb.de>, Christoph Hellwig <hch@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 04/22] arm: introduce little endian bitops
+Message-ID: <20101018135616.GB12449@n2100.arm.linux.org.uk>
+References: <1287135981-17604-1-git-send-email-akinobu.mita@gmail.com> <1287135981-17604-5-git-send-email-akinobu.mita@gmail.com> <20101018092650.GC26183@n2100.arm.linux.org.uk> <AANLkTi=1w9uV81CagrE53xEYkMaFh_3cM_+ybctT2ng4@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4CB721A1.4010508@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+In-Reply-To: <AANLkTi=1w9uV81CagrE53xEYkMaFh_3cM_+ybctT2ng4@mail.gmail.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 14, 2010 at 05:28:33PM +0200, Christian Ehrhardt wrote:
-
-> Seing the patches Mel sent a few weeks ago I realized that this series
-> might be at least partially related to my reports in 1Q 2010 - so I ran my
-> testcase on a few kernels to provide you with some more backing data.
-
-Thanks very much for revisiting this.
-
-> Results are always the average of three iozone runs as it is known to be somewhat noisy - especially when affected by the issue I try to show here.
-> As discussed in detail in older threads the setup uses 16 disks and scales the number of concurrent iozone processes.
-> Processes are evenly distributed so that it always is one process per disk.
-> In the past we reported 40% to 80% degradation for the sequential read case based on 2.6.32 which can still be seen.
-> What we found was that the allocations for page cache with GFP_COLD flag loop a long time between try_to_free, get_page, reclaim as free makes some progress and due to that GFP_COLD allocations can loop and retry.
-> In addition my case had no writes at all, which forced congestion_wait to wait the full timeout all the time.
+On Mon, Oct 18, 2010 at 10:22:59PM +0900, Akinobu Mita wrote:
+> 2010/10/18 Russell King - ARM Linux <linux@arm.linux.org.uk>:
+> > On Fri, Oct 15, 2010 at 06:46:03PM +0900, Akinobu Mita wrote:
+> >> Introduce little endian bit operations by renaming native ext2 bit
+> >> operations. The ext2 bit operations are kept by using little endian
+> >> bit operations until the conversions are finished.
+> >
+> > Can you explain why we need another level of indirection rather than
+> > using asm-generic/bitops/le.h, asm-generic/bitops/minix.h and
+> > asm-generic/bitops/ext2-non-atomic.h ?
 > 
-> Kernel (git)                   4          8         16   deviation #16 case                           comment
-> linux-2.6.30              902694    1396073    1892624                 base                              base
-> linux-2.6.32              752008     990425     932938               -50.7%     impact as reported in 1Q 2010
-> linux-2.6.35               63532      71573      64083               -96.6%                    got even worse
-> linux-2.6.35.6            176485     174442     212102               -88.8%  fixes useful, but still far away
-> linux-2.6.36-rc4-trace    119683     188997     187012               -90.1%                         still bad 
-
-FWIW, I wouldn't expect the trace kernel to help. It's only adding the
-markers but not doing anything useful with them.
-
-> linux-2.6.36-rc4-fix      884431    1114073    1470659               -22.3%            Mels fixes help a lot!
+> Sorry for not CCing the cover letter of this patch series.
 > 
-> So much from the case that I used when I reported the issue earlier this year.
-> The short summary is that the patch series from Mel helps a lot for my test case.
+> Currently there are no common little-endian bit operations for all
+> architectures, although some architectures implicitly include
+> asm-generic/bitops/le.h through asm-generic/bitops/minix-le.h or
+> asm-generic/bitops/ext2-non-atomic.h.
 > 
-
-This is good to hear. We're going in the right direction at least.
-
-> So I guess Mel you now want some traces of the last two cases right?
-> Could you give me some minimal advice what/how you would exactly need.
+> So some drivers (net/rds/cong.c and virt/kvm/kvm_main.c) need to
+> include asm/bitops/le.h directly. When I tried to remove the
+> direct inclusion of asm-generic/bitops/le.h by using ext2_*(),
+> several people prefer another solution like this patch series does.
 > 
-
-Yes please. Please do something like the following before the test
-
-mount -t debugfs none /sys/kernel/debug
-echo 1 > /sys/kernel/debug/tracing/events/vmscan/enable
-echo 1 > /sys/kernel/debug/tracing/events/writeback/writeback_congestion_wait/enable
-echo 1 > /sys/kernel/debug/tracing/events/writeback/writeback_wait_iff_congested/enable
-cat /sys/kernel/debug/tracing/trace_pipe > trace.log &
-
-rerun the test, gzip trace.log and drop it on some publicly accessible
-webserver. I can rerun the analysis scripts and see if something odd
-falls out.
-
-> In addition it worked really fine, so you can add both, however you like.
-> Reported-by: <ehrhardt@linux.vnet.ibm.com>
-> Tested-by: <ehrhardt@linux.vnet.ibm.com>
+> This patch series introduces little-endian bit operations for
+> all architectures and convert all ext2 non-atomic bit operations
+> and minix bit operations to use little-endian bit operations.
+> it enables to remove ext2 non-atomic and minix bit operations
+> from asm/bitops.h. The reason they should be removed from
+> asm/bitops.h is as follows:
 > 
-> Note: it might be worth to mention that the write case improved a lot since 2.6.30.
-> Not directly related to the read degradations, but with up to 150% (write) 272% (rewrite).
-> Therefore not everything is bad :-) 
+> For ext2 non-atomic bit operations, they are used for little-endian
+> byte order bitmap access by some filesystems and modules.
+> But using ext2_*() functions on a module other than ext2 filesystem
+> makes someone feel strange.
 > 
-
-Every cloud has a silver lining I guess :)
-
-> Any further comments or questions?
+> For minix bit operations, they are only used by minix filesystem
+> and useless by other modules. Because byte order of inode and block
+> bitmap is defferent on each architectures.
 > 
+> There are several issues including arm part. So I'm now fixing them.
 
-The log might help me further in figuring out how and why we are losing
-time. When/if the patches move from -mm to mainline, it'd also be worth
-retesting as there is some churn in this area and we need to know whether
-we are heading in the right direction or not. If all goes according to plan,
-kernel 2.6.37-rc1 will be of interest. Thanks again.
+le.h provides:
 
--- 
-Mel Gorman
-Part-time Phd Student                          Linux Technology Center
-University of Limerick                         IBM Dublin Software Lab
+	generic___set_le_bit
+	generic___test_and_set_le_bit
+	...
+
+Your new patches provide:
+
+	__set_le_bit
+	__test_and_set_le_bit
+
+Would it not be better to have le.h provide one set of these LE bitops
+(called either generic___set_le_bit or __set_le_bit - which ever you
+prefer), and then have everyone using those common names (including
+minix-le.h and ext2-non-atomic.h) rather than adding a whole series of
+new bitop macros to the current mess?
+
+To put it another way, if we're providing a set of guaranteed-little-endian
+bitops, I'd like to see ARM doing this:
+
+#define __test_and_set_le_bit(nr,p) ...
+
+#include <asm-generic/bitops/minix-le.h>
+#include <asm-generic/bitops/ext2-non-atomic.h>
+
+where ext2-non-atomic.h could just be:
+
+#define ext2_set_bit(nr,addr) __test_and_set_le_bit((nr),(unsigned long *)(addr))
+
+instead of defining its own minix and ext2 bitops as we do now:
+
+#ifndef __ARMEB__
+#define WORD_BITOFF_TO_LE(x)            ((x))
+#else
+#define WORD_BITOFF_TO_LE(x)            ((x) ^ 0x18)
+#endif
+#define ext2_set_bit(nr,p)                      \
+                __test_and_set_bit(WORD_BITOFF_TO_LE(nr), (unsigned long *)(p))
+
+vs the current 'generic' stuff:
+
+ARM byteorder.h (roughly):
+#ifdef __ARMEB__
+#define __BIG_ENDIAN 4321
+#else
+#define __LITTLE_ENDIAN 1234
+#endif
+
+le.h:
+#define BITOP_LE_SWIZZLE        ((BITS_PER_LONG-1) & ~0x7)
+#if defined(__LITTLE_ENDIAN)
+#define generic___test_and_set_le_bit(nr, addr) __test_and_set_bit(nr, addr)
+#elif defined(__BIG_ENDIAN)
+#define generic___test_and_set_le_bit(nr, addr) \
+        __test_and_set_bit((nr) ^ BITOP_LE_SWIZZLE, (addr))
+#endif
+
+ext2-non-atomic.h:
+#define ext2_set_bit(nr,addr)   \
+        generic___test_and_set_le_bit((nr),(unsigned long *)(addr))
+
+What I'm trying to say is please don't make the existing mess of bitops
+any worse than it currently is.
