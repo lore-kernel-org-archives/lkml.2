@@ -1,73 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933215Ab0JRUUL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Oct 2010 16:20:11 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:52471 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755652Ab0JRUUJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Oct 2010 16:20:09 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Daniel Walker <dwalker@fifo99.com>
+	id S1757734Ab0JRUU1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Oct 2010 16:20:27 -0400
+Received: from fifo99.com ([67.223.236.141]:48427 "EHLO fifo99.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756493Ab0JRUUK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Oct 2010 16:20:10 -0400
 Subject: Re: linux-next: manual merge of the msm tree with the arm tree
-Date: Mon, 18 Oct 2010 22:19:25 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.35-22-generic; KDE/4.5.1; x86_64; ; )
-Cc: Nicolas Pitre <nico@fluxnic.net>, Russell King <rmk@arm.linux.org.uk>,
+From: Daniel Walker <dwalker@fifo99.com>
+To: Nicolas Pitre <nico@fluxnic.net>
+Cc: Russell King <rmk@arm.linux.org.uk>,
         Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
         linux-kernel@vger.kernel.org, Jeremy Kerr <jeremy.kerr@canonical.com>,
         Jeff Ohlstein <johlstei@codeaurora.org>
-References: <20101018103540.7bd9c535.sfr@canb.auug.org.au> <alpine.LFD.2.00.1010181525000.2764@xanadu.home> <1287432774.5588.5.camel@c-dwalke-linux.qualcomm.com>
-In-Reply-To: <1287432774.5588.5.camel@c-dwalke-linux.qualcomm.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
+In-Reply-To: <alpine.LFD.2.00.1010181525000.2764@xanadu.home>
+References: <20101018103540.7bd9c535.sfr@canb.auug.org.au>
+	 <20101018110207.131b56ee.sfr@canb.auug.org.au>
+	 <20101018081520.GA10551@flint.arm.linux.org.uk>
+	 <1287422792.4105.14.camel@c-dwalke-linux.qualcomm.com>
+	 <20101018182044.GA558@flint.arm.linux.org.uk>
+	 <1287427572.4105.22.camel@c-dwalke-linux.qualcomm.com>
+	 <alpine.LFD.2.00.1010181525000.2764@xanadu.home>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 18 Oct 2010 13:19:39 -0700
+Message-ID: <1287433179.5588.9.camel@c-dwalke-linux.qualcomm.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
-Message-Id: <201010182219.25890.arnd@arndb.de>
-X-Provags-ID: V02:K0:UIOB3Us+TwCpdwEEw2apQW0ajCJVZR2HU2LJOUSBp1i
- s+fyTsfN4KhK1yLsIbKmTnUt1nyFr7D4zxhRD9F3NGWUWTyj1v
- 5STSqWgGzT6qdBrva/0ZlfAP88YpBT8kzwsWHJ2Wy8Uwjgo51m
- tyvYDraymmG/guxZ7wZJpdiOmkYZNS3XpgKNm8H74C6MME65et
- nYlTcgUn/oIaJ39B+UFwA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 18 October 2010 22:12:54 Daniel Walker wrote:
-> On Mon, 2010-10-18 at 15:29 -0400, Nicolas Pitre wrote:
-> 
-> > > Ok, well in that case why not accept this immediately after the merge
-> > > window? A point when everything is quiet, and most of the tree's are
-> > > empty?
-> > 
-> > RMK has his own merge window which closes about at the same time as 
-> > Linus' one opens.  We thought this was happening last week and therefore 
-> > this change was supposed to be the last one.
-> 
-> It seems like that could potentially make these kinds of problem worse,
-> since your merging things immediately before sending them to Linus. Like
-> right now we only have a fairly short amount of time to correct this
-> conflict. 
+On Mon, 2010-10-18 at 15:29 -0400, Nicolas Pitre wrote:
 
-What Nicolas was talking about is the *end* of the merge window, not the
-start. This is how all sensible maintainer trees work: you get to
-merge stuff into the maintainer tree for a number of weeks (some start
-at -rc1, other start a bit later). When Linus tells people to get ready
-for the release, the subsystem goes into regression fix mode and when
-Linus opens his merge window, everything should be reasonably stable.
+> RMK has his own merge window which closes about at the same time as 
+> Linus' one opens.  We thought this was happening last week and therefore 
+> this change was supposed to be the last one.
 
-> > > Well how about I merge this change into my tree ?
-> > 
-> > If you ask RMK to merge your tree in his that would be much simpler to 
-> > add this change in a single pass afterwards.
-> 
-> I can do that , but would I still be able to merge stuff into my tree?
-> Seems like I could, Russell would just clean up the conflict and my tree
-> would just move forward like it has been already , and I would send the
-> whole thing to Linus.
+I guess what I'm missing here is when does this window open? Is it a two
+week deal, or does it last the whole -rc cycle?
 
-When you know that Russell does not rebase his tree, you can pull his
-tree into yours whenever a change hits his tree that impacts you in
-a major way. You shouldn't do this too frequently, but it's a good way
-to resolve conflicts like this one.
+Daniel
 
-	Arnd
