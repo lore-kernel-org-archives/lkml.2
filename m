@@ -1,85 +1,178 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932758Ab0JRPju (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Oct 2010 11:39:50 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:59080 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932167Ab0JRPjs (ORCPT
+	id S932801Ab0JRPlz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Oct 2010 11:41:55 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:57963 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932167Ab0JRPlx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Oct 2010 11:39:48 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=qyms6WO1tkSnnh3XtkQdzMDNxhkJxrd6gT6QYzMPhhBP4edlaAJui2aTAHi09XOCIV
-         Bfy+MfQy8KTJz4knpDSZu2jqOJygSWueWRaUWNeCgz8euIGtwu0Jzflhaw3bw1IPDU2z
-         ULfcr3okzlaaTA0X3dyw6++QlOjVussCI4Sk4=
-Subject: Re: [PATCH] percpu_counter : add percpu_counter_add_fast()
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Christoph Lameter <cl@linux.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Nick Piggin <npiggin@kernel.dk>,
-        Dave Chinner <david@fromorbit.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <alpine.DEB.2.00.1010181015290.755@router.home>
-References: <1285762729-17928-1-git-send-email-david@fromorbit.com>
-	 <1285762729-17928-17-git-send-email-david@fromorbit.com>
-	 <20100929215322.ff635d3e.akpm@linux-foundation.org>
-	 <20100930061039.GX5665@dastard> <20101016075510.GH19147@amd>
-	 <1287217748.2799.68.camel@edumazet-laptop>
-	 <20101016020744.366bd9c6.akpm@linux-foundation.org>
-	 <1287221475.2799.123.camel@edumazet-laptop>
-	 <1287238754.2799.376.camel@edumazet-laptop>
-	 <alpine.DEB.2.00.1010181015290.755@router.home>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 18 Oct 2010 17:39:40 +0200
-Message-ID: <1287416380.2409.13.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 8bit
+	Mon, 18 Oct 2010 11:41:53 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: codalist@TELEMANN.coda.cs.cmu.edu,
+        ksummit-2010-discuss@lists.linux-foundation.org
+Subject: [v2] Remaining BKL users, what to do
+Date: Mon, 18 Oct 2010 17:42:06 +0200
+User-Agent: KMail/1.12.2 (Linux/2.6.35-16-generic; KDE/4.3.2; x86_64; ; )
+Cc: autofs@linux.kernel.org, linux-media@vger.kernel.org,
+        dri-devel@lists.freedesktop.org, Christoph Hellwig <hch@infradead.org>,
+        Mikulas Patocka <mikulas@artax.karlin.mff.cuni.cz>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Petr Vandrovec <vandrove@vc.cvut.cz>, Anders Larsen <al@alarsen.net>,
+        Jan Kara <jack@suse.cz>, Evgeniy Dushistov <dushistov@mail.ru>,
+        Ingo Molnar <mingo@elte.hu>, netdev@vger.kernel.org,
+        Samuel Ortiz <samuel@sortiz.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        Andrew Hendry <andrew.hendry@gmail.com>,
+        David Miller <davem@davemloft.net>, Jan Harkes <jaharkes@cs.cmu.edu>,
+        Bryan Schumaker <bjschuma@netapp.com>
+References: <201009161632.59210.arnd@arndb.de>
+In-Reply-To: <201009161632.59210.arnd@arndb.de>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201010181742.06678.arnd@arndb.de>
+X-Provags-ID: V02:K0:pSnB9rTTk0Wjcu0Lxh71tavU4twJxvMQzOlQYrJQL8r
+ WLZNoCnCsUITI50PSYAKS8RZ/WWyKtxgFe/QcFqzMx1c1Bfm+L
+ Oc8dmddr2QG9uCPQMXZjiEyjbTy2K3WX9QsKM9dqxxSOePsik5
+ pMA+5HsvMFlM0bYa73Z8NGS/fMQAQruaTOwBpfooeGSxUzwau7
+ T7kY8wCnCermQBFdD33qg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le lundi 18 octobre 2010 à 10:24 -0500, Christoph Lameter a écrit :
-> On Sat, 16 Oct 2010, Eric Dumazet wrote:
+This is a update on the current progress for the BKL removal, reflecting
+what is currently in linux-next.
+
+Maybe we can briefly discuss this at the kernel summit to decide if we
+want a quick death of the BKL, i.e. fixing/disabling/staging-out the
+remaining users in 2.6.38 or rather leave them there indefinitely.
+
+On Thursday 16 September 2010, Arnd Bergmann wrote:
+> The big kernel lock is gone from almost all code in linux-next, this is
+> the status of what I think will happen to the remaining users:
 > 
-> > I based following patch against linux-2.6, I dont know if previous
-> > Christoph patch is in a git tree. I'll respin it eventually.
-> 
-> The prior patch was accepted by Andrew.
-> 
-> > + * - It is preempt safe, but not IRQ safe (on UP)
-> 
-> The IRQ safeness depends on the arch. this_cpu_add() in general only
-> guarantees safety against preemption. It so happens that the x86
-> implementation is irq safe as well.
-> 
-> The IRQ safety for UP is therefore not an issue if you use this_cpu_add().
-> 
+> drivers/gpu/drm/i810/{i810,i830}_dma.c:
+> 	Fixable, but needs someone with the hardware to test. Can probably be
+> 	marked CONFIG_BROKEN_ON_SMP if nobody cares.
 
-Nope, on UP, we dont use a per_cpu field, just a "s64 count".
+Still open, no good solution for this.
 
-struct percpu_counter {
-        s64 count;
-};
+> drivers/media/video (V4L):
+> 	Mauro is working on it, some drivers get moved to staging while the
+> 	others get fixed. An easy workaround would be possible by adding
+> 	per-driver mutexes, but Mauro wants to it properly by locking all
+> 	the right places.
 
+Progressing well, patches are being worked on.
 
+> fs/adfs:
+> 	Probably not hard to fix, but needs someone to test it.
+> 	adfs has only seen janitorial fixes for the last 5 years.
+> 	Do we know of any users?
 
-> If you want to guarantee irqsafeness then use irqsafe_cpu_add() instead.
-> It generates the same code on x86 for SMP but takes care of the UP issues.
-> 
-> > +static inline void percpu_counter_add_fast(struct percpu_counter *fbc, long amount)
-> > +{
-> > +	this_cpu_add(*fbc->counters, amount);
-> > +}
-> 
-> What happens in case of counter overflow?
-> 
+Nobody replied.
 
-Nothing special, as I stated the usuable width of such counters would be
-restricted to a long, not an s64.
+> fs/autofs:
+> 	Pretty much dead, replaced by autofs4. I'd suggest moving this
+> 	to drivers/staging in 2.6.37 and letting it die there.
 
-It should be enough to count "number of inodes, of sockets, ..."
+Now in staging.
 
+> fs/coda:
+> 	Coda seems to have an active community, but not all of their
+> 	code is actually part of linux (pioctl!), while the last official
+> 	release is missing many of the cleanups that were don in Linux.
+> 	Not sure what to do, if someone is interested, the best way might
+> 	be a fresh start with a merger of the mainline linux and the
+> 	coda.cs.cmu.edu	codebase in drivers/staging.
+> 	Just removing the BKL without the Coda community seems like a heap
+> 	of pointless work.
 
+Jan Harkes showed interest, looks like this will get fixed eventually,
+but probably not in time for 2.6.37.
 
+> fs/freevxfs:
+> 	Uses the BKL in readdir and lookup, should be easy to fix. Christoph?
+
+Still waiting for confirmation from Christoph Hellwig that the BKL
+is not needed here. I can do the patch to remove it then.
+
+> fs/hpfs:
+> 	Looks fixable, if anyone cares. Maybe it's time for retirement in
+> 	drivers/staging though. The web page only has a Link to the
+> 	linux-2.2 version.
+
+No replies.
+
+> fs/lockd:
+> 	Trond writes that he has someone working on BKL removal here.
+
+Bryan Schumaker took care of this, looks like the locking is independent
+of the fs/locks.c locking now, although it still uses the BKL internally.
+
+I assume that this will get fixed as well, doesn't seem hard. As long
+as lockd uses the BKL, both nfs and nfsd depend on the BKL implicitly.
+
+> fs/locks.c:
+> 	Patch is under discussion, blocked by work on fs/lockd currently.
+
+No longer blocked now, both lockd and ceph can deal with this converted
+to spinlocks. I will follow up with the final patch once they hit mainline.
+
+> fs/ncpfs:
+> 	Should be fixable if Petr still cares about it. Otherwise suggest
+> 	moving to drivers/staging if there are no users left.
+
+Fixed by Petr Vandrovec.
+
+> fs/qnx4:
+> 	Should be easy to fix, there are only a few places in the code that
+> 	use the BKL. Anders?
+
+Anders Larsen volunteered.
+
+> fs/smbfs:
+> 	Last I heard this was considered obsolete. Should be move it to
+> 	drivers/staging now?
+
+Now in staging.
+
+> fs/udf:
+> 	Not completely trivial, but probably necessary to fix. Project web
+> 	site is dead, I hope that Jan Kara can be motivated to fix it though.
+
+Jan Kara volunteered to do it.
+
+> fs/ufs:
+> 	Evgeniy Dushistov is maintaining this, I hope he can take care of
+> 	getting rid of the BKL in UFS.
+
+No replies.
+
+> kernel/trace/blktrace.c:
+> 	Should be easy. Ingo? Steven?
+
+Done.
+
+> net/appletalk:
+> net/ipx/af_ipx.c:
+> net/irda/af_irda.c:
+> 	Can probably be saved from retirement in drivers/staging if the
+> 	maintainers still care.
+
+Samuel Ortiz fixed irda.
+
+David Miller volunteered to do appletalk and ipx.
+
+> net/x25:
+> 	Andrew Hendry has started working on it.
+
+Patches have shown up in -next now, I suppose Andrew will finish it soon.
+
+Out of the remaining modules, I guess i810/i830, adfs, hpfs and ufs might end
+up not getting fixed at all, we can either mark them non-SMP or move them
+to drivers/staging once all the others are done.
+
+	Arnd
