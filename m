@@ -1,249 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757846Ab0JRXVG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Oct 2010 19:21:06 -0400
-Received: from smtp104.sbc.mail.re3.yahoo.com ([66.196.96.80]:42048 "HELO
-	smtp104.sbc.mail.re3.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1755871Ab0JRXVE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Oct 2010 19:21:04 -0400
-X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
-X-YMail-OSG: CMeCi18VM1mmoLxCqci1EYBcRqkK2x1R0k8NHmuB.wBHH3r
- eDpBbt1X_j4AAW2pB0TCSKi2fvNSyLoEsze6gbY4wOIj_K6d9hNUIINfQBxk
- 6SRydFVhhJo0cON6qXV2P7C1.drQkIg6FSgVT2g2xaGSSBixa5mZqV013LEC
- HNzSczToX6a1v4BKMFu.jTsKp7G.3eNZuNKuXsi4zbqfY8SnKmRFXk502loY
- NB4WbYcMuk_0zl87Z3TZabe8xC.DhGh0Zi1hemBpIhvOws4TM8ys4z_jIOVD
- y7DuW72L_I338iOvDbh0FvhPWW6dRpXojwp7.HVi02ZNJ2QEjVMWqtIYmsCR
- n2NyI48K_0ZH5jkyRdk3r4BXkP8BC2vTCmNzQq7tete.7R09IQRGpw9bQ4tZ
- Ikek7Re_mt.pWtc8Es8mHjFVgRUx7GylJ.5uUjDnMVo0.WQZtv055OUiwLjo
- 1Xw1EyU0Oiwj3EZE-
-X-Yahoo-Newman-Property: ymail-3
-Subject: Re: [RFCv3 20/21] tcm: Add Kbuild and Kconfig for drivers/target
-	and Documentation/target/
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: Randy Dunlap <randy.dunlap@oracle.com>
-Cc: linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-In-Reply-To: <20101018155426.957b8c21.randy.dunlap@oracle.com>
-References: <1287441559-20129-1-git-send-email-nab@linux-iscsi.org>
-	 <20101018155426.957b8c21.randy.dunlap@oracle.com>
-Content-Type: text/plain
-Date: Mon, 18 Oct 2010 16:16:15 -0700
-Message-Id: <1287443775.14039.209.camel@haakon2.linux-iscsi.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.22.3.1 
-Content-Transfer-Encoding: 7bit
+	id S1757878Ab0JRXXN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Oct 2010 19:23:13 -0400
+Received: from snt0-omc2-s28.snt0.hotmail.com ([65.55.90.103]:23748 "EHLO
+	snt0-omc2-s28.snt0.hotmail.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755064Ab0JRXXM convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Oct 2010 19:23:12 -0400
+Message-ID: <SNT125-W625921DC185E1471AA98C1C35A0@phx.gbl>
+X-Originating-IP: [96.253.143.208]
+From: Yuhong Bao <yuhongbao_386@hotmail.com>
+To: <hpa@zytor.com>, <jbeulich@novell.com>
+CC: <linux-kernel@vger.kernel.org>, <colin.king@canonical.com>
+Subject: RE: patch disabling use of PSE on Atom CPUs with a certain erratum
+Date: Mon, 18 Oct 2010 16:23:12 -0700
+Importance: Normal
+In-Reply-To: <4CADE80E.8050905@zytor.com>
+References: <4CADAB3A020000780001B30A@vpn.id2.novell.com>
+ <4CADCF23.5070800@zytor.com> <4CADEED9020000780001B44F@vpn.id2.novell.com>
+ <4CADD442.4050706@zytor.com> <4CADFAE6020000780001B4DC@vpn.id2.novell.com>
+ <4CADE2F3.8000908@zytor.com>
+ <4CAE0373020000780001B50E@vpn,<4CADE80E.8050905@zytor.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+MIME-Version: 1.0
+X-OriginalArrivalTime: 18 Oct 2010 23:23:12.0262 (UTC) FILETIME=[6EB92A60:01CB6F1B]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-10-18 at 15:54 -0700, Randy Dunlap wrote:
-> On Mon, 18 Oct 2010 15:39:19 -0700 Nicholas A. Bellinger wrote:
-> 
-> > From: Nicholas Bellinger <nab@linux-iscsi.org>
-> 
-> 
-> > diff --git a/Documentation/target/tcm_mod_builder.txt b/Documentation/target/tcm_mod_builder.txt
-> > new file mode 100644
-> > index 0000000..b829e83
-> > --- /dev/null
-> > +++ b/Documentation/target/tcm_mod_builder.txt
-> > @@ -0,0 +1,145 @@
-> > +>>>>>>>>>> The TCM v4 fabric module script generator <<<<<<<<<<
-> > +
-> > +Greetings all,
-> > +
-> > +This document is intended to be a mini-HOWTO for using the tcm_mod_builder.py
-> > +script to generate a brand new functional TCM v4 fabric .ko module of your very own,
-> > +that once built can be immediately be loaded to start access the new TCM/ConfigFS
-> > +fabric skeleton, by simplying using:
-> 
->                        simply
-> 
 
-Fixed
+> Well, keep in mind that the right thing really is to get the microcode
+> update into the CPU early... i.e. in the BIOS, or in a pinch, from the
+> bootloader -- but before the kernel runs.
 
-> > +
-> > +	modprobe $TCM_NEW_MOD
-> > +	mkdir -p /sys/kernel/config/target/$TCM_NEW_MOD
-> > +
-> > +This script will create a new drivers/target/$TCM_NEW_MOD/, and will do the following
-> > +
-> > +	*) Generate new API callers for drivers/target/target_core_fabric_configs.c logic
-> > +	   ->make_nodeacl(), ->drop_nodeacl(), ->make_tpg(), ->drop_tpg()
-> > +	   ->make_wwn(), ->drop_wwn().  These are created into $TCM_NEW_MOD/$TCM_NEW_MOD_configfs.c
-> > +	*) Generate basic infrastructure for loading/unloading LKMs and TCM/ConfigFS fabric module
-> > +	   using a skeleton struct target_core_fabric_ops API template.
-> > +	*) Based on user defined T10 Proto_Ident for the new fabric module being built,
-> > +	   the TransportID / Initiator and Target WWPN related handlers for
-> > +	   SPC-3 persistent reservation are automatically generated in $TCM_NEW_MOD/$TCM_NEW_MOD_fabric.c
-> > +	   using drivers/target/target_core_fabric_lib.c logic.
-> > +	*) NOP API calls for all other Data I/O path and fabric dependent attribute logic
-> > +	   in $TCM_NEW_MOD/$TCM_NEW_MOD_fabric.c
-> > +
-> > +tcm_mod_builder.py depends upon the mandatory '-p $PROTO_IDENT' and '-m
-> > +$FABRIC_MOD_name' paramters, and actually running the script looks like:
-> 
->                      parameters,
-> 
+So which vendors have released BIOS updates?
+Good thing 64-bit was limited to the desktop Atoms in this generation.
 
-fixed
-
-> > +
-> > +target:/mnt/sdb/lio-core-2.6.git/Documentation/target# python tcm_mod_builder.py -p iSCSI -m tcm_nab5000
-> > +tcm_dir: /mnt/sdb/lio-core-2.6.git/Documentation/target/../../
-> > +Set fabric_mod_name: tcm_nab5000
-> > +Set fabric_mod_dir:
-> > +/mnt/sdb/lio-core-2.6.git/Documentation/target/../../drivers/target/tcm_nab5000
-> > +Using proto_ident: iSCSI
-> > +Creating fabric_mod_dir:
-> > +/mnt/sdb/lio-core-2.6.git/Documentation/target/../../drivers/target/tcm_nab5000
-> > +Writing file:
-> > +/mnt/sdb/lio-core-2.6.git/Documentation/target/../../drivers/target/tcm_nab5000/tcm_nab5000_base.h
-> > +Using tcm_mod_scan_fabric_ops:
-> > +/mnt/sdb/lio-core-2.6.git/Documentation/target/../../include/target/target_core_fabric_ops.h
-> > +Writing file:
-> > +/mnt/sdb/lio-core-2.6.git/Documentation/target/../../drivers/target/tcm_nab5000/tcm_nab5000_fabric.c
-> > +Writing file:
-> > +/mnt/sdb/lio-core-2.6.git/Documentation/target/../../drivers/target/tcm_nab5000/tcm_nab5000_fabric.h
-> > +Writing file:
-> > +/mnt/sdb/lio-core-2.6.git/Documentation/target/../../drivers/target/tcm_nab5000/tcm_nab5000_configfs.c
-> > +Writing file:
-> > +/mnt/sdb/lio-core-2.6.git/Documentation/target/../../drivers/target/tcm_nab5000/Kbuild
-> > +Writing file:
-> > +/mnt/sdb/lio-core-2.6.git/Documentation/target/../../drivers/target/tcm_nab5000/Kconfig
-> > +Would you like to add tcm_nab5000to drivers/target/Kbuild..? [yes,no]: yes
-> > +Would you like to add tcm_nab5000to drivers/target/Kconfig..? [yes,no]: yes
-> > +
-> > +At the end of tcm_mod_builder.py. the script will ask to add the following
-> 
->                                 .py,
-> 
-> > +line for to drivers/target/Kbuild:
-> 
->    line to
-> 
-
-fixed
-
-> > +
-> > +	obj-$(CONFIG_TCM_NAB5000)       += tcm_nab5000/
-> > +
-> > +and the same for drivers/target/Kconfig:
-> > +
-> > +	source "drivers/target/tcm_nab5000/Kconfig"
-> > +
-> > +*) Run 'make menuconfig' and select the new CONFIG_TCM_NAB5000 item:
-> > +
-> > +	<M>   TCM_NAB5000 fabric module                   
-> > +
-> > +*) Build using 'make modules', once completed you will have:
-> > +
-> > +target:/mnt/sdb/lio-core-2.6.git# ls -la drivers/target/tcm_nab5000/
-> > +total 1348
-> > +drwxr-xr-x 2 root root   4096 2010-10-05 03:23 .
-> > +drwxr-xr-x 9 root root   4096 2010-10-05 03:22 ..
-> > +-rw-r--r-- 1 root root    282 2010-10-05 03:22 Kbuild
-> > +-rw-r--r-- 1 root root    171 2010-10-05 03:22 Kconfig
-> > +-rw-r--r-- 1 root root     49 2010-10-05 03:23 modules.order
-> > +-rw-r--r-- 1 root root    738 2010-10-05 03:22 tcm_nab5000_base.h
-> > +-rw-r--r-- 1 root root   9096 2010-10-05 03:22 tcm_nab5000_configfs.c
-> > +-rw-r--r-- 1 root root 191200 2010-10-05 03:23 tcm_nab5000_configfs.o
-> > +-rw-r--r-- 1 root root  40504 2010-10-05 03:23 .tcm_nab5000_configfs.o.cmd
-> > +-rw-r--r-- 1 root root   5414 2010-10-05 03:22 tcm_nab5000_fabric.c
-> > +-rw-r--r-- 1 root root   2016 2010-10-05 03:22 tcm_nab5000_fabric.h
-> > +-rw-r--r-- 1 root root 190932 2010-10-05 03:23 tcm_nab5000_fabric.o
-> > +-rw-r--r-- 1 root root  40713 2010-10-05 03:23 .tcm_nab5000_fabric.o.cmd
-> > +-rw-r--r-- 1 root root 401861 2010-10-05 03:23 tcm_nab5000.ko
-> > +-rw-r--r-- 1 root root    265 2010-10-05 03:23 .tcm_nab5000.ko.cmd
-> > +-rw-r--r-- 1 root root    459 2010-10-05 03:23 tcm_nab5000.mod.c
-> > +-rw-r--r-- 1 root root  23896 2010-10-05 03:23 tcm_nab5000.mod.o
-> > +-rw-r--r-- 1 root root  22655 2010-10-05 03:23 .tcm_nab5000.mod.o.cmd
-> > +-rw-r--r-- 1 root root 379022 2010-10-05 03:23 tcm_nab5000.o
-> > +-rw-r--r-- 1 root root    211 2010-10-05 03:23 .tcm_nab5000.o.cmd
-> > +
-> > +*) Load the new module, create a lun_0 configfs group, and add new TCM Core
-> > +   IBLOCK backstore symlink to port:
-> > +
-> > +target:/mnt/sdb/lio-core-2.6.git# insmod drivers/target/tcm_nab5000.ko
-> > +target:/mnt/sdb/lio-core-2.6.git# mkdir -p /sys/kernel/config/target/nab5000/iqn.foo/tpgt_1/lun/lun_0
-> > +target:/mnt/sdb/lio-core-2.6.git# cd /sys/kernel/config/target/nab5000/iqn.foo/tpgt_1/lun/lun_0/
-> > +target:/sys/kernel/config/target/nab5000/iqn.foo/tpgt_1/lun/lun_0# ln -s /sys/kernel/config/target/core/iblock_0/lvm_test0 nab5000_port
-> > +
-> > +target:/sys/kernel/config/target/nab5000/iqn.foo/tpgt_1/lun/lun_0# cd -
-> > +target:/mnt/sdb/lio-core-2.6.git# tree /sys/kernel/config/target/nab5000/
-> > +/sys/kernel/config/target/nab5000/
-> > +|-- discovery_auth
-> > +|-- iqn.foo
-> > +|   `-- tpgt_1
-> > +|       |-- acls
-> > +|       |-- attrib
-> > +|       |-- lun
-> > +|       |   `-- lun_0
-> > +|       |       |-- alua_tg_pt_gp
-> > +|       |       |-- alua_tg_pt_offline
-> > +|       |       |-- alua_tg_pt_status
-> > +|       |       |-- alua_tg_pt_write_md
-> > +|	|	`-- nab5000_port -> ../../../../../../target/core/iblock_0/lvm_test0
-> > +|       |-- np
-> > +|       `-- param
-> > +`-- version
-> > +
-> > +target:/mnt/sdb/lio-core-2.6.git# lsmod
-> > +Module                  Size  Used by
-> > +tcm_nab5000             3935  4 
-> > +iscsi_target_mod      193211  0 
-> > +target_core_stgt        8090  0 
-> > +target_core_pscsi      11122  1 
-> > +target_core_file        9172  2 
-> > +target_core_iblock      9280  1 
-> > +target_core_mod       228575  31
-> > +tcm_nab5000,iscsi_target_mod,target_core_stgt,target_core_pscsi,target_core_file,target_core_iblock
-> > +libfc                  73681  0 
-> > +scsi_debug             56265  0 
-> > +scsi_tgt                8666  1 target_core_stgt
-> > +configfs               20644  2 target_core_mod
-> > +
-> > +----------------------------------------------------------------------
-> > +
-> > +Future TODO items:
-> > +
-> > +	*) Add more T10 proto_idents 
-> > +	*) Make tcm_mod_dump_fabric_ops() smater and generate function pointer
-> 
-> 	                                  smarter
-> 
-
-fixed
-
-> > +	   defs directly from include/target/target_core_fabric_ops.h:struct target_core_fabric_ops 
-> > +	   structure members.
-> > +
-> > +October 5th, 2010
-> > +Nicholas A. Bellinger <nab@linux-iscsi.org>
-> 
-> 
-> I don't get it, but then I haven't followed the scsi target development closely.
-> 
-> Why the intermediate step of the python script?  I.e., why generate
-> source & build/make files?
-> 
-
-The main idea here is to produce a functional running configfs skeleton
-that can be loaded and configured in /sys/kernel/config/target/$MOD_NAME
-using NOPs in order to jump start new TCM fabric module development.  
-This allows a fabric module developer to be able to just focus on the
-development of fabric dependent kernel I/O pieces, and use the TCM v4.0
-generic target_core_fabric_configfs.c framework so that fabric control
-plane code 'just works' out of the box for the basic setup.
-
->From there the newly generated module can be extended using context
-group specific CPP macros based on CONFIGFS_EATTR() code in
-include/target/target_core_fabric_configfs.h for fabric dependent knobs,
-etc.
-
-Thanks for your review!
-
---nab
-
-
+Yuhong Bao
+ 		 	   		  
