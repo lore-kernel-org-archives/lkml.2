@@ -1,73 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932911Ab0JRTUA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Oct 2010 15:20:00 -0400
-Received: from hera.kernel.org ([140.211.167.34]:59438 "EHLO hera.kernel.org"
+	id S1757590Ab0JRTUP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Oct 2010 15:20:15 -0400
+Received: from h5.dl5rb.org.uk ([81.2.74.5]:33263 "EHLO h5.dl5rb.org.uk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932134Ab0JRTT7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Oct 2010 15:19:59 -0400
-Date: Mon, 18 Oct 2010 19:19:31 GMT
-From: tip-bot for Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        a.p.zijlstra@chello.nl, matt@console-pimps.org, tglx@linutronix.de,
-        mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        a.p.zijlstra@chello.nl, matt@console-pimps.org, tglx@linutronix.de,
-        mingo@elte.hu
-In-Reply-To: <1287135757.29097.1368.camel@twins>
-References: <1287135757.29097.1368.camel@twins>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf: Fix group moving
-Message-ID: <tip-74c3337c2fc6389d3a57a622a936036b6db6b2e8@git.kernel.org>
-Git-Commit-ID: 74c3337c2fc6389d3a57a622a936036b6db6b2e8
-X-Mailer: tip-git-log-daemon
+	id S1756831Ab0JRTUL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Oct 2010 15:20:11 -0400
+Date: Mon, 18 Oct 2010 20:19:36 +0100
+From: Ralf Baechle <ralf@linux-mips.org>
+To: Shinya Kuribayashi <skuribay@pobox.com>
+Cc: Kevin Cernekee <cernekee@gmail.com>, linux-mips@linux-mips.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH resend 5/9] MIPS: sync after cacheflush
+Message-ID: <20101018191936.GH27377@linux-mips.org>
+References: <17ebecce124618ddf83ec6fe8e526f93@localhost>
+ <17d8d27a2356640a4359f1a7dcbb3b42@localhost>
+ <4CBC4F4E.5010305@pobox.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 18 Oct 2010 19:19:33 +0000 (UTC)
+In-Reply-To: <4CBC4F4E.5010305@pobox.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  74c3337c2fc6389d3a57a622a936036b6db6b2e8
-Gitweb:     http://git.kernel.org/tip/74c3337c2fc6389d3a57a622a936036b6db6b2e8
-Author:     Peter Zijlstra <a.p.zijlstra@chello.nl>
-AuthorDate: Fri, 15 Oct 2010 11:40:29 +0200
-Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Mon, 18 Oct 2010 19:58:51 +0200
+On Mon, Oct 18, 2010 at 10:44:46PM +0900, Shinya Kuribayashi wrote:
 
-perf: Fix group moving
+> I suspect that SYNC insn alone is still not enough, insn't it?  In
+> such systems with that 'deep' write buffer and data incoherency is
+> visibly observed, there sill may be data write transactions floating
+> in the internal bus system.
 
-Matt found we trigger the WARN_ON_ONCE() in perf_group_attach() when we take
-the move_group path in perf_event_open().
+A SYNC in theory should ensure global visibilty of preceding writes and
+completion of earlier reads.  That usually works between CPUs but not
+all I/O systems fully participate in that "consistency domain" so more
+or less arbitary shaking of the I/O system may still be required to to
+achieve consistency.
 
-Since we cannot de-construct the group (we rely on it to move the events), we
-have to simply ignore the double attach. The group state is context invariant
-and doesn't need changing.
+> To make sure that all data (data inside processor's write buffer and
+> data floating in the internal bus system), we need the following
+> three steps:
+> 
+> 1. Flush data cache
+> 2. Uncached, dummy load operation from _DRAM_ (not somewhere else)
+> 3. then SYNC instruction
+> 
+> With these steps, data in write buffer will be pushed out of the
+> processor's write buffer, wait for uncached load operation to be
+> completed, and then finally the pipeline gets cleared.  Thoughts?
 
-Reported-by: Matt Fleming <matt@console-pimps.org>
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-LKML-Reference: <1287135757.29097.1368.camel@twins>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
----
- kernel/perf_event.c |    7 ++++++-
- 1 files changed, 6 insertions(+), 1 deletions(-)
+I'm trying to get a statement from the MIPS architecture guys if the
+necessity to do anything beyond a cache flush is an architecture violation.
 
-diff --git a/kernel/perf_event.c b/kernel/perf_event.c
-index 99b9700..346dc0e 100644
---- a/kernel/perf_event.c
-+++ b/kernel/perf_event.c
-@@ -315,7 +315,12 @@ static void perf_group_attach(struct perf_event *event)
- {
- 	struct perf_event *group_leader = event->group_leader;
- 
--	WARN_ON_ONCE(event->attach_state & PERF_ATTACH_GROUP);
-+	/*
-+	 * We can have double attach due to group movement in perf_event_open.
-+	 */
-+	if (event->attach_state & PERF_ATTACH_GROUP)
-+		return;
-+
- 	event->attach_state |= PERF_ATTACH_GROUP;
- 
- 	if (group_leader == event)
+Don't worry, I'm not going to refuse patches for something just because
+it's not complying to a piece of paper as long as the silicon is in the
+wild.
+
+  Ralf
