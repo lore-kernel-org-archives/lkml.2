@@ -1,113 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754418Ab0JRIgU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Oct 2010 04:36:20 -0400
-Received: from zone0.gcu-squad.org ([212.85.147.21]:11075 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751920Ab0JRIgT (ORCPT
+	id S1754221Ab0JRInV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Oct 2010 04:43:21 -0400
+Received: from mailout-de.gmx.net ([213.165.64.23]:50993 "HELO mail.gmx.net"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
+	id S1753187Ab0JRInU convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Oct 2010 04:36:19 -0400
-Date: Mon, 18 Oct 2010 10:36:10 +0200
-From: Jean Delvare <khali@linux-fr.org>
-To: Mike Frysinger <vapier@gentoo.org>
-Cc: linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
-        uclinux-dist-devel@blackfin.uclinux.org,
-        device-drivers-devel@blackfin.uclinux.org,
-        Michael Hennerich <michael.hennerich@analog.com>
-Subject: Re: [PATCH] i2c: add irq_flags to board info
-Message-ID: <20101018103610.77b7e605@endymion.delvare>
-In-Reply-To: <1287359019-1476-1-git-send-email-vapier@gentoo.org>
-References: <1287359019-1476-1-git-send-email-vapier@gentoo.org>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 18 Oct 2010 04:43:20 -0400
+X-Authenticated: #5108953
+X-Provags-ID: V01U2FsdGVkX1/gYgI1iHDgto64JXTtyI/VVTuxlXbzGkbZFRIA7q
+	+DuTGaEvdCSkBD
+From: Toralf =?iso-8859-1?q?F=F6rster?= <toralf.foerster@gmx.de>
+To: Christoph Hellwig <hch@lst.de>
+Subject: Re: Fwd: Re: UML kernel crash of v2.6.36-rcX kernel
+Date: Mon, 18 Oct 2010 10:43:12 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.35.6; KDE/4.4.5; i686; ; )
+Cc: user-mode-linux-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        Richard Weinberger <richard@nod.at>, Al Viro <viro@zeniv.linux.org.uk>
+References: <201010131328.06465.toralf.foerster@gmx.de> <201010171555.40453.toralf.foerster@gmx.de> <20101017201837.GA16458@lst.de>
+In-Reply-To: <20101017201837.GA16458@lst.de>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201010181043.14253.toralf.foerster@gmx.de>
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mike,
 
-On Sun, 17 Oct 2010 19:43:39 -0400, Mike Frysinger wrote:
-> From: Michael Hennerich <michael.hennerich@analog.com>
-> 
-> These flags can be optionally defined - slave drivers may use them as
-> flags argument for request_irq().  In case they are left uninitialized
-> they will default to zero, and therefore shouldn't cause problems.
-> 
-> This allows us to avoid having to add dedicated platform init code just
-> to call set_irq_type()
+Christoph Hellwig wrote at 22:18:37
+> I really can't see any relation to the patch.  Can you try the some
+> things in the following order, please:
+...
+>  (4) re-apply the include/linux/statfs.h changes and see if it still
+>       boots
 
-Do you have examples of this? Can we see a preview of the amount of
-cleanups this patch would allow?
+The first half of step 4 was it (I did not apply the "Definitions for the flag 
+in f_flag.") :
 
-> -- which doesn't work very well when coupled with
-> module drivers.
+diff --git a/include/linux/statfs.h b/include/linux/statfs.h
+index b34cc82..0166d32 100644
+--- a/include/linux/statfs.h
++++ b/include/linux/statfs.h
+@@ -2,7 +2,6 @@
+ #define _LINUX_STATFS_H
+ 
+ #include <linux/types.h>
+-
+ #include <asm/statfs.h>
+ 
+ struct kstatfs {
+@@ -16,7 +15,29 @@ struct kstatfs {
+        __kernel_fsid_t f_fsid;
+        long f_namelen;
+        long f_frsize;
+-   long f_spare[5];
++ long f_flags;
++ long f_spare[4];
+ };
 
-I don't quite get what you mean here.
 
-> It also matches behavior of some other frameworks like
-> IDE and UIO.
 
-This is certainly a good point.
-
-> 
-> Signed-off-by: Michael Hennerich <michael.hennerich@analog.com>
-> Signed-off-by: Mike Frysinger <vapier@gentoo.org>
-> ---
->  drivers/i2c/i2c-core.c |    1 +
->  include/linux/i2c.h    |    4 ++++
->  2 files changed, 5 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/i2c/i2c-core.c b/drivers/i2c/i2c-core.c
-> index bea4c50..830528f 100644
-> --- a/drivers/i2c/i2c-core.c
-> +++ b/drivers/i2c/i2c-core.c
-> @@ -540,6 +540,7 @@ i2c_new_device(struct i2c_adapter *adap, struct i2c_board_info const *info)
->  	client->flags = info->flags;
->  	client->addr = info->addr;
->  	client->irq = info->irq;
-> +	client->irq_flags = info->irq_flags;
->  
->  	strlcpy(client->name, info->type, sizeof(client->name));
->  
-> diff --git a/include/linux/i2c.h b/include/linux/i2c.h
-> index 4bae0b7..e6248c1 100644
-> --- a/include/linux/i2c.h
-> +++ b/include/linux/i2c.h
-> @@ -189,6 +189,7 @@ struct i2c_driver {
->   * @driver: device's driver, hence pointer to access routines
->   * @dev: Driver model device node for the slave.
->   * @irq: indicates the IRQ generated by this device (if any)
-> + * @irq_flags: The flags passed to request_irq()
->   * @detected: member of an i2c_driver.clients list or i2c-core's
->   *	userspace_devices list
->   *
-> @@ -206,6 +207,7 @@ struct i2c_client {
->  	struct i2c_driver *driver;	/* and our access routines	*/
->  	struct device dev;		/* the device structure		*/
->  	int irq;			/* irq issued by device		*/
-> +	unsigned long irq_flags;	/* flags used by the irq 	*/
->  	struct list_head detected;
->  };
->  #define to_i2c_client(d) container_of(d, struct i2c_client, dev)
-> @@ -237,6 +239,7 @@ static inline void i2c_set_clientdata(struct i2c_client *dev, void *data)
->   * @archdata: copied into i2c_client.dev.archdata
->   * @of_node: pointer to OpenFirmware device node
->   * @irq: stored in i2c_client.irq
-> + * @irq_flags: The flags passed to request_irq() for i2c_client.irq
->   *
->   * I2C doesn't actually support hardware probing, although controllers and
->   * devices may be able to use I2C_SMBUS_QUICK to tell whether or not there's
-> @@ -259,6 +262,7 @@ struct i2c_board_info {
->  	struct device_node *of_node;
->  #endif
->  	int		irq;
-> +	unsigned long	irq_flags;
->  };
->  
->  /**
-
+FWIW the uml kernel boots fine even with that commit however it crashed after 
+a special http request : $> wget http://n22_uml/phpsysinfo/
 
 -- 
-Jean Delvare
+MfG/Kind regards
+Toralf Förster
+
+pgp finger print: 7B1A 07F4 EC82 0F90 D4C2 8936 872A E508 7DB6 9DA3
+
