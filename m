@@ -1,79 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932219Ab0JRPbX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Oct 2010 11:31:23 -0400
-Received: from mga09.intel.com ([134.134.136.24]:54664 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753388Ab0JRPbW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Oct 2010 11:31:22 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.57,345,1283756400"; 
-   d="scan'208";a="565055800"
-Date: Mon, 18 Oct 2010 23:31:09 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: "Figo.zhang" <zhangtianfei@leadcoretech.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "rientjes@google.com" <rientjes@google.com>,
-        figo1802 <figo1802@gmail.com>
-Subject: Re: oom_killer crash linux system
-Message-ID: <20101018153109.GA29500@localhost>
-References: <20101018021126.GB8654@localhost>
- <1287389631.1997.9.camel@myhost>
- <20101018180919.3AF8.A69D9226@jp.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101018180919.3AF8.A69D9226@jp.fujitsu.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S932437Ab0JRPcf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Oct 2010 11:32:35 -0400
+Received: from canuck.infradead.org ([134.117.69.58]:43390 "EHLO
+	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755355Ab0JRPce convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Oct 2010 11:32:34 -0400
+Subject: Re: [PATCH 0/3] Add OMAP hardware spinlock misc driver
+From: Peter Zijlstra <peterz@infradead.org>
+To: Catalin Marinas <catalin.marinas@arm.com>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Ohad Ben-Cohen <ohad@wizery.com>, Hari Kanigeri <h-kanigeri2@ti.com>,
+        Suman Anna <s-anna@ti.com>, Benoit Cousson <b-cousson@ti.com>,
+        Tony Lindgren <tony@atomide.com>, Greg KH <greg@kroah.com>,
+        linux-kernel@vger.kernel.org, Grant Likely <grant.likely@secretlab.ca>,
+        akpm@linux-foundation.org, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+In-Reply-To: <tnxeibnh67q.fsf@e102109-lin.cambridge.arm.com>
+References: <1287387875-14168-1-git-send-email-ohad@wizery.com>
+	 <1287406015.29097.1579.camel@twins>
+	 <20101018133502.GA12449@n2100.arm.linux.org.uk>
+	 <1287409417.29097.1598.camel@twins>
+	 <tnxeibnh67q.fsf@e102109-lin.cambridge.arm.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Mon, 18 Oct 2010 17:32:09 +0200
+Message-ID: <1287415929.29097.1616.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 18, 2010 at 05:10:00PM +0800, KOSAKI Motohiro wrote:
-> > 
-> > i want to test the oom-killer. My desktop (Dell optiplex 780, i686
-> > kernel)have 2GB ram, i turn off the swap partition, and open a huge pdf
-> > files and applications, and let the system eat huge ram.
-> > 
-> > in 2.6.35, i can use ram up to 1.75GB,
-> > 
-> > but in 2.6.36-rc8, i just use to 1.53GB ram , the system come very slow
-> > and crashed after some minutes , the DiskIO is very busy. i see the
-> > DiskIO read is up to 8MB/s, write just only 400KB/s, (see by conky).
-
-There are much more reads than writes, it looks like some thrashing.
-How do you measure the 1.75GB/1.53GB?
-
-> > what change between 2.6.35 to 2.6.36-rc8? is it low performance about
-> > page reclaim and page writeback in high press ram useage?
+On Mon, 2010-10-18 at 16:27 +0100, Catalin Marinas wrote:
+> Peter Zijlstra <peterz@infradead.org> wrote:
+> > On Mon, 2010-10-18 at 14:35 +0100, Russell King - ARM Linux wrote:
+> >> In any case, Linux's spinlock API (or more accurately, the ARM exclusive
+> >> access instructions) relies upon hardware coherency support (a piece of
+> >> hardware called an exclusive monitor) which isn't present on the M3 nor
+> >> DSP processors.  So there's no way to ensure that updates from the M3
+> >> and DSP are atomic wrt the A9 updates.
+> >
+> > Right, so the problem is that there simply is no way to do atomic memory
+> > access from these auxiliary processing units wrt the main CPU? Seeing as
+> > they operate on the same memory space, wouldn't it make sense to have
+> > them cache-coherent and thus provide atomicy guarantees through that?
 > 
-> very lots of change ;)
-> can you please send us your crash log?
+> With cache coherency you may get atomicity of writes or reads but
+> usually not atomic modifications.
 
-And there are several ways to help debug the problem.
+Sure, but you can 'easily' extend your coherency protocols with support
+for things like ll/sc (or larger transactions).
 
-- reduce the dirty limit
+Have ll bring the cacheline into exclusive state and tag it, then
+anything that demotes the cacheline will clear the tag and make sc fail.
 
-echo 5 > /proc/sys/vm/dirty_ratio
 
-- enable vmscan trace
-
-mount -t debugfs none /sys/kernel/debug
-echo 1 > /sys/kernel/debug/tracing/events/vmscan/enable
-<eat memory and wait for crash>
-cat /sys/kernel/debug/tracing/trace > trace.log
-
-- log vmstat events
-
-i=1
-while true;
-do
-        cp /proc/vmstat vmstat.$i
-        let i=i+1
-        sleep 1
-done
-
-Thanks,
-Fengguang
