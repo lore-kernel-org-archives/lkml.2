@@ -1,50 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755115Ab0JRLST (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Oct 2010 07:18:19 -0400
-Received: from canuck.infradead.org ([134.117.69.58]:56948 "EHLO
-	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754636Ab0JRLSR convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Oct 2010 07:18:17 -0400
-Subject: Re: [tip:perf/core] jump label: x86 support
-From: Peter Zijlstra <peterz@infradead.org>
-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        rostedt@goodmis.org, tglx@linutronix.de, jbaron@redhat.com,
-        "mathieu.desnoyers" <mathieu.desnoyers@efficios.com>
-Cc: linux-tip-commits@vger.kernel.org
-In-Reply-To: <tip-d9f5ab7b1c0a520867af389bab5d5fcdbd0e407e@git.kernel.org>
-References: <f838f49f40fbea0254036194be66dc48b598dcea.1284733808.git.jbaron@redhat.com>
-	 <tip-d9f5ab7b1c0a520867af389bab5d5fcdbd0e407e@git.kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Mon, 18 Oct 2010 13:17:55 +0200
-Message-ID: <1287400675.29097.1550.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	id S1755158Ab0JRLWw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Oct 2010 07:22:52 -0400
+Received: from a.ns.miles-group.at ([95.130.255.143]:56001 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754671Ab0JRLWv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Oct 2010 07:22:51 -0400
+/m: 
+MIME-Version: 1.0
+Content-Type: text/plain;
+ charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Date: Mon, 18 Oct 2010 13:22:41 +0200
+From: Richard Weinberger <richard@nod.at>
+To: =?UTF-8?Q?Toralf_F=C3=B6rster?= <toralf.foerster@gmx.de>
+Cc: richard -rw- weinberger <richard.weinberger@gmail.com>,
+        Christoph Hellwig <hch@lst.de>,
+        <user-mode-linux-devel@lists.sourceforge.net>,
+        <linux-kernel@vger.kernel.org>, Al Viro <viro@zeniv.linux.org.uk>
+Subject: Re: Fwd: Re: UML kernel crash of v2.6.36-rcX kernel
+In-Reply-To: <201010181314.27780.toralf.foerster@gmx.de>
+References: <201010131328.06465.toralf.foerster@gmx.de>
+ <201010181105.17077.toralf.foerster@gmx.de>
+ <AANLkTi=UyWg6PUrE_jEs0oqZ_tVw1mMQsoUrDnnqtcHa@mail.gmail.com>
+ <201010181314.27780.toralf.foerster@gmx.de>
+Message-ID: <64b54ba40b0fdec8e5437061e86457b4@radon2.swed.at>
+User-Agent: RoundCube Webmail
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-09-24 at 09:01 +0000, tip-bot for Jason Baron wrote:
-> +void arch_jump_label_transform(struct jump_entry *entry,
-> +                              enum jump_label_type type)
-> +{
-> +       union jump_code_union code;
-> +
-> +       if (type == JUMP_LABEL_ENABLE) {
-> +               code.jump = 0xe9;
-> +               code.offset = entry->target -
-> +                               (entry->code + JUMP_LABEL_NOP_SIZE);
-> +       } else
-> +               memcpy(&code, ideal_nop5, JUMP_LABEL_NOP_SIZE);
-> +       get_online_cpus();
-> +       mutex_lock(&text_mutex);
-> +       text_poke_smp((void *)entry->code, &code, JUMP_LABEL_NOP_SIZE);
-> +       mutex_unlock(&text_mutex);
-> +       put_online_cpus();
-> +} 
+On Mon, 18 Oct 2010 13:14:26 +0200, Toralf Förster
+<toralf.foerster@gmx.de> wrote:
+> richard -rw- weinberger wrote at 11:31:31
+>> Does this help?
+>>
+>> --- linux-2.6.36-rc8/fs/hostfs/hostfs_user.c.orig       2010-10-18
+>> 11:24:33.844592000 +0200
+>> +++ linux-2.6.36-rc8/fs/hostfs/hostfs_user.c    2010-10-18
+>> 11:24:44.594679000 +0200
+>> @@ -388,6 +388,6 @@
+>>         spare_out[1] = buf.f_spare[1];
+>>         spare_out[2] = buf.f_spare[2];
+>>         spare_out[3] = buf.f_spare[3];
+>> -       spare_out[4] = buf.f_spare[4];
+>> +
+>>         return 0;
+>>  }
+> 
+> yes - definitely (BTW I like a preceeding "diff --git" line to make
+> the patch
+> utility happy ;) )
 
-hpa, mathieu, what's the status of stop_machine less text poking?
-Because the above basically means we have to disable architecture
-jump_label support for -rt.
+Good to know. I'll submit a patch (with git ;)).
+
+Thanks,
+//richard
