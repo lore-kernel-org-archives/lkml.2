@@ -1,58 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755158Ab0JRLWw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Oct 2010 07:22:52 -0400
-Received: from a.ns.miles-group.at ([95.130.255.143]:56001 "EHLO radon.swed.at"
+	id S1755174Ab0JRLdj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Oct 2010 07:33:39 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:50223 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754671Ab0JRLWv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Oct 2010 07:22:51 -0400
-/m: 
+	id S1754673Ab0JRLdi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Oct 2010 07:33:38 -0400
+Date: Mon, 18 Oct 2010 13:33:35 +0200 (CEST)
+From: Lukas Czerner <lczerner@redhat.com>
+X-X-Sender: lukas@dhcp-lab-213.englab.brq.redhat.com
+To: Ric Wheeler <rwheeler@redhat.com>, Jeff Moyer <jmoyer@redhat.com>,
+        Eric Sandeen <esandeen@redhat.com>, linux-kernel@vger.kernel.org
+cc: Lukas Czerner <lczerner@redhat.com>
+Subject: Discard benchmarking tool for SSD's and thinly provisioned devices
+Message-ID: <alpine.LFD.2.00.1010181247330.6517@dhcp-lab-213.englab.brq.redhat.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Date: Mon, 18 Oct 2010 13:22:41 +0200
-From: Richard Weinberger <richard@nod.at>
-To: =?UTF-8?Q?Toralf_F=C3=B6rster?= <toralf.foerster@gmx.de>
-Cc: richard -rw- weinberger <richard.weinberger@gmail.com>,
-        Christoph Hellwig <hch@lst.de>,
-        <user-mode-linux-devel@lists.sourceforge.net>,
-        <linux-kernel@vger.kernel.org>, Al Viro <viro@zeniv.linux.org.uk>
-Subject: Re: Fwd: Re: UML kernel crash of v2.6.36-rcX kernel
-In-Reply-To: <201010181314.27780.toralf.foerster@gmx.de>
-References: <201010131328.06465.toralf.foerster@gmx.de>
- <201010181105.17077.toralf.foerster@gmx.de>
- <AANLkTi=UyWg6PUrE_jEs0oqZ_tVw1mMQsoUrDnnqtcHa@mail.gmail.com>
- <201010181314.27780.toralf.foerster@gmx.de>
-Message-ID: <64b54ba40b0fdec8e5437061e86457b4@radon2.swed.at>
-User-Agent: RoundCube Webmail
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 18 Oct 2010 13:14:26 +0200, Toralf Förster
-<toralf.foerster@gmx.de> wrote:
-> richard -rw- weinberger wrote at 11:31:31
->> Does this help?
->>
->> --- linux-2.6.36-rc8/fs/hostfs/hostfs_user.c.orig       2010-10-18
->> 11:24:33.844592000 +0200
->> +++ linux-2.6.36-rc8/fs/hostfs/hostfs_user.c    2010-10-18
->> 11:24:44.594679000 +0200
->> @@ -388,6 +388,6 @@
->>         spare_out[1] = buf.f_spare[1];
->>         spare_out[2] = buf.f_spare[2];
->>         spare_out[3] = buf.f_spare[3];
->> -       spare_out[4] = buf.f_spare[4];
->> +
->>         return 0;
->>  }
-> 
-> yes - definitely (BTW I like a preceeding "diff --git" line to make
-> the patch
-> utility happy ;) )
+Hi all,
 
-Good to know. I'll submit a patch (with git ;)).
+I would like to present you a tool for benchmarking discard performance
+on SSD's and thinly provisioned devices (or virtually any device
+supporting TRIM command).
 
-Thanks,
-//richard
+You can download the tool here:
+
+http://sourceforge.net/projects/test-discard/
+
+there is also git repository available.
+
+The tool is called "test-discard" (yes, very imaginative I know).
+
+
+DESCRIPTION
+-----------
+  This is a simple tool for benchmarking device discard (TRIM)
+performance. According to benchmark parameters the tool will
+repetitively call BLKDISCARD ioctl on the specified device with
+specified parameters collecting performance statistics.
+
+  You can specify several parameter for the test. First of all you can
+specify the overall amount of Bytes to discard, the bigger the value
+is, the bigger discard ranges you can test, the more precise result
+you will obtain, and the longer will the test take. Then you can
+specify device LBA to start with discard test and record size. There
+are three modes of the test: sequential test, random I/O test and test
+where we are discarding already discarded blocks (discard2).
+
+  There is also support for automated testing of range of record sizes.
+You just need to specify starting, ending and step record size and the
+tool will automatically survey the whole range. In addition you can get
+more script-friendly output for using this tool in scripts.
+
+  You can also generate nice graphs with gnuplot (script included), but
+you will probably need to alter it to match your needs.
+
+
+FUNCTION PRINCIPLE
+------------------
+  Invoke ioctl with BLKDISCARD flag and defined range repetitively until
+the specified amount of data is discarded. Running time of each ioctl
+invocation is measured and stored (also min and max) as well as number
+of invocations and range size.From collected data we can compute
+average ioctl running time, overall ioctl running time (sum) and
+throughput.
+
+  In random IO mode discard range is not determined sequentially but
+picked randomly anywhere on the disk, but it is of course aligned to
+the range_size. Already discarded blocks are stored in the list. Before
+each discard operation random block is generated and added to the list,
+possibly altered if the block was already discarded. There is one
+limitation though, if the record size is to low and disk size is too
+high, only a part of disk will be used. To be specific :
+
+	max_tested_disk_size = INT_MAX * record_size;
+
+
+Please, see README file included in sources for more information.
+
+
+WARNING
+-------
+ * !!!! It WILL DESTROY all your data on the device !!!!
+ * I am using the tool quite often, thus it was properly tested and
+   should be stable, though I do NOT PROVIDE ANY WARRANTY.
+
+
+Thanks!
+
+-Lukas
