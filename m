@@ -1,71 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757787Ab0JRVdu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Oct 2010 17:33:50 -0400
-Received: from c-67-162-90-113.hsd1.in.comcast.net ([67.162.90.113]:58015 "HELO
-	kosh.dhis.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1755997Ab0JRVdt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Oct 2010 17:33:49 -0400
-Message-ID: <20101018213348.10281.qmail@kosh.dhis.org>
-From: pacman@kosh.dhis.org
-Subject: Re: PROBLEM: memory corrupting bug, bisected to 6dda9d55
-To: benh@kernel.crashing.org (Benjamin Herrenschmidt)
-Date: Mon, 18 Oct 2010 16:33:48 -0500 (GMT+5)
-Cc: mel@csn.ul.ie (Mel Gorman), linux-mm@kvack.org,
-        akpm@linux-foundation.org (Andrew Morton),
-        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
-In-Reply-To: <1287436205.2341.14.camel@pasglop>
+	id S933364Ab0JRVeb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Oct 2010 17:34:31 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:58784 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933233Ab0JRVe3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Oct 2010 17:34:29 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Marc Aurele La France <tsi@ualberta.ca>
+Subject: Re: [Bug #20002] x86_64 2.6.35.* kernels and Intel Xeon X5550
+Date: Mon, 18 Oct 2010 23:33:13 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.36-rc8-rjw+; KDE/4.4.4; x86_64; ; )
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Kernel Testers List <kernel-testers@vger.kernel.org>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>,
+        Florian Mickler <florian@mickler.org>, len.brown@intel.com
+References: <1SnkuNVk0vO.A.E9E.Qx1uMB@chimera> <u4vap2zcaSM.A.IDF.Wx1uMB@chimera> <alpine.WNT.2.00.1010181456500.1680@cluij.ucs.ualberta.ca>
+In-Reply-To: <alpine.WNT.2.00.1010181456500.1680@cluij.ucs.ualberta.ca>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201010182333.13861.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Benjamin Herrenschmidt writes:
+On Monday, October 18, 2010, Marc Aurele La France wrote:
+> On Sun, 17 Oct 2010, Rafael J. Wysocki wrote:
 > 
-> You can do something fun... like a timer interrupt that peeks at those
-> physical addresses from the linear mapping for example, and try to find
-> out "when" they get set to the wrong value (you should observe the load
-> from disk, then the corruption, unless they end up being loaded
-> incorrectly (ie. dma coherency problem ?) ...
-
-I'm headed toward something like that. Maybe not a timer, maybe a "check it
-every time the kernel is entered". But first I have to work out exactly when
-the disk load completes so I know when to start checking.
-
+> > This message has been generated automatically as a part of a report
+> > of regressions introduced between 2.6.34 and 2.6.35.
 > 
-> >From there, you might be able to close onto the culprit a bit more, for
-> example, try using the DABR register to set data access breakpoints
-> shortly before the corruption spot. AFAIK, On those old 32-bit CPUs, you
-> can set whether you want it to break on a real or a virtual address.
-
-I thought of that, but as far as I can tell, this CPU doesn't have DABR.
-/proc/cpuinfo
-processor	: 0
-cpu		: 7447/7457
-clock		: 999.999990MHz
-revision	: 1.1 (pvr 8002 0101)
-bogomips	: 66.66
-timebase	: 33333333
-platform	: CHRP
-model		: Pegasos2
-machine		: CHRP Pegasos2
-Memory		: 512 MB
-
-My next thought was: right after the correct value appears in memory, unmap
-the page from the kernel and let it Oops when it tries to write there. Then I
-found out that the kernel is using BATs instead of page tables for its own
-view of memory. Booting with "nobats" completely changes the memory usage
-pattern (probably because it's allocating a lot of pages to hold PTEs that it
-didn't need before)
-
+> > The following bug entry is on the current list of known regressions
+> > introduced between 2.6.34 and 2.6.35.  Please verify if it still should
+> > be listed and let the tracking team know (either way).
 > 
-> You can also sprinkle tests for the page content through the code if
-> that doesn't work to try to "close in" on the culprit (for example if
-> it's a case of stray DMA, like a network driver bug or such).
+> > Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=20002
+> > Subject		: x86_64 2.6.35.* kernels and Intel Xeon X5550
+> > Submitter	: Marc Aurele La France <tsi@ualberta.ca>
+> > Date		: 2010-10-07 17:17 (11 days old)
+> > Message-ID	: <alpine.WNT.2.00.1010071055420.1672@cluij.ucs.ualberta.ca>
+> > References	: http://marc.info/?l=linux-kernel&m=128647187628706&w=2
+> 
+> Please delete this report, as it has been cloned as 20722, in an attempt 
+> to remove the regression tag, as I cannot do so myself.  Obviously, a lot 
+> of damage/lobotomies have been done to this BZ implementation compared to 
+> the one I know.
 
-No network drivers are loaded when this happens.
+Thanks, dropped.
 
--- 
-Alan Curry
+Rafael
