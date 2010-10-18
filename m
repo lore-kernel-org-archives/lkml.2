@@ -1,52 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932840Ab0JRQRA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Oct 2010 12:17:00 -0400
-Received: from helcar.apana.org.au ([209.40.204.226]:43630 "EHLO
-	fornost.hengli.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756859Ab0JRQQ6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1757193Ab0JRQQ6 (ORCPT <rfc822;w@1wt.eu>);
 	Mon, 18 Oct 2010 12:16:58 -0400
-Date: Tue, 19 Oct 2010 00:16:56 +0800
-From: Herbert Xu <herbert@gondor.hengli.com.au>
-To: Patrick Ringl <patrick_@freenet.de>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        bridge@lists.linux-foundation.org
-Subject: Re: 2.6.36-rc7: net/bridge causes temporary network I/O lockups [2]
-Message-ID: <20101018161656.GA2403@gondor.apana.org.au>
-References: <4CB9EBC3.4070905@freenet.de>
+Received: from one.firstfloor.org ([213.235.205.2]:35492 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755302Ab0JRQQ5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Oct 2010 12:16:57 -0400
+From: Andi Kleen <andi@firstfloor.org>
+To: Nick Piggin <npiggin@kernel.dk>
+Cc: Dave Chinner <david@fromorbit.com>, Christoph Hellwig <hch@infradead.org>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 11/18] fs: Introduce per-bucket inode hash locks
+References: <1286515292-15882-1-git-send-email-david@fromorbit.com>
+	<1286515292-15882-12-git-send-email-david@fromorbit.com>
+	<20101008185409.GA29251@infradead.org> <20101016075703.GO19147@amd>
+	<20101016161642.GC16861@infradead.org> <20101016171213.GC3240@amd>
+	<20101017004610.GB29677@dastard> <20101017022539.GA3317@amd>
+Date: Mon, 18 Oct 2010 18:16:50 +0200
+In-Reply-To: <20101017022539.GA3317@amd> (Nick Piggin's message of "Sun, 17
+	Oct 2010 13:25:39 +1100")
+Message-ID: <87iq0za32l.fsf@basil.nowhere.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4CB9EBC3.4070905@freenet.de>
-User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Oct 16, 2010 at 08:15:31PM +0200, Patrick Ringl wrote:
-> Hi,
+Nick Piggin <npiggin@kernel.dk> writes:
 >
-> okay I narrowed down the issue. I watched all function calls of the  
-> 'bridge' module with the help of a small systemtap probe of mine. I  
-> first traced a timespan where the issue did not occur, then one where it  
-> did and composed an intersection of these two:
+>> Providing
+>> locking wrappers that are exactly what users need so they don't have
+>> to care about it is, IMO, the right thing to do.
+>
+> Hiding the type of lock, and hiding the fact that it sets the low bit?
+> I don't agree. We don't have synchronization in our data structures,
+> where possible, because it is just restrictive or goes wrong when people
+> don't think enough about the locking.
 
-I can't reproduce this problem here so I'll need your help to
-track it down.
+I fully agree. The old skb lists in networking made this mistake
+long ago and it was a big problem, until people essentially stopped 
+using it (always using __ variants) and it was eventually removed.
 
-Can you see if you can relate the lock-ups to specific events
-such as a particular packet being sent through the bridge?
+Magic locking in data structures is usually a bad idea.
 
-If we can recreate the problem on demand that that helps us to
-find the root cause.
+-Andi
 
-You mentioned that you took packet dumps on the system.  If you
-can show us the packets through the bridge and its ports when
-the problem occurs that would be great.
-
-Thanks,
 -- 
-Email: Herbert Xu <herbert@gondor.apana.org.au>
-Home Page: http://gondor.apana.org.au/~herbert/
-PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
+ak@linux.intel.com -- Speaking for myself only.
