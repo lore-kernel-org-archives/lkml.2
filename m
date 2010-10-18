@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752309Ab0JRABU (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Oct 2010 20:01:20 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:48578 "EHLO smtps.tip.net.au"
+	id S1752416Ab0JRACJ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Oct 2010 20:02:09 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:38475 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751830Ab0JRABT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Oct 2010 20:01:19 -0400
-Date: Mon, 18 Oct 2010 11:01:16 +1100
+	id S1751859Ab0JRACI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 17 Oct 2010 20:02:08 -0400
+Date: Mon, 18 Oct 2010 11:02:07 +1100
 From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Kevin Hilman <khilman@deeprootsystems.com>
+To: Daniel Walker <dwalker@fifo99.com>
 Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Sekhar Nori <nsekhar@ti.com>, Nicolas Pitre <nicolas.pitre@linaro.org>
-Subject: Re: linux-next: manual merge of the davinci tree with the arm tree
-Message-Id: <20101018110116.00c4665e.sfr@canb.auug.org.au>
-In-Reply-To: <20101018103152.33fa12cd.sfr@canb.auug.org.au>
-References: <20101018103152.33fa12cd.sfr@canb.auug.org.au>
+        Jeremy Kerr <jeremy.kerr@canonical.com>,
+        Jeff Ohlstein <johlstei@codeaurora.org>,
+        Russell King <rmk@arm.linux.org.uk>
+Subject: Re: linux-next: manual merge of the msm tree with the arm tree
+Message-Id: <20101018110207.131b56ee.sfr@canb.auug.org.au>
+In-Reply-To: <20101018103540.7bd9c535.sfr@canb.auug.org.au>
+References: <20101018103540.7bd9c535.sfr@canb.auug.org.au>
 X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
@@ -23,58 +25,49 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[Just cc'ing Russell, sorry about that]
+[ Just cc'ing Russell, sorry about that]
 
-On Mon, 18 Oct 2010 10:31:52 +1100 Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+On Mon, 18 Oct 2010 10:35:40 +1100 Stephen Rothwell <sfr@canb.auug.org.au> wrote:
 >
-> Hi Kevin,
+> Hi Daniel,
 > 
-> Today's linux-next merge of the davinci tree got a conflicts in
-> arch/arm/mach-davinci/board-da830-evm.c and
-> arch/arm/mach-davinci/board-da850-evm.c between commit
-> 861bd81ee62a0d6759144c22909a8a3938951656 ("arm: remove
-> machine_desc.io_pg_offst and .phys_io") from the arm tree and commit
-> 48ea89eabee96019a4a84615af921f8703320abb ("davinci: introduce support for
-> AM1x ARM9 microprocessors") from the davinci tree.
+> Today's linux-next merge of the msm tree got a conflict in
+> arch/arm/mach-msm/include/mach/debug-macro.S between commit
+> 08a610d9ef5394525b0328da0162d7b58c982cc4 ("arm: return both physical and
+> virtual addresses from addruart") from the arm tree and commit
+> 46fe5f29e3062f681cc3cf07a604d82396faea89 ("msm: allow uart to be
+> conditionally disabled") from the msm tree.
 > 
-> Just context changes,  I fixed them up (see below) and can carry the fix
-> as necessary.
+> Just context changes.  I fixed it up (see below) and can carry the fix as
+> necessary.
 > -- 
 > Cheers,
 > Stephen Rothwell                    sfr@canb.auug.org.au
 > 
-> diff --cc arch/arm/mach-davinci/board-da830-evm.c
-> index 7f3cdbf,1bb89d3..0000000
-> --- a/arch/arm/mach-davinci/board-da830-evm.c
-> +++ b/arch/arm/mach-davinci/board-da830-evm.c
-> @@@ -596,7 -608,9 +608,7 @@@ static void __init da830_evm_map_io(voi
->   	da830_init();
->   }
+> diff --cc arch/arm/mach-msm/include/mach/debug-macro.S
+> index 3c35b0d,238c4f1..0000000
+> --- a/arch/arm/mach-msm/include/mach/debug-macro.S
+> +++ b/arch/arm/mach-msm/include/mach/debug-macro.S
+> @@@ -19,11 -19,13 +19,11 @@@
+>   #include <mach/hardware.h>
+>   #include <mach/msm_iomap.h>
 >   
-> - MACHINE_START(DAVINCI_DA830_EVM, "DaVinci DA830/OMAP-L137 EVM")
-> + MACHINE_START(DAVINCI_DA830_EVM, "DaVinci DA830/OMAP-L137/AM17x EVM")
->  -	.phys_io	= IO_PHYS,
->  -	.io_pg_offst	= (__IO_ADDRESS(IO_PHYS) >> 18) & 0xfffc,
->   	.boot_params	= (DA8XX_DDR_BASE + 0x100),
->   	.map_io		= da830_evm_map_io,
->   	.init_irq	= cp_intc_init,
-> diff --cc arch/arm/mach-davinci/board-da850-evm.c
-> index b26f5cb,ef97c7f..0000000
-> --- a/arch/arm/mach-davinci/board-da850-evm.c
-> +++ b/arch/arm/mach-davinci/board-da850-evm.c
-> @@@ -816,7 -868,9 +868,7 @@@ static void __init da850_evm_map_io(voi
->   	da850_init();
->   }
+> - #ifdef CONFIG_MSM_DEBUG_UART
+> + #ifdef CONFIG_HAS_MSM_DEBUG_UART_PHYS
+>  -	.macro	addruart, rx, tmp
+>  +	.macro	addruart, rp, rv
+>   	@ see if the MMU is enabled and select appropriate base address
+>  -	mrc	p15, 0, \rx, c1, c0
+>  -	tst	\rx, #1
+>  -	ldreq	\rx, =MSM_DEBUG_UART_PHYS
+>  -	ldrne	\rx, =MSM_DEBUG_UART_BASE
+>  +	ldr	\rp, =MSM_DEBUG_UART_PHYS
+>  +	ldr	\rv, =MSM_DEBUG_UART_BASE
+>   	.endm
 >   
-> - MACHINE_START(DAVINCI_DA850_EVM, "DaVinci DA850/OMAP-L138 EVM")
-> + MACHINE_START(DAVINCI_DA850_EVM, "DaVinci DA850/OMAP-L138/AM18x EVM")
->  -	.phys_io	= IO_PHYS,
->  -	.io_pg_offst	= (__IO_ADDRESS(IO_PHYS) >> 18) & 0xfffc,
->   	.boot_params	= (DA8XX_DDR_BASE + 0x100),
->   	.map_io		= da850_evm_map_io,
->   	.init_irq	= cp_intc_init,
-
+>   	.macro	senduart,rd,rx
 
 -- 
 Cheers,
 Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
