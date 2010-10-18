@@ -1,136 +1,321 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753766Ab0JRHO2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Oct 2010 03:14:28 -0400
-Received: from fmmailgate03.web.de ([217.72.192.234]:43663 "EHLO
-	fmmailgate03.web.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753389Ab0JRHO1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Oct 2010 03:14:27 -0400
-Message-ID: <4CBBF3C8.9070104@web.de>
-Date: Mon, 18 Oct 2010 09:14:16 +0200
-From: Jan Kiszka <jan.kiszka@web.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
+	id S1753904Ab0JRHPe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Oct 2010 03:15:34 -0400
+Received: from mx01.sz.bfs.de ([194.94.69.103]:40676 "EHLO mx01.sz.bfs.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753598Ab0JRHPc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Oct 2010 03:15:32 -0400
+Message-ID: <4CBBF407.7060705@bfs.de>
+Date: Mon, 18 Oct 2010 09:15:19 +0200
+From: walter harms <wharms@bfs.de>
+Reply-To: wharms@bfs.de
+User-Agent: Thunderbird 2.0.0.24 (X11/20100302)
 MIME-Version: 1.0
-To: Dave Young <hidave.darkstar@gmail.com>
-CC: Avi Kivity <avi@redhat.com>, kvm@vger.kernel.org,
+To: Julia Lawall <julia@diku.dk>
+CC: kernel-janitors@vger.kernel.org, devel@driverdev.osuosl.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [BUG] kvm: guest can not startup due to triple fault
-References: <20101017085416.GA1758@darkstar>	<4CBAC342.1010609@redhat.com>	<AANLkTin6qJYEqOc_97EVWkK1Kt1zNSvXtfVeYuk9fyJ8@mail.gmail.com>	<4CBAE8E2.1060704@redhat.com> <AANLkTi=5yGPmZxZY7T_oeyJ4xS+RWt7cY4WD=78fbo7v@mail.gmail.com>
-In-Reply-To: <AANLkTi=5yGPmZxZY7T_oeyJ4xS+RWt7cY4WD=78fbo7v@mail.gmail.com>
-X-Enigmail-Version: 1.1.2
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="------------enigCE2CA6A11C1F714CC5C67FDE"
-X-Provags-ID: V01U2FsdGVkX1+B4XruwJjyfH1ayy3GWbrERas7xYz5DlNq9muT
-	88+iBlhEm76kAr+6O8HFGombzpUaME8Y0D+sj4yvsYuMJx71WH
-	/GQjEFzZg=
+Subject: Re: [PATCH 1/3] drivers/staging/cx25821: Use kasprintf
+References: <1287341311-11161-1-git-send-email-julia@diku.dk> <1287341311-11161-2-git-send-email-julia@diku.dk>
+In-Reply-To: <1287341311-11161-2-git-send-email-julia@diku.dk>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
---------------enigCE2CA6A11C1F714CC5C67FDE
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
-
-Am 18.10.2010 06:43, Dave Young wrote:
-> On Sun, Oct 17, 2010 at 8:15 PM, Avi Kivity <avi@redhat.com> wrote:
->>  On 10/17/2010 12:14 PM, Dave Young wrote:
->>>
->>> On Sun, Oct 17, 2010 at 5:34 PM, Avi Kivity<avi@redhat.com>  wrote:
->>>>    On 10/17/2010 10:54 AM, Dave Young wrote:
->>>>>
->>>>>  linux guest can not startup normally, qemu keep rebooting.
->>>>>
->>>>>  host&    guest both use linux-2.6.36-rc8+ kernel
->>>>>
->>>>>  Add a dump_stack in x86.c around EXIT_SHUTDOWN code, I got:
->>>>>  [ 3924.503041] Pid: 1685, comm: qemu-system-x86 Not tainted
->>>>> 2.6.36-rc8+
->>>>>  #62
->>>>>  [ 3924.503045] Call Trace:
->>>>>  [ 3924.503055]  [<ffffffffa0176047>] handle_triple_fault+0x11/0x26=
-
->>>>>  [kvm_intel]
->>>>>  [ 3924.503060]  [<ffffffffa01772d2>] vmx_handle_exit+0x3df/0x474
->>>>>  [kvm_intel]
->>>>>  [ 3924.503080]  [<ffffffffa021f203>]
->>>>> kvm_arch_vcpu_ioctl_run+0x95f/0xc43
->>>>>  [kvm]
->>>>>  [ 3924.503087]  [<ffffffff81503e54>] ?
->>>>> __mutex_unlock_slowpath+0x11c/0x131
->>>>>  [ 3924.503101]  [<ffffffffa021e1f9>] ? kvm_arch_vcpu_load+0x90/0xe=
-6
->>>>> [kvm]
->>>>>  [ 3924.503112]  [<ffffffffa0210faf>] kvm_vcpu_ioctl+0x109/0x54a [k=
-vm]
->>>>>  [ 3924.503117]  [<ffffffff810bee76>] ?
->>>>>  fire_user_return_notifiers+0x2c/0x36
->>>>>  [ 3924.503122]  [<ffffffff8106be93>] ? trace_hardirqs_on+0xd/0xf
->>>>>  [ 3924.503127]  [<ffffffff81002789>] ? do_notify_resume+0x717/0x73=
-d
->>>>>  [ 3924.503131]  [<ffffffff8103994e>] ? finish_task_switch+0x69/0xd=
-a
->>>>>  [ 3924.503135]  [<ffffffff8110628c>] do_vfs_ioctl+0x4c3/0x50d
->>>>>  [ 3924.503139]  [<ffffffff8110632b>] sys_ioctl+0x55/0x77
->>>>>  [ 3924.503142]  [<ffffffff81002c02>] system_call_fastpath+0x16/0x1=
-b
->>>>>
->>>>>  Anyone can help on this?
->>>>
->>>>  Please provide a trace (trace-cmd record -e kvm) leading to the
->>>> failure.
->>>>
->>>
->>> Hi, please see:
->>> http://userweb.kernel.org/~davey/tmp/trace.dat
->>>
->>
->> Was this done with an old version of trace-cmd?  Please use the latest=
- git.
->>  Make sure you have udis86 and udis86-devel installed when you build i=
-t.
->=20
-> Hi, the trace-cmd was build from git version, but without udis86.
->=20
-> I updated trace.dat on the same url, is it a correct one?
->=20
-
-IIUC, plugin_kvm is only involved in reporting, not recording, so udis86
-shouldn't matter.
-
-I had a look out of curiosity (just managed to make my trace tools work
-smoothly), and the data is properly parsed by kernelshark here. There is
-a strange NMI storm going on right before the triple fault (on some MSR
-write) hits the fan.
-
-Jan
 
 
->>
->> --
->> error compiling committee.c: too many arguments to function
->>
->>
->=20
->=20
->=20
+Julia Lawall schrieb:
+> Rewrite the initialization of a dev field.  In the original code, in each
+> case there was a kmalloc followed by a memcpy, as illustrated by the
+> semantic patch below.  In the case that the provided string was the empty
+> string, the allocated memory was then overwritten with a constant string,
+> causing a memory leak.  Finally, there was no provision for returning
+> -ENOMEM in case of failure of the memory allocation.  Indeed, the return
+> value in an error case was err, a variable that was never initialized to
+> anything other than 0.
+> 
+> The following patch rewrites the above code to first select a string based
+> on various conditions, and then to copy it into a newly allocated memory
+> region, using kasprintf.  This decreases subtantially the code size
+> and removes the memory leak.  The instruction for getting the length of the
+> string and the associated variable declaration are also deleted.
+> 
+> The patch also drops err, changes the return value to retval, which in each
+> file was already initialized elsewhere to an error code, and initializes
+> retval to -ENOMEM when kasprintf fails.
+> 
+> The semantic patch that motivated this transformation is:
+> (http://coccinelle.lip6.fr/)
+> 
+> // <smpl>
+> @@
+> expression a,flag,len;
+> expression arg,e1,e2;
+> statement S;
+> @@
+> 
+>   len = strlen(arg)
+>   ... when != len = e1
+>       when != arg = e2
+>   a =
+> -  \(kmalloc\|kzalloc\)(len+1,flag)
+> +  kasprintf(flag,"%s",arg)
+>   <... when != a
+>   if (a == NULL || ...) S
+>   ...>
+> - memcpy(a,arg,len+1);
+> // </smpl>
+> 
+> Signed-off-by: Julia Lawall <julia@diku.dk>
+> 
+> ---
+> This patch makes quite a lot of changes and is only compile tested.
+> 
+>  drivers/staging/cx25821/cx25821-audio-upstream.c     |   36 +++---------
+>  drivers/staging/cx25821/cx25821-video-upstream-ch2.c |   57 +++++++------------
+>  drivers/staging/cx25821/cx25821-video-upstream.c     |   56 +++++++-----------
+>  3 files changed, 56 insertions(+), 93 deletions(-)
+> 
+> diff --git a/drivers/staging/cx25821/cx25821-audio-upstream.c b/drivers/staging/cx25821/cx25821-audio-upstream.c
+> index 27087db..a8f6343 100644
+> --- a/drivers/staging/cx25821/cx25821-audio-upstream.c
+> +++ b/drivers/staging/cx25821/cx25821-audio-upstream.c
+> @@ -723,8 +723,7 @@ int cx25821_audio_upstream_init(struct cx25821_dev *dev, int channel_select)
+>  {
+>  	struct sram_channel *sram_ch;
+>  	int retval = 0;
+> -	int err = 0;
+> -	int str_length = 0;
+> +	char *filename;
+>  
+>  	if (dev->_audio_is_running) {
+>  		printk(KERN_WARNING "Audio Channel is still running so return!\n");
+> @@ -752,28 +751,15 @@ int cx25821_audio_upstream_init(struct cx25821_dev *dev, int channel_select)
+>  	dev->_audio_lines_count = LINES_PER_AUDIO_BUFFER;
+>  	_line_size = AUDIO_LINE_SIZE;
+>  
+> -	if (dev->input_audiofilename) {
+> -		str_length = strlen(dev->input_audiofilename);
+> -		dev->_audiofilename = kmalloc(str_length + 1, GFP_KERNEL);
+> -
+> -		if (!dev->_audiofilename)
+> -			goto error;
+> -
+> -		memcpy(dev->_audiofilename, dev->input_audiofilename,
+> -		       str_length + 1);
+> -
+> -		/* Default if filename is empty string */
+> -		if (strcmp(dev->input_audiofilename, "") == 0)
+> -			dev->_audiofilename = "/root/audioGOOD.wav";
+> -
+> -	} else {
+> -		str_length = strlen(_defaultAudioName);
+> -		dev->_audiofilename = kmalloc(str_length + 1, GFP_KERNEL);
+> -
+> -		if (!dev->_audiofilename)
+> -			goto error;
+> -
+> -		memcpy(dev->_audiofilename, _defaultAudioName, str_length + 1);
+> +	if (dev->input_audiofilename &&
+> +	    strcmp(dev->input_audiofilename, "") != 0)
+> +		filename = dev->input_audiofilename;
+> +	else
+> +		filename = _defaultAudioName;
+> +	dev->_audiofilename = kasprintf(GFP_KERNEL, "%s", filename);
+> +	if (!dev->_audiofilename) {
+> +		retval = -ENOMEM;
+> +		goto error;
+>  	}
+>
+
+Is filename needed here at all ?
+The if statement looks strange this looks more familar to me:
+if (!dev->input_audiofilename || *dev->input_audiofilename==0)
+	filename = _defaultAudioName;
+else
+	filename = dev->input_audiofilename;
+
+re
+ wh
 
 
-
---------------enigCE2CA6A11C1F714CC5C67FDE
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.15 (GNU/Linux)
-Comment: Using GnuPG with SUSE - http://enigmail.mozdev.org/
-
-iEYEARECAAYFAky789AACgkQitSsb3rl5xRB/wCdEM5ZltTngMCjfT05tXmKE1Dq
-En8Ani3vaw49Abpo/IIEQx2UVZuOwxEu
-=P18e
------END PGP SIGNATURE-----
-
---------------enigCE2CA6A11C1F714CC5C67FDE--
+>  	retval =
+> @@ -802,5 +788,5 @@ int cx25821_audio_upstream_init(struct cx25821_dev *dev, int channel_select)
+>  error:
+>  	cx25821_dev_unregister(dev);
+>  
+> -	return err;
+> +	return retval;
+>  }
+> diff --git a/drivers/staging/cx25821/cx25821-video-upstream-ch2.c b/drivers/staging/cx25821/cx25821-video-upstream-ch2.c
+> index d12dbb5..531e0c4 100644
+> --- a/drivers/staging/cx25821/cx25821-video-upstream-ch2.c
+> +++ b/drivers/staging/cx25821/cx25821-video-upstream-ch2.c
+> @@ -747,10 +747,9 @@ int cx25821_vidupstream_init_ch2(struct cx25821_dev *dev, int channel_select,
+>  	struct sram_channel *sram_ch;
+>  	u32 tmp;
+>  	int retval = 0;
+> -	int err = 0;
+>  	int data_frame_size = 0;
+>  	int risc_buffer_size = 0;
+> -	int str_length = 0;
+> +	char *filename;
+>  
+>  	if (dev->_is_running_ch2) {
+>  		printk("Video Channel is still running so return!\n");
+> @@ -789,38 +788,26 @@ int cx25821_vidupstream_init_ch2(struct cx25821_dev *dev, int channel_select,
+>  	    dev->_isNTSC_ch2 ? NTSC_RISC_BUF_SIZE : PAL_RISC_BUF_SIZE;
+>  
+>  	if (dev->input_filename_ch2) {
+> -		str_length = strlen(dev->input_filename_ch2);
+> -		dev->_filename_ch2 = kmalloc(str_length + 1, GFP_KERNEL);
+> -
+> -		if (!dev->_filename_ch2)
+> -			goto error;
+> -
+> -		memcpy(dev->_filename_ch2, dev->input_filename_ch2,
+> -		       str_length + 1);
+> -	} else {
+> -		str_length = strlen(dev->_defaultname_ch2);
+> -		dev->_filename_ch2 = kmalloc(str_length + 1, GFP_KERNEL);
+> -
+> -		if (!dev->_filename_ch2)
+> -			goto error;
+> -
+> -		memcpy(dev->_filename_ch2, dev->_defaultname_ch2,
+> -		       str_length + 1);
+> -	}
+> -
+> -       /* Default if filename is empty string */
+> -	if (strcmp(dev->input_filename_ch2, "") == 0) {
+> -		if (dev->_isNTSC_ch2) {
+> -			dev->_filename_ch2 =
+> -			    (dev->_pixel_format_ch2 ==
+> -			     PIXEL_FRMT_411) ? "/root/vid411.yuv" :
+> -			    "/root/vidtest.yuv";
+> -		} else {
+> -			dev->_filename_ch2 =
+> -			    (dev->_pixel_format_ch2 ==
+> -			     PIXEL_FRMT_411) ? "/root/pal411.yuv" :
+> -			    "/root/pal422.yuv";
+> -		}
+> +		/* Default if filename is empty string */
+> +		if (strcmp(dev->input_filename_ch2, "") == 0) {
+> +			if (dev->_isNTSC_ch2)
+> +				filename =
+> +					(dev->_pixel_format_ch2 ==
+> +					PIXEL_FRMT_411) ? "/root/vid411.yuv" :
+> +					"/root/vidtest.yuv";
+> +			else
+> +				filename =
+> +					(dev->_pixel_format_ch2 ==
+> +					PIXEL_FRMT_411) ? "/root/pal411.yuv" :
+> +					"/root/pal422.yuv";
+> +		} else
+> +			filename = dev->input_filename_ch2;
+> +	} else
+> +		filename = dev->_defaultname_ch2;
+> +	dev->_filename_ch2 = kasprintf(GFP_KERNEL, "%s", filename);
+> +	if (!dev->_filename_ch2) {
+> +		retval = -ENOMEM;
+> +		goto error;
+>  	}
+>  
+>  	retval =
+> @@ -851,5 +838,5 @@ int cx25821_vidupstream_init_ch2(struct cx25821_dev *dev, int channel_select,
+>        error:
+>  	cx25821_dev_unregister(dev);
+>  
+> -	return err;
+> +	return retval;
+>  }
+> diff --git a/drivers/staging/cx25821/cx25821-video-upstream.c b/drivers/staging/cx25821/cx25821-video-upstream.c
+> index 756a820..040f795 100644
+> --- a/drivers/staging/cx25821/cx25821-video-upstream.c
+> +++ b/drivers/staging/cx25821/cx25821-video-upstream.c
+> @@ -800,10 +800,9 @@ int cx25821_vidupstream_init_ch1(struct cx25821_dev *dev, int channel_select,
+>  	struct sram_channel *sram_ch;
+>  	u32 tmp;
+>  	int retval = 0;
+> -	int err = 0;
+>  	int data_frame_size = 0;
+>  	int risc_buffer_size = 0;
+> -	int str_length = 0;
+> +	char *filename;
+>  
+>  	if (dev->_is_running) {
+>  		printk(KERN_INFO "Video Channel is still running so return!\n");
+> @@ -841,36 +840,27 @@ int cx25821_vidupstream_init_ch1(struct cx25821_dev *dev, int channel_select,
+>  	    dev->_isNTSC ? NTSC_RISC_BUF_SIZE : PAL_RISC_BUF_SIZE;
+>  
+>  	if (dev->input_filename) {
+> -		str_length = strlen(dev->input_filename);
+> -		dev->_filename = kmalloc(str_length + 1, GFP_KERNEL);
+> -
+> -		if (!dev->_filename)
+> -			goto error;
+> -
+> -		memcpy(dev->_filename, dev->input_filename, str_length + 1);
+> -	} else {
+> -		str_length = strlen(dev->_defaultname);
+> -		dev->_filename = kmalloc(str_length + 1, GFP_KERNEL);
+> -
+> -		if (!dev->_filename)
+> -			goto error;
+> -
+> -		memcpy(dev->_filename, dev->_defaultname, str_length + 1);
+> -	}
+> -
+> -	/* Default if filename is empty string */
+> -	if (strcmp(dev->input_filename, "") == 0) {
+> -		if (dev->_isNTSC) {
+> -			dev->_filename =
+> -			    (dev->_pixel_format ==
+> -			     PIXEL_FRMT_411) ? "/root/vid411.yuv" :
+> -			    "/root/vidtest.yuv";
+> -		} else {
+> -			dev->_filename =
+> -			    (dev->_pixel_format ==
+> -			     PIXEL_FRMT_411) ? "/root/pal411.yuv" :
+> -			    "/root/pal422.yuv";
+> -		}
+> +		/* Default if filename is empty string */
+> +		if (strcmp(dev->input_filename, "") == 0) {
+> +			if (dev->_isNTSC)
+> +				filename =
+> +					(dev->_pixel_format ==
+> +					PIXEL_FRMT_411) ? "/root/vid411.yuv" :
+> +					"/root/vidtest.yuv";
+> +			else
+> +				filename =
+> +					(dev->_pixel_format ==
+> +					PIXEL_FRMT_411) ? "/root/pal411.yuv" :
+> +					"/root/pal422.yuv";
+> +		} else
+> +			filename = dev->input_filename;
+> +	} else
+> +		filename = dev->_defaultname;
+> +
+> +	dev->_filename = kasprintf(GFP_KERNEL, "%s", filename);
+> +	if (!dev->_filename) {
+> +		retval = -ENOMEM;
+> +		goto error;
+>  	}
+>  
+>  	dev->_is_running = 0;
+> @@ -908,5 +898,5 @@ int cx25821_vidupstream_init_ch1(struct cx25821_dev *dev, int channel_select,
+>  error:
+>  	cx25821_dev_unregister(dev);
+>  
+> -	return err;
+> +	return retval;
+>  }
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe kernel-janitors" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
+> 
