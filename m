@@ -1,59 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757479Ab0JRRLE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Oct 2010 13:11:04 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:47206 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753667Ab0JRRLB (ORCPT
+	id S1757486Ab0JRRNK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Oct 2010 13:13:10 -0400
+Received: from smtp106.prem.mail.ac4.yahoo.com ([76.13.13.45]:20989 "HELO
+	smtp106.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1757445Ab0JRRNI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Oct 2010 13:11:01 -0400
-Date: Mon, 18 Oct 2010 13:10:46 -0400
-From: Kyle McMartin <kyle@mcmartin.ca>
-To: Eric Paris <eparis@redhat.com>
-Cc: Kyle McMartin <kyle@mcmartin.ca>, James Morris <jmorris@namei.org>,
-        Christoph Hellwig <hch@infradead.org>, kernel@lists.fedoraproject.org,
-        Mimi Zohar <zohar@us.ibm.com>, warthog9@kernel.org,
-        Dave Chinner <david@fromorbit.com>, linux-kernel@vger.kernel.org,
-        "H. Peter Anvin" <hpa@zytor.com>, Serge Hallyn <serue@us.ibm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>, mingo@elte.hu
-Subject: Re: ima: use of radix tree cache indexing == massive waste of memory?
-Message-ID: <20101018171046.GE8332@bombadil.infradead.org>
-References: <20101016065206.GO4681@dastard>
- <20101016192027.GA6883@infradead.org>
- <ebc4973c-6c11-4397-b8b0-c212a27abce4@email.android.com>
- <20101017004945.GE1614@infradead.org>
- <20101017054008.GA16383@elte.hu>
- <20101017184652.GB28060@infradead.org>
- <alpine.LRH.2.00.1010181127480.9476@tundra.namei.org>
- <20101018062530.GD8332@bombadil.infradead.org>
- <1287420534.2530.67.camel@localhost.localdomain>
+	Mon, 18 Oct 2010 13:13:08 -0400
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+X-YMail-OSG: wpqy52oVM1nATBOsKxpPFJrGtyuNWCKS.9Rdu0BvXDUp70O
+ hdnw-
+X-Yahoo-Newman-Property: ymail-3
+Date: Mon, 18 Oct 2010 11:12:31 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Eric Dumazet <eric.dumazet@gmail.com>
+cc: Andrew Morton <akpm@linux-foundation.org>, Nick Piggin <npiggin@kernel.dk>,
+        Dave Chinner <david@fromorbit.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] percpu_counter : add percpu_counter_add_fast()
+In-Reply-To: <1287416380.2409.13.camel@edumazet-laptop>
+Message-ID: <alpine.DEB.2.00.1010181111500.2092@router.home>
+References: <1285762729-17928-1-git-send-email-david@fromorbit.com>  <1285762729-17928-17-git-send-email-david@fromorbit.com>  <20100929215322.ff635d3e.akpm@linux-foundation.org>  <20100930061039.GX5665@dastard> <20101016075510.GH19147@amd> 
+ <1287217748.2799.68.camel@edumazet-laptop>  <20101016020744.366bd9c6.akpm@linux-foundation.org>  <1287221475.2799.123.camel@edumazet-laptop>  <1287238754.2799.376.camel@edumazet-laptop>  <alpine.DEB.2.00.1010181015290.755@router.home>
+ <1287416380.2409.13.camel@edumazet-laptop>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1287420534.2530.67.camel@localhost.localdomain>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 18, 2010 at 12:48:54PM -0400, Eric Paris wrote:
-> I'll can address this on the fedora list, but I think this is the wrong
-> approach.  IMA is supposed to be of negligible impact when not 'enabled'
-> and I believe the right solution is to fix places where that isn't true.
-> At the moment 3 have been identified.
-> 
+On Mon, 18 Oct 2010, Eric Dumazet wrote:
 
-My beef is #2, which is what I want to see solved. If there's a million
-people using Fedora, and 2 people use IMA, that's an awful lot of bytes
-that could be otherwise used.
+> Nope, on UP, we dont use a per_cpu field, just a "s64 count".
+>
+> struct percpu_counter {
+>         s64 count;
+> };
 
-I think it should be entirely opt in, with a CONFIG_IMA_DEFAULT_ON or
-something like we do for security hooks.
+Ok that is percpu counter specific then.
 
-Anyway, If you can address #2, then I'm happy having it enabled. If it's
-taken us this long to notice the impact, then it doesn't seem to be
-all that large in the general case, and if it can be reduced, then that
-should make everyone happy.
-
---Kyle
