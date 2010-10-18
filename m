@@ -1,79 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754696Ab0JRJk0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Oct 2010 05:40:26 -0400
-Received: from smtp.nokia.com ([192.100.122.233]:28983 "EHLO
-	mgw-mx06.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752293Ab0JRJkZ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Oct 2010 05:40:25 -0400
-From: <samu.p.onkalo@nokia.com>
-To: <samu.p.onkalo@nokia.com>, <khali@linux-fr.org>
-CC: <tony@atomide.com>, <linux-i2c@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Date: Mon, 18 Oct 2010 11:38:44 +0200
-Subject: RE: [PATCH 0/2] Short timeout for I2C transfers
-Thread-Topic: [PATCH 0/2] Short timeout for I2C transfers
-Thread-Index: ActsZ82pnIa0WGfKSjazAey3yqUnswCOGxXQAAFMGQA=
-Message-ID: <62697B07E9803846BC582181BD6FB6B835EFD27D1C@NOK-EUMSG-02.mgdnok.nokia.com>
-References: <1286977510-16702-1-git-send-email-samu.p.onkalo@nokia.com>
- <20101015145149.2f688c9d@endymion.delvare>
- <62697B07E9803846BC582181BD6FB6B835EFD27C35@NOK-EUMSG-02.mgdnok.nokia.com>
-In-Reply-To: <62697B07E9803846BC582181BD6FB6B835EFD27C35@NOK-EUMSG-02.mgdnok.nokia.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1754693Ab0JRJoT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Oct 2010 05:44:19 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:53573 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753234Ab0JRJoR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Oct 2010 05:44:17 -0400
+Date: Mon, 18 Oct 2010 10:44:04 +0100
+From: Mel Gorman <mel@csn.ul.ie>
+To: Tejun Heo <tj@kernel.org>
+Cc: lkml <linux-kernel@vger.kernel.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Wu Fengguang <fengguang.wu@intel.com>, Michal Hocko <mhocko@suse.cz>
+Subject: Re: [PATCH v2.6.36-rc7] memory_hotplug: drop spurious calls to
+	flush_scheduled_work()
+Message-ID: <20101018094403.GW30667@csn.ul.ie>
+References: <4CB8725B.9010200@kernel.org>
 MIME-Version: 1.0
-X-OriginalArrivalTime: 18 Oct 2010 09:40:06.0872 (UTC) FILETIME=[72BCAD80:01CB6EA8]
-X-Nokia-AV: Clean
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <4CB8725B.9010200@kernel.org>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Oct 15, 2010 at 05:25:15PM +0200, Tejun Heo wrote:
+> lru_add_drain_all() uses schedule_on_each_cpu() which is synchronous.
+> There is no reason to call flush_scheduled_work() after
+> lru_add_drain_all().  Drop the spurious calls.
+> 
 
+This looks correct.
 
->-----Original Message-----
->From: linux-i2c-owner@vger.kernel.org [mailto:linux-i2c-
->owner@vger.kernel.org] On Behalf Of ext samu.p.onkalo@nokia.com
+Acked-by: Mel Gorman <mel@csn.ul.ie>
 
+I suspect this call to flush_scheduled_work() existed because it is easy
+to interpret the documentation of schedule_on_each_cpu to mean it is an
+asynchronous call.  Maybe something like the following?
 
->>The timeout is a symptom as the controller level. What is the root
->>cause at the LP5523 device level? What exactly happens on the wire?
->>
->
->Chip seems to release ACK signal too soon causing rising edge while
->SCL is high. This violates bus protocol and causes timeout at the
->controller. It is no recognized as ACK nor NACK.
->
->>I am asking because maybe some of the already available protocol
->>mangling flags would work for you, in particular I2C_M_IGNORE_NAK. See
->>Documentation/i2c/i2c-protocol.
->>
->>
->>You should also check why you hit the timeout condition. Ideally the
->>hardware would report problems as they happen, quickly, rather than
->>having to rely on the driver's timeout mechanism. The timeout should
->>really only be a safety mechanism, for when the bus controller itself
->>misbehaves at the hardware level.
->>
+==== CUT HERE ====
+workqueue: Clarify that schedule_on_each_cpu is synchronous
 
-It seems that controller detects bus free condition when this happens.
-So, instead of the timeout, bus free condition should be detected.
-There is no such interrupt so this must be done by polling
-the status register. In general this is not a good idea.
+The documentation for schedule_on_each_cpu() states that it calls a function
+on each online CPU from keventd. This can easily be interpreted as an
+asyncronous call because the description does not mention that flush_work
+is called. Clarify that it is synchronous.
 
-Would it make sense somehow tell that use polling and not
-the interrupt / timeout control? I.e. by setting a flag that
-this transfer doesn't end properly.
+Signed-off-by: Mel Gorman <mel@csn.ul.ie>
+---
+ kernel/workqueue.c |    8 +++++---
+ 1 files changed, 5 insertions(+), 3 deletions(-)
 
-I2C_M_IGNORE_TIMEOUT?
-In such case just either wait for bus free if supported by HW or
-wait for some short time after start of the transmission
-
--Samu
-
-
+diff --git a/kernel/workqueue.c b/kernel/workqueue.c
+index f77afd9..07cba1e 100644
+--- a/kernel/workqueue.c
++++ b/kernel/workqueue.c
+@@ -2592,13 +2592,15 @@ int schedule_delayed_work_on(int cpu,
+ EXPORT_SYMBOL(schedule_delayed_work_on);
+ 
+ /**
+- * schedule_on_each_cpu - call a function on each online CPU from keventd
++ * schedule_on_each_cpu - Call a function on each online CPU via keventd and wait for completion
+  * @func: the function to call
+  *
++ * schedule_on_each_cpu executes a given callback function on each CPU via keventd
++ * and blocks until each callback has completed. schedule_on_each_cpu() is very
++ * slow.
++ *
+  * Returns zero on success.
+  * Returns -ve errno on failure.
+- *
+- * schedule_on_each_cpu() is very slow.
+  */
+ int schedule_on_each_cpu(work_func_t func)
+ {
