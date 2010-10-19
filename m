@@ -1,244 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756955Ab0JSTug (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Oct 2010 15:50:36 -0400
-Received: from www.tglx.de ([62.245.132.106]:38369 "EHLO www.tglx.de"
+	id S1756999Ab0JST6x (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Oct 2010 15:58:53 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:37524 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753117Ab0JSTuf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Oct 2010 15:50:35 -0400
-Date: Tue, 19 Oct 2010 21:49:45 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-cc: Steven Rostedt <rostedt@goodmis.org>,
-        Koki Sanagi <sanagi.koki@jp.fujitsu.com>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Frederic Weisbecker <fweisbec@gmail.com>, nhorman@tuxdriver.com,
-        scott.a.mcmillan@intel.com, laijs@cn.fujitsu.com,
-        "H. Peter Anvin" <hpa@zytor.com>, LKML <linux-kernel@vger.kernel.org>,
-        eric.dumazet@gmail.com, kaneshige.kenji@jp.fujitsu.com,
-        David Miller <davem@davemloft.net>, izumi.taku@jp.fujitsu.com,
-        kosaki.motohiro@jp.fujitsu.com,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        "Luck, Tony" <tony.luck@intel.com>
-Subject: Re: [PATCH] tracing: Cleanup the convoluted softirq tracepoints
-In-Reply-To: <20101019142820.GA14520@Krystal>
-Message-ID: <alpine.LFD.2.00.1010191842270.6815@localhost6.localdomain6>
-References: <tip-2bf2160d8805de64308e2e7c3cd97813cb58ed2f@git.kernel.org> <20100908112529.GA25931@elte.hu> <1287395077.29097.1543.camel@twins> <1287398936.29097.1548.camel@twins> <4CBD79CF.2060706@jp.fujitsu.com> <alpine.LFD.2.00.1010191428560.6815@localhost6.localdomain6>
- <20101019132236.GA19197@Krystal> <alpine.LFD.2.00.1010191524160.6815@localhost6.localdomain6> <1287496495.16971.372.camel@gandalf.stny.rr.com> <alpine.LFD.2.00.1010191558250.6815@localhost6.localdomain6> <20101019142820.GA14520@Krystal>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1751831Ab0JST6w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Oct 2010 15:58:52 -0400
+Date: Tue, 19 Oct 2010 15:58:17 -0400 (EDT)
+From: Mikulas Patocka <mpatocka@redhat.com>
+X-X-Sender: mpatocka@hs20-bc2-1.build.redhat.com
+To: Cong Meng <mcpacino@gmail.com>
+cc: linux-fsdevel@vger.kernel.org,
+        device-mapper development <dm-devel@redhat.com>,
+        linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Christoph Hellwig <hch@lst.de>, Nick Piggin <npiggin@kernel.dk>,
+        Daniel Phillips <phillips@phunq.net>
+Subject: Re: [dm-devel] introduce dm-snap-mv
+In-Reply-To: <20101006083150.GA15758@zhongling>
+Message-ID: <Pine.LNX.4.64.1010191551540.19443@hs20-bc2-1.build.redhat.com>
+References: <20101006083150.GA15758@zhongling>
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 19 Oct 2010, Mathieu Desnoyers wrote:
-> * Thomas Gleixner (tglx@linutronix.de) wrote:
-> > On Tue, 19 Oct 2010, Steven Rostedt wrote:
-> as an excuse for adding extra performance impact to kernel code, because when it
-> will be replaced by asm gotos, all that will be left is the performance impact
-> inappropriately justified as insignificant compared to the impact of the old
-> tracepoint scheme.
+Hi
 
-Can you at one point just stop your tracing lectures and look at the
-facts ?
+Thanks for the development!
 
-The impact of a sensible tracepoint design on the code in question
-before kstat_incr_softirqs_this_cpu() was added would have been a mere
-_FIVE_ bytes of text. But the original tracepoint code itself is
-_TWENTY_ bytes of text larger.
+I'm already developing something similar 
+paper: http://people.redhat.com/mpatocka/papers/shared-snapshots.pdf
+kernel code: http://people.redhat.com/mpatocka/patches/kernel/new-snapshots/r22/
+user code: http://people.redhat.com/mpatocka/patches/userspace/new-snapshots/lvm-2.02.73/
 
-So we trade horrible code plus 20 bytes text against 5 bytes of text
-in the hotpath. And you tell me that these _FIVE_ bytes are impacting
-performance so much that it's significant.
+Please change your code to conform to the existing interface. My kernel 
+code is extendible, you can plug arbitrary on-disk formats to it, there's 
+another example of Daniel Phillips' zumastore snapshots. Use this 
+interface so that it could be used with the existing userspace 
+infrastructure.
 
-Now with kstat_incr_softirqs_this_cpu() the impact is zero, it even
-removes code.
+Mikulas
 
-And talking about non impact of disabled trace points. The tracepoint
-in question which made me look at the code results in deinlining
-__raise_softirq_irqsoff() in net/dev/core.c. There goes your theory.
+On Wed, 6 Oct 2010, Cong Meng wrote:
 
-So no, you _cannot_ tell what impact a tracepoint has in reality
-except by looking at the assembly output.
-
-And what scares me way more is the size of a single tracepoint in a
-code file.
-
-Just adding "trace_softirq_entry(nr);" adds 88 bytes of text. So
-that's optimized tracing code ?
-
-All it's supposed to do is:
-
-    if (enabled)
-	trace_foo(nr);
-
-Replace "if (enabled)" with your favourite code patching jump label
-whatever magic. The above stupid version takes about 28, but the
-"optimized" tracing code makes that 88. Brilliant. That's inlining
-utter shite for no good reason. WTF is it necessary to inline all that
-gunk ?
-
-Please spare me the "jump label will make this less intrusive"
-lecture. I'm not interested at all.
-
-Let's instead look at some more facts:
-
-#include <linux/interrupt.h>
-#include <linux/module.h>
-
-#include <trace/events/irq.h>
-
-static struct softirq_action softirq_vec[NR_SOFTIRQS];
-
-void test(struct softirq_action *h)
-{
-	trace_softirq_entry(h - softirq_vec);
-
-	h->action(h);
-}
-
-Compile this code with GCC 4.5 with and without jump labels (zap the
-select HAVE_ARCH_JUMP_LABEL line in arch/x86/Kconfig)
-
-So now the !jumplabel case gives us:
-
-../build/kernel/soft.o:     file format elf64-x86-64
-
-Disassembly of section .text:
-
-0000000000000000 <test>:
-   0:	55                   	push   %rbp
-   1:	48 89 e5             	mov    %rsp,%rbp
-   4:	41 55                	push   %r13
-   6:	49 89 fd             	mov    %rdi,%r13
-   9:	49 81 ed 00 00 00 00 	sub    $0x0,%r13
-  10:	41 54                	push   %r12
-  12:	49 c1 ed 03          	shr    $0x3,%r13
-  16:	49 89 fc             	mov    %rdi,%r12
-  19:	53                   	push   %rbx
-  1a:	48 83 ec 08          	sub    $0x8,%rsp
-  1e:	83 3d 00 00 00 00 00 	cmpl   $0x0,0x0(%rip)        # 25 <test+0x25>
-  25:	74 4d                	je     74 <test+0x74>
-  27:	65 48 8b 04 25 00 00 	mov    %gs:0x0,%rax
-  2e:	00 00 
-  30:	ff 80 44 e0 ff ff    	incl   -0x1fbc(%rax)
-  36:	48 8b 1d 00 00 00 00 	mov    0x0(%rip),%rbx        # 3d <test+0x3d>
-  3d:	48 85 db             	test   %rbx,%rbx
-  40:	74 13                	je     55 <test+0x55>
-  42:	48 8b 7b 08          	mov    0x8(%rbx),%rdi
-  46:	44 89 ee             	mov    %r13d,%esi
-  49:	ff 13                	callq  *(%rbx)
-  4b:	48 83 c3 10          	add    $0x10,%rbx
-  4f:	48 83 3b 00          	cmpq   $0x0,(%rbx)
-  53:	eb eb                	jmp    40 <test+0x40>
-  55:	65 48 8b 04 25 00 00 	mov    %gs:0x0,%rax
-  5c:	00 00 
-  5e:	ff 88 44 e0 ff ff    	decl   -0x1fbc(%rax)
-  64:	48 8b 80 38 e0 ff ff 	mov    -0x1fc8(%rax),%rax
-  6b:	a8 08                	test   $0x8,%al
-  6d:	74 05                	je     74 <test+0x74>
-  6f:	e8 00 00 00 00       	callq  74 <test+0x74>
-  74:	4c 89 e7             	mov    %r12,%rdi
-  77:	41 ff 14 24          	callq  *(%r12)
-  7b:	58                   	pop    %rax
-  7c:	5b                   	pop    %rbx
-  7d:	41 5c                	pop    %r12
-  7f:	41 5d                	pop    %r13
-  81:	c9                   	leaveq 
-  82:	c3                   	retq   
-
-The jumplabel=y case gives:
-
-../build/kernel/soft.o:     file format elf64-x86-64
-
-Disassembly of section .text:
-
-0000000000000000 <test>:
-   0:	55                   	push   %rbp
-   1:	48 89 e5             	mov    %rsp,%rbp
-   4:	41 55                	push   %r13
-   6:	49 89 fd             	mov    %rdi,%r13
-   9:	49 81 ed 00 00 00 00 	sub    $0x0,%r13
-  10:	41 54                	push   %r12
-  12:	49 c1 ed 03          	shr    $0x3,%r13
-  16:	49 89 fc             	mov    %rdi,%r12
-  19:	53                   	push   %rbx
-  1a:	48 83 ec 08          	sub    $0x8,%rsp
-  1e:	e9 00 00 00 00       	jmpq   23 <test+0x23>
-  23:	eb 4d                	jmp    72 <test+0x72>
-  25:	65 48 8b 04 25 00 00 	mov    %gs:0x0,%rax
-  2c:	00 00 
-  2e:	ff 80 44 e0 ff ff    	incl   -0x1fbc(%rax)
-  34:	48 8b 1d 00 00 00 00 	mov    0x0(%rip),%rbx        # 3b <test+0x3b>
-  3b:	48 85 db             	test   %rbx,%rbx
-  3e:	74 13                	je     53 <test+0x53>
-  40:	48 8b 7b 08          	mov    0x8(%rbx),%rdi
-  44:	44 89 ee             	mov    %r13d,%esi
-  47:	ff 13                	callq  *(%rbx)
-  49:	48 83 c3 10          	add    $0x10,%rbx
-  4d:	48 83 3b 00          	cmpq   $0x0,(%rbx)
-  51:	eb eb                	jmp    3e <test+0x3e>
-  53:	65 48 8b 04 25 00 00 	mov    %gs:0x0,%rax
-  5a:	00 00 
-  5c:	ff 88 44 e0 ff ff    	decl   -0x1fbc(%rax)
-  62:	48 8b 80 38 e0 ff ff 	mov    -0x1fc8(%rax),%rax
-  69:	a8 08                	test   $0x8,%al
-  6b:	74 05                	je     72 <test+0x72>
-  6d:	e8 00 00 00 00       	callq  72 <test+0x72>
-  72:	4c 89 e7             	mov    %r12,%rdi
-  75:	41 ff 14 24          	callq  *(%r12)
-  79:	58                   	pop    %rax
-  7a:	5b                   	pop    %rbx
-  7b:	41 5c                	pop    %r12
-  7d:	41 5d                	pop    %r13
-  7f:	c9                   	leaveq 
-  80:	c3                   	retq   
-
-So that saves _TWO_ bytes of text and replaces:
-
--  1e:	83 3d 00 00 00 00 00 	cmpl   $0x0,0x0(%rip)        # 25 <test+0x25>
--  25:	74 4d                	je     74 <test+0x74>
-+  1e:	e9 00 00 00 00       	jmpq   23 <test+0x23>
-+  23:	eb 4d                	jmp    72 <test+0x72>
-
-So it trades a conditional vs. two jumps ? WTF ??
-
-I thought that jumplabel magic was supposed to get rid of the jump
-over the tracing code ? In fact it adds another jump. Whatfor ?
-
-Now even worse, when you NOP out the jmpq then your tracepoint is
-still not enabled. Brilliant !
-
-Did you guys ever look at the assembly output of that insane shite you
-are advertising with lengthy explanations ? 
-
-Obviously _NOT_
-
-Come back when you can show me a clean imlementation of all this crap
-which reproduces with my jumplabel enabled stock compiler. And please
-just send me a patch w/o the blurb.
-
-And sane looks like:
-
-    jmpq   2f  <---- This gets noped out 
-1:
-    mov    %r12,%rdi
-    callq  *(%r12)
-    [whatever cleanup it takes ]
-    leaveq 
-    retq   
-
-2f:
-    [tracing gunk]
-    jmp    1b
-
-And further I want to see the tracing gunk in a minimal size so the
-net/core/dev.c deinlining does not happen.
-
-Thanks,
-
-	tglx
-
-P.S.: It might be helpful and polite if you'd take off your tracing
-      blinkers from time to time.
+> Hello everyone,
+> 
+> I am very glad to introduce my work dm-snap-mv here.
+> 
+> 
+> what is dm-snap-mv
+> -------------------
+> The dm-snap-mv is a target module for device-mapper, which can take
+> multiple snapshots against an existing block device(origin device).
+> 
+> All snapshots are saved in an independent block device(COW device).
+> 
+> The copy-on-write is used, so only diff-data will be saved in the COW device.
+> 
+> 
+> features
+> --------
+> 1. snapshot of origin
+> 2. snapshot of snapshot
+> 3. instant snapshot creation and deletion
+> 4. origin and snapshots are concurrent readable/writable
+> 5. rollback snapshot to origin
+> 6. multiple origin devices share a COW device
+> 7. multiple COW devices are supported
+> 
+> 
+> diagram
+> -------
+> 
+>            +---------------------+    +---------------+     +--------------+
+>    read <--|                     |-----               |     |              |
+>            |    origin dm_dev    |    |   origin_dev  | COW |              |
+>   write ---|                     |---->               |----->  snapshot-1  |
+>            +---------------------+    +--|------------+     |     ...      | 
+>                                          |                  |     ...      |        
+>            +---------------------+    +--|------------------+     ...      |
+>    read <--|                     |-------?-                    snapshot-N  |
+>            |  snapshot-X dm_dev  |    |         cow_dev                    |
+>   write ---|                     |---->                                    |
+>            +---------------------+    +------------------------------------+
+> 
+>   dm_dev: device-mapper device, created by "dmsetup create ..."
+>      COW: copy-on-write
+> 
+> 
+> download the source
+> -----------------------
+> http://github.com/mcpacino/dm-snap-mv
+> 
+> git clone git://github.com/mcpacino/dm-snap-mv.git
+> 
+> 
+> a kernel patch
+> --------------
+> Now, dm-snap-mv highly depends on a kernel patch below, which make __getblk()
+> can get a 4K buffer head while block size of the disk is NOT 4K.
+> 
+> Signed-off-by: Cong Meng <mcpacino@gmail.com>
+> ---
+>  fs/buffer.c |    7 ++-----
+>  1 files changed, 2 insertions(+), 5 deletions(-)
+> 
+> diff --git a/fs/buffer.c b/fs/buffer.c
+> index 3e7dca2..f7f9d33 100644
+> --- a/fs/buffer.c
+> +++ b/fs/buffer.c
+> @@ -1051,10 +1051,7 @@ grow_buffers(struct block_device *bdev, sector_t block, int size)
+>  	pgoff_t index;
+>  	int sizebits;
+>  
+> -	sizebits = -1;
+> -	do {
+> -		sizebits++;
+> -	} while ((size << sizebits) < PAGE_SIZE);
+> +	sizebits = PAGE_CACHE_SHIFT - bdev->bd_inode->i_blkbits;
+>  
+>  	index = block >> sizebits;
+>  
+> @@ -2924,7 +2921,7 @@ int submit_bh(int rw, struct buffer_head * bh)
+>  	 */
+>  	bio = bio_alloc(GFP_NOIO, 1);
+>  
+> -	bio->bi_sector = bh->b_blocknr * (bh->b_size >> 9);
+> +	bio->bi_sector = bh->b_blocknr << (bh->b_bdev->bd_inode->i_blkbits - 9);
+>  	bio->bi_bdev = bh->b_bdev;
+>  	bio->bi_io_vec[0].bv_page = bh->b_page;
+>  	bio->bi_io_vec[0].bv_len = bh->b_size;
+> 
+> --
+> dm-devel mailing list
+> dm-devel@redhat.com
+> https://www.redhat.com/mailman/listinfo/dm-devel
+> 
