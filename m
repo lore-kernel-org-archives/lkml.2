@@ -1,77 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933957Ab0JSLMK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Oct 2010 07:12:10 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:39484 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932393Ab0JSLMI convert rfc822-to-8bit (ORCPT
+	id S1758247Ab0JSLM4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Oct 2010 07:12:56 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:56597 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932393Ab0JSLMz convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Oct 2010 07:12:08 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=LcrU9dmjkOQYWV2Ew46e4wx0FtG3QGm53HJynO6rDMUsZhWbS3k6Gm4KpRGIa+W+Q3
-         22iIVgEbpruokNOhNgIs9DQQXRg/jGkiu5AAVtmf+bZ3B09MsV14DG2Mb8z2k2WRtE68
-         rIxfDVS/68xueLZlBBmncbmkfMlW0Gj9GmUVo=
+	Tue, 19 Oct 2010 07:12:55 -0400
 MIME-Version: 1.0
-In-Reply-To: <1287486167.1994.1.camel@twins>
-References: <AANLkTinoaJX3M2zU_zZOpmFm9Ekxpw-LUVUf_TU8yuSq@mail.gmail.com>
-	<1287486167.1994.1.camel@twins>
-Date: Tue, 19 Oct 2010 17:12:06 +0600
-Message-ID: <AANLkTiku=BcJBQx5Av=Ri+Cd4b+VFY_Y2NL2sd4iQxLM@mail.gmail.com>
-Subject: Re: [PATCH] sched_rt: Removes extra checking for nr_cpus_allowed when
- calling find_lowest_rq
-From: Rakib Mullick <rakib.mullick@gmail.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Gregory Haskins <ghaskins@novell.com>
+X-Originating-IP: [196.201.218.253]
+In-Reply-To: <20101019064000.GC21782@elte.hu>
+References: <AANLkTinHc7tMntW5NFAhu40RC7m2=HwbqOBeE-21vL8J@mail.gmail.com>
+ <20101018233834.GC5370@nowhere> <AANLkTi=Ssz4WdMDXq-93GE9bPHoaQ8QyTSrWXDSCa7eH@mail.gmail.com>
+ <20101019064000.GC21782@elte.hu>
+From: Brian Gitonga Marete <marete@toshnix.com>
+Date: Tue, 19 Oct 2010 14:12:33 +0300
+Message-ID: <AANLkTimqaTKu23HrgbffAht_Otn9L5k2oHMZDGki8MK+@mail.gmail.com>
+Subject: Re: [PATCH] [PERF] (Userspace Tools) Fix a compilation error with
+ -fstack-protector and -Werror
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 19, 2010 at 5:02 PM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Tue, 2010-10-19 at 16:57 +0600, Rakib Mullick wrote:
->> sched_rt: Removes extra checking for nr_cpus_allowed when calling
->> find_lowest_rq
+On Tue, Oct 19, 2010 at 9:40 AM, Ingo Molnar <mingo@elte.hu> wrote:
 >
-> Why repeat this subject?
-
-Just trying to give a good looking format :-). Not sure whether it
-really is or not.
+> * Brian Gitonga Marete <marete@toshnix.com> wrote:
 >
->
-> That's just not explaining anything.. what can go wrong, how does this
-> fix it.
-
-Actually it's not a fix. It just removes a check. It checks whether
-this process is movable to other processor or not. And this check is
-made from inside the find_lowest_cpu function. Thats why, the check
-before calling find_lowest_cpu has been removed. Is my explanation
-okay?
-
-Thanks,
-Rakib
-
-
->
->> Signed-off-by: Rakib Mullick <rakib.mullick@gmail.com>
->> ---
+>> On Tue, Oct 19, 2010 at 2:38 AM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
+>> > On Tue, Oct 19, 2010 at 02:24:00AM +0300, Brian Gitonga Marete wrote:
+>> >> The following patch fixes compilation of the perf user-space tools on,
+>> >> for example, gcc version 4.3.3 (Ubuntu 4.3.3-5ubuntu4) . It should not
+>> >> break anything else.
+>> >
+>> >
+>> >
+>> > Hi,
+>> >
+>> > What kind of warning have you encountered and why it fixes it?
+>> > Can you describe that in your changelog?
+>> >
 >>
->> --- linus-rc8/kernel/sched_rt.c       2010-10-15 05:26:43.000000000 +0600
->> +++ rakib-rc8/kernel/sched_rt.c       2010-10-19 16:22:30.000000000 +0600
->> @@ -971,8 +971,7 @@ select_task_rq_rt(struct rq *rq, struct
->>        * that is just being woken and probably will have
->>        * cold cache anyway.
->>        */
->> -     if (unlikely(rt_task(rq->curr)) &&
->> -         (p->rt.nr_cpus_allowed > 1)) {
->> +     if (unlikely(rt_task(rq->curr))) {
->>               int cpu = find_lowest_rq(p);
+>> Hello Frederic,
 >>
->>               return (cpu == -1) ? task_cpu(p) : cpu;
+>> Some versions of gcc, e.g. gcc version 4.3.3 (Ubuntu 4.3.3-5ubuntu4), have the
+>> (default) minimum size of buffers protected by `-fstack-protector' set to 8. But
+>> in perf, there exist much smaller automatic buffers.
 >
+> Hm, it's this code:
 >
+>        /* newtWinChoice should really be accepting const char pointers... */
+>        char yes[] = "Yes", no[] = "No";
+>        return newtWinChoice(NULL, yes, no, (char *)msg) == 1;
+>
+> I.e. the code is messy and GCC is right to warn about it. Hence it would be somewhat
+> bad to actually remove the warning that pointed out some dodgy piece of code.
+>
+> Even if marking it const doesnt work due to the external libnewt API, we could at
+> least put 'yes' and 'no' into file scope and mark them static?
+
+OK. Now that I actually look closely at that fragment I can see its
+useless to create the automatic arrays. Local string literals would
+also work (i.e. just pass `"Yes"' and `"No"' to newtWinChoice). But
+can also do what you suggested if it is anticipated that they will be
+used somewhere else within the file at some other time -- Currently
+they are not.
+
+Thanks.
+-- 
+Brian Gitonga Marete
+Toshnix Systems
+Tel: +254722151590
