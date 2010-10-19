@@ -1,129 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933769Ab0JSIXT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Oct 2010 04:23:19 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:38640 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933108Ab0JSIXR (ORCPT
+	id S1758092Ab0JSIZb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Oct 2010 04:25:31 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:57693 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751366Ab0JSIZ3 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Oct 2010 04:23:17 -0400
-From: =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: linux-kernel@vger.kernel.org
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH] genirq: handle unhandled irqs when the handler is threaded
-Date: Tue, 19 Oct 2010 10:23:10 +0200
-Message-Id: <1287476590-8048-1-git-send-email-u.kleine-koenig@pengutronix.de>
-X-Mailer: git-send-email 1.7.2.3
+	Tue, 19 Oct 2010 04:25:29 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=GcFhxQx2KLeH+7YR8SMxyYGzRrIG7OzqJTAP+TGXA1ZLs/X+svmPpGFhl/wKA74TCE
+         qk1Ujs4ExZU2h7apMG5boyK3RF507E6i61RsJJarM36+Zq//cnuf0mnjSWawEplNCn+g
+         YPnx16iTXZ31si4q4k50U3ODwrYdb89FqydsE=
 MIME-Version: 1.0
+In-Reply-To: <20101019081509.GH12470@legolas.emea.dhcp.ti.com>
+References: <1287475466-8927-1-git-send-email-felipe.contreras@gmail.com>
+	<1287475466-8927-3-git-send-email-felipe.contreras@gmail.com>
+	<20101019081509.GH12470@legolas.emea.dhcp.ti.com>
+Date: Tue, 19 Oct 2010 11:25:27 +0300
+Message-ID: <AANLkTi=XxqfpEnWFZ2h-xqEPc62rfgomhhrvE1Z_ME_d@mail.gmail.com>
+Subject: Re: [PATCH 2/3] usb: trivial Kconfig cleanups
+From: Felipe Contreras <felipe.contreras@gmail.com>
+To: balbi@ti.com
+Cc: "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        linux-main <linux-kernel@vger.kernel.org>, Greg KH <greg@kroah.com>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This helps detecting stuck irq lines for threaded irqs.
+On Tue, Oct 19, 2010 at 11:15 AM, Felipe Balbi <balbi@ti.com> wrote:
+> On Tue, Oct 19, 2010 at 03:04:25AM -0500, Felipe Contreras wrote:
+>>
+>> @@ -125,14 +125,6 @@ config USB_MUSB_OTG
+>>
+>> endchoice
+>>
+>> -# enable peripheral support (including with OTG)
+>> -config USB_GADGET_MUSB_HDRC
+>> -       bool
+>> -       depends on USB_MUSB_HDRC && (USB_MUSB_PERIPHERAL || USB_MUSB_OTG)
+>> -#      default y
+>> -#      select USB_GADGET_DUALSPEED
+>> -#      select USB_GADGET_SELECTED
+>> -
+>
+> $ git grep -e CONFIG_USB_GADGET_MUSB_HDRC drivers/usb/
+> drivers/usb/gadget/gadget_chips.h:#ifdef CONFIG_USB_GADGET_MUSB_HDRC
+> drivers/usb/musb/Makefile:ifeq ($(CONFIG_USB_GADGET_MUSB_HDRC),y)
+> drivers/usb/musb/am35x.c:#ifdef CONFIG_USB_GADGET_MUSB_HDRC
+> drivers/usb/musb/da8xx.c:#ifdef CONFIG_USB_GADGET_MUSB_HDRC
+> drivers/usb/musb/musb_core.c:#ifdef CONFIG_USB_GADGET_MUSB_HDRC
+> drivers/usb/musb/musb_core.c:#ifdef CONFIG_USB_GADGET_MUSB_HDRC
+> drivers/usb/musb/musb_core.c:#ifdef CONFIG_USB_GADGET_MUSB_HDRC
+> drivers/usb/musb/musb_core.c:#ifdef CONFIG_USB_GADGET_MUSB_HDRC
+> drivers/usb/musb/musb_core.c:#endif /* CONFIG_USB_GADGET_MUSB_HDRC */
+> drivers/usb/musb/musb_core.c:#ifdef CONFIG_USB_GADGET_MUSB_HDRC
+> drivers/usb/musb/musb_core.c:#ifdef CONFIG_USB_GADGET_MUSB_HDRC
+> drivers/usb/musb/musb_core.c:#ifdef CONFIG_USB_GADGET_MUSB_HDRC
+> drivers/usb/musb/musb_core.c:#elif defined(CONFIG_USB_GADGET_MUSB_HDRC)
+> drivers/usb/musb/musb_core.h:#ifndef CONFIG_USB_GADGET_MUSB_HDRC
+> drivers/usb/musb/musb_core.h:#error bogus Kconfig output ... select
+> CONFIG_USB_GADGET_MUSB_HDRC
+> drivers/usb/musb/musb_core.h:#ifdef CONFIG_USB_GADGET_MUSB_HDRC
+> drivers/usb/musb/musb_core.h:#ifdef CONFIG_USB_GADGET_MUSB_HDRC
+> drivers/usb/musb/musb_core.h:#ifdef CONFIG_USB_GADGET_MUSB_HDRC
+> drivers/usb/musb/musb_core.h:#ifdef CONFIG_USB_GADGET_MUSB_HDRC
+> drivers/usb/musb/musb_core.h:#ifdef CONFIG_USB_GADGET_MUSB_HDRC
+> drivers/usb/musb/musb_core.h:#ifdef CONFIG_USB_GADGET_MUSB_HDRC
+> drivers/usb/musb/tusb6010.c:#ifdef CONFIG_USB_GADGET_MUSB_HDRC
+> drivers/usb/musb/tusb6010.c:#ifdef CONFIG_USB_GADGET_MUSB_HDRC
+> drivers/usb/musb/tusb6010.c:#ifdef CONFIG_USB_GADGET_MUSB_HDRC
 
-Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
----
- include/linux/irq.h   |    2 ++
- kernel/irq/handle.c   |    6 ------
- kernel/irq/manage.c   |    7 ++++++-
- kernel/irq/spurious.c |   17 +++++++++++++++--
- 4 files changed, 23 insertions(+), 9 deletions(-)
+So?
 
-diff --git a/include/linux/irq.h b/include/linux/irq.h
-index c03243a..fea4dc0 100644
---- a/include/linux/irq.h
-+++ b/include/linux/irq.h
-@@ -324,6 +324,8 @@ static inline void generic_handle_irq(unsigned int irq)
- }
- 
- /* Handling of unhandled and spurious interrupts: */
-+extern void note_threaded_interrupt(unsigned int irq, struct irq_desc *desc,
-+			   irqreturn_t action_ret);
- extern void note_interrupt(unsigned int irq, struct irq_desc *desc,
- 			   irqreturn_t action_ret);
- 
-diff --git a/kernel/irq/handle.c b/kernel/irq/handle.c
-index 27e5c69..439cb78 100644
---- a/kernel/irq/handle.c
-+++ b/kernel/irq/handle.c
-@@ -378,12 +378,6 @@ irqreturn_t handle_IRQ_event(unsigned int irq, struct irqaction *action)
- 		switch (ret) {
- 		case IRQ_WAKE_THREAD:
- 			/*
--			 * Set result to handled so the spurious check
--			 * does not trigger.
--			 */
--			ret = IRQ_HANDLED;
--
--			/*
- 			 * Catch drivers which return WAKE_THREAD but
- 			 * did not set up a thread function
- 			 */
-diff --git a/kernel/irq/manage.c b/kernel/irq/manage.c
-index c3003e9..361fe54 100644
---- a/kernel/irq/manage.c
-+++ b/kernel/irq/manage.c
-@@ -598,12 +598,17 @@ static int irq_thread(void *data)
- 			desc->status |= IRQ_PENDING;
- 			raw_spin_unlock_irq(&desc->lock);
- 		} else {
-+			irqreturn_t action_ret;
-+
- 			raw_spin_unlock_irq(&desc->lock);
- 
--			action->thread_fn(action->irq, action->dev_id);
-+			action_ret = action->thread_fn(action->irq, action->dev_id);
- 
- 			if (oneshot)
- 				irq_finalize_oneshot(action->irq, desc);
-+
-+			if (!noirqdebug)
-+				note_threaded_interrupt(action->irq, desc, action_ret);
- 		}
- 
- 		wake = atomic_dec_and_test(&desc->threads_active);
-diff --git a/kernel/irq/spurious.c b/kernel/irq/spurious.c
-index d819a3d6..079648f 100644
---- a/kernel/irq/spurious.c
-+++ b/kernel/irq/spurious.c
-@@ -215,8 +215,8 @@ try_misrouted_irq(unsigned int irq, struct irq_desc *desc,
- 	return action && (action->flags & IRQF_IRQPOLL);
- }
- 
--void note_interrupt(unsigned int irq, struct irq_desc *desc,
--		    irqreturn_t action_ret)
-+void note_threaded_interrupt(unsigned int irq, struct irq_desc *desc,
-+		irqreturn_t action_ret)
- {
- 	if (unlikely(action_ret != IRQ_HANDLED)) {
- 		/*
-@@ -264,6 +264,19 @@ void note_interrupt(unsigned int irq, struct irq_desc *desc,
- 	desc->irqs_unhandled = 0;
- }
- 
-+void note_interrupt(unsigned int irq, struct irq_desc *desc,
-+		irqreturn_t action_ret)
-+{
-+	if (action_ret == IRQ_WAKE_THREAD)
-+		/* handle when the thread function returns */
-+		return;
-+
-+	/* don't report IRQ_WAKE_THREAD | IRQ_HANDLED as bogus return value */
-+	action_ret &= ~IRQ_WAKE_THREAD;
-+
-+	note_threaded_interrupt(irq, desc, action_ret);
-+}
-+
- int noirqdebug __read_mostly;
- 
- int noirqdebug_setup(char *str)
+% git grep USB_GADGET_MUSB_HDRC -- '*/Kconfig'
+drivers/usb/gadget/Kconfig:config USB_GADGET_MUSB_HDRC
+drivers/usb/musb/Kconfig:# use USB_GADGET_MUSB_HDRC not
+USB_MUSB_PERIPHERAL to #ifdef peripheral
+drivers/usb/musb/Kconfig:       select USB_GADGET_MUSB_HDRC
+drivers/usb/musb/Kconfig:       select USB_GADGET_MUSB_HDRC
+drivers/usb/musb/Kconfig:config USB_GADGET_MUSB_HDRC
+drivers/usb/musb/Kconfig:       select USB_OTG if USB_GADGET_MUSB_HDRC
+
+(it's defined twice)
+
 -- 
-1.7.2.3
-
+Felipe Contreras
