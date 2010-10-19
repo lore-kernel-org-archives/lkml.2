@@ -1,97 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751651Ab0JSNuF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Oct 2010 09:50:05 -0400
-Received: from out02.mta.xmission.com ([166.70.13.232]:57674 "EHLO
-	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751063Ab0JSNto (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Oct 2010 09:49:44 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Andi Kleen <ak@linux.intel.com>
-Cc: Amerigo Wang <amwang@redhat.com>, linux-kernel@vger.kernel.org,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Len Brown <len.brown@intel.com>, Ingo Molnar <mingo@elte.hu>,
+	id S1751505Ab0JSNwI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Oct 2010 09:52:08 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:42779 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751006Ab0JSNwF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Oct 2010 09:52:05 -0400
+Date: Tue, 19 Oct 2010 15:50:53 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Arjan van de Ven <arjan@linux.intel.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Thomas Renninger <trenn@suse.de>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Tejun Heo <tj@kernel.org>, Frederic Weisbecker <fweisbec@gmail.com>,
+        Pierre Tardy <tardyp@gmail.com>,
+        Jean Pihet <jean.pihet@newoldbits.com>,
+        linux-trace-users@vger.kernel.org, linux-pm@lists.linux-foundation.org,
+        rjw@sisk.pl, linux-omap@vger.kernel.org,
+        Kevin Hilman <khilman@deeprootsystems.com>,
+        Steven Rostedt <rostedt@goodmis.org>, Frank Eigler <fche@redhat.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
         Andrew Morton <akpm@linux-foundation.org>,
-        David Howells <dhowells@redhat.com>, Eric Paris <eparis@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Andy Shevchenko <ext-andriy.shevchenko@nokia.com>,
-        linux-doc@vger.kernel.org
-References: <1287476560-5874-1-git-send-email-amwang@redhat.com>
-	<1287476560-5874-2-git-send-email-amwang@redhat.com>
-	<4CBD9B7F.6040307@linux.intel.com>
-Date: Tue, 19 Oct 2010 06:49:32 -0700
-In-Reply-To: <4CBD9B7F.6040307@linux.intel.com> (Andi Kleen's message of "Tue,
-	19 Oct 2010 15:22:07 +0200")
-Message-ID: <m1vd4yi977.fsf@fess.ebiederm.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: PATCH [0/4] perf: clean-up of power events API
+Message-ID: <20101019135053.GA665@elte.hu>
+References: <201010062334.46971.trenn@suse.de>
+ <4CB095FA.8060803@linux.intel.com>
+ <20101010121928.GA2688@elte.hu>
+ <201010191331.03080.trenn@suse.de>
+ <20101019114501.GA25371@elte.hu>
+ <1287488841.1994.5.camel@twins>
+ <20101019115200.GC25371@elte.hu>
+ <4CBD9CDD.1010300@linux.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=98.207.157.188;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-SA-Exim-Connect-IP: 98.207.157.188
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  1.5 XMNoVowels Alpha-numberic number with no vowels
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0000]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa07 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
-X-Spam-DCC: XMission; sa07 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;Andi Kleen <ak@linux.intel.com>
-X-Spam-Relay-Country: 
-Subject: Re: [PATCH 2/2] sysctl: remove sysctl syscall
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+Content-Disposition: inline
+In-Reply-To: <4CBD9CDD.1010300@linux.intel.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andi Kleen <ak@linux.intel.com> writes:
 
->  On 10/19/2010 10:22 AM, Amerigo Wang wrote:
->> Remove the obsolete sysctl syscall. It was scheduled
->> to be removed in Sept.
->
->
-> I thought at least older glibc was still using it? Did anyone check
-> what happens if it sees no sysctl(2)?
+* Arjan van de Ven <arjan@linux.intel.com> wrote:
 
-At the time the deprecation was written we nearly we were in the late
-rc's before anything that cared in practice. glibc has stopped even
-providing a sys_sysctl wrapper now.
+>  On 10/19/2010 4:52 AM, Ingo Molnar wrote:
+> >* Peter Zijlstra<peterz@infradead.org>  wrote:
+> >
+> >>On Tue, 2010-10-19 at 13:45 +0200, Ingo Molnar wrote:
+> >>>* Thomas Renninger<trenn@suse.de>  wrote:
+> >>>
+> >>>>>Most definitely. It's no accident that it took such a long time for this issue
+> >>>>>to be raised in the first place. It's a rare occurance -
+> >>>>Do you agree that this occurance happened now and these events should get cleaned
+> >>>>up before ARM and other archs make use of the broken interface?
+> >>>>
+> >>>>If not, discussing this further, is a big waste of time... and Jean would have to
+> >>>>try to adapt his ARM code on the broken ABI...
+> >>>The discussion seems to have died down somewhat. Please re-send to lkml the latest
+> >>>patches you have to remind everyone of the latest state of things - the merge window
+> >>>is getting near.
+> >>>
+> >>>My only compatibility/ABI point is basically that it shouldnt break _existing_
+> >>>tracepoints (and users thereof). If your latest bits meet that then it ought to be a
+> >>>good first step. You are free to (and encouraged to) introduce more complete sets of
+> >>>events.
+> >>Can we deprecate and eventually remove the old ones, or will we be forever obliged
+> >>to carry the old ones too?
+> >We most definitely want to deprecate and remove the old ones - but we want to give
+> >instrumentation software some migration time for that.
+> >
+> >Jean, Arjan, what would be a feasible and practical deprecation period for that? One
+> >kernel cycle?
+> 
+> more like a year
+> 
+> for some time software needs to support both, especially if popular distros stick 
+> to an older kernel like *cough* RHEL6
 
-> I think it's ok to remove the full tables, but keeping
-> a wrapper just for the functionality glibc use(s/d) is still a good
-> idea.
+Sure, you can support both. But as long as support for the _new_ events is included 
+in PowerTop there's no need to keep the duality upstream. Running ancient PowerTop 
+on fresh kernels is not common.
 
-I think the only problem should be the arm glibc.  I don't know if
-it's iopl implementation ever got weened off of this.  I tried
-but I didn't have good test machine and submitting patches to
-glibc is much more of a pain than kernel patches.
+An old RHEL kernel will still keep on working as you can keep support for old events 
+in PowerTop as long as you wish to.
 
-To my knowledge there has never been a version of x86 glibc that
-had problems if sys_sysctl returns -ENOSYS, and glibc proper removed
-even that dependency almost as soon as sys_sysctl was deprecated.
+The new kernel also wont 'overwrite' old events with new definitions in the future, 
+so PowerTop will keep working for as long as you want to support older kernels.
 
-Last time we discussed this (when I added the compatibility wrapper)
-I couldn't even find a version of glibc that used sysctl, and I could
-not find a distribution old enough that still had a version of glibc
-that used sysctl on x86.
+Does that sound good?
 
-We warn on every sys_sysctl value now even the glibc uses and perhaps I
-am blind but I haven't seen any bug reports.  So we should be safe
-turning this off.
+Thanks,
 
-As far as this goes I would just change the default to off for now.
-Keeping the code doesn't have any impact on the core of the kernel any
-more, or even any binary impact.  As the int -> long conversion has
-shown.  If we can get through a release with the code disabled killing
-it the next release makes a lot of sense.
-
-Eric
+	Ingo
