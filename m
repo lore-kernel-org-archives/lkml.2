@@ -1,81 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758277Ab0JSKvC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Oct 2010 06:51:02 -0400
-Received: from mga02.intel.com ([134.134.136.20]:47750 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758160Ab0JSKvA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Oct 2010 06:51:00 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.57,349,1283756400"; 
-   d="scan'208";a="565365000"
-Date: Tue, 19 Oct 2010 12:50:54 +0200
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-Cc: Vasiliy Kulikov <segooon@gmail.com>, kernel-janitors@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mfd/mc13xxx: don't open code kasprintf
-Message-ID: <20101019105053.GM2736@sortiz-mobl>
-References: <1286731711-17865-1-git-send-email-segooon@gmail.com>
- <1286739586-32745-1-git-send-email-u.kleine-koenig@pengutronix.de>
+	id S1758302Ab0JSKwO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Oct 2010 06:52:14 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:57852 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758243Ab0JSKwM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Oct 2010 06:52:12 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=XdPak8Z42RuZ6PZmBrbZNw/fjKKTzwQZW9ktRC8oksSH8qihXaQrARozUxuTjA6pfT
+         DDkX+2M9wfL6l7WJZN2DU/9u8/QNfA2IRudMtrM5PF9qk5v6t4p32N0W5+9UOqc3JEW1
+         zI3rGFGLYApY2a4ltjKoKin1HW/HmBSIfrXTI=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1286739586-32745-1-git-send-email-u.kleine-koenig@pengutronix.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20101019101229.GG31170@legolas.emea.dhcp.ti.com>
+References: <1287475466-8927-1-git-send-email-felipe.contreras@gmail.com>
+	<1287475466-8927-4-git-send-email-felipe.contreras@gmail.com>
+	<20101019081855.GI12470@legolas.emea.dhcp.ti.com>
+	<AANLkTi=8=M+egdo5o6nyMOaCyMCLaZdwJF3WKFwZnbd4@mail.gmail.com>
+	<20101019090149.GC31170@legolas.emea.dhcp.ti.com>
+	<AANLkTimCqZsJ6eY2zk0hJNhkYJDPbYnviiZ4gadnf-bB@mail.gmail.com>
+	<20101019101229.GG31170@legolas.emea.dhcp.ti.com>
+Date: Tue, 19 Oct 2010 13:52:10 +0300
+Message-ID: <AANLkTikmc1DmHZuhySM1gourjETsaXoCvgfqk7p-b6aQ@mail.gmail.com>
+Subject: Re: [PATCH 3/3] drivers: cleanup Kconfig stuff
+From: Felipe Contreras <felipe.contreras@gmail.com>
+To: balbi@ti.com
+Cc: "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        linux-main <linux-kernel@vger.kernel.org>, Greg KH <greg@kroah.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Uwe,
+On Tue, Oct 19, 2010 at 1:12 PM, Felipe Balbi <balbi@ti.com> wrote:
+> On Tue, Oct 19, 2010 at 04:55:04AM -0500, Felipe Contreras wrote:
+>>
+>> I'm not talking about phonet, I replied to your comment regarding
+>> USB_GADGET_MUSB_HDRC. For me USB_GADGET_MUSB_HDRC=n USB_G_NOKIA=y
+>> doesn't work, but the Kconfig allows it.
+>
+> I see, that's a problem for sure.
+>
+>> Ok, I'll make it: depends on (NOP_USB_XCEIV || TWL4030_USB)
+>>
+>> BTW, if you want to try this:
+>> ./scripts/kconfig/conf --defconfig=usb_defconfig arch/arm/Kconfig
+>>
+>> usb_defconfig:
+>> CONFIG_ARCH_OMAP=y
+>> CONFIG_EXPERIMENTAL=y
+>> CONFIG_NET=y
+>> CONFIG_PHONET=y
+>>
+>> CONFIG_USB=y
+>> CONFIG_USB_GADGET=y
+>> CONFIG_USB_MUSB_OTG=y
+>> CONFIG_USB_MUSB_HDRC=y
+>> CONFIG_USB_G_NOKIA=y
+>>
+>> # TODO USB_MUSB_OTG should select this
+>> CONFIG_USB_GADGET_MUSB_HDRC=y
+>>
+>> I expect TWL4030_USB and USB_OTG to be automatically selected.
+>
+> could be, but that's a board-by-board thing. It's not mandatory to have
+> twl4030-usb, it's mandatory to have a transceiver, not matter which one
+> it is.
 
-On Sun, Oct 10, 2010 at 09:39:46PM +0200, Uwe Kleine-König wrote:
-> This fixes an off by one error noticed by Vasiliy Kulikov en passant.
-> 
-> Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
-> ---
->  drivers/mfd/mc13xxx-core.c |    7 +------
->  1 files changed, 1 insertions(+), 6 deletions(-)
-> 
-> diff --git a/drivers/mfd/mc13xxx-core.c b/drivers/mfd/mc13xxx-core.c
-> index 93258ad..b763b8c 100644
-> --- a/drivers/mfd/mc13xxx-core.c
-> +++ b/drivers/mfd/mc13xxx-core.c
-> @@ -687,7 +687,6 @@ EXPORT_SYMBOL_GPL(mc13783_adc_do_conversion);
->  static int mc13xxx_add_subdevice_pdata(struct mc13xxx *mc13xxx,
->  		const char *format, void *pdata, size_t pdata_size)
->  {
-> -	char buf[30];
->  	const char *name = mc13xxx_get_chipname(mc13xxx);
->  
->  	struct mfd_cell cell = {
-> @@ -695,11 +694,7 @@ static int mc13xxx_add_subdevice_pdata(struct mc13xxx *mc13xxx,
->  		.data_size = pdata_size,
->  	};
->  
-> -	/* there is no asnprintf in the kernel :-( */
-> -	if (snprintf(buf, sizeof(buf), format, name) > sizeof(buf))
-> -		return -E2BIG;
-> -
-> -	cell.name = kmemdup(buf, strlen(buf) + 1, GFP_KERNEL);
-> +	cell.name = kasprintf(GFP_KERNEL, format, name);
-I don't think you need to allocate a name pointer here.
-cell.name = mc13xxx_get_chipname(mc13xxx); should be enough as
-platform_device_alloc() will memcpy it into an allocated buffer.
+I see, but is it possible that in a board you have the two? If not,
+there must be a way to find the correct transceiver based on the
+configuration. If yes, then there must be a way to select a sensible
+one by default, rather than not having any.
 
-Cheers,
-Samuel.
+This way, for example it would be possible to get rid of some lines in
+a minimal n900_defconfig (used in MeeGo[1]), and eventually hopefully
+get rid of all of them (except CONFIG_SND_OMAP_SOC_RX51=y).
 
-
->  	if (!cell.name)
->  		return -ENOMEM;
->  
-> -- 
-> 1.7.2.3
-> 
+[1] http://meego.gitorious.org/meego-os-base/kernel-source/blobs/master/config-arm-n900
 
 -- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+Felipe Contreras
