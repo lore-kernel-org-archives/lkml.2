@@ -1,44 +1,216 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933833Ab0JSIQ1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Oct 2010 04:16:27 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:46220
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932257Ab0JSIQ0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Oct 2010 04:16:26 -0400
-Date: Tue, 19 Oct 2010 01:16:49 -0700 (PDT)
-Message-Id: <20101019.011649.71113115.davem@davemloft.net>
-To: luca@llucax.com.ar
-Cc: nhorman@tuxdriver.com, paul.gortmaker@windriver.com,
-        jon.maloy@ericsson.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, tipc-discussion@lists.sourceforge.net
-Subject: Re: Linux 2.6.35/TIPC 2.0 ABI breaking changes
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20101019021657.GZ8781@llucax.com.ar>
-References: <4CBCD429.8090306@windriver.com>
-	<20101018234547.GA5703@hmsreliant.think-freely.org>
-	<20101019021657.GZ8781@llucax.com.ar>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	id S1758050Ab0JSISr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Oct 2010 04:18:47 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:14396 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755116Ab0JSISq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Oct 2010 04:18:46 -0400
+From: Amerigo Wang <amwang@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Amerigo Wang <amwang@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Dave Young <hidave.darkstar@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 1/2] sysctl: refactor __do_proc_doulongvec_minmax()
+Date: Tue, 19 Oct 2010 16:22:35 +0800
+Message-Id: <1287476560-5874-1-git-send-email-amwang@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Leandro Lucarella <luca@llucax.com.ar>
-Date: Mon, 18 Oct 2010 23:16:57 -0300
+Seperate read and write into two functions.
 
-> 
-> The problem is not between the tipc stacks in different hosts, is
-> between the tipc stack and the applications using it (well, maybe
-> there is a problem somewhere else too).
-> 
-> This was a deliberate API change, not a subtle bug...
+Signed-off-by: Amerigo Wang <amwang@redhat.com>
 
-Neil et al., if these packets live only between the kernel stack
-and the userspace API layer, we should not be byte-swapping this
-stuff and we need to fix this fast.
+---
+ kernel/sysctl.c |  151 +++++++++++++++++++++++++++++++++---------------------
+ 1 files changed, 92 insertions(+), 59 deletions(-)
 
-Thanks.
+diff --git a/kernel/sysctl.c b/kernel/sysctl.c
+index 3a45c22..7f9f937 100644
+--- a/kernel/sysctl.c
++++ b/kernel/sysctl.c
+@@ -2448,86 +2448,119 @@ int proc_dointvec_minmax(struct ctl_table *table, int write,
+ 				do_proc_dointvec_minmax_conv, &param);
+ }
+ 
+-static int __do_proc_doulongvec_minmax(void *data, struct ctl_table *table, int write,
+-				     void __user *buffer,
+-				     size_t *lenp, loff_t *ppos,
++static int __doulongvec_minmax_read(void *data, void __user *buffer,
++				     size_t *lenp, loff_t *ppos, int vleft,
+ 				     unsigned long convmul,
+ 				     unsigned long convdiv)
+ {
+-	unsigned long *i, *min, *max;
+-	int vleft, first = 1, err = 0;
+-	unsigned long page = 0;
+-	size_t left;
+-	char *kbuf;
++	unsigned long *i = data;
++	int err = 0;
++	bool first = true;
++	size_t left = *lenp;
+ 
+-	if (!data || !table->maxlen || !*lenp || (*ppos && !write)) {
+-		*lenp = 0;
+-		return 0;
++	for (; left && vleft--; i++, first = false) {
++		unsigned long val;
++
++		val = convdiv * (*i) / convmul;
++		if (!first)
++			err = proc_put_char(&buffer, &left, '\t');
++		err = proc_put_long(&buffer, &left, val, false);
++		if (err)
++			break;
+ 	}
+ 
+-	i = (unsigned long *) data;
+-	min = (unsigned long *) table->extra1;
+-	max = (unsigned long *) table->extra2;
+-	vleft = table->maxlen / sizeof(unsigned long);
+-	left = *lenp;
++	if (!first && left && !err)
++		err = proc_put_char(&buffer, &left, '\n');
+ 
+-	if (write) {
+-		if (left > PAGE_SIZE - 1)
+-			left = PAGE_SIZE - 1;
+-		page = __get_free_page(GFP_TEMPORARY);
+-		kbuf = (char *) page;
+-		if (!kbuf)
+-			return -ENOMEM;
+-		if (copy_from_user(kbuf, buffer, left)) {
+-			err = -EFAULT;
+-			goto free;
+-		}
+-		kbuf[left] = 0;
++	*lenp -= left;
++	*ppos += *lenp;
++	return err;
++}
++
++static int __doulongvec_minmax_write(void *data, void __user *buffer,
++				     size_t *lenp, loff_t *ppos, int vleft,
++				     unsigned long min, unsigned long max)
++{
++	char *kbuf;
++	size_t left = *lenp;
++	unsigned long page = 0;
++	unsigned long *i = (unsigned long *) data;
++	int err = 0;
++	bool first = true;
++
++	if (left > PAGE_SIZE - 1)
++		left = PAGE_SIZE - 1;
++	page = __get_free_page(GFP_TEMPORARY);
++	kbuf = (char *) page;
++	if (!kbuf)
++		return -ENOMEM;
++	if (copy_from_user(kbuf, buffer, left)) {
++		err = -EFAULT;
++		goto free;
+ 	}
++	kbuf[left] = 0;
+ 
+-	for (; left && vleft--; i++, first = 0) {
++	for (; left && vleft--; i++, first = false) {
+ 		unsigned long val;
++		bool neg;
+ 
+-		if (write) {
+-			bool neg;
+-
+-			left -= proc_skip_spaces(&kbuf);
++		left -= proc_skip_spaces(&kbuf);
+ 
+-			err = proc_get_long(&kbuf, &left, &val, &neg,
+-					     proc_wspace_sep,
+-					     sizeof(proc_wspace_sep), NULL);
+-			if (err)
+-				break;
+-			if (neg)
+-				continue;
+-			if ((min && val < *min) || (max && val > *max))
+-				continue;
+-			*i = val;
+-		} else {
+-			val = convdiv * (*i) / convmul;
+-			if (!first)
+-				err = proc_put_char(&buffer, &left, '\t');
+-			err = proc_put_long(&buffer, &left, val, false);
+-			if (err)
+-				break;
+-		}
++		err = proc_get_long(&kbuf, &left, &val, &neg,
++				     proc_wspace_sep,
++				     sizeof(proc_wspace_sep), NULL);
++		if (err)
++			break;
++		if (neg)
++			continue;
++		if (val < min || val > max)
++			continue;
++		*i = val;
+ 	}
+ 
+-	if (!write && !first && left && !err)
+-		err = proc_put_char(&buffer, &left, '\n');
+-	if (write && !err)
++	if (!err)
+ 		left -= proc_skip_spaces(&kbuf);
+ free:
+-	if (write) {
+-		free_page(page);
+-		if (first)
+-			return err ? : -EINVAL;
+-	}
++	free_page(page);
++	if (first)
++		return err ? : -EINVAL;
++
+ 	*lenp -= left;
+ 	*ppos += *lenp;
+ 	return err;
+ }
+ 
++static int __do_proc_doulongvec_minmax(void *data, struct ctl_table *table, int write,
++				     void __user *buffer,
++				     size_t *lenp, loff_t *ppos,
++				     unsigned long convmul,
++				     unsigned long convdiv)
++{
++	int vleft;
++	if (!data || !table->maxlen || !*lenp || (*ppos && !write)) {
++		*lenp = 0;
++		return 0;
++	}
++
++	vleft = table->maxlen / sizeof(unsigned long);
++	if (write) {
++		unsigned long min, max;
++
++		if (table->extra1)
++			min = *(unsigned long *) table->extra1;
++		else
++			min = 0;
++		if (table->extra2)
++			max = *(unsigned long *) table->extra2;
++		else
++			max = ULONG_MAX;
++		return __doulongvec_minmax_write(data, buffer, lenp,
++						  ppos, vleft, min, max);
++	} else
++		return __doulongvec_minmax_read(data, buffer, lenp,
++						 ppos, vleft, convmul, convdiv);
++}
++
+ static int do_proc_doulongvec_minmax(struct ctl_table *table, int write,
+ 				     void __user *buffer,
+ 				     size_t *lenp, loff_t *ppos,
+-- 
+1.6.5.2
+
