@@ -1,82 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758188Ab0JSJzK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Oct 2010 05:55:10 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:42966 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751375Ab0JSJzH (ORCPT
+	id S1758208Ab0JSKAo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Oct 2010 06:00:44 -0400
+Received: from t111.niisi.ras.ru ([193.232.173.111]:58537 "EHLO
+	t111.niisi.ras.ru" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758119Ab0JSKAn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Oct 2010 05:55:07 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=lM33wmykIu5nFPzUL8+/ID5LSl7YOl6Wv7y5Ha18mihfB+Mj2zyiho8Yro4Fdzikfq
-         FGtollMTUU6kxmMldCM0FLQtik1XqdAV/cPtlVKHjQsga2dyx33Zs4csF3uHQswMqhZn
-         UVQCNpc2XsHZ9+fJ9+YMSJfdi4zrrXPhbFz64=
+	Tue, 19 Oct 2010 06:00:43 -0400
+Message-ID: <4CBD6FDD.3020906@niisi.msk.ru>
+Date: Tue, 19 Oct 2010 14:15:57 +0400
+From: "Gleb O. Raiko" <raiko@niisi.msk.ru>
+Organization: NIISI RAN
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.1.5) Gecko/20091204 Thunderbird/3.0
 MIME-Version: 1.0
-In-Reply-To: <20101019090149.GC31170@legolas.emea.dhcp.ti.com>
-References: <1287475466-8927-1-git-send-email-felipe.contreras@gmail.com>
-	<1287475466-8927-4-git-send-email-felipe.contreras@gmail.com>
-	<20101019081855.GI12470@legolas.emea.dhcp.ti.com>
-	<AANLkTi=8=M+egdo5o6nyMOaCyMCLaZdwJF3WKFwZnbd4@mail.gmail.com>
-	<20101019090149.GC31170@legolas.emea.dhcp.ti.com>
-Date: Tue, 19 Oct 2010 12:55:04 +0300
-Message-ID: <AANLkTimCqZsJ6eY2zk0hJNhkYJDPbYnviiZ4gadnf-bB@mail.gmail.com>
-Subject: Re: [PATCH 3/3] drivers: cleanup Kconfig stuff
-From: Felipe Contreras <felipe.contreras@gmail.com>
-To: balbi@ti.com
-Cc: "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        linux-main <linux-kernel@vger.kernel.org>, Greg KH <greg@kroah.com>
-Content-Type: text/plain; charset=UTF-8
+To: Ralf Baechle <ralf@linux-mips.org>
+CC: Kevin Cernekee <cernekee@gmail.com>,
+        Shinya Kuribayashi <skuribay@pobox.com>, linux-mips@linux-mips.org,
+        linux-kernel@vger.kernel.org, chris@mips.com
+Subject: Re: [PATCH resend 5/9] MIPS: sync after cacheflush
+References: <17ebecce124618ddf83ec6fe8e526f93@localhost> <17d8d27a2356640a4359f1a7dcbb3b42@localhost> <4CBC4F4E.5010305@pobox.com> <20101018191936.GH27377@linux-mips.org> <AANLkTimmatKpOFATCPDxthN-9pZzzXRAOnLGR1_348=r@mail.gmail.com> <4CBD5CC9.8070706@niisi.msk.ru> <20101019091729.GA31405@linux-mips.org>
+In-Reply-To: <20101019091729.GA31405@linux-mips.org>
+Content-Type: text/plain; charset=KOI8-R; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Antivirus: Dr.Web (R) for Mail Servers on t111.niisi.ras.ru host
+X-Antivirus-Code: 100000
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 19, 2010 at 12:01 PM, Felipe Balbi <balbi@ti.com> wrote:
-> On Tue, Oct 19, 2010 at 03:34:55AM -0500, Felipe Contreras wrote:
->>>
->>> It was fine as it was before. NAK
->>
->> It's not fine. You can build with CONFIG_USB_G_NOKIA=y, and it doesn't
->> work. Definitely some dependency is missing.
+
+
+On 19.10.2010 13:17, Ralf Baechle wrote:
+> On Tue, Oct 19, 2010 at 12:54:33PM +0400, Gleb O. Raiko wrote:
+> The MIPS32 BIS v2.6 spec says on page 92:
 >
-> if phonet is not set it should not build. If phonet is set to module and
-> g_nokia to built-in, then it's your mistake.
-
-I'm not talking about phonet, I replied to your comment regarding
-USB_GADGET_MUSB_HDRC. For me USB_GADGET_MUSB_HDRC=n USB_G_NOKIA=y
-doesn't work, but the Kconfig allows it.
-
->> How do you handle USB_MUSB_HDRC=y and NOP_USB_XCEIV=n and TWL4030_USB=n?
->>
->> depends on (NOP_USB_XCEIV || TWL4030_USB) ?
+>    "The CACHE instruction and the memory transactions which are sourced by
+>     the CACHE instruction, such as cache refill or cache writeback, obey
+>     the ordering and completion rules of the SYNC instruction."
 >
-> you're selecting, not depending on this patch. What I mean is that you
-> will enable a useless driver on some boards if you "select TWL4030_USB
-> if ARCH_OMAP3"
+> That's not as clearly spelt out as one would like but it seems to imply
+> that only reads/writes preceeding the CACHE instruction are guaranteed
+> to have completed that is the last CACHE instruction that was executed
+> may still be incomplete.
 
-Ok, I'll make it: depends on (NOP_USB_XCEIV || TWL4030_USB)
+I meant another piece:
 
-BTW, if you want to try this:
-./scripts/kconfig/conf --defconfig=usb_defconfig arch/arm/Kconfig
+"For implementations which implement multiple level of caches  ... 
+<speaking about inclusive caches here> ... The software must place a 
+SYNC instruction after the CACHE instruction whenever there are possible 
+writebacks from the inner cache to ensure that the writeback data is 
+resident in the outer cache before operating on the
+outer cache. ... <the rest of statement is a bogeyman story about not 
+doing so>
 
-usb_defconfig:
-CONFIG_ARCH_OMAP=y
-CONFIG_EXPERIMENTAL=y
-CONFIG_NET=y
-CONFIG_PHONET=y
+For implementations which implement muliple level of caches without the 
+inclusion property, the use of a SYNC instruction after the CACHE 
+instruction is still needed whenever writeback data has to be resident 
+in the next level of memory hierarchy."
 
-CONFIG_USB=y
-CONFIG_USB_GADGET=y
-CONFIG_USB_MUSB_OTG=y
-CONFIG_USB_MUSB_HDRC=y
-CONFIG_USB_G_NOKIA=y
+It seems the last sentence shall be also applied for inclusive caches too.
 
-# TODO USB_MUSB_OTG should select this
-CONFIG_USB_GADGET_MUSB_HDRC=y
-
-I expect TWL4030_USB and USB_OTG to be automatically selected.
-
--- 
-Felipe Contreras
+Gleb.
