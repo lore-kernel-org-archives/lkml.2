@@ -1,53 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933894Ab0JSJkG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Oct 2010 05:40:06 -0400
-Received: from mailout-de.gmx.net ([213.165.64.23]:49263 "HELO mail.gmx.net"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
-	id S932440Ab0JSJkE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Oct 2010 05:40:04 -0400
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX1+Qq19leQOQgy7fh7iDtODLbQWBjfwPoPI24ng7YE
-	Js18S1miH61XIt
-Subject: Re: [RFC/RFT PATCH] sched: automated per tty task groups
-From: Mike Galbraith <efault@gmx.de>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-In-Reply-To: <1287480391.29097.1647.camel@twins>
-References: <1287479765.9920.9.camel@marge.simson.net>
-	 <1287480391.29097.1647.camel@twins>
-Content-Type: text/plain
-Date: Tue, 19 Oct 2010 11:39:59 +0200
-Message-Id: <1287481199.24189.5.camel@marge.simson.net>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.24.1.1 
-Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
+	id S1758130Ab0JSJkm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Oct 2010 05:40:42 -0400
+Received: from web37608.mail.mud.yahoo.com ([209.191.87.91]:21826 "HELO
+	web37608.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1757848Ab0JSJkl convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Oct 2010 05:40:41 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=yahoo.com;
+  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type:Content-Transfer-Encoding;
+  b=IijIDHAhhPotIiiYT1C7a89xUxyHJsZwlBc1gODeMQ2f5TpdXvwXPKB3+d5CGfacHt4ZdoK2fJEIAIKevlF/9MOmSxC62aOPJZ2LSZbwRM/Y/eIo74Mg+dWyMM4resqfMD37jT/NAY9KyCXfkDBo7oTCv1c7opoRihECBeS1N2Y=;
+Message-ID: <767911.16428.qm@web37608.mail.mud.yahoo.com>
+X-YMail-OSG: UeDtV8sVM1nKshQ8R.4qfcOTi1pA8X9ZUBgOmU3GAWNEWqK
+ XL0PddtuAnqTF8zsyCWfXS_eD.km6td1b9RQ6JqIPHLL9jRV2yNBFYXaeShj
+ TRnN9AYKHASHlmf8ZBP_u1WC6P8RHf3FfE79kwvGoi7x2vWCk.V8ShXWpKwB
+ 6ZV5AVPV58gow0IVNz68frW7jWT9.WqJWKC9KWGLn.dRWIEcqUFzZ75LLjC4
+ Wvq0o5aFK_Z.kOF_WJuaO8DlWJSiQ_i.cQ2dgA2vEyZ372fyNjyYAcGSuHKm
+ tFe_S9tLPsdFnfT0v..aBqwLYktebRB.hVGHwPZBQdMMW1MXz3q46O6nheVa
+ i
+X-Mailer: YahooMailClassic/11.4.9 YahooMailWebService/0.8.106.282862
+Date: Tue, 19 Oct 2010 02:40:39 -0700 (PDT)
+From: Alex Dubov <oakad@yahoo.com>
+Subject: Re: [PATCH 0/6] Results of my work on memorystick subsystem
+To: Maxim Levitsky <maximlevitsky@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <1287410779.20229.9.camel@maxim-laptop>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-10-19 at 11:26 +0200, Peter Zijlstra wrote:
-> On Tue, 2010-10-19 at 11:16 +0200, Mike Galbraith wrote:
-> > Greetings,
-> > 
-> > Comments, suggestions etc highly welcome.
+--- On Mon, 18/10/10, Maxim Levitsky <maximlevitsky@gmail.com> wrote:
+
 > 
-> You might be wanting to exclude RT tasks from the tty groups since there
-> is no interface to grant them any runtime and such :-)
+> But for mspro driver, it would be really hard for me to
+> split it.
+> I have rewritten a lot of code there.
+> Can't we just review the end result instead of the patch?
+> 
+> To split the patches, I pretty much need to rewrite the
+> whole thing once
+> gain.
+> I don't want to do that.
+> 
 
-:)
+First, a useful citation (Documentation/HOWTO:548):
+"The Linux kernel community does not gladly accept large chunks of code
+dropped on it all at once.  The changes need to be properly introduced,
+discussed, and broken up into tiny, individual portions."
 
-> Also, I think tty_sched_move_task and sched_move_task() should be
-> sharing lots more code -- I recently proposed a fix for
-> sched_move_task() because the Android people complained, but they
-> haven't replied back yet..
+I actually attempted to submit a large "full rewrite" patch early on
+during development of one of my drivers. I was a sole developer and it was
+not even on a stable tree, as far as I can remember. Yet, that patch was
+dropped immediately with the above given reason.
 
-Yeah. I should be able to just do sched_move_task(), but it doesn't
-currently work even with your patch, turning tty_sched on/off can lead
-to incredible delays before you get box back.  With virgin source, it's
-size infinity for all intents and purposes.
+And yes, I had to rewrite the whole thing again, this time in small steps.
 
-	-Mike
 
+
+      
