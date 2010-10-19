@@ -1,53 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754686Ab0JSQKH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Oct 2010 12:10:07 -0400
-Received: from mta8.brinkster.com ([65.182.109.77]:37729 "EHLO
-	mta8.brinkster.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753837Ab0JSQKF convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Oct 2010 12:10:05 -0400
-Date: Tue, 19 Oct 2010 09:10:00 -0700 (MST)
-From: "Mr. Kevin Brown" <feedback@isketchfz.com>
-Reply-To: "Mr. Kevin Brown" <mr.kevinbrown55@yahoo.com>
-Message-ID: <20368679.133263.1287504600974.JavaMail.root@mail4a.brinkster.com>
-Subject: =?utf-8?Q?=C4=8Cesk=C3=A1_republika?=
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
-X-Originating-IP: [209.237.232.93]
-X-Mailer: Zimbra 6.0.6_GA_2332.RHEL4 (ZimbraWebClient - FF3.0 (Win)/6.0.6_GA_2324.RHEL5)
-To: undisclosed-recipients:;
+	id S1754556Ab0JSQMB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Oct 2010 12:12:01 -0400
+Received: from tex.lwn.net ([70.33.254.29]:47898 "EHLO vena.lwn.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752802Ab0JSQMA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Oct 2010 12:12:00 -0400
+Date: Tue, 19 Oct 2010 10:11:58 -0600
+From: Jonathan Corbet <corbet@lwn.net>
+To: Kay Sievers <kay.sievers@vrfy.org>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>, Greg KH <greg@kroah.com>
+Subject: Re: [PATCH] support polling of /proc/swaps
+Message-ID: <20101019101158.29e8cd0f@bike.lwn.net>
+In-Reply-To: <1287479956.1729.1.camel@yio.site>
+References: <1287479956.1729.1.camel@yio.site>
+Organization: LWN.net
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dobrý den, příteli, 
-Já jsem pan Kevin Brown manažer Účetnictví / Audit ministerstva NatWest banky Harlsden, North West London, Anglie. Kontaktoval jsem si, co se týká podnikání návrh, který bude mít obrovský přínos pro nás oba a méně privilegované ty. Být manažerem účetního / auditu Greater London Krajský úřad jsem zjistil, součet £ 15,000,000.00 GBP (patnáct milionů britských liber šterlinků) na účtu, které patří k jednomu z našich zahraničních zákazníků Pozdní Pan Moises Saba Masrího. On byl židovský obchodní magnát z Mexika, který zemřel v zřícení vrtulníku na začátku letošního roku. 
+> From: Kay Sievers <kay.sievers@vrfy.org>
+> Subject: support polling of /proc/swaps
+> 
+> System management wants to subscribe to changes in swap
+> configuration. Make /proc/swaps pollable like /proc/mounts.
 
-Pan Saba byl 47-roky-starý, když obě jeho manželky, jeho jediný syn Avraham (Albert) a jeho dcera-v-právo zemřel v zřícení vrtulníku. 
+Please forgive me...I'm probably undercaffeinated and even dumber than
+usual, but...
 
-Můžete získat více informací, pokud jde o pád a smrt našeho pozdě zákazníka pana Mojžíše Saba na adresu webových stránkách níže: 
+Here we have this:
 
-http://www.ynetnews.com/articles/0,7340,L-3832556,00.html 
+> +static unsigned swaps_poll(struct file *file, poll_table *wait)
+> +{
+> +	struct proc_swaps *s = file->private_data;
 
-Volba Vás kontaktovat vzbudil z geografické povahy, kde žijete, zejména vzhledem k citlivosti na transakce a důvěrnost zde. Nyní náš bankovní bylo čekání na některý z příbuzných přijde-až k tvrzení, dědictví fondu, ale bohužel veškeré úsilí má být neplatné. Já osobně jsem byl neúspěšný při rozmisťování příbuzným ani nejbližším příbuzným pana Saba. Na tomto jde, mám usilovat o váš souhlas k vám jako další příbuzný / bude příjemce na zemřelého tak, že výtěžek z tohoto účtu oceněn na ₤ 15 milionů britských librách být vyplacena na vás. 
+But here I see:
 
-To bude vyplacena, nebo sdílená v těchto procent 60% pro mě a 40% na vás. Mám zajištěné veškeré nezbytné právní dokumenty, které mohou být použity k zálohování toto tvrzení se chystáme dělat. Vše, co potřebujete, je nahrát vaše jména na dokumenty a legalizovat u britského Nejvyššího soudu za účelem prokázání vás oprávněný příjemce. Všechny Žádám nyní je vaše upřímná Co-operace, důvěrnosti a důvěry k tomu, aby nás vidět tuto transakci prostřednictvím. Já vám zaručit 100% úspěšnost a že tato obchodní transakce budou provedeny v rámci působnosti práva a také chránit vás z jakéhokoli porušení smlouvy. 
+>  static int swaps_open(struct inode *inode, struct file *file)
+>  {
+> -	return seq_open(file, &swaps_op);
+> +	struct proc_swaps *s;
+> +	int ret;
+> +
+> +	s = kmalloc(sizeof(struct proc_swaps), GFP_KERNEL);
+> +	if (!s)
+> +		return -ENOMEM;
+> +
+> +	file->private_data = &s->seq;
 
-Uveďte, prosím, mi následující, jak jsme 7 pracovních dní spustíme ji projít: 
-1. Vaše celé jméno 
-2. Telefonní číslo 
-3. Kontaktní adresa 
-4. Věk 
-5. Pohlaví 
-6. Povolání 
+It sure looks to me like private_data is a struct seq_file pointer, not a
+struct proc_swaps pointer.  What am I missing?
 
-S prošla metodický vyhledávání, rozhodl jsem se Vás kontaktovat doufat, že vás najdou tento návrh zajímavý. Prosím o Vaše potvrzení této zprávy a naznačuje váš zájem budu vám poskytne bližší informace je. 
-Váš souhlas s tímto e-mailu a obchodní návrh bude vysoce ocenil. 
-S pozdravem, 
+Thanks,
 
-
-Pan Kevin Brown 
-
-... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... 
+jon
