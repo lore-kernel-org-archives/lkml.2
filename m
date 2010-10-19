@@ -1,55 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752607Ab0JSOdy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Oct 2010 10:33:54 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:38158 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752227Ab0JSOdw convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Oct 2010 10:33:52 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=SiKHZOzj5ldRiFoV4CPocTnnyFdvqXYRoD30qehQ3igXwV8g7tHS5OEO5dW+zlo2h1
-         B233dmmhMRZKWdnpqxmWiYOPgPIhTL4MAjHk+7Pa4HoL3HwfPmg7W91IxO33UiIHYPV5
-         c5z2YnKsDMJISPqBX9C65umfD+CR6qr6x445w=
-MIME-Version: 1.0
-In-Reply-To: <4CBD9FD5.506@nokia.com>
-References: <1287482608-11320-1-git-send-email-felipe.contreras@gmail.com>
-	<1287482608-11320-4-git-send-email-felipe.contreras@gmail.com>
-	<4CBD9FD5.506@nokia.com>
-Date: Tue, 19 Oct 2010 17:33:50 +0300
-Message-ID: <AANLkTinRRyrXzqEu=u+CCYkmSNGm03SSo1tVG=5_wdpo@mail.gmail.com>
-Subject: Re: [PATCH v2 3/3] drivers: cleanup Kconfig stuff
-From: Felipe Contreras <felipe.contreras@gmail.com>
-To: Roger Quadros <roger.quadros@nokia.com>
-Cc: "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        linux-omap <linux-omap@vger.kernel.org>,
-        linux-main <linux-kernel@vger.kernel.org>, Greg KH <greg@kroah.com>,
-        Felipe Balbi <balbi@ti.com>, Tony Lindgren <tony@atomide.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S1752532Ab0JSOfL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Oct 2010 10:35:11 -0400
+Received: from lo.gmane.org ([80.91.229.12]:58768 "EHLO lo.gmane.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750855Ab0JSOfJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Oct 2010 10:35:09 -0400
+X-Injected-Via-Gmane: http://gmane.org/
+To: linux-kernel@vger.kernel.org
+From: Grant Edwards <grant.b.edwards@gmail.com>
+Subject: Re: [PATCH] Documentation about RS485 serial communications
+Date: Tue, 19 Oct 2010 14:29:48 +0000 (UTC)
+Message-ID: <i9ka0s$4ua$1@dough.gmane.org>
+References: <20100408111310.524f7354@lxorguk.ukuu.org.uk>
+ <4BBDD71D.1010700@evidence.eu.com> <4BFD1FB6.8050405@atmel.com>
+ <4BFE2F38.8050200@evidence.eu.com> <4BFE41FD.2080804@atmel.com>
+ <20100527102917.GB31253@pengutronix.de> <4C626CBF.9020609@evidence.eu.com>
+ <20100811083214.21d2919e.randy.dunlap@oracle.com>
+ <4C669120.8080707@evidence.eu.com> <4C686411.3060500@oracle.com>
+ <20100815221906.GA24153@n2100.arm.linux.org.uk>
+ <4CBD8EE4.5040808@evidence.eu.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Complaints-To: usenet@dough.gmane.org
+X-Gmane-NNTP-Posting-Host: dsl.comtrol.com
+User-Agent: slrn/pre0.9.9-102 (Linux)
+Cc: linux-serial@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Cc: linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Roger,
+On 2010-10-19, Claudio Scordino <claudio@evidence.eu.com> wrote:
 
-On Tue, Oct 19, 2010 at 4:40 PM, Roger Quadros <roger.quadros@nokia.com> wrote:
->> @@ -843,6 +841,7 @@ config USB_CDC_COMPOSITE
->>  config USB_G_NOKIA
->>        tristate "Nokia composite gadget"
->>        depends on PHONET
->> +       depends on USB_GADGET_MUSB_HDRC
->
-> This is wrong. Is there a build problem or run-time problem without this?
+> +2. HARDWARE-RELATED CONSIDERATIONS
+> +
+> +   Some CPUs (e.g., Atmel AT91) contain a transceiver capable of working both
+> +   as RS232 and RS485.
 
-Try:
-CONFIG_USB_G_NOKIA=y
-CONFIG_USB_GADGET_MUSB_HDRC=n
+Pardon my curiosity, but I've looked at a few AT91 parts, and I've
+never seen on with an internal transceiver -- nor does Google seem
+able to find any.
 
-At least g_nokia doesn't seem to work correctly on my N900.
+Frankly, I'd be pretty surprised, since it would be very difficult
+(fab-wise), to build a mircoprocessor with I/O cells capable of
+withstanding the voltage levels specified in RS232.
+
+Can you specify to which parts you're referring?
 
 -- 
-Felipe Contreras
+Grant Edwards               grant.b.edwards        Yow! I have the power to
+                                  at               HALT PRODUCTION on all
+                              gmail.com            TEENAGE SEX COMEDIES!!
+
