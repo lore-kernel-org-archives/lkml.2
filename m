@@ -1,108 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757972Ab0JSFlZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Oct 2010 01:41:25 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:49954 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755054Ab0JSFlY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Oct 2010 01:41:24 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=TO0jWF53RCAtHG89+t2hJWU4GyXBngUaqcBq1lXZ79bp9qu+4OI5o+qTQkbxsiUh62
-         sYj0w9Jn8ogZd60UcEH+q9fA4DlWMKpkrNgDChMPncnuBl9dNG2t8pvgE4zby7858alc
-         wqd8wiENnkqJS1mhcAtCfgUw6qWS9nVFy9Oxo=
-From: Gustavo Silva <silvagustavosilva@gmail.com>
-To: gregkh@suse.de, eli@siliconsprawl.com
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Gustavo Silva <silvagustavo@users.sourceforge.net>
-Subject: [PATCH] Staging: frontier: fix coding style issues in tranzport.c
-Date: Tue, 19 Oct 2010 00:40:42 -0500
-Message-Id: <1287466842-14799-1-git-send-email-silvagustavo@users.sourceforge.net>
-X-Mailer: git-send-email 1.7.1
+	id S1757966Ab0JSFzu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Oct 2010 01:55:50 -0400
+Received: from ozlabs.org ([203.10.76.45]:46865 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754287Ab0JSFzt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Oct 2010 01:55:49 -0400
+Date: Tue, 19 Oct 2010 16:55:35 +1100
+From: Paul Mackerras <paulus@samba.org>
+To: Peter Zijlstra <peterz@infradead.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Alexey Kardashevskiy <aik@au1.ibm.com>,
+        Ingo Molnar <mingo@elte.hu>
+Subject: [PATCH] perf, powerpc: Fix power_pmu_event_init to not use
+ event->ctx
+Message-ID: <20101019055535.GA10398@drongo>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a patch to the tranzport.c file that fixes up the following issue
+Commit c3f00c70 ("perf: Separate find_get_context() from event
+initialization") changed the generic perf_event code to call
+perf_event_alloc, which calls the arch-specific event_init code,
+before looking up the context for the new event.  Unfortunately,
+power_pmu_event_init uses event->ctx->task to see whether the new
+event is a per-task event or a system-wide event, and thus crashes
+since event->ctx is NULL at the point where power_pmu_event_init gets
+called.
 
-WARNING: please, no space for starting a line	x 23
+(The reason it needs to know whether it is a per-task event is because
+there are some hardware events on Power systems which only count when
+the processor is not idle, and there are some fixed-function counters
+which count such events.  For example, the "run cycles" event counts
+cycles when the processor is not idle.  If the user asks to count
+cycles, we can use "run cycles" if this is a per-task event, since the
+processor is running when the task is running, by definition.  We
+can't use "run cycles" if the user asks for "cycles" on a system-wide
+counter.)
 
-Signed-off-by: Gustavo Silva <silvagustavo@users.sourceforge.net>
+Fortunately the information we need is in the event->attach_state
+field, so we just use that instead.
+
+Signed-off-by: Paul Mackerras <paulus@samba.org>
+Reported-by: Alexey Kardashevskiy <aik@au1.ibm.com>
 ---
- drivers/staging/frontier/tranzport.c |   54 +++++++++++++++++-----------------
- 1 files changed, 27 insertions(+), 27 deletions(-)
+ arch/powerpc/kernel/perf_event.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/staging/frontier/tranzport.c b/drivers/staging/frontier/tranzport.c
-index eed74f0..9c19972 100644
---- a/drivers/staging/frontier/tranzport.c
-+++ b/drivers/staging/frontier/tranzport.c
-@@ -174,37 +174,37 @@ static void usb_tranzport_abort_transfers(struct usb_tranzport *dev)
- 			usb_kill_urb(dev->interrupt_out_urb);
- }
+diff --git a/arch/powerpc/kernel/perf_event.c b/arch/powerpc/kernel/perf_event.c
+index 9cb4924..3129c85 100644
+--- a/arch/powerpc/kernel/perf_event.c
++++ b/arch/powerpc/kernel/perf_event.c
+@@ -1092,7 +1092,7 @@ static int power_pmu_event_init(struct perf_event *event)
+ 	 * XXX we should check if the task is an idle task.
+ 	 */
+ 	flags = 0;
+-	if (event->ctx->task)
++	if (event->attach_state & PERF_ATTACH_TASK)
+ 		flags |= PPMU_ONLY_COUNT_RUN;
  
--#define show_int(value)							\
--  static ssize_t show_##value(struct device *dev,			\
-+#define show_int(value)	\
-+	static ssize_t show_##value(struct device *dev,	\
- 			      struct device_attribute *attr, char *buf)	\
--  {									\
--    struct usb_interface *intf = to_usb_interface(dev);			\
--    struct usb_tranzport *t = usb_get_intfdata(intf);			\
--    return sprintf(buf, "%d\n", t->value);			        \
--  }									\
--  static DEVICE_ATTR(value, S_IRUGO, show_##value, NULL);
--
--#define show_set_int(value)						\
--  static ssize_t show_##value(struct device *dev,			\
-+	{	\
-+		struct usb_interface *intf = to_usb_interface(dev);	\
-+		struct usb_tranzport *t = usb_get_intfdata(intf);	\
-+		return sprintf(buf, "%d\n", t->value);	\
-+	}	\
-+	static DEVICE_ATTR(value, S_IRUGO, show_##value, NULL);
-+
-+#define show_set_int(value)	\
-+	static ssize_t show_##value(struct device *dev,	\
- 			      struct device_attribute *attr, char *buf)	\
--  {									\
--    struct usb_interface *intf = to_usb_interface(dev);			\
--    struct usb_tranzport *t = usb_get_intfdata(intf);			\
--    return sprintf(buf, "%d\n", t->value);			        \
--  }									\
--  static ssize_t set_##value(struct device *dev,			\
-+	{	\
-+		struct usb_interface *intf = to_usb_interface(dev);	\
-+		struct usb_tranzport *t = usb_get_intfdata(intf);	\
-+		return sprintf(buf, "%d\n", t->value);	\
-+	}	\
-+	static ssize_t set_##value(struct device *dev,	\
- 			     struct device_attribute *attr,		\
- 			     const char *buf, size_t count)		\
--  {									\
--    struct usb_interface *intf = to_usb_interface(dev);			\
--    struct usb_tranzport *t = usb_get_intfdata(intf);			\
--    unsigned long temp;							\
--    if (strict_strtoul(buf, 10, &temp))					\
--	return -EINVAL;							\
--    t->value = temp;							\
--    return count;							\
--  }									\
--  static DEVICE_ATTR(value, S_IWUGO | S_IRUGO, show_##value, set_##value);
-+	{	\
-+		struct usb_interface *intf = to_usb_interface(dev);	\
-+		struct usb_tranzport *t = usb_get_intfdata(intf);	\
-+		unsigned long temp;	\
-+		if (strict_strtoul(buf, 10, &temp))	\
-+			return -EINVAL;	\
-+		t->value = temp;	\
-+		return count;	\
-+	}	\
-+	static DEVICE_ATTR(value, S_IWUGO | S_IRUGO, show_##value, set_##value);
- 
- show_int(enable);
- show_int(offline);
--- 
-1.7.1
-
+ 	/*
