@@ -1,70 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933863Ab0JSLw5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Oct 2010 07:52:57 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:51187 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758274Ab0JSLwy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1758419Ab0JSLw4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Oct 2010 07:52:56 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:51500 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758252Ab0JSLwy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 19 Oct 2010 07:52:54 -0400
-Date: Tue, 19 Oct 2010 14:52:36 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: Felipe Contreras <felipe.contreras@gmail.com>
-Cc: "Balbi, Felipe" <balbi@ti.com>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        linux-omap <linux-omap@vger.kernel.org>,
-        linux-main <linux-kernel@vger.kernel.org>, Greg KH <greg@kroah.com>,
-        Tony Lindgren <tony@atomide.com>
-Subject: Re: [PATCH v2 3/3] drivers: cleanup Kconfig stuff
-Message-ID: <20101019115236.GL31170@legolas.emea.dhcp.ti.com>
-Reply-To: balbi@ti.com
-References: <1287482608-11320-1-git-send-email-felipe.contreras@gmail.com>
- <1287482608-11320-4-git-send-email-felipe.contreras@gmail.com>
- <20101019103234.GI31170@legolas.emea.dhcp.ti.com>
- <AANLkTinXzMQXoyyu+anSCvSuE9w3FWAP5HswDS0kfpzE@mail.gmail.com>
- <20101019111613.GJ31170@legolas.emea.dhcp.ti.com>
- <AANLkTikkMphKa2DGGtWxy-3LpFX0kn92UEYPj==Euzok@mail.gmail.com>
+Date: Tue, 19 Oct 2010 13:52:00 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Thomas Renninger <trenn@suse.de>, Arjan van de Ven <arjan@linux.intel.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Tejun Heo <tj@kernel.org>, Frederic Weisbecker <fweisbec@gmail.com>,
+        Pierre Tardy <tardyp@gmail.com>,
+        Jean Pihet <jean.pihet@newoldbits.com>,
+        linux-trace-users@vger.kernel.org, linux-pm@lists.linux-foundation.org,
+        rjw@sisk.pl, linux-omap@vger.kernel.org,
+        Kevin Hilman <khilman@deeprootsystems.com>,
+        Steven Rostedt <rostedt@goodmis.org>, Frank Eigler <fche@redhat.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: PATCH [0/4] perf: clean-up of power events API
+Message-ID: <20101019115200.GC25371@elte.hu>
+References: <201010062334.46971.trenn@suse.de>
+ <4CB095FA.8060803@linux.intel.com>
+ <20101010121928.GA2688@elte.hu>
+ <201010191331.03080.trenn@suse.de>
+ <20101019114501.GA25371@elte.hu>
+ <1287488841.1994.5.camel@twins>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii; format=flowed
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <AANLkTikkMphKa2DGGtWxy-3LpFX0kn92UEYPj==Euzok@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1287488841.1994.5.camel@twins>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
 
-On Tue, Oct 19, 2010 at 06:36:32AM -0500, Felipe Contreras wrote:
->That is actually the intention.
+* Peter Zijlstra <peterz@infradead.org> wrote:
 
-so it's a bit messed up one :-p
+> On Tue, 2010-10-19 at 13:45 +0200, Ingo Molnar wrote:
+> > 
+> > * Thomas Renninger <trenn@suse.de> wrote:
+> > 
+> > > > Most definitely. It's no accident that it took such a long time for this issue 
+> > > > to be raised in the first place. It's a rare occurance -
+> > >
+> > > Do you agree that this occurance happened now and these events should get cleaned 
+> > > up before ARM and other archs make use of the broken interface?
+> > >
+> > > If not, discussing this further, is a big waste of time... and Jean would have to 
+> > > try to adapt his ARM code on the broken ABI...
+> > 
+> > The discussion seems to have died down somewhat. Please re-send to lkml the latest 
+> > patches you have to remind everyone of the latest state of things - the merge window 
+> > is getting near.
+> > 
+> > My only compatibility/ABI point is basically that it shouldnt break _existing_ 
+> > tracepoints (and users thereof). If your latest bits meet that then it ought to be a 
+> > good first step. You are free to (and encouraged to) introduce more complete sets of 
+> > events.
+> 
+> Can we deprecate and eventually remove the old ones, or will we be forever obliged 
+> to carry the old ones too?
 
->It's the other way around. He wanted to get rid of defconfigs
->completely by moving the complexity to Kconfigs:
+We most definitely want to deprecate and remove the old ones - but we want to give 
+instrumentation software some migration time for that.
 
-Yes, but he was suggesting to add things like Kconfig.rx51 and that
-would be selecting correct drivers to get rx51 working, he was
-definitely not suggesting to add sensible defaults all over the tree.
+Jean, Arjan, what would be a feasible and practical deprecation period for that? One 
+kernel cycle?
 
->http://article.gmane.org/gmane.linux.kernel/994720
->http://article.gmane.org/gmane.linux.kernel/994706
->http://article.gmane.org/gmane.linux.kernel/994718
->
->You seem to be pushing for the exact opposite; keep the complexity on
->the defconfigs and the burden on the user creating configs.
+Thanks,
 
-no, you got me wrong. We do need to get rid of defconfigs, but we have
-to do so while keeping the resulting binary working and as of today, if
-you enable more than one transceiver driver, it won't work.
-
->Ok. But for now 'default y if ARCH_OMAP3' for TWL4030_USB doesn't
->hurt, nor increases the total size of Kconfigs, and solves a real
->problem.
-
-I don't see it that way. I see that there will be boards with one too
-many transceivers enabled and the resulting binary won't work, but I'll
-leave that for Greg to decide.
-
--- 
-balbi
+	Ingo
