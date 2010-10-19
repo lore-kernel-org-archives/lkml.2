@@ -1,49 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756536Ab0JSWqQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Oct 2010 18:46:16 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:53760 "EHLO mail.zytor.com"
+	id S1756673Ab0JSWu3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Oct 2010 18:50:29 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:54138 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755677Ab0JSWqO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Oct 2010 18:46:14 -0400
-Message-ID: <4CBE1F5E.8040807@zytor.com>
-Date: Tue, 19 Oct 2010 15:44:46 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc13 Thunderbird/3.1.4
-MIME-Version: 1.0
-To: Jason Baron <jbaron@redhat.com>
-CC: Thomas Gleixner <tglx@linutronix.de>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Koki Sanagi <sanagi.koki@jp.fujitsu.com>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Frederic Weisbecker <fweisbec@gmail.com>, nhorman@tuxdriver.com,
-        scott.a.mcmillan@intel.com, laijs@cn.fujitsu.com,
-        LKML <linux-kernel@vger.kernel.org>, eric.dumazet@gmail.com,
-        kaneshige.kenji@jp.fujitsu.com, David Miller <davem@davemloft.net>,
-        izumi.taku@jp.fujitsu.com, kosaki.motohiro@jp.fujitsu.com,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        "Luck, Tony" <tony.luck@intel.com>
-Subject: Re: [PATCH] tracing: Cleanup the convoluted softirq tracepoints
-References: <4CBD79CF.2060706@jp.fujitsu.com> <alpine.LFD.2.00.1010191428560.6815@localhost6.localdomain6> <20101019132236.GA19197@Krystal> <alpine.LFD.2.00.1010191524160.6815@localhost6.localdomain6> <1287496495.16971.372.camel@gandalf.stny.rr.com> <alpine.LFD.2.00.1010191558250.6815@localhost6.localdomain6> <20101019142820.GA14520@Krystal> <alpine.LFD.2.00.1010191842270.6815@localhost6.localdomain6> <20101019212816.GA2855@redhat.com> <alpine.LFD.2.00.1010192347390.6815@localhost6.localdomain6> <20101019223842.GE2855@redhat.com>
-In-Reply-To: <20101019223842.GE2855@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1755945Ab0JSWu1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Oct 2010 18:50:27 -0400
+Subject: Re: [PATCH 1/3] IMA: move read/write counters into struct inode
+From: Eric Paris <eparis@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Al Viro <viro@zeniv.linux.org.uk>, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        hch@infradead.org, zohar@us.ibm.com, warthog9@kernel.org,
+        david@fromorbit.com, jmorris@namei.org, kyle@mcmartin.ca,
+        hpa@zytor.com, akpm@linux-foundation.org, mingo@elte.hu
+In-Reply-To: <AANLkTimL=eChoCQHGoiouE5s6dGG=n9ZAQGhW-RW+gDj@mail.gmail.com>
+References: <20101019011650.25346.99614.stgit@paris.rdu.redhat.com>
+	 <AANLkTimGdjPyLXuknDNa7WNthDT9+2FdOuPdxwjRiMHD@mail.gmail.com>
+	 <1287506215.2530.187.camel@localhost.localdomain>
+	 <20101019165530.GT19804@ZenIV.linux.org.uk>
+	 <AANLkTimL=eChoCQHGoiouE5s6dGG=n9ZAQGhW-RW+gDj@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 19 Oct 2010 18:49:06 -0400
+Message-ID: <1287528546.2530.277.camel@localhost.localdomain>
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/19/2010 03:38 PM, Jason Baron wrote:
-> 
-> I'm not sure I did, the documentation says that we have nop followed by
-> a jmp:
-> 
-> +The new code is a 'nopl' followed by a 'jmp'. Thus:
-> +
-> +nopl - 0f 1f 44 00 00 - 5 bytes
-> +jmp  - eb 3e          - 2 bytes
-> 
+Executive summary of the day's work:
+Yesterday morning: 944 bytes per inode in core
+Yesterday night: 24 bytes per inode in core
+Tonight: 4 bytes per inode in core.
 
-There is no excuse for needing the second jump here, obviously...
+That's a x236 time reduction in memory usage.  No I didn't even start
+looking at a freezer.  Which could bring that 4 down to 0, but would add
+a scalability penalty on all inodes when IMA was enabled.
 
-	-hpa
+The memory associated with inodes that IMA actually cares about has gone
+from 312 to 320 bytes.  
+
+I'm going to follow up with my patch series again but they aren't really
+ready to be applied.  The IBM people who wrote IMA are reviewing them.
+I have some questions if my RCU+RBTREE usage is valid/correct.  I'd
+really like Al to take a close look at the last patch in the series to
+make sure my use of i_writecount actually does what I want it to do...
+
+-Eric
+
