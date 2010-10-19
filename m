@@ -1,141 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756999Ab0JST6x (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Oct 2010 15:58:53 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:37524 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751831Ab0JST6w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Oct 2010 15:58:52 -0400
-Date: Tue, 19 Oct 2010 15:58:17 -0400 (EDT)
-From: Mikulas Patocka <mpatocka@redhat.com>
-X-X-Sender: mpatocka@hs20-bc2-1.build.redhat.com
-To: Cong Meng <mcpacino@gmail.com>
-cc: linux-fsdevel@vger.kernel.org,
-        device-mapper development <dm-devel@redhat.com>,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Christoph Hellwig <hch@lst.de>, Nick Piggin <npiggin@kernel.dk>,
-        Daniel Phillips <phillips@phunq.net>
-Subject: Re: [dm-devel] introduce dm-snap-mv
-In-Reply-To: <20101006083150.GA15758@zhongling>
-Message-ID: <Pine.LNX.4.64.1010191551540.19443@hs20-bc2-1.build.redhat.com>
-References: <20101006083150.GA15758@zhongling>
+	id S1756966Ab0JSULz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Oct 2010 16:11:55 -0400
+Received: from eddie.linux-mips.org ([78.24.191.182]:35065 "EHLO
+	cvs.linux-mips.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752779Ab0JSULy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Oct 2010 16:11:54 -0400
+Date: Tue, 19 Oct 2010 21:11:51 +0100 (BST)
+From: "Maciej W. Rozycki" <macro@linux-mips.org>
+To: Ralf Baechle <ralf@linux-mips.org>
+cc: Kevin Cernekee <cernekee@gmail.com>,
+        Shinya Kuribayashi <skuribay@pobox.com>, linux-mips@linux-mips.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH resend 5/9] MIPS: sync after cacheflush
+In-Reply-To: <20101019123441.GJ27377@linux-mips.org>
+Message-ID: <alpine.LFD.2.00.1010192039550.15889@eddie.linux-mips.org>
+References: <17ebecce124618ddf83ec6fe8e526f93@localhost> <17d8d27a2356640a4359f1a7dcbb3b42@localhost> <4CBC4F4E.5010305@pobox.com> <AANLkTinpry=XG-ZDgXJK-VB6QkBL2TO4-vrsV5Tc1eEs@mail.gmail.com> <alpine.LFD.2.00.1010190146360.15889@eddie.linux-mips.org>
+ <20101019123441.GJ27377@linux-mips.org>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+On Tue, 19 Oct 2010, Ralf Baechle wrote:
 
-Thanks for the development!
+> See R4000 User's Manual Version 2, page 326, "Uncached Loads and Stores".
+> Of course this can only happen on cache coherent or multiprocessor systems.
+> I guess none of the supported DEC MIPS systems is affected.
 
-I'm already developing something similar 
-paper: http://people.redhat.com/mpatocka/papers/shared-snapshots.pdf
-kernel code: http://people.redhat.com/mpatocka/patches/kernel/new-snapshots/r22/
-user code: http://people.redhat.com/mpatocka/patches/userspace/new-snapshots/lvm-2.02.73/
+ Since none of the R4k DECstations is coherent or MP, I have not 
+considered these implications.  The only MP DECsystem (there was no 
+workstation variation), that is the 5800, was built with R3k chips in the 
+first place and the chance we ever come across one, let alone support it, 
+is epsilon.
 
-Please change your code to conform to the existing interface. My kernel 
-code is extendible, you can plug arbitrary on-disk formats to it, there's 
-another example of Daniel Phillips' zumastore snapshots. Use this 
-interface so that it could be used with the existing userspace 
-infrastructure.
+ That said, R4k DECstations seem to perform aggressive write buffering in 
+the chipset and to make sure a write has propagated to an MMIO register a 
+SYNC and an uncached read operation are necessary.  The read may be from 
+elsewhere apparently -- RAM at 0 seems just fine -- so the chipset seems 
+to obey the SYNC semantics.
 
-Mikulas
+ I haven't investigated DMA dependencies and I think we currently only 
+have one TURBOchannel device/driver only (that is the DEFTA/defxx FDDI 
+thingy) making use of the generic DMA API on DECstations.  It seemed to 
+work correctly the last time I tried; presumably either because the API 
+Does The Right Thing, or by pure luck and right timings.  Note that the 
+DEC/Motorola CAMEL FDDI chipset was quite an aggressive DMA agent for its 
+time, certainly capable of saturating some lower-clocked implementations 
+of the I/O bus.
 
-On Wed, 6 Oct 2010, Cong Meng wrote:
+ Then I think the onboard devices that do third-party DMA via the IOASIC 
+such as the LANCE Ethernet are too obscure/arcane to consider them here 
+and get any useful results -- any inconsistencies may well be masked by 
+the odd sequences used to access the respective chips.  There were some 
+hardly documented chipset errata too, making the whole thing yet more 
+complicated and causing some "impossible" error scenarios.
 
-> Hello everyone,
-> 
-> I am very glad to introduce my work dm-snap-mv here.
-> 
-> 
-> what is dm-snap-mv
-> -------------------
-> The dm-snap-mv is a target module for device-mapper, which can take
-> multiple snapshots against an existing block device(origin device).
-> 
-> All snapshots are saved in an independent block device(COW device).
-> 
-> The copy-on-write is used, so only diff-data will be saved in the COW device.
-> 
-> 
-> features
-> --------
-> 1. snapshot of origin
-> 2. snapshot of snapshot
-> 3. instant snapshot creation and deletion
-> 4. origin and snapshots are concurrent readable/writable
-> 5. rollback snapshot to origin
-> 6. multiple origin devices share a COW device
-> 7. multiple COW devices are supported
-> 
-> 
-> diagram
-> -------
-> 
->            +---------------------+    +---------------+     +--------------+
->    read <--|                     |-----               |     |              |
->            |    origin dm_dev    |    |   origin_dev  | COW |              |
->   write ---|                     |---->               |----->  snapshot-1  |
->            +---------------------+    +--|------------+     |     ...      | 
->                                          |                  |     ...      |        
->            +---------------------+    +--|------------------+     ...      |
->    read <--|                     |-------?-                    snapshot-N  |
->            |  snapshot-X dm_dev  |    |         cow_dev                    |
->   write ---|                     |---->                                    |
->            +---------------------+    +------------------------------------+
-> 
->   dm_dev: device-mapper device, created by "dmsetup create ..."
->      COW: copy-on-write
-> 
-> 
-> download the source
-> -----------------------
-> http://github.com/mcpacino/dm-snap-mv
-> 
-> git clone git://github.com/mcpacino/dm-snap-mv.git
-> 
-> 
-> a kernel patch
-> --------------
-> Now, dm-snap-mv highly depends on a kernel patch below, which make __getblk()
-> can get a 4K buffer head while block size of the disk is NOT 4K.
-> 
-> Signed-off-by: Cong Meng <mcpacino@gmail.com>
-> ---
->  fs/buffer.c |    7 ++-----
->  1 files changed, 2 insertions(+), 5 deletions(-)
-> 
-> diff --git a/fs/buffer.c b/fs/buffer.c
-> index 3e7dca2..f7f9d33 100644
-> --- a/fs/buffer.c
-> +++ b/fs/buffer.c
-> @@ -1051,10 +1051,7 @@ grow_buffers(struct block_device *bdev, sector_t block, int size)
->  	pgoff_t index;
->  	int sizebits;
->  
-> -	sizebits = -1;
-> -	do {
-> -		sizebits++;
-> -	} while ((size << sizebits) < PAGE_SIZE);
-> +	sizebits = PAGE_CACHE_SHIFT - bdev->bd_inode->i_blkbits;
->  
->  	index = block >> sizebits;
->  
-> @@ -2924,7 +2921,7 @@ int submit_bh(int rw, struct buffer_head * bh)
->  	 */
->  	bio = bio_alloc(GFP_NOIO, 1);
->  
-> -	bio->bi_sector = bh->b_blocknr * (bh->b_size >> 9);
-> +	bio->bi_sector = bh->b_blocknr << (bh->b_bdev->bd_inode->i_blkbits - 9);
->  	bio->bi_bdev = bh->b_bdev;
->  	bio->bi_io_vec[0].bv_page = bh->b_page;
->  	bio->bi_io_vec[0].bv_len = bh->b_size;
-> 
-> --
-> dm-devel mailing list
-> dm-devel@redhat.com
-> https://www.redhat.com/mailman/listinfo/dm-devel
-> 
+  Maciej
