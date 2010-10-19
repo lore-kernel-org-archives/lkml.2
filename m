@@ -1,139 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756331Ab0JSWjQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Oct 2010 18:39:16 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:26333 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754479Ab0JSWjP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Oct 2010 18:39:15 -0400
-Date: Tue, 19 Oct 2010 18:38:43 -0400
-From: Jason Baron <jbaron@redhat.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
+	id S1756288Ab0JSWlb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Oct 2010 18:41:31 -0400
+Received: from mail.openrapids.net ([64.15.138.104]:49777 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754479Ab0JSWla convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Oct 2010 18:41:30 -0400
+Date: Tue, 19 Oct 2010 18:41:27 -0400
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>, Thomas Gleixner <tglx@linutronix.de>,
         Koki Sanagi <sanagi.koki@jp.fujitsu.com>,
         Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
         Frederic Weisbecker <fweisbec@gmail.com>, nhorman@tuxdriver.com,
         scott.a.mcmillan@intel.com, laijs@cn.fujitsu.com,
-        "H. Peter Anvin" <hpa@zytor.com>, LKML <linux-kernel@vger.kernel.org>,
-        eric.dumazet@gmail.com, kaneshige.kenji@jp.fujitsu.com,
-        David Miller <davem@davemloft.net>, izumi.taku@jp.fujitsu.com,
-        kosaki.motohiro@jp.fujitsu.com,
+        LKML <linux-kernel@vger.kernel.org>, eric.dumazet@gmail.com,
+        kaneshige.kenji@jp.fujitsu.com, David Miller <davem@davemloft.net>,
+        izumi.taku@jp.fujitsu.com, kosaki.motohiro@jp.fujitsu.com,
         Heiko Carstens <heiko.carstens@de.ibm.com>,
-        "Luck, Tony" <tony.luck@intel.com>
+        "Luck, Tony" <tony.luck@intel.com>, Jason Baron <jbaron@redhat.com>
 Subject: Re: [PATCH] tracing: Cleanup the convoluted softirq tracepoints
-Message-ID: <20101019223842.GE2855@redhat.com>
-References: <4CBD79CF.2060706@jp.fujitsu.com>
- <alpine.LFD.2.00.1010191428560.6815@localhost6.localdomain6>
- <20101019132236.GA19197@Krystal>
- <alpine.LFD.2.00.1010191524160.6815@localhost6.localdomain6>
- <1287496495.16971.372.camel@gandalf.stny.rr.com>
- <alpine.LFD.2.00.1010191558250.6815@localhost6.localdomain6>
- <20101019142820.GA14520@Krystal>
- <alpine.LFD.2.00.1010191842270.6815@localhost6.localdomain6>
- <20101019212816.GA2855@redhat.com>
- <alpine.LFD.2.00.1010192347390.6815@localhost6.localdomain6>
+Message-ID: <20101019224126.GD3519@Krystal>
+References: <20101019132236.GA19197@Krystal> <alpine.LFD.2.00.1010191524160.6815@localhost6.localdomain6> <1287496495.16971.372.camel@gandalf.stny.rr.com> <alpine.LFD.2.00.1010191558250.6815@localhost6.localdomain6> <20101019142820.GA14520@Krystal> <alpine.LFD.2.00.1010191842270.6815@localhost6.localdomain6> <1287521757.16971.397.camel@gandalf.stny.rr.com> <alpine.LFD.2.00.1010192302000.6815@localhost6.localdomain6> <1287523439.16971.433.camel@gandalf.stny.rr.com> <4CBE122B.9020807@zytor.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.00.1010192347390.6815@localhost6.localdomain6>
-User-Agent: Mutt/1.5.20 (2010-07-18)
+Content-Transfer-Encoding: 8BIT
+In-Reply-To: <4CBE122B.9020807@zytor.com>
+X-Editor: vi
+X-Info: http://www.efficios.com
+X-Operating-System: Linux/2.6.26-2-686 (i686)
+X-Uptime: 18:20:15 up 27 days,  2:22,  4 users,  load average: 0.09, 0.10,
+	0.13
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 19, 2010 at 11:55:19PM +0200, Thomas Gleixner wrote:
-> On Tue, 19 Oct 2010, Jason Baron wrote:
-> > On Tue, Oct 19, 2010 at 09:49:45PM +0200, Thomas Gleixner wrote:
-> > > > > On Tue, 19 Oct 2010, Steven Rostedt wrote:
-> > > 
-> > > So it trades a conditional vs. two jumps ? WTF ??
-> > > 
+* H. Peter Anvin (hpa@zytor.com) wrote:
+> On 10/19/2010 02:23 PM, Steven Rostedt wrote:
 > > 
-> > right, so the 'jmpq' on boot on x86 gets patched with 5 byte no-op
-> > sequence. So in the disabled case we have no-op followed by a jump
-> > around the disabled code.
-> 
-> And that's supposed to be useful ? We do _NOT_ want to jump around
-> disabled stuff. The noped out case should fall through into the non
-> traced code. Otherwise that whole jumplabel thing is completely
-> useless.
-> 
-> > > I thought that jumplabel magic was supposed to get rid of the jump
-> > > over the tracing code ? In fact it adds another jump. Whatfor ?
-> > > 
+> > But it seemed that gcc for you inlined the code in the wrong spot.
+> > Perhaps it's not a good idea to have the something like h - softirq_vec
+> > in the parameter of the tracepoint. Not saying that your change is not
+> > worth it. It is, because h - softirq_vec is used by others now too.
 > > 
-> > yes, that is the plan. gcc does not yet support hot/cold labels...once
-> > it does the second jump will go away and the entire tracepoint code will
-> > be moved to a 'cold' section. It's not quite completely optimal yet, but
-> > we are getting there.
 > 
-> Then do not advertise it as the brilliant solution for all tracing
-> matters.
+> OK, first of all, there are some serious WTFs here:
 > 
-
-I'm not sure I did, the documentation says that we have nop followed by
-a jmp:
-
-+The new code is a 'nopl' followed by a 'jmp'. Thus:
-+
-+nopl - 0f 1f 44 00 00 - 5 bytes
-+jmp  - eb 3e          - 2 bytes
-
-
-http://marc.info/?l=linux-kernel&m=128717355231182&w=2`
-
-> > > Now even worse, when you NOP out the jmpq then your tracepoint is
-> > > still not enabled. Brilliant !
-> > > 
-> > 
-> > The 'jmpq' in the enabled case is patched with a jmpq to the body of the
-> > tracepoint itself.
+> # define JUMP_LABEL_INITIAL_NOP ".byte 0xe9 \n\t .long 0\n\t"
 > 
-> Brilliant.
->  
-> > > Did you guys ever look at the assembly output of that insane shite you
-> > > are advertising with lengthy explanations ? 
-> > > 
-> > > Obviously _NOT_
-> > > 
-> > > Come back when you can show me a clean imlementation of all this crap
-> > > which reproduces with my jumplabel enabled stock compiler. And please
-> > > just send me a patch w/o the blurb.
-> > > 
-> > > And sane looks like:
-> > > 
-> > >     jmpq   2f  <---- This gets noped out 
-> > > 1:
-> > >     mov    %r12,%rdi
-> > >     callq  *(%r12)
-> > >     [whatever cleanup it takes ]
-> > >     leaveq 
-> > >     retq   
-> > > 
-> > > 2f:
-> > >     [tracing gunk]
-> > >     jmp    1b
-> > > 
-> > 
-> > yes, this is what the code should look like when we get support for
-> > hot/cold labels. I've discussed this support with gcc folk, and its the
-> > next step here. So yes, this is exacatly where we are headed.
-> 
-> So and at the same time the whole tracing crowd tells me, that this is
-> already a done deal. See previous advertisments from DrTracing. I'm
-> seriously grumpy about this especially in the context of a patch which
-> fixes one of the worst interfaces I've seen in years.
-> 
-> Thanks,
-> 
-> 	tglx
+> A jump instruction is one of the worst possible NOPs.  Why are we doing
+> this?
 
-sorry if I mislead anybody about the current state of of 'jump labels'.
-But we have the same goal in mind, and a clear path to get there. If you
-don't agree with the approach - I'm all ears. And you are right - the code is
-not where it should be yet.
+This code is dynamically patched at boot time (and module load time) with a
+better nop, just like the function tracer does.
 
-thanks,
+> 
+> The second thing that I found when implementing static_cpu_has() was
+> that it is actually better to encapsulate the asm goto in a small inline
+> which returns bool (true/false) -- gcc will happily optimize out the
+> variable and only see it as a flow of control thing.  I would be very
+> curious if that wouldn't make gcc generate better code in cases like that.
+> 
+> gcc 4.5.0 has a bug in that there must be a flowthrough case in the asm
+> goto (you can't have it unconditionally branch one way or the other), so
+> that should be the likely case and accordingly it should be annotated
+> likely() so that gcc doesn't reorder.  I suspect in the end one ends up
+> with code like this:
+> 
+> static __always_inline __pure bool __switch_point(...)
+> {
+> 	asm goto("1: " JUMP_LABEL_INITIAL_NOP
+> 		 /* ... patching stuff */
+> 		: : : : t_jump);
+> 	return false;
+> t_jump:
+> 	return true;
+> }
+> 
+> #define SWITCH_POINT(x) unlikely(__switch_point(x))
+> 
+> I *suspect* this will resolve the need for hot/cold labels just fine.
 
--Jason
+Thanks for the hint! We'll make sure to try it out. Having the ability to force
+gcc to put the tracepoint in an unlikely branch is deeply needed here.
+
+I'm a bit curious about the nop vs jump overhead comparison you are referring
+to. It is an instruction latency benchmark or throughput benchmark ?
+
+Intel's manual "Intel 64 and IA-32 Architectures Optimization Reference Manual"
+
+http://www.intel.com/Assets/PDF/manual/248966.pdf
+
+Page C-33 (or 577 in the pdf)
+
+"7. Selection of conditional jump instructions should be based on the
+    recommendation of section Section 3.4.1, “Branch Prediction Optimization,” to
+    improve the predictability of branches. When branches are predicted
+    successfully, the latency of jcc is effectively zero."
+
+So it mentions "jcc", but not jmp. Is there any reason for jmp to have a higher
+latency than jcc ?
+
+In this manual, the latency of predicted jcc is therefore 0 cycle, and its
+throughput is 0.5 cycle/insn.
+
+NOP (page C-29) is stated to have a latency of 0.5 to 1 cycle/insn (depending on
+the exact HW), and throughput of 0.5 cycle/insn.
+
+However, I have not found "jmp" explicitly in this listing.
+
+So if we were executing tracepoints in a maze of jumps, we could argue that
+instruction throughput is the most important there. However, if we expect the
+common case to be surrounded by some non-ALU instructions, latency tends to
+become the most important criterion.
+
+But I feel I might be missing something important that distinguish "jcc" from
+"jmp".
+
+Thanks,
+
+Mathieu
+
+
+-- 
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
