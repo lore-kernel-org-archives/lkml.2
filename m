@@ -1,173 +1,196 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758583Ab0JSM6U (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Oct 2010 08:58:20 -0400
-Received: from hera.kernel.org ([140.211.167.34]:47366 "EHLO hera.kernel.org"
+	id S934003Ab0JSNBF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Oct 2010 09:01:05 -0400
+Received: from www.tglx.de ([62.245.132.106]:60011 "EHLO www.tglx.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756664Ab0JSM6T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Oct 2010 08:58:19 -0400
-Message-ID: <4CBD95DC.8000001@kernel.org>
-Date: Tue, 19 Oct 2010 14:58:04 +0200
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.9) Gecko/20100915 Lightning/1.0b2 Thunderbird/3.1.4
+	id S1757822Ab0JSNBD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Oct 2010 09:01:03 -0400
+Date: Tue, 19 Oct 2010 15:00:13 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Koki Sanagi <sanagi.koki@jp.fujitsu.com>
+cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        mathieu.desnoyers@efficios.com,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Steven Rostedt <rostedt@goodmis.org>, nhorman@tuxdriver.com,
+        scott.a.mcmillan@intel.com, laijs@cn.fujitsu.com,
+        "H. Peter Anvin" <hpa@zytor.com>, LKML <linux-kernel@vger.kernel.org>,
+        eric.dumazet@gmail.com, kaneshige.kenji@jp.fujitsu.com,
+        David Miller <davem@davemloft.net>, izumi.taku@jp.fujitsu.com,
+        kosaki.motohiro@jp.fujitsu.com,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        "Luck, Tony" <tony.luck@intel.com>
+Subject: [PATCH] tracing: Cleanup the convoluted softirq tracepoints
+In-Reply-To: <4CBD79CF.2060706@jp.fujitsu.com>
+Message-ID: <alpine.LFD.2.00.1010191428560.6815@localhost6.localdomain6>
+References: <4C724298.4050509@jp.fujitsu.com>  <tip-2bf2160d8805de64308e2e7c3cd97813cb58ed2f@git.kernel.org>  <20100908112529.GA25931@elte.hu>  <1287395077.29097.1543.camel@twins> <1287398936.29097.1548.camel@twins> <4CBD79CF.2060706@jp.fujitsu.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-To: Linux SCSI List <linux-scsi@vger.kernel.org>,
-        James Bottomley <James.Bottomley@suse.de>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: [PATCH 2/2] scsi: don't use execute_in_process_context()
-References: <4CBD95C0.6060302@kernel.org>
-In-Reply-To: <4CBD95C0.6060302@kernel.org>
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 19 Oct 2010 12:58:06 +0000 (UTC)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-SCSI is the only subsystem which uses execute_in_process_context().
-With the recent workqueue updates, unconditionally using work wouldn't
-cause deadlocks around execution resources and the two places where
-SCSI uses them are cold paths where using work unconditionally
-wouldn't make any difference.  Drop execute_in_process_context() and
-use work directly.
+With the addition of trace_softirq_raise() the softirq tracepoint got
+even more convoluted. Why the tracepoints take two pointers to assign
+an integer is beyond my comprehension.
 
-* scsi_device->ew is replaced with release_work.  scsi_target->ew is
-  replaced with reap_work.
+But adding an extra case which treats the first pointer as an unsigned
+long when the second pointer is NULL including the back and forth
+type casting is just horrible.
 
-* Both works are initialized with the respective release/reap function
-  during device/target init.  scsi_target_reap_usercontext() is moved
-  upwards to avoid needing forward declaration.
+Convert the softirq tracepoints to take a single unsigned int argument
+for the softirq vector number and fix the call sites.
 
-* scsi_alloc_target() now explicitly flushes the reap_work of the
-  found dying target before putting it instead of depending on
-  flush_scheduled_work().
-
-This is in preparation of deprecation of flush_scheduled_work() and
-execute_in_process_context().
-
-Signed-off-by: Tejun Heo <tj@kernel.org>
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 ---
- drivers/scsi/scsi_scan.c   |   26 +++++++++++++-------------
- drivers/scsi/scsi_sysfs.c  |    8 +++++---
- include/scsi/scsi_device.h |    4 ++--
- 3 files changed, 20 insertions(+), 18 deletions(-)
+ include/linux/interrupt.h  |    2 -
+ include/trace/events/irq.h |   54 ++++++++++++++++-----------------------------
+ kernel/softirq.c           |   14 ++++++-----
+ 3 files changed, 29 insertions(+), 41 deletions(-)
 
-Index: work/drivers/scsi/scsi_scan.c
-===================================================================
---- work.orig/drivers/scsi/scsi_scan.c
-+++ work/drivers/scsi/scsi_scan.c
-@@ -362,6 +362,16 @@ int scsi_is_target_device(const struct d
- }
- EXPORT_SYMBOL(scsi_is_target_device);
-
-+static void scsi_target_reap_usercontext(struct work_struct *work)
-+{
-+	struct scsi_target *starget =
-+		container_of(work, struct scsi_target, reap_work);
-+
-+	transport_remove_device(&starget->dev);
-+	device_del(&starget->dev);
-+	scsi_target_destroy(starget);
-+}
-+
- static struct scsi_target *__scsi_find_target(struct device *parent,
- 					      int channel, uint id)
+diff --git a/include/linux/interrupt.h b/include/linux/interrupt.h
+index 531495d..0ac1949 100644
+--- a/include/linux/interrupt.h
++++ b/include/linux/interrupt.h
+@@ -410,7 +410,7 @@ extern void open_softirq(int nr, void (*action)(struct softirq_action *));
+ extern void softirq_init(void);
+ static inline void __raise_softirq_irqoff(unsigned int nr)
  {
-@@ -429,6 +439,7 @@ static struct scsi_target *scsi_alloc_ta
- 	starget->state = STARGET_CREATED;
- 	starget->scsi_level = SCSI_2;
- 	starget->max_target_blocked = SCSI_DEFAULT_TARGET_BLOCKED;
-+	INIT_WORK(&starget->reap_work, scsi_target_reap_usercontext);
-  retry:
- 	spin_lock_irqsave(shost->host_lock, flags);
-
-@@ -464,21 +475,11 @@ static struct scsi_target *scsi_alloc_ta
- 	}
- 	/* Unfortunately, we found a dying target; need to
- 	 * wait until it's dead before we can get a new one */
-+	flush_work(&found_target->reap_work);
- 	put_device(&found_target->dev);
--	flush_scheduled_work();
- 	goto retry;
+-	trace_softirq_raise((struct softirq_action *)(unsigned long)nr, NULL);
++	trace_softirq_raise(nr);
+ 	or_softirq_pending(1UL << nr);
  }
-
--static void scsi_target_reap_usercontext(struct work_struct *work)
--{
--	struct scsi_target *starget =
--		container_of(work, struct scsi_target, ew.work);
--
--	transport_remove_device(&starget->dev);
--	device_del(&starget->dev);
--	scsi_target_destroy(starget);
--}
--
+ 
+diff --git a/include/trace/events/irq.h b/include/trace/events/irq.h
+index 6fa7cba..1c09820 100644
+--- a/include/trace/events/irq.h
++++ b/include/trace/events/irq.h
+@@ -86,76 +86,62 @@ TRACE_EVENT(irq_handler_exit,
+ 
+ DECLARE_EVENT_CLASS(softirq,
+ 
+-	TP_PROTO(struct softirq_action *h, struct softirq_action *vec),
++	TP_PROTO(unsigned int vec_nr),
+ 
+-	TP_ARGS(h, vec),
++	TP_ARGS(vec_nr),
+ 
+ 	TP_STRUCT__entry(
+-		__field(	int,	vec			)
++		__field(	unsigned int,	vec	)
+ 	),
+ 
+ 	TP_fast_assign(
+-		if (vec)
+-			__entry->vec = (int)(h - vec);
+-		else
+-			__entry->vec = (int)(long)h;
++		__entry->vec = vec_nr;
+ 	),
+ 
+-	TP_printk("vec=%d [action=%s]", __entry->vec,
++	TP_printk("vec=%u [action=%s]", __entry->vec,
+ 		  show_softirq_name(__entry->vec))
+ );
+ 
  /**
-  * scsi_target_reap - check to see if target is in use and destroy if not
-  * @starget: target to be checked
-@@ -509,8 +510,7 @@ void scsi_target_reap(struct scsi_target
- 	if (state == STARGET_CREATED)
- 		scsi_target_destroy(starget);
- 	else
--		execute_in_process_context(scsi_target_reap_usercontext,
--					   &starget->ew);
-+		schedule_work(&starget->reap_work);
- }
-
+  * softirq_entry - called immediately before the softirq handler
+- * @h: pointer to struct softirq_action
+- * @vec: pointer to first struct softirq_action in softirq_vec array
++ * @vec_nr:  softirq vector number
+  *
+- * The @h parameter, contains a pointer to the struct softirq_action
+- * which has a pointer to the action handler that is called. By subtracting
+- * the @vec pointer from the @h pointer, we can determine the softirq
+- * number. Also, when used in combination with the softirq_exit tracepoint
+- * we can determine the softirq latency.
++ * When used in combination with the softirq_exit tracepoint
++ * we can determine the softirq handler runtine.
+  */
+ DEFINE_EVENT(softirq, softirq_entry,
+ 
+-	TP_PROTO(struct softirq_action *h, struct softirq_action *vec),
++	TP_PROTO(unsigned int vec_nr),
+ 
+-	TP_ARGS(h, vec)
++	TP_ARGS(vec_nr)
+ );
+ 
  /**
-Index: work/drivers/scsi/scsi_sysfs.c
-===================================================================
---- work.orig/drivers/scsi/scsi_sysfs.c
-+++ work/drivers/scsi/scsi_sysfs.c
-@@ -298,7 +298,7 @@ static void scsi_device_dev_release_user
- 	struct list_head *this, *tmp;
- 	unsigned long flags;
-
--	sdev = container_of(work, struct scsi_device, ew.work);
-+	sdev = container_of(work, struct scsi_device, release_work);
-
- 	parent = sdev->sdev_gendev.parent;
- 	starget = to_scsi_target(parent);
-@@ -341,8 +341,8 @@ static void scsi_device_dev_release_user
- static void scsi_device_dev_release(struct device *dev)
- {
- 	struct scsi_device *sdp = to_scsi_device(dev);
--	execute_in_process_context(scsi_device_dev_release_usercontext,
--				   &sdp->ew);
+  * softirq_exit - called immediately after the softirq handler returns
+- * @h: pointer to struct softirq_action
+- * @vec: pointer to first struct softirq_action in softirq_vec array
++ * @vec_nr:  softirq vector number
+  *
+- * The @h parameter contains a pointer to the struct softirq_action
+- * that has handled the softirq. By subtracting the @vec pointer from
+- * the @h pointer, we can determine the softirq number. Also, when used in
+- * combination with the softirq_entry tracepoint we can determine the softirq
+- * latency.
++ * When used in combination with the softirq_entry tracepoint
++ * we can determine the softirq handler runtine.
+  */
+ DEFINE_EVENT(softirq, softirq_exit,
+ 
+-	TP_PROTO(struct softirq_action *h, struct softirq_action *vec),
++	TP_PROTO(unsigned int vec_nr),
+ 
+-	TP_ARGS(h, vec)
++	TP_ARGS(vec_nr)
+ );
+ 
+ /**
+  * softirq_raise - called immediately when a softirq is raised
+- * @h: pointer to struct softirq_action
+- * @vec: pointer to first struct softirq_action in softirq_vec array
++ * @vec_nr:  softirq vector number
+  *
+- * The @h parameter contains a pointer to the softirq vector number which is
+- * raised. @vec is NULL and it means @h includes vector number not
+- * softirq_action. When used in combination with the softirq_entry tracepoint
+- * we can determine the softirq raise latency.
++ * When used in combination with the softirq_entry tracepoint
++ * we can determine the softirq raise to run latency.
+  */
+ DEFINE_EVENT(softirq, softirq_raise,
+ 
+-	TP_PROTO(struct softirq_action *h, struct softirq_action *vec),
++	TP_PROTO(unsigned int vec_nr),
+ 
+-	TP_ARGS(h, vec)
++	TP_ARGS(vec_nr)
+ );
+ 
+ #endif /*  _TRACE_IRQ_H */
+diff --git a/kernel/softirq.c b/kernel/softirq.c
+index 07b4f1b..c0a9ea5 100644
+--- a/kernel/softirq.c
++++ b/kernel/softirq.c
+@@ -212,18 +212,20 @@ restart:
+ 
+ 	do {
+ 		if (pending & 1) {
++			unsigned int vec_nr = h - softirq_vec;
+ 			int prev_count = preempt_count();
+-			kstat_incr_softirqs_this_cpu(h - softirq_vec);
+ 
+-			trace_softirq_entry(h, softirq_vec);
++			kstat_incr_softirqs_this_cpu(vec_nr);
 +
-+	schedule_work(&sdp->release_work);
- }
-
- static struct class sdev_class = {
-@@ -1066,6 +1066,8 @@ void scsi_sysfs_device_initialize(struct
- 	dev_set_name(&sdev->sdev_dev, "%d:%d:%d:%d",
- 		     sdev->host->host_no, sdev->channel, sdev->id, sdev->lun);
- 	sdev->scsi_level = starget->scsi_level;
-+	INIT_WORK(&sdev->release_work, scsi_device_dev_release_usercontext);
-+
- 	transport_setup_device(&sdev->sdev_gendev);
- 	spin_lock_irqsave(shost->host_lock, flags);
- 	list_add_tail(&sdev->same_target_siblings, &starget->devices);
-Index: work/include/scsi/scsi_device.h
-===================================================================
---- work.orig/include/scsi/scsi_device.h
-+++ work/include/scsi/scsi_device.h
-@@ -166,7 +166,7 @@ struct scsi_device {
- 	struct device		sdev_gendev,
- 				sdev_dev;
-
--	struct execute_work	ew; /* used to get process context on put */
-+	struct work_struct	release_work; /* for process context on put */
-
- 	struct scsi_dh_data	*scsi_dh_data;
- 	enum scsi_device_state sdev_state;
-@@ -256,7 +256,7 @@ struct scsi_target {
- #define SCSI_DEFAULT_TARGET_BLOCKED	3
-
- 	char			scsi_level;
--	struct execute_work	ew;
-+	struct work_struct	reap_work;
- 	enum scsi_target_state	state;
- 	void 			*hostdata; /* available to low-level driver */
- 	unsigned long		starget_data[0]; /* for the transport */
++			trace_softirq_entry(vec_nr);
+ 			h->action(h);
+-			trace_softirq_exit(h, softirq_vec);
++			trace_softirq_exit(vec_nr);
+ 			if (unlikely(prev_count != preempt_count())) {
+ 				printk(KERN_ERR "huh, entered softirq %td %s %p"
+ 				       "with preempt_count %08x,"
+-				       " exited with %08x?\n", h - softirq_vec,
+-				       softirq_to_name[h - softirq_vec],
+-				       h->action, prev_count, preempt_count());
++				       " exited with %08x?\n", vec_nr,
++				       softirq_to_name[vec_nr], h->action,
++				       prev_count, preempt_count());
+ 				preempt_count() = prev_count;
+ 			}
+ 
