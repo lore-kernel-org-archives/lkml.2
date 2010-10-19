@@ -1,68 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757880Ab0JSFjU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Oct 2010 01:39:20 -0400
-Received: from mga01.intel.com ([192.55.52.88]:57752 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750744Ab0JSFjT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Oct 2010 01:39:19 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.57,349,1283756400"; 
-   d="scan'208";a="618074498"
-Subject: Re: [patch]x86: spread tlb flush vector between nodes
-From: Shaohua Li <shaohua.li@intel.com>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: lkml <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        "hpa@zytor.com" <hpa@zytor.com>, "Chen, Tim C" <tim.c.chen@intel.com>
-In-Reply-To: <1286959176.24888.6.camel@sli10-conroe.sh.intel.com>
-References: <1286955698.13317.5.camel@sli10-conroe.sh.intel.com>
-	 <20101013081629.GA1621@basil.fritz.box>
-	 <1286959176.24888.6.camel@sli10-conroe.sh.intel.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 19 Oct 2010 13:39:17 +0800
-Message-ID: <1287466757.29515.2.camel@sli10-conroe.sh.intel.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	id S933447Ab0JSFlD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Oct 2010 01:41:03 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:56942 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751501Ab0JSFlB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Oct 2010 01:41:01 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: Nick Piggin <npiggin@kernel.dk>
+Subject: Re: [patch 03/35] mm: implement per-zone shrinker
+Cc: kosaki.motohiro@jp.fujitsu.com, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, linux-mm@kvack.org
+In-Reply-To: <20101019053320.GA7470@amd>
+References: <20101019134345.A1E9.A69D9226@jp.fujitsu.com> <20101019053320.GA7470@amd>
+Message-Id: <20101019143806.A1F5.A69D9226@jp.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="US-ASCII"
 Content-Transfer-Encoding: 7bit
+X-Mailer: Becky! ver. 2.50.07 [ja]
+Date: Tue, 19 Oct 2010 14:40:55 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-10-13 at 16:39 +0800, Shaohua Li wrote:
-> On Wed, 2010-10-13 at 16:16 +0800, Andi Kleen wrote:
-> > On Wed, Oct 13, 2010 at 03:41:38PM +0800, Shaohua Li wrote:
+> Hi,
+> 
+> On Tue, Oct 19, 2010 at 01:49:12PM +0900, KOSAKI Motohiro wrote:
+> > Hi
 > > 
-> > Hi Shaohua,
+> > > Index: linux-2.6/include/linux/mm.h
+> > > ===================================================================
+> > > --- linux-2.6.orig/include/linux/mm.h	2010-10-19 14:19:40.000000000 +1100
+> > > +++ linux-2.6/include/linux/mm.h	2010-10-19 14:36:48.000000000 +1100
+> > > @@ -997,6 +997,10 @@
+> > >  /*
+> > >   * A callback you can register to apply pressure to ageable caches.
+> > >   *
+> > > + * 'shrink_zone' is the new shrinker API. It is to be used in preference
+> > > + * to 'shrink'. One must point to a shrinker function, the other must
+> > > + * be NULL. See 'shrink_slab' for details about the shrink_zone API.
 > > 
-> > > Currently flush tlb vector allocation is based on below equation:
-> > > 	sender = smp_processor_id() % 8
-> > > This isn't optimal, CPUs from different node can have the same vector, this
-> > > causes a lot of lock contention. Instead, we can assign the same vectors to
-> > > CPUs from the same node, while different node has different vectors. This has
-> > > below advantages:
-> > > a. if there is lock contention, the lock contention is between CPUs from one
-> > > node. This should be much cheaper than the contention between nodes.
-> > > b. completely avoid lock contention between nodes. This especially benefits
-> > > kswapd, which is the biggest user of tlb flush, since kswapd sets its affinity
-> > > to specific node.
+> ...
+> 
+> > Now we decided to don't remove old (*shrink)() interface and zone unaware
+> > slab users continue to use it. so why do we need global argument?
+> > If only zone aware shrinker user (*shrink_zone)(), we can remove it.
 > > 
-> > The original scheme with 8 vectors was designed when Linux didn't have
-> > per CPU interrupt numbers yet, and interrupts vectors were a scarce resource.
-> > 
-> > Now that we have per CPU interrupts and there is no immediate danger 
-> > of running out I think it's better to use more than 8 vectors for the TLB 
-> > flushes.
-> > 
-> > Perhaps could use 32 vectors or so and give each node on a 8S 
-> > system 4 slots and on a 4 node system 8 slots?
-> Haven't too much idea. Before we have per CPU interrupts, muti vector
-> msi-x isn't widely deployed. Thought we need data if this is really
-> required.
-looks there are still some overhead with total 8 vectors in a big
-machine. I'll try the 32 vectors as you suggested. I'll send separate
-patches out to address the 32 vectors issue. Can we merge this patch
-first?
+> > Personally I think we should remove it because a removing makes a clear
+> > message that all shrinker need to implement zone awareness eventually.
+> 
+> I agree, I do want to remove the old API, but it's easier to merge if
+> I just start by adding the new API. It is split out from my previous
+> patch which does convert all users of the API. When this gets merged, I
+> will break those out and send them via respective maintainers, then
+> remove the old API when they're all converted upstream.
 
-Thanks,
-Shaohua
+Ok, I've got. I have no objection this step-by-step development. thanks
+quick responce!
+
+
+
 
