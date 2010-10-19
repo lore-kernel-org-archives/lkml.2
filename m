@@ -1,140 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756557Ab0JSChc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Oct 2010 22:37:32 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:38780 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755928Ab0JSCh3 convert rfc822-to-8bit (ORCPT
+	id S1756075Ab0JSClE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Oct 2010 22:41:04 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:64194 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754077Ab0JSClD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Oct 2010 22:37:29 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=L+5ufpKQLuB2j9sRBJjqTPjsFbjXf75SgUI6sJqZM8nFoDwOf9Ckm0/7j0/pQ4cDGG
-         i9TAjJB3QuuHYti3bTrnVg6g9Qz87obbafl/Y59WHpriW5OdCJ3E76cdW4dA5NJLW9mp
-         WnAG3faH/APSX2sDVceQynQa6CEWbyKHb/FyQ=
-MIME-Version: 1.0
-In-Reply-To: <20101019022451.GA8310@localhost>
-References: <20100915091118.3dbdc961@notabene>
-	<4C90139A.1080809@redhat.com>
-	<20100915122334.3fa7b35f@notabene>
-	<20100915082843.GA17252@localhost>
-	<20100915184434.18e2d933@notabene>
-	<20101018151459.2b443221@notabene>
-	<20101018161504.GB29500@localhost>
-	<20101018145859.eee1ae33.akpm@linux-foundation.org>
-	<20101019093142.509d6947@notabene>
-	<20101018154137.90f5325f.akpm@linux-foundation.org>
-	<20101019022451.GA8310@localhost>
-Date: Tue, 19 Oct 2010 11:37:29 +0900
-Message-ID: <AANLkTimEjJu6Eo6VmaCyuDNpen66SeZGyV84GOcc9TV1@mail.gmail.com>
-Subject: Re: Deadlock possibly caused by too_many_isolated.
-From: Minchan Kim <minchan.kim@gmail.com>
-To: Wu Fengguang <fengguang.wu@intel.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Neil Brown <neilb@suse.de>,
-        Rik van Riel <riel@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "Li, Shaohua" <shaohua.li@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Mon, 18 Oct 2010 22:41:03 -0400
+Date: Tue, 19 Oct 2010 11:41:19 +0900
+From: Kukjin Kim <kgene.kim@samsung.com>
+Subject: RE: [PATCH 4/9] ARM: S3C64XX: add USB host support for mach-real6410
+In-reply-to: <AANLkTinWveichrhruhyphNfMaV05o2FgPJncejdDgfAo@mail.gmail.com>
+To: "'Darius Augulis'" <augulis.darius@gmail.com>
+Cc: linux-arm-kernel@lists.infradead.org, paulius.zaleckas@gmail.com,
+        linux-kernel@vger.kernel.org, ben-linux@fluff.org
+Message-id: <04e801cb6f37$1eb23130$5c169390$%kim@samsung.com>
+MIME-version: 1.0
+X-Mailer: Microsoft Office Outlook 12.0
+Content-type: text/plain; charset=us-ascii
+Content-language: ko
+Content-transfer-encoding: 7BIT
+Thread-index: ActuytSh7lUhk5X2QFu7Mdz5RzCBWAAajKnA
+References: <20100929192354.25307.40197.stgit@darius-desktop>
+ <20100929193346.25307.75373.stgit@darius-desktop>
+ <04a601cb6ec9$db82dee0$92889ca0$%kim@samsung.com>
+ <AANLkTinWveichrhruhyphNfMaV05o2FgPJncejdDgfAo@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 19, 2010 at 11:24 AM, Wu Fengguang <fengguang.wu@intel.com> wrote:
-> On Tue, Oct 19, 2010 at 06:41:37AM +0800, Andrew Morton wrote:
->> On Tue, 19 Oct 2010 09:31:42 +1100
->> Neil Brown <neilb@suse.de> wrote:
->>
->> > On Mon, 18 Oct 2010 14:58:59 -0700
->> > Andrew Morton <akpm@linux-foundation.org> wrote:
->> >
->> > > On Tue, 19 Oct 2010 00:15:04 +0800
->> > > Wu Fengguang <fengguang.wu@intel.com> wrote:
->> > >
->> > > > Neil find that if too_many_isolated() returns true while performing
->> > > > direct reclaim we can end up waiting for other threads to complete their
->> > > > direct reclaim.  If those threads are allowed to enter the FS or IO to
->> > > > free memory, but this thread is not, then it is possible that those
->> > > > threads will be waiting on this thread and so we get a circular
->> > > > deadlock.
->> > > >
->> > > > some task enters direct reclaim with GFP_KERNEL
->> > > >   => too_many_isolated() false
->> > > >     => vmscan and run into dirty pages
->> > > >       => pageout()
->> > > >         => take some FS lock
->> > > >           => fs/block code does GFP_NOIO allocation
->> > > >             => enter direct reclaim again
->> > > >               => too_many_isolated() true
->> > > >                 => waiting for others to progress, however the other
->> > > >                    tasks may be circular waiting for the FS lock..
->>
->> I'm assuming that the last four "=>"'s here should have been indented
->> another stop.
->
-> Yup. I'll fix it in next post.
->
->> > > > The fix is to let !__GFP_IO and !__GFP_FS direct reclaims enjoy higher
->> > > > priority than normal ones, by honouring them higher throttle threshold.
->> > > >
->> > > > Now !GFP_IOFS reclaims won't be waiting for GFP_IOFS reclaims to
->> > > > progress. They will be blocked only when there are too many concurrent
->> > > > !GFP_IOFS reclaims, however that's very unlikely because the IO-less
->> > > > direct reclaims is able to progress much more faster, and they won't
->> > > > deadlock each other. The threshold is raised high enough for them, so
->> > > > that there can be sufficient parallel progress of !GFP_IOFS reclaims.
->> > >
->> > > I'm not sure that this is really a full fix.  Torsten's analysis does
->> > > appear to point at the real bug: raid1 has code paths which allocate
->> > > more than a single element from a mempool without starting IO against
->> > > previous elements.
->> >
->> > ... point at "a" real bug.
->> >
->> > I think there are two bugs here.
->> > The raid1 bug that Torsten mentions is certainly real (and has been around
->> > for an embarrassingly long time).
->> > The bug that I identified in too_many_isolated is also a real bug and can be
->> > triggered without md/raid1 in the mix.
->> > So this is not a 'full fix' for every bug in the kernel :-),
->
->> > but it could well be a full fix for this particular bug.
->
-> Yeah it aims to be a full fix for one bug.
->
->> Can we just delete the too_many_isolated() logic?  (Crappy comment
->
-> If the two cond_resched() calls can be removed from
-> shrink_page_list(), the major cause of too many pages being
-> isolated will be gone. However the writeback-waiting logic after
-> should_reclaim_stall() will also block the direct reclaimer for long
-> time with pages isolated, which may bite under pathological conditions.
->
->> describes what the code does but not why it does it).
->
-> Good point. The comment could be improved as follows.
->
-> Thanks,
-> Fengguang
->
-> ---
-> Subject: vmscan: comment too_many_isolated()
-> From: Wu Fengguang <fengguang.wu@intel.com>
-> Date: Tue Oct 19 09:53:23 CST 2010
->
-> Comment "Why it's doing so" rather than "What it does"
-> as proposed by Andrew Morton.
->
-> Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
-Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
+Darius Augulis wrote:
+> 
+> On Mon, Oct 18, 2010 at 4:39 PM, Kukjin Kim <kgene.kim@samsung.com> wrote:
+> > Darius Augulis wrote:
+> >>
+> >> Add USB host device support for mach-real6410
+> >>
+> >> Signed-off-by: Darius Augulis <augulis.darius@gmail.com>
+> >> ---
+> >>  arch/arm/mach-s3c64xx/Kconfig         |    1 +
+> >>  arch/arm/mach-s3c64xx/mach-real6410.c |    1 +
+> >>  2 files changed, 2 insertions(+), 0 deletions(-)
+> >>
+> >> diff --git a/arch/arm/mach-s3c64xx/Kconfig
+b/arch/arm/mach-s3c64xx/Kconfig
+> >> index b706b80..c05ae12 100644
+> >> --- a/arch/arm/mach-s3c64xx/Kconfig
+> >> +++ b/arch/arm/mach-s3c64xx/Kconfig
+> >> @@ -109,6 +109,7 @@ config MACH_REAL6410
+> >>       select S3C_DEV_NAND
+> >>       select SAMSUNG_DEV_ADC
+> >>       select SAMSUNG_DEV_TS
+> >> +     select S3C_DEV_USB_HOST
+> >>       help
+> >>         Machine support for the CoreWind REAL6410
+> >>
+> >> diff --git a/arch/arm/mach-s3c64xx/mach-real6410.c b/arch/arm/mach-
+> >> s3c64xx/mach-real6410.c
+> >> index bad6990..00e7d7e 100644
+> >> --- a/arch/arm/mach-s3c64xx/mach-real6410.c
+> >> +++ b/arch/arm/mach-s3c64xx/mach-real6410.c
+> >> @@ -195,6 +195,7 @@ static struct platform_device *real6410_devices[]
+> >> __initdata = {
+> >>       &s3c_device_nand,
+> >>       &s3c_device_adc,
+> >>       &s3c_device_ts,
+> >> +     &s3c_device_ohci,
+> >>  };
+> >>
+> >>  static struct s3c2410_ts_mach_info s3c_ts_platform __initdata = {
+> >
+> > No need any gpio configuration for it?
+> 
+> No, USB is powered by hardware at startup and does not need any other
+> gpio config.
+> 
+
+Hmm...firstly see below...
+
++-----+        +------ UTMI -------- OTG Device
+| PHY |--------|
++-----+        +--- Serial I/F 1 --- Host 1.1 (1port)
+
++---------------+
+|USB Transceiver|-- Serial I/F 2 --- Host 1.1 (1port)
++---------------+
+
+If you want to use only 1port Host 1.1 through Serial I/F2, your code is ok.
+but want to use 2-port Host 1.1, need to set configuration of PHY
+initialization and clock path for Serial I/F1.
+I meant that.
+
+Thanks.
+
+Best regards,
+Kgene.
+--
+Kukjin Kim <kgene.kim@samsung.com>, Senior Engineer,
+SW Solution Development Team, Samsung Electronics Co., Ltd.
 
 
-
--- 
-Kind regards,
-Minchan Kim
