@@ -1,43 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933901Ab0JSJi2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Oct 2010 05:38:28 -0400
-Received: from mga01.intel.com ([192.55.52.88]:62353 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932440Ab0JSJi1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Oct 2010 05:38:27 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.57,349,1283756400"; 
-   d="scan'208";a="618130108"
-Date: Tue, 19 Oct 2010 11:38:25 +0200
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com
-Subject: Re: [PATCH 1/2] mfd: Factor out WM831x I2C I/O from the core driver
-Message-ID: <20101019093824.GE2736@sortiz-mobl>
-References: <1286556780-5610-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1286556780-5610-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S933894Ab0JSJkG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Oct 2010 05:40:06 -0400
+Received: from mailout-de.gmx.net ([213.165.64.23]:49263 "HELO mail.gmx.net"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
+	id S932440Ab0JSJkE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Oct 2010 05:40:04 -0400
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX1+Qq19leQOQgy7fh7iDtODLbQWBjfwPoPI24ng7YE
+	Js18S1miH61XIt
+Subject: Re: [RFC/RFT PATCH] sched: automated per tty task groups
+From: Mike Galbraith <efault@gmx.de>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+In-Reply-To: <1287480391.29097.1647.camel@twins>
+References: <1287479765.9920.9.camel@marge.simson.net>
+	 <1287480391.29097.1647.camel@twins>
+Content-Type: text/plain
+Date: Tue, 19 Oct 2010 11:39:59 +0200
+Message-Id: <1287481199.24189.5.camel@marge.simson.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.24.1.1 
+Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mark,
-
-On Fri, Oct 08, 2010 at 09:52:58AM -0700, Mark Brown wrote:
-> In preparation for the addition of SPI support for the WM831x move the I2C
-> specific code into a separate file with a separate Kconfig option so the
-> I2C support can be excluded from the build.
+On Tue, 2010-10-19 at 11:26 +0200, Peter Zijlstra wrote:
+> On Tue, 2010-10-19 at 11:16 +0200, Mike Galbraith wrote:
+> > Greetings,
+> > 
+> > Comments, suggestions etc highly welcome.
 > 
-> Also update the 1133-EV1 PMIC module support for SMDK6410 to use the new
-> symbol.
-Patch applied, many thanks.
+> You might be wanting to exclude RT tasks from the tty groups since there
+> is no interface to grant them any runtime and such :-)
 
-Cheers,
-Samuel.
--- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+:)
+
+> Also, I think tty_sched_move_task and sched_move_task() should be
+> sharing lots more code -- I recently proposed a fix for
+> sched_move_task() because the Android people complained, but they
+> haven't replied back yet..
+
+Yeah. I should be able to just do sched_move_task(), but it doesn't
+currently work even with your patch, turning tty_sched on/off can lead
+to incredible delays before you get box back.  With virgin source, it's
+size infinity for all intents and purposes.
+
+	-Mike
+
