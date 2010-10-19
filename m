@@ -1,78 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933814Ab0JSEEb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Oct 2010 00:04:31 -0400
-Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:28444 "EHLO
-	ipmail04.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757890Ab0JSD4J (ORCPT
+	id S933830Ab0JSEFB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Oct 2010 00:05:01 -0400
+Received: from TYO202.gate.nec.co.jp ([202.32.8.206]:60550 "EHLO
+	tyo202.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752103Ab0JSEE6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Oct 2010 23:56:09 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AnEFAJyxvEx5LcB2gWdsb2JhbACUbYx6FgEBFiIiwxaFSQSKSg
-Message-Id: <20101019034216.319085068@kernel.dk>
-User-Agent: quilt/0.48-1
-Date: Tue, 19 Oct 2010 14:42:16 +1100
-From: npiggin@kernel.dk
-To: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Subject: [patch 00/35] my inode scaling series for review
+	Tue, 19 Oct 2010 00:04:58 -0400
+Message-ID: <4CBD18A0.5070206@ce.jp.nec.com>
+Date: Tue, 19 Oct 2010 13:03:44 +0900
+From: "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc13 Thunderbird/3.1.4
+MIME-Version: 1.0
+To: Hannes Reinecke <hare@suse.de>
+CC: device-mapper development <dm-devel@redhat.com>,
+        Kiyoshi Ueda <k-ueda@ct.jp.nec.com>, michaelc@cs.wisc.edu,
+        tytso@mit.edu, linux-scsi@vger.kernel.org,
+        Mike Snitzer <snitzer@redhat.com>, jaxboe@fusionio.com, jack@suse.cz,
+        vst@vlnb.net, linux-kernel@vger.kernel.org, swhiteho@redhat.com,
+        linux-raid@vger.kernel.org, linux-ide@vger.kernel.org,
+        James.Bottomley@suse.de, chris.mason@oracle.com,
+        konishi.ryusuke@lab.ntt.co.jp, linux-fsdevel@vger.kernel.org,
+        Tejun Heo <tj@kernel.org>, rwheeler@redhat.com,
+        Christoph Hellwig <hch@lst.de>, Sergei Shtylyov <sshtylyov@mvista.com>
+Subject: Re: [RFC] training mpath to discern between SCSI errors
+References: <20100825155918.GB8509@redhat.com>	<4C7B984E.4070802@suse.de>	<4C7B9F14.9080900@mvista.com>	<4C7BA670.2060303@suse.de> <4C7BC5B4.3010707@suse.de> <4CBC00B3.7090603@ce.jp.nec.com> <4CBC35AE.9050002@suse.de>
+In-Reply-To: <4CBC35AE.9050002@suse.de>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Here is my famously tardy inode scaling patch set, for review for merging.
-Yes it is a lot of patches, but it is very well broken out. It is not
-rocket science -- if you don't understand something please get me to add
-comments.
+Hi Hannes,
 
-Patches 1-13 incrementally take over inode_lock in small, conservative,
-obvious (as possible) steps. Subsequent patches improve code and
-performance.
+(10/18/10 20:55), Hannes Reinecke wrote:
+>> Does 'retryable' of EIO mean retryable in multipath layer?
+>> If so, what is the difference between EIO and ENOLINK?
+>>
+> Yes, EIO is intended for errors which should be retried at the
+> multipath layer. This does _not_ include transport errors, which are
+> signalled by ENOLINK.
+> 
+> Basically, ENOLINK is a transport error, and EIO just means
+> something is wrong and we weren't able to classify it properly.
+> If we were, it'd be either ENOLINK or EREMOTEIO.
+> 
+>> I've heard of a case where just retrying within path-group is
+>> preferred to (relatively costly) switching group.
+>> So, if EIO (or other error code) can be used to indicate such type
+>> of errors, it's nice.
+>>
+> Yes, that was one of the intention.
 
-The only significant changes made from the inode scaling work in the
-vfs-scale tree are merging to mainline, taking review suggestions, changing
-the patch set to be better split up and improving comments and changelogs.
+Great to hear that.
 
-This is compatible with the rest of the dcache scaling improvements in my
-tree, including the store-free path walking (rcu-walk).
+And when it comes to retrying, the next problem is who controls it.
+I don't think it's good to duplicate retry logic in multipath and
+underlying device like SCSI (i.e. sd retries 5 times).
+So perhaps we need a way to disable (or limit) retries in underlying
+device at least.
 
-I don't think Dave Chinner's approach is the way to go for a number of
-reasons.
+>> Also (although this might be a bit off topic from your patch),
+>> can we expand such a distinction to what should be logged?
+>> Currently, it's difficult to distinguish important SCSI/block errors
+>> and less important ones in kernel log.
+>> For example, when I get a link failure on sda, kernel prints something
+>> like below, regardless of whether the I/O is recovered by multipathing or not:
+>>   end_request: I/O error, dev sda, sector XXXXX
+>>
+> Indeed, when using the above we could be modifying the above
+> message, eg by
+> 
+> end_request: transport error, dev sda, sector XXXXX
+> 
+> or
+> 
+> end_request: target error, dev sda, sector XXXXX
+> 
+> which would improve the output noticeable.
 
-* My locking design allows i_lock to lock the entire state of the icache
-  for a particular inode. Not so with Dave's, and he had to add code not
-  required with inode_lock synchronisation or my i_lock synchronisation.
-  I prefer being very conservative about making changes, especially before
-  inode_lock is lifted (which will be the end-point of bisection for any
-  locking breakage before it).
+It improves but still they look like critical errors
+even if multipath saves them.
 
-* As far as I can tell, I have addressed all Dave and Christoph's real
-  concerns.  The disagreement about the i_lock locking model can easily be
-  solved if they post a couple of small incremental patches to the end of the
-  series, making i_lock locking less regular and no longer protecting icache
-  state of that given inode (like inode_lock was able to pre-patchset). I've
-  repeatedly disagreed with this approach, however.
+When I see this:
 
-* I have used RCU for inodes, and structured a lot of the locking around that.
-  RCU is required for store-free path walking, so it makes more sense IMO to
-  implement now rather than in a subsequent release (and reworking inode locking  to take advantage of it). I have a design sketched for using slab RCU freeing,  which is a little more complex, but it should be able to take care of any
-  real-workload regressions if we do discover them.
+  end_request: target error, dev sda, sector XXXXX
 
-* I implement per-zone LRU lists and locking, which are desperately required
-  for reasonable NUMA performance, and are a first step towards proper mem
-  controller control of vfs caches (Google have a similar per-zone LRU patch
-  they need for their fakenuma based memory control, I believe).
-
-* I implemented per-cpu locking for inode sb lists. The scalability and
-  single threaded performance of the full vfs-scale stack has been tested
-  quite well. Most of the vfs scales pretty linearly up to several hundreds
-  of sockets at least. I have counted cycles on various x86 and POWER
-  architectures to improve single threaded performance. It's an ongoing
-  process but there has been a lot of work done already there.
-
-  We want all these things ASAP, so it doesn't make sense to me to stage out
-  significant locking changes in the icache code over several releases. Just
-  get them out of the way now -- the series is bisectable and reviewable, so
-  I think it will reduce churn and headache for everyone to get it out of the
-  way now.
+I can't tell whether it's a real error visible to user space
+or it's just recoverred by multipath retry/failover afterwards.
 
 
+>> Setting REQ_QUIET in dm-multipath could mask the message
+>> but also other important ones in SCSI.
+>>
+> Hmm. Not sure about that, but I think the above modifications will
+> be useful already.
+> 
+> I'll be sending an updated patch.
+
+Thank you. I'm looking for that.
+
+-- 
+Jun'ichi Nomura, NEC Corporation
