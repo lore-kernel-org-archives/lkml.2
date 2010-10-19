@@ -1,41 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933878Ab0JSKFz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Oct 2010 06:05:55 -0400
-Received: from newsmtp5.atmel.com ([204.2.163.5]:9545 "EHLO sjogate2.atmel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933798Ab0JSKFy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Oct 2010 06:05:54 -0400
-Message-ID: <4CBD6D75.4070908@atmel.com>
-Date: Tue, 19 Oct 2010 12:05:41 +0200
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; fr; rv:1.9.2.9) Gecko/20100915 Lightning/1.0b2 Thunderbird/3.1.4
+	id S933919Ab0JSKGY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Oct 2010 06:06:24 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:64112 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758154Ab0JSKGX convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Oct 2010 06:06:23 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=googlemail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=lodFdhTzG0qddRQmcsb/GBk467YWU1in4g9bVgcM/K7CRCB9hByj7DrEJI1GMbunkd
+         db483T/MByhgB/uHC5nCJ0gCEBWyvk0W0qrq1SpuA/AXpt7owUpdxkaRu+sveYThB4S8
+         7V3l7Qd8AJk22rJKy9IRcUJDS1A0xhvFwe6Oo=
 MIME-Version: 1.0
-To: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        phorton@bitbox.co.uk
-CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        avictor.za@gmail.com
-Subject: Re: [PATCH 1/5] Fix AT91SAM9G20 reset as per the errata in the data
- sheet
-References: <20100528153725.GA5102@axolotl.localnet> <29a192a1f4f98dd05b72ed8eafe67bd6aadd8432.1287076894.git.nicolas.ferre@atmel.com> <20101015122902.GF11127@game.jcrosoft.org>
-In-Reply-To: <20101015122902.GF11127@game.jcrosoft.org>
+In-Reply-To: <AANLkTin3wXWwA-HXhjx6wvzznp3p57Pg6fee8YNkZB79@mail.gmail.com>
+References: <20100915091118.3dbdc961@notabene>
+	<4C90139A.1080809@redhat.com>
+	<20100915122334.3fa7b35f@notabene>
+	<20100915082843.GA17252@localhost>
+	<20100915184434.18e2d933@notabene>
+	<20101018151459.2b443221@notabene>
+	<AANLkTimv_zXHdFDGa9ecgXyWmQynOKTDRPC59PZA9mvL@mail.gmail.com>
+	<20101019101151.57c6dd56@notabene>
+	<AANLkTin3wXWwA-HXhjx6wvzznp3p57Pg6fee8YNkZB79@mail.gmail.com>
+Date: Tue, 19 Oct 2010 12:06:21 +0200
+Message-ID: <AANLkTimVu+5gTDs8przJVP2EbWC=FX-zWW7aH08BtrHC@mail.gmail.com>
+Subject: Re: Deadlock possibly caused by too_many_isolated.
+From: Torsten Kaiser <just.for.lkml@googlemail.com>
+To: Neil Brown <neilb@suse.de>
+Cc: Wu Fengguang <fengguang.wu@intel.com>, Rik van Riel <riel@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Li Shaohua <shaohua.li@intel.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le 15/10/2010 14:29, Jean-Christophe PLAGNIOL-VILLARD :
->> +at91sam9g20_reset:	mov	r0, #0
->> +			mcr	p15, 0, r0, c7, c5, 0	@ flush I-cache
-> do we really need to flush the I-cache again
+On Tue, Oct 19, 2010 at 10:43 AM, Torsten Kaiser
+<just.for.lkml@googlemail.com> wrote:
+> On Tue, Oct 19, 2010 at 1:11 AM, Neil Brown <neilb@suse.de> wrote:
+>> Yes, thanks for the report.
+>> This is a real bug exactly as you describe.
+>>
+>> This is how I think I will fix it, though it needs a bit of review and
+>> testing before I can be certain.
+>> Also I need to check raid10 etc to see if they can suffer too.
+>>
+>> If you can test it I would really appreciate it.
+>
+> I did test it, but while it seemed to fix the deadlock, the system
+> still got unusable.
+> The still running "vmstat 1" showed that the swapout was still
+> progressing, but at a rate of ~20k sized bursts every 5 to 20 seconds.
+>
+> I also tried to additionally add Wu's patch:
+> --- linux-next.orig/mm/vmscan.c 2010-10-13 12:35:14.000000000 +0800
+> +++ linux-next/mm/vmscan.c      2010-10-19 00:13:04.000000000 +0800
+> @@ -1163,6 +1163,13 @@ static int too_many_isolated(struct zone
+>               isolated = zone_page_state(zone, NR_ISOLATED_ANON);
+>       }
+>
+> +       /*
+> +        * GFP_NOIO/GFP_NOFS callers are allowed to isolate more pages, so that
+> +        * they won't get blocked by normal ones and form circular deadlock.
+> +        */
+> +       if ((sc->gfp_mask & GFP_IOFS) == GFP_IOFS)
+> +               inactive >>= 3;
+> +
+>       return isolated > inactive;
+>
+> Either it did help somewhat, or I was more lucky on my second try, but
+> this time I needed ~5 tries instead of only 2 to get the system mostly
+> stuck again. On the testrun with Wu's patch the writeout pattern was
+> more stable, a burst of ~80kb each 20 seconds. But I would suspect
+> that the size of the burst is rather random.
+>
+> I do have a complete SysRq+T dump from the first run, I can send that
+> to anyone how wants it.
+> (It's 190k so I don't want not spam it to the list)
 
-You are right, it is done in the calling function: arm_machine_restart().
+Is this call trace from the SysRq+T violation the rule to only
+allocate one bio from bio_alloc() until its submitted?
 
-I will correct it in the patch series.
+[  549.700038] Call Trace:
+[  549.700038]  [<ffffffff81566b54>] schedule_timeout+0x144/0x200
+[  549.700038]  [<ffffffff81045cd0>] ? process_timeout+0x0/0x10
+[  549.700038]  [<ffffffff81565e22>] io_schedule_timeout+0x42/0x60
+[  549.700038]  [<ffffffff81083123>] mempool_alloc+0x163/0x1b0
+[  549.700038]  [<ffffffff81053560>] ? autoremove_wake_function+0x0/0x40
+[  549.700038]  [<ffffffff810ea2b9>] bio_alloc_bioset+0x39/0xf0
+[  549.700038]  [<ffffffff810ea38d>] bio_clone+0x1d/0x50
+[  549.700038]  [<ffffffff814318ed>] make_request+0x23d/0x850
+[  549.700038]  [<ffffffff81082e20>] ? mempool_alloc_slab+0x10/0x20
+[  549.700038]  [<ffffffff81045cd0>] ? process_timeout+0x0/0x10
+[  549.700038]  [<ffffffff81436e63>] md_make_request+0xc3/0x220
+[  549.700038]  [<ffffffff81083099>] ? mempool_alloc+0xd9/0x1b0
+[  549.700038]  [<ffffffff811ec153>] generic_make_request+0x1b3/0x370
+[  549.700038]  [<ffffffff810ea2d6>] ? bio_alloc_bioset+0x56/0xf0
+[  549.700038]  [<ffffffff811ec36a>] submit_bio+0x5a/0xd0
+[  549.700038]  [<ffffffff81080cf5>] ? unlock_page+0x25/0x30
+[  549.700038]  [<ffffffff810a871e>] swap_writepage+0x7e/0xc0
+[  549.700038]  [<ffffffff81090d99>] shmem_writepage+0x1c9/0x240
+[  549.700038]  [<ffffffff8108c9cb>] pageout+0x11b/0x270
+[  549.700038]  [<ffffffff8108cd78>] shrink_page_list+0x258/0x4d0
+[  549.700038]  [<ffffffff8108d9e7>] shrink_inactive_list+0x187/0x310
+[  549.700038]  [<ffffffff8102dcb1>] ? __wake_up_common+0x51/0x80
+[  549.700038]  [<ffffffff811fc8b2>] ? cpumask_next_and+0x22/0x40
+[  549.700038]  [<ffffffff8108e1c0>] shrink_zone+0x3e0/0x470
+[  549.700038]  [<ffffffff8108e797>] try_to_free_pages+0x157/0x410
+[  549.700038]  [<ffffffff81087c92>] __alloc_pages_nodemask+0x412/0x760
+[  549.700038]  [<ffffffff810b27d6>] alloc_pages_current+0x76/0xe0
+[  549.700038]  [<ffffffff810b6dad>] new_slab+0x1fd/0x2a0
+[  549.700038]  [<ffffffff81045cd0>] ? process_timeout+0x0/0x10
+[  549.700038]  [<ffffffff810b8721>] __slab_alloc+0x111/0x540
+[  549.700038]  [<ffffffff81059961>] ? prepare_creds+0x21/0xb0
+[  549.700038]  [<ffffffff810b92bb>] kmem_cache_alloc+0x9b/0xa0
+[  549.700038]  [<ffffffff81059961>] prepare_creds+0x21/0xb0
+[  549.700038]  [<ffffffff8104a919>] sys_setresgid+0x29/0x120
+[  549.700038]  [<ffffffff8100242b>] system_call_fastpath+0x16/0x1b
+[  549.700038]  ffff88011e125ea8 0000000000000046 ffff88011e125e08
+ffffffff81073c59
+[  549.700038]  0000000000012780 ffff88011ea905b0 ffff88011ea90808
+ffff88011e125fd8
+[  549.700038]  ffff88011ea90810 ffff88011e124010 0000000000012780
+ffff88011e125fd8
 
-Best regards,
--- 
-Nicolas Ferre
+swap_writepage() uses get_swap_bio() which uses bio_alloc() to get one
+bio. That bio is the submitted, but the submit path seems to get into
+make_request from raid1.c and that allocates a second bio from
+bio_alloc() via bio_clone().
 
+I am seeing this pattern (swap_writepage calling
+md_make_request/make_request and then getting stuck in mempool_alloc)
+more than 5 times in the SysRq+T output...
+
+
+Torsten
