@@ -1,129 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757992Ab0JSA7P (ORCPT <rfc822;w@1wt.eu>);
+	id S1758006Ab0JSA7Y (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Oct 2010 20:59:24 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:59988 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756633Ab0JSA7P (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 18 Oct 2010 20:59:15 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:42801 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755957Ab0JSA7O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Oct 2010 20:59:14 -0400
-Subject: Re: ima: use of radix tree cache indexing == massive waste of
- memory?
-From: Eric Paris <eparis@redhat.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Kyle McMartin <kyle@mcmartin.ca>, James Morris <jmorris@namei.org>,
-        Christoph Hellwig <hch@infradead.org>, kernel@lists.fedoraproject.org,
-        Mimi Zohar <zohar@us.ibm.com>, warthog9@kernel.org,
-        Dave Chinner <david@fromorbit.com>, linux-kernel@vger.kernel.org,
-        "H. Peter Anvin" <hpa@zytor.com>, Serge Hallyn <serue@us.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-In-Reply-To: <20101018181916.GB12372@elte.hu>
-References: <20101016192027.GA6883@infradead.org>
-	 <ebc4973c-6c11-4397-b8b0-c212a27abce4@email.android.com>
-	 <20101017004945.GE1614@infradead.org> <20101017054008.GA16383@elte.hu>
-	 <20101017184652.GB28060@infradead.org>
-	 <alpine.LRH.2.00.1010181127480.9476@tundra.namei.org>
-	 <20101018062530.GD8332@bombadil.infradead.org>
-	 <1287420534.2530.67.camel@localhost.localdomain>
-	 <AANLkTi=h6-qMtk9Kf0TRUfqjuBau+_FhKAMZOd_MZHrn@mail.gmail.com>
-	 <1287425596.2530.70.camel@localhost.localdomain>
-	 <20101018181916.GB12372@elte.hu>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 18 Oct 2010 20:58:10 -0400
-Message-ID: <1287449890.2530.97.camel@localhost.localdomain>
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Tue, 19 Oct 2010 09:53:47 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Greg Thelen <gthelen@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, containers@lists.osdl.org,
+        Andrea Righi <arighi@develer.com>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Ciju Rajan K <ciju@linux.vnet.ibm.com>,
+        David Rientjes <rientjes@google.com>
+Subject: Re: [PATCH v3 07/11] memcg: add dirty limits to mem_cgroup
+Message-Id: <20101019095347.473286af.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <1287448784-25684-8-git-send-email-gthelen@google.com>
+References: <1287448784-25684-1-git-send-email-gthelen@google.com>
+	<1287448784-25684-8-git-send-email-gthelen@google.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
 Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-10-18 at 20:19 +0200, Ingo Molnar wrote:
+On Mon, 18 Oct 2010 17:39:40 -0700
+Greg Thelen <gthelen@google.com> wrote:
 
-> I think it would be fair to argue that #2 is the thing that should be fixed first 
-> and foremost - before touching any data structure details.
+> Extend mem_cgroup to contain dirty page limits.  Also add routines
+> allowing the kernel to query the dirty usage of a memcg.
 > 
-> Because if you fix #2 then all the other items will become no-op to 99.9% of the 
-> people who are affected by this bug today.
+> These interfaces not used by the kernel yet.  A subsequent commit
+> will add kernel calls to utilize these new routines.
+> 
+> Signed-off-by: Greg Thelen <gthelen@google.com>
+> Signed-off-by: Andrea Righi <arighi@develer.com>
+> ---
+> 
+> Changelog since v1:
+> - Rename (for clarity):
+>   - mem_cgroup_write_page_stat_item -> mem_cgroup_page_stat_item
+>   - mem_cgroup_read_page_stat_item -> mem_cgroup_nr_pages_item
+> - Removed unnecessary get_ prefix from get_xxx() functions.
+> - Avoid lockdep warnings by using rcu_read_[un]lock() in
+>   mem_cgroup_has_dirty_limit().
+> 
 
-Where I stand at the end of the day:
-
-Executive summary for the TLDNR crowd:  Before upcoming patch series IMA
-wasted 4,720k of memory on my test box when not configured to do
-anything.  After patches IMA wastes 120k when not configured to do
-anything.
-
-------------------------
-
-I'm considering a system with 5000 inodes in core and 1500 inodes which
-IMA thinks should be measured (if it's on).  (which just so happens to
-be close to the system I've been testing on shortly after reboot)
-
-I'm going to consider 6 cases of memory usage and will post the patches
-shortly after this mail.  My cases are going to be:
-
-Linus - IMA Enabled
-Linus - IMA Disabled
-Allocate iint only when needed - IMA Enabled
-Allocate iint only when needed - IMA Disabled
-Allocate iint + RBTREE - IMA Enabled
-allocate iint + RBTREE - IMA Disabled
-
-In each case I consider 'disabled' to be 'compiled in but you didn't
-tell it to do anything.'
-
-So for Linus:
-sizeof(iint) = 312
-sizeof(radix) = 632
-sizeof(inode delta) = 0  (how much I grew struct inode)
-
-Given my scenario of a stock F14ish machine where 5000 inodes in core
-and 1500 are IMA relevant when enabled we end up with:
-
-Linus - Enabled			Linus - Disabled
-------------------		----------------
-iint_cache = 1,560k		iint_cache = 1,560k
-radix = 3,160k			radix = 3,160k
-inode d = 0			inode d = 0
-
-total = 4,720k			total = 4,720k
-
-
-For Allocate iint only when needed:
-sizeof(iint) = 288
-sizeof(radix) = 632
-sizeof(inode delta) = 24 (24 bytes from iint move to struct inode)
-
-Allocate iint - Enabled		Alloce iint - Disabled
------------------------		----------------------
-iint_cache = 342k		iint_cache = 0
-radix = 948k			radix = 0
-inode d = 120k			inode d  = 120k
-
-total = 1,410k			total = 120k
-
-
-For allocate iint only when needed and use rbtrees:
-sizeof(iint) = 320
-sizeof(radix) = 632 (but irrelevant)
-sizeof(inode delta) = 24
-
-Allocate + RBTREE - Enabled	Allocate iint + RBTREE - Disabled
----------------------------	---------------------------------
-iint_cache = 480k		iint_cache = 0
-radix = 0			radix = 0
-inode d = 120k			inode d = 120k
-
-total = 600k			total = 120k
-
-Seems like about the best we can do.  This patch series attempts to
-addresses all 3 of the problems I believe we identified (we still
-serialize IMA relevant inodes but not the majority of them and none when
-IMA is not enabled)
-
-IMA will continue to waste 24 bytes per inode in core even when it isn't
-doing anything useful just by compiling it in.  Future work to use a
-freezer could get rid of this if the complexity is worth the tradeoff.
-But I don't think it's worth it tonight.
-
--Eric
+Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 
