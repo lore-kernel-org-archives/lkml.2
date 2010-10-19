@@ -1,57 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755137Ab0JSRD7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Oct 2010 13:03:59 -0400
-Received: from fifo99.com ([67.223.236.141]:33345 "EHLO fifo99.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753402Ab0JSRD6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Oct 2010 13:03:58 -0400
-Subject: Re: linux-next: manual merge of the msm tree with the arm tree
-From: Daniel Walker <dwalker@fifo99.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Joe Perches <joe@perches.com>, Nicolas Pitre <nico@fluxnic.net>,
-        Russell King <rmk@arm.linux.org.uk>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        lkml <linux-kernel@vger.kernel.org>,
-        Jeremy Kerr <jeremy.kerr@canonical.com>,
-        Jeff Ohlstein <johlstei@codeaurora.org>
-In-Reply-To: <201010191518.04147.arnd@arndb.de>
-References: <20101018103540.7bd9c535.sfr@canb.auug.org.au>
-	 <alpine.LFD.2.00.1010181833440.2764@xanadu.home>
-	 <1287442418.5376.38.camel@Joe-Laptop>  <201010191518.04147.arnd@arndb.de>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 19 Oct 2010 10:03:26 -0700
-Message-ID: <1287507806.10071.16.camel@c-dwalke-linux.qualcomm.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1755733Ab0JSREm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Oct 2010 13:04:42 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:44190 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753402Ab0JSREj convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Oct 2010 13:04:39 -0400
+MIME-Version: 1.0
+In-Reply-To: <20101019165530.GT19804@ZenIV.linux.org.uk>
+References: <20101019011650.25346.99614.stgit@paris.rdu.redhat.com>
+ <AANLkTimGdjPyLXuknDNa7WNthDT9+2FdOuPdxwjRiMHD@mail.gmail.com>
+ <1287506215.2530.187.camel@localhost.localdomain> <20101019165530.GT19804@ZenIV.linux.org.uk>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Tue, 19 Oct 2010 10:03:48 -0700
+Message-ID: <AANLkTimL=eChoCQHGoiouE5s6dGG=n9ZAQGhW-RW+gDj@mail.gmail.com>
+Subject: Re: [PATCH 1/3] IMA: move read/write counters into struct inode
+To: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Eric Paris <eparis@redhat.com>, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        hch@infradead.org, zohar@us.ibm.com, warthog9@kernel.org,
+        david@fromorbit.com, jmorris@namei.org, kyle@mcmartin.ca,
+        hpa@zytor.com, akpm@linux-foundation.org, mingo@elte.hu
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-10-19 at 15:18 +0200, Arnd Bergmann wrote:
-> On Tuesday 19 October 2010, Joe Perches wrote:
-> > This could have been done:
-> > 
-> > $ git show 08a610d9ef5394525b0328da0162d7b58c982cc4 | ./scripts/get_maintainer.pl --nogit | wc -l
-> > 35
-> > 
-> > Even then, using 35 CCs is generally silly.
-> > 
-> > It might make some sense for a cover letter and a
-> > patch series where the series made tree-wide changes
-> > in multiple directories.
-> 
-> Probably not even then: When a single mail header gets too long, you usually land
-> in some spam filter and get hate mail from the list owners. The lkml limit is 1024
-> characters (this may come from an official RFC, don't know), which is usually less
-> than 35 recipients.
+On Tue, Oct 19, 2010 at 9:55 AM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+>
+> a) i_writecount is about VM_DENYWRITE, basically.  Reusing it for ima could
+> get unpleasant; when it's positive, we are fine, but it can get negative as
+> well.  IMA will have interesting time dealing with that.
+>
+> b) i_count is simply a refcount for struct inode.  Not exactly the number
+> of dentries, but that's the main contributor.  Basically, that's "how many
+> pointers outside of inode hash chains point that that struct inode at the
+> moment".
 
-Patches just shouldn't be this large. You want smaller patches for a lot
-of reason. Take the BKL, would it have been acceptable to make all the
-BKL changes in a single patch (and what would the CC have looked like)?
-If you do anything remotely sophisticated then , from my perspective, a
-tree wide patch just isn't going to work.
+My question was deeper. More along the lines of "why would IMA care?"
 
-Daniel
+How/why could IMA ever care about the pointless and trivial
+differences between its current private open/read/write counts and the
+counts that we already maintain?
 
+Yes, yes, I realize that they have technical differences in what they
+count. That's not the question. The question is "Why would IMA care?"
+
+                       Linus
