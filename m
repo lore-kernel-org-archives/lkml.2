@@ -1,47 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758142Ab0JSJqQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Oct 2010 05:46:16 -0400
-Received: from mailout-de.gmx.net ([213.165.64.22]:60813 "HELO mail.gmx.net"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
-	id S1755239Ab0JSJqP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Oct 2010 05:46:15 -0400
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX1/IPZYLyH3IuZV4JkT6OfWjlSjb25BGNLbrDECW/e
-	J1PBpTeXSu2Q+H
-Subject: Re: [RFC/RFT PATCH] sched: automated per tty task groups
-From: Mike Galbraith <efault@gmx.de>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-In-Reply-To: <1287481381.29097.1652.camel@twins>
-References: <1287479765.9920.9.camel@marge.simson.net>
-	 <1287480391.29097.1647.camel@twins>
-	 <1287481199.24189.5.camel@marge.simson.net>
-	 <1287481381.29097.1652.camel@twins>
-Content-Type: text/plain
-Date: Tue, 19 Oct 2010 11:46:11 +0200
-Message-Id: <1287481571.24189.9.camel@marge.simson.net>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.24.1.1 
-Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
+	id S1758158Ab0JSJsS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Oct 2010 05:48:18 -0400
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:49604 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752498Ab0JSJsR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Oct 2010 05:48:17 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :content-type;
+        b=VaovqkD67Y47qcNLFww/oF7UHr/Kb0Sv6xkQclgEfhjPxml5XcHuFb6ncwJP2Tnq6z
+         rvANMAjY8Ulqx3HvXY+gZ2VblQhsJjkMGaRiqbYBq71jmZ39czwJ57OKyqGgyhLQZxzW
+         RCrf9+Y1N+0kW58bjfKtkT1gIQUiiUU1z7rA0=
+MIME-Version: 1.0
+In-Reply-To: <AANLkTik5UwEqSfAem-yL4yQz+sap97m50EMuyS-E2t9s@mail.gmail.com>
+References: <AANLkTik5UwEqSfAem-yL4yQz+sap97m50EMuyS-E2t9s@mail.gmail.com>
+Date: Tue, 19 Oct 2010 12:48:16 +0300
+Message-ID: <AANLkTik=JqAsr0gyAd7fY-JrrwSXpcd9EEUyqkrxqFhw@mail.gmail.com>
+Subject: bind a usb device to a driver
+From: Pavlos Vinieratos <pvinis@gmail.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-10-19 at 11:43 +0200, Peter Zijlstra wrote:
-> On Tue, 2010-10-19 at 11:39 +0200, Mike Galbraith wrote:
-> > 
-> > Yeah. I should be able to just do sched_move_task(), but it doesn't
-> > currently work even with your patch, turning tty_sched on/off can lead
-> > to incredible delays before you get box back.  With virgin source, it's
-> > size infinity for all intents and purposes.
-> 
-> Ah, first feedback I've got on that patch,. but surely since you created
-> one that does work we can fix my patch and use the normal path? :-)
+hello.
 
-Yeah.  I wanted to get the RFC out the door, so took a shortcut.
+I am writing a usb device driver. I have written most of the driver,
+and I have tried with the usb-skeleton with my product and vendor id,
+to insmod the driver and then unbind the device from usbhid and bind
+it to my driver. I use echo -n "3-2:1.0" > /sys/bus/usb/...../unbind
+and bind. It unbinds, but the binding fails. echo says there is no
+such device..
+I tried blacklisting the hid_sony that gets loaded. should I blacklist
+hid as well? will I be able to use my mouse and keyboard then? I tried
+making a rule in modprobe.d. nothing..
+What should I do?
 
-	-Mike
+I then tried writing a user space driver, but after I set everything
+up (configs, interfaces..) usb_interrupt_read always returns -110
+(device busy)..
 
+help?
+thanks
