@@ -1,131 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756365Ab0JSCRu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Oct 2010 22:17:50 -0400
-Received: from alerce.vps.bitfolk.com ([212.13.194.134]:4831 "EHLO
-	alerce.vps.bitfolk.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754759Ab0JSCRt (ORCPT
+	id S1757270Ab0JSCSF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Oct 2010 22:18:05 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:52496 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756724Ab0JSCR7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Oct 2010 22:17:49 -0400
-Date: Mon, 18 Oct 2010 23:16:57 -0300
-From: Leandro Lucarella <luca@llucax.com.ar>
-To: Neil Horman <nhorman@tuxdriver.com>
-Cc: Paul Gortmaker <paul.gortmaker@windriver.com>, jon.maloy@ericsson.com,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        tipc-discussion@lists.sourceforge.net,
-        David Miller <davem@davemloft.net>
-Subject: Re: Linux 2.6.35/TIPC 2.0 ABI breaking changes
-Message-ID: <20101019021657.GZ8781@llucax.com.ar>
-References: <20101018150422.GV8781@llucax.com.ar>
- <20101018184628.GX8781@llucax.com.ar>
- <AANLkTimKbOreV4Fuyw3TbCrk9aa5yBZQSuRbo3Vdx=Q1@mail.gmail.com>
- <20101018.151708.193712688.davem@davemloft.net>
- <4CBCD429.8090306@windriver.com>
- <20101018234547.GA5703@hmsreliant.think-freely.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101018234547.GA5703@hmsreliant.think-freely.org>
-X-Paranoid: Just because you're paranoid, don't mean they're not after you.
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Mon, 18 Oct 2010 22:17:59 -0400
+Date: Mon, 18 Oct 2010 19:18:40 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Dave Young <hidave.darkstar@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org, kvm@vger.kernel.org
+Subject: Re: [PATCH 1/2] Add vzalloc shortcut
+Message-Id: <20101018191840.89b39aa3.akpm@linux-foundation.org>
+In-Reply-To: <AANLkTi=t2U5wa_7pqcb1pAq6p_x7VqYKbfMDZ10q+Geq@mail.gmail.com>
+References: <20101016043331.GA3177@darkstar>
+	<20101018164647.bc928c78.akpm@linux-foundation.org>
+	<AANLkTikVueTjihngtC2rsoeqkUb5Wg-zeEFH1HKgcuuo@mail.gmail.com>
+	<AANLkTi=t2U5wa_7pqcb1pAq6p_x7VqYKbfMDZ10q+Geq@mail.gmail.com>
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Neil Horman, el 18 de octubre a las 19:45 me escribiste:
-> > What I think has happened here (and I'll double check this
-> > tomorrow, since it is before I started assisting with tipc)
-> > is that a backwards incompatible change *did* inadvertently
-> > creep in via these two (related) commits:
-> > 
-> > --------------
-> > commit d88dca79d3852a3623f606f781e013d61486828a
-> > Author: Neil Horman <nhorman@tuxdriver.com>
-> > Date:   Mon Mar 8 12:20:58 2010 -0800
-> > 
-> >     tipc: fix endianness on tipc subscriber messages
-> > --------------
-> > 
-> > and
-> > 
-> > ---------------
-> > commit c6537d6742985da1fbf12ae26cde6a096fd35b5c
-> > Author: Jon Paul Maloy <jon.maloy@ericsson.com>
-> > Date:   Tue Apr 6 11:40:52 2010 +0000
-> > 
-> >     TIPC: Updated topology subscription protocol according to latest spec
-> > ---------------
-> > 
-> > Based on Leandro's info, I think it comes down to userspace
-> > not knowing exactly where to find these bits anymore:
-> > 
-> > #define TIPC_SUB_SERVICE       0x00    /* Filter for service availability    */
-> > #define TIPC_SUB_PORTS         0x01    /* Filter for port availability  */
-> > #define TIPC_SUB_CANCEL         0x04    /* Cancel a subscription         */
-> > 
-> That shouldn't be the case.  Prior to the above changes the tipc implementation
-> tracked the endianess of the hosts to which it was connected and swapped data
-> that it sent to those hosts accordingly.  With these changes the kernel client
-> simply swaps the data to network byte order on send and swaps it back to local
-> order on receive universally.  That second commit added a bit from the reserved
-> pool of one of the connection establishment messages to indicate that a peer was
-> using this new protocol.  If some non-local byte order information is making it
-> into user space, thats a bug that needs fixing.
+On Tue, 19 Oct 2010 09:55:17 +0800 Dave Young <hidave.darkstar@gmail.com> wrote:
+
+> On Tue, Oct 19, 2010 at 9:27 AM, Dave Young <hidave.darkstar@gmail.com> wrote:
+> > On Tue, Oct 19, 2010 at 7:46 AM, Andrew Morton
+> >>
+> >> Also, a slightly better implementation would be
+> >>
+> >> static inline void * vmalloc_node_flags(unsigned long size, gfp_t flags)
+> >> {
+> >>        return  vmalloc_node(size, 1, flags, PAGE_KERNEL, -1,
+> >>                                 builtin_return_address(0));
+> >> }
 > 
-> What may be happening is some old client that doesn't know about the new bit
-> might be communicating with an new client that does.  IIRC the spec called for
-> clients that set bits in the reserved field to drop frames from that client, so
-> that condition shouldn't occur, but TIPC may just be ignoring reserved bits.  I
-> wouldn't be suprised.
+> Is this better? might  vmalloc_node_flags would be used by other than vmalloc?
 > 
-> Its also possible that the payload data between applications using tipc follow
-> the same broken byte swapping method that the protocol itself did, but if that
-> were the case I would expect the application to continue running normally,
-> unless user space had direct access to the protocol header in its entirety, and
-> read it directly, in which case I think I would just cry.
+> static inline void * vmalloc_node_flags(unsigned long size, int node,
+> gfp_t flags)
 
-I think there is some misunderstanding here. The compatibility was
-broken only for subscriptions messages. The subscriptions messages are
-not sent between tipc clients (or maybe they are, but that's not how
-tipc developers normally use them AFAIK). You send a subscription
-message to your host tipc stack and the stack reply you with event
-notifications. Even when they are message sent through a socket, they
-are used as an API.
+I have no strong opinions, really.  If we add more and more arguments
+to vmalloc_node_flags() it ends up looking like vmalloc_node(), so we
+may as well just call vmalloc_node().  Do whatever feels good ;)
 
-So, this has nothing to do with payload data transmitted by applications
-using tipc. We are talking about the tipc API, which is "masked" into
-a socket.
-
-Here is a small example (~150 SLOC with comments). Using TIPC 2.0 API:
-http://tipc.cslab.ericsson.net/cgi-bin/gitweb.cgi?p=people/allan/tipcutils.git;a=blob;h=efdfa3802e51d9a2a9091b3d97625de9e686b72e;hb=tipcutils2.0;f=demos/topology_subscr_demo/client_tipc.c
-
-Using the "old" TIPC 1.6 API:
-http://tipc.cslab.ericsson.net/cgi-bin/gitweb.cgi?p=people/allan/tipcutils.git;a=blob;h=ac5dfc5004b482372abb7905c90fe3073fc9165d;hb=15f57f7572898959e0aaa66293895a8255d77021;f=demos/topology_subscr_demo/subscriptions.c
-
-> > ...because it doesn't know if there is the old auto endian
-> >  swap thing being done or not being done.
-> > 
-> > Assuming it is possible to do so in some non-kludgy way,
-> > it sounds like we want to be looking into an in-kernel change
-> > that ensures the older user space binaries get their
-> > functionality restored then?
-> > 
-> Lets try figure out exactly what data is getting mis-read first.  Maybe we can
-> fix it without having to go back to making a sending host figure out a receiving
-> hosts byte order.  That would be nice.  Can you describe the problem in more
-> detail?
-
-The problem is not between the tipc stacks in different hosts, is
-between the tipc stack and the applications using it (well, maybe there
-is a problem somewhere else too).
-
-This was a deliberate API change, not a subtle bug...
-
--- 
-Leandro Lucarella (AKA luca)                     http://llucax.com.ar/
-----------------------------------------------------------------------
-GPG Key: 5F5A8D05 (F8CD F9A7 BF00 5431 4145  104C 949E BFB6 5F5A 8D05)
-----------------------------------------------------------------------
-For me to ask a woman out, I've got to get into a mental state like the karate
-guys before they break the bricks.
-	-- George Constanza
