@@ -1,75 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933844Ab0JSJaB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Oct 2010 05:30:01 -0400
-Received: from minas.ics.muni.cz ([147.251.4.40]:52021 "EHLO minas.ics.muni.cz"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933423Ab0JSJaA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Oct 2010 05:30:00 -0400
-X-Greylist: delayed 309 seconds by postgrey-1.27 at vger.kernel.org; Tue, 19 Oct 2010 05:30:00 EDT
-From: Jiri Slaby <jslaby@suse.cz>
-To: jkosina@suse.cz
-Cc: alan@signal11.us, linux-input@vger.kernel.org, jirislaby@gmail.com,
-        linux-kernel@vger.kernel.org, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 1/1] HID: hidraw, fix window in hidraw_release
-Date: Tue, 19 Oct 2010 11:29:55 +0200
-Message-Id: <1287480595-5627-1-git-send-email-jslaby@suse.cz>
-X-Mailer: git-send-email 1.7.3.1
-In-Reply-To: <1287480285-5335-1-git-send-email-jslaby@suse.cz>
-References: <1287480285-5335-1-git-send-email-jslaby@suse.cz>
-X-Muni-Spam-TestIP: 147.251.48.3
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (minas.ics.muni.cz [147.251.4.35]); Tue, 19 Oct 2010 11:29:56 +0200 (CEST)
+	id S933889Ab0JSJaT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Oct 2010 05:30:19 -0400
+Received: from canuck.infradead.org ([134.117.69.58]:44366 "EHLO
+	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933868Ab0JSJaR convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Oct 2010 05:30:17 -0400
+Subject: Re: [RFC/RFT PATCH] sched: automated per tty task groups
+From: Peter Zijlstra <peterz@infradead.org>
+To: Mike Galbraith <efault@gmx.de>
+Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+In-Reply-To: <1287479765.9920.9.camel@marge.simson.net>
+References: <1287479765.9920.9.camel@marge.simson.net>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Tue, 19 Oct 2010 11:29:52 +0200
+Message-ID: <1287480592.29097.1650.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is a window between hidraw_table check and its dereference.
-In that window, the device may be unplugged and removed form the
-system and we will then dereference NULL.
+On Tue, 2010-10-19 at 11:16 +0200, Mike Galbraith wrote:
+> +       read_lock_irqsave(&tasklist_lock, flags);
+> +
+> +       rcu_read_lock();
+> +       for_each_process(p) {
+> +               tg = task_group(p);
+> +               tty_sched_move_task(p, tg);
+> +               list_for_each_entry_rcu(t, &p->thread_group, thread_group) {
+> +                       tty_sched_move_task(t, tg);
+> +               }
+> +       }
+> +       rcu_read_unlock();
+> +
+> +       read_unlock_irqrestore(&tasklist_lock, flags); 
 
-Lock that place properly so that either we get NULL and jump out or we
-can work with real pointer.
+I don't think you need to disable IRQs for tasklist lock, nor do I think
+you actually need it.
 
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
----
- drivers/hid/hidraw.c |   14 ++++++++++----
- 1 files changed, 10 insertions(+), 4 deletions(-)
+If you enable tty groups and then scan all the existing tasks you've
+covered them all, new tasks will already be placed right, dying tasks we
+don't care about anyway.
 
-diff --git a/drivers/hid/hidraw.c b/drivers/hid/hidraw.c
-index 925992f..8a4b32d 100644
---- a/drivers/hid/hidraw.c
-+++ b/drivers/hid/hidraw.c
-@@ -218,9 +218,13 @@ static int hidraw_release(struct inode * inode, struct file * file)
- 	unsigned int minor = iminor(inode);
- 	struct hidraw *dev;
- 	struct hidraw_list *list = file->private_data;
-+	int ret;
- 
--	if (!hidraw_table[minor])
--		return -ENODEV;
-+	mutex_lock(&minors_lock);
-+	if (!hidraw_table[minor]) {
-+		ret = -ENODEV;
-+		goto unlock;
-+	}
- 
- 	list_del(&list->node);
- 	dev = hidraw_table[minor];
-@@ -233,10 +237,12 @@ static int hidraw_release(struct inode * inode, struct file * file)
- 			kfree(list->hidraw);
- 		}
- 	}
--
- 	kfree(list);
-+	ret = 0;
-+unlock:
-+	mutex_unlock(&minors_lock);
- 
--	return 0;
-+	return ret;
- }
- 
- static long hidraw_ioctl(struct file *file, unsigned int cmd,
--- 
-1.7.3.1
 
