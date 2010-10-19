@@ -1,35 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933204Ab0JSDN4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Oct 2010 23:13:56 -0400
-Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:57406 "EHLO
-	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932464Ab0JSDNz convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Oct 2010 23:13:55 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+	id S1754716Ab0JSDVt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Oct 2010 23:21:49 -0400
+Received: from mga03.intel.com ([143.182.124.21]:34717 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752682Ab0JSDVs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Oct 2010 23:21:48 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.57,348,1283756400"; 
+   d="scan'208";a="337648482"
+Date: Tue, 19 Oct 2010 11:21:45 +0800
+From: Shaohua Li <shaohua.li@intel.com>
 To: Minchan Kim <minchan.kim@gmail.com>
-Subject: Re: Deadlock possibly caused by too_many_isolated.
-Cc: kosaki.motohiro@jp.fujitsu.com, Wu Fengguang <fengguang.wu@intel.com>,
+Cc: "Wu, Fengguang" <fengguang.wu@intel.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
         Andrew Morton <akpm@linux-foundation.org>, Neil Brown <neilb@suse.de>,
         Rik van Riel <riel@redhat.com>,
         KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "Li, Shaohua" <shaohua.li@intel.com>
-In-Reply-To: <AANLkTinvcGjF2-dvu8kpDY4V7kGkRJjHTWDtQPNRKMU_@mail.gmail.com>
-References: <20101019030515.GB11924@localhost> <AANLkTinvcGjF2-dvu8kpDY4V7kGkRJjHTWDtQPNRKMU_@mail.gmail.com>
-Message-Id: <20101019121321.A1E1.A69D9226@jp.fujitsu.com>
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Subject: Re: Deadlock possibly caused by too_many_isolated.
+Message-ID: <20101019032145.GA3108@sli10-conroe.sh.intel.com>
+References: <20101019093142.509d6947@notabene>
+ <20101018154137.90f5325f.akpm@linux-foundation.org>
+ <20101019095144.A1B0.A69D9226@jp.fujitsu.com>
+ <AANLkTin38qJ-U3B7XwMh-3aR9zRs21LgR1yHfqYifxrn@mail.gmail.com>
+ <20101019023537.GB8310@localhost>
+ <AANLkTikHxDyjOGgM8-X6FNT15Hr3s4NaA-=+FRhma+3D@mail.gmail.com>
+ <20101019030515.GB11924@localhost>
+ <AANLkTinvcGjF2-dvu8kpDY4V7kGkRJjHTWDtQPNRKMU_@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Becky! ver. 2.50.07 [ja]
-Date: Tue, 19 Oct 2010 12:13:52 +0900 (JST)
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTinvcGjF2-dvu8kpDY4V7kGkRJjHTWDtQPNRKMU_@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Oct 19, 2010 at 11:09:29AM +0800, Minchan Kim wrote:
 > On Tue, Oct 19, 2010 at 12:05 PM, Wu Fengguang <fengguang.wu@intel.com> wrote:
 > > On Tue, Oct 19, 2010 at 10:52:47AM +0800, Minchan Kim wrote:
 > >> Hi Wu,
@@ -71,9 +81,9 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 > Intend to agree.
 > I think root cause is a infinite looping in too_many_isolated holding FS lock.
 > Would it be simple that too_many_isolated would be bail out after some try?
+I'm wondering if we need too_many_isolated_zone logic. The do_try_to_free_pages
+will return progress till all zones are unreclaimable. Assume before this we
+don't oomkiller. If the direct reclaim fails but has progress, it will sleep.
 
-How?
-A lot of caller don't have good recover logic when memory allocation fail occur.
-
-
-
+Thanks,
+Shaohua
