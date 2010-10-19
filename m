@@ -1,93 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758516Ab0JSLhx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Oct 2010 07:37:53 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:65030 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758411Ab0JSLhw convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Oct 2010 07:37:52 -0400
+	id S1758536Ab0JSLqO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Oct 2010 07:46:14 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:39226 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758484Ab0JSLqM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Oct 2010 07:46:12 -0400
+Date: Tue, 19 Oct 2010 13:45:01 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Thomas Renninger <trenn@suse.de>
+Cc: Arjan van de Ven <arjan@linux.intel.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Tejun Heo <tj@kernel.org>, Frederic Weisbecker <fweisbec@gmail.com>,
+        Pierre Tardy <tardyp@gmail.com>,
+        Jean Pihet <jean.pihet@newoldbits.com>,
+        linux-trace-users@vger.kernel.org, linux-pm@lists.linux-foundation.org,
+        rjw@sisk.pl, linux-omap@vger.kernel.org,
+        Peter Zijlstra <peterz@infradead.org>,
+        Kevin Hilman <khilman@deeprootsystems.com>,
+        Steven Rostedt <rostedt@goodmis.org>, Frank Eigler <fche@redhat.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: PATCH [0/4] perf: clean-up of power events API
+Message-ID: <20101019114501.GA25371@elte.hu>
+References: <201010062334.46971.trenn@suse.de>
+ <4CB095FA.8060803@linux.intel.com>
+ <20101010121928.GA2688@elte.hu>
+ <201010191331.03080.trenn@suse.de>
 MIME-Version: 1.0
-X-Originating-IP: [196.201.218.251]
-In-Reply-To: <AANLkTin=0N0b=wK8974RGwXuTxpQ4BtH4bHwjsea+1tS@mail.gmail.com>
-References: <AANLkTinHc7tMntW5NFAhu40RC7m2=HwbqOBeE-21vL8J@mail.gmail.com>
- <20101018233834.GC5370@nowhere> <AANLkTi=Ssz4WdMDXq-93GE9bPHoaQ8QyTSrWXDSCa7eH@mail.gmail.com>
- <20101019064000.GC21782@elte.hu> <AANLkTimqaTKu23HrgbffAht_Otn9L5k2oHMZDGki8MK+@mail.gmail.com>
- <AANLkTin=0N0b=wK8974RGwXuTxpQ4BtH4bHwjsea+1tS@mail.gmail.com>
-From: Brian Gitonga Marete <marete@toshnix.com>
-Date: Tue, 19 Oct 2010 14:37:31 +0300
-Message-ID: <AANLkTikAU+JdTLJqCnG_bdUqLLtvCdXGYymJ6ePapq1Y@mail.gmail.com>
-Subject: Re: [PATCH] [PERF] (Userspace Tools) Fix a compilation error with
- -fstack-protector and -Werror
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201010191331.03080.trenn@suse.de>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 19, 2010 at 2:33 PM, Brian Gitonga Marete
-<marete@toshnix.com> wrote:
-> On Tue, Oct 19, 2010 at 2:12 PM, Brian Gitonga Marete
-> <marete@toshnix.com> wrote:
->> On Tue, Oct 19, 2010 at 9:40 AM, Ingo Molnar <mingo@elte.hu> wrote:
->>>
->>> * Brian Gitonga Marete <marete@toshnix.com> wrote:
->>>
->>>> On Tue, Oct 19, 2010 at 2:38 AM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
->>>> > On Tue, Oct 19, 2010 at 02:24:00AM +0300, Brian Gitonga Marete wrote:
->>>> >> The following patch fixes compilation of the perf user-space tools on,
->>>> >> for example, gcc version 4.3.3 (Ubuntu 4.3.3-5ubuntu4) . It should not
->>>> >> break anything else.
->>>> >
->>>> >
->>>> >
->>>> > Hi,
->>>> >
->>>> > What kind of warning have you encountered and why it fixes it?
->>>> > Can you describe that in your changelog?
->>>> >
->>>>
->>>> Hello Frederic,
->>>>
->>>> Some versions of gcc, e.g. gcc version 4.3.3 (Ubuntu 4.3.3-5ubuntu4), have the
->>>> (default) minimum size of buffers protected by `-fstack-protector' set to 8. But
->>>> in perf, there exist much smaller automatic buffers.
->>>
->>> Hm, it's this code:
->>>
->>>        /* newtWinChoice should really be accepting const char pointers... */
->>>        char yes[] = "Yes", no[] = "No";
->>>        return newtWinChoice(NULL, yes, no, (char *)msg) == 1;
->>>
->>> I.e. the code is messy and GCC is right to warn about it. Hence it would be somewhat
->>> bad to actually remove the warning that pointed out some dodgy piece of code.
->>>
->>> Even if marking it const doesnt work due to the external libnewt API, we could at
->>> least put 'yes' and 'no' into file scope and mark them static?
->>
->> OK. Now that I actually look closely at that fragment I can see its
->> useless to create the automatic arrays. Local string literals would
->> also work (i.e. just pass `"Yes"' and `"No"' to newtWinChoice). But
->> can also do what you suggested if it is anticipated that they will be
->> used somewhere else within the file at some other time -- Currently
->> they are not.
->>
+
+* Thomas Renninger <trenn@suse.de> wrote:
+
+> > Most definitely. It's no accident that it took such a long time for this issue 
+> > to be raised in the first place. It's a rare occurance -
 >
-> Oops. Sorry. What I suggested won't work because of the
-> -Wwrite-strings default option. Which actually makes me understand why
-> the original author of the code made it the way it is. Your suggestion
-> of file-scope, static does solve the problem.
+> Do you agree that this occurance happened now and these events should get cleaned 
+> up before ARM and other archs make use of the broken interface?
 >
+> If not, discussing this further, is a big waste of time... and Jean would have to 
+> try to adapt his ARM code on the broken ABI...
 
-As indeed does Americo's suggestion above.
+The discussion seems to have died down somewhat. Please re-send to lkml the latest 
+patches you have to remind everyone of the latest state of things - the merge window 
+is getting near.
 
+My only compatibility/ABI point is basically that it shouldnt break _existing_ 
+tracepoints (and users thereof). If your latest bits meet that then it ought to be a 
+good first step. You are free to (and encouraged to) introduce more complete sets of 
+events.
 
--- 
-Brian Gitonga Marete
-Toshnix Systems
-Tel: +254722151590
+Thanks,
+
+	Ingo
