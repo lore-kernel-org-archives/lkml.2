@@ -1,96 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756624Ab0JSRKD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Oct 2010 13:10:03 -0400
-Received: from canuck.infradead.org ([134.117.69.58]:57702 "EHLO
-	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754071Ab0JSRKB convert rfc822-to-8bit (ORCPT
+	id S1756610Ab0JSRL0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Oct 2010 13:11:26 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:47351 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756524Ab0JSRLY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Oct 2010 13:10:01 -0400
-Subject: Re: [PATCH] perf_events: fix time tracking in samples
-From: Peter Zijlstra <peterz@infradead.org>
-To: Stephane Eranian <eranian@google.com>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, paulus@samba.org,
-        davem@davemloft.net, fweisbec@gmail.com, perfmon2-devel@lists.sf.net,
-        eranian@gmail.com, robert.richter@amd.com
-In-Reply-To: <AANLkTik5_h1hVfX=1chezE6z25r4KV6GfzQZ+JvD8J_p@mail.gmail.com>
-References: <4cbdcbea.8491d80a.25b0.ffffece8@mx.google.com>
-	 <1287507178.1998.3440.camel@laptop>
-	 <AANLkTik5_h1hVfX=1chezE6z25r4KV6GfzQZ+JvD8J_p@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Tue, 19 Oct 2010 19:09:47 +0200
-Message-ID: <1287508187.1998.3445.camel@laptop>
+	Tue, 19 Oct 2010 13:11:24 -0400
+X-Authority-Analysis: v=1.1 cv=+c36koQ5Dcj/1qolKHjtkYAGXvrVJRRiKMp+84F5sLg= c=1 sm=0 a=orbmIEd6FBIA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=VwQbUJbxAAAA:8 a=20KFwNOVAAAA:8 a=meVymXHHAAAA:8 a=_KI8FHBTBClVQMh1aQoA:9 a=70W1dQL4S0VoNjgMiWRA4FC5pMoA:4 a=PUjeQqilurYA:10 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: [PATCH][GIT PULL] tracing: Fix compile issue for
+ trace_sched_wakeup.c
+From: Steven Rostedt <rostedt@goodmis.org>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Tue, 19 Oct 2010 13:11:22 -0400
+Message-ID: <1287508282.16971.386.camel@gandalf.stny.rr.com>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-10-19 at 19:01 +0200, Stephane Eranian wrote:
-> On Tue, Oct 19, 2010 at 6:52 PM, Peter Zijlstra <peterz@infradead.org> wrote:
-> > On Tue, 2010-10-19 at 18:47 +0200, Stephane Eranian wrote:
-> >> This patch corrects time tracking in samples. Without this patch
-> >> both time_enabled and time_running may be reported as zero when
-> >> user asks for PERF_SAMPLE_READ.
-> >>
-> >> You use PERF_SAMPLE_READ when you want to sample the values of
-> >> other counters in each sample. Because of multiplexing, it is
-> >> necessary to know both time_enable, time_running to be able
-> >> to scale counts correctly.
-> >>
-> >> We defer updating timing until we know it is really needed, i.e.,
-> >> only when we have PERF_SAMPLE_READ.
-> >>
-> >> With this patch, the libpfm4 example task_smpl now reports
-> >> correct counts (shown on 2.4GHz Core 2):
-> >>
-> >> $ task_smpl -p 2400000000 -e unhalted_core_cycles:u,instructions_retired:u,baclears  noploop 5
-> >> noploop for 5 seconds
-> >> IIP:0x000000004006d6 PID:5596 TID:5596 TIME:466,210,211,430 STREAM_ID:33 PERIOD:2,400,000,000 ENA=1,010,157,814 RUN=1,010,157,814 NR=3
-> >>       2,400,000,254 unhalted_core_cycles:u (33)
-> >>       2,399,273,744 instructions_retired:u (34)
-> >>       53,340 baclears (35)
-> >>
-> >> Signed-off-by: Stephane Eranian <eranian@google.com>
-> >>
-> >> ---
-> >>
-> >> diff --git a/kernel/perf_event.c b/kernel/perf_event.c
-> >> index f309e80..04611dd 100644
-> >> --- a/kernel/perf_event.c
-> >> +++ b/kernel/perf_event.c
-> >> @@ -3494,6 +3494,9 @@ static void perf_output_read_group(struct perf_output_handle *handle,
-> >>  static void perf_output_read(struct perf_output_handle *handle,
-> >>                            struct perf_event *event)
-> >>  {
-> >> +     update_context_time(event->ctx);
-> >> +     update_event_times(event);
-> >> +
-> >>       if (event->attr.read_format & PERF_FORMAT_GROUP)
-> >>               perf_output_read_group(handle, event);
-> >>       else
-> >
-> >
-> > Right, except that this can actually corrupt the time measurements... :/
-> >
-> > Usually context times are updated under ctx->lock, and this is called
-> > from NMI context, which can interrupt ctx->lock..
-> >
-> Ok, I missed that. But I don't understand why you need the lock to
-> udpate the time. The lower-level clock is lockless if I recall. Can't you
-> use an atomic ops in update_context_time()?
 
-atomic ops would slow down those code paths, also, I don't think you can
-fully get the ordering between ->tstamp_$foo and ->total_time_$foo just
-right.
+Ingo,
 
-> > I was thinking about updating a local copy of the times, in that case
-> > you can only get funny times from samples, but it won't corrupt the
-> > actual running data.
-> >
-> You want time to be correct in every sample How would you detect
-> bogus timing?
+Please pull the latest tip/perf/core tree, which can be found at:
 
-Not sure, but barring 64bit atomics for all these, 32bit archs and NMI
-are going to be 'interesting'
+  git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-2.6-trace.git
+tip/perf/core
+
+
+Steven Rostedt (1):
+      tracing: Fix compile issue for trace_sched_wakeup.c
+
+----
+ kernel/trace/trace_sched_wakeup.c |    3 +--
+ 1 files changed, 1 insertions(+), 2 deletions(-)
+---------------------------
+commit 7e40798f406fe73f9bac496a390daabd8768a8f7
+Author: Steven Rostedt <srostedt@redhat.com>
+Date:   Tue Oct 19 10:56:19 2010 -0400
+
+    tracing: Fix compile issue for trace_sched_wakeup.c
+    
+    The function start_func_tracer() was incorrectly added in the
+     #ifdef CONFIG_FUNCTION_TRACER condition, but is still used even
+    when function tracing is not enabled.
+    
+    The calls to register_ftrace_function() and register_ftrace_graph()
+    become nops (and their arguments are even ignored), thus there is
+    no reason to hide start_func_tracer() when function tracing is
+    not enabled.
+    
+    Reported-by: Ingo Molnar <mingo@elte.hu>
+    Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+
+diff --git a/kernel/trace/trace_sched_wakeup.c b/kernel/trace/trace_sched_wakeup.c
+index 31689d2..7319559 100644
+--- a/kernel/trace/trace_sched_wakeup.c
++++ b/kernel/trace/trace_sched_wakeup.c
+@@ -130,6 +130,7 @@ static struct ftrace_ops trace_ops __read_mostly =
+ {
+ 	.func = wakeup_tracer_call,
+ };
++#endif /* CONFIG_FUNCTION_TRACER */
+ 
+ static int start_func_tracer(int graph)
+ {
+@@ -159,8 +160,6 @@ static void stop_func_tracer(int graph)
+ 		unregister_ftrace_graph();
+ }
+ 
+-#endif /* CONFIG_FUNCTION_TRACER */
+-
+ #ifdef CONFIG_FUNCTION_GRAPH_TRACER
+ static int wakeup_set_flag(u32 old_flags, u32 bit, int set)
+ {
+
+
