@@ -1,85 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755652Ab0JSWXC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Oct 2010 18:23:02 -0400
-Received: from 34.97.116-78.rev.gaoland.net ([78.116.97.34]:57203 "EHLO
-	electric-eye.fr.zoreil.com" rhost-flags-OK-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754479Ab0JSWXA (ORCPT
+	id S1756155Ab0JSWX3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Oct 2010 18:23:29 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:46579 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755903Ab0JSWX1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Oct 2010 18:23:00 -0400
-X-Greylist: delayed 849 seconds by postgrey-1.27 at vger.kernel.org; Tue, 19 Oct 2010 18:22:56 EDT
-Date: Wed, 20 Oct 2010 00:07:24 +0200
-From: Francois Romieu <romieu@fr.zoreil.com>
-To: Daniel J Blueman <daniel.blueman@gmail.com>
-Cc: Matthew Garrett <mjg@redhat.com>, "David S. Miller" <davem@davemloft.net>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linux Networking <linux-net@vger.kernel.org>
-Subject: Re: [2.6.36-rc5] r8169 regression...
-Message-ID: <20101019220724.GA16254@electric-eye.fr.zoreil.com>
-Mail-Followup-To: Francois Romieu <romieu@fr.zoreil.com>,
-	Daniel J Blueman <daniel.blueman@gmail.com>,
-	Matthew Garrett <mjg@redhat.com>,
-	"David S. Miller" <davem@davemloft.net>,
-	Linux Kernel <linux-kernel@vger.kernel.org>,
-	Linux Networking <linux-net@vger.kernel.org>
-References: <AANLkTimdrM0H=b1OzmJ_mxMFqe-Y-Hxs5Lof5PAmVdbj@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTimdrM0H=b1OzmJ_mxMFqe-Y-Hxs5Lof5PAmVdbj@mail.gmail.com>
-X-Organisation: Land of Sunshine Inc.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 19 Oct 2010 18:23:27 -0400
+X-Authority-Analysis: v=1.1 cv=6ptpMFIBtxRk0xdOb6IhJTbTLVRlKjWFes7R4SsWCrA= c=1 sm=0 a=wGm5nfgfXM4A:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=nlXyqv6Ji1_L9UEWfycA:9 a=ivUtSdx0CHJyJC_S2HUA:7 a=rK7F48Nc4A8usy2HFYfu_w5_Sn8A:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [PATCH] tracing: Cleanup the convoluted softirq tracepoints
+From: Steven Rostedt <rostedt@goodmis.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Koki Sanagi <sanagi.koki@jp.fujitsu.com>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Frederic Weisbecker <fweisbec@gmail.com>, nhorman@tuxdriver.com,
+        scott.a.mcmillan@intel.com, laijs@cn.fujitsu.com,
+        LKML <linux-kernel@vger.kernel.org>, eric.dumazet@gmail.com,
+        kaneshige.kenji@jp.fujitsu.com, David Miller <davem@davemloft.net>,
+        izumi.taku@jp.fujitsu.com, kosaki.motohiro@jp.fujitsu.com,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        "Luck, Tony" <tony.luck@intel.com>
+In-Reply-To: <4CBE122B.9020807@zytor.com>
+References: <tip-2bf2160d8805de64308e2e7c3cd97813cb58ed2f@git.kernel.org>
+	 <20100908112529.GA25931@elte.hu> <1287395077.29097.1543.camel@twins>
+	 <1287398936.29097.1548.camel@twins> <4CBD79CF.2060706@jp.fujitsu.com>
+	 <alpine.LFD.2.00.1010191428560.6815@localhost6.localdomain6>
+	 <20101019132236.GA19197@Krystal>
+	 <alpine.LFD.2.00.1010191524160.6815@localhost6.localdomain6>
+	 <1287496495.16971.372.camel@gandalf.stny.rr.com>
+	 <alpine.LFD.2.00.1010191558250.6815@localhost6.localdomain6>
+	 <20101019142820.GA14520@Krystal>
+	 <alpine.LFD.2.00.1010191842270.6815@localhost6.localdomain6>
+	 <1287521757.16971.397.camel@gandalf.stny.rr.com>
+	 <alpine.LFD.2.00.1010192302000.6815@localhost6.localdomain6>
+	 <1287523439.16971.433.camel@gandalf.stny.rr.com>
+	 <4CBE122B.9020807@zytor.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Tue, 19 Oct 2010 18:23:25 -0400
+Message-ID: <1287527005.16971.527.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Daniel J Blueman <daniel.blueman@gmail.com> :
-> Since 2.6.36-rc5, I've been seeing unexpected link up and (as a
-> side-effect) pending softirq messages [1] when transferring data over
-> a r8169 adapter ("RTL8168d/8111d").
->
-> The recent change [2] to make the r8169 driver sensitive to receive
-> overflow events is clearly unnecessary for this MAC revision (since it
-> was fine without before), so it may be worthwhile to reintroduce the
-> 'tp->mac_version == RTL_GIGA_MAC_VER_11' condition on resetting the
-> link, tweaked to the problematic MAC version in the Thinkpad X100e.
-
-Matthew, can you apply the patch below and send your XID line ?
-
-At this stage in -rc, I'd rather revert [2], live with some Thinkpad
-X100e crashes when under network load while the screen turns off and
-avoid any new pesky regression. David ?
-
-diff --git a/drivers/net/r8169.c b/drivers/net/r8169.c
-index 992db2f..15b8e57 100644
---- a/drivers/net/r8169.c
-+++ b/drivers/net/r8169.c
-@@ -3208,7 +3208,7 @@ rtl8169_init_one(struct pci_dev *pdev, const struct pci_device_id *ent)
- 	netif_info(tp, probe, dev, "%s at 0x%lx, %pM, XID %08x IRQ %d\n",
- 		   rtl_chip_info[tp->chipset].name,
- 		   dev->base_addr, dev->dev_addr,
--		   (u32)(RTL_R32(TxConfig) & 0x9cf0f8ff), dev->irq);
-+		   (u32)(RTL_R32(TxConfig) & 0xfcf0f8ff), dev->irq);
- 
- 	rtl8169_init_phy(dev, tp);
- 
-[...]
-> As a second bonus, we find a latent softirq. When a receive overflow
-> is now detected, we get the callchain
-> rtl8169_tx_timeout->rtl8169_schedule_work which causes
-> rtl8169_reset_task->rtl8169_rx_interrupt->netif_rx from outside the
-> interrupt handler. I could cook a patch which would ensure
-> netif_rx_ni() is called outside the interrupt handler, but do we care?
-
-You can remove rtl8169_rx_interrupt in rtl8169_reset_task so that
-rtl8169_rx_interrupt be only called from softirq context. It will
-save some what-is-the-current-context code and avoid a circular
-rtl8169_rx_interrupt <-> rtl8169_reset_task dependency.
-
-[...]
-> --- [2]
+On Tue, 2010-10-19 at 14:48 -0700, H. Peter Anvin wrote:
+> On 10/19/2010 02:23 PM, Steven Rostedt wrote:
+> > 
+> > But it seemed that gcc for you inlined the code in the wrong spot.
+> > Perhaps it's not a good idea to have the something like h - softirq_vec
+> > in the parameter of the tracepoint. Not saying that your change is not
+> > worth it. It is, because h - softirq_vec is used by others now too.
+> > 
 > 
-> http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commit;h=801e147cde02f04b5c2f42764cd43a89fc7400a2
+> OK, first of all, there are some serious WTFs here:
+> 
+> # define JUMP_LABEL_INITIAL_NOP ".byte 0xe9 \n\t .long 0\n\t"
+> 
+> A jump instruction is one of the worst possible NOPs.  Why are we doing
+> this?
 
--- 
-Ueimor
+
+Good question. Safety?  Jason?
+
+This is the initial jumps and are converted on boot up to a better nop.
+
+> 
+> The second thing that I found when implementing static_cpu_has() was
+> that it is actually better to encapsulate the asm goto in a small inline
+> which returns bool (true/false) -- gcc will happily optimize out the
+> variable and only see it as a flow of control thing.  I would be very
+> curious if that wouldn't make gcc generate better code in cases like that.
+>
+> gcc 4.5.0 has a bug in that there must be a flowthrough case in the asm
+> goto (you can't have it unconditionally branch one way or the other), so
+> that should be the likely case and accordingly it should be annotated
+> likely() so that gcc doesn't reorder.  I suspect in the end one ends up
+> with code like this:
+> 
+> static __always_inline __pure bool __switch_point(...)
+> {
+> 	asm goto("1: " JUMP_LABEL_INITIAL_NOP
+> 		 /* ... patching stuff */
+> 		: : : : t_jump);
+> 	return false;
+> t_jump:
+> 	return true;
+> }
+> 
+> #define SWITCH_POINT(x) unlikely(__switch_point(x))
+> 
+> I *suspect* this will resolve the need for hot/cold labels just fine.
+
+Interesting, we could try this.
+
+Thanks!
+
+-- Steve
+
+
