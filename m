@@ -1,70 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756757Ab0JSRSk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Oct 2010 13:18:40 -0400
-Received: from relais.videotron.ca ([24.201.245.36]:48386 "EHLO
-	relais.videotron.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754172Ab0JSRSj (ORCPT
+	id S1756741Ab0JSRV1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Oct 2010 13:21:27 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:61375 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754172Ab0JSRV0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Oct 2010 13:18:39 -0400
-MIME-version: 1.0
-Content-transfer-encoding: 7BIT
-Content-type: TEXT/PLAIN; charset=US-ASCII
-Date: Tue, 19 Oct 2010 13:18:38 -0400 (EDT)
-From: Nicolas Pitre <nico@fluxnic.net>
-X-X-Sender: nico@xanadu.home
-To: Daniel Walker <dwalker@fifo99.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, Joe Perches <joe@perches.com>,
-        Russell King <rmk@arm.linux.org.uk>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        lkml <linux-kernel@vger.kernel.org>,
-        Jeremy Kerr <jeremy.kerr@canonical.com>,
-        Jeff Ohlstein <johlstei@codeaurora.org>
-Subject: Re: linux-next: manual merge of the msm tree with the arm tree
-In-reply-to: <1287507806.10071.16.camel@c-dwalke-linux.qualcomm.com>
-Message-id: <alpine.LFD.2.00.1010191314020.2764@xanadu.home>
-References: <20101018103540.7bd9c535.sfr@canb.auug.org.au>
- <alpine.LFD.2.00.1010181833440.2764@xanadu.home>
- <1287442418.5376.38.camel@Joe-Laptop> <201010191518.04147.arnd@arndb.de>
- <1287507806.10071.16.camel@c-dwalke-linux.qualcomm.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	Tue, 19 Oct 2010 13:21:26 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: "Ohad Ben-Cohen" <ohad@wizery.com>
+Subject: Re: [PATCH 1/3] drivers: misc: add omap_hwspinlock driver
+Date: Tue, 19 Oct 2010 19:21:20 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.36-rc7-next-20101015+; KDE/4.5.1; x86_64; ; )
+Cc: linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, akpm@linux-foundation.org,
+        Greg KH <greg@kroah.com>, Tony Lindgren <tony@atomide.com>,
+        Benoit Cousson <b-cousson@ti.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Hari Kanigeri <h-kanigeri2@ti.com>, Suman Anna <s-anna@ti.com>,
+        Simon Que <sque@ti.com>, "Krishnamoorthy, Balaji T" <balajitk@ti.com>
+References: <1287387875-14168-1-git-send-email-ohad@wizery.com> <1287387875-14168-2-git-send-email-ohad@wizery.com>
+In-Reply-To: <1287387875-14168-2-git-send-email-ohad@wizery.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201010191921.21007.arnd@arndb.de>
+X-Provags-ID: V02:K0:oUo8lAUw1ofP2nAKSI5ixjhDeoW4qyTFdooz9v83Ebr
+ 6jBpt03uDzgkXRxS/S3GfjO/rHB6yzeOxL9IUxQHU4ieCPqfV8
+ ah2TJjNVGe24b/Nmleff5Y8Qa+17VC194c3QMcCKYMPtgZr+XT
+ QUfGgqnldg+cHPyKIcSp3rUj7NN3sM1taaibRAPe6i4fUXSf1H
+ rqpcAhCRh2FLS/cX4HRRQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 19 Oct 2010, Daniel Walker wrote:
+On Monday 18 October 2010 09:44:33 Ohad Ben-Cohen wrote:
+> +  int omap_hwspin_lock(struct omap_hwspinlock *hwlock, unsigned long *flags);
+> ...
+> +     The flags parameter is a pointer to where the interrupts state of the
+> +     caller will be saved at.
 
-> On Tue, 2010-10-19 at 15:18 +0200, Arnd Bergmann wrote:
-> > On Tuesday 19 October 2010, Joe Perches wrote:
-> > > This could have been done:
-> > > 
-> > > $ git show 08a610d9ef5394525b0328da0162d7b58c982cc4 | ./scripts/get_maintainer.pl --nogit | wc -l
-> > > 35
-> > > 
-> > > Even then, using 35 CCs is generally silly.
-> > > 
-> > > It might make some sense for a cover letter and a
-> > > patch series where the series made tree-wide changes
-> > > in multiple directories.
-> > 
-> > Probably not even then: When a single mail header gets too long, you usually land
-> > in some spam filter and get hate mail from the list owners. The lkml limit is 1024
-> > characters (this may come from an official RFC, don't know), which is usually less
-> > than 35 recipients.
-> 
-> Patches just shouldn't be this large. You want smaller patches for a lot
-> of reason. Take the BKL, would it have been acceptable to make all the
-> BKL changes in a single patch (and what would the CC have looked like)?
-> If you do anything remotely sophisticated then , from my perspective, a
-> tree wide patch just isn't going to work.
+This seems to encourage sloppy coding: The only variant you allow is the one
+that corresponds to Linux's spin_lock_irqsave(), which is generally discouraged
+in all places where you know if you need to disable interrupts or not.
 
-That's why on occasions we do transgress the established process to 
-accommodate such changes.  Imagine just for a moment the patch that 
-modified the interrupt callback prototype to remove the useless pt_regs 
-argument.  Obviously, it had to be done atomically to the _whole_ tree, 
-and it was agreed that this patch was to be applied at the end of the 
-merge window.  But no one expected a single minute sending a CC to _all_ 
-the driver authors.
+IMHO the default should be a version that only allows locks that don't get
+taken at IRQ time and consequently don't require saving the interrupt flags.
 
-
-Nicolas
+	Arnd
