@@ -1,92 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756982Ab0JSTmn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Oct 2010 15:42:43 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:61217 "EHLO
+	id S1757044Ab0JSTm6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Oct 2010 15:42:58 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:53586 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756810Ab0JSTmH (ORCPT
+	with ESMTP id S1756693Ab0JSTmH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 19 Oct 2010 15:42:07 -0400
-X-Authority-Analysis: v=1.1 cv=kXGwZUU/u1JTMRv8Axk4W0omja+vfTT+sGlOkodD8F8= c=1 sm=0 a=Bbu59c7AzTAA:10 a=HRn4fpiT8EsA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=20KFwNOVAAAA:8 a=meVymXHHAAAA:8 a=I6j03qa_a5nMc7jSCuIA:9 a=j2HSjwhxuXFDMmviMoAA:7 a=ybfK-wzbDfusm436Gefgt2A-eL4A:4 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Authority-Analysis: v=1.1 cv=NFUeGz0loTdi/T6hXKngYYtckjed7x3pKvNOqmBBK18= c=1 sm=0 a=BWAsbdy6Z-kA:10 a=HRn4fpiT8EsA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=20KFwNOVAAAA:8 a=meVymXHHAAAA:8 a=HJudcVsSSnB4qObBnHgA:9 a=SOPH0zFicfF_0Zb7ZVoA:7 a=YP8zoErBTBrFO-z1YSJ71cMTfTkA:4 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
 X-Cloudmark-Score: 0
 X-Originating-IP: 67.242.120.143
-Message-Id: <20101019194204.400366428@goodmis.org>
+Message-Id: <20101019194204.098928016@goodmis.org>
 User-Agent: quilt/0.48-1
-Date: Tue, 19 Oct 2010 13:54:36 -0400
+Date: Tue, 19 Oct 2010 13:54:35 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
         Frederic Weisbecker <fweisbec@gmail.com>,
         Steven Rostedt <rostedt@goodmis.org>
-Subject: [PATCH 4/5] ring-buffer: Micro-optimize with some strategic inlining
+Subject: [PATCH 3/5] ring-buffer: Remove condition to add timestamp in fast path
 References: <20101019175432.854431527@goodmis.org>
-Content-Disposition: inline; filename=0004-ring-buffer-Micro-optimize-with-some-strategic-inlin.patch
+Content-Disposition: inline; filename=0003-ring-buffer-Remove-condition-to-add-timestamp-in-fas.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Steven Rostedt <srostedt@redhat.com>
 
-By using inline and noinline, we are able to make the fast path of
-recording an event 4% faster.
+There's a condition to check if we should add a time extend or
+not in the fast path. But this condition is racey (in the sense
+that we can add a unnecessary time extend, but nothing that
+can break anything). We later check if the time or event time
+delta should be zero or have real data in it (not racey), making
+this first check redundant.
+
+This check may help save space once in a while, but really is
+not worth the hassle to try to save some space that happens at
+most 134 ms at a time.
 
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- kernel/trace/ring_buffer.c |   23 +++++++++++++++--------
- 1 files changed, 15 insertions(+), 8 deletions(-)
+ kernel/trace/ring_buffer.c |   28 ++++++----------------------
+ 1 files changed, 6 insertions(+), 22 deletions(-)
 
 diff --git a/kernel/trace/ring_buffer.c b/kernel/trace/ring_buffer.c
-index 9f55330..fda009a 100644
+index 4fc1577..9f55330 100644
 --- a/kernel/trace/ring_buffer.c
 +++ b/kernel/trace/ring_buffer.c
-@@ -2085,7 +2085,7 @@ static void rb_start_commit(struct ring_buffer_per_cpu *cpu_buffer)
- 	local_inc(&cpu_buffer->commits);
- }
+@@ -2126,6 +2126,7 @@ rb_reserve_next_event(struct ring_buffer *buffer,
+ 	u64 ts, delta;
+ 	int nr_loops = 0;
+ 	int add_timestamp;
++	u64 diff;
  
--static void rb_end_commit(struct ring_buffer_per_cpu *cpu_buffer)
-+static inline void rb_end_commit(struct ring_buffer_per_cpu *cpu_buffer)
- {
- 	unsigned long commits;
+ 	rb_start_commit(cpu_buffer);
  
-@@ -2200,13 +2200,9 @@ rb_reserve_next_event(struct ring_buffer *buffer,
+@@ -2162,29 +2163,13 @@ rb_reserve_next_event(struct ring_buffer *buffer,
+ 		goto out_fail;
  
- #define TRACE_RECURSIVE_DEPTH 16
+ 	ts = rb_time_stamp(cpu_buffer->buffer);
++	diff = ts - cpu_buffer->write_stamp;
  
--static int trace_recursive_lock(void)
-+/* Keep this code out of the fast path cache */
-+static noinline void trace_recursive_fail(void)
- {
--	current->trace_recursion++;
+-	/*
+-	 * Only the first commit can update the timestamp.
+-	 * Yes there is a race here. If an interrupt comes in
+-	 * just after the conditional and it traces too, then it
+-	 * will also check the deltas. More than one timestamp may
+-	 * also be made. But only the entry that did the actual
+-	 * commit will be something other than zero.
+-	 */
+-	if (likely(cpu_buffer->tail_page == cpu_buffer->commit_page &&
+-		   rb_page_write(cpu_buffer->tail_page) ==
+-		   rb_commit_index(cpu_buffer))) {
+-		u64 diff;
 -
--	if (likely(current->trace_recursion < TRACE_RECURSIVE_DEPTH))
--		return 0;
+-		diff = ts - cpu_buffer->write_stamp;
 -
- 	/* Disable all tracing before we do anything else */
- 	tracing_off_permanent();
+-		/* make sure this diff is calculated here */
+-		barrier();
+-
+-		/* Did the write stamp get updated already? */
+-		if (unlikely(ts < cpu_buffer->write_stamp))
+-			goto get_event;
++	/* make sure this diff is calculated here */
++	barrier();
  
-@@ -2218,10 +2214,21 @@ static int trace_recursive_lock(void)
- 		    in_nmi());
++	/* Did the write stamp get updated already? */
++	if (likely(ts >= cpu_buffer->write_stamp)) {
+ 		delta = diff;
+ 		if (unlikely(test_time_stamp(delta))) {
+ 			WARN_ONCE(delta > (1ULL << 59),
+@@ -2196,7 +2181,6 @@ rb_reserve_next_event(struct ring_buffer *buffer,
+ 		}
+ 	}
  
- 	WARN_ON_ONCE(1);
-+}
-+
-+static inline int trace_recursive_lock(void)
-+{
-+	current->trace_recursion++;
-+
-+	if (likely(current->trace_recursion < TRACE_RECURSIVE_DEPTH))
-+		return 0;
-+
-+	trace_recursive_fail();
-+
- 	return -1;
- }
- 
--static void trace_recursive_unlock(void)
-+static inline void trace_recursive_unlock(void)
- {
- 	WARN_ON_ONCE(!current->trace_recursion);
- 
+- get_event:
+ 	event = __rb_reserve_next(cpu_buffer, length, ts,
+ 				  delta, add_timestamp);
+ 	if (unlikely(PTR_ERR(event) == -EAGAIN))
 -- 
 1.7.1
 
