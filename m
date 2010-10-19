@@ -1,69 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933946Ab0JSKhQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Oct 2010 06:37:16 -0400
-Received: from bhuna.collabora.co.uk ([93.93.128.226]:49314 "EHLO
-	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752030Ab0JSKhP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Oct 2010 06:37:15 -0400
-Message-ID: <4CBD739A.2010500@collabora.co.uk>
-Date: Tue, 19 Oct 2010 11:31:54 +0100
-From: Ian Molton <ian.molton@collabora.co.uk>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.12) Gecko/20100917 Icedove/3.0.8
+	id S933970Ab0JSKiK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Oct 2010 06:38:10 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:36293 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752030Ab0JSKiI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Oct 2010 06:38:08 -0400
+Date: Tue, 19 Oct 2010 12:37:59 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Shaohua Li <shaohua.li@intel.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Andi Kleen <andi@firstfloor.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        "Chen, Tim C" <tim.c.chen@intel.com>
+Subject: Re: [patch]x86: spread tlb flush vector between nodes
+Message-ID: <20101019103759.GC32212@elte.hu>
+References: <1286955698.13317.5.camel@sli10-conroe.sh.intel.com>
+ <20101013081629.GA1621@basil.fritz.box>
+ <1286959176.24888.6.camel@sli10-conroe.sh.intel.com>
+ <1287466757.29515.2.camel@sli10-conroe.sh.intel.com>
+ <6dd05e19-05ef-48e4-b42d-d18c913fa4d7@email.android.com>
+ <20101019084423.GB27723@elte.hu>
+ <1287478532.9456.0.camel@sli10-conroe.sh.intel.com>
 MIME-Version: 1.0
-To: Avi Kivity <avi@redhat.com>
-CC: linux-kernel@vger.kernel.org, QEMU Developers <qemu-devel@nongnu.org>
-Subject: Re: [PATCH] Implement a virtio GPU transport
-References: <4CAC9CD1.2050601@collabora.co.uk> <4CB1D79A.6070805@redhat.com>
-In-Reply-To: <4CB1D79A.6070805@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1287478532.9456.0.camel@sli10-conroe.sh.intel.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/10/10 16:11, Avi Kivity wrote:
-> On 10/06/2010 05:59 PM, Ian Molton wrote:
->> This patch implements a virtio-based transport for use by a
->> virtualised OpenGL passthrough implementation.
->>
->> The libGL and qemu-gl code to support this patch are available here:
->>
->> http://gitorious.org/vm-gl-accel/qemu-gl
->> http://gitorious.org/vm-gl-accel/qemu-libgl
->>
->>
->> Comments please!
+
+* Shaohua Li <shaohua.li@intel.com> wrote:
+
+> On Tue, 2010-10-19 at 16:44 +0800, Ingo Molnar wrote:
+> > * H. Peter Anvin <hpa@zytor.com> wrote:
+> > 
+> > > Technically, it is way too late for anything new in this merge window, but we can 
+> > > try to make a reasonable assessment of the risk since the merge window got 
+> > > delayed.  However, this close to the merge window you cannot just expect to be 
+> > > merged even if the patch itself is OK.
+> > 
+> > a prompt re-send of the patch today-ish, with proper changelog, etc. and with 
+> > the new tuning in place is definitely a must.
 >
-> 1. copy qemu-devel
+> the previous patch has changelog. what did you mean a new tuning?
 
-Ok, will do.
+The new tuning would be the 8->32 patch - but that would be a more complex and 
+separate (and definitely controversial) patch anyway.
 
-> an virtualization@, many virtio developers live there.
+So if hpa gives his ack we can try this current spread-tlb-vectors-better patch in 
+-tip and see how it fares. Could you please update the changelog to specify the 20% 
+improvement more precisely? What kind of workload was used and how was the 
+improvement measured?
 
-you mean virtualization@lists.osdl.org ?
+Thanks,
 
-> 2. should start with a patch to the virtio-pci spec to document what
-> you're doing
-
-Where can I find that spec?
-
->> + /* Transfer data */
->> + if (virtqueue_add_buf(vq, sg_list, o_page, i_page, (void *)1)>= 0) {
->> + virtqueue_kick(vq);
->> + /* Chill out until it's done with the buffer. */
->> + while (!virtqueue_get_buf(vq,&count))
->> + cpu_relax();
->> + }
->> +
->
-> This is pretty gross, and will burn lots of cpu if the hypervisor
-> processes the queue asynchronously.
-
-It doesnt, at present... It could be changed fairly easily ithout 
-breaking anything if that happens though.
-
--Ian
-
-
+	Ingo
