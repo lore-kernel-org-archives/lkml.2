@@ -1,48 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933832Ab0JSK1i (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Oct 2010 06:27:38 -0400
-Received: from a.ns.miles-group.at ([95.130.255.143]:35677 "EHLO radon.swed.at"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752172Ab0JSK1g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Oct 2010 06:27:36 -0400
-/m: 
+	id S933949Ab0JSK2a (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Oct 2010 06:28:30 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:46673 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933798Ab0JSK23 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Oct 2010 06:28:29 -0400
+Date: Tue, 19 Oct 2010 13:28:09 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: Felipe Contreras <felipe.contreras@gmail.com>
+Cc: "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        linux-omap <linux-omap@vger.kernel.org>,
+        linux-main <linux-kernel@vger.kernel.org>, Greg KH <greg@kroah.com>,
+        "Balbi, Felipe" <balbi@ti.com>, Tony Lindgren <tony@atomide.com>
+Subject: Re: [PATCH v2 1/3] usb: fix Kconfig warning
+Message-ID: <20101019102808.GH31170@legolas.emea.dhcp.ti.com>
+Reply-To: balbi@ti.com
+References: <1287482608-11320-1-git-send-email-felipe.contreras@gmail.com>
+ <1287482608-11320-2-git-send-email-felipe.contreras@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8
-Content-Transfer-Encoding: 7bit
-Date: Tue, 19 Oct 2010 12:27:26 +0200
-From: Richard Weinberger <richard@nod.at>
-To: Christoph Hellwig <hch@lst.de>
-Cc: Andrew Morton <akpm@linux-foundation.org>, <linux-kernel@vger.kernel.org>,
-        <jdike@addtoit.com>, <user-mode-linux-devel@lists.sourceforge.net>,
-        <viro@zeniv.linux.org.uk>, <toralf.foerster@gmx.de>,
-        Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [PATCH 1/1] hostfs: fix UML crash
-In-Reply-To: <20101019011125.GA3905@lst.de>
-References: <1287419814-20086-1-git-send-email-richard@nod.at>
- <20101018114039.503233da.akpm@linux-foundation.org>
- <201010182053.58496.richard@nod.at>
- <20101018130208.7b552527.akpm@linux-foundation.org>
- <20101019011125.GA3905@lst.de>
-Message-ID: <0ec4162fd4bfc651204532a22ac87a79@radon2.swed.at>
-User-Agent: RoundCube Webmail
+Content-Type: text/plain; charset=us-ascii; format=flowed
+Content-Disposition: inline
+In-Reply-To: <1287482608-11320-2-git-send-email-felipe.contreras@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 19 Oct 2010 03:11:25 +0200, Christoph Hellwig <hch@lst.de>
-wrote:
-> On Mon, Oct 18, 2010 at 01:02:08PM -0700, Andrew Morton wrote:
->> > >
->> > > Is there any reason for hostfs to be playing with the f_spare field at all?
-> 
-> No, there is no reason at all.  do_statfs is only called by
-> hostfs_statfs, which is the hostfs implementation of ->statfs.  zeroing
-> of the spare fields is done by common code (vfs_statfs_native).
+On Tue, Oct 19, 2010 at 05:03:26AM -0500, Felipe Contreras wrote:
+>warning: (USB_MUSB_HDRC_HCD && USB_SUPPORT && USB_MUSB_HDRC &&
+>(USB_MUSB_HOST || USB_MUSB_OTG) && USB_GADGET_MUSB_HDRC || USB_MUSB_OTG
+>&& <choice> && USB && USB_GADGET && PM && EXPERIMENTAL) selects USB_OTG
+>which has unmet direct dependencies (USB_GADGET_OMAP && ARCH_OMAP_OTG &&
+>USB_OHCI_HCD)
+>
+>This doesn't seem to happen on 2.6.36-rc8, but still doesn't make sense
+>to keep this duplicated config that is already defined in usb/core.
+>
+>Signed-off-by: Felipe Contreras <felipe.contreras@gmail.com>
 
-Thanks!
+Since this is related to MUSB, Greg to do you want me to queue for -rc0
+cycle and re-send for you ?
 
-> Can you submit a patch to just remove the spare_out argument to do_statfs?
-
-Sure.
+-- 
+balbi
