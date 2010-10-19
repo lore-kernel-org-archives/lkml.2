@@ -1,69 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932385Ab0JSDAD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Oct 2010 23:00:03 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:45466 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755487Ab0JSDAA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Oct 2010 23:00:00 -0400
-Message-ID: <4CBD099D.2060500@zytor.com>
-Date: Mon, 18 Oct 2010 19:59:41 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc13 Thunderbird/3.1.4
-MIME-Version: 1.0
-To: Dave Young <hidave.darkstar@gmail.com>
-CC: Avi Kivity <avi@redhat.com>, Ingo Molnar <mingo@elte.hu>,
-        Jan Kiszka <jan.kiszka@web.de>, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [BUG] kvm: guest can not startup due to triple fault
-References: <AANLkTin6qJYEqOc_97EVWkK1Kt1zNSvXtfVeYuk9fyJ8@mail.gmail.com>	<4CBAE8E2.1060704@redhat.com>	<AANLkTi=5yGPmZxZY7T_oeyJ4xS+RWt7cY4WD=78fbo7v@mail.gmail.com>	<4CBBF3C8.9070104@web.de>	<4CBC1047.6010501@redhat.com>	<20101018125803.GA2497@darkstar>	<4CBC4B06.3030300@redhat.com>	<20101018134508.GA11885@darkstar>	<4CBC4FA9.90406@redhat.com>	<4CBC5097.1020105@redhat.com>	<20101018135813.GA20316@darkstar>	<4CBC547A.8080700@redhat.com>	<4CBC964B.6000605@zytor.com> <AANLkTimLKjo+5BRFpOOb72qLrUnxfLXJQ6cwPwNsHHeB@mail.gmail.com>
-In-Reply-To: <AANLkTimLKjo+5BRFpOOb72qLrUnxfLXJQ6cwPwNsHHeB@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
+	id S932820Ab0JSDFU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Oct 2010 23:05:20 -0400
+Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:57140 "EHLO
+	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932230Ab0JSDFS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Oct 2010 23:05:18 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Tue, 19 Oct 2010 11:59:52 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: "Figo.zhang" <zhangtianfei@leadcoretech.com>
+Cc: lKOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "rientjes@google.com" <rientjes@google.com>,
+        figo1802 <figo1802@gmail.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Subject: Re: oom_killer crash linux system
+Message-Id: <20101019115952.d922763b.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <1287454058.2078.12.camel@myhost>
+References: <20101018021126.GB8654@localhost>
+	<1287389631.1997.9.camel@myhost>
+	<20101018180919.3AF8.A69D9226@jp.fujitsu.com>
+	<1287454058.2078.12.camel@myhost>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/18/2010 06:19 PM, Dave Young wrote:
-> On Tue, Oct 19, 2010 at 2:47 AM, H. Peter Anvin <hpa@zytor.com> wrote:
->> On 10/18/2010 07:06 AM, Avi Kivity wrote:
->>>   On 10/18/2010 03:58 PM, Dave Young wrote:
->>>>>
->>>>>  Please patch hardware_setup() to show the value of
->>>>>  boot_cpu_has(X86_FEATURE_NX).
->>>>
->>>> It's 0
->>>
->>> Well, that's ridiculous.  Looking back at your /proc/cpuinfo:
->>>
->>>> processor    : 0
->>>> flags                : fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush dts acpi mmx fxsr sse sse2 ss ht tm pbe syscall lm constant_tsc arch_perfmon pebs bts rep_good aperfmperf pni dtes64 monitor ds_cpl vmx est tm2 ssse3 cx16 xtpr pdcm lahf_lm ida dts tpr_shadow vnmi flexpriority
->>>>
->>>> processor    : 1
->>>> flags                : fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush dts acpi mmx fxsr sse sse2 ss ht tm pbe syscall nx lm constant_tsc arch_perfmon pebs bts rep_good aperfmperf pni dtes64 monitor ds_cpl vmx est tm2 ssse3 cx16 xtpr pdcm lahf_lm ida dts tpr_shadow vnmi flexpriority
->>>
->>> processor 0 doesn't have nx.
->>>
->>> Ingo, Peter, any ideas?  Where did the missing feature go?
->>>
->>
->> I don't see the original report -- in particular I can't see the kernel
->> version -- but I suspect this *might* be an instance of the same bug
->> fixed in mainline by checkin d900329e20f4476db6461752accebcf7935a8055
->> (for backporting 1dedefd1a066a795a87afca9c0236e1a94de9bf6 is also
->> needed; these both should be in -stable or on the way there.)
+On Tue, 19 Oct 2010 10:07:38 +0800
+"Figo.zhang" <zhangtianfei@leadcoretech.com> wrote:
+
 > 
-> The kernel is git version after 2.6.36-rc8, so I think the commits
-> don't fix this problem.
+> > 
+> > very lots of change ;)
+> > can you please send us your crash log?
+> 
+> i add some prink in select_bad_process() and oom_badness() to see
+> pid/totalpages/points/memoryuseage/and finally process to selet to kill.
+> 
+> i found it the oom-killer select: syslog-ng,mysqld,nautilus,VirtualBox
+> to kill, so my question is:
+> 
+> 1. the syslog-ng,mysqld,nautilus is the system foundamental process, so
+> if oom-killer kill those process, the system will be damaged, such as
+> lose some important data.
+> 
+> 2. the new oom-killer just use percentage of used memory as score to
+> select the candidate to kill, but how to know this process to very
+> important for system?
+> 
 
-OK.  Please install msr-tools on your system, and give us the outputs of:
+The kernel can never know it. Just an admin (a man or management software) knows.
+Old kernel tries to guess it, but it tend to be wrong and many many report comes
+"why my ....is killed..." All guesswork the kernel does is not enough, I think.
 
-rdmsr -p 0 -xc 0x1a0
-rdmsr -p 1 -xc 0x1a0
+> oom_score_adj, it is anyone commercial linux distributions to use this
+> to protect the critical process.
+> 
+oom_adj may be used in some system. All my customers select panic_at_oom=1
+and cause cluster fail over rather than half-broken.
 
-	-hpa
+<Off topic>
+Your another choice is memory cgroup, I think.
+please see documentation/cgroup/memory.txt or libcgroup.
+http://sourceforge.net/projects/libcg/
+You can use some fancy controls with it.
+</Off topic>
 
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
+
+BTW, there seems to be some strange things.
+(CC'ed to linux-mm)
+Brief Summary:
+   an oom-killer happens on swapless environment with 2.6.36-rc8.
+   It has 2G memory.
+a reporter says
+==
+> i want to test the oom-killer. My desktop (Dell optiplex 780, i686
+> kernel)have 2GB ram, i turn off the swap partition, and open a huge pdf
+> files and applications, and let the system eat huge ram.
+> 
+> in 2.6.35, i can use ram up to 1.75GB,
+> 
+> but in 2.6.36-rc8, i just use to 1.53GB ram , the system come very slow
+> and crashed after some minutes , the DiskIO is very busy. i see the
+> DiskIO read is up to 8MB/s, write just only 400KB/s, (see by conky).
+==
+
+The trigger of oom-kill is order=0 allocation. (see original mail for full log)
+
+
+Oct 19 09:44:08 myhost kernel: [  618.441470] httpd invoked oom-killer:
+gfp_mask=0x201da, order=0, oom_adj=0, oom_score_adj=0
+
+Zone's stat is.
+
+Oct 19 09:44:08 myhost kernel: [  618.441551]
+DMA free:7968kB min:64kB low:80kB high:96kB active_anon:3700kB inactive_anon:3752kB
+    active_file:12kB inactive_file:252kB unevictable:0kB isolated(anon):0kB
+    isolated(file):0kB present:15788kB mlocked:0kB dirty:0kB writeback:4kB
+    mapped:52kB shmem:348kB slab_reclaimable:0kB slab_unreclaimable:16kB
+    kernel_stack:0kB pagetables:0kB unstable:0kB bounce:0kB
+    writeback_tmp:0kB pages_scanned:421 all_unreclaimable? yes
+    lowmem_reserve[]: 0 865 1980 1980
+
+Oct 19 09:44:08 myhost kernel: [  618.441560]
+Normal free:39348kB min:3728kB low:4660kB high:5592kB active_anon:176740kB
+       inactive_anon:25640kB active_file:84kB inactive_file:308kB
+       unevictable:0kB isolated(anon):0kB isolated(file):0kB present:885944kB
+       mlocked:0kB dirty:0kB writeback:4kB mapped:576992kB shmem:5024kB
+       slab_reclaimable:7612kB slab_unreclaimable:15512kB kernel_stack:2792kB
+       pagetables:6884kB unstable:0kB bounce:0kB writeback_tmp:0kB
+       pages_scanned:741 all_unreclaimable? yes
+       lowmem_reserve[]: 0 0 8921 8921
+
+Oct 19 09:44:08 myhost kernel: [  618.441569]
+HighMem free:392kB min:512kB low:1712kB high:2912kB active_anon:492208kB
+        inactive_anon:166404kB active_file:180kB inactive_file:840kB
+        unevictable:40kB isolated(anon):0kB isolated(file):0kB present:1141984kB
+        mlocked:40kB dirty:0kB writeback:12kB mapped:493648kB shmem:72216kB
+        slab_reclaimable:0kB slab_unreclaimable:0kB kernel_stack:0kB
+        pagetables:0kB unstable:0kB bounce:0kB writeback_tmp:0kB
+        pages_scanned:1552 all_unreclaimable? yes
+
+Highmem seems a bit strange.
+  present(1141984) - active_anon - inactive_anon - inactive_file - active_file
+  = 482352kB but free is 392kB.
+
+  Highmem is used for some other purpose than usual user's page.(pagetable is 0.)
+  And, Hmm, mapped:493648kB seems too large for me. 
+  (active/inactive-file + shmem is not enough.)
+  And "mapped" in NORMAL zone is large, too.
+
+  Does anyone have idea about file-mapped-but-not-on-LRU pages ?
+
+Thanks,
+-Kame
+  
+
+
+
+
 
