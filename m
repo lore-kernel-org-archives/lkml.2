@@ -1,108 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754700Ab0JSWOs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Oct 2010 18:14:48 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:60051 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753231Ab0JSWOr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Oct 2010 18:14:47 -0400
-X-Authority-Analysis: v=1.1 cv=kXGwZUU/u1JTMRv8Axk4W0omja+vfTT+sGlOkodD8F8= c=1 sm=0 a=wGm5nfgfXM4A:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=mDV3o1hIAAAA:8 a=VwQbUJbxAAAA:8 a=8ccHUl6JdowTl4fXnn4A:9 a=7pPDcldb2C8H-0SubIoA:7 a=iysXg2OmJcA2mfS16mYoFv_0XjAA:4 a=PUjeQqilurYA:10 a=U62fhAwekXMA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: [PATCH] tracing: Cleanup the convoluted softirq tracepoints
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Koki Sanagi <sanagi.koki@jp.fujitsu.com>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Frederic Weisbecker <fweisbec@gmail.com>, nhorman@tuxdriver.com,
-        scott.a.mcmillan@intel.com, laijs@cn.fujitsu.com,
-        "H. Peter Anvin" <hpa@zytor.com>, LKML <linux-kernel@vger.kernel.org>,
-        eric.dumazet@gmail.com, kaneshige.kenji@jp.fujitsu.com,
-        David Miller <davem@davemloft.net>, izumi.taku@jp.fujitsu.com,
-        kosaki.motohiro@jp.fujitsu.com,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        "Luck, Tony" <tony.luck@intel.com>
-In-Reply-To: <alpine.LFD.2.00.1010192307560.6815@localhost6.localdomain6>
-References: <tip-2bf2160d8805de64308e2e7c3cd97813cb58ed2f@git.kernel.org>
-	 <20100908112529.GA25931@elte.hu> <1287395077.29097.1543.camel@twins>
-	 <1287398936.29097.1548.camel@twins> <4CBD79CF.2060706@jp.fujitsu.com>
-	 <alpine.LFD.2.00.1010191428560.6815@localhost6.localdomain6>
-	 <20101019132236.GA19197@Krystal>
-	 <alpine.LFD.2.00.1010191524160.6815@localhost6.localdomain6>
-	 <1287496495.16971.372.camel@gandalf.stny.rr.com>
-	 <alpine.LFD.2.00.1010191558250.6815@localhost6.localdomain6>
-	 <20101019142820.GA14520@Krystal>
-	 <alpine.LFD.2.00.1010191842270.6815@localhost6.localdomain6>
-	 <1287521757.16971.397.camel@gandalf.stny.rr.com>
-	 <alpine.LFD.2.00.1010192307560.6815@localhost6.localdomain6>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Tue, 19 Oct 2010 18:14:44 -0400
-Message-ID: <1287526484.16971.511.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1754984Ab0JSWRx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Oct 2010 18:17:53 -0400
+Received: from hera.kernel.org ([140.211.167.34]:35654 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754085Ab0JSWRv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Oct 2010 18:17:51 -0400
+Date: Tue, 19 Oct 2010 22:17:37 GMT
+From: tip-bot for Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        ian.cambell@eu.citrix.com, jbeulich@novell.com, tglx@linutronix.de,
+        hpa@linux.intel.com, jeremy.fitzhardinge@citrix.com
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        ian.cambell@eu.citrix.com, jbeulich@novell.com, tglx@linutronix.de,
+        hpa@linux.intel.com, jeremy.fitzhardinge@citrix.com
+In-Reply-To: <4CB88A4C.1080305@goop.org>
+References: <4CB88A4C.1080305@goop.org>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/mm] x86, mm: Hold mm->page_table_lock while doing vmalloc_sync
+Message-ID: <tip-617d34d9e5d8326ec8f188c616aa06ac59d083fe@git.kernel.org>
+Git-Commit-ID: 617d34d9e5d8326ec8f188c616aa06ac59d083fe
+X-Mailer: tip-git-log-daemon
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 19 Oct 2010 22:17:38 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-10-19 at 23:45 +0200, Thomas Gleixner wrote:
-> On Tue, 19 Oct 2010, Steven Rostedt wrote:
-> > On Tue, 2010-10-19 at 21:49 +0200, Thomas Gleixner wrote:
-> > 
-> > Because you do the h - softvec in the tracepoint parameter? I got a
-> > different result:
-> 
-> I guess some serious whacking is due.
-> 
-> The compiler adds two jumps when the parameter changes due to
->  (h -softvec) instead of (h, softvec) ????
-> 
-> Dude, you can't be serious.
-> 
-> If you would have asked about the compiler version I'm using and told
-> me about the compiler version you are using, then I could take that
-> answer somehow serious.
+Commit-ID:  617d34d9e5d8326ec8f188c616aa06ac59d083fe
+Gitweb:     http://git.kernel.org/tip/617d34d9e5d8326ec8f188c616aa06ac59d083fe
+Author:     Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+AuthorDate: Tue, 21 Sep 2010 12:01:51 -0700
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Tue, 19 Oct 2010 13:57:08 -0700
 
-Heh, gcc has always been of a black magic for what it decided. But,
-anyway, I'm using a self built version (vanilla from gcc.gnu.org) of
-4.5.1. What are you using?
+x86, mm: Hold mm->page_table_lock while doing vmalloc_sync
 
-> 
-> It still would miss the "Uhhhh, your compiler creates crap code"
-> alert, because that double jump is seriously broken and braindead.
-> 
-> And I tell you more about this. You are going to piss off a lot of
-> users of distro compilers because they will set CC_HAVE_ASM_GOTO
-> happily and create the code I posted. Which will break the tracer no
-> matter what.
-> 
-> So you tracer maniacs happily played with some experimental compiler
-> stuff w/o even testing your crap against something which ships with
-> distros or is the reference 4.5 compiler on kernel.org ?
-> 
-> I prefer you sending a patch to disable this, until it's sorted out,
-> unless you want me to add some really outrageous changelog to the
-> patch I'm going to put into tip tomorrow night, ok ?
+Take mm->page_table_lock while syncing the vmalloc region.  This prevents
+a race with the Xen pagetable pin/unpin code, which expects that the
+page_table_lock is already held.  If this race occurs, then Xen can see
+an inconsistent page type (a page can either be read/write or a pagetable
+page, and pin/unpin converts it between them), which will cause either
+the pin or the set_p[gm]d to fail; either will crash the kernel.
 
-Then lets just compare the crap versions you posted.
+vmalloc_sync_all() should be called rarely, so this extra use of
+page_table_lock should not interfere with its normal users.
 
-> -  1e:        83 3d 00 00 00 00 00    cmpl   $0x0,0x0(%rip)        # 25 <test+0x25>
-> -  25:        74 4d                   je     74 <test+0x74>
-> +  1e:        e9 00 00 00 00          jmpq   23 <test+0x23>
-> +  23:        eb 4d                   jmp    72 <test+0x72>
+The mm pointer is stashed in the pgd page's index field, as that won't
+be otherwise used for pgds.
 
-Yes, gcc replaced a cmp and conditional jump with two unconditional
-jumps. One of these jumps on boot up will be converted to a nop. Thus
-the jump label code just converted a compare and conditional jump with a
-nop and a non conditional jump.
+Reported-by: Ian Campbell <ian.cambell@eu.citrix.com>
+Originally-by: Jan Beulich <jbeulich@novell.com>
+LKML-Reference: <4CB88A4C.1080305@goop.org>
+Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+---
+ arch/x86/include/asm/pgtable.h |    2 ++
+ arch/x86/mm/fault.c            |   11 ++++++++++-
+ arch/x86/mm/init_64.c          |    7 +++++++
+ arch/x86/mm/pgtable.c          |   20 +++++++++++++++++---
+ 4 files changed, 36 insertions(+), 4 deletions(-)
 
-This still sounds like a win to me, although we can do better. I guess
-those poor sobs using a distro kernel compiled with a distro gcc that
-has CC_HAVE_ASM_GOTO enabled will still be doing better than if it was
-doing the if (enable) code.
-
--- Steve
-
-
+diff --git a/arch/x86/include/asm/pgtable.h b/arch/x86/include/asm/pgtable.h
+index 2d0a33b..ada823a 100644
+--- a/arch/x86/include/asm/pgtable.h
++++ b/arch/x86/include/asm/pgtable.h
+@@ -28,6 +28,8 @@ extern unsigned long empty_zero_page[PAGE_SIZE / sizeof(unsigned long)];
+ extern spinlock_t pgd_lock;
+ extern struct list_head pgd_list;
+ 
++extern struct mm_struct *pgd_page_get_mm(struct page *page);
++
+ #ifdef CONFIG_PARAVIRT
+ #include <asm/paravirt.h>
+ #else  /* !CONFIG_PARAVIRT */
+diff --git a/arch/x86/mm/fault.c b/arch/x86/mm/fault.c
+index caec229..6c27c39 100644
+--- a/arch/x86/mm/fault.c
++++ b/arch/x86/mm/fault.c
+@@ -229,7 +229,16 @@ void vmalloc_sync_all(void)
+ 
+ 		spin_lock_irqsave(&pgd_lock, flags);
+ 		list_for_each_entry(page, &pgd_list, lru) {
+-			if (!vmalloc_sync_one(page_address(page), address))
++			spinlock_t *pgt_lock;
++			int ret;
++
++			pgt_lock = &pgd_page_get_mm(page)->page_table_lock;
++
++			spin_lock(pgt_lock);
++			ret = vmalloc_sync_one(page_address(page), address);
++			spin_unlock(pgt_lock);
++
++			if (!ret)
+ 				break;
+ 		}
+ 		spin_unlock_irqrestore(&pgd_lock, flags);
+diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
+index 1ad7c0f..4d323fb 100644
+--- a/arch/x86/mm/init_64.c
++++ b/arch/x86/mm/init_64.c
+@@ -116,12 +116,19 @@ void sync_global_pgds(unsigned long start, unsigned long end)
+ 		spin_lock_irqsave(&pgd_lock, flags);
+ 		list_for_each_entry(page, &pgd_list, lru) {
+ 			pgd_t *pgd;
++			spinlock_t *pgt_lock;
++
+ 			pgd = (pgd_t *)page_address(page) + pgd_index(address);
++			pgt_lock = &pgd_page_get_mm(page)->page_table_lock;
++			spin_lock(pgt_lock);
++
+ 			if (pgd_none(*pgd))
+ 				set_pgd(pgd, *pgd_ref);
+ 			else
+ 				BUG_ON(pgd_page_vaddr(*pgd)
+ 				       != pgd_page_vaddr(*pgd_ref));
++
++			spin_unlock(pgt_lock);
+ 		}
+ 		spin_unlock_irqrestore(&pgd_lock, flags);
+ 	}
+diff --git a/arch/x86/mm/pgtable.c b/arch/x86/mm/pgtable.c
+index 5c4ee42..c70e57d 100644
+--- a/arch/x86/mm/pgtable.c
++++ b/arch/x86/mm/pgtable.c
+@@ -87,7 +87,19 @@ static inline void pgd_list_del(pgd_t *pgd)
+ #define UNSHARED_PTRS_PER_PGD				\
+ 	(SHARED_KERNEL_PMD ? KERNEL_PGD_BOUNDARY : PTRS_PER_PGD)
+ 
+-static void pgd_ctor(pgd_t *pgd)
++
++static void pgd_set_mm(pgd_t *pgd, struct mm_struct *mm)
++{
++	BUILD_BUG_ON(sizeof(virt_to_page(pgd)->index) < sizeof(mm));
++	virt_to_page(pgd)->index = (pgoff_t)mm;
++}
++
++struct mm_struct *pgd_page_get_mm(struct page *page)
++{
++	return (struct mm_struct *)page->index;
++}
++
++static void pgd_ctor(struct mm_struct *mm, pgd_t *pgd)
+ {
+ 	/* If the pgd points to a shared pagetable level (either the
+ 	   ptes in non-PAE, or shared PMD in PAE), then just copy the
+@@ -105,8 +117,10 @@ static void pgd_ctor(pgd_t *pgd)
+ 	}
+ 
+ 	/* list required to sync kernel mapping updates */
+-	if (!SHARED_KERNEL_PMD)
++	if (!SHARED_KERNEL_PMD) {
++		pgd_set_mm(pgd, mm);
+ 		pgd_list_add(pgd);
++	}
+ }
+ 
+ static void pgd_dtor(pgd_t *pgd)
+@@ -272,7 +286,7 @@ pgd_t *pgd_alloc(struct mm_struct *mm)
+ 	 */
+ 	spin_lock_irqsave(&pgd_lock, flags);
+ 
+-	pgd_ctor(pgd);
++	pgd_ctor(mm, pgd);
+ 	pgd_prepopulate_pmd(mm, pgd, pmds);
+ 
+ 	spin_unlock_irqrestore(&pgd_lock, flags);
