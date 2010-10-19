@@ -1,64 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758573Ab0JSNCb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Oct 2010 09:02:31 -0400
-Received: from mga09.intel.com ([134.134.136.24]:48547 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757822Ab0JSNCa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Oct 2010 09:02:30 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.57,350,1283756400"; 
-   d="scan'208";a="668786190"
-Date: Tue, 19 Oct 2010 15:02:27 +0200
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        Harald Welte <laforge@openezx.org>, Daniel Ribeiro <drwyrm@gmail.com>
-Subject: Re: [PATCH] mfd: Fix ezx_pcap_probe error path
-Message-ID: <20101019130226.GP2736@sortiz-mobl>
-References: <1287491304.2457.3.camel@phoenix>
+	id S1758591Ab0JSNHI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Oct 2010 09:07:08 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:58092 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758312Ab0JSNHH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Oct 2010 09:07:07 -0400
+Date: Tue, 19 Oct 2010 15:07:05 +0200
+From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: Samuel Ortiz <sameo@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org, Ian Molton <ian@mnementh.co.uk>,
+        Magnus Damm <damm@opensource.se>
+Subject: Re: [PATCH] mfd/tc6393xb: don't use devinit data from non-init
+	function
+Message-ID: <20101019130705.GF11713@pengutronix.de>
+References: <1267546953-19319-1-git-send-email-u.kleine-koenig@pengutronix.de> <20101019071951.GB23839@pengutronix.de> <20101019103130.GK2736@sortiz-mobl>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <1287491304.2457.3.camel@phoenix>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20101019103130.GK2736@sortiz-mobl>
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Axel,
-
-On Tue, Oct 19, 2010 at 08:28:24PM +0800, Axel Lin wrote:
-> return -ENOMEM if create_singlethread_workqueue failed.
-Thanks for the patch, applied to my for-next branch.
-
-Cheers,
-Samuel.
-
-
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
-> ---
->  drivers/mfd/ezx-pcap.c |    1 +
->  1 files changed, 1 insertions(+), 0 deletions(-)
+On Tue, Oct 19, 2010 at 12:31:31PM +0200, Samuel Ortiz wrote:
+> Hi Uwe,
 > 
-> diff --git a/drivers/mfd/ezx-pcap.c b/drivers/mfd/ezx-pcap.c
-> index d283d77..c2b698d 100644
-> --- a/drivers/mfd/ezx-pcap.c
-> +++ b/drivers/mfd/ezx-pcap.c
-> @@ -465,6 +465,7 @@ static int __devinit ezx_pcap_probe(struct spi_device *spi)
->  	pcap->irq_base = pdata->irq_base;
->  	pcap->workqueue = create_singlethread_workqueue("pcapd");
->  	if (!pcap->workqueue) {
-> +		ret = -ENOMEM;
->  		dev_err(&spi->dev, "cant create pcap thread\n");
->  		goto free_pcap;
->  	}
-> -- 
-> 1.7.0.4
-> 
-> 
-> 
+> On Tue, Oct 19, 2010 at 09:19:51AM +0200, Uwe Kleine-König wrote:
+> > Hello,
+> > 
+> > On Tue, Mar 02, 2010 at 05:22:33PM +0100, Uwe Kleine-König wrote:
+> > > tc6393xb_mmc_resources (which was marked __devinitdata) is used in
+> > > tc6393xb_mmc_enable() and tc6393xb_mmc_resume() which both are functions
+> > > living in .text.  This is not save with CONFIG_HOTPLUG=n.
+> > > 
+> > > This was introduced in
+> > > 
+> > > 	64e8867 (mfd: tmio_mmc hardware abstraction for CNF area)
+> > > 
+> > > Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
+> > > Cc: Ian Molton <ian@mnementh.co.uk>
+> > > Cc: Magnus Damm <damm@opensource.se>
+> > > Cc: Samuel Ortiz <sameo@linux.intel.com>
+> > ping
+> This one slipped through...
+> I just applied a similar patch from Marek Vasut, are you ok with that ?
+Hmm, cannot find it, neither in next nor in your tree.
+
+Best regards
+Uwe
 
 -- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+Pengutronix e.K.                           | Uwe Kleine-König            |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
