@@ -1,92 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933595Ab0JSI37 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Oct 2010 04:29:59 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:40552 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932393Ab0JSI36 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Oct 2010 04:29:58 -0400
-Date: Tue, 19 Oct 2010 11:29:41 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: Felipe Contreras <felipe.contreras@gmail.com>
-Cc: "Balbi, Felipe" <balbi@ti.com>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        linux-main <linux-kernel@vger.kernel.org>, Greg KH <greg@kroah.com>
-Subject: Re: [PATCH 2/3] usb: trivial Kconfig cleanups
-Message-ID: <20101019082941.GA31170@legolas.emea.dhcp.ti.com>
-Reply-To: balbi@ti.com
-References: <1287475466-8927-1-git-send-email-felipe.contreras@gmail.com>
- <1287475466-8927-3-git-send-email-felipe.contreras@gmail.com>
- <20101019081509.GH12470@legolas.emea.dhcp.ti.com>
- <AANLkTi=XxqfpEnWFZ2h-xqEPc62rfgomhhrvE1Z_ME_d@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1; format=flowed
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTi=XxqfpEnWFZ2h-xqEPc62rfgomhhrvE1Z_ME_d@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1755871Ab0JSIdK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Oct 2010 04:33:10 -0400
+Received: from TYO201.gate.nec.co.jp ([202.32.8.193]:53834 "EHLO
+	tyo201.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752166Ab0JSIdI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Oct 2010 04:33:08 -0400
+Date: Tue, 19 Oct 2010 17:27:44 +0900
+From: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+To: Greg Thelen <gthelen@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, containers@lists.osdl.org,
+        Andrea Righi <arighi@develer.com>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Ciju Rajan K <ciju@linux.vnet.ibm.com>,
+        David Rientjes <rientjes@google.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+Subject: Re: [PATCH v3 02/11] memcg: document cgroup dirty memory interfaces
+Message-Id: <20101019172744.45e0a8dc.nishimura@mxp.nes.nec.co.jp>
+In-Reply-To: <1287448784-25684-3-git-send-email-gthelen@google.com>
+References: <1287448784-25684-1-git-send-email-gthelen@google.com>
+	<1287448784-25684-3-git-send-email-gthelen@google.com>
+Organization: NEC Soft, Ltd.
+X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 19, 2010 at 03:25:27AM -0500, Felipe Contreras wrote:
->On Tue, Oct 19, 2010 at 11:15 AM, Felipe Balbi <balbi@ti.com> wrote:
->> On Tue, Oct 19, 2010 at 03:04:25AM -0500, Felipe Contreras wrote:
->>>
->>> @@ -125,14 +125,6 @@ config USB_MUSB_OTG
->>>
->>> endchoice
->>>
->>> -# enable peripheral support (including with OTG)
->>> -config USB_GADGET_MUSB_HDRC
->>> -       bool
->>> -       depends on USB_MUSB_HDRC && (USB_MUSB_PERIPHERAL || USB_MUSB_OTG)
->>> -#      default y
->>> -#      select USB_GADGET_DUALSPEED
->>> -#      select USB_GADGET_SELECTED
->>> -
->>
->> $ git grep -e CONFIG_USB_GADGET_MUSB_HDRC drivers/usb/
->> drivers/usb/gadget/gadget_chips.h:#ifdef CONFIG_USB_GADGET_MUSB_HDRC
->> drivers/usb/musb/Makefile:ifeq ($(CONFIG_USB_GADGET_MUSB_HDRC),y)
->> drivers/usb/musb/am35x.c:#ifdef CONFIG_USB_GADGET_MUSB_HDRC
->> drivers/usb/musb/da8xx.c:#ifdef CONFIG_USB_GADGET_MUSB_HDRC
->> drivers/usb/musb/musb_core.c:#ifdef CONFIG_USB_GADGET_MUSB_HDRC
->> drivers/usb/musb/musb_core.c:#ifdef CONFIG_USB_GADGET_MUSB_HDRC
->> drivers/usb/musb/musb_core.c:#ifdef CONFIG_USB_GADGET_MUSB_HDRC
->> drivers/usb/musb/musb_core.c:#ifdef CONFIG_USB_GADGET_MUSB_HDRC
->> drivers/usb/musb/musb_core.c:#endif /* CONFIG_USB_GADGET_MUSB_HDRC */
->> drivers/usb/musb/musb_core.c:#ifdef CONFIG_USB_GADGET_MUSB_HDRC
->> drivers/usb/musb/musb_core.c:#ifdef CONFIG_USB_GADGET_MUSB_HDRC
->> drivers/usb/musb/musb_core.c:#ifdef CONFIG_USB_GADGET_MUSB_HDRC
->> drivers/usb/musb/musb_core.c:#elif defined(CONFIG_USB_GADGET_MUSB_HDRC)
->> drivers/usb/musb/musb_core.h:#ifndef CONFIG_USB_GADGET_MUSB_HDRC
->> drivers/usb/musb/musb_core.h:#error bogus Kconfig output ... select
->> CONFIG_USB_GADGET_MUSB_HDRC
->> drivers/usb/musb/musb_core.h:#ifdef CONFIG_USB_GADGET_MUSB_HDRC
->> drivers/usb/musb/musb_core.h:#ifdef CONFIG_USB_GADGET_MUSB_HDRC
->> drivers/usb/musb/musb_core.h:#ifdef CONFIG_USB_GADGET_MUSB_HDRC
->> drivers/usb/musb/musb_core.h:#ifdef CONFIG_USB_GADGET_MUSB_HDRC
->> drivers/usb/musb/musb_core.h:#ifdef CONFIG_USB_GADGET_MUSB_HDRC
->> drivers/usb/musb/musb_core.h:#ifdef CONFIG_USB_GADGET_MUSB_HDRC
->> drivers/usb/musb/tusb6010.c:#ifdef CONFIG_USB_GADGET_MUSB_HDRC
->> drivers/usb/musb/tusb6010.c:#ifdef CONFIG_USB_GADGET_MUSB_HDRC
->> drivers/usb/musb/tusb6010.c:#ifdef CONFIG_USB_GADGET_MUSB_HDRC
->
->So?
->
->% git grep USB_GADGET_MUSB_HDRC -- '*/Kconfig'
->drivers/usb/gadget/Kconfig:config USB_GADGET_MUSB_HDRC
->drivers/usb/musb/Kconfig:# use USB_GADGET_MUSB_HDRC not
->USB_MUSB_PERIPHERAL to #ifdef peripheral
->drivers/usb/musb/Kconfig:       select USB_GADGET_MUSB_HDRC
->drivers/usb/musb/Kconfig:       select USB_GADGET_MUSB_HDRC
->drivers/usb/musb/Kconfig:config USB_GADGET_MUSB_HDRC
->drivers/usb/musb/Kconfig:       select USB_OTG if USB_GADGET_MUSB_HDRC
->
->(it's defined twice)
+On Mon, 18 Oct 2010 17:39:35 -0700
+Greg Thelen <gthelen@google.com> wrote:
 
-you're right, had missed that. This is ok too.
+> Document cgroup dirty memory interfaces and statistics.
+> 
+> Signed-off-by: Andrea Righi <arighi@develer.com>
+> Signed-off-by: Greg Thelen <gthelen@google.com>
+> ---
+> 
+> Changelog since v1:
+> - Renamed "nfs"/"total_nfs" to "nfs_unstable"/"total_nfs_unstable" in per cgroup
+>   memory.stat to match /proc/meminfo.
+> 
+> - Allow [kKmMgG] suffixes for newly created dirty limit value cgroupfs files.
+> 
+> - Describe a situation where a cgroup can exceed its dirty limit.
+> 
+>  Documentation/cgroups/memory.txt |   60 ++++++++++++++++++++++++++++++++++++++
+>  1 files changed, 60 insertions(+), 0 deletions(-)
+> 
+> diff --git a/Documentation/cgroups/memory.txt b/Documentation/cgroups/memory.txt
+> index 7781857..02bbd6f 100644
+> --- a/Documentation/cgroups/memory.txt
+> +++ b/Documentation/cgroups/memory.txt
+> @@ -385,6 +385,10 @@ mapped_file	- # of bytes of mapped file (includes tmpfs/shmem)
+>  pgpgin		- # of pages paged in (equivalent to # of charging events).
+>  pgpgout		- # of pages paged out (equivalent to # of uncharging events).
+>  swap		- # of bytes of swap usage
+> +dirty		- # of bytes that are waiting to get written back to the disk.
+> +writeback	- # of bytes that are actively being written back to the disk.
+> +nfs_unstable	- # of bytes sent to the NFS server, but not yet committed to
+> +		the actual storage.
+>  inactive_anon	- # of bytes of anonymous memory and swap cache memory on
+>  		LRU list.
+>  active_anon	- # of bytes of anonymous and swap cache memory on active
 
--- 
-balbi
+Shouldn't we add description of "total_diryt/writeback/nfs_unstable" too ?
+Seeing [5/11], it will be showed in memory.stat.
+
+> @@ -453,6 +457,62 @@ memory under it will be reclaimed.
+>  You can reset failcnt by writing 0 to failcnt file.
+>  # echo 0 > .../memory.failcnt
+>  
+> +5.5 dirty memory
+> +
+> +Control the maximum amount of dirty pages a cgroup can have at any given time.
+> +
+> +Limiting dirty memory is like fixing the max amount of dirty (hard to reclaim)
+> +page cache used by a cgroup.  So, in case of multiple cgroup writers, they will
+> +not be able to consume more than their designated share of dirty pages and will
+> +be forced to perform write-out if they cross that limit.
+> +
+> +The interface is equivalent to the procfs interface: /proc/sys/vm/dirty_*.  It
+> +is possible to configure a limit to trigger both a direct writeback or a
+> +background writeback performed by per-bdi flusher threads.  The root cgroup
+> +memory.dirty_* control files are read-only and match the contents of
+> +the /proc/sys/vm/dirty_* files.
+> +
+> +Per-cgroup dirty limits can be set using the following files in the cgroupfs:
+> +
+> +- memory.dirty_ratio: the amount of dirty memory (expressed as a percentage of
+> +  cgroup memory) at which a process generating dirty pages will itself start
+> +  writing out dirty data.
+> +
+> +- memory.dirty_limit_in_bytes: the amount of dirty memory (expressed in bytes)
+> +  in the cgroup at which a process generating dirty pages will start itself
+> +  writing out dirty data.  Suffix (k, K, m, M, g, or G) can be used to indicate
+> +  that value is kilo, mega or gigabytes.
+> +
+> +  Note: memory.dirty_limit_in_bytes is the counterpart of memory.dirty_ratio.
+> +  Only one of them may be specified at a time.  When one is written it is
+> +  immediately taken into account to evaluate the dirty memory limits and the
+> +  other appears as 0 when read.
+> +
+> +- memory.dirty_background_ratio: the amount of dirty memory of the cgroup
+> +  (expressed as a percentage of cgroup memory) at which background writeback
+> +  kernel threads will start writing out dirty data.
+> +
+> +- memory.dirty_background_limit_in_bytes: the amount of dirty memory (expressed
+> +  in bytes) in the cgroup at which background writeback kernel threads will
+> +  start writing out dirty data.  Suffix (k, K, m, M, g, or G) can be used to
+> +  indicate that value is kilo, mega or gigabytes.
+> +
+> +  Note: memory.dirty_background_limit_in_bytes is the counterpart of
+> +  memory.dirty_background_ratio.  Only one of them may be specified at a time.
+> +  When one is written it is immediately taken into account to evaluate the dirty
+> +  memory limits and the other appears as 0 when read.
+> +
+> +A cgroup may contain more dirty memory than its dirty limit.  This is possible
+> +because of the principle that the first cgroup to touch a page is charged for
+> +it.  Subsequent page counting events (dirty, writeback, nfs_unstable) are also
+> +counted to the originally charged cgroup.
+> +
+> +Example: If page is allocated by a cgroup A task, then the page is charged to
+> +cgroup A.  If the page is later dirtied by a task in cgroup B, then the cgroup A
+> +dirty count will be incremented.  If cgroup A is over its dirty limit but cgroup
+> +B is not, then dirtying a cgroup A page from a cgroup B task may push cgroup A
+> +over its dirty limit without throttling the dirtying cgroup B task.
+> +
+>  6. Hierarchy support
+>  
+>  The memory controller supports a deep hierarchy and hierarchical accounting.
+> -- 
+> 1.7.1
+> 
+Can you clarify whether we can limit the "total" dirty pages under hierarchy
+in use_hierarchy==1 case ?
+If we can, I think it would be better to note it in this documentation.
+
+
+Thanks,
+Daisuke Nishimura. 
