@@ -1,95 +1,204 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756877Ab0JSUQm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Oct 2010 16:16:42 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:42743 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752686Ab0JSUQl (ORCPT
-	<rfc822;<linux-kernel@vger.kernel.org>>);
-	Tue, 19 Oct 2010 16:16:41 -0400
-Date: Tue, 19 Oct 2010 16:15:18 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: stefano.stabellini@eu.citrix.com
-Cc: linux-kernel@vger.kernel.org,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
-        Qing He <qing.he@intel.com>, Yunhong Jiang <yunhong.jiang@intel.com>,
-        xen-devel@lists.xensource.com
-Subject: Re: [Xen-devel] [PATCH v4 03/10] xen: remap MSIs into pirqs when
- running as initial domain
-Message-ID: <20101019201518.GA9727@dumpdata.com>
-References: <alpine.DEB.2.00.1010191207010.2423@kaball-desktop>
- <1287487038-6643-3-git-send-email-stefano.stabellini@eu.citrix.com>
+	id S1757091Ab0JSUTC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Oct 2010 16:19:02 -0400
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:52408 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753293Ab0JSUTA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Oct 2010 16:19:00 -0400
+Date: Tue, 19 Oct 2010 16:18:41 -0400
+From: Neil Horman <nhorman@tuxdriver.com>
+To: Leandro Lucarella <luca@llucax.com.ar>
+Cc: David Miller <davem@davemloft.net>, paul.gortmaker@windriver.com,
+        jon.maloy@ericsson.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, tipc-discussion@lists.sourceforge.net
+Subject: Re: Linux 2.6.35/TIPC 2.0 ABI breaking changes
+Message-ID: <20101019201841.GC14410@hmsreliant.think-freely.org>
+References: <4CBCD429.8090306@windriver.com>
+ <20101018234547.GA5703@hmsreliant.think-freely.org>
+ <20101019021657.GZ8781@llucax.com.ar>
+ <20101019.011649.71113115.davem@davemloft.net>
+ <20101019110452.GA14410@hmsreliant.think-freely.org>
+ <20101019131936.GB8781@llucax.com.ar>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <1287487038-6643-3-git-send-email-stefano.stabellini@eu.citrix.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20101019131936.GB8781@llucax.com.ar>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-Spam-Score: -2.9 (--)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> +int xen_create_msi_irq(struct pci_dev *dev, struct msi_desc *msidesc, int type)
-> +{
-> +	int irq = -1;
-> +	struct physdev_map_pirq map_irq;
-> +	int rc;
-> +	int pos;
-> +	u32 table_offset, bir;
-> +
-> +	memset(&map_irq, 0, sizeof(map_irq));
-> +	map_irq.domid = DOMID_SELF;
-> +	map_irq.type = MAP_PIRQ_TYPE_MSI;
-> +	map_irq.index = -1;
-> +	map_irq.pirq = -1;
-> +	map_irq.bus = dev->bus->number;
-> +	map_irq.devfn = dev->devfn;
-> +
-> +	if (type == PCI_CAP_ID_MSIX) {
-> +		pos = pci_find_capability(dev, PCI_CAP_ID_MSIX);
-> +
-> +		pci_read_config_dword(dev, msix_table_offset_reg(pos),
-> +					&table_offset);
-> +		bir = (u8)(table_offset & PCI_MSIX_FLAGS_BIRMASK);
-> +
-> +		map_irq.table_base = pci_resource_start(dev, bir);
-> +		map_irq.entry_nr = msidesc->msi_attrib.entry_nr;
-> +	}
-> +
-> +	spin_lock(&irq_mapping_update_lock);
-> +
-> +	irq = find_unbound_irq();
-> +
-> +	if (irq == -1)
-> +		goto out;
-> +
-> +	rc = HYPERVISOR_physdev_op(PHYSDEVOP_map_pirq, &map_irq);
-> +	if (rc) {
-> +		printk(KERN_WARNING "xen map irq failed %d\n", rc);
-> +
-> +		dynamic_irq_cleanup(irq);
+On Tue, Oct 19, 2010 at 10:19:36AM -0300, Leandro Lucarella wrote:
+> Neil Horman, el 19 de octubre a las 07:04 me escribiste:
+> > On Tue, Oct 19, 2010 at 01:16:49AM -0700, David Miller wrote:
+> > > From: Leandro Lucarella <luca@llucax.com.ar>
+> > > Date: Mon, 18 Oct 2010 23:16:57 -0300
+> > > 
+> > > > 
+> > > > The problem is not between the tipc stacks in different hosts, is
+> > > > between the tipc stack and the applications using it (well, maybe
+> > > > there is a problem somewhere else too).
+> > > > 
+> > > > This was a deliberate API change, not a subtle bug...
+> > > 
+> > > Neil et al., if these packets live only between the kernel stack
+> > > and the userspace API layer, we should not be byte-swapping this
+> > > stuff and we need to fix this fast.
+> > > 
+> > Copy that Dave.  I think I see the problem.  The subscription code handles
+> > messages both off the wire and from local user space.  The off the wire case
+> > should work because the subscription code assumes that all the incomming data is
+> > in network byte order, but user space is an exception to that rule as its in
+> > local byte order.  I'll have a patch together for Leandro to test soon.
+> > Neil
+> 
+> Thank you very much. Bare in mind that the byte order is just one of the
+> problems, the other problem is the change in the value of
+> TIPC_SUB_SERVICE from 2 to 0. That too is breaking the API/ABI, as
+> a message with a filter value of 2 is rejected by TIPC 2.0/2.6.35+.
+> 
+> -- 
+> Leandro Lucarella (AKA luca)                     http://llucax.com.ar/
+> ----------------------------------------------------------------------
+> GPG Key: 5F5A8D05 (F8CD F9A7 BF00 5431 4145  104C 949E BFB6 5F5A 8D05)
+> ----------------------------------------------------------------------
+> Dentro de 30 años Argentina va a ser un gran supermercado con 15
+> changuitos, porque esa va a ser la cantidad de gente que va a poder
+> comprar algo.
+> 	-- Sidharta Wiki
+> 
 
-Looking at include/linux/irq.h, I see this commment:
- /*
-330  * Dynamic irq helper functions. Obsolete. Use irq_alloc_desc* and
-331  * irq_free_desc instead.
-332  */
 
-So we should use irq_free_desc instead of dynamic_irq_cleanup.
-(fyi, I didn't realize this until I started pulling in the sparse_irq
-patchset).
-> +
-> +		irq = -1;
-> +		goto out;
-> +	}
-> +	irq_info[irq] = mk_pirq_info(0, map_irq.pirq, 0, map_irq.index);
-> +
-> +	set_irq_chip_and_handler_name(irq, &xen_pirq_chip,
-> +			handle_level_irq,
-> +			(type == PCI_CAP_ID_MSIX) ? "msi-x":"msi");
-> +
-> +out:
-> +	spin_unlock(&irq_mapping_update_lock);
-> +	return irq;
-> +}
-> +#endif
-> +
+Hey all-
+	Heres what I have so far.  Dave as a heads up please don't apply this
+yet.  I'd like to go over it a bit more and be sure of the implications here
+before I post it for inclusion officially.  I wanted Leandro to have a copy
+though so he could confirm functionality for us.  Leandro, This patch lets me
+pass the tipc test code for TIPC 1.6 that you posted earlier this morning.  If
+you could confirm that it works for you that would be grand.  While your doing
+that, I want to read over the spec for TIPC and make sure that I'm not breaking
+anything new with this patch.
+
+Thanks!
+Neil
+
+
+diff --git a/include/linux/tipc.h b/include/linux/tipc.h
+index 181c8d0..d8de884 100644
+--- a/include/linux/tipc.h
++++ b/include/linux/tipc.h
+@@ -127,9 +127,10 @@ static inline unsigned int tipc_node(__u32 addr)
+  * TIPC topology subscription service definitions
+  */
+ 
+-#define TIPC_SUB_SERVICE     	0x00  	/* Filter for service availability    */
+-#define TIPC_SUB_PORTS     	0x01  	/* Filter for port availability  */
++#define TIPC_SUB_SERVICE     	0x01  	/* Filter for service availability    */
++#define TIPC_SUB_PORTS     	0x02  	/* Filter for port availability  */
+ #define TIPC_SUB_CANCEL         0x04    /* Cancel a subscription         */
++#define TIPC_SUB_MASK		(TIPC_SUB_SERVICE|TIPC_SUB_PORTS|TIPC_SUB_CANCEL)
+ 
+ #define TIPC_WAIT_FOREVER	~0	/* timeout for permanent subscription */
+ 
+diff --git a/net/tipc/subscr.c b/net/tipc/subscr.c
+index 18813ac..06682e1 100644
+--- a/net/tipc/subscr.c
++++ b/net/tipc/subscr.c
+@@ -75,6 +75,17 @@ struct top_srv {
+ 
+ static struct top_srv topsrv = { 0 };
+ 
++/*
++ * Detect the need for an endian swap.
++ * user space sends subscriber info in 
++ * host byte order while the kernel expects
++ * it in network byte order.  To correct this
++ * lets check the filter bits, if there in the 
++ * right place we know this is in network byte order
++ * otherwise it needs swapping around to maintain compatibility
++ */
++#define tipc_need_endian_swap(s) (!((s)->filter & TIPC_SUB_MASK))
++
+ /**
+  * subscr_send_event - send a message containing a tipc_event to the subscriber
+  *
+@@ -279,11 +290,21 @@ static void subscr_cancel(struct tipc_subscr *s,
+ 
+ 	/* Find first matching subscription, exit if not found */
+ 
+-	type = ntohl(s->seq.type);
+-	lower = ntohl(s->seq.lower);
+-	upper = ntohl(s->seq.upper);
+-	timeout = ntohl(s->timeout);
+-	filter = ntohl(s->filter) & ~TIPC_SUB_CANCEL;
++	if (tipc_need_endian_swap(s)) {
++		printk(KERN_CRIT "Swapping endianess in subscr_cancel\n");
++		type = ntohl(s->seq.type);
++		lower = ntohl(s->seq.lower);
++		upper = ntohl(s->seq.upper);
++		timeout = ntohl(s->timeout);
++		filter = ntohl(s->filter) & ~TIPC_SUB_CANCEL;
++	} else {
++		printk(KERN_CRIT "NOT Swapping endianess in subscr_cancel\n");
++		type = s->seq.type;
++		lower = s->seq.lower;
++		upper = s->seq.upper;
++		timeout = s->timeout;
++		filter = s->filter & ~TIPC_SUB_CANCEL;
++	}
+ 
+ 	list_for_each_entry_safe(sub, sub_temp, &subscriber->subscription_list,
+ 				 subscription_list) {
+@@ -325,10 +346,19 @@ static struct subscription *subscr_subscribe(struct tipc_subscr *s,
+ 					     struct subscriber *subscriber)
+ {
+ 	struct subscription *sub;
++	__u32 filter;
+ 
+ 	/* Detect & process a subscription cancellation request */
+ 
+-	if (ntohl(s->filter) & TIPC_SUB_CANCEL) {
++	if (tipc_need_endian_swap(s)) {
++		printk(KERN_CRIT "Swapping endianess in subscr_subscribe\n");
++		filter = ntohl(s->filter);
++	} else {
++		printk(KERN_CRIT "NOT Swapping endianess in subscr_subscribe\n");
++		filter = s->filter;
++	}
++
++	if (filter & TIPC_SUB_CANCEL) {
+ 		subscr_cancel(s, subscriber);
+ 		return NULL;
+ 	}
+@@ -353,11 +383,22 @@ static struct subscription *subscr_subscribe(struct tipc_subscr *s,
+ 
+ 	/* Initialize subscription object */
+ 
+-	sub->seq.type = ntohl(s->seq.type);
+-	sub->seq.lower = ntohl(s->seq.lower);
+-	sub->seq.upper = ntohl(s->seq.upper);
+-	sub->timeout = ntohl(s->timeout);
+-	sub->filter = ntohl(s->filter);
++	if (tipc_need_endian_swap(s)) {
++		printk(KERN_CRIT "Swapping endianess in subscr_subscribe\n");
++		sub->seq.type = ntohl(s->seq.type);
++		sub->seq.lower = ntohl(s->seq.lower);
++		sub->seq.upper = ntohl(s->seq.upper);
++		sub->timeout = ntohl(s->timeout);
++		sub->filter = ntohl(s->filter);
++	} else {
++		printk(KERN_CRIT "NOT Swapping endianess in subscr_subscribe\n");
++		sub->seq.type = s->seq.type;
++		sub->seq.lower = s->seq.lower;
++		sub->seq.upper = s->seq.upper;
++		sub->timeout = s->timeout;
++		sub->filter = s->filter;
++	}
++
+ 	if ((sub->filter && (sub->filter != TIPC_SUB_PORTS)) ||
+ 	    (sub->seq.lower > sub->seq.upper)) {
+ 		warn("Subscription rejected, illegal request\n");
