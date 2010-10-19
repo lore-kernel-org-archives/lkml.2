@@ -1,71 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751445Ab0JSNtt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Oct 2010 09:49:49 -0400
-Received: from 94-73-134-170.cizgi.net.tr ([94.73.134.170]:2792 "EHLO
-	mail.localhost.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751042Ab0JSNtr convert rfc822-to-8bit (ORCPT
+	id S1751651Ab0JSNuF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Oct 2010 09:50:05 -0400
+Received: from out02.mta.xmission.com ([166.70.13.232]:57674 "EHLO
+	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751063Ab0JSNto (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Oct 2010 09:49:47 -0400
-Reply-To: gar@gartrans.com
-Message-ID: <63256e72f6279b6375da12242ec00880@gartr.com>
-From: "=?iso-8859-9?B?R0FSIFRyYW5zcG9ydCBMdGQu3nRpLg==?=" <info@gartr.com>
-To: <linux-kernel@vger.kernel.org>
-Subject: 
-Date: Sun, 17 Oct 2010 15:54:15 +0300
+	Tue, 19 Oct 2010 09:49:44 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Andi Kleen <ak@linux.intel.com>
+Cc: Amerigo Wang <amwang@redhat.com>, linux-kernel@vger.kernel.org,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Len Brown <len.brown@intel.com>, Ingo Molnar <mingo@elte.hu>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        David Howells <dhowells@redhat.com>, Eric Paris <eparis@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Andy Shevchenko <ext-andriy.shevchenko@nokia.com>,
+        linux-doc@vger.kernel.org
+References: <1287476560-5874-1-git-send-email-amwang@redhat.com>
+	<1287476560-5874-2-git-send-email-amwang@redhat.com>
+	<4CBD9B7F.6040307@linux.intel.com>
+Date: Tue, 19 Oct 2010 06:49:32 -0700
+In-Reply-To: <4CBD9B7F.6040307@linux.intel.com> (Andi Kleen's message of "Tue,
+	19 Oct 2010 15:22:07 +0200")
+Message-ID: <m1vd4yi977.fsf@fess.ebiederm.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="iso-8859-9"
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=98.207.157.188;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-SA-Exim-Connect-IP: 98.207.157.188
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  1.5 XMNoVowels Alpha-numberic number with no vowels
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0000]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa07 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
+X-Spam-DCC: XMission; sa07 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;Andi Kleen <ak@linux.intel.com>
+X-Spam-Relay-Country: 
+Subject: Re: [PATCH 2/2] sysctl: remove sysctl syscall
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
+X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Yeni haftanýn hepimize saglik, mutluluk ve bol kazançli gecmesi dilegiyle.
-GAR TRANSPORT ailesi olarak TÜM AVRUPA ve BOSNA, SIRBISTAN, HIRVATÝSTAN, BULGARISTAN, ROMANYA, TÜRKI CUMHURIYETLER, IRAN KOMPLE TASIMALARINDA SIZ DEGERLI MÜSTERILERIMIZIN HIZMETINDEYIZ.
+Andi Kleen <ak@linux.intel.com> writes:
 
-IHRACAT PARSIYEL ARAC CIKIS PROGRAMIMIZ ASAGIDA BILGINIZE SUNULMUSTUR.
+>  On 10/19/2010 10:22 AM, Amerigo Wang wrote:
+>> Remove the obsolete sysctl syscall. It was scheduled
+>> to be removed in Sept.
+>
+>
+> I thought at least older glibc was still using it? Did anyone check
+> what happens if it sees no sysctl(2)?
 
-Carsamba &Cumartesi : Plovdiv - Sofya
-                               : Bukres
-                               : Belgrad
-                               : Saraybosna
-                               : Zagreb
-		        : Bakü
-                               : Kazakistan
-                               : Ozbekistan
-                               : Turkmenistan
+At the time the deprecation was written we nearly we were in the late
+rc's before anything that cared in practice. glibc has stopped even
+providing a sys_sysctl wrapper now.
 
-** Vsyaka sedmitsa ot sklada ni v istanbul imame redovni grupaji, koito se karat viv vsyaka tochka na BUGARIA. Shte chakame vashite obajdaniya za sivmestna rabota blagodarim vi predvaritelno.
+> I think it's ok to remove the full tables, but keeping
+> a wrapper just for the functionality glibc use(s/d) is still a good
+> idea.
 
-* Ýhracat depomuz YENIBOSNA'da dir.
-* Firmamýzýn parsiyel tasýma yapmakta oldugu ülkelerde hizmet ofisi ve acentesi bulunmaktadir.
-* Firmamýzýn ayný hatlarda kompel ve proze tasýma hzimeti sunmaktadir.
+I think the only problem should be the arm glibc.  I don't know if
+it's iopl implementation ever got weened off of this.  I tried
+but I didn't have good test machine and submitting patches to
+glibc is much more of a pain than kernel patches.
 
-MÝSYONUMUZ ; yalnizca yükünüzü degil , çogu zaman yükünüzden agir olan yükümlülüklerinizi de üstlenmektir.
+To my knowledge there has never been a version of x86 glibc that
+had problems if sys_sysctl returns -ENOSYS, and glibc proper removed
+even that dependency almost as soon as sys_sysctl was deprecated.
 
-NOT : BG için grupaj çikisimiz yukarida belirtilen ana güzergah olup diger variþ destinasyonlari için PLOVDIV merkezimizden iç tasima araçlarimiz ile aktarma yapilmaktadir.
+Last time we discussed this (when I added the compatibility wrapper)
+I couldn't even find a version of glibc that used sysctl, and I could
+not find a distribution old enough that still had a version of glibc
+that used sysctl on x86.
 
-DEPO ADRESIMIZ : CEMAL ULUSOY CAD. BASIN EKSPRES YOLU NO: 5
-TEL : +90 555 974 60 99
-YETKILI : Seyithan Bey
+We warn on every sys_sysctl value now even the glibc uses and perhaps I
+am blind but I haven't seen any bug reports.  So we should be safe
+turning this off.
 
-Talep etmeniz halinde Istanbul gümrüklerinde Ihracat ve Ithalat GÜMRÜKLEME hizmeti tarafimizdan verilmektedir.
+As far as this goes I would just change the default to off for now.
+Keeping the code doesn't have any impact on the core of the kernel any
+more, or even any binary impact.  As the int -> long conversion has
+shown.  If we can get through a release with the code disabled killing
+it the next release makes a lot of sense.
 
-Ibrahim Hilmi CINDIK 
-GAR Transportation OOD
-PLOVDIV / BULGARIA
-TEL   : +359 878 336 028
-e-mail : ibrahim@gartrans.com
-*********************************
-GAR Transport Ltd.Sti.
-ISTANBUL / TURKEY
-Tel  . +90 216 321 31 26
-Fax  . +90 216 321 63 50
-e-mail : gar@gartrans.com
-************************************
-www.gartrans.com
-
-
-
-
+Eric
