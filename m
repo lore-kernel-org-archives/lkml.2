@@ -1,53 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758271Ab0JSM5V (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Oct 2010 08:57:21 -0400
-Received: from soto.provo.novell.com ([137.65.250.214]:37778 "EHLO
-	soto.provo.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752030Ab0JSM5U convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-ghaskins@novell.com:5:1>);
-	Tue, 19 Oct 2010 08:57:20 -0400
-Message-Id: <4CBD5D680200005A0007492F@soto.provo.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 8.0.2 
-Date: Tue, 19 Oct 2010 06:57:12 -0600
-From: "Gregory Haskins" <ghaskins@novell.com>
-To: "Rakib Mullick" <rakib.mullick@gmail.com>,
-        "Peter Zijlstra" <peterz@infradead.org>
-Cc: "Ingo Molnar" <mingo@elte.hu>, "Steven Rostedt" <rostedt@goodmis.org>,
-        "LKML" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] sched_rt: Removes extra checking for
- nr_cpus_allowed when calling find_lowest_rq
-References: <AANLkTinoaJX3M2zU_zZOpmFm9Ekxpw-LUVUf_TU8yuSq@mail.gmail.com>
- <1287486167.1994.1.camel@twins>
-In-Reply-To: <1287486167.1994.1.camel@twins>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+	id S1758566Ab0JSM54 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Oct 2010 08:57:56 -0400
+Received: from hera.kernel.org ([140.211.167.34]:47345 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754657Ab0JSM5z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Oct 2010 08:57:55 -0400
+Message-ID: <4CBD95C0.6060302@kernel.org>
+Date: Tue, 19 Oct 2010 14:57:36 +0200
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.9) Gecko/20100915 Lightning/1.0b2 Thunderbird/3.1.4
+MIME-Version: 1.0
+To: Linux SCSI List <linux-scsi@vger.kernel.org>,
+        James Bottomley <James.Bottomley@suse.de>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        lkml <linux-kernel@vger.kernel.org>
+Subject: [PATCH 1/2] scsi: remove bogus use of struct execute_work in sg
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 19 Oct 2010 12:57:39 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 10/19/2010 at 07:02 AM, in message <1287486167.1994.1.camel@twins>, Peter
-Zijlstra <peterz@infradead.org> wrote: 
-> On Tue, 2010-10-19 at 16:57 +0600, Rakib Mullick wrote:
+execute_work usage in sg is bogus.  execute_in_process_context() is
+never used and ew is used purely as wrapper around work_struct which
+is superflous.  Use work_struct directly.
 
-[snip]
+Signed-off-by: Tejun Heo <tj@kernel.org>
+---
+ drivers/scsi/sg.c |   16 ++++++++--------
+ 1 file changed, 8 insertions(+), 8 deletions(-)
 
->> --- linus-rc8/kernel/sched_rt.c	2010-10-15 05:26:43.000000000 +0600
->> +++ rakib-rc8/kernel/sched_rt.c	2010-10-19 16:22:30.000000000 +0600
->> @@ -971,8 +971,7 @@ select_task_rq_rt(struct rq *rq, struct
->>  	 * that is just being woken and probably will have
->>  	 * cold cache anyway.
->>  	 */
->> -	if (unlikely(rt_task(rq->curr)) &&
->> -	    (p->rt.nr_cpus_allowed > 1)) {
+Index: work/drivers/scsi/sg.c
+===================================================================
+--- work.orig/drivers/scsi/sg.c
++++ work/drivers/scsi/sg.c
+@@ -137,7 +137,7 @@ typedef struct sg_request {	/* SG_MAX_QU
+ 	volatile char done;	/* 0->before bh, 1->before read, 2->read */
+ 	struct request *rq;
+ 	struct bio *bio;
+-	struct execute_work ew;
++	struct work_struct work;
+ } Sg_request;
 
-I think the motivation here was that checking nr_cpus_allowed is far cheaper than taking the hit on a function call in this particularly hot path.  As Steven points out in a follow-up reply, the function call has additional overhead before the equivalent check is made again.  We could possibly optimize this with some of the suggestions he made, but I am not sure if it is worth it (alone) as the call overhead would still be present.  OTOH, the cases where nr_cpus_allowed <= 1 are probably rare in the grand scheme of things.
+ typedef struct sg_fd {		/* holds the state of a file descriptor */
+@@ -160,7 +160,7 @@ typedef struct sg_fd {		/* holds the sta
+ 	char keep_orphan;	/* 0 -> drop orphan (def), 1 -> keep for read() */
+ 	char mmap_called;	/* 0 -> mmap() never called on this fd */
+ 	struct kref f_ref;
+-	struct execute_work ew;
++	struct work_struct work;
+ } Sg_fd;
 
-My opinion is the check should probably remain (if but perhaps with a comment to explain its existence) unless someone (Rakib, hint hint) is willing to do some benchmarking to demonstrate that it doesn't actually have any positive impact.  It probably also makes sense to take Steve's suggested changes to improve the places that use the function without external optimization.
+ typedef struct sg_device { /* holds the state of each scsi generic device */
+@@ -1246,7 +1246,7 @@ sg_mmap(struct file *filp, struct vm_are
 
-Kind Regards,
--Greg
+ static void sg_rq_end_io_usercontext(struct work_struct *work)
+ {
+-	struct sg_request *srp = container_of(work, struct sg_request, ew.work);
++	struct sg_request *srp = container_of(work, struct sg_request, work);
+ 	struct sg_fd *sfp = srp->parentfp;
 
+ 	sg_finish_rem_req(srp);
+@@ -1333,8 +1333,8 @@ static void sg_rq_end_io(struct request
+ 		kill_fasync(&sfp->async_qp, SIGPOLL, POLL_IN);
+ 		kref_put(&sfp->f_ref, sg_remove_sfp);
+ 	} else {
+-		INIT_WORK(&srp->ew.work, sg_rq_end_io_usercontext);
+-		schedule_work(&srp->ew.work);
++		INIT_WORK(&srp->work, sg_rq_end_io_usercontext);
++		schedule_work(&srp->work);
+ 	}
+ }
 
+@@ -2086,7 +2086,7 @@ sg_add_sfp(Sg_device * sdp, int dev)
+
+ static void sg_remove_sfp_usercontext(struct work_struct *work)
+ {
+-	struct sg_fd *sfp = container_of(work, struct sg_fd, ew.work);
++	struct sg_fd *sfp = container_of(work, struct sg_fd, work);
+ 	struct sg_device *sdp = sfp->parentdp;
+
+ 	/* Cleanup any responses which were never read(). */
+@@ -2123,8 +2123,8 @@ static void sg_remove_sfp(struct kref *k
+ 	write_unlock_irqrestore(&sg_index_lock, iflags);
+ 	wake_up_interruptible(&sdp->o_excl_wait);
+
+-	INIT_WORK(&sfp->ew.work, sg_remove_sfp_usercontext);
+-	schedule_work(&sfp->ew.work);
++	INIT_WORK(&sfp->work, sg_remove_sfp_usercontext);
++	schedule_work(&sfp->work);
+ }
+
+ static int
