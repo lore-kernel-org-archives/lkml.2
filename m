@@ -1,95 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758216Ab0JSKBn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Oct 2010 06:01:43 -0400
-Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:54019 "EHLO kernel.dk"
+	id S933461Ab0JSKCU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Oct 2010 06:02:20 -0400
+Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:54033 "EHLO kernel.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758138Ab0JSKBm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Oct 2010 06:01:42 -0400
-Message-ID: <4CBD6C84.3020309@kernel.dk>
-Date: Tue, 19 Oct 2010 12:01:40 +0200
+	id S1758138Ab0JSKCS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Oct 2010 06:02:18 -0400
+Message-ID: <4CBD6CAA.1060708@kernel.dk>
+Date: Tue, 19 Oct 2010 12:02:18 +0200
 From: Jens Axboe <axboe@kernel.dk>
 MIME-Version: 1.0
-To: Andi Kleen <andi@firstfloor.org>
-CC: torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
-        Andi Kleen <ak@linux.intel.com>, Vivek Goyal <vgoyal@redhat.com>
-Subject: Re: [PATCH] Fix array overflow in CFQ
-References: <1287479450-11447-1-git-send-email-andi@firstfloor.org>
-In-Reply-To: <1287479450-11447-1-git-send-email-andi@firstfloor.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+CC: kosaki.motohiro@jp.fujitsu.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v5] blk: fix a wrong accounting of hd_struct->in_flight
+References: <4CB40281.1020403@jp.fujitsu.com> <4CB41A27.5080001@kernel.dk> <4CB6FC1C.3050801@jp.fujitsu.com> <4CB6FDB7.5010501@kernel.dk> <4CB8135E.1030100@jp.fujitsu.com> <4CB82720.8040708@kernel.dk> <4CBC0524.7060804@jp.fujitsu.com> <4CBC06B2.7070107@kernel.dk> <4CBC3B3A.9040300@jp.fujitsu.com> <4CBC3BE2.2020802@kernel.dk> <4CBD00F7.3070503@jp.fujitsu.com>
+In-Reply-To: <4CBD00F7.3070503@jp.fujitsu.com>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2010-10-19 11:10, Andi Kleen wrote:
-> From: Andi Kleen <ak@linux.intel.com>
+On 2010-10-19 04:22, Yasuaki Ishimatsu wrote:
+> Hi Jens,
 > 
-> gcc 4.5 complains when compiling a recent rc with
+>> This version looks good, thanks for following through on this. What kind
+>> of testing did you do?
 > 
-> linux/block/cfq-iosched.c: In function ‘cfq_dispatch_requests’:
-> linux/block/cfq-iosched.c:2156:3: warning: array subscript is above array bounds
+> I did three kinds of test.
 > 
-> and it is right:
+> 1. run a reproducer.
+>    I confirmed the problem was fixed using attached the reproducer.
 > 
->  slice = group_slice * count /
->                 max_t(unsigned, cfqg->busy_queues_avg[cfqd->serving_prio],
->                       cfq_group_busy_queues_wl(cfqd->serving_prio, cfqd, cfqg));
+> 2. remove and make a partition which is running I/O.
+>    I confirmed the kernel panic or hungup did not occur using following steps.
 > 
-> busy_queues_avg can be indexed by this enum
+>      # dd if=/dev/sda of=null &
+>      # while true
+>      > do
+>      > /sbin/parted /dev/sda rm 3 > /dev/null
+>      > /sbin/parted /dev/sda mkpart primary ext2 42.5GB 52.5GB > /dev/null
+>      > sleep 2
+>      > done
 > 
-> enum wl_prio_t {
->         BE_WORKLOAD = 0,
->         RT_WORKLOAD = 1,
->         IDLE_WORKLOAD = 2,
-> };
+> 3. reload a partition which is running I/O.
+>    I confirmed the kernel panic or hungup did not occur using following steps.
 > 
-> in cfqd->serving_prio, but is only declared as
-> 
-> unsigned int busy_queues_avg[2];
-> 
-> which is clearly off by one. Fix this here.
+>      # dd if=/dev/sda of=null &
+>      # while true
+>      > do
+>      > /sbin/hdparm -z /dev/sda
+>      > sleep 2
+>      > done
 
-Indeed, that is definitely buggy. ->service_trees[][] looks buggy, too.
-WTF?!
-
-diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
-index 9eba291..8ce9f52 100644
---- a/block/cfq-iosched.c
-+++ b/block/cfq-iosched.c
-@@ -160,6 +160,7 @@ enum wl_prio_t {
- 	BE_WORKLOAD = 0,
- 	RT_WORKLOAD = 1,
- 	IDLE_WORKLOAD = 2,
-+	CFQ_PRIO_NR,
- };
- 
- /*
-@@ -168,7 +169,8 @@ enum wl_prio_t {
- enum wl_type_t {
- 	ASYNC_WORKLOAD = 0,
- 	SYNC_NOIDLE_WORKLOAD = 1,
--	SYNC_WORKLOAD = 2
-+	SYNC_WORKLOAD = 2,
-+	CFQ_TYPE_NR,
- };
- 
- /* This is per cgroup per device grouping structure */
-@@ -185,12 +187,12 @@ struct cfq_group {
- 	int nr_cfqq;
- 
- 	/* Per group busy queus average. Useful for workload slice calc. */
--	unsigned int busy_queues_avg[2];
-+	unsigned int busy_queues_avg[CFQ_PRIO_NR];
- 	/*
- 	 * rr lists of queues with requests, onle rr for each priority class.
- 	 * Counts are embedded in the cfq_rb_root
- 	 */
--	struct cfq_rb_root service_trees[2][3];
-+	struct cfq_rb_root service_trees[CFQ_PRIO_NR][CFQ_TYPE_NR];
- 	struct cfq_rb_root service_tree_idle;
- 
- 	unsigned long saved_workload_slice;
+Thanks, sounds good! I have queued it up for 2.6.37 and marked as a
+stable backport candidate.
 
 -- 
 Jens Axboe
