@@ -1,71 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757830Ab0JSVIk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Oct 2010 17:08:40 -0400
-Received: from www.tglx.de ([62.245.132.106]:33795 "EHLO www.tglx.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754418Ab0JSVIj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Oct 2010 17:08:39 -0400
-Date: Tue, 19 Oct 2010 23:07:47 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Steven Rostedt <rostedt@goodmis.org>
-cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Koki Sanagi <sanagi.koki@jp.fujitsu.com>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Frederic Weisbecker <fweisbec@gmail.com>, nhorman@tuxdriver.com,
-        scott.a.mcmillan@intel.com, laijs@cn.fujitsu.com,
-        "H. Peter Anvin" <hpa@zytor.com>, LKML <linux-kernel@vger.kernel.org>,
-        eric.dumazet@gmail.com, kaneshige.kenji@jp.fujitsu.com,
-        David Miller <davem@davemloft.net>, izumi.taku@jp.fujitsu.com,
-        kosaki.motohiro@jp.fujitsu.com,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        "Luck, Tony" <tony.luck@intel.com>
-Subject: Re: [PATCH] tracing: Cleanup the convoluted softirq tracepoints
-In-Reply-To: <1287521757.16971.397.camel@gandalf.stny.rr.com>
-Message-ID: <alpine.LFD.2.00.1010192302000.6815@localhost6.localdomain6>
-References: <tip-2bf2160d8805de64308e2e7c3cd97813cb58ed2f@git.kernel.org>  <20100908112529.GA25931@elte.hu> <1287395077.29097.1543.camel@twins>  <1287398936.29097.1548.camel@twins> <4CBD79CF.2060706@jp.fujitsu.com>  <alpine.LFD.2.00.1010191428560.6815@localhost6.localdomain6>
-  <20101019132236.GA19197@Krystal>  <alpine.LFD.2.00.1010191524160.6815@localhost6.localdomain6>  <1287496495.16971.372.camel@gandalf.stny.rr.com>  <alpine.LFD.2.00.1010191558250.6815@localhost6.localdomain6>  <20101019142820.GA14520@Krystal> 
- <alpine.LFD.2.00.1010191842270.6815@localhost6.localdomain6> <1287521757.16971.397.camel@gandalf.stny.rr.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1757897Ab0JSVIu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Oct 2010 17:08:50 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:55638 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757876Ab0JSVIt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Oct 2010 17:08:49 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 1/3] drivers: misc: add omap_hwspinlock driver
+Date: Tue, 19 Oct 2010 23:08:01 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.36-rc7-next-20101015+; KDE/4.5.1; x86_64; ; )
+Cc: "Ohad Ben-Cohen" <ohad@wizery.com>, Hari Kanigeri <h-kanigeri2@ti.com>,
+        Suman Anna <s-anna@ti.com>, Benoit Cousson <b-cousson@ti.com>,
+        Tony Lindgren <tony@atomide.com>, Greg KH <greg@kroah.com>,
+        linux-kernel@vger.kernel.org, Grant Likely <grant.likely@secretlab.ca>,
+        akpm@linux-foundation.org, linux-omap@vger.kernel.org,
+        "Krishnamoorthy, Balaji T" <balajitk@ti.com>
+References: <1287387875-14168-1-git-send-email-ohad@wizery.com> <201010191921.21007.arnd@arndb.de> <AANLkTinXR7OcfTpA6cWhRGzceekD6KQgnxOLeBKXP3WB@mail.gmail.com>
+In-Reply-To: <AANLkTinXR7OcfTpA6cWhRGzceekD6KQgnxOLeBKXP3WB@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201010192308.02018.arnd@arndb.de>
+X-Provags-ID: V02:K0:musnWT2vCJjPyNAxHJjkBoakUgpjJ/iYjEjDWtIIYDw
+ 0Ug7beAplE+2YDJE/OU1pGzrsv38MjSLLVi5LXJ3RS634wnEud
+ dq2pIEVLZEdXtsZONd/x1wausw8EUA1JmDNrLwgT0UUwfKKFGT
+ RresY2muiQqzZVVm17J6Sa11I1o9pq13BO4/ChtLp7x9E/GVxX
+ f1zmz8UmxR1jOAEtm9bkQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 19 Oct 2010, Steven Rostedt wrote:
-> On Tue, 2010-10-19 at 21:49 +0200, Thomas Gleixner wrote:
-> > So that saves _TWO_ bytes of text and replaces:
-> > 
-> > -  1e:	83 3d 00 00 00 00 00 	cmpl   $0x0,0x0(%rip)        # 25 <test+0x25>
-> > -  25:	74 4d                	je     74 <test+0x74>
-> > +  1e:	e9 00 00 00 00       	jmpq   23 <test+0x23>
-> > +  23:	eb 4d                	jmp    72 <test+0x72>
-> > 
-> > So it trades a conditional vs. two jumps ? WTF ??
+On Tuesday 19 October 2010 22:51:22 Ohad Ben-Cohen wrote:
+> >, which is generally discouraged
+> > in all places where you know if you need to disable interrupts or not.
+> >
+> > IMHO the default should be a version that only allows locks that don't get
+> > taken at IRQ time and consequently don't require saving the interrupt flags.
 > 
-> Well, the one jmpq is noped out, and the jmp is non conditional. I've
+> Please note that the hwspinlocks should never be used to achieve
+> synchronization with Linux contexts running on the same cpu - it's
+> always about achieving mutual exclusion with a remote processor.
 
-What are you smoking ?
+Ok, I see.
+ 
+> So whether the lock is taken at IRQ time or not does not affect the
+> requirement to disable interrupts while it is taken (very differently
+> from local spin_lock{_irqsave} synchronizations).
 
-In case the trace point is enabled the jmpq is there, so it jumps to
-23 and jumps from there to 72.
+Right. There are two more things to consider though:
 
-In case the trace point is disabled the jmpq is noped out, so it jumps
-to 72 directly.
+If you know that interrupts are disabled, you may still want to avoid
+having to save the interrupt flag to the stack, to save some cycles
+saving and restoring it. I don't know how expensive that is on ARM,
+some other architectures take an microseconds to restore the interrupt
+enabled flag from a register.
 
-> always thought a non conditional jmp was faster than a conditional one,
+Even in the case where you know that interrupts are enabled, you may
+want to avoid saving the interrupt flag to the stack, the simpler
+API (one argument instead of two) gives less room for screwing up.
 
-I always thought, that at least some of the stuff which comes from
-tracing folks makes some sense.
-
-> since there's no need to go into the branch prediction logic. The CPU
-> can simply skip to the code to jump next. Of counse, this pollutes the 
-> I$.
-
-We might consult Mathieu for further useless blurb on how CPUs work
-around broken code.
-
-Thanks,
-
-	tglx
+	Arnd
