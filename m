@@ -1,88 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756210Ab0JSQyG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Oct 2010 12:54:06 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:42520 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756064Ab0JSQyE (ORCPT
+	id S1756244Ab0JSQzG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Oct 2010 12:55:06 -0400
+Received: from caprica.metux.de ([82.165.128.25]:34985 "EHLO
+	mailgate.caprica.metux.de" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1756082Ab0JSQzF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Oct 2010 12:54:04 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:reply-to:to:cc:content-type:date:message-id
-         :mime-version:x-mailer:content-transfer-encoding;
-        b=nT72PWc57QX7PL+p5nPvaLwNIETqwxo7gJSs1wdn3RMxadSWb8nPwQWioALTA+vBzo
-         Px8X8uzZgGBM/G5SCOfu+qlMj3Lf/ZvtfbIArLNcc0YzRB9UV9F0IdMWQtAYaMxk9t/l
-         pR5OgCtKGnrCcKh7tSCKEvdqTPkRuJujTK/PA=
-Subject: [PATCH] ATI FB driver: fix variable size warnings
-From: Davidlohr Bueso <dave.bueso@gmail.com>
-Reply-To: dave.bueso@gmail.com
-To: Paul Mackerras <paulus@samba.org>, grant.likely@secretlab.ca,
-        alex.kern@gmx.de, benh@kernel.crashing.org, mpatocka@redhat.com
-Cc: LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 19 Oct 2010 13:53:52 -0300
-Message-ID: <1287507232.2133.12.camel@cowboy>
+	Tue, 19 Oct 2010 12:55:05 -0400
+X-Greylist: delayed 359 seconds by postgrey-1.27 at vger.kernel.org; Tue, 19 Oct 2010 12:55:05 EDT
+Date: Tue, 19 Oct 2010 18:41:08 +0200
+From: Enrico Weigelt <weigelt@metux.de>
+To: linux kernel list <linux-kernel@vger.kernel.org>
+Subject: cluster machines with per-CPU local memory (one step beyond numa ?;-))
+Message-ID: <20101019164108.GA26842@nibiru.local>
+Reply-To: weigelt@metux.de
+Mail-Followup-To: linux kernel list <linux-kernel@vger.kernel.org>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.4.1i
+X-Terror: bin laden, kill bush, Briefbombe, Massenvernichtung, KZ, 
+X-Nazi: Weisse Rasse, Hitlers Wiederauferstehung, 42, 
+X-Antichrist: weg mit schaeuble, ausrotten, heiliger krieg, al quaida, 
+X-Killer: 23, endloesung, Weltuntergang, 
+X-Doof: wer das liest ist doof
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ATI FB driver: fix variable size warnings and get rid of two unused variables.
 
-Basically revert the order of the for-loop and get rid of the ARRAY_SIZE()-1 bit, which causes the warning. The iterations produce the exact same result: exit if the PCI id is found. Otherwise (if no device is found, then 'i' should be the same value of the size of the amount of elements in the array).
-My current randconfig showed the following:
+Hi folks,
 
-drivers/video/aty/atyfb_base.c: In function ‘correct_chipset’:
-drivers/video/aty/atyfb_base.c:441: warning: overflow in implicit constant conversion
 
-This is compile-tested only.
+suppose we have a machine that consists a bunch of CPUs which
+have local memory (directly tied to the core, w/o additional
+caches) and either an slower shared memory or some DMA interlink
+(which only works on page granularity).
 
-PS: Not sure who deals with this, so please include CC if you know.
+Can Linux yet utilize such an machine ? How is this done ?
+Or how could it be done ?
 
-Thanks.
-Davidlohr
 
-Signed-off-by: Davidlohr Bueso <dave@gnu.org>
----
- drivers/video/aty/atyfb_base.c |   10 ++++------
- 1 files changed, 4 insertions(+), 6 deletions(-)
-
-diff --git a/drivers/video/aty/atyfb_base.c b/drivers/video/aty/atyfb_base.c
-index f8d69ad..7771142 100644
---- a/drivers/video/aty/atyfb_base.c
-+++ b/drivers/video/aty/atyfb_base.c
-@@ -436,13 +436,13 @@ static int __devinit correct_chipset(struct atyfb_par *par)
- 	u16 type;
- 	u32 chip_id;
- 	const char *name;
--	int i;
--
--	for (i = ARRAY_SIZE(aty_chips) - 1; i >= 0; i--)
-+	int i, arrsize = ARRAY_SIZE(aty_chips);
-+	
-+	for (i = 0; i < arrsize; i++)
- 		if (par->pci_id == aty_chips[i].pci_id)
- 			break;
- 
--	if (i < 0)
-+	if (i == arrsize)
- 		return -ENODEV;
- 
- 	name = aty_chips[i].name;
-@@ -535,8 +535,6 @@ static int __devinit correct_chipset(struct atyfb_par *par)
- 	return 0;
- }
- 
--static char ram_dram[] __devinitdata = "DRAM";
--static char ram_resv[] __devinitdata = "RESV";
- #ifdef CONFIG_FB_ATY_GX
- static char ram_vram[] __devinitdata = "VRAM";
- #endif /* CONFIG_FB_ATY_GX */
+cu
 -- 
-1.7.0.4
+----------------------------------------------------------------------
+ Enrico Weigelt, metux IT service -- http://www.metux.de/
 
-
-
+ phone:  +49 36207 519931  email: weigelt@metux.de
+ mobile: +49 151 27565287  icq:   210169427         skype: nekrad666
+----------------------------------------------------------------------
+ Embedded-Linux / Portierung / Opensource-QM / Verteilte Systeme
+----------------------------------------------------------------------
