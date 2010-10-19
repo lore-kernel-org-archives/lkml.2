@@ -1,42 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753417Ab0JSPJx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Oct 2010 11:09:53 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:53864 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752961Ab0JSPJv (ORCPT
+	id S1753152Ab0JSPOg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Oct 2010 11:14:36 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:57084 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751845Ab0JSPOf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Oct 2010 11:09:51 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=iM4RZM1qjJ/JbMk8ykSAsQyocYNHlr70JfjFu3AsGB8p7FEIjslllNWZSgOZp/92ZX
-         4bSpfQMHWnsxOp3R26XAbxRrFpb+R8qkRTszucEBHQQbh4hQoq23473b9sJn2Afb6E2B
-         eRMywyc9rPU6im40xjQNgZY+/YL5NnMenU8/c=
+	Tue, 19 Oct 2010 11:14:35 -0400
+Date: Tue, 19 Oct 2010 08:14:16 -0700
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Samuel Ortiz <sameo@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com
+Subject: Re: [PATCH 1/2] mfd: Factor out WM831x I2C I/O from the core driver
+Message-ID: <20101019151415.GA2677@opensource.wolfsonmicro.com>
+References: <1286573003-13889-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+ <20101019111553.GO2736@sortiz-mobl>
 MIME-Version: 1.0
-In-Reply-To: <1286888455-11385-1-git-send-email-linus.walleij@stericsson.com>
-References: <1286888455-11385-1-git-send-email-linus.walleij@stericsson.com>
-Date: Tue, 19 Oct 2010 17:09:46 +0200
-Message-ID: <AANLkTim6vq7dPjTt4GzB6JyEDfL50H67gMacw5UbWRAm@mail.gmail.com>
-Subject: Re: [PATCH 0/7] ste_dma40: various fixes to the DMA40
-From: Linus Walleij <linus.ml.walleij@gmail.com>
-To: Dan Williams <dan.j.williams@intel.com>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101019111553.GO2736@sortiz-mobl>
+X-Cookie: Your present plans will be successful.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/10/12 Linus Walleij <linus.walleij@stericsson.com>:
+On Tue, Oct 19, 2010 at 01:15:54PM +0200, Samuel Ortiz wrote:
 
-> here are some DMA40 cleanups for your immediate entertainment,
-> mostly tightening up this driver. It is getting real mature
-> now, still we need fix some smallish things...
+> I think we should select MFD_WM831X here as well otherwise there's nothing
+> preventing us from building the I2C or the SPI part without the core one. And
+> that leads to a build breakage.
 
-Dan are you taking these for the upcoming merge window?
-Since they change the platform data API a bit it'd be nice to
-have them in.
-
-Yours,
-Linus Walleij
+I agree, I'll try to send a followup out unless you update the patch
+before I get to it.
