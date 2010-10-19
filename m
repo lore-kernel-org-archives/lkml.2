@@ -1,107 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754008Ab0JSWEY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Oct 2010 18:04:24 -0400
-Received: from alerce.vps.bitfolk.com ([212.13.194.134]:3927 "EHLO
-	alerce.vps.bitfolk.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751178Ab0JSWEW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Oct 2010 18:04:22 -0400
-Date: Tue, 19 Oct 2010 19:03:14 -0300
-From: Leandro Lucarella <luca@llucax.com.ar>
-To: Neil Horman <nhorman@tuxdriver.com>
-Cc: David Miller <davem@davemloft.net>, paul.gortmaker@windriver.com,
-        jon.maloy@ericsson.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, tipc-discussion@lists.sourceforge.net
-Subject: Re: Linux 2.6.35/TIPC 2.0 ABI breaking changes
-Message-ID: <20101019220314.GI8781@llucax.com.ar>
-References: <4CBCD429.8090306@windriver.com>
- <20101018234547.GA5703@hmsreliant.think-freely.org>
- <20101019021657.GZ8781@llucax.com.ar>
- <20101019.011649.71113115.davem@davemloft.net>
- <20101019110452.GA14410@hmsreliant.think-freely.org>
- <20101019131936.GB8781@llucax.com.ar>
- <20101019201841.GC14410@hmsreliant.think-freely.org>
- <20101019204312.GH8781@llucax.com.ar>
+	id S1754244Ab0JSWFX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Oct 2010 18:05:23 -0400
+Received: from www.tglx.de ([62.245.132.106]:49373 "EHLO www.tglx.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753786Ab0JSWFV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Oct 2010 18:05:21 -0400
+Date: Wed, 20 Oct 2010 00:04:31 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Steven Rostedt <rostedt@goodmis.org>
+cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Koki Sanagi <sanagi.koki@jp.fujitsu.com>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Frederic Weisbecker <fweisbec@gmail.com>, nhorman@tuxdriver.com,
+        scott.a.mcmillan@intel.com, laijs@cn.fujitsu.com,
+        "H. Peter Anvin" <hpa@zytor.com>, LKML <linux-kernel@vger.kernel.org>,
+        eric.dumazet@gmail.com, kaneshige.kenji@jp.fujitsu.com,
+        David Miller <davem@davemloft.net>, izumi.taku@jp.fujitsu.com,
+        kosaki.motohiro@jp.fujitsu.com,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        "Luck, Tony" <tony.luck@intel.com>
+Subject: Re: [PATCH] tracing: Cleanup the convoluted softirq tracepoints
+In-Reply-To: <1287523439.16971.433.camel@gandalf.stny.rr.com>
+Message-ID: <alpine.LFD.2.00.1010192359480.6815@localhost6.localdomain6>
+References: <tip-2bf2160d8805de64308e2e7c3cd97813cb58ed2f@git.kernel.org>  <20100908112529.GA25931@elte.hu> <1287395077.29097.1543.camel@twins>  <1287398936.29097.1548.camel@twins> <4CBD79CF.2060706@jp.fujitsu.com>  <alpine.LFD.2.00.1010191428560.6815@localhost6.localdomain6>
+  <20101019132236.GA19197@Krystal>  <alpine.LFD.2.00.1010191524160.6815@localhost6.localdomain6>  <1287496495.16971.372.camel@gandalf.stny.rr.com>  <alpine.LFD.2.00.1010191558250.6815@localhost6.localdomain6>  <20101019142820.GA14520@Krystal> 
+ <alpine.LFD.2.00.1010191842270.6815@localhost6.localdomain6>  <1287521757.16971.397.camel@gandalf.stny.rr.com>  <alpine.LFD.2.00.1010192302000.6815@localhost6.localdomain6> <1287523439.16971.433.camel@gandalf.stny.rr.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101019204312.GH8781@llucax.com.ar>
-X-Paranoid: Just because you're paranoid, don't mean they're not after you.
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Leandro Lucarella, el 19 de octubre a las 17:43 me escribiste:
-> Neil Horman, el 19 de octubre a las 16:18 me escribiste:
-> > Hey all-
-> > 	Heres what I have so far.  Dave as a heads up please don't apply this
-> > yet.  I'd like to go over it a bit more and be sure of the implications here
-> > before I post it for inclusion officially.  I wanted Leandro to have a copy
-> > though so he could confirm functionality for us.  Leandro, This patch lets me
-> > pass the tipc test code for TIPC 1.6 that you posted earlier this morning.  If
-> > you could confirm that it works for you that would be grand.  While your doing
-> > that, I want to read over the spec for TIPC and make sure that I'm not breaking
-> > anything new with this patch.
+On Tue, 19 Oct 2010, Steven Rostedt wrote:
+> On Tue, 2010-10-19 at 23:07 +0200, Thomas Gleixner wrote:
+> > On Tue, 19 Oct 2010, Steven Rostedt wrote:
+> > > On Tue, 2010-10-19 at 21:49 +0200, Thomas Gleixner wrote:
+> > > > So that saves _TWO_ bytes of text and replaces:
+> > > > 
+> > > > -  1e:	83 3d 00 00 00 00 00 	cmpl   $0x0,0x0(%rip)        # 25 <test+0x25>
+> > > > -  25:	74 4d                	je     74 <test+0x74>
+> > > > +  1e:	e9 00 00 00 00       	jmpq   23 <test+0x23>
+> > > > +  23:	eb 4d                	jmp    72 <test+0x72>
+> > > > 
+> > > > So it trades a conditional vs. two jumps ? WTF ??
+> > > 
+> > > Well, the one jmpq is noped out, and the jmp is non conditional. I've
+> > 
+> > What are you smoking ?
 > 
-> Thanks for the quick response. I didn't tried the patch yet, but I think
-> spotted an error:
+> What? Are you saying that conditional jumps are just as fast as non
+> conditional ones?
 > 
-> > diff --git a/include/linux/tipc.h b/include/linux/tipc.h
-> > index 181c8d0..d8de884 100644
-> > --- a/include/linux/tipc.h
-> > +++ b/include/linux/tipc.h
-> > @@ -127,9 +127,10 @@ static inline unsigned int tipc_node(__u32 addr)
-> >   * TIPC topology subscription service definitions
-> >   */
-> >  
-> > -#define TIPC_SUB_SERVICE     	0x00  	/* Filter for service availability    */
-> > -#define TIPC_SUB_PORTS     	0x01  	/* Filter for port availability  */
-> > +#define TIPC_SUB_SERVICE     	0x01  	/* Filter for service availability    */
-> > +#define TIPC_SUB_PORTS     	0x02  	/* Filter for port availability  */
-> >  #define TIPC_SUB_CANCEL         0x04    /* Cancel a subscription         */
-> > +#define TIPC_SUB_MASK		(TIPC_SUB_SERVICE|TIPC_SUB_PORTS|TIPC_SUB_CANCEL)
-> >  
-> >  #define TIPC_WAIT_FOREVER	~0	/* timeout for permanent subscription */
-> >  
+> > 
+> > In case the trace point is enabled the jmpq is there, so it jumps to
+> > 23 and jumps from there to 72.
 > 
-> The values of TIPC_SUB_SERVICE and TIPC_SUB_PORTS seem to be swapped
-> compared to the old (TIPC 1.6) values:
-> #define TIPC_SUB_PORTS     	0x01  	/* filter for port availability */
-> #define TIPC_SUB_SERVICE     	0x02  	/* filter for service availability */
+> No, when we dynamically enable the tracepoint, it will jump to 25, not
+> 23. That's what the goto part is about. We add the do_trace label to the
+> table, and we make it point to that location. If we did it as you say,
+> then tracepoints would never be enabled.
 > 
-> You might missed this error when trying the code I posted earlier (which
-> BTW are the official TIPC demos) because the change of behaviour when
-> using TIPC_SUB_SERVICE and TIPC_SUB_PORTS is very subtle (the former
-> reports only the first published port name that matches, and the later
-> all the published ports that match).
+> This is not unlike what we do with the function tracer. The original
+> code points to mcount which simply is:
+> 
+> 	mcount:
+> 		retq
+> 
+> And when we enable the callers, we have it jump to a different function.
+> 
+> > 
+> > In case the trace point is disabled the jmpq is noped out, so it jumps
+> > to 72 directly.
+> 
+> That is correct.
+> 
+> > 
+> > > always thought a non conditional jmp was faster than a conditional one,
+> > 
+> > I always thought, that at least some of the stuff which comes from
+> > tracing folks makes some sense.
+> 
+> Is it still not making sense?
+> 
+> > 
+> > > since there's no need to go into the branch prediction logic. The CPU
+> > > can simply skip to the code to jump next. Of counse, this pollutes the 
+> > > I$.
+> > 
+> > We might consult Mathieu for further useless blurb on how CPUs work
+> > around broken code.
+> 
+> The code worked fine before, it just was not very pretty.
+> 
+> But it seemed that gcc for you inlined the code in the wrong spot.
+> Perhaps it's not a good idea to have the something like h - softirq_vec
+> in the parameter of the tracepoint. Not saying that your change is not
+> worth it. It is, because h - softirq_vec is used by others now too.
 
-Also, I'm surprised the TIPC 1.6 demo program worked for you, as I don't
-see any translation from the old TIPC_SUB_SERVICE value (2) to the new
-one (0, or the absence of the TIPC_SUB_PORTS flag). I guess if this
-subscription should be sent through the wire and should comply with
-TIPC 2.0, filter & 2 should be 0.
+Crap, crap, crap. This has nothing to do with the arguments of that
+trace point, it's a compiler problem and you are just hoping that GCC
+will do the right thing.
 
-Also, without such translation, I don't see how TIPC_SUB_SERVICE doesn't
-trigger a subscription rejection with this check:
+That's the complete wrong assumption and as Jason confirmed GCC is not
+up to it at all.
 
-	if ((sub->filter && (sub->filter != TIPC_SUB_PORTS)) ||
-			(sub->seq.lower > sub->seq.upper)) {
-		warn("Subscription rejected, illegal request\n");
+hpa just posted code which does the _RIGHT_ _THING_ independent of any
+compiler madness and you tracer folks just missed it.
 
-But if you tried the TIPC 1.6 demo and it worked, I guess I'm definitely
-missing something (as I'm not familiar with TIPC code at all).
+Your jump label optimization made code even worse for todays common
+compilers. Just admit it and fix that mess you created or simply
+disable it.
 
-Anyway, I'll try the patch tomorrow morning and tell you how it went,
-but I thought I should point out those things just in case.
+Thanks,
 
-Thanks.
-
--- 
-Leandro Lucarella (AKA luca)                     http://llucax.com.ar/
-----------------------------------------------------------------------
-GPG Key: 5F5A8D05 (F8CD F9A7 BF00 5431 4145  104C 949E BFB6 5F5A 8D05)
-----------------------------------------------------------------------
-Be nice to nerds
-Chances are you'll end up working for one
+	tglx
