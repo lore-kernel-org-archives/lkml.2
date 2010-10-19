@@ -1,84 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756289Ab0JSXjI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Oct 2010 19:39:08 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:44144 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751414Ab0JSXjG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Oct 2010 19:39:06 -0400
-Date: Tue, 19 Oct 2010 16:38:37 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Kay Sievers <kay.sievers@vrfy.org>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>, Greg KH <greg@kroah.com>
-Subject: Re: [PATCH] support polling of /proc/swaps
-Message-Id: <20101019163837.c2a67d0b.akpm@linux-foundation.org>
-In-Reply-To: <1287530747.1171.9.camel@yio.site>
-References: <1287479956.1729.1.camel@yio.site>
-	<20101019153136.b2543f7b.akpm@linux-foundation.org>
-	<1287530747.1171.9.camel@yio.site>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1757667Ab0JSXkd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Oct 2010 19:40:33 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:42816 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755435Ab0JSXkc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Oct 2010 19:40:32 -0400
+Message-ID: <4CBE2C1B.6070500@zytor.com>
+Date: Tue, 19 Oct 2010 16:39:07 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc13 Thunderbird/3.1.4
+MIME-Version: 1.0
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+CC: Steven Rostedt <rostedt@goodmis.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Koki Sanagi <sanagi.koki@jp.fujitsu.com>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Frederic Weisbecker <fweisbec@gmail.com>, nhorman@tuxdriver.com,
+        scott.a.mcmillan@intel.com, laijs@cn.fujitsu.com,
+        LKML <linux-kernel@vger.kernel.org>, eric.dumazet@gmail.com,
+        kaneshige.kenji@jp.fujitsu.com, David Miller <davem@davemloft.net>,
+        izumi.taku@jp.fujitsu.com, kosaki.motohiro@jp.fujitsu.com,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        "Luck, Tony" <tony.luck@intel.com>
+Subject: Re: [PATCH] tracing: Cleanup the convoluted softirq tracepoints
+References: <tip-2bf2160d8805de64308e2e7c3cd97813cb58ed2f@git.kernel.org>    <20100908112529.GA25931@elte.hu> <1287395077.29097.1543.camel@twins>    <1287398936.29097.1548.camel@twins> <4CBD79CF.2060706@jp.fujitsu.com>    <alpine.LFD.2.00.1010191428560.6815@localhost6.localdomain6>    <20101019132236.GA19197@Krystal>    <alpine.LFD.2.00.1010191524160.6815@localhost6.localdomain6>    <1287496495.16971.372.camel@gandalf.stny.rr.com>    <alpine.LFD.2.00.1010191558250.6815@localhost6.localdomain6>    <20101019142820.GA14520@Krystal>    <alpine.LFD.2.00.1010191842270.6815@localhost6.localdomain6>    <1287521757.16971.397.camel@gandalf.stny.rr.com>    <alpine.LFD.2.00.1010192302000.6815@localhost6.localdomain6>    <1287523439.16971.433.camel@gandalf.stny.rr.com>    <4CBE122B.9020807@zytor.com>    <1287527005.16971.527.camel@gandalf.stny.rr.com> <364b3c9b09b8b02f6804634a2fc927b4.squirrel@programming.kicks-ass.net>
+In-Reply-To: <364b3c9b09b8b02f6804634a2fc927b4.squirrel@programming.kicks-ass.net>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 20 Oct 2010 01:25:47 +0200
-Kay Sievers <kay.sievers@vrfy.org> wrote:
-
-> On Tue, 2010-10-19 at 15:31 -0700, Andrew Morton wrote:
-> > On Tue, 19 Oct 2010 11:19:16 +0200
-> > Kay Sievers <kay.sievers@vrfy.org> wrote:
+On 10/19/2010 03:27 PM, Peter Zijlstra wrote:
 > 
-> > It's a bit sad that we have to add quite a pile of infrastructure to
-> > make a procfs file pollable.  I wonder if it's possible to provide some
-> > core support for this, and reduce the amount of code at each particular
-> > handler site.
+> Due to not actually having a sane key type the above is not easy to
+> implement, but I tried:
 > 
-> You mean something like adding the event counter to the seq_file? There
-> is /proc/self/mounts,mountinfo and /proc/swaps so far, I think.
-
-Don't know - I was just waving hands about wondering if we really need
-to add 48 new lines of code each time we want to make a procfs file
-pollable.
-
-> > Also, I wonder how we are to communicate the existence of this feature
-> > to our users.  Nobody will look in Documentation/filesystems/.  Is
-> > there a manpage?  Seems not...
+> #define _SWITCH_POINT(x)\
+> ({                                                              \
+>         __label__ jl_enabled;                                   \
+>         bool ret = true;                                        \
+>         JUMP_LABEL(x, jl_enabled);                              \
+>         ret = false;                                            \
+> jl_enabled:                                                     \
+>         ret;            })
 > 
-> Hmm, 'man 5 proc'?
-
-yes, that mentions /proc/swaps.
-
-> > > +static DECLARE_WAIT_QUEUE_HEAD(proc_poll_wait);
-> > > +static int proc_poll_event;
-> > 
-> > Please pick a lock to protect proc_poll_event.
+> #define SWITCH_POINT(x) unlikely(_SWITCH_POINT(x))
 > 
-> An atomic_t should do it too, right?
-
-It does.
-
-> > Then document that
-> > locking here, when you also document proc_poll_event ;)
+> #define COND_STMT(key, stmt)                                    \
+> do {                                                            \
+>         if (SWITCH_POINT(key)) {                                \
+>                 stmt;                                           \
+>         }                                                       \
+> } while (0)
 > 
-> The actual value has no meaning at all, it just tells that something
-> happened if it has changed.
+> 
+> and that's still generating these double jumps.
 > 
 
-bah.
+I just experimented with it, and the ({...}) construct doesn't work,
+because it looks like a merged flow of control to gcc.
 
---- a/mm/swapfile.c~proc-swaps-support-polling-fix
-+++ a/mm/swapfile.c
-@@ -60,6 +60,7 @@ static struct swap_info_struct *swap_inf
- static DEFINE_MUTEX(swapon_mutex);
- 
- static DECLARE_WAIT_QUEUE_HEAD(proc_poll_wait);
-+/* Activity counter to indicate that a swapon or swapoff has occurred */
- static atomic_t proc_poll_event = ATOMIC_INIT(0);
- 
- static inline unsigned char swap_count(unsigned char ent)
-_
+Replacing the ({ ... }) with an inline does indeed remove the double
+jumps.
 
+diff --git a/include/linux/jump_label.h b/include/linux/jump_label.h
+index b67cb18..2ff829d 100644
+--- a/include/linux/jump_label.h
++++ b/include/linux/jump_label.h
+@@ -61,12 +61,22 @@ static inline int jump_label_text_reserved(void
+*start, void *end)
+
+ #endif
+
++static __always_inline __pure bool _SWITCH_POINT(void *x)
++{
++       asm goto("# SWITCH_POINT %0\n\t"
++                ".byte 0x66,0x66,0x66,0x66,0x90\n"
++                "1:"
++                : : "i" (x) : : jl_enabled);
++       return false;
++jl_enabled:
++       return true;
++}
++
++#define SWITCH_POINT(x)        unlikely(_SWITCH_POINT(x))
++
+ #define COND_STMT(key, stmt)                                   \
+ do {                                                           \
+-       __label__ jl_enabled;                                   \
+-       JUMP_LABEL(key, jl_enabled);                            \
+-       if (0) {                                                \
+-jl_enabled:                                                    \
++       if (SWITCH_POINT(key)) {                                \
+                stmt;                                           \
+        }                                                       \
+ } while (0)
+
+
+The key here seems to be to not use the JUMP_LABEL macro as implemented;
+I have utterly failed to make JUMP_LABEL() do the right thing.
+
+
+	-hpa
