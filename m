@@ -1,54 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934010Ab0JSNRm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Oct 2010 09:17:42 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:56364 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933331Ab0JSNRk (ORCPT
+	id S1758623Ab0JSNUM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Oct 2010 09:20:12 -0400
+Received: from alerce.vps.bitfolk.com ([212.13.194.134]:2354 "EHLO
+	alerce.vps.bitfolk.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758571Ab0JSNUK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Oct 2010 09:17:40 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Joe Perches <joe@perches.com>
-Subject: Re: linux-next: manual merge of the msm tree with the arm tree
-Date: Tue, 19 Oct 2010 15:18:03 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.35-16-generic; KDE/4.3.2; x86_64; ; )
-Cc: Nicolas Pitre <nico@fluxnic.net>, Daniel Walker <dwalker@fifo99.com>,
-        Russell King <rmk@arm.linux.org.uk>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        lkml <linux-kernel@vger.kernel.org>,
-        Jeremy Kerr <jeremy.kerr@canonical.com>,
-        Jeff Ohlstein <johlstei@codeaurora.org>
-References: <20101018103540.7bd9c535.sfr@canb.auug.org.au> <alpine.LFD.2.00.1010181833440.2764@xanadu.home> <1287442418.5376.38.camel@Joe-Laptop>
-In-Reply-To: <1287442418.5376.38.camel@Joe-Laptop>
+	Tue, 19 Oct 2010 09:20:10 -0400
+Date: Tue, 19 Oct 2010 10:19:36 -0300
+From: Leandro Lucarella <luca@llucax.com.ar>
+To: Neil Horman <nhorman@tuxdriver.com>
+Cc: David Miller <davem@davemloft.net>, paul.gortmaker@windriver.com,
+        jon.maloy@ericsson.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, tipc-discussion@lists.sourceforge.net
+Subject: Re: Linux 2.6.35/TIPC 2.0 ABI breaking changes
+Message-ID: <20101019131936.GB8781@llucax.com.ar>
+References: <4CBCD429.8090306@windriver.com>
+ <20101018234547.GA5703@hmsreliant.think-freely.org>
+ <20101019021657.GZ8781@llucax.com.ar>
+ <20101019.011649.71113115.davem@davemloft.net>
+ <20101019110452.GA14410@hmsreliant.think-freely.org>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201010191518.04147.arnd@arndb.de>
-X-Provags-ID: V02:K0:Smz9yJtVFYJHBWvQC4X+VJOW5CIHAJTqsz5DyXXZnga
- 1k257a1glkSVPkvXzjKV1jXh3HkX6A+YNeqcV3Gcz6gS01VxvN
- ZyEpX6CCBcjVkeADaIrTibiT3cHvQ7eT2K8Mc8nAv5p/X2erq8
- g+9gCfssDFGk4fXZXPudwy0KxnKEwDooSm5p2MxFXMq5wYNk0Z
- xP/lG0IiTPDdbOJ++WaXw==
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20101019110452.GA14410@hmsreliant.think-freely.org>
+X-Paranoid: Just because you're paranoid, don't mean they're not after you.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 19 October 2010, Joe Perches wrote:
-> This could have been done:
-> 
-> $ git show 08a610d9ef5394525b0328da0162d7b58c982cc4 | ./scripts/get_maintainer.pl --nogit | wc -l
-> 35
-> 
-> Even then, using 35 CCs is generally silly.
-> 
-> It might make some sense for a cover letter and a
-> patch series where the series made tree-wide changes
-> in multiple directories.
+Neil Horman, el 19 de octubre a las 07:04 me escribiste:
+> On Tue, Oct 19, 2010 at 01:16:49AM -0700, David Miller wrote:
+> > From: Leandro Lucarella <luca@llucax.com.ar>
+> > Date: Mon, 18 Oct 2010 23:16:57 -0300
+> > 
+> > > 
+> > > The problem is not between the tipc stacks in different hosts, is
+> > > between the tipc stack and the applications using it (well, maybe
+> > > there is a problem somewhere else too).
+> > > 
+> > > This was a deliberate API change, not a subtle bug...
+> > 
+> > Neil et al., if these packets live only between the kernel stack
+> > and the userspace API layer, we should not be byte-swapping this
+> > stuff and we need to fix this fast.
+> > 
+> Copy that Dave.  I think I see the problem.  The subscription code handles
+> messages both off the wire and from local user space.  The off the wire case
+> should work because the subscription code assumes that all the incomming data is
+> in network byte order, but user space is an exception to that rule as its in
+> local byte order.  I'll have a patch together for Leandro to test soon.
+> Neil
 
-Probably not even then: When a single mail header gets too long, you usually land
-in some spam filter and get hate mail from the list owners. The lkml limit is 1024
-characters (this may come from an official RFC, don't know), which is usually less
-than 35 recipients.
+Thank you very much. Bare in mind that the byte order is just one of the
+problems, the other problem is the change in the value of
+TIPC_SUB_SERVICE from 2 to 0. That too is breaking the API/ABI, as
+a message with a filter value of 2 is rejected by TIPC 2.0/2.6.35+.
 
-	Arnd
+-- 
+Leandro Lucarella (AKA luca)                     http://llucax.com.ar/
+----------------------------------------------------------------------
+GPG Key: 5F5A8D05 (F8CD F9A7 BF00 5431 4145  104C 949E BFB6 5F5A 8D05)
+----------------------------------------------------------------------
+Dentro de 30 años Argentina va a ser un gran supermercado con 15
+changuitos, porque esa va a ser la cantidad de gente que va a poder
+comprar algo.
+	-- Sidharta Wiki
