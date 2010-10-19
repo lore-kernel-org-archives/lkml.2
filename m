@@ -1,173 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757942Ab0JSVbR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Oct 2010 17:31:17 -0400
-Received: from pfepb.post.tele.dk ([195.41.46.236]:41791 "EHLO
-	pfepb.post.tele.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754490Ab0JSVbP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Oct 2010 17:31:15 -0400
-Date: Tue, 19 Oct 2010 23:31:12 +0200
-From: Sam Ravnborg <sam@ravnborg.org>
-To: Mike Frysinger <vapier.adi@gmail.com>, Michal Marek <mmarek@suse.cz>
-Cc: Hendrik Brueckner <brueckner@linux.vnet.ibm.com>, mmarek@suse.cz,
-        Michael Holzheu <holzheu@linux.vnet.ibm.com>, tabbott@ksplice.com,
-        vda.linux@googlemail.com, hpa@linux.intel.com,
-        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        heiko.carstens@de.ibm.com, schwidefsky@de.ibm.com
-Subject: Re: [PATCH] initramfs: Fix build break on symbol-prefixed archs
-Message-ID: <20101019213112.GA11432@merkur.ravnborg.org>
-References: <20100831082307.064687027@linux.vnet.ibm.com> <20100831083844.043619334@linux.vnet.ibm.com> <AANLkTikCLHh5Uz-DRq9ws78We+SwCAqdurA6HfuJh-8Y@mail.gmail.com> <20101018103729.GA4122@linux.vnet.ibm.com> <AANLkTikKJ25L=6b2resz+0SAg7ZYL5j=rHG7Lg4kFbwd@mail.gmail.com> <20101019110801.GA4128@linux.vnet.ibm.com> <AANLkTimLi8BYy_u8NhD15s=+iiODzuG1H_CgZ-cd7jep@mail.gmail.com>
+	id S1757951Ab0JSVcy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Oct 2010 17:32:54 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:48962 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757872Ab0JSVcx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Oct 2010 17:32:53 -0400
+Date: Tue, 19 Oct 2010 17:32:26 -0400
+From: Jason Baron <jbaron@redhat.com>
+To: David Daney <ddaney@caviumnetworks.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Koki Sanagi <sanagi.koki@jp.fujitsu.com>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Frederic Weisbecker <fweisbec@gmail.com>, nhorman@tuxdriver.com,
+        scott.a.mcmillan@intel.com, laijs@cn.fujitsu.com,
+        "H. Peter Anvin" <hpa@zytor.com>, LKML <linux-kernel@vger.kernel.org>,
+        eric.dumazet@gmail.com, kaneshige.kenji@jp.fujitsu.com,
+        David Miller <davem@davemloft.net>, izumi.taku@jp.fujitsu.com,
+        kosaki.motohiro@jp.fujitsu.com,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        "Luck, Tony" <tony.luck@intel.com>
+Subject: Re: [PATCH] tracing: Cleanup the convoluted softirq tracepoints
+Message-ID: <20101019213225.GB2855@redhat.com>
+References: <1287398936.29097.1548.camel@twins>
+ <4CBD79CF.2060706@jp.fujitsu.com>
+ <alpine.LFD.2.00.1010191428560.6815@localhost6.localdomain6>
+ <20101019132236.GA19197@Krystal>
+ <alpine.LFD.2.00.1010191524160.6815@localhost6.localdomain6>
+ <1287496495.16971.372.camel@gandalf.stny.rr.com>
+ <alpine.LFD.2.00.1010191558250.6815@localhost6.localdomain6>
+ <20101019142820.GA14520@Krystal>
+ <alpine.LFD.2.00.1010191842270.6815@localhost6.localdomain6>
+ <4CBE0AC6.3040402@caviumnetworks.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTimLi8BYy_u8NhD15s=+iiODzuG1H_CgZ-cd7jep@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <4CBE0AC6.3040402@caviumnetworks.com>
+User-Agent: Mutt/1.5.20 (2010-07-18)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 19, 2010 at 04:11:53PM -0400, Mike Frysinger wrote:
-> On Tue, Oct 19, 2010 at 07:08, Hendrik Brueckner wrote:
-> > --- a/usr/Makefile
-> > +++ b/usr/Makefile
-> > @@ -19,6 +19,9 @@ suffix_$(CONFIG_INITRAMFS_COMPRESSION_LZ
-> >  suffix_$(CONFIG_INITRAMFS_COMPRESSION_LZO)   = .lzo
+On Tue, Oct 19, 2010 at 02:16:54PM -0700, David Daney wrote:
+> On 10/19/2010 12:49 PM, Thomas Gleixner wrote:
+> [...]
+> >So that saves _TWO_ bytes of text and replaces:
 > >
-> >  AFLAGS_initramfs_data.o += -DINITRAMFS_IMAGE="usr/initramfs_data.cpio$(suffix_y)"
-> > +ifdef CONFIG_SYMBOL_PREFIX
-> > +AFLAGS_initramfs_data.o += -DSYMBOL_PREFIX=$(patsubst "%",%,$(CONFIG_SYMBOL_PREFIX))
-> > +endif
+> >-  1e:	83 3d 00 00 00 00 00 	cmpl   $0x0,0x0(%rip)        # 25<test+0x25>
+> >-  25:	74 4d                	je     74<test+0x74>
+> >+  1e:	e9 00 00 00 00       	jmpq   23<test+0x23>
+> >+  23:	eb 4d                	jmp    72<test+0x72>
 > >
-> >  # Generate builtin.o based on initramfs_data.o
-> >  obj-$(CONFIG_BLK_DEV_INITRD) := initramfs_data.o
+> >So it trades a conditional vs. two jumps ? WTF ??
+> >
+> >I thought that jumplabel magic was supposed to get rid of the jump
+> >over the tracing code ? In fact it adds another jump. Whatfor ?
 > 
-> i dont think we want to go this route.  keep it in one place:
-> --- a/scripts/Makefile.lib
-> +++ b/scripts/Makefile.lib
-> @@ -120,7 +120,9 @@ _c_flags += $(if $(patsubst n%,, \
->  endif
+> The 'asm goto' construct in GCC-4.5 is deficient in this area.
 > 
->  ifdef CONFIG_SYMBOL_PREFIX
-> -_cpp_flags += -DSYMBOL_PREFIX=$(patsubst "%",%,$(CONFIG_SYMBOL_PREFIX))
-> +_sym_flags = -DSYMBOL_PREFIX=$(patsubst "%",%,$(CONFIG_SYMBOL_PREFIX))
-> +_cpp_flags += $(_sym_flags)
-> +_a_flags += $(_sym_flags)
->  endif
+> GCC assumes that all exit paths from an 'asm goto' are equally
+> likely, so the tracing (or dynamic printk etc.) code is assumed to
+> be hot and is emitted inline.  Since they are inline like this,
+> there are all these jumps around them and they pollute the I-Cache.
+> 
+> I was looking at fixing it, but I think a true general purpose fix
+> would require enhancing GCC's grammar to allow specifying of the
+> 'likelyness' of each exit path from 'asm goto'.
+> 
+> David Daney
+> 
 
-The right fix would be to fix some unfortunate breakage in kbuild.
-The value of _cpp_flags is only used for preprocessing linker scripts,
-but should be used for as and gcc too.
+right, the next step is adding support for hot/cold labels, so the
+tracing code will be annotaed with a 'cold' label. Thus, not adding the
+'jmp' above on line '23', and in fact moving the tracing code
+out-of-line. Maybe I haven't been clear on this.
 
-A small analysis:
-Today we have different ways to set preprocessor flags.
+thanks,
 
-KBUILD_CPPFLAGS - set in top-level Makefile + arch MAkefile
-                  used by all of cpp, as, gcc
-
-EXTRA_CPPFLAGS  - not used at all and can be deleted
-
-cppflags-y      - set in Kbuild files
-                - only used when preprocessing linker scripts
-
-CPPFLAGS_<target> - used for linker scripts in many places
-
-It looks like the following untested patch should fix it.
-With this patch we have SYMBOL_PREFIX defined when
-building assembler files too.
-
-The patch fix it so flags used for preprocessing is also applied
-to as and gcc.
-
-@Michal - do you follow my rationale and do you agree?
-
-
-Another way to fix this would be to fix asm-generic/vmlinx.lds.h
-to check for CONFIG_SYMBOL_PREFIX direct.
-I cannot see why we require the SYMBOL_PREFIX definition.
-
-See patch number two below for my take on it.
-This is my preferred way to deal with this.
-The cppflags fix can wait a little.
-
-	Sam
-
-diff --git a/scripts/Makefile.lib b/scripts/Makefile.lib
-index 54fd1b7..1b8f15d 100644
---- a/scripts/Makefile.lib
-+++ b/scripts/Makefile.lib
-@@ -109,10 +109,10 @@ else
- debug_flags =
- endif
- 
--orig_c_flags   = $(KBUILD_CPPFLAGS) $(KBUILD_CFLAGS) $(KBUILD_SUBDIR_CCFLAGS) \
-+orig_c_flags   = $(KBUILD_CFLAGS) $(KBUILD_SUBDIR_CCFLAGS) \
-                  $(ccflags-y) $(CFLAGS_$(basetarget).o)
- _c_flags       = $(filter-out $(CFLAGS_REMOVE_$(basetarget).o), $(orig_c_flags))
--_a_flags       = $(KBUILD_CPPFLAGS) $(KBUILD_AFLAGS) $(KBUILD_SUBDIR_ASFLAGS) \
-+_a_flags       = $(KBUILD_AFLAGS) $(KBUILD_SUBDIR_ASFLAGS) \
-                  $(asflags-y) $(AFLAGS_$(basetarget).o)
- _cpp_flags     = $(KBUILD_CPPFLAGS) $(cppflags-y) $(CPPFLAGS_$(@F))
- 
-@@ -150,16 +150,14 @@ __a_flags	=                          $(call flags,_a_flags)
- __cpp_flags     =                          $(call flags,_cpp_flags)
- endif
- 
--c_flags        = -Wp,-MD,$(depfile) $(NOSTDINC_FLAGS) $(LINUXINCLUDE)     \
--		 $(__c_flags) $(modkern_cflags)                           \
-+cpp_flags      = -Wp,-MD,$(depfile) $(NOSTDINC_FLAGS) $(LINUXINCLUDE)     \
-+		 $(__cpp_flags)
-+
-+c_flags        = $(cpp_flags) $(__c_flags) $(modkern_cflags)              \
- 		 -D"KBUILD_STR(s)=\#s" $(basename_flags) $(modname_flags) \
- 		  $(debug_flags)
- 
--a_flags        = -Wp,-MD,$(depfile) $(NOSTDINC_FLAGS) $(LINUXINCLUDE)     \
--		 $(__a_flags) $(modkern_aflags)
--
--cpp_flags      = -Wp,-MD,$(depfile) $(NOSTDINC_FLAGS) $(LINUXINCLUDE)     \
--		 $(__cpp_flags)
-+a_flags        = $(cpp_flags) $(__a_flags) $(modkern_aflags)
- 
- ld_flags       = $(LDFLAGS) $(ldflags-y)
- 
-
-
-
-
-
-diff --git a/include/asm-generic/vmlinux.lds.h b/include/asm-generic/vmlinux.lds.h
-index 8a92a17..520e4ac 100644
---- a/include/asm-generic/vmlinux.lds.h
-+++ b/include/asm-generic/vmlinux.lds.h
-@@ -52,12 +52,12 @@
- #define LOAD_OFFSET 0
- #endif
- 
--#ifndef SYMBOL_PREFIX
-+#ifndef CONFIG_SYMBOL_PREFIX
- #define VMLINUX_SYMBOL(sym) sym
- #else
- #define PASTE2(x,y) x##y
- #define PASTE(x,y) PASTE2(x,y)
--#define VMLINUX_SYMBOL(sym) PASTE(SYMBOL_PREFIX, sym)
-+#define VMLINUX_SYMBOL(sym) PASTE(CONFIG_SYMBOL_PREFIX, sym)
- #endif
- 
- /* Align . to a 8 byte boundary equals to maximum function alignment. */
-diff --git a/scripts/Makefile.lib b/scripts/Makefile.lib
-index 54fd1b7..08e13b1 100644
---- a/scripts/Makefile.lib
-+++ b/scripts/Makefile.lib
-@@ -127,10 +127,6 @@ _c_flags += $(if $(patsubst n%,, \
- 		$(CFLAGS_GCOV))
- endif
- 
--ifdef CONFIG_SYMBOL_PREFIX
--_cpp_flags += -DSYMBOL_PREFIX=$(patsubst "%",%,$(CONFIG_SYMBOL_PREFIX))
--endif
--
- 
- # If building the kernel in a separate objtree expand all occurrences
- # of -Idir to -I$(srctree)/dir except for absolute paths (starting with '/').
+-Jason
