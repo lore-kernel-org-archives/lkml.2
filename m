@@ -1,70 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757946Ab0JSAqq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Oct 2010 20:46:46 -0400
-Received: from kroah.org ([198.145.64.141]:48379 "EHLO coco.kroah.org"
+	id S933652Ab0JSAro (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Oct 2010 20:47:44 -0400
+Received: from mga09.intel.com ([134.134.136.24]:8586 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755809Ab0JSAqo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Oct 2010 20:46:44 -0400
-Date: Mon, 18 Oct 2010 17:40:04 -0700
-From: Greg KH <greg@kroah.com>
-To: Dave Airlie <airlied@gmail.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, codalist@telemann.coda.cs.cmu.edu,
-        ksummit-2010-discuss@lists.linux-foundation.org,
-        autofs@linux.kernel.org, Jan Harkes <jaharkes@cs.cmu.edu>,
-        Samuel Ortiz <samuel@sortiz.org>, Jan Kara <jack@suse.cz>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        netdev@vger.kernel.org, Anders Larsen <al@alarsen.net>,
-        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        Bryan Schumaker <bjschuma@netapp.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        Petr Vandrovec <vandrove@vc.cvut.cz>,
-        Mikulas Patocka <mikulas@artax.karlin.mff.cuni.cz>,
-        linux-fsdevel@vger.kernel.org, Evgeniy Dushistov <dushistov@mail.ru>,
-        Ingo Molnar <mingo@elte.hu>, Andrew Hendry <andrew.hendry@gmail.com>,
-        linux-media@vger.kernel.org
-Subject: Re: [Ksummit-2010-discuss] [v2] Remaining BKL users, what to do
-Message-ID: <20101019004004.GB28380@kroah.com>
-References: <201009161632.59210.arnd@arndb.de> <201010181742.06678.arnd@arndb.de> <20101018184346.GD27089@kroah.com> <AANLkTin2KPNNXvwcWphhM-5qexB14FS7M7ezkCCYCZ2H@mail.gmail.com>
+	id S1755405Ab0JSArn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Oct 2010 20:47:43 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.57,347,1283756400"; 
+   d="scan'208";a="565223739"
+Date: Mon, 18 Oct 2010 17:47:40 -0700
+From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+To: Sergei Shtylyov <sshtylyov@mvista.com>
+Cc: Tatyana Brokhman <tlinder@codeaurora.org>, linux-usb@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Jacob Pan <jacob.jun.pan@intel.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/3] usb: USB3.0 ch11 definitions
+Message-ID: <20101019004740.GB2574@xanatos>
+References: <1287414160-12307-1-git-send-email-tlinder@codeaurora.org>
+ <4CBCA452.6070804@mvista.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <AANLkTin2KPNNXvwcWphhM-5qexB14FS7M7ezkCCYCZ2H@mail.gmail.com>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+In-Reply-To: <4CBCA452.6070804@mvista.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 19, 2010 at 09:00:09AM +1000, Dave Airlie wrote:
-> On Tue, Oct 19, 2010 at 4:43 AM, Greg KH <greg@kroah.com> wrote:
-> > On Mon, Oct 18, 2010 at 05:42:06PM +0200, Arnd Bergmann wrote:
-> >>
-> >> Out of the remaining modules, I guess i810/i830, adfs, hpfs and ufs might end
-> >> up not getting fixed at all, we can either mark them non-SMP or move them
-> >> to drivers/staging once all the others are done.
-> >
-> > I recommend moving them to staging, and then retire them from there if
-> > no one steps up to maintain them.
+On Mon, Oct 18, 2010 at 11:47:30PM +0400, Sergei Shtylyov wrote:
+> Hello.
 > 
-> I think this sets a bad precedent, these drivers work fine. Removing
-> BKL from them is hard, and involves finding and booting hw that
-> developers don't have much time/interest in at the moment. Anyone who
-> has access to the i810 hw and has time to work out the locking has
-> more important things to be doing with modern hw, however it doesn't
-> mean we should just drop support for old drivers because they don't
-> have active maintainers. Removing the BKL from the kernel is a great
-> goal, but breaking userspace ABI by removing drivers isn't.
+> On 18-10-2010 19:02, Tatyana Brokhman wrote:
+> 
+> >Adding hub SuperSpeed usb definitions as defined by ch10 of the USB3.0
+> >spec.
+> 
+>    So it's chapter 10 or 11? ;-)
 
-Should we just restrict such drivers to only be able to build on UP
-machines with preempt disabled so that the BKL could be safely removed
-from them?
+The hub definitions are in chapter 11 in the USB 2.0 bus spec, and
+chapter 10 in the USB 3.0 bus spec.  But I don't think we're going to
+rename ch11.h.
 
-Or what other idea do you have as to what could be done here?
-
-I do have access to this hardware, but its on an old single processor
-laptop, so any work that it would take to help do this development,
-really wouldn't be able to be tested to be valid at all.
-
-thanks,
-
-greg k-h
+Sarah Sharp
