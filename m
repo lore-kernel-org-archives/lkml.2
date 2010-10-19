@@ -1,204 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757091Ab0JSUTC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Oct 2010 16:19:02 -0400
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:52408 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753293Ab0JSUTA (ORCPT
+	id S1757148Ab0JSUVN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Oct 2010 16:21:13 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:63647 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753470Ab0JSUVM convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Oct 2010 16:19:00 -0400
-Date: Tue, 19 Oct 2010 16:18:41 -0400
-From: Neil Horman <nhorman@tuxdriver.com>
-To: Leandro Lucarella <luca@llucax.com.ar>
-Cc: David Miller <davem@davemloft.net>, paul.gortmaker@windriver.com,
-        jon.maloy@ericsson.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, tipc-discussion@lists.sourceforge.net
-Subject: Re: Linux 2.6.35/TIPC 2.0 ABI breaking changes
-Message-ID: <20101019201841.GC14410@hmsreliant.think-freely.org>
-References: <4CBCD429.8090306@windriver.com>
- <20101018234547.GA5703@hmsreliant.think-freely.org>
- <20101019021657.GZ8781@llucax.com.ar>
- <20101019.011649.71113115.davem@davemloft.net>
- <20101019110452.GA14410@hmsreliant.think-freely.org>
- <20101019131936.GB8781@llucax.com.ar>
+	Tue, 19 Oct 2010 16:21:12 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20101019131936.GB8781@llucax.com.ar>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-Spam-Score: -2.9 (--)
+X-Originating-IP: [109.186.69.160]
+In-Reply-To: <20101019154627.GC4589@kroah.com>
+References: <1287387875-14168-1-git-send-email-ohad@wizery.com>
+ <1287387875-14168-2-git-send-email-ohad@wizery.com> <20101019154627.GC4589@kroah.com>
+From: Ohad Ben-Cohen <ohad@wizery.com>
+Date: Tue, 19 Oct 2010 22:18:57 +0200
+Message-ID: <AANLkTi=TPNuDeEwqZzpSaz71rjghjg=6V0stFFcmpB+O@mail.gmail.com>
+Subject: Re: [PATCH 1/3] drivers: misc: add omap_hwspinlock driver
+To: Greg KH <greg@kroah.com>
+Cc: linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, akpm@linux-foundation.org,
+        Tony Lindgren <tony@atomide.com>, Benoit Cousson <b-cousson@ti.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Hari Kanigeri <h-kanigeri2@ti.com>, Suman Anna <s-anna@ti.com>,
+        Simon Que <sque@ti.com>, "Krishnamoorthy, Balaji T" <balajitk@ti.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 19, 2010 at 10:19:36AM -0300, Leandro Lucarella wrote:
-> Neil Horman, el 19 de octubre a las 07:04 me escribiste:
-> > On Tue, Oct 19, 2010 at 01:16:49AM -0700, David Miller wrote:
-> > > From: Leandro Lucarella <luca@llucax.com.ar>
-> > > Date: Mon, 18 Oct 2010 23:16:57 -0300
-> > > 
-> > > > 
-> > > > The problem is not between the tipc stacks in different hosts, is
-> > > > between the tipc stack and the applications using it (well, maybe
-> > > > there is a problem somewhere else too).
-> > > > 
-> > > > This was a deliberate API change, not a subtle bug...
-> > > 
-> > > Neil et al., if these packets live only between the kernel stack
-> > > and the userspace API layer, we should not be byte-swapping this
-> > > stuff and we need to fix this fast.
-> > > 
-> > Copy that Dave.  I think I see the problem.  The subscription code handles
-> > messages both off the wire and from local user space.  The off the wire case
-> > should work because the subscription code assumes that all the incomming data is
-> > in network byte order, but user space is an exception to that rule as its in
-> > local byte order.  I'll have a patch together for Leandro to test soon.
-> > Neil
-> 
-> Thank you very much. Bare in mind that the byte order is just one of the
-> problems, the other problem is the change in the value of
-> TIPC_SUB_SERVICE from 2 to 0. That too is breaking the API/ABI, as
-> a message with a filter value of 2 is rejected by TIPC 2.0/2.6.35+.
-> 
-> -- 
-> Leandro Lucarella (AKA luca)                     http://llucax.com.ar/
-> ----------------------------------------------------------------------
-> GPG Key: 5F5A8D05 (F8CD F9A7 BF00 5431 4145  104C 949E BFB6 5F5A 8D05)
-> ----------------------------------------------------------------------
-> Dentro de 30 años Argentina va a ser un gran supermercado con 15
-> changuitos, porque esa va a ser la cantidad de gente que va a poder
-> comprar algo.
-> 	-- Sidharta Wiki
-> 
+On Tue, Oct 19, 2010 at 5:46 PM, Greg KH <greg@kroah.com> wrote:
+> On Mon, Oct 18, 2010 at 09:44:33AM +0200, Ohad Ben-Cohen wrote:
+>> +#else /* !CONFIG_OMAP_HWSPINLOCK */
+>> +
+>> +static inline struct omap_hwspinlock *omap_hwspinlock_request(void)
+>> +{
+>> +     return ERR_PTR(-ENOSYS);
+>> +}
+>
+> One note, do you really want to fail if this option isn't built into the
+> kernel, yet you have a driver that is asking for it?  Shouldn't you
+> instead just silently succeed, and let the code path get compiled away?
+>
+> We did that for debugfs, after learning the pain that procfs had with
+> its api for "is not built".  Doing it the way you are requires the user
+> to always test for -ENOSYS, when in reality, if that is returned,
+> there's nothing the driver can do about it, so it should just not worry
+> about it.
+>
+> Just something to think about.
 
+Completely agree; if hwspinlock support is not needed, we better let
+its users run uninterruptedly. I'll change it.
 
-Hey all-
-	Heres what I have so far.  Dave as a heads up please don't apply this
-yet.  I'd like to go over it a bit more and be sure of the implications here
-before I post it for inclusion officially.  I wanted Leandro to have a copy
-though so he could confirm functionality for us.  Leandro, This patch lets me
-pass the tipc test code for TIPC 1.6 that you posted earlier this morning.  If
-you could confirm that it works for you that would be grand.  While your doing
-that, I want to read over the spec for TIPC and make sure that I'm not breaking
-anything new with this patch.
+Thanks,
+Ohad.
 
-Thanks!
-Neil
-
-
-diff --git a/include/linux/tipc.h b/include/linux/tipc.h
-index 181c8d0..d8de884 100644
---- a/include/linux/tipc.h
-+++ b/include/linux/tipc.h
-@@ -127,9 +127,10 @@ static inline unsigned int tipc_node(__u32 addr)
-  * TIPC topology subscription service definitions
-  */
- 
--#define TIPC_SUB_SERVICE     	0x00  	/* Filter for service availability    */
--#define TIPC_SUB_PORTS     	0x01  	/* Filter for port availability  */
-+#define TIPC_SUB_SERVICE     	0x01  	/* Filter for service availability    */
-+#define TIPC_SUB_PORTS     	0x02  	/* Filter for port availability  */
- #define TIPC_SUB_CANCEL         0x04    /* Cancel a subscription         */
-+#define TIPC_SUB_MASK		(TIPC_SUB_SERVICE|TIPC_SUB_PORTS|TIPC_SUB_CANCEL)
- 
- #define TIPC_WAIT_FOREVER	~0	/* timeout for permanent subscription */
- 
-diff --git a/net/tipc/subscr.c b/net/tipc/subscr.c
-index 18813ac..06682e1 100644
---- a/net/tipc/subscr.c
-+++ b/net/tipc/subscr.c
-@@ -75,6 +75,17 @@ struct top_srv {
- 
- static struct top_srv topsrv = { 0 };
- 
-+/*
-+ * Detect the need for an endian swap.
-+ * user space sends subscriber info in 
-+ * host byte order while the kernel expects
-+ * it in network byte order.  To correct this
-+ * lets check the filter bits, if there in the 
-+ * right place we know this is in network byte order
-+ * otherwise it needs swapping around to maintain compatibility
-+ */
-+#define tipc_need_endian_swap(s) (!((s)->filter & TIPC_SUB_MASK))
-+
- /**
-  * subscr_send_event - send a message containing a tipc_event to the subscriber
-  *
-@@ -279,11 +290,21 @@ static void subscr_cancel(struct tipc_subscr *s,
- 
- 	/* Find first matching subscription, exit if not found */
- 
--	type = ntohl(s->seq.type);
--	lower = ntohl(s->seq.lower);
--	upper = ntohl(s->seq.upper);
--	timeout = ntohl(s->timeout);
--	filter = ntohl(s->filter) & ~TIPC_SUB_CANCEL;
-+	if (tipc_need_endian_swap(s)) {
-+		printk(KERN_CRIT "Swapping endianess in subscr_cancel\n");
-+		type = ntohl(s->seq.type);
-+		lower = ntohl(s->seq.lower);
-+		upper = ntohl(s->seq.upper);
-+		timeout = ntohl(s->timeout);
-+		filter = ntohl(s->filter) & ~TIPC_SUB_CANCEL;
-+	} else {
-+		printk(KERN_CRIT "NOT Swapping endianess in subscr_cancel\n");
-+		type = s->seq.type;
-+		lower = s->seq.lower;
-+		upper = s->seq.upper;
-+		timeout = s->timeout;
-+		filter = s->filter & ~TIPC_SUB_CANCEL;
-+	}
- 
- 	list_for_each_entry_safe(sub, sub_temp, &subscriber->subscription_list,
- 				 subscription_list) {
-@@ -325,10 +346,19 @@ static struct subscription *subscr_subscribe(struct tipc_subscr *s,
- 					     struct subscriber *subscriber)
- {
- 	struct subscription *sub;
-+	__u32 filter;
- 
- 	/* Detect & process a subscription cancellation request */
- 
--	if (ntohl(s->filter) & TIPC_SUB_CANCEL) {
-+	if (tipc_need_endian_swap(s)) {
-+		printk(KERN_CRIT "Swapping endianess in subscr_subscribe\n");
-+		filter = ntohl(s->filter);
-+	} else {
-+		printk(KERN_CRIT "NOT Swapping endianess in subscr_subscribe\n");
-+		filter = s->filter;
-+	}
-+
-+	if (filter & TIPC_SUB_CANCEL) {
- 		subscr_cancel(s, subscriber);
- 		return NULL;
- 	}
-@@ -353,11 +383,22 @@ static struct subscription *subscr_subscribe(struct tipc_subscr *s,
- 
- 	/* Initialize subscription object */
- 
--	sub->seq.type = ntohl(s->seq.type);
--	sub->seq.lower = ntohl(s->seq.lower);
--	sub->seq.upper = ntohl(s->seq.upper);
--	sub->timeout = ntohl(s->timeout);
--	sub->filter = ntohl(s->filter);
-+	if (tipc_need_endian_swap(s)) {
-+		printk(KERN_CRIT "Swapping endianess in subscr_subscribe\n");
-+		sub->seq.type = ntohl(s->seq.type);
-+		sub->seq.lower = ntohl(s->seq.lower);
-+		sub->seq.upper = ntohl(s->seq.upper);
-+		sub->timeout = ntohl(s->timeout);
-+		sub->filter = ntohl(s->filter);
-+	} else {
-+		printk(KERN_CRIT "NOT Swapping endianess in subscr_subscribe\n");
-+		sub->seq.type = s->seq.type;
-+		sub->seq.lower = s->seq.lower;
-+		sub->seq.upper = s->seq.upper;
-+		sub->timeout = s->timeout;
-+		sub->filter = s->filter;
-+	}
-+
- 	if ((sub->filter && (sub->filter != TIPC_SUB_PORTS)) ||
- 	    (sub->seq.lower > sub->seq.upper)) {
- 		warn("Subscription rejected, illegal request\n");
+>
+> thanks,
+>
+> greg k-h
+>
