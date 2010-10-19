@@ -1,234 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753981Ab0JSPvV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Oct 2010 11:51:21 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:39946 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753735Ab0JSPvU (ORCPT
-	<rfc822;<linux-kernel@vger.kernel.org>>);
-	Tue, 19 Oct 2010 11:51:20 -0400
-Date: Tue, 19 Oct 2010 11:48:40 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Cc: Fitzhardinge <Jeremy.Fitzhardinge@citrix.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        Jeremy@acsinet12.oracle.com,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [Xen-devel] Re: [PATCH v3 02/10] xen: remap GSIs as pirqs when
- running as initial domain
-Message-ID: <20101019154840.GA8066@dumpdata.com>
-References: <alpine.DEB.2.00.1010121043030.2422@kaball-desktop>
- <1286901770-8612-2-git-send-email-Stefano.Stabellini@eu.citrix.com>
- <20101018154139.GB27373@dumpdata.com>
- <alpine.DEB.2.00.1010191116480.2423@kaball-desktop>
+	id S1753993Ab0JSPyb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Oct 2010 11:54:31 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:46449 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752918Ab0JSPya (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Oct 2010 11:54:30 -0400
+X-Authority-Analysis: v=1.1 cv=+c36koQ5Dcj/1qolKHjtkYAGXvrVJRRiKMp+84F5sLg= c=1 sm=0 a=mLPS_VH-7X8A:10 a=kj9zAlcOel0A:10 a=mpMdnlmFKti1S5SNY1DT+A==:17 a=yQdBAQUQAAAA:8 a=VwQbUJbxAAAA:8 a=NW928xBcoRxyB8_P8tMA:9 a=hiwZ2u9Oc3RwgfErI-QA:7 a=LbU9yJ5LHqgIFNFrn3QehzkOu08A:4 a=CjuIK1q_8ugA:10 a=IcxpeKGZWnEA:10 a=mpMdnlmFKti1S5SNY1DT+A==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 65.28.92.85
+Date: Tue, 19 Oct 2010 10:54:35 -0500
+From: Larry Finger <Larry.Finger@lwfinger.net>
+To: dwmw2@infradead.org
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH] linux-firmware: Add firmware file for r8712u (RTL8192SU)
+Message-ID: <4cbdbf3b.Ek+PDAiA1jX27HRq%Larry.Finger@lwfinger.net>
+User-Agent: Heirloom mailx 12.2 01/07/07
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1010191116480.2423@kaball-desktop>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 19, 2010 at 11:41:36AM +0100, Stefano Stabellini wrote:
-> On Mon, 18 Oct 2010, Konrad Rzeszutek Wilk wrote:
-> > On Tue, Oct 12, 2010 at 05:42:42PM +0100, Stefano Stabellini wrote:
-> > > From: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-> > > 
-> > > Implement xen_register_gsi to setup the correct triggering and polarity
-> > > properties of a gsi.
-> > > Implement xen_register_pirq to register a particular gsi as pirq and
-> > > receive interrupts as events.
-> > > Call xen_setup_pirqs to register all the legacy ISA irqs as pirqs.
-> > > 
-> > > Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-> > > Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-> > > ---
-> > >  arch/x86/include/asm/xen/pci.h  |    7 ++
-> > >  arch/x86/pci/xen.c              |  132 +++++++++++++++++++++++++++++++++++++++
-> > >  drivers/xen/events.c            |   13 ++++
-> > >  include/xen/interface/physdev.h |   10 +++
-> > >  4 files changed, 162 insertions(+), 0 deletions(-)
-> > > 
-> > > diff --git a/arch/x86/include/asm/xen/pci.h b/arch/x86/include/asm/xen/pci.h
-> > > index f89a42a..2329b3e 100644
-> > > --- a/arch/x86/include/asm/xen/pci.h
-> > > +++ b/arch/x86/include/asm/xen/pci.h
-> > > @@ -13,6 +13,13 @@ static inline int pci_xen_hvm_init(void)
-> > >  	return -1;
-> > >  }
-> > >  #endif
-> > > +#if defined(CONFIG_XEN_DOM0)
-> > > +void __init xen_setup_pirqs(void);
-> > > +#else
-> > > +static inline void __init xen_setup_pirqs(void)
-> > > +{
-> > > +}
-> > > +#endif
-> > >  
-> > >  #if defined(CONFIG_PCI_MSI)
-> > >  #if defined(CONFIG_PCI_XEN)
-> > > diff --git a/arch/x86/pci/xen.c b/arch/x86/pci/xen.c
-> > > index fb20d05..5d87774 100644
-> > > --- a/arch/x86/pci/xen.c
-> > > +++ b/arch/x86/pci/xen.c
-> > > @@ -262,3 +262,135 @@ int __init pci_xen_hvm_init(void)
-> > >  #endif
-> > >  	return 0;
-> > >  }
-> > > +
-> > > +#ifdef CONFIG_XEN_DOM0
-> > > +static int xen_register_pirq(u32 gsi, int triggering)
-> > > +{
-> > > +	int rc, irq;
-> > > +	struct physdev_map_pirq map_irq;
-> > > +	int shareable = 0;
-> > > +	char *name;
-> > > +
-> > > +	if (!xen_pv_domain())
-> > > +		return -1;
-> > > +
-> > > +	if (triggering == ACPI_EDGE_SENSITIVE) {
-> > > +		shareable = 0;
-> > > +		name = "ioapic-edge";
-> > > +	} else {
-> > > +		shareable = 1;
-> > > +		name = "ioapic-level";
-> > > +	}
-> > > +
-> > > +	irq = xen_allocate_pirq(gsi, shareable, name);
-> > > +
-> > > +	printk(KERN_DEBUG "xen: --> irq=%d\n", irq);
-> > > +
-> > > +	if (irq < 0)
-> > > +		goto out;
-> > > +
-> > > +	map_irq.domid = DOMID_SELF;
-> > > +	map_irq.type = MAP_PIRQ_TYPE_GSI;
-> > > +	map_irq.index = gsi;
-> > > +	map_irq.pirq = irq;
-> > > +
-> > > +	rc = HYPERVISOR_physdev_op(PHYSDEVOP_map_pirq, &map_irq);
-> > > +	if (rc) {
-> > > +		printk(KERN_WARNING "xen map irq failed %d\n", rc);
-> > > +		return -1;
-> > > +	}
-> > > +
-> > > +out:
-> > > +	return irq;
-> > > +}
-> > > +
-> > > +static int xen_register_gsi(u32 gsi, int triggering, int polarity)
-> > > +{
-> > > +	int rc, irq;
-> > > +	struct physdev_setup_gsi setup_gsi;
-> > > +
-> > > +	if (!xen_pv_domain())
-> > > +		return -1;
-> > > +
-> > > +	printk(KERN_DEBUG "xen: registering gsi %u triggering %d polarity %d\n",
-> > > +			gsi, triggering, polarity);
-> > > +
-> > > +	irq = xen_register_pirq(gsi, triggering);
-> > > +
-> > > +	setup_gsi.gsi = gsi;
-> > > +	setup_gsi.triggering = (triggering == ACPI_EDGE_SENSITIVE ? 0 : 1);
-> > > +	setup_gsi.polarity = (polarity == ACPI_ACTIVE_HIGH ? 0 : 1);
-> > > +
-> > > +	rc = HYPERVISOR_physdev_op(PHYSDEVOP_setup_gsi, &setup_gsi);
-> > > +	if (rc == -EEXIST)
-> > > +		printk(KERN_INFO "Already setup the GSI :%d\n", gsi);
-> > > +	else if (rc) {
-> > > +		printk(KERN_ERR "Failed to setup GSI :%d, err_code:%d\n",
-> > > +				gsi, rc);
-> > > +	}
-> > > +
-> > > +	return irq;
-> > > +}
-> > > +
-> > > +static __init void xen_setup_acpi_sci(void)
-> > > +{
-> > > +	int rc;
-> > > +	int trigger, polarity;
-> > > +	int gsi = acpi_sci_override_gsi;
-> > > +
-> > > +	if (!gsi)
-> > > +		return;
-> > 
-> > Should this be 'if (gsi >= 0)' ? I haven't seen any machine
-> > with the GSI at IRQ 0, but perhaps it would be possible?
-> > 
-> 
-> The test is correct as it is because it is meant to check if the
-> acpi_sci_override_gsi has been set correctly and by default is 0.
-> A similar test is done in
-> arch/x86/kernel/acpi/boot.c:acpi_parse_madt_ioapic_entries.
+>From e08609526c289eb678578b5c01cd007574939a48 Mon Sep 17 00:00:00 2001
+From: Larry Finger <Larry.Finger@lwfinger.net>
+Date: Mon, 18 Oct 2010 08:55:36 -0500
+Subject: [PATCH] Add firmware for Realtek RTL8192SU, aka rtl8712u, to linux-firmware.
 
-ok.
-> 
-> 
-> > > +
-> > > +	rc = acpi_get_override_irq(gsi, &trigger, &polarity);
-> > > +	if (rc)
-> > > +		return;
-> > 
-> > We don't want to report the error? Say a printk?
-> > 
-> 
-> good idea, I'll add one.
+Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
+---
 
-Thank you.
-> 
-> > > +	trigger = trigger ? ACPI_LEVEL_SENSITIVE : ACPI_EDGE_SENSITIVE;
-> > > +	polarity = polarity ? ACPI_ACTIVE_LOW : ACPI_ACTIVE_HIGH;
-> > > +	
-> > > +	printk("xen: sci override: global_irq=%d trigger=%d polarity=%d\n",
-> > > +			gsi, trigger, polarity);
-> > > +
-> > > +	gsi = xen_register_gsi(gsi, trigger, polarity);
-> > > +	printk("xen: acpi sci %d\n", gsi);
-> > 
-> > KERN_INFO ?
-> 
-> ok
+David,
 
-Danke.
-> 
-> > > +
-> > > +	return;
-> > > +}
-> > > +
-> > > +static int acpi_register_gsi_xen(struct device *dev, u32 gsi,
-> > > +				 int trigger, int polarity)
-> > > +{
-> > > +	return xen_register_gsi(gsi, trigger, polarity);
-> > > +}
-> > > +
-> > > +static int __init pci_xen_initial_domain(void)
-> > > +{
-> > > +	xen_setup_acpi_sci();
-> > > +	__acpi_register_gsi = acpi_register_gsi_xen;
-> > > +
-> > > +	return 0;
-> > > +}
-> > > +
-> > > +void __init xen_setup_pirqs(void)
-> > > +{
-> > > +	int irq;
-> > > +
-> > > +	pci_xen_initial_domain();
-> > > +
-> > > +	if (0 == nr_ioapics) {
-> > 
-> > This function is only called for the Dom0 case, so under
-> > what conditions would we have a machine with zero IO APICs?
-> > 
-> > And do we actually support machines with no IO APICs?
-> > (would Xen run under such ancient hardware?)
->  
-> I don't know about real hardware but during the development of the PV on
-> HVM series I was able to boot a PV on HVM guest using the nr_ioapics==0
-> code path successfully several times.
-> And you never know what the future may bring :)
+Despite the indication below, this patch file does not actually contain the firmware.
+I have sent it this way to avoid spamming mailboxes with the 122 KB binary file, yet
+have the revised text of WHENCE available for reviewing.
 
-True.
+To obtain everything, please pull from
+git://git.kernel.org/pub/scm/linux/kernel/git/lwfinger/r8712u_firmware.git
+
+Larry
+---
+
+ WHENCE       |   27 +++++++++++++++++++++++++++
+ rtl8712u.bin |  Bin 0 -> 122328 bytes
+ 2 files changed, 27 insertions(+), 0 deletions(-)
+ create mode 100644 rtl8712u.bin
+
+diff --git a/WHENCE b/WHENCE
+index 01a1262..7d362fc 100644
+--- a/WHENCE
++++ b/WHENCE
+@@ -1401,3 +1401,30 @@ File: bcm4329-fullmac-4-218-248-5.bin
+ File: bcm4329-fullmac-4-218-248-5.txt
+ 
+ Licence: Redistributable. See LICENCE.broadcom_bcm43xx for details.
++
++--------------------------------------------------------------------------
++
++Driver: r8712u - Reaktek 802.11n wireless LAN driver
++
++File: rtl8712u.bin
++
++Licence:
++
++ * Copyright(c) 2007 - 2010 Realtek Corporation. All rights reserved.
++ * Linux device driver for RTL8192SU
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms of version 2 of the GNU General Public License as
++ * published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful, but WITHOUT
++ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
++ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
++ * more details.
++ *
++ * You should have received a copy of the GNU General Public License along with
++ * this program; if not, write to the Free Software Foundation, Inc.,
++ * 51 Franklin Street, Fifth Floor, Boston, MA 02110, USA
++
++The firmware is included as hex in the original source.
++
+
