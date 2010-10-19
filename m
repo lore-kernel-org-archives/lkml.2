@@ -1,71 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756026Ab0JSSoJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Oct 2010 14:44:09 -0400
-Received: from smtp-out.google.com ([74.125.121.35]:50354 "EHLO
+	id S1755333Ab0JSStK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Oct 2010 14:49:10 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:31787 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752622Ab0JSSoI (ORCPT
+	with ESMTP id S1752113Ab0JSStH convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Oct 2010 14:44:08 -0400
+	Tue, 19 Oct 2010 14:49:07 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=google.com; s=beta;
-        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
-         :references:user-agent:mime-version:content-type;
-        b=uyGrpdxADXSlIzl4hTJKJumhhTKtKB7BKhRF17wnaE6PAXRldwpuKzESzLlIhxCfEL
-         weQcMhE8qY2vYOAlnecw==
-Date: Tue, 19 Oct 2010 11:43:58 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: "Figo.zhang" <zhangtianfei@leadcoretech.com>
-cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        linux-kernel@vger.kernel.org, figo1802 <figo1802@gmail.com>
-Subject: Re: oom_killer crash linux system
-In-Reply-To: <1287454058.2078.12.camel@myhost>
-Message-ID: <alpine.DEB.2.00.1010191139480.8950@chino.kir.corp.google.com>
-References: <20101018021126.GB8654@localhost> <1287389631.1997.9.camel@myhost> <20101018180919.3AF8.A69D9226@jp.fujitsu.com> <1287454058.2078.12.camel@myhost>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=Wx92Dl+s3uCYk8qqxA944ApluV+LbIUjelJJWN6k6qh0f7whEfQc9YUhAXidTcBsAF
+         L4NrIwnvzyUw0ame9wHg==
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <4CBDE5AB.4040401@linux.intel.com>
+References: <20101019183522.17992.86937.stgit@tringupt.in.ibm.com>
+	<4CBDE5AB.4040401@linux.intel.com>
+Date: Tue, 19 Oct 2010 11:49:02 -0700
+Message-ID: <AANLkTi=cetw_mdp_3s+T4OxTfcMT2u4cdVPKxOp7jbVU@mail.gmail.com>
+Subject: Re: [RFC V1] cpuidle: add idle routine registration and cleanup
+ pm_idle pointer
+From: Venkatesh Pallipadi <venki@google.com>
+To: Arjan van de Ven <arjan@linux.intel.com>
+Cc: Trinabh Gupta <trinabh@linux.vnet.ibm.com>, peterz@infradead.org,
+        lenb@kernel.org, suresh.b.siddha@intel.com, benh@kernel.crashing.org,
+        linux-kernel@vger.kernel.org, g.trinabh@gmail.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 19 Oct 2010, Figo.zhang wrote:
+On Tue, Oct 19, 2010 at 11:38 AM, Arjan van de Ven
+<arjan@linux.intel.com> wrote:
+>  On 10/19/2010 11:36 AM, Trinabh Gupta wrote:
+>>
+>> The core of the kernel's idle routine on x86 presently depends on an
+>> exported pm_idle function pointer that is unmanaged and causing
+>> hazard to various subsystems when they save and restore it.
+>> The first problem is that this exported pointer can be modified/flipped
+>> by any subsystem. There is no tracking or notification mechanism.
+>> Secondly and more importantly, various subsystems save the value of
+>> this pointer, flip it and later restore to the saved value. There is
+>> no guarantee that the saved value is still valid. The problem has
+>> been discussed in [2,3] and Peter Zijlstra suggested removing pm_idle
+>> and implementing a list based registration [1].
+>>
+>> This patch is an initial RFC implementation for x86 architecture
+>> only. This framework can be generalised for other archs and also
+>> include the current cpuidle framework for managing multiple idle
+>> routines.
+>>
+>> Tests done with the patch:
+>> ------------------------
+>> 1. Build (on 2.6.36-rc7) and booted on x86 with C1E as deepest idle
+>>    state and current_idle was selected to be mwait_idle.
+>>
+>> 2. Build (on 2.5.36-rc8) and booted on x86 (Nehalem) with ACPI C3 as
+>>    deepest sleep state.  The current_idle was selected to be
+>>    cpuidle_idle_call which is the cpuidle subsystem that will further
+>>    select idle routines from {C1,C2,C3}.
+>>
+>> Future implementation will try to eliminate this hirearchy and have
+>> a single registration and menu/idle cpuidle governor for selection
+>> of idle routine.
+>
+>
+> looks like you're duplicating the cpuidle subsystem
+>
+> how about biting the bullet and just always and only use the cpuidle
+> subsystem for all idle on x86 ?
+>
 
-> > very lots of change ;)
-> > can you please send us your crash log?
-> 
-> i add some prink in select_bad_process() and oom_badness() to see
-> pid/totalpages/points/memoryuseage/and finally process to selet to kill.
-> 
+I agree with Arjan.
+If we have a default_cpuidle driver which parses idle= params, handles
+various mwait quirks in x86 process*.c and registers with cpuidle, we
+can then always call cpuidle idle routine on x86.
 
-It shouldn't need any printk's to be added, the new heuristic is rather 
-predictable given the memory usage of the application.  You could find 
-what the badness score is by checking /proc/pid/oom_score.
-
-> i found it the oom-killer select: syslog-ng,mysqld,nautilus,VirtualBox
-> to kill, so my question is:
-> 
-> 1. the syslog-ng,mysqld,nautilus is the system foundamental process, so
-> if oom-killer kill those process, the system will be damaged, such as
-> lose some important data.
-> 
-
-The oom killer always attempts to kill the most memory-hogging task that 
-is eligible given the context in which the system is out of memory.  That 
-allows the kernel to free a large amount of memory so the oom killer will 
-not (hopefully) have to be recalled again in the near future.  Otherwise, 
-we end up killing everything else other than the memory-hogger, and it 
-that may turn out to be a memory leaker that we don't care about :)
-
-> 2. the new oom-killer just use percentage of used memory as score to
-> select the candidate to kill, but how to know this process to very
-> important for system?
-> 
-
-The user has to tell it by using /proc/pid/oom_score_adj, see 
-Documentation/filesystems/proc.txt if you'd like to adjust how the oom 
-killer ranks tasks that you deem to be important and vital to your system.
+Thanks,
+Venki
