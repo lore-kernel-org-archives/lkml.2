@@ -1,46 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754610Ab0JSP4E (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Oct 2010 11:56:04 -0400
-Received: from hera.kernel.org ([140.211.167.34]:56243 "EHLO hera.kernel.org"
+	id S1754318Ab0JSPzx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Oct 2010 11:55:53 -0400
+Received: from kroah.org ([198.145.64.141]:59769 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753667Ab0JSP4C (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Oct 2010 11:56:02 -0400
-Message-ID: <4CBDBF8A.8010106@kernel.org>
-Date: Tue, 19 Oct 2010 17:55:54 +0200
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.9) Gecko/20100915 Lightning/1.0b2 Thunderbird/3.1.4
+	id S1753880Ab0JSPzu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Oct 2010 11:55:50 -0400
+Date: Tue, 19 Oct 2010 08:52:19 -0700
+From: Greg KH <greg@kroah.com>
+To: Felipe Contreras <felipe.contreras@gmail.com>
+Cc: linux-usb@vger.kernel.org, linux-omap <linux-omap@vger.kernel.org>,
+        linux-main <linux-kernel@vger.kernel.org>, Felipe Balbi <balbi@ti.com>,
+        Tony Lindgren <tony@atomide.com>
+Subject: Re: [PATCH v2 3/3] drivers: cleanup Kconfig stuff
+Message-ID: <20101019155219.GI4589@kroah.com>
+References: <1287482608-11320-1-git-send-email-felipe.contreras@gmail.com>
+ <1287482608-11320-4-git-send-email-felipe.contreras@gmail.com>
 MIME-Version: 1.0
-To: Steve French <sfrench@samba.org>, linux-cifs@vger.kernel.org,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: [PATCH v2.6.36-rc7] cifs: cancel_delayed_work() + flush_scheduled_work()
- -> cancel_delayed_work_sync()
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 19 Oct 2010 15:56:01 +0000 (UTC)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1287482608-11320-4-git-send-email-felipe.contreras@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-flush_scheduled_work() is going away.
+On Tue, Oct 19, 2010 at 01:03:28PM +0300, Felipe Contreras wrote:
+> Add missing dependencies, and remove redundant ones, and select sensible
+> defaults.
+> 
+> Signed-off-by: Felipe Contreras <felipe.contreras@gmail.com>
+> ---
+>  drivers/mfd/Kconfig        |    3 ++-
+>  drivers/regulator/Kconfig  |    1 +
+>  drivers/usb/gadget/Kconfig |    3 +--
+>  drivers/usb/musb/Kconfig   |    6 ++----
+>  drivers/usb/otg/Kconfig    |    2 ++
+>  5 files changed, 8 insertions(+), 7 deletions(-)
+> 
+> diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
+> index db51ea1..0bbaf01 100644
+> --- a/drivers/mfd/Kconfig
+> +++ b/drivers/mfd/Kconfig
+> @@ -156,6 +156,7 @@ config MENELAUS
+>  config TWL4030_CORE
+>  	bool "Texas Instruments TWL4030/TWL5030/TWL6030/TPS659x0 Support"
+>  	depends on I2C=y && GENERIC_HARDIRQS
+> +	default y if ARCH_OMAP3 || ARCH_OMAP4
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
----
- fs/cifs/cifs_dfs_ref.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+Sorry, but unless the driver is somehow required to keep the board from
+going up in a puff of smoke, a default should NEVER be y.
 
-Index: work/fs/cifs/cifs_dfs_ref.c
-===================================================================
---- work.orig/fs/cifs/cifs_dfs_ref.c
-+++ work/fs/cifs/cifs_dfs_ref.c
-@@ -44,8 +44,7 @@ static void cifs_dfs_expire_automounts(s
- void cifs_dfs_release_automount_timer(void)
- {
- 	BUG_ON(!list_empty(&cifs_dfs_automount_list));
--	cancel_delayed_work(&cifs_dfs_automount_task);
--	flush_scheduled_work();
-+	cancel_delayed_work_sync(&cifs_dfs_automount_task);
- }
+Because of that, I can't take this patch.
 
- /**
+greg k-h
