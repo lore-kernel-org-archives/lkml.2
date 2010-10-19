@@ -1,75 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933498Ab0JSI3S (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Oct 2010 04:29:18 -0400
-Received: from casper.infradead.org ([85.118.1.10]:47452 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933108Ab0JSI3Q convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Oct 2010 04:29:16 -0400
-Subject: Re: [PATCH] perf, powerpc: Fix power_pmu_event_init to not use
- event->ctx
-From: Peter Zijlstra <peterz@infradead.org>
-To: Paul Mackerras <paulus@samba.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
-        Alexey Kardashevskiy <aik@au1.ibm.com>, Ingo Molnar <mingo@elte.hu>
-In-Reply-To: <20101019055535.GA10398@drongo>
-References: <20101019055535.GA10398@drongo>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Tue, 19 Oct 2010 10:28:52 +0200
-Message-ID: <1287476932.29097.1617.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	id S933595Ab0JSI37 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Oct 2010 04:29:59 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:40552 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932393Ab0JSI36 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Oct 2010 04:29:58 -0400
+Date: Tue, 19 Oct 2010 11:29:41 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: Felipe Contreras <felipe.contreras@gmail.com>
+Cc: "Balbi, Felipe" <balbi@ti.com>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        linux-main <linux-kernel@vger.kernel.org>, Greg KH <greg@kroah.com>
+Subject: Re: [PATCH 2/3] usb: trivial Kconfig cleanups
+Message-ID: <20101019082941.GA31170@legolas.emea.dhcp.ti.com>
+Reply-To: balbi@ti.com
+References: <1287475466-8927-1-git-send-email-felipe.contreras@gmail.com>
+ <1287475466-8927-3-git-send-email-felipe.contreras@gmail.com>
+ <20101019081509.GH12470@legolas.emea.dhcp.ti.com>
+ <AANLkTi=XxqfpEnWFZ2h-xqEPc62rfgomhhrvE1Z_ME_d@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1; format=flowed
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTi=XxqfpEnWFZ2h-xqEPc62rfgomhhrvE1Z_ME_d@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-10-19 at 16:55 +1100, Paul Mackerras wrote:
-> Commit c3f00c70 ("perf: Separate find_get_context() from event
-> initialization") changed the generic perf_event code to call
-> perf_event_alloc, which calls the arch-specific event_init code,
-> before looking up the context for the new event.  Unfortunately,
-> power_pmu_event_init uses event->ctx->task to see whether the new
-> event is a per-task event or a system-wide event, and thus crashes
-> since event->ctx is NULL at the point where power_pmu_event_init gets
-> called.
-> 
-> (The reason it needs to know whether it is a per-task event is because
-> there are some hardware events on Power systems which only count when
-> the processor is not idle, and there are some fixed-function counters
-> which count such events.  For example, the "run cycles" event counts
-> cycles when the processor is not idle.  If the user asks to count
-> cycles, we can use "run cycles" if this is a per-task event, since the
-> processor is running when the task is running, by definition.  We
-> can't use "run cycles" if the user asks for "cycles" on a system-wide
-> counter.)
-> 
-> Fortunately the information we need is in the event->attach_state
-> field, so we just use that instead.
+On Tue, Oct 19, 2010 at 03:25:27AM -0500, Felipe Contreras wrote:
+>On Tue, Oct 19, 2010 at 11:15 AM, Felipe Balbi <balbi@ti.com> wrote:
+>> On Tue, Oct 19, 2010 at 03:04:25AM -0500, Felipe Contreras wrote:
+>>>
+>>> @@ -125,14 +125,6 @@ config USB_MUSB_OTG
+>>>
+>>> endchoice
+>>>
+>>> -# enable peripheral support (including with OTG)
+>>> -config USB_GADGET_MUSB_HDRC
+>>> -       bool
+>>> -       depends on USB_MUSB_HDRC && (USB_MUSB_PERIPHERAL || USB_MUSB_OTG)
+>>> -#      default y
+>>> -#      select USB_GADGET_DUALSPEED
+>>> -#      select USB_GADGET_SELECTED
+>>> -
+>>
+>> $ git grep -e CONFIG_USB_GADGET_MUSB_HDRC drivers/usb/
+>> drivers/usb/gadget/gadget_chips.h:#ifdef CONFIG_USB_GADGET_MUSB_HDRC
+>> drivers/usb/musb/Makefile:ifeq ($(CONFIG_USB_GADGET_MUSB_HDRC),y)
+>> drivers/usb/musb/am35x.c:#ifdef CONFIG_USB_GADGET_MUSB_HDRC
+>> drivers/usb/musb/da8xx.c:#ifdef CONFIG_USB_GADGET_MUSB_HDRC
+>> drivers/usb/musb/musb_core.c:#ifdef CONFIG_USB_GADGET_MUSB_HDRC
+>> drivers/usb/musb/musb_core.c:#ifdef CONFIG_USB_GADGET_MUSB_HDRC
+>> drivers/usb/musb/musb_core.c:#ifdef CONFIG_USB_GADGET_MUSB_HDRC
+>> drivers/usb/musb/musb_core.c:#ifdef CONFIG_USB_GADGET_MUSB_HDRC
+>> drivers/usb/musb/musb_core.c:#endif /* CONFIG_USB_GADGET_MUSB_HDRC */
+>> drivers/usb/musb/musb_core.c:#ifdef CONFIG_USB_GADGET_MUSB_HDRC
+>> drivers/usb/musb/musb_core.c:#ifdef CONFIG_USB_GADGET_MUSB_HDRC
+>> drivers/usb/musb/musb_core.c:#ifdef CONFIG_USB_GADGET_MUSB_HDRC
+>> drivers/usb/musb/musb_core.c:#elif defined(CONFIG_USB_GADGET_MUSB_HDRC)
+>> drivers/usb/musb/musb_core.h:#ifndef CONFIG_USB_GADGET_MUSB_HDRC
+>> drivers/usb/musb/musb_core.h:#error bogus Kconfig output ... select
+>> CONFIG_USB_GADGET_MUSB_HDRC
+>> drivers/usb/musb/musb_core.h:#ifdef CONFIG_USB_GADGET_MUSB_HDRC
+>> drivers/usb/musb/musb_core.h:#ifdef CONFIG_USB_GADGET_MUSB_HDRC
+>> drivers/usb/musb/musb_core.h:#ifdef CONFIG_USB_GADGET_MUSB_HDRC
+>> drivers/usb/musb/musb_core.h:#ifdef CONFIG_USB_GADGET_MUSB_HDRC
+>> drivers/usb/musb/musb_core.h:#ifdef CONFIG_USB_GADGET_MUSB_HDRC
+>> drivers/usb/musb/musb_core.h:#ifdef CONFIG_USB_GADGET_MUSB_HDRC
+>> drivers/usb/musb/tusb6010.c:#ifdef CONFIG_USB_GADGET_MUSB_HDRC
+>> drivers/usb/musb/tusb6010.c:#ifdef CONFIG_USB_GADGET_MUSB_HDRC
+>> drivers/usb/musb/tusb6010.c:#ifdef CONFIG_USB_GADGET_MUSB_HDRC
+>
+>So?
+>
+>% git grep USB_GADGET_MUSB_HDRC -- '*/Kconfig'
+>drivers/usb/gadget/Kconfig:config USB_GADGET_MUSB_HDRC
+>drivers/usb/musb/Kconfig:# use USB_GADGET_MUSB_HDRC not
+>USB_MUSB_PERIPHERAL to #ifdef peripheral
+>drivers/usb/musb/Kconfig:       select USB_GADGET_MUSB_HDRC
+>drivers/usb/musb/Kconfig:       select USB_GADGET_MUSB_HDRC
+>drivers/usb/musb/Kconfig:config USB_GADGET_MUSB_HDRC
+>drivers/usb/musb/Kconfig:       select USB_OTG if USB_GADGET_MUSB_HDRC
+>
+>(it's defined twice)
 
-Ah, sorry for the breakage.
+you're right, had missed that. This is ok too.
 
-> Signed-off-by: Paul Mackerras <paulus@samba.org>
-> Reported-by: Alexey Kardashevskiy <aik@au1.ibm.com>
-
-Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-
-> ---
->  arch/powerpc/kernel/perf_event.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/arch/powerpc/kernel/perf_event.c b/arch/powerpc/kernel/perf_event.c
-> index 9cb4924..3129c85 100644
-> --- a/arch/powerpc/kernel/perf_event.c
-> +++ b/arch/powerpc/kernel/perf_event.c
-> @@ -1092,7 +1092,7 @@ static int power_pmu_event_init(struct perf_event *event)
->  	 * XXX we should check if the task is an idle task.
->  	 */
->  	flags = 0;
-> -	if (event->ctx->task)
-> +	if (event->attach_state & PERF_ATTACH_TASK)
->  		flags |= PPMU_ONLY_COUNT_RUN;
->  
->  	/*
-
+-- 
+balbi
