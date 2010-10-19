@@ -1,73 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933524Ab0JSH2y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Oct 2010 03:28:54 -0400
-Received: from hera.kernel.org ([140.211.167.34]:48384 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932760Ab0JSH2w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Oct 2010 03:28:52 -0400
-Date: Tue, 19 Oct 2010 07:28:35 GMT
-From: tip-bot for Yinghai Lu <yinghai@kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        yinghai@kernel.org, tglx@linutronix.de
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        yinghai@kernel.org, tglx@linutronix.de
-In-Reply-To: <4CBCB274.7010108@kernel.org>
-References: <4CBCB274.7010108@kernel.org>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:irq/core] x86: ioapic: Call free_irte only if interrupt remapping enabled
-Message-ID: <tip-9717967c4b704ce344c954afb5bb160aa9c01c34@git.kernel.org>
-Git-Commit-ID: 9717967c4b704ce344c954afb5bb160aa9c01c34
-X-Mailer: tip-git-log-daemon
-MIME-Version: 1.0
+	id S933714Ab0JSHcE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Oct 2010 03:32:04 -0400
+Received: from novprvlin0050.provo.novell.com ([137.65.248.33]:1676 "EHLO
+	novprvlin0050.provo.novell.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757835Ab0JSHcD (ORCPT
+	<rfc822;groupwise-jlee@novell.com:5:1>);
+	Tue, 19 Oct 2010 03:32:03 -0400
+Message-Id: <4CBDE4170200002300022431@novprvlin0050.provo.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 8.0.2 
+Date: Tue, 19 Oct 2010 01:31:51 -0600
+From: "Joey Lee" <jlee@novell.com>
+To: "Al Cho" <ACho@novell.com>
+Cc: <devel@driverdev.osuosl.org>, <yiyingc@ene.com.tw>, <gregkh@suse.de>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] staging/keucr: fix keucr lost disconnect in
+ transport
+Mime-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 19 Oct 2010 07:28:35 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  9717967c4b704ce344c954afb5bb160aa9c01c34
-Gitweb:     http://git.kernel.org/tip/9717967c4b704ce344c954afb5bb160aa9c01c34
-Author:     Yinghai Lu <yinghai@kernel.org>
-AuthorDate: Mon, 18 Oct 2010 13:47:48 -0700
-Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Tue, 19 Oct 2010 09:25:33 +0200
+Hi Al, 
 
-x86: ioapic: Call free_irte only if interrupt remapping enabled
+於 五，2010-09-24 於 18:50 +0800，Al Cho 提到：
+> The other part of keucr lost usb disconnect.
+> Unplug SDcard after thread scan,the wrong rule in usb_stor_port_reset,
+> so the driver still fail in stress test.
+> 
+> Signed-off-by: Al Cho <acho@novell.com>
+> ---
+>  drivers/staging/keucr/transport.c |   15 +++++----------
+>  1 files changed, 5 insertions(+), 10 deletions(-)
+> 
+> diff --git a/drivers/staging/keucr/transport.c b/drivers/staging/keucr/transport.c
+> index 7215429..445a62c 100644
+> --- a/drivers/staging/keucr/transport.c
+> +++ b/drivers/staging/keucr/transport.c
+> @@ -763,24 +763,19 @@ int usb_stor_port_reset(struct us_data *us)
+>  	int result, rc_lock;
+>  
+>  	//printk("transport --- usb_stor_port_reset\n");
+> -	result = rc_lock = usb_lock_device_for_reset(us->pusb_dev, us->pusb_intf);
+> +	result = usb_lock_device_for_reset(us->pusb_dev, us->pusb_intf);
+>  	if (result < 0)
+>  		printk("unable to lock device for reset: %d\n", result);
+> -	else
+> -	{
+> +	else {
+>  		/* Were we disconnected while waiting for the lock? */
+> -		if (test_bit(US_FLIDX_DISCONNECTING, &us->dflags))
+> -		{
+> +		if (test_bit(US_FLIDX_DISCONNECTING, &us->dflags)) {
+>  			result = -EIO;
+>  			//printk("No reset during disconnect\n");
+> -		}
+> -		else
+> -		{
+> +		} else {
+>  			result = usb_reset_device(us->pusb_dev);
+>  			//printk("usb_reset_composite_device returns %d\n", result);
+>  		}
+> -		if (rc_lock)
+> -			usb_unlock_device(us->pusb_dev);
+> +		usb_unlock_device(us->pusb_dev);
+>  	}
+>  	return result;
+>  }
 
-On a system that support intr-rempping when booting with "intremap=off"
+This patch works to me on MSI netbook.
 
-[  177.895501] BUG: unable to handle kernel NULL pointer dereference at 00000000000000f8
-[  177.913316] IP: [<ffffffff8145fc18>] free_irte+0x47/0xc0
-...
-[  178.173326] Call Trace:
-[  178.173574]  [<ffffffff810515b4>] destroy_irq+0x3a/0x75
-[  178.192934]  [<ffffffff81051834>] arch_teardown_msi_irq+0xe/0x10
-[  178.193418]  [<ffffffff81458dc3>] arch_teardown_msi_irqs+0x56/0x7f
-[  178.213021]  [<ffffffff81458e79>] free_msi_irqs+0x8d/0xeb
+Signed-off-by: Lee, Chun-Yi <jlee@novell.com>
 
-Call free_irte only when interrupt remapping is enabled.
 
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-LKML-Reference: <4CBCB274.7010108@kernel.org>
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Thank's
+Joey Lee
 
----
- arch/x86/kernel/apic/io_apic.c |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
-
-diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
-index 20e47e0..8ae808d 100644
---- a/arch/x86/kernel/apic/io_apic.c
-+++ b/arch/x86/kernel/apic/io_apic.c
-@@ -3109,7 +3109,8 @@ void destroy_irq(unsigned int irq)
- 
- 	irq_set_status_flags(irq, IRQ_NOREQUEST|IRQ_NOPROBE);
- 
--	free_irte(irq);
-+	if (intr_remapping_enabled)
-+		free_irte(irq);
- 	raw_spin_lock_irqsave(&vector_lock, flags);
- 	__clear_irq_vector(irq, cfg);
- 	raw_spin_unlock_irqrestore(&vector_lock, flags);
