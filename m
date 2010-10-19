@@ -1,171 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757533Ab0JSXZk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Oct 2010 19:25:40 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:37279 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754664Ab0JSXZj (ORCPT
+	id S1756723Ab0JSXas (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Oct 2010 19:30:48 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:48977 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751178Ab0JSXar (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Oct 2010 19:25:39 -0400
-Subject: Re: [PATCH] support polling of /proc/swaps
-From: Kay Sievers <kay.sievers@vrfy.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>, Greg KH <greg@kroah.com>
-In-Reply-To: <20101019153136.b2543f7b.akpm@linux-foundation.org>
-References: <1287479956.1729.1.camel@yio.site>
-	 <20101019153136.b2543f7b.akpm@linux-foundation.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 20 Oct 2010 01:25:47 +0200
-Message-ID: <1287530747.1171.9.camel@yio.site>
+	Tue, 19 Oct 2010 19:30:47 -0400
+Date: Tue, 19 Oct 2010 16:29:40 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: David Rientjes <rientjes@google.com>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Mel Gorman <mel@csn.ul.ie>, LKML <linux-kernel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>,
+        Christoph Lameter <cl@linux-foundation.org>
+Subject: Re: [resend][PATCH 2/2] mm, mem-hotplug: update pcp->stat_threshold
+ when memory hotplug occur
+Message-Id: <20101019162940.6918506d.akpm@linux-foundation.org>
+In-Reply-To: <alpine.DEB.2.00.1010191208130.15499@chino.kir.corp.google.com>
+References: <20101019140831.A1EB.A69D9226@jp.fujitsu.com>
+	<20101019140955.A1EE.A69D9226@jp.fujitsu.com>
+	<alpine.DEB.2.00.1010191208130.15499@chino.kir.corp.google.com>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.0 
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-10-19 at 15:31 -0700, Andrew Morton wrote:
-> On Tue, 19 Oct 2010 11:19:16 +0200
-> Kay Sievers <kay.sievers@vrfy.org> wrote:
+On Tue, 19 Oct 2010 12:11:09 -0700 (PDT)
+David Rientjes <rientjes@google.com> wrote:
 
-> It's a bit sad that we have to add quite a pile of infrastructure to
-> make a procfs file pollable.  I wonder if it's possible to provide some
-> core support for this, and reduce the amount of code at each particular
-> handler site.
-
-You mean something like adding the event counter to the seq_file? There
-is /proc/self/mounts,mountinfo and /proc/swaps so far, I think.
-
-> Also, I wonder how we are to communicate the existence of this feature
-> to our users.  Nobody will look in Documentation/filesystems/.  Is
-> there a manpage?  Seems not...
-
-Hmm, 'man 5 proc'?
-
-> > +static DECLARE_WAIT_QUEUE_HEAD(proc_poll_wait);
-> > +static int proc_poll_event;
+> On Tue, 19 Oct 2010, KOSAKI Motohiro wrote:
 > 
-> Please pick a lock to protect proc_poll_event.
+> > diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+> > index 14ee899..222d8cc 100644
+> > --- a/mm/page_alloc.c
+> > +++ b/mm/page_alloc.c
+> > @@ -51,6 +51,7 @@
+> >  #include <linux/kmemleak.h>
+> >  #include <linux/memory.h>
+> >  #include <linux/compaction.h>
+> > +#include <linux/vmstat.h>
+> >  #include <trace/events/kmem.h>
+> >  #include <linux/ftrace_event.h>
+> >  
+> > @@ -5013,6 +5014,8 @@ int __meminit init_per_zone_wmark_min(void)
+> >  		min_free_kbytes = 128;
+> >  	if (min_free_kbytes > 65536)
+> >  		min_free_kbytes = 65536;
+> > +
+> > +	refresh_zone_stat_thresholds();
+> >  	setup_per_zone_wmarks();
+> >  	setup_per_zone_lowmem_reserve();
+> >  	setup_per_zone_inactive_ratio();
+> 
+> setup_per_zone_wmarks() could change the min and low watermarks for a zone 
+> when refresh_zone_stat_thresholds() would have used the old value.
 
-An atomic_t should do it too, right?
+Indeed.
 
-> Then document that
-> locking here, when you also document proc_poll_event ;)
-
-The actual value has no meaning at all, it just tells that something
-happened if it has changed.
-
-
-
-From: Kay Sievers <kay.sievers@vrfy.org>
-Subject: support polling of /proc/swaps
-
-System management wants to subscribe to changes in swap
-configuration. Make /proc/swaps pollable like /proc/mounts.
-
-Signed-Off-By: Kay Sievers <kay.sievers@vrfy.org>
----
- mm/swapfile.c |   48 +++++++++++++++++++++++++++++++++++++++++++++++-
- 1 file changed, 47 insertions(+), 1 deletion(-)
-
---- a/mm/swapfile.c
-+++ b/mm/swapfile.c
-@@ -30,6 +30,7 @@
- #include <linux/capability.h>
- #include <linux/syscalls.h>
- #include <linux/memcontrol.h>
-+#include <linux/poll.h>
- 
- #include <asm/pgtable.h>
- #include <asm/tlbflush.h>
-@@ -58,6 +59,9 @@ static struct swap_info_struct *swap_inf
- 
- static DEFINE_MUTEX(swapon_mutex);
- 
-+static DECLARE_WAIT_QUEUE_HEAD(proc_poll_wait);
-+static atomic_t proc_poll_event = ATOMIC_INIT(0);
-+
- static inline unsigned char swap_count(unsigned char ent)
- {
- 	return ent & ~SWAP_HAS_CACHE;	/* may include SWAP_HAS_CONT flag */
-@@ -1680,6 +1684,8 @@ SYSCALL_DEFINE1(swapoff, const char __us
- 	}
- 	filp_close(swap_file, NULL);
- 	err = 0;
-+	atomic_inc(&proc_poll_event);
-+	wake_up_interruptible(&proc_poll_wait);
- 
- out_dput:
- 	filp_close(victim, NULL);
-@@ -1688,6 +1694,25 @@ out:
- }
- 
- #ifdef CONFIG_PROC_FS
-+struct proc_swaps {
-+	struct seq_file seq;
-+	int event;
-+};
-+
-+static unsigned swaps_poll(struct file *file, poll_table *wait)
-+{
-+	struct proc_swaps *s = file->private_data;
-+
-+	poll_wait(file, &proc_poll_wait, wait);
-+
-+	if (s->event != atomic_read(&proc_poll_event)) {
-+		s->event = atomic_read(&proc_poll_event);
-+		return POLLIN | POLLRDNORM | POLLERR | POLLPRI;
-+	}
-+
-+	return POLLIN | POLLRDNORM;
-+}
-+
- /* iterator */
- static void *swap_start(struct seq_file *swap, loff_t *pos)
- {
-@@ -1771,7 +1796,24 @@ static const struct seq_operations swaps
- 
- static int swaps_open(struct inode *inode, struct file *file)
- {
--	return seq_open(file, &swaps_op);
-+	struct proc_swaps *s;
-+	int ret;
-+
-+	s = kmalloc(sizeof(struct proc_swaps), GFP_KERNEL);
-+	if (!s)
-+		return -ENOMEM;
-+
-+	file->private_data = s;
-+
-+	ret = seq_open(file, &swaps_op);
-+	if (ret) {
-+		kfree(s);
-+		return ret;
-+	}
-+
-+	s->seq.private = s;
-+	s->event = atomic_read(&proc_poll_event);
-+	return ret;
- }
- 
- static const struct file_operations proc_swaps_operations = {
-@@ -1779,6 +1821,7 @@ static const struct file_operations proc
- 	.read		= seq_read,
- 	.llseek		= seq_lseek,
- 	.release	= seq_release,
-+	.poll		= swaps_poll,
- };
- 
- static int __init procswaps_init(void)
-@@ -2084,6 +2127,9 @@ SYSCALL_DEFINE2(swapon, const char __use
- 		swap_info[prev]->next = type;
- 	spin_unlock(&swap_lock);
- 	mutex_unlock(&swapon_mutex);
-+	atomic_inc(&proc_poll_event);
-+	wake_up_interruptible(&proc_poll_wait);
-+
- 	error = 0;
- 	goto out;
- bad_swap:
-
-
+I could make the obvious fix, but then what I'd have wouldn't be
+sufficiently tested.
