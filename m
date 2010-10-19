@@ -1,51 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752317Ab0JSR5K (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Oct 2010 13:57:10 -0400
-Received: from kroah.org ([198.145.64.141]:52482 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751555Ab0JSR5I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Oct 2010 13:57:08 -0400
-Date: Tue, 19 Oct 2010 10:50:36 -0700
-From: Greg KH <greg@kroah.com>
-To: Felipe Contreras <felipe.contreras@gmail.com>
-Cc: linux-usb@vger.kernel.org, linux-omap <linux-omap@vger.kernel.org>,
-        linux-main <linux-kernel@vger.kernel.org>, Felipe Balbi <balbi@ti.com>,
-        Tony Lindgren <tony@atomide.com>
-Subject: Re: [PATCH v2 2/3] usb: trivial Kconfig cleanups
-Message-ID: <20101019175036.GB4618@kroah.com>
-References: <1287482608-11320-1-git-send-email-felipe.contreras@gmail.com>
- <1287482608-11320-3-git-send-email-felipe.contreras@gmail.com>
- <20101019155109.GH4589@kroah.com>
- <AANLkTi=CzBriAFW2gzG68b=6wENysJZEkaO9jFrXQdnq@mail.gmail.com>
+	id S1752859Ab0JSSAF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Oct 2010 14:00:05 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:40067 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751178Ab0JSSAD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Oct 2010 14:00:03 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6141"; a="58429272"
+Date: Tue, 19 Oct 2010 11:00:00 -0700
+From: Larry Bassel <lbassel@codeaurora.org>
+To: Tatyana Brokhman <tlinder@codeaurora.org>
+Cc: linux-usb@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        David Brownell <dbrownell@users.sourceforge.net>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        Alan Stern <stern@rowland.harvard.edu>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 2/2] usb: dummy_hcd code simplification
+Message-ID: <20101019180000.GA3611@labbmf-linux.quicinc.com>
+References: <1287495641-22802-1-git-send-email-tlinder@codeaurora.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <AANLkTi=CzBriAFW2gzG68b=6wENysJZEkaO9jFrXQdnq@mail.gmail.com>
+In-Reply-To: <1287495641-22802-1-git-send-email-tlinder@codeaurora.org>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 19, 2010 at 08:15:19PM +0300, Felipe Contreras wrote:
-> On Tue, Oct 19, 2010 at 6:51 PM, Greg KH <greg@kroah.com> wrote:
-> > On Tue, Oct 19, 2010 at 01:03:27PM +0300, Felipe Contreras wrote:
-> >> Note: USB_GADGET_MUSB_HDRC is already defined in usb/gadget.
-> >>
-> >> Signed-off-by: Felipe Contreras <felipe.contreras@gmail.com>
-> >
-> > Please describe _what_ trivial cleanups you did, and why you did them.
-> > Care to resend?
+On 19 Oct 10 15:40, Tatyana Brokhman wrote:
+> Take handling of the control requests out from dummy_timer to a different
+> function.
 > 
-> How about:
-> Shuffle the code a bit so the description is at the top, remove
-> duplicated configs (USB_GADGET_MUSB_HDRC),  'default n' is redundant,
-> and USB_GADGET_SELECTED should go after USB_GADGET (on the appropriate
-> config).
+> Signed-off-by: Tatyana Brokhman <tlinder@codeaurora.org>
+> ---
+>  drivers/usb/gadget/dummy_hcd.c |  250 +++++++++++++++++++++-------------------
+>  1 files changed, 134 insertions(+), 116 deletions(-)
+> 
+> diff --git a/drivers/usb/gadget/dummy_hcd.c b/drivers/usb/gadget/dummy_hcd.c
+> index dc65462..ff93fea 100644
+> --- a/drivers/usb/gadget/dummy_hcd.c
+> +++ b/drivers/usb/gadget/dummy_hcd.c
+> @@ -1195,6 +1195,138 @@ static struct dummy_ep *find_endpoint (struct dummy *dum, u8 address)
+>  #define Ep_Request	(USB_TYPE_STANDARD | USB_RECIP_ENDPOINT)
+>  #define Ep_InRequest	(Ep_Request | USB_DIR_IN)
+>  
+> +
+> +/**
+> + * handle_control_request() - handles all control transferes
 
-Sounds good, but you need to resend it with this information in it, not
-much I can do with it in an independant email.
+"transfers" not "transferes".
 
-thanks,
+> -- 
+> 1.6.3.3
+> 
+> --
+> Sent by an consultant of the Qualcomm Innovation Center, Inc.
+> The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-arm-msm" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-greg k-h
+-- 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
