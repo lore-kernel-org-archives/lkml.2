@@ -1,56 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752532Ab0JSOfL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Oct 2010 10:35:11 -0400
-Received: from lo.gmane.org ([80.91.229.12]:58768 "EHLO lo.gmane.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750855Ab0JSOfJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Oct 2010 10:35:09 -0400
-X-Injected-Via-Gmane: http://gmane.org/
-To: linux-kernel@vger.kernel.org
-From: Grant Edwards <grant.b.edwards@gmail.com>
-Subject: Re: [PATCH] Documentation about RS485 serial communications
-Date: Tue, 19 Oct 2010 14:29:48 +0000 (UTC)
-Message-ID: <i9ka0s$4ua$1@dough.gmane.org>
-References: <20100408111310.524f7354@lxorguk.ukuu.org.uk>
- <4BBDD71D.1010700@evidence.eu.com> <4BFD1FB6.8050405@atmel.com>
- <4BFE2F38.8050200@evidence.eu.com> <4BFE41FD.2080804@atmel.com>
- <20100527102917.GB31253@pengutronix.de> <4C626CBF.9020609@evidence.eu.com>
- <20100811083214.21d2919e.randy.dunlap@oracle.com>
- <4C669120.8080707@evidence.eu.com> <4C686411.3060500@oracle.com>
- <20100815221906.GA24153@n2100.arm.linux.org.uk>
- <4CBD8EE4.5040808@evidence.eu.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1752380Ab0JSOhn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Oct 2010 10:37:43 -0400
+Received: from fed1rmmtao101.cox.net ([68.230.241.45]:42956 "EHLO
+	fed1rmmtao101.cox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751310Ab0JSOhl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Oct 2010 10:37:41 -0400
+X-Greylist: delayed 406 seconds by postgrey-1.27 at vger.kernel.org; Tue, 19 Oct 2010 10:37:41 EDT
+X-VR-Score: 130.00
+X-Authority-Analysis: v=1.1 cv=dbaSwxnuHrR0yVADEcRPA4YIn3BZCWHRWI2DPCFObtA=
+ c=1 sm=1 a=M58Ut_zYM0YA:10 a=z1hM_oKarXoA:10 a=IkcTkHD0fZMA:10
+ a=F3m6ZqAnpPGF+kIohjw9Mw==:17 a=k3OsbluC0nrsuQTdMAkA:9
+ a=6QlpV08A1A2G6-5iqiRhYz9IBiYA:4 a=QEXdDO2ut3YA:10 a=CwSHxaf-GV0OyJud:21
+ a=atTXs99Yeki54iIx:21 a=F3m6ZqAnpPGF+kIohjw9Mw==:117
+X-CM-Score: 0.00
+Authentication-Results: cox.net; none
+Message-ID: <20101019103054.QRAJ1.964899.imail@fed1rmwml4201>
+Date: Tue, 19 Oct 2010 10:30:54 -0400
+From: <younodjd89@cox.net>
+Reply-To: ericdonald200@aol.com
+Subject: End Of Year Result!!
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 7bit
-X-Complaints-To: usenet@dough.gmane.org
-X-Gmane-NNTP-Posting-Host: dsl.comtrol.com
-User-Agent: slrn/pre0.9.9-102 (Linux)
-Cc: linux-serial@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Cc: linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org
+X-Priority: 3 (Normal)
+Sensitivity: Normal
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2010-10-19, Claudio Scordino <claudio@evidence.eu.com> wrote:
+Your e mail  was choosen   in the UK promo  that was held
+October 14th, and you are to claim the
+sum   of 1,000 000 Pounds.it  means you are 1 of our six (6) lucky
+recipents . Your winning number is: (CT-222-6747,FGN/P-900-56).
 
-> +2. HARDWARE-RELATED CONSIDERATIONS
-> +
-> +   Some CPUs (e.g., Atmel AT91) contain a transceiver capable of working both
-> +   as RS232 and RS485.
 
-Pardon my curiosity, but I've looked at a few AT91 parts, and I've
-never seen on with an internal transceiver -- nor does Google seem
-able to find any.
+You are to send us this info
 
-Frankly, I'd be pretty surprised, since it would be very difficult
-(fab-wise), to build a mircoprocessor with I/O cells capable of
-withstanding the voltage levels specified in RS232.
-
-Can you specify to which parts you're referring?
-
--- 
-Grant Edwards               grant.b.edwards        Yow! I have the power to
-                                  at               HALT PRODUCTION on all
-                              gmail.com            TEENAGE SEX COMEDIES!!
-
+NAME IN FULL: 
+DELIVERY ADDRESS: 
+AGE:
+NATIONALITY: 
+OCCUPATION:
+PHONE:
+SEX:
