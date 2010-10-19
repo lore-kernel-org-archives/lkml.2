@@ -1,196 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754179Ab0JSEvM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Oct 2010 00:51:12 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:42356 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751388Ab0JSEvK (ORCPT
+	id S932715Ab0JSEwf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Oct 2010 00:52:35 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:33160 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753951Ab0JSEwe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Oct 2010 00:51:10 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Tue, 19 Oct 2010 13:45:41 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Greg Thelen <gthelen@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        containers@lists.osdl.org, Andrea Righi <arighi@develer.com>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Ciju Rajan K <ciju@linux.vnet.ibm.com>,
-        David Rientjes <rientjes@google.com>
-Subject: [RFC][PATCH 2/2] memcg: move_account optimization  by reduce locks
- (Re: [PATCH v3 04/11] memcg: add lock to synchronize page accounting and
- migration
-Message-Id: <20101019134541.455eeaba.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20101019134308.3fe81638.kamezawa.hiroyu@jp.fujitsu.com>
-References: <1287448784-25684-1-git-send-email-gthelen@google.com>
-	<1287448784-25684-5-git-send-email-gthelen@google.com>
-	<20101019094512.11eabc62.kamezawa.hiroyu@jp.fujitsu.com>
-	<20101019134308.3fe81638.kamezawa.hiroyu@jp.fujitsu.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 19 Oct 2010 00:52:34 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=FfaJ6D435vbYnSERPqhEHs/LVTOEalhwfGv0/UJRT7xnt7gvDwqUIcJ/Mkm1XIbRGI
+         28efgywlxQ4rBX9qAFEa53To8fwhsRqdmPfHU+HWvSSt5F10eMqhnhA+Nbi8TjWfZp3W
+         gISZA8qDAmXN0PDc5jKavS1Znw9RAqyp6FE2U=
+MIME-Version: 1.0
+In-Reply-To: <alpine.LNX.2.00.1010182342120.31740@banach.math.auburn.edu>
+References: <201009161632.59210.arnd@arndb.de>
+	<201010181742.06678.arnd@arndb.de>
+	<20101018184346.GD27089@kroah.com>
+	<AANLkTin2KPNNXvwcWphhM-5qexB14FS7M7ezkCCYCZ2H@mail.gmail.com>
+	<20101019004004.GB28380@kroah.com>
+	<AANLkTi=ffaihP5-yNYFKAbAbX+XbRgWRXXfCZd4J3KwQ@mail.gmail.com>
+	<20101019022413.GB30307@kroah.com>
+	<AANLkTinv4VFpi=Jkc_5oyFgPbdLRg0ResJx9u9Puhm-7@mail.gmail.com>
+	<1287459219.16971.352.camel@gandalf.stny.rr.com>
+	<alpine.LNX.2.00.1010182342120.31740@banach.math.auburn.edu>
+Date: Tue, 19 Oct 2010 14:52:32 +1000
+Message-ID: <AANLkTi=oAeuz8ZxcOMpf=3MVY=WMt0BwHiGCUxO7OAEV@mail.gmail.com>
+Subject: Re: [Ksummit-2010-discuss] [v2] Remaining BKL users, what to do
+From: Dave Airlie <airlied@gmail.com>
+To: Theodore Kilgore <kilgota@banach.math.auburn.edu>
+Cc: Steven Rostedt <rostedt@goodmis.org>, Greg KH <greg@kroah.com>,
+        codalist@telemann.coda.cs.cmu.edu, autofs@linux.kernel.org,
+        Samuel Ortiz <samuel@sortiz.org>, Jan Kara <jack@suse.cz>,
+        Mikulas Patocka <mikulas@artax.karlin.mff.cuni.cz>,
+        Arnd Bergmann <arnd@arndb.de>, Jan Harkes <jaharkes@cs.cmu.edu>,
+        netdev@vger.kernel.org, Anders Larsen <al@alarsen.net>,
+        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        Bryan Schumaker <bjschuma@netapp.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        ksummit-2010-discuss@lists.linux-foundation.org,
+        Petr Vandrovec <vandrove@vc.cvut.cz>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        linux-fsdevel@vger.kernel.org, Evgeniy Dushistov <dushistov@mail.ru>,
+        Ingo Molnar <mingo@elte.hu>, Andrew Hendry <andrew.hendry@gmail.com>,
+        linux-media@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> I might be able to find some hardware still lying around here that uses an
+> i810. Not sure unless I go hunting it. But I get the impression that if
+> the kernel is a single-CPU kernel there is not any problem anyway? Don't
+> distros offer a non-smp kernel as an installation option in case the user
+> needs it? So in reality how big a problem is this?
 
-reduce lock at account moving.
+Not anymore, which is my old point of making a fuss. Nowadays in the
+modern distro world, we supply a single kernel that can at runtime
+decide if its running on SMP or UP and rewrite the text section
+appropriately with locks etc. Its like magic, and something like
+marking drivers as BROKEN_ON_SMP at compile time is really wrong when
+what you want now is a runtime warning if someone tries to hotplug a
+CPU with a known iffy driver loaded or if someone tries to load the
+driver when we are already in SMP mode.
 
-a patch "memcg: add lock to synchronize page accounting and migration" add
-a new lock and make locking cost twice. This patch is for reducing the cost.
-
-At moving charges by scanning page table, we do all jobs under pte_lock.
-This means we never have race with "uncharge". Because of that,
-we can remove lock_page_cgroup() in some situation.
-
-The cost of moing 8G anon process
-==
-[mmotm-1013]
-Before:
-	real    0m0.792s
-	user    0m0.000s
-	sys     0m0.780s
-	
-[dirty-limit v3 patch]
-        real    0m0.854s
-        user    0m0.000s
-        sys     0m0.842s
-[get/put optimization ]
-	real    0m0.757s
-	user    0m0.000s
-	sys     0m0.746s
-
-[this patch]
-	real    0m0.732s
-	user    0m0.000s
-	sys     0m0.721s
-
-Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
----
- Documentation/cgroups/memory.txt |   23 ++++++++++++++++++++++-
- mm/memcontrol.c                  |   29 ++++++++++++++++++++++-------
- 2 files changed, 44 insertions(+), 8 deletions(-)
-
-Index: dirty_limit_new/mm/memcontrol.c
-===================================================================
---- dirty_limit_new.orig/mm/memcontrol.c
-+++ dirty_limit_new/mm/memcontrol.c
-@@ -2386,7 +2386,6 @@ static void __mem_cgroup_move_account(st
- {
- 	VM_BUG_ON(from == to);
- 	VM_BUG_ON(PageLRU(pc->page));
--	VM_BUG_ON(!PageCgroupLocked(pc));
- 	VM_BUG_ON(!PageCgroupUsed(pc));
- 	VM_BUG_ON(pc->mem_cgroup != from);
- 
-@@ -2424,19 +2423,32 @@ static void __mem_cgroup_move_account(st
-  * __mem_cgroup_move_account()
-  */
- static int mem_cgroup_move_account(struct page_cgroup *pc,
--		struct mem_cgroup *from, struct mem_cgroup *to, bool uncharge)
-+		struct mem_cgroup *from, struct mem_cgroup *to,
-+		bool uncharge, bool stable)
- {
- 	int ret = -EINVAL;
- 	unsigned long flags;
--
--	lock_page_cgroup(pc);
-+	/*
-+	 * When stable==true, some lock (page_table_lock etc.) prevents
-+	 * modification of PCG_USED bit and pc->mem_cgroup never be invalid.
-+	 * IOW, there will be no race with charge/uncharge. From another point
-+	 * of view, there will be other races with codes which accesses
-+	 * pc->mem_cgroup under lock_page_cgroup(). Considering what
-+	 * pc->mem_cgroup the codes will see, they'll see old or new value and
-+	 * both of values will never be invalid while they holds
-+	 * lock_page_cgroup(). There is no probelm to skip lock_page_cgroup
-+	 * when we can.
-+	 */
-+	if (!stable)
-+		lock_page_cgroup(pc);
- 	if (PageCgroupUsed(pc) && pc->mem_cgroup == from) {
- 		move_lock_page_cgroup(pc, &flags);
- 		__mem_cgroup_move_account(pc, from, to, uncharge);
- 		move_unlock_page_cgroup(pc, &flags);
- 		ret = 0;
- 	}
--	unlock_page_cgroup(pc);
-+	if (!stable)
-+		unlock_page_cgroup(pc);
- 	/*
- 	 * check events
- 	 */
-@@ -2474,7 +2486,7 @@ static int mem_cgroup_move_parent(struct
- 	if (ret || !parent)
- 		goto put_back;
- 
--	ret = mem_cgroup_move_account(pc, child, parent, true);
-+	ret = mem_cgroup_move_account(pc, child, parent, true, false);
- 	if (ret)
- 		mem_cgroup_cancel_charge(parent);
- put_back:
-@@ -5156,6 +5168,7 @@ retry:
- 		struct page *page;
- 		struct page_cgroup *pc;
- 		swp_entry_t ent;
-+		bool mapped = false;
- 
- 		if (!mc.precharge)
- 			break;
-@@ -5163,12 +5176,14 @@ retry:
- 		type = is_target_pte_for_mc(vma, addr, ptent, &target);
- 		switch (type) {
- 		case MC_TARGET_PAGE:
-+			mapped = true;
-+			/* Fall Through */
- 		case MC_TARGET_UNMAPPED_PAGE:
- 			page = target.page;
- 			if (!isolate_lru_page(page)) {
- 				pc = lookup_page_cgroup(page);
- 				if (!mem_cgroup_move_account(pc, mc.from,
--						mc.to, false)) {
-+						mc.to, false, mapped)) {
- 					mc.precharge--;
- 					/* we uncharge from mc.from later. */
- 					mc.moved_charge++;
-Index: dirty_limit_new/Documentation/cgroups/memory.txt
-===================================================================
---- dirty_limit_new.orig/Documentation/cgroups/memory.txt
-+++ dirty_limit_new/Documentation/cgroups/memory.txt
-@@ -637,7 +637,28 @@ memory cgroup.
-       | page_mapcount(page) > 1). You must enable Swap Extension(see 2.4) to
-       | enable move of swap charges.
- 
--8.3 TODO
-+8.3 Implemenation Detail
-+
-+  At moving, we need to take care of races. At first thinking, there are
-+  several sources of race when we overwrite pc->mem_cgroup.
-+  - charge/uncharge
-+  - file stat (dirty, writeback, etc..) accounting
-+  - LRU add/remove
-+
-+  Against charge/uncharge, we do all "move" under pte_lock. So, if we move
-+  chareges of a mapped pages, we don't need extra locks. If not mapped,
-+  we need to take lock_page_cgroup.
-+
-+  Against file-stat accouning, we need some locks. Current implementation
-+  uses 2 level locking, one is light-weight, another is heavy.
-+  A light-weight scheme is to use per-cpu counter. If someone moving a charge
-+  from a mem_cgroup, per-cpu "caution" counter is incremented and file-stat
-+  update will use heavy lock. This heavy lock is a special lock for move_charge
-+  and allow mutual execution of accessing pc->mem_cgroup.
-+
-+  Against LRU, we do isolate_lru_page() before move_account().
-+
-+8.4 TODO
- 
- - Implement madvise(2) to let users decide the vma to be moved or not to be
-   moved.
-
+Dave.
