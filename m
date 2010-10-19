@@ -1,76 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933899Ab0JSKRg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Oct 2010 06:17:36 -0400
-Received: from exprod5og108.obsmtp.com ([64.18.0.186]:41951 "HELO
-	exprod5og108.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753467Ab0JSKRe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Oct 2010 06:17:34 -0400
-Message-ID: <4CBD703B.5060607@panasas.com>
-Date: Tue, 19 Oct 2010 12:17:31 +0200
-From: Boaz Harrosh <bharrosh@panasas.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.12) Gecko/20100907 Fedora/3.0.7-1.fc12 Thunderbird/3.0.7
-MIME-Version: 1.0
-To: npiggin@kernel.dk
-CC: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Subject: Re: [patch 33/35] fs: icache introduce inode_get/inode_get_ilock
-References: <20101019034216.319085068@kernel.dk> <20101019034658.963540555@kernel.dk>
-In-Reply-To: <20101019034658.963540555@kernel.dk>
-Content-Type: text/plain; charset=UTF-8
+	id S933944Ab0JSKRr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Oct 2010 06:17:47 -0400
+Received: from gate.crashing.org ([63.228.1.57]:33618 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755147Ab0JSKRf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Oct 2010 06:17:35 -0400
+Subject: Re: PROBLEM: memory corrupting bug, bisected to 6dda9d55
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: pacman@kosh.dhis.org
+Cc: Mel Gorman <mel@csn.ul.ie>, linux-mm@kvack.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
+In-Reply-To: <20101018213348.10281.qmail@kosh.dhis.org>
+References: <20101018213348.10281.qmail@kosh.dhis.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 19 Oct 2010 21:16:50 +1100
+Message-ID: <1287483410.2341.66.camel@pasglop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 19 Oct 2010 10:17:33.0380 (UTC) FILETIME=[D82C5840:01CB6F76]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/19/2010 05:42 AM, npiggin@kernel.dk wrote:
-> Factor open coded inode lock, increment, unlock into a function inode_get().
-> Rename __iget to inode_get_ilock.
+
+> > >From there, you might be able to close onto the culprit a bit more, for
+> > example, try using the DABR register to set data access breakpoints
+> > shortly before the corruption spot. AFAIK, On those old 32-bit CPUs, you
+> > can set whether you want it to break on a real or a virtual address.
 > 
-> Signed-off-by: Nick Piggin <npiggin@kernel.dk>
+> I thought of that, but as far as I can tell, this CPU doesn't have DABR.
+> /proc/cpuinfo
+> processor	: 0
+> cpu		: 7447/7457
+> clock		: 999.999990MHz
+> revision	: 1.1 (pvr 8002 0101)
+> bogomips	: 66.66
+> timebase	: 33333333
+> platform	: CHRP
+> model		: Pegasos2
+> machine		: CHRP Pegasos2
+> Memory		: 512 MB
+
+AFAIK, the 7447 is just a derivative of the 7450 design which -does-
+have a DABR ... Unless it's broken :-)
+
+> My next thought was: right after the correct value appears in memory, unmap
+> the page from the kernel and let it Oops when it tries to write there. Then I
+> found out that the kernel is using BATs instead of page tables for its own
+> view of memory. Booting with "nobats" completely changes the memory usage
+> pattern (probably because it's allocating a lot of pages to hold PTEs that it
+> didn't need before)
+
+Right. And that hides the problem I suppose ?
+
+> > You can also sprinkle tests for the page content through the code if
+> > that doesn't work to try to "close in" on the culprit (for example if
+> > it's a case of stray DMA, like a network driver bug or such).
 > 
-> ---
+> No network drivers are loaded when this happens.
 
-<>
+Ok.
 
-> Index: linux-2.6/fs/exofs/inode.c
-> ===================================================================
-> --- linux-2.6.orig/fs/exofs/inode.c	2010-10-19 14:18:58.000000000 +1100
-> +++ linux-2.6/fs/exofs/inode.c	2010-10-19 14:19:16.000000000 +1100
-> @@ -1162,9 +1162,7 @@
->  	/* increment the refcount so that the inode will still be around when we
->  	 * reach the callback
->  	 */
-> -	spin_lock(&inode->i_lock);
-> -	inode->i_count++;
-> -	spin_unlock(&inode->i_lock);
-> +	inode_get(inode);
->  
->  	ios->done = create_done;
->  	ios->private = inode;
-> Index: linux-2.6/fs/exofs/namei.c
-> ===================================================================
-> --- linux-2.6.orig/fs/exofs/namei.c	2010-10-19 14:18:58.000000000 +1100
-> +++ linux-2.6/fs/exofs/namei.c	2010-10-19 14:19:00.000000000 +1100
-> @@ -153,9 +153,7 @@
->  
->  	inode->i_ctime = CURRENT_TIME;
->  	inode_inc_link_count(inode);
-> -	spin_lock(&inode->i_lock);
-> -	inode->i_count++;
-> -	spin_unlock(&inode->i_lock);
-> +	inode_get(inode);
->  
->  	return exofs_add_nondir(dentry, inode);
->  }
-
-Why won't you define an intermediate inode_get() in patch 08/35 and
-change both puts and gets of all file_systems in one patch? Instead
-of two tree sweeping patches. (At least for all the trivial places
-like here)
-
-Thanks
-Boaz
+Cheers,
+Ben.
 
 
