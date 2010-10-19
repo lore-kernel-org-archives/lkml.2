@@ -1,89 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752716Ab0JSOwk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Oct 2010 10:52:40 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:48751 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752061Ab0JSOwi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Oct 2010 10:52:38 -0400
-Date: Tue, 19 Oct 2010 16:51:09 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Arjan van de Ven <arjan@linux.intel.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Thomas Renninger <trenn@suse.de>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Tejun Heo <tj@kernel.org>, Frederic Weisbecker <fweisbec@gmail.com>,
-        Pierre Tardy <tardyp@gmail.com>,
-        Jean Pihet <jean.pihet@newoldbits.com>,
-        linux-trace-users@vger.kernel.org, linux-pm@lists.linux-foundation.org,
-        rjw@sisk.pl, linux-omap@vger.kernel.org,
-        Kevin Hilman <khilman@deeprootsystems.com>,
-        Steven Rostedt <rostedt@goodmis.org>, Frank Eigler <fche@redhat.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: PATCH [0/4] perf: clean-up of power events API
-Message-ID: <20101019145109.GA4857@elte.hu>
-References: <201010062334.46971.trenn@suse.de>
- <4CB095FA.8060803@linux.intel.com>
- <20101010121928.GA2688@elte.hu>
- <201010191331.03080.trenn@suse.de>
- <20101019114501.GA25371@elte.hu>
- <1287488841.1994.5.camel@twins>
- <20101019115200.GC25371@elte.hu>
- <4CBD9CDD.1010300@linux.intel.com>
- <20101019135053.GA665@elte.hu>
- <4CBDA2B6.9000405@linux.intel.com>
+	id S1752882Ab0JSOyo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Oct 2010 10:54:44 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:33552 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752229Ab0JSOyn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Oct 2010 10:54:43 -0400
+Date: Tue, 19 Oct 2010 10:54:42 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Stefan Richter <stefanr@s5r6.in-berlin.de>
+cc: David Brownell <david-b@pacbell.net>, USB list <linux-usb@vger.kernel.org>,
+        Kernel development list <linux-kernel@vger.kernel.org>
+Subject: Re: 2.6.36-rc7: NULL pointer dereference in ehci_clear_tt_buffer_complete
+In-Reply-To: <Pine.LNX.4.44L0.1010170944300.2318-100000@netrider.rowland.org>
+Message-ID: <Pine.LNX.4.44L0.1010191049440.1786-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4CBDA2B6.9000405@linux.intel.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sun, 17 Oct 2010, Alan Stern wrote:
 
-* Arjan van de Ven <arjan@linux.intel.com> wrote:
-
-> >> for some time software needs to support both, especially if popular distros 
-> >> stick to an older kernel like *cough* RHEL6
-> >
-> > Sure, you can support both. But as long as support for the _new_ events is 
-> > included in PowerTop there's no need to keep the duality upstream. Running 
-> > ancient PowerTop on fresh kernels is not common.
-> >
-> > An old RHEL kernel will still keep on working as you can keep support for old 
-> > events in PowerTop as long as you wish to.
-> >
-> > The new kernel also wont 'overwrite' old events with new definitions in the 
-> > future, so PowerTop will keep working for as long as you want to support older 
-> > kernels.
-> >
-> > Does that sound good?
+> On Sat, 16 Oct 2010, Stefan Richter wrote:
 > 
-> this does not scale much long term, eg this only works if this is only done once, 
-> and these points are stable afterwards. otherwise we get 25 of those different 
-> "workarounds for kernel ABI breakage" into all different projects, and it becomes 
-> untestable for all the poor software writers...
+> > > What I said above wasn't quite right.  This won't help trigger the 
+> > > oops, but it should trigger the line saying something like
+> > > 
+> > > 	ehci_hcd 0000:00:12.2: qh ffff880208f07af0 (#00) state 5
+> > > 
+> > > That's the real bug.
+> > 
+> > # grep ' qh ' /var/log/messages
+> > Oct 11 22:29:21 stein kernel: ehci_hcd 0000:00:12.2: qh ffff880208f07af0 (#00)
+> > state 5
+> > 
+> > I.e. there was none anymore since the one which I reported on Monday.
+> 
+> Evidently this bug is pretty difficult to get hold of.  There has to be 
+> an URB that is unlinked at the time the endpoint gets disabled, and 
+> ideally it should have failed with a communications error (because the 
+> device was unplugged).  Going to the trouble to arrange all that 
+> doesn't seem worthwhile.
 
-I have no intention for this to become common. For the 2+ years tracepoints have 
-been upstream this is the first time it has come up. It's a rare occurance, and as 
-long as we keep it rare and as long as we have a smooth transition process in place 
-it should be good. If it becomes common we are doing something wrong ...
+Okay, here's a patch which definitely causes the problem to surface.  
+It contains some extra debugging printouts but you can ignore them.  Or 
+you can edit out the hunks that affect ehci-q.c.
 
-Alternatively you might want to review the new power events and suggest ways to add 
-that extra information to existing events that suits your purposes as well. You 
-added the old power tracepoints so you sure must have an opinion about it all?
+Ideally, you would test this while forcing the card reader to run at
+full speed, by putting a USB-1.1 hub between the monitor and the card
+reader.  But if you don't have one available, don't worry -- the error
+message should still appear even though it won't lead to an oops.
 
-Thanks,
+And of course, when you run this along with the proposed fix, the error 
+message should go away.  :-)
 
-	Ingo
+Alan Stern
+
+
+
+Index: usb-2.6/drivers/usb/core/hcd.c
+===================================================================
+--- usb-2.6.orig/drivers/usb/core/hcd.c
++++ usb-2.6/drivers/usb/core/hcd.c
+@@ -1627,6 +1627,11 @@ rescan:
+ 	}
+ 	spin_unlock_irq(&hcd_urb_list_lock);
+ 
++	printk(KERN_INFO "flush delay %02x\n", ep->desc.bEndpointAddress);
++	local_irq_disable();
++	mdelay(10);
++	local_irq_enable();
++
+ 	/* Wait until the endpoint queue is completely empty */
+ 	while (!list_empty (&ep->urb_list)) {
+ 		spin_lock_irq(&hcd_urb_list_lock);
+Index: usb-2.6/drivers/usb/host/ehci-hcd.c
+===================================================================
+--- usb-2.6.orig/drivers/usb/host/ehci-hcd.c
++++ usb-2.6/drivers/usb/host/ehci-hcd.c
+@@ -74,7 +74,7 @@ static const char	hcd_name [] = "ehci_hc
+ #endif
+ 
+ /* magic numbers that can affect system performance */
+-#define	EHCI_TUNE_CERR		3	/* 0-3 qtd retries; 0 == don't stop */
++#define	EHCI_TUNE_CERR		0	/* 0-3 qtd retries; 0 == don't stop */
+ #define	EHCI_TUNE_RL_HS		4	/* nak throttle; see 4.9 */
+ #define	EHCI_TUNE_RL_TT		0
+ #define	EHCI_TUNE_MULT_HS	1	/* 1-3 transactions/uframe; 4.10.3 */
+Index: usb-2.6/drivers/usb/host/ehci-q.c
+===================================================================
+--- usb-2.6.orig/drivers/usb/host/ehci-q.c
++++ usb-2.6/drivers/usb/host/ehci-q.c
+@@ -272,6 +272,9 @@ __acquires(ehci->lock)
+ 
+ 	if (unlikely(urb->unlinked)) {
+ 		COUNT(ehci->stats.unlink);
++		if (urb->unlinked == -ESHUTDOWN)
++		printk(KERN_INFO "give back SHUTDOWN URB %02x\n",
++urb->ep->desc.bEndpointAddress);
+ 	} else {
+ 		/* report non-error and short read status as zero */
+ 		if (status == -EINPROGRESS || status == -EREMOTEIO)
+@@ -334,6 +337,8 @@ qh_completions (struct ehci_hcd *ehci, s
+ 	state = qh->qh_state;
+ 	qh->qh_state = QH_STATE_COMPLETING;
+ 	stopped = (state == QH_STATE_IDLE);
++	if (stopped)
++		printk(KERN_INFO "Scan stopped qh\n");
+ 
+  rescan:
+ 	last = NULL;
+@@ -1231,6 +1236,7 @@ static void start_unlink_async (struct e
+ 	qh->qh_state = QH_STATE_UNLINK;
+ 	ehci->reclaim = qh = qh_get (qh);
+ 
++	printk(KERN_INFO "Start async unlink\n");
+ 	prev = ehci->async;
+ 	while (prev->qh_next.qh != qh)
+ 		prev = prev->qh_next.qh;
+Index: usb-2.6/drivers/usb/core/message.c
+===================================================================
+--- usb-2.6.orig/drivers/usb/core/message.c
++++ usb-2.6/drivers/usb/core/message.c
+@@ -323,8 +323,13 @@ static void sg_complete(struct urb *urb)
+ 	/* on the last completion, signal usb_sg_wait() */
+ 	io->bytes += urb->actual_length;
+ 	io->count--;
+-	if (!io->count)
++	if (!io->count) {
++		if (status == -ESHUTDOWN) {
++			printk(KERN_INFO "sg completion delay\n");
++			mdelay(50);
++		}
+ 		complete(&io->complete);
++	}
+ 
+ 	spin_unlock(&io->lock);
+ }
+
