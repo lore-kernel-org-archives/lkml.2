@@ -1,105 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933830Ab0JSEFB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Oct 2010 00:05:01 -0400
-Received: from TYO202.gate.nec.co.jp ([202.32.8.206]:60550 "EHLO
-	tyo202.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752103Ab0JSEE6 (ORCPT
+	id S933730Ab0JSEGa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Oct 2010 00:06:30 -0400
+Received: from mga01.intel.com ([192.55.52.88]:30953 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752103Ab0JSEG2 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Oct 2010 00:04:58 -0400
-Message-ID: <4CBD18A0.5070206@ce.jp.nec.com>
-Date: Tue, 19 Oct 2010 13:03:44 +0900
-From: "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc13 Thunderbird/3.1.4
+	Tue, 19 Oct 2010 00:06:28 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.57,348,1283756400"; 
+   d="scan'208";a="848514424"
+From: "Ma, Ling" <ling.ma@intel.com>
+To: "miaox@cn.fujitsu.com" <miaox@cn.fujitsu.com>
+CC: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>,
+        Andi Kleen <andi@firstfloor.org>, Thomas Gleixner <tglx@linutronix.de>,
+        "Zhao, Yakui" <yakui.zhao@intel.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Date: Tue, 19 Oct 2010 12:06:23 +0800
+Subject: RE: [PATCH V2 -tip] lib,x86_64: improve the performance of memcpy()
+ for unaligned copy
+Thread-Topic: [PATCH V2 -tip] lib,x86_64: improve the performance of
+ memcpy() for unaligned copy
+Thread-Index: ActvONNS3Q3Iz+7zS/KpTpkhtLpISwAATedw
+Message-ID: <C10D3FB0CD45994C8A51FEC1227CE22F15D77726AF@shsmsx502.ccr.corp.intel.com>
+References: <4CAEC81C.1070108@cn.fujitsu.com>
+ <C10D3FB0CD45994C8A51FEC1227CE22F15C916E769@shsmsx502.ccr.corp.intel.com>
+ <4CAEDE0D.2040009@cn.fujitsu.com> <4CB62543.7000605@zytor.com>
+ <C10D3FB0CD45994C8A51FEC1227CE22F15CC203E71@shsmsx502.ccr.corp.intel.com>
+ <4CBBE7FB.2060303@cn.fujitsu.com>
+ <C10D3FB0CD45994C8A51FEC1227CE22F15D77721FD@shsmsx502.ccr.corp.intel.com>
+ <4CBBEA7F.7010604@cn.fujitsu.com>
+ <C10D3FB0CD45994C8A51FEC1227CE22F15D777221E@shsmsx502.ccr.corp.intel.com>
+ <4CBBFA7F.1010109@cn.fujitsu.com>
+ <C10D3FB0CD45994C8A51FEC1227CE22F15D77722D0@shsmsx502.ccr.corp.intel.com>
+ <4CBD0830.4030301@cn.fujitsu.com>
+In-Reply-To: <4CBD0830.4030301@cn.fujitsu.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Hannes Reinecke <hare@suse.de>
-CC: device-mapper development <dm-devel@redhat.com>,
-        Kiyoshi Ueda <k-ueda@ct.jp.nec.com>, michaelc@cs.wisc.edu,
-        tytso@mit.edu, linux-scsi@vger.kernel.org,
-        Mike Snitzer <snitzer@redhat.com>, jaxboe@fusionio.com, jack@suse.cz,
-        vst@vlnb.net, linux-kernel@vger.kernel.org, swhiteho@redhat.com,
-        linux-raid@vger.kernel.org, linux-ide@vger.kernel.org,
-        James.Bottomley@suse.de, chris.mason@oracle.com,
-        konishi.ryusuke@lab.ntt.co.jp, linux-fsdevel@vger.kernel.org,
-        Tejun Heo <tj@kernel.org>, rwheeler@redhat.com,
-        Christoph Hellwig <hch@lst.de>, Sergei Shtylyov <sshtylyov@mvista.com>
-Subject: Re: [RFC] training mpath to discern between SCSI errors
-References: <20100825155918.GB8509@redhat.com>	<4C7B984E.4070802@suse.de>	<4C7B9F14.9080900@mvista.com>	<4C7BA670.2060303@suse.de> <4C7BC5B4.3010707@suse.de> <4CBC00B3.7090603@ce.jp.nec.com> <4CBC35AE.9050002@suse.de>
-In-Reply-To: <4CBC35AE.9050002@suse.de>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Hannes,
 
-(10/18/10 20:55), Hannes Reinecke wrote:
->> Does 'retryable' of EIO mean retryable in multipath layer?
->> If so, what is the difference between EIO and ENOLINK?
+
+On Mon, 18 Oct 2010 16:01:13 +0800, Ma, Ling wrote:
+>>>> rep_good will cause memcpy jump to memcpy_c, so not run this patch,
+>>> we may continue to do further optimization on it later.
 >>
-> Yes, EIO is intended for errors which should be retried at the
-> multipath layer. This does _not_ include transport errors, which are
-> signalled by ENOLINK.
-> 
-> Basically, ENOLINK is a transport error, and EIO just means
-> something is wrong and we weren't able to classify it properly.
-> If we were, it'd be either ENOLINK or EREMOTEIO.
-> 
->> I've heard of a case where just retrying within path-group is
->> preferred to (relatively costly) switching group.
->> So, if EIO (or other error code) can be used to indicate such type
->> of errors, it's nice.
+>>> Yes, but in fact, the performance of memcpy_c is not better on some micro-architecture(such as:
+>>> Wolfdale-3M, ), especially in the unaligned cases, so we need do optimization for it, and I think
+>>> the first step of optimization is optimizing the original code of memcpy().
 >>
-> Yes, that was one of the intention.
-
-Great to hear that.
-
-And when it comes to retrying, the next problem is who controls it.
-I don't think it's good to duplicate retry logic in multipath and
-underlying device like SCSI (i.e. sd retries 5 times).
-So perhaps we need a way to disable (or limit) retries in underlying
-device at least.
-
->> Also (although this might be a bit off topic from your patch),
->> can we expand such a distinction to what should be logged?
->> Currently, it's difficult to distinguish important SCSI/block errors
->> and less important ones in kernel log.
->> For example, when I get a link failure on sda, kernel prints something
->> like below, regardless of whether the I/O is recovered by multipathing or not:
->>   end_request: I/O error, dev sda, sector XXXXX
+>> As mentioned above , we will optimize further memcpy_c soon.
+>> Two reasons :
+>>    1. movs instruction need long lantency to startup
+>>    2. movs instruction is not good for unaligned case.
 >>
-> Indeed, when using the above we could be modifying the above
-> message, eg by
-> 
-> end_request: transport error, dev sda, sector XXXXX
-> 
-> or
-> 
-> end_request: target error, dev sda, sector XXXXX
-> 
-> which would improve the output noticeable.
-
-It improves but still they look like critical errors
-even if multipath saves them.
-
-When I see this:
-
-  end_request: target error, dev sda, sector XXXXX
-
-I can't tell whether it's a real error visible to user space
-or it's just recoverred by multipath retry/failover afterwards.
-
-
->> Setting REQ_QUIET in dm-multipath could mask the message
->> but also other important ones in SCSI.
+>>>> BTW the improvement is only from core2 shift register optimization,
+>>>> but for most previous cpus shift register is very sensitive because of decode stage.
+>>>> I have test Atom, Opteron, and Nocona, new patch is still better.
 >>
-> Hmm. Not sure about that, but I think the above modifications will
-> be useful already.
-> 
-> I'll be sending an updated patch.
+>>> I think we can add a flag to make this improvement only valid for Core2 or other CPU like it,
+>>> just like X86_FEATURE_REP_GOOD.
+>>
+>> We should optimize core2 in memcpy_c function in future, I think.
 
-Thank you. I'm looking for that.
+>But there is a problem, the length of new instruction must be less or equal the length of
+>original instruction if we use alternatives, but IT seems the length of core2's optimization
+>instruction may be greater than the original instruction. So I think we can't optimize core2
+>in memcpy_c function, just in memcpy function.
+We keep above rule because we worry about i-cache capability miss and impact total performance.
+However we have several questions about it according to modern CPU arch.
+1. Current Linux kernel is far more previous versions and i-cache size(32k). 
+2. Hardware prefetch predication become more important and sophisticated, even when we access current cache line,
+   Hardware prefetch will fetch next line/lines on intel and AMD platform.
+3. Based on our test, we don't find compile operation Os(for size) is better than O2 (for performance) totally on modern CPU,
+   such as specjbb2005/2000, volano, kbuild ...,
+4. We have found memcpy_c have performance problem, we should manage to resolve it in small size as possible.
+   It is strange to separate core2 from other cpus by appending new flag,
+   And I think your patch must be bigger than last version.
 
--- 
-Jun'ichi Nomura, NEC Corporation
+Thanks
+Ling
+
+
