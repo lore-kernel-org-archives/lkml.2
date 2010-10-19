@@ -1,52 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753807Ab0JSSNR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Oct 2010 14:13:17 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:37223 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751783Ab0JSSNO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Oct 2010 14:13:14 -0400
-Date: Tue, 19 Oct 2010 19:12:49 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Colin Cross <ccross@google.com>
-Cc: Felipe Contreras <felipe.contreras@gmail.com>, Greg KH <greg@kroah.com>,
-        linux-main <linux-kernel@vger.kernel.org>,
-        linux-arm <linux-arm-kernel@lists.infradead.org>,
-        Arnd Hannemann <arnd@arndnet.de>,
-        Han Jonghun <jonghun79.han@gmail.com>,
-        Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        Hemant Pedanekar <hemantp@ti.com>
-Subject: Re: [PATCH] ARM: allow, but warn, when issuing ioremap() on RAM
-Message-ID: <20101019181249.GA9789@n2100.arm.linux.org.uk>
-References: <20101008175308.GA10975@n2100.arm.linux.org.uk> <AANLkTi=ERZjVDS=Q7aw1zA23KF68irUP3vvKLZw5meBU@mail.gmail.com> <20101008230451.GB10975@n2100.arm.linux.org.uk> <20101008232539.GA28697@kroah.com> <20101008234448.GD10975@n2100.arm.linux.org.uk> <AANLkTinhwORqdWU43yr1AXJGZm2zPKGG+Q9twruNs2aH@mail.gmail.com> <20101009092127.GB20975@n2100.arm.linux.org.uk> <AANLkTimQJLmDZPHtVJLCv9ZQgx_Yjh9=MOwOxMSAz4QX@mail.gmail.com> <20101011152516.GF27153@n2100.arm.linux.org.uk> <AANLkTikZAt-KWFF_MXxXGruia-=AieStQgird2XWgr6y@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTikZAt-KWFF_MXxXGruia-=AieStQgird2XWgr6y@mail.gmail.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	id S1753373Ab0JSSNK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Oct 2010 14:13:10 -0400
+Received: from mailout-de.gmx.net ([213.165.64.23]:51352 "HELO mail.gmx.net"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
+	id S1751531Ab0JSSNJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Oct 2010 14:13:09 -0400
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX190x8NKuQh0k1+ktL5jL9x60GXbXYWIZ1/HRTI3Gq
+	MDzoUhmP4LZCGZ
+Subject: Re: [RFC/RFT PATCH] sched: automated per tty task groups
+From: Mike Galbraith <efault@gmx.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+In-Reply-To: <AANLkTik08s=S7gZOGWEEhPW-zJtNRCse2h6jH3HAjoJH@mail.gmail.com>
+References: <1287479765.9920.9.camel@marge.simson.net>
+	 <1287487757.24189.40.camel@marge.simson.net>
+	 <AANLkTik08s=S7gZOGWEEhPW-zJtNRCse2h6jH3HAjoJH@mail.gmail.com>
+Content-Type: text/plain
+Date: Tue, 19 Oct 2010 20:13:03 +0200
+Message-Id: <1287511983.7417.45.camel@marge.simson.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.24.1.1 
+Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 19, 2010 at 01:13:36AM -0700, Colin Cross wrote:
-> If memblock_remove is used on the end of memory with this patch,
-> mem_init accesses off the end of the array of page structures because
-> of the discrepancy between memblock.memory and membank on the number
-> of the last pfn.   memblock.memory is used to determine the memory
-> zones in arm_bootmem_free, which eventually  is used to create the
-> array of page structures, but mem_init iterates over membank and calls
-> pfn_to_page on pfns up to bank_pfn_end.
-> 
-> Converting show_mem and mem_init to use memblock.memory fixes it:
+On Tue, 2010-10-19 at 08:28 -0700, Linus Torvalds wrote:
+> On Tue, Oct 19, 2010 at 4:29 AM, Mike Galbraith <efault@gmx.de> wrote:
 
-I intentionally did not do this because it won't work.  membank
-information is purposely not coalesced together when you have full
-sparsemem regions - which may result in
+> So I think the patch looks pretty good, and the numbers seem to look
+> just stunningly so, but I'd like to name the feature more along the
+> lines of "automatic process group scheduling" rather than about tty's
+> per se.
 
-	pfn_to_page(pfn) != pfn_to_page(pfn + 1) - 1
+Oh, absolutely, that's what it's all about really.  What I'd _like_ is
+to get per process group scheduling working on the cheap..ish.  Your
+idea of tty cgoups looked much simpler though, so I figured that would
+be a great place to start.  It turned out to be much simpler than I
+thought it would be, which is encouraging, and it works well in testing
+(so far that is).
 
-However, memblock information is coalesced, and so will cross these
-boundaries.  This means using memblock instead of membank will make
-things go pop.
+> And you actually did that for the Kconfig option, which makes me quite happy.
+
+(Ingo's input.. spot on)
+
+> The one other thing I do wonder about is how noticeable the group
+> scheduling overhead is.
+
+Very noticeable, cgroups is far from free.  It would make no sense for a
+performance freak to even think about it.  I don't run cgroup enabled
+kernels usually, and generally strip to the bone because I favor
+throughput very very heavily, but when I look at the desktop under load,
+the cost/performance trade-off ~seems to work out.
+
+>  If people compare with a non-CGROUP_SCHED
+> kernel, will a desktop-optimized kernel suddenly have horrible pipe
+> latency due to much higher scheduling cost? Right now that whole
+> feature is hidden by EXPERIMENTAL, I don't know how much it hurts, and
+> I never timed it when I tried it out long ago..
+
+The scheduling cost is quite high.  But realistically, the cost of a
+distro kernel with full featured network stack is (much) higher.  I
+seriously doubt the cost of cgroups would be noticed by the typical
+_desktop_ user.  Overall latencies for any switchy microbenchmark will
+certainly be considerably higher with the feature enabled.
+
+	-Mike
+
