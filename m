@@ -1,47 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758000Ab0JSI6J (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Oct 2010 04:58:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:64570 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751375Ab0JSI6H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Oct 2010 04:58:07 -0400
-Message-ID: <4CBD5D8F.6020505@redhat.com>
-Date: Tue, 19 Oct 2010 10:57:51 +0200
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc13 Lightning/1.0b3pre Thunderbird/3.1.4
+	id S1758059Ab0JSI6e (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Oct 2010 04:58:34 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:56935 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757572Ab0JSI6c (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Oct 2010 04:58:32 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=EjUiyIZutejRA4UMM3zC+MtLn1TYIrBxQqYjOe557/39w/kJRYhzEDzdeSadGqgcwR
+         7fvMj72TTDx6aPI7teztQs+4/L4OJv4bSd8H/uRPvQGDpQPVqUZXcVwcGCGnKWjUbdkx
+         ZJQvnRH9snlVrMX5yeEfT0GIphXnQKHCYYOX8=
+Date: Tue, 19 Oct 2010 17:03:04 +0800
+From: =?utf-8?Q?Am=C3=A9rico?= Wang <xiyou.wangcong@gmail.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Brian Gitonga Marete <marete@toshnix.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [PATCH] [PERF] (Userspace Tools) Fix a compilation error with
+ -fstack-protector and -Werror
+Message-ID: <20101019090304.GA5211@cr0.nay.redhat.com>
+References: <AANLkTinHc7tMntW5NFAhu40RC7m2=HwbqOBeE-21vL8J@mail.gmail.com>
+ <20101018233834.GC5370@nowhere>
+ <AANLkTi=Ssz4WdMDXq-93GE9bPHoaQ8QyTSrWXDSCa7eH@mail.gmail.com>
+ <20101019064000.GC21782@elte.hu>
 MIME-Version: 1.0
-To: Dave Young <hidave.darkstar@gmail.com>
-CC: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
-        Jan Kiszka <jan.kiszka@web.de>, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [BUG] kvm: guest can not startup due to triple fault
-References: <AANLkTin6qJYEqOc_97EVWkK1Kt1zNSvXtfVeYuk9fyJ8@mail.gmail.com>	<4CBAE8E2.1060704@redhat.com>	<AANLkTi=5yGPmZxZY7T_oeyJ4xS+RWt7cY4WD=78fbo7v@mail.gmail.com>	<4CBBF3C8.9070104@web.de>	<4CBC1047.6010501@redhat.com>	<20101018125803.GA2497@darkstar>	<4CBC4B06.3030300@redhat.com>	<20101018134508.GA11885@darkstar>	<4CBC4FA9.90406@redhat.com>	<4CBC5097.1020105@redhat.com>	<20101018135813.GA20316@darkstar>	<4CBC547A.8080700@redhat.com>	<4CBC964B.6000605@zytor.com>	<AANLkTimLKjo+5BRFpOOb72qLrUnxfLXJQ6cwPwNsHHeB@mail.gmail.com>	<4CBD099D.2060500@zytor.com> <AANLkTi=bYezfR6Gxy6_gXrAmsFTVOLJCex36BGmnEc28@mail.gmail.com>
-In-Reply-To: <AANLkTi=bYezfR6Gxy6_gXrAmsFTVOLJCex36BGmnEc28@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101019064000.GC21782@elte.hu>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  On 10/19/2010 08:55 AM, Dave Young wrote:
-> >  OK.  Please install msr-tools on your system, and give us the outputs of:
-> >
-> >  rdmsr -p 0 -xc 0x1a0
-> 0x1764952489
+On Tue, Oct 19, 2010 at 08:40:00AM +0200, Ingo Molnar wrote:
 >
-> >  rdmsr -p 1 -xc 0x1a0
-> 0x1364952489
+>* Brian Gitonga Marete <marete@toshnix.com> wrote:
+>
+>> On Tue, Oct 19, 2010 at 2:38 AM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
+>> > On Tue, Oct 19, 2010 at 02:24:00AM +0300, Brian Gitonga Marete wrote:
+>> >> The following patch fixes compilation of the perf user-space tools on,
+>> >> for example, gcc version 4.3.3 (Ubuntu 4.3.3-5ubuntu4) . It should not
+>> >> break anything else.
+>> >
+>> >
+>> >
+>> > Hi,
+>> >
+>> > What kind of warning have you encountered and why it fixes it?
+>> > Can you describe that in your changelog?
+>> >
+>> 
+>> Hello Frederic,
+>> 
+>> Some versions of gcc, e.g. gcc version 4.3.3 (Ubuntu 4.3.3-5ubuntu4), have the 
+>> (default) minimum size of buffers protected by `-fstack-protector' set to 8. But 
+>> in perf, there exist much smaller automatic buffers.
+>
+>Hm, it's this code:
+>
+>        /* newtWinChoice should really be accepting const char pointers... */
+>        char yes[] = "Yes", no[] = "No";
+>        return newtWinChoice(NULL, yes, no, (char *)msg) == 1;
+>
+>I.e. the code is messy and GCC is right to warn about it. Hence it would be somewhat 
+>bad to actually remove the warning that pointed out some dodgy piece of code.
+
+Agreed.
+
+>
+>Even if marking it const doesnt work due to the external libnewt API, we could at 
+>least put 'yes' and 'no' into file scope and mark them static?
 >
 
-That's MSR_IA32_MISC_ENABLE_XD_DISABLE.  Looks like the kernel never 
-plays with it.
+How about making ui__dialog_yesno() a macro? ;) Like:
 
-Suggest:
-- updating your BIOS
-- playing with the NX feature in your BIOS setup screens
-
-
--- 
-error compiling committee.c: too many arguments to function
-
+#define ui__dialog_yesno(msg) \
+	({newWinChoice(NULL, "Yes", "No", (char *)(msg)) == 1;})
