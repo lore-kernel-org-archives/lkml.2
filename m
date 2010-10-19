@@ -1,61 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933047Ab0JSAab (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Oct 2010 20:30:31 -0400
-Received: from antispam02.maxim-ic.com ([205.153.101.183]:42650 "EHLO
-	antispam02.maxim-ic.com.maxim-ic.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754855Ab0JSAa3 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Oct 2010 20:30:29 -0400
-X-ASG-Debug-ID: 1287448228-6cb0ca8c0001-xx1T2L
-X-Barracuda-Envelope-From: Peter.Hsiang@maxim-ic.com
-From: Peter Hsiang <Peter.Hsiang@maxim-ic.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: Stephen Rothwell <sfr@canb.auug.org.au>,
-        Liam Girdwood <lrg@slimlogic.co.uk>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Mon, 18 Oct 2010 17:30:39 -0700
-X-ASG-Orig-Subj: RE: linux-next: build failure after merge of the sound-asoc tree
-Subject: RE: linux-next: build failure after merge of the sound-asoc tree
-Thread-Topic: linux-next: build failure after merge of the sound-asoc tree
-Thread-Index: ActvIbnhrGtQDxy9RKydlrXuSQRBRQAAZkbQ
-Message-ID: <B2150E1E4418E1438554A300EA5040E40D471A4297@ITSVLEX06.it.maxim-ic.internal>
-References: <20101018142934.65f5d0fa.sfr@canb.auug.org.au>
- <B2150E1E4418E1438554A300EA5040E40D47140D97@ITSVLEX06.it.maxim-ic.internal>
- <20101019000730.GA27248@opensource.wolfsonmicro.com>
-In-Reply-To: <20101019000730.GA27248@opensource.wolfsonmicro.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
-X-OriginalArrivalTime: 19 Oct 2010 00:30:52.0225 (UTC) FILETIME=[E2A65B10:01CB6F24]
-X-Barracuda-Connect: terlingua.dalsemi.com[180.0.34.46]
-X-Barracuda-Start-Time: 1287448228
-X-Barracuda-URL: http://AntiSpam02.maxim-ic.com:8000/cgi-mod/mark.cgi
+	id S1757188Ab0JSAlh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Oct 2010 20:41:37 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:58065 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754660Ab0JSAlf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Oct 2010 20:41:35 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=from:to:cc:subject:date:message-id:x-mailer;
+	b=w2SOrFf0lrtGZNggclMIym0lhdeJl9MX8jvy12fVTsws2h6U/NWud0vy3FBneLMqi
+	rlFthj+9z7WtN+GI+Be9Q==
+From: Greg Thelen <gthelen@google.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        containers@lists.osdl.org, Andrea Righi <arighi@develer.com>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Ciju Rajan K <ciju@linux.vnet.ibm.com>,
+        David Rientjes <rientjes@google.com>, Greg Thelen <gthelen@google.com>
+Subject: [PATCH v3 00/11] memcg: per cgroup dirty page accounting
+Date: Mon, 18 Oct 2010 17:39:33 -0700
+Message-Id: <1287448784-25684-1-git-send-email-gthelen@google.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 18, 2010, Mark Brown wrote:
-> On Mon, Oct 18, 2010 at 01:25:12PM -0700, Peter Hsiang wrote:
-> 
-> > This message seems to be saying that this header file is missing.
-> > However, this header file was included in the patch that was submitted,
-> > and it did compile fine here before the submit.
-> > I don't understand why it's not there after it was applied?
-> 
-> Your patch was apparently not generated against the mainline Makefile or
-> Kconfig and the automated conflict resolution tool I used (which is
-> normally fairly reliable) appears to have misplaced the header.  I've
-> restored the driver with the readdition of the header.
+Changes since v2:
+- Rather than disabling softirq in lock_page_cgroup(), introduce a separate lock
+  to synchronize between memcg page accounting and migration.  This only affects
+  patch 4 of the series.  Patch 4 used to disable softirq, now it introduces the
+  new lock.
 
-.../pub/scm/linux/kernel/git/next/linux-next.git  Right?
-Thanks!
+Changes since v1:
+- Renamed "nfs"/"total_nfs" to "nfs_unstable"/"total_nfs_unstable" in per cgroup
+  memory.stat to match /proc/meminfo.
+- Avoid lockdep warnings by using rcu_read_[un]lock() in
+  mem_cgroup_has_dirty_limit().
+- Fixed lockdep issue in mem_cgroup_read_stat() which is exposed by these
+  patches.
+- Remove redundant comments.
+- Rename (for clarity):
+  - mem_cgroup_write_page_stat_item -> mem_cgroup_page_stat_item
+  - mem_cgroup_read_page_stat_item -> mem_cgroup_nr_pages_item
+- Renamed newly created proc files:
+  - memory.dirty_bytes -> memory.dirty_limit_in_bytes
+  - memory.dirty_background_bytes -> memory.dirty_background_limit_in_bytes
+- Removed unnecessary get_ prefix from get_xxx() functions.
+- Allow [kKmMgG] suffixes for newly created dirty limit value cgroupfs files.
+- Disable softirq rather than hardirq in lock_page_cgroup()
+- Made mem_cgroup_move_account_page_stat() inline.
+- Ported patches to mmotm-2010-10-13-17-13.
 
-Peter
+This patch set provides the ability for each cgroup to have independent dirty
+page limits.
 
+Limiting dirty memory is like fixing the max amount of dirty (hard to reclaim)
+page cache used by a cgroup.  So, in case of multiple cgroup writers, they will
+not be able to consume more than their designated share of dirty pages and will
+be forced to perform write-out if they cross that limit.
+
+The patches are based on a series proposed by Andrea Righi in Mar 2010.
+
+
+Overview:
+- Add page_cgroup flags to record when pages are dirty, in writeback, or nfs
+  unstable.
+
+- Extend mem_cgroup to record the total number of pages in each of the 
+  interesting dirty states (dirty, writeback, unstable_nfs).  
+
+- Add dirty parameters similar to the system-wide  /proc/sys/vm/dirty_*
+  limits to mem_cgroup.  The mem_cgroup dirty parameters are accessible
+  via cgroupfs control files.
+
+- Consider both system and per-memcg dirty limits in page writeback when
+  deciding to queue background writeback or block for foreground writeback.
+
+
+Known shortcomings:
+- When a cgroup dirty limit is exceeded, then bdi writeback is employed to
+  writeback dirty inodes.  Bdi writeback considers inodes from any cgroup, not
+  just inodes contributing dirty pages to the cgroup exceeding its limit.  
+
+
+Performance data:
+- A page fault microbenchmark workload was used to measure performance, which
+  can be called in read or write mode:
+        f = open(foo. $cpu)
+        truncate(f, 4096)
+        alarm(60)
+        while (1) {
+                p = mmap(f, 4096)
+                if (write)
+			*p = 1
+		else
+			x = *p
+                munmap(p)
+        }
+
+- The workload was called for several points in the patch series in different
+  modes:
+  - s_read is a single threaded reader
+  - s_write is a single threaded writer
+  - p_read is a 16 thread reader, each operating on a different file
+  - p_write is a 16 thread writer, each operating on a different file
+
+- Measurements were collected on a 16 core non-numa system using "perf stat
+  --repeat 3".  The -a option was used for parallel (p_*) runs.
+
+- All numbers are page fault rate (M/sec).  Higher is better.
+
+- To compare the performance of a kernel without non-memcg compare the first and
+  last rows, neither has memcg configured.  The first row does not include any
+  of these memcg patches.
+
+- To compare the performance of using memcg dirty limits, compare the baseline
+  (2nd row titled "w/ memcg") with the the code and memcg enabled (2nd to last
+  row titled "all patches").
+
+                           root_cgroup                     child_cgroup
+                 s_read s_write p_read p_write    s_read s_write p_read p_write
+mmotm w/o memcg   0.424  0.400   0.420  0.395
+w/ memcg          0.419  0.390   0.395  0.371      0.413  0.385   0.385  0.361
+all patches       0.421  0.384   0.395  0.362      0.418  0.380   0.396  0.360
+all patches       0.425  0.396   0.423  0.388
+  w/o memcg
+
+
+Balbir Singh (1):
+  memcg: CPU hotplug lockdep warning fix
+
+Greg Thelen (9):
+  memcg: add page_cgroup flags for dirty page tracking
+  memcg: document cgroup dirty memory interfaces
+  memcg: create extensible page stat update routines
+  memcg: add dirty page accounting infrastructure
+  memcg: add kernel calls for memcg dirty page stats
+  memcg: add dirty limits to mem_cgroup
+  memcg: add cgroupfs interface to memcg dirty limits
+  writeback: make determine_dirtyable_memory() static.
+  memcg: check memcg dirty limits in page writeback
+
+KAMEZAWA Hiroyuki (1):
+  memcg: add lock to synchronize page accounting and migration
+
+ Documentation/cgroups/memory.txt |   60 ++++++
+ fs/nfs/write.c                   |    4 +
+ include/linux/memcontrol.h       |   78 +++++++-
+ include/linux/page_cgroup.h      |   54 +++++-
+ include/linux/writeback.h        |    2 -
+ mm/filemap.c                     |    1 +
+ mm/memcontrol.c                  |  417 ++++++++++++++++++++++++++++++++++++--
+ mm/page-writeback.c              |  213 +++++++++++++-------
+ mm/rmap.c                        |    4 +-
+ mm/truncate.c                    |    1 +
+ 10 files changed, 726 insertions(+), 108 deletions(-)
