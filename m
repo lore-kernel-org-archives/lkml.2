@@ -1,160 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933410Ab0JSFa4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Oct 2010 01:30:56 -0400
-Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:14259 "EHLO
-	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754516Ab0JSFaz (ORCPT
+	id S1757831Ab0JSFcI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Oct 2010 01:32:08 -0400
+Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:34747 "EHLO
+	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750744Ab0JSFcH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Oct 2010 01:30:55 -0400
-Message-ID: <000b01cb6f4e$cc555df0$66f8800a@maildom.okisemi.com>
-From: "Masayuki Ohtake" <masa-korg@dsn.okisemi.com>
-To: "seedshope" <bocui107@gmail.com>
-Cc: "David S. Miller" <davem@davemloft.net>,
-        "Randy Dunlap" <randy.dunlap@oracle.com>,
-        "John Linn" <john.linn@xilinx.com>,
-        "Ralf Baechle" <ralf@linux-mips.org>,
-        "Kristoffer Glembo" <kristoffer@gaisler.com>,
-        "Maxime Bizon" <mbizon@freebox.fr>,
-        "Greg Rose" <gregory.v.rose@intel.com>,
-        "ML netdev" <netdev@vger.kernel.org>,
-        "LKML" <linux-kernel@vger.kernel.org>,
-        "Toshiharu Okada" <okada533@dsn.okisemi.com>,
-        "Takahiro Shimizu" <shimizu394@dsn.okisemi.com>,
-        "Tomoya Morinaga" <morinaga526@dsn.okisemi.com>,
-        "Wang, Qi" <qi.wang@intel.com>, "Wang, Yong Y" <yong.y.wang@intel.com>,
-        "Andrew" <andrew.chih.howe.khor@intel.com>,
-        "Intel OTC" <joel.clark@intel.com>,
-        "Foster, Margie" <margie.foster@intel.com>,
-        "MeeGo" <meego-dev@meego.com>
-References: <4CA03198.8080802@dsn.okisemi.com> <AANLkTinedgQJq04PHdGmZqs4p6Du4PA16QC2JNTaGhAa@mail.gmail.com>
-Subject: Re: [PATCH v6] Gigabit Ethernet driver of Topcliff PCH
-Date: Tue, 19 Oct 2010 14:30:44 +0900
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.2800.1983
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2800.1983
-X-Hosting-Pf: 0
-X-NAI-Spam-Score: 1
+	Tue, 19 Oct 2010 01:32:07 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Tue, 19 Oct 2010 14:26:40 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Minchan Kim <minchan.kim@gmail.com>
+Cc: "Figo.zhang" <zhangtianfei@leadcoretech.com>,
+        lKOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "rientjes@google.com" <rientjes@google.com>,
+        figo1802 <figo1802@gmail.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Subject: Re: oom_killer crash linux system
+Message-Id: <20101019142640.44c87807.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <AANLkTikw6NizBStoXVz8Br_LYvoLoofsOB+d6-FX2=Be@mail.gmail.com>
+References: <20101018021126.GB8654@localhost>
+	<1287389631.1997.9.camel@myhost>
+	<20101018180919.3AF8.A69D9226@jp.fujitsu.com>
+	<1287454058.2078.12.camel@myhost>
+	<20101019115952.d922763b.kamezawa.hiroyu@jp.fujitsu.com>
+	<AANLkTikw6NizBStoXVz8Br_LYvoLoofsOB+d6-FX2=Be@mail.gmail.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi seedshope,
+On Tue, 19 Oct 2010 14:23:29 +0900
+Minchan Kim <minchan.kim@gmail.com> wrote:
 
->why it is need to compare the INT_EN bit?
->As general, the pch_gbe_intr function was call,the interrupt is enable.
->In addition to the interrupt generate, what other conditions would call the interrupt function?
+> On Tue, Oct 19, 2010 at 11:59 AM, KAMEZAWA Hiroyuki
+> <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+> > On Tue, 19 Oct 2010 10:07:38 +0800
+> > "Figo.zhang" <zhangtianfei@leadcoretech.com> wrote:
+> >
+> >>
+> >> >
+> >> > very lots of change ;)
+> >> > can you please send us your crash log?
+> >>
+> >> i add some prink in select_bad_process() and oom_badness() to see
+> >> pid/totalpages/points/memoryuseage/and finally process to selet to kill.
+> >>
+> >> i found it the oom-killer select: syslog-ng,mysqld,nautilus,VirtualBox
+> >> to kill, so my question is:
+> >>
+> >> 1. the syslog-ng,mysqld,nautilus is the system foundamental process, so
+> >> if oom-killer kill those process, the system will be damaged, such as
+> >> lose some important data.
+> >>
+> >> 2. the new oom-killer just use percentage of used memory as score to
+> >> select the candidate to kill, but how to know this process to very
+> >> important for system?
+> >>
+> >
+> > The kernel can never know it. Just an admin (a man or management software) knows.
+> > Old kernel tries to guess it, but it tend to be wrong and many many report comes
+> > "why my ....is killed..." All guesswork the kernel does is not enough, I think.
+> >
+> >> oom_score_adj, it is anyone commercial linux distributions to use this
+> >> to protect the critical process.
+> >>
+> > oom_adj may be used in some system. All my customers select panic_at_oom=1
+> > and cause cluster fail over rather than half-broken.
+> >
+> > <Off topic>
+> > Your another choice is memory cgroup, I think.
+> > please see documentation/cgroup/memory.txt or libcgroup.
+> > http://sourceforge.net/projects/libcg/
+> > You can use some fancy controls with it.
+> > </Off topic>
+> >
+> >
+> > BTW, there seems to be some strange things.
+> > (CC'ed to linux-mm)
+> > Brief Summary:
+> >   an oom-killer happens on swapless environment with 2.6.36-rc8.
+> >   It has 2G memory.
+> > a reporter says
+> > ==
+> >> i want to test the oom-killer. My desktop (Dell optiplex 780, i686
+> >> kernel)have 2GB ram, i turn off the swap partition, and open a huge pdf
+> >> files and applications, and let the system eat huge ram.
+> >>
+> >> in 2.6.35, i can use ram up to 1.75GB,
+> >>
+> >> but in 2.6.36-rc8, i just use to 1.53GB ram , the system come very slow
+> >> and crashed after some minutes , the DiskIO is very busy. i see the
+> >> DiskIO read is up to 8MB/s, write just only 400KB/s, (see by conky).
+> > ==
+> >
+> > The trigger of oom-kill is order=0 allocation. (see original mail for full log)
+> >
+> >
+> > Oct 19 09:44:08 myhost kernel: [  618.441470] httpd invoked oom-killer:
+> > gfp_mask=0x201da, order=0, oom_adj=0, oom_score_adj=0
+> >
+> > Zone's stat is.
+> >
+> > Oct 19 09:44:08 myhost kernel: [  618.441551]
+> > DMA free:7968kB min:64kB low:80kB high:96kB active_anon:3700kB inactive_anon:3752kB
+> >    active_file:12kB inactive_file:252kB unevictable:0kB isolated(anon):0kB
+> >    isolated(file):0kB present:15788kB mlocked:0kB dirty:0kB writeback:4kB
+> >    mapped:52kB shmem:348kB slab_reclaimable:0kB slab_unreclaimable:16kB
+> >    kernel_stack:0kB pagetables:0kB unstable:0kB bounce:0kB
+> >    writeback_tmp:0kB pages_scanned:421 all_unreclaimable? yes
+> >    lowmem_reserve[]: 0 865 1980 1980
+> >
+> > Oct 19 09:44:08 myhost kernel: [  618.441560]
+> > Normal free:39348kB min:3728kB low:4660kB high:5592kB active_anon:176740kB
+> >       inactive_anon:25640kB active_file:84kB inactive_file:308kB
+> >       unevictable:0kB isolated(anon):0kB isolated(file):0kB present:885944kB
+> >       mlocked:0kB dirty:0kB writeback:4kB mapped:576992kB shmem:5024kB
+> >       slab_reclaimable:7612kB slab_unreclaimable:15512kB kernel_stack:2792kB
+> >       pagetables:6884kB unstable:0kB bounce:0kB writeback_tmp:0kB
+> >       pages_scanned:741 all_unreclaimable? yes
+> >       lowmem_reserve[]: 0 0 8921 8921
+> >
+> > Oct 19 09:44:08 myhost kernel: [  618.441569]
+> > HighMem free:392kB min:512kB low:1712kB high:2912kB active_anon:492208kB
+> >        inactive_anon:166404kB active_file:180kB inactive_file:840kB
+> >        unevictable:40kB isolated(anon):0kB isolated(file):0kB present:1141984kB
+> >        mlocked:40kB dirty:0kB writeback:12kB mapped:493648kB shmem:72216kB
+> >        slab_reclaimable:0kB slab_unreclaimable:0kB kernel_stack:0kB
+> >        pagetables:0kB unstable:0kB bounce:0kB writeback_tmp:0kB
+> >        pages_scanned:1552 all_unreclaimable? yes
+> >
+> > Highmem seems a bit strange.
+> >  present(1141984) - active_anon - inactive_anon - inactive_file - active_file
+> >  = 482352kB but free is 392kB.
+> >
+> >  Highmem is used for some other purpose than usual user's page.(pagetable is 0.)
+> >  And, Hmm, mapped:493648kB seems too large for me.
+> >  (active/inactive-file + shmem is not enough.)
+> >  And "mapped" in NORMAL zone is large, too.
+> >
+> >  Does anyone have idea about file-mapped-but-not-on-LRU pages ?
+> 
+> Isn't it possible some file pages are much sharable?
+> Please see the page_add_file_rmap.
+> 
 
-PCI devices in Topcliff IOH are connected with external PCI Express through logical PCI bus.
-In Topcliff IOH, more PCI devices are sharing interruption.
-Gigabit Ethernet device and USB Host are sharing interruption.
-The pch_gbe_intr function is called on condition of others.
-So, the comparison with INT_EN bit is necessary.
+page_add_file_rmap() just counts an event where mapcount goes 0->1. 
+Even if thousands process shares  a page,  it's just counted into file_mapped as 1.
 
->resently , I fail to test the kgdboe on the gbe driver.
->The pch_gbe_netpoll will call the pch_gbe_intr function.
->The interruption will be disable before enter the  pch_gbe_intr.
->So the pch_gbe_netpoll is fail for ever. Is it a bug?
+Then, there are 480MB of mapped file caches. Do I miss something ?
 
-I think it is not a bug.
-The INT_EN bit is a value of Gigabit Ethernet device's register.
-The interruption disable processing before pch_gbe_intr() in pch_gbe_netpoll() function is a disable_irq() function.
-The disable_irq() function does not change the register of a Gigabit Ethernet device.
-
-Best regards.
-Masayuki Otake.
-
------ 
-Date: Mon, 18 Oct 2010 16:48:50 +0800
-From: seedshope
-
-Hi Masayuki,
-
->/**
-> * pch_gbe_intr - Interrupt Handler
-> * @irq:   Interrupt number
-> * @data:  Pointer to a network interface device structure
-> * Returns
-> *     - IRQ_HANDLED:  Our interrupt
-> *     - IRQ_NONE:     Not our interrupt
-> */
->static irqreturn_t pch_gbe_intr(int irq, void *data)
->{
->       struct net_device *netdev = data;
->       struct pch_gbe_adapter *adapter = netdev_priv(netdev);
->       struct pch_gbe_hw *hw = &adapter->hw;
->       u32 int_st;
->       u32 int_en;
->
->       /* Check request status */
->       int_st = ioread32(&hw->reg->INT_ST);
->       int_st = int_st & ioread32(&hw->reg->INT_EN);
+Anyway, sum-of-all-lru-of-highmem is 480MB smaller than present pages.
+and isolated(anon/file) is 0kB.
+(NORMAL has similar problem)
 
 
-why it is need to compare the INT_EN bit? As general, the pch_gbe_intr function was call,the interrupt is enable. In
-addition to the interrupt generate, what other conditions would call the interrupt function?
-
-resently , I fail to test the kgdboe on the gbe driver.  The pch_gbe_netpoll will call the pch_gbe_intr function. The
-interruption will be disable before enter the  pch_gbe_intr.
-So the pch_gbe_netpoll is fail for ever. Is it a bug?
-
->       /* When request status is no interruption factor */
->       if (unlikely(!int_st))
->               return IRQ_NONE;        /* Not our interrupt. End processing. */
->       pr_debug("%s occur int_st = 0x%08x\n", __func__, int_st);
->       if (int_st & PCH_GBE_INT_RX_FRAME_ERR)
->               adapter->stats.intr_rx_frame_err_count++;
->       if (int_st & PCH_GBE_INT_RX_FIFO_ERR)
->               adapter->stats.intr_rx_fifo_err_count++;
->       if (int_st & PCH_GBE_INT_RX_DMA_ERR)
->               adapter->stats.intr_rx_dma_err_count++;
->       if (int_st & PCH_GBE_INT_TX_FIFO_ERR)
->               adapter->stats.intr_tx_fifo_err_count++;
->       if (int_st & PCH_GBE_INT_TX_DMA_ERR)
->               adapter->stats.intr_tx_dma_err_count++;
->       if (int_st & PCH_GBE_INT_TCPIP_ERR)
->               adapter->stats.intr_tcpip_err_count++;
->       /* When Rx descriptor is empty  */
->       if ((int_st & PCH_GBE_INT_RX_DSC_EMP)) {
->               adapter->stats.intr_rx_dsc_empty_count++;
->               pr_err("Rx descriptor is empty\n");
->               int_en = ioread32(&hw->reg->INT_EN);
->               iowrite32((int_en & ~PCH_GBE_INT_RX_DSC_EMP), &hw->reg->INT_EN);
->               if (hw->mac.tx_fc_enable) {
->                       /* Set Pause packet */
->                       pch_gbe_mac_set_pause_packet(hw);
->               }
->               if ((int_en & (PCH_GBE_INT_RX_DMA_CMPLT | PCH_GBE_INT_TX_CMPLT))
->                   == 0) {
->                       return IRQ_HANDLED;
->               }
->       }
->
->       /* When request status is Receive interruption */
->       if ((int_st & (PCH_GBE_INT_RX_DMA_CMPLT | PCH_GBE_INT_TX_CMPLT))) {
->               if (likely(napi_schedule_prep(&adapter->napi))) {
->                       /* Enable only Rx Descriptor empty */
->                       atomic_inc(&adapter->irq_sem);
->                       int_en = ioread32(&hw->reg->INT_EN);
->                       int_en &=
->                           ~(PCH_GBE_INT_RX_DMA_CMPLT | PCH_GBE_INT_TX_CMPLT);
->                       iowrite32(int_en, &hw->reg->INT_EN);
->                       /* Start polling for NAPI */
->                       __napi_schedule(&adapter->napi);
->               }
->       }
->       pr_debug("return = 0x%08x  INT_EN reg = 0x%08x\n",
->                IRQ_HANDLED, ioread32(&hw->reg->INT_EN));
->       return IRQ_HANDLED;
->}
+Thanks,
+-Kame
 
 
-
---
-To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-the body of a message to majordomo@vger.kernel.org
-More majordomo info at  http://vger.kernel.org/majordomo-info.html
-Please read the FAQ at  http://www.tux.org/lkml/
 
 
