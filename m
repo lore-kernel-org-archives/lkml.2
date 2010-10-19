@@ -1,106 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758257Ab0JSKuJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Oct 2010 06:50:09 -0400
-Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:45060 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758160Ab0JSKuG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Oct 2010 06:50:06 -0400
-X-IronPort-AV: E=Sophos;i="4.57,349,1283731200"; 
-   d="scan'208";a="2409115"
-Date: Tue, 19 Oct 2010 11:49:41 +0100
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball-desktop
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        Jeremy Fitzhardinge <Jeremy.Fitzhardinge@citrix.com>,
-        Ian Campbell <Ian.Campbell@eu.citrix.com>
-Subject: Re: [PATCH v3 08/10] xen: use host E820 map for dom0
-In-Reply-To: <20101018155412.GD27373@dumpdata.com>
-Message-ID: <alpine.DEB.2.00.1010191148550.2423@kaball-desktop>
-References: <alpine.DEB.2.00.1010121043030.2422@kaball-desktop> <1286901770-8612-8-git-send-email-Stefano.Stabellini@eu.citrix.com> <20101018155412.GD27373@dumpdata.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1758277Ab0JSKvC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Oct 2010 06:51:02 -0400
+Received: from mga02.intel.com ([134.134.136.20]:47750 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758160Ab0JSKvA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Oct 2010 06:51:00 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.57,349,1283756400"; 
+   d="scan'208";a="565365000"
+Date: Tue, 19 Oct 2010 12:50:54 +0200
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+Cc: Vasiliy Kulikov <segooon@gmail.com>, kernel-janitors@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mfd/mc13xxx: don't open code kasprintf
+Message-ID: <20101019105053.GM2736@sortiz-mobl>
+References: <1286731711-17865-1-git-send-email-segooon@gmail.com>
+ <1286739586-32745-1-git-send-email-u.kleine-koenig@pengutronix.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1286739586-32745-1-git-send-email-u.kleine-koenig@pengutronix.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 18 Oct 2010, Konrad Rzeszutek Wilk wrote:
-> On Tue, Oct 12, 2010 at 05:42:48PM +0100, Stefano Stabellini wrote:
-> > From: Ian Campbell <ian.campbell@citrix.com>
-> > 
-> > When running as initial domain, get the real physical memory map from
-> > xen using the XENMEM_machine_memory_map hypercall and use it to setup
-> > the e820 regions.
-> > 
-> > Signed-off-by: Ian Campbell <ian.campbell@citrix.com>
-> > Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-> > Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-> > ---
-> >  arch/x86/xen/setup.c           |   43 +++++++++++++++++++++++++++++++++++++--
-> >  include/xen/interface/memory.h |   28 ++++++++++++++++++++++++++
-> >  2 files changed, 68 insertions(+), 3 deletions(-)
-> > 
-> > diff --git a/arch/x86/xen/setup.c b/arch/x86/xen/setup.c
-> > index 62ceb78..b08aac2 100644
-> > --- a/arch/x86/xen/setup.c
-> > +++ b/arch/x86/xen/setup.c
-> > @@ -107,14 +107,51 @@ static unsigned long __init xen_return_unused_memory(unsigned long max_pfn,
-> >  
-> >  char * __init xen_memory_setup(void)
-> >  {
-> > +	static __initdata struct e820entry map[E820MAX];
-> > +
-> >  	unsigned long max_pfn = xen_start_info->nr_pages;
-> > +	struct xen_memory_map memmap;
-> > +	unsigned long long mem_end;
-> > +	int op;
-> > +	int rc;
-> > +	int i;
-> >  
-> >  	max_pfn = min(MAX_DOMAIN_PAGES, max_pfn);
-> > +	mem_end = PFN_PHYS((u64)max_pfn);
-> > +
-> > +	memmap.nr_entries = E820MAX;
-> > +	set_xen_guest_handle(memmap.buffer, map);
-> > +
-> > +	op = xen_initial_domain() ?
-> > +		XENMEM_machine_memory_map :
-> > +		XENMEM_memory_map;
-> > +	rc = HYPERVISOR_memory_op(op, &memmap);
-> > +	if (rc == -ENOSYS) {
-> > +		memmap.nr_entries = 1;
-> > +		map[0].addr = 0ULL;
-> > +		map[0].size = mem_end;
-> > +		/* 8MB slack (to balance backend allocations). */
-> > +		map[0].size += 8ULL << 20;
-> > +		map[0].type = E820_RAM;
-> > +		rc = 0;
-> > +	}
-> > +	BUG_ON(rc);
-> >  
-> >  	e820.nr_map = 0;
-> > -
-> > -	e820_add_region(0, PFN_PHYS((u64)max_pfn), E820_RAM);
-> > -
-> > +	for (i = 0; i < memmap.nr_entries; i++) {
-> > +		unsigned long long end = map[i].addr + map[i].size;
-> > +		if (map[i].type == E820_RAM) {
-> > +			if (map[i].addr > mem_end)
-> > +				continue;
+Hi Uwe,
+
+On Sun, Oct 10, 2010 at 09:39:46PM +0200, Uwe Kleine-König wrote:
+> This fixes an off by one error noticed by Vasiliy Kulikov en passant.
 > 
-> Would it make sense to print out a message saying something to the
-> effect of: "You need to increase the CONFIG_XEN_MAX_DOMAIN_MEMORY value to
-> take advantage of the extra %d gobs of memory!\n", map[i].size
+> Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
+> ---
+>  drivers/mfd/mc13xxx-core.c |    7 +------
+>  1 files changed, 1 insertions(+), 6 deletions(-)
 > 
-> Or will this be unneccessary with the later changes that Jeremy has
-> for the balloon work?
+> diff --git a/drivers/mfd/mc13xxx-core.c b/drivers/mfd/mc13xxx-core.c
+> index 93258ad..b763b8c 100644
+> --- a/drivers/mfd/mc13xxx-core.c
+> +++ b/drivers/mfd/mc13xxx-core.c
+> @@ -687,7 +687,6 @@ EXPORT_SYMBOL_GPL(mc13783_adc_do_conversion);
+>  static int mc13xxx_add_subdevice_pdata(struct mc13xxx *mc13xxx,
+>  		const char *format, void *pdata, size_t pdata_size)
+>  {
+> -	char buf[30];
+>  	const char *name = mc13xxx_get_chipname(mc13xxx);
+>  
+>  	struct mfd_cell cell = {
+> @@ -695,11 +694,7 @@ static int mc13xxx_add_subdevice_pdata(struct mc13xxx *mc13xxx,
+>  		.data_size = pdata_size,
+>  	};
+>  
+> -	/* there is no asnprintf in the kernel :-( */
+> -	if (snprintf(buf, sizeof(buf), format, name) > sizeof(buf))
+> -		return -E2BIG;
+> -
+> -	cell.name = kmemdup(buf, strlen(buf) + 1, GFP_KERNEL);
+> +	cell.name = kasprintf(GFP_KERNEL, format, name);
+I don't think you need to allocate a name pointer here.
+cell.name = mc13xxx_get_chipname(mc13xxx); should be enough as
+platform_device_alloc() will memcpy it into an allocated buffer.
+
+Cheers,
+Samuel.
+
+
+>  	if (!cell.name)
+>  		return -ENOMEM;
+>  
+> -- 
+> 1.7.2.3
 > 
 
-I think it still makes a lot of sense to print that message because
-ballooning might be disabled.
-
+-- 
+Intel Open Source Technology Centre
+http://oss.intel.com/
