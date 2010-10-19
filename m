@@ -1,97 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933696Ab0JSA5v (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Oct 2010 20:57:51 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:33341 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933674Ab0JSA5s (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Oct 2010 20:57:48 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=n0fi8KyAA/irC3zVz/ornCgDCd03QB0ygJKhUek58jVuzpcwTofimqpVkHBm08unaD
-         OeM2PdUGoCfXskAuU2UVKvHJgShiaXZLFT6QdLYeK7SVYivbDeTKwjy4kr17UlvEmLoO
-         WJA3UDMmHylnAqqkaFWYWewrlzRyAIFG5hYiw=
-MIME-Version: 1.0
-In-Reply-To: <20101019004004.GB28380@kroah.com>
-References: <201009161632.59210.arnd@arndb.de>
-	<201010181742.06678.arnd@arndb.de>
-	<20101018184346.GD27089@kroah.com>
-	<AANLkTin2KPNNXvwcWphhM-5qexB14FS7M7ezkCCYCZ2H@mail.gmail.com>
-	<20101019004004.GB28380@kroah.com>
-Date: Tue, 19 Oct 2010 10:57:43 +1000
-Message-ID: <AANLkTi=ffaihP5-yNYFKAbAbX+XbRgWRXXfCZd4J3KwQ@mail.gmail.com>
-Subject: Re: [Ksummit-2010-discuss] [v2] Remaining BKL users, what to do
-From: Dave Airlie <airlied@gmail.com>
-To: Greg KH <greg@kroah.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, codalist@telemann.coda.cs.cmu.edu,
-        ksummit-2010-discuss@lists.linux-foundation.org,
-        autofs@linux.kernel.org, Jan Harkes <jaharkes@cs.cmu.edu>,
-        Samuel Ortiz <samuel@sortiz.org>, Jan Kara <jack@suse.cz>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        netdev@vger.kernel.org, Anders Larsen <al@alarsen.net>,
-        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        Bryan Schumaker <bjschuma@netapp.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        Petr Vandrovec <vandrove@vc.cvut.cz>,
-        Mikulas Patocka <mikulas@artax.karlin.mff.cuni.cz>,
-        linux-fsdevel@vger.kernel.org, Evgeniy Dushistov <dushistov@mail.ru>,
-        Ingo Molnar <mingo@elte.hu>, Andrew Hendry <andrew.hendry@gmail.com>,
-        linux-media@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1757992Ab0JSA7P (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Oct 2010 20:59:15 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:42801 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755957Ab0JSA7O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Oct 2010 20:59:14 -0400
+Subject: Re: ima: use of radix tree cache indexing == massive waste of
+ memory?
+From: Eric Paris <eparis@redhat.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Kyle McMartin <kyle@mcmartin.ca>, James Morris <jmorris@namei.org>,
+        Christoph Hellwig <hch@infradead.org>, kernel@lists.fedoraproject.org,
+        Mimi Zohar <zohar@us.ibm.com>, warthog9@kernel.org,
+        Dave Chinner <david@fromorbit.com>, linux-kernel@vger.kernel.org,
+        "H. Peter Anvin" <hpa@zytor.com>, Serge Hallyn <serue@us.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+In-Reply-To: <20101018181916.GB12372@elte.hu>
+References: <20101016192027.GA6883@infradead.org>
+	 <ebc4973c-6c11-4397-b8b0-c212a27abce4@email.android.com>
+	 <20101017004945.GE1614@infradead.org> <20101017054008.GA16383@elte.hu>
+	 <20101017184652.GB28060@infradead.org>
+	 <alpine.LRH.2.00.1010181127480.9476@tundra.namei.org>
+	 <20101018062530.GD8332@bombadil.infradead.org>
+	 <1287420534.2530.67.camel@localhost.localdomain>
+	 <AANLkTi=h6-qMtk9Kf0TRUfqjuBau+_FhKAMZOd_MZHrn@mail.gmail.com>
+	 <1287425596.2530.70.camel@localhost.localdomain>
+	 <20101018181916.GB12372@elte.hu>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 18 Oct 2010 20:58:10 -0400
+Message-ID: <1287449890.2530.97.camel@localhost.localdomain>
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 19, 2010 at 10:40 AM, Greg KH <greg@kroah.com> wrote:
-> On Tue, Oct 19, 2010 at 09:00:09AM +1000, Dave Airlie wrote:
->> On Tue, Oct 19, 2010 at 4:43 AM, Greg KH <greg@kroah.com> wrote:
->> > On Mon, Oct 18, 2010 at 05:42:06PM +0200, Arnd Bergmann wrote:
->> >>
->> >> Out of the remaining modules, I guess i810/i830, adfs, hpfs and ufs might end
->> >> up not getting fixed at all, we can either mark them non-SMP or move them
->> >> to drivers/staging once all the others are done.
->> >
->> > I recommend moving them to staging, and then retire them from there if
->> > no one steps up to maintain them.
->>
->> I think this sets a bad precedent, these drivers work fine. Removing
->> BKL from them is hard, and involves finding and booting hw that
->> developers don't have much time/interest in at the moment. Anyone who
->> has access to the i810 hw and has time to work out the locking has
->> more important things to be doing with modern hw, however it doesn't
->> mean we should just drop support for old drivers because they don't
->> have active maintainers. Removing the BKL from the kernel is a great
->> goal, but breaking userspace ABI by removing drivers isn't.
->
-> Should we just restrict such drivers to only be able to build on UP
-> machines with preempt disabled so that the BKL could be safely removed
-> from them?
->
-> Or what other idea do you have as to what could be done here?
->
-> I do have access to this hardware, but its on an old single processor
-> laptop, so any work that it would take to help do this development,
-> really wouldn't be able to be tested to be valid at all.
+On Mon, 2010-10-18 at 20:19 +0200, Ingo Molnar wrote:
 
-There is only very rare case where the i830 driver might get used with
-SMP and really I think that case is in the don't care place, since if
-you have that hw you probably should be using i915 on it anyways.
+> I think it would be fair to argue that #2 is the thing that should be fixed first 
+> and foremost - before touching any data structure details.
+> 
+> Because if you fix #2 then all the other items will become no-op to 99.9% of the 
+> people who are affected by this bug today.
 
-So it really only leaves the problem case of what do distros do if we
-mark things as BROKEN_ON_SMP, since no distro builds UP kernels and
-when you boot the SMP kernels on UP they don't run as SMP so not
-having the driver load on those is a problem. Maybe we just need some
-sort of warn on smp if a smp unfriendly driver is loaded and we
-transition to SMP mode. Though this sounds like either (a) something
-we do now and I don't about it, (b) work.
+Where I stand at the end of the day:
 
-Dave.
+Executive summary for the TLDNR crowd:  Before upcoming patch series IMA
+wasted 4,720k of memory on my test box when not configured to do
+anything.  After patches IMA wastes 120k when not configured to do
+anything.
 
->
-> thanks,
->
-> greg k-h
->
+------------------------
+
+I'm considering a system with 5000 inodes in core and 1500 inodes which
+IMA thinks should be measured (if it's on).  (which just so happens to
+be close to the system I've been testing on shortly after reboot)
+
+I'm going to consider 6 cases of memory usage and will post the patches
+shortly after this mail.  My cases are going to be:
+
+Linus - IMA Enabled
+Linus - IMA Disabled
+Allocate iint only when needed - IMA Enabled
+Allocate iint only when needed - IMA Disabled
+Allocate iint + RBTREE - IMA Enabled
+allocate iint + RBTREE - IMA Disabled
+
+In each case I consider 'disabled' to be 'compiled in but you didn't
+tell it to do anything.'
+
+So for Linus:
+sizeof(iint) = 312
+sizeof(radix) = 632
+sizeof(inode delta) = 0  (how much I grew struct inode)
+
+Given my scenario of a stock F14ish machine where 5000 inodes in core
+and 1500 are IMA relevant when enabled we end up with:
+
+Linus - Enabled			Linus - Disabled
+------------------		----------------
+iint_cache = 1,560k		iint_cache = 1,560k
+radix = 3,160k			radix = 3,160k
+inode d = 0			inode d = 0
+
+total = 4,720k			total = 4,720k
+
+
+For Allocate iint only when needed:
+sizeof(iint) = 288
+sizeof(radix) = 632
+sizeof(inode delta) = 24 (24 bytes from iint move to struct inode)
+
+Allocate iint - Enabled		Alloce iint - Disabled
+-----------------------		----------------------
+iint_cache = 342k		iint_cache = 0
+radix = 948k			radix = 0
+inode d = 120k			inode d  = 120k
+
+total = 1,410k			total = 120k
+
+
+For allocate iint only when needed and use rbtrees:
+sizeof(iint) = 320
+sizeof(radix) = 632 (but irrelevant)
+sizeof(inode delta) = 24
+
+Allocate + RBTREE - Enabled	Allocate iint + RBTREE - Disabled
+---------------------------	---------------------------------
+iint_cache = 480k		iint_cache = 0
+radix = 0			radix = 0
+inode d = 120k			inode d = 120k
+
+total = 600k			total = 120k
+
+Seems like about the best we can do.  This patch series attempts to
+addresses all 3 of the problems I believe we identified (we still
+serialize IMA relevant inodes but not the majority of them and none when
+IMA is not enabled)
+
+IMA will continue to waste 24 bytes per inode in core even when it isn't
+doing anything useful just by compiling it in.  Future work to use a
+freezer could get rid of this if the complexity is worth the tradeoff.
+But I don't think it's worth it tonight.
+
+-Eric
+
