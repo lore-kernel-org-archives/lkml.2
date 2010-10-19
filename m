@@ -1,43 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933973Ab0JSMp6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Oct 2010 08:45:58 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:53490 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754904Ab0JSMp5 (ORCPT
+	id S1758508Ab0JSMtM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Oct 2010 08:49:12 -0400
+Received: from helcar.apana.org.au ([209.40.204.226]:60674 "EHLO
+	fornost.hengli.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754904Ab0JSMtL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Oct 2010 08:45:57 -0400
-X-Authority-Analysis: v=1.1 cv=kXGwZUU/u1JTMRv8Axk4W0omja+vfTT+sGlOkodD8F8= c=1 sm=0 a=QR7Z30341-IA:10 a=IkcTkHD0fZMA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=ImOyRZdbylXH_Pju1dcA:9 a=BKtkCc6f8KoyzNNqJ2k9mI5xYZ4A:4 a=QEXdDO2ut3YA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: [PATCH 0/7] [GIT PULL] tracing: various updates
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-In-Reply-To: <20101019071103.GA11443@elte.hu>
-References: <20101018202939.828061748@goodmis.org>
-	 <20101019062359.GB21782@elte.hu>  <20101019071103.GA11443@elte.hu>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 19 Oct 2010 08:45:55 -0400
-Message-ID: <1287492355.16971.361.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 8bit
+	Tue, 19 Oct 2010 08:49:11 -0400
+Date: Tue, 19 Oct 2010 20:49:08 +0800
+From: Herbert Xu <herbert@gondor.hengli.com.au>
+To: tadeusz.struk@intel.com
+Cc: linux-kernel@vger.kernel.org, linux-crypto@vger.kernel.org,
+        aidan.o.mahony@intel.com, gabriele.paoloni@intel.com,
+        adrian.hoban@intel.com
+Subject: Re: [PATCH 2/3] RFC4106 AES-GCM Driver Using Intel New Instructions
+Message-ID: <20101019124908.GA12898@gondor.apana.org.au>
+References: <4CB41CED.mailDED1NSGGA@intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4CB41CED.mailDED1NSGGA@intel.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-10-19 at 09:11 +0200, Ingo Molnar wrote:
-> hm, it doesnt build with certain configs:
+On Tue, Oct 12, 2010 at 09:31:41AM +0100, tadeusz.struk@intel.com wrote:
+> Hi Herbert,
+> Resubmitting the two other patches as requested.
+> Thanks,
+> Tadeusz
 > 
->  kernel/trace/trace_sched_wakeup.c:507: error: implicit declaration of function ‘start_func_tracer’
->  kernel/trace/trace_sched_wakeup.c:520: error: implicit declaration of function ‘stop_func_tracer’
+> >From 06444d8a95458d807ae14699e557739281d0b026 Mon Sep 17 00:00:00 2001
+> From: Adrian Hoban <ahoban@allen.ir.intel.com>
+> Date: Fri, 10 Sep 2010 18:08:45 +0100
+> Subject: [PATCH 2/3] RFC4106 AES-GCM Driver Using Intel New Instructions
 > 
-> Config attached.
+> This patch adds an optimized RFC4106 AES-GCM implementation for 64-bit
+> kernels. It supports 128-bit AES key size. This leverages the crypto
+> AEAD interface type to facilitate a combined AES & GCM operation to
+> be implemented in assembly code. The assembly code leverages Intel(R)
+> AES New Instructions and the PCLMULQDQ instruction.
 
-Thanks, I'll take a look.
+OK this patch applies now at least.  However it doesn't build:
 
--- Steve
+  AS [M]  arch/x86/crypto/aesni-intel_asm.o
+arch/x86/crypto/aesni-intel_asm.S: Assembler messages:
+arch/x86/crypto/aesni-intel_asm.S:803: Error: no such instruction: `aesenc 16*1(%rdi),%xmm6'
+arch/x86/crypto/aesni-intel_asm.S:803: Error: no such instruction: `aesenc 16*1(%rdi),%xmm7'
+arch/x86/crypto/aesni-intel_asm.S:803: Error: no such instruction: `aesenc 16*1(%rdi),%xmm8'
+...
 
+I suppose you can't rely on these new binutils instructions just
+yet.
 
+Cheers,
+-- 
+Email: Herbert Xu <herbert@gondor.apana.org.au>
+Home Page: http://gondor.apana.org.au/~herbert/
+PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
