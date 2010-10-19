@@ -1,81 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757215Ab0JSWux (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Oct 2010 18:50:53 -0400
-Received: from mail3.caviumnetworks.com ([12.108.191.235]:8890 "EHLO
-	mail3.caviumnetworks.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756813Ab0JSWuo (ORCPT
+	id S1756352Ab0JSWyb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Oct 2010 18:54:31 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:45652 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755637Ab0JSWya (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Oct 2010 18:50:44 -0400
-From: David Daney <ddaney@caviumnetworks.com>
-To: linux-mips@linux-mips.org, ralf@linux-mips.org,
-        devicetree-discuss@lists.ozlabs.org, grant.likely@secretlab.ca,
-        linux-kernel@vger.kernel.org
-Cc: David Daney <ddaney@caviumnetworks.com>, Dezhong Diao <dediao@cisco.com>
-Subject: [PATCH] of/mips: Cleanup some include directives/files.
-Date: Tue, 19 Oct 2010 15:50:31 -0700
-Message-Id: <1287528631-31797-1-git-send-email-ddaney@caviumnetworks.com>
-X-Mailer: git-send-email 1.7.2.3
-X-OriginalArrivalTime: 19 Oct 2010 22:51:04.0681 (UTC) FILETIME=[1C356590:01CB6FE0]
+	Tue, 19 Oct 2010 18:54:30 -0400
+Date: Tue, 19 Oct 2010 15:54:06 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Bruno Randolf <br1@einfach.org>, randy.dunlap@oracle.com,
+        kevin.granade@gmail.com, blp@cs.stanford.edu,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH v2] Add generic exponentially weighted moving average
+ function
+Message-Id: <20101019155406.0a728971.akpm@linux-foundation.org>
+In-Reply-To: <20101019153756.a89ed362.akpm@linux-foundation.org>
+References: <20101019083635.32294.67087.stgit@localhost6.localdomain6>
+	<20101019153756.a89ed362.akpm@linux-foundation.org>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The __init directives should go on the definitions of things, not the
-declaration, also __init is meaningless for inline functions, so
-remove it from prom.h.  This allows us to get rid of a useless
-#include, but most of the rest of them are useless too, so kill them
-as well.
+On Tue, 19 Oct 2010 15:37:56 -0700
+Andrew Morton <akpm@linux-foundation.org> wrote:
 
-If of_i2c.c needs irq definitions, it should include linux/irq.h
-directly, not assume indirect inclusion via asm/prom.h.
+> On Tue, 19 Oct 2010 17:36:35 +0900
+> Bruno Randolf <br1@einfach.org> wrote:
+> 
+> > This adds a generic exponentially weighted moving average function. This
+> > implementation makes use of a structure which keeps a scaled up internal
+> > representation to reduce rounding errors.
+> > 
+> > The idea for this implementation comes from the rt2x00 driver (rt2x00link.c)
+> > and I would like to use it in several places in the mac80211 and ath5k code.
+> > 
+> > Signed-off-by: Bruno Randolf <br1@einfach.org>
+> > 
+> 
+> hm, interesting.  I suspect there are a few places in MM/VFS/writeback
+> which could/should be using something like this.  Of course, if we do
+> this then your nice little function will end up 250 lines long, utterly
+> incomprehensible and full of subtle bugs.  We like things to be that way.
+> 
+> Thanks for proposing it as generic code, btw.  Let's merge it and see
+> what happens.
 
-Signed-off-by: David Daney <ddaney@caviumnetworks.com>
-Cc: Dezhong Diao <dediao@cisco.com>
----
- arch/mips/include/asm/prom.h |    8 ++------
- drivers/of/of_i2c.c          |    1 +
- 2 files changed, 3 insertions(+), 6 deletions(-)
+I looked at the code..
 
-diff --git a/arch/mips/include/asm/prom.h b/arch/mips/include/asm/prom.h
-index 23f8237..f29b862 100644
---- a/arch/mips/include/asm/prom.h
-+++ b/arch/mips/include/asm/prom.h
-@@ -12,10 +12,6 @@
- #define __ASM_MIPS_PROM_H
- 
- #ifdef CONFIG_OF
--#include <linux/init.h>
--
--#include <asm/setup.h>
--#include <asm/irq.h>
- #include <asm/bootinfo.h>
- 
- /* which is compatible with the flattened device tree (FDT) */
-@@ -27,9 +23,9 @@ extern int early_init_dt_scan_memory_arch(unsigned long node,
- extern int reserve_mem_mach(unsigned long addr, unsigned long size);
- extern void free_mem_mach(unsigned long addr, unsigned long size);
- 
--extern void __init device_tree_init(void);
-+extern void device_tree_init(void);
- #else /* CONFIG_OF */
--static inline void __init device_tree_init(void) { }
-+static inline void device_tree_init(void) { }
- #endif /* CONFIG_OF */
- 
- #endif /* _ASM_MIPS_PROM_H */
-diff --git a/drivers/of/of_i2c.c b/drivers/of/of_i2c.c
-index 0a694de..c85d3c7 100644
---- a/drivers/of/of_i2c.c
-+++ b/drivers/of/of_i2c.c
-@@ -12,6 +12,7 @@
-  */
- 
- #include <linux/i2c.h>
-+#include <linux/irq.h>
- #include <linux/of.h>
- #include <linux/of_i2c.h>
- #include <linux/of_irq.h>
--- 
-1.7.2.3
+> > diff --git a/include/linux/average.h b/include/linux/average.h
+> > new file mode 100644
+> > index 0000000..55e4317
+> > --- /dev/null
+> > +++ b/include/linux/average.h
+> > @@ -0,0 +1,37 @@
+> > +#ifndef _LINUX_AVERAGE_H
+> > +#define _LINUX_AVERAGE_H
+> > +
+> > +#define AVG_FACTOR	1000
+
+Can you please document the magic number?  What does it do?  I'd have
+though it likely that one day this will become variable, initialised in
+moving_average_init().
+
+> > +struct avg_val {
+> > +	int value;
+> > +	int internal;
+> > +};
+
+So it's using integer types.
+
+I guess that makes sense, maybe.  Does your application use negative
+quantities?  They're pretty rare beasts in the kernel.  I expect most
+callers will want an unsigned type?
+
+> > +/**
+> > + * moving_average() -  Exponentially weighted moving average (EWMA)
+> > + * @avg: Average structure
+> > + * @val: Current value
+> > + * @weight: This defines how fast the influence of older values decreases.
+> > + *	Has to be higher than 1. Use the same number every time you call this
+> > + *	function for a single struct avg_val!
+> > + *
+> > + * This implementation make use of a struct avg_val which keeps a scaled up
+> > + * internal representation to prevent rounding errors. Due to this, the maximum
+> > + * range of values is MAX_INT/(AVG_FACTOR*weight).
+> > + *
+> > + * The current average value can be accessed by using avg_val.value.
+> > + */
+> > +static inline void
+> > +moving_average(struct avg_val *avg, const int val, const int weight)
+> > +{
+> > +	if (WARN_ON_ONCE(weight <= 1))
+> > +		return;
+> > +	avg->internal = avg->internal  ?
+> > +		(((avg->internal * (weight - 1)) +
+> > +			(val * AVG_FACTOR)) / weight) :
+> > +		(val * AVG_FACTOR);
+> > +	avg->value = DIV_ROUND_CLOSEST(avg->internal, AVG_FACTOR);
+> > +}
+
+This function is really already too large to be inlined, and I'd
+suggest that lib/moving_average.c would be a better home for it.
+
+Is it expected that `weight' will have the same value for all calls of
+moving_average() against a particular avg_val?  If so then perhaps we
+should do away with this argument and place `weight' into the avg_val
+struct, and set that up in moving_average_init().
+
+And I do think that we need a moving_average_init(), because at present
+you require that callers initialise the avg_val() by hand.  This means
+that if we later add more fields to that struct, all callers will need
+to be updated.  Any which are out-of-tree will have been made buggy.
+
+Also, perhaps moving_average() should end with a
+
+	return avg->value;
+
+for convenience on the callers side.  Or maybe not - I haven't looked
+at any calling code...
+
+Finally, it's a little ugly to have callers poking around inside the
+avg_val to get the current average.  The main problem with this is that
+it restricts future implementations: they must maintain their average
+in avg_val.value.  If they instead were to call
+
+	moving_average_read(struct avg_val *)
+
+then we get more freedom regarding future implementations.  The current
+moving_average_read() could be inlined.  That would require that avg_val be
+defined in the header file rather than in .c.  This is a bit sad, but
+acceptable.
+
+
+
+And finally+1: moving_average() needs locking to protect internal
+state.  Right now, the caller must provide that locking.  And that's a
+fine design IMO - we have no business here assuming that we can use
+mutex_lock() or spin_lock() or spin_lock_irq() or spin_lock_irqsave() - 
+let the caller decide that.
+
+But the need for this caller-provided locking should be described in
+the API documentation, please.
 
