@@ -1,48 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756114Ab0JROHE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Oct 2010 10:07:04 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:60234 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755086Ab0JROHC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Oct 2010 10:07:02 -0400
-Message-ID: <4CBC547A.8080700@redhat.com>
-Date: Mon, 18 Oct 2010 16:06:50 +0200
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc13 Lightning/1.0b3pre Thunderbird/3.1.4
-MIME-Version: 1.0
-To: Dave Young <hidave.darkstar@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>
-CC: Jan Kiszka <jan.kiszka@web.de>, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [BUG] kvm: guest can not startup due to triple fault
-References: <AANLkTin6qJYEqOc_97EVWkK1Kt1zNSvXtfVeYuk9fyJ8@mail.gmail.com> <4CBAE8E2.1060704@redhat.com> <AANLkTi=5yGPmZxZY7T_oeyJ4xS+RWt7cY4WD=78fbo7v@mail.gmail.com> <4CBBF3C8.9070104@web.de> <4CBC1047.6010501@redhat.com> <20101018125803.GA2497@darkstar> <4CBC4B06.3030300@redhat.com> <20101018134508.GA11885@darkstar> <4CBC4FA9.90406@redhat.com> <4CBC5097.1020105@redhat.com> <20101018135813.GA20316@darkstar>
-In-Reply-To: <20101018135813.GA20316@darkstar>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1756126Ab0JROHi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Oct 2010 10:07:38 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:44065 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755086Ab0JROHh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Oct 2010 10:07:37 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=Rpv51hOVZCj/to8s9/hkdAwuJc1UJPaENwS99wr1DN2VIeL20OmO2q8NIZtSJzpKY8
+         KE+nAWGSDE0ghTtmO3+mADtPX2D6m7X710Gvnbd0IejTbrhHq8sp3U0hQSjpFpcpLHLr
+         wDi1nofkfp6pSpw9rTGdRxMZAStmYLuc0F8po=
+From: zhangyd <zhangyd6@gmail.com>
+To: dwmw2@infradead.org
+Cc: w.sang@pengutronix.de, Artem.Bityutskiy@nokia.com, ladis@linux-mips.org,
+        linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org,
+        zhangyd <zhangyd6@gmail.com>
+Subject: [PATCH] mtd: chips: Add SST38VF640x NOR-flashes
+Date: Mon, 18 Oct 2010 22:06:50 -0400
+Message-Id: <1287454010-2718-1-git-send-email-zhangyd6@gmail.com>
+X-Mailer: git-send-email 1.7.2.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  On 10/18/2010 03:58 PM, Dave Young wrote:
-> >
-> >  Please patch hardware_setup() to show the value of
-> >  boot_cpu_has(X86_FEATURE_NX).
->
-> It's 0
+Du to the wrong sector size description(The actual sector size is
+8KBytes/sector, but the reporting size is 64KBytes/sector),you can get
+the wrong size of the memory. So they should be moved to the jedec_probe.
 
-Well, that's ridiculous.  Looking back at your /proc/cpuinfo:
+Signed-off-by: yidong zhang<zhangyd6@gmail.com>
+---
+ drivers/mtd/chips/jedec_probe.c |   11 +++++++++++
+ 1 files changed, 11 insertions(+), 0 deletions(-)
 
-> processor	: 0
-> flags		: fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush dts acpi mmx fxsr sse sse2 ss ht tm pbe syscall lm constant_tsc arch_perfmon pebs bts rep_good aperfmperf pni dtes64 monitor ds_cpl vmx est tm2 ssse3 cx16 xtpr pdcm lahf_lm ida dts tpr_shadow vnmi flexpriority
->
-> processor	: 1
-> flags		: fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush dts acpi mmx fxsr sse sse2 ss ht tm pbe syscall nx lm constant_tsc arch_perfmon pebs bts rep_good aperfmperf pni dtes64 monitor ds_cpl vmx est tm2 ssse3 cx16 xtpr pdcm lahf_lm ida dts tpr_shadow vnmi flexpriority
-
-processor 0 doesn't have nx.
-
-Ingo, Peter, any ideas?  Where did the missing feature go?
-
+diff --git a/drivers/mtd/chips/jedec_probe.c b/drivers/mtd/chips/jedec_probe.c
+index d72a5fb..0e8df3b 100644
+--- a/drivers/mtd/chips/jedec_probe.c
++++ b/drivers/mtd/chips/jedec_probe.c
+@@ -163,6 +163,7 @@
+ #define SST49LF030A	0x001C
+ #define SST49LF040A	0x0051
+ #define SST49LF080A	0x005B
++#define SST38VF6401	0x536B
+ #define SST36VF3203	0x7354
+ 
+ /* Toshiba */
+@@ -1568,6 +1569,16 @@ static const struct amd_flash_info jedec_table[] = {
+ 			ERASEINFO(0x10000,64),
+ 		}
+ 	}, {
++		.mfr_id		= CFI_MFR_SST,
++		.dev_id		= SST38VF6401,
++		.name		= "SST 38VF6401",
++		.devtypes	= CFI_DEVICETYPE_X16,
++		.cmd_set	= P_ID_AMD_STD,
++		.nr_regions	= 1,
++		.regions	= {
++			ERASEINFO(0x10000,128),
++		}
++	}, {
+ 		.mfr_id		= CFI_MFR_ST,
+ 		.dev_id		= M29F800AB,
+ 		.name		= "ST M29F800AB",
 -- 
-error compiling committee.c: too many arguments to function
+1.7.2.3
 
