@@ -1,63 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934007Ab0JSMi5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Oct 2010 08:38:57 -0400
-Received: from bld-mail17.adl2.internode.on.net ([150.101.137.102]:59854 "EHLO
-	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S932693Ab0JSMi4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S933991Ab0JSMi4 (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 19 Oct 2010 08:38:56 -0400
-Date: Tue, 19 Oct 2010 23:38:52 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: npiggin@kernel.dk
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Subject: Re: [patch 31/35] fs: icache per-zone inode LRU
-Message-ID: <20101019123852.GA12506@dastard>
-References: <20101019034216.319085068@kernel.dk>
- <20101019034658.744504135@kernel.dk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101019034658.744504135@kernel.dk>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:61213 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932393Ab0JSMiy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Oct 2010 08:38:54 -0400
+X-Authority-Analysis: v=1.1 cv=6ptpMFIBtxRk0xdOb6IhJTbTLVRlKjWFes7R4SsWCrA= c=1 sm=0 a=O21JH8oWZ5MA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=pGLkceISAAAA:8 a=4YC9ZLZlW7zBmXA5HJgA:9 a=0s76a9iGO5bt5fQno3_BXgIOo20A:4 a=PUjeQqilurYA:10 a=MSl-tDqOz04A:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [PATCH] sched_rt: Removes extra checking for nr_cpus_allowed
+ when calling find_lowest_rq
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Rakib Mullick <rakib.mullick@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        Gregory Haskins <ghaskins@novell.com>
+In-Reply-To: <1287486167.1994.1.camel@twins>
+References: <AANLkTinoaJX3M2zU_zZOpmFm9Ekxpw-LUVUf_TU8yuSq@mail.gmail.com>
+	 <1287486167.1994.1.camel@twins>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Tue, 19 Oct 2010 08:38:51 -0400
+Message-ID: <1287491931.16971.358.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 19, 2010 at 02:42:47PM +1100, npiggin@kernel.dk wrote:
-> Per-zone LRUs and shrinkers for inode cache.
+On Tue, 2010-10-19 at 13:02 +0200, Peter Zijlstra wrote:
 
-Regardless of whether this is the right way to scale or not, I don't
-like the fact that this moves the cache LRUs into the memory
-management structures, and expands the use of MM specific structures
-throughout the code. It ties the cache implementation to the current
-VM implementation. That, IMO, goes against all the principle of
-modularisation at the source code level, and it means we have to tie
-all shrinker implemenations to the current internal implementation
-of the VM. I don't think that is wise thing to do because of the
-dependencies and impedance mismatches it introduces.
+> > Remove the check for nr_cpus_allowed of an RT task before calling
+> > find_lowest_cpu() from select_task_rq_rt function. Cause
+> > find_lowest_cpu checks for rt.nr_cpus_allowed of a process.
+> > It would've been nice, if we make the check before calling
+> > find_lowest_cpu. But its called from other places, so keep the
+> > nr_cpus_allowed check into find_lowest_cpu().
+> 
 
-As an example: XFS inodes to be reclaimed are simply tagged in a
-radix tree so the shrinker can reclaim inodes in optimal IO order
-rather strict LRU order. It simply does not match a zone-based
-shrinker implementation in any way, shape or form, nor does it's
-inherent parallelism match that of the way shrinkers are called.
+Yes it is redundant, but I'm wondering if we should modify
+find_lowest_rq() just to short cut this case.
 
-Any change in shrinker infrastructure needs to be able to handle
-these sorts of impedance mismatches between the VM and the cache
-subsystem. The current API doesn't handle this very well, either,
-so it's something that we need to fix so that scalability is easy
-for everyone.
+That is, instead of assigning all the variables on the stack, which I'm
+thinking __get_cpu_var() may act like a barrier() where gcc can't
+optimize. We should probably also do the following:
 
-Anyway, my main point is that tying the LRU and shrinker scaling to
-the implementation of the VM is a one-off solution that doesn't work
-for generic infrastructure. Other subsystems need the same
-large-machine scaling treatment, and there's no way we should be
-tying them all into the struct zone. It needs further abstraction.
+static int find_lowest_rq(struct task_struct *task)
+{
+	struct sched_domain *sd;
+-	struct cpumask *lowest_mask = __get_cpu_var(local_cpu_mask);
+-	int this_cpu = smp_processor_id();
+-	int cpu      = task_cpu(task);
++	struct cpumask *lowest_mask;
++	int this_cpu;
++	int cpu;
 
-Cheers,
+	if (task->rt.nr_cpus_allowed == 1)
+		return -1; /* No other targets possible */
 
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
++	lowest_mask = __get_cpu_var(local_cpu_mask);
++	this_cpu = smp_processor_id();
++	cpu = task_cpu(task;
+
+
+Then removing the redundant check may not hurt anything.
+
+-- Steve
+
+
+> > Signed-off-by: Rakib Mullick <rakib.mullick@gmail.com>
+> > ---
+> > 
+> > --- linus-rc8/kernel/sched_rt.c	2010-10-15 05:26:43.000000000 +0600
+> > +++ rakib-rc8/kernel/sched_rt.c	2010-10-19 16:22:30.000000000 +0600
+> > @@ -971,8 +971,7 @@ select_task_rq_rt(struct rq *rq, struct
+> >  	 * that is just being woken and probably will have
+> >  	 * cold cache anyway.
+> >  	 */
+> > -	if (unlikely(rt_task(rq->curr)) &&
+> > -	    (p->rt.nr_cpus_allowed > 1)) {
+> > +	if (unlikely(rt_task(rq->curr))) {
+> >  		int cpu = find_lowest_rq(p);
+> > 
+> >  		return (cpu == -1) ? task_cpu(p) : cpu;
+
+
