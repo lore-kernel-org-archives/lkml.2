@@ -1,87 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752877Ab0JSOr6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Oct 2010 10:47:58 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:48832 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752205Ab0JSOr4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Oct 2010 10:47:56 -0400
-Date: Tue, 19 Oct 2010 10:47:55 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Tatyana Brokhman <tlinder@codeaurora.org>
-cc: linux-usb@vger.kernel.org, <linux-arm-msm@vger.kernel.org>,
-        David Brownell <dbrownell@users.sourceforge.net>,
-        Greg Kroah-Hartman <gregkh@suse.de>, <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC/PATCH v2 3/3] usb: Adding SuperSpeed support to dummy_hcd
-In-Reply-To: <217d07c2bcc41c06a975cbe7b2465d64.squirrel@www.codeaurora.org>
-Message-ID: <Pine.LNX.4.44L0.1010191045150.1786-100000@iolanthe.rowland.org>
+	id S1752716Ab0JSOwk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Oct 2010 10:52:40 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:48751 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752061Ab0JSOwi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Oct 2010 10:52:38 -0400
+Date: Tue, 19 Oct 2010 16:51:09 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Arjan van de Ven <arjan@linux.intel.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Thomas Renninger <trenn@suse.de>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Tejun Heo <tj@kernel.org>, Frederic Weisbecker <fweisbec@gmail.com>,
+        Pierre Tardy <tardyp@gmail.com>,
+        Jean Pihet <jean.pihet@newoldbits.com>,
+        linux-trace-users@vger.kernel.org, linux-pm@lists.linux-foundation.org,
+        rjw@sisk.pl, linux-omap@vger.kernel.org,
+        Kevin Hilman <khilman@deeprootsystems.com>,
+        Steven Rostedt <rostedt@goodmis.org>, Frank Eigler <fche@redhat.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: PATCH [0/4] perf: clean-up of power events API
+Message-ID: <20101019145109.GA4857@elte.hu>
+References: <201010062334.46971.trenn@suse.de>
+ <4CB095FA.8060803@linux.intel.com>
+ <20101010121928.GA2688@elte.hu>
+ <201010191331.03080.trenn@suse.de>
+ <20101019114501.GA25371@elte.hu>
+ <1287488841.1994.5.camel@twins>
+ <20101019115200.GC25371@elte.hu>
+ <4CBD9CDD.1010300@linux.intel.com>
+ <20101019135053.GA665@elte.hu>
+ <4CBDA2B6.9000405@linux.intel.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4CBDA2B6.9000405@linux.intel.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 19 Oct 2010 tlinder@codeaurora.org wrote:
 
-> >> +/**
-> >> + * dummy_address_device() - Assign an address for the connected
-> >> + * device
-> >> + * @param hcd - host controller of the device
-> >> + * @param udev - device to address
-> >> + *
-> >> + * @return int - 0 on success, or an error code (refer to
-> >> + *	   errno-base.h for details)
-> >> + *
-> >> + * Issue an Address Device command (which will issue a
-> >> + * SetAddress request to the device). We should be protected by
-> >> + * the usb_address0_mutex in khubd's hub_port_init, so we should
-> >> + * only issue and wait on one address command at the same time.
-> >> + *
-> >> + * This function is used only for SS hcd drivers.
-> >> + */
-> >> +static int dummy_address_device(struct usb_hcd *hcd, struct usb_device
-> >> *udev)
-> >> +{
-> >> +	udev->devnum = 3;
-> >> +	return usb_control_msg(udev, (PIPE_CONTROL << 30),
-> >> +		USB_REQ_SET_ADDRESS, 0, udev->devnum, 0,
-> >> +		NULL, 0, USB_CTRL_SET_TIMEOUT);
-> >> +}
+* Arjan van de Ven <arjan@linux.intel.com> wrote:
+
+> >> for some time software needs to support both, especially if popular distros 
+> >> stick to an older kernel like *cough* RHEL6
 > >
-> > This looks very suspicious.  Why have this function if it's only going
-> > to do the same thing that usbcore would do if it weren't present?
+> > Sure, you can support both. But as long as support for the _new_ events is 
+> > included in PowerTop there's no need to keep the duality upstream. Running 
+> > ancient PowerTop on fresh kernels is not common.
+> >
+> > An old RHEL kernel will still keep on working as you can keep support for old 
+> > events in PowerTop as long as you wish to.
+> >
+> > The new kernel also wont 'overwrite' old events with new definitions in the 
+> > future, so PowerTop will keep working for as long as you want to support older 
+> > kernels.
+> >
+> > Does that sound good?
 > 
-> Upon new device connection the host addresses the device from
-> hub_set_address() that if the address_device cb was provided for the hcd -
-> calls it. This function begins with a verification that either this cb was
-> supplied or the usbcore already addresses the device (meaning udev->devnum
-> > 1).
-> usbcore addresses the device in choose_address() that is called from
-> hub_port_connect_change but only if it's not a SuperSpeed hcd:
-> if (!(hcd->driver->flags & HCD_USB3)) {
-> 	/* set the address */
->         choose_address(udev);
->         ...
-> }
-> Since our hcd is SuperSpeed, choose_address() isn't called and
-> udev->devnum remains 0.
-> Due to the above in order for this implementation to work properly we have
-> to provide the address_device cb for a SuperSpeed hcd.
-> Perhaps this was already fixed but I'm not familiar with such patch. I
-> would be happy to pick it up if you could refer me to it.
+> this does not scale much long term, eg this only works if this is only done once, 
+> and these points are stable afterwards. otherwise we get 25 of those different 
+> "workarounds for kernel ABI breakage" into all different projects, and it becomes 
+> untestable for all the poor software writers...
 
-http://www.kernel.org/pub/linux/kernel/people/gregkh/gregkh-2.6/gregkh-07-usb/usb-core-use-kernel-assigned-address-for-devices-under-xhci.patch
+I have no intention for this to become common. For the 2+ years tracepoints have 
+been upstream this is the first time it has come up. It's a rare occurance, and as 
+long as we keep it rare and as long as we have a smooth transition process in place 
+it should be good. If it becomes common we are doing something wrong ...
 
-> > Also, the address_device routine should not change udev->devnum.  The
-> > code that does this in the xhci driver is being removed, because it
-> > causes bugs.
-> 
-> A better solution might be to call choose_address() for SuperSpeed hcd as
-> well. If that sounds good to everyone I can make the change.
+Alternatively you might want to review the new power events and suggest ways to add 
+that extra information to existing events that suits your purposes as well. You 
+added the old power tracepoints so you sure must have an opinion about it all?
 
-The patch listed above already contains these changes.
+Thanks,
 
-Alan Stern
-
+	Ingo
