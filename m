@@ -1,389 +1,309 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933578Ab0JSH0E (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Oct 2010 03:26:04 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:40634 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757820Ab0JSH0B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Oct 2010 03:26:01 -0400
-Date: Tue, 19 Oct 2010 18:25:51 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: linux-next@vger.kernel.org
-Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: linux-next: Tree for October 19
-Message-Id: <20101019182551.7518b3a1.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Tue__19_Oct_2010_18_25_51_+1100_L/BcSgqX7l_nAn3A"
+	id S1758072Ab0JSH0p (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Oct 2010 03:26:45 -0400
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:36885 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752133Ab0JSH0o convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Oct 2010 03:26:44 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=HTZ2+eyRkrOJBW7hUwhLWD5GB0qA0DFdoMqeFwJeSVwn3xJHkn2rn8vKk6FJJnwqMa
+         ysnCb2W/KBBV+u6ayT3hzmi2bgy5aOZJZabmzrhG+kZnKPYP/Q0uex/F0VhJ/dpBhn43
+         akx3OsOX4tJvVk5tOl1EqXnV7aDRkp5sYFstU=
+MIME-Version: 1.0
+In-Reply-To: <201010182135.09506.florian@openwrt.org>
+References: <201010182135.09506.florian@openwrt.org>
+Date: Tue, 19 Oct 2010 09:26:42 +0200
+Message-ID: <AANLkTinS+bH+u-x0jEcMgN+uK-__65TNNGg6uQA55TSv@mail.gmail.com>
+Subject: Re: [PATCH v5] GPIO: add support for 74x164 serial-in/parallel-out
+ 8-bit shift register
+From: Miguel Ojeda <miguel.ojeda.sandonis@gmail.com>
+To: Florian Fainelli <florian@openwrt.org>
+Cc: David Brownell <david-b@pacbell.net>, Willy Tarreau <w@1wt.eu>,
+        linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Miguel Gaio <miguel.gaio@efixo.com>, dbrownell@users.sourceforge.net,
+        Juhos Gabor <juhosg@openwrt.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__19_Oct_2010_18_25_51_+1100_L/BcSgqX7l_nAn3A
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Mon, Oct 18, 2010 at 9:35 PM, Florian Fainelli <florian@openwrt.org> wrote:
+> From: Miguel Gaio <miguel.gaio@efixo.com>
+>
+> This patch adds support for generic 74x164 serial-in/parallel-out 8-bits
+> shift register. This driver can be used as a GPIO output expander.
+>
+> Signed-off-by: Miguel Gaio <miguel.gaio@efixo.com>
+> Signed-off-by: Juhos Gabor <juhosg@openwrt.org>
+> Signed-off-by: Florian Fainelli <florian@openwrt.org>
+> ---
+> Changes since v1:
+> - renamed nxp_ to gen_ since this driver is generic to all 74HC164 chips
+> - added comment on this driver not handling the 74HC164 daisy-chaining
+> - renamed misused GPIO expanders to Shift registers
+>
+> Changes since v2:
+> - rename 74hc164 to 74x164
+>
+> Changes since v3:
+> - support daisy-chaining of 74x164 up to 32 gpios
+>
+> Changes since v4:
+> - converted to a SPI device driver
+>
+> diff --git a/drivers/gpio/74x164.c b/drivers/gpio/74x164.c
+> new file mode 100644
+> index 0000000..ebb183f
+> --- /dev/null
+> +++ b/drivers/gpio/74x164.c
+> @@ -0,0 +1,184 @@
+> +/*
+> + *  74Hx164 - Generic serial-in/parallel-out 8-bits shift register GPIO driver
+> + *
+> + *  Copyright (C) 2010 Gabor Juhos <juhosg@openwrt.org>
+> + *  Copyright (C) 2010 Miguel Gaio <miguel.gaio@efixo.com>
+> + *
+> + *  This program is free software; you can redistribute it and/or modify
+> + *  it under the terms of the GNU General Public License version 2 as
+> + *  published by the Free Software Foundation.
+> + */
+> +
+> +#include <linux/init.h>
+> +#include <linux/mutex.h>
+> +#include <linux/spi/spi.h>
+> +#include <linux/spi/74x164.h>
+> +#include <linux/gpio.h>
+> +#include <linux/slab.h>
+> +
+> +#define GEN_74X164_GPIO_COUNT  8
+> +
+> +
+> +struct gen_74x164_chip {
+> +       struct spi_device       *spi;
+> +       struct gpio_chip        gpio_chip;
+> +       struct mutex            lock;
+> +       u8                      port_config;
+> +};
+> +
+> +static void gen_74x164_set_value(struct gpio_chip *, unsigned, int);
+> +
+> +static struct gen_74x164_chip *gpio_to_chip(struct gpio_chip *gc)
+> +{
+> +       return container_of(gc, struct gen_74x164_chip, gpio_chip);
+> +}
+> +
+> +static int __gen_74x164_write_config(struct gen_74x164_chip *chip)
+> +{
+> +       return spi_write(chip->spi,
+> +                        &chip->port_config, sizeof(chip->port_config));
+> +}
+> +
+> +static int gen_74x164_direction_output(struct gpio_chip *gc,
+> +               unsigned offset, int val)
+> +{
+> +       gen_74x164_set_value(gc, offset, val);
+> +       return 0;
+> +}
+> +
+> +static int gen_74x164_get_value(struct gpio_chip *gc, unsigned offset)
+> +{
+> +       struct gen_74x164_chip *chip = gpio_to_chip(gc);
+> +       int ret;
+> +
+> +       mutex_lock(&chip->lock);
+> +       ret = (chip->port_config >> offset) & 0x1;
+> +       mutex_unlock(&chip->lock);
+> +
+> +       return ret;
+> +}
+> +
+> +static void gen_74x164_set_value(struct gpio_chip *gc,
+> +               unsigned offset, int val)
+> +{
+> +       struct gen_74x164_chip *chip = gpio_to_chip(gc);
+> +       bool refresh;
+> +
+> +       mutex_lock(&chip->lock);
+> +       if (val)
+> +               chip->port_config |= (1 << offset);
+> +       else
+> +               chip->port_config &= ~(1 << offset);
 
-Hi all,
+set_bit(), clear_bit() ?
 
-Changes since 20101018:
-
-Undropped tree: xen
-
-The davinci tree lost its conflicts.
-
-The msm tree lost its conflict.
-
-The s5p tree lost its conflicts.
-
-The xfs tree lost its mismerge.
-
-The pci tree lost its build failure.
-
-The net tree lost its build failure and a couple of conflicts.
-
-The v4l-dvb tree gained a build failure for which I applied a patch.
-
-The sound-asoc tree lost its build failure (also the sound tree).
-
-The mmc tree lost its build failure.
-
-The security-testing tree gained a build failure so I used the version
-from next-20101018.
-
-The tip tree lost a conflict but gained another against the powerpc
-tree.  It also gained a build failure (actually yesterday) for which I
-applied a patch.
-
-The xen tree lost its conflicts.
-
-The staging-next tree gained a conflict against the v4l-dvb tree.
-
-----------------------------------------------------------------------------
-
-I have created today's linux-next tree at
-git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git
-(patches at http://www.kernel.org/pub/linux/kernel/v2.6/next/ ).  If you
-are tracking the linux-next tree using git, you should not use "git pull"
-to do so as that will try to merge the new linux-next release with the
-old one.  You should use "git fetch" as mentioned in the FAQ on the wiki
-(see below).
-
-You can see which trees have been included by looking in the Next/Trees
-file in the source.  There are also quilt-import.log and merge.log files
-in the Next directory.  Between each merge, the tree was built with
-a ppc64_defconfig for powerpc and an allmodconfig for x86_64. After the
-final fixups (if any), it is also built with powerpc allnoconfig (32 and
-64 bit), ppc44x_defconfig and allyesconfig (minus
-CONFIG_PROFILE_ALL_BRANCHES - this fails its final link) and i386, sparc
-and sparc64 defconfig. These builds also have
-CONFIG_ENABLE_WARN_DEPRECATED, CONFIG_ENABLE_MUST_CHECK and
-CONFIG_DEBUG_INFO disabled when necessary.
-
-Below is a summary of the state of the merge.
-
-We are up to 176 trees (counting Linus' and 22 trees of patches pending
-for Linus' tree), more are welcome (even if they are currently empty).
-Thanks to those who have contributed, and to those who haven't, please do.
-
-Status of my local build tests will be at
-http://kisskb.ellerman.id.au/linux-next .  If maintainers want to give
-advice about cross compilers/configs that work, we are always open to add
-more builds.
-
-Thanks to Randy Dunlap for doing many randconfig builds.
-
-There is a wiki covering stuff to do with linux-next at
-http://linux.f-seidel.de/linux-next/pmwiki/ .  Thanks to Frank Seidel.
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-$ git checkout master
-$ git reset --hard stable
-Merging origin/master
-Merging fixes/fixes
-Merging arm-current/master
-Merging m68k-current/for-linus
-Merging powerpc-merge/merge
-Merging sparc-current/master
-Merging scsi-rc-fixes/master
-Merging net-current/master
-Merging sound-current/for-linus
-Merging pci-current/for-linus
-Merging wireless-current/master
-Merging kbuild-current/rc-fixes
-Merging quilt/driver-core.current
-Merging quilt/tty.current
-Merging quilt/usb.current
-Merging quilt/staging.current
-Merging cpufreq-current/fixes
-Merging input-current/for-linus
-Merging md-current/for-linus
-Merging audit-current/for-linus
-Merging crypto-current/master
-Merging ide-curent/master
-Merging dwmw2/master
-Merging gcl-current/merge
-Merging arm/devel
-CONFLICT (content): Merge conflict in arch/arm/mach-at91/include/mach/syste=
-m.h
-CONFLICT (content): Merge conflict in arch/arm/mach-imx/mach-cpuimx27.c
-Merging davinci/davinci-next
-Merging i.MX/for-next
-Merging msm/for-next
-Merging omap/for-next
-Merging pxa/for-next
-Merging samsung/next-samsung
-Merging s5p/for-next
-Applying: s5p: merge fix for removal of fielda from machine_desc
-Merging tegra/for-next
-Merging avr32/avr32-arch
-Merging blackfin/for-linus
-Merging cris/for-next
-Merging ia64/test
-Merging m68k/for-next
-Merging m68knommu/for-next
-Merging microblaze/next
-Merging mips/mips-for-linux-next
-Merging parisc/next
-Merging powerpc/next
-Merging 4xx/next
-Merging 52xx-and-virtex/next
-Merging galak/next
-Merging s390/features
-Merging sh/master
-Merging genesis/master
-Merging sparc/master
-Merging tile/master
-Merging xtensa/master
-CONFLICT (content): Merge conflict in arch/xtensa/configs/iss_defconfig
-Merging ceph/for-next
-Merging cifs/master
-Merging configfs/linux-next
-Merging ecryptfs/next
-Merging ext3/for_next
-Merging ext4/next
-Merging fatfs/master
-Merging fuse/for-next
-Merging gfs2/master
-Merging hfsplus/for-next
-Merging jfs/next
-Merging logfs/master
-CONFLICT (content): Merge conflict in fs/logfs/logfs.h
-Merging nfs/linux-next
-Merging nfsd/nfsd-next
-Merging nilfs2/for-next
-Merging ocfs2/linux-next
-Merging omfs/for-next
-Merging squashfs/master
-Merging udf/for_next
-Merging v9fs/for-next
-Merging ubifs/linux-next
-Merging xfs/master
-Merging vfs/for-next
-Merging pci/linux-next
-Merging hid/for-next
-Merging quilt/i2c
-Merging bjdooks-i2c/next-i2c
-Merging quilt/jdelvare-hwmon
-Merging hwmon-staging/hwmon-next
-Merging quilt/kernel-doc
-Merging v4l-dvb/master
-Merging kbuild/for-next
-Merging kconfig/for-next
-Merging ide/master
-Merging libata/NEXT
-Merging infiniband/for-next
-Merging acpi/test
-Merging idle-test/idle-test
-Merging ieee1394/for-next
-Merging ubi/linux-next
-Merging kvm/linux-next
-Merging dlm/next
-Merging swiotlb/master
-Merging ibft/master
-Merging scsi/master
-Merging async_tx/next
-Merging net/master
-CONFLICT (content): Merge conflict in Documentation/feature-removal-schedul=
-e.txt
-CONFLICT (content): Merge conflict in arch/arm/mach-omap2/board-zoom-periph=
-erals.c
-CONFLICT (delete/modify): drivers/ieee1394/eth1394.c deleted in HEAD and mo=
-dified in net/master. Version net/master of drivers/ieee1394/eth1394.c left=
- in tree.
-$ git rm -f drivers/ieee1394/eth1394.c
-Merging wireless/master
-Merging bluetooth/master
-Merging mtd/master
-Merging crypto/master
-CONFLICT (content): Merge conflict in arch/arm/mach-omap2/devices.c
-Merging sound/for-next
-CONFLICT (content): Merge conflict in arch/arm/mach-s3c64xx/dev-audio.c
-CONFLICT (content): Merge conflict in drivers/video/sh_mobile_hdmi.c
-Merging sound-asoc/for-next
-Merging cpufreq/next
-Merging quilt/rr
-Merging input/next
-CONFLICT (content): Merge conflict in drivers/input/keyboard/Kconfig
-Merging lsm/for-next
-Merging block/for-next
-CONFLICT (content): Merge conflict in fs/ext4/mballoc.c
-Applying: ext4: merge fix for blkdev_issue_zeroout API change
-Merging quilt/device-mapper
-Merging embedded/master
-Merging firmware/master
-Merging pcmcia/master
-CONFLICT (content): Merge conflict in drivers/net/pcmcia/smc91c92_cs.c
-Merging battery/master
-Merging leds/for-mm
-Merging backlight/for-mm
-Merging mmc/mmc-next
-Merging kgdb/kgdb-next
-CONFLICT (content): Merge conflict in drivers/char/sysrq.c
-Merging slab/for-next
-Merging uclinux/for-next
-Merging md/for-next
-Merging mfd/for-next
-CONFLICT (content): Merge conflict in drivers/mfd/sh_mobile_sdhi.c
-Merging hdlc/hdlc-next
-Merging drm/drm-next
-CONFLICT (content): Merge conflict in drivers/gpu/drm/radeon/r600_blit_kms.c
-Merging viafb/viafb-next
-Merging voltage/for-next
-Merging security-testing/next
-$ git reset --hard HEAD^
-Merging refs/next/20101018/security-testing
-Merging lblnet/master
-Merging agp/agp-next
-Merging uwb/for-upstream
-Merging watchdog/master
-Merging bdev/master
-Merging dwmw2-iommu/master
-Merging cputime/cputime
-Merging osd/linux-next
-Merging jc_docs/docs-next
-Merging nommu/master
-Merging trivial/for-next
-CONFLICT (content): Merge conflict in net/irda/irnet/irnet_ppp.c
-Merging audit/for-next
-Merging quilt/aoe
-Merging suspend/linux-next
-Merging fsnotify/for-next
-Merging irda/for-next
-Merging catalin/for-next
-CONFLICT (content): Merge conflict in arch/arm/kernel/Makefile
-CONFLICT (content): Merge conflict in arch/arm/mach-vexpress/ct-ca9x4.c
-CONFLICT (content): Merge conflict in arch/arm/mm/flush.c
-Merging alacrity/linux-next
-CONFLICT (content): Merge conflict in include/linux/Kbuild
-Merging i7core_edac/linux_next
-CONFLICT (content): Merge conflict in MAINTAINERS
-Merging i7300_edac/linux_next
-Merging devicetree/next-devicetree
-Merging spi/next-spi
-CONFLICT (content): Merge conflict in drivers/spi/Kconfig
-CONFLICT (content): Merge conflict in drivers/spi/Makefile
-Merging omap_dss2/for-next
-Merging tip/auto-latest
-CONFLICT (content): Merge conflict in arch/powerpc/kernel/time.c
-CONFLICT (content): Merge conflict in arch/sh/kernel/perf_event.c
-CONFLICT (content): Merge conflict in include/linux/percpu.h
-CONFLICT (content): Merge conflict in net/core/dev.c
-Applying: ftrace: Remove recursion between recordmcount and scripts/mod/emp=
-ty
-Merging rcu/rcu/next
-Merging oprofile/for-next
-Merging xen/upstream/xen
-Merging swiotlb-xen/master
-Merging edac-amd/for-next
-Merging percpu/for-next
-CONFLICT (content): Merge conflict in include/linux/percpu.h
-CONFLICT (content): Merge conflict in mm/percpu.c
-Merging workqueues/for-next
-CONFLICT (content): Merge conflict in fs/gfs2/main.c
-Merging sfi/sfi-test
-Merging asm-generic/next
-Merging drivers-x86/linux-next
-Merging hwpoison/hwpoison
-Merging sysctl/master
-Merging quilt/driver-core
-CONFLICT (content): Merge conflict in drivers/misc/Makefile
-Merging quilt/tty
-Merging quilt/usb
-CONFLICT (content): Merge conflict in drivers/usb/gadget/rndis.c
-CONFLICT (content): Merge conflict in drivers/usb/host/Kconfig
-CONFLICT (content): Merge conflict in drivers/usb/host/Makefile
-Applying: scsi/sd: update for hw_sector_size rename
-Merging staging-next/staging-next
-CONFLICT (rename/modify): Merge conflict in drivers/misc/ti-st/st_core.c
-CONFLICT (rename/modify): Merge conflict in drivers/misc/ti-st/st_kim.c
-CONFLICT (content): Merge conflict in arch/arm/plat-omap/devices.c
-CONFLICT (content): Merge conflict in drivers/misc/Makefile
-CONFLICT (content): Merge conflict in drivers/staging/Makefile
-CONFLICT (content): Merge conflict in drivers/staging/batman-adv/hard-inter=
-face.c
-CONFLICT (content): Merge conflict in drivers/staging/cx25821/cx25821-audio=
--upstream.c
-CONFLICT (content): Merge conflict in drivers/staging/cx25821/cx25821-audio=
-.h
-CONFLICT (delete/modify): drivers/staging/mrst-touchscreen/Makefile deleted=
- in HEAD and modified in staging-next/staging-next. Version staging-next/st=
-aging-next of drivers/staging/mrst-touchscreen/Makefile left in tree.
-CONFLICT (delete/modify): drivers/staging/mrst-touchscreen/intel-mid-touch.=
-c deleted in HEAD and modified in staging-next/staging-next. Version stagin=
-g-next/staging-next of drivers/staging/mrst-touchscreen/intel-mid-touch.c l=
-eft in tree.
-CONFLICT (delete/modify): drivers/staging/ti-st/st.h deleted in staging-nex=
-t/staging-next and modified in HEAD. Version HEAD of drivers/staging/ti-st/=
-st.h left in tree.
-CONFLICT (delete/modify): drivers/staging/ti-st/st_core.h deleted in stagin=
-g-next/staging-next and modified in HEAD. Version HEAD of drivers/staging/t=
-i-st/st_core.h left in tree.
-$ git rm -f drivers/staging/mrst-touchscreen/Makefile drivers/staging/mrst-=
-touchscreen/intel-mid-touch.c
-$ git rm -f drivers/staging/ti-st/st.h drivers/staging/ti-st/st_core.h
-Applying: staging: ath6kl: Fixing the driver to use modified mmc_host struc=
-ture
-Merging slabh/slabh
-Merging bkl-trivial/trivial
-CONFLICT (content): Merge conflict in drivers/block/ataflop.c
-CONFLICT (content): Merge conflict in drivers/char/pcmcia/cm4000_cs.c
-CONFLICT (content): Merge conflict in drivers/char/pcmcia/cm4040_cs.c
-CONFLICT (content): Merge conflict in drivers/mmc/card/block.c
-Merging bkl-llseek/llseek
-CONFLICT (content): Merge conflict in drivers/gpu/drm/vmwgfx/vmwgfx_drv.c
-CONFLICT (content): Merge conflict in drivers/net/wireless/ath/ath9k/debug.c
-Applying: ath9k: fix up for .llseek fop change
-Merging bkl-vfs/vfs
-CONFLICT (content): Merge conflict in fs/cifs/cifsfs.c
-CONFLICT (content): Merge conflict in fs/nilfs2/super.c
-Merging bkl-config/config
-CONFLICT (content): Merge conflict in fs/compat_ioctl.c
-Merging irqflags/master
-Merging cleancache/linux-next
-CONFLICT (content): Merge conflict in include/linux/fs.h
-CONFLICT (content): Merge conflict in mm/Kconfig
-Merging scsi-post-merge/merge-base:master
-Applying: v4l-dvb: using vmalloc needs vmalloc.h in cx231xx-417.c
-
---Signature=_Tue__19_Oct_2010_18_25_51_+1100_L/BcSgqX7l_nAn3A
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQEcBAEBAgAGBQJMvUf/AAoJEDMEi1NhKgbs8N0H/iwMRnDcsdSIiowG3rymk1n0
-SdxaGwBcAH/gS95Z2oZoaXIa6365uVKCTaU/XHspfZz3cUnaeynfOoErOnjZoR2J
-HLKfd+JNffdv0BqIjGMP5QhxsHlDC24tofbYRpLbTCxk4P24SbqJ2Wy8uG+MDFEn
-tqqkwaCWd9gu3QHhagf5phLLJzKjKVFTy/4kuyCv+LpeShAKqT+QyzB6CyHxDOlq
-0fi578DWI/PR6EBTKvWWCOpdJRpA7H4bTW3Rpqavg4dOipu/TNsgLbZWrK1IEWnr
-vrMp4HDeddknsl53Bv9RTBKDcs08hgGbhWybIqdJzU4ghxCNpROjFjO2/aFVM5o=
-=fTYX
------END PGP SIGNATURE-----
-
---Signature=_Tue__19_Oct_2010_18_25_51_+1100_L/BcSgqX7l_nAn3A--
+> +
+> +       __gen_74x164_write_config(chip);
+> +       mutex_unlock(&chip->lock);
+> +}
+> +
+> +static int __devinit gen_74x164_probe(struct spi_device *spi)
+> +{
+> +       struct gen_74x164_chip *chip;
+> +       struct gen_74x164_chip_platform_data *pdata;
+> +       int ret;
+> +
+> +       pdata = spi->dev.platform_data;
+> +       if (!pdata || !pdata->base) {
+> +               dev_dbg(&spi->dev, "incorrect or missing platform data\n");
+> +               return -EINVAL;
+> +       }
+> +
+> +       /*
+> +        * bits_per_word cannot be configured in platform data
+> +        */
+> +       spi->bits_per_word = 8;
+> +
+> +       ret = spi_setup(spi);
+> +       if (ret < 0)
+> +               return ret;
+> +
+> +       chip = kzalloc(sizeof(*chip), GFP_KERNEL);
+> +       if (!chip)
+> +               return -ENOMEM;
+> +
+> +       mutex_init(&chip->lock);
+> +
+> +       dev_set_drvdata(&spi->dev, chip);
+> +
+> +       chip->spi = spi;
+> +
+> +       chip->gpio_chip.label = GEN_74X164_DRIVER_NAME,
+> +               chip->gpio_chip.direction_output = gen_74x164_direction_output;
+> +       chip->gpio_chip.get = gen_74x164_get_value;
+> +       chip->gpio_chip.set = gen_74x164_set_value;
+> +       chip->gpio_chip.base = pdata->base;
+> +       chip->gpio_chip.ngpio = GEN_74X164_GPIO_COUNT;
+> +       chip->gpio_chip.can_sleep = 1;
+> +       chip->gpio_chip.dev = &spi->dev;
+> +       chip->gpio_chip.owner = THIS_MODULE;
+> +
+> +       ret = __gen_74x164_write_config(chip);
+> +       if (ret) {
+> +               dev_err(&spi->dev, "Failed writing: %d\n", ret);
+> +               goto exit_destroy;
+> +       }
+> +
+> +       ret = gpiochip_add(&chip->gpio_chip);
+> +       if (ret)
+> +               goto exit_destroy;
+> +
+> +       return ret;
+> +
+> +exit_destroy:
+> +       dev_set_drvdata(&spi->dev, NULL);
+> +       mutex_destroy(&chip->lock);
+> +       kfree(chip);
+> +       return ret;
+> +}
+> +
+> +static int gen_74x164_remove(struct spi_device *spi)
+> +{
+> +       struct gen_74x164_chip *chip;
+> +       int ret;
+> +
+> +       chip = dev_get_drvdata(&spi->dev);
+> +       if (chip == NULL)
+> +               return -ENODEV;
+> +
+> +       dev_set_drvdata(&spi->dev, NULL);
+> +
+> +       ret = gpiochip_remove(&chip->gpio_chip);
+> +       if (!ret) {
+> +               mutex_destroy(&chip->lock);
+> +               kfree(chip);
+> +       } else
+> +               dev_err(&spi->dev, "Failed to remove the GPIO controller: %d\n",
+> +                               ret);
+> +
+> +       return ret;
+> +}
+> +
+> +static struct spi_driver gen_74x164_driver = {
+> +       .driver = {
+> +               .name           = GEN_74X164_DRIVER_NAME,
+> +               .owner          = THIS_MODULE,
+> +       },
+> +       .probe          = gen_74x164_probe,
+> +       .remove         = __devexit_p(gen_74x164_remove),
+> +};
+> +
+> +static int __init gen_74x164_init(void)
+> +{
+> +       return spi_register_driver(&gen_74x164_driver);
+> +}
+> +subsys_initcall(gen_74x164_init);
+> +
+> +static void __exit gen_74x164_exit(void)
+> +{
+> +       spi_unregister_driver(&gen_74x164_driver);
+> +}
+> +module_exit(gen_74x164_exit);
+> +
+> +MODULE_AUTHOR("Gabor Juhos <juhosg@openwrt.org>");
+> +MODULE_AUTHOR("Miguel Gaio <miguel.gaio@efixo.com>");
+> +MODULE_DESCRIPTION("GPIO expander driver for 74X164 8-bits shift register");
+> +MODULE_LICENSE("GPL v2");
+> +
+> diff --git a/drivers/gpio/Kconfig b/drivers/gpio/Kconfig
+> index 510aa20..614965c 100644
+> --- a/drivers/gpio/Kconfig
+> +++ b/drivers/gpio/Kconfig
+> @@ -339,6 +339,14 @@ config GPIO_MC33880
+>          SPI driver for Freescale MC33880 high-side/low-side switch.
+>          This provides GPIO interface supporting inputs and outputs.
+>
+> +config GPIO_74X164
+> +       tristate "74x164 serial-in/parallel-out 8-bits shift register"
+> +       depends on SPI_MASTER
+> +       help
+> +         Platform driver for 74x164 compatible serial-in/parallel-out
+> +         8-outputs shift registers. This driver can be used to provide access
+> +         to more gpio outputs.
+> +
+>  comment "AC97 GPIO expanders:"
+>
+>  config GPIO_UCB1400
+> diff --git a/drivers/gpio/Makefile b/drivers/gpio/Makefile
+> index fc6019d..60456a4 100644
+> --- a/drivers/gpio/Makefile
+> +++ b/drivers/gpio/Makefile
+> @@ -17,6 +17,7 @@ obj-$(CONFIG_GPIO_MAX7301)    += max7301.o
+>  obj-$(CONFIG_GPIO_MAX732X)     += max732x.o
+>  obj-$(CONFIG_GPIO_MC33880)     += mc33880.o
+>  obj-$(CONFIG_GPIO_MCP23S08)    += mcp23s08.o
+> +obj-$(CONFIG_GPIO_74X164)      += 74x164.o
+>  obj-$(CONFIG_GPIO_PCA953X)     += pca953x.o
+>  obj-$(CONFIG_GPIO_PCF857X)     += pcf857x.o
+>  obj-$(CONFIG_GPIO_PL061)       += pl061.o
+> diff --git a/include/linux/spi/74x164.h b/include/linux/spi/74x164.h
+> new file mode 100644
+> index 0000000..d85c52f
+> --- /dev/null
+> +++ b/include/linux/spi/74x164.h
+> @@ -0,0 +1,11 @@
+> +#ifndef LINUX_SPI_74X164_H
+> +#define LINUX_SPI_74X164_H
+> +
+> +#define GEN_74X164_DRIVER_NAME "74x164"
+> +
+> +struct gen_74x164_chip_platform_data {
+> +       /* number assigned to the first GPIO */
+> +       unsigned        base;
+> +};
+> +
+> +#endif
+>
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
