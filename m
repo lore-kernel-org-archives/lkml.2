@@ -1,84 +1,174 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757447Ab0JSUpk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Oct 2010 16:45:40 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:54484 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757145Ab0JSUpj convert rfc822-to-8bit (ORCPT
+	id S1757513Ab0JSUq4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Oct 2010 16:46:56 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:55727 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757145Ab0JSUqx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Oct 2010 16:45:39 -0400
-From: "Savoy, Pavan" <pavan_savoy@ti.com>
-To: "Gustavo F. Padovan" <padovan@profusion.mobi>
-CC: "marcel@holtmann.org" <marcel@holtmann.org>,
-        "linux-bluetooth@vger.kernel.org" <linux-bluetooth@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Wed, 20 Oct 2010 02:15:29 +0530
-Subject: RE: [PATCH v3] Bluetooth: btwilink driver
-Thread-Topic: [PATCH v3] Bluetooth: btwilink driver
-Thread-Index: Actvzb70eWl/t76XRuuIlwY6RCih/AAAGe9w
-Message-ID: <19F8576C6E063C45BE387C64729E739404AA4E790D@dbde02.ent.ti.com>
-References: <1287521858-15190-1-git-send-email-pavan_savoy@ti.com>
- <20101019203913.GA2322@vigoh>
-In-Reply-To: <20101019203913.GA2322@vigoh>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Tue, 19 Oct 2010 16:46:53 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Greg KH <greg@kroah.com>
+Subject: Re: [Ksummit-2010-discuss] [v2] Remaining BKL users, what to do
+Date: Tue, 19 Oct 2010 22:44:41 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.36-rc7-next-20101015+; KDE/4.5.1; x86_64; ; )
+Cc: Oliver Neukum <oliver@neukum.org>, Valdis.Kletnieks@vt.edu,
+        Dave Airlie <airlied@gmail.com>, codalist@telemann.coda.cs.cmu.edu,
+        ksummit-2010-discuss@lists.linux-foundation.org,
+        autofs@linux.kernel.org, Jan Harkes <jaharkes@cs.cmu.edu>,
+        Samuel Ortiz <samuel@sortiz.org>, Jan Kara <jack@suse.cz>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        netdev@vger.kernel.org, Anders Larsen <al@alarsen.net>,
+        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        Bryan Schumaker <bjschuma@netapp.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        Petr Vandrovec <vandrove@vc.cvut.cz>,
+        Mikulas Patocka <mikulas@artax.karlin.mff.cuni.cz>,
+        linux-fsdevel@vger.kernel.org, Evgeniy Dushistov <dushistov@mail.ru>,
+        Ingo Molnar <mingo@elte.hu>, Andrew Hendry <andrew.hendry@gmail.com>,
+        linux-media@vger.kernel.org
+References: <201009161632.59210.arnd@arndb.de> <201010192140.47433.oliver@neukum.org> <20101019202912.GA30133@kroah.com>
+In-Reply-To: <20101019202912.GA30133@kroah.com>
 MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201010192244.41913.arnd@arndb.de>
+X-Provags-ID: V02:K0:BTEgMGoS9cnbpK95avsETaNSljOwXsMOeiOW9oUL3Vc
+ e8Q2vo9pYpq1STKKrn+kPjK6bY9AzI+6lbzDExSJieH8c5aOhu
+ ibihMV0sAgu3ypBUm8tTQJT4Ktyj4v+Zq3zYGEoNsIxZPoGfZi
+ xBaVCzDt6gX6LitX7bYNH5m1eXe5UGNGJcTKKbqXNO2O5xtpI1
+ wChTTM/EL1K+poaePFjcA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-
-> -----Original Message-----
-> From: Gustavo F. Padovan [mailto:pao@profusion.mobi] On Behalf Of Gustavo F.
-> Padovan
-> Sent: Tuesday, October 19, 2010 3:39 PM
-> To: Savoy, Pavan
-> Cc: marcel@holtmann.org; linux-bluetooth@vger.kernel.org; linux-
-> kernel@vger.kernel.org
-> Subject: Re: [PATCH v3] Bluetooth: btwilink driver
+On Tuesday 19 October 2010 22:29:12 Greg KH wrote:
+> On Tue, Oct 19, 2010 at 09:40:47PM +0200, Oliver Neukum wrote:
+> > Am Dienstag, 19. Oktober 2010, 21:37:35 schrieb Greg KH:
+> > > > So no need to clean it up for multiprocessor support.
+> > > > 
+> > > > http://download.intel.com/design/chipsets/datashts/29067602.pdf
+> > > > http://www.intel.com/design/chipsets/specupdt/29069403.pdf
+> > > 
+> > > Great, we can just drop all calls to lock_kernel() and the like in the
+> > > driver and be done with it, right?
+> > 
+> > No,
+> > 
+> > you still need to switch off preemption.
 > 
-> * pavan_savoy@ti.com <pavan_savoy@ti.com> [2010-10-19 16:57:38 -0400]:
-> 
-> > From: Pavan Savoy <pavan_savoy@ti.com>
-> >
-> > v3 comments
-> >
-> > Marcel, Gustavo, & list,
-> > Please review this version of patch.
-> >
-> > Anderson,
-> > I have taken care of most of the comments you had.
-> > Have re-wrote some of the code commenting you've mentioned.
-> > Thanks for the comments,
-> >
-> > The other few like -EPERM for platform driver registration is to keep
-> > it similar to other drivers
-> 
-> Which drivers returns -EPERM to any kind of error? The are many reasons
-> why the funcion can fail, and you want to give the best error report to the
-> user. Use EPERM to all of them is just wrong.
+> Hm, how would you do that from within a driver?
 
-Yes, it can fail for plenty of reasons.
-So I'll just return whatever I get from platform_driver_register.
-Is this OK?
+I think this would do:
+---
+drm/i810: remove SMP support and BKL
 
+The i810 and i815 chipsets supported by the i810 drm driver were not
+officially designed for SMP operation, so the big kernel lock is
+only required for kernel preemption. This disables the driver if
+preemption is enabled and removes all calls to lock_kernel in it.
 
-> >type casting is maintained just to feel safe
-> > and have style similar to other drivers.
-> 
-> We don't need to feel safe here. Type cast actually can hide errors,
-> only use them when you really need to cast, in many case here you don't.
+If you own an Acorp 6A815EPD mainboard with a i815 chipset and
+two Pentium-III sockets, and want to run recent kernels on it,
+tell me about it.
 
-Ok, I can remove type casting.
-I am not really for or against it...
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+---
 
-> --
-> Gustavo F. Padovan
-> ProFUSION embedded systems - http://profusion.mobi
+diff --git a/drivers/gpu/drm/Kconfig b/drivers/gpu/drm/Kconfig
+index b755301..e071bc8 100644
+--- a/drivers/gpu/drm/Kconfig
++++ b/drivers/gpu/drm/Kconfig
+@@ -73,8 +73,8 @@ source "drivers/gpu/drm/radeon/Kconfig"
+ 
+ config DRM_I810
+ 	tristate "Intel I810"
+-	# BKL usage in order to avoid AB-BA deadlocks, may become BROKEN_ON_SMP
+-	depends on DRM && AGP && AGP_INTEL && BKL
++	# PREEMPT requires BKL support here, which was removed
++	depends on DRM && AGP && AGP_INTEL && !PREEMPT
+ 	help
+ 	  Choose this option if you have an Intel I810 graphics card.  If M is
+ 	  selected, the module will be called i810.  AGP support is required
+diff --git a/drivers/gpu/drm/i810/i810_dma.c b/drivers/gpu/drm/i810/i810_dma.c
+index ff33e53..8f371e8 100644
+--- a/drivers/gpu/drm/i810/i810_dma.c
++++ b/drivers/gpu/drm/i810/i810_dma.c
+@@ -37,7 +37,6 @@
+ #include <linux/interrupt.h>	/* For task queue support */
+ #include <linux/delay.h>
+ #include <linux/slab.h>
+-#include <linux/smp_lock.h>
+ #include <linux/pagemap.h>
+ 
+ #define I810_BUF_FREE		2
+@@ -94,7 +93,6 @@ static int i810_mmap_buffers(struct file *filp, struct vm_area_struct *vma)
+ 	struct drm_buf *buf;
+ 	drm_i810_buf_priv_t *buf_priv;
+ 
+-	lock_kernel();
+ 	dev = priv->minor->dev;
+ 	dev_priv = dev->dev_private;
+ 	buf = dev_priv->mmap_buffer;
+@@ -104,7 +102,6 @@ static int i810_mmap_buffers(struct file *filp, struct vm_area_struct *vma)
+ 	vma->vm_file = filp;
+ 
+ 	buf_priv->currently_mapped = I810_BUF_MAPPED;
+-	unlock_kernel();
+ 
+ 	if (io_remap_pfn_range(vma, vma->vm_start,
+ 			       vma->vm_pgoff,
+@@ -116,7 +113,7 @@ static int i810_mmap_buffers(struct file *filp, struct vm_area_struct *vma)
+ static const struct file_operations i810_buffer_fops = {
+ 	.open = drm_open,
+ 	.release = drm_release,
+-	.unlocked_ioctl = i810_ioctl,
++	.unlocked_ioctl = drm_ioctl,
+ 	.mmap = i810_mmap_buffers,
+ 	.fasync = drm_fasync,
+ 	.llseek = noop_llseek,
+@@ -1242,19 +1239,6 @@ int i810_driver_dma_quiescent(struct drm_device *dev)
+ 	return 0;
+ }
+ 
+-/*
+- * call the drm_ioctl under the big kernel lock because
+- * to lock against the i810_mmap_buffers function.
+- */
+-long i810_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
+-{
+-	int ret;
+-	lock_kernel();
+-	ret = drm_ioctl(file, cmd, arg);
+-	unlock_kernel();
+-	return ret;
+-}
+-
+ struct drm_ioctl_desc i810_ioctls[] = {
+ 	DRM_IOCTL_DEF_DRV(I810_INIT, i810_dma_init, DRM_AUTH|DRM_MASTER|DRM_ROOT_ONLY|DRM_UNLOCKED),
+ 	DRM_IOCTL_DEF_DRV(I810_VERTEX, i810_dma_vertex, DRM_AUTH|DRM_UNLOCKED),
+diff --git a/drivers/gpu/drm/i810/i810_drv.c b/drivers/gpu/drm/i810/i810_drv.c
+index 88bcd33..9642d3c 100644
+--- a/drivers/gpu/drm/i810/i810_drv.c
++++ b/drivers/gpu/drm/i810/i810_drv.c
+@@ -57,7 +57,7 @@ static struct drm_driver driver = {
+ 		 .owner = THIS_MODULE,
+ 		 .open = drm_open,
+ 		 .release = drm_release,
+-		 .unlocked_ioctl = i810_ioctl,
++		 .unlocked_ioctl = drm_ioctl,
+ 		 .mmap = drm_mmap,
+ 		 .poll = drm_poll,
+ 		 .fasync = drm_fasync,
+@@ -79,6 +79,10 @@ static struct drm_driver driver = {
+ 
+ static int __init i810_init(void)
+ {
++	if (num_present_cpus() > 1) {
++		pr_err("drm/i810 does not support SMP\n");
++		return -EINVAL;
++	}
+ 	driver.num_ioctls = i810_max_ioctl;
+ 	return drm_init(&driver);
+ }
