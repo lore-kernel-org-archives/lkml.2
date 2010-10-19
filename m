@@ -1,127 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757987Ab0JSVmj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Oct 2010 17:42:39 -0400
-Received: from shiva144.upmc.fr ([134.157.0.144]:50113 "EHLO shiva.upmc.fr"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753247Ab0JSVmi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Oct 2010 17:42:38 -0400
-X-Ids: courriel2
-Message-ID: <4CBE1179.2040003@upmc.fr>
-Date: Tue, 19 Oct 2010 23:45:29 +0200
-From: Bernard Pidoux <bernard.pidoux@upmc.fr>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.12) Gecko/20100919 Mandriva/3.0.8-0.1mdv2010.1 (2010.1) Thunderbird/3.0.8
+	id S1757995Ab0JSVpv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Oct 2010 17:45:51 -0400
+Received: from www.tglx.de ([62.245.132.106]:46028 "EHLO www.tglx.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753247Ab0JSVpu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Oct 2010 17:45:50 -0400
+Date: Tue, 19 Oct 2010 23:45:00 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Steven Rostedt <rostedt@goodmis.org>
+cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Koki Sanagi <sanagi.koki@jp.fujitsu.com>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Frederic Weisbecker <fweisbec@gmail.com>, nhorman@tuxdriver.com,
+        scott.a.mcmillan@intel.com, laijs@cn.fujitsu.com,
+        "H. Peter Anvin" <hpa@zytor.com>, LKML <linux-kernel@vger.kernel.org>,
+        eric.dumazet@gmail.com, kaneshige.kenji@jp.fujitsu.com,
+        David Miller <davem@davemloft.net>, izumi.taku@jp.fujitsu.com,
+        kosaki.motohiro@jp.fujitsu.com,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        "Luck, Tony" <tony.luck@intel.com>
+Subject: Re: [PATCH] tracing: Cleanup the convoluted softirq tracepoints
+In-Reply-To: <1287521757.16971.397.camel@gandalf.stny.rr.com>
+Message-ID: <alpine.LFD.2.00.1010192307560.6815@localhost6.localdomain6>
+References: <tip-2bf2160d8805de64308e2e7c3cd97813cb58ed2f@git.kernel.org>  <20100908112529.GA25931@elte.hu> <1287395077.29097.1543.camel@twins>  <1287398936.29097.1548.camel@twins> <4CBD79CF.2060706@jp.fujitsu.com>  <alpine.LFD.2.00.1010191428560.6815@localhost6.localdomain6>
+  <20101019132236.GA19197@Krystal>  <alpine.LFD.2.00.1010191524160.6815@localhost6.localdomain6>  <1287496495.16971.372.camel@gandalf.stny.rr.com>  <alpine.LFD.2.00.1010191558250.6815@localhost6.localdomain6>  <20101019142820.GA14520@Krystal> 
+ <alpine.LFD.2.00.1010191842270.6815@localhost6.localdomain6> <1287521757.16971.397.camel@gandalf.stny.rr.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-CC: Bernard Pidoux <bpidoux@free.fr>
-Subject: Re: booting "nosmp" kernel causing ACPI errors
-References: <4CB9D69D.60203@upmc.fr>
-In-Reply-To: <4CB9D69D.60203@upmc.fr>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Tue, 19 Oct 2010, Steven Rostedt wrote:
+> On Tue, 2010-10-19 at 21:49 +0200, Thomas Gleixner wrote:
+> 
+> Because you do the h - softvec in the tracepoint parameter? I got a
+> different result:
 
-I needed to run Linux on UP mode in order to perform some application tests.
-Using nosmp argument lead to bad interrupts set up.
+I guess some serious whacking is due.
 
-I finally found the explanation I was looking for in this acpi-linux 
-thread :
-http://marc.info/?l=linux-acpi&m=118794015205199&w=4
+The compiler adds two jumps when the parameter changes due to
+ (h -softvec) instead of (h, softvec) ????
 
-  	maxcpus=	[SMP] Maximum number of processors that	an SMP kernel
-			should make use of.  maxcpus=n : n>= 0 limits the
-			kernel to using 'n' processors.  n=0 is a special case,
-			it is equivalent to "nosmp", which also disables
-			the IO APIC.
+Dude, you can't be serious.
 
-	nosmp		[SMP] Tells an SMP kernel to act as a UP kernel,
-			and disable the IO APIC.  legacy for "maxcpus=0".
+If you would have asked about the compiler version I'm using and told
+me about the compiler version you are using, then I could take that
+answer somehow serious.
 
+It still would miss the "Uhhhh, your compiler creates crap code"
+alert, because that double jump is seriously broken and braindead.
 
-I understand that the reason why nosmp also disable IO APIC is for 
-backward compatibility.
-However this is not intuitive : one argument leading to two actions.
+And I tell you more about this. You are going to piss off a lot of
+users of distro compilers because they will set CC_HAVE_ASM_GOTO
+happily and create the code I posted. Which will break the tracer no
+matter what.
 
-So, if I want to run my dual core CPU in UniProcessor mode I have to use
-kernel argument maxcpus=1 in grub/menu.lst
+So you tracer maniacs happily played with some experimental compiler
+stuff w/o even testing your crap against something which ships with
+distros or is the reference 4.5 compiler on kernel.org ?
 
-Doing so, interrupts on my Linux system are correctly initialized and it 
-is much more stable.
+I prefer you sending a patch to disable this, until it's sorted out,
+unless you want me to add some really outrageous changelog to the
+patch I'm going to put into tip tomorrow night, ok ?
 
-Bernard
+Thanks,
 
-
-
-Le 16/10/2010 18:45, Bernard Pidoux a écrit :
-> Hi,
->
-> I observed ACPI errors when booting 2.6.35.7 kernel with "nosmp" 
-> argument.
-> dmesg shows a warning message starting with :
-> WARNING: at mm/page_alloc.c:1981 __alloc_pages_nodemask+0x5b4/0x6d0()
-> +Hardware name: MS-7519
-> +Modules linked in:
-> +Pid: 1, comm: swapper Not tainted 2.6.35.7 #2
->
-> This is followed by ACPI error messages and /proc/interrupts show that
-> interrupts 0-15 are then handled by XT-PIC-XT
-> instead of IO-APIC-edge and IO-APIC-fasteoi when runing smp kernel.
->
-> Here is lspci dump :
->
-> 00:00.0 Host bridge: Intel Corporation 4 Series Chipset DRAM 
-> Controller (rev 03)
-> 00:01.0 PCI bridge: Intel Corporation 4 Series Chipset PCI Express 
-> Root Port (rev 03)
-> 00:1a.0 USB Controller: Intel Corporation 82801JI (ICH10 Family) USB 
-> UHCI Controller #4
-> 00:1a.1 USB Controller: Intel Corporation 82801JI (ICH10 Family) USB 
-> UHCI Controller #5
-> 00:1a.2 USB Controller: Intel Corporation 82801JI (ICH10 Family) USB 
-> UHCI Controller #6
-> 00:1a.7 USB Controller: Intel Corporation 82801JI (ICH10 Family) USB2 
-> EHCI Controller #2
-> 00:1b.0 Audio device: Intel Corporation 82801JI (ICH10 Family) HD 
-> Audio Controller
-> 00:1c.0 PCI bridge: Intel Corporation 82801JI (ICH10 Family) PCI 
-> Express Root Port 1
-> 00:1c.1 PCI bridge: Intel Corporation 82801JI (ICH10 Family) PCI 
-> Express Port 2
-> 00:1c.5 PCI bridge: Intel Corporation 82801JI (ICH10 Family) PCI 
-> Express Root Port 6
-> 00:1d.0 USB Controller: Intel Corporation 82801JI (ICH10 Family) USB 
-> UHCI Controller #1
-> 00:1d.1 USB Controller: Intel Corporation 82801JI (ICH10 Family) USB 
-> UHCI Controller #2
-> 00:1d.2 USB Controller: Intel Corporation 82801JI (ICH10 Family) USB 
-> UHCI Controller #3
-> 00:1d.7 USB Controller: Intel Corporation 82801JI (ICH10 Family) USB2 
-> EHCI Controller #1
-> 00:1e.0 PCI bridge: Intel Corporation 82801 PCI Bridge (rev 90)
-> 00:1f.0 ISA bridge: Intel Corporation 82801JIB (ICH10) LPC Interface 
-> Controller
-> 00:1f.2 IDE interface: Intel Corporation 82801JI (ICH10 Family) 4 port 
-> SATA IDE Controller #1
-> 00:1f.3 SMBus: Intel Corporation 82801JI (ICH10 Family) SMBus Controller
-> 00:1f.5 IDE interface: Intel Corporation 82801JI (ICH10 Family) 2 port 
-> SATA IDE Controller #2
-> 01:00.0 VGA compatible controller: nVidia Corporation G98 [GeForce 
-> 8400 GS] (rev a1)
-> 02:00.0 IDE interface: JMicron Technology Corp. JMB368 IDE controller
-> 04:00.0 Ethernet controller: Realtek Semiconductor Co., Ltd. 
-> RTL8111/8168B PCI Express Gigabit Ethernet controller (rev 02)
->
-> I observed the same issue with another machine with also an MSI 
-> motherboard but using a PCI bridge VIA VT8237/VX700
-> even when booting with "pci=use_crs" argument.
->
-> Attached is diff -ruN file between 2.6.35.7 kernel without and with 
-> "nosmp" boot argument.
->
-> Bernard
->
-
+	tglx
