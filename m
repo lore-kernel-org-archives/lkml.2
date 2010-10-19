@@ -1,171 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752746Ab0JSOiI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Oct 2010 10:38:08 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:61681 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752229Ab0JSOiF (ORCPT
+	id S1752665Ab0JSOkD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Oct 2010 10:40:03 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:35157 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752019Ab0JSOkC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Oct 2010 10:38:05 -0400
+	Tue, 19 Oct 2010 10:40:02 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=subject:from:to:cc:content-type:date:message-id:mime-version
-         :x-mailer:content-transfer-encoding;
-        b=c852t/99LGu+s1vnMSua4dz2Ji3i0tTzxMyuEHNuImRBKgpZvcC8H+d+g5wt0IBif0
-         VmIE6LDenpLz8veamvlVAy0IxVLMbtt+lrPcWAzRcOjC3k7biMBvReoHKgTxuWElZDLg
-         kHwDGoZZBygg+9l7WuJPwDSTx0jtBcIlC8V0w=
-Subject: [PATCH] ipmi: proper spinlocks initializations
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Corey Minyard <minyard@acm.org>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        David Miller <davem@davemloft.net>, Yinghai Lu <yinghai@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 19 Oct 2010 16:37:53 +0200
-Message-ID: <1287499073.2676.117.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=ULQIepLUqVjZ1cqxagUUexJQF6gH6R6njAXfFzEQipLkXKf7pfP2Z40320TXXvk2ay
+         Uc5m8A8mGWITWiSWY7725Nitf9WPytAc1SCAnh+uU1qExbHKNh4scuX/MqlWm0GhVlmN
+         NDtrx7v4+oJ598oIqYX7Lb5MmvBsqRUX5a8rI=
+MIME-Version: 1.0
+In-Reply-To: <4CBD5D680200005A0007492F@soto.provo.novell.com>
+References: <AANLkTinoaJX3M2zU_zZOpmFm9Ekxpw-LUVUf_TU8yuSq@mail.gmail.com>
+	<1287486167.1994.1.camel@twins>
+	<4CBD5D680200005A0007492F@soto.provo.novell.com>
+Date: Tue, 19 Oct 2010 20:40:00 +0600
+Message-ID: <AANLkTi=-E6f3US+h9vzmZhQbzLkaoA4_OZqu8uV3wsjv@mail.gmail.com>
+Subject: Re: [PATCH] sched_rt: Removes extra checking for nr_cpus_allowed when
+ calling find_lowest_rq
+From: Rakib Mullick <rakib.mullick@gmail.com>
+To: Gregory Haskins <ghaskins@novell.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Unloading ipmi module can trigger following error.
-(if CONFIG_DEBUG_SPINLOCK=y)
+On 10/19/10, Gregory Haskins <ghaskins@novell.com> wrote:
+>>>> On 10/19/2010 at 07:02 AM, in message <1287486167.1994.1.camel@twins>,
+>>>> Peter
+> Zijlstra <peterz@infradead.org> wrote:
+>> On Tue, 2010-10-19 at 16:57 +0600, Rakib Mullick wrote:
+>
+> I think the motivation here was that checking nr_cpus_allowed is far cheaper
+> than taking the hit on a function call in this particularly hot path.  As
+> Steven points out in a follow-up reply, the function call has additional
+> overhead before the equivalent check is made again.  We could possibly
+> optimize this with some of the suggestions he made, but I am not sure if it
+> is worth it (alone) as the call overhead would still be present.  OTOH, the
+> cases where nr_cpus_allowed <= 1 are probably rare in the grand scheme of
+> things.
+>
+I also think that checking nr_cpus_allowed before calling
+find_lowest_rq is cheaper. We can take even cheaper way by introducing
+the same check in find_lock_lowest_rq(), which also calls
+find_lowest_rq. Scenario in find_lock_lowest_rq is even worse, a check
+for nr_cpus_allowed (maybe even before for loop) will reduce more
+overhead and removing the  nr_cpus_allowed check completely from
+find_lowest_rq. And it will keep find_lowest_rq simple. We can also
+made a comment whenever someone is calling find_lowest_rq, should
+check nr_cpus_allowed first. (I didn't propose it in patch, cause it's
+duplicate check. And it looks clean).
 
-[ 9633.779590] BUG: spinlock bad magic on CPU#1, rmmod/7170
-[ 9633.779606]  lock: f41f5414, .magic: 00000000, .owner:
-<none>/-1, .owner_cpu: 0
-[ 9633.779626] Pid: 7170, comm: rmmod Not tainted
-2.6.36-rc7-11474-gb71eb1e-dirty #328
-[ 9633.779644] Call Trace:
-[ 9633.779657]  [<c13921cc>] ? printk+0x18/0x1c
-[ 9633.779672]  [<c11a1f33>] spin_bug+0xa3/0xf0
-[ 9633.779685]  [<c11a1ffd>] do_raw_spin_lock+0x7d/0x160
-[ 9633.779702]  [<c1131537>] ? release_sysfs_dirent+0x47/0xb0
-[ 9633.779718]  [<c1131b78>] ? sysfs_addrm_finish+0xa8/0xd0
-[ 9633.779734]  [<c1394bac>] _raw_spin_lock_irqsave+0xc/0x20
-[ 9633.779752]  [<f99d93da>] cleanup_one_si+0x6a/0x200 [ipmi_si]
-[ 9633.779768]  [<c11305b2>] ? sysfs_hash_and_remove+0x72/0x80
-[ 9633.779786]  [<f99dcf26>] ipmi_pnp_remove+0xd/0xf [ipmi_si]
-[ 9633.779802]  [<c11f622b>] pnp_device_remove+0x1b/0x40
+> My opinion is the check should probably remain (if but perhaps with a
+> comment to explain its existence) unless someone (Rakib, hint hint) is
+> willing to do some benchmarking to demonstrate that it doesn't actually have
+> any positive impact.  It probably also makes sense to take Steve's suggested
+> changes to improve the places that use the function without external
+> optimization.
+>
+If we made explicit check before calling find_lowest_rq, then I don't
+think we need the change that Steve's suggesting. I think explicitly
+checking is much more easier and removes extra overhead of function
+calling.
 
-Fix this by initializing spinlocks in a smi_info_alloc() helper
-function, right after memory allocation and clearing.
-
-Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
-CC: David Miller <davem@davemloft.net>
-CC: Yinghai Lu <yinghai@kernel.org>
-CC: Andrew Morton <akpm@linux-foundation.org>
----
-CC David since I caught this error on net-next-2.6 tree ;)
-
- drivers/char/ipmi/ipmi_si_intf.c |   30 ++++++++++++++++++-----------
- 1 file changed, 19 insertions(+), 11 deletions(-)
-
-diff --git a/drivers/char/ipmi/ipmi_si_intf.c b/drivers/char/ipmi/ipmi_si_intf.c
-index 7bd7c45..501f115 100644
---- a/drivers/char/ipmi/ipmi_si_intf.c
-+++ b/drivers/char/ipmi/ipmi_si_intf.c
-@@ -1665,6 +1665,17 @@ static int check_hotmod_int_op(const char *curr, const char *option,
- 	return 0;
- }
- 
-+static struct smi_info *smi_info_alloc(void)
-+{
-+	struct smi_info *info = kzalloc(sizeof(*info), GFP_KERNEL);
-+
-+	if (info) {
-+		spin_lock_init(&info->si_lock);
-+		spin_lock_init(&info->msg_lock);
-+	}
-+	return info;
-+}
-+
- static int hotmod_handler(const char *val, struct kernel_param *kp)
- {
- 	char *str = kstrdup(val, GFP_KERNEL);
-@@ -1779,7 +1790,7 @@ static int hotmod_handler(const char *val, struct kernel_param *kp)
- 		}
- 
- 		if (op == HM_ADD) {
--			info = kzalloc(sizeof(*info), GFP_KERNEL);
-+			info = smi_info_alloc();
- 			if (!info) {
- 				rv = -ENOMEM;
- 				goto out;
-@@ -1844,7 +1855,7 @@ static __devinit void hardcode_find_bmc(void)
- 		if (!ports[i] && !addrs[i])
- 			continue;
- 
--		info = kzalloc(sizeof(*info), GFP_KERNEL);
-+		info = smi_info_alloc();
- 		if (!info)
- 			return;
- 
-@@ -2028,7 +2039,7 @@ static __devinit int try_init_spmi(struct SPMITable *spmi)
- 		return -ENODEV;
- 	}
- 
--	info = kzalloc(sizeof(*info), GFP_KERNEL);
-+	info = smi_info_alloc();
- 	if (!info) {
- 		printk(KERN_ERR PFX "Could not allocate SI data (3)\n");
- 		return -ENOMEM;
-@@ -2138,7 +2149,7 @@ static int __devinit ipmi_pnp_probe(struct pnp_dev *dev,
- 	if (!acpi_dev)
- 		return -ENODEV;
- 
--	info = kzalloc(sizeof(*info), GFP_KERNEL);
-+	info = smi_info_alloc();
- 	if (!info)
- 		return -ENOMEM;
- 
-@@ -2319,7 +2330,7 @@ static __devinit void try_init_dmi(struct dmi_ipmi_data *ipmi_data)
- {
- 	struct smi_info *info;
- 
--	info = kzalloc(sizeof(*info), GFP_KERNEL);
-+	info = smi_info_alloc();
- 	if (!info) {
- 		printk(KERN_ERR PFX "Could not allocate SI data\n");
- 		return;
-@@ -2426,7 +2437,7 @@ static int __devinit ipmi_pci_probe(struct pci_dev *pdev,
- 	int class_type = pdev->class & PCI_ERMC_CLASSCODE_TYPE_MASK;
- 	struct smi_info *info;
- 
--	info = kzalloc(sizeof(*info), GFP_KERNEL);
-+	info = smi_info_alloc();
- 	if (!info)
- 		return -ENOMEM;
- 
-@@ -2567,7 +2578,7 @@ static int __devinit ipmi_of_probe(struct platform_device *dev,
- 		return -EINVAL;
- 	}
- 
--	info = kzalloc(sizeof(*info), GFP_KERNEL);
-+	info = smi_info_alloc();
- 
- 	if (!info) {
- 		dev_err(&dev->dev,
-@@ -3014,7 +3025,7 @@ static __devinit void default_find_bmc(void)
- 		if (check_legacy_ioport(ipmi_defaults[i].port))
- 			continue;
- #endif
--		info = kzalloc(sizeof(*info), GFP_KERNEL);
-+		info = smi_info_alloc();
- 		if (!info)
- 			return;
- 
-@@ -3139,9 +3150,6 @@ static int try_smi_init(struct smi_info *new_smi)
- 		goto out_err;
- 	}
- 
--	spin_lock_init(&(new_smi->si_lock));
--	spin_lock_init(&(new_smi->msg_lock));
--
- 	/* Do low-level detection first. */
- 	if (new_smi->handlers->detect(new_smi->si_sm)) {
- 		if (new_smi->addr_source)
-
-
+Thanks,
+Rakib
+> Kind Regards,
+> -Greg
+>
+>
+>
