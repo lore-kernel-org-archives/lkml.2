@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933835Ab0JSJhZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Oct 2010 05:37:25 -0400
-Received: from mgw2.diku.dk ([130.225.96.92]:56481 "EHLO mgw2.diku.dk"
+	id S933907Ab0JSJhq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Oct 2010 05:37:46 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:56497 "EHLO mgw2.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754337Ab0JSJhY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Oct 2010 05:37:24 -0400
+	id S932167Ab0JSJhZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Oct 2010 05:37:25 -0400
 From: Julia Lawall <julia@diku.dk>
-To: Andrew Vasquez <andrew.vasquez@qlogic.com>
-Cc: kernel-janitors@vger.kernel.org, linux-driver@qlogic.com,
+To: James Smart <james.smart@emulex.com>
+Cc: kernel-janitors@vger.kernel.org,
         "James E.J. Bottomley" <James.Bottomley@suse.de>,
-        Grant Likely <grant.likely@secretlab.ca>, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org
-Subject: [PATCH 1/4] drivers/scsi/qla2xxx/qla_init.c: convert nested spin_lock_irqsave to spin_lock
-Date: Tue, 19 Oct 2010 11:43:53 +0200
-Message-Id: <1287481436-26656-1-git-send-email-julia@diku.dk>
+        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 3/4] drivers/scsi/lpfc/lpfc_bsg.c: convert nested spin_lock_irqsave to spin_lock
+Date: Tue, 19 Oct 2010 11:43:55 +0200
+Message-Id: <1287481436-26656-3-git-send-email-julia@diku.dk>
 X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -44,28 +43,26 @@ expression flags;
 Signed-off-by: Julia Lawall <julia@diku.dk>
 
 ---
- drivers/scsi/qla2xxx/qla_init.c |    4 ++--
+ drivers/scsi/lpfc/lpfc_bsg.c |    4 ++--
  1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/scsi/qla2xxx/qla_init.c b/drivers/scsi/qla2xxx/qla_init.c
-index 3cafbef..c8d0b12 100644
---- a/drivers/scsi/qla2xxx/qla_init.c
-+++ b/drivers/scsi/qla2xxx/qla_init.c
-@@ -1818,14 +1818,14 @@ qla2x00_init_rings(scsi_qla_host_t *vha)
- 		qla2x00_init_response_q_entries(rsp);
- 	}
+diff --git a/drivers/scsi/lpfc/lpfc_bsg.c b/drivers/scsi/lpfc/lpfc_bsg.c
+index f5d60b5..7260c3a 100644
+--- a/drivers/scsi/lpfc/lpfc_bsg.c
++++ b/drivers/scsi/lpfc/lpfc_bsg.c
+@@ -3142,12 +3142,12 @@ lpfc_bsg_menlo_cmd_cmp(struct lpfc_hba *phba,
+ 	job = menlo->set_job;
+ 	job->dd_data = NULL; /* so timeout handler does not reply */
  
--	spin_lock_irqsave(&ha->vport_slock, flags);
-+	spin_lock(&ha->vport_slock);
- 	/* Clear RSCN queue. */
- 	list_for_each_entry(vp, &ha->vp_list, list) {
- 		vp->rscn_in_ptr = 0;
- 		vp->rscn_out_ptr = 0;
- 	}
+-	spin_lock_irqsave(&phba->hbalock, flags);
++	spin_lock(&phba->hbalock);
+ 	cmdiocbq->iocb_flag |= LPFC_IO_WAKE;
+ 	if (cmdiocbq->context2 && rspiocbq)
+ 		memcpy(&((struct lpfc_iocbq *)cmdiocbq->context2)->iocb,
+ 		       &rspiocbq->iocb, sizeof(IOCB_t));
+-	spin_unlock_irqrestore(&phba->hbalock, flags);
++	spin_unlock(&phba->hbalock);
  
--	spin_unlock_irqrestore(&ha->vport_slock, flags);
-+	spin_unlock(&ha->vport_slock);
- 
- 	ha->isp_ops->config_rings(vha);
- 
+ 	bmp = menlo->bmp;
+ 	rspiocbq = menlo->rspiocbq;
 
