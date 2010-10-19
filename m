@@ -1,118 +1,359 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754244Ab0JSWFX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Oct 2010 18:05:23 -0400
-Received: from www.tglx.de ([62.245.132.106]:49373 "EHLO www.tglx.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753786Ab0JSWFV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Oct 2010 18:05:21 -0400
-Date: Wed, 20 Oct 2010 00:04:31 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Steven Rostedt <rostedt@goodmis.org>
-cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Koki Sanagi <sanagi.koki@jp.fujitsu.com>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Frederic Weisbecker <fweisbec@gmail.com>, nhorman@tuxdriver.com,
-        scott.a.mcmillan@intel.com, laijs@cn.fujitsu.com,
-        "H. Peter Anvin" <hpa@zytor.com>, LKML <linux-kernel@vger.kernel.org>,
-        eric.dumazet@gmail.com, kaneshige.kenji@jp.fujitsu.com,
-        David Miller <davem@davemloft.net>, izumi.taku@jp.fujitsu.com,
-        kosaki.motohiro@jp.fujitsu.com,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        "Luck, Tony" <tony.luck@intel.com>
-Subject: Re: [PATCH] tracing: Cleanup the convoluted softirq tracepoints
-In-Reply-To: <1287523439.16971.433.camel@gandalf.stny.rr.com>
-Message-ID: <alpine.LFD.2.00.1010192359480.6815@localhost6.localdomain6>
-References: <tip-2bf2160d8805de64308e2e7c3cd97813cb58ed2f@git.kernel.org>  <20100908112529.GA25931@elte.hu> <1287395077.29097.1543.camel@twins>  <1287398936.29097.1548.camel@twins> <4CBD79CF.2060706@jp.fujitsu.com>  <alpine.LFD.2.00.1010191428560.6815@localhost6.localdomain6>
-  <20101019132236.GA19197@Krystal>  <alpine.LFD.2.00.1010191524160.6815@localhost6.localdomain6>  <1287496495.16971.372.camel@gandalf.stny.rr.com>  <alpine.LFD.2.00.1010191558250.6815@localhost6.localdomain6>  <20101019142820.GA14520@Krystal> 
- <alpine.LFD.2.00.1010191842270.6815@localhost6.localdomain6>  <1287521757.16971.397.camel@gandalf.stny.rr.com>  <alpine.LFD.2.00.1010192302000.6815@localhost6.localdomain6> <1287523439.16971.433.camel@gandalf.stny.rr.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1754451Ab0JSWHH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Oct 2010 18:07:07 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:55708 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753124Ab0JSWHF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Oct 2010 18:07:05 -0400
+Date: Tue, 19 Oct 2010 15:06:24 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: Daniel Drake <dsd@laptop.org>
+Cc: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
+        dilinger@queued.net, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] OLPC: Add XO-1 suspend/resume support
+Message-Id: <20101019150624.0a77326e.randy.dunlap@oracle.com>
+In-Reply-To: <20101019220159.0DBBE9D401B@zog.reactivated.net>
+References: <20101019220159.0DBBE9D401B@zog.reactivated.net>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 19 Oct 2010, Steven Rostedt wrote:
-> On Tue, 2010-10-19 at 23:07 +0200, Thomas Gleixner wrote:
-> > On Tue, 19 Oct 2010, Steven Rostedt wrote:
-> > > On Tue, 2010-10-19 at 21:49 +0200, Thomas Gleixner wrote:
-> > > > So that saves _TWO_ bytes of text and replaces:
-> > > > 
-> > > > -  1e:	83 3d 00 00 00 00 00 	cmpl   $0x0,0x0(%rip)        # 25 <test+0x25>
-> > > > -  25:	74 4d                	je     74 <test+0x74>
-> > > > +  1e:	e9 00 00 00 00       	jmpq   23 <test+0x23>
-> > > > +  23:	eb 4d                	jmp    72 <test+0x72>
-> > > > 
-> > > > So it trades a conditional vs. two jumps ? WTF ??
-> > > 
-> > > Well, the one jmpq is noped out, and the jmp is non conditional. I've
-> > 
-> > What are you smoking ?
-> 
-> What? Are you saying that conditional jumps are just as fast as non
-> conditional ones?
-> 
-> > 
-> > In case the trace point is enabled the jmpq is there, so it jumps to
-> > 23 and jumps from there to 72.
-> 
-> No, when we dynamically enable the tracepoint, it will jump to 25, not
-> 23. That's what the goto part is about. We add the do_trace label to the
-> table, and we make it point to that location. If we did it as you say,
-> then tracepoints would never be enabled.
-> 
-> This is not unlike what we do with the function tracer. The original
-> code points to mcount which simply is:
-> 
-> 	mcount:
-> 		retq
-> 
-> And when we enable the callers, we have it jump to a different function.
-> 
-> > 
-> > In case the trace point is disabled the jmpq is noped out, so it jumps
-> > to 72 directly.
-> 
-> That is correct.
-> 
-> > 
-> > > always thought a non conditional jmp was faster than a conditional one,
-> > 
-> > I always thought, that at least some of the stuff which comes from
-> > tracing folks makes some sense.
-> 
-> Is it still not making sense?
-> 
-> > 
-> > > since there's no need to go into the branch prediction logic. The CPU
-> > > can simply skip to the code to jump next. Of counse, this pollutes the 
-> > > I$.
-> > 
-> > We might consult Mathieu for further useless blurb on how CPUs work
-> > around broken code.
-> 
-> The code worked fine before, it just was not very pretty.
-> 
-> But it seemed that gcc for you inlined the code in the wrong spot.
-> Perhaps it's not a good idea to have the something like h - softirq_vec
-> in the parameter of the tracepoint. Not saying that your change is not
-> worth it. It is, because h - softirq_vec is used by others now too.
+On Tue, 19 Oct 2010 23:01:58 +0100 (BST) Daniel Drake wrote:
 
-Crap, crap, crap. This has nothing to do with the arguments of that
-trace point, it's a compiler problem and you are just hoping that GCC
-will do the right thing.
+> Add code needed for basic suspend/resume of the XO-1 laptop.
+> 
+> swsusp_pg_dir needs to be exposed as it is used by the assembly
+> code run in the wakeup path.
+> 
+> Signed-off-by: Daniel Drake <dsd@laptop.org>
+> ---
+>  arch/x86/include/asm/olpc.h       |    5 +-
+>  arch/x86/kernel/Makefile          |    2 +-
+>  arch/x86/kernel/olpc-xo1-wakeup.S |  132 +++++++++++++++++++++++++++++++++++++
+>  arch/x86/kernel/olpc-xo1.c        |   79 ++++++++++++++++++++++
+>  arch/x86/mm/init_32.c             |    6 +-
+>  5 files changed, 219 insertions(+), 5 deletions(-)
+>  create mode 100644 arch/x86/kernel/olpc-xo1-wakeup.S
+> 
+> diff --git a/arch/x86/include/asm/olpc.h b/arch/x86/include/asm/olpc.h
+> index 101229b..54dfe92 100644
+> --- a/arch/x86/include/asm/olpc.h
+> +++ b/arch/x86/include/asm/olpc.h
+> @@ -88,7 +88,10 @@ extern int olpc_ec_mask_unset(uint8_t bits);
+>  
+>  /* EC commands */
+>  
+> -#define EC_FIRMWARE_REV		0x08
+> +#define EC_FIRMWARE_REV			0x08
+> +#define EC_WAKE_UP_WLAN			0x24
+> +#define EC_SET_SCI_INHIBIT		0x32
+> +#define EC_SET_SCI_INHIBIT_RELEASE	0x34
+>  
+>  /* SCI source values */
+>  
+> diff --git a/arch/x86/kernel/Makefile b/arch/x86/kernel/Makefile
+> index 4983b61..1b23334 100644
+> --- a/arch/x86/kernel/Makefile
+> +++ b/arch/x86/kernel/Makefile
+> @@ -106,7 +106,7 @@ obj-$(CONFIG_SCx200)		+= scx200.o
+>  scx200-y			+= scx200_32.o
+>  
+>  obj-$(CONFIG_OLPC)		+= olpc.o
+> -obj-$(CONFIG_OLPC_XO1)		+= olpc-xo1.o
+> +obj-$(CONFIG_OLPC_XO1)		+= olpc-xo1.o olpc-xo1-wakeup.o
+>  obj-$(CONFIG_OLPC_OPENFIRMWARE)	+= olpc_ofw.o
+>  obj-$(CONFIG_X86_MRST)		+= mrst.o
+>  
 
-That's the complete wrong assumption and as Jason confirmed GCC is not
-up to it at all.
+Hi,
+Does this build OK when CONFIG_PM is not enabled?
+or is that config not possible?
 
-hpa just posted code which does the _RIGHT_ _THING_ independent of any
-compiler madness and you tracer folks just missed it.
 
-Your jump label optimization made code even worse for todays common
-compilers. Just admit it and fix that mess you created or simply
-disable it.
+> diff --git a/arch/x86/kernel/olpc-xo1-wakeup.S b/arch/x86/kernel/olpc-xo1-wakeup.S
+> new file mode 100644
+> index 0000000..d335074
+> --- /dev/null
+> +++ b/arch/x86/kernel/olpc-xo1-wakeup.S
+> @@ -0,0 +1,132 @@
+> +.text
+> +#include <linux/linkage.h>
+> +#include <asm/segment.h>
+> +#include <asm/page.h>
+> +
+> +	.macro writepost,value
+> +		movb $0x34, %al
+> +		outb %al, $0x70
+> +		movb $\value, %al
+> +		outb %al, $0x71
+> +	.endm
+> +
+> +ALIGN
+> +	.align 4096
+> +
+> +wakeup_start:
+> +#	jmp wakeup_start
+> +
+> +	cli
+> +	cld
+> +
+> +	# Clear any dangerous flags
+> +
+> +	pushl $0
+> +	popfl
+> +
+> +	writepost 0x31
+> +
+> +	# Set up %cr3
+> +	movl $swsusp_pg_dir - __PAGE_OFFSET, %eax
+> +	movl %eax, %cr3
+> +
+> +	movl saved_cr4, %eax
+> +	movl %eax, %cr4
+> +
+> +	movl saved_cr0, %eax
+> +	movl %eax, %cr0
+> +
+> +	jmp 1f
+> +1:
+> +	ljmpl $__KERNEL_CS,$wakeup_return
+> +
+> +
+> +.org 0x1000
+> +
+> +wakeup_return:
+> +	movw    $__KERNEL_DS, %ax
+> +	movw    %ax, %ss
+> +	movw    %ax, %ds
+> +	movw    %ax, %es
+> +	movw    %ax, %fs
+> +	movw    %ax, %gs
+> +
+> +	lgdt    saved_gdt
+> +	lidt    saved_idt
+> +	lldt    saved_ldt
+> +	ljmp    $(__KERNEL_CS),$1f
+> +1:
+> +	movl    %cr3, %eax
+> +	movl    %eax, %cr3
+> +	wbinvd
+> +
+> +	# Go back to the return point
+> +	jmp ret_point
+> +
+> +save_registers:
+> +	sgdt  saved_gdt
+> +	sidt  saved_idt
+> +	sldt  saved_ldt
+> +
+> +	pushl %edx
+> +	movl %cr4, %edx
+> +	movl %edx, saved_cr4
+> +
+> +	movl %cr0, %edx
+> +	movl %edx, saved_cr0
+> +
+> +	popl %edx
+> +
+> +	movl %ebx, saved_context_ebx
+> +	movl %ebp, saved_context_ebp
+> +	movl %esi, saved_context_esi
+> +	movl %edi, saved_context_edi
+> +
+> +	pushfl
+> +	popl saved_context_eflags
+> +
+> +	ret
+> +
+> +
+> +restore_registers:
+> +	movl saved_context_ebp, %ebp
+> +	movl saved_context_ebx, %ebx
+> +	movl saved_context_esi, %esi
+> +	movl saved_context_edi, %edi
+> +
+> +	pushl saved_context_eflags
+> +	popfl
+> +
+> +	ret
+> +
+> +
+> +ENTRY(do_olpc_suspend_lowlevel)
+> +	call	save_processor_state
+> +	call	save_registers
+> +
+> +	# This is the stack context we want to remember
+> +	movl %esp, saved_context_esp
+> +
+> +	pushl	$3
+> +	call	olpc_xo1_do_sleep
+> +
+> +	jmp	wakeup_start
+> +	.p2align 4,,7
+> +ret_point:
+> +	movl    saved_context_esp, %esp
+> +
+> +	writepost 0x32
+> +
+> +	call	restore_registers
+> +	call	restore_processor_state
+> +	ret
+> +
+> +.data
+> +ALIGN
+> +
+> +saved_gdt:     .long   0,0
+> +saved_idt:     .long   0,0
+> +saved_ldt:     .long   0
+> +saved_cr4:     .long   0
+> +saved_cr0:     .long   0
+> +
+> diff --git a/arch/x86/kernel/olpc-xo1.c b/arch/x86/kernel/olpc-xo1.c
+> index f5442c0..9a06081 100644
+> --- a/arch/x86/kernel/olpc-xo1.c
+> +++ b/arch/x86/kernel/olpc-xo1.c
+> @@ -16,6 +16,7 @@
+>  #include <linux/pci_ids.h>
+>  #include <linux/platform_device.h>
+>  #include <linux/pm.h>
+> +#include <linux/suspend.h>
+>  
+>  #include <asm/io.h>
+>  #include <asm/olpc.h>
+> @@ -33,12 +34,83 @@
+>  #define PM_SSC		0x54
+>  
+>  /* PM registers (ACPI block) */
+> +#define PM1_STS		0x00
+>  #define PM1_CNT		0x08
+>  #define PM_GPE0_STS	0x18
+>  
+> +#define CS5536_PM_PWRBTN (1 << 8)
+> +
+> +extern void do_olpc_suspend_lowlevel(void);
+> +
+>  static unsigned long acpi_base;
+>  static unsigned long pms_base;
+>  
+> +static struct {
+> +	unsigned long address;
+> +	unsigned short segment;
+> +} ofw_bios_entry = { 0xF0000 + PAGE_OFFSET, __KERNEL_CS };
+> +
+> +static int xo1_power_state_enter(suspend_state_t pm_state)
+> +{
+> +	int r;
+> +
+> +	/* Only STR is supported */
+> +	if (pm_state != PM_SUSPEND_MEM)
+> +		return -EINVAL;
+> +
+> +	r = olpc_ec_cmd(EC_SET_SCI_INHIBIT, NULL, 0, NULL, 0);
+> +	if (r)
+> +		return r;
+> +
+> +	/* Save CPU state */
+> +	do_olpc_suspend_lowlevel();
+> +
+> +	/* Resume path starts here */
+> +
+> +	/* Tell the EC to stop inhibiting SCIs */
+> +	olpc_ec_cmd(EC_SET_SCI_INHIBIT_RELEASE, NULL, 0, NULL, 0);
+> +
+> +	/*
+> +	 * Tell the wireless module to restart USB communication.
+> +	 * Must be done twice.
+> +	 */
+> +	olpc_ec_cmd(EC_WAKE_UP_WLAN, NULL, 0, NULL, 0);
+> +	olpc_ec_cmd(EC_WAKE_UP_WLAN, NULL, 0, NULL, 0);
+> +
+> +	return 0;
+> +}
+> +
+> +asmlinkage int olpc_xo1_do_sleep(u8 sleep_state)
+> +{
+> +	void *pgd_addr = __va(read_cr3());
+> +	printk(KERN_ERR "xo1_do_sleep!\n"); /* this needs to remain here so
+> +					      * that gcc doesn't optimize
+> +					      * away our __va! */
+> +
+> +	/* Enable wakeup through power button */
+> +	outl((CS5536_PM_PWRBTN << 16) | 0xFFFF, acpi_base + PM1_STS);
+> +
+> +	__asm__ __volatile__("movl %0,%%eax" : : "r" (pgd_addr));
+> +	__asm__("call *(%%edi); cld"
+> +		: : "D" (&ofw_bios_entry));
+> +	__asm__ __volatile__("movb $0x34, %al\n\t"
+> +			     "outb %al, $0x70\n\t"
+> +			     "movb $0x30, %al\n\t"
+> +			     "outb %al, $0x71\n\t");
+> +	return 0;
+> +}
+> +
+> +static int xo1_power_state_valid(suspend_state_t pm_state)
+> +{
+> +	/* suspend-to-RAM only */
+> +	return pm_state == PM_SUSPEND_MEM;
+> +}
+> +
+> +static struct platform_suspend_ops xo1_suspend_ops = {
+> +	.valid = xo1_power_state_valid,
+> +	.enter = xo1_power_state_enter,
+> +};
+> +
+>  static void xo1_power_off(void)
+>  {
+>  	printk(KERN_INFO "OLPC XO-1 power off sequence...\n");
+> @@ -101,6 +173,13 @@ static int __devinit olpc_xo1_probe(struct platform_device *pdev)
+>  	if (r)
+>  		return r;
+>  
+> +	/*
+> +	 * Take a reference on ourself to prevent module unloading. We can't
+> +	 * safely unload after changing the suspend handlers.
+> +	 */
+> +	__module_get(THIS_MODULE);
+> +
+> +	suspend_set_ops(&xo1_suspend_ops);
+>  	pm_power_off = xo1_power_off;
+>  
+>  	printk(KERN_INFO "OLPC XO-1 support registered\n");
+> diff --git a/arch/x86/mm/init_32.c b/arch/x86/mm/init_32.c
+> index 43bbc29..dbdab67 100644
+> --- a/arch/x86/mm/init_32.c
+> +++ b/arch/x86/mm/init_32.c
+> @@ -549,7 +549,7 @@ static void __init pagetable_init(void)
+>  	permanent_kmaps_init(pgd_base);
+>  }
+>  
+> -#ifdef CONFIG_ACPI_SLEEP
+> +#if defined(CONFIG_ACPI_SLEEP) || defined(CONFIG_OLPC_XO1)
+>  /*
+>   * ACPI suspend needs this for resume, because things like the intel-agp
+>   * driver might have split up a kernel 4MB mapping.
+> @@ -561,11 +561,11 @@ static inline void save_pg_dir(void)
+>  {
+>  	copy_page(swsusp_pg_dir, swapper_pg_dir);
+>  }
+> -#else /* !CONFIG_ACPI_SLEEP */
+> +#else /* !CONFIG_ACPI_SLEEP && !CONFIG_OLPC_XO1 */
+>  static inline void save_pg_dir(void)
+>  {
+>  }
+> -#endif /* !CONFIG_ACPI_SLEEP */
+> +#endif /* !CONFIG_ACPI_SLEEP && !CONFIG_OLPC_XO1 */
+>  
+>  void zap_low_mappings(bool early)
+>  {
+> -- 
 
-Thanks,
-
-	tglx
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
