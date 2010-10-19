@@ -1,58 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751358Ab0JSOIZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Oct 2010 10:08:25 -0400
-Received: from www.tglx.de ([62.245.132.106]:34219 "EHLO www.tglx.de"
+	id S1751716Ab0JSOK6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Oct 2010 10:10:58 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:19448 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750794Ab0JSOIY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Oct 2010 10:08:24 -0400
-Date: Tue, 19 Oct 2010 16:07:09 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Steven Rostedt <rostedt@goodmis.org>
-cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Koki Sanagi <sanagi.koki@jp.fujitsu.com>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Frederic Weisbecker <fweisbec@gmail.com>, nhorman@tuxdriver.com,
-        scott.a.mcmillan@intel.com, laijs@cn.fujitsu.com,
-        "H. Peter Anvin" <hpa@zytor.com>, LKML <linux-kernel@vger.kernel.org>,
-        eric.dumazet@gmail.com, kaneshige.kenji@jp.fujitsu.com,
-        David Miller <davem@davemloft.net>, izumi.taku@jp.fujitsu.com,
-        kosaki.motohiro@jp.fujitsu.com,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        "Luck, Tony" <tony.luck@intel.com>
-Subject: Re: [PATCH] tracing: Cleanup the convoluted softirq tracepoints
-In-Reply-To: <1287496495.16971.372.camel@gandalf.stny.rr.com>
-Message-ID: <alpine.LFD.2.00.1010191558250.6815@localhost6.localdomain6>
-References: <4C724298.4050509@jp.fujitsu.com>  <tip-2bf2160d8805de64308e2e7c3cd97813cb58ed2f@git.kernel.org>  <20100908112529.GA25931@elte.hu> <1287395077.29097.1543.camel@twins>  <1287398936.29097.1548.camel@twins> <4CBD79CF.2060706@jp.fujitsu.com> 
- <alpine.LFD.2.00.1010191428560.6815@localhost6.localdomain6>  <20101019132236.GA19197@Krystal>  <alpine.LFD.2.00.1010191524160.6815@localhost6.localdomain6> <1287496495.16971.372.camel@gandalf.stny.rr.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1751011Ab0JSOK5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Oct 2010 10:10:57 -0400
+From: Andreas Schwab <schwab@redhat.com>
+To: Andi Kleen <ak@linux.intel.com>
+Cc: Amerigo Wang <amwang@redhat.com>, linux-kernel@vger.kernel.org,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Len Brown <len.brown@intel.com>, Ingo Molnar <mingo@elte.hu>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        David Howells <dhowells@redhat.com>, Eric Paris <eparis@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Andy Shevchenko <ext-andriy.shevchenko@nokia.com>,
+        linux-doc@vger.kernel.org
+Subject: Re: [PATCH 2/2] sysctl: remove sysctl syscall
+References: <1287476560-5874-1-git-send-email-amwang@redhat.com>
+	<1287476560-5874-2-git-send-email-amwang@redhat.com>
+	<4CBD9B7F.6040307@linux.intel.com>
+X-Yow: MMM-MM!!  So THIS is BIO-NEBULATION!
+Date: Tue, 19 Oct 2010 16:10:26 +0200
+In-Reply-To: <4CBD9B7F.6040307@linux.intel.com> (Andi Kleen's message of "Tue,
+	19 Oct 2010 15:22:07 +0200")
+Message-ID: <m3lj5uff3h.fsf@hase.home>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 19 Oct 2010, Steven Rostedt wrote:
+Andi Kleen <ak@linux.intel.com> writes:
 
-> On Tue, 2010-10-19 at 15:41 +0200, Thomas Gleixner wrote:
-> > On Tue, 19 Oct 2010, Mathieu Desnoyers wrote:
-> 
-> > Dudes, a vector computation is hardly a performance problem in that
-> > function and definitely not an excuse for designing such horrible
-> > interfaces.
-> 
-> Yes, now we can be a bit more liberal. But when these tracepoints were
-> going in, people were watching to make sure they have practically zero
-> impact when tracing was disabled.
-> 
-> Now that people are more use to tracepoints, they are more understanding
-> to have cleaner code over that extra few more lines of machine code in
-> the fast path.
+>  On 10/19/2010 10:22 AM, Amerigo Wang wrote:
+>> Remove the obsolete sysctl syscall. It was scheduled
+>> to be removed in Sept.
+>
+>
+> I thought at least older glibc was still using it? Did anyone check
+> what happens if it sees no sysctl(2)?
 
-The vector computation is compared to the extra tracing induced jumps
-probably not even measurable. Stop defending horrible coding with
-handwavy performance and impact arguments.
+It will fall back reading from /proc/sys.
 
-Thanks,
+Andreas.
 
-	tglx
+-- 
+Andreas Schwab, schwab@redhat.com
+GPG Key fingerprint = D4E8 DBE3 3813 BB5D FA84  5EC7 45C6 250E 6F00 984E
+"And now for something completely different."
