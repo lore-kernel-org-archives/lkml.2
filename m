@@ -1,62 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758074Ab0JSHKZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Oct 2010 03:10:25 -0400
-Received: from smtp.nokia.com ([147.243.1.47]:25451 "EHLO mgw-sa01.nokia.com"
+	id S933811Ab0JSHKd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Oct 2010 03:10:33 -0400
+Received: from smtp.nokia.com ([147.243.1.47]:25478 "EHLO mgw-sa01.nokia.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755239Ab0JSHKY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Oct 2010 03:10:24 -0400
+	id S1758077Ab0JSHK3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Oct 2010 03:10:29 -0400
 From: Samu Onkalo <samu.p.onkalo@nokia.com>
 To: akpm@linux-foundation.org
 Cc: linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCHv4 0/5] BH1770GLC, SFH7770 and APDS990x als / proximity sensor drivers
-Date: Tue, 19 Oct 2010 10:09:43 +0300
-Message-Id: <1287472188-10101-1-git-send-email-samu.p.onkalo@nokia.com>
+Subject: [PATCHv4 2/5] misc: update bh1770glc driver to Kconfig and Makefile
+Date: Tue, 19 Oct 2010 10:09:45 +0300
+Message-Id: <1287472188-10101-3-git-send-email-samu.p.onkalo@nokia.com>
 X-Mailer: git-send-email 1.6.0.4
+In-Reply-To: <1287472188-10101-1-git-send-email-samu.p.onkalo@nokia.com>
+References: <1287472188-10101-1-git-send-email-samu.p.onkalo@nokia.com>
 X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Patch set contains two drivers. One for BH1770GLC / SFH7770 chips and
-one for APDS990X chip.
+Compilation support for bh1770glc driver
 
-Both drivers have similar sysfs based interface. Both supports
-pm_runtime and regulator frame work. There is short documentation
-for both drivers.
+Signed-off-by: Samu Onkalo <samu.p.onkalo@nokia.com>
+---
+ drivers/misc/Kconfig  |   10 ++++++++++
+ drivers/misc/Makefile |    1 +
+ 2 files changed, 11 insertions(+), 0 deletions(-)
 
-Unfortunately I can't promise data sheets to public access.
-
-Changes since patch set version 3:
-
-- acked-by added to patches 1, 3 and 5
-- Documentation clean up (extra lines removed, LUX changed to lux)
-
-Patches 2 and 4 are not directly acked or I have missed something.
-However, all requested cleanups have been done to those patches.
-
-Tested on top of 2.6.36-rc5
-
-Samu Onkalo (5):
-  misc: Driver for bh1770glc / sfh7770 ALS and proximity sensor
-  misc: update bh1770glc driver to Kconfig and Makefile
-  misc: Driver for APDS990X ALS and proximity sensors
-  misc: update apds990x driver to Kconfig and Makefile
-  Documentation: Short descriptions for bh1770glc and apds990x drivers
-
- Documentation/misc-devices/apds990x.txt  |  111 +++
- Documentation/misc-devices/bh1770glc.txt |  116 +++
- drivers/misc/Kconfig                     |   21 +
- drivers/misc/Makefile                    |    2 +
- drivers/misc/apds990x.c                  | 1295 +++++++++++++++++++++++++++
- drivers/misc/bh1770glc.c                 | 1413 ++++++++++++++++++++++++++++++
- include/linux/i2c/apds990x.h             |   79 ++
- include/linux/i2c/bh1770glc.h            |   53 ++
- 8 files changed, 3090 insertions(+), 0 deletions(-)
- create mode 100644 Documentation/misc-devices/apds990x.txt
- create mode 100644 Documentation/misc-devices/bh1770glc.txt
- create mode 100644 drivers/misc/apds990x.c
- create mode 100644 drivers/misc/bh1770glc.c
- create mode 100644 include/linux/i2c/apds990x.h
- create mode 100644 include/linux/i2c/bh1770glc.h
+diff --git a/drivers/misc/Kconfig b/drivers/misc/Kconfig
+index b743312..a0ada25 100644
+--- a/drivers/misc/Kconfig
++++ b/drivers/misc/Kconfig
+@@ -314,6 +314,16 @@ config SENSORS_BH1780
+ 	  This driver can also be built as a module.  If so, the module
+ 	  will be called bh1780gli.
+ 
++config SENSORS_BH1770
++         tristate "BH1770GLC / SFH7770 combined ALS - Proximity sensor"
++         depends on I2C
++         ---help---
++           Say Y here if you want to build a driver for BH1770GLC (ROHM) or
++	   SFH7770 (Osram) combined ambient light and proximity sensor chip.
++
++           To compile this driver as a module, choose M here: the
++           module will be called bh1770glc. If unsure, say N here.
++
+ config HMC6352
+ 	tristate "Honeywell HMC6352 compass"
+ 	depends on I2C
+diff --git a/drivers/misc/Makefile b/drivers/misc/Makefile
+index 42eab95..f0567e0 100644
+--- a/drivers/misc/Makefile
++++ b/drivers/misc/Makefile
+@@ -16,6 +16,7 @@ obj-$(CONFIG_TIFM_CORE)       	+= tifm_core.o
+ obj-$(CONFIG_TIFM_7XX1)       	+= tifm_7xx1.o
+ obj-$(CONFIG_PHANTOM)		+= phantom.o
+ obj-$(CONFIG_SENSORS_BH1780)	+= bh1780gli.o
++obj-$(CONFIG_SENSORS_BH1770)	+= bh1770glc.o
+ obj-$(CONFIG_SGI_IOC4)		+= ioc4.o
+ obj-$(CONFIG_ENCLOSURE_SERVICES) += enclosure.o
+ obj-$(CONFIG_KGDB_TESTS)	+= kgdbts.o
+-- 
+1.6.0.4
 
