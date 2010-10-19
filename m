@@ -1,56 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751783Ab0JSRwP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Oct 2010 13:52:15 -0400
-Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:20267 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751063Ab0JSRwO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Oct 2010 13:52:14 -0400
-X-IronPort-AV: E=Sophos;i="4.57,351,1283731200"; 
-   d="scan'208";a="2419373"
-Date: Tue, 19 Oct 2010 18:51:47 +0100
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball-desktop
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: linux-kernel@vger.kernel.org,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        linux-next@vger.kernel.org
-Subject: Re: xen PV on HVM and initial domain merge in linux-next
-In-Reply-To: <alpine.DEB.2.00.1010191254460.2423@kaball-desktop>
-Message-ID: <alpine.DEB.2.00.1010191847290.10348@kaball-desktop>
-References: <alpine.DEB.2.00.1010191254460.2423@kaball-desktop>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1752317Ab0JSR5K (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Oct 2010 13:57:10 -0400
+Received: from kroah.org ([198.145.64.141]:52482 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751555Ab0JSR5I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Oct 2010 13:57:08 -0400
+Date: Tue, 19 Oct 2010 10:50:36 -0700
+From: Greg KH <greg@kroah.com>
+To: Felipe Contreras <felipe.contreras@gmail.com>
+Cc: linux-usb@vger.kernel.org, linux-omap <linux-omap@vger.kernel.org>,
+        linux-main <linux-kernel@vger.kernel.org>, Felipe Balbi <balbi@ti.com>,
+        Tony Lindgren <tony@atomide.com>
+Subject: Re: [PATCH v2 2/3] usb: trivial Kconfig cleanups
+Message-ID: <20101019175036.GB4618@kroah.com>
+References: <1287482608-11320-1-git-send-email-felipe.contreras@gmail.com>
+ <1287482608-11320-3-git-send-email-felipe.contreras@gmail.com>
+ <20101019155109.GH4589@kroah.com>
+ <AANLkTi=CzBriAFW2gzG68b=6wENysJZEkaO9jFrXQdnq@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTi=CzBriAFW2gzG68b=6wENysJZEkaO9jFrXQdnq@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I forgot to CC the LKML and linux-next...
+On Tue, Oct 19, 2010 at 08:15:19PM +0300, Felipe Contreras wrote:
+> On Tue, Oct 19, 2010 at 6:51 PM, Greg KH <greg@kroah.com> wrote:
+> > On Tue, Oct 19, 2010 at 01:03:27PM +0300, Felipe Contreras wrote:
+> >> Note: USB_GADGET_MUSB_HDRC is already defined in usb/gadget.
+> >>
+> >> Signed-off-by: Felipe Contreras <felipe.contreras@gmail.com>
+> >
+> > Please describe _what_ trivial cleanups you did, and why you did them.
+> > Care to resend?
+> 
+> How about:
+> Shuffle the code a bit so the description is at the top, remove
+> duplicated configs (USB_GADGET_MUSB_HDRC),  'default n' is redundant,
+> and USB_GADGET_SELECTED should go after USB_GADGET (on the appropriate
+> config).
 
-On Tue, 19 Oct 2010, Stefano Stabellini wrote:
-> Stephen,
-> I have two patch series to merge in linux-next:
-> 
-> PV on HVM: receive interrupts as xen events
-> xen: initial domain support
-> 
-> they have all the acked-by needed and are both stable since several
-> weeks, however they depend on Konrad's xen-pcifront series and for this
-> reason I waited until now to ask for a merge in linux-next.
-> 
-> Could you please pull:
-> 
-> git://xenbits.xen.org/people/sstabellini/linux-pvhvm.git linux-next-initial-domain-v4
-> 
-> it contains both series rebased on Konrad's pcifront series merged on
-> linux-next (warning: it still contains the merge commit of
-> xen-pcifront-0.8.2 in linux-next).
-> Let me know if you have any conflicts or if you need me to change the
-> branch somehow.
-> 
-> Many thanks in advance,
-> 
-> Stefano Stabellini
-> 
+Sounds good, but you need to resend it with this information in it, not
+much I can do with it in an independant email.
+
+thanks,
+
+greg k-h
