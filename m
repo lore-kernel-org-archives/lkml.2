@@ -1,72 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754475Ab0JSExe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Oct 2010 00:53:34 -0400
-Received: from e23smtp09.au.ibm.com ([202.81.31.142]:55030 "EHLO
-	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750744Ab0JSExc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Oct 2010 00:53:32 -0400
-Date: Tue, 19 Oct 2010 10:22:56 +0530
-From: Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>
-To: Ranjit Manomohan <ranjitm@google.com>
-Cc: linux-kernel@vger.kernel.org, Mike Galbraith <efault@gmx.de>,
-        Nikhil Rao <ncrao@google.com>, Salman Qazi <sqazi@google.com>,
-        Dhaval Giani <dhaval.giani@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Venkatesh Pallipadi <venki@google.com>, Paul Turner <pjt@google.com>
-Subject: Re: [ANNOUNCE] Linsched for 2.6.35 released
-Message-ID: <20101019045256.GA20232@dirshya.in.ibm.com>
-Reply-To: svaidy@linux.vnet.ibm.com
-References: <AANLkTinQAwEMGADYXX=2Rt3RUoMozDReNdpo9NtV1OO7@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <AANLkTinQAwEMGADYXX=2Rt3RUoMozDReNdpo9NtV1OO7@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1753951Ab0JSE4s (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Oct 2010 00:56:48 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:48707 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751074Ab0JSE4r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Oct 2010 00:56:47 -0400
+Date: Tue, 19 Oct 2010 15:56:44 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Paul Mackerras <paulus@samba.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        <linuxppc-dev@lists.ozlabs.org>
+Subject: Re: linux-next: manual merge of the tip tree with the powerpc tree
+Message-Id: <20101019155644.ebd2d802.sfr@canb.auug.org.au>
+In-Reply-To: <20101019154849.126a736a.sfr@canb.auug.org.au>
+References: <20101019154849.126a736a.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Ranjit Manomohan <ranjitm@google.com> [2010-10-12 10:29:54]:
+Hi again,
 
-> Hi,
->   I would like to announce the availability of the Linux Scheduler Simulator
-> (Linsched) for 2.6.35.
+On Tue, 19 Oct 2010 15:48:49 +1100 Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+>
+> Today's linux-next merge of the tip tree got a conflict in
+> arch/powerpc/kernel/time.c between commit
+> cf9efce0ce3136fa076f53e53154e98455229514 ("powerpc: Account time using
+> timebase rather than PURR") from the powerpc tree and commit
+> e360adbe29241a0194e10e20595360dd7b98a2b3 ("irq_work: Add generic hardirq
+> context callbacks") from the tip tree.
 > 
-> Originally developed at the University of North Carolina, LinSched is a
-> user-space program that hosts the Linux scheduling subsystem.
-> Its purpose is to provide a tool for observing and modifying the behavior
-> of the Linux scheduler. This makes it a valuable tool in prototyping new
-> Linux scheduling policies in a way that may be easier (or otherwise
-> less painful or time-consuming) to many developers when compared
-> to working with real hardware.
+> Just context changes.  I fixed it up and can carry the fix as necessary.
 
-The idea and framework looks very interesting.  I tried it out in
-order to understand the workload model and verification model and it
-worked fine for the test cases that you have provided.
+I forgot the merge diff, sorry:
 
-> Since Linsched allows arbitrary hardware topologies to be modeled,
-> it enables testing of scheduler changes on hardware that may not be
-> easily accessible to the developer. For example, most developers don't
-> have access to a quad-core quad-socket box, but they can use LinSched
-> to see how their changes affect the scheduler on such boxes.
+diff --cc arch/powerpc/kernel/time.c
+index 644f918,54888eb..0000000
+--- a/arch/powerpc/kernel/time.c
++++ b/arch/powerpc/kernel/time.c
+@@@ -578,9 -585,11 +578,9 @@@ void timer_interrupt(struct pt_regs * r
+  	old_regs = set_irq_regs(regs);
+  	irq_enter();
+  
+- 	if (test_perf_event_pending()) {
+- 		clear_perf_event_pending();
+- 		perf_event_do_pending();
+ -	calculate_steal_time();
+ -
++ 	if (test_irq_work_pending()) {
++ 		clear_irq_work_pending();
++ 		irq_work_run();
+  	}
+  
+  #ifdef CONFIG_PPC_ISERIES
 
-I am interested in trying this simulator in order to
-design/study/verify task placement logic within the SMP loadbalancer.
-Basically the effects of SD_POWERSAVINGS_BALANCE, SD_PREFER_SIBLING,
-etc in various topologies.
-
-The current interface and verification mechanism is to create tasks
-and observe the runtime received by each task.  In an ideal
-loadbalancer situation, all tasks should have received runtime
-proportional to their priority.
-
-Can you help me figure out how to get to kstat_cpu() or per-cpu
-kernel_stat accounting/utilisation metrics within the simulation?
-
-Thanks for sharing the framework.
-
---Vaidy
-
+-- 
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
