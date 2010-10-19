@@ -1,91 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755918Ab0JSWiN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Oct 2010 18:38:13 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:39029 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754479Ab0JSWiM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Oct 2010 18:38:12 -0400
-Date: Tue, 19 Oct 2010 15:37:56 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Bruno Randolf <br1@einfach.org>
-Cc: randy.dunlap@oracle.com, kevin.granade@gmail.com, blp@cs.stanford.edu,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH v2] Add generic exponentially weighted moving average
- function
-Message-Id: <20101019153756.a89ed362.akpm@linux-foundation.org>
-In-Reply-To: <20101019083635.32294.67087.stgit@localhost6.localdomain6>
-References: <20101019083635.32294.67087.stgit@localhost6.localdomain6>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1756331Ab0JSWjQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Oct 2010 18:39:16 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:26333 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754479Ab0JSWjP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Oct 2010 18:39:15 -0400
+Date: Tue, 19 Oct 2010 18:38:43 -0400
+From: Jason Baron <jbaron@redhat.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Koki Sanagi <sanagi.koki@jp.fujitsu.com>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Frederic Weisbecker <fweisbec@gmail.com>, nhorman@tuxdriver.com,
+        scott.a.mcmillan@intel.com, laijs@cn.fujitsu.com,
+        "H. Peter Anvin" <hpa@zytor.com>, LKML <linux-kernel@vger.kernel.org>,
+        eric.dumazet@gmail.com, kaneshige.kenji@jp.fujitsu.com,
+        David Miller <davem@davemloft.net>, izumi.taku@jp.fujitsu.com,
+        kosaki.motohiro@jp.fujitsu.com,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        "Luck, Tony" <tony.luck@intel.com>
+Subject: Re: [PATCH] tracing: Cleanup the convoluted softirq tracepoints
+Message-ID: <20101019223842.GE2855@redhat.com>
+References: <4CBD79CF.2060706@jp.fujitsu.com>
+ <alpine.LFD.2.00.1010191428560.6815@localhost6.localdomain6>
+ <20101019132236.GA19197@Krystal>
+ <alpine.LFD.2.00.1010191524160.6815@localhost6.localdomain6>
+ <1287496495.16971.372.camel@gandalf.stny.rr.com>
+ <alpine.LFD.2.00.1010191558250.6815@localhost6.localdomain6>
+ <20101019142820.GA14520@Krystal>
+ <alpine.LFD.2.00.1010191842270.6815@localhost6.localdomain6>
+ <20101019212816.GA2855@redhat.com>
+ <alpine.LFD.2.00.1010192347390.6815@localhost6.localdomain6>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LFD.2.00.1010192347390.6815@localhost6.localdomain6>
+User-Agent: Mutt/1.5.20 (2010-07-18)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 19 Oct 2010 17:36:35 +0900
-Bruno Randolf <br1@einfach.org> wrote:
-
-> This adds a generic exponentially weighted moving average function. This
-> implementation makes use of a structure which keeps a scaled up internal
-> representation to reduce rounding errors.
+On Tue, Oct 19, 2010 at 11:55:19PM +0200, Thomas Gleixner wrote:
+> On Tue, 19 Oct 2010, Jason Baron wrote:
+> > On Tue, Oct 19, 2010 at 09:49:45PM +0200, Thomas Gleixner wrote:
+> > > > > On Tue, 19 Oct 2010, Steven Rostedt wrote:
+> > > 
+> > > So it trades a conditional vs. two jumps ? WTF ??
+> > > 
+> > 
+> > right, so the 'jmpq' on boot on x86 gets patched with 5 byte no-op
+> > sequence. So in the disabled case we have no-op followed by a jump
+> > around the disabled code.
 > 
-> The idea for this implementation comes from the rt2x00 driver (rt2x00link.c)
-> and I would like to use it in several places in the mac80211 and ath5k code.
+> And that's supposed to be useful ? We do _NOT_ want to jump around
+> disabled stuff. The noped out case should fall through into the non
+> traced code. Otherwise that whole jumplabel thing is completely
+> useless.
 > 
-> Signed-off-by: Bruno Randolf <br1@einfach.org>
+> > > I thought that jumplabel magic was supposed to get rid of the jump
+> > > over the tracing code ? In fact it adds another jump. Whatfor ?
+> > > 
+> > 
+> > yes, that is the plan. gcc does not yet support hot/cold labels...once
+> > it does the second jump will go away and the entire tracepoint code will
+> > be moved to a 'cold' section. It's not quite completely optimal yet, but
+> > we are getting there.
+> 
+> Then do not advertise it as the brilliant solution for all tracing
+> matters.
 > 
 
-hm, interesting.  I suspect there are a few places in MM/VFS/writeback
-which could/should be using something like this.  Of course, if we do
-this then your nice little function will end up 250 lines long, utterly
-incomprehensible and full of subtle bugs.  We like things to be that way.
+I'm not sure I did, the documentation says that we have nop followed by
+a jmp:
 
-Thanks for proposing it as generic code, btw.  Let's merge it and see
-what happens.
++The new code is a 'nopl' followed by a 'jmp'. Thus:
++
++nopl - 0f 1f 44 00 00 - 5 bytes
++jmp  - eb 3e          - 2 bytes
 
-> diff --git a/include/linux/average.h b/include/linux/average.h
-> new file mode 100644
-> index 0000000..55e4317
-> --- /dev/null
-> +++ b/include/linux/average.h
-> @@ -0,0 +1,37 @@
-> +#ifndef _LINUX_AVERAGE_H
-> +#define _LINUX_AVERAGE_H
-> +
-> +#define AVG_FACTOR	1000
-> +
-> +struct avg_val {
-> +	int value;
-> +	int internal;
-> +};
-> +
-> +/**
-> + * moving_average() -  Exponentially weighted moving average (EWMA)
-> + * @avg: Average structure
-> + * @val: Current value
-> + * @weight: This defines how fast the influence of older values decreases.
-> + *	Has to be higher than 1. Use the same number every time you call this
-> + *	function for a single struct avg_val!
-> + *
-> + * This implementation make use of a struct avg_val which keeps a scaled up
-> + * internal representation to prevent rounding errors. Due to this, the maximum
-> + * range of values is MAX_INT/(AVG_FACTOR*weight).
-> + *
-> + * The current average value can be accessed by using avg_val.value.
-> + */
-> +static inline void
-> +moving_average(struct avg_val *avg, const int val, const int weight)
-> +{
-> +	if (WARN_ON_ONCE(weight <= 1))
-> +		return;
-> +	avg->internal = avg->internal  ?
-> +		(((avg->internal * (weight - 1)) +
-> +			(val * AVG_FACTOR)) / weight) :
-> +		(val * AVG_FACTOR);
-> +	avg->value = DIV_ROUND_CLOSEST(avg->internal, AVG_FACTOR);
-> +}
-> +
-> +#endif /* _LINUX_AVERAGE_H */
+
+http://marc.info/?l=linux-kernel&m=128717355231182&w=2`
+
+> > > Now even worse, when you NOP out the jmpq then your tracepoint is
+> > > still not enabled. Brilliant !
+> > > 
+> > 
+> > The 'jmpq' in the enabled case is patched with a jmpq to the body of the
+> > tracepoint itself.
+> 
+> Brilliant.
+>  
+> > > Did you guys ever look at the assembly output of that insane shite you
+> > > are advertising with lengthy explanations ? 
+> > > 
+> > > Obviously _NOT_
+> > > 
+> > > Come back when you can show me a clean imlementation of all this crap
+> > > which reproduces with my jumplabel enabled stock compiler. And please
+> > > just send me a patch w/o the blurb.
+> > > 
+> > > And sane looks like:
+> > > 
+> > >     jmpq   2f  <---- This gets noped out 
+> > > 1:
+> > >     mov    %r12,%rdi
+> > >     callq  *(%r12)
+> > >     [whatever cleanup it takes ]
+> > >     leaveq 
+> > >     retq   
+> > > 
+> > > 2f:
+> > >     [tracing gunk]
+> > >     jmp    1b
+> > > 
+> > 
+> > yes, this is what the code should look like when we get support for
+> > hot/cold labels. I've discussed this support with gcc folk, and its the
+> > next step here. So yes, this is exacatly where we are headed.
+> 
+> So and at the same time the whole tracing crowd tells me, that this is
+> already a done deal. See previous advertisments from DrTracing. I'm
+> seriously grumpy about this especially in the context of a patch which
+> fixes one of the worst interfaces I've seen in years.
+> 
+> Thanks,
+> 
+> 	tglx
+
+sorry if I mislead anybody about the current state of of 'jump labels'.
+But we have the same goal in mind, and a clear path to get there. If you
+don't agree with the approach - I'm all ears. And you are right - the code is
+not where it should be yet.
+
+thanks,
+
+-Jason
