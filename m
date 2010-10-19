@@ -1,102 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758653Ab0JSNX0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Oct 2010 09:23:26 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:63970 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758001Ab0JSNXZ convert rfc822-to-8bit (ORCPT
+	id S1758665Ab0JSNZn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Oct 2010 09:25:43 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:52771 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758484Ab0JSNZl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Oct 2010 09:23:25 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=iwpOukyqa2NInDRcxwisitqFVE3GHUvG5DpMtx3E1vCWoWidux4uKu6azrpRt3YySx
-         /kU+nDt6YRNTZmZduYkWGaaNOQNYxFSoB9vDPF75rNBsJKmTPfmCESz3iYDk3nohRDTT
-         jGZw3FL1IbhZFyeVl9V6/8PJ94u1cE41sdAZ4=
+	Tue, 19 Oct 2010 09:25:41 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Dave Airlie <airlied@gmail.com>
+Subject: Re: [Ksummit-2010-discuss] [v2] Remaining BKL users, what to do
+Date: Tue, 19 Oct 2010 15:26:01 +0200
+User-Agent: KMail/1.12.2 (Linux/2.6.35-16-generic; KDE/4.3.2; x86_64; ; )
+Cc: Theodore Kilgore <kilgota@banach.math.auburn.edu>,
+        Steven Rostedt <rostedt@goodmis.org>, Greg KH <greg@kroah.com>,
+        codalist@telemann.coda.cs.cmu.edu, autofs@linux.kernel.org,
+        Samuel Ortiz <samuel@sortiz.org>, Jan Kara <jack@suse.cz>,
+        Mikulas Patocka <mikulas@artax.karlin.mff.cuni.cz>,
+        Jan Harkes <jaharkes@cs.cmu.edu>, netdev@vger.kernel.org,
+        Anders Larsen <al@alarsen.net>, linux-kernel@vger.kernel.org,
+        dri-devel@lists.freedesktop.org, Bryan Schumaker <bjschuma@netapp.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        ksummit-2010-discuss@lists.linux-foundation.org,
+        Petr Vandrovec <vandrove@vc.cvut.cz>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        linux-fsdevel@vger.kernel.org, Evgeniy Dushistov <dushistov@mail.ru>,
+        Ingo Molnar <mingo@elte.hu>, Andrew Hendry <andrew.hendry@gmail.com>,
+        linux-media@vger.kernel.org
+References: <201009161632.59210.arnd@arndb.de> <AANLkTi=oAeuz8ZxcOMpf=3MVY=WMt0BwHiGCUxO7OAEV@mail.gmail.com> <201010190926.54635.arnd@arndb.de>
+In-Reply-To: <201010190926.54635.arnd@arndb.de>
 MIME-Version: 1.0
-In-Reply-To: <20101019083635.32294.67087.stgit@localhost6.localdomain6>
-References: <20101019083635.32294.67087.stgit@localhost6.localdomain6>
-From: kevin granade <kevin.granade@gmail.com>
-Date: Tue, 19 Oct 2010 08:22:54 -0500
-Message-ID: <AANLkTimeUUxxJWFbpNa4Z=aVAJ1QRvEX3qkVw8K_c=19@mail.gmail.com>
-Subject: Re: [PATCH v2] Add generic exponentially weighted moving average function
-To: Bruno Randolf <br1@einfach.org>
-Cc: randy.dunlap@oracle.com, akpm@linux-foundation.org, blp@cs.stanford.edu,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201010191526.01887.arnd@arndb.de>
+X-Provags-ID: V02:K0:Bq0skpZm2OFLmOqF+JO8pQA7ZbHqtQoTgY8L7XuvHB+
+ 6uOl586nzK9OEXLm2E0v9AE2tgXrXNri/C/soEyOFkYMLlYhoI
+ hONpoPZER80OAdtljUoKnKCNo6plEMKO51gai2aoksoFjO7Vn0
+ 4DhLOvCpkEFbjOdDNmY9e8QAILaYHRKmJ+s7hErB2J2DS6vaho
+ R3AQf1TrMxHJ+QFn++RqA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 19, 2010 at 3:36 AM, Bruno Randolf <br1@einfach.org> wrote:
->
-> This adds a generic exponentially weighted moving average function. This
-> implementation makes use of a structure which keeps a scaled up internal
-> representation to reduce rounding errors.
->
-> The idea for this implementation comes from the rt2x00 driver (rt2x00link.c)
-> and I would like to use it in several places in the mac80211 and ath5k code.
->
-> Signed-off-by: Bruno Randolf <br1@einfach.org>
+On Tuesday 19 October 2010, Arnd Bergmann wrote:
+> On Tuesday 19 October 2010 06:52:32 Dave Airlie wrote:
+> > > I might be able to find some hardware still lying around here that uses an
+> > > i810. Not sure unless I go hunting it. But I get the impression that if
+> > > the kernel is a single-CPU kernel there is not any problem anyway? Don't
+> > > distros offer a non-smp kernel as an installation option in case the user
+> > > needs it? So in reality how big a problem is this?
+> > 
+> > Not anymore, which is my old point of making a fuss. Nowadays in the
+> > modern distro world, we supply a single kernel that can at runtime
+> > decide if its running on SMP or UP and rewrite the text section
+> > appropriately with locks etc. Its like magic, and something like
+> > marking drivers as BROKEN_ON_SMP at compile time is really wrong when
+> > what you want now is a runtime warning if someone tries to hotplug a
+> > CPU with a known iffy driver loaded or if someone tries to load the
+> > driver when we are already in SMP mode.
+> 
+> We could make the driver run-time non-SMP by adding
+> 
+> 	if (num_present_cpus() > 1) {
+> 		pr_err("i810 no longer supports SMP\n");
+> 		return -EINVAL;
+> 	}
+> 
+> to the init function. That would cover the vast majority of the
+> users of i810 hardware, I guess.
 
-Sorry for the resend, gmail auto-switched to html.
+Some research showed that Intel never support i810/i815 SMP setups,
+but there was indeed one company (http://www.acorpusa.com at the time,
+now owned by a domain squatter) that made i815E based dual Pentium-III
+boards like this one: http://cgi.ebay.com/280319795096
 
-Probably not worth the paper it's written on, but fwiw:
-Reviewed-by: Kevin Granade <kevin.granade@gmail.com>
+The first person that can send me an authentic log file showing the
+use of X.org with DRM on a 2.6.35 kernel with two processors on that
+mainboard dated today or earlier gets a free upgrade to an AGP graphics
+card of comparable or better 3D performance from me. Please include
+the story how why you are running this machine with a new kernel.
 
->
-> --
-> v2: Renamed 'samples' to 'weight'. Added more documentation. Use avg_val
->    pointer. Add a WARN_ON_ONCE for invalid values of 'weight'. Divide
->    and round up/down.
-> ---
->  include/linux/average.h |   37 +++++++++++++++++++++++++++++++++++++
->  1 files changed, 37 insertions(+), 0 deletions(-)
->  create mode 100644 include/linux/average.h
->
-> diff --git a/include/linux/average.h b/include/linux/average.h
-> new file mode 100644
-> index 0000000..55e4317
-> --- /dev/null
-> +++ b/include/linux/average.h
-> @@ -0,0 +1,37 @@
-> +#ifndef _LINUX_AVERAGE_H
-> +#define _LINUX_AVERAGE_H
-> +
-> +#define AVG_FACTOR     1000
-> +
-> +struct avg_val {
-> +       int value;
-> +       int internal;
-> +};
-> +
-> +/**
-> + * moving_average() -  Exponentially weighted moving average (EWMA)
-> + * @avg: Average structure
-> + * @val: Current value
-> + * @weight: This defines how fast the influence of older values decreases.
-> + *     Has to be higher than 1. Use the same number every time you call this
-> + *     function for a single struct avg_val!
-> + *
-> + * This implementation make use of a struct avg_val which keeps a scaled up
-> + * internal representation to prevent rounding errors. Due to this, the maximum
-> + * range of values is MAX_INT/(AVG_FACTOR*weight).
-> + *
-> + * The current average value can be accessed by using avg_val.value.
-> + */
-> +static inline void
-> +moving_average(struct avg_val *avg, const int val, const int weight)
-> +{
-> +       if (WARN_ON_ONCE(weight <= 1))
-> +               return;
-> +       avg->internal = avg->internal  ?
-> +               (((avg->internal * (weight - 1)) +
-> +                       (val * AVG_FACTOR)) / weight) :
-> +               (val * AVG_FACTOR);
-> +       avg->value = DIV_ROUND_CLOSEST(avg->internal, AVG_FACTOR);
-> +}
-> +
-> +#endif /* _LINUX_AVERAGE_H */
->
+i830 is harder, apparently some i865G boards support Pentium 4 with HT
+and even later dual-core processors.
+
+	Arnd
