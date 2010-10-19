@@ -1,51 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755733Ab0JSREm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Oct 2010 13:04:42 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:44190 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753402Ab0JSREj convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Oct 2010 13:04:39 -0400
+	id S1755578Ab0JSRGP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Oct 2010 13:06:15 -0400
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:38382 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753523Ab0JSRGO convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Oct 2010 13:06:14 -0400
 MIME-Version: 1.0
-In-Reply-To: <20101019165530.GT19804@ZenIV.linux.org.uk>
-References: <20101019011650.25346.99614.stgit@paris.rdu.redhat.com>
- <AANLkTimGdjPyLXuknDNa7WNthDT9+2FdOuPdxwjRiMHD@mail.gmail.com>
- <1287506215.2530.187.camel@localhost.localdomain> <20101019165530.GT19804@ZenIV.linux.org.uk>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Tue, 19 Oct 2010 10:03:48 -0700
-Message-ID: <AANLkTimL=eChoCQHGoiouE5s6dGG=n9ZAQGhW-RW+gDj@mail.gmail.com>
-Subject: Re: [PATCH 1/3] IMA: move read/write counters into struct inode
-To: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Eric Paris <eparis@redhat.com>, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        hch@infradead.org, zohar@us.ibm.com, warthog9@kernel.org,
-        david@fromorbit.com, jmorris@namei.org, kyle@mcmartin.ca,
-        hpa@zytor.com, akpm@linux-foundation.org, mingo@elte.hu
+In-Reply-To: <87r5fmxghm.fsf@deeprootsystems.com>
+References: <1287387875-14168-1-git-send-email-ohad@wizery.com>
+ <1287387875-14168-4-git-send-email-ohad@wizery.com> <87r5fmxghm.fsf@deeprootsystems.com>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Tue, 19 Oct 2010 11:05:52 -0600
+X-Google-Sender-Auth: U_N7rT4Xo5A956vj2EWUmIQFQ-k
+Message-ID: <AANLkTikUJpMSzNecZyUPxEjY4p_aE-vf-VDUzkDksD3X@mail.gmail.com>
+Subject: Re: [PATCH 3/3] omap: add hwspinlock device
+To: Kevin Hilman <khilman@deeprootsystems.com>
+Cc: Ohad Ben-Cohen <ohad@wizery.com>, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        akpm@linux-foundation.org, Greg KH <greg@kroah.com>,
+        Tony Lindgren <tony@atomide.com>, Benoit Cousson <b-cousson@ti.com>,
+        Hari Kanigeri <h-kanigeri2@ti.com>, Suman Anna <s-anna@ti.com>,
+        Simon Que <sque@ti.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 19, 2010 at 9:55 AM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+On Tue, Oct 19, 2010 at 11:03 AM, Kevin Hilman
+<khilman@deeprootsystems.com> wrote:
+> Ohad Ben-Cohen <ohad@wizery.com> writes:
 >
-> a) i_writecount is about VM_DENYWRITE, basically.  Reusing it for ima could
-> get unpleasant; when it's positive, we are fine, but it can get negative as
-> well.  IMA will have interesting time dealing with that.
+>> From: Simon Que <sque@ti.com>
+>>
+>> Build and register an hwspinlock platform device.
+>>
+>> Although only OMAP4 supports the hardware spinlock module (for now),
+>> it is still safe to run this initcall on all omaps, because hwmod lookup
+>> will simply fail on hwspinlock-less platforms.
+>>
+>> Signed-off-by: Simon Que <sque@ti.com>
+>> Signed-off-by: Hari Kanigeri <h-kanigeri2@ti.com>
+>> Signed-off-by: Ohad Ben-Cohen <ohad@wizery.com>
+>> Cc: Benoit Cousson <b-cousson@ti.com>
+>> ---
+>>  arch/arm/mach-omap2/Makefile     |    1 +
+>>  arch/arm/mach-omap2/hwspinlock.c |   67 ++++++++++++++++++++++++++++++++++++++
+>>  2 files changed, 68 insertions(+), 0 deletions(-)
+>>  create mode 100644 arch/arm/mach-omap2/hwspinlock.c
+>>
+>> diff --git a/arch/arm/mach-omap2/Makefile b/arch/arm/mach-omap2/Makefile
+>> index 7352412..e55d1c5 100644
+>> --- a/arch/arm/mach-omap2/Makefile
+>> +++ b/arch/arm/mach-omap2/Makefile
+>> @@ -190,3 +190,4 @@ obj-y                                     += $(smc91x-m) $(smc91x-y)
+>>
+>>  smsc911x-$(CONFIG_SMSC911X)          := gpmc-smsc911x.o
+>>  obj-y                                        += $(smsc911x-m) $(smsc911x-y)
+>> +obj-$(CONFIG_ARCH_OMAP4)             += hwspinlock.o
+>> diff --git a/arch/arm/mach-omap2/hwspinlock.c b/arch/arm/mach-omap2/hwspinlock.c
+>> new file mode 100644
+>> index 0000000..641a6d4
+>> --- /dev/null
+>> +++ b/arch/arm/mach-omap2/hwspinlock.c
+>> @@ -0,0 +1,67 @@
+>> +/*
+>> + * OMAP hardware spinlock device initialization
+>> + *
+>> + * Copyright (C) 2010 Texas Instruments. All rights reserved.
+>> + *
+>> + * Contact: Simon Que <sque@ti.com>
+>> + *          Hari Kanigeri <h-kanigeri2@ti.com>
+>> + *
+>> + * This program is free software; you can redistribute it and/or
+>> + * modify it under the terms of the GNU General Public License
+>> + * version 2 as published by the Free Software Foundation.
+>> + *
+>> + * This program is distributed in the hope that it will be useful, but
+>> + * WITHOUT ANY WARRANTY; without even the implied warranty of
+>> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+>> + * General Public License for more details.
+>> + *
+>> + * You should have received a copy of the GNU General Public License
+>> + * along with this program; if not, write to the Free Software
+>> + * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
+>> + * 02110-1301 USA
+>> + */
+>> +
+>> +#include <linux/kernel.h>
+>> +#include <linux/init.h>
+>> +#include <linux/err.h>
+>> +
+>> +#include <plat/omap_hwmod.h>
+>> +#include <plat/omap_device.h>
+>> +
+>> +struct omap_device_pm_latency omap_spinlock_latency[] = {
+>> +     {
+>> +             .deactivate_func = omap_device_idle_hwmods,
+>> +             .activate_func   = omap_device_enable_hwmods,
+>> +             .flags = OMAP_DEVICE_LATENCY_AUTO_ADJUST,
+>> +     }
+>> +};
+>> +
+>> +int __init hwspinlocks_init(void)
+>> +{
+>> +     int retval = 0;
+>> +     struct omap_hwmod *oh;
+>> +     struct omap_device *od;
+>> +     const char *oh_name = "spinlock";
+>> +     const char *dev_name = "omap_hwspinlock";
+>> +
+>> +     /*
+>> +      * Hwmod lookup will fail in case our platform doesn't support the
+>> +      * hardware spinlock module, so it is safe to run this initcall
+>> +      * on all omaps
+>> +      */
+>> +     oh = omap_hwmod_lookup(oh_name);
+>> +     if (oh == NULL)
+>> +             return -EINVAL;
+>> +
+>> +     od = omap_device_build(dev_name, 0, oh, NULL, 0,
+>> +                             omap_spinlock_latency,
+>> +                             ARRAY_SIZE(omap_spinlock_latency), false);
+>> +     if (IS_ERR(od)) {
+>> +             pr_err("Can't build omap_device for %s:%s\n", dev_name,
+>> +                                                             oh_name);
+>> +             retval = PTR_ERR(od);
+>> +     }
+>> +
+>> +     return retval;
+>> +}
+>> +postcore_initcall(hwspinlocks_init);
 >
-> b) i_count is simply a refcount for struct inode.  Not exactly the number
-> of dentries, but that's the main contributor.  Basically, that's "how many
-> pointers outside of inode hash chains point that that struct inode at the
-> moment".
+> Any reason this needs to be a postcore_initcall?  Are there users of
+> hwspinlocks this early in boot?  Probaly subsys or even device_initcall
+> is more appropriate here.
+>
+> I would've suspected that any users of hwspinlocks will be dependent on
+> drivers for the other cores (e.g. syslink) which would likely be
+> initialized much later.
 
-My question was deeper. More along the lines of "why would IMA care?"
+On that note, is there any reason why this file cannot be selected as a module?
 
-How/why could IMA ever care about the pointless and trivial
-differences between its current private open/read/write counts and the
-counts that we already maintain?
+g.
 
-Yes, yes, I realize that they have technical differences in what they
-count. That's not the question. The question is "Why would IMA care?"
-
-                       Linus
+-- 
+Grant Likely, B.Sc., P.Eng.
+Secret Lab Technologies Ltd.
