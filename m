@@ -1,74 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933953Ab0JSLR5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Oct 2010 07:17:57 -0400
+	id S934012Ab0JSLSM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Oct 2010 07:18:12 -0400
 Received: from smtp02.citrix.com ([66.165.176.63]:49801 "EHLO
 	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758425Ab0JSLR4 (ORCPT
+	with ESMTP id S933996Ab0JSLSE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Oct 2010 07:17:56 -0400
+	Tue, 19 Oct 2010 07:18:04 -0400
 X-IronPort-AV: E=Sophos;i="4.57,350,1283745600"; 
-   d="scan'208";a="118686936"
+   d="scan'208";a="118686979"
 From: stefano.stabellini@eu.citrix.com
 To: linux-kernel@vger.kernel.org
 Cc: xen-devel@lists.xensource.com, Jeremy.Fitzhardinge@citrix.com,
         Stefano.Stabellini@eu.citrix.com,
         Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Subject: [PATCH v4 05/10] xen: use vcpu_ops to setup cpu masks
-Date: Tue, 19 Oct 2010 12:17:13 +0100
-Message-Id: <1287487038-6643-5-git-send-email-stefano.stabellini@eu.citrix.com>
+Subject: [PATCH v4 10/10] xen: mask the MTRR feature from the cpuid
+Date: Tue, 19 Oct 2010 12:17:18 +0100
+Message-Id: <1287487038-6643-10-git-send-email-stefano.stabellini@eu.citrix.com>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <alpine.DEB.2.00.1010191207010.2423@kaball-desktop>
 References: <alpine.DEB.2.00.1010191207010.2423@kaball-desktop>
-X-OriginalArrivalTime: 19 Oct 2010 11:17:56.0062 (UTC) FILETIME=[4775BFE0:01CB6F7F]
+X-OriginalArrivalTime: 19 Oct 2010 11:18:04.0484 (UTC) FILETIME=[4C7AD840:01CB6F7F]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
 
+We don't want Linux to think that the cpu supports MTRRs when running
+under Xen because MTRR operations could only be performed through
+hypercalls.
+
 Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
 ---
- arch/x86/xen/smp.c |    8 +++++++-
- 1 files changed, 7 insertions(+), 1 deletions(-)
+ arch/x86/xen/enlighten.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-diff --git a/arch/x86/xen/smp.c b/arch/x86/xen/smp.c
-index 25f232b..1386767 100644
---- a/arch/x86/xen/smp.c
-+++ b/arch/x86/xen/smp.c
-@@ -156,11 +156,16 @@ static void __init xen_fill_possible_map(void)
- {
- 	int i, rc;
+diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
+index 9efb004..d48a32b 100644
+--- a/arch/x86/xen/enlighten.c
++++ b/arch/x86/xen/enlighten.c
+@@ -243,6 +243,7 @@ static __init void xen_init_cpuid_mask(void)
+ 	cpuid_leaf1_edx_mask =
+ 		~((1 << X86_FEATURE_MCE)  |  /* disable MCE */
+ 		  (1 << X86_FEATURE_MCA)  |  /* disable MCA */
++		  (1 << X86_FEATURE_MTRR) |  /* disable MTRR */
+ 		  (1 << X86_FEATURE_ACC));   /* thermal monitoring */
  
-+	num_processors = 0;
-+	disabled_cpus = 0;
- 	for (i = 0; i < nr_cpu_ids; i++) {
- 		rc = HYPERVISOR_vcpu_op(VCPUOP_is_up, i, NULL);
- 		if (rc >= 0) {
- 			num_processors++;
- 			set_cpu_possible(i, true);
-+		} else {
-+			set_cpu_possible(i, false);
-+			set_cpu_present(i, false);
- 		}
- 	}
- }
-@@ -190,6 +195,8 @@ static void __init xen_smp_prepare_cpus(unsigned int max_cpus)
- 	if (xen_smp_intr_init(0))
- 		BUG();
- 
-+	xen_fill_possible_map();
-+
- 	if (!alloc_cpumask_var(&xen_cpu_initialized_map, GFP_KERNEL))
- 		panic("could not allocate xen_cpu_initialized_map\n");
- 
-@@ -480,6 +487,5 @@ static const struct smp_ops xen_smp_ops __initdata = {
- void __init xen_smp_init(void)
- {
- 	smp_ops = xen_smp_ops;
--	xen_fill_possible_map();
- 	xen_init_spinlocks();
- }
+ 	if (!xen_initial_domain())
 -- 
 1.5.6.5
 
