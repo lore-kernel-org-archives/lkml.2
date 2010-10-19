@@ -1,54 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757193Ab0JSUZw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Oct 2010 16:25:52 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:55545 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752988Ab0JSUZv (ORCPT
-	<rfc822;<linux-kernel@vger.kernel.org>>);
-	Tue, 19 Oct 2010 16:25:51 -0400
-Date: Tue, 19 Oct 2010 16:24:47 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: stefano.stabellini@eu.citrix.com
-Cc: xen-devel@lists.xensource.com,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
-        linux-kernel@vger.kernel.org, Qing He <qing.he@intel.com>,
-        Yunhong Jiang <yunhong.jiang@intel.com>
-Subject: Re: [Xen-devel] [PATCH v4 03/10] xen: remap MSIs into pirqs when
- running as initial domain
-Message-ID: <20101019202447.GA10052@dumpdata.com>
-References: <alpine.DEB.2.00.1010191207010.2423@kaball-desktop>
- <1287487038-6643-3-git-send-email-stefano.stabellini@eu.citrix.com>
- <20101019201518.GA9727@dumpdata.com>
+	id S1757188Ab0JSU3f (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Oct 2010 16:29:35 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:59529 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753408Ab0JSU3e (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Oct 2010 16:29:34 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Larry Finger <Larry.Finger@lwfinger.net>
+Subject: Re: [PATCH] linux-firmware: Add firmware file for r8712u (RTL8192SU)
+Date: Tue, 19 Oct 2010 22:29:30 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.36-rc7-next-20101015+; KDE/4.5.1; x86_64; ; )
+Cc: David Woodhouse <dwmw2@infradead.org>, linux-kernel@vger.kernel.org
+References: <4cbdbf3b.Ek+PDAiA1jX27HRq%Larry.Finger@lwfinger.net> <201010191935.40788.arnd@arndb.de> <4CBDE1C1.4020204@lwfinger.net>
+In-Reply-To: <4CBDE1C1.4020204@lwfinger.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101019201518.GA9727@dumpdata.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201010192229.30133.arnd@arndb.de>
+X-Provags-ID: V02:K0:lcX3SJJTn291oSDuXG6JYjZOy8SK9yo5Ew1rLCXKMaD
+ Y4vaBmhZKMxqhFAbnTz1nA/5sQ/a7al6E/MVRA6uEP8RY3RmSv
+ pxXGfNRc1nryoitblKAB/BuNCEngnpqeVsU+w1/zjKgReMHl7r
+ HCDSACa7FcMWL5Jz7NEVoCm6F1aRw7fractycoM8zgRVkY4pXa
+ c8VmJ7ELKY7I7wGf2YdKg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > +	rc = HYPERVISOR_physdev_op(PHYSDEVOP_map_pirq, &map_irq);
-> > +	if (rc) {
-> > +		printk(KERN_WARNING "xen map irq failed %d\n", rc);
-> > +
-> > +		dynamic_irq_cleanup(irq);
+On Tuesday 19 October 2010 20:21:53 Larry Finger wrote:
 > 
-> Looking at include/linux/irq.h, I see this commment:
->  /*
-> 330  * Dynamic irq helper functions. Obsolete. Use irq_alloc_desc* and
-> 331  * irq_free_desc instead.
-> 332  */
+> I was the one that added the drive, including the firmware file, to the kernel.
+> I know the driver was developed legally. I took source files that contain a GPL
+> license (including the firmware source) from the Realtek public site, cleaned up
+> the driver, added a copyright for my changes, and got permission from Realtek to
+> submit the result to the staging directory through Greg K-H. 
+
+Ok, so if you have the firmware source, add a proper make file and the source along
+with the binary file. You made it sound like the you only had the firmware as
+a hexdump, which would not be possible under the GPLv2 section 3, which says
+"The source code for a work means the preferred form of the work for making
+modifications to it".
+
+> > Hint: some files of the driver contain these "interesting" conditions:
+> > 
+> > /*
+> >  * Copyright(c) 2008 - 2010 Realtek Corporation. All rights reserved.
+> >  * Linux device driver for RTL8192U
+> >  *
+> >  * Based on the r8187 driver, which is:
+> >  * Copyright 2004-2005 Andrea Merello <andreamrl@tiscali.it>, et al.
+> >  * This program is free software; you can redistribute it and/or modify it
+> >  * under the terms of version 2 of the GNU General Public License as
+> >  * published by the Free Software Foundation.
 > 
-> So we should use irq_free_desc instead of dynamic_irq_cleanup.
-> (fyi, I didn't realize this until I started pulling in the sparse_irq
-> patchset).
+> That Merello copyright really has little to do with the current driver. As
+> Realtek included it in their source, I left it in, but consider it to be an
+> honorary citation.
 
-I looked at the rest of the patches and they all look good to me. Fix
-this above and you can stick
+That part is fine, what is not fine is the "All rights reserved" portion, which
+contradicts the GPL.
 
-Reviewed-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-
-on all the patches.
-
+	Arnd
