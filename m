@@ -1,46 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757612Ab0JSXKk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Oct 2010 19:10:40 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:47418 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755559Ab0JSXKk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Oct 2010 19:10:40 -0400
-Message-ID: <4CBE251A.6070603@zytor.com>
-Date: Tue, 19 Oct 2010 16:09:14 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc13 Thunderbird/3.1.4
+	id S1757809Ab0JSXNG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Oct 2010 19:13:06 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:50416 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755559Ab0JSXNE convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Oct 2010 19:13:04 -0400
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-CC: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Koki Sanagi <sanagi.koki@jp.fujitsu.com>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Frederic Weisbecker <fweisbec@gmail.com>, nhorman@tuxdriver.com,
-        scott.a.mcmillan@intel.com, laijs@cn.fujitsu.com,
-        LKML <linux-kernel@vger.kernel.org>, eric.dumazet@gmail.com,
-        kaneshige.kenji@jp.fujitsu.com, David Miller <davem@davemloft.net>,
-        izumi.taku@jp.fujitsu.com, kosaki.motohiro@jp.fujitsu.com,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        "Luck, Tony" <tony.luck@intel.com>, Jason Baron <jbaron@redhat.com>
-Subject: Re: [PATCH] tracing: Cleanup the convoluted softirq tracepoints
-References: <20101019132236.GA19197@Krystal>	 <alpine.LFD.2.00.1010191524160.6815@localhost6.localdomain6>	 <1287496495.16971.372.camel@gandalf.stny.rr.com>	 <alpine.LFD.2.00.1010191558250.6815@localhost6.localdomain6>	 <20101019142820.GA14520@Krystal>	 <alpine.LFD.2.00.1010191842270.6815@localhost6.localdomain6>	 <1287521757.16971.397.camel@gandalf.stny.rr.com>	 <alpine.LFD.2.00.1010192302000.6815@localhost6.localdomain6>	 <1287523439.16971.433.camel@gandalf.stny.rr.com>	 <4CBE122B.9020807@zytor.com> <20101019224126.GD3519@Krystal>	 <4CBE206A.20702@zytor.com> <1287529515.16971.538.camel@gandalf.stny.rr.com>
-In-Reply-To: <1287529515.16971.538.camel@gandalf.stny.rr.com>
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <AANLkTinZ2+ocJCfUpT15Ow3J9XBa-8XWnVC3gDDJ7s-v@mail.gmail.com>
+References: <1287387875-14168-1-git-send-email-ohad@wizery.com>
+ <1287387875-14168-4-git-send-email-ohad@wizery.com> <87r5fmxghm.fsf@deeprootsystems.com>
+ <AANLkTinZ2+ocJCfUpT15Ow3J9XBa-8XWnVC3gDDJ7s-v@mail.gmail.com>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Tue, 19 Oct 2010 17:12:43 -0600
+X-Google-Sender-Auth: e9sc365fb-MlHirOrpnO_61kFJU
+Message-ID: <AANLkTimTDCbLP+EeUeo35re0FrMvqV3ozU+v7DZXr_p3@mail.gmail.com>
+Subject: Re: [PATCH 3/3] omap: add hwspinlock device
+To: Ohad Ben-Cohen <ohad@wizery.com>
+Cc: Kevin Hilman <khilman@deeprootsystems.com>, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        akpm@linux-foundation.org, Greg KH <greg@kroah.com>,
+        Tony Lindgren <tony@atomide.com>, Benoit Cousson <b-cousson@ti.com>,
+        Hari Kanigeri <h-kanigeri2@ti.com>, Suman Anna <s-anna@ti.com>,
+        Simon Que <sque@ti.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/19/2010 04:05 PM, Steven Rostedt wrote:
+On Tue, Oct 19, 2010 at 3:02 PM, Ohad Ben-Cohen <ohad@wizery.com> wrote:
+> On Tue, Oct 19, 2010 at 7:03 PM, Kevin Hilman
+> <khilman@deeprootsystems.com> wrote:
+>>> +postcore_initcall(hwspinlocks_init);
 >>
->> JMP/Jcc does have a consumer -- the IP -- and actually measuring shows
->> that it is much, much worse than NOP and other dummy instructions.
-> 
-> But how does JMP vs Jcc compare?
-> 
+>> Any reason this needs to be a postcore_initcall?  Are there users of
+>> hwspinlocks this early in boot?
+>
+> i2c-omap, which is subsys_initcall (the I2C bus is shared between the
+> A9 and the M3 on some OMAP4 boards).
+>
+> And to allow early board code to reserve specific hwspinlock numbers
+> for predefined use-cases, we probably want to be before arch_initcall.
 
-*As far as I know* they're the same, except of course that a direct JMP
-never mispredicts.
+Man. this is getting ugly.  I think we need to discuss how to solve
+this at the Plumbers micro-conference. It kind of fits in with the
+whole embedded (ab)use of the device model topic anyway. Actually,
+this particular case isn't bad, but the moving of i2c and spi busses
+to an earlier initcall is just band-aiding the real problem of driver
+probe order dependencies.
 
-	-hpa
+g.
