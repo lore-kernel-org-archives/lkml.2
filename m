@@ -1,43 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752113Ab0JSS6o (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Oct 2010 14:58:44 -0400
-Received: from mail.physik.uni-muenchen.de ([192.54.42.129]:58859 "EHLO
-	mail.physik.uni-muenchen.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751287Ab0JSS6m convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Oct 2010 14:58:42 -0400
-X-Greylist: delayed 1773 seconds by postgrey-1.27 at vger.kernel.org; Tue, 19 Oct 2010 14:58:42 EDT
-Message-ID: <20101019202902.81141i9b0zmhpils@webmail.physik.uni-muenchen.de>
-Date: Tue, 19 Oct 2010 20:29:02 +0200
-From: Webmail service <Xuai.Zhuang@physik.uni-muenchen.de>
-To: undisclosed-recipients:;
-Subject: You have just exceeded your Email Quota limit
+	id S1756255Ab0JSS7Q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Oct 2010 14:59:16 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:51384 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753231Ab0JSS7O (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Oct 2010 14:59:14 -0400
+Date: Tue, 19 Oct 2010 20:59:10 +0200
+From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: Dinh.Nguyen@freescale.com
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux@arm.linux.org.uk, s.hauer@pengutronix.de,
+        valentin.longchamp@epfl.ch, daniel@caiaq.de, grant.likely@secretlab.ca,
+        amit.kucheria@canonical.com, xiao-lizhang@freescale.com
+Subject: Re: [PATCHv3 2/2] ARM: imx: Add wake functionality to GPIO
+Message-ID: <20101019185910.GA28166@pengutronix.de>
+References: <1287513592-6655-1-git-send-email-Dinh.Nguyen@freescale.com> <1287513592-6655-2-git-send-email-Dinh.Nguyen@freescale.com>
 MIME-Version: 1.0
-Content-Type: text/plain;
- charset=ISO-8859-1;
- DelSp="Yes";
- format="flowed"
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
-User-Agent: Internet Messaging Program (IMP) H3 (4.3.8)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1287513592-6655-2-git-send-email-Dinh.Nguyen@freescale.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is to inform you that you have just exceeded your Email
-Quota limit of 350MB. Before you can continue using your
-email account, you are required to expand your Email Quota
-because in less than 48 hours your email will be disable. Increase
-your Email Quota and continue to use your email account.
+On Tue, Oct 19, 2010 at 01:39:52PM -0500, Dinh.Nguyen@freescale.com wrote:
+> From: Dinh Nguyen <Dinh.Nguyen@freescale.com>
+> 
+> Add function definition for irq_chip.set_wake to enable GPIO to
+> wake-up the system.
+> 
+> This patch is based on Sascha Hauer's imx/linux-2.6 for-rmk tree.
+> 
+> Signed-off-by: Dinh Nguyen <Dinh.Nguyen@freescale.com>
+> ---
+>  arch/arm/plat-mxc/gpio.c              |   34 +++++++++++++++++++++++++++++++++
+>  arch/arm/plat-mxc/include/mach/gpio.h |    1 +
+>  2 files changed, 35 insertions(+), 0 deletions(-)
+> 
+> diff --git a/arch/arm/plat-mxc/gpio.c b/arch/arm/plat-mxc/gpio.c
+> index 9d38da0..e52c658 100644
+> --- a/arch/arm/plat-mxc/gpio.c
+> +++ b/arch/arm/plat-mxc/gpio.c
+> @@ -20,6 +20,7 @@
+>   */
+>  
+>  #include <linux/init.h>
+> +#include <linux/interrupt.h>
+>  #include <linux/io.h>
+>  #include <linux/irq.h>
+>  #include <linux/gpio.h>
+> @@ -201,11 +202,44 @@ static void mx2_gpio_irq_handler(u32 irq, struct irq_desc *desc)
+>  	}
+>  }
+>  
+> +/*
+> + * Set interrupt number "irq" in the GPIO as a wake-up source.
+> + * While system is running, all registered GPIO interrupts need to have
+> + * wake-up enabled. When system is suspended, only selected GPIO interrupts
+> + * need to have wake-up enabled.
+> + * @param  irq          interrupt source number
+> + * @param  enable       enable as wake-up if equal to non-zero
+> + * @return       This function returns 0 on success.
+> + */
+> +static int gpio_set_wake_irq(u32 irq, u32 enable)
+> +{
+> +	u32 gpio = irq_to_gpio(irq);
+> +	u32 gpio_idx = gpio & 0x1F;
+> +	struct mxc_gpio_port *port = &mxc_gpio_ports[gpio / 32];
+> +
+> +	if (enable) {
+> +		port->suspend_wakeup |= (1 << gpio_idx);
+> +		if (port->irq_high && (gpio_idx >= 16))
+> +			enable_irq_wake(port->irq_high);
+> +		else
+> +			enable_irq_wake(port->irq);
+> +	} else {
+> +		port->suspend_wakeup &= ~(1 << gpio_idx);
+> +		if (port->irq_high && (gpio_idx >= 16))
+> +			disable_irq_wake(port->irq_high);
+> +		else
+> +			disable_irq_wake(port->irq);
+> +	}
+> +
+> +	return 0;
+> +}
+> +
+>  static struct irq_chip gpio_irq_chip = {
+>  	.ack = gpio_ack_irq,
+>  	.mask = gpio_mask_irq,
+>  	.unmask = gpio_unmask_irq,
+>  	.set_type = gpio_set_irq_type,
+> +	.set_wake = gpio_set_wake_irq,
+>  };
+>  
+>  static void _set_gpio_direction(struct gpio_chip *chip, unsigned offset,
+> diff --git a/arch/arm/plat-mxc/include/mach/gpio.h b/arch/arm/plat-mxc/include/mach/gpio.h
+> index af33b74..133150e 100644
+> --- a/arch/arm/plat-mxc/include/mach/gpio.h
+> +++ b/arch/arm/plat-mxc/include/mach/gpio.h
+> @@ -39,6 +39,7 @@ struct mxc_gpio_port {
+>  	struct gpio_chip chip;
+>  	u32 both_edges;
+>  	spinlock_t lock;
+> +	u32 suspend_wakeup;
+This seems to be a write-only variable.  What is the intended purpose?
 
+Is this really enough to let the system wake from suspend?
 
-To expand your Email Quota to 2.2GB, use the below web link:
+Best regards
+Uwe
 
-http://do.my/gra/
-
-Thank you for your understanding.
-Copyright ©2010 Webmail service.
-
-----------------------------------------------------------------
-This message was sent using IMP, the Internet Messaging Program.
+-- 
+Pengutronix e.K.                           | Uwe Kleine-König            |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
