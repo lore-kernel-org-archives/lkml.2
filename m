@@ -1,285 +1,234 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754014Ab0JSPuh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Oct 2010 11:50:37 -0400
-Received: from hera.kernel.org ([140.211.167.34]:57165 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753974Ab0JSPuf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Oct 2010 11:50:35 -0400
-Message-ID: <4CBDBE39.7080502@kernel.org>
-Date: Tue, 19 Oct 2010 17:50:17 +0200
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.9) Gecko/20100915 Lightning/1.0b2 Thunderbird/3.1.4
+	id S1753981Ab0JSPvV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Oct 2010 11:51:21 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:39946 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753735Ab0JSPvU (ORCPT
+	<rfc822;<linux-kernel@vger.kernel.org>>);
+	Tue, 19 Oct 2010 11:51:20 -0400
+Date: Tue, 19 Oct 2010 11:48:40 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Cc: Fitzhardinge <Jeremy.Fitzhardinge@citrix.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        Jeremy@acsinet12.oracle.com,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [Xen-devel] Re: [PATCH v3 02/10] xen: remap GSIs as pirqs when
+ running as initial domain
+Message-ID: <20101019154840.GA8066@dumpdata.com>
+References: <alpine.DEB.2.00.1010121043030.2422@kaball-desktop>
+ <1286901770-8612-2-git-send-email-Stefano.Stabellini@eu.citrix.com>
+ <20101018154139.GB27373@dumpdata.com>
+ <alpine.DEB.2.00.1010191116480.2423@kaball-desktop>
 MIME-Version: 1.0
-To: David Howells <dhowells@redhat.com>, linux-afs@lists.infradead.org,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: [PATCH v2.6.36-rc7] afs: add afs_wq and use it instead of the system
- workqueue
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 19 Oct 2010 15:50:19 +0000 (UTC)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.00.1010191116480.2423@kaball-desktop>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-flush_scheduled_work() is going away.  afs needs to make sure all the
-works it has queued have finished before being unloaded and there can
-be arbitrary number of pending works.  Add afs_wq and use it as the
-flush domain instead of the system workqueue.
+On Tue, Oct 19, 2010 at 11:41:36AM +0100, Stefano Stabellini wrote:
+> On Mon, 18 Oct 2010, Konrad Rzeszutek Wilk wrote:
+> > On Tue, Oct 12, 2010 at 05:42:42PM +0100, Stefano Stabellini wrote:
+> > > From: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+> > > 
+> > > Implement xen_register_gsi to setup the correct triggering and polarity
+> > > properties of a gsi.
+> > > Implement xen_register_pirq to register a particular gsi as pirq and
+> > > receive interrupts as events.
+> > > Call xen_setup_pirqs to register all the legacy ISA irqs as pirqs.
+> > > 
+> > > Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+> > > Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+> > > ---
+> > >  arch/x86/include/asm/xen/pci.h  |    7 ++
+> > >  arch/x86/pci/xen.c              |  132 +++++++++++++++++++++++++++++++++++++++
+> > >  drivers/xen/events.c            |   13 ++++
+> > >  include/xen/interface/physdev.h |   10 +++
+> > >  4 files changed, 162 insertions(+), 0 deletions(-)
+> > > 
+> > > diff --git a/arch/x86/include/asm/xen/pci.h b/arch/x86/include/asm/xen/pci.h
+> > > index f89a42a..2329b3e 100644
+> > > --- a/arch/x86/include/asm/xen/pci.h
+> > > +++ b/arch/x86/include/asm/xen/pci.h
+> > > @@ -13,6 +13,13 @@ static inline int pci_xen_hvm_init(void)
+> > >  	return -1;
+> > >  }
+> > >  #endif
+> > > +#if defined(CONFIG_XEN_DOM0)
+> > > +void __init xen_setup_pirqs(void);
+> > > +#else
+> > > +static inline void __init xen_setup_pirqs(void)
+> > > +{
+> > > +}
+> > > +#endif
+> > >  
+> > >  #if defined(CONFIG_PCI_MSI)
+> > >  #if defined(CONFIG_PCI_XEN)
+> > > diff --git a/arch/x86/pci/xen.c b/arch/x86/pci/xen.c
+> > > index fb20d05..5d87774 100644
+> > > --- a/arch/x86/pci/xen.c
+> > > +++ b/arch/x86/pci/xen.c
+> > > @@ -262,3 +262,135 @@ int __init pci_xen_hvm_init(void)
+> > >  #endif
+> > >  	return 0;
+> > >  }
+> > > +
+> > > +#ifdef CONFIG_XEN_DOM0
+> > > +static int xen_register_pirq(u32 gsi, int triggering)
+> > > +{
+> > > +	int rc, irq;
+> > > +	struct physdev_map_pirq map_irq;
+> > > +	int shareable = 0;
+> > > +	char *name;
+> > > +
+> > > +	if (!xen_pv_domain())
+> > > +		return -1;
+> > > +
+> > > +	if (triggering == ACPI_EDGE_SENSITIVE) {
+> > > +		shareable = 0;
+> > > +		name = "ioapic-edge";
+> > > +	} else {
+> > > +		shareable = 1;
+> > > +		name = "ioapic-level";
+> > > +	}
+> > > +
+> > > +	irq = xen_allocate_pirq(gsi, shareable, name);
+> > > +
+> > > +	printk(KERN_DEBUG "xen: --> irq=%d\n", irq);
+> > > +
+> > > +	if (irq < 0)
+> > > +		goto out;
+> > > +
+> > > +	map_irq.domid = DOMID_SELF;
+> > > +	map_irq.type = MAP_PIRQ_TYPE_GSI;
+> > > +	map_irq.index = gsi;
+> > > +	map_irq.pirq = irq;
+> > > +
+> > > +	rc = HYPERVISOR_physdev_op(PHYSDEVOP_map_pirq, &map_irq);
+> > > +	if (rc) {
+> > > +		printk(KERN_WARNING "xen map irq failed %d\n", rc);
+> > > +		return -1;
+> > > +	}
+> > > +
+> > > +out:
+> > > +	return irq;
+> > > +}
+> > > +
+> > > +static int xen_register_gsi(u32 gsi, int triggering, int polarity)
+> > > +{
+> > > +	int rc, irq;
+> > > +	struct physdev_setup_gsi setup_gsi;
+> > > +
+> > > +	if (!xen_pv_domain())
+> > > +		return -1;
+> > > +
+> > > +	printk(KERN_DEBUG "xen: registering gsi %u triggering %d polarity %d\n",
+> > > +			gsi, triggering, polarity);
+> > > +
+> > > +	irq = xen_register_pirq(gsi, triggering);
+> > > +
+> > > +	setup_gsi.gsi = gsi;
+> > > +	setup_gsi.triggering = (triggering == ACPI_EDGE_SENSITIVE ? 0 : 1);
+> > > +	setup_gsi.polarity = (polarity == ACPI_ACTIVE_HIGH ? 0 : 1);
+> > > +
+> > > +	rc = HYPERVISOR_physdev_op(PHYSDEVOP_setup_gsi, &setup_gsi);
+> > > +	if (rc == -EEXIST)
+> > > +		printk(KERN_INFO "Already setup the GSI :%d\n", gsi);
+> > > +	else if (rc) {
+> > > +		printk(KERN_ERR "Failed to setup GSI :%d, err_code:%d\n",
+> > > +				gsi, rc);
+> > > +	}
+> > > +
+> > > +	return irq;
+> > > +}
+> > > +
+> > > +static __init void xen_setup_acpi_sci(void)
+> > > +{
+> > > +	int rc;
+> > > +	int trigger, polarity;
+> > > +	int gsi = acpi_sci_override_gsi;
+> > > +
+> > > +	if (!gsi)
+> > > +		return;
+> > 
+> > Should this be 'if (gsi >= 0)' ? I haven't seen any machine
+> > with the GSI at IRQ 0, but perhaps it would be possible?
+> > 
+> 
+> The test is correct as it is because it is meant to check if the
+> acpi_sci_override_gsi has been set correctly and by default is 0.
+> A similar test is done in
+> arch/x86/kernel/acpi/boot.c:acpi_parse_madt_ioapic_entries.
 
-While at it, convert cancel_delayed_work() + flush_scheduled_work() to
-cancel_delayed_work_sync() in afs_mntpt_kill_timer().
+ok.
+> 
+> 
+> > > +
+> > > +	rc = acpi_get_override_irq(gsi, &trigger, &polarity);
+> > > +	if (rc)
+> > > +		return;
+> > 
+> > We don't want to report the error? Say a printk?
+> > 
+> 
+> good idea, I'll add one.
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
----
- fs/afs/cmservice.c |   12 ++++++------
- fs/afs/internal.h  |    1 +
- fs/afs/main.c      |   13 +++++++++++--
- fs/afs/mntpt.c     |   11 +++++------
- fs/afs/rxrpc.c     |    2 +-
- fs/afs/server.c    |   13 +++++++------
- fs/afs/vlocation.c |   14 +++++++-------
- 7 files changed, 38 insertions(+), 28 deletions(-)
+Thank you.
+> 
+> > > +	trigger = trigger ? ACPI_LEVEL_SENSITIVE : ACPI_EDGE_SENSITIVE;
+> > > +	polarity = polarity ? ACPI_ACTIVE_LOW : ACPI_ACTIVE_HIGH;
+> > > +	
+> > > +	printk("xen: sci override: global_irq=%d trigger=%d polarity=%d\n",
+> > > +			gsi, trigger, polarity);
+> > > +
+> > > +	gsi = xen_register_gsi(gsi, trigger, polarity);
+> > > +	printk("xen: acpi sci %d\n", gsi);
+> > 
+> > KERN_INFO ?
+> 
+> ok
 
-Index: work/fs/afs/cmservice.c
-===================================================================
---- work.orig/fs/afs/cmservice.c
-+++ work/fs/afs/cmservice.c
-@@ -289,7 +289,7 @@ static int afs_deliver_cb_callback(struc
- 	call->server = server;
+Danke.
+> 
+> > > +
+> > > +	return;
+> > > +}
+> > > +
+> > > +static int acpi_register_gsi_xen(struct device *dev, u32 gsi,
+> > > +				 int trigger, int polarity)
+> > > +{
+> > > +	return xen_register_gsi(gsi, trigger, polarity);
+> > > +}
+> > > +
+> > > +static int __init pci_xen_initial_domain(void)
+> > > +{
+> > > +	xen_setup_acpi_sci();
+> > > +	__acpi_register_gsi = acpi_register_gsi_xen;
+> > > +
+> > > +	return 0;
+> > > +}
+> > > +
+> > > +void __init xen_setup_pirqs(void)
+> > > +{
+> > > +	int irq;
+> > > +
+> > > +	pci_xen_initial_domain();
+> > > +
+> > > +	if (0 == nr_ioapics) {
+> > 
+> > This function is only called for the Dom0 case, so under
+> > what conditions would we have a machine with zero IO APICs?
+> > 
+> > And do we actually support machines with no IO APICs?
+> > (would Xen run under such ancient hardware?)
+>  
+> I don't know about real hardware but during the development of the PV on
+> HVM series I was able to boot a PV on HVM guest using the nr_ioapics==0
+> code path successfully several times.
+> And you never know what the future may bring :)
 
- 	INIT_WORK(&call->work, SRXAFSCB_CallBack);
--	schedule_work(&call->work);
-+	queue_work(afs_wq, &call->work);
- 	return 0;
- }
-
-@@ -336,7 +336,7 @@ static int afs_deliver_cb_init_call_back
- 	call->server = server;
-
- 	INIT_WORK(&call->work, SRXAFSCB_InitCallBackState);
--	schedule_work(&call->work);
-+	queue_work(afs_wq, &call->work);
- 	return 0;
- }
-
-@@ -367,7 +367,7 @@ static int afs_deliver_cb_init_call_back
- 	call->server = server;
-
- 	INIT_WORK(&call->work, SRXAFSCB_InitCallBackState);
--	schedule_work(&call->work);
-+	queue_work(afs_wq, &call->work);
- 	return 0;
- }
-
-@@ -400,7 +400,7 @@ static int afs_deliver_cb_probe(struct a
- 	call->state = AFS_CALL_REPLYING;
-
- 	INIT_WORK(&call->work, SRXAFSCB_Probe);
--	schedule_work(&call->work);
-+	queue_work(afs_wq, &call->work);
- 	return 0;
- }
-
-@@ -496,7 +496,7 @@ static int afs_deliver_cb_probe_uuid(str
- 	call->state = AFS_CALL_REPLYING;
-
- 	INIT_WORK(&call->work, SRXAFSCB_ProbeUuid);
--	schedule_work(&call->work);
-+	queue_work(afs_wq, &call->work);
- 	return 0;
- }
-
-@@ -580,6 +580,6 @@ static int afs_deliver_cb_tell_me_about_
- 	call->state = AFS_CALL_REPLYING;
-
- 	INIT_WORK(&call->work, SRXAFSCB_TellMeAboutYourself);
--	schedule_work(&call->work);
-+	queue_work(afs_wq, &call->work);
- 	return 0;
- }
-Index: work/fs/afs/internal.h
-===================================================================
---- work.orig/fs/afs/internal.h
-+++ work/fs/afs/internal.h
-@@ -576,6 +576,7 @@ extern int afs_drop_inode(struct inode *
- /*
-  * main.c
-  */
-+extern struct workqueue_struct *afs_wq;
- extern struct afs_uuid afs_uuid;
-
- /*
-Index: work/fs/afs/main.c
-===================================================================
---- work.orig/fs/afs/main.c
-+++ work/fs/afs/main.c
-@@ -30,6 +30,7 @@ module_param(rootcell, charp, 0);
- MODULE_PARM_DESC(rootcell, "root AFS cell name and VL server IP addr list");
-
- struct afs_uuid afs_uuid;
-+struct workqueue_struct *afs_wq;
-
- /*
-  * get a client UUID
-@@ -87,10 +88,16 @@ static int __init afs_init(void)
- 	if (ret < 0)
- 		return ret;
-
-+	/* create workqueue */
-+	ret = -ENOMEM;
-+	afs_wq = alloc_workqueue("afs", 0, 0);
-+	if (!afs_wq)
-+		return ret;
-+
- 	/* register the /proc stuff */
- 	ret = afs_proc_init();
- 	if (ret < 0)
--		return ret;
-+		goto error_proc;
-
- #ifdef CONFIG_AFS_FSCACHE
- 	/* we want to be able to cache */
-@@ -140,6 +147,8 @@ error_cell_init:
- error_cache:
- #endif
- 	afs_proc_cleanup();
-+error_proc:
-+	destroy_workqueue(afs_wq);
- 	rcu_barrier();
- 	printk(KERN_ERR "kAFS: failed to register: %d\n", ret);
- 	return ret;
-@@ -163,7 +172,7 @@ static void __exit afs_exit(void)
- 	afs_purge_servers();
- 	afs_callback_update_kill();
- 	afs_vlocation_purge();
--	flush_scheduled_work();
-+	destroy_workqueue(afs_wq);
- 	afs_cell_purge();
- #ifdef CONFIG_AFS_FSCACHE
- 	fscache_unregister_netfs(&afs_cache_netfs);
-Index: work/fs/afs/mntpt.c
-===================================================================
---- work.orig/fs/afs/mntpt.c
-+++ work/fs/afs/mntpt.c
-@@ -267,8 +267,8 @@ static void *afs_mntpt_follow_link(struc
- 		path_put(&nd->path);
- 		nd->path.mnt = newmnt;
- 		nd->path.dentry = dget(newmnt->mnt_root);
--		schedule_delayed_work(&afs_mntpt_expiry_timer,
--				      afs_mntpt_expiry_timeout * HZ);
-+		queue_delayed_work(afs_wq, &afs_mntpt_expiry_timer,
-+				   afs_mntpt_expiry_timeout * HZ);
- 		break;
- 	case -EBUSY:
- 		/* someone else made a mount here whilst we were busy */
-@@ -294,8 +294,8 @@ static void afs_mntpt_expiry_timed_out(s
-
- 	if (!list_empty(&afs_vfsmounts)) {
- 		mark_mounts_for_expiry(&afs_vfsmounts);
--		schedule_delayed_work(&afs_mntpt_expiry_timer,
--				      afs_mntpt_expiry_timeout * HZ);
-+		queue_delayed_work(afs_wq, &afs_mntpt_expiry_timer,
-+				   afs_mntpt_expiry_timeout * HZ);
- 	}
-
- 	_leave("");
-@@ -309,6 +309,5 @@ void afs_mntpt_kill_timer(void)
- 	_enter("");
-
- 	ASSERT(list_empty(&afs_vfsmounts));
--	cancel_delayed_work(&afs_mntpt_expiry_timer);
--	flush_scheduled_work();
-+	cancel_delayed_work_sync(&afs_mntpt_expiry_timer);
- }
-Index: work/fs/afs/rxrpc.c
-===================================================================
---- work.orig/fs/afs/rxrpc.c
-+++ work/fs/afs/rxrpc.c
-@@ -410,7 +410,7 @@ static void afs_rx_interceptor(struct so
- 	if (!call) {
- 		/* its an incoming call for our callback service */
- 		skb_queue_tail(&afs_incoming_calls, skb);
--		schedule_work(&afs_collect_incoming_call_work);
-+		queue_work(afs_wq, &afs_collect_incoming_call_work);
- 	} else {
- 		/* route the messages directly to the appropriate call */
- 		skb_queue_tail(&call->rx_queue, skb);
-Index: work/fs/afs/server.c
-===================================================================
---- work.orig/fs/afs/server.c
-+++ work/fs/afs/server.c
-@@ -238,8 +238,8 @@ void afs_put_server(struct afs_server *s
- 	if (atomic_read(&server->usage) == 0) {
- 		list_move_tail(&server->grave, &afs_server_graveyard);
- 		server->time_of_death = get_seconds();
--		schedule_delayed_work(&afs_server_reaper,
--				      afs_server_timeout * HZ);
-+		queue_delayed_work(afs_wq, &afs_server_reaper,
-+				   afs_server_timeout * HZ);
- 	}
- 	spin_unlock(&afs_server_graveyard_lock);
- 	_leave(" [dead]");
-@@ -285,10 +285,11 @@ static void afs_reap_server(struct work_
- 		expiry = server->time_of_death + afs_server_timeout;
- 		if (expiry > now) {
- 			delay = (expiry - now) * HZ;
--			if (!schedule_delayed_work(&afs_server_reaper, delay)) {
-+			if (!queue_delayed_work(afs_wq, &afs_server_reaper,
-+						delay)) {
- 				cancel_delayed_work(&afs_server_reaper);
--				schedule_delayed_work(&afs_server_reaper,
--						      delay);
-+				queue_delayed_work(afs_wq, &afs_server_reaper,
-+						   delay);
- 			}
- 			break;
- 		}
-@@ -323,5 +324,5 @@ void __exit afs_purge_servers(void)
- {
- 	afs_server_timeout = 0;
- 	cancel_delayed_work(&afs_server_reaper);
--	schedule_delayed_work(&afs_server_reaper, 0);
-+	queue_delayed_work(afs_wq, &afs_server_reaper, 0);
- }
-Index: work/fs/afs/vlocation.c
-===================================================================
---- work.orig/fs/afs/vlocation.c
-+++ work/fs/afs/vlocation.c
-@@ -507,8 +507,8 @@ void afs_put_vlocation(struct afs_vlocat
- 		_debug("buried");
- 		list_move_tail(&vl->grave, &afs_vlocation_graveyard);
- 		vl->time_of_death = get_seconds();
--		schedule_delayed_work(&afs_vlocation_reap,
--				      afs_vlocation_timeout * HZ);
-+		queue_delayed_work(afs_wq, &afs_vlocation_reap,
-+				   afs_vlocation_timeout * HZ);
-
- 		/* suspend updates on this record */
- 		if (!list_empty(&vl->update)) {
-@@ -561,11 +561,11 @@ static void afs_vlocation_reaper(struct
- 		if (expiry > now) {
- 			delay = (expiry - now) * HZ;
- 			_debug("delay %lu", delay);
--			if (!schedule_delayed_work(&afs_vlocation_reap,
--						   delay)) {
-+			if (!queue_delayed_work(afs_wq, &afs_vlocation_reap,
-+						delay)) {
- 				cancel_delayed_work(&afs_vlocation_reap);
--				schedule_delayed_work(&afs_vlocation_reap,
--						      delay);
-+				queue_delayed_work(afs_wq, &afs_vlocation_reap,
-+						   delay);
- 			}
- 			break;
- 		}
-@@ -620,7 +620,7 @@ void afs_vlocation_purge(void)
- 	destroy_workqueue(afs_vlocation_update_worker);
-
- 	cancel_delayed_work(&afs_vlocation_reap);
--	schedule_delayed_work(&afs_vlocation_reap, 0);
-+	queue_delayed_work(afs_wq, &afs_vlocation_reap, 0);
- }
-
- /*
+True.
