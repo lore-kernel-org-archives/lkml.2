@@ -1,67 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757094Ab0JSUMR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Oct 2010 16:12:17 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:57040 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753415Ab0JSUMQ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Oct 2010 16:12:16 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :content-type:content-transfer-encoding;
-        b=qok1VGPlIiB2PWuCOPOniJ2J5FAS0QIvb9UM/Gg0rSn8PxwlorRcrfpqVv0FVzKM+c
-         2FQoeqKOZFkyhcee5RKtdEOihIQCZcJX21VDWjtynqohnP1bL5t5i77VgxEOlojoM8FT
-         l+EQOkEtdfEdGpsCNWsw/ByYR+SaiVY2LD6qA=
+	id S1756877Ab0JSUQm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Oct 2010 16:16:42 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:42743 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752686Ab0JSUQl (ORCPT
+	<rfc822;<linux-kernel@vger.kernel.org>>);
+	Tue, 19 Oct 2010 16:16:41 -0400
+Date: Tue, 19 Oct 2010 16:15:18 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: stefano.stabellini@eu.citrix.com
+Cc: linux-kernel@vger.kernel.org,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
+        Qing He <qing.he@intel.com>, Yunhong Jiang <yunhong.jiang@intel.com>,
+        xen-devel@lists.xensource.com
+Subject: Re: [Xen-devel] [PATCH v4 03/10] xen: remap MSIs into pirqs when
+ running as initial domain
+Message-ID: <20101019201518.GA9727@dumpdata.com>
+References: <alpine.DEB.2.00.1010191207010.2423@kaball-desktop>
+ <1287487038-6643-3-git-send-email-stefano.stabellini@eu.citrix.com>
 MIME-Version: 1.0
-In-Reply-To: <20101019110801.GA4128@linux.vnet.ibm.com>
-References: <20100831082307.064687027@linux.vnet.ibm.com> <20100831083844.043619334@linux.vnet.ibm.com>
- <AANLkTikCLHh5Uz-DRq9ws78We+SwCAqdurA6HfuJh-8Y@mail.gmail.com>
- <20101018103729.GA4122@linux.vnet.ibm.com> <AANLkTikKJ25L=6b2resz+0SAg7ZYL5j=rHG7Lg4kFbwd@mail.gmail.com>
- <20101019110801.GA4128@linux.vnet.ibm.com>
-From: Mike Frysinger <vapier.adi@gmail.com>
-Date: Tue, 19 Oct 2010 16:11:53 -0400
-Message-ID: <AANLkTimLi8BYy_u8NhD15s=+iiODzuG1H_CgZ-cd7jep@mail.gmail.com>
-Subject: Re: [PATCH] initramfs: Fix build break on symbol-prefixed archs
-To: Hendrik Brueckner <brueckner@linux.vnet.ibm.com>, mmarek@suse.cz,
-        Sam Ravnborg <sam@ravnborg.org>,
-        Michael Holzheu <holzheu@linux.vnet.ibm.com>, tabbott@ksplice.com,
-        vda.linux@googlemail.com, hpa@linux.intel.com,
-        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        heiko.carstens@de.ibm.com, schwidefsky@de.ibm.com
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1287487038-6643-3-git-send-email-stefano.stabellini@eu.citrix.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 19, 2010 at 07:08, Hendrik Brueckner wrote:
-> --- a/usr/Makefile
-> +++ b/usr/Makefile
-> @@ -19,6 +19,9 @@ suffix_$(CONFIG_INITRAMFS_COMPRESSION_LZ
->  suffix_$(CONFIG_INITRAMFS_COMPRESSION_LZO)   = .lzo
->
->  AFLAGS_initramfs_data.o += -DINITRAMFS_IMAGE="usr/initramfs_data.cpio$(suffix_y)"
-> +ifdef CONFIG_SYMBOL_PREFIX
-> +AFLAGS_initramfs_data.o += -DSYMBOL_PREFIX=$(patsubst "%",%,$(CONFIG_SYMBOL_PREFIX))
-> +endif
->
->  # Generate builtin.o based on initramfs_data.o
->  obj-$(CONFIG_BLK_DEV_INITRD) := initramfs_data.o
+> +int xen_create_msi_irq(struct pci_dev *dev, struct msi_desc *msidesc, int type)
+> +{
+> +	int irq = -1;
+> +	struct physdev_map_pirq map_irq;
+> +	int rc;
+> +	int pos;
+> +	u32 table_offset, bir;
+> +
+> +	memset(&map_irq, 0, sizeof(map_irq));
+> +	map_irq.domid = DOMID_SELF;
+> +	map_irq.type = MAP_PIRQ_TYPE_MSI;
+> +	map_irq.index = -1;
+> +	map_irq.pirq = -1;
+> +	map_irq.bus = dev->bus->number;
+> +	map_irq.devfn = dev->devfn;
+> +
+> +	if (type == PCI_CAP_ID_MSIX) {
+> +		pos = pci_find_capability(dev, PCI_CAP_ID_MSIX);
+> +
+> +		pci_read_config_dword(dev, msix_table_offset_reg(pos),
+> +					&table_offset);
+> +		bir = (u8)(table_offset & PCI_MSIX_FLAGS_BIRMASK);
+> +
+> +		map_irq.table_base = pci_resource_start(dev, bir);
+> +		map_irq.entry_nr = msidesc->msi_attrib.entry_nr;
+> +	}
+> +
+> +	spin_lock(&irq_mapping_update_lock);
+> +
+> +	irq = find_unbound_irq();
+> +
+> +	if (irq == -1)
+> +		goto out;
+> +
+> +	rc = HYPERVISOR_physdev_op(PHYSDEVOP_map_pirq, &map_irq);
+> +	if (rc) {
+> +		printk(KERN_WARNING "xen map irq failed %d\n", rc);
+> +
+> +		dynamic_irq_cleanup(irq);
 
-i dont think we want to go this route.  keep it in one place:
---- a/scripts/Makefile.lib
-+++ b/scripts/Makefile.lib
-@@ -120,7 +120,9 @@ _c_flags += $(if $(patsubst n%,, \
- endif
+Looking at include/linux/irq.h, I see this commment:
+ /*
+330  * Dynamic irq helper functions. Obsolete. Use irq_alloc_desc* and
+331  * irq_free_desc instead.
+332  */
 
- ifdef CONFIG_SYMBOL_PREFIX
--_cpp_flags += -DSYMBOL_PREFIX=$(patsubst "%",%,$(CONFIG_SYMBOL_PREFIX))
-+_sym_flags = -DSYMBOL_PREFIX=$(patsubst "%",%,$(CONFIG_SYMBOL_PREFIX))
-+_cpp_flags += $(_sym_flags)
-+_a_flags += $(_sym_flags)
- endif
-
-
--mike
+So we should use irq_free_desc instead of dynamic_irq_cleanup.
+(fyi, I didn't realize this until I started pulling in the sparse_irq
+patchset).
+> +
+> +		irq = -1;
+> +		goto out;
+> +	}
+> +	irq_info[irq] = mk_pirq_info(0, map_irq.pirq, 0, map_irq.index);
+> +
+> +	set_irq_chip_and_handler_name(irq, &xen_pirq_chip,
+> +			handle_level_irq,
+> +			(type == PCI_CAP_ID_MSIX) ? "msi-x":"msi");
+> +
+> +out:
+> +	spin_unlock(&irq_mapping_update_lock);
+> +	return irq;
+> +}
+> +#endif
+> +
