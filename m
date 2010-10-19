@@ -1,53 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755215Ab0JSWSf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Oct 2010 18:18:35 -0400
-Received: from www.tglx.de ([62.245.132.106]:44050 "EHLO www.tglx.de"
+	id S1755476Ab0JSWSo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Oct 2010 18:18:44 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:56534 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754890Ab0JSWSe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Oct 2010 18:18:34 -0400
-Date: Wed, 20 Oct 2010 00:17:28 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Jason Baron <jbaron@redhat.com>
-cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Koki Sanagi <sanagi.koki@jp.fujitsu.com>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Frederic Weisbecker <fweisbec@gmail.com>, nhorman@tuxdriver.com,
-        scott.a.mcmillan@intel.com, laijs@cn.fujitsu.com,
-        "H. Peter Anvin" <hpa@zytor.com>, LKML <linux-kernel@vger.kernel.org>,
-        eric.dumazet@gmail.com, kaneshige.kenji@jp.fujitsu.com,
-        David Miller <davem@davemloft.net>, izumi.taku@jp.fujitsu.com,
-        kosaki.motohiro@jp.fujitsu.com,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        "Luck, Tony" <tony.luck@intel.com>
-Subject: Re: [PATCH] tracing: Cleanup the convoluted softirq tracepoints
-In-Reply-To: <alpine.LFD.2.00.1010192347390.6815@localhost6.localdomain6>
-Message-ID: <alpine.LFD.2.00.1010200015320.6815@localhost6.localdomain6>
-References: <1287395077.29097.1543.camel@twins> <1287398936.29097.1548.camel@twins> <4CBD79CF.2060706@jp.fujitsu.com> <alpine.LFD.2.00.1010191428560.6815@localhost6.localdomain6> <20101019132236.GA19197@Krystal> <alpine.LFD.2.00.1010191524160.6815@localhost6.localdomain6>
- <1287496495.16971.372.camel@gandalf.stny.rr.com> <alpine.LFD.2.00.1010191558250.6815@localhost6.localdomain6> <20101019142820.GA14520@Krystal> <alpine.LFD.2.00.1010191842270.6815@localhost6.localdomain6> <20101019212816.GA2855@redhat.com>
- <alpine.LFD.2.00.1010192347390.6815@localhost6.localdomain6>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1755314Ab0JSWSm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Oct 2010 18:18:42 -0400
+From: Eric Paris <eparis@redhat.com>
+Subject: [PATCH] secmark: fix config problem when CONFIG_NF_CONNTRACK_SECMARK
+	is not set
+To: jmorris@namei.org
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        paul.moore@hp.com, kaber@trash.net, sfr@canb.auug.org.au
+Date: Tue, 19 Oct 2010 18:17:32 -0400
+Message-ID: <20101019221732.11590.22215.stgit@paris.rdu.redhat.com>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 19 Oct 2010, Thomas Gleixner wrote:
-> On Tue, 19 Oct 2010, Jason Baron wrote:
-> > > Now even worse, when you NOP out the jmpq then your tracepoint is
-> > > still not enabled. Brilliant !
-> > > 
-> > 
-> > The 'jmpq' in the enabled case is patched with a jmpq to the body of the
-> > tracepoint itself.
-> 
-> Brilliant.
+When CONFIG_NF_CONNTRACK_SECMARK is not set we accidentally attempt to use
+the secmark fielf of struct nf_conn.  Problem is when that config isn't set
+the field doesn't exist.  whoops.  Wrap the incorrect usage in the config.
 
-IOW, We now jump around the jump which jumps around the disabled code.
+Signed-off-by: Eric Paris <eparis@redhat.com>
+---
 
-Thanks,
+ net/netfilter/nf_conntrack_netlink.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
 
-	tglx
+diff --git a/net/netfilter/nf_conntrack_netlink.c b/net/netfilter/nf_conntrack_netlink.c
+index b3c6285..146476c 100644
+--- a/net/netfilter/nf_conntrack_netlink.c
++++ b/net/netfilter/nf_conntrack_netlink.c
+@@ -582,9 +582,11 @@ ctnetlink_conntrack_event(unsigned int events, struct nf_ct_event *item)
+ 		    && ctnetlink_dump_helpinfo(skb, ct) < 0)
+ 			goto nla_put_failure;
+ 
++#ifdef CONFIG_NF_CONNTRACK_SECMARK
+ 		if ((events & (1 << IPCT_SECMARK) || ct->secmark)
+ 		    && ctnetlink_dump_secctx(skb, ct) < 0)
+ 			goto nla_put_failure;
++#endif
+ 
+ 		if (events & (1 << IPCT_RELATED) &&
+ 		    ctnetlink_dump_master(skb, ct) < 0)
 
