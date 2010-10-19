@@ -1,14 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758006Ab0JSW7v (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Oct 2010 18:59:51 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:15704 "EHLO mx1.redhat.com"
+	id S1758054Ab0JSXAD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Oct 2010 19:00:03 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:56939 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757941Ab0JSW7t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Oct 2010 18:59:49 -0400
+	id S1756208Ab0JSW77 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Oct 2010 18:59:59 -0400
 From: Eric Paris <eparis@redhat.com>
-Subject: [PATCH 5/6] IMA: use rbtree instead of radix tree for inode
-	information cache
+Subject: [PATCH 6/6] IMA: use i_writecount rather than a private counter
 To: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
         linux-fsdevel@vger.kernel.org
 Cc: hch@infradead.org, zohar@us.ibm.com, warthog9@kernel.org,
@@ -16,221 +15,255 @@ Cc: hch@infradead.org, zohar@us.ibm.com, warthog9@kernel.org,
         hpa@zytor.com, akpm@linux-foundation.org,
         torvalds@linux-foundation.org, mingo@elte.hu, eparis@redhat.com,
         viro@zeniv.linux.org.uk
-Date: Tue, 19 Oct 2010 18:58:39 -0400
-Message-ID: <20101019225839.12396.92630.stgit@paris.rdu.redhat.com>
+Date: Tue, 19 Oct 2010 18:58:46 -0400
+Message-ID: <20101019225846.12396.34131.stgit@paris.rdu.redhat.com>
 In-Reply-To: <20101019225813.12396.2564.stgit@paris.rdu.redhat.com>
 References: <20101019225813.12396.2564.stgit@paris.rdu.redhat.com>
 User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 8bit
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The IMA code needs to store the number of tasks which have an open fd
-granting permission to write a file even when IMA is not in use.  It needs
-this information in order to be enabled at a later point in time without
-losing it's integrity garantees.  At the moment that means we store a
-little bit of data about every inode in a cache.  We use a radix tree key'd
-on the inode's memory address.  Dave Chinner pointed out that a radix tree
-is a terrible data structure for such a sparse key space.  This patch
-switches to using an rbtree which should be more efficient.
+IMA tracks the number of struct files which are holding a given inode
+readonly and the number white are holding the inode write or r/w.  It needs
+this information so when a new reader or writer comes in it can tell if
+this new file will be able to invalidate results it already made about
+existing files.
 
-Bug report from Dave:
+aka if a task is holding a struct file open RO, IMA measured the file and
+recorded those measurements and then a task opens the file RW IMA needs to
+note in the logs that the old measurement may not be correct.  It's called
+a "Time of Measure Time of Use" (ToMToU) issue.  The same is true is a RO
+file is opened to an inode which has an open writer.  We cannot, with any
+validity, measure the file in question since it could be changing.
 
- I just noticed that slabtop
-was reportingi an awfully high usage of radix tree nodes:
+This patch attempts to use the i_writecount field to track writers.  The
+i_writecount field actually embeds more information in it's value that IMA
+needs but it should work for our purposes and allow us to shrink the struct
+inode even more.
 
- OBJS ACTIVE  USE OBJ SIZE  SLABS OBJ/SLAB CACHE SIZE NAME
-4200331 2778082  66%    0.55K 144839       29   2317424K radix_tree_node
-2321500 2060290  88%    1.00K  72581       32   2322592K xfs_inode
-2235648 2069791  92%    0.12K  69864       32    279456K iint_cache
-
-That is, 2.7M radix tree nodes are allocated, and the cache itself
-is consuming 2.3GB of RAM. I know that the XFS inodei caches are
-indexed by radix tree node, but for 2 million cached inodes that
-would mean a density of 1 inode per radix tree node, which for a
-system with 16M inodes in the filsystems is an impossibly low
-density. The worst I've seen in a production system like kernel.org
-is about 20-25% density, which would mean about 150−200k radix tree
-nodes for that many inodes. So it's not the inode cache.
-
-So I looked up what the iint_cache was. It appears to used for storing
-per-inode IMA information, and uses a radix tree for indexing.
-It uses the *address* of the struct inode as the indexing key. That
-means the key space is extremely sparse - for XFS the struct inode
-addresses are approximately 1000 bytes apart, which means the
-closest the radix tree index keys get is ~1000. Which means
-that there is a single entry per radix tree leaf node, so the radix
-tree is using roughly 550 bytes for every 120byte structure being
-cached. For the above example, it's probably wasting close to 1GB of
-RAM....
-
-Reported-by: Dave Chinner <david@fromorbit.com>
 Signed-off-by: Eric Paris <eparis@redhat.com>
 ---
 
- security/integrity/ima/ima.h      |    4 +-
- security/integrity/ima/ima_iint.c |   85 ++++++++++++++++++++++++++++---------
- 2 files changed, 67 insertions(+), 22 deletions(-)
+ include/linux/fs.h                |    3 -
+ security/integrity/ima/ima_iint.c |    3 -
+ security/integrity/ima/ima_main.c |   95 +++++++++++++------------------------
+ 3 files changed, 34 insertions(+), 67 deletions(-)
 
-diff --git a/security/integrity/ima/ima.h b/security/integrity/ima/ima.h
-index 0767717..386026a 100644
---- a/security/integrity/ima/ima.h
-+++ b/security/integrity/ima/ima.h
-@@ -101,6 +101,8 @@ static inline unsigned long ima_hash_key(u8 *digest)
- 
- /* integrity data associated with an inode */
- struct ima_iint_cache {
-+	struct rb_node rb_node; /* rooted in ima_iint_tree */
-+	struct inode *inode;	/* back pointer to inode in question */
- 	u64 version;		/* track inode changes */
- 	unsigned long flags;
- 	u8 digest[IMA_DIGEST_SIZE];
-@@ -120,7 +122,7 @@ int ima_store_template(struct ima_template_entry *entry, int violation,
- void ima_template_show(struct seq_file *m, void *e,
- 		       enum ima_show_type show);
- 
--/* radix tree calls to lookup, insert, delete
-+/* rbtree tree calls to lookup, insert, delete
-  * integrity data associated with an inode.
-  */
- struct ima_iint_cache *ima_iint_insert(struct inode *inode);
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index 8f46e5b..5dbbf6b 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -777,9 +777,8 @@ struct inode {
+ 	void			*i_security;
+ #endif
+ #ifdef CONFIG_IMA
+-	/* all protected by i_mutex */
++	/* all protected by i_lock */
+ 	unsigned int		i_readers; /* struct files open RO */
+-	unsigned int		i_writers; /* struct files open WR */
+ #endif
+ #ifdef CONFIG_FS_POSIX_ACL
+ 	struct posix_acl	*i_acl;
 diff --git a/security/integrity/ima/ima_iint.c b/security/integrity/ima/ima_iint.c
-index 0bab052..bef6e8f 100644
+index bef6e8f..6e82324 100644
 --- a/security/integrity/ima/ima_iint.c
 +++ b/security/integrity/ima/ima_iint.c
-@@ -12,21 +12,48 @@
-  * File: ima_iint.c
-  * 	- implements the IMA hooks: ima_inode_alloc, ima_inode_free
-  *	- cache integrity information associated with an inode
-- *	  using a radix tree.
-+ *	  using a rbtree tree.
-  */
- #include <linux/slab.h>
- #include <linux/module.h>
- #include <linux/spinlock.h>
--#include <linux/radix-tree.h>
-+#include <linux/rbtree.h>
- #include "ima.h"
- 
--RADIX_TREE(ima_iint_store, GFP_ATOMIC);
-+static struct rb_root ima_iint_tree = RB_ROOT;
- DEFINE_SPINLOCK(ima_iint_lock);
- static struct kmem_cache *iint_cache __read_mostly;
- 
- int iint_initialized = 0;
- 
--/* ima_iint_find_get - return the iint associated with an inode
-+/*
-+ * __ima_iint_find - return the iint associated with an inode
-+ *
-+ * The caller must hold either the rcu_read_lock or the ima_iint_lock
-+ */
-+static struct ima_iint_cache *__ima_iint_find(struct inode *inode)
-+{
-+	struct ima_iint_cache *iint;
-+	struct rb_node *n = ima_iint_tree.rb_node;
-+
-+	while (n) {
-+		iint = rb_entry(n, struct ima_iint_cache, rb_node);
-+
-+		if (inode < iint->inode)
-+			n = n->rb_left;
-+		else if (inode > iint->inode)
-+			n = n->rb_right;
-+		else
-+			break;
-+	}
-+	if (!n)
-+		return NULL;
-+
-+	return iint;
-+}
-+
-+/*
-+ * ima_iint_find_get - return the iint associated with an inode
-  *
-  * ima_iint_find_get gets a reference to the iint. Caller must
-  * remember to put the iint reference.
-@@ -36,12 +63,11 @@ struct ima_iint_cache *ima_iint_find_get(struct inode *inode)
- 	struct ima_iint_cache *iint;
- 
- 	rcu_read_lock();
--	iint = radix_tree_lookup(&ima_iint_store, (unsigned long)inode);
--	if (!iint)
--		goto out;
--	kref_get(&iint->refcount);
--out:
-+	iint = __ima_iint_find(inode);
-+	if (iint)
-+		kref_get(&iint->refcount);
- 	rcu_read_unlock();
-+
- 	return iint;
- }
- 
-@@ -51,24 +77,39 @@ out:
-  */
- int ima_inode_alloc(struct inode *inode)
+@@ -118,11 +118,8 @@ void ima_check_counters(struct inode *inode)
  {
--	struct ima_iint_cache *iint = NULL;
-+	struct rb_node **p;
-+	struct rb_node *new_node, *parent = NULL;
-+	struct ima_iint_cache *new_iint, *test_iint;
- 	int rc = 0;
+ 	if (inode->i_readers)
+ 		printk(KERN_INFO "%s: readcount: %u\n", __func__, inode->i_readers);
+-	if (inode->i_writers)
+-		printk(KERN_INFO "%s: writers: %u\n", __func__, inode->i_writers);
  
--	iint = kmem_cache_alloc(iint_cache, GFP_NOFS);
--	if (!iint)
-+	new_iint = kmem_cache_alloc(iint_cache, GFP_NOFS);
-+	if (!new_iint)
- 		return -ENOMEM;
- 
--	rc = radix_tree_preload(GFP_NOFS);
--	if (rc < 0)
--		goto out;
-+	new_iint->inode = inode;
-+	new_node = &new_iint->rb_node;
- 
- 	spin_lock(&ima_iint_lock);
--	rc = radix_tree_insert(&ima_iint_store, (unsigned long)inode, iint);
--	spin_unlock(&ima_iint_lock);
--	radix_tree_preload_end();
-+
-+	p = &ima_iint_tree.rb_node;
-+	while (*p) {
-+		parent = *p;
-+		test_iint = rb_entry(parent, struct ima_iint_cache, rb_node);
-+
-+		if (inode < test_iint->inode)
-+			p = &(*p)->rb_left;
-+		else if (inode > test_iint->inode)
-+			p = &(*p)->rb_right;
-+		else {
-+			rc = -EEXIST;
-+			goto out;
-+		}
-+	}
-+
-+	rb_link_node(new_node, parent, p);
-+	rb_insert_color(new_node, &ima_iint_tree);
- out:
--	if (rc < 0)
--		kmem_cache_free(iint_cache, iint);
-+	spin_unlock(&ima_iint_lock);
- 
- 	return rc;
+ 	inode->i_readers = 0;
+-	inode->i_writers = 0;
  }
-@@ -113,7 +154,9 @@ void ima_inode_free(struct inode *inode)
- 	struct ima_iint_cache *iint;
  
- 	spin_lock(&ima_iint_lock);
--	iint = radix_tree_delete(&ima_iint_store, (unsigned long)inode);
-+	iint = __ima_iint_find(inode);
-+	if (iint)
-+		rb_erase(&iint->rb_node, &ima_iint_tree);
- 	spin_unlock(&ima_iint_lock);
- 	if (iint)
- 		call_rcu(&iint->rcu, iint_rcu_free);
+ /* iint_free - called when the iint refcount goes to zero */
+diff --git a/security/integrity/ima/ima_main.c b/security/integrity/ima/ima_main.c
+index 860e161..668ea93 100644
+--- a/security/integrity/ima/ima_main.c
++++ b/security/integrity/ima/ima_main.c
+@@ -85,48 +85,15 @@ out:
+ 	return found;
+ }
+ 
+-/* ima_read_write_check - reflect possible reading/writing errors in the PCR.
+- *
+- * When opening a file for read, if the file is already open for write,
+- * the file could change, resulting in a file measurement error.
+- *
+- * Opening a file for write, if the file is already open for read, results
+- * in a time of measure, time of use (ToMToU) error.
+- *
+- * In either case invalidate the PCR.
+- */
+-enum iint_pcr_error { TOMTOU, OPEN_WRITERS };
+-static void ima_read_write_check(enum iint_pcr_error error,
+-				 struct inode *inode,
+-				 const unsigned char *filename)
+-{
+-	BUG_ON(!mutex_is_locked(&inode->i_mutex));
+-
+-	switch (error) {
+-	case TOMTOU:
+-		if (inode->i_readers > 0)
+-			ima_add_violation(inode, filename, "invalid_pcr",
+-					  "ToMToU");
+-		break;
+-	case OPEN_WRITERS:
+-		if (inode->i_writers > 0)
+-			ima_add_violation(inode, filename, "invalid_pcr",
+-					  "open_writers");
+-		break;
+-	}
+-}
+-
+ /*
+  * Update the counts given an fmode_t
+  */
+ static void ima_inc_counts(struct inode *inode, fmode_t mode)
+ {
+-	BUG_ON(!mutex_is_locked(&inode->i_mutex));
++	assert_spin_locked(&inode->i_lock);
+ 
+ 	if ((mode & (FMODE_READ | FMODE_WRITE)) == FMODE_READ)
+ 		inode->i_readers++;
+-	if (mode & FMODE_WRITE)
+-		inode->i_writers++;
+ }
+ 
+ /*
+@@ -146,11 +113,12 @@ void ima_counts_get(struct file *file)
+ 	struct inode *inode = dentry->d_inode;
+ 	fmode_t mode = file->f_mode;
+ 	int rc;
++	bool send_tomtou = false, send_writers = false;
+ 
+-	if (!iint_initialized || !S_ISREG(inode->i_mode))
++	if (!S_ISREG(inode->i_mode))
+ 		return;
+ 
+-	mutex_lock(&inode->i_mutex);
++	spin_lock(&inode->i_lock);
+ 
+ 	if (!ima_initialized)
+ 		goto out;
+@@ -160,13 +128,23 @@ void ima_counts_get(struct file *file)
+ 		goto out;
+ 
+ 	if (mode & FMODE_WRITE) {
+-		ima_read_write_check(TOMTOU, inode, dentry->d_name.name);
++		if (inode->i_readers)
++			send_tomtou = true;
+ 		goto out;
+ 	}
+-	ima_read_write_check(OPEN_WRITERS, inode, dentry->d_name.name);
++
++	if (atomic_read(&inode->i_writecount) > 0)
++		send_writers = true;
+ out:
+ 	ima_inc_counts(inode, file->f_mode);
+-	mutex_unlock(&inode->i_mutex);
++	spin_unlock(&inode->i_lock);
++
++	if (send_tomtou)
++		ima_add_violation(inode, dentry->d_name.name, "invalid_pcr",
++				  "ToMToU");
++	if (send_writers)
++		ima_add_violation(inode, dentry->d_name.name, "invalid_pcr",
++				  "open_writers");
+ }
+ 
+ /*
+@@ -175,25 +153,18 @@ out:
+ static void ima_dec_counts(struct inode *inode, struct file *file)
+ {
+ 	mode_t mode = file->f_mode;
+-	bool dump = false;
+ 
+-	BUG_ON(!mutex_is_locked(&inode->i_mutex));
++	assert_spin_locked(&inode->i_lock);
+ 
+ 	if ((mode & (FMODE_READ | FMODE_WRITE)) == FMODE_READ) {
+-		if (unlikely(inode->i_readers == 0))
+-			dump = true;
+-		inode->i_readers--;
+-	}
+-	if (mode & FMODE_WRITE) {
+-		if (unlikely(inode->i_writers == 0))
+-			dump = true;
+-		inode->i_writers--;
+-	}
+-
+-	if (dump && !ima_limit_imbalance(file)) {
+-		printk(KERN_INFO "%s: open/free imbalance (r:%u w:%u)\n",
+-		       __func__, inode->i_readers, inode->i_writers);
+-		dump_stack();
++		if (unlikely(inode->i_readers == 0) &&
++		    !ima_limit_imbalance(file)) {
++			printk(KERN_INFO "%s: open/free imbalance (r:%u)\n",
++			       __func__, inode->i_readers);
++			dump_stack();
++		} else {
++			inode->i_readers--;
++		}
+ 	}
+ }
+ 
+@@ -204,10 +175,10 @@ static void ima_check_last_writer(struct ima_iint_cache *iint,
+ 	mode_t mode = file->f_mode;
+ 
+ 	BUG_ON(!mutex_is_locked(&iint->mutex));
+-	BUG_ON(!mutex_is_locked(&inode->i_mutex));
++	assert_spin_locked(&inode->i_lock);
+ 
+ 	if (mode & FMODE_WRITE &&
+-	    inode->i_writers == 0 &&
++	    atomic_read(&inode->i_writecount) <= 0 &&
+ 	    iint->version != inode->i_version)
+ 		iint->flags &= ~IMA_MEASURED;
+ }
+@@ -216,12 +187,12 @@ static void ima_file_free_iint(struct ima_iint_cache *iint, struct inode *inode,
+ 			       struct file *file)
+ {
+ 	mutex_lock(&iint->mutex);
+-	mutex_lock(&inode->i_mutex);
++	spin_lock(&inode->i_lock);
+ 
+ 	ima_dec_counts(inode, file);
+ 	ima_check_last_writer(iint, inode, file);
+ 
+-	mutex_unlock(&inode->i_mutex);
++	spin_unlock(&inode->i_lock);
+ 	mutex_unlock(&iint->mutex);
+ 
+ 	kref_put(&iint->refcount, iint_free);
+@@ -229,11 +200,11 @@ static void ima_file_free_iint(struct ima_iint_cache *iint, struct inode *inode,
+ 
+ static void ima_file_free_noiint(struct inode *inode, struct file *file)
+ {
+-	mutex_lock(&inode->i_mutex);
++	spin_lock(&inode->i_lock);
+ 
+ 	ima_dec_counts(inode, file);
+ 
+-	mutex_unlock(&inode->i_mutex);
++	spin_unlock(&inode->i_lock);
+ }
+ 
+ /**
+@@ -241,7 +212,7 @@ static void ima_file_free_noiint(struct inode *inode, struct file *file)
+  * @file: pointer to file structure being freed
+  *
+  * Flag files that changed, based on i_version;
+- * and decrement the i_readers/i_writers.
++ * and decrement the i_readers.
+  */
+ void ima_file_free(struct file *file)
+ {
 
