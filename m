@@ -1,100 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934000Ab0JSLSF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Oct 2010 07:18:05 -0400
+	id S933953Ab0JSLR5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Oct 2010 07:17:57 -0400
 Received: from smtp02.citrix.com ([66.165.176.63]:49801 "EHLO
 	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933966Ab0JSLR6 (ORCPT
+	with ESMTP id S1758425Ab0JSLR4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Oct 2010 07:17:58 -0400
+	Tue, 19 Oct 2010 07:17:56 -0400
 X-IronPort-AV: E=Sophos;i="4.57,350,1283745600"; 
-   d="scan'208";a="118686958"
+   d="scan'208";a="118686936"
 From: stefano.stabellini@eu.citrix.com
 To: linux-kernel@vger.kernel.org
 Cc: xen-devel@lists.xensource.com, Jeremy.Fitzhardinge@citrix.com,
-        Stefano.Stabellini@eu.citrix.com, Juan Quintela <quintela@redhat.com>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
+        Stefano.Stabellini@eu.citrix.com,
         Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Subject: [PATCH v4 06/10] xen: Initialize xenbus for dom0.
-Date: Tue, 19 Oct 2010 12:17:14 +0100
-Message-Id: <1287487038-6643-6-git-send-email-stefano.stabellini@eu.citrix.com>
+Subject: [PATCH v4 05/10] xen: use vcpu_ops to setup cpu masks
+Date: Tue, 19 Oct 2010 12:17:13 +0100
+Message-Id: <1287487038-6643-5-git-send-email-stefano.stabellini@eu.citrix.com>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <alpine.DEB.2.00.1010191207010.2423@kaball-desktop>
 References: <alpine.DEB.2.00.1010191207010.2423@kaball-desktop>
-X-OriginalArrivalTime: 19 Oct 2010 11:17:58.0015 (UTC) FILETIME=[489FC0F0:01CB6F7F]
+X-OriginalArrivalTime: 19 Oct 2010 11:17:56.0062 (UTC) FILETIME=[4775BFE0:01CB6F7F]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Juan Quintela <quintela@redhat.com>
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
 
-Do initial xenbus/xenstore setup in dom0.  In dom0 we need to actually
-allocate the xenstore resources, rather than being given them from
-outside.
-
-[ Impact: initialize Xenbus ]
-
-Signed-off-by: Juan Quintela <quintela@redhat.com>
-Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
 Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
 ---
- drivers/xen/xenbus/xenbus_probe.c |   29 ++++++++++++++++++++++++++++-
- 1 files changed, 28 insertions(+), 1 deletions(-)
+ arch/x86/xen/smp.c |    8 +++++++-
+ 1 files changed, 7 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/xen/xenbus/xenbus_probe.c b/drivers/xen/xenbus/xenbus_probe.c
-index d409495..d242610 100644
---- a/drivers/xen/xenbus/xenbus_probe.c
-+++ b/drivers/xen/xenbus/xenbus_probe.c
-@@ -801,6 +801,7 @@ device_initcall(xenbus_probe_initcall);
- static int __init xenbus_init(void)
+diff --git a/arch/x86/xen/smp.c b/arch/x86/xen/smp.c
+index 25f232b..1386767 100644
+--- a/arch/x86/xen/smp.c
++++ b/arch/x86/xen/smp.c
+@@ -156,11 +156,16 @@ static void __init xen_fill_possible_map(void)
  {
- 	int err = 0;
-+	unsigned long page = 0;
+ 	int i, rc;
  
- 	DPRINTK("");
- 
-@@ -821,7 +822,31 @@ static int __init xenbus_init(void)
- 	 * Domain0 doesn't have a store_evtchn or store_mfn yet.
- 	 */
- 	if (xen_initial_domain()) {
--		/* dom0 not yet supported */
-+		struct evtchn_alloc_unbound alloc_unbound;
-+
-+		/* Allocate Xenstore page */
-+		page = get_zeroed_page(GFP_KERNEL);
-+		if (!page)
-+			goto out_error;
-+
-+		xen_store_mfn = xen_start_info->store_mfn =
-+			pfn_to_mfn(virt_to_phys((void *)page) >>
-+				   PAGE_SHIFT);
-+
-+		/* Next allocate a local port which xenstored can bind to */
-+		alloc_unbound.dom        = DOMID_SELF;
-+		alloc_unbound.remote_dom = 0;
-+
-+		err = HYPERVISOR_event_channel_op(EVTCHNOP_alloc_unbound,
-+						  &alloc_unbound);
-+		if (err == -ENOSYS)
-+			goto out_error;
-+
-+		BUG_ON(err);
-+		xen_store_evtchn = xen_start_info->store_evtchn =
-+			alloc_unbound.port;
-+
-+		xen_store_interface = mfn_to_virt(xen_store_mfn);
- 	} else {
- 		if (xen_hvm_domain()) {
- 			uint64_t v = 0;
-@@ -867,6 +892,8 @@ static int __init xenbus_init(void)
- 	bus_unregister(&xenbus_frontend.bus);
- 
-   out_error:
-+	if (page != 0)
-+		free_page(page);
- 	return err;
++	num_processors = 0;
++	disabled_cpus = 0;
+ 	for (i = 0; i < nr_cpu_ids; i++) {
+ 		rc = HYPERVISOR_vcpu_op(VCPUOP_is_up, i, NULL);
+ 		if (rc >= 0) {
+ 			num_processors++;
+ 			set_cpu_possible(i, true);
++		} else {
++			set_cpu_possible(i, false);
++			set_cpu_present(i, false);
+ 		}
+ 	}
  }
+@@ -190,6 +195,8 @@ static void __init xen_smp_prepare_cpus(unsigned int max_cpus)
+ 	if (xen_smp_intr_init(0))
+ 		BUG();
  
++	xen_fill_possible_map();
++
+ 	if (!alloc_cpumask_var(&xen_cpu_initialized_map, GFP_KERNEL))
+ 		panic("could not allocate xen_cpu_initialized_map\n");
+ 
+@@ -480,6 +487,5 @@ static const struct smp_ops xen_smp_ops __initdata = {
+ void __init xen_smp_init(void)
+ {
+ 	smp_ops = xen_smp_ops;
+-	xen_fill_possible_map();
+ 	xen_init_spinlocks();
+ }
 -- 
 1.5.6.5
 
