@@ -1,49 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755189Ab0JSS2x (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Oct 2010 14:28:53 -0400
-Received: from verein.lst.de ([213.95.11.210]:43903 "EHLO verein.lst.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751526Ab0JSS2w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Oct 2010 14:28:52 -0400
-Date: Tue, 19 Oct 2010 20:28:18 +0200
-From: Christoph Hellwig <hch@lst.de>
-To: "Darrick J. Wong" <djwong@us.ibm.com>
-Cc: Andreas Dilger <adilger.kernel@dilger.ca>, "Ted Ts'o" <tytso@mit.edu>,
-        Mingming Cao <cmm@us.ibm.com>, Ric Wheeler <rwheeler@redhat.com>,
-        linux-ext4 <linux-ext4@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Keith Mannthey <kmannth@us.ibm.com>, Mingming Cao <mcao@us.ibm.com>,
-        Tejun Heo <tj@kernel.org>, hch@lst.de
-Subject: Re: Performance testing of various barrier reduction patches [was: Re: [RFC v4] ext4: Coordinate fsync requests]
-Message-ID: <20101019182817.GA11810@lst.de>
-References: <20100809195324.GG2109@tux1.beaverton.ibm.com> <4D5AEB7F-32E2-481A-A6C8-7E7E0BD3CE98@dilger.ca> <20100809233805.GH2109@tux1.beaverton.ibm.com> <20100819021441.GM2109@tux1.beaverton.ibm.com> <20100823183119.GA28105@tux1.beaverton.ibm.com> <20100923232527.GB25624@tux1.beaverton.ibm.com> <B0A8EB94-E2F7-4268-AE99-C4A7402E880D@dilger.ca> <20100927230111.GV25555@tux1.beaverton.ibm.com> <20101008212606.GE25624@tux1.beaverton.ibm.com> <20101018224936.GI25624@tux1.beaverton.ibm.com>
+	id S1755060Ab0JSSbZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Oct 2010 14:31:25 -0400
+Received: from zone0.gcu-squad.org ([212.85.147.21]:1739 "EHLO
+	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751526Ab0JSSbY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Oct 2010 14:31:24 -0400
+Date: Tue, 19 Oct 2010 20:31:01 +0200
+From: Jean Delvare <khali@linux-fr.org>
+To: Guenter Roeck <guenter.roeck@ericsson.com>
+Cc: Ben Dooks <ben-linux@fluff.org>, Rodolfo Giometti <giometti@linux.it>,
+        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2] i2c/mux: Driver for PCA9541 I2C Master Selector
+Message-ID: <20101019203101.197d493d@endymion.delvare>
+In-Reply-To: <20101019180805.GA31594@ericsson.com>
+References: <1286932516-20689-1-git-send-email-guenter.roeck@ericsson.com>
+	<20101019190647.314302e7@endymion.delvare>
+	<20101019180805.GA31594@ericsson.com>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101018224936.GI25624@tux1.beaverton.ibm.com>
-User-Agent: Mutt/1.3.28i
-X-Spam-Score: 0 () 
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 18, 2010 at 03:49:36PM -0700, Darrick J. Wong wrote:
-> Through this table, I'm looking for a performance characteristic that typifies
-> storage with a battery-backed write cache (BBWC).  As we can see from
-> lldd_flush_rtt_avg, the BBWC storage features a very low flush time, about 1ms
-> or less.  Everything else, including SSDs, are over that amount.  The other odd
-> result I see is that it takes a significant amount of time to get a flush
-> command from the top of the block layer to the LLDD, though I suspect some of
-> that might be waiting for the device to process earlier writes.  Christoph has
-> a patch that looks like it streamlines that, but it triggered various BUG_ONs
-> when I booted with it, so I took the patch out.
+On Tue, 19 Oct 2010 11:08:05 -0700, Guenter Roeck wrote:
+> On Tue, Oct 19, 2010 at 01:06:47PM -0400, Jean Delvare wrote:
+> > On Tue, 12 Oct 2010 18:15:16 -0700, Guenter Roeck wrote:
+> > > +     if (data->virt_adap == NULL) {
+> > > +             dev_err(&client->dev,
+> > > +                     "failed to register master selector as bus %d\n",
+> > > +                     force);
+> > 
+> > This error message is somewhat confusing if "force" is 0: in that case
+> > you didn't request any specific bus number.
+>
+> This is from pca954x code. Not sure how to rephrase it. Got an idea ?
 
-We currently synchronize flush requests.  There's no real reason to do
-it except that we'll either need to make drivers accept flush requests
-with a bio attached to them or find a workaround in the block layer to
-submit it without bio without synchronizing them.
+Just "failed to register master selector\n" should do. The adapter
+number doesn't really add any value.
 
-I thin kthat should be the first angle of attack before adding
-complexity to filesystems.
-
+-- 
+Jean Delvare
