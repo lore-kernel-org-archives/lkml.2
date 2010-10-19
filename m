@@ -1,73 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758133Ab0JSJT0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Oct 2010 05:19:26 -0400
-Received: from hera.kernel.org ([140.211.167.34]:45488 "EHLO hera.kernel.org"
+	id S933551Ab0JSJXw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Oct 2010 05:23:52 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:38702 "EHLO gir.skynet.ie"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758113Ab0JSJTY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Oct 2010 05:19:24 -0400
-Message-ID: <4CBD6276.7070803@kernel.org>
-Date: Tue, 19 Oct 2010 11:18:46 +0200
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.9) Gecko/20100915 Lightning/1.0b2 Thunderbird/3.1.4
+	id S1757890Ab0JSJXv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Oct 2010 05:23:51 -0400
+Date: Tue, 19 Oct 2010 10:23:38 +0100
+From: Mel Gorman <mel@csn.ul.ie>
+To: Christoph Lameter <cl@linux.com>
+Cc: Pekka Enberg <penberg@kernel.org>, Pekka Enberg <penberg@cs.helsinki.fi>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        David Rientjes <rientjes@google.com>, npiggin@kernel.dk,
+        yanmin_zhang@linux.intel.com
+Subject: Re: [UnifiedV4 00/16] The Unified slab allocator (V4)
+Message-ID: <20101019092337.GG30667@csn.ul.ie>
+References: <20101005185725.088808842@linux.com> <AANLkTinPU4T59PvDH1wX2Rcy7beL=TvmHOZh_wWuBU-T@mail.gmail.com> <alpine.DEB.2.00.1010061054410.31538@router.home> <20101013141455.GQ30667@csn.ul.ie> <alpine.DEB.2.00.1010181305000.2092@router.home>
 MIME-Version: 1.0
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-CC: Mel Gorman <mel@csn.ul.ie>, lkml <linux-kernel@vger.kernel.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Wu Fengguang <fengguang.wu@intel.com>, Michal Hocko <mhocko@suse.cz>
-Subject: [PATCH wq#for-next] workqueue: Clarify that schedule_on_each_cpu
- is synchronous
-References: <4CB8725B.9010200@kernel.org> <20101018094403.GW30667@csn.ul.ie> <20101019133750.A1E6.A69D9226@jp.fujitsu.com>
-In-Reply-To: <20101019133750.A1E6.A69D9226@jp.fujitsu.com>
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 19 Oct 2010 09:18:50 +0000 (UTC)
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.00.1010181305000.2092@router.home>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The documentation for schedule_on_each_cpu() states that it calls a
-function on each online CPU from keventd.  This can easily be
-interpreted as an asyncronous call because the description does not
-mention that flush_work is called.  Clarify that it is synchronous.
+On Mon, Oct 18, 2010 at 01:13:42PM -0500, Christoph Lameter wrote:
+> On Wed, 13 Oct 2010, Mel Gorman wrote:
+> 
+> > Minimally, I see the same sort of hackbench socket performance regression
+> > as reported elsewhere (10-15% regression). Otherwise, it isn't particularly
+> > exciting results. The machine is very basic - 2 socket, 4 cores, x86-64,
+> > 2G RAM. Macine model is an IBM BladeCenter HS20. Processor is Xeon but I'm
+> > not sure exact what model. It appears to be from around the P4 times.
+> 
+> Looks not good. Something must still be screwed up. Trouble is to find
+> time to do this work. When working on SLAB we had a team to implement the
+> NUMA stuff and deal with the performance issues.
+> 
+> > Christoph, in particular while it tests netperf, it is not binding to any
+> > particular CPU (although it can), server and client are running on the local
+> > machine (which has particular performance characterisitcs of its own) and
+> > the tests is STREAM, not RR so the tarball is not a replacement for more
+> > targetting testing or workload-specific testing. Still, it should catch
+> > some of the common snags before getting into specific workloads without
+> > taking an extraordinary amount of time to complete. sysbench might take a
+> > long time for many-core machines, limit the number of threads it tests with
+> > OLTP_MAX_THREADS in the config file.
+> 
+> That should not matter too much. The performance results should replicate
+> SLABs caching behavior and I do not see that in the tests.
+> 
 
-tj: rephrased a bit
+On the other hand, the unified figures are very close to slab in terms of
+behaviour. Very small gains and losses. Considering that the server and
+clients are not bound to any particular CPU either and the data set it is
+working on is quite large, a small amount of noise is expected.
 
-Signed-off-by: Mel Gorman <mel@csn.ul.ie>
-Reviewed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Signed-off-by: Tejun Heo <tj@kernel.org>
----
-Commited somewhat rephrased version.  Thank you.
+> > NETPERF UDP
+> >                    netperf-udp       netperf-udp          udp-slub
+> >                   slab-vanilla      slub-vanilla      unified-v4r1
+> >       64    52.23 ( 0.00%)*    53.80 ( 2.92%)     50.56 (-3.30%)               1.36%             1.00%             1.00%
+> >      128   103.70 ( 0.00%)    107.43 ( 3.47%)    101.23 (-2.44%)
+> >      256   208.62 ( 0.00%)*   212.15 ( 1.66%)    202.35 (-3.10%)               1.73%             1.00%             1.00%
+> >     1024   814.86 ( 0.00%)    827.42 ( 1.52%)    799.13 (-1.97%)
+> >     2048  1585.65 ( 0.00%)   1614.76 ( 1.80%)   1563.52 (-1.42%)
+> >     3312  2512.44 ( 0.00%)   2556.70 ( 1.73%)   2460.37 (-2.12%)
+> >     4096  3016.81 ( 0.00%)*  3058.16 ( 1.35%)   2901.87 (-3.96%)               1.15%             1.00%             1.00%
+> >     8192  5384.46 ( 0.00%)   5092.95 (-5.72%)   4912.71 (-9.60%)
+> >    16384  8091.96 ( 0.00%)*  8249.26 ( 1.91%)   8004.40 (-1.09%)               1.70%             1.00%             1.00%
+> 
+> Seems that we lost some of the netperf wins.
 
- kernel/workqueue.c |   10 ++++++----
- 1 files changed, 6 insertions(+), 4 deletions(-)
+It's a different test being run here. UDP_STREAM versus UDP_RR and that could
+be one factor in the differences between my results and your own. I'll look
+into redoing these for *_RR to rule that out as one factor.  The results
+are outside statistical noise though.
 
-diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-index 2c6871c..eb5c197 100644
---- a/kernel/workqueue.c
-+++ b/kernel/workqueue.c
-@@ -2676,13 +2676,15 @@ int schedule_delayed_work_on(int cpu,
- EXPORT_SYMBOL(schedule_delayed_work_on);
+> 
+> > SYSBENCH
+> >             sysbench-slab-vanilla-sysbenchsysbench-slub-vanilla-sysbench     sysbench-slub
+> >                   slab-vanilla      slub-vanilla      unified-v4r1
+> >            1  7521.24 ( 0.00%)  7719.38 ( 2.57%)  7589.13 ( 0.89%)
+> >            2 14872.85 ( 0.00%) 15275.09 ( 2.63%) 15054.08 ( 1.20%)
+> >            3 16502.53 ( 0.00%) 16676.53 ( 1.04%) 16465.69 (-0.22%)
+> >            4 17831.19 ( 0.00%) 17900.09 ( 0.38%) 17819.03 (-0.07%)
+> >            5 18158.40 ( 0.00%) 18432.74 ( 1.49%) 18341.99 ( 1.00%)
+> >            6 18673.68 ( 0.00%) 18878.41 ( 1.08%) 18614.92 (-0.32%)
+> >            7 17689.75 ( 0.00%) 17871.89 ( 1.02%) 17633.19 (-0.32%)
+> >            8 16885.68 ( 0.00%) 16838.37 (-0.28%) 16498.41 (-2.35%)
+> 
+> Same here. Seems that we combined the worst of both.
+> 
 
- /**
-- * schedule_on_each_cpu - call a function on each online CPU from keventd
-+ * schedule_on_each_cpu - execute a function synchronously on each online CPU
-  * @func: the function to call
-  *
-- * Returns zero on success.
-- * Returns -ve errno on failure.
-- *
-+ * schedule_on_each_cpu() executes @func on each online CPU using the
-+ * system workqueue and blocks until all CPUs have completed.
-  * schedule_on_each_cpu() is very slow.
-+ *
-+ * RETURNS:
-+ * 0 on success, -errno on failure.
-  */
- int schedule_on_each_cpu(work_func_t func)
- {
 -- 
-1.7.1
-
+Mel Gorman
+Part-time Phd Student                          Linux Technology Center
+University of Limerick                         IBM Dublin Software Lab
