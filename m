@@ -1,74 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933682Ab0JSJYx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Oct 2010 05:24:53 -0400
-Received: from minas.ics.muni.cz ([147.251.4.40]:42205 "EHLO minas.ics.muni.cz"
+	id S933731Ab0JSJ00 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Oct 2010 05:26:26 -0400
+Received: from mga01.intel.com ([192.55.52.88]:23761 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932393Ab0JSJYw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Oct 2010 05:24:52 -0400
-From: Jiri Slaby <jslaby@suse.cz>
-To: jkosina@suse.cz
-Cc: alan@signal11.us, linux-input@vger.kernel.org, jirislaby@gmail.com,
-        linux-kernel@vger.kernel.org, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 1/1] HID: hidraw, fix window in hidraw_release
-Date: Tue, 19 Oct 2010 11:24:45 +0200
-Message-Id: <1287480285-5335-1-git-send-email-jslaby@suse.cz>
-X-Mailer: git-send-email 1.7.3.1
-In-Reply-To: <20101009144026.c37f8d25.ospite@studenti.unina.it>
-References: <20101009144026.c37f8d25.ospite@studenti.unina.it>
-X-Muni-Spam-TestIP: 147.251.48.3
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (minas.ics.muni.cz [147.251.4.35]); Tue, 19 Oct 2010 11:24:47 +0200 (CEST)
+	id S932393Ab0JSJ0S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Oct 2010 05:26:18 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.57,349,1283756400"; 
+   d="scan'208";a="848591262"
+Date: Tue, 19 Oct 2010 11:26:16 +0200
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+Cc: David Jander <david@protonic.nl>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/4] mfd/mc13xxx: add support for mc13892
+Message-ID: <20101019092615.GD2736@sortiz-mobl>
+References: <20100929162315.GG29811@pengutronix.de>
+ <1285777427-2887-3-git-send-email-u.kleine-koenig@pengutronix.de>
+ <20101007184501.GX29673@pengutronix.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20101007184501.GX29673@pengutronix.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is a window between hidraw_table check and its dereference.
-In that window, the device may be unplugged and removed form the
-system and we will then dereference NULL.
+Hi Uwe,
 
-Lock that place properly so that either we get NULL and jump out or we
-can work with real pointer.
+On Thu, Oct 07, 2010 at 08:45:01PM +0200, Uwe Kleine-König wrote:
+> > +#define DEBUG
+> > +#define VERBOSE_DEBUG
+> David Jander gave me a hint via private mail that I forgot to remove
+> these two #defines.
+> Would you care to remove these before Linus pulls?  Should I send a
+> patch or do you do it by hand?
+That's fixed now.
 
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
----
- drivers/hid/hidraw.c |   14 ++++++++++----
- 1 files changed, 10 insertions(+), 4 deletions(-)
+Cheers,
+Samuel.
 
-diff --git a/drivers/hid/hidraw.c b/drivers/hid/hidraw.c
-index 925992f..6d81be3 100644
---- a/drivers/hid/hidraw.c
-+++ b/drivers/hid/hidraw.c
-@@ -218,9 +218,13 @@ static int hidraw_release(struct inode * inode, struct file * file)
- 	unsigned int minor = iminor(inode);
- 	struct hidraw *dev;
- 	struct hidraw_list *list = file->private_data;
-+	int ret;
- 
--	if (!hidraw_table[minor])
--		return -ENODEV;
-+	mutex_lock(&minors_lock);
-+	if (!hidraw_table[minor]) {
-+		ret = -ENODEV;
-+		goto unlock;
-+	}
- 
- 	list_del(&list->node);
- 	dev = hidraw_table[minor];
-@@ -233,10 +237,12 @@ static int hidraw_release(struct inode * inode, struct file * file)
- 			kfree(list->hidraw);
- 		}
- 	}
--
-+	ret = 0;
-+unlock:
-+	mutex_unlock(&minors_lock);
- 	kfree(list);
- 
--	return 0;
-+	return ret;
- }
- 
- static long hidraw_ioctl(struct file *file, unsigned int cmd,
 -- 
-1.7.3.1
-
+Intel Open Source Technology Centre
+http://oss.intel.com/
