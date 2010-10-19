@@ -1,59 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757327Ab0JSUiX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Oct 2010 16:38:23 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:48538 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753381Ab0JSUiV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Oct 2010 16:38:21 -0400
-Date: Tue, 19 Oct 2010 22:38:13 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Greg KH <greg@kroah.com>
-Cc: Oliver Neukum <oliver@neukum.org>, Jan Kara <jack@suse.cz>,
-        Anders Larsen <al@alarsen.net>, dri-devel@lists.freedesktop.org,
-        ksummit-2010-discuss@lists.linux-foundation.org,
-        Mikulas Patocka <mikulas@artax.karlin.mff.cuni.cz>,
-        codalist@telemann.coda.cs.cmu.edu,
-        Bryan Schumaker <bjschuma@netapp.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        Petr Vandrovec <vandrove@vc.cvut.cz>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Ingo Molnar <mingo@elte.hu>, linux-media@vger.kernel.org,
-        Samuel Ortiz <samuel@sortiz.org>,
-        Evgeniy Dushistov <dushistov@mail.ru>, Arnd Bergmann <arnd@arndb.de>,
-        autofs@linux.kernel.org, Jan Harkes <jaharkes@cs.cmu.edu>,
-        Valdis.Kletnieks@vt.edu, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        Andrew Hendry <andrew.hendry@gmail.com>
-Subject: Re: [Ksummit-2010-discuss] [v2] Remaining BKL users, what to do
-In-Reply-To: <20101019202912.GA30133@kroah.com>
-Message-ID: <alpine.LNX.2.00.1010192237220.6879@pobox.suse.cz>
-References: <201009161632.59210.arnd@arndb.de> <21406.1287512693@localhost> <20101019193735.GA4043@kroah.com> <201010192140.47433.oliver@neukum.org> <20101019202912.GA30133@kroah.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1757361Ab0JSUjX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Oct 2010 16:39:23 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:38621 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757145Ab0JSUjW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Oct 2010 16:39:22 -0400
+Date: Tue, 19 Oct 2010 18:39:13 -0200
+From: "Gustavo F. Padovan" <padovan@profusion.mobi>
+To: pavan_savoy@ti.com
+Cc: marcel@holtmann.org, linux-bluetooth@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3] Bluetooth: btwilink driver
+Message-ID: <20101019203913.GA2322@vigoh>
+References: <1287521858-15190-1-git-send-email-pavan_savoy@ti.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1287521858-15190-1-git-send-email-pavan_savoy@ti.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 19 Oct 2010, Greg KH wrote:
+* pavan_savoy@ti.com <pavan_savoy@ti.com> [2010-10-19 16:57:38 -0400]:
 
-> > > > So no need to clean it up for multiprocessor support.
-> > > > 
-> > > > http://download.intel.com/design/chipsets/datashts/29067602.pdf
-> > > > http://www.intel.com/design/chipsets/specupdt/29069403.pdf
-> > > 
-> > > Great, we can just drop all calls to lock_kernel() and the like in the
-> > > driver and be done with it, right?
-> > 
-> > No,
-> > 
-> > you still need to switch off preemption.
+> From: Pavan Savoy <pavan_savoy@ti.com>
 > 
-> Hm, how would you do that from within a driver?
+> v3 comments
+> 
+> Marcel, Gustavo, & list,
+> Please review this version of patch.
+> 
+> Anderson,
+> I have taken care of most of the comments you had.
+> Have re-wrote some of the code commenting you've mentioned.
+> Thanks for the comments,
+> 
+> The other few like -EPERM for platform driver registration is to keep
+> it similar to other drivers
 
-preempt_disable()
+Which drivers returns -EPERM to any kind of error? The are many reasons
+why the funcion can fail, and you want to give the best error report to the
+user. Use EPERM to all of them is just wrong.
+
+>type casting is maintained just to feel safe
+> and have style similar to other drivers.
+
+We don't need to feel safe here. Type cast actually can hide errors,
+only use them when you really need to cast, in many case here you don't.
 
 -- 
-Jiri Kosina
-SUSE Labs, Novell Inc.
+Gustavo F. Padovan
+ProFUSION embedded systems - http://profusion.mobi
