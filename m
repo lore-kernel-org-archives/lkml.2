@@ -1,65 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757188Ab0JSU3f (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Oct 2010 16:29:35 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:59529 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753408Ab0JSU3e (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Oct 2010 16:29:34 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Larry Finger <Larry.Finger@lwfinger.net>
-Subject: Re: [PATCH] linux-firmware: Add firmware file for r8712u (RTL8192SU)
-Date: Tue, 19 Oct 2010 22:29:30 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.36-rc7-next-20101015+; KDE/4.5.1; x86_64; ; )
-Cc: David Woodhouse <dwmw2@infradead.org>, linux-kernel@vger.kernel.org
-References: <4cbdbf3b.Ek+PDAiA1jX27HRq%Larry.Finger@lwfinger.net> <201010191935.40788.arnd@arndb.de> <4CBDE1C1.4020204@lwfinger.net>
-In-Reply-To: <4CBDE1C1.4020204@lwfinger.net>
+	id S1757266Ab0JSU3k (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Oct 2010 16:29:40 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:34265 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757223Ab0JSU3i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Oct 2010 16:29:38 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Alan Stern <stern@rowland.harvard.edu>
+Subject: Re: [linux-pm] 2.6.36-rc8-git3: Reported regressions 2.6.34 -> 2.6.35
+Date: Tue, 19 Oct 2010 22:28:11 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.36-rc8-rjw+; KDE/4.4.4; x86_64; ; )
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Florian Mickler <florian@mickler.org>,
+        Kernel Testers List <kernel-testers@vger.kernel.org>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>, O01eg <O01eg@yandex.ru>
+References: <Pine.LNX.4.44L0.1010191157070.1786-100000@iolanthe.rowland.org>
+In-Reply-To: <Pine.LNX.4.44L0.1010191157070.1786-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
 Content-Type: Text/Plain;
-  charset="utf-8"
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201010192229.30133.arnd@arndb.de>
-X-Provags-ID: V02:K0:lcX3SJJTn291oSDuXG6JYjZOy8SK9yo5Ew1rLCXKMaD
- Y4vaBmhZKMxqhFAbnTz1nA/5sQ/a7al6E/MVRA6uEP8RY3RmSv
- pxXGfNRc1nryoitblKAB/BuNCEngnpqeVsU+w1/zjKgReMHl7r
- HCDSACa7FcMWL5Jz7NEVoCm6F1aRw7fractycoM8zgRVkY4pXa
- c8VmJ7ELKY7I7wGf2YdKg==
+Message-Id: <201010192228.11954.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 19 October 2010 20:21:53 Larry Finger wrote:
+On Tuesday, October 19, 2010, Alan Stern wrote:
+> On Sun, 17 Oct 2010, Rafael J. Wysocki wrote:
 > 
-> I was the one that added the drive, including the firmware file, to the kernel.
-> I know the driver was developed legally. I took source files that contain a GPL
-> license (including the firmware source) from the Realtek public site, cleaned up
-> the driver, added a copyright for my changes, and got permission from Realtek to
-> submit the result to the staging directory through Greg K-H. 
-
-Ok, so if you have the firmware source, add a proper make file and the source along
-with the binary file. You made it sound like the you only had the firmware as
-a hexdump, which would not be possible under the GPLv2 section 3, which says
-"The source code for a work means the preferred form of the work for making
-modifications to it".
-
-> > Hint: some files of the driver contain these "interesting" conditions:
-> > 
-> > /*
-> >  * Copyright(c) 2008 - 2010 Realtek Corporation. All rights reserved.
-> >  * Linux device driver for RTL8192U
-> >  *
-> >  * Based on the r8187 driver, which is:
-> >  * Copyright 2004-2005 Andrea Merello <andreamrl@tiscali.it>, et al.
-> >  * This program is free software; you can redistribute it and/or modify it
-> >  * under the terms of version 2 of the GNU General Public License as
-> >  * published by the Free Software Foundation.
+> > Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=19302
+> > Subject		: PROBLEM: kernel crash on USB-modem (Huawei E1750) hangup.
+> > Submitter	: O01eg <O01eg@yandex.ru>
+> > Date		: 2010-09-26 19:50 (22 days old)
+> > Message-ID	: <op.vjnn1up1yohvy1@localhost>
+> > References	: http://marc.info/?l=linux-kernel&m=128553111709569&w=2
 > 
-> That Merello copyright really has little to do with the current driver. As
-> Realtek included it in their source, I left it in, but consider it to be an
-> honorary citation.
+> This does not appear to be a regression.  The bug report states that
+> the problem occurs in 2.6.34 and 2.6.36-rc5 and that no other kernels
+> were tested.
 
-That part is fine, what is not fine is the "All rights reserved" portion, which
-contradicts the GPL.
+OK, dropped.
 
-	Arnd
+Thanks,
+Rafael
