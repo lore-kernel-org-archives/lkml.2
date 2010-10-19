@@ -1,71 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757274Ab0JSIgZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Oct 2010 04:36:25 -0400
-Received: from mx3.schottelius.org ([77.109.138.221]:33669 "EHLO
-	mx3.schottelius.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753814Ab0JSIgY (ORCPT
+	id S933453Ab0JSIgl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Oct 2010 04:36:41 -0400
+Received: from mail30t.wh2.ocn.ne.jp ([125.206.180.136]:20885 "HELO
+	mail30t.wh2.ocn.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S932230Ab0JSIgj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Oct 2010 04:36:24 -0400
-Date: Tue, 19 Oct 2010 09:37:41 +0200
-From: Nico Schottelius <nico-linux-20101018@schottelius.org>
-To: Nico Schottelius <nico-linux-20101018@schottelius.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: Display freezes: 2.6.36-rc6-00137-g7c6d45e and
- 2.6.36-rc7-00124-g85a3318
-Message-ID: <20101019073741.GA2604@schottelius.org>
-Mail-Followup-To: Nico Schottelius <nico-linux-20101018@schottelius.org>,
-	linux-kernel@vger.kernel.org
-References: <20101018083307.GA4744@schottelius.org>
+	Tue, 19 Oct 2010 04:36:39 -0400
+Subject: [PATCH v2] Add generic exponentially weighted moving average function
+To: randy.dunlap@oracle.com, br1@einfach.org, akpm@linux-foundation.org,
+        kevin.granade@gmail.com
+From: Bruno Randolf <br1@einfach.org>
+Cc: blp@cs.stanford.edu, linux-kernel@vger.kernel.org
+Date: Tue, 19 Oct 2010 17:36:35 +0900
+Message-ID: <20101019083635.32294.67087.stgit@localhost6.localdomain6>
+User-Agent: StGit/0.15
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="/04w6evG8XlLl3ft"
-Content-Disposition: inline
-In-Reply-To: <20101018083307.GA4744@schottelius.org>
-User-Agent: echo $message | gpg -e $sender  -s | netcat mailhost 25
-X-Netzseite: http://www.nico.schottelius.org/
-X-System-Info: kr (Linux 2.6.36-rc8-00022-g2b666ca x86_64)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+X-SF-Loop: 1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This adds a generic exponentially weighted moving average function. This
+implementation makes use of a structure which keeps a scaled up internal
+representation to reduce rounding errors.
 
---/04w6evG8XlLl3ft
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+The idea for this implementation comes from the rt2x00 driver (rt2x00link.c)
+and I would like to use it in several places in the mac80211 and ath5k code.
 
-Update:
+Signed-off-by: Bruno Randolf <br1@einfach.org>
 
-Nico Schottelius [Mon, Oct 18, 2010 at 10:33:07AM +0200]:
-> as reported before, the system does not freeze completly anymore
-> and even reports errors after the nth time resumed (about 10 cycles
-> needed). Currently the display gets redrawn VERY slow, if at all.
-> Restarting xorg does not help, rebooting the system does.
+--
+v2: Renamed 'samples' to 'weight'. Added more documentation. Use avg_val
+    pointer. Add a WARN_ON_ONCE for invalid values of 'weight'. Divide
+    and round up/down.
+---
+ include/linux/average.h |   37 +++++++++++++++++++++++++++++++++++++
+ 1 files changed, 37 insertions(+), 0 deletions(-)
+ create mode 100644 include/linux/average.h
 
-It seems that this happens more often/always when a second
-monitor is enabled using xrandr.
+diff --git a/include/linux/average.h b/include/linux/average.h
+new file mode 100644
+index 0000000..55e4317
+--- /dev/null
++++ b/include/linux/average.h
+@@ -0,0 +1,37 @@
++#ifndef _LINUX_AVERAGE_H
++#define _LINUX_AVERAGE_H
++
++#define AVG_FACTOR	1000
++
++struct avg_val {
++	int value;
++	int internal;
++};
++
++/**
++ * moving_average() -  Exponentially weighted moving average (EWMA)
++ * @avg: Average structure
++ * @val: Current value
++ * @weight: This defines how fast the influence of older values decreases.
++ *	Has to be higher than 1. Use the same number every time you call this
++ *	function for a single struct avg_val!
++ *
++ * This implementation make use of a struct avg_val which keeps a scaled up
++ * internal representation to prevent rounding errors. Due to this, the maximum
++ * range of values is MAX_INT/(AVG_FACTOR*weight).
++ *
++ * The current average value can be accessed by using avg_val.value.
++ */
++static inline void
++moving_average(struct avg_val *avg, const int val, const int weight)
++{
++	if (WARN_ON_ONCE(weight <= 1))
++		return;
++	avg->internal = avg->internal  ?
++		(((avg->internal * (weight - 1)) +
++			(val * AVG_FACTOR)) / weight) :
++		(val * AVG_FACTOR);
++	avg->value = DIV_ROUND_CLOSEST(avg->internal, AVG_FACTOR);
++}
++
++#endif /* _LINUX_AVERAGE_H */
 
-At least the two last times the slow drawing state occured
-directly after the first resume with an enabled external
-monitor.
-
-Cheers,
-
-Nico
-
---=20
-PGP key: 7ED9 F7D3 6B10 81D7 0EC5  5C09 D7DC C8E4 3187 7DF0
-
---/04w6evG8XlLl3ft
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEARECAAYFAky9SsUACgkQ19zI5DGHffAMmgCdEzTC24Cjzfky0rPh3lnf7xIA
-TBsAoKtw0WdDKP6TTMUxF7p6eqOGLrIj
-=yRFm
------END PGP SIGNATURE-----
-
---/04w6evG8XlLl3ft--
