@@ -1,94 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757914Ab0JSCrV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Oct 2010 22:47:21 -0400
-Received: from relais.videotron.ca ([24.201.245.36]:45418 "EHLO
-	relais.videotron.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757829Ab0JSCrS (ORCPT
+	id S1757565Ab0JSCwt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Oct 2010 22:52:49 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:47317 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754272Ab0JSCws convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Oct 2010 22:47:18 -0400
-MIME-version: 1.0
-Content-transfer-encoding: 7BIT
-Content-type: TEXT/PLAIN; charset=US-ASCII
-Date: Mon, 18 Oct 2010 22:47:17 -0400 (EDT)
-From: Nicolas Pitre <nico@fluxnic.net>
-X-X-Sender: nico@xanadu.home
-To: Daniel Walker <dwalker@fifo99.com>
-Cc: Russell King <rmk@arm.linux.org.uk>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        lkml <linux-kernel@vger.kernel.org>,
-        Jeremy Kerr <jeremy.kerr@canonical.com>,
-        Jeff Ohlstein <johlstei@codeaurora.org>
-Subject: Re: linux-next: manual merge of the msm tree with the arm tree
-In-reply-to: <1287445545.5588.158.camel@c-dwalke-linux.qualcomm.com>
-Message-id: <alpine.LFD.2.00.1010182227440.2764@xanadu.home>
-References: <20101018103540.7bd9c535.sfr@canb.auug.org.au>
- <20101018110207.131b56ee.sfr@canb.auug.org.au>
- <20101018081520.GA10551@flint.arm.linux.org.uk>
- <1287422792.4105.14.camel@c-dwalke-linux.qualcomm.com>
- <20101018182044.GA558@flint.arm.linux.org.uk>
- <1287427572.4105.22.camel@c-dwalke-linux.qualcomm.com>
- <alpine.LFD.2.00.1010181525000.2764@xanadu.home>
- <1287432774.5588.5.camel@c-dwalke-linux.qualcomm.com>
- <20101018205847.GB23642@flint.arm.linux.org.uk>
- <1287437362.5588.57.camel@c-dwalke-linux.qualcomm.com>
- <20101018215815.GC23642@flint.arm.linux.org.uk>
- <1287440826.5588.83.camel@c-dwalke-linux.qualcomm.com>
- <alpine.LFD.2.00.1010181833440.2764@xanadu.home>
- <1287443346.5588.120.camel@c-dwalke-linux.qualcomm.com>
- <alpine.LFD.2.00.1010181923450.2764@xanadu.home>
- <1287445545.5588.158.camel@c-dwalke-linux.qualcomm.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	Mon, 18 Oct 2010 22:52:48 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=fPpNKVJQRDt+/quikq2SwEXLV3AG2D7g4aiP6RDDrWHA5mA1alaGlQY+cOzDJhyh3M
+         ghRmuZqvtHuvuKwD3MSwIz6aycueSFwPthWhbMrGy27PUkJuUZL+oDGZjGWQUR/nY28E
+         kXdHGPlNMIsUVVT9riZbghGmX2xQcdCOXL3OU=
+MIME-Version: 1.0
+In-Reply-To: <20101019023537.GB8310@localhost>
+References: <20101019093142.509d6947@notabene>
+	<20101018154137.90f5325f.akpm@linux-foundation.org>
+	<20101019095144.A1B0.A69D9226@jp.fujitsu.com>
+	<AANLkTin38qJ-U3B7XwMh-3aR9zRs21LgR1yHfqYifxrn@mail.gmail.com>
+	<20101019023537.GB8310@localhost>
+Date: Tue, 19 Oct 2010 11:52:47 +0900
+Message-ID: <AANLkTikHxDyjOGgM8-X6FNT15Hr3s4NaA-=+FRhma+3D@mail.gmail.com>
+Subject: Re: Deadlock possibly caused by too_many_isolated.
+From: Minchan Kim <minchan.kim@gmail.com>
+To: Wu Fengguang <fengguang.wu@intel.com>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>, Neil Brown <neilb@suse.de>,
+        Rik van Riel <riel@redhat.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "Li, Shaohua" <shaohua.li@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 18 Oct 2010, Daniel Walker wrote:
+Hi Wu,
 
-> I can say that I know for a fact that people don't read every patch, or
-> every email, or keep track of every single thread. I don't think it's
-> reasonable to expect people to do that. there's too many email, too many
-> threads, too many discussions etc ..
+On Tue, Oct 19, 2010 at 11:35 AM, Wu Fengguang <fengguang.wu@intel.com> wrote:
+>> @@ -2054,10 +2069,11 @@ rebalance:
+>>                 goto got_pg;
+>>
+>>         /*
+>> -        * If we failed to make any progress reclaiming, then we are
+>> -        * running out of options and have to consider going OOM
+>> +        * If we failed to make any progress reclaiming and there aren't
+>> +        * many parallel reclaiming, then we are unning out of options and
+>> +        * have to consider going OOM
+>>          */
+>> -       if (!did_some_progress) {
+>> +       if (!did_some_progress && !too_many_isolated_zone(preferred_zone)) {
+>>                 if ((gfp_mask & __GFP_FS) && !(gfp_mask & __GFP_NORETRY)) {
+>>                         if (oom_killer_disabled)
+>>                                 goto nopage;
+>
+> This is simply wrong.
+>
+> It disabled this block for 99% system because there won't be enough
+> tasks to make (!too_many_isolated_zone == true). As a result the LRU
+> will be scanned like mad and no task get OOMed when it should be.
 
-I'm not saying that you should keep track of every threads.  But you 
-should at least pay attention to what thread is being discussed, simply 
-by looking at the subject line.  Any good MUA will let you sort emails 
-and collapse them into thread view.  And scoring those incoming emails 
-with "arch/arm/mach-msm" for example is a quick way for you to be 
-noticed when a patch might be changing something in your area.  Tools 
-are there for you.
-
-> This discussion isn't really about that. It's not about people reading
-> every single patch, which we know they don't do. This is about conflicts
-> in -next.
-
-Glad to get back to the original issue.
-
-> These patches caused conflicts in -next .. What more could I have done
-> to prevent conflicts coming from another tree and patches that appear
-> not to effect me? Even if I read all the patches, and threads, it still
-> seems unreasonable to expect maintainers to predict conflicts not coming
-> from their own tree's.
-
-In this particular case, Stephen did fix the trivial merge conflict.  
-Most probably Linus could have done the same.  There is nothing you 
-needed to do in that case.  Or you could have waited until RMK's tree 
-hits mainline, then you merge that, fixing the issue within that merge, 
-before asking Linus to pull.
-
-And if the merge in linux-next turned out not to be that trivial, or you 
-have new machine entries in your tree that failed to compile due to the 
-missing fixup, well that's fine too because that's _exactly_ what the 
-purpose of the linux-next tree is: finding issues like this before the 
-real merge in Linus' tree.  So in this case the system did work: the 
-conflict was identified by the tool and you were notified.
-
-And the simplest solution to this is simply to merge your stuff into 
-RMK's tree in this case, so the generic change affecting all ARM 
-machines will cover yours as well.  Incidentally that's what has been 
-asked of you.
-
-See?  Nothing to really get excited about.
+If !too_many_isolated_zone is false, it means there are already many
+direct reclaiming tasks.
+So they could exit reclaim path and !too_many_isolated_zone will be true.
+What am I missing now?
 
 
-Nicolas
+> Thanks,
+> Fengguang
+>
+
+
+
+-- 
+Kind regards,
+Minchan Kim
