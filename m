@@ -1,71 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755353Ab0JSW0J (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Oct 2010 18:26:09 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:50041 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753389Ab0JSW0H convert rfc822-to-8bit (ORCPT
+	id S1756020Ab0JSW0M (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Oct 2010 18:26:12 -0400
+Received: from canuck.infradead.org ([134.117.69.58]:47310 "EHLO
+	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754541Ab0JSW0J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Oct 2010 18:26:07 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=tnZOcrVs/T+6lTdPiP62/fdyIvt/wbetrezyhYThPj3yo5OpJhmMsSrQPQJsT3yrTv
-         483/78g/X4Dz8ecg+bWE2Wf5doAlgFr3lsb6gSq+RfejCoUYE82VyWKFmmYc9403vTpK
-         LnvTDGVfjIlf/J7nT9Tn08YGkgYOU6W1a9MyY=
+	Tue, 19 Oct 2010 18:26:09 -0400
+Message-ID: <364b3c9b09b8b02f6804634a2fc927b4.squirrel@programming.kicks-ass.net>
+In-Reply-To: <1287527005.16971.527.camel@gandalf.stny.rr.com>
+References: <tip-2bf2160d8805de64308e2e7c3cd97813cb58ed2f@git.kernel.org>
+    <20100908112529.GA25931@elte.hu> <1287395077.29097.1543.camel@twins>
+    <1287398936.29097.1548.camel@twins> <4CBD79CF.2060706@jp.fujitsu.com>
+    <alpine.LFD.2.00.1010191428560.6815@localhost6.localdomain6>
+    <20101019132236.GA19197@Krystal>
+    <alpine.LFD.2.00.1010191524160.6815@localhost6.localdomain6>
+    <1287496495.16971.372.camel@gandalf.stny.rr.com>
+    <alpine.LFD.2.00.1010191558250.6815@localhost6.localdomain6>
+    <20101019142820.GA14520@Krystal>
+    <alpine.LFD.2.00.1010191842270.6815@localhost6.localdomain6>
+    <1287521757.16971.397.camel@gandalf.stny.rr.com>
+    <alpine.LFD.2.00.1010192302000.6815@localhost6.localdomain6>
+    <1287523439.16971.433.camel@gandalf.stny.rr.com>
+    <4CBE122B.9020807@zytor.com>
+    <1287527005.16971.527.camel@gandalf.stny.rr.com>
+Date: Wed, 20 Oct 2010 00:27:25 +0200
+Subject: Re: [PATCH] tracing: Cleanup the convoluted softirq tracepoints
+From: "Peter Zijlstra" <a.p.zijlstra@chello.nl>
+To: "Steven Rostedt" <rostedt@goodmis.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, "Thomas Gleixner" <tglx@linutronix.de>,
+        "Mathieu Desnoyers" <mathieu.desnoyers@efficios.com>,
+        "Koki Sanagi" <sanagi.koki@jp.fujitsu.com>,
+        "Peter Zijlstra" <peterz@infradead.org>, "Ingo Molnar" <mingo@elte.hu>,
+        "Frederic Weisbecker" <fweisbec@gmail.com>, nhorman@tuxdriver.com,
+        scott.a.mcmillan@intel.com, laijs@cn.fujitsu.com,
+        "LKML" <linux-kernel@vger.kernel.org>, eric.dumazet@gmail.com,
+        kaneshige.kenji@jp.fujitsu.com, "David Miller" <davem@davemloft.net>,
+        izumi.taku@jp.fujitsu.com, kosaki.motohiro@jp.fujitsu.com,
+        "Heiko Carstens" <heiko.carstens@de.ibm.com>,
+        "Luck, Tony" <tony.luck@intel.com>
+User-Agent: SquirrelMail/1.4.19
 MIME-Version: 1.0
-In-Reply-To: <1287327110-9158-1-git-send-email-segooon@gmail.com>
-References: <1287327110-9158-1-git-send-email-segooon@gmail.com>
-Date: Tue, 19 Oct 2010 15:26:05 -0700
-X-Google-Sender-Auth: aGT-0yso2GSpDqZxm11U_8e7kaM
-Message-ID: <AANLkTik15Z2_wyDRDOHOnpKKPgb+PHWs477esndgWmex@mail.gmail.com>
-Subject: Re: [PATCH] dma: imx-dma: fix signedness bug
-From: Dan Williams <dan.j.williams@intel.com>
-To: Vasiliy Kulikov <segooon@gmail.com>
-Cc: kernel-janitors@vger.kernel.org, Sascha Hauer <s.hauer@pengutronix.de>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Priority: 3 (Normal)
+Importance: Normal
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Oct 17, 2010 at 7:51 AM, Vasiliy Kulikov <segooon@gmail.com> wrote:
-> mxdmac->channel was unsigned, so check (imxdmac->channel < 0) for
-> failed imx_dma_request_by_prio() made no sence.  Explicitly check
-> signed values.
+On Wed, October 20, 2010 12:23 am, Steven Rostedt wrote:
+
+>> static __always_inline __pure bool __switch_point(...)
+>> {
+>> 	asm goto("1: " JUMP_LABEL_INITIAL_NOP
+>> 		 /* ... patching stuff */
+>> 		: : : : t_jump);
+>> 	return false;
+>> t_jump:
+>> 	return true;
+>> }
+>>
+>> #define SWITCH_POINT(x) unlikely(__switch_point(x))
+>>
+>> I *suspect* this will resolve the need for hot/cold labels just fine.
 >
-> Signed-off-by: Vasiliy Kulikov <segooon@gmail.com>
-> ---
->  drivers/dma/imx-dma.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
->
-> diff --git a/drivers/dma/imx-dma.c b/drivers/dma/imx-dma.c
-> index 346be62..75d870f 100644
-> --- a/drivers/dma/imx-dma.c
-> +++ b/drivers/dma/imx-dma.c
-> @@ -335,7 +335,7 @@ static int __init imxdma_probe(struct platform_device *pdev)
->
->                imxdmac->imxdma_channel = imx_dma_request_by_prio("dmaengine",
->                                DMA_PRIO_MEDIUM);
-> -               if (imxdmac->channel < 0)
-> +               if ((int)imxdmac->channel < 0)
->                        goto err_init;
+> Interesting, we could try this.
 
-Should this be:
+Due to not actually having a sane key type the above is not easy to
+implement, but I tried:
 
-               if ((int)imxdmac->channel < 0) {
-                       ret = -ENODEV;
-                       goto err_init;
-               }
+#define _SWITCH_POINT(x)\
+({                                                              \
+        __label__ jl_enabled;                                   \
+        bool ret = true;                                        \
+        JUMP_LABEL(x, jl_enabled);                              \
+        ret = false;                                            \
+jl_enabled:                                                     \
+        ret;            })
 
-...because I get the following in my compilation tests.
-drivers/dma/imx-dma.c: In function 'imxdma_probe':
-drivers/dma/imx-dma.c:324: warning: 'ret' may be used uninitialized in
-this function
+#define SWITCH_POINT(x) unlikely(_SWITCH_POINT(x))
 
---
-Dan
+#define COND_STMT(key, stmt)                                    \
+do {                                                            \
+        if (SWITCH_POINT(key)) {                                \
+                stmt;                                           \
+        }                                                       \
+} while (0)
+
+
+and that's still generating these double jumps.
+
