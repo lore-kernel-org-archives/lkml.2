@@ -1,101 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756430Ab0JSQz7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Oct 2010 12:55:59 -0400
-Received: from fifo99.com ([67.223.236.141]:53345 "EHLO fifo99.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756077Ab0JSQzz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Oct 2010 12:55:55 -0400
-Subject: Re: linux-next: manual merge of the msm tree with the arm tree
-From: Daniel Walker <dwalker@fifo99.com>
-To: Nicolas Pitre <nico@fluxnic.net>
-Cc: Russell King <rmk@arm.linux.org.uk>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        lkml <linux-kernel@vger.kernel.org>,
-        Jeremy Kerr <jeremy.kerr@canonical.com>,
-        Jeff Ohlstein <johlstei@codeaurora.org>
-In-Reply-To: <alpine.LFD.2.00.1010182227440.2764@xanadu.home>
-References: <20101018103540.7bd9c535.sfr@canb.auug.org.au>
-	 <20101018110207.131b56ee.sfr@canb.auug.org.au>
-	 <20101018081520.GA10551@flint.arm.linux.org.uk>
-	 <1287422792.4105.14.camel@c-dwalke-linux.qualcomm.com>
-	 <20101018182044.GA558@flint.arm.linux.org.uk>
-	 <1287427572.4105.22.camel@c-dwalke-linux.qualcomm.com>
-	 <alpine.LFD.2.00.1010181525000.2764@xanadu.home>
-	 <1287432774.5588.5.camel@c-dwalke-linux.qualcomm.com>
-	 <20101018205847.GB23642@flint.arm.linux.org.uk>
-	 <1287437362.5588.57.camel@c-dwalke-linux.qualcomm.com>
-	 <20101018215815.GC23642@flint.arm.linux.org.uk>
-	 <1287440826.5588.83.camel@c-dwalke-linux.qualcomm.com>
-	 <alpine.LFD.2.00.1010181833440.2764@xanadu.home>
-	 <1287443346.5588.120.camel@c-dwalke-linux.qualcomm.com>
-	 <alpine.LFD.2.00.1010181923450.2764@xanadu.home>
-	 <1287445545.5588.158.camel@c-dwalke-linux.qualcomm.com>
-	 <alpine.LFD.2.00.1010182227440.2764@xanadu.home>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 19 Oct 2010 09:55:16 -0700
-Message-ID: <1287507316.10071.9.camel@c-dwalke-linux.qualcomm.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1756323Ab0JSQ6r (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Oct 2010 12:58:47 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:52756 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754071Ab0JSQ6p (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Oct 2010 12:58:45 -0400
+From: Kevin Hilman <khilman@deeprootsystems.com>
+To: Ohad Ben-Cohen <ohad@wizery.com>
+Cc: <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <akpm@linux-foundation.org>,
+        Greg KH <greg@kroah.com>, Tony Lindgren <tony@atomide.com>,
+        Benoit Cousson <b-cousson@ti.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Hari Kanigeri <h-kanigeri2@ti.com>, Suman Anna <s-anna@ti.com>,
+        Simon Que <sque@ti.com>, "Krishnamoorthy\, Balaji T" <balajitk@ti.com>
+Subject: Re: [PATCH 1/3] drivers: misc: add omap_hwspinlock driver
+Organization: Deep Root Systems, LLC
+References: <1287387875-14168-1-git-send-email-ohad@wizery.com>
+	<1287387875-14168-2-git-send-email-ohad@wizery.com>
+Date: Tue, 19 Oct 2010 09:58:42 -0700
+In-Reply-To: <1287387875-14168-2-git-send-email-ohad@wizery.com> (Ohad
+	Ben-Cohen's message of "Mon, 18 Oct 2010 09:44:33 +0200")
+Message-ID: <8762wyyv99.fsf@deeprootsystems.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1.50 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-10-18 at 22:47 -0400, Nicolas Pitre wrote:
-> On Mon, 18 Oct 2010, Daniel Walker wrote:
-> 
-> > I can say that I know for a fact that people don't read every patch, or
-> > every email, or keep track of every single thread. I don't think it's
-> > reasonable to expect people to do that. there's too many email, too many
-> > threads, too many discussions etc ..
-> 
-> I'm not saying that you should keep track of every threads.  But you 
-> should at least pay attention to what thread is being discussed, simply 
-> by looking at the subject line.  Any good MUA will let you sort emails 
-> and collapse them into thread view.  And scoring those incoming emails 
-> with "arch/arm/mach-msm" for example is a quick way for you to be 
-> noticed when a patch might be changing something in your area.  Tools 
-> are there for you.
+Ohad Ben-Cohen <ohad@wizery.com> writes:
 
-AFAIK before this thread, I should get CC'd when you modify me tree..
-Maybe I'll setup some tools _now_ ..
+> From: Simon Que <sque@ti.com>
+>
+> Add driver for OMAP's Hardware Spinlock module.
+>
+> The OMAP Hardware Spinlock module, initially introduced in OMAP4,
+> provides hardware assistance for synchronization between the
+> multiple processors in the device (Cortex-A9, Cortex-M3 and
+> C64x+ DSP).
 
-> > This discussion isn't really about that. It's not about people reading
-> > every single patch, which we know they don't do. This is about conflicts
-> > in -next.
-> 
-> Glad to get back to the original issue.
-> 
-> > These patches caused conflicts in -next .. What more could I have done
-> > to prevent conflicts coming from another tree and patches that appear
-> > not to effect me? Even if I read all the patches, and threads, it still
-> > seems unreasonable to expect maintainers to predict conflicts not coming
-> > from their own tree's.
-> 
-> In this particular case, Stephen did fix the trivial merge conflict.  
-> Most probably Linus could have done the same.  There is nothing you 
-> needed to do in that case.  Or you could have waited until RMK's tree 
-> hits mainline, then you merge that, fixing the issue within that merge, 
-> before asking Linus to pull.
-> 
-> And if the merge in linux-next turned out not to be that trivial, or you 
-> have new machine entries in your tree that failed to compile due to the 
-> missing fixup, well that's fine too because that's _exactly_ what the 
-> purpose of the linux-next tree is: finding issues like this before the 
-> real merge in Linus' tree.  So in this case the system did work: the 
-> conflict was identified by the tool and you were notified.
-> 
-> And the simplest solution to this is simply to merge your stuff into 
-> RMK's tree in this case, so the generic change affecting all ARM 
-> machines will cover yours as well.  Incidentally that's what has been 
-> asked of you.
-> 
-> See?  Nothing to really get excited about.
+[...]
 
-Am I excited? Russell is the one getting excited .. I was the one trying
-to correct the issues , so Linus doesn't have to deal with it.
+> +/**
+> + * omap_hwspin_trylock() - attempt to lock a specific hwspinlock
+> + * @hwlock: a hwspinlock which we want to trylock
+> + * @flags: a pointer to where the caller's interrupt state will be saved at
+> + *
+> + * This function attempt to lock the underlying hwspinlock. Unlike
+> + * hwspinlock_lock, this function will immediately fail if the hwspinlock
+> + * is already taken.
+> + *
+> + * Upon a successful return from this function, preemption and interrupts
+> + * are disabled, so the caller must not sleep, and is advised to release
+> + * the hwspinlock as soon as possible. This is required in order to minimize
+> + * remote cores polling on the hardware interconnect.
+> + *
+> + * This function can be called from any context.
+> + *
+> + * Returns 0 if we successfully locked the hwspinlock, -EBUSY if
+> + * the hwspinlock was already taken, and -EINVAL if @hwlock is invalid.
+> + */
+> +int omap_hwspin_trylock(struct omap_hwspinlock *hwlock, unsigned long *flags)
+> +{
+> +	u32 ret;
+> +
+> +	if (IS_ERR_OR_NULL(hwlock)) {
+> +		pr_err("invalid hwlock\n");
+> +		return -EINVAL;
+> +	}
+> +
+> +	/*
+> +	 * This spin_trylock_irqsave serves two purposes:
+> +
+> +	 * 1. Disable local interrupts and preemption, in order to
+> +	 *    minimize the period of time in which the hwspinlock
+> +	 *    is taken (so caller will not preempted). This is
+> +	 *    important in order to minimize the possible polling on
+> +	 *    the hardware interconnect by a remote user of this lock.
+> +	 *
+> +	 * 2. Make this hwspinlock primitive SMP-safe (so we can try to
+> +	 *    take it from additional contexts on the local cpu)
+> +	 */
 
-Daniel
+3. Ensures that in_atomic/might_sleep checks catch potential problems
+   with hwspinlock usage (e.g. scheduler checks like 'scheduling while
+   atomic' etc.)
 
+> +	if (!spin_trylock_irqsave(&hwlock->lock, *flags))
+> +		return -EBUSY;
+> +
+> +	/* attempt to acquire the lock by reading its value */
+> +	ret = readl(hwlock->addr);
+> +
+> +	/* lock is already taken */
+> +	if (ret == SPINLOCK_TAKEN) {
+> +		spin_unlock_irqrestore(&hwlock->lock, *flags);
+> +		return -EBUSY;
+> +	}
+> +
+> +	/*
+> +	 * We can be sure the other core's memory operations
+> +	 * are observable to us only _after_ we successfully take
+> +	 * the hwspinlock, so we must make sure that subsequent memory
+> +	 * operations will not be reordered before we actually took the
+> +	 * hwspinlock.
+> +	 * Note: the implicit memory barrier of the spinlock above is too
+> +	 * early, so we need this additional explicit memory barrier.
+> +	 */
+> +	mb();
+> +
+> +	return 0;
+> +}
+> +EXPORT_SYMBOL_GPL(omap_hwspin_trylock);
 
+[...]
+
+> +/**
+> + * omap_hwspinlock_unlock() - unlock a specific hwspinlock
+
+minor nit: s/lock_unlock/_unlock/  to match name below
+
+> + * @hwlock: a previously-acquired hwspinlock which we want to unlock
+> + * @flags: a pointer to the caller's saved interrupts state
+> + *
+> + * This function will unlock a specific hwspinlock, enable preemption and
+> + * restore the interrupts state. @hwlock must be taken (by us!) before
+> + * calling this function: it is a bug to call unlock on a @hwlock that was
+> + * not taken by us, i.e. using one of omap_hwspin_{lock trylock, lock_timeout}.
+> + *
+> + * This function can be called from any context.
+> + *
+> + * Returns 0 when the @hwlock on success, or -EINVAL if @hwlock is invalid.
+> + */
+> +int omap_hwspin_unlock(struct omap_hwspinlock *hwlock, unsigned long *flags)
+> +{
+> +	if (IS_ERR_OR_NULL(hwlock)) {
+> +		pr_err("invalid hwlock\n");
+> +		return -EINVAL;
+> +	}
+> +
+> +	/*
+> +	 * We must make sure that memory operations, done before unlocking
+> +	 * the hwspinlock, will not be reordered after the lock is released.
+> +	 * The memory barrier induced by the spin_unlock below is too late:
+> +	 * the other core is going to access memory soon after it will take
+> +	 * the hwspinlock, and by then we want to be sure our memory operations
+> +	 * were already observable.
+> +	 */
+> +	mb();
+> +
+> +	/* release the lock by writing 0 to it (NOTTAKEN) */
+> +	writel(SPINLOCK_NOTTAKEN, hwlock->addr);
+> +
+> +	/* undo the spin_trylock_irqsave called in the locking function */
+> +	spin_unlock_irqrestore(&hwlock->lock, *flags);
+> +
+> +	return 0;
+> +}
+> +EXPORT_SYMBOL_GPL(omap_hwspin_unlock);
+
+[...]
+
+Kevin
