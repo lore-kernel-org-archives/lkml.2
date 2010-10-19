@@ -1,15 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756741Ab0JSTZc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Oct 2010 15:25:32 -0400
-Received: from turing-police.cc.vt.edu ([128.173.14.107]:38347 "EHLO
-	turing-police.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751092Ab0JSTZa (ORCPT
-	<RFC822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Oct 2010 15:25:30 -0400
-X-Greylist: delayed 3460 seconds by postgrey-1.27 at vger.kernel.org; Tue, 19 Oct 2010 15:25:30 EDT
-X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.2
-To: Greg KH <greg@kroah.com>
+	id S1752926Ab0JSTiJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Oct 2010 15:38:09 -0400
+Received: from kroah.org ([198.145.64.141]:40830 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751825Ab0JSTiH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Oct 2010 15:38:07 -0400
+Date: Tue, 19 Oct 2010 12:37:35 -0700
+From: Greg KH <greg@kroah.com>
+To: Valdis.Kletnieks@vt.edu
 Cc: Dave Airlie <airlied@gmail.com>, Arnd Bergmann <arnd@arndb.de>,
         codalist@telemann.coda.cs.cmu.edu,
         ksummit-2010-discuss@lists.linux-foundation.org,
@@ -26,60 +25,50 @@ Cc: Dave Airlie <airlied@gmail.com>, Arnd Bergmann <arnd@arndb.de>,
         Ingo Molnar <mingo@elte.hu>, Andrew Hendry <andrew.hendry@gmail.com>,
         linux-media@vger.kernel.org
 Subject: Re: [Ksummit-2010-discuss] [v2] Remaining BKL users, what to do
-In-Reply-To: Your message of "Mon, 18 Oct 2010 17:40:04 PDT."
-             <20101019004004.GB28380@kroah.com>
-From: Valdis.Kletnieks@vt.edu
-References: <201009161632.59210.arnd@arndb.de> <201010181742.06678.arnd@arndb.de> <20101018184346.GD27089@kroah.com> <AANLkTin2KPNNXvwcWphhM-5qexB14FS7M7ezkCCYCZ2H@mail.gmail.com>
-            <20101019004004.GB28380@kroah.com>
-Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1287512693_4982P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
-Content-Transfer-Encoding: 7bit
-Date: Tue, 19 Oct 2010 14:24:53 -0400
-Message-ID: <21406.1287512693@localhost>
+Message-ID: <20101019193735.GA4043@kroah.com>
+References: <201009161632.59210.arnd@arndb.de>
+ <201010181742.06678.arnd@arndb.de>
+ <20101018184346.GD27089@kroah.com>
+ <AANLkTin2KPNNXvwcWphhM-5qexB14FS7M7ezkCCYCZ2H@mail.gmail.com>
+ <20101019004004.GB28380@kroah.com>
+ <21406.1287512693@localhost>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <21406.1287512693@localhost>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1287512693_4982P
-Content-Type: text/plain; charset=us-ascii
+On Tue, Oct 19, 2010 at 02:24:53PM -0400, Valdis.Kletnieks@vt.edu wrote:
+> On Mon, 18 Oct 2010 17:40:04 PDT, Greg KH said:
+> 
+> > I do have access to this hardware, but its on an old single processor
+> > laptop, so any work that it would take to help do this development,
+> > really wouldn't be able to be tested to be valid at all.
+> 
+> The i810 is a graphics chipset embedded on the memory controller, which
+> was designed for the Intel Pentium II, Pentium III, and Celeron CPUs.  Page 8
+> of the datasheet specifically says:
+> 
+> Processor/Host Bus Support
+> - Optimized for the Intel Pentium II processor, Intel Pentium III processor, and Intel
+> CeleronTM processor
+> - Supports processor 370-Pin Socket and SC242
+> connectors
+> - Supports 32-Bit System Bus Addressing
+> - 4 deep in-order queue; 4 or 1 deep request queue
+> - Supports Uni-processor systems only
+> 
+> So no need to clean it up for multiprocessor support.
+> 
+> http://download.intel.com/design/chipsets/datashts/29067602.pdf
+> http://www.intel.com/design/chipsets/specupdt/29069403.pdf
 
-On Mon, 18 Oct 2010 17:40:04 PDT, Greg KH said:
+Great, we can just drop all calls to lock_kernel() and the like in the
+driver and be done with it, right?
 
-> I do have access to this hardware, but its on an old single processor
-> laptop, so any work that it would take to help do this development,
-> really wouldn't be able to be tested to be valid at all.
+thanks,
 
-The i810 is a graphics chipset embedded on the memory controller, which
-was designed for the Intel Pentium II, Pentium III, and Celeron CPUs.  Page 8
-of the datasheet specifically says:
-
-Processor/Host Bus Support
-- Optimized for the Intel Pentium II processor, Intel Pentium III processor, and Intel
-CeleronTM processor
-- Supports processor 370-Pin Socket and SC242
-connectors
-- Supports 32-Bit System Bus Addressing
-- 4 deep in-order queue; 4 or 1 deep request queue
-- Supports Uni-processor systems only
-
-So no need to clean it up for multiprocessor support.
-
-http://download.intel.com/design/chipsets/datashts/29067602.pdf
-http://www.intel.com/design/chipsets/specupdt/29069403.pdf
-
-
-
---==_Exmh_1287512693_4982P
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Exmh version 2.5 07/13/2001
-
-iD8DBQFMveJ1cC3lWbTT17ARAt2tAKCceoSv2e1z2O+xGP5HZSPh9BLV0ACcDMdD
-EqvUIRmf43WgTqzLN7IfCyo=
-=wMsJ
------END PGP SIGNATURE-----
-
---==_Exmh_1287512693_4982P--
+greg k-h
