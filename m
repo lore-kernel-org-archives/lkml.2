@@ -1,530 +1,343 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933797Ab0JSD7W (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Oct 2010 23:59:22 -0400
-Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:35868 "EHLO
+	id S933806Ab0JSD7Y (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Oct 2010 23:59:24 -0400
+Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:35892 "EHLO
 	ipmail04.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933785Ab0JSD7S (ORCPT
+	by vger.kernel.org with ESMTP id S933688Ab0JSD7R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Oct 2010 23:59:18 -0400
+	Mon, 18 Oct 2010 23:59:17 -0400
 X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AnEFAJyxvEx5LcB2gWdsb2JhbACUbYx6FgEBFiIiwxaCeIJRBIpK
-Message-Id: <20101019034657.896022051@kernel.dk>
+X-IronPort-Anti-Spam-Result: AnEFAJyxvEx5LcB2gWdsb2JhbACUbYx6FgEBFiIiwxaFSQSKSg
+Message-Id: <20101019034658.324078575@kernel.dk>
 User-Agent: quilt/0.48-1
-Date: Tue, 19 Oct 2010 14:42:39 +1100
+Date: Tue, 19 Oct 2010 14:42:43 +1100
 From: npiggin@kernel.dk
 To: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Subject: [patch 23/35] fs: icache use per-CPU lists and locks for sb inode lists
+Subject: [patch 27/35] fs: icache split IO and LRU lists
 References: <20101019034216.319085068@kernel.dk>
-Content-Disposition: inline; filename=fs-sb-inodes-percpu.patch
+Content-Disposition: inline; filename=fs-inode-split-lists.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Split inode reclaim and writeback lists in preparation to scale them up
+(per-bdi locking for i_io and per-zone locking for i_lru)
+
 Signed-off-by: Nick Piggin <npiggin@kernel.dk>
 
 ---
- fs/drop_caches.c                 |    4 -
- fs/fs-writeback.c                |   15 +++--
- fs/inode.c                       |   99 ++++++++++++++++++++++++++++-----------
- fs/notify/inode_mark.c           |    6 +-
- fs/quota/dquot.c                 |    8 +--
- fs/super.c                       |   16 +++++-
- include/linux/fs.h               |   58 ++++++++++++++++++++++
- include/linux/fsnotify_backend.h |    4 -
- include/linux/writeback.h        |    1 
- 9 files changed, 164 insertions(+), 47 deletions(-)
+ fs/fs-writeback.c  |   30 +++++++++++++++++-------------
+ fs/inode.c         |   46 +++++++++++++++++++++++++++-------------------
+ fs/nilfs2/mdt.c    |    3 ++-
+ include/linux/fs.h |    3 ++-
+ mm/backing-dev.c   |    6 +++---
+ 5 files changed, 51 insertions(+), 37 deletions(-)
 
-Index: linux-2.6/fs/inode.c
-===================================================================
---- linux-2.6.orig/fs/inode.c	2010-10-19 14:18:59.000000000 +1100
-+++ linux-2.6/fs/inode.c	2010-10-19 14:19:23.000000000 +1100
-@@ -25,10 +25,11 @@
- #include <linux/async.h>
- #include <linux/posix_acl.h>
- #include <linux/bit_spinlock.h>
-+#include <linux/lglock.h>
- 
- /*
-  * Usage:
-- * sb_inode_list_lock protects:
-+ * inode_list_lglock protects:
-  *   s_inodes, i_sb_list
-  * inode_hash_bucket lock protects:
-  *   inode hash table, i_hash
-@@ -43,7 +44,7 @@
-  *
-  * Ordering:
-  * inode->i_lock
-- *   sb_inode_list_lock
-+ *   inode_list_lglock
-  *   wb_inode_list_lock
-  *   inode_hash_bucket lock
-  */
-@@ -118,7 +119,9 @@
-  * NOTE! You also have to own the lock if you change
-  * the i_state of an inode while it is in use..
-  */
--DEFINE_SPINLOCK(sb_inode_list_lock);
-+DECLARE_LGLOCK(inode_list_lglock);
-+DEFINE_LGLOCK(inode_list_lglock);
-+
- DEFINE_SPINLOCK(wb_inode_list_lock);
- 
- /*
-@@ -395,6 +398,8 @@
- 
- static void __remove_inode_hash(struct inode *inode);
- 
-+static void inode_sb_list_del(struct inode *inode);
-+
- /*
-  * dispose_list - dispose of the contents of a local list
-  * @head: the head of the list to free
-@@ -414,9 +419,7 @@
- 
- 		spin_lock(&inode->i_lock);
- 		__remove_inode_hash(inode);
--		spin_lock(&sb_inode_list_lock);
--		list_del_rcu(&inode->i_sb_list);
--		spin_unlock(&sb_inode_list_lock);
-+		inode_sb_list_del(inode);
- 		spin_unlock(&inode->i_lock);
- 
- 		wake_up_inode(inode);
-@@ -427,20 +430,12 @@
- /*
-  * Invalidate all inodes for a device.
-  */
--static int invalidate_list(struct list_head *head, struct list_head *dispose)
-+static int invalidate_sb_inodes(struct super_block *sb, struct list_head *dispose)
- {
--	struct list_head *next;
-+	struct inode *inode;
- 	int busy = 0;
- 
--	next = head->next;
--	for (;;) {
--		struct list_head *tmp = next;
--		struct inode *inode;
--
--		next = next->next;
--		if (tmp == head)
--			break;
--		inode = list_entry(tmp, struct inode, i_sb_list);
-+	do_inode_list_for_each_entry_rcu(sb, inode) {
- 		spin_lock(&inode->i_lock);
- 		if (inode->i_state & I_NEW) {
- 			spin_unlock(&inode->i_lock);
-@@ -460,7 +455,8 @@
- 		}
- 		spin_unlock(&inode->i_lock);
- 		busy = 1;
--	}
-+	} while_inode_list_for_each_entry_rcu
-+
- 	return busy;
- }
- 
-@@ -483,8 +479,8 @@
- 	 * its consistency, because the list must not change during umount
- 	 * anymore, and because iprune_sem keeps shrink_icache_memory() away.
- 	 */
--	fsnotify_unmount_inodes(&sb->s_inodes);
--	busy = invalidate_list(&sb->s_inodes, &throw_away);
-+	fsnotify_unmount_inodes(sb);
-+	busy = invalidate_sb_inodes(sb, &throw_away);
- 
- 	dispose_list(&throw_away);
- 	up_write(&iprune_sem);
-@@ -718,13 +714,63 @@
- 	return tmp & I_HASHMASK;
- }
- 
-+static inline int inode_list_cpu(struct inode *inode)
-+{
-+#ifdef CONFIG_SMP
-+	return inode->i_sb_list_cpu;
-+#else
-+	return smp_processor_id();
-+#endif
-+}
-+
-+/* helper for file_sb_list_add to reduce ifdefs */
-+static inline void __inode_sb_list_add(struct inode *inode, struct super_block *sb)
-+{
-+	struct list_head *list;
-+#ifdef CONFIG_SMP
-+	int cpu;
-+	cpu = smp_processor_id();
-+	inode->i_sb_list_cpu = cpu;
-+	list = per_cpu_ptr(sb->s_inodes, cpu);
-+#else
-+	list = &sb->s_inodes;
-+#endif
-+	list_add_rcu(&inode->i_sb_list, list);
-+}
-+
-+/**
-+ * inode_sb_list_add - add an inode to the sb's file list
-+ * @inode: inode to add
-+ * @sb: sb to add it to
-+ *
-+ * Use this function to associate an with the superblock it belongs to.
-+ */
-+static void inode_sb_list_add(struct inode *inode, struct super_block *sb)
-+{
-+	lg_local_lock(inode_list_lglock);
-+	__inode_sb_list_add(inode, sb);
-+	lg_local_unlock(inode_list_lglock);
-+}
-+
-+/**
-+ * inode_sb_list_del - remove an inode from the sb's inode list
-+ * @inode: inode to remove
-+ * @sb: sb to remove it from
-+ *
-+ * Use this function to remove an inode from its superblock.
-+ */
-+static void inode_sb_list_del(struct inode *inode)
-+{
-+	lg_local_lock_cpu(inode_list_lglock, inode_list_cpu(inode));
-+	list_del_rcu(&inode->i_sb_list);
-+	lg_local_unlock_cpu(inode_list_lglock, inode_list_cpu(inode));
-+}
-+
- static inline void
- __inode_add_to_lists(struct super_block *sb, struct inode_hash_bucket *b,
- 			struct inode *inode)
- {
--	spin_lock(&sb_inode_list_lock);
--	list_add_rcu(&inode->i_sb_list, &sb->s_inodes);
--	spin_unlock(&sb_inode_list_lock);
-+	inode_sb_list_add(inode, sb);
- 	if (b) {
- 		spin_lock_bucket(b);
- 		hlist_bl_add_head_rcu(&inode->i_hash, &b->head);
-@@ -1270,6 +1316,7 @@
- 			continue;
- 		if (!spin_trylock(&old->i_lock)) {
- 			spin_unlock_bucket(b);
-+			cpu_relax();
- 			goto repeat;
- 		}
- 		goto found_old;
-@@ -1453,9 +1500,7 @@
- 			inodes_stat.nr_unused--;
- 		spin_unlock(&wb_inode_list_lock);
- 	}
--	spin_lock(&sb_inode_list_lock);
--	list_del_rcu(&inode->i_sb_list);
--	spin_unlock(&sb_inode_list_lock);
-+	inode_sb_list_del(inode);
- 	WARN_ON(inode->i_state & I_NEW);
- 	inode->i_state |= I_FREEING;
- 	spin_unlock(&inode->i_lock);
-@@ -1732,6 +1777,8 @@
- 					 init_once);
- 	register_shrinker(&icache_shrinker);
- 
-+	lg_lock_init(inode_list_lglock);
-+
- 	/* Hash may have been set up in inode_init_early */
- 	if (!hashdist)
- 		return;
-Index: linux-2.6/include/linux/fs.h
-===================================================================
---- linux-2.6.orig/include/linux/fs.h	2010-10-19 14:18:59.000000000 +1100
-+++ linux-2.6/include/linux/fs.h	2010-10-19 14:19:22.000000000 +1100
-@@ -374,6 +374,7 @@
- #include <linux/cache.h>
- #include <linux/kobject.h>
- #include <linux/list.h>
-+#include <linux/rculist.h>
- #include <linux/rculist_bl.h>
- #include <linux/radix-tree.h>
- #include <linux/prio_tree.h>
-@@ -733,6 +734,9 @@
- 		struct rcu_head		i_rcu;
- 	};
- 	unsigned long		i_ino;
-+#ifdef CONFIG_SMP
-+	int			i_sb_list_cpu;
-+#endif
- 	unsigned int		i_count;
- 	unsigned int		i_nlink;
- 	uid_t			i_uid;
-@@ -1344,11 +1348,12 @@
- #endif
- 	const struct xattr_handler **s_xattr;
- 
--	struct list_head	s_inodes;	/* all inodes */
- 	struct hlist_head	s_anon;		/* anonymous dentries for (nfs) exporting */
- #ifdef CONFIG_SMP
-+	struct list_head __percpu *s_inodes;
- 	struct list_head __percpu *s_files;
- #else
-+	struct list_head	s_inodes;	/* all inodes */
- 	struct list_head	s_files;
- #endif
- 	/* s_dentry_lru and s_nr_dentry_unused are protected by dcache_lock */
-@@ -2202,6 +2207,57 @@
- 	__insert_inode_hash(inode, inode->i_ino);
- }
- 
-+#ifdef CONFIG_SMP
-+/*
-+ * These macros iterate all inodes on all CPUs for a given superblock.
-+ * rcu_read_lock must be held.
-+ */
-+#define do_inode_list_for_each_entry_rcu(__sb, __inode)		\
-+{								\
-+	int i;							\
-+	for_each_possible_cpu(i) {				\
-+		struct list_head *list;				\
-+		list = per_cpu_ptr((__sb)->s_inodes, i);	\
-+		list_for_each_entry_rcu((__inode), list, i_sb_list)
-+
-+#define while_inode_list_for_each_entry_rcu			\
-+	}							\
-+}
-+
-+#define do_inode_list_for_each_entry_safe(__sb, __inode, __tmp)	\
-+{								\
-+	int i;							\
-+	for_each_possible_cpu(i) {				\
-+		struct list_head *list;				\
-+		list = per_cpu_ptr((__sb)->s_inodes, i);	\
-+		list_for_each_entry_safe((__inode), (__tmp), list, i_sb_list)
-+
-+#define while_inode_list_for_each_entry_safe			\
-+	}							\
-+}
-+
-+#else
-+
-+#define do_inode_list_for_each_entry_rcu(__sb, __inode)		\
-+{								\
-+	struct list_head *list;					\
-+	list = &(sb)->s_inodes;					\
-+	list_for_each_entry_rcu((__inode), list, i_sb_list)
-+
-+#define while_inode_list_for_each_entry_rcu			\
-+}
-+
-+#define do_inode_list_for_each_entry_safe(__sb, __inode, __tmp)	\
-+{								\
-+	struct list_head *list;					\
-+	list = &(sb)->s_inodes;					\
-+	list_for_each_entry_safe((__inode), (__tmp), list, i_sb_list)
-+
-+#define while_inode_list_for_each_entry_safe			\
-+}
-+
-+#endif
-+
- #ifdef CONFIG_BLOCK
- extern void submit_bio(int, struct bio *);
- extern int bdev_read_only(struct block_device *);
-Index: linux-2.6/fs/super.c
-===================================================================
---- linux-2.6.orig/fs/super.c	2010-10-19 14:17:17.000000000 +1100
-+++ linux-2.6/fs/super.c	2010-10-19 14:18:59.000000000 +1100
-@@ -67,12 +67,25 @@
- 			for_each_possible_cpu(i)
- 				INIT_LIST_HEAD(per_cpu_ptr(s->s_files, i));
- 		}
-+		s->s_inodes = alloc_percpu(struct list_head);
-+		if (!s->s_inodes) {
-+			free_percpu(s->s_files);
-+			security_sb_free(s);
-+			kfree(s);
-+			s = NULL;
-+			goto out;
-+		} else {
-+			int i;
-+
-+			for_each_possible_cpu(i)
-+				INIT_LIST_HEAD(per_cpu_ptr(s->s_inodes, i));
-+		}
- #else
- 		INIT_LIST_HEAD(&s->s_files);
-+		INIT_LIST_HEAD(&s->s_inodes);
- #endif
- 		INIT_LIST_HEAD(&s->s_instances);
- 		INIT_HLIST_HEAD(&s->s_anon);
--		INIT_LIST_HEAD(&s->s_inodes);
- 		INIT_LIST_HEAD(&s->s_dentry_lru);
- 		init_rwsem(&s->s_umount);
- 		mutex_init(&s->s_lock);
-@@ -124,6 +137,7 @@
- static inline void destroy_super(struct super_block *s)
- {
- #ifdef CONFIG_SMP
-+	free_percpu(s->s_inodes);
- 	free_percpu(s->s_files);
- #endif
- 	security_sb_free(s);
-Index: linux-2.6/fs/drop_caches.c
-===================================================================
---- linux-2.6.orig/fs/drop_caches.c	2010-10-19 14:18:59.000000000 +1100
-+++ linux-2.6/fs/drop_caches.c	2010-10-19 14:19:18.000000000 +1100
-@@ -17,7 +17,7 @@
- 	struct inode *inode, *toput_inode = NULL;
- 
- 	rcu_read_lock();
--	list_for_each_entry_rcu(inode, &sb->s_inodes, i_sb_list) {
-+	do_inode_list_for_each_entry_rcu(sb, inode) {
- 		spin_lock(&inode->i_lock);
- 		if (inode->i_state & (I_FREEING|I_WILL_FREE|I_NEW)
- 				|| inode->i_mapping->nrpages == 0) {
-@@ -31,7 +31,7 @@
- 		iput(toput_inode);
- 		toput_inode = inode;
- 		rcu_read_lock();
--	}
-+	} while_inode_list_for_each_entry_rcu
- 	rcu_read_unlock();
- 	iput(toput_inode);
- }
 Index: linux-2.6/fs/fs-writeback.c
 ===================================================================
 --- linux-2.6.orig/fs/fs-writeback.c	2010-10-19 14:18:59.000000000 +1100
-+++ linux-2.6/fs/fs-writeback.c	2010-10-19 14:19:22.000000000 +1100
-@@ -1074,7 +1074,7 @@
- 	 * we still have to wait for that writeout.
- 	 */
- 	rcu_read_lock();
--	list_for_each_entry_rcu(inode, &sb->s_inodes, i_sb_list) {
-+	do_inode_list_for_each_entry_rcu(sb, inode) {
- 		struct address_space *mapping;
++++ linux-2.6/fs/fs-writeback.c	2010-10-19 14:19:21.000000000 +1100
+@@ -173,11 +173,11 @@
+ 	if (!list_empty(&wb->b_dirty)) {
+ 		struct inode *tail;
  
- 		spin_lock(&inode->i_lock);
-@@ -1093,11 +1093,12 @@
- 		spin_unlock(&inode->i_lock);
- 		rcu_read_unlock();
- 		/*
--		 * We hold a reference to 'inode' so it couldn't have been
--		 * removed from s_inodes list while we dropped the i_lock.  We
--		 * cannot iput the inode now as we can be holding the last
--		 * reference and we cannot iput it under spinlock. So we keep
--		 * the reference and iput it later.
-+		 * We hold a reference to 'inode' so it couldn't have
-+		 * been removed from s_inodes list while we dropped the
-+		 * i_lock.  We cannot iput the inode now as we can be
-+		 * holding the last reference and we cannot iput it
-+		 * under spinlock. So we keep the reference and iput it
-+		 * later.
- 		 */
- 		iput(old_inode);
- 		old_inode = inode;
-@@ -1107,7 +1108,7 @@
- 		cond_resched();
- 
- 		rcu_read_lock();
--	}
-+	} while_inode_list_for_each_entry_rcu
- 	rcu_read_unlock();
- 	iput(old_inode);
+-		tail = list_entry(wb->b_dirty.next, struct inode, i_list);
++		tail = list_entry(wb->b_dirty.next, struct inode, i_io);
+ 		if (time_before(inode->dirtied_when, tail->dirtied_when))
+ 			inode->dirtied_when = jiffies;
+ 	}
+-	list_move(&inode->i_list, &wb->b_dirty);
++	list_move(&inode->i_io, &wb->b_dirty);
  }
-Index: linux-2.6/fs/notify/inode_mark.c
-===================================================================
---- linux-2.6.orig/fs/notify/inode_mark.c	2010-10-19 14:18:59.000000000 +1100
-+++ linux-2.6/fs/notify/inode_mark.c	2010-10-19 14:19:18.000000000 +1100
-@@ -236,11 +236,11 @@
-  * and with the sb going away, no new inodes will appear or be referenced
-  * from other paths.
-  */
--void fsnotify_unmount_inodes(struct list_head *list)
-+void fsnotify_unmount_inodes(struct super_block *sb)
- {
- 	struct inode *inode, *next_i, *need_iput = NULL;
  
--	list_for_each_entry_safe(inode, next_i, list, i_sb_list) {
-+	do_inode_list_for_each_entry_safe(sb, inode, next_i) {
- 		struct inode *need_iput_tmp;
+ /*
+@@ -188,7 +188,7 @@
+ 	struct bdi_writeback *wb = &inode_to_bdi(inode)->wb;
  
- 		spin_lock(&inode->i_lock);
-@@ -295,5 +295,5 @@
- 		fsnotify_inode_delete(inode);
- 
- 		iput(inode);
--	}
-+	} while_inode_list_for_each_entry_safe
+ 	assert_spin_locked(&wb_inode_list_lock);
+-	list_move(&inode->i_list, &wb->b_more_io);
++	list_move(&inode->i_io, &wb->b_more_io);
  }
-Index: linux-2.6/fs/quota/dquot.c
-===================================================================
---- linux-2.6.orig/fs/quota/dquot.c	2010-10-19 14:18:59.000000000 +1100
-+++ linux-2.6/fs/quota/dquot.c	2010-10-19 14:19:18.000000000 +1100
-@@ -898,7 +898,7 @@
- #endif
  
- 	rcu_read_lock();
--	list_for_each_entry_rcu(inode, &sb->s_inodes, i_sb_list) {
-+	do_inode_list_for_each_entry_rcu(sb, inode) {
- 		spin_lock(&inode->i_lock);
- 		if (inode->i_state & (I_FREEING|I_WILL_FREE|I_NEW)) {
- 			spin_unlock(&inode->i_lock);
-@@ -930,7 +930,7 @@
- 		 * lock. So we keep the reference and iput it later. */
- 		old_inode = inode;
- 		rcu_read_lock();
--	}
-+	} while_inode_list_for_each_entry_rcu
- 	rcu_read_unlock();
- 	iput(old_inode);
+ static void inode_sync_complete(struct inode *inode)
+@@ -230,14 +230,14 @@
  
-@@ -1013,7 +1013,7 @@
- 	int reserved = 0;
+ 	assert_spin_locked(&wb_inode_list_lock);
+ 	while (!list_empty(delaying_queue)) {
+-		inode = list_entry(delaying_queue->prev, struct inode, i_list);
++		inode = list_entry(delaying_queue->prev, struct inode, i_io);
+ 		if (older_than_this &&
+ 		    inode_dirtied_after(inode, *older_than_this))
+ 			break;
+ 		if (sb && sb != inode->i_sb)
+ 			do_sb_sort = 1;
+ 		sb = inode->i_sb;
+-		list_move(&inode->i_list, &tmp);
++		list_move(&inode->i_io, &tmp);
+ 	}
  
- 	rcu_read_lock();
--	list_for_each_entry_rcu(inode, &sb->s_inodes, i_sb_list) {
-+	do_inode_list_for_each_entry_rcu(sb, inode) {
- 		/*
- 		 *  We have to scan also I_NEW inodes because they can already
- 		 *  have quota pointer initialized. Luckily, we need to touch
-@@ -1025,7 +1025,7 @@
- 				reserved = 1;
- 			remove_inode_dquot_ref(inode, type, tofree_head);
+ 	/* just one sb in list, splice to dispatch_queue and we're done */
+@@ -248,12 +248,12 @@
+ 
+ 	/* Move inodes from one superblock together */
+ 	while (!list_empty(&tmp)) {
+-		inode = list_entry(tmp.prev, struct inode, i_list);
++		inode = list_entry(tmp.prev, struct inode, i_io);
+ 		sb = inode->i_sb;
+ 		list_for_each_prev_safe(pos, node, &tmp) {
+-			inode = list_entry(pos, struct inode, i_list);
++			inode = list_entry(pos, struct inode, i_io);
+ 			if (inode->i_sb == sb)
+-				list_move(&inode->i_list, dispatch_queue);
++				list_move(&inode->i_io, dispatch_queue);
  		}
--	}
-+	} while_inode_list_for_each_entry_rcu
- 	rcu_read_unlock();
- #ifdef CONFIG_QUOTA_DEBUG
- 	if (reserved) {
-Index: linux-2.6/include/linux/fsnotify_backend.h
-===================================================================
---- linux-2.6.orig/include/linux/fsnotify_backend.h	2010-10-19 14:17:17.000000000 +1100
-+++ linux-2.6/include/linux/fsnotify_backend.h	2010-10-19 14:18:59.000000000 +1100
-@@ -402,7 +402,7 @@
- extern void fsnotify_clear_marks_by_group(struct fsnotify_group *group);
- extern void fsnotify_get_mark(struct fsnotify_mark *mark);
- extern void fsnotify_put_mark(struct fsnotify_mark *mark);
--extern void fsnotify_unmount_inodes(struct list_head *list);
-+extern void fsnotify_unmount_inodes(struct super_block *sb);
- 
- /* put here because inotify does some weird stuff when destroying watches */
- extern struct fsnotify_event *fsnotify_create_event(struct inode *to_tell, __u32 mask,
-@@ -443,7 +443,7 @@
- 	return 0;
+ 	}
  }
+@@ -422,7 +422,11 @@
+ 			/*
+ 			 * The inode is clean
+ 			 */
+-			list_move(&inode->i_list, &inode_unused);
++			list_del_init(&inode->i_io);
++			if (list_empty(&inode->i_lru)) {
++				list_add(&inode->i_lru, &inode_unused);
++				inodes_stat.nr_unused++;
++			}
+ 		}
+ 	}
+ 	inode_sync_complete(inode);
+@@ -472,7 +476,7 @@
+ 	while (!list_empty(&wb->b_io)) {
+ 		long pages_skipped;
+ 		struct inode *inode = list_entry(wb->b_io.prev,
+-						 struct inode, i_list);
++						 struct inode, i_io);
  
--static inline void fsnotify_unmount_inodes(struct list_head *list)
-+static inline void fsnotify_unmount_inodes(struct super_block *sb)
- {}
+ 		if (!spin_trylock(&inode->i_lock)) {
+ 			spin_unlock(&wb_inode_list_lock);
+@@ -558,7 +562,7 @@
  
- #endif	/* CONFIG_FSNOTIFY */
-Index: linux-2.6/include/linux/writeback.h
+ 	while (!list_empty(&wb->b_io)) {
+ 		struct inode *inode = list_entry(wb->b_io.prev,
+-						 struct inode, i_list);
++						 struct inode, i_io);
+ 		struct super_block *sb = inode->i_sb;
+ 
+ 		if (!pin_sb_for_writeback(sb)) {
+@@ -703,7 +707,7 @@
+ 		spin_lock(&wb_inode_list_lock);
+ 		if (!list_empty(&wb->b_more_io))  {
+ 			inode = list_entry(wb->b_more_io.prev,
+-						struct inode, i_list);
++						struct inode, i_io);
+ 			if (!spin_trylock(&inode->i_lock)) {
+ 				spin_unlock(&wb_inode_list_lock);
+ 				goto retry;
+@@ -1029,7 +1033,7 @@
+ 
+ 			inode->dirtied_when = jiffies;
+ 			spin_lock(&wb_inode_list_lock);
+-			list_move(&inode->i_list, &bdi->wb.b_dirty);
++			list_move(&inode->i_io, &bdi->wb.b_dirty);
+ 			spin_unlock(&wb_inode_list_lock);
+ 		}
+ 	}
+Index: linux-2.6/include/linux/fs.h
 ===================================================================
---- linux-2.6.orig/include/linux/writeback.h	2010-10-19 14:18:59.000000000 +1100
-+++ linux-2.6/include/linux/writeback.h	2010-10-19 14:19:21.000000000 +1100
-@@ -9,7 +9,6 @@
+--- linux-2.6.orig/include/linux/fs.h	2010-10-19 14:19:00.000000000 +1100
++++ linux-2.6/include/linux/fs.h	2010-10-19 14:19:21.000000000 +1100
+@@ -727,7 +727,8 @@
  
- struct backing_dev_info;
+ struct inode {
+ 	struct hlist_bl_node	i_hash;
+-	struct list_head	i_list;		/* backing dev IO list */
++	struct list_head	i_io;		/* backing dev IO list */
++	struct list_head	i_lru;		/* inode LRU list */
+ 	struct list_head	i_sb_list;
+ 	union {
+ 		struct list_head	i_dentry;
+Index: linux-2.6/mm/backing-dev.c
+===================================================================
+--- linux-2.6.orig/mm/backing-dev.c	2010-10-19 14:18:59.000000000 +1100
++++ linux-2.6/mm/backing-dev.c	2010-10-19 14:19:20.000000000 +1100
+@@ -74,11 +74,11 @@
  
--extern spinlock_t sb_inode_list_lock;
- extern spinlock_t wb_inode_list_lock;
- extern struct list_head inode_unused;
+ 	nr_wb = nr_dirty = nr_io = nr_more_io = 0;
+ 	spin_lock(&wb_inode_list_lock);
+-	list_for_each_entry(inode, &wb->b_dirty, i_list)
++	list_for_each_entry(inode, &wb->b_dirty, i_io)
+ 		nr_dirty++;
+-	list_for_each_entry(inode, &wb->b_io, i_list)
++	list_for_each_entry(inode, &wb->b_io, i_io)
+ 		nr_io++;
+-	list_for_each_entry(inode, &wb->b_more_io, i_list)
++	list_for_each_entry(inode, &wb->b_more_io, i_io)
+ 		nr_more_io++;
+ 	spin_unlock(&wb_inode_list_lock);
  
+Index: linux-2.6/fs/inode.c
+===================================================================
+--- linux-2.6.orig/fs/inode.c	2010-10-19 14:19:00.000000000 +1100
++++ linux-2.6/fs/inode.c	2010-10-19 14:19:21.000000000 +1100
+@@ -34,12 +34,13 @@
+  * inode_hash_bucket lock protects:
+  *   inode hash table, i_hash
+  * wb_inode_list_lock protects:
+- *   inode_in_use, inode_unused, b_io, b_more_io, b_dirty, i_list
++ *   inode_in_use, inode_unused, b_io, b_more_io, b_dirty, i_io, i_lru
+  * inode->i_lock protects:
+  *   i_state
+  *   i_count
+  *   i_hash
+- *   i_list
++ *   i_io
++ *   i_lru
+  *   i_sb_list
+  *
+  * Ordering:
+@@ -327,6 +328,7 @@
+ 
+ void destroy_inode(struct inode *inode)
+ {
++	BUG_ON(!list_empty(&inode->i_io));
+ 	__destroy_inode(inode);
+ 	if (inode->i_sb->s_op->destroy_inode)
+ 		inode->i_sb->s_op->destroy_inode(inode);
+@@ -345,7 +347,8 @@
+ 	INIT_HLIST_BL_NODE(&inode->i_hash);
+ 	INIT_LIST_HEAD(&inode->i_dentry);
+ 	INIT_LIST_HEAD(&inode->i_devices);
+-	INIT_LIST_HEAD(&inode->i_list);
++	INIT_LIST_HEAD(&inode->i_io);
++	INIT_LIST_HEAD(&inode->i_lru);
+ 	INIT_RADIX_TREE(&inode->i_data.page_tree, GFP_ATOMIC);
+ 	spin_lock_init(&inode->i_data.tree_lock);
+ 	spin_lock_init(&inode->i_data.i_mmap_lock);
+@@ -413,8 +416,8 @@
+ 	while (!list_empty(head)) {
+ 		struct inode *inode;
+ 
+-		inode = list_first_entry(head, struct inode, i_list);
+-		list_del_init(&inode->i_list);
++		inode = list_first_entry(head, struct inode, i_lru);
++		list_del_init(&inode->i_lru);
+ 
+ 		evict(inode);
+ 
+@@ -445,13 +448,14 @@
+ 		invalidate_inode_buffers(inode);
+ 		if (!inode->i_count) {
+ 			spin_lock(&wb_inode_list_lock);
+-			list_del(&inode->i_list);
++			list_del_init(&inode->i_io);
++			list_del(&inode->i_lru);
+ 			inodes_stat.nr_unused--;
+ 			spin_unlock(&wb_inode_list_lock);
+ 			WARN_ON(inode->i_state & I_NEW);
+ 			inode->i_state |= I_FREEING;
+ 			spin_unlock(&inode->i_lock);
+-			list_add(&inode->i_list, dispose);
++			list_add(&inode->i_lru, dispose);
+ 			continue;
+ 		}
+ 		spin_unlock(&inode->i_lock);
+@@ -530,20 +534,20 @@
+ 		if (list_empty(&inode_unused))
+ 			break;
+ 
+-		inode = list_entry(inode_unused.prev, struct inode, i_list);
++		inode = list_entry(inode_unused.prev, struct inode, i_lru);
+ 
+ 		if (!spin_trylock(&inode->i_lock)) {
+ 			spin_unlock(&wb_inode_list_lock);
+ 			goto again;
+ 		}
+ 		if (inode->i_count || (inode->i_state & ~I_REFERENCED)) {
+-			list_del_init(&inode->i_list);
++			list_del_init(&inode->i_lru);
+ 			spin_unlock(&inode->i_lock);
+ 			inodes_stat.nr_unused--;
+ 			continue;
+ 		}
+ 		if (inode->i_state & I_REFERENCED) {
+-			list_move(&inode->i_list, &inode_unused);
++			list_move(&inode->i_lru, &inode_unused);
+ 			inode->i_state &= ~I_REFERENCED;
+ 			spin_unlock(&inode->i_lock);
+ 			continue;
+@@ -556,7 +560,7 @@
+ 			 *
+ 			 * We'll try to get it back if it becomes freeable.
+ 			 */
+-			list_move(&inode->i_list, &inode_unused);
++			list_move(&inode->i_lru, &inode_unused);
+ 			spin_unlock(&wb_inode_list_lock);
+ 			__iget(inode);
+ 			spin_unlock(&inode->i_lock);
+@@ -567,7 +571,7 @@
+ 			iput(inode);
+ 			spin_lock(&wb_inode_list_lock);
+ 			if (inode == list_entry(inode_unused.next,
+-						struct inode, i_list)) {
++						struct inode, i_lru)) {
+ 				if (spin_trylock(&inode->i_lock)) {
+ 					if (can_unuse(inode))
+ 						goto freeable;
+@@ -577,7 +581,7 @@
+ 			continue;
+ 		}
+ freeable:
+-		list_move(&inode->i_list, &freeable);
++		list_move(&inode->i_lru, &freeable);
+ 		WARN_ON(inode->i_state & I_NEW);
+ 		inode->i_state |= I_FREEING;
+ 		spin_unlock(&inode->i_lock);
+@@ -1508,9 +1512,9 @@
+ 		if (sb->s_flags & MS_ACTIVE) {
+ 			inode->i_state |= I_REFERENCED;
+ 			if (!(inode->i_state & (I_DIRTY|I_SYNC)) &&
+-					list_empty(&inode->i_list)) {
++					list_empty(&inode->i_lru)) {
+ 				spin_lock(&wb_inode_list_lock);
+-				list_add(&inode->i_list, &inode_unused);
++				list_add(&inode->i_lru, &inode_unused);
+ 				inodes_stat.nr_unused++;
+ 				spin_unlock(&wb_inode_list_lock);
+ 			}
+@@ -1526,11 +1530,15 @@
+ 		inode->i_state &= ~I_WILL_FREE;
+ 		__remove_inode_hash(inode);
+ 	}
+-	if (!list_empty(&inode->i_list)) {
++	if (!list_empty(&inode->i_lru)) {
+ 		spin_lock(&wb_inode_list_lock);
+-		list_del_init(&inode->i_list);
+-		if (!inode->i_state)
+-			inodes_stat.nr_unused--;
++		list_del_init(&inode->i_lru);
++		inodes_stat.nr_unused--;
++		spin_unlock(&wb_inode_list_lock);
++	}
++	if (!list_empty(&inode->i_io)) {
++		spin_lock(&wb_inode_list_lock);
++		list_del_init(&inode->i_io);
+ 		spin_unlock(&wb_inode_list_lock);
+ 	}
+ 	inode_sb_list_del(inode);
+Index: linux-2.6/fs/nilfs2/mdt.c
+===================================================================
+--- linux-2.6.orig/fs/nilfs2/mdt.c	2010-10-19 14:18:58.000000000 +1100
++++ linux-2.6/fs/nilfs2/mdt.c	2010-10-19 14:19:16.000000000 +1100
+@@ -504,7 +504,8 @@
+ #endif
+ 		inode->dirtied_when = 0;
+ 
+-		INIT_LIST_HEAD(&inode->i_list);
++		INIT_LIST_HEAD(&inode->i_io);
++		INIT_LIST_HEAD(&inode->i_lru);
+ 		INIT_LIST_HEAD(&inode->i_sb_list);
+ 		inode->i_state = 0;
+ #endif
 
 
