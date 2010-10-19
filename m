@@ -1,85 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756243Ab0JSIEW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Oct 2010 04:04:22 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:56364 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753867Ab0JSIEP convert rfc822-to-8bit (ORCPT
+	id S933684Ab0JSIEj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Oct 2010 04:04:39 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:33857 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933090Ab0JSIEg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Oct 2010 04:04:15 -0400
+	Tue, 19 Oct 2010 04:04:36 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :content-type:content-transfer-encoding;
-        b=Sf922q6WigSC0hTl1+jBraTMEbekQPUNMr/zkk+SIkbQOE+GS2gtbm63rezDnRKnLI
-         BSYexYJIgQFeDK/IQNW5K17+vldcKc0FYXFAuaDXZDR6vX58XoBGWFwU/oBfut6r9xtX
-         T7aN4K9D2hnCP+2/yswBGxtUMEdElMlDfGfsc=
-MIME-Version: 1.0
-In-Reply-To: <AANLkTinjZOS+n6RfdshXdOk7uN4neEKPitT12srK1GsF@mail.gmail.com>
-References: <AANLkTinjZOS+n6RfdshXdOk7uN4neEKPitT12srK1GsF@mail.gmail.com>
-Date: Tue, 19 Oct 2010 11:04:13 +0300
-Message-ID: <AANLkTimzEb=gs7JUh49+zRULL=fv+ugi3fY22HbmDGDq@mail.gmail.com>
-Subject: Fwd: kconfig issue with 'choice' and defconfigs
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=sz6uGkBmeobpNQ84sGdYGqktPmLwOolXVWfuBZnIspj1wSTkYOyJzKqRmVx1RtPiQZ
+         uR1dRT4jtEl/FRJyBO9RCLZwl5wZtJl+fYRcW1+w5GvUxmp9ESlPX294T6XVKpUrFCBK
+         hgCuITlK1dPHBnZ/Y5BkCYUEX94OKtlka0SFU=
 From: Felipe Contreras <felipe.contreras@gmail.com>
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: linux-usb@vger.kernel.org, linux-main <linux-kernel@vger.kernel.org>
+Cc: Greg KH <greg@kroah.com>, Felipe Balbi <balbi@ti.com>,
+        Felipe Contreras <felipe.contreras@gmail.com>
+Subject: [PATCH 0/3] usb: geneirc Kconfig fixes
+Date: Tue, 19 Oct 2010 11:04:23 +0300
+Message-Id: <1287475466-8927-1-git-send-email-felipe.contreras@gmail.com>
+X-Mailer: git-send-email 1.7.3.1.2.g7fe2b
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Hi,
 
-I'm forwarding this one so it doesn't get lost (I thought I sent it to lkml).
+This gets rid of some warnings, makes defconfigs smarter by having more proper
+dependencies, and general cleanups.
 
----------- Forwarded message ----------
-From: Felipe Contreras <felipe.contreras@gmail.com>
-Date: Fri, Oct 15, 2010 at 1:54 PM
-Subject: kconfig issue with 'choice' and defconfigs
-To: linux-kbuild@vger.kernel.org
-Cc: Michal Marek <mmarek@suse.cz>
+BTW, this is the reason USB_GADGET_MUSB_HDRC sometimes is not selected:
+http://article.gmane.org/gmane.linux.kbuild.devel/5480
 
+Felipe Contreras (3):
+  usb: fix Kconfig warning
+  usb: trivial Kconfig cleanups
+  drivers: cleanup Kconfig stuff
 
-Hi,
-
-I noticed this when playing with USB (USB_GADGET_MUSB_HDRC), basically
-anything 'choice' related doesn't play nice with defconfigs.
-
-Any ideas?
-
-./scripts/kconfig/conf --defconfig=/dev/null testconfig
-
-testconfig:
----
-config FRIEND
-       bool
-       select MARK
-       default y
-
-choice
-       prompt "pick one"
-
-config NOONE
-       bool "no one"
-
-config JOHN
-       bool "john"
-
-config JOHNJR
-       tristate
-       depends on JOHN
-       default FRIEND
-
-config MARK
-       bool "mark"
-
-endchoice
----
-
-CONFIG_FRIEND=y
-CONFIG_NOONE=y
-# CONFIG_JOHN is not set
-# CONFIG_MARK is not set
+ drivers/mfd/Kconfig        |    4 +++-
+ drivers/usb/core/Kconfig   |    3 ---
+ drivers/usb/gadget/Kconfig |   18 +++---------------
+ drivers/usb/musb/Kconfig   |   19 +++++--------------
+ 4 files changed, 11 insertions(+), 33 deletions(-)
 
 -- 
-Felipe Contreras
+1.7.3.1.2.g7fe2b
+
