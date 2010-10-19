@@ -1,83 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755289Ab0JSQZT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Oct 2010 12:25:19 -0400
-Received: from kroah.org ([198.145.64.141]:35059 "EHLO coco.kroah.org"
+	id S1755459Ab0JSQZy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Oct 2010 12:25:54 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:38406 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754765Ab0JSQZS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Oct 2010 12:25:18 -0400
-Date: Tue, 19 Oct 2010 09:23:48 -0700
-From: Greg KH <greg@kroah.com>
-To: Anand Gadiyar <gadiyar@ti.com>
-Cc: Felipe Contreras <felipe.contreras@gmail.com>, linux-usb@vger.kernel.org,
-        linux-omap <linux-omap@vger.kernel.org>,
-        linux-main <linux-kernel@vger.kernel.org>, Felipe Balbi <balbi@ti.com>,
-        Tony Lindgren <tony@atomide.com>
-Subject: Re: [PATCH v2 3/3] drivers: cleanup Kconfig stuff
-Message-ID: <20101019162348.GA28899@kroah.com>
-References: <1287482608-11320-1-git-send-email-felipe.contreras@gmail.com>
- <1287482608-11320-4-git-send-email-felipe.contreras@gmail.com>
- <20101019155219.GI4589@kroah.com>
- <4CBDC361.70507@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4CBDC361.70507@ti.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1754765Ab0JSQZx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Oct 2010 12:25:53 -0400
+Subject: Re: [PATCH 1/3] IMA: move read/write counters into struct inode
+From: Eric Paris <eparis@redhat.com>
+To: Dave Chinner <david@fromorbit.com>
+Cc: Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        zohar@us.ibm.com, warthog9@kernel.org, jmorris@namei.org,
+        kyle@mcmartin.ca, hpa@zytor.com, akpm@linux-foundation.org,
+        torvalds@linux-foundation.org, mingo@elte.hu, viro@zeniv.linux.org.uk
+In-Reply-To: <20101019073901.GB11284@dastard>
+References: <20101019011650.25346.99614.stgit@paris.rdu.redhat.com>
+	 <20101019013037.GA31393@infradead.org>
+	 <1287454443.2530.124.camel@localhost.localdomain>
+	 <20101019073901.GB11284@dastard>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 19 Oct 2010 12:24:43 -0400
+Message-ID: <1287505483.2530.174.camel@localhost.localdomain>
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 19, 2010 at 09:42:17PM +0530, Anand Gadiyar wrote:
-> On 10/19/2010 9:22 PM, Greg KH wrote:
-> >On Tue, Oct 19, 2010 at 01:03:28PM +0300, Felipe Contreras wrote:
-> >>Add missing dependencies, and remove redundant ones, and select sensible
-> >>defaults.
-> >>
-> >>Signed-off-by: Felipe Contreras<felipe.contreras@gmail.com>
-> >>---
-> >>  drivers/mfd/Kconfig        |    3 ++-
-> >>  drivers/regulator/Kconfig  |    1 +
-> >>  drivers/usb/gadget/Kconfig |    3 +--
-> >>  drivers/usb/musb/Kconfig   |    6 ++----
-> >>  drivers/usb/otg/Kconfig    |    2 ++
-> >>  5 files changed, 8 insertions(+), 7 deletions(-)
-> >>
-> >>diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
-> >>index db51ea1..0bbaf01 100644
-> >>--- a/drivers/mfd/Kconfig
-> >>+++ b/drivers/mfd/Kconfig
-> >>@@ -156,6 +156,7 @@ config MENELAUS
-> >>  config TWL4030_CORE
-> >>  	bool "Texas Instruments TWL4030/TWL5030/TWL6030/TPS659x0 Support"
-> >>  	depends on I2C=y&&  GENERIC_HARDIRQS
-> >>+	default y if ARCH_OMAP3 || ARCH_OMAP4
-> >
-> >Sorry, but unless the driver is somehow required to keep the board from
-> >going up in a puff of smoke, a default should NEVER be y.
-> >
-> >Because of that, I can't take this patch.
-> >
-> 
-> This is the driver for the Power-management IC on the board. Without
-> this IC being correctly configured, I'm guessing a lot of things
-> will fail. Not so sure if anything will go up in smoke (sounds
-> unlikely), or if the kernel will fail to boot - I'll check quickly -
-> but for this one specific instance, I think it's reasonable to
-> accept a default y.
+On Tue, 2010-10-19 at 18:39 +1100, Dave Chinner wrote:
+> On Mon, Oct 18, 2010 at 10:14:03PM -0400, Eric Paris wrote:
 
-Sorry, but no, I'm not going to take it for the reasons stated above.
+> Eric, just to put that in context - changing the size of an inode
+> needs to be conidered carefully because we cache so many of them. We
+> often jump through hoops just to reduce it by 4 or 8 bytes. You are
+> proposing to increase it by 24 bytes (roughly 5%) and as such that
+> _should_ be considered a big deal, especially for something that is
+> currently rarely used.
 
-> Kevin/Tony can probably confirm.
-> 
-> Greg,
-> 
-> For other instances of unnecessary "default y", do you think they
-> should be removed?
+In my mind it's framed a little differently, my patch series is reducing
+it from ~900 bytes to 24 bytes.  Even though that memory might not have
+been inside struct inode if there is always a 1-1 mapping it might as
+well be....   I'm going from seriously broken to a hell of a lot better.
+I believe that when I resend this series I'll drop 8 more of those bytes
+(open count as I think we can do without that these days).
 
-I wouldn't worry about trivial things like that, the damage is already
-done.
+> Personally I that adding a pointer into the struct inode is as much
+> as I'd want to compromise to. Those that want to use IMA or have the
+> possibility of turning it on dynamicaly can accept the additional
+> overhead of another memory allocation during inode allocation as the
+> cost of using this functionality.  That's the way the security
+> subsystem works, so I don't see any problems with doing this for IMA
+> and it turns the overhead problem into one that only affects those
+> that have it both configured and enabled.  That seems like a
+> reasonable compromise to me....
 
-thanks,
+The problem is that this would actually waste another 8 bytes (the size
+of the pointer in struct inode) since IMA is still going to need to
+allocate a structure for every inode to hold the 16-24 bytes of
+counters.  That 16-24 might not be in struct inode, but like I said, if
+there is a 1-1 mapping between the two there is no difference.
 
-greg k-h
+I said that if there was a consensus that this overhead was still too
+large (and it seems that may be the case) I would put looking at using a
+userspace freezer to attempt to collect the information dynamically on
+my todo list.  I'll gladly do that but we have a space/time tradeoff I'd
+rather have a consensus on before I start.
+
+If I go the pointer in struct inode route, I don't need to serialize
+entry and removal from core of every inode if IMA is enabled (while I
+add and remove it from the IMA lookup tree.)  If I don't add any fields
+to struct inode I'll need to serialize while I add them to the IMA
+lookup tree, but at the savings of a void * in struct inode.
+
+My guess is that most people will say forcing users to serialize and
+saving 8bytes per inode is the better choice, but I know there is
+scalability work going on and I want to make sure everyone agrees that
+is the right choice before we spend a lot of time on anything like
+this...
+
+-Eric
+
