@@ -1,81 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933714Ab0JSHcE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Oct 2010 03:32:04 -0400
-Received: from novprvlin0050.provo.novell.com ([137.65.248.33]:1676 "EHLO
-	novprvlin0050.provo.novell.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757835Ab0JSHcD (ORCPT
-	<rfc822;groupwise-jlee@novell.com:5:1>);
-	Tue, 19 Oct 2010 03:32:03 -0400
-Message-Id: <4CBDE4170200002300022431@novprvlin0050.provo.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 8.0.2 
-Date: Tue, 19 Oct 2010 01:31:51 -0600
-From: "Joey Lee" <jlee@novell.com>
-To: "Al Cho" <ACho@novell.com>
-Cc: <devel@driverdev.osuosl.org>, <yiyingc@ene.com.tw>, <gregkh@suse.de>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] staging/keucr: fix keucr lost disconnect in
- transport
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Content-Disposition: inline
+	id S933544Ab0JSHef (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Oct 2010 03:34:35 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:60380 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757830Ab0JSHed convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Oct 2010 03:34:33 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=Ea7azzOCh9MR48QMNoeexp0EgBF1opt10o4vxxBQh1EZbihNJyCXoS8oGMDkIACo7o
+         6/EXT7BFUq8NC4yoIwQM0B6hQyNI1Nj0qH7auCKs/OaXy6/E1aySOZ6ZLYd9lng+6O8f
+         WI5nWVLLe0PPC+oWuXHNieaZl1D2s+NvOODxc=
+MIME-Version: 1.0
+In-Reply-To: <20101019071534.GA15105@sli10-conroe.sh.intel.com>
+References: <20101019093142.509d6947@notabene>
+	<20101018154137.90f5325f.akpm@linux-foundation.org>
+	<20101019095144.A1B0.A69D9226@jp.fujitsu.com>
+	<AANLkTin38qJ-U3B7XwMh-3aR9zRs21LgR1yHfqYifxrn@mail.gmail.com>
+	<20101019023537.GB8310@localhost>
+	<AANLkTikHxDyjOGgM8-X6FNT15Hr3s4NaA-=+FRhma+3D@mail.gmail.com>
+	<20101019030515.GB11924@localhost>
+	<AANLkTinvcGjF2-dvu8kpDY4V7kGkRJjHTWDtQPNRKMU_@mail.gmail.com>
+	<20101019032145.GA3108@sli10-conroe.sh.intel.com>
+	<20101019071534.GA15105@sli10-conroe.sh.intel.com>
+Date: Tue, 19 Oct 2010 16:34:32 +0900
+Message-ID: <AANLkTimQzT3SYf0LMqEH8Bfta2gnvVjWCHRj=kmb_4Z7@mail.gmail.com>
+Subject: Re: Deadlock possibly caused by too_many_isolated.
+From: Minchan Kim <minchan.kim@gmail.com>
+To: Shaohua Li <shaohua.li@intel.com>
+Cc: "Wu, Fengguang" <fengguang.wu@intel.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>, Neil Brown <neilb@suse.de>,
+        Rik van Riel <riel@redhat.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Al, 
+On Tue, Oct 19, 2010 at 4:15 PM, Shaohua Li <shaohua.li@intel.com> wrote:
+> On Tue, Oct 19, 2010 at 11:21:45AM +0800, Shaohua Li wrote:
+>> On Tue, Oct 19, 2010 at 11:09:29AM +0800, Minchan Kim wrote:
+>> > On Tue, Oct 19, 2010 at 12:05 PM, Wu Fengguang <fengguang.wu@intel.com> wrote:
+>> > > On Tue, Oct 19, 2010 at 10:52:47AM +0800, Minchan Kim wrote:
+>> > >> Hi Wu,
+>> > >>
+>> > >> On Tue, Oct 19, 2010 at 11:35 AM, Wu Fengguang <fengguang.wu@intel.com> wrote:
+>> > >> >> @@ -2054,10 +2069,11 @@ rebalance:
+>> > >> >>                 goto got_pg;
+>> > >> >>
+>> > >> >>         /*
+>> > >> >> -        * If we failed to make any progress reclaiming, then we are
+>> > >> >> -        * running out of options and have to consider going OOM
+>> > >> >> +        * If we failed to make any progress reclaiming and there aren't
+>> > >> >> +        * many parallel reclaiming, then we are unning out of options and
+>> > >> >> +        * have to consider going OOM
+>> > >> >>          */
+>> > >> >> -       if (!did_some_progress) {
+>> > >> >> +       if (!did_some_progress && !too_many_isolated_zone(preferred_zone)) {
+>> > >> >>                 if ((gfp_mask & __GFP_FS) && !(gfp_mask & __GFP_NORETRY)) {
+>> > >> >>                         if (oom_killer_disabled)
+>> > >> >>                                 goto nopage;
+>> > >> >
+>> > >> > This is simply wrong.
+>> > >> >
+>> > >> > It disabled this block for 99% system because there won't be enough
+>> > >> > tasks to make (!too_many_isolated_zone == true). As a result the LRU
+>> > >> > will be scanned like mad and no task get OOMed when it should be.
+>> > >>
+>> > >> If !too_many_isolated_zone is false, it means there are already many
+>> > >> direct reclaiming tasks.
+>> > >> So they could exit reclaim path and !too_many_isolated_zone will be true.
+>> > >> What am I missing now?
+>> > >
+>> > > Ah sorry, my brain get short circuited.. but I still feel uneasy with
+>> > > this change. It's not fixing the root cause and won't prevent too many
+>> > > LRU pages be isolated. It's too late to test too_many_isolated_zone()
+>> > > after direct reclaim returns (after sleeping for a long time).
+>> > >
+>> >
+>> > Intend to agree.
+>> > I think root cause is a infinite looping in too_many_isolated holding FS lock.
+>> > Would it be simple that too_many_isolated would be bail out after some try?
+>> I'm wondering if we need too_many_isolated_zone logic. The do_try_to_free_pages
+>> will return progress till all zones are unreclaimable. Assume before this we
+>> don't oomkiller. If the direct reclaim fails but has progress, it will sleep.
+> Not sure if this is clear. What I mean is we can delete too_many_isolated_zone,
+> do_try_to_free_pages can still return 1 till all zones are unreclaimable. Before
+> this direct reclaim will not oom, because it sees progress and will call congestion_wait
+> to sleep. Am I missing anything?
+>
 
-æ–¼ äº”ï¼Œ2010-09-24 æ–¼ 18:50 +0800ï¼ŒAl Cho æåˆ°ï¼š
-> The other part of keucr lost usb disconnect.
-> Unplug SDcard after thread scan,the wrong rule in usb_stor_port_reset,
-> so the driver still fail in stress test.
-> 
-> Signed-off-by: Al Cho <acho@novell.com>
-> ---
->  drivers/staging/keucr/transport.c |   15 +++++----------
->  1 files changed, 5 insertions(+), 10 deletions(-)
-> 
-> diff --git a/drivers/staging/keucr/transport.c b/drivers/staging/keucr/transport.c
-> index 7215429..445a62c 100644
-> --- a/drivers/staging/keucr/transport.c
-> +++ b/drivers/staging/keucr/transport.c
-> @@ -763,24 +763,19 @@ int usb_stor_port_reset(struct us_data *us)
->  	int result, rc_lock;
->  
->  	//printk("transport --- usb_stor_port_reset\n");
-> -	result = rc_lock = usb_lock_device_for_reset(us->pusb_dev, us->pusb_intf);
-> +	result = usb_lock_device_for_reset(us->pusb_dev, us->pusb_intf);
->  	if (result < 0)
->  		printk("unable to lock device for reset: %d\n", result);
-> -	else
-> -	{
-> +	else {
->  		/* Were we disconnected while waiting for the lock? */
-> -		if (test_bit(US_FLIDX_DISCONNECTING, &us->dflags))
-> -		{
-> +		if (test_bit(US_FLIDX_DISCONNECTING, &us->dflags)) {
->  			result = -EIO;
->  			//printk("No reset during disconnect\n");
-> -		}
-> -		else
-> -		{
-> +		} else {
->  			result = usb_reset_device(us->pusb_dev);
->  			//printk("usb_reset_composite_device returns %d\n", result);
->  		}
-> -		if (rc_lock)
-> -			usb_unlock_device(us->pusb_dev);
-> +		usb_unlock_device(us->pusb_dev);
->  	}
->  	return result;
->  }
+You mean could we remove too_many_isolated? not too_many_isolated_zone. Right?
+It it is, we can't.
 
-This patch works to me on MSI netbook.
-
-Signed-off-by: Lee, Chun-Yi <jlee@novell.com>
+Your saying is right.
+do_try_to_free_pages can return 1 until all zones are unreclaimable.
+But If we remove throttling logic which is too_many_isolated, too many
+process can enter direct reclaim path and they can increase
+zone->pages_scanned while zone_reclaimable pages are decreased by
+isolation. At last, we could reach all zones are unreclaimable much
+faster.
 
 
-Thank's
-Joey Lee
 
+
+-- 
+Kind regards,
+Minchan Kim
