@@ -1,166 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758576Ab0JSMk3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Oct 2010 08:40:29 -0400
-Received: from mail.digidescorp.com ([66.244.163.200]:49344 "EHLO
-	digidescorp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758561Ab0JSMk0 (ORCPT
+	id S933973Ab0JSMp6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Oct 2010 08:45:58 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:53490 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754904Ab0JSMp5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Oct 2010 08:40:26 -0400
-X-Greylist: delayed 360 seconds by postgrey-1.27 at vger.kernel.org; Tue, 19 Oct 2010 08:40:26 EDT
-X-Spam-Processed: digidescorp.com, Tue, 19 Oct 2010 07:34:23 -0500
-X-Authenticated-Sender: steve@digidescorp.com
-X-Return-Path: prvs=19087ec99f=steve@digidescorp.com
-X-Envelope-From: steve@digidescorp.com
-X-MDaemon-Deliver-To: linux-kernel@vger.kernel.org
-From: "Steven J. Magnani" <steve@digidescorp.com>
-To: linux-mm@kvack.org
-Cc: dhowells@redhat.com, linux-kernel@vger.kernel.org,
-        kamezawa.hiroyu@jp.fujitsu.com, balbir@linux.vnet.ibm.com,
-        "Steven J. Magnani" <steve@digidescorp.com>
-Subject: [PATCH V2] nommu: add anonymous page memcg accounting
-Date: Tue, 19 Oct 2010 07:34:14 -0500
-Message-Id: <1287491654-4005-1-git-send-email-steve@digidescorp.com>
-X-Mailer: git-send-email 1.6.0.6
+	Tue, 19 Oct 2010 08:45:57 -0400
+X-Authority-Analysis: v=1.1 cv=kXGwZUU/u1JTMRv8Axk4W0omja+vfTT+sGlOkodD8F8= c=1 sm=0 a=QR7Z30341-IA:10 a=IkcTkHD0fZMA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=ImOyRZdbylXH_Pju1dcA:9 a=BKtkCc6f8KoyzNNqJ2k9mI5xYZ4A:4 a=QEXdDO2ut3YA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [PATCH 0/7] [GIT PULL] tracing: various updates
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+In-Reply-To: <20101019071103.GA11443@elte.hu>
+References: <20101018202939.828061748@goodmis.org>
+	 <20101019062359.GB21782@elte.hu>  <20101019071103.GA11443@elte.hu>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 19 Oct 2010 08:45:55 -0400
+Message-ID: <1287492355.16971.361.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add the necessary calls to track VM anonymous page usage (only).
+On Tue, 2010-10-19 at 09:11 +0200, Ingo Molnar wrote:
+> hm, it doesnt build with certain configs:
+> 
+>  kernel/trace/trace_sched_wakeup.c:507: error: implicit declaration of function ‘start_func_tracer’
+>  kernel/trace/trace_sched_wakeup.c:520: error: implicit declaration of function ‘stop_func_tracer’
+> 
+> Config attached.
 
-V2 changes:
-* Added update of memory cgroup documentation
-* Clarify use of 'file' to distinguish anonymous mappings
+Thanks, I'll take a look.
 
-Signed-off-by: Steven J. Magnani <steve@digidescorp.com>
----
-diff -uprN a/Documentation/cgroups/memory.txt b/Documentation/cgroups/memory.txt
---- a/Documentation/cgroups/memory.txt	2010-10-05 09:14:36.000000000 -0500
-+++ b/Documentation/cgroups/memory.txt	2010-10-19 07:28:04.000000000 -0500
-@@ -34,6 +34,7 @@ Current Status: linux-2.6.34-mmotm(devel
- 
- Features:
-  - accounting anonymous pages, file caches, swap caches usage and limiting them.
-+   NOTE: On NOMMU systems, only anonymous pages are accounted.
-  - private LRU and reclaim routine. (system's global LRU and private LRU
-    work independently from each other)
-  - optionally, memory+swap usage can be accounted and limited.
-@@ -640,7 +641,30 @@ At reading, current status of OOM is sho
- 	under_oom	 0 or 1 (if 1, the memory cgroup is under OOM, tasks may
- 				 be stopped.)
- 
--11. TODO
-+11. NOMMU Support
-+
-+Systems without a Memory Management Unit do not support virtual memory,
-+swapping, page faults, or migration, and are therefore limited to operating
-+entirely within the system's RAM. On such systems, maintaining an ability to
-+allocate sufficiently large blocks of contiguous memory is usually a challenge.
-+This makes the overhead involved in memory cgroup support more of a concern,
-+particularly when the memory page size is small.
-+
-+Typically, embedded systems are comparatively simple and deterministic, and are
-+required to remain stable over long periods. Invocation of the OOM-killer, were
-+it to occur in an uncontrolled manner, would likely destabilize such systems.
-+
-+Even a well-designed system may be presented with external stimuli that could
-+lead to OOM conditions. One example is a system that is required to check a
-+user-supplied removable FAT filesystem. As there is no way to bound the size
-+or coherence of the user's filesystem, the memory required to run dosfsck on
-+it may exceed the system's capacity. Running dosfsck in a memory cgroup
-+can preserve system stability even in the face of excessive memory demands.
-+
-+At the present time, only anonymous pages are included in NOMMU memory cgroup
-+accounting.
-+
-+12. TODO
- 
- 1. Add support for accounting huge pages (as a separate controller)
- 2. Make per-cgroup scanner reclaim not-shared pages first
-diff -uprN a/mm/nommu.c b/mm/nommu.c
---- a/mm/nommu.c	2010-10-13 08:20:38.000000000 -0500
-+++ b/mm/nommu.c	2010-10-13 08:24:06.000000000 -0500
-@@ -524,8 +524,10 @@ static void delete_nommu_region(struct v
- /*
-  * free a contiguous series of pages
-  */
--static void free_page_series(unsigned long from, unsigned long to)
-+static void free_page_series(unsigned long from, unsigned long to,
-+			     const struct file *file)
- {
-+	mem_cgroup_uncharge_start();
- 	for (; from < to; from += PAGE_SIZE) {
- 		struct page *page = virt_to_page(from);
- 
-@@ -534,8 +536,13 @@ static void free_page_series(unsigned lo
- 		if (page_count(page) != 1)
- 			kdebug("free page %p: refcount not one: %d",
- 			       page, page_count(page));
-+		/* Only anonymous pages are charged, currently */
-+		if (!file)
-+			mem_cgroup_uncharge_page(page);
-+
- 		put_page(page);
- 	}
-+	mem_cgroup_uncharge_end();
- }
- 
- /*
-@@ -563,7 +570,8 @@ static void __put_nommu_region(struct vm
- 		 * from ramfs/tmpfs mustn't be released here */
- 		if (region->vm_flags & VM_MAPPED_COPY) {
- 			kdebug("free series");
--			free_page_series(region->vm_start, region->vm_top);
-+			free_page_series(region->vm_start, region->vm_top,
-+					 region->vm_file);
- 		}
- 		kmem_cache_free(vm_region_jar, region);
- 	} else {
-@@ -1117,9 +1125,27 @@ static int do_mmap_private(struct vm_are
- 		set_page_refcounted(&pages[point]);
- 
- 	base = page_address(pages);
--	region->vm_flags = vma->vm_flags |= VM_MAPPED_COPY;
-+
- 	region->vm_start = (unsigned long) base;
- 	region->vm_end   = region->vm_start + rlen;
-+
-+	/* Only anonymous pages are charged, currently */
-+	if (!vma->vm_file) {
-+		for (point = 0; point < total; point++) {
-+			int charge_failed =
-+				mem_cgroup_newpage_charge(&pages[point],
-+							  current->mm,
-+							  GFP_KERNEL);
-+			if (charge_failed) {
-+				free_page_series(region->vm_start,
-+						 region->vm_end, NULL);
-+				region->vm_start = region->vm_end = 0;
-+				goto enomem;
-+			}
-+		}
-+	}
-+
-+	region->vm_flags = vma->vm_flags |= VM_MAPPED_COPY;
- 	region->vm_top   = region->vm_start + (total << PAGE_SHIFT);
- 
- 	vma->vm_start = region->vm_start;
-@@ -1150,7 +1176,7 @@ static int do_mmap_private(struct vm_are
- 	return 0;
- 
- error_free:
--	free_page_series(region->vm_start, region->vm_end);
-+	free_page_series(region->vm_start, region->vm_end, vma->vm_file);
- 	region->vm_start = vma->vm_start = 0;
- 	region->vm_end   = vma->vm_end = 0;
- 	region->vm_top   = 0;
-@@ -1555,7 +1581,7 @@ static int shrink_vma(struct mm_struct *
- 	add_nommu_region(region);
- 	up_write(&nommu_region_sem);
- 
--	free_page_series(from, to);
-+	free_page_series(from, to, vma->vm_file);
- 	return 0;
- }
- 
+-- Steve
+
 
