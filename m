@@ -1,45 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758402Ab0JSLum (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Oct 2010 07:50:42 -0400
-Received: from casper.infradead.org ([85.118.1.10]:52883 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758337Ab0JSLul convert rfc822-to-8bit (ORCPT
+	id S1758433Ab0JSLvu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Oct 2010 07:51:50 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:44488 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758178Ab0JSLvs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Oct 2010 07:50:41 -0400
-Subject: Re: [PATCH] perf, powerpc: Fix power_pmu_event_init to not use
- event->ctx
-From: Peter Zijlstra <peterz@infradead.org>
-To: Paul Mackerras <paulus@samba.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
-        Alexey Kardashevskiy <aik@au1.ibm.com>, Ingo Molnar <mingo@elte.hu>
-In-Reply-To: <1287476932.29097.1617.camel@twins>
-References: <20101019055535.GA10398@drongo>
-	 <1287476932.29097.1617.camel@twins>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Tue, 19 Oct 2010 13:50:30 +0200
-Message-ID: <1287489030.1994.8.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	Tue, 19 Oct 2010 07:51:48 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=HVVp3fEeUXjNUIq0scK9MXAlavER3Z+q6DyOxP124sbD685uAbXkXidpZz7rw2XY1E
+         MVnsrLsvB60iV6OWkbwZdWQuyFe50ePnB78ITZBArs2BFJKHkJWJKpYtw8o30+GOOA1n
+         wX/edRwQmXvss+6CWJMM5vYWSSV29ePfVdUOQ=
+Date: Tue, 19 Oct 2010 19:52:00 +0800
+From: Dave Young <hidave.darkstar@gmail.com>
+To: Avi Kivity <avi@redhat.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
+        Jan Kiszka <jan.kiszka@web.de>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [BUG] kvm: guest can not startup due to triple fault
+Message-ID: <20101019115200.GA2524@darkstar>
+References: <20101018134508.GA11885@darkstar>
+ <4CBC4FA9.90406@redhat.com>
+ <4CBC5097.1020105@redhat.com>
+ <20101018135813.GA20316@darkstar>
+ <4CBC547A.8080700@redhat.com>
+ <4CBC964B.6000605@zytor.com>
+ <AANLkTimLKjo+5BRFpOOb72qLrUnxfLXJQ6cwPwNsHHeB@mail.gmail.com>
+ <4CBD099D.2060500@zytor.com>
+ <AANLkTi=bYezfR6Gxy6_gXrAmsFTVOLJCex36BGmnEc28@mail.gmail.com>
+ <4CBD5D8F.6020505@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4CBD5D8F.6020505@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-10-19 at 10:28 +0200, Peter Zijlstra wrote:
- 
-> > (The reason it needs to know whether it is a per-task event is because
-> > there are some hardware events on Power systems which only count when
-> > the processor is not idle, and there are some fixed-function counters
-> > which count such events.  For example, the "run cycles" event counts
-> > cycles when the processor is not idle.  If the user asks to count
-> > cycles, we can use "run cycles" if this is a per-task event, since the
-> > processor is running when the task is running, by definition.  We
-> > can't use "run cycles" if the user asks for "cycles" on a system-wide
-> > counter.)
+On Tue, Oct 19, 2010 at 10:57:51AM +0200, Avi Kivity wrote:
+>  On 10/19/2010 08:55 AM, Dave Young wrote:
+> >>  OK.  Please install msr-tools on your system, and give us the outputs of:
+> >>
+> >>  rdmsr -p 0 -xc 0x1a0
+> >0x1764952489
+> >
+> >>  rdmsr -p 1 -xc 0x1a0
+> >0x1364952489
+> >
+> 
+> That's MSR_IA32_MISC_ENABLE_XD_DISABLE.  Looks like the kernel never
+> plays with it.
 
-Right, so the problem comes from you using run-cycles as cycles? How
-does that interact with things like cpu_relax() will that generate a
-difference in run-cycles vs cycles?
+Hope someone can fix this. IMO we should not depends on bios setting
 
+> 
+> Suggest:
+> - updating your BIOS
+> - playing with the NX feature in your BIOS setup screens
 
+Enable the XD in bios resolved the problem. Thanks you all for the help.
+
+> 
+> 
+> -- 
+> error compiling committee.c: too many arguments to function
+> 
