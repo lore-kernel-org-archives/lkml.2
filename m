@@ -1,58 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933505Ab0JSF7u (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Oct 2010 01:59:50 -0400
-Received: from eu1sys200aog111.obsmtp.com ([207.126.144.131]:60057 "EHLO
-	eu1sys200aog111.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756113Ab0JSF7t (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Oct 2010 01:59:49 -0400
-Message-ID: <4CBD33B8.5030105@st.com>
-Date: Tue, 19 Oct 2010 11:29:20 +0530
-From: viresh kumar <viresh.kumar@st.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.9) Gecko/20100915 Thunderbird/3.1.4
-MIME-Version: 1.0
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Pratyush ANAND <pratyush.anand@st.com>,
-        Shiraz HASHIM <shiraz.hashim@st.com>, Vipin KUMAR <vipin.kumar@st.com>,
-        Deepak SIKRI <deepak.sikri@st.com>,
-        Armando VISCONTI <armando.visconti@st.com>,
-        Vipul Kumar SAMAR <vipulkumar.samar@st.com>,
-        Rajeev KUMAR <rajeev-dlh.kumar@st.com>,
-        Bhupesh SHARMA <bhupesh.sharma@st.com>, Amit VIRDI <amit.virdi@st.com>
-Subject: Re: [PATCH V2 45/69] ST SPEAr: PCIE gadget suppport
-References: <cover.1285933331.git.viresh.kumar@st.com> <c91308e26397dbe49f384c7d3cf168593e1fe8b0.1285933332.git.viresh.kumar@st.com>
-In-Reply-To: <c91308e26397dbe49f384c7d3cf168593e1fe8b0.1285933332.git.viresh.kumar@st.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+	id S1758024Ab0JSGMq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Oct 2010 02:12:46 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:60438 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754516Ab0JSGMp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Oct 2010 02:12:45 -0400
+Date: Tue, 19 Oct 2010 17:12:33 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Greg KH <greg@kroah.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Ruslan Pisarev <ruslanpisarev@gmail.com>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Gorskin Ilya <revent82@gmail.com>
+Subject: linux-next: manual merge of the staging-next tree with the v4l-dvb
+ tree
+Message-Id: <20101019171233.9f3e1dad.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Tue__19_Oct_2010_17_12_33_+1100_vQa8FP1QT4B.Lu/x"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/01/2010 05:26 PM, Viresh KUMAR wrote:
-> From: Pratyush Anand <pratyush.anand@st.com>
-> 
-> This is a configurable gadget. can be configured by sysfs interface. Any
-> IP available at PCIE bus can be programmed to be used by host
-> controller.It supoorts both INTX and MSI.
-> By default, gadget is configured for INTX and SYSRAM1 is mapped to BAR0
-> with size 0x1000
-> 
-> Signed-off-by: Pratyush Anand <pratyush.anand@st.com>
-> Signed-off-by: Viresh Kumar <viresh.kumar@st.com>
-> ---
->  drivers/misc/Kconfig                 |   10 +
->  drivers/misc/Makefile                |    1 +
->  drivers/misc/spear13xx_pcie_gadget.c |  888 ++++++++++++++++++++++++++++++++++
->  3 files changed, 899 insertions(+), 0 deletions(-)
->  create mode 100644 drivers/misc/spear13xx_pcie_gadget.c
+--Signature=_Tue__19_Oct_2010_17_12_33_+1100_vQa8FP1QT4B.Lu/x
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Andrew,
+Hi Greg,
 
-Any review comments on this patch??
+Today's linux-next merge of the staging-next tree got a conflict in
+drivers/staging/cx25821/cx25821-audio-upstream.c between commit
+d6a0215fc954bd16a21bad94a3292f080d9f6f04 ("[media] Staging: cx25821: fix
+braces and space coding style issues") from the v4l-dvb tree and commit
+bb59a4c539140592723e806e852ee171da0eb3eb ("Staging: cx25821: clenup
+warnings found by checkpatch.pl tool in cx25821-audio-upstream.c and
+cx25821-audio.h") from the staging-next tree.
 
--- 
-viresh
+Basically different versions of the same patch.  I fixed it up.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Tue__19_Oct_2010_17_12_33_+1100_vQa8FP1QT4B.Lu/x
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iQEcBAEBAgAGBQJMvTbRAAoJEDMEi1NhKgbs+h8IAIyp5HO++Xy0QlO9bdn/ExTM
+Vn2egzu4a7FUVqGWJQ9RIrXpQPXcvfn21gmWwqhGGGATB0Eek3NcC8CplfshltuE
+elmjhYY3LBoPPGrK6eyGhqVsmE0HUd3ldwX+anrznmfEm8cANBbVC815+MTfQyl/
+VVDv54msxXLUx63zBJq0WEjVpHCZAdb6rXMNPrW8ZnooCavNC2ehfyR7mgjns/pz
+QuCx0B0ZIrdcInZf89bjG8tbSYxy7H0kBdHsuGpJU40NPNxzFBRm4zeIwxiNeS7X
+zd7Mzle1c2hRlR/oZV2HdQ/QZAB+NYCwLqVlrgUDvd/xpBwtRVnLhjZbAxzBN+8=
+=KX92
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__19_Oct_2010_17_12_33_+1100_vQa8FP1QT4B.Lu/x--
