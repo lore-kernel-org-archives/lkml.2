@@ -1,84 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758059Ab0JSI6e (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Oct 2010 04:58:34 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:56935 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757572Ab0JSI6c (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Oct 2010 04:58:32 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=EjUiyIZutejRA4UMM3zC+MtLn1TYIrBxQqYjOe557/39w/kJRYhzEDzdeSadGqgcwR
-         7fvMj72TTDx6aPI7teztQs+4/L4OJv4bSd8H/uRPvQGDpQPVqUZXcVwcGCGnKWjUbdkx
-         ZJQvnRH9snlVrMX5yeEfT0GIphXnQKHCYYOX8=
-Date: Tue, 19 Oct 2010 17:03:04 +0800
-From: =?utf-8?Q?Am=C3=A9rico?= Wang <xiyou.wangcong@gmail.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Brian Gitonga Marete <marete@toshnix.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [PATCH] [PERF] (Userspace Tools) Fix a compilation error with
- -fstack-protector and -Werror
-Message-ID: <20101019090304.GA5211@cr0.nay.redhat.com>
-References: <AANLkTinHc7tMntW5NFAhu40RC7m2=HwbqOBeE-21vL8J@mail.gmail.com>
- <20101018233834.GC5370@nowhere>
- <AANLkTi=Ssz4WdMDXq-93GE9bPHoaQ8QyTSrWXDSCa7eH@mail.gmail.com>
- <20101019064000.GC21782@elte.hu>
+	id S1756063Ab0JSJCL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Oct 2010 05:02:11 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:42322 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750871Ab0JSJCJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Oct 2010 05:02:09 -0400
+Date: Tue, 19 Oct 2010 12:01:49 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: Felipe Contreras <felipe.contreras@gmail.com>
+Cc: "Balbi, Felipe" <balbi@ti.com>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        linux-main <linux-kernel@vger.kernel.org>, Greg KH <greg@kroah.com>
+Subject: Re: [PATCH 3/3] drivers: cleanup Kconfig stuff
+Message-ID: <20101019090149.GC31170@legolas.emea.dhcp.ti.com>
+Reply-To: balbi@ti.com
+References: <1287475466-8927-1-git-send-email-felipe.contreras@gmail.com>
+ <1287475466-8927-4-git-send-email-felipe.contreras@gmail.com>
+ <20101019081855.GI12470@legolas.emea.dhcp.ti.com>
+ <AANLkTi=8=M+egdo5o6nyMOaCyMCLaZdwJF3WKFwZnbd4@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=us-ascii; format=flowed
 Content-Disposition: inline
-In-Reply-To: <20101019064000.GC21782@elte.hu>
+In-Reply-To: <AANLkTi=8=M+egdo5o6nyMOaCyMCLaZdwJF3WKFwZnbd4@mail.gmail.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 19, 2010 at 08:40:00AM +0200, Ingo Molnar wrote:
->
->* Brian Gitonga Marete <marete@toshnix.com> wrote:
->
->> On Tue, Oct 19, 2010 at 2:38 AM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
->> > On Tue, Oct 19, 2010 at 02:24:00AM +0300, Brian Gitonga Marete wrote:
->> >> The following patch fixes compilation of the perf user-space tools on,
->> >> for example, gcc version 4.3.3 (Ubuntu 4.3.3-5ubuntu4) . It should not
->> >> break anything else.
->> >
->> >
->> >
->> > Hi,
->> >
->> > What kind of warning have you encountered and why it fixes it?
->> > Can you describe that in your changelog?
->> >
->> 
->> Hello Frederic,
->> 
->> Some versions of gcc, e.g. gcc version 4.3.3 (Ubuntu 4.3.3-5ubuntu4), have the 
->> (default) minimum size of buffers protected by `-fstack-protector' set to 8. But 
->> in perf, there exist much smaller automatic buffers.
->
->Hm, it's this code:
->
->        /* newtWinChoice should really be accepting const char pointers... */
->        char yes[] = "Yes", no[] = "No";
->        return newtWinChoice(NULL, yes, no, (char *)msg) == 1;
->
->I.e. the code is messy and GCC is right to warn about it. Hence it would be somewhat 
->bad to actually remove the warning that pointed out some dodgy piece of code.
+Hi,
 
-Agreed.
-
+On Tue, Oct 19, 2010 at 03:34:55AM -0500, Felipe Contreras wrote:
+>> It was fine as it was before. NAK
 >
->Even if marking it const doesnt work due to the external libnewt API, we could at 
->least put 'yes' and 'no' into file scope and mark them static?
+>It's not fine. You can build with CONFIG_USB_G_NOKIA=y, and it doesn't
+>work. Definitely some dependency is missing.
+
+if phonet is not set it should not build. If phonet is set to module and
+g_nokia to built-in, then it's your mistake.
+
+>How do you handle USB_MUSB_HDRC=y and NOP_USB_XCEIV=n and TWL4030_USB=n?
 >
+>depends on (NOP_USB_XCEIV || TWL4030_USB) ?
 
-How about making ui__dialog_yesno() a macro? ;) Like:
+you're selecting, not depending on this patch. What I mean is that you
+will enable a useless driver on some boards if you "select TWL4030_USB
+if ARCH_OMAP3"
 
-#define ui__dialog_yesno(msg) \
-	({newWinChoice(NULL, "Yes", "No", (char *)(msg)) == 1;})
+-- 
+balbi
