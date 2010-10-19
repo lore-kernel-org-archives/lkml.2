@@ -1,41 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757506Ab0JSVP1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Oct 2010 17:15:27 -0400
-Received: from kroah.org ([198.145.64.141]:42110 "EHLO coco.kroah.org"
+	id S1757889Ab0JSVPm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Oct 2010 17:15:42 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:53559 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754100Ab0JSVP0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Oct 2010 17:15:26 -0400
-Date: Tue, 19 Oct 2010 14:14:48 -0700
-From: Greg KH <greg@kroah.com>
-To: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        Jeremy Fitzhardinge <Jeremy.Fitzhardinge@citrix.com>
-Subject: Re: [PATCH v4 00/10] xen: initial domain support
-Message-ID: <20101019211448.GA10109@kroah.com>
-References: <alpine.DEB.2.00.1010191207010.2423@kaball-desktop>
+	id S1757850Ab0JSVPk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Oct 2010 17:15:40 -0400
+Message-ID: <4CBE0A34.4060002@zytor.com>
+Date: Tue, 19 Oct 2010 14:14:28 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc13 Thunderbird/3.1.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1010191207010.2423@kaball-desktop>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Jan Beulich <JBeulich@novell.com>
+CC: mingo@elte.hu, tglx@linutronix.de, akpm@linux-foundation.org,
+        heukelum@fastmail.fm, linux-kbuild@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] x86: fix CFI macro invocations to deal with	 shortcomings
+ in gas
+References: <4CBDBEBA020000780001E05A@vpn.id2.novell.com>
+In-Reply-To: <4CBDBEBA020000780001E05A@vpn.id2.novell.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 19, 2010 at 12:16:31PM +0100, Stefano Stabellini wrote:
-> Hi all,
-> this series implements the basic support needed to boot Linux as initial
-> domain on Xen: the target is not to add full featured dom0 support in
-> the kernel but to be able to boot Linux on Xen on native.
+On 10/19/2010 06:52 AM, Jan Beulich wrote:
+> gas prior to (perhaps) 2.16.90 has problems with passing non-
+> parenthesized expressions containing spaces to macros. Spaces, however,
+> get inserted by cpp between any macro expanding to a number and a
+> subsequent + or -. For the +, current x86 gas then removes the space
+> again (future gas may not do so), but for the - the space gets retained
+> and is then considered a separator between macro arguments.
+> 
+> Fix the respective definitions for both the - and + cases, so that they
+> neither contain spaces nor make cpp insert any (the latter by adding
+> seemingly redundant parentheses).
+> 
+> Signed-off-by: Jan Beulich <jbeulich@novell.com>
+> Cc: Alexander van Heukelum <heukelum@fastmail.fm>
+> 
 
-Nice, but what real use is this?
+It's ugly -- very ugly -- and will almost certainly bitrot and break
+again, but it's a lot less ugly than any other alternative I can think
+of.  Unfortunately these versions of gas are not old enough that we can
+just kill them off, I don't think.
 
-I thought people wanted dom0 support, this doesn't seem to give them
-that.  Is that still the end-goal here, and this is merely a
-stepping-stone to get there?
-
-curious,
-
-greg k-h
+	-hpa
