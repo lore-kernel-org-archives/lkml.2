@@ -1,64 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933741Ab0JSIz4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Oct 2010 04:55:56 -0400
-Received: from mgw-sa02.ext.nokia.com ([147.243.1.48]:52635 "EHLO
-	mgw-sa02.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933658Ab0JSIzy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Oct 2010 04:55:54 -0400
-Subject: Re: [RFC][Patch] Adding kmsg_dump() to
- reboot/halt/poweroff/emergency_restart path
-From: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
-Reply-To: Artem.Bityutskiy@nokia.com
-To: ext KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: Seiji Aguchi <seiji.aguchi@hds.com>,
-        "simon.kagstrom@netinsight.net" <simon.kagstrom@netinsight.net>,
-        "David.Woodhouse@intel.com" <David.Woodhouse@intel.com>,
-        "anders.grafstrom@netinsight.net" <anders.grafstrom@netinsight.net>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "jason.wessel@windriver.com" <jason.wessel@windriver.com>,
-        "jslaby@suse.cz" <jslaby@suse.cz>,
-        "jmorris@namei.org" <jmorris@namei.org>,
-        "eparis@redhat.com" <eparis@redhat.com>, "hch@lst.de" <hch@lst.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "dle-develop@lists.sourceforge.net" 
-	<dle-develop@lists.sourceforge.net>,
-        Satoru Moriya <satoru.moriya@hds.com>
-In-Reply-To: <20101019173303.A205.A69D9226@jp.fujitsu.com>
-References: <5C4C569E8A4B9B42A84A977CF070A35B2C11B4B724@USINDEVS01.corp.hds.com>
-	 <20101019173303.A205.A69D9226@jp.fujitsu.com>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Nokia
-Date: Tue, 19 Oct 2010 11:51:12 +0300
-Message-ID: <1287478272.9272.9.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 (2.30.3-1.fc13) 
-Content-Transfer-Encoding: 8bit
-X-Nokia-AV: Clean
+	id S1758000Ab0JSI6J (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Oct 2010 04:58:09 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:64570 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751375Ab0JSI6H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Oct 2010 04:58:07 -0400
+Message-ID: <4CBD5D8F.6020505@redhat.com>
+Date: Tue, 19 Oct 2010 10:57:51 +0200
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc13 Lightning/1.0b3pre Thunderbird/3.1.4
+MIME-Version: 1.0
+To: Dave Young <hidave.darkstar@gmail.com>
+CC: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
+        Jan Kiszka <jan.kiszka@web.de>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [BUG] kvm: guest can not startup due to triple fault
+References: <AANLkTin6qJYEqOc_97EVWkK1Kt1zNSvXtfVeYuk9fyJ8@mail.gmail.com>	<4CBAE8E2.1060704@redhat.com>	<AANLkTi=5yGPmZxZY7T_oeyJ4xS+RWt7cY4WD=78fbo7v@mail.gmail.com>	<4CBBF3C8.9070104@web.de>	<4CBC1047.6010501@redhat.com>	<20101018125803.GA2497@darkstar>	<4CBC4B06.3030300@redhat.com>	<20101018134508.GA11885@darkstar>	<4CBC4FA9.90406@redhat.com>	<4CBC5097.1020105@redhat.com>	<20101018135813.GA20316@darkstar>	<4CBC547A.8080700@redhat.com>	<4CBC964B.6000605@zytor.com>	<AANLkTimLKjo+5BRFpOOb72qLrUnxfLXJQ6cwPwNsHHeB@mail.gmail.com>	<4CBD099D.2060500@zytor.com> <AANLkTi=bYezfR6Gxy6_gXrAmsFTVOLJCex36BGmnEc28@mail.gmail.com>
+In-Reply-To: <AANLkTi=bYezfR6Gxy6_gXrAmsFTVOLJCex36BGmnEc28@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-10-19 at 10:52 +0200, ext KOSAKI Motohiro wrote:
-> > Hi,
-> > 
-> > Final messages from reboot, halt and poweroff aren't output to disk because klogd/syslogd 
-> > has been killed and root file system has been turned read-only.
-> > 
-> > Final messages from emergency_restart aren't output to disk as well because system may
-> > reboot before klogd/syslogd outputs messages to disk.
-> > 
-> > Therefore, it is better to put kmsg_dumper in reboot/halt/poweroff/emergency_restart path.
-> > Any comments/advices are welcome.
-> 
-> I think mtdoops user don't want to dump logs if a system reboot/poweroff
-> safely because mtd device have write count limitation. and they are main
-> user of kmsg_dump().
+  On 10/19/2010 08:55 AM, Dave Young wrote:
+> >  OK.  Please install msr-tools on your system, and give us the outputs of:
+> >
+> >  rdmsr -p 0 -xc 0x1a0
+> 0x1764952489
+>
+> >  rdmsr -p 1 -xc 0x1a0
+> 0x1364952489
+>
 
-Right, at least this is how we use mtdoops - we log crashes.
+That's MSR_IA32_MISC_ENABLE_XD_DISABLE.  Looks like the kernel never 
+plays with it.
+
+Suggest:
+- updating your BIOS
+- playing with the NX feature in your BIOS setup screens
+
 
 -- 
-Best Regards,
-Artem Bityutskiy (Артём Битюцкий)
+error compiling committee.c: too many arguments to function
 
