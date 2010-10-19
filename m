@@ -1,72 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758044Ab0JSJLm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Oct 2010 05:11:42 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:43425 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752030Ab0JSJLl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Oct 2010 05:11:41 -0400
-From: Andi Kleen <andi@firstfloor.org>
-To: axboe@kernel.dk
-Cc: torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
-        Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH] Fix array overflow in CFQ
-Date: Tue, 19 Oct 2010 11:10:50 +0200
-Message-Id: <1287479450-11447-1-git-send-email-andi@firstfloor.org>
-X-Mailer: git-send-email 1.7.1
+	id S1758085Ab0JSJMq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Oct 2010 05:12:46 -0400
+Received: from mga09.intel.com ([134.134.136.24]:29613 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756596Ab0JSJMp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Oct 2010 05:12:45 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.57,349,1283756400"; 
+   d="scan'208";a="668733510"
+Date: Tue, 19 Oct 2010 11:12:42 +0200
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Axel Lin <axel.lin@gmail.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        Lars-Peter Clausen <lars@metafoo.de>
+Subject: Re: [PATCH] mfd: jz4740-adc - fix jz4740_adc_set_enabled
+Message-ID: <20101019091241.GC2736@sortiz-mobl>
+References: <1286437880.18303.2.camel@mola>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1286437880.18303.2.camel@mola>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andi Kleen <ak@linux.intel.com>
+Hi Axel,
 
-gcc 4.5 complains when compiling a recent rc with
+On Thu, Oct 07, 2010 at 03:51:20PM +0800, Axel Lin wrote:
+> When enabled is false, clear BIT(engine) of JZ_REG_ADC_ENABLE register.
+Patch applied, thanks.
 
-linux/block/cfq-iosched.c: In function ‘cfq_dispatch_requests’:
-linux/block/cfq-iosched.c:2156:3: warning: array subscript is above array bounds
+Cheers,
+Samuel.
 
-and it is right:
 
- slice = group_slice * count /
-                max_t(unsigned, cfqg->busy_queues_avg[cfqd->serving_prio],
-                      cfq_group_busy_queues_wl(cfqd->serving_prio, cfqd, cfqg));
+> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+> ---
+>  drivers/mfd/jz4740-adc.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/mfd/jz4740-adc.c b/drivers/mfd/jz4740-adc.c
+> index 3ad492c..9dd1b33 100644
+> --- a/drivers/mfd/jz4740-adc.c
+> +++ b/drivers/mfd/jz4740-adc.c
+> @@ -153,7 +153,7 @@ static inline void jz4740_adc_set_enabled(struct jz4740_adc *adc, int engine,
+>  	if (enabled)
+>  		val |= BIT(engine);
+>  	else
+> -		val &= BIT(engine);
+> +		val &= ~BIT(engine);
+>  	writeb(val, adc->base + JZ_REG_ADC_ENABLE);
+>  
+>  	spin_unlock_irqrestore(&adc->lock, flags);
+> -- 
+> 1.7.2
+> 
+> 
+> 
 
-busy_queues_avg can be indexed by this enum
-
-enum wl_prio_t {
-        BE_WORKLOAD = 0,
-        RT_WORKLOAD = 1,
-        IDLE_WORKLOAD = 2,
-};
-
-in cfqd->serving_prio, but is only declared as
-
-unsigned int busy_queues_avg[2];
-
-which is clearly off by one. Fix this here.
-
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
----
- block/cfq-iosched.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
-index 9eba291..76741da 100644
---- a/block/cfq-iosched.c
-+++ b/block/cfq-iosched.c
-@@ -185,7 +185,7 @@ struct cfq_group {
- 	int nr_cfqq;
- 
- 	/* Per group busy queus average. Useful for workload slice calc. */
--	unsigned int busy_queues_avg[2];
-+	unsigned int busy_queues_avg[3];
- 	/*
- 	 * rr lists of queues with requests, onle rr for each priority class.
- 	 * Counts are embedded in the cfq_rb_root
 -- 
-1.7.1
-
+Intel Open Source Technology Centre
+http://oss.intel.com/
