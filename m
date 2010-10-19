@@ -1,66 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754295Ab0JSVyk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Oct 2010 17:54:40 -0400
-Received: from claw.goop.org ([74.207.240.146]:55875 "EHLO claw.goop.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753090Ab0JSVyk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Oct 2010 17:54:40 -0400
-Message-ID: <4CBE139E.3060004@goop.org>
-Date: Tue, 19 Oct 2010 14:54:38 -0700
-From: Jeremy Fitzhardinge <jeremy@goop.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc13 Lightning/1.0b3pre Thunderbird/3.1.4
+	id S1753533Ab0JSVza (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Oct 2010 17:55:30 -0400
+Received: from am1ehsobe006.messaging.microsoft.com ([213.199.154.209]:37054
+	"EHLO AM1EHSOBE006.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750920Ab0JSVz3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Oct 2010 17:55:29 -0400
+X-SpamScore: 6
+X-BigFish: VS6(zcb8kzc8kzz1202hzz8275bhz2dh2a8h63h)
+X-Spam-TCS-SCL: 2:0
+From: <Dinh.Nguyen@freescale.com>
+To: <linux-kernel@vger.kernel.org>
+CC: <linux-arm-kernel@lists.infradead.org>, <linux@arm.linux.org.uk>,
+        <s.hauer@pengutronix.de>, <u.kleine-koenig@pengutronix.de>,
+        <valentin.longchamp@epfl.ch>, <daniel@caiaq.de>,
+        <grant.likely@secretlab.ca>, <amit.kucheria@canonical.com>,
+        <xiao-lizhang@freescale.com>, Dinh Nguyen <Dinh.Nguyen@freescale.com>
+Subject: [PATCH] ARM: imx: change mx51.h into mx5x.h
+Date: Tue, 19 Oct 2010 16:57:03 -0500
+Message-ID: <1287525423-22329-1-git-send-email-Dinh.Nguyen@freescale.com>
+X-Mailer: git-send-email 1.6.0.4
 MIME-Version: 1.0
-To: Greg KH <greg@kroah.com>
-CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        Jeremy Fitzhardinge <Jeremy.Fitzhardinge@citrix.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [Xen-devel] Re: [PATCH v4 00/10] xen: initial domain support
-References: <alpine.DEB.2.00.1010191207010.2423@kaball-desktop> <20101019211448.GA10109@kroah.com>
-In-Reply-To: <20101019211448.GA10109@kroah.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-Reverse-DNS: de01egw01.freescale.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- On 10/19/2010 02:14 PM, Greg KH wrote:
-> On Tue, Oct 19, 2010 at 12:16:31PM +0100, Stefano Stabellini wrote:
->> Hi all,
->> this series implements the basic support needed to boot Linux as initial
->> domain on Xen: the target is not to add full featured dom0 support in
->> the kernel but to be able to boot Linux on Xen on native.
-> Nice, but what real use is this?
->
-> I thought people wanted dom0 support, this doesn't seem to give them
-> that.  Is that still the end-goal here, and this is merely a
-> stepping-stone to get there?
+From: Dinh Nguyen <Dinh.Nguyen@freescale.com>
 
-Yes, it's a significant step there.  Once that's merged the main missing
-piece is backend drivers, which we can probably get into a mergable form
-for the next window.  And in the meantime, they're a fairly
-self-contained thing to maintain out of tree (like other drivers).
+In preparation for submitting i.MX53 support, change mx51.h to
+mx5x.h so that mx5x.h can contain MX53 information as well.
 
-Our strategy has been to put together a cluster of patch series which
-each have their own intrinsic value, but are also all leading to full
-dom0 support.  For example, Stefano's pv-hvm patches are useful for
-running Linux as a fully virtualized domain under Xen, but the reworking
-of the interrupt infrastructure in a way that dom0 support requires. 
-Likewise, Konrad's work on pci-passthrough for domU domains adds all the
-machinery required for a Xen domain to have direct access to hardware,
-which is also what dom0 requires.
+Signed-off-by: Dinh Nguyen <Dinh.Nguyen@freescale.com>
+---
+ arch/arm/mach-mx5/devices-imx51.h                 |    2 +-
+ arch/arm/plat-mxc/include/mach/debug-macro.S      |    2 +-
+ arch/arm/plat-mxc/include/mach/hardware.h         |    2 +-
+ arch/arm/plat-mxc/include/mach/{mx51.h => mx5x.h} |    0
+ 4 files changed, 3 insertions(+), 3 deletions(-)
+ rename arch/arm/plat-mxc/include/mach/{mx51.h => mx5x.h} (100%)
 
-This particular series introduces the pieces needed for the kernel to
-actually boot up to usermode as dom0, which has some value even if it
-doesn't yet allow you to start new domains (well, you could, but they
-wouldn't have any devices).
+diff --git a/arch/arm/mach-mx5/devices-imx51.h b/arch/arm/mach-mx5/devices-imx51.h
+index 5cc910e..f6abe2d 100644
+--- a/arch/arm/mach-mx5/devices-imx51.h
++++ b/arch/arm/mach-mx5/devices-imx51.h
+@@ -6,7 +6,7 @@
+  * the terms of the GNU General Public License version 2 as published by the
+  * Free Software Foundation.
+  */
+-#include <mach/mx51.h>
++#include <mach/mx5x.h>
+ #include <mach/devices-common.h>
+ 
+ extern const struct imx_fec_data imx51_fec_data __initconst;
+diff --git a/arch/arm/plat-mxc/include/mach/debug-macro.S b/arch/arm/plat-mxc/include/mach/debug-macro.S
+index 2560640..ac8a2bf 100644
+--- a/arch/arm/plat-mxc/include/mach/debug-macro.S
++++ b/arch/arm/plat-mxc/include/mach/debug-macro.S
+@@ -49,7 +49,7 @@
+ #ifdef UART_PADDR
+ #error "CONFIG_DEBUG_LL is incompatible with multiple archs"
+ #endif
+-#include <mach/mx51.h>
++#include <mach/mx5x.h>
+ #define UART_PADDR	MX51_UART1_BASE_ADDR
+ #define UART_VADDR	MX51_AIPS1_IO_ADDRESS(MX51_UART1_BASE_ADDR)
+ #endif
+diff --git a/arch/arm/plat-mxc/include/mach/hardware.h b/arch/arm/plat-mxc/include/mach/hardware.h
+index ebadf4a..5a7395a 100644
+--- a/arch/arm/plat-mxc/include/mach/hardware.h
++++ b/arch/arm/plat-mxc/include/mach/hardware.h
+@@ -28,7 +28,7 @@
+ 	 (addr) - (module ## _BASE_ADDR) + (module ## _BASE_ADDR_VIRT) : 0))
+ 
+ #ifdef CONFIG_ARCH_MX5
+-#include <mach/mx51.h>
++#include <mach/mx5x.h>
+ #endif
+ 
+ #ifdef CONFIG_ARCH_MX3
+diff --git a/arch/arm/plat-mxc/include/mach/mx51.h b/arch/arm/plat-mxc/include/mach/mx5x.h
+similarity index 100%
+rename from arch/arm/plat-mxc/include/mach/mx51.h
+rename to arch/arm/plat-mxc/include/mach/mx5x.h
+-- 
+1.6.0.4
 
-The net result is that there will be no massive "Xen dom0" patch series,
-since that has been pretty clearly rejected in the past.  Instead full
-dom0 support is being implemented - at least to some extent - as the
-emergent result of a number of Xen-related patches.  These patches also
-touch very little code outside of the existing Xen codebase, so there
-shouldn't be much scope for controversy.
 
-    J
