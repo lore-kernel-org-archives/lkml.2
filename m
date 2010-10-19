@@ -1,124 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756255Ab0JSS7Q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Oct 2010 14:59:16 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:51384 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753231Ab0JSS7O (ORCPT
+	id S1755664Ab0JSTBv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Oct 2010 15:01:51 -0400
+Received: from e23smtp07.au.ibm.com ([202.81.31.140]:45383 "EHLO
+	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752599Ab0JSTBu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Oct 2010 14:59:14 -0400
-Date: Tue, 19 Oct 2010 20:59:10 +0200
-From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: Dinh.Nguyen@freescale.com
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux@arm.linux.org.uk, s.hauer@pengutronix.de,
-        valentin.longchamp@epfl.ch, daniel@caiaq.de, grant.likely@secretlab.ca,
-        amit.kucheria@canonical.com, xiao-lizhang@freescale.com
-Subject: Re: [PATCHv3 2/2] ARM: imx: Add wake functionality to GPIO
-Message-ID: <20101019185910.GA28166@pengutronix.de>
-References: <1287513592-6655-1-git-send-email-Dinh.Nguyen@freescale.com> <1287513592-6655-2-git-send-email-Dinh.Nguyen@freescale.com>
+	Tue, 19 Oct 2010 15:01:50 -0400
+Message-ID: <4CBDEB14.2030304@linux.vnet.ibm.com>
+Date: Wed, 20 Oct 2010 00:31:40 +0530
+From: Trinabh Gupta <trinabh@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.10) Gecko/20100621 Fedora/3.0.5-1.fc11 Thunderbird/3.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1287513592-6655-2-git-send-email-Dinh.Nguyen@freescale.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+To: Venkatesh Pallipadi <venki@google.com>
+CC: Arjan van de Ven <arjan@linux.intel.com>, peterz@infradead.org,
+        lenb@kernel.org, suresh.b.siddha@intel.com, benh@kernel.crashing.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC V1] cpuidle: add idle routine registration and cleanup pm_idle
+ pointer
+References: <20101019183522.17992.86937.stgit@tringupt.in.ibm.com> <4CBDE5AB.4040401@linux.intel.com> <AANLkTi=cetw_mdp_3s+T4OxTfcMT2u4cdVPKxOp7jbVU@mail.gmail.com>
+In-Reply-To: <AANLkTi=cetw_mdp_3s+T4OxTfcMT2u4cdVPKxOp7jbVU@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 19, 2010 at 01:39:52PM -0500, Dinh.Nguyen@freescale.com wrote:
-> From: Dinh Nguyen <Dinh.Nguyen@freescale.com>
-> 
-> Add function definition for irq_chip.set_wake to enable GPIO to
-> wake-up the system.
-> 
-> This patch is based on Sascha Hauer's imx/linux-2.6 for-rmk tree.
-> 
-> Signed-off-by: Dinh Nguyen <Dinh.Nguyen@freescale.com>
-> ---
->  arch/arm/plat-mxc/gpio.c              |   34 +++++++++++++++++++++++++++++++++
->  arch/arm/plat-mxc/include/mach/gpio.h |    1 +
->  2 files changed, 35 insertions(+), 0 deletions(-)
-> 
-> diff --git a/arch/arm/plat-mxc/gpio.c b/arch/arm/plat-mxc/gpio.c
-> index 9d38da0..e52c658 100644
-> --- a/arch/arm/plat-mxc/gpio.c
-> +++ b/arch/arm/plat-mxc/gpio.c
-> @@ -20,6 +20,7 @@
->   */
->  
->  #include <linux/init.h>
-> +#include <linux/interrupt.h>
->  #include <linux/io.h>
->  #include <linux/irq.h>
->  #include <linux/gpio.h>
-> @@ -201,11 +202,44 @@ static void mx2_gpio_irq_handler(u32 irq, struct irq_desc *desc)
->  	}
->  }
->  
-> +/*
-> + * Set interrupt number "irq" in the GPIO as a wake-up source.
-> + * While system is running, all registered GPIO interrupts need to have
-> + * wake-up enabled. When system is suspended, only selected GPIO interrupts
-> + * need to have wake-up enabled.
-> + * @param  irq          interrupt source number
-> + * @param  enable       enable as wake-up if equal to non-zero
-> + * @return       This function returns 0 on success.
-> + */
-> +static int gpio_set_wake_irq(u32 irq, u32 enable)
-> +{
-> +	u32 gpio = irq_to_gpio(irq);
-> +	u32 gpio_idx = gpio & 0x1F;
-> +	struct mxc_gpio_port *port = &mxc_gpio_ports[gpio / 32];
-> +
-> +	if (enable) {
-> +		port->suspend_wakeup |= (1 << gpio_idx);
-> +		if (port->irq_high && (gpio_idx >= 16))
-> +			enable_irq_wake(port->irq_high);
-> +		else
-> +			enable_irq_wake(port->irq);
-> +	} else {
-> +		port->suspend_wakeup &= ~(1 << gpio_idx);
-> +		if (port->irq_high && (gpio_idx >= 16))
-> +			disable_irq_wake(port->irq_high);
-> +		else
-> +			disable_irq_wake(port->irq);
-> +	}
-> +
-> +	return 0;
-> +}
-> +
->  static struct irq_chip gpio_irq_chip = {
->  	.ack = gpio_ack_irq,
->  	.mask = gpio_mask_irq,
->  	.unmask = gpio_unmask_irq,
->  	.set_type = gpio_set_irq_type,
-> +	.set_wake = gpio_set_wake_irq,
->  };
->  
->  static void _set_gpio_direction(struct gpio_chip *chip, unsigned offset,
-> diff --git a/arch/arm/plat-mxc/include/mach/gpio.h b/arch/arm/plat-mxc/include/mach/gpio.h
-> index af33b74..133150e 100644
-> --- a/arch/arm/plat-mxc/include/mach/gpio.h
-> +++ b/arch/arm/plat-mxc/include/mach/gpio.h
-> @@ -39,6 +39,7 @@ struct mxc_gpio_port {
->  	struct gpio_chip chip;
->  	u32 both_edges;
->  	spinlock_t lock;
-> +	u32 suspend_wakeup;
-This seems to be a write-only variable.  What is the intended purpose?
 
-Is this really enough to let the system wake from suspend?
 
-Best regards
-Uwe
+On 10/20/2010 12:19 AM, Venkatesh Pallipadi wrote:
+> On Tue, Oct 19, 2010 at 11:38 AM, Arjan van de Ven
+> <arjan@linux.intel.com>  wrote:
+>>   On 10/19/2010 11:36 AM, Trinabh Gupta wrote:
+>>>
+>>> The core of the kernel's idle routine on x86 presently depends on an
+>>> exported pm_idle function pointer that is unmanaged and causing
+>>> hazard to various subsystems when they save and restore it.
+>>> The first problem is that this exported pointer can be modified/flipped
+>>> by any subsystem. There is no tracking or notification mechanism.
+>>> Secondly and more importantly, various subsystems save the value of
+>>> this pointer, flip it and later restore to the saved value. There is
+>>> no guarantee that the saved value is still valid. The problem has
+>>> been discussed in [2,3] and Peter Zijlstra suggested removing pm_idle
+>>> and implementing a list based registration [1].
+>>>
+>>> This patch is an initial RFC implementation for x86 architecture
+>>> only. This framework can be generalised for other archs and also
+>>> include the current cpuidle framework for managing multiple idle
+>>> routines.
+>>>
+>>> Tests done with the patch:
+>>> ------------------------
+>>> 1. Build (on 2.6.36-rc7) and booted on x86 with C1E as deepest idle
+>>>     state and current_idle was selected to be mwait_idle.
+>>>
+>>> 2. Build (on 2.5.36-rc8) and booted on x86 (Nehalem) with ACPI C3 as
+>>>     deepest sleep state.  The current_idle was selected to be
+>>>     cpuidle_idle_call which is the cpuidle subsystem that will further
+>>>     select idle routines from {C1,C2,C3}.
+>>>
+>>> Future implementation will try to eliminate this hirearchy and have
+>>> a single registration and menu/idle cpuidle governor for selection
+>>> of idle routine.
+>>
+>>
+>> looks like you're duplicating the cpuidle subsystem
+>>
+>> how about biting the bullet and just always and only use the cpuidle
+>> subsystem for all idle on x86 ?
+>>
+>
+> I agree with Arjan.
+> If we have a default_cpuidle driver which parses idle= params, handles
+> various mwait quirks in x86 process*.c and registers with cpuidle, we
+> can then always call cpuidle idle routine on x86.
 
--- 
-Pengutronix e.K.                           | Uwe Kleine-König            |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+This wouldn't duplicate code. It would move parts/functionality of 
+cpuidle into the kernel, keeping governors alone as modules.
+
+If we directly call cpuidle_idle_call() then this may be too much
+overhead for architectures that have single idle routine i.e cases where 
+cpuidle is not used and will be seen as a bloat. (c.f goals 4a,b).
+
+>
+> Thanks,
+> Venki
+
+Regards,
+-Trinabh
