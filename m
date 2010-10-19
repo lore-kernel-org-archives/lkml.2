@@ -1,19 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933907Ab0JSJhq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Oct 2010 05:37:46 -0400
-Received: from mgw2.diku.dk ([130.225.96.92]:56497 "EHLO mgw2.diku.dk"
+	id S933913Ab0JSJh7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Oct 2010 05:37:59 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:56490 "EHLO mgw2.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932167Ab0JSJhZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Oct 2010 05:37:25 -0400
+	id S1758001Ab0JSJhY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Oct 2010 05:37:24 -0400
 From: Julia Lawall <julia@diku.dk>
-To: James Smart <james.smart@emulex.com>
-Cc: kernel-janitors@vger.kernel.org,
-        "James E.J. Bottomley" <James.Bottomley@suse.de>,
-        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 3/4] drivers/scsi/lpfc/lpfc_bsg.c: convert nested spin_lock_irqsave to spin_lock
-Date: Tue, 19 Oct 2010 11:43:55 +0200
-Message-Id: <1287481436-26656-3-git-send-email-julia@diku.dk>
+To: linux-kernel@vger.kernel.org
+Cc: kernel-janitors@vger.kernel.org
+Subject: [PATCH 2/4] drivers/char/generic_serial.c: convert nested spin_lock_irqsave to spin_lock
+Date: Tue, 19 Oct 2010 11:43:54 +0200
+Message-Id: <1287481436-26656-2-git-send-email-julia@diku.dk>
 X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -43,26 +41,23 @@ expression flags;
 Signed-off-by: Julia Lawall <julia@diku.dk>
 
 ---
- drivers/scsi/lpfc/lpfc_bsg.c |    4 ++--
+ drivers/char/generic_serial.c |    4 ++--
  1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/scsi/lpfc/lpfc_bsg.c b/drivers/scsi/lpfc/lpfc_bsg.c
-index f5d60b5..7260c3a 100644
---- a/drivers/scsi/lpfc/lpfc_bsg.c
-+++ b/drivers/scsi/lpfc/lpfc_bsg.c
-@@ -3142,12 +3142,12 @@ lpfc_bsg_menlo_cmd_cmp(struct lpfc_hba *phba,
- 	job = menlo->set_job;
- 	job->dd_data = NULL; /* so timeout handler does not reply */
+diff --git a/drivers/char/generic_serial.c b/drivers/char/generic_serial.c
+index 5954ee1..466988d 100644
+--- a/drivers/char/generic_serial.c
++++ b/drivers/char/generic_serial.c
+@@ -566,9 +566,9 @@ void gs_close(struct tty_struct * tty, struct file * filp)
+ 	 * line status register.
+ 	 */
  
--	spin_lock_irqsave(&phba->hbalock, flags);
-+	spin_lock(&phba->hbalock);
- 	cmdiocbq->iocb_flag |= LPFC_IO_WAKE;
- 	if (cmdiocbq->context2 && rspiocbq)
- 		memcpy(&((struct lpfc_iocbq *)cmdiocbq->context2)->iocb,
- 		       &rspiocbq->iocb, sizeof(IOCB_t));
--	spin_unlock_irqrestore(&phba->hbalock, flags);
-+	spin_unlock(&phba->hbalock);
+-	spin_lock_irqsave(&port->driver_lock, flags);
++	spin_lock(&port->driver_lock);
+ 	port->rd->disable_rx_interrupts (port);
+-	spin_unlock_irqrestore(&port->driver_lock, flags);
++	spin_unlock(&port->driver_lock);
+ 	spin_unlock_irqrestore(&port->port.lock, flags);
  
- 	bmp = menlo->bmp;
- 	rspiocbq = menlo->rspiocbq;
+ 	/* close has no way of returning "EINTR", so discard return value */
 
