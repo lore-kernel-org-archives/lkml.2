@@ -1,82 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757951Ab0JSVcy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Oct 2010 17:32:54 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:48962 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757872Ab0JSVcx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Oct 2010 17:32:53 -0400
-Date: Tue, 19 Oct 2010 17:32:26 -0400
-From: Jason Baron <jbaron@redhat.com>
-To: David Daney <ddaney@caviumnetworks.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Koki Sanagi <sanagi.koki@jp.fujitsu.com>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Frederic Weisbecker <fweisbec@gmail.com>, nhorman@tuxdriver.com,
-        scott.a.mcmillan@intel.com, laijs@cn.fujitsu.com,
-        "H. Peter Anvin" <hpa@zytor.com>, LKML <linux-kernel@vger.kernel.org>,
-        eric.dumazet@gmail.com, kaneshige.kenji@jp.fujitsu.com,
-        David Miller <davem@davemloft.net>, izumi.taku@jp.fujitsu.com,
-        kosaki.motohiro@jp.fujitsu.com,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        "Luck, Tony" <tony.luck@intel.com>
-Subject: Re: [PATCH] tracing: Cleanup the convoluted softirq tracepoints
-Message-ID: <20101019213225.GB2855@redhat.com>
-References: <1287398936.29097.1548.camel@twins>
- <4CBD79CF.2060706@jp.fujitsu.com>
- <alpine.LFD.2.00.1010191428560.6815@localhost6.localdomain6>
- <20101019132236.GA19197@Krystal>
- <alpine.LFD.2.00.1010191524160.6815@localhost6.localdomain6>
- <1287496495.16971.372.camel@gandalf.stny.rr.com>
- <alpine.LFD.2.00.1010191558250.6815@localhost6.localdomain6>
- <20101019142820.GA14520@Krystal>
- <alpine.LFD.2.00.1010191842270.6815@localhost6.localdomain6>
- <4CBE0AC6.3040402@caviumnetworks.com>
+	id S1757968Ab0JSVdA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Oct 2010 17:33:00 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:64912 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757954Ab0JSVc7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Oct 2010 17:32:59 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=NOUES67MzFexlj4SyAgUnun8cBm16vtxvJ3+TtkMEvVkTrHJEDDy/mWY6Q813baKE1
+         U6d71UJCdJ47U5RYXNUDBDJe6QcNHEZvEgll4eKRpOy22f6/LLyNQUo+D0Fxpk4q9/Rz
+         0biFjIzusgDdHa8N9YlE89oYYjZMRjL29+24U=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4CBE0AC6.3040402@caviumnetworks.com>
-User-Agent: Mutt/1.5.20 (2010-07-18)
+In-Reply-To: <20101019170730.GA11171@kroah.com>
+References: <1287198527-1696-1-git-send-email-tdent48227@gmail.com>
+	<20101019170730.GA11171@kroah.com>
+Date: Tue, 19 Oct 2010 17:32:57 -0400
+Message-ID: <AANLkTikjziWvPSScEti8sz2YyBOJuaau54Y94CS9mpmc@mail.gmail.com>
+Subject: Re: [PATCH 1/2] Staging: speakup: main: Coding stlye fixes
+From: Tracey Dent <tdent48227@gmail.com>
+To: Greg KH <greg@kroah.com>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 19, 2010 at 02:16:54PM -0700, David Daney wrote:
-> On 10/19/2010 12:49 PM, Thomas Gleixner wrote:
-> [...]
-> >So that saves _TWO_ bytes of text and replaces:
-> >
-> >-  1e:	83 3d 00 00 00 00 00 	cmpl   $0x0,0x0(%rip)        # 25<test+0x25>
-> >-  25:	74 4d                	je     74<test+0x74>
-> >+  1e:	e9 00 00 00 00       	jmpq   23<test+0x23>
-> >+  23:	eb 4d                	jmp    72<test+0x72>
-> >
-> >So it trades a conditional vs. two jumps ? WTF ??
-> >
-> >I thought that jumplabel magic was supposed to get rid of the jump
-> >over the tracing code ? In fact it adds another jump. Whatfor ?
-> 
-> The 'asm goto' construct in GCC-4.5 is deficient in this area.
-> 
-> GCC assumes that all exit paths from an 'asm goto' are equally
-> likely, so the tracing (or dynamic printk etc.) code is assumed to
-> be hot and is emitted inline.  Since they are inline like this,
-> there are all these jumps around them and they pollute the I-Cache.
-> 
-> I was looking at fixing it, but I think a true general purpose fix
-> would require enhancing GCC's grammar to allow specifying of the
-> 'likelyness' of each exit path from 'asm goto'.
-> 
-> David Daney
-> 
+On 10/19/10, Greg KH <greg@kroah.com> wrote:
+> On Fri, Oct 15, 2010 at 11:08:46PM -0400, Tracey Dent wrote:
+>> Fixed coding style issues foung by checkpatch.pl
+>
+> Sorry, this one, and patch 2/2 were just submited by someone else right
+> before you sent yours :(
+>
+> thanks,
+>
+> greg k-h
+>
 
-right, the next step is adding support for hot/cold labels, so the
-tracing code will be annotaed with a 'cold' label. Thus, not adding the
-'jmp' above on line '23', and in fact moving the tracing code
-out-of-line. Maybe I haven't been clear on this.
-
-thanks,
-
--Jason
+Alright.
