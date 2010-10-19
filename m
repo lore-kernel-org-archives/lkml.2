@@ -1,69 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933872Ab0JSKMr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Oct 2010 06:12:47 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:45996 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754337Ab0JSKMq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Oct 2010 06:12:46 -0400
-Date: Tue, 19 Oct 2010 13:12:29 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: Felipe Contreras <felipe.contreras@gmail.com>
-Cc: "Balbi, Felipe" <balbi@ti.com>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        linux-main <linux-kernel@vger.kernel.org>, Greg KH <greg@kroah.com>
-Subject: Re: [PATCH 3/3] drivers: cleanup Kconfig stuff
-Message-ID: <20101019101229.GG31170@legolas.emea.dhcp.ti.com>
-Reply-To: balbi@ti.com
-References: <1287475466-8927-1-git-send-email-felipe.contreras@gmail.com>
- <1287475466-8927-4-git-send-email-felipe.contreras@gmail.com>
- <20101019081855.GI12470@legolas.emea.dhcp.ti.com>
- <AANLkTi=8=M+egdo5o6nyMOaCyMCLaZdwJF3WKFwZnbd4@mail.gmail.com>
- <20101019090149.GC31170@legolas.emea.dhcp.ti.com>
- <AANLkTimCqZsJ6eY2zk0hJNhkYJDPbYnviiZ4gadnf-bB@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii; format=flowed
+	id S933915Ab0JSKNq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Oct 2010 06:13:46 -0400
+Received: from vpn.id2.novell.com ([195.33.99.129]:51442 "EHLO
+	vpn.id2.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752172Ab0JSKNp convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-JBeulich@novell.com:5:1>);
+	Tue, 19 Oct 2010 06:13:45 -0400
+Message-Id: <4CBD8B75020000780001DF71@vpn.id2.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 8.0.1 
+Date: Tue, 19 Oct 2010 11:13:41 +0100
+From: "Jan Beulich" <JBeulich@novell.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: "Ingo Molnar" <mingo@elte.hu>, <heukelum@fastmail.fm>,
+        <tglx@linutronix.de>, <akpm@linux-foundation.org>,
+        "LKML" <linux-kernel@vger.kernel.org>
+Subject: Re: gas 2.16 and assembly macros -- entry_64.S build failure
+References: <201009152110.o8FLAJeJ015584@imap1.linux-foundation.org>
+ <4C91F07E0200007800016B50@vpn.id2.novell.com>
+ <20100916082816.GA25681@elte.hu>
+ <4C91F3A30200007800016B64@vpn.id2.novell.com>
+ <20100916101355.GA31458@elte.hu>
+ <4C9219BC0200007800016C53@vpn.id2.novell.com> <4CA52AA5.5040402@zytor.com>
+In-Reply-To: <4CA52AA5.5040402@zytor.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
 Content-Disposition: inline
-In-Reply-To: <AANLkTimCqZsJ6eY2zk0hJNhkYJDPbYnviiZ4gadnf-bB@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+>>> On 01.10.10 at 02:26, "H. Peter Anvin" <hpa@zytor.com> wrote:
+> On 09/16/2010 04:21 AM, Jan Beulich wrote:
+>>>
+>>> Yes, to only generate CFI on binutils that allows us to write sane 
+>>> looking code.
+>>>
+>>> I.e. to disable CONFIG_AS_CFI on binutils that are broken for this.
+>> 
+>> Again - that won't help, as it's the macro invocation that gas
+>> fails one, not one of the actual .cfi_* directives.
+>> 
+> 
+> Looking again at this issue with the binutils version from hell
+> (sigh)... I'm running quickly out of ideas.
+> 
+> The problem is that cpp inserts spaces around expansions, so:
+> 
+> 	pushq_cfi $(USER_DS)
+> 
+> ... turns into something like ...
+> 
+> 	pushq_cfi $( ( 5 * 8 + 3 ) )
+> 
+> ... which these old versions of gas considers multiple arguments to the
+> macro, even though there is no comma anywhere.  We can defang *some* of
+> these problems by using cpp macros to kill them off:
+> 
+> #define pushq_cfi pushq
+> 
+> ... but that doesn't work with the macros like movq_cfi.  On those, we
+> could argue that at least people won't put $ on them, but cpp will still
+> split them apart with spaces; this apparently causes problems at least
+> as soon as there is an expression more complicated than addition
+> involved (apparently plus signs are okay, but minus signs aren't!)
+> 
+> I'm completely lost about how to deal with this.   We can't simply
+> defang the macros -- at least not in a way that is likely to *stay*
+> working -- and dropping the macros is seriously going to impact the
+> debuggability of the kernel.  One way, of course, is to simply declare
+> binutils 2.16 and 2.15.9x (which is apparently included in
+> RHEL/CentOS 4) to be broken beyond repair unless distros backport a fix,
+> and in many ways I think that is the preferred option, but I don't know
+> if that makes sense to others...
 
-On Tue, Oct 19, 2010 at 04:55:04AM -0500, Felipe Contreras wrote:
->I'm not talking about phonet, I replied to your comment regarding
->USB_GADGET_MUSB_HDRC. For me USB_GADGET_MUSB_HDRC=n USB_G_NOKIA=y
->doesn't work, but the Kconfig allows it.
+Would excessive parenthesisation (in the header files) be an
+acceptable workaround? cpp inserts the spaces only when
+a preprocessing identifier that expands to a token sequence
+ending in a number is followed by ., +, or -. (The asymmetry
+in behavior between + and - then results from gas considering
+- a symbol char, but not +, which is the case even in current
+mainline, and which I think ought to be fixed - I'll bring this
+up on their mailing list -, but that fix would break the kernel
+build in its current shape afaict.)
 
-I see, that's a problem for sure.
+Basically, all constants potentially used in assembly expressions
+passed to macros would need to change from e.g.
 
->Ok, I'll make it: depends on (NOP_USB_XCEIV || TWL4030_USB)
->
->BTW, if you want to try this:
->./scripts/kconfig/conf --defconfig=usb_defconfig arch/arm/Kconfig
->
->usb_defconfig:
->CONFIG_ARCH_OMAP=y
->CONFIG_EXPERIMENTAL=y
->CONFIG_NET=y
->CONFIG_PHONET=y
->
->CONFIG_USB=y
->CONFIG_USB_GADGET=y
->CONFIG_USB_MUSB_OTG=y
->CONFIG_USB_MUSB_HDRC=y
->CONFIG_USB_G_NOKIA=y
->
-># TODO USB_MUSB_OTG should select this
->CONFIG_USB_GADGET_MUSB_HDRC=y
->
->I expect TWL4030_USB and USB_OTG to be automatically selected.
+#define RIP		128
 
-could be, but that's a board-by-board thing. It's not mandatory to have
-twl4030-usb, it's mandatory to have a transceiver, not matter which one
-it is.
+to
 
--- 
-balbi
+#define RIP		(128)
+
+I'll put together a patch if this is considered acceptable, and if
+it turns out to work across all cpp/gas version combinations
+that I can reasonably try.
+
+Jan
+
