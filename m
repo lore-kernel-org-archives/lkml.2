@@ -1,116 +1,185 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933544Ab0JSHef (ORCPT <rfc822;w@1wt.eu>);
+	id S933828Ab0JSHeh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Oct 2010 03:34:37 -0400
+Received: from novprvlin0050.provo.novell.com ([137.65.248.33]:1788 "EHLO
+	novprvlin0050.provo.novell.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S933423Ab0JSHef (ORCPT
+	<rfc822;groupwise-jlee@novell.com:5:2>);
 	Tue, 19 Oct 2010 03:34:35 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:60380 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757830Ab0JSHed convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Oct 2010 03:34:33 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=Ea7azzOCh9MR48QMNoeexp0EgBF1opt10o4vxxBQh1EZbihNJyCXoS8oGMDkIACo7o
-         6/EXT7BFUq8NC4yoIwQM0B6hQyNI1Nj0qH7auCKs/OaXy6/E1aySOZ6ZLYd9lng+6O8f
-         WI5nWVLLe0PPC+oWuXHNieaZl1D2s+NvOODxc=
-MIME-Version: 1.0
-In-Reply-To: <20101019071534.GA15105@sli10-conroe.sh.intel.com>
-References: <20101019093142.509d6947@notabene>
-	<20101018154137.90f5325f.akpm@linux-foundation.org>
-	<20101019095144.A1B0.A69D9226@jp.fujitsu.com>
-	<AANLkTin38qJ-U3B7XwMh-3aR9zRs21LgR1yHfqYifxrn@mail.gmail.com>
-	<20101019023537.GB8310@localhost>
-	<AANLkTikHxDyjOGgM8-X6FNT15Hr3s4NaA-=+FRhma+3D@mail.gmail.com>
-	<20101019030515.GB11924@localhost>
-	<AANLkTinvcGjF2-dvu8kpDY4V7kGkRJjHTWDtQPNRKMU_@mail.gmail.com>
-	<20101019032145.GA3108@sli10-conroe.sh.intel.com>
-	<20101019071534.GA15105@sli10-conroe.sh.intel.com>
-Date: Tue, 19 Oct 2010 16:34:32 +0900
-Message-ID: <AANLkTimQzT3SYf0LMqEH8Bfta2gnvVjWCHRj=kmb_4Z7@mail.gmail.com>
-Subject: Re: Deadlock possibly caused by too_many_isolated.
-From: Minchan Kim <minchan.kim@gmail.com>
-To: Shaohua Li <shaohua.li@intel.com>
-Cc: "Wu, Fengguang" <fengguang.wu@intel.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>, Neil Brown <neilb@suse.de>,
-        Rik van Riel <riel@redhat.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Message-Id: <4CBDE4B60200002300022439@novprvlin0050.provo.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 8.0.2 
+Date: Tue, 19 Oct 2010 01:34:30 -0600
+From: "Joey Lee" <jlee@novell.com>
+To: <mjg59@srcf.ucam.org>
+Cc: <randy.dunlap@oracle.com>, <mjg@redhat.com>, <gregkh@suse.de>,
+        <trenn@suse.de>, <linux-acpi@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <Valdis.Kletnieks@vt.edu>,
+        <Dennis.Jansen@web.de>
+Subject: Re: [PATCH] Add Intel Poulsbo Stub Driver
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 19, 2010 at 4:15 PM, Shaohua Li <shaohua.li@intel.com> wrote:
-> On Tue, Oct 19, 2010 at 11:21:45AM +0800, Shaohua Li wrote:
->> On Tue, Oct 19, 2010 at 11:09:29AM +0800, Minchan Kim wrote:
->> > On Tue, Oct 19, 2010 at 12:05 PM, Wu Fengguang <fengguang.wu@intel.com> wrote:
->> > > On Tue, Oct 19, 2010 at 10:52:47AM +0800, Minchan Kim wrote:
->> > >> Hi Wu,
->> > >>
->> > >> On Tue, Oct 19, 2010 at 11:35 AM, Wu Fengguang <fengguang.wu@intel.com> wrote:
->> > >> >> @@ -2054,10 +2069,11 @@ rebalance:
->> > >> >>                 goto got_pg;
->> > >> >>
->> > >> >>         /*
->> > >> >> -        * If we failed to make any progress reclaiming, then we are
->> > >> >> -        * running out of options and have to consider going OOM
->> > >> >> +        * If we failed to make any progress reclaiming and there aren't
->> > >> >> +        * many parallel reclaiming, then we are unning out of options and
->> > >> >> +        * have to consider going OOM
->> > >> >>          */
->> > >> >> -       if (!did_some_progress) {
->> > >> >> +       if (!did_some_progress && !too_many_isolated_zone(preferred_zone)) {
->> > >> >>                 if ((gfp_mask & __GFP_FS) && !(gfp_mask & __GFP_NORETRY)) {
->> > >> >>                         if (oom_killer_disabled)
->> > >> >>                                 goto nopage;
->> > >> >
->> > >> > This is simply wrong.
->> > >> >
->> > >> > It disabled this block for 99% system because there won't be enough
->> > >> > tasks to make (!too_many_isolated_zone == true). As a result the LRU
->> > >> > will be scanned like mad and no task get OOMed when it should be.
->> > >>
->> > >> If !too_many_isolated_zone is false, it means there are already many
->> > >> direct reclaiming tasks.
->> > >> So they could exit reclaim path and !too_many_isolated_zone will be true.
->> > >> What am I missing now?
->> > >
->> > > Ah sorry, my brain get short circuited.. but I still feel uneasy with
->> > > this change. It's not fixing the root cause and won't prevent too many
->> > > LRU pages be isolated. It's too late to test too_many_isolated_zone()
->> > > after direct reclaim returns (after sleeping for a long time).
->> > >
->> >
->> > Intend to agree.
->> > I think root cause is a infinite looping in too_many_isolated holding FS lock.
->> > Would it be simple that too_many_isolated would be bail out after some try?
->> I'm wondering if we need too_many_isolated_zone logic. The do_try_to_free_pages
->> will return progress till all zones are unreclaimable. Assume before this we
->> don't oomkiller. If the direct reclaim fails but has progress, it will sleep.
-> Not sure if this is clear. What I mean is we can delete too_many_isolated_zone,
-> do_try_to_free_pages can still return 1 till all zones are unreclaimable. Before
-> this direct reclaim will not oom, because it sees progress and will call congestion_wait
-> to sleep. Am I missing anything?
->
+Hi Matthew, 
 
-You mean could we remove too_many_isolated? not too_many_isolated_zone. Right?
-It it is, we can't.
-
-Your saying is right.
-do_try_to_free_pages can return 1 until all zones are unreclaimable.
-But If we remove throttling logic which is too_many_isolated, too many
-process can enter direct reclaim path and they can increase
-zone->pages_scanned while zone_reclaimable pages are decreased by
-isolation. At last, we could reach all zones are unreclaimable much
-faster.
+Does this stub driver good enough? Should I stop to work on this?
+Currently, the issue still there in my MSI poulsbo netbook.
 
 
+Thank's
+Joey Lee
 
+æ–¼ æ—¥ï¼Œ2010-09-19 æ–¼ 10:35 -0600ï¼ŒJoey Lee æåˆ°ï¼š
+> Hi Matthew, 
+> 
+> I modified the help description to add GMA500.
+> Could you please give my any suggestion for this stub driver? Does it
+> good enough to put into kernel ?
+> 
+> 
+> Thank's a lot!
+> Joey Lee
+> 
+> æ–¼ ä¸‰ï¼Œ2010-09-15 æ–¼ 22:24 +0800ï¼ŒLee, Chun-Yi æåˆ°ï¼š
+> > Currently, there have no GMA500(Poulsbo) native video driver to support
+> > intel opregion. So, use this stub driver to enable the acpi backlight
+> > control sysfs entry files by requrest acpi_video_register.
+> > 
+> > Signed-off-by: Lee, Chun-Yi <jlee@novell.com>
+> > ---
+> >  drivers/gpu/Makefile       |    2 +-
+> >  drivers/gpu/stub/Kconfig   |   13 +++++++++
+> >  drivers/gpu/stub/Makefile  |    1 +
+> >  drivers/gpu/stub/poulsbo.c |   63 ++++++++++++++++++++++++++++++++++++++++++++
+> >  drivers/video/Kconfig      |    2 +
+> >  5 files changed, 80 insertions(+), 1 deletions(-)
+> >  create mode 100644 drivers/gpu/stub/Kconfig
+> >  create mode 100644 drivers/gpu/stub/Makefile
+> >  create mode 100644 drivers/gpu/stub/poulsbo.c
+> > 
+> > diff --git a/drivers/gpu/Makefile b/drivers/gpu/Makefile
+> > index 30879df..cc92778 100644
+> > --- a/drivers/gpu/Makefile
+> > +++ b/drivers/gpu/Makefile
+> > @@ -1 +1 @@
+> > -obj-y			+= drm/ vga/
+> > +obj-y			+= drm/ vga/ stub/
+> > diff --git a/drivers/gpu/stub/Kconfig b/drivers/gpu/stub/Kconfig
+> > new file mode 100644
+> > index 0000000..8f5a540
+> > --- /dev/null
+> > +++ b/drivers/gpu/stub/Kconfig
+> > @@ -0,0 +1,13 @@
+> > +config STUB_POULSBO
+> > +	tristate "Intel GMA500 Stub Driver"
+> > +	depends on PCI
+> > +        # Poulsbo stub depends on ACPI_VIDEO when ACPI is enabled
+> > +        # but for select to work, need to select ACPI_VIDEO's dependencies, ick
+> > +        select ACPI_VIDEO if ACPI
+> > +	help
+> > +	  Choose this option if you have a system that has Intel GMA500
+> > +	  (Poulsbo) integrated graphics. If M is selected, the module will
+> > +	  be called Poulsbo. This driver is a stub driver for Poulsbo that
+> > +	  will call poulsbo.ko to enable the acpi backlight control sysfs
+> > +	  entry file because there have no poulsbo native driver can support
+> > +	  intel opregion.
+> > diff --git a/drivers/gpu/stub/Makefile b/drivers/gpu/stub/Makefile
+> > new file mode 100644
+> > index 0000000..cd940cc
+> > --- /dev/null
+> > +++ b/drivers/gpu/stub/Makefile
+> > @@ -0,0 +1 @@
+> > +obj-$(CONFIG_STUB_POULSBO) += poulsbo.o
+> > diff --git a/drivers/gpu/stub/poulsbo.c b/drivers/gpu/stub/poulsbo.c
+> > new file mode 100644
+> > index 0000000..d8aa636
+> > --- /dev/null
+> > +++ b/drivers/gpu/stub/poulsbo.c
+> > @@ -0,0 +1,63 @@
+> > +/*
+> > + * Intel Poulsbo Stub driver
+> > + *
+> > + * Copyright (C) 2010 Novell <jlee@novell.com>
+> > + *
+> > + * This program is free software; you can redistribute it and/or modify it
+> > + * under the terms of the GNU General Public License version 2 as published by
+> > + * the Free Software Foundation.
+> > + *
+> > + */
+> > +
+> > +#include <linux/module.h>
+> > +#include <linux/pci.h>
+> > +#include <acpi/video.h>
+> > +
+> > +#define DRIVER_NAME "poulsbo"
+> > +
+> > +enum {
+> > +	CHIP_PSB_8108 = 0,
+> > +	CHIP_PSB_8109 = 1,
+> > +};
+> > +
+> > +static struct pci_device_id pciidlist[] = {
+> > +	{0x8086, 0x8108, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_PSB_8108}, \
+> > +	{0x8086, 0x8109, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_PSB_8109}, \
+> > +	{0, 0, 0}
+> > +};
+> > +
+> > +static int poulsbo_probe(struct pci_dev *pdev, const struct pci_device_id *id)
+> > +{
+> > +	return acpi_video_register();
+> > +}
+> > +
+> > +static void poulsbo_remove(struct pci_dev *pdev)
+> > +{
+> > +	acpi_video_unregister();
+> > +}
+> > +
+> > +static struct pci_driver poulsbo_driver = {
+> > +	.name = DRIVER_NAME,
+> > +	.id_table = pciidlist,
+> > +	.probe = poulsbo_probe,
+> > +	.remove = poulsbo_remove,
+> > +};
+> > +
+> > +static int __init poulsbo_init(void)
+> > +{
+> > +	return pci_register_driver(&poulsbo_driver);
+> > +}
+> > +
+> > +static void __exit poulsbo_exit(void)
+> > +{
+> > +	pci_unregister_driver(&poulsbo_driver);
+> > +}
+> > +
+> > +module_init(poulsbo_init);
+> > +module_exit(poulsbo_exit);
+> > +
+> > +MODULE_AUTHOR("Lee, Chun-Yi <jlee@novell.com>");
+> > +MODULE_DESCRIPTION("Poulsbo Stub Driver");
+> > +MODULE_LICENSE("GPL");
+> > +
+> > +MODULE_DEVICE_TABLE(pci, pciidlist);
+> > diff --git a/drivers/video/Kconfig b/drivers/video/Kconfig
+> > index 8b31fdf..8807ae5 100644
+> > --- a/drivers/video/Kconfig
+> > +++ b/drivers/video/Kconfig
+> > @@ -17,6 +17,8 @@ source "drivers/gpu/vga/Kconfig"
+> >  
+> >  source "drivers/gpu/drm/Kconfig"
+> >  
+> > +source "drivers/gpu/stub/Kconfig"
+> > +
+> >  config VGASTATE
+> >         tristate
+> >         default n
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
--- 
-Kind regards,
-Minchan Kim
