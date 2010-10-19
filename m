@@ -1,95 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756181Ab0JSW1b (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Oct 2010 18:27:31 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:35313 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754085Ab0JSW1a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Oct 2010 18:27:30 -0400
-Message-ID: <4CBE1B04.5020309@zytor.com>
-Date: Tue, 19 Oct 2010 15:26:12 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc13 Thunderbird/3.1.4
-MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-CC: Thomas Gleixner <tglx@linutronix.de>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Koki Sanagi <sanagi.koki@jp.fujitsu.com>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Frederic Weisbecker <fweisbec@gmail.com>, nhorman@tuxdriver.com,
-        scott.a.mcmillan@intel.com, laijs@cn.fujitsu.com,
-        LKML <linux-kernel@vger.kernel.org>, eric.dumazet@gmail.com,
-        kaneshige.kenji@jp.fujitsu.com, David Miller <davem@davemloft.net>,
-        izumi.taku@jp.fujitsu.com, kosaki.motohiro@jp.fujitsu.com,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        "Luck, Tony" <tony.luck@intel.com>
-Subject: Re: [PATCH] tracing: Cleanup the convoluted softirq tracepoints
-References: <tip-2bf2160d8805de64308e2e7c3cd97813cb58ed2f@git.kernel.org>	 <20100908112529.GA25931@elte.hu> <1287395077.29097.1543.camel@twins>	 <1287398936.29097.1548.camel@twins> <4CBD79CF.2060706@jp.fujitsu.com>	 <alpine.LFD.2.00.1010191428560.6815@localhost6.localdomain6>	 <20101019132236.GA19197@Krystal>	 <alpine.LFD.2.00.1010191524160.6815@localhost6.localdomain6>	 <1287496495.16971.372.camel@gandalf.stny.rr.com>	 <alpine.LFD.2.00.1010191558250.6815@localhost6.localdomain6>	 <20101019142820.GA14520@Krystal>	 <alpine.LFD.2.00.1010191842270.6815@localhost6.localdomain6>	 <1287521757.16971.397.camel@gandalf.stny.rr.com>	 <alpine.LFD.2.00.1010192302000.6815@localhost6.localdomain6>	 <1287523439.16971.433.camel@gandalf.stny.rr.com>	 <4CBE122B.9020807@zytor.com> <1287527005.16971.527.camel@gandalf.stny.rr.com>
-In-Reply-To: <1287527005.16971.527.camel@gandalf.stny.rr.com>
-Content-Type: text/plain; charset=ISO-8859-15
+	id S1755620Ab0JSWcI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Oct 2010 18:32:08 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:35069 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754651Ab0JSWcG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Oct 2010 18:32:06 -0400
+Date: Tue, 19 Oct 2010 15:31:36 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Kay Sievers <kay.sievers@vrfy.org>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>, Greg KH <greg@kroah.com>
+Subject: Re: [PATCH] support polling of /proc/swaps
+Message-Id: <20101019153136.b2543f7b.akpm@linux-foundation.org>
+In-Reply-To: <1287479956.1729.1.camel@yio.site>
+References: <1287479956.1729.1.camel@yio.site>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/19/2010 03:23 PM, Steven Rostedt wrote:
-> On Tue, 2010-10-19 at 14:48 -0700, H. Peter Anvin wrote:
->> On 10/19/2010 02:23 PM, Steven Rostedt wrote:
->>>
->>> But it seemed that gcc for you inlined the code in the wrong spot.
->>> Perhaps it's not a good idea to have the something like h - softirq_vec
->>> in the parameter of the tracepoint. Not saying that your change is not
->>> worth it. It is, because h - softirq_vec is used by others now too.
->>>
->>
->> OK, first of all, there are some serious WTFs here:
->>
->> # define JUMP_LABEL_INITIAL_NOP ".byte 0xe9 \n\t .long 0\n\t"
->>
->> A jump instruction is one of the worst possible NOPs.  Why are we doing
->> this?
+On Tue, 19 Oct 2010 11:19:16 +0200
+Kay Sievers <kay.sievers@vrfy.org> wrote:
+
+> From: Kay Sievers <kay.sievers@vrfy.org>
+> Subject: support polling of /proc/swaps
 > 
-> Good question. Safety?  Jason?
-> 
-> This is the initial jumps and are converted on boot up to a better nop.
+> System management wants to subscribe to changes in swap
+> configuration. Make /proc/swaps pollable like /proc/mounts.
 > 
 
-But it makes absolutely no sense to insert an instruction that
-suboptimal and then convert it.  Start out with a reasonable,
-universally acceptable, instruction, e.g. LEA on 32 bits and NOPL on 64
-bits.
+It's a bit sad that we have to add quite a pile of infrastructure to
+make a procfs file pollable.  I wonder if it's possible to provide some
+core support for this, and reduce the amount of code at each particular
+handler site.
 
->>
->> The second thing that I found when implementing static_cpu_has() was
->> that it is actually better to encapsulate the asm goto in a small inline
->> which returns bool (true/false) -- gcc will happily optimize out the
->> variable and only see it as a flow of control thing.  I would be very
->> curious if that wouldn't make gcc generate better code in cases like that.
->>
->> gcc 4.5.0 has a bug in that there must be a flowthrough case in the asm
->> goto (you can't have it unconditionally branch one way or the other), so
->> that should be the likely case and accordingly it should be annotated
->> likely() so that gcc doesn't reorder.  I suspect in the end one ends up
->> with code like this:
->>
->> static __always_inline __pure bool __switch_point(...)
->> {
->> 	asm goto("1: " JUMP_LABEL_INITIAL_NOP
->> 		 /* ... patching stuff */
->> 		: : : : t_jump);
->> 	return false;
->> t_jump:
->> 	return true;
->> }
->>
->> #define SWITCH_POINT(x) unlikely(__switch_point(x))
->>
->> I *suspect* this will resolve the need for hot/cold labels just fine.
+Also, I wonder how we are to communicate the existence of this feature
+to our users.  Nobody will look in Documentation/filesystems/.  Is
+there a manpage?  Seems not...
+
+> ---
+>  mm/swapfile.c |   48 +++++++++++++++++++++++++++++++++++++++++++++++-
+>  1 file changed, 47 insertions(+), 1 deletion(-)
 > 
-> Interesting, we could try this.
-> 
+> --- a/mm/swapfile.c
+> +++ b/mm/swapfile.c
+> @@ -30,6 +30,7 @@
+>  #include <linux/capability.h>
+>  #include <linux/syscalls.h>
+>  #include <linux/memcontrol.h>
+> +#include <linux/poll.h>
+>  
+>  #include <asm/pgtable.h>
+>  #include <asm/tlbflush.h>
+> @@ -58,6 +59,9 @@ static struct swap_info_struct *swap_inf
+>  
+>  static DEFINE_MUTEX(swapon_mutex);
+>  
+> +static DECLARE_WAIT_QUEUE_HEAD(proc_poll_wait);
+> +static int proc_poll_event;
 
-It of course also have the nice property that it syntactically looks
-exactly like any other C conditional.
+Please pick a lock to protect proc_poll_event.  Then document that
+locking here, when you also document proc_poll_event ;)
 
-	-hpa
+>  static inline unsigned char swap_count(unsigned char ent)
+>  {
+>  	return ent & ~SWAP_HAS_CACHE;	/* may include SWAP_HAS_CONT flag */
+> @@ -1680,6 +1684,8 @@ SYSCALL_DEFINE1(swapoff, const char __us
+>  	}
+>  	filp_close(swap_file, NULL);
+>  	err = 0;
+> +	proc_poll_event++;
+
+Then fix this race.
+
+> +	wake_up_interruptible(&proc_poll_wait);
+>  
+>  out_dput:
+>  	filp_close(victim, NULL);
+
