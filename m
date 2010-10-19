@@ -1,62 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753738Ab0JSSPZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Oct 2010 14:15:25 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:37505 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751531Ab0JSSPX convert rfc822-to-8bit (ORCPT
+	id S1754433Ab0JSSQt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Oct 2010 14:16:49 -0400
+Received: from e33.co.us.ibm.com ([32.97.110.151]:56180 "EHLO
+	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751957Ab0JSSQq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Oct 2010 14:15:23 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=kNli3xaTGq2sNMwm8DBlwTYIuupCvJ+xKNrHKYf/AEKKcuRyRYgGghlWYAf6k4Mt9R
-         k1Wruj1b7BL8Ua7HsTYTnhWUEGcul2y4AnpMbKPjeDHR7/H0qMy/SPr8gibOdGHQzcUU
-         6arRYn6OiGVBT3qqYmaWzU5uBxdCZKiUYOenw=
-MIME-Version: 1.0
-In-Reply-To: <20101019175036.GB4618@kroah.com>
-References: <1287482608-11320-1-git-send-email-felipe.contreras@gmail.com>
-	<1287482608-11320-3-git-send-email-felipe.contreras@gmail.com>
-	<20101019155109.GH4589@kroah.com>
-	<AANLkTi=CzBriAFW2gzG68b=6wENysJZEkaO9jFrXQdnq@mail.gmail.com>
-	<20101019175036.GB4618@kroah.com>
-Date: Tue, 19 Oct 2010 21:15:21 +0300
-Message-ID: <AANLkTinRCaXO1nO3sZdbiAHont+vgd4eZE9EN-snjZYg@mail.gmail.com>
-Subject: Re: [PATCH v2 2/3] usb: trivial Kconfig cleanups
-From: Felipe Contreras <felipe.contreras@gmail.com>
-To: Greg KH <greg@kroah.com>
-Cc: linux-usb@vger.kernel.org, linux-omap <linux-omap@vger.kernel.org>,
-        linux-main <linux-kernel@vger.kernel.org>, Felipe Balbi <balbi@ti.com>,
-        Tony Lindgren <tony@atomide.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Tue, 19 Oct 2010 14:16:46 -0400
+Subject: Re: [PATCH 1/3] IMA: move read/write counters into struct inode
+From: Mimi Zohar <zohar@linux.vnet.ibm.com>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Eric Paris <eparis@redhat.com>, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        hch@infradead.org, Mimi Zohar <zohar@us.ibm.com>, warthog9@kernel.org,
+        david@fromorbit.com, jmorris@namei.org, kyle@mcmartin.ca,
+        hpa@zytor.com, akpm@linux-foundation.org, mingo@elte.hu
+In-Reply-To: <20101019172805.GU19804@ZenIV.linux.org.uk>
+References: <20101019011650.25346.99614.stgit@paris.rdu.redhat.com>
+	 <AANLkTimGdjPyLXuknDNa7WNthDT9+2FdOuPdxwjRiMHD@mail.gmail.com>
+	 <1287506215.2530.187.camel@localhost.localdomain>
+	 <20101019165530.GT19804@ZenIV.linux.org.uk>
+	 <AANLkTimL=eChoCQHGoiouE5s6dGG=n9ZAQGhW-RW+gDj@mail.gmail.com>
+	 <20101019172805.GU19804@ZenIV.linux.org.uk>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 19 Oct 2010 14:16:22 -0400
+Message-ID: <1287512182.3167.130.camel@localhost.localdomain>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 (2.30.3-1.fc13) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 19, 2010 at 8:50 PM, Greg KH <greg@kroah.com> wrote:
-> On Tue, Oct 19, 2010 at 08:15:19PM +0300, Felipe Contreras wrote:
->> On Tue, Oct 19, 2010 at 6:51 PM, Greg KH <greg@kroah.com> wrote:
->> > On Tue, Oct 19, 2010 at 01:03:27PM +0300, Felipe Contreras wrote:
->> >> Note: USB_GADGET_MUSB_HDRC is already defined in usb/gadget.
->> >>
->> >> Signed-off-by: Felipe Contreras <felipe.contreras@gmail.com>
->> >
->> > Please describe _what_ trivial cleanups you did, and why you did them.
->> > Care to resend?
->>
->> How about:
->> Shuffle the code a bit so the description is at the top, remove
->> duplicated configs (USB_GADGET_MUSB_HDRC),  'default n' is redundant,
->> and USB_GADGET_SELECTED should go after USB_GADGET (on the appropriate
->> config).
->
-> Sounds good, but you need to resend it with this information in it, not
-> much I can do with it in an independant email.
+On Tue, 2010-10-19 at 18:28 +0100, Al Viro wrote:
+> On Tue, Oct 19, 2010 at 10:03:48AM -0700, Linus Torvalds wrote:
+> > On Tue, Oct 19, 2010 at 9:55 AM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+> > >
+> > > a) i_writecount is about VM_DENYWRITE, basically. ?Reusing it for ima could
+> > > get unpleasant; when it's positive, we are fine, but it can get negative as
+> > > well. ?IMA will have interesting time dealing with that.
+> > >
+> > > b) i_count is simply a refcount for struct inode. ?Not exactly the number
+> > > of dentries, but that's the main contributor. ?Basically, that's "how many
+> > > pointers outside of inode hash chains point that that struct inode at the
+> > > moment".
+> > 
+> > My question was deeper. More along the lines of "why would IMA care?"
+> > 
+> > How/why could IMA ever care about the pointless and trivial
+> > differences between its current private open/read/write counts and the
+> > counts that we already maintain?
+> > 
+> > Yes, yes, I realize that they have technical differences in what they
+> > count. That's not the question. The question is "Why would IMA care?"
 
-I know that, I just wanted to see if it was ok before resending so I
-don't resend another time.
+The filesystem prevents files being executed from being opened for
+write.  The same guarantees that the file won't change, obviously,
+doesn't exist for files being opened for read. Thus measuring a file
+opened for read that has already been open for write, has no meaning.
+Unfortunately, since the inode counters don't provide this information,
+IMA maintains a separate set of counters.
 
--- 
-Felipe Contreras
+> I'd rather not say what I think about IMA sanity (and usefulness); as for what
+> it tries to do...  They want to whine if you open a file that is already opened
+> for write and they want to whine if you open a file for write when it's already
+> opened for read.  Unless they decide to leave the file alone, that is.
+
+You left out one minor detail, invalidate the PCR as well.
+
+Mimi
+
