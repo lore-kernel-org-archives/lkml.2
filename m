@@ -1,76 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933705Ab0JSHH4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Oct 2010 03:07:56 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:59728 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933685Ab0JSHHz (ORCPT
+	id S933781Ab0JSHIj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Oct 2010 03:08:39 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:35727 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933715Ab0JSHIh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Oct 2010 03:07:55 -0400
-Date: Tue, 19 Oct 2010 16:08:14 +0900
-From: Kukjin Kim <kgene.kim@samsung.com>
-Subject: RE: [PATCH 5/9 v2] ARM: S3C64XX: add support for mach-mini6410
-In-reply-to: <20100929193406.25307.33007.stgit@darius-desktop>
-To: "'Darius Augulis'" <augulis.darius@gmail.com>,
-        linux-arm-kernel@lists.infradead.org
-Cc: paulius.zaleckas@gmail.com, linux-kernel@vger.kernel.org,
-        ben-linux@fluff.org
-Message-id: <052801cb6f5c$67216fb0$35644f10$%kim@samsung.com>
-MIME-version: 1.0
-X-Mailer: Microsoft Office Outlook 12.0
-Content-type: text/plain; charset=utf-8
-Content-language: ko
-Content-transfer-encoding: 7BIT
-Thread-index: ActgDX5MBZRIvEkjRg+nJaB8GUYO3wPOxiZg
-References: <20100929192354.25307.40197.stgit@darius-desktop>
- <20100929193406.25307.33007.stgit@darius-desktop>
+	Tue, 19 Oct 2010 03:08:37 -0400
+From: Felipe Balbi <balbi@ti.com>
+To: Greg KH <greg@kroah.com>
+Cc: Linux USB Mailing List <linux-usb@vger.kernel.org>,
+        Ajay Kumar Gupta <ajay.gupta@ti.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-omap@vger.kernel.org, Felipe Balbi <balbi@ti.com>
+Subject: [PATCH 1/3] AM35x: Add musb support
+Date: Tue, 19 Oct 2010 10:08:11 +0300
+Message-Id: <1287472093-20454-2-git-send-email-balbi@ti.com>
+X-Mailer: git-send-email 1.7.3.rc0.35.g8ac8c
+In-Reply-To: <1287472093-20454-1-git-send-email-balbi@ti.com>
+References: <1287472093-20454-1-git-send-email-balbi@ti.com>
+Organization: Texas Instruments\n
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Darius Augulis wrote:
-> 
-> Add support for mini6410 board from FriendlyARM
-> 
-> Signed-off-by: Darius Augulis <augulis.darius@gmail.com>
-> ---
-> 
-> Changelog since v1:
->  - Ben's comments about coding style fixed
-> 
->  arch/arm/mach-s3c64xx/Kconfig         |   10 ++
->  arch/arm/mach-s3c64xx/Makefile        |    1
->  arch/arm/mach-s3c64xx/mach-mini6410.c |  157
-> +++++++++++++++++++++++++++++++++
->  3 files changed, 168 insertions(+), 0 deletions(-)
->  create mode 100644 arch/arm/mach-s3c64xx/mach-mini6410.c
-> 
+From: Ajay Kumar Gupta <ajay.gupta@ti.com>
 
-(snip)
+AM35x has musb interface (version 1.8) and uses CPPI41 DMA engine.
+It has USB phy built inside the IP itself.
 
-> +
-> +MACHINE_START(MINI6410, "MINI6410")
-> +	/* Maintainer: Darius Augulis <augulis.darius@gmail.com> */
-> +	.phys_io	= S3C_PA_UART & 0xfff00000,
-> +	.io_pg_offst	= (((u32)S3C_VA_UART) >> 18) & 0xfffc,
+Signed-off-by: Ajay Kumar Gupta <ajay.gupta@ti.com>
+Acked-by: Tony Lindgren <tony@atomide.com>
+Cc: linux-arm-kernel@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org
+Cc: linux-omap@vger.kernel.org
+Signed-off-by: Felipe Balbi <balbi@ti.com>
+---
+ arch/arm/mach-omap2/board-am3517evm.c |   31 +++++++++++++++++++++++++++++++
+ arch/arm/mach-omap2/usb-musb.c        |    4 ++++
+ arch/arm/plat-omap/include/plat/usb.h |   21 +++++++++++++++++++++
+ 3 files changed, 56 insertions(+), 0 deletions(-)
 
-Now, we no need to add above two members since commit 861bd81ee62a0d6759144c22909a8a3938951656 ("arm: remove machine_desc.io_pg_offst and .phys_io") from the arm tree
-
-> +	.boot_params	= S3C64XX_PA_SDRAM + 0x100,
-> +
-> +	.init_irq	= s3c6410_init_irq,
-> +	.map_io		= mini6410_map_io,
-> +	.init_machine	= mini6410_machine_init,
-> +	.timer		= &s3c24xx_timer,
-> +MACHINE_END
-
-Others, looks ok.
-
-Thanks.
-
-Best regards,
-Kgene.
---
-Kukjin Kim <kgene.kim@samsung.com>, Senior Engineer,
-SW Solution Development Team, Samsung Electronics Co., Ltd.
+diff --git a/arch/arm/mach-omap2/board-am3517evm.c b/arch/arm/mach-omap2/board-am3517evm.c
+index 4d0f585..6d352a2 100644
+--- a/arch/arm/mach-omap2/board-am3517evm.c
++++ b/arch/arm/mach-omap2/board-am3517evm.c
+@@ -35,6 +35,7 @@
+ #include <plat/control.h>
+ #include <plat/usb.h>
+ #include <plat/display.h>
++#include <plat/control.h>
+ 
+ #include "mux.h"
+ 
+@@ -375,6 +376,31 @@ static void __init am3517_evm_init_irq(void)
+ 	omap_gpio_init();
+ }
+ 
++static struct omap_musb_board_data musb_board_data = {
++	.interface_type         = MUSB_INTERFACE_ULPI,
++	.mode                   = MUSB_OTG,
++	.power                  = 500,
++};
++
++static __init void am3517_evm_musb_init(void)
++{
++	u32 devconf2;
++
++	/*
++	 * Set up USB clock/mode in the DEVCONF2 register.
++	 */
++	devconf2 = omap_ctrl_readl(AM35XX_CONTROL_DEVCONF2);
++
++	/* USB2.0 PHY reference clock is 13 MHz */
++	devconf2 &= ~(CONF2_REFFREQ | CONF2_OTGMODE | CONF2_PHY_GPIOMODE);
++	devconf2 |=  CONF2_REFFREQ_13MHZ | CONF2_SESENDEN | CONF2_VBDTCTEN
++			| CONF2_DATPOL;
++
++	omap_ctrl_writel(devconf2, AM35XX_CONTROL_DEVCONF2);
++
++	usb_musb_init(&musb_board_data);
++}
++
+ static const struct ehci_hcd_omap_platform_data ehci_pdata __initconst = {
+ 	.port_mode[0] = EHCI_HCD_OMAP_MODE_PHY,
+ #if defined(CONFIG_PANEL_SHARP_LQ043T1DG01) || \
+@@ -393,6 +419,8 @@ static const struct ehci_hcd_omap_platform_data ehci_pdata __initconst = {
+ 
+ #ifdef CONFIG_OMAP_MUX
+ static struct omap_board_mux board_mux[] __initdata = {
++	/* USB OTG DRVVBUS offset = 0x212 */
++	OMAP3_MUX(SAD2D_MCAD23, OMAP_MUX_MODE0 | OMAP_PIN_INPUT_PULLDOWN),
+ 	{ .reg_offset = OMAP_MUX_TERMINATOR },
+ };
+ #else
+@@ -459,6 +487,9 @@ static void __init am3517_evm_init(void)
+ 				ARRAY_SIZE(am3517evm_i2c1_boardinfo));
+ 	/*Ethernet*/
+ 	am3517_evm_ethernet_init(&am3517_evm_emac_pdata);
++
++	/* MUSB */
++	am3517_evm_musb_init();
+ }
+ 
+ MACHINE_START(OMAP3517EVM, "OMAP3517/AM3517 EVM")
+diff --git a/arch/arm/mach-omap2/usb-musb.c b/arch/arm/mach-omap2/usb-musb.c
+index 33a5cde..7260558 100644
+--- a/arch/arm/mach-omap2/usb-musb.c
++++ b/arch/arm/mach-omap2/usb-musb.c
+@@ -28,6 +28,7 @@
+ 
+ #include <mach/hardware.h>
+ #include <mach/irqs.h>
++#include <mach/am35xx.h>
+ #include <plat/usb.h>
+ 
+ #ifdef CONFIG_USB_MUSB_SOC
+@@ -89,6 +90,9 @@ void __init usb_musb_init(struct omap_musb_board_data *board_data)
+ {
+ 	if (cpu_is_omap243x()) {
+ 		musb_resources[0].start = OMAP243X_HS_BASE;
++	} else if (cpu_is_omap3517() || cpu_is_omap3505()) {
++		musb_resources[0].start = AM35XX_IPSS_USBOTGSS_BASE;
++		musb_resources[1].start = INT_35XX_USBOTG_IRQ;
+ 	} else if (cpu_is_omap34xx()) {
+ 		musb_resources[0].start = OMAP34XX_HSUSB_OTG_BASE;
+ 	} else if (cpu_is_omap44xx()) {
+diff --git a/arch/arm/plat-omap/include/plat/usb.h b/arch/arm/plat-omap/include/plat/usb.h
+index 2a9427c..9feddac 100644
+--- a/arch/arm/plat-omap/include/plat/usb.h
++++ b/arch/arm/plat-omap/include/plat/usb.h
+@@ -218,6 +218,27 @@ static inline omap2_usbfs_init(struct omap_usb_config *pdata)
+ #	define	USBT2TLL5PI		(1 << 17)
+ #	define	USB0PUENACTLOI		(1 << 16)
+ #	define	USBSTANDBYCTRL		(1 << 15)
++/* AM35x */
++/* USB 2.0 PHY Control */
++#define CONF2_PHY_GPIOMODE	(1 << 23)
++#define CONF2_OTGMODE		(3 << 14)
++#define CONF2_NO_OVERRIDE	(0 << 14)
++#define CONF2_FORCE_HOST	(1 << 14)
++#define CONF2_FORCE_DEVICE	(2 << 14)
++#define CONF2_FORCE_HOST_VBUS_LOW (3 << 14)
++#define CONF2_SESENDEN		(1 << 13)
++#define CONF2_VBDTCTEN		(1 << 12)
++#define CONF2_REFFREQ_24MHZ	(2 << 8)
++#define CONF2_REFFREQ_26MHZ	(7 << 8)
++#define CONF2_REFFREQ_13MHZ	(6 << 8)
++#define CONF2_REFFREQ		(0xf << 8)
++#define CONF2_PHYCLKGD		(1 << 7)
++#define CONF2_VBUSSENSE		(1 << 6)
++#define CONF2_PHY_PLLON		(1 << 5)
++#define CONF2_RESET		(1 << 4)
++#define CONF2_PHYPWRDN		(1 << 3)
++#define CONF2_OTGPWRDN		(1 << 2)
++#define CONF2_DATPOL		(1 << 1)
+ 
+ #if defined(CONFIG_ARCH_OMAP1) && defined(CONFIG_USB)
+ u32 omap1_usb0_init(unsigned nwires, unsigned is_device);
+-- 
+1.7.3.rc0.35.g8ac8c
 
