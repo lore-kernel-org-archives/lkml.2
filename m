@@ -1,81 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934017Ab0JSN3I (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Oct 2010 09:29:08 -0400
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:59073 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758611Ab0JSN3C (ORCPT
+	id S1758641Ab0JSNbK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Oct 2010 09:31:10 -0400
+Received: from b-pb-sasl-quonix.pobox.com ([208.72.237.35]:59052 "EHLO
+	sasl.smtp.pobox.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1758542Ab0JSNbI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Oct 2010 09:29:02 -0400
-Date: Tue, 19 Oct 2010 09:28:44 -0400
-From: Neil Horman <nhorman@tuxdriver.com>
-To: Leandro Lucarella <luca@llucax.com.ar>
-Cc: David Miller <davem@davemloft.net>, paul.gortmaker@windriver.com,
-        jon.maloy@ericsson.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, tipc-discussion@lists.sourceforge.net
-Subject: Re: Linux 2.6.35/TIPC 2.0 ABI breaking changes
-Message-ID: <20101019132844.GB14410@hmsreliant.think-freely.org>
-References: <4CBCD429.8090306@windriver.com>
- <20101018234547.GA5703@hmsreliant.think-freely.org>
- <20101019021657.GZ8781@llucax.com.ar>
- <20101019.011649.71113115.davem@davemloft.net>
- <20101019110452.GA14410@hmsreliant.think-freely.org>
- <20101019131936.GB8781@llucax.com.ar>
+	Tue, 19 Oct 2010 09:31:08 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws; d=pobox.com; h=message-id:date
+	:from:mime-version:to:cc:subject:references:in-reply-to
+	:content-type:content-transfer-encoding; q=dns; s=sasl; b=ac0Pr8
+	Rh87ly1OwU2v6YZEjXt9z5bqTzDOwi5Z4ft6Fo5FxhS0Z66uvt9huIOfHEQLeJjg
+	cA3ETAro4JTUw7z3XZ23QdL9FZnpUaxRUTJbOfpr585nvUlL8AmMlichfphM/6/v
+	lMNP/WamGTl7Udy4GezAWSl/C3+uB0eg0yAk4=
+Message-ID: <4CBD9D8C.3080302@pobox.com>
+Date: Tue, 19 Oct 2010 22:30:52 +0900
+From: Shinya Kuribayashi <skuribay@pobox.com>
+User-Agent: Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10.6; en-US;
+ rv:1.9.1.14) Gecko/20101005 Thunderbird/3.0.9
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20101019131936.GB8781@llucax.com.ar>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-Spam-Score: -2.9 (--)
+To: Kevin Cernekee <cernekee@gmail.com>
+CC: Shinya Kuribayashi <shinya.kuribayashi.px@renesas.com>,
+        Ralf Baechle <ralf@linux-mips.org>, linux-mips@linux-mips.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH resend 5/9] MIPS: sync after cacheflush
+References: <17ebecce124618ddf83ec6fe8e526f93@localhost>
+ <17d8d27a2356640a4359f1a7dcbb3b42@localhost> <4CBC4F4E.5010305@pobox.com>
+ <AANLkTinpry=XG-ZDgXJK-VB6QkBL2TO4-vrsV5Tc1eEs@mail.gmail.com>
+ <4CBCE05E.20408@renesas.com>
+ <AANLkTinTaW87RGUZ+o4TL8gzUPGkoR8=7C1e7aYWC9=b@mail.gmail.com>
+In-Reply-To: <AANLkTinTaW87RGUZ+o4TL8gzUPGkoR8=7C1e7aYWC9=b@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Pobox-Relay-ID: 1E1DF384-DB85-11DF-B10A-89B3016DD5F0-47602734!b-pb-sasl-quonix.pobox.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 19, 2010 at 10:19:36AM -0300, Leandro Lucarella wrote:
-> Neil Horman, el 19 de octubre a las 07:04 me escribiste:
-> > On Tue, Oct 19, 2010 at 01:16:49AM -0700, David Miller wrote:
-> > > From: Leandro Lucarella <luca@llucax.com.ar>
-> > > Date: Mon, 18 Oct 2010 23:16:57 -0300
-> > > 
-> > > > 
-> > > > The problem is not between the tipc stacks in different hosts, is
-> > > > between the tipc stack and the applications using it (well, maybe
-> > > > there is a problem somewhere else too).
-> > > > 
-> > > > This was a deliberate API change, not a subtle bug...
-> > > 
-> > > Neil et al., if these packets live only between the kernel stack
-> > > and the userspace API layer, we should not be byte-swapping this
-> > > stuff and we need to fix this fast.
-> > > 
-> > Copy that Dave.  I think I see the problem.  The subscription code handles
-> > messages both off the wire and from local user space.  The off the wire case
-> > should work because the subscription code assumes that all the incomming data is
-> > in network byte order, but user space is an exception to that rule as its in
-> > local byte order.  I'll have a patch together for Leandro to test soon.
-> > Neil
-> 
-> Thank you very much. Bare in mind that the byte order is just one of the
-> problems, the other problem is the change in the value of
-> TIPC_SUB_SERVICE from 2 to 0. That too is breaking the API/ABI, as
-> a message with a filter value of 2 is rejected by TIPC 2.0/2.6.35+.
-> 
-Yeah, that was the format change.  We might just need to revert that.  Lets see
-about getting the endianess issue straight, and we'll go from there.
-Neil
+On 10/19/10 9:51 AM, Kevin Cernekee wrote:
+> Correct.  This particular system makes no guarantees that data flushed
+> out through CACHE operations will not overtake subsequent uncached
+> stores.
 
-> -- 
-> Leandro Lucarella (AKA luca)                     http://llucax.com.ar/
-> ----------------------------------------------------------------------
-> GPG Key: 5F5A8D05 (F8CD F9A7 BF00 5431 4145  104C 949E BFB6 5F5A 8D05)
-> ----------------------------------------------------------------------
-> Dentro de 30 años Argentina va a ser un gran supermercado con 15
-> changuitos, porque esa va a ser la cantidad de gente que va a poder
-> comprar algo.
-> 	-- Sidharta Wiki
-> --
-> To unsubscribe from this list: send the line "unsubscribe netdev" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+Thanks for the clarification, understood.  So we only need to take care
+of the order of out-bound data write transactions at the processor end,
+and preceding uncached load is not required here.   Sorry for the noise.
+
+   Shinya
