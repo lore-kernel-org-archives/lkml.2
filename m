@@ -1,112 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754779Ab0JSSYZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Oct 2010 14:24:25 -0400
-Received: from mail.digidescorp.com ([66.244.163.200]:53870 "EHLO
-	digidescorp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751531Ab0JSSYY (ORCPT
+	id S1754087Ab0JSSZs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Oct 2010 14:25:48 -0400
+Received: from cpoproxy2-pub.bluehost.com ([67.222.39.38]:45397 "HELO
+	cpoproxy2-pub.bluehost.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1752599Ab0JSSZq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Oct 2010 14:24:24 -0400
-X-Spam-Processed: digidescorp.com, Tue, 19 Oct 2010 13:24:22 -0500
-X-Authenticated-Sender: steve@digidescorp.com
-X-MDRemoteIP: 12.54.16.226
-X-Return-Path: prvs=19087ec99f=steve@digidescorp.com
-X-Envelope-From: steve@digidescorp.com
-X-MDaemon-Deliver-To: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V2] nommu: add anonymous page memcg accounting
-From: "Steven J. Magnani" <steve@digidescorp.com>
-Reply-To: steve@digidescorp.com
-To: balbir@linux.vnet.ibm.com
-Cc: linux-mm@kvack.org, dhowells@redhat.com, linux-kernel@vger.kernel.org,
-        kamezawa.hiroyu@jp.fujitsu.com
-In-Reply-To: <20101019154819.GC15844@balbir.in.ibm.com>
-References: <1287491654-4005-1-git-send-email-steve@digidescorp.com>
-	 <20101019154819.GC15844@balbir.in.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Digital Design Corporation
-Date: Tue, 19 Oct 2010 13:24:17 -0500
-Message-ID: <1287512657.2500.31.camel@iscandar.digidescorp.com>
+	Tue, 19 Oct 2010 14:25:46 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
+	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
+	b=bqCBh2iyss6BtUT4g9zopX5We24v/FTShuUO6u+9hEa5JwwAG7kZCNyWNTDtNHLaM19H6lDbHGM0je6e+LdMxbqR/f1/ag1vRy0Tp6hwywWGT/ieAjNDZ3zH3Cp9Yxni;
+Date: Tue, 19 Oct 2010 11:24:39 -0700
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+To: Ram Pai <linuxram@us.ibm.com>
+Cc: Bjorn Helgaas <bjorn.helgaas@hp.com>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org, clemens@ladisch.de,
+        Yinghai Lu <yinghai@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [RFC v2 PATCH 1/1] PCI: override BIOS/firmware resource
+ allocation
+Message-ID: <20101019112439.53c4901e@jbarnes-desktop>
+In-Reply-To: <20101019171740.GC8437@ram-laptop>
+References: <20101006225834.GE2945@ram-laptop>
+	<201010081416.57454.bjorn.helgaas@hp.com>
+	<20101012070515.GA549@ram-laptop>
+	<201010121301.54402.bjorn.helgaas@hp.com>
+	<20101018131010.0e4771eb@jbarnes-desktop>
+	<20101019171740.GC8437@ram-laptop>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.174.193.198 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-10-19 at 21:18 +0530, Balbir Singh wrote:
-> * Steven J. Magnani <steve@digidescorp.com> [2010-10-19 07:34:14]:
+On Tue, 19 Oct 2010 10:17:40 -0700
+Ram Pai <linuxram@us.ibm.com> wrote:
+> > So where do we stand with this machine's problem?
 > 
-> > Add the necessary calls to track VM anonymous page usage (only).
-> > 
-> > V2 changes:
-> > * Added update of memory cgroup documentation
-> > * Clarify use of 'file' to distinguish anonymous mappings
-> > 
-> > Signed-off-by: Steven J. Magnani <steve@digidescorp.com>
-> > ---
-> > diff -uprN a/Documentation/cgroups/memory.txt b/Documentation/cgroups/memory.txt
-> > --- a/Documentation/cgroups/memory.txt	2010-10-05 09:14:36.000000000 -0500
-> > +++ b/Documentation/cgroups/memory.txt	2010-10-19 07:28:04.000000000 -0500
-> > @@ -34,6 +34,7 @@ Current Status: linux-2.6.34-mmotm(devel
-> > 
-> >  Features:
-> >   - accounting anonymous pages, file caches, swap caches usage and limiting them.
-> > +   NOTE: On NOMMU systems, only anonymous pages are accounted.
-> >   - private LRU and reclaim routine. (system's global LRU and private LRU
-> >     work independently from each other)
-> >   - optionally, memory+swap usage can be accounted and limited.
-> > @@ -640,7 +641,30 @@ At reading, current status of OOM is sho
-> >  	under_oom	 0 or 1 (if 1, the memory cgroup is under OOM, tasks may
-> >  				 be stopped.)
-> > 
-> > -11. TODO
-> > +11. NOMMU Support
-<snip>
-> > +
-> > +At the present time, only anonymous pages are included in NOMMU memory cgroup
-> > +accounting.
+> I think, this machine with the latest mainline kernel, will see memory resource
+> allocation failure messages. Since the latest kernel does not release and retry
+> to allocate resources, the io resources allocated by the BIOS continue to stay
+> put and hence the problem is masked.
 > 
-> What is the reason for tracking just anonymous memory?
-
-Tracking more than that is beyond my current scope, and perhaps of
-limited benefit under an assumption that NOMMU systems don't usually
-work with large files. The limitations of the implementation are
-documented, so hopefully anyone who needs more functionality will know
-that they need to implement it.
-
-> > diff -uprN a/mm/nommu.c b/mm/nommu.c
-> > --- a/mm/nommu.c	2010-10-13 08:20:38.000000000 -0500
-> > +++ b/mm/nommu.c	2010-10-13 08:24:06.000000000 -0500
-<snip>
-> > @@ -1117,9 +1125,27 @@ static int do_mmap_private(struct vm_are
-> >  		set_page_refcounted(&pages[point]);
-> > 
-> >  	base = page_address(pages);
-> > -	region->vm_flags = vma->vm_flags |= VM_MAPPED_COPY;
-> > +
-> >  	region->vm_start = (unsigned long) base;
-> >  	region->vm_end   = region->vm_start + rlen;
-> > +
-> > +	/* Only anonymous pages are charged, currently */
-> > +	if (!vma->vm_file) {
-> > +		for (point = 0; point < total; point++) {
-> > +			int charge_failed =
-> > +				mem_cgroup_newpage_charge(&pages[point],
-> > +							  current->mm,
+> However, any attempt to release and reallocate the resource on that machine
+> will fail; because as pointed out by Bjorn, there is some weird allocation
+> behavior in the current code. Unfortunately I cannot trigger that behavior on
+> any of my machines. 
 > 
-> Is current->mm same as vma->vm_mm? I think vma->vm_mm is cleaner.
+> I have requested data from Peter, who originally reported the problem. 
+> Hope he still has his setup with the Xonar card available for debugging.
+> 
+> Anyway, I do see a smoking gun in pbus_size_io() and pbus_size_mem().  They
+> call resource_size() to find the size requirement of resources of all devices
+> behind the bridge.  However for resources whose start and size are set to zero,
+> resource_size() returns one. Later ALIGN() rounds it up to the next higher
+> alignment boundary.
 
-I agree, but at the time this code runs, vma->vm_mm is NULL except for
-an executable file mapping - which is not the case for the anonymous
-pages we are trying to track. I will look into modifying do_mmap_pgoff()
-to set vm_mm before invoking do_mmap_private(); if that can be done
-without side effects, I'll change the code here as you suggest.
+Right, if there are no devices with actual sizes behind a given bridge
+window we shouldn't bother to allocate space (that may mean
+re-allocation later if a device is added, but that needs extra work
+anyway).
 
-Thanks for the quick review.
-------------------------------------------------------------------------
- Steven J. Magnani               "I claim this network for MARS!
- www.digidescorp.com              Earthling, return my space modulator!"
+And like Bjorn said, I/O sizing has special requirements for PCI-PCI
+bridges, but for others we may be able to make the windows smaller.
 
- #include <standard.disclaimer>
+> > Ram, do you have other machines that require your override patch?
+> 
+> Yes, I have a couple of machines whose BIOS is unaware of SRIOV resources,
+> These machines need the override patch. :(
 
+Ok, but hopefully we can make those machines work without extra kernel
+options; at worst maybe we can special case SRIOV resources and cause
+them to trigger more aggressive reallocation.
 
+> > Until we understand what's failing and why, I'm hesitant to apply a
+> > patch that will work around the problem but require an extra kernel
+> > parameter.
+> 
+> We have already come a full circle here.  The original approach was
+> reverted because it regressed a platform. Now we are rejecting this
+> approach because we want the original approach. 
+
+Well the original approach had several problems:
+  - unclear try= parameter
+  - undocumented and ad-hoc reallocation behavior
+  - poor (well, lack of) overall design
+
+The root of the issue is still that we have poor data on where we're
+allowed to put device resources.  Bjorn has been improving this, along
+with changing the way we do allocations so as to avoid problem areas,
+but ultimately this is the area where we need the most work.
+
+We've tried and failed to add chipset specific drivers to give us safe
+ranges, but those just can't keep up with the number of platforms and
+variations out there.  On x86, I think the only reasonable approach is
+to use the platforms as designed, i.e. use the resources Windows uses
+and in the way Windows uses them.  Anything else just means we'll be
+playing catch up.
+
+As special cases arise (i.e. ways we use the platform that depart from
+its original design and Windows version), as I suspect this SRIOV issue
+is, we may need to apply additional conditions.  But I'd like to avoid
+that if at all possible.
+
+So on that note, does Windows on these machines support allocation of
+SRIOV resources?  If so, how is it handled?  Which resource ranges are
+used for the extra BARs?
+
+-- 
+Jesse Barnes, Intel Open Source Technology Center
