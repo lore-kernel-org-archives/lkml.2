@@ -1,117 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933042Ab0JSAV0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Oct 2010 20:21:26 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:52037 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753667Ab0JSAVY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Oct 2010 20:21:24 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:content-transfer-encoding
-         :in-reply-to:user-agent;
-        b=cri6CE3BSo+PwRTTHA2YZPFfR+amQE/9ZHgeFm1/qU5oOf6Fepzct3A0gYhKnSEoQ5
-         b9/O/ZVuCbxc4oUtaz8FqT6HnDzme9iW0iCmPXrTXMpmV7QfJu9nxbiQu6TQ9RulpRLG
-         WZqeFXMYBGhco0fxDCAEYeHIPMNptN5z7ZeIg=
-Date: Tue, 19 Oct 2010 02:20:31 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Brian Gitonga Marete <marete@toshnix.com>, Ingo Molnar <mingo@elte.hu>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [PATCH] [PERF] (Userspace Tools) Fix a compilation error with
-	-fstack-protector and -Werror
-Message-ID: <20101019002030.GD5370@nowhere>
-References: <AANLkTinHc7tMntW5NFAhu40RC7m2=HwbqOBeE-21vL8J@mail.gmail.com> <20101018233834.GC5370@nowhere> <AANLkTi=Ssz4WdMDXq-93GE9bPHoaQ8QyTSrWXDSCa7eH@mail.gmail.com>
+	id S933047Ab0JSAab (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Oct 2010 20:30:31 -0400
+Received: from antispam02.maxim-ic.com ([205.153.101.183]:42650 "EHLO
+	antispam02.maxim-ic.com.maxim-ic.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754855Ab0JSAa3 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Oct 2010 20:30:29 -0400
+X-ASG-Debug-ID: 1287448228-6cb0ca8c0001-xx1T2L
+X-Barracuda-Envelope-From: Peter.Hsiang@maxim-ic.com
+From: Peter Hsiang <Peter.Hsiang@maxim-ic.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: Stephen Rothwell <sfr@canb.auug.org.au>,
+        Liam Girdwood <lrg@slimlogic.co.uk>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Mon, 18 Oct 2010 17:30:39 -0700
+X-ASG-Orig-Subj: RE: linux-next: build failure after merge of the sound-asoc tree
+Subject: RE: linux-next: build failure after merge of the sound-asoc tree
+Thread-Topic: linux-next: build failure after merge of the sound-asoc tree
+Thread-Index: ActvIbnhrGtQDxy9RKydlrXuSQRBRQAAZkbQ
+Message-ID: <B2150E1E4418E1438554A300EA5040E40D471A4297@ITSVLEX06.it.maxim-ic.internal>
+References: <20101018142934.65f5d0fa.sfr@canb.auug.org.au>
+ <B2150E1E4418E1438554A300EA5040E40D47140D97@ITSVLEX06.it.maxim-ic.internal>
+ <20101019000730.GA27248@opensource.wolfsonmicro.com>
+In-Reply-To: <20101019000730.GA27248@opensource.wolfsonmicro.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTi=Ssz4WdMDXq-93GE9bPHoaQ8QyTSrWXDSCa7eH@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+X-OriginalArrivalTime: 19 Oct 2010 00:30:52.0225 (UTC) FILETIME=[E2A65B10:01CB6F24]
+X-Barracuda-Connect: terlingua.dalsemi.com[180.0.34.46]
+X-Barracuda-Start-Time: 1287448228
+X-Barracuda-URL: http://AntiSpam02.maxim-ic.com:8000/cgi-mod/mark.cgi
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 19, 2010 at 03:06:41AM +0300, Brian Gitonga Marete wrote:
-> On Tue, Oct 19, 2010 at 2:38 AM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
-> > On Tue, Oct 19, 2010 at 02:24:00AM +0300, Brian Gitonga Marete wrote:
-> >> The following patch fixes compilation of the perf user-space tools on,
-> >> for example, gcc version 4.3.3 (Ubuntu 4.3.3-5ubuntu4) . It should not
-> >> break anything else.
-> >
-> >
-> >
-> > Hi,
-> >
-> > What kind of warning have you encountered and why it fixes it?
-> > Can you describe that in your changelog?
-> >
+On Mon, Oct 18, 2010, Mark Brown wrote:
+> On Mon, Oct 18, 2010 at 01:25:12PM -0700, Peter Hsiang wrote:
 > 
-> Hello Frederic,
+> > This message seems to be saying that this header file is missing.
+> > However, this header file was included in the patch that was submitted,
+> > and it did compile fine here before the submit.
+> > I don't understand why it's not there after it was applied?
 > 
-> Some versions of gcc, e.g. gcc version 4.3.3 (Ubuntu 4.3.3-5ubuntu4), have
-> the (default) minimum size of buffers protected by `-fstack-protector' set
-> to 8. But in perf, there exist much smaller automatic buffers.
-> 
-> This in combination with the -fstack-protector-all, -Werror and
-> -Wstack-protector causes the compile to fail for such a compiler.
-> 
-> The error encountered with the above-mentioned compiler is:
-> 
-> gcc -o util/ui/util.o -c -ggdb3 -Wall -Wextra -std=gnu99 -Werror -O6
-> -D_FORTIFY_SOURCE=2 -Wformat -Wformat-security -Wformat-y2k -Wshadow
-> -Winit-self -Wpacked -Wredundant-decls -Wstack-protector
-> -Wstrict-aliasing=3 -Wswitch-default -Wswitch-enum -Wno-system-headers
-> -Wundef -Wvolatile-register-var -Wwrite-strings -Wbad-function-cast
-> -Wmissing-declarations -Wmissing-prototypes -Wnested-externs
-> -Wold-style-definition -Wstrict-prototypes
-> -Wdeclaration-after-statement  -fstack-protector-all
-> -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -Iutil/include
-> -Iarch/x86/include -DLIBELF_NO_MMAP -I/usr/include/elfutils
-> -DDWARF_SUPPORT -I/usr/include/slang -DSHA1_HEADER='<openssl/sha.h>'
-> util/ui/util.c
-> cc1: warnings being treated as errors
-> util/ui/util.c: In function ‘ui__dialog_yesno’:
-> util/ui/util.c:110: error: not protecting function: no buffer at least
-> 8 bytes long
+> Your patch was apparently not generated against the mainline Makefile or
+> Kconfig and the automated conflict resolution tool I used (which is
+> normally fairly reliable) appears to have misplaced the header.  I've
+> restored the driver with the readdition of the header.
 
-
-Doh! So that was the reason of this warning. Yeah looks like a right fix.
-And that fixes the issue for me.
-
-Tested-by: Frederic Weisbecker <fweisbec@gmail.com>
-
+.../pub/scm/linux/kernel/git/next/linux-next.git  Right?
 Thanks!
 
-
-> 
-> Signed-off-by: Brian Gitonga Marete <marete@toshnix.com>
-> ---
->  tools/perf/Makefile |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-> index 1950e19..64eb2ea 100644
-> --- a/tools/perf/Makefile
-> +++ b/tools/perf/Makefile
-> @@ -288,7 +288,7 @@ endif
->  -include feature-tests.mak
-> 
->  ifeq ($(call try-cc,$(SOURCE_HELLO),-Werror -fstack-protector-all),y)
-> -	CFLAGS := $(CFLAGS) -fstack-protector-all
-> +	CFLAGS := $(CFLAGS) -fstack-protector-all --param ssp-buffer-size=1
->  endif
-> 
-> 
-> -- 
-> 1.6.0.4
-> 
-> 
-> -- 
-> Brian Gitonga Marete
-> Toshnix Systems
-> Tel: +254722151590
+Peter
 
