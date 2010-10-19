@@ -1,69 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757349Ab0JSUm3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Oct 2010 16:42:29 -0400
-Received: from cantor.suse.de ([195.135.220.2]:34872 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753662Ab0JSUm1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Oct 2010 16:42:27 -0400
-Date: Tue, 19 Oct 2010 22:41:28 +0200
-From: Jan Kara <jack@suse.cz>
-To: Namhyung Kim <namhyung@gmail.com>
-Cc: Jan Kara <jack@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
-        Andreas Dilger <adilger.kernel@dilger.ca>, linux-ext4@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ext3: Check return value of sb_getblk()
-Message-ID: <20101019204127.GB3487@quack.suse.cz>
-References: <1287470061-4158-1-git-send-email-namhyung@gmail.com>
- <1287475049.1705.2.camel@leonhard>
+	id S1757412Ab0JSUns (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Oct 2010 16:43:48 -0400
+Received: from alerce.vps.bitfolk.com ([212.13.194.134]:4068 "EHLO
+	alerce.vps.bitfolk.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753741Ab0JSUnq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Oct 2010 16:43:46 -0400
+Date: Tue, 19 Oct 2010 17:43:12 -0300
+From: Leandro Lucarella <luca@llucax.com.ar>
+To: Neil Horman <nhorman@tuxdriver.com>
+Cc: David Miller <davem@davemloft.net>, paul.gortmaker@windriver.com,
+        jon.maloy@ericsson.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, tipc-discussion@lists.sourceforge.net
+Subject: Re: Linux 2.6.35/TIPC 2.0 ABI breaking changes
+Message-ID: <20101019204312.GH8781@llucax.com.ar>
+References: <4CBCD429.8090306@windriver.com>
+ <20101018234547.GA5703@hmsreliant.think-freely.org>
+ <20101019021657.GZ8781@llucax.com.ar>
+ <20101019.011649.71113115.davem@davemloft.net>
+ <20101019110452.GA14410@hmsreliant.think-freely.org>
+ <20101019131936.GB8781@llucax.com.ar>
+ <20101019201841.GC14410@hmsreliant.think-freely.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1287475049.1705.2.camel@leonhard>
+In-Reply-To: <20101019201841.GC14410@hmsreliant.think-freely.org>
+X-Paranoid: Just because you're paranoid, don't mean they're not after you.
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 19-10-10 16:57:29, Namhyung Kim wrote:
-> 2010-10-19 (화), 15:34 +0900, Namhyung Kim:
-> > Check return value of sb_getblk() is NULL. unlikely is addded here
-> > since it is called from a loop and we've been OK without the check
-> > until now.
-> > 
-> > Signed-off-by: Namhyung Kim <namhyung@gmail.com>
-> > ---
-> >  fs/ext3/inode.c |    6 ++++++
-> >  1 files changed, 6 insertions(+), 0 deletions(-)
-> > 
-> > diff --git a/fs/ext3/inode.c b/fs/ext3/inode.c
-> > index ef1c23a..a7ac778 100644
-> > --- a/fs/ext3/inode.c
-> > +++ b/fs/ext3/inode.c
-> > @@ -655,6 +655,12 @@ static int ext3_alloc_branch(handle_t *handle, struct inode *inode,
-> >  		 * parent to disk.
-> >  		 */
-> >  		bh = sb_getblk(inode->i_sb, new_blocks[n-1]);
-> > +		if (unlikely(!bh)) {
-> > +			n--;
-> > +			err = -ENOMEM;
-> > +			goto failed;
-> > +		}
-> > +
-> >  		branch[n].bh = bh;
-> >  		lock_buffer(bh);
-> >  		BUFFER_TRACE(bh, "call get_create_access");
-> 
-> Maybe EIO would be more proper error code, I guess.
-  Hmm, for ext3, sb_getblk() cannot really realistically fail. Block
-numbers are 32-bit so they can never be big enough to overflow pagecache
-index and grow_buffers() loops indefinitely if it cannot allocate buffers.
-But OK, EIO might be a reasonable return value and we can have the check
-there just in case sb_getblk() grows some other possiblility to fail.
+Neil Horman, el 19 de octubre a las 16:18 me escribiste:
+> Hey all-
+> 	Heres what I have so far.  Dave as a heads up please don't apply this
+> yet.  I'd like to go over it a bit more and be sure of the implications here
+> before I post it for inclusion officially.  I wanted Leandro to have a copy
+> though so he could confirm functionality for us.  Leandro, This patch lets me
+> pass the tipc test code for TIPC 1.6 that you posted earlier this morning.  If
+> you could confirm that it works for you that would be grand.  While your doing
+> that, I want to read over the spec for TIPC and make sure that I'm not breaking
+> anything new with this patch.
 
-								Honza
+Thanks for the quick response. I didn't tried the patch yet, but I think
+spotted an error:
+
+> diff --git a/include/linux/tipc.h b/include/linux/tipc.h
+> index 181c8d0..d8de884 100644
+> --- a/include/linux/tipc.h
+> +++ b/include/linux/tipc.h
+> @@ -127,9 +127,10 @@ static inline unsigned int tipc_node(__u32 addr)
+>   * TIPC topology subscription service definitions
+>   */
+>  
+> -#define TIPC_SUB_SERVICE     	0x00  	/* Filter for service availability    */
+> -#define TIPC_SUB_PORTS     	0x01  	/* Filter for port availability  */
+> +#define TIPC_SUB_SERVICE     	0x01  	/* Filter for service availability    */
+> +#define TIPC_SUB_PORTS     	0x02  	/* Filter for port availability  */
+>  #define TIPC_SUB_CANCEL         0x04    /* Cancel a subscription         */
+> +#define TIPC_SUB_MASK		(TIPC_SUB_SERVICE|TIPC_SUB_PORTS|TIPC_SUB_CANCEL)
+>  
+>  #define TIPC_WAIT_FOREVER	~0	/* timeout for permanent subscription */
+>  
+
+The values of TIPC_SUB_SERVICE and TIPC_SUB_PORTS seem to be swapped
+compared to the old (TIPC 1.6) values:
+#define TIPC_SUB_PORTS     	0x01  	/* filter for port availability */
+#define TIPC_SUB_SERVICE     	0x02  	/* filter for service availability */
+
+You might missed this error when trying the code I posted earlier (which
+BTW are the official TIPC demos) because the change of behaviour when
+using TIPC_SUB_SERVICE and TIPC_SUB_PORTS is very subtle (the former
+reports only the first published port name that matches, and the later
+all the published ports that match).
+
+I'll test the patch tomorrow morning (ART).
+
+Thanks again.
 
 -- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+Leandro Lucarella (AKA luca)                     http://llucax.com.ar/
+----------------------------------------------------------------------
+GPG Key: 5F5A8D05 (F8CD F9A7 BF00 5431 4145  104C 949E BFB6 5F5A 8D05)
+----------------------------------------------------------------------
+Long you live and high you fly
+And smiles you'll give and tears you'll cry
+And all you touch and all you see
+Is all your life will ever be.
