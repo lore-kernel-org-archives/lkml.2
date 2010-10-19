@@ -1,614 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756650Ab0JSRHQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Oct 2010 13:07:16 -0400
-Received: from zone0.gcu-squad.org ([212.85.147.21]:32766 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756507Ab0JSRHO (ORCPT
+	id S1756567Ab0JSRIe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Oct 2010 13:08:34 -0400
+Received: from static-64-22-42-202.albyny.csvoip.net ([64.22.42.202]:14337
+	"EHLO svr3.sixnetio.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754071Ab0JSRId convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Oct 2010 13:07:14 -0400
-Date: Tue, 19 Oct 2010 19:06:47 +0200
-From: Jean Delvare <khali@linux-fr.org>
-To: Guenter Roeck <guenter.roeck@ericsson.com>
-Cc: Ben Dooks <ben-linux@fluff.org>, Rodolfo Giometti <giometti@linux.it>,
-        <linux-i2c@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2] i2c/mux: Driver for PCA9541 I2C Master Selector
-Message-ID: <20101019190647.314302e7@endymion.delvare>
-In-Reply-To: <1286932516-20689-1-git-send-email-guenter.roeck@ericsson.com>
-References: <1286932516-20689-1-git-send-email-guenter.roeck@ericsson.com>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 19 Oct 2010 13:08:33 -0400
+X-Greylist: delayed 1210 seconds by postgrey-1.27 at vger.kernel.org; Tue, 19 Oct 2010 13:08:33 EDT
+x-mimeole: Produced By Microsoft Exchange V6.5
+Content-class: urn:content-classes:message
+MIME-Version: 1.0
+Content-Type: text/plain;
+	charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+Subject: [PATCH] macb: Don't re-enable interrupts while in polling mode
+Date: Tue, 19 Oct 2010 12:48:22 -0400
+Message-ID: <C8F551D39A7C724E987CF8DD11D3178304D02F88@svr3.sixnetio.com>
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+Thread-Topic: [PATCH] macb: Don't re-enable interrupts while in polling mode
+Thread-Index: ActvrXDME7aDjFv0SLipITCL9taFtA==
+From: "Joshua Hoke" <Joshua.Hoke@sixnet.com>
+To: "Nicolas Ferre" <nicolas.ferre@atmel.com>
+Cc: "David S. Miller" <davem@davemloft.net>, "Jiri Pirko" <jpirko@redhat.com>,
+        "Peter Korsgaard" <peter.korsgaard@barco.com>,
+        "Eric Dumazet" <eric.dumazet@gmail.com>,
+        "Haavard Skinnemoen" <haavard.skinnemoen@atmel.com>,
+        <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        "Andrew Morton" <akpm@linux-foundation.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Guenter,
+From: Joshua Hoke <joshua.hoke@sixnet.com>
 
-On Tue, 12 Oct 2010 18:15:16 -0700, Guenter Roeck wrote:
-> This patch adds support for PCA9541, an I2C Bus Master Selector.
-> The driver is modeled as single channel I2C Multiplexer to be able to utilize
-> the I2C multiplexer framework.
-> 
-> Signed-off-by: Guenter Roeck <guenter.roeck@ericsson.com>
-> Reviewed-by: Tom Grennan <tom.grennan@ericsson.com>
-> ---
-> v2 changes:
-> - Added more detailed description and reasoning why the driver was implemented
->   as single-channel multiplexer.
-> - Modified arbitration algorithm, since access to i2c masters from interrupt
->   level is not a good idea. Instead of using hrtimers and handling arbitration
->   in interrupt, handle it from select_chan and either delay for short retry
->   periods or sleep for long (millisecond) periods.
-> 
->  drivers/i2c/muxes/Kconfig   |   10 +
->  drivers/i2c/muxes/Makefile  |    1 +
->  drivers/i2c/muxes/pca9541.c |  397 +++++++++++++++++++++++++++++++++++++++++++
->  3 files changed, 408 insertions(+), 0 deletions(-)
->  create mode 100644 drivers/i2c/muxes/pca9541.c
+[PATCH] macb: Don't re-enable interrupts while in polling mode
 
-Sorry for the late reply. I hoped to find the time to review your
-driver in depth with the datasheet, but finally didn't, so here is a
-shorter review.
+On a busy network, the macb driver could get stuck in the interrupt
+handler, quickly triggering the watchdog, due to a confluence of
+factors:
 
-Your model seems sane as long as the Linux host only controls one of
-the masters. If the two masters are controlled by the Linux host, the
-slave bus segment will appear twice but you will only be able to
-instantiate an I2C client device on one of them for each device,
-otherwise the same device will be listed twice.
+ 1. macb_poll re-enables interrupts unconditionally, even when it will
+    be called again because it exhausted its rx budget
 
-If we have to support this, the i2c core will need some rework, as an
-i2c_client would have to be allowed to have more than one parent.
+ 2. macb_interrupt only disables interrupts after scheduling
+    macb_poll, but scheduling fails when macb_poll is already scheduled
+    because it didn't call napi_complete
 
-> 
-> diff --git a/drivers/i2c/muxes/Kconfig b/drivers/i2c/muxes/Kconfig
-> index 4c9a99c..4d91d80 100644
-> --- a/drivers/i2c/muxes/Kconfig
-> +++ b/drivers/i2c/muxes/Kconfig
-> @@ -5,6 +5,16 @@
->  menu "Multiplexer I2C Chip support"
->  	depends on I2C_MUX
->  
-> +config I2C_MUX_PCA9541
-> +	tristate "NXP PCA9541 I2C Master Selector"
-> +	depends on EXPERIMENTAL
-> +	help
-> +	  If you say yes here you get support for the NXP PCA9541
-> +	  I2C Master Selector.
-> +
-> +	  This driver can also be built as a module.  If so, the module
-> +	  will be called pca9541.
-> +
->  config I2C_MUX_PCA954x
->  	tristate "Philips PCA954x I2C Mux/switches"
->  	depends on EXPERIMENTAL
-> diff --git a/drivers/i2c/muxes/Makefile b/drivers/i2c/muxes/Makefile
-> index bd83b52..4e27d0d 100644
-> --- a/drivers/i2c/muxes/Makefile
-> +++ b/drivers/i2c/muxes/Makefile
-> @@ -1,6 +1,7 @@
->  #
->  # Makefile for multiplexer I2C chip drivers.
->  
-> +obj-$(CONFIG_I2C_MUX_PCA9541)	+= pca9541.o
->  obj-$(CONFIG_I2C_MUX_PCA954x)	+= pca954x.o
->  
->  ifeq ($(CONFIG_I2C_DEBUG_BUS),y)
-> diff --git a/drivers/i2c/muxes/pca9541.c b/drivers/i2c/muxes/pca9541.c
-> new file mode 100644
-> index 0000000..3a17e29
-> --- /dev/null
-> +++ b/drivers/i2c/muxes/pca9541.c
-> @@ -0,0 +1,397 @@
-> +/*
-> + * I2C multiplexer driver for pca9541 bus master selector
+ 3. macb_interrupt loops until the interrupt status register is clear,
+    which will never happen in this case if the driver doesn't disable
+    the RX interrupt
 
-I tend to use capitals when I mean device names, and lower-case letters
-when I refer to the drivers.
+Since macb_interrupt runs in interrupt context, this effectively locks
+up the machine, triggering the hardware watchdog.
 
-> + *
-> + * Copyright (c) 2010 Ericsson AB.
-> + *
-> + * Author: Guenter Roeck <guenter.roeck@ericsson.com>
-> + *
-> + * Derived from:
-> + *  driver/i2c/muxes/pca954x.c
+This issue was readily reproducible on a flooded network with a
+modified 2.6.27.48 kernel. The same problem appears to still be in the
+2.6.36-rc8 driver code, so I am submitting this patch against that
+version. I have not tested this version of the patch except to make
+sure the kernel compiles.
 
-Avoid full paths in comments, they don't add value and tend to become
-incorrect after some time.
+Signed-off-by: Joshua Hoke <joshua.hoke@sixnet.com>
 
-> + *
-> + *  Copyright (c) 2008-2009 Rodolfo Giometti <giometti@linux.it>
-> + *  Copyright (c) 2008-2009 Eurotech S.p.A. <info@eurotech.it>
-> + *
-> + * This file is licensed under the terms of the GNU General Public
-> + * License version 2. This program is licensed "as is" without any
-> + * warranty of any kind, whether express or implied.
-> + */
-> +
-> +#include <linux/module.h>
-> +#include <linux/init.h>
-> +#include <linux/hrtimer.h>
+---
 
-You no longer need this. OTOH you would need to include
-<linux/jiffies.h> for time_is_after_eq_jiffies, and <linux/delay.h> for
-udelay and msleep.
+I'm submitting this at the request of Andrew Morton in this bug:
 
-> +#include <linux/slab.h>
-> +#include <linux/device.h>
-> +#include <linux/i2c.h>
-> +#include <linux/i2c-mux.h>
-> +
-> +#include <linux/i2c/pca954x.h>
-> +
-> +/*
-> + * The PCA9541 is a bus master selector. It supports two I2C masters connected
-> + * to a single slave bus.
-> + *
-> + * Before each bus transaction, a master has to acquire the bus. After the
-> + * transaction is complete, bus ownership has to be released. This fits well
-> + * into the I2C multiplexer framework, which provides select and release
-> + * functions for this purpose. For this reason, this driver is modeled as
-> + * single-channel I2C bus multiplexer.
-> + */
-> +
-> +#define PCA9541_CONTROL		0x01
-> +#define PCA9541_ISTAT		0x02
-> +
-> +#define PCA9541_CTL_MYBUS	(1 << 0)
-> +#define PCA9541_CTL_NMYBUS	(1 << 1)
-> +#define PCA9541_CTL_BUSON	(1 << 2)
-> +#define PCA9541_CTL_NBUSON	(1 << 3)
-> +#define PCA9541_CTL_BUSINIT	(1 << 4)
-> +#define PCA9541_CTL_TESTON	(1 << 6)
-> +#define PCA9541_CTL_NTESTON	(1 << 7)
-> +
-> +#define PCA9541_ISTAT_INTIN	(1 << 0)
-> +#define PCA9541_ISTAT_BUSINIT	(1 << 1)
-> +#define PCA9541_ISTAT_BUSOK	(1 << 2)
-> +#define PCA9541_ISTAT_BUSLOST	(1 << 3)
-> +#define PCA9541_ISTAT_MYTEST	(1 << 6)
-> +#define PCA9541_ISTAT_NMYTEST	(1 << 7)
-> +
-> +#define BUSON		(PCA9541_CTL_BUSON | PCA9541_CTL_NBUSON)
-> +#define MYBUS		(PCA9541_CTL_MYBUS | PCA9541_CTL_NMYBUS)
-> +#define mybus(x)	(!((x) & MYBUS) || ((x) & MYBUS) == MYBUS)
-> +#define busoff(x)	(!((x) & BUSON) || ((x) & BUSON) == BUSON)
-> +
-> +/* jiffies timers */
-> +#define ARB_TIMEOUT	(HZ / 8)	/* 125 ms */
-> +#define ARB2_TIMEOUT	(HZ / 4)	/* 250 ms */
+  https://bugzilla.kernel.org/show_bug.cgi?id=20732
 
-Might be good to explain why you need two different values.
+This version of the patch applies to 2.6.36-rc8 but has not been
+tested. In particular I am assuming that napi_schedule_prep() behaves
+the same as netif_rx_schedule_prep() did by failing when the macb_poll
+callback is already scheduled.
 
-> +
-> +/* high resolution timers, in uS */
-
-I'm not sure how udelay() and msleep() qualify as "high resolution
-timers"? I think you want to rephrase this comment.
-
-Also I doubt you really meant microsiemens, but more likely "us" for
-microseconds.
-
-> +#define SELECT_TO_SHORT	50
-> +#define SELECT_TO_LONG	1000
-> +
-> +struct pca9541 {
-> +	struct i2c_adapter *virt_adap;
-> +	struct i2c_client *client;
-
-You could easily do without this field IMHO. Simply pass the client
-between the functions, instead of the data.
-
-> +	unsigned long select_timeout;
-> +	unsigned long arb_timeout;
-> +};
-> +
-> +static const struct i2c_device_id pca9541_id[] = {
-> +	{"pca9541", 0},
-> +	{}
-> +};
-> +
-> +MODULE_DEVICE_TABLE(i2c, pca9541_id);
-> +
-> +/*
-> + * Write to selector register. Don't use i2c_transfer()/i2c_smbus_xfer()
-
-The function can actually be used to write to any register.
-
-> + * as they will try to lock the adapter a second time.
-> + */
-> +static int pca9541_reg_write(struct i2c_adapter *adap,
-> +			     struct i2c_client *client, u8 command, u8 val)
-
-Note that you could derive the adapter from the client, so you don't
-have to pass it as a function parameter.
-
-> +{
-> +	int ret;
-> +
-> +	if (adap->algo->master_xfer) {
-> +		struct i2c_msg msg;
-> +		char buf[2];
-> +
-> +		msg.addr = client->addr;
-> +		msg.flags = 0;
-> +		msg.len = 2;
-> +		buf[0] = command;
-> +		buf[1] = val;
-> +		msg.buf = buf;
-> +		ret = adap->algo->master_xfer(adap, &msg, 1);
-> +	} else {
-> +		union i2c_smbus_data data;
-> +
-> +		data.byte = val;
-> +		ret = adap->algo->smbus_xfer(adap, client->addr,
-> +					     client->flags,
-> +					     I2C_SMBUS_WRITE,
-> +					     command,
-> +					     I2C_SMBUS_BYTE_DATA, &data);
-> +	}
-> +
-> +	return ret;
-> +}
-> +
-> +/*
-> + * Read from selector register. Don't use i2c_transfer()/i2c_smbus_xfer()
-
-The function can actually be used to read from any register.
-
-> + * as they will try to lock adapter a second time.
-> + */
-> +static int pca9541_reg_read(struct i2c_adapter *adap,
-> +			    struct i2c_client *client, u8 command)
-> +{
-> +	int ret;
-> +	u8 val;
-> +
-> +	if (adap->algo->master_xfer) {
-> +		struct i2c_msg msg[2] = {
-> +			{
-> +				.addr = client->addr,
-> +				.flags = 0,
-> +				.len = 1,
-> +				.buf = &command
-> +			},
-> +			{
-> +				.addr = client->addr,
-> +				.flags = I2C_M_RD,
-> +				.len = 1,
-> +				.buf = &val
-> +			}
-> +		};
-> +		ret = adap->algo->master_xfer(adap, msg, 2);
-> +		if (ret == 2)
-> +			ret = val;
-> +		else if (ret >= 0)
-> +			ret = -EIO;
-> +	} else {
-> +		union i2c_smbus_data data;
-> +
-> +		ret = adap->algo->smbus_xfer(adap, client->addr,
-> +					     client->flags,
-> +					     I2C_SMBUS_READ,
-> +					     command,
-> +					     I2C_SMBUS_BYTE_DATA, &data);
-> +		if (!ret)
-> +			ret = data.byte;
-> +	}
-> +	return ret;
-> +}
-
-Needless to say we'll end up providing helper functions for these
-"unlocked" transactions at some point in time. I'm just waiting to see
-more mux drivers pop up, to figure out the right API.
-
-> +
-> +/*
-> + * Arbitration management functions
-> + */
-> +
-> +static void pca9541_release_bus(struct i2c_adapter *adap,
-> +				struct i2c_client *client)
-> +{
-> +	int reg;
-> +
-> +	reg = pca9541_reg_read(adap, client, PCA9541_CONTROL);
-> +	if (reg >= 0 && !busoff(reg) && mybus(reg))
-> +		pca9541_reg_write(adap, client, PCA9541_CONTROL,
-> +				  (reg & PCA9541_CTL_NBUSON) >> 1);
-> +}
-
-Is it OK to reset all other (writable) bits to 0?
-
-> +
-> +/*
-> + * Arbitration is defined as a two-step process. A device can only activate
-
-I presume "device" means "bus master" here?
-
-> + * the bus if it owns it; otherwise it has to request ownership first.
-
-Here "bus" means "slave bus"?
-
-> + * This multi-step process ensures that access contention is resolved
-> + * gracefully.
-> + *
-> + * Bus	Ownership	Other master	Action
-> + * state		requested access
-> + * ----------------------------------------------------
-> + * off	-		yes		wait for arbitration timeout or
-> + *					for other master to drop request
-> + * off	no		no		take ownership
-> + * off	yes		no		turn on bus
-> + * on	yes		-		done
-> + * on	no		-		wait for arbitration timeout or
-> + *					for other master to release bus
-> + *
-> + * The main contention point occurs if the bus is off and both masters request
-> + * access at the same time. In this case, one master will turn on the bus,
-
-"access" means "ownership"?
-
-> + * believing that it owns it. The other master will request bus ownership.
-> + * Result is that the bus is turned on, and master which did _not_ own the
-> + * bus before ends up owning it.
-> + */
-> +
-> +/* Control commands per pca9541 datasheet */
-> +static u8 pca9541_control[] = {
-> +	4, 0, 1, 5, 4, 4, 5, 5, 0, 0, 1, 1, 0, 4, 5, 1
-> +};
-
-Any reason to not make this array const? Also I would make its size
-explicit, as the driver codes assumes there are 0x10 elements in this
-array.
-
-> +
-> +/*
-> + * Channel arbitration
-> + *
-> + * Return values:
-> + *  <0: error
-> + *  0 : bus not acquired
-> + *  1 : bus acquired
-> + */
-> +static int pca9541_arbitrate(struct pca9541 *data)
-> +{
-> +	struct i2c_client *client = data->client;
-> +	struct i2c_adapter *adap = to_i2c_adapter(client->dev.parent);
-
-Also known as client->adapter.
-
-> +	int reg;
-> +
-> +	reg = pca9541_reg_read(adap, client, PCA9541_CONTROL);
-> +	if (reg < 0)
-> +		return reg;
-> +
-> +	if (busoff(reg)) {
-> +		int istat;
-> +		/*
-> +		 * Bus is off, request ownership or turn it on unless
-> +		 * other master requested access.
-> +		 */
-> +		istat = pca9541_reg_read(adap, client, PCA9541_ISTAT);
-> +		if (!(istat & PCA9541_ISTAT_NMYTEST)
-> +		    || time_is_before_eq_jiffies(data->arb_timeout)) {
-> +			/*
-> +			 * Other master did not request access, or arbitration
-> +			 * timeout expired. Take the bus.
-> +			 */
-> +			pca9541_reg_write(adap, client,
-> +					  PCA9541_CONTROL,
-> +					  pca9541_control[reg & 0x0f]
-> +					  | PCA9541_CTL_NTESTON);
-> +			data->select_timeout = SELECT_TO_SHORT;
-> +		} else {
-> +			/* Other master requested access. */
-> +			data->select_timeout = SELECT_TO_LONG * 2;
-
-This "* 2" may deserve a comment.
-
-> +		}
-> +	} else if (mybus(reg)) {
-> +		/* Bus is on, and we own it. We are done. */
-
-We are done, but we still have something to do? Confusing.
-
-> +		if (reg & (PCA9541_CTL_NTESTON | PCA9541_CTL_BUSINIT))
-> +			pca9541_reg_write(adap, client,
-> +					  PCA9541_CONTROL,
-> +					  reg & ~(PCA9541_CTL_NTESTON
-> +						  | PCA9541_CTL_BUSINIT));
-> +		return 1;
-> +	} else {
-> +		/* Other master owns the bus */
-> +		data->select_timeout = SELECT_TO_LONG;
-> +		if (time_is_before_eq_jiffies(data->arb_timeout)) {
-> +			/* Time is up, take the bus and reset it. */
-> +			pca9541_reg_write(adap, client,
-> +					  PCA9541_CONTROL,
-> +					  pca9541_control[reg & 0x0f]
-> +					  | PCA9541_CTL_BUSINIT
-> +					  | PCA9541_CTL_NTESTON);
-> +		} else {
-> +			/* Request bus access if needed */
-> +			if (!(reg & PCA9541_CTL_NTESTON))
-> +				pca9541_reg_write(adap, client,
-> +						  PCA9541_CONTROL,
-> +						  reg | PCA9541_CTL_NTESTON);
-> +		}
-> +	}
-> +	return 0;
-> +}
-> +
-> +static int pca9541_select_chan(struct i2c_adapter *adap, void *client, u32 chan)
-> +{
-> +	struct pca9541 *data = i2c_get_clientdata(client);
-> +	int ret;
-> +	unsigned long timeout = jiffies + ARB2_TIMEOUT;
-> +
-> +	data->arb_timeout = jiffies + ARB_TIMEOUT;
-
-I would love to see a comment before each of these timeout values, to
-know which event the timeout is for.
-
-> +
-> +	do {
-> +		ret = pca9541_arbitrate(data);
-> +		if (ret)
-> +			return ret < 0 ? ret : 0;
-> +
-> +		if (data->select_timeout == SELECT_TO_SHORT)
-> +			udelay(data->select_timeout);
-> +		else
-> +			msleep(data->select_timeout / 1000);
-> +	} while (time_is_after_eq_jiffies(timeout));
-> +
-> +	return ETIMEDOUT;
-
-The convention is to use negative values for errors.
-
-> +}
-> +
-> +static int pca9541_release_chan(struct i2c_adapter *adap,
-> +				void *client, u32 chan)
-> +{
-> +	pca9541_release_bus(adap, client);
-> +	return 0;
-> +}
-> +
-> +/*
-> + * I2C init/probing/exit functions
-> + */
-> +static int __devinit pca9541_probe(struct i2c_client *client,
-> +				   const struct i2c_device_id *id)
-
-The use of __devinit and __devexit isn't recommended for i2c drivers.
-If your driver is built into the kernel but the underlying i2c bus
-driver is build as a module, you're in trouble.
-
-> +{
-> +	struct i2c_adapter *adap = to_i2c_adapter(client->dev.parent);
-
-client->adapter
-
-> +	struct pca954x_platform_data *pdata = client->dev.platform_data;
-> +	struct pca9541 *data;
-> +	int force;
-> +	int ret = -ENODEV;
-> +
-> +	if (!i2c_check_functionality(adap, I2C_FUNC_SMBUS_BYTE_DATA))
-> +		goto err;
-> +
-> +	/* Read control register to verify that the device exists */
-> +	if (i2c_smbus_read_byte_data(client, PCA9541_CONTROL) < 0)
-> +		goto err;
-
-Note: you already know that the device exists. If not, probe() wouldn't
-be called. So if you get a failure here, it means broken platform
-initialization code.
-
-> +
-> +	data = kzalloc(sizeof(struct pca9541), GFP_KERNEL);
-> +	if (!data) {
-> +		ret = -ENOMEM;
-> +		goto err;
-> +	}
-> +
-> +	data->client = client;
-> +	i2c_set_clientdata(client, data);
-> +
-> +	/* Create a virtual adapter */
-
-Please don't use the term "virtual" here. This bus segment has nothing
-virtual, it exists for real.
-
-> +
-> +	force = 0;
-> +	if (pdata)
-> +		force = pdata->modes[0].adap_id;
-> +	data->virt_adap = i2c_add_mux_adapter(adap, client, force, 0,
-> +					      pca9541_select_chan,
-> +					      pca9541_release_chan);
-> +
-> +	if (data->virt_adap == NULL) {
-> +		dev_err(&client->dev,
-> +			"failed to register master selector as bus %d\n",
-> +			force);
-
-This error message is somewhat confusing if "force" is 0: in that case
-you didn't request any specific bus number.
-
-> +		goto exit_free;
-> +	}
-> +
-> +	dev_info(&client->dev, "registered master selector for I2C %s\n",
-> +		 client->name);
-> +
-> +	pca9541_release_bus(adap, client);
-
-This is racy. You are protected by the controller's mutex only inside
-the select_chan and release_chan methods. Outside of them, you are a
-regular user of the controller, so you have to use only regular
-("locked") transfer functions. Alternatively, you can request and
-return exclusive access to the controller yourself with the
-i2c_lock_adapter() and i2c_unlock_adapter() functions, and keep using
-your "unlocked" transfer functions.
-
-Additionally, as soon as your new bus segment is registered, someone
-might decide to use it. If you call pca9541_release_bus(), it will
-cause a failure. So I believe you should call pca9541_release_bus()
-_before_ you call i2c_add_mux_adapter().
-
-> +
-> +	return 0;
-> +
-> +exit_free:
-> +	kfree(data);
-> +err:
-> +	return ret;
-> +}
-> +
-> +static int __devexit pca9541_remove(struct i2c_client *client)
-> +{
-> +	struct pca9541 *data = i2c_get_clientdata(client);
-> +
-> +	i2c_del_mux_adapter(data->virt_adap);
-> +
-> +	kfree(data);
-> +	return 0;
-> +}
-> +
-> +static struct i2c_driver pca9541_driver = {
-> +	.driver = {
-> +		   .name = "pca9541",
-> +		   .owner = THIS_MODULE,
-> +		   },
-> +	.probe = pca9541_probe,
-> +	.remove = __devexit_p(pca9541_remove),
-> +	.id_table = pca9541_id,
-> +};
-> +
-> +static int __init pca9541_init(void)
-> +{
-> +	return i2c_add_driver(&pca9541_driver);
-> +}
-> +
-> +static void __exit pca9541_exit(void)
-> +{
-> +	i2c_del_driver(&pca9541_driver);
-> +}
-> +
-> +module_init(pca9541_init);
-> +module_exit(pca9541_exit);
-> +
-> +MODULE_AUTHOR("Guenter Roeck <guenter.roeck@ericsson.com>");
-> +MODULE_DESCRIPTION("PCA9541 I2C master selector driver");
-> +MODULE_LICENSE("GPL v2");
-
-
--- 
-Jean Delvare
+diff --git a/drivers/net/macb.c b/drivers/net/macb.c
+index ff2f158..36cf594 100644
+--- a/drivers/net/macb.c
++++ b/drivers/net/macb.c
+@@ -515,14 +515,15 @@ static int macb_poll(struct napi_struct *napi, int
+budget)
+ 		(unsigned long)status, budget);
+ 
+ 	work_done = macb_rx(bp, budget);
+-	if (work_done < budget)
++	if (work_done < budget) {
+ 		napi_complete(napi);
+ 
+-	/*
+-	 * We've done what we can to clean the buffers. Make sure we
+-	 * get notified when new packets arrive.
+-	 */
+-	macb_writel(bp, IER, MACB_RX_INT_FLAGS);
++		/*
++		 * We've done what we can to clean the buffers. Make
+sure we
++		 * get notified when new packets arrive.
++		 */
++		macb_writel(bp, IER, MACB_RX_INT_FLAGS);
++	}
+ 
+ 	/* TODO: Handle errors */
+ 
+@@ -550,12 +551,16 @@ static irqreturn_t macb_interrupt(int irq, void
+*dev_id)
+ 		}
+ 
+ 		if (status & MACB_RX_INT_FLAGS) {
++			/*
++			 * There's no point taking any more interrupts
++			 * until we have processed the buffers. The
++			 * scheduling call may fail if the poll routine
++			 * is already scheduled, so disable interrupts
++			 * now.
++			 */
++			macb_writel(bp, IDR, MACB_RX_INT_FLAGS);
++
+ 			if (napi_schedule_prep(&bp->napi)) {
+-				/*
+-				 * There's no point taking any more
+interrupts
+-				 * until we have processed the buffers
+-				 */
+-				macb_writel(bp, IDR, MACB_RX_INT_FLAGS);
+ 				dev_dbg(&bp->pdev->dev,
+ 					"scheduling RX softirq\n");
+ 				__napi_schedule(&bp->napi);
