@@ -1,46 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933652Ab0JSAro (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Oct 2010 20:47:44 -0400
-Received: from mga09.intel.com ([134.134.136.24]:8586 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755405Ab0JSArn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Oct 2010 20:47:43 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.57,347,1283756400"; 
-   d="scan'208";a="565223739"
-Date: Mon, 18 Oct 2010 17:47:40 -0700
-From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-To: Sergei Shtylyov <sshtylyov@mvista.com>
-Cc: Tatyana Brokhman <tlinder@codeaurora.org>, linux-usb@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Jacob Pan <jacob.jun.pan@intel.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/3] usb: USB3.0 ch11 definitions
-Message-ID: <20101019004740.GB2574@xanatos>
-References: <1287414160-12307-1-git-send-email-tlinder@codeaurora.org>
- <4CBCA452.6070804@mvista.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4CBCA452.6070804@mvista.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1757954Ab0JSAsq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Oct 2010 20:48:46 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:32833 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756217Ab0JSAso (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Oct 2010 20:48:44 -0400
+X-Authority-Analysis: v=1.1 cv=vbQZhf6WRU4XF+4tPWNJEMYU0N1CowIjcRZ/qR/IBDs= c=1 sm=0 a=DQfcIUaFywYA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=meVymXHHAAAA:8 a=kW4U0Hh1q0zK2dZO9F4A:9 a=5G96KsvviPL28zLCB4QA:7 a=sq_RhbO3TGtprtmuN1ES8eUmMKEA:4 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [PATCH v2][GIT PULL] ftrace: Remove recursion between
+ recordmcount and scripts/mod/empty
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Sam Ravnborg <sam@ravnborg.org>, Michal Marek <mmarek@suse.cz>,
+        linux-kbuild <linux-kbuild@vger.kernel.org>
+In-Reply-To: <20101018163935.48260a13.akpm@linux-foundation.org>
+References: <1287437213.16971.333.camel@gandalf.stny.rr.com>
+	 <20101018163935.48260a13.akpm@linux-foundation.org>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Mon, 18 Oct 2010 20:48:41 -0400
+Message-ID: <1287449321.16971.336.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 18, 2010 at 11:47:30PM +0400, Sergei Shtylyov wrote:
-> Hello.
+On Mon, 2010-10-18 at 16:39 -0700, Andrew Morton wrote:
+> On Mon, 18 Oct 2010 17:26:53 -0400
+> Steven Rostedt <rostedt@goodmis.org> wrote:
 > 
-> On 18-10-2010 19:02, Tatyana Brokhman wrote:
+> > Please pull the latest tip/perf/recordmcount-2 tree
 > 
-> >Adding hub SuperSpeed usb definitions as defined by ch10 of the USB3.0
-> >spec.
+> Today's linux-next has some problems.
 > 
->    So it's chapter 10 or 11? ;-)
+> make mrproper
+> make allmodconfig
+> make
+> 
+>   CHK     include/linux/version.h
+>   UPD     include/linux/version.h
+>   CHK     include/generated/utsrelease.h
+>   UPD     include/generated/utsrelease.h
+>   CC      kernel/bounds.s
+>   GEN     include/generated/bounds.h
+>   CC      arch/x86/kernel/asm-offsets.s
+>   GEN     include/generated/asm-offsets.h
+>   CALL    scripts/checksyscalls.sh
+>   HOSTCC  scripts/genksyms/genksyms.o
+>   SHIPPED scripts/genksyms/lex.c
+>   SHIPPED scripts/genksyms/parse.h
+>   SHIPPED scripts/genksyms/keywords.c
+>   HOSTCC  scripts/genksyms/lex.o
+>   SHIPPED scripts/genksyms/parse.c
+>   HOSTCC  scripts/genksyms/parse.o
+>   HOSTLD  scripts/genksyms/genksyms
+>   CC      scripts/mod/empty.o
+> /bin/sh: /usr/src/25/scripts/recordmcount: No such file or directory
+> 
+> If you run `make' a few times, scritps/recordmcount eventually turns
+> up and the build runs OK.  Some ordering thing or a race or whatever?
 
-The hub definitions are in chapter 11 in the USB 2.0 bus spec, and
-chapter 10 in the USB 3.0 bus spec.  But I don't think we're going to
-rename ch11.h.
+The patch you just replied to fixes this :-)
 
-Sarah Sharp
+-- Steve
+
+
