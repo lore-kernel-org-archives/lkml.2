@@ -1,111 +1,731 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753337Ab0JSEBs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Oct 2010 00:01:48 -0400
-Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:28439 "EHLO
+	id S932863Ab0JSD4O (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Oct 2010 23:56:14 -0400
+Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:28444 "EHLO
 	ipmail04.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933146Ab0JSD4Q (ORCPT
+	by vger.kernel.org with ESMTP id S1758028Ab0JSD4L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Oct 2010 23:56:16 -0400
+	Mon, 18 Oct 2010 23:56:11 -0400
 X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AnEFAJyxvEx5LcB2gWdsb2JhbACUbYx6FgEBFiIiwxaFSQSKSoUA
-Message-Id: <20101019034657.476923711@kernel.dk>
+X-IronPort-Anti-Spam-Result: AnEFAJyxvEx5LcB2gWdsb2JhbACUbYx6FgEBFiIiwxaFSQSKSg
+Message-Id: <20101019034655.756353382@kernel.dk>
 User-Agent: quilt/0.48-1
-Date: Tue, 19 Oct 2010 14:42:35 +1100
+Date: Tue, 19 Oct 2010 14:42:19 +1100
 From: npiggin@kernel.dk
 To: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Subject: [patch 19/35] fs: icache remove redundant i_sb_list umount locking
+Cc: linux-mm@kvack.org
+Subject: [patch 03/35] mm: implement per-zone shrinker
 References: <20101019034216.319085068@kernel.dk>
-Content-Disposition: inline; filename=fs-inode_lock-scale-11a.patch
+Content-Disposition: inline; filename=mm-zone-shrinker.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In preparation for rcu walking the inode sb lists, remove some
-locking from the inode umount path according to comments and
-the fact that we already rely on the list not changing at these
-points.
+Allow the shrinker to do per-zone shrinking. This requires adding a zone
+argument to the shrinker callback and calling shrinkers for each zone
+scanned. The logic somewhat in vmscan code gets simpler: the shrinkers are
+invoked for each zone, around the same time as the pagecache scanner.
+Zone reclaim needed a bit of surgery to cope with the change, but the
+idea is the same.
 
+But all shrinkers are currently global-based, so they need a way to
+convert per-zone ratios into global scan ratios. So seeing as we are
+changing the shrinker API anyway, let's reorganise it to make it saner.
+
+So the shrinker callback is passed:
+- the number of pagecache pages scanned in this zone
+- the number of pagecache pages in this zone
+- the total number of pagecache pages in all zones to be scanned
+
+The shrinker is now completely responsible for calculating and batching
+(given helpers), which provides better flexibility. vmscan helper functions
+are provided to accumulate these ratios, and help with batching.
+
+Finally, add some fixed-point scaling to the ratio, which helps rounding.
+
+The old shrinker API remains for unconverted code. There is no urgency
+to convert them at once.
+
+Cc: linux-mm@kvack.org
 Signed-off-by: Nick Piggin <npiggin@kernel.dk>
 
 ---
- fs/inode.c             |   15 +++++----------
- fs/notify/inode_mark.c |   15 +++------------
- 2 files changed, 8 insertions(+), 22 deletions(-)
+ fs/drop_caches.c    |    6 
+ include/linux/mm.h  |   43 ++++++
+ mm/memory-failure.c |   10 -
+ mm/vmscan.c         |  327 +++++++++++++++++++++++++++++++++++++---------------
+ 4 files changed, 279 insertions(+), 107 deletions(-)
 
-Index: linux-2.6/fs/inode.c
+Index: linux-2.6/include/linux/mm.h
 ===================================================================
---- linux-2.6.orig/fs/inode.c	2010-10-19 14:18:59.000000000 +1100
-+++ linux-2.6/fs/inode.c	2010-10-19 14:19:25.000000000 +1100
-@@ -407,14 +407,6 @@
- 		struct list_head *tmp = next;
- 		struct inode *inode;
- 
--		/*
--		 * We can reschedule here without worrying about the list's
--		 * consistency because the per-sb list of inodes must not
--		 * change during umount anymore, and because iprune_sem keeps
--		 * shrink_icache_memory() away.
--		 */
--		cond_resched_lock(&sb_inode_list_lock);
--
- 		next = next->next;
- 		if (tmp == head)
- 			break;
-@@ -458,10 +450,13 @@
- 	LIST_HEAD(throw_away);
- 
- 	down_write(&iprune_sem);
--	spin_lock(&sb_inode_list_lock);
-+	/*
-+	 * We can walk the per-sb list of inodes here without worrying about
-+	 * its consistency, because the list must not change during umount
-+	 * anymore, and because iprune_sem keeps shrink_icache_memory() away.
-+	 */
- 	fsnotify_unmount_inodes(&sb->s_inodes);
- 	busy = invalidate_list(&sb->s_inodes, &throw_away);
--	spin_unlock(&sb_inode_list_lock);
- 
- 	dispose_list(&throw_away);
- 	up_write(&iprune_sem);
-Index: linux-2.6/fs/notify/inode_mark.c
-===================================================================
---- linux-2.6.orig/fs/notify/inode_mark.c	2010-10-19 14:18:59.000000000 +1100
-+++ linux-2.6/fs/notify/inode_mark.c	2010-10-19 14:19:24.000000000 +1100
-@@ -232,8 +232,9 @@
-  * fsnotify_unmount_inodes - an sb is unmounting.  handle any watched inodes.
-  * @list: list of inodes being unmounted (sb->s_inodes)
+--- linux-2.6.orig/include/linux/mm.h	2010-10-19 14:19:40.000000000 +1100
++++ linux-2.6/include/linux/mm.h	2010-10-19 14:36:48.000000000 +1100
+@@ -997,6 +997,10 @@
+ /*
+  * A callback you can register to apply pressure to ageable caches.
   *
-- * Called with iprune_mutex held, keeping shrink_icache_memory() at bay.
-- * sb_inode_list_lock to protect the super block's list of inodes.
-+ * Called with iprune_mutex held, keeping shrink_icache_memory() at bay,
-+ * and with the sb going away, no new inodes will appear or be referenced
-+ * from other paths.
++ * 'shrink_zone' is the new shrinker API. It is to be used in preference
++ * to 'shrink'. One must point to a shrinker function, the other must
++ * be NULL. See 'shrink_slab' for details about the shrink_zone API.
++ *
+  * 'shrink' is passed a count 'nr_to_scan' and a 'gfpmask'.  It should
+  * look through the least-recently-used 'nr_to_scan' entries and
+  * attempt to free them up.  It should return the number of objects
+@@ -1013,13 +1017,53 @@
+ 	int (*shrink)(struct shrinker *, int nr_to_scan, gfp_t gfp_mask);
+ 	int seeks;	/* seeks to recreate an obj */
+ 
++	/*
++	 * shrink_zone - slab shrinker callback for reclaimable objects
++	 * @shrink: this struct shrinker
++	 * @zone: zone to scan
++	 * @scanned: pagecache lru pages scanned in zone
++	 * @total: total pagecache lru pages in zone
++	 * @global: global pagecache lru pages (for zone-unaware shrinkers)
++	 * @flags: shrinker flags
++	 * @gfp_mask: gfp context we are operating within
++	 *
++	 * The shrinkers are responsible for calculating the appropriate
++	 * pressure to apply, batching up scanning (and cond_resched,
++	 * cond_resched_lock etc), and updating events counters including
++	 * count_vm_event(SLABS_SCANNED, nr).
++	 *
++	 * This approach gives flexibility to the shrinkers. They know best how
++	 * to do batching, how much time between cond_resched is appropriate,
++	 * what statistics to increment, etc.
++	 */
++	void (*shrink_zone)(struct shrinker *shrink,
++		struct zone *zone, unsigned long scanned,
++		unsigned long total, unsigned long global,
++		unsigned long flags, gfp_t gfp_mask);
++
+ 	/* These are for internal use */
+ 	struct list_head list;
+ 	long nr;	/* objs pending delete */
+ };
++
++/* Constants for use by old shrinker API */
+ #define DEFAULT_SEEKS 2 /* A good number if you don't know better. */
++
++/* Constants for use by new shrinker API */
++/*
++ * SHRINK_DEFAULT_SEEKS is shifted by 4 to match an arbitrary constant
++ * in the old shrinker code.
++ */
++#define SHRINK_FACTOR	(128UL) /* Fixed point shift */
++#define SHRINK_DEFAULT_SEEKS	(SHRINK_FACTOR*DEFAULT_SEEKS/4)
++#define SHRINK_BATCH	128	/* A good number if you don't know better */
++
+ extern void register_shrinker(struct shrinker *);
+ extern void unregister_shrinker(struct shrinker *);
++extern void shrinker_add_scan(unsigned long *dst,
++				unsigned long scanned, unsigned long total,
++				unsigned long objects, unsigned int ratio);
++extern unsigned long shrinker_do_scan(unsigned long *dst, unsigned long batch);
+ 
+ int vma_wants_writenotify(struct vm_area_struct *vma);
+ 
+@@ -1443,8 +1487,7 @@
+ 
+ int drop_caches_sysctl_handler(struct ctl_table *, int,
+ 					void __user *, size_t *, loff_t *);
+-unsigned long shrink_slab(unsigned long scanned, gfp_t gfp_mask,
+-			unsigned long lru_pages);
++void shrink_all_slab(void);
+ 
+ #ifndef CONFIG_MMU
+ #define randomize_va_space 0
+Index: linux-2.6/mm/vmscan.c
+===================================================================
+--- linux-2.6.orig/mm/vmscan.c	2010-10-19 14:19:40.000000000 +1100
++++ linux-2.6/mm/vmscan.c	2010-10-19 14:33:38.000000000 +1100
+@@ -74,6 +74,9 @@
+ 	/* Can pages be swapped as part of reclaim? */
+ 	int may_swap;
+ 
++	/* Can slab pages be reclaimed? */
++	int may_reclaim_slab;
++
+ 	int swappiness;
+ 
+ 	int order;
+@@ -163,6 +166,8 @@
   */
- void fsnotify_unmount_inodes(struct list_head *list)
+ void register_shrinker(struct shrinker *shrinker)
  {
-@@ -285,14 +286,6 @@
- 			spin_unlock(&next_i->i_lock);
++	BUG_ON(shrinker->shrink && shrinker->shrink_zone);
++	BUG_ON(!shrinker->shrink && !shrinker->shrink_zone);
+ 	shrinker->nr = 0;
+ 	down_write(&shrinker_rwsem);
+ 	list_add_tail(&shrinker->list, &shrinker_list);
+@@ -181,43 +186,101 @@
+ }
+ EXPORT_SYMBOL(unregister_shrinker);
+ 
+-#define SHRINK_BATCH 128
+ /*
+- * Call the shrink functions to age shrinkable caches
++ * shrinker_add_scan - accumulate shrinker scan
++ * @dst: scan counter variable
++ * @scanned: pagecache pages scanned
++ * @total: total pagecache objects
++ * @tot: total objects in this cache
++ * @ratio: ratio of pagecache value to object value
+  *
+- * Here we assume it costs one seek to replace a lru page and that it also
+- * takes a seek to recreate a cache object.  With this in mind we age equal
+- * percentages of the lru and ageable caches.  This should balance the seeks
+- * generated by these structures.
++ * shrinker_add_scan accumulates a number of objects to scan into @dst,
++ * based on the following ratio:
+  *
+- * If the vm encountered mapped pages on the LRU it increase the pressure on
+- * slab to avoid swapping.
++ * proportion = scanned / total        // proportion of pagecache scanned
++ * obj_prop   = objects * proportion   // same proportion of objects
++ * to_scan    = obj_prop / ratio       // modify by ratio
++ * *dst += (total / scanned)           // accumulate to dst
+  *
+- * We do weird things to avoid (scanned*seeks*entries) overflowing 32 bits.
++ * The ratio is a fixed point integer with a factor SHRINK_FACTOR.
++ * Higher ratios give objects higher value.
+  *
+- * `lru_pages' represents the number of on-LRU pages in all the zones which
+- * are eligible for the caller's allocation attempt.  It is used for balancing
+- * slab reclaim versus page reclaim.
++ * @dst is also fixed point, so cannot be used as a simple count.
++ * shrinker_do_scan will take care of that for us.
+  *
+- * Returns the number of slab objects which we shrunk.
++ * There is no synchronisation here, which is fine really. A rare lost
++ * update is no huge deal in reclaim code.
+  */
+-unsigned long shrink_slab(unsigned long scanned, gfp_t gfp_mask,
+-			unsigned long lru_pages)
++void shrinker_add_scan(unsigned long *dst,
++			unsigned long scanned, unsigned long total,
++			unsigned long objects, unsigned int ratio)
+ {
+-	struct shrinker *shrinker;
+-	unsigned long ret = 0;
++	unsigned long long delta;
+ 
+-	if (scanned == 0)
+-		scanned = SWAP_CLUSTER_MAX;
++	delta = (unsigned long long)scanned * objects;
++	delta *= SHRINK_FACTOR;
++	do_div(delta, total + 1);
++	delta *= SHRINK_FACTOR; /* ratio is also in SHRINK_FACTOR units */
++	do_div(delta, ratio + 1);
+ 
+-	if (!down_read_trylock(&shrinker_rwsem))
+-		return 1;	/* Assume we'll be able to shrink next time */
++	/*
++	 * Avoid risking looping forever due to too large nr value:
++	 * never try to free more than twice the estimate number of
++	 * freeable entries.
++	 */
++	*dst += delta;
++
++	if (*dst / SHRINK_FACTOR > objects)
++		*dst = objects * SHRINK_FACTOR;
++}
++EXPORT_SYMBOL(shrinker_add_scan);
++
++/*
++ * shrinker_do_scan - scan a batch of objects
++ * @dst: scan counter
++ * @batch: number of objects to scan in this batch
++ * @Returns: number of objects to scan
++ *
++ * shrinker_do_scan takes the scan counter accumulated by shrinker_add_scan,
++ * and decrements it by @batch if it is greater than batch and returns batch.
++ * Otherwise returns 0. The caller should use the return value as the number
++ * of objects to scan next.
++ *
++ * Between shrinker_do_scan calls, the caller should drop locks if possible
++ * and call cond_resched.
++ *
++ * Note, @dst is a fixed point scaled integer. See shrinker_add_scan.
++ *
++ * Like shrinker_add_scan, shrinker_do_scan is not SMP safe, but it doesn't
++ * really need to be.
++ */
++unsigned long shrinker_do_scan(unsigned long *dst, unsigned long batch)
++{
++	unsigned long nr = ACCESS_ONCE(*dst);
++	if (nr < batch * SHRINK_FACTOR)
++		return 0;
++	*dst = nr - batch * SHRINK_FACTOR;
++	return batch;
++}
++EXPORT_SYMBOL(shrinker_do_scan);
++
++#define SHRINK_BATCH 128
++/*
++ * Scan the deprecated shrinkers. This will go away soon in favour of
++ * converting everybody to new shrinker API.
++ */
++static void shrink_slab_old(unsigned long scanned, gfp_t gfp_mask,
++			unsigned long lru_pages)
++{
++	struct shrinker *shrinker;
+ 
+ 	list_for_each_entry(shrinker, &shrinker_list, list) {
+ 		unsigned long long delta;
+ 		unsigned long total_scan;
+ 		unsigned long max_pass;
+ 
++		if (!shrinker->shrink)
++			continue;
+ 		max_pass = (*shrinker->shrink)(shrinker, 0, gfp_mask);
+ 		delta = (4 * scanned) / shrinker->seeks;
+ 		delta *= max_pass;
+@@ -244,15 +307,11 @@
+ 		while (total_scan >= SHRINK_BATCH) {
+ 			long this_scan = SHRINK_BATCH;
+ 			int shrink_ret;
+-			int nr_before;
+ 
+-			nr_before = (*shrinker->shrink)(shrinker, 0, gfp_mask);
+ 			shrink_ret = (*shrinker->shrink)(shrinker, this_scan,
+ 								gfp_mask);
+ 			if (shrink_ret == -1)
+ 				break;
+-			if (shrink_ret < nr_before)
+-				ret += nr_before - shrink_ret;
+ 			count_vm_events(SLABS_SCANNED, this_scan);
+ 			total_scan -= this_scan;
+ 
+@@ -261,8 +320,75 @@
+ 
+ 		shrinker->nr += total_scan;
+ 	}
++}
++/*
++ * shrink_slab - Call the shrink functions to age shrinkable caches
++ * @zone: the zone we are currently reclaiming from
++ * @scanned: how many pagecache pages were scanned in this zone
++ * @total: total number of reclaimable pagecache pages in this zone
++ * @global: total number of reclaimable pagecache pages in the system
++ * @gfp_mask: gfp context that we are in
++ *
++ * Slab shrinkers should scan their objects in a proportion to the ratio of
++ * scanned to total pagecache pages in this zone, modified by a "cost"
++ * constant.
++ *
++ * For example, we have a slab cache with 100 reclaimable objects in a
++ * particular zone, and the cost of reclaiming an object is determined to be
++ * twice as expensive as reclaiming a pagecache page (due to likelihood and
++ * cost of reconstruction). If we have 200 reclaimable pagecache pages in that
++ * zone particular zone, and scan 20 of them (10%), we should scan 5% (5) of
++ * the objects in our slab cache.
++ *
++ * If we have a single global list of objects and no per-zone lists, the
++ * global count of objects can be used to find the correct ratio to scan.
++ *
++ * See shrinker_add_scan and shrinker_do_scan for helper functions and
++ * details on how to calculate these numbers.
++ */
++static void shrink_slab(struct zone *zone, unsigned long scanned,
++			unsigned long total, unsigned long global,
++			gfp_t gfp_mask)
++{
++	struct shrinker *shrinker;
++
++	if (scanned == 0)
++		scanned = SWAP_CLUSTER_MAX;
++
++	if (!down_read_trylock(&shrinker_rwsem))
++		return;
++
++	/* do a global shrink with the old shrinker API */
++	shrink_slab_old(scanned, gfp_mask, global);
++
++	list_for_each_entry(shrinker, &shrinker_list, list) {
++		if (!shrinker->shrink_zone)
++			continue;
++		(*shrinker->shrink_zone)(shrinker, zone, scanned,
++					total, global, 0, gfp_mask);
++	}
+ 	up_read(&shrinker_rwsem);
+-	return ret;
++}
++
++void shrink_all_slab(void)
++{
++	struct zone *zone;
++	struct reclaim_state reclaim_state;
++
++	current->reclaim_state = &reclaim_state;
++	do {
++		reclaim_state.reclaimed_slab = 0;
++		/*
++		 * Use "100" for "scanned", "total", and "global", so
++		 * that shrinkers scan a large proportion of their
++		 * objects. 100 rather than 1 in order to reduce rounding
++		 * errors.
++		 */
++		for_each_populated_zone(zone)
++			shrink_slab(zone, 100, 100, 100, GFP_KERNEL);
++	} while (reclaim_state.reclaimed_slab);
++
++	current->reclaim_state = NULL;
+ }
+ 
+ static inline int is_page_cache_freeable(struct page *page)
+@@ -1740,18 +1866,24 @@
+  * This is a basic per-zone page freer.  Used by both kswapd and direct reclaim.
+  */
+ static void shrink_zone(int priority, struct zone *zone,
+-				struct scan_control *sc)
++		struct scan_control *sc, unsigned long global_lru_pages)
+ {
+ 	unsigned long nr[NR_LRU_LISTS];
+ 	unsigned long nr_to_scan;
+ 	enum lru_list l;
+ 	unsigned long nr_reclaimed = sc->nr_reclaimed;
+ 	unsigned long nr_to_reclaim = sc->nr_to_reclaim;
++	unsigned long nr_scanned = sc->nr_scanned;
++	unsigned long lru_pages = 0;
+ 
+ 	get_scan_count(zone, sc, nr, priority);
+ 
+ 	set_lumpy_reclaim_mode(priority, sc);
+ 
++	/* Used by slab shrinking, below */
++	if (sc->may_reclaim_slab)
++		lru_pages = zone_reclaimable_pages(zone);
++
+ 	while (nr[LRU_INACTIVE_ANON] || nr[LRU_ACTIVE_FILE] ||
+ 					nr[LRU_INACTIVE_FILE]) {
+ 		for_each_evictable_lru(l) {
+@@ -1776,8 +1908,6 @@
+ 			break;
+ 	}
+ 
+-	sc->nr_reclaimed = nr_reclaimed;
+-
+ 	/*
+ 	 * Even if we did not try to evict anon pages at all, we want to
+ 	 * rebalance the anon lru active/inactive ratio.
+@@ -1785,6 +1915,23 @@
+ 	if (inactive_anon_is_low(zone, sc) && nr_swap_pages > 0)
+ 		shrink_active_list(SWAP_CLUSTER_MAX, zone, sc, priority, 0);
+ 
++	/*
++	 * Don't shrink slabs when reclaiming memory from
++	 * over limit cgroups
++	 */
++	if (sc->may_reclaim_slab) {
++		struct reclaim_state *reclaim_state = current->reclaim_state;
++
++		shrink_slab(zone, sc->nr_scanned - nr_scanned,
++			lru_pages, global_lru_pages, sc->gfp_mask);
++		if (reclaim_state) {
++			nr_reclaimed += reclaim_state->reclaimed_slab;
++			reclaim_state->reclaimed_slab = 0;
++		}
++	}
++
++	sc->nr_reclaimed = nr_reclaimed;
++
+ 	throttle_vm_writeout(sc->gfp_mask);
+ }
+ 
+@@ -1805,7 +1952,7 @@
+  * scan then give up on it.
+  */
+ static void shrink_zones(int priority, struct zonelist *zonelist,
+-					struct scan_control *sc)
++		struct scan_control *sc, unsigned long global_lru_pages)
+ {
+ 	struct zoneref *z;
+ 	struct zone *zone;
+@@ -1825,7 +1972,7 @@
+ 				continue;	/* Let kswapd poll it */
  		}
  
--		/*
--		 * We can safely drop sb_inode_list_lock here because we hold
--		 * references on both inode and next_i.  Also no new inodes
--		 * will be added since the umount has begun.  Finally,
--		 * iprune_mutex keeps shrink_icache_memory() away.
--		 */
--		spin_unlock(&sb_inode_list_lock);
--
- 		if (need_iput_tmp)
- 			iput(need_iput_tmp);
- 
-@@ -302,7 +295,5 @@
- 		fsnotify_inode_delete(inode);
- 
- 		iput(inode);
--
--		spin_lock(&sb_inode_list_lock);
+-		shrink_zone(priority, zone, sc);
++		shrink_zone(priority, zone, sc, global_lru_pages);
  	}
  }
+ 
+@@ -1882,7 +2029,6 @@
+ {
+ 	int priority;
+ 	unsigned long total_scanned = 0;
+-	struct reclaim_state *reclaim_state = current->reclaim_state;
+ 	struct zoneref *z;
+ 	struct zone *zone;
+ 	unsigned long writeback_threshold;
+@@ -1894,30 +2040,20 @@
+ 		count_vm_event(ALLOCSTALL);
+ 
+ 	for (priority = DEF_PRIORITY; priority >= 0; priority--) {
+-		sc->nr_scanned = 0;
+-		if (!priority)
+-			disable_swap_token();
+-		shrink_zones(priority, zonelist, sc);
+-		/*
+-		 * Don't shrink slabs when reclaiming memory from
+-		 * over limit cgroups
+-		 */
+-		if (scanning_global_lru(sc)) {
+-			unsigned long lru_pages = 0;
+-			for_each_zone_zonelist(zone, z, zonelist,
+-					gfp_zone(sc->gfp_mask)) {
+-				if (!cpuset_zone_allowed_hardwall(zone, GFP_KERNEL))
+-					continue;
++		unsigned long lru_pages = 0;
+ 
+-				lru_pages += zone_reclaimable_pages(zone);
+-			}
++		for_each_zone_zonelist(zone, z, zonelist,
++				gfp_zone(sc->gfp_mask)) {
++			if (!cpuset_zone_allowed_hardwall(zone, GFP_KERNEL))
++				continue;
+ 
+-			shrink_slab(sc->nr_scanned, sc->gfp_mask, lru_pages);
+-			if (reclaim_state) {
+-				sc->nr_reclaimed += reclaim_state->reclaimed_slab;
+-				reclaim_state->reclaimed_slab = 0;
+-			}
++			lru_pages += zone_reclaimable_pages(zone);
+ 		}
++
++		sc->nr_scanned = 0;
++		if (!priority)
++			disable_swap_token();
++		shrink_zones(priority, zonelist, sc, lru_pages);
+ 		total_scanned += sc->nr_scanned;
+ 		if (sc->nr_reclaimed >= sc->nr_to_reclaim)
+ 			goto out;
+@@ -1975,6 +2111,7 @@
+ 		.nr_to_reclaim = SWAP_CLUSTER_MAX,
+ 		.may_unmap = 1,
+ 		.may_swap = 1,
++		.may_reclaim_slab = 1,
+ 		.swappiness = vm_swappiness,
+ 		.order = order,
+ 		.mem_cgroup = NULL,
+@@ -2004,6 +2141,7 @@
+ 		.may_writepage = !laptop_mode,
+ 		.may_unmap = 1,
+ 		.may_swap = !noswap,
++		.may_reclaim_slab = 0,
+ 		.swappiness = swappiness,
+ 		.order = 0,
+ 		.mem_cgroup = mem,
+@@ -2022,7 +2160,7 @@
+ 	 * will pick up pages from other mem cgroup's as well. We hack
+ 	 * the priority and make it zero.
+ 	 */
+-	shrink_zone(0, zone, &sc);
++	shrink_zone(0, zone, &sc, zone_reclaimable_pages(zone));
+ 
+ 	trace_mm_vmscan_memcg_softlimit_reclaim_end(sc.nr_reclaimed);
+ 
+@@ -2040,6 +2178,7 @@
+ 		.may_writepage = !laptop_mode,
+ 		.may_unmap = 1,
+ 		.may_swap = !noswap,
++		.may_reclaim_slab = 0,
+ 		.nr_to_reclaim = SWAP_CLUSTER_MAX,
+ 		.swappiness = swappiness,
+ 		.order = 0,
+@@ -2117,11 +2256,11 @@
+ 	int priority;
+ 	int i;
+ 	unsigned long total_scanned;
+-	struct reclaim_state *reclaim_state = current->reclaim_state;
+ 	struct scan_control sc = {
+ 		.gfp_mask = GFP_KERNEL,
+ 		.may_unmap = 1,
+ 		.may_swap = 1,
++		.may_reclaim_slab = 1,
+ 		/*
+ 		 * kswapd doesn't want to be bailed out while reclaim. because
+ 		 * we want to put equal scanning pressure on each zone.
+@@ -2195,7 +2334,6 @@
+ 		 */
+ 		for (i = 0; i <= end_zone; i++) {
+ 			struct zone *zone = pgdat->node_zones + i;
+-			int nr_slab;
+ 
+ 			if (!populated_zone(zone))
+ 				continue;
+@@ -2217,15 +2355,11 @@
+ 			 */
+ 			if (!zone_watermark_ok(zone, order,
+ 					8*high_wmark_pages(zone), end_zone, 0))
+-				shrink_zone(priority, zone, &sc);
+-			reclaim_state->reclaimed_slab = 0;
+-			nr_slab = shrink_slab(sc.nr_scanned, GFP_KERNEL,
+-						lru_pages);
+-			sc.nr_reclaimed += reclaim_state->reclaimed_slab;
++				shrink_zone(priority, zone, &sc, lru_pages);
+ 			total_scanned += sc.nr_scanned;
+ 			if (zone->all_unreclaimable)
+ 				continue;
+-			if (nr_slab == 0 && !zone_reclaimable(zone))
++			if (!zone_reclaimable(zone))
+ 				zone->all_unreclaimable = 1;
+ 			/*
+ 			 * If we've done a decent amount of scanning and
+@@ -2482,6 +2616,7 @@
+ 		.may_swap = 1,
+ 		.may_unmap = 1,
+ 		.may_writepage = 1,
++		.may_reclaim_slab = 1,
+ 		.nr_to_reclaim = nr_to_reclaim,
+ 		.hibernation_mode = 1,
+ 		.swappiness = vm_swappiness,
+@@ -2665,13 +2800,14 @@
+ 		.may_writepage = !!(zone_reclaim_mode & RECLAIM_WRITE),
+ 		.may_unmap = !!(zone_reclaim_mode & RECLAIM_SWAP),
+ 		.may_swap = 1,
++		.may_reclaim_slab = 0,
+ 		.nr_to_reclaim = max_t(unsigned long, nr_pages,
+ 				       SWAP_CLUSTER_MAX),
+ 		.gfp_mask = gfp_mask,
+ 		.swappiness = vm_swappiness,
+ 		.order = order,
+ 	};
+-	unsigned long nr_slab_pages0, nr_slab_pages1;
++	unsigned long lru_pages, slab_pages;
+ 
+ 	cond_resched();
+ 	/*
+@@ -2684,51 +2820,61 @@
+ 	reclaim_state.reclaimed_slab = 0;
+ 	p->reclaim_state = &reclaim_state;
+ 
++	lru_pages = zone_reclaimable_pages(zone);
++	slab_pages = zone_page_state(zone, NR_SLAB_RECLAIMABLE);
++
+ 	if (zone_pagecache_reclaimable(zone) > zone->min_unmapped_pages) {
++		if (slab_pages > zone->min_slab_pages)
++			sc.may_reclaim_slab = 1;
+ 		/*
+ 		 * Free memory by calling shrink zone with increasing
+ 		 * priorities until we have enough memory freed.
+ 		 */
+ 		priority = ZONE_RECLAIM_PRIORITY;
+ 		do {
+-			shrink_zone(priority, zone, &sc);
++			shrink_zone(priority, zone, &sc, lru_pages);
+ 			priority--;
+ 		} while (priority >= 0 && sc.nr_reclaimed < nr_pages);
+-	}
+ 
+-	nr_slab_pages0 = zone_page_state(zone, NR_SLAB_RECLAIMABLE);
+-	if (nr_slab_pages0 > zone->min_slab_pages) {
++	} else if (slab_pages > zone->min_slab_pages) {
+ 		/*
+-		 * shrink_slab() does not currently allow us to determine how
+-		 * many pages were freed in this zone. So we take the current
+-		 * number of slab pages and shake the slab until it is reduced
+-		 * by the same nr_pages that we used for reclaiming unmapped
+-		 * pages.
+-		 *
+-		 * Note that shrink_slab will free memory on all zones and may
+-		 * take a long time.
++		 * Scanning slab without pagecache, have to open code
++		 * call to shrink_slab (shirnk_zone drives slab reclaim via
++		 * pagecache scanning, so it isn't set up to shrink slab
++		 * without scanning pagecache.
+ 		 */
+-		for (;;) {
+-			unsigned long lru_pages = zone_reclaimable_pages(zone);
+-
+-			/* No reclaimable slab or very low memory pressure */
+-			if (!shrink_slab(sc.nr_scanned, gfp_mask, lru_pages))
+-				break;
+ 
+-			/* Freed enough memory */
+-			nr_slab_pages1 = zone_page_state(zone,
+-							NR_SLAB_RECLAIMABLE);
+-			if (nr_slab_pages1 + nr_pages <= nr_slab_pages0)
+-				break;
+-		}
++		/*
++		 * lru_pages / 10  -- put a 10% pressure on the slab
++		 * which roughly corresponds to ZONE_RECLAIM_PRIORITY
++		 * scanning 1/16th of pagecache.
++		 *
++		 * Global slabs will be shrink at a relatively more
++		 * aggressive rate because we don't calculate the
++		 * global lru size for speed. But they really should
++		 * be converted to per zone slabs if they are important
++		 */
++		shrink_slab(zone, lru_pages / 10, lru_pages, lru_pages,
++				gfp_mask);
+ 
+ 		/*
+-		 * Update nr_reclaimed by the number of slab pages we
+-		 * reclaimed from this zone.
++		 * Although we have a zone based slab shrinker API, some slabs
++		 * are still scanned globally. This means we can't quite
++		 * determine how many pages were freed in this zone by
++		 * checking reclaimed_slab. However the regular shrink_zone
++		 * paths have exactly the same problem that they largely
++		 * ignore. So don't be different.
++		 *
++		 * The situation will improve dramatically as important slabs
++		 * are switched over to using reclaimed_slab after the
++		 * important slabs are converted to using per zone shrinkers.
++		 *
++		 * Note that shrink_slab may free memory on all zones and may
++		 * take a long time, but again switching important slabs to
++		 * zone based shrinkers will solve this problem.
+ 		 */
+-		nr_slab_pages1 = zone_page_state(zone, NR_SLAB_RECLAIMABLE);
+-		if (nr_slab_pages1 < nr_slab_pages0)
+-			sc.nr_reclaimed += nr_slab_pages0 - nr_slab_pages1;
++		sc.nr_reclaimed += reclaim_state.reclaimed_slab;
++		reclaim_state.reclaimed_slab = 0;
+ 	}
+ 
+ 	p->reclaim_state = NULL;
+Index: linux-2.6/fs/drop_caches.c
+===================================================================
+--- linux-2.6.orig/fs/drop_caches.c	2010-10-19 14:19:40.000000000 +1100
++++ linux-2.6/fs/drop_caches.c	2010-10-19 14:20:01.000000000 +1100
+@@ -35,11 +35,7 @@
+ 
+ static void drop_slab(void)
+ {
+-	int nr_objects;
+-
+-	do {
+-		nr_objects = shrink_slab(1000, GFP_KERNEL, 1000);
+-	} while (nr_objects > 10);
++	shrink_all_slab();
+ }
+ 
+ int drop_caches_sysctl_handler(ctl_table *table, int write,
+Index: linux-2.6/mm/memory-failure.c
+===================================================================
+--- linux-2.6.orig/mm/memory-failure.c	2010-10-19 14:19:40.000000000 +1100
++++ linux-2.6/mm/memory-failure.c	2010-10-19 14:20:01.000000000 +1100
+@@ -231,14 +231,8 @@
+ 	 * Only all shrink_slab here (which would also
+ 	 * shrink other caches) if access is not potentially fatal.
+ 	 */
+-	if (access) {
+-		int nr;
+-		do {
+-			nr = shrink_slab(1000, GFP_KERNEL, 1000);
+-			if (page_count(p) == 1)
+-				break;
+-		} while (nr > 10);
+-	}
++	if (access)
++		shrink_all_slab();
+ }
+ EXPORT_SYMBOL_GPL(shake_page);
+ 
 
 
