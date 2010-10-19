@@ -1,44 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753337Ab0JSV55 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Oct 2010 17:57:57 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:36212 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751178Ab0JSV5z (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Oct 2010 17:57:55 -0400
+	id S1753293Ab0JSWAA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Oct 2010 18:00:00 -0400
+Received: from imr4.ericy.com ([198.24.6.8]:47587 "EHLO imr4.ericy.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752370Ab0JSV76 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Oct 2010 17:59:58 -0400
+Subject: Re: [PATCH v2] i2c/mux: Driver for PCA9541 I2C Master Selector
+From: Guenter Roeck <guenter.roeck@ericsson.com>
+Reply-To: guenter.roeck@ericsson.com
+To: Jean Delvare <khali@linux-fr.org>
+CC: Ben Dooks <ben-linux@fluff.org>, Rodolfo Giometti <giometti@linux.it>,
+        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <20101019234929.3d4d14f4@endymion.delvare>
+References: <1286932516-20689-1-git-send-email-guenter.roeck@ericsson.com>
+	 <20101019190647.314302e7@endymion.delvare>
+	 <1287521453.9690.299.camel@groeck-laptop>
+	 <20101019234929.3d4d14f4@endymion.delvare>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Ericsson
+Date: Tue, 19 Oct 2010 14:59:19 -0700
+Message-ID: <1287525559.9690.309.camel@groeck-laptop>
 MIME-Version: 1.0
-X-Originating-IP: [109.186.69.160]
-In-Reply-To: <201010192258.27988.arnd@arndb.de>
-References: <1287387875-14168-1-git-send-email-ohad@wizery.com>
- <AANLkTimDdPUjo+65vBL0PTQ3b=5NpeVT28XrdkYqx3Ex@mail.gmail.com>
- <AANLkTinNfERyi_bTWc7LOKR1uRLC3E612ubFKBLxWB1E@mail.gmail.com> <201010192258.27988.arnd@arndb.de>
-From: Ohad Ben-Cohen <ohad@wizery.com>
-Date: Tue, 19 Oct 2010 23:57:33 +0200
-Message-ID: <AANLkTimx8abJzUo-+BGbM6QxGdMF3dO=dbh_UG=FsWMZ@mail.gmail.com>
-Subject: Re: [PATCH 1/3] drivers: misc: add omap_hwspinlock driver
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-arm-kernel@lists.infradead.org,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Hari Kanigeri <h-kanigeri2@ti.com>, Suman Anna <s-anna@ti.com>,
-        Benoit Cousson <b-cousson@ti.com>, Tony Lindgren <tony@atomide.com>,
-        Greg KH <greg@kroah.com>, linux-kernel@vger.kernel.org,
-        Simon Que <sque@ti.com>, akpm@linux-foundation.org,
-        linux-omap@vger.kernel.org,
-        "Krishnamoorthy, Balaji T" <balajitk@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 19, 2010 at 10:58 PM, Arnd Bergmann <arnd@arndb.de> wrote:
->> If a hwspinlock is taken over a long period of time, its other user
->> (with which we try to achieve synchronization) might be polling the
->> OMAP interconnect for too long (trying to take the hwspinlock) and
->> thus preventing it to be used for other transactions.
->
-> This sounds exactly like any other spinlock.
+On Tue, 2010-10-19 at 17:49 -0400, Jean Delvare wrote:
+> On Tue, 19 Oct 2010 13:50:53 -0700, Guenter Roeck wrote:
+> > Hi Jean,
+> > 
+> > On Tue, 2010-10-19 at 13:06 -0400, Jean Delvare wrote:
+> > [ ... ]
+> > > > +
+> > > > +/*
+> > > > + * I2C init/probing/exit functions
+> > > > + */
+> > > > +static int __devinit pca9541_probe(struct i2c_client *client,
+> > > > +                                const struct i2c_device_id *id)
+> > > 
+> > > The use of __devinit and __devexit isn't recommended for i2c drivers.
+> > > If your driver is built into the kernel but the underlying i2c bus
+> > > driver is build as a module, you're in trouble.
+> > > 
+> > I don't mind changing this, but ... the code is copied from pca954x.c,
+> > which also uses __devinit and __devexit for the same functions. Wouldn't
+> > that be a problem there as well ? Or am I missing something ?
+> 
+> You're right, this should be fixed. I take patches ;)
+> 
+Ok, I'll add that to my pending list.
 
-The difference is hardware-specific: the hwspinlock device is located
-on the OMAP's L4 interconnect where access is slow, wasteful of power,
-and spinning on it may prevent other peripherals from interconnecting.
+Guenter
+
+
