@@ -1,69 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758559Ab0JSLtO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Oct 2010 07:49:14 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:59163 "EHLO mx2.mail.elte.hu"
+	id S1758345Ab0JSLuZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Oct 2010 07:50:25 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:19701 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758542Ab0JSLtN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Oct 2010 07:49:13 -0400
-Date: Tue, 19 Oct 2010 13:49:04 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Brian Gitonga Marete <marete@toshnix.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [PATCH] [PERF] (Userspace Tools) Fix a compilation error with
- -fstack-protector and -Werror
-Message-ID: <20101019114904.GB25371@elte.hu>
-References: <AANLkTinHc7tMntW5NFAhu40RC7m2=HwbqOBeE-21vL8J@mail.gmail.com>
- <20101018233834.GC5370@nowhere>
- <AANLkTi=Ssz4WdMDXq-93GE9bPHoaQ8QyTSrWXDSCa7eH@mail.gmail.com>
- <20101019064000.GC21782@elte.hu>
- <AANLkTimqaTKu23HrgbffAht_Otn9L5k2oHMZDGki8MK+@mail.gmail.com>
- <AANLkTin=0N0b=wK8974RGwXuTxpQ4BtH4bHwjsea+1tS@mail.gmail.com>
+	id S1758069Ab0JSLuY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Oct 2010 07:50:24 -0400
+Date: Tue, 19 Oct 2010 07:49:33 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: Andi Kleen <andi@firstfloor.org>, torvalds@linux-foundation.org,
+        linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH] Fix array overflow in CFQ
+Message-ID: <20101019114933.GA857@redhat.com>
+References: <1287479450-11447-1-git-send-email-andi@firstfloor.org>
+ <4CBD6C84.3020309@kernel.dk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <AANLkTin=0N0b=wK8974RGwXuTxpQ4BtH4bHwjsea+1tS@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <4CBD6C84.3020309@kernel.dk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Brian Gitonga Marete <marete@toshnix.com> wrote:
-
-> > OK. Now that I actually look closely at that fragment I can see its useless to 
-> > create the automatic arrays. Local string literals would also work (i.e. just 
-> > pass `"Yes"' and `"No"' to newtWinChoice). But can also do what you suggested if 
-> > it is anticipated that they will be used somewhere else within the file at some 
-> > other time -- Currently they are not.
+On Tue, Oct 19, 2010 at 12:01:40PM +0200, Jens Axboe wrote:
+> On 2010-10-19 11:10, Andi Kleen wrote:
+> > From: Andi Kleen <ak@linux.intel.com>
+> > 
+> > gcc 4.5 complains when compiling a recent rc with
+> > 
+> > linux/block/cfq-iosched.c: In function ‘cfq_dispatch_requests’:
+> > linux/block/cfq-iosched.c:2156:3: warning: array subscript is above array bounds
+> > 
+> > and it is right:
+> > 
+> >  slice = group_slice * count /
+> >                 max_t(unsigned, cfqg->busy_queues_avg[cfqd->serving_prio],
+> >                       cfq_group_busy_queues_wl(cfqd->serving_prio, cfqd, cfqg));
+> > 
+> > busy_queues_avg can be indexed by this enum
+> > 
+> > enum wl_prio_t {
+> >         BE_WORKLOAD = 0,
+> >         RT_WORKLOAD = 1,
+> >         IDLE_WORKLOAD = 2,
+> > };
+> > 
+> > in cfqd->serving_prio, but is only declared as
+> > 
+> > unsigned int busy_queues_avg[2];
+> > 
+> > which is clearly off by one. Fix this here.
 > 
-> Oops. Sorry. What I suggested won't work because of the -Wwrite-strings default 
-> option. Which actually makes me understand why the original author of the code 
-> made it the way it is. Your suggestion of file-scope, static does solve the 
-> problem.
+> Indeed, that is definitely buggy. ->service_trees[][] looks buggy, too.
+> WTF?!
 
-Btw., -Wwrite-strings has proven to be a really useful warning in practice, in that 
-it ensured that we propagate string immutability/const-ness as widely as possible. 
-This resulted is cleaner perf code in the long run.
+Hi Jens,
 
-Here we cannot fix the Newt prototype (it's an existing library outside of our 
-control) to take a const so we have to do the (mild) workaround of moving it to file 
-scope. (if this becomes common then we'd have to re-evaluate the use of this 
-warning)
+busy_queues_avg[] definitely looks buggy. Looks like I introduced this bug
+while converting corrado's logic to group logic. I will fix it in a while.
+Sorry for the goof up here.
 
-I think Arnaldo has plans to get rid of the libnewt dependency altogether - that 
-might be a fix too.
+->service_trees[][] is not buggy. We maintain workload subclassification
+only for RT and BE class. For IDLE class, there are no ASYNC_WORKLOAD,
+SYNC_NOIDLE_WORKLOAD or SYNC_WORKLOAD. All the type of idle queues
+go onto a separate service tree, service_tree_idle.
 
-Thanks,
+Thanks
+Vivek
 
-	Ingo
+> 
+> diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
+> index 9eba291..8ce9f52 100644
+> --- a/block/cfq-iosched.c
+> +++ b/block/cfq-iosched.c
+> @@ -160,6 +160,7 @@ enum wl_prio_t {
+>  	BE_WORKLOAD = 0,
+>  	RT_WORKLOAD = 1,
+>  	IDLE_WORKLOAD = 2,
+> +	CFQ_PRIO_NR,
+>  };
+>  
+>  /*
+> @@ -168,7 +169,8 @@ enum wl_prio_t {
+>  enum wl_type_t {
+>  	ASYNC_WORKLOAD = 0,
+>  	SYNC_NOIDLE_WORKLOAD = 1,
+> -	SYNC_WORKLOAD = 2
+> +	SYNC_WORKLOAD = 2,
+> +	CFQ_TYPE_NR,
+>  };
+>  
+>  /* This is per cgroup per device grouping structure */
+> @@ -185,12 +187,12 @@ struct cfq_group {
+>  	int nr_cfqq;
+>  
+>  	/* Per group busy queus average. Useful for workload slice calc. */
+> -	unsigned int busy_queues_avg[2];
+> +	unsigned int busy_queues_avg[CFQ_PRIO_NR];
+>  	/*
+>  	 * rr lists of queues with requests, onle rr for each priority class.
+>  	 * Counts are embedded in the cfq_rb_root
+>  	 */
+> -	struct cfq_rb_root service_trees[2][3];
+> +	struct cfq_rb_root service_trees[CFQ_PRIO_NR][CFQ_TYPE_NR];
+>  	struct cfq_rb_root service_tree_idle;
+>  
+>  	unsigned long saved_workload_slice;
+> 
+> -- 
+> Jens Axboe
