@@ -1,84 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755476Ab0JSQ2M (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Oct 2010 12:28:12 -0400
-Received: from va3ehsobe010.messaging.microsoft.com ([216.32.180.30]:22990
-	"EHLO VA3EHSOBE010.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753840Ab0JSQ2J (ORCPT
+	id S1755639Ab0JSQ3V (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Oct 2010 12:29:21 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:54979 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755415Ab0JSQ3U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Oct 2010 12:28:09 -0400
-X-SpamScore: -14
-X-BigFish: VPS-14(zzbb2cK1432N98dNzz1202hzz8275bhz32i2a8h43h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: KIP:(null);UIP:(null);(null);(null)
-X-WSS-ID: 0LAJPQN-01-94U-02
-X-M-MSG: 
-Date: Tue, 19 Oct 2010 18:25:07 +0200
-From: Robert Richter <robert.richter@amd.com>
-To: Don Zickus <dzickus@redhat.com>
-CC: "mingo@elte.hu" <mingo@elte.hu>,
-        "andi@firstfloor.org" <andi@firstfloor.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "peterz@infradead.org" <peterz@infradead.org>,
-        "ying.huang@intel.com" <ying.huang@intel.com>
-Subject: Re: [PATCH 4/5] x86, NMI: Allow NMI reason io port (0x61) to be
- processed on any CPU
-Message-ID: <20101019162507.GU5969@erda.amd.com>
-References: <1287195738-3136-1-git-send-email-dzickus@redhat.com>
- <1287195738-3136-5-git-send-email-dzickus@redhat.com>
- <20101019150701.GR5969@erda.amd.com>
+	Tue, 19 Oct 2010 12:29:20 -0400
+Date: Tue, 19 Oct 2010 12:29:07 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: Eric Paris <eparis@redhat.com>
+Cc: Dave Chinner <david@fromorbit.com>, Christoph Hellwig <hch@infradead.org>,
+        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, zohar@us.ibm.com, warthog9@kernel.org,
+        jmorris@namei.org, kyle@mcmartin.ca, hpa@zytor.com,
+        akpm@linux-foundation.org, torvalds@linux-foundation.org,
+        mingo@elte.hu, viro@zeniv.linux.org.uk
+Subject: Re: [PATCH 1/3] IMA: move read/write counters into struct inode
+Message-ID: <20101019162907.GA5785@infradead.org>
+References: <20101019011650.25346.99614.stgit@paris.rdu.redhat.com>
+ <20101019013037.GA31393@infradead.org>
+ <1287454443.2530.124.camel@localhost.localdomain>
+ <20101019073901.GB11284@dastard>
+ <1287505483.2530.174.camel@localhost.localdomain>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20101019150701.GR5969@erda.amd.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Reverse-DNS: unknown
+In-Reply-To: <1287505483.2530.174.camel@localhost.localdomain>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 19.10.10 17:07:01, Robert Richter wrote:
-> On 15.10.10 22:22:17, Don Zickus wrote:
-> > From: Huang Ying <ying.huang@intel.com>
-> > 
-> > In original NMI handler, NMI reason io port (0x61) is only processed
-> > on BSP. This makes it impossible to hot-remove BSP. To solve the
-> > issue, a raw spinlock is used to make the port can be processed on any
-> > CPU.
-> > 
-> > Signed-off-by: Huang Ying <ying.huang@intel.com>
-> > Signed-off-by: Don Zickus <dzickus@redhat.com>
-> > ---
-> >  arch/x86/kernel/traps.c |   45 +++++++++++++++++++++++++--------------------
-> >  1 files changed, 25 insertions(+), 20 deletions(-)
+Eric,
 
-> > @@ -400,28 +405,28 @@ static notrace __kprobes void default_do_nmi(struct pt_regs *regs)
-> >  		return;
-> >  
-> >  	/* Non-CPU-specific NMI: NMI sources can be processed on any CPU */
-> > -	cpu = smp_processor_id();
-> > -	/* Only the BSP gets external NMIs from the system. */
-> > -	if (!cpu) {
-> > -		reason = get_nmi_reason();
-> > -		if (reason & NMI_REASON_MASK) {
-> > -			if (notify_die(DIE_NMI, "nmi", regs, reason, 2, SIGINT)
-> > -			    == NOTIFY_STOP)
-> > -				return;
-> > -			if (reason & NMI_REASON_SERR)
-> > -				pci_serr_error(reason, regs);
-> > -			else if (reason & NMI_REASON_IOCHK)
-> > -				io_check_error(reason, regs);
-> > +	raw_spin_lock(&nmi_reason_lock);
-> 
-> What about using raw_spin_trylock() instead? We don't have to wait
-> here since we are already processing it by another cpu.
+I think you and just about everyone here are on a different page, and
+before we have the basic disagreement settled I'm not sure we can
+make much progress.
 
-This would avoid a global lock and also deadlocking in case of a
-potential #gp in the nmi handler.
+Can you please explain why a feature like IMA that no sane user would
+ever want should cause _any_ overhead for users that just have it
+compiled in because their distro or defconfig did without actually
+using.
 
--Robert
-
--- 
-Advanced Micro Devices, Inc.
-Operating System Research Center
+What exactly is the problem to require the few people that want it to
+use a kernel command line option and/or an _DEFAULT_ON config option?
 
