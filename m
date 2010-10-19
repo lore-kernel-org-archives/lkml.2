@@ -1,58 +1,168 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755747Ab0JSR2V (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Oct 2010 13:28:21 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:44466 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752208Ab0JSR2T (ORCPT
+	id S1753874Ab0JSRdz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Oct 2010 13:33:55 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:45488 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752591Ab0JSRdx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Oct 2010 13:28:19 -0400
-Date: Tue, 19 Oct 2010 18:28:05 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Eric Paris <eparis@redhat.com>, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        hch@infradead.org, zohar@us.ibm.com, warthog9@kernel.org,
-        david@fromorbit.com, jmorris@namei.org, kyle@mcmartin.ca,
-        hpa@zytor.com, akpm@linux-foundation.org, mingo@elte.hu
-Subject: Re: [PATCH 1/3] IMA: move read/write counters into struct inode
-Message-ID: <20101019172805.GU19804@ZenIV.linux.org.uk>
-References: <20101019011650.25346.99614.stgit@paris.rdu.redhat.com>
- <AANLkTimGdjPyLXuknDNa7WNthDT9+2FdOuPdxwjRiMHD@mail.gmail.com>
- <1287506215.2530.187.camel@localhost.localdomain>
- <20101019165530.GT19804@ZenIV.linux.org.uk>
- <AANLkTimL=eChoCQHGoiouE5s6dGG=n9ZAQGhW-RW+gDj@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTimL=eChoCQHGoiouE5s6dGG=n9ZAQGhW-RW+gDj@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+	Tue, 19 Oct 2010 13:33:53 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=q0m4bCWzKBMfMtzQG9nKQUKvOmcBGuS4P9D/PWw/uI8ZApPsdH7PTAWctYfbnHaDYq
+         BbsHJ3W8XmNnw6UmWhpV0ozzrrLCoeR7m6vNJxV1AydlPRunao8oPbw3AKP8xP/koqn6
+         6Ck+BMENEo9Mc98FtXMzip00Ris4x+dKC0EZY=
+From: dirk.brandewie@gmail.com
+To: linux-kernel@vger.kernel.org
+Cc: hpa@zytor.com, mingo@redhat.com, tglx@linutronix.de, x86@kernel.org
+Subject: [PATCH] x86: Allow platforms to force enable apic
+Date: Tue, 19 Oct 2010 10:46:28 -0700
+Message-Id: <1287510389-8388-1-git-send-email-dirk.brandewie@gmail.com>
+X-Mailer: git-send-email 1.7.2.3
+To: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 19, 2010 at 10:03:48AM -0700, Linus Torvalds wrote:
-> On Tue, Oct 19, 2010 at 9:55 AM, Al Viro <viro@zeniv.linux.org.uk> wrote:
-> >
-> > a) i_writecount is about VM_DENYWRITE, basically. ?Reusing it for ima could
-> > get unpleasant; when it's positive, we are fine, but it can get negative as
-> > well. ?IMA will have interesting time dealing with that.
-> >
-> > b) i_count is simply a refcount for struct inode. ?Not exactly the number
-> > of dentries, but that's the main contributor. ?Basically, that's "how many
-> > pointers outside of inode hash chains point that that struct inode at the
-> > moment".
-> 
-> My question was deeper. More along the lines of "why would IMA care?"
-> 
-> How/why could IMA ever care about the pointless and trivial
-> differences between its current private open/read/write counts and the
-> counts that we already maintain?
-> 
-> Yes, yes, I realize that they have technical differences in what they
-> count. That's not the question. The question is "Why would IMA care?"
+From: Thomas Gleixner <tglx@linutronix.de>
 
-I'd rather not say what I think about IMA sanity (and usefulness); as for what
-it tries to do...  They want to whine if you open a file that is already opened
-for write and they want to whine if you open a file for write when it's already
-opened for read.  Unless they decide to leave the file alone, that is.
+Some embedded x86 platforms don't setup the APIC in the
+BIOS/bootloader and would be forced to add "lapic" on the kernel
+command line. That's a bit akward.
+
+Split out the force enable code from detect_init_APIC() and allow
+platform code to call it from the platform setup.
+
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+---
+ arch/x86/include/asm/apic.h |    1 +
+ arch/x86/kernel/apic/apic.c |   87 ++++++++++++++++++++++++++----------------
+ 2 files changed, 55 insertions(+), 33 deletions(-)
+
+diff --git a/arch/x86/include/asm/apic.h b/arch/x86/include/asm/apic.h
+index 1fa03e0..4261a39 100644
+--- a/arch/x86/include/asm/apic.h
++++ b/arch/x86/include/asm/apic.h
+@@ -238,6 +238,7 @@ extern void setup_boot_APIC_clock(void);
+ extern void setup_secondary_APIC_clock(void);
+ extern int APIC_init_uniprocessor(void);
+ extern void enable_NMI_through_LVT0(void);
++extern int apic_force_enable(void);
+ 
+ /*
+  * On 32bit this is mach-xxx local
+diff --git a/arch/x86/kernel/apic/apic.c b/arch/x86/kernel/apic/apic.c
+index e3b534c..67ba18a 100644
+--- a/arch/x86/kernel/apic/apic.c
++++ b/arch/x86/kernel/apic/apic.c
+@@ -1481,13 +1481,60 @@ static int __init detect_init_APIC(void)
+ 	return 0;
+ }
+ #else
++
++static int apic_verify(void)
++{
++	u32 features, h, l;
++
++	/*
++	 * The APIC feature bit should now be enabled
++	 * in `cpuid'
++	 */
++	features = cpuid_edx(1);
++	if (!(features & (1 << X86_FEATURE_APIC))) {
++		pr_warning("Could not enable APIC!\n");
++		return -1;
++	}
++	set_cpu_cap(&boot_cpu_data, X86_FEATURE_APIC);
++	mp_lapic_addr = APIC_DEFAULT_PHYS_BASE;
++
++	/* The BIOS may have set up the APIC at some other address */
++	rdmsr(MSR_IA32_APICBASE, l, h);
++	if (l & MSR_IA32_APICBASE_ENABLE)
++		mp_lapic_addr = l & MSR_IA32_APICBASE_BASE;
++
++	pr_info("Found and enabled local APIC!\n");
++	return 0;
++}
++
++int apic_force_enable(void)
++{
++	u32 h, l;
++
++	if (disable_apic)
++		return -1;
++
++	/*
++	 * Some BIOSes disable the local APIC in the APIC_BASE
++	 * MSR. This can only be done in software for Intel P6 or later
++	 * and AMD K7 (Model > 1) or later.
++	 */
++	rdmsr(MSR_IA32_APICBASE, l, h);
++	if (!(l & MSR_IA32_APICBASE_ENABLE)) {
++		pr_info("Local APIC disabled by BIOS -- reenabling.\n");
++		l &= ~MSR_IA32_APICBASE_BASE;
++		l |= MSR_IA32_APICBASE_ENABLE | APIC_DEFAULT_PHYS_BASE;
++		wrmsr(MSR_IA32_APICBASE, l, h);
++		enabled_via_apicbase = 1;
++	}
++	return apic_verify();
++}
++
+ /*
+  * Detect and initialize APIC
+  */
+ static int __init detect_init_APIC(void)
+ {
+-	u32 h, l, features;
+-
+ 	/* Disabled by kernel option? */
+ 	if (disable_apic)
+ 		return -1;
+@@ -1517,38 +1564,12 @@ static int __init detect_init_APIC(void)
+ 				"you can enable it with \"lapic\"\n");
+ 			return -1;
+ 		}
+-		/*
+-		 * Some BIOSes disable the local APIC in the APIC_BASE
+-		 * MSR. This can only be done in software for Intel P6 or later
+-		 * and AMD K7 (Model > 1) or later.
+-		 */
+-		rdmsr(MSR_IA32_APICBASE, l, h);
+-		if (!(l & MSR_IA32_APICBASE_ENABLE)) {
+-			pr_info("Local APIC disabled by BIOS -- reenabling.\n");
+-			l &= ~MSR_IA32_APICBASE_BASE;
+-			l |= MSR_IA32_APICBASE_ENABLE | APIC_DEFAULT_PHYS_BASE;
+-			wrmsr(MSR_IA32_APICBASE, l, h);
+-			enabled_via_apicbase = 1;
+-		}
+-	}
+-	/*
+-	 * The APIC feature bit should now be enabled
+-	 * in `cpuid'
+-	 */
+-	features = cpuid_edx(1);
+-	if (!(features & (1 << X86_FEATURE_APIC))) {
+-		pr_warning("Could not enable APIC!\n");
+-		return -1;
++		if (apic_force_enable())
++			return -1;
++	} else {
++		if (apic_verify())
++			return -1;
+ 	}
+-	set_cpu_cap(&boot_cpu_data, X86_FEATURE_APIC);
+-	mp_lapic_addr = APIC_DEFAULT_PHYS_BASE;
+-
+-	/* The BIOS may have set up the APIC at some other address */
+-	rdmsr(MSR_IA32_APICBASE, l, h);
+-	if (l & MSR_IA32_APICBASE_ENABLE)
+-		mp_lapic_addr = l & MSR_IA32_APICBASE_BASE;
+-
+-	pr_info("Found and enabled local APIC!\n");
+ 
+ 	apic_pm_activate();
+ 
+-- 
+1.7.2.3
+
