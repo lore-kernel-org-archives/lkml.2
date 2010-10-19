@@ -1,78 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933732Ab0JSHmA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Oct 2010 03:42:00 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:63335 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752133Ab0JSHl7 (ORCPT
+	id S933743Ab0JSHo0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Oct 2010 03:44:26 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:36382 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933386Ab0JSHoZ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Oct 2010 03:41:59 -0400
+	Tue, 19 Oct 2010 03:44:25 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=Gf0lkyHQ5CnOcQIiOOTUhqzMosggBLIbBGXD+PN6zcbVP+cfl8z1XJgpCg4Qy6gk5N
-         sa4Pn6Czwbr1BQd4ruxWWdiBSFlBmqh8BC6RIbcA716gHKsb/DfrCeULwn0ndmI8SF7t
-         G0EJ0Q5S4FWyJpLKoloDouhadBtEeyDO+yHtQ=
+        h=mime-version:sender:in-reply-to:references:from:date
+         :x-google-sender-auth:message-id:subject:to:cc:content-type
+         :content-transfer-encoding;
+        b=FBGuaSBk+ni9R2fyzJHqUesrFKEVXPoI8XeuBLaxp448usoiSeQBd9ASUS/6xtKQOv
+         LpuitNKx6DfKnPnslfHCngP0ddaent1Kl1e/qU/FU35PpO35jAjevA7qpYz4v7TQ0iv1
+         12F4hEQn+Nz9G/ivdxP5D+bkl/1fh/oC1zjlk=
 MIME-Version: 1.0
-In-Reply-To: <20101018230655.GJ13341@atomide.com>
-References: <1286310944-25035-1-git-send-email-x0095840@ti.com>
-	<AANLkTimoTmhAw11jJihiuyByzKZ9KTFHvx6iw8oeLCGg@mail.gmail.com>
-	<496565EC904933469F292DDA3F1663E602F47B2BB1@dlee06.ent.ti.com>
-	<AANLkTim6XRgnefA0vmRNeW=TONhxz68WYAjuA96LqWOj@mail.gmail.com>
-	<496565EC904933469F292DDA3F1663E602F47B3002@dlee06.ent.ti.com>
-	<AANLkTik3hhWy+tRxThtrbwNXTssV7nf9+_LGn5Ct3iet@mail.gmail.com>
-	<496565EC904933469F292DDA3F1663E602F48817EF@dlee06.ent.ti.com>
-	<AANLkTi=juk+824k1R8mJrDostKhRz+nRNqj9E-rNYWrv@mail.gmail.com>
-	<496565EC904933469F292DDA3F1663E602F4881816@dlee06.ent.ti.com>
-	<AANLkTikfn9w-FMKXOVXibwHVy4vt72GdveDLVv0z3GmT@mail.gmail.com>
-	<20101018230655.GJ13341@atomide.com>
-Date: Tue, 19 Oct 2010 10:41:57 +0300
-Message-ID: <AANLkTimfHtgXvJ05wOwq6oGuHDA76rpf5SANf718f8re@mail.gmail.com>
-Subject: Re: [PATCHv3 00/11] staging tidspbridge: iommu migration
-From: Felipe Contreras <felipe.contreras@gmail.com>
-To: Tony Lindgren <tony@atomide.com>
-Cc: "Guzman Lugo, Fernando" <fernando.lugo@ti.com>,
-        "gregkh@suse.de" <gregkh@suse.de>,
-        "felipe.contreras@nokia.com" <felipe.contreras@nokia.com>,
-        "ameya.palande@nokia.com" <ameya.palande@nokia.com>,
-        "Menon, Nishanth" <nm@ti.com>,
-        "Hiroshi.DOYU@nokia.com" <Hiroshi.DOYU@nokia.com>,
-        "ohad@wizery.com" <ohad@wizery.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "andy.shevchenko@gmail.com" <andy.shevchenko@gmail.com>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <20101019071951.GB23839@pengutronix.de>
+References: <1267546953-19319-1-git-send-email-u.kleine-koenig@pengutronix.de> <20101019071951.GB23839@pengutronix.de>
+From: Ian Molton <ian@mnementh.co.uk>
+Date: Tue, 19 Oct 2010 08:44:02 +0100
+X-Google-Sender-Auth: 9VSAO6FV7rfGtrce8IWVPvBwnwU
+Message-ID: <AANLkTikaoztadhmdD6asL+RLKj27NEa3cPp+fz-=j4+F@mail.gmail.com>
+Subject: Re: [PATCH] mfd/tc6393xb: don't use devinit data from non-init function
+To: =?ISO-8859-1?Q?Uwe_Kleine=2DK=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+Cc: linux-kernel@vger.kernel.org, Magnus Damm <damm@opensource.se>,
+        Samuel Ortiz <sameo@linux.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 19, 2010 at 2:06 AM, Tony Lindgren <tony@atomide.com> wrote:
-> * Felipe Contreras <felipe.contreras@gmail.com> [101015 13:09]:
->> On Fri, Oct 15, 2010 at 7:53 PM, Guzman Lugo, Fernando
->> <fernando.lugo@ti.com> wrote:
->> >> If you want I can provide my working branch on top of .36-rc8
->> >> with next-staging merged. If I revert your patches, it works fine.
->> >
->> > That could be interested. Can you send me the link?
->>
->> There you go:
->> git://gitorious.org/~felipec/linux-omap/felipec.git (fc-dsp-work)
->>
->> HEAD works, HEAD^ doesn't.
->
-> Great, can you please also let us know what if anything should
-> be still queued for the merge window that's about to open?
->
-> I've lost track of the dspbridge mutations by now..
+I already acked it... wonder where it went?
 
-We would need these:
-http://article.gmane.org/gmane.linux.kernel/1044209
-http://article.gmane.org/gmane.linux.ports.arm.omap/45076 (just sent)
+Acked-by: Ian Molton <ian@mnementh.co.uk>
 
-The first one is in staging-next, you have ack'ed it, but Paul nak'ed
-it. We would need it on mainline if dsp has any chances of working
-there.
+:)
 
 -- 
-Felipe Contreras
+Ian Molton
+Linux, Automotive, and other hacking:
+http://www.mnementh.co.uk/
+
+
+
+2010/10/19 Uwe Kleine-König <u.kleine-koenig@pengutronix.de>:
+> Hello,
+>
+> On Tue, Mar 02, 2010 at 05:22:33PM +0100, Uwe Kleine-König wrote:
+>> tc6393xb_mmc_resources (which was marked __devinitdata) is used in
+>> tc6393xb_mmc_enable() and tc6393xb_mmc_resume() which both are functions
+>> living in .text.  This is not save with CONFIG_HOTPLUG=n.
+>>
+>> This was introduced in
+>>
+>>       64e8867 (mfd: tmio_mmc hardware abstraction for CNF area)
+>>
+>> Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
+>> Cc: Ian Molton <ian@mnementh.co.uk>
+>> Cc: Magnus Damm <damm@opensource.se>
+>> Cc: Samuel Ortiz <sameo@linux.intel.com>
+> ping
+>
+> Uwe
+>> ---
+>>  drivers/mfd/tc6393xb.c |    2 +-
+>>  1 files changed, 1 insertions(+), 1 deletions(-)
+>>
+>> diff --git a/drivers/mfd/tc6393xb.c b/drivers/mfd/tc6393xb.c
+>> index 4bc5a08..b057d8d 100644
+>> --- a/drivers/mfd/tc6393xb.c
+>> +++ b/drivers/mfd/tc6393xb.c
+>> @@ -154,7 +154,7 @@ static struct resource __devinitdata tc6393xb_nand_resources[] = {
+>>       },
+>>  };
+>>
+>> -static struct resource __devinitdata tc6393xb_mmc_resources[] = {
+>> +static struct resource tc6393xb_mmc_resources[] = {
+>>       {
+>>               .start  = 0x800,
+>>               .end    = 0x9ff,
+>> --
+>> 1.7.0
+>>
+>>
+>
+> --
+> Pengutronix e.K.                           | Uwe Kleine-König            |
+> Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+>
