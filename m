@@ -1,80 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753140Ab0JSPIU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Oct 2010 11:08:20 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:47031 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752513Ab0JSPIS (ORCPT
+	id S1753362Ab0JSPJF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Oct 2010 11:09:05 -0400
+Received: from am1ehsobe006.messaging.microsoft.com ([213.199.154.209]:35730
+	"EHLO AM1EHSOBE006.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753250Ab0JSPJE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Oct 2010 11:08:18 -0400
-Date: Tue, 19 Oct 2010 11:08:17 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Tatyana Brokhman <tlinder@codeaurora.org>
-cc: USB list <linux-usb@vger.kernel.org>, <linux-arm-msm@vger.kernel.org>,
-        David Brownell <dbrownell@users.sourceforge.net>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        Kernel development list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v3 2/2] usb: dummy_hcd code simplification
-In-Reply-To: <1287495641-22802-1-git-send-email-tlinder@codeaurora.org>
-Message-ID: <Pine.LNX.4.44L0.1010191056470.1786-100000@iolanthe.rowland.org>
+	Tue, 19 Oct 2010 11:09:04 -0400
+X-SpamScore: -14
+X-BigFish: VPS-14(zzbb2cK1432N98dNzz1202hzz8275bhz32i2a8h43h61h)
+X-Spam-TCS-SCL: 0:0
+X-FB-SS: 0,
+X-WSS-ID: 0LAJLZN-02-AH4-02
+X-M-MSG: 
+Date: Tue, 19 Oct 2010 17:07:01 +0200
+From: Robert Richter <robert.richter@amd.com>
+To: Don Zickus <dzickus@redhat.com>
+CC: "mingo@elte.hu" <mingo@elte.hu>,
+        "andi@firstfloor.org" <andi@firstfloor.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "peterz@infradead.org" <peterz@infradead.org>,
+        "ying.huang@intel.com" <ying.huang@intel.com>
+Subject: Re: [PATCH 4/5] x86, NMI: Allow NMI reason io port (0x61) to be
+ processed on any CPU
+Message-ID: <20101019150701.GR5969@erda.amd.com>
+References: <1287195738-3136-1-git-send-email-dzickus@redhat.com>
+ <1287195738-3136-5-git-send-email-dzickus@redhat.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1287195738-3136-5-git-send-email-dzickus@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Reverse-DNS: unknown
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 19 Oct 2010, Tatyana Brokhman wrote:
-
-> Take handling of the control requests out from dummy_timer to a different
-> function.
+On 15.10.10 22:22:17, Don Zickus wrote:
+> From: Huang Ying <ying.huang@intel.com>
 > 
-> Signed-off-by: Tatyana Brokhman <tlinder@codeaurora.org>
+> In original NMI handler, NMI reason io port (0x61) is only processed
+> on BSP. This makes it impossible to hot-remove BSP. To solve the
+> issue, a raw spinlock is used to make the port can be processed on any
+> CPU.
+> 
+> Signed-off-by: Huang Ying <ying.huang@intel.com>
+> Signed-off-by: Don Zickus <dzickus@redhat.com>
 > ---
->  drivers/usb/gadget/dummy_hcd.c |  250 +++++++++++++++++++++-------------------
->  1 files changed, 134 insertions(+), 116 deletions(-)
+>  arch/x86/kernel/traps.c |   45 +++++++++++++++++++++++++--------------------
+>  1 files changed, 25 insertions(+), 20 deletions(-)
 > 
-> diff --git a/drivers/usb/gadget/dummy_hcd.c b/drivers/usb/gadget/dummy_hcd.c
-> index dc65462..ff93fea 100644
-> --- a/drivers/usb/gadget/dummy_hcd.c
-> +++ b/drivers/usb/gadget/dummy_hcd.c
-> @@ -1195,6 +1195,138 @@ static struct dummy_ep *find_endpoint (struct dummy *dum, u8 address)
->  #define Ep_Request	(USB_TYPE_STANDARD | USB_RECIP_ENDPOINT)
->  #define Ep_InRequest	(Ep_Request | USB_DIR_IN)
+> diff --git a/arch/x86/kernel/traps.c b/arch/x86/kernel/traps.c
+> index d8acab3..accb2f4 100644
+> --- a/arch/x86/kernel/traps.c
+> +++ b/arch/x86/kernel/traps.c
+> @@ -83,6 +83,12 @@ EXPORT_SYMBOL_GPL(used_vectors);
 >  
-> +
-> +/**
-> + * handle_control_request() - handles all control transferes
-> + *
-
-There should not be a blank line here.
-
-> + * @dum - pointer to dummy (the_controller)
-> + * @urb - the urb request to handle
-
-Where's the line for "setup"?
-
-> + * @status - pointer to request handling status
-
-In each of these there should be a ':' following the variable name,
-not a space and a '-'.  Honestly, I can't see why you have so much
-trouble copying the format of existing kerneldoc entries.
-
-> + *
-> + * Return 0 - if the request was handled
-> + *	  1 - if the request wasn't handles
-> + *	  error code on error
+>  static int ignore_nmis;
+>  
+> +/*
+> + * Prevent NMI reason port (0x61) being accessed simultaneously, can
+> + * only be used in NMI handler.
 > + */
-> +static int handle_control_request(struct dummy *dum, struct urb *urb,
-> +				  struct usb_ctrlrequest setup,
+> +static DEFINE_RAW_SPINLOCK(nmi_reason_lock);
+> +
+>  static inline void conditional_sti(struct pt_regs *regs)
+>  {
+>  	if (regs->flags & X86_EFLAGS_IF)
+> @@ -383,7 +389,6 @@ unknown_nmi_error(unsigned char reason, struct pt_regs *regs)
+>  static notrace __kprobes void default_do_nmi(struct pt_regs *regs)
+>  {
+>  	unsigned char reason = 0;
+> -	int cpu;
+>  
+>  	/*
+>  	 * CPU-specific NMI must be processed before non-CPU-specific
+> @@ -400,28 +405,28 @@ static notrace __kprobes void default_do_nmi(struct pt_regs *regs)
+>  		return;
+>  
+>  	/* Non-CPU-specific NMI: NMI sources can be processed on any CPU */
+> -	cpu = smp_processor_id();
+> -	/* Only the BSP gets external NMIs from the system. */
+> -	if (!cpu) {
+> -		reason = get_nmi_reason();
+> -		if (reason & NMI_REASON_MASK) {
+> -			if (notify_die(DIE_NMI, "nmi", regs, reason, 2, SIGINT)
+> -			    == NOTIFY_STOP)
+> -				return;
+> -			if (reason & NMI_REASON_SERR)
+> -				pci_serr_error(reason, regs);
+> -			else if (reason & NMI_REASON_IOCHK)
+> -				io_check_error(reason, regs);
+> +	raw_spin_lock(&nmi_reason_lock);
 
-Don't pass "setup" by value!  Pass it by reference, i.e., pass a 
-pointer to the "setup" variable in dummy_timer().
+What about using raw_spin_trylock() instead? We don't have to wait
+here since we are already processing it by another cpu.
 
-> +				  int *status)
-> +{
+-Robert
 
-The rest of this is okay.
+> +	reason = get_nmi_reason();
+> +	if (reason & NMI_REASON_MASK) {
+> +		if (notify_die(DIE_NMI, "nmi", regs, reason, 2, SIGINT)
+> +		    == NOTIFY_STOP)
+> +			goto unlock_return;
+> +		if (reason & NMI_REASON_SERR)
+> +			pci_serr_error(reason, regs);
+> +		else if (reason & NMI_REASON_IOCHK)
+> +			io_check_error(reason, regs);
+>  #ifdef CONFIG_X86_32
+> -			/*
+> -			 * Reassert NMI in case it became active
+> -			 * meanwhile as it's edge-triggered:
+> -			 */
+> -			reassert_nmi();
+> +		/*
+> +		 * Reassert NMI in case it became active
+> +		 * meanwhile as it's edge-triggered:
+> +		 */
+> +		reassert_nmi();
+>  #endif
+> -			return;
+> -		}
+> +unlock_return:
+> +		raw_spin_unlock(&nmi_reason_lock);
+> +		return;
+>  	}
+> +	raw_spin_unlock(&nmi_reason_lock);
+>  
+>  	if (notify_die(DIE_NMI, "nmi", regs, 0, 2, SIGINT) == NOTIFY_STOP)
+>  		return;
+> -- 
+> 1.7.2.3
+> 
+> 
 
-Alan Stern
+-- 
+Advanced Micro Devices, Inc.
+Operating System Research Center
 
