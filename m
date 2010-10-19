@@ -1,28 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933991Ab0JSMi4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Oct 2010 08:38:56 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:61213 "EHLO
+	id S1758547Ab0JSMkF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Oct 2010 08:40:05 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:40342 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932393Ab0JSMiy (ORCPT
+	with ESMTP id S1758326Ab0JSMkC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Oct 2010 08:38:54 -0400
-X-Authority-Analysis: v=1.1 cv=6ptpMFIBtxRk0xdOb6IhJTbTLVRlKjWFes7R4SsWCrA= c=1 sm=0 a=O21JH8oWZ5MA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=pGLkceISAAAA:8 a=4YC9ZLZlW7zBmXA5HJgA:9 a=0s76a9iGO5bt5fQno3_BXgIOo20A:4 a=PUjeQqilurYA:10 a=MSl-tDqOz04A:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+	Tue, 19 Oct 2010 08:40:02 -0400
+X-Authority-Analysis: v=1.1 cv=NFUeGz0loTdi/T6hXKngYYtckjed7x3pKvNOqmBBK18= c=1 sm=0 a=uClON0xspYwA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=f2IuoIUASZe4VltPhkoA:9 a=Ue0PYLc86exCCGVn5A1JAHvB63IA:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
 X-Cloudmark-Score: 0
 X-Originating-IP: 67.242.120.143
-Subject: Re: [PATCH] sched_rt: Removes extra checking for nr_cpus_allowed
- when calling find_lowest_rq
+Subject: Re: [Ksummit-2010-discuss] [v2] Remaining BKL users, what to do
 From: Steven Rostedt <rostedt@goodmis.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Rakib Mullick <rakib.mullick@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        Gregory Haskins <ghaskins@novell.com>
-In-Reply-To: <1287486167.1994.1.camel@twins>
-References: <AANLkTinoaJX3M2zU_zZOpmFm9Ekxpw-LUVUf_TU8yuSq@mail.gmail.com>
-	 <1287486167.1994.1.camel@twins>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Dave Airlie <airlied@gmail.com>,
+        Theodore Kilgore <kilgota@banach.math.auburn.edu>,
+        Greg KH <greg@kroah.com>, codalist@telemann.coda.cs.cmu.edu,
+        autofs@linux.kernel.org, Samuel Ortiz <samuel@sortiz.org>,
+        Jan Kara <jack@suse.cz>,
+        Mikulas Patocka <mikulas@artax.karlin.mff.cuni.cz>,
+        Jan Harkes <jaharkes@cs.cmu.edu>, netdev@vger.kernel.org,
+        Anders Larsen <al@alarsen.net>, linux-kernel@vger.kernel.org,
+        dri-devel@lists.freedesktop.org, Bryan Schumaker <bjschuma@netapp.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        ksummit-2010-discuss@lists.linux-foundation.org,
+        Petr Vandrovec <vandrove@vc.cvut.cz>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        linux-fsdevel@vger.kernel.org, Evgeniy Dushistov <dushistov@mail.ru>,
+        Ingo Molnar <mingo@elte.hu>, Andrew Hendry <andrew.hendry@gmail.com>,
+        linux-media@vger.kernel.org
+In-Reply-To: <201010190926.54635.arnd@arndb.de>
+References: <201009161632.59210.arnd@arndb.de>
+	 <alpine.LNX.2.00.1010182342120.31740@banach.math.auburn.edu>
+	 <AANLkTi=oAeuz8ZxcOMpf=3MVY=WMt0BwHiGCUxO7OAEV@mail.gmail.com>
+	 <201010190926.54635.arnd@arndb.de>
 Content-Type: text/plain; charset="ISO-8859-15"
-Date: Tue, 19 Oct 2010 08:38:51 -0400
-Message-ID: <1287491931.16971.358.camel@gandalf.stny.rr.com>
+Date: Tue, 19 Oct 2010 08:39:58 -0400
+Message-ID: <1287491998.16971.360.camel@gandalf.stny.rr.com>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
@@ -30,60 +44,37 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-10-19 at 13:02 +0200, Peter Zijlstra wrote:
-
-> > Remove the check for nr_cpus_allowed of an RT task before calling
-> > find_lowest_cpu() from select_task_rq_rt function. Cause
-> > find_lowest_cpu checks for rt.nr_cpus_allowed of a process.
-> > It would've been nice, if we make the check before calling
-> > find_lowest_cpu. But its called from other places, so keep the
-> > nr_cpus_allowed check into find_lowest_cpu().
+On Tue, 2010-10-19 at 09:26 +0200, Arnd Bergmann wrote:
+> On Tuesday 19 October 2010 06:52:32 Dave Airlie wrote:
+> > > I might be able to find some hardware still lying around here that uses an
+> > > i810. Not sure unless I go hunting it. But I get the impression that if
+> > > the kernel is a single-CPU kernel there is not any problem anyway? Don't
+> > > distros offer a non-smp kernel as an installation option in case the user
+> > > needs it? So in reality how big a problem is this?
+> > 
+> > Not anymore, which is my old point of making a fuss. Nowadays in the
+> > modern distro world, we supply a single kernel that can at runtime
+> > decide if its running on SMP or UP and rewrite the text section
+> > appropriately with locks etc. Its like magic, and something like
+> > marking drivers as BROKEN_ON_SMP at compile time is really wrong when
+> > what you want now is a runtime warning if someone tries to hotplug a
+> > CPU with a known iffy driver loaded or if someone tries to load the
+> > driver when we are already in SMP mode.
 > 
+> We could make the driver run-time non-SMP by adding
+> 
+> 	if (num_present_cpus() > 1) {
+> 		pr_err("i810 no longer supports SMP\n");
+> 		return -EINVAL;
+> 	}
+> 
+> to the init function. That would cover the vast majority of the
+> users of i810 hardware, I guess.
 
-Yes it is redundant, but I'm wondering if we should modify
-find_lowest_rq() just to short cut this case.
-
-That is, instead of assigning all the variables on the stack, which I'm
-thinking __get_cpu_var() may act like a barrier() where gcc can't
-optimize. We should probably also do the following:
-
-static int find_lowest_rq(struct task_struct *task)
-{
-	struct sched_domain *sd;
--	struct cpumask *lowest_mask = __get_cpu_var(local_cpu_mask);
--	int this_cpu = smp_processor_id();
--	int cpu      = task_cpu(task);
-+	struct cpumask *lowest_mask;
-+	int this_cpu;
-+	int cpu;
-
-	if (task->rt.nr_cpus_allowed == 1)
-		return -1; /* No other targets possible */
-
-+	lowest_mask = __get_cpu_var(local_cpu_mask);
-+	this_cpu = smp_processor_id();
-+	cpu = task_cpu(task;
-
-
-Then removing the redundant check may not hurt anything.
+I think we also need to cover the PREEMPT case too. But that could be a
+compile time check, since you can't boot a preempt kernel and make it
+non preempt.
 
 -- Steve
-
-
-> > Signed-off-by: Rakib Mullick <rakib.mullick@gmail.com>
-> > ---
-> > 
-> > --- linus-rc8/kernel/sched_rt.c	2010-10-15 05:26:43.000000000 +0600
-> > +++ rakib-rc8/kernel/sched_rt.c	2010-10-19 16:22:30.000000000 +0600
-> > @@ -971,8 +971,7 @@ select_task_rq_rt(struct rq *rq, struct
-> >  	 * that is just being woken and probably will have
-> >  	 * cold cache anyway.
-> >  	 */
-> > -	if (unlikely(rt_task(rq->curr)) &&
-> > -	    (p->rt.nr_cpus_allowed > 1)) {
-> > +	if (unlikely(rt_task(rq->curr))) {
-> >  		int cpu = find_lowest_rq(p);
-> > 
-> >  		return (cpu == -1) ? task_cpu(p) : cpu;
 
 
