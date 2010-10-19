@@ -1,48 +1,199 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757906Ab0JSAnl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Oct 2010 20:43:41 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:53296 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755005Ab0JSAnk (ORCPT
+	id S1757918Ab0JSAoN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Oct 2010 20:44:13 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:33808 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755005Ab0JSAoK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Oct 2010 20:43:40 -0400
-Date: Mon, 18 Oct 2010 17:43:13 -0700
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Peter Hsiang <Peter.Hsiang@maxim-ic.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
-        Liam Girdwood <lrg@slimlogic.co.uk>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: linux-next: build failure after merge of the sound-asoc tree
-Message-ID: <20101019004312.GD27248@opensource.wolfsonmicro.com>
-References: <20101018142934.65f5d0fa.sfr@canb.auug.org.au>
- <B2150E1E4418E1438554A300EA5040E40D47140D97@ITSVLEX06.it.maxim-ic.internal>
- <20101019000730.GA27248@opensource.wolfsonmicro.com>
- <B2150E1E4418E1438554A300EA5040E40D471A4297@ITSVLEX06.it.maxim-ic.internal>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <B2150E1E4418E1438554A300EA5040E40D471A4297@ITSVLEX06.it.maxim-ic.internal>
-X-Cookie: You will have a long and boring life.
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Mon, 18 Oct 2010 20:44:10 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
+	b=UqM1MXDThTqZnBg3+Kg2SZnnJZXgPwzoqmLaEmCpQ9kZ+94D7pLzPCqQfI1bcv/g5
+	ElV5P5qucl5cJZyYMVXQA==
+From: Greg Thelen <gthelen@google.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        containers@lists.osdl.org, Andrea Righi <arighi@develer.com>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Ciju Rajan K <ciju@linux.vnet.ibm.com>,
+        David Rientjes <rientjes@google.com>, Greg Thelen <gthelen@google.com>
+Subject: [PATCH v3 11/11] memcg: check memcg dirty limits in page writeback
+Date: Mon, 18 Oct 2010 17:39:44 -0700
+Message-Id: <1287448784-25684-12-git-send-email-gthelen@google.com>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1287448784-25684-1-git-send-email-gthelen@google.com>
+References: <1287448784-25684-1-git-send-email-gthelen@google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 18, 2010 at 05:30:39PM -0700, Peter Hsiang wrote:
-> On Mon, Oct 18, 2010, Mark Brown wrote:
+If the current process is in a non-root memcg, then
+global_dirty_limits() will consider the memcg dirty limit.
+This allows different cgroups to have distinct dirty limits
+which trigger direct and background writeback at different
+levels.
 
-> > Your patch was apparently not generated against the mainline Makefile or
-> > Kconfig and the automated conflict resolution tool I used (which is
-> > normally fairly reliable) appears to have misplaced the header.  I've
-> > restored the driver with the readdition of the header.
+Signed-off-by: Andrea Righi <arighi@develer.com>
+Signed-off-by: Greg Thelen <gthelen@google.com>
+---
 
-> .../pub/scm/linux/kernel/git/next/linux-next.git  Right?
+Changelog since v1:
+- Removed unnecessary get_ prefix from get_xxx() functions.
 
-As previously advised several times you should be submitting against the
-latest for-whatever branch of 
+ mm/page-writeback.c |   89 +++++++++++++++++++++++++++++++++++++++++---------
+ 1 files changed, 73 insertions(+), 16 deletions(-)
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/broonie/sound-2.6.git
+diff --git a/mm/page-writeback.c b/mm/page-writeback.c
+index a0bb3e2..9b34f01 100644
+--- a/mm/page-writeback.c
++++ b/mm/page-writeback.c
+@@ -180,7 +180,7 @@ static unsigned long highmem_dirtyable_memory(unsigned long total)
+  * Returns the numebr of pages that can currently be freed and used
+  * by the kernel for direct mappings.
+  */
+-static unsigned long determine_dirtyable_memory(void)
++static unsigned long global_dirtyable_memory(void)
+ {
+ 	unsigned long x;
+ 
+@@ -192,6 +192,58 @@ static unsigned long determine_dirtyable_memory(void)
+ 	return x + 1;	/* Ensure that we never return 0 */
+ }
+ 
++static unsigned long dirtyable_memory(void)
++{
++	unsigned long memory;
++	s64 memcg_memory;
++
++	memory = global_dirtyable_memory();
++	if (!mem_cgroup_has_dirty_limit())
++		return memory;
++	memcg_memory = mem_cgroup_page_stat(MEMCG_NR_DIRTYABLE_PAGES);
++	BUG_ON(memcg_memory < 0);
++
++	return min((unsigned long)memcg_memory, memory);
++}
++
++static long reclaimable_pages(void)
++{
++	s64 ret;
++
++	if (!mem_cgroup_has_dirty_limit())
++		return global_page_state(NR_FILE_DIRTY) +
++			global_page_state(NR_UNSTABLE_NFS);
++	ret = mem_cgroup_page_stat(MEMCG_NR_RECLAIM_PAGES);
++	BUG_ON(ret < 0);
++
++	return ret;
++}
++
++static long writeback_pages(void)
++{
++	s64 ret;
++
++	if (!mem_cgroup_has_dirty_limit())
++		return global_page_state(NR_WRITEBACK);
++	ret = mem_cgroup_page_stat(MEMCG_NR_WRITEBACK);
++	BUG_ON(ret < 0);
++
++	return ret;
++}
++
++static unsigned long dirty_writeback_pages(void)
++{
++	s64 ret;
++
++	if (!mem_cgroup_has_dirty_limit())
++		return global_page_state(NR_UNSTABLE_NFS) +
++			global_page_state(NR_WRITEBACK);
++	ret = mem_cgroup_page_stat(MEMCG_NR_DIRTY_WRITEBACK_PAGES);
++	BUG_ON(ret < 0);
++
++	return ret;
++}
++
+ /*
+  * couple the period to the dirty_ratio:
+  *
+@@ -204,8 +256,8 @@ static int calc_period_shift(void)
+ 	if (vm_dirty_bytes)
+ 		dirty_total = vm_dirty_bytes / PAGE_SIZE;
+ 	else
+-		dirty_total = (vm_dirty_ratio * determine_dirtyable_memory()) /
+-				100;
++		dirty_total = (vm_dirty_ratio * global_dirtyable_memory()) /
++			100;
+ 	return 2 + ilog2(dirty_total - 1);
+ }
+ 
+@@ -410,18 +462,23 @@ void global_dirty_limits(unsigned long *pbackground, unsigned long *pdirty)
+ {
+ 	unsigned long background;
+ 	unsigned long dirty;
+-	unsigned long available_memory = determine_dirtyable_memory();
++	unsigned long available_memory = dirtyable_memory();
+ 	struct task_struct *tsk;
++	struct vm_dirty_param dirty_param;
+ 
+-	if (vm_dirty_bytes)
+-		dirty = DIV_ROUND_UP(vm_dirty_bytes, PAGE_SIZE);
++	vm_dirty_param(&dirty_param);
++
++	if (dirty_param.dirty_bytes)
++		dirty = DIV_ROUND_UP(dirty_param.dirty_bytes, PAGE_SIZE);
+ 	else
+-		dirty = (vm_dirty_ratio * available_memory) / 100;
++		dirty = (dirty_param.dirty_ratio * available_memory) / 100;
+ 
+-	if (dirty_background_bytes)
+-		background = DIV_ROUND_UP(dirty_background_bytes, PAGE_SIZE);
++	if (dirty_param.dirty_background_bytes)
++		background = DIV_ROUND_UP(dirty_param.dirty_background_bytes,
++					  PAGE_SIZE);
+ 	else
+-		background = (dirty_background_ratio * available_memory) / 100;
++		background = (dirty_param.dirty_background_ratio *
++			      available_memory) / 100;
+ 
+ 	if (background >= dirty)
+ 		background = dirty / 2;
+@@ -493,9 +550,8 @@ static void balance_dirty_pages(struct address_space *mapping,
+ 			.range_cyclic	= 1,
+ 		};
+ 
+-		nr_reclaimable = global_page_state(NR_FILE_DIRTY) +
+-					global_page_state(NR_UNSTABLE_NFS);
+-		nr_writeback = global_page_state(NR_WRITEBACK);
++		nr_reclaimable = reclaimable_pages();
++		nr_writeback = writeback_pages();
+ 
+ 		global_dirty_limits(&background_thresh, &dirty_thresh);
+ 
+@@ -652,6 +708,7 @@ void throttle_vm_writeout(gfp_t gfp_mask)
+ {
+ 	unsigned long background_thresh;
+ 	unsigned long dirty_thresh;
++	unsigned long dirty;
+ 
+         for ( ; ; ) {
+ 		global_dirty_limits(&background_thresh, &dirty_thresh);
+@@ -662,9 +719,9 @@ void throttle_vm_writeout(gfp_t gfp_mask)
+                  */
+                 dirty_thresh += dirty_thresh / 10;      /* wheeee... */
+ 
+-                if (global_page_state(NR_UNSTABLE_NFS) +
+-			global_page_state(NR_WRITEBACK) <= dirty_thresh)
+-                        	break;
++		dirty = dirty_writeback_pages();
++		if (dirty <= dirty_thresh)
++			break;
+                 congestion_wait(BLK_RW_ASYNC, HZ/10);
+ 
+ 		/*
+-- 
+1.7.1
 
-for ASoC.  That will *generally* be what's in -next but not always.
