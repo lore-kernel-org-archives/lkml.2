@@ -1,69 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933944Ab0JSKRr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Oct 2010 06:17:47 -0400
-Received: from gate.crashing.org ([63.228.1.57]:33618 "EHLO gate.crashing.org"
+	id S933932Ab0JSKT3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Oct 2010 06:19:29 -0400
+Received: from mga09.intel.com ([134.134.136.24]:41353 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755147Ab0JSKRf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Oct 2010 06:17:35 -0400
-Subject: Re: PROBLEM: memory corrupting bug, bisected to 6dda9d55
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: pacman@kosh.dhis.org
-Cc: Mel Gorman <mel@csn.ul.ie>, linux-mm@kvack.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
-In-Reply-To: <20101018213348.10281.qmail@kosh.dhis.org>
-References: <20101018213348.10281.qmail@kosh.dhis.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 19 Oct 2010 21:16:50 +1100
-Message-ID: <1287483410.2341.66.camel@pasglop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S933717Ab0JSKT2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Oct 2010 06:19:28 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.57,349,1283756400"; 
+   d="scan'208";a="565356963"
+Date: Tue, 19 Oct 2010 12:19:23 +0200
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Axel Lin <axel.lin@gmail.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        Todd Fischer <todd.fischer@ridgerun.com>
+Subject: Re: [PATCH] mfd: tps6507x - fix off-by-one value range checking
+Message-ID: <20101019101922.GI2736@sortiz-mobl>
+References: <1286937879.453.1.camel@mola>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1286937879.453.1.camel@mola>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Axel,
 
-> > >From there, you might be able to close onto the culprit a bit more, for
-> > example, try using the DABR register to set data access breakpoints
-> > shortly before the corruption spot. AFAIK, On those old 32-bit CPUs, you
-> > can set whether you want it to break on a real or a virtual address.
-> 
-> I thought of that, but as far as I can tell, this CPU doesn't have DABR.
-> /proc/cpuinfo
-> processor	: 0
-> cpu		: 7447/7457
-> clock		: 999.999990MHz
-> revision	: 1.1 (pvr 8002 0101)
-> bogomips	: 66.66
-> timebase	: 33333333
-> platform	: CHRP
-> model		: Pegasos2
-> machine		: CHRP Pegasos2
-> Memory		: 512 MB
-
-AFAIK, the 7447 is just a derivative of the 7450 design which -does-
-have a DABR ... Unless it's broken :-)
-
-> My next thought was: right after the correct value appears in memory, unmap
-> the page from the kernel and let it Oops when it tries to write there. Then I
-> found out that the kernel is using BATs instead of page tables for its own
-> view of memory. Booting with "nobats" completely changes the memory usage
-> pattern (probably because it's allocating a lot of pages to hold PTEs that it
-> didn't need before)
-
-Right. And that hides the problem I suppose ?
-
-> > You can also sprinkle tests for the page content through the code if
-> > that doesn't work to try to "close in" on the culprit (for example if
-> > it's a case of stray DMA, like a network driver bug or such).
-> 
-> No network drivers are loaded when this happens.
-
-Ok.
+On Wed, Oct 13, 2010 at 10:44:39AM +0800, Axel Lin wrote:
+> We use msg[0] for device register.
+> If bytes == (TPS6507X_MAX_REGISTER + 1),
+> we got a buffer overflow when doing memcpy(&msg[1], src, bytes);
+> Thus we must ensure bytes not greater than TPS6507X_MAX_REGISTER.
+Thanks, patch applied to my for-next tree.
 
 Cheers,
-Ben.
+Samuel.
 
-
+-- 
+Intel Open Source Technology Centre
+http://oss.intel.com/
