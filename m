@@ -1,72 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758099Ab0JSH21 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Oct 2010 03:28:27 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:58917 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757904Ab0JSH2Y (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Oct 2010 03:28:24 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Dave Airlie <airlied@gmail.com>
-Subject: Re: [Ksummit-2010-discuss] [v2] Remaining BKL users, what to do
-Date: Tue, 19 Oct 2010 09:26:54 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.36-rc7-next-20101015+; KDE/4.5.1; x86_64; ; )
-Cc: Theodore Kilgore <kilgota@banach.math.auburn.edu>,
-        Steven Rostedt <rostedt@goodmis.org>, Greg KH <greg@kroah.com>,
-        codalist@telemann.coda.cs.cmu.edu, autofs@linux.kernel.org,
-        Samuel Ortiz <samuel@sortiz.org>, Jan Kara <jack@suse.cz>,
-        Mikulas Patocka <mikulas@artax.karlin.mff.cuni.cz>,
-        Jan Harkes <jaharkes@cs.cmu.edu>, netdev@vger.kernel.org,
-        Anders Larsen <al@alarsen.net>, linux-kernel@vger.kernel.org,
-        dri-devel@lists.freedesktop.org, Bryan Schumaker <bjschuma@netapp.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        ksummit-2010-discuss@lists.linux-foundation.org,
-        Petr Vandrovec <vandrove@vc.cvut.cz>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        linux-fsdevel@vger.kernel.org, Evgeniy Dushistov <dushistov@mail.ru>,
-        Ingo Molnar <mingo@elte.hu>, Andrew Hendry <andrew.hendry@gmail.com>,
-        linux-media@vger.kernel.org
-References: <201009161632.59210.arnd@arndb.de> <alpine.LNX.2.00.1010182342120.31740@banach.math.auburn.edu> <AANLkTi=oAeuz8ZxcOMpf=3MVY=WMt0BwHiGCUxO7OAEV@mail.gmail.com>
-In-Reply-To: <AANLkTi=oAeuz8ZxcOMpf=3MVY=WMt0BwHiGCUxO7OAEV@mail.gmail.com>
+	id S933524Ab0JSH2y (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Oct 2010 03:28:54 -0400
+Received: from hera.kernel.org ([140.211.167.34]:48384 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932760Ab0JSH2w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Oct 2010 03:28:52 -0400
+Date: Tue, 19 Oct 2010 07:28:35 GMT
+From: tip-bot for Yinghai Lu <yinghai@kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        yinghai@kernel.org, tglx@linutronix.de
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        yinghai@kernel.org, tglx@linutronix.de
+In-Reply-To: <4CBCB274.7010108@kernel.org>
+References: <4CBCB274.7010108@kernel.org>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:irq/core] x86: ioapic: Call free_irte only if interrupt remapping enabled
+Message-ID: <tip-9717967c4b704ce344c954afb5bb160aa9c01c34@git.kernel.org>
+Git-Commit-ID: 9717967c4b704ce344c954afb5bb160aa9c01c34
+X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201010190926.54635.arnd@arndb.de>
-X-Provags-ID: V02:K0:LJ2/jR9teWW+QcU+wjp5hwNK8/IiySASG1c5Cyj+U6n
- Dfne4bC0CnaO/1ivHMeP74dclHMF/cYQ/0SqASh+bOw2uyQlOz
- CKzGG0ZJxxWxmDi1vP4U+tBKm3BNS+mCbbkgj5pD5rt/oOuEk1
- e0e35mkVfCyijV+NzhQS4HTBXSKdKUhXzMQu9BWx0vAmBDhCHo
- 1+JYLYrIDzWACx2SeMAfQ==
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 19 Oct 2010 07:28:35 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 19 October 2010 06:52:32 Dave Airlie wrote:
-> > I might be able to find some hardware still lying around here that uses an
-> > i810. Not sure unless I go hunting it. But I get the impression that if
-> > the kernel is a single-CPU kernel there is not any problem anyway? Don't
-> > distros offer a non-smp kernel as an installation option in case the user
-> > needs it? So in reality how big a problem is this?
-> 
-> Not anymore, which is my old point of making a fuss. Nowadays in the
-> modern distro world, we supply a single kernel that can at runtime
-> decide if its running on SMP or UP and rewrite the text section
-> appropriately with locks etc. Its like magic, and something like
-> marking drivers as BROKEN_ON_SMP at compile time is really wrong when
-> what you want now is a runtime warning if someone tries to hotplug a
-> CPU with a known iffy driver loaded or if someone tries to load the
-> driver when we are already in SMP mode.
+Commit-ID:  9717967c4b704ce344c954afb5bb160aa9c01c34
+Gitweb:     http://git.kernel.org/tip/9717967c4b704ce344c954afb5bb160aa9c01c34
+Author:     Yinghai Lu <yinghai@kernel.org>
+AuthorDate: Mon, 18 Oct 2010 13:47:48 -0700
+Committer:  Thomas Gleixner <tglx@linutronix.de>
+CommitDate: Tue, 19 Oct 2010 09:25:33 +0200
 
-We could make the driver run-time non-SMP by adding
+x86: ioapic: Call free_irte only if interrupt remapping enabled
 
-	if (num_present_cpus() > 1) {
-		pr_err("i810 no longer supports SMP\n");
-		return -EINVAL;
-	}
+On a system that support intr-rempping when booting with "intremap=off"
 
-to the init function. That would cover the vast majority of the
-users of i810 hardware, I guess.
+[  177.895501] BUG: unable to handle kernel NULL pointer dereference at 00000000000000f8
+[  177.913316] IP: [<ffffffff8145fc18>] free_irte+0x47/0xc0
+...
+[  178.173326] Call Trace:
+[  178.173574]  [<ffffffff810515b4>] destroy_irq+0x3a/0x75
+[  178.192934]  [<ffffffff81051834>] arch_teardown_msi_irq+0xe/0x10
+[  178.193418]  [<ffffffff81458dc3>] arch_teardown_msi_irqs+0x56/0x7f
+[  178.213021]  [<ffffffff81458e79>] free_msi_irqs+0x8d/0xeb
 
-	Arnd
+Call free_irte only when interrupt remapping is enabled.
+
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+LKML-Reference: <4CBCB274.7010108@kernel.org>
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+
+---
+ arch/x86/kernel/apic/io_apic.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
+
+diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
+index 20e47e0..8ae808d 100644
+--- a/arch/x86/kernel/apic/io_apic.c
++++ b/arch/x86/kernel/apic/io_apic.c
+@@ -3109,7 +3109,8 @@ void destroy_irq(unsigned int irq)
+ 
+ 	irq_set_status_flags(irq, IRQ_NOREQUEST|IRQ_NOPROBE);
+ 
+-	free_irte(irq);
++	if (intr_remapping_enabled)
++		free_irte(irq);
+ 	raw_spin_lock_irqsave(&vector_lock, flags);
+ 	__clear_irq_vector(irq, cfg);
+ 	raw_spin_unlock_irqrestore(&vector_lock, flags);
