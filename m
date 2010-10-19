@@ -1,94 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933803Ab0JSHNq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Oct 2010 03:13:46 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:60785 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933578Ab0JSHNo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Oct 2010 03:13:44 -0400
-From: =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: linux-acpi@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Greg KH <greg@kroah.com>,
-        Shaohua Li <shaohua.li@intel.com>, Len Brown <lenb@kernel.org>
-Subject: [PATCH RESEND] ACPI dock: move some functions to .init.text
-Date: Tue, 19 Oct 2010 09:13:39 +0200
-Message-Id: <1287472419-13187-1-git-send-email-u.kleine-koenig@pengutronix.de>
-X-Mailer: git-send-email 1.7.2.3
-In-Reply-To: <1277127073-10485-1-git-send-email-u.kleine-koenig@pengutronix.de>
-References: <1277127073-10485-1-git-send-email-u.kleine-koenig@pengutronix.de>
+	id S1758081Ab0JSHPh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Oct 2010 03:15:37 -0400
+Received: from mga01.intel.com ([192.55.52.88]:61759 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751414Ab0JSHPg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Oct 2010 03:15:36 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.57,349,1283756400"; 
+   d="scan'208";a="618099166"
+Date: Tue, 19 Oct 2010 15:15:34 +0800
+From: Shaohua Li <shaohua.li@intel.com>
+To: Minchan Kim <minchan.kim@gmail.com>
+Cc: "Wu, Fengguang" <fengguang.wu@intel.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>, Neil Brown <neilb@suse.de>,
+        Rik van Riel <riel@redhat.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Subject: Re: Deadlock possibly caused by too_many_isolated.
+Message-ID: <20101019071534.GA15105@sli10-conroe.sh.intel.com>
+References: <20101019093142.509d6947@notabene>
+ <20101018154137.90f5325f.akpm@linux-foundation.org>
+ <20101019095144.A1B0.A69D9226@jp.fujitsu.com>
+ <AANLkTin38qJ-U3B7XwMh-3aR9zRs21LgR1yHfqYifxrn@mail.gmail.com>
+ <20101019023537.GB8310@localhost>
+ <AANLkTikHxDyjOGgM8-X6FNT15Hr3s4NaA-=+FRhma+3D@mail.gmail.com>
+ <20101019030515.GB11924@localhost>
+ <AANLkTinvcGjF2-dvu8kpDY4V7kGkRJjHTWDtQPNRKMU_@mail.gmail.com>
+ <20101019032145.GA3108@sli10-conroe.sh.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+In-Reply-To: <20101019032145.GA3108@sli10-conroe.sh.intel.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-find_dock and find_bay are only called by dock_init which lives in
-.init.text dock_add is only called by find_dock and find_bay.  So all
-three functions can be moved to .init.text, too.
-
-This fixes:
-
-        WARNING: vmlinux.o(.text+0x2134b7): Section mismatch in reference from the function dock_add() to the function .init.text:platform_device_register_resndata()
-        The function dock_add() references
-        the function __init platform_device_register_resndata().
-        This is often because dock_add lacks a __init
-        annotation or the annotation of platform_device_register_resndata is wrong.
-
-for a build with unset CONFIG_MODULES.
-
-Signed-off-by: Uwe Kleine-KÃ¶nig <u.kleine-koenig@pengutronix.de>
----
-Hello,
-
-since the first submission of the patch back in June I reworded the
-commit log to make it (hopefully) more understandable.  Since then
-platform_device_register_data was marked __init_or_module, so the
-problem is real now (and only occurs with CONFIG_MODULES=n).
-
-Best regards
-Uwe
-
- drivers/acpi/dock.c |    6 +++---
- 1 files changed, 3 insertions(+), 3 deletions(-)
-
-diff --git a/drivers/acpi/dock.c b/drivers/acpi/dock.c
-index 3fe29e9..2b16563 100644
---- a/drivers/acpi/dock.c
-+++ b/drivers/acpi/dock.c
-@@ -929,7 +929,7 @@ static struct attribute_group dock_attribute_group = {
-  * allocated and initialize a new dock station device.  Find all devices
-  * that are on the dock station, and register for dock event notifications.
-  */
--static int dock_add(acpi_handle handle)
-+static int __init dock_add(acpi_handle handle)
- {
- 	int ret, id;
- 	struct dock_station ds, *dock_station;
-@@ -1023,7 +1023,7 @@ static int dock_remove(struct dock_station *ds)
-  *
-  * This is called by acpi_walk_namespace to look for dock stations.
-  */
--static acpi_status
-+static __init acpi_status
- find_dock(acpi_handle handle, u32 lvl, void *context, void **rv)
- {
- 	if (is_dock(handle))
-@@ -1032,7 +1032,7 @@ find_dock(acpi_handle handle, u32 lvl, void *context, void **rv)
- 	return AE_OK;
- }
- 
--static acpi_status
-+static __init acpi_status
- find_bay(acpi_handle handle, u32 lvl, void *context, void **rv)
- {
- 	/* If bay is a dock, it's already handled */
--- 
-1.7.2.3
-
+On Tue, Oct 19, 2010 at 11:21:45AM +0800, Shaohua Li wrote:
+> On Tue, Oct 19, 2010 at 11:09:29AM +0800, Minchan Kim wrote:
+> > On Tue, Oct 19, 2010 at 12:05 PM, Wu Fengguang <fengguang.wu@intel.com> wrote:
+> > > On Tue, Oct 19, 2010 at 10:52:47AM +0800, Minchan Kim wrote:
+> > >> Hi Wu,
+> > >>
+> > >> On Tue, Oct 19, 2010 at 11:35 AM, Wu Fengguang <fengguang.wu@intel.com> wrote:
+> > >> >> @@ -2054,10 +2069,11 @@ rebalance:
+> > >> >>                 goto got_pg;
+> > >> >>
+> > >> >>         /*
+> > >> >> -        * If we failed to make any progress reclaiming, then we are
+> > >> >> -        * running out of options and have to consider going OOM
+> > >> >> +        * If we failed to make any progress reclaiming and there aren't
+> > >> >> +        * many parallel reclaiming, then we are unning out of options and
+> > >> >> +        * have to consider going OOM
+> > >> >>          */
+> > >> >> -       if (!did_some_progress) {
+> > >> >> +       if (!did_some_progress && !too_many_isolated_zone(preferred_zone)) {
+> > >> >>                 if ((gfp_mask & __GFP_FS) && !(gfp_mask & __GFP_NORETRY)) {
+> > >> >>                         if (oom_killer_disabled)
+> > >> >>                                 goto nopage;
+> > >> >
+> > >> > This is simply wrong.
+> > >> >
+> > >> > It disabled this block for 99% system because there won't be enough
+> > >> > tasks to make (!too_many_isolated_zone == true). As a result the LRU
+> > >> > will be scanned like mad and no task get OOMed when it should be.
+> > >>
+> > >> If !too_many_isolated_zone is false, it means there are already many
+> > >> direct reclaiming tasks.
+> > >> So they could exit reclaim path and !too_many_isolated_zone will be true.
+> > >> What am I missing now?
+> > >
+> > > Ah sorry, my brain get short circuited.. but I still feel uneasy with
+> > > this change. It's not fixing the root cause and won't prevent too many
+> > > LRU pages be isolated. It's too late to test too_many_isolated_zone()
+> > > after direct reclaim returns (after sleeping for a long time).
+> > >
+> > 
+> > Intend to agree.
+> > I think root cause is a infinite looping in too_many_isolated holding FS lock.
+> > Would it be simple that too_many_isolated would be bail out after some try?
+> I'm wondering if we need too_many_isolated_zone logic. The do_try_to_free_pages
+> will return progress till all zones are unreclaimable. Assume before this we
+> don't oomkiller. If the direct reclaim fails but has progress, it will sleep.
+Not sure if this is clear. What I mean is we can delete too_many_isolated_zone,
+do_try_to_free_pages can still return 1 till all zones are unreclaimable. Before
+this direct reclaim will not oom, because it sees progress and will call congestion_wait
+to sleep. Am I missing anything?
