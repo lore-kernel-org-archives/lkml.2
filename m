@@ -1,47 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755005Ab0JSQEp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Oct 2010 12:04:45 -0400
-Received: from hera.kernel.org ([140.211.167.34]:34512 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753667Ab0JSQEo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Oct 2010 12:04:44 -0400
-Message-ID: <4CBDC19A.60709@kernel.org>
-Date: Tue, 19 Oct 2010 18:04:42 +0200
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.9) Gecko/20100915 Lightning/1.0b2 Thunderbird/3.1.4
+	id S1754127Ab0JSQH2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Oct 2010 12:07:28 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:37468 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752918Ab0JSQH1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Oct 2010 12:07:27 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=tFDWHFpc9dIzgm5j+rNwhYwrwr13YnU5oou7zB7TI8g2WSEFMh/1+dbqXz8jEtn7z8
+         RPtJw06L6AwMwrcXWkMmum9kFId0DPJvltr6lvhsUN2Sxwu+sAzSUu6PkD1soQZhZm93
+         KzJnhjXlB/NI32v9uUFGQ7gsMEKljUwxJBMY0=
+Message-ID: <4CBDC23C.6050403@lwfinger.net>
+Date: Tue, 19 Oct 2010 11:07:24 -0500
+From: Larry Finger <Larry.Finger@lwfinger.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.12) Gecko/20100914 SUSE/3.0.8 Thunderbird/3.0.8
 MIME-Version: 1.0
-To: "David S. Miller" <davem@davemloft.net>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: [PATCH v2.6.36-rc7] net/neighbour: cancel_delayed_work() + flush_scheduled_work()
- -> cancel_delayed_work_sync()
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=ISO-8859-1
+To: David Woodhouse <dwmw2@infradead.org>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] linux-firmware: Add firmware file for r8712u (RTL8192SU)
+References: <4cbdbf3b.Ek+PDAiA1jX27HRq%Larry.Finger@lwfinger.net> <1287503882.1084.22.camel@i7.infradead.org>
+In-Reply-To: <1287503882.1084.22.camel@i7.infradead.org>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 19 Oct 2010 16:04:43 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-flush_scheduled_work() is going away.  Prepare for it.
+On 10/19/2010 10:58 AM, David Woodhouse wrote:
+> On Tue, 2010-10-19 at 10:54 -0500, Larry Finger wrote:
+>> + * This program is free software; you can redistribute it and/or modify it
+>> + * under the terms of version 2 of the GNU General Public License as
+>> + * published by the Free Software Foundation. 
+> 
+> Where is the source code, then?
+> 
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
----
- net/core/neighbour.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+The source code for the driver with inline firmware is in linux-next in
+drivers/staging/rtl8712 and was pushed through GregKH.
 
-Index: work/net/core/neighbour.c
-===================================================================
---- work.orig/net/core/neighbour.c
-+++ work/net/core/neighbour.c
-@@ -1486,8 +1486,7 @@ int neigh_table_clear(struct neigh_table
- 	struct neigh_table **tp;
+Larry
 
- 	/* It is not clean... Fix it to unload IPv6 module safely */
--	cancel_delayed_work(&tbl->gc_work);
--	flush_scheduled_work();
-+	cancel_delayed_work_sync(&tbl->gc_work);
- 	del_timer_sync(&tbl->proxy_timer);
- 	pneigh_queue_purge(&tbl->proxy_queue);
- 	neigh_ifdown(tbl, NULL);
