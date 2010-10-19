@@ -1,81 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933680Ab0JSHHg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Oct 2010 03:07:36 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:51146 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758050Ab0JSHHe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Oct 2010 03:07:34 -0400
-Date: Tue, 19 Oct 2010 18:07:30 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Mauro Carvalho Chehab <mchehab@infradead.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Palash Bandyopadhyay <palash.bandyopadhyay@conexant.com>,
-        Devin Heitmueller <dheitmueller@hauppauge.com>,
-        Arnd Bergmann <arnd@arndb.de>
-Subject: linux-next: build failure after merge of the final tree (v4l-dvb
- tree related)
-Message-Id: <20101019180730.5beac8af.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S933705Ab0JSHH4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Oct 2010 03:07:56 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:59728 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933685Ab0JSHHz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Oct 2010 03:07:55 -0400
+Date: Tue, 19 Oct 2010 16:08:14 +0900
+From: Kukjin Kim <kgene.kim@samsung.com>
+Subject: RE: [PATCH 5/9 v2] ARM: S3C64XX: add support for mach-mini6410
+In-reply-to: <20100929193406.25307.33007.stgit@darius-desktop>
+To: "'Darius Augulis'" <augulis.darius@gmail.com>,
+        linux-arm-kernel@lists.infradead.org
+Cc: paulius.zaleckas@gmail.com, linux-kernel@vger.kernel.org,
+        ben-linux@fluff.org
+Message-id: <052801cb6f5c$67216fb0$35644f10$%kim@samsung.com>
+MIME-version: 1.0
+X-Mailer: Microsoft Office Outlook 12.0
+Content-type: text/plain; charset=utf-8
+Content-language: ko
+Content-transfer-encoding: 7BIT
+Thread-index: ActgDX5MBZRIvEkjRg+nJaB8GUYO3wPOxiZg
+References: <20100929192354.25307.40197.stgit@darius-desktop>
+ <20100929193406.25307.33007.stgit@darius-desktop>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mauro,
+Darius Augulis wrote:
+> 
+> Add support for mini6410 board from FriendlyARM
+> 
+> Signed-off-by: Darius Augulis <augulis.darius@gmail.com>
+> ---
+> 
+> Changelog since v1:
+>  - Ben's comments about coding style fixed
+> 
+>  arch/arm/mach-s3c64xx/Kconfig         |   10 ++
+>  arch/arm/mach-s3c64xx/Makefile        |    1
+>  arch/arm/mach-s3c64xx/mach-mini6410.c |  157
+> +++++++++++++++++++++++++++++++++
+>  3 files changed, 168 insertions(+), 0 deletions(-)
+>  create mode 100644 arch/arm/mach-s3c64xx/mach-mini6410.c
+> 
 
-After merging the final tree, today's linux-next build (powerpc
-allyesconfig) failed like this:
+(snip)
 
-drivers/media/video/cx231xx/cx231xx-417.c: In function 'cx231xx_load_firmware':
-drivers/media/video/cx231xx/cx231xx-417.c:943: error: implicit declaration of function 'vmalloc'
-drivers/media/video/cx231xx/cx231xx-417.c:943: warning: cast to pointer from integer of different size
-drivers/media/video/cx231xx/cx231xx-417.c:950: warning: cast to pointer from integer of different size
-drivers/media/video/cx231xx/cx231xx-417.c:1039: error: implicit declaration of function 'vfree'
+> +
+> +MACHINE_START(MINI6410, "MINI6410")
+> +	/* Maintainer: Darius Augulis <augulis.darius@gmail.com> */
+> +	.phys_io	= S3C_PA_UART & 0xfff00000,
+> +	.io_pg_offst	= (((u32)S3C_VA_UART) >> 18) & 0xfffc,
 
-Caused by commit e0bb3704be9decb10985b0886031e76a228b5f32 ("[media]
-cx231xx: Added support for Carraera, Shelby, RDx_253S and VIDEO_GRABBER").
+Now, we no need to add above two members since commit 861bd81ee62a0d6759144c22909a8a3938951656 ("arm: remove machine_desc.io_pg_offst and .phys_io") from the arm tree
 
-Also, I don't think Arnd is going to like the new BKL usage also
-introduced by the commit.  ;-)
+> +	.boot_params	= S3C64XX_PA_SDRAM + 0x100,
+> +
+> +	.init_irq	= s3c6410_init_irq,
+> +	.map_io		= mini6410_map_io,
+> +	.init_machine	= mini6410_machine_init,
+> +	.timer		= &s3c24xx_timer,
+> +MACHINE_END
 
-I added the following patch for today:
+Others, looks ok.
 
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Tue, 19 Oct 2010 18:01:25 +1100
-Subject: [PATCH] v4l-dvb: using vmalloc needs vmalloc.h in cx231xx-417.c
+Thanks.
 
-Fixes these build errors and warnings:
+Best regards,
+Kgene.
+--
+Kukjin Kim <kgene.kim@samsung.com>, Senior Engineer,
+SW Solution Development Team, Samsung Electronics Co., Ltd.
 
-drivers/media/video/cx231xx/cx231xx-417.c: In function 'cx231xx_load_firmware':
-drivers/media/video/cx231xx/cx231xx-417.c:943: error: implicit declaration of function 'vmalloc'
-drivers/media/video/cx231xx/cx231xx-417.c:943: warning: cast to pointer from integer of different size
-drivers/media/video/cx231xx/cx231xx-417.c:950: warning: cast to pointer from integer of different size
-drivers/media/video/cx231xx/cx231xx-417.c:1039: error: implicit declaration of function 'vfree'
-
-Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
----
- drivers/media/video/cx231xx/cx231xx-417.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
-
-diff --git a/drivers/media/video/cx231xx/cx231xx-417.c b/drivers/media/video/cx231xx/cx231xx-417.c
-index e456b97..aab21f3 100644
---- a/drivers/media/video/cx231xx/cx231xx-417.c
-+++ b/drivers/media/video/cx231xx/cx231xx-417.c
-@@ -32,6 +32,7 @@
- #include <linux/device.h>
- #include <linux/firmware.h>
- #include <linux/smp_lock.h>
-+#include <linux/vmalloc.h>
- #include <media/v4l2-common.h>
- #include <media/v4l2-ioctl.h>
- #include <media/cx2341x.h>
--- 
-1.7.1
-
--- 
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
