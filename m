@@ -1,66 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758370Ab0JSLQd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Oct 2010 07:16:33 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:49406 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758333Ab0JSLQb (ORCPT
+	id S1758380Ab0JSLQ6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Oct 2010 07:16:58 -0400
+Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:23656 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758069Ab0JSLQ5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Oct 2010 07:16:31 -0400
-Date: Tue, 19 Oct 2010 14:16:13 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: Felipe Contreras <felipe.contreras@gmail.com>
-Cc: "Balbi, Felipe" <balbi@ti.com>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        linux-omap <linux-omap@vger.kernel.org>,
-        linux-main <linux-kernel@vger.kernel.org>, Greg KH <greg@kroah.com>,
-        Tony Lindgren <tony@atomide.com>
-Subject: Re: [PATCH v2 3/3] drivers: cleanup Kconfig stuff
-Message-ID: <20101019111613.GJ31170@legolas.emea.dhcp.ti.com>
-Reply-To: balbi@ti.com
-References: <1287482608-11320-1-git-send-email-felipe.contreras@gmail.com>
- <1287482608-11320-4-git-send-email-felipe.contreras@gmail.com>
- <20101019103234.GI31170@legolas.emea.dhcp.ti.com>
- <AANLkTinXzMQXoyyu+anSCvSuE9w3FWAP5HswDS0kfpzE@mail.gmail.com>
+	Tue, 19 Oct 2010 07:16:57 -0400
+X-IronPort-AV: E=Sophos;i="4.57,350,1283731200"; 
+   d="scan'208";a="2409890"
+Date: Tue, 19 Oct 2010 12:16:31 +0100
+From: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball-desktop
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        Jeremy Fitzhardinge <Jeremy.Fitzhardinge@citrix.com>,
+        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>
+Subject: [PATCH v4 00/10] xen: initial domain support
+Message-ID: <alpine.DEB.2.00.1010191207010.2423@kaball-desktop>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii; format=flowed
-Content-Disposition: inline
-In-Reply-To: <AANLkTinXzMQXoyyu+anSCvSuE9w3FWAP5HswDS0kfpzE@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Hi all,
+this series implements the basic support needed to boot Linux as initial
+domain on Xen: the target is not to add full featured dom0 support in
+the kernel but to be able to boot Linux on Xen on native.
+We tried to minimize the impact to generic x86 code and interfaces and
+since v2 of the series we were able to eliminate all the modifications
+to non-Xen specific code.
 
-On Tue, Oct 19, 2010 at 05:59:58AM -0500, Felipe Contreras wrote:
->The USB_MUSB_HDRC dependency on NOP_USB_XCEIV || TWL4030_USB is
->already there, I'm just making it explicit. The rest are not
->dependencies, just sensible defaults, and they are already in
->drivers/usb/musb/Kconfig, I'm just moving them.
 
-might be true, but what will happen is that other developers will just
-"follow what's in the tree" so they'll keep on adding more and more
-"sesible defaults" to this line.
+New changes in v4:
+- add few printk's to inform the user about abnormal situations;
 
-Linus had some really good comments about Kconfig usage some time ago
-and I'm sure he wouldn't like us adding "sensible defaults" all over the
-place.
+- initialize irq to -1 in xen_create_msi_irq.
 
->If you have a better approach to avoid manually selecting TWL4030_USB
->on defconfigs, and making sure USB_MUSB_HDRC works, please share it.
 
-that's the thing. Currently, I don't think it should be automatic as we
-can only have one transceiver structure. Look into
-drivers/usb/otg/otg.c, it's just a static global pointer on that file,
-which prevents us from having a working solution if you enable more than
-one transceiver.
+New changes in v3:
+- compile all the initial domain functions in arch/x86/pci/xen.c only if
+CONFIG_XEN_DOM0 is defined;
 
-Ideally there would be a class or something similar to allow us to
-register N transceiver and use the correct one in runtime, that would
-make distro-makers' life easier. It'll probably help Linaro also at some
-point, but as of today, enabling more than one transceiver will never
-work.
+- compile the msi functions in drivers/xen/events.c only if
+CONFIG_PCI_MSI is defined;
 
--- 
-balbi
+- move the xen_setup_pirqs declaration to
+arch/x86/include/asm/xen/pci.h.
+
+
+New changes in v2:
+- remove the last three patches that added Xen mtrr support;
+
+- add a new patch to mask the cpu mtrr feature from the cpuid on Xen.
+
+
+
+This series depends on two other patch series not yet applied but
+already sent to the list for comments a little while back:
+
+Konrad's "Xen PCI frontend driver" series
+http://lkml.org/lkml/2010/10/12/207
+
+my "PV on HVM: receive interrupts as xen events" series
+http://lkml.org/lkml/2010/10/12/246
+
+
+
+The list of patches with a diffstat follows:
+Ian Campbell (1):
+      xen: use host E820 map for dom0
+
+Jeremy Fitzhardinge (3):
+      xen: remap GSIs as pirqs when running as initial domain
+      xen: map a dummy page for local apic and ioapic in xen_set_fixmap
+      xen: make hvc_xen console work for dom0.
+
+Juan Quintela (2):
+      xen: Initialize xenbus for dom0.
+      xen: add the direct mapping area for ISA bus access
+
+Qing He (1):
+      xen: remap MSIs into pirqs when running as initial domain
+
+Stefano Stabellini (3):
+      xen: introduce XEN_DOM0 as a silent option
+      xen: use vcpu_ops to setup cpu masks
+      xen: mask the MTRR feature from the cpuid
+
+ arch/x86/include/asm/xen/pci.h    |    7 ++
+ arch/x86/pci/xen.c                |  190 +++++++++++++++++++++++++++++++++----
+ arch/x86/xen/Kconfig              |    5 +
+ arch/x86/xen/enlighten.c          |    2 +
+ arch/x86/xen/mmu.c                |   47 +++++++++-
+ arch/x86/xen/setup.c              |   51 +++++++++-
+ arch/x86/xen/smp.c                |    8 ++-
+ drivers/char/hvc_xen.c            |   98 +++++++++++++-------
+ drivers/xen/events.c              |   75 ++++++++++++++-
+ drivers/xen/xenbus/xenbus_probe.c |   29 ++++++-
+ include/xen/events.h              |    5 +
+ include/xen/interface/memory.h    |   28 ++++++
+ include/xen/interface/physdev.h   |   10 ++
+ 13 files changed, 495 insertions(+), 60 deletions(-)
+
+A git tree with this and the other two series on top of Linux 2.6.36-rc7
+is available here:
+
+git://xenbits.xen.org/people/sstabellini/linux-pvhvm.git 2.6.36-rc7-initial-domain-v4
+
+Cheers,
+
+Stefano Stabellini
