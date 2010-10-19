@@ -1,18 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753013Ab0JSPBR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Oct 2010 11:01:17 -0400
-Received: from db3ehsobe005.messaging.microsoft.com ([213.199.154.143]:59455
-	"EHLO DB3EHSOBE005.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752061Ab0JSPBP (ORCPT
+	id S1753002Ab0JSPDy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Oct 2010 11:03:54 -0400
+Received: from va3ehsobe003.messaging.microsoft.com ([216.32.180.13]:12035
+	"EHLO VA3EHSOBE003.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752516Ab0JSPDx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Oct 2010 11:01:15 -0400
+	Tue, 19 Oct 2010 11:03:53 -0400
 X-SpamScore: -14
-X-BigFish: VPS-14(zzbb2cK1432N98dNzz1202hzzz32i2a8h61h)
-X-Spam-TCS-SCL: 0:0
-X-WSS-ID: 0LAJLPQ-02-9UK-02
+X-BigFish: VPS-14(zzbb2cK1432N98dNzz1202hzz8275bhz32i2a8h43h62h)
+X-Spam-TCS-SCL: 1:0
+X-Forefront-Antispam-Report: KIP:(null);UIP:(null);(null);(null)
+X-FB-SS: 5,
+X-WSS-ID: 0LAJLT1-02-A3E-02
 X-M-MSG: 
-Date: Tue, 19 Oct 2010 17:01:04 +0200
+Date: Tue, 19 Oct 2010 17:03:03 +0200
 From: Robert Richter <robert.richter@amd.com>
 To: Don Zickus <dzickus@redhat.com>
 CC: "mingo@elte.hu" <mingo@elte.hu>,
@@ -20,67 +22,51 @@ CC: "mingo@elte.hu" <mingo@elte.hu>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         "peterz@infradead.org" <peterz@infradead.org>,
         "ying.huang@intel.com" <ying.huang@intel.com>
-Subject: Re: [PATCH 0/5] x86, NMI: give NMI handler a face-lift
-Message-ID: <20101019150104.GP5969@erda.amd.com>
+Subject: Re: [PATCH 5/5] x86, NMI: Remove do_nmi_callback logic
+Message-ID: <20101019150303.GQ5969@erda.amd.com>
 References: <1287195738-3136-1-git-send-email-dzickus@redhat.com>
+ <1287195738-3136-6-git-send-email-dzickus@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <1287195738-3136-1-git-send-email-dzickus@redhat.com>
+In-Reply-To: <1287195738-3136-6-git-send-email-dzickus@redhat.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Reverse-DNS: ausb3extmailp02.amd.com
+X-Reverse-DNS: unknown
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 15.10.10 22:22:13, Don Zickus wrote:
-> Restructuring the nmi handler to be more readable and simpler.
+On 15.10.10 22:22:18, Don Zickus wrote:
+> From: Huang Ying <ying.huang@intel.com>
 > 
-> This is just laying the ground work for future improvements in this area.
+> do_nmi_callback related logic is removed, because it is useless, just
+> adds code complexity.
 > 
-> I know people were complaining about having DIE_NMI and DIE_NMI_IPI, but
-> for now it is consistent with what was there before.  Hopefully, we can
-> modify the notifier chain to make it smarter and combine the two events.
+> unknown_nmi_panic sysctl is reserved to keep kernel ABI unchanged.
 > 
-> I also left out one of Huang's patch until we figure out how we are going
-> to proceed with a new notifier.
-> 
-> Tested 32-bit and 64-bit on AMD and Intel machines.
-> 
-> Cheers,
-> Don
-> 
-> Huang Ying (5):
->   x86, NMI: Add NMI symbol constants and rename memory parity to PCI
->     SERR
->   x86, NMI: Add touch_nmi_watchdog to io_check_error delay
->   x86, NMI: Rewrite NMI handler
->   x86, NMI: Allow NMI reason io port (0x61) to be processed on any CPU
->   x86, NMI: Remove do_nmi_callback logic
+> Signed-off-by: Huang Ying <ying.huang@intel.com>
+> Signed-off-by: Don Zickus <dzickus@redhat.com>
+> ---
+>  arch/x86/include/asm/nmi.h    |   10 +++++++++-
+>  arch/x86/kernel/apic/hw_nmi.c |    1 -
+>  arch/x86/kernel/apic/nmi.c    |   29 +----------------------------
+>  arch/x86/kernel/traps.c       |   17 +++++++++++------
+>  4 files changed, 21 insertions(+), 36 deletions(-)
 
-I am fine with applying the patches, thanks Huang and Don.
+> diff --git a/arch/x86/kernel/traps.c b/arch/x86/kernel/traps.c
+> index accb2f4..9ef8e15 100644
+> --- a/arch/x86/kernel/traps.c
+> +++ b/arch/x86/kernel/traps.c
+> @@ -83,6 +83,8 @@ EXPORT_SYMBOL_GPL(used_vectors);
+>  
+>  static int ignore_nmis;
+>  
+> +int unknown_nmi_panic;
 
-I have some 2 comments on them and will reply directly.
+I didn't apply the patches, so I am not really sure, but I think this
+could be static now.
 
 -Robert
-
-> 
->  arch/x86/include/asm/mach_traps.h |   12 +++-
->  arch/x86/include/asm/nmi.h        |   10 +++-
->  arch/x86/kernel/apic/hw_nmi.c     |    1 -
->  arch/x86/kernel/apic/nmi.c        |   29 +-------
->  arch/x86/kernel/cpu/perf_event.c  |    1 -
->  arch/x86/kernel/traps.c           |  141 ++++++++++++++++++++----------------
->  arch/x86/oprofile/nmi_int.c       |    1 -
->  arch/x86/oprofile/nmi_timer_int.c |    2 +-
->  drivers/char/ipmi/ipmi_watchdog.c |    2 +-
->  drivers/watchdog/hpwdt.c          |    2 +-
->  10 files changed, 102 insertions(+), 99 deletions(-)
-> 
-> -- 
-> 1.7.2.3
-> 
-> 
 
 -- 
 Advanced Micro Devices, Inc.
