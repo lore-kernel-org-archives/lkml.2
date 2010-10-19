@@ -1,68 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756058Ab0JSQss (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Oct 2010 12:48:48 -0400
-Received: from smtp-out.google.com ([74.125.121.35]:33448 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754595Ab0JSQsr (ORCPT
+	id S1756112Ab0JSQuw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Oct 2010 12:50:52 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:40176 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755997Ab0JSQuu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Oct 2010 12:48:47 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=message-id:from:date:to:reply-to:cc:subject;
-        b=mx3sSFEUwZshC8WwSebzkcDY426ecAKSvYjBdZXPcyC6WOLsipIioOSY3cl66URxZj
-         YAvVeCgfDkShfFFK8UvQ==
-Message-ID: <4cbdcbea.8491d80a.25b0.ffffece8@mx.google.com>
-From: Stephane Eranian <eranian@google.com>
-Date: Tue, 19 Oct 2010 18:47:01 +0200
-To: linux-kernel@vger.kernel.org
-Reply-to: eranian@google.com
-Cc: peterz@infradead.org, mingo@elte.hu, paulus@samba.org, davem@davemloft.net,
-        fweisbec@gmail.com, perfmon2-devel@lists.sf.net, eranian@gmail.com,
-        eranian@google.com, robert.richter@amd.com
-Subject: [PATCH] perf_events: fix time tracking in samples
-X-System-Of-Record: true
+	Tue, 19 Oct 2010 12:50:50 -0400
+Date: Tue, 19 Oct 2010 12:50:44 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: Nick Piggin <npiggin@kernel.dk>
+Cc: Christoph Hellwig <hch@infradead.org>, Andi Kleen <andi@firstfloor.org>,
+        Dave Chinner <david@fromorbit.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, tglx@linutronix.de
+Subject: Re: [PATCH 11/18] fs: Introduce per-bucket inode hash locks
+Message-ID: <20101019165044.GA13531@infradead.org>
+References: <1286515292-15882-12-git-send-email-david@fromorbit.com>
+ <20101008185409.GA29251@infradead.org>
+ <20101016075703.GO19147@amd>
+ <20101016161642.GC16861@infradead.org>
+ <20101016171213.GC3240@amd>
+ <20101017004610.GB29677@dastard>
+ <20101017022539.GA3317@amd>
+ <87iq0za32l.fsf@basil.nowhere.org>
+ <20101018162105.GB9571@infradead.org>
+ <20101019070057.GA7770@amd>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101019070057.GA7770@amd>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch corrects time tracking in samples. Without this patch
-both time_enabled and time_running may be reported as zero when
-user asks for PERF_SAMPLE_READ.
+On Tue, Oct 19, 2010 at 06:00:57PM +1100, Nick Piggin wrote:
+> But it is still "magic". Because you don't even know whether it
+> is a spin or sleeping lock, let alone whether it is irq or bh safe.
+> You get far more information seeing a bit_spin_lock(0, &hlist) call
+> than hlist_lock().
+> 
+> Even if you do rename them to hlist_bit_spin_lock, etc. Then you need
+> to add variants for each type of locking a caller wants to do on it.
+> Ask Linus what he thinks about that.
 
-You use PERF_SAMPLE_READ when you want to sample the values of
-other counters in each sample. Because of multiplexing, it is
-necessary to know both time_enable, time_running to be able
-to scale counts correctly.
+And why do we need all these versions?  We never had irqsave or bhsave
+versions of bitlocks.  The only thing we might eventually want are
+trylock and is_locked operations once we grow user of it.
 
-We defer updating timing until we know it is really needed, i.e.,
-only when we have PERF_SAMPLE_READ.
+To get back a bit to the point:
 
-With this patch, the libpfm4 example task_smpl now reports
-correct counts (shown on 2.4GHz Core 2):
+ - we have a new bl_hlist sturcture which combines a hash list and a
+   lock embedded into the head
+ - the reason why we do it is to be able to use a bitlock
+ 
+Now your initial version exposed the ugly defaults of that to the user
+which is required to case the hash head to and unsigned long and use
+bit_spin_lock on bit 0 of it.  There's zero abstraction and a lot
+internal gutting required there.
 
-$ task_smpl -p 2400000000 -e unhalted_core_cycles:u,instructions_retired:u,baclears  noploop 5
-noploop for 5 seconds
-IIP:0x000000004006d6 PID:5596 TID:5596 TIME:466,210,211,430 STREAM_ID:33 PERIOD:2,400,000,000 ENA=1,010,157,814 RUN=1,010,157,814 NR=3
-	2,400,000,254 unhalted_core_cycles:u (33)
-	2,399,273,744 instructions_retired:u (34)
-	53,340 baclears (35)
+The version I suggest and that dave implemented instead adds wrappers
+to call bit_spin_lock/unlock with thos conventions as helper that
+operate on the abstract type.  This frees the caller from revinventing
+just those same wrappers, as done in your demo tree for the inode and
+dentry hashes.
 
-Signed-off-by: Stephane Eranian <eranian@google.com>
+Furthermore it allows the RT people to simply throw a mutex into the
+head and everything keeps working without touching a sinlge line of
+code outside of hlist_bl.h.
 
----
-
-diff --git a/kernel/perf_event.c b/kernel/perf_event.c
-index f309e80..04611dd 100644
---- a/kernel/perf_event.c
-+++ b/kernel/perf_event.c
-@@ -3494,6 +3494,9 @@ static void perf_output_read_group(struct perf_output_handle *handle,
- static void perf_output_read(struct perf_output_handle *handle,
- 			     struct perf_event *event)
- {
-+	update_context_time(event->ctx);
-+	update_event_times(event);
-+
- 	if (event->attr.read_format & PERF_FORMAT_GROUP)
- 		perf_output_read_group(handle, event);
- 	else
+To me that's very clearly preferable, and I'd really like to see
+a clearly reasoned argument against it.
