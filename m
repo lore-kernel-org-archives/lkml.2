@@ -1,25 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753951Ab0JSE4s (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Oct 2010 00:56:48 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:48707 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751074Ab0JSE4r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Oct 2010 00:56:47 -0400
-Date: Tue, 19 Oct 2010 15:56:44 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Paul Mackerras <paulus@samba.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        <linuxppc-dev@lists.ozlabs.org>
-Subject: Re: linux-next: manual merge of the tip tree with the powerpc tree
-Message-Id: <20101019155644.ebd2d802.sfr@canb.auug.org.au>
-In-Reply-To: <20101019154849.126a736a.sfr@canb.auug.org.au>
-References: <20101019154849.126a736a.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+	id S1754660Ab0JSE6F (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Oct 2010 00:58:05 -0400
+Received: from TYO202.gate.nec.co.jp ([202.32.8.206]:41267 "EHLO
+	tyo202.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750744Ab0JSE6D (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Oct 2010 00:58:03 -0400
+Date: Tue, 19 Oct 2010 13:52:30 +0900
+From: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+To: Greg Thelen <gthelen@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, containers@lists.osdl.org,
+        Andrea Righi <arighi@develer.com>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Ciju Rajan K <ciju@linux.vnet.ibm.com>,
+        David Rientjes <rientjes@google.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+Subject: Re: [PATCH v3 03/11] memcg: create extensible page stat update
+ routines
+Message-Id: <20101019135230.4369a25e.nishimura@mxp.nes.nec.co.jp>
+In-Reply-To: <1287448784-25684-4-git-send-email-gthelen@google.com>
+References: <1287448784-25684-1-git-send-email-gthelen@google.com>
+	<1287448784-25684-4-git-send-email-gthelen@google.com>
+Organization: NEC Soft, Ltd.
+X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
@@ -27,41 +34,20 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi again,
+On Mon, 18 Oct 2010 17:39:36 -0700
+Greg Thelen <gthelen@google.com> wrote:
 
-On Tue, 19 Oct 2010 15:48:49 +1100 Stephen Rothwell <sfr@canb.auug.org.au> wrote:
->
-> Today's linux-next merge of the tip tree got a conflict in
-> arch/powerpc/kernel/time.c between commit
-> cf9efce0ce3136fa076f53e53154e98455229514 ("powerpc: Account time using
-> timebase rather than PURR") from the powerpc tree and commit
-> e360adbe29241a0194e10e20595360dd7b98a2b3 ("irq_work: Add generic hardirq
-> context callbacks") from the tip tree.
+> Replace usage of the mem_cgroup_update_file_mapped() memcg
+> statistic update routine with two new routines:
+> * mem_cgroup_inc_page_stat()
+> * mem_cgroup_dec_page_stat()
 > 
-> Just context changes.  I fixed it up and can carry the fix as necessary.
+> As before, only the file_mapped statistic is managed.  However,
+> these more general interfaces allow for new statistics to be
+> more easily added.  New statistics are added with memcg dirty
+> page accounting.
+> 
+> Signed-off-by: Greg Thelen <gthelen@google.com>
+> Signed-off-by: Andrea Righi <arighi@develer.com>
 
-I forgot the merge diff, sorry:
-
-diff --cc arch/powerpc/kernel/time.c
-index 644f918,54888eb..0000000
---- a/arch/powerpc/kernel/time.c
-+++ b/arch/powerpc/kernel/time.c
-@@@ -578,9 -585,11 +578,9 @@@ void timer_interrupt(struct pt_regs * r
-  	old_regs = set_irq_regs(regs);
-  	irq_enter();
-  
-- 	if (test_perf_event_pending()) {
-- 		clear_perf_event_pending();
-- 		perf_event_do_pending();
- -	calculate_steal_time();
- -
-+ 	if (test_irq_work_pending()) {
-+ 		clear_irq_work_pending();
-+ 		irq_work_run();
-  	}
-  
-  #ifdef CONFIG_PPC_ISERIES
-
--- 
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Acked-by: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
