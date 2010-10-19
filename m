@@ -1,83 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755459Ab0JSQZy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Oct 2010 12:25:54 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:38406 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754765Ab0JSQZx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Oct 2010 12:25:53 -0400
-Subject: Re: [PATCH 1/3] IMA: move read/write counters into struct inode
-From: Eric Paris <eparis@redhat.com>
-To: Dave Chinner <david@fromorbit.com>
-Cc: Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        zohar@us.ibm.com, warthog9@kernel.org, jmorris@namei.org,
-        kyle@mcmartin.ca, hpa@zytor.com, akpm@linux-foundation.org,
-        torvalds@linux-foundation.org, mingo@elte.hu, viro@zeniv.linux.org.uk
-In-Reply-To: <20101019073901.GB11284@dastard>
-References: <20101019011650.25346.99614.stgit@paris.rdu.redhat.com>
-	 <20101019013037.GA31393@infradead.org>
-	 <1287454443.2530.124.camel@localhost.localdomain>
-	 <20101019073901.GB11284@dastard>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 19 Oct 2010 12:24:43 -0400
-Message-ID: <1287505483.2530.174.camel@localhost.localdomain>
-Mime-Version: 1.0
+	id S1755502Ab0JSQ0c (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Oct 2010 12:26:32 -0400
+Received: from mail-px0-f174.google.com ([209.85.212.174]:52511 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754926Ab0JSQ0b (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Oct 2010 12:26:31 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=TMBXSENj8WXtbaeCZeF0S+EqC8XzWgXLPwqPiWkRxq/eSt93E8ZrKAY5NaDsD6fC/n
+         MUa5Jr9yBfa7F+XvlV9BY0/y2NRyPtWjwWDKHe24n6TaNUwt2qeARWOKEOnV/v54xDiL
+         09j+A9jLkTkkkjYS2U0KD7c5NmICtfm2wiVck=
+Message-ID: <4CBDC6AF.3060902@lwfinger.net>
+Date: Tue, 19 Oct 2010 11:26:23 -0500
+From: Larry Finger <Larry.Finger@lwfinger.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.12) Gecko/20100914 SUSE/3.0.8 Thunderbird/3.0.8
+MIME-Version: 1.0
+To: David Woodhouse <dwmw2@infradead.org>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] linux-firmware: Add firmware file for r8712u (RTL8192SU)
+References: <4cbdbf3b.Ek+PDAiA1jX27HRq%Larry.Finger@lwfinger.net>	 <1287503882.1084.22.camel@i7.infradead.org> <4CBDC23C.6050403@lwfinger.net> <1287504505.1084.23.camel@i7.infradead.org>
+In-Reply-To: <1287504505.1084.23.camel@i7.infradead.org>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-10-19 at 18:39 +1100, Dave Chinner wrote:
-> On Mon, Oct 18, 2010 at 10:14:03PM -0400, Eric Paris wrote:
+On 10/19/2010 11:08 AM, David Woodhouse wrote:
+> On Tue, 2010-10-19 at 11:07 -0500, Larry Finger wrote:
+>> On 10/19/2010 10:58 AM, David Woodhouse wrote:
+>>> On Tue, 2010-10-19 at 10:54 -0500, Larry Finger wrote:
+>>>> + * This program is free software; you can redistribute it and/or modify it
+>>>> + * under the terms of version 2 of the GNU General Public License as
+>>>> + * published by the Free Software Foundation. 
+>>>
+>>> Where is the source code, then?
+>>>
+>>
+>> The source code for the driver with inline firmware is in linux-next in
+>> drivers/staging/rtl8712 and was pushed through GregKH.
+> 
+> No. If you're stating that the *firmware* is under GPL, then we need to
+> see the source code for the firmware. If not, try another description of
+> the licence on the firmware.
 
-> Eric, just to put that in context - changing the size of an inode
-> needs to be conidered carefully because we cache so many of them. We
-> often jump through hoops just to reduce it by 4 or 8 bytes. You are
-> proposing to increase it by 24 bytes (roughly 5%) and as such that
-> _should_ be considered a big deal, especially for something that is
-> currently rarely used.
+In the source code originally provided by Realtek, the firmware is inlined in a
+header file. Unfortunately, it does not have any license information provided
+and starts with
 
-In my mind it's framed a little differently, my patch series is reducing
-it from ~900 bytes to 24 bytes.  Even though that memory might not have
-been inside struct inode if there is always a 1-1 mapping it might as
-well be....   I'm going from seriously broken to a hell of a lot better.
-I believe that when I resend this series I'll drop 8 more of those bytes
-(open count as I think we can do without that these days).
+/* Firmware */
+static const unsigned char f_array[122328] = {
+0x12, 0x87, 0xEC, 0x11, 0x30, 0x00, 0x00, 0x00, 0x08, 0xE8, 0x00, 0x00,
+0x50, 0xF5, 0x00, 0x00, 0x30, 0x00, 0x00, 0x00, 0x98, 0xF3, 0x00, 0x00,
 
-> Personally I that adding a pointer into the struct inode is as much
-> as I'd want to compromise to. Those that want to use IMA or have the
-> possibility of turning it on dynamicaly can accept the additional
-> overhead of another memory allocation during inode allocation as the
-> cost of using this functionality.  That's the way the security
-> subsystem works, so I don't see any problems with doing this for IMA
-> and it turns the overhead problem into one that only affects those
-> that have it both configured and enabled.  That seems like a
-> reasonable compromise to me....
+The license information that I put into WHENCE is in the source-code file that
+contains the MODULE_LICENSE(GPL) statement. As the firmware header file is part
+of that set of files, I thought the GPL license would apply to all. Is that not
+so? If not, I'm not sure how to proceed.
 
-The problem is that this would actually waste another 8 bytes (the size
-of the pointer in struct inode) since IMA is still going to need to
-allocate a structure for every inode to hold the 16-24 bytes of
-counters.  That 16-24 might not be in struct inode, but like I said, if
-there is a 1-1 mapping between the two there is no difference.
-
-I said that if there was a consensus that this overhead was still too
-large (and it seems that may be the case) I would put looking at using a
-userspace freezer to attempt to collect the information dynamically on
-my todo list.  I'll gladly do that but we have a space/time tradeoff I'd
-rather have a consensus on before I start.
-
-If I go the pointer in struct inode route, I don't need to serialize
-entry and removal from core of every inode if IMA is enabled (while I
-add and remove it from the IMA lookup tree.)  If I don't add any fields
-to struct inode I'll need to serialize while I add them to the IMA
-lookup tree, but at the savings of a void * in struct inode.
-
-My guess is that most people will say forcing users to serialize and
-saving 8bytes per inode is the better choice, but I know there is
-scalability work going on and I want to make sure everyone agrees that
-is the right choice before we spend a lot of time on anything like
-this...
-
--Eric
-
+Larry
