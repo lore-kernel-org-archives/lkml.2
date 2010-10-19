@@ -1,510 +1,244 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756856Ab0JSTpM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Oct 2010 15:45:12 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:50591 "EHLO arroyo.ext.ti.com"
+	id S1756955Ab0JSTug (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Oct 2010 15:50:36 -0400
+Received: from www.tglx.de ([62.245.132.106]:38369 "EHLO www.tglx.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752703Ab0JSTpK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Oct 2010 15:45:10 -0400
-From: pavan_savoy@ti.com
-To: padovan@profusion.mobi, marcel@holtmann.org
-Cc: linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Pavan Savoy <pavan_savoy@ti.com>
-Subject: [PATCH v3] Bluetooth: btwilink driver
-Date: Tue, 19 Oct 2010 16:57:38 -0400
-Message-Id: <1287521858-15190-1-git-send-email-pavan_savoy@ti.com>
-X-Mailer: git-send-email 1.6.5
+	id S1753117Ab0JSTuf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Oct 2010 15:50:35 -0400
+Date: Tue, 19 Oct 2010 21:49:45 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+cc: Steven Rostedt <rostedt@goodmis.org>,
+        Koki Sanagi <sanagi.koki@jp.fujitsu.com>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Frederic Weisbecker <fweisbec@gmail.com>, nhorman@tuxdriver.com,
+        scott.a.mcmillan@intel.com, laijs@cn.fujitsu.com,
+        "H. Peter Anvin" <hpa@zytor.com>, LKML <linux-kernel@vger.kernel.org>,
+        eric.dumazet@gmail.com, kaneshige.kenji@jp.fujitsu.com,
+        David Miller <davem@davemloft.net>, izumi.taku@jp.fujitsu.com,
+        kosaki.motohiro@jp.fujitsu.com,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        "Luck, Tony" <tony.luck@intel.com>
+Subject: Re: [PATCH] tracing: Cleanup the convoluted softirq tracepoints
+In-Reply-To: <20101019142820.GA14520@Krystal>
+Message-ID: <alpine.LFD.2.00.1010191842270.6815@localhost6.localdomain6>
+References: <tip-2bf2160d8805de64308e2e7c3cd97813cb58ed2f@git.kernel.org> <20100908112529.GA25931@elte.hu> <1287395077.29097.1543.camel@twins> <1287398936.29097.1548.camel@twins> <4CBD79CF.2060706@jp.fujitsu.com> <alpine.LFD.2.00.1010191428560.6815@localhost6.localdomain6>
+ <20101019132236.GA19197@Krystal> <alpine.LFD.2.00.1010191524160.6815@localhost6.localdomain6> <1287496495.16971.372.camel@gandalf.stny.rr.com> <alpine.LFD.2.00.1010191558250.6815@localhost6.localdomain6> <20101019142820.GA14520@Krystal>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Pavan Savoy <pavan_savoy@ti.com>
+On Tue, 19 Oct 2010, Mathieu Desnoyers wrote:
+> * Thomas Gleixner (tglx@linutronix.de) wrote:
+> > On Tue, 19 Oct 2010, Steven Rostedt wrote:
+> as an excuse for adding extra performance impact to kernel code, because when it
+> will be replaced by asm gotos, all that will be left is the performance impact
+> inappropriately justified as insignificant compared to the impact of the old
+> tracepoint scheme.
 
-v3 comments
+Can you at one point just stop your tracing lectures and look at the
+facts ?
 
-Marcel, Gustavo, & list,
-Please review this version of patch.
+The impact of a sensible tracepoint design on the code in question
+before kstat_incr_softirqs_this_cpu() was added would have been a mere
+_FIVE_ bytes of text. But the original tracepoint code itself is
+_TWENTY_ bytes of text larger.
 
-Anderson,
-I have taken care of most of the comments you had.
-Have re-wrote some of the code commenting you've mentioned.
-Thanks for the comments,
+So we trade horrible code plus 20 bytes text against 5 bytes of text
+in the hotpath. And you tell me that these _FIVE_ bytes are impacting
+performance so much that it's significant.
 
-The other few like -EPERM for platform driver registration is to keep
-it similar to other drivers, type casting is maintained just to feel safe
-and have style similar to other drivers.
-BT_WILINK in Kconfig is similar to BT_MRVL.
-I hope those aren't too critical.
+Now with kstat_incr_softirqs_this_cpu() the impact is zero, it even
+removes code.
 
--- patch description --
+And talking about non impact of disabled trace points. The tracepoint
+in question which made me look at the code results in deinlining
+__raise_softirq_irqsoff() in net/dev/core.c. There goes your theory.
 
-This is the bluetooth protocol driver for the TI WiLink7 chipsets.
-Texas Instrument's WiLink chipsets combine wireless technologies
-like BT, FM, GPS and WLAN onto a single chip.
+So no, you _cannot_ tell what impact a tracepoint has in reality
+except by looking at the assembly output.
 
-This Bluetooth driver works on top of the TI_ST shared transport
-line discipline driver which also allows other drivers like
-FM V4L2 and GPS character driver to make use of the same UART interface.
+And what scares me way more is the size of a single tracepoint in a
+code file.
 
-Kconfig and Makefile modifications to enable the Bluetooth
-driver for Texas Instrument's WiLink 7 chipset.
+Just adding "trace_softirq_entry(nr);" adds 88 bytes of text. So
+that's optimized tracing code ?
 
-Signed-off-by: Pavan Savoy <pavan_savoy@ti.com>
----
- drivers/bluetooth/Kconfig    |   10 +
- drivers/bluetooth/Makefile   |    1 +
- drivers/bluetooth/btwilink.c |  411 ++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 422 insertions(+), 0 deletions(-)
- create mode 100644 drivers/bluetooth/btwilink.c
+All it's supposed to do is:
 
-diff --git a/drivers/bluetooth/Kconfig b/drivers/bluetooth/Kconfig
-index 02deef4..8e0de9a 100644
---- a/drivers/bluetooth/Kconfig
-+++ b/drivers/bluetooth/Kconfig
-@@ -219,4 +219,14 @@ config BT_ATH3K
- 	  Say Y here to compile support for "Atheros firmware download driver"
- 	  into the kernel or say M to compile it as module (ath3k).
- 
-+config BT_WILINK
-+	tristate "Texas Instruments WiLink7 driver"
-+	depends on TI_ST
-+	help
-+	  This enables the Bluetooth driver for Texas Instrument's BT/FM/GPS
-+	  combo devices. This makes use of shared transport line discipline
-+	  core driver to communicate with the BT core of the combo chip.
-+
-+	  Say Y here to compile support for Texas Instrument's WiLink7 driver
-+	  into the kernel or say M to compile it as module.
- endmenu
-diff --git a/drivers/bluetooth/Makefile b/drivers/bluetooth/Makefile
-index 71bdf13..f4460f4 100644
---- a/drivers/bluetooth/Makefile
-+++ b/drivers/bluetooth/Makefile
-@@ -18,6 +18,7 @@ obj-$(CONFIG_BT_HCIBTSDIO)	+= btsdio.o
- obj-$(CONFIG_BT_ATH3K)		+= ath3k.o
- obj-$(CONFIG_BT_MRVL)		+= btmrvl.o
- obj-$(CONFIG_BT_MRVL_SDIO)	+= btmrvl_sdio.o
-+obj-$(CONFIG_BT_WILINK)		+= btwilink.o
- 
- btmrvl-y			:= btmrvl_main.o
- btmrvl-$(CONFIG_DEBUG_FS)	+= btmrvl_debugfs.o
-diff --git a/drivers/bluetooth/btwilink.c b/drivers/bluetooth/btwilink.c
-new file mode 100644
-index 0000000..930e3d3
---- /dev/null
-+++ b/drivers/bluetooth/btwilink.c
-@@ -0,0 +1,411 @@
-+/*
-+ *  Texas Instrument's Bluetooth Driver For Shared Transport.
-+ *
-+ *  Bluetooth Driver acts as interface between HCI core and
-+ *  TI Shared Transport Layer.
-+ *
-+ *  Copyright (C) 2009-2010 Texas Instruments
-+ *  Author: Raja Mani <raja_mani@ti.com>
-+ *	Pavan Savoy <pavan_savoy@ti.com>
-+ *
-+ *  This program is free software; you can redistribute it and/or modify
-+ *  it under the terms of the GNU General Public License version 2 as
-+ *  published by the Free Software Foundation.
-+ *
-+ *  This program is distributed in the hope that it will be useful,
-+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ *  GNU General Public License for more details.
-+ *
-+ *  You should have received a copy of the GNU General Public License
-+ *  along with this program; if not, write to the Free Software
-+ *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-+ *
-+ */
-+
-+#include <linux/platform_device.h>
-+#include <net/bluetooth/bluetooth.h>
-+#include <net/bluetooth/hci_core.h>
-+
-+#include <linux/ti_wilink_st.h>
-+
-+/* Bluetooth Driver Version */
-+#define VERSION               "1.0"
-+
-+/* Number of seconds to wait for registration completion
-+ * when ST returns PENDING status.
-+ */
-+#define BT_REGISTER_TIMEOUT   6000	/* 6 sec */
-+
-+/**
-+ * struct ti_st - driver operation structure
-+ * @hdev: hci device pointer which binds to bt driver
-+ * @reg_status: ST registration callback status
-+ * @st_write: write function provided by the ST driver
-+ *	to be used by the driver during send_frame.
-+ * @wait_reg_completion - completion sync between ti_st_open
-+ *	and ti_st_registration_completion_cb.
-+ */
-+struct ti_st {
-+	struct hci_dev *hdev;
-+	char reg_status;
-+	long (*st_write) (struct sk_buff *);
-+	struct completion wait_reg_completion;
-+};
-+
-+static int reset;
-+
-+/* Increments HCI counters based on pocket ID (cmd,acl,sco) */
-+static inline void ti_st_tx_complete(struct ti_st *hst, int pkt_type)
-+{
-+	struct hci_dev *hdev;
-+	hdev = hst->hdev;
-+
-+	/* Update HCI stat counters */
-+	switch (pkt_type) {
-+	case HCI_COMMAND_PKT:
-+		hdev->stat.cmd_tx++;
-+		break;
-+
-+	case HCI_ACLDATA_PKT:
-+		hdev->stat.acl_tx++;
-+		break;
-+
-+	case HCI_SCODATA_PKT:
-+		hdev->stat.sco_tx++;
-+		break;
-+	}
-+}
-+
-+/* ------- Interfaces to Shared Transport ------ */
-+
-+/* Called by ST layer to indicate protocol registration completion
-+ * status.ti_st_open() function will wait for signal from this
-+ * API when st_register() function returns ST_PENDING.
-+ */
-+static void st_registration_completion_cb(void *priv_data, char data)
-+{
-+	struct ti_st *lhst = (struct ti_st *)priv_data;
-+
-+	/* Save registration status for use in ti_st_open() */
-+	lhst->reg_status = data;
-+	/* complete the wait in ti_st_open() */
-+	complete(&lhst->wait_reg_completion);
-+}
-+
-+/* Called by Shared Transport layer when receive data is
-+ * available */
-+static long st_receive(void *priv_data, struct sk_buff *skb)
-+{
-+	int err;
-+	struct ti_st *lhst = (struct ti_st *)priv_data;
-+
-+	if (!skb)
-+		return -EFAULT;
-+
-+	if (!lhst) {
-+		kfree_skb(skb);
-+		return -EFAULT;
-+	}
-+
-+	skb->dev = (struct net_device *)lhst->hdev;
-+
-+	/* Forward skb to HCI core layer */
-+	err = hci_recv_frame(skb);
-+	if (err) {
-+		kfree_skb(skb);
-+		BT_ERR("Unable to push skb to HCI core(%d)", err);
-+		return err;
-+	}
-+
-+	lhst->hdev->stat.byte_rx += skb->len;
-+
-+	return 0;
-+}
-+
-+/* ------- Interfaces to HCI layer ------ */
-+/* protocol structure registered with shared transport */
-+static struct st_proto_s ti_st_proto = {
-+	.type = ST_BT,
-+	.recv = st_receive,
-+	.reg_complete_cb = st_registration_completion_cb,
-+	.priv_data = NULL,
-+};
-+
-+/* Called from HCI core to initialize the device */
-+static int ti_st_open(struct hci_dev *hdev)
-+{
-+	unsigned long timeleft;
-+	struct ti_st *hst;
-+	int err;
-+
-+	BT_DBG("%s %p", hdev->name, hdev);
-+
-+	/* provide contexts for callbacks from ST */
-+	hst = hdev->driver_data;
-+	ti_st_proto.priv_data = hst;
-+
-+	err = st_register(&ti_st_proto);
-+	if (err == -EINPROGRESS) {
-+		/* Prepare wait-for-completion handler data structures.
-+		 * Needed to synchronize this and
-+		 * st_registration_completion_cb() functions.
-+		 */
-+		init_completion(&hst->wait_reg_completion);
-+
-+		/* Reset ST registration callback status flag , this value
-+		 * will be updated in ti_st_registration_completion_cb()
-+		 * function whenever it called from ST driver.
-+		 */
-+		hst->reg_status = -EINPROGRESS;
-+
-+		/* ST is busy with either protocol registration or firmware
-+		 * download. Wait until the registration callback is called
-+		 */
-+		BT_DBG(" waiting for registration completion signal from ST");
-+
-+		timeleft = wait_for_completion_timeout
-+			(&hst->wait_reg_completion,
-+			 msecs_to_jiffies(BT_REGISTER_TIMEOUT));
-+		if (!timeleft) {
-+			BT_ERR("Timeout(%d sec),didn't get reg "
-+					"completion signal from ST",
-+					BT_REGISTER_TIMEOUT / 1000);
-+			return -ETIMEDOUT;
-+		}
-+
-+		/* Is ST registration callback called with ERROR status? */
-+		if (hst->reg_status != 0) {
-+			BT_ERR("ST registration completed with invalid "
-+					"status %d", hst->reg_status);
-+			return -EAGAIN;
-+		}
-+		err = 0;
-+	} else if (err == -EPERM) {
-+		BT_ERR("st_register failed %d", err);
-+		return err;
-+	}
-+
-+	hst->st_write = ti_st_proto.write;
-+	if (!hst->st_write) {
-+		BT_ERR("undefined ST write function");
-+
-+		/* Undo registration with ST */
-+		err = st_unregister(ST_BT);
-+		if (err)
-+			BT_ERR("st_unregister() failed with error %d", err);
-+
-+		hst->st_write = NULL;
-+		return err;
-+	}
-+
-+	/* Registration with ST layer is successful,
-+	 * hardware is ready to accept commands from HCI core.
-+	 */
-+	set_bit(HCI_RUNNING, &hdev->flags);
-+
-+	return err;
-+}
-+
-+/* Close device */
-+static int ti_st_close(struct hci_dev *hdev)
-+{
-+	int err;
-+	struct ti_st *hst = hdev->driver_data;
-+
-+	/* continue to unregister from transport */
-+	err = st_unregister(ST_BT);
-+	if (err)
-+		BT_ERR("st_unregister() failed with error %d", err);
-+
-+	hst->st_write = NULL;
-+
-+	return err;
-+}
-+
-+static int ti_st_send_frame(struct sk_buff *skb)
-+{
-+	struct hci_dev *hdev;
-+	struct ti_st *hst;
-+	long len;
-+
-+	if (!skb)
-+		return -ENOMEM;
-+
-+	hdev = (struct hci_dev *)skb->dev;
-+	if (!hdev)
-+		return -ENODEV;
-+
-+	if (!test_bit(HCI_RUNNING, &hdev->flags))
-+		return -EBUSY;
-+
-+	hst = (struct ti_st *)hdev->driver_data;
-+
-+	/* Prepend skb with frame type */
-+	memcpy(skb_push(skb, 1), &bt_cb(skb)->pkt_type, 1);
-+
-+	BT_DBG(" %s: type %d len %d", hdev->name, bt_cb(skb)->pkt_type,
-+			skb->len);
-+
-+	/* Insert skb to shared transport layer's transmit queue.
-+	 * Freeing skb memory is taken care in shared transport layer,
-+	 * so don't free skb memory here.
-+	 */
-+	if (!hst->st_write) {
-+		kfree_skb(skb);
-+		BT_ERR(" Could not write to ST (st_write is NULL)");
-+		return -EAGAIN;
-+	}
-+
-+	len = hst->st_write(skb);
-+	if (len < 0) {
-+		kfree_skb(skb);
-+		BT_ERR(" ST write failed (%ld)", len);
-+		return -EAGAIN;
-+	}
-+
-+	/* ST accepted our skb. So, Go ahead and do rest */
-+	hdev->stat.byte_tx += len;
-+	ti_st_tx_complete(hst, bt_cb(skb)->pkt_type);
-+
-+	return 0;
-+}
-+
-+static void ti_st_destruct(struct hci_dev *hdev)
-+{
-+	if (!hdev)
-+		return;
-+
-+	BT_DBG("%s", hdev->name);
-+
-+	/* free ti_st memory */
-+	kfree(hdev->driver_data);
-+
-+	return;
-+}
-+
-+/* Creates new HCI device */
-+static int ti_st_register_dev(struct ti_st *hst)
-+{
-+	int err;
-+	struct hci_dev *hdev;
-+
-+	/* Initialize and register HCI device */
-+	hdev = hci_alloc_dev();
-+	if (!hdev)
-+		return -ENOMEM;
-+
-+	BT_DBG("hdev %p", hdev);
-+
-+	hst->hdev = hdev;
-+	hdev->bus = HCI_UART;
-+	hdev->driver_data = hst;
-+	hdev->open = ti_st_open;
-+	hdev->close = ti_st_close;
-+	hdev->flush = NULL;
-+	hdev->send = ti_st_send_frame;
-+	hdev->destruct = ti_st_destruct;
-+	hdev->owner = THIS_MODULE;
-+
-+	if (reset)
-+		set_bit(HCI_QUIRK_NO_RESET, &hdev->quirks);
-+
-+	err = hci_register_dev(hdev);
-+	if (err < 0) {
-+		BT_ERR("Can't register HCI device error %d", err);
-+		hci_free_dev(hdev);
-+		return err;
-+	}
-+
-+	BT_DBG(" HCI device registered (hdev %p)", hdev);
-+	return 0;
-+}
-+
-+
-+static int bt_ti_probe(struct platform_device *pdev)
-+{
-+	int err;
-+	static struct ti_st *hst;
-+
-+	BT_DBG(" Bluetooth Driver Version %s", VERSION);
-+
-+	hst = kzalloc(sizeof(struct ti_st), GFP_KERNEL);
-+	if (!hst)
-+		return -ENOMEM;
-+
-+	/* Expose "hciX" device to user space */
-+	err = ti_st_register_dev(hst);
-+	if (err) {
-+		kfree(hst);
-+		return err;
-+	}
-+
-+	dev_set_drvdata(&pdev->dev, hst);
-+	return err;
-+}
-+
-+static int bt_ti_remove(struct platform_device *pdev)
-+{
-+	struct ti_st *hst;
-+	struct hci_dev *hdev;
-+
-+	hst = dev_get_drvdata(&pdev->dev);
-+
-+	if (!hst)
-+		return -EFAULT;
-+
-+	/* Deallocate local resource's memory  */
-+	hdev = hst->hdev;
-+
-+	if (!hdev) {
-+		BT_ERR("Invalid hdev memory");
-+		kfree(hst);
-+		return -EFAULT;
-+	}
-+
-+	ti_st_close(hdev);
-+	hci_unregister_dev(hdev);
-+	/* Free HCI device memory */
-+	hci_free_dev(hdev);
-+
-+	return 0;
-+}
-+
-+static struct platform_driver btwilink_driver = {
-+	.probe = bt_ti_probe,
-+	.remove = bt_ti_remove,
-+	.driver = {
-+		.name = "btwilink",
-+		.owner = THIS_MODULE,
-+	},
-+};
-+
-+/* ------- Module Init/Exit interfaces ------ */
-+static int __init bt_drv_init(void)
-+{
-+	long ret;
-+
-+	ret = platform_driver_register(&btwilink_driver);
-+	if (ret != 0) {
-+		BT_ERR("btwilink platform driver registration failed");
-+		return -EPERM;
-+	}
-+	return 0;
-+}
-+
-+static void __exit bt_drv_exit(void)
-+{
-+	platform_driver_unregister(&btwilink_driver);
-+}
-+
-+module_init(bt_drv_init);
-+module_exit(bt_drv_exit);
-+
-+/* ------ Module Info ------ */
-+
-+module_param(reset, bool, 0644);
-+MODULE_PARM_DESC(reset, "Send HCI reset command on initialization");
-+MODULE_AUTHOR("Raja Mani <raja_mani@ti.com>");
-+MODULE_DESCRIPTION("Bluetooth Driver for TI Shared Transport" VERSION);
-+MODULE_VERSION(VERSION);
-+MODULE_LICENSE("GPL");
--- 
-1.6.5
+    if (enabled)
+	trace_foo(nr);
 
+Replace "if (enabled)" with your favourite code patching jump label
+whatever magic. The above stupid version takes about 28, but the
+"optimized" tracing code makes that 88. Brilliant. That's inlining
+utter shite for no good reason. WTF is it necessary to inline all that
+gunk ?
+
+Please spare me the "jump label will make this less intrusive"
+lecture. I'm not interested at all.
+
+Let's instead look at some more facts:
+
+#include <linux/interrupt.h>
+#include <linux/module.h>
+
+#include <trace/events/irq.h>
+
+static struct softirq_action softirq_vec[NR_SOFTIRQS];
+
+void test(struct softirq_action *h)
+{
+	trace_softirq_entry(h - softirq_vec);
+
+	h->action(h);
+}
+
+Compile this code with GCC 4.5 with and without jump labels (zap the
+select HAVE_ARCH_JUMP_LABEL line in arch/x86/Kconfig)
+
+So now the !jumplabel case gives us:
+
+../build/kernel/soft.o:     file format elf64-x86-64
+
+Disassembly of section .text:
+
+0000000000000000 <test>:
+   0:	55                   	push   %rbp
+   1:	48 89 e5             	mov    %rsp,%rbp
+   4:	41 55                	push   %r13
+   6:	49 89 fd             	mov    %rdi,%r13
+   9:	49 81 ed 00 00 00 00 	sub    $0x0,%r13
+  10:	41 54                	push   %r12
+  12:	49 c1 ed 03          	shr    $0x3,%r13
+  16:	49 89 fc             	mov    %rdi,%r12
+  19:	53                   	push   %rbx
+  1a:	48 83 ec 08          	sub    $0x8,%rsp
+  1e:	83 3d 00 00 00 00 00 	cmpl   $0x0,0x0(%rip)        # 25 <test+0x25>
+  25:	74 4d                	je     74 <test+0x74>
+  27:	65 48 8b 04 25 00 00 	mov    %gs:0x0,%rax
+  2e:	00 00 
+  30:	ff 80 44 e0 ff ff    	incl   -0x1fbc(%rax)
+  36:	48 8b 1d 00 00 00 00 	mov    0x0(%rip),%rbx        # 3d <test+0x3d>
+  3d:	48 85 db             	test   %rbx,%rbx
+  40:	74 13                	je     55 <test+0x55>
+  42:	48 8b 7b 08          	mov    0x8(%rbx),%rdi
+  46:	44 89 ee             	mov    %r13d,%esi
+  49:	ff 13                	callq  *(%rbx)
+  4b:	48 83 c3 10          	add    $0x10,%rbx
+  4f:	48 83 3b 00          	cmpq   $0x0,(%rbx)
+  53:	eb eb                	jmp    40 <test+0x40>
+  55:	65 48 8b 04 25 00 00 	mov    %gs:0x0,%rax
+  5c:	00 00 
+  5e:	ff 88 44 e0 ff ff    	decl   -0x1fbc(%rax)
+  64:	48 8b 80 38 e0 ff ff 	mov    -0x1fc8(%rax),%rax
+  6b:	a8 08                	test   $0x8,%al
+  6d:	74 05                	je     74 <test+0x74>
+  6f:	e8 00 00 00 00       	callq  74 <test+0x74>
+  74:	4c 89 e7             	mov    %r12,%rdi
+  77:	41 ff 14 24          	callq  *(%r12)
+  7b:	58                   	pop    %rax
+  7c:	5b                   	pop    %rbx
+  7d:	41 5c                	pop    %r12
+  7f:	41 5d                	pop    %r13
+  81:	c9                   	leaveq 
+  82:	c3                   	retq   
+
+The jumplabel=y case gives:
+
+../build/kernel/soft.o:     file format elf64-x86-64
+
+Disassembly of section .text:
+
+0000000000000000 <test>:
+   0:	55                   	push   %rbp
+   1:	48 89 e5             	mov    %rsp,%rbp
+   4:	41 55                	push   %r13
+   6:	49 89 fd             	mov    %rdi,%r13
+   9:	49 81 ed 00 00 00 00 	sub    $0x0,%r13
+  10:	41 54                	push   %r12
+  12:	49 c1 ed 03          	shr    $0x3,%r13
+  16:	49 89 fc             	mov    %rdi,%r12
+  19:	53                   	push   %rbx
+  1a:	48 83 ec 08          	sub    $0x8,%rsp
+  1e:	e9 00 00 00 00       	jmpq   23 <test+0x23>
+  23:	eb 4d                	jmp    72 <test+0x72>
+  25:	65 48 8b 04 25 00 00 	mov    %gs:0x0,%rax
+  2c:	00 00 
+  2e:	ff 80 44 e0 ff ff    	incl   -0x1fbc(%rax)
+  34:	48 8b 1d 00 00 00 00 	mov    0x0(%rip),%rbx        # 3b <test+0x3b>
+  3b:	48 85 db             	test   %rbx,%rbx
+  3e:	74 13                	je     53 <test+0x53>
+  40:	48 8b 7b 08          	mov    0x8(%rbx),%rdi
+  44:	44 89 ee             	mov    %r13d,%esi
+  47:	ff 13                	callq  *(%rbx)
+  49:	48 83 c3 10          	add    $0x10,%rbx
+  4d:	48 83 3b 00          	cmpq   $0x0,(%rbx)
+  51:	eb eb                	jmp    3e <test+0x3e>
+  53:	65 48 8b 04 25 00 00 	mov    %gs:0x0,%rax
+  5a:	00 00 
+  5c:	ff 88 44 e0 ff ff    	decl   -0x1fbc(%rax)
+  62:	48 8b 80 38 e0 ff ff 	mov    -0x1fc8(%rax),%rax
+  69:	a8 08                	test   $0x8,%al
+  6b:	74 05                	je     72 <test+0x72>
+  6d:	e8 00 00 00 00       	callq  72 <test+0x72>
+  72:	4c 89 e7             	mov    %r12,%rdi
+  75:	41 ff 14 24          	callq  *(%r12)
+  79:	58                   	pop    %rax
+  7a:	5b                   	pop    %rbx
+  7b:	41 5c                	pop    %r12
+  7d:	41 5d                	pop    %r13
+  7f:	c9                   	leaveq 
+  80:	c3                   	retq   
+
+So that saves _TWO_ bytes of text and replaces:
+
+-  1e:	83 3d 00 00 00 00 00 	cmpl   $0x0,0x0(%rip)        # 25 <test+0x25>
+-  25:	74 4d                	je     74 <test+0x74>
++  1e:	e9 00 00 00 00       	jmpq   23 <test+0x23>
++  23:	eb 4d                	jmp    72 <test+0x72>
+
+So it trades a conditional vs. two jumps ? WTF ??
+
+I thought that jumplabel magic was supposed to get rid of the jump
+over the tracing code ? In fact it adds another jump. Whatfor ?
+
+Now even worse, when you NOP out the jmpq then your tracepoint is
+still not enabled. Brilliant !
+
+Did you guys ever look at the assembly output of that insane shite you
+are advertising with lengthy explanations ? 
+
+Obviously _NOT_
+
+Come back when you can show me a clean imlementation of all this crap
+which reproduces with my jumplabel enabled stock compiler. And please
+just send me a patch w/o the blurb.
+
+And sane looks like:
+
+    jmpq   2f  <---- This gets noped out 
+1:
+    mov    %r12,%rdi
+    callq  *(%r12)
+    [whatever cleanup it takes ]
+    leaveq 
+    retq   
+
+2f:
+    [tracing gunk]
+    jmp    1b
+
+And further I want to see the tracing gunk in a minimal size so the
+net/core/dev.c deinlining does not happen.
+
+Thanks,
+
+	tglx
+
+P.S.: It might be helpful and polite if you'd take off your tracing
+      blinkers from time to time.
