@@ -1,59 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753293Ab0JSWAA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Oct 2010 18:00:00 -0400
-Received: from imr4.ericy.com ([198.24.6.8]:47587 "EHLO imr4.ericy.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752370Ab0JSV76 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Oct 2010 17:59:58 -0400
-Subject: Re: [PATCH v2] i2c/mux: Driver for PCA9541 I2C Master Selector
-From: Guenter Roeck <guenter.roeck@ericsson.com>
-Reply-To: guenter.roeck@ericsson.com
-To: Jean Delvare <khali@linux-fr.org>
-CC: Ben Dooks <ben-linux@fluff.org>, Rodolfo Giometti <giometti@linux.it>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-In-Reply-To: <20101019234929.3d4d14f4@endymion.delvare>
-References: <1286932516-20689-1-git-send-email-guenter.roeck@ericsson.com>
-	 <20101019190647.314302e7@endymion.delvare>
-	 <1287521453.9690.299.camel@groeck-laptop>
-	 <20101019234929.3d4d14f4@endymion.delvare>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Ericsson
-Date: Tue, 19 Oct 2010 14:59:19 -0700
-Message-ID: <1287525559.9690.309.camel@groeck-laptop>
+	id S1753874Ab0JSWBJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Oct 2010 18:01:09 -0400
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:64578 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752949Ab0JSWBI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Oct 2010 18:01:08 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=Ph9YAhC1TNUGCC6QAe0RIsl44qZx8HssasVSxpGiqpwNhDyJl2DUcE2l8Q7d+mZOQo
+         7JNvdfevOtitTT02vAkrtn8jX2eF//oseIvBC7u403Hb8TeceE1eSpB/BJKwlDDzH+7l
+         KSGfzaNnbfnNxdCH0dkzz4Co0CeqRZ8sn846I=
 MIME-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20101019125250.GC12898@gondor.apana.org.au>
+References: <1287236963-1705-1-git-send-email-tdent48227@gmail.com>
+	<20101019125250.GC12898@gondor.apana.org.au>
+Date: Tue, 19 Oct 2010 18:01:06 -0400
+Message-ID: <AANLkTin1YMQT=Y_1z01RYz1-TDYY5DOy_yctTpzHg9C-@mail.gmail.com>
+Subject: Re: [PATCH 01/02] Drivers: crypto: Makefile: replace the use of
+ <module>-objs with <module>-y
+From: Tracey Dent <tdent48227@gmail.com>
+To: Herbert Xu <herbert@gondor.hengli.com.au>
+Cc: davem@davemloft.net, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-10-19 at 17:49 -0400, Jean Delvare wrote:
-> On Tue, 19 Oct 2010 13:50:53 -0700, Guenter Roeck wrote:
-> > Hi Jean,
-> > 
-> > On Tue, 2010-10-19 at 13:06 -0400, Jean Delvare wrote:
-> > [ ... ]
-> > > > +
-> > > > +/*
-> > > > + * I2C init/probing/exit functions
-> > > > + */
-> > > > +static int __devinit pca9541_probe(struct i2c_client *client,
-> > > > +                                const struct i2c_device_id *id)
-> > > 
-> > > The use of __devinit and __devexit isn't recommended for i2c drivers.
-> > > If your driver is built into the kernel but the underlying i2c bus
-> > > driver is build as a module, you're in trouble.
-> > > 
-> > I don't mind changing this, but ... the code is copied from pca954x.c,
-> > which also uses __devinit and __devexit for the same functions. Wouldn't
-> > that be a problem there as well ? Or am I missing something ?
-> 
-> You're right, this should be fixed. I take patches ;)
-> 
-Ok, I'll add that to my pending list.
+On 10/19/10, Herbert Xu <herbert@gondor.apana.org.au> wrote:
+> On Sat, Oct 16, 2010 at 09:49:22AM -0400, Tracey Dent wrote:
+>> Changed <module>-objs to <module>-y in Makefile.
+>>
+>> Signed-off-by: Tracey Dent <tdent48227@gmail.com>
+>
+> I've rolled both patches into one and applied it.
+>
+> Thanks,
+> --
+> Email: Herbert Xu <herbert@gondor.apana.org.au>
+> Home Page: http://gondor.apana.org.au/~herbert/
+> PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
+>
 
-Guenter
-
-
+Thanks
