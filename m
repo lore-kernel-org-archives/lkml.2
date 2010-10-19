@@ -1,92 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756740Ab0JSFKB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Oct 2010 01:10:01 -0400
-Received: from TYO201.gate.nec.co.jp ([202.32.8.193]:65023 "EHLO
-	tyo201.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751501Ab0JSFKA (ORCPT
+	id S932116Ab0JSFLL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Oct 2010 01:11:11 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:33690 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751388Ab0JSFLJ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Oct 2010 01:10:00 -0400
-Date: Tue, 19 Oct 2010 14:03:38 +0900
-From: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-To: Greg Thelen <gthelen@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, containers@lists.osdl.org,
-        Andrea Righi <arighi@develer.com>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
+	Tue, 19 Oct 2010 01:11:09 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=GzGJ1Zs/pru1YiLi0+itgO/HZtFvUwXWQQS0MN/02R7P4yV8ra0fAjDr4Wkxgd0Twu
+         DgNIiLvr7gDl9YIQKghKoxFynuFup98P0ZRyoteqEuw5wGD+z5aVTmxTbn9/v6iLk4rM
+         PCMabS9QSNIKpZluzPvp/OkGhHeCSEbiN2moA=
+MIME-Version: 1.0
+In-Reply-To: <20101019121321.A1E1.A69D9226@jp.fujitsu.com>
+References: <20101019030515.GB11924@localhost>
+	<AANLkTinvcGjF2-dvu8kpDY4V7kGkRJjHTWDtQPNRKMU_@mail.gmail.com>
+	<20101019121321.A1E1.A69D9226@jp.fujitsu.com>
+Date: Tue, 19 Oct 2010 14:11:07 +0900
+Message-ID: <AANLkTi=Akuku=Sz7kw0JRB-bzP8cmirbX4XJ8qyVqmze@mail.gmail.com>
+Subject: Re: Deadlock possibly caused by too_many_isolated.
+From: Minchan Kim <minchan.kim@gmail.com>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: Wu Fengguang <fengguang.wu@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>, Neil Brown <neilb@suse.de>,
+        Rik van Riel <riel@redhat.com>,
         KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Ciju Rajan K <ciju@linux.vnet.ibm.com>,
-        David Rientjes <rientjes@google.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-Subject: Re: [PATCH v3 04/11] memcg: add lock to synchronize page accounting
- and migration
-Message-Id: <20101019140338.9fd664bc.nishimura@mxp.nes.nec.co.jp>
-In-Reply-To: <1287448784-25684-5-git-send-email-gthelen@google.com>
-References: <1287448784-25684-1-git-send-email-gthelen@google.com>
-	<1287448784-25684-5-git-send-email-gthelen@google.com>
-Organization: NEC Soft, Ltd.
-X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "Li, Shaohua" <shaohua.li@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 18 Oct 2010 17:39:37 -0700
-Greg Thelen <gthelen@google.com> wrote:
+On Tue, Oct 19, 2010 at 12:13 PM, KOSAKI Motohiro
+<kosaki.motohiro@jp.fujitsu.com> wrote:
+>> On Tue, Oct 19, 2010 at 12:05 PM, Wu Fengguang <fengguang.wu@intel.com> wrote:
+>> > On Tue, Oct 19, 2010 at 10:52:47AM +0800, Minchan Kim wrote:
+>> >> Hi Wu,
+>> >>
+>> >> On Tue, Oct 19, 2010 at 11:35 AM, Wu Fengguang <fengguang.wu@intel.com> wrote:
+>> >> >> @@ -2054,10 +2069,11 @@ rebalance:
+>> >> >>                 goto got_pg;
+>> >> >>
+>> >> >>         /*
+>> >> >> -        * If we failed to make any progress reclaiming, then we are
+>> >> >> -        * running out of options and have to consider going OOM
+>> >> >> +        * If we failed to make any progress reclaiming and there aren't
+>> >> >> +        * many parallel reclaiming, then we are unning out of options and
+>> >> >> +        * have to consider going OOM
+>> >> >>          */
+>> >> >> -       if (!did_some_progress) {
+>> >> >> +       if (!did_some_progress && !too_many_isolated_zone(preferred_zone)) {
+>> >> >>                 if ((gfp_mask & __GFP_FS) && !(gfp_mask & __GFP_NORETRY)) {
+>> >> >>                         if (oom_killer_disabled)
+>> >> >>                                 goto nopage;
+>> >> >
+>> >> > This is simply wrong.
+>> >> >
+>> >> > It disabled this block for 99% system because there won't be enough
+>> >> > tasks to make (!too_many_isolated_zone == true). As a result the LRU
+>> >> > will be scanned like mad and no task get OOMed when it should be.
+>> >>
+>> >> If !too_many_isolated_zone is false, it means there are already many
+>> >> direct reclaiming tasks.
+>> >> So they could exit reclaim path and !too_many_isolated_zone will be true.
+>> >> What am I missing now?
+>> >
+>> > Ah sorry, my brain get short circuited.. but I still feel uneasy with
+>> > this change. It's not fixing the root cause and won't prevent too many
+>> > LRU pages be isolated. It's too late to test too_many_isolated_zone()
+>> > after direct reclaim returns (after sleeping for a long time).
+>> >
+>>
+>> Intend to agree.
+>> I think root cause is a infinite looping in too_many_isolated holding FS lock.
+>> Would it be simple that too_many_isolated would be bail out after some try?
+>
+> How?
+> A lot of caller don't have good recover logic when memory allocation fail occur.
+>
 
-> From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> 
-> From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> 
-> Introduce a new bit spin lock, PCG_MOVE_LOCK, to synchronize
-> the page accounting and migration code.  This reworks the
-> locking scheme of _update_stat() and _move_account() by
-> adding new lock bit PCG_MOVE_LOCK, which is always taken
-> under IRQ disable.
-> 
-> 1. If pages are being migrated from a memcg, then updates to
->    that memcg page statistics are protected by grabbing
->    PCG_MOVE_LOCK using move_lock_page_cgroup().  In an
->    upcoming commit, memcg dirty page accounting will be
->    updating memcg page accounting (specifically: num
->    writeback pages) from IRQ context (softirq).  Avoid a
->    deadlocking nested spin lock attempt by disabling irq on
->    the local processor when grabbing the PCG_MOVE_LOCK.
-> 
-> 2. lock for update_page_stat is used only for avoiding race
->    with move_account().  So, IRQ awareness of
->    lock_page_cgroup() itself is not a problem.  The problem
->    is between mem_cgroup_update_page_stat() and
->    mem_cgroup_move_account_page().
-> 
-> Trade-off:
->   * Changing lock_page_cgroup() to always disable IRQ (or
->     local_bh) has some impacts on performance and I think
->     it's bad to disable IRQ when it's not necessary.
->   * adding a new lock makes move_account() slower.  Score is
->     here.
-> 
-> Performance Impact: moving a 8G anon process.
-> 
-> Before:
-> 	real    0m0.792s
-> 	user    0m0.000s
-> 	sys     0m0.780s
-> 
-> After:
-> 	real    0m0.854s
-> 	user    0m0.000s
-> 	sys     0m0.842s
-> 
-> This score is bad but planned patches for optimization can reduce
-> this impact.
-> 
-> Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> Signed-off-by: Greg Thelen <gthelen@google.com>
+I means following as.
 
-This approach is more straightforward and easy to understand.
+1. shrink_inactive_list
+2. if too_many_isolated is looping than 5 times, it marks some
+variable to notice this fail is concurrent reclaim and bail out
+3. __alloc_pages_slowpath see that did_some_progress is zero and the
+mark which show bailout by concurrent reclaim.
+4. Instead of OOM, congestion_wait and rebalance.
 
-Acked-by: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+While I implement it, I knew it makes code rather ugly and I thought
+lost is bigger than gain.
+
+Okay. I will drop this idea.
+
+Thanks for advising me, Wu, KOSAKI.
+-- 
+Kind regards,
+Minchan Kim
