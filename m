@@ -1,46 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757266Ab0JSU3k (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Oct 2010 16:29:40 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:34265 "EHLO ogre.sisk.pl"
+	id S1757314Ab0JSUaF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Oct 2010 16:30:05 -0400
+Received: from kroah.org ([198.145.64.141]:49484 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757223Ab0JSU3i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Oct 2010 16:29:38 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Alan Stern <stern@rowland.harvard.edu>
-Subject: Re: [linux-pm] 2.6.36-rc8-git3: Reported regressions 2.6.34 -> 2.6.35
-Date: Tue, 19 Oct 2010 22:28:11 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.36-rc8-rjw+; KDE/4.4.4; x86_64; ; )
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Florian Mickler <florian@mickler.org>,
-        Kernel Testers List <kernel-testers@vger.kernel.org>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>, O01eg <O01eg@yandex.ru>
-References: <Pine.LNX.4.44L0.1010191157070.1786-100000@iolanthe.rowland.org>
-In-Reply-To: <Pine.LNX.4.44L0.1010191157070.1786-100000@iolanthe.rowland.org>
+	id S1757273Ab0JSUaB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Oct 2010 16:30:01 -0400
+Date: Tue, 19 Oct 2010 13:29:12 -0700
+From: Greg KH <greg@kroah.com>
+To: Oliver Neukum <oliver@neukum.org>
+Cc: Valdis.Kletnieks@vt.edu, Dave Airlie <airlied@gmail.com>,
+        Arnd Bergmann <arnd@arndb.de>, codalist@telemann.coda.cs.cmu.edu,
+        ksummit-2010-discuss@lists.linux-foundation.org,
+        autofs@linux.kernel.org, Jan Harkes <jaharkes@cs.cmu.edu>,
+        Samuel Ortiz <samuel@sortiz.org>, Jan Kara <jack@suse.cz>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        netdev@vger.kernel.org, Anders Larsen <al@alarsen.net>,
+        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        Bryan Schumaker <bjschuma@netapp.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        Petr Vandrovec <vandrove@vc.cvut.cz>,
+        Mikulas Patocka <mikulas@artax.karlin.mff.cuni.cz>,
+        linux-fsdevel@vger.kernel.org, Evgeniy Dushistov <dushistov@mail.ru>,
+        Ingo Molnar <mingo@elte.hu>, Andrew Hendry <andrew.hendry@gmail.com>,
+        linux-media@vger.kernel.org
+Subject: Re: [Ksummit-2010-discuss] [v2] Remaining BKL users, what to do
+Message-ID: <20101019202912.GA30133@kroah.com>
+References: <201009161632.59210.arnd@arndb.de>
+ <21406.1287512693@localhost>
+ <20101019193735.GA4043@kroah.com>
+ <201010192140.47433.oliver@neukum.org>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201010192228.11954.rjw@sisk.pl>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201010192140.47433.oliver@neukum.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, October 19, 2010, Alan Stern wrote:
-> On Sun, 17 Oct 2010, Rafael J. Wysocki wrote:
+On Tue, Oct 19, 2010 at 09:40:47PM +0200, Oliver Neukum wrote:
+> Am Dienstag, 19. Oktober 2010, 21:37:35 schrieb Greg KH:
+> > > So no need to clean it up for multiprocessor support.
+> > > 
+> > > http://download.intel.com/design/chipsets/datashts/29067602.pdf
+> > > http://www.intel.com/design/chipsets/specupdt/29069403.pdf
+> > 
+> > Great, we can just drop all calls to lock_kernel() and the like in the
+> > driver and be done with it, right?
 > 
-> > Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=19302
-> > Subject		: PROBLEM: kernel crash on USB-modem (Huawei E1750) hangup.
-> > Submitter	: O01eg <O01eg@yandex.ru>
-> > Date		: 2010-09-26 19:50 (22 days old)
-> > Message-ID	: <op.vjnn1up1yohvy1@localhost>
-> > References	: http://marc.info/?l=linux-kernel&m=128553111709569&w=2
+> No,
 > 
-> This does not appear to be a regression.  The bug report states that
-> the problem occurs in 2.6.34 and 2.6.36-rc5 and that no other kernels
-> were tested.
+> you still need to switch off preemption.
 
-OK, dropped.
+Hm, how would you do that from within a driver?
 
-Thanks,
-Rafael
+thanks,
+
+greg k-h
