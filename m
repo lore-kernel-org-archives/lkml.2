@@ -1,119 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755307Ab0JSB1t (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Oct 2010 21:27:49 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:40585 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750985Ab0JSB1s convert rfc822-to-8bit (ORCPT
+	id S1753786Ab0JSBc3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Oct 2010 21:32:29 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:48062 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751694Ab0JSBc2 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Oct 2010 21:27:48 -0400
+	Mon, 18 Oct 2010 21:32:28 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=mime-version:in-reply-to:references:date:message-id:subject:from:to
          :cc:content-type:content-transfer-encoding;
-        b=k3R0felhCswlOvwbruhobNR6IhuxG129RyGSy5aBD6/GIL9//wsoSJBjKrsgYMNr4h
-         IJTupVzBLM5AgNse45LZ9R/f4VV578onJsFWpWIyJetWscqOPlr1j+p8e+3q74w026OG
-         JEMBhPF1oDdcCqpBYVWUay8LyZgUmgsYIetBg=
+        b=IkR4isyAYIMH410BIAyZS9ift9LwV2336eRAGF60nRiB3fiwn/qDAkfMIE0K/MVj3B
+         yjFsx99of+XH/O7Z6X7LIey4trmDi/x8HSENcdR2dlaUz/aNduAeMNdWA5GCWZhnHwf5
+         bRjXWA0EDOTNEAzzDSAbwUXqgm7DUiHxCvt2c=
 MIME-Version: 1.0
-In-Reply-To: <20101018164647.bc928c78.akpm@linux-foundation.org>
-References: <20101016043331.GA3177@darkstar>
-	<20101018164647.bc928c78.akpm@linux-foundation.org>
-Date: Tue, 19 Oct 2010 09:27:47 +0800
-Message-ID: <AANLkTikVueTjihngtC2rsoeqkUb5Wg-zeEFH1HKgcuuo@mail.gmail.com>
-Subject: Re: [PATCH 1/2] Add vzalloc shortcut
-From: Dave Young <hidave.darkstar@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org, kvm@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <20101019102114.A1B9.A69D9226@jp.fujitsu.com>
+References: <20101019095144.A1B0.A69D9226@jp.fujitsu.com>
+	<AANLkTin38qJ-U3B7XwMh-3aR9zRs21LgR1yHfqYifxrn@mail.gmail.com>
+	<20101019102114.A1B9.A69D9226@jp.fujitsu.com>
+Date: Tue, 19 Oct 2010 10:32:27 +0900
+Message-ID: <AANLkTinU9qHEGgK5NDLi-zBSXJZmRDoZEnyLOHRYe8rd@mail.gmail.com>
+Subject: Re: Deadlock possibly caused by too_many_isolated.
+From: Minchan Kim <minchan.kim@gmail.com>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Neil Brown <neilb@suse.de>,
+        Wu Fengguang <fengguang.wu@intel.com>, Rik van Riel <riel@redhat.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "Li, Shaohua" <shaohua.li@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 19, 2010 at 7:46 AM, Andrew Morton
-<akpm@linux-foundation.org> wrote:
-> On Sat, 16 Oct 2010 12:33:31 +0800
-> Dave Young <hidave.darkstar@gmail.com> wrote:
->
->> Add vzalloc for convinience of vmalloc-then-memset-zero case
+On Tue, Oct 19, 2010 at 10:21 AM, KOSAKI Motohiro
+<kosaki.motohiro@jp.fujitsu.com> wrote:
+>> On Tue, Oct 19, 2010 at 9:57 AM, KOSAKI Motohiro
+>> <kosaki.motohiro@jp.fujitsu.com> wrote:
+>> >> > I think there are two bugs here.
+>> >> > The raid1 bug that Torsten mentions is certainly real (and has been around
+>> >> > for an embarrassingly long time).
+>> >> > The bug that I identified in too_many_isolated is also a real bug and can be
+>> >> > triggered without md/raid1 in the mix.
+>> >> > So this is not a 'full fix' for every bug in the kernel :-), but it could
+>> >> > well be a full fix for this particular bug.
+>> >> >
+>> >>
+>> >> Can we just delete the too_many_isolated() logic? �(Crappy comment
+>> >> describes what the code does but not why it does it).
+>> >
+>> > if my remember is correct, we got bug report that LTP may makes misterious
+>> > OOM killer invocation about 1-2 years ago. because, if too many parocess are in
+>> > reclaim path, all of reclaimable pages can be isolated and last reclaimer found
+>> > the system don't have any reclaimable pages and lead to invoke OOM killer.
+>> > We have strong motivation to avoid false positive oom. then, some discusstion
+>> > made this patch.
+>> >
+>> > if my remember is incorrect, I hope Wu or Rik fix me.
 >>
->> Use __GFP_ZERO in vzalloc to zero fill the allocated memory.
+>> AFAIR, it's right.
 >>
->> Signed-off-by: Dave Young <hidave.darkstar@gmail.com>
->> ---
->>  include/linux/vmalloc.h |    1 +
->>  mm/vmalloc.c            |   13 +++++++++++++
->>  2 files changed, 14 insertions(+)
+>> How about this?
 >>
->> --- linux-2.6.orig/include/linux/vmalloc.h    2010-08-22 15:31:38.000000000 +0800
->> +++ linux-2.6/include/linux/vmalloc.h 2010-10-16 10:50:54.739996121 +0800
->> @@ -53,6 +53,7 @@ static inline void vmalloc_init(void)
->>  #endif
->>
->>  extern void *vmalloc(unsigned long size);
->> +extern void *vzalloc(unsigned long size);
->>  extern void *vmalloc_user(unsigned long size);
->>  extern void *vmalloc_node(unsigned long size, int node);
->>  extern void *vmalloc_exec(unsigned long size);
->> --- linux-2.6.orig/mm/vmalloc.c       2010-08-22 15:31:39.000000000 +0800
->> +++ linux-2.6/mm/vmalloc.c    2010-10-16 10:51:57.126665918 +0800
->> @@ -1604,6 +1604,19 @@ void *vmalloc(unsigned long size)
->>  EXPORT_SYMBOL(vmalloc);
->>
->>  /**
->> + *   vzalloc  -  allocate virtually contiguous memory with zero filled
+>> It's rather aggressive throttling than old(ie, it considers not lru
+>> type granularity but zone )
+>> But I think it can prevent unnecessary OOM problem and solve deadlock problem.
 >
-> s/filled/fill/
+> Can you please elaborate your intention? Do you think Wu's approach is wrong?
 
-Thanks, Will fix
+No. I think Wu's patch may work well. But I agree Andrew.
+Couldn't we remove the too_many_isolated logic? If it is, we can solve
+the problem simply.
+But If we remove the logic, we will meet long time ago problem, again.
+So my patch's intention is to prevent OOM and deadlock problem with
+simple patch without adding new heuristic in too_many_isolated.
 
->
->> + *   @size:          allocation size
->> + *   Allocate enough pages to cover @size from the page level
->> + *   allocator and map them into contiguous kernel virtual space.
->> + */
->> +void *vzalloc(unsigned long size)
->> +{
->> +     return __vmalloc_node(size, 1, GFP_KERNEL | __GFP_HIGHMEM | __GFP_ZERO,
->> +                             PAGE_KERNEL, -1, __builtin_return_address(0));
->> +}
->> +EXPORT_SYMBOL(vzalloc);
->
-> We'd need to add the same interface to nommu, please.
-
-Ok, will do
-
-Minchan kim, thanks as well. I missed your comments about nommu before.
-
->
-> Also, a slightly better implementation would be
->
-> static inline void *__vmalloc_node_flags(unsigned long size, gfp_t flags)
-> {
->        return __vmalloc_node(size, 1, flags, PAGE_KERNEL, -1,
->                                __builtin_return_address(0));
-> }
->
-> void *vzalloc(unsigned long size)
-> {
->        return __vmalloc_node_flags(size,
->                                GFP_KERNEL | __GFP_HIGHMEM | __GFP_ZERO);
-> }
->
-> void *vmalloc(unsigned long size)
-> {
->        return __vmalloc_node_flags(size, GFP_KERNEL | __GFP_HIGHMEM);
-> }
->
-> just to avoid code duplication (and possible later errors derived from it).
->
-> Perhaps it should be always_inline, so the __builtin_return_address()
-> can't get broken.
->
-> Or just leave it the way you had it :)
-
-Andrew, your suggestion is cleaner and better. I will do as yours.
 
 -- 
-Regards
-dave
+Kind regards,
+Minchan Kim
