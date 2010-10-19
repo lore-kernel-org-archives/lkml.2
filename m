@@ -1,51 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757500Ab0JSUoQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Oct 2010 16:44:16 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:42803 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753741Ab0JSUoO (ORCPT
+	id S1757447Ab0JSUpk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Oct 2010 16:45:40 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:54484 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757145Ab0JSUpj convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Oct 2010 16:44:14 -0400
-Date: Tue, 19 Oct 2010 21:41:22 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Greg KH <greg@kroah.com>
-Cc: Oliver Neukum <oliver@neukum.org>, Valdis.Kletnieks@vt.edu,
-        Dave Airlie <airlied@gmail.com>, Arnd Bergmann <arnd@arndb.de>,
-        codalist@telemann.coda.cs.cmu.edu,
-        ksummit-2010-discuss@lists.linux-foundation.org,
-        autofs@linux.kernel.org, Jan Harkes <jaharkes@cs.cmu.edu>,
-        Samuel Ortiz <samuel@sortiz.org>, Jan Kara <jack@suse.cz>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        netdev@vger.kernel.org, Anders Larsen <al@alarsen.net>,
-        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        Bryan Schumaker <bjschuma@netapp.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        Petr Vandrovec <vandrove@vc.cvut.cz>,
-        Mikulas Patocka <mikulas@artax.karlin.mff.cuni.cz>,
-        linux-fsdevel@vger.kernel.org, Evgeniy Dushistov <dushistov@mail.ru>,
-        Ingo Molnar <mingo@elte.hu>, Andrew Hendry <andrew.hendry@gmail.com>,
-        linux-media@vger.kernel.org
-Subject: Re: [Ksummit-2010-discuss] [v2] Remaining BKL users, what to do
-Message-ID: <20101019214122.301ca754@lxorguk.ukuu.org.uk>
-In-Reply-To: <20101019202912.GA30133@kroah.com>
-References: <201009161632.59210.arnd@arndb.de>
-	<21406.1287512693@localhost>
-	<20101019193735.GA4043@kroah.com>
-	<201010192140.47433.oliver@neukum.org>
-	<20101019202912.GA30133@kroah.com>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 19 Oct 2010 16:45:39 -0400
+From: "Savoy, Pavan" <pavan_savoy@ti.com>
+To: "Gustavo F. Padovan" <padovan@profusion.mobi>
+CC: "marcel@holtmann.org" <marcel@holtmann.org>,
+        "linux-bluetooth@vger.kernel.org" <linux-bluetooth@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Wed, 20 Oct 2010 02:15:29 +0530
+Subject: RE: [PATCH v3] Bluetooth: btwilink driver
+Thread-Topic: [PATCH v3] Bluetooth: btwilink driver
+Thread-Index: Actvzb70eWl/t76XRuuIlwY6RCih/AAAGe9w
+Message-ID: <19F8576C6E063C45BE387C64729E739404AA4E790D@dbde02.ent.ti.com>
+References: <1287521858-15190-1-git-send-email-pavan_savoy@ti.com>
+ <20101019203913.GA2322@vigoh>
+In-Reply-To: <20101019203913.GA2322@vigoh>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > you still need to switch off preemption.
-> 
-> Hm, how would you do that from within a driver?
 
-Do we care - unless I misunderstand the current intel DRM driver handles
-the i810 as well ?
+
+
+> -----Original Message-----
+> From: Gustavo F. Padovan [mailto:pao@profusion.mobi] On Behalf Of Gustavo F.
+> Padovan
+> Sent: Tuesday, October 19, 2010 3:39 PM
+> To: Savoy, Pavan
+> Cc: marcel@holtmann.org; linux-bluetooth@vger.kernel.org; linux-
+> kernel@vger.kernel.org
+> Subject: Re: [PATCH v3] Bluetooth: btwilink driver
+> 
+> * pavan_savoy@ti.com <pavan_savoy@ti.com> [2010-10-19 16:57:38 -0400]:
+> 
+> > From: Pavan Savoy <pavan_savoy@ti.com>
+> >
+> > v3 comments
+> >
+> > Marcel, Gustavo, & list,
+> > Please review this version of patch.
+> >
+> > Anderson,
+> > I have taken care of most of the comments you had.
+> > Have re-wrote some of the code commenting you've mentioned.
+> > Thanks for the comments,
+> >
+> > The other few like -EPERM for platform driver registration is to keep
+> > it similar to other drivers
+> 
+> Which drivers returns -EPERM to any kind of error? The are many reasons
+> why the funcion can fail, and you want to give the best error report to the
+> user. Use EPERM to all of them is just wrong.
+
+Yes, it can fail for plenty of reasons.
+So I'll just return whatever I get from platform_driver_register.
+Is this OK?
+
+
+> >type casting is maintained just to feel safe
+> > and have style similar to other drivers.
+> 
+> We don't need to feel safe here. Type cast actually can hide errors,
+> only use them when you really need to cast, in many case here you don't.
+
+Ok, I can remove type casting.
+I am not really for or against it...
+
+> --
+> Gustavo F. Padovan
+> ProFUSION embedded systems - http://profusion.mobi
