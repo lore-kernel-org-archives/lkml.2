@@ -1,50 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756789Ab0JSBFp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Oct 2010 21:05:45 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:60386 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755118Ab0JSBFo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Oct 2010 21:05:44 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Tue, 19 Oct 2010 10:00:15 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Greg Thelen <gthelen@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, containers@lists.osdl.org,
-        Andrea Righi <arighi@develer.com>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Ciju Rajan K <ciju@linux.vnet.ibm.com>,
-        David Rientjes <rientjes@google.com>
-Subject: Re: [PATCH v3 11/11] memcg: check memcg dirty limits in page
- writeback
-Message-Id: <20101019100015.7a0d4695.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <1287448784-25684-12-git-send-email-gthelen@google.com>
-References: <1287448784-25684-1-git-send-email-gthelen@google.com>
-	<1287448784-25684-12-git-send-email-gthelen@google.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
+	id S1754855Ab0JSBMN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Oct 2010 21:12:13 -0400
+Received: from verein.lst.de ([213.95.11.210]:55120 "EHLO verein.lst.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754077Ab0JSBMM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Oct 2010 21:12:12 -0400
+Date: Tue, 19 Oct 2010 03:11:25 +0200
+From: Christoph Hellwig <hch@lst.de>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Richard Weinberger <richard@nod.at>, linux-kernel@vger.kernel.org,
+        jdike@addtoit.com, user-mode-linux-devel@lists.sourceforge.net,
+        viro@zeniv.linux.org.uk, toralf.foerster@gmx.de,
+        Christoph Hellwig <hch@lst.de>, Arnd Bergmann <arnd@arndb.de>
+Subject: Re: [PATCH 1/1] hostfs: fix UML crash
+Message-ID: <20101019011125.GA3905@lst.de>
+References: <1287419814-20086-1-git-send-email-richard@nod.at> <20101018114039.503233da.akpm@linux-foundation.org> <201010182053.58496.richard@nod.at> <20101018130208.7b552527.akpm@linux-foundation.org>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101018130208.7b552527.akpm@linux-foundation.org>
+User-Agent: Mutt/1.3.28i
+X-Spam-Score: 0 () 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 18 Oct 2010 17:39:44 -0700
-Greg Thelen <gthelen@google.com> wrote:
+On Mon, Oct 18, 2010 at 01:02:08PM -0700, Andrew Morton wrote:
+> > > 
+> > > Is there any reason for hostfs to be playing with the f_spare field at all?
 
-> If the current process is in a non-root memcg, then
-> global_dirty_limits() will consider the memcg dirty limit.
-> This allows different cgroups to have distinct dirty limits
-> which trigger direct and background writeback at different
-> levels.
-> 
-> Signed-off-by: Andrea Righi <arighi@develer.com>
-> Signed-off-by: Greg Thelen <gthelen@google.com>
+No, there is no reason at all.  do_statfs is only called by
+hostfs_statfs, which is the hostfs implementation of ->statfs.  zeroing
+of the spare fields is done by common code (vfs_statfs_native).
 
-Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Can you submit a patch to just remove the spare_out argument to do_statfs?
 
+> 365b1818 added f_flags to `struct statfs' but didn't carry that over to
+> `struct compat_statfs' and hence didn't copy f_flags over into
+> compat_statfs.  Deliberate, or oversight?
+
+Oversight.
