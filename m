@@ -1,70 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752629Ab0JTKBW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Oct 2010 06:01:22 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:37663 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751251Ab0JTKBV (ORCPT
+	id S1752738Ab0JTKCu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Oct 2010 06:02:50 -0400
+Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:33764 "EHLO
+	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752698Ab0JTKCs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Oct 2010 06:01:21 -0400
+	Wed, 20 Oct 2010 06:02:48 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvsEALpavkx5LdoF/2dsb2JhbAChWHK+I4VKBA
+Date: Wed, 20 Oct 2010 21:02:42 +1100
+From: Nick Piggin <npiggin@kernel.dk>
+To: Dave Chinner <david@fromorbit.com>
+Cc: Nick Piggin <npiggin@kernel.dk>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Subject: Re: [patch 31/35] fs: icache per-zone inode LRU
+Message-ID: <20101020100242.GA5853@amd>
+References: <20101019034216.319085068@kernel.dk>
+ <20101019034658.744504135@kernel.dk>
+ <20101019123852.GA12506@dastard>
+ <20101020023556.GC3740@amd>
+ <20101020031256.GA4095@amd>
+ <20101020094302.GE12506@dastard>
 MIME-Version: 1.0
-X-Originating-IP: [109.186.69.160]
-In-Reply-To: <AANLkTikPnm1NK1wGGzbOuNoCOnAcSp=RC8mTW2yx3u0s@mail.gmail.com>
-References: <1287387875-14168-1-git-send-email-ohad@wizery.com>
- <1287531090.9245.139.camel@c-dwalke-linux.qualcomm.com> <AANLkTikPnm1NK1wGGzbOuNoCOnAcSp=RC8mTW2yx3u0s@mail.gmail.com>
-From: Ohad Ben-Cohen <ohad@wizery.com>
-Date: Wed, 20 Oct 2010 12:00:59 +0200
-Message-ID: <AANLkTimSL3UN6V45-+x7+wyT9Oz1Jfy+LesAUxMcPNqd@mail.gmail.com>
-Subject: Re: [PATCH 0/3] Add OMAP hardware spinlock misc driver
-To: Daniel Walker <dwalker@codeaurora.org>
-Cc: linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, akpm@linux-foundation.org,
-        Greg KH <greg@kroah.com>, Tony Lindgren <tony@atomide.com>,
-        Benoit Cousson <b-cousson@ti.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Hari Kanigeri <h-kanigeri2@ti.com>, Suman Anna <s-anna@ti.com>,
-        mattw@codeaurora.org, Russell King <linux@arm.linux.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101020094302.GE12506@dastard>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[resubmitting due to l-o being dropped from this discussion fork.
-Thanks Russell for catching this]
+On Wed, Oct 20, 2010 at 08:43:02PM +1100, Dave Chinner wrote:
+> > On Wed, Oct 20, 2010 at 01:35:56PM +1100, Nick Piggin wrote:
+> > > 
+> > > It's very fundamental. We allocate memory from, and have to reclaim
+> > > memory from -- zones. Memory reclaim is driven based on how the VM
+> > > wants to reclaim memory: nothing you can do to avoid some linkage
+> > > between the two.
+> 
+> The allocation API exposes per-node allocation, not zones. The zones
+> are the internal implementation of the API, not what people use
+> directly for allocation...
 
- On Wed, Oct 20, 2010 at 1:31 AM, Daniel Walker <dwalker@codeaurora.org> wrote:
-> On Mon, 2010-10-18 at 09:44 +0200, Ohad Ben-Cohen wrote:
->> OMAP4 introduces a Spinlock hardware module, which provides hardware
->> assistance for synchronization and mutual exclusion between heterogeneous
->> processors and those not operating under a single, shared operating system
->> (e.g. OMAP4 has dual Cortex-A9, dual Cortex-M3 and a C64x+ DSP).
->>
->> The intention of this hardware module is to allow remote processors,
->> that have no alternative mechanism to accomplish synchronization and mutual
->> exclusion operations, to share resources (such as memory and/or any other
->> hardware resource).
->>
->> This patchset adds a new misc driver for this OMAP hwspinlock module.
->
-> Does this code interface with some hardware unit (other than the other
-> processors) to accomplish this locking ?
+Of course it exposes zones (with GFP flags). In fact they were exposed
+before the zone concept was extended to NUMA.
 
- Yes, it's a special-purpose hardware peripheral.
 
-> The reason I ask is because MSM has similar code, and from what I can
-> tell the MSM version has some structures in memory but that's all. It
-> just operates on the structures in memory.
+> > > > As an example: XFS inodes to be reclaimed are simply tagged in a
+> > > > radix tree so the shrinker can reclaim inodes in optimal IO order
+> > > > rather strict LRU order. It simply does not match a zone-based
+> ....
+> > > But anyway, that's kind of an "aside": inode caches are reclaimed
+> > > in LRU, IO-suboptimal order today anyway. Per-zone LRU doesn't
+> > > change that in the slightest.
+> 
+> I suspect you didn't read what I wrote, so I'll repeat it. XFS has
+> reclaimed inodes in optimal IO order for several releases and so
+> per-zone LRU would change that drastically.
 
- That's interesting.
+You were talking about XFS's own inode reclaim code? My patches
+of course don't change that. I would like to see them usable by
+XFS as well of course, but I'm not forcing anything to be
+shoehorned in where it doesn't fit properly yet.
 
- We did have thoughts of making this a generic framework, in the hope
- that it would be useful for other vendors too, but we didn't find
- additional users.
+The Linux inode reclaimer is pretty well "random" from POV of
+disk order, as you know.
 
-> It might be worth looking over the two implementation so we aren't both
-> remaking the wheel.
+I don't have the complete answer about how to write back required
+inode information in IO optimal order, and at the same time make
+reclaim optimal reclaiming choices.
 
- Indeed. Where is that MSM code ?
+It could be that a 2 stage reclaim process is enough (have the
+Linux inode reclaim make the thing and make it eligible for IO
+and real reclaiming, then have an inode writeout pass that does
+IO optimal reclaiming from those).
 
- Thanks,
- Ohad.
+That is really quite speculative and out of scope of this patch set.
+But the point is that this patch set doesn't prohibit anything like
+that happening, does not change XFS's reclaim currently.
+
+
+> > > > Other subsystems need the same
+> > > > large-machine scaling treatment, and there's no way we should be
+> > > > tying them all into the struct zone. It needs further abstraction.
+> > > 
+> > > An abstraction? Other than the zone? What do you suggest? Invent
+> > > something that the VM has no concept of and try to use that?
+> 
+> I think you answered that question yourself a moment ago:
+> 
+> > > The structure is not frequent -- a couple per NUMA node.
+> 
+> Sounds to me like a per-node LRU/shrinker arrangement is an
+> abstraction that the VM could work with.
+
+The zone really is the right place. If you do it per node, then
+you can still have shortages in one node in a zone but not
+another, causing the same excessive reclaim problem.
+
+
+> Indeed, make it run only
+> from the *per-node kswapd* instead of from direct reclaim, and we'd
+> also solve the unbound reclaim parallelism problem at the same
+> time...
+
+That's also out of scope, but it is among things being
+considered, as far as I know (along with capping number of
+threads in reclaim etc). But doing zone LRUs doesn't change
+this either -- kswapd pagecache reclaim also works per node,
+by simply processing all the zones that belong to the node.
+
