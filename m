@@ -1,67 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758269Ab0JTGnr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Oct 2010 02:43:47 -0400
-Received: from vpn.id2.novell.com ([195.33.99.129]:38636 "EHLO
-	vpn.id2.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756414Ab0JTGnq convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-JBeulich@novell.com:5:1>);
-	Wed, 20 Oct 2010 02:43:46 -0400
-Message-Id: <4CBEABAE020000780001E227@vpn.id2.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 8.0.1 
-Date: Wed, 20 Oct 2010 07:43:26 +0100
-From: "Jan Beulich" <JBeulich@novell.com>
-To: "Alexander van Heukelum" <heukelum@fastmail.fm>
-Cc: "Ingo Molnar" <mingo@elte.hu>, "Thomas Gleixner" <tglx@linutronix.de>,
-        "Andrew Morton" <akpm@linux-foundation.org>,
-        <linux-kernel@vger.kernel.org>, "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [PATCH] x86: fix CFI macro invocations to deal with
-	 shortcomings in gas
-References: <4CBDBEBA020000780001E05A@vpn.id2.novell.com>
- <1287522205.14378.1400906413@webmail.messagingengine.com>
-In-Reply-To: <1287522205.14378.1400906413@webmail.messagingengine.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+	id S1758281Ab0JTGqz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Oct 2010 02:46:55 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:50993 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756414Ab0JTGqx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Oct 2010 02:46:53 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6141"; a="58512426"
+Message-ID: <8720b0b367107614c4b07a21ff215785.squirrel@www.codeaurora.org>
+In-Reply-To: <874c7b4e0f4fcbc99d074b23595454e5.squirrel@www.codeaurora.org>
+References: <1286635573-30035-1-git-send-email-tlinder@codeaurora.org>
+    <20101010081012.GB18531@linux.intel.com>
+    <874c7b4e0f4fcbc99d074b23595454e5.squirrel@www.codeaurora.org>
+Date: Tue, 19 Oct 2010 23:48:56 -0700 (PDT)
+Subject: Re: [PATCH v5] usb: usb3.0 ch9 definitions
+From: tlinder@codeaurora.org
+To: tlinder@codeaurora.org
+Cc: "Matthew Wilcox" <willy@linux.intel.com>,
+        "Tatyana Brokhman" <tlinder@codeaurora.org>, linux-usb@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, "Greg Kroah-Hartman" <gregkh@suse.de>,
+        "Sarah Sharp" <sarah.a.sharp@linux.intel.com>,
+        linux-kernel@vger.kernel.org
+User-Agent: SquirrelMail/1.4.17
+MIME-Version: 1.0
+Content-Type: text/plain;charset=iso-8859-1
+Content-Transfer-Encoding: 8bit
+X-Priority: 3 (Normal)
+Importance: Normal
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 19.10.10 at 23:03, "Alexander van Heukelum" <heukelum@fastmail.fm> wrote:
->> -       pushl_cfi (TI_sysenter_return-THREAD_SIZE+8+4*4)(%esp)
->> +       pushl_cfi TI_sysenter_return-THREAD_SIZE_asm+8+4*4(%esp)
-> 
-> This expands to:
->     pushl_cfi (60)-(8192)+8+4*4(%esp)
-> 
-> I'm sorry to say that Ubuntu 6.06's gas (2.16.91 20060118) still chokes
-> with "too many positional arguments" on this line.
+Hi Matthew
 
-It escapes me where it would split the obviously single argument, and
-I know I checked all official versions from 2.15 onwards. Could you
-try whether that specific gas would be okay with
+Bellow is the reply we received from Intel regarding this issue:
 
-     pushl_cfi ((60)-(8192)+8+4*4)(%esp)
+"Errata 10.007 in the “Q1-09 USB3_Errata.pdf” file defines a correction of
+the SuperSpeed USB Device Capability structure in section 10.13.1 that
+changes bLength from 12 to 10 bytes, and bFunctionalitySupport from 8 to
+3."
 
-I had intentionally removed the surrounding parentheses since
-those are considered by newer gas when determining arguments,
-and thus I could expose eventual problems with older gas even
-on newer versions.
+Best Regards
+Tanya Brokhman
 
-Further, could you experiment (or ideally debug) where is splits
-the argument. Something like
+> Hi Matthew
+>
+> Page 10-57 you're referring to defines the SuperSpeed USB Device
+> Capability descriptor for Hub Class. The descriptor itself is defined in
+> ch9 section 9.6.2.2 and the wReserved is not defined there. Thus the total
+> length of the descriptor is 10 bytes and not 12.
+> IMO we should follow the definition in ch9. It seems that ch 10 has a typo
+> in it. You're right about the errata. I found no reference to this issue
+> either.
+> I'll contact USB-IF regarding this issue.
+> Thanks for bringing this up!
+>
+> Best regards
+> Tanya Brokhman
+>
+>> On Sat, Oct 09, 2010 at 04:46:12PM +0200, Tatyana Brokhman wrote:
+>>> +/*
+>>> + * SuperSpeed USB Capability descriptor: Defines the set of SuperSpeed
+>>> USB
+>>> + * specific device level capabilities
+>>> + */
+>>> +#define		USB_SS_CAP_TYPE		3
+>>> +struct usb_ss_cap_descriptor {		/* Link Power Management */
+>>> +	__u8  bLength;
+>>> +	__u8  bDescriptorType;
+>>> +	__u8  bDevCapabilityType;
+>>> +	__u8  bmAttributes;
+>>> +#define USB_LTM_SUPPORT			(1 << 1) /* supports LTM */
+>>> +	__le16 wSpeedSupported;
+>>> +#define USB_LOW_SPEED_OPERATION		(1)	 /* Low speed operation */
+>>> +#define USB_FULL_SPEED_OPERATION	(1 << 1) /* Full speed operation */
+>>> +#define USB_HIGH_SPEED_OPERATION	(1 << 2) /* High speed operation */
+>>> +#define USB_5GBPS_OPERATION		(1 << 3) /* Operation at 5Gbps */
+>>> +	__u8  bFunctionalitySupport;
+>>> +	__u8  bU1devExitLat;
+>>> +	__le16 bU2DevExitLat;
+>>> +} __attribute__((packed));
+>>> +
+>>> +#define USB_DT_USB_SS_CAP_SIZE	10
+>>
+>> Hang on, if we're looking at page 10-57 of "USB 3 0
+>> (11132008)-final.pdf",
+>> it's 12 bytes long with the last two bytes being wReserved.  Is there
+>> an erratum that changes this?  I just looked through
+>> "USB3_Errata [June 2010].pdf" and don't see any errata that look
+>> germane.
+>>
+>>
+>
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-usb" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
 
-.macro m arg1 arg2=0
-	.long	\arg1, \arg2
-.endm
-
-.data
-_start:
-	m	(60)-(8192)+8+4*4
-
-might be handy - assembling with -alm=<filename> should allow
-you to inspect where the argument got split.
-
-Thanks, Jan
 
