@@ -1,47 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756485Ab0JTBEi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Oct 2010 21:04:38 -0400
-Received: from smtp.srv.ualberta.ca ([129.128.5.19]:62129 "EHLO
-	mail9.srv.ualberta.ca" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754276Ab0JTBEh (ORCPT
+	id S1755970Ab0JTBIz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Oct 2010 21:08:55 -0400
+Received: from TYO201.gate.nec.co.jp ([202.32.8.193]:41107 "EHLO
+	tyo201.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753507Ab0JTBIy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Oct 2010 21:04:37 -0400
-Date: Tue, 19 Oct 2010 19:04:13 -0600 (Mountain Daylight Time)
-From: Marc Aurele La France <tsi@ualberta.ca>
-To: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-cc: Len Brown <lenb@kernel.org>, linux-kernel@vger.kernel.org
-Subject: Re: x86_64 2.6.35.* kernels and Intel Xeon X5550
-In-Reply-To: <20101020002250.GA10364@khazad-dum.debian.net>
-Message-ID: <alpine.WNT.1.10.1010191903570.1452@tsi>
-References: <alpine.WNT.2.00.1010071055420.1672@cluij.ucs.ualberta.ca> <alpine.WNT.1.10.1010152030320.280@tsi> <alpine.LFD.2.00.1010160338280.2238@localhost.localdomain> <alpine.WNT.2.00.1010181440110.1680@cluij.ucs.ualberta.ca>
- <20101020002250.GA10364@khazad-dum.debian.net>
-User-Agent: Alpine 1.10 (WNT 962 2008-03-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+	Tue, 19 Oct 2010 21:08:54 -0400
+Date: Wed, 20 Oct 2010 09:48:21 +0900
+From: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Greg Thelen <gthelen@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        containers@lists.osdl.org, Andrea Righi <arighi@develer.com>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Ciju Rajan K <ciju@linux.vnet.ibm.com>,
+        David Rientjes <rientjes@google.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+Subject: Re: [PATCH v3 02/11] memcg: document cgroup dirty memory interfaces
+Message-Id: <20101020094821.75c70fe3.nishimura@mxp.nes.nec.co.jp>
+In-Reply-To: <20101020091109.ccd7b39a.kamezawa.hiroyu@jp.fujitsu.com>
+References: <1287448784-25684-1-git-send-email-gthelen@google.com>
+	<1287448784-25684-3-git-send-email-gthelen@google.com>
+	<20101019172744.45e0a8dc.nishimura@mxp.nes.nec.co.jp>
+	<xr93lj5t5245.fsf@ninji.mtv.corp.google.com>
+	<20101020091109.ccd7b39a.kamezawa.hiroyu@jp.fujitsu.com>
+Organization: NEC Soft, Ltd.
+X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 19 Oct 2010, Henrique de Moraes Holschuh wrote:
-> On Mon, 18 Oct 2010, Marc Aurele La France wrote:
->>> Please file a bug report at bugzilla.kernel.org and assign it to me.
+On Wed, 20 Oct 2010 09:11:09 +0900
+KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
 
->> Done.  However, due to finger-checks BZ won't let me correct, you'll
+> On Tue, 19 Oct 2010 14:00:58 -0700
+> Greg Thelen <gthelen@google.com> wrote:
+> 
+(snip)
+> > +When use_hierarchy=0, each cgroup has independent dirty memory usage and limits.
+> > +
+> > +When use_hierarchy=1, a parent cgroup increasing its dirty memory usage will
+> > +compare its total_dirty memory (which includes sum of all child cgroup dirty
+> > +memory) to its dirty limits.  This keeps a parent from explicitly exceeding its
+> > +dirty limits.  However, a child cgroup can increase its dirty usage without
+> > +considering the parent's dirty limits.  Thus the parent's total_dirty can exceed
+> > +the parent's dirty limits as a child dirties pages.
+> 
+> Hmm. in short, dirty_ratio in use_hierarchy=1 doesn't work as an user expects.
+> Is this a spec. or a current implementation ?
+> 
+> I think as following.
+>  - add a limitation as "At setting chidlren's dirty_ratio, it must be below parent's.
+>    If it exceeds parent's dirty_ratio, EINVAL is returned."
+> 
+> Could you modify setting memory.dirty_ratio code ?
+> Then, parent's dirty_ratio will never exceeds its own. (If I understand correctly.)
+> 
+> "memory.dirty_limit_in_bytes" will be a bit more complecated, but I think you can.
+> 
+I agree.
 
-> What's the bug number, please?
+At the first impression, this limitation seems a bit overkill for me, because
+we allow memory.limit_in_bytes of a child bigger than that of parent now.
+But considering more, the situation is different, because usage_in_bytes never
+exceeds limit_in_bytes.
 
-20722.
 
-Marc.
-
-+----------------------------------+----------------------------------+
-|  Marc Aurele La France           |  work:   1-780-492-9310          |
-|  Academic Information and        |  fax:    1-780-492-1729          |
-|    Communications Technologies   |  email:  tsi@ualberta.ca         |
-|  352 General Services Building   +----------------------------------+
-|  University of Alberta           |                                  |
-|  Edmonton, Alberta               |    Standard disclaimers apply    |
-|  T6G 2H1                         |                                  |
-|  CANADA                          |                                  |
-+----------------------------------+----------------------------------+
+Thanks,
+Daisuke Nishimura.
