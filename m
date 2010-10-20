@@ -1,213 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752289Ab0JTJ1p (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Oct 2010 05:27:45 -0400
-Received: from mga01.intel.com ([192.55.52.88]:2794 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751361Ab0JTJ1n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Oct 2010 05:27:43 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.57,354,1283756400"; 
-   d="scan'208";a="849036577"
-Date: Wed, 20 Oct 2010 17:27:39 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: Torsten Kaiser <just.for.lkml@googlemail.com>, Neil Brown <neilb@suse.de>,
-        Rik van Riel <riel@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "Li, Shaohua" <shaohua.li@intel.com>, Jens Axboe <axboe@kernel.dk>
-Subject: Re: Deadlock possibly caused by too_many_isolated.
-Message-ID: <20101020092739.GA23869@localhost>
-References: <AANLkTimVu+5gTDs8przJVP2EbWC=FX-zWW7aH08BtrHC@mail.gmail.com>
- <20101020055717.GA12752@localhost>
- <20101020150346.1832.A69D9226@jp.fujitsu.com>
+	id S1752333Ab0JTJ3t (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Oct 2010 05:29:49 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:40139 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752039Ab0JTJ3s (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Oct 2010 05:29:48 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:content-type;
+        b=ScOiNrN/yTIv6O5TXiRth4SI+pJLY3LqWhn9D7YC74lvi7iVbFhbS8F2qU4q2U7lSE
+         OhKQLpwExOxUhL4oRcJePldJMPoik0r09hQEjxuxnnRbPDB2qmT+lRJ2F6peq8aQ9VnJ
+         93sUH6pjOc0kNU/W6r+shSlSBkL+LD+satWX8=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20101020150346.1832.A69D9226@jp.fujitsu.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Date: Wed, 20 Oct 2010 12:29:46 +0300
+Message-ID: <AANLkTi=JxMBjJ9MF94pRMjy4KbJcpLJh-Xm=hv+kietF@mail.gmail.com>
+Subject: Null dereference bug on 2.6.36-rc8 (device-mapper?)
+From: Felipe Contreras <felipe.contreras@gmail.com>
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 20, 2010 at 03:05:56PM +0800, KOSAKI Motohiro wrote:
-> > On Tue, Oct 19, 2010 at 06:06:21PM +0800, Torsten Kaiser wrote:
-> > > On Tue, Oct 19, 2010 at 10:43 AM, Torsten Kaiser
-> > > <just.for.lkml@googlemail.com> wrote:
-> > > > On Tue, Oct 19, 2010 at 1:11 AM, Neil Brown <neilb@suse.de> wrote:
-> > > >> Yes, thanks for the report.
-> > > >> This is a real bug exactly as you describe.
-> > > >>
-> > > >> This is how I think I will fix it, though it needs a bit of review and
-> > > >> testing before I can be certain.
-> > > >> Also I need to check raid10 etc to see if they can suffer too.
-> > > >>
-> > > >> If you can test it I would really appreciate it.
-> > > >
-> > > > I did test it, but while it seemed to fix the deadlock, the system
-> > > > still got unusable.
-> > > > The still running "vmstat 1" showed that the swapout was still
-> > > > progressing, but at a rate of ~20k sized bursts every 5 to 20 seconds.
-> > > >
-> > > > I also tried to additionally add Wu's patch:
-> > > > --- linux-next.orig/mm/vmscan.c 2010-10-13 12:35:14.000000000 +0800
-> > > > +++ linux-next/mm/vmscan.c      2010-10-19 00:13:04.000000000 +0800
-> > > > @@ -1163,6 +1163,13 @@ static int too_many_isolated(struct zone
-> > > >               isolated = zone_page_state(zone, NR_ISOLATED_ANON);
-> > > >       }
-> > > >
-> > > > +       /*
-> > > > +        * GFP_NOIO/GFP_NOFS callers are allowed to isolate more pages, so that
-> > > > +        * they won't get blocked by normal ones and form circular deadlock.
-> > > > +        */
-> > > > +       if ((sc->gfp_mask & GFP_IOFS) == GFP_IOFS)
-> > > > +               inactive >>= 3;
-> > > > +
-> > > >       return isolated > inactive;
-> > > >
-> > > > Either it did help somewhat, or I was more lucky on my second try, but
-> > > > this time I needed ~5 tries instead of only 2 to get the system mostly
-> > > > stuck again. On the testrun with Wu's patch the writeout pattern was
-> > > > more stable, a burst of ~80kb each 20 seconds. But I would suspect
-> > > > that the size of the burst is rather random.
-> > > >
-> > > > I do have a complete SysRq+T dump from the first run, I can send that
-> > > > to anyone how wants it.
-> > > > (It's 190k so I don't want not spam it to the list)
-> > > 
-> > > Is this call trace from the SysRq+T violation the rule to only
-> > > allocate one bio from bio_alloc() until its submitted?
-> > > 
-> > > [  549.700038] Call Trace:
-> > > [  549.700038]  [<ffffffff81566b54>] schedule_timeout+0x144/0x200
-> > > [  549.700038]  [<ffffffff81045cd0>] ? process_timeout+0x0/0x10
-> > > [  549.700038]  [<ffffffff81565e22>] io_schedule_timeout+0x42/0x60
-> > > [  549.700038]  [<ffffffff81083123>] mempool_alloc+0x163/0x1b0
-> > > [  549.700038]  [<ffffffff81053560>] ? autoremove_wake_function+0x0/0x40
-> > > [  549.700038]  [<ffffffff810ea2b9>] bio_alloc_bioset+0x39/0xf0
-> > > [  549.700038]  [<ffffffff810ea38d>] bio_clone+0x1d/0x50
-> > > [  549.700038]  [<ffffffff814318ed>] make_request+0x23d/0x850
-> > > [  549.700038]  [<ffffffff81082e20>] ? mempool_alloc_slab+0x10/0x20
-> > > [  549.700038]  [<ffffffff81045cd0>] ? process_timeout+0x0/0x10
-> > > [  549.700038]  [<ffffffff81436e63>] md_make_request+0xc3/0x220
-> > > [  549.700038]  [<ffffffff81083099>] ? mempool_alloc+0xd9/0x1b0
-> > > [  549.700038]  [<ffffffff811ec153>] generic_make_request+0x1b3/0x370
-> > > [  549.700038]  [<ffffffff810ea2d6>] ? bio_alloc_bioset+0x56/0xf0
-> > > [  549.700038]  [<ffffffff811ec36a>] submit_bio+0x5a/0xd0
-> > > [  549.700038]  [<ffffffff81080cf5>] ? unlock_page+0x25/0x30
-> > > [  549.700038]  [<ffffffff810a871e>] swap_writepage+0x7e/0xc0
-> > > [  549.700038]  [<ffffffff81090d99>] shmem_writepage+0x1c9/0x240
-> > > [  549.700038]  [<ffffffff8108c9cb>] pageout+0x11b/0x270
-> > > [  549.700038]  [<ffffffff8108cd78>] shrink_page_list+0x258/0x4d0
-> > > [  549.700038]  [<ffffffff8108d9e7>] shrink_inactive_list+0x187/0x310
-> > > [  549.700038]  [<ffffffff8102dcb1>] ? __wake_up_common+0x51/0x80
-> > > [  549.700038]  [<ffffffff811fc8b2>] ? cpumask_next_and+0x22/0x40
-> > > [  549.700038]  [<ffffffff8108e1c0>] shrink_zone+0x3e0/0x470
-> > > [  549.700038]  [<ffffffff8108e797>] try_to_free_pages+0x157/0x410
-> > > [  549.700038]  [<ffffffff81087c92>] __alloc_pages_nodemask+0x412/0x760
-> > > [  549.700038]  [<ffffffff810b27d6>] alloc_pages_current+0x76/0xe0
-> > > [  549.700038]  [<ffffffff810b6dad>] new_slab+0x1fd/0x2a0
-> > > [  549.700038]  [<ffffffff81045cd0>] ? process_timeout+0x0/0x10
-> > > [  549.700038]  [<ffffffff810b8721>] __slab_alloc+0x111/0x540
-> > > [  549.700038]  [<ffffffff81059961>] ? prepare_creds+0x21/0xb0
-> > > [  549.700038]  [<ffffffff810b92bb>] kmem_cache_alloc+0x9b/0xa0
-> > > [  549.700038]  [<ffffffff81059961>] prepare_creds+0x21/0xb0
-> > > [  549.700038]  [<ffffffff8104a919>] sys_setresgid+0x29/0x120
-> > > [  549.700038]  [<ffffffff8100242b>] system_call_fastpath+0x16/0x1b
-> > > [  549.700038]  ffff88011e125ea8 0000000000000046 ffff88011e125e08
-> > > ffffffff81073c59
-> > > [  549.700038]  0000000000012780 ffff88011ea905b0 ffff88011ea90808
-> > > ffff88011e125fd8
-> > > [  549.700038]  ffff88011ea90810 ffff88011e124010 0000000000012780
-> > > ffff88011e125fd8
-> > > 
-> > > swap_writepage() uses get_swap_bio() which uses bio_alloc() to get one
-> > > bio. That bio is the submitted, but the submit path seems to get into
-> > > make_request from raid1.c and that allocates a second bio from
-> > > bio_alloc() via bio_clone().
-> > > 
-> > > I am seeing this pattern (swap_writepage calling
-> > > md_make_request/make_request and then getting stuck in mempool_alloc)
-> > > more than 5 times in the SysRq+T output...
-> > 
-> > I bet the root cause is the failure of pool->alloc(__GFP_NORETRY)
-> > inside mempool_alloc(), which can be fixed by this patch.
-> > 
-> > Thanks,
-> > Fengguang
-> > ---
-> > 
-> > concurrent direct page reclaim problem
-> > 
-> >   __GFP_NORETRY page allocations may fail when there are many concurrent page
-> >   allocating tasks, but not necessary in real short of memory. The root cause
-> >   is, tasks will first run direct page reclaim to free some pages from the LRU
-> >   lists and put them to the per-cpu page lists and the buddy system, and then
-> >   try to get a free page from there.  However the free pages reclaimed by this
-> >   task may be consumed by other tasks when the direct reclaim task is able to
-> >   get the free page for itself.
-> > 
-> >   Let's retry it a bit harder.
-> > 
-> > --- linux-next.orig/mm/page_alloc.c	2010-10-20 13:44:50.000000000 +0800
-> > +++ linux-next/mm/page_alloc.c	2010-10-20 13:50:54.000000000 +0800
-> > @@ -1700,7 +1700,7 @@ should_alloc_retry(gfp_t gfp_mask, unsig
-> >  				unsigned long pages_reclaimed)
-> >  {
-> >  	/* Do not loop if specifically requested */
-> > -	if (gfp_mask & __GFP_NORETRY)
-> > +	if (gfp_mask & __GFP_NORETRY && pages_reclaimed > (1 << (order + 12)))
-> >  		return 0;
-> >  
-> >  	/*
-> 
-> SLUB usually try high order allocation with __GFP_NORETRY at first. In
-> other words, It strongly depend on __GFP_NORETRY don't any retry. I'm
-> worry this...
+Hi,
 
-Right. I noticed that too. Hopefully the "limited" retry won't impact
-it too much. That said, we do need a better solution than such hacks.
+I just got this while running palimpset (didn't see that on -rc7)
 
-> And, in this case, stucked tasks have PF_MEMALLOC. allocation with PF_MEMALLOC
-> failure mean this zone have zero memory purely. So, retrying don't solve anything.
+Oct 20 12:25:06 annwn kernel: [43176.117555] BUG: unable to handle
+kernel NULL pointer dereference at 0000000c
+Oct 20 12:25:06 annwn kernel: [43176.117643] IP: [<c10a5396>]
+__trace_add_event_call+0x16/0x410
+Oct 20 12:25:06 annwn kernel: [43176.117710] *pde = 00000000
+Oct 20 12:25:06 annwn kernel: [43176.117750] Oops: 0000 [#1] SMP
+Oct 20 12:25:06 annwn kernel: [43176.117801] last sysfs file:
+/sys/devices/virtual/block/dm-6/queue/rotational
+Oct 20 12:25:06 annwn kernel: [43176.117860] Modules linked in:
+dm_crypt(+) fuse cdc_ether usbnet mii sunrpc ext4 mbcache jbd2 crc16
+kvm_intel kvm thinkpad_acpi iwl3945 e1000e iwlcore [last unloaded:
+scsi_wait_scan]
+Oct 20 12:25:06 annwn kernel: [43176.118007]
+Oct 20 12:25:06 annwn kernel: [43176.118007] Pid: 13364, comm:
+modprobe Not tainted 2.6.36-rc7 #7 2008Y32/2008Y32
+Oct 20 12:25:06 annwn kernel: [43176.118007] EIP: 0060:[<c10a5396>]
+EFLAGS: 00010282 CPU: 1
+Oct 20 12:25:06 annwn kernel: [43176.118007] EIP is at
+__trace_add_event_call+0x16/0x410
+Oct 20 12:25:06 annwn kernel: [43176.118007] EAX: 00000000 EBX:
+00000000 ECX: f5b1460c EDX: f85eb2a0
+Oct 20 12:25:06 annwn kernel: [43176.118007] ESI: 00000048 EDI:
+f85eb2a0 EBP: cbb47e84 ESP: cbb47e54
+Oct 20 12:25:06 annwn kernel: [43176.118007]  DS: 007b ES: 007b FS:
+00d8 GS: 0033 SS: 0068
+Oct 20 12:25:06 annwn kernel: [43176.118007] Process modprobe (pid:
+13364, ti=cbb46000 task=f50ea580 task.ti=cbb46000)
+Oct 20 12:25:06 annwn kernel: [43176.118007] Stack:
+Oct 20 12:25:06 annwn kernel: [43176.118007]  00000000 00000246
+000000d0 cbb47e84 00000246 c63939c0 cbb47eb0 c10a57f8
+Oct 20 12:25:06 annwn kernel: [43176.118007] <0> f5b1460c f85eb2a0
+00000048 f5b14670 cbb47eb8 c10a5930 f5b14670 f5b14738
+Oct 20 12:25:06 annwn kernel: [43176.118007] <0> f5b146d4 f5b1460c
+f5b146d4 f5b14738 daa04080 f5b14600 c1783088 00000000
+Oct 20 12:25:06 annwn kernel: [43176.118007] Call Trace:
+Oct 20 12:25:06 annwn kernel: [43176.118007]  [<c10a57f8>] ?
+trace_module_notify+0x68/0x2b0
+Oct 20 12:25:06 annwn kernel: [43176.118007]  [<c10a5930>] ?
+trace_module_notify+0x1a0/0x2b0
+Oct 20 12:25:06 annwn kernel: [43176.118007]  [<c1578e30>] ?
+notifier_call_chain+0x40/0x60
+Oct 20 12:25:06 annwn kernel: [43176.118007]  [<c1061056>] ?
+__blocking_notifier_call_chain+0x46/0x60
+Oct 20 12:25:06 annwn kernel: [43176.118007]  [<c106108a>] ?
+blocking_notifier_call_chain+0x1a/0x20
+Oct 20 12:25:06 annwn kernel: [43176.118007]  [<c107421a>] ?
+sys_init_module+0xda/0x1040
+Oct 20 12:25:06 annwn kernel: [43176.118007]  [<c1002e0c>] ?
+sysenter_do_call+0x12/0x22
+Oct 20 12:25:06 annwn kernel: [43176.118007]  [<c1050000>] ?
+signal_wake_up+0x30/0x40
+Oct 20 12:25:06 annwn kernel: [43176.118007] Code: c9 83 f8 01 19 c0
+83 e0 ed c3 8d 74 26 00 8d bc 27 00 00 00 00 55 89 e5 83 ec 30 89 5d
+f4 89 75 f8 89 7d fc 89 c3 89 4d f0 89 d7 <8b> 40 0c be ea ff ff ff 85
+c0 74 1d 8b 43 08 8b 50 20 85 d2 74
+Oct 20 12:25:06 annwn kernel: [43176.118007] EIP: [<c10a5396>]
+__trace_add_event_call+0x16/0x410 SS:ESP 0068:cbb47e54
+Oct 20 12:25:06 annwn kernel: [43176.118007] CR2: 000000000000000c
+Oct 20 12:25:06 annwn kernel: [43176.134274] ---[ end trace
+39b1707504206e4d ]---
+Oct 20 12:25:06 annwn kernel: [43176.134436] device-mapper: table:
+254:6: crypt: unknown target type
+Oct 20 12:25:06 annwn kernel: [43176.134489] device-mapper: ioctl:
+error adding target to table
 
-The zone has no free (buddy) memory, but has plenty of reclaimable pages.
-The concurrent page reclaimers may steal pages reclaimed by this task
-from time to time, but not always. So retry reclaiming will help.
-
-> And I think the root cause is in another.
-> 
-> bio_clone() use fs_bio_set internally.
-> 
-> 	struct bio *bio_clone(struct bio *bio, gfp_t gfp_mask)
-> 	{
-> 	        struct bio *b = bio_alloc_bioset(gfp_mask, bio->bi_max_vecs, fs_bio_set);
-> 	...
-> 
-> and fs_bio_set is initialized very small pool size.
-> 
-> 	#define BIO_POOL_SIZE 2
-> 	static int __init init_bio(void)
-> 	{
-> 		..
-> 	        fs_bio_set = bioset_create(BIO_POOL_SIZE, 0);
-
-Agreed. BIO_POOL_SIZE=2 is too small to be deadlock free.
-
-> So, I think raid1.c need to use their own bioset instead fs_bio_set.
-> otherwise, bio pool exshost can happen very easily.
-
-That would fix the deadlock, but not enough for good IO throughput
-when multiple CPUs are trying to submit IO. Increasing BIO_POOL_SIZE
-to a large value should help fix both the deadlock and IO throughput.
-
-> But I'm not sure. I'm not IO expert.
-
-[add CC to Jens]
-
-Thanks,
-Fengguang
+-- 
+Felipe Contreras
