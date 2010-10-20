@@ -1,57 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754288Ab0JTQop (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Oct 2010 12:44:45 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:35268 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754117Ab0JTQoo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Oct 2010 12:44:44 -0400
-Date: Wed, 20 Oct 2010 12:43:24 -0400
-From: Jason Baron <jbaron@redhat.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Steven Rostedt <rostedt@goodmis.org>, LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        masami.hiramatsu.pt@hitachi.com
-Subject: Re: [PATCH][GIT PULL] tracing: Fix compile issue for
-	trace_sched_wakeup.c
-Message-ID: <20101020164324.GC7348@redhat.com>
-References: <1287508282.16971.386.camel@gandalf.stny.rr.com> <20101019184111.GA17266@elte.hu> <20101020154045.GA18353@elte.hu>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101020154045.GA18353@elte.hu>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1754364Ab0JTQpf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Oct 2010 12:45:35 -0400
+Received: from zone0.gcu-squad.org ([212.85.147.21]:34723 "EHLO
+	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754300Ab0JTQpd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Oct 2010 12:45:33 -0400
+Date: Wed, 20 Oct 2010 18:45:15 +0200
+From: Jean Delvare <khali@linux-fr.org>
+To: Joe Perches <joe@perches.com>
+Cc: Guenter Roeck <guenter.roeck@ericsson.com>,
+        Hans de Goede <j.w.r.degoede@hhs.nl>,
+        Alistair John Strachan <alistair@devzero.co.uk>,
+        Henrik Rydberg <rydberg@euromail.se>,
+        "Mark M. Hoffman" <mhoffman@lightlink.com>,
+        Luca Tettamanti <kronos.it@gmail.com>,
+        Fenghua Yu <fenghua.yu@intel.com>, Juerg Haefliger <juergh@gmail.com>,
+        Eric Piel <eric.piel@tremplin-utc.net>,
+        Jim Cromie <jim.cromie@gmail.com>,
+        Roger Lucas <vt8231@hiddenengine.co.uk>,
+        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] drivers/hwmon: Use pr_fmt and pr_<level>
+Message-ID: <20101020184515.38512719@endymion.delvare>
+In-Reply-To: <1287590890.1813.166.camel@Joe-Laptop>
+References: <1287530020.10409.594.camel@Joe-Laptop>
+	<20101020032938.GA20095@ericsson.com>
+	<1287545658.10409.606.camel@Joe-Laptop>
+	<20101020035346.GA20178@ericsson.com>
+	<1287547662.10409.618.camel@Joe-Laptop>
+	<20101020093438.07b129c8@endymion.delvare>
+	<20101020144608.GA21937@ericsson.com>
+	<1287590890.1813.166.camel@Joe-Laptop>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 20, 2010 at 05:40:45PM +0200, Ingo Molnar wrote:
-> FYI, there's a new mystery hang (sometimes crash) that triggers in -tip - and which 
-> seems to be tracing related. See the crashlog below - config attached.
-> 
-> It's not bisectable - small changes in the kernel make the bug come/go. (might be a 
-> race of some sorts)
-> 
-> Thanks,
-> 
-> 	Ingo
-> 
+Hi Joe,
 
-strange b/c it looks like we get though enabling/disabling the
-tracepoitns individually, but then when we go to enable all the
-tracepoints we hit this hang - perhaps, suggesting a race. Do we always
-fail after "Testing all events:" is printed? Does the crash have any
-more clues. I will try and re-produce this.
+On Wed, 20 Oct 2010 09:08:10 -0700, Joe Perches wrote:
+> On Wed, 2010-10-20 at 07:46 -0700, Guenter Roeck wrote:
+> > > * That being said, now that the hwmon subsystem maintainer is a shared
+> > >   duty between Guenter and myself, there's no single place where we can
+> > >   keep a patch touching many drivers and ensure it doesn't conflict
+> > >   with the changes in the other tree. But I would think   this is
+> > >   something for Gunter and myself to sort out, not patch contributors.
+> 
+> Perhaps allow both maintainers read/write access to hwmon-next?
 
-Also, I noticed some recent changes to text_poke_smp() usage of
-stop_machine() on Oct. 14th. That's related to the area where this appears
-to hang, so if things were working with this .config before then, that
-might be a place to look. Adding Masami to the 'cc list.
+Guenter and myself are collaborating on the hwmon tree since a
+relatively recent date. We still have to find the best method. For now
+we have separate trees because it seemed easier that way, but we may
+change our minds later.
 
-thanks,
+> > > I currently have pending patches to the following hwmon drivers in my
+> > > tree: adt7475, ams, asc7621, hdaps, it87, k8temp, lm75, lm85, lm90,
+> > > pcf8591, s3c-hwmon, w83795. Two of these are affected by Joe's
+> > > patch(es). Guenter, what about you?
+> >
+> > coretemp, pkgtemp, via-cputemp, ltc4261 (new), lis3, hp_accel
+> 
+> I did these against next which includes 'hwmon-staging/hwmon-next'.
+> 
+> Shouldn't these patches apply without modification or do I need
+> to do something else?
 
--Jason
+If you based your patches on linux-next then you're all set. I was
+asking Guenter about his affected drivers only to decide who, of him and
+me, should take which patch.
+
+-- 
+Jean Delvare
