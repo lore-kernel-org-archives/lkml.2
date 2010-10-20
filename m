@@ -1,62 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757418Ab0JTDeZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Oct 2010 23:34:25 -0400
-Received: from mail.perches.com ([173.55.12.10]:3119 "EHLO mail.perches.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756647Ab0JTDeY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Oct 2010 23:34:24 -0400
-Subject: Re: [PATCH] drivers/hwmon: Use pr_fmt and pr_<level>
-From: Joe Perches <joe@perches.com>
-To: Guenter Roeck <guenter.roeck@ericsson.com>
-Cc: Jean Delvare <khali@linux-fr.org>, Hans de Goede <j.w.r.degoede@hhs.nl>,
-        Alistair John Strachan <alistair@devzero.co.uk>,
-        Henrik Rydberg <rydberg@euromail.se>,
-        "Mark M. Hoffman" <mhoffman@lightlink.com>,
-        Luca Tettamanti <kronos.it@gmail.com>,
-        Fenghua Yu <fenghua.yu@intel.com>, Juerg Haefliger <juergh@gmail.com>,
-        Eric Piel <eric.piel@tremplin-utc.net>,
-        Jim Cromie <jim.cromie@gmail.com>,
-        Roger Lucas <vt8231@hiddenengine.co.uk>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
-        LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <20101020032938.GA20095@ericsson.com>
-References: <1287530020.10409.594.camel@Joe-Laptop>
-	 <20101020032938.GA20095@ericsson.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 19 Oct 2010 20:34:18 -0700
-Message-ID: <1287545658.10409.606.camel@Joe-Laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1757827Ab0JTDej (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Oct 2010 23:34:39 -0400
+Received: from dhruva1.ncra.tifr.res.in ([158.144.12.129]:49301 "EHLO
+	dhruva1.ncra.tifr.res.in" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757042Ab0JTDeh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Oct 2010 23:34:37 -0400
+From: "Raju Rameshwar Uprade" <rajsingh@ncra.tifr.res.in>
+To: Greg KH <greg@kroah.com>,
+        Raju Rameshwar Uprade <rajsingh@ncra.tifr.res.in>
+Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
+Subject: Re: pl2303 ttyUSB0: pl2303_write - failed submitting write urb, error -22
+Date: Wed, 20 Oct 2010 09:04:13 +0530
+Message-Id: <20101020033203.M98091@admin-gateway.ncra.tifr.res.in>
+In-Reply-To: <20101019124713.GA31828@kroah.com>
+References: <20101018102001.M46961@admin-gateway.ncra.tifr.res.in> <20101019033522.GA32577@kroah.com> <20101019050336.M39015@admin-gateway.ncra.tifr.res.in> <20101019124713.GA31828@kroah.com>
+X-Mailer: OpenWebMail 2.53 (08:Aug:2008)
+X-OriginatingIP: 158.144.12.129
+MIME-Version: 1.0
+Content-Type: text/plain;
+	charset=utf-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-10-19 at 20:29 -0700, Guenter Roeck wrote:
-> On Tue, Oct 19, 2010 at 07:13:40PM -0400, Joe Perches wrote:
-> > Convert printks to pr_<level>
-> > Coalesce long formats
-> > Removed prefixes from formats
-> > Added #define pr_fmt KBUILD_MODNAME ": " fmt
-> > Standardized abitguru messages for reporting and finding MAINTAINER
-> > Compiled x86 allyesconfig only.
-> > I inspected "strings drivers/hwmon/built-in.o",
-> > but it's otherwise untested.
-> > Signed-off-by: Joe Perches <joe@perches.com>
-> There are several lines longer than 80 characters.
-> Does this rule no longer apply ?
 
-80 columns isn't checked for printk format strings.
+> Then you are really on your own here, sorry.
 
-A kernel general preference may be to keep formats as
-a single string without line breaks so that grep works
-better.
+Greg,
 
-> Oddly enough, there are only four checkpatch warnings about long lines,
-> even though there are many more.
+      I have learned a lot from you..I am very close to the solution...thanks for your
+wishes..I think in coming weeks, I will be able to resolve the issues.
+I will always be very thankful for your support and guidance.
 
-The version I use doesn't show any warnings.
 
-cheers, Joe
-
+Regards,
+Raj.
