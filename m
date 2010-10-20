@@ -1,84 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753538Ab0JTPPw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Oct 2010 11:15:52 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:49709 "EHLO arroyo.ext.ti.com"
+	id S1753626Ab0JTPQd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Oct 2010 11:16:33 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:46741 "EHLO mx2.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751129Ab0JTPPv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Oct 2010 11:15:51 -0400
-Date: Wed, 20 Oct 2010 18:15:27 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: Felipe Contreras <felipe.contreras@gmail.com>
-Cc: "Balbi, Felipe" <balbi@ti.com>, Roger Quadros <roger.quadros@nokia.com>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        linux-omap <linux-omap@vger.kernel.org>,
-        linux-main <linux-kernel@vger.kernel.org>, Greg KH <greg@kroah.com>,
-        Tony Lindgren <tony@atomide.com>
-Subject: Re: [PATCH v2 3/3] drivers: cleanup Kconfig stuff
-Message-ID: <20101020151527.GF2883@legolas.emea.dhcp.ti.com>
-Reply-To: balbi@ti.com
-References: <1287482608-11320-1-git-send-email-felipe.contreras@gmail.com>
- <1287482608-11320-4-git-send-email-felipe.contreras@gmail.com>
- <4CBD9FD5.506@nokia.com>
- <AANLkTinRRyrXzqEu=u+CCYkmSNGm03SSo1tVG=5_wdpo@mail.gmail.com>
- <4CBE9E69.6060803@nokia.com>
- <AANLkTinOYDBMVZ3ibG3Md7jdOuOC6NkGWaugvHwT6uqF@mail.gmail.com>
- <4CBEB312.7060400@nokia.com>
- <AANLkTikom=eRFqCJmYE+k1zn5K2MR9s8HhNXtjOvUqvr@mail.gmail.com>
- <20101020125407.GE2433@legolas.emea.dhcp.ti.com>
- <AANLkTi=+6bC=JALdCDKW_BS-jnNk3zFPuWuBT+aY=Utx@mail.gmail.com>
+	id S1752614Ab0JTPQb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Oct 2010 11:16:31 -0400
+Date: Wed, 20 Oct 2010 17:15:55 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Eric Paris <eparis@redhat.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        hch@infradead.org, zohar@us.ibm.com, warthog9@kernel.org,
+        david@fromorbit.com, jmorris@namei.org, kyle@mcmartin.ca,
+        hpa@zytor.com, akpm@linux-foundation.org
+Subject: Re: [PATCH 1/3] IMA: move read/write counters into struct inode
+Message-ID: <20101020151555.GC22271@elte.hu>
+References: <20101019011650.25346.99614.stgit@paris.rdu.redhat.com>
+ <AANLkTimGdjPyLXuknDNa7WNthDT9+2FdOuPdxwjRiMHD@mail.gmail.com>
+ <1287506215.2530.187.camel@localhost.localdomain>
+ <20101019165530.GT19804@ZenIV.linux.org.uk>
+ <AANLkTimL=eChoCQHGoiouE5s6dGG=n9ZAQGhW-RW+gDj@mail.gmail.com>
+ <1287528546.2530.277.camel@localhost.localdomain>
+ <20101020143845.GB22271@elte.hu>
+ <1287585996.2530.294.camel@localhost.localdomain>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii; format=flowed
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <AANLkTi=+6bC=JALdCDKW_BS-jnNk3zFPuWuBT+aY=Utx@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1287585996.2530.294.camel@localhost.localdomain>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-hi,
 
-On Wed, Oct 20, 2010 at 09:52:06AM -0500, Felipe Contreras wrote:
->TWL4030_USB is inside drivers/usb/Kconfig and drivers/usb/otg/Kconfig,
->which means in order to achieve the same on the board config you would
->have to do:
->
->default y if USB_SUPPORT && (USB || USB_GADGET) && ARCH_OMAP3
->
->Seems to be more convoluted to me.
->
->Besides, I think TWL4030_USB and the full description of it doesn't
->give any hints to the people reading drivers/usb/otg/Kconfig what is
->it used for. 'default y if ARCH_OMAP3' achieves that.
+* Eric Paris <eparis@redhat.com> wrote:
 
-no it doesn't. No user will 'cat drivers/usb/otg/Kconfig | grep -A 10
-TWL4030' and check the 'default y if ARCH_OMAP3
+> On Wed, 2010-10-20 at 16:38 +0200, Ingo Molnar wrote:
+> > * Eric Paris <eparis@redhat.com> wrote:
+> > 
+> > > Executive summary of the day's work:
+> > > Yesterday morning: 944 bytes per inode in core
+> > > Yesterday night: 24 bytes per inode in core
+> > > Tonight: 4 bytes per inode in core.
+> > > 
+> > > That's a x236 time reduction in memory usage.  No I didn't even start looking 
+> > > at a freezer.  Which could bring that 4 down to 0, but would add a scalability 
+> > > penalty on all inodes when IMA was enabled.
+> > 
+> > Why not use inode->i_security intelligently? That already exists so that way 
+> > it's 0 bytes.
+> > 
+> > Thanks,
+> 
+> It still wouldn't be 0 bytes since there would be a 1-1 mapping from inode to 
+> i_security structs. [...]
 
-if you think help is not enough, fix help.
+Only for IMA-affected files, right?
 
->Plus, there is no big change:
->
->config USB_MUSB_HDRC
->-	select TWL4030_USB if MACH_OMAP_3430SDP
->
->config TWL4030_USB
->+	default y if ARCH_OMAP3
->
+My point is to keep it 0 overhead for the _non IMA common case_.
 
-what's the problem with:
+> The real reason I don't pursue this route is because of the litany of different 
+> ways this pointer is used in different LSMs (or not used at all.)  And we all know 
+> that LSM authors aren't known for seeing the world the same way as each other.  As 
+> a maintainer of one of those LSMs even I'm scared to try pushing that forward....
 
-diff --git a/arch/arm/mach-omap2/Kconfig b/arch/arm/mach-omap2/Kconfig
-index ab784bf..3af9580 100644
---- a/arch/arm/mach-omap2/Kconfig
-+++ b/arch/arm/mach-omap2/Kconfig
-@@ -215,6 +215,7 @@ config MACH_NOKIA_RX51
-         depends on ARCH_OMAP3
-         default y
-         select OMAP_PACKAGE_CBB
-+       select TWL4030_USB
-  
-  config MACH_OMAP_ZOOM2
-         bool "OMAP3 Zoom2 board"
+Ugh. That's a perfect reason to do it exactly like i suggested.
 
--- 
-balbi
+Thanks,
+
+	Ingo
