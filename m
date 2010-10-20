@@ -1,127 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752371Ab0JTLf3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Oct 2010 07:35:29 -0400
-Received: from adelie.canonical.com ([91.189.90.139]:52752 "EHLO
-	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751800Ab0JTLf2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Oct 2010 07:35:28 -0400
-Date: Wed, 20 Oct 2010 14:35:50 +0300
-From: Amit Kucheria <amit.kucheria@canonical.com>
-To: Uwe =?utf-8?Q?Kleine-K=C3=B6nig?= <u.kleine-koenig@pengutronix.de>
-Cc: Dinh.Nguyen@freescale.com, linux-kernel@vger.kernel.org,
-        linux@arm.linux.org.uk, s.hauer@pengutronix.de,
-        grant.likely@secretlab.ca, linux-arm-kernel@lists.infradead.org,
-        daniel@caiaq.de, xiao-lizhang@freescale.com,
-        valentin.longchamp@epfl.ch
-Subject: Re: [PATCH] ARM: imx: change mx51.h into mx5x.h
-Message-ID: <20101020113550.GL2562@matterhorn.lan>
-Mail-Followup-To: Uwe =?utf-8?Q?Kleine-K=C3=B6nig?= <u.kleine-koenig@pengutronix.de>,
-	Dinh.Nguyen@freescale.com, linux-kernel@vger.kernel.org,
-	linux@arm.linux.org.uk, s.hauer@pengutronix.de,
-	grant.likely@secretlab.ca, linux-arm-kernel@lists.infradead.org,
-	daniel@caiaq.de, xiao-lizhang@freescale.com,
-	valentin.longchamp@epfl.ch
-References: <1287525423-22329-1-git-send-email-Dinh.Nguyen@freescale.com>
- <20101020090122.GH28166@pengutronix.de>
+	id S1752480Ab0JTLgn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Oct 2010 07:36:43 -0400
+Received: from david.siemens.de ([192.35.17.14]:15483 "EHLO david.siemens.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752123Ab0JTLgm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Oct 2010 07:36:42 -0400
+Message-ID: <4CBED41F.6030109@siemens.com>
+Date: Wed, 20 Oct 2010 13:35:59 +0200
+From: Jan Kiszka <jan.kiszka@siemens.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20101020090122.GH28166@pengutronix.de>
-X-URL: http://www.verdurent.com/
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Gleb Natapov <gleb@redhat.com>
+CC: "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "avi@redhat.com" <avi@redhat.com>, "mingo@elte.hu" <mingo@elte.hu>,
+        "a.p.zijlstra@chello.nl" <a.p.zijlstra@chello.nl>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "hpa@zytor.com" <hpa@zytor.com>, "riel@redhat.com" <riel@redhat.com>,
+        "cl@linux-foundation.org" <cl@linux-foundation.org>,
+        "mtosatti@redhat.com" <mtosatti@redhat.com>
+Subject: Re: [PATCH v7 02/12] Halt vcpu if page it tries to access is swapped
+ out.
+References: <1287048176-2563-1-git-send-email-gleb@redhat.com> <1287048176-2563-3-git-send-email-gleb@redhat.com> <4CBED271.9000103@siemens.com> <20101020113300.GR10207@redhat.com>
+In-Reply-To: <20101020113300.GR10207@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10 Oct 20, Uwe Kleine-König wrote:
-> Hello Dinh,
-> 
-> On Tue, Oct 19, 2010 at 04:57:03PM -0500, Dinh.Nguyen@freescale.com wrote:
-> > From: Dinh Nguyen <Dinh.Nguyen@freescale.com>
-> > 
-> > In preparation for submitting i.MX53 support, change mx51.h to
-> > mx5x.h so that mx5x.h can contain MX53 information as well.
-> Last time I found time to clean up the imx ports I worked hard that e.g.
-> mx27 machines only used MX27_ prefixed symbols, not the MX2x_ ones.  (I
-> don't remember off-hand if I was done, so there might be a few users
-> left.)
-> 
-> I'd prefer to just add an mx53.h instead.
+Am 20.10.2010 13:33, Gleb Natapov wrote:
+> On Wed, Oct 20, 2010 at 01:28:49PM +0200, Jan Kiszka wrote:
+>>
+>> Based on early kvm-kmod experiments, it looks like this (and maybe more)
+>> breaks the build in arch/x86/kvm/x86.c if CONFIG_KVM_ASYNC_PF is
+>> disabled. Please have a look.
+>>
+> CONFIG_KVM_ASYNC_PF is always enabled on x86.
 
-Perhaps this is a good time to ask the question - Why?
+Ah, so this is more like CONFIG_HAVE_KVM_ASYNC_PF?
 
-mx53.h will duplicate (almost) everything in mx51.h. And any fixes made to
-mx51.h won't make it to mx53.h
+Then I need some stubs in kvm-kmod to handle the case that its disabled
+on x86 (due to missing host kernel features).
 
-Other sub-archs don't do this. e.g. omap uses one common header file and then
-a per-SoC file for the differences.
-
-> > Signed-off-by: Dinh Nguyen <Dinh.Nguyen@freescale.com>
-> > ---
-> >  arch/arm/mach-mx5/devices-imx51.h                 |    2 +-
-> >  arch/arm/plat-mxc/include/mach/debug-macro.S      |    2 +-
-> >  arch/arm/plat-mxc/include/mach/hardware.h         |    2 +-
-> >  arch/arm/plat-mxc/include/mach/{mx51.h => mx5x.h} |    0
-> BTW, this is wrong, at least the header guard needs updating when you
-> rename the file.
-> 
-> >  4 files changed, 3 insertions(+), 3 deletions(-)
-> >  rename arch/arm/plat-mxc/include/mach/{mx51.h => mx5x.h} (100%)
-> > 
-> > diff --git a/arch/arm/mach-mx5/devices-imx51.h b/arch/arm/mach-mx5/devices-imx51.h
-> > index 5cc910e..f6abe2d 100644
-> > --- a/arch/arm/mach-mx5/devices-imx51.h
-> > +++ b/arch/arm/mach-mx5/devices-imx51.h
-> > @@ -6,7 +6,7 @@
-> >   * the terms of the GNU General Public License version 2 as published by the
-> >   * Free Software Foundation.
-> >   */
-> > -#include <mach/mx51.h>
-> > +#include <mach/mx5x.h>
-> >  #include <mach/devices-common.h>
-> >  
-> >  extern const struct imx_fec_data imx51_fec_data __initconst;
-> > diff --git a/arch/arm/plat-mxc/include/mach/debug-macro.S b/arch/arm/plat-mxc/include/mach/debug-macro.S
-> > index 2560640..ac8a2bf 100644
-> > --- a/arch/arm/plat-mxc/include/mach/debug-macro.S
-> > +++ b/arch/arm/plat-mxc/include/mach/debug-macro.S
-> > @@ -49,7 +49,7 @@
-> >  #ifdef UART_PADDR
-> >  #error "CONFIG_DEBUG_LL is incompatible with multiple archs"
-> >  #endif
-> > -#include <mach/mx51.h>
-> > +#include <mach/mx5x.h>
-> >  #define UART_PADDR	MX51_UART1_BASE_ADDR
-> >  #define UART_VADDR	MX51_AIPS1_IO_ADDRESS(MX51_UART1_BASE_ADDR)
-> >  #endif
-> > diff --git a/arch/arm/plat-mxc/include/mach/hardware.h b/arch/arm/plat-mxc/include/mach/hardware.h
-> > index ebadf4a..5a7395a 100644
-> > --- a/arch/arm/plat-mxc/include/mach/hardware.h
-> > +++ b/arch/arm/plat-mxc/include/mach/hardware.h
-> > @@ -28,7 +28,7 @@
-> >  	 (addr) - (module ## _BASE_ADDR) + (module ## _BASE_ADDR_VIRT) : 0))
-> >  
-> >  #ifdef CONFIG_ARCH_MX5
-> > -#include <mach/mx51.h>
-> > +#include <mach/mx5x.h>
-> >  #endif
-> >  
-> >  #ifdef CONFIG_ARCH_MX3
-> > diff --git a/arch/arm/plat-mxc/include/mach/mx51.h b/arch/arm/plat-mxc/include/mach/mx5x.h
-> > similarity index 100%
-> > rename from arch/arm/plat-mxc/include/mach/mx51.h
-> > rename to arch/arm/plat-mxc/include/mach/mx5x.h
-> > -- 
-> > 1.6.0.4
-> 
-> -- 
-> Pengutronix e.K.                           | Uwe Kleine-König            |
-> Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Jan
 
 -- 
-----------------------------------------------------------------------
-Amit Kucheria, Kernel Engineer || amit.kucheria@canonical.com
-----------------------------------------------------------------------
+Siemens AG, Corporate Technology, CT T DE IT 1
+Corporate Competence Center Embedded Linux
