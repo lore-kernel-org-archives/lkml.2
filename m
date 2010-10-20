@@ -1,72 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757680Ab0JTDrk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Oct 2010 23:47:40 -0400
-Received: from [120.204.251.227] ([120.204.251.227]:34490 "EHLO
-	LC-SHMAIL-01.SHANGHAI.LEADCORETECH.COM" rhost-flags-FAIL-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756955Ab0JTDrj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Oct 2010 23:47:39 -0400
-Subject: Re: oom_killer crash linux system
-From: "Figo.zhang" <zhangtianfei@leadcoretech.com>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Wu Fengguang <fengguang.wu@intel.com>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "rientjes@google.com" <rientjes@google.com>,
-        figo1802 <figo1802@gmail.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-In-Reply-To: <20101020122137.1824.A69D9226@jp.fujitsu.com>
-References: <20101020112828.1818.A69D9226@jp.fujitsu.com>
-	 <1287543520.2074.1.camel@myhost>
-	 <20101020122137.1824.A69D9226@jp.fujitsu.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 20 Oct 2010 11:43:45 +0800
-Message-ID: <1287546225.2121.14.camel@myhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.0 
+	id S1757911Ab0JTDsw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Oct 2010 23:48:52 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:57158 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1757361Ab0JTDsv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Oct 2010 23:48:51 -0400
+Message-ID: <4CBE6791.9040402@cn.fujitsu.com>
+Date: Wed, 20 Oct 2010 11:52:49 +0800
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100423 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: paulmck@linux.vnet.ibm.com
+CC: Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/2] rcu,cleanup: simplify the code when cpu is dying
+References: <4CBD4F56.2000601@cn.fujitsu.com> <20101019183216.GC2362@linux.vnet.ibm.com>
+In-Reply-To: <20101019183216.GC2362@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 20 Oct 2010 03:47:36.0661 (UTC) FILETIME=[890E1850:01CB7009]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 10/20/2010 02:32 AM, Paul E. McKenney wrote:
 
-> > active_anon:398375 inactive_anon:82967 isolated_anon:0 
-> >  active_file:81 inactive_file:429 isolated_file:32
-> >  unevictable:13 dirty:2 writeback:14 unstable:0
-> >  free:11942 slab_reclaimable:2391 slab_unreclaimable:3303
-> >  mapped:5617 shmem:33909 pagetables:2280 bounce:0
-> 
-> active_anon + inactive_anon + isolated_anon = 481342 pages ~= 1.8GB
-> Um, this oom doesn't makes accounting lost.
-> 
-> > here is the page-types log:
-> >              flags	page-count       MB  symbolic-flags long-symbolic-flags
-> > 
-> > 0x0000000000005828	     83024      324 ___U_l_____Ma_b___________________ uptodate,lru,mmap,anonymous,swapbacked
-> > 0x0000000000005868	    358737     1401 ___U_lA____Ma_b___________________ uptodate,lru,active,mmap,anonymous,swapbacked
-> >              total	    515071     2011
-> 
-> page-types show similar result.
+>  		   rsp->n_force_qs, rsp->n_force_qs_ngp,
+>  		   rsp->n_force_qs - rsp->n_force_qs_ngp,
+> -		   rsp->n_force_qs_lh);
+> +		   rsp->n_force_qs_lh, rsp->orphan_qlen);
+>  	for (rnp = &rsp->node[0]; rnp - &rsp->node[0] < NUM_RCU_NODES; rnp++) {
+>  		if (rnp->level != level) {
+>  			seq_puts(m, "\n");
 > 
 > 
-> The big difference is, previous and current are showing some different processes.
-> only previous has VirtualBox, only current has vmware-usbarbit, etc..
-> 
-> Can you use same test environment?
-yes, it is the same desktop, and i open some pdf files and applications
-by random. 
 
-but when my desktop eat up to 1.8GB RAM (active_anon + inactive_anon +
-isolated_anon = 481342 pages >= 1.8GB), the system became extraordinary
-slow. when i move the mouse, the mouse cant move a little on screen. i
-deem it have "crashed", but i ping it's ip by other desktop, it is ok.
-
-so what is apect affect the system seem to "crashed", page-writeback?
-page-reclaimed?  and the oom-killer seem to be very conservative? in
-that condition , oom_killer must kill some process to release memory for
-new process.
-
+rsp->orphan_qlen is still removed in new patch, is it a big problem for
+users who trace rcu by these files?
 
