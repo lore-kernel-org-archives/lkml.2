@@ -1,71 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758298Ab0JTGuL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Oct 2010 02:50:11 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:64739 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758181Ab0JTGuJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Oct 2010 02:50:09 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Dave Young <hidave.darkstar@gmail.com>
-Subject: Re: [Ksummit-2010-discuss] [v2] Remaining BKL users, what to do
-Date: Wed, 20 Oct 2010 08:50:07 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.35-16-generic; KDE/4.3.2; x86_64; ; )
-Cc: Greg KH <greg@kroah.com>, Oliver Neukum <oliver@neukum.org>,
-        Valdis.Kletnieks@vt.edu, Dave Airlie <airlied@gmail.com>,
-        codalist@telemann.coda.cs.cmu.edu,
-        ksummit-2010-discuss@lists.linux-foundation.org,
-        autofs@linux.kernel.org, Jan Harkes <jaharkes@cs.cmu.edu>,
-        Samuel Ortiz <samuel@sortiz.org>, Jan Kara <jack@suse.cz>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        netdev@vger.kernel.org, Anders Larsen <al@alarsen.net>,
-        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        Bryan Schumaker <bjschuma@netapp.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        Petr Vandrovec <vandrove@vc.cvut.cz>,
-        Mikulas Patocka <mikulas@artax.karlin.mff.cuni.cz>,
-        linux-fsdevel@vger.kernel.org, Evgeniy Dushistov <dushistov@mail.ru>,
-        Ingo Molnar <mingo@elte.hu>, Andrew Hendry <andrew.hendry@gmail.com>,
-        linux-media@vger.kernel.org
-References: <201009161632.59210.arnd@arndb.de> <201010192244.41913.arnd@arndb.de> <AANLkTimRFxKT5p1K=Rd1MxXZymonx_t6rHKBhn=8CsW=@mail.gmail.com>
-In-Reply-To: <AANLkTimRFxKT5p1K=Rd1MxXZymonx_t6rHKBhn=8CsW=@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201010200850.07906.arnd@arndb.de>
-X-Provags-ID: V02:K0:WMnLcvfNeVjmsBlpUADKsc9MavrQ0Gp5o8oFannGgc1
- gCNxyR9jX+wTJvOmtxNjBuwNxIwIgGFeWrfdeyDrLCoYVvaXHY
- mIOHIMnnIgKALi9iHz0qAviB1kGT9GlpV++GQ4n7SdKgZBPWZr
- hOoeStCpV/y4ChIii3un0xBMt8C36e8VhVtXRsQSknTUB7FUS3
- jZHnVoYBls1GGKt/mFUTw==
+	id S932360Ab0JTGwZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Oct 2010 02:52:25 -0400
+Received: from mail.perches.com ([173.55.12.10]:3262 "EHLO mail.perches.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932250Ab0JTGwV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Oct 2010 02:52:21 -0400
+From: Joe Perches <joe@perches.com>
+To: Jean Delvare <khali@linux-fr.org>,
+        Guenter Roeck <guenter.roeck@ericsson.com>
+Cc: lm-sensors@lm-sensors.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 31/32] drivers/hwmon/w83627hf.c: Use pr_fmt and pr_<level>
+Date: Tue, 19 Oct 2010 23:51:55 -0700
+Message-Id: <1c8f1890b6adbfe084e1443f5e5e9c7428edb3d4.1287556801.git.joe@perches.com>
+X-Mailer: git-send-email 1.7.3.1.g432b3.dirty
+In-Reply-To: <20101020035346.GA20178@ericsson.com>
+References: <20101020035346.GA20178@ericsson.com>
+In-Reply-To: <cover.1287556800.git.joe@perches.com>
+References: <cover.1287556800.git.joe@perches.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 20 October 2010, Dave Young wrote:
-> be curious, why can't just fix the lock_kernel logic of i810? Fixing
-> is too hard?
-> 
-> Find a i810 hardware should be possible, even if the hardware does not
-> support SMP, can't we test the fix with preemption?
+Added #define pr_fmt KBUILD_MODNAME ": " fmt
+Converted printks to pr_<level>
+Coalesced any long formats
+Removed prefixes from formats
 
-Yes, that should work too. My usual approach for removing the BKL without
-having the hardware myself was to make locking stricter, i.e. replace
-the BKL with a new spinlock or mutex. This way all the code would still
-be serialized and if I did something wrong, lockdep would complain about
-it, but there would be no risk of silent data corruption.
+Signed-off-by: Joe Perches <joe@perches.com>
+---
+ drivers/hwmon/w83627hf.c |   17 ++++++++---------
+ 1 files changed, 8 insertions(+), 9 deletions(-)
 
-In case of i810, locking across DRM is rather complicated and there is no
-way of doing this without making changes to other DRM code.
+diff --git a/drivers/hwmon/w83627hf.c b/drivers/hwmon/w83627hf.c
+index 38e2805..bde50e3 100644
+--- a/drivers/hwmon/w83627hf.c
++++ b/drivers/hwmon/w83627hf.c
+@@ -39,6 +39,8 @@
+     supported yet.
+ */
+ 
++#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
++
+ #include <linux/module.h>
+ #include <linux/init.h>
+ #include <linux/slab.h>
+@@ -1166,14 +1168,13 @@ static int __init w83627hf_find(int sioaddr, unsigned short *addr,
+ 	       superio_inb(sio_data, WINB_BASE_REG + 1);
+ 	*addr = val & WINB_ALIGNMENT;
+ 	if (*addr == 0) {
+-		printk(KERN_WARNING DRVNAME ": Base address not set, "
+-		       "skipping\n");
++		pr_warn("Base address not set, skipping\n");
+ 		goto exit;
+ 	}
+ 
+ 	val = superio_inb(sio_data, WINB_ACT_REG);
+ 	if (!(val & 0x01)) {
+-		printk(KERN_WARNING DRVNAME ": Enabling HWM logical device\n");
++		pr_warn("Enabling HWM logical device\n");
+ 		superio_outb(sio_data, WINB_ACT_REG, val | 0x01);
+ 	}
+ 
+@@ -1789,28 +1790,26 @@ static int __init w83627hf_device_add(unsigned short address,
+ 	pdev = platform_device_alloc(DRVNAME, address);
+ 	if (!pdev) {
+ 		err = -ENOMEM;
+-		printk(KERN_ERR DRVNAME ": Device allocation failed\n");
++		pr_err("Device allocation failed\n");
+ 		goto exit;
+ 	}
+ 
+ 	err = platform_device_add_resources(pdev, &res, 1);
+ 	if (err) {
+-		printk(KERN_ERR DRVNAME ": Device resource addition failed "
+-		       "(%d)\n", err);
++		pr_err("Device resource addition failed (%d)\n", err);
+ 		goto exit_device_put;
+ 	}
+ 
+ 	err = platform_device_add_data(pdev, sio_data,
+ 				       sizeof(struct w83627hf_sio_data));
+ 	if (err) {
+-		printk(KERN_ERR DRVNAME ": Platform data allocation failed\n");
++		pr_err("Platform data allocation failed\n");
+ 		goto exit_device_put;
+ 	}
+ 
+ 	err = platform_device_add(pdev);
+ 	if (err) {
+-		printk(KERN_ERR DRVNAME ": Device addition failed (%d)\n",
+-		       err);
++		pr_err("Device addition failed (%d)\n", err);
+ 		goto exit_device_put;
+ 	}
+ 
+-- 
+1.7.3.1.g432b3.dirty
 
-In fact, the only critical section that is actually protected by the BKL
-are the few lines in i810_mmap_buffers. They look like they might not even
-need the BKL to start with and we can just remove it even on SMP/PREEMPT,
-except for perhaps the assignment to buf_priv->currently_mapped.
-Someone who understands more about the driver than I do can probably figure
-this out easily, but I couldn't come up with a way that doesn't risk
-breaking in corner cases.
-
-	Arnd
