@@ -1,90 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753848Ab0JTP0b (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Oct 2010 11:26:31 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:60947 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753776Ab0JTP0a convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Oct 2010 11:26:30 -0400
-From: "Guzman Lugo, Fernando" <fernando.lugo@ti.com>
-To: Hiroshi DOYU <Hiroshi.DOYU@nokia.com>,
-        "felipe.contreras@gmail.com" <felipe.contreras@gmail.com>
-CC: "felipe.contreras@nokia.com" <felipe.contreras@nokia.com>,
-        "david.cohen@nokia.com" <david.cohen@nokia.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>
-Date: Wed, 20 Oct 2010 10:26:24 -0500
-Subject: RE: [PATCHv4 4/4] iommu: create new api to set valid da range
-Thread-Topic: [PATCHv4 4/4] iommu: create new api to set valid da range
-Thread-Index: ActwOPdExtplr7a9SX2pGcFDbZm6QAAMeH0g
-Message-ID: <496565EC904933469F292DDA3F1663E602F4935CE1@dlee06.ent.ti.com>
-References: <AANLkTimSQabHv3AOFFR4m3POjmuGvN18u7TNsPyauH8D@mail.gmail.com>
-	<20101020.114516.189725260.Hiroshi.DOYU@nokia.com>
-	<AANLkTimpmoDY+nDERsTQ_FK0k_vkPjOi=ttbdtt2LpPs@mail.gmail.com>
- <20101020.122638.112626316.Hiroshi.DOYU@nokia.com>
-In-Reply-To: <20101020.122638.112626316.Hiroshi.DOYU@nokia.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1753801Ab0JTP2r (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Oct 2010 11:28:47 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:63785 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753444Ab0JTP2q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Oct 2010 11:28:46 -0400
+Date: Wed, 20 Oct 2010 11:27:45 -0400
+From: Jason Baron <jbaron@redhat.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Koki Sanagi <sanagi.koki@jp.fujitsu.com>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Frederic Weisbecker <fweisbec@gmail.com>, nhorman@tuxdriver.com,
+        scott.a.mcmillan@intel.com, laijs@cn.fujitsu.com,
+        LKML <linux-kernel@vger.kernel.org>, eric.dumazet@gmail.com,
+        kaneshige.kenji@jp.fujitsu.com, David Miller <davem@davemloft.net>,
+        izumi.taku@jp.fujitsu.com, kosaki.motohiro@jp.fujitsu.com,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        "Luck, Tony" <tony.luck@intel.com>
+Subject: Re: [PATCH] tracing: Cleanup the convoluted softirq tracepoints
+Message-ID: <20101020152745.GA7348@redhat.com>
+References: <alpine.LFD.2.00.1010191558250.6815@localhost6.localdomain6> <20101019142820.GA14520@Krystal> <alpine.LFD.2.00.1010191842270.6815@localhost6.localdomain6> <1287521757.16971.397.camel@gandalf.stny.rr.com> <alpine.LFD.2.00.1010192302000.6815@localhost6.localdomain6> <1287523439.16971.433.camel@gandalf.stny.rr.com> <4CBE122B.9020807@zytor.com> <20101019224126.GD3519@Krystal> <4CBE206A.20702@zytor.com> <1287529515.16971.538.camel@gandalf.stny.rr.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1287529515.16971.538.camel@gandalf.stny.rr.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- 
-
-> -----Original Message-----
-> From: Hiroshi DOYU [mailto:Hiroshi.DOYU@nokia.com] 
-> Sent: Wednesday, October 20, 2010 4:27 AM
-> To: felipe.contreras@gmail.com
-> Cc: Guzman Lugo, Fernando; felipe.contreras@nokia.com; 
-> david.cohen@nokia.com; linux-kernel@vger.kernel.org; 
-> linux-omap@vger.kernel.org
-> Subject: Re: [PATCHv4 4/4] iommu: create new api to set valid da range
-> 
-> From: ext Felipe Contreras <felipe.contreras@gmail.com>
-> Subject: Re: [PATCHv4 4/4] iommu: create new api to set valid da range
-> Date: Wed, 20 Oct 2010 10:58:16 +0200
-> 
-> > On Wed, Oct 20, 2010 at 11:45 AM, Hiroshi DOYU 
-> <Hiroshi.DOYU@nokia.com> wrote:
-> >> From: "ext felipe.contreras@gmail.com" <felipe.contreras@gmail.com>
-> >> Subject: Re: [PATCHv4 4/4] iommu: create new api to set valid da 
-> >> range
-> >> Date: Wed, 20 Oct 2010 10:35:50 +0200
-> >>
-> >>> On Wed, Oct 20, 2010 at 5:48 AM, Fernando Guzman Lugo 
-> <x0095840@ti.com> wrote:
-> >>>> Some IOMMUs cannot use the whole 0x0 - 0xFFFFFFFF range.
-> >>>> With this new API the valid range can be set.
-> >>>>
-> >>>> Signed-off-by: Fernando Guzman Lugo <x0095840@ti.com>
-> >>>
-> >>> I don't see the point in having an API. It could be done through 
-> >>> platform data, and the usage of 0xFFFFF000 instead of 
-> ULONG_MAX is 
-> >>> independent of this.
-> >>
-> >> Using platform data is better, but why dropping da_end?
+On Tue, Oct 19, 2010 at 07:05:15PM -0400, Steven Rostedt wrote:
+> On Tue, 2010-10-19 at 15:49 -0700, H. Peter Anvin wrote:
+> > On 10/19/2010 03:41 PM, Mathieu Desnoyers wrote:
+> > >>
+> > >> OK, first of all, there are some serious WTFs here:
+> > >>
+> > >> # define JUMP_LABEL_INITIAL_NOP ".byte 0xe9 \n\t .long 0\n\t"
+> > >>
+> > >> A jump instruction is one of the worst possible NOPs.  Why are we doing
+> > >> this?
+> > > 
+> > > This code is dynamically patched at boot time (and module load time) with a
+> > > better nop, just like the function tracer does.
+> > > 
 > > 
-> > Because it's always 0xFFFFF000. Do you know of any instance 
-> where it's 
-> >not?
+> > That's just ridiculous... start out with something sane and you at least
+> > have the chance of not having to patch it.
 > 
-> We should try to avoid forcing unnecessary limitations and 
-> dependencies. The usage of device virtual address space range 
-> depends on dsp(coprocessor) side S/W implimentation or configuration.
-
-I am agree. The valid range depends on the user (dsp or something else)
-The only limitation of see in the iommu is that range has to be
-Page aligned and that should be the only limitation.
-
-Regards,
-Fernando.
-
+> Yep we can fix this. Jason?
 > 
+
+sure. The idea of the 'jmp 0' was simply to be an lcd for x86, if
+there's a better lcd for x86, I'll update it. But note, that since the
+'jmp 0' is patched to a better nop at boot, we wouldn't see much gain.
+And in the boot path we are using 'text_poke_early()', so avoiding that
+isn't going to improve things much.
+
+I've got a few fixup patches in the queue that I'm going to post first,
+and then I'll take a look at this change.
+
+thanks,
+
+-Jason
+
