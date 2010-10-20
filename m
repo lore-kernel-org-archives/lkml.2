@@ -1,51 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756367Ab0JTBNn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Oct 2010 21:13:43 -0400
-Received: from mga09.intel.com ([134.134.136.24]:7424 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753772Ab0JTBNm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Oct 2010 21:13:42 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.57,353,1283756400"; 
-   d="scan'208";a="668991294"
-Subject: Re: [patch]x86: spread tlb flush vector between nodes
-From: Shaohua Li <shaohua.li@intel.com>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
-        lkml <linux-kernel@vger.kernel.org>,
-        "Chen, Tim C" <tim.c.chen@intel.com>
-In-Reply-To: <20101019133426.GB11654@basil.fritz.box>
-References: <1286955698.13317.5.camel@sli10-conroe.sh.intel.com>
-	 <20101013081629.GA1621@basil.fritz.box>
-	 <1286959176.24888.6.camel@sli10-conroe.sh.intel.com>
-	 <1287466757.29515.2.camel@sli10-conroe.sh.intel.com>
-	 <6dd05e19-05ef-48e4-b42d-d18c913fa4d7@email.android.com>
-	 <20101019084423.GB27723@elte.hu>
-	 <1287478532.9456.0.camel@sli10-conroe.sh.intel.com>
-	 <20101019103759.GC32212@elte.hu> <1287494931.1699.12.camel@shli-laptop>
-	 <20101019133426.GB11654@basil.fritz.box>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 20 Oct 2010 09:13:41 +0800
-Message-ID: <1287537221.15980.3.camel@sli10-conroe.sh.intel.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	id S1756095Ab0JTBTg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Oct 2010 21:19:36 -0400
+Received: from mail.bluewatersys.com ([202.124.120.130]:54205 "EHLO
+	hayes.bluewaternz.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753381Ab0JTBTf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Oct 2010 21:19:35 -0400
+Message-ID: <4CBE43CE.404@bluewatersys.com>
+Date: Wed, 20 Oct 2010 14:20:14 +1300
+From: Ryan Mallon <ryan@bluewatersys.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.12) Gecko/20100915 Thunderbird/3.0.8
+MIME-Version: 1.0
+To: Kevin Hilman <khilman@deeprootsystems.com>
+CC: Ohad Ben-Cohen <ohad@wizery.com>, Hari Kanigeri <h-kanigeri2@ti.com>,
+        Suman Anna <s-anna@ti.com>, Benoit Cousson <b-cousson@ti.com>,
+        Tony Lindgren <tony@atomide.com>, Greg KH <greg@kroah.com>,
+        linux-kernel@vger.kernel.org, Grant Likely <grant.likely@secretlab.ca>,
+        Simon Que <sque@ti.com>, akpm@linux-foundation.org,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 3/3] omap: add hwspinlock device
+References: <1287387875-14168-1-git-send-email-ohad@wizery.com>	<1287387875-14168-4-git-send-email-ohad@wizery.com>	<87r5fmxghm.fsf@deeprootsystems.com>	<AANLkTinZ2+ocJCfUpT15Ow3J9XBa-8XWnVC3gDDJ7s-v@mail.gmail.com> <87bp6pviwf.fsf@deeprootsystems.com>
+In-Reply-To: <87bp6pviwf.fsf@deeprootsystems.com>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-10-19 at 21:34 +0800, Andi Kleen wrote:
-> >  
-> > +static int tlb_vector_offset[NR_CPUS] __read_mostly;
+On 10/20/2010 12:53 PM, Kevin Hilman wrote:
+> Ohad Ben-Cohen <ohad@wizery.com> writes:
 > 
-> Never use NR_CPUS. Always use per cpu data.
+>> On Tue, Oct 19, 2010 at 7:03 PM, Kevin Hilman
+>> <khilman@deeprootsystems.com> wrote:
+>>>> +postcore_initcall(hwspinlocks_init);
+>>>
+>>> Any reason this needs to be a postcore_initcall?  Are there users of
+>>> hwspinlocks this early in boot?
+>>
+>> i2c-omap, which is subsys_initcall (the I2C bus is shared between the
+>> A9 and the M3 on some OMAP4 boards).
 > 
-> Otherwise you waste a lot of space on a CONFIG_MAX_SMP
-> kernel running on a smaller box.
-ha, I want it to be __read_mostly to avoid cache pollution, apparently
-we have no per cpu API to do this. Maybe I need add one.
+> Rather than moving towards having more drivers have to be built in (and
+> depend on their probe order) we need to be moving towards building all
+> these drivers as modules, including omap-i2c.
 
-Thanks,
-Shaohua
+The issue of probe order still needs to be resolved for those of us who
+do want all the drivers built into the kernel. Everything comes out in
+the wash already if everything is built as modules by installing the
+modules in the correct order right?
 
+~Ryan
+
+-- 
+Bluewater Systems Ltd - ARM Technology Solution Centre
+
+Ryan Mallon         		5 Amuri Park, 404 Barbadoes St
+ryan@bluewatersys.com         	PO Box 13 889, Christchurch 8013
+http://www.bluewatersys.com	New Zealand
+Phone: +64 3 3779127		Freecall: Australia 1800 148 751
+Fax:   +64 3 3779135			  USA 1800 261 2934
