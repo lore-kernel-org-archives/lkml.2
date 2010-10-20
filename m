@@ -1,81 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758188Ab0JTGfu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Oct 2010 02:35:50 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:34747 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757787Ab0JTGft (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Oct 2010 02:35:49 -0400
-Date: Wed, 20 Oct 2010 08:35:42 +0200
-From: Sascha Hauer <s.hauer@pengutronix.de>
-To: Dan Williams <dan.j.williams@intel.com>
-Cc: Vasiliy Kulikov <segooon@gmail.com>, kernel-janitors@vger.kernel.org,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] dma: imx-dma: fix signedness bug
-Message-ID: <20101020063542.GD28242@pengutronix.de>
-References: <1287327110-9158-1-git-send-email-segooon@gmail.com> <AANLkTik15Z2_wyDRDOHOnpKKPgb+PHWs477esndgWmex@mail.gmail.com>
+	id S1758237Ab0JTGgI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Oct 2010 02:36:08 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:52087 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758036Ab0JTGgG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Oct 2010 02:36:06 -0400
+Date: Wed, 20 Oct 2010 09:35:38 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: Kevin Hilman <khilman@deeprootsystems.com>
+Cc: Tony Lindgren <tony@atomide.com>,
+        Felipe Contreras <felipe.contreras@gmail.com>,
+        Felipe Balbi <me@felipebalbi.com>, "Balbi, Felipe" <balbi@ti.com>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        linux-omap <linux-omap@vger.kernel.org>,
+        linux-main <linux-kernel@vger.kernel.org>, Greg KH <greg@kroah.com>
+Subject: Re: [PATCH v2 3/3] drivers: cleanup Kconfig stuff
+Message-ID: <20101020063538.GG15448@legolas.emea.dhcp.ti.com>
+Reply-To: balbi@ti.com
+References: <20101019103234.GI31170@legolas.emea.dhcp.ti.com>
+ <AANLkTinXzMQXoyyu+anSCvSuE9w3FWAP5HswDS0kfpzE@mail.gmail.com>
+ <20101019111613.GJ31170@legolas.emea.dhcp.ti.com>
+ <AANLkTikkMphKa2DGGtWxy-3LpFX0kn92UEYPj==Euzok@mail.gmail.com>
+ <20101019115236.GL31170@legolas.emea.dhcp.ti.com>
+ <AANLkTim3NsgjC3Nh8VCCrx4cV1Y+kn38=30=en0KCft6@mail.gmail.com>
+ <6ea089ac75d4d15d88698468eacb7fe3@secure211.sgcpanel.com>
+ <AANLkTinYM5aavk9_jcTTymff=OY+Yyv8T6C+dmMih0p_@mail.gmail.com>
+ <20101019234414.GB30991@atomide.com>
+ <87fww1u3fw.fsf@deeprootsystems.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: text/plain; charset=us-ascii; format=flowed
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTik15Z2_wyDRDOHOnpKKPgb+PHWs477esndgWmex@mail.gmail.com>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 08:33:18 up 108 days, 21:44, 21 users,  load average: 0.21, 1.06,
-	0.90
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: sha@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+In-Reply-To: <87fww1u3fw.fsf@deeprootsystems.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 19, 2010 at 03:26:05PM -0700, Dan Williams wrote:
-> On Sun, Oct 17, 2010 at 7:51 AM, Vasiliy Kulikov <segooon@gmail.com> wrote:
-> > mxdmac->channel was unsigned, so check (imxdmac->channel < 0) for
-> > failed imx_dma_request_by_prio() made no sence.  Explicitly check
-> > signed values.
-> >
-> > Signed-off-by: Vasiliy Kulikov <segooon@gmail.com>
-> > ---
-> >  drivers/dma/imx-dma.c |    2 +-
-> >  1 files changed, 1 insertions(+), 1 deletions(-)
-> >
-> > diff --git a/drivers/dma/imx-dma.c b/drivers/dma/imx-dma.c
-> > index 346be62..75d870f 100644
-> > --- a/drivers/dma/imx-dma.c
-> > +++ b/drivers/dma/imx-dma.c
-> > @@ -335,7 +335,7 @@ static int __init imxdma_probe(struct platform_device *pdev)
-> >
-> >                imxdmac->imxdma_channel = imx_dma_request_by_prio("dmaengine",
-> >                                DMA_PRIO_MEDIUM);
-> > -               if (imxdmac->channel < 0)
-> > +               if ((int)imxdmac->channel < 0)
-> >                        goto err_init;
-> 
-> Should this be:
-> 
->                if ((int)imxdmac->channel < 0) {
->                        ret = -ENODEV;
->                        goto err_init;
->                }
-> 
-> ...because I get the following in my compilation tests.
+Hi,
 
-Yes, ret is clearly used uninitialized. I wonder why my gcc-4.3.2 compiler
-does not warn me about this :(
+On Tue, Oct 19, 2010 at 07:13:07PM -0500, Kevin Hilman wrote:
+>One thing I don't like about this is that there is currently no way to
+>'select' as a module.
 
-Sascha
+Yeah, I remember suggesting to add "module" to Kconfig language which
+would do the job of selecting as module.
 
 -- 
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+balbi
