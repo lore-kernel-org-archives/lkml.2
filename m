@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757468Ab0JTBhu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Oct 2010 21:37:50 -0400
+	id S1757537Ab0JTBiG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Oct 2010 21:38:06 -0400
 Received: from mga09.intel.com ([134.134.136.24]:62723 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755559Ab0JTBhS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Oct 2010 21:37:18 -0400
+	id S1757048Ab0JTBhR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Oct 2010 21:37:17 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.57,353,1283756400"; 
-   d="scan'208";a="565620664"
+   d="scan'208";a="565620658"
 From: Huang Ying <ying.huang@intel.com>
 To: Len Brown <lenb@kernel.org>
 Cc: linux-kernel@vger.kernel.org, Andi Kleen <andi@firstfloor.org>,
         ying.huang@intel.com, linux-acpi@vger.kernel.org
-Subject: [PATCH 8/9] ACPI, APEI, Report GHES error record with hardware error device core
-Date: Wed, 20 Oct 2010 09:36:59 +0800
-Message-Id: <1287538620-7442-9-git-send-email-ying.huang@intel.com>
+Subject: [PATCH 7/9] ACPI, APEI, Use ERST for hardware error persisting before panic
+Date: Wed, 20 Oct 2010 09:36:58 +0800
+Message-Id: <1287538620-7442-8-git-send-email-ying.huang@intel.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1287538620-7442-1-git-send-email-ying.huang@intel.com>
 References: <1287538620-7442-1-git-send-email-ying.huang@intel.com>
@@ -23,259 +23,281 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-One hardware error device (struct herr_dev) is created for each GHES
-in GHES platform device "probe" function.  Then when GHES hardware
-error handler is notified by firmware, the hardware error records will
-be reported on the struct herr_dev.
+Corrected/Recoverable hardware errors can usually be saved into disk
+and/or sent to network for logging.  But if uncorrected/fatal hardware
+errors occur, system may not reliable enough for desk and/or network
+accessing and needs to go panic as soon as possible for error
+containment.  In this situation, ERST can be used to save the valuable
+error records into some persistent storage such as flash.
 
-In the previous GHES support, only corrected memory error can be
-reported to user space via /dev/mcelog, now all kinds of hardware
-errors notified with SCI can be reported.
+This patch implements herr_persist interface using ERST.  So that
+hardware error device core can use ERST to save hardware error record
+before panic.
 
 Signed-off-by: Huang Ying <ying.huang@intel.com>
 ---
- drivers/acpi/apei/cper.c |   18 +++++++
- drivers/acpi/apei/ghes.c |  119 +++++++++++++++++++++++++++++++----------------
- include/linux/cper.h     |    2 
- 3 files changed, 99 insertions(+), 40 deletions(-)
+ drivers/acpi/apei/Kconfig |    1 
+ drivers/acpi/apei/cper.c  |   19 +++++
+ drivers/acpi/apei/erst.c  |  169 ++++++++++++++++++++++++++++++++++++++++++++++
+ include/linux/cper.h      |    1 
+ 4 files changed, 190 insertions(+)
 
 --- a/drivers/acpi/apei/cper.c
 +++ b/drivers/acpi/apei/cper.c
-@@ -49,6 +49,24 @@ int herr_severity_to_cper(int herr_sever
- }
- EXPORT_SYMBOL_GPL(herr_severity_to_cper);
- 
-+int cper_severity_to_herr(int cper_severity)
+@@ -29,6 +29,25 @@
+ #include <linux/time.h>
+ #include <linux/cper.h>
+ #include <linux/acpi.h>
++#include <linux/herror_record.h>
++
++int herr_severity_to_cper(int herr_severity)
 +{
-+	switch (cper_severity) {
-+	case CPER_SEV_INFORMATIONAL:
-+		return HERR_SEV_NONE;
-+	case CPER_SEV_CORRECTED:
-+		return HERR_SEV_CORRECTED;
-+	case CPER_SEV_RECOVERABLE:
-+		return HERR_SEV_RECOVERABLE;
-+	case CPER_SEV_FATAL:
-+		return HERR_SEV_FATAL;
-+	default:
-+		/* Unknown, default to fatal */
-+		return HERR_SEV_FATAL;
-+	}
-+}
-+EXPORT_SYMBOL_GPL(cper_severity_to_herr);
-+
- /*
-  * CPER record ID need to be unique even after reboot, because record
-  * ID is used as index for ERST storage, while CPER records from
---- a/drivers/acpi/apei/ghes.c
-+++ b/drivers/acpi/apei/ghes.c
-@@ -43,6 +43,7 @@
- #include <linux/kdebug.h>
- #include <linux/platform_device.h>
- #include <linux/mutex.h>
-+#include <linux/herror.h>
- #include <acpi/apei.h>
- #include <acpi/atomicio.h>
- #include <acpi/hed.h>
-@@ -74,6 +75,7 @@ struct ghes {
- 	struct list_head list;
- 	u64 buffer_paddr;
- 	unsigned long flags;
-+	struct herr_dev *herr_dev;
- };
- 
- /*
-@@ -238,9 +240,38 @@ static void ghes_clear_estatus(struct gh
- 	ghes->flags &= ~GHES_TO_CLEAR;
- }
- 
-+static void ghes_report(struct ghes *ghes)
-+{
-+	struct herr_record *ercd;
-+	struct herr_section *esec;
-+	struct acpi_hest_generic_status *estatus;
-+	unsigned int estatus_len, ercd_alloc_flags = 0;
-+	int ghes_sev;
-+
-+	ghes_sev = ghes_severity(ghes->estatus->error_severity);
-+	if (ghes_sev >= GHES_SEV_PANIC)
-+		ercd_alloc_flags |= HERR_ALLOC_NO_BURST_CONTROL;
-+	estatus_len = apei_estatus_len(ghes->estatus);
-+	ercd = herr_record_alloc(HERR_RECORD_LEN_ROUND1(estatus_len),
-+				 ghes->herr_dev, ercd_alloc_flags);
-+	if (!ercd)
-+		return;
-+
-+	ercd->severity = cper_severity_to_herr(ghes->estatus->error_severity);
-+
-+	esec = herr_first_sec(ercd);
-+	esec->length = HERR_SEC_LEN_ROUND(estatus_len);
-+	esec->flags = 0;
-+	esec->type = HERR_TYPE_GESR;
-+
-+	estatus = herr_sec_data(esec);
-+	memcpy(estatus, ghes->estatus, estatus_len);
-+	herr_record_report(ercd, ghes->herr_dev);
-+}
-+
- static void ghes_do_proc(struct ghes *ghes)
- {
--	int sev, processed = 0;
-+	int sev;
- 	struct acpi_hest_generic_data *gdata;
- 
- 	sev = ghes_severity(ghes->estatus->error_severity);
-@@ -251,15 +282,9 @@ static void ghes_do_proc(struct ghes *gh
- 			apei_mce_report_mem_error(
- 				sev == GHES_SEV_CORRECTED,
- 				(struct cper_sec_mem_err *)(gdata+1));
--			processed = 1;
- 		}
- #endif
- 	}
--
--	if (!processed && printk_ratelimit())
--		pr_warning(GHES_PFX
--		"Unknown error record from generic hardware error source: %d\n",
--			   ghes->generic->header.source_id);
- }
- 
- static int ghes_proc(struct ghes *ghes)
-@@ -269,7 +294,9 @@ static int ghes_proc(struct ghes *ghes)
- 	rc = ghes_read_estatus(ghes, 0);
- 	if (rc)
- 		goto out;
-+	ghes_report(ghes);
- 	ghes_do_proc(ghes);
-+	herr_notify();
- 
- out:
- 	ghes_clear_estatus(ghes);
-@@ -300,41 +327,15 @@ static int __devinit ghes_probe(struct p
- {
- 	struct acpi_hest_generic *generic;
- 	struct ghes *ghes = NULL;
--	int rc = -EINVAL;
-+	int rc;
- 
-+	rc = -ENODEV;
- 	generic = *(struct acpi_hest_generic **)ghes_dev->dev.platform_data;
- 	if (!generic->enabled)
--		return -ENODEV;
--
--	if (generic->error_block_length <
--	    sizeof(struct acpi_hest_generic_status)) {
--		pr_warning(FW_BUG GHES_PFX
--"Invalid error block length: %u for generic hardware error source: %d\n",
--			   generic->error_block_length,
--			   generic->header.source_id);
- 		goto err;
--	}
--	if (generic->records_to_preallocate == 0) {
--		pr_warning(FW_BUG GHES_PFX
--"Invalid records to preallocate: %u for generic hardware error source: %d\n",
--			   generic->records_to_preallocate,
--			   generic->header.source_id);
--		goto err;
--	}
--	ghes = ghes_new(generic);
--	if (IS_ERR(ghes)) {
--		rc = PTR_ERR(ghes);
--		ghes = NULL;
--		goto err;
--	}
--	if (generic->notify.type == ACPI_HEST_NOTIFY_SCI) {
--		mutex_lock(&ghes_list_mutex);
--		if (list_empty(&ghes_sci))
--			register_acpi_hed_notifier(&ghes_notifier_sci);
--		list_add_rcu(&ghes->list, &ghes_sci);
--		mutex_unlock(&ghes_list_mutex);
--	} else {
--		unsigned char *notify = NULL;
-+
-+	if (generic->notify.type != ACPI_HEST_NOTIFY_SCI) {
-+		char *notify = NULL;
- 
- 		switch (generic->notify.type) {
- 		case ACPI_HEST_NOTIFY_POLLED:
-@@ -357,9 +358,46 @@ static int __devinit ghes_probe(struct p
- "Unknown notification type: %u for generic hardware error source: %d\n",
- 			generic->notify.type, generic->header.source_id);
- 		}
--		rc = -ENODEV;
- 		goto err;
- 	}
-+
-+	rc = -EIO;
-+	if (generic->error_block_length <
-+	    sizeof(struct acpi_hest_generic_status)) {
-+		pr_warning(FW_BUG GHES_PFX
-+"Invalid error block length: %u for generic hardware error source: %d\n",
-+			   generic->error_block_length,
-+			   generic->header.source_id);
-+		goto err;
-+	}
-+	ghes = ghes_new(generic);
-+	if (IS_ERR(ghes)) {
-+		rc = PTR_ERR(ghes);
-+		ghes = NULL;
-+		goto err;
-+	}
-+	rc = -ENOMEM;
-+	ghes->herr_dev = herr_dev_alloc();
-+	if (!ghes->herr_dev)
-+		goto err;
-+	ghes->herr_dev->name = dev_name(&ghes_dev->dev);
-+	ghes->herr_dev->dev.parent = &ghes_dev->dev;
-+	rc = herr_dev_register(ghes->herr_dev);
-+	if (rc) {
-+		herr_dev_free(ghes->herr_dev);
-+		goto err;
-+	}
-+	switch (generic->notify.type) {
-+	case ACPI_HEST_NOTIFY_SCI:
-+		mutex_lock(&ghes_list_mutex);
-+		if (list_empty(&ghes_sci))
-+			register_acpi_hed_notifier(&ghes_notifier_sci);
-+		list_add_rcu(&ghes->list, &ghes_sci);
-+		mutex_unlock(&ghes_list_mutex);
-+		break;
++	switch (herr_severity) {
++	case HERR_SEV_NONE:
++		return CPER_SEV_INFORMATIONAL;
++	case HERR_SEV_CORRECTED:
++		return CPER_SEV_CORRECTED;
++	case HERR_SEV_RECOVERABLE:
++		return CPER_SEV_RECOVERABLE;
++	case HERR_SEV_FATAL:
++		return CPER_SEV_FATAL;
 +	default:
 +		BUG();
++		return CPER_SEV_FATAL;
 +	}
- 	platform_set_drvdata(ghes_dev, ghes);
++}
++EXPORT_SYMBOL_GPL(herr_severity_to_cper);
+ 
+ /*
+  * CPER record ID need to be unique even after reboot, because record
+--- a/drivers/acpi/apei/erst.c
++++ b/drivers/acpi/apei/erst.c
+@@ -33,6 +33,7 @@
+ #include <linux/uaccess.h>
+ #include <linux/cper.h>
+ #include <linux/nmi.h>
++#include <linux/herror.h>
+ #include <linux/hardirq.h>
+ #include <acpi/apei.h>
+ 
+@@ -88,6 +89,12 @@ static struct erst_erange {
+  */
+ static DEFINE_SPINLOCK(erst_lock);
+ 
++static void *erst_buf;
++static unsigned int erst_buf_len;
++
++/* Prevent erst_buf from being accessed simultaneously */
++static DEFINE_MUTEX(erst_buf_mutex);
++
+ static inline int erst_errno(int command_status)
+ {
+ 	switch (command_status) {
+@@ -774,6 +781,12 @@ static int __erst_write_to_nvram(const s
+ 	return -ENOSYS;
+ }
+ 
++static int __erst_write_herr_record_to_nvram(const struct herr_record *ercd)
++{
++	/* do not print message, because printk is not safe for NMI */
++	return -ENOSYS;
++}
++
+ static int __erst_read_to_erange_from_nvram(u64 record_id, u64 *offset)
+ {
+ 	pr_unimpl_nvram();
+@@ -910,6 +923,156 @@ out:
+ }
+ EXPORT_SYMBOL_GPL(erst_clear);
+ 
++#define CPER_CREATOR_ERST						\
++	UUID_LE(0xEACBBA0C, 0x803A, 0x4096, 0xB1, 0x1D, 0xC3, 0xC7,	\
++		0x6E, 0xE7, 0x94, 0xF9)
++
++#define CPER_SEC_HERR_RECORD						\
++	UUID_LE(0x633AB656, 0x6703, 0x11DF, 0x87, 0xCF, 0x00, 0x19,	\
++		0xD1, 0x2A, 0x29, 0xEF)
++
++static ssize_t erst_herr_record_to_cper(struct cper_record_header *crcd,
++					size_t buf_size,
++					const struct herr_record *ercd)
++{
++	struct cper_section_descriptor *csec;
++	unsigned int crcd_len;
++	void *csec_data;
++
++	crcd_len = sizeof(*crcd) + sizeof(*csec) + ercd->length;
++	if (crcd_len > buf_size)
++		return crcd_len;
++
++	memset(crcd, 0, crcd_len);
++	memcpy(crcd->signature, CPER_SIG_RECORD, CPER_SIG_SIZE);
++	crcd->revision = CPER_RECORD_REV;
++	crcd->signature_end = CPER_SIG_END;
++	crcd->error_severity = herr_severity_to_cper(ercd->severity);
++	/* timestamp, platform_id, partition_id is invalid */
++	crcd->validation_bits = 0;
++	crcd->creator_id = CPER_CREATOR_ERST;
++	crcd->section_count = 1;
++	crcd->record_length = crcd_len;
++	crcd->record_id = ercd->id;
++
++	csec = (struct cper_section_descriptor *)(crcd + 1);
++	csec_data = csec + 1;
++
++	csec->section_length = ercd->length;
++	csec->revision = CPER_SEC_REV;
++	csec->section_type = CPER_SEC_HERR_RECORD;
++	csec->section_severity = crcd->error_severity;
++	csec->section_offset = (void *)csec_data - (void *)crcd;
++
++	memcpy(csec_data, ercd, ercd->length);
++
++	return crcd_len;
++}
++
++static int erst_write_herr_record(const struct herr_record *ercd)
++{
++	struct cper_record_header *crcd;
++	ssize_t crcd_len;
++	unsigned long flags;
++	int rc;
++
++	if (!spin_trylock_irqsave(&erst_lock, flags))
++		return -EBUSY;
++
++	if (erst_erange.attr & ERST_RANGE_NVRAM) {
++		rc = __erst_write_herr_record_to_nvram(ercd);
++		goto out;
++	}
++
++	rc = -EINVAL;
++	crcd_len = erst_herr_record_to_cper(erst_erange.vaddr,
++					    erst_erange.size, ercd);
++	if (crcd_len > erst_erange.size)
++		goto out;
++	crcd = erst_erange.vaddr;
++	/* signature for serialization system */
++	memcpy(&crcd->persistence_information, "ER", 2);
++	rc = __erst_write_to_storage(0);
++out:
++	spin_unlock_irqrestore(&erst_lock, flags);
++
++	return rc;
++}
++
++static ssize_t erst_persist_peek_user(u64 *record_id, char __user *ubuf,
++				      size_t usize)
++{
++	int rc, pos;
++	ssize_t len, clen;
++	u64 id;
++	struct cper_record_header *crcd;
++	struct cper_section_descriptor *csec;
++	struct herr_record *ercd;
++
++	if (mutex_lock_interruptible(&erst_buf_mutex) != 0)
++		return -EINTR;
++	erst_get_record_id_begin(&pos);
++retry_next:
++	len = 0;
++	rc = erst_get_record_id_next(&pos, &id);
++	if (rc)
++		goto out;
++	/* no more record */
++	if (id == APEI_ERST_INVALID_RECORD_ID)
++		goto out;
++retry:
++	rc = clen = erst_read(id, erst_buf, erst_buf_len);
++	/* someone else has cleared the record, try next one */
++	if (rc == -ENOENT)
++		goto retry_next;
++	else if (rc < 0)
++		goto out;
++	else if (clen > erst_buf_len) {
++		void *p;
++		rc = -ENOMEM;
++		p = kmalloc(clen, GFP_KERNEL);
++		if (!p)
++			goto out;
++		kfree(erst_buf);
++		erst_buf = p;
++		erst_buf_len = clen;
++		goto retry;
++	}
++
++	crcd = erst_buf;
++	csec = (struct cper_section_descriptor *)(crcd + 1);
++	if (crcd->section_count != 1 ||
++	    uuid_le_cmp(crcd->creator_id, CPER_CREATOR_ERST) ||
++	    uuid_le_cmp(csec->section_type, CPER_SEC_HERR_RECORD))
++		goto retry_next;
++
++	ercd = (struct herr_record *)(csec + 1);
++	len = ercd->length;
++
++	rc = -EINVAL;
++	if (len > usize)
++		goto out;
++
++	ercd->flags |= HERR_RCD_PREV | HERR_RCD_PERSIST;
++
++	rc = -EFAULT;
++	if (copy_to_user(ubuf, ercd, len))
++		goto out;
++	*record_id = id;
++	rc = 0;
++out:
++	erst_get_record_id_end();
++	mutex_unlock(&erst_buf_mutex);
++	return rc ? rc : len;
++}
++
++static struct herr_persist erst_persist = {
++	.name		= "ERST",
++	.in		= erst_write_herr_record,
++	.peek_user	= erst_persist_peek_user,
++	.clear		= erst_clear,
++};
++
+ static int __init setup_erst_disable(char *str)
+ {
+ 	erst_disable = 1;
+@@ -1007,11 +1170,17 @@ static int __init erst_init(void)
+ 	if (!erst_erange.vaddr)
+ 		goto err_release_erange;
+ 
++	rc = herr_persist_register(&erst_persist);
++	if (rc)
++		goto err_unmap_erange;
++
+ 	pr_info(ERST_PFX
+ 	"Error Record Serialization Table (ERST) support is initialized.\n");
  
  	return 0;
-@@ -386,13 +424,14 @@ static int __devexit ghes_remove(struct
- 		if (list_empty(&ghes_sci))
- 			unregister_acpi_hed_notifier(&ghes_notifier_sci);
- 		mutex_unlock(&ghes_list_mutex);
-+		synchronize_rcu();
- 		break;
- 	default:
- 		BUG();
- 		break;
- 	}
  
--	synchronize_rcu();
-+	herr_dev_unregister(ghes->herr_dev);
- 	ghes_fini(ghes);
- 	kfree(ghes);
- 
++err_unmap_erange:
++	iounmap(erst_erange.vaddr);
+ err_release_erange:
+ 	release_mem_region(erst_erange.base, erst_erange.size);
+ err_unmap_reg:
 --- a/include/linux/cper.h
 +++ b/include/linux/cper.h
-@@ -22,6 +22,7 @@
- #define LINUX_CPER_H
- 
- #include <linux/uuid.h>
-+#include <linux/herror_record.h>
- 
- /* CPER record signature and the size */
- #define CPER_SIG_RECORD				"CPER"
-@@ -310,6 +311,7 @@ struct cper_sec_mem_err {
+@@ -309,6 +309,7 @@ struct cper_sec_mem_err {
+ /* Reset to default packing */
  #pragma pack()
  
- int herr_severity_to_cper(int herr_severity);
-+int cper_severity_to_herr(int cper_severity);
++int herr_severity_to_cper(int herr_severity);
  u64 cper_next_record_id(void);
  
  #endif
+--- a/drivers/acpi/apei/Kconfig
++++ b/drivers/acpi/apei/Kconfig
+@@ -1,6 +1,7 @@
+ config ACPI_APEI
+ 	bool "ACPI Platform Error Interface (APEI)"
+ 	depends on X86
++	select HERR_DEV_CORE
+ 	help
+ 	  APEI allows to report errors (for example from the chipset)
+ 	  to the operating system. This improves NMI handling
