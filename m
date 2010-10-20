@@ -1,177 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754196Ab0JTCfe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Oct 2010 22:35:34 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:49584 "EHLO bear.ext.ti.com"
+	id S1756327Ab0JTCgn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Oct 2010 22:36:43 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:48697 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752689Ab0JTCfd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Oct 2010 22:35:33 -0400
+	id S1752990Ab0JTCfe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Oct 2010 22:35:34 -0400
 From: Fernando Guzman Lugo <x0095840@ti.com>
 To: <Hiroshi.DOYU@nokia.com>
 Cc: <felipe.contreras@nokia.com>, <david.cohen@nokia.com>,
         <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
         Fernando Guzman Lugo <x0095840@ti.com>
-Subject: [PATCHv4 2/4] iovmm: add superpages support to fixed da address
-Date: Tue, 19 Oct 2010 21:48:50 -0500
-Message-Id: <1287542932-14206-3-git-send-email-x0095840@ti.com>
+Subject: [PATCHv4 0/4] iovmm: fixes for iovmm module
+Date: Tue, 19 Oct 2010 21:48:48 -0500
+Message-Id: <1287542932-14206-1-git-send-email-x0095840@ti.com>
 X-Mailer: git-send-email 1.6.3.3
-In-Reply-To: <1287542932-14206-2-git-send-email-x0095840@ti.com>
-References: <1287542932-14206-1-git-send-email-x0095840@ti.com>
- <1287542932-14206-2-git-send-email-x0095840@ti.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds superpages support to fixed ad address
-inside iommu_kmap function.
+Version 4:
+* Changes in "iommu: create new api to set valid da range"
+  - Validate range for fixed address.
+  - Change way of change boundaries to avoid possible overflow
+    instead of style :
+       start + bytes >= end     which start + end can overflow
+    use style:
+       end - start < bytes
 
-Signed-off-by: Fernando Guzman Lugo <x0095840@ti.com>
----
- arch/arm/plat-omap/iovmm.c |   62 +++++++++++++++++++++++++------------------
- 1 files changed, 36 insertions(+), 26 deletions(-)
+Version 3:
+* change patch 2 base on Felipe Contreras' comments,
+  now it uses min_t and I deleted some blank lines.
+* patch "create new api to set valid da range" is base on
+  "iovmm: IVA2 MMU range is from 0x11000000 to 0xFFFFFFFF"
+  patch and on Hiroshi's comments and now it is added to
+  this set.
 
-diff --git a/arch/arm/plat-omap/iovmm.c b/arch/arm/plat-omap/iovmm.c
-index 34f0012..93a34d9 100644
---- a/arch/arm/plat-omap/iovmm.c
-+++ b/arch/arm/plat-omap/iovmm.c
-@@ -87,35 +87,43 @@ static size_t sgtable_len(const struct sg_table *sgt)
- }
- #define sgtable_ok(x)	(!!sgtable_len(x))
- 
-+static unsigned max_alignment(u32 addr)
-+{
-+	int i;
-+	unsigned pagesize[] = { SZ_16M, SZ_1M, SZ_64K, SZ_4K, };
-+	for (i = 0; i < ARRAY_SIZE(pagesize) && addr & (pagesize[i] - 1); i++)
-+		;
-+	return (i < ARRAY_SIZE(pagesize)) ? pagesize[i] : 0;
-+}
-+
- /*
-  * calculate the optimal number sg elements from total bytes based on
-  * iommu superpages
-  */
--static unsigned int sgtable_nents(size_t bytes)
-+static unsigned sgtable_nents(size_t bytes, u32 da, u32 pa)
- {
--	int i;
--	unsigned int nr_entries;
--	const unsigned long pagesize[] = { SZ_16M, SZ_1M, SZ_64K, SZ_4K, };
-+	unsigned nr_entries = 0, ent_sz;
- 
- 	if (!IS_ALIGNED(bytes, PAGE_SIZE)) {
- 		pr_err("%s: wrong size %08x\n", __func__, bytes);
- 		return 0;
- 	}
- 
--	nr_entries = 0;
--	for (i = 0; i < ARRAY_SIZE(pagesize); i++) {
--		if (bytes >= pagesize[i]) {
--			nr_entries += (bytes / pagesize[i]);
--			bytes %= pagesize[i];
--		}
-+	while (bytes) {
-+		ent_sz = max_alignment(da | pa);
-+		ent_sz = min_t(unsigned, ent_sz, iopgsz_max(bytes));
-+		nr_entries++;
-+		da += ent_sz;
-+		pa += ent_sz;
-+		bytes -= ent_sz;
- 	}
--	BUG_ON(bytes);
- 
- 	return nr_entries;
- }
- 
- /* allocate and initialize sg_table header(a kind of 'superblock') */
--static struct sg_table *sgtable_alloc(const size_t bytes, u32 flags)
-+static struct sg_table *sgtable_alloc(const size_t bytes, u32 flags,
-+							u32 da, u32 pa)
- {
- 	unsigned int nr_entries;
- 	int err;
-@@ -127,9 +135,8 @@ static struct sg_table *sgtable_alloc(const size_t bytes, u32 flags)
- 	if (!IS_ALIGNED(bytes, PAGE_SIZE))
- 		return ERR_PTR(-EINVAL);
- 
--	/* FIXME: IOVMF_DA_FIXED should support 'superpages' */
--	if ((flags & IOVMF_LINEAR) && (flags & IOVMF_DA_ANON)) {
--		nr_entries = sgtable_nents(bytes);
-+	if (flags & IOVMF_LINEAR) {
-+		nr_entries = sgtable_nents(bytes, da, pa);
- 		if (!nr_entries)
- 			return ERR_PTR(-EINVAL);
- 	} else
-@@ -409,7 +416,8 @@ static inline void sgtable_drain_vmalloc(struct sg_table *sgt)
- 	BUG_ON(!sgt);
- }
- 
--static void sgtable_fill_kmalloc(struct sg_table *sgt, u32 pa, size_t len)
-+static void sgtable_fill_kmalloc(struct sg_table *sgt, u32 pa, u32 da,
-+								size_t len)
- {
- 	unsigned int i;
- 	struct scatterlist *sg;
-@@ -418,9 +426,10 @@ static void sgtable_fill_kmalloc(struct sg_table *sgt, u32 pa, size_t len)
- 	va = phys_to_virt(pa);
- 
- 	for_each_sg(sgt->sgl, sg, sgt->nents, i) {
--		size_t bytes;
-+		unsigned bytes;
- 
--		bytes = iopgsz_max(len);
-+		bytes = max_alignment(da | pa);
-+		bytes = min_t(unsigned, bytes, iopgsz_max(len));
- 
- 		BUG_ON(!iopgsz_ok(bytes));
- 
-@@ -429,6 +438,7 @@ static void sgtable_fill_kmalloc(struct sg_table *sgt, u32 pa, size_t len)
- 		 * 'pa' is cotinuous(linear).
- 		 */
- 		pa += bytes;
-+		da += bytes;
- 		len -= bytes;
- 	}
- 	BUG_ON(len);
-@@ -695,18 +705,18 @@ u32 iommu_vmalloc(struct iommu *obj, u32 da, size_t bytes, u32 flags)
- 	if (!va)
- 		return -ENOMEM;
- 
--	sgt = sgtable_alloc(bytes, flags);
-+	flags &= IOVMF_HW_MASK;
-+	flags |= IOVMF_DISCONT;
-+	flags |= IOVMF_ALLOC;
-+	flags |= (da ? IOVMF_DA_FIXED : IOVMF_DA_ANON);
-+
-+	sgt = sgtable_alloc(bytes, flags, da, 0);
- 	if (IS_ERR(sgt)) {
- 		da = PTR_ERR(sgt);
- 		goto err_sgt_alloc;
- 	}
- 	sgtable_fill_vmalloc(sgt, va);
- 
--	flags &= IOVMF_HW_MASK;
--	flags |= IOVMF_DISCONT;
--	flags |= IOVMF_ALLOC;
--	flags |= (da ? IOVMF_DA_FIXED : IOVMF_DA_ANON);
--
- 	da = __iommu_vmap(obj, da, sgt, va, bytes, flags);
- 	if (IS_ERR_VALUE(da))
- 		goto err_iommu_vmap;
-@@ -746,11 +756,11 @@ static u32 __iommu_kmap(struct iommu *obj, u32 da, u32 pa, void *va,
- {
- 	struct sg_table *sgt;
- 
--	sgt = sgtable_alloc(bytes, flags);
-+	sgt = sgtable_alloc(bytes, flags, da, pa);
- 	if (IS_ERR(sgt))
- 		return PTR_ERR(sgt);
- 
--	sgtable_fill_kmalloc(sgt, pa, bytes);
-+	sgtable_fill_kmalloc(sgt, pa, da, bytes);
- 
- 	da = map_iommu_region(obj, da, sgt, va, bytes, flags);
- 	if (IS_ERR_VALUE(da)) {
--- 
-1.6.3.3
+Version 2:
+* Removed "iovmm: fixes for iovmm module" that patch was already
+  sent.
+* Modified "iovmm: fix roundup for next area and end check for the
+  last area" patch, base on Davin Cohen's comments and rename it
+  to a proper name that describes what it is doing now.
+
+Fernando Guzman Lugo (4):
+  iovmm: no gap checking for fixed address
+  iovmm: add superpages support to fixed da address
+  iovmm: replace __iounmap with omap_iounmap
+  iommu: create new api to set valid da range
+
+ arch/arm/plat-omap/include/plat/iommu.h |    3 +
+ arch/arm/plat-omap/iommu.c              |   29 +++++++++++
+ arch/arm/plat-omap/iovmm.c              |   81 +++++++++++++++++-------------
+ 3 files changed, 78 insertions(+), 35 deletions(-)
 
