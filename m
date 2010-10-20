@@ -1,57 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751605Ab0JTJE1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Oct 2010 05:04:27 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:49254 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750971Ab0JTJEZ (ORCPT
+	id S1751837Ab0JTJEt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Oct 2010 05:04:49 -0400
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:43042 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751105Ab0JTJEs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Oct 2010 05:04:25 -0400
+	Wed, 20 Oct 2010 05:04:48 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:cc:content-type;
-        b=jH+30zwU3IvRU25ZVVEF0uLMPQ0qi3kzleCoKyiHqvK/HpwIT9tcUX0kEuHZEC1rlT
-         u/c34+Y3LEd+hz8srozNUF3Xj2jnF6xImDeetP8LAlScuecMfQQ4x6SlvFYFwwk8+n3P
-         nuDCWHDYrZVU/yxP5500Tv0vGZH45jVTte/JM=
-MIME-Version: 1.0
-Date: Wed, 20 Oct 2010 15:04:24 +0600
-Message-ID: <AANLkTi=zOktJDfpPOzNr6JOgzjnUuqoa_oSt6YK3RQD9@mail.gmail.com>
-Subject: [PATCH] mfd, ab3550: Fix spurious section mismatch warning.
-From: Rakib Mullick <rakib.mullick@gmail.com>
-To: sameo@linux.intel.com
-Cc: LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+        h=subject:from:to:cc:content-type:date:message-id:mime-version
+         :x-mailer:content-transfer-encoding;
+        b=D/BxBgvMuoPI3iMF5MlQ6OYng3pDGXuntKojIQYmlNCyN8cNiO5X5TIL+t8C+By+W4
+         xvfn7GqflXivO2RpYNmFFhuWRTRGWSgvHFVFwFd7vEnjLQh0EeQL5K4NASpTHNqndK68
+         3PnsMp47AjMkhKhn7zHnZZM3Gu9+sdVkNTxlo=
+Subject: [PATCH] mfd: max8998 cleanups
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Cc: Samuel Ortiz <sameo@linux.intel.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>
+Content-Type: text/plain
+Date: Wed, 20 Oct 2010 17:06:44 +0800
+Message-Id: <1287565604.7849.4.camel@mola>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.22.3.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- This patch fixes the following section mismatch warning.
-ab3550_driver has been reffered from both __init and __exit path so
-use __refdata to keep it calm.
+This patch includes below fixes:
+1. i2c_smbus_write_byte_data() returns zero or negative value,
+   therefore no need to check if ret is greater than zero or not.
+2. Properly free irq and unregister max8998->rtc device in
+   max8998_i2c_probe() error path and max8998_i2c_remove().
 
-
-WARNING: drivers/mfd/built-in.o(.data+0x3b4c): Section mismatch in
-reference from the variable ab3550_driver to the function
-.init.text:ab3550_probe()
-The variable ab3550_driver references
-the function __init ab3550_probe()
-If the reference is valid then annotate the
-variable with __init* or __refdata (see linux/init.h) or name the variable:
-*_template, *_timer, *_sht, *_ops, *_probe, *_probe_one, *_console,
-
-
-Signed-off-by: Rakib Mullick <rakib.mullick@gmail.com>
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
 ---
+ drivers/mfd/max8998.c |    6 ++++--
+ 1 files changed, 4 insertions(+), 2 deletions(-)
 
---- linus-rc8/drivers/mfd/ab3550-core.c	2010-10-15 05:26:43.000000000 +0600
-+++ rakib-rc8/drivers/mfd/ab3550-core.c	2010-10-20 14:44:58.000000000 +0600
-@@ -1373,7 +1373,8 @@ static const struct i2c_device_id ab3550
- };
- MODULE_DEVICE_TABLE(i2c, ab3550_id);
+diff --git a/drivers/mfd/max8998.c b/drivers/mfd/max8998.c
+index a720f41..bb9977b 100644
+--- a/drivers/mfd/max8998.c
++++ b/drivers/mfd/max8998.c
+@@ -110,8 +110,6 @@ int max8998_update_reg(struct i2c_client *i2c, u8 reg, u8 val, u8 mask)
+ 		u8 old_val = ret & 0xff;
+ 		u8 new_val = (val & mask) | (old_val & (~mask));
+ 		ret = i2c_smbus_write_byte_data(i2c, reg, new_val);
+-		if (ret >= 0)
+-			ret = 0;
+ 	}
+ 	mutex_unlock(&max8998->iolock);
+ 	return ret;
+@@ -155,6 +153,8 @@ static int max8998_i2c_probe(struct i2c_client *i2c,
+ 
+ err:
+ 	mfd_remove_devices(max8998->dev);
++	max8998_irq_exit(max8998);
++	i2c_unregister_device(max8998->rtc);
+ 	kfree(max8998);
+ 	return ret;
+ }
+@@ -164,6 +164,8 @@ static int max8998_i2c_remove(struct i2c_client *i2c)
+ 	struct max8998_dev *max8998 = i2c_get_clientdata(i2c);
+ 
+ 	mfd_remove_devices(max8998->dev);
++	max8998_irq_exit(max8998);
++	i2c_unregister_device(max8998->rtc);
+ 	kfree(max8998);
+ 
+ 	return 0;
+-- 
+1.7.2
 
--static struct i2c_driver ab3550_driver = {
-+/* Use __refdata to fix spurious section mismatch warning. */
-+static struct i2c_driver ab3550_driver __refdata = {
- 	.driver = {
- 		.name	= AB3550_NAME_STRING,
- 		.owner	= THIS_MODULE,
+
+
