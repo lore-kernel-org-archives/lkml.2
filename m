@@ -1,85 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757349Ab0JTDLK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Oct 2010 23:11:10 -0400
-Received: from ipmail06.adl2.internode.on.net ([150.101.137.129]:55517 "EHLO
+	id S1757555Ab0JTDNA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Oct 2010 23:13:00 -0400
+Received: from ipmail06.adl2.internode.on.net ([150.101.137.129]:26331 "EHLO
 	ipmail06.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756079Ab0JTDLJ (ORCPT
+	by vger.kernel.org with ESMTP id S1757327Ab0JTDM6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Oct 2010 23:11:09 -0400
+	Tue, 19 Oct 2010 23:12:58 -0400
 X-IronPort-Anti-Spam-Filtered: true
 X-IronPort-Anti-Spam-Result: AvsEAMj4vUx5LdoF/2dsb2JhbAChVnLCZYVKBA
-Date: Wed, 20 Oct 2010 14:11:05 +1100
+Date: Wed, 20 Oct 2010 14:12:56 +1100
 From: Nick Piggin <npiggin@kernel.dk>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: Nick Piggin <npiggin@kernel.dk>, Andi Kleen <andi@firstfloor.org>,
-        Dave Chinner <david@fromorbit.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, tglx@linutronix.de
-Subject: Re: [PATCH 11/18] fs: Introduce per-bucket inode hash locks
-Message-ID: <20101020031105.GI3740@amd>
-References: <20101008185409.GA29251@infradead.org>
- <20101016075703.GO19147@amd>
- <20101016161642.GC16861@infradead.org>
- <20101016171213.GC3240@amd>
- <20101017004610.GB29677@dastard>
- <20101017022539.GA3317@amd>
- <87iq0za32l.fsf@basil.nowhere.org>
- <20101018162105.GB9571@infradead.org>
- <20101019070057.GA7770@amd>
- <20101019165044.GA13531@infradead.org>
+To: Nick Piggin <npiggin@kernel.dk>, linux-mm@kvack.org
+Cc: Dave Chinner <david@fromorbit.com>, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org
+Subject: Re: [patch 31/35] fs: icache per-zone inode LRU
+Message-ID: <20101020031256.GA4095@amd>
+References: <20101019034216.319085068@kernel.dk>
+ <20101019034658.744504135@kernel.dk>
+ <20101019123852.GA12506@dastard>
+ <20101020023556.GC3740@amd>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20101019165044.GA13531@infradead.org>
+In-Reply-To: <20101020023556.GC3740@amd>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 19, 2010 at 12:50:44PM -0400, Christoph Hellwig wrote:
-> On Tue, Oct 19, 2010 at 06:00:57PM +1100, Nick Piggin wrote:
-> > But it is still "magic". Because you don't even know whether it
-> > is a spin or sleeping lock, let alone whether it is irq or bh safe.
-> > You get far more information seeing a bit_spin_lock(0, &hlist) call
-> > than hlist_lock().
+Gah. Try again.
+
+On Wed, Oct 20, 2010 at 01:35:56PM +1100, Nick Piggin wrote:
+> [I should have cc'ed this one to linux-mm as well, so I quote your
+> reply in full here]
+> 
+> On Tue, Oct 19, 2010 at 11:38:52PM +1100, Dave Chinner wrote:
+> > On Tue, Oct 19, 2010 at 02:42:47PM +1100, npiggin@kernel.dk wrote:
+> > > Per-zone LRUs and shrinkers for inode cache.
 > > 
-> > Even if you do rename them to hlist_bit_spin_lock, etc. Then you need
-> > to add variants for each type of locking a caller wants to do on it.
-> > Ask Linus what he thinks about that.
+> > Regardless of whether this is the right way to scale or not, I don't
+> > like the fact that this moves the cache LRUs into the memory
+> > management structures, and expands the use of MM specific structures
+> > throughout the code.
 > 
-> And why do we need all these versions?  We never had irqsave or bhsave
-> versions of bitlocks.  The only thing we might eventually want are
-> trylock and is_locked operations once we grow user of it.
-
-Or sleeping locks. And there is no reason not to have irqsave or
-bhsave versions of bitlocks (which could enable interrupts etc on
-a contended lock) but they just haven't been put in yet. If someone
-needs them, and implements them in the bitlock code, everybody can
-use them.
-
-
-> To get back a bit to the point:
+> The zone structure really is the basic unit of memory abstraction
+> in the whole zoned VM concept (which covers different properties
+> of both physical address and NUMA cost).
 > 
->  - we have a new bl_hlist sturcture which combines a hash list and a
->    lock embedded into the head
->  - the reason why we do it is to be able to use a bitlock
-
-To use bit 0 as a lock bit, yes. But if another use for the API was
-required like to store some other OOB state (not a lock), then some
-assertions can come out of the hlist_bl code quite easily and it
-can be extended to have an arbitrary bit there. (or several arbitrary
-bits if the pointer is aligned correctly).
-
-  
-> Now your initial version exposed the ugly defaults of that to the user
-> which is required to case the hash head to and unsigned long and use
-> bit_spin_lock on bit 0 of it.  There's zero abstraction and a lot
-> internal gutting required there.
-
-What do you mean zero abstraction? It changes all the hlist operations
-to handle bit 0 as lock bit.
-
-Locking and unlocking a bit, we already have abstractions for. They work
-really well, and nobody has to check the implementation to know what
-they do.
-
+> The zone contains structures for memory management that aren't
+> otherwise directly related to one another. Generic page waitqueues,
+> page allocator structures, pagecache reclaim structures, memory model
+> data, and various statistics.
+> 
+> Structures to reclaim inodes from a particular zone belong in the
+> zone struct as much as those to reclaim pagecache or anonymous
+> memory from that zone too. It actually fits far better in here than
+> globally, because all our allocation/reclaiming/watermarks etc is
+> driven per-zone.
+> 
+> The structure is not frequent -- a couple per NUMA node.
+> 
+> 
+> > It ties the cache implementation to the current
+> > VM implementation. That, IMO, goes against all the principle of
+> > modularisation at the source code level, and it means we have to tie
+> > all shrinker implemenations to the current internal implementation
+> > of the VM. I don't think that is wise thing to do because of the
+> > dependencies and impedance mismatches it introduces.
+> 
+> It's very fundamental. We allocate memory from, and have to reclaim
+> memory from -- zones. Memory reclaim is driven based on how the VM
+> wants to reclaim memory: nothing you can do to avoid some linkage
+> between the two.
+> 
+> Look at it this way. The dumb global shrinker is also tied to an
+> MM implementation detail, but that detail in fact does *not* match
+> the reality of the MM, and so it has all these problems interacting
+> with real reclaim.
+> 
+> What problems? OK, on an N zone system (assuming equal zones and
+> even distribution of objects around memory), then if there is a shortage
+> on a particular zone, slabs from _all_ zones are reclaimed. We reclaim
+> a factor of N too many objects. In a NUMA situation, we also touch
+> remote memory with a chance (N-1)/N.
+> 
+> As number of nodes grow beyond 2, this quickly goes down hill.
+> 
+> In summary, there needs to be some knowledge of how MM reclaims memory
+> in memory reclaim shrinkers -- simply can't do a good implementation
+> without that. If the zone concept changes, the MM gets turned upside
+> down and all those assumptions would need to be revisited anyway.
+> 
+> 
+> > As an example: XFS inodes to be reclaimed are simply tagged in a
+> > radix tree so the shrinker can reclaim inodes in optimal IO order
+> > rather strict LRU order. It simply does not match a zone-based
+> 
+> This is another problem, similar to what we have in pagecache. In
+> the pagecache, we need to clean pages in optimal IO order, but we
+> still reclaim them according to some LRU order.
+> 
+> If you reclaim them in optimal IO order, cache efficiency will go
+> down because you sacrifice recency/frequency information. If you
+> IO in reclaim order, IO efficiency goes down. The solution is to
+> decouple them with like writeout versus reclaim.
+> 
+> But anyway, that's kind of an "aside": inode caches are reclaimed
+> in LRU, IO-suboptimal order today anyway. Per-zone LRU doesn't
+> change that in the slightest.
+> 
+> > shrinker implementation in any way, shape or form, nor does it's
+> > inherent parallelism match that of the way shrinkers are called.
+> > 
+> > Any change in shrinker infrastructure needs to be able to handle
+> > these sorts of impedance mismatches between the VM and the cache
+> > subsystem. The current API doesn't handle this very well, either,
+> > so it's something that we need to fix so that scalability is easy
+> > for everyone.
+> > 
+> > Anyway, my main point is that tying the LRU and shrinker scaling to
+> > the implementation of the VM is a one-off solution that doesn't work
+> > for generic infrastructure.
+> 
+> No it isn't. It worked for the pagecache, and it works for dcache.
+> 
+> 
+> > Other subsystems need the same
+> > large-machine scaling treatment, and there's no way we should be
+> > tying them all into the struct zone. It needs further abstraction.
+> 
+> An abstraction? Other than the zone? What do you suggest? Invent
+> something that the VM has no concept of and try to use that?
+> 
+> No. The zone is the right thing to base it on.
