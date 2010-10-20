@@ -1,57 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754488Ab0JTRFd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Oct 2010 13:05:33 -0400
-Received: from claw.goop.org ([74.207.240.146]:51975 "EHLO claw.goop.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753036Ab0JTRFc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Oct 2010 13:05:32 -0400
-Message-ID: <4CBF2158.7060600@goop.org>
-Date: Wed, 20 Oct 2010 10:05:28 -0700
-From: Jeremy Fitzhardinge <jeremy@goop.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc13 Lightning/1.0b3pre Thunderbird/3.1.4
+	id S1754596Ab0JTRFs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Oct 2010 13:05:48 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:41067 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754541Ab0JTRFq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Oct 2010 13:05:46 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:from:organization:to:subject:date:user-agent:cc:references
+         :in-reply-to:mime-version:content-type:content-transfer-encoding
+         :message-id;
+        b=XhRZtk88NyFK4dgg4Vmb6/zBKJJPhx2Il8i3jGE42t2PRPCidd8YZMicITV5HTwhkb
+         Vw7poeKgA3A39s1qaxDLDbTlx7kk7Vx1av50tGA7pS3p3vGPh2CWdErRqrKlZdNok4Pu
+         /OhABlYPVDQIhxQJ9ZTiPqcQmuDjqr5s50Yvs=
+From: Florian Fainelli <florian@openwrt.org>
+Organization: OpenWrt
+To: Bastien ROUCARIES <roucaries.bastien@gmail.com>,
+        Juhos Gabor <juhosg@openwrt.org>
+Subject: Re: [PATCH v5] GPIO: add support for 74x164 serial-in/parallel-out 8-bit shift register
+Date: Wed, 20 Oct 2010 19:06:40 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.35-22-server; KDE/4.5.1; x86_64; ; )
+Cc: Willy Tarreau <w@1wt.eu>, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org, Samuel Ortiz <sameo@linux.intel.com>,
+        Miguel Gaio <miguel.gaio@efixo.com>
+References: <201010182135.09506.florian@openwrt.org> <AANLkTi=zj0Bns6eo40ksr52YKScarVvhMPNpxdT=Fjp7@mail.gmail.com>
+In-Reply-To: <AANLkTi=zj0Bns6eo40ksr52YKScarVvhMPNpxdT=Fjp7@mail.gmail.com>
 MIME-Version: 1.0
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Jeremy Fitzhardinge <Jeremy.Fitzhardinge@citrix.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Ian Campbell <Ian.Campbell@eu.citrix.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>
-Subject: Re: [Xen-devel] Re: [PATCH v3 08/10] xen: use host E820 map for dom0
-References: <alpine.DEB.2.00.1010121043030.2422@kaball-desktop>	<1286901770-8612-8-git-send-email-Stefano.Stabellini@eu.citrix.com>	<20101018155412.GD27373@dumpdata.com> <alpine.DEB.2.00.1010191148550.2423@kaball-desktop>
-In-Reply-To: <alpine.DEB.2.00.1010191148550.2423@kaball-desktop>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201010201906.41047.florian@openwrt.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- On 10/19/2010 03:49 AM, Stefano Stabellini wrote:
->>> -	e820_add_region(0, PFN_PHYS((u64)max_pfn), E820_RAM);
->>> -
->>> +	for (i = 0; i < memmap.nr_entries; i++) {
->>> +		unsigned long long end = map[i].addr + map[i].size;
->>> +		if (map[i].type == E820_RAM) {
->>> +			if (map[i].addr > mem_end)
->>> +				continue;
->> Would it make sense to print out a message saying something to the
->> effect of: "You need to increase the CONFIG_XEN_MAX_DOMAIN_MEMORY value to
->> take advantage of the extra %d gobs of memory!\n", map[i].size
->>
->> Or will this be unneccessary with the later changes that Jeremy has
->> for the balloon work?
->>
-> I think it still makes a lot of sense to print that message because
-> ballooning might be disabled.
+On Wednesday 20 October 2010 14:51:42 Bastien ROUCARIES wrote:
+> On Mon, Oct 18, 2010 at 9:35 PM, Florian Fainelli <florian@openwrt.org> 
+wrote:
+> > From: Miguel Gaio <miguel.gaio@efixo.com>
+> > 
+> > This patch adds support for generic 74x164 serial-in/parallel-out 8-bits
+> > shift register. This driver can be used as a GPIO output expander.
+> 
+> Could you add some documentation ? how to wire it both in soft and hard
+> part?
 
-CONFIG_XEN_MAX_DOMAIN_MEMORY scales the max pfn in the p2m table, and it
-independent of whether ballooning is enabled.  The presence or absence
-of ballooning will only affect whether memory between memory and maxmem
-can be made available.  And it defaults 128G now anyway, so its very
-unlikely people will hit it by accident.
+This is just an example of course, and I will add a subsequent patch adding an 
+entry for it in Documentation/
 
-Aside from that, I'm thinking of making ballooning mandatory (perhaps
-just a config option on the usermode-visible parts), since it seems so
-core (its mandatory for all the dom0/passthrough stuff anyway).
+static struct spi_board_info board_spi_devices[] = {
+ {
+	.modalias = "74x164",
+	.max_speed_hz = 781000,
+	.bus_num = 1,
+	.controller_data = (void *) SPI_GPIO_NO_CHIPSELECT,
+	.mode = SPI_MODE_0,
+	.platform_data = &nb4_74x164_platform_data
+}
+};
 
-    J
+and then registering your board_spi_devices with:
+
+spi_register_board_info(board_spi_devices, ARRAY_SIZE(board_spi_devices);
+--
+Florian
