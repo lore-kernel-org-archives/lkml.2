@@ -1,112 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752200Ab0JTIfy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Oct 2010 04:35:54 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:37844 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751592Ab0JTIfv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Oct 2010 04:35:51 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=LYc/t12bHAoMBtUDpvbM3pDA3GTgiIUEymMAlfF5NZvtz/1CS2IYugI6Z4AUA2K8v1
-         N/wDe4rwVCvMwzxnpfbSS4bj7fYjk/QYaV/P0CK3/D1CVeHcaLX56Wj6V3TUtRuAHrl8
-         31qTDbA1vwsEHsKpsT5xiGTrflYDD18qPXSMc=
+	id S1752282Ab0JTIhP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Oct 2010 04:37:15 -0400
+Received: from hera.kernel.org ([140.211.167.34]:48807 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752045Ab0JTIhM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Oct 2010 04:37:12 -0400
+Message-ID: <4CBEAA2F.6000009@kernel.org>
+Date: Wed, 20 Oct 2010 10:37:03 +0200
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.9) Gecko/20100915 Lightning/1.0b2 Thunderbird/3.1.4
 MIME-Version: 1.0
-In-Reply-To: <1287542932-14206-5-git-send-email-x0095840@ti.com>
-References: <1287542932-14206-1-git-send-email-x0095840@ti.com>
-	<1287542932-14206-2-git-send-email-x0095840@ti.com>
-	<1287542932-14206-3-git-send-email-x0095840@ti.com>
-	<1287542932-14206-4-git-send-email-x0095840@ti.com>
-	<1287542932-14206-5-git-send-email-x0095840@ti.com>
-Date: Wed, 20 Oct 2010 11:35:50 +0300
-Message-ID: <AANLkTimSQabHv3AOFFR4m3POjmuGvN18u7TNsPyauH8D@mail.gmail.com>
-Subject: Re: [PATCHv4 4/4] iommu: create new api to set valid da range
-From: "felipe.contreras@gmail.com" <felipe.contreras@gmail.com>
-To: Fernando Guzman Lugo <x0095840@ti.com>
-Cc: Hiroshi.DOYU@nokia.com, felipe.contreras@nokia.com, david.cohen@nokia.com,
-        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+To: Ralph Campbell <ralph.campbell@qlogic.com>
+CC: Roland Dreier <rolandd@cisco.com>, Sean Hefty <sean.hefty@intel.com>,
+        Hal Rosenstock <hal.rosenstock@gmail.com>,
+        "linux-rdma@vger.kernel.org" <linux-rdma@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2.6.36-rc7] infiniband: update workqueue usage
+References: <4CBDB834.2050905@kernel.org> <1287508926.27343.299.camel@chromite.mv.qlogic.com>
+In-Reply-To: <1287508926.27343.299.camel@chromite.mv.qlogic.com>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 20 Oct 2010 08:37:05 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 20, 2010 at 5:48 AM, Fernando Guzman Lugo <x0095840@ti.com> wrote:
-> Some IOMMUs cannot use the whole 0x0 - 0xFFFFFFFF range.
-> With this new API the valid range can be set.
->
-> Signed-off-by: Fernando Guzman Lugo <x0095840@ti.com>
+Hello,
 
-I don't see the point in having an API. It could be done through
-platform data, and the usage of 0xFFFFF000 instead of ULONG_MAX is
-independent of this.
+On 10/19/2010 07:22 PM, Ralph Campbell wrote:
+> On Tue, 2010-10-19 at 08:24 -0700, Tejun Heo wrote:
+> 
+>> * qib_cq_wq is a separate singlethread workqueue.  Does the queue
+>>   require strict single thread execution ordering?  IOW, does each
+>>   work have to be executed in the exact queued order and no two works
+>>   should execute in parallel?  Or was the singlethreadedness chosen
+>>   just to reduce the number of workers?
+> 
+> The work functions need to be called in-order and single threaded
+> or memory will be freed multiple times and other "bad things".
 
-diff --git a/arch/arm/mach-omap2/omap-iommu.c b/arch/arm/mach-omap2/omap-iommu.c
-index f5a1aad..db919254 100644
---- a/arch/arm/mach-omap2/omap-iommu.c
-+++ b/arch/arm/mach-omap2/omap-iommu.c
-@@ -43,6 +43,7 @@ static struct iommu_device omap3_devices[] = {
- 			.name = "iva2",
- 			.nr_tlb_entries = 32,
- 			.clk_name = "iva2_ck",
-+			.start_addr = 0x11000000,
- 		},
- 	},
- #endif
-diff --git a/arch/arm/plat-omap/include/plat/iommu.h
-b/arch/arm/plat-omap/include/plat/iommu.h
-index 33c7d41..94f3a9a 100644
---- a/arch/arm/plat-omap/include/plat/iommu.h
-+++ b/arch/arm/plat-omap/include/plat/iommu.h
-@@ -50,6 +50,8 @@ struct iommu {
- 	int (*isr)(struct iommu *obj);
+I see, so they'll need to be converted to alloc_ordered_workqueue()
+once -rc1 merge window opens up.  I'll follow up with the conversion.
 
- 	void *ctx; /* iommu context: registres saved area */
-+
-+	u32		start_addr;
- };
-
- struct cr_regs {
-@@ -103,6 +105,7 @@ struct iommu_platform_data {
- 	const char *name;
- 	const char *clk_name;
- 	const int nr_tlb_entries;
-+	u32 start_addr;
- };
-
- #if defined(CONFIG_ARCH_OMAP1)
-diff --git a/arch/arm/plat-omap/iommu.c b/arch/arm/plat-omap/iommu.c
-index 6336ae2..3023d0b 100644
---- a/arch/arm/plat-omap/iommu.c
-+++ b/arch/arm/plat-omap/iommu.c
-@@ -926,6 +926,10 @@ static int __devinit omap_iommu_probe(struct
-platform_device *pdev)
- 	obj->name = pdata->name;
- 	obj->dev = &pdev->dev;
- 	obj->ctx = (void *)obj + sizeof(*obj);
-+	obj->start_addr = pdata->start_addr;
-+
-+	if (!obj->start_addr)
-+		obj->start_addr = PAGE_SIZE;
-
- 	mutex_init(&obj->iommu_lock);
- 	mutex_init(&obj->mmap_lock);
-diff --git a/arch/arm/plat-omap/iovmm.c b/arch/arm/plat-omap/iovmm.c
-index f318476..fd0c93f 100644
---- a/arch/arm/plat-omap/iovmm.c
-+++ b/arch/arm/plat-omap/iovmm.c
-@@ -284,7 +284,7 @@ static struct iovm_struct *alloc_iovm_area(struct
-iommu *obj, u32 da,
- 		/*
- 		 * Reserve the first page for NULL
- 		 */
--		start = PAGE_SIZE;
-+		start = obj->start_addr;
- 		if (flags & IOVMF_LINEAR)
- 			alignement = iopgsz_max(bytes);
- 		start = roundup(start, alignement);
+Thanks.
 
 -- 
-Felipe Contreras
+tejun
