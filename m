@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756185Ab0JTWto (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Oct 2010 18:49:44 -0400
-Received: from smtp-out.google.com ([74.125.121.35]:50723 "EHLO
+	id S1756181Ab0JTWuI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Oct 2010 18:50:08 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:50562 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756144Ab0JTWtm (ORCPT
+	with ESMTP id S1751715Ab0JTWt1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Oct 2010 18:49:42 -0400
+	Wed, 20 Oct 2010 18:49:27 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=google.com; s=beta;
-        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=GsFUBcBib0Kh0Hic3fvY04PJJKfE8tSdwa1dwMXcSrb4ORIibjZzClRHMlKqFhaeW0
-         aMaN4DIZbf1s0iKegrrg==
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=ClHmXBGJ0W3IXic/EO5isRmqott8yuSZgUT99sE2wbmPbqTVudB8Ell81mtWZggki7
+         kuJYzRdQuRP/Gs/FmjgA==
 From: Venkatesh Pallipadi <venki@google.com>
 To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
         "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
@@ -22,101 +22,80 @@ Cc: linux-kernel@vger.kernel.org, Paul Turner <pjt@google.com>,
         Shaun Ruffell <sruffell@digium.com>,
         Yong Zhang <yong.zhang0@gmail.com>,
         Venkatesh Pallipadi <venki@google.com>
-Subject: [PATCH 5/6] Account ksoftirq time as cpustat softirq
-Date: Wed, 20 Oct 2010 15:49:01 -0700
-Message-Id: <1287614941-32325-6-git-send-email-venki@google.com>
+Subject: [PATCH 0/5] Proper kernel irq time reporting -v0
+Date: Wed, 20 Oct 2010 15:48:56 -0700
+Message-Id: <1287614941-32325-1-git-send-email-venki@google.com>
 X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1287614941-32325-1-git-send-email-venki@google.com>
-References: <1287614941-32325-1-git-send-email-venki@google.com>
 X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-softirq time in ksoftirqd context is not accounted in ns granularity
-per cpu softirq stats, as we want that to be a part of ksoftirqd
-exec_runtime.
+This is part 2 of
+"Proper kernel irq time accounting -v4"
+http://lkml.indiana.edu/hypermail//linux/kernel/1010.0/01175.html
 
-Accounting them separately, and using them while doing stats makes
-/proc/stat include that time in cpu si time.
+and applies over those changes.
+
+Part 1 solves the way irqs are accounted in scheduler and tasks. This
+patchset solves how irq times are reported in /proc/stat and also not
+to include irq time in task->stime, etc.
+
+Example:
+Running a cpu intensive loop and network intensive nc on a 4 CPU system
+and looking at 'top' output.
+
+With vanilla kernel:
+Cpu0  :  0.0% us,  0.3% sy,  0.0% ni, 99.3% id,  0.0% wa,  0.0% hi,  0.3% si
+Cpu1  : 100.0% us,  0.0% sy,  0.0% ni,  0.0% id,  0.0% wa,  0.0% hi,  0.0% si
+Cpu2  :  1.3% us, 27.2% sy,  0.0% ni,  0.0% id,  0.0% wa,  0.0% hi, 71.4% si
+Cpu3  :  1.6% us,  1.3% sy,  0.0% ni, 96.7% id,  0.0% wa,  0.0% hi,  0.3% si
+
+ PID USER      PR  NI  VIRT  RES  SHR S %CPU %MEM    TIME+  COMMAND
+ 7555 root      20   0  1760  528  436 R  100  0.0   0:15.79 nc
+ 7563 root      20   0  3632  268  204 R  100  0.0   0:13.13 loop
+
+Notes:
+- Both tasks show 100% CPU, even when one of them is stuck on a CPU thats
+  processing 70% softirq.
+- no hardirq time.
+
+
+With "part 1" patches:
+Cpu0  :  0.0% us,  0.0% sy,  0.0% ni, 100.0% id,  0.0% wa,  0.0% hi,  0.0% si
+Cpu1  : 100.0% us,  0.0% sy,  0.0% ni,  0.0% id,  0.0% wa,  0.0% hi,  0.0% si
+Cpu2  :  2.0% us, 30.6% sy,  0.0% ni,  0.0% id,  0.0% wa,  0.0% hi, 67.4% si
+Cpu3  :  0.7% us,  0.7% sy,  0.3% ni, 98.3% id,  0.0% wa,  0.0% hi,  0.0% si
+
+ PID USER      PR  NI  VIRT  RES  SHR S %CPU %MEM    TIME+  COMMAND
+ 6289 root      20   0  3632  268  204 R  100  0.0   2:18.67 loop
+ 5737 root      20   0  1760  528  436 R   33  0.0   0:26.72 nc
+
+Notes:
+- Tasks show 100% CPU and 33% CPU that correspond to their non-irq exec time.
+- no hardirq time.
+
+
+With "part 1 + part 2" patches:
+Cpu0  :  1.3% us,  1.0% sy,  0.3% ni, 97.0% id,  0.0% wa,  0.0% hi,  0.3% si
+Cpu1  : 99.3% us,  0.0% sy,  0.0% ni,  0.0% id,  0.0% wa,  0.7% hi,  0.0% si
+Cpu2  :  1.3% us, 31.5% sy,  0.0% ni,  0.0% id,  0.0% wa,  8.3% hi, 58.9% si
+Cpu3  :  1.0% us,  2.0% sy,  0.3% ni, 95.0% id,  0.0% wa,  0.7% hi,  1.0% si
+
+ PID USER      PR  NI  VIRT  RES  SHR S %CPU %MEM    TIME+  COMMAND
+20929 root      20   0  3632  268  204 R   99  0.0   3:48.25 loop
+20796 root      20   0  1760  528  436 R   33  0.0   2:38.65 nc
+
+Notes:
+- Both task exec time and hard irq time reported correctly.
+- hi and si time are based on fine granularity info and not on samples.
+- getrusage would give proper utime/stime split not including irq times
+  in that ratio.
+- Other places that report user/sys time like, cgroup cpuacct.stat will
+  now include only non-irq exectime.
+
+Thanks,
+Venki
 
 Signed-off-by: Venkatesh Pallipadi <venki@google.com>
----
- kernel/sched.c |   28 +++++++++++++++++++++-------
- 1 files changed, 21 insertions(+), 7 deletions(-)
-
-diff --git a/kernel/sched.c b/kernel/sched.c
-index 7e812a6..cba8090 100644
---- a/kernel/sched.c
-+++ b/kernel/sched.c
-@@ -1941,6 +1941,7 @@ static void deactivate_task(struct rq *rq, struct task_struct *p, int flags)
-  */
- static DEFINE_PER_CPU(u64, cpu_hardirq_time);
- static DEFINE_PER_CPU(u64, cpu_softirq_time);
-+static DEFINE_PER_CPU(u64, cpu_ksoftirqd_time);
- 
- static DEFINE_PER_CPU(u64, irq_start_time);
- static int sched_clock_irqtime;
-@@ -1979,15 +1980,20 @@ void account_system_vtime(struct task_struct *curr)
- 	delta = now - per_cpu(irq_start_time, cpu);
- 	per_cpu(irq_start_time, cpu) = now;
- 	/*
--	 * We do not account for softirq time from ksoftirqd here.
- 	 * We want to continue accounting softirq time to ksoftirqd thread
- 	 * in that case, so as not to confuse scheduler with a special task
- 	 * that do not consume any time, but still wants to run.
-+	 * So, softirq time in ksoftirqd is accounted separately and used
-+	 * for softirq time reporting in /proc/stat.
- 	 */
--	if (in_irq())
-+	if (in_irq()) {
- 		per_cpu(cpu_hardirq_time, cpu) += delta;
--	else if (in_serving_softirq() && !(is_ksoftirqd_context()))
--		per_cpu(cpu_softirq_time, cpu) += delta;
-+	} else if (in_serving_softirq()) {
-+		if (is_ksoftirqd_context())
-+			per_cpu(cpu_ksoftirqd_time, cpu) += delta;
-+		else
-+			per_cpu(cpu_softirq_time, cpu) += delta;
-+	}
- 
- 	local_irq_restore(flags);
- }
-@@ -2025,7 +2031,9 @@ static int irqtime_account_si_update(void)
- 	int ret = 0;
- 
- 	local_irq_save(flags);
--	latest_ns = __get_cpu_var(cpu_softirq_time);
-+	latest_ns = __get_cpu_var(cpu_softirq_time) +
-+			__get_cpu_var(cpu_ksoftirqd_time);
-+
- 	if (cputime64_gt(nsecs_to_cputime64(latest_ns), cpustat->softirq))
- 		ret = 1;
- 	local_irq_restore(flags);
-@@ -3606,7 +3614,8 @@ void account_system_time(struct task_struct *p, int hardirq_offset,
-  * no timer going off while we are on hardirq and hence we may never get an
-  * oppurtunity to update it solely in system time.
-  * p->stime and friends are only updated on system time and not on irq
-- * softirq as those do not count in task exec_runtime any more.
-+ * softirq as those do not count in task exec_runtime any more (except
-+ * for ksoftirqd).
-  */
- static void irqtime_account_process_tick(struct task_struct *p, int user_tick,
- 						struct rq *rq)
-@@ -3620,7 +3629,12 @@ static void irqtime_account_process_tick(struct task_struct *p, int user_tick,
- 	} else if (user_tick) {
- 		account_user_time(p, cputime_one_jiffy, one_jiffy_scaled);
- 	} else if (irqtime_account_si_update()) {
--		cpustat->softirq = cputime64_add(cpustat->softirq, tmp);
-+		if (is_ksoftirqd_context()) {
-+			__account_system_time(p, cputime_one_jiffy,
-+					one_jiffy_scaled, &cpustat->softirq);
-+		} else {
-+			cpustat->softirq = cputime64_add(cpustat->softirq, tmp);
-+		}
- 	} else if (p == rq->idle) {
- 		account_idle_time(cputime_one_jiffy);
- 	} else if (p->flags & PF_VCPU) { /* System time or guest time */
--- 
-1.7.1
 
