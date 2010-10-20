@@ -1,84 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755579Ab0JTW7j (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Oct 2010 18:59:39 -0400
-Received: from alerce.vps.bitfolk.com ([212.13.194.134]:2279 "EHLO
-	alerce.vps.bitfolk.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752943Ab0JTW7h (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Oct 2010 18:59:37 -0400
-Date: Wed, 20 Oct 2010 19:59:29 -0300
-From: Leandro Lucarella <luca@llucax.com.ar>
-To: Jon Maloy <jon.maloy@ericsson.com>
-Cc: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "tipc-discussion@lists.sourceforge.net" 
-	<tipc-discussion@lists.sourceforge.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Neil Horman <nhorman@tuxdriver.com>,
-        David Miller <davem@davemloft.net>
-Subject: Re: Linux 2.6.35/TIPC 2.0 ABI breaking changes
-Message-ID: <20101020225929.GT8781@llucax.com.ar>
-References: <20101019.011649.71113115.davem@davemloft.net>
- <20101019110452.GA14410@hmsreliant.think-freely.org>
- <20101019131936.GB8781@llucax.com.ar>
- <20101019201841.GC14410@hmsreliant.think-freely.org>
- <20101020172018.GN8781@llucax.com.ar>
- <0434463FDA60A94FA978ACA44617682DEE84668199@EUSAACMS0702.eamcs.ericsson.se>
- <20101020180454.GC14407@hmsreliant.think-freely.org>
- <0434463FDA60A94FA978ACA44617682DEE846681B9@EUSAACMS0702.eamcs.ericsson.se>
- <20101020182851.GP8781@llucax.com.ar>
- <20101020192350.GR8781@llucax.com.ar>
+	id S1756231Ab0JTXHZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Oct 2010 19:07:25 -0400
+Received: from hera.kernel.org ([140.211.167.34]:37461 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756169Ab0JTXHV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Oct 2010 19:07:21 -0400
+Date: Wed, 20 Oct 2010 23:06:59 GMT
+From: tip-bot for Shaohua Li <shaohua.li@intel.com>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        eric.dumazet@gmail.com, shaohua.li@intel.com, tglx@linutronix.de,
+        hpa@linux.intel.com
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        eric.dumazet@gmail.com, tglx@linutronix.de, shaohua.li@intel.com,
+        hpa@linux.intel.com
+In-Reply-To: <1287544022.4571.7.camel@sli10-conroe.sh.intel.com>
+References: <1287544022.4571.7.camel@sli10-conroe.sh.intel.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/mm] percpu: Introduce a read-mostly percpu API
+Message-ID: <tip-c957ef2c59e952803766ddc22e89981ab534606f@git.kernel.org>
+Git-Commit-ID: c957ef2c59e952803766ddc22e89981ab534606f
+X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <20101020192350.GR8781@llucax.com.ar>
-X-Paranoid: Just because you're paranoid, don't mean they're not after you.
-User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 20 Oct 2010 23:06:59 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Leandro Lucarella, el 20 de octubre a las 16:23 me escribiste:
-> Leandro Lucarella, el 20 de octubre a las 15:28 me escribiste:
-> > Jon Maloy, el 20 de octubre a las 14:10 me escribiste:
-> > > <...>
-> > > > > 
-> > > > > Remember, permitting both is a superset of the current one 
-> > > > (NBO only) 
-> > > > > so it is fully backwards compatible. We break absolutly nothing by 
-> > > > > permitting this.
-> > > > > 
-> > > > Thats effectively reverting both our patches though, isn't it 
-> > > > (not that I'm disagreeing with it, just looking for 
-> > > > clarification).  If we revert my patch and reintroduce the 
-> > > > htohl mechanism which tracks endianess, we might as well 
-> > > > revert the TIPC_SUB_SERVICE flag as well, yeah?
-> > > 
-> > > Absolutely. I think it was a mistake to change that value.
-> > > But I don't think we need to reintroduce the htohl(). That
-> > > was just one way of doing it. If I understood your suggestion
-> > > from yesterday correctly you converted the whole message within
-> > > one if()clause, without any htohl(). I have have no problem with 
-> > > that approach.
-> > 
-> > There is a difference between both solutions, the htohl() version
-> > tracked the need for swap as a struct subscription member (which was
-> > used when sending back events). Neils patch doesn't do that tracking.
-> > I don't really know the implications of this, but maybe it would be
-> > a wise idea to stay in the safe side and revert both patches for now.
-> 
-> BTW, I tried 2.6.37 reverting both offending patches and everything
-> seems to work well.
+Commit-ID:  c957ef2c59e952803766ddc22e89981ab534606f
+Gitweb:     http://git.kernel.org/tip/c957ef2c59e952803766ddc22e89981ab534606f
+Author:     Shaohua Li <shaohua.li@intel.com>
+AuthorDate: Wed, 20 Oct 2010 11:07:02 +0800
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Wed, 20 Oct 2010 14:33:58 -0700
 
-I meant 2.6.35.7.
+percpu: Introduce a read-mostly percpu API
 
--- 
-Leandro Lucarella (AKA luca)                     http://llucax.com.ar/
-----------------------------------------------------------------------
-GPG Key: 5F5A8D05 (F8CD F9A7 BF00 5431 4145  104C 949E BFB6 5F5A 8D05)
-----------------------------------------------------------------------
-Karma police
-arrest this girl,
-her Hitler hairdo
-is making me feel ill
-and we have crashed her party.
+Add a new readmostly percpu section and API.  This can be used to
+avoid dirtying data lines which are generally not written to, which is
+especially important for data which may be accessed by processors
+other than the one for which the percpu area belongs to.
+
+[ hpa: moved it *after* the page-aligned section, for obvious
+  reasons. ]
+
+Signed-off-by: Shaohua Li <shaohua.li@intel.com>
+LKML-Reference: <1287544022.4571.7.camel@sli10-conroe.sh.intel.com>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+---
+ include/asm-generic/vmlinux.lds.h |    4 ++++
+ include/linux/percpu-defs.h       |    9 +++++++++
+ 2 files changed, 13 insertions(+), 0 deletions(-)
+
+diff --git a/include/asm-generic/vmlinux.lds.h b/include/asm-generic/vmlinux.lds.h
+index 8a92a17..d7e7b21 100644
+--- a/include/asm-generic/vmlinux.lds.h
++++ b/include/asm-generic/vmlinux.lds.h
+@@ -677,7 +677,9 @@
+ 				- LOAD_OFFSET) {			\
+ 		VMLINUX_SYMBOL(__per_cpu_start) = .;			\
+ 		*(.data..percpu..first)					\
++		. = ALIGN(PAGE_SIZE);					\
+ 		*(.data..percpu..page_aligned)				\
++		*(.data..percpu..readmostly)				\
+ 		*(.data..percpu)					\
+ 		*(.data..percpu..shared_aligned)			\
+ 		VMLINUX_SYMBOL(__per_cpu_end) = .;			\
+@@ -703,6 +705,8 @@
+ 		VMLINUX_SYMBOL(__per_cpu_load) = .;			\
+ 		VMLINUX_SYMBOL(__per_cpu_start) = .;			\
+ 		*(.data..percpu..first)					\
++		. = ALIGN(PAGE_SIZE);					\
++		*(.data..percpu..readmostly)				\
+ 		*(.data..percpu..page_aligned)				\
+ 		*(.data..percpu)					\
+ 		*(.data..percpu..shared_aligned)			\
+diff --git a/include/linux/percpu-defs.h b/include/linux/percpu-defs.h
+index ce2dc65..27ef6b1 100644
+--- a/include/linux/percpu-defs.h
++++ b/include/linux/percpu-defs.h
+@@ -139,6 +139,15 @@
+ 	__aligned(PAGE_SIZE)
+ 
+ /*
++ * Declaration/definition used for per-CPU variables that must be read mostly.
++ */
++#define DECLARE_PER_CPU_READ_MOSTLY(type, name)			\
++	DECLARE_PER_CPU_SECTION(type, name, "..readmostly")
++
++#define DEFINE_PER_CPU_READ_MOSTLY(type, name)				\
++	DEFINE_PER_CPU_SECTION(type, name, "..readmostly")
++
++/*
+  * Intermodule exports for per-CPU variables.  sparse forgets about
+  * address space across EXPORT_SYMBOL(), change EXPORT_SYMBOL() to
+  * noop if __CHECKER__.
