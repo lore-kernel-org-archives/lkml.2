@@ -1,63 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755718Ab0JTA0P (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Oct 2010 20:26:15 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:39858 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753355Ab0JTA0N convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Oct 2010 20:26:13 -0400
+	id S1755891Ab0JTAbX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Oct 2010 20:31:23 -0400
+Received: from mho-01-ewr.mailhop.org ([204.13.248.71]:52574 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751236Ab0JTAbV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Oct 2010 20:31:21 -0400
+X-Mail-Handler: MailHop Outbound by DynDNS
+X-Originating-IP: 67.188.36.105
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1/Q9c9ReJXH2aiBJuBHqkv7
+Date: Tue, 19 Oct 2010 17:31:16 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Kevin Hilman <khilman@deeprootsystems.com>
+Cc: Felipe Contreras <felipe.contreras@gmail.com>,
+        Felipe Balbi <me@felipebalbi.com>, balbi@ti.com,
+        linux-usb@vger.kernel.org, linux-omap <linux-omap@vger.kernel.org>,
+        linux-main <linux-kernel@vger.kernel.org>, Greg KH <greg@kroah.com>
+Subject: Re: [PATCH v2 3/3] drivers: cleanup Kconfig stuff
+Message-ID: <20101020003115.GC30991@atomide.com>
+References: <20101019103234.GI31170@legolas.emea.dhcp.ti.com>
+ <AANLkTinXzMQXoyyu+anSCvSuE9w3FWAP5HswDS0kfpzE@mail.gmail.com>
+ <20101019111613.GJ31170@legolas.emea.dhcp.ti.com>
+ <AANLkTikkMphKa2DGGtWxy-3LpFX0kn92UEYPj==Euzok@mail.gmail.com>
+ <20101019115236.GL31170@legolas.emea.dhcp.ti.com>
+ <AANLkTim3NsgjC3Nh8VCCrx4cV1Y+kn38=30=en0KCft6@mail.gmail.com>
+ <6ea089ac75d4d15d88698468eacb7fe3@secure211.sgcpanel.com>
+ <AANLkTinYM5aavk9_jcTTymff=OY+Yyv8T6C+dmMih0p_@mail.gmail.com>
+ <20101019234414.GB30991@atomide.com>
+ <87fww1u3fw.fsf@deeprootsystems.com>
 MIME-Version: 1.0
-In-Reply-To: <20101019225813.12396.2564.stgit@paris.rdu.redhat.com>
-References: <20101019225813.12396.2564.stgit@paris.rdu.redhat.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Tue, 19 Oct 2010 17:25:38 -0700
-Message-ID: <AANLkTikgHG+COx7Bps4NhbiLywUvPcwoQWhN1CWU6yUc@mail.gmail.com>
-Subject: Re: [PATCH 1/6] IMA: move read/write counters into struct inode
-To: Eric Paris <eparis@redhat.com>
-Cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, hch@infradead.org, zohar@us.ibm.com,
-        warthog9@kernel.org, david@fromorbit.com, jmorris@namei.org,
-        kyle@mcmartin.ca, hpa@zytor.com, akpm@linux-foundation.org,
-        mingo@elte.hu, viro@zeniv.linux.org.uk
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87fww1u3fw.fsf@deeprootsystems.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 19, 2010 at 3:58 PM, Eric Paris <eparis@redhat.com> wrote:
->
-> This patch does the minimum needed to move the location of the data.  Further
-> cleanups, especially the location of counter updates, may still be possible.
+* Kevin Hilman <khilman@deeprootsystems.com> [101019 17:04]:
+> Tony Lindgren <tony@atomide.com> writes:
+> >
+> > This actually produces a booting omap2+ kernel with no .config
+> > at all. I've tested it with:
+> >
+> > $ echo CONFIG_ARCH_OMAP=y > .config
+> > $ yes "" | ARCH=arm make oldconfig
+> >
+> > So if you have something that's needed on almost every omap,
+> > you can select it there.
+> 
+> One thing I don't like about this is that there is currently no way to
+> 'select' as a module.
 
-Hmm. The end result looks fine (adding four bytes to struct inode in
-order to avoid all the complexity seems reasonable), but I do get the
-feeling that this should likely be the last in the series, so that the
-VFS level files would get minimal changes. IOW, do the cleanups inside
-the IMA code first, and then do the switch-over to using counters in
-the inode last.
+I think that would take two passes to do currently for the depenencies..
+But we can certainly select all the omap drivers as modules in
+omap2plus_defconfig.
 
-Well, not last, since I think you need to do this before you can do
-the "only allocate iint when needed" only after you've moved the
-counters. But I think the logical order would be
- - switch to rbtree
- - drop opencount
- - switch counts to 'unsigned int'
- - drop iint->writecount and use i_writecount instead
- - move the remaining readcount to i_readcount
- - only allocate iint when necessary
+> In order to get to a minimal kernel, in theory, we don't need regulator,
+> i2c, MFD, or twl4030* built in.  They should all be built as modules.
+> Yes, there are some assumptions made today that some of these things are
+> built in, and then are used from init code, but that is broken.
 
-That way you'd only have _one_ patch that touches <linux/fs.h>, rather
-than four, and the remaining patches would all be to security/ima.
+I think the only thing keeping us from doing that is that most of
+the boards don't use initramfs. Without initramfs these are needed
+to mount root on MMC.
+ 
+> If someone is looking for a good omap-kernel-janitors project, I would
+> suggest getting to a *really* minimal OMAP2+ kernel with everything
+> possible built as modules to be a very good project.
 
-But maybe I missed some reason for this particular ordering.
+Agreed. The way to do that is to set everything possible as modules
+in omap2plus_defconfig, and move to kernel + initramfs based booting
+like most distros do.
 
-Oh, and btw, due to alignment reasons it looks like the 4-byte
-i_readcount would take 8 bytes due to bad structure packing. I don't
-know if that is avoidable, but I do think it would make more sense to
-put it next to i_writecount instead of in between two pointers. That
-still doesn't help (we've got 3 32-bit values next to each other), but
-it's at least -closer- to working out.
+Regards,
 
-                         Linus
+Tony
