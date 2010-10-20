@@ -1,53 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754246Ab0JTQpa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Oct 2010 12:45:30 -0400
-Received: from sous-sol.org ([216.99.217.87]:35963 "EHLO sequoia.sous-sol.org"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754117Ab0JTQp2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Oct 2010 12:45:28 -0400
-Date: Wed, 20 Oct 2010 09:43:52 -0700
-From: Chris Wright <chrisw@sous-sol.org>
-To: Dan Magenheimer <dan.magenheimer@oracle.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        xen-devel@lists.xensource.com,
-        Jeremy Fitzhardinge <jeremy@xensource.com>,
-        Konrad Wilk <konrad.wilk@oracle.com>, linux-kernel@vger.kernel.org,
-        Chris Wright <chrisw@sous-sol.org>, virtualization@lists.osdl.org,
-        linux-next@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [Xen-devel] Re: xen PV on HVM and initial domain merge in
- linux-next
-Message-ID: <20101020164352.GL25455@sequoia.sous-sol.org>
-References: <alpine.DEB.2.00.1010191254460.2423@kaball-desktop>
- <alpine.DEB.2.00.1010191847290.10348@kaball-desktop20101020113256.3647b1d9.sfr@canb.auug.org.au>
- <5d143f14-26a1-4452-8b44-dae2a8b6df11@default>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5d143f14-26a1-4452-8b44-dae2a8b6df11@default>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+	id S1754334Ab0JTQqz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Oct 2010 12:46:55 -0400
+Received: from zone0.gcu-squad.org ([212.85.147.21]:38089 "EHLO
+	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754163Ab0JTQqy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Oct 2010 12:46:54 -0400
+Date: Wed, 20 Oct 2010 18:46:40 +0200
+From: Jean Delvare <khali@linux-fr.org>
+To: Guenter Roeck <guenter.roeck@ericsson.com>
+Cc: Joe Perches <joe@perches.com>, Hans de Goede <j.w.r.degoede@hhs.nl>,
+        Alistair John Strachan <alistair@devzero.co.uk>,
+        Henrik Rydberg <rydberg@euromail.se>,
+        "Mark M. Hoffman" <mhoffman@lightlink.com>,
+        Luca Tettamanti <kronos.it@gmail.com>,
+        Fenghua Yu <fenghua.yu@intel.com>, Juerg Haefliger <juergh@gmail.com>,
+        Eric Piel <eric.piel@tremplin-utc.net>,
+        Jim Cromie <jim.cromie@gmail.com>,
+        Roger Lucas <vt8231@hiddenengine.co.uk>,
+        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] drivers/hwmon: Use pr_fmt and pr_<level>
+Message-ID: <20101020184640.0df26e35@endymion.delvare>
+In-Reply-To: <20101020164343.GA22572@ericsson.com>
+References: <1287530020.10409.594.camel@Joe-Laptop>
+	<20101020032938.GA20095@ericsson.com>
+	<1287545658.10409.606.camel@Joe-Laptop>
+	<20101020035346.GA20178@ericsson.com>
+	<1287547662.10409.618.camel@Joe-Laptop>
+	<20101020093438.07b129c8@endymion.delvare>
+	<20101020144608.GA21937@ericsson.com>
+	<20101020183835.202989c9@endymion.delvare>
+	<20101020164343.GA22572@ericsson.com>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Dan Magenheimer (dan.magenheimer@oracle.com) wrote:
-> > Not following the Xen develpment at all, I would like to have a
-> > positive reply from the listed Xen contacts, please,
-> 
-> I am not officially listed as a maintainer for Xen, but fwiw:
-> 
-> Acked-by: Dan Magenheimer <dan.magenheimer@oracle.com>
-> 
-> And, Stephen, I think Chris Wright and virtualization@lists.osdl.org
-> are stale entries in the MAINTAINERS file for Xen development,
-> so you are unlikely to receive replies from him/them.
-> (Chris, virtualization@lists.osdl.org ... please feel free
-> to correct me if I am wrong.)
+On Wed, 20 Oct 2010 09:43:43 -0700, Guenter Roeck wrote:
+> On Wed, Oct 20, 2010 at 12:38:35PM -0400, Jean Delvare wrote:
+> > But first of all, I really would like the pr_fmt issue do be sorted
+> > out. I don't like the idea of having to redefine it in every driver,
+> > when it seems easy to avoid that. Joe?
+>
+> Agreed, especially since it doesn't seem to be used in many of the drivers.
 
-Yeah, I'm not really doing Xen pv stuff these days.
-The virtualization list itself is always open, and it's useful for
-things that cross over (e.g. virtio, pv clock, pv spinlocks).
+As I understand it, it's used silently by all pr_*() calls.
 
-thanks,
--chris
+-- 
+Jean Delvare
