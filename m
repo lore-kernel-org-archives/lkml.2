@@ -1,84 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751469Ab0JTLN3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Oct 2010 07:13:29 -0400
-Received: from canuck.infradead.org ([134.117.69.58]:48162 "EHLO
-	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750811Ab0JTLN2 convert rfc822-to-8bit (ORCPT
+	id S1751731Ab0JTLRa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Oct 2010 07:17:30 -0400
+Received: from casper.infradead.org ([85.118.1.10]:36191 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751169Ab0JTLR3 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Oct 2010 07:13:28 -0400
-Subject: Re: [PATCH] perf_events: fix time tracking in samples
+	Wed, 20 Oct 2010 07:17:29 -0400
+Subject: Re: [PATCH] sched_fair.c:find_busiest_group(), kernel 2.6.35.7
 From: Peter Zijlstra <peterz@infradead.org>
-To: Stephane Eranian <eranian@google.com>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, paulus@samba.org,
-        davem@davemloft.net, fweisbec@gmail.com, perfmon2-devel@lists.sf.net,
-        eranian@gmail.com, robert.richter@amd.com
-In-Reply-To: <AANLkTimjabS1MEkheJ0z2keceH=0eEfC_NbyCjZ-Ltxz@mail.gmail.com>
-References: <4cbdcbea.8491d80a.25b0.ffffece8@mx.google.com>
-	 <1287507178.1998.3440.camel@laptop>
-	 <AANLkTik5_h1hVfX=1chezE6z25r4KV6GfzQZ+JvD8J_p@mail.gmail.com>
-	 <1287508187.1998.3445.camel@laptop>
-	 <AANLkTimjabS1MEkheJ0z2keceH=0eEfC_NbyCjZ-Ltxz@mail.gmail.com>
+To: Andrew Dickinson <whydna@whydna.net>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>
+In-Reply-To: <AANLkTinpR5QQUkd5VJMyotiEMLZYZdDs5-Jwn3LQ4pC0@mail.gmail.com>
+References: <AANLkTinpR5QQUkd5VJMyotiEMLZYZdDs5-Jwn3LQ4pC0@mail.gmail.com>
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 8BIT
-Date: Wed, 20 Oct 2010 13:13:16 +0200
-Message-ID: <1287573196.3488.2.camel@twins>
+Date: Wed, 20 Oct 2010 13:17:27 +0200
+Message-ID: <1287573447.3488.5.camel@twins>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-10-19 at 21:03 +0200, Stephane Eranian wrote:
-
-> >> Ok, I missed that. But I don't understand why you need the lock to
-> >> udpate the time. The lower-level clock is lockless if I recall. Can't you
-> >> use an atomic ops in update_context_time()?
-> >
-> > atomic ops would slow down those code paths, also, I don't think you can
-> > fully get the ordering between ->tstamp_$foo and ->total_time_$foo just
-> > right.
-> >
+On Wed, 2010-10-20 at 00:20 -0700, Andrew Dickinson wrote:
+> This is a patch to fix the corner case where we're crashing with
+> divide_error in find_busiest_group (see
+> https://bugzilla.kernel.org/show_bug.cgi?id=16991).
+> I don't fully understand what the case is that causes sds.total_pwr to
+> be zero in find_busiest_group, but this patch guards against the
+> divide-by-zero bug.
 > 
-> I don't get that. Could you give an example?
+> I also added safe-guarding around other routines in the scheduler code
+> where we're dividing by power; that's more of a just-in-case and I'm
+> definitely open for debate on that.
 
-Take update_context_time(), it has:
+No.. papering over crap like this is not done. In that BZ there's a
+number of suggestions of how/where to track down the actual root cause,
+but apparently nobody is interested in doing that.
 
-now = perf_clock();
-ctx->time += now - ctx->timestamp;
-ctx->timestamp = now;
-
-If you interleave two of those you get:
-
- ctx->timestamp = T0;
-
-
- now = perf_clock(); /* T1 */
- ctx->time += now - ctx->timestamp;
-					now = perf_clock(); /* T2 */
-					ctx->time += now - ctx->timestamp;
-					ctx->timestamp = now;
- ctx->timestamp = now;
-
-
-So at this point you would expect timestamp = T2 and time += T2-T0.
-
-Except that: time += T1 - T0 + T2 - T0 != T2 - T0 and
-             timestamp = T1
-
-You can of course write it as something like x86_perf_event_update(),
-but then there's trying to keep total_time_running and
-total_time_enabled in sync.
-
-
-> > Not sure, but barring 64bit atomics for all these, 32bit archs and NMI
-> > are going to be 'interesting'
-> >
-> 
-> Every sample needs to be correct, otherwise you run the risk of introducing
-> bias.
-> 
-> I think if the tradeoffs is correctness vs. speed, I'd choose correctness.
-
-Well, yes, but it sucks, esp. since its only relevant to
-PERF_SAMPLE_READ.
+(I can't reproduce so I can't actually do anything about it).
