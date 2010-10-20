@@ -1,75 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755827Ab0JTUsA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Oct 2010 16:48:00 -0400
-Received: from mga02.intel.com ([134.134.136.20]:38610 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754697Ab0JTUr7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Oct 2010 16:47:59 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.57,356,1283756400"; 
-   d="scan'208";a="669270597"
-Message-ID: <4CBF557E.2020208@linux.intel.com>
-Date: Wed, 20 Oct 2010 13:47:58 -0700
-From: Arjan van de Ven <arjan@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.2.9) Gecko/20100915 Thunderbird/3.1.4
+	id S1755129Ab0JTUvZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Oct 2010 16:51:25 -0400
+Received: from mailout-de.gmx.net ([213.165.64.22]:33002 "HELO mail.gmx.net"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
+	id S1752296Ab0JTUvY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Oct 2010 16:51:24 -0400
+X-Authenticated: #15668376
+X-Provags-ID: V01U2FsdGVkX19Ow4FzfMVODxAuZJr7S4JYCoaEczQ/AotsZWd9E9
+	xCn5h9LjQZUwxs
+Date: Wed, 20 Oct 2010 22:51:15 +0200
+From: Sven Eckelmann <sven.eckelmann@gmx.de>
+To: The list for a Better Approach To Mobile Ad-hoc
+	 Networking <b.a.t.m.a.n@lists.open-mesh.org>
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Andy Shevchenko <andy.shevchenko@gmail.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        Marek Lindner <lindner_marek@yahoo.de>,
+        Simon Wunderlich <siwu@hrz.tu-chemnitz.de>
+Subject: Re: [B.A.T.M.A.N.] [resend][PATCHv2] staging: batman-adv: remove
+ useless addr_to_string()
+Message-ID: <20101020205115.GA18087@sven-atom.lazhur.ath.cx>
+References: <1287589664-25447-1-git-send-email-andy.shevchenko@gmail.com>
 MIME-Version: 1.0
-To: Venkatesh Pallipadi <venki@google.com>
-CC: svaidy@linux.vnet.ibm.com, Andi Kleen <ak@linux.intel.com>,
-        Trinabh Gupta <trinabh@linux.vnet.ibm.com>, peterz@infradead.org,
-        lenb@kernel.org, suresh.b.siddha@intel.com, benh@kernel.crashing.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC V1] cpuidle: add idle routine registration and cleanup pm_idle
- pointer
-References: <20101019183522.17992.86937.stgit@tringupt.in.ibm.com>	<4CBDE5AB.4040401@linux.intel.com>	<AANLkTi=cetw_mdp_3s+T4OxTfcMT2u4cdVPKxOp7jbVU@mail.gmail.com>	<4CBDEB14.2030304@linux.vnet.ibm.com>	<4CBF06D5.7020508@linux.vnet.ibm.com>	<4CBF0854.6080903@linux.intel.com>	<4CBF0C04.5070705@linux.intel.com>	<4CBF12CB.9050604@linux.intel.com>	<20101020191941.GA706@dirshya.in.ibm.com>	<4CBF4243.4040104@linux.intel.com>	<20101020194045.GB706@dirshya.in.ibm.com>	<4CBF4693.1070802@linux.intel.com> <AANLkTimNWYuP0e03xTq4Yg7Sb1RPHsQjC2X4wpf1CcPB@mail.gmail.com>
-In-Reply-To: <AANLkTimNWYuP0e03xTq4Yg7Sb1RPHsQjC2X4wpf1CcPB@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha512;
+	protocol="application/pgp-signature"; boundary="9jxsPFA5p3P2qPhR"
+Content-Disposition: inline
+In-Reply-To: <1287589664-25447-1-git-send-email-andy.shevchenko@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  On 10/20/2010 12:47 PM, Venkatesh Pallipadi wrote:
-> On Wed, Oct 20, 2010 at 12:44 PM, Arjan van de Ven
-> <arjan@linux.intel.com>  wrote:
->>   On 10/20/2010 12:40 PM, Vaid
->>>> you ALWAYS have at least 2 idle handling states. The platform idle
->>>> one and the generic busy waiting one.
->>>> the later is needed for "I want absolutely 0 latency" cases.
->>> Some special overrides like idle=poll should handle this case even if
->>> cpuidle and related registration mechanism is compiled out. The point
->>> is that we need some flexibility even if the full framework is not
->>> included.
->> this is not idle=poll
->>
->> this is an (privileged) app or driver, at runtime, requesting a 0 usec max
->> latency for a short or long period of time.
->>
->>
->>>>> Making current cpuidle as default in kernel
->>>> not "in the kernel" but "for x86".
->>>> You're solving an x86 problem here, right?
->>>> (the pm_idle is an x86 only problem. other architectures should be
->>>> able to keep doing what they are doing)
->>>> For x86, lets solve it by going to cpuidle period... and if Andi can
->>>> find some bloat in cpuidle, lets see if the fat can be trimmed.
->>> Ok, you are suggesting that for x86 lets move cpuidle in kernel
->>> always, while it can be an optional module for other archs as it
->>> stands today.  We can slim down the cpuidle from current 7K or atleast
->>> split some parts like governors as modules if needed.
->> governors as modules is a total pain. modules don't solve the problem.
->> really. it's still code you need.
->> we have two governors today, menu and ladder
->> menu is best on anything that is tickless
->> ladder is useless on any tickless kernel, and likely not better than menu on
->> non-tickless.
->> that's it.
->> It will be good to have other archs also follow the same cpuidle
-> I don't think they have to be modules. There can be a CPUIDLE_LITE
-> which deCONFIG entire governor.c and individual governors (and
-> probably sysfs stuff as well) for archs that can only use one state at
-> any time, but still want to do config or runtime detection of one
-> state and register that state.
 
-there is no such case though; you always have at least 2 options!
-(the hardware equivalent of "hlt" and the polling option)
+--9jxsPFA5p3P2qPhR
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
+On Wed, Oct 20, 2010 at 06:47:44PM +0300, Andy Shevchenko wrote:
+> Since all *printf() methods in the kernel understand '%pM' modifier the
+> conversion to the string is useless beforehand.
+>=20
+> Additionally this patch decreases batman_if structure by 20 bytes.
+
+Thanks for your patch. I have problems with compiling due to other patches =
+in
+the queue. I will fix that and recommend it as patch for 2.6.38.
+
+Best regards,
+	Sven
+
+--9jxsPFA5p3P2qPhR
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+Content-Disposition: inline
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iQIcBAEBCgAGBQJMv1ZDAAoJEF2HCgfBJntGfp0P/ApVA8supc//9wBKj/1sapF/
+RhEeZq1f8Sj3UjwMXtLb/hcPXH7F61wNs+874f5va94NbGHs7Kal4qxu3UmXpLPW
+AfwPm4t1Q3VCOWZwXwvoanItRLr9fLslKZMCwzxYj6VvfbEmejZus+iMIaLQFOY6
+jIpQolzfx7vsG5j2yMZuKZhgmK1Ld3RnSMOuyIp9/sGe/4Wlct6A1n8trptRFvPh
+6hmjyUeXKcfCYifEolWDL9AdiBq/oTKdEkqEPDsgptGU8ko4N6bEiWmmhYAJA5OY
+O2XU90HqP9ODk1j7d0ZzjCXtkVo6JcabFUxrAK4CUsLeUl/h3Mrn/0ai83x1a0NR
+EwZ/zd/69b2X3AoPSMnu0mogcrYEBTYUdkUX1o7zlzlbEr700ivUpipBGz2JEV1w
+N8k/tylxVNSHt0C4/1DUP8DTzmQHiKwjwFludhudd4r2N3LJB3xD+tVYmB5PWWCp
+yHpufpurZmclbu7pR8+/bTUn/NUPX33zM2QzJlNFHw78ru7cwLSUinYc0sdmw4cX
+PKqFEMT/3AD13wOiZk5GuHjKPxv9WzHmpseyPjGZgHuieoXDDmh2RQedu/knD8pO
+jwbo3n8cvVgltdEGqr8NPRvEKLZunBwnQ3vdu+d3hjl7ge0tLW3QXLLjmqIR6O7u
+dvvnm0OtcGE/4D2t90tX
+=/RJF
+-----END PGP SIGNATURE-----
+
+--9jxsPFA5p3P2qPhR--
