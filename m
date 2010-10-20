@@ -1,152 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755810Ab0JTUcj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Oct 2010 16:32:39 -0400
-Received: from www84.your-server.de ([213.133.104.84]:45499 "EHLO
-	www84.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753709Ab0JTUci (ORCPT
+	id S1755721Ab0JTUgt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Oct 2010 16:36:49 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:60207 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753392Ab0JTUgs convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Oct 2010 16:32:38 -0400
-X-Greylist: delayed 1404 seconds by postgrey-1.27 at vger.kernel.org; Wed, 20 Oct 2010 16:32:38 EDT
-From: stefani@seibold.net
-To: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        randy.dunlap@oracle.com, alan@lxorguk.ukuu.org.uk
-Cc: stefani@seibold.net
-Subject: [PATCH] Fix kfifo_alloc() to return a signed int value
-Date: Wed, 20 Oct 2010 22:12:24 +0200
-Message-Id: <1287605544-21270-2-git-send-email-stefani@seibold.net>
-X-Mailer: git-send-email 1.7.3.1
-In-Reply-To: <1287605544-21270-1-git-send-email-stefani@seibold.net>
-References: <1287605544-21270-1-git-send-email-stefani@seibold.net>
-X-Authenticated-Sender: stefani@seibold.net
+	Wed, 20 Oct 2010 16:36:48 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=XFZVfDss722GblkZife5p5cXU0FCItk76H3VFrvjgQlXF4bx8AZHO+wWyFPkz8c3U0
+         E0wJF3hK+rWDQIqRy4cxQX1ZMPV9XTbncu1AiTD8XoDrjdcl5rcB5BfJp75XGgchsnKn
+         1WrkSYMvWuJeWHP0kBytjUFYrkkibu+YmEx10=
+MIME-Version: 1.0
+In-Reply-To: <1287604743.15567.27.camel@Joe-Laptop>
+References: <1287530020.10409.594.camel@Joe-Laptop> <20101020094208.3136b9dd@endymion.delvare>
+ <1287602386.2210.6.camel@cowboy> <20101020213810.6b31c04e@endymion.delvare>
+ <1287604323.15567.22.camel@Joe-Laptop> <1287604743.15567.27.camel@Joe-Laptop>
+From: Jim Cromie <jim.cromie@gmail.com>
+Date: Wed, 20 Oct 2010 14:36:17 -0600
+Message-ID: <AANLkTinuBoVyKSm5nAwNx6H8DF6wDNNi4z4-b8wyXbaW@mail.gmail.com>
+Subject: Re: [PATCH] drivers/hwmon: Use pr_fmt and pr_<level>
+To: Joe Perches <joe@perches.com>
+Cc: Jean Delvare <khali@linux-fr.org>, dave@gnu.org,
+        Guenter Roeck <guenter.roeck@ericsson.com>,
+        Hans de Goede <j.w.r.degoede@hhs.nl>,
+        Alistair John Strachan <alistair@devzero.co.uk>,
+        Henrik Rydberg <rydberg@euromail.se>,
+        "Mark M. Hoffman" <mhoffman@lightlink.com>,
+        Luca Tettamanti <kronos.it@gmail.com>,
+        Fenghua Yu <fenghua.yu@intel.com>, Juerg Haefliger <juergh@gmail.com>,
+        Eric Piel <eric.piel@tremplin-utc.net>,
+        Roger Lucas <vt8231@hiddenengine.co.uk>, lm-sensors@lm-sensors.org,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stefani Seibold <stefani@seibold.net>
+On Wed, Oct 20, 2010 at 1:59 PM, Joe Perches <joe@perches.com> wrote:
+> On Wed, 2010-10-20 at 12:52 -0700, Joe Perches wrote:
+>> So perhaps add this to include/linux/hwmon.h instead:
+>> #if defined pr_fmt
+>> #undef pr_fmt
+>> #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+>> #endif
+>
+> Nope.  That won't work as other non-hwmon files include it.
+>
+> drivers/platform/x86/eeepc-laptop.c:#include <linux/hwmon.h>
+> drivers/platform/x86/compal-laptop.c:#include <linux/hwmon.h>
+> drivers/platform/x86/thinkpad_acpi.c:#include <linux/hwmon.h>
+> drivers/thermal/thermal_sys.c:#include <linux/hwmon.h>
+> drivers/staging/iio/light/tsl2563.c:#include <linux/hwmon.h>
+> drivers/gpu/drm/radeon/radeon_pm.c:#include <linux/hwmon.h>
+> drivers/gpu/drm/nouveau/nouveau_pm.c:#include <linux/hwmon.h>
+> drivers/acpi/power_meter.c:#include <linux/hwmon.h>
+> drivers/input/touchscreen/ads7846.c:#include <linux/hwmon.h>
+>
+>
+>
 
-This patch adds a new __kfifo_int_must_check_helper() helper function,
-which is needed for kfifo_alloc() to return the right signed integer
-value.
 
-The origin __kfifo_must_check_helper() helper was renamed into
-__kfifo_uint_must_check_helper() to show the sign which is expected and
-returned.
+what about modules.h ? or device.h ?
 
-Signed-off-by: Stefani Seibold <stefani@seibold.net>
----
- include/linux/kfifo.h |   28 +++++++++++++++++-----------
- 1 files changed, 17 insertions(+), 11 deletions(-)
+Id think that would cover many users without being universally inadequate,
+and Id guess one of those (or a neighbor) would cover most of the use-cases.
 
-diff --git a/include/linux/kfifo.h b/include/linux/kfifo.h
-index 62dbee5..10308c6 100644
---- a/include/linux/kfifo.h
-+++ b/include/linux/kfifo.h
-@@ -172,7 +172,13 @@ struct kfifo_rec_ptr_2 __STRUCT_KFIFO_PTR(unsigned char, 2, void);
- 
- 
- static inline unsigned int __must_check
--__kfifo_must_check_helper(unsigned int val)
-+__kfifo_uint_must_check_helper(unsigned int val)
-+{
-+	return val;
-+}
-+
-+static inline int __must_check
-+__kfifo_int_must_check_helper(int val)
- {
- 	return val;
- }
-@@ -267,7 +273,7 @@ __kfifo_must_check_helper(unsigned int val)
-  * @fifo: address of the fifo to be used
-  */
- #define	kfifo_avail(fifo) \
--__kfifo_must_check_helper( \
-+__kfifo_uint_must_check_helper( \
- ({ \
- 	typeof((fifo) + 1) __tmpq = (fifo); \
- 	const size_t __recsize = sizeof(*__tmpq->rectype); \
-@@ -300,7 +306,7 @@ __kfifo_must_check_helper( \
-  * This function returns the size of the next fifo record in number of bytes.
-  */
- #define kfifo_peek_len(fifo) \
--__kfifo_must_check_helper( \
-+__kfifo_uint_must_check_helper( \
- ({ \
- 	typeof((fifo) + 1) __tmp = (fifo); \
- 	const size_t __recsize = sizeof(*__tmp->rectype); \
-@@ -323,7 +329,7 @@ __kfifo_must_check_helper( \
-  * Return 0 if no error, otherwise an error code.
-  */
- #define kfifo_alloc(fifo, size, gfp_mask) \
--__kfifo_must_check_helper( \
-+__kfifo_int_must_check_helper( \
- ({ \
- 	typeof((fifo) + 1) __tmp = (fifo); \
- 	struct __kfifo *__kfifo = &__tmp->kfifo; \
-@@ -419,7 +425,7 @@ __kfifo_must_check_helper( \
-  * writer, you don't need extra locking to use these macro.
-  */
- #define	kfifo_get(fifo, val) \
--__kfifo_must_check_helper( \
-+__kfifo_uint_must_check_helper( \
- ({ \
- 	typeof((fifo) + 1) __tmp = (fifo); \
- 	typeof((val) + 1) __val = (val); \
-@@ -460,7 +466,7 @@ __kfifo_must_check_helper( \
-  * writer, you don't need extra locking to use these macro.
-  */
- #define	kfifo_peek(fifo, val) \
--__kfifo_must_check_helper( \
-+__kfifo_uint_must_check_helper( \
- ({ \
- 	typeof((fifo) + 1) __tmp = (fifo); \
- 	typeof((val) + 1) __val = (val); \
-@@ -552,7 +558,7 @@ __kfifo_must_check_helper( \
-  * writer, you don't need extra locking to use these macro.
-  */
- #define	kfifo_out(fifo, buf, n) \
--__kfifo_must_check_helper( \
-+__kfifo_uint_must_check_helper( \
- ({ \
- 	typeof((fifo) + 1) __tmp = (fifo); \
- 	typeof((buf) + 1) __buf = (buf); \
-@@ -580,7 +586,7 @@ __kfifo_must_check_helper( \
-  * copied.
-  */
- #define	kfifo_out_spinlocked(fifo, buf, n, lock) \
--__kfifo_must_check_helper( \
-+__kfifo_uint_must_check_helper( \
- ({ \
- 	unsigned long __flags; \
- 	unsigned int __ret; \
-@@ -609,7 +615,7 @@ __kfifo_must_check_helper( \
-  * writer, you don't need extra locking to use these macro.
-  */
- #define	kfifo_from_user(fifo, from, len, copied) \
--__kfifo_must_check_helper( \
-+__kfifo_uint_must_check_helper( \
- ({ \
- 	typeof((fifo) + 1) __tmp = (fifo); \
- 	const void __user *__from = (from); \
-@@ -637,7 +643,7 @@ __kfifo_must_check_helper( \
-  * writer, you don't need extra locking to use these macro.
-  */
- #define	kfifo_to_user(fifo, to, len, copied) \
--__kfifo_must_check_helper( \
-+__kfifo_uint_must_check_helper( \
- ({ \
- 	typeof((fifo) + 1) __tmp = (fifo); \
- 	void __user *__to = (to); \
-@@ -764,7 +770,7 @@ __kfifo_must_check_helper( \
-  * writer, you don't need extra locking to use these macro.
-  */
- #define	kfifo_out_peek(fifo, buf, n) \
--__kfifo_must_check_helper( \
-+__kfifo_uint_must_check_helper( \
- ({ \
- 	typeof((fifo) + 1) __tmp = (fifo); \
- 	typeof((buf) + 1) __buf = (buf); \
--- 
-1.7.3.1
+youve got a list of 200 pr-fmt users,
+why not break them down by which format theyre using,
+and see if those formats line up with subsystems.
+Id think 6 or 7 definitions in the appropriate headers
+would give useful log-content, and avoid countless changes.
 
+KBUILD_MODNAME is always #defined by the make system.
+so if your defn built upon that, it would address all code that builds
+as modules, how many other use-cases are there ?
