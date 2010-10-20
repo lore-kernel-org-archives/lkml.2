@@ -1,56 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751490Ab0JTJI1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Oct 2010 05:08:27 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:54729 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750908Ab0JTJI0 (ORCPT
+	id S1751779Ab0JTJNm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Oct 2010 05:13:42 -0400
+Received: from smtp.nokia.com ([192.100.122.230]:54621 "EHLO
+	mgw-mx03.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750944Ab0JTJNk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Oct 2010 05:08:26 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:content-type:date:message-id:mime-version
-         :x-mailer:content-transfer-encoding;
-        b=QqT/zfigi9vIlD/f5Tz4jPZ8qvutHRva7Kpr/ftQEHScK9FQblJQAaSWdnzKqQNuc4
-         rDpqP+zIW/P0uUb5tsHr3ZLHyqGUEHW0qSKB7rPtG568lgkh3p+2MH+oRrpSyYBjrjRy
-         vZj0lxx3qBFTL939pI0C0SeiJ5yfoH8/3U7Xw=
-Subject: [PATCH] mfd: Add free max8998->ono irq in max8998_irq_exit()
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel <linux-kernel@vger.kernel.org>
-Cc: Samuel Ortiz <sameo@linux.intel.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Joonyoung Shim <jy0922.shim@samsung.com>
-Content-Type: text/plain
-Date: Wed, 20 Oct 2010 17:09:56 +0800
-Message-Id: <1287565796.7849.6.camel@mola>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.22.3.1 
+	Wed, 20 Oct 2010 05:13:40 -0400
+Message-ID: <4CBEB312.7060400@nokia.com>
+Date: Wed, 20 Oct 2010 12:14:58 +0300
+From: Roger Quadros <roger.quadros@nokia.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.9) Gecko/20100915 Thunderbird/3.1.4
+MIME-Version: 1.0
+To: "ext felipe.contreras@gmail.com" <felipe.contreras@gmail.com>
+CC: "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        linux-omap <linux-omap@vger.kernel.org>,
+        linux-main <linux-kernel@vger.kernel.org>, Greg KH <greg@kroah.com>,
+        Felipe Balbi <balbi@ti.com>, Tony Lindgren <tony@atomide.com>
+Subject: Re: [PATCH v2 3/3] drivers: cleanup Kconfig stuff
+References: <1287482608-11320-1-git-send-email-felipe.contreras@gmail.com>	<1287482608-11320-4-git-send-email-felipe.contreras@gmail.com>	<4CBD9FD5.506@nokia.com>	<AANLkTinRRyrXzqEu=u+CCYkmSNGm03SSo1tVG=5_wdpo@mail.gmail.com>	<4CBE9E69.6060803@nokia.com> <AANLkTinOYDBMVZ3ibG3Md7jdOuOC6NkGWaugvHwT6uqF@mail.gmail.com>
+In-Reply-To: <AANLkTinOYDBMVZ3ibG3Md7jdOuOC6NkGWaugvHwT6uqF@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 20 Oct 2010 09:13:30.0632 (UTC) FILETIME=[10214880:01CB7037]
+X-Nokia-AV: Unscannable
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- drivers/mfd/max8998-irq.c |    3 +++
- 1 files changed, 3 insertions(+), 0 deletions(-)
+On 10/20/2010 11:53 AM, ext felipe.contreras@gmail.com wrote:
+> On Wed, Oct 20, 2010 at 10:46 AM, Roger Quadros<roger.quadros@nokia.com>  wrote:
+>> On 10/19/2010 05:33 PM, ext Felipe Contreras wrote:
+>>> On Tue, Oct 19, 2010 at 4:40 PM, Roger Quadros<roger.quadros@nokia.com>
+>>>   wrote:
+>>>>>
+>>>>> @@ -843,6 +841,7 @@ config USB_CDC_COMPOSITE
+>>>>>   config USB_G_NOKIA
+>>>>>         tristate "Nokia composite gadget"
+>>>>>         depends on PHONET
+>>>>> +       depends on USB_GADGET_MUSB_HDRC
+>>>>
+>>>> This is wrong. Is there a build problem or run-time problem without this?
+>>>
+>>> Try:
+>>> CONFIG_USB_G_NOKIA=y
+>>> CONFIG_USB_GADGET_MUSB_HDRC=n
+>>>
+>>> At least g_nokia doesn't seem to work correctly on my N900.
+>>>
+>> It won't work on N900 because N900 has MUSB USB gadget controller and it
+>> needs to be selected somehow while building for N900.
+>>
+>> You should set CONFIG_USB_GADGET_MUSB_HDRC to y somewhere else while
+>> building for N900 and not here because g_nokia is not MUSB specific.
+>
+> How do you expect people to know that? The Kconfig should define what
+> USB_G_NOKIA needs to work, so that people can enable those things
+> without go Googling hunting for a workable defconfig. Right now people
+> can build g_nokia modules that don't work, and that shouldn't be
+> allowed by the Kconfig.
+>
 
-diff --git a/drivers/mfd/max8998-irq.c b/drivers/mfd/max8998-irq.c
-index 346fd29..45bfe77 100644
---- a/drivers/mfd/max8998-irq.c
-+++ b/drivers/mfd/max8998-irq.c
-@@ -250,6 +250,9 @@ int max8998_irq_init(struct max8998_dev *max8998)
- 
- void max8998_irq_exit(struct max8998_dev *max8998)
- {
-+	if (max8998->ono)
-+		free_irq(max8998->ono, max8998);
-+
- 	if (max8998->irq)
- 		free_irq(max8998->irq, max8998);
- }
+USB_G_NOKIA just needs a USB gadget controller to work. The gadget controller 
+used for the board should come from the board's Kconfig which will ideally be 
+supplied by the board's vendor.
+
+For example, can't USB_GADGET_MUSB_HDRC be selected in MACH_NOKIA_RX51 in 
+arch/arm/mach-omap2/Kconfig? or is there a better place to put it?
+
 -- 
-1.7.2
-
-
-
+regards,
+-roger
