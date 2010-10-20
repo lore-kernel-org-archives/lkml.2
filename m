@@ -1,37 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755493Ab0JTWJn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Oct 2010 18:09:43 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:37984 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755172Ab0JTWJm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Oct 2010 18:09:42 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: Linux 2.6.36
-Date: Thu, 21 Oct 2010 00:08:46 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.36-rc8-rjw+; KDE/4.4.4; x86_64; ; )
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-References: <AANLkTimdii2F3PsG4SxO5Zym7TB=MSGhtN+TpG=HmbcT@mail.gmail.com> <201010210002.59742.rjw@sisk.pl>
-In-Reply-To: <201010210002.59742.rjw@sisk.pl>
+	id S1755561Ab0JTWKj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Oct 2010 18:10:39 -0400
+Received: from s15228384.onlinehome-server.info ([87.106.30.177]:53632 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755333Ab0JTWKi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Oct 2010 18:10:38 -0400
+Date: Thu, 21 Oct 2010 00:11:28 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Borislav Petkov <bp@amd64.org>, "H. Peter Anvin" <hpa@linux.intel.com>,
+        "mingo@redhat.com" <mingo@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "jeremy.fitzhardinge@citrix.com" <jeremy.fitzhardinge@citrix.com>,
+        "linux-tip-commits@vger.kernel.org" 
+	<linux-tip-commits@vger.kernel.org>
+Subject: Re: [tip:x86/mm] x86, mm: Fix incorrect data type in
+ vmalloc_sync_all()
+Message-ID: <20101020221128.GA16926@aftab>
+References: <20101020103642.GA3135@kryptos.osrc.amd.com>
+ <tip-bfac67208d6d2a84fe7980187d3d2f21424dde59@git.kernel.org>
+ <20101020195046.GB16147@aftab>
+ <4CBF48C7.3050306@linux.intel.com>
+ <20101020201055.GA3971@kryptos.osrc.amd.com>
+ <4CBF4D78.1050404@zytor.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201010210008.47036.rjw@sisk.pl>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4CBF4D78.1050404@zytor.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, October 21, 2010, Rafael J. Wysocki wrote:
-> On Wednesday, October 20, 2010, Linus Torvalds wrote:
-> > So it's a week later than I wanted (plus all the days that added up
-> > from me having a few 8-day weeks during this release window), but it's
-> > out there now.
+On Wed, Oct 20, 2010 at 04:13:44PM -0400, H. Peter Anvin wrote:
+...
+
+> > From: foo
+> > Date: bar
+> > 
+> > or
+> > 
+> > On <date>, <person> said:
+> > 
+> > Hmm...
+> > 
 > 
-> Hmm, v2.6.36 doesn't seem to be present anywhere at kernel.org, AFAICS.
-> Missing tag?
+> Well, the latter can at least be edited out.
+> 
+> The former *really* gunks up git.
 
-Ah, it's there, sorry for the noise.
+this decides it then, fall back to the mutt-default. It's not like the
+former one is radically better to keep it and disrupt git workflows.
 
-Rafael
+-- 
+Regards/Gruss,
+Boris.
+
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+General Managers: Alberto Bozzo, Andrew Bowd
+Registration: Dornach, Gemeinde Aschheim, Landkreis Muenchen
+Registergericht Muenchen, HRB Nr. 43632
