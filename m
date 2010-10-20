@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932372Ab0JTGw7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Oct 2010 02:52:59 -0400
-Received: from mail.perches.com ([173.55.12.10]:3263 "EHLO mail.perches.com"
+	id S932222Ab0JTGwT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Oct 2010 02:52:19 -0400
+Received: from mail.perches.com ([173.55.12.10]:3251 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932264Ab0JTGwV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Oct 2010 02:52:21 -0400
+	id S932175Ab0JTGwS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Oct 2010 02:52:18 -0400
 From: Joe Perches <joe@perches.com>
 To: Jean Delvare <khali@linux-fr.org>,
         Guenter Roeck <guenter.roeck@ericsson.com>
 Cc: lm-sensors@lm-sensors.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 32/32] drivers/hwmon/w83781d.c: Use pr_fmt and pr_<level>
-Date: Tue, 19 Oct 2010 23:51:56 -0700
-Message-Id: <1ce82b2a1c726d252483c508053eff046abcf132.1287556801.git.joe@perches.com>
+Subject: [PATCH 25/32] drivers/hwmon/smsc47m1.c: Use pr_fmt and pr_<level>
+Date: Tue, 19 Oct 2010 23:51:49 -0700
+Message-Id: <93eb55a4b0015390c488cb8fad988c2cdd3a4686.1287556801.git.joe@perches.com>
 X-Mailer: git-send-email 1.7.3.1.g432b3.dirty
 In-Reply-To: <20101020035346.GA20178@ericsson.com>
 References: <20101020035346.GA20178@ericsson.com>
@@ -29,119 +29,114 @@ Removed prefixes from formats
 
 Signed-off-by: Joe Perches <joe@perches.com>
 ---
- drivers/hwmon/w83781d.c |   29 ++++++++++++++---------------
- 1 files changed, 14 insertions(+), 15 deletions(-)
+ drivers/hwmon/smsc47m1.c |   31 +++++++++++++++----------------
+ 1 files changed, 15 insertions(+), 16 deletions(-)
 
-diff --git a/drivers/hwmon/w83781d.c b/drivers/hwmon/w83781d.c
-index c84b9b4..d452a20 100644
---- a/drivers/hwmon/w83781d.c
-+++ b/drivers/hwmon/w83781d.c
-@@ -33,6 +33,8 @@
- 
+diff --git a/drivers/hwmon/smsc47m1.c b/drivers/hwmon/smsc47m1.c
+index 8fa462f..f44a89a 100644
+--- a/drivers/hwmon/smsc47m1.c
++++ b/drivers/hwmon/smsc47m1.c
+@@ -26,6 +26,8 @@
+     Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
  
 +#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
 +
  #include <linux/module.h>
- #include <linux/init.h>
  #include <linux/slab.h>
-@@ -1798,8 +1800,7 @@ w83781d_isa_found(unsigned short address)
- 	 * individually for the probing phase. */
- 	for (port = address; port < address + W83781D_EXTENT; port++) {
- 		if (!request_region(port, 1, "w83781d")) {
--			pr_debug("w83781d: Failed to request port 0x%x\n",
--				 port);
-+			pr_debug("Failed to request port 0x%x\n", port);
- 			goto release;
+ #include <linux/ioport.h>
+@@ -435,30 +437,29 @@ static int __init smsc47m1_find(unsigned short *addr,
+ 	 */
+ 	switch (val) {
+ 	case 0x51:
+-		pr_info(DRVNAME ": Found SMSC LPC47B27x\n");
++		pr_info("Found SMSC LPC47B27x\n");
+ 		sio_data->type = smsc47m1;
+ 		break;
+ 	case 0x59:
+-		pr_info(DRVNAME ": Found SMSC LPC47M10x/LPC47M112/LPC47M13x\n");
++		pr_info("Found SMSC LPC47M10x/LPC47M112/LPC47M13x\n");
+ 		sio_data->type = smsc47m1;
+ 		break;
+ 	case 0x5F:
+-		pr_info(DRVNAME ": Found SMSC LPC47M14x\n");
++		pr_info("Found SMSC LPC47M14x\n");
+ 		sio_data->type = smsc47m1;
+ 		break;
+ 	case 0x60:
+-		pr_info(DRVNAME ": Found SMSC LPC47M15x/LPC47M192/LPC47M997\n");
++		pr_info("Found SMSC LPC47M15x/LPC47M192/LPC47M997\n");
+ 		sio_data->type = smsc47m1;
+ 		break;
+ 	case 0x6B:
+ 		if (superio_inb(SUPERIO_REG_DEVREV) & 0x80) {
+-			pr_debug(DRVNAME ": "
+-				 "Found SMSC LPC47M233, unsupported\n");
++			pr_debug("Found SMSC LPC47M233, unsupported\n");
+ 			superio_exit();
+ 			return -ENODEV;
  		}
+ 
+-		pr_info(DRVNAME ": Found SMSC LPC47M292\n");
++		pr_info("Found SMSC LPC47M292\n");
+ 		sio_data->type = smsc47m2;
+ 		break;
+ 	default:
+@@ -470,7 +471,7 @@ static int __init smsc47m1_find(unsigned short *addr,
+ 	*addr = (superio_inb(SUPERIO_REG_BASE) << 8)
+ 	      |  superio_inb(SUPERIO_REG_BASE + 1);
+ 	if (*addr == 0) {
+-		pr_info(DRVNAME ": Device address not set, will not use\n");
++		pr_info("Device address not set, will not use\n");
+ 		superio_exit();
+ 		return -ENODEV;
  	}
-@@ -1811,7 +1812,7 @@ w83781d_isa_found(unsigned short address)
- 	if (inb_p(address + 2) != val
- 	 || inb_p(address + 3) != val
- 	 || inb_p(address + 7) != val) {
--		pr_debug("w83781d: Detection failed at step 1\n");
-+		pr_debug("Detection failed at step 1\n");
- 		goto release;
- 	}
- #undef REALLY_SLOW_IO
-@@ -1820,14 +1821,14 @@ w83781d_isa_found(unsigned short address)
- 	   MSB (busy flag) should be clear initially, set after the write. */
- 	save = inb_p(address + W83781D_ADDR_REG_OFFSET);
- 	if (save & 0x80) {
--		pr_debug("w83781d: Detection failed at step 2\n");
-+		pr_debug("Detection failed at step 2\n");
- 		goto release;
- 	}
- 	val = ~save & 0x7f;
- 	outb_p(val, address + W83781D_ADDR_REG_OFFSET);
- 	if (inb_p(address + W83781D_ADDR_REG_OFFSET) != (val | 0x80)) {
- 		outb_p(save, address + W83781D_ADDR_REG_OFFSET);
--		pr_debug("w83781d: Detection failed at step 3\n");
-+		pr_debug("Detection failed at step 3\n");
- 		goto release;
+@@ -479,7 +480,7 @@ static int __init smsc47m1_find(unsigned short *addr,
+ 	 * Compaq Presario S4000NX) */
+ 	sio_data->activate = superio_inb(SUPERIO_REG_ACT);
+ 	if ((sio_data->activate & 0x01) == 0) {
+-		pr_info(DRVNAME ": Enabling device\n");
++		pr_info("Enabling device\n");
+ 		superio_outb(SUPERIO_REG_ACT, sio_data->activate | 0x01);
  	}
  
-@@ -1835,7 +1836,7 @@ w83781d_isa_found(unsigned short address)
- 	outb_p(W83781D_REG_CONFIG, address + W83781D_ADDR_REG_OFFSET);
- 	val = inb_p(address + W83781D_DATA_REG_OFFSET);
- 	if (val & 0x80) {
--		pr_debug("w83781d: Detection failed at step 4\n");
-+		pr_debug("Detection failed at step 4\n");
- 		goto release;
- 	}
- 	outb_p(W83781D_REG_BANK, address + W83781D_ADDR_REG_OFFSET);
-@@ -1844,19 +1845,19 @@ w83781d_isa_found(unsigned short address)
- 	val = inb_p(address + W83781D_DATA_REG_OFFSET);
- 	if ((!(save & 0x80) && (val != 0xa3))
- 	 || ((save & 0x80) && (val != 0x5c))) {
--		pr_debug("w83781d: Detection failed at step 5\n");
-+		pr_debug("Detection failed at step 5\n");
- 		goto release;
- 	}
- 	outb_p(W83781D_REG_I2C_ADDR, address + W83781D_ADDR_REG_OFFSET);
- 	val = inb_p(address + W83781D_DATA_REG_OFFSET);
- 	if (val < 0x03 || val > 0x77) {	/* Not a valid I2C address */
--		pr_debug("w83781d: Detection failed at step 6\n");
-+		pr_debug("Detection failed at step 6\n");
- 		goto release;
- 	}
+@@ -494,7 +495,7 @@ static void smsc47m1_restore(const struct smsc47m1_sio_data *sio_data)
+ 		superio_enter();
+ 		superio_select();
  
- 	/* The busy flag should be clear again */
- 	if (inb_p(address + W83781D_ADDR_REG_OFFSET) & 0x80) {
--		pr_debug("w83781d: Detection failed at step 7\n");
-+		pr_debug("Detection failed at step 7\n");
- 		goto release;
- 	}
+-		pr_info(DRVNAME ": Disabling device\n");
++		pr_info("Disabling device\n");
+ 		superio_outb(SUPERIO_REG_ACT, sio_data->activate);
  
-@@ -1871,7 +1872,7 @@ w83781d_isa_found(unsigned short address)
- 		found = 1;
- 
- 	if (found)
--		pr_info("w83781d: Found a %s chip at %#x\n",
-+		pr_info("Found a %s chip at %#x\n",
- 			val == 0x30 ? "W83782D" : "W83781D", (int)address);
- 
-  release:
-@@ -1894,21 +1895,19 @@ w83781d_isa_device_add(unsigned short address)
- 	pdev = platform_device_alloc("w83781d", address);
+ 		superio_exit();
+@@ -823,28 +824,26 @@ static int __init smsc47m1_device_add(unsigned short address,
+ 	pdev = platform_device_alloc(DRVNAME, address);
  	if (!pdev) {
  		err = -ENOMEM;
--		printk(KERN_ERR "w83781d: Device allocation failed\n");
+-		printk(KERN_ERR DRVNAME ": Device allocation failed\n");
 +		pr_err("Device allocation failed\n");
  		goto exit;
  	}
  
  	err = platform_device_add_resources(pdev, &res, 1);
  	if (err) {
--		printk(KERN_ERR "w83781d: Device resource addition failed "
+-		printk(KERN_ERR DRVNAME ": Device resource addition failed "
 -		       "(%d)\n", err);
 +		pr_err("Device resource addition failed (%d)\n", err);
  		goto exit_device_put;
  	}
  
+ 	err = platform_device_add_data(pdev, sio_data,
+ 				       sizeof(struct smsc47m1_sio_data));
+ 	if (err) {
+-		printk(KERN_ERR DRVNAME ": Platform data allocation failed\n");
++		pr_err("Platform data allocation failed\n");
+ 		goto exit_device_put;
+ 	}
+ 
  	err = platform_device_add(pdev);
  	if (err) {
--		printk(KERN_ERR "w83781d: Device addition failed (%d)\n",
+-		printk(KERN_ERR DRVNAME ": Device addition failed (%d)\n",
 -		       err);
 +		pr_err("Device addition failed (%d)\n", err);
  		goto exit_device_put;
