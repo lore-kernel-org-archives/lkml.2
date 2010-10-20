@@ -1,67 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751646Ab0JTNGi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Oct 2010 09:06:38 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:37280 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750762Ab0JTNGh (ORCPT
+	id S1751179Ab0JTNJH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Oct 2010 09:09:07 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:38969 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750875Ab0JTNJG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Oct 2010 09:06:37 -0400
-X-Authority-Analysis: v=1.1 cv=kXGwZUU/u1JTMRv8Axk4W0omja+vfTT+sGlOkodD8F8= c=1 sm=0 a=r7vHpovKClYA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=7d_E57ReAAAA:8 a=meVymXHHAAAA:8 a=qyGgBq6Egb8k_feRqDMA:9 a=TO1xO2AdWe8j_sr-ghJWz_Gf7LIA:4 a=PUjeQqilurYA:10 a=D6-X0JM3zdQA:10 a=Zh68SRI7RUMA:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: [PATCH 2/5] ring-buffer: Bind time extend and data events
- together
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-In-Reply-To: <alpine.LFD.2.00.1010192244290.6815@localhost6.localdomain6>
-References: <20101019175432.854431527@goodmis.org>
-	 <20101019194203.807907304@goodmis.org>
-	 <alpine.LFD.2.00.1010192244290.6815@localhost6.localdomain6>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Wed, 20 Oct 2010 09:06:33 -0400
-Message-ID: <1287579993.16971.552.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	Wed, 20 Oct 2010 09:09:06 -0400
+Date: Wed, 20 Oct 2010 15:09:03 +0200
+From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: Dinh.Nguyen@freescale.com, linux-kernel@vger.kernel.org,
+        linux@arm.linux.org.uk, s.hauer@pengutronix.de,
+        grant.likely@secretlab.ca, linux-arm-kernel@lists.infradead.org,
+        daniel@caiaq.de, xiao-lizhang@freescale.com,
+        valentin.longchamp@epfl.ch
+Subject: Re: [PATCH] ARM: imx: change mx51.h into mx5x.h
+Message-ID: <20101020130903.GA19834@pengutronix.de>
+References: <1287525423-22329-1-git-send-email-Dinh.Nguyen@freescale.com> <20101020090122.GH28166@pengutronix.de> <20101020113550.GL2562@matterhorn.lan>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20101020113550.GL2562@matterhorn.lan>
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-10-19 at 22:46 +0200, Thomas Gleixner wrote:
-> On Tue, 19 Oct 2010, Steven Rostedt wrote:
+Hello Amit,
 
-> > Suggested-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-> > Cc: Thomas Gleixner <tglx@linutronix.de>
-> > Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-> > ---
-> >  include/linux/ring_buffer.h |   12 --
-> >  kernel/trace/ring_buffer.c  |  283 +++++++++++++++++++++++--------------------
-> >  2 files changed, 154 insertions(+), 141 deletions(-)
+On Wed, Oct 20, 2010 at 02:35:50PM +0300, Amit Kucheria wrote:
+> On 10 Oct 20, Uwe Kleine-König wrote:
+> > Hello Dinh,
+> > 
+> > On Tue, Oct 19, 2010 at 04:57:03PM -0500, Dinh.Nguyen@freescale.com wrote:
+> > > From: Dinh Nguyen <Dinh.Nguyen@freescale.com>
+> > > 
+> > > In preparation for submitting i.MX53 support, change mx51.h to
+> > > mx5x.h so that mx5x.h can contain MX53 information as well.
+> > Last time I found time to clean up the imx ports I worked hard that e.g.
+> > mx27 machines only used MX27_ prefixed symbols, not the MX2x_ ones.  (I
+> > don't remember off-hand if I was done, so there might be a few users
+> > left.)
+> > 
+> > I'd prefer to just add an mx53.h instead.
 > 
-> Is there no way to make this change a bit more finegrained,
-> i.e. incremental patches ?
+> Perhaps this is a good time to ask the question - Why?
 > 
-> Thanks,
+> mx53.h will duplicate (almost) everything in mx51.h. And any fixes made to
+> mx51.h won't make it to mx53.h
+Yep, that's the pro side of having a single header file for both mx51
+and mx53.  On the negative side we have:
 
-There's probably a little I can add incrementally, but the main change
-that this does is that the ring buffer can return either a data type or
-time extend type (which has a data type appended to it).
+ - When changing mx5x.h you always have to check (now) two reference
+   manuals, later maybe more.
+ - When Freescale decides to create a (say) mx56 that is totally
+   different, you can be happy not to have constants starting with MX5X.
+   (This happened to the MX2X constants when Freescale created mx25, not
+   to mention mx23 and mx28.)
 
-Luckily, the interface to the ring buffer has all be encapsulated, so
-the only changes need to be made in ring_buffer.[ch]. All interfaces
-that take a event type needs to check if it is a data or time extend.
-Which is why the patch looks so big. But these changes are contained in
-this file.
+I admit that *now* it would be easier to just rename mx51.h to mx5x.h,
+but for the long run keeping mx51.h is better, I'm sure.
 
-But there's some clean ups that this patch did, I can pull them out and
-submit again.
+Best regards
+Uwe
 
-Thanks,
-
--- Steve
-
-
+-- 
+Pengutronix e.K.                           | Uwe Kleine-König            |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
