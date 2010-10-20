@@ -1,73 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752648Ab0JTJ4q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Oct 2010 05:56:46 -0400
-Received: from mail4.hitachi.co.jp ([133.145.228.5]:35815 "EHLO
-	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751251Ab0JTJ4n (ORCPT
+	id S1752629Ab0JTKBW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Oct 2010 06:01:22 -0400
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:37663 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751251Ab0JTKBV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Oct 2010 05:56:43 -0400
-X-AuditID: b753bd60-a7adaba000000a18-8c-4cbebcd73c93
-Message-ID: <4CBEBCD4.7030800@hitachi.com>
-Date: Wed, 20 Oct 2010 18:56:36 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Systems Development Lab., Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.9) Gecko/20100915 Thunderbird/3.1.4
+	Wed, 20 Oct 2010 06:01:21 -0400
 MIME-Version: 1.0
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Christoph Hellwig <hch@infradead.org>, Oleg Nesterov <oleg@redhat.com>,
-        Mark Wielaard <mjw@redhat.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Naren A Devaiah <naren.devaiah@in.ibm.com>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        "Frank Ch. Eigler" <fche@redhat.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        2nddept-manager@sdl.hitachi.co.jp
-Subject: Re: [PATCHv11a 2.6.36-rc2-tip 12/15] 12: perf: show possible probes
- in a given file.
-References: <20100825134117.5447.55209.sendpatchset@localhost6.localdomain6> <20100825134343.5447.44352.sendpatchset@localhost6.localdomain6> <20100827142144.GE5444@linux.vnet.ibm.com>
-In-Reply-To: <20100827142144.GE5444@linux.vnet.ibm.com>
+X-Originating-IP: [109.186.69.160]
+In-Reply-To: <AANLkTikPnm1NK1wGGzbOuNoCOnAcSp=RC8mTW2yx3u0s@mail.gmail.com>
+References: <1287387875-14168-1-git-send-email-ohad@wizery.com>
+ <1287531090.9245.139.camel@c-dwalke-linux.qualcomm.com> <AANLkTikPnm1NK1wGGzbOuNoCOnAcSp=RC8mTW2yx3u0s@mail.gmail.com>
+From: Ohad Ben-Cohen <ohad@wizery.com>
+Date: Wed, 20 Oct 2010 12:00:59 +0200
+Message-ID: <AANLkTimSL3UN6V45-+x7+wyT9Oz1Jfy+LesAUxMcPNqd@mail.gmail.com>
+Subject: Re: [PATCH 0/3] Add OMAP hardware spinlock misc driver
+To: Daniel Walker <dwalker@codeaurora.org>
+Cc: linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, akpm@linux-foundation.org,
+        Greg KH <greg@kroah.com>, Tony Lindgren <tony@atomide.com>,
+        Benoit Cousson <b-cousson@ti.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Hari Kanigeri <h-kanigeri2@ti.com>, Suman Anna <s-anna@ti.com>,
+        mattw@codeaurora.org, Russell King <linux@arm.linux.org.uk>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
-X-FMFTCR: RANGEA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Srikar,
+[resubmitting due to l-o being dropped from this discussion fork.
+Thanks Russell for catching this]
 
-(2010/08/27 23:21), Srikar Dronamraju wrote:
-> Introduces -S/--show_functions option for perf-probe.
-> This lists function names in a File. If no file is specified, then lists
-> functions in the current running kernel.
+ On Wed, Oct 20, 2010 at 1:31 AM, Daniel Walker <dwalker@codeaurora.org> wrote:
+> On Mon, 2010-10-18 at 09:44 +0200, Ohad Ben-Cohen wrote:
+>> OMAP4 introduces a Spinlock hardware module, which provides hardware
+>> assistance for synchronization and mutual exclusion between heterogeneous
+>> processors and those not operating under a single, shared operating system
+>> (e.g. OMAP4 has dual Cortex-A9, dual Cortex-M3 and a C64x+ DSP).
+>>
+>> The intention of this hardware module is to allow remote processors,
+>> that have no alternative mechanism to accomplish synchronization and mutual
+>> exclusion operations, to share resources (such as memory and/or any other
+>> hardware resource).
+>>
+>> This patchset adds a new misc driver for this OMAP hwspinlock module.
+>
+> Does this code interface with some hardware unit (other than the other
+> processors) to accomplish this locking ?
 
-Hmm, I think the basic functionality of this patch (I mean
-functions in running kernel) could be merged separately
-from this series.
+ Yes, it's a special-purpose hardware peripheral.
 
+> The reason I ask is because MSM has similar code, and from what I can
+> tell the MSM version has some structures in memory but that's all. It
+> just operates on the structures in memory.
 
-> +	OPT_BOOLEAN('S', "show_functions", &params.list_functions,
-> +				"Show potential probes."),
-> +	OPT_CALLBACK('D', "limit_dsos", NULL, "DSO",
-> +				"Limit Dsos.", opt_limit_dsos),
+ That's interesting.
 
-However, I'd rather use --funcs/-F and --dso/-D instead of
-above. :)
+ We did have thoughts of making this a generic framework, in the hope
+ that it would be useful for other vendors too, but we didn't find
+ additional users.
 
-Thank you,
+> It might be worth looking over the two implementation so we aren't both
+> remaking the wheel.
 
--- 
-Masami HIRAMATSU
-2nd Dept. Linux Technology Center
-Hitachi, Ltd., Systems Development Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
+ Indeed. Where is that MSM code ?
+
+ Thanks,
+ Ohad.
