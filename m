@@ -1,216 +1,174 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753174Ab0JTOXm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Oct 2010 10:23:42 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:45611 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752134Ab0JTOXk (ORCPT
+	id S1753217Ab0JTO0A (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Oct 2010 10:26:00 -0400
+Received: from casper.infradead.org ([85.118.1.10]:50459 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753134Ab0JTOZ7 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Oct 2010 10:23:40 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=IXsPMac+dX2yDpVtXO1GE3bNDHUCM+Pp6eagX5OrUPjv92C+bA/ogFAQAkq01VORzo
-         OH/k9Wmlp4y/KoXzdx/8V/Wx3vbW3581ZwtthqTLSkqjgs9olM6YcWy219bqriZPY2CL
-         8IZDJhSLeRsOUUz0ODireHKeS2Q53N0pDbgq8=
-Date: Wed, 20 Oct 2010 23:23:26 +0900
-From: Minchan Kim <minchan.kim@gmail.com>
-To: Torsten Kaiser <just.for.lkml@googlemail.com>
-Cc: Wu Fengguang <fengguang.wu@intel.com>, Neil Brown <neilb@suse.de>,
-        Rik van Riel <riel@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "Li, Shaohua" <shaohua.li@intel.com>
-Subject: Re: Deadlock possibly caused by too_many_isolated.
-Message-ID: <20101020142326.GA5243@barrios-desktop>
-References: <20100915122334.3fa7b35f@notabene>
- <20100915082843.GA17252@localhost>
- <20100915184434.18e2d933@notabene>
- <20101018151459.2b443221@notabene>
- <AANLkTimv_zXHdFDGa9ecgXyWmQynOKTDRPC59PZA9mvL@mail.gmail.com>
- <20101019101151.57c6dd56@notabene>
- <AANLkTin3wXWwA-HXhjx6wvzznp3p57Pg6fee8YNkZB79@mail.gmail.com>
- <AANLkTimVu+5gTDs8przJVP2EbWC=FX-zWW7aH08BtrHC@mail.gmail.com>
- <20101020055717.GA12752@localhost>
- <AANLkTinC=xcgfwgXw8Tr-Q_cnxZakjj_W=HwQRV+5vkd@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTinC=xcgfwgXw8Tr-Q_cnxZakjj_W=HwQRV+5vkd@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Wed, 20 Oct 2010 10:25:59 -0400
+Subject: Re: High CPU load when machine is idle (related to PROBLEM:
+ Unusually high load average when idle in 2.6.35, 2.6.35.1 and later)
+From: Peter Zijlstra <peterz@infradead.org>
+To: Damien Wyart <damien.wyart@free.fr>
+Cc: Chase Douglas <chase.douglas@canonical.com>, Ingo Molnar <mingo@elte.hu>,
+        tmhikaru@gmail.com, Thomas Gleixner <tglx@linutronix.de>,
+        linux-kernel@vger.kernel.org, Venkatesh Pallipadi <venki@google.com>
+In-Reply-To: <1287584073.3488.22.camel@twins>
+References: <20100929070153.GA2200@brouette>
+	 <20101014145813.GA2185@brouette>  <20101020132732.GA30024@brouette>
+	 <1287581440.3488.16.camel@twins>  <1287582208.3488.20.camel@twins>
+	 <1287584073.3488.22.camel@twins>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Wed, 20 Oct 2010 16:25:49 +0200
+Message-ID: <1287584749.3488.26.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello
+On Wed, 2010-10-20 at 16:14 +0200, Peter Zijlstra wrote:
 
-On Wed, Oct 20, 2010 at 09:25:49AM +0200, Torsten Kaiser wrote:
-> On Wed, Oct 20, 2010 at 7:57 AM, Wu Fengguang <fengguang.wu@intel.com> wrote:
-> > On Tue, Oct 19, 2010 at 06:06:21PM +0800, Torsten Kaiser wrote:
-> >> swap_writepage() uses get_swap_bio() which uses bio_alloc() to get one
-> >> bio. That bio is the submitted, but the submit path seems to get into
-> >> make_request from raid1.c and that allocates a second bio from
-> >> bio_alloc() via bio_clone().
-> >>
-> >> I am seeing this pattern (swap_writepage calling
-> >> md_make_request/make_request and then getting stuck in mempool_alloc)
-> >> more than 5 times in the SysRq+T output...
-> >
-> > I bet the root cause is the failure of pool->alloc(__GFP_NORETRY)
-> > inside mempool_alloc(), which can be fixed by this patch.
+> ---
+>  include/linux/sched.h    |    8 ++++++++
+>  kernel/sched.c           |   28 +++++++++++++++++++++-------
+>  kernel/sched_idletask.c  |    1 -
+>  kernel/time/tick-sched.c |    2 ++
+>  4 files changed, 31 insertions(+), 8 deletions(-)
 > 
-> No. I tested the patch (ontop of Neils fix and your patch regarding
-> too_many_isolated()), but the system got stuck the same way on the
-> first try to fill the tmpfs.
-> I think the basic problem is, that the mempool that should guarantee
-> progress is exhausted because the raid1 device is stacked between the
-> pageout code and the disks and so the "use only 1 bio"-rule gets
-> violated.
+> diff --git a/include/linux/sched.h b/include/linux/sched.h
+> index 0383601..5311ef4 100644
+> --- a/include/linux/sched.h
+> +++ b/include/linux/sched.h
+> @@ -145,6 +145,14 @@ extern unsigned long this_cpu_load(void);
+>  
+>  extern void calc_global_load(void);
+>  
+> +#ifdef CONFIG_NO_HZ
+> +extern void calc_load_account_idle(void);
+> +extern void calc_load_account_nonidle(void);
+> +#else
+> +static inline void calc_load_account_idle(void) { }
+> +static inline void calc_load_account_nonidle(void) { }
+> +#endif
+> +
+>  extern unsigned long get_parent_ip(unsigned long addr);
+>  
+>  struct seq_file;
+> diff --git a/kernel/sched.c b/kernel/sched.c
+> index abf8440..79a29e6 100644
+> --- a/kernel/sched.c
+> +++ b/kernel/sched.c
+> @@ -526,6 +526,10 @@ struct rq {
+>  	/* calc_load related fields */
+>  	unsigned long calc_load_update;
+>  	long calc_load_active;
+> +#ifdef CONFIG_NO_HZ
+> +	long calc_load_inactive;
+> +	int calc_load_seq;
+> +#endif
+>  
+>  #ifdef CONFIG_SCHED_HRTICK
+>  #ifdef CONFIG_SMP
+> @@ -1833,7 +1837,6 @@ static void cfs_rq_set_shares(struct cfs_rq *cfs_rq, unsigned long shares)
+>  }
+>  #endif
+>  
+> -static void calc_load_account_idle(struct rq *this_rq);
+>  static void update_sysctl(void);
+>  static int get_update_sysctl_factor(void);
+>  static void update_cpu_load(struct rq *this_rq);
+> @@ -3111,16 +3114,29 @@ static long calc_load_fold_active(struct rq *this_rq)
+>   * When making the ILB scale, we should try to pull this in as well.
+>   */
+>  static atomic_long_t calc_load_tasks_idle;
+> +static atomic_t calc_load_seq;
+>  
+> -static void calc_load_account_idle(struct rq *this_rq)
+> +void calc_load_account_idle(void)
+>  {
+> +	struct rq *this_rq = this_rq();
+>  	long delta;
+>  
+>  	delta = calc_load_fold_active(this_rq);
+> +	this_rq->calc_load_inactive = delta;
+> +	this_rq->calc_load_seq = atomic_read(&calc_load_seq);
+> +
+>  	if (delta)
+>  		atomic_long_add(delta, &calc_load_tasks_idle);
+>  }
+>  
+> +void calc_load_account_nonidle(void)
+> +{
+> +	struct rq *this_rq = this_rq();
+> +
+> +	if (atomic_read(&calc_load_seq) == this_rq->calc_load_seq)
+> +		atomic_long_add(this_rq->calc_load_inactive, &calc_load_tasks_idle);
+
+So that should read: that atomic_long_sub()
+
+Trouble is, load goes down with that patch fixed, it just never goes
+up :/
+
+
+> +}
+> +
+>  static long calc_load_fold_idle(void)
+>  {
+>  	long delta = 0;
+> @@ -3128,16 +3144,14 @@ static long calc_load_fold_idle(void)
+>  	/*
+>  	 * Its got a race, we don't care...
+>  	 */
+> -	if (atomic_long_read(&calc_load_tasks_idle))
+> +	if (atomic_long_read(&calc_load_tasks_idle)) {
+> +		atomic_inc(&calc_load_seq);
+>  		delta = atomic_long_xchg(&calc_load_tasks_idle, 0);
+> +	}
+>  
+>  	return delta;
+>  }
+>  #else
+> -static void calc_load_account_idle(struct rq *this_rq)
+> -{
+> -}
+> -
+>  static inline long calc_load_fold_idle(void)
+>  {
+>  	return 0;
+> diff --git a/kernel/sched_idletask.c b/kernel/sched_idletask.c
+> index 9fa0f402..6ca191f 100644
+> --- a/kernel/sched_idletask.c
+> +++ b/kernel/sched_idletask.c
+> @@ -23,7 +23,6 @@ static void check_preempt_curr_idle(struct rq *rq, struct task_struct *p, int fl
+>  static struct task_struct *pick_next_task_idle(struct rq *rq)
+>  {
+>  	schedstat_inc(rq, sched_goidle);
+> -	calc_load_account_idle(rq);
+>  	return rq->idle;
+>  }
+>  
+> diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
+> index 3e216e0..808abd7 100644
+> --- a/kernel/time/tick-sched.c
+> +++ b/kernel/time/tick-sched.c
+> @@ -411,6 +411,7 @@ void tick_nohz_stop_sched_tick(int inidle)
+>  			ts->tick_stopped = 1;
+>  			ts->idle_jiffies = last_jiffies;
+>  			rcu_enter_nohz();
+> +			calc_load_account_idle();
+>  		}
+>  
+>  		ts->idle_sleeps++;
+> @@ -520,6 +521,7 @@ void tick_nohz_restart_sched_tick(void)
+>  
+>  	ts->inidle = 0;
+>  
+> +	calc_load_account_nonidle();
+>  	rcu_exit_nohz();
+>  
+>  	/* Update jiffies first */
 > 
-> > Thanks,
-> > Fengguang
-> > ---
-> >
-> > concurrent direct page reclaim problem
-> >
-> > ?__GFP_NORETRY page allocations may fail when there are many concurrent page
-> > ?allocating tasks, but not necessary in real short of memory. The root cause
-> > ?is, tasks will first run direct page reclaim to free some pages from the LRU
-> > ?lists and put them to the per-cpu page lists and the buddy system, and then
-> > ?try to get a free page from there. ?However the free pages reclaimed by this
-> > ?task may be consumed by other tasks when the direct reclaim task is able to
-> > ?get the free page for itself.
-> 
-> I believe the facts disagree with that assumtion. My bad for not
-> posting this before, but I also used SysRq+M to see whats going on,
-> but each time there still was some free memory.
-> Here is the SysRq+M output from the run with only Neils patch applied,
-> but on each other run the same ~14Mb stayed free
 
-
-What is your problem?(Sorry if you explained it several time).
-I read the thread. 
-It seems Wu's patch solved deadlock problem by FS lock holding and too_many_isolated.
-What is the problem remained in your case? unusable system by swapstorm?
-If it is, I think it's expected behavior. Please see the below comment. 
-(If I don't catch your point, Please explain your problem.)
-
-> 
-> [  437.481365] SysRq : Show Memory
-> [  437.490003] Mem-Info:
-> [  437.491357] Node 0 DMA per-cpu:
-> [  437.500032] CPU    0: hi:    0, btch:   1 usd:   0
-> [  437.500032] CPU    1: hi:    0, btch:   1 usd:   0
-> [  437.500032] CPU    2: hi:    0, btch:   1 usd:   0
-> [  437.500032] CPU    3: hi:    0, btch:   1 usd:   0
-> [  437.500032] Node 0 DMA32 per-cpu:
-> [  437.500032] CPU    0: hi:  186, btch:  31 usd: 138
-> [  437.500032] CPU    1: hi:  186, btch:  31 usd:  30
-> [  437.500032] CPU    2: hi:  186, btch:  31 usd:   0
-> [  437.500032] CPU    3: hi:  186, btch:  31 usd:   0
-> [  437.500032] Node 1 DMA32 per-cpu:
-> [  437.500032] CPU    0: hi:  186, btch:  31 usd:   0
-> [  437.500032] CPU    1: hi:  186, btch:  31 usd:   0
-> [  437.500032] CPU    2: hi:  186, btch:  31 usd:   0
-> [  437.500032] CPU    3: hi:  186, btch:  31 usd:   0
-> [  437.500032] Node 1 Normal per-cpu:
-> [  437.500032] CPU    0: hi:  186, btch:  31 usd:   0
-> [  437.500032] CPU    1: hi:  186, btch:  31 usd:   0
-> [  437.500032] CPU    2: hi:  186, btch:  31 usd:  25
-> [  437.500032] CPU    3: hi:  186, btch:  31 usd:  30
-> [  437.500032] active_anon:2039 inactive_anon:985233 isolated_anon:682
-> [  437.500032]  active_file:1667 inactive_file:1723 isolated_file:0
-> [  437.500032]  unevictable:0 dirty:0 writeback:25387 unstable:0
-> [  437.500032]  free:3471 slab_reclaimable:2840 slab_unreclaimable:6337
-> [  437.500032]  mapped:1284 shmem:960501 pagetables:523 bounce:0
-> [  437.500032] Node 0 DMA free:8008kB min:28kB low:32kB high:40kB
-> active_anon:0kB inact
-> ive_anon:7596kB active_file:12kB inactive_file:0kB unevictable:0kB
-> isolated(anon):0kB i
-> solated(file):0kB present:15768kB mlocked:0kB dirty:0kB
-> writeback:404kB mapped:0kB shme
-> m:7192kB slab_reclaimable:32kB slab_unreclaimable:304kB
-> kernel_stack:0kB pagetables:0kB
->  unstable:0kB bounce:0kB writeback_tmp:0kB pages_scanned:118
-> all_unreclaimable? no
-> [  437.500032] lowmem_reserve[]: 0 2004 2004 2004
-
-Node 0 DMA : free 8008K but lowmem_reserve 8012K(2004 pages)
-So page allocator can't allocate the page unless preferred zone is DMA
-
-> [  437.500032] Node 0 DMA32 free:2980kB min:4036kB low:5044kB
-> high:6052kB active_anon:2
-> 844kB inactive_anon:1918424kB active_file:3428kB inactive_file:3780kB
-> unevictable:0kB isolated(anon):1232kB isolated(file):0kB
-> present:2052320kB mlocked:0kB dirty:0kB writeback:72016kB
-> mapped:2232kB shmem:1847640kB slab_reclaimable:5444kB
-> slab_unreclaimable:13508kB kernel_stack:744kB pagetables:864kB
-> unstable:0kB bounce:0kB writeback_tmp:0kB pages_scanned:0
-> all_unreclaimable? no
-> [  437.500032] lowmem_reserve[]: 0 0 0 0
-
-Node 0 DMA32 : free 2980K but min 4036K.
-Few file LRU compare to anon LRU
-
-Normally, it could fail to allocate the page. 
-'Normal' means caller doesn't request alloc_pages with __GFP_HIGH or !__GFP_WAIT
-Generally many call sites don't pass gfp_flag with __GFP_HIGH|!__GFP_WAIT.
-
-> [  437.500032] Node 1 DMA32 free:2188kB min:3036kB low:3792kB
-> high:4552kB active_anon:0kB inactive_anon:1555368kB active_file:0kB
-> inactive_file:28kB unevictable:0kB isolated(anon):768kB
-> isolated(file):0kB present:1544000kB mlocked:0kB dirty:0kB
-> writeback:21160kB mapped:0kB shmem:1534960kB slab_reclaimable:3728kB
-> slab_unreclaimable:7076kB kernel_stack:8kB pagetables:0kB unstable:0kB
-> bounce:0kB writeback_tmp:0kB pages_scanned:0 all_unreclaimable? no
-> [  437.500032] lowmem_reserve[]: 0 0 505 505
-
-Node 1 DMA32 free : 2188K min 3036K 
-It's a same situation with Node 0 DMA32. 
-Normally, it could fail to allocate the page. 
-Few file LRU compare to anon LRU
-
-
-> [  437.500032] Node 1 Normal free:708kB min:1016kB low:1268kB
-> high:1524kB active_anon:5312kB inactive_anon:459544kB
-> active_file:3228kB inactive_file:3084kB unevictable:0kB
-> isolated(anon):728kB isolated(file):0kB present:517120kB mlocked:0kB
-> dirty:0kB writeback:7968kB mapped:2904kB shmem:452212kB
-> slab_reclaimable:2156kB slab_unreclaimable:4460kB kernel_stack:200kB
-> pagetables:1228kB unstable:0kB bounce:0kB writeback_tmp:0kB
-> pages_scanned:9678 all_unreclaimable? no
-> [  437.500032] lowmem_reserve[]: 0 0 0 0
-
-Node 1 Normal : free 708K min 1016K 
-Normally, it could fail to allocate the page. 
-Few file LRU compare to anon LRU
-
-> [  437.500032] Node 0 DMA: 2*4kB 2*8kB 1*16kB 3*32kB 3*64kB 4*128kB
-> 4*256kB 2*512kB 1*1024kB 2*2048kB 0*4096kB = 8008kB
-> [  437.500032] Node 0 DMA32: 27*4kB 15*8kB 8*16kB 8*32kB 7*64kB
-> 1*128kB 1*256kB 1*512kB 1*1024kB 0*2048kB 0*4096kB = 2980kB
-> [  437.500032] Node 1 DMA32: 1*4kB 6*8kB 3*16kB 1*32kB 0*64kB 1*128kB
-> 0*256kB 0*512kB 0*1024kB 1*2048kB 0*4096kB = 2308kB
-> [  437.500032] Node 1 Normal: 39*4kB 13*8kB 10*16kB 3*32kB 1*64kB
-> 1*128kB 0*256kB 0*512kB 0*1024kB 0*2048kB 0*4096kB = 708kB
-> [  437.500032] 989289 total pagecache pages
-> [  437.500032] 25398 pages in swap cache
-> [  437.500032] Swap cache stats: add 859204, delete 833806, find 28/39
-> [  437.500032] Free swap  = 9865628kB
-> [  437.500032] Total swap = 10000316kB
-> [  437.500032] 1048575 pages RAM
-> [  437.500032] 33809 pages reserved
-> [  437.500032] 7996 pages shared
-> [  437.500032] 1008521 pages non-shared
-> 
-All zones don't have enough pages and don't have enough file lru pages.
-So swapout is expected behavior, I think.
-It means your workload exceeds your system available DRAM size.
-
--- 
-Kind regards,
-Minchan Kim
