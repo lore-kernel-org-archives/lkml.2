@@ -1,60 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756205Ab0JTXPu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Oct 2010 19:15:50 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:39819 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754937Ab0JTXPt (ORCPT
+	id S1756249Ab0JTXSW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Oct 2010 19:18:22 -0400
+Received: from exprod7og124.obsmtp.com ([64.18.2.26]:41778 "EHLO
+	exprod7og124.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755970Ab0JTXSV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Oct 2010 19:15:49 -0400
-Date: Wed, 20 Oct 2010 16:15:47 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: "N.P.S." <napohybelskurwysynom2010@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Removal of duplicate includes from many files
-Message-Id: <20101020161547.0c9d95cc.akpm@linux-foundation.org>
-In-Reply-To: <4CBF6602.3070801@gmail.com>
-References: <201009282344.o8SNiliN024981@imap1.linux-foundation.org>
-	<AANLkTikapE3RaVVFS3yBSGmCkMGUvfZECJq5eOmayWhZ@mail.gmail.com>
-	<4CA4D61C.2010909@gmail.com>
-	<4CA4E76E.1050602@gmail.com>
-	<20101004161600.8cdf4e0c.akpm@linux-foundation.org>
-	<AANLkTimmQmQU4fE9ku_wc8x_dPEfnjgOHWSM18O0=coa@mail.gmail.com>
-	<4CBF6602.3070801@gmail.com>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Wed, 20 Oct 2010 19:18:21 -0400
+Message-ID: <4CBF78B6.90002@genband.com>
+Date: Wed, 20 Oct 2010 17:18:14 -0600
+From: Chris Friesen <chris.friesen@genband.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc11 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: netdev@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: [BUG] problems with "ip xfrm" on 32-bit userspace with 64-bit kernel
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 20 Oct 2010 23:18:16.0275 (UTC) FILETIME=[1320A230:01CB70AD]
+X-TM-AS-Product-Ver: SMEX-8.0.0.4160-6.500.1024-17716.002
+X-TM-AS-Result: No--23.519600-5.000000-31
+X-TM-AS-User-Approved-Sender: No
+X-TM-AS-User-Blocked-Sender: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 20 Oct 2010 23:58:26 +0200
-"N.P.S." <napohybelskurwysynom2010@gmail.com> wrote:
 
-> W dniu 2010-10-05 01:33, Zimny Lech pisze:
-> > 2010/10/5 Andrew Morton<akpm@linux-foundation.org>:
-> >> Removal of duplicated includes is a somewhat dangerous thing.  If
-> >> someone else says "hey, there's a duplicated include" and then fixes
-> >> it, and if this patch removes the other include then whoops, we broke
-> >> the build.  This has happened before.
-> > Yeah, right.
-> >
-> >> So I'd ask that you redo and resend this patch shortly after 2.6.36 is
-> >> released please, so I can get it into mainline quickly thus minimising
-> >> the opportunity for such breakage.
-> >
-> 
-> I rebased series against 2.6.36 and I checked if something has not been 
-> removed by someone else. Please pull
-> git pull git://github.com/napohybelskurwysynom2010/Linux-2.6-nps.git rodi1
-> 
-> or apply attached patch
+We've run into a 32/64 compatibility problem with iproute2.  The "ip
+xfrm monitor acquire" command doesn't work properly due to struct size
+mismatches between kernel and userspace.
 
-The patch was space-stuffed by your email client and hence did not
-apply.  I fixed it up.
+If I modify include/linux/xfrm.h to pack all the structures and rebuild
+the kernel and userspace, this message is displayed properly.  However,
+this shouldn't be necessary and might not work on all architectures.
 
-Many of these changes are already in linux-next.  I kept the changes
-which aren't in linux-next and verified that none of those changes were
-removing duplications which were already removed in linux-next.
+Anyone got any ideas that are less drastic?
 
+Thanks,
+Chris
+
+
+
+Details:
+
+iproute2-2.6.35.tar.bz2 package (the "ip" binary reports a version of
+iproute2-ss100804)
+
+2.6.27.18 kernel, ARCH is x86, kernel is 64-bit, userspace is 32-bit.
+
+
+
+To reproduce:
+
+1.  Find a src and dst IP address that normally passes a ping test
+
+ping -I 172.25.0.4 172.25.132.1
+
+
+2.  Setup a single outgoing IPsec policy that will require an IPsec SA
+on the next ping packet.
+
+setkey -c << EOF
+spdadd 172.24.132.4/32[any] 172.24.136.0/32[any] any -P out ipsec
+esp/transport//unique:1;
+EOF
+
+
+3.  In a separate window/terminal, launch the following command to
+monitor Netlink messages from the kernel
+
+ip xfrm monitor acquire
+
+
+4.  Send a ping packet (this command will block, or fail depending on
+your kernel config)
+
+ping -I 172.25.0.4 172.25.132.1
+
+
+5.  The "ip xfrm monitor acquire" command displays something similar to
+this:
+
+!!!Deficit 72, rta_len=1
+acquire proto esp
+  sel src 172.25.0.4/32 dst 172.25.132.1/32 proto udp sport 44136 dport 1025
+  policy src 172.25.0.4/32 dst 172.25.132.1/32
+        dir out priority 2147483648 ptype main
+
+6.  The "!!!Deficit 72, rta_len=1" string at the beginning of the
+message is complaining about mismatches between the total reported
+length of the Netlink message and the useable length detected.   Also,
+the ACQUIRE message is incomplete as shown--there are attributes such as
+the reqId value that are not displayed.
+
+7. Now clean up after yourself and take down the ipsec policy:
+
+setkey -c << EOF
+spddelete 172.24.132.4/32[any] 172.24.136.0/32[any] any -P out ipsec
+esp/transport//unique:1;
+EOF
+
+
+
+-- 
+Chris Friesen
+Software Developer
+GENBAND
+chris.friesen@genband.com
+www.genband.com
