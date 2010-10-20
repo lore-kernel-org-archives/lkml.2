@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755744Ab0JTUXl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Oct 2010 16:23:41 -0400
-Received: from BERING.ISR.CS.CMU.EDU ([128.2.209.223]:44645 "EHLO
+	id S1755821Ab0JTUXx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Oct 2010 16:23:53 -0400
+Received: from BERING.ISR.CS.CMU.EDU ([128.2.209.223]:44648 "EHLO
 	bering.isr.cs.cmu.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755710Ab0JTUXj (ORCPT
+	with ESMTP id S1755788Ab0JTUXv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Oct 2010 16:23:39 -0400
+	Wed, 20 Oct 2010 16:23:51 -0400
 From: Jan Harkes <jaharkes@cs.cmu.edu>
 To: linux-fsdevel@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, arnd@arndb.de,
         Yoshihisa Abe <yoshiabe@cs.cmu.edu>, Jan Harkes <jaharkes@cs.cmu.edu>
-Subject: [RFC][PATCH 1/3] Coda: add spin lock to protect accesses to struct coda_inode_info.
-Date: Wed, 20 Oct 2010 16:23:02 -0400
-Message-Id: <1287606184-26889-2-git-send-email-jaharkes@cs.cmu.edu>
+Subject: [RFC][PATCH 2/3] Coda: push BKL regions into coda_upcall()
+Date: Wed, 20 Oct 2010 16:23:03 -0400
+Message-Id: <1287606184-26889-3-git-send-email-jaharkes@cs.cmu.edu>
 X-Mailer: git-send-email 1.6.3.3
 In-Reply-To: <1287606184-26889-1-git-send-email-jaharkes@cs.cmu.edu>
 References: <1287606184-26889-1-git-send-email-jaharkes@cs.cmu.edu>
@@ -23,290 +23,678 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Yoshihisa Abe <yoshiabe@cs.cmu.edu>
 
-We mostly need it to protect cached user permissions. The c_flags field
-is advisory, reading the wrong value is harmless and in the worst case
-we hit a slow path where we have to make an extra upcall to the
-userspace cache manager when revalidating a dentry or inode.
+Now that shared inode state is locked using the cii->c_lock, the BKL is
+only used to protect the upcall queues used to communicate with the
+userspace cache manager. The remaining state is all local and we can
+push the lock further down into coda_upcall().
 
 Signed-off-by: Yoshihisa Abe <yoshiabe@cs.cmu.edu>
 Signed-off-by: Jan Harkes <jaharkes@cs.cmu.edu>
 ---
- fs/coda/cache.c            |   17 ++++++++++++-----
- fs/coda/cnode.c            |   19 ++++++++++++++-----
- fs/coda/dir.c              |    6 ++++++
- fs/coda/file.c             |   12 ++++++++++--
- fs/coda/inode.c            |    2 ++
- include/linux/coda_fs_i.h  |   13 +++++++++----
- include/linux/coda_linux.h |    6 +++++-
- 7 files changed, 58 insertions(+), 17 deletions(-)
+ fs/coda/dir.c     |  152 +++++++++++++++--------------------------------------
+ fs/coda/file.c    |   19 +------
+ fs/coda/inode.c   |   11 +----
+ fs/coda/pioctl.c  |   22 ++------
+ fs/coda/psdev.c   |    2 -
+ fs/coda/symlink.c |    3 -
+ fs/coda/upcall.c  |   17 ++++--
+ 7 files changed, 65 insertions(+), 161 deletions(-)
 
-diff --git a/fs/coda/cache.c b/fs/coda/cache.c
-index a5bf577..9060f08 100644
---- a/fs/coda/cache.c
-+++ b/fs/coda/cache.c
-@@ -17,6 +17,7 @@
+diff --git a/fs/coda/dir.c b/fs/coda/dir.c
+index 69fbbea..8cc6c61 100644
+--- a/fs/coda/dir.c
++++ b/fs/coda/dir.c
+@@ -17,7 +17,6 @@
+ #include <linux/stat.h>
+ #include <linux/errno.h>
  #include <linux/string.h>
- #include <linux/list.h>
- #include <linux/sched.h>
-+#include <linux/spinlock.h>
+-#include <linux/smp_lock.h>
+ #include <linux/spinlock.h>
  
- #include <linux/coda.h>
- #include <linux/coda_linux.h>
-@@ -31,19 +32,23 @@ void coda_cache_enter(struct inode *inode, int mask)
+ #include <asm/uaccess.h>
+@@ -117,15 +116,11 @@ static struct dentry *coda_lookup(struct inode *dir, struct dentry *entry, struc
+ 		goto exit;
+ 	}
+ 
+-	lock_kernel();
+-
+ 	error = venus_lookup(dir->i_sb, coda_i2f(dir), name, length,
+ 			     &type, &resfid);
+ 	if (!error)
+ 		error = coda_cnode_make(&inode, &resfid, dir->i_sb);
+ 
+-	unlock_kernel();
+-
+ 	if (error && error != -ENOENT)
+ 		return ERR_PTR(error);
+ 
+@@ -141,28 +136,24 @@ exit:
+ 
+ int coda_permission(struct inode *inode, int mask)
  {
- 	struct coda_inode_info *cii = ITOC(inode);
+-        int error = 0;
++	int error;
  
-+	spin_lock(&cii->c_lock);
- 	cii->c_cached_epoch = atomic_read(&permission_epoch);
- 	if (cii->c_uid != current_fsuid()) {
- 		cii->c_uid = current_fsuid();
-                 cii->c_cached_perm = mask;
-         } else
-                 cii->c_cached_perm |= mask;
-+	spin_unlock(&cii->c_lock);
+ 	mask &= MAY_READ | MAY_WRITE | MAY_EXEC;
+  
+ 	if (!mask)
+-		return 0; 
++		return 0;
+ 
+ 	if ((mask & MAY_EXEC) && !execute_ok(inode))
+ 		return -EACCES;
+ 
+-	lock_kernel();
+-
+ 	if (coda_cache_check(inode, mask))
+-		goto out; 
++		return 0;
+ 
+         error = venus_access(inode->i_sb, coda_i2f(inode), mask);
+     
+ 	if (!error)
+ 		coda_cache_enter(inode, mask);
+ 
+- out:
+-	unlock_kernel();
+ 	return error;
  }
  
- /* remove cached acl from an inode */
- void coda_cache_clear_inode(struct inode *inode)
+@@ -201,41 +192,34 @@ static inline void coda_dir_drop_nlink(struct inode *dir)
+ /* creation routines: create, mknod, mkdir, link, symlink */
+ static int coda_create(struct inode *dir, struct dentry *de, int mode, struct nameidata *nd)
  {
- 	struct coda_inode_info *cii = ITOC(inode);
-+	spin_lock(&cii->c_lock);
- 	cii->c_cached_epoch = atomic_read(&permission_epoch) - 1;
-+	spin_unlock(&cii->c_lock);
+-        int error=0;
++	int error;
+ 	const char *name=de->d_name.name;
+ 	int length=de->d_name.len;
+ 	struct inode *inode;
+ 	struct CodaFid newfid;
+ 	struct coda_vattr attrs;
+ 
+-	lock_kernel();
+-
+-	if (coda_isroot(dir) && coda_iscontrol(name, length)) {
+-		unlock_kernel();
++	if (coda_isroot(dir) && coda_iscontrol(name, length))
+ 		return -EPERM;
+-	}
+ 
+ 	error = venus_create(dir->i_sb, coda_i2f(dir), name, length, 
+ 				0, mode, &newfid, &attrs);
+-
+-        if ( error ) {
+-		unlock_kernel();
+-		d_drop(de);
+-		return error;
+-	}
++	if (error)
++		goto err_out;
+ 
+ 	inode = coda_iget(dir->i_sb, &newfid, &attrs);
+-	if ( IS_ERR(inode) ) {
+-		unlock_kernel();
+-		d_drop(de);
+-		return PTR_ERR(inode);
++	if (IS_ERR(inode)) {
++		error = PTR_ERR(inode);
++		goto err_out;
+ 	}
+ 
+ 	/* invalidate the directory cnode's attributes */
+ 	coda_dir_update_mtime(dir);
+-	unlock_kernel();
+ 	d_instantiate(de, inode);
+ 	return 0;
++err_out:
++	d_drop(de);
++	return error;
  }
  
- /* remove all acl caches */
-@@ -57,13 +62,15 @@ void coda_cache_clear_all(struct super_block *sb)
- int coda_cache_check(struct inode *inode, int mask)
- {
- 	struct coda_inode_info *cii = ITOC(inode);
--        int hit;
-+	int hit;
- 	
--        hit = (mask & cii->c_cached_perm) == mask &&
--		cii->c_uid == current_fsuid() &&
--		cii->c_cached_epoch == atomic_read(&permission_epoch);
-+	spin_lock(&cii->c_lock);
-+	hit = (mask & cii->c_cached_perm) == mask &&
-+	    cii->c_uid == current_fsuid() &&
-+	    cii->c_cached_epoch == atomic_read(&permission_epoch);
-+	spin_unlock(&cii->c_lock);
+ static int coda_mkdir(struct inode *dir, struct dentry *de, int mode)
+@@ -247,36 +231,29 @@ static int coda_mkdir(struct inode *dir, struct dentry *de, int mode)
+ 	int error;
+ 	struct CodaFid newfid;
  
--        return hit;
-+	return hit;
+-	lock_kernel();
+-
+-	if (coda_isroot(dir) && coda_iscontrol(name, len)) {
+-		unlock_kernel();
++	if (coda_isroot(dir) && coda_iscontrol(name, len))
+ 		return -EPERM;
+-	}
+ 
+ 	attrs.va_mode = mode;
+ 	error = venus_mkdir(dir->i_sb, coda_i2f(dir), 
+ 			       name, len, &newfid, &attrs);
+-        
+-        if ( error ) {
+-		unlock_kernel();
+-		d_drop(de);
+-		return error;
+-        }
++	if (error)
++		goto err_out;
+          
+ 	inode = coda_iget(dir->i_sb, &newfid, &attrs);
+-	if ( IS_ERR(inode) ) {
+-		unlock_kernel();
+-		d_drop(de);
+-		return PTR_ERR(inode);
++	if (IS_ERR(inode)) {
++		error = PTR_ERR(inode);
++		goto err_out;
+ 	}
+ 
+ 	/* invalidate the directory cnode's attributes */
+ 	coda_dir_inc_nlink(dir);
+ 	coda_dir_update_mtime(dir);
+-	unlock_kernel();
+ 	d_instantiate(de, inode);
+ 	return 0;
++err_out:
++	d_drop(de);
++	return error;
+ }
+ 
+ /* try to make de an entry in dir_inodde linked to source_de */ 
+@@ -288,52 +265,39 @@ static int coda_link(struct dentry *source_de, struct inode *dir_inode,
+ 	int len = de->d_name.len;
+ 	int error;
+ 
+-	lock_kernel();
+-
+-	if (coda_isroot(dir_inode) && coda_iscontrol(name, len)) {
+-		unlock_kernel();
++	if (coda_isroot(dir_inode) && coda_iscontrol(name, len))
+ 		return -EPERM;
+-	}
+ 
+ 	error = venus_link(dir_inode->i_sb, coda_i2f(inode),
+ 			   coda_i2f(dir_inode), (const char *)name, len);
+ 
+ 	if (error) {
+ 		d_drop(de);
+-		goto out;
++		return error;
+ 	}
+ 
+ 	coda_dir_update_mtime(dir_inode);
+ 	atomic_inc(&inode->i_count);
+ 	d_instantiate(de, inode);
+ 	inc_nlink(inode);
+-
+-out:
+-	unlock_kernel();
+-	return(error);
++	return 0;
  }
  
  
-diff --git a/fs/coda/cnode.c b/fs/coda/cnode.c
-index a7a7809..6022405 100644
---- a/fs/coda/cnode.c
-+++ b/fs/coda/cnode.c
-@@ -45,13 +45,15 @@ static void coda_fill_inode(struct inode *inode, struct coda_vattr *attr)
- static int coda_test_inode(struct inode *inode, void *data)
+ static int coda_symlink(struct inode *dir_inode, struct dentry *de,
+ 			const char *symname)
  {
- 	struct CodaFid *fid = (struct CodaFid *)data;
--	return coda_fideq(&(ITOC(inode)->c_fid), fid);
-+	struct coda_inode_info *cii = ITOC(inode);
-+	return coda_fideq(&cii->c_fid, fid);
+-        const char *name = de->d_name.name;
++	const char *name = de->d_name.name;
+ 	int len = de->d_name.len;
+ 	int symlen;
+-	int error = 0;
+-
+-	lock_kernel();
++	int error;
+ 
+-	if (coda_isroot(dir_inode) && coda_iscontrol(name, len)) {
+-		unlock_kernel();
++	if (coda_isroot(dir_inode) && coda_iscontrol(name, len))
+ 		return -EPERM;
+-	}
+ 
+ 	symlen = strlen(symname);
+-	if ( symlen > CODA_MAXPATHLEN ) {
+-		unlock_kernel();
++	if (symlen > CODA_MAXPATHLEN)
+ 		return -ENAMETOOLONG;
+-	}
+ 
+ 	/*
+ 	 * This entry is now negative. Since we do not create
+@@ -344,10 +308,9 @@ static int coda_symlink(struct inode *dir_inode, struct dentry *de,
+ 			      symname, symlen);
+ 
+ 	/* mtime is no good anymore */
+-	if ( !error )
++	if (!error)
+ 		coda_dir_update_mtime(dir_inode);
+ 
+-	unlock_kernel();
+ 	return error;
  }
  
- static int coda_set_inode(struct inode *inode, void *data)
- {
- 	struct CodaFid *fid = (struct CodaFid *)data;
--	ITOC(inode)->c_fid = *fid;
-+	struct coda_inode_info *cii = ITOC(inode);
-+	cii->c_fid = *fid;
+@@ -358,17 +321,12 @@ static int coda_unlink(struct inode *dir, struct dentry *de)
+ 	const char *name = de->d_name.name;
+ 	int len = de->d_name.len;
+ 
+-	lock_kernel();
+-
+ 	error = venus_remove(dir->i_sb, coda_i2f(dir), name, len);
+-	if ( error ) {
+-		unlock_kernel();
++	if (error)
+ 		return error;
+-	}
+ 
+ 	coda_dir_update_mtime(dir);
+ 	drop_nlink(de->d_inode);
+-	unlock_kernel();
  	return 0;
  }
  
-@@ -71,6 +73,7 @@ struct inode * coda_iget(struct super_block * sb, struct CodaFid * fid,
- 		cii = ITOC(inode);
- 		/* we still need to set i_ino for things like stat(2) */
- 		inode->i_ino = hash;
-+		/* inode is locked and unique, no need to grab cii->c_lock */
- 		cii->c_mapcount = 0;
- 		unlock_new_inode(inode);
+@@ -378,8 +336,6 @@ static int coda_rmdir(struct inode *dir, struct dentry *de)
+ 	int len = de->d_name.len;
+ 	int error;
+ 
+-	lock_kernel();
+-
+ 	error = venus_rmdir(dir->i_sb, coda_i2f(dir), name, len);
+ 	if (!error) {
+ 		/* VFS may delete the child */
+@@ -390,7 +346,6 @@ static int coda_rmdir(struct inode *dir, struct dentry *de)
+ 		coda_dir_drop_nlink(dir);
+ 		coda_dir_update_mtime(dir);
  	}
-@@ -107,14 +110,20 @@ int coda_cnode_make(struct inode **inode, struct CodaFid *fid, struct super_bloc
+-	unlock_kernel();
+ 	return error;
  }
  
+@@ -404,14 +359,11 @@ static int coda_rename(struct inode *old_dir, struct dentry *old_dentry,
+ 	int new_length = new_dentry->d_name.len;
+ 	int error;
  
-+/* Although we treat Coda file identifiers as immutable, there is one
-+ * special case for files created during a disconnection where they may
-+ * not be globally unique. When an identifier collision is detected we
-+ * first try to flush the cached inode from the kernel and finally
-+ * resort to renaming/rehashing in-place. Userspace remembers both old
-+ * and new values of the identifier to handle any in-flight upcalls.
-+ * The real solution is to use globally unique UUIDs as identifiers, but
-+ * retrofitting the existing userspace code for this is non-trivial. */
- void coda_replace_fid(struct inode *inode, struct CodaFid *oldfid, 
- 		      struct CodaFid *newfid)
- {
--	struct coda_inode_info *cii;
-+	struct coda_inode_info *cii = ITOC(inode);
- 	unsigned long hash = coda_f2i(newfid);
- 	
--	cii = ITOC(inode);
+-	lock_kernel();
 -
- 	BUG_ON(!coda_fideq(&cii->c_fid, oldfid));
+ 	error = venus_rename(old_dir->i_sb, coda_i2f(old_dir),
+ 			     coda_i2f(new_dir), old_length, new_length,
+ 			     (const char *) old_name, (const char *)new_name);
+-
+-	if ( !error ) {
+-		if ( new_dentry->d_inode ) {
++	if (!error) {
++		if (new_dentry->d_inode) {
+ 			if ( S_ISDIR(new_dentry->d_inode->i_mode) ) {
+ 				coda_dir_drop_nlink(old_dir);
+ 				coda_dir_inc_nlink(new_dir);
+@@ -424,7 +376,6 @@ static int coda_rename(struct inode *old_dir, struct dentry *old_dentry,
+ 			coda_flag_inode(new_dir, C_VATTR);
+ 		}
+ 	}
+-	unlock_kernel();
  
- 	/* replace fid and rehash inode */
-diff --git a/fs/coda/dir.c b/fs/coda/dir.c
-index ccd98b0..69fbbea 100644
---- a/fs/coda/dir.c
-+++ b/fs/coda/dir.c
-@@ -18,6 +18,7 @@
- #include <linux/errno.h>
- #include <linux/string.h>
- #include <linux/smp_lock.h>
-+#include <linux/spinlock.h>
+ 	return error;
+ }
+@@ -595,17 +546,14 @@ static int coda_dentry_revalidate(struct dentry *de, struct nameidata *nd)
+ 	struct inode *inode = de->d_inode;
+ 	struct coda_inode_info *cii;
  
- #include <asm/uaccess.h>
+-	if (!inode)
++	if (!inode || coda_isroot(inode))
+ 		return 1;
+-	lock_kernel();
+-	if (coda_isroot(inode))
+-		goto out;
+ 	if (is_bad_inode(inode))
+-		goto bad;
++		return 0;
  
-@@ -617,7 +618,9 @@ static int coda_dentry_revalidate(struct dentry *de, struct nameidata *nd)
- 		goto out;
+ 	cii = ITOC(de->d_inode);
+ 	if (!(cii->c_flags & (C_PURGE | C_FLUSH)))
+-		goto out;
++		return 1;
+ 
+ 	shrink_dcache_parent(de);
+ 
+@@ -615,19 +563,13 @@ static int coda_dentry_revalidate(struct dentry *de, struct nameidata *nd)
+ 
+ 	if (atomic_read(&de->d_count) > 1)
+ 		/* pretend it's valid, but don't change the flags */
+-		goto out;
++		return 1;
  
  	/* clear the flags. */
-+	spin_lock(&cii->c_lock);
+ 	spin_lock(&cii->c_lock);
  	cii->c_flags &= ~(C_VATTR | C_PURGE | C_FLUSH);
-+	spin_unlock(&cii->c_lock);
- 
- bad:
- 	unlock_kernel();
-@@ -691,7 +694,10 @@ int coda_revalidate_inode(struct dentry *dentry)
- 			goto return_bad;
- 		
- 		coda_flag_inode_children(inode, C_FLUSH);
-+
-+		spin_lock(&cii->c_lock);
- 		cii->c_flags &= ~(C_VATTR | C_PURGE | C_FLUSH);
-+		spin_unlock(&cii->c_lock);
- 	}
- 
- ok:
-diff --git a/fs/coda/file.c b/fs/coda/file.c
-index ad3cd2a..c4e3957 100644
---- a/fs/coda/file.c
-+++ b/fs/coda/file.c
-@@ -16,6 +16,7 @@
- #include <linux/cred.h>
- #include <linux/errno.h>
- #include <linux/smp_lock.h>
-+#include <linux/spinlock.h>
- #include <linux/string.h>
- #include <linux/slab.h>
- #include <asm/uaccess.h>
-@@ -109,19 +110,24 @@ coda_file_mmap(struct file *coda_file, struct vm_area_struct *vma)
- 
- 	coda_inode = coda_file->f_path.dentry->d_inode;
- 	host_inode = host_file->f_path.dentry->d_inode;
-+
-+	cii = ITOC(coda_inode);
-+	spin_lock(&cii->c_lock);
- 	coda_file->f_mapping = host_file->f_mapping;
- 	if (coda_inode->i_mapping == &coda_inode->i_data)
- 		coda_inode->i_mapping = host_inode->i_mapping;
- 
- 	/* only allow additional mmaps as long as userspace isn't changing
- 	 * the container file on us! */
--	else if (coda_inode->i_mapping != host_inode->i_mapping)
-+	else if (coda_inode->i_mapping != host_inode->i_mapping) {
-+		spin_unlock(&cii->c_lock);
- 		return -EBUSY;
-+	}
- 
- 	/* keep track of how often the coda_inode/host_file has been mmapped */
--	cii = ITOC(coda_inode);
- 	cii->c_mapcount++;
- 	cfi->cfi_mapcount++;
-+	spin_unlock(&cii->c_lock);
- 
- 	return host_file->f_op->mmap(host_file, vma);
+ 	spin_unlock(&cii->c_lock);
+-
+-bad:
+-	unlock_kernel();
+ 	return 0;
+-out:
+-	unlock_kernel();
+-	return 1;
  }
-@@ -185,11 +191,13 @@ int coda_release(struct inode *coda_inode, struct file *coda_file)
- 	cii = ITOC(coda_inode);
- 
- 	/* did we mmap this file? */
-+	spin_lock(&cii->c_lock);
- 	if (coda_inode->i_mapping == &host_inode->i_data) {
- 		cii->c_mapcount -= cfi->cfi_mapcount;
- 		if (!cii->c_mapcount)
- 			coda_inode->i_mapping = &coda_inode->i_data;
- 	}
-+	spin_unlock(&cii->c_lock);
- 
- 	fput(cfi->cfi_container);
- 	kfree(coda_file->private_data);
-diff --git a/fs/coda/inode.c b/fs/coda/inode.c
-index 6526e6f..f4ca79d 100644
---- a/fs/coda/inode.c
-+++ b/fs/coda/inode.c
-@@ -16,6 +16,7 @@
- #include <linux/errno.h>
- #include <linux/unistd.h>
- #include <linux/smp_lock.h>
-+#include <linux/spinlock.h>
- #include <linux/file.h>
- #include <linux/vfs.h>
- #include <linux/slab.h>
-@@ -51,6 +52,7 @@ static struct inode *coda_alloc_inode(struct super_block *sb)
- 	ei->c_flags = 0;
- 	ei->c_uid = 0;
- 	ei->c_cached_perm = 0;
-+	spin_lock_init(&ei->c_lock);
- 	return &ei->vfs_inode;
- }
- 
-diff --git a/include/linux/coda_fs_i.h b/include/linux/coda_fs_i.h
-index b3ef0c4..e35071b 100644
---- a/include/linux/coda_fs_i.h
-+++ b/include/linux/coda_fs_i.h
-@@ -10,19 +10,24 @@
- 
- #include <linux/types.h>
- #include <linux/list.h>
-+#include <linux/spinlock.h>
- #include <linux/coda.h>
  
  /*
-  * coda fs inode data
-+ * c_lock protects accesses to c_flags, c_mapcount, c_cached_epoch, c_uid and
-+ * c_cached_perm.
-+ * vfs_inode is set only when the inode is created and never changes.
-+ * c_fid is set when the inode is created and should be considered immutable.
-  */
- struct coda_inode_info {
--        struct CodaFid	   c_fid;	/* Coda identifier */
--        u_short	           c_flags;     /* flags (see below) */
--	struct list_head   c_cilist;    /* list of all coda inodes */
-+	struct CodaFid	   c_fid;	/* Coda identifier */
-+	u_short	           c_flags;     /* flags (see below) */
- 	unsigned int	   c_mapcount;  /* nr of times this inode is mapped */
- 	unsigned int	   c_cached_epoch; /* epoch for cached permissions */
- 	vuid_t		   c_uid;	/* fsuid for cached permissions */
--        unsigned int       c_cached_perm; /* cached access permissions */
-+	unsigned int       c_cached_perm; /* cached access permissions */
-+	spinlock_t	   c_lock;
- 	struct inode	   vfs_inode;
- };
- 
-diff --git a/include/linux/coda_linux.h b/include/linux/coda_linux.h
-index dcc228a..2e914d0 100644
---- a/include/linux/coda_linux.h
-+++ b/include/linux/coda_linux.h
-@@ -89,7 +89,11 @@ static __inline__ char *coda_i2s(struct inode *inode)
- /* this will not zap the inode away */
- static __inline__ void coda_flag_inode(struct inode *inode, int flag)
+@@ -659,20 +601,19 @@ static int coda_dentry_delete(struct dentry * dentry)
+ int coda_revalidate_inode(struct dentry *dentry)
  {
--	ITOC(inode)->c_flags |= flag;
-+	struct coda_inode_info *cii = ITOC(inode);
-+
-+	spin_lock(&cii->c_lock);
-+	cii->c_flags |= flag;
-+	spin_unlock(&cii->c_lock);
- }		
+ 	struct coda_vattr attr;
+-	int error = 0;
++	int error;
+ 	int old_mode;
+ 	ino_t old_ino;
+ 	struct inode *inode = dentry->d_inode;
+ 	struct coda_inode_info *cii = ITOC(inode);
  
- #endif
+-	lock_kernel();
+-	if ( !cii->c_flags )
+-		goto ok;
++	if (!cii->c_flags)
++		return 0;
+ 
+ 	if (cii->c_flags & (C_VATTR | C_PURGE | C_FLUSH)) {
+ 		error = venus_getattr(inode->i_sb, &(cii->c_fid), &attr);
+-		if ( error )
+-			goto return_bad;
++		if (error)
++			return -EIO;
+ 
+ 		/* this inode may be lost if:
+ 		   - it's ino changed 
+@@ -691,7 +632,7 @@ int coda_revalidate_inode(struct dentry *dentry)
+ 		/* the following can happen when a local fid is replaced 
+ 		   with a global one, here we lose and declare the inode bad */
+ 		if (inode->i_ino != old_ino)
+-			goto return_bad;
++			return -EIO;
+ 		
+ 		coda_flag_inode_children(inode, C_FLUSH);
+ 
+@@ -699,12 +640,5 @@ int coda_revalidate_inode(struct dentry *dentry)
+ 		cii->c_flags &= ~(C_VATTR | C_PURGE | C_FLUSH);
+ 		spin_unlock(&cii->c_lock);
+ 	}
+-
+-ok:
+-	unlock_kernel();
+ 	return 0;
+-
+-return_bad:
+-	unlock_kernel();
+-	return -EIO;
+ }
+diff --git a/fs/coda/file.c b/fs/coda/file.c
+index c4e3957..c8b50ba 100644
+--- a/fs/coda/file.c
++++ b/fs/coda/file.c
+@@ -15,7 +15,6 @@
+ #include <linux/stat.h>
+ #include <linux/cred.h>
+ #include <linux/errno.h>
+-#include <linux/smp_lock.h>
+ #include <linux/spinlock.h>
+ #include <linux/string.h>
+ #include <linux/slab.h>
+@@ -144,8 +143,6 @@ int coda_open(struct inode *coda_inode, struct file *coda_file)
+ 	if (!cfi)
+ 		return -ENOMEM;
+ 
+-	lock_kernel();
+-
+ 	error = venus_open(coda_inode->i_sb, coda_i2f(coda_inode), coda_flags,
+ 			   &host_file);
+ 	if (!host_file)
+@@ -153,7 +150,6 @@ int coda_open(struct inode *coda_inode, struct file *coda_file)
+ 
+ 	if (error) {
+ 		kfree(cfi);
+-		unlock_kernel();
+ 		return error;
+ 	}
+ 
+@@ -165,8 +161,6 @@ int coda_open(struct inode *coda_inode, struct file *coda_file)
+ 
+ 	BUG_ON(coda_file->private_data != NULL);
+ 	coda_file->private_data = cfi;
+-
+-	unlock_kernel();
+ 	return 0;
+ }
+ 
+@@ -177,9 +171,7 @@ int coda_release(struct inode *coda_inode, struct file *coda_file)
+ 	struct coda_file_info *cfi;
+ 	struct coda_inode_info *cii;
+ 	struct inode *host_inode;
+-	int err = 0;
+-
+-	lock_kernel();
++	int err;
+ 
+ 	cfi = CODA_FTOC(coda_file);
+ 	BUG_ON(!cfi || cfi->cfi_magic != CODA_MAGIC);
+@@ -203,8 +195,6 @@ int coda_release(struct inode *coda_inode, struct file *coda_file)
+ 	kfree(coda_file->private_data);
+ 	coda_file->private_data = NULL;
+ 
+-	unlock_kernel();
+-
+ 	/* VFS fput ignores the return value from file_operations->release, so
+ 	 * there is no use returning an error here */
+ 	return 0;
+@@ -215,7 +205,7 @@ int coda_fsync(struct file *coda_file, int datasync)
+ 	struct file *host_file;
+ 	struct inode *coda_inode = coda_file->f_path.dentry->d_inode;
+ 	struct coda_file_info *cfi;
+-	int err = 0;
++	int err;
+ 
+ 	if (!(S_ISREG(coda_inode->i_mode) || S_ISDIR(coda_inode->i_mode) ||
+ 	      S_ISLNK(coda_inode->i_mode)))
+@@ -226,11 +216,8 @@ int coda_fsync(struct file *coda_file, int datasync)
+ 	host_file = cfi->cfi_container;
+ 
+ 	err = vfs_fsync(host_file, datasync);
+-	if ( !err && !datasync ) {
+-		lock_kernel();
++	if (!err && !datasync)
+ 		err = venus_fsync(coda_inode->i_sb, coda_i2f(coda_inode));
+-		unlock_kernel();
+-	}
+ 
+ 	return err;
+ }
+diff --git a/fs/coda/inode.c b/fs/coda/inode.c
+index f4ca79d..d287bed 100644
+--- a/fs/coda/inode.c
++++ b/fs/coda/inode.c
+@@ -15,7 +15,6 @@
+ #include <linux/stat.h>
+ #include <linux/errno.h>
+ #include <linux/unistd.h>
+-#include <linux/smp_lock.h>
+ #include <linux/spinlock.h>
+ #include <linux/file.h>
+ #include <linux/vfs.h>
+@@ -247,8 +246,6 @@ int coda_setattr(struct dentry *de, struct iattr *iattr)
+ 	struct coda_vattr vattr;
+ 	int error;
+ 
+-	lock_kernel();
+-	
+ 	memset(&vattr, 0, sizeof(vattr)); 
+ 
+ 	inode->i_ctime = CURRENT_TIME_SEC;
+@@ -258,13 +255,11 @@ int coda_setattr(struct dentry *de, struct iattr *iattr)
+ 	/* Venus is responsible for truncating the container-file!!! */
+ 	error = venus_setattr(inode->i_sb, coda_i2f(inode), &vattr);
+ 
+-	if ( !error ) {
++	if (!error) {
+ 	        coda_vattr_to_iattr(inode, &vattr); 
+ 		coda_cache_clear_inode(inode);
+ 	}
+ 
+-	unlock_kernel();
+-
+ 	return error;
+ }
+ 
+@@ -278,12 +273,8 @@ static int coda_statfs(struct dentry *dentry, struct kstatfs *buf)
+ {
+ 	int error;
+ 	
+-	lock_kernel();
+-
+ 	error = venus_statfs(dentry, buf);
+ 
+-	unlock_kernel();
+-
+ 	if (error) {
+ 		/* fake something like AFS does */
+ 		buf->f_blocks = 9000000;
+diff --git a/fs/coda/pioctl.c b/fs/coda/pioctl.c
+index ca25d96..600dc46 100644
+--- a/fs/coda/pioctl.c
++++ b/fs/coda/pioctl.c
+@@ -23,8 +23,6 @@
+ #include <linux/coda_fs_i.h>
+ #include <linux/coda_psdev.h>
+ 
+-#include <linux/smp_lock.h>
+-
+ /* pioctl ops */
+ static int coda_ioctl_permission(struct inode *inode, int mask);
+ static long coda_pioctl(struct file *filp, unsigned int cmd,
+@@ -57,13 +55,9 @@ static long coda_pioctl(struct file *filp, unsigned int cmd,
+ 	struct inode *target_inode = NULL;
+ 	struct coda_inode_info *cnp;
+ 
+-	lock_kernel();
+-
+ 	/* get the Pioctl data arguments from user space */
+-	if (copy_from_user(&data, (void __user *)user_data, sizeof(data))) {
+-		error = -EINVAL;
+-		goto out;
+-	}
++	if (copy_from_user(&data, (void __user *)user_data, sizeof(data)))
++		return -EINVAL;
+ 
+ 	/*
+ 	 * Look up the pathname. Note that the pathname is in
+@@ -75,13 +69,12 @@ static long coda_pioctl(struct file *filp, unsigned int cmd,
+ 		error = user_lpath(data.path, &path);
+ 
+ 	if (error)
+-		goto out;
+-	else
+-		target_inode = path.dentry->d_inode;
++		return error;
++
++	target_inode = path.dentry->d_inode;
+ 
+ 	/* return if it is not a Coda inode */
+ 	if (target_inode->i_sb != inode->i_sb) {
+-		path_put(&path);
+ 		error = -EINVAL;
+ 		goto out;
+ 	}
+@@ -90,10 +83,7 @@ static long coda_pioctl(struct file *filp, unsigned int cmd,
+ 	cnp = ITOC(target_inode);
+ 
+ 	error = venus_pioctl(inode->i_sb, &(cnp->c_fid), cmd, &data);
+-
+-	path_put(&path);
+-
+ out:
+-	unlock_kernel();
++	path_put(&path);
+ 	return error;
+ }
+diff --git a/fs/coda/psdev.c b/fs/coda/psdev.c
+index 116af75..f786759 100644
+--- a/fs/coda/psdev.c
++++ b/fs/coda/psdev.c
+@@ -137,9 +137,7 @@ static ssize_t coda_psdev_write(struct file *file, const char __user *buf,
+ 		}
+ 
+ 		/* what downcall errors does Venus handle ? */
+-		lock_kernel();
+ 		error = coda_downcall(hdr.opcode, dcbuf, sb);
+-		unlock_kernel();
+ 
+ 		CODA_FREE(dcbuf, nbytes);
+ 		if (error) {
+diff --git a/fs/coda/symlink.c b/fs/coda/symlink.c
+index 4513b72..af78f00 100644
+--- a/fs/coda/symlink.c
++++ b/fs/coda/symlink.c
+@@ -14,7 +14,6 @@
+ #include <linux/stat.h>
+ #include <linux/errno.h>
+ #include <linux/pagemap.h>
+-#include <linux/smp_lock.h>
+ 
+ #include <linux/coda.h>
+ #include <linux/coda_linux.h>
+@@ -29,11 +28,9 @@ static int coda_symlink_filler(struct file *file, struct page *page)
+ 	unsigned int len = PAGE_SIZE;
+ 	char *p = kmap(page);
+ 
+-	lock_kernel();
+ 	cii = ITOC(inode);
+ 
+ 	error = venus_readlink(inode->i_sb, &cii->c_fid, p, &len);
+-	unlock_kernel();
+ 	if (error)
+ 		goto fail;
+ 	SetPageUptodate(page);
+diff --git a/fs/coda/upcall.c b/fs/coda/upcall.c
+index b8893ab..e53847f 100644
+--- a/fs/coda/upcall.c
++++ b/fs/coda/upcall.c
+@@ -27,6 +27,7 @@
+ #include <linux/errno.h>
+ #include <linux/string.h>
+ #include <linux/slab.h>
++#include <linux/smp_lock.h>
+ #include <asm/uaccess.h>
+ #include <linux/vmalloc.h>
+ #include <linux/vfs.h>
+@@ -667,18 +668,23 @@ static int coda_upcall(struct venus_comm *vcp,
+ {
+ 	union outputArgs *out;
+ 	union inputArgs *sig_inputArgs;
+-	struct upc_req *req, *sig_req;
+-	int error = 0;
++	struct upc_req *req = NULL, *sig_req;
++	int error;
++
++	lock_kernel();
+ 
+ 	if (!vcp->vc_inuse) {
+ 		printk(KERN_NOTICE "coda: Venus dead, not sending upcall\n");
+-		return -ENXIO;
++		error = -ENXIO;
++		goto exit;
+ 	}
+ 
+ 	/* Format the request message. */
+ 	req = kmalloc(sizeof(struct upc_req), GFP_KERNEL);
+-	if (!req)
+-		return -ENOMEM;
++	if (!req) {
++		error = -ENOMEM;
++		goto exit;
++	}
+ 
+ 	req->uc_data = (void *)buffer;
+ 	req->uc_flags = 0;
+@@ -759,6 +765,7 @@ static int coda_upcall(struct venus_comm *vcp,
+ 
+ exit:
+ 	kfree(req);
++	unlock_kernel();
+ 	return error;
+ }
+ 
 -- 
 1.6.3.3
 
