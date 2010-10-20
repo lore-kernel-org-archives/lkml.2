@@ -1,135 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753917Ab0JTPpW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Oct 2010 11:45:22 -0400
-Received: from claw.goop.org ([74.207.240.146]:43524 "EHLO claw.goop.org"
+	id S1753993Ab0JTPq1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Oct 2010 11:46:27 -0400
+Received: from gwu.lbox.cz ([62.245.111.132]:51634 "EHLO gwu.lbox.cz"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751681Ab0JTPpV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Oct 2010 11:45:21 -0400
-X-User-Agent: K-9 Mail for Android
-References: <alpine.DEB.2.00.1010191254460.2423@kaball-desktop> <alpine.DEB.2.00.1010191847290.10348@kaball-desktop> <20101020113256.3647b1d9.sfr@canb.auug.org.au> <alpine.DEB.2.00.1010201455160.10348@kaball-desktop>
-In-Reply-To: <alpine.DEB.2.00.1010201455160.10348@kaball-desktop>
+	id S1751781Ab0JTPq0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Oct 2010 11:46:26 -0400
+Date: Wed, 20 Oct 2010 16:46:40 +0200
+From: Nikola Ciprich <extmaillist@linuxbox.cz>
+To: "Tantilov, Emil S" <emil.s.tantilov@intel.com>
+Cc: Linux kernel list <linux-kernel@vger.kernel.org>,
+        linux-net maillist <linux-net@vger.kernel.org>,
+        e1000-devel list <e1000-devel@lists.sourceforge.net>,
+        "nikola.ciprich@linuxbox.cz" <nikola.ciprich@linuxbox.cz>
+Subject: Re: [E1000-devel] 2.6.36-rc7-git2 - panic/GPF: e1000e/vlans?
+Message-ID: <20101020144640.GA3009@pcnci.linuxbox.cz>
+References: <20101014052242.GA8998@pcnci.linuxbox.cz>
+ <EA929A9653AAE14F841771FB1DE5A1366027CEFF1C@rrsmsx501.amr.corp.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain;
- charset=utf-8
-Content-Transfer-Encoding: 8bit
-Subject: Re: xen PV on HVM and initial domain merge in linux-next
-From: Jeremy Fitzhardinge <jeremy@goop.org>
-Date: Wed, 20 Oct 2010 08:45:08 -0700
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>
-CC: Jeremy Fitzhardinge <Jeremy.Fitzhardinge@citrix.com>,
-        Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Chris Wright <chrisw@sous-sol.org>,
-        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        Konrad@smtp1.linux-foundation.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>
-Message-ID: <fae522ea-85bb-4c59-a601-f754cc2c986b@email.android.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <EA929A9653AAE14F841771FB1DE5A1366027CEFF1C@rrsmsx501.amr.corp.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Antivirus: on lbxovapx by Kaspersky antivirus, 3964741 records (last update: 20101020)
+X-Spam-Score: N/A (trusted relay)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Yes all ok.
+Hello Emil,
 
-	J
+I tried it now, I can still 100% reproduce with 2.6.36-rc7-git2, but
+with 2.6.36-rc8-git5 it works OK. So it certainly got fixed in the meantime!
+I'll therefore close the bug in BZ.
 
-"Stefano Stabellini" <stefano.stabellini@eu.citrix.com> wrote:
+have a nice day!
 
->On Wed, 20 Oct 2010, Stephen Rothwell wrote:
->> Hi Stefano,
->> 
->> [just casting the net a bit wider ...]
->> 
->> On Tue, 19 Oct 2010 18:51:47 +0100 Stefano Stabellini
-><stefano.stabellini@eu.citrix.com> wrote:
->> >
->> > I forgot to CC the LKML and linux-next...
->> > 
->> > On Tue, 19 Oct 2010, Stefano Stabellini wrote:
->> > > Stephen,
->> > > I have two patch series to merge in linux-next:
->> > > 
->> > > PV on HVM: receive interrupts as xen events
->> > > xen: initial domain support
->> > > 
->> > > they have all the acked-by needed and are both stable since
->several
->> > > weeks, however they depend on Konrad's xen-pcifront series and
->for this
->> > > reason I waited until now to ask for a merge in linux-next.
->> > > 
->> > > Could you please pull:
->> > > 
->> > > git://xenbits.xen.org/people/sstabellini/linux-pvhvm.git
->linux-next-initial-domain-v4
->> > > 
->> > > it contains both series rebased on Konrad's pcifront series
->merged on
->> > > linux-next (warning: it still contains the merge commit of
->> > > xen-pcifront-0.8.2 in linux-next).
->> > > Let me know if you have any conflicts or if you need me to change
->the
->> > > branch somehow.
->> 
->> Not following the Xen develpment at all, I would like to have a
->positive
->> reply from the listed Xen contacts, please,
->> 
->
->Sure.
->Jeremy?
->
->
->> I do have concerns that this is turning up so late, but I realise
->that
->> that is mainly due to a misunderstanding on the part of some of the
->Xen
->> community.
->> 
->
->Thank you very much for understanding!
->
->
->> Also, the above tree is based on next-20101019 which means that I
->cannot
->> use it as is.  All the trees merged into linux-next must be base on
->some
->> other stable tree (almost always Linus' tree).  linux-next is rebuilt
->> from scratch every day, so I cannot ever include a previous day's
->version.
->> 
->> Merging in other stable trees is OK (as long as the other maintainer
->is
->> aware of that and makes sure that their tree does not reabse).
->> 
->> Basically what you send to me should be what you intend to send to
->Linus
->> during the next merge window.
+best regards
+
+nik
+
+
+On Fri, Oct 15, 2010 at 10:58:15AM -0600, Tantilov, Emil S wrote:
+> >-----Original Message-----
+> >From: Nikola Ciprich [mailto:extmaillist@linuxbox.cz]
+> >Sent: Wednesday, October 13, 2010 10:23 PM
+> >To: Linux kernel list; linux-net maillist; e1000-devel list
+> >Cc: nikola.ciprich@linuxbox.cz
+> >Subject: [E1000-devel] 2.6.36-rc7-git2 - panic/GPF: e1000e/vlans?
+> >
+> >Hi,
+> >when I try to boot 2.6.36-rc7-git2 on one of my machines, it crashes while
+> >setting up the network.
 > 
->All right.
->I merged Jeremy's and Konrad's branches (the ones you just merged on
->linux-next) on top of linux 2.6.36 rc8, then I rebased my series on top
->of the result.
->Please checkout this branch:
->
->git://xenbits.xen.org/people/sstabellini/linux-pvhvm.git
->2.6.36-rc8-initial-domain-v5
->
->and let me know if it is suitable, it shouldn't have any merge
->conflicts.
->
->Cheers,
->
->Stefano
->
->_______________________________________________
->Virtualization mailing list
->Virtualization@lists.linux-foundation.org
->https://lists.linux-foundation.org/mailman/listinfo/virtualization
+> Thanks for letting us know!
+> 
+> >The setup is quite complex, with bonding, lots of vlans and 3 intel
+> >adapters (system is quad x86_64)
+> 
+> Could you provide more details about the exact setup and the sequence of 
+> commands that lead to the crash? If you can narrow it down to the actual 
+> command that caused the crash that would be very helpful.
+> 
+> Also - are you testing from Linus or net-next tree? If you are not using 
+> net-next, could you give it a try and see if you can reproduce it there?
+> 
+> >
+> >snip of lspci:
+> >06:00.0 Ethernet controller: Intel Corporation 80003ES2LAN Gigabit Ethernet
+> >Controller (Copper) (rev 01)
+> >06:00.1 Ethernet controller: Intel Corporation 80003ES2LAN Gigabit Ethernet
+> >Controller (Copper) (rev 01)
+> >09:00.0 Ethernet controller: Intel Corporation 82574L Gigabit Network
+> >Connection
+> 
+> Could you provide the output of lspci -vvv and a kernel config?
+> 
+> Thanks,
+> Emil
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-net" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
 
 -- 
-Sent from my Android phone with K-9 Mail. Please excuse my brevity.
+-------------------------------------
+Ing. Nikola CIPRICH
+LinuxBox.cz, s.r.o.
+28. rijna 168, 709 01 Ostrava
+
+tel.:   +420 596 603 142
+fax:    +420 596 621 273
+mobil:  +420 777 093 799
+www.linuxbox.cz
+
+mobil servis: +420 737 238 656
+email servis: servis@linuxbox.cz
+-------------------------------------
