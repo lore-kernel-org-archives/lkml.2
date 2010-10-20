@@ -1,49 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753430Ab0JTOzV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Oct 2010 10:55:21 -0400
-Received: from webhosting01.bon.m2soft.com ([195.38.20.32]:34669 "EHLO
-	webhosting01.bon.m2soft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752725Ab0JTOzT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Oct 2010 10:55:19 -0400
-Date: Wed, 20 Oct 2010 16:50:47 +0200
-From: Nicolas Kaiser <nikai@nikai.net>
-To: Alexander Viro <viro@zeniv.linux.org.uk>
-Cc: Jens Axboe <jaxboe@fusionio.com>, linux-fsdevel@vger.kernel.org,
+	id S1753469Ab0JTOzo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Oct 2010 10:55:44 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:49104 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752134Ab0JTOzn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Oct 2010 10:55:43 -0400
+Date: Wed, 20 Oct 2010 16:55:40 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Jiri Slaby <jslaby@suse.cz>
+Cc: alan@signal11.us, linux-input@vger.kernel.org, jirislaby@gmail.com,
         linux-kernel@vger.kernel.org
-Subject: [PATCH] fs: return error on error condition
-Message-ID: <20101020165047.09150171@absol.kitzblitz>
-Organization: -
-X-Face: "fF&[w2"Nws:JNH4'g|:gVhgGKLhj|X}}&w&V?]0=,7n`jy8D6e[Jh=7+ca|4~t5e[ItpL5
- N'y~Mvi-vJm`"1T5fi1^b!&EG]6nW~C!FN},=$G?^U2t~n[3;u\"5-|~H{-5]IQ2
-X-Mailer: Claws Mail (Linux)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Subject: Re: [PATCH 1/1] HID: hidraw, fix window in hidraw_release
+In-Reply-To: <1287480595-5627-1-git-send-email-jslaby@suse.cz>
+Message-ID: <alpine.LNX.2.00.1010201655191.6879@pobox.suse.cz>
+References: <1287480285-5335-1-git-send-email-jslaby@suse.cz> <1287480595-5627-1-git-send-email-jslaby@suse.cz>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It's intended to return an error, right?
+On Tue, 19 Oct 2010, Jiri Slaby wrote:
 
-Signed-off-by: Nicolas Kaiser <nikai@nikai.net>
----
- fs/pipe.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+> There is a window between hidraw_table check and its dereference.
+> In that window, the device may be unplugged and removed form the
+> system and we will then dereference NULL.
+> 
+> Lock that place properly so that either we get NULL and jump out or we
+> can work with real pointer.
+> 
+> Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+> ---
+>  drivers/hid/hidraw.c |   14 ++++++++++----
+>  1 files changed, 10 insertions(+), 4 deletions(-)
+> 
+> diff --git a/drivers/hid/hidraw.c b/drivers/hid/hidraw.c
+> index 925992f..8a4b32d 100644
+> --- a/drivers/hid/hidraw.c
+> +++ b/drivers/hid/hidraw.c
+> @@ -218,9 +218,13 @@ static int hidraw_release(struct inode * inode, struct file * file)
+>  	unsigned int minor = iminor(inode);
+>  	struct hidraw *dev;
+>  	struct hidraw_list *list = file->private_data;
+> +	int ret;
+>  
+> -	if (!hidraw_table[minor])
+> -		return -ENODEV;
+> +	mutex_lock(&minors_lock);
+> +	if (!hidraw_table[minor]) {
+> +		ret = -ENODEV;
+> +		goto unlock;
+> +	}
+>  
+>  	list_del(&list->node);
+>  	dev = hidraw_table[minor];
+> @@ -233,10 +237,12 @@ static int hidraw_release(struct inode * inode, struct file * file)
+>  			kfree(list->hidraw);
+>  		}
+>  	}
+> -
+>  	kfree(list);
+> +	ret = 0;
+> +unlock:
+> +	mutex_unlock(&minors_lock);
+>  
+> -	return 0;
+> +	return ret;
+>  }
 
-diff --git a/fs/pipe.c b/fs/pipe.c
-index 279eef9..37eb1eb 100644
---- a/fs/pipe.c
-+++ b/fs/pipe.c
-@@ -382,7 +382,7 @@ pipe_read(struct kiocb *iocb, const struct iovec *_iov,
- 			error = ops->confirm(pipe, buf);
- 			if (error) {
- 				if (!ret)
--					error = ret;
-+					ret = error;
- 				break;
- 			}
- 
+Good catch, applied. Thanks.
+
 -- 
-1.7.2.2
+Jiri Kosina
+SUSE Labs, Novell Inc.
