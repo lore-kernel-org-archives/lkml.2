@@ -1,156 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756266Ab0JTXX5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Oct 2010 19:23:57 -0400
-Received: from smtp108.sbc.mail.gq1.yahoo.com ([67.195.14.111]:33337 "HELO
-	smtp108.sbc.mail.gq1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1755074Ab0JTXX4 (ORCPT
+	id S1751582Ab0JTXZq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Oct 2010 19:25:46 -0400
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:43906 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750935Ab0JTXZp convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Oct 2010 19:23:56 -0400
-X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
-X-YMail-OSG: iNKScYwVM1klkJXS43.jP4A2pPdFc8R_oy.2iUjaNOgR3XC
- dkmwcH9QQ8XvgtKqjThVvfBGpZYQP7gavvNll50zxa0rWMMTKmKophY1MLEd
- Eo0eVqdleZVzoqsAJ.8BTkTMdjBoe3oRpkV8djNbk3zZLhKmRozjzVvzIueA
- jCNYbJJlMtgkPGpMOoAIiTfv5K171YyFpgjeH0W4iLipLUWXtiElkq8qkihO
- 0HuCSz6dk4lfedKdxT72u3v.CpmZX1b2fpM8o.isCWKdT.VjcqZSaEe6hgAa
- MkP_O59AEMtKRaBpRT_MTva3LwpxdGemYkHQ7VC8cjb6GXC2EuPINTc0-
-X-Yahoo-Newman-Property: ymail-3
-Subject: Re: [ANNOUNCE] Status of unlocked_qcmds=1 operation for .37
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: Giridhar Malavali <giridhar.malavali@qlogic.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        LinuxSCSI <linux-scsi@vger.kernel.org>,
-        James Bottomley <James.Bottomley@suse.de>,
-        Mike Christie <michaelc@cs.wisc.edu>,
-        Andrew Vasquez <andrew.vasquez@qlogic.com>
-In-Reply-To: <C8E4BD3D.A1E3%giridhar.malavali@qlogic.com>
-References: <C8E4BD3D.A1E3%giridhar.malavali@qlogic.com>
-Content-Type: text/plain
-Date: Wed, 20 Oct 2010 16:19:05 -0700
-Message-Id: <1287616745.10283.141.camel@haakon2.linux-iscsi.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.22.3.1 
-Content-Transfer-Encoding: 7bit
+	Wed, 20 Oct 2010 19:25:45 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=CeFcbOp7T9zODzKHsOo6q35tLBXSCTT/sqJlt2GnmIAAuKiIAUBk5Njp4w7CSJqaib
+         3ACRhmZqIsZCNZOgPHuBQ8lIO6iQQIivrpx0NmOIy/clD9705Nhubc7kkmIPkmUL9aYY
+         DRyz7p7bBcAGuR9PCJakDB9FcraxoYo2I7IfI=
+MIME-Version: 1.0
+In-Reply-To: <20101020161547.0c9d95cc.akpm@linux-foundation.org>
+References: <201009282344.o8SNiliN024981@imap1.linux-foundation.org>
+	<AANLkTikapE3RaVVFS3yBSGmCkMGUvfZECJq5eOmayWhZ@mail.gmail.com>
+	<4CA4D61C.2010909@gmail.com>
+	<4CA4E76E.1050602@gmail.com>
+	<20101004161600.8cdf4e0c.akpm@linux-foundation.org>
+	<AANLkTimmQmQU4fE9ku_wc8x_dPEfnjgOHWSM18O0=coa@mail.gmail.com>
+	<4CBF6602.3070801@gmail.com>
+	<20101020161547.0c9d95cc.akpm@linux-foundation.org>
+Date: Thu, 21 Oct 2010 01:25:44 +0200
+Message-ID: <AANLkTinrXm7of1eSM=D0qin92MR2Qd+5DZgu7eTLjzCt@mail.gmail.com>
+Subject: Re: [PATCH] Removal of duplicate includes from many files
+From: Zimny Lech <napohybelskurwysynom2010@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-10-20 at 15:37 -0700, Giridhar Malavali wrote:
-> 
-> 
+2010/10/21 Andrew Morton <akpm@linux-foundation.org>:
+> The patch was space-stuffed by your email client and hence did not
+> apply.
 
-<Trimming long CC'list>
+Bad thunderbird...
 
-Hi Giri,
+I'll try to fix it
 
-> On 10/20/10 1:49 PM, "Nicholas A. Bellinger" <nab@linux-iscsi.org> wrote:
-> 
-> > Greetings all,
-> > 
-> > So as we get closer to the .37 merge window, I wanted to take this
-> > oppourtunity to recap the current status of the drop-host_lock /
-> > unlocked_qcmds=1 patches, and what is required for the next RFCv5 and
-> > hopefully a merge into .37.  The last RFCv4 was posted here:
-> > 
-> > http://marc.info/?l=linux-kernel=128563953114561=2
-> > <http://marc.info/?l=linux-kernel&m=128563953114561&w=2>
-> > 
-> > Since then, Christof Schmitt has sent a patch to drop struct
-> > scsi_cmnd->serial_number usage in zfcp, and Tim Chen has sent an
-> > important fix to drop an extra host_lock access that I originally missed
-> > in qla2xxx SHT->queuecommand() that certainly would have deadlocked a
-> > running machine.   Many thanks to Christof and Tim for your
-> > contributions and review!
-> > 
-> > So at this point in the game the current score sits at:
-> > 
-> > *) core drivers/scsi remaining issue(s):
-> > 
-> > The issue raised by andmike during RFCv4 described as:
-> > 
-> > "If we skip __scsi_try_to_abort_cmd when REQ_ATOM_COMPLETE is set it
-> > would be correct for the scsi_decide_disposition cases but it would
-> > appear this would stop __scsi_try_to_abort_cmd from being called in the
-> > time out case as REQ_ATOM_COMPLETE is set prior to calling
-> > blk_rq_timed_out."
-> > 
-> > The complete discussion is here:
-> > 
-> > http://marc.info/?l=linux-scsi=128535319915212=2
-> > <http://marc.info/?l=linux-scsi&m=128535319915212&w=2>
-> > 
-> > We still need folks with experience to dig into this code, so you know
-> > the scsi_error.c code please jump in!
-> > 
-> > *) LLD libraries running by default w/ unlocked_qcmds=1
-> > 
-> > libiscsi: need ack from mnc
-> > libsas: need ack from jejb
-> > libfc: remaining rport state + host_lock less issue.  Need more input
-> >        from mnc for James Smart and Joe on this...
-> > libata: jgarzik thinks this should be OK, review and ack from tejun
-> >         would also be very helpful.
-> > 
-> > The main issue remaining here is the audit of libfc rport (and other..?)
-> > code that assumes host_lock is held to protect state.  mnc, do you have
-> > any more thoughts for James Smart and Joe here..?
-> > 
-> > *) Individual LLDs running by default w/ unlocked_qcmds=1
-> > 
-> > aic94xx: need ack maintainer at adaptec..?)
-> > mvsas: need ack maintainer at marvell..?)
-> > pm8001: need ack Jang Wang
-> > qla4xxx, qla2xxx: need ack Andrew Vasquez
-> > fnic:  need ack Joe Eykholt
-> 
-> The qla2xxx driver is modified not to depend on the host_lock and also to
-> drop usage of scsi_cmnd->serial_number. Both the patches are submitted to
-> linux-scsi and you can find more information at
-> 
-> http://marc.info/?l=linux-scsi&m=128716779923700&w=2
+>  I fixed it up.
+>
+> Many of these changes are already in linux-next.  I kept the changes
+> which aren't in linux-next and verified that none of those changes were
+> removing duplications which were already removed in linux-next.
+>
 
-Sure, but for the new fast unlocked_qcmds=1 operation in
-qla2xxx_queuecommand(), the host_lock access needs to be complete
-removed from SHT->queuecommand().   The above patch just moves the
-vha->host->host_lock unlock up in queuecommand(),  right..?
+Ok, thanks!
 
-diff --git a/drivers/scsi/qla2xxx/qla_os.c b/drivers/scsi/qla2xxx/qla_os.c
-index b0c7139..77203b0 100644
---- a/drivers/scsi/qla2xxx/qla_os.c
-+++ b/drivers/scsi/qla2xxx/qla_os.c
-@@ -545,6 +545,7 @@ qla2xxx_queuecommand(struct scsi_cmnd *cmd, void (*done)(struct scsi_cmnd *))
- 	srb_t *sp;
- 	int rval;
- 
-+	spin_unlock_irq(vha->host->host_lock);
- 	if (ha->flags.eeh_busy) {
- 		if (ha->flags.pci_channel_io_perm_failure)
- 			cmd->result = DID_NO_CONNECT << 16;
+P.S. Next patches I will try to send through relevant trees
 
-<SNIP>
+-- 
+Slawa!
+N.P.S.
 
-@@ -603,9 +599,11 @@ qc24_host_busy_lock:
- 	return SCSI_MLQUEUE_HOST_BUSY;
- 
- qc24_target_busy:
-+	spin_lock_irq(vha->host->host_lock);
- 	return SCSI_MLQUEUE_TARGET_BUSY;
- 
- qc24_fail_command:
-+	spin_lock_irq(vha->host->host_lock);
- 	done(cmd);
- 
- 	return 0;
-
-> http://marc.info/?l=linux-scsi&m=128716779623683&w=2
-> 
-
-<nod> I had been only updating LLDs that actually used ->serial_number
-beyond a simple informational purposes for error recovery.  Thanks for
-removing this one preemptively!  8-)
-
-Best,
-
---nab
-
-
+Les fleurs du mal unfold
+Comme les fleurs du mal
+Dark demons of my soul
+Un amour fatal
