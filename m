@@ -1,75 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751782Ab0JTJiv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Oct 2010 05:38:51 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:36211 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750918Ab0JTJit (ORCPT
+	id S1752369Ab0JTJnK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Oct 2010 05:43:10 -0400
+Received: from bld-mail13.adl6.internode.on.net ([150.101.137.98]:48631 "EHLO
+	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751003Ab0JTJnI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Oct 2010 05:38:49 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:message-id:date:from:user-agent:mime-version:cc:subject
-         :references:in-reply-to:x-enigmail-version:content-type
-         :content-transfer-encoding;
-        b=YR61e2dwJxouV5qsnhvgG9rpDcIz8hikHXLSDQnkKjF2BaBGu85kZXHSp4jOVGpB5w
-         Ba6zNbf9izCYf3Z0oq0JkSTQY2vBF5oqfQ1X0bxC/uZNirz2DqgVlOETjxvCIGXWhlC+
-         zVBLWP2ayHUlTICvBAA9YZfhLuAIDlOl2wF+0=
-Message-ID: <4CBEB8A3.6080100@suse.cz>
-Date: Wed, 20 Oct 2010 11:38:43 +0200
-From: Jiri Slaby <jslaby@suse.cz>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.11) Gecko/20101013 SUSE/3.1.5 Thunderbird/3.1.5
+	Wed, 20 Oct 2010 05:43:08 -0400
+Date: Wed, 20 Oct 2010 20:43:02 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: Nick Piggin <npiggin@kernel.dk>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org
+Subject: Re: [patch 31/35] fs: icache per-zone inode LRU
+Message-ID: <20101020094302.GE12506@dastard>
+References: <20101019034216.319085068@kernel.dk>
+ <20101019034658.744504135@kernel.dk>
+ <20101019123852.GA12506@dastard>
+ <20101020023556.GC3740@amd>
+ <20101020031256.GA4095@amd>
 MIME-Version: 1.0
-CC: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>,
-        clemens@ladisch.de, venki@google.com,
-        the arch/x86 maintainers <x86@kernel.org>
-Subject: Re: HPET causes tasks to freeze (still in 2.6.36-rc6)
-References: <4CA9F471.2080704@suse.cz> <alpine.LFD.2.00.1010041747550.14550@localhost6.localdomain6> <4CB38960.5070306@suse.cz>
-In-Reply-To: <4CB38960.5070306@suse.cz>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-To: unlisted-recipients:; (no To-header on input)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101020031256.GA4095@amd>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/12/2010 12:02 AM, Jiri Slaby wrote:
-> On 10/04/2010 06:31 PM, Thomas Gleixner wrote:
->> On Mon, 4 Oct 2010, Jiri Slaby wrote:
->>> HPET as a clocksource has still issues in the latest kernels (confirmed
->>> in 2.6.36-rc6) at least on x86_64. Unless clocksource=jiffies,
->>> clocksource=tsc or nolapic_timer is used, the system is unusable. Tasks
->>> are not woken unless mouse is moved, key is pressed (or other hard irq
->>> triggered). 2.6.32 seems to be the last working.
->>
->> The problem is not clocksource related, it's NOHZ related.
->>
->> clocksource=jiffies, clocksource=tsc are disabling NOHZ simply because
->> we can not do NOHZ neither with jiffies nor with a TSC which stops in
->> deeper C-states.
->>
->> nolapic_timer installs a dummy lapic timer so the lapic is not used,
->> but HPET is used instead and NOHZ is disabled as well.
->>
->> So the real problem is that the hpet broadcast interrupts which are
->> used to work around the lapic timer stops in C3 problem are not coming
->> through for whatever reason.
->>
->> So the question is what changed in the ACPI/idle NOHZ code which might
->> expose this problem.
->>
->> Can we get dmesg, output of proc/timer_list and output of
->> /proc/acpi/processor/CPU0/power for a .32 and a non working kernel
->> please ?
-> 
-> Sure:
-> http://labs.suse.cz/jslaby/bug-579932/
+> On Wed, Oct 20, 2010 at 01:35:56PM +1100, Nick Piggin wrote:
+> > On Tue, Oct 19, 2010 at 11:38:52PM +1100, Dave Chinner wrote:
+> > > On Tue, Oct 19, 2010 at 02:42:47PM +1100, npiggin@kernel.dk wrote:
+> > > > Per-zone LRUs and shrinkers for inode cache.
+> > > 
+> > > Regardless of whether this is the right way to scale or not, I don't
+> > > like the fact that this moves the cache LRUs into the memory
+> > > management structures, and expands the use of MM specific structures
+> > > throughout the code.
+> > 
+> > The zone structure really is the basic unit of memory abstraction
+> > in the whole zoned VM concept (which covers different properties
+> > of both physical address and NUMA cost).
 
-Did anybody have a chance to look into the logs? Should I create a bug
-at kernel.org for that? Or provide more info?
+[ snip lecture on NUMA VM 101 - I got that at SGI w.r.t. Irix more than
+8 years ago, and Linux isn't any different. ]
 
-thanks,
+> > > It ties the cache implementation to the current
+> > > VM implementation. That, IMO, goes against all the principle of
+> > > modularisation at the source code level, and it means we have to tie
+> > > all shrinker implemenations to the current internal implementation
+> > > of the VM. I don't think that is wise thing to do because of the
+> > > dependencies and impedance mismatches it introduces.
+> > 
+> > It's very fundamental. We allocate memory from, and have to reclaim
+> > memory from -- zones. Memory reclaim is driven based on how the VM
+> > wants to reclaim memory: nothing you can do to avoid some linkage
+> > between the two.
+
+The allocation API exposes per-node allocation, not zones. The zones
+are the internal implementation of the API, not what people use
+directly for allocation...
+
+> > > As an example: XFS inodes to be reclaimed are simply tagged in a
+> > > radix tree so the shrinker can reclaim inodes in optimal IO order
+> > > rather strict LRU order. It simply does not match a zone-based
+....
+> > But anyway, that's kind of an "aside": inode caches are reclaimed
+> > in LRU, IO-suboptimal order today anyway. Per-zone LRU doesn't
+> > change that in the slightest.
+
+I suspect you didn't read what I wrote, so I'll repeat it. XFS has
+reclaimed inodes in optimal IO order for several releases and so
+per-zone LRU would change that drastically.
+
+> > > Other subsystems need the same
+> > > large-machine scaling treatment, and there's no way we should be
+> > > tying them all into the struct zone. It needs further abstraction.
+> > 
+> > An abstraction? Other than the zone? What do you suggest? Invent
+> > something that the VM has no concept of and try to use that?
+
+I think you answered that question yourself a moment ago:
+
+> > The structure is not frequent -- a couple per NUMA node.
+
+Sounds to me like a per-node LRU/shrinker arrangement is an
+abstraction that the VM could work with. Indeed, make it run only
+from the *per-node kswapd* instead of from direct reclaim, and we'd
+also solve the unbound reclaim parallelism problem at the same
+time...
+
+Cheers,
+
+Dave.
 -- 
-js
-suse labs
+Dave Chinner
+david@fromorbit.com
