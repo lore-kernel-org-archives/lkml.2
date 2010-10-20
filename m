@@ -1,65 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758182Ab0JTGNr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Oct 2010 02:13:47 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:56849 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757918Ab0JTGNq (ORCPT
+	id S1758206Ab0JTGQh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Oct 2010 02:16:37 -0400
+Received: from helcar.apana.org.au ([209.40.204.226]:55201 "EHLO
+	fornost.hengli.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758000Ab0JTGQg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Oct 2010 02:13:46 -0400
+	Wed, 20 Oct 2010 02:16:36 -0400
+Date: Wed, 20 Oct 2010 14:16:31 +0800
+From: Herbert Xu <herbert@gondor.hengli.com.au>
+To: Patrick Ringl <patrick_@freenet.de>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        bridge@lists.linux-foundation.org
+Subject: Re: 2.6.36-rc7: net/bridge causes temporary network I/O lockups [2]
+Message-ID: <20101020061631.GA21679@gondor.apana.org.au>
+References: <4CB9EBC3.4070905@freenet.de> <20101018161656.GA2403@gondor.apana.org.au> <4CBCB014.9080108@freenet.de>
 MIME-Version: 1.0
-X-Originating-IP: [109.186.69.160]
-In-Reply-To: <1287531090.9245.139.camel@c-dwalke-linux.qualcomm.com>
-References: <1287387875-14168-1-git-send-email-ohad@wizery.com> <1287531090.9245.139.camel@c-dwalke-linux.qualcomm.com>
-From: Ohad Ben-Cohen <ohad@wizery.com>
-Date: Wed, 20 Oct 2010 08:13:25 +0200
-Message-ID: <AANLkTikPnm1NK1wGGzbOuNoCOnAcSp=RC8mTW2yx3u0s@mail.gmail.com>
-Subject: Re: [PATCH 0/3] Add OMAP hardware spinlock misc driver
-To: Daniel Walker <dwalker@codeaurora.org>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        akpm@linux-foundation.org, Greg KH <greg@kroah.com>,
-        Tony Lindgren <tony@atomide.com>, Benoit Cousson <b-cousson@ti.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Hari Kanigeri <h-kanigeri2@ti.com>, Suman Anna <s-anna@ti.com>,
-        mattw@codeaurora.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4CBCB014.9080108@freenet.de>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 20, 2010 at 1:31 AM, Daniel Walker <dwalker@codeaurora.org> wrote:
-> On Mon, 2010-10-18 at 09:44 +0200, Ohad Ben-Cohen wrote:
->> OMAP4 introduces a Spinlock hardware module, which provides hardware
->> assistance for synchronization and mutual exclusion between heterogeneous
->> processors and those not operating under a single, shared operating system
->> (e.g. OMAP4 has dual Cortex-A9, dual Cortex-M3 and a C64x+ DSP).
->>
->> The intention of this hardware module is to allow remote processors,
->> that have no alternative mechanism to accomplish synchronization and mutual
->> exclusion operations, to share resources (such as memory and/or any other
->> hardware resource).
->>
->> This patchset adds a new misc driver for this OMAP hwspinlock module.
+On Mon, Oct 18, 2010 at 10:37:40PM +0200, Patrick Ringl wrote:
 >
-> Does this code interface with some hardware unit (other than the other
-> processors) to accomplish this locking ?
+> Anything else I could possibly provide? :-)
 
-Yes, it's a special-purpose hardware peripheral.
+Yes, testing :)
 
-> The reason I ask is because MSM has similar code, and from what I can
-> tell the MSM version has some structures in memory but that's all. It
-> just operates on the structures in memory.
+First of all I'd like to rule out (or in) the IPv6 query code,
+which is clearly generating a bogus packet (wrong payload_len).
 
-That's interesting.
-
-We did have thoughts of making this a generic framework, in the hope
-that it would be useful for other vendors too, but we didn't find
-additional users.
-
-> It might be worth looking over the two implementation so we aren't both
-> remaking the wheel.
-
-Indeed. Where is that MSM code ?
+So can you apply this patch and see if it makes the problem
+go away? Please take packet dumps so we know that the IPv6 query
+is no longer being sent.
 
 Thanks,
-Ohad.
+-- 
+Email: Herbert Xu <herbert@gondor.apana.org.au>
+Home Page: http://gondor.apana.org.au/~herbert/
+PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
+--
+diff --git a/net/bridge/br_multicast.c b/net/bridge/br_multicast.c
+index eb5b256..66f39d7 100644
+--- a/net/bridge/br_multicast.c
++++ b/net/bridge/br_multicast.c
+@@ -832,11 +832,6 @@ static void br_multicast_send_query(struct net_bridge *br,
+ 	br_group.proto = htons(ETH_P_IP);
+ 	__br_multicast_send_query(br, port, &br_group);
+ 
+-#if defined(CONFIG_IPV6) || defined(CONFIG_IPV6_MODULE)
+-	br_group.proto = htons(ETH_P_IPV6);
+-	__br_multicast_send_query(br, port, &br_group);
+-#endif
+-
+ 	time = jiffies;
+ 	time += sent < br->multicast_startup_query_count ?
+ 		br->multicast_startup_query_interval :
