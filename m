@@ -1,26 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755095Ab0JTS4e (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Oct 2010 14:56:34 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:41116 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752069Ab0JTS4d (ORCPT
+	id S1755271Ab0JTS5K (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Oct 2010 14:57:10 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:51607 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755036Ab0JTS5H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Oct 2010 14:56:33 -0400
-Date: Wed, 20 Oct 2010 11:56:08 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Randy Dunlap <randy.dunlap@oracle.com>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Stefani Seibold <stefani@seibold.net>
-Subject: Re: kfifo must_check warning (+ patch)
-Message-Id: <20101020115608.996a9db4.akpm@linux-foundation.org>
-In-Reply-To: <20101020193702.584f2c9a@lxorguk.ukuu.org.uk>
-References: <20101019151048.ae79bb25.randy.dunlap@oracle.com>
-	<20101019221242.c732e1fa.akpm@linux-foundation.org>
-	<20101020094659.091113f5.randy.dunlap@oracle.com>
-	<20101020193702.584f2c9a@lxorguk.ukuu.org.uk>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+	Wed, 20 Oct 2010 14:57:07 -0400
+Date: Wed, 20 Oct 2010 19:56:03 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Alexander Stein <alexander.stein@systec-electronic.com>
+Cc: linux-arm-kernel@lists.infradead.org,
+        Grant Edwards <grant.b.edwards@gmail.com>,
+        linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org
+Subject: Re: [PATCH] Documentation about RS485 serial communications
+Message-ID: <20101020195603.70395f50@lxorguk.ukuu.org.uk>
+In-Reply-To: <201010201000.14905.alexander.stein@systec-electronic.com>
+References: <20100408111310.524f7354@lxorguk.ukuu.org.uk>
+	<201010191727.53314.alexander.stein@systec-electronic.com>
+	<i9kk4o$svc$1@dough.gmane.org>
+	<201010201000.14905.alexander.stein@systec-electronic.com>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
@@ -28,23 +29,36 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 20 Oct 2010 19:37:02 +0100
-Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
+On Wed, 20 Oct 2010 10:00:14 +0200
+Alexander Stein <alexander.stein@systec-electronic.com> wrote:
 
-> > Some versions of gcc mysteriously report:
-> > drivers/char/n_gsm.c:1580: warning: ignoring return value of '__kfifo_must_check_helper', declared with attribute warn_unused_result
+> On Tuesday 19 October 2010, 19:22:32 Grant Edwards wrote:
+> > Yes, the AT91 UARTs do have a built-in half-duplex mode that will
+> > automatically control line direction by toggling RTS.
 > > 
-> > This warning can be eliminated by using a local variable for the
-> > returned result value, as suggested by Andrew Morton.
+> > That can used to control external half-duplex hardware like an RS485
+> > transceiver or any RS232-connected half-duplex device like some
+> > modems.
+> > 
+> > Though the Atmel docs refer to it as "RS485 mode" there is no RS485
+> > transceiver in the AT91 parts (AFAIK), and "RS485 mode" isn't specific
+> > to RS485 - it can be used with any external half-duplex hardware.
 > 
-> But that just hides the bug in the helper surely - the helper has type
-> errors so needs fixing - not this. If you apply this then the underlying
-> bug is just going to get forgotten
-> 
+> Out of curiosity, how can I add RS485 (or whatever) support for other serial 
+> devices like e.g. i.mx serial? Is there some driver independent interface 
+> which only gets filled in board configs like setting some GPIO pins?
 
-It won't get forgotten.
+Several devices support RS485 and the like
 
-I agree that the warning is probably an artifact of the signedness
-thing.  So for 2.6.36, disabling __kfifo_must_check_helper() will
-suffice.  I'm sure that Stefani will fix up __kfifo_must_check_helper()
-for real for 2.6.37, then we can see if the warning reoccurs.
+There are two interfaces
+
+1.	termiox	which is used in the old Unix world for sync and
+other stuff on serial world. Linux now supports a bit of this interface
+and has the flags so we can grow it as needed. It covers one way flow
+control
+
+2.	TIOCGSRS485/TIOCSRS486 plus struct serial_rs485 which is Linux
+specific but also allows for pre/post send delays in hardware that some
+chips can do.
+
+And nothing stops you supporting both interfaces when it makes sense
