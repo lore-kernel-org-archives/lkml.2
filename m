@@ -1,69 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753801Ab0JTP2r (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Oct 2010 11:28:47 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:63785 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753444Ab0JTP2q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Oct 2010 11:28:46 -0400
-Date: Wed, 20 Oct 2010 11:27:45 -0400
-From: Jason Baron <jbaron@redhat.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Koki Sanagi <sanagi.koki@jp.fujitsu.com>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Frederic Weisbecker <fweisbec@gmail.com>, nhorman@tuxdriver.com,
-        scott.a.mcmillan@intel.com, laijs@cn.fujitsu.com,
-        LKML <linux-kernel@vger.kernel.org>, eric.dumazet@gmail.com,
-        kaneshige.kenji@jp.fujitsu.com, David Miller <davem@davemloft.net>,
-        izumi.taku@jp.fujitsu.com, kosaki.motohiro@jp.fujitsu.com,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        "Luck, Tony" <tony.luck@intel.com>
-Subject: Re: [PATCH] tracing: Cleanup the convoluted softirq tracepoints
-Message-ID: <20101020152745.GA7348@redhat.com>
-References: <alpine.LFD.2.00.1010191558250.6815@localhost6.localdomain6> <20101019142820.GA14520@Krystal> <alpine.LFD.2.00.1010191842270.6815@localhost6.localdomain6> <1287521757.16971.397.camel@gandalf.stny.rr.com> <alpine.LFD.2.00.1010192302000.6815@localhost6.localdomain6> <1287523439.16971.433.camel@gandalf.stny.rr.com> <4CBE122B.9020807@zytor.com> <20101019224126.GD3519@Krystal> <4CBE206A.20702@zytor.com> <1287529515.16971.538.camel@gandalf.stny.rr.com>
+	id S1753834Ab0JTPaA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Oct 2010 11:30:00 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:30288 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753531Ab0JTP36 (ORCPT
+	<rfc822;<linux-kernel@vger.kernel.org>>);
+	Wed, 20 Oct 2010 11:29:58 -0400
+Date: Wed, 20 Oct 2010 11:28:08 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jeremy Fitzhardinge <Jeremy.Fitzhardinge@citrix.com>,
+        Chris Wright <chrisw@sous-sol.org>,
+        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>
+Subject: Re: xen PV on HVM and initial domain merge in linux-next
+Message-ID: <20101020152808.GA22328@dumpdata.com>
+References: <alpine.DEB.2.00.1010191254460.2423@kaball-desktop>
+ <alpine.DEB.2.00.1010191847290.10348@kaball-desktop>
+ <20101020113256.3647b1d9.sfr@canb.auug.org.au>
+ <alpine.DEB.2.00.1010201455160.10348@kaball-desktop>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1287529515.16971.538.camel@gandalf.stny.rr.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <alpine.DEB.2.00.1010201455160.10348@kaball-desktop>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 19, 2010 at 07:05:15PM -0400, Steven Rostedt wrote:
-> On Tue, 2010-10-19 at 15:49 -0700, H. Peter Anvin wrote:
-> > On 10/19/2010 03:41 PM, Mathieu Desnoyers wrote:
-> > >>
-> > >> OK, first of all, there are some serious WTFs here:
-> > >>
-> > >> # define JUMP_LABEL_INITIAL_NOP ".byte 0xe9 \n\t .long 0\n\t"
-> > >>
-> > >> A jump instruction is one of the worst possible NOPs.  Why are we doing
-> > >> this?
-> > > 
-> > > This code is dynamically patched at boot time (and module load time) with a
-> > > better nop, just like the function tracer does.
-> > > 
+On Wed, Oct 20, 2010 at 04:16:17PM +0100, Stefano Stabellini wrote:
+> On Wed, 20 Oct 2010, Stephen Rothwell wrote:
+> > Hi Stefano,
 > > 
-> > That's just ridiculous... start out with something sane and you at least
-> > have the chance of not having to patch it.
+> > [just casting the net a bit wider ...]
+> > 
+> > On Tue, 19 Oct 2010 18:51:47 +0100 Stefano Stabellini <stefano.stabellini@eu.citrix.com> wrote:
+> > >
+> > > I forgot to CC the LKML and linux-next...
+> > > 
+> > > On Tue, 19 Oct 2010, Stefano Stabellini wrote:
+> > > > Stephen,
+> > > > I have two patch series to merge in linux-next:
+> > > > 
+> > > > PV on HVM: receive interrupts as xen events
+> > > > xen: initial domain support
+> > > > 
+> > > > they have all the acked-by needed and are both stable since several
+> > > > weeks, however they depend on Konrad's xen-pcifront series and for this
+> > > > reason I waited until now to ask for a merge in linux-next.
+> > > > 
+> > > > Could you please pull:
+> > > > 
+> > > > git://xenbits.xen.org/people/sstabellini/linux-pvhvm.git linux-next-initial-domain-v4
+> > > > 
+> > > > it contains both series rebased on Konrad's pcifront series merged on
+> > > > linux-next (warning: it still contains the merge commit of
+> > > > xen-pcifront-0.8.2 in linux-next).
+> > > > Let me know if you have any conflicts or if you need me to change the
+> > > > branch somehow.
+> > 
+> > Not following the Xen develpment at all, I would like to have a positive
+> > reply from the listed Xen contacts, please,
+> > 
 > 
-> Yep we can fix this. Jason?
+> Sure.
+> Jeremy?
+
+The patches touch the Xen PCI components, so:
+
+Acked-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+
+And yeah, we need to update the MAINTAINERS file. Let me spin one out
+with the folks who are currently involved in this.
+
 > 
+> 
+> > I do have concerns that this is turning up so late, but I realise that
+> > that is mainly due to a misunderstanding on the part of some of the Xen
+> > community.
+> > 
+> 
+> Thank you very much for understanding!
+> 
+> 
+> > Also, the above tree is based on next-20101019 which means that I cannot
+> > use it as is.  All the trees merged into linux-next must be base on some
+> > other stable tree (almost always Linus' tree).  linux-next is rebuilt
+> > from scratch every day, so I cannot ever include a previous day's version.
+> > 
+> > Merging in other stable trees is OK (as long as the other maintainer is
+> > aware of that and makes sure that their tree does not reabse).
+> > 
+> > Basically what you send to me should be what you intend to send to Linus
+> > during the next merge window.
+>  
+> All right.
+> I merged Jeremy's and Konrad's branches (the ones you just merged on
+> linux-next) on top of linux 2.6.36 rc8, then I rebased my series on top
+> of the result.
+> Please checkout this branch:
+> 
+> git://xenbits.xen.org/people/sstabellini/linux-pvhvm.git 2.6.36-rc8-initial-domain-v5
 
-sure. The idea of the 'jmp 0' was simply to be an lcd for x86, if
-there's a better lcd for x86, I'll update it. But note, that since the
-'jmp 0' is patched to a better nop at boot, we wouldn't see much gain.
-And in the boot path we are using 'text_poke_early()', so avoiding that
-isn't going to improve things much.
+Just as a note, you might want to create a branch titled
 
-I've got a few fixup patches in the queue that I'm going to post first,
-and then I'll take a look at this change.
+#linux-next in your git tree and link the reviewed/acked/tested branch to it. That way
+Stephen does not have to change his entries in the linux-next tree every release.
 
-thanks,
+> 
+> and let me know if it is suitable, it shouldn't have any merge
+> conflicts.
 
--Jason
-
+/me nods. Works nicely. Thank you for doing this on such a short-time frame.
