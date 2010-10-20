@@ -1,73 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754544Ab0JTRTG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Oct 2010 13:19:06 -0400
-Received: from imr3.ericy.com ([198.24.6.13]:54154 "EHLO imr3.ericy.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753418Ab0JTRTF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Oct 2010 13:19:05 -0400
-Date: Wed, 20 Oct 2010 10:18:06 -0700
-From: Guenter Roeck <guenter.roeck@ericsson.com>
-To: Joe Perches <joe@perches.com>
-CC: Jean Delvare <khali@linux-fr.org>, Hans de Goede <j.w.r.degoede@hhs.nl>,
-        Alistair John Strachan <alistair@devzero.co.uk>,
-        Henrik Rydberg <rydberg@euromail.se>,
-        "Mark M. Hoffman" <mhoffman@lightlink.com>,
-        Luca Tettamanti <kronos.it@gmail.com>,
-        Fenghua Yu <fenghua.yu@intel.com>, Juerg Haefliger <juergh@gmail.com>,
-        Eric Piel <eric.piel@tremplin-utc.net>,
-        Jim Cromie <jim.cromie@gmail.com>,
-        Roger Lucas <vt8231@hiddenengine.co.uk>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] drivers/hwmon: Use pr_fmt and pr_<level>
-Message-ID: <20101020171806.GD22572@ericsson.com>
-References: <1287530020.10409.594.camel@Joe-Laptop>
- <20101020094208.3136b9dd@endymion.delvare>
- <1287590363.1813.148.camel@Joe-Laptop>
- <20101020164929.GB22572@ericsson.com>
- <1287593660.1813.198.camel@Joe-Laptop>
+	id S1754631Ab0JTRUp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Oct 2010 13:20:45 -0400
+Received: from alerce.vps.bitfolk.com ([212.13.194.134]:3699 "EHLO
+	alerce.vps.bitfolk.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753530Ab0JTRUo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Oct 2010 13:20:44 -0400
+Date: Wed, 20 Oct 2010 14:20:18 -0300
+From: Leandro Lucarella <luca@llucax.com.ar>
+To: Neil Horman <nhorman@tuxdriver.com>
+Cc: David Miller <davem@davemloft.net>, paul.gortmaker@windriver.com,
+        jon.maloy@ericsson.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, tipc-discussion@lists.sourceforge.net
+Subject: Re: Linux 2.6.35/TIPC 2.0 ABI breaking changes
+Message-ID: <20101020172018.GN8781@llucax.com.ar>
+References: <4CBCD429.8090306@windriver.com>
+ <20101018234547.GA5703@hmsreliant.think-freely.org>
+ <20101019021657.GZ8781@llucax.com.ar>
+ <20101019.011649.71113115.davem@davemloft.net>
+ <20101019110452.GA14410@hmsreliant.think-freely.org>
+ <20101019131936.GB8781@llucax.com.ar>
+ <20101019201841.GC14410@hmsreliant.think-freely.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1287593660.1813.198.camel@Joe-Laptop>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20101019201841.GC14410@hmsreliant.think-freely.org>
+X-Paranoid: Just because you're paranoid, don't mean they're not after you.
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 20, 2010 at 12:54:20PM -0400, Joe Perches wrote:
-> On Wed, 2010-10-20 at 09:49 -0700, Guenter Roeck wrote:
-> > On Wed, Oct 20, 2010 at 11:59:23AM -0400,
-> >  Joe Perches wrote:
-> > [ ... ]
-> > > Anyway, I'd like to sort it out eventually.
-> > > For now, I just add the #define pr_fmt, with
-> > > a long term goal of removing them all and using
-> > > a different mechanism to remove the duplicated
-> > > prefix string altogether from the formats and
-> > > save some text.
-> > I don't mind individual pr_fmt defines as long as they are used.
-> > However, that is not the case in many of the patches.
-> > Just adding a pr_fmt define to a file without using it doesn't make sense to me.
-> 
-> kernel.h has the equivalent of:
-> 
-> #define pr_<level>(fmt, arg...) printk(KERN_<level> pr_fmt(fmt), ##arg)
-> 
-And no one minds that there are literally hundreds of equivalent defines
-for pr_fmt in the code, and even more conflicting ones ? Odd.
+Neil Horman, el 19 de octubre a las 16:18 me escribiste:
+> 	Heres what I have so far.  Dave as a heads up please don't apply this
+> yet.  I'd like to go over it a bit more and be sure of the implications here
+> before I post it for inclusion officially.  I wanted Leandro to have a copy
+> though so he could confirm functionality for us.  Leandro, This patch lets me
+> pass the tipc test code for TIPC 1.6 that you posted earlier this morning.  If
+> you could confirm that it works for you that would be grand.  While your doing
+> that, I want to read over the spec for TIPC and make sure that I'm not breaking
+> anything new with this patch.
 
-Maybe the following in kernel.h would make more sense.
+I tried the patch (swapping the values of TIPC_SUB_SERVICE and
+TIPC_SUB_PORTS) based on 2.6.35.4 and it didn't worked. dmesg sais:
+NOT Swapping endianess in subscr_subscribe
+NOT Swapping endianess in subscr_subscribe
+TIPC: Subscription rejected, illegal request
 
-#ifndef pr_fmt
-#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-#endif
+I tried with a binary compiled with an older tipc.h header, I didn't
+tried to recompile it using the new tipc.h (on purpose as the thing that
+should be fixed is backwards compatibility).
 
-At least it would make more sense than littering source files with pr_fmt definitions.
-If that doesn't fly, I would prefer to stick with the existing default definition in kernel.h.
-At least that would give people an incentive to fix the problem in kernel.h (or in some other
-central location) if they dislike the resulting missing module names.
+I've read the TIPC 2.0 specification[1] a little more, and as I see, the
+subscription messages are not supposed to go through the wire[2].
 
-Thanks,
-Guenter
+	8.  Topology Service
+
+	TIPC provides a message-based mechanism for an application to
+	learn about the port names that are visible to its node. This is
+	achieved by communicating with a Topology Service that has
+	knowledge of the contents of the node's name table.
+
+So, if the idea is to comply with TIPC 2.0, the topology service should
+accept the new TIPC_SUB_SERVICE and TIPC_SUB_PORTS values (0 and
+1 in NBO respectively), and all the fields in the subscr struct should
+be filled in NBO too.
+
+However, if the idea is to keep backwards compatibility too, HBO should
+be accepted as well as the old TIPC_SUB_SERVICE and TIPC_SUB_PORTS
+values (2 and 1 in HBO respectively).
+
+The real problem is, we can't figure out the endianess of the subscr
+struct because 0x0 is a valid filter in TIPC 2.0.
+
+The only solution I see is to change the TIPC 2.0 specification (which
+is a "work-in-progress") to make the topology service use the port name
+{2,2}, leaving {1,1} for backwards compatibility. Then add the constants
+TIPC_SUB_SERVICE2 (0) and TIPC_TOP_SRV2 (2), or similar, to use the TIPC
+2.0 interface and leave TIPC_SUB_SERVICE and TIPC_TOP_SRV for the TIPC
+1.x interface.
+
+Another option is to change the TIPC 2.0 specification to use the old
+format (use HBO in subscriptions and keep TIPC_SUB_SERVICE as a separate
+flag with value 2) and forget about all this. After all, I can't see
+what advantages gives having to change the BO for internal messages
+between the applications and the stack.
+
+[1] http://tipc.sourceforge.net/doc/draft-spec-tipc-06.html
+[2] http://tipc.sourceforge.net/doc/draft-spec-tipc-06.html#anchor92
+
+-- 
+Leandro Lucarella (AKA luca)                     http://llucax.com.ar/
+----------------------------------------------------------------------
+GPG Key: 5F5A8D05 (F8CD F9A7 BF00 5431 4145  104C 949E BFB6 5F5A 8D05)
+----------------------------------------------------------------------
+CARANCHO OBNUBILADO APARECE EN PARQUE CHACABUCO!
+	-- Crónica TV
