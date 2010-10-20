@@ -1,80 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752956Ab0JTKgh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Oct 2010 06:36:37 -0400
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:33793 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751894Ab0JTKgf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1752911Ab0JTKgg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Oct 2010 06:36:36 -0400
+Received: from gate.crashing.org ([63.228.1.57]:41814 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751145Ab0JTKgf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 20 Oct 2010 06:36:35 -0400
-Date: Wed, 20 Oct 2010 12:36:43 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: linux-tip-commits@vger.kernel.org, linux-kernel@vger.kernel.org,
-        hpa@zytor.com, mingo@redhat.com, ian.cambell@eu.citrix.com,
-        jbeulich@novell.com, tglx@linutronix.de, hpa@linux.intel.com
-Subject: Re: [tip:x86/mm] x86, mm: Hold mm->page_table_lock while doing
- vmalloc_sync
-Message-ID: <20101020103642.GA3135@kryptos.osrc.amd.com>
-References: <4CB88A4C.1080305@goop.org>
- <tip-617d34d9e5d8326ec8f188c616aa06ac59d083fe@git.kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <tip-617d34d9e5d8326ec8f188c616aa06ac59d083fe@git.kernel.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Subject: Re: PROBLEM: memory corrupting bug, bisected to 6dda9d55
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: pacman@kosh.dhis.org
+Cc: Segher Boessenkool <segher@kernel.crashing.org>,
+        Mel Gorman <mel@csn.ul.ie>, linux-mm@kvack.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
+In-Reply-To: <20101020032345.5240.qmail@kosh.dhis.org>
+References: <20101020032345.5240.qmail@kosh.dhis.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 20 Oct 2010 21:32:16 +1100
+Message-ID: <1287570736.2198.19.camel@pasglop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: tip-bot for Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-Date: Tue, Oct 19, 2010 at 10:17:37PM +0000
+On Tue, 2010-10-19 at 22:23 -0500, pacman@kosh.dhis.org wrote:
+> The diff fragment above applied inside prom_close_stdin, but there are
+> some
+> prom_printf calls after prom_close_stdin. Calling prom_printf after
+> closing
+> stdout sounds like it could be bad. If I moved it down below all the
+> prom_printf's, it would be after the "quiesce" call. Would that be
+> acceptable
+> (or even interesting as an experiment)? Does a close need a quiesce
+> after it?
 
-> Commit-ID:  617d34d9e5d8326ec8f188c616aa06ac59d083fe
-> Gitweb:     http://git.kernel.org/tip/617d34d9e5d8326ec8f188c616aa06ac59d083fe
-> Author:     Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-> AuthorDate: Tue, 21 Sep 2010 12:01:51 -0700
-> Committer:  H. Peter Anvin <hpa@linux.intel.com>
-> CommitDate: Tue, 19 Oct 2010 13:57:08 -0700
+Just try :-) "quiesce" is something that afaik only apple ever
+implemented anyways. It uses hooks inside their OF to shut down all
+drivers that do bus master (among other HW sanitization tasks).
 
---
-From: Borislav Petkov <borislav.petkov@amd.com>
-Date: Wed, 20 Oct 2010 12:23:48 +0200
-Subject: [PATCH] x86, mm: Fix build warning on 32-bit
-
-arch/x86/mm/fault.c: In function 'vmalloc_sync_all':
-arch/x86/mm/fault.c:238: warning: assignment makes integer from pointer without a cast
-
-introduced by 617d34d9e5d8326ec8f188c616aa06ac59d083fe.
-
-Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
----
- arch/x86/mm/fault.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/arch/x86/mm/fault.c b/arch/x86/mm/fault.c
-index 85c2eb9..79b0b37 100644
---- a/arch/x86/mm/fault.c
-+++ b/arch/x86/mm/fault.c
-@@ -230,7 +230,7 @@ void vmalloc_sync_all(void)
- 		spin_lock_irqsave(&pgd_lock, flags);
- 		list_for_each_entry(page, &pgd_list, lru) {
- 			spinlock_t *pgt_lock;
--			int ret;
-+			pmd_t *ret;
- 
- 			pgt_lock = &pgd_page_get_mm(page)->page_table_lock;
- 
--- 
-1.7.3.1
+Cheers,
+Ben.
 
 
--- 
-Regards/Gruss,
-Boris.
-
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-General Managers: Alberto Bozzo, Andrew Bowd
-Registration: Dornach, Gemeinde Aschheim, Landkreis Muenchen
-Registergericht Muenchen, HRB Nr. 43632
