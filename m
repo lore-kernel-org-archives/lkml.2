@@ -1,50 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754042Ab0JTQFJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Oct 2010 12:05:09 -0400
-Received: from smtp.opengridcomputing.com ([209.198.142.2]:45944 "EHLO
-	smtp.opengridcomputing.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751906Ab0JTQFH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Oct 2010 12:05:07 -0400
-Message-ID: <4CBF1331.70107@opengridcomputing.com>
-Date: Wed, 20 Oct 2010 11:05:05 -0500
-From: Tom Tucker <tom@opengridcomputing.com>
-User-Agent: Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10.6; en-US; rv:1.9.2.9) Gecko/20100915 Lightning/1.0b2 Thunderbird/3.1.4
-MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: "J. Bruce Fields" <bfields@fieldses.org>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        linux-nfs@vger.kernel.org, lkml <linux-kernel@vger.kernel.org>,
-        Tom Tucker <tom@ogc.us>
-Subject: Re: [PATCH linux-2.6.36-rc7] sunrpc/xprtrdma: clean up workqueue
- usage
-References: <4CB87807.7050108@kernel.org> <20101015171132.GA18869@fieldses.org> <4CB89393.6000207@opengridcomputing.com> <4CB8A745.5020206@kernel.org>
-In-Reply-To: <4CB8A745.5020206@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1753938Ab0JTQGS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Oct 2010 12:06:18 -0400
+Received: from LUNGE.MIT.EDU ([18.54.1.69]:43986 "EHLO lunge.queued.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751906Ab0JTQGR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Oct 2010 12:06:17 -0400
+Date: Wed, 20 Oct 2010 09:06:13 -0700
+From: Andres Salomon <dilinger@queued.net>
+To: Daniel Drake <dsd@laptop.org>
+Cc: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
+        linux-kernel@vger.kernel.org, bp@alien8.de, randy.dunlap@oracle.com
+Subject: Re: [PATCH v2] OLPC: Add XO-1 suspend/resume support
+Message-ID: <20101020090613.2e969a6f@queued.net>
+In-Reply-To: <20101020151723.9F6F89D401B@zog.reactivated.net>
+References: <20101020151723.9F6F89D401B@zog.reactivated.net>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  On 10/15/10 2:11 PM, Tejun Heo wrote:
-> On 10/15/2010 07:46 PM, Tom Tucker wrote:
->>   On 10/15/10 12:11 PM, J. Bruce Fields wrote:
->>> Tom, could you take a look?
->>>
->> This looks reasonable to me.
->>
->> My bet is that it wasn't tested though due to hardware
->> availability. I'll test it this weekend and let you know how it
->> goes.
-> Yeap, only compile tested.  Testing would be much appreciated.
->
-Tejun,
+On Wed, 20 Oct 2010 16:17:23 +0100 (BST)
+Daniel Drake <dsd@laptop.org> wrote:
 
-I've tested this now with iozone etc... works like a charm ;-)
+> Add code needed for basic suspend/resume of the XO-1 laptop.
+> 
+> Signed-off-by: Daniel Drake <dsd@laptop.org>
+> ---
+>  arch/x86/Kconfig                  |    2 +-
+>  arch/x86/include/asm/olpc.h       |    5 +-
+>  arch/x86/kernel/Makefile          |    2 +-
+>  arch/x86/kernel/olpc-xo1-wakeup.S |  133
+> +++++++++++++++++++++++++++++++++++++
+> arch/x86/kernel/olpc-xo1.c        |   79 ++++++++++++++++++++++ 5
+> files changed, 218 insertions(+), 3 deletions(-) create mode 100644
+> arch/x86/kernel/olpc-xo1-wakeup.S
+> 
+> v2: add dependency on CONFIG_PM_SLEEP (thanks Randy), avoid
+> requirement on hacking swsusp_pg_dir by switching to
+> initial_page_table Depends on the following patch:
+> x86-32, mm: Add an initial page table for core bootstrapping
+> 
+> diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+> index 6a81891..581abc7 100644
+> --- a/arch/x86/Kconfig
+> +++ b/arch/x86/Kconfig
+> @@ -2036,7 +2036,7 @@ config OLPC
+>  
+>  config OLPC_XO1
+>  	tristate "OLPC XO-1 support"
+> -	depends on OLPC && PCI
+> +	depends on OLPC && PCI && PM_SLEEP
+>  	---help---
 
-Tom
 
-> Thanks.
->
+My suggestion would be:
 
+config OLPC_XO1_PM
+	bool
+	depends on OLPC && PCI && PM_SLEEP
+	default y
+
+
+No help necessary; just silently turn it on if PM_SLEEP is enabled, but
+don't make all OLPC support dependent upon PM_SLEEP.
