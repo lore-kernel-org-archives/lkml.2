@@ -1,80 +1,174 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753453Ab0JTR0S (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Oct 2010 13:26:18 -0400
-Received: from eddie.linux-mips.org ([78.24.191.182]:47695 "EHLO
-	cvs.linux-mips.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753122Ab0JTR0R (ORCPT
+	id S1754163Ab0JTR05 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Oct 2010 13:26:57 -0400
+Received: from casper.infradead.org ([85.118.1.10]:53780 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753122Ab0JTR04 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Oct 2010 13:26:17 -0400
-Date: Wed, 20 Oct 2010 18:26:15 +0100 (BST)
-From: "Maciej W. Rozycki" <macro@linux-mips.org>
-To: "Gleb O. Raiko" <raiko@niisi.msk.ru>
-cc: Ralf Baechle <ralf@linux-mips.org>, Kevin Cernekee <cernekee@gmail.com>,
-        Shinya Kuribayashi <skuribay@pobox.com>, linux-mips@linux-mips.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH resend 5/9] MIPS: sync after cacheflush
-In-Reply-To: <4CBEA2D6.6050507@niisi.msk.ru>
-Message-ID: <alpine.LFD.2.00.1010201750060.15889@eddie.linux-mips.org>
-References: <17ebecce124618ddf83ec6fe8e526f93@localhost> <17d8d27a2356640a4359f1a7dcbb3b42@localhost> <4CBC4F4E.5010305@pobox.com> <AANLkTinpry=XG-ZDgXJK-VB6QkBL2TO4-vrsV5Tc1eEs@mail.gmail.com> <alpine.LFD.2.00.1010190146360.15889@eddie.linux-mips.org>
- <20101019123441.GJ27377@linux-mips.org> <alpine.LFD.2.00.1010192039550.15889@eddie.linux-mips.org> <4CBEA2D6.6050507@niisi.msk.ru>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Wed, 20 Oct 2010 13:26:56 -0400
+Subject: Re: High CPU load when machine is idle (related to PROBLEM:
+ Unusually high load average when idle in 2.6.35, 2.6.35.1 and later)
+From: Peter Zijlstra <peterz@infradead.org>
+To: Damien Wyart <damien.wyart@free.fr>
+Cc: Chase Douglas <chase.douglas@canonical.com>, Ingo Molnar <mingo@elte.hu>,
+        tmhikaru@gmail.com, Thomas Gleixner <tglx@linutronix.de>,
+        linux-kernel@vger.kernel.org, Venkatesh Pallipadi <venki@google.com>
+In-Reply-To: <1287584073.3488.22.camel@twins>
+References: <20100929070153.GA2200@brouette>
+	 <20101014145813.GA2185@brouette>  <20101020132732.GA30024@brouette>
+	 <1287581440.3488.16.camel@twins>  <1287582208.3488.20.camel@twins>
+	 <1287584073.3488.22.camel@twins>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Wed, 20 Oct 2010 19:26:45 +0200
+Message-ID: <1287595605.3488.52.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 20 Oct 2010, Gleb O. Raiko wrote:
 
-> >   That said, R4k DECstations seem to perform aggressive write buffering in
-> > the chipset and to make sure a write has propagated to an MMIO register a
-> > SYNC and an uncached read operation are necessary.
-> 
-> Just uncached read may be enough. R4k shall pull data from its store buffer on
-> uncached read.
 
- I'm not sure what you mean: whether the processor will snoop the value to 
-read in the store buffer or will it stall until the buffer has drained and 
-issue the load on the external bus?
+OK, how does this work for people? I find my idle load is still a tad
+high, but maybe I'm not patient enough.
 
- I can't see the behaviour of uncached loads wrt uncached stores clearly 
-documented anywhere for the R4400 processor (DEC used the SC variation, 
-BTW).  There's no mention of uncached loads to have SYNC properties.  
-Therefore in the context of one or more pending uncached stores I can 
-assume one of the three for an uncached load:
+---
+ include/linux/sched.h    |    8 ++++++++
+ kernel/sched.c           |   32 ++++++++++++++++++++++++++------
+ kernel/sched_idletask.c  |    1 -
+ kernel/time/tick-sched.c |    2 ++
+ 4 files changed, 36 insertions(+), 7 deletions(-)
 
-1. If the addresses match, then the value loaded is snooped in (retrieved 
-   from) the store buffer, no external cycle on the bus is seen.  This is 
-   what the R2020 WB did.
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 0383601..5311ef4 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -145,6 +145,14 @@ extern unsigned long this_cpu_load(void);
+ 
+ extern void calc_global_load(void);
+ 
++#ifdef CONFIG_NO_HZ
++extern void calc_load_account_idle(void);
++extern void calc_load_account_nonidle(void);
++#else
++static inline void calc_load_account_idle(void) { }
++static inline void calc_load_account_nonidle(void) { }
++#endif
++
+ extern unsigned long get_parent_ip(unsigned long addr);
+ 
+ struct seq_file;
+diff --git a/kernel/sched.c b/kernel/sched.c
+index abf8440..f214222 100644
+--- a/kernel/sched.c
++++ b/kernel/sched.c
+@@ -526,6 +526,10 @@ struct rq {
+ 	/* calc_load related fields */
+ 	unsigned long calc_load_update;
+ 	long calc_load_active;
++#ifdef CONFIG_NO_HZ
++	long calc_load_inactive;
++	int calc_load_seq;
++#endif
+ 
+ #ifdef CONFIG_SCHED_HRTICK
+ #ifdef CONFIG_SMP
+@@ -1833,7 +1837,6 @@ static void cfs_rq_set_shares(struct cfs_rq *cfs_rq, unsigned long shares)
+ }
+ #endif
+ 
+-static void calc_load_account_idle(struct rq *this_rq);
+ static void update_sysctl(void);
+ static int get_update_sysctl_factor(void);
+ static void update_cpu_load(struct rq *this_rq);
+@@ -3111,16 +3114,36 @@ static long calc_load_fold_active(struct rq *this_rq)
+  * When making the ILB scale, we should try to pull this in as well.
+  */
+ static atomic_long_t calc_load_tasks_idle;
++static atomic_t calc_load_seq;
+ 
+-static void calc_load_account_idle(struct rq *this_rq)
++void calc_load_account_idle(void)
+ {
++	struct rq *this_rq = this_rq();
+ 	long delta;
+ 
+ 	delta = calc_load_fold_active(this_rq);
++	this_rq->calc_load_inactive = delta;
++	this_rq->calc_load_seq = atomic_read(&calc_load_seq);
++
+ 	if (delta)
+ 		atomic_long_add(delta, &calc_load_tasks_idle);
+ }
+ 
++void calc_load_account_nonidle(void)
++{
++	struct rq *this_rq = this_rq();
++
++	if (atomic_read(&calc_load_seq) == this_rq->calc_load_seq) {
++		atomic_long_sub(this_rq->calc_load_inactive, &calc_load_tasks_idle);
++		/*
++		 * Undo the _fold_active() from _account_idle(). This
++		 * avoids us loosing active tasks and creating a negative
++		 * bias
++		 */
++		this_rq->calc_load_active -= this_rq->calc_load_inactive;
++	}
++}
++
+ static long calc_load_fold_idle(void)
+ {
+ 	long delta = 0;
+@@ -3128,16 +3151,13 @@ static long calc_load_fold_idle(void)
+ 	/*
+ 	 * Its got a race, we don't care...
+ 	 */
++	atomic_inc(&calc_load_seq);
+ 	if (atomic_long_read(&calc_load_tasks_idle))
+ 		delta = atomic_long_xchg(&calc_load_tasks_idle, 0);
+ 
+ 	return delta;
+ }
+ #else
+-static void calc_load_account_idle(struct rq *this_rq)
+-{
+-}
+-
+ static inline long calc_load_fold_idle(void)
+ {
+ 	return 0;
+diff --git a/kernel/sched_idletask.c b/kernel/sched_idletask.c
+index 9fa0f402..6ca191f 100644
+--- a/kernel/sched_idletask.c
++++ b/kernel/sched_idletask.c
+@@ -23,7 +23,6 @@ static void check_preempt_curr_idle(struct rq *rq, struct task_struct *p, int fl
+ static struct task_struct *pick_next_task_idle(struct rq *rq)
+ {
+ 	schedstat_inc(rq, sched_goidle);
+-	calc_load_account_idle(rq);
+ 	return rq->idle;
+ }
+ 
+diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
+index 3e216e0..808abd7 100644
+--- a/kernel/time/tick-sched.c
++++ b/kernel/time/tick-sched.c
+@@ -411,6 +411,7 @@ void tick_nohz_stop_sched_tick(int inidle)
+ 			ts->tick_stopped = 1;
+ 			ts->idle_jiffies = last_jiffies;
+ 			rcu_enter_nohz();
++			calc_load_account_idle();
+ 		}
+ 
+ 		ts->idle_sleeps++;
+@@ -520,6 +521,7 @@ void tick_nohz_restart_sched_tick(void)
+ 
+ 	ts->inidle = 0;
+ 
++	calc_load_account_nonidle();
+ 	rcu_exit_nohz();
+ 
+ 	/* Update jiffies first */
 
-2. The load bypasses the stores and therefore reaches the external bus 
-   before the stores.  This is what the R3220 MB did and I believe the 
-   R2020 WB defaulted to in the case of no address match.
-
-3. The load stalls until the outstanding stores have completed and only 
-   then appears on the external bus.
-
-There's no hurt from using SYNC here and its semantics make it clear it 
-enforces the case #3 above even if not otherwise guaranteed.  Otherwise I 
-think the case #2 would be a reasonable default (i.e. one I'd recommend to 
-a processor designer) as draining the store buffer on any uncached load 
-whether needed or not is a waste of performance.
-
-> >   I haven't investigated DMA dependencies and I think we currently only
-> > have one TURBOchannel device/driver only (that is the DEFTA/defxx FDDI
-> > thingy) making use of the generic DMA API on DECstations.  It seemed to
-> > work correctly the last time I tried; presumably either because the API
-> > Does The Right Thing, or by pure luck and right timings.
-> 
-> dfx_writel issues sync after store. BTW, it seems no uncached read issued here
-> (just mb() is used, which seems to do sync only), so either those uncached
-> read is not needed (unlikely) or data from dfx_writel wait somewhere in the
-> chipset for being pulled by subsequent reads or writes.
-
- Ah, I could have added it myself ;) -- oddly enough even though the 
-driver originated from DEC, they only used/tested it with x86 systems 
-apparently, rather than the obvious choice of the Alpha that implemented a 
-much, much weaker ordering model that any MIPS chip ever did.
-
-  Maciej
