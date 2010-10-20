@@ -1,95 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754651Ab0JTR6z (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Oct 2010 13:58:55 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:2058 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753913Ab0JTR6y convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Oct 2010 13:58:54 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp02.nvidia.com on Wed, 20 Oct 2010 10:58:41 -0700
-From: Rhyland Klein <rklein@nvidia.com>
-To: Rhyland Klein <rklein@nvidia.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: "cbouatmailru@gmail.com" <cbouatmailru@gmail.com>,
-        Andrew Chew <AChew@nvidia.com>, "olof@lixom.net" <olof@lixom.net>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Wed, 20 Oct 2010 10:56:08 -0700
-Subject: RE: [PATCH 1/1] power: bq24617: Adding initial charger support
-Thread-Topic: [PATCH 1/1] power: bq24617: Adding initial charger support
-Thread-Index: ActwA0M/yhGpE0igR4ybrf6+x/IxCQAewgKQAABqqOA=
-Message-ID: <E88A1D35AF5437468E5B14C7C4BA61C702D37CA98E@HQMAIL01.nvidia.com>
-References: <1287541031-17409-1-git-send-email-rklein@nvidia.com>
- <20101020030235.GA25392@sirena.org.uk> 
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	id S1754648Ab0JTSCZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Oct 2010 14:02:25 -0400
+Received: from xenotime.net ([72.52.115.56]:53047 "HELO xenotime.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1753204Ab0JTSCY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Oct 2010 14:02:24 -0400
+Date: Wed, 20 Oct 2010 11:02:11 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+Cc: Tech Board Discuss 
+	<Tech-board-discuss@lists.linux-foundation.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        "ksummit-2010-discuss@lists.linux-foundation.org" 
+	<ksummit-2010-discuss@lists.linux-foundation.org>
+Subject: Re: Linux Foundation Technical Advisory Board Elections and
+ Nomination process
+Message-Id: <20101020110211.92051a57.rdunlap@xenotime.net>
+In-Reply-To: <1287151254.3069.10.camel@mulgrave.site>
+References: <1287151254.3069.10.camel@mulgrave.site>
+Organization: YPO4
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: Rhyland Klein
-> Sent: Wednesday, October 20, 2010 10:52 AM
-> To: 'Mark Brown'
-> Cc: cboutatmailru@gmail.com; Andrew Chew; olof@lixom.net; linux-
-> tegra@vger.kernel.org; linux-kernel@vger.kernel.org
-> Subject: RE: [PATCH 1/1] power: bq24617: Adding initial charger support
-> 
-> > From: Mark Brown [mailto:broonie@opensource.wolfsonmicro.com]
-> > Sent: Tuesday, October 19, 2010 8:03 PM
-> > To: Rhyland Klein
-> > Cc: cboutatmailru@gmail.com; Andrew Chew; olof@lixom.net; linux-
-> > tegra@vger.kernel.org; linux-kernel@vger.kernel.org
-> > Subject: Re: [PATCH 1/1] power: bq24617: Adding initial charger support
-> >
-> > On Tue, Oct 19, 2010 at 07:17:11PM -0700, rklein@nvidia.com wrote:
-> > > From: Rhyland Klein <rklein@nvidia.com>
-> > >
-> > > Initial checkin adding basic support for the TI BQ24617 battery charger
-> > on the
-> > > Nvidia Tegra architecture.
-> >
-> > Why is this driver dependant on the CPU?  I can't see anything in the
-> > code that makes it so.
-> 
-> In hindsight this isn't the most accurate statement. The driver itself is
-> not dependent on the CPU, it is dependent on the platform design, and in
-> particular requires the PG line to be piped in through a GPIO. Would it
-> make more sense to make the driver dependent on GPIO instead?
-> 
-> >
-> > > +	if (old_status != -1 &&
-> > > +		old_status != new_status) {
-> > > +		dev_dbg(&chip->pdev->dev,
-> > > +			"%s: %i -> %i\n", __func__, old_status,
-> > > +			new_status);
-> > > +		kobject_uevent(&chip->power_supply.dev->kobj, KOBJ_CHANGE);
-> >
-> > power_supply_changed().
-> 
-> Alright.
-> 
-> >
-> > > +static irqreturn_t bq24617_irq_switch(int irq, void *devid)
-> > > +{
-> > > +	struct bq24617_info *chip = devid;
-> > > +
-> > > +	schedule_work(&chip->ac_work);
-> > > +
-> > > +	return IRQ_HANDLED;
-> > > +}
-> >
-> > You're looking for a threaded IRQ handler here - use
-> > request_threaded_irq() with no primary handler.
-> 
-> Alright I will look into this.
+On Fri, 15 Oct 2010 10:00:54 -0400 James Bottomley wrote:
 
-Fixing Anton's email address here, I had a typo in it.
+> The elections for five of the ten members of the Linux Foundation
+> Technical Advisory Board[TAB] are held every year, currently the
+> election will be at the 2010 Kernel Summit in a BoF session on Tuesday
+> at Jillians (The Joint KS/Plumbers Reception on 2 November).  The idea
+> is to be open to both KS and Plumbers attendees who wish to vote. 
+> 
+> Anyone is eligible to stand for election, simply send your nomination
+> to:
+> 
+> Tech-board-discuss@lists.linux-foundation.org
+
+
+I suppose that nominees will make a statement about their qualifications
+(or at least be allowed to do so).
+
+What does the TAB do?  What has it done in the past year or two?
+
+There are no recent meeting minutes at
+http://www.linuxfoundation.org/programs/advisory-councils/tab
+to try to evaluate anything about the TAB afaict.
+
+thanks,
+---
+~Randy
