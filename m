@@ -1,69 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752849Ab0JTKVh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Oct 2010 06:21:37 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:56707 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751251Ab0JTKVf convert rfc822-to-8bit (ORCPT
+	id S1752872Ab0JTKYh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Oct 2010 06:24:37 -0400
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:39510 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751251Ab0JTKYf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Oct 2010 06:21:35 -0400
+	Wed, 20 Oct 2010 06:24:35 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:from:date
-         :x-google-sender-auth:message-id:subject:to:cc:content-type
-         :content-transfer-encoding;
-        b=p1Xw2sig1h3YKrevAelE+mhnzVH1EUA0JNe4pENRHh+PsgFZq2FxrZISjMT2DivQu/
-         b9sfMoGPLy3MFZW6ePlQYmbvAFvohbYP6KunpqVJnZtlPTHt90f7Bhhz8bOfHkIkGkNV
-         q/QuIX6d+dNrHfTAiIu95X+ZTbEGZ4WaYOAvE=
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
+        b=eGLtKhukj+MgNexDMP8iZa16B/MvIw4NcuRUoTR0lQ0xGBcy3sn2MjA1nO/aNgYUdZ
+         wH9MgC65z2M0f24Ouav+V3wyWbgIE0rp20zDNwvvwv8uNWfLSTr1Vb7LWpBqwkUav5E3
+         NMhYFhqKjonKL45J7dcBY/v0w5TxpB2ys04sU=
 MIME-Version: 1.0
-In-Reply-To: <4CBEAA6E.2060000@kernel.org>
-References: <4CBDB834.2050905@kernel.org> <AANLkTi=gYununGYK-QuonZASyk49Rj2-+zG+f22fBF=g@mail.gmail.com>
- <4CBEAA6E.2060000@kernel.org>
-From: Bart Van Assche <bvanassche@acm.org>
-Date: Wed, 20 Oct 2010 12:21:13 +0200
-X-Google-Sender-Auth: Iz8KcvHdruGNXPcJM9gvz-KcPE8
-Message-ID: <AANLkTikLUhN691OzPiqO_hqeAkE7VfWA6Gkwqt98MHN9@mail.gmail.com>
-Subject: Re: [PATCH v2.6.36-rc7] infiniband: update workqueue usage
-To: Tejun Heo <tj@kernel.org>
-Cc: Roland Dreier <rolandd@cisco.com>, Sean Hefty <sean.hefty@intel.com>,
-        Hal Rosenstock <hal.rosenstock@gmail.com>, linux-rdma@vger.kernel.org,
-        lkml <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+In-Reply-To: <20101019134418.GA13514@gondor.apana.org.au>
+References: <20100907084213.GA4610@gondor.apana.org.au>
+	<20101019134418.GA13514@gondor.apana.org.au>
+Date: Wed, 20 Oct 2010 12:24:33 +0200
+X-Google-Sender-Auth: UZKxjj6vDloC7L9lm03wWSlsG0g
+Message-ID: <AANLkTi=cmus+1fWBbqH8p=cw4G60+PF_572=5Au=TDxL@mail.gmail.com>
+Subject: Re: RFC: Crypto API User-interface
+From: Nikos Mavrogiannopoulos <nmav@gnutls.org>
+To: Herbert Xu <herbert@gondor.hengli.com.au>
+Cc: Linux Crypto Mailing List <linux-crypto@vger.kernel.org>,
+        netdev@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Cryptodev-linux-devel@gna.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 20, 2010 at 10:38 AM, Tejun Heo <tj@kernel.org> wrote:
-> Hello,
->
-> On 10/19/2010 08:40 PM, Bart Van Assche wrote:
->> On Tue, Oct 19, 2010 at 5:24 PM, Tejun Heo <tj@kernel.org> wrote:
->>> [ ... ]
->>> This is to prepare for deprecation of flush_scheduled_work().
->>> [ ... ]
->>> Index: work/include/rdma/ib_verbs.h
->>> [ ... ]
->>> +extern struct workqueue_struct *ib_wq;
->>> [ ... ]
->>
->> This patch adds a declaration of a global variable to a public header
->> file. That might be unavoidable, but it doesn't make me happy.
->
-> Hmm... that's one very interesting reason to be unhappy.  Can you
-> please elaborate why addition of a global variable doesn't make you
-> happy?
+On Tue, Oct 19, 2010 at 3:44 PM, Herbert Xu
+<herbert@gondor.hengli.com.au> wrote:
+> OK I've gone ahead and implemented the user-space API for hashes
+> and ciphers.
+> To recap this interface is designed to allow user-space programs
+> to access hardware cryptographic accelerators that we have added
+> to the kernel.
+> The intended usage scenario is where a large amount of data needs
+> to be processed where the benefits offered by hardware acceleration
+> that is normally unavailable in user-space (as opposed to ones
+> such as the Intel AES instruction which may be used directly from
+> user-space) outweigh the overhead of going through the kernel.
 
-In the past every time I saw a global variable being added in a
-software project that meant that some software concept was not being
-abstracted properly. Which does not necessarily mean that that is the
-case with this patch.
+What is the overall advantage of this API comparing to other existing
+ones that achieve similar goals[0][1]?
 
-With the posted patch, just like with the current implementation, e.g.
-the flush_workqueue() call in the ipath driver will make that driver
-wait until work scheduled by the core/sa_query.c code finished and
-vice versa. Is that necessary ? If not, using multiple work queues for
-IB instead of one would allow to get rid of that global ib_wq
-declaration.
+Some observations:
+1. To perform an encryption of data 6 system calls are made (I don't
+count the 2 used for socket initialization since I suppose can be global
+for all operations) and a file descriptor is assigned. The number of
+system calls
+made has great impact to the actual speed seen by userspace (as you said this
+API is for user-space to access the high-speed peripherals that do encryption).
+2. Due to the usage of read() and write() no zero-copy can happen for
+user-space buffers[3].
 
-Bart.
+regards,
+Nikos
+
+[0]. http://home.gna.org/cryptodev-linux/
+[1]. http://home.gna.org/cryptodev-linux/ncr.html
+[2]. The openbsd[0] api can do it with 3 system calls and NCR[1] with one,
+and both require no file descriptor for each operation.
+[3]. The openbsd[0] api and NCR[1] do zero-copy for user-space buffers.
