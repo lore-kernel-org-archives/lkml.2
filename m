@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756126Ab0JTWtb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Oct 2010 18:49:31 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:32159 "EHLO
+	id S1756185Ab0JTWto (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Oct 2010 18:49:44 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:50723 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756075Ab0JTWt2 (ORCPT
+	with ESMTP id S1756144Ab0JTWtm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Oct 2010 18:49:28 -0400
+	Wed, 20 Oct 2010 18:49:42 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=google.com; s=beta;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=Y2V9IDNbJD0ZYmSgAUC2SIXmycJHaESrt7+mc21v4hbUrMeKEYF+zThGPKiif4eJam
-         JCrtM2oQMLOd4J2hHauw==
+        b=GsFUBcBib0Kh0Hic3fvY04PJJKfE8tSdwa1dwMXcSrb4ORIibjZzClRHMlKqFhaeW0
+         aMaN4DIZbf1s0iKegrrg==
 From: Venkatesh Pallipadi <venki@google.com>
 To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
         "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
@@ -22,9 +22,9 @@ Cc: linux-kernel@vger.kernel.org, Paul Turner <pjt@google.com>,
         Shaun Ruffell <sruffell@digium.com>,
         Yong Zhang <yong.zhang0@gmail.com>,
         Venkatesh Pallipadi <venki@google.com>
-Subject: [PATCH 2/6] Add nsecs_to_cputime64 interface for asm-generic
-Date: Wed, 20 Oct 2010 15:48:58 -0700
-Message-Id: <1287614941-32325-3-git-send-email-venki@google.com>
+Subject: [PATCH 5/6] Account ksoftirq time as cpustat softirq
+Date: Wed, 20 Oct 2010 15:49:01 -0700
+Message-Id: <1287614941-32325-6-git-send-email-venki@google.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1287614941-32325-1-git-send-email-venki@google.com>
 References: <1287614941-32325-1-git-send-email-venki@google.com>
@@ -33,90 +33,90 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add nsecs_to_cputime64 interface. This is used in following patches that
-updates cpu irq stat based on ns granularity info in IRQ_TIME_ACCOUNTING.
+softirq time in ksoftirqd context is not accounted in ns granularity
+per cpu softirq stats, as we want that to be a part of ksoftirqd
+exec_runtime.
+
+Accounting them separately, and using them while doing stats makes
+/proc/stat include that time in cpu si time.
 
 Signed-off-by: Venkatesh Pallipadi <venki@google.com>
 ---
- include/asm-generic/cputime.h |    3 +++
- include/linux/jiffies.h       |    1 +
- kernel/time.c                 |   23 +++++++++++++++++++++--
- 3 files changed, 25 insertions(+), 2 deletions(-)
+ kernel/sched.c |   28 +++++++++++++++++++++-------
+ 1 files changed, 21 insertions(+), 7 deletions(-)
 
-diff --git a/include/asm-generic/cputime.h b/include/asm-generic/cputime.h
-index ca0f239..c0f0da0 100644
---- a/include/asm-generic/cputime.h
-+++ b/include/asm-generic/cputime.h
-@@ -30,6 +30,9 @@ typedef u64 cputime64_t;
- #define cputime64_to_jiffies64(__ct)	(__ct)
- #define jiffies64_to_cputime64(__jif)	(__jif)
- #define cputime_to_cputime64(__ct)	((u64) __ct)
-+#define cputime64_gt(__a, __b)		((__a) >  (__b))
-+
-+#define nsecs_to_cputime64(__ct)	nsecs_to_jiffies64(__ct)
- 
- 
- /*
-diff --git a/include/linux/jiffies.h b/include/linux/jiffies.h
-index 6811f4b..922aa31 100644
---- a/include/linux/jiffies.h
-+++ b/include/linux/jiffies.h
-@@ -307,6 +307,7 @@ extern clock_t jiffies_to_clock_t(long x);
- extern unsigned long clock_t_to_jiffies(unsigned long x);
- extern u64 jiffies_64_to_clock_t(u64 x);
- extern u64 nsec_to_clock_t(u64 x);
-+extern u64 nsecs_to_jiffies64(u64 n);
- extern unsigned long nsecs_to_jiffies(u64 n);
- 
- #define TIMESTAMP_SIZE	30
-diff --git a/kernel/time.c b/kernel/time.c
-index ba9b338..058d4be 100644
---- a/kernel/time.c
-+++ b/kernel/time.c
-@@ -645,7 +645,7 @@ u64 nsec_to_clock_t(u64 x)
- }
- 
- /**
-- * nsecs_to_jiffies - Convert nsecs in u64 to jiffies
-+ * nsecs_to_jiffies64 - Convert nsecs in u64 to jiffies64
-  *
-  * @n:	nsecs in u64
-  *
-@@ -657,7 +657,7 @@ u64 nsec_to_clock_t(u64 x)
-  *   NSEC_PER_SEC = 10^9 = (5^9 * 2^9) = (1953125 * 512)
-  *   ULLONG_MAX ns = 18446744073.709551615 secs = about 584 years
+diff --git a/kernel/sched.c b/kernel/sched.c
+index 7e812a6..cba8090 100644
+--- a/kernel/sched.c
++++ b/kernel/sched.c
+@@ -1941,6 +1941,7 @@ static void deactivate_task(struct rq *rq, struct task_struct *p, int flags)
   */
--unsigned long nsecs_to_jiffies(u64 n)
-+u64 nsecs_to_jiffies64(u64 n)
- {
- #if (NSEC_PER_SEC % HZ) == 0
- 	/* Common case, HZ = 100, 128, 200, 250, 256, 500, 512, 1000 etc. */
-@@ -673,6 +673,25 @@ unsigned long nsecs_to_jiffies(u64 n)
- 	return div_u64(n * 9, (9ull * NSEC_PER_SEC + HZ / 2) / HZ);
- #endif
- }
-+
-+
-+/**
-+ * nsecs_to_jiffies - Convert nsecs in u64 to jiffies
-+ *
-+ * @n:	nsecs in u64
-+ *
-+ * Unlike {m,u}secs_to_jiffies, type of input is not unsigned int but u64.
-+ * And this doesn't return MAX_JIFFY_OFFSET since this function is designed
-+ * for scheduler, not for use in device drivers to calculate timeout value.
-+ *
-+ * note:
-+ *   NSEC_PER_SEC = 10^9 = (5^9 * 2^9) = (1953125 * 512)
-+ *   ULLONG_MAX ns = 18446744073.709551615 secs = about 584 years
-+ */
-+unsigned long nsecs_to_jiffies(u64 n)
-+{
-+	return (unsigned long)nsecs_to_jiffies64(n);
-+}
+ static DEFINE_PER_CPU(u64, cpu_hardirq_time);
+ static DEFINE_PER_CPU(u64, cpu_softirq_time);
++static DEFINE_PER_CPU(u64, cpu_ksoftirqd_time);
  
- #if (BITS_PER_LONG < 64)
- u64 get_jiffies_64(void)
+ static DEFINE_PER_CPU(u64, irq_start_time);
+ static int sched_clock_irqtime;
+@@ -1979,15 +1980,20 @@ void account_system_vtime(struct task_struct *curr)
+ 	delta = now - per_cpu(irq_start_time, cpu);
+ 	per_cpu(irq_start_time, cpu) = now;
+ 	/*
+-	 * We do not account for softirq time from ksoftirqd here.
+ 	 * We want to continue accounting softirq time to ksoftirqd thread
+ 	 * in that case, so as not to confuse scheduler with a special task
+ 	 * that do not consume any time, but still wants to run.
++	 * So, softirq time in ksoftirqd is accounted separately and used
++	 * for softirq time reporting in /proc/stat.
+ 	 */
+-	if (in_irq())
++	if (in_irq()) {
+ 		per_cpu(cpu_hardirq_time, cpu) += delta;
+-	else if (in_serving_softirq() && !(is_ksoftirqd_context()))
+-		per_cpu(cpu_softirq_time, cpu) += delta;
++	} else if (in_serving_softirq()) {
++		if (is_ksoftirqd_context())
++			per_cpu(cpu_ksoftirqd_time, cpu) += delta;
++		else
++			per_cpu(cpu_softirq_time, cpu) += delta;
++	}
+ 
+ 	local_irq_restore(flags);
+ }
+@@ -2025,7 +2031,9 @@ static int irqtime_account_si_update(void)
+ 	int ret = 0;
+ 
+ 	local_irq_save(flags);
+-	latest_ns = __get_cpu_var(cpu_softirq_time);
++	latest_ns = __get_cpu_var(cpu_softirq_time) +
++			__get_cpu_var(cpu_ksoftirqd_time);
++
+ 	if (cputime64_gt(nsecs_to_cputime64(latest_ns), cpustat->softirq))
+ 		ret = 1;
+ 	local_irq_restore(flags);
+@@ -3606,7 +3614,8 @@ void account_system_time(struct task_struct *p, int hardirq_offset,
+  * no timer going off while we are on hardirq and hence we may never get an
+  * oppurtunity to update it solely in system time.
+  * p->stime and friends are only updated on system time and not on irq
+- * softirq as those do not count in task exec_runtime any more.
++ * softirq as those do not count in task exec_runtime any more (except
++ * for ksoftirqd).
+  */
+ static void irqtime_account_process_tick(struct task_struct *p, int user_tick,
+ 						struct rq *rq)
+@@ -3620,7 +3629,12 @@ static void irqtime_account_process_tick(struct task_struct *p, int user_tick,
+ 	} else if (user_tick) {
+ 		account_user_time(p, cputime_one_jiffy, one_jiffy_scaled);
+ 	} else if (irqtime_account_si_update()) {
+-		cpustat->softirq = cputime64_add(cpustat->softirq, tmp);
++		if (is_ksoftirqd_context()) {
++			__account_system_time(p, cputime_one_jiffy,
++					one_jiffy_scaled, &cpustat->softirq);
++		} else {
++			cpustat->softirq = cputime64_add(cpustat->softirq, tmp);
++		}
+ 	} else if (p == rq->idle) {
+ 		account_idle_time(cputime_one_jiffy);
+ 	} else if (p->flags & PF_VCPU) { /* System time or guest time */
 -- 
 1.7.1
 
