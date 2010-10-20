@@ -1,69 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751944Ab0JTEvF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Oct 2010 00:51:05 -0400
-Received: from smtp.outflux.net ([198.145.64.163]:42337 "EHLO smtp.outflux.net"
+	id S1751913Ab0JTE7L (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Oct 2010 00:59:11 -0400
+Received: from hera.kernel.org ([140.211.167.34]:34092 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751169Ab0JTEvB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Oct 2010 00:51:01 -0400
-Date: Tue, 19 Oct 2010 21:45:39 -0700
-From: Kees Cook <kees.cook@canonical.com>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Siarhei Liakh <sliakh.lkml@gmail.com>,
-        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        linux-next@vger.kernel.org, Arjan van de Ven <arjan@infradead.org>,
-        James Morris <jmorris@namei.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Andi Kleen <ak@muc.de>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, Dave Jones <davej@redhat.com>
-Subject: Re: [PATCH V10] RO/NX protection for loadable kernel modules
-Message-ID: <20101020044539.GX6311@outflux.net>
-References: <817ecb6f1002011539g3f30416fi60c7c5222cab8f3@mail.gmail.com>
- <201002021429.38331.rusty@rustcorp.com.au>
- <4B67C0F9.2020202@zytor.com>
- <201002081159.45219.rusty@rustcorp.com.au>
+	id S1750946Ab0JTE7J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Oct 2010 00:59:09 -0400
+Date: Wed, 20 Oct 2010 04:58:50 GMT
+From: tip-bot for Jiri Olsa <jolsa@redhat.com>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        rostedt@goodmis.org, tglx@linutronix.de, jolsa@redhat.com
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        rostedt@goodmis.org, tglx@linutronix.de, jolsa@redhat.com
+In-Reply-To: <20100924154102.GB1818@jolsa.brq.redhat.com>
+References: <20100924154102.GB1818@jolsa.brq.redhat.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] tracing: Add proper check for irq_depth routines
+Message-ID: <tip-a9d61173dc1cb63e660ae89e874e51ba4fd2f991@git.kernel.org>
+Git-Commit-ID: a9d61173dc1cb63e660ae89e874e51ba4fd2f991
+X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <201002081159.45219.rusty@rustcorp.com.au>
-Organization: Canonical
-X-HELO: www.outflux.net
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 20 Oct 2010 04:58:51 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Commit-ID:  a9d61173dc1cb63e660ae89e874e51ba4fd2f991
+Gitweb:     http://git.kernel.org/tip/a9d61173dc1cb63e660ae89e874e51ba4fd2f991
+Author:     Jiri Olsa <jolsa@redhat.com>
+AuthorDate: Fri, 24 Sep 2010 17:41:02 +0200
+Committer:  Steven Rostedt <rostedt@goodmis.org>
+CommitDate: Mon, 18 Oct 2010 10:53:25 -0400
 
-On Mon, Feb 08, 2010 at 11:59:44AM +1030, Rusty Russell wrote:
-> On Tue, 2 Feb 2010 04:36:49 pm H. Peter Anvin wrote:
-> > On 02/01/2010 07:59 PM, Rusty Russell wrote:
-> > > On Tue, 2 Feb 2010 10:09:53 am Siarhei Liakh wrote:
-> > >> This patch is a logical extension of the protection provided by
-> > >> CONFIG_DEBUG_RODATA to LKMs. The protection is provided by splitting
-> > >> module_core and module_init into three logical parts each and setting
-> > >> appropriate page access permissions for each individual section:
-> > >>
-> > >>   1. Code: RO+X
-> > >>   2. RO data: RO+NX
-> > >>   3. RW data: RW+NX
-> > >
-> > > Thanks, applied!
-> > 
-> > I also applied this to the -tip tree... do you prefer to carry it or 
-> > should I leave it as is?
-> 
-> I'm always happy for you to do my work for me!  There are no other module
-> patches likely to conflict.
-> 
-> Acked-by: Rusty Russell <rusty@rustcorp.com.au>
+tracing: Add proper check for irq_depth routines
 
-Sorry for losing track, but where did this patch end up? I don't see it
-in any of the trees I've looked in.
+The check_irq_entry and check_irq_return could be called
+from graph event context. In such case there's no graph
+private data allocated. Adding checks to handle this case.
 
-Thanks,
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+LKML-Reference: <20100924154102.GB1818@jolsa.brq.redhat.com>
 
--Kees
+[ Fixed some grammar in the comments ]
 
--- 
-Kees Cook
-Ubuntu Security Team
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ kernel/trace/trace_functions_graph.c |   24 ++++++++++++++++++++----
+ 1 files changed, 20 insertions(+), 4 deletions(-)
+
+diff --git a/kernel/trace/trace_functions_graph.c b/kernel/trace/trace_functions_graph.c
+index ef49e93..4c58ccc 100644
+--- a/kernel/trace/trace_functions_graph.c
++++ b/kernel/trace/trace_functions_graph.c
+@@ -888,12 +888,20 @@ check_irq_entry(struct trace_iterator *iter, u32 flags,
+ 		unsigned long addr, int depth)
+ {
+ 	int cpu = iter->cpu;
++	int *depth_irq;
+ 	struct fgraph_data *data = iter->private;
+-	int *depth_irq = &(per_cpu_ptr(data->cpu_data, cpu)->depth_irq);
+ 
+-	if (flags & TRACE_GRAPH_PRINT_IRQS)
++	/*
++	 * If we are either displaying irqs, or we got called as
++	 * a graph event and private data does not exist,
++	 * then we bypass the irq check.
++	 */
++	if ((flags & TRACE_GRAPH_PRINT_IRQS) ||
++	    (!data))
+ 		return 0;
+ 
++	depth_irq = &(per_cpu_ptr(data->cpu_data, cpu)->depth_irq);
++
+ 	/*
+ 	 * We are inside the irq code
+ 	 */
+@@ -926,12 +934,20 @@ static int
+ check_irq_return(struct trace_iterator *iter, u32 flags, int depth)
+ {
+ 	int cpu = iter->cpu;
++	int *depth_irq;
+ 	struct fgraph_data *data = iter->private;
+-	int *depth_irq = &(per_cpu_ptr(data->cpu_data, cpu)->depth_irq);
+ 
+-	if (flags & TRACE_GRAPH_PRINT_IRQS)
++	/*
++	 * If we are either displaying irqs, or we got called as
++	 * a graph event and private data does not exist,
++	 * then we bypass the irq check.
++	 */
++	if ((flags & TRACE_GRAPH_PRINT_IRQS) ||
++	    (!data))
+ 		return 0;
+ 
++	depth_irq = &(per_cpu_ptr(data->cpu_data, cpu)->depth_irq);
++
+ 	/*
+ 	 * We are not inside the irq code.
+ 	 */
