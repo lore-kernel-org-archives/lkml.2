@@ -1,28 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754408Ab0JTCWi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Oct 2010 22:22:38 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:52550 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752779Ab0JTCWh (ORCPT
+	id S1753250Ab0JTCaK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Oct 2010 22:30:10 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:54993 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752453Ab0JTCaI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Oct 2010 22:22:37 -0400
-Date: Tue, 19 Oct 2010 19:22:29 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: David Rientjes <rientjes@google.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Mel Gorman <mel@csn.ul.ie>, LKML <linux-kernel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>,
-        Christoph Lameter <cl@linux-foundation.org>
-Subject: Re: [resend][PATCH 2/2] mm, mem-hotplug: update pcp->stat_threshold
- when memory hotplug occur
-Message-Id: <20101019192229.bae83d9d.akpm@linux-foundation.org>
-In-Reply-To: <20101020110132.1815.A69D9226@jp.fujitsu.com>
-References: <alpine.DEB.2.00.1010191208130.15499@chino.kir.corp.google.com>
-	<20101019162940.6918506d.akpm@linux-foundation.org>
-	<20101020110132.1815.A69D9226@jp.fujitsu.com>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+	Tue, 19 Oct 2010 22:30:08 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Wed, 20 Oct 2010 11:24:31 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Greg Thelen <gthelen@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        containers@lists.osdl.org, Andrea Righi <arighi@develer.com>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Ciju Rajan K <ciju@linux.vnet.ibm.com>,
+        David Rientjes <rientjes@google.com>
+Subject: Re: [PATCH v3 02/11] memcg: document cgroup dirty memory interfaces
+Message-Id: <20101020112431.b76b861d.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20101020101421.05325710.kamezawa.hiroyu@jp.fujitsu.com>
+References: <1287448784-25684-1-git-send-email-gthelen@google.com>
+	<1287448784-25684-3-git-send-email-gthelen@google.com>
+	<20101019172744.45e0a8dc.nishimura@mxp.nes.nec.co.jp>
+	<xr93lj5t5245.fsf@ninji.mtv.corp.google.com>
+	<20101020091109.ccd7b39a.kamezawa.hiroyu@jp.fujitsu.com>
+	<20101020094821.75c70fe3.nishimura@mxp.nes.nec.co.jp>
+	<20101020101421.05325710.kamezawa.hiroyu@jp.fujitsu.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
@@ -30,30 +39,56 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 20 Oct 2010 11:07:33 +0900 (JST) KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com> wrote:
+On Wed, 20 Oct 2010 10:14:21 +0900
+KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
 
-> > > > @@ -5013,6 +5014,8 @@ int __meminit init_per_zone_wmark_min(void)
-> > > >  		min_free_kbytes = 128;
-> > > >  	if (min_free_kbytes > 65536)
-> > > >  		min_free_kbytes = 65536;
-> > > > +
-> > > > +	refresh_zone_stat_thresholds();
-> > > >  	setup_per_zone_wmarks();
-> > > >  	setup_per_zone_lowmem_reserve();
-> > > >  	setup_per_zone_inactive_ratio();
-> > > 
-> > > setup_per_zone_wmarks() could change the min and low watermarks for a zone 
-> > > when refresh_zone_stat_thresholds() would have used the old value.
-> > 
-> > Indeed.
-> > 
-> > I could make the obvious fix, but then what I'd have wouldn't be
-> > sufficiently tested.
+> On Wed, 20 Oct 2010 09:48:21 +0900
+> Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp> wrote:
 > 
-> Can we review this?
+> > On Wed, 20 Oct 2010 09:11:09 +0900
+> > KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+> > 
+> > > On Tue, 19 Oct 2010 14:00:58 -0700
+> > > Greg Thelen <gthelen@google.com> wrote:
+> > > 
+> > (snip)
+> > > > +When use_hierarchy=0, each cgroup has independent dirty memory usage and limits.
+> > > > +
+> > > > +When use_hierarchy=1, a parent cgroup increasing its dirty memory usage will
+> > > > +compare its total_dirty memory (which includes sum of all child cgroup dirty
+> > > > +memory) to its dirty limits.  This keeps a parent from explicitly exceeding its
+> > > > +dirty limits.  However, a child cgroup can increase its dirty usage without
+> > > > +considering the parent's dirty limits.  Thus the parent's total_dirty can exceed
+> > > > +the parent's dirty limits as a child dirties pages.
+> > > 
+> > > Hmm. in short, dirty_ratio in use_hierarchy=1 doesn't work as an user expects.
+> > > Is this a spec. or a current implementation ?
+> > > 
+> > > I think as following.
+> > >  - add a limitation as "At setting chidlren's dirty_ratio, it must be below parent's.
+> > >    If it exceeds parent's dirty_ratio, EINVAL is returned."
+> > > 
+> > > Could you modify setting memory.dirty_ratio code ?
+> > > Then, parent's dirty_ratio will never exceeds its own. (If I understand correctly.)
+> > > 
+> > > "memory.dirty_limit_in_bytes" will be a bit more complecated, but I think you can.
+> > > 
+> > I agree.
+> > 
+> > At the first impression, this limitation seems a bit overkill for me, because
+> > we allow memory.limit_in_bytes of a child bigger than that of parent now.
+> > But considering more, the situation is different, because usage_in_bytes never
+> > exceeds limit_in_bytes.
+> > 
+> 
+> I'd like to consider a patch.
+> Please mention that "use_hierarchy=1 case depends on implemenation." for now.
+> 
 
-It's unclear what you mean?
+BTW, how about supporing dirty_limit_in_bytes when use_hierarchy=0 or leave it as
+broken when use_hierarchy=1 ?
+It seems we can only support dirty_ratio when hierarchy is used.
 
-The patches otherwise look OK to me, but it's pretty easy to make
-mistakes in this area.
+Thanks,
+-Kame
 
