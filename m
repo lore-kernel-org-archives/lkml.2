@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932324Ab0JTGwY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Oct 2010 02:52:24 -0400
-Received: from mail.perches.com ([173.55.12.10]:3260 "EHLO mail.perches.com"
+	id S932372Ab0JTGw7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Oct 2010 02:52:59 -0400
+Received: from mail.perches.com ([173.55.12.10]:3263 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932175Ab0JTGwU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Oct 2010 02:52:20 -0400
+	id S932264Ab0JTGwV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Oct 2010 02:52:21 -0400
 From: Joe Perches <joe@perches.com>
 To: Jean Delvare <khali@linux-fr.org>,
         Guenter Roeck <guenter.roeck@ericsson.com>
-Cc: Roger Lucas <vt8231@hiddenengine.co.uk>, lm-sensors@lm-sensors.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 29/32] drivers/hwmon/vt8231.c: Use pr_fmt and pr_<level>
-Date: Tue, 19 Oct 2010 23:51:53 -0700
-Message-Id: <2f9af9098da1daa404968edb93ae4387f81ec1a2.1287556801.git.joe@perches.com>
+Cc: lm-sensors@lm-sensors.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 32/32] drivers/hwmon/w83781d.c: Use pr_fmt and pr_<level>
+Date: Tue, 19 Oct 2010 23:51:56 -0700
+Message-Id: <1ce82b2a1c726d252483c508053eff046abcf132.1287556801.git.joe@perches.com>
 X-Mailer: git-send-email 1.7.3.1.g432b3.dirty
 In-Reply-To: <20101020035346.GA20178@ericsson.com>
 References: <20101020035346.GA20178@ericsson.com>
@@ -30,15 +29,15 @@ Removed prefixes from formats
 
 Signed-off-by: Joe Perches <joe@perches.com>
 ---
- drivers/hwmon/vt8231.c |   10 +++++-----
- 1 files changed, 5 insertions(+), 5 deletions(-)
+ drivers/hwmon/w83781d.c |   29 ++++++++++++++---------------
+ 1 files changed, 14 insertions(+), 15 deletions(-)
 
-diff --git a/drivers/hwmon/vt8231.c b/drivers/hwmon/vt8231.c
-index e6078c9..db3b2e8 100644
---- a/drivers/hwmon/vt8231.c
-+++ b/drivers/hwmon/vt8231.c
-@@ -24,6 +24,8 @@
- /* Supports VIA VT8231 South Bridge embedded sensors
+diff --git a/drivers/hwmon/w83781d.c b/drivers/hwmon/w83781d.c
+index c84b9b4..d452a20 100644
+--- a/drivers/hwmon/w83781d.c
++++ b/drivers/hwmon/w83781d.c
+@@ -33,6 +33,8 @@
+ 
  */
  
 +#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
@@ -46,18 +45,95 @@ index e6078c9..db3b2e8 100644
  #include <linux/module.h>
  #include <linux/init.h>
  #include <linux/slab.h>
-@@ -902,21 +904,19 @@ static int __devinit vt8231_device_add(unsigned short address)
- 	pdev = platform_device_alloc("vt8231", address);
+@@ -1798,8 +1800,7 @@ w83781d_isa_found(unsigned short address)
+ 	 * individually for the probing phase. */
+ 	for (port = address; port < address + W83781D_EXTENT; port++) {
+ 		if (!request_region(port, 1, "w83781d")) {
+-			pr_debug("w83781d: Failed to request port 0x%x\n",
+-				 port);
++			pr_debug("Failed to request port 0x%x\n", port);
+ 			goto release;
+ 		}
+ 	}
+@@ -1811,7 +1812,7 @@ w83781d_isa_found(unsigned short address)
+ 	if (inb_p(address + 2) != val
+ 	 || inb_p(address + 3) != val
+ 	 || inb_p(address + 7) != val) {
+-		pr_debug("w83781d: Detection failed at step 1\n");
++		pr_debug("Detection failed at step 1\n");
+ 		goto release;
+ 	}
+ #undef REALLY_SLOW_IO
+@@ -1820,14 +1821,14 @@ w83781d_isa_found(unsigned short address)
+ 	   MSB (busy flag) should be clear initially, set after the write. */
+ 	save = inb_p(address + W83781D_ADDR_REG_OFFSET);
+ 	if (save & 0x80) {
+-		pr_debug("w83781d: Detection failed at step 2\n");
++		pr_debug("Detection failed at step 2\n");
+ 		goto release;
+ 	}
+ 	val = ~save & 0x7f;
+ 	outb_p(val, address + W83781D_ADDR_REG_OFFSET);
+ 	if (inb_p(address + W83781D_ADDR_REG_OFFSET) != (val | 0x80)) {
+ 		outb_p(save, address + W83781D_ADDR_REG_OFFSET);
+-		pr_debug("w83781d: Detection failed at step 3\n");
++		pr_debug("Detection failed at step 3\n");
+ 		goto release;
+ 	}
+ 
+@@ -1835,7 +1836,7 @@ w83781d_isa_found(unsigned short address)
+ 	outb_p(W83781D_REG_CONFIG, address + W83781D_ADDR_REG_OFFSET);
+ 	val = inb_p(address + W83781D_DATA_REG_OFFSET);
+ 	if (val & 0x80) {
+-		pr_debug("w83781d: Detection failed at step 4\n");
++		pr_debug("Detection failed at step 4\n");
+ 		goto release;
+ 	}
+ 	outb_p(W83781D_REG_BANK, address + W83781D_ADDR_REG_OFFSET);
+@@ -1844,19 +1845,19 @@ w83781d_isa_found(unsigned short address)
+ 	val = inb_p(address + W83781D_DATA_REG_OFFSET);
+ 	if ((!(save & 0x80) && (val != 0xa3))
+ 	 || ((save & 0x80) && (val != 0x5c))) {
+-		pr_debug("w83781d: Detection failed at step 5\n");
++		pr_debug("Detection failed at step 5\n");
+ 		goto release;
+ 	}
+ 	outb_p(W83781D_REG_I2C_ADDR, address + W83781D_ADDR_REG_OFFSET);
+ 	val = inb_p(address + W83781D_DATA_REG_OFFSET);
+ 	if (val < 0x03 || val > 0x77) {	/* Not a valid I2C address */
+-		pr_debug("w83781d: Detection failed at step 6\n");
++		pr_debug("Detection failed at step 6\n");
+ 		goto release;
+ 	}
+ 
+ 	/* The busy flag should be clear again */
+ 	if (inb_p(address + W83781D_ADDR_REG_OFFSET) & 0x80) {
+-		pr_debug("w83781d: Detection failed at step 7\n");
++		pr_debug("Detection failed at step 7\n");
+ 		goto release;
+ 	}
+ 
+@@ -1871,7 +1872,7 @@ w83781d_isa_found(unsigned short address)
+ 		found = 1;
+ 
+ 	if (found)
+-		pr_info("w83781d: Found a %s chip at %#x\n",
++		pr_info("Found a %s chip at %#x\n",
+ 			val == 0x30 ? "W83782D" : "W83781D", (int)address);
+ 
+  release:
+@@ -1894,21 +1895,19 @@ w83781d_isa_device_add(unsigned short address)
+ 	pdev = platform_device_alloc("w83781d", address);
  	if (!pdev) {
  		err = -ENOMEM;
--		printk(KERN_ERR "vt8231: Device allocation failed\n");
+-		printk(KERN_ERR "w83781d: Device allocation failed\n");
 +		pr_err("Device allocation failed\n");
  		goto exit;
  	}
  
  	err = platform_device_add_resources(pdev, &res, 1);
  	if (err) {
--		printk(KERN_ERR "vt8231: Device resource addition failed "
+-		printk(KERN_ERR "w83781d: Device resource addition failed "
 -		       "(%d)\n", err);
 +		pr_err("Device resource addition failed (%d)\n", err);
  		goto exit_device_put;
@@ -65,7 +141,7 @@ index e6078c9..db3b2e8 100644
  
  	err = platform_device_add(pdev);
  	if (err) {
--		printk(KERN_ERR "vt8231: Device addition failed (%d)\n",
+-		printk(KERN_ERR "w83781d: Device addition failed (%d)\n",
 -		       err);
 +		pr_err("Device addition failed (%d)\n", err);
  		goto exit_device_put;
