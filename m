@@ -1,51 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932445Ab0JTHub (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Oct 2010 03:50:31 -0400
-Received: from t111.niisi.ras.ru ([193.232.173.111]:51279 "EHLO
-	t111.niisi.ras.ru" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932280Ab0JTHua (ORCPT
+	id S1754744Ab0JTHwP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Oct 2010 03:52:15 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:58122 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754400Ab0JTHwO convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Oct 2010 03:50:30 -0400
-Message-ID: <4CBEA2D6.6050507@niisi.msk.ru>
-Date: Wed, 20 Oct 2010 12:05:42 +0400
-From: "Gleb O. Raiko" <raiko@niisi.msk.ru>
-Organization: NIISI RAN
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.1.5) Gecko/20091204 Thunderbird/3.0
+	Wed, 20 Oct 2010 03:52:14 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=Cw9TfgSxf6oxi9KA7iiFJ7wqpvPyTAVX43qn7tAY9dPN4+ZWS4ege+ZLYgBq3F6xuU
+         YbxCae2W+4tZ4aHG42cqtl2Qs7YDR/NNpvLbsMnJjncW8WgF3LSnNn6oeUBC9RPDD3JK
+         CqAMXjIPhczC7OARk0udjc4VDr5IVTIRHHkLk=
 MIME-Version: 1.0
-To: "Maciej W. Rozycki" <macro@linux-mips.org>
-CC: Ralf Baechle <ralf@linux-mips.org>, Kevin Cernekee <cernekee@gmail.com>,
-        Shinya Kuribayashi <skuribay@pobox.com>, linux-mips@linux-mips.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH resend 5/9] MIPS: sync after cacheflush
-References: <17ebecce124618ddf83ec6fe8e526f93@localhost> <17d8d27a2356640a4359f1a7dcbb3b42@localhost> <4CBC4F4E.5010305@pobox.com> <AANLkTinpry=XG-ZDgXJK-VB6QkBL2TO4-vrsV5Tc1eEs@mail.gmail.com> <alpine.LFD.2.00.1010190146360.15889@eddie.linux-mips.org> <20101019123441.GJ27377@linux-mips.org> <alpine.LFD.2.00.1010192039550.15889@eddie.linux-mips.org>
-In-Reply-To: <alpine.LFD.2.00.1010192039550.15889@eddie.linux-mips.org>
-Content-Type: text/plain; charset=KOI8-R; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Antivirus: Dr.Web (R) for Mail Servers on t111.niisi.ras.ru host
-X-Antivirus-Code: 100000
+In-Reply-To: <20101019160010.45750e1c.akpm@linux-foundation.org>
+References: <201010182135.09506.florian@openwrt.org>
+	<AANLkTinS+bH+u-x0jEcMgN+uK-__65TNNGg6uQA55TSv@mail.gmail.com>
+	<20101019160010.45750e1c.akpm@linux-foundation.org>
+Date: Wed, 20 Oct 2010 09:52:13 +0200
+Message-ID: <AANLkTi==o4dJSfuC5HT64ZWb0f3ZMG-hjTiK8Sh9UYoR@mail.gmail.com>
+Subject: Re: [PATCH v5] GPIO: add support for 74x164 serial-in/parallel-out
+ 8-bit shift register
+From: Miguel Ojeda <miguel.ojeda.sandonis@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Florian Fainelli <florian@openwrt.org>,
+        David Brownell <david-b@pacbell.net>, Willy Tarreau <w@1wt.eu>,
+        linux-kernel@vger.kernel.org, Samuel Ortiz <sameo@linux.intel.com>,
+        Miguel Gaio <miguel.gaio@efixo.com>, dbrownell@users.sourceforge.net,
+        Juhos Gabor <juhosg@openwrt.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 20.10.2010 0:11, Maciej W. Rozycki wrote:
->   That said, R4k DECstations seem to perform aggressive write buffering in
-> the chipset and to make sure a write has propagated to an MMIO register a
-> SYNC and an uncached read operation are necessary.
+On Wed, Oct 20, 2010 at 1:00 AM, Andrew Morton
+<akpm@linux-foundation.org> wrote:
+> On Tue, 19 Oct 2010 09:26:42 +0200
+> Miguel Ojeda <miguel.ojeda.sandonis@gmail.com> wrote:
+>
+>> On Mon, Oct 18, 2010 at 9:35 PM, Florian Fainelli <florian@openwrt.org> wrote:
+>> > From: Miguel Gaio <miguel.gaio@efixo.com>
+>> >
+>> > This patch adds support for generic 74x164 serial-in/parallel-out 8-bits
+>> > shift register. This driver can be used as a GPIO output expander.
+>> >
+>> ...
+>> > +struct gen_74x164_chip {
+>> > +       struct spi_device       *spi;
+>> > +       struct gpio_chip        gpio_chip;
+>> > +       struct mutex            lock;
+>> > +       u8                      port_config;
+>> > +};
+>> ...
+>> > +static void gen_74x164_set_value(struct gpio_chip *gc,
+>> > +               unsigned offset, int val)
+>> > +{
+>> > +       struct gen_74x164_chip *chip = gpio_to_chip(gc);
+>> > +       bool refresh;
+>> > +
+>> > +       mutex_lock(&chip->lock);
+>> > +       if (val)
+>> > +               chip->port_config |= (1 << offset);
+>> > +       else
+>> > +               chip->port_config &= ~(1 << offset);
+>>
+>> set_bit(), clear_bit() ?
+>
+> They're only to be used on `unsigned long' types, and `port_config' is
+> u8.
+>
 
-Just uncached read may be enough. R4k shall pull data from its store 
-buffer on uncached read.
+Right as always! Maybe BIT()? Don't we have a {SET,CLEAR}_BIT()-like
+macros somewhere?
 
->   I haven't investigated DMA dependencies and I think we currently only
-> have one TURBOchannel device/driver only (that is the DEFTA/defxx FDDI
-> thingy) making use of the generic DMA API on DECstations.  It seemed to
-> work correctly the last time I tried; presumably either because the API
-> Does The Right Thing, or by pure luck and right timings.
+#define SET_BIT(var,nr) (var) |= BIT((nr))
+#define CLEAR_BIT(var,nr) (var) &= ~BIT((nr))
+#define PUT_BIT(var,nr,value) do { \
+        if ((value)) \
+                SET_BIT((var), (nr)); \
+        else \
+                CLEAR_BIT((var), (nr)); \
+} while(0)
 
-dfx_writel issues sync after store. BTW, it seems no uncached read 
-issued here (just mb() is used, which seems to do sync only), so either 
-those uncached read is not needed (unlikely) or data from dfx_writel 
-wait somewhere in the chipset for being pulled by subsequent reads or 
-writes.
-
-Gleb.
+May I make a patch and try to see who could use it? I suppose a
+Coccinelle's semantic patch would be great here.
