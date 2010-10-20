@@ -1,71 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753784Ab0JTP0E (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Oct 2010 11:26:04 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:32318 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753500Ab0JTP0C (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Oct 2010 11:26:02 -0400
-Subject: Re: [PATCH 1/3] IMA: move read/write counters into struct inode
-From: Eric Paris <eparis@redhat.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        hch@infradead.org, zohar@us.ibm.com, warthog9@kernel.org,
-        david@fromorbit.com, jmorris@namei.org, kyle@mcmartin.ca,
-        hpa@zytor.com, akpm@linux-foundation.org
-In-Reply-To: <20101020151555.GC22271@elte.hu>
-References: <20101019011650.25346.99614.stgit@paris.rdu.redhat.com>
-	 <AANLkTimGdjPyLXuknDNa7WNthDT9+2FdOuPdxwjRiMHD@mail.gmail.com>
-	 <1287506215.2530.187.camel@localhost.localdomain>
-	 <20101019165530.GT19804@ZenIV.linux.org.uk>
-	 <AANLkTimL=eChoCQHGoiouE5s6dGG=n9ZAQGhW-RW+gDj@mail.gmail.com>
-	 <1287528546.2530.277.camel@localhost.localdomain>
-	 <20101020143845.GB22271@elte.hu>
-	 <1287585996.2530.294.camel@localhost.localdomain>
-	 <20101020151555.GC22271@elte.hu>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 20 Oct 2010 11:25:35 -0400
-Message-ID: <1287588335.2530.296.camel@localhost.localdomain>
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1753848Ab0JTP0b (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Oct 2010 11:26:31 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:60947 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753776Ab0JTP0a convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Oct 2010 11:26:30 -0400
+From: "Guzman Lugo, Fernando" <fernando.lugo@ti.com>
+To: Hiroshi DOYU <Hiroshi.DOYU@nokia.com>,
+        "felipe.contreras@gmail.com" <felipe.contreras@gmail.com>
+CC: "felipe.contreras@nokia.com" <felipe.contreras@nokia.com>,
+        "david.cohen@nokia.com" <david.cohen@nokia.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>
+Date: Wed, 20 Oct 2010 10:26:24 -0500
+Subject: RE: [PATCHv4 4/4] iommu: create new api to set valid da range
+Thread-Topic: [PATCHv4 4/4] iommu: create new api to set valid da range
+Thread-Index: ActwOPdExtplr7a9SX2pGcFDbZm6QAAMeH0g
+Message-ID: <496565EC904933469F292DDA3F1663E602F4935CE1@dlee06.ent.ti.com>
+References: <AANLkTimSQabHv3AOFFR4m3POjmuGvN18u7TNsPyauH8D@mail.gmail.com>
+	<20101020.114516.189725260.Hiroshi.DOYU@nokia.com>
+	<AANLkTimpmoDY+nDERsTQ_FK0k_vkPjOi=ttbdtt2LpPs@mail.gmail.com>
+ <20101020.122638.112626316.Hiroshi.DOYU@nokia.com>
+In-Reply-To: <20101020.122638.112626316.Hiroshi.DOYU@nokia.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-10-20 at 17:15 +0200, Ingo Molnar wrote:
-> * Eric Paris <eparis@redhat.com> wrote:
+ 
+
+> -----Original Message-----
+> From: Hiroshi DOYU [mailto:Hiroshi.DOYU@nokia.com] 
+> Sent: Wednesday, October 20, 2010 4:27 AM
+> To: felipe.contreras@gmail.com
+> Cc: Guzman Lugo, Fernando; felipe.contreras@nokia.com; 
+> david.cohen@nokia.com; linux-kernel@vger.kernel.org; 
+> linux-omap@vger.kernel.org
+> Subject: Re: [PATCHv4 4/4] iommu: create new api to set valid da range
 > 
-> > On Wed, 2010-10-20 at 16:38 +0200, Ingo Molnar wrote:
-> > > * Eric Paris <eparis@redhat.com> wrote:
-> > > 
-> > > > Executive summary of the day's work:
-> > > > Yesterday morning: 944 bytes per inode in core
-> > > > Yesterday night: 24 bytes per inode in core
-> > > > Tonight: 4 bytes per inode in core.
-> > > > 
-> > > > That's a x236 time reduction in memory usage.  No I didn't even start looking 
-> > > > at a freezer.  Which could bring that 4 down to 0, but would add a scalability 
-> > > > penalty on all inodes when IMA was enabled.
-> > > 
-> > > Why not use inode->i_security intelligently? That already exists so that way 
-> > > it's 0 bytes.
-> > > 
-> > > Thanks,
+> From: ext Felipe Contreras <felipe.contreras@gmail.com>
+> Subject: Re: [PATCHv4 4/4] iommu: create new api to set valid da range
+> Date: Wed, 20 Oct 2010 10:58:16 +0200
+> 
+> > On Wed, Oct 20, 2010 at 11:45 AM, Hiroshi DOYU 
+> <Hiroshi.DOYU@nokia.com> wrote:
+> >> From: "ext felipe.contreras@gmail.com" <felipe.contreras@gmail.com>
+> >> Subject: Re: [PATCHv4 4/4] iommu: create new api to set valid da 
+> >> range
+> >> Date: Wed, 20 Oct 2010 10:35:50 +0200
+> >>
+> >>> On Wed, Oct 20, 2010 at 5:48 AM, Fernando Guzman Lugo 
+> <x0095840@ti.com> wrote:
+> >>>> Some IOMMUs cannot use the whole 0x0 - 0xFFFFFFFF range.
+> >>>> With this new API the valid range can be set.
+> >>>>
+> >>>> Signed-off-by: Fernando Guzman Lugo <x0095840@ti.com>
+> >>>
+> >>> I don't see the point in having an API. It could be done through 
+> >>> platform data, and the usage of 0xFFFFF000 instead of 
+> ULONG_MAX is 
+> >>> independent of this.
+> >>
+> >> Using platform data is better, but why dropping da_end?
 > > 
-> > It still wouldn't be 0 bytes since there would be a 1-1 mapping from inode to 
-> > i_security structs. [...]
+> > Because it's always 0xFFFFF000. Do you know of any instance 
+> where it's 
+> >not?
 > 
-> Only for IMA-affected files, right?
+> We should try to avoid forcing unnecessary limitations and 
+> dependencies. The usage of device virtual address space range 
+> depends on dsp(coprocessor) side S/W implimentation or configuration.
 
-No, we need to keep the open read counter even for non-IMA-affected
-files in case we later determine that it is IMA-affected.  That's the 4
-bytes I have today, which I said could be eliminated with a freezer that
-calculated it when IMA was enabled, but isn't something I'm looking at
-right now....
+I am agree. The valid range depends on the user (dsp or something else)
+The only limitation of see in the iommu is that range has to be
+Page aligned and that should be the only limitation.
 
--Eric
+Regards,
+Fernando.
 
--Eric
-
+> 
