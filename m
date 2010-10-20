@@ -1,127 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756391Ab0JTCmJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Oct 2010 22:42:09 -0400
-Received: from mail30g.wh2.ocn.ne.jp ([220.111.41.239]:21868 "HELO
-	mail30g.wh2.ocn.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754127Ab0JTCmH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Oct 2010 22:42:07 -0400
-From: Bruno Randolf <br1@einfach.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH v2] Add generic exponentially weighted moving average function
-Date: Wed, 20 Oct 2010 11:42:00 +0900
-User-Agent: KMail/1.13.5 (Linux/2.6.35-22-generic; KDE/4.5.1; x86_64; ; )
-Cc: randy.dunlap@oracle.com, kevin.granade@gmail.com, blp@cs.stanford.edu,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-References: <20101019083635.32294.67087.stgit@localhost6.localdomain6> <20101019153756.a89ed362.akpm@linux-foundation.org> <20101019155406.0a728971.akpm@linux-foundation.org>
-In-Reply-To: <20101019155406.0a728971.akpm@linux-foundation.org>
+	id S1756262Ab0JTCvf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Oct 2010 22:51:35 -0400
+Received: from relay1.sgi.com ([192.48.179.29]:58893 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755203Ab0JTCve (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Oct 2010 22:51:34 -0400
+Date: Tue, 19 Oct 2010 21:51:31 -0500
+From: Robin Holt <holt@sgi.com>
+To: Julia Lawall <julia@diku.dk>
+Cc: Robin Holt <holt@sgi.com>, kernel-janitors@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/4] drivers/misc/sgi-xp/xpc_uv.c: convert nested
+ spin_lock_irqsave to spin_lock
+Message-ID: <20101020025130.GE14068@sgi.com>
+References: <1287481436-26656-4-git-send-email-julia@diku.dk>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201010201142.00110.br1@einfach.org>
-X-SF-Loop: 1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1287481436-26656-4-git-send-email-julia@diku.dk>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed October 20 2010 07:54:06 Andrew Morton wrote:
-> I looked at the code..
-
-Thank you for your review!
-
-> > > +#define AVG_FACTOR	1000
+On Tue, Oct 19, 2010 at 11:43:56AM +0200, Julia Lawall wrote:
+> From: Julia Lawall <julia@diku.dk>
 > 
-> Can you please document the magic number?  What does it do?  I'd have
-> though it likely that one day this will become variable, initialised in
-> moving_average_init().
-
-OK. I thought I'd get away without it ;) but you convinced me it's better to 
-have a moving_average_init().
-
-> > > +struct avg_val {
-> > > +	int value;
-> > > +	int internal;
-> > > +};
+> If spin_lock_irqsave is called twice in a row with the same second
+> argument, the interrupt state at the point of the second call overwrites
+> the value saved by the first call.  Indeed, the second call does not need
+> to save the interrupt state, so it is changed to a simple spin_lock.
 > 
-> So it's using integer types.
+> The semantic match that finds this problem is as follows:
+> (http://coccinelle.lip6.fr/)
 > 
-> I guess that makes sense, maybe.  Does your application use negative
-> quantities?  They're pretty rare beasts in the kernel.  I expect most
-> callers will want an unsigned type?
-
-I want to use it with negative numbers (signal strength in dBm), but it's easy 
-enough to convert them to positive numbers, so I'll change the variables to 
-unsigned. I guess averaging between positive and negative numbers is really 
-rare...
-
-> > > +static inline void
-> > > +moving_average(struct avg_val *avg, const int val, const int weight)
-> > > +{
-> > > +	if (WARN_ON_ONCE(weight <= 1))
-> > > +		return;
-> > > +	avg->internal = avg->internal  ?
-> > > +		(((avg->internal * (weight - 1)) +
-> > > +			(val * AVG_FACTOR)) / weight) :
-> > > +		(val * AVG_FACTOR);
-> > > +	avg->value = DIV_ROUND_CLOSEST(avg->internal, AVG_FACTOR);
-> > > +}
+> // <smpl>
+> @@
+> expression lock1,lock2;
+> expression flags;
+> @@
 > 
-> This function is really already too large to be inlined, and I'd
-> suggest that lib/moving_average.c would be a better home for it.
-
-OK. Maybe we could call it lib/average.c so other averaging implementations - 
-should there be any in the future - could go there as well?
-
-> Is it expected that `weight' will have the same value for all calls of
-> moving_average() against a particular avg_val?  If so then perhaps we
-> should do away with this argument and place `weight' into the avg_val
-> struct, and set that up in moving_average_init().
-
-Yes. So I'll make a moving_average_init(scaling_factor, weight).
-
-> And I do think that we need a moving_average_init(), because at present
-> you require that callers initialise the avg_val() by hand.  This means
-> that if we later add more fields to that struct, all callers will need
-> to be updated.  Any which are out-of-tree will have been made buggy.
-
-Well, the initialization we currently require is just to make sure is is 
-zeroed out... But I agree to the other benefits using an init function.
-
-> Also, perhaps moving_average() should end with a
+> *spin_lock_irqsave(lock1,flags)
+> ... when != flags
+> *spin_lock_irqsave(lock2,flags)
+> // </smpl>
 > 
-> 	return avg->value;
-> 
-> for convenience on the callers side.  Or maybe not - I haven't looked
-> at any calling code...
+> Signed-off-by: Julia Lawall <julia@diku.dk>
 
-Ok. No problem.
- 
-> Finally, it's a little ugly to have callers poking around inside the
-> avg_val to get the current average.  The main problem with this is that
-> it restricts future implementations: they must maintain their average
-> in avg_val.value.  If they instead were to call
-> 
-> 	moving_average_read(struct avg_val *)
-> 
-> then we get more freedom regarding future implementations.  The current
-> moving_average_read() could be inlined.  That would require that avg_val be
-> defined in the header file rather than in .c.  This is a bit sad, but
-> acceptable.
+Acked-by: Robin Holt <holt@sgi.com>
 
-I see.
- 
-> And finally+1: moving_average() needs locking to protect internal
-> state.  Right now, the caller must provide that locking.  And that's a
-> fine design IMO - we have no business here assuming that we can use
-> mutex_lock() or spin_lock() or spin_lock_irq() or spin_lock_irqsave() -
-> let the caller decide that.
 > 
-> But the need for this caller-provided locking should be described in
-> the API documentation, please.
-
-Will do that and resend an improved version shortly.
-
-Thanks,
-Bruno
+> ---
+>  drivers/misc/sgi-xp/xpc_uv.c |    4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/misc/sgi-xp/xpc_uv.c b/drivers/misc/sgi-xp/xpc_uv.c
+> index 1f59ee2..7aeaef7 100644
+> --- a/drivers/misc/sgi-xp/xpc_uv.c
+> +++ b/drivers/misc/sgi-xp/xpc_uv.c
+> @@ -451,9 +451,9 @@ xpc_handle_activate_mq_msg_uv(struct xpc_partition *part,
+>  
+>  		if (msg->activate_gru_mq_desc_gpa !=
+>  		    part_uv->activate_gru_mq_desc_gpa) {
+> -			spin_lock_irqsave(&part_uv->flags_lock, irq_flags);
+> +			spin_lock(&part_uv->flags_lock);
+>  			part_uv->flags &= ~XPC_P_CACHED_ACTIVATE_GRU_MQ_DESC_UV;
+> -			spin_unlock_irqrestore(&part_uv->flags_lock, irq_flags);
+> +			spin_unlock(&part_uv->flags_lock);
+>  			part_uv->activate_gru_mq_desc_gpa =
+>  			    msg->activate_gru_mq_desc_gpa;
+>  		}
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
