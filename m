@@ -1,90 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757663Ab0JTDOi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Oct 2010 23:14:38 -0400
-Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:41493 "EHLO
-	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757510Ab0JTDOh (ORCPT
+	id S1757724Ab0JTDPg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Oct 2010 23:15:36 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:35834 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757500Ab0JTDPe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Oct 2010 23:14:37 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: Dave Chinner <david@fromorbit.com>
-Subject: Re: [patch 31/35] fs: icache per-zone inode LRU
-Cc: kosaki.motohiro@jp.fujitsu.com, npiggin@kernel.dk,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-In-Reply-To: <20101019123852.GA12506@dastard>
-References: <20101019034658.744504135@kernel.dk> <20101019123852.GA12506@dastard>
-Message-Id: <20101020115432.1821.A69D9226@jp.fujitsu.com>
+	Tue, 19 Oct 2010 23:15:34 -0400
+Date: Wed, 20 Oct 2010 04:15:04 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Matthew Wilcox <matthew@wil.cx>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Eric Paris <eparis@redhat.com>, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        hch@infradead.org, zohar@us.ibm.com, warthog9@kernel.org,
+        david@fromorbit.com, jmorris@namei.org, kyle@mcmartin.ca,
+        hpa@zytor.com, akpm@linux-foundation.org, mingo@elte.hu
+Subject: Re: [PATCH 1/3] IMA: move read/write counters into struct inode
+Message-ID: <20101020031504.GA18581@ZenIV.linux.org.uk>
+References: <20101019011650.25346.99614.stgit@paris.rdu.redhat.com>
+ <AANLkTimGdjPyLXuknDNa7WNthDT9+2FdOuPdxwjRiMHD@mail.gmail.com>
+ <1287506215.2530.187.camel@localhost.localdomain>
+ <20101019165530.GT19804@ZenIV.linux.org.uk>
+ <AANLkTimL=eChoCQHGoiouE5s6dGG=n9ZAQGhW-RW+gDj@mail.gmail.com>
+ <20101019172805.GU19804@ZenIV.linux.org.uk>
+ <20101019191133.GE2447@parisc-linux.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Becky! ver. 2.50.07 [ja]
-Date: Wed, 20 Oct 2010 12:14:32 +0900 (JST)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101019191133.GE2447@parisc-linux.org>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-
-> On Tue, Oct 19, 2010 at 02:42:47PM +1100, npiggin@kernel.dk wrote:
-> > Per-zone LRUs and shrinkers for inode cache.
+On Tue, Oct 19, 2010 at 01:11:33PM -0600, Matthew Wilcox wrote:
+> Hm.  Sounds like the same question that the file leases code needs
+> answered.  The important difference is that the leases code can just
+> refuse to set a lease on inodes with multiple dentries.
 > 
-> Regardless of whether this is the right way to scale or not, I don't
-> like the fact that this moves the cache LRUs into the memory
-> management structures, and expands the use of MM specific structures
-> throughout the code. It ties the cache implementation to the current
-> VM implementation. That, IMO, goes against all the principle of
-> modularisation at the source code level, and it means we have to tie
-> all shrinker implemenations to the current internal implementation
-> of the VM. I don't think that is wise thing to do because of the
-> dependencies and impedance mismatches it introduces.
+> While my mind's on it ... Al, is this code even close to correct?
 > 
-> As an example: XFS inodes to be reclaimed are simply tagged in a
-> radix tree so the shrinker can reclaim inodes in optimal IO order
-> rather strict LRU order. It simply does not match a zone-based
-> shrinker implementation in any way, shape or form, nor does it's
-> inherent parallelism match that of the way shrinkers are called.
-> 
-> Any change in shrinker infrastructure needs to be able to handle
-> these sorts of impedance mismatches between the VM and the cache
-> subsystem. The current API doesn't handle this very well, either,
-> so it's something that we need to fix so that scalability is easy
-> for everyone.
-> 
-> Anyway, my main point is that tying the LRU and shrinker scaling to
-> the implementation of the VM is a one-off solution that doesn't work
-> for generic infrastructure. Other subsystems need the same
-> large-machine scaling treatment, and there's no way we should be
-> tying them all into the struct zone. It needs further abstraction.
+>                 if ((arg == F_RDLCK) && (atomic_read(&inode->i_writecount) > 0))
+>                         goto out;
+>                 if ((arg == F_WRLCK)
+>                     && ((atomic_read(&dentry->d_count) > 1)
+>                         || (atomic_read(&inode->i_count) > 1)))
+>                         goto out;
 
-I'm not sure what data structure is best. I can only say current
-zone unawareness slab shrinker might makes following sad scenario.
+No.  This is complete junk; note that e.g. ls -lR will disrupt it, since
+lstat(2) will bump dentry refcount.  The first part is more or less OK;
+the second makes no sense.
 
- o DMA zone shortage invoke and plenty icache in NORMAL zone dropping
- o NUMA aware system enable zone_reclaim_mode, but shrink_slab() still
-   drop unrelated zone's icache
-
-both makes performance degression. In other words, Linux does not have
-flat memory model. so, I don't think Nick's basic concept is wrong. 
-It's straight forward enhancement. but if it don't fit current shrinkers,
-I'd like to discuss how to make better data structure.
-
-
-
-and I have dump question (sorry, I don't know xfs at all). current
-xfs_mount is below.
-
-typedef struct xfs_mount {
- ...
-        struct shrinker         m_inode_shrink; /* inode reclaim shrinker */
-} xfs_mount_t;
-
-
-Do you mean xfs can't convert shrinker to shrinker[ZONES]? If so, why?
-
-
-Thanks.
-
-
-
+What is it trying to do?  Note that the first part also doesn't make a lot
+of sense, since you could be acquiring a write reference *right* *now*,
+just as that check passes.  And you could finish getting it before you get
+to do anything else in generic_setlease().
