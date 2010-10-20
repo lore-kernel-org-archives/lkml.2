@@ -1,63 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756095Ab0JTBTg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Oct 2010 21:19:36 -0400
-Received: from mail.bluewatersys.com ([202.124.120.130]:54205 "EHLO
-	hayes.bluewaternz.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753381Ab0JTBTf (ORCPT
+	id S1756947Ab0JTBTw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Oct 2010 21:19:52 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:52938 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755935Ab0JTBTv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Oct 2010 21:19:35 -0400
-Message-ID: <4CBE43CE.404@bluewatersys.com>
-Date: Wed, 20 Oct 2010 14:20:14 +1300
-From: Ryan Mallon <ryan@bluewatersys.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.12) Gecko/20100915 Thunderbird/3.0.8
-MIME-Version: 1.0
-To: Kevin Hilman <khilman@deeprootsystems.com>
-CC: Ohad Ben-Cohen <ohad@wizery.com>, Hari Kanigeri <h-kanigeri2@ti.com>,
-        Suman Anna <s-anna@ti.com>, Benoit Cousson <b-cousson@ti.com>,
-        Tony Lindgren <tony@atomide.com>, Greg KH <greg@kroah.com>,
-        linux-kernel@vger.kernel.org, Grant Likely <grant.likely@secretlab.ca>,
-        Simon Que <sque@ti.com>, akpm@linux-foundation.org,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 3/3] omap: add hwspinlock device
-References: <1287387875-14168-1-git-send-email-ohad@wizery.com>	<1287387875-14168-4-git-send-email-ohad@wizery.com>	<87r5fmxghm.fsf@deeprootsystems.com>	<AANLkTinZ2+ocJCfUpT15Ow3J9XBa-8XWnVC3gDDJ7s-v@mail.gmail.com> <87bp6pviwf.fsf@deeprootsystems.com>
-In-Reply-To: <87bp6pviwf.fsf@deeprootsystems.com>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=UTF-8
+	Tue, 19 Oct 2010 21:19:51 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Wed, 20 Oct 2010 10:14:21 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+Cc: Greg Thelen <gthelen@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        containers@lists.osdl.org, Andrea Righi <arighi@develer.com>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Ciju Rajan K <ciju@linux.vnet.ibm.com>,
+        David Rientjes <rientjes@google.com>
+Subject: Re: [PATCH v3 02/11] memcg: document cgroup dirty memory interfaces
+Message-Id: <20101020101421.05325710.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20101020094821.75c70fe3.nishimura@mxp.nes.nec.co.jp>
+References: <1287448784-25684-1-git-send-email-gthelen@google.com>
+	<1287448784-25684-3-git-send-email-gthelen@google.com>
+	<20101019172744.45e0a8dc.nishimura@mxp.nes.nec.co.jp>
+	<xr93lj5t5245.fsf@ninji.mtv.corp.google.com>
+	<20101020091109.ccd7b39a.kamezawa.hiroyu@jp.fujitsu.com>
+	<20101020094821.75c70fe3.nishimura@mxp.nes.nec.co.jp>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/20/2010 12:53 PM, Kevin Hilman wrote:
-> Ohad Ben-Cohen <ohad@wizery.com> writes:
+On Wed, 20 Oct 2010 09:48:21 +0900
+Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp> wrote:
+
+> On Wed, 20 Oct 2010 09:11:09 +0900
+> KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
 > 
->> On Tue, Oct 19, 2010 at 7:03 PM, Kevin Hilman
->> <khilman@deeprootsystems.com> wrote:
->>>> +postcore_initcall(hwspinlocks_init);
->>>
->>> Any reason this needs to be a postcore_initcall?  Are there users of
->>> hwspinlocks this early in boot?
->>
->> i2c-omap, which is subsys_initcall (the I2C bus is shared between the
->> A9 and the M3 on some OMAP4 boards).
+> > On Tue, 19 Oct 2010 14:00:58 -0700
+> > Greg Thelen <gthelen@google.com> wrote:
+> > 
+> (snip)
+> > > +When use_hierarchy=0, each cgroup has independent dirty memory usage and limits.
+> > > +
+> > > +When use_hierarchy=1, a parent cgroup increasing its dirty memory usage will
+> > > +compare its total_dirty memory (which includes sum of all child cgroup dirty
+> > > +memory) to its dirty limits.  This keeps a parent from explicitly exceeding its
+> > > +dirty limits.  However, a child cgroup can increase its dirty usage without
+> > > +considering the parent's dirty limits.  Thus the parent's total_dirty can exceed
+> > > +the parent's dirty limits as a child dirties pages.
+> > 
+> > Hmm. in short, dirty_ratio in use_hierarchy=1 doesn't work as an user expects.
+> > Is this a spec. or a current implementation ?
+> > 
+> > I think as following.
+> >  - add a limitation as "At setting chidlren's dirty_ratio, it must be below parent's.
+> >    If it exceeds parent's dirty_ratio, EINVAL is returned."
+> > 
+> > Could you modify setting memory.dirty_ratio code ?
+> > Then, parent's dirty_ratio will never exceeds its own. (If I understand correctly.)
+> > 
+> > "memory.dirty_limit_in_bytes" will be a bit more complecated, but I think you can.
+> > 
+> I agree.
 > 
-> Rather than moving towards having more drivers have to be built in (and
-> depend on their probe order) we need to be moving towards building all
-> these drivers as modules, including omap-i2c.
+> At the first impression, this limitation seems a bit overkill for me, because
+> we allow memory.limit_in_bytes of a child bigger than that of parent now.
+> But considering more, the situation is different, because usage_in_bytes never
+> exceeds limit_in_bytes.
+> 
 
-The issue of probe order still needs to be resolved for those of us who
-do want all the drivers built into the kernel. Everything comes out in
-the wash already if everything is built as modules by installing the
-modules in the correct order right?
+I'd like to consider a patch.
+Please mention that "use_hierarchy=1 case depends on implemenation." for now.
 
-~Ryan
+Thanks,
+-Kame
 
--- 
-Bluewater Systems Ltd - ARM Technology Solution Centre
 
-Ryan Mallon         		5 Amuri Park, 404 Barbadoes St
-ryan@bluewatersys.com         	PO Box 13 889, Christchurch 8013
-http://www.bluewatersys.com	New Zealand
-Phone: +64 3 3779127		Freecall: Australia 1800 148 751
-Fax:   +64 3 3779135			  USA 1800 261 2934
