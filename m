@@ -1,174 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754163Ab0JTR05 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Oct 2010 13:26:57 -0400
-Received: from casper.infradead.org ([85.118.1.10]:53780 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753122Ab0JTR04 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Oct 2010 13:26:56 -0400
-Subject: Re: High CPU load when machine is idle (related to PROBLEM:
- Unusually high load average when idle in 2.6.35, 2.6.35.1 and later)
-From: Peter Zijlstra <peterz@infradead.org>
-To: Damien Wyart <damien.wyart@free.fr>
-Cc: Chase Douglas <chase.douglas@canonical.com>, Ingo Molnar <mingo@elte.hu>,
-        tmhikaru@gmail.com, Thomas Gleixner <tglx@linutronix.de>,
-        linux-kernel@vger.kernel.org, Venkatesh Pallipadi <venki@google.com>
-In-Reply-To: <1287584073.3488.22.camel@twins>
-References: <20100929070153.GA2200@brouette>
-	 <20101014145813.GA2185@brouette>  <20101020132732.GA30024@brouette>
-	 <1287581440.3488.16.camel@twins>  <1287582208.3488.20.camel@twins>
-	 <1287584073.3488.22.camel@twins>
+	id S1753469Ab0JTR2Y (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Oct 2010 13:28:24 -0400
+Received: from mail.perches.com ([173.55.12.10]:3357 "EHLO mail.perches.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753122Ab0JTR2X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Oct 2010 13:28:23 -0400
+Subject: Re: [PATCH] drivers/hwmon: Use pr_fmt and pr_<level>
+From: Joe Perches <joe@perches.com>
+To: Guenter Roeck <guenter.roeck@ericsson.com>
+Cc: Jean Delvare <khali@linux-fr.org>, Hans de Goede <j.w.r.degoede@hhs.nl>,
+        Alistair John Strachan <alistair@devzero.co.uk>,
+        Henrik Rydberg <rydberg@euromail.se>,
+        "Mark M. Hoffman" <mhoffman@lightlink.com>,
+        Luca Tettamanti <kronos.it@gmail.com>,
+        Fenghua Yu <fenghua.yu@intel.com>, Juerg Haefliger <juergh@gmail.com>,
+        Eric Piel <eric.piel@tremplin-utc.net>,
+        Jim Cromie <jim.cromie@gmail.com>,
+        Roger Lucas <vt8231@hiddenengine.co.uk>,
+        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
+        LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <20101020171806.GD22572@ericsson.com>
+References: <1287530020.10409.594.camel@Joe-Laptop>
+	 <20101020094208.3136b9dd@endymion.delvare>
+	 <1287590363.1813.148.camel@Joe-Laptop>
+	 <20101020164929.GB22572@ericsson.com>
+	 <1287593660.1813.198.camel@Joe-Laptop>
+	 <20101020171806.GD22572@ericsson.com>
 Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Wed, 20 Oct 2010 19:26:45 +0200
-Message-ID: <1287595605.3488.52.camel@twins>
+Date: Wed, 20 Oct 2010 10:28:20 -0700
+Message-ID: <1287595700.1813.202.camel@Joe-Laptop>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 2010-10-20 at 10:18 -0700, Guenter Roeck wrote:
+> On Wed, Oct 20, 2010 at 12:54:20PM -0400, Joe Perches wrote:
+> > On Wed, 2010-10-20 at 09:49 -0700, Guenter Roeck wrote:
+> > > On Wed, Oct 20, 2010 at 11:59:23AM -0400,
+> > >  Joe Perches wrote:
+> > > [ ... ]
+> > > > Anyway, I'd like to sort it out eventually.
+> > > > For now, I just add the #define pr_fmt, with
+> > > > a long term goal of removing them all and using
+> > > > a different mechanism to remove the duplicated
+> > > > prefix string altogether from the formats and
+> > > > save some text.
+> > > I don't mind individual pr_fmt defines as long as they are used.
+> > > However, that is not the case in many of the patches.
+> > > Just adding a pr_fmt define to a file without using it doesn't make sense to me.
+> > kernel.h has the equivalent of:
+> > #define pr_<level>(fmt, arg...) printk(KERN_<level> pr_fmt(fmt), ##arg)
+> > 
+> And no one minds that there are literally hundreds of equivalent defines
+> for pr_fmt in the code, and even more conflicting ones ? Odd.
+> 
+> Maybe the following in kernel.h would make more sense.
+> 
+> #ifndef pr_fmt
+> #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+> #endif
+> 
+> At least it would make more sense than littering source files with pr_fmt definitions.
+> If that doesn't fly, I would prefer to stick with the existing default definition in kernel.h.
 
+That would give you no prefix at all and make the
+logging messages harder to distinguish.
 
-OK, how does this work for people? I find my idle load is still a tad
-high, but maybe I'm not patient enough.
+> At least that would give people an incentive to fix the problem in kernel.h (or in some other
+> central location) if they dislike the resulting missing module names.
 
----
- include/linux/sched.h    |    8 ++++++++
- kernel/sched.c           |   32 ++++++++++++++++++++++++++------
- kernel/sched_idletask.c  |    1 -
- kernel/time/tick-sched.c |    2 ++
- 4 files changed, 36 insertions(+), 7 deletions(-)
+I don't think it flies for another year or two.
 
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 0383601..5311ef4 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -145,6 +145,14 @@ extern unsigned long this_cpu_load(void);
- 
- extern void calc_global_load(void);
- 
-+#ifdef CONFIG_NO_HZ
-+extern void calc_load_account_idle(void);
-+extern void calc_load_account_nonidle(void);
-+#else
-+static inline void calc_load_account_idle(void) { }
-+static inline void calc_load_account_nonidle(void) { }
-+#endif
-+
- extern unsigned long get_parent_ip(unsigned long addr);
- 
- struct seq_file;
-diff --git a/kernel/sched.c b/kernel/sched.c
-index abf8440..f214222 100644
---- a/kernel/sched.c
-+++ b/kernel/sched.c
-@@ -526,6 +526,10 @@ struct rq {
- 	/* calc_load related fields */
- 	unsigned long calc_load_update;
- 	long calc_load_active;
-+#ifdef CONFIG_NO_HZ
-+	long calc_load_inactive;
-+	int calc_load_seq;
-+#endif
- 
- #ifdef CONFIG_SCHED_HRTICK
- #ifdef CONFIG_SMP
-@@ -1833,7 +1837,6 @@ static void cfs_rq_set_shares(struct cfs_rq *cfs_rq, unsigned long shares)
- }
- #endif
- 
--static void calc_load_account_idle(struct rq *this_rq);
- static void update_sysctl(void);
- static int get_update_sysctl_factor(void);
- static void update_cpu_load(struct rq *this_rq);
-@@ -3111,16 +3114,36 @@ static long calc_load_fold_active(struct rq *this_rq)
-  * When making the ILB scale, we should try to pull this in as well.
-  */
- static atomic_long_t calc_load_tasks_idle;
-+static atomic_t calc_load_seq;
- 
--static void calc_load_account_idle(struct rq *this_rq)
-+void calc_load_account_idle(void)
- {
-+	struct rq *this_rq = this_rq();
- 	long delta;
- 
- 	delta = calc_load_fold_active(this_rq);
-+	this_rq->calc_load_inactive = delta;
-+	this_rq->calc_load_seq = atomic_read(&calc_load_seq);
-+
- 	if (delta)
- 		atomic_long_add(delta, &calc_load_tasks_idle);
- }
- 
-+void calc_load_account_nonidle(void)
-+{
-+	struct rq *this_rq = this_rq();
-+
-+	if (atomic_read(&calc_load_seq) == this_rq->calc_load_seq) {
-+		atomic_long_sub(this_rq->calc_load_inactive, &calc_load_tasks_idle);
-+		/*
-+		 * Undo the _fold_active() from _account_idle(). This
-+		 * avoids us loosing active tasks and creating a negative
-+		 * bias
-+		 */
-+		this_rq->calc_load_active -= this_rq->calc_load_inactive;
-+	}
-+}
-+
- static long calc_load_fold_idle(void)
- {
- 	long delta = 0;
-@@ -3128,16 +3151,13 @@ static long calc_load_fold_idle(void)
- 	/*
- 	 * Its got a race, we don't care...
- 	 */
-+	atomic_inc(&calc_load_seq);
- 	if (atomic_long_read(&calc_load_tasks_idle))
- 		delta = atomic_long_xchg(&calc_load_tasks_idle, 0);
- 
- 	return delta;
- }
- #else
--static void calc_load_account_idle(struct rq *this_rq)
--{
--}
--
- static inline long calc_load_fold_idle(void)
- {
- 	return 0;
-diff --git a/kernel/sched_idletask.c b/kernel/sched_idletask.c
-index 9fa0f402..6ca191f 100644
---- a/kernel/sched_idletask.c
-+++ b/kernel/sched_idletask.c
-@@ -23,7 +23,6 @@ static void check_preempt_curr_idle(struct rq *rq, struct task_struct *p, int fl
- static struct task_struct *pick_next_task_idle(struct rq *rq)
- {
- 	schedstat_inc(rq, sched_goidle);
--	calc_load_account_idle(rq);
- 	return rq->idle;
- }
- 
-diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
-index 3e216e0..808abd7 100644
---- a/kernel/time/tick-sched.c
-+++ b/kernel/time/tick-sched.c
-@@ -411,6 +411,7 @@ void tick_nohz_stop_sched_tick(int inidle)
- 			ts->tick_stopped = 1;
- 			ts->idle_jiffies = last_jiffies;
- 			rcu_enter_nohz();
-+			calc_load_account_idle();
- 		}
- 
- 		ts->idle_sleeps++;
-@@ -520,6 +521,7 @@ void tick_nohz_restart_sched_tick(void)
- 
- 	ts->inidle = 0;
- 
-+	calc_load_account_nonidle();
- 	rcu_exit_nohz();
- 
- 	/* Update jiffies first */
+$ grep -Prh --include=*.[ch] "define\s*pr_fmt" * | \
+	perl -p -e 's/[ \t]+/ /g' | \
+	sort | uniq -c | sort -rn
+    211 #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+     93 #define pr_fmt(fmt) KMSG_COMPONENT ": " fmt
+     16 #define pr_fmt(fmt) KBUILD_MODNAME ":%s(): " fmt, __func__
+     16 #define pr_fmt(fmt) KBUILD_MODNAME ":%s: " fmt, __func__
+      4 #define pr_fmt(fmt) "intc: " fmt
+      4 #define pr_fmt(fmt) "ep93xx " KBUILD_MODNAME ": " fmt
+      3 #define pr_fmt(fmt) "%s: " fmt, __func__
+      3 #define pr_fmt(fmt) DRV_MODULE_NAME ": " fmt
+      2 #define pr_fmt(fmt) "gcov: " fmt
+      2 #define pr_fmt(fmt) fmt
+      2 #define pr_fmt(fmt) DRV_NAME ": " fmt
+      1 #define pr_fmt(fmt) "viod: " fmt
+      1 #define pr_fmt(fmt) "tboot: " fmt
+      1 #define pr_fmt(fmt) "(stll) :" fmt
+      1 #define pr_fmt(fmt) "(stk) :" fmt
+      1 #define pr_fmt(fmt) "(stc): " fmt
+      1 #define pr_fmt(fmt) "PMU: " fmt
+      1 #define pr_fmt(fmt) "pit: " fmt
+      1 #define pr_fmt(fmt) "phram: " fmt
+      1 #define pr_fmt(fmt) "PCI: " fmt
+      1 #define pr_fmt(fmt) "module %s: " fmt
+      1 #define pr_fmt(fmt) "mmiotrace: " fmt
+      1 #define pr_fmt(fmt) KBUILD_MODNAME " WATCHDOG: " fmt
+      1 #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt /* Append 'batman-adv: ' before
+      1 #define pr_fmt(fmt) KBUILD_MODNAME " " fmt
+      1 #define pr_fmt(fmt) KBUILD_BASENAME ": " fmt
+      1 #define pr_fmt(fmt) "isram: " fmt
+      1 #define pr_fmt(fmt) "hw perfevents: " fmt
+      1 #define pr_fmt(fmt) "hw-breakpoint: " fmt
+      1 #define pr_fmt(fmt) DRIVER_NAME ": " fmt
+      1 #define pr_fmt(fmt) "cxgb: " fmt
+      1 #define pr_fmt(fmt) "cn_test: " fmt
+      1 #define pr_fmt(fmt) "clock: " fmt
+      1 #define pr_fmt(fmt) "acerhdf: " fmt
+
 
