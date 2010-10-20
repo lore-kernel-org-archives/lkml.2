@@ -1,354 +1,186 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932084Ab0JTE76 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Oct 2010 00:59:58 -0400
-Received: from hera.kernel.org ([140.211.167.34]:34116 "EHLO hera.kernel.org"
+	id S1752575Ab0JTFCI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Oct 2010 01:02:08 -0400
+Received: from hera.kernel.org ([140.211.167.34]:37198 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750946Ab0JTE74 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Oct 2010 00:59:56 -0400
-Date: Wed, 20 Oct 2010 04:59:38 GMT
-From: tip-bot for Jiri Olsa <jolsa@redhat.com>
+	id S1750834Ab0JTFCH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Oct 2010 01:02:07 -0400
+Date: Wed, 20 Oct 2010 05:01:30 GMT
+From: tip-bot for Robert Richter <robert.richter@amd.com>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        rostedt@goodmis.org, tglx@linutronix.de, jolsa@redhat.com
+        robert.richter@amd.com, tglx@linutronix.de, mingo@elte.hu
 Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        rostedt@goodmis.org, tglx@linutronix.de, jolsa@redhat.com
-In-Reply-To: <1285243253-7372-4-git-send-email-jolsa@redhat.com>
-References: <1285243253-7372-4-git-send-email-jolsa@redhat.com>
+        robert.richter@amd.com, tglx@linutronix.de, mingo@elte.hu
+In-Reply-To: <1286360874-1471-2-git-send-email-robert.richter@amd.com>
+References: <1286360874-1471-2-git-send-email-robert.richter@amd.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] tracing: Graph support for wakeup tracer
-Message-ID: <tip-7495a5beaa22f190f4888aa8cbe4827c16575d0a@git.kernel.org>
-Git-Commit-ID: 7495a5beaa22f190f4888aa8cbe4827c16575d0a
+Subject: [tip:irq/core] apic, x86: Check if EILVT APIC registers are available (AMD only)
+Message-ID: <tip-a68c439b1966c91f0ef474e2bf275d6792312726@git.kernel.org>
+Git-Commit-ID: a68c439b1966c91f0ef474e2bf275d6792312726
 X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 20 Oct 2010 04:59:38 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 20 Oct 2010 05:01:31 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  7495a5beaa22f190f4888aa8cbe4827c16575d0a
-Gitweb:     http://git.kernel.org/tip/7495a5beaa22f190f4888aa8cbe4827c16575d0a
-Author:     Jiri Olsa <jolsa@redhat.com>
-AuthorDate: Thu, 23 Sep 2010 14:00:53 +0200
-Committer:  Steven Rostedt <rostedt@goodmis.org>
-CommitDate: Mon, 18 Oct 2010 10:53:30 -0400
+Commit-ID:  a68c439b1966c91f0ef474e2bf275d6792312726
+Gitweb:     http://git.kernel.org/tip/a68c439b1966c91f0ef474e2bf275d6792312726
+Author:     Robert Richter <robert.richter@amd.com>
+AuthorDate: Wed, 6 Oct 2010 12:27:53 +0200
+Committer:  Ingo Molnar <mingo@elte.hu>
+CommitDate: Wed, 20 Oct 2010 04:42:13 +0200
 
-tracing: Graph support for wakeup tracer
+apic, x86: Check if EILVT APIC registers are available (AMD only)
 
-Add function graph support for wakeup latency tracer.
-The graph output is enabled by setting the 'display-graph'
-trace option.
+This patch implements checks for the availability of LVT entries
+(APIC500-530) and reserves it if used. The check becomes
+necessary since we want to let the BIOS provide the LVT offsets.
+ The offsets should be determined by the subsystems using it
+like those for MCE threshold or IBS.  On K8 only offset 0
+(APIC500) and MCE interrupts are supported. Beginning with
+family 10h at least 4 offsets are available.
 
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-LKML-Reference: <1285243253-7372-4-git-send-email-jolsa@redhat.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Since offsets must be consistent for all cores, we keep track of
+the LVT offsets in software and reserve the offset for the same
+vector also to be used on other cores. An offset is freed by
+setting the entry to APIC_EILVT_MASKED.
+
+If the BIOS is right, there should be no conflicts. Otherwise a
+"[Firmware Bug]: ..." error message is generated. However, if
+software does not properly determines the offsets, it is not
+necessarily a BIOS bug.
+
+Signed-off-by: Robert Richter <robert.richter@amd.com>
+LKML-Reference: <1286360874-1471-2-git-send-email-robert.richter@amd.com>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
 ---
- kernel/trace/trace_sched_wakeup.c |  231 +++++++++++++++++++++++++++++++++++--
- 1 files changed, 221 insertions(+), 10 deletions(-)
+ arch/x86/include/asm/apicdef.h |    1 +
+ arch/x86/kernel/apic/apic.c    |   83 +++++++++++++++++++++++++++++++++++----
+ 2 files changed, 75 insertions(+), 9 deletions(-)
 
-diff --git a/kernel/trace/trace_sched_wakeup.c b/kernel/trace/trace_sched_wakeup.c
-index 4086eae..033510d 100644
---- a/kernel/trace/trace_sched_wakeup.c
-+++ b/kernel/trace/trace_sched_wakeup.c
-@@ -31,13 +31,33 @@ static int			wakeup_rt;
- static arch_spinlock_t wakeup_lock =
- 	(arch_spinlock_t)__ARCH_SPIN_LOCK_UNLOCKED;
+diff --git a/arch/x86/include/asm/apicdef.h b/arch/x86/include/asm/apicdef.h
+index 7fe3b30..a859ca4 100644
+--- a/arch/x86/include/asm/apicdef.h
++++ b/arch/x86/include/asm/apicdef.h
+@@ -131,6 +131,7 @@
+ #define APIC_EILVTn(n)	(0x500 + 0x10 * n)
+ #define		APIC_EILVT_NR_AMD_K8	1	/* # of extended interrupts */
+ #define		APIC_EILVT_NR_AMD_10H	4
++#define		APIC_EILVT_NR_MAX	APIC_EILVT_NR_AMD_10H
+ #define		APIC_EILVT_LVTOFF(x)	(((x) >> 4) & 0xF)
+ #define		APIC_EILVT_MSG_FIX	0x0
+ #define		APIC_EILVT_MSG_SMI	0x2
+diff --git a/arch/x86/kernel/apic/apic.c b/arch/x86/kernel/apic/apic.c
+index 8cf86fb..2bfeafd 100644
+--- a/arch/x86/kernel/apic/apic.c
++++ b/arch/x86/kernel/apic/apic.c
+@@ -52,6 +52,7 @@
+ #include <asm/mce.h>
+ #include <asm/kvm_para.h>
+ #include <asm/tsc.h>
++#include <asm/atomic.h>
  
-+static void wakeup_reset(struct trace_array *tr);
- static void __wakeup_reset(struct trace_array *tr);
-+static int wakeup_graph_entry(struct ftrace_graph_ent *trace);
-+static void wakeup_graph_return(struct ftrace_graph_ret *trace);
+ unsigned int num_processors;
  
- static int save_lat_flag;
+@@ -370,24 +371,88 @@ static void __setup_APIC_LVTT(unsigned int clocks, int oneshot, int irqen)
+ }
  
-+#define TRACE_DISPLAY_GRAPH     1
-+
-+static struct tracer_opt trace_opts[] = {
-+#ifdef CONFIG_FUNCTION_GRAPH_TRACER
-+	/* display latency trace as call graph */
-+	{ TRACER_OPT(display-graph, TRACE_DISPLAY_GRAPH) },
-+#endif
-+	{ } /* Empty entry */
-+};
-+
-+static struct tracer_flags tracer_flags = {
-+	.val  = 0,
-+	.opts = trace_opts,
-+};
-+
-+#define is_graph() (tracer_flags.val & TRACE_DISPLAY_GRAPH)
-+
- #ifdef CONFIG_FUNCTION_TRACER
  /*
-- * irqsoff uses its own tracer function to keep the overhead down:
-+ * wakeup uses its own tracer function to keep the overhead down:
+- * Setup extended LVT, AMD specific (K8, family 10h)
++ * Setup extended LVT, AMD specific
+  *
+- * Vector mappings are hard coded. On K8 only offset 0 (APIC500) and
+- * MCE interrupts are supported. Thus MCE offset must be set to 0.
++ * Software should use the LVT offsets the BIOS provides.  The offsets
++ * are determined by the subsystems using it like those for MCE
++ * threshold or IBS.  On K8 only offset 0 (APIC500) and MCE interrupts
++ * are supported. Beginning with family 10h at least 4 offsets are
++ * available.
+  *
+- * If mask=1, the LVT entry does not generate interrupts while mask=0
+- * enables the vector. See also the BKDGs.
++ * Since the offsets must be consistent for all cores, we keep track
++ * of the LVT offsets in software and reserve the offset for the same
++ * vector also to be used on other cores. An offset is freed by
++ * setting the entry to APIC_EILVT_MASKED.
++ *
++ * If the BIOS is right, there should be no conflicts. Otherwise a
++ * "[Firmware Bug]: ..." error message is generated. However, if
++ * software does not properly determines the offsets, it is not
++ * necessarily a BIOS bug.
   */
- static void
- wakeup_tracer_call(unsigned long ip, unsigned long parent_ip)
-@@ -80,8 +100,191 @@ static struct ftrace_ops trace_ops __read_mostly =
- {
- 	.func = wakeup_tracer_call,
- };
-+
-+static int start_func_tracer(int graph)
-+{
-+	int ret;
-+
-+	if (!graph)
-+		ret = register_ftrace_function(&trace_ops);
-+	else
-+		ret = register_ftrace_graph(&wakeup_graph_return,
-+					    &wakeup_graph_entry);
-+
-+	if (!ret && tracing_is_enabled())
-+		tracer_enabled = 1;
-+	else
-+		tracer_enabled = 0;
-+
-+	return ret;
-+}
-+
-+static void stop_func_tracer(int graph)
-+{
-+	tracer_enabled = 0;
-+
-+	if (!graph)
-+		unregister_ftrace_function(&trace_ops);
-+	else
-+		unregister_ftrace_graph();
-+}
-+
- #endif /* CONFIG_FUNCTION_TRACER */
  
-+#ifdef CONFIG_FUNCTION_GRAPH_TRACER
-+static int wakeup_set_flag(u32 old_flags, u32 bit, int set)
-+{
+ #define APIC_EILVT_LVTOFF_MCE 0
+ #define APIC_EILVT_LVTOFF_IBS 1
+ 
+-static void setup_APIC_eilvt(u8 lvt_off, u8 vector, u8 msg_type, u8 mask)
++static atomic_t eilvt_offsets[APIC_EILVT_NR_MAX];
 +
-+	if (!(bit & TRACE_DISPLAY_GRAPH))
++static inline int eilvt_entry_is_changeable(unsigned int old, unsigned int new)
++{
++	return (old & APIC_EILVT_MASKED)
++		|| (new == APIC_EILVT_MASKED)
++		|| ((new & ~APIC_EILVT_MASKED) == old);
++}
++
++static unsigned int reserve_eilvt_offset(int offset, unsigned int new)
++{
++	unsigned int rsvd;			/* 0: uninitialized */
++
++	if (offset >= APIC_EILVT_NR_MAX)
++		return ~0;
++
++	rsvd = atomic_read(&eilvt_offsets[offset]) & ~APIC_EILVT_MASKED;
++	do {
++		if (rsvd &&
++		    !eilvt_entry_is_changeable(rsvd, new))
++			/* may not change if vectors are different */
++			return rsvd;
++		rsvd = atomic_cmpxchg(&eilvt_offsets[offset], rsvd, new);
++	} while (rsvd != new);
++
++	return new;
++}
++
++/*
++ * If mask=1, the LVT entry does not generate interrupts while mask=0
++ * enables the vector. See also the BKDGs.
++ */
++
++static int setup_APIC_eilvt(u8 offset, u8 vector, u8 msg_type, u8 mask)
+ {
+-	unsigned long reg = (lvt_off << 4) + APIC_EILVTn(0);
+-	unsigned int  v   = (mask << 16) | (msg_type << 8) | vector;
++	unsigned long reg = APIC_EILVTn(offset);
++	unsigned int new, old, reserved;
++
++	new = (mask << 16) | (msg_type << 8) | vector;
++	old = apic_read(reg);
++	reserved = reserve_eilvt_offset(offset, new);
+ 
+-	apic_write(reg, v);
++	if (reserved != new) {
++		pr_err(FW_BUG "cpu %d, try to setup vector 0x%x, but "
++		       "vector 0x%x was already reserved by another core, "
++		       "APIC%lX=0x%x\n",
++		       smp_processor_id(), new, reserved, reg, old);
 +		return -EINVAL;
++	}
 +
-+	if (!(is_graph() ^ set))
-+		return 0;
++	if (!eilvt_entry_is_changeable(old, new)) {
++		pr_err(FW_BUG "cpu %d, try to setup vector 0x%x but "
++		       "register already in use, APIC%lX=0x%x\n",
++		       smp_processor_id(), new, reg, old);
++		return -EBUSY;
++	}
 +
-+	stop_func_tracer(!set);
++	apic_write(reg, new);
 +
-+	wakeup_reset(wakeup_trace);
-+	tracing_max_latency = 0;
-+
-+	return start_func_tracer(set);
-+}
-+
-+static int wakeup_graph_entry(struct ftrace_graph_ent *trace)
-+{
-+	struct trace_array *tr = wakeup_trace;
-+	struct trace_array_cpu *data;
-+	unsigned long flags;
-+	long disabled;
-+	int cpu, pc, ret = 0;
-+
-+	if (likely(!wakeup_task))
-+		return 0;
-+
-+	pc = preempt_count();
-+	preempt_disable_notrace();
-+
-+	cpu = raw_smp_processor_id();
-+	if (cpu != wakeup_current_cpu)
-+		goto out_enable;
-+
-+	data = tr->data[cpu];
-+	disabled = atomic_inc_return(&data->disabled);
-+	if (unlikely(disabled != 1))
-+		goto out;
-+
-+	local_save_flags(flags);
-+	ret = __trace_graph_entry(tr, trace, flags, pc);
-+
-+out:
-+	atomic_dec(&data->disabled);
-+
-+out_enable:
-+	preempt_enable_notrace();
-+	return ret;
-+}
-+
-+static void wakeup_graph_return(struct ftrace_graph_ret *trace)
-+{
-+	struct trace_array *tr = wakeup_trace;
-+	struct trace_array_cpu *data;
-+	unsigned long flags;
-+	long disabled;
-+	int cpu, pc;
-+
-+	if (likely(!wakeup_task))
-+		return;
-+
-+	pc = preempt_count();
-+	preempt_disable_notrace();
-+
-+	cpu = raw_smp_processor_id();
-+	if (cpu != wakeup_current_cpu)
-+		goto out_enable;
-+
-+	data = tr->data[cpu];
-+	disabled = atomic_inc_return(&data->disabled);
-+	if (unlikely(disabled != 1))
-+		goto out;
-+
-+	local_save_flags(flags);
-+	__trace_graph_return(tr, trace, flags, pc);
-+
-+out:
-+	atomic_dec(&data->disabled);
-+
-+out_enable:
-+	preempt_enable_notrace();
-+	return;
-+}
-+
-+static void wakeup_trace_open(struct trace_iterator *iter)
-+{
-+	if (is_graph())
-+		graph_trace_open(iter);
-+}
-+
-+static void wakeup_trace_close(struct trace_iterator *iter)
-+{
-+	if (iter->private)
-+		graph_trace_close(iter);
-+}
-+
-+#define GRAPH_TRACER_FLAGS (TRACE_GRAPH_PRINT_PROC)
-+
-+static enum print_line_t wakeup_print_line(struct trace_iterator *iter)
-+{
-+	/*
-+	 * In graph mode call the graph tracer output function,
-+	 * otherwise go with the TRACE_FN event handler
-+	 */
-+	if (is_graph())
-+		return print_graph_function_flags(iter, GRAPH_TRACER_FLAGS);
-+
-+	return TRACE_TYPE_UNHANDLED;
-+}
-+
-+static void wakeup_print_header(struct seq_file *s)
-+{
-+	if (is_graph())
-+		print_graph_headers_flags(s, GRAPH_TRACER_FLAGS);
-+	else
-+		trace_default_header(s);
-+}
-+
-+static void
-+__trace_function(struct trace_array *tr,
-+		 unsigned long ip, unsigned long parent_ip,
-+		 unsigned long flags, int pc)
-+{
-+	if (is_graph())
-+		trace_graph_function(tr, ip, parent_ip, flags, pc);
-+	else
-+		trace_function(tr, ip, parent_ip, flags, pc);
-+}
-+#else
-+#define __trace_function trace_function
-+
-+static int wakeup_set_flag(u32 old_flags, u32 bit, int set)
-+{
-+	return -EINVAL;
-+}
-+
-+static int wakeup_graph_entry(struct ftrace_graph_ent *trace)
-+{
-+	return -1;
-+}
-+
-+static enum print_line_t wakeup_print_line(struct trace_iterator *iter)
-+{
-+	return TRACE_TYPE_UNHANDLED;
-+}
-+
-+static void wakeup_graph_return(struct ftrace_graph_ret *trace) { }
-+static void wakeup_print_header(struct seq_file *s) { }
-+static void wakeup_trace_open(struct trace_iterator *iter) { }
-+static void wakeup_trace_close(struct trace_iterator *iter) { }
-+#endif /* CONFIG_FUNCTION_GRAPH_TRACER */
-+
- /*
-  * Should this new latency be reported/recorded?
-  */
-@@ -152,7 +355,7 @@ probe_wakeup_sched_switch(void *ignore,
- 	/* The task we are waiting for is waking up */
- 	data = wakeup_trace->data[wakeup_cpu];
++	return 0;
+ }
  
--	trace_function(wakeup_trace, CALLER_ADDR0, CALLER_ADDR1, flags, pc);
-+	__trace_function(wakeup_trace, CALLER_ADDR0, CALLER_ADDR1, flags, pc);
- 	tracing_sched_switch_trace(wakeup_trace, prev, next, flags, pc);
- 
- 	T0 = data->preempt_timestamp;
-@@ -252,7 +455,7 @@ probe_wakeup(void *ignore, struct task_struct *p, int success)
- 	 * is not called by an assembly function  (where as schedule is)
- 	 * it should be safe to use it here.
- 	 */
--	trace_function(wakeup_trace, CALLER_ADDR1, CALLER_ADDR2, flags, pc);
-+	__trace_function(wakeup_trace, CALLER_ADDR1, CALLER_ADDR2, flags, pc);
- 
- out_locked:
- 	arch_spin_unlock(&wakeup_lock);
-@@ -303,12 +506,8 @@ static void start_wakeup_tracer(struct trace_array *tr)
- 	 */
- 	smp_wmb();
- 
--	register_ftrace_function(&trace_ops);
--
--	if (tracing_is_enabled())
--		tracer_enabled = 1;
--	else
--		tracer_enabled = 0;
-+	if (start_func_tracer(is_graph()))
-+		printk(KERN_ERR "failed to start wakeup tracer\n");
- 
- 	return;
- fail_deprobe_wake_new:
-@@ -320,7 +519,7 @@ fail_deprobe:
- static void stop_wakeup_tracer(struct trace_array *tr)
- {
- 	tracer_enabled = 0;
--	unregister_ftrace_function(&trace_ops);
-+	stop_func_tracer(is_graph());
- 	unregister_trace_sched_switch(probe_wakeup_sched_switch, NULL);
- 	unregister_trace_sched_wakeup_new(probe_wakeup, NULL);
- 	unregister_trace_sched_wakeup(probe_wakeup, NULL);
-@@ -379,9 +578,15 @@ static struct tracer wakeup_tracer __read_mostly =
- 	.start		= wakeup_tracer_start,
- 	.stop		= wakeup_tracer_stop,
- 	.print_max	= 1,
-+	.print_header	= wakeup_print_header,
-+	.print_line	= wakeup_print_line,
-+	.flags		= &tracer_flags,
-+	.set_flag	= wakeup_set_flag,
- #ifdef CONFIG_FTRACE_SELFTEST
- 	.selftest    = trace_selftest_startup_wakeup,
- #endif
-+	.open		= wakeup_trace_open,
-+	.close		= wakeup_trace_close,
- 	.use_max_tr	= 1,
- };
- 
-@@ -394,9 +599,15 @@ static struct tracer wakeup_rt_tracer __read_mostly =
- 	.stop		= wakeup_tracer_stop,
- 	.wait_pipe	= poll_wait_pipe,
- 	.print_max	= 1,
-+	.print_header	= wakeup_print_header,
-+	.print_line	= wakeup_print_line,
-+	.flags		= &tracer_flags,
-+	.set_flag	= wakeup_set_flag,
- #ifdef CONFIG_FTRACE_SELFTEST
- 	.selftest    = trace_selftest_startup_wakeup,
- #endif
-+	.open		= wakeup_trace_open,
-+	.close		= wakeup_trace_close,
- 	.use_max_tr	= 1,
- };
- 
+ u8 setup_APIC_eilvt_mce(u8 vector, u8 msg_type, u8 mask)
