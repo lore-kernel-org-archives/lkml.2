@@ -1,54 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753032Ab0JTMyf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Oct 2010 08:54:35 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:40816 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751370Ab0JTMyd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Oct 2010 08:54:33 -0400
-Date: Wed, 20 Oct 2010 15:54:07 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: Felipe Contreras <felipe.contreras@gmail.com>
-Cc: Roger Quadros <roger.quadros@nokia.com>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        linux-omap <linux-omap@vger.kernel.org>,
-        linux-main <linux-kernel@vger.kernel.org>, Greg KH <greg@kroah.com>,
-        "Balbi, Felipe" <balbi@ti.com>, Tony Lindgren <tony@atomide.com>
-Subject: Re: [PATCH v2 3/3] drivers: cleanup Kconfig stuff
-Message-ID: <20101020125407.GE2433@legolas.emea.dhcp.ti.com>
-Reply-To: balbi@ti.com
-References: <1287482608-11320-1-git-send-email-felipe.contreras@gmail.com>
- <1287482608-11320-4-git-send-email-felipe.contreras@gmail.com>
- <4CBD9FD5.506@nokia.com>
- <AANLkTinRRyrXzqEu=u+CCYkmSNGm03SSo1tVG=5_wdpo@mail.gmail.com>
- <4CBE9E69.6060803@nokia.com>
- <AANLkTinOYDBMVZ3ibG3Md7jdOuOC6NkGWaugvHwT6uqF@mail.gmail.com>
- <4CBEB312.7060400@nokia.com>
- <AANLkTikom=eRFqCJmYE+k1zn5K2MR9s8HhNXtjOvUqvr@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii; format=flowed
-Content-Disposition: inline
-In-Reply-To: <AANLkTikom=eRFqCJmYE+k1zn5K2MR9s8HhNXtjOvUqvr@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1752208Ab0JTMzc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Oct 2010 08:55:32 -0400
+Received: from mail.digidescorp.com ([66.244.163.200]:35112 "EHLO
+	digidescorp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751178Ab0JTMzb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Oct 2010 08:55:31 -0400
+X-Greylist: delayed 368 seconds by postgrey-1.27 at vger.kernel.org; Wed, 20 Oct 2010 08:55:31 EDT
+X-Spam-Processed: digidescorp.com, Wed, 20 Oct 2010 07:49:22 -0500
+X-Authenticated-Sender: steve@digidescorp.com
+X-Return-Path: prvs=19096f736b=steve@digidescorp.com
+X-Envelope-From: steve@digidescorp.com
+X-MDaemon-Deliver-To: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH V2] nommu: add anonymous page memcg accounting
+From: "Steven J. Magnani" <steve@digidescorp.com>
+Reply-To: steve@digidescorp.com
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: balbir@linux.vnet.ibm.com, linux-mm@kvack.org, dhowells@redhat.com,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <20101020091746.f0cc5dc2.kamezawa.hiroyu@jp.fujitsu.com>
+References: <1287491654-4005-1-git-send-email-steve@digidescorp.com>
+	 <20101019154819.GC15844@balbir.in.ibm.com>
+	 <1287512657.2500.31.camel@iscandar.digidescorp.com>
+	 <20101020091746.f0cc5dc2.kamezawa.hiroyu@jp.fujitsu.com>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Digital Design Corporation
+Date: Wed, 20 Oct 2010 07:49:17 -0500
+Message-ID: <1287578957.2603.34.camel@iscandar.digidescorp.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 20, 2010 at 04:23:13AM -0500, Felipe Contreras wrote:
->Ok, but USB_OMAP is not supposed to work on the N900? (I tried and it didn't)
+On Wed, 2010-10-20 at 09:17 +0900, KAMEZAWA Hiroyuki wrote:
+> On Tue, 19 Oct 2010 13:24:17 -0500
+> "Steven J. Magnani" <steve@digidescorp.com> wrote:
+> 
+> > On Tue, 2010-10-19 at 21:18 +0530, Balbir Singh wrote:
+> > > * Steven J. Magnani <steve@digidescorp.com> [2010-10-19 07:34:14]:
+> > > > +
+> > > > +At the present time, only anonymous pages are included in NOMMU memory cgroup
+> > > > +accounting.
+> > > 
+> > > What is the reason for tracking just anonymous memory?
+> > 
+> > Tracking more than that is beyond my current scope, and perhaps of
+> > limited benefit under an assumption that NOMMU systems don't usually
+> > work with large files. The limitations of the implementation are
+> > documented, so hopefully anyone who needs more functionality will know
+> > that they need to implement it.
+> > 
+> 
+> What happens at reaching limit ? memory can be reclaimed ?
 
-ooooh, that's old. That's from the omap1. It's the old omap_udc.c
+I'm not quite sure what you're asking. In my usage, the OOM-killer gets
+invoked and the 'runaway' dosfsck process gets terminated; at that point
+all its memory is freed. 
 
->I don't think so, because people might not want USB at all. The ideal
->case would be for USB_GADGET_MUSB_HDRC to be selected automatically
->when the user selects USB and USB_GADGET, but that's not happening
->because USB_GADGET_OMAP is selected first (all the dependencies are
->met).
+Regards,
+------------------------------------------------------------------------
+ Steven J. Magnani               "I claim this network for MARS!
+ www.digidescorp.com              Earthling, return my space modulator!"
 
-And how is that different from:
+ #include <standard.disclaimer>
 
-default y if ARCH_OMAP3 ? If you don't want USB at all, you'll disable
-it by hand, the default is on. Select on board Kconfig.
 
--- 
-balbi
