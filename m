@@ -1,64 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755005Ab0JTSk4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Oct 2010 14:40:56 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:46981 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751288Ab0JTSkz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Oct 2010 14:40:55 -0400
-Date: Wed, 20 Oct 2010 20:40:32 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Jason Baron <jbaron@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: Re: [PATCH][GIT PULL] tracing: Fix compile issue for
- trace_sched_wakeup.c
-Message-ID: <20101020184032.GB12666@elte.hu>
-References: <1287508282.16971.386.camel@gandalf.stny.rr.com>
- <20101019184111.GA17266@elte.hu>
- <20101020154045.GA18353@elte.hu>
- <1287592675.16971.559.camel@gandalf.stny.rr.com>
+	id S1755178Ab0JTSlH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Oct 2010 14:41:07 -0400
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:38767 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755091Ab0JTSlD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Oct 2010 14:41:03 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:content-type;
+        b=JYEVmLtAcp24Ze00DBFOTY3Uz14Q+FDayQv0zvjVb9dbyapX4Betiv231/eIvQwTpp
+         oeQwUWFE7VS0COZZNB6GoninuY6skOP+uE6sJCc1+gEEQpbIi3k//3TGNN0KLsVtJaX4
+         rwk4+UudxHCGx2lb562I7hkiNIFOXKC/ASDo8=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1287592675.16971.559.camel@gandalf.stny.rr.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+Date: Wed, 20 Oct 2010 13:41:03 -0500
+Message-ID: <AANLkTim_fmTFr3gPAXE9Q77nzKxreOHyU7JXamKfohxv@mail.gmail.com>
+Subject: one or more brain cells staggering towards 64 bit inode numbers
+From: David Nicol <davidnicol@gmail.com>
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+fs.h contains, in part
 
-* Steven Rostedt <rostedt@goodmis.org> wrote:
+struct inode {
+	struct hlist_node	i_hash;
+	struct list_head	i_list;		/* backing dev IO list */
+	struct list_head	i_sb_list;
+	struct list_head	i_dentry;
+	unsigned long		i_ino;
+	atomic_t		i_count;
+	unsigned int		i_nlink;
+	uid_t			i_uid;
+	gid_t			i_gid;
+	dev_t			i_rdev;
+	unsigned int		i_blkbits;
+	u64			i_version;
+	loff_t			i_size;
 
-> jump_label_update uses stop_machine to enable each tracepoint. Thus this is 
-> stressing stop machine.
-> 
-> Does this only happen on i386, or do we get this on x86_64 too?
 
-I've only seen it on 32-bit - and this testbox is booting both random 64-bit and 
-32-bit kernels, so the test proportion is 50%.
 
-The failures started at around the time Thomas did the big irq/core changes a couple 
-of days ago. I first blamed it on him. I.e. it's around:
+how much chaos would ensue if the inode number would change to a u64?
+Aside from, of course, having to recompile anything
+file-system-related on a 32-bit system to use the resulting kernel?
+Probably better to do an #ifdef based on sizeof that member and zig or
+zag depending.
 
-  12ef49d: Merge branch 'irq/core'
 
-That's right after jump labels and some other tracing changes went in. The compiler 
-i'm using is:
 
-  gcc version 4.4.4 20100514 (Red Hat 4.4.4-3) (GCC) 
-
-which doesnt support jump labels.
-
-	Ingo
+-- 
+"In one instance, a rai being transported by canoe was accidentally
+dropped and sunk to the sea floor. Although it was never seen again,
+everyone agreed that the rai must still be there, so it continued to
+be transacted as genuine currency" -- Wikipedia
