@@ -1,65 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753913Ab0JTXo6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Oct 2010 19:44:58 -0400
-Received: from e36.co.us.ibm.com ([32.97.110.154]:32882 "EHLO
-	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754078Ab0JTXo2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Oct 2010 19:44:28 -0400
+	id S1755542Ab0JTXpX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Oct 2010 19:45:23 -0400
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:48123 "EHLO e7.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752870Ab0JTXoV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Oct 2010 19:44:21 -0400
 From: John Stultz <johnstul@us.ibm.com>
 To: LKML <linux-kernel@vger.kernel.org>
-Cc: John Stultz <johnstul@us.ibm.com>,
+Cc: John Stultz <johnstul@us.ibm.com>, jacob.jun.pan@intel.com,
+        Glauber Costa <glommer@redhat.com>,
+        Dimitri Sivanich <sivanich@sgi.com>,
+        Alok N Kataria <akataria@vmware.com>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Jeremy Fitzhardinge <jeremy@xensource.com>,
+        Chris McDermott <lcm@us.ibm.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Magnus Damm <magnus.damm@gmail.com>, Paul Mundt <lethal@linux-sh.org>,
+        Tony Luck <tony.luck@intel.com>,
+        "David S. Miller" <davem@davemloft.net>,
         Haavard Skinnemoen <hskinnemoen@atmel.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH 5/7] avr32: Convert to clocksource_register_hz
-Date: Wed, 20 Oct 2010 16:44:11 -0700
-Message-Id: <1287618253-13258-6-git-send-email-johnstul@us.ibm.com>
+        Ralf Baechle <ralf@linux-mips.org>, Mike Frysinger <vapier@gentoo.org>
+Subject: [PATCH 0/7] clocksource_register_khz/hz cleanups(for 2.6.37?)
+Date: Wed, 20 Oct 2010 16:44:06 -0700
+Message-Id: <1287618253-13258-1-git-send-email-johnstul@us.ibm.com>
 X-Mailer: git-send-email 1.6.0.4
-In-Reply-To: <1287618253-13258-5-git-send-email-johnstul@us.ibm.com>
-References: <1287618253-13258-1-git-send-email-johnstul@us.ibm.com>
- <1287618253-13258-2-git-send-email-johnstul@us.ibm.com>
- <1287618253-13258-3-git-send-email-johnstul@us.ibm.com>
- <1287618253-13258-4-git-send-email-johnstul@us.ibm.com>
- <1287618253-13258-5-git-send-email-johnstul@us.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This converts the avr32 clocksource to use clocksource_register_hz.
+So the common x86 clocksources have switched over to using 
+clocksource_register_khz/hz() and so far I've seen no bug
+reports, so I wanted to post the conversion for a few more
+architectures so they can be queued up for 2.6.37 (or later
+if the maintainer feels more testing would be good).
 
-This is untested, so any assistance in testing would be appreciated!
+These changes greatly simplify clocksource registration,
+removing much of the copy/paste voodoo surrounding how
+to calculate good mult and shift values for clocksources.
 
-Signed-off-by: John Stultz <johnstul@us.ibm.com>
-CC: Haavard Skinnemoen <hskinnemoen@atmel.com>
+While the patch set is numbered here, the patches are not
+dependent on each other. So each maintainer can make an 
+independent call on merging for 2.6.37.
+
+The conversion is fairly straight forward. However, I have 
+not been able to test these, so I'd appreciate any testing 
+or feedback. Any assistance from the maintainers in getting
+these into their trees would also be greatly appreciated.
+
+thanks
+-john
+
+
+CC: jacob.jun.pan@intel.com
+CC: Glauber Costa <glommer@redhat.com>
+CC: Dimitri Sivanich <sivanich@sgi.com>
+CC: Alok N Kataria <akataria@vmware.com>
+CC: Rusty Russell <rusty@rustcorp.com.au>
+CC: Jeremy Fitzhardinge <jeremy@xensource.com>
+CC: Chris McDermott <lcm@us.ibm.com>
 CC: Thomas Gleixner <tglx@linutronix.de>
----
- arch/avr32/kernel/time.c |    5 +----
- 1 files changed, 1 insertions(+), 4 deletions(-)
+CC: Magnus Damm <magnus.damm@gmail.com>
+CC: Paul Mundt <lethal@linux-sh.org>
+CC: Tony Luck <tony.luck@intel.com>
+CC: "David S. Miller" <davem@davemloft.net>
+CC: Haavard Skinnemoen <hskinnemoen@atmel.com>
+CC: Ralf Baechle <ralf@linux-mips.org>
+CC: Mike Frysinger <vapier@gentoo.org>
 
-diff --git a/arch/avr32/kernel/time.c b/arch/avr32/kernel/time.c
-index 668ed28..05ad291 100644
---- a/arch/avr32/kernel/time.c
-+++ b/arch/avr32/kernel/time.c
-@@ -35,7 +35,6 @@ static struct clocksource counter = {
- 	.rating		= 50,
- 	.read		= read_cycle_count,
- 	.mask		= CLOCKSOURCE_MASK(32),
--	.shift		= 16,
- 	.flags		= CLOCK_SOURCE_IS_CONTINUOUS,
- };
- 
-@@ -123,9 +122,7 @@ void __init time_init(void)
- 
- 	/* figure rate for counter */
- 	counter_hz = clk_get_rate(boot_cpu_data.clk);
--	counter.mult = clocksource_hz2mult(counter_hz, counter.shift);
--
--	ret = clocksource_register(&counter);
-+	ret = clocksource_register_hz(&counter, counter_hz);
- 	if (ret)
- 		pr_debug("timer: could not register clocksource: %d\n", ret);
- 
--- 
-1.6.0.4
+
+John Stultz (7):
+  x86: Convert remaining clocksources to clocksource_register_hz/khz
+  sh: convert to clocksource_register_hz
+  ia64: convert to clocksource_register_hz/khz
+  sparc: convert to clocksource_register_hz/khz
+  avr32: Convert to clocksource_register_hz
+  mips: convert to clocksource_register_hz/khz
+  blackfin: convert to clocksource_register_hz
+
+ arch/avr32/kernel/time.c                        |    5 +--
+ arch/blackfin/kernel/time-ts.c                  |   35 +---------------------
+ arch/ia64/kernel/cyclone.c                      |    6 +---
+ arch/ia64/kernel/time.c                         |    9 +----
+ arch/ia64/sn/kernel/sn2/timer.c                 |    6 +---
+ arch/mips/alchemy/common/time.c                 |    3 +-
+ arch/mips/cavium-octeon/csrc-octeon.c           |    3 +-
+ arch/mips/include/asm/time.h                    |    6 ----
+ arch/mips/jz4740/time.c                         |    3 +-
+ arch/mips/kernel/cevt-txx9.c                    |    3 +-
+ arch/mips/kernel/csrc-bcm1480.c                 |    3 +-
+ arch/mips/kernel/csrc-ioasic.c                  |    4 +--
+ arch/mips/kernel/csrc-powertv.c                 |   35 ++---------------------
+ arch/mips/kernel/csrc-r4k.c                     |    4 +--
+ arch/mips/kernel/csrc-sb1250.c                  |    3 +-
+ arch/mips/kernel/i8253.c                        |    5 +--
+ arch/mips/loongson/common/cs5536/cs5536_mfgpt.c |    5 +--
+ arch/mips/sgi-ip27/ip27-timer.c                 |    3 +-
+ arch/sparc/kernel/time_64.c                     |    4 +--
+ arch/x86/kernel/apb_timer.c                     |   10 +------
+ arch/x86/kernel/i8253.c                         |    6 +---
+ arch/x86/kernel/kvmclock.c                      |    6 +---
+ arch/x86/kernel/uv_time.c                       |    6 +---
+ arch/x86/kernel/vmiclock_32.c                   |    9 +-----
+ arch/x86/lguest/boot.c                          |    4 +--
+ arch/x86/xen/time.c                             |    6 +---
+ drivers/char/hpet.c                             |    6 +---
+ drivers/clocksource/cyclone.c                   |   10 +-----
+ drivers/clocksource/sh_cmt.c                    |   14 ++++----
+ drivers/clocksource/sh_tmu.c                    |   12 ++++----
+ 30 files changed, 45 insertions(+), 189 deletions(-)
 
