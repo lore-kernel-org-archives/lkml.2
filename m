@@ -1,94 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753250Ab0JTCaK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Oct 2010 22:30:10 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:54993 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752453Ab0JTCaI (ORCPT
+	id S1754032Ab0JTCcp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Oct 2010 22:32:45 -0400
+Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:39864 "EHLO
+	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752006Ab0JTCco (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Oct 2010 22:30:08 -0400
+	Tue, 19 Oct 2010 22:32:44 -0400
 X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Wed, 20 Oct 2010 11:24:31 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Greg Thelen <gthelen@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        containers@lists.osdl.org, Andrea Righi <arighi@develer.com>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: "Figo.zhang" <zhangtianfei@leadcoretech.com>
+Subject: Re: oom_killer crash linux system
+Cc: kosaki.motohiro@jp.fujitsu.com, Wu Fengguang <fengguang.wu@intel.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
         Minchan Kim <minchan.kim@gmail.com>,
-        Ciju Rajan K <ciju@linux.vnet.ibm.com>,
-        David Rientjes <rientjes@google.com>
-Subject: Re: [PATCH v3 02/11] memcg: document cgroup dirty memory interfaces
-Message-Id: <20101020112431.b76b861d.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20101020101421.05325710.kamezawa.hiroyu@jp.fujitsu.com>
-References: <1287448784-25684-1-git-send-email-gthelen@google.com>
-	<1287448784-25684-3-git-send-email-gthelen@google.com>
-	<20101019172744.45e0a8dc.nishimura@mxp.nes.nec.co.jp>
-	<xr93lj5t5245.fsf@ninji.mtv.corp.google.com>
-	<20101020091109.ccd7b39a.kamezawa.hiroyu@jp.fujitsu.com>
-	<20101020094821.75c70fe3.nishimura@mxp.nes.nec.co.jp>
-	<20101020101421.05325710.kamezawa.hiroyu@jp.fujitsu.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "rientjes@google.com" <rientjes@google.com>,
+        figo1802 <figo1802@gmail.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+In-Reply-To: <1287540415.2069.1.camel@myhost>
+References: <20101020013553.GA7428@localhost> <1287540415.2069.1.camel@myhost>
+Message-Id: <20101020112828.1818.A69D9226@jp.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8bit
+X-Mailer: Becky! ver. 2.50.07 [ja]
+Date: Wed, 20 Oct 2010 11:32:38 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 20 Oct 2010 10:14:21 +0900
-KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
-
-> On Wed, 20 Oct 2010 09:48:21 +0900
-> Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp> wrote:
 > 
-> > On Wed, 20 Oct 2010 09:11:09 +0900
-> > KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+> > > page_add_file_rmap() just counts an event where mapcount goes 0->1. 
+> > > Even if thousands process shares  a page,  it's just counted into file_mapped as 1.
+> > > 
+> > > Then, there are 480MB of mapped file caches. Do I miss something ?
+> > > 
+> > > Anyway, sum-of-all-lru-of-highmem is 480MB smaller than present pages.
+> > > and isolated(anon/file) is 0kB.
+> > > (NORMAL has similar problem)
 > > 
-> > > On Tue, 19 Oct 2010 14:00:58 -0700
-> > > Greg Thelen <gthelen@google.com> wrote:
-> > > 
-> > (snip)
-> > > > +When use_hierarchy=0, each cgroup has independent dirty memory usage and limits.
-> > > > +
-> > > > +When use_hierarchy=1, a parent cgroup increasing its dirty memory usage will
-> > > > +compare its total_dirty memory (which includes sum of all child cgroup dirty
-> > > > +memory) to its dirty limits.  This keeps a parent from explicitly exceeding its
-> > > > +dirty limits.  However, a child cgroup can increase its dirty usage without
-> > > > +considering the parent's dirty limits.  Thus the parent's total_dirty can exceed
-> > > > +the parent's dirty limits as a child dirties pages.
-> > > 
-> > > Hmm. in short, dirty_ratio in use_hierarchy=1 doesn't work as an user expects.
-> > > Is this a spec. or a current implementation ?
-> > > 
-> > > I think as following.
-> > >  - add a limitation as "At setting chidlren's dirty_ratio, it must be below parent's.
-> > >    If it exceeds parent's dirty_ratio, EINVAL is returned."
-> > > 
-> > > Could you modify setting memory.dirty_ratio code ?
-> > > Then, parent's dirty_ratio will never exceeds its own. (If I understand correctly.)
-> > > 
-> > > "memory.dirty_limit_in_bytes" will be a bit more complecated, but I think you can.
-> > > 
-> > I agree.
+> > hugetlb files? But it's a desktop box. Figo, what's your meminfo?
 > > 
-> > At the first impression, this limitation seems a bit overkill for me, because
-> > we allow memory.limit_in_bytes of a child bigger than that of parent now.
-> > But considering more, the situation is different, because usage_in_bytes never
-> > exceeds limit_in_bytes.
+> > The GEM objects may be files not in LRU, however they should be
+> > accounted into shmem.
 > > 
+> > Figo, would you run "page-types -r" for some clues? It can be compiled
+> > from the kernel tree:
+> > 
+> >         cd linux
+> >         make Documentation/vm
+> >         sudo Documentation/vm/page-types -r
 > 
-> I'd like to consider a patch.
-> Please mention that "use_hierarchy=1 case depends on implemenation." for now.
+> hi fengguang,
+> here is the "page-types -r" result:
 > 
+>              flags	page-count       MB  symbolic-flags
+> long-symbolic-flags
+> 0x0000000000005828	     74342      290 ___U_l_____Ma_b___________________ uptodate,lru,mmap,anonymous,swapbacked
+> 0x0000000000005868	    373077     1457 ___U_lA____Ma_b___________________ uptodate,lru,active,mmap,anonymous,swapbacked
 
-BTW, how about supporing dirty_limit_in_bytes when use_hierarchy=0 or leave it as
-broken when use_hierarchy=1 ?
-It seems we can only support dirty_ratio when hierarchy is used.
+1457+290=1747MB. that's ok. and this is very different result with your
+previous oom log.
 
-Thanks,
--Kame
+can you please try 1) invoke oom 2) get page-types -r again. I'm curious
+that oom makes page accounting lost again. I mean, please send us oom 
+log and "page-types -r" result.
+
+thanks.
+
+
+
 
