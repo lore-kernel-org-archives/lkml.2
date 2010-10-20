@@ -1,75 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932378Ab0JTHmX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Oct 2010 03:42:23 -0400
-Received: from zone0.gcu-squad.org ([212.85.147.21]:23908 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932285Ab0JTHmW (ORCPT
+	id S932437Ab0JTHpq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Oct 2010 03:45:46 -0400
+Received: from smtp.nokia.com ([192.100.122.230]:41804 "EHLO
+	mgw-mx03.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932106Ab0JTHpo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Oct 2010 03:42:22 -0400
-Date: Wed, 20 Oct 2010 09:42:08 +0200
-From: Jean Delvare <khali@linux-fr.org>
-To: Joe Perches <joe@perches.com>
-Cc: Guenter Roeck <guenter.roeck@ericsson.com>,
-        Hans de Goede <j.w.r.degoede@hhs.nl>,
-        Alistair John Strachan <alistair@devzero.co.uk>,
-        Henrik Rydberg <rydberg@euromail.se>,
-        "Mark M. Hoffman" <mhoffman@lightlink.com>,
-        Luca Tettamanti <kronos.it@gmail.com>,
-        Fenghua Yu <fenghua.yu@intel.com>, Juerg Haefliger <juergh@gmail.com>,
-        Eric Piel <eric.piel@tremplin-utc.net>,
-        Jim Cromie <jim.cromie@gmail.com>,
-        Roger Lucas <vt8231@hiddenengine.co.uk>, lm-sensors@lm-sensors.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] drivers/hwmon: Use pr_fmt and pr_<level>
-Message-ID: <20101020094208.3136b9dd@endymion.delvare>
-In-Reply-To: <1287530020.10409.594.camel@Joe-Laptop>
-References: <1287530020.10409.594.camel@Joe-Laptop>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Wed, 20 Oct 2010 03:45:44 -0400
+Message-ID: <4CBE9E69.6060803@nokia.com>
+Date: Wed, 20 Oct 2010 10:46:49 +0300
+From: Roger Quadros <roger.quadros@nokia.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.9) Gecko/20100915 Thunderbird/3.1.4
+MIME-Version: 1.0
+To: ext Felipe Contreras <felipe.contreras@gmail.com>
+CC: "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        linux-omap <linux-omap@vger.kernel.org>,
+        linux-main <linux-kernel@vger.kernel.org>, Greg KH <greg@kroah.com>,
+        Felipe Balbi <balbi@ti.com>, Tony Lindgren <tony@atomide.com>
+Subject: Re: [PATCH v2 3/3] drivers: cleanup Kconfig stuff
+References: <1287482608-11320-1-git-send-email-felipe.contreras@gmail.com>	<1287482608-11320-4-git-send-email-felipe.contreras@gmail.com>	<4CBD9FD5.506@nokia.com> <AANLkTinRRyrXzqEu=u+CCYkmSNGm03SSo1tVG=5_wdpo@mail.gmail.com>
+In-Reply-To: <AANLkTinRRyrXzqEu=u+CCYkmSNGm03SSo1tVG=5_wdpo@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 20 Oct 2010 07:45:20.0515 (UTC) FILETIME=[BEF97D30:01CB702A]
+X-Nokia-AV: Unscannable
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Joe,
+On 10/19/2010 05:33 PM, ext Felipe Contreras wrote:
+> Hi Roger,
+>
+> On Tue, Oct 19, 2010 at 4:40 PM, Roger Quadros<roger.quadros@nokia.com>  wrote:
+>>> @@ -843,6 +841,7 @@ config USB_CDC_COMPOSITE
+>>>   config USB_G_NOKIA
+>>>         tristate "Nokia composite gadget"
+>>>         depends on PHONET
+>>> +       depends on USB_GADGET_MUSB_HDRC
+>>
+>> This is wrong. Is there a build problem or run-time problem without this?
+>
+> Try:
+> CONFIG_USB_G_NOKIA=y
+> CONFIG_USB_GADGET_MUSB_HDRC=n
+>
+> At least g_nokia doesn't seem to work correctly on my N900.
+>
+It won't work on N900 because N900 has MUSB USB gadget controller and it needs 
+to be selected somehow while building for N900.
 
-On Tue, 19 Oct 2010 16:13:40 -0700, Joe Perches wrote:
-> Convert printks to pr_<level>
-> Coalesce long formats
-> Removed prefixes from formats
-> Added #define pr_fmt KBUILD_MODNAME ": " fmt
-> Standardized abitguru messages for reporting and finding MAINTAINER
-> (...)
-> diff --git a/drivers/hwmon/abituguru.c b/drivers/hwmon/abituguru.c
-> index 03694cc..8f07a9d 100644
-> --- a/drivers/hwmon/abituguru.c
-> +++ b/drivers/hwmon/abituguru.c
-> @@ -20,6 +20,9 @@
->      the custom Abit uGuru chip found on Abit uGuru motherboards. Note: because
->      of lack of specs the CPU/RAM voltage & frequency control is not supported!
->  */
-> +
-> +#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-> +
->  #include <linux/module.h>
-
-It looks odd that every driver would have to set this. Shouldn't this
-be the default set in <linux/kernel.h>? Something like:
-
-#ifndef pr_fmt
-#ifdef KBUILD_MODNAME
-#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-#else
-#define pr_fmt(fmt) fmt
-#endif /* KBUILD_MODNAME */
-#endif
-
-Overall I like this cleanup patch, but the addition of #define pr_fmt
-to every driver looks plain wrong.
-
-I'll review the rest of the patch(es) once this point is sorted out.
+You should set CONFIG_USB_GADGET_MUSB_HDRC to y somewhere else while building 
+for N900 and not here because g_nokia is not MUSB specific.
 
 -- 
-Jean Delvare
+regards,
+-roger
