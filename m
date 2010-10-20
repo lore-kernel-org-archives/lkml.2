@@ -1,101 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753597Ab0JTPz4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Oct 2010 11:55:56 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:52594 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751375Ab0JTPzy (ORCPT
+	id S1753744Ab0JTP5m (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Oct 2010 11:57:42 -0400
+Received: from e23smtp04.au.ibm.com ([202.81.31.146]:51075 "EHLO
+	e23smtp04.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753174Ab0JTP5l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Oct 2010 11:55:54 -0400
-Date: Wed, 20 Oct 2010 09:55:49 -0600
-From: Grant Likely <grant.likely@secretlab.ca>
-To: Ohad Ben-Cohen <ohad@wizery.com>
-Cc: Kevin Hilman <khilman@deeprootsystems.com>, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        akpm@linux-foundation.org, Greg KH <greg@kroah.com>,
-        Tony Lindgren <tony@atomide.com>, Benoit Cousson <b-cousson@ti.com>,
-        Hari Kanigeri <h-kanigeri2@ti.com>, Suman Anna <s-anna@ti.com>,
-        Simon Que <sque@ti.com>
-Subject: Re: [PATCH 3/3] omap: add hwspinlock device
-Message-ID: <20101020155549.GF7285@angua.secretlab.ca>
-References: <1287387875-14168-1-git-send-email-ohad@wizery.com>
- <1287387875-14168-4-git-send-email-ohad@wizery.com>
- <87r5fmxghm.fsf@deeprootsystems.com>
- <AANLkTinZ2+ocJCfUpT15Ow3J9XBa-8XWnVC3gDDJ7s-v@mail.gmail.com>
- <87bp6pviwf.fsf@deeprootsystems.com>
- <AANLkTikE1dCXW-7ScVoDgEK3sxai_TyFzstSG+zvNm2F@mail.gmail.com>
+	Wed, 20 Oct 2010 11:57:41 -0400
+Message-ID: <4CBF116F.6090201@linux.vnet.ibm.com>
+Date: Wed, 20 Oct 2010 21:27:35 +0530
+From: Trinabh Gupta <trinabh@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.10) Gecko/20100621 Fedora/3.0.5-1.fc11 Thunderbird/3.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTikE1dCXW-7ScVoDgEK3sxai_TyFzstSG+zvNm2F@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Arjan van de Ven <arjan@linux.intel.com>
+CC: Venkatesh Pallipadi <venki@google.com>, peterz@infradead.org,
+        lenb@kernel.org, suresh.b.siddha@intel.com, benh@kernel.crashing.org,
+        linux-kernel@vger.kernel.org, ak@linux.intel.com
+Subject: Re: [RFC V1] cpuidle: add idle routine registration and cleanup pm_idle
+ pointer
+References: <20101019183522.17992.86937.stgit@tringupt.in.ibm.com> <4CBDE5AB.4040401@linux.intel.com> <AANLkTi=cetw_mdp_3s+T4OxTfcMT2u4cdVPKxOp7jbVU@mail.gmail.com> <4CBDEB14.2030304@linux.vnet.ibm.com> <4CBF06D5.7020508@linux.vnet.ibm.com> <4CBF0854.6080903@linux.intel.com>
+In-Reply-To: <4CBF0854.6080903@linux.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 20, 2010 at 04:38:32PM +0200, Ohad Ben-Cohen wrote:
-> On Wed, Oct 20, 2010 at 1:53 AM, Kevin Hilman
-> <khilman@deeprootsystems.com> wrote:
-> >> And to allow early board code to reserve specific hwspinlock numbers
-> >> for predefined use-cases, we probably want to be before arch_initcall.
-> >
-> > There's no reason for board code to have to do this at initcall time.
-> 
-> If we want to have allow both allocations of predefined hwspinlocks
-> with omap_hwspinlock_request_specific(int), and dynamic allocations
-> (where we don't care about the specific instance of the hwspinlock we
-> will get) with omap_hwspinlock_request(), we must ensure that the
-> former _specific() API will never be called after the latter.
-> 
-> If we will allow drivers to call omap_hwspinlock_request() before all
-> callers of omap_hwspinlock_request_specific() completed, then things
-> will break (because drivers might start getting hwspinlocks that are
-> predefined for dedicated use cases on the system).
-> 
-> So if we want the _specific API to work, we can only allow early board
-> code to use it in order to reserve those predefined hwspinlocks before
-> drivers get the chance to call omap_hwspinlock_request().
-> 
-> The tempting alternative is not to provide the
-> omap_hwspinlock_request_specific() API at all (which is something we
-> discussed internally).
-> 
-> Let's take the i2c-omap for example.
-> 
-> It sounds like it must have a predefined hwspinlock, but what if:
-> 
-> 1. It will use omap_hwspinlock_request() to dynamically allocate a hwspinlock
-> 2. Obviously, the hwspinlock id number must be communicated to the M3
-> BIOS, so the i2c-omap will publish that id using a small shared memory
-> entry that will be allocated for this sole purpose
-> 3. we will make sure that 1+2 completes before the remote processor is
-> taken out of reset
-> 
-> This does not require any smart IPC and it will allow us to get rid of
-> the omap_hwspinlock_request_specific() API and its early-callers
-> requirement.
-> 
-> All we will be left to take care of is the order of the ->probe()
-> execution (assuming we want both the i2c and the hwspinlock drivers to
-> be device_initcall)
 
-Having fought with this kind of thing before, I would strongly
-recommend making the interface either all-dynamic, or all-predefined,
-but not a mixture of the two.
 
-> 
-> >
-> > This kind of thing needs to be done by platform_data function pointers,
-> > as is done for every other driver that needs platform-specific driver
-> > customization.
-> 
-> Why would we need platform-specific function pointers here ? I'm not
-> sure I'm following this one.
-> 
-> Thanks,
-> Ohad.
-> 
-> 
-> >
-> > Kevin
-> >
+On 10/20/2010 08:48 PM, Arjan van de Ven wrote:
+> On 10/20/2010 8:12 AM, Trinabh Gupta wrote:
+>>
+>>
+>> On 10/20/2010 12:31 AM, Trinabh Gupta wrote:
+>>>
+>>>
+>>> On 10/20/2010 12:19 AM, Venkatesh Pallipadi wrote:
+>>>> On Tue, Oct 19, 2010 at 11:38 AM, Arjan van de Ven
+>>>> <arjan@linux.intel.com> wrote:
+>>>>> On 10/19/2010 11:36 AM, Trinabh Gupta wrote:
+>>>>>>
+>>>>>> The core of the kernel's idle routine on x86 presently depends on an
+>>>>>> exported pm_idle function pointer that is unmanaged and causing
+>>>>>> hazard to various subsystems when they save and restore it.
+>>>>>> The first problem is that this exported pointer can be
+>>>>>> modified/flipped
+>>>>>> by any subsystem. There is no tracking or notification mechanism.
+>>>>>> Secondly and more importantly, various subsystems save the value of
+>>>>>> this pointer, flip it and later restore to the saved value. There is
+>>>>>> no guarantee that the saved value is still valid. The problem has
+>>>>>> been discussed in [2,3] and Peter Zijlstra suggested removing pm_idle
+>>>>>> and implementing a list based registration [1].
+>>>>>>
+>>>>>> This patch is an initial RFC implementation for x86 architecture
+>>>>>> only. This framework can be generalised for other archs and also
+>>>>>> include the current cpuidle framework for managing multiple idle
+>>>>>> routines.
+>>>>>>
+>>>>>> Tests done with the patch:
+>>>>>> ------------------------
+>>>>>> 1. Build (on 2.6.36-rc7) and booted on x86 with C1E as deepest idle
+>>>>>> state and current_idle was selected to be mwait_idle.
+>>>>>>
+>>>>>> 2. Build (on 2.5.36-rc8) and booted on x86 (Nehalem) with ACPI C3 as
+>>>>>> deepest sleep state. The current_idle was selected to be
+>>>>>> cpuidle_idle_call which is the cpuidle subsystem that will further
+>>>>>> select idle routines from {C1,C2,C3}.
+>>>>>>
+>>>>>> Future implementation will try to eliminate this hirearchy and have
+>>>>>> a single registration and menu/idle cpuidle governor for selection
+>>>>>> of idle routine.
+>>>>>
+>>>>>
+>>>>> looks like you're duplicating the cpuidle subsystem
+>>>>>
+>>>>> how about biting the bullet and just always and only use the cpuidle
+>>>>> subsystem for all idle on x86 ?
+>>>>>
+>>>>
+>>>> I agree with Arjan.
+>>>> If we have a default_cpuidle driver which parses idle= params, handles
+>>>> various mwait quirks in x86 process*.c and registers with cpuidle, we
+>>>> can then always call cpuidle idle routine on x86.
+>>>
+>>> This wouldn't duplicate code. It would move parts/functionality of
+>>> cpuidle into the kernel, keeping governors alone as modules.
+>>>
+>>> If we directly call cpuidle_idle_call() then this may be too much
+>>> overhead for architectures that have single idle routine i.e cases where
+>>> cpuidle is not used and will be seen as a bloat. (c.f goals 4a,b).
+>>
+>> Hi Venki, Arjan
+>>
+>> Building cpuidle into the kernel would add ~7KB for everyone, even
+>> x86 architectures having only single idle state/routine.
+>
+> but now you're duplicating this functionality adding code for everyone.
+
+I do not intend to duplicate code. I am trying to do what Andi
+suggested i.e make the registration part lightweight and *move*
+it into the kernel so that we can do away with problems such as
+exported pm_idle pointer. This implementation is an *intermediate*
+step.
+
+>
+> 99.999% of the people today run cpuidle... (especially embedded x86
+> where they really care about power)
+> all x86 going forward also has > 1 idle option anyway.
+>
+> and you're adding and extra layer in the middle that just duplicates the
+> layer that's in use in practice above it.
+
+As I said, this would not duplicate rather split things - minimal
+registration part within the kernel (so that problems like
+pm_idle are resolved) and governors as module.
+
+-Trinabh
+
+>
+> seriously, this sounds like the wrong tradeoff to make.
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at http://www.tux.org/lkml/
+>
