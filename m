@@ -1,93 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754744Ab0JTSIA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Oct 2010 14:08:00 -0400
-Received: from mail4.comsite.net ([205.238.176.238]:21746 "EHLO
-	mail4.comsite.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753913Ab0JTSH7 (ORCPT
+	id S1754734Ab0JTSLH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Oct 2010 14:11:07 -0400
+Received: from out1.smtp.messagingengine.com ([66.111.4.25]:34019 "EHLO
+	out1.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753913Ab0JTSLF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Oct 2010 14:07:59 -0400
-X-Greylist: delayed 980 seconds by postgrey-1.27 at vger.kernel.org; Wed, 20 Oct 2010 14:07:59 EDT
-X-Default-Received-SPF: pass (skip=forwardok (res=PASS)) x-ip-name=71.22.127.106;
-From: miltonm@bga.com
-To: Randy Dunlap <randy.dunlap@oracle.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Stefani Seibold <stefani@seibold.net>
-Subject: Re: kfifo must_check warning (+ patch)
-Message-Id: <kfifo-patch1-reply@mdm.bga.com>
-In-Reply-To: <20101020094659.091113f5.randy.dunlap@oracle.com>
-References: <20101019151048.ae79bb25.randy.dunlap@oracle.com>
-	<20101019221242.c732e1fa.akpm@linux-foundation.org>
-	<20101020094659.091113f5.randy.dunlap@oracle.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Wed, 20 Oct 2010 14:11:05 -0400
+Message-Id: <1287598263.13748.1401083639@webmail.messagingengine.com>
+X-Sasl-Enc: Fbpic3mAoooU6dvYi3R1dai6pip7kEtQzmo75EMbLPmW 1287598263
+From: "Alexander van Heukelum" <heukelum@fastmail.fm>
+To: "Jan Beulich" <JBeulich@novell.com>
+Cc: "Ingo Molnar" <mingo@elte.hu>, "Thomas Gleixner" <tglx@linutronix.de>,
+        "Andrew Morton" <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>
+MIME-Version: 1.0
 Content-Transfer-Encoding: 7bit
-Date: Wed, 20 Oct 2010 12:51:27 -0500
-X-Originating-IP: 71.22.127.106
+Content-Type: text/plain; charset="us-ascii"
+X-Mailer: MessagingEngine.com Webmail Interface
+In-Reply-To: <4CBEABAE020000780001E227@vpn.id2.novell.com>
+References: <4CBDBEBA020000780001E05A@vpn.id2.novell.com><1287522205.14378.1400906413@webmail.messagingengine.com>
+ <4CBEABAE020000780001E227@vpn.id2.novell.com>
+Subject: Re: [PATCH] x86: fix CFI macro invocations to deal with  shortcomings
+ in gas
+Date: Wed, 20 Oct 2010 20:11:03 +0200
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello Jan and all,
 
-> --- linux-next-20101019.orig/drivers/char/n_gsm.c
-> +++ linux-next-20101019/drivers/char/n_gsm.c
-> @@ -1573,11 +1573,14 @@  static void gsm_dlci_command(struct gsm_
->  static struct gsm_dlci *gsm_dlci_alloc(struct gsm_mux *gsm, int addr)
->  {
->  	struct gsm_dlci *dlci = kzalloc(sizeof(struct gsm_dlci), GFP_ATOMIC);
-> +	int err;
-> +
->  	if (dlci == NULL)
->  		return NULL;
->  	spin_lock_init(&dlci->lock);
->  	dlci->fifo = &dlci->_fifo;
-> -	if (kfifo_alloc(&dlci->_fifo, 4096, GFP_KERNEL) < 0) {
-> +	err = kfifo_alloc(&dlci->_fifo, 4096, GFP_KERNEL);
-> +	if (err < 0) {
->  		kfree(dlci);
->  		return NULL;
->  	}
-> 
-> 
-
-
-I think this is not a gcc bug but Randy's gcc beeing smarter
-and showing a signed bug with the old code.
-
-The earlier discussion had:
-
-> > > Should the driver code be doing something else?
-> > > or should the kfifo_alloc() macro be checking the result of the helper?
-> > > 
+On Wed, 20 Oct 2010 07:43 +0100, "Jan Beulich" <JBeulich@novell.com> wrote:
+> >>> On 19.10.10 at 23:03, "Alexander van Heukelum" <heukelum@fastmail.fm> wrote:
+> >> -       pushl_cfi (TI_sysenter_return-THREAD_SIZE+8+4*4)(%esp)
+> >> +       pushl_cfi TI_sysenter_return-THREAD_SIZE_asm+8+4*4(%esp)
 > > 
-> > A gcc bug, I'd say.  The code looks OK and my gcc doesn't warn.
-> 
-> OK.
-> 
-> > Perhaps see if you can find some code transformation in n_gsm.c which
-> > makes it go away?  Add a new local variable or something.
-> 
-> Yes, that works for me.  Patch is below.
-> 
-
-> > I did see a probably unrelated bug in there though. 
-> > __kfifo_must_check_helper() coerces its arg into an `unsigned int' and
-> > returns an unsigned int.  Consequently if kfifo_alloc() tries to return
-> > -EINVAL, the above-quoted code won't detect the error: it will see
-> > -EINVAL as a large, positive unsigned value.
+> > This expands to:
+> >     pushl_cfi (60)-(8192)+8+4*4(%esp)
 > > 
+> > I'm sorry to say that Ubuntu 6.06's gas (2.16.91 20060118) still chokes
+> > with "too many positional arguments" on this line.
+> 
+> It escapes me where it would split the obviously single argument, and
+> I know I checked all official versions from 2.15 onwards. Could you
+> try whether that specific gas would be okay with
+> 
+>      pushl_cfi ((60)-(8192)+8+4*4)(%esp)
 
-and then gcc decides that the check of < 0 is meaningless, and then
-says that the result is unused.
+Yes, this works! Adding the parentheses to the patch makes things go
+on Ubuntu 6.06 (i386). I hope we can get rid of the old gas, but feel free
+to add an Acked-by: Alexander van Heukelum <heukelum@fastmail.fm>.
 
-Note: I'm a kernel hacker , not a gcc one.  This is pure speculation.
+> I had intentionally removed the surrounding parentheses since
+> those are considered by newer gas when determining arguments,
+> and thus I could expose eventual problems with older gas even
+> on newer versions.
+> 
+> Further, could you experiment (or ideally debug) where is splits
+> the argument. Something like
+> 
+> .macro m arg1 arg2=0
+> 	.long	\arg1, \arg2
+> .endm
+> 
+> .data
+> _start:
+> 	m	(60)-(8192)+8+4*4
 
-So to me the helper is the one causing the error!  ... and the patch is
-undoing the damage at the caller.
+Contents of section .data:
+ 0000 3c000000 18e0ffff
 
-So the correct fix is to change the return type of the helper,
-and if someone wants the int to be unsigned then it needs to be
-unsigned long so we can use an is_error type test.
+So it splits at the minus sign, even though there is no space.
 
-milton
+Greetings,
+    Alexander
+
+> might be handy - assembling with -alm=<filename> should allow
+> you to inspect where the argument got split.
+> 
+> Thanks, Jan
+> 
