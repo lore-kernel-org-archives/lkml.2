@@ -1,48 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756686Ab0JTClc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Oct 2010 22:41:32 -0400
-Received: from relay2.sgi.com ([192.48.179.30]:42980 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1756303Ab0JTClb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Oct 2010 22:41:31 -0400
-Date: Tue, 19 Oct 2010 21:41:28 -0500
-From: Robin Holt <holt@sgi.com>
-To: "J.H." <warthog9@kernel.org>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: More issues found on kernel.org
-Message-ID: <20101020024128.GD14068@sgi.com>
-References: <4CBC9CC7.7050204@kernel.org>
+	id S1756391Ab0JTCmJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Oct 2010 22:42:09 -0400
+Received: from mail30g.wh2.ocn.ne.jp ([220.111.41.239]:21868 "HELO
+	mail30g.wh2.ocn.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754127Ab0JTCmH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Oct 2010 22:42:07 -0400
+From: Bruno Randolf <br1@einfach.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH v2] Add generic exponentially weighted moving average function
+Date: Wed, 20 Oct 2010 11:42:00 +0900
+User-Agent: KMail/1.13.5 (Linux/2.6.35-22-generic; KDE/4.5.1; x86_64; ; )
+Cc: randy.dunlap@oracle.com, kevin.granade@gmail.com, blp@cs.stanford.edu,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+References: <20101019083635.32294.67087.stgit@localhost6.localdomain6> <20101019153756.a89ed362.akpm@linux-foundation.org> <20101019155406.0a728971.akpm@linux-foundation.org>
+In-Reply-To: <20101019155406.0a728971.akpm@linux-foundation.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4CBC9CC7.7050204@kernel.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201010201142.00110.br1@einfach.org>
+X-SF-Loop: 1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 18, 2010 at 12:15:19PM -0700, J.H. wrote:
-> Not that the current discussion on IMA, and the recent problems found
-> with XFS were enough, I've started seeing, rather regularly, what I've
-> reported in bugzilla
-> 
-> https://bugzilla.kernel.org/show_bug.cgi?id=20702
-> 
-> It looks like a double free is happening somewhere, and the issue
-> *SEEMS* to be limited to the dynamic web boxes (bugzilla, wiki's, etc)
-> and those are the only boxes I have running drbd and ocfs2.
-> 
-> Once the initial problem hits, the box more or less grinds to a halt and
-> will eventually kernel panic and reboot.  Explicitly trying to reboot
-> the box results in a solidly hung box requiring a hard reset.
-> 
-> Anyone have any thoughts, any extra debugging if/when this should happen
-> again that would be useful?
+On Wed October 20 2010 07:54:06 Andrew Morton wrote:
+> I looked at the code..
 
-If you are building your own kernel, I would turn on slab debugging.
-Nearly all the double frees I have come across in the last years have
-been tracked down using slab debug which traps double frees.  It does
-not always point at the culprit, but at least narrows the field.
+Thank you for your review!
 
-Robin
+> > > +#define AVG_FACTOR	1000
+> 
+> Can you please document the magic number?  What does it do?  I'd have
+> though it likely that one day this will become variable, initialised in
+> moving_average_init().
+
+OK. I thought I'd get away without it ;) but you convinced me it's better to 
+have a moving_average_init().
+
+> > > +struct avg_val {
+> > > +	int value;
+> > > +	int internal;
+> > > +};
+> 
+> So it's using integer types.
+> 
+> I guess that makes sense, maybe.  Does your application use negative
+> quantities?  They're pretty rare beasts in the kernel.  I expect most
+> callers will want an unsigned type?
+
+I want to use it with negative numbers (signal strength in dBm), but it's easy 
+enough to convert them to positive numbers, so I'll change the variables to 
+unsigned. I guess averaging between positive and negative numbers is really 
+rare...
+
+> > > +static inline void
+> > > +moving_average(struct avg_val *avg, const int val, const int weight)
+> > > +{
+> > > +	if (WARN_ON_ONCE(weight <= 1))
+> > > +		return;
+> > > +	avg->internal = avg->internal  ?
+> > > +		(((avg->internal * (weight - 1)) +
+> > > +			(val * AVG_FACTOR)) / weight) :
+> > > +		(val * AVG_FACTOR);
+> > > +	avg->value = DIV_ROUND_CLOSEST(avg->internal, AVG_FACTOR);
+> > > +}
+> 
+> This function is really already too large to be inlined, and I'd
+> suggest that lib/moving_average.c would be a better home for it.
+
+OK. Maybe we could call it lib/average.c so other averaging implementations - 
+should there be any in the future - could go there as well?
+
+> Is it expected that `weight' will have the same value for all calls of
+> moving_average() against a particular avg_val?  If so then perhaps we
+> should do away with this argument and place `weight' into the avg_val
+> struct, and set that up in moving_average_init().
+
+Yes. So I'll make a moving_average_init(scaling_factor, weight).
+
+> And I do think that we need a moving_average_init(), because at present
+> you require that callers initialise the avg_val() by hand.  This means
+> that if we later add more fields to that struct, all callers will need
+> to be updated.  Any which are out-of-tree will have been made buggy.
+
+Well, the initialization we currently require is just to make sure is is 
+zeroed out... But I agree to the other benefits using an init function.
+
+> Also, perhaps moving_average() should end with a
+> 
+> 	return avg->value;
+> 
+> for convenience on the callers side.  Or maybe not - I haven't looked
+> at any calling code...
+
+Ok. No problem.
+ 
+> Finally, it's a little ugly to have callers poking around inside the
+> avg_val to get the current average.  The main problem with this is that
+> it restricts future implementations: they must maintain their average
+> in avg_val.value.  If they instead were to call
+> 
+> 	moving_average_read(struct avg_val *)
+> 
+> then we get more freedom regarding future implementations.  The current
+> moving_average_read() could be inlined.  That would require that avg_val be
+> defined in the header file rather than in .c.  This is a bit sad, but
+> acceptable.
+
+I see.
+ 
+> And finally+1: moving_average() needs locking to protect internal
+> state.  Right now, the caller must provide that locking.  And that's a
+> fine design IMO - we have no business here assuming that we can use
+> mutex_lock() or spin_lock() or spin_lock_irq() or spin_lock_irqsave() -
+> let the caller decide that.
+> 
+> But the need for this caller-provided locking should be described in
+> the API documentation, please.
+
+Will do that and resend an improved version shortly.
+
+Thanks,
+Bruno
