@@ -1,65 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754198Ab0JTQo0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Oct 2010 12:44:26 -0400
-Received: from imr4.ericy.com ([198.24.6.8]:39229 "EHLO imr4.ericy.com"
+	id S1754288Ab0JTQop (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Oct 2010 12:44:45 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:35268 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754098Ab0JTQoZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Oct 2010 12:44:25 -0400
-Date: Wed, 20 Oct 2010 09:43:43 -0700
-From: Guenter Roeck <guenter.roeck@ericsson.com>
-To: Jean Delvare <khali@linux-fr.org>
-CC: Joe Perches <joe@perches.com>, Hans de Goede <j.w.r.degoede@hhs.nl>,
-        Alistair John Strachan <alistair@devzero.co.uk>,
-        Henrik Rydberg <rydberg@euromail.se>,
-        "Mark M. Hoffman" <mhoffman@lightlink.com>,
-        Luca Tettamanti <kronos.it@gmail.com>,
-        Fenghua Yu <fenghua.yu@intel.com>, Juerg Haefliger <juergh@gmail.com>,
-        Eric Piel <eric.piel@tremplin-utc.net>,
-        Jim Cromie <jim.cromie@gmail.com>,
-        Roger Lucas <vt8231@hiddenengine.co.uk>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] drivers/hwmon: Use pr_fmt and pr_<level>
-Message-ID: <20101020164343.GA22572@ericsson.com>
-References: <1287530020.10409.594.camel@Joe-Laptop>
- <20101020032938.GA20095@ericsson.com>
- <1287545658.10409.606.camel@Joe-Laptop>
- <20101020035346.GA20178@ericsson.com>
- <1287547662.10409.618.camel@Joe-Laptop>
- <20101020093438.07b129c8@endymion.delvare>
- <20101020144608.GA21937@ericsson.com>
- <20101020183835.202989c9@endymion.delvare>
+	id S1754117Ab0JTQoo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Oct 2010 12:44:44 -0400
+Date: Wed, 20 Oct 2010 12:43:24 -0400
+From: Jason Baron <jbaron@redhat.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Steven Rostedt <rostedt@goodmis.org>, LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        masami.hiramatsu.pt@hitachi.com
+Subject: Re: [PATCH][GIT PULL] tracing: Fix compile issue for
+	trace_sched_wakeup.c
+Message-ID: <20101020164324.GC7348@redhat.com>
+References: <1287508282.16971.386.camel@gandalf.stny.rr.com> <20101019184111.GA17266@elte.hu> <20101020154045.GA18353@elte.hu>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20101020183835.202989c9@endymion.delvare>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20101020154045.GA18353@elte.hu>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jean,
-On Wed, Oct 20, 2010 at 12:38:35PM -0400, Jean Delvare wrote:
-[ ... ]
+On Wed, Oct 20, 2010 at 05:40:45PM +0200, Ingo Molnar wrote:
+> FYI, there's a new mystery hang (sometimes crash) that triggers in -tip - and which 
+> seems to be tracing related. See the crashlog below - config attached.
 > 
-> I'm still using quilt so it means quite some manual work for me. Probably
-> I could automate part of it, and I would if it was happening
-> frequently. But as it stands it's rather rare.
+> It's not bisectable - small changes in the kernel make the bug come/go. (might be a 
+> race of some sorts)
 > 
-I tried quilt, but dumped it in favor of git. Personal preference, maybe,
-but I seem to get along with git much better than with quilt.
+> Thanks,
+> 
+> 	Ingo
+> 
 
-> OK. Well, only two of "my" drivers are affected by Joe's patch (it87
-> and pcf8591), so if you prefer the split variant, you could pick all
-> the individual patches except these two, and I take these two.
-> 
-Ok, let's do that.
+strange b/c it looks like we get though enabling/disabling the
+tracepoitns individually, but then when we go to enable all the
+tracepoints we hit this hang - perhaps, suggesting a race. Do we always
+fail after "Testing all events:" is printed? Does the crash have any
+more clues. I will try and re-produce this.
 
-> But first of all, I really would like the pr_fmt issue do be sorted
-> out. I don't like the idea of having to redefine it in every driver,
-> when it seems easy to avoid that. Joe?
-> 
-Agreed, especially since it doesn't seem to be used in many of the drivers.
+Also, I noticed some recent changes to text_poke_smp() usage of
+stop_machine() on Oct. 14th. That's related to the area where this appears
+to hang, so if things were working with this .config before then, that
+might be a place to look. Adding Masami to the 'cc list.
 
-Guenter
+thanks,
+
+-Jason
