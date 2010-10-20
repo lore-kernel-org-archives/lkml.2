@@ -1,68 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750874Ab0JTEHp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Oct 2010 00:07:45 -0400
-Received: from mail.perches.com ([173.55.12.10]:3133 "EHLO mail.perches.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750707Ab0JTEHo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Oct 2010 00:07:44 -0400
-Subject: Re: [PATCH] drivers/hwmon: Use pr_fmt and pr_<level>
-From: Joe Perches <joe@perches.com>
-To: Guenter Roeck <guenter.roeck@ericsson.com>
-Cc: Jean Delvare <khali@linux-fr.org>, Hans de Goede <j.w.r.degoede@hhs.nl>,
-        Alistair John Strachan <alistair@devzero.co.uk>,
-        Henrik Rydberg <rydberg@euromail.se>,
-        "Mark M. Hoffman" <mhoffman@lightlink.com>,
-        Luca Tettamanti <kronos.it@gmail.com>,
-        Fenghua Yu <fenghua.yu@intel.com>, Juerg Haefliger <juergh@gmail.com>,
-        Eric Piel <eric.piel@tremplin-utc.net>,
-        Jim Cromie <jim.cromie@gmail.com>,
-        Roger Lucas <vt8231@hiddenengine.co.uk>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
-        LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <20101020035346.GA20178@ericsson.com>
-References: <1287530020.10409.594.camel@Joe-Laptop>
-	 <20101020032938.GA20095@ericsson.com>
-	 <1287545658.10409.606.camel@Joe-Laptop>
-	 <20101020035346.GA20178@ericsson.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 19 Oct 2010 21:07:42 -0700
-Message-ID: <1287547662.10409.618.camel@Joe-Laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1751034Ab0JTEIq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Oct 2010 00:08:46 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:50465 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750745Ab0JTEIp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Oct 2010 00:08:45 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=from:to:cc:subject:references:date:message-id:user-agent:
+	mime-version:content-type;
+	b=AhWF4akB5a/t6ln9t6SkxAy9b5+xnSgE5Ask2i9Q7nnZyyDhqpTM/M+jtxNMcrju9
+	sbzPMn10TbS79Dxfcmg/w==
+From: Greg Thelen <gthelen@google.com>
+To: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, containers@lists.osdl.org,
+        Andrea Righi <arighi@develer.com>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Ciju Rajan K <ciju@linux.vnet.ibm.com>,
+        David Rientjes <rientjes@google.com>
+Subject: Re: [PATCH v3 07/11] memcg: add dirty limits to mem_cgroup
+References: <1287448784-25684-1-git-send-email-gthelen@google.com>
+	<1287448784-25684-8-git-send-email-gthelen@google.com>
+	<20101020095056.48098b34.nishimura@mxp.nes.nec.co.jp>
+Date: Tue, 19 Oct 2010 21:08:20 -0700
+Message-ID: <xr93iq0x1p6z.fsf@ninji.mtv.corp.google.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-10-19 at 20:53 -0700, Guenter Roeck wrote:
-> On Tue, Oct 19, 2010 at 11:34:18PM -0400, Joe Perches wrote:
-> > On Tue, 2010-10-19 at 20:29 -0700, Guenter Roeck wrote:
-> > > There are several lines longer than 80 characters.
-> > > Does this rule no longer apply ?
-> > 80 columns isn't checked for printk format strings.
-> Interesting.
-> > A kernel general preference may be to keep formats as
-> > a single string without line breaks so that grep works
-> > better.
-> > > Oddly enough, there are only four checkpatch warnings about long lines,
-> > > even though there are many more.
-> > The version I use doesn't show any warnings.
-> checkpatch.pl from both v2.6.36-rc7 and v2.6.36-rc6 do report warnings.
-> Looks like those versions flag long lines for pr_warn. Is your version
-> older or newer ?
+Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp> writes:
 
-Newer.  It adds pr_warn to the exempted list, not just pr_warning.
+>> +static unsigned long long
+>> +memcg_hierarchical_free_pages(struct mem_cgroup *mem)
+>> +{
+>> +	struct cgroup *cgroup;
+>> +	unsigned long long min_free, free;
+>> +
+>> +	min_free = res_counter_read_u64(&mem->res, RES_LIMIT) -
+>> +		res_counter_read_u64(&mem->res, RES_USAGE);
+>> +	cgroup = mem->css.cgroup;
+>> +	if (!mem->use_hierarchy)
+>> +		goto out;
+>> +
+>> +	while (cgroup->parent) {
+>> +		cgroup = cgroup->parent;
+>> +		mem = mem_cgroup_from_cont(cgroup);
+>> +		if (!mem->use_hierarchy)
+>> +			break;
+>> +		free = res_counter_read_u64(&mem->res, RES_LIMIT) -
+>> +			res_counter_read_u64(&mem->res, RES_USAGE);
+>> +		min_free = min(min_free, free);
+>> +	}
+>> +out:
+>> +	/* Translate free memory in pages */
+>> +	return min_free >> PAGE_SHIFT;
+>> +}
+>> +
+> I think you can simplify this function using parent_mem_cgroup().
+>
+> 	unsigned long free, min_free = ULLONG_MAX;
+>
+> 	while (mem) {
+> 		free = res_counter_read_u64(&mem->res, RES_LIMIT) -
+> 			res_counter_read_u64(&mem->res, RES_USAGE);
+> 		min_free = min(min_free, free);
+> 		mem = parent_mem_cgroup();
+> 	}
+>
+> 	/* Translate free memory in pages */
+> 	return min_free >> PAGE_SHIFT;
+>
+> And, IMHO, we should return min(global_page_state(NR_FREE_PAGES), min_free >> PAGE_SHIFT).
+> Because we are allowed to set no-limit(or a very big limit) in memcg,
+> so min_free can be very big if we don't set a limit against all the memcg's in hierarchy.
+>
+>
+> Thanks,
+> Dasiuke Nishimura.
 
-> Anyway, would it be possible to split the patch into one patch per file ?
+Thank you.  This is a good suggestion.  I will update the page to include this.
 
-Oh sure.  It's trivial to do that.
-
-> I don't know how Jean thinks about it, but in my opinion it would be cleaner,
-> permit revert on a single patch/file instead of having to revert the entire series,
-> it would simplify review, and it would make it much easier to cherry-pick 
-> pieces into other releases if needed.
-
-Jean, do you have a preference?
-I'll resubmit if you want it separated.
-
+--
+Greg
