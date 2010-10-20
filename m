@@ -1,48 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754664Ab0JTT3f (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Oct 2010 15:29:35 -0400
-Received: from mga09.intel.com ([134.134.136.24]:6788 "EHLO mga09.intel.com"
+	id S1754094Ab0JTTbh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Oct 2010 15:31:37 -0400
+Received: from hera.kernel.org ([140.211.167.34]:37282 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751904Ab0JTT3d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Oct 2010 15:29:33 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.57,356,1283756400"; 
-   d="scan'208";a="669250069"
-Message-ID: <4CBF431C.3070002@linux.intel.com>
-Date: Wed, 20 Oct 2010 12:29:32 -0700
-From: Arjan van de Ven <arjan@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.2.9) Gecko/20100915 Thunderbird/3.1.4
+	id S1751681Ab0JTTbg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Oct 2010 15:31:36 -0400
+Date: Wed, 20 Oct 2010 19:31:14 GMT
+From: tip-bot for tip-bot for Jeremy Fitzhardinge 
+	<jeremy.fitzhardinge@citrix.com>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        tglx@linutronix.de, hpa@linux.intel.com, borislav.petkov@amd.com,
+        jeremy.fitzhardinge@citrix.com
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        tglx@linutronix.de, hpa@linux.intel.com,
+        jeremy.fitzhardinge@citrix.com, borislav.petkov@amd.com
+In-Reply-To: <20101020103642.GA3135@kryptos.osrc.amd.com>
+References: <20101020103642.GA3135@kryptos.osrc.amd.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/mm] x86, mm: Fix incorrect data type in vmalloc_sync_all()
+Message-ID: <tip-bfac67208d6d2a84fe7980187d3d2f21424dde59@git.kernel.org>
+Git-Commit-ID: bfac67208d6d2a84fe7980187d3d2f21424dde59
+X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: svaidy@linux.vnet.ibm.com, Andi Kleen <ak@linux.intel.com>,
-        Trinabh Gupta <trinabh@linux.vnet.ibm.com>,
-        Venkatesh Pallipadi <venki@google.com>, lenb@kernel.org,
-        suresh.b.siddha@intel.com, benh@kernel.crashing.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC V1] cpuidle: add idle routine registration and cleanup pm_idle
- pointer
-References: <20101019183522.17992.86937.stgit@tringupt.in.ibm.com>	 <4CBDE5AB.4040401@linux.intel.com>	 <AANLkTi=cetw_mdp_3s+T4OxTfcMT2u4cdVPKxOp7jbVU@mail.gmail.com>	 <4CBDEB14.2030304@linux.vnet.ibm.com> <4CBF06D5.7020508@linux.vnet.ibm.com>	 <4CBF0854.6080903@linux.intel.com> <4CBF0C04.5070705@linux.intel.com>	 <4CBF12CB.9050604@linux.intel.com>	 <20101020191941.GA706@dirshya.in.ibm.com>	 <4CBF4243.4040104@linux.intel.com> <1287602923.3673.1.camel@laptop>
-In-Reply-To: <1287602923.3673.1.camel@laptop>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 20 Oct 2010 19:31:16 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  On 10/20/2010 12:28 PM, Peter Zijlstra wrote:
-> On Wed, 2010-10-20 at 12:25 -0700, Arjan van de Ven wrote:
->> (the pm_idle is an x86 only problem. other architectures should be able
->> to keep doing what they are doing)
-> sadly no, some architectures copied this brilliant piece of design.
->
-> A quick git grep suggests:
-> arm/blackfin/cris/ia64/m32r/m68knommu/microblaze/mn10300/sh/sparc all
-> have pm_idle.
+Commit-ID:  bfac67208d6d2a84fe7980187d3d2f21424dde59
+Gitweb:     http://git.kernel.org/tip/bfac67208d6d2a84fe7980187d3d2f21424dde59
+Author:     tip-bot for Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+AuthorDate: Tue, 19 Oct 2010 22:17:37 +0000
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Wed, 20 Oct 2010 11:53:10 -0700
 
-any of those that only every use one are the easy case.
+x86, mm: Fix incorrect data type in vmalloc_sync_all()
 
-the ones that use multiple can convert to the same solution x86 has over 
-time.
+arch/x86/mm/fault.c: In function 'vmalloc_sync_all':
+arch/x86/mm/fault.c:238: warning: assignment makes integer from pointer without a cast
 
+introduced by 617d34d9e5d8326ec8f188c616aa06ac59d083fe.
 
+Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
+LKML-Reference: <20101020103642.GA3135@kryptos.osrc.amd.com>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+---
+ arch/x86/mm/fault.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/arch/x86/mm/fault.c b/arch/x86/mm/fault.c
+index 6c27c39..0cdb8d4 100644
+--- a/arch/x86/mm/fault.c
++++ b/arch/x86/mm/fault.c
+@@ -230,7 +230,7 @@ void vmalloc_sync_all(void)
+ 		spin_lock_irqsave(&pgd_lock, flags);
+ 		list_for_each_entry(page, &pgd_list, lru) {
+ 			spinlock_t *pgt_lock;
+-			int ret;
++			pmd_t *ret;
+ 
+ 			pgt_lock = &pgd_page_get_mm(page)->page_table_lock;
+ 
