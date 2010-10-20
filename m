@@ -1,50 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755200Ab0JTFhJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Oct 2010 01:37:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:17133 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751915Ab0JTFhH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Oct 2010 01:37:07 -0400
-Message-ID: <4CBE80F1.5080003@redhat.com>
-Date: Wed, 20 Oct 2010 13:41:05 +0800
-From: Cong Wang <amwang@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Shredder/3.0.4
+	id S1755361Ab0JTFrJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Oct 2010 01:47:09 -0400
+Received: from s15228384.onlinehome-server.info ([87.106.30.177]:58689 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752564Ab0JTFrI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Oct 2010 01:47:08 -0400
+Date: Wed, 20 Oct 2010 07:47:52 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Daniel Drake <dsd@laptop.org>, "tglx@linutronix.de" <tglx@linutronix.de>,
+        "mingo@redhat.com" <mingo@redhat.com>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "dilinger@queued.net" <dilinger@queued.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Borislav Petkov <bp@amd64.org>, "Roedel, Joerg" <Joerg.Roedel@amd.com>
+Subject: Re: [PATCH] OLPC: Add XO-1 suspend/resume support
+Message-ID: <20101020054752.GA10441@aftab>
+References: <20101019220159.0DBBE9D401B@zog.reactivated.net>
+ <4CBE1781.1050000@zytor.com>
 MIME-Version: 1.0
-To: Andi Kleen <ak@linux.intel.com>
-CC: Andreas Schwab <schwab@redhat.com>, linux-kernel@vger.kernel.org,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Len Brown <len.brown@intel.com>, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        David Howells <dhowells@redhat.com>, Eric Paris <eparis@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Andy Shevchenko <ext-andriy.shevchenko@nokia.com>,
-        linux-doc@vger.kernel.org
-Subject: Re: [PATCH 2/2] sysctl: remove sysctl syscall
-References: <1287476560-5874-1-git-send-email-amwang@redhat.com>	<1287476560-5874-2-git-send-email-amwang@redhat.com>	<4CBD9B7F.6040307@linux.intel.com> <m3lj5uff3h.fsf@hase.home> <4CBDB3B0.8080605@linux.intel.com>
-In-Reply-To: <4CBDB3B0.8080605@linux.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4CBE1781.1050000@zytor.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/19/10 23:05, Andi Kleen wrote:
-> On 10/19/2010 4:10 PM, Andreas Schwab wrote:
->>> On 10/19/2010 10:22 AM, Amerigo Wang wrote:
->>>> Remove the obsolete sysctl syscall. It was scheduled
->>>> to be removed in Sept.
->>>
->>> I thought at least older glibc was still using it? Did anyone check
->>> what happens if it sees no sysctl(2)?
->> It will fall back reading from /proc/sys.
->
-> First that's slow (but ok), but that will fail if there is no /proc.
->
+From: "H. Peter Anvin" <hpa@zytor.com>
+Date: Tue, Oct 19, 2010 at 06:11:13PM -0400
 
-I strongly doubt glibc will work if there is no /proc,
-a quick grep shows lots of "/proc" strings in glibc code.
+> On 10/19/2010 03:01 PM, Daniel Drake wrote:
+> > Add code needed for basic suspend/resume of the XO-1 laptop.
+> > 
+> > swsusp_pg_dir needs to be exposed as it is used by the assembly
+> > code run in the wakeup path.
+> > 
+> 
+> Okay... this is Yet Another Reason why we need to unify all the bloody
+> trampoline page tables.
+> 
+> What it comes down to is that there are several users which need a 1:1
+> mapped pagetable and a chunk of memory < 1 MiB, and they should all be
+> combined and linked together, and share a single pagetable set that
+> sticks around.
+> 
+> Borislav has already been doing some of this work:
+> 
+> [PATCH] x86-32, mm: Add an initial page table for core bootstrapping
+> 
+> I thought that patch was already in -tip, but it looks like it's not...
+> Borislav/Joerg... was there a newer patch or did we just miss the final
+> version?  I remember we talked about this at some length, but it looks
+> like I dropped the ball (I was on vacation when the above message was
+> posted.)
+
+The final version with fixed ACPI sleep is this one:
+http://www.gossamer-threads.com/lists/linux/kernel/1270589
+
+I ran it for a couple of weeks and it didn't show any regressions. If
+you want to get it into the merge window, I can get you an updated
+version against a -tip branch of your liking ASAP.
+
+-- 
+Regards/Gruss,
+Boris.
+
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+General Managers: Alberto Bozzo, Andrew Bowd
+Registration: Dornach, Gemeinde Aschheim, Landkreis Muenchen
+Registergericht Muenchen, HRB Nr. 43632
