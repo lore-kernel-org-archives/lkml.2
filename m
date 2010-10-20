@@ -1,74 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754905Ab0JTS3E (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Oct 2010 14:29:04 -0400
-Received: from alerce.vps.bitfolk.com ([212.13.194.134]:3714 "EHLO
-	alerce.vps.bitfolk.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754094Ab0JTS3C (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Oct 2010 14:29:02 -0400
-Date: Wed, 20 Oct 2010 15:28:51 -0300
-From: Leandro Lucarella <luca@llucax.com.ar>
-To: Jon Maloy <jon.maloy@ericsson.com>
-Cc: Neil Horman <nhorman@tuxdriver.com>, David Miller <davem@davemloft.net>,
-        "paul.gortmaker@windriver.com" <paul.gortmaker@windriver.com>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "tipc-discussion@lists.sourceforge.net" 
-	<tipc-discussion@lists.sourceforge.net>
-Subject: Re: Linux 2.6.35/TIPC 2.0 ABI breaking changes
-Message-ID: <20101020182851.GP8781@llucax.com.ar>
-References: <20101018234547.GA5703@hmsreliant.think-freely.org>
- <20101019021657.GZ8781@llucax.com.ar>
- <20101019.011649.71113115.davem@davemloft.net>
- <20101019110452.GA14410@hmsreliant.think-freely.org>
- <20101019131936.GB8781@llucax.com.ar>
- <20101019201841.GC14410@hmsreliant.think-freely.org>
- <20101020172018.GN8781@llucax.com.ar>
- <0434463FDA60A94FA978ACA44617682DEE84668199@EUSAACMS0702.eamcs.ericsson.se>
- <20101020180454.GC14407@hmsreliant.think-freely.org>
- <0434463FDA60A94FA978ACA44617682DEE846681B9@EUSAACMS0702.eamcs.ericsson.se>
+	id S1754852Ab0JTSdi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Oct 2010 14:33:38 -0400
+Received: from c-67-162-90-113.hsd1.in.comcast.net ([67.162.90.113]:34008 "HELO
+	kosh.dhis.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1753249Ab0JTSdh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Oct 2010 14:33:37 -0400
+Message-ID: <20101020183336.1714.qmail@kosh.dhis.org>
+From: pacman@kosh.dhis.org
+Subject: Re: PROBLEM: memory corrupting bug, bisected to 6dda9d55
+To: benh@kernel.crashing.org (Benjamin Herrenschmidt)
+Date: Wed, 20 Oct 2010 13:33:36 -0500 (GMT+5)
+Cc: segher@kernel.crashing.org (Segher Boessenkool),
+        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
+In-Reply-To: <1287570736.2198.19.camel@pasglop>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <0434463FDA60A94FA978ACA44617682DEE846681B9@EUSAACMS0702.eamcs.ericsson.se>
-X-Paranoid: Just because you're paranoid, don't mean they're not after you.
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jon Maloy, el 20 de octubre a las 14:10 me escribiste:
-> <...>
-> > > 
-> > > Remember, permitting both is a superset of the current one 
-> > (NBO only) 
-> > > so it is fully backwards compatible. We break absolutly nothing by 
-> > > permitting this.
-> > > 
-> > Thats effectively reverting both our patches though, isn't it 
-> > (not that I'm disagreeing with it, just looking for 
-> > clarification).  If we revert my patch and reintroduce the 
-> > htohl mechanism which tracks endianess, we might as well 
-> > revert the TIPC_SUB_SERVICE flag as well, yeah?
+Benjamin Herrenschmidt writes:
 > 
-> Absolutely. I think it was a mistake to change that value.
-> But I don't think we need to reintroduce the htohl(). That
-> was just one way of doing it. If I understood your suggestion
-> from yesterday correctly you converted the whole message within
-> one if()clause, without any htohl(). I have have no problem with 
-> that approach.
+> On Tue, 2010-10-19 at 22:23 -0500, pacman@kosh.dhis.org wrote:
+> > The diff fragment above applied inside prom_close_stdin, but there are
+> > some
+> > prom_printf calls after prom_close_stdin. Calling prom_printf after
+> > closing
+> > stdout sounds like it could be bad. If I moved it down below all the
+> > prom_printf's, it would be after the "quiesce" call. Would that be
+> > acceptable
+> > (or even interesting as an experiment)? Does a close need a quiesce
+> > after it?
+> 
+> Just try :-) "quiesce" is something that afaik only apple ever
+> implemented anyways. It uses hooks inside their OF to shut down all
+> drivers that do bus master (among other HW sanitization tasks).
 
-There is a difference between both solutions, the htohl() version
-tracked the need for swap as a struct subscription member (which was
-used when sending back events). Neils patch doesn't do that tracking.
-I don't really know the implications of this, but maybe it would be
-a wise idea to stay in the safe side and revert both patches for now.
+I booted a version with a prom_close_stdout after the last prom_debug. It
+didn't have any effect. That 1000Hz clock was still ticking.
 
 -- 
-Leandro Lucarella (AKA luca)                     http://llucax.com.ar/
-----------------------------------------------------------------------
-GPG Key: 5F5A8D05 (F8CD F9A7 BF00 5431 4145  104C 949E BFB6 5F5A 8D05)
-----------------------------------------------------------------------
-It's not a lie, if you believe it.
-	-- George Constanza
+Alan Curry
