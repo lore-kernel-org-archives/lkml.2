@@ -1,80 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755882Ab0JTW2y (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Oct 2010 18:28:54 -0400
-Received: from tundra.namei.org ([65.99.196.166]:53928 "EHLO tundra.namei.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754102Ab0JTW2x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Oct 2010 18:28:53 -0400
-Date: Thu, 21 Oct 2010 09:28:36 +1100 (EST)
-From: James Morris <jmorris@namei.org>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Eric Paris <eparis@redhat.com>
-Subject: Re: linux-next: build failure after merge of the final tree
- (security-testing tree related)
-In-Reply-To: <20101020161024.af794b4a.sfr@canb.auug.org.au>
-Message-ID: <alpine.LRH.2.00.1010210928270.8572@tundra.namei.org>
-References: <20101020161024.af794b4a.sfr@canb.auug.org.au>
-User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
+	id S1755937Ab0JTW3O (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Oct 2010 18:29:14 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:1058 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754724Ab0JTW3N (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Oct 2010 18:29:13 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6142"; a="58699691"
+Message-ID: <4CBF6D38.3080208@codeaurora.org>
+Date: Wed, 20 Oct 2010 15:29:12 -0700
+From: Bryan Huntsman <bryanh@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100528 Thunderbird/3.0.5
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Ohad Ben-Cohen <ohad@wizery.com>
+CC: Daniel Walker <dwalker@codeaurora.org>, Hari Kanigeri <h-kanigeri2@ti.com>,
+        Suman Anna <s-anna@ti.com>, Russell King <linux@arm.linux.org.uk>,
+        Benoit Cousson <b-cousson@ti.com>, Tony Lindgren <tony@atomide.com>,
+        Greg KH <greg@kroah.com>, linux-kernel@vger.kernel.org,
+        Grant Likely <grant.likely@secretlab.ca>, mattw@codeaurora.org,
+        akpm@linux-foundation.org, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 0/3] Add OMAP hardware spinlock misc driver
+References: <1287387875-14168-1-git-send-email-ohad@wizery.com>	<1287531090.9245.139.camel@c-dwalke-linux.qualcomm.com>	<AANLkTikPnm1NK1wGGzbOuNoCOnAcSp=RC8mTW2yx3u0s@mail.gmail.com> <AANLkTimSL3UN6V45-+x7+wyT9Oz1Jfy+LesAUxMcPNqd@mail.gmail.com>
+In-Reply-To: <AANLkTimSL3UN6V45-+x7+wyT9Oz1Jfy+LesAUxMcPNqd@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 20 Oct 2010, Stephen Rothwell wrote:
 
-> Hi James,
-> 
-> After merging the final tree, today's linux-next build (powerpc
-> allyesconfig) failed like this:
-> 
-> security/selinux/ss/services.c: In function 'security_read_policy':
-> security/selinux/ss/services.c:3172: error: implicit declaration of function 'vmalloc_user'
-> security/selinux/ss/services.c:3172: warning: assignment makes pointer from integer without a cast
-> 
-> Caused by commit ed167abda544bb7f8cf09dc3d3608c79e1cfb25f ("SELinux:
-> allow userspace to read policy back out of the kernel") and
-> bb17427490e1e295f3c0550c308684bd952a585d ("selinux: implement mmap
-> on /selinux/policy").
-> 
-> Please see Rule 1 (in Documentation/SubmitChecklist).
-> 
-> I applied the following patch for today:
+>  Indeed. Where is that MSM code ?
 
-Thanks, applied.
+We don't have an equivalent feature on MSM, nor any plans for one.  Daniel was thinking of an internal test feature that had been deprecated a while ago.
 
-> 
-> From: Stephen Rothwell <sfr@canb.auug.org.au>
-> Date: Wed, 20 Oct 2010 16:08:00 +1100
-> Subject: [PATCH] selinux: include vmalloc.h for vmalloc_user
-> 
-> ---
->  security/selinux/ss/services.c |    1 +
->  1 files changed, 1 insertions(+), 0 deletions(-)
-> 
-> diff --git a/security/selinux/ss/services.c b/security/selinux/ss/services.c
-> index 3a1739b..223c1ff 100644
-> --- a/security/selinux/ss/services.c
-> +++ b/security/selinux/ss/services.c
-> @@ -51,6 +51,7 @@
->  #include <linux/mutex.h>
->  #include <linux/selinux.h>
->  #include <linux/flex_array.h>
-> +#include <linux/vmalloc.h>
->  #include <net/netlabel.h>
->  
->  #include "flask.h"
-> -- 
-> 1.7.1
-> 
-> -- 
-> Cheers,
-> Stephen Rothwell                    sfr@canb.auug.org.au
-> http://www.canb.auug.org.au/~sfr/
-> 
+- Bryan
 
 -- 
-James Morris
-<jmorris@namei.org>
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
