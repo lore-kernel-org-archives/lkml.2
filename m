@@ -1,168 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757576Ab0JTBjD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Oct 2010 21:39:03 -0400
-Received: from mga09.intel.com ([134.134.136.24]:19948 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756550Ab0JTBhJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Oct 2010 21:37:09 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.57,353,1283756400"; 
-   d="scan'208";a="565620627"
-From: Huang Ying <ying.huang@intel.com>
-To: Len Brown <lenb@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Andi Kleen <andi@firstfloor.org>,
-        ying.huang@intel.com, linux-acpi@vger.kernel.org
-Subject: [PATCH 2/9] Add lock-less version of bitmap_set/clear
-Date: Wed, 20 Oct 2010 09:36:53 +0800
-Message-Id: <1287538620-7442-3-git-send-email-ying.huang@intel.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1287538620-7442-1-git-send-email-ying.huang@intel.com>
-References: <1287538620-7442-1-git-send-email-ying.huang@intel.com>
+	id S1756648Ab0JTBkm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Oct 2010 21:40:42 -0400
+Received: from [120.204.251.227] ([120.204.251.227]:45380 "EHLO
+	LC-SHMAIL-01.SHANGHAI.LEADCORETECH.COM" rhost-flags-FAIL-FAIL-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753454Ab0JTBkl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Oct 2010 21:40:41 -0400
+Subject: Re: oom_killer crash linux system
+From: "Figo.zhang" <zhangtianfei@leadcoretech.com>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "rientjes@google.com" <rientjes@google.com>,
+        figo1802 <figo1802@gmail.com>
+In-Reply-To: <20101019152249.e268b1e9.kamezawa.hiroyu@jp.fujitsu.com>
+References: <20101018021126.GB8654@localhost>
+	 <1287389631.1997.9.camel@myhost>
+	 <20101018180919.3AF8.A69D9226@jp.fujitsu.com>
+	 <1287454058.2078.12.camel@myhost>
+	 <20101019152249.e268b1e9.kamezawa.hiroyu@jp.fujitsu.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 20 Oct 2010 09:36:47 +0800
+Message-ID: <1287538607.2031.5.camel@myhost>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.0 
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 20 Oct 2010 01:40:38.0173 (UTC) FILETIME=[CC1514D0:01CB6FF7]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-cmpxchg is used to change the bitmap instead of the ordinary unsigned
-long assigning. Several users can set/clear the same bitmap
-simultaneously without lock. If there is conflict between two user,
-(set/clear same bit), one will return remain bits immediately.
+>
+> >
+> > echo 5 > /proc/sys/vm/dirty_ratio
+>
+> reduce the dirty_ratio, i can use memory up to 1.75GB, and then it
+will
+> call oom-killer.
+>So it helps.  Are there intensive IO after reducing dirty_ratio?
 
-This can be used to implement the lock-less resource allocator.
+> > - enable vmscan trace
+> >
+> > mount -t debugfs none /sys/kernel/debug
+> > echo 1 > /sys/kernel/debug/tracing/events/vmscan/enable
+> > <eat memory and wait for crash>
+> > cat /sys/kernel/debug/tracing/trace > trace.log
+> would you like to help to see the trace.log , i add attached file.
+> There are many vmscan writes showing up in the trace.
 
-Signed-off-by: Huang Ying <ying.huang@intel.com>
----
- include/linux/bitmap.h |    4 +
- lib/bitmap.c           |  101 +++++++++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 105 insertions(+)
+yes, the DiskIO is be not aggressive when i reduce the dirty_ratio, but
+when i use memory up to 1.75GB (total 2GB), the system suddenly crashed.
+when i reboot and want to see the /var/log/message, it is without useful
+information.
 
---- a/include/linux/bitmap.h
-+++ b/include/linux/bitmap.h
-@@ -44,6 +44,8 @@
-  * bitmap_weight(src, nbits)			Hamming Weight: number set bits
-  * bitmap_set(dst, pos, nbits)			Set specified bit area
-  * bitmap_clear(dst, pos, nbits)		Clear specified bit area
-+ * bitmap_set_ll(dst, pos, nbits)		Set specified bit area, lock-less version
-+ * bitmap_clear_ll(dst, pos, nbits)		Clear specified bit area, lock-less version
-  * bitmap_find_next_zero_area(buf, len, pos, n, mask)	Find bit free area
-  * bitmap_shift_right(dst, src, n, nbits)	*dst = *src >> n
-  * bitmap_shift_left(dst, src, n, nbits)	*dst = *src << n
-@@ -113,6 +115,8 @@ extern int __bitmap_weight(const unsigne
- 
- extern void bitmap_set(unsigned long *map, int i, int len);
- extern void bitmap_clear(unsigned long *map, int start, int nr);
-+extern int bitmap_set_ll(unsigned long *map, int i, int len);
-+extern int bitmap_clear_ll(unsigned long *map, int start, int nr);
- extern unsigned long bitmap_find_next_zero_area(unsigned long *map,
- 					 unsigned long size,
- 					 unsigned long start,
---- a/lib/bitmap.c
-+++ b/lib/bitmap.c
-@@ -315,6 +315,107 @@ void bitmap_clear(unsigned long *map, in
- }
- EXPORT_SYMBOL(bitmap_clear);
- 
-+static inline int set_bits_ll(unsigned long *addr, unsigned long mask_to_set)
-+{
-+	unsigned long val, nval;
-+
-+	nval = *addr;
-+	do {
-+		val = nval;
-+		if (val & mask_to_set)
-+			return -EBUSY;
-+	} while ((nval = cmpxchg(addr, val, val | mask_to_set)) != val);
-+
-+	return 0;
-+}
-+
-+static inline int clear_bits_ll(unsigned long *addr,
-+				unsigned long mask_to_clear)
-+{
-+	unsigned long val, nval;
-+
-+	nval = *addr;
-+	do {
-+		val = nval;
-+		if ((val & mask_to_clear) != mask_to_clear)
-+			return -EBUSY;
-+	} while ((nval = cmpxchg(addr, val, val & ~mask_to_clear)) != val);
-+
-+	return 0;
-+}
-+
-+/**
-+ * bitmap_set_ll - set the specified number of bits at the specified position
-+ * @map: pointer to a bitmap
-+ * @start: a bit position in @map
-+ * @nr: number of bits to set
-+ *
-+ * Set @nr bits start from @start in @map lock-lessly. Several users
-+ * can set/clear the same bitmap simultaneously without lock. If two
-+ * users set the same bit, one user will return remain bits, otherwise
-+ * return 0.
-+ */
-+int bitmap_set_ll(unsigned long *map, int start, int nr)
-+{
-+	unsigned long *p = map + BIT_WORD(start);
-+	const int size = start + nr;
-+	int bits_to_set = BITS_PER_LONG - (start % BITS_PER_LONG);
-+	unsigned long mask_to_set = BITMAP_FIRST_WORD_MASK(start);
-+
-+	while (nr - bits_to_set >= 0) {
-+		if (set_bits_ll(p, mask_to_set))
-+			return nr;
-+		nr -= bits_to_set;
-+		bits_to_set = BITS_PER_LONG;
-+		mask_to_set = ~0UL;
-+		p++;
-+	}
-+	if (nr) {
-+		mask_to_set &= BITMAP_LAST_WORD_MASK(size);
-+		if (set_bits_ll(p, mask_to_set))
-+			return nr;
-+	}
-+
-+	return 0;
-+}
-+EXPORT_SYMBOL(bitmap_set_ll);
-+
-+/**
-+ * bitmap_clear_ll - clear the specified number of bits at the specified position
-+ * @map: pointer to a bitmap
-+ * @start: a bit position in @map
-+ * @nr: number of bits to set
-+ *
-+ * Clear @nr bits start from @start in @map lock-lessly. Several users
-+ * can set/clear the same bitmap simultaneously without lock. If two
-+ * users clear the same bit, one user will return remain bits,
-+ * otherwise return 0.
-+ */
-+int bitmap_clear_ll(unsigned long *map, int start, int nr)
-+{
-+	unsigned long *p = map + BIT_WORD(start);
-+	const int size = start + nr;
-+	int bits_to_clear = BITS_PER_LONG - (start % BITS_PER_LONG);
-+	unsigned long mask_to_clear = BITMAP_FIRST_WORD_MASK(start);
-+
-+	while (nr - bits_to_clear >= 0) {
-+		if (clear_bits_ll(p, mask_to_clear))
-+			return nr;
-+		nr -= bits_to_clear;
-+		bits_to_clear = BITS_PER_LONG;
-+		mask_to_clear = ~0UL;
-+		p++;
-+	}
-+	if (nr) {
-+		mask_to_clear &= BITMAP_LAST_WORD_MASK(size);
-+		if (clear_bits_ll(p, mask_to_clear))
-+			return nr;
-+	}
-+
-+	return 0;
-+}
-+EXPORT_SYMBOL(bitmap_clear_ll);
-+
- /*
-  * bitmap_find_next_zero_area - find a contiguous aligned zero area
-  * @map: The address to base the search on
+so it is other useful debug approach to find the issue?
+
+
+
