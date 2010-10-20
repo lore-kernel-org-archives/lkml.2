@@ -1,43 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758040Ab0JTGBP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Oct 2010 02:01:15 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:40322 "EHLO mail.zytor.com"
+	id S1758119Ab0JTGCb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Oct 2010 02:02:31 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:23938 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753877Ab0JTGBO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Oct 2010 02:01:14 -0400
-Message-ID: <4CBE8584.10707@zytor.com>
-Date: Tue, 19 Oct 2010 23:00:36 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc13 Thunderbird/3.1.4
+	id S1752716Ab0JTGC3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Oct 2010 02:02:29 -0400
+Message-ID: <4CBE86E0.3050505@redhat.com>
+Date: Wed, 20 Oct 2010 14:06:24 +0800
+From: Cong Wang <amwang@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Shredder/3.0.4
 MIME-Version: 1.0
-To: Eric Dumazet <eric.dumazet@gmail.com>
-CC: Shaohua Li <shaohua.li@intel.com>, lkml <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>, Andi Kleen <andi@firstfloor.org>,
-        "Chen, Tim C" <tim.c.chen@intel.com>
-Subject: Re: [PATCH 1/2]percpu: introduce read mostly percpu API
-References: <1287544022.4571.7.camel@sli10-conroe.sh.intel.com> <1287551880.2700.79.camel@edumazet-laptop>
-In-Reply-To: <1287551880.2700.79.camel@edumazet-laptop>
-Content-Type: text/plain; charset=UTF-8
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+CC: Andi Kleen <ak@linux.intel.com>, linux-kernel@vger.kernel.org,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Len Brown <len.brown@intel.com>, Ingo Molnar <mingo@elte.hu>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        David Howells <dhowells@redhat.com>, Eric Paris <eparis@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Andy Shevchenko <ext-andriy.shevchenko@nokia.com>,
+        linux-doc@vger.kernel.org
+Subject: Re: [PATCH 2/2] sysctl: remove sysctl syscall
+References: <1287476560-5874-1-git-send-email-amwang@redhat.com>	<1287476560-5874-2-git-send-email-amwang@redhat.com>	<4CBD9B7F.6040307@linux.intel.com> <m1vd4yi977.fsf@fess.ebiederm.org>	<4CBDB385.6080100@linux.intel.com> <m1eibmdvew.fsf@fess.ebiederm.org>
+In-Reply-To: <m1eibmdvew.fsf@fess.ebiederm.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/19/2010 10:18 PM, Eric Dumazet wrote:
-> 
-> Could you precisely describe why grouping together read mostly percpu
-> variables is a win ? Especially when you add in your next patch a single
-> variable ?
-> 
+On 10/20/10 00:00, Eric W. Biederman wrote:
+> To the best of my knowledge the last and user of sys_sysctl is the glibc
+> ioperm (my apologies I mispoke when I said iopl) implementation on arm.
+> Not that people run around calling ioperm very often in any distro.
 
-The logic is that those variables are less likely to end up dirty in the
-cache.  It is, however, much less of an issue for percpu variables,
-since dirty lines there aren't quite so likely to bounce around.
 
-	-hpa
+I saw that in Changelog of glibc too, but that was back to 2000, 10 years
+past, I don't see any code using sysctl() in glibc now, except sys_sysctl()
+itself, of course.
 
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
+>
+> All of that said I think disabling sys_sysctl by default now is totally
+> reasonable.  If there is a percentage in removing the code we can worry
+> about that later.  Perhaps we should add a CONFIG_CRUFT and move
+> sys_sysctl under there.  Binary compatibility that nothing needs but
+> that we actually have code for just in case.
 
+But you put sysctl in features-removal-schedule.txt 3 years ago. :)
+
+I believe they should see the kernel warnings if they are still using
+sysctl.
+
+Thanks.
