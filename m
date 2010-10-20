@@ -1,85 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753375Ab0JTOwK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Oct 2010 10:52:10 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:36364 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751252Ab0JTOwI (ORCPT
+	id S1753454Ab0JTOwg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Oct 2010 10:52:36 -0400
+Received: from mail.pripojeni.net ([217.66.174.14]:34206 "EHLO
+	smtp.pripojeni.net" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
+	with ESMTP id S1753406Ab0JTOwe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Oct 2010 10:52:08 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=er19eD5eOTdo60FAUcThHafh5SGAzmUGZ+JBbvAv6s9JgUR+gqKAS505TqaalLaVH+
-         jx29iQwhPOxbldjMXWS/BwqGMJASZjBCqsy6vwVN991Hnna4TI31VuOJiVHsNSUAsyw4
-         JZ3yGCHqnnllvrY6Vpe5qlUyM5X3j1U4jC1HI=
-MIME-Version: 1.0
-In-Reply-To: <20101020125407.GE2433@legolas.emea.dhcp.ti.com>
-References: <1287482608-11320-1-git-send-email-felipe.contreras@gmail.com>
-	<1287482608-11320-4-git-send-email-felipe.contreras@gmail.com>
-	<4CBD9FD5.506@nokia.com>
-	<AANLkTinRRyrXzqEu=u+CCYkmSNGm03SSo1tVG=5_wdpo@mail.gmail.com>
-	<4CBE9E69.6060803@nokia.com>
-	<AANLkTinOYDBMVZ3ibG3Md7jdOuOC6NkGWaugvHwT6uqF@mail.gmail.com>
-	<4CBEB312.7060400@nokia.com>
-	<AANLkTikom=eRFqCJmYE+k1zn5K2MR9s8HhNXtjOvUqvr@mail.gmail.com>
-	<20101020125407.GE2433@legolas.emea.dhcp.ti.com>
-Date: Wed, 20 Oct 2010 17:52:06 +0300
-Message-ID: <AANLkTi=+6bC=JALdCDKW_BS-jnNk3zFPuWuBT+aY=Utx@mail.gmail.com>
-Subject: Re: [PATCH v2 3/3] drivers: cleanup Kconfig stuff
-From: Felipe Contreras <felipe.contreras@gmail.com>
-To: balbi@ti.com
-Cc: Roger Quadros <roger.quadros@nokia.com>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        linux-omap <linux-omap@vger.kernel.org>,
-        linux-main <linux-kernel@vger.kernel.org>, Greg KH <greg@kroah.com>,
-        Tony Lindgren <tony@atomide.com>
-Content-Type: text/plain; charset=UTF-8
+	Wed, 20 Oct 2010 10:52:34 -0400
+From: Jiri Slaby <jslaby@suse.cz>
+To: hpa@zytor.com
+Cc: x86@kernel.org, linux-kernel@vger.kernel.org, jirislaby@gmail.com,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>
+Subject: [PATCH 1/1] x86: get rid of <0> from stack output
+Date: Wed, 20 Oct 2010 16:48:51 +0200
+Message-Id: <1287586131-16222-1-git-send-email-jslaby@suse.cz>
+X-Mailer: git-send-email 1.7.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 20, 2010 at 3:54 PM, Felipe Balbi <balbi@ti.com> wrote:
-> On Wed, Oct 20, 2010 at 04:23:13AM -0500, Felipe Contreras wrote:
->>
->> Ok, but USB_OMAP is not supposed to work on the N900? (I tried and it
->> didn't)
->
-> ooooh, that's old. That's from the omap1. It's the old omap_udc.c
+The stack output currently looks like this:
+ 7fffffffffffffff 0000000a00000000 ffffffff81093341 0000000000000046
+<0> ffff88003a545fd8 0000000000000000 0000000000000000 00007fffa39769c0
+<0> ffff88003e403f58 ffffffff8102fc4c ffff88003e403f58 ffff88003e403f78
 
-Ok, then the dependency should be ARCH_OMAP1, not ARCH_OMAP.
+The superfluous <0> are caused by recent printk KERN_CONT change.
+<*> is now ignored in printk unless some text follows the level and
+even then it still has to be the first in the format message.
 
->> I don't think so, because people might not want USB at all. The ideal
->> case would be for USB_GADGET_MUSB_HDRC to be selected automatically
->> when the user selects USB and USB_GADGET, but that's not happening
->> because USB_GADGET_OMAP is selected first (all the dependencies are
->> met).
->
-> And how is that different from:
->
-> default y if ARCH_OMAP3 ? If you don't want USB at all, you'll disable
-> it by hand, the default is on. Select on board Kconfig.
+Note that the log_lvl parameter is now completely ignored in
+show_stack_log_lvl and the stack is dumped with the default level
+(like for quite some time already). It behaves the same as the rest of
+the dump, function traces are dumped in the very same manner. Only
+Code and maybe some lines are printed with EMERG level.
 
-TWL4030_USB is inside drivers/usb/Kconfig and drivers/usb/otg/Kconfig,
-which means in order to achieve the same on the board config you would
-have to do:
+Unfortunately I see no way how to fix this conceptually to have the
+whole oops/BUG/panic output with the same level, so this removed only
+the superfluous characters for the time being.
 
-default y if USB_SUPPORT && (USB || USB_GADGET) && ARCH_OMAP3
+Just for illustration:
+<4>Process kworker/0:0 (pid: 0, threadinfo ffff88003c8a6000, task ffff88003c85c100)
+<0>Stack:
+<4> ffffffff818022c0 0000000a00000001 0000000000000001 0000000000000046
+<4> ffff88003c8a7fd8 0000000000000001 ffff88003c8a7e58 0000000000000000
+<4> ffff88003e503f48 ffffffff8102fc4c ffff88003e503f48 ffff88003e503f68
+<0>Call Trace:
+<0> <IRQ>
+<4> [<ffffffff8102fc4c>] ? call_softirq+0x1c/0x30
+...
+<0>Code: 00 01 00 00 65 8b 04 25 80 c5 00 00 c7 45 ...
 
-Seems to be more convoluted to me.
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>
+---
+ arch/x86/kernel/dumpstack_32.c |    6 +++---
+ arch/x86/kernel/dumpstack_64.c |    8 ++++----
+ 2 files changed, 7 insertions(+), 7 deletions(-)
 
-Besides, I think TWL4030_USB and the full description of it doesn't
-give any hints to the people reading drivers/usb/otg/Kconfig what is
-it used for. 'default y if ARCH_OMAP3' achieves that.
-
-Plus, there is no big change:
-
-config USB_MUSB_HDRC
--	select TWL4030_USB if MACH_OMAP_3430SDP
-
-config TWL4030_USB
-+	default y if ARCH_OMAP3
-
+diff --git a/arch/x86/kernel/dumpstack_32.c b/arch/x86/kernel/dumpstack_32.c
+index 0f6376f..1bc7f75 100644
+--- a/arch/x86/kernel/dumpstack_32.c
++++ b/arch/x86/kernel/dumpstack_32.c
+@@ -82,11 +82,11 @@ show_stack_log_lvl(struct task_struct *task, struct pt_regs *regs,
+ 		if (kstack_end(stack))
+ 			break;
+ 		if (i && ((i % STACKSLOTS_PER_LINE) == 0))
+-			printk("\n%s", log_lvl);
+-		printk(" %08lx", *stack++);
++			printk(KERN_CONT "\n");
++		printk(KERN_CONT " %08lx", *stack++);
+ 		touch_nmi_watchdog();
+ 	}
+-	printk("\n");
++	printk(KERN_CONT "\n");
+ 	show_trace_log_lvl(task, regs, sp, bp, log_lvl);
+ }
+ 
+diff --git a/arch/x86/kernel/dumpstack_64.c b/arch/x86/kernel/dumpstack_64.c
+index 57a21f1..6a34048 100644
+--- a/arch/x86/kernel/dumpstack_64.c
++++ b/arch/x86/kernel/dumpstack_64.c
+@@ -265,20 +265,20 @@ show_stack_log_lvl(struct task_struct *task, struct pt_regs *regs,
+ 		if (stack >= irq_stack && stack <= irq_stack_end) {
+ 			if (stack == irq_stack_end) {
+ 				stack = (unsigned long *) (irq_stack_end[-1]);
+-				printk(" <EOI> ");
++				printk(KERN_CONT " <EOI> ");
+ 			}
+ 		} else {
+ 		if (((long) stack & (THREAD_SIZE-1)) == 0)
+ 			break;
+ 		}
+ 		if (i && ((i % STACKSLOTS_PER_LINE) == 0))
+-			printk("\n%s", log_lvl);
+-		printk(" %016lx", *stack++);
++			printk(KERN_CONT "\n");
++		printk(KERN_CONT " %016lx", *stack++);
+ 		touch_nmi_watchdog();
+ 	}
+ 	preempt_enable();
+ 
+-	printk("\n");
++	printk(KERN_CONT "\n");
+ 	show_trace_log_lvl(task, regs, sp, bp, log_lvl);
+ }
+ 
 -- 
-Felipe Contreras
+1.7.3.1
+
+
