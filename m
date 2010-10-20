@@ -1,84 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754927Ab0JTSgn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Oct 2010 14:36:43 -0400
-Received: from imr4.ericy.com ([198.24.6.8]:41286 "EHLO imr4.ericy.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751288Ab0JTSgm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Oct 2010 14:36:42 -0400
-Date: Wed, 20 Oct 2010 11:35:44 -0700
-From: Guenter Roeck <guenter.roeck@ericsson.com>
-To: Joe Perches <joe@perches.com>
-CC: Jean Delvare <khali@linux-fr.org>, Hans de Goede <j.w.r.degoede@hhs.nl>,
-        Alistair John Strachan <alistair@devzero.co.uk>,
-        Henrik Rydberg <rydberg@euromail.se>,
-        "Mark M. Hoffman" <mhoffman@lightlink.com>,
-        Luca Tettamanti <kronos.it@gmail.com>,
-        Fenghua Yu <fenghua.yu@intel.com>, Juerg Haefliger <juergh@gmail.com>,
-        Eric Piel <eric.piel@tremplin-utc.net>,
-        Jim Cromie <jim.cromie@gmail.com>,
-        Roger Lucas <vt8231@hiddenengine.co.uk>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] drivers/hwmon: Use pr_fmt and pr_<level>
-Message-ID: <20101020183544.GA22966@ericsson.com>
-References: <1287530020.10409.594.camel@Joe-Laptop>
- <20101020094208.3136b9dd@endymion.delvare>
- <1287590363.1813.148.camel@Joe-Laptop>
- <20101020164929.GB22572@ericsson.com>
- <1287593660.1813.198.camel@Joe-Laptop>
- <20101020171806.GD22572@ericsson.com>
- <1287595700.1813.202.camel@Joe-Laptop>
- <20101020174846.GA22819@ericsson.com>
- <1287597762.1813.217.camel@Joe-Laptop>
+	id S1755029Ab0JTShc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Oct 2010 14:37:32 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:57528 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751288Ab0JTShb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Oct 2010 14:37:31 -0400
+From: Kevin Hilman <khilman@deeprootsystems.com>
+To: Ohad Ben-Cohen <ohad@wizery.com>
+Cc: linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, akpm@linux-foundation.org,
+        Greg KH <greg@kroah.com>, Tony Lindgren <tony@atomide.com>,
+        Benoit Cousson <b-cousson@ti.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Hari Kanigeri <h-kanigeri2@ti.com>, Suman Anna <s-anna@ti.com>,
+        Simon Que <sque@ti.com>
+Subject: Re: [PATCH 3/3] omap: add hwspinlock device
+Organization: Deep Root Systems, LLC
+References: <1287387875-14168-1-git-send-email-ohad@wizery.com>
+	<1287387875-14168-4-git-send-email-ohad@wizery.com>
+	<87r5fmxghm.fsf@deeprootsystems.com>
+	<AANLkTinZ2+ocJCfUpT15Ow3J9XBa-8XWnVC3gDDJ7s-v@mail.gmail.com>
+	<87bp6pviwf.fsf@deeprootsystems.com>
+	<AANLkTikE1dCXW-7ScVoDgEK3sxai_TyFzstSG+zvNm2F@mail.gmail.com>
+Date: Wed, 20 Oct 2010 11:37:27 -0700
+In-Reply-To: <AANLkTikE1dCXW-7ScVoDgEK3sxai_TyFzstSG+zvNm2F@mail.gmail.com>
+	(Ohad Ben-Cohen's message of "Wed, 20 Oct 2010 16:38:32 +0200")
+Message-ID: <8739s0sobc.fsf@deeprootsystems.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1.50 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1287597762.1813.217.camel@Joe-Laptop>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 20, 2010 at 02:02:42PM -0400, Joe Perches wrote:
-> On Wed, 2010-10-20 at 10:48 -0700, Guenter Roeck wrote:
-> > The modified define in kernel.org would only apply if pr_fmt isn't already defined,
-> > so that argument is not really correct. The real difference would be that you could
-> > then remove the individual pr_fmt defines from 211 files, and all users of pr_fmt
-> > without module name (ie those hard to read) would be easier to read/identify.
-> 
-> I think that's not a good idea for now,
-> though I agree with the general concept.
-> 
-> This is in kernel.h now.
-> 
-> #ifndef pr_fmt
-> #define pr_fmt(fmt) fmt
-> #endif
-> 
-> A lot of the pr_<level> calls already include
-> some internal prefix.
-> 
-> Try:
-> $ grep -rP --include=*.[ch] -oh "\bpr_\w+\s*\(\s*\"\w+:" * | \
-> 	cut -f2- -d"(" | sort | uniq -c | sort -rn
-> 
-> You're suggesting modifying 100+ files to get the
-> same output used now.
-> 
-Yes, plus another 200+ files to remove the then-unnecessary existing pr_fmt defines.
+Ohad Ben-Cohen <ohad@wizery.com> writes:
 
-> I think doing something like this after some more
-> generally accepted agreement is reached on how best
-> to do it would be better.
-> 
-Sounds like the ~400 definitions of TRUE and FALSE in the code base I am working with here.
+> On Wed, Oct 20, 2010 at 1:53 AM, Kevin Hilman
+> <khilman@deeprootsystems.com> wrote:
+>>> And to allow early board code to reserve specific hwspinlock numbers
+>>> for predefined use-cases, we probably want to be before arch_initcall.
+>>
+>> There's no reason for board code to have to do this at initcall time.
+>
+> If we want to have allow both allocations of predefined hwspinlocks
+> with omap_hwspinlock_request_specific(int), and dynamic allocations
+> (where we don't care about the specific instance of the hwspinlock we
+> will get) with omap_hwspinlock_request(), we must ensure that the
+> former _specific() API will never be called after the latter.
+>
+> If we will allow drivers to call omap_hwspinlock_request() before all
+> callers of omap_hwspinlock_request_specific() completed, then things
+> will break (because drivers might start getting hwspinlocks that are
+> predefined for dedicated use cases on the system).
+>
+> So if we want the _specific API to work, we can only allow early board
+> code to use it in order to reserve those predefined hwspinlocks before
+> drivers get the chance to call omap_hwspinlock_request().
+>
+> The tempting alternative is not to provide the
+> omap_hwspinlock_request_specific() API at all (which is something we
+> discussed internally).
+>
+> Let's take the i2c-omap for example.
+>
+> It sounds like it must have a predefined hwspinlock, but what if:
+>
+> 1. It will use omap_hwspinlock_request() to dynamically allocate a hwspinlock
+> 2. Obviously, the hwspinlock id number must be communicated to the M3
+> BIOS, so the i2c-omap will publish that id using a small shared memory
+> entry that will be allocated for this sole purpose
+> 3. we will make sure that 1+2 completes before the remote processor is
+> taken out of reset
+>
+> This does not require any smart IPC and it will allow us to get rid of
+> the omap_hwspinlock_request_specific() API and its early-callers
+> requirement.
 
-My take is that the time to reach such an agreement is now, to avoid cluttering more code
-with pr_fmt defines. The longer we wait, the more difficult it will get to reach an agreement,
-since more and more subsystems will be affected.
+Yes, that would indeed simplify things. 
 
-Personally, I think the pr_fmt cleanup should be more important than replacing printk
-with pr_<level>. But I'll defer to Jean's judgement on this one, and follow his lead.
+> All we will be left to take care of is the order of the ->probe()
+> execution (assuming we want both the i2c and the hwspinlock drivers to
+> be device_initcall)
 
-Guenter
+I understand the dependency between i2c and hwspinlock for some
+platforms with a shared i2c bus.  Besides that being a broken hardware
+design, I can see the need for the i2c driver to take a hwspinlock for
+i2c xfers, but why does the i2c driver need to take the hwspinlock at
+probe time?  Presumably, this is before the remote cores are executing
+code.
+
+>>
+>> This kind of thing needs to be done by platform_data function pointers,
+>> as is done for every other driver that needs platform-specific driver
+>> customization.
+>
+> Why would we need platform-specific function pointers here ? I'm not
+> sure I'm following this one.
+
+So that board code (built-in) does not call the hwspinlock driver
+(potentially a module.)
+
+The way to solve this is to have platform_data with function pointers,
+so that when the driver's ->probe() is done, it can call cany custom
+hooks registered by the board code.
+
+Kevin
+
