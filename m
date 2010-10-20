@@ -1,74 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758148Ab0JTGe2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Oct 2010 02:34:28 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:58939 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751808Ab0JTGe1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Oct 2010 02:34:27 -0400
-Date: Wed, 20 Oct 2010 09:34:05 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: Felipe Contreras <felipe.contreras@gmail.com>
-Cc: "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        linux-omap <linux-omap@vger.kernel.org>,
-        linux-main <linux-kernel@vger.kernel.org>, Greg KH <greg@kroah.com>,
-        "Balbi, Felipe" <balbi@ti.com>, Tony Lindgren <tony@atomide.com>
-Subject: Re: [PATCH v2 1/3] usb: fix Kconfig warning
-Message-ID: <20101020063405.GF15448@legolas.emea.dhcp.ti.com>
-Reply-To: balbi@ti.com
-References: <1287482608-11320-1-git-send-email-felipe.contreras@gmail.com>
- <1287482608-11320-2-git-send-email-felipe.contreras@gmail.com>
+	id S1758188Ab0JTGfu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Oct 2010 02:35:50 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:34747 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757787Ab0JTGft (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Oct 2010 02:35:49 -0400
+Date: Wed, 20 Oct 2010 08:35:42 +0200
+From: Sascha Hauer <s.hauer@pengutronix.de>
+To: Dan Williams <dan.j.williams@intel.com>
+Cc: Vasiliy Kulikov <segooon@gmail.com>, kernel-janitors@vger.kernel.org,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] dma: imx-dma: fix signedness bug
+Message-ID: <20101020063542.GD28242@pengutronix.de>
+References: <1287327110-9158-1-git-send-email-segooon@gmail.com> <AANLkTik15Z2_wyDRDOHOnpKKPgb+PHWs477esndgWmex@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii; format=flowed
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-In-Reply-To: <1287482608-11320-2-git-send-email-felipe.contreras@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTik15Z2_wyDRDOHOnpKKPgb+PHWs477esndgWmex@mail.gmail.com>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 08:33:18 up 108 days, 21:44, 21 users,  load average: 0.21, 1.06,
+	0.90
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: sha@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 19, 2010 at 05:03:26AM -0500, Felipe Contreras wrote:
->warning: (USB_MUSB_HDRC_HCD && USB_SUPPORT && USB_MUSB_HDRC &&
->(USB_MUSB_HOST || USB_MUSB_OTG) && USB_GADGET_MUSB_HDRC || USB_MUSB_OTG
->&& <choice> && USB && USB_GADGET && PM && EXPERIMENTAL) selects USB_OTG
->which has unmet direct dependencies (USB_GADGET_OMAP && ARCH_OMAP_OTG &&
->USB_OHCI_HCD)
->
->This doesn't seem to happen on 2.6.36-rc8, but still doesn't make sense
->to keep this duplicated config that is already defined in usb/core.
->
+On Tue, Oct 19, 2010 at 03:26:05PM -0700, Dan Williams wrote:
+> On Sun, Oct 17, 2010 at 7:51 AM, Vasiliy Kulikov <segooon@gmail.com> wrote:
+> > mxdmac->channel was unsigned, so check (imxdmac->channel < 0) for
+> > failed imx_dma_request_by_prio() made no sence.  Explicitly check
+> > signed values.
+> >
+> > Signed-off-by: Vasiliy Kulikov <segooon@gmail.com>
+> > ---
+> >  drivers/dma/imx-dma.c |    2 +-
+> >  1 files changed, 1 insertions(+), 1 deletions(-)
+> >
+> > diff --git a/drivers/dma/imx-dma.c b/drivers/dma/imx-dma.c
+> > index 346be62..75d870f 100644
+> > --- a/drivers/dma/imx-dma.c
+> > +++ b/drivers/dma/imx-dma.c
+> > @@ -335,7 +335,7 @@ static int __init imxdma_probe(struct platform_device *pdev)
+> >
+> >                imxdmac->imxdma_channel = imx_dma_request_by_prio("dmaengine",
+> >                                DMA_PRIO_MEDIUM);
+> > -               if (imxdmac->channel < 0)
+> > +               if ((int)imxdmac->channel < 0)
+> >                        goto err_init;
+> 
+> Should this be:
+> 
+>                if ((int)imxdmac->channel < 0) {
+>                        ret = -ENODEV;
+>                        goto err_init;
+>                }
+> 
+> ...because I get the following in my compilation tests.
 
-Acked-by: Felipe Balbi <balbi@ti.com>
+Yes, ret is clearly used uninitialized. I wonder why my gcc-4.3.2 compiler
+does not warn me about this :(
 
->Signed-off-by: Felipe Contreras <felipe.contreras@gmail.com>
->---
-> drivers/usb/gadget/Kconfig |   11 -----------
-> 1 files changed, 0 insertions(+), 11 deletions(-)
->
->diff --git a/drivers/usb/gadget/Kconfig b/drivers/usb/gadget/Kconfig
->index cd27f9b..19a6eb6 100644
->--- a/drivers/usb/gadget/Kconfig
->+++ b/drivers/usb/gadget/Kconfig
->@@ -209,17 +209,6 @@ config USB_OMAP
-> 	default USB_GADGET
-> 	select USB_GADGET_SELECTED
->
->-config USB_OTG
->-	boolean "OTG Support"
->-	depends on USB_GADGET_OMAP && ARCH_OMAP_OTG && USB_OHCI_HCD
->-	help
->-	   The most notable feature of USB OTG is support for a
->-	   "Dual-Role" device, which can act as either a device
->-	   or a host.  The initial role choice can be changed
->-	   later, when two dual-role devices talk to each other.
->-
->-	   Select this only if your OMAP board has a Mini-AB connector.
->-
-> config USB_GADGET_PXA25X
-> 	boolean "PXA 25x or IXP 4xx"
-> 	depends on (ARCH_PXA && PXA25x) || ARCH_IXP4XX
->-- 
->1.7.3.1.2.g7fe2b
+Sascha
 
 -- 
-balbi
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
