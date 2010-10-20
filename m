@@ -1,81 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753986Ab0JTRyv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Oct 2010 13:54:51 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:40872 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751681Ab0JTRyu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Oct 2010 13:54:50 -0400
-Date: Wed, 20 Oct 2010 20:54:20 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: Felipe Contreras <felipe.contreras@gmail.com>
-Cc: "Balbi, Felipe" <balbi@ti.com>, Roger Quadros <roger.quadros@nokia.com>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        linux-omap <linux-omap@vger.kernel.org>,
-        linux-main <linux-kernel@vger.kernel.org>, Greg KH <greg@kroah.com>,
-        Tony Lindgren <tony@atomide.com>
-Subject: Re: [PATCH v2 3/3] drivers: cleanup Kconfig stuff
-Message-ID: <20101020175420.GC3431@legolas.emea.dhcp.ti.com>
-Reply-To: balbi@ti.com
-References: <4CBD9FD5.506@nokia.com>
- <AANLkTinRRyrXzqEu=u+CCYkmSNGm03SSo1tVG=5_wdpo@mail.gmail.com>
- <4CBE9E69.6060803@nokia.com>
- <AANLkTinOYDBMVZ3ibG3Md7jdOuOC6NkGWaugvHwT6uqF@mail.gmail.com>
- <4CBEB312.7060400@nokia.com>
- <AANLkTikom=eRFqCJmYE+k1zn5K2MR9s8HhNXtjOvUqvr@mail.gmail.com>
- <20101020125407.GE2433@legolas.emea.dhcp.ti.com>
- <AANLkTi=+6bC=JALdCDKW_BS-jnNk3zFPuWuBT+aY=Utx@mail.gmail.com>
- <20101020151527.GF2883@legolas.emea.dhcp.ti.com>
- <AANLkTim-QeP0hfSVGUd-tHWso9HQv25TwapBBZ1KPD3=@mail.gmail.com>
+	id S1754590Ab0JTRzW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Oct 2010 13:55:22 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:1406 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753863Ab0JTRzV convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Oct 2010 13:55:21 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp03.nvidia.com on Wed, 20 Oct 2010 10:55:14 -0700
+From: Rhyland Klein <rklein@nvidia.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: "cboutatmailru@gmail.com" <cboutatmailru@gmail.com>,
+        Andrew Chew <AChew@nvidia.com>, "olof@lixom.net" <olof@lixom.net>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Wed, 20 Oct 2010 10:52:08 -0700
+Subject: RE: [PATCH 1/1] power: bq24617: Adding initial charger support
+Thread-Topic: [PATCH 1/1] power: bq24617: Adding initial charger support
+Thread-Index: ActwA0M/yhGpE0igR4ybrf6+x/IxCQAewgKQ
+Message-ID: <E88A1D35AF5437468E5B14C7C4BA61C702D37CA98C@HQMAIL01.nvidia.com>
+References: <1287541031-17409-1-git-send-email-rklein@nvidia.com>
+ <20101020030235.GA25392@sirena.org.uk>
+In-Reply-To: <20101020030235.GA25392@sirena.org.uk>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii; format=flowed
-Content-Disposition: inline
-In-Reply-To: <AANLkTim-QeP0hfSVGUd-tHWso9HQv25TwapBBZ1KPD3=@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+> From: Mark Brown [mailto:broonie@opensource.wolfsonmicro.com]
+> Sent: Tuesday, October 19, 2010 8:03 PM
+> To: Rhyland Klein
+> Cc: cboutatmailru@gmail.com; Andrew Chew; olof@lixom.net; linux-
+> tegra@vger.kernel.org; linux-kernel@vger.kernel.org
+> Subject: Re: [PATCH 1/1] power: bq24617: Adding initial charger support
+> 
+> On Tue, Oct 19, 2010 at 07:17:11PM -0700, rklein@nvidia.com wrote:
+> > From: Rhyland Klein <rklein@nvidia.com>
+> >
+> > Initial checkin adding basic support for the TI BQ24617 battery charger
+> on the
+> > Nvidia Tegra architecture.
+> 
+> Why is this driver dependant on the CPU?  I can't see anything in the
+> code that makes it so.
 
-On Wed, Oct 20, 2010 at 11:22:17AM -0500, Felipe Contreras wrote:
->Users would not need to care... if they enable USB and USB_GADGET, it
->will be selected automatically for OMAP3, which is what users would
->expect.
+In hindsight this isn't the most accurate statement. The driver itself is not dependent on the CPU, it is dependent on the platform design, and in particular requires the PG line to be piped in through a GPIO. Would it make more sense to make the driver dependent on GPIO instead?
 
-wouldn't a user expect USB to be enabled if the board _has_ a USB
-connector ?
+> 
+> > +	if (old_status != -1 &&
+> > +		old_status != new_status) {
+> > +		dev_dbg(&chip->pdev->dev,
+> > +			"%s: %i -> %i\n", __func__, old_status,
+> > +			new_status);
+> > +		kobject_uevent(&chip->power_supply.dev->kobj, KOBJ_CHANGE);
+> 
+> power_supply_changed().
 
->I was talking more about developers.
->
->How should the help be fixed?
->"Select y if you are using an OMAP3 system that has TWL4030"
+Alright.
 
-If you have the TWL4030 family of PMIC chips and want to use USB, you
-probably need this. If unsure, say Y.
+> 
+> > +static irqreturn_t bq24617_irq_switch(int irq, void *devid)
+> > +{
+> > +	struct bq24617_info *chip = devid;
+> > +
+> > +	schedule_work(&chip->ac_work);
+> > +
+> > +	return IRQ_HANDLED;
+> > +}
+> 
+> You're looking for a threaded IRQ handler here - use
+> request_threaded_irq() with no primary handler.
 
->1) Do you think all the OMAP3 boards should add that?
-
-why not ?
-
->2) What if you don't want to use USB?
-
-what if you don't want to use USB and we use your choice of:
-
-default y if ARCH_OMAP3 ??
-
-what's the big difference ? The default will be "USB enabled" and if you
-don't want, just drop it. The thing is that in most cases we want to
-support what is wired on the board. RX51 has a USB micro-B connector, so
-by default we want USB peripheral enabled and host disabled. If a user
-(or developer for that matter) wants to play with the unsupported host
-mode on RX51, he will enable that part by himself and pray for it to
-work. If, on the other hand, a camera developer doesn't need USB at all
-and decides to save a few bytes on the binary, he will make sure to
-disable it.
-
-The thing is that there's no way to make everybody happy, so we stick to
-what the board is wired to do.
-
--- 
-balbi
+Alright I will look into this.
