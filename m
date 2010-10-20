@@ -1,149 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755908Ab0JTUyq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Oct 2010 16:54:46 -0400
-Received: from www84.your-server.de ([213.133.104.84]:34041 "EHLO
-	www84.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754994Ab0JTUyp (ORCPT
+	id S1755471Ab0JTUzg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Oct 2010 16:55:36 -0400
+Received: from e28smtp08.in.ibm.com ([122.248.162.8]:48016 "EHLO
+	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754697Ab0JTUzf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Oct 2010 16:54:45 -0400
-From: stefani@seibold.net
-To: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        randy.dunlap@oracle.com, alan@lxorguk.ukuu.org.uk
-Cc: stefani@seibold.net
-Subject: [PATCH] Fix kfifo_alloc() to return a signed int value
-Date: Wed, 20 Oct 2010 22:12:23 +0200
-Message-Id: <1287605544-21270-1-git-send-email-stefani@seibold.net>
-X-Mailer: git-send-email 1.7.3.1
-X-Authenticated-Sender: stefani@seibold.net
+	Wed, 20 Oct 2010 16:55:35 -0400
+Date: Thu, 21 Oct 2010 02:25:30 +0530
+From: Dipankar Sarma <dipankar@in.ibm.com>
+To: Arjan van de Ven <arjan@linux.intel.com>
+Cc: Andi Kleen <ak@linux.intel.com>,
+        Trinabh Gupta <trinabh@linux.vnet.ibm.com>,
+        Venkatesh Pallipadi <venki@google.com>, peterz@infradead.org,
+        lenb@kernel.org, suresh.b.siddha@intel.com, benh@kernel.crashing.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC V1] cpuidle: add idle routine registration and cleanup
+ pm_idle pointer
+Message-ID: <20101020205530.GA22317@in.ibm.com>
+Reply-To: dipankar@in.ibm.com
+References: <20101019183522.17992.86937.stgit@tringupt.in.ibm.com>
+ <4CBDE5AB.4040401@linux.intel.com>
+ <AANLkTi=cetw_mdp_3s+T4OxTfcMT2u4cdVPKxOp7jbVU@mail.gmail.com>
+ <4CBDEB14.2030304@linux.vnet.ibm.com>
+ <4CBF06D5.7020508@linux.vnet.ibm.com>
+ <4CBF0854.6080903@linux.intel.com>
+ <4CBF0C04.5070705@linux.intel.com>
+ <4CBF12CB.9050604@linux.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4CBF12CB.9050604@linux.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stefani Seibold <stefani@seibold.net>
+On Wed, Oct 20, 2010 at 09:03:23AM -0700, Arjan van de Ven wrote:
+>  On 10/20/2010 8:34 AM, Andi Kleen wrote:
+> >
+> >I think the right option is still to put cpuidle on a diet.
+> >There's no reason an idle handler needs to be that bloated.
+> >
+> >If it was 2K or so just including it into the core would be fine.
+> >
+> >Ignoring code size completely is generally a wrong trade off imho.
+> 
+> I'm not ignoring code size.
+> I'm saying that a 7Kb component that everyone on this architecture
+> uses in practice versus adding 0.5Kb in ADDITION to that for
+> everyone for the theoretical case
+> of someone NOT using cpuidle is the wrong tradeoff.
 
-This patch adds a new __kfifo_int_must_check_helper() helper function,
-which is needed for kfifo_alloc() to return the right signed integer
-value.
+The 0.5kb is necessary because we want to move from dangling
+pm_idle to a simple registration mechanism. 
 
-The origin __kfifo_must_check_helper() helper was renamed into
-__kfifo_uint_must_check_helper() to show the sign which is expected and
-returned.
+> having it go on a diet? I'm all for it. Killing off the ladder
+> governor for example is a step.
+> But really. 7Kb. There's lots of lower hanging fruit as well. 7Kb is
+> not a reason to make such a bad tradeoff.
 
-Signed-off-by: Stefani Seibold <stefani@seibold.net>
----
- include/linux/kfifo.h |   28 +++++++++++++++++-----------
- 1 files changed, 17 insertions(+), 11 deletions(-)
+Given the number of archs using this, doing this incrementally
+seems to be the best way to go. The registration part first,
+trimming cpuidle, moving other archs to the registration
+mechanism later eventually deprecating pm_idle.
 
-diff --git a/include/linux/kfifo.h b/include/linux/kfifo.h
-index 62dbee5..10308c6 100644
---- a/include/linux/kfifo.h
-+++ b/include/linux/kfifo.h
-@@ -172,7 +172,13 @@ struct kfifo_rec_ptr_2 __STRUCT_KFIFO_PTR(unsigned char, 2, void);
- 
- 
- static inline unsigned int __must_check
--__kfifo_must_check_helper(unsigned int val)
-+__kfifo_uint_must_check_helper(unsigned int val)
-+{
-+	return val;
-+}
-+
-+static inline int __must_check
-+__kfifo_int_must_check_helper(int val)
- {
- 	return val;
- }
-@@ -267,7 +273,7 @@ __kfifo_must_check_helper(unsigned int val)
-  * @fifo: address of the fifo to be used
-  */
- #define	kfifo_avail(fifo) \
--__kfifo_must_check_helper( \
-+__kfifo_uint_must_check_helper( \
- ({ \
- 	typeof((fifo) + 1) __tmpq = (fifo); \
- 	const size_t __recsize = sizeof(*__tmpq->rectype); \
-@@ -300,7 +306,7 @@ __kfifo_must_check_helper( \
-  * This function returns the size of the next fifo record in number of bytes.
-  */
- #define kfifo_peek_len(fifo) \
--__kfifo_must_check_helper( \
-+__kfifo_uint_must_check_helper( \
- ({ \
- 	typeof((fifo) + 1) __tmp = (fifo); \
- 	const size_t __recsize = sizeof(*__tmp->rectype); \
-@@ -323,7 +329,7 @@ __kfifo_must_check_helper( \
-  * Return 0 if no error, otherwise an error code.
-  */
- #define kfifo_alloc(fifo, size, gfp_mask) \
--__kfifo_must_check_helper( \
-+__kfifo_int_must_check_helper( \
- ({ \
- 	typeof((fifo) + 1) __tmp = (fifo); \
- 	struct __kfifo *__kfifo = &__tmp->kfifo; \
-@@ -419,7 +425,7 @@ __kfifo_must_check_helper( \
-  * writer, you don't need extra locking to use these macro.
-  */
- #define	kfifo_get(fifo, val) \
--__kfifo_must_check_helper( \
-+__kfifo_uint_must_check_helper( \
- ({ \
- 	typeof((fifo) + 1) __tmp = (fifo); \
- 	typeof((val) + 1) __val = (val); \
-@@ -460,7 +466,7 @@ __kfifo_must_check_helper( \
-  * writer, you don't need extra locking to use these macro.
-  */
- #define	kfifo_peek(fifo, val) \
--__kfifo_must_check_helper( \
-+__kfifo_uint_must_check_helper( \
- ({ \
- 	typeof((fifo) + 1) __tmp = (fifo); \
- 	typeof((val) + 1) __val = (val); \
-@@ -552,7 +558,7 @@ __kfifo_must_check_helper( \
-  * writer, you don't need extra locking to use these macro.
-  */
- #define	kfifo_out(fifo, buf, n) \
--__kfifo_must_check_helper( \
-+__kfifo_uint_must_check_helper( \
- ({ \
- 	typeof((fifo) + 1) __tmp = (fifo); \
- 	typeof((buf) + 1) __buf = (buf); \
-@@ -580,7 +586,7 @@ __kfifo_must_check_helper( \
-  * copied.
-  */
- #define	kfifo_out_spinlocked(fifo, buf, n, lock) \
--__kfifo_must_check_helper( \
-+__kfifo_uint_must_check_helper( \
- ({ \
- 	unsigned long __flags; \
- 	unsigned int __ret; \
-@@ -609,7 +615,7 @@ __kfifo_must_check_helper( \
-  * writer, you don't need extra locking to use these macro.
-  */
- #define	kfifo_from_user(fifo, from, len, copied) \
--__kfifo_must_check_helper( \
-+__kfifo_uint_must_check_helper( \
- ({ \
- 	typeof((fifo) + 1) __tmp = (fifo); \
- 	const void __user *__from = (from); \
-@@ -637,7 +643,7 @@ __kfifo_must_check_helper( \
-  * writer, you don't need extra locking to use these macro.
-  */
- #define	kfifo_to_user(fifo, to, len, copied) \
--__kfifo_must_check_helper( \
-+__kfifo_uint_must_check_helper( \
- ({ \
- 	typeof((fifo) + 1) __tmp = (fifo); \
- 	void __user *__to = (to); \
-@@ -764,7 +770,7 @@ __kfifo_must_check_helper( \
-  * writer, you don't need extra locking to use these macro.
-  */
- #define	kfifo_out_peek(fifo, buf, n) \
--__kfifo_must_check_helper( \
-+__kfifo_uint_must_check_helper( \
- ({ \
- 	typeof((fifo) + 1) __tmp = (fifo); \
- 	typeof((buf) + 1) __buf = (buf); \
--- 
-1.7.3.1
+Thanks
+Dipankar
 
