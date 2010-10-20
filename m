@@ -1,497 +1,195 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758327Ab0JTHFe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Oct 2010 03:05:34 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:50983 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758216Ab0JTHFd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Oct 2010 03:05:33 -0400
-Date: Wed, 20 Oct 2010 09:05:26 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Borislav Petkov <bp@amd64.org>, Daniel Drake <dsd@laptop.org>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "mingo@redhat.com" <mingo@redhat.com>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "dilinger@queued.net" <dilinger@queued.net>,
+	id S1758554Ab0JTHGB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Oct 2010 03:06:01 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:34108 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758311Ab0JTHGA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Oct 2010 03:06:00 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: Wu Fengguang <fengguang.wu@intel.com>
+Subject: Re: Deadlock possibly caused by too_many_isolated.
+Cc: kosaki.motohiro@jp.fujitsu.com,
+        Torsten Kaiser <just.for.lkml@googlemail.com>,
+        Neil Brown <neilb@suse.de>, Rik van Riel <riel@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Roedel, Joerg" <Joerg.Roedel@amd.com>
-Subject: [PATCH -tip/master] x86-32, mm: Add an initial page table for core
- bootstrapping
-Message-ID: <20101020070526.GA9588@liondog.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	"H. Peter Anvin" <hpa@zytor.com>, Borislav Petkov <bp@amd64.org>,
-	Daniel Drake <dsd@laptop.org>,
-	"tglx@linutronix.de" <tglx@linutronix.de>,
-	"mingo@redhat.com" <mingo@redhat.com>,
-	"x86@kernel.org" <x86@kernel.org>,
-	"dilinger@queued.net" <dilinger@queued.net>,
-	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-	"Roedel, Joerg" <Joerg.Roedel@amd.com>
-References: <20101019220159.0DBBE9D401B@zog.reactivated.net>
- <4CBE1781.1050000@zytor.com>
- <20101020054752.GA10441@aftab>
- <4CBE8506.60503@zytor.com>
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "Li, Shaohua" <shaohua.li@intel.com>
+In-Reply-To: <20101020055717.GA12752@localhost>
+References: <AANLkTimVu+5gTDs8przJVP2EbWC=FX-zWW7aH08BtrHC@mail.gmail.com> <20101020055717.GA12752@localhost>
+Message-Id: <20101020150346.1832.A69D9226@jp.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <4CBE8506.60503@zytor.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8bit
+X-Mailer: Becky! ver. 2.50.07 [ja]
+Date: Wed, 20 Oct 2010 16:05:56 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "H. Peter Anvin" <hpa@zytor.com>
-Date: Tue, Oct 19, 2010 at 10:58:30PM -0700
+> On Tue, Oct 19, 2010 at 06:06:21PM +0800, Torsten Kaiser wrote:
+> > On Tue, Oct 19, 2010 at 10:43 AM, Torsten Kaiser
+> > <just.for.lkml@googlemail.com> wrote:
+> > > On Tue, Oct 19, 2010 at 1:11 AM, Neil Brown <neilb@suse.de> wrote:
+> > >> Yes, thanks for the report.
+> > >> This is a real bug exactly as you describe.
+> > >>
+> > >> This is how I think I will fix it, though it needs a bit of review and
+> > >> testing before I can be certain.
+> > >> Also I need to check raid10 etc to see if they can suffer too.
+> > >>
+> > >> If you can test it I would really appreciate it.
+> > >
+> > > I did test it, but while it seemed to fix the deadlock, the system
+> > > still got unusable.
+> > > The still running "vmstat 1" showed that the swapout was still
+> > > progressing, but at a rate of ~20k sized bursts every 5 to 20 seconds.
+> > >
+> > > I also tried to additionally add Wu's patch:
+> > > --- linux-next.orig/mm/vmscan.c 2010-10-13 12:35:14.000000000 +0800
+> > > +++ linux-next/mm/vmscan.c      2010-10-19 00:13:04.000000000 +0800
+> > > @@ -1163,6 +1163,13 @@ static int too_many_isolated(struct zone
+> > >               isolated = zone_page_state(zone, NR_ISOLATED_ANON);
+> > >       }
+> > >
+> > > +       /*
+> > > +        * GFP_NOIO/GFP_NOFS callers are allowed to isolate more pages, so that
+> > > +        * they won't get blocked by normal ones and form circular deadlock.
+> > > +        */
+> > > +       if ((sc->gfp_mask & GFP_IOFS) == GFP_IOFS)
+> > > +               inactive >>= 3;
+> > > +
+> > >       return isolated > inactive;
+> > >
+> > > Either it did help somewhat, or I was more lucky on my second try, but
+> > > this time I needed ~5 tries instead of only 2 to get the system mostly
+> > > stuck again. On the testrun with Wu's patch the writeout pattern was
+> > > more stable, a burst of ~80kb each 20 seconds. But I would suspect
+> > > that the size of the burst is rather random.
+> > >
+> > > I do have a complete SysRq+T dump from the first run, I can send that
+> > > to anyone how wants it.
+> > > (It's 190k so I don't want not spam it to the list)
+> > 
+> > Is this call trace from the SysRq+T violation the rule to only
+> > allocate one bio from bio_alloc() until its submitted?
+> > 
+> > [  549.700038] Call Trace:
+> > [  549.700038]  [<ffffffff81566b54>] schedule_timeout+0x144/0x200
+> > [  549.700038]  [<ffffffff81045cd0>] ? process_timeout+0x0/0x10
+> > [  549.700038]  [<ffffffff81565e22>] io_schedule_timeout+0x42/0x60
+> > [  549.700038]  [<ffffffff81083123>] mempool_alloc+0x163/0x1b0
+> > [  549.700038]  [<ffffffff81053560>] ? autoremove_wake_function+0x0/0x40
+> > [  549.700038]  [<ffffffff810ea2b9>] bio_alloc_bioset+0x39/0xf0
+> > [  549.700038]  [<ffffffff810ea38d>] bio_clone+0x1d/0x50
+> > [  549.700038]  [<ffffffff814318ed>] make_request+0x23d/0x850
+> > [  549.700038]  [<ffffffff81082e20>] ? mempool_alloc_slab+0x10/0x20
+> > [  549.700038]  [<ffffffff81045cd0>] ? process_timeout+0x0/0x10
+> > [  549.700038]  [<ffffffff81436e63>] md_make_request+0xc3/0x220
+> > [  549.700038]  [<ffffffff81083099>] ? mempool_alloc+0xd9/0x1b0
+> > [  549.700038]  [<ffffffff811ec153>] generic_make_request+0x1b3/0x370
+> > [  549.700038]  [<ffffffff810ea2d6>] ? bio_alloc_bioset+0x56/0xf0
+> > [  549.700038]  [<ffffffff811ec36a>] submit_bio+0x5a/0xd0
+> > [  549.700038]  [<ffffffff81080cf5>] ? unlock_page+0x25/0x30
+> > [  549.700038]  [<ffffffff810a871e>] swap_writepage+0x7e/0xc0
+> > [  549.700038]  [<ffffffff81090d99>] shmem_writepage+0x1c9/0x240
+> > [  549.700038]  [<ffffffff8108c9cb>] pageout+0x11b/0x270
+> > [  549.700038]  [<ffffffff8108cd78>] shrink_page_list+0x258/0x4d0
+> > [  549.700038]  [<ffffffff8108d9e7>] shrink_inactive_list+0x187/0x310
+> > [  549.700038]  [<ffffffff8102dcb1>] ? __wake_up_common+0x51/0x80
+> > [  549.700038]  [<ffffffff811fc8b2>] ? cpumask_next_and+0x22/0x40
+> > [  549.700038]  [<ffffffff8108e1c0>] shrink_zone+0x3e0/0x470
+> > [  549.700038]  [<ffffffff8108e797>] try_to_free_pages+0x157/0x410
+> > [  549.700038]  [<ffffffff81087c92>] __alloc_pages_nodemask+0x412/0x760
+> > [  549.700038]  [<ffffffff810b27d6>] alloc_pages_current+0x76/0xe0
+> > [  549.700038]  [<ffffffff810b6dad>] new_slab+0x1fd/0x2a0
+> > [  549.700038]  [<ffffffff81045cd0>] ? process_timeout+0x0/0x10
+> > [  549.700038]  [<ffffffff810b8721>] __slab_alloc+0x111/0x540
+> > [  549.700038]  [<ffffffff81059961>] ? prepare_creds+0x21/0xb0
+> > [  549.700038]  [<ffffffff810b92bb>] kmem_cache_alloc+0x9b/0xa0
+> > [  549.700038]  [<ffffffff81059961>] prepare_creds+0x21/0xb0
+> > [  549.700038]  [<ffffffff8104a919>] sys_setresgid+0x29/0x120
+> > [  549.700038]  [<ffffffff8100242b>] system_call_fastpath+0x16/0x1b
+> > [  549.700038]  ffff88011e125ea8 0000000000000046 ffff88011e125e08
+> > ffffffff81073c59
+> > [  549.700038]  0000000000012780 ffff88011ea905b0 ffff88011ea90808
+> > ffff88011e125fd8
+> > [  549.700038]  ffff88011ea90810 ffff88011e124010 0000000000012780
+> > ffff88011e125fd8
+> > 
+> > swap_writepage() uses get_swap_bio() which uses bio_alloc() to get one
+> > bio. That bio is the submitted, but the submit path seems to get into
+> > make_request from raid1.c and that allocates a second bio from
+> > bio_alloc() via bio_clone().
+> > 
+> > I am seeing this pattern (swap_writepage calling
+> > md_make_request/make_request and then getting stuck in mempool_alloc)
+> > more than 5 times in the SysRq+T output...
+> 
+> I bet the root cause is the failure of pool->alloc(__GFP_NORETRY)
+> inside mempool_alloc(), which can be fixed by this patch.
+> 
+> Thanks,
+> Fengguang
+> ---
+> 
+> concurrent direct page reclaim problem
+> 
+>   __GFP_NORETRY page allocations may fail when there are many concurrent page
+>   allocating tasks, but not necessary in real short of memory. The root cause
+>   is, tasks will first run direct page reclaim to free some pages from the LRU
+>   lists and put them to the per-cpu page lists and the buddy system, and then
+>   try to get a free page from there.  However the free pages reclaimed by this
+>   task may be consumed by other tasks when the direct reclaim task is able to
+>   get the free page for itself.
+> 
+>   Let's retry it a bit harder.
+> 
+> --- linux-next.orig/mm/page_alloc.c	2010-10-20 13:44:50.000000000 +0800
+> +++ linux-next/mm/page_alloc.c	2010-10-20 13:50:54.000000000 +0800
+> @@ -1700,7 +1700,7 @@ should_alloc_retry(gfp_t gfp_mask, unsig
+>  				unsigned long pages_reclaimed)
+>  {
+>  	/* Do not loop if specifically requested */
+> -	if (gfp_mask & __GFP_NORETRY)
+> +	if (gfp_mask & __GFP_NORETRY && pages_reclaimed > (1 << (order + 12)))
+>  		return 0;
+>  
+>  	/*
 
-> If you could prep something against tip:master we *might* be able to get
-> it in... not sure yet (and it partly depends on when Linus decides to
-> push the button, of course.)
+SLUB usually try high order allocation with __GFP_NORETRY at first. In
+other words, It strongly depend on __GFP_NORETRY don't any retry. I'm
+worry this...
 
-Here you go, suspend-to-{ram,disk} works, will run it in the next couple
-of days just in case.
+And, in this case, stucked tasks have PF_MEMALLOC. allocation with PF_MEMALLOC
+failure mean this zone have zero memory purely. So, retrying don't solve anything.
 
---
-From: Borislav Petkov <bp@alien8.de>
-Date: Sat, 28 Aug 2010 15:58:33 +0200
-Subject: [PATCH -tip/master] x86-32, mm: Add an initial page table for core bootstrapping
+And I think the root cause is in another.
 
-This patch adds an initial page table with low mappings used exclusively
-for booting APs/resuming after ACPI suspend/machine restart. After this,
-there's no need to add low mappings to swapper_pg_dir and zap them later
-or create own swsusp PGD page solely for ACPI sleep needs - we have
-initial_page_table for that.
+bio_clone() use fs_bio_set internally.
 
-[ v1.1 Fix suspend-to-ram ]
+	struct bio *bio_clone(struct bio *bio, gfp_t gfp_mask)
+	{
+	        struct bio *b = bio_alloc_bioset(gfp_mask, bio->bi_max_vecs, fs_bio_set);
+	...
 
-Signed-off-by: Borislav Petkov <bp@alien8.de>
----
- arch/x86/include/asm/pgtable_32.h |    2 +-
- arch/x86/include/asm/tlbflush.h   |    2 -
- arch/x86/include/asm/trampoline.h |    3 --
- arch/x86/kernel/acpi/sleep.c      |    7 ++++-
- arch/x86/kernel/head32.c          |    1 +
- arch/x86/kernel/head_32.S         |   55 +++++++++++++++++--------------------
- arch/x86/kernel/reboot.c          |   10 +-----
- arch/x86/kernel/setup.c           |   18 +++++++++++-
- arch/x86/kernel/smpboot.c         |   16 +++--------
- arch/x86/kernel/trampoline.c      |   16 -----------
- arch/x86/mm/init_32.c             |   45 ------------------------------
- 11 files changed, 56 insertions(+), 119 deletions(-)
+and fs_bio_set is initialized very small pool size.
 
-diff --git a/arch/x86/include/asm/pgtable_32.h b/arch/x86/include/asm/pgtable_32.h
-index f686f49..8abde9e 100644
---- a/arch/x86/include/asm/pgtable_32.h
-+++ b/arch/x86/include/asm/pgtable_32.h
-@@ -26,7 +26,7 @@ struct mm_struct;
- struct vm_area_struct;
- 
- extern pgd_t swapper_pg_dir[1024];
--extern pgd_t trampoline_pg_dir[1024];
-+extern pgd_t initial_page_table[1024];
- 
- static inline void pgtable_cache_init(void) { }
- static inline void check_pgt_cache(void) { }
-diff --git a/arch/x86/include/asm/tlbflush.h b/arch/x86/include/asm/tlbflush.h
-index 7f3eba0..169be89 100644
---- a/arch/x86/include/asm/tlbflush.h
-+++ b/arch/x86/include/asm/tlbflush.h
-@@ -172,6 +172,4 @@ static inline void flush_tlb_kernel_range(unsigned long start,
- 	flush_tlb_all();
- }
- 
--extern void zap_low_mappings(bool early);
--
- #endif /* _ASM_X86_TLBFLUSH_H */
-diff --git a/arch/x86/include/asm/trampoline.h b/arch/x86/include/asm/trampoline.h
-index 4dde797..f4500fb 100644
---- a/arch/x86/include/asm/trampoline.h
-+++ b/arch/x86/include/asm/trampoline.h
-@@ -13,16 +13,13 @@ extern unsigned char *trampoline_base;
- 
- extern unsigned long init_rsp;
- extern unsigned long initial_code;
--extern unsigned long initial_page_table;
- extern unsigned long initial_gs;
- 
- #define TRAMPOLINE_SIZE roundup(trampoline_end - trampoline_data, PAGE_SIZE)
- 
- extern unsigned long setup_trampoline(void);
--extern void __init setup_trampoline_page_table(void);
- extern void __init reserve_trampoline_memory(void);
- #else
--static inline void setup_trampoline_page_table(void) {}
- static inline void reserve_trampoline_memory(void) {}
- #endif /* CONFIG_X86_TRAMPOLINE */
- 
-diff --git a/arch/x86/kernel/acpi/sleep.c b/arch/x86/kernel/acpi/sleep.c
-index e125207..74a8478 100644
---- a/arch/x86/kernel/acpi/sleep.c
-+++ b/arch/x86/kernel/acpi/sleep.c
-@@ -13,6 +13,11 @@
- #include <asm/segment.h>
- #include <asm/desc.h>
- 
-+#ifdef CONFIG_X86_32
-+#include <asm/pgtable.h>
-+#include <asm/pgtable_32.h>
-+#endif
-+
- #include "realmode/wakeup.h"
- #include "sleep.h"
- 
-@@ -91,7 +96,7 @@ int acpi_save_state_mem(void)
- 
- #ifndef CONFIG_64BIT
- 	header->pmode_entry = (u32)&wakeup_pmode_return;
--	header->pmode_cr3 = (u32)(swsusp_pg_dir - __PAGE_OFFSET);
-+	header->pmode_cr3 = (u32)__pa(&initial_page_table);
- 	saved_magic = 0x12345678;
- #else /* CONFIG_64BIT */
- 	header->trampoline_segment = setup_trampoline() >> 4;
-diff --git a/arch/x86/kernel/head32.c b/arch/x86/kernel/head32.c
-index 9a6ca23..7633101 100644
---- a/arch/x86/kernel/head32.c
-+++ b/arch/x86/kernel/head32.c
-@@ -18,6 +18,7 @@
- #include <asm/apic.h>
- #include <asm/io_apic.h>
- #include <asm/bios_ebda.h>
-+#include <asm/tlbflush.h>
- 
- static void __init i386_default_early_setup(void)
- {
-diff --git a/arch/x86/kernel/head_32.S b/arch/x86/kernel/head_32.S
-index fa8c1b8..bcece91 100644
---- a/arch/x86/kernel/head_32.S
-+++ b/arch/x86/kernel/head_32.S
-@@ -183,13 +183,12 @@ default_entry:
- #ifdef CONFIG_X86_PAE
- 
- 	/*
--	 * In PAE mode swapper_pg_dir is statically defined to contain enough
--	 * entries to cover the VMSPLIT option (that is the top 1, 2 or 3
--	 * entries). The identity mapping is handled by pointing two PGD
--	 * entries to the first kernel PMD.
-+	 * In PAE mode initial_page_table is statically defined to contain
-+	 * enough entries to cover the VMSPLIT option (that is the top 1, 2 or 3
-+	 * entries). The identity mapping is handled by pointing two PGD entries
-+	 * to the first kernel PMD.
- 	 *
--	 * Note the upper half of each PMD or PTE are always zero at
--	 * this stage.
-+	 * Note the upper half of each PMD or PTE are always zero at this stage.
- 	 */
- 
- #define KPMDS (((-__PAGE_OFFSET) >> 30) & 3) /* Number of kernel PMDs */
-@@ -197,7 +196,7 @@ default_entry:
- 	xorl %ebx,%ebx				/* %ebx is kept at zero */
- 
- 	movl $pa(__brk_base), %edi
--	movl $pa(swapper_pg_pmd), %edx
-+	movl $pa(initial_pg_pmd), %edx
- 	movl $PTE_IDENT_ATTR, %eax
- 10:
- 	leal PDE_IDENT_ATTR(%edi),%ecx		/* Create PMD entry */
-@@ -226,14 +225,14 @@ default_entry:
- 	movl %eax, pa(max_pfn_mapped)
- 
- 	/* Do early initialization of the fixmap area */
--	movl $pa(swapper_pg_fixmap)+PDE_IDENT_ATTR,%eax
--	movl %eax,pa(swapper_pg_pmd+0x1000*KPMDS-8)
-+	movl $pa(initial_pg_fixmap)+PDE_IDENT_ATTR,%eax
-+	movl %eax,pa(initial_pg_pmd+0x1000*KPMDS-8)
- #else	/* Not PAE */
- 
- page_pde_offset = (__PAGE_OFFSET >> 20);
- 
- 	movl $pa(__brk_base), %edi
--	movl $pa(swapper_pg_dir), %edx
-+	movl $pa(initial_page_table), %edx
- 	movl $PTE_IDENT_ATTR, %eax
- 10:
- 	leal PDE_IDENT_ATTR(%edi),%ecx		/* Create PDE entry */
-@@ -257,8 +256,8 @@ page_pde_offset = (__PAGE_OFFSET >> 20);
- 	movl %eax, pa(max_pfn_mapped)
- 
- 	/* Do early initialization of the fixmap area */
--	movl $pa(swapper_pg_fixmap)+PDE_IDENT_ATTR,%eax
--	movl %eax,pa(swapper_pg_dir+0xffc)
-+	movl $pa(initial_pg_fixmap)+PDE_IDENT_ATTR,%eax
-+	movl %eax,pa(initial_page_table+0xffc)
- #endif
- 	jmp 3f
- /*
-@@ -334,7 +333,7 @@ ENTRY(startup_32_smp)
- /*
-  * Enable paging
-  */
--	movl pa(initial_page_table), %eax
-+	movl $pa(initial_page_table), %eax
- 	movl %eax,%cr3		/* set the page table pointer.. */
- 	movl %cr0,%eax
- 	orl  $X86_CR0_PG,%eax
-@@ -614,8 +613,6 @@ ignore_int:
- .align 4
- ENTRY(initial_code)
- 	.long i386_start_kernel
--ENTRY(initial_page_table)
--	.long pa(swapper_pg_dir)
- 
- /*
-  * BSS section
-@@ -623,20 +620,18 @@ ENTRY(initial_page_table)
- __PAGE_ALIGNED_BSS
- 	.align PAGE_SIZE_asm
- #ifdef CONFIG_X86_PAE
--swapper_pg_pmd:
-+initial_pg_pmd:
- 	.fill 1024*KPMDS,4,0
- #else
--ENTRY(swapper_pg_dir)
-+ENTRY(initial_page_table)
- 	.fill 1024,4,0
- #endif
--swapper_pg_fixmap:
-+initial_pg_fixmap:
- 	.fill 1024,4,0
--#ifdef CONFIG_X86_TRAMPOLINE
--ENTRY(trampoline_pg_dir)
--	.fill 1024,4,0
--#endif
- ENTRY(empty_zero_page)
- 	.fill 4096,1,0
-+ENTRY(swapper_pg_dir)
-+	.fill 1024,4,0
- 
- /*
-  * This starts the data section.
-@@ -645,20 +640,20 @@ ENTRY(empty_zero_page)
- __PAGE_ALIGNED_DATA
- 	/* Page-aligned for the benefit of paravirt? */
- 	.align PAGE_SIZE_asm
--ENTRY(swapper_pg_dir)
--	.long	pa(swapper_pg_pmd+PGD_IDENT_ATTR),0	/* low identity map */
-+ENTRY(initial_page_table)
-+	.long	pa(initial_pg_pmd+PGD_IDENT_ATTR),0	/* low identity map */
- # if KPMDS == 3
--	.long	pa(swapper_pg_pmd+PGD_IDENT_ATTR),0
--	.long	pa(swapper_pg_pmd+PGD_IDENT_ATTR+0x1000),0
--	.long	pa(swapper_pg_pmd+PGD_IDENT_ATTR+0x2000),0
-+	.long	pa(initial_pg_pmd+PGD_IDENT_ATTR),0
-+	.long	pa(initial_pg_pmd+PGD_IDENT_ATTR+0x1000),0
-+	.long	pa(initial_pg_pmd+PGD_IDENT_ATTR+0x2000),0
- # elif KPMDS == 2
- 	.long	0,0
--	.long	pa(swapper_pg_pmd+PGD_IDENT_ATTR),0
--	.long	pa(swapper_pg_pmd+PGD_IDENT_ATTR+0x1000),0
-+	.long	pa(initial_pg_pmd+PGD_IDENT_ATTR),0
-+	.long	pa(initial_pg_pmd+PGD_IDENT_ATTR+0x1000),0
- # elif KPMDS == 1
- 	.long	0,0
- 	.long	0,0
--	.long	pa(swapper_pg_pmd+PGD_IDENT_ATTR),0
-+	.long	pa(initial_pg_pmd+PGD_IDENT_ATTR),0
- # else
- #  error "Kernel PMDs should be 1, 2 or 3"
- # endif
-diff --git a/arch/x86/kernel/reboot.c b/arch/x86/kernel/reboot.c
-index 7a4cf14..f7f53dc 100644
---- a/arch/x86/kernel/reboot.c
-+++ b/arch/x86/kernel/reboot.c
-@@ -371,16 +371,10 @@ void machine_real_restart(const unsigned char *code, int length)
- 	CMOS_WRITE(0x00, 0x8f);
- 	spin_unlock(&rtc_lock);
- 
--	/* Remap the kernel at virtual address zero, as well as offset zero
--	   from the kernel segment.  This assumes the kernel segment starts at
--	   virtual address PAGE_OFFSET. */
--	memcpy(swapper_pg_dir, swapper_pg_dir + KERNEL_PGD_BOUNDARY,
--		sizeof(swapper_pg_dir [0]) * KERNEL_PGD_PTRS);
--
- 	/*
--	 * Use `swapper_pg_dir' as our page directory.
-+	 * Switch back to the initial page table.
- 	 */
--	load_cr3(swapper_pg_dir);
-+	load_cr3(initial_page_table);
- 
- 	/* Write 0x1234 to absolute memory location 0x472.  The BIOS reads
- 	   this on booting to tell it to "Bypass memory test (also warm
-diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
-index 44e208e..3df995f 100644
---- a/arch/x86/kernel/setup.c
-+++ b/arch/x86/kernel/setup.c
-@@ -700,6 +700,17 @@ void __init setup_arch(char **cmdline_p)
- #ifdef CONFIG_X86_32
- 	memcpy(&boot_cpu_data, &new_cpu_data, sizeof(new_cpu_data));
- 	visws_early_detect();
-+
-+	/*
-+	 * copy kernel address range established so far and switch
-+	 * to the proper swapper page table
-+	 */
-+	clone_pgd_range(swapper_pg_dir     + KERNEL_PGD_BOUNDARY,
-+			initial_page_table + KERNEL_PGD_BOUNDARY,
-+			KERNEL_PGD_PTRS);
-+
-+	load_cr3(swapper_pg_dir);
-+	__flush_tlb_all();
- #else
- 	printk(KERN_INFO "Command line: %s\n", boot_command_line);
- #endif
-@@ -985,7 +996,12 @@ void __init setup_arch(char **cmdline_p)
- 	paging_init();
- 	x86_init.paging.pagetable_setup_done(swapper_pg_dir);
- 
--	setup_trampoline_page_table();
-+#ifdef CONFIG_X86_32
-+	/* sync back kernel address range */
-+	clone_pgd_range(initial_page_table + KERNEL_PGD_BOUNDARY,
-+			swapper_pg_dir     + KERNEL_PGD_BOUNDARY,
-+			KERNEL_PGD_PTRS);
-+#endif
- 
- 	tboot_probe();
- 
-diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
-index dfb5089..6af1185 100644
---- a/arch/x86/kernel/smpboot.c
-+++ b/arch/x86/kernel/smpboot.c
-@@ -299,22 +299,16 @@ notrace static void __cpuinit start_secondary(void *unused)
- 	 * fragile that we want to limit the things done here to the
- 	 * most necessary things.
- 	 */
-+	cpu_init();
-+	preempt_disable();
-+	smp_callin();
- 
- #ifdef CONFIG_X86_32
--	/*
--	 * Switch away from the trampoline page-table
--	 *
--	 * Do this before cpu_init() because it needs to access per-cpu
--	 * data which may not be mapped in the trampoline page-table.
--	 */
-+	/* switch away from the initial page table */
- 	load_cr3(swapper_pg_dir);
- 	__flush_tlb_all();
- #endif
- 
--	cpu_init();
--	preempt_disable();
--	smp_callin();
--
- 	/* otherwise gcc will move up smp_processor_id before the cpu_init */
- 	barrier();
- 	/*
-@@ -785,7 +779,6 @@ do_rest:
- #ifdef CONFIG_X86_32
- 	/* Stack for startup_32 can be just as for start_secondary onwards */
- 	irq_ctx_init(cpu);
--	initial_page_table = __pa(&trampoline_pg_dir);
- #else
- 	clear_tsk_thread_flag(c_idle.idle, TIF_FORK);
- 	initial_gs = per_cpu_offset(cpu);
-@@ -934,7 +927,6 @@ int __cpuinit native_cpu_up(unsigned int cpu)
- 	per_cpu(cpu_state, cpu) = CPU_UP_PREPARE;
- 
- 	err = do_boot_cpu(apicid, cpu);
--
- 	if (err) {
- 		pr_debug("do_boot_cpu failed %d\n", err);
- 		return -EIO;
-diff --git a/arch/x86/kernel/trampoline.c b/arch/x86/kernel/trampoline.c
-index 4c3da56..a375616 100644
---- a/arch/x86/kernel/trampoline.c
-+++ b/arch/x86/kernel/trampoline.c
-@@ -38,19 +38,3 @@ unsigned long __trampinit setup_trampoline(void)
- 	memcpy(trampoline_base, trampoline_data, TRAMPOLINE_SIZE);
- 	return virt_to_phys(trampoline_base);
- }
--
--void __init setup_trampoline_page_table(void)
--{
--#ifdef CONFIG_X86_32
--	/* Copy kernel address range */
--	clone_pgd_range(trampoline_pg_dir + KERNEL_PGD_BOUNDARY,
--			swapper_pg_dir + KERNEL_PGD_BOUNDARY,
--			KERNEL_PGD_PTRS);
--
--	/* Initialize low mappings */
--	clone_pgd_range(trampoline_pg_dir,
--			swapper_pg_dir + KERNEL_PGD_BOUNDARY,
--			min_t(unsigned long, KERNEL_PGD_PTRS,
--			      KERNEL_PGD_BOUNDARY));
--#endif
--}
-diff --git a/arch/x86/mm/init_32.c b/arch/x86/mm/init_32.c
-index 5d0a671..0e969f9 100644
---- a/arch/x86/mm/init_32.c
-+++ b/arch/x86/mm/init_32.c
-@@ -528,48 +528,6 @@ static void __init pagetable_init(void)
- 	permanent_kmaps_init(pgd_base);
- }
- 
--#ifdef CONFIG_ACPI_SLEEP
--/*
-- * ACPI suspend needs this for resume, because things like the intel-agp
-- * driver might have split up a kernel 4MB mapping.
-- */
--char swsusp_pg_dir[PAGE_SIZE]
--	__attribute__ ((aligned(PAGE_SIZE)));
--
--static inline void save_pg_dir(void)
--{
--	copy_page(swsusp_pg_dir, swapper_pg_dir);
--}
--#else /* !CONFIG_ACPI_SLEEP */
--static inline void save_pg_dir(void)
--{
--}
--#endif /* !CONFIG_ACPI_SLEEP */
--
--void zap_low_mappings(bool early)
--{
--	int i;
--
--	/*
--	 * Zap initial low-memory mappings.
--	 *
--	 * Note that "pgd_clear()" doesn't do it for
--	 * us, because pgd_clear() is a no-op on i386.
--	 */
--	for (i = 0; i < KERNEL_PGD_BOUNDARY; i++) {
--#ifdef CONFIG_X86_PAE
--		set_pgd(swapper_pg_dir+i, __pgd(1 + __pa(empty_zero_page)));
--#else
--		set_pgd(swapper_pg_dir+i, __pgd(0));
--#endif
--	}
--
--	if (early)
--		__flush_tlb();
--	else
--		flush_tlb_all();
--}
--
- pteval_t __supported_pte_mask __read_mostly = ~(_PAGE_NX | _PAGE_GLOBAL | _PAGE_IOMAP);
- EXPORT_SYMBOL_GPL(__supported_pte_mask);
- 
-@@ -882,9 +840,6 @@ void __init mem_init(void)
- 
- 	if (boot_cpu_data.wp_works_ok < 0)
- 		test_wp_bit();
--
--	save_pg_dir();
--	zap_low_mappings(true);
- }
- 
- #ifdef CONFIG_MEMORY_HOTPLUG
--- 
-1.7.2.3
+	#define BIO_POOL_SIZE 2
+	static int __init init_bio(void)
+	{
+		..
+	        fs_bio_set = bioset_create(BIO_POOL_SIZE, 0);
+
+So, I think raid1.c need to use their own bioset instead fs_bio_set.
+otherwise, bio pool exshost can happen very easily.
+
+But I'm not sure. I'm not IO expert.
 
 
--- 
-Regards/Gruss,
-    Boris.
+
+
