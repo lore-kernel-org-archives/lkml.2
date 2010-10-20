@@ -1,165 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755601Ab0JTFvn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Oct 2010 01:51:43 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:62890 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752564Ab0JTFvk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Oct 2010 01:51:40 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=sfTj1qnnj53LXyKgZPYtda+q6Pr5vkZMmWDpNTlqJo8wh7sgFZPO+AjODBw9HBnR2M
-         Kr8o/fY9qMvbjo5VL0oWnqE7i9m5HMQxS31McikHCWvv+x5RMIpHFxNb4SzfVxLsttwG
-         ENB1ypaQNzH+O53v2RwPcMdcSadJaKs7xPQYU=
-From: "Lee, Chun-Yi" <joeyli.kernel@gmail.com>
-To: dri-devel@lists.freedesktop.org
-Cc: randy.dunlap@oracle.com, mjg59@srcf.ucam.org, gregkh@suse.de,
-        trenn@suse.de, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Valdis.Kletnieks@vt.edu,
-        Dennis.Jansen@web.de, airlied@linux.ie, airlied@redhat.com,
-        eric@anholt.net, alexdeucher@gmail.com, bskeggs@redhat.com,
-        chris@chris-wilson.co.uk, "Lee, Chun-Yi" <jlee@novell.com>
-Subject: [PATCH] Add Intel GMA500(Poulsbo) Stub Driver
-Date: Wed, 20 Oct 2010 13:51:19 +0800
-Message-Id: <1287553879-25897-1-git-send-email-jlee@novell.com>
-X-Mailer: git-send-email 1.6.0.2
+	id S1757459Ab0JTF5W (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Oct 2010 01:57:22 -0400
+Received: from mga01.intel.com ([192.55.52.88]:38218 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753258Ab0JTF5U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Oct 2010 01:57:20 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.57,354,1283756400"; 
+   d="scan'208";a="848983607"
+Date: Wed, 20 Oct 2010 13:57:17 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Torsten Kaiser <just.for.lkml@googlemail.com>
+Cc: Neil Brown <neilb@suse.de>, Rik van Riel <riel@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "Li, Shaohua" <shaohua.li@intel.com>
+Subject: Re: Deadlock possibly caused by too_many_isolated.
+Message-ID: <20101020055717.GA12752@localhost>
+References: <20100915091118.3dbdc961@notabene>
+ <4C90139A.1080809@redhat.com>
+ <20100915122334.3fa7b35f@notabene>
+ <20100915082843.GA17252@localhost>
+ <20100915184434.18e2d933@notabene>
+ <20101018151459.2b443221@notabene>
+ <AANLkTimv_zXHdFDGa9ecgXyWmQynOKTDRPC59PZA9mvL@mail.gmail.com>
+ <20101019101151.57c6dd56@notabene>
+ <AANLkTin3wXWwA-HXhjx6wvzznp3p57Pg6fee8YNkZB79@mail.gmail.com>
+ <AANLkTimVu+5gTDs8przJVP2EbWC=FX-zWW7aH08BtrHC@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTimVu+5gTDs8przJVP2EbWC=FX-zWW7aH08BtrHC@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, there have no GMA500(Poulsbo) native video driver to support
-intel opregion. So, use this stub driver to enable the acpi backlight
-control sysfs entry files by requrest acpi_video_register.
+On Tue, Oct 19, 2010 at 06:06:21PM +0800, Torsten Kaiser wrote:
+> On Tue, Oct 19, 2010 at 10:43 AM, Torsten Kaiser
+> <just.for.lkml@googlemail.com> wrote:
+> > On Tue, Oct 19, 2010 at 1:11 AM, Neil Brown <neilb@suse.de> wrote:
+> >> Yes, thanks for the report.
+> >> This is a real bug exactly as you describe.
+> >>
+> >> This is how I think I will fix it, though it needs a bit of review and
+> >> testing before I can be certain.
+> >> Also I need to check raid10 etc to see if they can suffer too.
+> >>
+> >> If you can test it I would really appreciate it.
+> >
+> > I did test it, but while it seemed to fix the deadlock, the system
+> > still got unusable.
+> > The still running "vmstat 1" showed that the swapout was still
+> > progressing, but at a rate of ~20k sized bursts every 5 to 20 seconds.
+> >
+> > I also tried to additionally add Wu's patch:
+> > --- linux-next.orig/mm/vmscan.c 2010-10-13 12:35:14.000000000 +0800
+> > +++ linux-next/mm/vmscan.c      2010-10-19 00:13:04.000000000 +0800
+> > @@ -1163,6 +1163,13 @@ static int too_many_isolated(struct zone
+> >               isolated = zone_page_state(zone, NR_ISOLATED_ANON);
+> >       }
+> >
+> > +       /*
+> > +        * GFP_NOIO/GFP_NOFS callers are allowed to isolate more pages, so that
+> > +        * they won't get blocked by normal ones and form circular deadlock.
+> > +        */
+> > +       if ((sc->gfp_mask & GFP_IOFS) == GFP_IOFS)
+> > +               inactive >>= 3;
+> > +
+> >       return isolated > inactive;
+> >
+> > Either it did help somewhat, or I was more lucky on my second try, but
+> > this time I needed ~5 tries instead of only 2 to get the system mostly
+> > stuck again. On the testrun with Wu's patch the writeout pattern was
+> > more stable, a burst of ~80kb each 20 seconds. But I would suspect
+> > that the size of the burst is rather random.
+> >
+> > I do have a complete SysRq+T dump from the first run, I can send that
+> > to anyone how wants it.
+> > (It's 190k so I don't want not spam it to the list)
+> 
+> Is this call trace from the SysRq+T violation the rule to only
+> allocate one bio from bio_alloc() until its submitted?
+> 
+> [  549.700038] Call Trace:
+> [  549.700038]  [<ffffffff81566b54>] schedule_timeout+0x144/0x200
+> [  549.700038]  [<ffffffff81045cd0>] ? process_timeout+0x0/0x10
+> [  549.700038]  [<ffffffff81565e22>] io_schedule_timeout+0x42/0x60
+> [  549.700038]  [<ffffffff81083123>] mempool_alloc+0x163/0x1b0
+> [  549.700038]  [<ffffffff81053560>] ? autoremove_wake_function+0x0/0x40
+> [  549.700038]  [<ffffffff810ea2b9>] bio_alloc_bioset+0x39/0xf0
+> [  549.700038]  [<ffffffff810ea38d>] bio_clone+0x1d/0x50
+> [  549.700038]  [<ffffffff814318ed>] make_request+0x23d/0x850
+> [  549.700038]  [<ffffffff81082e20>] ? mempool_alloc_slab+0x10/0x20
+> [  549.700038]  [<ffffffff81045cd0>] ? process_timeout+0x0/0x10
+> [  549.700038]  [<ffffffff81436e63>] md_make_request+0xc3/0x220
+> [  549.700038]  [<ffffffff81083099>] ? mempool_alloc+0xd9/0x1b0
+> [  549.700038]  [<ffffffff811ec153>] generic_make_request+0x1b3/0x370
+> [  549.700038]  [<ffffffff810ea2d6>] ? bio_alloc_bioset+0x56/0xf0
+> [  549.700038]  [<ffffffff811ec36a>] submit_bio+0x5a/0xd0
+> [  549.700038]  [<ffffffff81080cf5>] ? unlock_page+0x25/0x30
+> [  549.700038]  [<ffffffff810a871e>] swap_writepage+0x7e/0xc0
+> [  549.700038]  [<ffffffff81090d99>] shmem_writepage+0x1c9/0x240
+> [  549.700038]  [<ffffffff8108c9cb>] pageout+0x11b/0x270
+> [  549.700038]  [<ffffffff8108cd78>] shrink_page_list+0x258/0x4d0
+> [  549.700038]  [<ffffffff8108d9e7>] shrink_inactive_list+0x187/0x310
+> [  549.700038]  [<ffffffff8102dcb1>] ? __wake_up_common+0x51/0x80
+> [  549.700038]  [<ffffffff811fc8b2>] ? cpumask_next_and+0x22/0x40
+> [  549.700038]  [<ffffffff8108e1c0>] shrink_zone+0x3e0/0x470
+> [  549.700038]  [<ffffffff8108e797>] try_to_free_pages+0x157/0x410
+> [  549.700038]  [<ffffffff81087c92>] __alloc_pages_nodemask+0x412/0x760
+> [  549.700038]  [<ffffffff810b27d6>] alloc_pages_current+0x76/0xe0
+> [  549.700038]  [<ffffffff810b6dad>] new_slab+0x1fd/0x2a0
+> [  549.700038]  [<ffffffff81045cd0>] ? process_timeout+0x0/0x10
+> [  549.700038]  [<ffffffff810b8721>] __slab_alloc+0x111/0x540
+> [  549.700038]  [<ffffffff81059961>] ? prepare_creds+0x21/0xb0
+> [  549.700038]  [<ffffffff810b92bb>] kmem_cache_alloc+0x9b/0xa0
+> [  549.700038]  [<ffffffff81059961>] prepare_creds+0x21/0xb0
+> [  549.700038]  [<ffffffff8104a919>] sys_setresgid+0x29/0x120
+> [  549.700038]  [<ffffffff8100242b>] system_call_fastpath+0x16/0x1b
+> [  549.700038]  ffff88011e125ea8 0000000000000046 ffff88011e125e08
+> ffffffff81073c59
+> [  549.700038]  0000000000012780 ffff88011ea905b0 ffff88011ea90808
+> ffff88011e125fd8
+> [  549.700038]  ffff88011ea90810 ffff88011e124010 0000000000012780
+> ffff88011e125fd8
+> 
+> swap_writepage() uses get_swap_bio() which uses bio_alloc() to get one
+> bio. That bio is the submitted, but the submit path seems to get into
+> make_request from raid1.c and that allocates a second bio from
+> bio_alloc() via bio_clone().
+> 
+> I am seeing this pattern (swap_writepage calling
+> md_make_request/make_request and then getting stuck in mempool_alloc)
+> more than 5 times in the SysRq+T output...
 
-Signed-off-by: Lee, Chun-Yi <jlee@novell.com>
+I bet the root cause is the failure of pool->alloc(__GFP_NORETRY)
+inside mempool_alloc(), which can be fixed by this patch.
+
+Thanks,
+Fengguang
 ---
- drivers/gpu/Makefile       |    2 +-
- drivers/gpu/stub/Kconfig   |   13 +++++++++
- drivers/gpu/stub/Makefile  |    1 +
- drivers/gpu/stub/poulsbo.c |   63 ++++++++++++++++++++++++++++++++++++++++++++
- drivers/video/Kconfig      |    2 +
- 5 files changed, 80 insertions(+), 1 deletions(-)
- create mode 100644 drivers/gpu/stub/Kconfig
- create mode 100644 drivers/gpu/stub/Makefile
- create mode 100644 drivers/gpu/stub/poulsbo.c
 
-diff --git a/drivers/gpu/Makefile b/drivers/gpu/Makefile
-index 30879df..cc92778 100644
---- a/drivers/gpu/Makefile
-+++ b/drivers/gpu/Makefile
-@@ -1 +1 @@
--obj-y			+= drm/ vga/
-+obj-y			+= drm/ vga/ stub/
-diff --git a/drivers/gpu/stub/Kconfig b/drivers/gpu/stub/Kconfig
-new file mode 100644
-index 0000000..8f5a540
---- /dev/null
-+++ b/drivers/gpu/stub/Kconfig
-@@ -0,0 +1,13 @@
-+config STUB_POULSBO
-+	tristate "Intel GMA500 Stub Driver"
-+	depends on PCI
-+        # Poulsbo stub depends on ACPI_VIDEO when ACPI is enabled
-+        # but for select to work, need to select ACPI_VIDEO's dependencies, ick
-+        select ACPI_VIDEO if ACPI
-+	help
-+	  Choose this option if you have a system that has Intel GMA500
-+	  (Poulsbo) integrated graphics. If M is selected, the module will
-+	  be called Poulsbo. This driver is a stub driver for Poulsbo that
-+	  will call poulsbo.ko to enable the acpi backlight control sysfs
-+	  entry file because there have no poulsbo native driver can support
-+	  intel opregion.
-diff --git a/drivers/gpu/stub/Makefile b/drivers/gpu/stub/Makefile
-new file mode 100644
-index 0000000..cd940cc
---- /dev/null
-+++ b/drivers/gpu/stub/Makefile
-@@ -0,0 +1 @@
-+obj-$(CONFIG_STUB_POULSBO) += poulsbo.o
-diff --git a/drivers/gpu/stub/poulsbo.c b/drivers/gpu/stub/poulsbo.c
-new file mode 100644
-index 0000000..d8aa636
---- /dev/null
-+++ b/drivers/gpu/stub/poulsbo.c
-@@ -0,0 +1,63 @@
-+/*
-+ * Intel Poulsbo Stub driver
-+ *
-+ * Copyright (C) 2010 Novell <jlee@novell.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms of the GNU General Public License version 2 as published by
-+ * the Free Software Foundation.
-+ *
-+ */
-+
-+#include <linux/module.h>
-+#include <linux/pci.h>
-+#include <acpi/video.h>
-+
-+#define DRIVER_NAME "poulsbo"
-+
-+enum {
-+	CHIP_PSB_8108 = 0,
-+	CHIP_PSB_8109 = 1,
-+};
-+
-+static struct pci_device_id pciidlist[] = {
-+	{0x8086, 0x8108, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_PSB_8108}, \
-+	{0x8086, 0x8109, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_PSB_8109}, \
-+	{0, 0, 0}
-+};
-+
-+static int poulsbo_probe(struct pci_dev *pdev, const struct pci_device_id *id)
-+{
-+	return acpi_video_register();
-+}
-+
-+static void poulsbo_remove(struct pci_dev *pdev)
-+{
-+	acpi_video_unregister();
-+}
-+
-+static struct pci_driver poulsbo_driver = {
-+	.name = DRIVER_NAME,
-+	.id_table = pciidlist,
-+	.probe = poulsbo_probe,
-+	.remove = poulsbo_remove,
-+};
-+
-+static int __init poulsbo_init(void)
-+{
-+	return pci_register_driver(&poulsbo_driver);
-+}
-+
-+static void __exit poulsbo_exit(void)
-+{
-+	pci_unregister_driver(&poulsbo_driver);
-+}
-+
-+module_init(poulsbo_init);
-+module_exit(poulsbo_exit);
-+
-+MODULE_AUTHOR("Lee, Chun-Yi <jlee@novell.com>");
-+MODULE_DESCRIPTION("Poulsbo Stub Driver");
-+MODULE_LICENSE("GPL");
-+
-+MODULE_DEVICE_TABLE(pci, pciidlist);
-diff --git a/drivers/video/Kconfig b/drivers/video/Kconfig
-index 8b31fdf..8807ae5 100644
---- a/drivers/video/Kconfig
-+++ b/drivers/video/Kconfig
-@@ -17,6 +17,8 @@ source "drivers/gpu/vga/Kconfig"
- 
- source "drivers/gpu/drm/Kconfig"
- 
-+source "drivers/gpu/stub/Kconfig"
-+
- config VGASTATE
-        tristate
-        default n
--- 
-1.6.0.2
+concurrent direct page reclaim problem
 
+  __GFP_NORETRY page allocations may fail when there are many concurrent page
+  allocating tasks, but not necessary in real short of memory. The root cause
+  is, tasks will first run direct page reclaim to free some pages from the LRU
+  lists and put them to the per-cpu page lists and the buddy system, and then
+  try to get a free page from there.  However the free pages reclaimed by this
+  task may be consumed by other tasks when the direct reclaim task is able to
+  get the free page for itself.
+
+  Let's retry it a bit harder.
+
+--- linux-next.orig/mm/page_alloc.c	2010-10-20 13:44:50.000000000 +0800
++++ linux-next/mm/page_alloc.c	2010-10-20 13:50:54.000000000 +0800
+@@ -1700,7 +1700,7 @@ should_alloc_retry(gfp_t gfp_mask, unsig
+ 				unsigned long pages_reclaimed)
+ {
+ 	/* Do not loop if specifically requested */
+-	if (gfp_mask & __GFP_NORETRY)
++	if (gfp_mask & __GFP_NORETRY && pages_reclaimed > (1 << (order + 12)))
+ 		return 0;
+ 
+ 	/*
