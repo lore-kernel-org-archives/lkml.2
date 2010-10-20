@@ -1,136 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757555Ab0JTDNA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Oct 2010 23:13:00 -0400
-Received: from ipmail06.adl2.internode.on.net ([150.101.137.129]:26331 "EHLO
-	ipmail06.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757327Ab0JTDM6 (ORCPT
+	id S1757620Ab0JTDNU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Oct 2010 23:13:20 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:49450 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757327Ab0JTDNR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Oct 2010 23:12:58 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvsEAMj4vUx5LdoF/2dsb2JhbAChVnLCZYVKBA
-Date: Wed, 20 Oct 2010 14:12:56 +1100
-From: Nick Piggin <npiggin@kernel.dk>
-To: Nick Piggin <npiggin@kernel.dk>, linux-mm@kvack.org
-Cc: Dave Chinner <david@fromorbit.com>, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org
-Subject: Re: [patch 31/35] fs: icache per-zone inode LRU
-Message-ID: <20101020031256.GA4095@amd>
-References: <20101019034216.319085068@kernel.dk>
- <20101019034658.744504135@kernel.dk>
- <20101019123852.GA12506@dastard>
- <20101020023556.GC3740@amd>
+	Tue, 19 Oct 2010 23:13:17 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:subject:references
+         :in-reply-to:content-type:content-transfer-encoding;
+        b=dA2ytn3ppjv0eoRwfG/weoemz9SXkfKMAYGWjFsiyiAxkWUsQuYWpLLdN0o2CSaiDB
+         dXqzddxA44u1KdnSk5AZTvZuoXRro6zt+kvdkhw7whweLVsv0ZSAeoRYHqWVPLGrw3gD
+         aJDTa+wbIgJd4Zqm55IuTPS+JyFSn0I2IT4H4=
+Message-ID: <4CBE5E6B.1050701@gmail.com>
+Date: Tue, 19 Oct 2010 20:13:47 -0700
+From: "Justin P. Mattock" <justinmattock@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:2.0b5pre) Gecko/20100827 Thunderbird/3.2a1pre
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101020023556.GC3740@amd>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: x86_32 compile error with the latest Mainline
+References: <AANLkTi=kHWqg32TFVjX5GT+R2hDPcadxsvYhL7RXiGsp@mail.gmail.com>
+In-Reply-To: <AANLkTi=kHWqg32TFVjX5GT+R2hDPcadxsvYhL7RXiGsp@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Gah. Try again.
+On 10/19/2010 07:55 PM, Justin Mattock wrote:
+> looking into upstart, I realize I need to have an image in order to
+> load the policy
+> at boot... so after learning something new(normally make, make install
+> is just fine)
+> I seem to be hitting some thing with dpkg-gencontrol
+>
+> make-kpkg  --initrd --rootcmd fakeroot --revision=1
+> --append-to-version -justin-rt kernel_image kernel_headers
+> (probably have something wrong)
+>
+> and the error:
+>
+> 	    -e 's/=ST/linux/g'  -e 's/=R//g' \
+>              -e 's/=KPV/12.032/g'                       \
+> 	    -e 's/=K/vmlinuz/g'           \
+> 	    -e 's@=MK@@g' -e 's@=A@i386@g'   \
+> 	    -e 's/=I/YES/g'     -e 's,=D,/boot,g'        \
+> 	    -e 's/=MD//g'                                \
+> 	    -e 's@=M@@g'    -e 's/=OF//g'    \
+> 	    -e 's/=S//g' -e 's@=B@i386@g'     \
+> 	 ./debian/templates.l10n>  ./debian/templates.master
+> install -p    -o root -g root  -m  644 ./debian/templates.master
+> /home/kernel/2.6.37/debian/linux-image-2.6.36-rc8-justin-rt+/DEBIAN/templates
+> dpkg-gencontrol -DArchitecture=i386 -isp	     \
+> 			-plinux-image-2.6.36-rc8-justin-rt+
+> -P/home/kernel/2.6.37/debian/linux-image-2.6.36-rc8-justin-rt+/
+> dpkg-gencontrol: error: package linux-image-2.6.36-rc8-justin-rt+ not
+> in control info
+> make[2]: *** [debian/stamp/binary/linux-image-2.6.36-rc8-justin-rt+] Error 255
+> make[2]: Leaving directory `/home/kernel/2.6.37'
+> make[1]: *** [debian/stamp/binary/pre-linux-image-2.6.36-rc8-justin-rt+] Error 2
+> make[1]: Leaving directory `/home/kernel/2.6.37'
+> make: *** [kernel_image] Error 2
+>
+>
+> I've gone in an enabled/disabled CONFIG_LOCALVERSION but still errors
+> out both ways..
+>
+> any ideas on what I did wrong?
+> BTW: also noticed this thread as well
+> http://www.gossamer-threads.com/lists/linux/kernel/1266036
+>
 
-On Wed, Oct 20, 2010 at 01:35:56PM +1100, Nick Piggin wrote:
-> [I should have cc'ed this one to linux-mm as well, so I quote your
-> reply in full here]
-> 
-> On Tue, Oct 19, 2010 at 11:38:52PM +1100, Dave Chinner wrote:
-> > On Tue, Oct 19, 2010 at 02:42:47PM +1100, npiggin@kernel.dk wrote:
-> > > Per-zone LRUs and shrinkers for inode cache.
-> > 
-> > Regardless of whether this is the right way to scale or not, I don't
-> > like the fact that this moves the cache LRUs into the memory
-> > management structures, and expands the use of MM specific structures
-> > throughout the code.
-> 
-> The zone structure really is the basic unit of memory abstraction
-> in the whole zoned VM concept (which covers different properties
-> of both physical address and NUMA cost).
-> 
-> The zone contains structures for memory management that aren't
-> otherwise directly related to one another. Generic page waitqueues,
-> page allocator structures, pagecache reclaim structures, memory model
-> data, and various statistics.
-> 
-> Structures to reclaim inodes from a particular zone belong in the
-> zone struct as much as those to reclaim pagecache or anonymous
-> memory from that zone too. It actually fits far better in here than
-> globally, because all our allocation/reclaiming/watermarks etc is
-> driven per-zone.
-> 
-> The structure is not frequent -- a couple per NUMA node.
-> 
-> 
-> > It ties the cache implementation to the current
-> > VM implementation. That, IMO, goes against all the principle of
-> > modularisation at the source code level, and it means we have to tie
-> > all shrinker implemenations to the current internal implementation
-> > of the VM. I don't think that is wise thing to do because of the
-> > dependencies and impedance mismatches it introduces.
-> 
-> It's very fundamental. We allocate memory from, and have to reclaim
-> memory from -- zones. Memory reclaim is driven based on how the VM
-> wants to reclaim memory: nothing you can do to avoid some linkage
-> between the two.
-> 
-> Look at it this way. The dumb global shrinker is also tied to an
-> MM implementation detail, but that detail in fact does *not* match
-> the reality of the MM, and so it has all these problems interacting
-> with real reclaim.
-> 
-> What problems? OK, on an N zone system (assuming equal zones and
-> even distribution of objects around memory), then if there is a shortage
-> on a particular zone, slabs from _all_ zones are reclaimed. We reclaim
-> a factor of N too many objects. In a NUMA situation, we also touch
-> remote memory with a chance (N-1)/N.
-> 
-> As number of nodes grow beyond 2, this quickly goes down hill.
-> 
-> In summary, there needs to be some knowledge of how MM reclaims memory
-> in memory reclaim shrinkers -- simply can't do a good implementation
-> without that. If the zone concept changes, the MM gets turned upside
-> down and all those assumptions would need to be revisited anyway.
-> 
-> 
-> > As an example: XFS inodes to be reclaimed are simply tagged in a
-> > radix tree so the shrinker can reclaim inodes in optimal IO order
-> > rather strict LRU order. It simply does not match a zone-based
-> 
-> This is another problem, similar to what we have in pagecache. In
-> the pagecache, we need to clean pages in optimal IO order, but we
-> still reclaim them according to some LRU order.
-> 
-> If you reclaim them in optimal IO order, cache efficiency will go
-> down because you sacrifice recency/frequency information. If you
-> IO in reclaim order, IO efficiency goes down. The solution is to
-> decouple them with like writeout versus reclaim.
-> 
-> But anyway, that's kind of an "aside": inode caches are reclaimed
-> in LRU, IO-suboptimal order today anyway. Per-zone LRU doesn't
-> change that in the slightest.
-> 
-> > shrinker implementation in any way, shape or form, nor does it's
-> > inherent parallelism match that of the way shrinkers are called.
-> > 
-> > Any change in shrinker infrastructure needs to be able to handle
-> > these sorts of impedance mismatches between the VM and the cache
-> > subsystem. The current API doesn't handle this very well, either,
-> > so it's something that we need to fix so that scalability is easy
-> > for everyone.
-> > 
-> > Anyway, my main point is that tying the LRU and shrinker scaling to
-> > the implementation of the VM is a one-off solution that doesn't work
-> > for generic infrastructure.
-> 
-> No it isn't. It worked for the pagecache, and it works for dcache.
-> 
-> 
-> > Other subsystems need the same
-> > large-machine scaling treatment, and there's no way we should be
-> > tying them all into the struct zone. It needs further abstraction.
-> 
-> An abstraction? Other than the zone? What do you suggest? Invent
-> something that the VM has no concept of and try to use that?
-> 
-> No. The zone is the right thing to base it on.
+
+o.k. nevermind... needed to do more searching with this, ended up using 
+a patch on this report, that fixes this error for me:
+https://bugs.launchpad.net/ubuntu/+source/linux-source-2.6.15/+bug/16447
+
+
+
+Justin P. Mattock
