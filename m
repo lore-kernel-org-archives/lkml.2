@@ -1,124 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753106Ab0JTKl2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Oct 2010 06:41:28 -0400
-Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:60374 "EHLO
-	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752936Ab0JTKl1 (ORCPT
+	id S1752967Ab0JTKuH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Oct 2010 06:50:07 -0400
+Received: from mga14.intel.com ([143.182.124.37]:16864 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751375Ab0JTKuG convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Oct 2010 06:41:27 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvsEAMJhvkx5LdoF/2dsb2JhbAChV3K+CoVKBA
-Date: Wed, 20 Oct 2010 21:41:21 +1100
-From: Nick Piggin <npiggin@kernel.dk>
-To: Dave Chinner <david@fromorbit.com>
-Cc: Nick Piggin <npiggin@kernel.dk>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Subject: Re: [patch 31/35] fs: icache per-zone inode LRU
-Message-ID: <20101020104121.GA5999@amd>
-References: <20101019034658.744504135@kernel.dk>
- <20101019123852.GA12506@dastard>
- <20101020115432.1821.A69D9226@jp.fujitsu.com>
- <20101020032024.GA4134@amd>
- <20101020101906.GM32255@dastard>
+	Wed, 20 Oct 2010 06:50:06 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.57,354,1283756400"; 
+   d="scan'208";a="338271737"
+From: "Hoban, Adrian" <adrian.hoban@intel.com>
+To: Herbert Xu <herbert@gondor.hengli.com.au>,
+        "linux-crypto@vger.kernel.org" <linux-crypto@vger.kernel.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Struk, Tadeusz" <tadeusz.struk@intel.com>,
+        "O Mahony, Aidan" <aidan.o.mahony@intel.com>,
+        "Paoloni, Gabriele" <gabriele.paoloni@intel.com>
+Date: Wed, 20 Oct 2010 11:49:10 +0100
+Subject: RE: [PATCH 2/3] RFC4106 AES-GCM Driver Using Intel New Instructions
+Thread-Topic: [PATCH 2/3] RFC4106 AES-GCM Driver Using Intel New Instructions
+Thread-Index: ActvjBFMQsaqrmqcRFyQJAyoIREkewAAC29wAAFlYGAAKmThMA==
+Message-ID: <CFBC532374C38D45810FA00BC2D2C204012D3E76C4@irsmsx502.ger.corp.intel.com>
+References: <4CB41CED.mailDED1NSGGA@intel.com>
+ <20101019124908.GA12898@gondor.apana.org.au>
+ <44813D8942D35947805CBEEA94195BB001B135B69E@irsmsx505.ger.corp.intel.com>
+ <24483BA4C9F69C43A7379639D35543D7C2F99F27@irsmsx502.ger.corp.intel.com>
+In-Reply-To: <24483BA4C9F69C43A7379639D35543D7C2F99F27@irsmsx502.ger.corp.intel.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="iso-8859-1"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101020101906.GM32255@dastard>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 20, 2010 at 09:19:06PM +1100, Dave Chinner wrote:
-> On Wed, Oct 20, 2010 at 02:20:24PM +1100, Nick Piggin wrote:
-> > 
-> > Well if XFS were to use per-ZONE shrinkers, it would remain with a
-> > single shrinker context per-sb like it has now, but it would divide
-> > its object management into per-zone structures.
+Hi Herbert,
+
+We have been using binutils v2.19. 
+
+Can you please recommend the version(s) of binutils (gas) that we should test with before submitting a patch? V2.16.1, or perhaps the older version (2.12) described in /Documentation/Changes? 
+
+We will retest with the recommended version, update the code and resubmit the patch ASAP. 
+
+Cheers,
+Adrian
+
+
+-----Original Message-----
+From: Herbert Xu [mailto:herbert@gondor.apana.org.au] 
+Sent: Tuesday, October 19, 2010 1:49 PM
+To: Struk, Tadeusz
+Cc: linux-kernel@vger.kernel.org; linux-crypto@vger.kernel.org; O Mahony, Aidan; Paoloni, Gabriele; Hoban, Adrian
+Subject: Re: [PATCH 2/3] RFC4106 AES-GCM Driver Using Intel New Instructions
+
+On Tue, Oct 12, 2010 at 09:31:41AM +0100, tadeusz.struk@intel.com wrote:
+> Hi Herbert,
+> Resubmitting the two other patches as requested.
+> Thanks,
+> Tadeusz
 > 
-> <sigh>
+> >From 06444d8a95458d807ae14699e557739281d0b026 Mon Sep 17 00:00:00 2001
+> From: Adrian Hoban <ahoban@allen.ir.intel.com>
+> Date: Fri, 10 Sep 2010 18:08:45 +0100
+> Subject: [PATCH 2/3] RFC4106 AES-GCM Driver Using Intel New Instructions
 > 
-> I don't think anyone wants per-ag X per-zone reclaim lists on a 1024
-> node machine with a 1,000 AG (1PB) filesystem.
+> This patch adds an optimized RFC4106 AES-GCM implementation for 64-bit
+> kernels. It supports 128-bit AES key size. This leverages the crypto
+> AEAD interface type to facilitate a combined AES & GCM operation to
+> be implemented in assembly code. The assembly code leverages Intel(R)
+> AES New Instructions and the PCLMULQDQ instruction.
 
-Maybe not, but a 1024 node machine will *definitely* need to minimise
-interconnect traffic and remote memory access. So if each node can't
-spare enough memory for a couple of thousand LRU list heads, then
-XFS's per-ag LRUs may need rethinking (they may provide reasonable
-scalability on well partitioned workloads, but they can not help
-the reclaimers to do the right thing -- remote memory accesses will
-still dominate the inode LRU scanning there).
+OK this patch applies now at least.  However it doesn't build:
 
+  AS [M]  arch/x86/crypto/aesni-intel_asm.o
+arch/x86/crypto/aesni-intel_asm.S: Assembler messages:
+arch/x86/crypto/aesni-intel_asm.S:803: Error: no such instruction: `aesenc 16*1(%rdi),%xmm6'
+arch/x86/crypto/aesni-intel_asm.S:803: Error: no such instruction: `aesenc 16*1(%rdi),%xmm7'
+arch/x86/crypto/aesni-intel_asm.S:803: Error: no such instruction: `aesenc 16*1(%rdi),%xmm8'
+...
 
-> As I have already said, the XFS inode caches are optimised in
-> structure to minimise IO and maximise internal filesystem
-> parallelism. They are not optimised for per-cpu or NUMA scalability
-> because if you don't have filesystem level parallelism, you can't
-> scale to large numbers of concurrent operations across large numbers
-> of CPUs in the first place.
+I suppose you can't rely on these new binutils instructions just
+yet.
 
-And as I have already said, nothing in my patches changes that.
-What it provides is *opportunity* for shrinkers to take advantage
-of per-zone scalability and improved reclaim patterns. Nothing
-forces it, though.
+Cheers,
+-- 
+Email: Herbert Xu <herbert@gondor.apana.org.au>
+Home Page: http://gondor.apana.org.au/~herbert/
+PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
+--------------------------------------------------------------
+Intel Shannon Limited
+Registered in Ireland
+Registered Office: Collinstown Industrial Park, Leixlip, County Kildare
+Registered Number: 308263
+Business address: Dromore House, East Park, Shannon, Co. Clare
 
- 
-> In the case of XFS, per-allocation group is the way we scale
-> internal parallelism and as long as you have more AGs than you have
-> CPUs, there is very good per-CPU scalability through the filesystem
-> because most operations are isolated to a single AG.  That is how we
-> scale parallelism in XFS, and it has proven to scale pretty well for
-> even the largest of NUMA machines. 
-> 
-> This is what I mean about there being an impedence mismatch between
-> the way the VM and the VFS/filesystem caches scale. Fundamentally,
-> the way filesystems want their caches to operate for optimal
-> performance can be vastly different to the way you want shrinkers to
-> operate for VM scalability. Forcing the MM way of doing stuff down
-> into the LRUs and shrinkers is not a good way of solving this
-> problem.
+This e-mail and any attachments may contain confidential material for the sole use of the intended recipient(s). Any review or distribution by others is strictly prohibited. If you are not the intended recipient, please contact the sender and delete all copies.
 
-It isn't forcing anything. Maybe you didn't understand the patch
-because you keep repeating this.
-
- 
-> > For subsystems that aren't important, don't take much memory or have
-> > much reclaim throughput, they are free to ignore the zone argument
-> > and keep using the global input to the shrinker.
-> 
-> Having a global lock in a shrinker is already a major point of
-> contention because shrinkers have unbound parallelism.  Hence all
-> shrinkers need to be converted to use scalable structures. What we
-> need _first_ is the infrastructure to do this in a sane manner, not
-> tie a couple of shrinkers tightly into the mm structures and then
-> walk away.
-
-Per zone is the way to do it. Shrinkers and reclaim concept is
-already tightly coupled with the mm. Memory pressure and the need
-to reclaim occurs solely and only as a function of a zone (or zones).
-Adding the zone argument to the shrinker does nothing more than adding
-that previously missing input to the shrinker.
-
-"I have a memory shortage in this zone, so I need to free reclaimable
-objects from this zone"
-
-This is a pretty core memory managementy idea. If you "decouple"
-shrinkers from mm any further, then you end up with something that
-doesn't give shrinkers the required information.
- 
-
-> And FWIW, most subsystems that use shrinkers can be compiled in as
-> modules or not compiled in at all. That'll probably leave #ifdef
-> CONFIG_ crap all through the struct zone definition as they are
-> converted to use your current method....
-
-I haven't thought about how random drivers will do per-zone things.
-Obviously not an all out dumping ground in struct zone, but it does
-fit for critical central caches like page, inode, and dentry.
-
-Even if they aren't compiled out, we don't want their size bloating
-things too much if they aren't loaded or in use. Probably dynamic
-allocation would be the best way to go for them. Pretty simple really.
 
