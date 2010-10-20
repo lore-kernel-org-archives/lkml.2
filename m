@@ -1,56 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754648Ab0JTSCZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Oct 2010 14:02:25 -0400
-Received: from xenotime.net ([72.52.115.56]:53047 "HELO xenotime.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1753204Ab0JTSCY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Oct 2010 14:02:24 -0400
-Date: Wed, 20 Oct 2010 11:02:11 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-Cc: Tech Board Discuss 
-	<Tech-board-discuss@lists.linux-foundation.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        "ksummit-2010-discuss@lists.linux-foundation.org" 
-	<ksummit-2010-discuss@lists.linux-foundation.org>
-Subject: Re: Linux Foundation Technical Advisory Board Elections and
- Nomination process
-Message-Id: <20101020110211.92051a57.rdunlap@xenotime.net>
-In-Reply-To: <1287151254.3069.10.camel@mulgrave.site>
-References: <1287151254.3069.10.camel@mulgrave.site>
-Organization: YPO4
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+	id S1754715Ab0JTSCq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Oct 2010 14:02:46 -0400
+Received: from mail.perches.com ([173.55.12.10]:3373 "EHLO mail.perches.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753944Ab0JTSCp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Oct 2010 14:02:45 -0400
+Subject: Re: [PATCH] drivers/hwmon: Use pr_fmt and pr_<level>
+From: Joe Perches <joe@perches.com>
+To: Guenter Roeck <guenter.roeck@ericsson.com>
+Cc: Jean Delvare <khali@linux-fr.org>, Hans de Goede <j.w.r.degoede@hhs.nl>,
+        Alistair John Strachan <alistair@devzero.co.uk>,
+        Henrik Rydberg <rydberg@euromail.se>,
+        "Mark M. Hoffman" <mhoffman@lightlink.com>,
+        Luca Tettamanti <kronos.it@gmail.com>,
+        Fenghua Yu <fenghua.yu@intel.com>, Juerg Haefliger <juergh@gmail.com>,
+        Eric Piel <eric.piel@tremplin-utc.net>,
+        Jim Cromie <jim.cromie@gmail.com>,
+        Roger Lucas <vt8231@hiddenengine.co.uk>,
+        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
+        LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <20101020174846.GA22819@ericsson.com>
+References: <1287530020.10409.594.camel@Joe-Laptop>
+	 <20101020094208.3136b9dd@endymion.delvare>
+	 <1287590363.1813.148.camel@Joe-Laptop>
+	 <20101020164929.GB22572@ericsson.com>
+	 <1287593660.1813.198.camel@Joe-Laptop>
+	 <20101020171806.GD22572@ericsson.com>
+	 <1287595700.1813.202.camel@Joe-Laptop>
+	 <20101020174846.GA22819@ericsson.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 20 Oct 2010 11:02:42 -0700
+Message-ID: <1287597762.1813.217.camel@Joe-Laptop>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 15 Oct 2010 10:00:54 -0400 James Bottomley wrote:
+On Wed, 2010-10-20 at 10:48 -0700, Guenter Roeck wrote:
+> The modified define in kernel.org would only apply if pr_fmt isn't already defined,
+> so that argument is not really correct. The real difference would be that you could
+> then remove the individual pr_fmt defines from 211 files, and all users of pr_fmt
+> without module name (ie those hard to read) would be easier to read/identify.
 
-> The elections for five of the ten members of the Linux Foundation
-> Technical Advisory Board[TAB] are held every year, currently the
-> election will be at the 2010 Kernel Summit in a BoF session on Tuesday
-> at Jillians (The Joint KS/Plumbers Reception on 2 November).  The idea
-> is to be open to both KS and Plumbers attendees who wish to vote. 
-> 
-> Anyone is eligible to stand for election, simply send your nomination
-> to:
-> 
-> Tech-board-discuss@lists.linux-foundation.org
+I think that's not a good idea for now,
+though I agree with the general concept.
 
+This is in kernel.h now.
 
-I suppose that nominees will make a statement about their qualifications
-(or at least be allowed to do so).
+#ifndef pr_fmt
+#define pr_fmt(fmt) fmt
+#endif
 
-What does the TAB do?  What has it done in the past year or two?
+A lot of the pr_<level> calls already include
+some internal prefix.
 
-There are no recent meeting minutes at
-http://www.linuxfoundation.org/programs/advisory-councils/tab
-to try to evaluate anything about the TAB afaict.
+Try:
+$ grep -rP --include=*.[ch] -oh "\bpr_\w+\s*\(\s*\"\w+:" * | \
+	cut -f2- -d"(" | sort | uniq -c | sort -rn
 
-thanks,
----
-~Randy
+You're suggesting modifying 100+ files to get the
+same output used now.
+
+I think doing something like this after some more
+generally accepted agreement is reached on how best
+to do it would be better.
+
