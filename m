@@ -1,33 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753295Ab0JTPwg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Oct 2010 11:52:36 -0400
-Received: from fep16.mx.upcmail.net ([62.179.121.36]:62505 "EHLO
-	fep16.mx.upcmail.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752845Ab0JTPwf (ORCPT
+	id S1753477Ab0JTPyO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Oct 2010 11:54:14 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:43980 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752982Ab0JTPyN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Oct 2010 11:52:35 -0400
-X-SourceIP: 80.56.199.130
-Subject: Re: ptrace BUG [was: mmotm 2010-10-13-17-13 uploaded]
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+	Wed, 20 Oct 2010 11:54:13 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=j4BdLsM+wsIuOaN+3AFYfbdwrc8UHUCj+7bL4IlT4RPrkDcw3mpnnoH0sf8h4qn95O
+         LPHzQqcaCgTwZO0Wg8Rg1fd9k/BM84FrAM87cDIn/WmITw3EyBRiz3DdynjgOQXuEZ0Y
+         Y7iHNBaFFcOLPEelvYVibze+R2tJUR/xaucNw=
+Date: Wed, 20 Oct 2010 17:54:08 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
 To: Jiri Slaby <jirislaby@gmail.com>
 Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        mm-commits@vger.kernel.org, Ingo Molnar <mingo@elte.hu>
+        mm-commits@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@elte.hu>
+Subject: Re: ptrace BUG [was: mmotm 2010-10-13-17-13 uploaded]
+Message-ID: <20101020155406.GC5387@nowhere>
+References: <201010140044.o9E0iuR3029069@imap1.linux-foundation.org> <4CBF0FB7.3000602@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 In-Reply-To: <4CBF0FB7.3000602@gmail.com>
-References: <201010140044.o9E0iuR3029069@imap1.linux-foundation.org>
-	 <4CBF0FB7.3000602@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 20 Oct 2010 17:52:27 +0200
-Message-ID: <1287589947.3488.28.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
-X-Cloudmark-Analysis: v=1.1 cv=FfKqumoxTXZ+9nPf2j1EcRvkwAYRHfr8aJLFveX/caA= c=1 sm=0 a=bL8u2p6j2agA:10 a=IkcTkHD0fZMA:10 a=Z4Rwk6OoAAAA:8 a=pGLkceISAAAA:8 a=nhUURdti6VFmraMYl1sA:9 a=9pWqRr82vrcvjp5Y6wgA:7 a=YY8VnUFarDD5FQ7kGaildzT6bCIA:4 a=QEXdDO2ut3YA:10 a=jbrJJM5MRmoA:10 a=MSl-tDqOz04A:10 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-10-20 at 17:50 +0200, Jiri Slaby wrote:
+On Wed, Oct 20, 2010 at 05:50:15PM +0200, Jiri Slaby wrote:
 > On 10/14/2010 02:13 AM, akpm@linux-foundation.org wrote:
 > > The mm-of-the-moment snapshot 2010-10-13-17-13 has been uploaded to
 > 
@@ -40,6 +45,20 @@ On Wed, 2010-10-20 at 17:50 +0200, Jiri Slaby wrote:
 > last sysfs file: /sys/devices/virtual/net/tun0/statistics/collisions
 > CPU 1
 > Modules linked in: dvb_usb_af9015 dvb_usb
+
+
+
+Do you have this fix?
+
+d580ff8699e8811a9af37e9de4dea375401bdeec
+("perf, hw_breakpoint: Fix crash in hw_breakpoint creation")
+
+It's in tip:/perf/core, which perhaps hasn't yet reached -next.
+
+
+This should fix the problem.
+
+
 > 
 > Pid: 18934, comm: gdb Not tainted 2.6.36-rc7-mm1_64+ #1286 To be filled
 > by O.E.M./To Be Filled By O.E.M.
@@ -89,155 +108,13 @@ On Wed, 2010-10-20 at 17:50 +0200, Jiri Slaby wrote:
 > psi[18938] trap int3 ip:7ffff3bdaa01 sp:7fffffffccc8 error:0
 > 
 > Is there a pacth for this already? Or should I investigate further?
-
----
-commit d580ff8699e8811a9af37e9de4dea375401bdeec
-Author: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Date:   Thu Oct 14 17:43:23 2010 +0200
-
-    perf, hw_breakpoint: Fix crash in hw_breakpoint creation
-    
-    hw_breakpoint creation needs to account stuff per-task to ensure there
-    is always sufficient hardware resources to back these things due to
-    ptrace.
-    
-    With the perf per pmu context changes the event initialization no
-    longer has access to the event context, for the simple reason that we
-    need to first find the pmu (result of initialization) before we can
-    find the context.
-    
-    This makes hw_breakpoints unhappy, because it can no longer do per
-    task accounting, cure this by frobbing a task pointer in the event::hw
-    bits for now...
-    
-    Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-    Cc: Frederic Weisbecker <fweisbec@gmail.com>
-    LKML-Reference: <20101014203625.391543667@chello.nl>
-    Signed-off-by: Ingo Molnar <mingo@elte.hu>
-
-diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-index 2ebfc9a..97965fa 100644
---- a/include/linux/perf_event.h
-+++ b/include/linux/perf_event.h
-@@ -536,6 +536,12 @@ struct hw_perf_event {
- 		struct { /* breakpoint */
- 			struct arch_hw_breakpoint	info;
- 			struct list_head		bp_list;
-+			/*
-+			 * Crufty hack to avoid the chicken and egg
-+			 * problem hw_breakpoint has with context
-+			 * creation and event initalization.
-+			 */
-+			struct task_struct		*bp_target;
- 		};
- #endif
- 	};
-@@ -693,6 +699,7 @@ struct swevent_hlist {
- 
- #define PERF_ATTACH_CONTEXT	0x01
- #define PERF_ATTACH_GROUP	0x02
-+#define PERF_ATTACH_TASK	0x04
- 
- /**
-  * struct perf_event - performance event kernel representation:
-diff --git a/kernel/hw_breakpoint.c b/kernel/hw_breakpoint.c
-index 3b714e8..2c9120f 100644
---- a/kernel/hw_breakpoint.c
-+++ b/kernel/hw_breakpoint.c
-@@ -113,12 +113,12 @@ static unsigned int max_task_bp_pinned(int cpu, enum bp_type_idx type)
-  */
- static int task_bp_pinned(struct perf_event *bp, enum bp_type_idx type)
- {
--	struct perf_event_context *ctx = bp->ctx;
-+	struct task_struct *tsk = bp->hw.bp_target;
- 	struct perf_event *iter;
- 	int count = 0;
- 
- 	list_for_each_entry(iter, &bp_task_head, hw.bp_list) {
--		if (iter->ctx == ctx && find_slot_idx(iter) == type)
-+		if (iter->hw.bp_target == tsk && find_slot_idx(iter) == type)
- 			count += hw_breakpoint_weight(iter);
- 	}
- 
-@@ -134,7 +134,7 @@ fetch_bp_busy_slots(struct bp_busy_slots *slots, struct perf_event *bp,
- 		    enum bp_type_idx type)
- {
- 	int cpu = bp->cpu;
--	struct task_struct *tsk = bp->ctx->task;
-+	struct task_struct *tsk = bp->hw.bp_target;
- 
- 	if (cpu >= 0) {
- 		slots->pinned = per_cpu(nr_cpu_bp_pinned[type], cpu);
-@@ -213,7 +213,7 @@ toggle_bp_slot(struct perf_event *bp, bool enable, enum bp_type_idx type,
- 	       int weight)
- {
- 	int cpu = bp->cpu;
--	struct task_struct *tsk = bp->ctx->task;
-+	struct task_struct *tsk = bp->hw.bp_target;
- 
- 	/* Pinned counter cpu profiling */
- 	if (!tsk) {
-diff --git a/kernel/perf_event.c b/kernel/perf_event.c
-index b21d06a..856e20b 100644
---- a/kernel/perf_event.c
-+++ b/kernel/perf_event.c
-@@ -5255,9 +5255,10 @@ unlock:
-  */
- static struct perf_event *
- perf_event_alloc(struct perf_event_attr *attr, int cpu,
--		   struct perf_event *group_leader,
--		   struct perf_event *parent_event,
--		   perf_overflow_handler_t overflow_handler)
-+		 struct task_struct *task,
-+		 struct perf_event *group_leader,
-+		 struct perf_event *parent_event,
-+		 perf_overflow_handler_t overflow_handler)
- {
- 	struct pmu *pmu;
- 	struct perf_event *event;
-@@ -5299,6 +5300,17 @@ perf_event_alloc(struct perf_event_attr *attr, int cpu,
- 
- 	event->state		= PERF_EVENT_STATE_INACTIVE;
- 
-+	if (task) {
-+		event->attach_state = PERF_ATTACH_TASK;
-+#ifdef CONFIG_HAVE_HW_BREAKPOINT
-+		/*
-+		 * hw_breakpoint is a bit difficult here..
-+		 */
-+		if (attr->type == PERF_TYPE_BREAKPOINT)
-+			event->hw.bp_target = task;
-+#endif
-+	}
-+
- 	if (!overflow_handler && parent_event)
- 		overflow_handler = parent_event->overflow_handler;
- 	
-@@ -5559,7 +5571,7 @@ SYSCALL_DEFINE5(perf_event_open,
- 		}
- 	}
- 
--	event = perf_event_alloc(&attr, cpu, group_leader, NULL, NULL);
-+	event = perf_event_alloc(&attr, cpu, task, group_leader, NULL, NULL);
- 	if (IS_ERR(event)) {
- 		err = PTR_ERR(event);
- 		goto err_task;
-@@ -5728,7 +5740,7 @@ perf_event_create_kernel_counter(struct perf_event_attr *attr, int cpu,
- 	 * Get the target context (task or percpu):
- 	 */
- 
--	event = perf_event_alloc(attr, cpu, NULL, NULL, overflow_handler);
-+	event = perf_event_alloc(attr, cpu, task, NULL, NULL, overflow_handler);
- 	if (IS_ERR(event)) {
- 		err = PTR_ERR(event);
- 		goto err;
-@@ -5996,6 +6008,7 @@ inherit_event(struct perf_event *parent_event,
- 
- 	child_event = perf_event_alloc(&parent_event->attr,
- 					   parent_event->cpu,
-+					   child,
- 					   group_leader, parent_event,
- 					   NULL);
- 	if (IS_ERR(child_event))
-
+> 
+> regards,
+> -- 
+> js
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
