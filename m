@@ -1,58 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752091Ab0JTIZh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Oct 2010 04:25:37 -0400
-Received: from mga09.intel.com ([134.134.136.24]:8048 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751875Ab0JTIZc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Oct 2010 04:25:32 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.57,354,1283756400"; 
-   d="scan'208";a="669073761"
-From: Sheng Yang <sheng@linux.intel.com>
-To: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>
-Cc: kvm@vger.kernel.org, "Michael S. Tsirkin" <mst@redhat.com>,
-        Sheng Yang <sheng@linux.intel.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH 2/8] irq: Export irq_to_desc() to modules
-Date: Wed, 20 Oct 2010 16:26:26 +0800
-Message-Id: <1287563192-29685-3-git-send-email-sheng@linux.intel.com>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1287563192-29685-1-git-send-email-sheng@linux.intel.com>
-References: <1287563192-29685-1-git-send-email-sheng@linux.intel.com>
+	id S1752200Ab0JTIfy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Oct 2010 04:35:54 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:37844 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751592Ab0JTIfv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Oct 2010 04:35:51 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=LYc/t12bHAoMBtUDpvbM3pDA3GTgiIUEymMAlfF5NZvtz/1CS2IYugI6Z4AUA2K8v1
+         N/wDe4rwVCvMwzxnpfbSS4bj7fYjk/QYaV/P0CK3/D1CVeHcaLX56Wj6V3TUtRuAHrl8
+         31qTDbA1vwsEHsKpsT5xiGTrflYDD18qPXSMc=
+MIME-Version: 1.0
+In-Reply-To: <1287542932-14206-5-git-send-email-x0095840@ti.com>
+References: <1287542932-14206-1-git-send-email-x0095840@ti.com>
+	<1287542932-14206-2-git-send-email-x0095840@ti.com>
+	<1287542932-14206-3-git-send-email-x0095840@ti.com>
+	<1287542932-14206-4-git-send-email-x0095840@ti.com>
+	<1287542932-14206-5-git-send-email-x0095840@ti.com>
+Date: Wed, 20 Oct 2010 11:35:50 +0300
+Message-ID: <AANLkTimSQabHv3AOFFR4m3POjmuGvN18u7TNsPyauH8D@mail.gmail.com>
+Subject: Re: [PATCHv4 4/4] iommu: create new api to set valid da range
+From: "felipe.contreras@gmail.com" <felipe.contreras@gmail.com>
+To: Fernando Guzman Lugo <x0095840@ti.com>
+Cc: Hiroshi.DOYU@nokia.com, felipe.contreras@nokia.com, david.cohen@nokia.com,
+        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-KVM need to execute mask/unmask directly on MSI/MSI-X devices. The alternative
-way of doing this is export mask_msi_irq(), but it lacks of checking if IRQ
-type was really MSI.
+On Wed, Oct 20, 2010 at 5:48 AM, Fernando Guzman Lugo <x0095840@ti.com> wrote:
+> Some IOMMUs cannot use the whole 0x0 - 0xFFFFFFFF range.
+> With this new API the valid range can be set.
+>
+> Signed-off-by: Fernando Guzman Lugo <x0095840@ti.com>
 
-Cc: linux-kernel@vger.kernel.org
-Signed-off-by: Sheng Yang <sheng@linux.intel.com>
----
- kernel/irq/handle.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
+I don't see the point in having an API. It could be done through
+platform data, and the usage of 0xFFFFF000 instead of ULONG_MAX is
+independent of this.
 
-diff --git a/kernel/irq/handle.c b/kernel/irq/handle.c
-index 27e5c69..1ea2a24 100644
---- a/kernel/irq/handle.c
-+++ b/kernel/irq/handle.c
-@@ -139,6 +139,7 @@ struct irq_desc *irq_to_desc(unsigned int irq)
- {
- 	return radix_tree_lookup(&irq_desc_tree, irq);
- }
-+EXPORT_SYMBOL_GPL(irq_to_desc);
- 
- void replace_irq_desc(unsigned int irq, struct irq_desc *desc)
- {
-@@ -276,6 +277,7 @@ struct irq_desc *irq_to_desc(unsigned int irq)
- {
- 	return (irq < NR_IRQS) ? irq_desc + irq : NULL;
- }
-+EXPORT_SYMBOL_GPL(irq_to_desc);
- 
- struct irq_desc *irq_to_desc_alloc_node(unsigned int irq, int node)
- {
+diff --git a/arch/arm/mach-omap2/omap-iommu.c b/arch/arm/mach-omap2/omap-iommu.c
+index f5a1aad..db919254 100644
+--- a/arch/arm/mach-omap2/omap-iommu.c
++++ b/arch/arm/mach-omap2/omap-iommu.c
+@@ -43,6 +43,7 @@ static struct iommu_device omap3_devices[] = {
+ 			.name = "iva2",
+ 			.nr_tlb_entries = 32,
+ 			.clk_name = "iva2_ck",
++			.start_addr = 0x11000000,
+ 		},
+ 	},
+ #endif
+diff --git a/arch/arm/plat-omap/include/plat/iommu.h
+b/arch/arm/plat-omap/include/plat/iommu.h
+index 33c7d41..94f3a9a 100644
+--- a/arch/arm/plat-omap/include/plat/iommu.h
++++ b/arch/arm/plat-omap/include/plat/iommu.h
+@@ -50,6 +50,8 @@ struct iommu {
+ 	int (*isr)(struct iommu *obj);
+
+ 	void *ctx; /* iommu context: registres saved area */
++
++	u32		start_addr;
+ };
+
+ struct cr_regs {
+@@ -103,6 +105,7 @@ struct iommu_platform_data {
+ 	const char *name;
+ 	const char *clk_name;
+ 	const int nr_tlb_entries;
++	u32 start_addr;
+ };
+
+ #if defined(CONFIG_ARCH_OMAP1)
+diff --git a/arch/arm/plat-omap/iommu.c b/arch/arm/plat-omap/iommu.c
+index 6336ae2..3023d0b 100644
+--- a/arch/arm/plat-omap/iommu.c
++++ b/arch/arm/plat-omap/iommu.c
+@@ -926,6 +926,10 @@ static int __devinit omap_iommu_probe(struct
+platform_device *pdev)
+ 	obj->name = pdata->name;
+ 	obj->dev = &pdev->dev;
+ 	obj->ctx = (void *)obj + sizeof(*obj);
++	obj->start_addr = pdata->start_addr;
++
++	if (!obj->start_addr)
++		obj->start_addr = PAGE_SIZE;
+
+ 	mutex_init(&obj->iommu_lock);
+ 	mutex_init(&obj->mmap_lock);
+diff --git a/arch/arm/plat-omap/iovmm.c b/arch/arm/plat-omap/iovmm.c
+index f318476..fd0c93f 100644
+--- a/arch/arm/plat-omap/iovmm.c
++++ b/arch/arm/plat-omap/iovmm.c
+@@ -284,7 +284,7 @@ static struct iovm_struct *alloc_iovm_area(struct
+iommu *obj, u32 da,
+ 		/*
+ 		 * Reserve the first page for NULL
+ 		 */
+-		start = PAGE_SIZE;
++		start = obj->start_addr;
+ 		if (flags & IOVMF_LINEAR)
+ 			alignement = iopgsz_max(bytes);
+ 		start = roundup(start, alignement);
+
 -- 
-1.7.0.1
-
+Felipe Contreras
