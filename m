@@ -1,38 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753293Ab0JTO3z (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Oct 2010 10:29:55 -0400
-Received: from sh.osrg.net ([192.16.179.4]:54486 "EHLO sh.osrg.net"
+	id S1753312Ab0JTOb4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Oct 2010 10:31:56 -0400
+Received: from cantor.suse.de ([195.135.220.2]:35006 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753198Ab0JTO3y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Oct 2010 10:29:54 -0400
-Date: Wed, 20 Oct 2010 23:29:39 +0900
-To: tj@kernel.org
-Cc: linux-scsi@vger.kernel.org, James.Bottomley@suse.de,
-        fujita.tomonori@lab.ntt.co.jp, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] scsi: remove bogus use of struct execute_work in sg
-From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-In-Reply-To: <4CBD95C0.6060302@kernel.org>
-References: <4CBD95C0.6060302@kernel.org>
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-Message-Id: <20101020232322I.fujita.tomonori@lab.ntt.co.jp>
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Wed, 20 Oct 2010 23:29:40 +0900 (JST)
+	id S1751252Ab0JTObz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Oct 2010 10:31:55 -0400
+Date: Wed, 20 Oct 2010 07:14:26 -0700
+From: Greg KH <gregkh@suse.de>
+To: Andy Shevchenko <andy.shevchenko@gmail.com>
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv2] staging: batman-adv: remove useless addr_to_string()
+Message-ID: <20101020141426.GA14590@suse.de>
+References: <20101019170342.GA18575@kroah.com> <1287574044-23000-1-git-send-email-andy.shevchenko@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1287574044-23000-1-git-send-email-andy.shevchenko@gmail.com>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 19 Oct 2010 14:57:36 +0200
-Tejun Heo <tj@kernel.org> wrote:
-
-> execute_work usage in sg is bogus.  execute_in_process_context() is
-> never used and ew is used purely as wrapper around work_struct which
-> is superflous.  Use work_struct directly.
+On Wed, Oct 20, 2010 at 02:27:24PM +0300, Andy Shevchenko wrote:
+> Since all *printf() methods in the kernel understand '%pM' modifier the
+> conversion to the string is useless beforehand.
 > 
-> Signed-off-by: Tejun Heo <tj@kernel.org>
-> ---
->  drivers/scsi/sg.c |   16 ++++++++--------
->  1 file changed, 8 insertions(+), 8 deletions(-)
+> Additionally this patch decreases batman_if structure by 20 bytes.
+> 
+> Signed-off-by: Andy Shevchenko <andy.shevchenko@gmail.com>
 
-Acked-by: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+Please also read the TODO file in this directory, which says who to copy
+on patches for these files.  Care to resend it with those addresses
+added?
+
+thanks,
+
+greg k-h
