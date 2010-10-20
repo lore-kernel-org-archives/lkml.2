@@ -1,50 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754706Ab0JTSDh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Oct 2010 14:03:37 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:64465 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753944Ab0JTSDg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Oct 2010 14:03:36 -0400
-Date: Wed, 20 Oct 2010 12:03:32 -0600
-From: Grant Likely <grant.likely@secretlab.ca>
-To: Ralf Baechle <ralf@linux-mips.org>
-Cc: David Daney <ddaney@caviumnetworks.com>, linux-mips@linux-mips.org,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        Dezhong Diao <dediao@cisco.com>
-Subject: Re: [PATCH] of/mips: Cleanup some include directives/files.
-Message-ID: <20101020180332.GO7285@angua.secretlab.ca>
-References: <1287528631-31797-1-git-send-email-ddaney@caviumnetworks.com>
- <20101020065830.GA12565@linux-mips.org>
+	id S1754749Ab0JTSE0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Oct 2010 14:04:26 -0400
+Received: from imr4.ericy.com ([198.24.6.8]:57764 "EHLO imr4.ericy.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754027Ab0JTSEY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Oct 2010 14:04:24 -0400
+Date: Wed, 20 Oct 2010 11:03:28 -0700
+From: Guenter Roeck <guenter.roeck@ericsson.com>
+To: Jean Delvare <khali@linux-fr.org>
+CC: Joe Perches <joe@perches.com>, Hans de Goede <j.w.r.degoede@hhs.nl>,
+        Alistair John Strachan <alistair@devzero.co.uk>,
+        Henrik Rydberg <rydberg@euromail.se>,
+        "Mark M. Hoffman" <mhoffman@lightlink.com>,
+        Luca Tettamanti <kronos.it@gmail.com>,
+        Fenghua Yu <fenghua.yu@intel.com>, Juerg Haefliger <juergh@gmail.com>,
+        Eric Piel <eric.piel@tremplin-utc.net>,
+        Jim Cromie <jim.cromie@gmail.com>,
+        Roger Lucas <vt8231@hiddenengine.co.uk>,
+        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] drivers/hwmon: Use pr_fmt and pr_<level>
+Message-ID: <20101020180328.GB22819@ericsson.com>
+References: <1287530020.10409.594.camel@Joe-Laptop>
+ <20101020032938.GA20095@ericsson.com>
+ <1287545658.10409.606.camel@Joe-Laptop>
+ <20101020035346.GA20178@ericsson.com>
+ <1287547662.10409.618.camel@Joe-Laptop>
+ <20101020093438.07b129c8@endymion.delvare>
+ <20101020144608.GA21937@ericsson.com>
+ <20101020183835.202989c9@endymion.delvare>
+ <20101020164343.GA22572@ericsson.com>
+ <20101020184640.0df26e35@endymion.delvare>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <20101020065830.GA12565@linux-mips.org>
+In-Reply-To: <20101020184640.0df26e35@endymion.delvare>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 20, 2010 at 07:58:30AM +0100, Ralf Baechle wrote:
-> On Tue, Oct 19, 2010 at 03:50:31PM -0700, David Daney wrote:
+On Wed, Oct 20, 2010 at 12:46:40PM -0400, Jean Delvare wrote:
+> On Wed, 20 Oct 2010 09:43:43 -0700, Guenter Roeck wrote:
+> > On Wed, Oct 20, 2010 at 12:38:35PM -0400, Jean Delvare wrote:
+> > > But first of all, I really would like the pr_fmt issue do be sorted
+> > > out. I don't like the idea of having to redefine it in every driver,
+> > > when it seems easy to avoid that. Joe?
+> >
+> > Agreed, especially since it doesn't seem to be used in many of the drivers.
 > 
-> > The __init directives should go on the definitions of things, not the
-> > declaration, also __init is meaningless for inline functions, so
-> > remove it from prom.h.  This allows us to get rid of a useless
-> > #include, but most of the rest of them are useless too, so kill them
-> > as well.
-> > 
-> > If of_i2c.c needs irq definitions, it should include linux/irq.h
-> > directly, not assume indirect inclusion via asm/prom.h.
-> 
-> Grant, I assume you're going to merge this one.
-> 
-> Acked-by: Ralf Baechle <ralf@linux-mips.org>
+> As I understand it, it's used silently by all pr_*() calls.
 
-Yes, I'll pick it up.  I'm compile testing now.
+I don't really understand the resistance to add the module name to the default
+pr_fmt in kernel.h, and I really don't like the idea to spread pr_fmt defines
+throughout the code instead.
 
-g.
+Maybe I am missing something, but to me the result of this cleanup is less clean 
+code than before.
 
-> 
->   Ralf
+What is your take ?
+
+Guenter
