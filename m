@@ -1,142 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752526Ab0JTAJ3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Oct 2010 20:09:29 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:29455 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751774Ab0JTAJ1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Oct 2010 20:09:27 -0400
-Date: Tue, 19 Oct 2010 20:09:17 -0400 (EDT)
-From: Mikulas Patocka <mpatocka@redhat.com>
-X-X-Sender: mpatocka@hs20-bc2-1.build.redhat.com
-To: Neil Brown <neilb@suse.de>
-cc: linux-kernel@vger.kernel.org, dm-devel@redhat.com,
-        linux-fsdevel@vger.kernel.org, jaxboe@fusionio.com,
-        Milan Broz <mbroz@redhat.com>, Alasdair G Kergon <agk@redhat.com>
-Subject: Re: i_size misuses
-In-Reply-To: <20101020093316.346926c4@notabene>
-Message-ID: <Pine.LNX.4.64.1010192000490.6227@hs20-bc2-1.build.redhat.com>
-References: <Pine.LNX.4.64.1009080833180.16126@hs20-bc2-1.build.redhat.com>
- <20100912080543.34650074@notabene> <Pine.LNX.4.64.1010191450240.9738@hs20-bc2-1.build.redhat.com>
- <20101020093316.346926c4@notabene>
+	id S1752836Ab0JTANN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Oct 2010 20:13:13 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:53828 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751391Ab0JTANM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Oct 2010 20:13:12 -0400
+From: Kevin Hilman <khilman@deeprootsystems.com>
+To: Tony Lindgren <tony@atomide.com>
+Cc: Felipe Contreras <felipe.contreras@gmail.com>,
+        Felipe Balbi <me@felipebalbi.com>, balbi@ti.com,
+        linux-usb@vger.kernel.org, linux-omap <linux-omap@vger.kernel.org>,
+        linux-main <linux-kernel@vger.kernel.org>, Greg KH <greg@kroah.com>
+Subject: Re: [PATCH v2 3/3] drivers: cleanup Kconfig stuff
+Organization: Deep Root Systems, LLC
+References: <1287482608-11320-1-git-send-email-felipe.contreras@gmail.com>
+	<1287482608-11320-4-git-send-email-felipe.contreras@gmail.com>
+	<20101019103234.GI31170@legolas.emea.dhcp.ti.com>
+	<AANLkTinXzMQXoyyu+anSCvSuE9w3FWAP5HswDS0kfpzE@mail.gmail.com>
+	<20101019111613.GJ31170@legolas.emea.dhcp.ti.com>
+	<AANLkTikkMphKa2DGGtWxy-3LpFX0kn92UEYPj==Euzok@mail.gmail.com>
+	<20101019115236.GL31170@legolas.emea.dhcp.ti.com>
+	<AANLkTim3NsgjC3Nh8VCCrx4cV1Y+kn38=30=en0KCft6@mail.gmail.com>
+	<6ea089ac75d4d15d88698468eacb7fe3@secure211.sgcpanel.com>
+	<AANLkTinYM5aavk9_jcTTymff=OY+Yyv8T6C+dmMih0p_@mail.gmail.com>
+	<20101019234414.GB30991@atomide.com>
+Date: Tue, 19 Oct 2010 17:13:07 -0700
+In-Reply-To: <20101019234414.GB30991@atomide.com> (Tony Lindgren's message of
+	"Tue, 19 Oct 2010 16:44:14 -0700")
+Message-ID: <87fww1u3fw.fsf@deeprootsystems.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1.50 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Tony Lindgren <tony@atomide.com> writes:
 
+> * Felipe Contreras <felipe.contreras@gmail.com> [101019 13:43]:
+>> On Tue, Oct 19, 2010 at 6:05 PM, Felipe Balbi <me@felipebalbi.com> wrote:
+>> > On Tue, 19 Oct 2010 17:32:07 +0300, Felipe Contreras
+>> > <felipe.contreras@gmail.com> wrote:
+>> >> There are two parts, one part is to fix the Kconfigs, and another was
+>> >> to come up with a way to replace the horrible defconfigs. Part two is
+>> >> mostly fixed thanks to 'make savedefconfig', since the defconfigs are
+>> >> not so horrible any more, but part one is a continued effort.
+>> >>
+>> >> For part two Linus had the idea to use Kconfigs instead of defconfigs,
+>> >> but they would mostly look very similar to the current ones generated
+>> >> by 'make savedefconfig'.
+>> >>
+>> >> I don't know what makes you think Linus didn't want part one to be
+>> >> done. He wanted the Kconfig.rx51 to be human readable, and you are
+>> >> proposing that TWL4030_USB should be manually added there... I don't
+>> >> think TWL4030_USB says anything to human beings.
+>> >
+>> > I don't read anywhere Linus saying we should clutter drivers/*/Kconfig
+>> > with defaults. I think you're inverting things, it's much better
+>> > to select TWL4030_USB when you enable MACH_OMAP_RX51 then default y
+>> > if MACH_OMAP_RX51.
+>> 
+>> So say, if you have 100 board defconfigs with OMAP3 chips and TWL4030,
+>> each and every one of them should select both USB_MUSB_HDRC and
+>> TWL4030_USB?
+>> 
+>> And you are saying if somebody is doing 'make menuconfig', that person
+>> should somehow know that _obviously_ he needs TWL4030_USB in order to
+>> use USB_MUSB_HDRC, or USB_G_NOKIA?
+>
+> Hey we're already dealing with stuff like this :)
+>
+> See ARCH_OMAP2PLUS_TYPICAL in arch/arm/mach-omap2/Kconfig:
+>
+> config ARCH_OMAP2PLUS_TYPICAL
+>         bool "Typical OMAP configuration"
+>         default y
+>         select AEABI
+>         select REGULATOR
+>         select PM
+>         select PM_RUNTIME
+>         select VFP
+>         select NEON if ARCH_OMAP3 || ARCH_OMAP4
+>         select SERIAL_OMAP
+>         select SERIAL_OMAP_CONSOLE
+>         select I2C
+>         select I2C_OMAP
+>         select MFD
+>         select MENELAUS if ARCH_OMAP2
+>         select TWL4030_CORE if ARCH_OMAP3 || ARCH_OMAP4
+>         select TWL4030_POWER if ARCH_OMAP3 || ARCH_OMAP4
+>         help
+>           Compile a kernel suitable for booting most boards
+>
+> This actually produces a booting omap2+ kernel with no .config
+> at all. I've tested it with:
+>
+> $ echo CONFIG_ARCH_OMAP=y > .config
+> $ yes "" | ARCH=arm make oldconfig
+>
+> So if you have something that's needed on almost every omap,
+> you can select it there.
 
-On Wed, 20 Oct 2010, Neil Brown wrote:
+One thing I don't like about this is that there is currently no way to
+'select' as a module.
 
-> On Tue, 19 Oct 2010 14:55:31 -0400 (EDT)
-> Mikulas Patocka <mpatocka@redhat.com> wrote:
-> 
-> > 
-> > 
-> > On Sun, 12 Sep 2010, Neil Brown wrote:
-> > 
-> > > On Wed, 8 Sep 2010 09:32:13 -0400 (EDT)
-> > > Mikulas Patocka <mpatocka@redhat.com> wrote:
-> > > 
-> > > > Hi
-> > > > 
-> > > > when reviewing some i_size problem, I searched the kernel for i_size usage 
-> > > > (the variable should really be written with i_size_write and read with 
-> > > > i_size_read).
-> > > > 
-> > > > Properly locked direct use of "i_size" inside memory management or 
-> > > > filesystems may not be a problem, but there are many problems in general 
-> > > > code outside mm.
-> > > > 
-> > > > The misuses are:
-> > > > SOUND/SOUND_FIRMWARE.C:l = filp->f_path.dentry->d_inode->i_size;
-> > > > KERNEL/RELAY.C:buf->dentry->d_inode->i_size = buf->early_bytes;
-> > > > KERNEL/RELAY.C:buf->dentry->d_inode->i_size += buf->chan->subbuf_size 
-> > > > -buf->padding[old_subbuf];
-> > > > DRIVERS/USB/CORE/INODE.C:dev->usbfs_dentry->d_inode->i_size = i_size;
-> > > > DRIVERS/MTD/DEVICES/BLOCK2MTD.C:dev->mtd.size = 
-> > > > dev->blkdev->bd_inode->i_size & PAGE_MASK;
-> > > > DRIVERS/MD/MD.C: many reads of i_size 
-> > > > DRIVERS/BLOCK/NBD.C: many writes to i_size without i_size_write
-> > > > DRIVERS/BLOCK/DRBD/DRBD_INT.H: return bdev ? bdev->bd_inode->i_size >> 9 : 0;
-> > > > DRIVERS/BLOCK/DRBD/DRBD_WRAPPERS.H: mdev->this_bdev->bd_inode->i_size = 
-> > > > (loff_t)size << 9;
-> > > > BLOCK/BLK-CORE.C:printk(KERN_INFO "%s: rw=%ld, want=%Lu, limit=%Lu\n",
-> > > >                 bdevname(bio->bi_bdev, b),
-> > > >                 bio->bi_rw,
-> > > >                 (unsigned long long)bio->bi_sector + bio_sectors(bio),
-> > > >                 (long long)(bio->bi_bdev->bd_inode->i_size >> 9));
-> > > > maxsector = bio->bi_bdev->bd_inode->i_size >> 9;
-> > > > BLOCK/COMPAT_IOCTL.C: size = bdev->bd_inode->i_size;
-> > > > return compat_put_u64(arg, bdev->bd_inode->i_size);
-> > > > BLOCK/IOCTL.C: if (start + len > (bdev->bd_inode->i_size >> 9))
-> > > > size = bdev->bd_inode->i_size;
-> > > > return put_u64(arg, bdev->bd_inode->i_size);
-> > > > 
-> > > > The problem with this code is that if you read i_size without i_size_read 
-> > > > and the size wraps around 32 bits, for example from 0xffffffff to 
-> > > > 0x100000000 , there is a possibility on 32-bit machines to read an invalid 
-> > > > value (either 0 or 0x1ffffffff). Similarly, if you write i_size without 
-> > > > i_size_write, the readers can see intermediate invalid values.
-> > > > 
-> > > > 
-> > > > The original problem that caused this investigation is the question, how a 
-> > > > block device driver can change the size of its device. Normal method (used 
-> > > > in a few drivers, including dm), consists of
-> > > > mutex_lock(&inode->i_mutex);
-> > > > i_size_write(inode, new_size);
-> > > > mutex_unlock(&inode->i_mutex);
-> > > 
-> > > Don't you just do
-> > > 
-> > >   set_capacity(gendisk, sectors);
-> > >   revalidate(gendisk);
-> > > 
-> > > ??
-> > > 
-> > > NeilBrown
-> > 
-> > revalidate_disk() has still the problem that it changes i_size without 
-> > holding i_mutex and other kernel parts (for example generic_file_llseek) 
-> > assume that if we hold the lock, i_size_can't be changed.
-> 
-> generic_file_llseek is not used for block devices.  They use block_llseek
-> which uses i_size_read, so I think it is safe.
-> 
-> > 
-> > The rules for accessing i_size must be specified and followed.
-> 
-> I agree.  However the rules can be different for different file systems and
-> file types.
-> A filesystem that used the generic_* function would need to only change
-> i_size under i_mutex as you say.
-> For block devices it appears that the rule is that it can only be changed
-> under bd_mutex.
-> For 'relay' (which you mentioned above), it seem the relevant mutex is the
-> global relay_channels_mutex, though I didn't read the code thoroughly to be
-> sure.
+In order to get to a minimal kernel, in theory, we don't need regulator,
+i2c, MFD, or twl4030* built in.  They should all be built as modules.
+Yes, there are some assumptions made today that some of these things are
+built in, and then are used from init code, but that is broken.
 
-You are right.
+If someone is looking for a good omap-kernel-janitors project, I would
+suggest getting to a *really* minimal OMAP2+ kernel with everything
+possible built as modules to be a very good project.
 
-> It still would probably be useful to review all the i_size related code to
-> ensure that it is safe, but you should not assume that everything follows the
-> same rules.  So first you need to work out the rule for a given subsystem,
-> then audit it against that rule (and maybe document that rule if it isn't
-> already documented!)
-> 
-> NeilBrown
-
-If you specify complex rules (i_size can be read directly under i_mutex 
-for files, but can't be read for block devices under i_mutex), it will 
-only complicate review and it may introduce bugs in the future --- 
-remember that Linux doesn't have a formal specification and the 
-specification is inferred from the code --- thus, you use 
-i_size_read(inode) somewhere and inode->i_size elsewhere, people will 
-infer a wrong specification --- as shown above on the few examples of 
-i_size abusers.
-
-I'd change i_size to __i_size (this will warn people not to touch it) and 
-convert all accesses to i_size_read and i_size_write.
-
-Mikulas
+Kevin
