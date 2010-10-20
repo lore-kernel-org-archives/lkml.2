@@ -1,70 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751439Ab0JTLHP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Oct 2010 07:07:15 -0400
-Received: from newsmtp5.atmel.com ([204.2.163.5]:44482 "EHLO
-	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750982Ab0JTLHO (ORCPT
+	id S1751469Ab0JTLN3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Oct 2010 07:13:29 -0400
+Received: from canuck.infradead.org ([134.117.69.58]:48162 "EHLO
+	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750811Ab0JTLN2 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Oct 2010 07:07:14 -0400
-Message-ID: <4CBECD42.7070905@atmel.com>
-Date: Wed, 20 Oct 2010 13:06:42 +0200
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; fr; rv:1.9.2.9) Gecko/20100915 Lightning/1.0b2 Thunderbird/3.1.4
-MIME-Version: 1.0
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-CC: Andrew Victor <linux@maxim.org.za>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        "'linux-arm-kernel@lists.infradead.org'" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>,
-        Peter Horton <phorton@bitbox.co.uk>, pgsellmann@portner-elektronik.at
-Subject: [GITT PULL] AT91: second pull for 2.6.37 merge window
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Wed, 20 Oct 2010 07:13:28 -0400
+Subject: Re: [PATCH] perf_events: fix time tracking in samples
+From: Peter Zijlstra <peterz@infradead.org>
+To: Stephane Eranian <eranian@google.com>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, paulus@samba.org,
+        davem@davemloft.net, fweisbec@gmail.com, perfmon2-devel@lists.sf.net,
+        eranian@gmail.com, robert.richter@amd.com
+In-Reply-To: <AANLkTimjabS1MEkheJ0z2keceH=0eEfC_NbyCjZ-Ltxz@mail.gmail.com>
+References: <4cbdcbea.8491d80a.25b0.ffffece8@mx.google.com>
+	 <1287507178.1998.3440.camel@laptop>
+	 <AANLkTik5_h1hVfX=1chezE6z25r4KV6GfzQZ+JvD8J_p@mail.gmail.com>
+	 <1287508187.1998.3445.camel@laptop>
+	 <AANLkTimjabS1MEkheJ0z2keceH=0eEfC_NbyCjZ-Ltxz@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Wed, 20 Oct 2010 13:13:16 +0200
+Message-ID: <1287573196.3488.2.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Russell,
+On Tue, 2010-10-19 at 21:03 +0200, Stephane Eranian wrote:
 
-Could you please pull the following:
+> >> Ok, I missed that. But I don't understand why you need the lock to
+> >> udpate the time. The lower-level clock is lockless if I recall. Can't you
+> >> use an atomic ops in update_context_time()?
+> >
+> > atomic ops would slow down those code paths, also, I don't think you can
+> > fully get the ordering between ->tstamp_$foo and ->total_time_$foo just
+> > right.
+> >
+> 
+> I don't get that. Could you give an example?
 
-  git://github.com/at91linux/linux-2.6-at91.git for_rmk_bis
+Take update_context_time(), it has:
 
-This contains second set of AT91 update for 2.6.37 
-merge window. All has been discussed on the list. 
-It is based on latest linus' git tree:
-commit 51ea8a88aae425915b458bfe295f1f10a3d52781
+now = perf_clock();
+ctx->time += now - ctx->timestamp;
+ctx->timestamp = now;
 
-Nicolas Ferre (3):
-      AT91: trivial: align comment of at91sam9g20_reset with one more tab
-      AT91: reset routine cleanup, remove not needed icache flush
-      AT91: reset: extend alternate reset procedure to several chips
+If you interleave two of those you get:
 
-Peter Gsellmann (1):
-      AT91: add board support for Pcontrol_G20
+ ctx->timestamp = T0;
 
-Peter Horton (1):
-      AT91: Fix AT91SAM9G20 reset as per the errata in the data sheet
 
- arch/arm/configs/pcontrol_g20_defconfig |  175 +++++++++++++++++
- arch/arm/mach-at91/Kconfig              |    6 +
- arch/arm/mach-at91/Makefile             |   13 +-
- arch/arm/mach-at91/at91sam9260.c        |    7 +-
- arch/arm/mach-at91/at91sam9261.c        |    7 +-
- arch/arm/mach-at91/at91sam9263.c        |    7 +-
- arch/arm/mach-at91/at91sam9_alt_reset.S |   48 +++++
- arch/arm/mach-at91/at91sam9rl.c         |    7 +-
- arch/arm/mach-at91/board-pcontrol-g20.c |  322 +++++++++++++++++++++++++++++++
- arch/arm/mach-at91/generic.h            |    3 +
- 10 files changed, 565 insertions(+), 30 deletions(-)
- create mode 100644 arch/arm/configs/pcontrol_g20_defconfig
- create mode 100644 arch/arm/mach-at91/at91sam9_alt_reset.S
- create mode 100644 arch/arm/mach-at91/board-pcontrol-g20.c
+ now = perf_clock(); /* T1 */
+ ctx->time += now - ctx->timestamp;
+					now = perf_clock(); /* T2 */
+					ctx->time += now - ctx->timestamp;
+					ctx->timestamp = now;
+ ctx->timestamp = now;
 
-Thanks a lot, best regards,
--- 
-Nicolas Ferre
 
+So at this point you would expect timestamp = T2 and time += T2-T0.
+
+Except that: time += T1 - T0 + T2 - T0 != T2 - T0 and
+             timestamp = T1
+
+You can of course write it as something like x86_perf_event_update(),
+but then there's trying to keep total_time_running and
+total_time_enabled in sync.
+
+
+> > Not sure, but barring 64bit atomics for all these, 32bit archs and NMI
+> > are going to be 'interesting'
+> >
+> 
+> Every sample needs to be correct, otherwise you run the risk of introducing
+> bias.
+> 
+> I think if the tradeoffs is correctness vs. speed, I'd choose correctness.
+
+Well, yes, but it sucks, esp. since its only relevant to
+PERF_SAMPLE_READ.
