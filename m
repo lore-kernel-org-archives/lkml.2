@@ -1,84 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753340Ab0JTOil (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Oct 2010 10:38:41 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:32775 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753134Ab0JTOij convert rfc822-to-8bit (ORCPT
+	id S1753381Ab0JTOiz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Oct 2010 10:38:55 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:40748 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753187Ab0JTOix (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Oct 2010 10:38:39 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=BMdM/x/yX1CSqS1O/uOHvQf75EouOcFPCF5M6l3ALFZMrHQuhTUmmjT8fy1MuFcSFz
-         upjwoCZxO9eJI1qyY0PTwvcgTDWbtauJYndElf5RPLuM6FxvXEVwSn3cytrFstAM17ls
-         2XTB7JhcSQ1ogCiMDLGhP6qUBZRWfTGkWJP7k=
+	Wed, 20 Oct 2010 10:38:53 -0400
 MIME-Version: 1.0
-In-Reply-To: <4CBEE186.8090701@nokia.com>
-References: <1287482608-11320-1-git-send-email-felipe.contreras@gmail.com>
-	<1287482608-11320-4-git-send-email-felipe.contreras@gmail.com>
-	<4CBD9FD5.506@nokia.com>
-	<AANLkTinRRyrXzqEu=u+CCYkmSNGm03SSo1tVG=5_wdpo@mail.gmail.com>
-	<4CBE9E69.6060803@nokia.com>
-	<AANLkTinOYDBMVZ3ibG3Md7jdOuOC6NkGWaugvHwT6uqF@mail.gmail.com>
-	<4CBEB312.7060400@nokia.com>
-	<AANLkTikom=eRFqCJmYE+k1zn5K2MR9s8HhNXtjOvUqvr@mail.gmail.com>
-	<4CBEE186.8090701@nokia.com>
-Date: Wed, 20 Oct 2010 17:38:37 +0300
-Message-ID: <AANLkTinULxyUg_vHjk9RsQm4Row7vRC9ApzYXt7ZMQJD@mail.gmail.com>
-Subject: Re: [PATCH v2 3/3] drivers: cleanup Kconfig stuff
-From: Felipe Contreras <felipe.contreras@gmail.com>
-To: Roger Quadros <roger.quadros@nokia.com>
-Cc: "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        linux-omap <linux-omap@vger.kernel.org>,
-        linux-main <linux-kernel@vger.kernel.org>, Greg KH <greg@kroah.com>,
-        Felipe Balbi <balbi@ti.com>, Tony Lindgren <tony@atomide.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+X-Originating-IP: [109.186.69.160]
+In-Reply-To: <87bp6pviwf.fsf@deeprootsystems.com>
+References: <1287387875-14168-1-git-send-email-ohad@wizery.com>
+ <1287387875-14168-4-git-send-email-ohad@wizery.com> <87r5fmxghm.fsf@deeprootsystems.com>
+ <AANLkTinZ2+ocJCfUpT15Ow3J9XBa-8XWnVC3gDDJ7s-v@mail.gmail.com> <87bp6pviwf.fsf@deeprootsystems.com>
+From: Ohad Ben-Cohen <ohad@wizery.com>
+Date: Wed, 20 Oct 2010 16:38:32 +0200
+Message-ID: <AANLkTikE1dCXW-7ScVoDgEK3sxai_TyFzstSG+zvNm2F@mail.gmail.com>
+Subject: Re: [PATCH 3/3] omap: add hwspinlock device
+To: Kevin Hilman <khilman@deeprootsystems.com>
+Cc: linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, akpm@linux-foundation.org,
+        Greg KH <greg@kroah.com>, Tony Lindgren <tony@atomide.com>,
+        Benoit Cousson <b-cousson@ti.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Hari Kanigeri <h-kanigeri2@ti.com>, Suman Anna <s-anna@ti.com>,
+        Simon Que <sque@ti.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 20, 2010 at 3:33 PM, Roger Quadros <roger.quadros@nokia.com> wrote:
-> On 10/20/2010 12:23 PM, ext Felipe Contreras wrote:
->> On Wed, Oct 20, 2010 at 12:14 PM, Roger Quadros<roger.quadros@nokia.com>
->>  wrote:
->>> USB_G_NOKIA just needs a USB gadget controller to work. The gadget
->>> controller used for the board should come from the board's Kconfig which
->>> will ideally be supplied by the board's vendor.
->>
->> Ok, but USB_OMAP is not supposed to work on the N900? (I tried and it
->> didn't)
+On Wed, Oct 20, 2010 at 1:53 AM, Kevin Hilman
+<khilman@deeprootsystems.com> wrote:
+>> And to allow early board code to reserve specific hwspinlock numbers
+>> for predefined use-cases, we probably want to be before arch_initcall.
 >
-> No it won't work. USB_OMAP was for older OMAP's. MUSB is on OMAP3 and later.
-> But MUSB is not limited to OMAP SoC.
+> There's no reason for board code to have to do this at initcall time.
 
-config USB_GADGET_OMAP
-  depends ARCH_OMAP
+If we want to have allow both allocations of predefined hwspinlocks
+with omap_hwspinlock_request_specific(int), and dynamic allocations
+(where we don't care about the specific instance of the hwspinlock we
+will get) with omap_hwspinlock_request(), we must ensure that the
+former _specific() API will never be called after the latter.
 
-So how about s/ARCH_OMAP/ARCH_OMAP1/
+If we will allow drivers to call omap_hwspinlock_request() before all
+callers of omap_hwspinlock_request_specific() completed, then things
+will break (because drivers might start getting hwspinlocks that are
+predefined for dedicated use cases on the system).
 
-Then USB_GADGET_MUSB_HDRC would be selected by default on OMAP2+.
+So if we want the _specific API to work, we can only allow early board
+code to use it in order to reserve those predefined hwspinlocks before
+drivers get the chance to call omap_hwspinlock_request().
 
->>> For example, can't USB_GADGET_MUSB_HDRC be selected in MACH_NOKIA_RX51 in
->>> arch/arm/mach-omap2/Kconfig? or is there a better place to put it?
->>
->> I don't think so, because people might not want USB at all. The ideal
->> case would be for USB_GADGET_MUSB_HDRC to be selected automatically
->> when the user selects USB and USB_GADGET, but that's not happening
->> because USB_GADGET_OMAP is selected first (all the dependencies are
->> met).
->>
-> Yes you are right. In think with the current setup (i.e. controller
-> selection at kconfig and limitation to one controller per config) we will
-> never be able to satisfy all users.
+The tempting alternative is not to provide the
+omap_hwspinlock_request_specific() API at all (which is something we
+discussed internally).
+
+Let's take the i2c-omap for example.
+
+It sounds like it must have a predefined hwspinlock, but what if:
+
+1. It will use omap_hwspinlock_request() to dynamically allocate a hwspinlock
+2. Obviously, the hwspinlock id number must be communicated to the M3
+BIOS, so the i2c-omap will publish that id using a small shared memory
+entry that will be allocated for this sole purpose
+3. we will make sure that 1+2 completes before the remote processor is
+taken out of reset
+
+This does not require any smart IPC and it will allow us to get rid of
+the omap_hwspinlock_request_specific() API and its early-callers
+requirement.
+
+All we will be left to take care of is the order of the ->probe()
+execution (assuming we want both the i2c and the hwspinlock drivers to
+be device_initcall)
+
 >
-> We might need to move to some kind of gadget controller framework and
-> runtime controller selection to solve this problem.
+> This kind of thing needs to be done by platform_data function pointers,
+> as is done for every other driver that needs platform-specific driver
+> customization.
 
-Definitely, for multi-omap. But for OMAP1/OMAP2+ setting ARCH_OMAP1 as
-I just suggested would do the trick.
+Why would we need platform-specific function pointers here ? I'm not
+sure I'm following this one.
 
--- 
-Felipe Contreras
+Thanks,
+Ohad.
+
+
+>
+> Kevin
+>
