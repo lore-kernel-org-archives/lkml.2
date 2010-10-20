@@ -1,73 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753355Ab0JTOrO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Oct 2010 10:47:14 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:22427 "EHLO mx1.redhat.com"
+	id S1753418Ab0JTOrV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Oct 2010 10:47:21 -0400
+Received: from imr3.ericy.com ([198.24.6.13]:33048 "EHLO imr3.ericy.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752906Ab0JTOrN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Oct 2010 10:47:13 -0400
-Subject: Re: [PATCH 1/3] IMA: move read/write counters into struct inode
-From: Eric Paris <eparis@redhat.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        hch@infradead.org, zohar@us.ibm.com, warthog9@kernel.org,
-        david@fromorbit.com, jmorris@namei.org, kyle@mcmartin.ca,
-        hpa@zytor.com, akpm@linux-foundation.org
-In-Reply-To: <20101020143845.GB22271@elte.hu>
-References: <20101019011650.25346.99614.stgit@paris.rdu.redhat.com>
-	 <AANLkTimGdjPyLXuknDNa7WNthDT9+2FdOuPdxwjRiMHD@mail.gmail.com>
-	 <1287506215.2530.187.camel@localhost.localdomain>
-	 <20101019165530.GT19804@ZenIV.linux.org.uk>
-	 <AANLkTimL=eChoCQHGoiouE5s6dGG=n9ZAQGhW-RW+gDj@mail.gmail.com>
-	 <1287528546.2530.277.camel@localhost.localdomain>
-	 <20101020143845.GB22271@elte.hu>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 20 Oct 2010 10:46:36 -0400
-Message-ID: <1287585996.2530.294.camel@localhost.localdomain>
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1753122Ab0JTOrR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Oct 2010 10:47:17 -0400
+Date: Wed, 20 Oct 2010 07:46:08 -0700
+From: Guenter Roeck <guenter.roeck@ericsson.com>
+To: Jean Delvare <khali@linux-fr.org>
+CC: Joe Perches <joe@perches.com>, Hans de Goede <j.w.r.degoede@hhs.nl>,
+        Alistair John Strachan <alistair@devzero.co.uk>,
+        Henrik Rydberg <rydberg@euromail.se>,
+        "Mark M. Hoffman" <mhoffman@lightlink.com>,
+        Luca Tettamanti <kronos.it@gmail.com>,
+        Fenghua Yu <fenghua.yu@intel.com>, Juerg Haefliger <juergh@gmail.com>,
+        Eric Piel <eric.piel@tremplin-utc.net>,
+        Jim Cromie <jim.cromie@gmail.com>,
+        Roger Lucas <vt8231@hiddenengine.co.uk>,
+        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] drivers/hwmon: Use pr_fmt and pr_<level>
+Message-ID: <20101020144608.GA21937@ericsson.com>
+References: <1287530020.10409.594.camel@Joe-Laptop>
+ <20101020032938.GA20095@ericsson.com>
+ <1287545658.10409.606.camel@Joe-Laptop>
+ <20101020035346.GA20178@ericsson.com>
+ <1287547662.10409.618.camel@Joe-Laptop>
+ <20101020093438.07b129c8@endymion.delvare>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20101020093438.07b129c8@endymion.delvare>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-10-20 at 16:38 +0200, Ingo Molnar wrote:
-> * Eric Paris <eparis@redhat.com> wrote:
+On Wed, Oct 20, 2010 at 03:34:38AM -0400, Jean Delvare wrote:
+[ ... ]
 > 
-> > Executive summary of the day's work:
-> > Yesterday morning: 944 bytes per inode in core
-> > Yesterday night: 24 bytes per inode in core
-> > Tonight: 4 bytes per inode in core.
-> > 
-> > That's a x236 time reduction in memory usage.  No I didn't even start looking at a 
-> > freezer.  Which could bring that 4 down to 0, but would add a scalability penalty 
-> > on all inodes when IMA was enabled.
+> * This isn't the kind of fixes we want to cherry-pick from. We're not
+>   fixing any bug here, are we? I certainly hope that a real bug fix
+>   wouldn't be hidden within a larger patch, but would have the separate
+>   patch it deserves. At which point we no longer care if the rest is
+>   one large patch or one patch per driver.
 > 
-> Why not use inode->i_security intelligently? That already exists so that way it's 0 
-> bytes.
+Actually, I do this kind of thing all the time when backporting.
+It is easier to apply all patches applied to a driver than skipping
+the cleanup patches, to avoid conflicts when cherry-picking functional
+patches. The tendency for large cleanup patches affecting several drivers
+and modules created trouble for me several times already.
+
+> * I don't see us reverting that kind of patch either. If we don't like
+>   the changes for whatever reason, we don't take them in the first
+>   place. Once in, we're not going to change our minds.
 > 
-> Thanks,
+> * 32 patches for a simple cleanup is actually a lot more work for me
+>   than a single large patch. It's cheaper for me to do minor
+>   adjustments to a large patch than to apply 32 patches individually.
+> 
+Good point. I am using git all the time, so it isn't that much of a
+problem for me. Our mailer problems (the tabs replacing stuff) are
+much more annoying.
 
-It still wouldn't be 0 bytes since there would be a 1-1 mapping from
-inode to i_security structs.  It would just be hiding the memory
-somewhere else so it's harder to spot.  And that's exactly how we got
-into this situation, instead of just doing thing in the inode we hid it
-away in a radix tree node and ima_iint_cache.  In any case it would
-require a secondary structure
+> * That being said, now that the hwmon subsystem maintainer is a shared
+>   duty between Guenter and myself, there's no single place where we can
+>   keep a patch touching many drivers and ensure it doesn't conflict
+>   with the changes in the other tree. But I would think   this is
+>   something for Gunter and myself to sort out, not patch contributors.
+> 
+> I currently have pending patches to the following hwmon drivers in my
+> tree: adt7475, ams, asc7621, hdaps, it87, k8temp, lm75, lm85, lm90,
+> pcf8591, s3c-hwmon, w83795. Two of these are affected by Joe's
+> patch(es). Guenter, what about you?
+> 
+coretemp, pkgtemp, via-cputemp, ltc4261 (new), lis3, hp_accel
 
-struct generic_lsm_inode_structure
-{
-	IMA Fields
-	void *lsm_inode_structure;
-}
-
-Which means yet another pointer to the real per LSM inode struct.  So it
-would actually likely cost memory....
-
-The real reason I don't pursue this route is because of the litany of
-different ways this pointer is used in different LSMs (or not used at
-all.)  And we all know that LSM authors aren't known for seeing the
-world the same way as each other.  As a maintainer of one of those LSMs
-even I'm scared to try pushing that forward....
-
+Guenter
