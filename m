@@ -1,113 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752738Ab0JTKCu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Oct 2010 06:02:50 -0400
-Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:33764 "EHLO
-	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752698Ab0JTKCs (ORCPT
+	id S1752765Ab0JTKDf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Oct 2010 06:03:35 -0400
+Received: from am1ehsobe003.messaging.microsoft.com ([213.199.154.206]:23395
+	"EHLO AM1EHSOBE003.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752566Ab0JTKDc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Oct 2010 06:02:48 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvsEALpavkx5LdoF/2dsb2JhbAChWHK+I4VKBA
-Date: Wed, 20 Oct 2010 21:02:42 +1100
-From: Nick Piggin <npiggin@kernel.dk>
-To: Dave Chinner <david@fromorbit.com>
-Cc: Nick Piggin <npiggin@kernel.dk>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Subject: Re: [patch 31/35] fs: icache per-zone inode LRU
-Message-ID: <20101020100242.GA5853@amd>
-References: <20101019034216.319085068@kernel.dk>
- <20101019034658.744504135@kernel.dk>
- <20101019123852.GA12506@dastard>
- <20101020023556.GC3740@amd>
- <20101020031256.GA4095@amd>
- <20101020094302.GE12506@dastard>
+	Wed, 20 Oct 2010 06:03:32 -0400
+X-SpamScore: -17
+X-BigFish: VPS-17(zzbb2cK936eK1432N98dNzz1202hzz8275bhz32i2a8h43h61h)
+X-Spam-TCS-SCL: 0:0
+X-FB-SS: 0,
+X-WSS-ID: 0LAL2LF-01-0TV-02
+X-M-MSG: 
+Date: Wed, 20 Oct 2010 12:03:16 +0200
+From: Robert Richter <robert.richter@amd.com>
+To: Huang Ying <ying.huang@intel.com>
+CC: Don Zickus <dzickus@redhat.com>, "mingo@elte.hu" <mingo@elte.hu>,
+        "andi@firstfloor.org" <andi@firstfloor.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "peterz@infradead.org" <peterz@infradead.org>
+Subject: Re: [PATCH 4/5] x86, NMI: Allow NMI reason io port (0x61) to be
+ processed on any CPU
+Message-ID: <20101020100316.GX5969@erda.amd.com>
+References: <1287195738-3136-1-git-send-email-dzickus@redhat.com>
+ <1287195738-3136-5-git-send-email-dzickus@redhat.com>
+ <20101019150701.GR5969@erda.amd.com>
+ <20101019162507.GU5969@erda.amd.com>
+ <20101019183720.GN4140@redhat.com>
+ <1287534192.3026.9.camel@yhuang-dev>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <20101020094302.GE12506@dastard>
+In-Reply-To: <1287534192.3026.9.camel@yhuang-dev>
 User-Agent: Mutt/1.5.20 (2009-06-14)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 20, 2010 at 08:43:02PM +1100, Dave Chinner wrote:
-> > On Wed, Oct 20, 2010 at 01:35:56PM +1100, Nick Piggin wrote:
+On 19.10.10 20:23:12, Huang Ying wrote:
+> On Wed, 2010-10-20 at 02:37 +0800, Don Zickus wrote:
+> > On Tue, Oct 19, 2010 at 06:25:07PM +0200, Robert Richter wrote:
+> > > On 19.10.10 17:07:01, Robert Richter wrote:
+> > > > On 15.10.10 22:22:17, Don Zickus wrote:
+> > > > > From: Huang Ying <ying.huang@intel.com>
+> > > > > 
+> > > > > In original NMI handler, NMI reason io port (0x61) is only processed
+> > > > > on BSP. This makes it impossible to hot-remove BSP. To solve the
+> > > > > issue, a raw spinlock is used to make the port can be processed on any
+> > > > > CPU.
+> > > > > 
+> > > > > Signed-off-by: Huang Ying <ying.huang@intel.com>
+> > > > > Signed-off-by: Don Zickus <dzickus@redhat.com>
+> > > > > ---
+> > > > >  arch/x86/kernel/traps.c |   45 +++++++++++++++++++++++++--------------------
+> > > > >  1 files changed, 25 insertions(+), 20 deletions(-)
 > > > 
-> > > It's very fundamental. We allocate memory from, and have to reclaim
-> > > memory from -- zones. Memory reclaim is driven based on how the VM
-> > > wants to reclaim memory: nothing you can do to avoid some linkage
-> > > between the two.
-> 
-> The allocation API exposes per-node allocation, not zones. The zones
-> are the internal implementation of the API, not what people use
-> directly for allocation...
-
-Of course it exposes zones (with GFP flags). In fact they were exposed
-before the zone concept was extended to NUMA.
-
-
-> > > > As an example: XFS inodes to be reclaimed are simply tagged in a
-> > > > radix tree so the shrinker can reclaim inodes in optimal IO order
-> > > > rather strict LRU order. It simply does not match a zone-based
-> ....
-> > > But anyway, that's kind of an "aside": inode caches are reclaimed
-> > > in LRU, IO-suboptimal order today anyway. Per-zone LRU doesn't
-> > > change that in the slightest.
-> 
-> I suspect you didn't read what I wrote, so I'll repeat it. XFS has
-> reclaimed inodes in optimal IO order for several releases and so
-> per-zone LRU would change that drastically.
-
-You were talking about XFS's own inode reclaim code? My patches
-of course don't change that. I would like to see them usable by
-XFS as well of course, but I'm not forcing anything to be
-shoehorned in where it doesn't fit properly yet.
-
-The Linux inode reclaimer is pretty well "random" from POV of
-disk order, as you know.
-
-I don't have the complete answer about how to write back required
-inode information in IO optimal order, and at the same time make
-reclaim optimal reclaiming choices.
-
-It could be that a 2 stage reclaim process is enough (have the
-Linux inode reclaim make the thing and make it eligible for IO
-and real reclaiming, then have an inode writeout pass that does
-IO optimal reclaiming from those).
-
-That is really quite speculative and out of scope of this patch set.
-But the point is that this patch set doesn't prohibit anything like
-that happening, does not change XFS's reclaim currently.
-
-
-> > > > Other subsystems need the same
-> > > > large-machine scaling treatment, and there's no way we should be
-> > > > tying them all into the struct zone. It needs further abstraction.
+> > > > > @@ -400,28 +405,28 @@ static notrace __kprobes void default_do_nmi(struct pt_regs *regs)
+> > > > >  		return;
+> > > > >  
+> > > > >  	/* Non-CPU-specific NMI: NMI sources can be processed on any CPU */
+> > > > > -	cpu = smp_processor_id();
+> > > > > -	/* Only the BSP gets external NMIs from the system. */
+> > > > > -	if (!cpu) {
+> > > > > -		reason = get_nmi_reason();
+> > > > > -		if (reason & NMI_REASON_MASK) {
+> > > > > -			if (notify_die(DIE_NMI, "nmi", regs, reason, 2, SIGINT)
+> > > > > -			    == NOTIFY_STOP)
+> > > > > -				return;
+> > > > > -			if (reason & NMI_REASON_SERR)
+> > > > > -				pci_serr_error(reason, regs);
+> > > > > -			else if (reason & NMI_REASON_IOCHK)
+> > > > > -				io_check_error(reason, regs);
+> > > > > +	raw_spin_lock(&nmi_reason_lock);
+> > > > 
+> > > > What about using raw_spin_trylock() instead? We don't have to wait
+> > > > here since we are already processing it by another cpu.
 > > > 
-> > > An abstraction? Other than the zone? What do you suggest? Invent
-> > > something that the VM has no concept of and try to use that?
+> > > This would avoid a global lock and also deadlocking in case of a
+> > > potential #gp in the nmi handler.
+> > 
+> > I would feel more comfortable with it too.  I can't find a reason where
+> > trylock would do harm.
 > 
-> I think you answered that question yourself a moment ago:
+> One possible issue can be as follow:
 > 
-> > > The structure is not frequent -- a couple per NUMA node.
+> - PCI SERR NMI raised on CPU 0
+> - IOCHK NMI raised on CPU 1
 > 
-> Sounds to me like a per-node LRU/shrinker arrangement is an
-> abstraction that the VM could work with.
+> If we use try lock, we may get unknown NMI on one CPU. Do you guys think
+> so?
 
-The zone really is the right place. If you do it per node, then
-you can still have shortages in one node in a zone but not
-another, causing the same excessive reclaim problem.
+This could be a valid point. On the other side the former
+implementation to let only handle cpu #0 i/o interrupts didn't trigger
+unknown nmis, so try_lock wouldn't change much compared to this. To be
+sure we might do a NOTIFY_STOP in the unknown path if we don't get the
+lock.
 
+-Robert
 
-> Indeed, make it run only
-> from the *per-node kswapd* instead of from direct reclaim, and we'd
-> also solve the unbound reclaim parallelism problem at the same
-> time...
-
-That's also out of scope, but it is among things being
-considered, as far as I know (along with capping number of
-threads in reclaim etc). But doing zone LRUs doesn't change
-this either -- kswapd pagecache reclaim also works per node,
-by simply processing all the zones that belong to the node.
+-- 
+Advanced Micro Devices, Inc.
+Operating System Research Center
 
