@@ -1,82 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754734Ab0JTSLH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Oct 2010 14:11:07 -0400
-Received: from out1.smtp.messagingengine.com ([66.111.4.25]:34019 "EHLO
-	out1.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753913Ab0JTSLF (ORCPT
+	id S1754846Ab0JTSLa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Oct 2010 14:11:30 -0400
+Received: from imr4.ericy.com ([198.24.6.8]:46424 "EHLO imr4.ericy.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751681Ab0JTSL3 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Oct 2010 14:11:05 -0400
-Message-Id: <1287598263.13748.1401083639@webmail.messagingengine.com>
-X-Sasl-Enc: Fbpic3mAoooU6dvYi3R1dai6pip7kEtQzmo75EMbLPmW 1287598263
-From: "Alexander van Heukelum" <heukelum@fastmail.fm>
-To: "Jan Beulich" <JBeulich@novell.com>
-Cc: "Ingo Molnar" <mingo@elte.hu>, "Thomas Gleixner" <tglx@linutronix.de>,
-        "Andrew Morton" <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>
+	Wed, 20 Oct 2010 14:11:29 -0400
+From: Jon Maloy <jon.maloy@ericsson.com>
+To: Neil Horman <nhorman@tuxdriver.com>
+CC: Leandro Lucarella <luca@llucax.com.ar>, David Miller <davem@davemloft.net>,
+        "paul.gortmaker@windriver.com" <paul.gortmaker@windriver.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "tipc-discussion@lists.sourceforge.net" 
+	<tipc-discussion@lists.sourceforge.net>
+Date: Wed, 20 Oct 2010 14:10:51 -0400
+Subject: RE: Linux 2.6.35/TIPC 2.0 ABI breaking changes
+Thread-Topic: Linux 2.6.35/TIPC 2.0 ABI breaking changes
+Thread-Index: ActwgVOFm80Lj0fuSKSc23NQoZjomgAABITw
+Message-ID: <0434463FDA60A94FA978ACA44617682DEE846681B9@EUSAACMS0702.eamcs.ericsson.se>
+References: <4CBCD429.8090306@windriver.com>
+ <20101018234547.GA5703@hmsreliant.think-freely.org>
+ <20101019021657.GZ8781@llucax.com.ar>
+ <20101019.011649.71113115.davem@davemloft.net>
+ <20101019110452.GA14410@hmsreliant.think-freely.org>
+ <20101019131936.GB8781@llucax.com.ar>
+ <20101019201841.GC14410@hmsreliant.think-freely.org>
+ <20101020172018.GN8781@llucax.com.ar>
+ <0434463FDA60A94FA978ACA44617682DEE84668199@EUSAACMS0702.eamcs.ericsson.se>
+ <20101020180454.GC14407@hmsreliant.think-freely.org>
+In-Reply-To: <20101020180454.GC14407@hmsreliant.think-freely.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset="us-ascii"
-X-Mailer: MessagingEngine.com Webmail Interface
-In-Reply-To: <4CBEABAE020000780001E227@vpn.id2.novell.com>
-References: <4CBDBEBA020000780001E05A@vpn.id2.novell.com><1287522205.14378.1400906413@webmail.messagingengine.com>
- <4CBEABAE020000780001E227@vpn.id2.novell.com>
-Subject: Re: [PATCH] x86: fix CFI macro invocations to deal with  shortcomings
- in gas
-Date: Wed, 20 Oct 2010 20:11:03 +0200
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Jan and all,
-
-On Wed, 20 Oct 2010 07:43 +0100, "Jan Beulich" <JBeulich@novell.com> wrote:
-> >>> On 19.10.10 at 23:03, "Alexander van Heukelum" <heukelum@fastmail.fm> wrote:
-> >> -       pushl_cfi (TI_sysenter_return-THREAD_SIZE+8+4*4)(%esp)
-> >> +       pushl_cfi TI_sysenter_return-THREAD_SIZE_asm+8+4*4(%esp)
+<...>
 > > 
-> > This expands to:
-> >     pushl_cfi (60)-(8192)+8+4*4(%esp)
+> > Remember, permitting both is a superset of the current one 
+> (NBO only) 
+> > so it is fully backwards compatible. We break absolutly nothing by 
+> > permitting this.
 > > 
-> > I'm sorry to say that Ubuntu 6.06's gas (2.16.91 20060118) still chokes
-> > with "too many positional arguments" on this line.
-> 
-> It escapes me where it would split the obviously single argument, and
-> I know I checked all official versions from 2.15 onwards. Could you
-> try whether that specific gas would be okay with
-> 
->      pushl_cfi ((60)-(8192)+8+4*4)(%esp)
+> Thats effectively reverting both our patches though, isn't it 
+> (not that I'm disagreeing with it, just looking for 
+> clarification).  If we revert my patch and reintroduce the 
+> htohl mechanism which tracks endianess, we might as well 
+> revert the TIPC_SUB_SERVICE flag as well, yeah?
 
-Yes, this works! Adding the parentheses to the patch makes things go
-on Ubuntu 6.06 (i386). I hope we can get rid of the old gas, but feel free
-to add an Acked-by: Alexander van Heukelum <heukelum@fastmail.fm>.
+Absolutely. I think it was a mistake to change that value.
+But I don't think we need to reintroduce the htohl(). That
+was just one way of doing it. If I understood your suggestion
+from yesterday correctly you converted the whole message within
+one if()clause, without any htohl(). I have have no problem with 
+that approach.
 
-> I had intentionally removed the surrounding parentheses since
-> those are considered by newer gas when determining arguments,
-> and thus I could expose eventual problems with older gas even
-> on newer versions.
+///jon
+
 > 
-> Further, could you experiment (or ideally debug) where is splits
-> the argument. Something like
+> Neil
 > 
-> .macro m arg1 arg2=0
-> 	.long	\arg1, \arg2
-> .endm
-> 
-> .data
-> _start:
-> 	m	(60)-(8192)+8+4*4
-
-Contents of section .data:
- 0000 3c000000 18e0ffff
-
-So it splits at the minus sign, even though there is no space.
-
-Greetings,
-    Alexander
-
-> might be handy - assembling with -alm=<filename> should allow
-> you to inspect where the argument got split.
-> 
-> Thanks, Jan
+> > 
+> > > 
+> > > [1] http://tipc.sourceforge.net/doc/draft-spec-tipc-06.html
+> > > [2] 
+> http://tipc.sourceforge.net/doc/draft-spec-tipc-06.html#anchor92
+> > > 
+> > > -- 
+> > > Leandro Lucarella (AKA luca)                     
+> http://llucax.com.ar/
+> > > 
+> --------------------------------------------------------------------
+> > > -- GPG Key: 5F5A8D05 (F8CD F9A7 BF00 5431 4145  104C 949E 
+> BFB6 5F5A 
+> > > 8D05)
+> > > 
+> --------------------------------------------------------------------
+> > > -- CARANCHO OBNUBILADO APARECE EN PARQUE CHACABUCO!
+> > > 	-- Crónica TV
+> > > --
+> > > To unsubscribe from this list: send the line "unsubscribe 
+> netdev" in 
+> > > the body of a message to majordomo@vger.kernel.org More majordomo 
+> > > info at  http://vger.kernel.org/majordomo-info.html
+> > > --
+> > To unsubscribe from this list: send the line "unsubscribe 
+> netdev" in 
+> > the body of a message to majordomo@vger.kernel.org More 
+> majordomo info 
+> > at  http://vger.kernel.org/majordomo-info.html
+> > 
 > 
