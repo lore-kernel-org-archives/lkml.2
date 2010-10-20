@@ -1,52 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755733Ab0JTClW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Oct 2010 22:41:22 -0400
-Received: from ipmail06.adl2.internode.on.net ([150.101.137.129]:17021 "EHLO
-	ipmail06.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752746Ab0JTClV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Oct 2010 22:41:21 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvsEALvxvUx5LdoF/2dsb2JhbAChVXLCfoVKBA
-Date: Wed, 20 Oct 2010 13:41:18 +1100
-From: Nick Piggin <npiggin@kernel.dk>
-To: Miklos Szeredi <miklos@szeredi.hu>
-Cc: npiggin@kernel.dk, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org
-Subject: Re: [patch 27/35] fs: icache split IO and LRU lists
-Message-ID: <20101020024118.GF3740@amd>
-References: <20101019034216.319085068@kernel.dk>
- <20101019034658.324078575@kernel.dk>
- <E1P8EnH-0006ov-M9@pomaz-ex.szeredi.hu>
+	id S1756686Ab0JTClc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Oct 2010 22:41:32 -0400
+Received: from relay2.sgi.com ([192.48.179.30]:42980 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1756303Ab0JTClb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Oct 2010 22:41:31 -0400
+Date: Tue, 19 Oct 2010 21:41:28 -0500
+From: Robin Holt <holt@sgi.com>
+To: "J.H." <warthog9@kernel.org>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: More issues found on kernel.org
+Message-ID: <20101020024128.GD14068@sgi.com>
+References: <4CBC9CC7.7050204@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <E1P8EnH-0006ov-M9@pomaz-ex.szeredi.hu>
+In-Reply-To: <4CBC9CC7.7050204@kernel.org>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 19, 2010 at 06:12:07PM +0200, Miklos Szeredi wrote:
-> On Tue, 19 Oct 2010, npiggin@kernel.d wrote:
-> > @@ -422,7 +422,11 @@
-> >  			/*
-> >  			 * The inode is clean
-> >  			 */
-> > -			list_move(&inode->i_list, &inode_unused);
-> > +			list_del_init(&inode->i_io);
-> > +			if (list_empty(&inode->i_lru)) {
-> > +				list_add(&inode->i_lru, &inode_unused);
-> > +				inodes_stat.nr_unused++;
+On Mon, Oct 18, 2010 at 12:15:19PM -0700, J.H. wrote:
+> Not that the current discussion on IMA, and the recent problems found
+> with XFS were enough, I've started seeing, rather regularly, what I've
+> reported in bugzilla
 > 
-> It's not obvious where this came from.  How come nr_unused was
-> correctly accounted with the previous, list_move() version?
+> https://bugzilla.kernel.org/show_bug.cgi?id=20702
+> 
+> It looks like a double free is happening somewhere, and the issue
+> *SEEMS* to be limited to the dynamic web boxes (bugzilla, wiki's, etc)
+> and those are the only boxes I have running drbd and ocfs2.
+> 
+> Once the initial problem hits, the box more or less grinds to a halt and
+> will eventually kernel panic and reboot.  Explicitly trying to reboot
+> the box results in a solidly hung box requiring a hard reset.
+> 
+> Anyone have any thoughts, any extra debugging if/when this should happen
+> again that would be useful?
 
-Yes... inode is considered unused if it has 0 refcount, even if
-it is dirty. This hunk must have crept in from somewhere else,
-good catch.
+If you are building your own kernel, I would turn on slab debugging.
+Nearly all the double frees I have come across in the last years have
+been tracked down using slab debug which traps double frees.  It does
+not always point at the culprit, but at least narrows the field.
 
-Thanks,
-Nick
-
+Robin
