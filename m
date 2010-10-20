@@ -1,118 +1,288 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752836Ab0JTANN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Oct 2010 20:13:13 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:53828 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751391Ab0JTANM (ORCPT
+	id S1753095Ab0JTARS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Oct 2010 20:17:18 -0400
+Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:33553 "EHLO
+	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751748Ab0JTARR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Oct 2010 20:13:12 -0400
-From: Kevin Hilman <khilman@deeprootsystems.com>
-To: Tony Lindgren <tony@atomide.com>
-Cc: Felipe Contreras <felipe.contreras@gmail.com>,
-        Felipe Balbi <me@felipebalbi.com>, balbi@ti.com,
-        linux-usb@vger.kernel.org, linux-omap <linux-omap@vger.kernel.org>,
-        linux-main <linux-kernel@vger.kernel.org>, Greg KH <greg@kroah.com>
-Subject: Re: [PATCH v2 3/3] drivers: cleanup Kconfig stuff
-Organization: Deep Root Systems, LLC
-References: <1287482608-11320-1-git-send-email-felipe.contreras@gmail.com>
-	<1287482608-11320-4-git-send-email-felipe.contreras@gmail.com>
-	<20101019103234.GI31170@legolas.emea.dhcp.ti.com>
-	<AANLkTinXzMQXoyyu+anSCvSuE9w3FWAP5HswDS0kfpzE@mail.gmail.com>
-	<20101019111613.GJ31170@legolas.emea.dhcp.ti.com>
-	<AANLkTikkMphKa2DGGtWxy-3LpFX0kn92UEYPj==Euzok@mail.gmail.com>
-	<20101019115236.GL31170@legolas.emea.dhcp.ti.com>
-	<AANLkTim3NsgjC3Nh8VCCrx4cV1Y+kn38=30=en0KCft6@mail.gmail.com>
-	<6ea089ac75d4d15d88698468eacb7fe3@secure211.sgcpanel.com>
-	<AANLkTinYM5aavk9_jcTTymff=OY+Yyv8T6C+dmMih0p_@mail.gmail.com>
-	<20101019234414.GB30991@atomide.com>
-Date: Tue, 19 Oct 2010 17:13:07 -0700
-In-Reply-To: <20101019234414.GB30991@atomide.com> (Tony Lindgren's message of
-	"Tue, 19 Oct 2010 16:44:14 -0700")
-Message-ID: <87fww1u3fw.fsf@deeprootsystems.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1.50 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	Tue, 19 Oct 2010 20:17:17 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Wed, 20 Oct 2010 09:11:09 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Greg Thelen <gthelen@google.com>
+Cc: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        containers@lists.osdl.org, Andrea Righi <arighi@develer.com>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Ciju Rajan K <ciju@linux.vnet.ibm.com>,
+        David Rientjes <rientjes@google.com>
+Subject: Re: [PATCH v3 02/11] memcg: document cgroup dirty memory interfaces
+Message-Id: <20101020091109.ccd7b39a.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <xr93lj5t5245.fsf@ninji.mtv.corp.google.com>
+References: <1287448784-25684-1-git-send-email-gthelen@google.com>
+	<1287448784-25684-3-git-send-email-gthelen@google.com>
+	<20101019172744.45e0a8dc.nishimura@mxp.nes.nec.co.jp>
+	<xr93lj5t5245.fsf@ninji.mtv.corp.google.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tony Lindgren <tony@atomide.com> writes:
+On Tue, 19 Oct 2010 14:00:58 -0700
+Greg Thelen <gthelen@google.com> wrote:
 
-> * Felipe Contreras <felipe.contreras@gmail.com> [101019 13:43]:
->> On Tue, Oct 19, 2010 at 6:05 PM, Felipe Balbi <me@felipebalbi.com> wrote:
->> > On Tue, 19 Oct 2010 17:32:07 +0300, Felipe Contreras
->> > <felipe.contreras@gmail.com> wrote:
->> >> There are two parts, one part is to fix the Kconfigs, and another was
->> >> to come up with a way to replace the horrible defconfigs. Part two is
->> >> mostly fixed thanks to 'make savedefconfig', since the defconfigs are
->> >> not so horrible any more, but part one is a continued effort.
->> >>
->> >> For part two Linus had the idea to use Kconfigs instead of defconfigs,
->> >> but they would mostly look very similar to the current ones generated
->> >> by 'make savedefconfig'.
->> >>
->> >> I don't know what makes you think Linus didn't want part one to be
->> >> done. He wanted the Kconfig.rx51 to be human readable, and you are
->> >> proposing that TWL4030_USB should be manually added there... I don't
->> >> think TWL4030_USB says anything to human beings.
->> >
->> > I don't read anywhere Linus saying we should clutter drivers/*/Kconfig
->> > with defaults. I think you're inverting things, it's much better
->> > to select TWL4030_USB when you enable MACH_OMAP_RX51 then default y
->> > if MACH_OMAP_RX51.
->> 
->> So say, if you have 100 board defconfigs with OMAP3 chips and TWL4030,
->> each and every one of them should select both USB_MUSB_HDRC and
->> TWL4030_USB?
->> 
->> And you are saying if somebody is doing 'make menuconfig', that person
->> should somehow know that _obviously_ he needs TWL4030_USB in order to
->> use USB_MUSB_HDRC, or USB_G_NOKIA?
->
-> Hey we're already dealing with stuff like this :)
->
-> See ARCH_OMAP2PLUS_TYPICAL in arch/arm/mach-omap2/Kconfig:
->
-> config ARCH_OMAP2PLUS_TYPICAL
->         bool "Typical OMAP configuration"
->         default y
->         select AEABI
->         select REGULATOR
->         select PM
->         select PM_RUNTIME
->         select VFP
->         select NEON if ARCH_OMAP3 || ARCH_OMAP4
->         select SERIAL_OMAP
->         select SERIAL_OMAP_CONSOLE
->         select I2C
->         select I2C_OMAP
->         select MFD
->         select MENELAUS if ARCH_OMAP2
->         select TWL4030_CORE if ARCH_OMAP3 || ARCH_OMAP4
->         select TWL4030_POWER if ARCH_OMAP3 || ARCH_OMAP4
->         help
->           Compile a kernel suitable for booting most boards
->
-> This actually produces a booting omap2+ kernel with no .config
-> at all. I've tested it with:
->
-> $ echo CONFIG_ARCH_OMAP=y > .config
-> $ yes "" | ARCH=arm make oldconfig
->
-> So if you have something that's needed on almost every omap,
-> you can select it there.
+> Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp> writes:
+> 
+> > On Mon, 18 Oct 2010 17:39:35 -0700
+> > Greg Thelen <gthelen@google.com> wrote:
+> >
+> >> Document cgroup dirty memory interfaces and statistics.
+> >> 
+> >> Signed-off-by: Andrea Righi <arighi@develer.com>
+> >> Signed-off-by: Greg Thelen <gthelen@google.com>
+> >> ---
+> >> 
+> >> Changelog since v1:
+> >> - Renamed "nfs"/"total_nfs" to "nfs_unstable"/"total_nfs_unstable" in per cgroup
+> >>   memory.stat to match /proc/meminfo.
+> >> 
+> >> - Allow [kKmMgG] suffixes for newly created dirty limit value cgroupfs files.
+> >> 
+> >> - Describe a situation where a cgroup can exceed its dirty limit.
+> >> 
+> >>  Documentation/cgroups/memory.txt |   60 ++++++++++++++++++++++++++++++++++++++
+> >>  1 files changed, 60 insertions(+), 0 deletions(-)
+> >> 
+> >> diff --git a/Documentation/cgroups/memory.txt b/Documentation/cgroups/memory.txt
+> >> index 7781857..02bbd6f 100644
+> >> --- a/Documentation/cgroups/memory.txt
+> >> +++ b/Documentation/cgroups/memory.txt
+> >> @@ -385,6 +385,10 @@ mapped_file	- # of bytes of mapped file (includes tmpfs/shmem)
+> >>  pgpgin		- # of pages paged in (equivalent to # of charging events).
+> >>  pgpgout		- # of pages paged out (equivalent to # of uncharging events).
+> >>  swap		- # of bytes of swap usage
+> >> +dirty		- # of bytes that are waiting to get written back to the disk.
+> >> +writeback	- # of bytes that are actively being written back to the disk.
+> >> +nfs_unstable	- # of bytes sent to the NFS server, but not yet committed to
+> >> +		the actual storage.
+> >>  inactive_anon	- # of bytes of anonymous memory and swap cache memory on
+> >>  		LRU list.
+> >>  active_anon	- # of bytes of anonymous and swap cache memory on active
+> >
+> > Shouldn't we add description of "total_diryt/writeback/nfs_unstable" too ?
+> > Seeing [5/11], it will be showed in memory.stat.
+> 
+> Good catch.  See patch (below).
+> 
+> >> @@ -453,6 +457,62 @@ memory under it will be reclaimed.
+> >>  You can reset failcnt by writing 0 to failcnt file.
+> >>  # echo 0 > .../memory.failcnt
+> >>  
+> >> +5.5 dirty memory
+> >> +
+> >> +Control the maximum amount of dirty pages a cgroup can have at any given time.
+> >> +
+> >> +Limiting dirty memory is like fixing the max amount of dirty (hard to reclaim)
+> >> +page cache used by a cgroup.  So, in case of multiple cgroup writers, they will
+> >> +not be able to consume more than their designated share of dirty pages and will
+> >> +be forced to perform write-out if they cross that limit.
+> >> +
+> >> +The interface is equivalent to the procfs interface: /proc/sys/vm/dirty_*.  It
+> >> +is possible to configure a limit to trigger both a direct writeback or a
+> >> +background writeback performed by per-bdi flusher threads.  The root cgroup
+> >> +memory.dirty_* control files are read-only and match the contents of
+> >> +the /proc/sys/vm/dirty_* files.
+> >> +
+> >> +Per-cgroup dirty limits can be set using the following files in the cgroupfs:
+> >> +
+> >> +- memory.dirty_ratio: the amount of dirty memory (expressed as a percentage of
+> >> +  cgroup memory) at which a process generating dirty pages will itself start
+> >> +  writing out dirty data.
+> >> +
+> >> +- memory.dirty_limit_in_bytes: the amount of dirty memory (expressed in bytes)
+> >> +  in the cgroup at which a process generating dirty pages will start itself
+> >> +  writing out dirty data.  Suffix (k, K, m, M, g, or G) can be used to indicate
+> >> +  that value is kilo, mega or gigabytes.
+> >> +
+> >> +  Note: memory.dirty_limit_in_bytes is the counterpart of memory.dirty_ratio.
+> >> +  Only one of them may be specified at a time.  When one is written it is
+> >> +  immediately taken into account to evaluate the dirty memory limits and the
+> >> +  other appears as 0 when read.
+> >> +
+> >> +- memory.dirty_background_ratio: the amount of dirty memory of the cgroup
+> >> +  (expressed as a percentage of cgroup memory) at which background writeback
+> >> +  kernel threads will start writing out dirty data.
+> >> +
+> >> +- memory.dirty_background_limit_in_bytes: the amount of dirty memory (expressed
+> >> +  in bytes) in the cgroup at which background writeback kernel threads will
+> >> +  start writing out dirty data.  Suffix (k, K, m, M, g, or G) can be used to
+> >> +  indicate that value is kilo, mega or gigabytes.
+> >> +
+> >> +  Note: memory.dirty_background_limit_in_bytes is the counterpart of
+> >> +  memory.dirty_background_ratio.  Only one of them may be specified at a time.
+> >> +  When one is written it is immediately taken into account to evaluate the dirty
+> >> +  memory limits and the other appears as 0 when read.
+> >> +
+> >> +A cgroup may contain more dirty memory than its dirty limit.  This is possible
+> >> +because of the principle that the first cgroup to touch a page is charged for
+> >> +it.  Subsequent page counting events (dirty, writeback, nfs_unstable) are also
+> >> +counted to the originally charged cgroup.
+> >> +
+> >> +Example: If page is allocated by a cgroup A task, then the page is charged to
+> >> +cgroup A.  If the page is later dirtied by a task in cgroup B, then the cgroup A
+> >> +dirty count will be incremented.  If cgroup A is over its dirty limit but cgroup
+> >> +B is not, then dirtying a cgroup A page from a cgroup B task may push cgroup A
+> >> +over its dirty limit without throttling the dirtying cgroup B task.
+> >> +
+> >>  6. Hierarchy support
+> >>  
+> >>  The memory controller supports a deep hierarchy and hierarchical accounting.
+> >> -- 
+> >> 1.7.1
+> >> 
+> > Can you clarify whether we can limit the "total" dirty pages under hierarchy
+> > in use_hierarchy==1 case ?
+> > If we can, I think it would be better to note it in this documentation.
+> >
+> >
+> > Thanks,
+> > Daisuke Nishimura.
+> 
+> Here is a second version of this -v3 doc patch:
+> 
+> Author: Greg Thelen <gthelen@google.com>
+> Date:   Sat Apr 10 15:34:28 2010 -0700
+> 
+>     memcg: document cgroup dirty memory interfaces
+>     
+>     Document cgroup dirty memory interfaces and statistics.
+>     
+>     Signed-off-by: Andrea Righi <arighi@develer.com>
+>     Signed-off-by: Greg Thelen <gthelen@google.com>
+> 
 
-One thing I don't like about this is that there is currently no way to
-'select' as a module.
+nitpicks. and again, why you always drop Acks ?
 
-In order to get to a minimal kernel, in theory, we don't need regulator,
-i2c, MFD, or twl4030* built in.  They should all be built as modules.
-Yes, there are some assumptions made today that some of these things are
-built in, and then are used from init code, but that is broken.
+> diff --git a/Documentation/cgroups/memory.txt b/Documentation/cgroups/memory.txt
+> index 7781857..8bf6d3b 100644
+> --- a/Documentation/cgroups/memory.txt
+> +++ b/Documentation/cgroups/memory.txt
+> @@ -385,6 +385,10 @@ mapped_file	- # of bytes of mapped file (includes tmpfs/shmem)
+>  pgpgin		- # of pages paged in (equivalent to # of charging events).
+>  pgpgout		- # of pages paged out (equivalent to # of uncharging events).
+>  swap		- # of bytes of swap usage
+> +dirty		- # of bytes that are waiting to get written back to the disk.
 
-If someone is looking for a good omap-kernel-janitors project, I would
-suggest getting to a *really* minimal OMAP2+ kernel with everything
-possible built as modules to be a very good project.
+extra tab ?
 
-Kevin
+> +writeback	- # of bytes that are actively being written back to the disk.
+> +nfs_unstable	- # of bytes sent to the NFS server, but not yet committed to
+> +		the actual storage.
+>  inactive_anon	- # of bytes of anonymous memory and swap cache memory on
+>  		LRU list.
+>  active_anon	- # of bytes of anonymous and swap cache memory on active
+> @@ -406,6 +410,9 @@ total_mapped_file	- sum of all children's "cache"
+>  total_pgpgin		- sum of all children's "pgpgin"
+>  total_pgpgout		- sum of all children's "pgpgout"
+>  total_swap		- sum of all children's "swap"
+> +total_dirty		- sum of all children's "dirty"
+> +total_writeback		- sum of all children's "writeback"
+
+here, too.
+
+> +total_nfs_unstable	- sum of all children's "nfs_unstable"
+>  total_inactive_anon	- sum of all children's "inactive_anon"
+>  total_active_anon	- sum of all children's "active_anon"
+>  total_inactive_file	- sum of all children's "inactive_file"
+> @@ -453,6 +460,71 @@ memory under it will be reclaimed.
+>  You can reset failcnt by writing 0 to failcnt file.
+>  # echo 0 > .../memory.failcnt
+>  
+> +5.5 dirty memory
+> +
+> +Control the maximum amount of dirty pages a cgroup can have at any given time.
+> +
+> +Limiting dirty memory is like fixing the max amount of dirty (hard to reclaim)
+> +page cache used by a cgroup.  So, in case of multiple cgroup writers, they will
+> +not be able to consume more than their designated share of dirty pages and will
+> +be forced to perform write-out if they cross that limit.
+> +
+> +The interface is equivalent to the procfs interface: /proc/sys/vm/dirty_*.  It
+> +is possible to configure a limit to trigger both a direct writeback or a
+> +background writeback performed by per-bdi flusher threads.  The root cgroup
+> +memory.dirty_* control files are read-only and match the contents of
+> +the /proc/sys/vm/dirty_* files.
+> +
+> +Per-cgroup dirty limits can be set using the following files in the cgroupfs:
+> +
+> +- memory.dirty_ratio: the amount of dirty memory (expressed as a percentage of
+> +  cgroup memory) at which a process generating dirty pages will itself start
+> +  writing out dirty data.
+> +
+> +- memory.dirty_limit_in_bytes: the amount of dirty memory (expressed in bytes)
+> +  in the cgroup at which a process generating dirty pages will start itself
+> +  writing out dirty data.  Suffix (k, K, m, M, g, or G) can be used to indicate
+> +  that value is kilo, mega or gigabytes.
+> +
+> +  Note: memory.dirty_limit_in_bytes is the counterpart of memory.dirty_ratio.
+> +  Only one of them may be specified at a time.  When one is written it is
+> +  immediately taken into account to evaluate the dirty memory limits and the
+> +  other appears as 0 when read.
+> +
+> +- memory.dirty_background_ratio: the amount of dirty memory of the cgroup
+> +  (expressed as a percentage of cgroup memory) at which background writeback
+> +  kernel threads will start writing out dirty data.
+> +
+> +- memory.dirty_background_limit_in_bytes: the amount of dirty memory (expressed
+> +  in bytes) in the cgroup at which background writeback kernel threads will
+> +  start writing out dirty data.  Suffix (k, K, m, M, g, or G) can be used to
+> +  indicate that value is kilo, mega or gigabytes.
+> +
+> +  Note: memory.dirty_background_limit_in_bytes is the counterpart of
+> +  memory.dirty_background_ratio.  Only one of them may be specified at a time.
+> +  When one is written it is immediately taken into account to evaluate the dirty
+> +  memory limits and the other appears as 0 when read.
+> +
+> +A cgroup may contain more dirty memory than its dirty limit.  This is possible
+> +because of the principle that the first cgroup to touch a page is charged for
+> +it.  Subsequent page counting events (dirty, writeback, nfs_unstable) are also
+> +counted to the originally charged cgroup.
+> +
+> +Example: If page is allocated by a cgroup A task, then the page is charged to
+> +cgroup A.  If the page is later dirtied by a task in cgroup B, then the cgroup A
+> +dirty count will be incremented.  If cgroup A is over its dirty limit but cgroup
+> +B is not, then dirtying a cgroup A page from a cgroup B task may push cgroup A
+> +over its dirty limit without throttling the dirtying cgroup B task.
+> +
+> +When use_hierarchy=0, each cgroup has independent dirty memory usage and limits.
+> +
+> +When use_hierarchy=1, a parent cgroup increasing its dirty memory usage will
+> +compare its total_dirty memory (which includes sum of all child cgroup dirty
+> +memory) to its dirty limits.  This keeps a parent from explicitly exceeding its
+> +dirty limits.  However, a child cgroup can increase its dirty usage without
+> +considering the parent's dirty limits.  Thus the parent's total_dirty can exceed
+> +the parent's dirty limits as a child dirties pages.
+
+Hmm. in short, dirty_ratio in use_hierarchy=1 doesn't work as an user expects.
+Is this a spec. or a current implementation ?
+
+I think as following.
+ - add a limitation as "At setting chidlren's dirty_ratio, it must be below parent's.
+   If it exceeds parent's dirty_ratio, EINVAL is returned."
+
+Could you modify setting memory.dirty_ratio code ?
+Then, parent's dirty_ratio will never exceeds its own. (If I understand correctly.)
+
+"memory.dirty_limit_in_bytes" will be a bit more complecated, but I think you can.
+
+
+Thanks,
+-Kame
+
