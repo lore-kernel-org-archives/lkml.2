@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756181Ab0JTWuI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Oct 2010 18:50:08 -0400
-Received: from smtp-out.google.com ([74.125.121.35]:50562 "EHLO
+	id S1756208Ab0JTWuT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Oct 2010 18:50:19 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:51060 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751715Ab0JTWt1 (ORCPT
+	with ESMTP id S1756155Ab0JTWuQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Oct 2010 18:49:27 -0400
+	Wed, 20 Oct 2010 18:50:16 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=google.com; s=beta;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=ClHmXBGJ0W3IXic/EO5isRmqott8yuSZgUT99sE2wbmPbqTVudB8Ell81mtWZggki7
-         kuJYzRdQuRP/Gs/FmjgA==
+        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
+        b=ngyetHd/5yNt8R+5VYrvhEVhhosqi4ZVZl7qjlkBItVRIRYomBVwNhAzIUq2PXJA90
+         EnUnxY78fBjL1bccs6EQ==
 From: Venkatesh Pallipadi <venki@google.com>
 To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
         "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
@@ -22,80 +22,102 @@ Cc: linux-kernel@vger.kernel.org, Paul Turner <pjt@google.com>,
         Shaun Ruffell <sruffell@digium.com>,
         Yong Zhang <yong.zhang0@gmail.com>,
         Venkatesh Pallipadi <venki@google.com>
-Subject: [PATCH 0/5] Proper kernel irq time reporting -v0
-Date: Wed, 20 Oct 2010 15:48:56 -0700
-Message-Id: <1287614941-32325-1-git-send-email-venki@google.com>
+Subject: [PATCH 3/6] Refactor account_system_time separating id and actual update
+Date: Wed, 20 Oct 2010 15:48:59 -0700
+Message-Id: <1287614941-32325-4-git-send-email-venki@google.com>
 X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1287614941-32325-1-git-send-email-venki@google.com>
+References: <1287614941-32325-1-git-send-email-venki@google.com>
 X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is part 2 of
-"Proper kernel irq time accounting -v4"
-http://lkml.indiana.edu/hypermail//linux/kernel/1010.0/01175.html
+Refactor account_system_time, to separate out the logic of
+identifying the update needed and code that does actual updating.
 
-and applies over those changes.
-
-Part 1 solves the way irqs are accounted in scheduler and tasks. This
-patchset solves how irq times are reported in /proc/stat and also not
-to include irq time in task->stime, etc.
-
-Example:
-Running a cpu intensive loop and network intensive nc on a 4 CPU system
-and looking at 'top' output.
-
-With vanilla kernel:
-Cpu0  :  0.0% us,  0.3% sy,  0.0% ni, 99.3% id,  0.0% wa,  0.0% hi,  0.3% si
-Cpu1  : 100.0% us,  0.0% sy,  0.0% ni,  0.0% id,  0.0% wa,  0.0% hi,  0.0% si
-Cpu2  :  1.3% us, 27.2% sy,  0.0% ni,  0.0% id,  0.0% wa,  0.0% hi, 71.4% si
-Cpu3  :  1.6% us,  1.3% sy,  0.0% ni, 96.7% id,  0.0% wa,  0.0% hi,  0.3% si
-
- PID USER      PR  NI  VIRT  RES  SHR S %CPU %MEM    TIME+  COMMAND
- 7555 root      20   0  1760  528  436 R  100  0.0   0:15.79 nc
- 7563 root      20   0  3632  268  204 R  100  0.0   0:13.13 loop
-
-Notes:
-- Both tasks show 100% CPU, even when one of them is stuck on a CPU thats
-  processing 70% softirq.
-- no hardirq time.
-
-
-With "part 1" patches:
-Cpu0  :  0.0% us,  0.0% sy,  0.0% ni, 100.0% id,  0.0% wa,  0.0% hi,  0.0% si
-Cpu1  : 100.0% us,  0.0% sy,  0.0% ni,  0.0% id,  0.0% wa,  0.0% hi,  0.0% si
-Cpu2  :  2.0% us, 30.6% sy,  0.0% ni,  0.0% id,  0.0% wa,  0.0% hi, 67.4% si
-Cpu3  :  0.7% us,  0.7% sy,  0.3% ni, 98.3% id,  0.0% wa,  0.0% hi,  0.0% si
-
- PID USER      PR  NI  VIRT  RES  SHR S %CPU %MEM    TIME+  COMMAND
- 6289 root      20   0  3632  268  204 R  100  0.0   2:18.67 loop
- 5737 root      20   0  1760  528  436 R   33  0.0   0:26.72 nc
-
-Notes:
-- Tasks show 100% CPU and 33% CPU that correspond to their non-irq exec time.
-- no hardirq time.
-
-
-With "part 1 + part 2" patches:
-Cpu0  :  1.3% us,  1.0% sy,  0.3% ni, 97.0% id,  0.0% wa,  0.0% hi,  0.3% si
-Cpu1  : 99.3% us,  0.0% sy,  0.0% ni,  0.0% id,  0.0% wa,  0.7% hi,  0.0% si
-Cpu2  :  1.3% us, 31.5% sy,  0.0% ni,  0.0% id,  0.0% wa,  8.3% hi, 58.9% si
-Cpu3  :  1.0% us,  2.0% sy,  0.3% ni, 95.0% id,  0.0% wa,  0.7% hi,  1.0% si
-
- PID USER      PR  NI  VIRT  RES  SHR S %CPU %MEM    TIME+  COMMAND
-20929 root      20   0  3632  268  204 R   99  0.0   3:48.25 loop
-20796 root      20   0  1760  528  436 R   33  0.0   2:38.65 nc
-
-Notes:
-- Both task exec time and hard irq time reported correctly.
-- hi and si time are based on fine granularity info and not on samples.
-- getrusage would give proper utime/stime split not including irq times
-  in that ratio.
-- Other places that report user/sys time like, cgroup cpuacct.stat will
-  now include only non-irq exectime.
-
-Thanks,
-Venki
+This is used by following patch for IRQ_TIME_ACCOUNTING,
+which has different identification logic and same update logic.
 
 Signed-off-by: Venkatesh Pallipadi <venki@google.com>
+---
+ kernel/sched.c |   46 +++++++++++++++++++++++++++++++---------------
+ 1 files changed, 31 insertions(+), 15 deletions(-)
+
+diff --git a/kernel/sched.c b/kernel/sched.c
+index 5d4afe9..8b97958 100644
+--- a/kernel/sched.c
++++ b/kernel/sched.c
+@@ -3501,6 +3501,32 @@ static void account_guest_time(struct task_struct *p, cputime_t cputime,
+ }
+ 
+ /*
++ * Account system cpu time to a process and desired cpustat field
++ * @p: the process that the cpu time gets accounted to
++ * @cputime: the cpu time spent in kernel space since the last update
++ * @cputime_scaled: cputime scaled by cpu frequency
++ * @target_cputime64: pointer to cpustat field that needs updating
++ */
++static inline
++void __account_system_time(struct task_struct *p, cputime_t cputime,
++			cputime_t cputime_scaled, cputime64_t *target_cputime64)
++{
++	cputime64_t tmp = cputime_to_cputime64(cputime);
++
++	/* Add system time to process. */
++	p->stime = cputime_add(p->stime, cputime);
++	p->stimescaled = cputime_add(p->stimescaled, cputime_scaled);
++	account_group_system_time(p, cputime);
++
++	/* Add system time to cpustat. */
++	*target_cputime64 = cputime64_add(*target_cputime64, tmp);
++	cpuacct_update_stats(p, CPUACCT_STAT_SYSTEM, cputime);
++
++	/* Account for system time used */
++	acct_update_integrals(p);
++}
++
++/*
+  * Account system cpu time to a process.
+  * @p: the process that the cpu time gets accounted to
+  * @hardirq_offset: the offset to subtract from hardirq_count()
+@@ -3511,31 +3537,21 @@ void account_system_time(struct task_struct *p, int hardirq_offset,
+ 			 cputime_t cputime, cputime_t cputime_scaled)
+ {
+ 	struct cpu_usage_stat *cpustat = &kstat_this_cpu.cpustat;
+-	cputime64_t tmp;
++	cputime64_t *target_cputime64;
+ 
+ 	if ((p->flags & PF_VCPU) && (irq_count() - hardirq_offset == 0)) {
+ 		account_guest_time(p, cputime, cputime_scaled);
+ 		return;
+ 	}
+ 
+-	/* Add system time to process. */
+-	p->stime = cputime_add(p->stime, cputime);
+-	p->stimescaled = cputime_add(p->stimescaled, cputime_scaled);
+-	account_group_system_time(p, cputime);
+-
+-	/* Add system time to cpustat. */
+-	tmp = cputime_to_cputime64(cputime);
+ 	if (hardirq_count() - hardirq_offset)
+-		cpustat->irq = cputime64_add(cpustat->irq, tmp);
++		target_cputime64 = &cpustat->irq;
+ 	else if (in_serving_softirq())
+-		cpustat->softirq = cputime64_add(cpustat->softirq, tmp);
++		target_cputime64 = &cpustat->softirq;
+ 	else
+-		cpustat->system = cputime64_add(cpustat->system, tmp);
++		target_cputime64 = &cpustat->system;
+ 
+-	cpuacct_update_stats(p, CPUACCT_STAT_SYSTEM, cputime);
+-
+-	/* Account for system time used */
+-	acct_update_integrals(p);
++	__account_system_time(p, cputime, cputime_scaled, target_cputime64);
+ }
+ 
+ /*
+-- 
+1.7.1
 
