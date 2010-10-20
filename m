@@ -1,262 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758177Ab0JTGJI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Oct 2010 02:09:08 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:51824 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1758149Ab0JTGJF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Oct 2010 02:09:05 -0400
-Message-ID: <4CBE8872.1010905@cn.fujitsu.com>
-Date: Wed, 20 Oct 2010 14:13:06 +0800
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100423 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH 2/2 v2] rcu,cleanup: simplify the code when cpu is dying
-Content-Type: text/plain; charset=UTF-8
+	id S1758157Ab0JTGMk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Oct 2010 02:12:40 -0400
+Received: from mga11.intel.com ([192.55.52.93]:30870 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756179Ab0JTGMj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Oct 2010 02:12:39 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.57,354,1283756400"; 
+   d="scan'208";a="848987929"
+Subject: Re: [PATCH -v3 5/6] x86, NMI, treat unknown NMI as hardware error
+From: Huang Ying <ying.huang@intel.com>
+To: Don Zickus <dzickus@redhat.com>
+Cc: Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Robert Richter <robert.richter@amd.com>
+In-Reply-To: <20101011212006.GB23882@redhat.com>
+References: <1286606987-19879-1-git-send-email-ying.huang@intel.com>
+	 <1286606987-19879-5-git-send-email-ying.huang@intel.com>
+	 <20101011212006.GB23882@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 20 Oct 2010 14:12:37 +0800
+Message-ID: <1287555157.3026.21.camel@yhuang-dev>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When we handle cpu notify DYING, the whole system is stopped except
-current CPU, so we can touch any data, and we remove the orphan_cbs_tail
-and send the callbacks to the dest CPU directly.
+Hi, Don,
 
-Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
----
- rcutree.c        |   81 ++++++++++++++-----------------------------------------
- rcutree.h        |   16 ++--------
- rcutree_plugin.h |    8 ++---
- rcutree_trace.c  |    4 +-
- 4 files changed, 31 insertions(+), 78 deletions(-)
-diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-index ccdc04c..669d7fe 100644
---- a/kernel/rcutree.c
-+++ b/kernel/rcutree.c
-@@ -67,9 +67,6 @@ static struct lock_class_key rcu_node_class[NUM_RCU_LVLS];
- 	.gpnum = -300, \
- 	.completed = -300, \
- 	.onofflock = __RAW_SPIN_LOCK_UNLOCKED(&structname.onofflock), \
--	.orphan_cbs_list = NULL, \
--	.orphan_cbs_tail = &structname.orphan_cbs_list, \
--	.orphan_qlen = 0, \
- 	.fqslock = __RAW_SPIN_LOCK_UNLOCKED(&structname.fqslock), \
- 	.n_force_qs = 0, \
- 	.n_force_qs_ngp = 0, \
-@@ -984,53 +981,31 @@ rcu_check_quiescent_state(struct rcu_state *rsp, struct rcu_data *rdp)
- #ifdef CONFIG_HOTPLUG_CPU
- 
- /*
-- * Move a dying CPU's RCU callbacks to the ->orphan_cbs_list for the
-- * specified flavor of RCU.  The callbacks will be adopted by the next
-- * _rcu_barrier() invocation or by the CPU_DEAD notifier, whichever
-- * comes first.  Because this is invoked from the CPU_DYING notifier,
-- * irqs are already disabled.
-+ * Move a dying CPU's RCU callbacks to online CPU's callback list.
-+ * Synchronization is not required because this function executes
-+ * in stop_machine() context.
-  */
--static void rcu_send_cbs_to_orphanage(struct rcu_state *rsp)
-+static void rcu_send_cbs_to_online(struct rcu_state *rsp)
- {
- 	int i;
-+	/* current DYING CPU is cleared in the cpu_online_mask */
-+	int receive_cpu = cpumask_any(cpu_online_mask);
- 	struct rcu_data *rdp = this_cpu_ptr(rsp->rda);
-+	struct rcu_data *receive_rdp = per_cpu_ptr(rsp->rda, receive_cpu);
- 
- 	if (rdp->nxtlist == NULL)
- 		return;  /* irqs disabled, so comparison is stable. */
--	raw_spin_lock(&rsp->onofflock);  /* irqs already disabled. */
--	*rsp->orphan_cbs_tail = rdp->nxtlist;
--	rsp->orphan_cbs_tail = rdp->nxttail[RCU_NEXT_TAIL];
-+
-+	*receive_rdp->nxttail[RCU_NEXT_TAIL] = rdp->nxtlist;
-+	receive_rdp->nxttail[RCU_NEXT_TAIL] = rdp->nxttail[RCU_NEXT_TAIL];
-+	receive_rdp->qlen += rdp->qlen;
-+	receive_rdp->n_cbs_adopted += rdp->qlen;
-+	rdp->n_cbs_orphaned += rdp->qlen;
-+
- 	rdp->nxtlist = NULL;
- 	for (i = 0; i < RCU_NEXT_SIZE; i++)
- 		rdp->nxttail[i] = &rdp->nxtlist;
--	rsp->orphan_qlen += rdp->qlen;
--	rdp->n_cbs_orphaned += rdp->qlen;
- 	rdp->qlen = 0;
--	raw_spin_unlock(&rsp->onofflock);  /* irqs remain disabled. */
--}
--
--/*
-- * Adopt previously orphaned RCU callbacks.
-- */
--static void rcu_adopt_orphan_cbs(struct rcu_state *rsp)
--{
--	unsigned long flags;
--	struct rcu_data *rdp;
--
--	raw_spin_lock_irqsave(&rsp->onofflock, flags);
--	rdp = this_cpu_ptr(rsp->rda);
--	if (rsp->orphan_cbs_list == NULL) {
--		raw_spin_unlock_irqrestore(&rsp->onofflock, flags);
--		return;
--	}
--	*rdp->nxttail[RCU_NEXT_TAIL] = rsp->orphan_cbs_list;
--	rdp->nxttail[RCU_NEXT_TAIL] = rsp->orphan_cbs_tail;
--	rdp->qlen += rsp->orphan_qlen;
--	rdp->n_cbs_adopted += rsp->orphan_qlen;
--	rsp->orphan_cbs_list = NULL;
--	rsp->orphan_cbs_tail = &rsp->orphan_cbs_list;
--	rsp->orphan_qlen = 0;
--	raw_spin_unlock_irqrestore(&rsp->onofflock, flags);
- }
- 
- /*
-@@ -1081,8 +1056,6 @@ static void __rcu_offline_cpu(int cpu, struct rcu_state *rsp)
- 		raw_spin_unlock_irqrestore(&rnp->lock, flags);
- 	if (need_report & RCU_OFL_TASKS_EXP_GP)
- 		rcu_report_exp_rnp(rsp, rnp);
--
--	rcu_adopt_orphan_cbs(rsp);
- }
- 
- /*
-@@ -1100,11 +1073,7 @@ static void rcu_offline_cpu(int cpu)
- 
- #else /* #ifdef CONFIG_HOTPLUG_CPU */
- 
--static void rcu_send_cbs_to_orphanage(struct rcu_state *rsp)
--{
--}
--
--static void rcu_adopt_orphan_cbs(struct rcu_state *rsp)
-+static void rcu_send_cbs_to_online(struct rcu_state *rsp)
- {
- }
- 
-@@ -1702,10 +1671,7 @@ static void _rcu_barrier(struct rcu_state *rsp,
- 	 * early.
- 	 */
- 	atomic_set(&rcu_barrier_cpu_count, 1);
--	preempt_disable(); /* stop CPU_DYING from filling orphan_cbs_list */
--	rcu_adopt_orphan_cbs(rsp);
- 	on_each_cpu(rcu_barrier_func, (void *)call_rcu_func, 1);
--	preempt_enable(); /* CPU_DYING can again fill orphan_cbs_list */
- 	if (atomic_dec_and_test(&rcu_barrier_cpu_count))
- 		complete(&rcu_barrier_completion);
- 	wait_for_completion(&rcu_barrier_completion);
-@@ -1831,18 +1797,13 @@ static int __cpuinit rcu_cpu_notify(struct notifier_block *self,
- 	case CPU_DYING:
- 	case CPU_DYING_FROZEN:
- 		/*
--		 * preempt_disable() in _rcu_barrier() prevents stop_machine(),
--		 * so when "on_each_cpu(rcu_barrier_func, (void *)type, 1);"
--		 * returns, all online cpus have queued rcu_barrier_func().
--		 * The dying CPU clears its cpu_online_mask bit and
--		 * moves all of its RCU callbacks to ->orphan_cbs_list
--		 * in the context of stop_machine(), so subsequent calls
--		 * to _rcu_barrier() will adopt these callbacks and only
--		 * then queue rcu_barrier_func() on all remaining CPUs.
-+		 * The whole machine is "stopped" except this cpu, so we can
-+		 * touch any data without introducing corruption. And we send
-+		 * the callbacks to an attribute chosen online cpu.
- 		 */
--		rcu_send_cbs_to_orphanage(&rcu_bh_state);
--		rcu_send_cbs_to_orphanage(&rcu_sched_state);
--		rcu_preempt_send_cbs_to_orphanage();
-+		rcu_send_cbs_to_online(&rcu_bh_state);
-+		rcu_send_cbs_to_online(&rcu_sched_state);
-+		rcu_preempt_send_cbs_to_online();
- 		break;
- 	case CPU_DEAD:
- 	case CPU_DEAD_FROZEN:
-diff --git a/kernel/rcutree.h b/kernel/rcutree.h
-index 91d4170..1a54be2 100644
---- a/kernel/rcutree.h
-+++ b/kernel/rcutree.h
-@@ -203,8 +203,8 @@ struct rcu_data {
- 	long		qlen_last_fqs_check;
- 					/* qlen at last check for QS forcing */
- 	unsigned long	n_cbs_invoked;	/* count of RCU cbs invoked. */
--	unsigned long	n_cbs_orphaned;	/* RCU cbs sent to orphanage. */
--	unsigned long	n_cbs_adopted;	/* RCU cbs adopted from orphanage. */
-+	unsigned long   n_cbs_orphaned; /* RCU cbs orphaned by dying CPU */
-+	unsigned long   n_cbs_adopted;  /* RCU cbs adopted from dying CPU */
- 	unsigned long	n_force_qs_snap;
- 					/* did other CPU force QS recently? */
- 	long		blimit;		/* Upper limit on a processed batch */
-@@ -309,15 +309,7 @@ struct rcu_state {
- 	/* End of fields guarded by root rcu_node's lock. */
- 
- 	raw_spinlock_t onofflock;		/* exclude on/offline and */
--						/*  starting new GP.  Also */
--						/*  protects the following */
--						/*  orphan_cbs fields. */
--	struct rcu_head *orphan_cbs_list;	/* list of rcu_head structs */
--						/*  orphaned by all CPUs in */
--						/*  a given leaf rcu_node */
--						/*  going offline. */
--	struct rcu_head **orphan_cbs_tail;	/* And tail pointer. */
--	long orphan_qlen;			/* Number of orphaned cbs. */
-+						/*  starting new GP. */
- 	raw_spinlock_t fqslock;			/* Only one task forcing */
- 						/*  quiescent states. */
- 	unsigned long jiffies_force_qs;		/* Time at which to invoke */
-@@ -390,7 +382,7 @@ static void rcu_report_exp_rnp(struct rcu_state *rsp, struct rcu_node *rnp);
- static int rcu_preempt_pending(int cpu);
- static int rcu_preempt_needs_cpu(int cpu);
- static void __cpuinit rcu_preempt_init_percpu_data(int cpu);
--static void rcu_preempt_send_cbs_to_orphanage(void);
-+static void rcu_preempt_send_cbs_to_online(void);
- static void __init __rcu_init_preempt(void);
- static void rcu_needs_cpu_flush(void);
- 
-diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
-index 71a4147..0e75d60 100644
---- a/kernel/rcutree_plugin.h
-+++ b/kernel/rcutree_plugin.h
-@@ -773,11 +773,11 @@ static void __cpuinit rcu_preempt_init_percpu_data(int cpu)
- }
- 
- /*
-- * Move preemptable RCU's callbacks to ->orphan_cbs_list.
-+ * Move preemptable DYING RCU's callbacks to other online CPU.
-  */
--static void rcu_preempt_send_cbs_to_orphanage(void)
-+static void rcu_preempt_send_cbs_to_online(void)
- {
--	rcu_send_cbs_to_orphanage(&rcu_preempt_state);
-+	rcu_send_cbs_to_online(&rcu_preempt_state);
- }
- 
- /*
-@@ -1001,7 +1001,7 @@ static void __cpuinit rcu_preempt_init_percpu_data(int cpu)
- /*
-  * Because there is no preemptable RCU, there are no callbacks to move.
-  */
--static void rcu_preempt_send_cbs_to_orphanage(void)
-+static void rcu_preempt_send_cbs_to_online(void)
- {
- }
- 
-diff --git a/kernel/rcutree_trace.c b/kernel/rcutree_trace.c
-index d15430b..cbead39 100644
---- a/kernel/rcutree_trace.c
-+++ b/kernel/rcutree_trace.c
-@@ -166,13 +166,13 @@ static void print_one_rcu_state(struct seq_file *m, struct rcu_state *rsp)
- 
- 	gpnum = rsp->gpnum;
- 	seq_printf(m, "c=%lu g=%lu s=%d jfq=%ld j=%x "
--		      "nfqs=%lu/nfqsng=%lu(%lu) fqlh=%lu oqlen=%ld\n",
-+		      "nfqs=%lu/nfqsng=%lu(%lu) fqlh=%lu\n",
- 		   rsp->completed, gpnum, rsp->signaled,
- 		   (long)(rsp->jiffies_force_qs - jiffies),
- 		   (int)(jiffies & 0xffff),
- 		   rsp->n_force_qs, rsp->n_force_qs_ngp,
- 		   rsp->n_force_qs - rsp->n_force_qs_ngp,
--		   rsp->n_force_qs_lh, rsp->orphan_qlen);
-+		   rsp->n_force_qs_lh);
- 	for (rnp = &rsp->node[0]; rnp - &rsp->node[0] < NUM_RCU_NODES; rnp++) {
- 		if (rnp->level != level) {
- 			seq_puts(m, "\n");
+On Tue, 2010-10-12 at 05:20 +0800, Don Zickus wrote:
+> > @@ -366,6 +368,15 @@ unknown_nmi_error(unsigned char reason,
+> >  	if (notify_die(DIE_NMIUNKNOWN, "nmi", regs, reason, 2, SIGINT) ==
+> >  			NOTIFY_STOP)
+> >  		return;
+> > +	/*
+> > +	 * On some platforms, hardware errors may be notified via
+> > +	 * unknown NMI
+> > +	 */
+> > +	if (unknown_nmi_as_hwerr)
+> > +		panic(
+> > +		"NMI for hardware error without error record: Not continuing\n"
+> > +		"Please check BIOS/BMC log for further information.");
+> > +
+> >  #ifdef CONFIG_MCA
+> >  	/*
+> >  	 * Might actually be able to figure out what the guilty party
+> 
+> The only quirk I have left is the above piece, which is basically a
+> philosophy difference with Robert and myself.  Where we believe it should
+> be on the die_chain and Andi and yourself would like to see it explicitly
+> called out.
+
+After some more thought, I found this is different from DIE_NMI and
+DIE_NMI_IPI case. I think the code added is for general unknown NMI
+processing instead of a device driver. What we do is not to add special
+processing for some devices, but treat unknown NMI as hardware error
+notification in general and use a white list to deal with broken
+hardware and stone age machine. Do you agree?
+
+If so, it should not be turned into a notifier block unless you want to
+turn all general unknown NMI processing code into a notifier block.
+
+Best Regards,
+Huang Ying
+
+
