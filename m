@@ -1,61 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758206Ab0JTGQh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Oct 2010 02:16:37 -0400
-Received: from helcar.apana.org.au ([209.40.204.226]:55201 "EHLO
-	fornost.hengli.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758000Ab0JTGQg (ORCPT
+	id S1758232Ab0JTGRY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Oct 2010 02:17:24 -0400
+Received: from TYO201.gate.nec.co.jp ([202.32.8.193]:63149 "EHLO
+	tyo201.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758000Ab0JTGRX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Oct 2010 02:16:36 -0400
-Date: Wed, 20 Oct 2010 14:16:31 +0800
-From: Herbert Xu <herbert@gondor.hengli.com.au>
-To: Patrick Ringl <patrick_@freenet.de>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        bridge@lists.linux-foundation.org
-Subject: Re: 2.6.36-rc7: net/bridge causes temporary network I/O lockups [2]
-Message-ID: <20101020061631.GA21679@gondor.apana.org.au>
-References: <4CB9EBC3.4070905@freenet.de> <20101018161656.GA2403@gondor.apana.org.au> <4CBCB014.9080108@freenet.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4CBCB014.9080108@freenet.de>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	Wed, 20 Oct 2010 02:17:23 -0400
+Date: Wed, 20 Oct 2010 15:09:57 +0900
+From: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Greg Thelen <gthelen@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        containers@lists.osdl.org, Andrea Righi <arighi@develer.com>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Ciju Rajan K <ciju@linux.vnet.ibm.com>,
+        David Rientjes <rientjes@google.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+Subject: Re: [PATCH v2][memcg+dirtylimit] Fix  overwriting global vm dirty
+ limit setting by memcg (Re: [PATCH v3 00/11] memcg: per cgroup dirty page
+ accounting
+Message-Id: <20101020150957.547c76d2.nishimura@mxp.nes.nec.co.jp>
+In-Reply-To: <20101020140255.5b8afb63.kamezawa.hiroyu@jp.fujitsu.com>
+References: <1287448784-25684-1-git-send-email-gthelen@google.com>
+	<20101020122144.47f2b60b.kamezawa.hiroyu@jp.fujitsu.com>
+	<20101020140255.5b8afb63.kamezawa.hiroyu@jp.fujitsu.com>
+Organization: NEC Soft, Ltd.
+X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 18, 2010 at 10:37:40PM +0200, Patrick Ringl wrote:
->
-> Anything else I could possibly provide? :-)
+On Wed, 20 Oct 2010 14:02:55 +0900
+KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
 
-Yes, testing :)
+> Fixed one here.
+> ==
+> From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> 
+> Now, at calculating dirty limit, vm_dirty_param() is called.
+> This function returns dirty-limit related parameters considering
+> memory cgroup settings.
+> 
+> Now, assume that vm_dirty_bytes=100M (global dirty limit) and
+> memory cgroup has 1G of pages and 40 dirty_ratio, dirtyable memory is
+> 500MB.
+> 
+> In this case, global_dirty_limits will consider dirty_limt as
+> 500 *0.4 = 200MB. This is bad...memory cgroup is not back door.
+> 
+> This patch limits the return value of vm_dirty_param() considring
+> global settings.
+> 
+> Changelog:
+>  - fixed an argument "mem" int to u64
+>  - fixed to use global available memory to cap memcg's value.
+> 
+> Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 
-First of all I'd like to rule out (or in) the IPv6 query code,
-which is clearly generating a bogus packet (wrong payload_len).
-
-So can you apply this patch and see if it makes the problem
-go away? Please take packet dumps so we know that the IPv6 query
-is no longer being sent.
-
-Thanks,
--- 
-Email: Herbert Xu <herbert@gondor.apana.org.au>
-Home Page: http://gondor.apana.org.au/~herbert/
-PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
---
-diff --git a/net/bridge/br_multicast.c b/net/bridge/br_multicast.c
-index eb5b256..66f39d7 100644
---- a/net/bridge/br_multicast.c
-+++ b/net/bridge/br_multicast.c
-@@ -832,11 +832,6 @@ static void br_multicast_send_query(struct net_bridge *br,
- 	br_group.proto = htons(ETH_P_IP);
- 	__br_multicast_send_query(br, port, &br_group);
- 
--#if defined(CONFIG_IPV6) || defined(CONFIG_IPV6_MODULE)
--	br_group.proto = htons(ETH_P_IPV6);
--	__br_multicast_send_query(br, port, &br_group);
--#endif
--
- 	time = jiffies;
- 	time += sent < br->multicast_startup_query_count ?
- 		br->multicast_startup_query_interval :
+Acked-by: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
