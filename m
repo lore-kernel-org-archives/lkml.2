@@ -1,57 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758119Ab0JTGCb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Oct 2010 02:02:31 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:23938 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752716Ab0JTGC3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Oct 2010 02:02:29 -0400
-Message-ID: <4CBE86E0.3050505@redhat.com>
-Date: Wed, 20 Oct 2010 14:06:24 +0800
-From: Cong Wang <amwang@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Shredder/3.0.4
+	id S932117Ab0JTGFW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Oct 2010 02:05:22 -0400
+Received: from ch-smtp01.sth.basefarm.net ([80.76.149.212]:57890 "EHLO
+	ch-smtp01.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757146Ab0JTGFW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Oct 2010 02:05:22 -0400
+Message-ID: <4CBE8669.5080002@euromail.se>
+Date: Wed, 20 Oct 2010 08:04:25 +0200
+From: Henrik Rydberg <rydberg@euromail.se>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100922 Thunderbird/3.1.4
 MIME-Version: 1.0
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-CC: Andi Kleen <ak@linux.intel.com>, linux-kernel@vger.kernel.org,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Len Brown <len.brown@intel.com>, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        David Howells <dhowells@redhat.com>, Eric Paris <eparis@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Andy Shevchenko <ext-andriy.shevchenko@nokia.com>,
-        linux-doc@vger.kernel.org
-Subject: Re: [PATCH 2/2] sysctl: remove sysctl syscall
-References: <1287476560-5874-1-git-send-email-amwang@redhat.com>	<1287476560-5874-2-git-send-email-amwang@redhat.com>	<4CBD9B7F.6040307@linux.intel.com> <m1vd4yi977.fsf@fess.ebiederm.org>	<4CBDB385.6080100@linux.intel.com> <m1eibmdvew.fsf@fess.ebiederm.org>
-In-Reply-To: <m1eibmdvew.fsf@fess.ebiederm.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Joe Perches <joe@perches.com>
+CC: Guenter Roeck <guenter.roeck@ericsson.com>,
+        Jean Delvare <khali@linux-fr.org>,
+        Hans de Goede <j.w.r.degoede@hhs.nl>,
+        Alistair John Strachan <alistair@devzero.co.uk>,
+        "Mark M. Hoffman" <mhoffman@lightlink.com>,
+        Luca Tettamanti <kronos.it@gmail.com>,
+        Fenghua Yu <fenghua.yu@intel.com>, Juerg Haefliger <juergh@gmail.com>,
+        Eric Piel <eric.piel@tremplin-utc.net>,
+        Jim Cromie <jim.cromie@gmail.com>,
+        Roger Lucas <vt8231@hiddenengine.co.uk>,
+        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] drivers/hwmon: Use pr_fmt and pr_<level>
+References: <1287530020.10409.594.camel@Joe-Laptop>	 <20101020032938.GA20095@ericsson.com>	 <1287545658.10409.606.camel@Joe-Laptop>	 <20101020035346.GA20178@ericsson.com> <1287547662.10409.618.camel@Joe-Laptop>
+In-Reply-To: <1287547662.10409.618.camel@Joe-Laptop>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: 83.248.196.134
+X-Scan-Result: No virus found in message 1P8Rmq-0001ZH-6H.
+X-Scan-Signature: ch-smtp01.sth.basefarm.net 1P8Rmq-0001ZH-6H 87debaccac5d5a111927e2bc0cdba217
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/20/10 00:00, Eric W. Biederman wrote:
-> To the best of my knowledge the last and user of sys_sysctl is the glibc
-> ioperm (my apologies I mispoke when I said iopl) implementation on arm.
-> Not that people run around calling ioperm very often in any distro.
+On 10/20/2010 06:07 AM, Joe Perches wrote:
+
+> On Tue, 2010-10-19 at 20:53 -0700, Guenter Roeck wrote:
+>> On Tue, Oct 19, 2010 at 11:34:18PM -0400, Joe Perches wrote:
+>>> On Tue, 2010-10-19 at 20:29 -0700, Guenter Roeck wrote:
+>>>> There are several lines longer than 80 characters.
+>>>> Does this rule no longer apply ?
+>>> 80 columns isn't checked for printk format strings.
+>> Interesting.
+>>> A kernel general preference may be to keep formats as
+>>> a single string without line breaks so that grep works
+>>> better.
+>>>> Oddly enough, there are only four checkpatch warnings about long lines,
+>>>> even though there are many more.
+>>> The version I use doesn't show any warnings.
+>> checkpatch.pl from both v2.6.36-rc7 and v2.6.36-rc6 do report warnings.
+>> Looks like those versions flag long lines for pr_warn. Is your version
+>> older or newer ?
+> 
+> Newer.  It adds pr_warn to the exempted list, not just pr_warning.
+> 
+>> Anyway, would it be possible to split the patch into one patch per file ?
+> 
+> Oh sure.  It's trivial to do that.
+> 
+>> I don't know how Jean thinks about it, but in my opinion it would be cleaner,
+>> permit revert on a single patch/file instead of having to revert the entire series,
+>> it would simplify review, and it would make it much easier to cherry-pick 
+>> pieces into other releases if needed.
+> 
+> Jean, do you have a preference?
+> I'll resubmit if you want it separated.
 
 
-I saw that in Changelog of glibc too, but that was back to 2000, 10 years
-past, I don't see any code using sysctl() in glibc now, except sys_sysctl()
-itself, of course.
+Yes please, that would be nice.
 
->
-> All of that said I think disabling sys_sysctl by default now is totally
-> reasonable.  If there is a percentage in removing the code we can worry
-> about that later.  Perhaps we should add a CONFIG_CRUFT and move
-> sys_sysctl under there.  Binary compatibility that nothing needs but
-> that we actually have code for just in case.
-
-But you put sysctl in features-removal-schedule.txt 3 years ago. :)
-
-I believe they should see the kernel warnings if they are still using
-sysctl.
-
-Thanks.
+Thanks,
+Henrik
