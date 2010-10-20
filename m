@@ -1,48 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753611Ab0JTR3h (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Oct 2010 13:29:37 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:57759 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753293Ab0JTR3g (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Oct 2010 13:29:36 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:x-enigmail-version:content-type
-         :content-transfer-encoding;
-        b=dIvCbbBuK5NcnOOKpW4N+8liqu36fJHe+TsMDIMHtPVqesE4HraLAV6YCtsUKEo1cd
-         GiCM5SQCzQLwTY+ZtBF6vSHW5GVjYiMmmzWFsXKgAnlRcZ4JiB96R6mBavdS0Wh9gih/
-         uqy6UM5/ql8y3bNuKzueT6AI+rrc0Lr01zCzM=
-Message-ID: <4CBF26FC.2000002@gmail.com>
-Date: Wed, 20 Oct 2010 19:29:32 +0200
-From: Jiri Slaby <jirislaby@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.11) Gecko/20101013 SUSE/3.1.5 Thunderbird/3.1.5
+	id S1753623Ab0JTRct (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Oct 2010 13:32:49 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:35845 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750811Ab0JTRcs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Oct 2010 13:32:48 -0400
+Date: Wed, 20 Oct 2010 18:32:31 +0100
+From: Alasdair G Kergon <agk@redhat.com>
+To: Milan Broz <mbroz@redhat.com>
+Cc: Andi Kleen <ak@linux.intel.com>, Mike Snitzer <snitzer@redhat.com>,
+        linux-kernel@vger.kernel.org,
+        device-mapper development <dm-devel@redhat.com>,
+        Andi Kleen <andi@firstfloor.org>, pedrib@gmail.com
+Subject: Re: [dm-devel] [PATCH] DM-CRYPT: Scale to multiple CPUs v3
+Message-ID: <20101020173231.GP3935@agk-dp.fab.redhat.com>
+Mail-Followup-To: Milan Broz <mbroz@redhat.com>,
+	Andi Kleen <ak@linux.intel.com>, Mike Snitzer <snitzer@redhat.com>,
+	linux-kernel@vger.kernel.org,
+	device-mapper development <dm-devel@redhat.com>,
+	Andi Kleen <andi@firstfloor.org>, pedrib@gmail.com
+References: <20101010115941.GA8539@basil.fritz.box> <4CB1B3B9.4030205@redhat.com> <20101010130842.GE8256@basil.fritz.box> <4CB1DD1A.5080906@redhat.com> <20101010162257.GA1272@redhat.com> <4CB1ECCA.8040801@redhat.com> <20101010170750.GA1475@redhat.com> <4CB20C72.3030504@redhat.com> <4CB7595C.4000801@redhat.com> <4CBEFABC.3030400@redhat.com>
 MIME-Version: 1.0
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-CC: Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org, mm-commits@vger.kernel.org,
-        Ingo Molnar <mingo@elte.hu>
-Subject: Re: ptrace BUG [was: mmotm 2010-10-13-17-13 uploaded]
-References: <201010140044.o9E0iuR3029069@imap1.linux-foundation.org>	 <4CBF0FB7.3000602@gmail.com> <20101020155406.GC5387@nowhere>	 <4CBF12D4.4070207@gmail.com> <1287591225.3488.29.camel@twins>
-In-Reply-To: <1287591225.3488.29.camel@twins>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4CBEFABC.3030400@redhat.com>
+Organization: Red Hat UK Ltd. Registered in England and Wales, number
+	03798903. Registered Office: Amberley Place, 107-111 Peascod
+	Street, Windsor, Berkshire, SL4 1TE.
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/20/2010 06:13 PM, Peter Zijlstra wrote:
-> On Wed, 2010-10-20 at 18:03 +0200, Jiri Slaby wrote:
->> I applied the patch and got another BUG:
-> 
-> I don't think it applies on its own.. please use -tip or -next.
+On Wed, Oct 20, 2010 at 04:20:44PM +0200, Milan Broz wrote:
+> this patch introduces apparent regressions in async crypto mode.
+ 
+OK, thanks for performing those tests.
 
-Ok, I will try not to use gdb/strace till the next mmotm and will report
-then.
+This patch is stalled until these problems are understood properly and
+solutions are proposed.  I was prepared to overlook the regression in
+stacked 'async' provided there was an inline FIXME explaining clearly
+how to fix it in future should we need to, but I can't support a patch that
+apparently breaks stacked sync encryption.
 
-thanks,
--- 
-js
+One solution might be to make the proposed changes only for non-stacked
+configurations and leave stacks to work as they do today - either
+detecting that automatically or having userspace supply a target
+parameter to say whether or not to turn it on.  (For that, would need
+tests to show a stack of many layers where only one is a crypt target
+continues to work after the change.)
+
+Alasdair
+
