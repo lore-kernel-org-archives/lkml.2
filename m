@@ -1,67 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751159Ab0JTEMZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Oct 2010 00:12:25 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:57511 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750864Ab0JTEMY (ORCPT
+	id S1751186Ab0JTENW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Oct 2010 00:13:22 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:54915 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750946Ab0JTENV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Oct 2010 00:12:24 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Wed, 20 Oct 2010 13:06:54 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Greg Thelen <gthelen@google.com>
-Cc: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        containers@lists.osdl.org, Andrea Righi <arighi@develer.com>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Ciju Rajan K <ciju@linux.vnet.ibm.com>,
-        David Rientjes <rientjes@google.com>
-Subject: Re: [PATCH v3 02/11] memcg: document cgroup dirty memory interfaces
-Message-Id: <20101020130654.bf861eda.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <xr93r5fl1poc.fsf@ninji.mtv.corp.google.com>
-References: <1287448784-25684-1-git-send-email-gthelen@google.com>
-	<1287448784-25684-3-git-send-email-gthelen@google.com>
-	<20101019172744.45e0a8dc.nishimura@mxp.nes.nec.co.jp>
-	<xr93lj5t5245.fsf@ninji.mtv.corp.google.com>
-	<20101020091109.ccd7b39a.kamezawa.hiroyu@jp.fujitsu.com>
-	<xr93r5fl1poc.fsf@ninji.mtv.corp.google.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 20 Oct 2010 00:13:21 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=RZFAPphDvfQrGQmGVY7gkQpbkW6x2WO5krkjCKeJYWYebuev8snjqhe89H7smVmX0d
+         cAlXzL6s4V3y3mpX6M71OZlhNnBepvSb4OTBVtG6bca8zFGKYioOzK4pfVsYHpdwJO7t
+         0pM/COuLqyDecT7u/qR4Jrq5CF6GWJwDLQ8nY=
+MIME-Version: 1.0
+In-Reply-To: <AANLkTi=-E6f3US+h9vzmZhQbzLkaoA4_OZqu8uV3wsjv@mail.gmail.com>
+References: <AANLkTinoaJX3M2zU_zZOpmFm9Ekxpw-LUVUf_TU8yuSq@mail.gmail.com>
+	<1287486167.1994.1.camel@twins>
+	<4CBD5D680200005A0007492F@soto.provo.novell.com>
+	<AANLkTi=-E6f3US+h9vzmZhQbzLkaoA4_OZqu8uV3wsjv@mail.gmail.com>
+Date: Wed, 20 Oct 2010 10:13:19 +0600
+Message-ID: <AANLkTimcBESMCtr3osZ=4seqT+bSGGix920PDecaSVX_@mail.gmail.com>
+Subject: Re: [PATCH] sched_rt: Removes extra checking for nr_cpus_allowed when
+ calling find_lowest_rq
+From: Rakib Mullick <rakib.mullick@gmail.com>
+To: Gregory Haskins <ghaskins@novell.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 19 Oct 2010 17:45:08 -0700
-Greg Thelen <gthelen@google.com> wrote:
+On Tue, Oct 19, 2010 at 8:40 PM, Rakib Mullick <rakib.mullick@gmail.com> wrote:
+> On 10/19/10, Gregory Haskins <ghaskins@novell.com> wrote:
+>>>>> On 10/19/2010 at 07:02 AM, in message <1287486167.1994.1.camel@twins>,
+>>>>> Peter
+>> Zijlstra <peterz@infradead.org> wrote:
+>>> On Tue, 2010-10-19 at 16:57 +0600, Rakib Mullick wrote:
+>>
+> If we made explicit check before calling find_lowest_rq, then I don't
+> think we need the change that Steve's suggesting. I think explicitly
+> checking is much more easier and removes extra overhead of function
+> calling.
 
-> KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> writes:
-> > BTW, how about supporing dirty_limit_in_bytes when use_hierarchy=0 or
-> > leave it as broken when use_hierarchy=1 ?  It seems we can only
-> > support dirty_ratio when hierarchy is used.
-> 
-> I am not sure what you mean here.
+The following patch shows what I was trying to say. Please check and
+comment. Hopefully this looks clean.
 
-When using dirty_ratio, we can check the value of dirty_ratio at setting it
-and make guarantee that any children's dirty_ratio cannot exceeds it parent's.
 
-If we guarantee that, we can keep dirty_ratio even under hierarchy.
+--- linus-rc8/kernel/sched_rt.c	2010-10-19 16:42:05.000000000 +0600
++++ rakib-rc8/kernel/sched_rt.c	2010-10-20 10:04:08.000000000 +0600
+@@ -1174,9 +1174,6 @@ static int find_lowest_rq(struct task_st
+ 	int this_cpu = smp_processor_id();
+ 	int cpu      = task_cpu(task);
 
-When it comes to dirty_limit_in_bytes, we never able to do such kind of
-controls. So, it will be broken and will do different behavior than
-dirty_ratio.
+-	if (task->rt.nr_cpus_allowed == 1)
+-		return -1; /* No other targets possible */
+-
+ 	if (!cpupri_find(&task_rq(task)->rd->cpupri, task, lowest_mask))
+ 		return -1; /* No targets found */
 
-So, not supporing dirty_bytes when use_hierarchy==1 for now sounds reasonable to me.
+@@ -1238,6 +1235,9 @@ static struct rq *find_lock_lowest_rq(st
+ 	int tries;
+ 	int cpu;
+
++	if (task->rt.nr_cpus_allowed < 2)
++		goto out;
++
+ 	for (tries = 0; tries < RT_MAX_TRIES; tries++) {
+ 		cpu = find_lowest_rq(task);
+
+@@ -1275,6 +1275,7 @@ static struct rq *find_lock_lowest_rq(st
+ 		lowest_rq = NULL;
+ 	}
+
++out:
+ 	return lowest_rq;
+ }
+
+
 
 Thanks,
--Kame
+Rakib
 
-
-
-
-
+>
+> Thanks,
+> Rakib
+>> Kind Regards,
+>> -Greg
+>>
+>>
+>>
+>
