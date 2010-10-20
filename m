@@ -1,83 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755948Ab0JTWj5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Oct 2010 18:39:57 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:60119 "EHLO mx2.suse.de"
+	id S1756003Ab0JTWkL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Oct 2010 18:40:11 -0400
+Received: from kroah.org ([198.145.64.141]:57404 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751720Ab0JTWj4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755082Ab0JTWj4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 20 Oct 2010 18:39:56 -0400
-Date: Wed, 20 Oct 2010 15:38:20 -0700
-From: Greg KH <gregkh@suse.de>
-To: Alexey Charkov <alchark@gmail.com>
-Cc: vt8500-wm8505-linux-kernel@googlegroups.com,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/6] serial: Add support for UART on VIA VT8500 and
-	compatibles
-Message-ID: <20101020223820.GB16331@suse.de>
-References: <1287608139-21354-1-git-send-email-alchark@gmail.com> <1287608139-21354-2-git-send-email-alchark@gmail.com> <20101020211643.GA10006@suse.de> <AANLkTikGiYvXgLs5eRQ9ghmatccBQJSdS3qwEHZN_3NF@mail.gmail.com>
+Date: Wed, 20 Oct 2010 15:39:58 -0700
+From: Greg KH <greg@kroah.com>
+To: Sven Eckelmann <sven.eckelmann@gmx.de>
+Cc: The list for a Better Approach To Mobile Ad-hoc
+	 Networking <b.a.t.m.a.n@lists.open-mesh.org>,
+        devel@driverdev.osuosl.org, Greg Kroah-Hartman <gregkh@suse.de>,
+        linux-kernel@vger.kernel.org,
+        Simon Wunderlich <siwu@hrz.tu-chemnitz.de>,
+        Andy Shevchenko <andy.shevchenko@gmail.com>,
+        Marek Lindner <lindner_marek@yahoo.de>
+Subject: Re: [B.A.T.M.A.N.] [resend][PATCHv2] staging: batman-adv: remove
+	useless addr_to_string()
+Message-ID: <20101020223958.GA17011@kroah.com>
+References: <1287589664-25447-1-git-send-email-andy.shevchenko@gmail.com> <20101020205115.GA18087@sven-atom.lazhur.ath.cx> <20101020205749.GA9686@kroah.com> <20101020221636.GA21132@sven-atom.lazhur.ath.cx>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <AANLkTikGiYvXgLs5eRQ9ghmatccBQJSdS3qwEHZN_3NF@mail.gmail.com>
+In-Reply-To: <20101020221636.GA21132@sven-atom.lazhur.ath.cx>
 User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 21, 2010 at 01:31:41AM +0400, Alexey Charkov wrote:
-> 2010/10/21 Greg KH <gregkh@suse.de>:
-> > On Thu, Oct 21, 2010 at 12:55:34AM +0400, Alexey Charkov wrote:
-> >> This adds a driver for the serial ports found in VIA and WonderMedia
-> >> Systems-on-Chip. Interrupt-driven FIFO operation is implemented.
-> >> The hardware also supports pure register-based operation (which is
-> >> slower) and DMA-based FIFO operation. As the FIFOs are only 16 bytes
-> >> long, DMA operation is probably not worth the hassle.
-> >>
-> >> Signed-off-by: Alexey Charkov <alchark@gmail.com>
-> >> ---
-> >>
-> >> Please review and state whether this could be acceptable for a merge
-> >> to mainline in the coming 2.6.37 window.
-> >
-> > .37? ??Aren't you cutting it a bit close here? ??My trees unofficially
-> > closed a few days or so ago for new stuff to go to .37, what kept this
-> > from being sent previously?
-> >
+On Thu, Oct 21, 2010 at 12:16:37AM +0200, Sven Eckelmann wrote:
+> On Wed, Oct 20, 2010 at 01:57:49PM -0700, Greg KH wrote:
+> > On Wed, Oct 20, 2010 at 10:51:15PM +0200, Sven Eckelmann wrote:
+> > > On Wed, Oct 20, 2010 at 06:47:44PM +0300, Andy Shevchenko wrote:
+> > > > Since all *printf() methods in the kernel understand '%pM' modifier the
+> > > > conversion to the string is useless beforehand.
+> > > > 
+> > > > Additionally this patch decreases batman_if structure by 20 bytes.
+> > > 
+> > > Thanks for your patch. I have problems with compiling due to other patches in
+> > > the queue. I will fix that and recommend it as patch for 2.6.38.
+> > 
+> > What do you mean by this?  It applies just fine to my tree, so why can't
+> > I take it now?
 > 
-> In fact, I'm somewhat new to kernel development, and have not yet
-> understood the good timings to do things properly.
+> If you want then do so, but the stuff in batman-adv's master must be fixed so
+> they have to apply the v3 version of the patch and not the v2 version Andy
+> sent.
 
-Please read the information in Documentation/development_process, it
-will help you out a lot.
+That's one of the problems with having an out-of-tree tree.  Please
+don't do that at all anymore.
 
-> My view was that the merge window is when new stuff should be
-> submitted, while everything in between is devoted to fixing breakage
-> just introduced.  So, I must have been wrong :)
-
-The merge window is for the subsystem maintainers, not the individual
-developers.  You need to have the code into a subsystem tree before the
-merge window in order to be able to get it accepted.
-
-> >> If possible, I would deeply appreciate a merge to a relevant git tree
-> >> for integration prior to asking Linus to pull the changes. I could
-> >> rebase the code if needed, currently this is against Linus' master
-> >> branch.
-> >>
-> >> This patch relies on the basic architecture support for VT8500/WM8505
-> >> to be in place, as introduced by PATCH 1/6 in this series.
-> >
-> > So it will just fail to build without that patch?
-> >
-> 
-> It won't, and it should not even be selectable, as there is a Kconfig
-> dependency on the relevant arch. It's just that it would be useless
-> without the relevant arch support.
-
-That's good to know.
-
-As the .37 merge window just opened, you are going to have to wait until
-2.6.37-rc1 before anyone will be able to have the time to review and
-accept these patches, sorry.  Please resend them then.
+I'll go apply this patch to mine, and you can handle any merge issues if
+you continue to wish to keep an external tree (hint, I STRONGLY
+recommend that you do not, for these reasons and many others.)
 
 thanks,
 
