@@ -1,102 +1,254 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751913Ab0JTE7L (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Oct 2010 00:59:11 -0400
-Received: from hera.kernel.org ([140.211.167.34]:34092 "EHLO hera.kernel.org"
+	id S1752281Ab0JTE73 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Oct 2010 00:59:29 -0400
+Received: from hera.kernel.org ([140.211.167.34]:34103 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750946Ab0JTE7J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Oct 2010 00:59:09 -0400
-Date: Wed, 20 Oct 2010 04:58:50 GMT
+	id S1751135Ab0JTE72 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Oct 2010 00:59:28 -0400
+Date: Wed, 20 Oct 2010 04:59:13 GMT
 From: tip-bot for Jiri Olsa <jolsa@redhat.com>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
         rostedt@goodmis.org, tglx@linutronix.de, jolsa@redhat.com
 Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
         rostedt@goodmis.org, tglx@linutronix.de, jolsa@redhat.com
-In-Reply-To: <20100924154102.GB1818@jolsa.brq.redhat.com>
-References: <20100924154102.GB1818@jolsa.brq.redhat.com>
+In-Reply-To: <1285243253-7372-3-git-send-email-jolsa@redhat.com>
+References: <1285243253-7372-3-git-send-email-jolsa@redhat.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] tracing: Add proper check for irq_depth routines
-Message-ID: <tip-a9d61173dc1cb63e660ae89e874e51ba4fd2f991@git.kernel.org>
-Git-Commit-ID: a9d61173dc1cb63e660ae89e874e51ba4fd2f991
+Subject: [tip:perf/core] tracing: Make graph related irqs/preemptsoff functions global
+Message-ID: <tip-0a772620a2e21fb55a02f70fe38d4b5c3a5fbbbf@git.kernel.org>
+Git-Commit-ID: 0a772620a2e21fb55a02f70fe38d4b5c3a5fbbbf
 X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 20 Oct 2010 04:58:51 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 20 Oct 2010 04:59:13 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  a9d61173dc1cb63e660ae89e874e51ba4fd2f991
-Gitweb:     http://git.kernel.org/tip/a9d61173dc1cb63e660ae89e874e51ba4fd2f991
+Commit-ID:  0a772620a2e21fb55a02f70fe38d4b5c3a5fbbbf
+Gitweb:     http://git.kernel.org/tip/0a772620a2e21fb55a02f70fe38d4b5c3a5fbbbf
 Author:     Jiri Olsa <jolsa@redhat.com>
-AuthorDate: Fri, 24 Sep 2010 17:41:02 +0200
+AuthorDate: Thu, 23 Sep 2010 14:00:52 +0200
 Committer:  Steven Rostedt <rostedt@goodmis.org>
-CommitDate: Mon, 18 Oct 2010 10:53:25 -0400
+CommitDate: Mon, 18 Oct 2010 10:53:28 -0400
 
-tracing: Add proper check for irq_depth routines
+tracing: Make graph related irqs/preemptsoff functions global
 
-The check_irq_entry and check_irq_return could be called
-from graph event context. In such case there's no graph
-private data allocated. Adding checks to handle this case.
+Move trace_graph_function() and print_graph_headers_flags() functions
+to the trace_function_graph.c to be globaly available.
 
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-LKML-Reference: <20100924154102.GB1818@jolsa.brq.redhat.com>
-
-[ Fixed some grammar in the comments ]
-
+LKML-Reference: <1285243253-7372-3-git-send-email-jolsa@redhat.com>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- kernel/trace/trace_functions_graph.c |   24 ++++++++++++++++++++----
- 1 files changed, 20 insertions(+), 4 deletions(-)
+ kernel/trace/trace.h                 |    4 ++
+ kernel/trace/trace_functions_graph.c |   63 ++++++++++++++++++++++++++++++++--
+ kernel/trace/trace_irqsoff.c         |   56 ++++--------------------------
+ 3 files changed, 71 insertions(+), 52 deletions(-)
 
+diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
+index d39b3c5..9021f8c 100644
+--- a/kernel/trace/trace.h
++++ b/kernel/trace/trace.h
+@@ -343,6 +343,10 @@ void trace_function(struct trace_array *tr,
+ 		    unsigned long ip,
+ 		    unsigned long parent_ip,
+ 		    unsigned long flags, int pc);
++void trace_graph_function(struct trace_array *tr,
++		    unsigned long ip,
++		    unsigned long parent_ip,
++		    unsigned long flags, int pc);
+ void trace_default_header(struct seq_file *m);
+ void print_trace_header(struct seq_file *m, struct trace_iterator *iter);
+ int trace_empty(struct trace_iterator *iter);
 diff --git a/kernel/trace/trace_functions_graph.c b/kernel/trace/trace_functions_graph.c
-index ef49e93..4c58ccc 100644
+index 4c58ccc..6f8fe28 100644
 --- a/kernel/trace/trace_functions_graph.c
 +++ b/kernel/trace/trace_functions_graph.c
-@@ -888,12 +888,20 @@ check_irq_entry(struct trace_iterator *iter, u32 flags,
- 		unsigned long addr, int depth)
- {
- 	int cpu = iter->cpu;
-+	int *depth_irq;
- 	struct fgraph_data *data = iter->private;
--	int *depth_irq = &(per_cpu_ptr(data->cpu_data, cpu)->depth_irq);
+@@ -262,6 +262,35 @@ int trace_graph_thresh_entry(struct ftrace_graph_ent *trace)
+ 		return trace_graph_entry(trace);
+ }
  
--	if (flags & TRACE_GRAPH_PRINT_IRQS)
-+	/*
-+	 * If we are either displaying irqs, or we got called as
-+	 * a graph event and private data does not exist,
-+	 * then we bypass the irq check.
-+	 */
-+	if ((flags & TRACE_GRAPH_PRINT_IRQS) ||
-+	    (!data))
- 		return 0;
- 
-+	depth_irq = &(per_cpu_ptr(data->cpu_data, cpu)->depth_irq);
++static void
++__trace_graph_function(struct trace_array *tr,
++		unsigned long ip, unsigned long flags, int pc)
++{
++	u64 time = trace_clock_local();
++	struct ftrace_graph_ent ent = {
++		.func  = ip,
++		.depth = 0,
++	};
++	struct ftrace_graph_ret ret = {
++		.func     = ip,
++		.depth    = 0,
++		.calltime = time,
++		.rettime  = time,
++	};
 +
- 	/*
- 	 * We are inside the irq code
- 	 */
-@@ -926,12 +934,20 @@ static int
- check_irq_return(struct trace_iterator *iter, u32 flags, int depth)
- {
- 	int cpu = iter->cpu;
-+	int *depth_irq;
- 	struct fgraph_data *data = iter->private;
--	int *depth_irq = &(per_cpu_ptr(data->cpu_data, cpu)->depth_irq);
- 
--	if (flags & TRACE_GRAPH_PRINT_IRQS)
-+	/*
-+	 * If we are either displaying irqs, or we got called as
-+	 * a graph event and private data does not exist,
-+	 * then we bypass the irq check.
-+	 */
-+	if ((flags & TRACE_GRAPH_PRINT_IRQS) ||
-+	    (!data))
- 		return 0;
- 
-+	depth_irq = &(per_cpu_ptr(data->cpu_data, cpu)->depth_irq);
++	__trace_graph_entry(tr, &ent, flags, pc);
++	__trace_graph_return(tr, &ret, flags, pc);
++}
 +
++void
++trace_graph_function(struct trace_array *tr,
++		unsigned long ip, unsigned long parent_ip,
++		unsigned long flags, int pc)
++{
++	__trace_graph_function(tr, parent_ip, flags, pc);
++	__trace_graph_function(tr, ip, flags, pc);
++}
++
+ void __trace_graph_return(struct trace_array *tr,
+ 				struct ftrace_graph_ret *trace,
+ 				unsigned long flags,
+@@ -1179,7 +1208,7 @@ print_graph_comment(struct trace_seq *s, struct trace_entry *ent,
+ 
+ 
+ enum print_line_t
+-print_graph_function_flags(struct trace_iterator *iter, u32 flags)
++__print_graph_function_flags(struct trace_iterator *iter, u32 flags)
+ {
+ 	struct ftrace_graph_ent_entry *field;
+ 	struct fgraph_data *data = iter->private;
+@@ -1242,7 +1271,18 @@ print_graph_function_flags(struct trace_iterator *iter, u32 flags)
+ static enum print_line_t
+ print_graph_function(struct trace_iterator *iter)
+ {
+-	return print_graph_function_flags(iter, tracer_flags.val);
++	return __print_graph_function_flags(iter, tracer_flags.val);
++}
++
++enum print_line_t print_graph_function_flags(struct trace_iterator *iter,
++					     u32 flags)
++{
++	if (trace_flags & TRACE_ITER_LATENCY_FMT)
++		flags |= TRACE_GRAPH_PRINT_DURATION;
++	else
++		flags |= TRACE_GRAPH_PRINT_ABS_TIME;
++
++	return __print_graph_function_flags(iter, flags);
+ }
+ 
+ static enum print_line_t
+@@ -1274,7 +1314,7 @@ static void print_lat_header(struct seq_file *s, u32 flags)
+ 	seq_printf(s, "#%.*s|||| /                     \n", size, spaces);
+ }
+ 
+-void print_graph_headers_flags(struct seq_file *s, u32 flags)
++static void __print_graph_headers_flags(struct seq_file *s, u32 flags)
+ {
+ 	int lat = trace_flags & TRACE_ITER_LATENCY_FMT;
+ 
+@@ -1315,6 +1355,23 @@ void print_graph_headers(struct seq_file *s)
+ 	print_graph_headers_flags(s, tracer_flags.val);
+ }
+ 
++void print_graph_headers_flags(struct seq_file *s, u32 flags)
++{
++	struct trace_iterator *iter = s->private;
++
++	if (trace_flags & TRACE_ITER_LATENCY_FMT) {
++		/* print nothing if the buffers are empty */
++		if (trace_empty(iter))
++			return;
++
++		print_trace_header(s, iter);
++		flags |= TRACE_GRAPH_PRINT_DURATION;
++	} else
++		flags |= TRACE_GRAPH_PRINT_ABS_TIME;
++
++	__print_graph_headers_flags(s, flags);
++}
++
+ void graph_trace_open(struct trace_iterator *iter)
+ {
+ 	/* pid and depth on the last trace processed */
+diff --git a/kernel/trace/trace_irqsoff.c b/kernel/trace/trace_irqsoff.c
+index 73a6b06..4047e98 100644
+--- a/kernel/trace/trace_irqsoff.c
++++ b/kernel/trace/trace_irqsoff.c
+@@ -229,75 +229,33 @@ static void irqsoff_trace_close(struct trace_iterator *iter)
+ 
+ static enum print_line_t irqsoff_print_line(struct trace_iterator *iter)
+ {
+-	u32 flags = GRAPH_TRACER_FLAGS;
+-
+-	if (trace_flags & TRACE_ITER_LATENCY_FMT)
+-		flags |= TRACE_GRAPH_PRINT_DURATION;
+-	else
+-		flags |= TRACE_GRAPH_PRINT_ABS_TIME;
+-
  	/*
- 	 * We are not inside the irq code.
+ 	 * In graph mode call the graph tracer output function,
+ 	 * otherwise go with the TRACE_FN event handler
  	 */
+ 	if (is_graph())
+-		return print_graph_function_flags(iter, flags);
++		return print_graph_function_flags(iter, GRAPH_TRACER_FLAGS);
+ 
+ 	return TRACE_TYPE_UNHANDLED;
+ }
+ 
+ static void irqsoff_print_header(struct seq_file *s)
+ {
+-	if (is_graph()) {
+-		struct trace_iterator *iter = s->private;
+-		u32 flags = GRAPH_TRACER_FLAGS;
+-
+-		if (trace_flags & TRACE_ITER_LATENCY_FMT) {
+-			/* print nothing if the buffers are empty */
+-			if (trace_empty(iter))
+-				return;
+-
+-			print_trace_header(s, iter);
+-			flags |= TRACE_GRAPH_PRINT_DURATION;
+-		} else
+-			flags |= TRACE_GRAPH_PRINT_ABS_TIME;
+-
+-		print_graph_headers_flags(s, flags);
+-	} else
++	if (is_graph())
++		print_graph_headers_flags(s, GRAPH_TRACER_FLAGS);
++	else
+ 		trace_default_header(s);
+ }
+ 
+ static void
+-trace_graph_function(struct trace_array *tr,
+-		 unsigned long ip, unsigned long flags, int pc)
+-{
+-	u64 time = trace_clock_local();
+-	struct ftrace_graph_ent ent = {
+-		.func  = ip,
+-		.depth = 0,
+-	};
+-	struct ftrace_graph_ret ret = {
+-		.func     = ip,
+-		.depth    = 0,
+-		.calltime = time,
+-		.rettime  = time,
+-	};
+-
+-	__trace_graph_entry(tr, &ent, flags, pc);
+-	__trace_graph_return(tr, &ret, flags, pc);
+-}
+-
+-static void
+ __trace_function(struct trace_array *tr,
+ 		 unsigned long ip, unsigned long parent_ip,
+ 		 unsigned long flags, int pc)
+ {
+-	if (!is_graph())
++	if (is_graph())
++		trace_graph_function(tr, ip, parent_ip, flags, pc);
++	else
+ 		trace_function(tr, ip, parent_ip, flags, pc);
+-	else {
+-		trace_graph_function(tr, parent_ip, flags, pc);
+-		trace_graph_function(tr, ip, flags, pc);
+-	}
+ }
+ 
+ #else
