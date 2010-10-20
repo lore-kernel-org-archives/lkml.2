@@ -1,273 +1,467 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752091Ab0JTL1j (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Oct 2010 07:27:39 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:39792 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751764Ab0JTL1i (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Oct 2010 07:27:38 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=VIdUzBOfkQVxDkU66WSOCEsS9vrIe5WmLdinWV1ejABi9+PRP8ZGvrci3LMflKnjXJ
-         vJqMh5GgqN1cEQHhdX6o+d9Ju3cn/eZanx5pyYPn254Egyc6YFcqRsOCcA5llwyfpPE+
-         7TKoPel030zcpaFb8lL0qYZXSy7+JDIaXc1LE=
-From: Andy Shevchenko <andy.shevchenko@gmail.com>
-To: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@suse.de>,
-        Andy Shevchenko <andy.shevchenko@gmail.com>
-Subject: [PATCHv2] staging: batman-adv: remove useless addr_to_string()
-Date: Wed, 20 Oct 2010 14:27:24 +0300
-Message-Id: <1287574044-23000-1-git-send-email-andy.shevchenko@gmail.com>
-X-Mailer: git-send-email 1.7.2.3
-In-Reply-To: <20101019170342.GA18575@kroah.com>
-References: <20101019170342.GA18575@kroah.com>
+	id S1752069Ab0JTL3o (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Oct 2010 07:29:44 -0400
+Received: from thoth.sbs.de ([192.35.17.2]:22334 "EHLO thoth.sbs.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751800Ab0JTL3m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Oct 2010 07:29:42 -0400
+Message-ID: <4CBED271.9000103@siemens.com>
+Date: Wed, 20 Oct 2010 13:28:49 +0200
+From: Jan Kiszka <jan.kiszka@siemens.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
+MIME-Version: 1.0
+To: Gleb Natapov <gleb@redhat.com>
+CC: kvm@vger.kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        avi@redhat.com, mingo@elte.hu, a.p.zijlstra@chello.nl,
+        tglx@linutronix.de, hpa@zytor.com, riel@redhat.com,
+        cl@linux-foundation.org, mtosatti@redhat.com
+Subject: Re: [PATCH v7 02/12] Halt vcpu if page it tries to access is swapped
+ out.
+References: <1287048176-2563-1-git-send-email-gleb@redhat.com> <1287048176-2563-3-git-send-email-gleb@redhat.com>
+In-Reply-To: <1287048176-2563-3-git-send-email-gleb@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since all *printf() methods in the kernel understand '%pM' modifier the
-conversion to the string is useless beforehand.
+Am 14.10.2010 11:22, Gleb Natapov wrote:
+> If a guest accesses swapped out memory do not swap it in from vcpu thread
+> context. Schedule work to do swapping and put vcpu into halted state
+> instead.
+> 
+> Interrupts will still be delivered to the guest and if interrupt will
+> cause reschedule guest will continue to run another task.
+> 
+> Acked-by: Rik van Riel <riel@redhat.com>
+> Signed-off-by: Gleb Natapov <gleb@redhat.com>
+> ---
+>  arch/x86/include/asm/kvm_host.h |   18 ++++
+>  arch/x86/kvm/Kconfig            |    1 +
+>  arch/x86/kvm/Makefile           |    1 +
+>  arch/x86/kvm/mmu.c              |   52 +++++++++++-
+>  arch/x86/kvm/paging_tmpl.h      |    4 +-
+>  arch/x86/kvm/x86.c              |  112 ++++++++++++++++++++++-
+>  include/linux/kvm_host.h        |   31 +++++++
+>  include/trace/events/kvm.h      |   90 ++++++++++++++++++
+>  virt/kvm/Kconfig                |    3 +
+>  virt/kvm/async_pf.c             |  190 +++++++++++++++++++++++++++++++++++++++
+>  virt/kvm/async_pf.h             |   36 ++++++++
+>  virt/kvm/kvm_main.c             |   57 +++++++++---
+>  12 files changed, 578 insertions(+), 17 deletions(-)
+>  create mode 100644 virt/kvm/async_pf.c
+>  create mode 100644 virt/kvm/async_pf.h
+> 
+> diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
+> index e209078..043e29e 100644
+> --- a/arch/x86/include/asm/kvm_host.h
+> +++ b/arch/x86/include/asm/kvm_host.h
+> @@ -83,11 +83,14 @@
+>  #define KVM_NR_FIXED_MTRR_REGION 88
+>  #define KVM_NR_VAR_MTRR 8
+>  
+> +#define ASYNC_PF_PER_VCPU 64
+> +
+>  extern spinlock_t kvm_lock;
+>  extern struct list_head vm_list;
+>  
+>  struct kvm_vcpu;
+>  struct kvm;
+> +struct kvm_async_pf;
+>  
+>  enum kvm_reg {
+>  	VCPU_REGS_RAX = 0,
+> @@ -412,6 +415,11 @@ struct kvm_vcpu_arch {
+>  	u64 hv_vapic;
+>  
+>  	cpumask_var_t wbinvd_dirty_mask;
+> +
+> +	struct {
+> +		bool halted;
+> +		gfn_t gfns[roundup_pow_of_two(ASYNC_PF_PER_VCPU)];
+> +	} apf;
+>  };
+>  
+>  struct kvm_arch {
+> @@ -585,6 +593,10 @@ struct kvm_x86_ops {
+>  	const struct trace_print_flags *exit_reasons_str;
+>  };
+>  
+> +struct kvm_arch_async_pf {
+> +	gfn_t gfn;
+> +};
+> +
+>  extern struct kvm_x86_ops *kvm_x86_ops;
+>  
+>  int kvm_mmu_module_init(void);
+> @@ -823,4 +835,10 @@ void kvm_set_shared_msr(unsigned index, u64 val, u64 mask);
+>  
+>  bool kvm_is_linear_rip(struct kvm_vcpu *vcpu, unsigned long linear_rip);
+>  
+> +void kvm_arch_async_page_not_present(struct kvm_vcpu *vcpu,
+> +				     struct kvm_async_pf *work);
+> +void kvm_arch_async_page_present(struct kvm_vcpu *vcpu,
+> +				 struct kvm_async_pf *work);
+> +extern bool kvm_find_async_pf_gfn(struct kvm_vcpu *vcpu, gfn_t gfn);
+> +
+>  #endif /* _ASM_X86_KVM_HOST_H */
+> diff --git a/arch/x86/kvm/Kconfig b/arch/x86/kvm/Kconfig
+> index ddc131f..50f6364 100644
+> --- a/arch/x86/kvm/Kconfig
+> +++ b/arch/x86/kvm/Kconfig
+> @@ -28,6 +28,7 @@ config KVM
+>  	select HAVE_KVM_IRQCHIP
+>  	select HAVE_KVM_EVENTFD
+>  	select KVM_APIC_ARCHITECTURE
+> +	select KVM_ASYNC_PF
+>  	select USER_RETURN_NOTIFIER
+>  	select KVM_MMIO
+>  	---help---
+> diff --git a/arch/x86/kvm/Makefile b/arch/x86/kvm/Makefile
+> index 31a7035..c53bf19 100644
+> --- a/arch/x86/kvm/Makefile
+> +++ b/arch/x86/kvm/Makefile
+> @@ -9,6 +9,7 @@ kvm-y			+= $(addprefix ../../../virt/kvm/, kvm_main.o ioapic.o \
+>  				coalesced_mmio.o irq_comm.o eventfd.o \
+>  				assigned-dev.o)
+>  kvm-$(CONFIG_IOMMU_API)	+= $(addprefix ../../../virt/kvm/, iommu.o)
+> +kvm-$(CONFIG_KVM_ASYNC_PF)	+= $(addprefix ../../../virt/kvm/, async_pf.o)
+>  
+>  kvm-y			+= x86.o mmu.o emulate.o i8259.o irq.o lapic.o \
+>  			   i8254.o timer.o
+> diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+> index 908ea54..f01e89a 100644
+> --- a/arch/x86/kvm/mmu.c
+> +++ b/arch/x86/kvm/mmu.c
+> @@ -18,9 +18,11 @@
+>   *
+>   */
+>  
+> +#include "irq.h"
+>  #include "mmu.h"
+>  #include "x86.h"
+>  #include "kvm_cache_regs.h"
+> +#include "x86.h"
+>  
+>  #include <linux/kvm_host.h>
+>  #include <linux/types.h>
+> @@ -2585,6 +2587,50 @@ static int nonpaging_page_fault(struct kvm_vcpu *vcpu, gva_t gva,
+>  			     error_code & PFERR_WRITE_MASK, gfn);
+>  }
+>  
+> +int kvm_arch_setup_async_pf(struct kvm_vcpu *vcpu, gva_t gva, gfn_t gfn)
+> +{
+> +	struct kvm_arch_async_pf arch;
+> +	arch.gfn = gfn;
+> +
+> +	return kvm_setup_async_pf(vcpu, gva, gfn, &arch);
+> +}
+> +
+> +static bool can_do_async_pf(struct kvm_vcpu *vcpu)
+> +{
+> +	if (unlikely(!irqchip_in_kernel(vcpu->kvm) ||
+> +		     kvm_event_needs_reinjection(vcpu)))
+> +		return false;
+> +
+> +	return kvm_x86_ops->interrupt_allowed(vcpu);
+> +}
+> +
+> +static bool try_async_pf(struct kvm_vcpu *vcpu, gfn_t gfn, gva_t gva,
+> +			 pfn_t *pfn)
+> +{
+> +	bool async;
+> +
+> +	*pfn = gfn_to_pfn_async(vcpu->kvm, gfn, &async);
+> +
+> +	if (!async)
+> +		return false; /* *pfn has correct page already */
+> +
+> +	put_page(pfn_to_page(*pfn));
+> +
+> +	if (can_do_async_pf(vcpu)) {
+> +		trace_kvm_try_async_get_page(async, *pfn);
+> +		if (kvm_find_async_pf_gfn(vcpu, gfn)) {
+> +			trace_kvm_async_pf_doublefault(gva, gfn);
+> +			kvm_make_request(KVM_REQ_APF_HALT, vcpu);
+> +			return true;
+> +		} else if (kvm_arch_setup_async_pf(vcpu, gva, gfn))
+> +			return true;
+> +	}
+> +
+> +	*pfn = gfn_to_pfn(vcpu->kvm, gfn);
+> +	
+> +	return false;
+> +}
+> +
+>  static int tdp_page_fault(struct kvm_vcpu *vcpu, gva_t gpa,
+>  				u32 error_code)
+>  {
+> @@ -2607,7 +2653,11 @@ static int tdp_page_fault(struct kvm_vcpu *vcpu, gva_t gpa,
+>  
+>  	mmu_seq = vcpu->kvm->mmu_notifier_seq;
+>  	smp_rmb();
+> -	pfn = gfn_to_pfn(vcpu->kvm, gfn);
+> +
+> +	if (try_async_pf(vcpu, gfn, gpa, &pfn))
+> +		return 0;
+> +
+> +	/* mmio */
+>  	if (is_error_pfn(pfn))
+>  		return kvm_handle_bad_page(vcpu->kvm, gfn, pfn);
+>  	spin_lock(&vcpu->kvm->mmu_lock);
+> diff --git a/arch/x86/kvm/paging_tmpl.h b/arch/x86/kvm/paging_tmpl.h
+> index cd7a833..c45376d 100644
+> --- a/arch/x86/kvm/paging_tmpl.h
+> +++ b/arch/x86/kvm/paging_tmpl.h
+> @@ -568,7 +568,9 @@ static int FNAME(page_fault)(struct kvm_vcpu *vcpu, gva_t addr,
+>  
+>  	mmu_seq = vcpu->kvm->mmu_notifier_seq;
+>  	smp_rmb();
+> -	pfn = gfn_to_pfn(vcpu->kvm, walker.gfn);
+> +
+> +	if (try_async_pf(vcpu, walker.gfn, addr, &pfn))
+> +		return 0;
+>  
+>  	/* mmio */
+>  	if (is_error_pfn(pfn))
+> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+> index 7127a13..09e72fc 100644
+> --- a/arch/x86/kvm/x86.c
+> +++ b/arch/x86/kvm/x86.c
+> @@ -43,6 +43,7 @@
+>  #include <linux/slab.h>
+>  #include <linux/perf_event.h>
+>  #include <linux/uaccess.h>
+> +#include <linux/hash.h>
+>  #include <trace/events/kvm.h>
+>  
+>  #define CREATE_TRACE_POINTS
+> @@ -155,6 +156,13 @@ struct kvm_stats_debugfs_item debugfs_entries[] = {
+>  
+>  u64 __read_mostly host_xcr0;
+>  
+> +static inline void kvm_async_pf_hash_reset(struct kvm_vcpu *vcpu)
+> +{
+> +	int i;
+> +	for (i = 0; i < roundup_pow_of_two(ASYNC_PF_PER_VCPU); i++)
+> +		vcpu->arch.apf.gfns[i] = ~0;
+> +}
+> +
+>  static inline u32 bit(int bitno)
+>  {
+>  	return 1 << (bitno & 31);
+> @@ -5110,6 +5118,12 @@ static int vcpu_enter_guest(struct kvm_vcpu *vcpu)
+>  			vcpu->fpu_active = 0;
+>  			kvm_x86_ops->fpu_deactivate(vcpu);
+>  		}
+> +		if (kvm_check_request(KVM_REQ_APF_HALT, vcpu)) {
+> +			/* Page is swapped out. Do synthetic halt */
+> +			vcpu->arch.apf.halted = true;
+> +			r = 1;
+> +			goto out;
+> +		}
+>  	}
+>  
+>  	r = kvm_mmu_reload(vcpu);
+> @@ -5238,7 +5252,8 @@ static int __vcpu_run(struct kvm_vcpu *vcpu)
+>  
+>  	r = 1;
+>  	while (r > 0) {
+> -		if (vcpu->arch.mp_state == KVM_MP_STATE_RUNNABLE)
+> +		if (vcpu->arch.mp_state == KVM_MP_STATE_RUNNABLE &&
+> +		    !vcpu->arch.apf.halted)
+>  			r = vcpu_enter_guest(vcpu);
+>  		else {
+>  			srcu_read_unlock(&kvm->srcu, vcpu->srcu_idx);
+> @@ -5251,6 +5266,7 @@ static int __vcpu_run(struct kvm_vcpu *vcpu)
+>  					vcpu->arch.mp_state =
+>  						KVM_MP_STATE_RUNNABLE;
+>  				case KVM_MP_STATE_RUNNABLE:
+> +					vcpu->arch.apf.halted = false;
+>  					break;
+>  				case KVM_MP_STATE_SIPI_RECEIVED:
+>  				default:
+> @@ -5272,6 +5288,9 @@ static int __vcpu_run(struct kvm_vcpu *vcpu)
+>  			vcpu->run->exit_reason = KVM_EXIT_INTR;
+>  			++vcpu->stat.request_irq_exits;
+>  		}
+> +		
+> +		kvm_check_async_pf_completion(vcpu);
+> +
+>  		if (signal_pending(current)) {
+>  			r = -EINTR;
+>  			vcpu->run->exit_reason = KVM_EXIT_INTR;
+> @@ -5785,6 +5804,10 @@ int kvm_arch_vcpu_reset(struct kvm_vcpu *vcpu)
+>  
+>  	kvm_make_request(KVM_REQ_EVENT, vcpu);
+>  
+> +	kvm_clear_async_pf_completion_queue(vcpu);
+> +	kvm_async_pf_hash_reset(vcpu);
+> +	vcpu->arch.apf.halted = false;
+> +
+>  	return kvm_x86_ops->vcpu_reset(vcpu);
+>  }
+>  
+> @@ -5873,6 +5896,8 @@ int kvm_arch_vcpu_init(struct kvm_vcpu *vcpu)
+>  	if (!zalloc_cpumask_var(&vcpu->arch.wbinvd_dirty_mask, GFP_KERNEL))
+>  		goto fail_free_mce_banks;
+>  
+> +	kvm_async_pf_hash_reset(vcpu);
+> +
+>  	return 0;
+>  fail_free_mce_banks:
+>  	kfree(vcpu->arch.mce_banks);
+> @@ -5931,8 +5956,10 @@ static void kvm_free_vcpus(struct kvm *kvm)
+>  	/*
+>  	 * Unpin any mmu pages first.
+>  	 */
+> -	kvm_for_each_vcpu(i, vcpu, kvm)
+> +	kvm_for_each_vcpu(i, vcpu, kvm) {
+> +		kvm_clear_async_pf_completion_queue(vcpu);
+>  		kvm_unload_vcpu_mmu(vcpu);
+> +	}
+>  	kvm_for_each_vcpu(i, vcpu, kvm)
+>  		kvm_arch_vcpu_free(vcpu);
+>  
+> @@ -6043,7 +6070,9 @@ void kvm_arch_flush_shadow(struct kvm *kvm)
+>  
+>  int kvm_arch_vcpu_runnable(struct kvm_vcpu *vcpu)
+>  {
+> -	return vcpu->arch.mp_state == KVM_MP_STATE_RUNNABLE
+> +	return (vcpu->arch.mp_state == KVM_MP_STATE_RUNNABLE &&
+> +		!vcpu->arch.apf.halted)
+> +		|| !list_empty_careful(&vcpu->async_pf.done)
+>  		|| vcpu->arch.mp_state == KVM_MP_STATE_SIPI_RECEIVED
+>  		|| vcpu->arch.nmi_pending ||
+>  		(kvm_arch_interrupt_allowed(vcpu) &&
+> @@ -6102,6 +6131,83 @@ void kvm_set_rflags(struct kvm_vcpu *vcpu, unsigned long rflags)
+>  }
+>  EXPORT_SYMBOL_GPL(kvm_set_rflags);
+>  
+> +static inline u32 kvm_async_pf_hash_fn(gfn_t gfn)
+> +{
+> +	return hash_32(gfn & 0xffffffff, order_base_2(ASYNC_PF_PER_VCPU));
+> +}
+> +
+> +static inline u32 kvm_async_pf_next_probe(u32 key)
+> +{
+> +	return (key + 1) & (roundup_pow_of_two(ASYNC_PF_PER_VCPU) - 1);
+> +}
+> +
+> +static void kvm_add_async_pf_gfn(struct kvm_vcpu *vcpu, gfn_t gfn)
+> +{
+> +	u32 key = kvm_async_pf_hash_fn(gfn);
+> +
+> +	while (vcpu->arch.apf.gfns[key] != ~0)
+> +		key = kvm_async_pf_next_probe(key);
+> +
+> +	vcpu->arch.apf.gfns[key] = gfn;
+> +}
+> +
+> +static u32 kvm_async_pf_gfn_slot(struct kvm_vcpu *vcpu, gfn_t gfn)
+> +{
+> +	int i;
+> +	u32 key = kvm_async_pf_hash_fn(gfn);
+> +
+> +	for (i = 0; i < roundup_pow_of_two(ASYNC_PF_PER_VCPU) &&
+> +		     (vcpu->arch.apf.gfns[key] != gfn ||
+> +		      vcpu->arch.apf.gfns[key] == ~0); i++)
+> +		key = kvm_async_pf_next_probe(key);
+> +
+> +	return key;
+> +}
+> +
+> +bool kvm_find_async_pf_gfn(struct kvm_vcpu *vcpu, gfn_t gfn)
+> +{
+> +	return vcpu->arch.apf.gfns[kvm_async_pf_gfn_slot(vcpu, gfn)] == gfn;
+> +}
+> +
+> +static void kvm_del_async_pf_gfn(struct kvm_vcpu *vcpu, gfn_t gfn)
+> +{
+> +	u32 i, j, k;
+> +
+> +	i = j = kvm_async_pf_gfn_slot(vcpu, gfn);
+> +	while (true) {
+> +		vcpu->arch.apf.gfns[i] = ~0;
+> +		do {
+> +			j = kvm_async_pf_next_probe(j);
+> +			if (vcpu->arch.apf.gfns[j] == ~0)
+> +				return;
+> +			k = kvm_async_pf_hash_fn(vcpu->arch.apf.gfns[j]);
+> +			/*
+> +			 * k lies cyclically in ]i,j]
+> +			 * |    i.k.j |
+> +			 * |....j i.k.| or  |.k..j i...|
+> +			 */
+> +		} while ((i <= j) ? (i < k && k <= j) : (i < k || k <= j));
+> +		vcpu->arch.apf.gfns[i] = vcpu->arch.apf.gfns[j];
+> +		i = j;
+> +	}
+> +}
+> +
+> +void kvm_arch_async_page_not_present(struct kvm_vcpu *vcpu,
+> +				     struct kvm_async_pf *work)
+> +{
+> +	trace_kvm_async_pf_not_present(work->gva);
+> +
+> +	kvm_make_request(KVM_REQ_APF_HALT, vcpu);
+> +	kvm_add_async_pf_gfn(vcpu, work->arch.gfn);
+> +}
+> +
+> +void kvm_arch_async_page_present(struct kvm_vcpu *vcpu,
+> +				 struct kvm_async_pf *work)
+> +{
+> +	trace_kvm_async_pf_ready(work->gva);
+> +	kvm_del_async_pf_gfn(vcpu, work->arch.gfn);
+> +}
+> +
+>  EXPORT_TRACEPOINT_SYMBOL_GPL(kvm_exit);
+>  EXPORT_TRACEPOINT_SYMBOL_GPL(kvm_inj_virq);
+>  EXPORT_TRACEPOINT_SYMBOL_GPL(kvm_page_fault);
+> diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
+> index 0b89d00..9a9b017 100644
+> --- a/include/linux/kvm_host.h
+> +++ b/include/linux/kvm_host.h
+> @@ -40,6 +40,7 @@
+>  #define KVM_REQ_KICK               9
+>  #define KVM_REQ_DEACTIVATE_FPU    10
+>  #define KVM_REQ_EVENT             11
+> +#define KVM_REQ_APF_HALT          12
+>  
+>  #define KVM_USERSPACE_IRQ_SOURCE_ID	0
+>  
+> @@ -74,6 +75,26 @@ int kvm_io_bus_register_dev(struct kvm *kvm, enum kvm_bus bus_idx,
+>  int kvm_io_bus_unregister_dev(struct kvm *kvm, enum kvm_bus bus_idx,
+>  			      struct kvm_io_device *dev);
+>  
+> +#ifdef CONFIG_KVM_ASYNC_PF
+> +struct kvm_async_pf {
+> +	struct work_struct work;
+> +	struct list_head link;
+> +	struct list_head queue;
+> +	struct kvm_vcpu *vcpu;
+> +	struct mm_struct *mm;
+> +	gva_t gva;
+> +	unsigned long addr;
+> +	struct kvm_arch_async_pf arch;
+> +	struct page *page;
+> +	bool done;
+> +};
+> +
+> +void kvm_clear_async_pf_completion_queue(struct kvm_vcpu *vcpu);
+> +void kvm_check_async_pf_completion(struct kvm_vcpu *vcpu);
+> +int kvm_setup_async_pf(struct kvm_vcpu *vcpu, gva_t gva, gfn_t gfn,
+> +		       struct kvm_arch_async_pf *arch);
+> +#endif
+> +
 
-Additionally this patch decreases batman_if structure by 20 bytes.
+Based on early kvm-kmod experiments, it looks like this (and maybe more)
+breaks the build in arch/x86/kvm/x86.c if CONFIG_KVM_ASYNC_PF is
+disabled. Please have a look.
 
-Signed-off-by: Andy Shevchenko <andy.shevchenko@gmail.com>
----
- drivers/staging/batman-adv/hard-interface.c |    2 --
- drivers/staging/batman-adv/main.c           |    5 -----
- drivers/staging/batman-adv/main.h           |    2 --
- drivers/staging/batman-adv/originator.c     |   16 ++++++----------
- drivers/staging/batman-adv/routing.c        |    4 ++--
- drivers/staging/batman-adv/send.c           |    8 ++++----
- drivers/staging/batman-adv/types.h          |    1 -
- drivers/staging/batman-adv/vis.c            |   18 ++++++------------
- 8 files changed, 18 insertions(+), 38 deletions(-)
+Jan
 
-diff --git a/drivers/staging/batman-adv/hard-interface.c b/drivers/staging/batman-adv/hard-interface.c
-index 7b77cf2..80cfa86 100644
---- a/drivers/staging/batman-adv/hard-interface.c
-+++ b/drivers/staging/batman-adv/hard-interface.c
-@@ -159,8 +159,6 @@ static bool hardif_is_iface_up(struct batman_if *batman_if)
- 
- static void update_mac_addresses(struct batman_if *batman_if)
- {
--	addr_to_string(batman_if->addr_str, batman_if->net_dev->dev_addr);
--
- 	memcpy(((struct batman_packet *)(batman_if->packet_buff))->orig,
- 	       batman_if->net_dev->dev_addr, ETH_ALEN);
- 	memcpy(((struct batman_packet *)(batman_if->packet_buff))->prev_sender,
-diff --git a/drivers/staging/batman-adv/main.c b/drivers/staging/batman-adv/main.c
-index 580ca02..0587940 100644
---- a/drivers/staging/batman-adv/main.c
-+++ b/drivers/staging/batman-adv/main.c
-@@ -145,11 +145,6 @@ void dec_module_count(void)
- 	module_put(THIS_MODULE);
- }
- 
--int addr_to_string(char *buff, uint8_t *addr)
--{
--	return sprintf(buff, "%pM", addr);
--}
--
- /* returns 1 if they are the same originator */
- 
- int compare_orig(void *data1, void *data2)
-diff --git a/drivers/staging/batman-adv/main.h b/drivers/staging/batman-adv/main.h
-index ca97589..5e3f516 100644
---- a/drivers/staging/batman-adv/main.h
-+++ b/drivers/staging/batman-adv/main.h
-@@ -58,7 +58,6 @@
- 
- #define PACKBUFF_SIZE 2000
- #define LOG_BUF_LEN 8192	  /* has to be a power of 2 */
--#define ETH_STR_LEN 20
- 
- #define VIS_INTERVAL 5000	/* 5 seconds */
- 
-@@ -136,7 +135,6 @@ int mesh_init(struct net_device *soft_iface);
- void mesh_free(struct net_device *soft_iface);
- void inc_module_count(void);
- void dec_module_count(void);
--int addr_to_string(char *buff, uint8_t *addr);
- int compare_orig(void *data1, void *data2);
- int choose_orig(void *data, int32_t size);
- int is_my_mac(uint8_t *addr);
-diff --git a/drivers/staging/batman-adv/originator.c b/drivers/staging/batman-adv/originator.c
-index 865211d..5527008 100644
---- a/drivers/staging/batman-adv/originator.c
-+++ b/drivers/staging/batman-adv/originator.c
-@@ -315,7 +315,6 @@ int orig_seq_print_text(struct seq_file *seq, void *offset)
- 	int last_seen_secs;
- 	int last_seen_msecs;
- 	unsigned long flags;
--	char orig_str[ETH_STR_LEN], router_str[ETH_STR_LEN];
- 
- 	if ((!bat_priv->primary_if) ||
- 	    (bat_priv->primary_if->if_status != IF_ACTIVE)) {
-@@ -329,10 +328,10 @@ int orig_seq_print_text(struct seq_file *seq, void *offset)
- 				  net_dev->name);
- 	}
- 
--	seq_printf(seq, "[B.A.T.M.A.N. adv %s%s, MainIF/MAC: %s/%s (%s)]\n",
-+	seq_printf(seq, "[B.A.T.M.A.N. adv %s%s, MainIF/MAC: %s/%pM (%s)]\n",
- 		   SOURCE_VERSION, REVISION_VERSION_STR,
- 		   bat_priv->primary_if->net_dev->name,
--		   bat_priv->primary_if->addr_str, net_dev->name);
-+		   bat_priv->primary_if->net_dev->dev_addr, net_dev->name);
- 	seq_printf(seq, "  %-15s %s (%s/%i) %17s [%10s]: %20s ...\n",
- 		   "Originator", "last-seen", "#", TQ_MAX_VALUE, "Nexthop",
- 		   "outgoingIF", "Potential nexthops");
-@@ -349,21 +348,18 @@ int orig_seq_print_text(struct seq_file *seq, void *offset)
- 		if (orig_node->router->tq_avg == 0)
- 			continue;
- 
--		addr_to_string(orig_str, orig_node->orig);
--		addr_to_string(router_str, orig_node->router->addr);
- 		last_seen_secs = jiffies_to_msecs(jiffies -
- 						orig_node->last_valid) / 1000;
- 		last_seen_msecs = jiffies_to_msecs(jiffies -
- 						orig_node->last_valid) % 1000;
- 
--		seq_printf(seq, "%-17s %4i.%03is   (%3i) %17s [%10s]:",
--			   orig_str, last_seen_secs, last_seen_msecs,
--			   orig_node->router->tq_avg, router_str,
-+		seq_printf(seq, "%pM %4i.%03is   (%3i) %pM [%10s]:",
-+			   orig_node->orig, last_seen_secs, last_seen_msecs,
-+			   orig_node->router->tq_avg, orig_node->router->addr,
- 			   orig_node->router->if_incoming->net_dev->name);
- 
- 		list_for_each_entry(neigh_node, &orig_node->neigh_list, list) {
--			addr_to_string(orig_str, neigh_node->addr);
--			seq_printf(seq, " %17s (%3i)", orig_str,
-+			seq_printf(seq, " %pM (%3i)", neigh_node->addr,
- 					   neigh_node->tq_avg);
- 		}
- 
-diff --git a/drivers/staging/batman-adv/routing.c b/drivers/staging/batman-adv/routing.c
-index 58aa99e..9010263 100644
---- a/drivers/staging/batman-adv/routing.c
-+++ b/drivers/staging/batman-adv/routing.c
-@@ -554,11 +554,11 @@ void receive_bat_packet(struct ethhdr *ethhdr,
- 					    batman_packet->orig) ? 1 : 0);
- 
- 	bat_dbg(DBG_BATMAN, bat_priv,
--		"Received BATMAN packet via NB: %pM, IF: %s [%s] "
-+		"Received BATMAN packet via NB: %pM, IF: %s [%pM] "
- 		"(from OG: %pM, via prev OG: %pM, seqno %d, tq %d, "
- 		"TTL %d, V %d, IDF %d)\n",
- 		ethhdr->h_source, if_incoming->net_dev->name,
--		if_incoming->addr_str, batman_packet->orig,
-+		if_incoming->net_dev->dev_addr, batman_packet->orig,
- 		batman_packet->prev_sender, batman_packet->seqno,
- 		batman_packet->tq, batman_packet->ttl, batman_packet->version,
- 		has_directlink_flag);
-diff --git a/drivers/staging/batman-adv/send.c b/drivers/staging/batman-adv/send.c
-index 9032861..7adf76d 100644
---- a/drivers/staging/batman-adv/send.c
-+++ b/drivers/staging/batman-adv/send.c
-@@ -135,13 +135,13 @@ static void send_packet_to_if(struct forw_packet *forw_packet,
- 							    "Forwarding"));
- 		bat_dbg(DBG_BATMAN, bat_priv,
- 			"%s %spacket (originator %pM, seqno %d, TQ %d, TTL %d,"
--			" IDF %s) on interface %s [%s]\n",
-+			" IDF %s) on interface %s [%pM]\n",
- 			fwd_str, (packet_num > 0 ? "aggregated " : ""),
- 			batman_packet->orig, ntohl(batman_packet->seqno),
- 			batman_packet->tq, batman_packet->ttl,
- 			(batman_packet->flags & DIRECTLINK ?
- 			 "on" : "off"),
--			batman_if->net_dev->name, batman_if->addr_str);
-+			batman_if->net_dev->name, batman_if->net_dev->dev_addr);
- 
- 		buff_pos += sizeof(struct batman_packet) +
- 			(batman_packet->num_hna * ETH_ALEN);
-@@ -186,12 +186,12 @@ static void send_packet(struct forw_packet *forw_packet)
- 		/* FIXME: what about aggregated packets ? */
- 		bat_dbg(DBG_BATMAN, bat_priv,
- 			"%s packet (originator %pM, seqno %d, TTL %d) "
--			"on interface %s [%s]\n",
-+			"on interface %s [%pM]\n",
- 			(forw_packet->own ? "Sending own" : "Forwarding"),
- 			batman_packet->orig, ntohl(batman_packet->seqno),
- 			batman_packet->ttl,
- 			forw_packet->if_incoming->net_dev->name,
--			forw_packet->if_incoming->addr_str);
-+			forw_packet->if_incoming->net_dev->dev_addr);
- 
- 		/* skb is only used once and than forw_packet is free'd */
- 		send_skb_packet(forw_packet->skb, forw_packet->if_incoming,
-diff --git a/drivers/staging/batman-adv/types.h b/drivers/staging/batman-adv/types.h
-index bb5827f..f3f7366 100644
---- a/drivers/staging/batman-adv/types.h
-+++ b/drivers/staging/batman-adv/types.h
-@@ -37,7 +37,6 @@ struct batman_if {
- 	struct list_head list;
- 	int16_t if_num;
- 	char if_status;
--	char addr_str[ETH_STR_LEN];
- 	struct net_device *net_dev;
- 	atomic_t seqno;
- 	atomic_t frag_seqno;
-diff --git a/drivers/staging/batman-adv/vis.c b/drivers/staging/batman-adv/vis.c
-index 6b102a3..3d2c1bc 100644
---- a/drivers/staging/batman-adv/vis.c
-+++ b/drivers/staging/batman-adv/vis.c
-@@ -130,15 +130,13 @@ static ssize_t vis_data_read_prim_sec(char *buff, struct hlist_head *if_list)
- {
- 	struct if_list_entry *entry;
- 	struct hlist_node *pos;
--	char tmp_addr_str[ETH_STR_LEN];
- 	size_t len = 0;
- 
- 	hlist_for_each_entry(entry, pos, if_list, list) {
- 		if (entry->primary)
- 			len += sprintf(buff + len, "PRIMARY, ");
- 		else {
--			addr_to_string(tmp_addr_str, entry->addr);
--			len += sprintf(buff + len,  "SEC %s, ", tmp_addr_str);
-+			len += sprintf(buff + len,  "SEC %pM, ", entry->addr);
- 		}
- 	}
- 
-@@ -165,14 +163,12 @@ static size_t vis_data_count_prim_sec(struct hlist_head *if_list)
- static ssize_t vis_data_read_entry(char *buff, struct vis_info_entry *entry,
- 				   uint8_t *src, bool primary)
- {
--	char to[18];
--
- 	/* maximal length: max(4+17+2, 3+17+1+3+2) == 26 */
--	addr_to_string(to, entry->dest);
- 	if (primary && entry->quality == 0)
--		return sprintf(buff, "HNA %s, ", to);
-+		return sprintf(buff, "HNA %pM, ", entry->dest);
- 	else if (compare_orig(entry->src, src))
--		return sprintf(buff, "TQ %s %d, ", to, entry->quality);
-+		return sprintf(buff, "TQ %pM %d, ", entry->dest,
-+			       entry->quality);
- 
- 	return 0;
- }
-@@ -190,7 +186,6 @@ int vis_seq_print_text(struct seq_file *seq, void *offset)
- 	struct if_list_entry *entry;
- 	struct hlist_node *pos, *n;
- 	int i;
--	char tmp_addr_str[ETH_STR_LEN];
- 	unsigned long flags;
- 	int vis_server = atomic_read(&bat_priv->vis_mode);
- 	size_t buff_pos, buf_size;
-@@ -255,9 +250,8 @@ int vis_seq_print_text(struct seq_file *seq, void *offset)
- 		}
- 
- 		hlist_for_each_entry(entry, pos, &vis_if_list, list) {
--			addr_to_string(tmp_addr_str, entry->addr);
--			buff_pos += sprintf(buff + buff_pos, "%s,",
--					    tmp_addr_str);
-+			buff_pos += sprintf(buff + buff_pos, "%pM,",
-+					    entry->addr);
- 
- 			for (i = 0; i < packet->entries; i++)
- 				buff_pos += vis_data_read_entry(buff + buff_pos,
 -- 
-1.7.2.3
-
+Siemens AG, Corporate Technology, CT T DE IT 1
+Corporate Competence Center Embedded Linux
