@@ -1,77 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758220Ab0JTGhY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Oct 2010 02:37:24 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:46270 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757787Ab0JTGhX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Oct 2010 02:37:23 -0400
-Date: Wed, 20 Oct 2010 08:37:19 +0200
-From: Sascha Hauer <s.hauer@pengutronix.de>
-To: Dan Williams <dan.j.williams@intel.com>
-Cc: Vasiliy Kulikov <segooon@gmail.com>, kernel-janitors@vger.kernel.org,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] dma: imx-dma: fix signedness bug
-Message-ID: <20101020063719.GE28242@pengutronix.de>
-References: <1287327110-9158-1-git-send-email-segooon@gmail.com> <AANLkTik15Z2_wyDRDOHOnpKKPgb+PHWs477esndgWmex@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1758269Ab0JTGnr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Oct 2010 02:43:47 -0400
+Received: from vpn.id2.novell.com ([195.33.99.129]:38636 "EHLO
+	vpn.id2.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756414Ab0JTGnq convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-JBeulich@novell.com:5:1>);
+	Wed, 20 Oct 2010 02:43:46 -0400
+Message-Id: <4CBEABAE020000780001E227@vpn.id2.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 8.0.1 
+Date: Wed, 20 Oct 2010 07:43:26 +0100
+From: "Jan Beulich" <JBeulich@novell.com>
+To: "Alexander van Heukelum" <heukelum@fastmail.fm>
+Cc: "Ingo Molnar" <mingo@elte.hu>, "Thomas Gleixner" <tglx@linutronix.de>,
+        "Andrew Morton" <akpm@linux-foundation.org>,
+        <linux-kernel@vger.kernel.org>, "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [PATCH] x86: fix CFI macro invocations to deal with
+	 shortcomings in gas
+References: <4CBDBEBA020000780001E05A@vpn.id2.novell.com>
+ <1287522205.14378.1400906413@webmail.messagingengine.com>
+In-Reply-To: <1287522205.14378.1400906413@webmail.messagingengine.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
 Content-Disposition: inline
-In-Reply-To: <AANLkTik15Z2_wyDRDOHOnpKKPgb+PHWs477esndgWmex@mail.gmail.com>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 08:35:45 up 108 days, 21:46, 21 users,  load average: 0.75, 0.89,
-	0.85
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: sha@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+>>> On 19.10.10 at 23:03, "Alexander van Heukelum" <heukelum@fastmail.fm> wrote:
+>> -       pushl_cfi (TI_sysenter_return-THREAD_SIZE+8+4*4)(%esp)
+>> +       pushl_cfi TI_sysenter_return-THREAD_SIZE_asm+8+4*4(%esp)
+> 
+> This expands to:
+>     pushl_cfi (60)-(8192)+8+4*4(%esp)
+> 
+> I'm sorry to say that Ubuntu 6.06's gas (2.16.91 20060118) still chokes
+> with "too many positional arguments" on this line.
 
-mxdmac->channel was unsigned, so check (imxdmac->channel < 0) for
-failed imx_dma_request_by_prio() made no sence.  Explicitly check
-signed values.
-Also, fix uninitialzed use of ret.
+It escapes me where it would split the obviously single argument, and
+I know I checked all official versions from 2.15 onwards. Could you
+try whether that specific gas would be okay with
 
-Signed-off-by: Vasiliy Kulikov <segooon@gmail.com>
-Signed-off-by: Sascha Hauer <s.hauer@pengutronix.de>
----
+     pushl_cfi ((60)-(8192)+8+4*4)(%esp)
 
-Here's an updated patch fixing both issues.
+I had intentionally removed the surrounding parentheses since
+those are considered by newer gas when determining arguments,
+and thus I could expose eventual problems with older gas even
+on newer versions.
 
- drivers/dma/imx-dma.c |    4 +++-
- 1 files changed, 3 insertions(+), 1 deletions(-)
+Further, could you experiment (or ideally debug) where is splits
+the argument. Something like
 
-diff --git a/drivers/dma/imx-dma.c b/drivers/dma/imx-dma.c
-index 346be62..f629e49 100644
---- a/drivers/dma/imx-dma.c
-+++ b/drivers/dma/imx-dma.c
-@@ -335,8 +335,10 @@ static int __init imxdma_probe(struct platform_device *pdev)
- 
- 		imxdmac->imxdma_channel = imx_dma_request_by_prio("dmaengine",
- 				DMA_PRIO_MEDIUM);
--		if (imxdmac->channel < 0)
-+		if ((int)imxdmac->channel < 0) {
-+			ret = -ENODEV;
- 			goto err_init;
-+		}
- 
- 		imx_dma_setup_handlers(imxdmac->imxdma_channel,
- 		       imxdma_irq_handler, imxdma_err_handler, imxdmac);
--- 
-1.7.2.3
+.macro m arg1 arg2=0
+	.long	\arg1, \arg2
+.endm
 
--- 
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+.data
+_start:
+	m	(60)-(8192)+8+4*4
+
+might be handy - assembling with -alm=<filename> should allow
+you to inspect where the argument got split.
+
+Thanks, Jan
+
