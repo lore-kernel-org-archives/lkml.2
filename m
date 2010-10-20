@@ -1,133 +1,177 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756621Ab0JTCgF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Oct 2010 22:36:05 -0400
-Received: from ipmail06.adl2.internode.on.net ([150.101.137.129]:31460 "EHLO
-	ipmail06.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756530Ab0JTCgC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Oct 2010 22:36:02 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvsEALvxvUx5LdoF/2dsb2JhbAChVXLCfoVKBA
-Date: Wed, 20 Oct 2010 13:35:56 +1100
-From: Nick Piggin <npiggin@kernel.dk>
-To: Dave Chinner <david@fromorbit.com>
-Cc: npiggin@kernel.dk, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org
-Subject: Re: [patch 31/35] fs: icache per-zone inode LRU
-Message-ID: <20101020023556.GC3740@amd>
-References: <20101019034216.319085068@kernel.dk>
- <20101019034658.744504135@kernel.dk>
- <20101019123852.GA12506@dastard>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101019123852.GA12506@dastard>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1754196Ab0JTCfe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Oct 2010 22:35:34 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:49584 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752689Ab0JTCfd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Oct 2010 22:35:33 -0400
+From: Fernando Guzman Lugo <x0095840@ti.com>
+To: <Hiroshi.DOYU@nokia.com>
+Cc: <felipe.contreras@nokia.com>, <david.cohen@nokia.com>,
+        <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        Fernando Guzman Lugo <x0095840@ti.com>
+Subject: [PATCHv4 2/4] iovmm: add superpages support to fixed da address
+Date: Tue, 19 Oct 2010 21:48:50 -0500
+Message-Id: <1287542932-14206-3-git-send-email-x0095840@ti.com>
+X-Mailer: git-send-email 1.6.3.3
+In-Reply-To: <1287542932-14206-2-git-send-email-x0095840@ti.com>
+References: <1287542932-14206-1-git-send-email-x0095840@ti.com>
+ <1287542932-14206-2-git-send-email-x0095840@ti.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[I should have cc'ed this one to linux-mm as well, so I quote your
-reply in full here]
+This patch adds superpages support to fixed ad address
+inside iommu_kmap function.
 
-On Tue, Oct 19, 2010 at 11:38:52PM +1100, Dave Chinner wrote:
-> On Tue, Oct 19, 2010 at 02:42:47PM +1100, npiggin@kernel.dk wrote:
-> > Per-zone LRUs and shrinkers for inode cache.
-> 
-> Regardless of whether this is the right way to scale or not, I don't
-> like the fact that this moves the cache LRUs into the memory
-> management structures, and expands the use of MM specific structures
-> throughout the code.
+Signed-off-by: Fernando Guzman Lugo <x0095840@ti.com>
+---
+ arch/arm/plat-omap/iovmm.c |   62 +++++++++++++++++++++++++------------------
+ 1 files changed, 36 insertions(+), 26 deletions(-)
 
-The zone structure really is the basic unit of memory abstraction
-in the whole zoned VM concept (which covers different properties
-of both physical address and NUMA cost).
-
-The zone contains structures for memory management that aren't
-otherwise directly related to one another. Generic page waitqueues,
-page allocator structures, pagecache reclaim structures, memory model
-data, and various statistics.
-
-Structures to reclaim inodes from a particular zone belong in the
-zone struct as much as those to reclaim pagecache or anonymous
-memory from that zone too. It actually fits far better in here than
-globally, because all our allocation/reclaiming/watermarks etc is
-driven per-zone.
-
-The structure is not frequent -- a couple per NUMA node.
-
-
-> It ties the cache implementation to the current
-> VM implementation. That, IMO, goes against all the principle of
-> modularisation at the source code level, and it means we have to tie
-> all shrinker implemenations to the current internal implementation
-> of the VM. I don't think that is wise thing to do because of the
-> dependencies and impedance mismatches it introduces.
-
-It's very fundamental. We allocate memory from, and have to reclaim
-memory from -- zones. Memory reclaim is driven based on how the VM
-wants to reclaim memory: nothing you can do to avoid some linkage
-between the two.
-
-Look at it this way. The dumb global shrinker is also tied to an
-MM implementation detail, but that detail in fact does *not* match
-the reality of the MM, and so it has all these problems interacting
-with real reclaim.
-
-What problems? OK, on an N zone system (assuming equal zones and
-even distribution of objects around memory), then if there is a shortage
-on a particular zone, slabs from _all_ zones are reclaimed. We reclaim
-a factor of N too many objects. In a NUMA situation, we also touch
-remote memory with a chance (N-1)/N.
-
-As number of nodes grow beyond 2, this quickly goes down hill.
-
-In summary, there needs to be some knowledge of how MM reclaims memory
-in memory reclaim shrinkers -- simply can't do a good implementation
-without that. If the zone concept changes, the MM gets turned upside
-down and all those assumptions would need to be revisited anyway.
-
-
-> As an example: XFS inodes to be reclaimed are simply tagged in a
-> radix tree so the shrinker can reclaim inodes in optimal IO order
-> rather strict LRU order. It simply does not match a zone-based
-
-This is another problem, similar to what we have in pagecache. In
-the pagecache, we need to clean pages in optimal IO order, but we
-still reclaim them according to some LRU order.
-
-If you reclaim them in optimal IO order, cache efficiency will go
-down because you sacrifice recency/frequency information. If you
-IO in reclaim order, IO efficiency goes down. The solution is to
-decouple them with like writeout versus reclaim.
-
-But anyway, that's kind of an "aside": inode caches are reclaimed
-in LRU, IO-suboptimal order today anyway. Per-zone LRU doesn't
-change that in the slightest.
-
-> shrinker implementation in any way, shape or form, nor does it's
-> inherent parallelism match that of the way shrinkers are called.
-> 
-> Any change in shrinker infrastructure needs to be able to handle
-> these sorts of impedance mismatches between the VM and the cache
-> subsystem. The current API doesn't handle this very well, either,
-> so it's something that we need to fix so that scalability is easy
-> for everyone.
-> 
-> Anyway, my main point is that tying the LRU and shrinker scaling to
-> the implementation of the VM is a one-off solution that doesn't work
-> for generic infrastructure.
-
-No it isn't. It worked for the pagecache, and it works for dcache.
-
-
-> Other subsystems need the same
-> large-machine scaling treatment, and there's no way we should be
-> tying them all into the struct zone. It needs further abstraction.
-
-An abstraction? Other than the zone? What do you suggest? Invent
-something that the VM has no concept of and try to use that?
-
-No. The zone is the right thing to base it on.
+diff --git a/arch/arm/plat-omap/iovmm.c b/arch/arm/plat-omap/iovmm.c
+index 34f0012..93a34d9 100644
+--- a/arch/arm/plat-omap/iovmm.c
++++ b/arch/arm/plat-omap/iovmm.c
+@@ -87,35 +87,43 @@ static size_t sgtable_len(const struct sg_table *sgt)
+ }
+ #define sgtable_ok(x)	(!!sgtable_len(x))
+ 
++static unsigned max_alignment(u32 addr)
++{
++	int i;
++	unsigned pagesize[] = { SZ_16M, SZ_1M, SZ_64K, SZ_4K, };
++	for (i = 0; i < ARRAY_SIZE(pagesize) && addr & (pagesize[i] - 1); i++)
++		;
++	return (i < ARRAY_SIZE(pagesize)) ? pagesize[i] : 0;
++}
++
+ /*
+  * calculate the optimal number sg elements from total bytes based on
+  * iommu superpages
+  */
+-static unsigned int sgtable_nents(size_t bytes)
++static unsigned sgtable_nents(size_t bytes, u32 da, u32 pa)
+ {
+-	int i;
+-	unsigned int nr_entries;
+-	const unsigned long pagesize[] = { SZ_16M, SZ_1M, SZ_64K, SZ_4K, };
++	unsigned nr_entries = 0, ent_sz;
+ 
+ 	if (!IS_ALIGNED(bytes, PAGE_SIZE)) {
+ 		pr_err("%s: wrong size %08x\n", __func__, bytes);
+ 		return 0;
+ 	}
+ 
+-	nr_entries = 0;
+-	for (i = 0; i < ARRAY_SIZE(pagesize); i++) {
+-		if (bytes >= pagesize[i]) {
+-			nr_entries += (bytes / pagesize[i]);
+-			bytes %= pagesize[i];
+-		}
++	while (bytes) {
++		ent_sz = max_alignment(da | pa);
++		ent_sz = min_t(unsigned, ent_sz, iopgsz_max(bytes));
++		nr_entries++;
++		da += ent_sz;
++		pa += ent_sz;
++		bytes -= ent_sz;
+ 	}
+-	BUG_ON(bytes);
+ 
+ 	return nr_entries;
+ }
+ 
+ /* allocate and initialize sg_table header(a kind of 'superblock') */
+-static struct sg_table *sgtable_alloc(const size_t bytes, u32 flags)
++static struct sg_table *sgtable_alloc(const size_t bytes, u32 flags,
++							u32 da, u32 pa)
+ {
+ 	unsigned int nr_entries;
+ 	int err;
+@@ -127,9 +135,8 @@ static struct sg_table *sgtable_alloc(const size_t bytes, u32 flags)
+ 	if (!IS_ALIGNED(bytes, PAGE_SIZE))
+ 		return ERR_PTR(-EINVAL);
+ 
+-	/* FIXME: IOVMF_DA_FIXED should support 'superpages' */
+-	if ((flags & IOVMF_LINEAR) && (flags & IOVMF_DA_ANON)) {
+-		nr_entries = sgtable_nents(bytes);
++	if (flags & IOVMF_LINEAR) {
++		nr_entries = sgtable_nents(bytes, da, pa);
+ 		if (!nr_entries)
+ 			return ERR_PTR(-EINVAL);
+ 	} else
+@@ -409,7 +416,8 @@ static inline void sgtable_drain_vmalloc(struct sg_table *sgt)
+ 	BUG_ON(!sgt);
+ }
+ 
+-static void sgtable_fill_kmalloc(struct sg_table *sgt, u32 pa, size_t len)
++static void sgtable_fill_kmalloc(struct sg_table *sgt, u32 pa, u32 da,
++								size_t len)
+ {
+ 	unsigned int i;
+ 	struct scatterlist *sg;
+@@ -418,9 +426,10 @@ static void sgtable_fill_kmalloc(struct sg_table *sgt, u32 pa, size_t len)
+ 	va = phys_to_virt(pa);
+ 
+ 	for_each_sg(sgt->sgl, sg, sgt->nents, i) {
+-		size_t bytes;
++		unsigned bytes;
+ 
+-		bytes = iopgsz_max(len);
++		bytes = max_alignment(da | pa);
++		bytes = min_t(unsigned, bytes, iopgsz_max(len));
+ 
+ 		BUG_ON(!iopgsz_ok(bytes));
+ 
+@@ -429,6 +438,7 @@ static void sgtable_fill_kmalloc(struct sg_table *sgt, u32 pa, size_t len)
+ 		 * 'pa' is cotinuous(linear).
+ 		 */
+ 		pa += bytes;
++		da += bytes;
+ 		len -= bytes;
+ 	}
+ 	BUG_ON(len);
+@@ -695,18 +705,18 @@ u32 iommu_vmalloc(struct iommu *obj, u32 da, size_t bytes, u32 flags)
+ 	if (!va)
+ 		return -ENOMEM;
+ 
+-	sgt = sgtable_alloc(bytes, flags);
++	flags &= IOVMF_HW_MASK;
++	flags |= IOVMF_DISCONT;
++	flags |= IOVMF_ALLOC;
++	flags |= (da ? IOVMF_DA_FIXED : IOVMF_DA_ANON);
++
++	sgt = sgtable_alloc(bytes, flags, da, 0);
+ 	if (IS_ERR(sgt)) {
+ 		da = PTR_ERR(sgt);
+ 		goto err_sgt_alloc;
+ 	}
+ 	sgtable_fill_vmalloc(sgt, va);
+ 
+-	flags &= IOVMF_HW_MASK;
+-	flags |= IOVMF_DISCONT;
+-	flags |= IOVMF_ALLOC;
+-	flags |= (da ? IOVMF_DA_FIXED : IOVMF_DA_ANON);
+-
+ 	da = __iommu_vmap(obj, da, sgt, va, bytes, flags);
+ 	if (IS_ERR_VALUE(da))
+ 		goto err_iommu_vmap;
+@@ -746,11 +756,11 @@ static u32 __iommu_kmap(struct iommu *obj, u32 da, u32 pa, void *va,
+ {
+ 	struct sg_table *sgt;
+ 
+-	sgt = sgtable_alloc(bytes, flags);
++	sgt = sgtable_alloc(bytes, flags, da, pa);
+ 	if (IS_ERR(sgt))
+ 		return PTR_ERR(sgt);
+ 
+-	sgtable_fill_kmalloc(sgt, pa, bytes);
++	sgtable_fill_kmalloc(sgt, pa, da, bytes);
+ 
+ 	da = map_iommu_region(obj, da, sgt, va, bytes, flags);
+ 	if (IS_ERR_VALUE(da)) {
+-- 
+1.6.3.3
 
