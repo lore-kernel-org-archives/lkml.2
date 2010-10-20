@@ -1,54 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752886Ab0JTKcr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Oct 2010 06:32:47 -0400
-Received: from casper.infradead.org ([85.118.1.10]:36012 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751145Ab0JTKcq convert rfc822-to-8bit (ORCPT
+	id S1752956Ab0JTKgh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Oct 2010 06:36:37 -0400
+Received: from s15228384.onlinehome-server.info ([87.106.30.177]:33793 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751894Ab0JTKgf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Oct 2010 06:32:46 -0400
-Subject: Re: [PATCH] perf_events: fix the fix for transaction recovery in
- group_sched_in()
-From: Peter Zijlstra <peterz@infradead.org>
-To: eranian@google.com
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, paulus@samba.org,
-        davem@davemloft.net, fweisbec@gmail.com, perfmon2-devel@lists.sf.net,
-        eranian@gmail.com, robert.richter@amd.com
-In-Reply-To: <4cbe1191.8709d80a.1d10.ffff9970@mx.google.com>
-References: <4cbe1191.8709d80a.1d10.ffff9970@mx.google.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Wed, 20 Oct 2010 12:32:25 +0200
-Message-ID: <1287570745.2703.7.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Wed, 20 Oct 2010 06:36:35 -0400
+Date: Wed, 20 Oct 2010 12:36:43 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: linux-tip-commits@vger.kernel.org, linux-kernel@vger.kernel.org,
+        hpa@zytor.com, mingo@redhat.com, ian.cambell@eu.citrix.com,
+        jbeulich@novell.com, tglx@linutronix.de, hpa@linux.intel.com
+Subject: Re: [tip:x86/mm] x86, mm: Hold mm->page_table_lock while doing
+ vmalloc_sync
+Message-ID: <20101020103642.GA3135@kryptos.osrc.amd.com>
+References: <4CB88A4C.1080305@goop.org>
+ <tip-617d34d9e5d8326ec8f188c616aa06ac59d083fe@git.kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <tip-617d34d9e5d8326ec8f188c616aa06ac59d083fe@git.kernel.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-10-19 at 23:45 +0200, Stephane Eranian wrote:
-> This patch fixes the group_sched_in() fix added by commit 8e5fc1a.
-> Although the patch solved the issue with time_running, time_enabled
-> for all events in a group, it had one flaw in case the group could
-> never be scheduled. It would cause time_enabled to get negative.
-> The issue was that tstamp_stopped was never updated, even though
-> tstamp_enabled was.
-> 
-> This new version is much simpler and ensures that in case of
-> error in group_sched_in() during event_sched_in(), the events up
-> to the failed event go through regular event_sched_out(). But the
-> failed event and the remaining events in the group have their timings
-> adjusted as if they had also gone through event_sched_in() and
-> event_sched_out(). This ensures timing uniformity across all
-> events in a group. This also takes care of the tstamp_stopped problem
-> in case the group could never be scheduled. The tstamp_stopped is
-> updated as if the event had actually run.
-> 
-> With this patch, the following now reports correct time_enabled,
-> in case the NMI watchdog is active:
+From: tip-bot for Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+Date: Tue, Oct 19, 2010 at 10:17:37PM +0000
 
-Hehe, good thing I didn't tag that commit as stable then.. ;-)
+> Commit-ID:  617d34d9e5d8326ec8f188c616aa06ac59d083fe
+> Gitweb:     http://git.kernel.org/tip/617d34d9e5d8326ec8f188c616aa06ac59d083fe
+> Author:     Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+> AuthorDate: Tue, 21 Sep 2010 12:01:51 -0700
+> Committer:  H. Peter Anvin <hpa@linux.intel.com>
+> CommitDate: Tue, 19 Oct 2010 13:57:08 -0700
 
-Could you respin this one as two patches, one a clean revert and two the
-proper fix? That way its clearer what the actual change is and it eases
-backporting..
+--
+From: Borislav Petkov <borislav.petkov@amd.com>
+Date: Wed, 20 Oct 2010 12:23:48 +0200
+Subject: [PATCH] x86, mm: Fix build warning on 32-bit
+
+arch/x86/mm/fault.c: In function 'vmalloc_sync_all':
+arch/x86/mm/fault.c:238: warning: assignment makes integer from pointer without a cast
+
+introduced by 617d34d9e5d8326ec8f188c616aa06ac59d083fe.
+
+Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
+---
+ arch/x86/mm/fault.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/arch/x86/mm/fault.c b/arch/x86/mm/fault.c
+index 85c2eb9..79b0b37 100644
+--- a/arch/x86/mm/fault.c
++++ b/arch/x86/mm/fault.c
+@@ -230,7 +230,7 @@ void vmalloc_sync_all(void)
+ 		spin_lock_irqsave(&pgd_lock, flags);
+ 		list_for_each_entry(page, &pgd_list, lru) {
+ 			spinlock_t *pgt_lock;
+-			int ret;
++			pmd_t *ret;
+ 
+ 			pgt_lock = &pgd_page_get_mm(page)->page_table_lock;
+ 
+-- 
+1.7.3.1
+
+
+-- 
+Regards/Gruss,
+Boris.
+
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+General Managers: Alberto Bozzo, Andrew Bowd
+Registration: Dornach, Gemeinde Aschheim, Landkreis Muenchen
+Registergericht Muenchen, HRB Nr. 43632
