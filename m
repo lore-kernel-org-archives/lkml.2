@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753052Ab0JTMby (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Oct 2010 08:31:54 -0400
-Received: from smtp.nokia.com ([192.100.105.134]:31264 "EHLO
-	mgw-mx09.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751179Ab0JTMbx (ORCPT
+	id S1753237Ab0JTMcN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Oct 2010 08:32:13 -0400
+Received: from smtp.nokia.com ([192.100.122.233]:45673 "EHLO
+	mgw-mx06.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753183Ab0JTMcK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Oct 2010 08:31:53 -0400
-Message-ID: <4CBEE186.8090701@nokia.com>
-Date: Wed, 20 Oct 2010 15:33:10 +0300
+	Wed, 20 Oct 2010 08:32:10 -0400
+Message-ID: <4CBEE193.7000100@nokia.com>
+Date: Wed, 20 Oct 2010 15:33:23 +0300
 From: Roger Quadros <roger.quadros@nokia.com>
 User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.9) Gecko/20100915 Thunderbird/3.1.4
 MIME-Version: 1.0
@@ -22,7 +22,7 @@ References: <1287482608-11320-1-git-send-email-felipe.contreras@gmail.com>	<1287
 In-Reply-To: <AANLkTikom=eRFqCJmYE+k1zn5K2MR9s8HhNXtjOvUqvr@mail.gmail.com>
 Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 20 Oct 2010 12:31:43.0810 (UTC) FILETIME=[C1043A20:01CB7052]
+X-OriginalArrivalTime: 20 Oct 2010 12:31:56.0106 (UTC) FILETIME=[C85872A0:01CB7052]
 X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -87,11 +87,11 @@ MUSB is not limited to OMAP SoC.
 > because USB_GADGET_OMAP is selected first (all the dependencies are
 > met).
 >
-Yes you are right. In think with the current setup (i.e. controller selection at 
+Yes you are right. I think with the current setup (i.e. controller selection at 
 kconfig and limitation to one controller per config) we will never be able to 
 satisfy all users.
 
-We might need to move to some kind of gadget controller framework and runtime 
+We might need to move to some kind of gadget controller framework and run time 
 controller selection to solve this problem.
 
 -- 
