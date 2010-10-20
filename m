@@ -1,66 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756248Ab0JTXIp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Oct 2010 19:08:45 -0400
-Received: from hera.kernel.org ([140.211.167.34]:37499 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756169Ab0JTXIn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Oct 2010 19:08:43 -0400
-Date: Wed, 20 Oct 2010 23:07:43 GMT
-From: tip-bot for FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        akpm@linux-foundation.org, fujita.tomonori@lab.ntt.co.jp,
-        tglx@linutronix.de, hpa@linux.intel.com
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org, fujita.tomonori@lab.ntt.co.jp,
-        tglx@linutronix.de, hpa@linux.intel.com
-In-Reply-To: <201010202255.o9KMtZXu009370@imap1.linux-foundation.org>
-References: <201010202255.o9KMtZXu009370@imap1.linux-foundation.org>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/mm] x86, mm: Enable ARCH_DMA_ADDR_T_64BIT with X86_64 || HIGHMEM64G
-Message-ID: <tip-66f2b061546974b96b7b238a92ce89a87ecf0754@git.kernel.org>
-Git-Commit-ID: 66f2b061546974b96b7b238a92ce89a87ecf0754
-X-Mailer: tip-git-log-daemon
+	id S1756218Ab0JTXMu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Oct 2010 19:12:50 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:8755 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754178Ab0JTXMt convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Oct 2010 19:12:49 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp02.nvidia.com on Wed, 20 Oct 2010 16:12:44 -0700
+From: Rhyland Klein <rklein@nvidia.com>
+To: Rhyland Klein <rklein@nvidia.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: "cboutatmailru@gmail.com" <cboutatmailru@gmail.com>,
+        Andrew Chew <AChew@nvidia.com>, "olof@lixom.net" <olof@lixom.net>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Wed, 20 Oct 2010 16:07:23 -0700
+Subject: RE: [PATCH 1/1] power: bq24617: Adding initial charger support
+Thread-Topic: [PATCH 1/1] power: bq24617: Adding initial charger support
+Thread-Index: ActwA0M/yhGpE0igR4ybrf6+x/IxCQAewgKQAAtGM9A=
+Message-ID: <E88A1D35AF5437468E5B14C7C4BA61C702D37CAA30@HQMAIL01.nvidia.com>
+References: <1287541031-17409-1-git-send-email-rklein@nvidia.com>
+ <20101020030235.GA25392@sirena.org.uk>
+ <E88A1D35AF5437468E5B14C7C4BA61C702D37CA98C@HQMAIL01.nvidia.com>
+In-Reply-To: <E88A1D35AF5437468E5B14C7C4BA61C702D37CA98C@HQMAIL01.nvidia.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 20 Oct 2010 23:07:44 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  66f2b061546974b96b7b238a92ce89a87ecf0754
-Gitweb:     http://git.kernel.org/tip/66f2b061546974b96b7b238a92ce89a87ecf0754
-Author:     FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-AuthorDate: Wed, 20 Oct 2010 15:55:35 -0700
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Wed, 20 Oct 2010 16:02:42 -0700
+> -----Original Message-----
+> From: linux-kernel-owner@vger.kernel.org [mailto:linux-kernel-
+> owner@vger.kernel.org] On Behalf Of Rhyland Klein
+> Sent: Wednesday, October 20, 2010 10:52 AM
+> To: Mark Brown
+> Cc: cboutatmailru@gmail.com; Andrew Chew; olof@lixom.net; linux-
+> tegra@vger.kernel.org; linux-kernel@vger.kernel.org
+> Subject: RE: [PATCH 1/1] power: bq24617: Adding initial charger support
+> 
+> > From: Mark Brown [mailto:broonie@opensource.wolfsonmicro.com]
+> > Sent: Tuesday, October 19, 2010 8:03 PM
+> > To: Rhyland Klein
+> > Cc: cboutatmailru@gmail.com; Andrew Chew; olof@lixom.net; linux-
+> > tegra@vger.kernel.org; linux-kernel@vger.kernel.org
+> > Subject: Re: [PATCH 1/1] power: bq24617: Adding initial charger support
+> >
+> > On Tue, Oct 19, 2010 at 07:17:11PM -0700, rklein@nvidia.com wrote:
+> > > From: Rhyland Klein <rklein@nvidia.com>
+> > >
+> > > Initial checkin adding basic support for the TI BQ24617 battery charger
+> > on the
+> > > Nvidia Tegra architecture.
+> >
+> > Why is this driver dependant on the CPU?  I can't see anything in the
+> > code that makes it so.
+> 
+> In hindsight this isn't the most accurate statement. The driver itself is
+> not dependent on the CPU, it is dependent on the platform design, and in
+> particular requires the PG line to be piped in through a GPIO. Would it
+> make more sense to make the driver dependent on GPIO instead?
+>
 
-x86, mm: Enable ARCH_DMA_ADDR_T_64BIT with X86_64 || HIGHMEM64G
+Sorry for the confusion on this, I am removing the TEGRA dependency as it isn't necessary. 
 
-Set CONFIG_ARCH_DMA_ADDR_T_64BIT when we set dma_addr_t to 64 bits in
-<asm/types.h>; this allows Kconfig decisions based on this property.
-
-Signed-off-by: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-LKML-Reference: <201010202255.o9KMtZXu009370@imap1.linux-foundation.org>
-Acked-by: "H. Peter Anvin" <hpa@zytor.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
----
- arch/x86/Kconfig |    3 +++
- 1 files changed, 3 insertions(+), 0 deletions(-)
-
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index cea0cd9..2924f4e 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -1148,6 +1148,9 @@ config X86_PAE
- config ARCH_PHYS_ADDR_T_64BIT
- 	def_bool X86_64 || X86_PAE
  
-+config ARCH_DMA_ADDR_T_64BIT
-+	def_bool X86_64 || HIGHMEM64G
-+
- config DIRECT_GBPAGES
- 	bool "Enable 1GB pages for kernel pagetables" if EMBEDDED
- 	default y
+> >
+> > > +	if (old_status != -1 &&
+> > > +		old_status != new_status) {
+> > > +		dev_dbg(&chip->pdev->dev,
+> > > +			"%s: %i -> %i\n", __func__, old_status,
+> > > +			new_status);
+> > > +		kobject_uevent(&chip->power_supply.dev->kobj, KOBJ_CHANGE);
+> >
+> > power_supply_changed().
+> 
+> Alright.
+> 
+> >
+> > > +static irqreturn_t bq24617_irq_switch(int irq, void *devid)
+> > > +{
+> > > +	struct bq24617_info *chip = devid;
+> > > +
+> > > +	schedule_work(&chip->ac_work);
+> > > +
+> > > +	return IRQ_HANDLED;
+> > > +}
+> >
+> > You're looking for a threaded IRQ handler here - use
+> > request_threaded_irq() with no primary handler.
+> 
+> Alright I will look into this.
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
