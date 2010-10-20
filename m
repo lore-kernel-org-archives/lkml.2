@@ -1,146 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752725Ab0JTKHO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Oct 2010 06:07:14 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:42416 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751251Ab0JTKHM convert rfc822-to-8bit (ORCPT
+	id S1752804Ab0JTKTW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Oct 2010 06:19:22 -0400
+Received: from bld-mail18.adl2.internode.on.net ([150.101.137.103]:48156 "EHLO
+	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751251Ab0JTKTU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Oct 2010 06:07:12 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=v0lVGHNHB2eYL3DBu2OsTnHPNVJVrjQzpUFhHhPMLECjNBMS6w7ojAWB2T7b4mpE/c
-         S9BSmOsS3rKwspIGSBUOf5O/HNrLGj4FqPH06f+5N+exnr7k8rIURIAfQkiH/UqByth1
-         fl63l1FgmIv2vLDVIdd22BNe0yFhiFcDQbQgk=
+	Wed, 20 Oct 2010 06:19:20 -0400
+Date: Wed, 20 Oct 2010 21:19:06 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: Nick Piggin <npiggin@kernel.dk>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Subject: Re: [patch 31/35] fs: icache per-zone inode LRU
+Message-ID: <20101020101906.GM32255@dastard>
+References: <20101019034658.744504135@kernel.dk>
+ <20101019123852.GA12506@dastard>
+ <20101020115432.1821.A69D9226@jp.fujitsu.com>
+ <20101020032024.GA4134@amd>
 MIME-Version: 1.0
-In-Reply-To: <20101020090124.GA27531@localhost>
-References: <20100915122334.3fa7b35f@notabene>
-	<20100915082843.GA17252@localhost>
-	<20100915184434.18e2d933@notabene>
-	<20101018151459.2b443221@notabene>
-	<AANLkTimv_zXHdFDGa9ecgXyWmQynOKTDRPC59PZA9mvL@mail.gmail.com>
-	<20101019101151.57c6dd56@notabene>
-	<AANLkTin3wXWwA-HXhjx6wvzznp3p57Pg6fee8YNkZB79@mail.gmail.com>
-	<AANLkTimVu+5gTDs8przJVP2EbWC=FX-zWW7aH08BtrHC@mail.gmail.com>
-	<20101020055717.GA12752@localhost>
-	<AANLkTinC=xcgfwgXw8Tr-Q_cnxZakjj_W=HwQRV+5vkd@mail.gmail.com>
-	<20101020090124.GA27531@localhost>
-Date: Wed, 20 Oct 2010 12:07:11 +0200
-Message-ID: <AANLkTikwLp=PQ+fNTK9GqM9U5oDeriaSdkWCDfUp0a4R@mail.gmail.com>
-Subject: Re: Deadlock possibly caused by too_many_isolated.
-From: Torsten Kaiser <just.for.lkml@googlemail.com>
-To: Wu Fengguang <fengguang.wu@intel.com>
-Cc: Neil Brown <neilb@suse.de>, Rik van Riel <riel@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "Li, Shaohua" <shaohua.li@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101020032024.GA4134@amd>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 20, 2010 at 11:01 AM, Wu Fengguang <fengguang.wu@intel.com> wrote:
-> On Wed, Oct 20, 2010 at 03:25:49PM +0800, Torsten Kaiser wrote:
->> On Wed, Oct 20, 2010 at 7:57 AM, Wu Fengguang <fengguang.wu@intel.com> wrote:
->> > On Tue, Oct 19, 2010 at 06:06:21PM +0800, Torsten Kaiser wrote:
->> >> swap_writepage() uses get_swap_bio() which uses bio_alloc() to get one
->> >> bio. That bio is the submitted, but the submit path seems to get into
->> >> make_request from raid1.c and that allocates a second bio from
->> >> bio_alloc() via bio_clone().
->> >>
->> >> I am seeing this pattern (swap_writepage calling
->> >> md_make_request/make_request and then getting stuck in mempool_alloc)
->> >> more than 5 times in the SysRq+T output...
->> >
->> > I bet the root cause is the failure of pool->alloc(__GFP_NORETRY)
->> > inside mempool_alloc(), which can be fixed by this patch.
->>
->> No. I tested the patch (ontop of Neils fix and your patch regarding
->> too_many_isolated()), but the system got stuck the same way on the
->> first try to fill the tmpfs.
->> I think the basic problem is, that the mempool that should guarantee
->> progress is exhausted because the raid1 device is stacked between the
->> pageout code and the disks and so the "use only 1 bio"-rule gets
->> violated.
->
-> The mempool get exhausted because pool->alloc() failed at least 2
-> times. But there are no such high memory pressure except for some
-> parallel reclaimers. It seems the below patch does not completely
-> stop the page allocation failure, hence does not stop the deadlock.
->
-> As you and KOSAKI said, the root cause is BIO_POOL_SIZE being smaller
-> than the total possible allocations in the IO stack. Then why not
-> bumping up BIO_POOL_SIZE to something like 64? It will be large enough
-> to allow multiple stacked IO layers.
->
-> And the larger value will allow more concurrent flying IOs for better
-> IO throughput in such situation. Commit 5972511b7 lowers it from 256
-> to 2 because it believes that pool->alloc() will only fail on somehow
-> OOM situation. However truth is __GFP_NORETRY allocations fail much
-> more easily in _normal_ operations (whenever there are multiple
-> concurrent page reclaimers). We have to be able to perform better in
-> such situation.  The __GFP_NORETRY patch to reduce failures is one
-> option, increasing BIO_POOL_SIZE is another.
->
-> So would you try this fix?
+On Wed, Oct 20, 2010 at 02:20:24PM +1100, Nick Piggin wrote:
+> On Wed, Oct 20, 2010 at 12:14:32PM +0900, KOSAKI Motohiro wrote:
+> > > On Tue, Oct 19, 2010 at 02:42:47PM +1100, npiggin@kernel.dk wrote:
+> > > Anyway, my main point is that tying the LRU and shrinker scaling to
+> > > the implementation of the VM is a one-off solution that doesn't work
+> > > for generic infrastructure. Other subsystems need the same
+> > > large-machine scaling treatment, and there's no way we should be
+> > > tying them all into the struct zone. It needs further abstraction.
+> > 
+> > I'm not sure what data structure is best. I can only say current
+> > zone unawareness slab shrinker might makes following sad scenario.
+> > 
+> >  o DMA zone shortage invoke and plenty icache in NORMAL zone dropping
+> >  o NUMA aware system enable zone_reclaim_mode, but shrink_slab() still
+> >    drop unrelated zone's icache
+> > 
+> > both makes performance degression. In other words, Linux does not have
+> > flat memory model. so, I don't think Nick's basic concept is wrong. 
+> > It's straight forward enhancement. but if it don't fit current shrinkers,
+> > I'd like to discuss how to make better data structure.
+> > 
+> > 
+> > 
+> > and I have dump question (sorry, I don't know xfs at all). current
+> > xfs_mount is below.
+> > 
+> > typedef struct xfs_mount {
+> >  ...
+> >         struct shrinker         m_inode_shrink; /* inode reclaim shrinker */
+> > } xfs_mount_t;
+> > 
+> > 
+> > Do you mean xfs can't convert shrinker to shrinker[ZONES]? If so, why?
+> 
+> Well if XFS were to use per-ZONE shrinkers, it would remain with a
+> single shrinker context per-sb like it has now, but it would divide
+> its object management into per-zone structures.
 
-While it seems to fix the hang (Just vanilla -rc8, even without the
-fix from Neil to raid1.c, did not hang during multiple runs of my
-testscript), I believe this is not a fix for the problem.
+<sigh>
 
-To quote comment above bio_alloc() from fs/bio.c:
- *      If %__GFP_WAIT is set, then bio_alloc will always be able to allocate
- *      a bio. This is due to the mempool guarantees. To make this work, callers
- *      must never allocate more than 1 bio at a time from this pool. Callers
- *      that need to allocate more than 1 bio must always submit the previously
- *      allocated bio for IO before attempting to allocate a new one. Failure to
- *      do so can cause livelocks under memory pressure.
+I don't think anyone wants per-ag X per-zone reclaim lists on a 1024
+node machine with a 1,000 AG (1PB) filesystem.
 
-So it seems that limiting fs_bio_set to only 2 entries was intended.
-And the commit comment from the change that reduced this from 256 to 2
-even said that this pool is only intended as a last resort to sustain
-progress.
+As I have already said, the XFS inode caches are optimised in
+structure to minimise IO and maximise internal filesystem
+parallelism. They are not optimised for per-cpu or NUMA scalability
+because if you don't have filesystem level parallelism, you can't
+scale to large numbers of concurrent operations across large numbers
+of CPUs in the first place.
 
-And I think in my testcase the important thing is not good
-performance, but only to make sure the system does not hang.
-Both of the situations that cause the hang for me where more cases of
-"what not to do" then anything that should perform good. In the
-original case the system started too many gcc's because I'm to lazy to
-figure out a better way to organize the parallelization of independent
-singlethreaded compiles and parallel makes. The Gentoo package manager
-tries to use the load average to that point, but this is foiled if a
-compile first has a singlethreaded part (like configure) and only
-later switches to parallel compiles. So portage started 4 package
-compilations, because during configure the load was low and then the
-system had to deal with 20 gcc's (make -j5) eating all of its memory.
-And even that seemed to only happen during one part of the compiles,
-as in the not hanging cases, the swapping soon stopped. So it would
-just have to survive the initial overallocation with the small mempool
-and everything is find.
-My reduced testcase is even more useless as an example for a real
-load: I'm just using multiple dd's to fill a tmpfs as fast as I can to
-see if raid1.c::make_request() breaks under memory pressure. And here
-too the only goal should be that the kernel should survive this abuse.
+In the case of XFS, per-allocation group is the way we scale
+internal parallelism and as long as you have more AGs than you have
+CPUs, there is very good per-CPU scalability through the filesystem
+because most operations are isolated to a single AG.  That is how we
+scale parallelism in XFS, and it has proven to scale pretty well for
+even the largest of NUMA machines. 
 
-Sorry, but increasing BIO_POOL_SIZE just looks like papering over the
-real problem...
+This is what I mean about there being an impedence mismatch between
+the way the VM and the VFS/filesystem caches scale. Fundamentally,
+the way filesystems want their caches to operate for optimal
+performance can be vastly different to the way you want shrinkers to
+operate for VM scalability. Forcing the MM way of doing stuff down
+into the LRUs and shrinkers is not a good way of solving this
+problem.
 
+> For subsystems that aren't important, don't take much memory or have
+> much reclaim throughput, they are free to ignore the zone argument
+> and keep using the global input to the shrinker.
 
-Torsten
+Having a global lock in a shrinker is already a major point of
+contention because shrinkers have unbound parallelism.  Hence all
+shrinkers need to be converted to use scalable structures. What we
+need _first_ is the infrastructure to do this in a sane manner, not
+tie a couple of shrinkers tightly into the mm structures and then
+walk away.
 
-> --- linux-next.orig/include/linux/bio.h 2010-10-20 16:55:57.000000000 +0800
-> +++ linux-next/include/linux/bio.h      2010-10-20 16:56:54.000000000 +0800
-> @@ -286,7 +286,7 @@ static inline void bio_set_completion_cp
->  * These memory pools in turn all allocate from the bio_slab
->  * and the bvec_slabs[].
->  */
-> -#define BIO_POOL_SIZE 2
-> +#define BIO_POOL_SIZE  64
->  #define BIOVEC_NR_POOLS 6
->  #define BIOVEC_MAX_IDX (BIOVEC_NR_POOLS - 1)
+And FWIW, most subsystems that use shrinkers can be compiled in as
+modules or not compiled in at all. That'll probably leave #ifdef
+CONFIG_ crap all through the struct zone definition as they are
+converted to use your current method....
+
+Cheers,
+
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
