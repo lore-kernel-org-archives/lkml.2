@@ -1,52 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755897Ab0JTCic (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Oct 2010 22:38:32 -0400
-Received: from ipmail06.adl2.internode.on.net ([150.101.137.129]:31254 "EHLO
-	ipmail06.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753141Ab0JTCib (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Oct 2010 22:38:31 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvsEALvxvUx5LdoF/2dsb2JhbAChVXLCfoVKBA
-Date: Wed, 20 Oct 2010 13:38:28 +1100
-From: Nick Piggin <npiggin@kernel.dk>
-To: Miklos Szeredi <miklos@szeredi.hu>
-Cc: npiggin@kernel.dk, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org
-Subject: Re: [patch 26/35] fs: icache alloc anonymous inode allocation
-Message-ID: <20101020023828.GE3740@amd>
-References: <20101019034216.319085068@kernel.dk>
- <20101019034658.215515030@kernel.dk>
- <E1P8ERs-0006k4-Gz@pomaz-ex.szeredi.hu>
+	id S1755621Ab0JTCka (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Oct 2010 22:40:30 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:55765 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754051Ab0JTCk3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Oct 2010 22:40:29 -0400
+Message-ID: <4CBE567B.5030003@zytor.com>
+Date: Tue, 19 Oct 2010 19:39:55 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc13 Thunderbird/3.1.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <E1P8ERs-0006k4-Gz@pomaz-ex.szeredi.hu>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Shaohua Li <shaohua.li@intel.com>
+CC: Andi Kleen <andi@firstfloor.org>, Ingo Molnar <mingo@elte.hu>,
+        lkml <linux-kernel@vger.kernel.org>,
+        "Chen, Tim C" <tim.c.chen@intel.com>
+Subject: Re: [patch]x86: spread tlb flush vector between nodes
+References: <1286955698.13317.5.camel@sli10-conroe.sh.intel.com>	 <20101013081629.GA1621@basil.fritz.box>	 <1286959176.24888.6.camel@sli10-conroe.sh.intel.com>	 <1287466757.29515.2.camel@sli10-conroe.sh.intel.com>	 <6dd05e19-05ef-48e4-b42d-d18c913fa4d7@email.android.com>	 <20101019084423.GB27723@elte.hu>	 <1287478532.9456.0.camel@sli10-conroe.sh.intel.com>	 <20101019103759.GC32212@elte.hu> <1287494931.1699.12.camel@shli-laptop>	 <20101019133426.GB11654@basil.fritz.box> <1287537221.15980.3.camel@sli10-conroe.sh.intel.com>
+In-Reply-To: <1287537221.15980.3.camel@sli10-conroe.sh.intel.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 19, 2010 at 05:50:00PM +0200, Miklos Szeredi wrote:
-> On Tue, 19 Oct 2010, npiggin@kernel.d wrote:
-> > Index: linux-2.6/fs/anon_inodes.c
-> > ===================================================================
-> > --- linux-2.6.orig/fs/anon_inodes.c	2010-10-19 14:18:58.000000000 +1100
-> > +++ linux-2.6/fs/anon_inodes.c	2010-10-19 14:19:19.000000000 +1100
-> > @@ -191,7 +191,7 @@
-> >   */
-> >  static struct inode *anon_inode_mkinode(void)
-> >  {
-> > -	struct inode *inode = new_inode(anon_inode_mnt->mnt_sb);
-> > +	struct inode *inode = new_anon_inode(anon_inode_mnt->mnt_sb);
-> >  
-> >  	if (!inode)
-> >  		return ERR_PTR(-ENOMEM);
+On 10/19/2010 06:13 PM, Shaohua Li wrote:
+> On Tue, 2010-10-19 at 21:34 +0800, Andi Kleen wrote:
+>>>  
+>>> +static int tlb_vector_offset[NR_CPUS] __read_mostly;
+>>
+>> Never use NR_CPUS. Always use per cpu data.
+>>
+>> Otherwise you waste a lot of space on a CONFIG_MAX_SMP
+>> kernel running on a smaller box.
+> ha, I want it to be __read_mostly to avoid cache pollution, apparently
+> we have no per cpu API to do this. Maybe I need add one.
 > 
-> This too needs an inode->i_ino initialization (the default ULONG_MAX
-> will cause EOVERFLOW on 32bit fstat, AFAIK), though it could just be a
-> constant, say 2.
 
-OK. I'll add a #define for it. Thanks
+Quite possible, however, definitely percpu over a static array.
+
+	-hpa
+
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
 
