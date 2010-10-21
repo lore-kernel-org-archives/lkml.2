@@ -1,140 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757520Ab0JUHJK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Oct 2010 03:09:10 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:36300 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755194Ab0JUHJI (ORCPT
+	id S1753237Ab0JUHRj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Oct 2010 03:17:39 -0400
+Received: from fep18.mx.upcmail.net ([62.179.121.38]:36732 "EHLO
+	fep18.mx.upcmail.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751128Ab0JUHRi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Oct 2010 03:09:08 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Thu, 21 Oct 2010 16:03:43 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        steiner@sgi.com, yinghai@kernel.org, mingo@elte.hu
-Subject: [PATCH v2 2/2] try to fix /proc/stat scalability of irq sum of all
- cpu
-Message-Id: <20101021160343.b7a0f60e.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20101021160134.d4c99943.kamezawa.hiroyu@jp.fujitsu.com>
-References: <20101021160134.d4c99943.kamezawa.hiroyu@jp.fujitsu.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
+	Thu, 21 Oct 2010 03:17:38 -0400
+X-SourceIP: 80.56.199.130
+Subject: Re: mmotm 2010-10-20-15-01 uploaded
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Li Zefan <lizf@cn.fujitsu.com>, linux-kernel@vger.kernel.org
+In-Reply-To: <20101020204649.46361931.akpm@linux-foundation.org>
+References: <201010202233.o9KMXNoL008303@imap1.linux-foundation.org>
+	 <4CBFAB7B.7080306@cn.fujitsu.com> <4CBFB06B.3020305@cn.fujitsu.com>
+	 <20101020204649.46361931.akpm@linux-foundation.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 21 Oct 2010 09:17:26 +0200
+Message-ID: <1287645446.3488.56.camel@twins>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
+X-Cloudmark-Analysis: v=1.1 cv=BBXmjR/jrMMj1wHBsuD7Cdv69cLzNztNz9uR8CXiauo= c=1 sm=0 a=OHuDnJXnxFEA:10 a=IkcTkHD0fZMA:10 a=2F5E-7aXOXnKwpUEvboA:9 a=2lYgmc_wo3q56ufZuZorqYViq9UA:4 a=QEXdDO2ut3YA:10 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+On Wed, 2010-10-20 at 20:46 -0700, Andrew Morton wrote:
+> 
+> > ------------[ cut here ]------------
+> > WARNING: at arch/x86/mm/highmem_32.c:82 __kunmap_atomic+0x80/0xd4()
+> 
+>                 WARN_ON_ONCE(idx !=
+>                         ((vaddr - __fix_to_virt(FIX_KMAP_BEGIN)) >> PAGE_SHIFT));
+> 
+> > Hardware name: ASPIRE AG1720
+> > Modules linked in:
+> > Pid: 1, comm: swapper Not tainted 2.6.36-rc8-mm1+ #1
+> > Call Trace:
+> >  [<c0440982>] warn_slowpath_common+0x6a/0x7f
+> >  [<c042e6c5>] ? __kunmap_atomic+0x80/0xd4
+> >  [<c04409ab>] warn_slowpath_null+0x14/0x18
+> >  [<c042e6c5>] __kunmap_atomic+0x80/0xd4
+> >  [<c04f2d1f>] zero_user_segments+0x5e/0x64
+> >  [<c04f2e58>] simple_write_begin+0x5e/0x6c
+> >  [<c04a6518>] generic_file_buffered_write+0xc0/0x1c5
 
-In /proc/stat, the number of per-IRQ event is shown by making a sum
-each irq's events on all cpus. But we can make use of kstat_irqs().
+<snip>
 
-kstat_irqs() do the same calculation, If !CONFIG_GENERIC_HARDIRQ,
-it's not a big cost. (Both of the number of cpus and irqs are small.)
+> It would have been clearer to do
+> 
+>         WARN_ON_ONCE(vaddr != __fix_to_virt(FIX_KMAP_BEGIN + idx))
+> 
+> but I don't see what's gone wrong here.  Peter?
 
-If a system is very big and CONFIG_GENERIC_HARDIRQ, it does
+Right, so that's the warning that the unmapped address isn't actually
+the top-of-stack one.
 
-	for_each_irq()
-		for_each_cpu()
-			- look up a radix tree
-			- read desc->irq_stat[cpu]
-This seems not efficient. This patch adds kstat_irqs() for
-CONFIG_GENRIC_HARDIRQ and change the calculation as
+Your version is much nicer, although I haven't looked too hard at it, I
+probably got my head in a twist.
 
-	for_each_irq()
-		look up radix tree
-		for_each_cpu()
-			- read desc->irq_stat[cpu]
+But like you, I cannot directly see what's going wrong here,
+zero_user_segments() seems a simple enough function without any
+kmap_atomic nesting, so I'm not at all seeing how that's going wrong.
 
-This reduces cost.
-
-A test on (4096cpusp, 256 nodes, 4592 irqs) host (by Jack Steiner)
-
-%time cat /proc/stat > /dev/null
-
-Before Patch:	 2.459 sec
-After Patch :	  .561 sec
-
-Changelog:
- - rebased onto mmotm-1020 (kernel/irq/handle.c is modified)
-
-Tested-by: Jack Steiner <steiner@sgi.com>
-Acked-by: Jack Steiner <steiner@sgi.com>
-Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
----
- fs/proc/stat.c              |    9 ++-------
- include/linux/kernel_stat.h |    4 ++++
- kernel/irq/irqdesc.c        |   16 ++++++++++++++++
- 3 files changed, 22 insertions(+), 7 deletions(-)
-
-Index: mmotm-1020/fs/proc/stat.c
-===================================================================
---- mmotm-1020.orig/fs/proc/stat.c
-+++ mmotm-1020/fs/proc/stat.c
-@@ -108,13 +108,8 @@ static int show_stat(struct seq_file *p,
- 	seq_printf(p, "intr %llu", (unsigned long long)sum);
- 
- 	/* sum again ? it could be updated? */
--	for_each_irq_nr(j) {
--		per_irq_sum = 0;
--		for_each_possible_cpu(i)
--			per_irq_sum += kstat_irqs_cpu(j, i);
--
--		seq_printf(p, " %u", per_irq_sum);
--	}
-+	for_each_irq_nr(j)
-+		seq_printf(p, " %u", kstat_irqs(j));
- 
- 	seq_printf(p,
- 		"\nctxt %llu\n"
-Index: mmotm-1020/include/linux/kernel_stat.h
-===================================================================
---- mmotm-1020.orig/include/linux/kernel_stat.h
-+++ mmotm-1020/include/linux/kernel_stat.h
-@@ -86,6 +86,7 @@ static inline unsigned int kstat_softirq
- /*
-  * Number of interrupts per specific IRQ source, since bootup
-  */
-+#ifndef CONFIG_GENERIC_HARDIRQS
- static inline unsigned int kstat_irqs(unsigned int irq)
- {
- 	unsigned int sum = 0;
-@@ -96,6 +97,9 @@ static inline unsigned int kstat_irqs(un
- 
- 	return sum;
- }
-+#else
-+extern unsigned int kstat_irqs(unsigned int irq);
-+#endif
- 
- /*
-  * Number of interrupts per cpu, since bootup
-Index: mmotm-1020/kernel/irq/irqdesc.c
-===================================================================
---- mmotm-1020.orig/kernel/irq/irqdesc.c
-+++ mmotm-1020/kernel/irq/irqdesc.c
-@@ -393,3 +393,19 @@ unsigned int kstat_irqs_cpu(unsigned int
- 	struct irq_desc *desc = irq_to_desc(irq);
- 	return desc ? desc->kstat_irqs[cpu] : 0;
- }
-+
-+#ifdef CONFIG_GENERIC_HARDIRQS
-+unsigned int  kstat_irqs(unsigned int irq)
-+{
-+	struct irq_desc *desc = irq_to_desc(irq);
-+	int cpu;
-+	int sum = 0;
-+
-+	if (!desc)
-+		return 0;
-+	for_each_possible_cpu(cpu)
-+		sum += desc->kstat_irqs[cpu];
-+	return sum;
-+}
-+EXPORT_SYMBOL_GPL(kstat_irqs);
-+#endif /*CONFIG_GENERIC_HARDIRQS*/
+/me goes find where you hide your mmotm patch-queue and stare at the
+actual code.
 
