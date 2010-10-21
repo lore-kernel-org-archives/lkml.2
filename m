@@ -1,104 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756222Ab0JUOgy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Oct 2010 10:36:54 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:16341 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750712Ab0JUOgw convert rfc822-to-8bit (ORCPT
+	id S1753805Ab0JUOiZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Oct 2010 10:38:25 -0400
+Received: from e38.co.us.ibm.com ([32.97.110.159]:44186 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751985Ab0JUOiY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Oct 2010 10:36:52 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=cEqTJCmLa04L8OBWwB+80pYqp+cxcr0tIb6hTrYGyqMubcrHHigS6Qhwawfk67Y8FU
-         gRVEdrartObUgIOJkRdg==
+	Thu, 21 Oct 2010 10:38:24 -0400
+Date: Thu, 21 Oct 2010 07:38:21 -0700
+From: Vernon Mauery <vernux@us.ibm.com>
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        Linux Documentation <linux-doc@vger.kernel.org>,
+        Platform driver x86 <platform-driver-x86@vger.kernel.org>
+Subject: Re: [Patch] IBM Real-Time "SMI Free" mode driver -v7
+Message-ID: <20101021143821.GB8754@lucy>
+References: <20101005224718.GC4046@lucy>
+ <20101021135429.GC22133@srcf.ucam.org>
+ <20101021142319.GA8754@lucy>
+ <20101021142523.GA23171@srcf.ucam.org>
 MIME-Version: 1.0
-In-Reply-To: <1287638608.2545.98.camel@edumazet-laptop>
-References: <1287614941-32325-1-git-send-email-venki@google.com>
-	<1287614941-32325-2-git-send-email-venki@google.com>
-	<1287638608.2545.98.camel@edumazet-laptop>
-Date: Thu, 21 Oct 2010 07:36:49 -0700
-Message-ID: <AANLkTi=QyTJ0vZ=U3Ts7bB-DGvtTuQ_M6k8igkKiv6EE@mail.gmail.com>
-Subject: Re: [PATCH 1/6] Free up pf flag PF_KSOFTIRQD
-From: Venkatesh Pallipadi <venki@google.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        linux-kernel@vger.kernel.org, Paul Turner <pjt@google.com>,
-        Shaun Ruffell <sruffell@digium.com>,
-        Yong Zhang <yong.zhang0@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii; format=flowed
+Content-Disposition: inline
+In-Reply-To: <20101021142523.GA23171@srcf.ucam.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 20, 2010 at 10:23 PM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
-> Le mercredi 20 octobre 2010 à 15:48 -0700, Venkatesh Pallipadi a écrit :
->> +int is_ksoftirqd_context(void)
->> +{
->> +       return (current == __get_cpu_var(ksoftirqd));
->> +}
+On 21-Oct-2010 03:25 PM, Matthew Garrett wrote:
+>On Thu, Oct 21, 2010 at 07:23:19AM -0700, Vernon Mauery wrote:
+>> On 21-Oct-2010 02:54 PM, Matthew Garrett wrote:
+>>> Applied, thanks. It'd be nice if we didn't have to rely on DMI,
+>>> especially since enterprise customers often end up running later kernels
+>>
+>> I am not sure what you mean here by problems with DMI running later
+>> kernels.
 >
-> "return (X == Y);" should be "return X == Y;"
->
-> I believe this function should be inlined, and use this_cpu_read()
-> You probably can pass 'current' as a pointer.
->
-> static inline bool is_ksoftirq(struct task_struct *p)
-> {
->        return p == this_cpu_read(ksoftirqd);
-> }
+>Oops, sorry! I mean running on older kernels.
 
-Yes. I thought about static inline part. The reason I did not make
-this static inline was because ksoftirqd was declared static in
-softirq.c and this function was getting called from sched.c.
+Do older kernels not have DMI support?  I would think that if an 
+enterprise distribution wanted this driver they would likely already 
+have DMI support backported as well.
 
-I did not know that this_cpu_read existed though. I guess I should be
-looking at using that elsewhere in the patchset too.
+Or they can work with me to find a way that works in that kernel.  I was 
+thinking that in the current (and future) kernel, DMI was the best way 
+to go.
 
-Also, part of the overhead you see below I think is coming from
-DEBUG_PREEMPT. That would be making every smp_processor_id() call more
-expensive. No?
+>>> - is there any other way to determine that this is safe to load? Could
+>>
+>> I can't think of anything off the top of my head that would allow us to
+>> ensure that this is only loaded on IBM systems.  DMI is pretty good
+>> about that.
+>
+>I'd suggest using DMI to verify that it's an IBM, and perhaps also using
+>DMI to check that it's a server or blade rather than a laptop or
+>desktop. After that you could just check the ebda rather than having to
+>have an entry for every specific machine.
 
-Thanks,
-Venki
+I went for a better safe than sorry route.  Before I added the DMI 
+checking I had some reports of this getting loaded on non-IBM hardware 
+and it came up with some nasty error messages.  I figured since I knew 
+exactly which platforms have support, I could just limit the driver to 
+those.  Then there is the force parameter that allows a user to ignore 
+the DMI data and try to load the driver anyway.
 
->
-> Your version is a bit expensive :
->
-> <is_ksoftirqd_context>:
->        55                      push   %rbp
->        48 89 e5                mov    %rsp,%rbp
->        48 83 ec 10             sub    $0x10,%rsp
->        48 89 1c 24             mov    %rbx,(%rsp)
->        4c 89 64 24 08          mov    %r12,0x8(%rsp)
->        48 c7 c3 40 03 01 00    mov    $0x10340,%rbx
->        e8 93 e5 24 00          callq  ffffffff812aeab0 <debug_smp_processor_id>
->        89 c0                   mov    %eax,%eax
->        48 8b 04 c5 a0 b8 b5    mov    -0x7e4a4760(,%rax,8),%rax
->        81
->        65 4c 8b 24 25 00 cc    mov    %gs:0xcc00,%r12
->        00 00
->        4c 39 24 18             cmp    %r12,(%rax,%rbx,1)
->        48 8b 1c 24             mov    (%rsp),%rbx
->        4c 8b 64 24 08          mov    0x8(%rsp),%r12
->        c9                      leaveq
->        0f 94 c0                sete   %al
->        0f b6 c0                movzbl %al,%eax
->        c3                      retq
->
-> While alternate version :
->
->                                cmp    %gs:0x10340,%rdi
->
-> (So it should be as fast as previous flag based test)
->
-> Thanks
->
->
->
+--Vernon
