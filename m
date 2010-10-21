@@ -1,125 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932193Ab0JUNuQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Oct 2010 09:50:16 -0400
-Received: from mailout-de.gmx.net ([213.165.64.23]:42146 "HELO mail.gmx.net"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
-	id S932166Ab0JUNuP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Oct 2010 09:50:15 -0400
-X-Authenticated: #15668376
-X-Provags-ID: V01U2FsdGVkX1/xRIZiuGvxWJhWpeBSU+i5m/0dVhUo5pZ9qTjNcm
-	IKj9FiylJX74Da
-From: Sven Eckelmann <sven.eckelmann@gmx.de>
-To: Greg KH <greg@kroah.com>
-Subject: Re: [B.A.T.M.A.N.] [resend][PATCHv2] staging: batman-adv: remove useless addr_to_string()
-Date: Thu, 21 Oct 2010 15:51:12 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.32-5-amd64; KDE/4.4.5; x86_64; ; )
-Cc: b.a.t.m.a.n@lists.open-mesh.org, devel@driverdev.osuosl.org,
-        "Greg Kroah-Hartman" <gregkh@suse.de>, linux-kernel@vger.kernel.org,
-        Simon Wunderlich <siwu@hrz.tu-chemnitz.de>,
-        Andy Shevchenko <andy.shevchenko@gmail.com>,
-        Marek Lindner <lindner_marek@yahoo.de>
-References: <1287589664-25447-1-git-send-email-andy.shevchenko@gmail.com> <201010211441.39483.sven.eckelmann@gmx.de> <20101021133848.GC20184@kroah.com>
-In-Reply-To: <20101021133848.GC20184@kroah.com>
+	id S932221Ab0JUNue (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Oct 2010 09:50:34 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:53348 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932157Ab0JUNub (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Oct 2010 09:50:31 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Christoph Hellwig <hch@infradead.org>
+Subject: [PATCH 2/2] BKL: remove BKL from freevxfs
+Date: Thu, 21 Oct 2010 15:51:08 +0200
+User-Agent: KMail/1.12.2 (Linux/2.6.35-16-generic; KDE/4.3.2; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+References: <201009161632.59210.arnd@arndb.de> <20101021124743.GC17654@infradead.org> <201010211538.24733.arnd@arndb.de>
+In-Reply-To: <201010211538.24733.arnd@arndb.de>
 MIME-Version: 1.0
-Content-Type: multipart/signed;
-  boundary="nextPart20442021.5PmmWb4flc";
-  protocol="application/pgp-signature";
-  micalg=pgp-sha512
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201010211551.14371.sven.eckelmann@gmx.de>
-X-Y-GMX-Trusted: 0
+Message-Id: <201010211551.08870.arnd@arndb.de>
+X-Provags-ID: V02:K0:ijvrWgM97qRfZne9M1ImVX1zPFTFNJOB9XLJIt+UW0H
+ TiKXblklMJu6Z1248ILhX2vahCS25/b8PioKjQIqLBuSkGrbUn
+ w46yR+YLZDae+Ubly1Lx3qfQh4oXD8uTffnjDd7raQTpPjS09W
+ J5LjLtNSoiD8w+P4EnyZBeRWBGsQ+PuiTiOGxQZXH03s4Us1jg
+ QT7qWluMneomPAFCTNHxg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart20442021.5PmmWb4flc
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: quoted-printable
+All uses of the BKL in freevxfs were the result of a pushdown into
+code that doesn't really need it. As Christoph points out, this
+is a read-only file system, which eliminates most of the races in
+readdir/lookup.
 
-Greg KH wrote:
-> On Thu, Oct 21, 2010 at 02:41:37PM +0200, Sven Eckelmann wrote:
-> > Greg KH wrote:
-> > > On Thu, Oct 21, 2010 at 12:16:37AM +0200, Sven Eckelmann wrote:
-> > > > On Wed, Oct 20, 2010 at 01:57:49PM -0700, Greg KH wrote:
-> > > > > On Wed, Oct 20, 2010 at 10:51:15PM +0200, Sven Eckelmann wrote:
-> > > > > > On Wed, Oct 20, 2010 at 06:47:44PM +0300, Andy Shevchenko wrote:
-> > > > > > > Since all *printf() methods in the kernel understand '%pM'
-> > > > > > > modifier the conversion to the string is useless beforehand.
-> > > > > > >=20
-> > > > > > > Additionally this patch decreases batman_if structure by 20
-> > > > > > > bytes.
-> > > > > >=20
-> > > > > > Thanks for your patch. I have problems with compiling due to
-> > > > > > other patches in the queue. I will fix that and recommend it as
-> > > > > > patch for 2.6.38.
-> > > > >=20
-> > > > > What do you mean by this?  It applies just fine to my tree, so why
-> > > > > can't I take it now?
-> > > >=20
-> > > > If you want then do so, but the stuff in batman-adv's master must be
-> > > > fixed so they have to apply the v3 version of the patch and not the
-> > > > v2 version Andy sent.
-> > >=20
-> > > That's one of the problems with having an out-of-tree tree.  Please
-> > > don't do that at all anymore.
-> >=20
-> > I don't see a difference in a in-tree tree and and out-of-tree tree when
-> > applying patches somewhere else out of order. In both situations we have
-> > a merge conflict (not that the scm says "omg, i cannot merge it" but
-> > that the thing doesn't compile after the merge).
->=20
-> Not true at all, the in-linux-next tree builds just fine with this
-> patch.  In fact, it's now in linux-next already.
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+Cc: Christoph Hellwig <hch@infradead.org>
+---
+ fs/freevxfs/vxfs_lookup.c |   14 ++------------
+ fs/freevxfs/vxfs_super.c  |   10 ----------
+ 2 files changed, 2 insertions(+), 22 deletions(-)
 
-He? I never said that it breaks stuff in your staging tree.
+diff --git a/fs/freevxfs/vxfs_lookup.c b/fs/freevxfs/vxfs_lookup.c
+index 0ec7bb2..6c5131d 100644
+--- a/fs/freevxfs/vxfs_lookup.c
++++ b/fs/freevxfs/vxfs_lookup.c
+@@ -36,7 +36,6 @@
+ #include <linux/highmem.h>
+ #include <linux/kernel.h>
+ #include <linux/pagemap.h>
+-#include <linux/smp_lock.h>
+ 
+ #include "vxfs.h"
+ #include "vxfs_dir.h"
+@@ -212,16 +211,12 @@ vxfs_lookup(struct inode *dip, struct dentry *dp, struct nameidata *nd)
+ 	if (dp->d_name.len > VXFS_NAMELEN)
+ 		return ERR_PTR(-ENAMETOOLONG);
+ 				 
+-	lock_kernel();
+ 	ino = vxfs_inode_by_name(dip, dp);
+ 	if (ino) {
+ 		ip = vxfs_iget(dip->i_sb, ino);
+-		if (IS_ERR(ip)) {
+-			unlock_kernel();
++		if (IS_ERR(ip))
+ 			return ERR_CAST(ip);
+-		}
+ 	}
+-	unlock_kernel();
+ 	d_add(dp, ip);
+ 	return NULL;
+ }
+@@ -248,8 +243,6 @@ vxfs_readdir(struct file *fp, void *retp, filldir_t filler)
+ 	u_long			page, npages, block, pblocks, nblocks, offset;
+ 	loff_t			pos;
+ 
+-	lock_kernel();
+-
+ 	switch ((long)fp->f_pos) {
+ 	case 0:
+ 		if (filler(retp, ".", 1, fp->f_pos, ip->i_ino, DT_DIR) < 0)
+@@ -265,10 +258,8 @@ vxfs_readdir(struct file *fp, void *retp, filldir_t filler)
+ 
+ 	pos = fp->f_pos - 2;
+ 	
+-	if (pos > VXFS_DIRROUND(ip->i_size)) {
+-		unlock_kernel();
++	if (pos > VXFS_DIRROUND(ip->i_size))
+ 		return 0;
+-	}
+ 
+ 	npages = dir_pages(ip);
+ 	nblocks = dir_blocks(ip);
+@@ -327,6 +318,5 @@ vxfs_readdir(struct file *fp, void *retp, filldir_t filler)
+ done:
+ 	fp->f_pos = ((page << PAGE_CACHE_SHIFT) | offset) + 2;
+ out:
+-	unlock_kernel();
+ 	return 0;
+ }
+diff --git a/fs/freevxfs/vxfs_super.c b/fs/freevxfs/vxfs_super.c
+index eb2b9e0..71b0148 100644
+--- a/fs/freevxfs/vxfs_super.c
++++ b/fs/freevxfs/vxfs_super.c
+@@ -38,7 +38,6 @@
+ #include <linux/buffer_head.h>
+ #include <linux/kernel.h>
+ #include <linux/slab.h>
+-#include <linux/smp_lock.h>
+ #include <linux/stat.h>
+ #include <linux/vfs.h>
+ #include <linux/mount.h>
+@@ -81,16 +80,12 @@ vxfs_put_super(struct super_block *sbp)
+ {
+ 	struct vxfs_sb_info	*infp = VXFS_SBI(sbp);
+ 
+-	lock_kernel();
+-
+ 	vxfs_put_fake_inode(infp->vsi_fship);
+ 	vxfs_put_fake_inode(infp->vsi_ilist);
+ 	vxfs_put_fake_inode(infp->vsi_stilist);
+ 
+ 	brelse(infp->vsi_bp);
+ 	kfree(infp);
+-
+-	unlock_kernel();
+ }
+ 
+ /**
+@@ -159,14 +154,11 @@ static int vxfs_fill_super(struct super_block *sbp, void *dp, int silent)
+ 	struct inode *root;
+ 	int ret = -EINVAL;
+ 
+-	lock_kernel();
+-
+ 	sbp->s_flags |= MS_RDONLY;
+ 
+ 	infp = kzalloc(sizeof(*infp), GFP_KERNEL);
+ 	if (!infp) {
+ 		printk(KERN_WARNING "vxfs: unable to allocate incore superblock\n");
+-		unlock_kernel();
+ 		return -ENOMEM;
+ 	}
+ 
+@@ -239,7 +231,6 @@ static int vxfs_fill_super(struct super_block *sbp, void *dp, int silent)
+ 		goto out_free_ilist;
+ 	}
+ 
+-	unlock_kernel();
+ 	return 0;
+ 	
+ out_free_ilist:
+@@ -249,7 +240,6 @@ out_free_ilist:
+ out:
+ 	brelse(bp);
+ 	kfree(infp);
+-	unlock_kernel();
+ 	return ret;
+ }
+ 
+-- 
+1.7.1
 
-> > I always thought that even when the source is in the kernel (or in
-> > staging) that there are still a maintainer responsible for it. That this
-> > person has to go through the patches and look if they do whatever they
-> > claim to do and that this isn't against what the original implementation
-> > had to do or should do.
->=20
-> Yes, but sometimes, especially for trivial patches, the maintainer is
-> routed around and patches go in through other trees.
->=20
-> Remember a maintainer is not someone who can say "no" to all patches
-> that comes in, sorry, we don't work that way.
-
-What? I no batman-adv maintainer said no to patches on the lkml or other li=
-nux=20
-related mailing lists as far as I can remember, but postponed them or=20
-recommended changes.
-
-There were patches dropped in the past which didn't make sense or created m=
-ore=20
-problems than they solved - but that was even before batman-adv entered=20
-staging.
-
-thanks,
-	Sven
-
---nextPart20442021.5PmmWb4flc
-Content-Type: application/pgp-signature; name=signature.asc 
-Content-Description: This is a digitally signed message part.
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQIcBAABCgAGBQJMwEVRAAoJEF2HCgfBJntGZWQP/11baSKY2u+zlkjbSsASxWfi
-JwGNxA1DZ/KYyx4lPF9hUhDBRIQQSI34IARigkarAZ2mPi2ADyse4pQwt3ettXsc
-6CRyRiHTTSms96gAjICTKBOsQw2QGTjhP+XPkXsCkwA2U1F2sAJf8nkVkLzrEpQm
-yDRsKgJfw5c6tl9EVABw9w5795dLLnZrB3W05u8UX8O9liusubHkc6RkThwoFLDa
-EYwtVvk7EHbuvo/7cAkHsZayI4Z0c6pJ2fBMuQmOFEvbMiVbFTMZe7ePdV6Ar41H
-KOtvmy5IhTuDnsiu30fVtVPoO5/kDa1tpd4l6UiYnhnnLCmuHbOKHLEW0tNygWnd
-6UIMxk3u6ugUMY0HcW9YphiT+cOUVDb5RukeDq8y0MMw9SMkSiQKUcbm5gOgE0/H
-9HMgHCqraaPuHU0Ux10NjYIyKGF96cXTwhj4DtJgsana9yiX2hR8juvePKuTsUVa
-qLK19XoWeBDMDQFhy/CWfHSTYR/EK8s8GUtFr/zIP8Xs8PUgtfrvVn3psahknisE
-VJX4l7s6T5Yljcji2dFaEjAtCkWxBeJ4LdOgWH3IQ41CuUPG4DgP67WqyLonqGDO
-DSu0rCPEvkMxDRBlg97Zz0o56I+HaCFzALqTR9fwxfiGagdNKEzbcVv5r94l5i27
-QdZA8e1CHdJal1GmWk3o
-=22FI
------END PGP SIGNATURE-----
-
---nextPart20442021.5PmmWb4flc--
