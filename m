@@ -1,279 +1,185 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932234Ab0JUOOO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Oct 2010 10:14:14 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:40645 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757138Ab0JUOOM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Oct 2010 10:14:12 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=WUUXw4UgtT0Av6Z3WDalc2Kp3WjR5rNQCqPhWMeVODBNn5RPYXioPGJhzm13lZAQQJ
-         9hNHQ6ew3zm3nikbBvQxKOJQwWLlGxNC/MjWCp+M6fxcuCRhjzHLfiK1xw0Y7E4VKR4d
-         YHyKsClIhQ41+FrheE/B4hp4CikFV3EbhGbpA=
-Date: Thu, 21 Oct 2010 18:14:07 +0400
-From: Anton Vorontsov <cbouatmailru@gmail.com>
-To: Lars-Peter Clausen <lars@metafoo.de>
-Cc: rklein@nvidia.com, broonie@opensource.wolfsonmicro.com, achew@nvidia.com,
-        olof@lixom.net, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] POWER: Add gpio chager driver
-Message-ID: <20101021141407.GA26602@oksana.dev.rtsoft.ru>
-References: <4CC02FF9.3050804@metafoo.de>
- <1287663957-30099-1-git-send-email-lars@metafoo.de>
+	id S932295Ab0JUOOw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Oct 2010 10:14:52 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:33929 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932274Ab0JUOOv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Oct 2010 10:14:51 -0400
+Date: Thu, 21 Oct 2010 16:14:40 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [GIT PULL] x86/x2apic for v2.6.37
+Message-ID: <20101021141440.GA10210@elte.hu>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1287663957-30099-1-git-send-email-lars@metafoo.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 21, 2010 at 02:25:57PM +0200, Lars-Peter Clausen wrote:
-> This patch adds a simple driver for chargers indicating their online status
-> through a GPIO pin.
-> 
-> Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
+Linus,
 
-I agree, the GPIO name fits better. Rhyland, are you OK with that
-driver, does it fit your needs?
+Please pull the x86-x2apic-for-linus git tree from:
 
-Some comments down below.
+   git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git x86-x2apic-for-linus
 
-[...]
-> +struct gpio_charger {
-> +	const struct gpio_charger_platform_data *pdata;
-> +	int irq;
+ Thanks,
 
-This can be unsigned.
+	Ingo
 
-> +
-> +	struct power_supply charger;
-> +};
-> +
-> +static irqreturn_t gpio_charger_irq(int irq, void *devid)
-> +{
-> +	struct power_supply *charger = devid;
+------------------>
+Suresh Siddha (3):
+      x86, intr-remap: Set redirection hint in the IRTE
+      x86, intr-remap: Remove IRTE setup duplicate code
+      x86, x2apic: Simplify apic init in SMP and UP builds
 
-Please add an empty line here.
 
-> +	power_supply_changed(charger);
-> +
-> +	return IRQ_HANDLED;
-> +}
-> +
-> +static inline struct gpio_charger *psy_to_gpio_charger(struct power_supply *psy)
-> +{
-> +	return container_of(psy, struct gpio_charger, charger);
-> +}
-> +
-> +static int gpio_charger_get_property(struct power_supply *psy,
-> +	enum power_supply_property psp, union power_supply_propval *val)
+ arch/x86/include/asm/irq_remapping.h |   27 +++++++++++++++++++++++++++
+ arch/x86/kernel/apic/apic.c          |    3 ---
+ arch/x86/kernel/apic/io_apic.c       |   25 ++-----------------------
+ arch/x86/kernel/apic/probe_64.c      |    3 +++
+ arch/x86/kernel/smpboot.c            |    4 ++--
+ 5 files changed, 34 insertions(+), 28 deletions(-)
 
-One more tab for here?
-
-> +{
-> +	struct gpio_charger *gpio_charger = psy_to_gpio_charger(psy);
-> +	const struct gpio_charger_platform_data *pdata = gpio_charger->pdata;
-> +
-> +	switch (psp) {
-> +	case POWER_SUPPLY_PROP_ONLINE:
-> +		val->intval = gpio_get_value(pdata->gpio);
-> +		val->intval ^= pdata->gpio_active_low;
-> +		break;
-> +	default:
-> +		return -EINVAL;
-> +	}
-> +
-> +	return 0;
-> +}
-> +
-> +static enum power_supply_property gpio_charger_properties[] = {
-> +	POWER_SUPPLY_PROP_ONLINE,
-> +};
-> +
-> +static int __devinit gpio_charger_probe(struct platform_device *pdev)
-> +{
-> +	const struct gpio_charger_platform_data *pdata = pdev->dev.platform_data;
-> +	struct gpio_charger *gpio_charger;
-> +	struct power_supply *charger;
-> +	int ret;
-> +
-> +	if (!pdata) {
-> +		dev_err(&pdev->dev, "No platform data");
-> +		return -EINVAL;
-> +	}
-> +
-> +	if (!gpio_is_valid(pdata->gpio)) {
-> +		dev_err(&pdev->dev, "Invalid gpio pin\n");
-> +		return -EINVAL;
-> +	}
-> +
-> +	gpio_charger = kzalloc(sizeof(*gpio_charger), GFP_KERNEL);
-> +
-> +	charger = &gpio_charger->charger;
-> +
-> +	charger->name = pdata->name;
-> +	charger->type = pdata->type;
-> +	charger->properties = gpio_charger_properties;
-> +	charger->num_properties = ARRAY_SIZE(gpio_charger_properties);
-> +	charger->get_property  = gpio_charger_get_property;
-> +	charger->supplied_to = pdata->supplied_to;
-> +	charger->num_supplicants = pdata->num_supplicants;
-> +
-> +	ret = gpio_request(pdata->gpio, dev_name(&pdev->dev));
-> +	if (ret) {
-> +		dev_err(&pdev->dev, "Failed to request gpio pin: %d\n", ret);
-> +		goto err_free;
-> +	}
-> +	ret = gpio_direction_input(pdata->gpio);
-> +	if (ret) {
-> +		dev_err(&pdev->dev, "Failed to set gpio to input: %d\n", ret);
-> +		goto err_gpio_free;
-> +	}
-> +
-> +	gpio_charger->irq = gpio_to_irq(pdata->gpio);
-> +	if (gpio_charger->irq >= 0) {
-
-0 isn't valid IRQ number. The check should be just 'if (gpio_charger->irq)'.
-
-> +		ret = request_irq(gpio_charger->irq, gpio_charger_irq,
-> +				IRQF_TRIGGER_RISING | IRQF_TRIGGER_FALLING,
-> +				dev_name(&pdev->dev), charger);
-> +		if (ret) {
-> +			dev_warn(&pdev->dev, "Failed to request gpio irq: %d\n", ret);
-> +			gpio_charger->irq = -1;
-> +		}
-> +	}
-> +
-> +	gpio_charger->pdata = pdata;
-> +
-> +	ret = power_supply_register(&pdev->dev, charger);
-> +	if (ret < 0) {
-> +		dev_err(&pdev->dev, "Failed to register power supply: %d\n", ret);
-> +		goto err_irq_free;
-> +	}
-> +
-> +	platform_set_drvdata(pdev, gpio_charger);
-> +
-> +	return 0;
-> +
-> +err_irq_free:
-> +	if (gpio_charger->irq >= 0)
-> +		free_irq(gpio_charger->irq, charger);
-> +err_gpio_free:
-> +	gpio_free(pdata->gpio);
-> +err_free:
-> +	kfree(gpio_charger);
-> +	return ret;
-> +}
-> +
-> +static int __devexit gpio_charger_remove(struct platform_device *pdev)
-> +{
-> +	struct gpio_charger *gpio_charger = platform_get_drvdata(pdev);
-> +	const struct gpio_charger_platform_data *pdata = gpio_charger->pdata;
-> +
-> +	power_supply_unregister(&gpio_charger->charger);
-> +
-> +	if (gpio_charger->irq >= 0)
-> +		free_irq(gpio_charger->irq, &gpio_charger->charger);
-> +	gpio_free(pdata->gpio);
-> +
-> +	platform_set_drvdata(pdev, NULL);
-> +	kfree(gpio_charger);
-> +
-> +	return 0;
-> +}
-> +
-> +static struct platform_driver  gpio_charger_driver = {
-> +	.probe = gpio_charger_probe,
-> +	.remove = __devexit_p(gpio_charger_remove),
-> +	.driver = {
-> +		.name = "gpio-charger",
-> +		.owner = THIS_MODULE,
-> +	},
-> +};
-> +
-> +static int __init gpio_charger_init(void)
-> +{
-> +	return platform_driver_register(&gpio_charger_driver);
-> +}
-> +module_init(gpio_charger_init);
-> +
-> +static void __exit gpio_charger_exit(void)
-> +{
-> +	platform_driver_unregister(&gpio_charger_driver);
-> +}
-> +module_exit(gpio_charger_exit);
-> +
-> +MODULE_AUTHOR("Lars-Peter Clausen <lars@metafoo.de>");
-> +MODULE_DESCRIPTION("Driver for chargers which report their online status through a GPIO");
-> +MODULE_LICENSE("GPL");
-> +MODULE_ALIAS("platform:gpio-charger");
-> diff --git a/include/linux/power/gpio-charger.h b/include/linux/power/gpio-charger.h
-> new file mode 100644
-> index 0000000..404d5e6
-> --- /dev/null
-> +++ b/include/linux/power/gpio-charger.h
-> @@ -0,0 +1,39 @@
-> +/*
-> + *  Copyright (C) 2010, Lars-Peter Clausen <lars@metafoo.de>
-> + *
-> + *  This program is free software; you can redistribute	 it and/or modify it
-> + *  under  the terms of	 the GNU General  Public License as published by the
-> + *  Free Software Foundation;  either version 2 of the	License, or (at your
-> + *  option) any later version.
-> + *
-> + *  You should have received a copy of the  GNU General Public License along
-> + *  with this program; if not, write  to the Free Software Foundation, Inc.,
-> + *  675 Mass Ave, Cambridge, MA 02139, USA.
-> + *
-> + */
-> +
-> +#ifndef __LINUX_POWER_GPIO_CHARGER_H__
-> +#define __LINUX_POWER_GPIO_CHARGER_H__
-> +
-> +/*
-
-Should be /**
-
-> + * struct gpio_charger_platform_data - platform_data for gpio_charger devices
-> + * @name:		Name for the chargers power_supply device
-> + * @type:		Type of the charger
-> + * @gpio:		GPIO which is used to indicate the chargers status
-> + * @gpio_active_low:	Should be set to 1 if the GPIO is active low otherwise 0
-> + * @supplied_to:	Array of battery names to which this chargers supplies power
-> + * @num_supplicants:	Number of entries in the supplied_to array
-> + */
-> +
-
-No need for this empty line.
-
-> +struct gpio_charger_platform_data {
-> +	const char *name;
-> +	enum power_supply_type type;
-
-#include <linux/power_supply.h> is needed for this.
-
-> +
-> +	int gpio;
-> +	int gpio_active_low;
-> +
-> +	char **supplied_to;
-> +	size_t num_supplicants;
-
-And #include <linux/types.h> for this.
-
-> +};
-> +
-> +#endif
-
-Thanks!
-
--- 
-Anton Vorontsov
-email: cbouatmailru@gmail.com
-irc://irc.freenode.net/bd2
+diff --git a/arch/x86/include/asm/irq_remapping.h b/arch/x86/include/asm/irq_remapping.h
+index f275e22..8d84150 100644
+--- a/arch/x86/include/asm/irq_remapping.h
++++ b/arch/x86/include/asm/irq_remapping.h
+@@ -3,4 +3,31 @@
+ 
+ #define IRTE_DEST(dest) ((x2apic_mode) ? dest : dest << 8)
+ 
++#ifdef CONFIG_INTR_REMAP
++static inline void prepare_irte(struct irte *irte, int vector,
++			        unsigned int dest)
++{
++	memset(irte, 0, sizeof(*irte));
++
++	irte->present = 1;
++	irte->dst_mode = apic->irq_dest_mode;
++	/*
++	 * Trigger mode in the IRTE will always be edge, and for IO-APIC, the
++	 * actual level or edge trigger will be setup in the IO-APIC
++	 * RTE. This will help simplify level triggered irq migration.
++	 * For more details, see the comments (in io_apic.c) explainig IO-APIC
++	 * irq migration in the presence of interrupt-remapping.
++	*/
++	irte->trigger_mode = 0;
++	irte->dlvry_mode = apic->irq_delivery_mode;
++	irte->vector = vector;
++	irte->dest_id = IRTE_DEST(dest);
++	irte->redir_hint = 1;
++}
++#else
++static void prepare_irte(struct irte *irte, int vector, unsigned int dest)
++{
++}
++#endif
++
+ #endif	/* _ASM_X86_IRQ_REMAPPING_H */
+diff --git a/arch/x86/kernel/apic/apic.c b/arch/x86/kernel/apic/apic.c
+index e3b534c..8cf86fb 100644
+--- a/arch/x86/kernel/apic/apic.c
++++ b/arch/x86/kernel/apic/apic.c
+@@ -1665,10 +1665,7 @@ int __init APIC_init_uniprocessor(void)
+ 	}
+ #endif
+ 
+-#ifndef CONFIG_SMP
+-	enable_IR_x2apic();
+ 	default_setup_apic_routing();
+-#endif
+ 
+ 	verify_local_APIC();
+ 	connect_bsp_APIC();
+diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
+index f1efeba..e8c95a2 100644
+--- a/arch/x86/kernel/apic/io_apic.c
++++ b/arch/x86/kernel/apic/io_apic.c
+@@ -1377,21 +1377,7 @@ int setup_ioapic_entry(int apic_id, int irq,
+ 		if (index < 0)
+ 			panic("Failed to allocate IRTE for ioapic %d\n", apic_id);
+ 
+-		memset(&irte, 0, sizeof(irte));
+-
+-		irte.present = 1;
+-		irte.dst_mode = apic->irq_dest_mode;
+-		/*
+-		 * Trigger mode in the IRTE will always be edge, and the
+-		 * actual level or edge trigger will be setup in the IO-APIC
+-		 * RTE. This will help simplify level triggered irq migration.
+-		 * For more details, see the comments above explainig IO-APIC
+-		 * irq migration in the presence of interrupt-remapping.
+-		 */
+-		irte.trigger_mode = 0;
+-		irte.dlvry_mode = apic->irq_delivery_mode;
+-		irte.vector = vector;
+-		irte.dest_id = IRTE_DEST(destination);
++		prepare_irte(&irte, vector, destination);
+ 
+ 		/* Set source-id of interrupt request */
+ 		set_ioapic_sid(&irte, apic_id);
+@@ -3335,14 +3321,7 @@ static int msi_compose_msg(struct pci_dev *pdev, unsigned int irq,
+ 		ir_index = map_irq_to_irte_handle(irq, &sub_handle);
+ 		BUG_ON(ir_index == -1);
+ 
+-		memset (&irte, 0, sizeof(irte));
+-
+-		irte.present = 1;
+-		irte.dst_mode = apic->irq_dest_mode;
+-		irte.trigger_mode = 0; /* edge */
+-		irte.dlvry_mode = apic->irq_delivery_mode;
+-		irte.vector = cfg->vector;
+-		irte.dest_id = IRTE_DEST(dest);
++		prepare_irte(&irte, cfg->vector, dest);
+ 
+ 		/* Set source-id of interrupt request */
+ 		if (pdev)
+diff --git a/arch/x86/kernel/apic/probe_64.c b/arch/x86/kernel/apic/probe_64.c
+index 83e9be4..f9e4e6a 100644
+--- a/arch/x86/kernel/apic/probe_64.c
++++ b/arch/x86/kernel/apic/probe_64.c
+@@ -54,6 +54,9 @@ static int apicid_phys_pkg_id(int initial_apic_id, int index_msb)
+  */
+ void __init default_setup_apic_routing(void)
+ {
++
++	enable_IR_x2apic();
++
+ #ifdef CONFIG_X86_X2APIC
+ 	if (x2apic_mode
+ #ifdef CONFIG_X86_UV
+diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
+index 8b3bfc4..87a8c6b 100644
+--- a/arch/x86/kernel/smpboot.c
++++ b/arch/x86/kernel/smpboot.c
+@@ -1109,8 +1109,6 @@ void __init native_smp_prepare_cpus(unsigned int max_cpus)
+ 	}
+ 	set_cpu_sibling_map(0);
+ 
+-	enable_IR_x2apic();
+-	default_setup_apic_routing();
+ 
+ 	if (smp_sanity_check(max_cpus) < 0) {
+ 		printk(KERN_INFO "SMP disabled\n");
+@@ -1118,6 +1116,8 @@ void __init native_smp_prepare_cpus(unsigned int max_cpus)
+ 		goto out;
+ 	}
+ 
++	default_setup_apic_routing();
++
+ 	preempt_disable();
+ 	if (read_apic_id() != boot_cpu_physical_apicid) {
+ 		panic("Boot APIC ID in local APIC unexpected (%d vs %d)",
