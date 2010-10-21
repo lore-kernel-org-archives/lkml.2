@@ -1,35 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754071Ab0JUKKp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Oct 2010 06:10:45 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:52639
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752885Ab0JUKKo (ORCPT
+	id S1754800Ab0JUKLa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Oct 2010 06:11:30 -0400
+Received: from mail9.hitachi.co.jp ([133.145.228.44]:41873 "EHLO
+	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753002Ab0JUKL2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Oct 2010 06:10:44 -0400
-Date: Thu, 21 Oct 2010 03:11:07 -0700 (PDT)
-Message-Id: <20101021.031107.226775564.davem@davemloft.net>
-To: tdent48227@gmail.com
-Cc: chas@cmf.nrl.navy.mil, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, linux-atm-general@lists.sourceforge.net
-Subject: Re: [PATCH] Drivers: atm: Makefile: replace the use of
- <module>-objs with <module>-y
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1287201209-2101-1-git-send-email-tdent48227@gmail.com>
-References: <1287201209-2101-1-git-send-email-tdent48227@gmail.com>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	Thu, 21 Oct 2010 06:11:28 -0400
+X-AuditID: b753bd60-a6b32ba000000226-ed-4cc011cdce1d
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Subject: [PATCH -tip  0/7] Perf probe update (--vars/--module)
+To: Arnaldo Carvalho de Melo <acme@redhat.com>, Ingo Molnar <mingo@elte.hu>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org, 2nddept-manager@sdl.hitachi.co.jp
+Date: Thu, 21 Oct 2010 19:12:43 +0900
+Message-ID: <20101021101243.3542.28282.stgit@ltc236.sdl.hitachi.co.jp>
+User-Agent: StGIT/0.14.3
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
+X-FMFTCR: RANGEC
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Tracey Dent <tdent48227@gmail.com>
-Date: Fri, 15 Oct 2010 23:53:29 -0400
+Hi,
 
-> Changed <module>-objs to <module>-y in Makefile.
-> 
-> Signed-off-by: Tracey Dent <tdent48227@gmail.com>
+This series fixes several variable-access problems, a style issue 
+and adds two features; showing available variables and
+module probing support. :)
 
-Applied.
+Thank you,
+
+---
+
+Masami Hiramatsu (7):
+      perf probe: Add basic module support
+      perf probe: Show accessible global variables
+      perf probe: Function style fix
+      perf probe: Show accessible local variables
+      perf probe: Support global variables
+      [BUGFIX] perf probe: Fix local variable searching loop
+      [BUGFIX] perf probe: Fix type searching
+
+
+ tools/perf/Documentation/perf-probe.txt |   18 +
+ tools/perf/builtin-probe.c              |   78 +++-
+ tools/perf/util/map.h                   |   10 
+ tools/perf/util/probe-event.c           |  189 +++++++--
+ tools/perf/util/probe-event.h           |   16 +
+ tools/perf/util/probe-finder.c          |  644 +++++++++++++++++++++++++------
+ tools/perf/util/probe-finder.h          |   31 +
+ 7 files changed, 793 insertions(+), 193 deletions(-)
+
+-- 
+Masami HIRAMATSU
+2nd Dept. Linux Technology Center
+Hitachi, Ltd., Systems Development Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
+
