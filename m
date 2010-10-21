@@ -1,43 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757846Ab0JUPFl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Oct 2010 11:05:41 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:64147 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751388Ab0JUPFj (ORCPT
+	id S1758566Ab0JUPGB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Oct 2010 11:06:01 -0400
+Received: from exprod7og108.obsmtp.com ([64.18.2.169]:34502 "EHLO
+	exprod7og108.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758357Ab0JUPF7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Oct 2010 11:05:39 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Akinobu Mita <akinobu.mita@gmail.com>
-Subject: Re: [PATCH v2 01/22] bitops: merge little and big endian definisions in asm-generic/bitops/le.h
-Date: Thu, 21 Oct 2010 17:06:14 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.35-16-generic; KDE/4.3.2; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        Christoph Hellwig <hch@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-References: <1287672077-5797-1-git-send-email-akinobu.mita@gmail.com> <1287672077-5797-2-git-send-email-akinobu.mita@gmail.com>
-In-Reply-To: <1287672077-5797-2-git-send-email-akinobu.mita@gmail.com>
+	Thu, 21 Oct 2010 11:05:59 -0400
+Message-ID: <4CC056CA.9060903@genband.com>
+Date: Thu, 21 Oct 2010 09:05:46 -0600
+From: Chris Friesen <chris.friesen@genband.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc11 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
+To: Florian Westphal <fw@strlen.de>
+CC: netdev@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [BUG] problems with "ip xfrm" on 32-bit userspace with 64-bit
+ kernel
+References: <4CBF78B6.90002@genband.com> <20101021075056.GE15247@Chamillionaire.breakpoint.cc>
+In-Reply-To: <20101021075056.GE15247@Chamillionaire.breakpoint.cc>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Message-Id: <201010211706.15042.arnd@arndb.de>
-X-Provags-ID: V02:K0:WFb1/jdmlvXFFmJy9xHhRySEUhhq6C3jy5z2WIrtknS
- b97TlnF6dqQDBKanMFDGHv5JauRlaR/hHxt/GCmABs+MhZ4w4U
- bh84g/SNUSF4T6KVR5kuIX0EHqazFBT1LGzwPFGTnvhNGZf5hZ
- BU6rtQjKRjy5RKgXpU2pRqYHUjnd4qY38oNvhp02P4td50m32n
- T5f9Qe6epKTqtsOqdT+RA==
+X-OriginalArrivalTime: 21 Oct 2010 15:05:48.0457 (UTC) FILETIME=[71AB2990:01CB7131]
+X-TM-AS-Product-Ver: SMEX-8.0.0.4160-6.500.1024-17716.007
+X-TM-AS-Result: No--13.462200-5.000000-31
+X-TM-AS-User-Approved-Sender: No
+X-TM-AS-User-Blocked-Sender: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 21 October 2010, Akinobu Mita wrote:
-> In order to make the forthcoming changes smaller, this merges
-> macro definisions in asm-generic/bitops/le.h for big-endian and
-> little-endian as much as possible.
+On 10/21/2010 01:50 AM, Florian Westphal wrote:
+> Chris Friesen <chris.friesen@genband.com> wrote:
+>> We've run into a 32/64 compatibility problem with iproute2.  The "ip
+>> xfrm monitor acquire" command doesn't work properly due to struct size
+>> mismatches between kernel and userspace.
 > 
-> This also removes unused BITOP_WORD macro.
+> Yes.  See archives for 'xfrm: add x86 CONFIG_COMPAT support'
+> (http://marc.info/?t=127050655600003&r=1&w=2)
 > 
-> Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
+> for a discussion on why the patch set to fix this was rejected.
 
-Acked-by: Arnd Bergmann <arnd@arndb.de>
+Interesting discussion.  Kind of sucks for people trying to use it though.
+
+How do distros resolve this?  Do they build iproute2 as a 64-bit package
+or something?
+
+Chris
+
+-- 
+Chris Friesen
+Software Developer
+GENBAND
+chris.friesen@genband.com
+www.genband.com
