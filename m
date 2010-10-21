@@ -1,175 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757987Ab0JUTZQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Oct 2010 15:25:16 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:32377 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752199Ab0JUTZN convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Oct 2010 15:25:13 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=liJ6BgtdL6DwcwxsnBQXxRDJe997hnWDXm8sWIDjnMNKFCUgmtcTykjMvud6FqPK1N
-         oFeEIvNQ6EqiK9cJ8WBQ==
+	id S1754229Ab0JUTh2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Oct 2010 15:37:28 -0400
+Received: from tx2ehsobe004.messaging.microsoft.com ([65.55.88.14]:26625 "EHLO
+	TX2EHSOBE009.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753380Ab0JUTh1 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Oct 2010 15:37:27 -0400
+X-SpamScore: -30
+X-BigFish: VS-30(zz542N1432N98dN4015L9371Pzz1202hzz8275bhz2dh2a8h)
+X-MimeOLE: Produced By Microsoft Exchange V6.5
+Content-Class: urn:content-classes:message
 MIME-Version: 1.0
-In-Reply-To: <1287672271.3488.139.camel@twins>
-References: <1287614941-32325-1-git-send-email-venki@google.com>
-	<1287614941-32325-5-git-send-email-venki@google.com>
-	<1287672271.3488.139.camel@twins>
-Date: Thu, 21 Oct 2010 12:25:11 -0700
-Message-ID: <AANLkTi=Yi4U_TjJZLGo4v1f6fjLYesO9GCxLnT42qkt0@mail.gmail.com>
-Subject: Re: [PATCH 4/6] Export ns irqtimes from IRQ_TIME_ACCOUNTING through /proc/stat
-From: Venkatesh Pallipadi <venki@google.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        linux-kernel@vger.kernel.org, Paul Turner <pjt@google.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Shaun Ruffell <sruffell@digium.com>,
-        Yong Zhang <yong.zhang0@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="iso-8859-1"
 Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Subject: RE: [PATCHv4 2/2] ARM: imx: Add wake functionality to GPIO
+Date: Thu, 21 Oct 2010 12:37:43 -0700
+Message-ID: <86A0E76937111F4C92FABEC0A2098851051D5EDD@az33exm21>
+In-Reply-To: <20101021191441.GY19834@pengutronix.de>
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+Thread-Topic: [PATCHv4 2/2] ARM: imx: Add wake functionality to GPIO
+Thread-Index: ActxVE0AXea74Th6SWiw8rbfdUB/YQAAdwPw
+References: <1287687324-6101-1-git-send-email-Dinh.Nguyen@freescale.com> <1287687324-6101-2-git-send-email-Dinh.Nguyen@freescale.com> <20101021191441.GY19834@pengutronix.de>
+From: Nguyen Dinh-R00091 <R00091@freescale.com>
+To: =?iso-8859-1?Q?Uwe_Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux@arm.linux.org.uk>, <s.hauer@pengutronix.de>,
+        <valentin.longchamp@epfl.ch>, <daniel@caiaq.de>,
+        <grant.likely@secretlab.ca>, <bryan.wu@canonical.com>,
+        <amit.kucheria@canonical.com>,
+        Zhang Lily-R58066 <R58066@freescale.com>
+X-Reverse-DNS: az33egw02.freescale.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 21, 2010 at 7:44 AM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Wed, 2010-10-20 at 15:49 -0700, Venkatesh Pallipadi wrote:
->
->> +static int irqtime_account_hi_update(void)
->> +{
->> +     struct cpu_usage_stat *cpustat = &kstat_this_cpu.cpustat;
->> +     unsigned long flags;
->> +     u64 latest_ns;
->> +     int ret = 0;
->> +
->> +     local_irq_save(flags);
->> +     latest_ns = __get_cpu_var(cpu_hardirq_time);
->
-> I guess this_cpu_read() would again be an improvement.. same for the SI
-> version.
->
+Hi Uwe,
 
-Yes.
-
->> +     if (cputime64_gt(nsecs_to_cputime64(latest_ns), cpustat->irq))
->> +             ret = 1;
->> +     local_irq_restore(flags);
->> +     return ret;
->> +}
+>-----Original Message-----
+>From: Uwe Kleine-König [mailto:u.kleine-koenig@pengutronix.de]
+>Sent: Thursday, October 21, 2010 2:15 PM
+>To: Nguyen Dinh-R00091
+>Cc: linux-kernel@vger.kernel.org; linux-arm-kernel@lists.infradead.org; linux@arm.linux.org.uk;
+>s.hauer@pengutronix.de; valentin.longchamp@epfl.ch; daniel@caiaq.de; grant.likely@secretlab.ca;
+>bryan.wu@canonical.com; amit.kucheria@canonical.com; Zhang Lily-R58066
+>Subject: Re: [PATCHv4 2/2] ARM: imx: Add wake functionality to GPIO
 >
->> +#ifdef CONFIG_IRQ_TIME_ACCOUNTING
->> +/*
->> + * Account a tick to a process and cpustat
->> + * @p: the process that the cpu time gets accounted to
->> + * @user_tick: is the tick from userspace
->> + * @rq: the pointer to rq
->> + *
->> + * Tick demultiplexing follows the order
->> + * - pending hardirq update
->> + * - user_time
->> + * - pending softirq update
->> + * - idle_time
->> + * - system time
->> + *   - check for guest_time
->> + *   - else account as system_time
->> + *
->> + * Check for hardirq is done both for system and user time as there is
->> + * no timer going off while we are on hardirq and hence we may never get an
->> + * oppurtunity to update it solely in system time.
->
-> My mailer suggests you spell that as: opportunity :-)
-
-Ah, I don't have spell checker on my editor :-). Will change.
-
->> + * p->stime and friends are only updated on system time and not on irq
->> + * softirq as those do not count in task exec_runtime any more.
->> + */
->> +static void irqtime_account_process_tick(struct task_struct *p, int user_tick,
->> +                                             struct rq *rq)
->> +{
->> +     cputime_t one_jiffy_scaled = cputime_to_scaled(cputime_one_jiffy);
->> +     cputime64_t tmp = cputime_to_cputime64(cputime_one_jiffy);
->> +     struct cpu_usage_stat *cpustat = &kstat_this_cpu.cpustat;
->> +
->> +     if (irqtime_account_hi_update()) {
->> +             cpustat->irq = cputime64_add(cpustat->irq, tmp);
->> +     } else if (user_tick) {
->> +             account_user_time(p, cputime_one_jiffy, one_jiffy_scaled);
->> +     } else if (irqtime_account_si_update()) {
->> +             cpustat->softirq = cputime64_add(cpustat->softirq, tmp);
->> +     } else if (p == rq->idle) {
->> +             account_idle_time(cputime_one_jiffy);
->> +     } else if (p->flags & PF_VCPU) { /* System time or guest time */
->> +             account_guest_time(p, cputime_one_jiffy, one_jiffy_scaled);
->> +     } else {
->> +             __account_system_time(p, cputime_one_jiffy, one_jiffy_scaled,
->> +                                     &cpustat->system);
->> +     }
->> +}
->
-> I'd do:
->
->  - hardirq
->  - softirq
->  - user
->  - system
->     - guest
->     - really system
->  - idle
->
-> Since otherwise tiny slices of softirq would need to wait for a system
-> tick to happen before you fold them.
->
-> Also, it is possible that in a single tick multiple counters overflow
-> the jiffy boundary, so something like:
->
->  if (irqtime_account_hi_update())
->        cpustat->irq = ...
->
->  if (irqtime_account_si_update())
->        cpustate->softirq = ...
->
->  if (user_tick) {
->  } else if (...) {
->
->  } else ...
->
-> would seem like the better approach.
->
-
-I am not sure about checking for both si and hi. That would result in
-double accounting a tick and have some side-effects.
-Regarding moving si above user: Yes. That seems good.
-idle after system, That may not make so much of a difference, as there
-is no special way to check for system time, other than !idle.
-
->>  /*
->>   * Account for involuntary wait time.
->>   * @steal: the cpu time spent in involuntary wait
->> @@ -3594,6 +3685,11 @@ void account_process_tick(struct task_struct *p, int user_tick)
->>       cputime_t one_jiffy_scaled = cputime_to_scaled(cputime_one_jiffy);
->>       struct rq *rq = this_rq();
+>On Thu, Oct 21, 2010 at 01:55:24PM -0500, Dinh.Nguyen@freescale.com wrote:
+>> From: Dinh Nguyen <Dinh.Nguyen@freescale.com>
 >>
->> +     if (sched_clock_irqtime) {
->> +             irqtime_account_process_tick(p, user_tick, rq);
->> +             return;
->> +     }
+>> Add function definition for irq_chip.set_wake to enable GPIO to
+>> wake-up the system.
+>>
+>> This patch is based on Sascha Hauer's imx/linux-2.6 for-rmk tree.
+>>
+>> This patch has been tested on a MX51 Babbage system that had suspend
+>> code implemented. The set_wake implementation is necessary for a
+>> GPIO to wake up a system from suspend.
+>>
+>> Signed-off-by: Dinh Nguyen <Dinh.Nguyen@freescale.com>
+>> ---
+>>  arch/arm/plat-mxc/gpio.c |   32 ++++++++++++++++++++++++++++++++
+>>  1 files changed, 32 insertions(+), 0 deletions(-)
+>>
+>> diff --git a/arch/arm/plat-mxc/gpio.c b/arch/arm/plat-mxc/gpio.c
+>> index 9d38da0..9c3e362 100644
+>> --- a/arch/arm/plat-mxc/gpio.c
+>> +++ b/arch/arm/plat-mxc/gpio.c
+>> @@ -20,6 +20,7 @@
+>>   */
+>>
+>>  #include <linux/init.h>
+>> +#include <linux/interrupt.h>
+>>  #include <linux/io.h>
+>>  #include <linux/irq.h>
+>>  #include <linux/gpio.h>
+>> @@ -201,11 +202,42 @@ static void mx2_gpio_irq_handler(u32 irq, struct irq_desc *desc)
+>>  	}
+>>  }
+>>
+>> +/*
+>> + * Set interrupt number "irq" in the GPIO as a wake-up source.
+>> + * While system is running, all registered GPIO interrupts need to have
+>> + * wake-up enabled. When system is suspended, only selected GPIO interrupts
+>> + * need to have wake-up enabled.
+>> + * @param  irq          interrupt source number
+>> + * @param  enable       enable as wake-up if equal to non-zero
+>> + * @return       This function returns 0 on success.
+>> + */
+>> +static int gpio_set_wake_irq(u32 irq, u32 enable)
+>> +{
+>> +	u32 gpio = irq_to_gpio(irq);
+>> +	u32 gpio_idx = gpio & 0x1F;
+>> +	struct mxc_gpio_port *port = &mxc_gpio_ports[gpio / 32];
 >> +
->>       if (user_tick)
->>               account_user_time(p, cputime_one_jiffy, one_jiffy_scaled);
->>       else if ((p != rq->idle) || (irq_count() != HARDIRQ_OFFSET))
->
-> mark_tsc_unstable() can disable sched_clock_irqtime at any time, the
-> accounting won't go funny due to that right?
->
+>> +	if (enable) {
+>> +		if (port->irq_high && (gpio_idx >= 16))
+>> +			enable_irq_wake(port->irq_high);
+>> +		else
+>> +			enable_irq_wake(port->irq);
+>> +	} else {
+>> +		if (port->irq_high && (gpio_idx >= 16))
+>> +			disable_irq_wake(port->irq_high);
+>> +		else
+>> +			disable_irq_wake(port->irq);
+>> +	}
+>> +
+>> +	return 0;
+>> +}
+>> +
+>Is this really enough to let the CPU wake up?  Is this implementation
+>correct for all i.MX SoCs?
 
-That should be OK. We would just fallback to lowres tick based accounting.
+I tested the code to wakeup from suspend on my MX51 Babbage board, without this code the power button on the Babbage board will not wakeup the system. It appears that in the gpio-keys.c, gpio_keys_suspend() will call the enable_irq_wake, which then will call the GPIO's set_wake function on the GPIO pin. This implementation should be correct for all i.MX SoCs.
+
+>
+>Best regards
+>Uwe
+>
+>>  static struct irq_chip gpio_irq_chip = {
+>>  	.ack = gpio_ack_irq,
+>>  	.mask = gpio_mask_irq,
+>>  	.unmask = gpio_unmask_irq,
+>>  	.set_type = gpio_set_irq_type,
+>> +	.set_wake = gpio_set_wake_irq,
+>>  };
+>>
+>>  static void _set_gpio_direction(struct gpio_chip *chip, unsigned offset,
+>> --
+>> 1.6.0.4
+>>
+>>
+>>
+>
+>--
+>Pengutronix e.K.                           | Uwe Kleine-König            |
+>Industrial Linux Solutions                 | http://www.pengutronix.de/  |
 
 Thanks,
-Venki
+Dinh
+
