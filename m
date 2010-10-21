@@ -1,43 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752472Ab0JUIIi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Oct 2010 04:08:38 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:44478
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750875Ab0JUIIg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Oct 2010 04:08:36 -0400
-Date: Thu, 21 Oct 2010 01:08:59 -0700 (PDT)
-Message-Id: <20101021.010859.71110203.davem@davemloft.net>
-To: mst@redhat.com
-Cc: kvm@vger.kernel.org, virtualization@lists.osdl.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [GIT PULL net-2.6] vhost-net: access_ok fix
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20101019145901.GA16025@redhat.com>
-References: <20101019145901.GA16025@redhat.com>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	id S1752993Ab0JUII5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Oct 2010 04:08:57 -0400
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:40111 "EHLO e8.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752877Ab0JUIIx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Oct 2010 04:08:53 -0400
+Date: Thu, 21 Oct 2010 13:38:44 +0530
+From: Bharata B Rao <bharata@linux.vnet.ibm.com>
+To: pjt@google.com
+Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@elte.hu>, Srivatsa Vaddagiri <vatsa@in.ibm.com>,
+        Chris Friesen <cfriesen@nortel.com>,
+        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
+        Pierre Bourdon <pbourdon@excellency.fr>
+Subject: Re: [RFC tg_shares_up improvements - v1 01/12] sched: rewrite
+	tg_shares_up
+Message-ID: <20101021080844.GB3581@in.ibm.com>
+Reply-To: bharata@linux.vnet.ibm.com
+References: <20101016044349.830426011@google.com> <20101016045118.529238208@google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101016045118.529238208@google.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Michael S. Tsirkin" <mst@redhat.com>
-Date: Tue, 19 Oct 2010 16:59:01 +0200
+On Fri, Oct 15, 2010 at 09:43:50PM -0700, pjt@google.com wrote:
+> From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> --- kernel/sched_fair.c.orig
+> +++ kernel/sched_fair.c
+> @@ -417,7 +417,6 @@ int sched_proc_update_handler(struct ctl
+>  	WRT_SYSCTL(sched_min_granularity);
+>  	WRT_SYSCTL(sched_latency);
+>  	WRT_SYSCTL(sched_wakeup_granularity);
+> -	WRT_SYSCTL(sched_shares_ratelimit);
+>  #undef WRT_SYSCTL
+> 
+>  	return 0;
+> @@ -633,7 +632,6 @@ account_entity_enqueue(struct cfs_rq *cf
+>  		list_add(&se->group_node, &cfs_rq->tasks);
+>  	}
+>  	cfs_rq->nr_running++;
+> -	se->on_rq = 1;
+>  }
+> 
+>  static void
+> @@ -647,9 +645,89 @@ account_entity_dequeue(struct cfs_rq *cf
+>  		list_del_init(&se->group_node);
+>  	}
+>  	cfs_rq->nr_running--;
+> -	se->on_rq = 0;
+>  }
+> 
+<snip>
+> @@ -771,7 +849,9 @@ enqueue_entity(struct cfs_rq *cfs_rq, st
+>  	 * Update run-time statistics of the 'current'.
+>  	 */
+>  	update_curr(cfs_rq);
+> +	update_cfs_load(cfs_rq);
+>  	account_entity_enqueue(cfs_rq, se);
+> +	update_cfs_shares(cfs_rq_of(se));
+> 
+>  	if (flags & ENQUEUE_WAKEUP) {
+>  		place_entity(cfs_rq, se, 0);
+> @@ -782,6 +862,7 @@ enqueue_entity(struct cfs_rq *cfs_rq, st
+>  	check_spread(cfs_rq, se);
+>  	if (se != cfs_rq->curr)
+>  		__enqueue_entity(cfs_rq, se);
+> +	se->on_rq = 1;
+>  }
+> 
+>  static void __clear_buddies(struct cfs_rq *cfs_rq, struct sched_entity *se)
+> @@ -825,8 +906,11 @@ dequeue_entity(struct cfs_rq *cfs_rq, st
+> 
+>  	if (se != cfs_rq->curr)
+>  		__dequeue_entity(cfs_rq, se);
+> +	se->on_rq = 0;
 
-> David,
-> Not sure if it's too late for 2.6.36 - in case it's not, the following tree
-> includes a last minute bugfix for vhost-net, found by code inspection.
-> It is on top of net-2.6.
-> Thanks!
-> 
-> The following changes since commit b0057c51db66c5f0f38059f242c57d61c4741d89:
-> 
->   tg3: restore rx_dropped accounting (2010-10-11 16:06:24 -0700)
-> 
-> are available in the git repository at:
->   git://git.kernel.org/pub/scm/linux/kernel/git/mst/vhost.git vhost-net
+Since setting and un-setting of se->on_rq is completely handled within
+sched_fair.c, we can remove the redundant setting and un-setting of
+se->on_rq from sched.c:[en]dequeue_task. Even w/o this patch, they were
+redundant I suppose.
 
-Even though it's too late, I've pulled this.
+Regards,
+Bharata.
