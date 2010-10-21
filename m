@@ -1,109 +1,357 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756155Ab0JUAu1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Oct 2010 20:50:27 -0400
-Received: from bld-mail19.adl2.internode.on.net ([150.101.137.104]:41137 "EHLO
-	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752039Ab0JUAu0 (ORCPT
+	id S1756302Ab0JUA5R (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Oct 2010 20:57:17 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:19932 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756000Ab0JUA5Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Oct 2010 20:50:26 -0400
-From: Dave Chinner <david@fromorbit.com>
-To: linux-fsdevel@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH 01/21] fs: switch bdev inode bdi's correctly
-Date: Thu, 21 Oct 2010 11:49:26 +1100
-Message-Id: <1287622186-1935-2-git-send-email-david@fromorbit.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1287622186-1935-1-git-send-email-david@fromorbit.com>
-References: <1287622186-1935-1-git-send-email-david@fromorbit.com>
+	Wed, 20 Oct 2010 20:57:16 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp03.nvidia.com on Wed, 20 Oct 2010 17:57:15 -0700
+From: rklein@nvidia.com
+To: broonie@opensource.wolfsonmicro.com, cbouatmailru@gmail.com
+Cc: achew@nvidia.com, olof@lixom.net, linux-kernel@vger.kernel.org,
+        Rhyland Klein <rklein@nvidia.com>
+Subject: [PATCH v2] power: bq24617: Adding initial charger support
+Date: Wed, 20 Oct 2010 17:56:03 -0700
+Message-Id: <1287622563-23900-1-git-send-email-rklein@nvidia.com>
+X-Mailer: git-send-email 1.7.0.4
+X-OriginalArrivalTime: 21 Oct 2010 00:56:15.0287 (UTC) FILETIME=[C34AAC70:01CB70BA]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dave Chinner <dchinner@redhat.com>
+From: Rhyland Klein <rklein@nvidia.com>
 
-bdev inodes can remain dirty even after their last close. Hence the
-BDI associated with the bdev->inode gets modified duringthe last
-close to point to the default BDI. However, the bdev inode still
-needs to be moved to the dirty lists of the new BDI, otherwise it
-will corrupt the writeback list is was left on.
+Initial checkin adding basic support for the TI BQ24617 battery charger where
+the PG output is directed to the driver via a gpio. This gpio address needs to
+be passed in the platform data to the driver.
 
-Add a new function bdev_inode_switch_bdi() to move all the bdi state
-from the old bdi to the new one safely. This is only a temporary
-measure until the bdev inode<->bdi lifecycle problems are sorted
-out.
-
-Signed-off-by: Dave Chinner <dchinner@redhat.com>
-Reviewed-by: Christoph Hellwig <hch@lst.de>
+Signed-off-by: Rhyland Klein <rklein@nvidia.com>
 ---
- fs/block_dev.c |   26 +++++++++++++++++++++-----
- 1 files changed, 21 insertions(+), 5 deletions(-)
+Addressed comments by Mark Brown
+  * Removed dependency on TEGRA, changed to GPIO
+  * now using power_supply_changed()
+  * now using request_threaded_irq()
 
-diff --git a/fs/block_dev.c b/fs/block_dev.c
-index 50e8c85..501eab5 100644
---- a/fs/block_dev.c
-+++ b/fs/block_dev.c
-@@ -48,6 +48,21 @@ inline struct block_device *I_BDEV(struct inode *inode)
+ drivers/power/Kconfig   |    7 ++
+ drivers/power/Makefile  |    1 +
+ drivers/power/bq24617.c |  262 +++++++++++++++++++++++++++++++++++++++++++++++
+ include/linux/bq24617.h |   10 ++
+ 4 files changed, 280 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/power/bq24617.c
+ create mode 100644 include/linux/bq24617.h
+
+diff --git a/drivers/power/Kconfig b/drivers/power/Kconfig
+index 60d83d9..1901ccf 100644
+--- a/drivers/power/Kconfig
++++ b/drivers/power/Kconfig
+@@ -185,4 +185,11 @@ config CHARGER_TWL4030
+ 	help
+ 	  Say Y here to enable support for TWL4030 Battery Charge Interface.
  
- EXPORT_SYMBOL(I_BDEV);
- 
++config CHARGER_BQ24617
++	tristate "BQ24617 battery charger"
++	depends on I2C && GENERIC_GPIO
++	help
++	 Say Y to include support for the TI BQ24617 battery charger where PG
++	 is attached to a gpio.
++
+ endif # POWER_SUPPLY
+diff --git a/drivers/power/Makefile b/drivers/power/Makefile
+index c75772e..45cd557 100644
+--- a/drivers/power/Makefile
++++ b/drivers/power/Makefile
+@@ -32,3 +32,4 @@ obj-$(CONFIG_BATTERY_JZ4740)	+= jz4740-battery.o
+ obj-$(CONFIG_BATTERY_INTEL_MID)	+= intel_mid_battery.o
+ obj-$(CONFIG_CHARGER_ISP1704)	+= isp1704_charger.o
+ obj-$(CONFIG_CHARGER_TWL4030)	+= twl4030_charger.o
++obj-$(CONFIG_CHARGER_BQ24617)	+= bq24617.o
+diff --git a/drivers/power/bq24617.c b/drivers/power/bq24617.c
+new file mode 100644
+index 0000000..64500e6
+--- /dev/null
++++ b/drivers/power/bq24617.c
+@@ -0,0 +1,262 @@
 +/*
-+ * move the inode from it's current bdi to the a new bdi. if the inode is dirty
-+ * we need to move it onto the dirty list of @dst so that the inode is always
-+ * on the right list.
++ * Charger driver for TI's BQ24617
++ *
++ * Copyright (c) 2010, NVIDIA Corporation.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful, but WITHOUT
++ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
++ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
++ * more details.
++ *
++ * You should have received a copy of the GNU General Public License along
++ * with this program; if not, write to the Free Software Foundation, Inc.,
++ * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 + */
-+static void bdev_inode_switch_bdi(struct inode *inode,
-+			struct backing_dev_info *dst)
++
++#include <linux/init.h>
++#include <linux/module.h>
++#include <linux/kernel.h>
++#include <linux/err.h>
++#include <linux/power_supply.h>
++#include <linux/slab.h>
++#include <linux/gpio.h>
++#include <linux/bq24617.h>
++#include <linux/interrupt.h>
++#include <linux/platform_device.h>
++#include <linux/irq.h>
++
++struct bq24617_info {
++	struct power_supply		power_supply;
++	struct bq24617_platform_data	*pdata;
++	struct platform_device		*pdev;
++	struct mutex			work_lock;
++	struct work_struct		ac_work;
++	int				status;
++};
++
++static enum power_supply_property bq24617_properties[] = {
++	POWER_SUPPLY_PROP_ONLINE,
++};
++
++static void bq24617_batt_update(struct bq24617_info *chip)
 +{
-+	spin_lock(&inode_lock);
-+	inode->i_data.backing_dev_info = dst;
-+	if (inode->i_state & I_DIRTY)
-+		list_move(&inode->i_list, &dst->wb.b_dirty);
-+	spin_unlock(&inode_lock);
++	int old_status = chip->status;
++	int new_status = old_status;
++	struct bq24617_platform_data *pdata;
++	int gpio_value = 0;
++
++	pdata = chip->pdata;
++
++	mutex_lock(&chip->work_lock);
++
++	gpio_value = gpio_get_value(pdata->gpio_addr);
++
++	new_status = !gpio_value;
++	chip->status = new_status;
++
++	mutex_unlock(&chip->work_lock);
++
++	if (old_status != -1 &&
++		old_status != new_status) {
++		dev_dbg(&chip->pdev->dev,
++			"%s: %i -> %i\n", __func__, old_status,
++			new_status);
++		power_supply_changed(&chip->power_supply);
++	}
++
 +}
 +
- static sector_t max_block(struct block_device *bdev)
- {
- 	sector_t retval = ~((sector_t)0);
-@@ -1390,7 +1405,7 @@ static int __blkdev_get(struct block_device *bdev, fmode_t mode, int for_part)
- 				bdi = blk_get_backing_dev_info(bdev);
- 				if (bdi == NULL)
- 					bdi = &default_backing_dev_info;
--				bdev->bd_inode->i_data.backing_dev_info = bdi;
-+				bdev_inode_switch_bdi(bdev->bd_inode, bdi);
- 			}
- 			if (bdev->bd_invalidated)
- 				rescan_partitions(disk, bdev);
-@@ -1405,8 +1420,8 @@ static int __blkdev_get(struct block_device *bdev, fmode_t mode, int for_part)
- 			if (ret)
- 				goto out_clear;
- 			bdev->bd_contains = whole;
--			bdev->bd_inode->i_data.backing_dev_info =
--			   whole->bd_inode->i_data.backing_dev_info;
-+			bdev_inode_switch_bdi(bdev->bd_inode,
-+				whole->bd_inode->i_data.backing_dev_info);
- 			bdev->bd_part = disk_get_part(disk, partno);
- 			if (!(disk->flags & GENHD_FL_UP) ||
- 			    !bdev->bd_part || !bdev->bd_part->nr_sects) {
-@@ -1439,7 +1454,7 @@ static int __blkdev_get(struct block_device *bdev, fmode_t mode, int for_part)
- 	disk_put_part(bdev->bd_part);
- 	bdev->bd_disk = NULL;
- 	bdev->bd_part = NULL;
--	bdev->bd_inode->i_data.backing_dev_info = &default_backing_dev_info;
-+	bdev_inode_switch_bdi(bdev->bd_inode, &default_backing_dev_info);
- 	if (bdev != bdev->bd_contains)
- 		__blkdev_put(bdev->bd_contains, mode, 1);
- 	bdev->bd_contains = NULL;
-@@ -1533,7 +1548,8 @@ static int __blkdev_put(struct block_device *bdev, fmode_t mode, int for_part)
- 		disk_put_part(bdev->bd_part);
- 		bdev->bd_part = NULL;
- 		bdev->bd_disk = NULL;
--		bdev->bd_inode->i_data.backing_dev_info = &default_backing_dev_info;
-+		bdev_inode_switch_bdi(bdev->bd_inode,
-+					&default_backing_dev_info);
- 		if (bdev != bdev->bd_contains)
- 			victim = bdev->bd_contains;
- 		bdev->bd_contains = NULL;
++static irqreturn_t bq24617_irq_switch(int irq, void *devid)
++{
++	struct bq24617_info *chip = devid;
++
++	schedule_work(&chip->ac_work);
++
++	return IRQ_HANDLED;
++}
++
++static int bq24617_get_property(struct power_supply *psy,
++	enum power_supply_property psp,
++	union power_supply_propval *val)
++{
++	struct bq24617_info *chip = container_of(psy, struct bq24617_info,
++						power_supply);
++
++	switch (psp) {
++	case POWER_SUPPLY_PROP_ONLINE:
++		bq24617_batt_update(chip);
++		val->intval = chip->status;
++		break;
++	default:
++		dev_err(&chip->pdev->dev,
++			"%s: Unknown property requested.\n", __func__);
++		return -EINVAL;
++		break;
++	}
++	return 0;
++}
++
++static void bq24617_ac_work(struct work_struct *work)
++{
++	struct bq24617_info *chip;
++	chip = container_of(work, struct bq24617_info, ac_work);
++	bq24617_batt_update(chip);
++}
++
++static int bq24617_probe(struct platform_device *pdev)
++{
++	struct bq24617_info *chip;
++	struct bq24617_platform_data *pdata = pdev->dev.platform_data;
++	int rc;
++
++	if (!pdata) {
++		dev_err(&pdev->dev, "No platform data\n");
++		return -ENXIO;
++	}
++
++	if (!(gpio_is_valid(pdata->gpio_addr))) {
++		dev_err(&pdev->dev, "Gpio is not valid\n");
++		return -EINVAL;
++	}
++
++	chip = kzalloc(sizeof(struct bq24617_info), GFP_KERNEL);
++	if (!chip)
++		return -ENOMEM;
++
++	chip->pdata = pdata;
++	chip->pdev = pdev;
++	chip->power_supply.name = "ac";
++	chip->status = -1; /* set status to reflect unset */
++	chip->power_supply.type = POWER_SUPPLY_TYPE_MAINS;
++	chip->power_supply.properties = bq24617_properties;
++	chip->power_supply.num_properties = ARRAY_SIZE(bq24617_properties);
++	chip->power_supply.get_property = bq24617_get_property;
++	chip->power_supply.supplied_to = pdata->batteries;
++	chip->power_supply.num_supplicants = pdata->num_batteries;
++
++	mutex_init(&chip->work_lock);
++
++	platform_set_drvdata(pdev, chip);
++
++	rc = gpio_request(pdata->gpio_addr, "ac online");
++	if (rc) {
++		dev_err(&pdev->dev,
++			"%s: Failed to get gpio\n", __func__);
++		goto free_chip;
++	}
++
++	gpio_direction_input(pdata->gpio_addr);
++	if (rc) {
++		dev_err(&pdev->dev,
++			"%s: Failed to set gpio direction\n",
++			__func__);
++		goto release_gpio;
++	}
++
++	rc = request_threaded_irq (gpio_to_irq(pdata->gpio_addr),
++				NULL,
++				bq24617_irq_switch,
++				IRQF_TRIGGER_FALLING | IRQF_TRIGGER_RISING,
++				"ac detect",
++				chip);
++
++	if (rc) {
++		dev_err(&pdev->dev,
++			"%s: Failed to request threaded IRQ\n", __func__);
++		goto release_gpio;
++	}
++
++	INIT_WORK(&chip->ac_work, bq24617_ac_work);
++
++	rc = power_supply_register(&pdev->dev, &chip->power_supply);
++	if (rc) {
++		dev_err(&pdev->dev,
++			"%s: Failed to register power supply\n", __func__);
++		goto free_irq;
++	}
++
++	dev_info(&pdev->dev,
++		"%s: battery charger ac device registered\n", pdev->name);
++
++	schedule_work(&chip->ac_work);
++
++	return 0;
++
++free_irq:
++	free_irq(gpio_to_irq(pdata->gpio_addr), chip);
++release_gpio:
++	gpio_free(pdata->gpio_addr);
++free_chip:
++	kfree(chip);
++	return rc;
++}
++
++static int bq24617_remove(struct platform_device *pdev)
++{
++	struct bq24617_info *chip = platform_get_drvdata(pdev);
++	struct bq24617_platform_data *pdata = chip->pdata;
++
++	flush_scheduled_work();
++
++	power_supply_unregister(&chip->power_supply);
++
++	free_irq(gpio_to_irq(pdata->gpio_addr), chip);
++	gpio_free(pdata->gpio_addr);
++	kfree(chip);
++
++	return 0;
++}
++
++#if CONFIG_PM
++static int bq24617_suspend(struct platform_device *pdev, pm_message_t state)
++{
++	flush_scheduled_work();
++
++	return 0;
++}
++
++static int bq24617_resume(struct platform_device *pdev)
++{
++	struct bq24617_info *chip = platform_get_drvdata(pdev);
++
++	schedule_work(&chip->ac_work);
++
++	return 0;
++}
++
++#else
++#define bq24617_suspend         NULL
++#define bq24617_resume          NULL
++#endif
++
++static struct platform_driver bq24617_driver = {
++	.driver = {
++		.name	= "bq24617",
++		.owner	= THIS_MODULE,
++	},
++	.probe		= bq24617_probe,
++	.remove		= __devexit_p(bq24617_remove),
++	.suspend	= bq24617_suspend,
++	.resume		= bq24617_resume,
++};
++
++static int __devinit bq24617_init(void)
++{
++	return platform_driver_register(&bq24617_driver);
++}
++module_init(bq24617_init);
++
++static void __devexit bq24617_exit(void)
++{
++	platform_driver_unregister(&bq24617_driver);
++}
++module_exit(bq24617_exit);
++
++MODULE_AUTHOR("Rhyland Klein <rklein@nvidia.com");
++MODULE_DESCRIPTION("BQ24617 battery charger driver");
++MODULE_LICENSE("GPL");
+diff --git a/include/linux/bq24617.h b/include/linux/bq24617.h
+new file mode 100644
+index 0000000..4c58406
+--- /dev/null
++++ b/include/linux/bq24617.h
+@@ -0,0 +1,10 @@
++#ifndef _LINUX_BQ24617_H
++#define _LINUX_BQ24617_H
++
++struct bq24617_platform_data {
++	int	gpio_addr;
++	char	**batteries;
++	int	num_batteries;
++};
++
++#endif
 -- 
-1.7.1
+1.7.0.4
 
