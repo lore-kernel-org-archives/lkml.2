@@ -1,65 +1,185 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754062Ab0JUAqj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Oct 2010 20:46:39 -0400
-Received: from mga02.intel.com ([134.134.136.20]:5767 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752148Ab0JUAqi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Oct 2010 20:46:38 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.58,214,1286175600"; 
-   d="scan'208";a="669330867"
-Subject: Re: [PATCH 4/5] x86, NMI: Allow NMI reason io port (0x61) to be
- processed on any CPU
-From: Huang Ying <ying.huang@intel.com>
-To: Robert Richter <robert.richter@amd.com>
-Cc: Don Zickus <dzickus@redhat.com>, "mingo@elte.hu" <mingo@elte.hu>,
-        "andi@firstfloor.org" <andi@firstfloor.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "peterz@infradead.org" <peterz@infradead.org>
-In-Reply-To: <20101020100316.GX5969@erda.amd.com>
-References: <1287195738-3136-1-git-send-email-dzickus@redhat.com>
-	 <1287195738-3136-5-git-send-email-dzickus@redhat.com>
-	 <20101019150701.GR5969@erda.amd.com> <20101019162507.GU5969@erda.amd.com>
-	 <20101019183720.GN4140@redhat.com> <1287534192.3026.9.camel@yhuang-dev>
-	 <20101020100316.GX5969@erda.amd.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 21 Oct 2010 08:46:35 +0800
-Message-ID: <1287621995.19320.14.camel@yhuang-dev>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1756293Ab0JUAu2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Oct 2010 20:50:28 -0400
+Received: from bld-mail12.adl6.internode.on.net ([150.101.137.97]:35893 "EHLO
+	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752447Ab0JUAu0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Oct 2010 20:50:26 -0400
+From: Dave Chinner <david@fromorbit.com>
+To: linux-fsdevel@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH 09/21] fs: Factor inode hash operations into functions
+Date: Thu, 21 Oct 2010 11:49:34 +1100
+Message-Id: <1287622186-1935-10-git-send-email-david@fromorbit.com>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1287622186-1935-1-git-send-email-david@fromorbit.com>
+References: <1287622186-1935-1-git-send-email-david@fromorbit.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-10-20 at 18:03 +0800, Robert Richter wrote:
-> > > > > What about using raw_spin_trylock() instead? We don't have to wait
-> > > > > here since we are already processing it by another cpu.
-> > > > 
-> > > > This would avoid a global lock and also deadlocking in case of a
-> > > > potential #gp in the nmi handler.
-> > > 
-> > > I would feel more comfortable with it too.  I can't find a reason where
-> > > trylock would do harm.
-> > 
-> > One possible issue can be as follow:
-> > 
-> > - PCI SERR NMI raised on CPU 0
-> > - IOCHK NMI raised on CPU 1
-> > 
-> > If we use try lock, we may get unknown NMI on one CPU. Do you guys think
-> > so?
-> 
-> This could be a valid point. On the other side the former
-> implementation to let only handle cpu #0 i/o interrupts didn't trigger
-> unknown nmis, so try_lock wouldn't change much compared to this.
+From: Dave Chinner <dchinner@redhat.com>
 
-Because we want to support BSP hot-remove, these NMIs may be redirected
-to other CPUs. I think it may be possible after we hot-remove the BSP
-PCI SERR NMI is routed to CPU 1, while IOCHK NMI is routed to CPU 2. The
-raw_spin_lock() here is for that.
+Before replacing the inode hash locking with a more scalable
+mechanism, factor the removal of the inode from the hashes rather
+than open coding it in several places.
 
-Best Regards,
-Huang Ying
+Based on a patch originally from Nick Piggin.
+
+Signed-off-by: Dave Chinner <dchinner@redhat.com>
+Reviewed-by: Christoph Hellwig <hch@lst.de>
+---
+ fs/inode.c |  100 +++++++++++++++++++++++++++++++++--------------------------
+ 1 files changed, 56 insertions(+), 44 deletions(-)
+
+diff --git a/fs/inode.c b/fs/inode.c
+index 77b71ce..cfcafee 100644
+--- a/fs/inode.c
++++ b/fs/inode.c
+@@ -359,6 +359,59 @@ void inode_lru_list_del(struct inode *inode)
+ 	}
+ }
+ 
++static unsigned long hash(struct super_block *sb, unsigned long hashval)
++{
++	unsigned long tmp;
++
++	tmp = (hashval * (unsigned long)sb) ^ (GOLDEN_RATIO_PRIME + hashval) /
++			L1_CACHE_BYTES;
++	tmp = tmp ^ ((tmp ^ GOLDEN_RATIO_PRIME) >> I_HASHBITS);
++	return tmp & I_HASHMASK;
++}
++
++/**
++ *	__insert_inode_hash - hash an inode
++ *	@inode: unhashed inode
++ *	@hashval: unsigned long value used to locate this object in the
++ *		inode_hashtable.
++ *
++ *	Add an inode to the inode hash for this superblock.
++ */
++void __insert_inode_hash(struct inode *inode, unsigned long hashval)
++{
++	struct hlist_head *head = inode_hashtable + hash(inode->i_sb, hashval);
++	spin_lock(&inode_lock);
++	hlist_add_head(&inode->i_hash, head);
++	spin_unlock(&inode_lock);
++}
++EXPORT_SYMBOL(__insert_inode_hash);
++
++/**
++ *	__remove_inode_hash - remove an inode from the hash
++ *	@inode: inode to unhash
++ *
++ *	Remove an inode from the superblock. inode->i_lock must be
++ *	held.
++ */
++static void __remove_inode_hash(struct inode *inode)
++{
++	hlist_del_init(&inode->i_hash);
++}
++
++/**
++ *	remove_inode_hash - remove an inode from the hash
++ *	@inode: inode to unhash
++ *
++ *	Remove an inode from the superblock.
++ */
++void remove_inode_hash(struct inode *inode)
++{
++	spin_lock(&inode_lock);
++	hlist_del_init(&inode->i_hash);
++	spin_unlock(&inode_lock);
++}
++EXPORT_SYMBOL(remove_inode_hash);
++
+ void end_writeback(struct inode *inode)
+ {
+ 	might_sleep();
+@@ -406,7 +459,7 @@ static void dispose_list(struct list_head *head)
+ 		evict(inode);
+ 
+ 		spin_lock(&inode_lock);
+-		hlist_del_init(&inode->i_hash);
++		__remove_inode_hash(inode);
+ 		list_del_init(&inode->i_sb_list);
+ 		spin_unlock(&inode_lock);
+ 
+@@ -658,16 +711,6 @@ repeat:
+ 	return node ? inode : NULL;
+ }
+ 
+-static unsigned long hash(struct super_block *sb, unsigned long hashval)
+-{
+-	unsigned long tmp;
+-
+-	tmp = (hashval * (unsigned long)sb) ^ (GOLDEN_RATIO_PRIME + hashval) /
+-			L1_CACHE_BYTES;
+-	tmp = tmp ^ ((tmp ^ GOLDEN_RATIO_PRIME) >> I_HASHBITS);
+-	return tmp & I_HASHMASK;
+-}
+-
+ static inline void
+ __inode_add_to_lists(struct super_block *sb, struct hlist_head *head,
+ 			struct inode *inode)
+@@ -1234,36 +1277,6 @@ int insert_inode_locked4(struct inode *inode, unsigned long hashval,
+ }
+ EXPORT_SYMBOL(insert_inode_locked4);
+ 
+-/**
+- *	__insert_inode_hash - hash an inode
+- *	@inode: unhashed inode
+- *	@hashval: unsigned long value used to locate this object in the
+- *		inode_hashtable.
+- *
+- *	Add an inode to the inode hash for this superblock.
+- */
+-void __insert_inode_hash(struct inode *inode, unsigned long hashval)
+-{
+-	struct hlist_head *head = inode_hashtable + hash(inode->i_sb, hashval);
+-	spin_lock(&inode_lock);
+-	hlist_add_head(&inode->i_hash, head);
+-	spin_unlock(&inode_lock);
+-}
+-EXPORT_SYMBOL(__insert_inode_hash);
+-
+-/**
+- *	remove_inode_hash - remove an inode from the hash
+- *	@inode: inode to unhash
+- *
+- *	Remove an inode from the superblock.
+- */
+-void remove_inode_hash(struct inode *inode)
+-{
+-	spin_lock(&inode_lock);
+-	hlist_del_init(&inode->i_hash);
+-	spin_unlock(&inode_lock);
+-}
+-EXPORT_SYMBOL(remove_inode_hash);
+ 
+ int generic_delete_inode(struct inode *inode)
+ {
+@@ -1319,6 +1332,7 @@ static void iput_final(struct inode *inode)
+ 		WARN_ON(inode->i_state & I_NEW);
+ 		inode->i_state &= ~I_WILL_FREE;
+ 		hlist_del_init(&inode->i_hash);
++		__remove_inode_hash(inode);
+ 	}
+ 	list_del_init(&inode->i_wb_list);
+ 	WARN_ON(inode->i_state & I_NEW);
+@@ -1334,9 +1348,7 @@ static void iput_final(struct inode *inode)
+ 	list_del_init(&inode->i_sb_list);
+ 	spin_unlock(&inode_lock);
+ 	evict(inode);
+-	spin_lock(&inode_lock);
+-	hlist_del_init(&inode->i_hash);
+-	spin_unlock(&inode_lock);
++	remove_inode_hash(inode);
+ 	wake_up_inode(inode);
+ 	BUG_ON(inode->i_state != (I_FREEING | I_CLEAR));
+ 	destroy_inode(inode);
+-- 
+1.7.1
 
