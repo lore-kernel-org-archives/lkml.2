@@ -1,94 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756002Ab0JUKME (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Oct 2010 06:12:04 -0400
-Received: from mail4.hitachi.co.jp ([133.145.228.5]:32924 "EHLO
-	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755885Ab0JUKMA (ORCPT
+	id S1756282Ab0JUKMV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Oct 2010 06:12:21 -0400
+Received: from casper.infradead.org ([85.118.1.10]:42589 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753406Ab0JUKMS convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Oct 2010 06:12:00 -0400
-X-AuditID: b753bd60-a7ecfba000005dcc-95-4cc011ed64a4
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Subject: [PATCH -tip  5/7] perf probe: Function style fix
-To: Arnaldo Carvalho de Melo <acme@redhat.com>, Ingo Molnar <mingo@elte.hu>
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org, 2nddept-manager@sdl.hitachi.co.jp,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org
-Date: Thu, 21 Oct 2010 19:13:29 +0900
-Message-ID: <20101021101329.3542.51200.stgit@ltc236.sdl.hitachi.co.jp>
-In-Reply-To: <20101021101243.3542.28282.stgit@ltc236.sdl.hitachi.co.jp>
-References: <20101021101243.3542.28282.stgit@ltc236.sdl.hitachi.co.jp>
-User-Agent: StGIT/0.14.3
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
-X-FMFTCR: RANGEA
+	Thu, 21 Oct 2010 06:12:18 -0400
+Subject: Re: Ftrace: can trace kthread?
+From: Peter Zijlstra <peterz@infradead.org>
+To: "Figo.zhang" <zhangtianfei@leadcoretech.com>
+Cc: Yong Zhang <yong.zhang0@gmail.com>, Li Zefan <lizf@cn.fujitsu.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Steven Rostedt <srostedt@redhat.com>
+In-Reply-To: <1287651542.2237.17.camel@myhost>
+References: <1287647732.2237.7.camel@myhost>
+	 <AANLkTim7g+8_rQSyewC6n_5WmC04kU-rj1g9k61=O2Vm@mail.gmail.com>
+	 <1287649283.2237.8.camel@myhost>
+	 <AANLkTikzSZNtTGfOcP-87u+pMZyW8WrdxwV52ZV3f=nX@mail.gmail.com>
+	 <1287650668.2237.12.camel@myhost>
+	 <AANLkTi=D_a_BH-HW9mqwLim+DjxARWzT8mxP_dah5iLY@mail.gmail.com>
+	 <1287651542.2237.17.camel@myhost>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Thu, 21 Oct 2010 12:12:07 +0200
+Message-ID: <1287655927.3488.100.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Just change the order of function arguments for ease of read;
-moving optional bool flag to the last.
+On Thu, 2010-10-21 at 16:59 +0800, Figo.zhang wrote:
+> > I just
+> > echo  0 > tracing_enabled
+> > echo function > current_tracer
+> > echo 374(pid of flush) > set_ftrace_pid
+> > echo 1 > tracing_enabled
+> > wait some time
+> > echo 0 > tracing_enabled
+> > cat trace
+> > 
+> > So I think this answer your question "could kthread be traced?"
+> 
+> i do it the same of you.
 
-Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: linux-kernel@vger.kernel.org
----
+> but i canot trace nothing. 
 
- tools/perf/builtin-probe.c    |    4 ++--
- tools/perf/util/probe-event.c |    2 +-
- tools/perf/util/probe-event.h |    2 +-
- 3 files changed, 4 insertions(+), 4 deletions(-)
+Your initial attempt had:
 
-diff --git a/tools/perf/builtin-probe.c b/tools/perf/builtin-probe.c
-index 91bb6cf..c777bec 100644
---- a/tools/perf/builtin-probe.c
-+++ b/tools/perf/builtin-probe.c
-@@ -305,8 +305,8 @@ int cmd_probe(int argc, const char **argv, const char *prefix __used)
- 
- 	if (params.nevents) {
- 		ret = add_perf_probe_events(params.events, params.nevents,
--					    params.force_add,
--					    params.max_probe_points);
-+					    params.max_probe_points,
-+					    params.force_add);
- 		if (ret < 0) {
- 			pr_err("  Error: Failed to add events. (%d)\n", ret);
- 			return ret;
-diff --git a/tools/perf/util/probe-event.c b/tools/perf/util/probe-event.c
-index 3de265e..cafddc9 100644
---- a/tools/perf/util/probe-event.c
-+++ b/tools/perf/util/probe-event.c
-@@ -1668,7 +1668,7 @@ struct __event_package {
- };
- 
- int add_perf_probe_events(struct perf_probe_event *pevs, int npevs,
--			  bool force_add, int max_tevs)
-+			  int max_tevs, bool force_add)
- {
- 	int i, j, ret;
- 	struct __event_package *pkgs;
-diff --git a/tools/perf/util/probe-event.h b/tools/perf/util/probe-event.h
-index 727a7fe..83130f6 100644
---- a/tools/perf/util/probe-event.h
-+++ b/tools/perf/util/probe-event.h
-@@ -117,7 +117,7 @@ extern int parse_line_range_desc(const char *cmd, struct line_range *lr);
- 
- 
- extern int add_perf_probe_events(struct perf_probe_event *pevs, int npevs,
--				 bool force_add, int max_probe_points);
-+				 int max_probe_points, bool force_add);
- extern int del_perf_probe_events(struct strlist *dellist);
- extern int show_perf_probe_events(void);
- extern int show_line_range(struct line_range *lr);
+        echo kswapd > /sys/kernel/debug/tracing/set_graph_function
 
+have you reset that state?
