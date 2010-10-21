@@ -1,69 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758256Ab0JUPJg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Oct 2010 11:09:36 -0400
-Received: from e38.co.us.ibm.com ([32.97.110.159]:54014 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751688Ab0JUPJe (ORCPT
+	id S1758581Ab0JUPJy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Oct 2010 11:09:54 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:34986 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758392Ab0JUPJw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Oct 2010 11:09:34 -0400
-Date: Thu, 21 Oct 2010 08:09:28 -0700
-From: Vernon Mauery <vernux@us.ibm.com>
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        Linux Documentation <linux-doc@vger.kernel.org>,
-        Platform driver x86 <platform-driver-x86@vger.kernel.org>
-Subject: Re: [Patch] IBM Real-Time "SMI Free" mode driver -v7
-Message-ID: <20101021150928.GC8754@lucy>
-References: <20101005224718.GC4046@lucy>
- <20101021135429.GC22133@srcf.ucam.org>
- <20101021142319.GA8754@lucy>
- <20101021142523.GA23171@srcf.ucam.org>
- <20101021143821.GB8754@lucy>
- <20101021144234.GA23552@srcf.ucam.org>
+	Thu, 21 Oct 2010 11:09:52 -0400
+From: =?UTF-8?q?Diego=20Elio=20Petten=C3=B2?= <flameeyes@gmail.com>
+To: linux-kernel@vger.kernel.org, alsa-devel@alsa-project.org
+Cc: David Henningsson <david.henningsson@canonical.com>
+Subject: [PATCH] ALSA: HDA: Enable internal mic on Dell E6410 and Dell E6510
+Date: Thu, 21 Oct 2010 17:09:49 +0200
+Message-Id: <1287673789-13915-1-git-send-email-flameeyes@gmail.com>
+X-Mailer: git-send-email 1.7.3.1
+In-Reply-To: <1285726141-26448-2-git-send-email-flameeyes@gmail.com>
+References: <1285726141-26448-2-git-send-email-flameeyes@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii; format=flowed
-Content-Disposition: inline
-In-Reply-To: <20101021144234.GA23552@srcf.ucam.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 21-Oct-2010 03:42 PM, Matthew Garrett wrote:
->On Thu, Oct 21, 2010 at 07:38:21AM -0700, Vernon Mauery wrote:
->> On 21-Oct-2010 03:25 PM, Matthew Garrett wrote:
->>> Oops, sorry! I mean running on older kernels.
->>
->> Do older kernels not have DMI support?  I would think that if an
->> enterprise distribution wanted this driver they would likely already
->> have DMI support backported as well.
->
->I mean that they may run the current driver on newer hardware that isn't
->in the DMI table, and that may be the only thing preventing it from
->working.
->
->>> I'd suggest using DMI to verify that it's an IBM, and perhaps also using
->>> DMI to check that it's a server or blade rather than a laptop or
->>> desktop. After that you could just check the ebda rather than having to
->>> have an entry for every specific machine.
->>
->> I went for a better safe than sorry route.  Before I added the DMI
->> checking I had some reports of this getting loaded on non-IBM hardware
->> and it came up with some nasty error messages.  I figured since I knew
->> exactly which platforms have support, I could just limit the driver to
->> those.  Then there is the force parameter that allows a user to ignore
->> the DMI data and try to load the driver anyway.
->
->It's preferable to have the driver be able to support future hardware
->built to the same spec without having to add extra IDs. It's easy to
->make sure that you're loading on an IBM server - are there any of these
->that have the _RTL_ header but will break?
+From: David Henningsson <david.henningsson@canonical.com>
 
-No, if it has the _RTL_ header it should be fine.  I was more concerned 
-about the driver trying to map the EBDA and reading through it on 
-non-ibm platforms, so I guess just a check to see that it is IBM should 
-be sufficient.  Let me get a patch that does that.
+(Ported on top of 2.6.36)
 
---Vernon
+BugLink: http://launchpad.net/bugs/628961
+BugLink: http://launchpad.net/bugs/605047
+
+CC: Diego Elio Pettenò <flameeyes@gmail.com>
+---
+ sound/pci/hda/patch_sigmatel.c |   13 +++++++++++++
+ 1 files changed, 13 insertions(+), 0 deletions(-)
+
+diff --git a/sound/pci/hda/patch_sigmatel.c b/sound/pci/hda/patch_sigmatel.c
+index c16c5ba..be79c3c 100644
+--- a/sound/pci/hda/patch_sigmatel.c
++++ b/sound/pci/hda/patch_sigmatel.c
+@@ -1633,6 +1633,13 @@ static unsigned int dell_s14_pin_configs[10] = {
+ 	0x40f000f0, 0x40f000f0,
+ };
+ 
++/* Deliberately turn off 0x0f (Dock Mic) to make it choose Int Mic instead */
++static unsigned int dell_e6410_pin_configs[10] = {
++	0x04a11020, 0x0421101f, 0x400000f0, 0x90170110,
++	0x23011050, 0x40f000f0, 0x400000f0, 0x90a60130,
++	0x40f000f0, 0x40f000f0,
++};
++
+ static unsigned int hp_dv7_4000_pin_configs[10] = {
+ 	0x03a12050, 0x0321201f, 0x40f000f0, 0x90170110,
+ 	0x40f000f0, 0x40f000f0, 0x90170110, 0xd5a30140,
+@@ -1643,6 +1650,7 @@ static unsigned int *stac92hd83xxx_brd_tbl[STAC_92HD83XXX_MODELS] = {
+ 	[STAC_92HD83XXX_REF] = ref92hd83xxx_pin_configs,
+ 	[STAC_92HD83XXX_PWR_REF] = ref92hd83xxx_pin_configs,
+ 	[STAC_DELL_S14] = dell_s14_pin_configs,
++	[STAC_DELL_E6410] = dell_e6410_pin_configs,
+ 	[STAC_HP_DV7_4000] = hp_dv7_4000_pin_configs,
+ };
+ 
+@@ -1651,6 +1659,7 @@ static const char *stac92hd83xxx_models[STAC_92HD83XXX_MODELS] = {
+ 	[STAC_92HD83XXX_REF] = "ref",
+ 	[STAC_92HD83XXX_PWR_REF] = "mic-ref",
+ 	[STAC_DELL_S14] = "dell-s14",
++	[STAC_DELL_E6410] = "dell-e6410",
+ 	[STAC_92HD83XXX_HP] = "hp",
+ 	[STAC_HP_DV7_4000] = "hp-dv7-4000",
+ };
+@@ -1663,6 +1672,10 @@ static struct snd_pci_quirk stac92hd83xxx_cfg_tbl[] = {
+ 		      "DFI LanParty", STAC_92HD83XXX_REF),
+ 	SND_PCI_QUIRK(PCI_VENDOR_ID_DELL, 0x02ba,
+ 		      "unknown Dell", STAC_DELL_S14),
++	SND_PCI_QUIRK(PCI_VENDOR_ID_DELL, 0x040a,
++		      "Dell E6410", STAC_DELL_E6410),
++	SND_PCI_QUIRK(PCI_VENDOR_ID_DELL, 0x040b,
++		      "Dell E6510", STAC_DELL_E6410),
+ 	SND_PCI_QUIRK_MASK(PCI_VENDOR_ID_HP, 0xff00, 0x3600,
+ 		      "HP", STAC_92HD83XXX_HP),
+ 	{} /* terminator */
+-- 
+1.7.3.1
+
