@@ -1,87 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756531Ab0JUXFA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Oct 2010 19:05:00 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:51565 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751377Ab0JUXE7 convert rfc822-to-8bit (ORCPT
+	id S1758127Ab0JUXH1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Oct 2010 19:07:27 -0400
+Received: from helcar.apana.org.au ([209.40.204.226]:58394 "EHLO
+	fornost.hengli.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752455Ab0JUXH0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Oct 2010 19:04:59 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:from:date
-         :x-google-sender-auth:message-id:subject:to:cc:content-type
-         :content-transfer-encoding;
-        b=mNfIPm0c5NlQpWfV7W2Vn8FBxGGV9aXvSvgQsjBnewBgPPZV+eQT8dpEHGubVg85lE
-         1JodvbJH9zPbBHuj3AjRfIDbccU0sLJITSuZglV9woILp6p+EaOGpAUNbOx7OYUJ4LPv
-         FEKp1eiC6Zy3oO5+bEyhStTvbh+A+Kk3N2iEQ=
+	Thu, 21 Oct 2010 19:07:26 -0400
+Date: Thu, 21 Oct 2010 18:07:24 -0500
+From: Herbert Xu <herbert@gondor.hengli.com.au>
+To: Patrick Ringl <patrick_@freenet.de>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        bridge@lists.linux-foundation.org
+Subject: Re: 2.6.36-rc7: net/bridge causes temporary network I/O lockups [2]
+Message-ID: <20101021230724.GA5170@gondor.apana.org.au>
+References: <4CB9EBC3.4070905@freenet.de> <20101018161656.GA2403@gondor.apana.org.au> <4CBCB014.9080108@freenet.de> <20101020061631.GA21679@gondor.apana.org.au> <4CC0BC3E.6080906@freenet.de>
 MIME-Version: 1.0
-In-Reply-To: <20101021155528.b3d6d027.akpm@linux-foundation.org>
-References: <1287250035-30404-1-git-send-email-vapier@gentoo.org>
- <20101021150250.f6499506.akpm@linux-foundation.org> <201010211823.38287.vapier@gentoo.org>
- <20101021155528.b3d6d027.akpm@linux-foundation.org>
-From: Mike Frysinger <vapier@gentoo.org>
-Date: Thu, 21 Oct 2010 19:04:36 -0400
-X-Google-Sender-Auth: eJzyCei2f2VaRIFXP1c1xkLHT4Q
-Message-ID: <AANLkTim6AFDw_1V9rtF4e_2tmgctbKHziQa-1e3=q7og@mail.gmail.com>
-Subject: Re: [PATCH] lib/atomic64_test: do not build on non-atomic64 systems
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Luca Barbieri <luca@luca-barbieri.com>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4CC0BC3E.6080906@freenet.de>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 21, 2010 at 18:55, Andrew Morton wrote:
-> On Thu, 21 Oct 2010 18:23:37 -0400 Mike Frysinger wrote:
->> On Thursday, October 21, 2010 18:02:50 Andrew Morton wrote:
->> > On Sat, 16 Oct 2010 13:27:15 -0400 Mike Frysinger wrote:
->> > > If the arch doesn't provide atomic64 functionality (there are quite a
->> > > few), then don't bother trying to build this test.
->> >
->> > I don't get it.  If the arch doesn't implement atomic64 then this file
->> > will get zillions of build errors, won't it?
->>
->> ... which is why i added the ifdef protection
+On Fri, Oct 22, 2010 at 12:18:38AM +0200, Patrick Ringl wrote:
 >
-> So the changelog was poor.  Please write complete changelogs so I need
-> to have this sort of conversation less often?
+> sorry for the late response. I've been using your patch on 2.6.36 and  
+> unfortunately, the bogus ipv6 packet is not the cause of the lockups. I  
+> have attached two packet dumps (br0 and eth1) again.
 
-the changelog seems pretty clear to me.  arch doesnt provide atomic64,
-so dont build code that uses atomic64.
+OK I see, I had thought that your whole system locked up for
+20-30 seconds but it was only the external network responses
+that stopped.
 
-> Why doesn't this cause lots of you-broke-my-build complaints?  Nobody's
-> running allmodonfig?
+I think the problem is your switch.  It appears to purge our
+port entry when it receives our general query.
 
-that's how i noticed.  perhaps the other arches that dont provide
-atomic64 arent doing as many build tests as i am.
+So to work around this, I suggest that you disable the startup
+queries through the parameter multicast_startup_query_count.
+You can do this either through sysfs or a sufficiently recent
+brctl command.
 
->> > > diff --git a/lib/atomic64_test.c b/lib/atomic64_test.c
->> > > index 250ed11..0ac1a66 100644
->> > > --- a/lib/atomic64_test.c
->> > > +++ b/lib/atomic64_test.c
->> > > @@ -12,6 +12,8 @@
->> > >
->> > >  #include <linux/kernel.h>
->> > >  #include <asm/atomic.h>
->> > >
->> > > +#ifdef ATOMIC64_INIT
->> >
->> > hm, that's a bit lazy.  It should really use a CONFIG_HAVE_ thing.  What
->> > a pita.
->>
->> ATOMIC64_INIT is required for atomic64 headers to provide, and having a
->> Kconfig knob doesnt gain anything else
->
-> I know that.  But the standard way for an architecture to indicate to
-> the core that it impements a feature is for it to define CONFIG_HAVE_*.
-> Picking some related #define which architectures happen to implement
-> is atypical and unexpected.
->
-> Will it cause problems?  Probably not, unless the arch goes and defines
-> ATOMIC64_INIT without actually implementing atomic64.  But it's
-> atypical and unexpected and, yes, lazy!
+BTW, what brand/model is your switch? If this problem is common
+enough then we may have to disable general queries by default.
 
-you can say "lazy" all you like.  i dont see the point in going that route.
--mike
+Cheers,
+-- 
+Email: Herbert Xu <herbert@gondor.apana.org.au>
+Home Page: http://gondor.apana.org.au/~herbert/
+PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
