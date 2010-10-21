@@ -1,32 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757360Ab0JUG3S (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Oct 2010 02:29:18 -0400
-Received: from smtp-out.google.com ([74.125.121.35]:27172 "EHLO
+	id S1757442Ab0JUGhE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Oct 2010 02:37:04 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:10957 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757039Ab0JUG3R convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1757205Ab0JUGhC convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Oct 2010 02:29:17 -0400
+	Thu, 21 Oct 2010 02:37:02 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=google.com; s=beta;
         h=mime-version:in-reply-to:references:from:date:message-id:subject:to
          :cc:content-type:content-transfer-encoding;
-        b=bAFUG5KyqeddYKvuWxGCL3xLfLMTpsUUmn1eQY/uBOljO2BqdT6tHhh7hTP3sqL4XS
-         Ly1C9MjjcUWdlpTHkD2A==
+        b=o+MenS9wbh75z+fTWcx8lT1k+M9GdNjvQC0ZOBw2eS4CJBMQowiJ6SG2iWI8hZZtgy
+         /SYHSgW9kdSHcKgibaiw==
 MIME-Version: 1.0
-In-Reply-To: <20101021060414.GA3581@in.ibm.com>
-References: <20101016044349.830426011@google.com> <20101016045118.529238208@google.com>
- <20101021060414.GA3581@in.ibm.com>
+In-Reply-To: <1287258414.1998.133.camel@laptop>
+References: <20101016044349.830426011@google.com> <1287258414.1998.133.camel@laptop>
 From: Paul Turner <pjt@google.com>
-Date: Wed, 20 Oct 2010 23:28:42 -0700
-Message-ID: <AANLkTi=na_4Ab_CRHpqUqZFEG3QFW4aabjveHY0Pp53+@mail.gmail.com>
-Subject: Re: [RFC tg_shares_up improvements - v1 01/12] sched: rewrite tg_shares_up
-To: bharata@linux.vnet.ibm.com
-Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@elte.hu>, Srivatsa Vaddagiri <vatsa@in.ibm.com>,
+Date: Wed, 20 Oct 2010 23:36:27 -0700
+Message-ID: <AANLkTi=o63gqA+62fXQ8jwNS=t8hsSgO3DgbvPKRXD4d@mail.gmail.com>
+Subject: Re: [RFC tg_shares_up improvements - v1 00/12] [RFC tg_shares_up - v1
+ 00/12] Reducing cost of tg->shares distribution
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Srivatsa Vaddagiri <vatsa@in.ibm.com>,
         Chris Friesen <cfriesen@nortel.com>,
         Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
-        Pierre Bourdon <pbourdon@excellency.fr>
+        Pierre Bourdon <pbourdon@excellency.fr>,
+        Bharata B Rao <bharata@linux.vnet.ibm.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 X-System-Of-Record: true
@@ -34,162 +35,69 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 20, 2010 at 11:04 PM, Bharata B Rao
-<bharata@linux.vnet.ibm.com> wrote:
-> On Fri, Oct 15, 2010 at 09:43:50PM -0700, pjt@google.com wrote:
->> From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+On Sat, Oct 16, 2010 at 12:46 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Fri, 2010-10-15 at 21:43 -0700, pjt@google.com wrote:
+>> Hi all,
 >>
->> By tracking a per-cpu load-avg for each cfs_rq and folding it into a
->> global task_group load on each tick we can rework tg_shares_up to be
->> strictly per-cpu.
+>> Peter previously posted a patchset that attempted to improve the problem of
+>> task_group share distribution.  This is something that has been a long-time
+>> pain point for group scheduling.  The existing algorithm considers
+>> distributions on a per-cpu-per-domain basis and carries a fairly high update
+>> overhead, especially on larger machines.
 >>
->> This should improve cpu-cgroup performance for smp systems
->> significantly.
+>> I was previously looking at improving this using Fenwick trees to allow a
+>> single sum without the exorbitant cost but then Peter's idea above was better :).
 >>
->> [ Paul: changed to use queueing cfs_rq ]
+>> The kernel is that by monitoring the average contribution to load on a
+>> per-cpu-per-taskgroup basis we can distribute the weight for which we are
+>> expected to consume.
 >>
->> Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
->> Signed-off-by: Paul Turner <pjt@google.com>
+>> This set extends the original posting with a focus on increased fairness and
+>> reduced convergence (to true average) time.  In particular the case of large
+>> over-commit in the case of a distributed wake-up is a concern which is now
+>> fairly well addressed.
 >>
->> Index: kernel/sched_fair.c
->> ===================================================================
->> --- kernel/sched_fair.c.orig
->> +++ kernel/sched_fair.c
->> @@ -417,7 +417,6 @@ int sched_proc_update_handler(struct ctl
->>       WRT_SYSCTL(sched_min_granularity);
->>       WRT_SYSCTL(sched_latency);
->>       WRT_SYSCTL(sched_wakeup_granularity);
->> -     WRT_SYSCTL(sched_shares_ratelimit);
->>  #undef WRT_SYSCTL
->>
->>       return 0;
->> @@ -633,7 +632,6 @@ account_entity_enqueue(struct cfs_rq *cf
->>               list_add(&se->group_node, &cfs_rq->tasks);
->>       }
->>       cfs_rq->nr_running++;
->> -     se->on_rq = 1;
->>  }
->>
->>  static void
->> @@ -647,9 +645,89 @@ account_entity_dequeue(struct cfs_rq *cf
->>               list_del_init(&se->group_node);
->>       }
->>       cfs_rq->nr_running--;
->> -     se->on_rq = 0;
->>  }
->>
->> +#if defined CONFIG_SMP && defined CONFIG_FAIR_GROUP_SCHED
->> +static void update_cfs_load(struct cfs_rq *cfs_rq)
->> +{
->> +     u64 period = sched_avg_period();
->> +     u64 now, delta;
->> +
->> +     if (!cfs_rq)
->> +             return;
->> +
->> +     now = rq_of(cfs_rq)->clock;
->> +     delta = now - cfs_rq->load_stamp;
->> +
->> +     cfs_rq->load_stamp = now;
->> +     cfs_rq->load_period += delta;
->> +     cfs_rq->load_avg += delta * cfs_rq->load.weight;
->> +
->> +     while (cfs_rq->load_period > period) {
->> +             /*
->> +              * Inline assembly required to prevent the compiler
->> +              * optimising this loop into a divmod call.
->> +              * See __iter_div_u64_rem() for another example of this.
->> +              */
->> +             asm("" : "+rm" (cfs_rq->load_period));
->> +             cfs_rq->load_period /= 2;
->> +             cfs_rq->load_avg /= 2;
->> +     }
->> +}
->> +
->> +static void reweight_entity(struct cfs_rq *cfs_rq, struct sched_entity *se,
->> +                         unsigned long weight)
->> +{
->> +     if (se->on_rq)
->> +             account_entity_dequeue(cfs_rq, se);
->> +
->> +     update_load_set(&se->load, weight);
->> +
->> +     if (se->on_rq)
->> +             account_entity_enqueue(cfs_rq, se);
->> +}
->> +
->> +static void update_cfs_shares(struct cfs_rq *cfs_rq)
->> +{
->> +     struct task_group *tg;
->> +     struct sched_entity *se;
->> +     long load_weight, load, shares;
->> +
->> +     if (!cfs_rq)
->> +             return;
->> +
->> +     tg = cfs_rq->tg;
->> +     se = tg->se[cpu_of(rq_of(cfs_rq))];
->> +     if (!se)
->> +             return;
->> +
->> +     load = cfs_rq->load.weight;
->> +
->> +     load_weight = atomic_read(&tg->load_weight);
->> +     load_weight -= cfs_rq->load_contribution;
->> +     load_weight += load;
->> +
->> +     shares = (tg->shares * load);
->> +     if (load_weight)
->> +             shares /= load_weight;
->> +
->> +     if (shares < MIN_SHARES)
->> +             shares = MIN_SHARES;
->> +     if (shares > tg->shares)
->> +             shares = tg->shares;
->> +
->> +     reweight_entity(cfs_rq_of(se), se, shares);
->> +}
->> +#else /* CONFIG_FAIR_GROUP_SCHED */
->> +static inline void update_cfs_load(struct cfs_rq *cfs_rq)
->> +{
->> +}
->> +
->> +static inline void update_cfs_shares(struct cfs_rq *cfs_rq)
->> +{
->> +}
->> +#endif /* CONFIG_FAIR_GROUP_SCHED */
->> +
->>  static void enqueue_sleeper(struct cfs_rq *cfs_rq, struct sched_entity *se)
->>  {
->>  #ifdef CONFIG_SCHEDSTATS
->> @@ -771,7 +849,9 @@ enqueue_entity(struct cfs_rq *cfs_rq, st
->>        * Update run-time statistics of the 'current'.
->>        */
->>       update_curr(cfs_rq);
->> +     update_cfs_load(cfs_rq);
->>       account_entity_enqueue(cfs_rq, se);
+>> Obviously everything's experimental but it should be stable/fair.
 >
-> By placing update_cfs_load() before account_entity_enqueue(), you are
-> updating cfs_rq->load_avg before actually taking into account the current
-> load increment due to enqueing. I see same in dequeue also. Is there a
-> reason for this ?
-
-Yes -- the update covers the interval spanning the previous update
-(tracked with load_stamp) and the present.  This interval occurred
-prior to the above weight delta which will only be meaningful against
-the _next_ interval we account.
-
->
->> +     update_cfs_shares(cfs_rq_of(se));
->
-> Isn't cfs_rq_of(se) same as cfs_rq that enqueue_entity() gets
-> from enqueue_task_fair() ?  Same for dequeue case.
+> I like what you've done with it, my only worry is 10/12 where you allow
+> for extra updates to the global state -- I think they should be fairly
+> limited in number, and I can see the need for the update if we get too
+> far out of whack, but it is something to look at while testing this
+> stuff.
 >
 
-Yup.. no need for it, will fix.
+So my original answer here was to only update when there was load and
+it was > n% delta which stops 1 thread waking up and sleeping from
+thrashing it, but the 2 thread case is just as obviously broken for
+any n.  It needs a rate limit but I'm sort of loathe to introduce
+_another_ set of timestamps.  I don't suppose there's much harm in
+doing so though and I don't think it's going to be clean to overload
+one of the existing ones so perhaps another counter is the answer.
 
-Thanks
+I'll make sure this is addressed in v2.
 
-> Regards,
-> Bharata.
+>> TODO:
+>> - Validate any RT interaction
+>
+> I don't think there's anything to worry about there, the only
+> interaction which there is between this and the rt scheduling classes is
+> the initial sharing of the load-avg window, but you 'cure' that in 7/12.
+>
+> (I think that sysctl wants a _us postfix someplace and we thus want some
+> NSEC_PER_USEC multiplication in there).
+>
+
+Yes -- updated, thanks.
+
+>> - Continue collecting/analyzing performance and fairness data
+>
+> Yes please ;-), I'll try and run this on some machines as well.
+>
+>> - Should the shares period just be the sched_latency?
+>
+> Interesting idea.. lets keep it a separate sysctl for now for easy
+> tuning, if things settle down and we're still good in that range we can
+> consider merging them.
+>
+>
 >
