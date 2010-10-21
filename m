@@ -1,59 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757537Ab0JUL2s (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Oct 2010 07:28:48 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:36932 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755013Ab0JUL2q (ORCPT
+	id S1757568Ab0JUL2w (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Oct 2010 07:28:52 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:43475
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757548Ab0JUL2u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Oct 2010 07:28:46 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:cc:content-type;
-        b=Nusol3wgsDuIlTjoN7+laMEOI6gm9G2y1H5jJzOcaH8QjC5Zi4ZWup+4fRoxcY6xNu
-         6uE8htysHc7FUJRVwYOBF4ZKuDM3muVYOdbJ/6sl7uqlASVz+eMqFUc9IwcMG0bvpabV
-         K89l18OyUsW+j5sT4luv9rNn13K05Om/VqXek=
-MIME-Version: 1.0
-Date: Thu, 21 Oct 2010 17:28:44 +0600
-Message-ID: <AANLkTimTi_NTSampvrxXMVj5UTCR+p5wxLCQdnY8Rc4+@mail.gmail.com>
-Subject: [PATCH]: x86, cpufreq: Mark longrun_get_policy with __cpuinit.
-From: Rakib Mullick <rakib.mullick@gmail.com>
-To: x86@kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        cpufreq@vger.kernel.org
-Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 21 Oct 2010 07:28:50 -0400
+Date: Thu, 21 Oct 2010 04:29:13 -0700 (PDT)
+Message-Id: <20101021.042913.13752984.davem@davemloft.net>
+To: tj@kernel.org
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2.6.36-rc7] net/neighbour: cancel_delayed_work() +
+ flush_scheduled_work() -> cancel_delayed_work_sync()
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <4CBDC19A.60709@kernel.org>
+References: <4CBDC19A.60709@kernel.org>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fixes the following warning. The function
-longrun_cpu_init() is marked with __cpuinit which calls
-longrun_get_policy() which is a __init function. So make
-longrun_get_policy with __cpuinit.
+From: Tejun Heo <tj@kernel.org>
+Date: Tue, 19 Oct 2010 18:04:42 +0200
 
-WARNING: arch/x86/kernel/cpu/cpufreq/longrun.o(.cpuinit.text+0x4c5):
-Section mismatch in reference from the function longrun_cpu_init() to
-the function .init.text:longrun_get_policy()
-The function __cpuinit longrun_cpu_init() references
-a function __init longrun_get_policy().
-If longrun_get_policy is only used by longrun_cpu_init then
-annotate longrun_get_policy with a matching annotation.
+> flush_scheduled_work() is going away.  Prepare for it.
+> 
+> Signed-off-by: Tejun Heo <tj@kernel.org>
 
-
-Signed-off-by: Rakib Mullick <rakib.mullick@gmail.com>
----
-
-diff --git a/arch/x86/kernel/cpu/cpufreq/longrun.c
-b/arch/x86/kernel/cpu/cpufreq/longrun.c
-index fc09f14..66d5d6f 100644
---- a/arch/x86/kernel/cpu/cpufreq/longrun.c
-+++ b/arch/x86/kernel/cpu/cpufreq/longrun.c
-@@ -35,7 +35,7 @@ static unsigned int longrun_low_freq, longrun_high_freq;
-  * Reads the current LongRun policy by access to MSR_TMTA_LONGRUN_FLAGS
-  * and MSR_TMTA_LONGRUN_CTRL
-  */
--static void __init longrun_get_policy(struct cpufreq_policy *policy)
-+static void __cpuinit longrun_get_policy(struct cpufreq_policy *policy)
- {
- 	u32 msr_lo, msr_hi;
+Applied.
