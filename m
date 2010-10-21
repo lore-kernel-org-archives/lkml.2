@@ -1,116 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756704Ab0JUU1V (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Oct 2010 16:27:21 -0400
-Received: from a.ns.miles-group.at ([95.130.255.143]:42611 "EHLO radon.swed.at"
+	id S1756922Ab0JUU1z (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Oct 2010 16:27:55 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:60337 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752967Ab0JUU1U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Oct 2010 16:27:20 -0400
-/m: 
-From: Richard Weinberger <richard@nod.at>
-To: Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: linux-next: User Mode Linux broken
-Date: Thu, 21 Oct 2010 22:27:12 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.25.20-0.7-pae; KDE/4.4.4; i686; ; )
-Cc: peterz@infradead.org, hpa@zytor.com, mingo@elte.hu,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-next@vger.kernel.org
-References: <201010211315.26679.richard@nod.at> <201010212122.38437.richard@nod.at> <alpine.LFD.2.00.1010212143300.3467@localhost6.localdomain6>
-In-Reply-To: <alpine.LFD.2.00.1010212143300.3467@localhost6.localdomain6>
+	id S1752967Ab0JUU1x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Oct 2010 16:27:53 -0400
+Message-ID: <4CC0A204.4060403@zytor.com>
+Date: Thu, 21 Oct 2010 13:26:44 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc13 Thunderbird/3.1.4
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+To: akataria@vmware.com
+CC: Ingo Molnar <mingo@elte.hu>, Vivek Goyal <vgoyal@redhat.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
+        Haren Myneni <hbabu@us.ibm.com>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Daniel Hecht <dhecht@vmware.com>,
+        "jeremy@xensource.com" <jeremy@xensource.com>
+Subject: Re: [RFC PATCH] Bug during kexec...not all cpus are stopped
+References: <1286570087.8769.27.camel@ank32.eng.vmware.com>	 <1286816964.1372.2.camel@ank32.eng.vmware.com>	 <m1lj64ppri.fsf@fess.ebiederm.org>	 <1286826083.1372.15.camel@ank32.eng.vmware.com>	 <20101011213901.GR12743@redhat.com> <m1hbgs5qkc.fsf@fess.ebiederm.org>	 <20101012221717.GA27478@redhat.com>	 <1286929430.15658.30.camel@ank32.eng.vmware.com> <1287688156.27008.13.camel@ank32.eng.vmware.com>
+In-Reply-To: <1287688156.27008.13.camel@ank32.eng.vmware.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Message-Id: <201010212227.12919.richard@nod.at>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Donnerstag 21 Oktober 2010, 21:45:35 schrieb Thomas Gleixner:
-> On Thu, 21 Oct 2010, Richard Weinberger wrote:
-> > Am Donnerstag 21 Oktober 2010, 18:09:22 schrieb Thomas Gleixner:
-> > > On Thu, 21 Oct 2010, Richard Weinberger wrote:
-> > > > Thomas,
-> > > > 
-> > > > Your commit c5f7563 ("genirq: Provide compat handling for
-> > > > chip->enable()") breaks UML.
-> > > > It does not start anymore.
-> > > > 
-> > > > When I apply this patch it works fine again.
-> > > > http://userweb.kernel.org/~akpm/mmotm/broken-out/um-migrate-from-__do
-> > > > _irq -to- generic_handle_irq.patch
-> > > > 
-> > > > Maybe your patch breaks all users of __do_IRQ()?
-> > > 
-> > > Not intentionally :)
-> > > 
-> > > The irq_chip of um has it's own dummy enable function, so the compat
-> > > code uses it.
-> > > 
-> > > +static void compat_irq_enable(struct irq_data *data)
-> > > +{
-> > > +	data->chip->enable(data->irq);
-> > > +}
-> > > +
-> > > 
-> > > ...
-> > > 
-> > > +	if (chip->enable)
-> > > +		chip->irq_enable = compat_irq_enable;
-> > > +
-> > > +	/*
-> > > +	 * The real defaults
-> > > +	 */
-> > > +	if (!chip->irq_enable)
-> > > +		chip->irq_enable = default_enable;
-> > > 
-> > > So I really can't see how's that supposed to break UM
-> > 
-> > This patch solves the issue for me.
-> > What do you think?
-> > 
-> > Thanks,
-> > //richard
-> > 
-> > diff --git a/kernel/irq/resend.c b/kernel/irq/resend.c
-> > index 891115a..1fb4012 100644
-> > --- a/kernel/irq/resend.c
-> > +++ b/kernel/irq/resend.c
-> > @@ -60,8 +60,11 @@ void check_irq_resend(struct irq_desc *desc, unsigned
-> > int irq)
-> > 
-> >         /*
-> >         
-> >          * Make sure the interrupt is enabled, before resending it:
-> >          */
-> > 
-> > +#ifndef CONFIG_GENERIC_HARDIRQS_NO_DEPRECATED
-> > +       desc->irq_data.chip->enable(irq);
-> > +#elif
-> > 
-> >         desc->irq_data.chip->irq_enable(&desc->irq_data);
-> > 
-> > -
-> > +#endif
-> > 
-> >         /*
-> >         
-> >          * We do not resend level type interrupts. Level type
-> >          * interrupts are resent by hardware when they are still
+On 10/21/2010 12:09 PM, Alok Kataria wrote:
 > 
-> Why shold it solve it ? irq_enable is set to compat_irq_enable which
-> in turn calls chip->enable.
+> I don't think this patch was picked up for tip, now that the 2.6.37
+> merge window is open can you please pick this up push it upstream.
+> This patch fixes a legitimate regression, which was introduced during
+> 2.6.30, by commit id 4ef702c10b5df18ab04921fc252c26421d4d6c75.
 > 
-> So how's that different ?
 
-I took a closer look on the issue.
+It probably would have helped if the patch had had a proper patch header
+and so on, and *in particular* not buried in a tree with [RFC PATCH].
+RFC strongly implies that the patch is intended as a base for
+discussion, and is explicitly not intended to be committed.
 
-check_irq_resend() gets called before irq_chip_set_defaults().
-In the first call to check_irq_resend() desc->irq_data.chip->irq_enable is 
-NULL. UML dies due to a NULL-pointer dereference...
-
-I don't know why check_irq_resend() is called before irq_chip_set_defaults().
-It's your code. ;-)
-
-Thanks,
-//richard
+	-hpa
