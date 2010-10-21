@@ -1,58 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755666Ab0JUXRb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Oct 2010 19:17:31 -0400
-Received: from claw.goop.org ([74.207.240.146]:34381 "EHLO claw.goop.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750996Ab0JUXRa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Oct 2010 19:17:30 -0400
-Message-ID: <4CC0CA07.3000306@goop.org>
-Date: Thu, 21 Oct 2010 16:17:27 -0700
-From: Jeremy Fitzhardinge <jeremy@goop.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc13 Lightning/1.0b3pre Thunderbird/3.1.4
-MIME-Version: 1.0
-To: "H. Peter Anvin" <hpa@zytor.com>
-CC: the arch/x86 maintainers <x86@kernel.org>,
-        "Xen-devel@lists.xensource.com" <Xen-devel@lists.xensource.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: Re: [PATCH] x86: define arch_vm_get_page_prot to set _PAGE_IOMAP
- on VM_IO vmas
-References: <4CC0C14E.5080205@goop.org> <4CC0C318.90401@zytor.com>
-In-Reply-To: <4CC0C318.90401@zytor.com>
-Content-Type: text/plain; charset=UTF-8
+	id S1757649Ab0JUXSK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Oct 2010 19:18:10 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:53708 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751618Ab0JUXSI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Oct 2010 19:18:08 -0400
+Date: Thu, 21 Oct 2010 16:18:01 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Nick Piggin <npiggin@kernel.dk>, Dave Chinner <david@fromorbit.com>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Christoph Lameter <cl@linux-foundation.org>
+Subject: Re: [PATCH] percpu_counter : add percpu_counter_add_fast()
+Message-Id: <20101021161801.8149e2fe.akpm@linux-foundation.org>
+In-Reply-To: <1287701894.2607.32.camel@edumazet-laptop>
+References: <1285762729-17928-1-git-send-email-david@fromorbit.com>
+	<1285762729-17928-17-git-send-email-david@fromorbit.com>
+	<20100929215322.ff635d3e.akpm@linux-foundation.org>
+	<20100930061039.GX5665@dastard>
+	<20101016075510.GH19147@amd>
+	<1287217748.2799.68.camel@edumazet-laptop>
+	<20101016020744.366bd9c6.akpm@linux-foundation.org>
+	<1287221475.2799.123.camel@edumazet-laptop>
+	<1287238754.2799.376.camel@edumazet-laptop>
+	<20101021154333.f67fd870.akpm@linux-foundation.org>
+	<1287701894.2607.32.camel@edumazet-laptop>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- On 10/21/2010 03:47 PM, H. Peter Anvin wrote:
-> On 10/21/2010 03:40 PM, Jeremy Fitzhardinge wrote:
->> Set _PAGE_IOMAP in ptes mapping a VM_IO vma.  This says that the mapping
->> is of a real piece of physical hardware, and not just system memory.
->>
->> Xen, in particular, uses to this to inhibit the normal pfn->mfn conversion
->> that would normally happen - in other words, treat the address directly
->> as a machine physical address without converting it from pseudo-physical.
->>
->> [ Impact: make VM_IO mappings map the right thing under Xen ]
->>
->> Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
->>
-> Am I the only one who thinks this seems extremely odd that the guest is
-> trusted to make this distinction?
+On Fri, 22 Oct 2010 00:58:14 +0200
+Eric Dumazet <eric.dumazet@gmail.com> wrote:
 
-Xen PV guests are always responsible for constructing ptes with machine
-addresses in them (ie, doing their own pseudo-physical to machine
-address conversion), and Xen verifies that the pages they want to map
-either belong to them or have been granted to them.  The _PAGE_IOMAP
-flag is a kernel-internal one which allows us to distinguish between
-ptes intended to map memory vs machine hardware addresses; it is not
-part of the Xen ABI.
+> Then 39 instructions in hot path (no lock taken)
 
-If you're passing a device through to a domain, the domain is given
-access to the device's address space so it can legally map those pages
-(and if an IOMMU is available, the device is constrained to only DMA
-that domain's memory).
+Wow, your compiler sucks.
 
-    J
+.globl __percpu_counter_add
+	.type	__percpu_counter_add, @function
+__percpu_counter_add:
+	pushq	%rbp	#
+	movq	%rsp, %rbp	#,
+	pushq	%r13	#
+	movq	%rdi, %r13	# fbc, fbc
+	pushq	%r12	#
+	pushq	%rbx	#
+	pushq	%r10	#
+	movq	96(%rdi), %rbx	# <variable>.counters, pcount
+#APP
+	movl %gs:cpu_number,%eax	# cpu_number, pfo_ret__
+#NO_APP
+	cltq
+	addq	__per_cpu_offset(,%rax,8), %rbx	# __per_cpu_offset, pcount
+	movslq	(%rbx),%rax	#* pcount, tmp70
+	leaq	(%rax,%rsi), %r12	#, count
+	movslq	%edx,%rax	# batch, batch
+	cmpq	%rax, %r12	# batch, count
+	jge	.L43	#,
+	negl	%edx	# batch
+	movslq	%edx,%rax	# batch, tmp74
+	cmpq	%rax, %r12	# tmp74, count
+	jg	.L45	#,
+.L43:
+	movq	%r13, %rdi	# fbc, D.14396
+	call	_raw_spin_lock	#
+	addq	%r12, 72(%r13)	# count, <variable>.count
+	movq	%r13, %rdi	# fbc, D.14396
+	movl	$0, (%rbx)	#,* pcount
+	call	_raw_spin_unlock	#
+	jmp	.L47	#
+.L45:
+	movl	%r12d, (%rbx)	# count,* pcount
+.L47:
+	popq	%r9	#
+	popq	%rbx	#
+	popq	%r12	#
+	popq	%r13	#
+	leave
+	ret
+
