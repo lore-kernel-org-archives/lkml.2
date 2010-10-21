@@ -1,183 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754427Ab0JUXNP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Oct 2010 19:13:15 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:57549 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751002Ab0JUXNO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Oct 2010 19:13:14 -0400
-Date: Thu, 21 Oct 2010 16:12:24 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Cyril Chemparathy <cyril@ti.com>
-Cc: davinci-linux-open-source@linux.davincidsp.com,
-        spi-devel-general@lists.sourceforge.net,
-        broonie@opensource.wolfsonmicro.com, lrg@slimlogic.co.uk,
-        dbrownell@users.sourceforge.net, grant.likely@secretlab.ca,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        rpurdie@rpsys.net
-Subject: Re: [PATCH v3 01/12] misc: add driver for sequencer serial port
-Message-Id: <20101021161224.b4c0b623.akpm@linux-foundation.org>
-In-Reply-To: <1287694873-12904-2-git-send-email-cyril@ti.com>
-References: <1287694873-12904-1-git-send-email-cyril@ti.com>
-	<1287694873-12904-2-git-send-email-cyril@ti.com>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1755666Ab0JUXRb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Oct 2010 19:17:31 -0400
+Received: from claw.goop.org ([74.207.240.146]:34381 "EHLO claw.goop.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750996Ab0JUXRa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Oct 2010 19:17:30 -0400
+Message-ID: <4CC0CA07.3000306@goop.org>
+Date: Thu, 21 Oct 2010 16:17:27 -0700
+From: Jeremy Fitzhardinge <jeremy@goop.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc13 Lightning/1.0b3pre Thunderbird/3.1.4
+MIME-Version: 1.0
+To: "H. Peter Anvin" <hpa@zytor.com>
+CC: the arch/x86 maintainers <x86@kernel.org>,
+        "Xen-devel@lists.xensource.com" <Xen-devel@lists.xensource.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: Re: [PATCH] x86: define arch_vm_get_page_prot to set _PAGE_IOMAP
+ on VM_IO vmas
+References: <4CC0C14E.5080205@goop.org> <4CC0C318.90401@zytor.com>
+In-Reply-To: <4CC0C318.90401@zytor.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 21 Oct 2010 17:01:02 -0400
-Cyril Chemparathy <cyril@ti.com> wrote:
+ On 10/21/2010 03:47 PM, H. Peter Anvin wrote:
+> On 10/21/2010 03:40 PM, Jeremy Fitzhardinge wrote:
+>> Set _PAGE_IOMAP in ptes mapping a VM_IO vma.  This says that the mapping
+>> is of a real piece of physical hardware, and not just system memory.
+>>
+>> Xen, in particular, uses to this to inhibit the normal pfn->mfn conversion
+>> that would normally happen - in other words, treat the address directly
+>> as a machine physical address without converting it from pseudo-physical.
+>>
+>> [ Impact: make VM_IO mappings map the right thing under Xen ]
+>>
+>> Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+>>
+> Am I the only one who thinks this seems extremely odd that the guest is
+> trusted to make this distinction?
 
-> TI's sequencer serial port (TI-SSP) is a jack-of-all-trades type of serial port
-> device.  It has a built-in programmable execution engine that can be programmed
-> to operate as almost any serial bus (I2C, SPI, EasyScale, and others).
-> 
-> This patch adds a driver for this controller device.  The driver does not
-> expose a user-land interface.  Protocol drivers built on top of this layer are
-> expected to remain in-kernel.
-> 
->
-> ...
->
-> +struct ti_ssp_dev_data {
-> +	const char	*dev_name;
-> +	unsigned long	iosel; /* see note below */
-> +	unsigned long	config;
-> +	const void	*pdata;
-> +	int		pdata_sz;
+Xen PV guests are always responsible for constructing ptes with machine
+addresses in them (ie, doing their own pseudo-physical to machine
+address conversion), and Xen verifies that the pages they want to map
+either belong to them or have been granted to them.  The _PAGE_IOMAP
+flag is a kernel-internal one which allows us to distinguish between
+ptes intended to map memory vs machine hardware addresses; it is not
+part of the Xen ABI.
 
+If you're passing a device through to a domain, the domain is given
+access to the device's address space so it can legally map those pages
+(and if an IOMMU is available, the device is constrained to only DMA
+that domain's memory).
 
-I suppose this really should have type size_t.  Also a better name is
-"pdata_size" - we prefer to avoid this random omission of vowels from
-kernel identifiers.  Just spell it out; it makes it easier to remember.
-
-> +};
-> +
-> +struct ti_ssp_data {
-> +	unsigned long		out_clock;
-> +	struct ti_ssp_dev_data	dev_data[2];
-> +};
-> +
->
-> ...
->
-> +config TI_SSP
-> +	depends on ARCH_DAVINCI_TNETV107X
-> +	tristate "Sequencer Serial Port support"
-> +	default y
-
-Was `y' a good choice?
-
-> +	---help---
-> +	  Say Y here if you want support for the Sequencer Serial Port
-> +	  in a Texas Instruments TNETV107X SoC.
-> +
-> +	  To compile this driver as a module, choose M here: the
-> +	  module will be called ti_ssp.
->
-> ...
->
-> +#define dev2ssp(dev)	dev_get_drvdata(dev->parent)
-> +#define dev2port(dev)	(to_platform_device(dev)->id)
-
-These could be implemented as C funtions.  That's superior because of
-the typechecking.  At present dev2ssp() will happily compile and fail
-at runtime if passed anystructure which has a 'const struct device
-*parent'.
-
-> +/* Register Access Helpers */
-> +static inline u32 ssp_read(struct ti_ssp *ssp, int reg)
-> +{
-> +	return __raw_readl(ssp->regs + reg);
-> +}
-> +
-> +static inline void ssp_write(struct ti_ssp *ssp, int reg, u32 val)
-> +{
-> +	__raw_writel(val, ssp->regs + reg);
-> +}
-
-Why are the __raw functions used here?
-
-> +static inline void ssp_rmw(struct ti_ssp *ssp, int reg, u32 mask, u32 bits)
-> +{
-> +	u32 val = ssp_read(ssp, reg);
-> +	val &= ~mask;
-> +	val |= bits;
-> +	ssp_write(ssp, reg, val);
-> +}
-
-Locking?  Perhaps this function must be called under ssp->lock?  If so,
-that should be documented here and it appears that not all callsites
-actually do that correctly.
-
->
-> ...
->
-> +static int __set_iosel(struct ti_ssp *ssp, int port, u32 iosel)
-> +{
-> +	unsigned val;
-> +
-> +	/* IOSEL1 gets the least significant 16 bits */
-> +	val = ssp_read(ssp, REG_IOSEL_1);
-> +	val &= 0xffff << (port ? 0 : 16);
-> +	val |= (iosel & 0xffff) << (port ? 16 : 0);
-> +	ssp_write(ssp, REG_IOSEL_1, val);
-> +
-> +	/* IOSEL2 gets the most significant 16 bits */
-> +	val = ssp_read(ssp, REG_IOSEL_2);
-> +	val &= 0x0007 << (port ? 0 : 16);
-> +	val |= (iosel & 0x00070000) >> (port ? 0 : 16);
-> +	ssp_write(ssp, REG_IOSEL_2, val);
-
-More rmw's which need locking.  It should be documented please.  Both
-callers get it right this time.
-
-> +	return 0;
-> +}
-> +
->
-> ...
->
-> +int ti_ssp_run(struct device *dev, u32 pc, u32 input, u32 *output)
-> +{
-> +	struct ti_ssp *ssp = dev2ssp(dev);
-> +	int port = dev2port(dev);
-> +	int count;
-> +
-> +	if (pc & ~(0x3f))
-> +		return -EINVAL;
-> +
-> +	ssp_port_write(ssp, port, PORT_ADDR, input >> 16);
-> +	ssp_port_write(ssp, port, PORT_DATA, input & 0xffff);
-> +	ssp_port_rmw(ssp, port, PORT_CFG_1, 0x3f, pc);
-> +
-> +	ssp_port_set_bits(ssp, port, PORT_CFG_1, SSP_START);
-> +
-> +	for (count = 10000; count; count--) {
-> +		if ((ssp_port_read(ssp, port, PORT_CFG_1) & SSP_BUSY) == 0)
-> +			break;
-> +		udelay(1);
-> +	}
-> +
-> +	if (output) {
-> +		*(output) = (ssp_port_read(ssp, port, PORT_ADDR) << 16) |
-> +			    (ssp_port_read(ssp, port, PORT_DATA) &  0xffff);
-> +	}
-> +
-> +	if (!count) {
-> +		dev_err(ssp->dev, "timed out waiting for SSP operation\n");
-> +		return -EIO;
-> +	}
-
-There doesn't seem much point in writing to *output if the port_read()
-timed out?
-
->
-> ...
->
-
-That's all fairly minor stuff.  It looks Good Enough For Linux to me.
+    J
