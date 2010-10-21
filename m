@@ -1,52 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754197Ab0JUIlP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Oct 2010 04:41:15 -0400
-Received: from dgate20.ts.fujitsu.com ([80.70.172.51]:33918 "EHLO
+	id S1754738Ab0JUIlp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Oct 2010 04:41:45 -0400
+Received: from dgate20.ts.fujitsu.com ([80.70.172.51]:64195 "EHLO
 	dgate20.ts.fujitsu.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752627Ab0JUIlN (ORCPT
+	with ESMTP id S1754525Ab0JUIln (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Oct 2010 04:41:13 -0400
-X-Greylist: delayed 580 seconds by postgrey-1.27 at vger.kernel.org; Thu, 21 Oct 2010 04:41:12 EDT
+	Thu, 21 Oct 2010 04:41:43 -0400
 DomainKey-Signature: s=s1536a; d=ts.fujitsu.com; c=nofws; q=dns;
   h=X-SBRSScore:X-IronPort-AV:Received:X-IronPort-AV:
    Received:Received:Received:X-Authentication-Warning:Date:
    From:To:Subject:Cc:Message-ID:User-Agent:MIME-Version:
    Content-Type;
-  b=UqNiIQvFcfls3Ip9NYNNxwi5nQQxELk+xEBk4QD+YBNa4JDxNxh2MloB
-   MuOdem4SxE23fP5vngvGpzNlyxK/j2y6CEPlGJ311aKP/jNfkBY79tH5z
-   BPqFkzF4sBUZAOekTHhZOlepCLKL8H3P713o89h8iGjxtjrldkpM/Fmc4
-   1s+yRpVPCMe2u0pJZ/zC4HjnyYouEoK9IW1U/tvfFJ1kOoOhMmGMI/+YN
-   yf7HjllO7bmuXjwpHgNr6f/Gnkrp4;
+  b=RhFBCq6YV58RyTGB/wwepkaQ+wMB8KyU6mHCyICNyc5OAm+USydTvZjk
+   4g+ODGIIJ7URmNUgn7n0ay88YoBtjgvoZtyzq+2dZYL5MMVWT/OIHwYqF
+   05JUiz5TxbEozsqpWWG4WKEK3WjzHTY54Xff2deWp8wXmV33B/zinrnuf
+   2NXYvt6T49likWTVL3s/0bAfrIZlvow5Nkvm7D2Q+EhQSkPh7oNe8BFs9
+   7e/Kyf5N7J8Sw51vBp/ryc/ngA1IP;
 X-SBRSScore: None
 X-IronPort-AV: E=Sophos;i="4.58,216,1286143200"; 
-   d="scan'208";a="48738469"
+   d="scan'208";a="48736926"
 X-IronPort-AV: E=Sophos;i="4.58,216,1286143200"; 
-   d="scan'208";a="101452648"
-Date: Thu, 21 Oct 2010 10:38:16 +0200
+   d="scan'208";a="103682233"
+Date: Thu, 21 Oct 2010 10:28:33 +0200
 From: martin.wilck@ts.fujitsu.com
 To: linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        jbarnes@virtuousgeek.org
+        <jbarnes@virtuousgeek.org>, Barnes@cooper.psw.pdbps.fsc.net,
+        Jesse@cooper.psw.pdbps.fsc.net
 Subject: [PATCH] fix size checks for mmap() on /proc/bus/pci files
- (resent)
 Cc: gerhard.wichert@ts.fujitsu.com, martin.wilck@ts.fujitsu.com
-Message-ID: <4cbffbf8.Qhs/h1a0ymU/N8ON%martin.wilck@ts.fujitsu.com>
+Message-ID: <4cbff9b1.X5CZHeO9bG6baJma%martin.wilck@ts.fujitsu.com>
 User-Agent: Heirloom mailx 12.4 7/29/08
 MIME-Version: 1.0
 Content-Type: multipart/mixed;
- boundary="=_4cbffbf8.3Qsa1gI4/ms1FkUIi/Bi5ckTo9I6z6O86Vyj5kOcynWQD8Mh"
+ boundary="=_4cbff9b1.VnzIZiDCmRiP7IRd+LdmmYACv3sQ1zx/yO71zNAp1RiZkwu+"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 This is a multi-part message in MIME format.
 
---=_4cbffbf8.3Qsa1gI4/ms1FkUIi/Bi5ckTo9I6z6O86Vyj5kOcynWQD8Mh
+--=_4cbff9b1.VnzIZiDCmRiP7IRd+LdmmYACv3sQ1zx/yO71zNAp1RiZkwu+
 Content-Type: text/plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
 Content-Disposition: inline
-
-(Resent because of broken recepient list in last mail - sorry.)
 
 [PATCH] fix size checks for mmap() on /proc/bus/pci files
 
@@ -140,7 +137,7 @@ Signed-off-by: Martin Wilck <Martin.Wilck@ts.fujitsu,com>
  	/* pci_mmap_page_range() expects the same kind of entry as coming
  	 * from /proc/bus/pci/ which is a "user visible" value. If this is
 
---=_4cbffbf8.3Qsa1gI4/ms1FkUIi/Bi5ckTo9I6z6O86Vyj5kOcynWQD8Mh
+--=_4cbff9b1.VnzIZiDCmRiP7IRd+LdmmYACv3sQ1zx/yO71zNAp1RiZkwu+
 Content-Type: text/plain;
  charset=us-ascii
 Content-Transfer-Encoding: 7bit
@@ -239,4 +236,4 @@ Signed-off-by: Martin Wilck <Martin.Wilck@ts.fujitsu,com>
  	/* pci_mmap_page_range() expects the same kind of entry as coming
  	 * from /proc/bus/pci/ which is a "user visible" value. If this is
 
---=_4cbffbf8.3Qsa1gI4/ms1FkUIi/Bi5ckTo9I6z6O86Vyj5kOcynWQD8Mh--
+--=_4cbff9b1.VnzIZiDCmRiP7IRd+LdmmYACv3sQ1zx/yO71zNAp1RiZkwu+--
