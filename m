@@ -1,85 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758581Ab0JUPJy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Oct 2010 11:09:54 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:34986 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758392Ab0JUPJw (ORCPT
+	id S1757676Ab0JUPLm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Oct 2010 11:11:42 -0400
+Received: from zone0.gcu-squad.org ([212.85.147.21]:24666 "EHLO
+	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753059Ab0JUPLl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Oct 2010 11:09:52 -0400
-From: =?UTF-8?q?Diego=20Elio=20Petten=C3=B2?= <flameeyes@gmail.com>
-To: linux-kernel@vger.kernel.org, alsa-devel@alsa-project.org
-Cc: David Henningsson <david.henningsson@canonical.com>
-Subject: [PATCH] ALSA: HDA: Enable internal mic on Dell E6410 and Dell E6510
-Date: Thu, 21 Oct 2010 17:09:49 +0200
-Message-Id: <1287673789-13915-1-git-send-email-flameeyes@gmail.com>
-X-Mailer: git-send-email 1.7.3.1
-In-Reply-To: <1285726141-26448-2-git-send-email-flameeyes@gmail.com>
-References: <1285726141-26448-2-git-send-email-flameeyes@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	Thu, 21 Oct 2010 11:11:41 -0400
+Date: Thu, 21 Oct 2010 17:11:20 +0200
+From: Jean Delvare <khali@linux-fr.org>
+To: Guenter Roeck <guenter.roeck@ericsson.com>
+Cc: Ben Dooks <ben-linux@fluff.org>, Rodolfo Giometti <giometti@linux.it>,
+        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3] i2c/mux: Driver for PCA9541 I2C Master Selector
+Message-ID: <20101021171120.7ea57f9b@endymion.delvare>
+In-Reply-To: <20101021150300.GB26460@ericsson.com>
+References: <1287546908-32634-1-git-send-email-guenter.roeck@ericsson.com>
+	<20101021164304.06770538@endymion.delvare>
+	<20101021150300.GB26460@ericsson.com>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: David Henningsson <david.henningsson@canonical.com>
+On Thu, 21 Oct 2010 08:03:00 -0700, Guenter Roeck wrote:
+> On Thu, Oct 21, 2010 at 10:43:04AM -0400, Jean Delvare wrote:
+> > On Tue, 19 Oct 2010 20:55:08 -0700, Guenter Roeck wrote:
+> > > This patch adds support for PCA9541, an I2C Bus Master Selector.
+> > > The driver is modeled as single channel I2C Multiplexer to be able to utilize
+> > > the I2C multiplexer framework.
+> > > 
+> > > Signed-off-by: Guenter Roeck <guenter.roeck@ericsson.com>
+> > > Reviewed-by: Tom Grennan <tom.grennan@ericsson.com>
+> > > ---
+> > > v3 changes:
+> > > - Clarified and cleaned up comments.
+> > > - No longer pass "struct i2c_adapter *" as parameter.
+> > >   Get it from client->adapter if needed.
+> > > - No longer pass "struct pca9541 *" as parameter. 
+> > >   Pass "struct i2c_client *" instead and get "struct pca9541 *" from it
+> > >   if needed.
+> > > - Removed "struct i2c_client *client" from struct pca9541 since it is
+> > >   no longer needed.
+> > > - Moved "pca9541_release_bus(client);" ahead of i2c_add_mux_adapter()
+> > >   to avoid a possible race condition. Also protect the call with
+> > >   i2c_lock_adapter() / i2c_unlock_adapter().
+> > > - Removed __devinit from pca9541_probe() and __devexit from pca9541_remove().
+> > 
+> > Applied, thanks.
+> > 
+> > Would you mind adding yourself to MAINTAINERS as a maintainer for this
+> > driver? While the driver is small, it's not trivial and it's difficult
+> > to work on it without the right hardware setup.
+> > 
+> Sure. Not intentional - I wanted to do that, just forgot. And I agree,
+> it is pretty much impossible to maintain it unless you have HW to test it.
+> 
+> Want me to resubmit or send a separate patch ?
 
-(Ported on top of 2.6.36)
+Separate patch, I'll merge them if needs be.
 
-BugLink: http://launchpad.net/bugs/628961
-BugLink: http://launchpad.net/bugs/605047
-
-CC: Diego Elio Pettenò <flameeyes@gmail.com>
----
- sound/pci/hda/patch_sigmatel.c |   13 +++++++++++++
- 1 files changed, 13 insertions(+), 0 deletions(-)
-
-diff --git a/sound/pci/hda/patch_sigmatel.c b/sound/pci/hda/patch_sigmatel.c
-index c16c5ba..be79c3c 100644
---- a/sound/pci/hda/patch_sigmatel.c
-+++ b/sound/pci/hda/patch_sigmatel.c
-@@ -1633,6 +1633,13 @@ static unsigned int dell_s14_pin_configs[10] = {
- 	0x40f000f0, 0x40f000f0,
- };
- 
-+/* Deliberately turn off 0x0f (Dock Mic) to make it choose Int Mic instead */
-+static unsigned int dell_e6410_pin_configs[10] = {
-+	0x04a11020, 0x0421101f, 0x400000f0, 0x90170110,
-+	0x23011050, 0x40f000f0, 0x400000f0, 0x90a60130,
-+	0x40f000f0, 0x40f000f0,
-+};
-+
- static unsigned int hp_dv7_4000_pin_configs[10] = {
- 	0x03a12050, 0x0321201f, 0x40f000f0, 0x90170110,
- 	0x40f000f0, 0x40f000f0, 0x90170110, 0xd5a30140,
-@@ -1643,6 +1650,7 @@ static unsigned int *stac92hd83xxx_brd_tbl[STAC_92HD83XXX_MODELS] = {
- 	[STAC_92HD83XXX_REF] = ref92hd83xxx_pin_configs,
- 	[STAC_92HD83XXX_PWR_REF] = ref92hd83xxx_pin_configs,
- 	[STAC_DELL_S14] = dell_s14_pin_configs,
-+	[STAC_DELL_E6410] = dell_e6410_pin_configs,
- 	[STAC_HP_DV7_4000] = hp_dv7_4000_pin_configs,
- };
- 
-@@ -1651,6 +1659,7 @@ static const char *stac92hd83xxx_models[STAC_92HD83XXX_MODELS] = {
- 	[STAC_92HD83XXX_REF] = "ref",
- 	[STAC_92HD83XXX_PWR_REF] = "mic-ref",
- 	[STAC_DELL_S14] = "dell-s14",
-+	[STAC_DELL_E6410] = "dell-e6410",
- 	[STAC_92HD83XXX_HP] = "hp",
- 	[STAC_HP_DV7_4000] = "hp-dv7-4000",
- };
-@@ -1663,6 +1672,10 @@ static struct snd_pci_quirk stac92hd83xxx_cfg_tbl[] = {
- 		      "DFI LanParty", STAC_92HD83XXX_REF),
- 	SND_PCI_QUIRK(PCI_VENDOR_ID_DELL, 0x02ba,
- 		      "unknown Dell", STAC_DELL_S14),
-+	SND_PCI_QUIRK(PCI_VENDOR_ID_DELL, 0x040a,
-+		      "Dell E6410", STAC_DELL_E6410),
-+	SND_PCI_QUIRK(PCI_VENDOR_ID_DELL, 0x040b,
-+		      "Dell E6510", STAC_DELL_E6410),
- 	SND_PCI_QUIRK_MASK(PCI_VENDOR_ID_HP, 0xff00, 0x3600,
- 		      "HP", STAC_92HD83XXX_HP),
- 	{} /* terminator */
 -- 
-1.7.3.1
-
+Jean Delvare
