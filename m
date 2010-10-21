@@ -1,96 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755885Ab0JURvy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Oct 2010 13:51:54 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:61178 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753485Ab0JURvw (ORCPT
+	id S1756204Ab0JURwV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Oct 2010 13:52:21 -0400
+Received: from idcmail-mo2no.shaw.ca ([64.59.134.9]:15727 "EHLO
+	idcmail-mo2no.shaw.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756047Ab0JURwT convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Oct 2010 13:51:52 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:x-enigmail-version:content-type
-         :content-transfer-encoding;
-        b=ArQV7rC4GwHtwtU0eK763OassfX2/Q+SG17EDxCOFV4cMqu6Cqs7yHRjtymhzZqH+y
-         w7bZgXS+Cpcxlet/+qsmm0XtN7qnCZMIcj0qDYnjVnQPGISEaogSnmsojAgk0EQzhhsV
-         ADSFJZHnUXQsuQuJ5DVlzBPcKHZfCePzm6qrA=
-Message-ID: <4CC07DB4.20205@gmail.com>
-Date: Thu, 21 Oct 2010 19:51:48 +0200
-From: Jiri Slaby <jirislaby@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.11) Gecko/20101013 SUSE/3.1.5 Thunderbird/3.1.5
-MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-CC: akpm@linux-foundation.org, mm-commits@vger.kernel.org,
-        Antti Palosaari <crope@iki.fi>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>, Greg KH <gregkh@suse.de>,
-        USB list <linux-usb@vger.kernel.org>
-Subject: DVB: af9015 defunct [was: mmotm 2010-10-20-15-01 uploaded]
-References: <201010202233.o9KMXNoL008303@imap1.linux-foundation.org>
-In-Reply-To: <201010202233.o9KMXNoL008303@imap1.linux-foundation.org>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-2
-Content-Transfer-Encoding: 7bit
+	Thu, 21 Oct 2010 13:52:19 -0400
+X-Cloudmark-SP-Filtered: true
+X-Cloudmark-SP-Result: v=1.1 cv=cUTwMia+6fMZF7bjUHU44PO5dfBASsAn9IQPzcMrg/g= c=1 sm=1
+ a=QT8drYoAYEQA:10 a=BLceEmwcHowA:10 a=kj9zAlcOel0A:10 a=xqWC_Br6kY4A:10
+ a=c23vf5CSMVc0QQz9B4a6RA==:17 a=0EuGTOPUOMYycOhixQ4A:9
+ a=cEK2MmWAv6YktlrWYhUA:7 a=TOs814xW77Blr3J1qNk2C6POT9MA:4 a=CjuIK1q_8ugA:10
+ a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
+Subject: Re: [PATCH v2 20/22] bitops: remove ext2 non-atomic bitops from asm/bitops.h
+Mime-Version: 1.0 (Apple Message framework v1081)
+Content-Type: text/plain; charset=us-ascii
+From: Andreas Dilger <adilger@dilger.ca>
+In-Reply-To: <1287672077-5797-21-git-send-email-akinobu.mita@gmail.com>
+Date: Thu, 21 Oct 2010 11:52:15 -0600
+Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        Arnd Bergmann <arnd@arndb.de>, Christoph Hellwig <hch@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
+        linux-ext4@vger.kernel.org
+Content-Transfer-Encoding: 8BIT
+Message-Id: <AECEA79F-28E8-49B0-8C13-2CF115A6ECB4@dilger.ca>
+References: <1287672077-5797-1-git-send-email-akinobu.mita@gmail.com> <1287672077-5797-21-git-send-email-akinobu.mita@gmail.com>
+To: Akinobu Mita <akinobu.mita@gmail.com>
+X-Mailer: Apple Mail (2.1081)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/21/2010 12:01 AM, akpm@linux-foundation.org wrote:
-> The mm-of-the-moment snapshot 2010-10-20-15-01 has been uploaded to
+On 2010-10-21, at 08:41, Akinobu Mita wrote:
+> As the result of conversions, there are no users of ext2 non-atomic bit
+> operations except for ext2 file system itself.  Now we can put them
+> into architecture independent code in ext2 file system, and remove
+> from asm/bitops.h for all architectures.
 
-Well, this release happens to be a multimedia failure :(.
+Presumably there will be a separate patch series to remove the atomic ext2 bitops?  I was going to suggest removing the ext2 comment in bitops.h, but I notice that there are still the atomic bitops left.
 
-I hit another regression against mmotm 2010-10-13-17-13, where
-0413:6029 (DVB USB tuner) can't be inited when plugged in. Even lsusb
-waits inifitely.
+In any case, thanks for your efforts.  I agree that these ext2_* functions have no place in the generic code, and are only there for historical reasons.
 
-usb 2-6: new high speed USB device using ehci_hcd and address 5
-dvb-usb: found a 'Leadtek WinFast DTV Dongle Gold' in cold state, will
-try to load a firmware
-dvb-usb: downloading firmware from file 'dvb-usb-af9015.fw'
-dvb-usb: found a 'Leadtek WinFast DTV Dongle Gold' in warm state.
-dvb-usb: will pass the complete MPEG2 transport stream to the software
-demuxer.
-DVB: registering new adapter (Leadtek WinFast DTV Dongle Gold)
-af9013: firmware version:4.95.0.0
-DVB: registering adapter 1 frontend 0 (Afatech AF9013 DVB-T)...
-tda18271 18-00c0: creating new instance
-TDA18271HD/C2 detected @ 18-00c0
-af9015: command failed:1
-tda18271_write_regs: [18-00c0|M] ERROR: idx = 0x0, len = 39,
-i2c_transfer returned: -1
-af9015: command failed:1
-tda18271_write_regs: [18-00c0|M] ERROR: idx = 0x20, len = 1,
-i2c_transfer returned: -1
-af9015: command failed:1
-tda18271_write_regs: [18-00c0|M] ERROR: idx = 0x20, len = 1,
-i2c_transfer returned: -1
-af9015: command failed:1
-tda18271_write_regs: [18-00c0|M] ERROR: idx = 0x20, len = 1,
-i2c_transfer returned: -1
-af9015: command failed:1
-tda18271_write_regs: [18-00c0|M] ERROR: idx = 0x20, len = 1,
-i2c_transfer returned: -1
-af9015: recv bulk message failed:-71
-af9015: bulk message failed:-71 (8/0)
-af9013: I2C read failed reg:d417
-tda18271_write_regs: [18-00c0|M] ERROR: idx = 0x5, len = 11,
-i2c_transfer returned: -1
-af9015: bulk message failed:-71 (8/0)
-af9013: I2C read failed reg:d417
-af9015: bulk message failed:-71 (9/0)
-af9015: bulk message failed:-71 (8/0)
-af9013: I2C read failed reg:d417
-tda18271_write_regs: [18-00c0|M] ERROR: idx = 0x13, len = 1,
-i2c_transfer returned: -71
-af9015: bulk message failed:-71 (8/0)
-af9013: I2C read failed reg:d417
-af9015: bulk message failed:-71 (9/0)
-af9015: bulk message failed:-71 (8/0)
-af9013: I2C read failed reg:d417
-tda18271_write_regs: [18-00c0|M] ERROR: idx = 0x13, len = 1,
-i2c_transfer returned: -71
+> --- a/arch/arm/include/asm/bitops.h
+> +++ b/arch/arm/include/asm/bitops.h
+> @@ -327,22 +327,10 @@ static inline int fls(int x)
+> * Ext2 is defined to use little-endian byte ordering.
+> * These do not need to be atomic.
+> */
+> -#define ext2_set_bit(nr,p)			\
+> -		__test_and_set_le_bit(nr, (unsigned long *)(p))
+> #define ext2_set_bit_atomic(lock,nr,p)          \
+> 		test_and_set_le_bit(nr, (unsigned long *)(p))
+> -#define ext2_clear_bit(nr,p)			\
+> -		__test_and_clear_le_bit(nr, (unsigned long *)(p))
+> #define ext2_clear_bit_atomic(lock,nr,p)        \
+> 		test_and_clear_le_bit(nr, (unsigned long *)(p))
+> -#define ext2_test_bit(nr,p)			\
+> -		test_le_bit(nr, (unsigned long *)(p))
+> -#define ext2_find_first_zero_bit(p,sz)		\
+> -		find_first_zero_le_bit((unsigned long *)(p), sz)
+> -#define ext2_find_next_zero_bit(p,sz,off)	\
+> -		find_next_zero_le_bit((unsigned long *)(p), sz, off)
+> -#define ext2_find_next_bit(p, sz, off) \
+> -		find_next_le_bit((unsigned long *)(p), sz, off)
 
-regards,
--- 
-js
+
+Cheers, Andreas
+
+
+
+
+
