@@ -1,16 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755343Ab0JUKLn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Oct 2010 06:11:43 -0400
-Received: from mail4.hitachi.co.jp ([133.145.228.5]:32869 "EHLO
-	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755181Ab0JUKLl (ORCPT
+	id S1755043Ab0JUKLh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Oct 2010 06:11:37 -0400
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:42790 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753262Ab0JUKLf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Oct 2010 06:11:41 -0400
-X-AuditID: b753bd60-a88d0ba000005dcc-0c-4cc011da5629
+	Thu, 21 Oct 2010 06:11:35 -0400
+X-AuditID: b753bd60-a6acdba000005dcc-e0-4cc011d3826b
 From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Subject: [PATCH -tip 2/7] [BUGFIX] perf probe: Fix local variable searching
-	loop
+Subject: [PATCH -tip  1/7] [BUGFIX] perf probe: Fix type searching
 To: Arnaldo Carvalho de Melo <acme@redhat.com>, Ingo Molnar <mingo@elte.hu>
 Cc: Steven Rostedt <rostedt@goodmis.org>,
         Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
@@ -20,8 +19,8 @@ Cc: Steven Rostedt <rostedt@goodmis.org>,
         Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
         Arnaldo Carvalho de Melo <acme@redhat.com>,
         linux-kernel@vger.kernel.org
-Date: Thu, 21 Oct 2010 19:13:09 +0900
-Message-ID: <20101021101309.3542.46434.stgit@ltc236.sdl.hitachi.co.jp>
+Date: Thu, 21 Oct 2010 19:13:02 +0900
+Message-ID: <20101021101302.3542.38549.stgit@ltc236.sdl.hitachi.co.jp>
 In-Reply-To: <20101021101243.3542.28282.stgit@ltc236.sdl.hitachi.co.jp>
 References: <20101021101243.3542.28282.stgit@ltc236.sdl.hitachi.co.jp>
 User-Agent: StGIT/0.14.3
@@ -34,10 +33,10 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix to check the die's address and search into the die
-only if it has given address.
-This will avoid finding wrong variables in wrong
-basic block.
+Fix to get the actual type die of variables by
+using dwarf_attr_integrate() which gets attribute
+from die even if the type die is connected by
+DW_AT_abstract_origin.
 
 Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
@@ -47,63 +46,55 @@ Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
 Cc: linux-kernel@vger.kernel.org
 ---
 
- tools/perf/util/probe-finder.c |   26 ++++++++++++++++++--------
- 1 files changed, 18 insertions(+), 8 deletions(-)
+ tools/perf/util/probe-finder.c |   25 +++++++++++++++++--------
+ 1 files changed, 17 insertions(+), 8 deletions(-)
 
 diff --git a/tools/perf/util/probe-finder.c b/tools/perf/util/probe-finder.c
-index a2d1f79..abcaec5 100644
+index 32b81f7..a2d1f79 100644
 --- a/tools/perf/util/probe-finder.c
 +++ b/tools/perf/util/probe-finder.c
-@@ -329,25 +329,35 @@ static Dwarf_Die *die_find_inlinefunc(Dwarf_Die *sp_die, Dwarf_Addr addr,
- 	return die_find_child(sp_die, __die_find_inline_cb, &addr, die_mem);
+@@ -160,26 +160,35 @@ static bool die_compare_name(Dwarf_Die *dw_die, const char *tname)
+ 	return name ? (strcmp(tname, name) == 0) : false;
  }
  
-+struct __find_variable_param {
-+	const char *name;
-+	Dwarf_Addr addr;
-+};
++/* Get type die */
++static Dwarf_Die *die_get_type(Dwarf_Die *vr_die, Dwarf_Die *die_mem)
++{
++	Dwarf_Attribute attr;
 +
- static int __die_find_variable_cb(Dwarf_Die *die_mem, void *data)
++	if (dwarf_attr_integrate(vr_die, DW_AT_type, &attr) &&
++	    dwarf_formref_die(&attr, die_mem))
++		return die_mem;
++	else
++		return NULL;
++}
++
+ /* Get type die, but skip qualifiers and typedef */
+ static Dwarf_Die *die_get_real_type(Dwarf_Die *vr_die, Dwarf_Die *die_mem)
  {
--	const char *name = data;
-+	struct __find_variable_param *fvp = data;
+-	Dwarf_Attribute attr;
  	int tag;
  
- 	tag = dwarf_tag(die_mem);
- 	if ((tag == DW_TAG_formal_parameter ||
- 	     tag == DW_TAG_variable) &&
--	    die_compare_name(die_mem, name))
-+	    die_compare_name(die_mem, fvp->name))
- 		return DIE_FIND_CB_FOUND;
+ 	do {
+-		if (dwarf_attr(vr_die, DW_AT_type, &attr) == NULL ||
+-		    dwarf_formref_die(&attr, die_mem) == NULL)
+-			return NULL;
+-
+-		tag = dwarf_tag(die_mem);
+-		vr_die = die_mem;
++		vr_die = die_get_type(vr_die, die_mem);
++		if (!vr_die)
++			break;
++		tag = dwarf_tag(vr_die);
+ 	} while (tag == DW_TAG_const_type ||
+ 		 tag == DW_TAG_restrict_type ||
+ 		 tag == DW_TAG_volatile_type ||
+ 		 tag == DW_TAG_shared_type ||
+ 		 tag == DW_TAG_typedef);
  
--	return DIE_FIND_CB_CONTINUE;
-+	if (dwarf_haspc(die_mem, fvp->addr))
-+		return DIE_FIND_CB_CONTINUE;
-+	else
-+		return DIE_FIND_CB_SIBLING;
+-	return die_mem;
++	return vr_die;
  }
  
--/* Find a variable called 'name' */
--static Dwarf_Die *die_find_variable(Dwarf_Die *sp_die, const char *name,
--				    Dwarf_Die *die_mem)
-+/* Find a variable called 'name' at given address */
-+static Dwarf_Die *die_find_variable_at(Dwarf_Die *sp_die, const char *name,
-+				       Dwarf_Addr addr, Dwarf_Die *die_mem)
- {
--	return die_find_child(sp_die, __die_find_variable_cb, (void *)name,
-+	struct __find_variable_param fvp = { .name = name, .addr = addr};
-+
-+	return die_find_child(sp_die, __die_find_variable_cb, (void *)&fvp,
- 			      die_mem);
- }
- 
-@@ -731,7 +741,7 @@ static int find_variable(Dwarf_Die *sp_die, struct probe_finder *pf)
- 	pr_debug("Searching '%s' variable in context.\n",
- 		 pf->pvar->var);
- 	/* Search child die for local variables and parameters. */
--	if (die_find_variable(sp_die, pf->pvar->var, &vr_die))
-+	if (die_find_variable_at(sp_die, pf->pvar->var, pf->addr, &vr_die))
- 		ret = convert_variable(&vr_die, pf);
- 	else {
- 		/* Search upper class */
+ static bool die_is_signed_type(Dwarf_Die *tp_die)
 
