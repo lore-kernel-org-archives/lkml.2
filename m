@@ -1,49 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757512Ab0JUTE4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Oct 2010 15:04:56 -0400
-Received: from eu1sys200aog105.obsmtp.com ([207.126.144.119]:58061 "EHLO
-	eu1sys200aog105.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753954Ab0JUTE4 (ORCPT
+	id S1757591Ab0JUTHe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Oct 2010 15:07:34 -0400
+Received: from 174-46-170-145.static.twtelecom.net ([174.46.170.145]:54596
+	"EHLO barracuda.logicpd.com" rhost-flags-OK-FAIL-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752369Ab0JUTHc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Oct 2010 15:04:56 -0400
-From: Linus Walleij <linus.walleij@stericsson.com>
-To: Dan Williams <dan.j.williams@intel.com>
-Cc: <linux-kernel@vger.kernel.org>,
-        Linus Walleij <linus.walleij@stericsson.com>
-Subject: [PATCH] DMAENGINE: move COH901318 to arch_initcall
-Date: Thu, 21 Oct 2010 21:04:38 +0200
-Message-ID: <1287687878-27016-1-git-send-email-linus.walleij@stericsson.com>
-X-Mailer: git-send-email 1.6.3.3
+	Thu, 21 Oct 2010 15:07:32 -0400
+X-Greylist: delayed 1019 seconds by postgrey-1.27 at vger.kernel.org; Thu, 21 Oct 2010 15:07:32 EDT
+X-ASG-Debug-ID: 1287687032-5707d7c60001-xx1T2L
+X-Barracuda-Envelope-From: tim.nordell@logicpd.com
+From: Tim Nordell <tim.nordell@logicpd.com>
+X-Barracuda-BBL-IP: 10.1.18.134
+X-Barracuda-RBL-IP: 10.1.18.134
+To: <linux-arm-kernel@lists.infradead.org>, <linux-omap@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+CC: Tim Nordell <tim.nordell@logicpd.com>
+Subject: [PATCH] ARM: OMAP: Modified omap_mux_init_signal() to take in const char *
+Date: Thu, 21 Oct 2010 13:50:41 -0500
+X-ASG-Orig-Subj: [PATCH] ARM: OMAP: Modified omap_mux_init_signal() to take in const char *
+Message-ID: <1287687041-22377-1-git-send-email-tim.nordell@logicpd.com>
+X-Mailer: git-send-email 1.7.1
 MIME-Version: 1.0
 Content-Type: text/plain
+X-Barracuda-Connect: edprex01.logicpd.com[10.1.18.134]
+X-Barracuda-Start-Time: 1287687032
+X-Barracuda-Encrypted: AES128-SHA
+X-Barracuda-URL: http://ep-cuda.logicpd.com:8000/cgi-mod/mark.cgi
+X-Barracuda-Spam-Score: 0.00
+X-Barracuda-Spam-Status: No, SCORE=0.00 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.44340
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-After moving the PL022 driver to subsys_initcall() due to the need
-of having stuff like regulators on the other end of the SPI link,
-I noticed that the COH901318 DMA engine will get probed before
-the DMA engine, so move it to an arch_initcall().
+If one does the following line twice with the old code:
 
-Signed-off-by: Linus Walleij <linus.walleij@stericsson.com>
+omap_mux_init_signal("uart3_rts_sd.gpio_164", OMAP_PIN_INPUT);
+omap_mux_init_signal("uart3_rts_sd.gpio_164", OMAP_PIN_INPUT);
+
+the compiler optimizes the two const strings into one string
+internally in the compiler.  The old code would modify the string
+by inserting a NULL effectively making the second call become:
+
+omap_mux_init_signal("uart3_rts_sd", OMAP_PIN_INPUT);
+
+Since the code changes _all_ uart3_rts_sd signals over to this,
+it'll cause unknown behavior, as well as making it more
+difficult to track down the reason since the string
+"uart3_rts_sd" by itself may not actually exist in your
+normal mux initialization sequence.
+
+Signed-off-by: Tim Nordell <tim.nordell@logicpd.com>
 ---
- drivers/dma/coh901318.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ arch/arm/mach-omap2/mux.c |   13 ++++++++-----
+ arch/arm/mach-omap2/mux.h |    4 ++--
+ 2 files changed, 10 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/dma/coh901318.c b/drivers/dma/coh901318.c
-index ae2b871..a665683 100644
---- a/drivers/dma/coh901318.c
-+++ b/drivers/dma/coh901318.c
-@@ -1610,7 +1610,7 @@ int __init coh901318_init(void)
- {
- 	return platform_driver_probe(&coh901318_driver, coh901318_probe);
+diff --git a/arch/arm/mach-omap2/mux.c b/arch/arm/mach-omap2/mux.c
+index ab403b2..b685540 100644
+--- a/arch/arm/mach-omap2/mux.c
++++ b/arch/arm/mach-omap2/mux.c
+@@ -127,19 +127,21 @@ int __init omap_mux_init_gpio(int gpio, int val)
+ 	return 0;
  }
--subsys_initcall(coh901318_init);
-+arch_initcall(coh901318_init);
  
- void __exit coh901318_exit(void)
+-int __init omap_mux_init_signal(char *muxname, int val)
++int __init omap_mux_init_signal(const char *muxname, int val)
  {
+ 	struct omap_mux_entry *e;
+-	char *m0_name = NULL, *mode_name = NULL;
++	const char *m0_name = NULL, *mode_name = NULL;
+ 	int found = 0;
++	int m0_name_len;
+ 
+ 	mode_name = strchr(muxname, '.');
+ 	if (mode_name) {
+-		*mode_name = '\0';
+ 		mode_name++;
+ 		m0_name = muxname;
++		m0_name_len = mode_name - muxname - 1;
+ 	} else {
+ 		mode_name = muxname;
++		m0_name_len = strlen(muxname);
+ 	}
+ 
+ 	list_for_each_entry(e, &muxmodes, node) {
+@@ -147,7 +149,8 @@ int __init omap_mux_init_signal(char *muxname, int val)
+ 		char *m0_entry = m->muxnames[0];
+ 		int i;
+ 
+-		if (m0_name && strcmp(m0_name, m0_entry))
++		if (m0_name && (strncmp(m0_name, m0_entry, m0_name_len)
++				|| strlen(m0_entry) != m0_name_len))
+ 			continue;
+ 
+ 		for (i = 0; i < OMAP_MUX_NR_MODES; i++) {
+@@ -164,7 +167,7 @@ int __init omap_mux_init_signal(char *muxname, int val)
+ 				mux_mode = val | i;
+ 				printk(KERN_DEBUG "mux: Setting signal "
+ 					"%s.%s 0x%04x -> 0x%04x\n",
+-					m0_entry, muxname, old_mode, mux_mode);
++					m0_entry, mode_cur, old_mode, mux_mode);
+ 				omap_mux_write(mux_mode, m->reg_offset);
+ 				found++;
+ 			}
+diff --git a/arch/arm/mach-omap2/mux.h b/arch/arm/mach-omap2/mux.h
+index a8e040c..55e3a21 100644
+--- a/arch/arm/mach-omap2/mux.h
++++ b/arch/arm/mach-omap2/mux.h
+@@ -120,7 +120,7 @@ int omap_mux_init_gpio(int gpio, int val);
+  * @muxname:		Mux name in mode0_name.signal_name format
+  * @val:		Options for the mux register value
+  */
+-int omap_mux_init_signal(char *muxname, int val);
++int omap_mux_init_signal(const char *muxname, int val);
+ 
+ #else
+ 
+@@ -128,7 +128,7 @@ static inline int omap_mux_init_gpio(int gpio, int val)
+ {
+ 	return 0;
+ }
+-static inline int omap_mux_init_signal(char *muxname, int val)
++static inline int omap_mux_init_signal(const char *muxname, int val)
+ {
+ 	return 0;
+ }
 -- 
-1.6.3.3
+1.7.1
 
