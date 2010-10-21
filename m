@@ -1,173 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932073Ab0JUVHB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Oct 2010 17:07:01 -0400
-Received: from smtp-outbound-2.vmware.com ([65.115.85.73]:52063 "EHLO
-	smtp-outbound-2.vmware.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751220Ab0JUVG7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Oct 2010 17:06:59 -0400
-Subject: [PATCH] x86, Fix native_machine_shutdown for kexec case.
-From: Alok Kataria <akataria@vmware.com>
-Reply-To: akataria@vmware.com
-To: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>
-Cc: Vivek Goyal <vgoyal@redhat.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
-        Haren Myneni <hbabu@us.ibm.com>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Daniel Hecht <dhecht@vmware.com>,
-        "jeremy@xensource.com" <jeremy@xensource.com>
-Content-Type: text/plain
-Organization: VMware INC.
+	id S1758134Ab0JUVHJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Oct 2010 17:07:09 -0400
+Received: from claw.goop.org ([74.207.240.146]:58485 "EHLO claw.goop.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750712Ab0JUVHI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Oct 2010 17:07:08 -0400
+Message-ID: <4CC0AB73.8060609@goop.org>
 Date: Thu, 21 Oct 2010 14:06:59 -0700
-Message-Id: <1287695219.27008.27.camel@ank32.eng.vmware.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.12.3 (2.12.3-8.el5_2.3) 
+From: Jeremy Fitzhardinge <jeremy@goop.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc13 Lightning/1.0b3pre Thunderbird/3.1.4
+MIME-Version: 1.0
+To: "H. Peter Anvin" <hpa@zytor.com>
+CC: the arch/x86 maintainers <x86@kernel.org>,
+        "Xen-devel@lists.xensource.com" <Xen-devel@lists.xensource.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Ian Campbell <Ian.Campbell@citrix.com>,
+        Jan Beulich <JBeulich@novell.com>
+Subject: Re: [PATCH] x86: hold mm->page_table_lock while doing vmalloc_sync
+References: <4CB76E8B.2090309@goop.org>
+In-Reply-To: <4CB76E8B.2090309@goop.org>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fixes a bug in the kexec case, when the AP's fail to process
-the reboot IPI in the 1sec timeout and the BP starts with starting the
-new kernel.
-This problem was originally reported and discussed over here.
-http://lkml.org/lkml/2010/10/8/422
+ Ping?  Have you had any thoughts about possible x86-64 problems with this?
 
--- 
+Thanks,
+    J
 
-x86 smp_ops now has a new op, stop_other_cpus which takes a parameter "wait"
-this allows the caller to specify if it wants to stop until all the cpus
-have processed the stop IPI. This is required specifically for the kexec case
-where we should wait for all the cpus to be stopped before starting the new
-kernel.
-We now wait for the cpus to stop in all cases except for panic where we expect
-things to be broken and we are doing our best to make things work anyway.
-
-Signed-off-by: Alok N Kataria <akataria@vmware.com>
-Cc: Eric W. Biederman <ebiederm@xmission.com>
-Cc: Jeremy Fitzhardinge <jeremy@xensource.com>
-
-Index: linux-x86-tree.git/arch/x86/include/asm/smp.h
-===================================================================
---- linux-x86-tree.git.orig/arch/x86/include/asm/smp.h	2010-10-21 13:53:25.000000000 -0700
-+++ linux-x86-tree.git/arch/x86/include/asm/smp.h	2010-10-21 13:55:18.000000000 -0700
-@@ -50,7 +50,7 @@ struct smp_ops {
- 	void (*smp_prepare_cpus)(unsigned max_cpus);
- 	void (*smp_cpus_done)(unsigned max_cpus);
- 
--	void (*smp_send_stop)(void);
-+	void (*stop_other_cpus)(int wait);
- 	void (*smp_send_reschedule)(int cpu);
- 
- 	int (*cpu_up)(unsigned cpu);
-@@ -73,7 +73,12 @@ extern struct smp_ops smp_ops;
- 
- static inline void smp_send_stop(void)
- {
--	smp_ops.smp_send_stop();
-+	smp_ops.stop_other_cpus(0);
-+}
-+
-+static inline void stop_other_cpus(void)
-+{
-+	smp_ops.stop_other_cpus(1);
- }
- 
- static inline void smp_prepare_boot_cpu(void)
-Index: linux-x86-tree.git/arch/x86/kernel/reboot.c
-===================================================================
---- linux-x86-tree.git.orig/arch/x86/kernel/reboot.c	2010-10-21 13:55:08.000000000 -0700
-+++ linux-x86-tree.git/arch/x86/kernel/reboot.c	2010-10-21 13:55:18.000000000 -0700
-@@ -635,7 +635,7 @@ void native_machine_shutdown(void)
- 	/* O.K Now that I'm on the appropriate processor,
- 	 * stop all of the others.
- 	 */
--	smp_send_stop();
-+	stop_other_cpus();
- #endif
- 
- 	lapic_shutdown();
-Index: linux-x86-tree.git/arch/x86/kernel/smp.c
-===================================================================
---- linux-x86-tree.git.orig/arch/x86/kernel/smp.c	2010-10-21 13:53:25.000000000 -0700
-+++ linux-x86-tree.git/arch/x86/kernel/smp.c	2010-10-21 13:55:18.000000000 -0700
-@@ -159,10 +159,10 @@ asmlinkage void smp_reboot_interrupt(voi
- 	irq_exit();
- }
- 
--static void native_smp_send_stop(void)
-+static void native_stop_other_cpus(int wait)
- {
- 	unsigned long flags;
--	unsigned long wait;
-+	unsigned long timeout;
- 
- 	if (reboot_force)
- 		return;
-@@ -179,9 +179,12 @@ static void native_smp_send_stop(void)
- 	if (num_online_cpus() > 1) {
- 		apic->send_IPI_allbutself(REBOOT_VECTOR);
- 
--		/* Don't wait longer than a second */
--		wait = USEC_PER_SEC;
--		while (num_online_cpus() > 1 && wait--)
-+		/*
-+		 * Don't wait longer than a second if the caller
-+		 * didn't ask us to wait.
-+		 */
-+		timeout = USEC_PER_SEC;
-+		while (num_online_cpus() > 1 && (wait || timeout--))
- 			udelay(1);
- 	}
- 
-@@ -227,7 +230,7 @@ struct smp_ops smp_ops = {
- 	.smp_prepare_cpus	= native_smp_prepare_cpus,
- 	.smp_cpus_done		= native_smp_cpus_done,
- 
--	.smp_send_stop		= native_smp_send_stop,
-+	.stop_other_cpus	= native_stop_other_cpus,
- 	.smp_send_reschedule	= native_smp_send_reschedule,
- 
- 	.cpu_up			= native_cpu_up,
-Index: linux-x86-tree.git/arch/x86/xen/enlighten.c
-===================================================================
---- linux-x86-tree.git.orig/arch/x86/xen/enlighten.c	2010-10-21 13:53:25.000000000 -0700
-+++ linux-x86-tree.git/arch/x86/xen/enlighten.c	2010-10-21 13:55:18.000000000 -0700
-@@ -1019,7 +1019,7 @@ static void xen_reboot(int reason)
- 	struct sched_shutdown r = { .reason = reason };
- 
- #ifdef CONFIG_SMP
--	smp_send_stop();
-+	stop_other_cpus();
- #endif
- 
- 	if (HYPERVISOR_sched_op(SCHEDOP_shutdown, &r))
-Index: linux-x86-tree.git/arch/x86/xen/smp.c
-===================================================================
---- linux-x86-tree.git.orig/arch/x86/xen/smp.c	2010-10-21 13:53:25.000000000 -0700
-+++ linux-x86-tree.git/arch/x86/xen/smp.c	2010-10-21 13:55:18.000000000 -0700
-@@ -400,9 +400,9 @@ static void stop_self(void *v)
- 	BUG();
- }
- 
--static void xen_smp_send_stop(void)
-+static void xen_stop_other_cpus(int wait)
- {
--	smp_call_function(stop_self, NULL, 0);
-+	smp_call_function(stop_self, NULL, wait);
- }
- 
- static void xen_smp_send_reschedule(int cpu)
-@@ -470,7 +470,7 @@ static const struct smp_ops xen_smp_ops 
- 	.cpu_disable = xen_cpu_disable,
- 	.play_dead = xen_play_dead,
- 
--	.smp_send_stop = xen_smp_send_stop,
-+	.stop_other_cpus = xen_stop_other_cpus,
- 	.smp_send_reschedule = xen_smp_send_reschedule,
- 
- 	.send_call_func_ipi = xen_smp_send_call_function_ipi,
-
+On 10/14/2010 01:56 PM, Jeremy Fitzhardinge wrote:
+>
+> Take mm->page_table_lock while syncing the vmalloc region.  This prevents
+> a race with the Xen pagetable pin/unpin code, which expects that the
+> page_table_lock is already held.  If this race occurs, then Xen can see
+> an inconsistent page type (a page can either be read/write or a pagetable
+> page, and pin/unpin converts it between them), which will cause either
+> the pin or the set_p[gm]d to fail; either will crash the kernel.
+>
+> vmalloc_sync_all() should be called rarely, so this extra use of
+> page_table_lock should not interfere with its normal users.
+>
+> The mm pointer is stashed in the pgd page's index field, as that won't
+> be otherwise used for pgd pages.
+>
+> Bug reported by Ian Campbell <ian.cambell@eu.citrix.com>
+> Derived from a patch by Jan Beulich <jbeulich@novell.com>
+>
+> Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+>
+> diff --git a/arch/x86/include/asm/pgtable.h b/arch/x86/include/asm/pgtable.h
+> index a34c785..422b363 100644
+> --- a/arch/x86/include/asm/pgtable.h
+> +++ b/arch/x86/include/asm/pgtable.h
+> @@ -28,6 +28,8 @@ extern unsigned long empty_zero_page[PAGE_SIZE / sizeof(unsigned long)];
+>  extern spinlock_t pgd_lock;
+>  extern struct list_head pgd_list;
+>  
+> +extern struct mm_struct *pgd_page_get_mm(struct page *page);
+> +
+>  #ifdef CONFIG_PARAVIRT
+>  #include <asm/paravirt.h>
+>  #else  /* !CONFIG_PARAVIRT */
+> diff --git a/arch/x86/mm/fault.c b/arch/x86/mm/fault.c
+> index 4c4508e..b7f9ae1 100644
+> --- a/arch/x86/mm/fault.c
+> +++ b/arch/x86/mm/fault.c
+> @@ -229,7 +229,16 @@ void vmalloc_sync_all(void)
+>  
+>  		spin_lock_irqsave(&pgd_lock, flags);
+>  		list_for_each_entry(page, &pgd_list, lru) {
+> -			if (!vmalloc_sync_one(page_address(page), address))
+> +			spinlock_t *pgt_lock;
+> +			int ret;
+> +
+> +			pgt_lock = &pgd_page_get_mm(page)->page_table_lock;
+> +
+> +			spin_lock(pgt_lock);
+> +			ret = vmalloc_sync_one(page_address(page), address);
+> +			spin_unlock(pgt_lock);
+> +
+> +			if (!ret)
+>  				break;
+>  		}
+>  		spin_unlock_irqrestore(&pgd_lock, flags);
+> @@ -341,11 +350,19 @@ void vmalloc_sync_all(void)
+>  		spin_lock_irqsave(&pgd_lock, flags);
+>  		list_for_each_entry(page, &pgd_list, lru) {
+>  			pgd_t *pgd;
+> +			spinlock_t *pgt_lock;
+> +
+>  			pgd = (pgd_t *)page_address(page) + pgd_index(address);
+> +
+> +			pgt_lock = &pgd_page_get_mm(page)->page_table_lock;
+> +			spin_lock(pgt_lock);
+> +
+>  			if (pgd_none(*pgd))
+>  				set_pgd(pgd, *pgd_ref);
+>  			else
+>  				BUG_ON(pgd_page_vaddr(*pgd) != pgd_page_vaddr(*pgd_ref));
+> +
+> +			spin_unlock(pgt_lock);
+>  		}
+>  		spin_unlock_irqrestore(&pgd_lock, flags);
+>  	}
+> diff --git a/arch/x86/mm/pgtable.c b/arch/x86/mm/pgtable.c
+> index 5c4ee42..c70e57d 100644
+> --- a/arch/x86/mm/pgtable.c
+> +++ b/arch/x86/mm/pgtable.c
+> @@ -87,7 +87,19 @@ static inline void pgd_list_del(pgd_t *pgd)
+>  #define UNSHARED_PTRS_PER_PGD				\
+>  	(SHARED_KERNEL_PMD ? KERNEL_PGD_BOUNDARY : PTRS_PER_PGD)
+>  
+> -static void pgd_ctor(pgd_t *pgd)
+> +
+> +static void pgd_set_mm(pgd_t *pgd, struct mm_struct *mm)
+> +{
+> +	BUILD_BUG_ON(sizeof(virt_to_page(pgd)->index) < sizeof(mm));
+> +	virt_to_page(pgd)->index = (pgoff_t)mm;
+> +}
+> +
+> +struct mm_struct *pgd_page_get_mm(struct page *page)
+> +{
+> +	return (struct mm_struct *)page->index;
+> +}
+> +
+> +static void pgd_ctor(struct mm_struct *mm, pgd_t *pgd)
+>  {
+>  	/* If the pgd points to a shared pagetable level (either the
+>  	   ptes in non-PAE, or shared PMD in PAE), then just copy the
+> @@ -105,8 +117,10 @@ static void pgd_ctor(pgd_t *pgd)
+>  	}
+>  
+>  	/* list required to sync kernel mapping updates */
+> -	if (!SHARED_KERNEL_PMD)
+> +	if (!SHARED_KERNEL_PMD) {
+> +		pgd_set_mm(pgd, mm);
+>  		pgd_list_add(pgd);
+> +	}
+>  }
+>  
+>  static void pgd_dtor(pgd_t *pgd)
+> @@ -272,7 +286,7 @@ pgd_t *pgd_alloc(struct mm_struct *mm)
+>  	 */
+>  	spin_lock_irqsave(&pgd_lock, flags);
+>  
+> -	pgd_ctor(pgd);
+> +	pgd_ctor(mm, pgd);
+>  	pgd_prepopulate_pmd(mm, pgd, pmds);
+>  
+>  	spin_unlock_irqrestore(&pgd_lock, flags);
+>
+>
 
