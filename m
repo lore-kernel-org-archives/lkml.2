@@ -1,84 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756637Ab0JUSNs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Oct 2010 14:13:48 -0400
-Received: from mga01.intel.com ([192.55.52.88]:24486 "EHLO mga01.intel.com"
+	id S1756695Ab0JUSOn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Oct 2010 14:14:43 -0400
+Received: from THUNK.ORG ([69.25.196.29]:49531 "EHLO thunker.thunk.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753982Ab0JUSNr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Oct 2010 14:13:47 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.58,218,1286175600"; 
-   d="scan'208";a="619037928"
-From: Seth Heasley <seth.heasley@intel.com>
-Organization: Intel Corporation
-To: linux-kernel@vger.kernel.org, khali@linux-fr.org, i2c@lm-sensors.org,
-        linux-pci@vger.kernel.org, jbarnes@virtuousgeek.org
-Subject: [PATCH 2.6.36-next-20101021] SMBus patch for Intel Patsburg DeviceIDs
-Date: Thu, 21 Oct 2010 11:04:51 -0700
-User-Agent: KMail/1.10.3 (Linux/2.6.27.7-9-default; KDE/4.1.3; x86_64; ; )
-Cc: seth.heasley@intel.com
+	id S1753982Ab0JUSOl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Oct 2010 14:14:41 -0400
+Date: Thu, 21 Oct 2010 14:14:32 -0400
+From: "Ted Ts'o" <tytso@mit.edu>
+To: Boaz Harrosh <bharrosh@panasas.com>
+Cc: Jens Axboe <axboe@kernel.dk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>
+Subject: Re: What am I doing wrong?  submit_bio() suddenly stops working...
+Message-ID: <20101021181432.GE3127@thunk.org>
+Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
+	Boaz Harrosh <bharrosh@panasas.com>, Jens Axboe <axboe@kernel.dk>,
+	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+	"linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>
+References: <E1P8kSE-0001DW-8C@tytso-glaptop>
+ <4CBFE4E2.7050001@kernel.dk>
+ <20101021165525.GB3127@thunk.org>
+ <4CC07B62.9070000@panasas.com>
 MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Message-Id: <201010211104.51630.seth.heasley@intel.com>
+In-Reply-To: <4CC07B62.9070000@panasas.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on thunker.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds support for the Intel Patsburg PCH SMBus Controller.
+On Thu, Oct 21, 2010 at 07:41:54PM +0200, Boaz Harrosh wrote:
+> > +#ifdef PDEBUG
+> > +	trace_printk("%s: io submitted io_end %p\n", 
+> > +		     io->io_end->inode->i_sb->s_id, io->io_end);
+> > +#endif
+> > +	submit_bio(io->io_op, io->io_bio);
+> > +	ASSERT(!bio_flagged(bio, BIO_EOPNOTSUPP));
+> > +	bio_put(io->io_bio);
+> 
+> The extra get/put is only done for the duration of the ASSERT above, right?
+> I'd put a comment. And why don't you just call the _get here just before
+> submit_bio instead of down at io_submit_init.
 
-Signed-off-by: Seth Heasley <seth.heasley@intel.com>
+The bio layer isn't well documented, so a lot of this was written by
+cargo cult programming.  In this case, I was following what XFS did
+when I originally wrote it.  It's only in the past week when I've been
+diving deep into the source and was able to conclude that yes, it's
+only needed for the ASSERT.
 
---- linux-2.6.35.7/include/linux/pci_ids.h.orig	2010-10-20 16:10:02.000000000 -0700
-+++ linux-2.6.35.7/include/linux/pci_ids.h	2010-10-20 16:09:01.000000000 -0700
-@@ -2423,6 +2423,7 @@
- #define PCI_DEVICE_ID_INTEL_COUGARPOINT_SMBUS	0x1c22
- #define PCI_DEVICE_ID_INTEL_COUGARPOINT_LPC_MIN	0x1c41
- #define PCI_DEVICE_ID_INTEL_COUGARPOINT_LPC_MAX	0x1c5f
-+#define PCI_DEVICE_ID_INTEL_PATSBURG_SMBUS	0x1d22
- #define PCI_DEVICE_ID_INTEL_PATSBURG_LPC	0x1d40
- #define PCI_DEVICE_ID_INTEL_82801AA_0	0x2410
- #define PCI_DEVICE_ID_INTEL_82801AA_1	0x2411
---- linux-2.6.35.7/drivers/i2c/busses/Kconfig.orig	2010-10-20 16:13:38.000000000 -0700
-+++ linux-2.6.35.7/drivers/i2c/busses/Kconfig	2010-10-20 16:10:55.000000000 -0700
-@@ -99,6 +99,7 @@
- 	    ICH10
- 	    5/3400 Series (PCH)
- 	    Cougar Point (PCH)
-+	    Patsburg (PCH)
- 
- 	  This driver can also be built as a module.  If so, the module
- 	  will be called i2c-i801.
---- linux-2.6.35.7/drivers/i2c/busses/i2c-i801.c.orig	2010-10-20 16:12:06.000000000 -0700
-+++ linux-2.6.35.7/drivers/i2c/busses/i2c-i801.c	2010-10-20 16:12:27.000000000 -0700
-@@ -43,6 +43,7 @@
-   ICH10                 0x3a60     32     hard     yes     yes     yes
-   5/3400 Series (PCH)   0x3b30     32     hard     yes     yes     yes
-   Cougar Point (PCH)    0x1c22     32     hard     yes     yes     yes
-+  Patsburg (PCH)        0x1d22     32     hard     yes     yes     yes
- 
-   Features supported by this driver:
-   Software PEC                     no
-@@ -592,6 +593,7 @@
- 	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_ICH10_5) },
- 	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_5_3400_SERIES_SMBUS) },
- 	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_COUGARPOINT_SMBUS) },
-+	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_PATSBURG_SMBUS) },
- 	{ 0, }
- };
- 
---- linux-2.6.35.7/Documentation/i2c/busses/i2c-i801.orig	2010-10-20 16:16:01.000000000 -0700
-+++ linux-2.6.35.7/Documentation/i2c/busses/i2c-i801	2010-10-20 16:15:17.000000000 -0700
-@@ -15,8 +15,9 @@
-   * Intel 82801I (ICH9)
-   * Intel EP80579 (Tolapai)
-   * Intel 82801JI (ICH10)
--  * Intel 3400/5 Series (PCH)
-+  * Intel 5/3400 Series (PCH)
-   * Intel Cougar Point (PCH)
-+  * Intel Patsburg (PCH)
-    Datasheets: Publicly available at the Intel website
- 
- Authors: 
+One of the frustrating things about the bio layer is that all of the
+different file systems use very different patterns about how they
+access the bio layer --- which is perhaps caused by the lack of
+documentation.  But I finally did notice that the JFS code dodn't do a
+bio_get() after calling bio_alloc(), and it was only when I did a lot
+of source code tracing that I realized that it strictly speaking the
+ASSERT isn't really even all that necessary, since we're not calling
+using a discard or barrier op, which is the only thing that could
+possibly set the EOPNOTSUPP flag anyway....
+
+> > +	do {
+> > +		bio = bio_alloc(GFP_NOIO, nvecs);
+> > +		nvecs >>= 1;
+> > +	} while (bio == NULL);
+> 
+> This is surly bad. bio_alloc must be allowed to fail
+> (Specially with GFP_NOIO). You should only loop down to
+> 1 and then prepare to return -ENOMEM from this function
+> and handle it properly in callers. (Or schedule and wait
+> like below)
+
+Copied exactly from the XFS code.  I was under the (possibly mistaken)
+assumption that the XFS code was a good place to copy from, since
+everyone sings the praises of XFS.....
+
+I do agree that bio_alloc() should be allowed to fail, although life
+gets really tough deep in the writeback stack to throw a failure all
+the way back out.  This was on my todo list to fix, after I got things
+basically working.
+
+							- Ted
