@@ -1,92 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756397Ab0JUBI7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Oct 2010 21:08:59 -0400
-Received: from home.kolivas.org ([59.167.196.135]:34080 "EHLO home.kolivas.org"
+	id S1756289Ab0JUBOI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Oct 2010 21:14:08 -0400
+Received: from mga11.intel.com ([192.55.52.93]:60099 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752039Ab0JUBI6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Oct 2010 21:08:58 -0400
-From: Con Kolivas <kernel@kolivas.org>
-To: linux-kernel@vger.kernel.org
-Subject: 2.6.36-ck1
-Date: Thu, 21 Oct 2010 12:08:54 +1100
-User-Agent: KMail/1.13.5 (Linux/2.6.36-ck1; KDE/4.4.5; x86_64; ; )
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
+	id S1753461Ab0JUBOH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Oct 2010 21:14:07 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.58,214,1286175600"; 
+   d="scan'208";a="618773185"
+Subject: Re: [PATCH -v3 5/6] x86, NMI, treat unknown NMI as hardware error
+From: Huang Ying <ying.huang@intel.com>
+To: Don Zickus <dzickus@redhat.com>
+Cc: Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Robert Richter <robert.richter@amd.com>,
+        "peterz@infradead.org" <peterz@infradead.org>
+In-Reply-To: <20101020141558.GB19090@redhat.com>
+References: <1286606987-19879-1-git-send-email-ying.huang@intel.com>
+	 <1286606987-19879-5-git-send-email-ying.huang@intel.com>
+	 <20101011212006.GB23882@redhat.com> <1287555157.3026.21.camel@yhuang-dev>
+	 <20101020141558.GB19090@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 21 Oct 2010 09:14:03 +0800
+Message-ID: <1287623643.19320.40.camel@yhuang-dev>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
-Message-Id: <201010211208.54401.kernel@kolivas.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These are patches designed to improve system responsiveness and interactivity 
-with specific emphasis on the desktop, but suitable to any workload.
+On Wed, 2010-10-20 at 22:15 +0800, Don Zickus wrote:
+> On Wed, Oct 20, 2010 at 02:12:37PM +0800, Huang Ying wrote:
+> > Hi, Don,
+> > 
+> > On Tue, 2010-10-12 at 05:20 +0800, Don Zickus wrote:
+> > > > @@ -366,6 +368,15 @@ unknown_nmi_error(unsigned char reason,
+> > > >  	if (notify_die(DIE_NMIUNKNOWN, "nmi", regs, reason, 2, SIGINT) ==
+> > > >  			NOTIFY_STOP)
+> > > >  		return;
+> > > > +	/*
+> > > > +	 * On some platforms, hardware errors may be notified via
+> > > > +	 * unknown NMI
+> > > > +	 */
+> > > > +	if (unknown_nmi_as_hwerr)
+> > > > +		panic(
+> > > > +		"NMI for hardware error without error record: Not continuing\n"
+> > > > +		"Please check BIOS/BMC log for further information.");
+> > > > +
+> > > >  #ifdef CONFIG_MCA
+> > > >  	/*
+> > > >  	 * Might actually be able to figure out what the guilty party
+> > > 
+> > > The only quirk I have left is the above piece, which is basically a
+> > > philosophy difference with Robert and myself.  Where we believe it should
+> > > be on the die_chain and Andi and yourself would like to see it explicitly
+> > > called out.
+> > 
+> > After some more thought, I found this is different from DIE_NMI and
+> > DIE_NMI_IPI case. I think the code added is for general unknown NMI
+> > processing instead of a device driver. What we do is not to add special
+> > processing for some devices, but treat unknown NMI as hardware error
+> > notification in general and use a white list to deal with broken
+> > hardware and stone age machine. Do you agree?
+> > 
+> > If so, it should not be turned into a notifier block unless you want to
+> > turn all general unknown NMI processing code into a notifier block.
+> 
+> Well, yes I actually do, mainly to keep the code simpler.  But also, after
+> having a conversation with someone yesterday, realized that unknown NMIs
+> are dealt with on a platform level and not a chipset level.
+
+But there is some general rules for unknown NMI. We think unknown NMI is
+hardware error notification on all systems except systems with broken
+hardware or software bugs, stone age machines. Do you agree with that?
+
+> The reason I say that is some companies, like HP, have a special driver
+> hpwdt that they want to run in the case of an unknown NMI.  They don't
+> care about HEST or the other stuff, they want their BIOS call to take care
+> of it.  So now that hack has to be put into notifier somewhere.
+
+Yes. I found that during NMI handler development. It sits in a notifier
+chain and in a driver. hpwdt uses unknown NMI for watchdog timeout
+notification, it is a platform feature and should be implemented in a
+driver. But we want to implement a general default unknown NMI
+processing logic, not do that for some specific platform or chipset.
+
+> I can only imagine Dell trying to do something similar as a value add.
+> 
+> To me it just makes sense to setup all the HEST stuff as default notifier
+> blocks and then have platform specific drivers register on top of them
+> (using the priority scheme).  This to me gives everyone flexibility on how
+> to handle the unknown NMIs.
+
+Yes. HEST code will be in a driver and will register a notifier block to
+do its work.
+
+> Thoughts?
+
+But the code in this patch is not for HEST. (HEST is only used to
+implement the white list). I think the code is for a general standard
+feature. I don't want to add HEST processing here.
+
+Do you think it should be a general rule to treat all unknown NMI as
+hardware error notification except some broken hardware and stone age
+machines?
+
+If so, this patch add that general logic to the general NMI handling
+code. It is not for specific hardware. The HEST and PCI ID table are
+used to implement a white list to deal with the broken hardware and
+stone age machines.
+
+Best Regards,
+Huang Ying
 
 
-Apply to 2.6.36:
-http://www.kernel.org/pub/linux/kernel/people/ck/patches/2.6/2.6.36/2.6.36-ck1/patch-2.6.36-ck1.bz2
-
-Broken out tarball:
-http://www.kernel.org/pub/linux/kernel/people/ck/patches/2.6/2.6.36/2.6.36-ck1/2.6.36-ck1-broken-out.tar.bz2
-
-Discrete patches:
-http://www.kernel.org/pub/linux/kernel/people/ck/patches/2.6/2.6.36/2.6.36-ck1/patches/
-
-All -ck patches:
-http://www.kernel.org/pub/linux/kernel/people/ck/patches/
-
-
-Web:
-http://kernel.kolivas.org
-
-Code blog when I feel like it:
-http://ck-hack.blogspot.com/
-
-Each discrete patch contains a brief description of what it does at the top of 
-the patch itself.
-
-
-The most significant change is an updated BFS cpu scheduler to BFS 357 (Magnum).
-It should pretty much behave like the older one, but is tighter with respect
-to keeping to its deadlines, and will continue to behave fairly when load is
-more than 8 * number of CPUs.
-
-The other addition is to decrease the default dirty_ratio.
-
-The rest is a resync only since 2.6.35-ck1.
-
-
-Patch series:
-2.6.36-sched-bfs-357.patch
-sched-add-above-background-load-function.patch
-mm-make_swappiness_really_mean_it.patch
-mm-zero_swappiness.patch
-mm-enable_swaptoken_only_when_swap_full.patch
-mm-drop_swap_cache_aggressively.patch
-mm-kswapd_inherit_prio-1.patch
-mm-background_scan.patch
-mm-idleprio_prio-1.patch
-mm-lru_cache_add_lru_tail.patch
-mm-decrease_default_dirty_ratio.patch
-kconfig-expose_vmsplit_option.patch
-hz-default_1000.patch
-hz-no_default_250.patch
-hz-raise_max.patch
-preempt-desktop-tune.patch
-cpufreq-bfs_tweaks.patch
-ck1-version.patch
-
-
-Those following the development of the patches for interactivity at massive
-load, I have COMPLETELY DROPPED them as they introduce regressions at normal
-workloads, and I cannot under any circumstances approve changes to improve
-behaviour at ridiculous workloads which affect regular ones. I still see
-precisely zero point at optimising for absurd workloads. Proving how many
-un-niced jobs you can throw at your kernel compiles is not a measure of one's
-prowess. It is just a mindless test. 
-
-
-Enjoy!
--- 
--ck
