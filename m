@@ -1,65 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755573Ab0JUJD7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Oct 2010 05:03:59 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:58995 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755405Ab0JUJD5 (ORCPT
+	id S1755658Ab0JUJEc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Oct 2010 05:04:32 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:65180 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755490Ab0JUJE3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Oct 2010 05:03:57 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: "Ohad Ben-Cohen" <ohad@wizery.com>
-Subject: Re: [PATCH 1/3] drivers: misc: add omap_hwspinlock driver
-Date: Thu, 21 Oct 2010 11:04:28 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.35-16-generic; KDE/4.3.2; x86_64; ; )
-Cc: linux-arm-kernel@lists.infradead.org, Hari Kanigeri <h-kanigeri2@ti.com>,
-        Suman Anna <s-anna@ti.com>, Benoit Cousson <b-cousson@ti.com>,
-        Tony Lindgren <tony@atomide.com>, Greg KH <greg@kroah.com>,
-        linux-kernel@vger.kernel.org, Grant Likely <grant.likely@secretlab.ca>,
-        akpm@linux-foundation.org, linux-omap@vger.kernel.org,
-        "Krishnamoorthy, Balaji T" <balajitk@ti.com>
-References: <1287387875-14168-1-git-send-email-ohad@wizery.com> <201010192308.02018.arnd@arndb.de> <AANLkTikz-_qhjygzek4tR0CtDLih3ZQyy1mPKnXAiOiV@mail.gmail.com>
-In-Reply-To: <AANLkTikz-_qhjygzek4tR0CtDLih3ZQyy1mPKnXAiOiV@mail.gmail.com>
+	Thu, 21 Oct 2010 05:04:29 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=Vg2c3tpWykTZaVqINRNOiMyq4qvO6X4X8tisCM7ccjNnBv7Xh+kBkyOArNW8CBFeih
+         o494XEWFpPLJIBUApYuBWyvAi4kEwy2wsZ88XQWR1rIBijHUl9MYNfZuO4kyrK71zil4
+         yuBvphb4ssYJikoWfqS/ab40lCVR5XBxvgiJs=
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201010211104.28555.arnd@arndb.de>
-X-Provags-ID: V02:K0:qF/h02VlW12xwsZkNeXrX7nMZQYGGF4vE7lnWDizxyn
- 5dMrYMZ/amjheBKrF7lUVeYKTl1qW2XOUJYJTrZ17TgeBH+2G0
- jWGPPkSJI6svUEkR3563Dp0AvhwWMnUz0YJ5Mlyh2o/vN4ahtJ
- bqnG9mWOfEywt39O6yg9k0namF5xL6yl+2dC+pgBqYVYcm10y1
- S1tdpozS3e/sIXnAFBEDg==
+In-Reply-To: <20101020175420.GC3431@legolas.emea.dhcp.ti.com>
+References: <4CBD9FD5.506@nokia.com>
+	<AANLkTinRRyrXzqEu=u+CCYkmSNGm03SSo1tVG=5_wdpo@mail.gmail.com>
+	<4CBE9E69.6060803@nokia.com>
+	<AANLkTinOYDBMVZ3ibG3Md7jdOuOC6NkGWaugvHwT6uqF@mail.gmail.com>
+	<4CBEB312.7060400@nokia.com>
+	<AANLkTikom=eRFqCJmYE+k1zn5K2MR9s8HhNXtjOvUqvr@mail.gmail.com>
+	<20101020125407.GE2433@legolas.emea.dhcp.ti.com>
+	<AANLkTi=+6bC=JALdCDKW_BS-jnNk3zFPuWuBT+aY=Utx@mail.gmail.com>
+	<20101020151527.GF2883@legolas.emea.dhcp.ti.com>
+	<AANLkTim-QeP0hfSVGUd-tHWso9HQv25TwapBBZ1KPD3=@mail.gmail.com>
+	<20101020175420.GC3431@legolas.emea.dhcp.ti.com>
+Date: Thu, 21 Oct 2010 12:04:27 +0300
+Message-ID: <AANLkTin31dmD5OfR3-nvZSg82i3H=_xgH_isJc+Epttq@mail.gmail.com>
+Subject: Re: [PATCH v2 3/3] drivers: cleanup Kconfig stuff
+From: Felipe Contreras <felipe.contreras@gmail.com>
+To: balbi@ti.com
+Cc: Roger Quadros <roger.quadros@nokia.com>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        linux-omap <linux-omap@vger.kernel.org>,
+        linux-main <linux-kernel@vger.kernel.org>, Greg KH <greg@kroah.com>,
+        Tony Lindgren <tony@atomide.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 21 October 2010, Ohad Ben-Cohen wrote:
-> This sounds like adding a set of API that resembles spin_{unlock,lock}_irq.
-> 
-> My gut feeling here is that while this may be useful and simple at
-> certain places, it is somewhat error prone; a driver which would
-> erroneously use this at the wrong place will end up enabling
-> interrupts where it really shouldn't.
-> 
-> Don't you feel that proving a simple spin_lock_irqsave-like API is
-> actually safer and less error prone ?
-> 
-> I guess that is one of the reasons why spin_lock_irqsave is much more
-> popular than spin_lock_irq - people just know it will never screw up.
+On Wed, Oct 20, 2010 at 8:54 PM, Felipe Balbi <balbi@ti.com> wrote:
+> On Wed, Oct 20, 2010 at 11:22:17AM -0500, Felipe Contreras wrote:
+>>
+>> Users would not need to care... if they enable USB and USB_GADGET, it
+>> will be selected automatically for OMAP3, which is what users would
+>> expect.
+>
+> wouldn't a user expect USB to be enabled if the board _has_ a USB
+> connector ?
 
-People can screw that up in different ways, e.g.
+Not if it's not going to be used.
 
-	spin_lock_irqsave(&lock_a, flags);
-	spin_lock_irqsave(&lock_b, flags); /* overwrites flags */
+>> I was talking more about developers.
+>>
+>> How should the help be fixed?
+>> "Select y if you are using an OMAP3 system that has TWL4030"
+>
+> If you have the TWL4030 family of PMIC chips and want to use USB, you
+> probably need this. If unsure, say Y.
 
-	spin_lock_irqrestore(&lock_b, flags);
-	spin_lock_irqrestore(&lock_a, flags); /* still disabled! */
+If you see TWL4030_USB, it's because you have enabled USB_SUPPORT, so
+you want to use USB. And that help still doesn't say anything to most
+people.
 
-I use the presence of spin_lock_irqsave in driver code as an indication
-of whether the author had any clue about locking. Most experienced
-coders use the right version intuitively, while beginners often just
-use _irqsave because they didn't understand the API and they were told
-that using this is safe.
+>> 1) Do you think all the OMAP3 boards should add that?
+>
+> why not ?
 
-	Arnd
+You prefer a patch that adds one line per board rather than a patch
+that adds one line in total... That is exactly the opposite of Linus's
+complaint regarding big ARM changesets.
+
+>> 2) What if you don't want to use USB?
+>
+> what if you don't want to use USB and we use your choice of:
+>
+> default y if ARCH_OMAP3 ??
+>
+> what's the big difference ? The default will be "USB enabled" and if you
+> don't want, just drop it. The thing is that in most cases we want to
+> support what is wired on the board.
+
+For "most cases" there is 'default'.
+
+> RX51 has a USB micro-B connector, so
+> by default we want USB peripheral enabled and host disabled. If a user
+> (or developer for that matter) wants to play with the unsupported host
+> mode on RX51, he will enable that part by himself and pray for it to
+> work. If, on the other hand, a camera developer doesn't need USB at all
+> and decides to save a few bytes on the binary, he will make sure to
+> disable it.
+
+Your patch would not allow such camera developer to disable USB
+through the kernel configuration.
+
+> The thing is that there's no way to make everybody happy, so we stick to
+> what the board is wired to do.
+
+I don't understand, currently TWL4030_USB is not selected in any way,
+you are saying it should always be enabled (which I disagree with),
+but that's not currently happening. If anything, my patch is changing
+things to go into the direction you want, not the opposite.
+
+My patch shuffles _one_ line that:
+1) Allows clueless OMAP3 users to have TWL4030_USB enabled by default
+_if_ they enable USB and USB_GADGET regardless of which board is being
+used
+2) Still allow people to build kernels without USB, nor TWL4030_USB
+3) Simplify defconfgs by removing one line
+4) Don't need extra changes in the board configurations
+5) Doesn't increase the total lines in Kconfigs
+
+Compared to the current situation 1) would actually change things into
+the direction you advocated to: TWL4030_USB is enabled by default.
+
+-- 
+Felipe Contreras
