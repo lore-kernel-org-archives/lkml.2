@@ -1,61 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755524Ab0JUULe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Oct 2010 16:11:34 -0400
-Received: from www.tglx.de ([62.245.132.106]:57636 "EHLO www.tglx.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751403Ab0JUULd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Oct 2010 16:11:33 -0400
-Date: Thu, 21 Oct 2010 21:56:31 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Steven Rostedt <rostedt@goodmis.org>
-cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Koki Sanagi <sanagi.koki@jp.fujitsu.com>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Frederic Weisbecker <fweisbec@gmail.com>, nhorman@tuxdriver.com,
-        scott.a.mcmillan@intel.com, laijs@cn.fujitsu.com,
-        "H. Peter Anvin" <hpa@zytor.com>, LKML <linux-kernel@vger.kernel.org>,
-        eric.dumazet@gmail.com, kaneshige.kenji@jp.fujitsu.com,
-        David Miller <davem@davemloft.net>, izumi.taku@jp.fujitsu.com,
-        kosaki.motohiro@jp.fujitsu.com,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        "Luck, Tony" <tony.luck@intel.com>
-Subject: Re: [PATCH] tracing: Cleanup the convoluted softirq tracepoints
-In-Reply-To: <1287680725.16971.586.camel@gandalf.stny.rr.com>
-Message-ID: <alpine.LFD.2.00.1010212149480.3467@localhost6.localdomain6>
-References: <tip-2bf2160d8805de64308e2e7c3cd97813cb58ed2f@git.kernel.org>  <20100908112529.GA25931@elte.hu> <1287395077.29097.1543.camel@twins>  <1287398936.29097.1548.camel@twins> <4CBD79CF.2060706@jp.fujitsu.com>  <alpine.LFD.2.00.1010191428560.6815@localhost6.localdomain6>
-  <20101019132236.GA19197@Krystal>  <alpine.LFD.2.00.1010191524160.6815@localhost6.localdomain6>  <1287496495.16971.372.camel@gandalf.stny.rr.com>  <alpine.LFD.2.00.1010191558250.6815@localhost6.localdomain6>  <20101019142820.GA14520@Krystal> 
- <alpine.LFD.2.00.1010191842270.6815@localhost6.localdomain6>  <1287521757.16971.397.camel@gandalf.stny.rr.com>  <alpine.LFD.2.00.1010192302000.6815@localhost6.localdomain6>  <1287523439.16971.433.camel@gandalf.stny.rr.com>  <alpine.LFD.2.00.1010192359480.6815@localhost6.localdomain6>
-  <1287527634.16971.536.camel@gandalf.stny.rr.com>  <alpine.LFD.2.00.1010211817540.2418@localhost6.localdomain6> <1287680725.16971.586.camel@gandalf.stny.rr.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1755915Ab0JUUQ4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Oct 2010 16:16:56 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:57562 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755179Ab0JUUQz convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Oct 2010 16:16:55 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <20101021132159.GA3284@elte.hu>
+References: <20101021132159.GA3284@elte.hu>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Thu, 21 Oct 2010 13:16:10 -0700
+Message-ID: <AANLkTimLCHhh1TmfpOeju6RcxbCMreh7yQKTZvFj87aF@mail.gmail.com>
+Subject: Re: [GIT PULL] x86/asm changes for v2.6.37
+To: Ingo Molnar <mingo@elte.hu>
+Cc: linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 21 Oct 2010, Steven Rostedt wrote:
+On Thu, Oct 21, 2010 at 6:21 AM, Ingo Molnar <mingo@elte.hu> wrote:
+>
+> Jan Beulich (1):
+>      i386: Make kernel_execve() suitable for stack unwinding
+>
+>        long __res;
+> -       asm volatile ("push %%ebx ; movl %2,%%ebx ; int $0x80 ; pop %%ebx"
+> +       asm volatile ("int $0x80"
+>        : "=a" (__res)
+> -       : "0" (__NR_execve), "ri" (filename), "c" (argv), "d" (envp) : "memory");
+> +       : "0" (__NR_execve), "b" (filename), "c" (argv), "d" (envp) : "memory");
+>        return __res;
+>  }
 
-> On Thu, 2010-10-21 at 18:18 +0200, Thomas Gleixner wrote:
-> > 
-> > On Tue, 19 Oct 2010, Steven Rostedt wrote:
-> > 
-> > > On Wed, 2010-10-20 at 00:04 +0200, Thomas Gleixner wrote:
-> > > 
-> > > > hpa just posted code which does the _RIGHT_ _THING_ independent of any
-> > > > compiler madness and you tracer folks just missed it.
-> > > 
-> > > Thomas,
-> > > 
-> > > Can you try this patch and see if it makes the object code better?
-> > 
-> > Nope, same result.
-> 
-> Yeah, I figured. Do you have CC_OPTIMIZE_FOR_SIZE set? And if you do,
-> what happens if you disable it?
+I pulled this, but there's a reason we used to do it that way - gcc
+has had bugs with inline asm changing %ebx due to some bad interaction
+with using it as the GOT base register for position-independent code
+or something.
 
-Hmm. Indeed. That gets rid of the double jump.
+So I hope those are all solved, and I guess we use -fPIC only for some
+early boot code. But in case this is ever used in some environment
+that is PIC (the vsyscall page?) we need to worry about gcc
+interactions.
 
-Thanks,
-
-	tglx
+                   Linus
