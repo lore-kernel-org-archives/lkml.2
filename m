@@ -1,126 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758571Ab0JUVvZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Oct 2010 17:51:25 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:41977 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752898Ab0JUVvY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Oct 2010 17:51:24 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [GIT PULL] Power management updates for 2.6.37
-Date: Thu, 21 Oct 2010 23:50:15 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.36-rjw+; KDE/4.4.4; x86_64; ; )
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        "Linux-pm mailing list" <linux-pm@lists.linux-foundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="utf-8"
+	id S932619Ab0JUWCz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Oct 2010 18:02:55 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:40212 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932571Ab0JUWCx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Oct 2010 18:02:53 -0400
+Date: Thu, 21 Oct 2010 15:02:50 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Mike Frysinger <vapier@gentoo.org>
+Cc: Luca Barbieri <luca@luca-barbieri.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] lib/atomic64_test: do not build on non-atomic64 systems
+Message-Id: <20101021150250.f6499506.akpm@linux-foundation.org>
+In-Reply-To: <1287250035-30404-1-git-send-email-vapier@gentoo.org>
+References: <1287250035-30404-1-git-send-email-vapier@gentoo.org>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Message-Id: <201010212350.15409.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Sat, 16 Oct 2010 13:27:15 -0400
+Mike Frysinger <vapier@gentoo.org> wrote:
 
-Please pull power management updates for 2.6.37 from:
+> If the arch doesn't provide atomic64 functionality (there are quite a
+> few), then don't bother trying to build this test.
+> 
 
-git://git.kernel.org/pub/scm/linux/kernel/git/rafael/suspend-2.6.git for-linus
+I don't get it.  If the arch doesn't implement atomic64 then this file
+will get zillions of build errors, won't it?
 
-They include:
+> diff --git a/lib/atomic64_test.c b/lib/atomic64_test.c
+> index 250ed11..0ac1a66 100644
+> --- a/lib/atomic64_test.c
+> +++ b/lib/atomic64_test.c
+> @@ -12,6 +12,8 @@
+>  #include <linux/kernel.h>
+>  #include <asm/atomic.h>
+>  
+> +#ifdef ATOMIC64_INIT
 
- * Runtime PM framework updates from Alan Stern and me.  The autosuspend
-   feature is now available at the core level to drivers wanting to use it.
+hm, that's a bit lazy.  It should really use a CONFIG_HAVE_ thing.  What
+a pita.
 
- * Hibernate image compression from Bojan Smojver.
-
- * Operating Performance Points framework from Nishanth Menon.
-
- * Hibernate improvements and fixes.
-
- * sysfs attribute for checking pm_trace device matches from James Hogan.
-
- * Extension of the wakeup events code for collecting wakeup sources
-   statistics.
-
-
- Documentation/ABI/testing/sysfs-devices-power |   88 +++
- Documentation/ABI/testing/sysfs-power         |   29 +
- Documentation/kernel-parameters.txt           |    5 +
- Documentation/power/00-INDEX                  |    2 +
- Documentation/power/interface.txt             |    2 +-
- Documentation/power/opp.txt                   |  375 ++++++++++
- Documentation/power/runtime_pm.txt            |  227 ++++++-
- Documentation/power/s2ram.txt                 |    7 +
- Documentation/power/swsusp.txt                |    3 +-
- drivers/base/power/Makefile                   |    1 +
- drivers/base/power/generic_ops.c              |    4 +-
- drivers/base/power/main.c                     |   21 +-
- drivers/base/power/opp.c                      |  628 ++++++++++++++++
- drivers/base/power/power.h                    |    2 +
- drivers/base/power/runtime.c                  |  944 +++++++++++++------------
- drivers/base/power/sysfs.c                    |  217 ++++++-
- drivers/base/power/trace.c                    |   36 +-
- drivers/base/power/wakeup.c                   |  613 ++++++++++++++--
- fs/sysfs/group.c                              |   59 ++
- include/linux/opp.h                           |  105 +++
- include/linux/pm.h                            |   38 +-
- include/linux/pm_runtime.h                    |  121 +++-
- include/linux/pm_wakeup.h                     |  127 +++-
- include/linux/resume-trace.h                  |    2 +
- include/linux/suspend.h                       |    6 +-
- include/linux/sysfs.h                         |   15 +
- kernel/power/Kconfig                          |   17 +
- kernel/power/hibernate.c                      |   25 +-
- kernel/power/main.c                           |   29 +-
- kernel/power/power.h                          |   10 +-
- kernel/power/process.c                        |   11 +-
- kernel/power/snapshot.c                       |   13 +-
- kernel/power/swap.c                           |  300 ++++++++-
- 33 files changed, 3447 insertions(+), 635 deletions(-)
-
----------------
-
-Alan Stern (7):
-      sysfs: Add sysfs_merge_group() and sysfs_unmerge_group()
-      PM / Runtime: Move code in drivers/base/power/runtime.c
-      PM / Runtime: Replace boolean arguments with bitflags
-      PM / Runtime: Merge synchronous and async runtime routines
-      PM / Runtime: Combine runtime PM entry points
-      PM / Runtime: Add no_callbacks flag
-      PM / Runtime: Implement autosuspend support
-
-Bojan Smojver (1):
-      PM / Hibernate: Compress hibernation image with LZO
-
-James Hogan (2):
-      PM: Lock PM device list mutex in show_dev_hash()
-      PM: Add sysfs attr for rechecking dev hash from PM trace
-
-Kevin Cernekee (1):
-      PM: Fix signed/unsigned warning in dpm_show_time()
-
-Ming Lei (1):
-      PM: runtime: add missed pm_request_autosuspend
-
-Nishanth Menon (1):
-      PM: Introduce library for device-specific OPPs (v7)
-
-Ohad Ben-Cohen (1):
-      PM / Runtime: Lenient generic runtime pm callbacks
-
-Rafael J. Wysocki (12):
-      PM: Fix unmet dependency warning from kconfig
-      PM / Runtime: Use alloc_workqueue() for creating the PM workqueue
-      PM / Hibernate: Improve comments in hibernate_preallocate_memory()
-      PM / Hibernate: Make default image size depend on total RAM size
-      PM / Wakeup: Introduce wakeup source objects and event statistics (v3)
-      PM: Fix potential issue with failing asynchronous suspend
-      PM / Hibernate: Make some boot messages look less scary
-      PM: Allow wakeup events to abort freezing of tasks
-      PM / Runtime: Reduce code duplication in core helper functions
-      PM / Hibernate: Modify signature used to mark swap
-      PM / Runtime: Remove idle notification after failing suspend
-      PM / Wakeup: Show wakeup sources statistics in debugfs
-
+>  #define INIT(c) do { atomic64_set(&v, c); r = c; } while (0)
+>  static __init int test_atomic64(void)
+>  {
+> @@ -164,3 +166,5 @@ static __init int test_atomic64(void)
+>  }
+>  
+>  core_initcall(test_atomic64);
+> +
+> +#endif
+> -- 
+> 1.7.3.1
