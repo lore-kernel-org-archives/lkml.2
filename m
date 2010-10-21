@@ -1,69 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756359Ab0JUJ4t (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Oct 2010 05:56:49 -0400
-Received: from [120.204.251.227] ([120.204.251.227]:52567 "EHLO
-	LC-SHMAIL-01.SHANGHAI.LEADCORETECH.COM" rhost-flags-FAIL-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756233Ab0JUJ4s (ORCPT
+	id S1751615Ab0JUKAz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Oct 2010 06:00:55 -0400
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:49910 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750875Ab0JUKAy convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Oct 2010 05:56:48 -0400
-Subject: Re: Ftrace: can trace kthread?
-From: "Figo.zhang" <zhangtianfei@leadcoretech.com>
-To: Yong Zhang <yong.zhang0@gmail.com>
-Cc: Li Zefan <lizf@cn.fujitsu.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Steven Rostedt <srostedt@redhat.com>
-In-Reply-To: <AANLkTinkMrsRQ8tdCrTj57SA_qHYrg+-qCqZpyQZ-FMr@mail.gmail.com>
-References: <1287647732.2237.7.camel@myhost>
-	 <AANLkTim7g+8_rQSyewC6n_5WmC04kU-rj1g9k61=O2Vm@mail.gmail.com>
-	 <1287649283.2237.8.camel@myhost>
-	 <AANLkTikzSZNtTGfOcP-87u+pMZyW8WrdxwV52ZV3f=nX@mail.gmail.com>
-	 <1287650668.2237.12.camel@myhost>
-	 <AANLkTi=D_a_BH-HW9mqwLim+DjxARWzT8mxP_dah5iLY@mail.gmail.com>
-	 <1287651542.2237.17.camel@myhost>
-	 <AANLkTinkMrsRQ8tdCrTj57SA_qHYrg+-qCqZpyQZ-FMr@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 21 Oct 2010 17:52:45 +0800
-Message-ID: <1287654765.2237.18.camel@myhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.0 
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 21 Oct 2010 09:56:47.0052 (UTC) FILETIME=[462148C0:01CB7106]
+	Thu, 21 Oct 2010 06:00:54 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=IH9CwV9TsL76UxoLrTTnitU7x8T5w3+AAzmeKPVlK5V1uZHVVigCFzpgvk4ySkvHTN
+         cV0nv6cuSSvms9+0pWppb1R0yQGusjAQ0GdmtOxvGADZD7Vyh0N0OoghmFJsgEwLemGF
+         L8dSsl66wHQ0mHfnJVVuSCLS0MG+wymjG+O+k=
+MIME-Version: 1.0
+In-Reply-To: <AANLkTikjByC1_BQvPv=Stkdph1cV=a8CwcqrcBv6u0+p@mail.gmail.com>
+References: <AANLkTim+vj_OAd22TdThuC-HSqUiDjguOHQWjyqFaq6N@mail.gmail.com>
+	<AANLkTi=Cpq2_vV2RGcoQhrqk8xpL59AvLFPzfvTBk5Xa@mail.gmail.com>
+	<4CBF8BDB.7090907@gmail.com>
+	<20101021075401.GC22100@n2100.arm.linux.org.uk>
+	<AANLkTikjByC1_BQvPv=Stkdph1cV=a8CwcqrcBv6u0+p@mail.gmail.com>
+Date: Thu, 21 Oct 2010 12:00:53 +0200
+Message-ID: <AANLkTik=27zjJacQTQhd6E4rGuERg19rAd5cgnLTDEoR@mail.gmail.com>
+Subject: Re: [RFC] Removal of dead code from arch/arm/*
+From: Zimny Lech <napohybelskurwysynom2010@gmail.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Eric Miao <eric.y.miao@gmail.com>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+2010/10/21 Zimny Lech <napohybelskurwysynom2010@gmail.com>:
+> I tried to cross compile allyesconfig to test my changes and I hit this
+>  CC      drivers/gpio/janz-ttl.o
+> drivers/gpio/janz-ttl.c: In function ‘ttl_set_value’:
+> drivers/gpio/janz-ttl.c:107: error: implicit declaration of function
+> ‘iowrite16be’
 
-> >
-> > [root@myhost tracing]# ps -ax | grep flush
-> > Warning: bad ps syntax, perhaps a bogus '-'? See http://procps.sf.net/faq.html
-> >  1205 ?        S      0:01 [flush-8:0]
-> > 11852 pts/1    S+     0:00 grep flush
-> > [root@myhost tracing]#
-> >
-> > so my flusher pid is 1205, i do it as below:
-> >
-> > [root@myhost tracing]# echo 0 > tracing_enabled
-> > [root@myhost tracing]# echo function > current_tracer
-> > [root@myhost tracing]# echo 1205 > set_ftrace_pid
-> > [root@myhost tracing]# echo 1 > tracing_enabled
-> >
-> > wait ... and open some pdf files, let system eat huge memory...
-> >
-> > [root@myhost tracing]# echo 0 > tracing_enabled
-> > [root@myhost tracing]# cat trace
-> > # tracer: function
-> > #
-> > #           TASK-PID    CPU#    TIMESTAMP  FUNCTION
-> > #              | |       |          |         |
-> >
-> >
-> > but i canot trace nothing.
-> 
-> Is tracing_on enable(1) on your system?
-> I enable it on my system by default, so I didn't show it in the previous mail.
-> 
+Another build error not caused by my patch AFAICS
 
-tracing_on is sure on, my kernel is 2.6.36-rc8, what is your kernel
-version?
+  CC      drivers/input/touchscreen/eeti_ts.o
+drivers/input/touchscreen/eeti_ts.c: In function ‘eeti_ts_irq_active’:
+drivers/input/touchscreen/eeti_ts.c:65: error: implicit declaration of
+function ‘irq_to_gpio’
 
+
+-- 
+Slawa!
+N.P.S.
+
+Les fleurs du mal unfold
+Comme les fleurs du mal
+Dark demons of my soul
+Un amour fatal
