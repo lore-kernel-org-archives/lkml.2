@@ -1,266 +1,282 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757200Ab0JUOuw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Oct 2010 10:50:52 -0400
-Received: from va3ehsobe006.messaging.microsoft.com ([216.32.180.16]:7432 "EHLO
-	VA3EHSOBE009.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756382Ab0JUOuu (ORCPT
+	id S1756142Ab0JUOxF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Oct 2010 10:53:05 -0400
+Received: from mailhost.informatik.uni-hamburg.de ([134.100.9.70]:33225 "EHLO
+	mailhost.informatik.uni-hamburg.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753073Ab0JUOxD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Oct 2010 10:50:50 -0400
-X-SpamScore: 1
-X-BigFish: VPS1(zzzz1202hzz8275bhz32i2a8h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:ausb3extmailp01.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0LANAK5-02-7ED-02
-X-M-MSG: 
-From: Hans Rosenfeld <hans.rosenfeld@amd.com>
-To: <hpa@zytor.com>, <mingo@elte.hu>, <tglx@linutronix.de>,
-        <brgerst@gmail.com>
-CC: <linux-kernel@vger.kernel.org>, <robert.richter@amd.com>,
-        <andreas.herrmann3@amd.com>, Hans Rosenfeld <hans.rosenfeld@amd.com>
-Subject: [PATCH 1/1] Cleanup xsave/xrstor support.
-Date: Thu, 21 Oct 2010 16:50:27 +0200
-Message-ID: <1287672627-275685-2-git-send-email-hans.rosenfeld@amd.com>
-X-Mailer: git-send-email 1.5.6.5
-In-Reply-To: <1287672627-275685-1-git-send-email-hans.rosenfeld@amd.com>
-References: <1287672627-275685-1-git-send-email-hans.rosenfeld@amd.com>
-Organization: Advanced Micro Devices GmbH, Einsteinring 24, 85609 Dornach b. Muenchen; Geschaeftsfuehrer: Andrew Bowd, Alberto Bozzo; Sitz: Dornach, Gemeinde Aschheim, Landkreis Muenchen; Registergericht Muenchen, HRB Nr. 43632
+	Thu, 21 Oct 2010 10:53:03 -0400
+Message-ID: <4CC053B5.3090904@metafoo.de>
+Date: Thu, 21 Oct 2010 16:52:37 +0200
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla-Thunderbird 2.0.0.24 (X11/20100329)
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: amd.com
+To: Anton Vorontsov <cbouatmailru@gmail.com>
+CC: rklein@nvidia.com, broonie@opensource.wolfsonmicro.com, achew@nvidia.com,
+        olof@lixom.net, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] POWER: Add gpio chager driver
+References: <4CC02FF9.3050804@metafoo.de> <1287663957-30099-1-git-send-email-lars@metafoo.de> <20101021141407.GA26602@oksana.dev.rtsoft.ru>
+In-Reply-To: <20101021141407.GA26602@oksana.dev.rtsoft.ru>
+X-Enigmail-Version: 0.95.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Removed the functions fpu_fxrstor_checking() and restore_fpu_checking()
-because they weren't doing anything. Removed redundant xsave/xrstor
-implementations. Since xsave/xrstor is not specific to the FPU, and also
-for consistency, all xsave/xrstor functions now take a xsave_struct
-argument.
+Anton Vorontsov wrote:
+> On Thu, Oct 21, 2010 at 02:25:57PM +0200, Lars-Peter Clausen wrote:
+>> This patch adds a simple driver for chargers indicating their online status
+>> through a GPIO pin.
+>>
+>> Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
+> 
+> I agree, the GPIO name fits better. Rhyland, are you OK with that
+> driver, does it fit your needs?
+> 
+> Some comments down below.
+> 
+> [...]
+>> +struct gpio_charger {
+>> +	const struct gpio_charger_platform_data *pdata;
+>> +	int irq;
+> 
+> This can be unsigned.
 
-Signed-off-by: Hans Rosenfeld <hans.rosenfeld@amd.com>
----
- arch/x86/include/asm/i387.h  |   20 +++-------
- arch/x86/include/asm/xsave.h |   81 +++++++++++++++---------------------------
- arch/x86/kernel/traps.c      |    2 +-
- arch/x86/kernel/xsave.c      |    4 +-
- 4 files changed, 38 insertions(+), 69 deletions(-)
+If the gpio has no irq or the irq could not be requested the irq fields value is
+negative.
 
-diff --git a/arch/x86/include/asm/i387.h b/arch/x86/include/asm/i387.h
-index 70626ed..de8593b 100644
---- a/arch/x86/include/asm/i387.h
-+++ b/arch/x86/include/asm/i387.h
-@@ -199,12 +199,14 @@ static inline void fpu_fxsave(struct fpu *fpu)
- static inline void fpu_save_init(struct fpu *fpu)
- {
- 	if (use_xsave()) {
--		fpu_xsave(fpu);
-+		struct xsave_struct *xstate = &fpu->state->xsave;
-+
-+		fpu_xsave(xstate);
- 
- 		/*
- 		 * xsave header may indicate the init state of the FP.
- 		 */
--		if (!(fpu->state->xsave.xsave_hdr.xstate_bv & XSTATE_FP))
-+		if (!(xstate->xsave_hdr.xstate_bv & XSTATE_FP))
- 			return;
- 	} else if (use_fxsr()) {
- 		fpu_fxsave(fpu);
-@@ -234,22 +236,12 @@ static inline void __save_init_fpu(struct task_struct *tsk)
- 	task_thread_info(tsk)->status &= ~TS_USEDFPU;
- }
- 
--static inline int fpu_fxrstor_checking(struct fpu *fpu)
--{
--	return fxrstor_checking(&fpu->state->fxsave);
--}
--
- static inline int fpu_restore_checking(struct fpu *fpu)
- {
- 	if (use_xsave())
--		return fpu_xrstor_checking(fpu);
-+		return xrstor_checking(&fpu->state->xsave, -1);
- 	else
--		return fpu_fxrstor_checking(fpu);
--}
--
--static inline int restore_fpu_checking(struct task_struct *tsk)
--{
--	return fpu_restore_checking(&tsk->thread.fpu);
-+		return fxrstor_checking(&fpu->state->fxsave);
- }
- 
- /*
-diff --git a/arch/x86/include/asm/xsave.h b/arch/x86/include/asm/xsave.h
-index c6ce245..8bcbbce 100644
---- a/arch/x86/include/asm/xsave.h
-+++ b/arch/x86/include/asm/xsave.h
-@@ -42,10 +42,11 @@ extern int check_for_xstate(struct i387_fxsave_struct __user *buf,
- 			    void __user *fpstate,
- 			    struct _fpx_sw_bytes *sw);
- 
--static inline int fpu_xrstor_checking(struct fpu *fpu)
-+static inline int xrstor_checking(struct xsave_struct *fx, u64 mask)
- {
--	struct xsave_struct *fx = &fpu->state->xsave;
- 	int err;
-+	u32 lmask = mask;
-+	u32 hmask = mask >> 32;
- 
- 	asm volatile("1: .byte " REX_PREFIX "0x0f,0xae,0x2f\n\t"
- 		     "2:\n"
-@@ -55,13 +56,23 @@ static inline int fpu_xrstor_checking(struct fpu *fpu)
- 		     ".previous\n"
- 		     _ASM_EXTABLE(1b, 3b)
- 		     : [err] "=r" (err)
--		     : "D" (fx), "m" (*fx), "a" (-1), "d" (-1), "0" (0)
-+		     : "D" (fx), "m" (*fx), "a" (lmask), "d" (hmask), "0" (0)
- 		     : "memory");
- 
- 	return err;
- }
- 
--static inline int xsave_user(struct xsave_struct __user *buf)
-+static inline void xrstor_state(struct xsave_struct *fx, u64 mask)
-+{
-+	u32 lmask = mask;
-+	u32 hmask = mask >> 32;
-+
-+	asm volatile(".byte " REX_PREFIX "0x0f,0xae,0x2f\n\t"
-+		     : : "D" (fx), "m" (*fx), "a" (lmask), "d" (hmask)
-+		     :   "memory");
-+}
-+
-+static inline int xsave_checking(struct xsave_struct __user *buf)
- {
- 	int err;
- 
-@@ -74,58 +85,24 @@ static inline int xsave_user(struct xsave_struct __user *buf)
- 	if (unlikely(err))
- 		return -EFAULT;
- 
--	__asm__ __volatile__("1: .byte " REX_PREFIX "0x0f,0xae,0x27\n"
--			     "2:\n"
--			     ".section .fixup,\"ax\"\n"
--			     "3:  movl $-1,%[err]\n"
--			     "    jmp  2b\n"
--			     ".previous\n"
--			     ".section __ex_table,\"a\"\n"
--			     _ASM_ALIGN "\n"
--			     _ASM_PTR "1b,3b\n"
--			     ".previous"
--			     : [err] "=r" (err)
--			     : "D" (buf), "a" (-1), "d" (-1), "0" (0)
--			     : "memory");
-+	asm volatile("1: .byte " REX_PREFIX "0x0f,0xae,0x27\n"
-+		     "2:\n"
-+		     ".section .fixup,\"ax\"\n"
-+		     "3:  movl $-1,%[err]\n"
-+		     "    jmp  2b\n"
-+		     ".previous\n"
-+		     _ASM_EXTABLE(1b,3b)
-+		     : [err] "=r" (err)
-+		     : "D" (buf), "a" (-1), "d" (-1), "0" (0)
-+		     : "memory");
-+
- 	if (unlikely(err) && __clear_user(buf, xstate_size))
- 		err = -EFAULT;
--	/* No need to clear here because the caller clears USED_MATH */
--	return err;
--}
--
--static inline int xrestore_user(struct xsave_struct __user *buf, u64 mask)
--{
--	int err;
--	struct xsave_struct *xstate = ((__force struct xsave_struct *)buf);
--	u32 lmask = mask;
--	u32 hmask = mask >> 32;
- 
--	__asm__ __volatile__("1: .byte " REX_PREFIX "0x0f,0xae,0x2f\n"
--			     "2:\n"
--			     ".section .fixup,\"ax\"\n"
--			     "3:  movl $-1,%[err]\n"
--			     "    jmp  2b\n"
--			     ".previous\n"
--			     ".section __ex_table,\"a\"\n"
--			     _ASM_ALIGN "\n"
--			     _ASM_PTR "1b,3b\n"
--			     ".previous"
--			     : [err] "=r" (err)
--			     : "D" (xstate), "a" (lmask), "d" (hmask), "0" (0)
--			     : "memory");	/* memory required? */
-+	/* No need to clear here because the caller clears USED_MATH */
- 	return err;
- }
- 
--static inline void xrstor_state(struct xsave_struct *fx, u64 mask)
--{
--	u32 lmask = mask;
--	u32 hmask = mask >> 32;
--
--	asm volatile(".byte " REX_PREFIX "0x0f,0xae,0x2f\n\t"
--		     : : "D" (fx), "m" (*fx), "a" (lmask), "d" (hmask)
--		     :   "memory");
--}
--
- static inline void xsave_state(struct xsave_struct *fx, u64 mask)
- {
- 	u32 lmask = mask;
-@@ -136,7 +113,7 @@ static inline void xsave_state(struct xsave_struct *fx, u64 mask)
- 		     :   "memory");
- }
- 
--static inline void fpu_xsave(struct fpu *fpu)
-+static inline void fpu_xsave(struct xsave_struct *fx)
- {
- 	/* This, however, we can work around by forcing the compiler to select
- 	   an addressing mode that doesn't require extended registers. */
-@@ -144,7 +121,7 @@ static inline void fpu_xsave(struct fpu *fpu)
- 		".byte " REX_PREFIX "0x0f,0xae,0x27",
- 		".byte " REX_PREFIX "0x0f,0xae,0x37",
- 		X86_FEATURE_XSAVEOPT,
--		[fx] "D" (&fpu->state->xsave), "a" (-1), "d" (-1) :
-+		[fx] "D" (fx), "a" (-1), "d" (-1) :
- 		"memory");
- }
- #endif
-diff --git a/arch/x86/kernel/traps.c b/arch/x86/kernel/traps.c
-index cb838ca..966793d 100644
---- a/arch/x86/kernel/traps.c
-+++ b/arch/x86/kernel/traps.c
-@@ -731,7 +731,7 @@ void __math_state_restore(void)
- 	/*
- 	 * Paranoid restore. send a SIGSEGV if we fail to restore the state.
- 	 */
--	if (unlikely(restore_fpu_checking(tsk))) {
-+	if (unlikely(fpu_restore_checking(&tsk->thread.fpu))) {
- 		stts();
- 		force_sig(SIGSEGV, tsk);
- 		return;
-diff --git a/arch/x86/kernel/xsave.c b/arch/x86/kernel/xsave.c
-index 9c253bd..5eb15d4 100644
---- a/arch/x86/kernel/xsave.c
-+++ b/arch/x86/kernel/xsave.c
-@@ -170,7 +170,7 @@ int save_i387_xstate(void __user *buf)
- 
- 	if (task_thread_info(tsk)->status & TS_USEDFPU) {
- 		if (use_xsave())
--			err = xsave_user(buf);
-+			err = xsave_checking(buf);
- 		else
- 			err = fxsave_user(buf);
- 
-@@ -247,7 +247,7 @@ static int restore_user_xstate(void __user *buf)
- 	/*
- 	 * restore the state passed by the user.
- 	 */
--	err = xrestore_user(buf, mask);
-+	err = xrstor_checking((__force struct xsave_struct *)buf, mask);
- 	if (err)
- 		return err;
- 
--- 
-1.5.6.5
+> 
+>> +
+>> +	struct power_supply charger;
+>> +};
+>> +
+>> +static irqreturn_t gpio_charger_irq(int irq, void *devid)
+>> +{
+>> +	struct power_supply *charger = devid;
+> 
+> Please add an empty line here.
+> 
+>> +	power_supply_changed(charger);
+>> +
+>> +	return IRQ_HANDLED;
+>> +}
+>> +
+>> +static inline struct gpio_charger *psy_to_gpio_charger(struct power_supply *psy)
+>> +{
+>> +	return container_of(psy, struct gpio_charger, charger);
+>> +}
+>> +
+>> +static int gpio_charger_get_property(struct power_supply *psy,
+>> +	enum power_supply_property psp, union power_supply_propval *val)
+> 
+> One more tab for here?
+> 
+I prefer one tab, but I can change it.
 
+>> +{
+>> +	struct gpio_charger *gpio_charger = psy_to_gpio_charger(psy);
+>> +	const struct gpio_charger_platform_data *pdata = gpio_charger->pdata;
+>> +
+>> +	switch (psp) {
+>> +	case POWER_SUPPLY_PROP_ONLINE:
+>> +		val->intval = gpio_get_value(pdata->gpio);
+>> +		val->intval ^= pdata->gpio_active_low;
+>> +		break;
+>> +	default:
+>> +		return -EINVAL;
+>> +	}
+>> +
+>> +	return 0;
+>> +}
+>> +
+>> +static enum power_supply_property gpio_charger_properties[] = {
+>> +	POWER_SUPPLY_PROP_ONLINE,
+>> +};
+>> +
+>> +static int __devinit gpio_charger_probe(struct platform_device *pdev)
+>> +{
+>> +	const struct gpio_charger_platform_data *pdata = pdev->dev.platform_data;
+>> +	struct gpio_charger *gpio_charger;
+>> +	struct power_supply *charger;
+>> +	int ret;
+>> +
+>> +	if (!pdata) {
+>> +		dev_err(&pdev->dev, "No platform data");
+>> +		return -EINVAL;
+>> +	}
+>> +
+>> +	if (!gpio_is_valid(pdata->gpio)) {
+>> +		dev_err(&pdev->dev, "Invalid gpio pin\n");
+>> +		return -EINVAL;
+>> +	}
+>> +
+>> +	gpio_charger = kzalloc(sizeof(*gpio_charger), GFP_KERNEL);
+>> +
+>> +	charger = &gpio_charger->charger;
+>> +
+>> +	charger->name = pdata->name;
+>> +	charger->type = pdata->type;
+>> +	charger->properties = gpio_charger_properties;
+>> +	charger->num_properties = ARRAY_SIZE(gpio_charger_properties);
+>> +	charger->get_property  = gpio_charger_get_property;
+>> +	charger->supplied_to = pdata->supplied_to;
+>> +	charger->num_supplicants = pdata->num_supplicants;
+>> +
+>> +	ret = gpio_request(pdata->gpio, dev_name(&pdev->dev));
+>> +	if (ret) {
+>> +		dev_err(&pdev->dev, "Failed to request gpio pin: %d\n", ret);
+>> +		goto err_free;
+>> +	}
+>> +	ret = gpio_direction_input(pdata->gpio);
+>> +	if (ret) {
+>> +		dev_err(&pdev->dev, "Failed to set gpio to input: %d\n", ret);
+>> +		goto err_gpio_free;
+>> +	}
+>> +
+>> +	gpio_charger->irq = gpio_to_irq(pdata->gpio);
+>> +	if (gpio_charger->irq >= 0) {
+> 
+> 0 isn't valid IRQ number. The check should be just 'if (gpio_charger->irq)'.
 
+While it is unlikely to be used for an gpio IRQ, as far as I know 0 is a valid IRQ
+number.
+
+> 
+>> +		ret = request_irq(gpio_charger->irq, gpio_charger_irq,
+>> +				IRQF_TRIGGER_RISING | IRQF_TRIGGER_FALLING,
+>> +				dev_name(&pdev->dev), charger);
+>> +		if (ret) {
+>> +			dev_warn(&pdev->dev, "Failed to request gpio irq: %d\n", ret);
+>> +			gpio_charger->irq = -1;
+>> +		}
+>> +	}
+>> +
+>> +	gpio_charger->pdata = pdata;
+>> +
+>> +	ret = power_supply_register(&pdev->dev, charger);
+>> +	if (ret < 0) {
+>> +		dev_err(&pdev->dev, "Failed to register power supply: %d\n", ret);
+>> +		goto err_irq_free;
+>> +	}
+>> +
+>> +	platform_set_drvdata(pdev, gpio_charger);
+>> +
+>> +	return 0;
+>> +
+>> +err_irq_free:
+>> +	if (gpio_charger->irq >= 0)
+>> +		free_irq(gpio_charger->irq, charger);
+>> +err_gpio_free:
+>> +	gpio_free(pdata->gpio);
+>> +err_free:
+>> +	kfree(gpio_charger);
+>> +	return ret;
+>> +}
+>> +
+>> +static int __devexit gpio_charger_remove(struct platform_device *pdev)
+>> +{
+>> +	struct gpio_charger *gpio_charger = platform_get_drvdata(pdev);
+>> +	const struct gpio_charger_platform_data *pdata = gpio_charger->pdata;
+>> +
+>> +	power_supply_unregister(&gpio_charger->charger);
+>> +
+>> +	if (gpio_charger->irq >= 0)
+>> +		free_irq(gpio_charger->irq, &gpio_charger->charger);
+>> +	gpio_free(pdata->gpio);
+>> +
+>> +	platform_set_drvdata(pdev, NULL);
+>> +	kfree(gpio_charger);
+>> +
+>> +	return 0;
+>> +}
+>> +
+>> +static struct platform_driver  gpio_charger_driver = {
+>> +	.probe = gpio_charger_probe,
+>> +	.remove = __devexit_p(gpio_charger_remove),
+>> +	.driver = {
+>> +		.name = "gpio-charger",
+>> +		.owner = THIS_MODULE,
+>> +	},
+>> +};
+>> +
+>> +static int __init gpio_charger_init(void)
+>> +{
+>> +	return platform_driver_register(&gpio_charger_driver);
+>> +}
+>> +module_init(gpio_charger_init);
+>> +
+>> +static void __exit gpio_charger_exit(void)
+>> +{
+>> +	platform_driver_unregister(&gpio_charger_driver);
+>> +}
+>> +module_exit(gpio_charger_exit);
+>> +
+>> +MODULE_AUTHOR("Lars-Peter Clausen <lars@metafoo.de>");
+>> +MODULE_DESCRIPTION("Driver for chargers which report their online status through a GPIO");
+>> +MODULE_LICENSE("GPL");
+>> +MODULE_ALIAS("platform:gpio-charger");
+>> diff --git a/include/linux/power/gpio-charger.h b/include/linux/power/gpio-charger.h
+>> new file mode 100644
+>> index 0000000..404d5e6
+>> --- /dev/null
+>> +++ b/include/linux/power/gpio-charger.h
+>> @@ -0,0 +1,39 @@
+>> +/*
+>> + *  Copyright (C) 2010, Lars-Peter Clausen <lars@metafoo.de>
+>> + *
+>> + *  This program is free software; you can redistribute	 it and/or modify it
+>> + *  under  the terms of	 the GNU General  Public License as published by the
+>> + *  Free Software Foundation;  either version 2 of the	License, or (at your
+>> + *  option) any later version.
+>> + *
+>> + *  You should have received a copy of the  GNU General Public License along
+>> + *  with this program; if not, write  to the Free Software Foundation, Inc.,
+>> + *  675 Mass Ave, Cambridge, MA 02139, USA.
+>> + *
+>> + */
+>> +
+>> +#ifndef __LINUX_POWER_GPIO_CHARGER_H__
+>> +#define __LINUX_POWER_GPIO_CHARGER_H__
+>> +
+>> +/*
+> 
+> Should be /**
+> 
+>> + * struct gpio_charger_platform_data - platform_data for gpio_charger devices
+>> + * @name:		Name for the chargers power_supply device
+>> + * @type:		Type of the charger
+>> + * @gpio:		GPIO which is used to indicate the chargers status
+>> + * @gpio_active_low:	Should be set to 1 if the GPIO is active low otherwise 0
+>> + * @supplied_to:	Array of battery names to which this chargers supplies power
+>> + * @num_supplicants:	Number of entries in the supplied_to array
+>> + */
+>> +
+> 
+> No need for this empty line.
+> 
+>> +struct gpio_charger_platform_data {
+>> +	const char *name;
+>> +	enum power_supply_type type;
+> 
+> #include <linux/power_supply.h> is needed for this.
+> 
+>> +
+>> +	int gpio;
+>> +	int gpio_active_low;
+>> +
+>> +	char **supplied_to;
+>> +	size_t num_supplicants;
+> 
+> And #include <linux/types.h> for this.
+> 
+>> +};
+>> +
+>> +#endif
+> 
+> Thanks!
+> 
+
+Thanks,
+- Lars
