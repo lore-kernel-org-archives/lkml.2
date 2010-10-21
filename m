@@ -1,62 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753505Ab0JUKHP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Oct 2010 06:07:15 -0400
-Received: from ipmail05.adl6.internode.on.net ([150.101.137.143]:36063 "EHLO
-	ipmail05.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751307Ab0JUKHN (ORCPT
+	id S1753803Ab0JUKIe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Oct 2010 06:08:34 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:53598 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752884Ab0JUKId (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Oct 2010 06:07:13 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AuwEAP+rv0x5LdoFgWdsb2JhbAChVBYBARYiIr9WhUoE
-Date: Thu, 21 Oct 2010 21:07:06 +1100
-From: Nick Piggin <npiggin@kernel.dk>
-To: Dave Chinner <david@fromorbit.com>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 04/21] fs: Implement lazy LRU updates for inodes
-Message-ID: <20101021100706.GA9797@amd>
-References: <1287622186-1935-1-git-send-email-david@fromorbit.com>
- <1287622186-1935-5-git-send-email-david@fromorbit.com>
+	Thu, 21 Oct 2010 06:08:33 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: "Figo.zhang" <zhangtianfei@leadcoretech.com>
+Subject: Re: Ftrace: can trace kthread?
+Cc: kosaki.motohiro@jp.fujitsu.com, Yong Zhang <yong.zhang0@gmail.com>,
+        Li Zefan <lizf@cn.fujitsu.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Steven Rostedt <srostedt@redhat.com>
+In-Reply-To: <1287654765.2237.18.camel@myhost>
+References: <AANLkTinkMrsRQ8tdCrTj57SA_qHYrg+-qCqZpyQZ-FMr@mail.gmail.com> <1287654765.2237.18.camel@myhost>
+Message-Id: <20101021190831.C8EB.A69D9226@jp.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1287622186-1935-5-git-send-email-david@fromorbit.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8bit
+X-Mailer: Becky! ver. 2.50.07 [ja]
+Date: Thu, 21 Oct 2010 19:08:30 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 21, 2010 at 11:49:29AM +1100, Dave Chinner wrote:
->  		} else {
->  			/*
-> -			 * The inode is clean, unused
-> +			 * The inode is clean. If it is unused, then make sure
-> +			 * that it is put on the LRU correctly as iput_final()
-> +			 * does not move dirty inodes to the LRU and dirty
-> +			 * inodes are removed from the LRU during scanning.
->  			 */
-> -			list_move(&inode->i_list, &inode_unused);
-> +			list_del_init(&inode->i_list);
-> +			if (!atomic_read(&inode->i_count))
-> +				inode_lru_list_add(inode);
+> 
+> > >
+> > > [root@myhost tracing]# ps -ax | grep flush
+> > > Warning: bad ps syntax, perhaps a bogus '-'? See http://procps.sf.net/faq.html
+> > >  1205 ?        S      0:01 [flush-8:0]
+> > > 11852 pts/1    S+     0:00 grep flush
+> > > [root@myhost tracing]#
+> > >
+> > > so my flusher pid is 1205, i do it as below:
+> > >
+> > > [root@myhost tracing]# echo 0 > tracing_enabled
+> > > [root@myhost tracing]# echo function > current_tracer
+> > > [root@myhost tracing]# echo 1205 > set_ftrace_pid
+> > > [root@myhost tracing]# echo 1 > tracing_enabled
+> > >
+> > > wait ... and open some pdf files, let system eat huge memory...
+> > >
+> > > [root@myhost tracing]# echo 0 > tracing_enabled
+> > > [root@myhost tracing]# cat trace
+> > > # tracer: function
+> > > #
+> > > #           TASK-PID    CPU#    TIMESTAMP  FUNCTION
+> > > #              | |       |          |         |
+> > >
+> > >
+> > > but i canot trace nothing.
+> > 
+> > Is tracing_on enable(1) on your system?
+> > I enable it on my system by default, so I didn't show it in the previous mail.
+> > 
+> 
+> tracing_on is sure on, my kernel is 2.6.36-rc8, what is your kernel
+> version?
 
-This "optimisation" is surely wrong. How could we have no reference
-on the inode at this point?
+2.6.36-rc8 + Yong's way works perfectly fine on my x86_64 desktop.
+
+thanks.
 
 
-> -static int can_unuse(struct inode *inode)
-> -{
-> -	if (inode->i_state)
-> -		return 0;
-> -	if (inode_has_buffers(inode))
-> -		return 0;
-> -	if (atomic_read(&inode->i_count))
-> -		return 0;
-> -	if (inode->i_data.nrpages)
-> -		return 0;
-> -	return 1;
-> -}
-
-Avoiding the reclaim optimisation? As I said, I noticed some increased
-scanning in heavy reclaim from removing this.
 
