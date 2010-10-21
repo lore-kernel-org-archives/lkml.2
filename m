@@ -1,316 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932331Ab0JUPzh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Oct 2010 11:55:37 -0400
-Received: from smtp-out-181.synserver.de ([212.40.180.181]:1093 "HELO
-	smtp-out-181.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751025Ab0JUPzg (ORCPT
+	id S1757616Ab0JUP5W (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Oct 2010 11:57:22 -0400
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:56204 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751446Ab0JUP5V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Oct 2010 11:55:36 -0400
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@laprican.de
-X-SynServer-PPID: 21940
-From: Lars-Peter Clausen <lars@metafoo.de>
-To: rklein@nvidia.com, Anton Vorontsov <cbouatmailru@gmail.com>
-Cc: broonie@opensource.wolfsonmicro.com, achew@nvidia.com, olof@lixom.net,
-        linux-kernel@vger.kernel.org, Lars-Peter Clausen <lars@metafoo.de>
-Subject: [PATCH v2] POWER: Add gpio charger driver
-Date: Thu, 21 Oct 2010 17:55:01 +0200
-Message-Id: <1287676501-23254-1-git-send-email-lars@metafoo.de>
-X-Mailer: git-send-email 1.5.6.5
-In-Reply-To: <1287663957-30099-1-git-send-email-lars@metafoo.de>
-References: <1287663957-30099-1-git-send-email-lars@metafoo.de>
+	Thu, 21 Oct 2010 11:57:21 -0400
+X-Mail-Handler: MailHop Outbound by DynDNS
+X-Originating-IP: 67.188.36.105
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1/5dmms3QtebV0ypzItFO6b
+Date: Thu, 21 Oct 2010 08:57:10 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Felipe Balbi <balbi@ti.com>
+Cc: Roger Quadros <roger.quadros@nokia.com>,
+        ext Felipe Contreras <felipe.contreras@gmail.com>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        linux-omap <linux-omap@vger.kernel.org>,
+        linux-main <linux-kernel@vger.kernel.org>, Greg KH <greg@kroah.com>,
+        David Brownell <dbrownell@users.sourceforge.net>
+Subject: Re: [PATCH v2 3/3] drivers: cleanup Kconfig stuff
+Message-ID: <20101021155710.GB3616@atomide.com>
+References: <4CBD9FD5.506@nokia.com>
+ <AANLkTinRRyrXzqEu=u+CCYkmSNGm03SSo1tVG=5_wdpo@mail.gmail.com>
+ <4CBE9E69.6060803@nokia.com>
+ <AANLkTinOYDBMVZ3ibG3Md7jdOuOC6NkGWaugvHwT6uqF@mail.gmail.com>
+ <4CBEB312.7060400@nokia.com>
+ <AANLkTikom=eRFqCJmYE+k1zn5K2MR9s8HhNXtjOvUqvr@mail.gmail.com>
+ <4CBEE186.8090701@nokia.com>
+ <AANLkTinULxyUg_vHjk9RsQm4Row7vRC9ApzYXt7ZMQJD@mail.gmail.com>
+ <4CC0493F.1000701@nokia.com>
+ <20101021154125.GR3958@legolas.emea.dhcp.ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101021154125.GR3958@legolas.emea.dhcp.ti.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds a simple driver for chargers indicating their online status
-through a GPIO pin.
+* Felipe Balbi <balbi@ti.com> [101021 08:32]:
+> Hi,
+> 
+> On Thu, Oct 21, 2010 at 09:07:59AM -0500, Roger Quadros wrote:
+> >But I'm not sure that omap_udc is used only for OMAP1 architecture.
+> >Dave/Tony should confirm this.
+> 
+> Maybe the old omap2420_h4 board still uses it, but from 2430 I think the
+> ip isn't even there anymore.
 
-Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
+I don't think it's currently working on 2420. But still, the drivers
+should be platform independent. All the drivers that might be possible
+should at least build and not mess up things for other platforms.
 
----
-Changes since v1
-* Fix typo in Kconfig
-* Fix whitespace issues
-* Add missing includes in the header file
-* Make the irq field of the driver struct unsigned and assume that 0 is not a
-  valid irq.
----
- drivers/power/Kconfig              |   10 ++
- drivers/power/Makefile             |    1 +
- drivers/power/gpio-charger.c       |  185 ++++++++++++++++++++++++++++++++++++
- include/linux/power/gpio-charger.h |   41 ++++++++
- 4 files changed, 237 insertions(+), 0 deletions(-)
- create mode 100644 drivers/power/gpio-charger.c
- create mode 100644 include/linux/power/gpio-charger.h
+Regards,
 
-diff --git a/drivers/power/Kconfig b/drivers/power/Kconfig
-index 0734356..6c771f0 100644
---- a/drivers/power/Kconfig
-+++ b/drivers/power/Kconfig
-@@ -166,4 +166,14 @@ config BATTERY_INTEL_MID
- 	  Say Y here to enable the battery driver on Intel MID
- 	  platforms.
- 
-+config CHARGER_GPIO
-+	tristate "GPIO charger"
-+	depends on GPIOLIB
-+	help
-+	  Say Y to include support for chargers which report their online status
-+	  through a GPIO pin.
-+
-+	  This driver can be build as a module. If so, the module will be
-+	  called gpio-charger.
-+
- endif # POWER_SUPPLY
-diff --git a/drivers/power/Makefile b/drivers/power/Makefile
-index 10143aa..2ca71ac 100644
---- a/drivers/power/Makefile
-+++ b/drivers/power/Makefile
-@@ -37,3 +37,4 @@ obj-$(CONFIG_BATTERY_S3C_ADC)	+= s3c_adc_battery.o
- obj-$(CONFIG_CHARGER_PCF50633)	+= pcf50633-charger.o
- obj-$(CONFIG_BATTERY_JZ4740)	+= jz4740-battery.o
- obj-$(CONFIG_BATTERY_INTEL_MID)	+= intel_mid_battery.o
-+obj-$(CONFIG_CHARGER_GPIO)	+= gpio-charger.o
-diff --git a/drivers/power/gpio-charger.c b/drivers/power/gpio-charger.c
-new file mode 100644
-index 0000000..fccbe99
---- /dev/null
-+++ b/drivers/power/gpio-charger.c
-@@ -0,0 +1,185 @@
-+/*
-+ *  Copyright (C) 2010, Lars-Peter Clausen <lars@metafoo.de>
-+ *  Driver for chargers which report their online status through a GPIO pin
-+ *
-+ *  This program is free software; you can redistribute it and/or modify it
-+ *  under  the terms of the GNU General  Public License as published by the
-+ *  Free Software Foundation;  either version 2 of the License, or (at your
-+ *  option) any later version.
-+ *
-+ *  You should have received a copy of the GNU General Public License along
-+ *  with this program; if not, write to the Free Software Foundation, Inc.,
-+ *  675 Mass Ave, Cambridge, MA 02139, USA.
-+ *
-+ */
-+
-+#include <linux/device.h>
-+#include <linux/gpio.h>
-+#include <linux/init.h>
-+#include <linux/interrupt.h>
-+#include <linux/kernel.h>
-+#include <linux/module.h>
-+#include <linux/platform_device.h>
-+#include <linux/power_supply.h>
-+#include <linux/slab.h>
-+
-+#include <linux/power/gpio-charger.h>
-+
-+struct gpio_charger {
-+	const struct gpio_charger_platform_data *pdata;
-+	unsigned int irq;
-+
-+	struct power_supply charger;
-+};
-+
-+static irqreturn_t gpio_charger_irq(int irq, void *devid)
-+{
-+	struct power_supply *charger = devid;
-+
-+	power_supply_changed(charger);
-+
-+	return IRQ_HANDLED;
-+}
-+
-+static inline struct gpio_charger *psy_to_gpio_charger(struct power_supply *psy)
-+{
-+	return container_of(psy, struct gpio_charger, charger);
-+}
-+
-+static int gpio_charger_get_property(struct power_supply *psy,
-+		enum power_supply_property psp, union power_supply_propval *val)
-+{
-+	struct gpio_charger *gpio_charger = psy_to_gpio_charger(psy);
-+	const struct gpio_charger_platform_data *pdata = gpio_charger->pdata;
-+
-+	switch (psp) {
-+	case POWER_SUPPLY_PROP_ONLINE:
-+		val->intval = gpio_get_value(pdata->gpio);
-+		val->intval ^= pdata->gpio_active_low;
-+		break;
-+	default:
-+		return -EINVAL;
-+	}
-+
-+	return 0;
-+}
-+
-+static enum power_supply_property gpio_charger_properties[] = {
-+	POWER_SUPPLY_PROP_ONLINE,
-+};
-+
-+static int __devinit gpio_charger_probe(struct platform_device *pdev)
-+{
-+	const struct gpio_charger_platform_data *pdata = pdev->dev.platform_data;
-+	struct gpio_charger *gpio_charger;
-+	struct power_supply *charger;
-+	int ret;
-+	int irq;
-+
-+	if (!pdata) {
-+		dev_err(&pdev->dev, "No platform data\n");
-+		return -EINVAL;
-+	}
-+
-+	if (!gpio_is_valid(pdata->gpio)) {
-+		dev_err(&pdev->dev, "Invalid gpio pin\n");
-+		return -EINVAL;
-+	}
-+
-+	gpio_charger = kzalloc(sizeof(*gpio_charger), GFP_KERNEL);
-+
-+	charger = &gpio_charger->charger;
-+
-+	charger->name = pdata->name;
-+	charger->type = pdata->type;
-+	charger->properties = gpio_charger_properties;
-+	charger->num_properties = ARRAY_SIZE(gpio_charger_properties);
-+	charger->get_property  = gpio_charger_get_property;
-+	charger->supplied_to = pdata->supplied_to;
-+	charger->num_supplicants = pdata->num_supplicants;
-+
-+	ret = gpio_request(pdata->gpio, dev_name(&pdev->dev));
-+	if (ret) {
-+		dev_err(&pdev->dev, "Failed to request gpio pin: %d\n", ret);
-+		goto err_free;
-+	}
-+	ret = gpio_direction_input(pdata->gpio);
-+	if (ret) {
-+		dev_err(&pdev->dev, "Failed to set gpio to input: %d\n", ret);
-+		goto err_gpio_free;
-+	}
-+
-+	irq = gpio_to_irq(pdata->gpio);
-+	if (irq > 0) {
-+		ret = request_irq(irq, gpio_charger_irq,
-+				IRQF_TRIGGER_RISING | IRQF_TRIGGER_FALLING,
-+				dev_name(&pdev->dev), charger);
-+		if (ret)
-+			dev_warn(&pdev->dev, "Failed to request irq: %d\n", ret);
-+		else
-+			gpio_charger->irq = irq;
-+	}
-+
-+	gpio_charger->pdata = pdata;
-+
-+	ret = power_supply_register(&pdev->dev, charger);
-+	if (ret < 0) {
-+		dev_err(&pdev->dev, "Failed to register power supply: %d\n", ret);
-+		goto err_irq_free;
-+	}
-+
-+	platform_set_drvdata(pdev, gpio_charger);
-+
-+	return 0;
-+
-+err_irq_free:
-+	if (gpio_charger->irq)
-+		free_irq(gpio_charger->irq, charger);
-+err_gpio_free:
-+	gpio_free(pdata->gpio);
-+err_free:
-+	kfree(gpio_charger);
-+	return ret;
-+}
-+
-+static int __devexit gpio_charger_remove(struct platform_device *pdev)
-+{
-+	struct gpio_charger *gpio_charger = platform_get_drvdata(pdev);
-+
-+	power_supply_unregister(&gpio_charger->charger);
-+
-+	if (gpio_charger->irq)
-+		free_irq(gpio_charger->irq, &gpio_charger->charger);
-+	gpio_free(gpio_charger->pdata->gpio);
-+
-+	platform_set_drvdata(pdev, NULL);
-+	kfree(gpio_charger);
-+
-+	return 0;
-+}
-+
-+static struct platform_driver gpio_charger_driver = {
-+	.probe = gpio_charger_probe,
-+	.remove = __devexit_p(gpio_charger_remove),
-+	.driver = {
-+		.name = "gpio-charger",
-+		.owner = THIS_MODULE,
-+	},
-+};
-+
-+static int __init gpio_charger_init(void)
-+{
-+	return platform_driver_register(&gpio_charger_driver);
-+}
-+module_init(gpio_charger_init);
-+
-+static void __exit gpio_charger_exit(void)
-+{
-+	platform_driver_unregister(&gpio_charger_driver);
-+}
-+module_exit(gpio_charger_exit);
-+
-+MODULE_AUTHOR("Lars-Peter Clausen <lars@metafoo.de>");
-+MODULE_DESCRIPTION("Driver for chargers which report their online status through a GPIO");
-+MODULE_LICENSE("GPL");
-+MODULE_ALIAS("platform:gpio-charger");
-diff --git a/include/linux/power/gpio-charger.h b/include/linux/power/gpio-charger.h
-new file mode 100644
-index 0000000..de1dfe0
---- /dev/null
-+++ b/include/linux/power/gpio-charger.h
-@@ -0,0 +1,41 @@
-+/*
-+ *  Copyright (C) 2010, Lars-Peter Clausen <lars@metafoo.de>
-+ *
-+ *  This program is free software; you can redistribute it and/or modify it
-+ *  under  the terms of the GNU General  Public License as published by the
-+ *  Free Software Foundation;  either version 2 of the License, or (at your
-+ *  option) any later version.
-+ *
-+ *  You should have received a copy of the GNU General Public License along
-+ *  with this program; if not, write to the Free Software Foundation, Inc.,
-+ *  675 Mass Ave, Cambridge, MA 02139, USA.
-+ *
-+ */
-+
-+#ifndef __LINUX_POWER_GPIO_CHARGER_H__
-+#define __LINUX_POWER_GPIO_CHARGER_H__
-+
-+#include <linux/power_supply.h>
-+#include <linux/types.h>
-+
-+/**
-+ * struct gpio_charger_platform_data - platform_data for gpio_charger devices
-+ * @name:		Name for the chargers power_supply device
-+ * @type:		Type of the charger
-+ * @gpio:		GPIO which is used to indicate the chargers status
-+ * @gpio_active_low:	Should be set to 1 if the GPIO is active low otherwise 0
-+ * @supplied_to:	Array of battery names to which this chargers supplies power
-+ * @num_supplicants:	Number of entries in the supplied_to array
-+ */
-+struct gpio_charger_platform_data {
-+	const char *name;
-+	enum power_supply_type type;
-+
-+	int gpio;
-+	int gpio_active_low;
-+
-+	char **supplied_to;
-+	size_t num_supplicants;
-+};
-+
-+#endif
--- 
-1.5.6.5
-
+Tony
