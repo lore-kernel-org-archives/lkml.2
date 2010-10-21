@@ -1,69 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757519Ab0JULLU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Oct 2010 07:11:20 -0400
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:37500 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757461Ab0JULLT convert rfc822-to-8bit (ORCPT
+	id S1757504Ab0JULOU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Oct 2010 07:14:20 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:47727 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757078Ab0JULOT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Oct 2010 07:11:19 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=TCivQLQXyWl1zMoaVxmMdqs4TChqh3GR8JsYlCcIWKyIKvDgPwvaaAlF9P5fGLYuJf
-         7kgWpFkQgNULuZ4zdxDLWLnqcnigJPLJ8/otJAekyjX+3+7dZu4ZfzLDIWjybKMapmYU
-         BOp376KbMRjmehvy/KbHXpzKrsg3sy0T8uvTw=
-MIME-Version: 1.0
-In-Reply-To: <AANLkTik=27zjJacQTQhd6E4rGuERg19rAd5cgnLTDEoR@mail.gmail.com>
-References: <AANLkTim+vj_OAd22TdThuC-HSqUiDjguOHQWjyqFaq6N@mail.gmail.com>
-	<AANLkTi=Cpq2_vV2RGcoQhrqk8xpL59AvLFPzfvTBk5Xa@mail.gmail.com>
-	<4CBF8BDB.7090907@gmail.com>
-	<20101021075401.GC22100@n2100.arm.linux.org.uk>
-	<AANLkTikjByC1_BQvPv=Stkdph1cV=a8CwcqrcBv6u0+p@mail.gmail.com>
-	<AANLkTik=27zjJacQTQhd6E4rGuERg19rAd5cgnLTDEoR@mail.gmail.com>
-Date: Thu, 21 Oct 2010 13:11:19 +0200
-Message-ID: <AANLkTimHWtJDV+ZkRnLY5sPmBGC-Z9wHaZwT2KBAN2nv@mail.gmail.com>
-Subject: Re: [RFC] Removal of dead code from arch/arm/*
-From: Zimny Lech <napohybelskurwysynom2010@gmail.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8BIT
+	Thu, 21 Oct 2010 07:14:19 -0400
+X-Authority-Analysis: v=1.1 cv=+c36koQ5Dcj/1qolKHjtkYAGXvrVJRRiKMp+84F5sLg= c=1 sm=0 a=LuwKl7ggZIAA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=4BKNm4wy7LaF7vkoOuIA:9 a=EjixQbyAtvvveGDfHqtCAD8o1bEA:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [PATCH][GIT PULL] tracing: Fix compile issue for
+ trace_sched_wakeup.c
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Jason Baron <jbaron@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+In-Reply-To: <20101020154045.GA18353@elte.hu>
+References: <1287508282.16971.386.camel@gandalf.stny.rr.com>
+	 <20101019184111.GA17266@elte.hu>  <20101020154045.GA18353@elte.hu>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Thu, 21 Oct 2010 07:14:16 -0400
+Message-ID: <1287659656.16971.573.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/10/21 Zimny Lech <napohybelskurwysynom2010@gmail.com>:
-> 2010/10/21 Zimny Lech <napohybelskurwysynom2010@gmail.com>:
->> I tried to cross compile allyesconfig to test my changes and I hit this
->>  CC      drivers/gpio/janz-ttl.o
->> drivers/gpio/janz-ttl.c: In function ‘ttl_set_value’:
->> drivers/gpio/janz-ttl.c:107: error: implicit declaration of function
->> ‘iowrite16be’
->
-> Another build error not caused by my patch AFAICS
->
->  CC      drivers/input/touchscreen/eeti_ts.o
-> drivers/input/touchscreen/eeti_ts.c: In function ‘eeti_ts_irq_active’:
-> drivers/input/touchscreen/eeti_ts.c:65: error: implicit declaration of
-> function ‘irq_to_gpio’
->
-
-Another one
-
-  CC      drivers/mfd/ezx-pcap.o
-drivers/mfd/ezx-pcap.c: In function ‘pcap_isr_work’:
-drivers/mfd/ezx-pcap.c:214: error: implicit declaration of function
-‘irq_to_gpio’
+On Wed, 2010-10-20 at 17:40 +0200, Ingo Molnar wrote:
+> FYI, there's a new mystery hang (sometimes crash) that triggers in -tip - and which 
+> seems to be tracing related. See the crashlog below - config attached.
+> 
+> It's not bisectable - small changes in the kernel make the bug come/go. (might be a 
+> race of some sorts)
+> 
 
 
+> [   42.324027] Testing all events: 
+> [  245.668090] INFO: task swapper:1 blocked for more than 120 seconds.
+> [  245.672051] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+> [  245.676026] swapper       D f6420b40  6544     1      0 0x00000000
+> [  245.684051]  f6437dac 00000046 f694aac0 f6420b40 f6438000 f6437d74 f6438294 f6438290
+> [  245.692237]  c2192ac0 c204e6c0 c2192ac0 c2192ac0 f6438290 00000000 f6438000 ff2ffa7d
+> [  245.701068]  00000009 f6420b40 f6437e5c 7fffffff f6438000 f6437dfc f6437e5c 7fffffff
+> [  245.709071] Call Trace:
+> [  245.711551]  [<c1a7f561>] schedule_timeout+0x1c/0x1e7
+> [  245.712036]  [<c1a818b6>] ? _raw_spin_unlock_irq+0x2d/0x43
+> [  245.716037]  [<c1027f2d>] ? sub_preempt_count+0x4/0x98
+> [  245.720061]  [<c1a818b6>] ? _raw_spin_unlock_irq+0x2d/0x43
+> [  245.724036]  [<c1027fb4>] ? sub_preempt_count+0x8b/0x98
+> [  245.728036]  [<c1a7e76b>] wait_for_common+0xc1/0x11a
+> [  245.732062]  [<c102de32>] ? default_wake_function+0x0/0x12
+> [  245.736041]  [<c1a7e863>] wait_for_completion+0x17/0x19
+> [  245.740069]  [<c10667a2>] __stop_cpus+0xdd/0x103
+> [  245.744072]  [<c1a7e6db>] ? wait_for_common+0x31/0x11a
+> [  245.748040]  [<c10665a4>] ? stop_machine_cpu_stop+0x0/0x9a
+> [  245.752040]  [<c106683d>] stop_cpus+0x2c/0x3f
+> [  245.756069]  [<c10668af>] __stop_machine+0x5f/0x67
+> [  245.760186]  [<c1006240>] ? stop_machine_text_poke+0x0/0x43
+> [  245.764040]  [<c1006240>] ? stop_machine_text_poke+0x0/0x43
+> [  245.768071]  [<c19f0a73>] ? cfdgml_create+0x2b/0xde
+> [  245.772040]  [<c10060fd>] text_poke_smp+0x3a/0x42
+> [  245.776039]  [<c19f0a73>] ? cfdgml_create+0x2b/0xde
 
--- 
-Slawa!
-N.P.S.
 
-Les fleurs du mal unfold
-Comme les fleurs du mal
-Dark demons of my soul
-Un amour fatal
+> [  245.780098]  [<c1005b9c>] arch_jump_label_transform+0x53/0x67
+> [  245.784042]  [<c104ef0d>] jump_label_update+0x49/0x98
+
+Looks like this code had jump labels enabled. Do you have a dump where
+they are not enabled?
+
+-- Steve
+
+> [  245.788041]  [<c1070b33>] tracepoint_update_probe_range+0xec/0x116
+> [  245.792070]  [<c1070c74>] tracepoint_probe_unregister+0x51/0x6b
+> [  245.796040]  [<c107f3c0>] ftrace_event_reg+0x48/0x4c
+> [  245.800041]  [<c107e87c>] ftrace_event_enable_disable+0x39/0x8a
+> [  245.804070]  [<c107ebdf>] __ftrace_set_clr_event+0x91/0xbc
+> [  245.808043]  [<c1fbee72>] event_trace_self_tests+0x1cd/0x239
+> [  245.812040]  [<c1fbf025>] event_trace_self_tests_init+0x2a/0x39
+> [  245.816230]  [<c1fab282>] do_one_initcall+0x47/0x113
+> [  245.820069]  [<c1fbeffb>] ? event_trace_self_tests_init+0x0/0x39
+> [  245.824040]  [<c1fbeffb>] ? event_trace_self_tests_init+0x0/0x39
+> [  245.828069]  [<c1fab477>] kernel_init+0x10d/0x18e
+> [  245.832040]  [<c1fab36a>] ? kernel_init+0x0/0x18e
+> [  245.836040]  [<c1002c7e>] kernel_thread_helper+0x6/0x10
+
+
