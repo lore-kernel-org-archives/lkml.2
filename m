@@ -1,142 +1,232 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757650Ab0JUTJL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Oct 2010 15:09:11 -0400
-Received: from mga02.intel.com ([134.134.136.20]:3273 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757559Ab0JUTJJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Oct 2010 15:09:09 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.58,218,1286175600"; 
-   d="scan'208";a="566224762"
-Date: Thu, 21 Oct 2010 12:09:03 -0700 (Pacific Daylight Time)
-From: "Brandeburg, Jesse" <jesse.brandeburg@intel.com>
-To: Nikola Ciprich <extmaillist@linuxbox.cz>
-cc: "Tantilov, Emil S" <emil.s.tantilov@intel.com>,
-        linux-net maillist <linux-net@vger.kernel.org>,
-        e1000-devel list <e1000-devel@lists.sourceforge.net>,
-        "nikola.ciprich@linuxbox.cz" <nikola.ciprich@linuxbox.cz>,
-        Linux kernel list <linux-kernel@vger.kernel.org>,
-        netdev@vger.kernel.org
-Subject: Re: [E1000-devel] 2.6.36-rc7-git2 - panic/GPF: e1000e/vlans?
-In-Reply-To: <20101021190208.GA7289@nik-comp.lan>
-Message-ID: <alpine.WNT.2.00.1010211207220.5208@jbrandeb-desk1.amr.corp.intel.com>
-References: <20101014052242.GA8998@pcnci.linuxbox.cz> <EA929A9653AAE14F841771FB1DE5A1366027CEFF1C@rrsmsx501.amr.corp.intel.com> <20101020144640.GA3009@pcnci.linuxbox.cz> <20101020163659.GB3009@pcnci.linuxbox.cz> <20101021190208.GA7289@nik-comp.lan>
-User-Agent: Alpine 2.00 (WNT 1167 2008-08-23)
-ReplyTo: "Brandeburg, Jesse" <jesse.brandeburg@intel.com>
-X-X-Sender: amrjbrandeb@imapmail.glb.intel.com
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+	id S1757671Ab0JUTJV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Oct 2010 15:09:21 -0400
+Received: from smtp-outbound-2.vmware.com ([65.115.85.73]:43904 "EHLO
+	smtp-outbound-2.vmware.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755082Ab0JUTJR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Oct 2010 15:09:17 -0400
+Subject: Re: [RFC PATCH] Bug during kexec...not all cpus are stopped
+From: Alok Kataria <akataria@vmware.com>
+Reply-To: akataria@vmware.com
+To: Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>
+Cc: Vivek Goyal <vgoyal@redhat.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
+        Haren Myneni <hbabu@us.ibm.com>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Daniel Hecht <dhecht@vmware.com>,
+        "jeremy@xensource.com" <jeremy@xensource.com>
+In-Reply-To: <1286929430.15658.30.camel@ank32.eng.vmware.com>
+References: <1286570087.8769.27.camel@ank32.eng.vmware.com>
+	 <1286816964.1372.2.camel@ank32.eng.vmware.com>
+	 <m1lj64ppri.fsf@fess.ebiederm.org>
+	 <1286826083.1372.15.camel@ank32.eng.vmware.com>
+	 <20101011213901.GR12743@redhat.com> <m1hbgs5qkc.fsf@fess.ebiederm.org>
+	 <20101012221717.GA27478@redhat.com>
+	 <1286929430.15658.30.camel@ank32.eng.vmware.com>
+Content-Type: text/plain
+Organization: VMware INC.
+Date: Thu, 21 Oct 2010 12:09:16 -0700
+Message-Id: <1287688156.27008.13.camel@ank32.eng.vmware.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.12.3 (2.12.3-8.el5_2.3) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-Adding netdev... beware the top post ordering in the thread.
-
-On Thu, 21 Oct 2010, Nikola Ciprich wrote:
-
-> Ok, here're the steps to reproduce the problem:
-> 
-> ip link set up dev eth0
-> vconfig add eth0 10
-> ip link set up dev eth0.10
-> brctl addbr brtest
-> # to bylo ok, sundá to až:
-> brctl add brtest eth0.10
-> 
-> last command causes panic in few seconds..
-> 
-> Interesting thing is that it're reproducible only for eth0, not for
-> eth1 (both are onboard 80003ES2LAN)
-> 
-> here's the lspci for those:
-> 06:00.0 Ethernet controller: Intel Corporation 80003ES2LAN Gigabit Ethernet Controller (Copper) (rev 01)
-> 	Subsystem: Super Micro Computer Inc Unknown device 0000
-> 	Flags: bus master, fast devsel, latency 0, IRQ 65
-> 	Memory at d8300000 (32-bit, non-prefetchable) [size=128K]
-> 	I/O ports at 3000 [size=32]
-> 	Capabilities: [c8] Power Management version 2
-> 	Capabilities: [d0] Message Signalled Interrupts: 64bit+ Queue=0/0 Enable+
-> 	Capabilities: [e0] Express Endpoint IRQ 0
-> 	Capabilities: [100] Advanced Error Reporting
-> 	Capabilities: [140] Device Serial Number 5a-19-34-ff-ff-48-30-00
-> 
-> 06:00.1 Ethernet controller: Intel Corporation 80003ES2LAN Gigabit Ethernet Controller (Copper) (rev 01)
-> 	Subsystem: Super Micro Computer Inc Unknown device 0000
-> 	Flags: bus master, fast devsel, latency 0, IRQ 66
-> 	Memory at d8320000 (32-bit, non-prefetchable) [size=128K]
-> 	I/O ports at 3020 [size=32]
-> 	Capabilities: [c8] Power Management version 2
-> 	Capabilities: [d0] Message Signalled Interrupts: 64bit+ Queue=0/0 Enable+
-> 	Capabilities: [e0] Express Endpoint IRQ 0
-> 	Capabilities: [100] Advanced Error Reporting
-> 	Capabilities: [140] Device Serial Number 5a-19-34-ff-ff-48-30-00
-> 
-> last but not least, I've done bisect and it leads to:
-> commit ae878ae280bea286ff2b1e1cb6e609dd8cb4501d
-> Author: Maciej Żenczykowski <maze@google.com>
-> Date:   Sun Oct 3 14:49:00 2010 -0700                                                                                                                                                                                                      net: Fix IPv6 PMTU disc. w/ asymmetric routes
-> 
-> doesn't seem to me to be related at all, but reverting really seems to fix the problem for me..
-> I hope it helps..
-> with best regards
-> nik
-> 
-> 
-> 
-> On Wed, Oct 20, 2010 at 06:36:59PM +0200, Nikola Ciprich wrote:
-> > so unfortunately I have to take back what I just wrote :(
-> > the problem still persists, it just seems to be more random
-> > so I'll try to separate the exact command that causes the panic..
-> > n.
+On Tue, 2010-10-12 at 17:23 -0700, Alok Kataria wrote:
+> On Tue, 2010-10-12 at 15:17 -0700, Vivek Goyal wrote:
+> > On Mon, Oct 11, 2010 at 03:10:11PM -0700, Eric W. Biederman wrote:
+> > > Vivek Goyal <vgoyal@redhat.com> writes:
+> > > 
+> > > > On Mon, Oct 11, 2010 at 12:41:23PM -0700, Alok Kataria wrote:
+> > > 
+> > > > I don't think that kdump path uses smp_send_stop().
+> > > 
+> > > It doesn't.
+> > > 
+> > > > IIUC, on x86, we directly send NMI to other cpus.
+> > > >
+> > > > native_machine_crash_shutdown()
+> > > >   kdump_nmi_shootdown_cpus()
+> > > >         nmi_shootdown_cpus()
+> > > >            smp_send_nmi_allbutself
+> > > >                 apic->send_IPI_allbutself(NMI_VECTOR);
+> > > >
+> > > > So above description should be limited to only panic() path.
+> > > 
+> > > Is it actually confusing?  With respect to documenting the line
+> > > of thinking it seems reasonable.
+> > > 
 > > 
-> > On Wed, Oct 20, 2010 at 04:46:40PM +0200, Nikola Ciprich wrote:
-> > > Hello Emil,
+> > No, just wanted to point out that let us modify the changelog to remove
+> > keyword "kdump" from it. 
+> > 
+> > > > On a side note, I am wondering why panic() and kdump path can't share the
+> > > > shutdown routine.
 > > > 
-> > > I tried it now, I can still 100% reproduce with 2.6.36-rc7-git2, but
-> > > with 2.6.36-rc8-git5 it works OK. So it certainly got fixed in the meantime!
-> > > I'll therefore close the bug in BZ.
+> > > Hysterical raisins.  Andi's change to smp_send_stop says that NMIs not
+> > > working on some boxes.  When someone wants to weed through all of the
+> > > insanity it would probably be good to get the panic and the kdump paths
+> > > sharing code.  For now simply separating panic and reboot should be
+> > > enough, and it lets the code evolve where it needs to.
 > > > 
-> > > have a nice day!
-> > > 
-> > > best regards
-> > > 
-> > > nik
-> > > 
-> > > 
-> > > On Fri, Oct 15, 2010 at 10:58:15AM -0600, Tantilov, Emil S wrote:
-> > > > >-----Original Message-----
-> > > > >From: Nikola Ciprich [mailto:extmaillist@linuxbox.cz]
-> > > > >Sent: Wednesday, October 13, 2010 10:23 PM
-> > > > >To: Linux kernel list; linux-net maillist; e1000-devel list
-> > > > >Cc: nikola.ciprich@linuxbox.cz
-> > > > >Subject: [E1000-devel] 2.6.36-rc7-git2 - panic/GPF: e1000e/vlans?
-> > > > >
-> > > > >Hi,
-> > > > >when I try to boot 2.6.36-rc7-git2 on one of my machines, it crashes while
-> > > > >setting up the network.
-> > > > 
-> > > > Thanks for letting us know!
-> > > > 
-> > > > >The setup is quite complex, with bonding, lots of vlans and 3 intel
-> > > > >adapters (system is quad x86_64)
-> > > > 
-> > > > Could you provide more details about the exact setup and the sequence of 
-> > > > commands that lead to the crash? If you can narrow it down to the actual 
-> > > > command that caused the crash that would be very helpful.
-> > > > 
-> > > > Also - are you testing from Linus or net-next tree? If you are not using 
-> > > > net-next, could you give it a try and see if you can reproduce it there?
-> > > > 
-> > > > >
-> > > > >snip of lspci:
-> > > > >06:00.0 Ethernet controller: Intel Corporation 80003ES2LAN Gigabit Ethernet
-> > > > >Controller (Copper) (rev 01)
-> > > > >06:00.1 Ethernet controller: Intel Corporation 80003ES2LAN Gigabit Ethernet
-> > > > >Controller (Copper) (rev 01)
-> > > > >09:00.0 Ethernet controller: Intel Corporation 82574L Gigabit Network
-> > > > >Connection
-> > > > 
-> > > > Could you provide the output of lspci -vvv and a kernel config?
+> > 
+> > Ok. Agreed that atleast conceptually kdump and panic() path should share
+> > the code. But that's a different problem altogether and this patch can go in.
+> 
+> Okay now that we all agree, let me repost a patch with the updated
+> changelog, this fits on top of tip/master. 
+
+Hi Ingo, HPA
+
+I don't think this patch was picked up for tip, now that the 2.6.37
+merge window is open can you please pick this up push it upstream.
+This patch fixes a legitimate regression, which was introduced during
+2.6.30, by commit id 4ef702c10b5df18ab04921fc252c26421d4d6c75.
+
+Thanks,
+Alok
+
+> 
+> --
+> 
+> x86 smp_ops now has a new op, stop_other_cpus which takes a parameter "wait"
+> this allows the caller to specify if it wants to stop until all the cpus
+> have processed the stop IPI. This is required specifically for the kexec case
+> where we should wait for all the cpus to be stopped before starting the new
+> kernel.
+> We now wait for the cpus to stop in all cases except for panic where we expect
+> things to be broken and we are doing our best to make things work anyway.
+> 
+> 
+> Signed-off-by: Alok N Kataria <akataria@vmware.com>
+> Cc: Eric W. Biederman <ebiederm@xmission.com>
+> Cc: Jeremy Fitzhardinge <jeremy@xensource.com>
+> 
+> Index: linux-x86-tree.git/arch/x86/include/asm/smp.h
+> ===================================================================
+> --- linux-x86-tree.git.orig/arch/x86/include/asm/smp.h	2010-02-07 16:37:26.000000000 -0800
+> +++ linux-x86-tree.git/arch/x86/include/asm/smp.h	2010-10-12 16:37:04.000000000 -0700
+> @@ -50,7 +50,7 @@ struct smp_ops {
+>  	void (*smp_prepare_cpus)(unsigned max_cpus);
+>  	void (*smp_cpus_done)(unsigned max_cpus);
+>  
+> -	void (*smp_send_stop)(void);
+> +	void (*stop_other_cpus)(int wait);
+>  	void (*smp_send_reschedule)(int cpu);
+>  
+>  	int (*cpu_up)(unsigned cpu);
+> @@ -73,7 +73,12 @@ extern struct smp_ops smp_ops;
+>  
+>  static inline void smp_send_stop(void)
+>  {
+> -	smp_ops.smp_send_stop();
+> +	smp_ops.stop_other_cpus(0);
+> +}
+> +
+> +static inline void stop_other_cpus(void)
+> +{
+> +	smp_ops.stop_other_cpus(1);
+>  }
+>  
+>  static inline void smp_prepare_boot_cpu(void)
+> Index: linux-x86-tree.git/arch/x86/kernel/reboot.c
+> ===================================================================
+> --- linux-x86-tree.git.orig/arch/x86/kernel/reboot.c	2010-08-17 12:09:51.000000000 -0700
+> +++ linux-x86-tree.git/arch/x86/kernel/reboot.c	2010-10-12 16:37:04.000000000 -0700
+> @@ -641,7 +641,7 @@ void native_machine_shutdown(void)
+>  	/* O.K Now that I'm on the appropriate processor,
+>  	 * stop all of the others.
+>  	 */
+> -	smp_send_stop();
+> +	stop_other_cpus();
+>  #endif
+>  
+>  	lapic_shutdown();
+> Index: linux-x86-tree.git/arch/x86/kernel/smp.c
+> ===================================================================
+> --- linux-x86-tree.git.orig/arch/x86/kernel/smp.c	2010-07-08 13:53:34.000000000 -0700
+> +++ linux-x86-tree.git/arch/x86/kernel/smp.c	2010-10-12 16:37:04.000000000 -0700
+> @@ -159,10 +159,10 @@ asmlinkage void smp_reboot_interrupt(voi
+>  	irq_exit();
+>  }
+>  
+> -static void native_smp_send_stop(void)
+> +static void native_stop_other_cpus(int wait)
+>  {
+>  	unsigned long flags;
+> -	unsigned long wait;
+> +	unsigned long timeout;
+>  
+>  	if (reboot_force)
+>  		return;
+> @@ -179,9 +179,12 @@ static void native_smp_send_stop(void)
+>  	if (num_online_cpus() > 1) {
+>  		apic->send_IPI_allbutself(REBOOT_VECTOR);
+>  
+> -		/* Don't wait longer than a second */
+> -		wait = USEC_PER_SEC;
+> -		while (num_online_cpus() > 1 && wait--)
+> +		/*
+> +		 * Don't wait longer than a second if the caller
+> +		 * didn't ask us to wait.
+> +		 */
+> +		timeout = USEC_PER_SEC;
+> +		while (num_online_cpus() > 1 && (wait || timeout--))
+>  			udelay(1);
+>  	}
+>  
+> @@ -227,7 +230,7 @@ struct smp_ops smp_ops = {
+>  	.smp_prepare_cpus	= native_smp_prepare_cpus,
+>  	.smp_cpus_done		= native_smp_cpus_done,
+>  
+> -	.smp_send_stop		= native_smp_send_stop,
+> +	.stop_other_cpus	= native_stop_other_cpus,
+>  	.smp_send_reschedule	= native_smp_send_reschedule,
+>  
+>  	.cpu_up			= native_cpu_up,
+> Index: linux-x86-tree.git/arch/x86/xen/enlighten.c
+> ===================================================================
+> --- linux-x86-tree.git.orig/arch/x86/xen/enlighten.c	2010-10-12 16:36:28.000000000 -0700
+> +++ linux-x86-tree.git/arch/x86/xen/enlighten.c	2010-10-12 16:37:04.000000000 -0700
+> @@ -1019,7 +1019,7 @@ static void xen_reboot(int reason)
+>  	struct sched_shutdown r = { .reason = reason };
+>  
+>  #ifdef CONFIG_SMP
+> -	smp_send_stop();
+> +	stop_other_cpus();
+>  #endif
+>  
+>  	if (HYPERVISOR_sched_op(SCHEDOP_shutdown, &r))
+> Index: linux-x86-tree.git/arch/x86/xen/smp.c
+> ===================================================================
+> --- linux-x86-tree.git.orig/arch/x86/xen/smp.c	2010-08-17 12:09:51.000000000 -0700
+> +++ linux-x86-tree.git/arch/x86/xen/smp.c	2010-10-12 16:37:04.000000000 -0700
+> @@ -400,9 +400,9 @@ static void stop_self(void *v)
+>  	BUG();
+>  }
+>  
+> -static void xen_smp_send_stop(void)
+> +static void xen_stop_other_cpus(int wait)
+>  {
+> -	smp_call_function(stop_self, NULL, 0);
+> +	smp_call_function(stop_self, NULL, wait);
+>  }
+>  
+>  static void xen_smp_send_reschedule(int cpu)
+> @@ -470,7 +470,7 @@ static const struct smp_ops xen_smp_ops 
+>  	.cpu_disable = xen_cpu_disable,
+>  	.play_dead = xen_play_dead,
+>  
+> -	.smp_send_stop = xen_smp_send_stop,
+> +	.stop_other_cpus = xen_stop_other_cpus,
+>  	.smp_send_reschedule = xen_smp_send_reschedule,
+>  
+>  	.send_call_func_ipi = xen_smp_send_call_function_ipi,
+> 
+
