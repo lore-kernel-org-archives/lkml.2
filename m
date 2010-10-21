@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758180Ab0JUVCg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Oct 2010 17:02:36 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:52378 "EHLO arroyo.ext.ti.com"
+	id S1758074Ab0JUVCB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Oct 2010 17:02:01 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:52363 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757994Ab0JUVCE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Oct 2010 17:02:04 -0400
+	id S1758000Ab0JUVB6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Oct 2010 17:01:58 -0400
 From: Cyril Chemparathy <cyril@ti.com>
 To: davinci-linux-open-source@linux.davincidsp.com,
         spi-devel-general@lists.sourceforge.net,
@@ -14,9 +14,9 @@ To: davinci-linux-open-source@linux.davincidsp.com,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         rpurdie@rpsys.net
 Cc: Cyril Chemparathy <cyril@ti.com>
-Subject: [PATCH v3 01/12] misc: add driver for sequencer serial port
-Date: Thu, 21 Oct 2010 17:01:02 -0400
-Message-Id: <1287694873-12904-2-git-send-email-cyril@ti.com>
+Subject: [PATCH v3 05/12] davinci: add spi devices on tnetv107x evm
+Date: Thu, 21 Oct 2010 17:01:06 -0400
+Message-Id: <1287694873-12904-6-git-send-email-cyril@ti.com>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1287694873-12904-1-git-send-email-cyril@ti.com>
 References: <1287694873-12904-1-git-send-email-cyril@ti.com>
@@ -24,596 +24,100 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-TI's sequencer serial port (TI-SSP) is a jack-of-all-trades type of serial port
-device.  It has a built-in programmable execution engine that can be programmed
-to operate as almost any serial bus (I2C, SPI, EasyScale, and others).
+This patch adds definitions for spi devices on the tnetv107x evm platform.
 
-This patch adds a driver for this controller device.  The driver does not
-expose a user-land interface.  Protocol drivers built on top of this layer are
-expected to remain in-kernel.
-
-Acked-by: Grant Likely <grant.likely@secretlab.ca>
 Signed-off-by: Cyril Chemparathy <cyril@ti.com>
 ---
- arch/arm/mach-davinci/include/mach/ti_ssp.h |   89 ++++++
- drivers/misc/Kconfig                        |   11 +
- drivers/misc/Makefile                       |    1 +
- drivers/misc/ti_ssp.c                       |  436 +++++++++++++++++++++++++++
- 4 files changed, 537 insertions(+), 0 deletions(-)
- create mode 100644 arch/arm/mach-davinci/include/mach/ti_ssp.h
- create mode 100644 drivers/misc/ti_ssp.c
+ arch/arm/mach-davinci/board-tnetv107x-evm.c |   45 +++++++++++++++++++++++++++
+ 1 files changed, 45 insertions(+), 0 deletions(-)
 
-diff --git a/arch/arm/mach-davinci/include/mach/ti_ssp.h b/arch/arm/mach-davinci/include/mach/ti_ssp.h
-new file mode 100644
-index 0000000..51afc42
---- /dev/null
-+++ b/arch/arm/mach-davinci/include/mach/ti_ssp.h
-@@ -0,0 +1,89 @@
-+/*
-+ * Sequencer Serial Port (SSP) driver for Texas Instruments' SoCs
-+ *
-+ * Copyright (C) 2010 Texas Instruments Inc
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-+ */
-+
-+#ifndef __TI_SSP_H__
-+#define __TI_SSP_H__
-+
-+struct ti_ssp_dev_data {
-+	const char	*dev_name;
-+	unsigned long	iosel; /* see note below */
-+	unsigned long	config;
-+	const void	*pdata;
-+	int		pdata_sz;
-+};
-+
-+struct ti_ssp_data {
-+	unsigned long		out_clock;
-+	struct ti_ssp_dev_data	dev_data[2];
-+};
-+
-+/*
-+ * Sequencer port IO pin configuration bits.  These do not correlate 1-1 with
-+ * the hardware.  The iosel field in the port data combines iosel1 and iosel2,
-+ * and is therefore not a direct map to register space.  It is best to use the
-+ * macros below to construct iosel values.
-+ *
-+ * least significant 16 bits --> iosel1
-+ * most significant 16 bits  --> iosel2
-+ */
-+
-+#define SSP_IN			0x0000
-+#define SSP_DATA		0x0001
-+#define SSP_CLOCK		0x0002
-+#define SSP_CHIPSEL		0x0003
-+#define SSP_OUT			0x0004
-+#define SSP_PIN_SEL(pin, v)	((v) << ((pin) * 3))
-+#define SSP_PIN_MASK(pin)	SSP_PIN_SEL(pin, 0x7)
-+#define SSP_INPUT_SEL(pin)	((pin) << 16)
-+
-+/* Sequencer port config bits */
-+#define SSP_EARLY_DIN		BIT(8)
-+#define SSP_DELAY_DOUT		BIT(9)
-+
-+/* Sequence map definitions */
-+#define SSP_CLK_HIGH		BIT(0)
-+#define SSP_CLK_LOW		0
-+#define SSP_DATA_HIGH		BIT(1)
-+#define SSP_DATA_LOW		0
-+#define SSP_CS_HIGH		BIT(2)
-+#define SSP_CS_LOW		0
-+#define SSP_OUT_MODE		BIT(3)
-+#define SSP_IN_MODE		0
-+#define SSP_DATA_REG		BIT(4)
-+#define SSP_ADDR_REG		0
-+
-+#define SSP_OPCODE_DIRECT	((0x0) << 5)
-+#define SSP_OPCODE_TOGGLE	((0x1) << 5)
-+#define SSP_OPCODE_SHIFT	((0x2) << 5)
-+#define SSP_OPCODE_BRANCH0	((0x4) << 5)
-+#define SSP_OPCODE_BRANCH1	((0x5) << 5)
-+#define SSP_OPCODE_BRANCH	((0x6) << 5)
-+#define SSP_OPCODE_STOP		((0x7) << 5)
-+#define SSP_BRANCH(addr)	((addr) << 8)
-+#define SSP_COUNT(cycles)	((cycles) << 8)
-+
-+int ti_ssp_raw_read(struct device *dev);
-+int ti_ssp_raw_write(struct device *dev, u32 val);
-+int ti_ssp_load(struct device *dev, int offs, u32* prog, int len);
-+int ti_ssp_run(struct device *dev, u32 pc, u32 input, u32 *output);
-+int ti_ssp_set_mode(struct device *dev, int mode);
-+int ti_ssp_set_iosel(struct device *dev, u32 iosel);
-+
-+#endif /* __TI_SSP_H__ */
-diff --git a/drivers/misc/Kconfig b/drivers/misc/Kconfig
-index b743312..9fb8470 100644
---- a/drivers/misc/Kconfig
-+++ b/drivers/misc/Kconfig
-@@ -390,6 +390,17 @@ config BMP085
- 	  To compile this driver as a module, choose M here: the
- 	  module will be called bmp085.
+diff --git a/arch/arm/mach-davinci/board-tnetv107x-evm.c b/arch/arm/mach-davinci/board-tnetv107x-evm.c
+index 401ad26..c37c5c6 100644
+--- a/arch/arm/mach-davinci/board-tnetv107x-evm.c
++++ b/arch/arm/mach-davinci/board-tnetv107x-evm.c
+@@ -25,6 +25,7 @@
+ #include <linux/mtd/partitions.h>
+ #include <linux/input.h>
+ #include <linux/input/matrix_keypad.h>
++#include <linux/spi/spi.h>
  
-+config TI_SSP
-+	depends on ARCH_DAVINCI_TNETV107X
-+	tristate "Sequencer Serial Port support"
-+	default y
-+	---help---
-+	  Say Y here if you want support for the Sequencer Serial Port
-+	  in a Texas Instruments TNETV107X SoC.
+ #include <asm/mach/arch.h>
+ #include <asm/mach-types.h>
+@@ -38,6 +39,7 @@
+ 
+ #define EVM_MMC_WP_GPIO		21
+ #define EVM_MMC_CD_GPIO		24
++#define EVM_SPI_CS_GPIO		54
+ 
+ static int initialize_gpio(int gpio, char *desc)
+ {
+@@ -203,9 +205,47 @@ static struct matrix_keypad_platform_data keypad_config = {
+ 	.no_autorepeat	= 0,
+ };
+ 
++static void spi_select_device(int cs)
++{
++	static int gpio;
 +
-+	  To compile this driver as a module, choose M here: the
-+	  module will be called ti_ssp.
++	if (!gpio) {
++		int ret;
++		ret = gpio_request(EVM_SPI_CS_GPIO, "spi chipsel");
++		if (ret < 0) {
++			pr_err("cannot open spi chipsel gpio\n");
++			gpio = -ENOSYS;
++			return;
++		} else {
++			gpio = EVM_SPI_CS_GPIO;
++			gpio_direction_output(gpio, 0);
++		}
++	}
 +
- source "drivers/misc/c2port/Kconfig"
- source "drivers/misc/eeprom/Kconfig"
- source "drivers/misc/cb710/Kconfig"
-diff --git a/drivers/misc/Makefile b/drivers/misc/Makefile
-index 42eab95..7568100 100644
---- a/drivers/misc/Makefile
-+++ b/drivers/misc/Makefile
-@@ -28,6 +28,7 @@ obj-$(CONFIG_SENSORS_TSL2550)	+= tsl2550.o
- obj-$(CONFIG_EP93XX_PWM)	+= ep93xx_pwm.o
- obj-$(CONFIG_DS1682)		+= ds1682.o
- obj-$(CONFIG_TI_DAC7512)	+= ti_dac7512.o
-+obj-$(CONFIG_TI_SSP)		+= ti_ssp.o
- obj-$(CONFIG_C2PORT)		+= c2port/
- obj-$(CONFIG_IWMC3200TOP)      += iwmc3200top/
- obj-$(CONFIG_HMC6352)		+= hmc6352.o
-diff --git a/drivers/misc/ti_ssp.c b/drivers/misc/ti_ssp.c
-new file mode 100644
-index 0000000..8249a8b
---- /dev/null
-+++ b/drivers/misc/ti_ssp.c
-@@ -0,0 +1,436 @@
-+/*
-+ * Sequencer Serial Port (SSP) driver for Texas Instruments' SoCs
-+ *
-+ * Copyright (C) 2010 Texas Instruments Inc
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-+ */
++	if (gpio < 0)
++		return;
 +
-+#include <linux/errno.h>
-+#include <linux/kernel.h>
-+#include <linux/module.h>
-+#include <linux/slab.h>
-+#include <linux/err.h>
-+#include <linux/init.h>
-+#include <linux/wait.h>
-+#include <linux/clk.h>
-+#include <linux/interrupt.h>
-+#include <linux/device.h>
-+#include <linux/spinlock.h>
-+#include <linux/platform_device.h>
-+#include <linux/delay.h>
-+#include <linux/io.h>
++	return gpio_set_value(gpio, cs ? 1 : 0);
++}
 +
-+#include <mach/ti_ssp.h>
-+
-+/* Register Offsets */
-+#define REG_REV		0x00
-+#define REG_IOSEL_1	0x04
-+#define REG_IOSEL_2	0x08
-+#define REG_PREDIV	0x0c
-+#define REG_INTR_ST	0x10
-+#define REG_INTR_EN	0x14
-+#define REG_TEST_CTRL	0x18
-+
-+/* Per port registers */
-+#define PORT_CFG_2	0x00
-+#define PORT_ADDR	0x04
-+#define PORT_DATA	0x08
-+#define PORT_CFG_1	0x0c
-+#define PORT_STATE	0x10
-+
-+#define SSP_PORT_CONFIG_MASK	(SSP_EARLY_DIN | SSP_DELAY_DOUT)
-+#define SSP_PORT_CLKRATE_MASK	0x0f
-+
-+#define SSP_SEQRAM_WR_EN	BIT(4)
-+#define SSP_SEQRAM_RD_EN	BIT(5)
-+#define SSP_START		BIT(15)
-+#define SSP_BUSY		BIT(10)
-+#define SSP_PORT_ASL		BIT(7)
-+#define SSP_PORT_CFO1		BIT(6)
-+
-+#define SSP_PORT_SEQRAM_SIZE	32
-+
-+static const int ssp_port_base[]   = {0x040, 0x080};
-+static const int ssp_port_seqram[] = {0x100, 0x180};
-+
-+struct ti_ssp {
-+	struct resource			*res;
-+	struct device			*dev;
-+	void __iomem			*regs;
-+	spinlock_t			lock;
-+	struct clk			*clk;
-+	const struct ti_ssp_data	*data;
++static const struct ti_ssp_spi_data spi_master_data = {
++	.num_cs		= 2,
++	.select		= spi_select_device,
 +};
 +
-+#define dev2ssp(dev)	dev_get_drvdata(dev->parent)
-+#define dev2port(dev)	(to_platform_device(dev)->id)
-+
-+/* Register Access Helpers */
-+static inline u32 ssp_read(struct ti_ssp *ssp, int reg)
-+{
-+	return __raw_readl(ssp->regs + reg);
-+}
-+
-+static inline void ssp_write(struct ti_ssp *ssp, int reg, u32 val)
-+{
-+	__raw_writel(val, ssp->regs + reg);
-+}
-+
-+static inline void ssp_rmw(struct ti_ssp *ssp, int reg, u32 mask, u32 bits)
-+{
-+	u32 val = ssp_read(ssp, reg);
-+	val &= ~mask;
-+	val |= bits;
-+	ssp_write(ssp, reg, val);
-+}
-+
-+static inline u32 ssp_port_read(struct ti_ssp *ssp, int port, int reg)
-+{
-+	return ssp_read(ssp, ssp_port_base[port] + reg);
-+}
-+
-+static inline void ssp_port_write(struct ti_ssp *ssp, int port, int reg,
-+				  u32 val)
-+{
-+	ssp_write(ssp, ssp_port_base[port] + reg, val);
-+}
-+
-+static inline void ssp_port_rmw(struct ti_ssp *ssp, int port, int reg,
-+				u32 mask, u32 bits)
-+{
-+	ssp_rmw(ssp, ssp_port_base[port] + reg, mask, bits);
-+}
-+
-+static inline void ssp_port_clr_bits(struct ti_ssp *ssp, int port, int reg,
-+				     u32 bits)
-+{
-+	ssp_port_rmw(ssp, port, reg, bits, 0);
-+}
-+
-+static inline void ssp_port_set_bits(struct ti_ssp *ssp, int port, int reg,
-+				     u32 bits)
-+{
-+	ssp_port_rmw(ssp, port, reg, 0, bits);
-+}
-+
-+static int __set_mode(struct ti_ssp *ssp, int port, int mode)
-+{
-+	mode &= SSP_PORT_CONFIG_MASK;
-+	ssp_port_rmw(ssp, port, PORT_CFG_1, SSP_PORT_CONFIG_MASK, mode);
-+
-+	return 0;
-+}
-+
-+int ti_ssp_set_mode(struct device *dev, int mode)
-+{
-+	struct ti_ssp *ssp = dev2ssp(dev);
-+	int port = dev2port(dev);
-+	int ret;
-+
-+	spin_lock(&ssp->lock);
-+	ret = __set_mode(ssp, port, mode);
-+	spin_unlock(&ssp->lock);
-+
-+	return ret;
-+}
-+EXPORT_SYMBOL(ti_ssp_set_mode);
-+
-+static int __set_iosel(struct ti_ssp *ssp, int port, u32 iosel)
-+{
-+	unsigned val;
-+
-+	/* IOSEL1 gets the least significant 16 bits */
-+	val = ssp_read(ssp, REG_IOSEL_1);
-+	val &= 0xffff << (port ? 0 : 16);
-+	val |= (iosel & 0xffff) << (port ? 16 : 0);
-+	ssp_write(ssp, REG_IOSEL_1, val);
-+
-+	/* IOSEL2 gets the most significant 16 bits */
-+	val = ssp_read(ssp, REG_IOSEL_2);
-+	val &= 0x0007 << (port ? 0 : 16);
-+	val |= (iosel & 0x00070000) >> (port ? 0 : 16);
-+	ssp_write(ssp, REG_IOSEL_2, val);
-+
-+	return 0;
-+}
-+
-+int ti_ssp_set_iosel(struct device *dev, u32 iosel)
-+{
-+	struct ti_ssp *ssp = dev2ssp(dev);
-+	int port = dev2port(dev);
-+	int ret;
-+
-+	spin_lock(&ssp->lock);
-+	ret = __set_iosel(ssp, port, iosel);
-+	spin_unlock(&ssp->lock);
-+
-+	return ret;
-+}
-+EXPORT_SYMBOL(ti_ssp_set_iosel);
-+
-+int ti_ssp_load(struct device *dev, int offs, u32* prog, int len)
-+{
-+	struct ti_ssp *ssp = dev2ssp(dev);
-+	int port = dev2port(dev);
-+	int i;
-+
-+	if (len > SSP_PORT_SEQRAM_SIZE)
-+		return -ENOSPC;
-+
-+	spin_lock(&ssp->lock);
-+
-+	/* Enable SeqRAM access */
-+	ssp_port_set_bits(ssp, port, PORT_CFG_2, SSP_SEQRAM_WR_EN);
-+
-+	/* Copy code */
-+	for (i = 0; i < len; i++) {
-+		__raw_writel(prog[i], ssp->regs + offs + 4*i +
-+			     ssp_port_seqram[port]);
-+	}
-+
-+	/* Disable SeqRAM access */
-+	ssp_port_clr_bits(ssp, port, PORT_CFG_2, SSP_SEQRAM_WR_EN);
-+
-+	spin_unlock(&ssp->lock);
-+
-+	return 0;
-+}
-+EXPORT_SYMBOL(ti_ssp_load);
-+
-+int ti_ssp_raw_read(struct device *dev)
-+{
-+	struct ti_ssp *ssp = dev2ssp(dev);
-+	int port = dev2port(dev);
-+	u32 val;
-+
-+	val = ssp_read(ssp, REG_IOSEL_2);
-+	val >>= (port ? 27 : 11);
-+
-+	return val & 0x0f;
-+}
-+EXPORT_SYMBOL(ti_ssp_raw_read);
-+
-+int ti_ssp_raw_write(struct device *dev, u32 val)
-+{
-+	struct ti_ssp *ssp = dev2ssp(dev);
-+	int port = dev2port(dev);
-+	u32 mask;
-+
-+	spin_lock(&ssp->lock);
-+	val &= 0x0f;
-+	val <<= (port ? 22 : 6);
-+	mask = 0x0f;
-+	mask <<= (port ? 22 : 6);
-+	ssp_rmw(ssp, REG_IOSEL_2, mask, val);
-+	spin_unlock(&ssp->lock);
-+
-+	return 0;
-+}
-+EXPORT_SYMBOL(ti_ssp_raw_write);
-+
-+int ti_ssp_run(struct device *dev, u32 pc, u32 input, u32 *output)
-+{
-+	struct ti_ssp *ssp = dev2ssp(dev);
-+	int port = dev2port(dev);
-+	int count;
-+
-+	if (pc & ~(0x3f))
-+		return -EINVAL;
-+
-+	ssp_port_write(ssp, port, PORT_ADDR, input >> 16);
-+	ssp_port_write(ssp, port, PORT_DATA, input & 0xffff);
-+	ssp_port_rmw(ssp, port, PORT_CFG_1, 0x3f, pc);
-+
-+	ssp_port_set_bits(ssp, port, PORT_CFG_1, SSP_START);
-+
-+	for (count = 10000; count; count--) {
-+		if ((ssp_port_read(ssp, port, PORT_CFG_1) & SSP_BUSY) == 0)
-+			break;
-+		udelay(1);
-+	}
-+
-+	if (output) {
-+		*(output) = (ssp_port_read(ssp, port, PORT_ADDR) << 16) |
-+			    (ssp_port_read(ssp, port, PORT_DATA) &  0xffff);
-+	}
-+
-+	if (!count) {
-+		dev_err(ssp->dev, "timed out waiting for SSP operation\n");
-+		return -EIO;
-+	}
-+
-+	/* return stop address */
-+	return ssp_port_read(ssp, port, PORT_STATE) & 0x3f;
-+}
-+EXPORT_SYMBOL(ti_ssp_run);
-+
-+static int __unregister_subdev(struct device *dev, void *unused)
-+{
-+	platform_device_unregister(to_platform_device(dev));
-+	return 0;
-+}
-+
-+static int unregister_subdevs(struct ti_ssp *ssp)
-+{
-+	return device_for_each_child(ssp->dev, NULL, __unregister_subdev);
-+}
-+
-+static void register_subdevs(struct ti_ssp *ssp)
-+{
-+	int id;
-+
-+	for (id = 0; id < 2; id++) {
-+		const struct ti_ssp_dev_data *data = &ssp->data->dev_data[id];
-+
-+		if (!data->dev_name)
-+			continue;
-+
-+		spin_lock(&ssp->lock);
-+		__set_iosel(ssp, id, data->iosel);
-+		ssp_port_rmw(ssp, id, PORT_CFG_1, SSP_PORT_CONFIG_MASK,
-+			     data->config);
-+		ssp_port_rmw(ssp, id, PORT_CFG_2, SSP_PORT_CLKRATE_MASK, 0);
-+		spin_unlock(&ssp->lock);
-+
-+		platform_device_register_data(ssp->dev, data->dev_name, id,
-+					      data->pdata, data->pdata_sz);
-+	}
-+}
-+
-+static int __devinit ti_ssp_probe(struct platform_device *pdev)
-+{
-+	static struct ti_ssp *ssp;
-+	const struct ti_ssp_data *pdata = pdev->dev.platform_data;
-+	int ret = 0, prediv = 0xff;
-+	unsigned long sysclk;
-+	struct device *dev = &pdev->dev;
-+
-+	ssp = kzalloc(sizeof(*ssp), GFP_KERNEL);
-+	if (!ssp) {
-+		dev_err(dev, "cannot allocate device info\n");
-+		return -ENOMEM;
-+	}
-+
-+	ssp->data = pdata;
-+	ssp->dev = dev;
-+	dev_set_drvdata(dev, ssp);
-+
-+	ret = -ENODEV;
-+	ssp->res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+	if (!ssp->res) {
-+		dev_err(dev, "cannot determine register area\n");
-+		goto error_res;
-+	}
-+
-+	ret = -EINVAL;
-+	if (!request_mem_region(ssp->res->start, resource_size(ssp->res),
-+				pdev->name)) {
-+		dev_err(dev, "cannot claim register memory\n");
-+		goto error_res;
-+	}
-+
-+	ret = -ENOMEM;
-+	ssp->regs = ioremap(ssp->res->start, resource_size(ssp->res));
-+	if (!ssp->regs) {
-+		dev_err(dev, "cannot map register memory\n");
-+		goto error_map;
-+	}
-+
-+	ret = -EINVAL;
-+	ssp->clk = clk_get(dev, NULL);
-+	if (IS_ERR(ssp->clk)) {
-+		dev_err(dev, "cannot claim device clock\n");
-+		goto error_clk;
-+	}
-+
-+	spin_lock_init(&ssp->lock);
-+
-+	/* Power on and initialize SSP */
-+	ret = clk_enable(ssp->clk);
-+	if (ret)
-+		goto error_enable;
-+
-+	/* Reset registers to a sensible known state */
-+	ssp_write(ssp, REG_IOSEL_1, 0);
-+	ssp_write(ssp, REG_IOSEL_2, 0);
-+	ssp_write(ssp, REG_INTR_EN, 0);
-+	ssp_write(ssp, REG_TEST_CTRL, 0);
-+	ssp_port_write(ssp, 0, PORT_CFG_1, SSP_PORT_ASL);
-+	ssp_port_write(ssp, 1, PORT_CFG_1, SSP_PORT_ASL);
-+	ssp_port_write(ssp, 0, PORT_CFG_2, SSP_PORT_CFO1);
-+	ssp_port_write(ssp, 1, PORT_CFG_2, SSP_PORT_CFO1);
-+
-+	sysclk = clk_get_rate(ssp->clk);
-+	if (pdata && pdata->out_clock)
-+		prediv = (sysclk / pdata->out_clock) - 1;
-+	prediv = clamp(prediv, 0, 0xff);
-+	ssp_rmw(ssp, REG_PREDIV, 0xff, prediv);
-+
-+	register_subdevs(ssp);
-+
-+	return 0;
-+
-+error_enable:
-+	clk_put(ssp->clk);
-+error_clk:
-+	iounmap(ssp->regs);
-+error_map:
-+	release_mem_region(ssp->res->start, resource_size(ssp->res));
-+error_res:
-+	kfree(ssp);
-+	return ret;
-+}
-+
-+static int __devexit ti_ssp_remove(struct platform_device *pdev)
-+{
-+	struct device *dev = &pdev->dev;
-+	struct ti_ssp *ssp = dev_get_drvdata(dev);
-+
-+	unregister_subdevs(ssp);
-+	clk_disable(ssp->clk);
-+	clk_put(ssp->clk);
-+	iounmap(ssp->regs);
-+	release_mem_region(ssp->res->start, resource_size(ssp->res));
-+	kfree(ssp);
-+	dev_set_drvdata(dev, NULL);
-+	return 0;
-+}
-+
-+static struct platform_driver ti_ssp_driver = {
-+	.probe		= ti_ssp_probe,
-+	.remove		= __devexit_p(ti_ssp_remove),
-+	.driver		= {
-+		.name	= "ti-ssp",
-+		.owner	= THIS_MODULE,
-+	}
+ static struct ti_ssp_data ssp_config = {
+ 	.out_clock	= 250 * 1000,
+ 	.dev_data	= {
++		[1] = {
++			.dev_name = "ti-ssp-spi",
++			.iosel = SSP_PIN_SEL(0, SSP_CLOCK)	|
++				 SSP_PIN_SEL(1, SSP_DATA)	|
++				 SSP_PIN_SEL(2, SSP_CHIPSEL)	|
++				 SSP_PIN_SEL(3, SSP_IN)		|
++				 SSP_INPUT_SEL(3),
++			.pdata = &spi_master_data,
++			.pdata_sz = sizeof(spi_master_data),
++		},
+ 	},
+ };
+ 
+@@ -217,6 +257,9 @@ static struct tnetv107x_device_info evm_device_info __initconst = {
+ 	.ssp_config		= &ssp_config,
+ };
+ 
++static struct spi_board_info spi_info[] __initconst = {
 +};
 +
-+static int __init ti_ssp_init(void)
-+{
-+	return platform_driver_register(&ti_ssp_driver);
-+}
-+arch_initcall_sync(ti_ssp_init);
+ static __init void tnetv107x_evm_board_init(void)
+ {
+ 	davinci_cfg_reg_list(sdio1_pins);
+@@ -224,6 +267,8 @@ static __init void tnetv107x_evm_board_init(void)
+ 	davinci_cfg_reg_list(ssp_pins);
+ 
+ 	tnetv107x_devices_init(&evm_device_info);
 +
-+static void __exit ti_ssp_exit(void)
-+{
-+	platform_driver_unregister(&ti_ssp_driver);
-+}
-+module_exit(ti_ssp_exit);
-+
-+MODULE_DESCRIPTION("Sequencer Serial Port (SSP) Driver");
-+MODULE_AUTHOR("Cyril Chemparathy");
-+MODULE_LICENSE("GPL");
-+MODULE_ALIAS("platform:ti_ssp");
++	spi_register_board_info(spi_info, ARRAY_SIZE(spi_info));
+ }
+ 
+ #ifdef CONFIG_SERIAL_8250_CONSOLE
 -- 
 1.7.0.4
 
