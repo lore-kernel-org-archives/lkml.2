@@ -1,92 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757173Ab0JUUaE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Oct 2010 16:30:04 -0400
-Received: from turing-police.cc.vt.edu ([128.173.14.107]:48704 "EHLO
-	turing-police.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756513Ab0JUUaB (ORCPT
-	<RFC822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Oct 2010 16:30:01 -0400
-X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.2
-To: Takashi Iwai <tiwai@suse.de>
-Cc: Jiri Slaby <jirislaby@gmail.com>, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org, mm-commits@vger.kernel.org,
-        clemens@ladisch.de, Jaroslav Kysela <perex@perex.cz>,
-        alsa-devel@alsa-project.org
-Subject: Re: HDA: no sound [was: mmotm 2010-10-20-15-01 uploaded]
-In-Reply-To: Your message of "Thu, 21 Oct 2010 21:40:08 +0200."
-             <s5h8w1rxrl3.wl%tiwai@suse.de>
-From: Valdis.Kletnieks@vt.edu
-References: <201010202233.o9KMXNoL008303@imap1.linux-foundation.org> <4CBFEE94.7020103@gmail.com> <s5hlj5sc7do.wl%tiwai@suse.de> <4CBFF25C.2080908@gmail.com> <s5hfww0c6oj.wl%tiwai@suse.de> <4CC085F5.9070905@gmail.com> <s5heibjxsi4.wl%tiwai@suse.de> <4CC092BC.9060504@gmail.com>
-            <s5h8w1rxrl3.wl%tiwai@suse.de>
-Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1287692957_4908P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
-Content-Transfer-Encoding: 7bit
-Date: Thu, 21 Oct 2010 16:29:17 -0400
-Message-ID: <5220.1287692957@localhost>
+	id S1757353Ab0JUUic (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Oct 2010 16:38:32 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:51600 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757059Ab0JUUia convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Oct 2010 16:38:30 -0400
+From: Jeff Moyer <jmoyer@redhat.com>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: Jens Axboe <jaxboe@fusionio.com>,
+        linux kernel mailing list <linux-kernel@vger.kernel.org>,
+        Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH] cfq-iosched: Fix a gcc 4.5 warning and put some comments
+References: <20101021182403.GA8378@redhat.com>
+X-PGP-KeyID: 1F78E1B4
+X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
+X-PCLoadLetter: What the f**k does that mean?
+Date: Thu, 21 Oct 2010 16:36:20 -0400
+In-Reply-To: <20101021182403.GA8378@redhat.com> (Vivek Goyal's message of
+	"Thu, 21 Oct 2010 14:24:03 -0400")
+Message-ID: <x497hhbe117.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1287692957_4908P
-Content-Type: text/plain; charset=us-ascii
+Vivek Goyal <vgoyal@redhat.com> writes:
 
-On Thu, 21 Oct 2010 21:40:08 +0200, Takashi Iwai said:
-> > >>>   commit de8c85f7840e5e29629de95f5af24297fb325e0b
-> > >>>     ALSA: HDA: Sigmatel: work around incorrect master muting
-> > >>
-> > >> Reverting this one helps.
-> > > 
-> > > The latter one?
-> > 
-> > Yeah. Otherwise I would write it to the former :).
+> - Andi encountedred following warning with gcc 4.5
+>
+>   linux/block/cfq-iosched.c: In function ‘cfq_dispatch_requests’:
+>   linux/block/cfq-iosched.c:2156:3: warning: array subscript is above array
+>   bounds
+>
+> - Warning happens due to following code.
+>
+>   slice = group_slice * count /
+> 		max_t(unsigned, cfqg->busy_queues_avg[cfqd->serving_prio],
+> 		cfq_group_busy_queues_wl(cfqd->serving_prio, cfqd, cfqg));
+>
+>   gcc is complaining about cfqg->busy_queues_avg[] being indexed by CFQ
+>   prio classes (RT, BE and IDLE) while the array size is only 2.
+>
+> - At run time, we never access cfqg->busy_queues_avg[IDLE] and return from
+>   function before this code hits.
+>
+> - To fix warning increase the array size though it will remain unused. This
+>   patch also puts some comments to clarify some of the confusions.
+>
+> - I have taken Jens's patch and modified it a bit.
+>
+> - Compile tested with gcc 4.4 and boot tested. I don't have gcc 4.5
+>   running, Andi can you please test it with gcc 4.5 to make sure it
+>   worked.
+>
+> Reported-by: Andi Kleen <ak@linux.intel.com>
+> Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
+> Signed-off-by: Jens Axboe <axboe@kernel.dk>
 
-Confirming - reverting that one commit fixes sound on my Dell laptop as
-well.
-
-> This might be a user-space issue, then.
-
-That would be icky, if we have to lockstep a 2.6.37 kernel upgrade to
-an alsa-lib upgrade.  Stuff like udev and perf having to lockstep is
-bad enough...
-
-> Could you try once the latest alsa-lib?  If you are using SUSE packages,
-> the snapshot rpms are available on OBS multimedia:audio:snapshot/alsa
-> repo.  (The version number of the package is still 1.0.22, but don't
-> care; I just forgot to change the spec file.
-
-Hmm... on my laptop, Fedora Rawhide is showing:
-
-% rpm -qi alsa-lib
-Name        : alsa-lib                     Relocations: (not relocatable)
-Version     : 1.0.23                            Vendor: Fedora Project
-Release     : 1.fc14                        Build Date: Fri 16 Apr 2010 07:48:17 AM EDT
-Install Date: Sun 18 Apr 2010 03:22:04 PM EDT      Build Host: x86-02.phx2.fedoraproject.org
-Group       : System Environment/Libraries   Source RPM: alsa-lib-1.0.23-1.fc14.src.rpm
-Size        : 1188301                          License: LGPLv2+
-Signature   : (none)
-Packager    : Fedora Project
-URL         : http://www.alsa-project.org/
-Summary     : The Advanced Linux Sound Architecture (ALSA) library
-Description :
-The Advanced Linux Sound Architecture (ALSA) provides audio and MIDI
-functionality to the Linux operating system.
-
-Is that "recent enough", or do I need to find something newer?
-
-
-
---==_Exmh_1287692957_4908P
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Exmh version 2.5 07/13/2001
-
-iD8DBQFMwKKdcC3lWbTT17ARAlF/AJ9Ds/YZVkn1C4CvRynOwoA24UyBNQCgsWhp
-aEj2r+EBbW6pVz7K4Bzi7xo=
-=X41X
------END PGP SIGNATURE-----
-
---==_Exmh_1287692957_4908P--
+Acked-by: Jeff Moyer <jmoyer@redhat.com>
