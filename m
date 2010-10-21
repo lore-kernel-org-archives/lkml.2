@@ -1,92 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754362Ab0JUQWW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Oct 2010 12:22:22 -0400
-Received: from mail.openrapids.net ([64.15.138.104]:57619 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753224Ab0JUQWU (ORCPT
+	id S1753100Ab0JUQWR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Oct 2010 12:22:17 -0400
+Received: from smtp108.prem.mail.ac4.yahoo.com ([76.13.13.47]:44801 "HELO
+	smtp108.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1750783Ab0JUQWP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Oct 2010 12:22:20 -0400
-Date: Thu, 21 Oct 2010 12:22:15 -0400
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Markus Trippelsdorf <markus@trippelsdorf.de>
-Cc: Mike Galbraith <efault@gmx.de>, Ingo Molnar <mingo@elte.hu>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [RFC/RFT PATCH] sched: automated per tty task groups
-Message-ID: <20101021162215.GA8463@Krystal>
-References: <1287479765.9920.9.camel@marge.simson.net> <1287487757.24189.40.camel@marge.simson.net> <AANLkTik08s=S7gZOGWEEhPW-zJtNRCse2h6jH3HAjoJH@mail.gmail.com> <1287511983.7417.45.camel@marge.simson.net> <1287514410.7368.10.camel@marge.simson.net> <20101020025652.GB26822@elte.hu> <1287648715.9021.20.camel@marge.simson.net> <20101021084838.GA1590@arch.trippelsdorf.de> <1287651165.9021.38.camel@marge.simson.net> <20101021115723.GA1587@arch.trippelsdorf.de>
+	Thu, 21 Oct 2010 12:22:15 -0400
+X-Greylist: delayed 400 seconds by postgrey-1.27 at vger.kernel.org; Thu, 21 Oct 2010 12:22:15 EDT
+X-Yahoo-SMTP: OIJXglSswBDfgLtXluJ6wiAYv6_cnw--
+X-YMail-OSG: FIUYLnwVM1mKWsg4.P3WYs7hV8u5wqNBORw0kTc3z1vhXmK
+ UV1TOH0JYc9HSpJT5HqJXoeC2aG5XLq64lXRwIeYqCTyHgxVZps.uPMo2.4w
+ d0LOPnuG1l9rLEN6RLZEbiXMBDjWi.fmFY4Uci.GpUJQLTg1Txtu2Y5knS7I
+ j_mtcu.NMl5YD5OwawmgO2IKO1qRuNwr3dwjs_YC77T9OcVjIlojuFuITMe1
+ yKV7uEkxTc9agLVTW1pZ.Yen8XJrWZ9SUH56vCyYbWocjmXZqnSiVxDZxxEL
+ A5vfu1EUPQlr_45XRERlJZpcZ0dv4
+X-Yahoo-Newman-Property: ymail-3
+Message-ID: <4CC06721.8020308@schaufler-ca.com>
+Date: Thu, 21 Oct 2010 09:15:29 -0700
+From: Casey Schaufler <casey@schaufler-ca.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.0; en-US; rv:1.9.2.9) Gecko/20100915 Thunderbird/3.1.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101021115723.GA1587@arch.trippelsdorf.de>
-X-Editor: vi
-X-Info: http://www.efficios.com
-X-Operating-System: Linux/2.6.26-2-686 (i686)
-X-Uptime: 12:16:28 up 28 days, 20:18,  4 users,  load average: 0.31, 0.27,
-	0.20
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Ingo Molnar <mingo@elte.hu>
+CC: Eric Paris <eparis@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        hch@infradead.org, zohar@us.ibm.com, warthog9@kernel.org,
+        david@fromorbit.com, jmorris@namei.org, kyle@mcmartin.ca,
+        hpa@zytor.com, akpm@linux-foundation.org
+Subject: Re: [PATCH 1/3] IMA: move read/write counters into struct inode
+References: <20101019011650.25346.99614.stgit@paris.rdu.redhat.com> <AANLkTimGdjPyLXuknDNa7WNthDT9+2FdOuPdxwjRiMHD@mail.gmail.com> <1287506215.2530.187.camel@localhost.localdomain> <20101019165530.GT19804@ZenIV.linux.org.uk> <AANLkTimL=eChoCQHGoiouE5s6dGG=n9ZAQGhW-RW+gDj@mail.gmail.com> <1287528546.2530.277.camel@localhost.localdomain> <20101020143845.GB22271@elte.hu> <1287585996.2530.294.camel@localhost.localdomain> <20101020151555.GC22271@elte.hu>
+In-Reply-To: <20101020151555.GC22271@elte.hu>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Markus Trippelsdorf (markus@trippelsdorf.de) wrote:
-> On Thu, Oct 21, 2010 at 10:52:45AM +0200, Mike Galbraith wrote:
-> > On Thu, 2010-10-21 at 10:48 +0200, Markus Trippelsdorf wrote:
-> > > On Thu, Oct 21, 2010 at 10:11:55AM +0200, Mike Galbraith wrote:
-> > > > On Wed, 2010-10-20 at 04:56 +0200, Ingo Molnar wrote:
-> > > > 
-> > > > > Mind doing more of the tty->desktop renames/generalizations as Linus suggested, and 
-> > > > > resend the patch?
-> > > > 
-> > > > Here she comes.  Better/Worse?
-> > > > 
-> > > > Changes:
-> > > > - tty->autogroup.
-> > > > - only autogroup fair class tasks.
-> > > > - removed dainbramaged sleeper vruntime twiddling.
-> > > > - removed paranoid locking.
-> > > > - removed noop detatch code.
-> > > > 
-> > > > > I'd also suggest to move it out of EXPERIMENTAL - we dont really do that for core 
-> > > > > kernel features as most distros enable CONFIG_EXPERIMENTAL so it's a rather 
-> > > > > meaningless distinction. Since the feature is default-n, people will get the old 
-> > > > > scheduler by default but can also choose this desktop-centric scheduling mode.
-> > > > > 
-> > > > > I'd even argue to make it default-y, because this patch clearly cures a form of 
-> > > > > kbuild cancer.
-> > > > 
-> > > > You top dogs can make the default call.. it it's accepted that is ;-)
-> > > > 
-> > > > Marcus:  care to try the below?  Works fine for me (but so did first
-> > > > cut).  It depends on the attached patch, and applied to virgin shiny new
-> > > > 2.6.36.
-> > > 
-> > > Works fine interactively, but I still get the same kernel BUG on reboot
-> > > time as before. Would a photo of the trace help you?
-> > 
-> > Odd.  Yeah, please send me the photo and your .config.
-> 
-> OK here you go. Both are attached.
+ On 10/20/2010 8:15 AM, Ingo Molnar wrote:
+> * Eric Paris <eparis@redhat.com> wrote:
+>
+>> On Wed, 2010-10-20 at 16:38 +0200, Ingo Molnar wrote:
+>>> * Eric Paris <eparis@redhat.com> wrote:
+>>>
+>>>> Executive summary of the day's work:
+>>>> Yesterday morning: 944 bytes per inode in core
+>>>> Yesterday night: 24 bytes per inode in core
+>>>> Tonight: 4 bytes per inode in core.
+>>>>
+>>>> That's a x236 time reduction in memory usage.  No I didn't even start looking 
+>>>> at a freezer.  Which could bring that 4 down to 0, but would add a scalability 
+>>>> penalty on all inodes when IMA was enabled.
+>>> Why not use inode->i_security intelligently? That already exists so that way 
+>>> it's 0 bytes.
+>>>
+>>> Thanks,
+>> It still wouldn't be 0 bytes since there would be a 1-1 mapping from inode to 
+>> i_security structs. [...]
+> Only for IMA-affected files, right?
+>
+> My point is to keep it 0 overhead for the _non IMA common case_.
+>
+>> The real reason I don't pursue this route is because of the litany of different 
+>> ways this pointer is used in different LSMs (or not used at all.)  And we all know 
+>> that LSM authors aren't known for seeing the world the same way as each other.  As 
+>> a maintainer of one of those LSMs even I'm scared to try pushing that forward....
+> Ugh. That's a perfect reason to do it exactly like i suggested.
 
-In the backtrace, the scheduler is called from:
-
-do_group_exit()
-  __dequeue_signal()
-    do_exit()
-
-given that task_group() is called from many spots in the scheduler, I wonder if
-some checks making sure that tg != NULL in task_group() would be appropriate ?
-Also checking that p->signal is non-NULL in autogroup_attach_tty() might help.
-
-Thanks,
-
-Mathieu
+If you would like to make a proposal on LSM stacking other than
+the traditional "rip the LSM out" I am sure that everyone in the
+IMA, SELinux, TOMOYO, AppArmor and Smack communities would be
+happy to have a look. Short of having a viable mechanism for
+multiple LSMs to coexist IMA needs its separate space. Yes, people
+do use both IMA and LSMs on the same machine at the same time.
 
 
--- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
+> Thanks,
+>
+> 	Ingo
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-security-module" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
+>
+
