@@ -1,10 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758147Ab0JUVDr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Oct 2010 17:03:47 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:52365 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758024Ab0JUVB7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1758285Ab0JUVDs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Oct 2010 17:03:48 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:39736 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758022Ab0JUVB7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 21 Oct 2010 17:01:59 -0400
 From: Cyril Chemparathy <cyril@ti.com>
 To: davinci-linux-open-source@linux.davincidsp.com,
@@ -14,9 +15,9 @@ To: davinci-linux-open-source@linux.davincidsp.com,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         rpurdie@rpsys.net
 Cc: Cyril Chemparathy <cyril@ti.com>
-Subject: [PATCH v3 09/12] davinci: add tnetv107x evm ti-ssp gpio device
-Date: Thu, 21 Oct 2010 17:01:10 -0400
-Message-Id: <1287694873-12904-10-git-send-email-cyril@ti.com>
+Subject: [PATCH v3 11/12] davinci: add tnetv107x evm backlight device
+Date: Thu, 21 Oct 2010 17:01:12 -0400
+Message-Id: <1287694873-12904-12-git-send-email-cyril@ti.com>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1287694873-12904-1-git-send-email-cyril@ti.com>
 References: <1287694873-12904-1-git-send-email-cyril@ti.com>
@@ -24,50 +25,49 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds definitions to hook up one of the ti-ssp ports to the SSP GPIO
-driver.
+The tnetv107x evm board has a backlight device that is connected on one of the
+SSP ports.  This patch adds the board definitions necessary to plug the
+backlight driver to the GPIO corresponding to this SSP pin.
 
 Signed-off-by: Cyril Chemparathy <cyril@ti.com>
 ---
- arch/arm/mach-davinci/board-tnetv107x-evm.c |   15 +++++++++++++++
- 1 files changed, 15 insertions(+), 0 deletions(-)
+ arch/arm/mach-davinci/board-tnetv107x-evm.c |    9 +++++++++
+ 1 files changed, 9 insertions(+), 0 deletions(-)
 
 diff --git a/arch/arm/mach-davinci/board-tnetv107x-evm.c b/arch/arm/mach-davinci/board-tnetv107x-evm.c
-index d4c3d18..270ba26 100644
+index 270ba26..ca61f8a 100644
 --- a/arch/arm/mach-davinci/board-tnetv107x-evm.c
 +++ b/arch/arm/mach-davinci/board-tnetv107x-evm.c
-@@ -40,6 +40,8 @@
- #include <mach/ti_ssp.h>
- #include <mach/tnetv107x.h>
- 
-+#define SSP_GPIO_START		128
-+
+@@ -45,6 +45,7 @@
  #define EVM_MMC_WP_GPIO		21
  #define EVM_MMC_CD_GPIO		24
  #define EVM_SPI_CS_GPIO		54
-@@ -236,9 +238,22 @@ static const struct ti_ssp_spi_data spi_master_data = {
- 	.select		= spi_select_device,
++#define EVM_BACKLIGHT_GPIO	(SSP_GPIO_START + 2)
+ 
+ static int initialize_gpio(int gpio, char *desc)
+ {
+@@ -360,6 +361,12 @@ static struct spi_board_info spi_info[] __initconst = {
+ 	},
  };
  
-+static const struct ti_ssp_gpio_data ssp_gpio_data = {
-+	.start		= SSP_GPIO_START,
++static struct platform_device backlight_device = {
++	.name		= "tps6116x",
++	.id		= -1,
++	.dev.platform_data = (void *)EVM_BACKLIGHT_GPIO,
 +};
 +
- static struct ti_ssp_data ssp_config = {
- 	.out_clock	= 250 * 1000,
- 	.dev_data	= {
-+		[0] = {
-+			.dev_name = "ti-ssp-gpio",
-+			.iosel = SSP_PIN_SEL(0, SSP_IN) |
-+				 SSP_PIN_SEL(1, SSP_IN) |
-+				 SSP_PIN_SEL(2, SSP_IN) |
-+				 SSP_PIN_SEL(3, SSP_IN),
-+			.pdata = &ssp_gpio_data,
-+			.pdata_sz = sizeof(ssp_gpio_data),
-+		},
- 		[1] = {
- 			.dev_name = "ti-ssp-spi",
- 			.iosel = SSP_PIN_SEL(0, SSP_CLOCK)	|
+ static __init void tnetv107x_evm_board_init(void)
+ {
+ 	davinci_cfg_reg_list(sdio1_pins);
+@@ -368,6 +375,8 @@ static __init void tnetv107x_evm_board_init(void)
+ 
+ 	tnetv107x_devices_init(&evm_device_info);
+ 
++	platform_device_register(&backlight_device);
++
+ 	spi_register_board_info(spi_info, ARRAY_SIZE(spi_info));
+ }
+ 
 -- 
 1.7.0.4
 
