@@ -1,59 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752886Ab0JUHa0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Oct 2010 03:30:26 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:33254 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751360Ab0JUHaZ (ORCPT
+	id S1752781Ab0JUHeU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Oct 2010 03:34:20 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:43978 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750951Ab0JUHeT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Oct 2010 03:30:25 -0400
-Date: Thu, 21 Oct 2010 00:30:08 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
+	Thu, 21 Oct 2010 03:34:19 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:x-enigmail-version:content-type
+         :content-transfer-encoding;
+        b=d0iYAcQObeaSKc8pzJF5PDwSEIgEAVUddYJQpB7RLb6RH2lqeUEKKad0UmAwCWST3A
+         vO+Ls77MPUMiJfnJBEH3YnuO2pHiS5Rp03a/fLdTCNDnUPtrh7D8AqH3T08Gp8P18hiV
+         ew9mD1Wv7Vcs70cu3vLj7WfTOYldWB4POtlIU=
+Message-ID: <4CBFECF6.8040304@gmail.com>
+Date: Thu, 21 Oct 2010 09:34:14 +0200
+From: Jiri Slaby <jirislaby@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.11) Gecko/20101013 SUSE/3.1.5 Thunderbird/3.1.5
+MIME-Version: 1.0
 To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Li Zefan <lizf@cn.fujitsu.com>, linux-kernel@vger.kernel.org
-Subject: Re: mmotm 2010-10-20-15-01 uploaded
-Message-Id: <20101021003008.064302ad.akpm@linux-foundation.org>
-In-Reply-To: <1287645446.3488.56.camel@twins>
-References: <201010202233.o9KMXNoL008303@imap1.linux-foundation.org>
-	<4CBFAB7B.7080306@cn.fujitsu.com>
-	<4CBFB06B.3020305@cn.fujitsu.com>
-	<20101020204649.46361931.akpm@linux-foundation.org>
-	<1287645446.3488.56.camel@twins>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+CC: Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org, mm-commits@vger.kernel.org,
+        Ingo Molnar <mingo@elte.hu>
+Subject: Re: ptrace BUG [was: mmotm 2010-10-13-17-13 uploaded]
+References: <201010140044.o9E0iuR3029069@imap1.linux-foundation.org>	 <4CBF0FB7.3000602@gmail.com> <20101020155406.GC5387@nowhere>	 <4CBF12D4.4070207@gmail.com> <1287591225.3488.29.camel@twins>
+In-Reply-To: <1287591225.3488.29.camel@twins>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 21 Oct 2010 09:17:26 +0200 Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
-
-> > It would have been clearer to do
-> > 
-> >         WARN_ON_ONCE(vaddr != __fix_to_virt(FIX_KMAP_BEGIN + idx))
-> > 
-> > but I don't see what's gone wrong here.  Peter?
+On 10/20/2010 06:13 PM, Peter Zijlstra wrote:
+> On Wed, 2010-10-20 at 18:03 +0200, Jiri Slaby wrote:
+>> I applied the patch and got another BUG:
 > 
-> Right, so that's the warning that the unmapped address isn't actually
-> the top-of-stack one.
-> 
-> Your version is much nicer, although I haven't looked too hard at it, I
-> probably got my head in a twist.
-> 
-> But like you, I cannot directly see what's going wrong here,
-> zero_user_segments() seems a simple enough function without any
-> kmap_atomic nesting, so I'm not at all seeing how that's going wrong.
-> 
-> /me goes find where you hide your mmotm patch-queue and stare at the
-> actual code.
+> I don't think it applies on its own.. please use -tip or -next.
 
-hm, OK.  The x86 guys have been mucking with the fixmap code lately but
-I don't see anything which could cause this.
+Ok, it works in mmotm 2010-10-20-15-01.
 
-btw, it's a bit sad to use KM_TYPE_NR*NR_CPUS pages of virtual address
-space for kmap_atomic().  I'd expect that distros set NR_CPUS quite
-large (Fedora has 256).  That's 20MB of virtual address space consumed,
-I think.
-
-And we consume it on non-highmem kernels, too...
+thanks,
+-- 
+js
