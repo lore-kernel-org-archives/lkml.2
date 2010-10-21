@@ -1,44 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758224Ab0JUVqk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Oct 2010 17:46:40 -0400
-Received: from mtagate7.de.ibm.com ([195.212.17.167]:49659 "EHLO
-	mtagate7.de.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752851Ab0JUVqi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Oct 2010 17:46:38 -0400
-Message-ID: <4CC0B4B5.8040006@de.ibm.com>
-Date: Thu, 21 Oct 2010 23:46:29 +0200
-From: Christian Borntraeger <borntraeger@de.ibm.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.12) Gecko/20100918 Lightning/1.0b1 Icedove/3.0.8
+	id S1757658Ab0JUVto (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Oct 2010 17:49:44 -0400
+Received: from ozlabs.org ([203.10.76.45]:60567 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752810Ab0JUVtn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Oct 2010 17:49:43 -0400
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [PATCH v2][GIT PULL] tracing: Prevent unloadable modules from using trace_bprintk()
+Date: Fri, 22 Oct 2010 08:05:14 +1030
+User-Agent: KMail/1.13.5 (Linux/2.6.35-22-generic; KDE/4.5.1; i686; ; )
+Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+References: <1287668742.16971.585.camel@gandalf.stny.rr.com>
+In-Reply-To: <1287668742.16971.585.camel@gandalf.stny.rr.com>
 MIME-Version: 1.0
-To: Mitchell Erblich <erblichs@earthlink.net>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: Verification of SYScall changes because of CVE-2009-0029
-References: <7E55CE8C-959B-42B7-B991-4E385D1D6E38@earthlink.net>
-In-Reply-To: <7E55CE8C-959B-42B7-B991-4E385D1D6E38@earthlink.net>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201010220805.14454.rusty@rustcorp.com.au>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 21.10.2010 07:40, schrieb Mitchell Erblich:
-> he ABI in the Linux kernel 2.6.28 and earlier on s390, powerpc, sparc64, and mips
-> 64-bit platforms requires that a 32-bit argument in a 64-bit register was properly
-> sign extended when sent from a user-mode application, but cannot verify this, which
-> allows local users to cause a denial of service (crash) or possibly gain privileges 
-> via a crafted system call.
+On Fri, 22 Oct 2010 12:15:42 am Steven Rostedt wrote:
 > 
-> Has anyone been able to verify  (a program that exploits this issue) ?
+> Ingo,
+> 
+> This is based off of my core-2 branch. I'm moved this patch after that
+> so if anyone has any objections, I can change this patch without holding
+> off the previous one.
 
-I found the problem with crashme and I was able to reduce the test to a
-5 line C program - so yes, the problem can happen for real. The thing is
-that this was no generic exploit, the problem from the testcase existed 
-only with specific gcc, kernel, syscall and architecture but there might
-be others - we dont know. So sorry, there is no generic test case that 
-checks if the problem is fixed.
+I think disabling use in modules is lazy, and allowing it for !MODVERSIONS
+is just weird.
 
-Christian
+Can't you detect this on module unload and fix it up?  Or delay freeing the
+module until the trace ring is emptied?
 
-
+Cheers,
+Rusty.
