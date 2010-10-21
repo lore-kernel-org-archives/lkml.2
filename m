@@ -1,66 +1,175 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758007Ab0JUTXU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Oct 2010 15:23:20 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:54324 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754772Ab0JUTXT (ORCPT
+	id S1757987Ab0JUTZQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Oct 2010 15:25:16 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:32377 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752199Ab0JUTZN convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Oct 2010 15:23:19 -0400
-Date: Thu, 21 Oct 2010 12:22:32 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Brian Behlendorf <behlendorf1@llnl.gov>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] Make div64_u64() precise on 32bit platforms
-Message-Id: <20101021122232.10d2d573.akpm@linux-foundation.org>
-In-Reply-To: <20101021181220.GA8827@redhat.com>
-References: <201010121227.05735.behlendorf1@llnl.gov>
-	<20101013213746.GA27248@redhat.com>
-	<20101014121159.GA407@redhat.com>
-	<1287683202.16680.44.camel@pip>
-	<20101021181220.GA8827@redhat.com>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 21 Oct 2010 15:25:13 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=liJ6BgtdL6DwcwxsnBQXxRDJe997hnWDXm8sWIDjnMNKFCUgmtcTykjMvud6FqPK1N
+         oFeEIvNQ6EqiK9cJ8WBQ==
+MIME-Version: 1.0
+In-Reply-To: <1287672271.3488.139.camel@twins>
+References: <1287614941-32325-1-git-send-email-venki@google.com>
+	<1287614941-32325-5-git-send-email-venki@google.com>
+	<1287672271.3488.139.camel@twins>
+Date: Thu, 21 Oct 2010 12:25:11 -0700
+Message-ID: <AANLkTi=Yi4U_TjJZLGo4v1f6fjLYesO9GCxLnT42qkt0@mail.gmail.com>
+Subject: Re: [PATCH 4/6] Export ns irqtimes from IRQ_TIME_ACCOUNTING through /proc/stat
+From: Venkatesh Pallipadi <venki@google.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        linux-kernel@vger.kernel.org, Paul Turner <pjt@google.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Shaun Ruffell <sruffell@digium.com>,
+        Yong Zhang <yong.zhang0@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 21 Oct 2010 20:12:20 +0200
-Oleg Nesterov <oleg@redhat.com> wrote:
+On Thu, Oct 21, 2010 at 7:44 AM, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Wed, 2010-10-20 at 15:49 -0700, Venkatesh Pallipadi wrote:
+>
+>> +static int irqtime_account_hi_update(void)
+>> +{
+>> +     struct cpu_usage_stat *cpustat = &kstat_this_cpu.cpustat;
+>> +     unsigned long flags;
+>> +     u64 latest_ns;
+>> +     int ret = 0;
+>> +
+>> +     local_irq_save(flags);
+>> +     latest_ns = __get_cpu_var(cpu_hardirq_time);
+>
+> I guess this_cpu_read() would again be an improvement.. same for the SI
+> version.
+>
 
-> Andrew, please drop
-> 
-> 	lib-div64c-document-that-div64_u64-is-not-precise-on-32bit-platforms.patch
-> 
-> On 10/21, Brian Behlendorf wrote:
-> >
-> > I think we should use your simpler version.  There's no good reason to
-> > make this more complicated than it needs to be.  I haven't been able to
-> > find a test case where your changes get the wrong result.
-> 
-> Great!
-> 
-> > From: Brian Behlendorf <behlendorf1@llnl.gov>
-> > Date: Thu, 5 Aug 2010 14:59:11 -0700
-> > Subject: [PATCH] Fix div64_u64 for 32bit platforms
-> >
-> > The current implementation of div64_u64 for 32bit systems returns
-> > an approximately correct result when the divisor exceeds 32bits.
-> > Since doing 64bit division using 32bit hardware is a long since
-> > solved problem we just use one of the existing proven methods.
-> 
-> Brian, you forgot to add your sob. Hopefully Andrew can add
-> 
-> 	Signed-off-by: Brian Behlendorf <behlendorf1@llnl.gov>
-> 
-> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+Yes.
 
-OK..
+>> +     if (cputime64_gt(nsecs_to_cputime64(latest_ns), cpustat->irq))
+>> +             ret = 1;
+>> +     local_irq_restore(flags);
+>> +     return ret;
+>> +}
+>
+>> +#ifdef CONFIG_IRQ_TIME_ACCOUNTING
+>> +/*
+>> + * Account a tick to a process and cpustat
+>> + * @p: the process that the cpu time gets accounted to
+>> + * @user_tick: is the tick from userspace
+>> + * @rq: the pointer to rq
+>> + *
+>> + * Tick demultiplexing follows the order
+>> + * - pending hardirq update
+>> + * - user_time
+>> + * - pending softirq update
+>> + * - idle_time
+>> + * - system time
+>> + *   - check for guest_time
+>> + *   - else account as system_time
+>> + *
+>> + * Check for hardirq is done both for system and user time as there is
+>> + * no timer going off while we are on hardirq and hence we may never get an
+>> + * oppurtunity to update it solely in system time.
+>
+> My mailer suggests you spell that as: opportunity :-)
 
-Just to tie all this off, you originally said "We have a bug report
-which blames div64_u64() on 32bit platforms.".  Where is that bug report?
+Ah, I don't have spell checker on my editor :-). Will change.
 
-Thanks.
+>> + * p->stime and friends are only updated on system time and not on irq
+>> + * softirq as those do not count in task exec_runtime any more.
+>> + */
+>> +static void irqtime_account_process_tick(struct task_struct *p, int user_tick,
+>> +                                             struct rq *rq)
+>> +{
+>> +     cputime_t one_jiffy_scaled = cputime_to_scaled(cputime_one_jiffy);
+>> +     cputime64_t tmp = cputime_to_cputime64(cputime_one_jiffy);
+>> +     struct cpu_usage_stat *cpustat = &kstat_this_cpu.cpustat;
+>> +
+>> +     if (irqtime_account_hi_update()) {
+>> +             cpustat->irq = cputime64_add(cpustat->irq, tmp);
+>> +     } else if (user_tick) {
+>> +             account_user_time(p, cputime_one_jiffy, one_jiffy_scaled);
+>> +     } else if (irqtime_account_si_update()) {
+>> +             cpustat->softirq = cputime64_add(cpustat->softirq, tmp);
+>> +     } else if (p == rq->idle) {
+>> +             account_idle_time(cputime_one_jiffy);
+>> +     } else if (p->flags & PF_VCPU) { /* System time or guest time */
+>> +             account_guest_time(p, cputime_one_jiffy, one_jiffy_scaled);
+>> +     } else {
+>> +             __account_system_time(p, cputime_one_jiffy, one_jiffy_scaled,
+>> +                                     &cpustat->system);
+>> +     }
+>> +}
+>
+> I'd do:
+>
+>  - hardirq
+>  - softirq
+>  - user
+>  - system
+>     - guest
+>     - really system
+>  - idle
+>
+> Since otherwise tiny slices of softirq would need to wait for a system
+> tick to happen before you fold them.
+>
+> Also, it is possible that in a single tick multiple counters overflow
+> the jiffy boundary, so something like:
+>
+>  if (irqtime_account_hi_update())
+>        cpustat->irq = ...
+>
+>  if (irqtime_account_si_update())
+>        cpustate->softirq = ...
+>
+>  if (user_tick) {
+>  } else if (...) {
+>
+>  } else ...
+>
+> would seem like the better approach.
+>
+
+I am not sure about checking for both si and hi. That would result in
+double accounting a tick and have some side-effects.
+Regarding moving si above user: Yes. That seems good.
+idle after system, That may not make so much of a difference, as there
+is no special way to check for system time, other than !idle.
+
+>>  /*
+>>   * Account for involuntary wait time.
+>>   * @steal: the cpu time spent in involuntary wait
+>> @@ -3594,6 +3685,11 @@ void account_process_tick(struct task_struct *p, int user_tick)
+>>       cputime_t one_jiffy_scaled = cputime_to_scaled(cputime_one_jiffy);
+>>       struct rq *rq = this_rq();
+>>
+>> +     if (sched_clock_irqtime) {
+>> +             irqtime_account_process_tick(p, user_tick, rq);
+>> +             return;
+>> +     }
+>> +
+>>       if (user_tick)
+>>               account_user_time(p, cputime_one_jiffy, one_jiffy_scaled);
+>>       else if ((p != rq->idle) || (irq_count() != HARDIRQ_OFFSET))
+>
+> mark_tsc_unstable() can disable sched_clock_irqtime at any time, the
+> accounting won't go funny due to that right?
+>
+
+That should be OK. We would just fallback to lowres tick based accounting.
+
+Thanks,
+Venki
