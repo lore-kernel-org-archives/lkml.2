@@ -1,80 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756853Ab0JUBxn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Oct 2010 21:53:43 -0400
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:38866 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756815Ab0JUBxl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Oct 2010 21:53:41 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=C6NwEWHeZzRfm4qlr1BuBr5nZnVMsmHivURFib5qLtGZgTYaEyyWKxs15cS+TE6sd1
-         emSVxdQZvbu1barYQoZbp99vJAB5a888pU66xZxDncpQPI0e3f4nbOjYID0Qsld4SEv7
-         vDcBHEms3WIy245AgELYA027dHu9CshFFhBrc=
-Date: Wed, 20 Oct 2010 21:53:37 -0400
-From: tmhikaru@gmail.com
-To: Peter Zijlstra <peterz@infradead.org>, Damien Wyart <damien.wyart@free.fr>,
-        Chase Douglas <chase.douglas@canonical.com>,
-        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        linux-kernel@vger.kernel.org, Venkatesh Pallipadi <venki@google.com>
-Subject: Re: High CPU load when machine is idle (related to PROBLEM: Unusually high load average when idle in 2.6.35, 2.6.35.1 and later)
-Message-ID: <20101021015337.GA21384@roll>
-References: <20100929070153.GA2200@brouette> <20101014145813.GA2185@brouette> <20101020132732.GA30024@brouette> <1287581440.3488.16.camel@twins> <1287582208.3488.20.camel@twins> <1287584073.3488.22.camel@twins> <1287595605.3488.52.camel@twins> <20101021014843.GA21295@roll>
-Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="LQksG6bCIzRHxTLp"
-Content-Disposition: inline
-In-Reply-To: <20101021014843.GA21295@roll>
-User-Agent: Mutt/1.4.2.3i
+	id S1756838Ab0JUCAg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Oct 2010 22:00:36 -0400
+Received: from thunk.org ([69.25.196.29]:45674 "EHLO thunker.thunk.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754695Ab0JUCAf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Oct 2010 22:00:35 -0400
+Date: Wed, 20 Oct 2010 22:00:30 -0400
+Message-Id: <E1P8kSE-0001DW-8C@tytso-glaptop>
+To: Jens Axboe <axboe@kernel.dk>
+cc: linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: What am I doing wrong?  submit_bio() suddenly stops working...
+From: "Theodore Ts'o" <tytso@mit.edu>
+Phone: (781) 391-3464
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on thunker.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hey Jens,
 
---LQksG6bCIzRHxTLp
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+I've been trying to figure out what I'm doing wrong.  I've been trying
+to convert the data writeback bath to use the bio layer.  It mostly
+works --- until all of sudden all calls to block_bio_queue(), either via
+submit_bh() or via submit_bio(), start turning into no-ops.
 
-On Wed, Oct 20, 2010 at 09:48:43PM -0400, tm@ wrote:
-> On Wed, Oct 20, 2010 at 07:26:45PM +0200, Peter Zijlstra wrote:
-> >=20
-> >=20
-> > OK, how does this work for people? I find my idle load is still a tad
-> > high, but maybe I'm not patient enough.
->=20
-> I haven't had a chance to keep up with the topic, and I apologize. I'll be
-> testing this as soon as I can finish compiling it. Thank you all for not
-> letting this go unfixed.
->=20
-> Tim McGrath
+I'm sure I'm doing something wrong, but the bio layer isn't terribly
+well documented, so I'm not sure what it might be.  The patch which
+causes the problem can be found be found here:
 
-Uhh, problem. This patch does not apply to git checkout
-74f5187ac873042f502227701ed1727e7c5fbfa9
+http://userweb.kernel.org/~tytso/ext4-bio-patches/0006-Ext4-Use-bio-layer-instead-of-buffer-layer-in-mpage_.patch
 
-which is the version of the kernel that first exhibits this flaw.
+Here is an except from an ftrace I've been taking to get to the bottom
+of it.  It's a combination of some trace_printk's, blktrace, and the
+block_bio_queue tracepoint.   The full log can be found at:
 
-which version of the kernel does this patch apply cleanly to?
+http://userweb.kernel.org/~tytso/ext4-bio-patches/kvm-console
 
-Tim McGrath
+It shows all of the blktrace events that shows up after block_bio_queue
+tracepoint, but at some point, after jbd2 or ext4 calls submit_bh() or
+submit_bio(), after the block_bio_queue tracepoint, we stop seeing the
+blktrace events, and it looks like the block I/O layer stops answering
+the phone.  No complaints in dmesg, no BUG_ON's, no errors....
 
---LQksG6bCIzRHxTLp
-Content-Type: application/pgp-signature
-Content-Disposition: inline
+If I back out the ext4 bio patches, things work correctly, and as I
+said, I'm pretty sure the bug is in my code.  But the failure is
+happening deep in the block I/O stack, and I can't figure out why it's
+failing.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
+I'm hoping this rings a bell, and perhaps we should consider some of the
+debugging trace_printk's as possible new tracepoints?
 
-iQEVAwUBTL+dIZEncCrqzVruAQJgaQf/T0+A0anYe5x4V7SJ8qrQBc6zliOrqjp6
-LOp6wGipVULCZDF5a75+w/9g0SDdglCFw7lHdLSpGbUPakLMLE9lNhk6lLkzgyc+
-ZBSrz++5VAhbM11C1ZURpP4GR7m3NRO1Cxm51OfUUIigwYu06rBjcgizOZQvW7S/
-iSCg7OhespAEMOAyCxqyF8fiRjL6LSN2WUonwmEBwQpjPxxDGvcL79osyvWuawU0
-LHrehdQKjUTvVzWylR8RLp8vlY7jUgBIxCFBke4lvOCQ1Q9D7p8HFKXeZ8iiMymt
-H9T+jRNhmTGx26b/klZ0qLd98HGYtwGbdghj06cRPtgL7dnY5rQVbw==
-=mbbR
------END PGP SIGNATURE-----
+Any help you could give me would be greatly appreciated.  Ideally, you
+or someone can tell me what stupid thing I'm doing.  :-)
 
---LQksG6bCIzRHxTLp--
+Thanks,
+
+					- Ted
+
+[  215.663499] jbd2/sdb-2126    0..... 6976406us : submit_bh: <5>dev sdb blk 131072, ret_pc c0211ecb (__sync_dirty_buffer) pid 2126
+[  215.663499] jbd2/sdb-2126    0d.... 6976415us :   8,16   Q  WS 1048576 + 8 [jbd2/sdb-8]
+[  215.663499] jbd2/sdb-2126    0..... 6976419us : block_bio_queue: 8,16 WS 1048576 + 8 [jbd2/sdb-8]
+[  215.663499] jbd2/sdb-2126    0d.... 6976439us :   8,16   m   N cfq2126 alloced
+[  215.663499] jbd2/sdb-2126    0d.... 6976440us :   8,16   G  WS 1048576 + 8 [jbd2/sdb-8]
+[  215.663499] jbd2/sdb-2126    0d.... 6976445us :   8,16   I   W 1048576 + 8 [jbd2/sdb-8]
+[  215.663499] jbd2/sdb-2126    0d.... 6976446us :   8,16   m   N cfq2126 insert_request
+[  215.663499] jbd2/sdb-2126    0d.... 6976448us :   8,16   m   N cfq2126 add_to_rr
+[  215.663499] jbd2/sdb-2126    0d.... 6976451us :   8,16   m   N cfq2126 preempt
+[  215.663499] jbd2/sdb-2126    0d.... 6976452us :   8,16   m   N cfq2993 slice expired t=1
+[  215.663499] jbd2/sdb-2126    0d.... 6976453us :   8,16   m   N cfq2993 resid=-331
+[  215.663499] jbd2/sdb-2126    0d.... 6976456us :   8,16   m   N cfq2993 sl_used=12 disp=2 charge=12 iops=0 sect=296
+[  215.663499] jbd2/sdb-2126    0d.... 6976788us :   8,16   m   N cfq workload slice:45
+[  215.663499] jbd2/sdb-2126    0d.... 6976791us :   8,16   m   N cfq2126 set_active wl_prio:0 wl_type:2
+[  215.663499] jbd2/sdb-2126    0..... 6976797us : __wait_on_buffer: <5>dev sdb blk 131072, ret_pc c0210e83 (wait_on_buffer) pid 2126
+[  215.663499] jbd2/sdb-2126    0d.... 6976801us :   8,16   U   N [jbd2/sdb-8] 10
+[  215.663499] jbd2/sda-1439    0..... 10966709us : submit_bh: <5>dev sda blk 128401, ret_pc c02128fb (__block_write_full_page) pid 1439
+[  215.663499] jbd2/sda-1439    0..... 10966719us : block_bio_queue: 8,0 WS 1027208 + 8 [jbd2/sda-8]
+[  215.663499] jbd2/sda-1439    0..... 10966750us : submit_bh: <5>dev sda blk 128402, ret_pc c02128fb (__block_write_full_page) pid 1439
+...
