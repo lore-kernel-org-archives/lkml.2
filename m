@@ -1,82 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758857Ab0JUWNv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Oct 2010 18:13:51 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:42108 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753720Ab0JUWNu convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Oct 2010 18:13:50 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=FsRiWysaoOmAkggtQffAIMKdYMSU22sYO27Njw5pQow6JiIyu8KsKw/Q+NpZeNVZrk
-         KPGSUnSGGuIz/PvdwTpZriCdWyE8b3MokMbdDSr9KywpxPAY63JCxT7NiZYHj7eXWa9d
-         bOHJhpYm4tc62V5Nq7JsxXTResx8yVQINvoys=
+	id S1758328Ab0JUWSt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Oct 2010 18:18:49 -0400
+Received: from mout0.freenet.de ([195.4.92.90]:45116 "EHLO mout0.freenet.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752383Ab0JUWSr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Oct 2010 18:18:47 -0400
+Message-ID: <4CC0BC3E.6080906@freenet.de>
+Date: Fri, 22 Oct 2010 00:18:38 +0200
+From: Patrick Ringl <patrick_@freenet.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.11) Gecko/20100713 Thunderbird/3.0.6
 MIME-Version: 1.0
-In-Reply-To: <AANLkTin4A61K9uW1Cns3rr3eDkWQ+KCBP8jt4M4tFQHP@mail.gmail.com>
-References: <AANLkTin4A61K9uW1Cns3rr3eDkWQ+KCBP8jt4M4tFQHP@mail.gmail.com>
-Date: Fri, 22 Oct 2010 00:13:49 +0200
-Message-ID: <AANLkTi=Ju8KFDaeizbvZbDTX9gSi_hKU04RcJ4yms2gQ@mail.gmail.com>
-Subject: Re: Re: [RFC/RFT PATCH] sched: automated per tty task groups
-From: Marco <mpiazza@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Mike Galbraith <efault@gmx.de>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Herbert Xu <herbert@gondor.hengli.com.au>
+CC: Patrick Ringl <patrick_@freenet.de>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, bridge@lists.linux-foundation.org
+Subject: Re: 2.6.36-rc7: net/bridge causes temporary network I/O lockups [2]
+References: <4CB9EBC3.4070905@freenet.de> <20101018161656.GA2403@gondor.apana.org.au> <4CBCB014.9080108@freenet.de> <20101020061631.GA21679@gondor.apana.org.au>
+In-Reply-To: <20101020061631.GA21679@gondor.apana.org.au>
+Content-Type: multipart/mixed;
+ boundary="------------070402080704000908080609"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I've made some tests to give a try to tty grouping patches.
+This is a multi-part message in MIME format.
+--------------070402080704000908080609
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 
-Kernel 2.6.36+CONFIG_SCHED_AUTOGROUP+Improve_tick_preemption.patch
-
-These are the result of :
-taskset -c 0 ./wakeup-latency& sleep 30;killall wakeup-latency (owner marco)
-vs
-taskset -c 0 make -j 10 bzImage
-
-
-Vanilla 2.6.36
-maximum latency: 52879.7 탎
-average latency: 4217.5 탎
-missed timer events: 0
-
-Kernel 2.6.36+autogroup enabled
-maximum latency: 2840.8 탎
-average latency: 15.5 탎
-missed timer events: 0
-
-Kernel 2.6.36+libpam-systemd enabled
-maximum latency: 26361.6 탎
-average latency: 4548.6 탎
-missed timer events: 0
-
-Kernel 2.6.36+START-NICE sched feature(v3)
-maximum latency: 76182.8 탎
-average latency: 4930.1 탎
-missed timer events: 0
-
-Quite impressive.....
-Now, i can play supertuxkart while make'ing -j 10 and stellarium shows
-the highest fps i've seen so far.
-Very good job, guys.
-
-Marco
-
-
-On Thu, Oct 21, 2010 at 11:17 AM, Marco <mpiazza@gmail.com> wrote:
-> Hello, i'm a little confused about tty grouping.
-> The benefit in terms of latency is only due to the grouping of task
-> under the appropriate cgroup hierarchy?
+On 10/20/2010 08:16 AM, Herbert Xu wrote:
+> On Mon, Oct 18, 2010 at 10:37:40PM +0200, Patrick Ringl wrote:
+>    
+>> Anything else I could possibly provide? :-)
+>>      
+> Yes, testing :)
 >
-> Can this issue be solved by userspace daemon (think of libpam-systemd,
-> libpam-cgroup)? Perhaps tty grouping in kernel space is more
-> efficient.
+> First of all I'd like to rule out (or in) the IPv6 query code,
+> which is clearly generating a bogus packet (wrong payload_len).
 >
-> I'm missing something?
->
-> Marco
->
+> So can you apply this patch and see if it makes the problem
+> go away? Please take packet dumps so we know that the IPv6 query
+> is no longer being sent.
+>    
+Hi,
+
+Hi,
+
+sorry for the late response. I've been using your patch on 2.6.36 and 
+unfortunately, the bogus ipv6 packet is not the cause of the lockups. I 
+have attached two packet dumps (br0 and eth1) again.
+
+
+regards,
+Patrick
+> Thanks,
+>    
+
+
+--------------070402080704000908080609
+Content-Type: application/octet-stream;
+ name="n_br0"
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment;
+ filename="n_br0"
+
+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
+AAA=
+--------------070402080704000908080609
+Content-Type: application/octet-stream;
+ name="n_eth1"
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment;
+ filename="n_eth1"
+
+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
+AAAAAA==
+--------------070402080704000908080609--
