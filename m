@@ -1,59 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751615Ab0JUKAz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Oct 2010 06:00:55 -0400
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:49910 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750875Ab0JUKAy convert rfc822-to-8bit (ORCPT
+	id S1752345Ab0JUKEy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Oct 2010 06:04:54 -0400
+Received: from canuck.infradead.org ([134.117.69.58]:55913 "EHLO
+	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750951Ab0JUKEx convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Oct 2010 06:00:54 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=IH9CwV9TsL76UxoLrTTnitU7x8T5w3+AAzmeKPVlK5V1uZHVVigCFzpgvk4ySkvHTN
-         cV0nv6cuSSvms9+0pWppb1R0yQGusjAQ0GdmtOxvGADZD7Vyh0N0OoghmFJsgEwLemGF
-         L8dSsl66wHQ0mHfnJVVuSCLS0MG+wymjG+O+k=
-MIME-Version: 1.0
-In-Reply-To: <AANLkTikjByC1_BQvPv=Stkdph1cV=a8CwcqrcBv6u0+p@mail.gmail.com>
-References: <AANLkTim+vj_OAd22TdThuC-HSqUiDjguOHQWjyqFaq6N@mail.gmail.com>
-	<AANLkTi=Cpq2_vV2RGcoQhrqk8xpL59AvLFPzfvTBk5Xa@mail.gmail.com>
-	<4CBF8BDB.7090907@gmail.com>
-	<20101021075401.GC22100@n2100.arm.linux.org.uk>
-	<AANLkTikjByC1_BQvPv=Stkdph1cV=a8CwcqrcBv6u0+p@mail.gmail.com>
-Date: Thu, 21 Oct 2010 12:00:53 +0200
-Message-ID: <AANLkTik=27zjJacQTQhd6E4rGuERg19rAd5cgnLTDEoR@mail.gmail.com>
-Subject: Re: [RFC] Removal of dead code from arch/arm/*
-From: Zimny Lech <napohybelskurwysynom2010@gmail.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Eric Miao <eric.y.miao@gmail.com>, linux-arm-kernel@lists.infradead.org,
+	Thu, 21 Oct 2010 06:04:53 -0400
+Subject: Re: [PATCH v3] Add generic exponentially weighted moving average
+ (EWMA) function
+From: Peter Zijlstra <peterz@infradead.org>
+To: Bruno Randolf <br1@einfach.org>
+Cc: randy.dunlap@oracle.com, akpm@linux-foundation.org,
+        kevin.granade@gmail.com, Lars_Ericsson@telia.com, blp@cs.stanford.edu,
         linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=windows-1252
+In-Reply-To: <201010211440.24936.br1@einfach.org>
+References: <20101020082336.28281.77747.stgit@localhost6.localdomain6>
+	 <1287587023.3488.27.camel@twins>  <201010211440.24936.br1@einfach.org>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 8BIT
+Date: Thu, 21 Oct 2010 12:04:35 +0200
+Message-ID: <1287655475.3488.99.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/10/21 Zimny Lech <napohybelskurwysynom2010@gmail.com>:
-> I tried to cross compile allyesconfig to test my changes and I hit this
->  CC      drivers/gpio/janz-ttl.o
-> drivers/gpio/janz-ttl.c: In function ‘ttl_set_value’:
-> drivers/gpio/janz-ttl.c:107: error: implicit declaration of function
-> ‘iowrite16be’
+On Thu, 2010-10-21 at 14:40 +0900, Bruno Randolf wrote:
+> On Thu October 21 2010 00:03:43 Peter Zijlstra wrote:
+> > On Wed, 2010-10-20 at 17:23 +0900, Bruno Randolf wrote:
+> > > +/**
+> > > + * ewma_add() - Exponentially weighted moving average (EWMA)
+> > > + * @avg: Average structure
+> > > + * @val: Current value
+> > > + *
+> > > + * Add a sample to the average.
+> > > + */
+> > > +struct ewma*
+> > > +ewma_add(struct ewma *avg, const unsigned int val)
+> > > +{
+> > > +       avg->internal = avg->internal  ?
+> > > +               (((avg->internal * (avg->weight - 1)) +
+> > > +                       (val * avg->factor)) / avg->weight) :
+> > > +               (val * avg->factor);
+> > > +       return avg;
+> > > +}
+> > > +EXPORT_SYMBOL(ewma_add);
+> > 
+> > How can it be a weighted avg if each sample has the same weight?
+> 
+> by applying the weight again and again, we get an exponential weighting.
+> 
+> http://en.wikipedia.org/wiki/Exponentially_weighted_moving_average
 
-Another build error not caused by my patch AFAICS
+Ah, thanks. It might be worth adding some of that explanation to the
+actual comment.
 
-  CC      drivers/input/touchscreen/eeti_ts.o
-drivers/input/touchscreen/eeti_ts.c: In function ‘eeti_ts_irq_active’:
-drivers/input/touchscreen/eeti_ts.c:65: error: implicit declaration of
-function ‘irq_to_gpio’
+I think the naming is somewhat unfortunate since a weighted average
+makes me think of:
 
+       \Sum w_i * v_i
+ wa = ---------------
+         \Sum w_i
 
--- 
-Slawa!
-N.P.S.
-
-Les fleurs du mal unfold
-Comme les fleurs du mal
-Dark demons of my soul
-Un amour fatal
+Instead of the described algorithm.
