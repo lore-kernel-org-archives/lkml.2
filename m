@@ -1,60 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757775Ab0JUTKv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Oct 2010 15:10:51 -0400
-Received: from 174-46-170-154.static.twtelecom.net ([174.46.170.154]:59077
-	"EHLO edprlnx06.logicpd.com" rhost-flags-OK-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752971Ab0JUTKt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Oct 2010 15:10:49 -0400
-Message-ID: <4CC09042.3000201@logicpd.com>
-Date: Thu, 21 Oct 2010 14:10:58 -0500
-From: Tim Nordell <tim.nordell@logicpd.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.7) Gecko/20100908 Lightning/1.0b2pre Thunderbird/3.1.1
-MIME-Version: 1.0
-To: Tim Nordell <tim.nordell@logicpd.com>
-CC: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] ARM: OMAP: Modified omap_mux_init_signal() to take in
- const char *
-References: <1287687041-22377-1-git-send-email-tim.nordell@logicpd.com>
-In-Reply-To: <1287687041-22377-1-git-send-email-tim.nordell@logicpd.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1757842Ab0JUTLl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Oct 2010 15:11:41 -0400
+Received: from mailout-de.gmx.net ([213.165.64.22]:47984 "HELO mail.gmx.net"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
+	id S1755038Ab0JUTLj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Oct 2010 15:11:39 -0400
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX1/+F94mZ6H+12MJjWnKME3u5KRb7oP4fzJe89hEJ2
+	M7mqktTA6ZEWoa
+Subject: Re: [RFC/RFT PATCH] sched: automated per tty task groups
+From: Mike Galbraith <efault@gmx.de>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Ingo Molnar <mingo@elte.hu>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Markus Trippelsdorf <markus@trippelsdorf.de>
+In-Reply-To: <20101021162924.GA3225@redhat.com>
+References: <1287479765.9920.9.camel@marge.simson.net>
+	 <1287487757.24189.40.camel@marge.simson.net>
+	 <AANLkTik08s=S7gZOGWEEhPW-zJtNRCse2h6jH3HAjoJH@mail.gmail.com>
+	 <1287511983.7417.45.camel@marge.simson.net>
+	 <1287514410.7368.10.camel@marge.simson.net>
+	 <20101020025652.GB26822@elte.hu>
+	 <1287648715.9021.20.camel@marge.simson.net>
+	 <20101021105114.GA10216@Krystal> <1287660312.3488.103.camel@twins>
+	 <20101021162924.GA3225@redhat.com>
+Content-Type: text/plain
+Date: Thu, 21 Oct 2010 21:11:34 +0200
+Message-Id: <1287688294.7436.36.camel@marge.simson.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.24.1.1 
 Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- On 10/21/10 13:50, Tim Nordell wrote:
-> If one does the following line twice with the old code:
->
-> omap_mux_init_signal("uart3_rts_sd.gpio_164", OMAP_PIN_INPUT);
-> omap_mux_init_signal("uart3_rts_sd.gpio_164", OMAP_PIN_INPUT);
->
-> the compiler optimizes the two const strings into one string
-> internally in the compiler.  The old code would modify the string
-> by inserting a NULL effectively making the second call become:
->
-> omap_mux_init_signal("uart3_rts_sd", OMAP_PIN_INPUT);
->
-> Since the code changes _all_ uart3_rts_sd signals over to this,
-> it'll cause unknown behavior, as well as making it more
-> difficult to track down the reason since the string
-> "uart3_rts_sd" by itself may not actually exist in your
-> normal mux initialization sequence.
->
+On Thu, 2010-10-21 at 18:29 +0200, Oleg Nesterov wrote:
+> On 10/21, Peter Zijlstra wrote:
+> >
+> > On Thu, 2010-10-21 at 06:51 -0400, Mathieu Desnoyers wrote:
+> > > * Mike Galbraith (efault@gmx.de) wrote:
+> > > [...]
+> > > > +static void
+> > > > +autogroup_attach_tty(struct task_struct *p, struct task_group **tg)
+> > > > +{
+> > > > +	struct tty_struct *tty = p->signal->tty;
+> > > > +
+> > > > +	if (!tty)
+> > > > +		return;
+> > > > +
+> > > > +	*tg = p->signal->tty->tg;
+> > > > +}
+> 
+> minor nit, I think in theory this needs barrier(), or
+> 
+> 	struct tty_struct *tty = ACCESS_ONCE(p->signal->tty);
+> 
+> 	if (tty)
+> 		*tg = tty->tg;
 
-Gah.  I just realized there was a patch in the linux-omap tree to do the
-same thing.
+Thanks.
 
-http://git.kernel.org/?p=linux/kernel/git/tmlind/linux-omap-2.6.git;a=commitdiff;h=5a3b2f7a5a79082dd3a5f2294cbd85fc3b173d98;hp=7ad0e386d46e9edff64705ab25337ad9130baf63
+> > > > +static inline void
+> > > > +autogroup_check_attach(struct task_struct *p, struct task_group **tg)
+> > > > +{
+> > > > +	if (!sysctl_sched_autogroup_enabled || *tg != &root_task_group ||
+> > > > +			p->sched_class != &fair_sched_class)
+> > > > +		return;
+> > > > +
+> > > > +	rcu_read_lock();
+> > > > +
+> > > > +	autogroup_attach_tty(p, tg);
+> > > > +
+> > > > +	rcu_read_unlock();
+> > > > +}
+> > > > +
+> >
+> > >  Meanwhile, a little question about locking here: how is
+> > > the read lock supposed to protect from p->signal (and p->signal->tty)
+> > > modifications ? What's the locking scheme here ? So maybe just simple
+> > > rcu_dereference are missing, or maybe the tsk->sighand->siglock might be
+> > > required. In all cases, I feel something is missing there.
+> >
+> > Oleg, could you comment?
+> 
+> No, I don't understand this ;) But I know nothig about task groups,
+> most probably this is OK.
+> 
+> It is not clear to me why do we need rcu_read_lock() and how it can help.
+> The tty can go away right after dereferencing signal->tty.
 
-It looks like by inspection that there could be a couple of things wrong
-with that patch however.  Namely, on the comparison of muxname to
-m0_entry, if they have the same string up to mode0_len, such as
-"dss_data1" and "dss_data12" it'd match there prematurely as it'd stop
-comparing.  Also, a minor display issue on the printk of the new muxname.
+It was inherited.
 
-- Tim
+> Even if the task doesn't exit, it (or its sub-thread) can do sys_setsid()
+> at any moment and free this tty. If any thread was moved to tty->sg, doesn't
+> this mean that, say, ->cfs_rq will point to the already freed tg->cfs_rq?
+
+Ah, so isn't as safe as it looked. Thanks!
+
+> >From http://marc.info/?l=linux-kernel&m=128764874422614
+> 
+> 	+int sched_autogroup_handler(struct ctl_table *table, int write,
+> 	+		void __user *buffer, size_t *lenp, loff_t *ppos)
+> 	+{
+> 	+	struct task_struct *p, *t;
+> 	+	struct task_group *tg;
+> 	+	int ret = proc_dointvec_minmax(table, write, buffer, lenp, ppos);
+> 	+
+> 	+	if (ret || !write)
+> 	+		return ret;
+> 	+
+> 	+	for_each_process(p) {
+> 
+> Hmm. This needs rcu lock at least?
+
+(used to be paranoid locking there.. vs required locking)
+
+> 	+		tg = task_group(p);
+> 
+> Why?
+
+A cleanup leftover.
+
+> 
+> 	+		sched_move_task(p);
+> 	+		list_for_each_entry_rcu(t, &p->thread_group, thread_group) {
+> 	+			sched_move_task(t);
+> 	+		}
+> 	+	}
+> 
+> Looks like, you can just do
+> 
+> 	do_each_thread(p, t) {
+> 		sched_move_task(t);
+> 	} while_each_thread(p, t);
+> 
+> With the same effect.
+
+Yeah.
+
+So in theory, the tty can go away on me.  I knew this was too easy.
+
+	-Mike
+
+
