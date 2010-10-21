@@ -1,67 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752032Ab0JUPTz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Oct 2010 11:19:55 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:60355 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751783Ab0JUPTy (ORCPT
+	id S1754638Ab0JUPVV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Oct 2010 11:21:21 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:57443 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754252Ab0JUPVS convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Oct 2010 11:19:54 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Jan Harkes <jaharkes@cs.cmu.edu>
-Subject: Re: [RFC][PATCH 0/3] Coda: remove BKL
-Date: Thu, 21 Oct 2010 17:20:28 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.35-16-generic; KDE/4.3.2; x86_64; ; )
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <1287606184-26889-1-git-send-email-jaharkes@cs.cmu.edu> <201010211108.41320.arnd@arndb.de> <4CC058EC.1060200@cs.cmu.edu>
-In-Reply-To: <4CC058EC.1060200@cs.cmu.edu>
+	Thu, 21 Oct 2010 11:21:18 -0400
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201010211720.28775.arnd@arndb.de>
-X-Provags-ID: V02:K0:cPL7nvNMGY/hq8yXG8VoGVFTXuDoTODfTOI/oedzBFM
- CO/Ez93Uc1N4oGxjLGE98SQf1XJeC+puFx5HkpMMmVReF+kElb
- 5wVzE/Z2c1qD50h8kDL4BU/oPYD3usAiM8s3ZThEl9REIqwxI/
- L9gTyjN+aQwKI16zyYZ2c1xrOLsZn1wb4tbdhl9vezsP6+rduO
- bsZjiJKNM4qKPewLkXl5w==
+Message-ID: <e0836cf5-8328-48b9-bea7-872b357b7e82@default>
+Date: Thu, 21 Oct 2010 08:20:47 -0700 (PDT)
+From: Dan Magenheimer <dan.magenheimer@oracle.com>
+To: torvalds@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org
+Subject: [GIT PULL] mm/vfs/fs:cleancache for 2.6.37 merge window
+X-Priority: 3
+X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.2.1.2  (406224) [OL
+ 12.0.6539.5000]
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 21 October 2010, Jan Harkes wrote:
-> On 10/21/2010 05:08 AM, Arnd Bergmann wrote:
-> > On Wednesday 20 October 2010, Jan Harkes wrote:
-> >> The following three patches remove the big kernel lock from the Coda
-> >> file system kernel module. We initially add a spinlock to protect the
-> >> Coda-specific inode data. After this we can push the BKL all the way
-> >> down to where the requests are queued for the userspace Coda cache
-> >> manager process and finally we replace the remaining BKL uses with a
-> >> mutex that protects the upcall queues.
-> > 
-> > Very nice!
-> > 
-> > Are you pushing this to Linus or should I take care of it along with
-> > the other file systems?
-> > 
-> > This patch is larger than most of the others, but I can add it to
-> > my bkl/vfs tree if you like.
-> 
-> In that case it might be better when pushed separately, just to avoid
-> any chances on a merge conflict for the bkl/vfs tree. I was thinking of
-> letting the initial merges hit, rebase and retest over the weekend if
-> there were any Coda related changes, and sending the final version to
-> Linus by monday.
-> 
-> Besides, that gives me a couple of more days to make sure I weed out any
-> remaining issues.
+Hi Linus --
 
-Ok, good.
+Please pull:
 
-I'll leave everything as is then, to avoid having to rebase myself.
+ git://git.kernel.org/pub/scm/linux/kernel/git/djm/tmem.git for-linus
 
-This means you will get the conflict against the pushdown patch into
-coda_fill_super, which is trivial to clean up by reverting part of
-my patch and applying yours.
+since git commit cb655d0f3d57c23db51b981648e452988c0223f9:
+Linus Torvalds (1):
 
-	Arnd
+    Linux 2.6.36-rc7
+
+This cleancache patchset crosses multiple subsystem boundaries and
+at the recent filesystem/storage/mm summit, people suggested that
+I should just submit it to linux-next (done), and directly to you
+at the next merge window.  Previous lkml postings received a great
+deal of review and comment from a wide variety of maintainers, as
+documented in the commit logs.
+
+In addition, the cleancache shim to Xen Transcendent Memory makes
+use of and is dependent on the cleancache patchset.  Jeremy Fitzhardinge
+asked that I just include the shim in my tree to be pulled at the
+same time, to avoid any merge ordering issues.  (Another cleancache
+user, zcache, developed by Nitin Gupta has been submitted for the
+drivers/staging tree and will follow at some point, though possibly
+not until the next merge window.)
+
+The patches apply cleanly against linux-2.6.36-rc7.  In
+linux-next, sfr had to manually resolve a couple of very minor merge
+conflicts in mm/Kconfig and include/linux/fs.h due to minor changes
+in other trees.
+
+If you have any questions or concerns, please let me know!
+
+Thanks,
+Dan
+
+P.S. This is my first direct submission to you and today
+happens to be my 50th birthday, so please be kind :-)
+
+Dan Magenheimer (9):
+      mm/fs: cleancache documentation
+      fs: add field to superblock to support cleancache
+      mm: cleancache core ops functions and config
+      mm/fs: add hooks to support cleancache
+      ext3: add cleancache support
+      btrfs: add cleancache support
+      ext4: add cleancache support
+      ocfs2: add cleancache support
+      xen: cleancache shim to Xen Transcendent Memory
+
+ .../ABI/testing/sysfs-kernel-mm-cleancache         |   11 +
+ Documentation/vm/cleancache.txt                    |  267 ++++++++++++++++++++
+ arch/x86/include/asm/xen/hypercall.h               |    7 +
+ drivers/xen/Makefile                               |    1 +
+ drivers/xen/tmem.c                                 |  264 +++++++++++++++++++
+ fs/btrfs/extent_io.c                               |    9 +
+ fs/btrfs/super.c                                   |    2 +
+ fs/buffer.c                                        |    5 +
+ fs/ext3/super.c                                    |    2 +
+ fs/ext4/super.c                                    |    2 +
+ fs/mpage.c                                         |    7 +
+ fs/ocfs2/super.c                                   |    2 +
+ fs/super.c                                         |    3 +
+ include/linux/cleancache.h                         |  118 +++++++++
+ include/linux/fs.h                                 |    5 +
+ include/xen/interface/xen.h                        |   22 ++
+ mm/Kconfig                                         |   22 ++
+ mm/Makefile                                        |    1 +
+ mm/cleancache.c                                    |  245 ++++++++++++++++++
+ mm/filemap.c                                       |   11 +
+ mm/truncate.c                                      |   10 +
+ 21 files changed, 1016 insertions(+), 0 deletions(-)
