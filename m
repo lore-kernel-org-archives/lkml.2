@@ -1,59 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758880Ab0JUWcj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Oct 2010 18:32:39 -0400
-Received: from bld-mail14.adl6.internode.on.net ([150.101.137.99]:42881 "EHLO
-	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751534Ab0JUWch (ORCPT
+	id S1758868Ab0JUWe1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Oct 2010 18:34:27 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:45165 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751221Ab0JUWe0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Oct 2010 18:32:37 -0400
-Date: Fri, 22 Oct 2010 09:32:34 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 08/21] fs: rework icount to be a locked variable
-Message-ID: <20101021223234.GT32255@dastard>
-References: <1287622186-1935-1-git-send-email-david@fromorbit.com>
- <1287622186-1935-9-git-send-email-david@fromorbit.com>
- <20101021194044.GC19804@ZenIV.linux.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101021194044.GC19804@ZenIV.linux.org.uk>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Thu, 21 Oct 2010 18:34:26 -0400
+X-Authority-Analysis: v=1.1 cv=kXGwZUU/u1JTMRv8Axk4W0omja+vfTT+sGlOkodD8F8= c=1 sm=0 a=A6yVOXcETFUA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=Fnu6_QAKJhjM5M7tjMoA:9 a=TUZGdpBZcEIC51OStYYA9x2XuboA:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [PATCH v2][GIT PULL] tracing: Prevent unloadable modules from
+ using trace_bprintk()
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+In-Reply-To: <201010220805.14454.rusty@rustcorp.com.au>
+References: <1287668742.16971.585.camel@gandalf.stny.rr.com>
+	 <201010220805.14454.rusty@rustcorp.com.au>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Thu, 21 Oct 2010 18:34:23 -0400
+Message-ID: <1287700463.16971.603.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 21, 2010 at 08:40:45PM +0100, Al Viro wrote:
-> On Thu, Oct 21, 2010 at 11:49:33AM +1100, Dave Chinner wrote:
-> > From: Dave Chinner <dchinner@redhat.com>
+On Fri, 2010-10-22 at 08:05 +1030, Rusty Russell wrote:
+> On Fri, 22 Oct 2010 12:15:42 am Steven Rostedt wrote:
 > > 
-> > The inode reference count is currently an atomic variable so that it
-> > can be sampled/modified outside the inode_lock. However, the
-> > inode_lock is still needed to synchronise the final reference count
-> > and checks against the inode state.
+> > Ingo,
 > > 
-> > To avoid needing the protection of the inode lock, protect the inode
-> > reference count with the per-inode i_lock and convert it to a normal
-> > variable. To avoid existing out-of-tree code accidentally compiling
-> > against the new method, rename the i_count field to i_ref. This is
-> > relatively straight forward as there are limited external references
-> > to the i_count field remaining.
+> > This is based off of my core-2 branch. I'm moved this patch after that
+> > so if anyone has any objections, I can change this patch without holding
+> > off the previous one.
 > 
-> BTW, the same thing as with Nick's set - separate patch for "clone the
-> reference to inode we are already holding" helper, in front of queue.
+> I think disabling use in modules is lazy,
 
-Isn't that already done by the patch 6 "fs: Clean up inode reference
-counting"? That patch does the converting of stand-alone
-atomic_inc(&inode->i-count) into iref(inode), not this one.
-Maybe I've misunderstood what you are wanting to be changed with
-this patch - can you clarify, Al?
+and safer.
 
-Cheers,
+It's not a big deal if a module does not use it. What we have is
+"trace_printk()" and if the format passed to it is static, that turns
+into trace_bprintk(). If the format is a variable, then you are stuck
+with trace_printk() that just does the sprintf() operation in the trace.
+Which this patch makes all modules do.
 
-Dave.
+With trace_bprintk() the pointer to the format and arguments are put
+into the ring buffer for later processing.
 
--- 
-Dave Chinner
-david@fromorbit.com
+
+>  and allowing it for !MODVERSIONS
+> is just weird.
+
+that was me being weirdly paranoid ;-)
+
+> 
+> Can't you detect this on module unload and fix it up?  Or delay freeing the
+> module until the trace ring is emptied?
+
+One possibility is to magically make all string formats used in
+trace_printk into its own section, and keep it allocated until the ring
+buffer is empty. Or, we can just do that with the module's entire string
+section, since we know whether or not that module has a trace_printk in
+it or not.
+
+-- Steve
+
+
+
