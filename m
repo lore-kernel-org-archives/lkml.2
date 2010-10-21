@@ -1,65 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757353Ab0JUUic (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Oct 2010 16:38:32 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:51600 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757059Ab0JUUia convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Oct 2010 16:38:30 -0400
-From: Jeff Moyer <jmoyer@redhat.com>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: Jens Axboe <jaxboe@fusionio.com>,
-        linux kernel mailing list <linux-kernel@vger.kernel.org>,
-        Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH] cfq-iosched: Fix a gcc 4.5 warning and put some comments
-References: <20101021182403.GA8378@redhat.com>
-X-PGP-KeyID: 1F78E1B4
-X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
-X-PCLoadLetter: What the f**k does that mean?
-Date: Thu, 21 Oct 2010 16:36:20 -0400
-In-Reply-To: <20101021182403.GA8378@redhat.com> (Vivek Goyal's message of
-	"Thu, 21 Oct 2010 14:24:03 -0400")
-Message-ID: <x497hhbe117.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
+	id S1757556Ab0JUUq1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Oct 2010 16:46:27 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:51587 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757077Ab0JUUq0 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Oct 2010 16:46:26 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+In-Reply-To: <20101021134558.GA5859@elte.hu>
+References: <20101021134558.GA5859@elte.hu>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Thu, 21 Oct 2010 13:45:15 -0700
+Message-ID: <AANLkTi=RKyHLNTq6iomZOXkc6Zw1j9iAgsq8388XmzwN@mail.gmail.com>
+Subject: Re: [GIT PULL] x86/fpu for v2.6.37
+To: Ingo Molnar <mingo@elte.hu>, Brian Gerst <brgerst@gmail.com>
+Cc: linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Vivek Goyal <vgoyal@redhat.com> writes:
+On Thu, Oct 21, 2010 at 6:45 AM, Ingo Molnar <mingo@elte.hu> wrote:
+>
+> Please pull the latest x86-fpu-for-linus git tree from:
+>
+> � git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git x86-fpu-for-linus
 
-> - Andi encountedred following warning with gcc 4.5
->
->   linux/block/cfq-iosched.c: In function ‘cfq_dispatch_requests’:
->   linux/block/cfq-iosched.c:2156:3: warning: array subscript is above array
->   bounds
->
-> - Warning happens due to following code.
->
->   slice = group_slice * count /
-> 		max_t(unsigned, cfqg->busy_queues_avg[cfqd->serving_prio],
-> 		cfq_group_busy_queues_wl(cfqd->serving_prio, cfqd, cfqg));
->
->   gcc is complaining about cfqg->busy_queues_avg[] being indexed by CFQ
->   prio classes (RT, BE and IDLE) while the array size is only 2.
->
-> - At run time, we never access cfqg->busy_queues_avg[IDLE] and return from
->   function before this code hits.
->
-> - To fix warning increase the array size though it will remain unused. This
->   patch also puts some comments to clarify some of the confusions.
->
-> - I have taken Jens's patch and modified it a bit.
->
-> - Compile tested with gcc 4.4 and boot tested. I don't have gcc 4.5
->   running, Andi can you please test it with gcc 4.5 to make sure it
->   worked.
->
-> Reported-by: Andi Kleen <ak@linux.intel.com>
-> Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
-> Signed-off-by: Jens Axboe <axboe@kernel.dk>
+This conflicted with the CONFIG_AS_FXSAVEQ changes from the asm tree.
 
-Acked-by: Jeff Moyer <jmoyer@redhat.com>
+I fixed it up, but I did it only for  the fpu_fxsave() function. I
+suspect that the CONFIG_AS_FXSAVEQ thing should be used for
+fxsave_user() too.
+
+                              Linus
