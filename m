@@ -1,68 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753217Ab0JUQyi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Oct 2010 12:54:38 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:12745 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752580Ab0JUQyh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Oct 2010 12:54:37 -0400
-From: Jeff Moyer <jmoyer@redhat.com>
-To: Lukas Czerner <lczerner@redhat.com>
-Cc: linux-ext4@vger.kernel.org, tytso@mit.edu, sandeen@redhat.com,
-        adilger@dilger.ca, axboe@kernel.dk, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] block: Make blkdev_issue_discard() interruptible
-References: <1287671673-11448-1-git-send-email-lczerner@redhat.com>
-	<1287676486-19645-1-git-send-email-lczerner@redhat.com>
-X-PGP-KeyID: 1F78E1B4
-X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
-X-PCLoadLetter: What the f**k does that mean?
-Date: Thu, 21 Oct 2010 12:52:22 -0400
-In-Reply-To: <1287676486-19645-1-git-send-email-lczerner@redhat.com> (Lukas
-	Czerner's message of "Thu, 21 Oct 2010 17:54:46 +0200")
-Message-ID: <x49k4lb1oah.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
+	id S1753497Ab0JUQyz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Oct 2010 12:54:55 -0400
+Received: from silver.sucs.swan.ac.uk ([137.44.10.1]:56548 "EHLO
+	silver.sucs.swan.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752340Ab0JUQyx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Oct 2010 12:54:53 -0400
+Date: Thu, 21 Oct 2010 17:54:20 +0100
+From: Sitsofe Wheeler <sitsofe@yahoo.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
+        Matthew Garrett <mjg59@srcf.ucam.org>, Len Brown <lenb@kernel.org>,
+        Zhang Rui <rui.zhang@intel.com>, David Zeuthen <davidz@redhat.com>,
+        Richard Hughes <richard@hughsie.com>, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ACPI / Battery: Return -ENODATA for unknown values in
+	get_property()
+Message-ID: <20101021165420.GA8718@sucs.org>
+References: <20101016141321.GA11054@sucs.org> <20101017131016.GB13015@khazad-dum.debian.net> <20101017145025.GA32599@sucs.org> <201010172032.43206.rjw@sisk.pl>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201010172032.43206.rjw@sisk.pl>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Lukas Czerner <lczerner@redhat.com> writes:
+On Sun, Oct 17, 2010 at 08:32:42PM +0200, Rafael J. Wysocki wrote:
+> 
+> Still, if user space has problems with failing reads from the sysfs
+> attributes, it may be better to simply put -1 in there.  Patch is
+> appended, please test.
 
-> Since the discard may take quite long time, especially with really big
-> extents (like the whole device for example), it would be nice to give to
-> users the opportunity to abort it. This is especially useful for mkfs,
-> when user can not know in advance how long it will take.
->
-> In conjunction with mke2fs patch "Inform user about ongoing discard"
-> it gives the user all the comfort of being informed about discard and
-> being able to abort the operation.
+This patch does what it says on the tin (returns -1 in sysfs on my EeePC
+900). So:
 
-For others reviewing, this is against the block tree's for-next branch.
+Tested-by: Sitsofe Wheeler <sitsofe@yahoo.com>
 
-> ---
->  block/blk-lib.c |    3 +++
->  1 files changed, 3 insertions(+), 0 deletions(-)
->
-> diff --git a/block/blk-lib.c b/block/blk-lib.c
-> index 1a320d2..db44671 100644
-> --- a/block/blk-lib.c
-> +++ b/block/blk-lib.c
-> @@ -91,6 +91,9 @@ int blkdev_issue_discard(struct block_device *bdev, sector_t sector,
->  		bio_get(bio);
->  		submit_bio(type, bio);
->  
-> +		if (unlikely(fatal_signal_pending(current)))
-> +			ret = -ERESTARTSYS;
-> +
->  		wait_for_completion(&wait);
->  
->  		if (bio_flagged(bio, BIO_EOPNOTSUPP))
+It's a shame the previous changes didn't work as they stopped a buggy
+upower using the -1 value (and producing a nonsense rate like 8.4e-06)
+but it's not clear which part of the stack can't handle -ENODATA
+perhaps it is another part of the kernel?
 
-Given that you're still doing the wait_for_completion, wouldn't it be
-better to check for a pending signal after that?
+Richard, any chance of upower being changed to test for -1 before doing
+doing anything with current_now (
+http://cgit.freedesktop.org/DeviceKit/upower/tree/src/linux/up-device-supply.c?id=5387183d53c16a987a0737c1bdec1b62edf3daa6#n561)?
+I guess there are a whole bunch of other attributes that could
+theoretically be -1 and shouldn't be used if they return it...
 
-What testing did you perform?
-
-Cheers,
-Jeff
+-- 
+Sitsofe | http://sucs.org/~sits/
