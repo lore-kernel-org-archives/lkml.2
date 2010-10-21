@@ -1,64 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757790Ab0JUMGT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Oct 2010 08:06:19 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:51383 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752689Ab0JUMGS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Oct 2010 08:06:18 -0400
-Message-ID: <4CC02CDF.5040700@cn.fujitsu.com>
-Date: Thu, 21 Oct 2010 20:06:55 +0800
-From: Shan Wei <shanwei@cn.fujitsu.com>
-User-Agent: Thunderbird 2.0.0.23 (X11/20090817)
-MIME-Version: 1.0
-To: Nicolas Kaiser <nikai@nikai.net>
-CC: Vlad Yasevich <vladislav.yasevich@hp.com>,
-        Sridhar Samudrala <sri@us.ibm.com>, linux-sctp@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] sctp: remove redundant chunk length check
-References: <20101021121409.6de7d429@absol.kitzblitz>
-In-Reply-To: <20101021121409.6de7d429@absol.kitzblitz>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1757788Ab0JUMKT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Oct 2010 08:10:19 -0400
+Received: from canuck.infradead.org ([134.117.69.58]:52870 "EHLO
+	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754039Ab0JUMKS convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Oct 2010 08:10:18 -0400
+Subject: Re: High CPU load when machine is idle (related to PROBLEM:
+ Unusually high load average when idle in 2.6.35, 2.6.35.1 and later)
+From: Peter Zijlstra <peterz@infradead.org>
+To: Damien Wyart <damien.wyart@free.fr>
+Cc: Chase Douglas <chase.douglas@canonical.com>, Ingo Molnar <mingo@elte.hu>,
+        tmhikaru@gmail.com, Thomas Gleixner <tglx@linutronix.de>,
+        linux-kernel@vger.kernel.org, Venkatesh Pallipadi <venki@google.com>
+In-Reply-To: <1287595605.3488.52.camel@twins>
+References: <20100929070153.GA2200@brouette>
+	 <20101014145813.GA2185@brouette>  <20101020132732.GA30024@brouette>
+	 <1287581440.3488.16.camel@twins>  <1287582208.3488.20.camel@twins>
+	 <1287584073.3488.22.camel@twins>  <1287595605.3488.52.camel@twins>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Thu, 21 Oct 2010 14:09:59 +0200
+Message-ID: <1287662999.3488.117.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Nicolas Kaiser wrote, at 10/21/2010 06:14 PM:
-> Checking the chunk length at this point appears redundant, as
-> the rest of the packet gets discarded anyway.
-> 
-> Signed-off-by: Nicolas Kaiser <nikai@nikai.net>
+On Wed, 2010-10-20 at 19:26 +0200, Peter Zijlstra wrote:
 
-Yes, indeed.
-
-How did you find this? By reviewing the source code?
-
--- 
-Best Regards
------
-Shan Wei
-
-> ---
->  net/sctp/sm_statefuns.c |    6 ------
->  1 files changed, 0 insertions(+), 6 deletions(-)
-> 
-> diff --git a/net/sctp/sm_statefuns.c b/net/sctp/sm_statefuns.c
-> index 4b4eb7c..9840615 100644
-> --- a/net/sctp/sm_statefuns.c
-> +++ b/net/sctp/sm_statefuns.c
-> @@ -3418,12 +3418,6 @@ static sctp_disposition_t sctp_sf_shut_8_4_5(const struct sctp_endpoint *ep,
+> -static void calc_load_account_idle(struct rq *this_rq)
+> +void calc_load_account_idle(void)
+>  {
+> +	struct rq *this_rq = this_rq();
+>  	long delta;
 >  
->  		SCTP_INC_STATS(SCTP_MIB_OUTCTRLCHUNKS);
+>  	delta = calc_load_fold_active(this_rq);
+> +	this_rq->calc_load_inactive = delta;
+> +	this_rq->calc_load_seq = atomic_read(&calc_load_seq);
+> +
+>  	if (delta)
+>  		atomic_long_add(delta, &calc_load_tasks_idle);
+>  }
 >  
-> -		/* If the chunk length is invalid, we don't want to process
-> -		 * the reset of the packet.
-> -		 */
-> -		if (!sctp_chunk_length_valid(chunk, sizeof(sctp_chunkhdr_t)))
-> -			return sctp_sf_pdiscard(ep, asoc, type, arg, commands);
-> -
->  		/* We need to discard the rest of the packet to prevent
->  		 * potential bomming attacks from additional bundled chunks.
->  		 * This is documented in SCTP Threats ID.
+> +void calc_load_account_nonidle(void)
+> +{
+> +	struct rq *this_rq = this_rq();
+> +
+> +	if (atomic_read(&calc_load_seq) == this_rq->calc_load_seq) {
+> +		atomic_long_sub(this_rq->calc_load_inactive, &calc_load_tasks_idle);
+> +		/*
+> +		 * Undo the _fold_active() from _account_idle(). This
+> +		 * avoids us loosing active tasks and creating a negative
+> +		 * bias
+> +		 */
+> +		this_rq->calc_load_active -= this_rq->calc_load_inactive;
+> +	}
+> +}
 
+Ok, so while trying to write a changelog on this patch I got myself
+terribly confused again..
 
+calc_load_active_fold() is a relative operation and simply gives delta
+values since the last time it got called. That means that the sum of
+multiple invocations in a given time interval should be identical to a
+single invocation.
+
+Therefore, the going idle multiple times during LOAD_FREQ hypothesis
+doesn't really make sense. 
+
+Even if it became idle but wasn't idle at the LOAD_FREQ turn-over it
+shouldn't matter, since the calc_load_account_active() call will simply
+fold the remaining delta with the accrued idle delta and the total
+should all match up once we fold into the global calc_load_tasks.
+
+So afaict its should all have worked and this patch is a big NOP,.
+except it isn't.. 
+
+Damn I hate this bug.. ;-) Anybody?
