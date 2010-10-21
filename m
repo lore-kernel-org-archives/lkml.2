@@ -1,60 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752863Ab0JUQ0X (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Oct 2010 12:26:23 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:37184 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752407Ab0JUQ0W (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Oct 2010 12:26:22 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=J4G98kasXY/XH76k24Yp8gOe9r7H4YvOeIsg0J8y3DlWkJlewrNy1c8qO7OV0289uS
-         wdaV9hrgSNrFt80iNcHRKLI8JcArhhGXIsnk7VnSSimDBpT+wtZAPBVIdxJxME8tq4z9
-         DkOUXzog5s1lKnhkMgVNe93mUCW7unr+h5+us=
-Date: Thu, 21 Oct 2010 20:26:17 +0400
-From: Anton Vorontsov <cbouatmailru@gmail.com>
-To: Lars-Peter Clausen <lars@metafoo.de>
-Cc: rklein@nvidia.com, broonie@opensource.wolfsonmicro.com, achew@nvidia.com,
-        olof@lixom.net, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] POWER: Add gpio charger driver
-Message-ID: <20101021162617.GA10447@oksana.dev.rtsoft.ru>
-References: <1287663957-30099-1-git-send-email-lars@metafoo.de>
- <1287676501-23254-1-git-send-email-lars@metafoo.de>
+	id S1752425Ab0JUQcq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Oct 2010 12:32:46 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:36157 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751011Ab0JUQco (ORCPT
+	<rfc822;<linux-kernel@vger.kernel.org>>);
+	Thu, 21 Oct 2010 12:32:44 -0400
+Date: Thu, 21 Oct 2010 12:32:25 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Randy Dunlap <randy.dunlap@oracle.com>, stefano.stabellini@eu.citrix.com
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, xen-devel@lists.xensource.com,
+        linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: linux-next: Tree for October 21 (xen)
+Message-ID: <20101021163225.GA2456@dumpdata.com>
+References: <20101021151529.392fecea.sfr@canb.auug.org.au>
+ <20101021091316.0587c1a8.randy.dunlap@oracle.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1287676501-23254-1-git-send-email-lars@metafoo.de>
+In-Reply-To: <20101021091316.0587c1a8.randy.dunlap@oracle.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 21, 2010 at 05:55:01PM +0200, Lars-Peter Clausen wrote:
-> This patch adds a simple driver for chargers indicating their online status
-> through a GPIO pin.
+On Thu, Oct 21, 2010 at 09:13:16AM -0700, Randy Dunlap wrote:
+> On Thu, 21 Oct 2010 15:15:29 +1100 Stephen Rothwell wrote:
 > 
-> Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
+> > Hi all,
+> > 
+> > Reminder: do not add 2.6.38 destined stuff to linux-next until after
+> > 2.6.37-rc1 is released.
+> > 
+> > Changes since 20101020:
+> 
+> 
+> When CONFIG_SMP is not enabled:
+> 
+> arch/x86/pci/xen.c:401: error: 'nr_ioapics' undeclared (first use in this function)
 
-Hm. I'm getting older, it seems. Now can anybody remind me why
-pda_power.c doesn't work here? ;-)
+Thank you,
 
-This driver looks like a light-weigh version of pda_power, except
-that it can do GPIOs directly (instead of is_*_online() callbacks).
-
-Can we instead improve pda_power? Like this:
-
-	if (!pdata->is_ac_online && pdata->ac_monitor_gpio)
-		pdata->is_ac_online = pda_ac_monitor_gpio;
-
-Should look quite cool, I think.
-
-(Plus, we might get rid of ac/usb stuff in that driver, and 
-pass enum power_supply_type to the callbacks instead).
-
--- 
-Anton Vorontsov
-email: cbouatmailru@gmail.com
-irc://irc.freenode.net/bd2
+Stefano, this one is yours.
