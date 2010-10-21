@@ -1,80 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755325Ab0JUIy1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Oct 2010 04:54:27 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:48948 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754095Ab0JUIy0 convert rfc822-to-8bit (ORCPT
+	id S1754932Ab0JUI5y (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Oct 2010 04:57:54 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:60399 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751701Ab0JUI5w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Oct 2010 04:54:26 -0400
+	Thu, 21 Oct 2010 04:57:52 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=VhbLp1o/hsx6whgV2FDae+HgCSFEVi2owIlbqHIMQ8GSTk/a35tAiERVM/obidCGXF
-         T9Qy4SOpLf2OyEJE56FyKuAC1CEv1i1uZfqHUee1277m/nSvd3SUD9ZAQ1fNKS3meGrQ
-         LjoRdseCWhEMvzUo70M3d4MYlwRVEFITvrIxk=
-MIME-Version: 1.0
-In-Reply-To: <1287650668.2237.12.camel@myhost>
-References: <1287647732.2237.7.camel@myhost>
-	<AANLkTim7g+8_rQSyewC6n_5WmC04kU-rj1g9k61=O2Vm@mail.gmail.com>
-	<1287649283.2237.8.camel@myhost>
-	<AANLkTikzSZNtTGfOcP-87u+pMZyW8WrdxwV52ZV3f=nX@mail.gmail.com>
-	<1287650668.2237.12.camel@myhost>
-Date: Thu, 21 Oct 2010 16:54:25 +0800
-Message-ID: <AANLkTi=D_a_BH-HW9mqwLim+DjxARWzT8mxP_dah5iLY@mail.gmail.com>
-Subject: Re: Ftrace: can trace kthread?
-From: Yong Zhang <yong.zhang0@gmail.com>
-To: "Figo.zhang" <zhangtianfei@leadcoretech.com>
-Cc: Li Zefan <lizf@cn.fujitsu.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Steven Rostedt <srostedt@redhat.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+        h=date:from:to:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=Hvgass0QoCQWYLrV0T4jnae+KjRGCWLNoieKbnoWRT1t3QHk6bj+xeGXTQLfLWEDU2
+         JnyHB3aJi4LbbPEH8RXPa/1h+PDsxy/uzGqy/7B5RymlVuAvujuGz7cHQ6KSd7EHUFOr
+         TOTd9VeKfAe89X83RoRz5aCiVj7L7ad0elD0c=
+Date: Thu, 21 Oct 2010 04:57:48 -0400
+From: tmhikaru@gmail.com
+To: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        Damien Wyart <damien.wyart@free.fr>,
+        Chase Douglas <chase.douglas@canonical.com>,
+        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+        Venkatesh Pallipadi <venki@google.com>
+Subject: Re: High CPU load when machine is idle (related to PROBLEM: Unusually high load average when idle in 2.6.35, 2.6.35.1 and later)
+Message-ID: <20101021085748.GA26125@roll>
+References: <20100929070153.GA2200@brouette> <20101014145813.GA2185@brouette> <20101020132732.GA30024@brouette> <1287581440.3488.16.camel@twins> <1287582208.3488.20.camel@twins> <1287584073.3488.22.camel@twins> <1287595605.3488.52.camel@twins> <20101021014843.GA21295@roll> <20101021015337.GA21384@roll> <20101021082233.GD8775@elte.hu>
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="ikeVEW9yuYc//A+q"
+Content-Disposition: inline
+In-Reply-To: <20101021082233.GD8775@elte.hu>
+User-Agent: Mutt/1.4.2.3i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 21, 2010 at 4:44 PM, Figo.zhang
-<zhangtianfei@leadcoretech.com> wrote:
->
->> > i try by set_ftrace_pid, it also can't ftrace the kswapd.
->>
->> Are you sure kswapd got chance to run on your system?
->>
->> BTW, I can successfully trace bdi_writeback_thread,
->> # tracer: function
->> #
->> #           TASK-PID    CPU#    TIMESTAMP  FUNCTION
->> #              | |       |          |         |
->>        flush-8:0-374   [000] 600743.828496: finish_task_switch <-schedule
->>        flush-8:0-374   [000] 600743.828498: perf_event_task_sched_in
->> <-finish_task_switch
->>        flush-8:0-374   [000] 600743.828498: del_timer_sync <-schedule_timeout
->>        flush-8:0-374   [000] 600743.828499: try_to_del_timer_sync
->> <-del_timer_sync
->>        flush-8:0-374   [000] 600743.828499: lock_timer_base
->> <-try_to_del_timer_sync
->>        flush-8:0-374   [000] 600743.828499: _spin_lock_irqsave <-lock_timer_base
->>        flush-8:0-374   [000] 600743.828500: _spin_unlock_irqrestore
->> <-try_to_del_timer_sync
->>        flush-8:0-374   [000] 600743.828500: kthread_should_stop
->> <-bdi_writeback_task
->
-> are you use my scprit to trace the bdi_writeback_thread ?
 
-No.
+--ikeVEW9yuYc//A+q
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I just
-echo  0 > tracing_enabled
-echo function > current_tracer
-echo 374(pid of flush) > set_ftrace_pid
-echo 1 > tracing_enabled
-wait some time
-echo 0 > tracing_enabled
-cat trace
+On Thu, Oct 21, 2010 at 10:22:33AM +0200, Ingo Molnar wrote:
+>=20
+> * tmhikaru@gmail.com <tmhikaru@gmail.com> wrote:
+>=20
+> > On Wed, Oct 20, 2010 at 09:48:43PM -0400, tm@ wrote:
+> > > On Wed, Oct 20, 2010 at 07:26:45PM +0200, Peter Zijlstra wrote:
+> > > >=20
+> > > >=20
+> > > > OK, how does this work for people? I find my idle load is still a t=
+ad
+> > > > high, but maybe I'm not patient enough.
+> > >=20
+> > > I haven't had a chance to keep up with the topic, and I apologize. I'=
+ll be
+> > > testing this as soon as I can finish compiling it. Thank you all for =
+not
+> > > letting this go unfixed.
+> > >=20
+> > > Tim McGrath
+> >=20
+> > Uhh, problem. This patch does not apply to git checkout
+> > 74f5187ac873042f502227701ed1727e7c5fbfa9
+> >=20
+> > which is the version of the kernel that first exhibits this flaw.
+> >=20
+> > which version of the kernel does this patch apply cleanly to?
+>=20
+> Try -tip (which includes the scheduler development tree as well):
+>=20
+>    http://people.redhat.com/mingo/tip.git/README
+>=20
+> Thanks,
+>=20
+> 	Ingo
 
-So I think this answer your question "could kthread be traced?"
+Tried that, patch still doesn't apply... and I just figured out why. Looks
+like my email client is screwing the patch up. mutt apparently wants to chew
+on my mail before I get it. viewing the mail as an attachment and saving it
+works properly however.
 
-Thanks,
-Yong
+Now that I have properly saved the mail, it applies cleanly to tip/master as
+well as 74f5187ac873042f502227701ed1727e7c5fbfa9 - though in the latter's
+case it's having to fuzz around a bit. I'll try testing
+74f5187ac873042f502227701ed1727e7c5fbfa9 first since it's the one I *know*
+is flawed, and I want to reduce the amount of changes that I have to test
+for.
+
+I'll build and test it, then let you guys know if there's any noticable
+difference.
+
+Tim McGrath
+
+--ikeVEW9yuYc//A+q
+Content-Type: application/pgp-signature
+Content-Disposition: inline
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iQEVAwUBTMAAjJEncCrqzVruAQI2nQf/VVfsakXkgdZNbGhzki2Xiit2FTDW3+I9
+PI/1NyJ9lGX1GMn8GtAyCwYnTDn36bRepo1CVx1BSx/tqhLdhzm/OyS6jlW260O6
+aG3iAZQ2kqLyuNNFq/gI3YuFXorrpaYA595NwhWKkyhUapzeKvqSmrz10zQM56SI
+I05PCD115+44N9iOYR0ZpUDy+67/MtFdFwHzYNUk8hjg6S1+YBL7SI0wle7Tv3j9
+g0IGT8ddIZmBy4/pqyYzwq8OMp58I1YHvR2d9mjwhK8skZ2PvYZdMbDg4EBL3CnT
+WB6nv30UhZCfoYzV0AL84rlqsT5jsxcNAVEsy23tAyKwp+sXEJ8FYw==
+=UdhS
+-----END PGP SIGNATURE-----
+
+--ikeVEW9yuYc//A+q--
