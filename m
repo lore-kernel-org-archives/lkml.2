@@ -1,52 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756676Ab0JUSQ5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Oct 2010 14:16:57 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:46239 "EHLO mx1.redhat.com"
+	id S1756747Ab0JUSVz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Oct 2010 14:21:55 -0400
+Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:49739 "EHLO kernel.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753982Ab0JUSQ4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Oct 2010 14:16:56 -0400
-Date: Thu, 21 Oct 2010 20:12:20 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Brian Behlendorf <behlendorf1@llnl.gov>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] Make div64_u64() precise on 32bit platforms
-Message-ID: <20101021181220.GA8827@redhat.com>
-References: <201010121227.05735.behlendorf1@llnl.gov> <20101013213746.GA27248@redhat.com> <20101014121159.GA407@redhat.com> <1287683202.16680.44.camel@pip>
+	id S1753435Ab0JUSVy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Oct 2010 14:21:54 -0400
+Message-ID: <4CC084C0.9020000@kernel.dk>
+Date: Thu, 21 Oct 2010 20:21:52 +0200
+From: Jens Axboe <axboe@kernel.dk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1287683202.16680.44.camel@pip>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: "Ted Ts'o" <tytso@mit.edu>, Boaz Harrosh <bharrosh@panasas.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>
+Subject: Re: What am I doing wrong?  submit_bio() suddenly stops working...
+References: <E1P8kSE-0001DW-8C@tytso-glaptop> <4CBFE4E2.7050001@kernel.dk> <20101021165525.GB3127@thunk.org> <4CC07B62.9070000@panasas.com> <20101021181432.GE3127@thunk.org>
+In-Reply-To: <20101021181432.GE3127@thunk.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andrew, please drop
+On 2010-10-21 20:14, Ted Ts'o wrote:
+> On Thu, Oct 21, 2010 at 07:41:54PM +0200, Boaz Harrosh wrote:
+>>> +#ifdef PDEBUG
+>>> +	trace_printk("%s: io submitted io_end %p\n", 
+>>> +		     io->io_end->inode->i_sb->s_id, io->io_end);
+>>> +#endif
+>>> +	submit_bio(io->io_op, io->io_bio);
+>>> +	ASSERT(!bio_flagged(bio, BIO_EOPNOTSUPP));
+>>> +	bio_put(io->io_bio);
+>>
+>> The extra get/put is only done for the duration of the ASSERT above, right?
+>> I'd put a comment. And why don't you just call the _get here just before
+>> submit_bio instead of down at io_submit_init.
+> 
+> The bio layer isn't well documented, so a lot of this was written by
+> cargo cult programming.  In this case, I was following what XFS did
+> when I originally wrote it.  It's only in the past week when I've been
+> diving deep into the source and was able to conclude that yes, it's
+> only needed for the ASSERT.
 
-	lib-div64c-document-that-div64_u64-is-not-precise-on-32bit-platforms.patch
+Come on Ted, you are laying it on pretty thick now. It's ordinary
+reference counting, and the use case you have here is exactly the one
+that is described in the comment for bio_get(). You allocate the bio, it
+has a single reference. The end_io function you define drops the
+reference you had to this bio. Since IO can complete before submit_bio()
+has returned, you need to grab an extra reference if you depend on
+dereferencing the bio after submission.
 
-On 10/21, Brian Behlendorf wrote:
->
-> I think we should use your simpler version.  There's no good reason to
-> make this more complicated than it needs to be.  I haven't been able to
-> find a test case where your changes get the wrong result.
+> One of the frustrating things about the bio layer is that all of the
+> different file systems use very different patterns about how they
+> access the bio layer --- which is perhaps caused by the lack of
+> documentation.  But I finally did notice that the JFS code dodn't do a
+> bio_get() after calling bio_alloc(), and it was only when I did a lot
+> of source code tracing that I realized that it strictly speaking the
+> ASSERT isn't really even all that necessary, since we're not calling
+> using a discard or barrier op, which is the only thing that could
+> possibly set the EOPNOTSUPP flag anyway....
+> 
+>>> +	do {
+>>> +		bio = bio_alloc(GFP_NOIO, nvecs);
+>>> +		nvecs >>= 1;
+>>> +	} while (bio == NULL);
+>>
+>> This is surly bad. bio_alloc must be allowed to fail
+>> (Specially with GFP_NOIO). You should only loop down to
+>> 1 and then prepare to return -ENOMEM from this function
+>> and handle it properly in callers. (Or schedule and wait
+>> like below)
+> 
+> Copied exactly from the XFS code.  I was under the (possibly mistaken)
+> assumption that the XFS code was a good place to copy from, since
+> everyone sings the praises of XFS.....
 
-Great!
+And it'll work.
 
-> From: Brian Behlendorf <behlendorf1@llnl.gov>
-> Date: Thu, 5 Aug 2010 14:59:11 -0700
-> Subject: [PATCH] Fix div64_u64 for 32bit platforms
->
-> The current implementation of div64_u64 for 32bit systems returns
-> an approximately correct result when the divisor exceeds 32bits.
-> Since doing 64bit division using 32bit hardware is a long since
-> solved problem we just use one of the existing proven methods.
+> I do agree that bio_alloc() should be allowed to fail, although life
+> gets really tough deep in the writeback stack to throw a failure all
+> the way back out.  This was on my todo list to fix, after I got things
+> basically working.
 
-Brian, you forgot to add your sob. Hopefully Andrew can add
+So don't use __GFP_WAIT, then it returns NULL.
 
-	Signed-off-by: Brian Behlendorf <behlendorf1@llnl.gov>
-
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+-- 
+Jens Axboe
 
