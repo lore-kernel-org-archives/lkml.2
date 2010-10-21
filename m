@@ -1,54 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753497Ab0JUQyz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Oct 2010 12:54:55 -0400
-Received: from silver.sucs.swan.ac.uk ([137.44.10.1]:56548 "EHLO
-	silver.sucs.swan.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752340Ab0JUQyx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Oct 2010 12:54:53 -0400
-Date: Thu, 21 Oct 2010 17:54:20 +0100
-From: Sitsofe Wheeler <sitsofe@yahoo.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
-        Matthew Garrett <mjg59@srcf.ucam.org>, Len Brown <lenb@kernel.org>,
-        Zhang Rui <rui.zhang@intel.com>, David Zeuthen <davidz@redhat.com>,
-        Richard Hughes <richard@hughsie.com>, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ACPI / Battery: Return -ENODATA for unknown values in
-	get_property()
-Message-ID: <20101021165420.GA8718@sucs.org>
-References: <20101016141321.GA11054@sucs.org> <20101017131016.GB13015@khazad-dum.debian.net> <20101017145025.GA32599@sucs.org> <201010172032.43206.rjw@sisk.pl>
+	id S1753634Ab0JUQzM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Oct 2010 12:55:12 -0400
+Received: from www.tglx.de ([62.245.132.106]:40722 "EHLO www.tglx.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751962Ab0JUQzK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Oct 2010 12:55:10 -0400
+Date: Thu, 21 Oct 2010 18:18:14 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Steven Rostedt <rostedt@goodmis.org>
+cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Koki Sanagi <sanagi.koki@jp.fujitsu.com>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Frederic Weisbecker <fweisbec@gmail.com>, nhorman@tuxdriver.com,
+        scott.a.mcmillan@intel.com, laijs@cn.fujitsu.com,
+        "H. Peter Anvin" <hpa@zytor.com>, LKML <linux-kernel@vger.kernel.org>,
+        eric.dumazet@gmail.com, kaneshige.kenji@jp.fujitsu.com,
+        David Miller <davem@davemloft.net>, izumi.taku@jp.fujitsu.com,
+        kosaki.motohiro@jp.fujitsu.com,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        "Luck, Tony" <tony.luck@intel.com>
+Subject: Re: [PATCH] tracing: Cleanup the convoluted softirq tracepoints
+In-Reply-To: <1287527634.16971.536.camel@gandalf.stny.rr.com>
+Message-ID: <alpine.LFD.2.00.1010211817540.2418@localhost6.localdomain6>
+References: <tip-2bf2160d8805de64308e2e7c3cd97813cb58ed2f@git.kernel.org>  <20100908112529.GA25931@elte.hu> <1287395077.29097.1543.camel@twins>  <1287398936.29097.1548.camel@twins> <4CBD79CF.2060706@jp.fujitsu.com>  <alpine.LFD.2.00.1010191428560.6815@localhost6.localdomain6>
+  <20101019132236.GA19197@Krystal>  <alpine.LFD.2.00.1010191524160.6815@localhost6.localdomain6>  <1287496495.16971.372.camel@gandalf.stny.rr.com>  <alpine.LFD.2.00.1010191558250.6815@localhost6.localdomain6>  <20101019142820.GA14520@Krystal> 
+ <alpine.LFD.2.00.1010191842270.6815@localhost6.localdomain6>  <1287521757.16971.397.camel@gandalf.stny.rr.com>  <alpine.LFD.2.00.1010192302000.6815@localhost6.localdomain6>  <1287523439.16971.433.camel@gandalf.stny.rr.com>  <alpine.LFD.2.00.1010192359480.6815@localhost6.localdomain6>
+ <1287527634.16971.536.camel@gandalf.stny.rr.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201010172032.43206.rjw@sisk.pl>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Oct 17, 2010 at 08:32:42PM +0200, Rafael J. Wysocki wrote:
+
+
+On Tue, 19 Oct 2010, Steven Rostedt wrote:
+
+> On Wed, 2010-10-20 at 00:04 +0200, Thomas Gleixner wrote:
 > 
-> Still, if user space has problems with failing reads from the sysfs
-> attributes, it may be better to simply put -1 in there.  Patch is
-> appended, please test.
+> > hpa just posted code which does the _RIGHT_ _THING_ independent of any
+> > compiler madness and you tracer folks just missed it.
+> 
+> Thomas,
+> 
+> Can you try this patch and see if it makes the object code better?
 
-This patch does what it says on the tin (returns -1 in sysfs on my EeePC
-900). So:
+Nope, same result.
 
-Tested-by: Sitsofe Wheeler <sitsofe@yahoo.com>
+Thanks,
 
-It's a shame the previous changes didn't work as they stopped a buggy
-upower using the -1 value (and producing a nonsense rate like 8.4e-06)
-but it's not clear which part of the stack can't handle -ENODATA
-perhaps it is another part of the kernel?
+	tglx
 
-Richard, any chance of upower being changed to test for -1 before doing
-doing anything with current_now (
-http://cgit.freedesktop.org/DeviceKit/upower/tree/src/linux/up-device-supply.c?id=5387183d53c16a987a0737c1bdec1b62edf3daa6#n561)?
-I guess there are a whole bunch of other attributes that could
-theoretically be -1 and shouldn't be used if they return it...
-
--- 
-Sitsofe | http://sucs.org/~sits/
+> -- Steve
+> 
+> 
+> diff --git a/include/linux/tracepoint.h b/include/linux/tracepoint.h
+> index a4a90b6..6264bd3 100644
+> --- a/include/linux/tracepoint.h
+> +++ b/include/linux/tracepoint.h
+> @@ -144,14 +144,19 @@ static inline void tracepoint_update_probe_range(struct tracepoint *begin,
+>   */
+>  #define __DECLARE_TRACE(name, proto, args, data_proto, data_args)	\
+>  	extern struct tracepoint __tracepoint_##name;			\
+> -	static inline void trace_##name(proto)				\
+> +	static __always_inline int __trace_##name(proto)		\
+>  	{								\
+>  		JUMP_LABEL(&__tracepoint_##name.state, do_trace);	\
+> -		return;							\
+> +		return 0;						\
+>  do_trace:								\
+>  			__DO_TRACE(&__tracepoint_##name,		\
+>  				TP_PROTO(data_proto),			\
+>  				TP_ARGS(data_args));			\
+> +			return 1;					\
+> +	}								\
+> +	static inline void trace_##name(proto)				\
+> +	{								\
+> +		unlikely(__trace_##name(args));				\
+>  	}								\
+>  	static inline int						\
+>  	register_trace_##name(void (*probe)(data_proto), void *data)	\
+> 
+> 
