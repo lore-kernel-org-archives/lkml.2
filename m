@@ -1,73 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755452Ab0JUJDJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Oct 2010 05:03:09 -0400
-Received: from [120.204.251.227] ([120.204.251.227]:42060 "EHLO
-	LC-SHMAIL-01.SHANGHAI.LEADCORETECH.COM" rhost-flags-FAIL-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755389Ab0JUJDH (ORCPT
+	id S1755573Ab0JUJD7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Oct 2010 05:03:59 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:58995 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755405Ab0JUJD5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Oct 2010 05:03:07 -0400
-Subject: Re: Ftrace: can trace kthread?
-From: "Figo.zhang" <zhangtianfei@leadcoretech.com>
-To: Yong Zhang <yong.zhang0@gmail.com>
-Cc: Li Zefan <lizf@cn.fujitsu.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Steven Rostedt <srostedt@redhat.com>
-In-Reply-To: <AANLkTi=D_a_BH-HW9mqwLim+DjxARWzT8mxP_dah5iLY@mail.gmail.com>
-References: <1287647732.2237.7.camel@myhost>
-	 <AANLkTim7g+8_rQSyewC6n_5WmC04kU-rj1g9k61=O2Vm@mail.gmail.com>
-	 <1287649283.2237.8.camel@myhost>
-	 <AANLkTikzSZNtTGfOcP-87u+pMZyW8WrdxwV52ZV3f=nX@mail.gmail.com>
-	 <1287650668.2237.12.camel@myhost>
-	 <AANLkTi=D_a_BH-HW9mqwLim+DjxARWzT8mxP_dah5iLY@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 21 Oct 2010 16:59:02 +0800
-Message-ID: <1287651542.2237.17.camel@myhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.0 
+	Thu, 21 Oct 2010 05:03:57 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: "Ohad Ben-Cohen" <ohad@wizery.com>
+Subject: Re: [PATCH 1/3] drivers: misc: add omap_hwspinlock driver
+Date: Thu, 21 Oct 2010 11:04:28 +0200
+User-Agent: KMail/1.12.2 (Linux/2.6.35-16-generic; KDE/4.3.2; x86_64; ; )
+Cc: linux-arm-kernel@lists.infradead.org, Hari Kanigeri <h-kanigeri2@ti.com>,
+        Suman Anna <s-anna@ti.com>, Benoit Cousson <b-cousson@ti.com>,
+        Tony Lindgren <tony@atomide.com>, Greg KH <greg@kroah.com>,
+        linux-kernel@vger.kernel.org, Grant Likely <grant.likely@secretlab.ca>,
+        akpm@linux-foundation.org, linux-omap@vger.kernel.org,
+        "Krishnamoorthy, Balaji T" <balajitk@ti.com>
+References: <1287387875-14168-1-git-send-email-ohad@wizery.com> <201010192308.02018.arnd@arndb.de> <AANLkTikz-_qhjygzek4tR0CtDLih3ZQyy1mPKnXAiOiV@mail.gmail.com>
+In-Reply-To: <AANLkTikz-_qhjygzek4tR0CtDLih3ZQyy1mPKnXAiOiV@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 21 Oct 2010 09:03:04.0720 (UTC) FILETIME=[C5787100:01CB70FE]
+Message-Id: <201010211104.28555.arnd@arndb.de>
+X-Provags-ID: V02:K0:qF/h02VlW12xwsZkNeXrX7nMZQYGGF4vE7lnWDizxyn
+ 5dMrYMZ/amjheBKrF7lUVeYKTl1qW2XOUJYJTrZ17TgeBH+2G0
+ jWGPPkSJI6svUEkR3563Dp0AvhwWMnUz0YJ5Mlyh2o/vN4ahtJ
+ bqnG9mWOfEywt39O6yg9k0namF5xL6yl+2dC+pgBqYVYcm10y1
+ S1tdpozS3e/sIXnAFBEDg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-> I just
-> echo  0 > tracing_enabled
-> echo function > current_tracer
-> echo 374(pid of flush) > set_ftrace_pid
-> echo 1 > tracing_enabled
-> wait some time
-> echo 0 > tracing_enabled
-> cat trace
+On Thursday 21 October 2010, Ohad Ben-Cohen wrote:
+> This sounds like adding a set of API that resembles spin_{unlock,lock}_irq.
 > 
-> So I think this answer your question "could kthread be traced?"
+> My gut feeling here is that while this may be useful and simple at
+> certain places, it is somewhat error prone; a driver which would
+> erroneously use this at the wrong place will end up enabling
+> interrupts where it really shouldn't.
+> 
+> Don't you feel that proving a simple spin_lock_irqsave-like API is
+> actually safer and less error prone ?
+> 
+> I guess that is one of the reasons why spin_lock_irqsave is much more
+> popular than spin_lock_irq - people just know it will never screw up.
 
-i do it the same of you.
+People can screw that up in different ways, e.g.
 
-[root@myhost tracing]# ps -ax | grep flush
-Warning: bad ps syntax, perhaps a bogus '-'? See http://procps.sf.net/faq.html
- 1205 ?        S      0:01 [flush-8:0]
-11852 pts/1    S+     0:00 grep flush
-[root@myhost tracing]# 
+	spin_lock_irqsave(&lock_a, flags);
+	spin_lock_irqsave(&lock_b, flags); /* overwrites flags */
 
-so my flusher pid is 1205, i do it as below:
+	spin_lock_irqrestore(&lock_b, flags);
+	spin_lock_irqrestore(&lock_a, flags); /* still disabled! */
 
-[root@myhost tracing]# echo 0 > tracing_enabled 
-[root@myhost tracing]# echo function > current_tracer
-[root@myhost tracing]# echo 1205 > set_ftrace_pid 
-[root@myhost tracing]# echo 1 > tracing_enabled 
+I use the presence of spin_lock_irqsave in driver code as an indication
+of whether the author had any clue about locking. Most experienced
+coders use the right version intuitively, while beginners often just
+use _irqsave because they didn't understand the API and they were told
+that using this is safe.
 
-wait ... and open some pdf files, let system eat huge memory...
-
-[root@myhost tracing]# echo 0 > tracing_enabled 
-[root@myhost tracing]# cat trace
-# tracer: function
-#
-#           TASK-PID    CPU#    TIMESTAMP  FUNCTION
-#              | |       |          |         |
-
-
-but i canot trace nothing. 
-
-
+	Arnd
