@@ -1,122 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756039Ab0JUJWx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Oct 2010 05:22:53 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:50732 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750975Ab0JUJWv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Oct 2010 05:22:51 -0400
-Message-ID: <4CC00740.3050404@redhat.com>
-Date: Thu, 21 Oct 2010 17:26:24 +0800
-From: Cong Wang <amwang@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Shredder/3.0.4
+	id S1755577Ab0JUJ1K (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Oct 2010 05:27:10 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:51890 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752667Ab0JUJ1J (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Oct 2010 05:27:09 -0400
+Date: Thu, 21 Oct 2010 11:27:06 +0200
+From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: Eric Miao <eric.y.miao@gmail.com>
+Cc: Zimny Lech <napohybelskurwysynom2010@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [RFC] Removal of dead code from arch/arm/*
+Message-ID: <20101021092706.GI19834@pengutronix.de>
+References: <AANLkTim+vj_OAd22TdThuC-HSqUiDjguOHQWjyqFaq6N@mail.gmail.com> <AANLkTi=Cpq2_vV2RGcoQhrqk8xpL59AvLFPzfvTBk5Xa@mail.gmail.com>
 MIME-Version: 1.0
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-CC: Andi Kleen <ak@linux.intel.com>, linux-kernel@vger.kernel.org,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Len Brown <len.brown@intel.com>, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        David Howells <dhowells@redhat.com>, Eric Paris <eparis@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Andy Shevchenko <ext-andriy.shevchenko@nokia.com>,
-        linux-doc@vger.kernel.org
-Subject: Re: [PATCH 2/2] sysctl: remove sysctl syscall
-References: <1287476560-5874-1-git-send-email-amwang@redhat.com>	<1287476560-5874-2-git-send-email-amwang@redhat.com>	<4CBD9B7F.6040307@linux.intel.com> <m1vd4yi977.fsf@fess.ebiederm.org>	<4CBDB385.6080100@linux.intel.com> <m1eibmdvew.fsf@fess.ebiederm.org>	<4CBE86E0.3050505@redhat.com> <m1zku99dh4.fsf@fess.ebiederm.org>
-In-Reply-To: <m1zku99dh4.fsf@fess.ebiederm.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTi=Cpq2_vV2RGcoQhrqk8xpL59AvLFPzfvTBk5Xa@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/20/10 21:54, Eric W. Biederman wrote:
-> Cong Wang<amwang@redhat.com>  writes:
->
->> On 10/20/10 00:00, Eric W. Biederman wrote:
->>> To the best of my knowledge the last and user of sys_sysctl is the glibc
->>> ioperm (my apologies I mispoke when I said iopl) implementation on arm.
->>> Not that people run around calling ioperm very often in any distro.
->>
->>
->> I saw that in Changelog of glibc too, but that was back to 2000, 10 years
->> past, I don't see any code using sysctl() in glibc now, except sys_sysctl()
->> itself, of course.
->
-> You have to look in the glibc-ports tree to see the arm code.
->
-> The arm support is not in the main glibc tree for some reason.
->
-> Hmm. Looking I thought sys_sysctl had stopped being exported from glibc
-> but it appears I was wrong.
+On Thu, Oct 21, 2010 at 08:32:06AM +0800, Eric Miao wrote:
+> On Thu, Oct 21, 2010 at 8:23 AM, Zimny Lech
+> <napohybelskurwysynom2010@gmail.com> wrote:
+> > Hi,
+> >
+> > I will begin testing this, I would like to know your opinion about this patches
+> > git pull git://github.com/napohybelskurwysynom2010/Linux-2.6-nps.git rodc1
+> 
+> Would be great if you can post the patches instead of letting people
+> figuring out
+> how to peek into your changes? (although a combination of "git remote add" +
+> "git fetch" + "git log <your remote branch>" can do the trick, not that straight
+> forward)
+<gitlesson>
 
+Actually the easiest and AFAICT most unintrusive way to get this branch
+is:
 
-Ok, got it.
+	~/linux-2.6$ git fetch git://github.com/napohybelskurwysynom2010/Linux-2.6-nps.git rodc1
+	....
 
+	~/linux-2.6$ gitk origin/master..FETCH_HEAD
 
->> I believe they should see the kernel warnings if they are still using
->> sysctl.
->
-> Unfortunately sometimes a word to the wise isn't quite enough. Sigh.  I
-> very much think having the sysctl code disabled by default is definitely
-> safe right now, and the first responsible step in getting this code
-> removed from the kernel.
->
-> There were two original reasons for the deprecations.  Maintaining the
-> binary sysctl logic was bug prone, and no one was using sysctl.
->
-> The rewriting of the binary interface into binary_sysctl.c takes care of
-> most if not all of the maintenance concerns.  You may think you are
-> using the binary interface but the kernel just rewrites it into a /proc
-> access.
->
-> What is left is an interface in the kernel that no one uses and that
-> will eventually bit rot, for lack of care, attention, and testing, but we
-> still have a while until that happens.
->
-> I recommend this:
+This doesn't even create a branch and the objects are subject to garbage
+collection after the next fetch (i.e. when they aren't referenced by
+FETCH_HEAD anymore).
 
+And (as a small side note) you can combine git remote add + git fetch by
+passing -f to git remote add.
 
-This sounds ok for me.
-Do you want to me to carry this patch for you and resend?
+</gitlesson>
 
->
-> ---
-> diff --git a/init/Kconfig b/init/Kconfig
-> index 2de5b1c..a9e1cda 100644
-> --- a/init/Kconfig
-> +++ b/init/Kconfig
-> @@ -808,7 +808,7 @@ config UID16
->   config SYSCTL_SYSCALL
->   	bool "Sysctl syscall support" if EMBEDDED
->   	depends on PROC_SYSCTL
-> -	default y
-> +	default n
->   	select SYSCTL
->   	---help---
->   	  sys_sysctl uses binary paths that have been found challenging
-> @@ -816,11 +816,15 @@ config SYSCTL_SYSCALL
->   	  using paths with ascii names is now the primary path to this
->   	  information.
->
-> -	  Almost nothing using the binary sysctl interface so if you are
-> -	  trying to save some space it is probably safe to disable this,
-> -	  making your kernel marginally smaller.
-> +	  This option is kept as a service to our loyal customers who
-> +	  have ignored all of our warnings over the years and have a
-> +	  binary somewhere that won't work without this.
-> +
-> +	  This code is not regularly used or tested and will probably have
-> +	  bit-rotted before someone cares enough to do more maintenance on it
-> +	  so enable at your own risk.
->
-> -	  If unsure say Y here.
-> +	  Say N here.
->
->   config KALLSYMS
->   	 bool "Load all symbols for debugging/ksymoops" if EMBEDDED
+Best regards
+Uwe
 
-
-Thanks!
+-- 
+Pengutronix e.K.                           | Uwe Kleine-König            |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
