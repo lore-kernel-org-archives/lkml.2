@@ -1,89 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756547Ab0JUXAO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Oct 2010 19:00:14 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:55122 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750915Ab0JUXAN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Oct 2010 19:00:13 -0400
-Date: Thu, 21 Oct 2010 15:59:02 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Kevin Hilman <khilman@deeprootsystems.com>
-Cc: Cyril Chemparathy <cyril@ti.com>,
-        davinci-linux-open-source@linux.davincidsp.com,
-        spi-devel-general@lists.sourceforge.net,
-        broonie@opensource.wolfsonmicro.com, lrg@slimlogic.co.uk,
-        dbrownell@users.sourceforge.net, grant.likely@secretlab.ca,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        rpurdie@rpsys.net
-Subject: Re: [PATCH v3 00/12] tnetv107x ssp driver stack
-Message-Id: <20101021155902.b9702f72.akpm@linux-foundation.org>
-In-Reply-To: <87mxq7p4hv.fsf@deeprootsystems.com>
-References: <1287694873-12904-1-git-send-email-cyril@ti.com>
-	<87mxq7p4hv.fsf@deeprootsystems.com>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1758861Ab0JUXAo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Oct 2010 19:00:44 -0400
+Received: from mga01.intel.com ([192.55.52.88]:58611 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751931Ab0JUXAn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Oct 2010 19:00:43 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.58,219,1286175600"; 
+   d="scan'208";a="619121247"
+Date: Fri, 22 Oct 2010 01:00:40 +0200
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Axel Lin <axel.lin@gmail.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Joonyoung Shim <jy0922.shim@samsung.com>
+Subject: Re: [PATCH] mfd: Add free max8998->ono irq in max8998_irq_exit()
+Message-ID: <20101021230039.GG11685@sortiz-mobl>
+References: <1287565796.7849.6.camel@mola>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1287565796.7849.6.camel@mola>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 21 Oct 2010 15:26:04 -0700
-Kevin Hilman <khilman@deeprootsystems.com> wrote:
+Hi Axel,
 
-> Cyril Chemparathy <cyril@ti.com> writes:
-> 
-> > TI's sequencer serial port (TI-SSP) is a jack-of-all-trades type of serial port
-> > device.  It has a built-in programmable execution engine that can be programmed
-> > to operate as almost any serial bus (I2C, SPI, EasyScale, and others).
-> 
-> Andrew, looking for some advice here...
-> 
-> This is a piece of davinci hardware, but introduces drivers in various
-> subsystems.  I'm willing to merge this series via the davinci tree after
-> getting acks from the various subsystem maintainers.  Is this an OK
-> approach?  It seems best to me to merge this all together.
+On Wed, Oct 20, 2010 at 05:09:56PM +0800, Axel Lin wrote:
+> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+Patch applied, many thanks.
 
-Yes, that's the best approach.
+Cheers,
+Samuel.
 
-Some of the desired acks may not be forthcoming.  In which case the
-best you can do is to review the code yourself, make the maintainer(s)
-aware of what's going on and just go ahead and merge it.  If people are
-too busy to look at the code then so be it - we can't really permit
-that problem to permanently block new drivers.
 
-> We already have acks for the regulator and gpio driver parts, and the
-> backlight driver has a clear owner in MAINTAINERS.  However, who should
-> be doing the final review/ack of the drivers/misc and drivers/gpio
-> changes is less clear to me.  
+> ---
+>  drivers/mfd/max8998-irq.c |    3 +++
+>  1 files changed, 3 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/mfd/max8998-irq.c b/drivers/mfd/max8998-irq.c
+> index 346fd29..45bfe77 100644
+> --- a/drivers/mfd/max8998-irq.c
+> +++ b/drivers/mfd/max8998-irq.c
+> @@ -250,6 +250,9 @@ int max8998_irq_init(struct max8998_dev *max8998)
+>  
+>  void max8998_irq_exit(struct max8998_dev *max8998)
+>  {
+> +	if (max8998->ono)
+> +		free_irq(max8998->ono, max8998);
+> +
+>  	if (max8998->irq)
+>  		free_irq(max8998->irq, max8998);
+>  }
+> -- 
+> 1.7.2
+> 
+> 
 > 
 
-I'll go and have a look at drivers/misc/ti_ssp.c.
-
-> 
-> Thanks,
-> 
-> Kevin
-> 
-> >  arch/arm/mach-davinci/board-tnetv107x-evm.c    |  199 +++++++
-> >  arch/arm/mach-davinci/devices-tnetv107x.c      |   25 +
-> >  arch/arm/mach-davinci/include/mach/ti_ssp.h    |   98 ++++
-> >  arch/arm/mach-davinci/include/mach/tnetv107x.h |    2 +
-> >  arch/arm/mach-davinci/tnetv107x.c              |    2 +-
-> >  drivers/gpio/Kconfig                           |   10 +
-> >  drivers/gpio/Makefile                          |    1 +
-> >  drivers/gpio/ti-ssp-gpio.c                     |  200 +++++++
-> >  drivers/misc/Kconfig                           |   11 +
-> >  drivers/misc/Makefile                          |    1 +
-> >  drivers/misc/ti_ssp.c                          |  436 +++++++++++++++
-> >  drivers/regulator/Kconfig                      |   10 +
-> >  drivers/regulator/Makefile                     |    1 +
-> >  drivers/regulator/tps6524x-regulator.c         |  692 ++++++++++++++++++++++++
-> >  drivers/spi/Kconfig                            |    7 +
-> >  drivers/spi/Makefile                           |    1 +
-> >  drivers/spi/spi_ti_ssp.c                       |  397 ++++++++++++++
-> >  drivers/video/backlight/Kconfig                |    7 +
-> >  drivers/video/backlight/Makefile               |    2 +-
-> >  drivers/video/backlight/tps6116x.c             |  340 ++++++++++++
+-- 
+Intel Open Source Technology Centre
+http://oss.intel.com/
