@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756518Ab0JUAuv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Oct 2010 20:50:51 -0400
-Received: from bld-mail15.adl6.internode.on.net ([150.101.137.100]:57598 "EHLO
+	id S1756592Ab0JUAvj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Oct 2010 20:51:39 -0400
+Received: from bld-mail17.adl2.internode.on.net ([150.101.137.102]:42668 "EHLO
 	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756403Ab0JUAup (ORCPT
+	with ESMTP id S1756508Ab0JUAuw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Oct 2010 20:50:45 -0400
+	Wed, 20 Oct 2010 20:50:52 -0400
 From: Dave Chinner <david@fromorbit.com>
 To: linux-fsdevel@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH 15/21] fs: split locking of inode writeback and LRU lists
-Date: Thu, 21 Oct 2010 11:49:40 +1100
-Message-Id: <1287622186-1935-16-git-send-email-david@fromorbit.com>
+Subject: [PATCH 16/21] fs: Protect inode->i_state with the inode->i_lock
+Date: Thu, 21 Oct 2010 11:49:41 +1100
+Message-Id: <1287622186-1935-17-git-send-email-david@fromorbit.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1287622186-1935-1-git-send-email-david@fromorbit.com>
 References: <1287622186-1935-1-git-send-email-david@fromorbit.com>
@@ -22,531 +22,601 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Dave Chinner <dchinner@redhat.com>
 
-Given that the inode LRU and IO lists are split apart, they do not
-need to be protected by the same lock. So in preparation for removal
-of the inode_lock, add new locks for them. The writeback lists are
-only ever accessed in the context of a bdi, so add a per-BDI lock to
-protect manipulations of these lists.
+We currently protect the per-inode state flags with the inode_lock.
+Using a global lock to protect per-object state is overkill when we
+coul duse a per-inode lock to protect the state.  Use the
+inode->i_lock for this, and wrap all the state changes and checks
+with the inode->i_lock.
 
-For the inode LRU, introduce a simple global lock to protect it.
-While this could be made per-sb, it is unclear yet as to what is the
-next step for optimising/parallelising reclaim of inodes. Rather
-than optimise now, leave it as a global list and lock until further
-analysis can be done.
-
-Because there will now be a situation where the inode is on
-different lists protected by different locks during the freeing of
-the inode (i.e. not an atomic state transition), we need to ensure
-that we set the I_FREEING state flag before we start removing inodes
-from the IO and LRU lists. This ensures that if we race with other
-threads during freeing, they will notice the I_FREEING flag is set
-and be able to take appropriate action to avoid problems.
-
-Based on a patch originally from Nick Piggin.
+Based on work originally written by Nick Piggin.
 
 Signed-off-by: Dave Chinner <dchinner@redhat.com>
 Reviewed-by: Christoph Hellwig <hch@lst.de>
 ---
- fs/block_dev.c              |    5 +++
- fs/fs-writeback.c           |   51 +++++++++++++++++++++++++++++++++---
- fs/inode.c                  |   61 ++++++++++++++++++++++++++++++++++++++-----
- fs/internal.h               |    5 +++
- include/linux/backing-dev.h |    3 ++
- mm/backing-dev.c            |   18 ++++++++++++
- 6 files changed, 132 insertions(+), 11 deletions(-)
+ fs/drop_caches.c       |    9 +++--
+ fs/fs-writeback.c      |   48 +++++++++++++++++++++------
+ fs/inode.c             |   85 ++++++++++++++++++++++++++++++++++--------------
+ fs/nilfs2/gcdat.c      |    1 +
+ fs/notify/inode_mark.c |    6 ++-
+ fs/quota/dquot.c       |   12 +++---
+ 6 files changed, 113 insertions(+), 48 deletions(-)
 
-diff --git a/fs/block_dev.c b/fs/block_dev.c
-index 11ad53d..7909775 100644
---- a/fs/block_dev.c
-+++ b/fs/block_dev.c
-@@ -56,10 +56,15 @@ EXPORT_SYMBOL(I_BDEV);
- static void bdev_inode_switch_bdi(struct inode *inode,
- 			struct backing_dev_info *dst)
- {
-+	struct backing_dev_info *old = inode->i_data.backing_dev_info;
-+
+diff --git a/fs/drop_caches.c b/fs/drop_caches.c
+index dfe8cb1..f958dd8 100644
+--- a/fs/drop_caches.c
++++ b/fs/drop_caches.c
+@@ -19,11 +19,12 @@ static void drop_pagecache_sb(struct super_block *sb, void *unused)
  	spin_lock(&inode_lock);
-+	bdi_lock_two(old, dst);
- 	inode->i_data.backing_dev_info = dst;
- 	if (!list_empty(&inode->i_wb_list))
- 		list_move(&inode->i_wb_list, &dst->wb.b_dirty);
-+	spin_unlock(&old->wb.b_lock);
-+	spin_unlock(&dst->wb.b_lock);
- 	spin_unlock(&inode_lock);
- }
- 
+ 	spin_lock(&sb->s_inodes_lock);
+ 	list_for_each_entry(inode, &sb->s_inodes, i_sb_list) {
+-		if (inode->i_state & (I_FREEING|I_WILL_FREE|I_NEW))
+-			continue;
+-		if (inode->i_mapping->nrpages == 0)
+-			continue;
+ 		spin_lock(&inode->i_lock);
++		if ((inode->i_state & (I_FREEING|I_WILL_FREE|I_NEW)) ||
++		    (inode->i_mapping->nrpages == 0)) {
++			spin_unlock(&inode->i_lock);
++			continue;
++		}
+ 		inode->i_ref++;
+ 		spin_unlock(&inode->i_lock);
+ 		spin_unlock(&sb->s_inodes_lock);
 diff --git a/fs/fs-writeback.c b/fs/fs-writeback.c
-index 676e048..36106e6 100644
+index 36106e6..807d936 100644
 --- a/fs/fs-writeback.c
 +++ b/fs/fs-writeback.c
-@@ -157,6 +157,18 @@ void bdi_start_background_writeback(struct backing_dev_info *bdi)
+@@ -304,10 +304,12 @@ static void inode_wait_for_writeback(struct inode *inode)
+ 	wait_queue_head_t *wqh;
+ 
+ 	wqh = bit_waitqueue(&inode->i_state, __I_SYNC);
+-	 while (inode->i_state & I_SYNC) {
++	while (inode->i_state & I_SYNC) {
++		spin_unlock(&inode->i_lock);
+ 		spin_unlock(&inode_lock);
+ 		__wait_on_bit(wqh, &wq, inode_wait, TASK_UNINTERRUPTIBLE);
+ 		spin_lock(&inode_lock);
++		spin_lock(&inode->i_lock);
+ 	}
  }
  
- /*
-+ * Remove the inode from the writeback list it is on.
-+ */
-+void inode_wb_list_del(struct inode *inode)
-+{
-+	struct backing_dev_info *bdi = inode_to_bdi(inode);
-+
-+	spin_lock(&bdi->wb.b_lock);
-+	list_del_init(&inode->i_wb_list);
-+	spin_unlock(&bdi->wb.b_lock);
-+}
-+
-+/*
-  * Redirty an inode: set its when-it-was dirtied timestamp and move it to the
-  * furthest end of its superblock's dirty-inode list.
-  *
-@@ -169,6 +181,7 @@ static void redirty_tail(struct inode *inode)
- {
- 	struct bdi_writeback *wb = &inode_to_bdi(inode)->wb;
- 
-+	assert_spin_locked(&wb->b_lock);
- 	if (!list_empty(&wb->b_dirty)) {
- 		struct inode *tail;
- 
-@@ -186,6 +199,7 @@ static void requeue_io(struct inode *inode)
- {
- 	struct bdi_writeback *wb = &inode_to_bdi(inode)->wb;
- 
-+	assert_spin_locked(&wb->b_lock);
- 	list_move(&inode->i_wb_list, &wb->b_more_io);
- }
- 
-@@ -269,6 +283,7 @@ static void move_expired_inodes(struct list_head *delaying_queue,
-  */
- static void queue_io(struct bdi_writeback *wb, unsigned long *older_than_this)
- {
-+	assert_spin_locked(&wb->b_lock);
- 	list_splice_init(&wb->b_more_io, &wb->b_io);
- 	move_expired_inodes(&wb->b_dirty, &wb->b_io, older_than_this);
- }
-@@ -311,6 +326,7 @@ static void inode_wait_for_writeback(struct inode *inode)
- static int
- writeback_single_inode(struct inode *inode, struct writeback_control *wbc)
- {
-+	struct backing_dev_info *bdi = inode_to_bdi(inode);
- 	struct address_space *mapping = inode->i_mapping;
+@@ -331,6 +333,7 @@ writeback_single_inode(struct inode *inode, struct writeback_control *wbc)
  	unsigned dirty;
  	int ret;
-@@ -330,7 +346,9 @@ writeback_single_inode(struct inode *inode, struct writeback_control *wbc)
+ 
++	spin_lock(&inode->i_lock);
+ 	if (!inode->i_ref)
+ 		WARN_ON(!(inode->i_state & (I_WILL_FREE|I_FREEING)));
+ 	else
+@@ -346,6 +349,7 @@ writeback_single_inode(struct inode *inode, struct writeback_control *wbc)
  		 * completed a full scan of b_io.
  		 */
  		if (wbc->sync_mode != WB_SYNC_ALL) {
-+			spin_lock(&bdi->wb.b_lock);
++			spin_unlock(&inode->i_lock);
+ 			spin_lock(&bdi->wb.b_lock);
  			requeue_io(inode);
-+			spin_unlock(&bdi->wb.b_lock);
- 			return 0;
- 		}
+ 			spin_unlock(&bdi->wb.b_lock);
+@@ -363,6 +367,7 @@ writeback_single_inode(struct inode *inode, struct writeback_control *wbc)
+ 	/* Set I_SYNC, reset I_DIRTY_PAGES */
+ 	inode->i_state |= I_SYNC;
+ 	inode->i_state &= ~I_DIRTY_PAGES;
++	spin_unlock(&inode->i_lock);
+ 	spin_unlock(&inode_lock);
  
-@@ -385,6 +403,7 @@ writeback_single_inode(struct inode *inode, struct writeback_control *wbc)
+ 	ret = do_writepages(mapping, wbc);
+@@ -384,8 +389,10 @@ writeback_single_inode(struct inode *inode, struct writeback_control *wbc)
+ 	 * write_inode()
+ 	 */
+ 	spin_lock(&inode_lock);
++	spin_lock(&inode->i_lock);
+ 	dirty = inode->i_state & I_DIRTY;
+ 	inode->i_state &= ~(I_DIRTY_SYNC | I_DIRTY_DATASYNC);
++	spin_unlock(&inode->i_lock);
+ 	spin_unlock(&inode_lock);
+ 	/* Don't write the inode if only I_DIRTY_PAGES was set */
+ 	if (dirty & (I_DIRTY_SYNC | I_DIRTY_DATASYNC)) {
+@@ -395,6 +402,7 @@ writeback_single_inode(struct inode *inode, struct writeback_control *wbc)
+ 	}
+ 
+ 	spin_lock(&inode_lock);
++	spin_lock(&inode->i_lock);
+ 	inode->i_state &= ~I_SYNC;
+ 	if (!(inode->i_state & I_FREEING)) {
+ 		if (mapping_tagged(mapping, PAGECACHE_TAG_DIRTY)) {
+@@ -403,6 +411,7 @@ writeback_single_inode(struct inode *inode, struct writeback_control *wbc)
  			 * sometimes bales out without doing anything.
  			 */
  			inode->i_state |= I_DIRTY_PAGES;
-+			spin_lock(&bdi->wb.b_lock);
++			spin_unlock(&inode->i_lock);
+ 			spin_lock(&bdi->wb.b_lock);
  			if (wbc->nr_to_write <= 0) {
  				/*
- 				 * slice used up: queue for next turn
-@@ -400,6 +419,7 @@ writeback_single_inode(struct inode *inode, struct writeback_control *wbc)
- 				 */
- 				redirty_tail(inode);
- 			}
-+			spin_unlock(&bdi->wb.b_lock);
- 		} else if (inode->i_state & I_DIRTY) {
- 			/*
- 			 * Filesystems can dirty the inode during writeback
-@@ -407,7 +427,9 @@ writeback_single_inode(struct inode *inode, struct writeback_control *wbc)
+@@ -427,6 +436,7 @@ writeback_single_inode(struct inode *inode, struct writeback_control *wbc)
  			 * submission or metadata updates after data IO
  			 * completion.
  			 */
-+			spin_lock(&bdi->wb.b_lock);
++			spin_unlock(&inode->i_lock);
+ 			spin_lock(&bdi->wb.b_lock);
  			redirty_tail(inode);
-+			spin_unlock(&bdi->wb.b_lock);
- 		} else {
- 			/*
- 			 * The inode is clean. If it is unused, then make sure
-@@ -415,7 +437,7 @@ writeback_single_inode(struct inode *inode, struct writeback_control *wbc)
+ 			spin_unlock(&bdi->wb.b_lock);
+@@ -437,10 +447,15 @@ writeback_single_inode(struct inode *inode, struct writeback_control *wbc)
  			 * does not move dirty inodes to the LRU and dirty
  			 * inodes are removed from the LRU during scanning.
  			 */
--			list_del_init(&inode->i_wb_list);
-+			inode_wb_list_del(inode);
- 			if (!inode->i_ref)
++			int unused = inode->i_ref == 0;
++			spin_unlock(&inode->i_lock);
+ 			inode_wb_list_del(inode);
+-			if (!inode->i_ref)
++			if (unused)
  				inode_lru_list_add(inode);
  		}
-@@ -463,6 +485,7 @@ static bool pin_sb_for_writeback(struct super_block *sb)
- static int writeback_sb_inodes(struct super_block *sb, struct bdi_writeback *wb,
- 		struct writeback_control *wbc, bool only_this_sb)
- {
-+	assert_spin_locked(&wb->b_lock);
- 	while (!list_empty(&wb->b_io)) {
- 		long pages_skipped;
- 		struct inode *inode = list_entry(wb->b_io.prev,
-@@ -478,7 +501,6 @@ static int writeback_sb_inodes(struct super_block *sb, struct bdi_writeback *wb,
- 				redirty_tail(inode);
- 				continue;
- 			}
--
- 			/*
- 			 * The inode belongs to a different superblock.
- 			 * Bounce back to the caller to unpin this and
-@@ -487,7 +509,15 @@ static int writeback_sb_inodes(struct super_block *sb, struct bdi_writeback *wb,
- 			return 0;
- 		}
- 
--		if (inode->i_state & (I_NEW | I_WILL_FREE)) {
-+		/*
-+		 * We can see I_FREEING here when the inode is in the process of
-+		 * being reclaimed. In that case the freer is waiting on the
-+		 * wb->b_lock that we currently hold to remove the inode from
-+		 * the writeback list. So we don't spin on it here, requeue it
-+		 * and move on to the next inode, which will allow the other
-+		 * thread to free the inode when we drop the lock.
-+		 */
-+		if (inode->i_state & (I_NEW | I_WILL_FREE | I_FREEING)) {
++	} else {
++		/* freer will clean up */
++		spin_unlock(&inode->i_lock);
+ 	}
+ 	inode_sync_complete(inode);
+ 	return ret;
+@@ -517,7 +532,9 @@ static int writeback_sb_inodes(struct super_block *sb, struct bdi_writeback *wb,
+ 		 * and move on to the next inode, which will allow the other
+ 		 * thread to free the inode when we drop the lock.
+ 		 */
++		spin_lock(&inode->i_lock);
+ 		if (inode->i_state & (I_NEW | I_WILL_FREE | I_FREEING)) {
++			spin_unlock(&inode->i_lock);
  			requeue_io(inode);
  			continue;
  		}
-@@ -498,10 +528,11 @@ static int writeback_sb_inodes(struct super_block *sb, struct bdi_writeback *wb,
- 		if (inode_dirtied_after(inode, wbc->wb_start))
+@@ -525,10 +542,11 @@ static int writeback_sb_inodes(struct super_block *sb, struct bdi_writeback *wb,
+ 		 * Was this inode dirtied after sync_sb_inodes was called?
+ 		 * This keeps sync from extra jobs and livelock.
+ 		 */
+-		if (inode_dirtied_after(inode, wbc->wb_start))
++		if (inode_dirtied_after(inode, wbc->wb_start)) {
++			spin_unlock(&inode->i_lock);
  			return 1;
++		}
  
--		BUG_ON(inode->i_state & I_FREEING);
- 		spin_lock(&inode->i_lock);
+-		spin_lock(&inode->i_lock);
  		inode->i_ref++;
  		spin_unlock(&inode->i_lock);
-+		spin_unlock(&wb->b_lock);
-+
- 		pages_skipped = wbc->pages_skipped;
- 		writeback_single_inode(inode, wbc);
- 		if (wbc->pages_skipped != pages_skipped) {
-@@ -509,12 +540,15 @@ static int writeback_sb_inodes(struct super_block *sb, struct bdi_writeback *wb,
- 			 * writeback is not making progress due to locked
- 			 * buffers.  Skip this inode for now.
- 			 */
-+			spin_lock(&wb->b_lock);
- 			redirty_tail(inode);
-+			spin_unlock(&wb->b_lock);
- 		}
- 		spin_unlock(&inode_lock);
- 		iput(inode);
- 		cond_resched();
- 		spin_lock(&inode_lock);
-+		spin_lock(&wb->b_lock);
- 		if (wbc->nr_to_write <= 0) {
- 			wbc->more_io = 1;
- 			return 1;
-@@ -534,6 +568,8 @@ void writeback_inodes_wb(struct bdi_writeback *wb,
- 	if (!wbc->wb_start)
- 		wbc->wb_start = jiffies; /* livelock avoidance */
- 	spin_lock(&inode_lock);
-+	spin_lock(&wb->b_lock);
-+
- 	if (!wbc->for_kupdate || list_empty(&wb->b_io))
- 		queue_io(wb, wbc->older_than_this);
- 
-@@ -552,6 +588,7 @@ void writeback_inodes_wb(struct bdi_writeback *wb,
- 		if (ret)
- 			break;
- 	}
-+	spin_unlock(&wb->b_lock);
- 	spin_unlock(&inode_lock);
- 	/* Leave any unwritten inodes on b_io */
- }
-@@ -562,9 +599,11 @@ static void __writeback_inodes_sb(struct super_block *sb,
- 	WARN_ON(!rwsem_is_locked(&sb->s_umount));
- 
- 	spin_lock(&inode_lock);
-+	spin_lock(&wb->b_lock);
- 	if (!wbc->for_kupdate || list_empty(&wb->b_io))
- 		queue_io(wb, wbc->older_than_this);
- 	writeback_sb_inodes(sb, wb, wbc, true);
-+	spin_unlock(&wb->b_lock);
- 	spin_unlock(&inode_lock);
- }
- 
-@@ -677,8 +716,10 @@ static long wb_writeback(struct bdi_writeback *wb,
- 		 */
- 		spin_lock(&inode_lock);
- 		if (!list_empty(&wb->b_more_io))  {
-+			spin_lock(&wb->b_lock);
+ 		spin_unlock(&wb->b_lock);
+@@ -719,9 +737,11 @@ static long wb_writeback(struct bdi_writeback *wb,
+ 			spin_lock(&wb->b_lock);
  			inode = list_entry(wb->b_more_io.prev,
  						struct inode, i_wb_list);
-+			spin_unlock(&wb->b_lock);
++			spin_lock(&inode->i_lock);
+ 			spin_unlock(&wb->b_lock);
  			trace_wbc_writeback_wait(&wbc, wb->bdi);
  			inode_wait_for_writeback(inode);
++			spin_unlock(&inode->i_lock);
  		}
-@@ -991,8 +1032,10 @@ void __mark_inode_dirty(struct inode *inode, int flags)
+ 		spin_unlock(&inode_lock);
+ 	}
+@@ -987,6 +1007,7 @@ void __mark_inode_dirty(struct inode *inode, int flags)
+ 		block_dump___mark_inode_dirty(inode);
+ 
+ 	spin_lock(&inode_lock);
++	spin_lock(&inode->i_lock);
+ 	if ((inode->i_state & flags) != flags) {
+ 		const int was_dirty = inode->i_state & I_DIRTY;
+ 
+@@ -998,7 +1019,7 @@ void __mark_inode_dirty(struct inode *inode, int flags)
+ 		 * superblock list, based upon its state.
+ 		 */
+ 		if (inode->i_state & I_SYNC)
+-			goto out;
++			goto out_unlock;
+ 
+ 		/*
+ 		 * Only add valid (hashed) inodes to the superblock's
+@@ -1006,10 +1027,10 @@ void __mark_inode_dirty(struct inode *inode, int flags)
+ 		 */
+ 		if (!S_ISBLK(inode->i_mode)) {
+ 			if (inode_unhashed(inode))
+-				goto out;
++				goto out_unlock;
+ 		}
+ 		if (inode->i_state & I_FREEING)
+-			goto out;
++			goto out_unlock;
+ 
+ 		/*
+ 		 * If the inode was already on b_dirty/b_io/b_more_io, don't
+@@ -1032,12 +1053,16 @@ void __mark_inode_dirty(struct inode *inode, int flags)
  					wakeup_bdi = true;
  			}
  
-+			spin_lock(&bdi->wb.b_lock);
++			spin_unlock(&inode->i_lock);
+ 			spin_lock(&bdi->wb.b_lock);
  			inode->dirtied_when = jiffies;
  			list_move(&inode->i_wb_list, &bdi->wb.b_dirty);
-+			spin_unlock(&bdi->wb.b_lock);
+ 			spin_unlock(&bdi->wb.b_lock);
++			goto out;
  		}
  	}
++out_unlock:
++	spin_unlock(&inode->i_lock);
  out:
+ 	spin_unlock(&inode_lock);
+ 
+@@ -1086,12 +1111,13 @@ static void wait_sb_inodes(struct super_block *sb)
+ 	list_for_each_entry(inode, &sb->s_inodes, i_sb_list) {
+ 		struct address_space *mapping;
+ 
+-		if (inode->i_state & (I_FREEING|I_WILL_FREE|I_NEW))
+-			continue;
++		spin_lock(&inode->i_lock);
+ 		mapping = inode->i_mapping;
+-		if (mapping->nrpages == 0)
++		if ((inode->i_state & (I_FREEING|I_WILL_FREE|I_NEW)) ||
++		    mapping->nrpages == 0) {
++			spin_unlock(&inode->i_lock);
+ 			continue;
+-		spin_lock(&inode->i_lock);
++		}
+ 		inode->i_ref++;
+ 		spin_unlock(&inode->i_lock);
+ 		spin_unlock(&sb->s_inodes_lock);
 diff --git a/fs/inode.c b/fs/inode.c
-index 734aadf..959c8b5 100644
+index 959c8b5..32bac58 100644
 --- a/fs/inode.c
 +++ b/fs/inode.c
-@@ -25,6 +25,8 @@
- #include <linux/async.h>
- #include <linux/posix_acl.h>
- 
-+#include "internal.h"
-+
- /*
-  * Locking rules.
+@@ -33,7 +33,7 @@
+  * inode->i_lock is *always* the innermost lock.
   *
-@@ -36,6 +38,10 @@
+  * inode->i_lock protects:
+- *   i_ref
++ *   i_ref i_state
+  * inode hash lock protects:
   *   inode hash table, i_hash
   * sb inode lock protects:
-  *   s_inodes, i_sb_list
-+ * bdi writeback lock protects:
-+ *   b_io, b_more_io, b_dirty, i_wb_list
-+ * inode_lru_lock protects:
-+ *   inode_lru, i_lru
-  *
-  * Lock orders
-  * inode_lock
-@@ -44,6 +50,17 @@
-  *
-  * inode_lock
-  *   sb inode lock
-+ *     inode_lru_lock
-+ *       wb->b_lock
-+ *         inode->i_lock
-+ *
-+ * inode_lock
-+ *   wb->b_lock
-+ *     sb_lock (pin sb for writeback)
-+ *     inode->i_lock
-+ *
-+ * inode_lock
-+ *   inode_lru
-  *     inode->i_lock
-  */
- /*
-@@ -94,6 +111,7 @@ static struct hlist_bl_head *inode_hashtable __read_mostly;
-  * allowing for low-overhead inode sync() operations.
-  */
- static LIST_HEAD(inode_lru);
-+static DEFINE_SPINLOCK(inode_lru_lock);
- 
- /*
-  * A simple spinlock to protect the list manipulations.
-@@ -354,20 +372,28 @@ void iref(struct inode *inode)
- }
- EXPORT_SYMBOL_GPL(iref);
- 
-+/*
-+ * check against I_FREEING as inode writeback completion could race with
-+ * setting the I_FREEING and removing the inode from the LRU.
-+ */
- void inode_lru_list_add(struct inode *inode)
+@@ -178,7 +178,7 @@ int proc_nr_inodes(ctl_table *table, int write,
+ static void wake_up_inode(struct inode *inode)
  {
--	if (list_empty(&inode->i_lru)) {
-+	spin_lock(&inode_lru_lock);
-+	if (list_empty(&inode->i_lru) && !(inode->i_state & I_FREEING)) {
- 		list_add(&inode->i_lru, &inode_lru);
- 		percpu_counter_inc(&nr_inodes_unused);
- 	}
-+	spin_unlock(&inode_lru_lock);
+ 	/*
+-	 * Prevent speculative execution through spin_unlock(&inode_lock);
++	 * Prevent speculative execution through spin_unlock(&inode->i_lock);
+ 	 */
+ 	smp_mb();
+ 	wake_up_bit(&inode->i_state, __I_NEW);
+@@ -495,7 +495,9 @@ void end_writeback(struct inode *inode)
+ 	BUG_ON(!(inode->i_state & I_FREEING));
+ 	BUG_ON(inode->i_state & I_CLEAR);
+ 	inode_sync_wait(inode);
++	spin_lock(&inode->i_lock);
+ 	inode->i_state = I_FREEING | I_CLEAR;
++	spin_unlock(&inode->i_lock);
  }
+ EXPORT_SYMBOL(end_writeback);
  
- void inode_lru_list_del(struct inode *inode)
- {
-+	spin_lock(&inode_lru_lock);
- 	if (!list_empty(&inode->i_lru)) {
- 		list_del_init(&inode->i_lru);
- 		percpu_counter_dec(&nr_inodes_unused);
- 	}
-+	spin_unlock(&inode_lru_lock);
- }
- 
- static void __inode_sb_list_add(struct inode *inode)
-@@ -552,8 +578,18 @@ static int invalidate_list(struct super_block *sb, struct list_head *head,
- 			spin_unlock(&inode->i_lock);
+@@ -570,14 +572,16 @@ static int invalidate_list(struct super_block *sb, struct list_head *head,
+ 		if (tmp == head)
+ 			break;
+ 		inode = list_entry(tmp, struct inode, i_sb_list);
+-		if (inode->i_state & I_NEW)
++		spin_lock(&inode->i_lock);
++		if (inode->i_state & I_NEW) {
++			spin_unlock(&inode->i_lock);
+ 			continue;
++		}
+ 		invalidate_inode_buffers(inode);
+-		spin_lock(&inode->i_lock);
+ 		if (!inode->i_ref) {
+-			spin_unlock(&inode->i_lock);
  			WARN_ON(inode->i_state & I_NEW);
  			inode->i_state |= I_FREEING;
-+
-+			/*
-+			 * move the inode off the IO lists and LRU once
-+			 * I_FREEING is set so that it won't get moved back on
-+			 * there if it is dirty.
-+			 */
-+			inode_wb_list_del(inode);
-+
-+			spin_lock(&inode_lru_lock);
- 			list_move(&inode->i_lru, dispose);
- 			percpu_counter_dec(&nr_inodes_unused);
-+			spin_unlock(&inode_lru_lock);
- 			continue;
- 		}
- 		spin_unlock(&inode->i_lock);
-@@ -614,6 +650,7 @@ static void prune_icache(int nr_to_scan)
++			spin_unlock(&inode->i_lock);
  
- 	down_read(&iprune_sem);
- 	spin_lock(&inode_lock);
-+	spin_lock(&inode_lru_lock);
- 	for (nr_scanned = 0; nr_scanned < nr_to_scan; nr_scanned++) {
- 		struct inode *inode;
+ 			/*
+ 			 * move the inode off the IO lists and LRU once
+@@ -673,9 +677,9 @@ static void prune_icache(int nr_to_scan)
  
-@@ -644,6 +681,7 @@ static void prune_icache(int nr_to_scan)
- 		if (inode_has_buffers(inode) || inode->i_data.nrpages) {
- 			inode->i_ref++;
+ 		/* recently referenced inodes get one more pass */
+ 		if (inode->i_state & I_REFERENCED) {
++			inode->i_state &= ~I_REFERENCED;
  			spin_unlock(&inode->i_lock);
-+			spin_unlock(&inode_lru_lock);
- 			spin_unlock(&inode_lock);
- 			if (remove_inode_buffers(inode))
- 				reap += invalidate_mapping_pages(&inode->i_data,
-@@ -661,19 +699,28 @@ static void prune_icache(int nr_to_scan)
- 			 * same. Either way, we won't spin on it in this loop.
- 			 */
- 			spin_lock(&inode_lock);
-+			spin_lock(&inode_lru_lock);
+ 			list_move(&inode->i_lru, &inode_lru);
+-			inode->i_state &= ~I_REFERENCED;
  			continue;
  		}
- 		spin_unlock(&inode->i_lock);
--		list_move(&inode->i_lru, &freeable);
--		list_del_init(&inode->i_wb_list);
+ 		if (inode_has_buffers(inode) || inode->i_data.nrpages) {
+@@ -702,9 +706,9 @@ static void prune_icache(int nr_to_scan)
+ 			spin_lock(&inode_lru_lock);
+ 			continue;
+ 		}
+-		spin_unlock(&inode->i_lock);
  		WARN_ON(inode->i_state & I_NEW);
  		inode->i_state |= I_FREEING;
-+
-+		/*
-+		 * move the inode off the io lists and lru once
-+		 * i_freeing is set so that it won't get moved back on
-+		 * there if it is dirty.
-+		 */
-+		inode_wb_list_del(inode);
-+
-+		list_move(&inode->i_lru, &freeable);
- 		percpu_counter_dec(&nr_inodes_unused);
- 	}
- 	if (current_is_kswapd())
- 		__count_vm_events(KSWAPD_INODESTEAL, reap);
- 	else
- 		__count_vm_events(PGINODESTEAL, reap);
-+	spin_unlock(&inode_lru_lock);
- 	spin_unlock(&inode_lock);
++		spin_unlock(&inode->i_lock);
  
- 	dispose_list(&freeable);
-@@ -1391,15 +1438,15 @@ static void iput_final(struct inode *inode)
- 		inode->i_state &= ~I_WILL_FREE;
- 		__remove_inode_hash(inode);
- 	}
--	list_del_init(&inode->i_wb_list);
- 	WARN_ON(inode->i_state & I_NEW);
- 	inode->i_state |= I_FREEING;
+ 		/*
+ 		 * move the inode off the io lists and lru once
+@@ -758,9 +762,6 @@ static struct shrinker icache_shrinker = {
  
- 	/*
--	 * After we delete the inode from the LRU here, we avoid moving dirty
--	 * inodes back onto the LRU now because I_FREEING is set and hence
--	 * writeback_single_inode() won't move the inode around.
-+	 * After we delete the inode from the LRU and IO lists here, we avoid
-+	 * moving dirty inodes back onto the LRU now because I_FREEING is set
-+	 * and hence writeback_single_inode() won't move the inode around.
- 	 */
-+	inode_wb_list_del(inode);
- 	inode_lru_list_del(inode);
+ static void __wait_on_freeing_inode(struct inode *inode);
  
- 	__inode_sb_list_del(inode);
-diff --git a/fs/internal.h b/fs/internal.h
-index ece3565..f8825ae 100644
---- a/fs/internal.h
-+++ b/fs/internal.h
-@@ -107,3 +107,8 @@ extern void release_open_intent(struct nameidata *);
-  */
- extern void inode_lru_list_add(struct inode *inode);
- extern void inode_lru_list_del(struct inode *inode);
-+
-+/*
-+ * fs-writeback.c
-+ */
-+extern void inode_wb_list_del(struct inode *inode);
-diff --git a/include/linux/backing-dev.h b/include/linux/backing-dev.h
-index 35b0074..995a3ad 100644
---- a/include/linux/backing-dev.h
-+++ b/include/linux/backing-dev.h
-@@ -57,6 +57,7 @@ struct bdi_writeback {
- 	struct list_head b_dirty;	/* dirty inodes */
- 	struct list_head b_io;		/* parked for writeback */
- 	struct list_head b_more_io;	/* parked for more writeback */
-+	spinlock_t b_lock;		/* writeback lists lock */
- };
- 
- struct backing_dev_info {
-@@ -108,6 +109,8 @@ int bdi_writeback_thread(void *data);
- int bdi_has_dirty_io(struct backing_dev_info *bdi);
- void bdi_arm_supers_timer(void);
- void bdi_wakeup_thread_delayed(struct backing_dev_info *bdi);
-+void bdi_lock_two(struct backing_dev_info *bdi1,
-+				struct backing_dev_info *bdi2);
- 
- extern spinlock_t bdi_lock;
- extern struct list_head bdi_list;
-diff --git a/mm/backing-dev.c b/mm/backing-dev.c
-index 15d5097..52442bd 100644
---- a/mm/backing-dev.c
-+++ b/mm/backing-dev.c
-@@ -74,12 +74,14 @@ static int bdi_debug_stats_show(struct seq_file *m, void *v)
- 
- 	nr_wb = nr_dirty = nr_io = nr_more_io = 0;
- 	spin_lock(&inode_lock);
-+	spin_lock(&wb->b_lock);
- 	list_for_each_entry(inode, &wb->b_dirty, i_wb_list)
- 		nr_dirty++;
- 	list_for_each_entry(inode, &wb->b_io, i_wb_list)
- 		nr_io++;
- 	list_for_each_entry(inode, &wb->b_more_io, i_wb_list)
- 		nr_more_io++;
-+	spin_unlock(&wb->b_lock);
- 	spin_unlock(&inode_lock);
- 
- 	global_dirty_limits(&background_thresh, &dirty_thresh);
-@@ -634,6 +636,7 @@ static void bdi_wb_init(struct bdi_writeback *wb, struct backing_dev_info *bdi)
- 	INIT_LIST_HEAD(&wb->b_dirty);
- 	INIT_LIST_HEAD(&wb->b_io);
- 	INIT_LIST_HEAD(&wb->b_more_io);
-+	spin_lock_init(&wb->b_lock);
- 	setup_timer(&wb->wakeup_timer, wakeup_timer_fn, (unsigned long)bdi);
- }
- 
-@@ -671,6 +674,18 @@ err:
- }
- EXPORT_SYMBOL(bdi_init);
- 
-+void bdi_lock_two(struct backing_dev_info *bdi1,
-+				struct backing_dev_info *bdi2)
-+{
-+	if (bdi1 < bdi2) {
-+		spin_lock(&bdi1->wb.b_lock);
-+		spin_lock_nested(&bdi2->wb.b_lock, 1);
-+	} else {
-+		spin_lock(&bdi2->wb.b_lock);
-+		spin_lock_nested(&bdi1->wb.b_lock, 1);
-+	}
-+}
-+
- void bdi_destroy(struct backing_dev_info *bdi)
- {
- 	int i;
-@@ -683,9 +698,12 @@ void bdi_destroy(struct backing_dev_info *bdi)
- 		struct bdi_writeback *dst = &default_backing_dev_info.wb;
- 
+-/*
+- * Called with the inode lock held.
+- */
+ static struct inode *find_inode(struct super_block *sb,
+ 				struct hlist_bl_head *b,
+ 				int (*test)(struct inode *, void *),
+@@ -773,15 +774,17 @@ repeat:
+ 	hlist_bl_for_each_entry(inode, node, b, i_hash) {
+ 		if (inode->i_sb != sb)
+ 			continue;
+-		if (!test(inode, data))
++		spin_lock(&inode->i_lock);
++		if (!test(inode, data)) {
++			spin_unlock(&inode->i_lock);
+ 			continue;
++		}
+ 		if (inode->i_state & (I_FREEING|I_WILL_FREE)) {
+ 			hlist_bl_unlock(b);
+ 			__wait_on_freeing_inode(inode);
+ 			hlist_bl_lock(b);
+ 			goto repeat;
+ 		}
+-		spin_lock(&inode->i_lock);
+ 		inode->i_ref++;
+ 		spin_unlock(&inode->i_lock);
+ 		return inode;
+@@ -805,13 +808,13 @@ repeat:
+ 			continue;
+ 		if (inode->i_sb != sb)
+ 			continue;
++		spin_lock(&inode->i_lock);
+ 		if (inode->i_state & (I_FREEING|I_WILL_FREE)) {
+ 			hlist_bl_unlock(b);
+ 			__wait_on_freeing_inode(inode);
+ 			hlist_bl_lock(b);
+ 			goto repeat;
+ 		}
+-		spin_lock(&inode->i_lock);
+ 		inode->i_ref++;
+ 		spin_unlock(&inode->i_lock);
+ 		return inode;
+@@ -846,9 +849,13 @@ struct inode *new_inode(struct super_block *sb)
+ 	inode = alloc_inode(sb);
+ 	if (inode) {
  		spin_lock(&inode_lock);
-+		bdi_lock_two(bdi, &default_backing_dev_info);
- 		list_splice(&bdi->wb.b_dirty, &dst->b_dirty);
- 		list_splice(&bdi->wb.b_io, &dst->b_io);
- 		list_splice(&bdi->wb.b_more_io, &dst->b_more_io);
-+		spin_unlock(&bdi->wb.b_lock);
-+		spin_unlock(&dst->b_lock);
+-		__inode_sb_list_add(inode);
++		/*
++		 * set the inode state before we make the inode accessible to
++		 * the outside world.
++		 */
+ 		inode->i_ino = ++last_ino;
+ 		inode->i_state = 0;
++		__inode_sb_list_add(inode);
  		spin_unlock(&inode_lock);
  	}
+ 	return inode;
+@@ -916,10 +923,14 @@ static struct inode *get_new_inode(struct super_block *sb,
+ 			if (set(inode, data))
+ 				goto set_failed;
  
++			/*
++			 * Set the inode state before we make the inode
++			 * visible to the outside world.
++			 */
++			inode->i_state = I_NEW;
+ 			hlist_bl_add_head(&inode->i_hash, b);
+ 			hlist_bl_unlock(b);
+ 			__inode_sb_list_add(inode);
+-			inode->i_state = I_NEW;
+ 			spin_unlock(&inode_lock);
+ 
+ 			/* Return the locked inode with I_NEW set, the
+@@ -966,11 +977,15 @@ static struct inode *get_new_inode_fast(struct super_block *sb,
+ 		/* We released the lock, so.. */
+ 		old = find_inode_fast(sb, b, ino);
+ 		if (!old) {
++			/*
++			 * Set the inode state before we make the inode
++			 * visible to the outside world.
++			 */
+ 			inode->i_ino = ino;
++			inode->i_state = I_NEW;
+ 			hlist_bl_add_head(&inode->i_hash, b);
+ 			hlist_bl_unlock(b);
+ 			__inode_sb_list_add(inode);
+-			inode->i_state = I_NEW;
+ 			spin_unlock(&inode_lock);
+ 
+ 			/* Return the locked inode with I_NEW set, the
+@@ -1313,8 +1328,11 @@ int insert_inode_locked(struct inode *inode)
+ 				continue;
+ 			if (old->i_sb != sb)
+ 				continue;
+-			if (old->i_state & (I_FREEING|I_WILL_FREE))
++			spin_lock(&old->i_lock);
++			if (old->i_state & (I_FREEING|I_WILL_FREE)) {
++				spin_unlock(&old->i_lock);
+ 				continue;
++			}
+ 			break;
+ 		}
+ 		if (likely(!node)) {
+@@ -1323,7 +1341,6 @@ int insert_inode_locked(struct inode *inode)
+ 			spin_unlock(&inode_lock);
+ 			return 0;
+ 		}
+-		spin_lock(&old->i_lock);
+ 		old->i_ref++;
+ 		spin_unlock(&old->i_lock);
+ 		hlist_bl_unlock(b);
+@@ -1344,6 +1361,10 @@ int insert_inode_locked4(struct inode *inode, unsigned long hashval,
+ 	struct super_block *sb = inode->i_sb;
+ 	struct hlist_bl_head *b = inode_hashtable + hash(sb, hashval);
+ 
++	/*
++	 * Nobody else can see the new inode yet, so it is safe to set flags
++	 * without locking here.
++	 */
+ 	inode->i_state |= I_NEW;
+ 
+ 	while (1) {
+@@ -1357,8 +1378,11 @@ int insert_inode_locked4(struct inode *inode, unsigned long hashval,
+ 				continue;
+ 			if (!test(old, data))
+ 				continue;
+-			if (old->i_state & (I_FREEING|I_WILL_FREE))
++			spin_lock(&old->i_lock);
++			if (old->i_state & (I_FREEING|I_WILL_FREE)) {
++				spin_unlock(&old->i_lock);
+ 				continue;
++			}
+ 			break;
+ 		}
+ 		if (likely(!node)) {
+@@ -1367,7 +1391,6 @@ int insert_inode_locked4(struct inode *inode, unsigned long hashval,
+ 			spin_unlock(&inode_lock);
+ 			return 0;
+ 		}
+-		spin_lock(&old->i_lock);
+ 		old->i_ref++;
+ 		spin_unlock(&old->i_lock);
+ 		hlist_bl_unlock(b);
+@@ -1416,6 +1439,8 @@ static void iput_final(struct inode *inode)
+ 	const struct super_operations *op = inode->i_sb->s_op;
+ 	int drop;
+ 
++	assert_spin_locked(&inode->i_lock);
++
+ 	if (op && op->drop_inode)
+ 		drop = op->drop_inode(inode);
+ 	else
+@@ -1424,22 +1449,30 @@ static void iput_final(struct inode *inode)
+ 	if (!drop) {
+ 		if (sb->s_flags & MS_ACTIVE) {
+ 			inode->i_state |= I_REFERENCED;
+-			if (!(inode->i_state & (I_DIRTY|I_SYNC)))
++			if (!(inode->i_state & (I_DIRTY|I_SYNC)) &&
++			    list_empty(&inode->i_lru)) {
++				spin_unlock(&inode->i_lock);
+ 				inode_lru_list_add(inode);
++				return;
++			}
++			spin_unlock(&inode->i_lock);
+ 			spin_unlock(&inode_lock);
+ 			return;
+ 		}
+ 		WARN_ON(inode->i_state & I_NEW);
+ 		inode->i_state |= I_WILL_FREE;
++		spin_unlock(&inode->i_lock);
+ 		spin_unlock(&inode_lock);
+ 		write_inode_now(inode, 1);
+ 		spin_lock(&inode_lock);
++		__remove_inode_hash(inode);
++		spin_lock(&inode->i_lock);
+ 		WARN_ON(inode->i_state & I_NEW);
+ 		inode->i_state &= ~I_WILL_FREE;
+-		__remove_inode_hash(inode);
+ 	}
+ 	WARN_ON(inode->i_state & I_NEW);
+ 	inode->i_state |= I_FREEING;
++	spin_unlock(&inode->i_lock);
+ 
+ 	/*
+ 	 * After we delete the inode from the LRU and IO lists here, we avoid
+@@ -1470,12 +1503,11 @@ static void iput_final(struct inode *inode)
+ void iput(struct inode *inode)
+ {
+ 	if (inode) {
+-		BUG_ON(inode->i_state & I_CLEAR);
+-
+ 		spin_lock(&inode_lock);
+ 		spin_lock(&inode->i_lock);
++		BUG_ON(inode->i_state & I_CLEAR);
++
+ 		if (--inode->i_ref == 0) {
+-			spin_unlock(&inode->i_lock);
+ 			iput_final(inode);
+ 			return;
+ 		}
+@@ -1661,6 +1693,8 @@ EXPORT_SYMBOL(inode_wait);
+  * wake_up_inode() after removing from the hash list will DTRT.
+  *
+  * This is called with inode_lock held.
++ *
++ * Called with i_lock held and returns with it dropped.
+  */
+ static void __wait_on_freeing_inode(struct inode *inode)
+ {
+@@ -1668,6 +1702,7 @@ static void __wait_on_freeing_inode(struct inode *inode)
+ 	DEFINE_WAIT_BIT(wait, &inode->i_state, __I_NEW);
+ 	wq = bit_waitqueue(&inode->i_state, __I_NEW);
+ 	prepare_to_wait(wq, &wait.wait, TASK_UNINTERRUPTIBLE);
++	spin_unlock(&inode->i_lock);
+ 	spin_unlock(&inode_lock);
+ 	schedule();
+ 	finish_wait(wq, &wait.wait);
+diff --git a/fs/nilfs2/gcdat.c b/fs/nilfs2/gcdat.c
+index 84a45d1..c51f0e8 100644
+--- a/fs/nilfs2/gcdat.c
++++ b/fs/nilfs2/gcdat.c
+@@ -27,6 +27,7 @@
+ #include "page.h"
+ #include "mdt.h"
+ 
++/* XXX: what protects i_state? */
+ int nilfs_init_gcdat_inode(struct the_nilfs *nilfs)
+ {
+ 	struct inode *dat = nilfs->ns_dat, *gcdat = nilfs->ns_gc_dat;
+diff --git a/fs/notify/inode_mark.c b/fs/notify/inode_mark.c
+index 4ed0e43..203146b 100644
+--- a/fs/notify/inode_mark.c
++++ b/fs/notify/inode_mark.c
+@@ -249,8 +249,11 @@ void fsnotify_unmount_inodes(struct list_head *list)
+ 		 * I_WILL_FREE, or I_NEW which is fine because by that point
+ 		 * the inode cannot have any associated watches.
+ 		 */
+-		if (inode->i_state & (I_FREEING|I_WILL_FREE|I_NEW))
++		spin_lock(&inode->i_lock);
++		if (inode->i_state & (I_FREEING|I_WILL_FREE|I_NEW)) {
++			spin_unlock(&inode->i_lock);
+ 			continue;
++		}
+ 
+ 		/*
+ 		 * If i_ref is zero, the inode cannot have any watches and
+@@ -258,7 +261,6 @@ void fsnotify_unmount_inodes(struct list_head *list)
+ 		 * evict all inodes with zero i_ref from icache which is
+ 		 * unnecessarily violent and may in fact be illegal to do.
+ 		 */
+-		spin_lock(&inode->i_lock);
+ 		if (!inode->i_ref) {
+ 			spin_unlock(&inode->i_lock);
+ 			continue;
+diff --git a/fs/quota/dquot.c b/fs/quota/dquot.c
+index 7ef5411..b02a3e1 100644
+--- a/fs/quota/dquot.c
++++ b/fs/quota/dquot.c
+@@ -899,18 +899,18 @@ static void add_dquot_ref(struct super_block *sb, int type)
+ 	spin_lock(&inode_lock);
+ 	spin_lock(&sb->s_inodes_lock);
+ 	list_for_each_entry(inode, &sb->s_inodes, i_sb_list) {
+-		if (inode->i_state & (I_FREEING|I_WILL_FREE|I_NEW))
++		spin_lock(&inode->i_lock);
++		if ((inode->i_state & (I_FREEING|I_WILL_FREE|I_NEW)) ||
++		    !atomic_read(&inode->i_writecount) ||
++		    !dqinit_needed(inode, type)) {
++			spin_unlock(&inode->i_lock);
+ 			continue;
++		}
+ #ifdef CONFIG_QUOTA_DEBUG
+ 		if (unlikely(inode_get_rsv_space(inode) > 0))
+ 			reserved = 1;
+ #endif
+-		if (!atomic_read(&inode->i_writecount))
+-			continue;
+-		if (!dqinit_needed(inode, type))
+-			continue;
+ 
+-		spin_lock(&inode->i_lock);
+ 		inode->i_ref++;
+ 		spin_unlock(&inode->i_lock);
+ 		spin_unlock(&sb->s_inodes_lock);
 -- 
 1.7.1
 
