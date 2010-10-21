@@ -1,67 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756626Ab0JUSID (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Oct 2010 14:08:03 -0400
-Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:42894 "EHLO kernel.dk"
+	id S1756637Ab0JUSNs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Oct 2010 14:13:48 -0400
+Received: from mga01.intel.com ([192.55.52.88]:24486 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756292Ab0JUSIB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Oct 2010 14:08:01 -0400
-Message-ID: <4CC0817F.1020403@kernel.dk>
-Date: Thu, 21 Oct 2010 20:07:59 +0200
-From: Jens Axboe <axboe@kernel.dk>
+	id S1753982Ab0JUSNr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Oct 2010 14:13:47 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.58,218,1286175600"; 
+   d="scan'208";a="619037928"
+From: Seth Heasley <seth.heasley@intel.com>
+Organization: Intel Corporation
+To: linux-kernel@vger.kernel.org, khali@linux-fr.org, i2c@lm-sensors.org,
+        linux-pci@vger.kernel.org, jbarnes@virtuousgeek.org
+Subject: [PATCH 2.6.36-next-20101021] SMBus patch for Intel Patsburg DeviceIDs
+Date: Thu, 21 Oct 2010 11:04:51 -0700
+User-Agent: KMail/1.10.3 (Linux/2.6.27.7-9-default; KDE/4.1.3; x86_64; ; )
+Cc: seth.heasley@intel.com
 MIME-Version: 1.0
-To: Boaz Harrosh <bharrosh@panasas.com>
-CC: "Ted Ts'o" <tytso@mit.edu>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>
-Subject: Re: What am I doing wrong?  submit_bio() suddenly stops working...
-References: <E1P8kSE-0001DW-8C@tytso-glaptop> <4CBFE4E2.7050001@kernel.dk> <20101021165525.GB3127@thunk.org> <4CC07B62.9070000@panasas.com>
-In-Reply-To: <4CC07B62.9070000@panasas.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain;
+  charset="us-ascii"
 Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-Id: <201010211104.51630.seth.heasley@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2010-10-21 19:41, Boaz Harrosh wrote:
->> +void ext4_io_submit(struct ext4_io_submit *io)
->> +{
->> +	if (!io->io_bio)
->> +		return;
->> +#ifdef PDEBUG
->> +	trace_printk("%s: io submitted io_end %p\n", 
->> +		     io->io_end->inode->i_sb->s_id, io->io_end);
->> +#endif
->> +	submit_bio(io->io_op, io->io_bio);
->> +	ASSERT(!bio_flagged(bio, BIO_EOPNOTSUPP));
->> +	bio_put(io->io_bio);
-> 
-> The extra get/put is only done for the duration of the ASSERT above, right?
-> I'd put a comment. And why don't you just call the _get here just before
-> submit_bio instead of down at io_submit_init.
+This patch adds support for the Intel Patsburg PCH SMBus Controller.
 
-Ted is using it to signal the reference from io:
+Signed-off-by: Seth Heasley <seth.heasley@intel.com>
 
->> +	io->io_bio = 0;
-
-which makes sense (even if you don't need it, as long as you don't deref
-bio after calling submit_bio()).
-
->> +	do {
->> +		bio = bio_alloc(GFP_NOIO, nvecs);
->> +		nvecs >>= 1;
->> +	} while (bio == NULL);
-> 
-> This is surly bad. bio_alloc must be allowed to fail
-> (Specially with GFP_NOIO). You should only loop down to
-> 1 and then prepare to return -ENOMEM from this function
-> and handle it properly in callers. (Or schedule and wait
-> like below)
-
-Since __GFP_WAIT is set, it'll never return NULL. And as long as you
-don't allocate more than 1 before doing you submit_bio(), it should be
-OK in this case.
-
--- 
-Jens Axboe
-
+--- linux-2.6.35.7/include/linux/pci_ids.h.orig	2010-10-20 16:10:02.000000000 -0700
++++ linux-2.6.35.7/include/linux/pci_ids.h	2010-10-20 16:09:01.000000000 -0700
+@@ -2423,6 +2423,7 @@
+ #define PCI_DEVICE_ID_INTEL_COUGARPOINT_SMBUS	0x1c22
+ #define PCI_DEVICE_ID_INTEL_COUGARPOINT_LPC_MIN	0x1c41
+ #define PCI_DEVICE_ID_INTEL_COUGARPOINT_LPC_MAX	0x1c5f
++#define PCI_DEVICE_ID_INTEL_PATSBURG_SMBUS	0x1d22
+ #define PCI_DEVICE_ID_INTEL_PATSBURG_LPC	0x1d40
+ #define PCI_DEVICE_ID_INTEL_82801AA_0	0x2410
+ #define PCI_DEVICE_ID_INTEL_82801AA_1	0x2411
+--- linux-2.6.35.7/drivers/i2c/busses/Kconfig.orig	2010-10-20 16:13:38.000000000 -0700
++++ linux-2.6.35.7/drivers/i2c/busses/Kconfig	2010-10-20 16:10:55.000000000 -0700
+@@ -99,6 +99,7 @@
+ 	    ICH10
+ 	    5/3400 Series (PCH)
+ 	    Cougar Point (PCH)
++	    Patsburg (PCH)
+ 
+ 	  This driver can also be built as a module.  If so, the module
+ 	  will be called i2c-i801.
+--- linux-2.6.35.7/drivers/i2c/busses/i2c-i801.c.orig	2010-10-20 16:12:06.000000000 -0700
++++ linux-2.6.35.7/drivers/i2c/busses/i2c-i801.c	2010-10-20 16:12:27.000000000 -0700
+@@ -43,6 +43,7 @@
+   ICH10                 0x3a60     32     hard     yes     yes     yes
+   5/3400 Series (PCH)   0x3b30     32     hard     yes     yes     yes
+   Cougar Point (PCH)    0x1c22     32     hard     yes     yes     yes
++  Patsburg (PCH)        0x1d22     32     hard     yes     yes     yes
+ 
+   Features supported by this driver:
+   Software PEC                     no
+@@ -592,6 +593,7 @@
+ 	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_ICH10_5) },
+ 	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_5_3400_SERIES_SMBUS) },
+ 	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_COUGARPOINT_SMBUS) },
++	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_PATSBURG_SMBUS) },
+ 	{ 0, }
+ };
+ 
+--- linux-2.6.35.7/Documentation/i2c/busses/i2c-i801.orig	2010-10-20 16:16:01.000000000 -0700
++++ linux-2.6.35.7/Documentation/i2c/busses/i2c-i801	2010-10-20 16:15:17.000000000 -0700
+@@ -15,8 +15,9 @@
+   * Intel 82801I (ICH9)
+   * Intel EP80579 (Tolapai)
+   * Intel 82801JI (ICH10)
+-  * Intel 3400/5 Series (PCH)
++  * Intel 5/3400 Series (PCH)
+   * Intel Cougar Point (PCH)
++  * Intel Patsburg (PCH)
+    Datasheets: Publicly available at the Intel website
+ 
+ Authors: 
