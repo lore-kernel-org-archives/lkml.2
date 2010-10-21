@@ -1,48 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751787Ab0JUHzq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Oct 2010 03:55:46 -0400
-Received: from mailout-de.gmx.net ([213.165.64.23]:50402 "HELO mail.gmx.net"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
-	id S1751208Ab0JUHzp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Oct 2010 03:55:45 -0400
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX192lZMedch2CU8TyJSGL0MnrU847aCp5lacMRWF0P
-	5LdWYzT74bVt0f
-Subject: Re: [RFC/RFT PATCH] sched: automated per tty task groups
-From: Mike Galbraith <efault@gmx.de>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-In-Reply-To: <1287481381.29097.1652.camel@twins>
-References: <1287479765.9920.9.camel@marge.simson.net>
-	 <1287480391.29097.1647.camel@twins>
-	 <1287481199.24189.5.camel@marge.simson.net>
-	 <1287481381.29097.1652.camel@twins>
-Content-Type: text/plain
-Date: Thu, 21 Oct 2010 09:55:41 +0200
-Message-Id: <1287647741.9021.2.camel@marge.simson.net>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.24.1.1 
+	id S1752025Ab0JUH5W (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Oct 2010 03:57:22 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:61376 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751011Ab0JUH5V (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Oct 2010 03:57:21 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:x-enigmail-version:content-type
+         :content-transfer-encoding;
+        b=sXdsaLHyrePuR6/3JBIKPk5hjPUMszh7KB9IPeThwVMGg0eUKtt8UcExq6cM3KOQvD
+         ihkk0KZq9xZ76w7fz2LC5hxtb8YxWXAryq/1khMKv31EvSx9NQC5DfH1V1rQugGMZdcC
+         yMtB9G8mVGmZTJFqD3g/t81K64eETmueL/HLY=
+Message-ID: <4CBFF25C.2080908@gmail.com>
+Date: Thu, 21 Oct 2010 09:57:16 +0200
+From: Jiri Slaby <jirislaby@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.11) Gecko/20101013 SUSE/3.1.5 Thunderbird/3.1.5
+MIME-Version: 1.0
+To: Takashi Iwai <tiwai@suse.de>
+CC: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        mm-commits@vger.kernel.org, clemens@ladisch.de,
+        Jaroslav Kysela <perex@perex.cz>, alsa-devel@alsa-project.org
+Subject: Re: HDA: no sound [was: mmotm 2010-10-20-15-01 uploaded]
+References: <201010202233.o9KMXNoL008303@imap1.linux-foundation.org>	<4CBFEE94.7020103@gmail.com> <s5hlj5sc7do.wl%tiwai@suse.de>
+In-Reply-To: <s5hlj5sc7do.wl%tiwai@suse.de>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-10-19 at 11:43 +0200, Peter Zijlstra wrote: 
-> On Tue, 2010-10-19 at 11:39 +0200, Mike Galbraith wrote:
-> > 
-> > Yeah. I should be able to just do sched_move_task(), but it doesn't
-> > currently work even with your patch, turning tty_sched on/off can lead
-> > to incredible delays before you get box back.  With virgin source, it's
-> > size infinity for all intents and purposes.
+On 10/21/2010 09:49 AM, Takashi Iwai wrote:
+> At Thu, 21 Oct 2010 09:41:08 +0200,
+> Jiri Slaby wrote:
+>> alsa-info:
+>> http://www.alsa-project.org/db/?f=a7a09703bcc8c43386c87a984e513ce35fc91ca4
 > 
-> Ah, first feedback I've got on that patch,. but surely since you created
-> one that does work we can fix my patch and use the normal path? :-)
+> I see the Front volume is set to zero.  Try to raise it.
 
-Actually, your patch works just peachy, my fiddling with sleepers
-vruntime at attach time was a dainbramaged thing to do.
+I set all the values to ~ 70 and then tried with pure alsa. It basically
+works.
 
-	-Mike
+BUT, when I run pulse and it suspends the device (or whatever), all the
+levels get down to 0 back again. When I raise it and run mplayer, it
+gets to 0 immediately. If I raise it gets to 0 when mplayer finishes and
+pulse writes 'protocol-native.c: Connection died.'. It never raises
+automatically. And if I raise it during playback, nothing plays at all.
 
+regards,
+-- 
+js
