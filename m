@@ -1,225 +1,300 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751311Ab0JUEgR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Oct 2010 00:36:17 -0400
-Received: from cobra.newdream.net ([66.33.216.30]:35443 "EHLO
-	cobra.newdream.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750878Ab0JUEgP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Oct 2010 00:36:15 -0400
-Date: Wed, 20 Oct 2010 21:39:13 -0700 (PDT)
-From: Sage Weil <sage@newdream.net>
-To: torvalds@linux-foundation.org
-cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        ceph-devel@vger.kernel.org
-Subject: [GIT PULL] Ceph updates and RBD for 2.6.37-rc1
-Message-ID: <Pine.LNX.4.64.1010202136490.22008@cobra.newdream.net>
+	id S1751513Ab0JUEj5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Oct 2010 00:39:57 -0400
+Received: from e6.ny.us.ibm.com ([32.97.182.146]:38847 "EHLO e6.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750878Ab0JUEj4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Oct 2010 00:39:56 -0400
+Date: Wed, 20 Oct 2010 21:39:53 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Lai Jiangshan <laijs@cn.fujitsu.com>
+Cc: Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/2 v2] rcu,cleanup: move synchronize_sched_expedited()
+ out of sched.c
+Message-ID: <20101021043953.GC2545@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <4CBE886A.7010509@cn.fujitsu.com>
+ <20101020191512.GG2386@linux.vnet.ibm.com>
+ <20101021001928.GA24855@linux.vnet.ibm.com>
+ <4CBFB381.50601@cn.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4CBFB381.50601@cn.fujitsu.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Thu, Oct 21, 2010 at 11:29:05AM +0800, Lai Jiangshan wrote:
+> On 10/21/2010 08:19 AM, Paul E. McKenney wrote:
+> > On Wed, Oct 20, 2010 at 12:15:12PM -0700, Paul E. McKenney wrote:
+> >> On Wed, Oct 20, 2010 at 02:12:58PM +0800, Lai Jiangshan wrote:
+> >>> The first version of synchronize_sched_expedited() use the migration code
+> >>> of the scheduler code, so it have to be implemented in sched.c
+> >>>
+> >>> but now, the synchronize_sched_expedited() does not use such code,
+> >>> it is time to move it out of sched.c.
+> >>>
+> >>> Different rcu implementation' synchronize_sched_expedited() are also
+> >>> different. so we move synchronize_sched_expedited() to kernel/rcutree_plugin.h
+> >>> or include/linux/rcutiny.h instead of kerenl/rcupdate.c
+> >>
+> >> Queued, thank you!!!
+> > 
+> > Hello again, Lai,
+> > 
+> > I hit the following build error during testing:
+> > 
+> > kernel/built-in.o: In function `.synchronize_rcu_expedited':
+> > (.text+0x787d8): undefined reference to `.synchronize_sched_expedited'
+> > kernel/built-in.o:(.toc1+0x1fe0): undefined reference to `synchronize_sched_expedited'
+> > 
+> > This build uses defconfig with the following applied:
+> > 
+> > CONFIG_RCU_TRACE=y
+> > CONFIG_RCU_FAST_NO_HZ=y
+> > CONFIG_NO_HZ=y
+> > CONFIG_RCU_CPU_STALL_DETECTOR=y
+> > CONFIG_SMP=y
+> > CONFIG_RCU_FANOUT=8
+> > CONFIG_NR_CPUS=8
+> > CONFIG_RCU_FANOUT_EXACT=n
+> > CONFIG_HOTPLUG_CPU=y
+> > CONFIG_PREEMPT_NONE=y
+> > CONFIG_PREEMPT_VOLUNTARY=n
+> > CONFIG_PREEMPT=n
+> > CONFIG_TREE_RCU=y
+> > CONFIG_TREE_PREEMPT_RCU=n
+> > CONFIG_RCU_TORTURE_TEST=m
+> > CONFIG_MODULE_UNLOAD=y
+> > CONFIG_SYSFS_DEPRECATED_V2=y
+> > CONFIG_IKCONFIG=y
+> > CONFIG_IKCONFIG_PROC=y
+> > 
+> > Thoughts?
+> > 
+> > 							Thanx, Paul
+> > 
+> > 
+> 
+> I moved the code into CONFIG_TREE_PREEMPT_RCU=y codes. fixed version:
 
-Please pull the following Ceph updates, refactoring, and RBD from
+Thank you, queued and am retesting.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/sage/ceph-client.git for-linus
+							Thanx, Paul
 
-The bulk of this patchset is a refactor of the Ceph file system code that 
-separates the network, cluster, and I/O components from the fs-specific 
-bits into a 'libceph' module.  (This approach was requested by Christoph 
-at LSF in August.)  Mostly this is a matter of moving files around, with a 
-few interface cleanups.
-
-Another patch then implements RBD (rados block device), a network block 
-device backed by Ceph's distributed object store.  RBD devices are 
-replicated, thinly provisioned, resizable, and snapshottable. The driver 
-is marked EXPERIMENTAL.  The code has been out on -fsdevel and LKML 
-several times, and has been in linux-next for almost two cycles now.  If 
-you have any lingering questions/concerns, please let me know.
-
-Other notable patches include: switch to lock_flocks() interface to 
-facilitate BKL removal, a dcache_lock/i_lock locking cleanup that will 
-make Dave and Nick's lock scalability work a bit easier, a new ioctl to 
-control Ceph's striping policy on a per-directory/hierarchical basis, and 
-some miscellaneous non-critical cleanups.
-
-Thanks!
-sage
-
-
-Dan Carpenter (2):
-      rbd: null vs ERR_PTR
-      rbd: passing wrong variable to bvec_kunmap_irq()
-
-Greg Farnum (3):
-      ceph: add pagelist_reserve, pagelist_truncate, pagelist_set_cursor
-      ceph: preallocate flock state without locks held
-      ceph: add CEPH_MDS_OP_SETDIRLAYOUT and associated ioctl.
-
-Julia Lawall (1):
-      fs/ceph/xattr.c: Use kmemdup
-
-Randy Dunlap (1):
-      ceph: fix debugfs warnings
-
-Sage Weil (6):
-      ceph: do not hide .snap in root directory
-      ceph: only invalidate on check_caps if we actually have pages
-      ceph: use mapping->nrpages to determine if mapping is empty
-      ceph: switch from BKL to lock_flocks()
-      ceph: fix num_pages_free accounting in pagelist
-      ceph: do not carry i_lock for readdir from dcache
-
-Vasiliy Kulikov (1):
-      block: rbd: fixed may leaks
-
-Yehuda Sadeh (8):
-      ceph: lookup pool in osdmap by name
-      ceph: refactor osdc requests creation functions
-      ceph: messenger and osdc changes for rbd
-      ceph-rbd: osdc support for osd call and rollback operations
-      ceph: factor out libceph from Ceph file system
-      rbd: introduce rados block device (rbd), based on libceph
-      block: rbd: removing unnecessary test
-      ceph: don't crash when passed bad mount options
-
- MAINTAINERS                               |   11 +
- drivers/block/Kconfig                     |   17 +
- drivers/block/Makefile                    |    1 +
- drivers/block/rbd.c                       | 1841 +++++++++++++++++++++++++++++
- drivers/block/rbd_types.h                 |   73 ++
- fs/ceph/Kconfig                           |   14 +-
- fs/ceph/Makefile                          |   11 +-
- fs/ceph/README                            |   20 -
- fs/ceph/addr.c                            |   65 +-
- fs/ceph/caps.c                            |   50 +-
- fs/ceph/ceph_frag.c                       |    3 +-
- fs/ceph/ceph_strings.c                    |  193 ---
- fs/ceph/debugfs.c                         |  406 ++-----
- fs/ceph/dir.c                             |   97 +-
- fs/ceph/export.c                          |    5 +-
- fs/ceph/file.c                            |  207 +---
- fs/ceph/inode.c                           |   19 +-
- fs/ceph/ioctl.c                           |   77 ++-
- fs/ceph/ioctl.h                           |    4 +-
- fs/ceph/locks.c                           |   23 +-
- fs/ceph/mds_client.c                      |  129 ++-
- fs/ceph/mds_client.h                      |   20 +-
- fs/ceph/mdsmap.c                          |   11 +-
- fs/ceph/pagelist.c                        |   63 -
- fs/ceph/pagelist.h                        |   54 -
- fs/ceph/snap.c                            |   10 +-
- fs/ceph/strings.c                         |  117 ++
- fs/ceph/super.c                           | 1154 ++++++++-----------
- fs/ceph/super.h                           |  400 +++----
- fs/ceph/xattr.c                           |   18 +-
- {fs => include/linux}/ceph/auth.h         |    4 +-
- {fs => include/linux}/ceph/buffer.h       |    0
- {fs => include/linux}/ceph/ceph_debug.h   |    5 +-
- {fs => include/linux}/ceph/ceph_frag.h    |    0
- {fs => include/linux}/ceph/ceph_fs.h      |    1 +
- {fs => include/linux}/ceph/ceph_hash.h    |    0
- include/linux/ceph/debugfs.h              |   33 +
- {fs => include/linux}/ceph/decode.h       |    5 +
- include/linux/ceph/libceph.h              |  249 ++++
- {fs => include/linux}/ceph/mdsmap.h       |    0
- {fs => include/linux}/ceph/messenger.h    |   12 +-
- {fs => include/linux}/ceph/mon_client.h   |    1 +
- {fs => include/linux}/ceph/msgpool.h      |    0
- {fs => include/linux}/ceph/msgr.h         |    0
- {fs => include/linux}/ceph/osd_client.h   |   67 ++
- {fs => include/linux}/ceph/osdmap.h       |    4 +-
- include/linux/ceph/pagelist.h             |   75 ++
- {fs => include/linux}/ceph/rados.h        |    0
- {fs => include/linux}/ceph/types.h        |    0
- {fs/ceph => include/linux}/crush/crush.h  |    0
- {fs/ceph => include/linux}/crush/hash.h   |    0
- {fs/ceph => include/linux}/crush/mapper.h |    0
- net/Kconfig                               |    1 +
- net/Makefile                              |    1 +
- net/ceph/Kconfig                          |   28 +
- net/ceph/Makefile                         |   37 +
- {fs => net}/ceph/armor.c                  |    0
- {fs => net}/ceph/auth.c                   |   10 +-
- {fs => net}/ceph/auth_none.c              |    7 +-
- {fs => net}/ceph/auth_none.h              |    3 +-
- {fs => net}/ceph/auth_x.c                 |    9 +-
- {fs => net}/ceph/auth_x.h                 |    3 +-
- {fs => net}/ceph/auth_x_protocol.h        |    0
- {fs => net}/ceph/buffer.c                 |    9 +-
- net/ceph/ceph_common.c                    |  529 +++++++++
- {fs => net}/ceph/ceph_fs.c                |    5 +-
- {fs => net}/ceph/ceph_hash.c              |    2 +-
- net/ceph/ceph_strings.c                   |   84 ++
- {fs => net}/ceph/crush/crush.c            |    2 +-
- {fs => net}/ceph/crush/hash.c             |    2 +-
- {fs => net}/ceph/crush/mapper.c           |    4 +-
- {fs => net}/ceph/crypto.c                 |    4 +-
- {fs => net}/ceph/crypto.h                 |    4 +-
- net/ceph/debugfs.c                        |  267 +++++
- {fs => net}/ceph/messenger.c              |  296 ++++-
- {fs => net}/ceph/mon_client.c             |   73 +-
- {fs => net}/ceph/msgpool.c                |    4 +-
- {fs => net}/ceph/osd_client.c             |  400 +++++--
- {fs => net}/ceph/osdmap.c                 |   30 +-
- net/ceph/pagelist.c                       |  154 +++
- net/ceph/pagevec.c                        |  223 ++++
- 81 files changed, 5547 insertions(+), 2213 deletions(-)
- create mode 100644 drivers/block/rbd.c
- create mode 100644 drivers/block/rbd_types.h
- delete mode 100644 fs/ceph/README
- delete mode 100644 fs/ceph/ceph_strings.c
- delete mode 100644 fs/ceph/pagelist.c
- delete mode 100644 fs/ceph/pagelist.h
- create mode 100644 fs/ceph/strings.c
- rename {fs => include/linux}/ceph/auth.h (97%)
- rename {fs => include/linux}/ceph/buffer.h (100%)
- rename {fs => include/linux}/ceph/ceph_debug.h (86%)
- rename {fs => include/linux}/ceph/ceph_frag.h (100%)
- rename {fs => include/linux}/ceph/ceph_fs.h (99%)
- rename {fs => include/linux}/ceph/ceph_hash.h (100%)
- create mode 100644 include/linux/ceph/debugfs.h
- rename {fs => include/linux}/ceph/decode.h (96%)
- create mode 100644 include/linux/ceph/libceph.h
- rename {fs => include/linux}/ceph/mdsmap.h (100%)
- rename {fs => include/linux}/ceph/messenger.h (95%)
- rename {fs => include/linux}/ceph/mon_client.h (99%)
- rename {fs => include/linux}/ceph/msgpool.h (100%)
- rename {fs => include/linux}/ceph/msgr.h (100%)
- rename {fs => include/linux}/ceph/osd_client.h (76%)
- rename {fs => include/linux}/ceph/osdmap.h (97%)
- create mode 100644 include/linux/ceph/pagelist.h
- rename {fs => include/linux}/ceph/rados.h (100%)
- rename {fs => include/linux}/ceph/types.h (100%)
- rename {fs/ceph => include/linux}/crush/crush.h (100%)
- rename {fs/ceph => include/linux}/crush/hash.h (100%)
- rename {fs/ceph => include/linux}/crush/mapper.h (100%)
- create mode 100644 net/ceph/Kconfig
- create mode 100644 net/ceph/Makefile
- rename {fs => net}/ceph/armor.c (100%)
- rename {fs => net}/ceph/auth.c (97%)
- rename {fs => net}/ceph/auth_none.c (96%)
- rename {fs => net}/ceph/auth_none.h (94%)
- rename {fs => net}/ceph/auth_x.c (99%)
- rename {fs => net}/ceph/auth_x.h (96%)
- rename {fs => net}/ceph/auth_x_protocol.h (100%)
- rename {fs => net}/ceph/buffer.c (86%)
- create mode 100644 net/ceph/ceph_common.c
- rename {fs => net}/ceph/ceph_fs.c (92%)
- rename {fs => net}/ceph/ceph_hash.c (98%)
- create mode 100644 net/ceph/ceph_strings.c
- rename {fs => net}/ceph/crush/crush.c (99%)
- rename {fs => net}/ceph/crush/hash.c (99%)
- rename {fs => net}/ceph/crush/mapper.c (99%)
- rename {fs => net}/ceph/crypto.c (99%)
- rename {fs => net}/ceph/crypto.h (95%)
- create mode 100644 net/ceph/debugfs.c
- rename {fs => net}/ceph/messenger.c (89%)
- rename {fs => net}/ceph/mon_client.c (94%)
- rename {fs => net}/ceph/msgpool.c (95%)
- rename {fs => net}/ceph/osd_client.c (84%)
- rename {fs => net}/ceph/osdmap.c (97%)
- create mode 100644 net/ceph/pagelist.c
- create mode 100644 net/ceph/pagevec.c
+> Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+> ---
+> diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
+> index 0d0b640..ead36da 100644
+> --- a/include/linux/rcupdate.h
+> +++ b/include/linux/rcupdate.h
+> @@ -66,7 +66,6 @@ extern void call_rcu_sched(struct rcu_head *head,
+>  extern void synchronize_sched(void);
+>  extern void rcu_barrier_bh(void);
+>  extern void rcu_barrier_sched(void);
+> -extern void synchronize_sched_expedited(void);
+>  extern int sched_expedited_torture_stats(char *page);
+> 
+>  static inline void __rcu_read_lock_bh(void)
+> diff --git a/include/linux/rcutiny.h b/include/linux/rcutiny.h
+> index 13877cb..4d84452 100644
+> --- a/include/linux/rcutiny.h
+> +++ b/include/linux/rcutiny.h
+> @@ -58,6 +58,11 @@ static inline void synchronize_rcu_bh_expedited(void)
+>  	synchronize_sched();
+>  }
+> 
+> +static inline void synchronize_sched_expedited(void)
+> +{
+> +	synchronize_sched();
+> +}
+> +
+>  #ifdef CONFIG_TINY_RCU
+> 
+>  static inline void rcu_preempt_note_context_switch(void)
+> diff --git a/include/linux/rcutree.h b/include/linux/rcutree.h
+> index 95518e6..9a1fd6c 100644
+> --- a/include/linux/rcutree.h
+> +++ b/include/linux/rcutree.h
+> @@ -47,6 +47,7 @@ static inline void exit_rcu(void)
+>  #endif /* #else #ifdef CONFIG_TREE_PREEMPT_RCU */
+> 
+>  extern void synchronize_rcu_bh(void);
+> +extern void synchronize_sched_expedited(void);
+>  extern void synchronize_rcu_expedited(void);
+> 
+>  static inline void synchronize_rcu_bh_expedited(void)
+> diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
+> index 0e75d60..0de359b 100644
+> --- a/kernel/rcutree_plugin.h
+> +++ b/kernel/rcutree_plugin.h
+> @@ -25,6 +25,7 @@
+>   */
+> 
+>  #include <linux/delay.h>
+> +#include <linux/stop_machine.h>
+> 
+>  /*
+>   * Check the RCU kernel configuration parameters and print informative
+> @@ -1014,6 +1015,76 @@ static void __init __rcu_init_preempt(void)
+> 
+>  #endif /* #else #ifdef CONFIG_TREE_PREEMPT_RCU */
+> 
+> +#ifndef CONFIG_SMP
+> +
+> +void synchronize_sched_expedited(void)
+> +{
+> +	cond_resched();
+> +}
+> +EXPORT_SYMBOL_GPL(synchronize_sched_expedited);
+> +
+> +#else /* #ifndef CONFIG_SMP */
+> +
+> +static atomic_t synchronize_sched_expedited_count = ATOMIC_INIT(0);
+> +
+> +static int synchronize_sched_expedited_cpu_stop(void *data)
+> +{
+> +	/*
+> +	 * There must be a full memory barrier on each affected CPU
+> +	 * between the time that try_stop_cpus() is called and the
+> +	 * time that it returns.
+> +	 *
+> +	 * In the current initial implementation of cpu_stop, the
+> +	 * above condition is already met when the control reaches
+> +	 * this point and the following smp_mb() is not strictly
+> +	 * necessary.  Do smp_mb() anyway for documentation and
+> +	 * robustness against future implementation changes.
+> +	 */
+> +	smp_mb(); /* See above comment block. */
+> +	return 0;
+> +}
+> +
+> +/*
+> + * Wait for an rcu-sched grace period to elapse, but use "big hammer"
+> + * approach to force grace period to end quickly.  This consumes
+> + * significant time on all CPUs, and is thus not recommended for
+> + * any sort of common-case code.
+> + *
+> + * Note that it is illegal to call this function while holding any
+> + * lock that is acquired by a CPU-hotplug notifier.  Failing to
+> + * observe this restriction will result in deadlock.
+> + */
+> +void synchronize_sched_expedited(void)
+> +{
+> +	int snap, trycount = 0;
+> +
+> +	smp_mb();  /* ensure prior mod happens before capturing snap. */
+> +	snap = atomic_read(&synchronize_sched_expedited_count) + 1;
+> +	get_online_cpus();
+> +	while (try_stop_cpus(cpu_online_mask,
+> +			     synchronize_sched_expedited_cpu_stop,
+> +			     NULL) == -EAGAIN) {
+> +		put_online_cpus();
+> +		if (trycount++ < 10)
+> +			udelay(trycount * num_online_cpus());
+> +		else {
+> +			synchronize_sched();
+> +			return;
+> +		}
+> +		if (atomic_read(&synchronize_sched_expedited_count) - snap > 0) {
+> +			smp_mb(); /* ensure test happens before caller kfree */
+> +			return;
+> +		}
+> +		get_online_cpus();
+> +	}
+> +	atomic_inc(&synchronize_sched_expedited_count);
+> +	smp_mb__after_atomic_inc(); /* ensure post-GP actions seen after GP. */
+> +	put_online_cpus();
+> +}
+> +EXPORT_SYMBOL_GPL(synchronize_sched_expedited);
+> +
+> +#endif /* #else #ifndef CONFIG_SMP */
+> +
+>  #if !defined(CONFIG_RCU_FAST_NO_HZ)
+> 
+>  /*
+> diff --git a/kernel/sched.c b/kernel/sched.c
+> index abf8440..9dc7775 100644
+> --- a/kernel/sched.c
+> +++ b/kernel/sched.c
+> @@ -9332,72 +9332,3 @@ struct cgroup_subsys cpuacct_subsys = {
+>  };
+>  #endif	/* CONFIG_CGROUP_CPUACCT */
+> 
+> -#ifndef CONFIG_SMP
+> -
+> -void synchronize_sched_expedited(void)
+> -{
+> -	barrier();
+> -}
+> -EXPORT_SYMBOL_GPL(synchronize_sched_expedited);
+> -
+> -#else /* #ifndef CONFIG_SMP */
+> -
+> -static atomic_t synchronize_sched_expedited_count = ATOMIC_INIT(0);
+> -
+> -static int synchronize_sched_expedited_cpu_stop(void *data)
+> -{
+> -	/*
+> -	 * There must be a full memory barrier on each affected CPU
+> -	 * between the time that try_stop_cpus() is called and the
+> -	 * time that it returns.
+> -	 *
+> -	 * In the current initial implementation of cpu_stop, the
+> -	 * above condition is already met when the control reaches
+> -	 * this point and the following smp_mb() is not strictly
+> -	 * necessary.  Do smp_mb() anyway for documentation and
+> -	 * robustness against future implementation changes.
+> -	 */
+> -	smp_mb(); /* See above comment block. */
+> -	return 0;
+> -}
+> -
+> -/*
+> - * Wait for an rcu-sched grace period to elapse, but use "big hammer"
+> - * approach to force grace period to end quickly.  This consumes
+> - * significant time on all CPUs, and is thus not recommended for
+> - * any sort of common-case code.
+> - *
+> - * Note that it is illegal to call this function while holding any
+> - * lock that is acquired by a CPU-hotplug notifier.  Failing to
+> - * observe this restriction will result in deadlock.
+> - */
+> -void synchronize_sched_expedited(void)
+> -{
+> -	int snap, trycount = 0;
+> -
+> -	smp_mb();  /* ensure prior mod happens before capturing snap. */
+> -	snap = atomic_read(&synchronize_sched_expedited_count) + 1;
+> -	get_online_cpus();
+> -	while (try_stop_cpus(cpu_online_mask,
+> -			     synchronize_sched_expedited_cpu_stop,
+> -			     NULL) == -EAGAIN) {
+> -		put_online_cpus();
+> -		if (trycount++ < 10)
+> -			udelay(trycount * num_online_cpus());
+> -		else {
+> -			synchronize_sched();
+> -			return;
+> -		}
+> -		if (atomic_read(&synchronize_sched_expedited_count) - snap > 0) {
+> -			smp_mb(); /* ensure test happens before caller kfree */
+> -			return;
+> -		}
+> -		get_online_cpus();
+> -	}
+> -	atomic_inc(&synchronize_sched_expedited_count);
+> -	smp_mb__after_atomic_inc(); /* ensure post-GP actions seen after GP. */
+> -	put_online_cpus();
+> -}
+> -EXPORT_SYMBOL_GPL(synchronize_sched_expedited);
+> -
+> -#endif /* #else #ifndef CONFIG_SMP */
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
