@@ -1,62 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753756Ab0JUQzi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Oct 2010 12:55:38 -0400
-Received: from THUNK.ORG ([69.25.196.29]:37397 "EHLO thunker.thunk.org"
+	id S1753548Ab0JUQ4H (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Oct 2010 12:56:07 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:37413 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752932Ab0JUQzg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Oct 2010 12:55:36 -0400
-Date: Thu, 21 Oct 2010 12:55:25 -0400
-From: "Ted Ts'o" <tytso@mit.edu>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>
-Subject: Re: What am I doing wrong?  submit_bio() suddenly stops working...
-Message-ID: <20101021165525.GB3127@thunk.org>
-Mail-Followup-To: Ted Ts'o <tytso@mit.edu>, Jens Axboe <axboe@kernel.dk>,
-	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-	"linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>
-References: <E1P8kSE-0001DW-8C@tytso-glaptop>
- <4CBFE4E2.7050001@kernel.dk>
+	id S1751701Ab0JUQ4F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Oct 2010 12:56:05 -0400
+From: Jeff Moyer <jmoyer@redhat.com>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: Andi Kleen <ak@linux.intel.com>, Jens Axboe <axboe@kernel.dk>,
+        Andi Kleen <andi@firstfloor.org>, torvalds@linux-foundation.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Fix array overflow in CFQ
+References: <1287479450-11447-1-git-send-email-andi@firstfloor.org>
+	<4CBD6C84.3020309@kernel.dk> <20101019114933.GA857@redhat.com>
+	<20101019123320.GB857@redhat.com> <4CBD9BCA.2060200@linux.intel.com>
+	<20101019150516.GE857@redhat.com>
+X-PGP-KeyID: 1F78E1B4
+X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
+X-PCLoadLetter: What the f**k does that mean?
+Date: Thu, 21 Oct 2010 12:53:39 -0400
+In-Reply-To: <20101019150516.GE857@redhat.com> (Vivek Goyal's message of "Tue,
+	19 Oct 2010 11:05:16 -0400")
+Message-ID: <x49fwvz1o8c.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4CBFE4E2.7050001@kernel.dk>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on thunker.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 21, 2010 at 08:59:46AM +0200, Jens Axboe wrote:
-> 
-> I don't see anything immediately wrong with your approach. I suspect
-> we'll need to see sysrq-t traces of the relevant processes to make a
-> more educated guess!
+Vivek Goyal <vgoyal@redhat.com> writes:
 
-I've uploaded a trace output that includes the sysrq-t trace, but I
-don't think it shows anything interesting.  We're not hanging on any
-kind of loack as near as I can tell.  It looks like
-__generic_make_request() is calling q->make_request_fn(), and this is
-returning without actually doing anything.
+> On Tue, Oct 19, 2010 at 03:23:22PM +0200, Andi Kleen wrote:
+>> 
+>> >         slice = group_slice * count /
+>> >                 max_t(unsigned, cfqg->busy_queues_avg[cfqd->serving_prio],
+>> >                       cfq_group_busy_queues_wl(cfqd->serving_prio, cfqd,
+>> >cfqg));
+>> >
+>> >So for IDLE class, we return immediately from the function and never
+>> >execute cfqg->busy_queues_avg[IDLE].
+>> 
+>> Hmm that's true. But why do you put this into a global variable
+>> anyways, can't it
+>> just be a local?
+>
+> We keep track of average number of queues per group per prio class. So it
+> can't be local as it historical data.
+>
+>> >Now to remove the gcc warning we can increase the size of busy_queues_avg[]
+>> >array but third field should always remain unused.
+>> >
+>> It's better to increase the field still I think.
+>
+> Agreed.
+>
+> Jens, do you want me to regenerate your patch so that we increase the
+> size of ->busy_queues_avg[CFQ_PRIO_NR] but not ->service_trees[][].
 
-http://userweb.kernel.org/~tytso/ext4-bio-patches/kvm-console-2
+Just be sure to put a huge comment in there so you don't confuse the
+poor masses trying to make sense of the code.
 
-In this trace, I added a patch to prove that __generic_make_request()
-is calling __make_request (I wasn't sure what q->make_request_fn was
-indirecting to, so I added a brute force lookup to make sure I
-understood what was going on), but at one point, it just starts
-queuing the request, and it enters cfq, but the request never gets
-dispatched out.  Maybe this is a failure of the plugging/unplugging
-mechanisms?
-
-I guess I can start putting in more brute-force printk's inside
-__make_request and inside the cfq scheduler to try to understand what
-is going on, but I'm really guessing at this point.
-
-If you have any suggestions about more elegant ways of figuring what
-is happening, please do let me know....
-
-						- Ted
+Cheers,
+Jeff
