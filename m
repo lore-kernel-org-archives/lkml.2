@@ -1,49 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757795Ab0JUMCE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Oct 2010 08:02:04 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:54107 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757739Ab0JUMCD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Oct 2010 08:02:03 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: "Ohad Ben-Cohen" <ohad@wizery.com>
-Subject: Re: [PATCH 1/3] drivers: misc: add omap_hwspinlock driver
-Date: Thu, 21 Oct 2010 14:02:40 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.35-16-generic; KDE/4.3.2; x86_64; ; )
-Cc: linux-arm-kernel@lists.infradead.org, Hari Kanigeri <h-kanigeri2@ti.com>,
-        Suman Anna <s-anna@ti.com>, Benoit Cousson <b-cousson@ti.com>,
-        Tony Lindgren <tony@atomide.com>, Greg KH <greg@kroah.com>,
-        linux-kernel@vger.kernel.org, Grant Likely <grant.likely@secretlab.ca>,
-        akpm@linux-foundation.org, linux-omap@vger.kernel.org,
-        "Krishnamoorthy, Balaji T" <balajitk@ti.com>
-References: <1287387875-14168-1-git-send-email-ohad@wizery.com> <201010211104.28555.arnd@arndb.de> <AANLkTimWG_38hY2Xq=G7r42eP+zmA24Gaw4-hLVJstVA@mail.gmail.com>
-In-Reply-To: <AANLkTimWG_38hY2Xq=G7r42eP+zmA24Gaw4-hLVJstVA@mail.gmail.com>
+	id S1757827Ab0JUMCR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Oct 2010 08:02:17 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:48909 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757811Ab0JUMCQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Oct 2010 08:02:16 -0400
+From: Nikanth Karthikesan <knikanth@suse.de>
+Organization: suse.de
+To: Nathan Fontenot <nfont@austin.ibm.com>
+Subject: Re: [PATCH 0/9] v3 De-couple sysfs memory directories from memory sections
+Date: Thu, 21 Oct 2010 17:35:19 +0530
+User-Agent: KMail/1.12.4 (Linux/2.6.31.12-0.2-default; KDE/4.3.5; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        linuxppc-dev@lists.ozlabs.org, Greg KH <greg@kroah.com>,
+        Dave Hansen <dave@linux.vnet.ibm.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Robin Holt <holt@sgi.com>, steiner@sgi.com
+References: <4CA62700.7010809@austin.ibm.com>
+In-Reply-To: <4CA62700.7010809@austin.ibm.com>
 MIME-Version: 1.0
 Content-Type: Text/Plain;
   charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201010211402.40272.arnd@arndb.de>
-X-Provags-ID: V02:K0:99YarNVZuiiIdxcCfVn+OgBQlFHR+Cmf1dVzjewUKY8
- G2jchyKGoo4pqCsng5A3g+puJB/XrhLKleylxXhVDONGKJOI6T
- Bwh8BglR5ZwCy22nhFAE7pRuaB8fDuqHZ5YCmaQyBSelBmb0Ai
- J9QK3jAqOocT3S98nVlhwt21L/gggdhjnCS+rSamVewC2Z4Dvj
- Iun+H8qP8uYss+xT4RtPw==
+Message-Id: <201010211735.19276.knikanth@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 21 October 2010, Ohad Ben-Cohen wrote:
-> The change is also pretty trivial:
+On Friday 01 October 2010 23:52:56 Nathan Fontenot wrote:
+> This set of patches decouples the concept that a single memory
+> section corresponds to a single directory in
+> /sys/devices/system/memory/.  On systems
+> with large amounts of memory (1+ TB) there are performance issues
+> related to creating the large number of sysfs directories.  For
+> a powerpc machine with 1 TB of memory we are creating 63,000+
+> directories.  This is resulting in boot times of around 45-50
+> minutes for systems with 1 TB of memory and 8 hours for systems
+> with 2 TB of memory.  With this patch set applied I am now seeing
+> boot times of 5 minutes or less.
 > 
-> * move the internal locking implementation to raw_ methods
-> * the raw_ methods would save the current interrupt state only if
-> given a placeholder
-> * wrap those raw_ methods with the desired API (but only support the
-> _irq and _irqsave flavors)
+> The root of this issue is in sysfs directory creation. Every time
+> a directory is created a string compare is done against all sibling
+> directories to ensure we do not create duplicates.  The list of
+> directory nodes in sysfs is kept as an unsorted list which results
+> in this being an exponentially longer operation as the number of
+> directories are created.
 > 
 
-Sounds good!
+Can we simply remove this check for this case alone?! :)
 
-	Arnd
+Thanks
+Nikanth
+
+Do not check for an entry with the same name is already present, when
+__sysfs_add_one() is directly called, bypassing sysfs_add_one().
+
+Currently register_mem_sect_under_node() calls
+sysfs_create_link_nowarn(), which is the only caller to do so.
+
+Signed-off-by: Nikanth Karthikesan <knikanth@suse.de>
+
+---
+
+diff --git a/fs/sysfs/dir.c b/fs/sysfs/dir.c
+index 7e54bac..14d965c 100644
+--- a/fs/sysfs/dir.c
++++ b/fs/sysfs/dir.c
+@@ -368,21 +368,16 @@ void sysfs_addrm_start(struct sysfs_addrm_cxt *acxt,
+  *	This function should be called between calls to
+  *	sysfs_addrm_start() and sysfs_addrm_finish() and should be
+  *	passed the same @acxt as passed to sysfs_addrm_start().
++ *	And there should be no sibling with the same name.
+  *
+  *	LOCKING:
+  *	Determined by sysfs_addrm_start().
+  *
+- *	RETURNS:
+- *	0 on success, -EEXIST if entry with the given name already
+- *	exists.
+  */
+-int __sysfs_add_one(struct sysfs_addrm_cxt *acxt, struct sysfs_dirent *sd)
++void __sysfs_add_one(struct sysfs_addrm_cxt *acxt, struct sysfs_dirent *sd)
+ {
+ 	struct sysfs_inode_attrs *ps_iattr;
+ 
+-	if (sysfs_find_dirent(acxt->parent_sd, sd->s_ns, sd->s_name))
+-		return -EEXIST;
+-
+ 	sd->s_parent = sysfs_get(acxt->parent_sd);
+ 
+ 	sysfs_link_sibling(sd);
+@@ -394,7 +389,6 @@ int __sysfs_add_one(struct sysfs_addrm_cxt *acxt, struct sysfs_dirent *sd)
+ 		ps_iattrs->ia_ctime = ps_iattrs->ia_mtime = CURRENT_TIME;
+ 	}
+ 
+-	return 0;
+ }
+ 
+ /**
+@@ -439,10 +433,9 @@ static char *sysfs_pathname(struct sysfs_dirent *sd, char *path)
+  */
+ int sysfs_add_one(struct sysfs_addrm_cxt *acxt, struct sysfs_dirent *sd)
+ {
+-	int ret;
++	int ret = 0;
+ 
+-	ret = __sysfs_add_one(acxt, sd);
+-	if (ret == -EEXIST) {
++	if (sysfs_find_dirent(acxt->parent_sd, sd->s_ns, sd->s_name)) {
+ 		char *path = kzalloc(PATH_MAX, GFP_KERNEL);
+ 		WARN(1, KERN_WARNING
+ 		     "sysfs: cannot create duplicate filename '%s'\n",
+@@ -450,8 +443,11 @@ int sysfs_add_one(struct sysfs_addrm_cxt *acxt, struct sysfs_dirent *sd)
+ 		     strcat(strcat(sysfs_pathname(acxt->parent_sd, path), "/"),
+ 		            sd->s_name));
+ 		kfree(path);
++		ret = -EEXIST;
+ 	}
+ 
++	__sysfs_add_one(acxt, sd);
++
+ 	return ret;
+ }
+ 
+diff --git a/fs/sysfs/symlink.c b/fs/sysfs/symlink.c
+index a7ac78f..7c56d34 100644
+--- a/fs/sysfs/symlink.c
++++ b/fs/sysfs/symlink.c
+@@ -72,7 +72,7 @@ static int sysfs_do_create_link(struct kobject *kobj, struct kobject *target,
+ 		if (warn)
+ 			error = sysfs_add_one(&acxt, sd);
+ 		else
+-			error = __sysfs_add_one(&acxt, sd);
++			__sysfs_add_one(&acxt, sd);
+ 	} else {
+ 		error = -EINVAL;
+ 		WARN(1, KERN_WARNING
+diff --git a/fs/sysfs/sysfs.h b/fs/sysfs/sysfs.h
+index d9be60a..35449c8 100644
+--- a/fs/sysfs/sysfs.h
++++ b/fs/sysfs/sysfs.h
+@@ -155,7 +155,7 @@ struct sysfs_dirent *sysfs_get_active(struct sysfs_dirent *sd);
+ void sysfs_put_active(struct sysfs_dirent *sd);
+ void sysfs_addrm_start(struct sysfs_addrm_cxt *acxt,
+ 		       struct sysfs_dirent *parent_sd);
+-int __sysfs_add_one(struct sysfs_addrm_cxt *acxt, struct sysfs_dirent *sd);
++void __sysfs_add_one(struct sysfs_addrm_cxt *acxt, struct sysfs_dirent *sd);
+ int sysfs_add_one(struct sysfs_addrm_cxt *acxt, struct sysfs_dirent *sd);
+ void sysfs_remove_one(struct sysfs_addrm_cxt *acxt, struct sysfs_dirent *sd);
+ void sysfs_addrm_finish(struct sysfs_addrm_cxt *acxt);
