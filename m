@@ -1,118 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758866Ab0JUWXS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Oct 2010 18:23:18 -0400
-Received: from web31802.mail.mud.yahoo.com ([68.142.207.65]:26363 "HELO
-	web31802.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1758798Ab0JUWXQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Oct 2010 18:23:16 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.com;
-  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Reply-To:Subject:To:MIME-Version:Content-Type;
-  b=RbBD779VDU8sEugyhQrd7vqS5XkKvMZBCpIHl9hsZqpEyoxTWctsTnIuU8pOjLePtPwG0e5KkfDaYgRkIP7BrJ1ebuLHWifXNOU//Jlmr/Is5ZoJlC3PDATAhJS1cbHJVsBqCquAr3P3J7Ooy/hBPntSvX76gbuTu8a8mVHyoeg=;
-Message-ID: <407253.45995.qm@web31802.mail.mud.yahoo.com>
-X-YMail-OSG: _iUSK8kVM1nGqrqHWb_BCYfiqfOTajzgDeKuH0ygzeah8SF
- tw32186I3uFcNGWjxHeFPcSu63arTGjgYSPKWXfne6rl7Wzmu07KdDORV5yo
- 4Rv0a5mTvuxlydpfhhu0A73avCpDixxRCZwEUO2GIem5cteFZpMacAhe2tQ1
- kPAd.kdtDmTSA3Um_Lq2YJz5QzWOYU3DtIeF7Wvaw2V5KGNAVrAn1ksx8i3z
- H.LxI.VYgqguxkbhu5VGrUvjsfJMiSoI05y95oqUbNhnMa9Jr_e6rzAb6WMr
- h_AS2cn_a5rjfr0ZWb0WJtxn5pXOiixx4mjQBWOEUOwRSawYQMavpb_xK.8P
- 3Rp0rOKcVlzB9P0g4kUuN.l0JS1c-
-X-Mailer: YahooMailClassic/11.4.9 YahooMailWebService/0.8.107.285259
-Date: Thu, 21 Oct 2010 15:23:14 -0700 (PDT)
-From: Luben Tuikov <ltuikov@yahoo.com>
-Reply-To: ltuikov@yahoo.com
-Subject: [PATCH] [USB] Use normalized sense when emulating autosense
-To: Greg KH <greg@kroah.com>, linux-usb@vger.kernel.org,
-        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
+	id S1758873Ab0JUWYJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Oct 2010 18:24:09 -0400
+Received: from smtp.gentoo.org ([140.211.166.183]:37037 "EHLO smtp.gentoo.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751149Ab0JUWYI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Oct 2010 18:24:08 -0400
+From: Mike Frysinger <vapier@gentoo.org>
+Organization: wh0rd.org
+To: Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] lib/atomic64_test: do not build on non-atomic64 systems
+Date: Thu, 21 Oct 2010 18:23:37 -0400
+User-Agent: KMail/1.13.5 (Linux/2.6.36; KDE/4.5.2; x86_64; ; )
+Cc: Luca Barbieri <luca@luca-barbieri.com>, linux-kernel@vger.kernel.org
+References: <1287250035-30404-1-git-send-email-vapier@gentoo.org> <20101021150250.f6499506.akpm@linux-foundation.org>
+In-Reply-To: <20101021150250.f6499506.akpm@linux-foundation.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed;
+  boundary="nextPart21465947.xavF07kZvE";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha1
+Content-Transfer-Encoding: 7bit
+Message-Id: <201010211823.38287.vapier@gentoo.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch solves two things:
-1) Enables autosense emulation code to correctly
-interpret descriptor format sense data, and
-2) Fixes a bug whereby the autosense emulation
-code would overwrite descriptor format sense data
-with SENSE KEY HARDWARE ERROR in fixed format, to
-incorrectly look like this:
+--nextPart21465947.xavF07kZvE
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: quoted-printable
 
-Oct 21 14:11:07 localhost kernel: sd 7:0:0:0: [sdc]  Sense Key : Recovered Error [current] [descriptor]
-Oct 21 14:11:07 localhost kernel: Descriptor sense data with sense descriptors (in hex):
-Oct 21 14:11:07 localhost kernel:        72 01 04 1d 00 00 00 0e 09 0c 00 00 00 00 00 00
-Oct 21 14:11:07 localhost kernel:        00 4f 00 c2 00 50
-Oct 21 14:11:07 localhost kernel: sd 7:0:0:0: [sdc]  ASC=0x4 ASCQ=0x1d
+On Thursday, October 21, 2010 18:02:50 Andrew Morton wrote:
+> On Sat, 16 Oct 2010 13:27:15 -0400 Mike Frysinger wrote:
+> > If the arch doesn't provide atomic64 functionality (there are quite a
+> > few), then don't bother trying to build this test.
+>=20
+> I don't get it.  If the arch doesn't implement atomic64 then this file
+> will get zillions of build errors, won't it?
 
-Signed-off-by: Luben Tuikov <ltuikov@yahoo.com>
----
- drivers/usb/storage/transport.c |   27 ++++++++++++---------------
- 1 files changed, 12 insertions(+), 15 deletions(-)
+=2E.. which is why i added the ifdef protection
 
-diff --git a/drivers/usb/storage/transport.c b/drivers/usb/storage/transport.c
-index 64ec073..46165de 100644
---- a/drivers/usb/storage/transport.c
-+++ b/drivers/usb/storage/transport.c
-@@ -691,6 +691,7 @@ void usb_stor_invoke_transport(struct scsi_cmnd *srb, struct us_data *us)
- 		int temp_result;
- 		struct scsi_eh_save ses;
- 		int sense_size = US_SENSE_SIZE;
-+		struct scsi_sense_hdr sshdr;
- 
- 		/* device supports and needs bigger sense buffer */
- 		if (us->fflags & US_FL_SANE_SENSE)
-@@ -774,17 +775,15 @@ Retry_Sense:
- 			srb->sense_buffer[7] = (US_SENSE_SIZE - 8);
- 		}
- 
-+		scsi_normalize_sense(srb->sense_buffer, SCSI_SENSE_BUFFERSIZE,
-+				     &sshdr);
-+
- 		US_DEBUGP("-- Result from auto-sense is %d\n", temp_result);
- 		US_DEBUGP("-- code: 0x%x, key: 0x%x, ASC: 0x%x, ASCQ: 0x%x\n",
--			  srb->sense_buffer[0],
--			  srb->sense_buffer[2] & 0xf,
--			  srb->sense_buffer[12], 
--			  srb->sense_buffer[13]);
-+			  sshdr.response_code, sshdr.sense_key,
-+			  sshdr.asc, sshdr.ascq);
- #ifdef CONFIG_USB_STORAGE_DEBUG
--		usb_stor_show_sense(
--			  srb->sense_buffer[2] & 0xf,
--			  srb->sense_buffer[12], 
--			  srb->sense_buffer[13]);
-+		usb_stor_show_sense(sshdr.sense_key, sshdr.asc, sshdr.ascq);
- #endif
- 
- 		/* set the result so the higher layers expect this data */
-@@ -794,12 +793,7 @@ Retry_Sense:
- 		 * everything worked or that there was an unspecified
- 		 * problem.  We have to decide which.
- 		 */
--		if (	/* Filemark 0, ignore EOM, ILI 0, no sense */
--				(srb->sense_buffer[2] & 0xaf) == 0 &&
--			/* No ASC or ASCQ */
--				srb->sense_buffer[12] == 0 &&
--				srb->sense_buffer[13] == 0) {
--
-+		if (sshdr.sense_key == 0 && sshdr.asc == 0 && sshdr.ascq == 0) {
- 			/* If things are really okay, then let's show that.
- 			 * Zero out the sense buffer so the higher layers
- 			 * won't realize we did an unsolicited auto-sense.
-@@ -814,7 +808,10 @@ Retry_Sense:
- 			 */
- 			} else {
- 				srb->result = DID_ERROR << 16;
--				srb->sense_buffer[2] = HARDWARE_ERROR;
-+				if ((sshdr.response_code & 0x72) == 0x72)
-+					srb->sense_buffer[1] = HARDWARE_ERROR;
-+				else
-+					srb->sense_buffer[2] = HARDWARE_ERROR;
- 			}
- 		}
- 	}
--- 
-1.7.0.1
+> > diff --git a/lib/atomic64_test.c b/lib/atomic64_test.c
+> > index 250ed11..0ac1a66 100644
+> > --- a/lib/atomic64_test.c
+> > +++ b/lib/atomic64_test.c
+> > @@ -12,6 +12,8 @@
+> >=20
+> >  #include <linux/kernel.h>
+> >  #include <asm/atomic.h>
+> >=20
+> > +#ifdef ATOMIC64_INIT
+>=20
+> hm, that's a bit lazy.  It should really use a CONFIG_HAVE_ thing.  What
+> a pita.
 
+ATOMIC64_INIT is required for atomic64 headers to provide, and having a=20
+Kconfig knob doesnt gain anything else
+=2Dmike
+
+--nextPart21465947.xavF07kZvE
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.16 (GNU/Linux)
+
+iQIcBAABAgAGBQJMwL1qAAoJEEFjO5/oN/WBMKIP/RbfPkKSME287+ugQ7x6ROfW
+7tt3EUOIRe62b4zPpOU58fZu6ywlHK4sBqn9cbwKkFfTlImtixtW8lO1VQEyJMdz
+m8TPFSQojGzdGO2mIKiZqlOJSGjb/N+dvUhU89zGc6DNpT6FgFJJuTi6D8ocf32F
+DwPPxDaJQN46PthRC4IQ1TebevpYE6Bzvvk9UoW8gsffkeIYM0RMe9Eu1mtasdYN
+wzKsgp9iKqiUM5tDuzJ+Rw9D54rhKp6hQjLBW8aMXbjFuG6H/Ly7FYdoWlMWONSv
+/xwEmGS5D767clD38dbD2/KzFUyykL66Nwv6iGaEKMwWnIhqzW3523nj2nsgogzy
+rY7cY5vm5kFW6SIYGCZbPvHLCXtmJ+zDzThncyjKyAWCos9dhGHQs2UjZjc9CviX
+Vn8cGa5CN7cWqqqjPPrAZPAVC9k8Dj5m4u/ILKp/RUskXYFaZpDoB5nv2IvsoEDq
+SDodYF3oYNanHhQd0HmWnWfhQA4hI/6J/NRl09nZhEakgvc976pCdQMqXSg2adyY
+/4yusG62g2I6N1wcQqwACJ2ibSAeuOFxnSlZRPJKVOUOnWhZUoXpUkmGcJOtz+8R
+Q6v0mJ8zNS5jjle4sK6ksG7LMbpzn9WywSN4B4QZO5N0kmURcbbbSKgZ2907q21E
+Spmu2xI4IR2nCW0Vb1wj
+=Vl6Q
+-----END PGP SIGNATURE-----
+
+--nextPart21465947.xavF07kZvE--
