@@ -1,306 +1,168 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757853Ab0JUMdT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Oct 2010 08:33:19 -0400
-Received: from smtp-out-181.synserver.de ([212.40.180.181]:1545 "HELO
-	smtp-out-181.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1756385Ab0JUMdS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Oct 2010 08:33:18 -0400
-X-Greylist: delayed 400 seconds by postgrey-1.27 at vger.kernel.org; Thu, 21 Oct 2010 08:33:17 EDT
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@laprican.de
-X-SynServer-PPID: 21351
-From: Lars-Peter Clausen <lars@metafoo.de>
-To: rklein@nvidia.com, Anton Vorontsov <cbouatmailru@gmail.com>
-Cc: broonie@opensource.wolfsonmicro.com, achew@nvidia.com, olof@lixom.net,
-        linux-kernel@vger.kernel.org, Lars-Peter Clausen <lars@metafoo.de>
-Subject: [PATCH] POWER: Add gpio chager driver
-Date: Thu, 21 Oct 2010 14:25:57 +0200
-Message-Id: <1287663957-30099-1-git-send-email-lars@metafoo.de>
-X-Mailer: git-send-email 1.5.6.5
-In-Reply-To: <4CC02FF9.3050804@metafoo.de>
-References: <4CC02FF9.3050804@metafoo.de>
+	id S1757851Ab0JUMkn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Oct 2010 08:40:43 -0400
+Received: from mailout-de.gmx.net ([213.165.64.22]:57491 "HELO mail.gmx.net"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
+	id S1755496Ab0JUMkm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Oct 2010 08:40:42 -0400
+X-Authenticated: #15668376
+X-Provags-ID: V01U2FsdGVkX19UC7QJR1lU11Ga/oi3BsgKXdkK3aYksdLjxbpFFH
+	zdfL+ZVjIpaKPi
+From: Sven Eckelmann <sven.eckelmann@gmx.de>
+To: b.a.t.m.a.n@lists.open-mesh.org
+Subject: Re: [B.A.T.M.A.N.] [resend][PATCHv2] staging: batman-adv: remove useless addr_to_string()
+Date: Thu, 21 Oct 2010 14:41:37 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.32-5-amd64; KDE/4.4.5; x86_64; ; )
+Cc: Greg KH <greg@kroah.com>, devel@driverdev.osuosl.org,
+        "Greg Kroah-Hartman" <gregkh@suse.de>, linux-kernel@vger.kernel.org,
+        Simon Wunderlich <siwu@hrz.tu-chemnitz.de>,
+        Andy Shevchenko <andy.shevchenko@gmail.com>,
+        Marek Lindner <lindner_marek@yahoo.de>
+References: <1287589664-25447-1-git-send-email-andy.shevchenko@gmail.com> <20101020221636.GA21132@sven-atom.lazhur.ath.cx> <20101020223958.GA17011@kroah.com>
+In-Reply-To: <20101020223958.GA17011@kroah.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed;
+  boundary="nextPart2310473.Nn2jE4RZYK";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha512
+Content-Transfer-Encoding: 7bit
+Message-Id: <201010211441.39483.sven.eckelmann@gmx.de>
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds a simple driver for chargers indicating their online status
-through a GPIO pin.
+--nextPart2310473.Nn2jE4RZYK
+Content-Type: Text/Plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
----
- drivers/power/Kconfig              |   10 ++
- drivers/power/Makefile             |    1 +
- drivers/power/gpio-charger.c       |  184 ++++++++++++++++++++++++++++++++++++
- include/linux/power/gpio-charger.h |   39 ++++++++
- 4 files changed, 234 insertions(+), 0 deletions(-)
- create mode 100644 drivers/power/gpio-charger.c
- create mode 100644 include/linux/power/gpio-charger.h
+Greg KH wrote:
+> On Thu, Oct 21, 2010 at 12:16:37AM +0200, Sven Eckelmann wrote:
+> > On Wed, Oct 20, 2010 at 01:57:49PM -0700, Greg KH wrote:
+> > > On Wed, Oct 20, 2010 at 10:51:15PM +0200, Sven Eckelmann wrote:
+> > > > On Wed, Oct 20, 2010 at 06:47:44PM +0300, Andy Shevchenko wrote:
+> > > > > Since all *printf() methods in the kernel understand '%pM' modifi=
+er
+> > > > > the conversion to the string is useless beforehand.
+> > > > >=20
+> > > > > Additionally this patch decreases batman_if structure by 20 bytes.
+> > > >=20
+> > > > Thanks for your patch. I have problems with compiling due to other
+> > > > patches in the queue. I will fix that and recommend it as patch for
+> > > > 2.6.38.
+> > >=20
+> > > What do you mean by this?  It applies just fine to my tree, so why
+> > > can't I take it now?
+> >=20
+> > If you want then do so, but the stuff in batman-adv's master must be
+> > fixed so they have to apply the v3 version of the patch and not the v2
+> > version Andy sent.
+>=20
+> That's one of the problems with having an out-of-tree tree.  Please
+> don't do that at all anymore.
 
-diff --git a/drivers/power/Kconfig b/drivers/power/Kconfig
-index 0734356..90b1940 100644
---- a/drivers/power/Kconfig
-+++ b/drivers/power/Kconfig
-@@ -166,4 +166,14 @@ config BATTERY_INTEL_MID
- 	  Say Y here to enable the battery driver on Intel MID
- 	  platforms.
- 
-+config CHARGER_GPIO
-+	tristate "GPIO charger"
-+	depends on GPIOLIB
-+	help
-+	  Say Y to include support for chargers which report their online status
-+	  through a GPIO pin.
-+
-+	  This driver can be build as a module. If so, the module will be
-+	  called gpio-chager.
-+
- endif # POWER_SUPPLY
-diff --git a/drivers/power/Makefile b/drivers/power/Makefile
-index 10143aa..2ca71ac 100644
---- a/drivers/power/Makefile
-+++ b/drivers/power/Makefile
-@@ -37,3 +37,4 @@ obj-$(CONFIG_BATTERY_S3C_ADC)	+= s3c_adc_battery.o
- obj-$(CONFIG_CHARGER_PCF50633)	+= pcf50633-charger.o
- obj-$(CONFIG_BATTERY_JZ4740)	+= jz4740-battery.o
- obj-$(CONFIG_BATTERY_INTEL_MID)	+= intel_mid_battery.o
-+obj-$(CONFIG_CHARGER_GPIO)	+= gpio-charger.o
-diff --git a/drivers/power/gpio-charger.c b/drivers/power/gpio-charger.c
-new file mode 100644
-index 0000000..0a2ddfc
---- /dev/null
-+++ b/drivers/power/gpio-charger.c
-@@ -0,0 +1,184 @@
-+/*
-+ *  Copyright (C) 2010, Lars-Peter Clausen <lars@metafoo.de>
-+ *  Driver for chargers which report their online status through a GPIO pin
-+ *
-+ *  This program is free software; you can redistribute	 it and/or modify it
-+ *  under  the terms of	 the GNU General  Public License as published by the
-+ *  Free Software Foundation;  either version 2 of the	License, or (at your
-+ *  option) any later version.
-+ *
-+ *  You should have received a copy of the  GNU General Public License along
-+ *  with this program; if not, write  to the Free Software Foundation, Inc.,
-+ *  675 Mass Ave, Cambridge, MA 02139, USA.
-+ *
-+ */
-+
-+#include <linux/device.h>
-+#include <linux/gpio.h>
-+#include <linux/init.h>
-+#include <linux/interrupt.h>
-+#include <linux/kernel.h>
-+#include <linux/module.h>
-+#include <linux/platform_device.h>
-+#include <linux/power_supply.h>
-+#include <linux/slab.h>
-+
-+#include <linux/power/gpio-charger.h>
-+
-+struct gpio_charger {
-+	const struct gpio_charger_platform_data *pdata;
-+	int irq;
-+
-+	struct power_supply charger;
-+};
-+
-+static irqreturn_t gpio_charger_irq(int irq, void *devid)
-+{
-+	struct power_supply *charger = devid;
-+	power_supply_changed(charger);
-+
-+	return IRQ_HANDLED;
-+}
-+
-+static inline struct gpio_charger *psy_to_gpio_charger(struct power_supply *psy)
-+{
-+	return container_of(psy, struct gpio_charger, charger);
-+}
-+
-+static int gpio_charger_get_property(struct power_supply *psy,
-+	enum power_supply_property psp, union power_supply_propval *val)
-+{
-+	struct gpio_charger *gpio_charger = psy_to_gpio_charger(psy);
-+	const struct gpio_charger_platform_data *pdata = gpio_charger->pdata;
-+
-+	switch (psp) {
-+	case POWER_SUPPLY_PROP_ONLINE:
-+		val->intval = gpio_get_value(pdata->gpio);
-+		val->intval ^= pdata->gpio_active_low;
-+		break;
-+	default:
-+		return -EINVAL;
-+	}
-+
-+	return 0;
-+}
-+
-+static enum power_supply_property gpio_charger_properties[] = {
-+	POWER_SUPPLY_PROP_ONLINE,
-+};
-+
-+static int __devinit gpio_charger_probe(struct platform_device *pdev)
-+{
-+	const struct gpio_charger_platform_data *pdata = pdev->dev.platform_data;
-+	struct gpio_charger *gpio_charger;
-+	struct power_supply *charger;
-+	int ret;
-+
-+	if (!pdata) {
-+		dev_err(&pdev->dev, "No platform data");
-+		return -EINVAL;
-+	}
-+
-+	if (!gpio_is_valid(pdata->gpio)) {
-+		dev_err(&pdev->dev, "Invalid gpio pin\n");
-+		return -EINVAL;
-+	}
-+
-+	gpio_charger = kzalloc(sizeof(*gpio_charger), GFP_KERNEL);
-+
-+	charger = &gpio_charger->charger;
-+
-+	charger->name = pdata->name;
-+	charger->type = pdata->type;
-+	charger->properties = gpio_charger_properties;
-+	charger->num_properties = ARRAY_SIZE(gpio_charger_properties);
-+	charger->get_property  = gpio_charger_get_property;
-+	charger->supplied_to = pdata->supplied_to;
-+	charger->num_supplicants = pdata->num_supplicants;
-+
-+	ret = gpio_request(pdata->gpio, dev_name(&pdev->dev));
-+	if (ret) {
-+		dev_err(&pdev->dev, "Failed to request gpio pin: %d\n", ret);
-+		goto err_free;
-+	}
-+	ret = gpio_direction_input(pdata->gpio);
-+	if (ret) {
-+		dev_err(&pdev->dev, "Failed to set gpio to input: %d\n", ret);
-+		goto err_gpio_free;
-+	}
-+
-+	gpio_charger->irq = gpio_to_irq(pdata->gpio);
-+	if (gpio_charger->irq >= 0) {
-+		ret = request_irq(gpio_charger->irq, gpio_charger_irq,
-+				IRQF_TRIGGER_RISING | IRQF_TRIGGER_FALLING,
-+				dev_name(&pdev->dev), charger);
-+		if (ret) {
-+			dev_warn(&pdev->dev, "Failed to request gpio irq: %d\n", ret);
-+			gpio_charger->irq = -1;
-+		}
-+	}
-+
-+	gpio_charger->pdata = pdata;
-+
-+	ret = power_supply_register(&pdev->dev, charger);
-+	if (ret < 0) {
-+		dev_err(&pdev->dev, "Failed to register power supply: %d\n", ret);
-+		goto err_irq_free;
-+	}
-+
-+	platform_set_drvdata(pdev, gpio_charger);
-+
-+	return 0;
-+
-+err_irq_free:
-+	if (gpio_charger->irq >= 0)
-+		free_irq(gpio_charger->irq, charger);
-+err_gpio_free:
-+	gpio_free(pdata->gpio);
-+err_free:
-+	kfree(gpio_charger);
-+	return ret;
-+}
-+
-+static int __devexit gpio_charger_remove(struct platform_device *pdev)
-+{
-+	struct gpio_charger *gpio_charger = platform_get_drvdata(pdev);
-+	const struct gpio_charger_platform_data *pdata = gpio_charger->pdata;
-+
-+	power_supply_unregister(&gpio_charger->charger);
-+
-+	if (gpio_charger->irq >= 0)
-+		free_irq(gpio_charger->irq, &gpio_charger->charger);
-+	gpio_free(pdata->gpio);
-+
-+	platform_set_drvdata(pdev, NULL);
-+	kfree(gpio_charger);
-+
-+	return 0;
-+}
-+
-+static struct platform_driver  gpio_charger_driver = {
-+	.probe = gpio_charger_probe,
-+	.remove = __devexit_p(gpio_charger_remove),
-+	.driver = {
-+		.name = "gpio-charger",
-+		.owner = THIS_MODULE,
-+	},
-+};
-+
-+static int __init gpio_charger_init(void)
-+{
-+	return platform_driver_register(&gpio_charger_driver);
-+}
-+module_init(gpio_charger_init);
-+
-+static void __exit gpio_charger_exit(void)
-+{
-+	platform_driver_unregister(&gpio_charger_driver);
-+}
-+module_exit(gpio_charger_exit);
-+
-+MODULE_AUTHOR("Lars-Peter Clausen <lars@metafoo.de>");
-+MODULE_DESCRIPTION("Driver for chargers which report their online status through a GPIO");
-+MODULE_LICENSE("GPL");
-+MODULE_ALIAS("platform:gpio-charger");
-diff --git a/include/linux/power/gpio-charger.h b/include/linux/power/gpio-charger.h
-new file mode 100644
-index 0000000..404d5e6
---- /dev/null
-+++ b/include/linux/power/gpio-charger.h
-@@ -0,0 +1,39 @@
-+/*
-+ *  Copyright (C) 2010, Lars-Peter Clausen <lars@metafoo.de>
-+ *
-+ *  This program is free software; you can redistribute	 it and/or modify it
-+ *  under  the terms of	 the GNU General  Public License as published by the
-+ *  Free Software Foundation;  either version 2 of the	License, or (at your
-+ *  option) any later version.
-+ *
-+ *  You should have received a copy of the  GNU General Public License along
-+ *  with this program; if not, write  to the Free Software Foundation, Inc.,
-+ *  675 Mass Ave, Cambridge, MA 02139, USA.
-+ *
-+ */
-+
-+#ifndef __LINUX_POWER_GPIO_CHARGER_H__
-+#define __LINUX_POWER_GPIO_CHARGER_H__
-+
-+/*
-+ * struct gpio_charger_platform_data - platform_data for gpio_charger devices
-+ * @name:		Name for the chargers power_supply device
-+ * @type:		Type of the charger
-+ * @gpio:		GPIO which is used to indicate the chargers status
-+ * @gpio_active_low:	Should be set to 1 if the GPIO is active low otherwise 0
-+ * @supplied_to:	Array of battery names to which this chargers supplies power
-+ * @num_supplicants:	Number of entries in the supplied_to array
-+ */
-+
-+struct gpio_charger_platform_data {
-+	const char *name;
-+	enum power_supply_type type;
-+
-+	int gpio;
-+	int gpio_active_low;
-+
-+	char **supplied_to;
-+	size_t num_supplicants;
-+};
-+
-+#endif
--- 
-1.5.6.5
+I don't see a difference in a in-tree tree and and out-of-tree tree when=20
+applying patches somewhere else out of order. In both situations we have a=
+=20
+merge conflict (not that the scm says "omg, i cannot merge it" but that the=
+=20
+thing doesn't compile after the merge). Not that it would care much that th=
+ere=20
+is a merge conflict - it only has to be resolved one way or the other. And =
+I=20
+don't force the submitter to do it (I couldn't do it anyway), but try to he=
+lp=20
+to resolve it for the actual maintainer.
 
+I always thought that even when the source is in the kernel (or in staging)=
+=20
+that there are still a maintainer responsible for it. That this person has =
+to=20
+go through the patches and look if they do whatever they claim to do and th=
+at=20
+this isn't against what the original implementation had to do or should do.
+
+In case of batman-adv those maintainers are called by the names Marek Lindn=
+er=20
+and Simon Wunderlich. None of those names sound like GregKH or random guy (=
+aka=20
+me). I know that you are the staging maintainer and you have more to say, b=
+ut=20
+wouldn't it be more healthy that the guys who know more details about it ca=
+n=20
+take a look at the non critical stuff?
+
+And the only reason I proposed (not forced, only recommended) that will be=
+=20
+send later for inclusion in 2.6.38 was that you told us that the day a new=
+=20
+kernel (2.6.36) gets released is too late to get new stuff (other than fixe=
+s)=20
+in your tree for 2.6.37.
+
+> I'll go apply this patch to mine, and you can handle any merge issues if
+> you continue to wish to keep an external tree (hint, I STRONGLY
+> recommend that you do not, for these reasons and many others.)
+
+The development of batman-adv is mainly done by people which need it=20
+externally - so out of kernel. That means if we are not allowed anymore to=
+=20
+have some kind of external tree that we can use, it must be done the other =
+way=20
+around aka compat-wireless like and without the ability to test experimenta=
+l=20
+stuff with the community unless by sending it to you and reverting it befor=
+e a=20
+new linux release is made. Otherwise we would only have a external tree whi=
+ch=20
+is in another form (quilt, loose patches, ...) and would be nothing differe=
+nt=20
+than what we have currently.
+
+The current way is not to say that we come first, but to keep things=20
+organized. Take for example Andy's patch - it was in my own opinion to late=
+=20
+for 2.6.37 and it was nothing real critical (but nevertheless quite helpful=
+).=20
+So queuing it up with the stuff for 2.6.38 seemed to be a good idea. In tha=
+t=20
+time also the affected other code parts could be fixed by the actual author=
+=20
+and everything flows back to you as a complete package.
+
+And in my own opinion the external tree was quite helpful to see incorrect=
+=20
+merge resolutions...
+
+Everything above is my own opinion and does not strictly reflect the positi=
+ons=20
+and policies of the batman-adv project or the actual maintainers.
+
+thanks,
+	Sven
+
+--nextPart2310473.Nn2jE4RZYK
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iQIcBAABCgAGBQJMwDUCAAoJEF2HCgfBJntGa9gQAI+S+mSpjCuD5NoHsDAGQ+x7
+kL/38+DXNMvHMJHoV7c1sfuBh1ikY6rDpY49d6NLhaQIkwTJ4bcyHZ4YB45PF4AP
+9cAPhLoqkfX9c7nDhbVvpAYuQ3aQlGVJUtBBEuQgyzmBBp746GdudbOvWwWYfF9G
+krprhlvPGdB1A6qP65fIGaOuu9udPBTF5BrGcwIUTHV4fz505Icz+l4B1GzXvYoy
+idk0ngyuXRJIQm2bz5Mk6oYinQRH6b0IMYh/EScSLZN3qhBqTv9iN/GKC4bXaYJ+
+IbE118bINGKbq0ucyRKco56iwZAV+jwYMqpuq7b40QR4gPc9woyLN+nA2D8Z9SEK
+pC2E4m0OQHYNTTorG1BCIwmiciU/NgEqo0xlUV1acmzNG2N6wV9ExTNi50TYs5EY
+6fZIgwE61dTLKclNmn8FFgn5CIn9Xi9UvMDM14OUStvk+f0PzWJn17J43LE1zNrg
+C+VG3GHGaVoz+OBnKMuZKU64UgP7BQksg22s/B4wy5i6rqDBrIy7nWspKHvKOhYE
+QaJdMq3ggOwy6grZSZZoD/ohbUrIrXUVRInTgnQ9C5v7dUJCaFRYAOx4rCVY4ejG
+w9W4/eXxPyU3kINuxkhSwGxhVn3+RoVrawoOI7hnBKlWzC7PuLVW4+i+a6lKj0i6
+1obYlBPevx5WwPAYCByQ
+=yYhK
+-----END PGP SIGNATURE-----
+
+--nextPart2310473.Nn2jE4RZYK--
