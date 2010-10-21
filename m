@@ -1,60 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757374Ab0JUD1G (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Oct 2010 23:27:06 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:42730 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757277Ab0JUD1E (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Oct 2010 23:27:04 -0400
-Date: Wed, 20 Oct 2010 21:26:57 -0600
-From: Grant Likely <grant.likely@secretlab.ca>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Andres Salomon <dilinger@queued.net>
-Subject: Re: linux-next: build warning after merge of the devicetree tree
-Message-ID: <20101021032657.GB13335@angua.secretlab.ca>
-References: <20101021133726.d1e5f433.sfr@canb.auug.org.au>
+	id S1757396Ab0JUDjh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Oct 2010 23:39:37 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:33928 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757276Ab0JUDjg (ORCPT
+	<rfc822;<linux-kernel@vger.kernel.org>>);
+	Wed, 20 Oct 2010 23:39:36 -0400
+Date: Wed, 20 Oct 2010 23:38:15 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Li Zefan <lizf@cn.fujitsu.com>
+Cc: akpm@linux-foundation.org, mm-commits@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: mmotm 2010-10-20-15-01 uploaded
+Message-ID: <20101021033815.GA696@dumpdata.com>
+References: <201010202233.o9KMXNoL008303@imap1.linux-foundation.org>
+ <4CBFAB7B.7080306@cn.fujitsu.com>
+ <4CBFB06B.3020305@cn.fujitsu.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20101021133726.d1e5f433.sfr@canb.auug.org.au>
+In-Reply-To: <4CBFB06B.3020305@cn.fujitsu.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 21, 2010 at 01:37:26PM +1100, Stephen Rothwell wrote:
-> Hi Grant,
-> 
-> After merging the devicetree tree, today's linux-next build (x86_64
-> allmodconfig) produced this warning:
-> 
-> arch/x86/kernel/irq.c:280: warning: 'struct device_node' declared inside parameter list
-> 
-> Introduced by commit 27f4e2b1060be8bc38146fd30986e7c2858e2a5f ("x86/of:
-> define irq functions to allow drivers/of/* to build on x86").  This build
-> has CONFIG_OF not set.
+On Thu, Oct 21, 2010 at 11:15:55AM +0800, Li Zefan wrote:
+> Li Zefan wrote:
+> > akpm@linux-foundation.org wrote:
+> >> The mm-of-the-moment snapshot 2010-10-20-15-01 has been uploaded to
+> >>
+> >>    http://userweb.kernel.org/~akpm/mmotm/
+> >>
+> >> and will soon be available at
+> >>
+> >>    git://zen-kernel.org/kernel/mmotm.git
+> >>
+> >> It contains the following patches against 2.6.36-rc8:
+> >>
+> > 
+> > Got this:
+> > 
+> > arch/x86/pci/xen.c: In function 'pci_xen_init':
+> > arch/x86/pci/xen.c:138: error: 'isapnp_disable' undeclared (first use in this function)
+> > arch/x86/pci/xen.c:138: error: (Each undeclared identifier is reported only once
+> > arch/x86/pci/xen.c:138: error: for each function it appears in.)
 
-Thanks Stephen.  Does the following patch fix things?
+Ok. Will fix this.
+> > 
+> > # quilt patches arch/x86/pci/xen.c
+> > linux-next.patch
+> 
+> I just commented out isapnp_disable, and after boot I saw this warning:
 
-diff --git a/arch/x86/kernel/irq.c b/arch/x86/kernel/irq.c
-index 4417f49..23216f7 100644
---- a/arch/x86/kernel/irq.c
-+++ b/arch/x86/kernel/irq.c
-@@ -276,12 +276,14 @@ void smp_x86_platform_ipi(struct pt_regs *regs)
- 
- EXPORT_SYMBOL_GPL(vector_used_by_percpu_irq);
- 
-+#ifdef CONFIG_OF
- unsigned int irq_create_of_mapping(struct device_node *controller,
-                const u32 *intspec, unsigned int intsize)
- {
-        return intspec[0];
- }
- EXPORT_SYMBOL_GPL(irq_create_of_mapping);
-+#endif
- 
- #ifdef CONFIG_HOTPLUG_CPU
- /* A cpu has been removed from cpu_online_mask.  Reset irq affinities. */
-
+Under what conditions? Is this a baremetal bootup? What is your .config?
+> 
+> ------------[ cut here ]------------
+> WARNING: at arch/x86/mm/highmem_32.c:82 __kunmap_atomic+0x80/0xd4()
+> Hardware name: ASPIRE AG1720
+> Modules linked in:
+> Pid: 1, comm: swapper Not tainted 2.6.36-rc8-mm1+ #1
+> Call Trace:
+>  [<c0440982>] warn_slowpath_common+0x6a/0x7f
+>  [<c042e6c5>] ? __kunmap_atomic+0x80/0xd4
+>  [<c04409ab>] warn_slowpath_null+0x14/0x18
+>  [<c042e6c5>] __kunmap_atomic+0x80/0xd4
+>  [<c04f2d1f>] zero_user_segments+0x5e/0x64
+>  [<c04f2e58>] simple_write_begin+0x5e/0x6c
+>  [<c04a6518>] generic_file_buffered_write+0xc0/0x1c5
+>  [<c0444f41>] ? current_fs_time+0x1b/0x1e
+>  [<c04a7745>] __generic_file_aio_write+0x25e/0x28f
+>  [<c04a77d8>] generic_file_aio_write+0x62/0xaa
+>  [<c04db6df>] do_sync_write+0x8f/0xca
+>  [<c075fc8f>] ? _raw_write_unlock_irqrestore+0x41/0x4d
+>  [<c074aedd>] ? kmemleak_alloc+0x59/0x78
+>  [<c09874f3>] ? do_name+0x10e/0x26b
+>  [<c04db650>] ? do_sync_write+0x0/0xca
+>  [<c04dbc44>] vfs_write+0x85/0xe3
+>  [<c04dbd40>] sys_write+0x40/0x62
+>  [<c098722b>] do_copy+0x24/0xbe
+>  [<c09870d4>] flush_buffer+0x6a/0x8a
+>  [<c09a84b1>] gunzip+0x267/0x2e6
+>  [<c0592458>] ? nofill+0x0/0x8
+>  [<c09a824a>] ? gunzip+0x0/0x2e6
+>  [<c0987b7f>] unpack_to_rootfs+0x1e0/0x2ee
+>  [<c098706a>] ? flush_buffer+0x0/0x8a
+>  [<c0986e93>] ? error+0x0/0x13
+>  [<c0987cd9>] populate_rootfs+0x4c/0x200
+>  [<c05a944e>] ? pci_get_subsys+0x4d/0x59
+>  [<c075da14>] ? printk+0x14/0x18
+>  [<c09aa16f>] ? pci_apply_final_quirks+0xc9/0xe6
+>  [<c0403080>] do_one_initcall+0x76/0x126
+>  [<c0987c8d>] ? populate_rootfs+0x0/0x200
+>  [<c098539e>] kernel_init+0x126/0x1a2
+>  [<c0985278>] ? kernel_init+0x0/0x1a2
+>  [<c0409942>] kernel_thread_helper+0x6/0x10
+> ---[ end trace e93713a9d40cd06c ]---
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
