@@ -1,88 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757625Ab0JUW6j (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Oct 2010 18:58:39 -0400
-Received: from mga03.intel.com ([143.182.124.21]:56164 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756309Ab0JUW6i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Oct 2010 18:58:38 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.58,219,1286175600"; 
-   d="scan'208";a="339013465"
-Date: Fri, 22 Oct 2010 00:58:34 +0200
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        Kyungmin Park <kyungmin.park@samsung.com>
-Subject: Re: [PATCH] mfd: max8998 cleanups
-Message-ID: <20101021225834.GF11685@sortiz-mobl>
-References: <1287565604.7849.4.camel@mola>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1287565604.7849.4.camel@mola>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1758886Ab0JUW7A (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Oct 2010 18:59:00 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:47553 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756041Ab0JUW66 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Oct 2010 18:58:58 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=XQRv9yDAqLpy1M+t3HWORg74/dofAAHh/Qv+m1fQ3IW4lG5Plba+sX91mPpO+iTbTR
+         AfQt92jzHxTmN/LU2LAfXiVNdjqKwIlktxMUWdaVn3eTN9PXNQEBDssIkgrTCqpRXM9O
+         SzZZACMJt/cQ5mH/sloEeP2cJGRfVBNLFaDO8=
+Subject: Re: [PATCH 16/17] fs: Convert nr_inodes to a per-cpu counter
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Nick Piggin <npiggin@kernel.dk>, Dave Chinner <david@fromorbit.com>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <20101021153126.c1693e8e.akpm@linux-foundation.org>
+References: <1285762729-17928-1-git-send-email-david@fromorbit.com>
+	 <1285762729-17928-17-git-send-email-david@fromorbit.com>
+	 <20100929215322.ff635d3e.akpm@linux-foundation.org>
+	 <20100930061039.GX5665@dastard> <20101016075510.GH19147@amd>
+	 <1287217748.2799.68.camel@edumazet-laptop>
+	 <20101016020744.366bd9c6.akpm@linux-foundation.org>
+	 <1287221475.2799.123.camel@edumazet-laptop>
+	 <20101021153126.c1693e8e.akpm@linux-foundation.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 22 Oct 2010 00:58:52 +0200
+Message-ID: <1287701932.2607.34.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Axel,
+Le jeudi 21 octobre 2010 à 15:31 -0700, Andrew Morton a écrit :
+> (working in time-reversed oreder again :()
 
-On Wed, Oct 20, 2010 at 05:06:44PM +0800, Axel Lin wrote:
-> This patch includes below fixes:
-> 1. i2c_smbus_write_byte_data() returns zero or negative value,
->    therefore no need to check if ret is greater than zero or not.
-> 2. Properly free irq and unregister max8998->rtc device in
->    max8998_i2c_probe() error path and max8998_i2c_remove().
-The fixes make sense, I'd appreciate to get 2 separate patches for them
-though.
+> I don't know what "previous patch" you're referring to.
 
-Cheers,
-Samuel.
+Nothing exciting, it was to update the comment that was slightly wrong
+about size of percpu_counter...
+
+(percpu_counter: change inaccurate comment)
+
+https://patchwork.kernel.org/patch/238441/
 
 
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
-> ---
->  drivers/mfd/max8998.c |    6 ++++--
->  1 files changed, 4 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/mfd/max8998.c b/drivers/mfd/max8998.c
-> index a720f41..bb9977b 100644
-> --- a/drivers/mfd/max8998.c
-> +++ b/drivers/mfd/max8998.c
-> @@ -110,8 +110,6 @@ int max8998_update_reg(struct i2c_client *i2c, u8 reg, u8 val, u8 mask)
->  		u8 old_val = ret & 0xff;
->  		u8 new_val = (val & mask) | (old_val & (~mask));
->  		ret = i2c_smbus_write_byte_data(i2c, reg, new_val);
-> -		if (ret >= 0)
-> -			ret = 0;
->  	}
->  	mutex_unlock(&max8998->iolock);
->  	return ret;
-> @@ -155,6 +153,8 @@ static int max8998_i2c_probe(struct i2c_client *i2c,
->  
->  err:
->  	mfd_remove_devices(max8998->dev);
-> +	max8998_irq_exit(max8998);
-> +	i2c_unregister_device(max8998->rtc);
->  	kfree(max8998);
->  	return ret;
->  }
-> @@ -164,6 +164,8 @@ static int max8998_i2c_remove(struct i2c_client *i2c)
->  	struct max8998_dev *max8998 = i2c_get_clientdata(i2c);
->  
->  	mfd_remove_devices(max8998->dev);
-> +	max8998_irq_exit(max8998);
-> +	i2c_unregister_device(max8998->rtc);
->  	kfree(max8998);
->  
->  	return 0;
-> -- 
-> 1.7.2
-> 
-> 
-> 
 
--- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
