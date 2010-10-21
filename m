@@ -1,89 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756747Ab0JUSVz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Oct 2010 14:21:55 -0400
-Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:49739 "EHLO kernel.dk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753435Ab0JUSVy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Oct 2010 14:21:54 -0400
-Message-ID: <4CC084C0.9020000@kernel.dk>
-Date: Thu, 21 Oct 2010 20:21:52 +0200
-From: Jens Axboe <axboe@kernel.dk>
+	id S1756867Ab0JUSWR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Oct 2010 14:22:17 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:49108 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756801Ab0JUSWP convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Oct 2010 14:22:15 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:reply-to:to:subject:date:user-agent:cc:references:in-reply-to
+         :mime-version:content-type:content-transfer-encoding:message-id;
+        b=K6KxPNTvY7BhVwfQJItHPKwGo1h7Ted5mq41IuuWkTfl/oHxyg+hOah+HRmnXSNEOQ
+         diwUn/NydqoOZMAgiOOhv8w4fk1NMa8V2KGQffsB94HzzHMVkqA3mvit9NHto7sAHfqz
+         +H+sZxyzQJZmv3VQ+WsKAMwMxOaYPsiELQDjo=
+From: Maciej Rutecki <maciej.rutecki@gmail.com>
+Reply-To: maciej.rutecki@gmail.com
+To: evogt@free.fr
+Subject: Re: PROBLEM: kernel 2.6.35.7 crashes under I/O load
+Date: Thu, 21 Oct 2010 20:22:09 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.36-rc8-git3; KDE/4.4.5; i686; ; )
+Cc: linux-kernel@vger.kernel.org
+References: <alpine.DEB.1.10.1010202300540.3989@coniglio.vogt-bodving.test>
+In-Reply-To: <alpine.DEB.1.10.1010202300540.3989@coniglio.vogt-bodving.test>
 MIME-Version: 1.0
-To: "Ted Ts'o" <tytso@mit.edu>, Boaz Harrosh <bharrosh@panasas.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>
-Subject: Re: What am I doing wrong?  submit_bio() suddenly stops working...
-References: <E1P8kSE-0001DW-8C@tytso-glaptop> <4CBFE4E2.7050001@kernel.dk> <20101021165525.GB3127@thunk.org> <4CC07B62.9070000@panasas.com> <20101021181432.GE3127@thunk.org>
-In-Reply-To: <20101021181432.GE3127@thunk.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201010212022.09399.maciej.rutecki@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2010-10-21 20:14, Ted Ts'o wrote:
-> On Thu, Oct 21, 2010 at 07:41:54PM +0200, Boaz Harrosh wrote:
->>> +#ifdef PDEBUG
->>> +	trace_printk("%s: io submitted io_end %p\n", 
->>> +		     io->io_end->inode->i_sb->s_id, io->io_end);
->>> +#endif
->>> +	submit_bio(io->io_op, io->io_bio);
->>> +	ASSERT(!bio_flagged(bio, BIO_EOPNOTSUPP));
->>> +	bio_put(io->io_bio);
->>
->> The extra get/put is only done for the duration of the ASSERT above, right?
->> I'd put a comment. And why don't you just call the _get here just before
->> submit_bio instead of down at io_submit_init.
+On środa, 20 października 2010 o 23:20:27 Etienne Vogt wrote:
+> Hi there !
 > 
-> The bio layer isn't well documented, so a lot of this was written by
-> cargo cult programming.  In this case, I was following what XFS did
-> when I originally wrote it.  It's only in the past week when I've been
-> diving deep into the source and was able to conclude that yes, it's
-> only needed for the ASSERT.
+>   Since upgrading my main Linux Debian system to the last 2.6.35.7 kernel,
+> it's suffering from frequent crashes under I/O load.
+>   This evening, one of these crashes was recorded into the system logs.
+> When it occured, I was processing a Digital TV recording with mencoder.
 
-Come on Ted, you are laying it on pretty thick now. It's ordinary
-reference counting, and the use case you have here is exactly the one
-that is described in the comment for bio_get(). You allocate the bio, it
-has a single reference. The end_io function you define drops the
-reference you had to this bio. Since IO can complete before submit_bio()
-has returned, you need to grab an extra reference if you depend on
-dereferencing the bio after submission.
-
-> One of the frustrating things about the bio layer is that all of the
-> different file systems use very different patterns about how they
-> access the bio layer --- which is perhaps caused by the lack of
-> documentation.  But I finally did notice that the JFS code dodn't do a
-> bio_get() after calling bio_alloc(), and it was only when I did a lot
-> of source code tracing that I realized that it strictly speaking the
-> ASSERT isn't really even all that necessary, since we're not calling
-> using a discard or barrier op, which is the only thing that could
-> possibly set the EOPNOTSUPP flag anyway....
-> 
->>> +	do {
->>> +		bio = bio_alloc(GFP_NOIO, nvecs);
->>> +		nvecs >>= 1;
->>> +	} while (bio == NULL);
->>
->> This is surly bad. bio_alloc must be allowed to fail
->> (Specially with GFP_NOIO). You should only loop down to
->> 1 and then prepare to return -ENOMEM from this function
->> and handle it properly in callers. (Or schedule and wait
->> like below)
-> 
-> Copied exactly from the XFS code.  I was under the (possibly mistaken)
-> assumption that the XFS code was a good place to copy from, since
-> everyone sings the praises of XFS.....
-
-And it'll work.
-
-> I do agree that bio_alloc() should be allowed to fail, although life
-> gets really tough deep in the writeback stack to throw a failure all
-> the way back out.  This was on my todo list to fix, after I got things
-> basically working.
-
-So don't use __GFP_WAIT, then it returns NULL.
+I created a Bugzilla entry at 
+https://bugzilla.kernel.org/show_bug.cgi?id=20892
+for your bug report, please add your address to the CC list in there, thanks!
 
 -- 
-Jens Axboe
-
+Maciej Rutecki
+http://www.maciek.unixy.pl
