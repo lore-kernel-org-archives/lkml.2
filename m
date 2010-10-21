@@ -1,38 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757596Ab0JULaj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Oct 2010 07:30:39 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:43512
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757633Ab0JULai (ORCPT
+	id S1757704Ab0JULfz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Oct 2010 07:35:55 -0400
+Received: from fep15.mx.upcmail.net ([62.179.121.35]:36925 "EHLO
+	fep15.mx.upcmail.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757296Ab0JULfy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Oct 2010 07:30:38 -0400
-Date: Thu, 21 Oct 2010 04:31:00 -0700 (PDT)
-Message-Id: <20101021.043100.42796935.davem@davemloft.net>
-To: julia@diku.dk
-Cc: p_gortmaker@yahoo.com, kernel-janitors@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] drivers/net/ax88796.c: Return error code in failure
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1287411074-19825-2-git-send-email-julia@diku.dk>
-References: <1287411074-19825-2-git-send-email-julia@diku.dk>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+	Thu, 21 Oct 2010 07:35:54 -0400
+X-SourceIP: 80.56.199.130
+Subject: Re: [PATCH 0/7] perf,x86: PEBS/BTS buffer allocation changes
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Stephane Eranian <eranian@google.com>
+Cc: Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org
+In-Reply-To: <20101019134256.087045503@chello.nl>
+References: <20101019134256.087045503@chello.nl>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 21 Oct 2010 13:35:46 +0200
+Message-ID: <1287660946.3488.105.camel@twins>
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
+X-Cloudmark-Analysis: v=1.1 cv=xhnIrgVimuy9wQ+RkywzulFXCq7zNkI+ObDjxzBho7Y= c=1 sm=0 a=-KpEscm3vOMA:10 a=IkcTkHD0fZMA:10 a=a9Mq2fA7e3t7ShMRO_sA:9 a=xt-F8Rzb9s9E3va_liCS2G8gv-cA:4 a=QEXdDO2ut3YA:10 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Julia Lawall <julia@diku.dk>
-Date: Mon, 18 Oct 2010 16:11:14 +0200
-
-> In this code, 0 is returned on failure, even though other
-> failures return -ENOMEM or other similar values.
+On Tue, 2010-10-19 at 15:42 +0200, Peter Zijlstra wrote:
+> Hi Stephane,
 > 
-> A simplified version of the semantic match that finds this problem is as
-> follows: (http://coccinelle.lip6.fr/)
- ...
-> Signed-off-by: Julia Lawall <julia@diku.dk>
+> Your PEBS/BTS buffer patch failed a .config dependent build, which on its own
+> was rather easy to fix, but Ingo objected to the size of the patch and asked me
+> to rewrite in smaller increments. This patch series is the result.
+> 
+> What do you think?
 
-Applied.
+Stephane, can I get an ack/review tag for this?
+
