@@ -1,39 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753771Ab0JUP2q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Oct 2010 11:28:46 -0400
-Received: from smtp105.prem.mail.ac4.yahoo.com ([76.13.13.44]:28248 "HELO
-	smtp105.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751865Ab0JUP2o (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Oct 2010 11:28:44 -0400
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-X-YMail-OSG: y4XgbU8VM1kVBSxaS7NqWqpHF_9xZJLP79MjwWjtm889P_S
- _R6fG1qz0ld.klEgjiHiJJK5cuAHPoBq9KZ73U6TBLLZK2WMpZGoM178FB8Q
- ZNLtD7R5LBK4MjAY5JKwWfQA2.2lNj_I0B.S.mjCYG74x_yA0S1WoPBHDnwU
- O20g.qAGaLArGWIoJ9uRAL3cBpOS.APFysBfk_7LWZATXTBqtWeMt1TTJPXr
- HmWxUXcSdiAwwgkVnSDcBxvX.2t4pi8Pf1A--
-X-Yahoo-Newman-Property: ymail-3
-Date: Thu, 21 Oct 2010 10:28:42 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: npiggin@kernel.dk
-cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [patch 13/14] fs: icache split IO and LRU lists
-In-Reply-To: <20101021131017.274548424@kernel.dk>
-Message-ID: <alpine.DEB.2.00.1010211018250.24115@router.home>
-References: <20101021130829.442910807@kernel.dk> <20101021131017.274548424@kernel.dk>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1758634Ab0JUPdM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Oct 2010 11:33:12 -0400
+Received: from enyo.dsw2k3.info ([195.71.86.239]:38037 "EHLO enyo.dsw2k3.info"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757613Ab0JUPdL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Oct 2010 11:33:11 -0400
+X-Greylist: delayed 524 seconds by postgrey-1.27 at vger.kernel.org; Thu, 21 Oct 2010 11:33:11 EDT
+Date: Thu, 21 Oct 2010 17:24:17 +0200
+From: Matthias Schniedermeyer <ms@citd.de>
+To: Christian Bahls <lkml@qb352.de>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: ?Powermanagement?-Regression in 2.6.36
+Message-ID: <20101021152417.GA16661@citd.de>
+References: <AANLkTikR_yZsjqLbVMRQovw1o+v6RVGvjxrwazyw0ZqH@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTikR_yZsjqLbVMRQovw1o+v6RVGvjxrwazyw0ZqH@mail.gmail.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 22 Oct 2010, npiggin@kernel.dk wrote:
+On 21.10.2010 16:34, Christian Bahls wrote:
+> Dear List
+> 
+> PPS: bisecting this regression seems to be out of question
+>  recompiling the kernel on this computer takes a few hours
+>  as all the other computers i use are 64bit
+>  i would alternatively have to setup a cross-compilation environment
+>  which i have not done in years (and not without rocklinux either)
 
-> Split inode reclaim and writeback lists in preparation to scale them up
-> (per-bdi locking for i_io and per-zone locking for i_lru)
+As far as it is my experience, x86 32bit/64bit can build each other.
 
-Why per zone and not per node? Is there any chance of having lru lists for
-ZONE_NORMAL and ZONE_DMA?
+On the "big" machine just add "ARCH=x86" to (all!) make invocations.
+ARCH=x86 makes "CONFIG_64BIT" an actual configuration option and 
+honours whatever is configured in the .config-file.
+
+
+
+
+
+Bis denn
+
+-- 
+Real Programmers consider "what you see is what you get" to be just as 
+bad a concept in Text Editors as it is in women. No, the Real Programmer
+wants a "you asked for it, you got it" text editor -- complicated, 
+cryptic, powerful, unforgiving, dangerous.
+
