@@ -1,68 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758018Ab0JUNdv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Oct 2010 09:33:51 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:3589 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755941Ab0JUNdu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Oct 2010 09:33:50 -0400
-Subject: Re: Ftrace: can trace kthread?
-From: Steven Rostedt <srostedt@redhat.com>
-To: "Figo.zhang" <zhangtianfei@leadcoretech.com>
-Cc: Li Zefan <lizf@cn.fujitsu.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-In-Reply-To: <1287647732.2237.7.camel@myhost>
-References: <1287647732.2237.7.camel@myhost>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Red Hat
-Date: Thu, 21 Oct 2010 09:33:43 -0400
-Message-ID: <1287668023.2824.15.camel@fedora>
+	id S1758016Ab0JUNfW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Oct 2010 09:35:22 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:46412 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755181Ab0JUNfV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Oct 2010 09:35:21 -0400
+X-Authority-Analysis: v=1.1 cv=kXGwZUU/u1JTMRv8Axk4W0omja+vfTT+sGlOkodD8F8= c=1 sm=0 a=8eYBim7neI8A:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=VwQbUJbxAAAA:8 a=CG3p_s7I1h95krVFPr4A:9 a=KoCpZLJOrdlCxv6cGYUA:7 a=sFe7dviuRWdQs8BoeKv1OtzI9tcA:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [PATCH v2 0/8] [GIT PULL] ring-buffer: various updates
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org
+Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+In-Reply-To: <20101021013906.507064528@goodmis.org>
+References: <20101021013906.507064528@goodmis.org>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Thu, 21 Oct 2010 09:35:18 -0400
+Message-ID: <1287668118.16971.576.camel@gandalf.stny.rr.com>
 Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Just a quick note. Please send email to my rostedt@goodmis.org address.
-I do not check my srostedt@redhat.com address as often.
+Ingo,
 
-I know, I know, I have it as my Author tag (but not my signed off by)
-and I had to add it to my business card. I just could not be so bold as
-to put my goodmis.org address on my Red Hat business card ;-) And there
-was no good way to add it as a secondary.
+Would you be able to pull this for 2.6.37?
+
+Thanks,
 
 -- Steve
 
-On Thu, 2010-10-21 at 15:55 +0800, Figo.zhang wrote:
-> hi,
+
+On Wed, 2010-10-20 at 21:39 -0400, Steven Rostedt wrote:
+> Ingo,
 > 
-> is it ftrace in 2.6.36-rc8 can trace the kthread? i want to trace the
-> kswapd/bdi_writeback_thread, but not success. i am sure that kswapd is
-> running, because i let the system eat huge memory. i can trace some
-> function such as __do_fault. what is issue on it? 
+> Thomas suggested that I try to fine grain the big patch in this series.
+> It contained some minor clean ups, so I pulled them out of that patch.
+> But that patch is still a bit big. Just because it changes the fact
+> that the ring buffer functions can now accept a time extend as well
+> as a data event. Those changes were rather trivial though.
 > 
-> Best,
-> Figo.zhang
+> Please pull the latest tip/perf/ringbuffer-2 tree, which can be found at:
 > 
-> 
-> here is my ftrace script.
-> i = 1
-> while true;
-> do
-> 	echo 1 > /proc/sys/kernel/ftrace_enabled
-> 	echo function_graph > /sys/kernel/debug/tracing/current_tracer
-> 	echo kswapd > /sys/kernel/debug/tracing/set_graph_function
-> 	echo 1 > /sys/kernel/debug/tracing/tracing_on
-> 	echo 1 > /sys/kernel/debug/tracing/tracing_enabled
-> 	sleep 1
-> 	echo 0 > /sys/kernel/debug/tracing/tracing_enabled
-> 	cat /sys/kernel/debug/tracing/trace > ftrace.kswap.log.$i
-> 
-> 	let i=i+1;
-> 
-> done
+>   git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-2.6-trace.git
+> tip/perf/ringbuffer-2
 > 
 > 
+> Steven Rostedt (8):
+>       ring-buffer: Make write slow path out of line
+>       ring-buffer: Pass timestamp by value and not by reference
+>       ring-buffer: Pass delta by value and not by reference
+>       ring-buffer: Remove ring_buffer_event_time_delta()
+>       ring-buffer: Bind time extend and data events together
+>       ring-buffer: Remove condition to add timestamp in fast path
+>       ring-buffer: Micro-optimize with some strategic inlining
+>       ring-buffer: Remove unused macro RB_TIMESTAMPS_PER_PAGE
 > 
+> ----
+>  include/linux/ring_buffer.h |   12 --
+>  kernel/trace/ring_buffer.c  |  335 ++++++++++++++++++++++---------------------
+>  2 files changed, 172 insertions(+), 175 deletions(-)
 
 
