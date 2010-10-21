@@ -1,54 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758886Ab0JUW7A (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Oct 2010 18:59:00 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:47553 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756041Ab0JUW66 (ORCPT
+	id S1756547Ab0JUXAO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Oct 2010 19:00:14 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:55122 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750915Ab0JUXAN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Oct 2010 18:58:58 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=XQRv9yDAqLpy1M+t3HWORg74/dofAAHh/Qv+m1fQ3IW4lG5Plba+sX91mPpO+iTbTR
-         AfQt92jzHxTmN/LU2LAfXiVNdjqKwIlktxMUWdaVn3eTN9PXNQEBDssIkgrTCqpRXM9O
-         SzZZACMJt/cQ5mH/sloEeP2cJGRfVBNLFaDO8=
-Subject: Re: [PATCH 16/17] fs: Convert nr_inodes to a per-cpu counter
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Nick Piggin <npiggin@kernel.dk>, Dave Chinner <david@fromorbit.com>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-In-Reply-To: <20101021153126.c1693e8e.akpm@linux-foundation.org>
-References: <1285762729-17928-1-git-send-email-david@fromorbit.com>
-	 <1285762729-17928-17-git-send-email-david@fromorbit.com>
-	 <20100929215322.ff635d3e.akpm@linux-foundation.org>
-	 <20100930061039.GX5665@dastard> <20101016075510.GH19147@amd>
-	 <1287217748.2799.68.camel@edumazet-laptop>
-	 <20101016020744.366bd9c6.akpm@linux-foundation.org>
-	 <1287221475.2799.123.camel@edumazet-laptop>
-	 <20101021153126.c1693e8e.akpm@linux-foundation.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 22 Oct 2010 00:58:52 +0200
-Message-ID: <1287701932.2607.34.camel@edumazet-laptop>
+	Thu, 21 Oct 2010 19:00:13 -0400
+Date: Thu, 21 Oct 2010 15:59:02 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Kevin Hilman <khilman@deeprootsystems.com>
+Cc: Cyril Chemparathy <cyril@ti.com>,
+        davinci-linux-open-source@linux.davincidsp.com,
+        spi-devel-general@lists.sourceforge.net,
+        broonie@opensource.wolfsonmicro.com, lrg@slimlogic.co.uk,
+        dbrownell@users.sourceforge.net, grant.likely@secretlab.ca,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        rpurdie@rpsys.net
+Subject: Re: [PATCH v3 00/12] tnetv107x ssp driver stack
+Message-Id: <20101021155902.b9702f72.akpm@linux-foundation.org>
+In-Reply-To: <87mxq7p4hv.fsf@deeprootsystems.com>
+References: <1287694873-12904-1-git-send-email-cyril@ti.com>
+	<87mxq7p4hv.fsf@deeprootsystems.com>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le jeudi 21 octobre 2010 à 15:31 -0700, Andrew Morton a écrit :
-> (working in time-reversed oreder again :()
+On Thu, 21 Oct 2010 15:26:04 -0700
+Kevin Hilman <khilman@deeprootsystems.com> wrote:
 
-> I don't know what "previous patch" you're referring to.
+> Cyril Chemparathy <cyril@ti.com> writes:
+> 
+> > TI's sequencer serial port (TI-SSP) is a jack-of-all-trades type of serial port
+> > device.  It has a built-in programmable execution engine that can be programmed
+> > to operate as almost any serial bus (I2C, SPI, EasyScale, and others).
+> 
+> Andrew, looking for some advice here...
+> 
+> This is a piece of davinci hardware, but introduces drivers in various
+> subsystems.  I'm willing to merge this series via the davinci tree after
+> getting acks from the various subsystem maintainers.  Is this an OK
+> approach?  It seems best to me to merge this all together.
 
-Nothing exciting, it was to update the comment that was slightly wrong
-about size of percpu_counter...
+Yes, that's the best approach.
 
-(percpu_counter: change inaccurate comment)
+Some of the desired acks may not be forthcoming.  In which case the
+best you can do is to review the code yourself, make the maintainer(s)
+aware of what's going on and just go ahead and merge it.  If people are
+too busy to look at the code then so be it - we can't really permit
+that problem to permanently block new drivers.
 
-https://patchwork.kernel.org/patch/238441/
+> We already have acks for the regulator and gpio driver parts, and the
+> backlight driver has a clear owner in MAINTAINERS.  However, who should
+> be doing the final review/ack of the drivers/misc and drivers/gpio
+> changes is less clear to me.  
+> 
 
+I'll go and have a look at drivers/misc/ti_ssp.c.
 
-
+> 
+> Thanks,
+> 
+> Kevin
+> 
+> >  arch/arm/mach-davinci/board-tnetv107x-evm.c    |  199 +++++++
+> >  arch/arm/mach-davinci/devices-tnetv107x.c      |   25 +
+> >  arch/arm/mach-davinci/include/mach/ti_ssp.h    |   98 ++++
+> >  arch/arm/mach-davinci/include/mach/tnetv107x.h |    2 +
+> >  arch/arm/mach-davinci/tnetv107x.c              |    2 +-
+> >  drivers/gpio/Kconfig                           |   10 +
+> >  drivers/gpio/Makefile                          |    1 +
+> >  drivers/gpio/ti-ssp-gpio.c                     |  200 +++++++
+> >  drivers/misc/Kconfig                           |   11 +
+> >  drivers/misc/Makefile                          |    1 +
+> >  drivers/misc/ti_ssp.c                          |  436 +++++++++++++++
+> >  drivers/regulator/Kconfig                      |   10 +
+> >  drivers/regulator/Makefile                     |    1 +
+> >  drivers/regulator/tps6524x-regulator.c         |  692 ++++++++++++++++++++++++
+> >  drivers/spi/Kconfig                            |    7 +
+> >  drivers/spi/Makefile                           |    1 +
+> >  drivers/spi/spi_ti_ssp.c                       |  397 ++++++++++++++
+> >  drivers/video/backlight/Kconfig                |    7 +
+> >  drivers/video/backlight/Makefile               |    2 +-
+> >  drivers/video/backlight/tps6116x.c             |  340 ++++++++++++
