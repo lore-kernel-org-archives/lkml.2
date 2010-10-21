@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756694Ab0JUAya (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Oct 2010 20:54:30 -0400
-Received: from bld-mail12.adl6.internode.on.net ([150.101.137.97]:35922 "EHLO
+	id S1756155Ab0JUAu1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Oct 2010 20:50:27 -0400
+Received: from bld-mail19.adl2.internode.on.net ([150.101.137.104]:41137 "EHLO
 	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756318Ab0JUAub (ORCPT
+	with ESMTP id S1752039Ab0JUAu0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Oct 2010 20:50:31 -0400
+	Wed, 20 Oct 2010 20:50:26 -0400
 From: Dave Chinner <david@fromorbit.com>
 To: linux-fsdevel@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH 03/21] fs: Convert nr_inodes and nr_unused to per-cpu counters
-Date: Thu, 21 Oct 2010 11:49:28 +1100
-Message-Id: <1287622186-1935-4-git-send-email-david@fromorbit.com>
+Subject: [PATCH 01/21] fs: switch bdev inode bdi's correctly
+Date: Thu, 21 Oct 2010 11:49:26 +1100
+Message-Id: <1287622186-1935-2-git-send-email-david@fromorbit.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1287622186-1935-1-git-send-email-david@fromorbit.com>
 References: <1287622186-1935-1-git-send-email-david@fromorbit.com>
@@ -22,278 +22,88 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Dave Chinner <dchinner@redhat.com>
 
-The number of inodes allocated does not need to be tied to the
-addition or removal of an inode to/from a list. If we are not tied
-to a list lock, we could update the counters when inodes are
-initialised or destroyed, but to do that we need to convert the
-counters to be per-cpu (i.e. independent of a lock). This means that
-we have the freedom to change the list/locking implementation
-without needing to care about the counters.
+bdev inodes can remain dirty even after their last close. Hence the
+BDI associated with the bdev->inode gets modified duringthe last
+close to point to the default BDI. However, the bdev inode still
+needs to be moved to the dirty lists of the new BDI, otherwise it
+will corrupt the writeback list is was left on.
 
-Based on a patch originally from Eric Dumazet.
+Add a new function bdev_inode_switch_bdi() to move all the bdi state
+from the old bdi to the new one safely. This is only a temporary
+measure until the bdev inode<->bdi lifecycle problems are sorted
+out.
 
 Signed-off-by: Dave Chinner <dchinner@redhat.com>
 Reviewed-by: Christoph Hellwig <hch@lst.de>
 ---
- fs/fs-writeback.c  |    5 +--
- fs/inode.c         |   64 ++++++++++++++++++++++++++++++++++++---------------
- include/linux/fs.h |    4 ++-
- kernel/sysctl.c    |    4 +-
- 4 files changed, 52 insertions(+), 25 deletions(-)
+ fs/block_dev.c |   26 +++++++++++++++++++++-----
+ 1 files changed, 21 insertions(+), 5 deletions(-)
 
-diff --git a/fs/fs-writeback.c b/fs/fs-writeback.c
-index ab38fef..58a95b7 100644
---- a/fs/fs-writeback.c
-+++ b/fs/fs-writeback.c
-@@ -723,7 +723,7 @@ static long wb_check_old_data_flush(struct bdi_writeback *wb)
- 	wb->last_old_flush = jiffies;
- 	nr_pages = global_page_state(NR_FILE_DIRTY) +
- 			global_page_state(NR_UNSTABLE_NFS) +
--			(inodes_stat.nr_inodes - inodes_stat.nr_unused);
-+			get_nr_dirty_inodes();
+diff --git a/fs/block_dev.c b/fs/block_dev.c
+index 50e8c85..501eab5 100644
+--- a/fs/block_dev.c
++++ b/fs/block_dev.c
+@@ -48,6 +48,21 @@ inline struct block_device *I_BDEV(struct inode *inode)
  
- 	if (nr_pages) {
- 		struct wb_writeback_work work = {
-@@ -1090,8 +1090,7 @@ void writeback_inodes_sb(struct super_block *sb)
+ EXPORT_SYMBOL(I_BDEV);
  
- 	WARN_ON(!rwsem_is_locked(&sb->s_umount));
- 
--	work.nr_pages = nr_dirty + nr_unstable +
--			(inodes_stat.nr_inodes - inodes_stat.nr_unused);
-+	work.nr_pages = nr_dirty + nr_unstable + get_nr_dirty_inodes();
- 
- 	bdi_queue_work(sb->s_bdi, &work);
- 	wait_for_completion(&done);
-diff --git a/fs/inode.c b/fs/inode.c
-index 8646433..b3b6a4b 100644
---- a/fs/inode.c
-+++ b/fs/inode.c
-@@ -103,8 +103,41 @@ static DECLARE_RWSEM(iprune_sem);
-  */
- struct inodes_stat_t inodes_stat;
- 
-+static struct percpu_counter nr_inodes __cacheline_aligned_in_smp;
-+static struct percpu_counter nr_inodes_unused __cacheline_aligned_in_smp;
-+
- static struct kmem_cache *inode_cachep __read_mostly;
- 
-+static inline int get_nr_inodes(void)
-+{
-+	return percpu_counter_sum_positive(&nr_inodes);
-+}
-+
-+static inline int get_nr_inodes_unused(void)
-+{
-+	return percpu_counter_sum_positive(&nr_inodes_unused);
-+}
-+
-+int get_nr_dirty_inodes(void)
-+{
-+	int nr_dirty = get_nr_inodes() - get_nr_inodes_unused();
-+	return nr_dirty > 0 ? nr_dirty : 0;
-+
-+}
-+
 +/*
-+ * Handle nr_inode sysctl
++ * move the inode from it's current bdi to the a new bdi. if the inode is dirty
++ * we need to move it onto the dirty list of @dst so that the inode is always
++ * on the right list.
 + */
-+#if defined(CONFIG_SYSCTL) && defined(CONFIG_PROC_FS)
-+int proc_nr_inodes(ctl_table *table, int write,
-+		   void __user *buffer, size_t *lenp, loff_t *ppos)
++static void bdev_inode_switch_bdi(struct inode *inode,
++			struct backing_dev_info *dst)
 +{
-+	inodes_stat.nr_inodes = get_nr_inodes();
-+	inodes_stat.nr_unused = get_nr_inodes_unused();
-+	return proc_dointvec(table, write, buffer, lenp, ppos);
++	spin_lock(&inode_lock);
++	inode->i_data.backing_dev_info = dst;
++	if (inode->i_state & I_DIRTY)
++		list_move(&inode->i_list, &dst->wb.b_dirty);
++	spin_unlock(&inode_lock);
 +}
-+#endif
 +
- static void wake_up_inode(struct inode *inode)
+ static sector_t max_block(struct block_device *bdev)
  {
- 	/*
-@@ -192,6 +225,8 @@ int inode_init_always(struct super_block *sb, struct inode *inode)
- 	inode->i_fsnotify_mask = 0;
- #endif
- 
-+	percpu_counter_inc(&nr_inodes);
-+
- 	return 0;
- out:
- 	return -ENOMEM;
-@@ -232,6 +267,7 @@ void __destroy_inode(struct inode *inode)
- 	if (inode->i_default_acl && inode->i_default_acl != ACL_NOT_CACHED)
- 		posix_acl_release(inode->i_default_acl);
- #endif
-+	percpu_counter_dec(&nr_inodes);
- }
- EXPORT_SYMBOL(__destroy_inode);
- 
-@@ -286,7 +322,7 @@ void __iget(struct inode *inode)
- 
- 	if (!(inode->i_state & (I_DIRTY|I_SYNC)))
- 		list_move(&inode->i_list, &inode_in_use);
--	inodes_stat.nr_unused--;
-+	percpu_counter_dec(&nr_inodes_unused);
- }
- 
- void end_writeback(struct inode *inode)
-@@ -327,8 +363,6 @@ static void evict(struct inode *inode)
-  */
- static void dispose_list(struct list_head *head)
- {
--	int nr_disposed = 0;
--
- 	while (!list_empty(head)) {
- 		struct inode *inode;
- 
-@@ -344,11 +378,7 @@ static void dispose_list(struct list_head *head)
- 
- 		wake_up_inode(inode);
- 		destroy_inode(inode);
--		nr_disposed++;
- 	}
--	spin_lock(&inode_lock);
--	inodes_stat.nr_inodes -= nr_disposed;
--	spin_unlock(&inode_lock);
- }
- 
- /*
-@@ -357,7 +387,7 @@ static void dispose_list(struct list_head *head)
- static int invalidate_list(struct list_head *head, struct list_head *dispose)
- {
- 	struct list_head *next;
--	int busy = 0, count = 0;
-+	int busy = 0;
- 
- 	next = head->next;
- 	for (;;) {
-@@ -383,13 +413,11 @@ static int invalidate_list(struct list_head *head, struct list_head *dispose)
- 			list_move(&inode->i_list, dispose);
- 			WARN_ON(inode->i_state & I_NEW);
- 			inode->i_state |= I_FREEING;
--			count++;
-+			percpu_counter_dec(&nr_inodes_unused);
- 			continue;
- 		}
- 		busy = 1;
- 	}
--	/* only unused inodes may be cached with i_count zero */
--	inodes_stat.nr_unused -= count;
- 	return busy;
- }
- 
-@@ -448,7 +476,6 @@ static int can_unuse(struct inode *inode)
- static void prune_icache(int nr_to_scan)
- {
- 	LIST_HEAD(freeable);
--	int nr_pruned = 0;
- 	int nr_scanned;
- 	unsigned long reap = 0;
- 
-@@ -484,9 +511,8 @@ static void prune_icache(int nr_to_scan)
- 		list_move(&inode->i_list, &freeable);
- 		WARN_ON(inode->i_state & I_NEW);
- 		inode->i_state |= I_FREEING;
--		nr_pruned++;
-+		percpu_counter_dec(&nr_inodes_unused);
- 	}
--	inodes_stat.nr_unused -= nr_pruned;
- 	if (current_is_kswapd())
- 		__count_vm_events(KSWAPD_INODESTEAL, reap);
- 	else
-@@ -518,7 +544,7 @@ static int shrink_icache_memory(struct shrinker *shrink, int nr, gfp_t gfp_mask)
- 			return -1;
- 		prune_icache(nr);
- 	}
--	return (inodes_stat.nr_unused / 100) * sysctl_vfs_cache_pressure;
-+	return (get_nr_inodes_unused() / 100) * sysctl_vfs_cache_pressure;
- }
- 
- static struct shrinker icache_shrinker = {
-@@ -595,7 +621,6 @@ static inline void
- __inode_add_to_lists(struct super_block *sb, struct hlist_head *head,
- 			struct inode *inode)
- {
--	inodes_stat.nr_inodes++;
- 	list_add(&inode->i_list, &inode_in_use);
- 	list_add(&inode->i_sb_list, &sb->s_inodes);
- 	if (head)
-@@ -1215,7 +1240,7 @@ static void iput_final(struct inode *inode)
- 	if (!drop) {
- 		if (!(inode->i_state & (I_DIRTY|I_SYNC)))
- 			list_move(&inode->i_list, &inode_unused);
--		inodes_stat.nr_unused++;
-+		percpu_counter_inc(&nr_inodes_unused);
- 		if (sb->s_flags & MS_ACTIVE) {
- 			spin_unlock(&inode_lock);
- 			return;
-@@ -1227,14 +1252,13 @@ static void iput_final(struct inode *inode)
- 		spin_lock(&inode_lock);
- 		WARN_ON(inode->i_state & I_NEW);
- 		inode->i_state &= ~I_WILL_FREE;
--		inodes_stat.nr_unused--;
-+		percpu_counter_dec(&nr_inodes_unused);
- 		hlist_del_init(&inode->i_hash);
- 	}
- 	list_del_init(&inode->i_list);
- 	list_del_init(&inode->i_sb_list);
- 	WARN_ON(inode->i_state & I_NEW);
- 	inode->i_state |= I_FREEING;
--	inodes_stat.nr_inodes--;
- 	spin_unlock(&inode_lock);
- 	evict(inode);
- 	spin_lock(&inode_lock);
-@@ -1503,6 +1527,8 @@ void __init inode_init(void)
- 					 SLAB_MEM_SPREAD),
- 					 init_once);
- 	register_shrinker(&icache_shrinker);
-+	percpu_counter_init(&nr_inodes, 0);
-+	percpu_counter_init(&nr_inodes_unused, 0);
- 
- 	/* Hash may have been set up in inode_init_early */
- 	if (!hashdist)
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index 63d069b..1fb92f9 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -407,6 +407,7 @@ extern struct files_stat_struct files_stat;
- extern int get_max_files(void);
- extern int sysctl_nr_open;
- extern struct inodes_stat_t inodes_stat;
-+extern int get_nr_dirty_inodes(void);
- extern int leases_enable, lease_break_time;
- 
- struct buffer_head;
-@@ -2474,7 +2475,8 @@ ssize_t simple_attr_write(struct file *file, const char __user *buf,
- struct ctl_table;
- int proc_nr_files(struct ctl_table *table, int write,
- 		  void __user *buffer, size_t *lenp, loff_t *ppos);
--
-+int proc_nr_inodes(struct ctl_table *table, int write,
-+		   void __user *buffer, size_t *lenp, loff_t *ppos);
- int __init get_filesystem_list(char *buf);
- 
- #define ACC_MODE(x) ("\004\002\006\006"[(x)&O_ACCMODE])
-diff --git a/kernel/sysctl.c b/kernel/sysctl.c
-index f88552c..33d1733 100644
---- a/kernel/sysctl.c
-+++ b/kernel/sysctl.c
-@@ -1340,14 +1340,14 @@ static struct ctl_table fs_table[] = {
- 		.data		= &inodes_stat,
- 		.maxlen		= 2*sizeof(int),
- 		.mode		= 0444,
--		.proc_handler	= proc_dointvec,
-+		.proc_handler	= proc_nr_inodes,
- 	},
- 	{
- 		.procname	= "inode-state",
- 		.data		= &inodes_stat,
- 		.maxlen		= 7*sizeof(int),
- 		.mode		= 0444,
--		.proc_handler	= proc_dointvec,
-+		.proc_handler	= proc_nr_inodes,
- 	},
- 	{
- 		.procname	= "file-nr",
+ 	sector_t retval = ~((sector_t)0);
+@@ -1390,7 +1405,7 @@ static int __blkdev_get(struct block_device *bdev, fmode_t mode, int for_part)
+ 				bdi = blk_get_backing_dev_info(bdev);
+ 				if (bdi == NULL)
+ 					bdi = &default_backing_dev_info;
+-				bdev->bd_inode->i_data.backing_dev_info = bdi;
++				bdev_inode_switch_bdi(bdev->bd_inode, bdi);
+ 			}
+ 			if (bdev->bd_invalidated)
+ 				rescan_partitions(disk, bdev);
+@@ -1405,8 +1420,8 @@ static int __blkdev_get(struct block_device *bdev, fmode_t mode, int for_part)
+ 			if (ret)
+ 				goto out_clear;
+ 			bdev->bd_contains = whole;
+-			bdev->bd_inode->i_data.backing_dev_info =
+-			   whole->bd_inode->i_data.backing_dev_info;
++			bdev_inode_switch_bdi(bdev->bd_inode,
++				whole->bd_inode->i_data.backing_dev_info);
+ 			bdev->bd_part = disk_get_part(disk, partno);
+ 			if (!(disk->flags & GENHD_FL_UP) ||
+ 			    !bdev->bd_part || !bdev->bd_part->nr_sects) {
+@@ -1439,7 +1454,7 @@ static int __blkdev_get(struct block_device *bdev, fmode_t mode, int for_part)
+ 	disk_put_part(bdev->bd_part);
+ 	bdev->bd_disk = NULL;
+ 	bdev->bd_part = NULL;
+-	bdev->bd_inode->i_data.backing_dev_info = &default_backing_dev_info;
++	bdev_inode_switch_bdi(bdev->bd_inode, &default_backing_dev_info);
+ 	if (bdev != bdev->bd_contains)
+ 		__blkdev_put(bdev->bd_contains, mode, 1);
+ 	bdev->bd_contains = NULL;
+@@ -1533,7 +1548,8 @@ static int __blkdev_put(struct block_device *bdev, fmode_t mode, int for_part)
+ 		disk_put_part(bdev->bd_part);
+ 		bdev->bd_part = NULL;
+ 		bdev->bd_disk = NULL;
+-		bdev->bd_inode->i_data.backing_dev_info = &default_backing_dev_info;
++		bdev_inode_switch_bdi(bdev->bd_inode,
++					&default_backing_dev_info);
+ 		if (bdev != bdev->bd_contains)
+ 			victim = bdev->bd_contains;
+ 		bdev->bd_contains = NULL;
 -- 
 1.7.1
 
