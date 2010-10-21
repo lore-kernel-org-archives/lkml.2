@@ -1,76 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758868Ab0JUWe1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Oct 2010 18:34:27 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:45165 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751221Ab0JUWe0 (ORCPT
+	id S1758720Ab0JUWhZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Oct 2010 18:37:25 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:47422 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751806Ab0JUWhY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Oct 2010 18:34:26 -0400
-X-Authority-Analysis: v=1.1 cv=kXGwZUU/u1JTMRv8Axk4W0omja+vfTT+sGlOkodD8F8= c=1 sm=0 a=A6yVOXcETFUA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=Fnu6_QAKJhjM5M7tjMoA:9 a=TUZGdpBZcEIC51OStYYA9x2XuboA:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: [PATCH v2][GIT PULL] tracing: Prevent unloadable modules from
- using trace_bprintk()
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-In-Reply-To: <201010220805.14454.rusty@rustcorp.com.au>
-References: <1287668742.16971.585.camel@gandalf.stny.rr.com>
-	 <201010220805.14454.rusty@rustcorp.com.au>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Thu, 21 Oct 2010 18:34:23 -0400
-Message-ID: <1287700463.16971.603.camel@gandalf.stny.rr.com>
+	Thu, 21 Oct 2010 18:37:24 -0400
+Date: Thu, 21 Oct 2010 15:37:19 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Nick Piggin <npiggin@kernel.dk>, Dave Chinner <david@fromorbit.com>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Christoph Lameter <cl@linux-foundation.org>
+Subject: Re: [PATCH] percpu_counter : add percpu_counter_add_fast()
+Message-Id: <20101021153719.c8bde251.akpm@linux-foundation.org>
+In-Reply-To: <1287238754.2799.376.camel@edumazet-laptop>
+References: <1285762729-17928-1-git-send-email-david@fromorbit.com>
+	<1285762729-17928-17-git-send-email-david@fromorbit.com>
+	<20100929215322.ff635d3e.akpm@linux-foundation.org>
+	<20100930061039.GX5665@dastard>
+	<20101016075510.GH19147@amd>
+	<1287217748.2799.68.camel@edumazet-laptop>
+	<20101016020744.366bd9c6.akpm@linux-foundation.org>
+	<1287221475.2799.123.camel@edumazet-laptop>
+	<1287238754.2799.376.camel@edumazet-laptop>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-10-22 at 08:05 +1030, Rusty Russell wrote:
-> On Fri, 22 Oct 2010 12:15:42 am Steven Rostedt wrote:
-> > 
-> > Ingo,
-> > 
-> > This is based off of my core-2 branch. I'm moved this patch after that
-> > so if anyone has any objections, I can change this patch without holding
-> > off the previous one.
+On Sat, 16 Oct 2010 16:19:14 +0200
+Eric Dumazet <eric.dumazet@gmail.com> wrote:
+
+> The current way to change a percpu_counter is to call
+> percpu_counter_add(), which is a bit expensive.
+> (More than 40 instructions, possible false sharing, ...)
 > 
-> I think disabling use in modules is lazy,
-
-and safer.
-
-It's not a big deal if a module does not use it. What we have is
-"trace_printk()" and if the format passed to it is static, that turns
-into trace_bprintk(). If the format is a variable, then you are stuck
-with trace_printk() that just does the sprintf() operation in the trace.
-Which this patch makes all modules do.
-
-With trace_bprintk() the pointer to the format and arguments are put
-into the ring buffer for later processing.
-
-
->  and allowing it for !MODVERSIONS
-> is just weird.
-
-that was me being weirdly paranoid ;-)
-
+> When we dont need to maintain the approximate value of the
+> percpu_counter (aka fbc->count), and dont need a "s64" wide counter but
+> a regular "int" or "long" one, we can use this new function : 
+> percpu_counter_add_fast()
 > 
-> Can't you detect this on module unload and fix it up?  Or delay freeing the
-> module until the trace ring is emptied?
+> This function is pretty fast : 
+> - One instruction on x86 SMP, no register pressure.
+> - Is safe in preempt enabled contexts.
+> - No lock acquisition, less false sharing.
+> 
+> Users of this percpu_counter variant should not use
+> percpu_counter_read() or percpu_counter_read_positive() anymore, only
+> percpu_counter_sum{_positive}() variant.
 
-One possibility is to magically make all string formats used in
-trace_printk into its own section, and keep it allocated until the ring
-buffer is empty. Or, we can just do that with the module's entire string
-section, since we know whether or not that module has a trace_printk in
-it or not.
+That isn't actually what I was suggesting.  I was suggesting the use of
+an inlined, this_cpu_add()-using percpu_counter_add() variant which
+still does the batched spilling into ->count.  IOW, just speed up the
+current implementation along the lines of
 
--- Steve
+{
+	val = this_cpu_add_return(*fbc->counters, amount);
+	if (unlikely(abs(val) > fbc->batch))
+		out_of_line_stuff();
+}	
 
-
+I suppose what you're proposing here is useful, although the name isn't
+a good one.  It's a different way of using the existing data structure.
+I'd suggest that a better name is something like percpu_counter_add_local()?
 
