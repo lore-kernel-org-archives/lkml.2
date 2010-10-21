@@ -1,150 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758543Ab0JUOpU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Oct 2010 10:45:20 -0400
-Received: from canuck.infradead.org ([134.117.69.58]:50158 "EHLO
-	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752967Ab0JUOpO convert rfc822-to-8bit (ORCPT
+	id S1758510Ab0JUOrq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Oct 2010 10:47:46 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:61069 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754720Ab0JUOnd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Oct 2010 10:45:14 -0400
-Subject: Re: [PATCH 4/6] Export ns irqtimes from IRQ_TIME_ACCOUNTING
- through /proc/stat
-From: Peter Zijlstra <peterz@infradead.org>
-To: Venkatesh Pallipadi <venki@google.com>
-Cc: Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        linux-kernel@vger.kernel.org, Paul Turner <pjt@google.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Shaun Ruffell <sruffell@digium.com>,
-        Yong Zhang <yong.zhang0@gmail.com>
-In-Reply-To: <1287614941-32325-5-git-send-email-venki@google.com>
-References: <1287614941-32325-1-git-send-email-venki@google.com>
-	 <1287614941-32325-5-git-send-email-venki@google.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Thu, 21 Oct 2010 16:44:31 +0200
-Message-ID: <1287672271.3488.139.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Thu, 21 Oct 2010 10:43:33 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
+        b=GKgLLkh8KPxt3Z8aNZN/XBgwO4xUKMRVj4KPZxfimAyU8asXB00Zs8/UWIIScDPR62
+         3V4j757PZbdqWwxthikJohXQLOAGlgbMDONFbtvWuGXkfdXtvrANSnXTWTpiOnN5E6An
+         s/IIOJKP42V0Z6b68PHmLISuRUKi1ArZgLLEE=
+From: Akinobu Mita <akinobu.mita@gmail.com>
+To: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        Arnd Bergmann <arnd@arndb.de>, Christoph Hellwig <hch@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: Akinobu Mita <akinobu.mita@gmail.com>, Greg Ungerer <gerg@uclinux.org>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Roman Zippel <zippel@linux-m68k.org>,
+        Andreas Schwab <schwab@linux-m68k.org>, linux-m68k@vger.kernel.org
+Subject: [PATCH v2 06/22] m68knommu: introduce little-endian bitops
+Date: Thu, 21 Oct 2010 23:41:01 +0900
+Message-Id: <1287672077-5797-7-git-send-email-akinobu.mita@gmail.com>
+X-Mailer: git-send-email 1.6.0.6
+In-Reply-To: <1287672077-5797-1-git-send-email-akinobu.mita@gmail.com>
+References: <1287672077-5797-1-git-send-email-akinobu.mita@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-10-20 at 15:49 -0700, Venkatesh Pallipadi wrote:
+Introduce little-endian bit operations by renaming native ext2 bit
+operations. The ext2 bit operations are kept as wrapper macros using
+little-endian bit operations to maintain bisectability until the
+conversions are finished.
 
-> +static int irqtime_account_hi_update(void)
-> +{
-> +	struct cpu_usage_stat *cpustat = &kstat_this_cpu.cpustat;
-> +	unsigned long flags;
-> +	u64 latest_ns;
-> +	int ret = 0;
-> +
-> +	local_irq_save(flags);
-> +	latest_ns = __get_cpu_var(cpu_hardirq_time);
+Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
+Cc: Greg Ungerer <gerg@uclinux.org>
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Roman Zippel <zippel@linux-m68k.org>
+Cc: Andreas Schwab <schwab@linux-m68k.org>
+Cc: linux-m68k@lists.linux-m68k.org
+---
+No change from previous submission
 
-I guess this_cpu_read() would again be an improvement.. same for the SI
-version.
+ arch/m68k/include/asm/bitops_no.h |   40 +++++++++++++++++++++++++++++-------
+ 1 files changed, 32 insertions(+), 8 deletions(-)
 
-> +	if (cputime64_gt(nsecs_to_cputime64(latest_ns), cpustat->irq))
-> +		ret = 1;
-> +	local_irq_restore(flags);
-> +	return ret;
-> +}
+diff --git a/arch/m68k/include/asm/bitops_no.h b/arch/m68k/include/asm/bitops_no.h
+index 292e1ce..9f5eb02 100644
+--- a/arch/m68k/include/asm/bitops_no.h
++++ b/arch/m68k/include/asm/bitops_no.h
+@@ -196,7 +196,15 @@ static __inline__ int __test_bit(int nr, const volatile unsigned long * addr)
+ #include <asm-generic/bitops/hweight.h>
+ #include <asm-generic/bitops/lock.h>
+ 
+-static __inline__ int ext2_set_bit(int nr, volatile void * addr)
++#define BITOP_LE_SWIZZLE	((BITS_PER_LONG-1) & ~0x7)
++
++#define __set_le_bit(nr, addr) \
++	__set_bit((nr) ^ BITOP_LE_SWIZZLE, (addr))
++
++#define __clear_le_bit(nr, addr) \
++	__clear_bit((nr) ^ BITOP_LE_SWIZZLE, (addr))
++
++static inline int __test_and_set_le_bit(int nr, volatile void *addr)
+ {
+ 	char retval;
+ 
+@@ -215,7 +223,7 @@ static __inline__ int ext2_set_bit(int nr, volatile void * addr)
+ 	return retval;
+ }
+ 
+-static __inline__ int ext2_clear_bit(int nr, volatile void * addr)
++static inline int __test_and_clear_le_bit(int nr, volatile void *addr)
+ {
+ 	char retval;
+ 
+@@ -238,7 +246,7 @@ static __inline__ int ext2_clear_bit(int nr, volatile void * addr)
+ 	({						\
+ 		int ret;				\
+ 		spin_lock(lock);			\
+-		ret = ext2_set_bit((nr), (addr));	\
++		ret = __test_and_set_le_bit((nr), (addr));	\
+ 		spin_unlock(lock);			\
+ 		ret;					\
+ 	})
+@@ -247,12 +255,12 @@ static __inline__ int ext2_clear_bit(int nr, volatile void * addr)
+ 	({						\
+ 		int ret;				\
+ 		spin_lock(lock);			\
+-		ret = ext2_clear_bit((nr), (addr));	\
++		ret = __test_and_clear_le_bit((nr), (addr));	\
+ 		spin_unlock(lock);			\
+ 		ret;					\
+ 	})
+ 
+-static __inline__ int ext2_test_bit(int nr, const volatile void * addr)
++static inline int test_le_bit(int nr, const volatile void *addr)
+ {
+ 	char retval;
+ 
+@@ -271,10 +279,10 @@ static __inline__ int ext2_test_bit(int nr, const volatile void * addr)
+ 	return retval;
+ }
+ 
+-#define ext2_find_first_zero_bit(addr, size) \
+-        ext2_find_next_zero_bit((addr), (size), 0)
++#define find_first_zero_le_bit(addr, size)	\
++	find_next_zero_le_bit((addr), (size), 0)
+ 
+-static __inline__ unsigned long ext2_find_next_zero_bit(void *addr, unsigned long size, unsigned long offset)
++static inline unsigned long find_next_zero_le_bit(void *addr, unsigned long size, unsigned long offset)
+ {
+ 	unsigned long *p = ((unsigned long *) addr) + (offset >> 5);
+ 	unsigned long result = offset & ~31UL;
+@@ -324,8 +332,24 @@ found_middle:
+ 	return result + ffz(__swab32(tmp));
+ }
+ 
++#define ext2_set_bit(nr, addr)	\
++	__test_and_set_le_bit(nr, addr)
++
++#define ext2_clear_bit(nr, addr)	\
++	test_and_clear_le_bit(nr, addr)
++
++#define ext2_test_bit(nr, addr)	\
++	test_le_bit(nr, addr)
++
++#define ext2_find_first_zero_bit(addr, size) \
++	find_first_zero_le_bit(addr, size)
++
++#define ext2_find_next_zero_bit(addr, size, offset)	\
++	find_next_zero_le_bit(addr, size, offset)
++
+ #define ext2_find_next_bit(addr, size, off) \
+ 	find_next_le_bit((unsigned long *)(addr), (size), (off))
++
+ #include <asm-generic/bitops/minix.h>
+ 
+ #endif /* __KERNEL__ */
+-- 
+1.7.1.231.gd0b16
 
-> +#ifdef CONFIG_IRQ_TIME_ACCOUNTING
-> +/*
-> + * Account a tick to a process and cpustat
-> + * @p: the process that the cpu time gets accounted to
-> + * @user_tick: is the tick from userspace
-> + * @rq: the pointer to rq
-> + *
-> + * Tick demultiplexing follows the order
-> + * - pending hardirq update
-> + * - user_time
-> + * - pending softirq update
-> + * - idle_time
-> + * - system time
-> + *   - check for guest_time
-> + *   - else account as system_time
-> + *
-> + * Check for hardirq is done both for system and user time as there is
-> + * no timer going off while we are on hardirq and hence we may never get an
-> + * oppurtunity to update it solely in system time.
-
-My mailer suggests you spell that as: opportunity :-)
-
-> + * p->stime and friends are only updated on system time and not on irq
-> + * softirq as those do not count in task exec_runtime any more.
-> + */
-> +static void irqtime_account_process_tick(struct task_struct *p, int user_tick,
-> +						struct rq *rq)
-> +{
-> +	cputime_t one_jiffy_scaled = cputime_to_scaled(cputime_one_jiffy);
-> +	cputime64_t tmp = cputime_to_cputime64(cputime_one_jiffy);
-> +	struct cpu_usage_stat *cpustat = &kstat_this_cpu.cpustat;
-> +
-> +	if (irqtime_account_hi_update()) {
-> +		cpustat->irq = cputime64_add(cpustat->irq, tmp);
-> +	} else if (user_tick) {
-> +		account_user_time(p, cputime_one_jiffy, one_jiffy_scaled);
-> +	} else if (irqtime_account_si_update()) {
-> +		cpustat->softirq = cputime64_add(cpustat->softirq, tmp);
-> +	} else if (p == rq->idle) {
-> +		account_idle_time(cputime_one_jiffy);
-> +	} else if (p->flags & PF_VCPU) { /* System time or guest time */
-> +		account_guest_time(p, cputime_one_jiffy, one_jiffy_scaled);
-> +	} else {
-> +		__account_system_time(p, cputime_one_jiffy, one_jiffy_scaled,
-> +					&cpustat->system);
-> +	}
-> +}
-
-I'd do:
-
-  - hardirq
-  - softirq
-  - user
-  - system
-     - guest
-     - really system
-  - idle
-
-Since otherwise tiny slices of softirq would need to wait for a system
-tick to happen before you fold them.
-
-Also, it is possible that in a single tick multiple counters overflow
-the jiffy boundary, so something like:
-
-  if (irqtime_account_hi_update())
-	cpustat->irq = ...
-
-  if (irqtime_account_si_update())
-	cpustate->softirq = ...
-
-  if (user_tick) {
-  } else if (...) {
-
-  } else ...
-
-would seem like the better approach.
-
->  /*
->   * Account for involuntary wait time.
->   * @steal: the cpu time spent in involuntary wait
-> @@ -3594,6 +3685,11 @@ void account_process_tick(struct task_struct *p, int user_tick)
->  	cputime_t one_jiffy_scaled = cputime_to_scaled(cputime_one_jiffy);
->  	struct rq *rq = this_rq();
->  
-> +	if (sched_clock_irqtime) {
-> +		irqtime_account_process_tick(p, user_tick, rq);
-> +		return;
-> +	}
-> +
->  	if (user_tick)
->  		account_user_time(p, cputime_one_jiffy, one_jiffy_scaled);
->  	else if ((p != rq->idle) || (irq_count() != HARDIRQ_OFFSET))
-
-mark_tsc_unstable() can disable sched_clock_irqtime at any time, the
-accounting won't go funny due to that right?
