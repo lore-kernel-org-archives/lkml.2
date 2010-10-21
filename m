@@ -1,59 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755800Ab0JUUJ4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Oct 2010 16:09:56 -0400
-Received: from mail-zbox20.bo3.lycos.com ([209.202.250.20]:56087 "EHLO
-	mailbox20.lycos.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754398Ab0JUUJz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Oct 2010 16:09:55 -0400
-X-Greylist: delayed 425 seconds by postgrey-1.27 at vger.kernel.org; Thu, 21 Oct 2010 16:09:55 EDT
-Date: Thu, 21 Oct 2010 16:02:42 -0400 (EDT)
-From: "Artem S. Tashkinov" <t.artem@lycos.com>
-To: linux-kernel@vger.kernel.org
-Message-ID: <28654042.253821287691362834.JavaMail.root@mail-zbox20.bo3.lycos.com>
-In-Reply-To: <18536664.253751287691209904.JavaMail.root@mail-zbox20.bo3.lycos.com>
-Subject: On Linux numbering scheme
+	id S1755524Ab0JUULe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Oct 2010 16:11:34 -0400
+Received: from www.tglx.de ([62.245.132.106]:57636 "EHLO www.tglx.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751403Ab0JUULd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Oct 2010 16:11:33 -0400
+Date: Thu, 21 Oct 2010 21:56:31 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Steven Rostedt <rostedt@goodmis.org>
+cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Koki Sanagi <sanagi.koki@jp.fujitsu.com>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Frederic Weisbecker <fweisbec@gmail.com>, nhorman@tuxdriver.com,
+        scott.a.mcmillan@intel.com, laijs@cn.fujitsu.com,
+        "H. Peter Anvin" <hpa@zytor.com>, LKML <linux-kernel@vger.kernel.org>,
+        eric.dumazet@gmail.com, kaneshige.kenji@jp.fujitsu.com,
+        David Miller <davem@davemloft.net>, izumi.taku@jp.fujitsu.com,
+        kosaki.motohiro@jp.fujitsu.com,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        "Luck, Tony" <tony.luck@intel.com>
+Subject: Re: [PATCH] tracing: Cleanup the convoluted softirq tracepoints
+In-Reply-To: <1287680725.16971.586.camel@gandalf.stny.rr.com>
+Message-ID: <alpine.LFD.2.00.1010212149480.3467@localhost6.localdomain6>
+References: <tip-2bf2160d8805de64308e2e7c3cd97813cb58ed2f@git.kernel.org>  <20100908112529.GA25931@elte.hu> <1287395077.29097.1543.camel@twins>  <1287398936.29097.1548.camel@twins> <4CBD79CF.2060706@jp.fujitsu.com>  <alpine.LFD.2.00.1010191428560.6815@localhost6.localdomain6>
+  <20101019132236.GA19197@Krystal>  <alpine.LFD.2.00.1010191524160.6815@localhost6.localdomain6>  <1287496495.16971.372.camel@gandalf.stny.rr.com>  <alpine.LFD.2.00.1010191558250.6815@localhost6.localdomain6>  <20101019142820.GA14520@Krystal> 
+ <alpine.LFD.2.00.1010191842270.6815@localhost6.localdomain6>  <1287521757.16971.397.camel@gandalf.stny.rr.com>  <alpine.LFD.2.00.1010192302000.6815@localhost6.localdomain6>  <1287523439.16971.433.camel@gandalf.stny.rr.com>  <alpine.LFD.2.00.1010192359480.6815@localhost6.localdomain6>
+  <1287527634.16971.536.camel@gandalf.stny.rr.com>  <alpine.LFD.2.00.1010211817540.2418@localhost6.localdomain6> <1287680725.16971.586.camel@gandalf.stny.rr.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [188.17.79.151]
-X-Mailer: Zimbra 5.0 (ZimbraWebClient - FF3.0 (Linux)/5.0.18_GA_3028.CentOS5)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- Hello,
+On Thu, 21 Oct 2010, Steven Rostedt wrote:
 
+> On Thu, 2010-10-21 at 18:18 +0200, Thomas Gleixner wrote:
+> > 
+> > On Tue, 19 Oct 2010, Steven Rostedt wrote:
+> > 
+> > > On Wed, 2010-10-20 at 00:04 +0200, Thomas Gleixner wrote:
+> > > 
+> > > > hpa just posted code which does the _RIGHT_ _THING_ independent of any
+> > > > compiler madness and you tracer folks just missed it.
+> > > 
+> > > Thomas,
+> > > 
+> > > Can you try this patch and see if it makes the object code better?
+> > 
+> > Nope, same result.
+> 
+> Yeah, I figured. Do you have CC_OPTIMIZE_FOR_SIZE set? And if you do,
+> what happens if you disable it?
 
+Hmm. Indeed. That gets rid of the double jump.
 
- As time passes by, the Linux numbering scheme makes even less sense. Some time ago there was a discussion on LKML about a new numbering scheme but it didn't come to any positive conclusion and then the subject was forgotten entirely. Not meaning to raise a clamour here (and I suppose I represent a large group of Linux users here). I'm willing to suggest a numbering scheme which I hope will answer all known complaints and criticism.
+Thanks,
 
-
-
- The scheme is simple. We start either from 3.0.1 [.stable] or from 3.10.0 [.stable].
-
-
-
- The first digit will remain "3" forever, to preserve compatibility with all existing utilities and internal Linux kernel code. So, the concern about older utilities breakage is answered here: both 3.0.1 and 3.10.1 are bigger than any currently released kernel.
-
-
-
- The second number will be either 10 (the current year) or 0 meaning we have reset the numbering altogether. However in my opinion 10 sounds better than 0.
-
-
-
- Now, more about the second and third numbers. The second number is just the current year in the 21 century or the same number minus 10. The third number will be incremented with every new release until the next year hits. So, the real next year we'll have 3.11.1, 3.11.2, 3.11.3, etc.
-
-
-
- Now comes a problem, what if we release kernel 3.10.1 this year and the development of the next one commences also this year? What will be the next release number? I suggest to assign the next release number as the following:
-
-
-
- 1) Either regardless the actual year the next kernel gets released (this way the kernel development started in 2010 will yield kernel 3.10.2 even though we hit the next year) or
-
- 2) By the day the kernel gets released, so while in development the kernel version remained 3.10.1-rcX, on the 15th of January, we rename it to 3.11.1.
-
-
-  Artem
+	tglx
