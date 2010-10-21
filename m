@@ -1,73 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753266Ab0JUIWq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Oct 2010 04:22:46 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:46037 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752552Ab0JUIWo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Oct 2010 04:22:44 -0400
-Date: Thu, 21 Oct 2010 10:22:33 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: tmhikaru@gmail.com
-Cc: Peter Zijlstra <peterz@infradead.org>, Damien Wyart <damien.wyart@free.fr>,
-        Chase Douglas <chase.douglas@canonical.com>,
-        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
-        Venkatesh Pallipadi <venki@google.com>
-Subject: Re: High CPU load when machine is idle (related to PROBLEM:
- Unusually high load average when idle in 2.6.35, 2.6.35.1 and later)
-Message-ID: <20101021082233.GD8775@elte.hu>
-References: <20100929070153.GA2200@brouette>
- <20101014145813.GA2185@brouette>
- <20101020132732.GA30024@brouette>
- <1287581440.3488.16.camel@twins>
- <1287582208.3488.20.camel@twins>
- <1287584073.3488.22.camel@twins>
- <1287595605.3488.52.camel@twins>
- <20101021014843.GA21295@roll>
- <20101021015337.GA21384@roll>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101021015337.GA21384@roll>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+	id S1753537Ab0JUIZn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Oct 2010 04:25:43 -0400
+Received: from [120.204.251.227] ([120.204.251.227]:33472 "EHLO
+	LC-SHMAIL-01.SHANGHAI.LEADCORETECH.COM" rhost-flags-FAIL-FAIL-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752901Ab0JUIZm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Oct 2010 04:25:42 -0400
+Subject: Re: Ftrace: can trace kthread?
+From: "Figo.zhang" <zhangtianfei@leadcoretech.com>
+To: Yong Zhang <yong.zhang0@gmail.com>
+Cc: Li Zefan <lizf@cn.fujitsu.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Steven Rostedt <srostedt@redhat.com>
+In-Reply-To: <AANLkTim7g+8_rQSyewC6n_5WmC04kU-rj1g9k61=O2Vm@mail.gmail.com>
+References: <1287647732.2237.7.camel@myhost>
+	 <AANLkTim7g+8_rQSyewC6n_5WmC04kU-rj1g9k61=O2Vm@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 21 Oct 2010 16:21:23 +0800
+Message-ID: <1287649283.2237.8.camel@myhost>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.0 
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 21 Oct 2010 08:25:23.0459 (UTC) FILETIME=[81A76530:01CB70F9]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* tmhikaru@gmail.com <tmhikaru@gmail.com> wrote:
-
-> On Wed, Oct 20, 2010 at 09:48:43PM -0400, tm@ wrote:
-> > On Wed, Oct 20, 2010 at 07:26:45PM +0200, Peter Zijlstra wrote:
-> > > 
-> > > 
-> > > OK, how does this work for people? I find my idle load is still a tad
-> > > high, but maybe I'm not patient enough.
-> > 
-> > I haven't had a chance to keep up with the topic, and I apologize. I'll be
-> > testing this as soon as I can finish compiling it. Thank you all for not
-> > letting this go unfixed.
-> > 
-> > Tim McGrath
+On Thu, 2010-10-21 at 16:10 +0800, Yong Zhang wrote:
+> On Thu, Oct 21, 2010 at 3:55 PM, Figo.zhang
+> <zhangtianfei@leadcoretech.com> wrote:
+> > hi,
+> >
+> > is it ftrace in 2.6.36-rc8 can trace the kthread?
 > 
-> Uhh, problem. This patch does not apply to git checkout
-> 74f5187ac873042f502227701ed1727e7c5fbfa9
+> How about the set_ftrace_pid interface?
 > 
-> which is the version of the kernel that first exhibits this flaw.
-> 
-> which version of the kernel does this patch apply cleanly to?
 
-Try -tip (which includes the scheduler development tree as well):
+i try by set_ftrace_pid, it also can't ftrace the kswapd.
 
-   http://people.redhat.com/mingo/tip.git/README
-
-Thanks,
-
-	Ingo
