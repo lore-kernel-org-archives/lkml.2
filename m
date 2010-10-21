@@ -1,89 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753100Ab0JUQWR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Oct 2010 12:22:17 -0400
-Received: from smtp108.prem.mail.ac4.yahoo.com ([76.13.13.47]:44801 "HELO
-	smtp108.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1750783Ab0JUQWP (ORCPT
+	id S1752169Ab0JUQ0B (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Oct 2010 12:26:01 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:56687 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751293Ab0JUQ0A convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Oct 2010 12:22:15 -0400
-X-Greylist: delayed 400 seconds by postgrey-1.27 at vger.kernel.org; Thu, 21 Oct 2010 12:22:15 EDT
-X-Yahoo-SMTP: OIJXglSswBDfgLtXluJ6wiAYv6_cnw--
-X-YMail-OSG: FIUYLnwVM1mKWsg4.P3WYs7hV8u5wqNBORw0kTc3z1vhXmK
- UV1TOH0JYc9HSpJT5HqJXoeC2aG5XLq64lXRwIeYqCTyHgxVZps.uPMo2.4w
- d0LOPnuG1l9rLEN6RLZEbiXMBDjWi.fmFY4Uci.GpUJQLTg1Txtu2Y5knS7I
- j_mtcu.NMl5YD5OwawmgO2IKO1qRuNwr3dwjs_YC77T9OcVjIlojuFuITMe1
- yKV7uEkxTc9agLVTW1pZ.Yen8XJrWZ9SUH56vCyYbWocjmXZqnSiVxDZxxEL
- A5vfu1EUPQlr_45XRERlJZpcZ0dv4
-X-Yahoo-Newman-Property: ymail-3
-Message-ID: <4CC06721.8020308@schaufler-ca.com>
-Date: Thu, 21 Oct 2010 09:15:29 -0700
-From: Casey Schaufler <casey@schaufler-ca.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.0; en-US; rv:1.9.2.9) Gecko/20100915 Thunderbird/3.1.4
+	Thu, 21 Oct 2010 12:26:00 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=eFLQK17mLxpJYA1YOU3Hk5SP2P5amoKPlmheRWIk+H4zF+5nNPl5eEUjRHptpu3awP
+         yZMERCl4WMV7cYTHN846o4+n7pQS1kQ3GOw5quVq2/fm7tk/crtkKPXerQy/6NpakgN8
+         uif6aUJJeeKgB8+8jPXc7KToXn43ZD7UtvuYg=
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@elte.hu>
-CC: Eric Paris <eparis@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        hch@infradead.org, zohar@us.ibm.com, warthog9@kernel.org,
-        david@fromorbit.com, jmorris@namei.org, kyle@mcmartin.ca,
-        hpa@zytor.com, akpm@linux-foundation.org
-Subject: Re: [PATCH 1/3] IMA: move read/write counters into struct inode
-References: <20101019011650.25346.99614.stgit@paris.rdu.redhat.com> <AANLkTimGdjPyLXuknDNa7WNthDT9+2FdOuPdxwjRiMHD@mail.gmail.com> <1287506215.2530.187.camel@localhost.localdomain> <20101019165530.GT19804@ZenIV.linux.org.uk> <AANLkTimL=eChoCQHGoiouE5s6dGG=n9ZAQGhW-RW+gDj@mail.gmail.com> <1287528546.2530.277.camel@localhost.localdomain> <20101020143845.GB22271@elte.hu> <1287585996.2530.294.camel@localhost.localdomain> <20101020151555.GC22271@elte.hu>
-In-Reply-To: <20101020151555.GC22271@elte.hu>
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20101021125809.GA15031@linux-mips.org>
+References: <74b5d3ba9506b2e6d885546bd6dcdaec@localhost>
+	<20101021125809.GA15031@linux-mips.org>
+Date: Thu, 21 Oct 2010 09:25:59 -0700
+Message-ID: <AANLkTinJ4wU30AaBhcvJRLZ_iw-eo9tEkds8QA1S=Nqw@mail.gmail.com>
+Subject: Re: [PATCH v2 8/9] MIPS: Honor L2 bypass bit
+From: Kevin Cernekee <cernekee@gmail.com>
+To: Ralf Baechle <ralf@linux-mips.org>
+Cc: linux-mips@linux-mips.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- On 10/20/2010 8:15 AM, Ingo Molnar wrote:
-> * Eric Paris <eparis@redhat.com> wrote:
->
->> On Wed, 2010-10-20 at 16:38 +0200, Ingo Molnar wrote:
->>> * Eric Paris <eparis@redhat.com> wrote:
->>>
->>>> Executive summary of the day's work:
->>>> Yesterday morning: 944 bytes per inode in core
->>>> Yesterday night: 24 bytes per inode in core
->>>> Tonight: 4 bytes per inode in core.
->>>>
->>>> That's a x236 time reduction in memory usage.  No I didn't even start looking 
->>>> at a freezer.  Which could bring that 4 down to 0, but would add a scalability 
->>>> penalty on all inodes when IMA was enabled.
->>> Why not use inode->i_security intelligently? That already exists so that way 
->>> it's 0 bytes.
->>>
->>> Thanks,
->> It still wouldn't be 0 bytes since there would be a 1-1 mapping from inode to 
->> i_security structs. [...]
-> Only for IMA-affected files, right?
->
-> My point is to keep it 0 overhead for the _non IMA common case_.
->
->> The real reason I don't pursue this route is because of the litany of different 
->> ways this pointer is used in different LSMs (or not used at all.)  And we all know 
->> that LSM authors aren't known for seeing the world the same way as each other.  As 
->> a maintainer of one of those LSMs even I'm scared to try pushing that forward....
-> Ugh. That's a perfect reason to do it exactly like i suggested.
+On Thu, Oct 21, 2010 at 5:58 AM, Ralf Baechle <ralf@linux-mips.org> wrote:
+> I did a bit of research in the meantime.  Turns out that some MIPS
+> customers are using their own L2 cache controller.  That means a simple
+> check by the CPU PrID is not sufficient and we will need some sort of
+> platform-specific probe, sigh.
 
-If you would like to make a proposal on LSM stacking other than
-the traditional "rip the LSM out" I am sure that everyone in the
-IMA, SELinux, TOMOYO, AppArmor and Smack communities would be
-happy to have a look. Short of having a viable mechanism for
-multiple LSMs to coexist IMA needs its separate space. Yes, people
-do use both IMA and LSMs on the same machine at the same time.
+FWIW, I did check the software user's manual for each of the four
+processors in the list and verified that L2B is at CONFIG2 bit 12.  It
+would be very rude for an L2 designer to redefine those bits in
+defiance of the SUM, no?
 
-
-> Thanks,
->
-> 	Ingo
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-security-module" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
->
-
+I also rechecked 24KE just now, and found that L2B is defined in the
+latest rev of the SUM, but in my local copy (Revision 01.02) bit 12 is
+the MSB of SS instead.  Hmmm.
