@@ -1,167 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755082Ab0JUT7F (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Oct 2010 15:59:05 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:51937 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754477Ab0JUT7D (ORCPT
+	id S1755800Ab0JUUJ4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Oct 2010 16:09:56 -0400
+Received: from mail-zbox20.bo3.lycos.com ([209.202.250.20]:56087 "EHLO
+	mailbox20.lycos.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754398Ab0JUUJz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Oct 2010 15:59:03 -0400
-Date: Thu, 21 Oct 2010 12:58:16 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        steiner@sgi.com, yinghai@kernel.org, mingo@elte.hu,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH v2 2/2] try to fix /proc/stat scalability of irq sum of
- all cpu
-Message-Id: <20101021125816.7d4517c8.akpm@linux-foundation.org>
-In-Reply-To: <20101021160343.b7a0f60e.kamezawa.hiroyu@jp.fujitsu.com>
-References: <20101021160134.d4c99943.kamezawa.hiroyu@jp.fujitsu.com>
-	<20101021160343.b7a0f60e.kamezawa.hiroyu@jp.fujitsu.com>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Thu, 21 Oct 2010 16:09:55 -0400
+X-Greylist: delayed 425 seconds by postgrey-1.27 at vger.kernel.org; Thu, 21 Oct 2010 16:09:55 EDT
+Date: Thu, 21 Oct 2010 16:02:42 -0400 (EDT)
+From: "Artem S. Tashkinov" <t.artem@lycos.com>
+To: linux-kernel@vger.kernel.org
+Message-ID: <28654042.253821287691362834.JavaMail.root@mail-zbox20.bo3.lycos.com>
+In-Reply-To: <18536664.253751287691209904.JavaMail.root@mail-zbox20.bo3.lycos.com>
+Subject: On Linux numbering scheme
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [188.17.79.151]
+X-Mailer: Zimbra 5.0 (ZimbraWebClient - FF3.0 (Linux)/5.0.18_GA_3028.CentOS5)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 21 Oct 2010 16:03:43 +0900
-KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+ Hello,
 
-> From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> 
-> In /proc/stat, the number of per-IRQ event is shown by making a sum
-> each irq's events on all cpus. But we can make use of kstat_irqs().
-> 
-> kstat_irqs() do the same calculation, If !CONFIG_GENERIC_HARDIRQ,
-> it's not a big cost. (Both of the number of cpus and irqs are small.)
-> 
-> If a system is very big and CONFIG_GENERIC_HARDIRQ, it does
-> 
-> 	for_each_irq()
-> 		for_each_cpu()
-> 			- look up a radix tree
-> 			- read desc->irq_stat[cpu]
-> This seems not efficient. This patch adds kstat_irqs() for
-> CONFIG_GENRIC_HARDIRQ and change the calculation as
-> 
-> 	for_each_irq()
-> 		look up radix tree
-> 		for_each_cpu()
-> 			- read desc->irq_stat[cpu]
-> 
-> This reduces cost.
-> 
-> A test on (4096cpusp, 256 nodes, 4592 irqs) host (by Jack Steiner)
-> 
-> %time cat /proc/stat > /dev/null
-> 
-> Before Patch:	 2.459 sec
-> After Patch :	  .561 sec
-> 
-> Changelog:
->  - rebased onto mmotm-1020 (kernel/irq/handle.c is modified)
-> 
-> Tested-by: Jack Steiner <steiner@sgi.com>
-> Acked-by: Jack Steiner <steiner@sgi.com>
-> Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> ---
->  fs/proc/stat.c              |    9 ++-------
->  include/linux/kernel_stat.h |    4 ++++
->  kernel/irq/irqdesc.c        |   16 ++++++++++++++++
->  3 files changed, 22 insertions(+), 7 deletions(-)
-> 
-> Index: mmotm-1020/fs/proc/stat.c
-> ===================================================================
-> --- mmotm-1020.orig/fs/proc/stat.c
-> +++ mmotm-1020/fs/proc/stat.c
-> @@ -108,13 +108,8 @@ static int show_stat(struct seq_file *p,
->  	seq_printf(p, "intr %llu", (unsigned long long)sum);
->  
->  	/* sum again ? it could be updated? */
-> -	for_each_irq_nr(j) {
-> -		per_irq_sum = 0;
-> -		for_each_possible_cpu(i)
-> -			per_irq_sum += kstat_irqs_cpu(j, i);
-> -
-> -		seq_printf(p, " %u", per_irq_sum);
-> -	}
-> +	for_each_irq_nr(j)
-> +		seq_printf(p, " %u", kstat_irqs(j));
->  
->  	seq_printf(p,
->  		"\nctxt %llu\n"
-> Index: mmotm-1020/include/linux/kernel_stat.h
-> ===================================================================
-> --- mmotm-1020.orig/include/linux/kernel_stat.h
-> +++ mmotm-1020/include/linux/kernel_stat.h
-> @@ -86,6 +86,7 @@ static inline unsigned int kstat_softirq
->  /*
->   * Number of interrupts per specific IRQ source, since bootup
->   */
-> +#ifndef CONFIG_GENERIC_HARDIRQS
->  static inline unsigned int kstat_irqs(unsigned int irq)
->  {
->  	unsigned int sum = 0;
-> @@ -96,6 +97,9 @@ static inline unsigned int kstat_irqs(un
->  
->  	return sum;
->  }
-> +#else
-> +extern unsigned int kstat_irqs(unsigned int irq);
-> +#endif
 
-hrm, why on earth was that inlined.
 
->  /*
->   * Number of interrupts per cpu, since bootup
-> Index: mmotm-1020/kernel/irq/irqdesc.c
-> ===================================================================
-> --- mmotm-1020.orig/kernel/irq/irqdesc.c
-> +++ mmotm-1020/kernel/irq/irqdesc.c
-> @@ -393,3 +393,19 @@ unsigned int kstat_irqs_cpu(unsigned int
->  	struct irq_desc *desc = irq_to_desc(irq);
->  	return desc ? desc->kstat_irqs[cpu] : 0;
->  }
-> +
-> +#ifdef CONFIG_GENERIC_HARDIRQS
-> +unsigned int  kstat_irqs(unsigned int irq)
-> +{
-> +	struct irq_desc *desc = irq_to_desc(irq);
-> +	int cpu;
-> +	int sum = 0;
-> +
-> +	if (!desc)
-> +		return 0;
-> +	for_each_possible_cpu(cpu)
-> +		sum += desc->kstat_irqs[cpu];
-> +	return sum;
-> +}
-> +EXPORT_SYMBOL_GPL(kstat_irqs);
+ As time passes by, the Linux numbering scheme makes even less sense. Some time ago there was a discussion on LKML about a new numbering scheme but it didn't come to any positive conclusion and then the subject was forgotten entirely. Not meaning to raise a clamour here (and I suppose I represent a large group of Linux users here). I'm willing to suggest a numbering scheme which I hope will answer all known complaints and criticism.
 
-kstat_irqs() needs to be exported to modules because of some silliness
-in drivers/isdn/hisax/config.c.  But in linux-next that silliness got
-deleted and the kstat_irqs export was removed.
 
---- a/kernel/irq/irqdesc.c~proc-stat-fix-scalability-of-irq-sum-of-all-cpu-fix
-+++ a/kernel/irq/irqdesc.c
-@@ -395,7 +395,7 @@ unsigned int kstat_irqs_cpu(unsigned int
- }
- 
- #ifdef CONFIG_GENERIC_HARDIRQS
--unsigned int  kstat_irqs(unsigned int irq)
-+unsigned int kstat_irqs(unsigned int irq)
- {
- 	struct irq_desc *desc = irq_to_desc(irq);
- 	int cpu;
-@@ -407,5 +407,4 @@ unsigned int  kstat_irqs(unsigned int ir
- 		sum += desc->kstat_irqs[cpu];
- 	return sum;
- }
--EXPORT_SYMBOL_GPL(kstat_irqs);
--#endif /*CONFIG_GENERIC_HARDIRQS*/
-+#endif /* CONFIG_GENERIC_HARDIRQS */
-_
 
+ The scheme is simple. We start either from 3.0.1 [.stable] or from 3.10.0 [.stable].
+
+
+
+ The first digit will remain "3" forever, to preserve compatibility with all existing utilities and internal Linux kernel code. So, the concern about older utilities breakage is answered here: both 3.0.1 and 3.10.1 are bigger than any currently released kernel.
+
+
+
+ The second number will be either 10 (the current year) or 0 meaning we have reset the numbering altogether. However in my opinion 10 sounds better than 0.
+
+
+
+ Now, more about the second and third numbers. The second number is just the current year in the 21 century or the same number minus 10. The third number will be incremented with every new release until the next year hits. So, the real next year we'll have 3.11.1, 3.11.2, 3.11.3, etc.
+
+
+
+ Now comes a problem, what if we release kernel 3.10.1 this year and the development of the next one commences also this year? What will be the next release number? I suggest to assign the next release number as the following:
+
+
+
+ 1) Either regardless the actual year the next kernel gets released (this way the kernel development started in 2010 will yield kernel 3.10.2 even though we hit the next year) or
+
+ 2) By the day the kernel gets released, so while in development the kernel version remained 3.10.1-rcX, on the 15th of January, we rename it to 3.11.1.
+
+
+  Artem
