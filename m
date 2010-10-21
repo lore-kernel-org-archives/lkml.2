@@ -1,49 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758596Ab0JUPHu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Oct 2010 11:07:50 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:56605 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752967Ab0JUPHs (ORCPT
+	id S1758256Ab0JUPJg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Oct 2010 11:09:36 -0400
+Received: from e38.co.us.ibm.com ([32.97.110.159]:54014 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751688Ab0JUPJe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Oct 2010 11:07:48 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Akinobu Mita <akinobu.mita@gmail.com>
-Subject: Re: [PATCH v2 03/22] s390: introduce little-endian bitops
-Date: Thu, 21 Oct 2010 17:08:00 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.35-16-generic; KDE/4.3.2; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        Christoph Hellwig <hch@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>, linux390@de.ibm.com,
-        linux-s390@vger.kernel.org
-References: <1287672077-5797-1-git-send-email-akinobu.mita@gmail.com> <1287672077-5797-4-git-send-email-akinobu.mita@gmail.com>
-In-Reply-To: <1287672077-5797-4-git-send-email-akinobu.mita@gmail.com>
+	Thu, 21 Oct 2010 11:09:34 -0400
+Date: Thu, 21 Oct 2010 08:09:28 -0700
+From: Vernon Mauery <vernux@us.ibm.com>
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        Linux Documentation <linux-doc@vger.kernel.org>,
+        Platform driver x86 <platform-driver-x86@vger.kernel.org>
+Subject: Re: [Patch] IBM Real-Time "SMI Free" mode driver -v7
+Message-ID: <20101021150928.GC8754@lucy>
+References: <20101005224718.GC4046@lucy>
+ <20101021135429.GC22133@srcf.ucam.org>
+ <20101021142319.GA8754@lucy>
+ <20101021142523.GA23171@srcf.ucam.org>
+ <20101021143821.GB8754@lucy>
+ <20101021144234.GA23552@srcf.ucam.org>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201010211708.00606.arnd@arndb.de>
-X-Provags-ID: V02:K0:JoCnoqYd/DDdgEpBRm1St6kDQyPNBsN2DyO8edHVDw2
- 0Gk5mTzn/U90/dpG7G0XWdha0EfqlygWXH+67isqHykXEk+Twb
- wbJ1NCOtF38p7EhK0gQtRKVQqX6kdZjeHuWTlfj/hN0CB6l8PH
- kwSL/JK+I+b/U3VxqAxhFERrrvrjH7yHVZ/8/t0ZCop7grXpES
- KIc3seHsfDwVA3X55Km+A==
+Content-Type: text/plain; charset=us-ascii; format=flowed
+Content-Disposition: inline
+In-Reply-To: <20101021144234.GA23552@srcf.ucam.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 21 October 2010, Akinobu Mita wrote:
-> Introduce little-endian bit operations by renaming native ext2 bit
-> operations. The ext2 bit operations are kept as wrapper macros using
-> little-endian bit operations to maintain bisectability until the
-> conversions are finished.
-> 
-> Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
-> Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
-> Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
-> Cc: linux390@de.ibm.com
-> Cc: linux-s390@vger.kernel.org
+On 21-Oct-2010 03:42 PM, Matthew Garrett wrote:
+>On Thu, Oct 21, 2010 at 07:38:21AM -0700, Vernon Mauery wrote:
+>> On 21-Oct-2010 03:25 PM, Matthew Garrett wrote:
+>>> Oops, sorry! I mean running on older kernels.
+>>
+>> Do older kernels not have DMI support?  I would think that if an
+>> enterprise distribution wanted this driver they would likely already
+>> have DMI support backported as well.
+>
+>I mean that they may run the current driver on newer hardware that isn't
+>in the DMI table, and that may be the only thing preventing it from
+>working.
+>
+>>> I'd suggest using DMI to verify that it's an IBM, and perhaps also using
+>>> DMI to check that it's a server or blade rather than a laptop or
+>>> desktop. After that you could just check the ebda rather than having to
+>>> have an entry for every specific machine.
+>>
+>> I went for a better safe than sorry route.  Before I added the DMI
+>> checking I had some reports of this getting loaded on non-IBM hardware
+>> and it came up with some nasty error messages.  I figured since I knew
+>> exactly which platforms have support, I could just limit the driver to
+>> those.  Then there is the force parameter that allows a user to ignore
+>> the DMI data and try to load the driver anyway.
+>
+>It's preferable to have the driver be able to support future hardware
+>built to the same spec without having to add extra IDs. It's easy to
+>make sure that you're loading on an IBM server - are there any of these
+>that have the _RTL_ header but will break?
 
-Acked-by: Arnd Bergmann <arnd@arndb.de>
+No, if it has the _RTL_ header it should be fine.  I was more concerned 
+about the driver trying to map the EBDA and reading through it on 
+non-ibm platforms, so I guess just a check to see that it is IBM should 
+be sufficient.  Let me get a patch that does that.
+
+--Vernon
