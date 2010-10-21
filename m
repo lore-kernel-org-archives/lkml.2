@@ -1,73 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756681Ab0JUK3Z (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Oct 2010 06:29:25 -0400
-Received: from mbox2.netikka.net ([213.250.81.203]:33790 "EHLO
-	mbox2.netikka.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753406Ab0JUK3Y (ORCPT
+	id S1756410Ab0JUKbv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Oct 2010 06:31:51 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:54505 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753406Ab0JUKbu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Oct 2010 06:29:24 -0400
-X-Greylist: delayed 608 seconds by postgrey-1.27 at vger.kernel.org; Thu, 21 Oct 2010 06:29:24 EDT
-Message-ID: <4CC0139E.2080106@mandriva.org>
-Date: Thu, 21 Oct 2010 13:19:10 +0300
-From: Thomas Backlund <tmb@mandriva.org>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; sv-SE; rv:1.9.2.11) Gecko/20101013 Thunderbird/3.1.5
+	Thu, 21 Oct 2010 06:31:50 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: Bruno Randolf <br1@einfach.org>
+Subject: Re: [PATCH v3] Add generic exponentially weighted moving average (EWMA) function
+Cc: kosaki.motohiro@jp.fujitsu.com, randy.dunlap@oracle.com,
+        akpm@linux-foundation.org, kevin.granade@gmail.com,
+        Lars_Ericsson@telia.com, blp@cs.stanford.edu,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <20101020082336.28281.77747.stgit@localhost6.localdomain6>
+References: <20101020082336.28281.77747.stgit@localhost6.localdomain6>
+Message-Id: <20101021192658.C8EE.A69D9226@jp.fujitsu.com>
 MIME-Version: 1.0
-To: monstr@monstr.eu
-CC: microblaze-uclinux@itee.uq.edu.au, linux-kernel@vger.kernel.org
-Subject: [PATCH] microblaze: fix build with make 3.82
-Content-Type: multipart/mixed;
- boundary="------------000007050400050509070404"
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8bit
+X-Mailer: Becky! ver. 2.50.07 [ja]
+Date: Thu, 21 Oct 2010 19:31:47 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------000007050400050509070404
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Hi
+
+I'm plaing this a bit and I have to say this doesn't works as I expected
+because ewma_init() has very easy confusable.
+
+so, I have one request.
 
 
---------------000007050400050509070404
-Content-Type: text/plain;
- name="microblaze-fix-build-with-make-3.82.patch"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
- filename="microblaze-fix-build-with-make-3.82.patch"
+> +/**
+> + * ewma_init() - Initialize EWMA parameters
+> + * @avg: Average structure
+> + * @factor: Factor to use for the scaled up internal value. The maximum value
+> + *	of averages can be UINT_MAX/(factor*weight).
+> + * @weight: Exponential weight, or decay rate. This defines how fast the
+> + * 	influence of older values decreases. Has to be bigger than 1.
+> + *
+> + * Initialize the EWMA parameters for a given struct ewma @avg.
+> + */
+> +struct ewma*
+> +ewma_init(struct ewma *avg, const unsigned int factor,
+> +	  const unsigned int weight)
+> +{
+> +	WARN_ON(weight <= 1 || factor == 0);
+> +	avg->weight = weight;
+> +	avg->factor = factor;
+> +	return avg;
+> +}
+> +EXPORT_SYMBOL(ewma_init);
+
+Please initalize avg->internal too.
 
 
-microblaze: fix build with make 3.82
+and nit, I don't understand what you intend by 'const unsigned int'. I think
+we can remove this const safely. it's more easy readable.
 
-When running make headers_install_all on x86_64 and make 3.82 I hit this:
 
-arch/microblaze/Makefile:80: *** mixed implicit and normal rules.  Stop.
-make: *** [headers_install_all] Error 2
 
-So split the rules to satisfy make 3.82.
 
-Signed-off-by: Thomas Backlund <tmb@mandriva.org>
-Cc: Stable <stable@kernel.org>
-
---- linux-2.6.36/arch/microblaze/Makefile.orig	2010-10-20 20:30:22.000000000 +0000
-+++ linux-2.6.36/arch/microblaze/Makefile	2010-10-21 10:08:08.776564834 +0000
-@@ -72,12 +72,16 @@ export MMU DTB
- 
- all: linux.bin
- 
--BOOT_TARGETS = linux.bin linux.bin.gz simpleImage.%
-+# With make 3.82 we cannot mix normal and wildcard targets
-+BOOT_TARGETS1 = linux.bin linux.bin.gz
-+BOOT_TARGETS2 = simpleImage.%
- 
- archclean:
- 	$(Q)$(MAKE) $(clean)=$(boot)
- 
--$(BOOT_TARGETS): vmlinux
-+$(BOOT_TARGETS1): vmlinux
-+	$(Q)$(MAKE) $(build)=$(boot) $(boot)/$@
-+$(BOOT_TARGETS2): vmlinux
- 	$(Q)$(MAKE) $(build)=$(boot) $(boot)/$@
- 
- define archhelp
-
---------------000007050400050509070404--
