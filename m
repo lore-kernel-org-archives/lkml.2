@@ -1,51 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756724Ab0JUUXm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Oct 2010 16:23:42 -0400
-Received: from silver.sucs.swan.ac.uk ([137.44.10.1]:38076 "EHLO
-	silver.sucs.swan.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756203Ab0JUUXl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Oct 2010 16:23:41 -0400
-Date: Thu, 21 Oct 2010 21:23:36 +0100
-From: Sitsofe Wheeler <sitsofe@yahoo.com>
-To: Andev <debiandev@gmail.com>
-Cc: linux kernel <kernelnewbies@nl.linux.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: Disable L1/L2/L3 cache and MTRR
-Message-ID: <20101021202336.GA3318@sucs.org>
-References: <AANLkTikKFnVOFr70u_2Hdtz0mXuAEckWWUy885m_ut--@mail.gmail.com>
+	id S1756704Ab0JUU1V (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Oct 2010 16:27:21 -0400
+Received: from a.ns.miles-group.at ([95.130.255.143]:42611 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752967Ab0JUU1U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Oct 2010 16:27:20 -0400
+/m: 
+From: Richard Weinberger <richard@nod.at>
+To: Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: linux-next: User Mode Linux broken
+Date: Thu, 21 Oct 2010 22:27:12 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.25.20-0.7-pae; KDE/4.4.4; i686; ; )
+Cc: peterz@infradead.org, hpa@zytor.com, mingo@elte.hu,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-next@vger.kernel.org
+References: <201010211315.26679.richard@nod.at> <201010212122.38437.richard@nod.at> <alpine.LFD.2.00.1010212143300.3467@localhost6.localdomain6>
+In-Reply-To: <alpine.LFD.2.00.1010212143300.3467@localhost6.localdomain6>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTikKFnVOFr70u_2Hdtz0mXuAEckWWUy885m_ut--@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201010212227.12919.richard@nod.at>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On Thu, Oct 21, 2010 at 12:21:15PM -0400, Andev wrote:
+Am Donnerstag 21 Oktober 2010, 21:45:35 schrieb Thomas Gleixner:
+> On Thu, 21 Oct 2010, Richard Weinberger wrote:
+> > Am Donnerstag 21 Oktober 2010, 18:09:22 schrieb Thomas Gleixner:
+> > > On Thu, 21 Oct 2010, Richard Weinberger wrote:
+> > > > Thomas,
+> > > > 
+> > > > Your commit c5f7563 ("genirq: Provide compat handling for
+> > > > chip->enable()") breaks UML.
+> > > > It does not start anymore.
+> > > > 
+> > > > When I apply this patch it works fine again.
+> > > > http://userweb.kernel.org/~akpm/mmotm/broken-out/um-migrate-from-__do
+> > > > _irq -to- generic_handle_irq.patch
+> > > > 
+> > > > Maybe your patch breaks all users of __do_IRQ()?
+> > > 
+> > > Not intentionally :)
+> > > 
+> > > The irq_chip of um has it's own dummy enable function, so the compat
+> > > code uses it.
+> > > 
+> > > +static void compat_irq_enable(struct irq_data *data)
+> > > +{
+> > > +	data->chip->enable(data->irq);
+> > > +}
+> > > +
+> > > 
+> > > ...
+> > > 
+> > > +	if (chip->enable)
+> > > +		chip->irq_enable = compat_irq_enable;
+> > > +
+> > > +	/*
+> > > +	 * The real defaults
+> > > +	 */
+> > > +	if (!chip->irq_enable)
+> > > +		chip->irq_enable = default_enable;
+> > > 
+> > > So I really can't see how's that supposed to break UM
+> > 
+> > This patch solves the issue for me.
+> > What do you think?
+> > 
+> > Thanks,
+> > //richard
+> > 
+> > diff --git a/kernel/irq/resend.c b/kernel/irq/resend.c
+> > index 891115a..1fb4012 100644
+> > --- a/kernel/irq/resend.c
+> > +++ b/kernel/irq/resend.c
+> > @@ -60,8 +60,11 @@ void check_irq_resend(struct irq_desc *desc, unsigned
+> > int irq)
+> > 
+> >         /*
+> >         
+> >          * Make sure the interrupt is enabled, before resending it:
+> >          */
+> > 
+> > +#ifndef CONFIG_GENERIC_HARDIRQS_NO_DEPRECATED
+> > +       desc->irq_data.chip->enable(irq);
+> > +#elif
+> > 
+> >         desc->irq_data.chip->irq_enable(&desc->irq_data);
+> > 
+> > -
+> > +#endif
+> > 
+> >         /*
+> >         
+> >          * We do not resend level type interrupts. Level type
+> >          * interrupts are resent by hardware when they are still
 > 
-> In Intel software developers manual, it is mentioned that apart from the
-> above you need to disable MTRR. I did that using the following command:
+> Why shold it solve it ? irq_enable is set to compat_irq_enable which
+> in turn calls chip->enable.
 > 
-> echo "disable=00" >| /proc/mtrr
-> 
-> Now when I run some sample benchmarks they show a slowdown of almost 1000x!!
-> 
-> This is not reasonable since the max. The slowdown I was expecting is 200x
-> considering that it will take 200 cycles to read from DRAM.
+> So how's that different ?
 
-Assuming the cache was completely disabled, won't the impact be
-cumulative? E.g. imagine a memory read takes one cycle from cache and
-100 from main memory. If you read 5 instructions from cache that will
-take 5 cycles. If you read 5 instructions from main memory that will be
-5*100 so 500 cycles. If it is 10 instructions then it is 10 vs 1000 and
-so on...
+I took a closer look on the issue.
 
-Are you searching for an improvement in determinism?
+check_irq_resend() gets called before irq_chip_set_defaults().
+In the first call to check_irq_resend() desc->irq_data.chip->irq_enable is 
+NULL. UML dies due to a NULL-pointer dereference...
 
--- 
-Sitsofe | http://sucs.org/~sits/
+I don't know why check_irq_resend() is called before irq_chip_set_defaults().
+It's your code. ;-)
+
+Thanks,
+//richard
