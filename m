@@ -1,103 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757442Ab0JUGhE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Oct 2010 02:37:04 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:10957 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757205Ab0JUGhC convert rfc822-to-8bit (ORCPT
+	id S1757501Ab0JUGsQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Oct 2010 02:48:16 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:47099 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755331Ab0JUGsP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Oct 2010 02:37:02 -0400
+	Thu, 21 Oct 2010 02:48:15 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=o+MenS9wbh75z+fTWcx8lT1k+M9GdNjvQC0ZOBw2eS4CJBMQowiJ6SG2iWI8hZZtgy
-         /SYHSgW9kdSHcKgibaiw==
-MIME-Version: 1.0
-In-Reply-To: <1287258414.1998.133.camel@laptop>
-References: <20101016044349.830426011@google.com> <1287258414.1998.133.camel@laptop>
-From: Paul Turner <pjt@google.com>
-Date: Wed, 20 Oct 2010 23:36:27 -0700
-Message-ID: <AANLkTi=o63gqA+62fXQ8jwNS=t8hsSgO3DgbvPKRXD4d@mail.gmail.com>
-Subject: Re: [RFC tg_shares_up improvements - v1 00/12] [RFC tg_shares_up - v1
- 00/12] Reducing cost of tg->shares distribution
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Srivatsa Vaddagiri <vatsa@in.ibm.com>,
-        Chris Friesen <cfriesen@nortel.com>,
-        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
-        Pierre Bourdon <pbourdon@excellency.fr>,
-        Bharata B Rao <bharata@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=RyK31E5Zv8pxjwc/deZxowkNFa+COzBzvTElVRKJjHDEPZmcIwoLMWyR/uCLL5lsVb
+         swSSU9UtfKWnrU3huZbVX4qEupJFXXpEcv42X8SzolJ+VDmhKjKscltMLB7eM/NwmqhN
+         /O7vYg3eBUIweP3e9jMtT4ovFNSQQHXMYyw1I=
+Subject: Re: [tip:x86/mm] percpu: Introduce a read-mostly percpu API
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Shaohua Li <shaohua.li@intel.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "mingo@redhat.com" <mingo@redhat.com>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "hpa@linux.intel.com" <hpa@linux.intel.com>
+In-Reply-To: <20101021061701.GA17054@sli10-conroe.sh.intel.com>
+References: <1287544022.4571.7.camel@sli10-conroe.sh.intel.com>
+	 <tip-c957ef2c59e952803766ddc22e89981ab534606f@git.kernel.org>
+	 <20101021013833.GA21863@sli10-conroe.sh.intel.com>
+	 <1287639230.2545.117.camel@edumazet-laptop> <4CBFD5A6.3060308@zytor.com>
+	 <1287641277.4507.23.camel@edumazet-laptop> <4CBFD92B.5090503@zytor.com>
+	 <20101021061701.GA17054@sli10-conroe.sh.intel.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 21 Oct 2010 08:48:05 +0200
+Message-ID: <1287643685.4507.110.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Oct 16, 2010 at 12:46 PM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Fri, 2010-10-15 at 21:43 -0700, pjt@google.com wrote:
->> Hi all,
->>
->> Peter previously posted a patchset that attempted to improve the problem of
->> task_group share distribution.  This is something that has been a long-time
->> pain point for group scheduling.  The existing algorithm considers
->> distributions on a per-cpu-per-domain basis and carries a fairly high update
->> overhead, especially on larger machines.
->>
->> I was previously looking at improving this using Fenwick trees to allow a
->> single sum without the exorbitant cost but then Peter's idea above was better :).
->>
->> The kernel is that by monitoring the average contribution to load on a
->> per-cpu-per-taskgroup basis we can distribute the weight for which we are
->> expected to consume.
->>
->> This set extends the original posting with a focus on increased fairness and
->> reduced convergence (to true average) time.  In particular the case of large
->> over-commit in the case of a distributed wake-up is a concern which is now
->> fairly well addressed.
->>
->> Obviously everything's experimental but it should be stable/fair.
->
-> I like what you've done with it, my only worry is 10/12 where you allow
-> for extra updates to the global state -- I think they should be fairly
-> limited in number, and I can see the need for the update if we get too
-> far out of whack, but it is something to look at while testing this
-> stuff.
->
+Le jeudi 21 octobre 2010 Ã  14:17 +0800, Shaohua Li a Ã©crit :
+> This isn't a previous bug. see
+> #define DECLARE_PER_CPU_PAGE_ALIGNED(type, name)			\
+> 	DECLARE_PER_CPU_SECTION(type, name, "..page_aligned")		\
+> 	__aligned(PAGE_SIZE)
+> the ..page_aligned is already page aligned. I add it is because it can make
+> the .readmostly section guarantee to have no cache false sharing, because
+> I add the . = ALIGN(PAGE_SIZE); before .readmostly section, and .page_aligned
+> follows, but for sure this wates some memory.
 
-So my original answer here was to only update when there was load and
-it was > n% delta which stops 1 thread waking up and sleeping from
-thrashing it, but the 2 thread case is just as obviously broken for
-any n.  It needs a rate limit but I'm sort of loathe to introduce
-_another_ set of timestamps.  I don't suppose there's much harm in
-doing so though and I don't think it's going to be clean to overload
-one of the existing ones so perhaps another counter is the answer.
+A small note:
 
-I'll make sure this is addressed in v2.
+The __aligned(XXX) makes sure object _starts_ at XXX boundary, not that
+following one will also use same alignment. Of course, we can argue that
+we dont try to put in PAGE_ALIGNED section small objects, but still...
 
->> TODO:
->> - Validate any RT interaction
->
-> I don't think there's anything to worry about there, the only
-> interaction which there is between this and the rt scheduling classes is
-> the initial sharing of the load-avg window, but you 'cure' that in 7/12.
->
-> (I think that sysctl wants a _us postfix someplace and we thus want some
-> NSEC_PER_USEC multiplication in there).
->
+Explicit .ALIGN() uses in .lds are more readable IMHO...
 
-Yes -- updated, thanks.
 
->> - Continue collecting/analyzing performance and fairness data
->
-> Yes please ;-), I'll try and run this on some machines as well.
->
->> - Should the shares period just be the sched_latency?
->
-> Interesting idea.. lets keep it a separate sysctl for now for easy
-> tuning, if things settle down and we're still good in that range we can
-> consider merging them.
->
->
->
+
