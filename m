@@ -1,71 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753141Ab0JUIjO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Oct 2010 04:39:14 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:52148 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751998Ab0JUIjN (ORCPT
+	id S1753959Ab0JUIjc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Oct 2010 04:39:32 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:4328 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753262Ab0JUIja convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Oct 2010 04:39:13 -0400
+	Thu, 21 Oct 2010 04:39:30 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=agD74CQ4ATJyz5vNpC2ln2Zy/c+HTMnjDYbazzvXX6V4bp9cjYhqi54D7o7uJJk54U
-         SMK6utycCC8zFlV8qaghbt68yOaI7QaSuVmEI8ErVTC1nMhipuxcfqh5bwAleTMQS1mJ
-         mwGLcISVOSBvQ5d3W3nLR2o82hEZAycYyAbqE=
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=OV8EJECXnjOKas4Lm7zJJkfsdvaBJi5MrOxsqdp6+IaZRSkc87v2gqsxcQH531JG/2
+         9TXHrwbnNT54V1nPi5pw==
 MIME-Version: 1.0
-In-Reply-To: <1287649283.2237.8.camel@myhost>
-References: <1287647732.2237.7.camel@myhost>
-	<AANLkTim7g+8_rQSyewC6n_5WmC04kU-rj1g9k61=O2Vm@mail.gmail.com>
-	<1287649283.2237.8.camel@myhost>
-Date: Thu, 21 Oct 2010 16:39:12 +0800
-Message-ID: <AANLkTikzSZNtTGfOcP-87u+pMZyW8WrdxwV52ZV3f=nX@mail.gmail.com>
-Subject: Re: Ftrace: can trace kthread?
-From: Yong Zhang <yong.zhang0@gmail.com>
-To: "Figo.zhang" <zhangtianfei@leadcoretech.com>
-Cc: Li Zefan <lizf@cn.fujitsu.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Steven Rostedt <srostedt@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <20101021080844.GB3581@in.ibm.com>
+References: <20101016044349.830426011@google.com> <20101016045118.529238208@google.com>
+ <20101021080844.GB3581@in.ibm.com>
+From: Paul Turner <pjt@google.com>
+Date: Thu, 21 Oct 2010 01:38:56 -0700
+Message-ID: <AANLkTimHW5Rd42ERzsPf6MsoehS8Y5M2e1CiPX3rcfYP@mail.gmail.com>
+Subject: Re: [RFC tg_shares_up improvements - v1 01/12] sched: rewrite tg_shares_up
+To: bharata@linux.vnet.ibm.com
+Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@elte.hu>, Srivatsa Vaddagiri <vatsa@in.ibm.com>,
+        Chris Friesen <cfriesen@nortel.com>,
+        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
+        Pierre Bourdon <pbourdon@excellency.fr>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 21, 2010 at 4:21 PM, Figo.zhang
-<zhangtianfei@leadcoretech.com> wrote:
-> On Thu, 2010-10-21 at 16:10 +0800, Yong Zhang wrote:
->> On Thu, Oct 21, 2010 at 3:55 PM, Figo.zhang
->> <zhangtianfei@leadcoretech.com> wrote:
->> > hi,
->> >
->> > is it ftrace in 2.6.36-rc8 can trace the kthread?
+On Thu, Oct 21, 2010 at 1:08 AM, Bharata B Rao
+<bharata@linux.vnet.ibm.com> wrote:
+> On Fri, Oct 15, 2010 at 09:43:50PM -0700, pjt@google.com wrote:
+>> From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+>> --- kernel/sched_fair.c.orig
+>> +++ kernel/sched_fair.c
+>> @@ -417,7 +417,6 @@ int sched_proc_update_handler(struct ctl
+>>       WRT_SYSCTL(sched_min_granularity);
+>>       WRT_SYSCTL(sched_latency);
+>>       WRT_SYSCTL(sched_wakeup_granularity);
+>> -     WRT_SYSCTL(sched_shares_ratelimit);
+>>  #undef WRT_SYSCTL
 >>
->> How about the set_ftrace_pid interface?
+>>       return 0;
+>> @@ -633,7 +632,6 @@ account_entity_enqueue(struct cfs_rq *cf
+>>               list_add(&se->group_node, &cfs_rq->tasks);
+>>       }
+>>       cfs_rq->nr_running++;
+>> -     se->on_rq = 1;
+>>  }
 >>
+>>  static void
+>> @@ -647,9 +645,89 @@ account_entity_dequeue(struct cfs_rq *cf
+>>               list_del_init(&se->group_node);
+>>       }
+>>       cfs_rq->nr_running--;
+>> -     se->on_rq = 0;
+>>  }
+>>
+> <snip>
+>> @@ -771,7 +849,9 @@ enqueue_entity(struct cfs_rq *cfs_rq, st
+>>        * Update run-time statistics of the 'current'.
+>>        */
+>>       update_curr(cfs_rq);
+>> +     update_cfs_load(cfs_rq);
+>>       account_entity_enqueue(cfs_rq, se);
+>> +     update_cfs_shares(cfs_rq_of(se));
+>>
+>>       if (flags & ENQUEUE_WAKEUP) {
+>>               place_entity(cfs_rq, se, 0);
+>> @@ -782,6 +862,7 @@ enqueue_entity(struct cfs_rq *cfs_rq, st
+>>       check_spread(cfs_rq, se);
+>>       if (se != cfs_rq->curr)
+>>               __enqueue_entity(cfs_rq, se);
+>> +     se->on_rq = 1;
+>>  }
+>>
+>>  static void __clear_buddies(struct cfs_rq *cfs_rq, struct sched_entity *se)
+>> @@ -825,8 +906,11 @@ dequeue_entity(struct cfs_rq *cfs_rq, st
+>>
+>>       if (se != cfs_rq->curr)
+>>               __dequeue_entity(cfs_rq, se);
+>> +     se->on_rq = 0;
 >
-> i try by set_ftrace_pid, it also can't ftrace the kswapd.
+> Since setting and un-setting of se->on_rq is completely handled within
+> sched_fair.c, we can remove the redundant setting and un-setting of
+> se->on_rq from sched.c:[en]dequeue_task. Even w/o this patch, they were
+> redundant I suppose.
 
-Are you sure kswapd got chance to run on your system?
+Mmmm I think SCHED_RT (currently) depends on this, it could probably
+cleaned up in a separate patch.
 
-BTW, I can successfully trace bdi_writeback_thread,
-# tracer: function
-#
-#           TASK-PID    CPU#    TIMESTAMP  FUNCTION
-#              | |       |          |         |
-       flush-8:0-374   [000] 600743.828496: finish_task_switch <-schedule
-       flush-8:0-374   [000] 600743.828498: perf_event_task_sched_in
-<-finish_task_switch
-       flush-8:0-374   [000] 600743.828498: del_timer_sync <-schedule_timeout
-       flush-8:0-374   [000] 600743.828499: try_to_del_timer_sync
-<-del_timer_sync
-       flush-8:0-374   [000] 600743.828499: lock_timer_base
-<-try_to_del_timer_sync
-       flush-8:0-374   [000] 600743.828499: _spin_lock_irqsave <-lock_timer_base
-       flush-8:0-374   [000] 600743.828500: _spin_unlock_irqrestore
-<-try_to_del_timer_sync
-       flush-8:0-374   [000] 600743.828500: kthread_should_stop
-<-bdi_writeback_task
-
-Thanks,
-Yong
+>
+> Regards,
+> Bharata.
+>
