@@ -1,270 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756089Ab0JUJ3X (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Oct 2010 05:29:23 -0400
-Received: from lon1-post-2.mail.demon.net ([195.173.77.149]:37483 "EHLO
-	lon1-post-2.mail.demon.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755223Ab0JUJ3W (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Oct 2010 05:29:22 -0400
-Subject: Re: [PATCH] [v2] slub tracing: move trace calls out of always
- inlined functions to reduce kernel code size
-From: Richard Kennedy <richard@rsk.demon.co.uk>
-To: Pekka Enberg <penberg@kernel.org>
-Cc: Christoph Lameter <cl@linux-foundation.org>,
-        lkml <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
-        Steven Rostedt <rostedt@goodmis.org>
-In-Reply-To: <1287049769.1909.4.camel@castor.rsk>
-References: <1286986178.1901.60.camel@castor.rsk>
-	 <4CB6ACB7.8060006@kernel.org>  <1287049769.1909.4.camel@castor.rsk>
+	id S1756169Ab0JUJhX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Oct 2010 05:37:23 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:63781 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755013Ab0JUJhW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Oct 2010 05:37:22 -0400
+Subject: GFS2: Pull request (merge window)
+From: Steven Whitehouse <swhiteho@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: cluster-devel@redhat.com, linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 21 Oct 2010 10:29:19 +0100
-Message-ID: <1287653359.1906.13.camel@castor.rsk>
+Organization: Red Hat UK Ltd
+Date: Thu, 21 Oct 2010 10:43:33 +0100
+Message-ID: <1287654213.2946.3.camel@dolmen>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 (2.30.3-1.fc13) 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Having the trace calls defined in the always inlined kmalloc functions
-in include/linux/slub_def.h causes a lot of code duplication as the
-trace functions get instantiated for each kamalloc call site. This can
-simply be removed by pushing the trace calls down into the functions in
-slub.c.
+Hi,
 
-On my x86_64 built this patch shrinks the code size of the kernel by
-approx 36K and also shrinks the code size of many modules -- too many to
-list here ;)
+There have been no changes in the GFS2 -nmw git tree since my recent
+patch posting. Please consider pulling the following changes,
 
-size vmlinux (2.6.36) reports
-       text        data     bss     dec     hex filename
-    5410611	 743172	 828928	6982711	 6a8c37	vmlinux
-    5373738	 744244	 828928	6946910	 6a005e	vmlinux + patch
+Steve.
 
-The resulting kernel has had some testing & kmalloc trace still seems to
-work.
+-------------------------------------------------------------------------
+The following changes since commit 2422084a94fcd5038406261b331672a13c92c050:
 
-This patch
-- moves trace_kmalloc out of the inlined kmalloc() and pushes it down
-into kmem_cache_alloc_trace() so this it only get instantiated once.
+  Merge branch 'for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/mattst88/alpha-2.6 (2010-09-19 11:09:23 -0700)
 
-- rename kmem_cache_alloc_notrace()  to kmem_cache_alloc_trace() to
-indicate that now is does have tracing. (maybe this would better being
-called something like kmalloc_kmem_cache ?)
+are available in the git repository at:
 
-- adds a new function kmalloc_order() to handle allocation and tracing
-of large allocations of page order.
+  git://git.kernel.org/pub/scm/linux/kernel/git/steve/gfs2-2.6-nmw.git master
 
-- removes tracing from the inlined kmalloc_large() replacing them with a
-call to kmalloc_order();
+Andrea Gelmini (1):
+      GFS2: fixed typo
 
-- move tracing out of inlined kmalloc_node() and pushing it down into
-kmem_cache_alloc_node_trace
+Benjamin Marzinski (2):
+      GFS2: fallocate support
+      GFS2: reserve more blocks for transactions
 
-- rename kmem_cache_alloc_node_notrace() to
-kmem_cache_alloc_node_trace()
+Bob Peterson (1):
+      GFS2 fatal: filesystem consistency error on rename
 
-- removes the include of trace/events/kmem.h from slub_def.h.
+Steven Whitehouse (18):
+      GFS2: New truncate sequence
+      GFS2: Remove i_disksize
+      GFS2: No longer experimental
+      GFS2: Add a bug trap in allocation code
+      GFS2: Fix whitespace in previous patch
+      GFS2: Don't enforce min hold time when two demotes occur in rapid succession
+      GFS2: Update handling of DLM return codes to match reality
+      GFS2: Use new workqueue scheme
+      GFS2: Make . and .. qstrs constant
+      GFS2: Remove ignore_local_fs mount argument
+      GFS2: Remove localcaching mount option
+      GFS2: Remove upgrade mount option
+      GFS2: Fix journal check for spectator mounts
+      GFS2: Fix compiler warning from previous patch
+      GFS2: Fix spectator umount issue
+      GFS2: Add "norecovery" mount option as a synonym for "spectator"
+      GFS2: Improve journal allocation via sysfs
+      GFS2: Fix type mapping for demote_rq interface
 
-v2
-- keep kmalloc_order_trace inline when !CONFIG_TRACE
-
-Signed-off-by: Richard Kennedy <richard@rsk.demon.co.uk>
-
-----
-patch against v2.6.36
-compiled & tested on x86_64
-
-regards
-Richard
-
- include/linux/slub_def.h |   55 ++++++++++++++++++++++-------------------------
- mm/slub.c                |   30 +++++++++++++++++++------
- 2 files changed, 49 insertions(+), 36 deletions(-)
-
-
-
-diff --git a/include/linux/slub_def.h b/include/linux/slub_def.h
-index 9f63538..d5a4ced 100644
---- a/include/linux/slub_def.h
-+++ b/include/linux/slub_def.h
-@@ -10,9 +10,8 @@
- #include <linux/gfp.h>
- #include <linux/workqueue.h>
- #include <linux/kobject.h>
--#include <linux/kmemleak.h>
- 
--#include <trace/events/kmem.h>
-+#include <linux/kmemleak.h>
- 
- enum stat_item {
- 	ALLOC_FASTPATH,		/* Allocation from cpu slab */
-@@ -222,31 +221,40 @@ static __always_inline struct kmem_cache *kmalloc_slab(size_t size)
- void *kmem_cache_alloc(struct kmem_cache *, gfp_t);
- void *__kmalloc(size_t size, gfp_t flags);
- 
-+static __always_inline void *
-+kmalloc_order(size_t size, gfp_t flags, unsigned int order)
-+{
-+	void *ret = (void *) __get_free_pages(flags | __GFP_COMP, order);
-+	kmemleak_alloc(ret, size, 1, flags);
-+	return ret;
-+}
-+
- #ifdef CONFIG_TRACING
--extern void *kmem_cache_alloc_notrace(struct kmem_cache *s, gfp_t gfpflags);
-+extern void *
-+kmem_cache_alloc_trace(struct kmem_cache *s, gfp_t gfpflags, size_t size);
-+extern void *kmalloc_order_trace(size_t size, gfp_t flags, unsigned int order);
- #else
- static __always_inline void *
--kmem_cache_alloc_notrace(struct kmem_cache *s, gfp_t gfpflags)
-+kmem_cache_alloc_trace(struct kmem_cache *s, gfp_t gfpflags, size_t size)
- {
- 	return kmem_cache_alloc(s, gfpflags);
- }
-+
-+static __always_inline void *
-+kmalloc_order_trace(size_t size, gfp_t flags, unsigned int order)
-+{
-+	return kmalloc_order(size, flags, order);
-+}
- #endif
- 
- static __always_inline void *kmalloc_large(size_t size, gfp_t flags)
- {
- 	unsigned int order = get_order(size);
--	void *ret = (void *) __get_free_pages(flags | __GFP_COMP, order);
--
--	kmemleak_alloc(ret, size, 1, flags);
--	trace_kmalloc(_THIS_IP_, ret, size, PAGE_SIZE << order, flags);
--
--	return ret;
-+	return kmalloc_order_trace(size, flags, order);
- }
- 
- static __always_inline void *kmalloc(size_t size, gfp_t flags)
- {
--	void *ret;
--
- 	if (__builtin_constant_p(size)) {
- 		if (size > SLUB_MAX_SIZE)
- 			return kmalloc_large(size, flags);
-@@ -257,11 +265,7 @@ static __always_inline void *kmalloc(size_t size, gfp_t flags)
- 			if (!s)
- 				return ZERO_SIZE_PTR;
- 
--			ret = kmem_cache_alloc_notrace(s, flags);
--
--			trace_kmalloc(_THIS_IP_, ret, size, s->size, flags);
--
--			return ret;
-+			return kmem_cache_alloc_trace(s, flags, size);
- 		}
- 	}
- 	return __kmalloc(size, flags);
-@@ -272,14 +276,14 @@ void *__kmalloc_node(size_t size, gfp_t flags, int node);
- void *kmem_cache_alloc_node(struct kmem_cache *, gfp_t flags, int node);
- 
- #ifdef CONFIG_TRACING
--extern void *kmem_cache_alloc_node_notrace(struct kmem_cache *s,
-+extern void *kmem_cache_alloc_node_trace(struct kmem_cache *s,
- 					   gfp_t gfpflags,
--					   int node);
-+					   int node, size_t size);
- #else
- static __always_inline void *
--kmem_cache_alloc_node_notrace(struct kmem_cache *s,
-+kmem_cache_alloc_node_trace(struct kmem_cache *s,
- 			      gfp_t gfpflags,
--			      int node)
-+			      int node, size_t size)
- {
- 	return kmem_cache_alloc_node(s, gfpflags, node);
- }
-@@ -287,8 +291,6 @@ kmem_cache_alloc_node_notrace(struct kmem_cache *s,
- 
- static __always_inline void *kmalloc_node(size_t size, gfp_t flags, int node)
- {
--	void *ret;
--
- 	if (__builtin_constant_p(size) &&
- 		size <= SLUB_MAX_SIZE && !(flags & SLUB_DMA)) {
- 			struct kmem_cache *s = kmalloc_slab(size);
-@@ -296,12 +298,7 @@ static __always_inline void *kmalloc_node(size_t size, gfp_t flags, int node)
- 		if (!s)
- 			return ZERO_SIZE_PTR;
- 
--		ret = kmem_cache_alloc_node_notrace(s, flags, node);
--
--		trace_kmalloc_node(_THIS_IP_, ret,
--				   size, s->size, flags, node);
--
--		return ret;
-+		return kmem_cache_alloc_node_trace(s, flags, node, size);
- 	}
- 	return __kmalloc_node(size, flags, node);
- }
-diff --git a/mm/slub.c b/mm/slub.c
-index 13fffe1..aab2165 100644
---- a/mm/slub.c
-+++ b/mm/slub.c
-@@ -28,6 +28,8 @@
- #include <linux/math64.h>
- #include <linux/fault-inject.h>
- 
-+#include <trace/events/kmem.h>
-+
- /*
-  * Lock order:
-  *   1. slab_lock(page)
-@@ -1736,11 +1738,21 @@ void *kmem_cache_alloc(struct kmem_cache *s, gfp_t gfpflags)
- EXPORT_SYMBOL(kmem_cache_alloc);
- 
- #ifdef CONFIG_TRACING
--void *kmem_cache_alloc_notrace(struct kmem_cache *s, gfp_t gfpflags)
-+void *kmem_cache_alloc_trace(struct kmem_cache *s, gfp_t gfpflags, size_t size)
-+{
-+	void *ret = slab_alloc(s, gfpflags, NUMA_NO_NODE, _RET_IP_);
-+	trace_kmalloc(_RET_IP_, ret, size, s->size, gfpflags);
-+	return ret;
-+}
-+EXPORT_SYMBOL(kmem_cache_alloc_trace);
-+
-+void *kmalloc_order_trace(size_t size, gfp_t flags, unsigned int order)
- {
--	return slab_alloc(s, gfpflags, NUMA_NO_NODE, _RET_IP_);
-+	void *ret = kmalloc_order(size, flags, order);
-+	trace_kmalloc(_RET_IP_, ret, size, PAGE_SIZE << order, flags);
-+	return ret;
- }
--EXPORT_SYMBOL(kmem_cache_alloc_notrace);
-+EXPORT_SYMBOL(kmalloc_order_trace);
- #endif
- 
- #ifdef CONFIG_NUMA
-@@ -1757,13 +1769,17 @@ EXPORT_SYMBOL(kmem_cache_alloc_node);
- #endif
- 
- #ifdef CONFIG_TRACING
--void *kmem_cache_alloc_node_notrace(struct kmem_cache *s,
-+void *kmem_cache_alloc_node_trace(struct kmem_cache *s,
- 				    gfp_t gfpflags,
--				    int node)
-+				    int node, size_t size)
- {
--	return slab_alloc(s, gfpflags, node, _RET_IP_);
-+	void *ret = slab_alloc(s, gfpflags, node, _RET_IP_);
-+
-+	trace_kmalloc_node(_RET_IP_, ret,
-+			   size, s->size, gfpflags, node);
-+	return ret;
- }
--EXPORT_SYMBOL(kmem_cache_alloc_node_notrace);
-+EXPORT_SYMBOL(kmem_cache_alloc_node_trace);
- #endif
- 
- /*
+ fs/gfs2/Kconfig      |    2 +-
+ fs/gfs2/aops.c       |   24 ++--
+ fs/gfs2/bmap.c       |  255 +++++++++++++++++++--------------------
+ fs/gfs2/bmap.h       |   20 ++--
+ fs/gfs2/dentry.c     |    2 +-
+ fs/gfs2/dir.c        |   31 +++--
+ fs/gfs2/dir.h        |   34 +++---
+ fs/gfs2/export.c     |    9 +--
+ fs/gfs2/file.c       |    6 +-
+ fs/gfs2/glock.c      |   23 +++-
+ fs/gfs2/glock.h      |    2 +-
+ fs/gfs2/glops.c      |    6 +-
+ fs/gfs2/incore.h     |    8 +-
+ fs/gfs2/inode.c      |    9 +-
+ fs/gfs2/inode.h      |   15 +++
+ fs/gfs2/lock_dlm.c   |    4 +-
+ fs/gfs2/main.c       |    6 +-
+ fs/gfs2/ops_fstype.c |   79 +++----------
+ fs/gfs2/ops_inode.c  |  326 ++++++++++++++++++++++++++++++++++++++++++--------
+ fs/gfs2/quota.c      |   16 +--
+ fs/gfs2/recovery.c   |   15 ++-
+ fs/gfs2/rgrp.c       |   50 ++++++--
+ fs/gfs2/rgrp.h       |    8 +-
+ fs/gfs2/super.c      |   26 ++---
+ fs/gfs2/sys.c        |   22 ++--
+ fs/gfs2/trace_gfs2.h |    3 +-
+ fs/gfs2/trans.h      |    9 ++
+ fs/gfs2/xattr.c      |    2 +-
+ 28 files changed, 617 insertions(+), 395 deletions(-)
 
 
