@@ -1,202 +1,306 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757844Ab0JUM2t (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Oct 2010 08:28:49 -0400
-Received: from mail.digidescorp.com ([66.244.163.200]:55891 "EHLO
-	digidescorp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757774Ab0JUM2s (ORCPT
+	id S1757853Ab0JUMdT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Oct 2010 08:33:19 -0400
+Received: from smtp-out-181.synserver.de ([212.40.180.181]:1545 "HELO
+	smtp-out-181.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1756385Ab0JUMdS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Oct 2010 08:28:48 -0400
-X-Spam-Processed: digidescorp.com, Thu, 21 Oct 2010 07:28:46 -0500
-X-Authenticated-Sender: steve@digidescorp.com
-X-Return-Path: prvs=191030265f=steve@digidescorp.com
-X-Envelope-From: steve@digidescorp.com
-X-MDaemon-Deliver-To: linux-kernel@vger.kernel.org
-From: "Steven J. Magnani" <steve@digidescorp.com>
-To: linux-mm@kvack.org
-Cc: balbir@linux.vnet.ibm.com, dhowells@redhat.com,
-        linux-kernel@vger.kernel.org, kamezawa.hiroyu@jp.fujitsu.com,
-        "Steven J. Magnani" <steve@digidescorp.com>
-Subject: [PATCH V3] nommu: add anonymous page memcg accounting
-Date: Thu, 21 Oct 2010 07:28:08 -0500
-Message-Id: <1287664088-4483-1-git-send-email-steve@digidescorp.com>
-X-Mailer: git-send-email 1.6.0.6
+	Thu, 21 Oct 2010 08:33:18 -0400
+X-Greylist: delayed 400 seconds by postgrey-1.27 at vger.kernel.org; Thu, 21 Oct 2010 08:33:17 EDT
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@laprican.de
+X-SynServer-PPID: 21351
+From: Lars-Peter Clausen <lars@metafoo.de>
+To: rklein@nvidia.com, Anton Vorontsov <cbouatmailru@gmail.com>
+Cc: broonie@opensource.wolfsonmicro.com, achew@nvidia.com, olof@lixom.net,
+        linux-kernel@vger.kernel.org, Lars-Peter Clausen <lars@metafoo.de>
+Subject: [PATCH] POWER: Add gpio chager driver
+Date: Thu, 21 Oct 2010 14:25:57 +0200
+Message-Id: <1287663957-30099-1-git-send-email-lars@metafoo.de>
+X-Mailer: git-send-email 1.5.6.5
+In-Reply-To: <4CC02FF9.3050804@metafoo.de>
+References: <4CC02FF9.3050804@metafoo.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add the necessary calls to track VM anonymous page usage (only).
+This patch adds a simple driver for chargers indicating their online status
+through a GPIO pin.
 
-V3 changes:
-* Use vma->vm_mm instead of current->mm when charging pages, for clarity
-* Document that reclaim is not possible with only anonymous page accounting
-  so the OOM-killer is invoked when a limit is exceeded
-* Add TODO to implement file cache (reclaim) support or optimize away
-  page_cgroup->lru
-
-V2 changes:
-* Added update of memory cgroup documentation
-* Clarify use of 'file' to distinguish anonymous mappings
-
-Signed-off-by: Steven J. Magnani <steve@digidescorp.com>
+Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
 ---
-diff -uprN a/Documentation/cgroups/memory.txt b/Documentation/cgroups/memory.txt
---- a/Documentation/cgroups/memory.txt	2010-10-05 09:14:36.000000000 -0500
-+++ b/Documentation/cgroups/memory.txt	2010-10-21 07:25:24.000000000 -0500
-@@ -34,6 +34,7 @@ Current Status: linux-2.6.34-mmotm(devel
+ drivers/power/Kconfig              |   10 ++
+ drivers/power/Makefile             |    1 +
+ drivers/power/gpio-charger.c       |  184 ++++++++++++++++++++++++++++++++++++
+ include/linux/power/gpio-charger.h |   39 ++++++++
+ 4 files changed, 234 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/power/gpio-charger.c
+ create mode 100644 include/linux/power/gpio-charger.h
+
+diff --git a/drivers/power/Kconfig b/drivers/power/Kconfig
+index 0734356..90b1940 100644
+--- a/drivers/power/Kconfig
++++ b/drivers/power/Kconfig
+@@ -166,4 +166,14 @@ config BATTERY_INTEL_MID
+ 	  Say Y here to enable the battery driver on Intel MID
+ 	  platforms.
  
- Features:
-  - accounting anonymous pages, file caches, swap caches usage and limiting them.
-+   NOTE: On NOMMU systems, only anonymous pages are accounted.
-  - private LRU and reclaim routine. (system's global LRU and private LRU
-    work independently from each other)
-  - optionally, memory+swap usage can be accounted and limited.
-@@ -640,13 +641,41 @@ At reading, current status of OOM is sho
- 	under_oom	 0 or 1 (if 1, the memory cgroup is under OOM, tasks may
- 				 be stopped.)
- 
--11. TODO
-+11. NOMMU Support
++config CHARGER_GPIO
++	tristate "GPIO charger"
++	depends on GPIOLIB
++	help
++	  Say Y to include support for chargers which report their online status
++	  through a GPIO pin.
 +
-+Systems without a Memory Management Unit do not support virtual memory,
-+swapping, page faults, or migration, and are therefore limited to operating
-+entirely within the system's RAM. On such systems, maintaining an ability to
-+allocate sufficiently large blocks of contiguous memory is usually a challenge.
-+This makes the overhead involved in memory cgroup support more of a concern,
-+particularly when the memory page size is small.
++	  This driver can be build as a module. If so, the module will be
++	  called gpio-chager.
 +
-+Typically, embedded systems are comparatively simple and deterministic, and are
-+required to remain stable over long periods. Invocation of the OOM-killer, were
-+it to occur in an uncontrolled manner, would likely destabilize such systems.
+ endif # POWER_SUPPLY
+diff --git a/drivers/power/Makefile b/drivers/power/Makefile
+index 10143aa..2ca71ac 100644
+--- a/drivers/power/Makefile
++++ b/drivers/power/Makefile
+@@ -37,3 +37,4 @@ obj-$(CONFIG_BATTERY_S3C_ADC)	+= s3c_adc_battery.o
+ obj-$(CONFIG_CHARGER_PCF50633)	+= pcf50633-charger.o
+ obj-$(CONFIG_BATTERY_JZ4740)	+= jz4740-battery.o
+ obj-$(CONFIG_BATTERY_INTEL_MID)	+= intel_mid_battery.o
++obj-$(CONFIG_CHARGER_GPIO)	+= gpio-charger.o
+diff --git a/drivers/power/gpio-charger.c b/drivers/power/gpio-charger.c
+new file mode 100644
+index 0000000..0a2ddfc
+--- /dev/null
++++ b/drivers/power/gpio-charger.c
+@@ -0,0 +1,184 @@
++/*
++ *  Copyright (C) 2010, Lars-Peter Clausen <lars@metafoo.de>
++ *  Driver for chargers which report their online status through a GPIO pin
++ *
++ *  This program is free software; you can redistribute	 it and/or modify it
++ *  under  the terms of	 the GNU General  Public License as published by the
++ *  Free Software Foundation;  either version 2 of the	License, or (at your
++ *  option) any later version.
++ *
++ *  You should have received a copy of the  GNU General Public License along
++ *  with this program; if not, write  to the Free Software Foundation, Inc.,
++ *  675 Mass Ave, Cambridge, MA 02139, USA.
++ *
++ */
 +
-+Even a well-designed system may be presented with external stimuli that could
-+lead to OOM conditions. One example is a system that is required to check a
-+user-supplied removable FAT filesystem. As there is no way to bound the size
-+or coherence of the user's filesystem, the memory required to run dosfsck on
-+it may exceed the system's capacity. Running dosfsck in a memory cgroup
-+can preserve system stability even in the face of excessive memory demands.
++#include <linux/device.h>
++#include <linux/gpio.h>
++#include <linux/init.h>
++#include <linux/interrupt.h>
++#include <linux/kernel.h>
++#include <linux/module.h>
++#include <linux/platform_device.h>
++#include <linux/power_supply.h>
++#include <linux/slab.h>
 +
-+At the present time, only anonymous pages are included in NOMMU memory cgroup
-+accounting. As anonymous pages are not reclaimable, when a memory cgroup
-+exceeds its limit, reclaim will fail and the OOM-killer will be invoked.
-+See the Reclaim section of this document.
++#include <linux/power/gpio-charger.h>
 +
-+12. TODO
- 
- 1. Add support for accounting huge pages (as a separate controller)
- 2. Make per-cgroup scanner reclaim not-shared pages first
- 3. Teach controller to account for shared-pages
- 4. Start reclamation in the background when the limit is
-    not yet hit but the usage is getting closer
-+5. NOMMU: implement file cache accounting (which would support reclaim)
-+   or optimize away page_cgroup->lru, which is just per-page overhead when
-+   reclaim is not supported.
- 
- Summary
- 
-diff -uprN a/mm/nommu.c b/mm/nommu.c
---- a/mm/nommu.c	2010-10-13 08:20:38.000000000 -0500
-+++ b/mm/nommu.c	2010-10-20 07:34:11.000000000 -0500
-@@ -524,8 +524,10 @@ static void delete_nommu_region(struct v
- /*
-  * free a contiguous series of pages
-  */
--static void free_page_series(unsigned long from, unsigned long to)
-+static void free_page_series(unsigned long from, unsigned long to,
-+			     const struct file *file)
- {
-+	mem_cgroup_uncharge_start();
- 	for (; from < to; from += PAGE_SIZE) {
- 		struct page *page = virt_to_page(from);
- 
-@@ -534,8 +536,13 @@ static void free_page_series(unsigned lo
- 		if (page_count(page) != 1)
- 			kdebug("free page %p: refcount not one: %d",
- 			       page, page_count(page));
-+		/* Only anonymous pages are charged, currently */
-+		if (!file)
-+			mem_cgroup_uncharge_page(page);
++struct gpio_charger {
++	const struct gpio_charger_platform_data *pdata;
++	int irq;
 +
- 		put_page(page);
- 	}
-+	mem_cgroup_uncharge_end();
- }
- 
- /*
-@@ -563,7 +570,8 @@ static void __put_nommu_region(struct vm
- 		 * from ramfs/tmpfs mustn't be released here */
- 		if (region->vm_flags & VM_MAPPED_COPY) {
- 			kdebug("free series");
--			free_page_series(region->vm_start, region->vm_top);
-+			free_page_series(region->vm_start, region->vm_top,
-+					 region->vm_file);
- 		}
- 		kmem_cache_free(vm_region_jar, region);
- 	} else {
-@@ -1117,9 +1125,27 @@ static int do_mmap_private(struct vm_are
- 		set_page_refcounted(&pages[point]);
- 
- 	base = page_address(pages);
--	region->vm_flags = vma->vm_flags |= VM_MAPPED_COPY;
++	struct power_supply charger;
++};
 +
- 	region->vm_start = (unsigned long) base;
- 	region->vm_end   = region->vm_start + rlen;
++static irqreturn_t gpio_charger_irq(int irq, void *devid)
++{
++	struct power_supply *charger = devid;
++	power_supply_changed(charger);
 +
-+	/* Only anonymous pages are charged, currently */
-+	if (!vma->vm_file) {
-+		for (point = 0; point < total; point++) {
-+			int charge_failed =
-+				mem_cgroup_newpage_charge(&pages[point],
-+							  vma->vm_mm,
-+							  GFP_KERNEL);
-+			if (charge_failed) {
-+				free_page_series(region->vm_start,
-+						 region->vm_end, NULL);
-+				region->vm_start = region->vm_end = 0;
-+				goto enomem;
-+			}
++	return IRQ_HANDLED;
++}
++
++static inline struct gpio_charger *psy_to_gpio_charger(struct power_supply *psy)
++{
++	return container_of(psy, struct gpio_charger, charger);
++}
++
++static int gpio_charger_get_property(struct power_supply *psy,
++	enum power_supply_property psp, union power_supply_propval *val)
++{
++	struct gpio_charger *gpio_charger = psy_to_gpio_charger(psy);
++	const struct gpio_charger_platform_data *pdata = gpio_charger->pdata;
++
++	switch (psp) {
++	case POWER_SUPPLY_PROP_ONLINE:
++		val->intval = gpio_get_value(pdata->gpio);
++		val->intval ^= pdata->gpio_active_low;
++		break;
++	default:
++		return -EINVAL;
++	}
++
++	return 0;
++}
++
++static enum power_supply_property gpio_charger_properties[] = {
++	POWER_SUPPLY_PROP_ONLINE,
++};
++
++static int __devinit gpio_charger_probe(struct platform_device *pdev)
++{
++	const struct gpio_charger_platform_data *pdata = pdev->dev.platform_data;
++	struct gpio_charger *gpio_charger;
++	struct power_supply *charger;
++	int ret;
++
++	if (!pdata) {
++		dev_err(&pdev->dev, "No platform data");
++		return -EINVAL;
++	}
++
++	if (!gpio_is_valid(pdata->gpio)) {
++		dev_err(&pdev->dev, "Invalid gpio pin\n");
++		return -EINVAL;
++	}
++
++	gpio_charger = kzalloc(sizeof(*gpio_charger), GFP_KERNEL);
++
++	charger = &gpio_charger->charger;
++
++	charger->name = pdata->name;
++	charger->type = pdata->type;
++	charger->properties = gpio_charger_properties;
++	charger->num_properties = ARRAY_SIZE(gpio_charger_properties);
++	charger->get_property  = gpio_charger_get_property;
++	charger->supplied_to = pdata->supplied_to;
++	charger->num_supplicants = pdata->num_supplicants;
++
++	ret = gpio_request(pdata->gpio, dev_name(&pdev->dev));
++	if (ret) {
++		dev_err(&pdev->dev, "Failed to request gpio pin: %d\n", ret);
++		goto err_free;
++	}
++	ret = gpio_direction_input(pdata->gpio);
++	if (ret) {
++		dev_err(&pdev->dev, "Failed to set gpio to input: %d\n", ret);
++		goto err_gpio_free;
++	}
++
++	gpio_charger->irq = gpio_to_irq(pdata->gpio);
++	if (gpio_charger->irq >= 0) {
++		ret = request_irq(gpio_charger->irq, gpio_charger_irq,
++				IRQF_TRIGGER_RISING | IRQF_TRIGGER_FALLING,
++				dev_name(&pdev->dev), charger);
++		if (ret) {
++			dev_warn(&pdev->dev, "Failed to request gpio irq: %d\n", ret);
++			gpio_charger->irq = -1;
 +		}
 +	}
 +
-+	region->vm_flags = vma->vm_flags |= VM_MAPPED_COPY;
- 	region->vm_top   = region->vm_start + (total << PAGE_SHIFT);
- 
- 	vma->vm_start = region->vm_start;
-@@ -1150,7 +1176,7 @@ static int do_mmap_private(struct vm_are
- 	return 0;
- 
- error_free:
--	free_page_series(region->vm_start, region->vm_end);
-+	free_page_series(region->vm_start, region->vm_end, vma->vm_file);
- 	region->vm_start = vma->vm_start = 0;
- 	region->vm_end   = vma->vm_end = 0;
- 	region->vm_top   = 0;
-@@ -1213,16 +1239,15 @@ unsigned long do_mmap_pgoff(struct file 
- 	INIT_LIST_HEAD(&vma->anon_vma_chain);
- 	vma->vm_flags = vm_flags;
- 	vma->vm_pgoff = pgoff;
-+	vma->vm_mm    = current->mm;
- 
- 	if (file) {
- 		region->vm_file = file;
- 		get_file(file);
- 		vma->vm_file = file;
- 		get_file(file);
--		if (vm_flags & VM_EXECUTABLE) {
-+		if (vm_flags & VM_EXECUTABLE)
- 			added_exe_file_vma(current->mm);
--			vma->vm_mm = current->mm;
--		}
- 	}
- 
- 	down_write(&nommu_region_sem);
-@@ -1555,7 +1580,7 @@ static int shrink_vma(struct mm_struct *
- 	add_nommu_region(region);
- 	up_write(&nommu_region_sem);
- 
--	free_page_series(from, to);
-+	free_page_series(from, to, vma->vm_file);
- 	return 0;
- }
- 
++	gpio_charger->pdata = pdata;
++
++	ret = power_supply_register(&pdev->dev, charger);
++	if (ret < 0) {
++		dev_err(&pdev->dev, "Failed to register power supply: %d\n", ret);
++		goto err_irq_free;
++	}
++
++	platform_set_drvdata(pdev, gpio_charger);
++
++	return 0;
++
++err_irq_free:
++	if (gpio_charger->irq >= 0)
++		free_irq(gpio_charger->irq, charger);
++err_gpio_free:
++	gpio_free(pdata->gpio);
++err_free:
++	kfree(gpio_charger);
++	return ret;
++}
++
++static int __devexit gpio_charger_remove(struct platform_device *pdev)
++{
++	struct gpio_charger *gpio_charger = platform_get_drvdata(pdev);
++	const struct gpio_charger_platform_data *pdata = gpio_charger->pdata;
++
++	power_supply_unregister(&gpio_charger->charger);
++
++	if (gpio_charger->irq >= 0)
++		free_irq(gpio_charger->irq, &gpio_charger->charger);
++	gpio_free(pdata->gpio);
++
++	platform_set_drvdata(pdev, NULL);
++	kfree(gpio_charger);
++
++	return 0;
++}
++
++static struct platform_driver  gpio_charger_driver = {
++	.probe = gpio_charger_probe,
++	.remove = __devexit_p(gpio_charger_remove),
++	.driver = {
++		.name = "gpio-charger",
++		.owner = THIS_MODULE,
++	},
++};
++
++static int __init gpio_charger_init(void)
++{
++	return platform_driver_register(&gpio_charger_driver);
++}
++module_init(gpio_charger_init);
++
++static void __exit gpio_charger_exit(void)
++{
++	platform_driver_unregister(&gpio_charger_driver);
++}
++module_exit(gpio_charger_exit);
++
++MODULE_AUTHOR("Lars-Peter Clausen <lars@metafoo.de>");
++MODULE_DESCRIPTION("Driver for chargers which report their online status through a GPIO");
++MODULE_LICENSE("GPL");
++MODULE_ALIAS("platform:gpio-charger");
+diff --git a/include/linux/power/gpio-charger.h b/include/linux/power/gpio-charger.h
+new file mode 100644
+index 0000000..404d5e6
+--- /dev/null
++++ b/include/linux/power/gpio-charger.h
+@@ -0,0 +1,39 @@
++/*
++ *  Copyright (C) 2010, Lars-Peter Clausen <lars@metafoo.de>
++ *
++ *  This program is free software; you can redistribute	 it and/or modify it
++ *  under  the terms of	 the GNU General  Public License as published by the
++ *  Free Software Foundation;  either version 2 of the	License, or (at your
++ *  option) any later version.
++ *
++ *  You should have received a copy of the  GNU General Public License along
++ *  with this program; if not, write  to the Free Software Foundation, Inc.,
++ *  675 Mass Ave, Cambridge, MA 02139, USA.
++ *
++ */
++
++#ifndef __LINUX_POWER_GPIO_CHARGER_H__
++#define __LINUX_POWER_GPIO_CHARGER_H__
++
++/*
++ * struct gpio_charger_platform_data - platform_data for gpio_charger devices
++ * @name:		Name for the chargers power_supply device
++ * @type:		Type of the charger
++ * @gpio:		GPIO which is used to indicate the chargers status
++ * @gpio_active_low:	Should be set to 1 if the GPIO is active low otherwise 0
++ * @supplied_to:	Array of battery names to which this chargers supplies power
++ * @num_supplicants:	Number of entries in the supplied_to array
++ */
++
++struct gpio_charger_platform_data {
++	const char *name;
++	enum power_supply_type type;
++
++	int gpio;
++	int gpio_active_low;
++
++	char **supplied_to;
++	size_t num_supplicants;
++};
++
++#endif
+-- 
+1.5.6.5
 
