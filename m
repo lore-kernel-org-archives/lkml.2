@@ -1,80 +1,202 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757818Ab0JUM1N (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Oct 2010 08:27:13 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:35088 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757737Ab0JUM1L convert rfc822-to-8bit (ORCPT
+	id S1757844Ab0JUM2t (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Oct 2010 08:28:49 -0400
+Received: from mail.digidescorp.com ([66.244.163.200]:55891 "EHLO
+	digidescorp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757774Ab0JUM2s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Oct 2010 08:27:11 -0400
-From: "Kanigeri, Hari" <h-kanigeri2@ti.com>
-To: "Kamoolkar, Mugdha" <mugdha@ti.com>, "'Ohad Ben-Cohen'" <ohad@wizery.com>,
-        Kevin Hilman <khilman@deeprootsystems.com>,
-        "Krishnamoorthy, Balaji T" <balajitk@ti.com>,
-        "Kamat, Nishant" <nskamat@ti.com>
-CC: "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        Greg KH <greg@kroah.com>, Tony Lindgren <tony@atomide.com>,
-        "Cousson, Benoit" <b-cousson@ti.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        "Anna, Suman" <s-anna@ti.com>, Simon Que <sque@ti.com>
-Date: Thu, 21 Oct 2010 07:26:25 -0500
-Subject: RE: [PATCH 3/3] omap: add hwspinlock device
-Thread-Topic: [PATCH 3/3] omap: add hwspinlock device
-Thread-Index: ActwjBYZ42+jyHUzT/m0HqnV96vz7gAbk0dwAAfwZmA=
-Message-ID: <8F7AF80515AF0D4D93307E594F3CB40E6E0DD10A@dlee03.ent.ti.com>
-References: <1287387875-14168-1-git-send-email-ohad@wizery.com>
- <1287387875-14168-4-git-send-email-ohad@wizery.com>
- <87r5fmxghm.fsf@deeprootsystems.com>
- <AANLkTinZ2+ocJCfUpT15Ow3J9XBa-8XWnVC3gDDJ7s-v@mail.gmail.com>
- <87bp6pviwf.fsf@deeprootsystems.com>
- <AANLkTikE1dCXW-7ScVoDgEK3sxai_TyFzstSG+zvNm2F@mail.gmail.com>
- <8739s0sobc.fsf@deeprootsystems.com>
- <AANLkTikdjtYtzhgM_=io3SFdUZq=8Xcc8n24bW=SFgTA@mail.gmail.com>
- <B85A65D85D7EB246BE421B3FB0FBB5930233F94602@dbde02.ent.ti.com>
-In-Reply-To: <B85A65D85D7EB246BE421B3FB0FBB5930233F94602@dbde02.ent.ti.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Thu, 21 Oct 2010 08:28:48 -0400
+X-Spam-Processed: digidescorp.com, Thu, 21 Oct 2010 07:28:46 -0500
+X-Authenticated-Sender: steve@digidescorp.com
+X-Return-Path: prvs=191030265f=steve@digidescorp.com
+X-Envelope-From: steve@digidescorp.com
+X-MDaemon-Deliver-To: linux-kernel@vger.kernel.org
+From: "Steven J. Magnani" <steve@digidescorp.com>
+To: linux-mm@kvack.org
+Cc: balbir@linux.vnet.ibm.com, dhowells@redhat.com,
+        linux-kernel@vger.kernel.org, kamezawa.hiroyu@jp.fujitsu.com,
+        "Steven J. Magnani" <steve@digidescorp.com>
+Subject: [PATCH V3] nommu: add anonymous page memcg accounting
+Date: Thu, 21 Oct 2010 07:28:08 -0500
+Message-Id: <1287664088-4483-1-git-send-email-steve@digidescorp.com>
+X-Mailer: git-send-email 1.6.0.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mugdha,
+Add the necessary calls to track VM anonymous page usage (only).
 
-> > >>
-> > >> This does not require any smart IPC and it will allow us to get
-> > rid of
-> > >> the omap_hwspinlock_request_specific() API and its early-callers
-> > >> requirement.
-> > >
-> > > Yes, that would indeed simplify things.
-> >
-> > Balaji, Nishant, are you OK with this ?
-> >
-> The problem with this approach is that the i2c driver would have to
-> sync up on the shared memory location that it uses to share the
-> information of the spinlock ID. What location would this be? How would
-> the i2c driver on the m3 know about this location? Does this mean
-> hard-coding of the shared memory address? If yes, then there would be
-> an impact to users if they wanted to change their memory map. Any kind
-> of hard-coding of this sort can be painful in such cases, especially
-> if it happens in multiple drivers. On the other hand, hard-coding
-> (reserving) spinlock IDs is a much safer option and does not impact
-> anything else.
-> 
+V3 changes:
+* Use vma->vm_mm instead of current->mm when charging pages, for clarity
+* Document that reclaim is not possible with only anonymous page accounting
+  so the OOM-killer is invoked when a limit is exceeded
+* Add TODO to implement file cache (reclaim) support or optimize away
+  page_cgroup->lru
 
-We can avoid the hard-coding of shared memory location if I2C Driver maps using iommu some dynamic memory for shared memory location to M3 virtual address and shares this information to I2c driver counter-part on M3 using the IPC call. But this might not be trivial and this would be against what Ohad mentioned about not requiring any smart IPC :).
-I prefer hard-coding of spinlock id to keep things simple.
+V2 changes:
+* Added update of memory cgroup documentation
+* Clarify use of 'file' to distinguish anonymous mappings
 
-Thank you,
-Best regards,
-Hari
+Signed-off-by: Steven J. Magnani <steve@digidescorp.com>
+---
+diff -uprN a/Documentation/cgroups/memory.txt b/Documentation/cgroups/memory.txt
+--- a/Documentation/cgroups/memory.txt	2010-10-05 09:14:36.000000000 -0500
++++ b/Documentation/cgroups/memory.txt	2010-10-21 07:25:24.000000000 -0500
+@@ -34,6 +34,7 @@ Current Status: linux-2.6.34-mmotm(devel
+ 
+ Features:
+  - accounting anonymous pages, file caches, swap caches usage and limiting them.
++   NOTE: On NOMMU systems, only anonymous pages are accounted.
+  - private LRU and reclaim routine. (system's global LRU and private LRU
+    work independently from each other)
+  - optionally, memory+swap usage can be accounted and limited.
+@@ -640,13 +641,41 @@ At reading, current status of OOM is sho
+ 	under_oom	 0 or 1 (if 1, the memory cgroup is under OOM, tasks may
+ 				 be stopped.)
+ 
+-11. TODO
++11. NOMMU Support
++
++Systems without a Memory Management Unit do not support virtual memory,
++swapping, page faults, or migration, and are therefore limited to operating
++entirely within the system's RAM. On such systems, maintaining an ability to
++allocate sufficiently large blocks of contiguous memory is usually a challenge.
++This makes the overhead involved in memory cgroup support more of a concern,
++particularly when the memory page size is small.
++
++Typically, embedded systems are comparatively simple and deterministic, and are
++required to remain stable over long periods. Invocation of the OOM-killer, were
++it to occur in an uncontrolled manner, would likely destabilize such systems.
++
++Even a well-designed system may be presented with external stimuli that could
++lead to OOM conditions. One example is a system that is required to check a
++user-supplied removable FAT filesystem. As there is no way to bound the size
++or coherence of the user's filesystem, the memory required to run dosfsck on
++it may exceed the system's capacity. Running dosfsck in a memory cgroup
++can preserve system stability even in the face of excessive memory demands.
++
++At the present time, only anonymous pages are included in NOMMU memory cgroup
++accounting. As anonymous pages are not reclaimable, when a memory cgroup
++exceeds its limit, reclaim will fail and the OOM-killer will be invoked.
++See the Reclaim section of this document.
++
++12. TODO
+ 
+ 1. Add support for accounting huge pages (as a separate controller)
+ 2. Make per-cgroup scanner reclaim not-shared pages first
+ 3. Teach controller to account for shared-pages
+ 4. Start reclamation in the background when the limit is
+    not yet hit but the usage is getting closer
++5. NOMMU: implement file cache accounting (which would support reclaim)
++   or optimize away page_cgroup->lru, which is just per-page overhead when
++   reclaim is not supported.
+ 
+ Summary
+ 
+diff -uprN a/mm/nommu.c b/mm/nommu.c
+--- a/mm/nommu.c	2010-10-13 08:20:38.000000000 -0500
++++ b/mm/nommu.c	2010-10-20 07:34:11.000000000 -0500
+@@ -524,8 +524,10 @@ static void delete_nommu_region(struct v
+ /*
+  * free a contiguous series of pages
+  */
+-static void free_page_series(unsigned long from, unsigned long to)
++static void free_page_series(unsigned long from, unsigned long to,
++			     const struct file *file)
+ {
++	mem_cgroup_uncharge_start();
+ 	for (; from < to; from += PAGE_SIZE) {
+ 		struct page *page = virt_to_page(from);
+ 
+@@ -534,8 +536,13 @@ static void free_page_series(unsigned lo
+ 		if (page_count(page) != 1)
+ 			kdebug("free page %p: refcount not one: %d",
+ 			       page, page_count(page));
++		/* Only anonymous pages are charged, currently */
++		if (!file)
++			mem_cgroup_uncharge_page(page);
++
+ 		put_page(page);
+ 	}
++	mem_cgroup_uncharge_end();
+ }
+ 
+ /*
+@@ -563,7 +570,8 @@ static void __put_nommu_region(struct vm
+ 		 * from ramfs/tmpfs mustn't be released here */
+ 		if (region->vm_flags & VM_MAPPED_COPY) {
+ 			kdebug("free series");
+-			free_page_series(region->vm_start, region->vm_top);
++			free_page_series(region->vm_start, region->vm_top,
++					 region->vm_file);
+ 		}
+ 		kmem_cache_free(vm_region_jar, region);
+ 	} else {
+@@ -1117,9 +1125,27 @@ static int do_mmap_private(struct vm_are
+ 		set_page_refcounted(&pages[point]);
+ 
+ 	base = page_address(pages);
+-	region->vm_flags = vma->vm_flags |= VM_MAPPED_COPY;
++
+ 	region->vm_start = (unsigned long) base;
+ 	region->vm_end   = region->vm_start + rlen;
++
++	/* Only anonymous pages are charged, currently */
++	if (!vma->vm_file) {
++		for (point = 0; point < total; point++) {
++			int charge_failed =
++				mem_cgroup_newpage_charge(&pages[point],
++							  vma->vm_mm,
++							  GFP_KERNEL);
++			if (charge_failed) {
++				free_page_series(region->vm_start,
++						 region->vm_end, NULL);
++				region->vm_start = region->vm_end = 0;
++				goto enomem;
++			}
++		}
++	}
++
++	region->vm_flags = vma->vm_flags |= VM_MAPPED_COPY;
+ 	region->vm_top   = region->vm_start + (total << PAGE_SHIFT);
+ 
+ 	vma->vm_start = region->vm_start;
+@@ -1150,7 +1176,7 @@ static int do_mmap_private(struct vm_are
+ 	return 0;
+ 
+ error_free:
+-	free_page_series(region->vm_start, region->vm_end);
++	free_page_series(region->vm_start, region->vm_end, vma->vm_file);
+ 	region->vm_start = vma->vm_start = 0;
+ 	region->vm_end   = vma->vm_end = 0;
+ 	region->vm_top   = 0;
+@@ -1213,16 +1239,15 @@ unsigned long do_mmap_pgoff(struct file 
+ 	INIT_LIST_HEAD(&vma->anon_vma_chain);
+ 	vma->vm_flags = vm_flags;
+ 	vma->vm_pgoff = pgoff;
++	vma->vm_mm    = current->mm;
+ 
+ 	if (file) {
+ 		region->vm_file = file;
+ 		get_file(file);
+ 		vma->vm_file = file;
+ 		get_file(file);
+-		if (vm_flags & VM_EXECUTABLE) {
++		if (vm_flags & VM_EXECUTABLE)
+ 			added_exe_file_vma(current->mm);
+-			vma->vm_mm = current->mm;
+-		}
+ 	}
+ 
+ 	down_write(&nommu_region_sem);
+@@ -1555,7 +1580,7 @@ static int shrink_vma(struct mm_struct *
+ 	add_nommu_region(region);
+ 	up_write(&nommu_region_sem);
+ 
+-	free_page_series(from, to);
++	free_page_series(from, to, vma->vm_file);
+ 	return 0;
+ }
+ 
+
