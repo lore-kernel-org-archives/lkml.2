@@ -1,152 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756274Ab0JUBVM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Oct 2010 21:21:12 -0400
-Received: from nm19-vm0.bullet.mail.ac4.yahoo.com ([98.139.53.212]:24131 "HELO
-	nm19-vm0.bullet.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751054Ab0JUBVK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Oct 2010 21:21:10 -0400
-X-Greylist: delayed 388 seconds by postgrey-1.27 at vger.kernel.org; Wed, 20 Oct 2010 21:21:10 EDT
-X-Yahoo-Newman-Id: 127410.48794.bm@omp1027.mail.ac4.yahoo.com
-X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
-X-YMail-OSG: kWxRPdcVM1mVwik7U_8ech9DQKz_hjMdULoZv6jJz_v5K5e
- 39XIwBb6TceKxLDGGSjGJiVH2_RPj.T0I0ESg.dl9cwSB.rT15hqP5awjK8O
- NSFPU04VvZbEFER6C6jp.Ia3Z46Nbjs5kQropDWJD2DHjWVjflqGYibcxSWu
- Wx7Q6AA3UOvjjKlkBNgz2b4PzYWG4xYEBDNgtwyMGJFftEEZ1O7LfUd8u2yw
- 6Fj0ffNdxnR9p3D3JAgRg.9_cImdySVT7Gi9krGK2dE7tIT172rQqWmORLSQ
- NVNbzwfjm1ZdbnVlWmUfXNG0Nbo5KiXK2V6CqhzOM54I8BgUNP1Kkv9C5kZe
- 721.IEkSkRRx7ZtbYTlJUea5QMg3BYcnvq.PHxoQzv_CVkYLXqTA_8A.avDC
- FyT1XhnS67OB7ka0Ve0T5VJSYwfbuJHCfuoa3FFqxHzXf9YA1dvPQ
-X-Yahoo-Newman-Property: ymail-3
-Subject: Re: [ANNOUNCE] Status of unlocked_qcmds=1 operation for .37
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: Giridhar Malavali <giridhar.malavali@qlogic.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        LinuxSCSI <linux-scsi@vger.kernel.org>,
-        James Bottomley <James.Bottomley@suse.de>,
-        Mike Christie <michaelc@cs.wisc.edu>,
-        Andrew Vasquez <andrew.vasquez@qlogic.com>
-In-Reply-To: <C8E4D7B7.A1F4%giridhar.malavali@qlogic.com>
-References: <C8E4D7B7.A1F4%giridhar.malavali@qlogic.com>
-Content-Type: text/plain
-Date: Wed, 20 Oct 2010 17:39:29 -0700
-Message-Id: <1287621569.10283.162.camel@haakon2.linux-iscsi.org>
+	id S1755623Ab0JUBZN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Oct 2010 21:25:13 -0400
+Received: from mga02.intel.com ([134.134.136.20]:57261 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751054Ab0JUBZM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Oct 2010 21:25:12 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.58,214,1286175600"; 
+   d="scan'208";a="565979803"
+Subject: Re: [PATCH 4/5] x86, NMI: Allow NMI reason io port (0x61) to be
+ processed on any CPU
+From: Huang Ying <ying.huang@intel.com>
+To: Don Zickus <dzickus@redhat.com>
+Cc: Robert Richter <robert.richter@amd.com>, "mingo@elte.hu" <mingo@elte.hu>,
+        "andi@firstfloor.org" <andi@firstfloor.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "peterz@infradead.org" <peterz@infradead.org>
+In-Reply-To: <20101021011813.GH19090@redhat.com>
+References: <1287195738-3136-1-git-send-email-dzickus@redhat.com>
+	 <1287195738-3136-5-git-send-email-dzickus@redhat.com>
+	 <20101019150701.GR5969@erda.amd.com> <20101019162507.GU5969@erda.amd.com>
+	 <20101019183720.GN4140@redhat.com> <1287534192.3026.9.camel@yhuang-dev>
+	 <20101020142734.GD19090@redhat.com> <1287621607.19320.7.camel@yhuang-dev>
+	 <20101021011813.GH19090@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 21 Oct 2010 09:25:09 +0800
+Message-ID: <1287624309.19320.52.camel@yhuang-dev>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.22.3.1 
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-10-20 at 17:30 -0700, Giridhar Malavali wrote:
+On Thu, 2010-10-21 at 09:18 +0800, Don Zickus wrote:
+> On Thu, Oct 21, 2010 at 08:40:07AM +0800, Huang Ying wrote:
+> > On Wed, 2010-10-20 at 22:27 +0800, Don Zickus wrote:
+> > > I thought the point of this patch was to remove that restriction in the
+> > > nmi handler, which would allow future patches to re-route these NMIs to
+> > > another cpu, thus finally allowing people to hot-remove the bsp cpu, no?
+> > 
+> > Yes. We just want to make it possible to hot-remove the bsp cpu. Because
+> > IOAPIC is configurable, I think it is possible to configure IOAPIC to
+> > send PCI SERR NMI to one CPU while IOCK NMI to another CPU. Why not
+> > support this situation too? It does not harm anything but performance to
 > 
-> 
-> On 10/20/10 4:19 PM, "Nicholas A. Bellinger" <nab@linux-iscsi.org> wrote:
-> 
-> > On Wed, 2010-10-20 at 15:37 -0700, Giridhar Malavali wrote:
-> >> 
-> >> 
-> > 
-> > <Trimming long CC'list>
-> > 
-> > Hi Giri,
-> > 
-> >> On 10/20/10 1:49 PM, "Nicholas A. Bellinger" <nab@linux-iscsi.org> wrote:
-> >> 
-> >>> Greetings all,
-> >>> 
-> >>> *) Individual LLDs running by default w/ unlocked_qcmds=1
-> >>> 
-> >>> aic94xx: need ack maintainer at adaptec..?)
-> >>> mvsas: need ack maintainer at marvell..?)
-> >>> pm8001: need ack Jang Wang
-> >>> qla4xxx, qla2xxx: need ack Andrew Vasquez
-> >>> fnic:  need ack Joe Eykholt
-> >> 
-> >> The qla2xxx driver is modified not to depend on the host_lock and also to
-> >> drop usage of scsi_cmnd->serial_number. Both the patches are submitted to
-> >> linux-scsi and you can find more information at
-> >> 
-> >> http://marc.info/?l=linux-scsi=128716779923700=2
-> >> <http://marc.info/?l=linux-scsi&m=128716779923700&w=2>
-> > 
-> > Sure, but for the new fast unlocked_qcmds=1 operation in
-> > qla2xxx_queuecommand(), the host_lock access needs to be complete
-> > removed from SHT->queuecommand().   The above patch just moves the
-> > vha->host->host_lock unlock up in queuecommand(),  right..?
-> > 
-> > diff --git a/drivers/scsi/qla2xxx/qla_os.c b/drivers/scsi/qla2xxx/qla_os.c
-> > index b0c7139..77203b0 100644
-> > --- a/drivers/scsi/qla2xxx/qla_os.c
-> > +++ b/drivers/scsi/qla2xxx/qla_os.c
-> > @@ -545,6 +545,7 @@ qla2xxx_queuecommand(struct scsi_cmnd *cmd, void
-> > (*done)(struct scsi_cmnd *))
-> >         srb_t *sp;
-> >         int rval;
-> > 
-> > +       spin_unlock_irq(vha->host->host_lock);
-> >         if (ha->flags.eeh_busy) {
-> >                 if (ha->flags.pci_channel_io_perm_failure)
-> >                         cmd->result = DID_NO_CONNECT << 16;
-> > 
-> > <SNIP>
-> > 
-> > @@ -603,9 +599,11 @@ qc24_host_busy_lock:
-> >         return SCSI_MLQUEUE_HOST_BUSY;
-> > 
-> >  qc24_target_busy:
-> > +       spin_lock_irq(vha->host->host_lock);
-> >         return SCSI_MLQUEUE_TARGET_BUSY;
-> > 
-> >  qc24_fail_command:
-> > +       spin_lock_irq(vha->host->host_lock);
-> >         done(cmd);
-> > 
-> >         return 0;
-> > 
-> >> http://marc.info/?l=linux-scsi=128716779623683=2
-> >> <http://marc.info/?l=linux-scsi&m=128716779623683&w=2>
-> >> 
-> > 
-> > <nod> I had been only updating LLDs that actually used ->serial_number
-> > beyond a simple informational purposes for error recovery.  Thanks for
-> > removing this one preemptively!  8-)
-> > 
-> > Best,
-> > 
-> > --nab
-> > 
-> 
-> Hi Nicholas,
-> 
-> Yes, I understand. I was thinking that you are going to submit the patches
-> for all LLD with your final submission.
-> 
-> I will submit the patch which removes host_lock in queuecommand routine
-> completely then. 
+> Why would we want to?  It seems simpler to have one cpu dedicated to
+> handling the external NMIs.
 
-Hmmmmm..
+If we can guarantee that these NMIs will be only sent to one CPU, I am
+fine with trylock.
 
-I think you will want to coordinate with James Bottomley here before
-dropping the existing qla2xxx SHT->queuecomand() -> unlock() ->
-do_lld_work() -> lock() code.  Doing this legacy optimization still does
-provide some form of benefit (which btw I don't think anyone has ever
-actually determined how much this), but lets make sure the legacy
-optimization remains in place until we can resolve the remaining issues
-so James can merge the initial pieces.  From there you can drop
-host_lock in qla2xxx_queuecommand() and safely enable unlocked_qcmds=1
-operation by default to realize the lock-less queue small block IOP
-gains.
-
-Best,
-
---nab
-
+> > use raw_spin_lock() instead of raw_spin_trylock() here. And for hardware
+> > error processing, performance is not so important in fact.
 > 
-> -- Giri
-> 
-> > 
-> > 
-> 
+> I don't know.  I was always a little uncomfortable with a spin_lock there,
+> so I am more supportive of a trylock.
+
+Best Regards,
+Huang Ying
 
