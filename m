@@ -1,143 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758328Ab0JUWSt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Oct 2010 18:18:49 -0400
-Received: from mout0.freenet.de ([195.4.92.90]:45116 "EHLO mout0.freenet.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752383Ab0JUWSr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Oct 2010 18:18:47 -0400
-Message-ID: <4CC0BC3E.6080906@freenet.de>
-Date: Fri, 22 Oct 2010 00:18:38 +0200
-From: Patrick Ringl <patrick_@freenet.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.11) Gecko/20100713 Thunderbird/3.0.6
+	id S1758866Ab0JUWXS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Oct 2010 18:23:18 -0400
+Received: from web31802.mail.mud.yahoo.com ([68.142.207.65]:26363 "HELO
+	web31802.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1758798Ab0JUWXQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Oct 2010 18:23:16 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=yahoo.com;
+  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Reply-To:Subject:To:MIME-Version:Content-Type;
+  b=RbBD779VDU8sEugyhQrd7vqS5XkKvMZBCpIHl9hsZqpEyoxTWctsTnIuU8pOjLePtPwG0e5KkfDaYgRkIP7BrJ1ebuLHWifXNOU//Jlmr/Is5ZoJlC3PDATAhJS1cbHJVsBqCquAr3P3J7Ooy/hBPntSvX76gbuTu8a8mVHyoeg=;
+Message-ID: <407253.45995.qm@web31802.mail.mud.yahoo.com>
+X-YMail-OSG: _iUSK8kVM1nGqrqHWb_BCYfiqfOTajzgDeKuH0ygzeah8SF
+ tw32186I3uFcNGWjxHeFPcSu63arTGjgYSPKWXfne6rl7Wzmu07KdDORV5yo
+ 4Rv0a5mTvuxlydpfhhu0A73avCpDixxRCZwEUO2GIem5cteFZpMacAhe2tQ1
+ kPAd.kdtDmTSA3Um_Lq2YJz5QzWOYU3DtIeF7Wvaw2V5KGNAVrAn1ksx8i3z
+ H.LxI.VYgqguxkbhu5VGrUvjsfJMiSoI05y95oqUbNhnMa9Jr_e6rzAb6WMr
+ h_AS2cn_a5rjfr0ZWb0WJtxn5pXOiixx4mjQBWOEUOwRSawYQMavpb_xK.8P
+ 3Rp0rOKcVlzB9P0g4kUuN.l0JS1c-
+X-Mailer: YahooMailClassic/11.4.9 YahooMailWebService/0.8.107.285259
+Date: Thu, 21 Oct 2010 15:23:14 -0700 (PDT)
+From: Luben Tuikov <ltuikov@yahoo.com>
+Reply-To: ltuikov@yahoo.com
+Subject: [PATCH] [USB] Use normalized sense when emulating autosense
+To: Greg KH <greg@kroah.com>, linux-usb@vger.kernel.org,
+        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
 MIME-Version: 1.0
-To: Herbert Xu <herbert@gondor.hengli.com.au>
-CC: Patrick Ringl <patrick_@freenet.de>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, bridge@lists.linux-foundation.org
-Subject: Re: 2.6.36-rc7: net/bridge causes temporary network I/O lockups [2]
-References: <4CB9EBC3.4070905@freenet.de> <20101018161656.GA2403@gondor.apana.org.au> <4CBCB014.9080108@freenet.de> <20101020061631.GA21679@gondor.apana.org.au>
-In-Reply-To: <20101020061631.GA21679@gondor.apana.org.au>
-Content-Type: multipart/mixed;
- boundary="------------070402080704000908080609"
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------070402080704000908080609
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+This patch solves two things:
+1) Enables autosense emulation code to correctly
+interpret descriptor format sense data, and
+2) Fixes a bug whereby the autosense emulation
+code would overwrite descriptor format sense data
+with SENSE KEY HARDWARE ERROR in fixed format, to
+incorrectly look like this:
 
-On 10/20/2010 08:16 AM, Herbert Xu wrote:
-> On Mon, Oct 18, 2010 at 10:37:40PM +0200, Patrick Ringl wrote:
->    
->> Anything else I could possibly provide? :-)
->>      
-> Yes, testing :)
->
-> First of all I'd like to rule out (or in) the IPv6 query code,
-> which is clearly generating a bogus packet (wrong payload_len).
->
-> So can you apply this patch and see if it makes the problem
-> go away? Please take packet dumps so we know that the IPv6 query
-> is no longer being sent.
->    
-Hi,
+Oct 21 14:11:07 localhost kernel: sd 7:0:0:0: [sdc]  Sense Key : Recovered Error [current] [descriptor]
+Oct 21 14:11:07 localhost kernel: Descriptor sense data with sense descriptors (in hex):
+Oct 21 14:11:07 localhost kernel:        72 01 04 1d 00 00 00 0e 09 0c 00 00 00 00 00 00
+Oct 21 14:11:07 localhost kernel:        00 4f 00 c2 00 50
+Oct 21 14:11:07 localhost kernel: sd 7:0:0:0: [sdc]  ASC=0x4 ASCQ=0x1d
 
-Hi,
+Signed-off-by: Luben Tuikov <ltuikov@yahoo.com>
+---
+ drivers/usb/storage/transport.c |   27 ++++++++++++---------------
+ 1 files changed, 12 insertions(+), 15 deletions(-)
 
-sorry for the late response. I've been using your patch on 2.6.36 and 
-unfortunately, the bogus ipv6 packet is not the cause of the lockups. I 
-have attached two packet dumps (br0 and eth1) again.
+diff --git a/drivers/usb/storage/transport.c b/drivers/usb/storage/transport.c
+index 64ec073..46165de 100644
+--- a/drivers/usb/storage/transport.c
++++ b/drivers/usb/storage/transport.c
+@@ -691,6 +691,7 @@ void usb_stor_invoke_transport(struct scsi_cmnd *srb, struct us_data *us)
+ 		int temp_result;
+ 		struct scsi_eh_save ses;
+ 		int sense_size = US_SENSE_SIZE;
++		struct scsi_sense_hdr sshdr;
+ 
+ 		/* device supports and needs bigger sense buffer */
+ 		if (us->fflags & US_FL_SANE_SENSE)
+@@ -774,17 +775,15 @@ Retry_Sense:
+ 			srb->sense_buffer[7] = (US_SENSE_SIZE - 8);
+ 		}
+ 
++		scsi_normalize_sense(srb->sense_buffer, SCSI_SENSE_BUFFERSIZE,
++				     &sshdr);
++
+ 		US_DEBUGP("-- Result from auto-sense is %d\n", temp_result);
+ 		US_DEBUGP("-- code: 0x%x, key: 0x%x, ASC: 0x%x, ASCQ: 0x%x\n",
+-			  srb->sense_buffer[0],
+-			  srb->sense_buffer[2] & 0xf,
+-			  srb->sense_buffer[12], 
+-			  srb->sense_buffer[13]);
++			  sshdr.response_code, sshdr.sense_key,
++			  sshdr.asc, sshdr.ascq);
+ #ifdef CONFIG_USB_STORAGE_DEBUG
+-		usb_stor_show_sense(
+-			  srb->sense_buffer[2] & 0xf,
+-			  srb->sense_buffer[12], 
+-			  srb->sense_buffer[13]);
++		usb_stor_show_sense(sshdr.sense_key, sshdr.asc, sshdr.ascq);
+ #endif
+ 
+ 		/* set the result so the higher layers expect this data */
+@@ -794,12 +793,7 @@ Retry_Sense:
+ 		 * everything worked or that there was an unspecified
+ 		 * problem.  We have to decide which.
+ 		 */
+-		if (	/* Filemark 0, ignore EOM, ILI 0, no sense */
+-				(srb->sense_buffer[2] & 0xaf) == 0 &&
+-			/* No ASC or ASCQ */
+-				srb->sense_buffer[12] == 0 &&
+-				srb->sense_buffer[13] == 0) {
+-
++		if (sshdr.sense_key == 0 && sshdr.asc == 0 && sshdr.ascq == 0) {
+ 			/* If things are really okay, then let's show that.
+ 			 * Zero out the sense buffer so the higher layers
+ 			 * won't realize we did an unsolicited auto-sense.
+@@ -814,7 +808,10 @@ Retry_Sense:
+ 			 */
+ 			} else {
+ 				srb->result = DID_ERROR << 16;
+-				srb->sense_buffer[2] = HARDWARE_ERROR;
++				if ((sshdr.response_code & 0x72) == 0x72)
++					srb->sense_buffer[1] = HARDWARE_ERROR;
++				else
++					srb->sense_buffer[2] = HARDWARE_ERROR;
+ 			}
+ 		}
+ 	}
+-- 
+1.7.0.1
 
-
-regards,
-Patrick
-> Thanks,
->    
-
-
---------------070402080704000908080609
-Content-Type: application/octet-stream;
- name="n_br0"
-Content-Transfer-Encoding: base64
-Content-Disposition: attachment;
- filename="n_br0"
-
-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
-AAA=
---------------070402080704000908080609
-Content-Type: application/octet-stream;
- name="n_eth1"
-Content-Transfer-Encoding: base64
-Content-Disposition: attachment;
- filename="n_eth1"
-
-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
-AAAAAA==
---------------070402080704000908080609--
