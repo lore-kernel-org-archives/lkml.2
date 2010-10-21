@@ -1,74 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756204Ab0JURwV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Oct 2010 13:52:21 -0400
-Received: from idcmail-mo2no.shaw.ca ([64.59.134.9]:15727 "EHLO
-	idcmail-mo2no.shaw.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756047Ab0JURwT convert rfc822-to-8bit (ORCPT
+	id S1756245Ab0JUR7e (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Oct 2010 13:59:34 -0400
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:37795 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755080Ab0JUR7d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Oct 2010 13:52:19 -0400
-X-Cloudmark-SP-Filtered: true
-X-Cloudmark-SP-Result: v=1.1 cv=cUTwMia+6fMZF7bjUHU44PO5dfBASsAn9IQPzcMrg/g= c=1 sm=1
- a=QT8drYoAYEQA:10 a=BLceEmwcHowA:10 a=kj9zAlcOel0A:10 a=xqWC_Br6kY4A:10
- a=c23vf5CSMVc0QQz9B4a6RA==:17 a=0EuGTOPUOMYycOhixQ4A:9
- a=cEK2MmWAv6YktlrWYhUA:7 a=TOs814xW77Blr3J1qNk2C6POT9MA:4 a=CjuIK1q_8ugA:10
- a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
-Subject: Re: [PATCH v2 20/22] bitops: remove ext2 non-atomic bitops from asm/bitops.h
-Mime-Version: 1.0 (Apple Message framework v1081)
-Content-Type: text/plain; charset=us-ascii
-From: Andreas Dilger <adilger@dilger.ca>
-In-Reply-To: <1287672077-5797-21-git-send-email-akinobu.mita@gmail.com>
-Date: Thu, 21 Oct 2010 11:52:15 -0600
-Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        Arnd Bergmann <arnd@arndb.de>, Christoph Hellwig <hch@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
-        linux-ext4@vger.kernel.org
-Content-Transfer-Encoding: 8BIT
-Message-Id: <AECEA79F-28E8-49B0-8C13-2CF115A6ECB4@dilger.ca>
-References: <1287672077-5797-1-git-send-email-akinobu.mita@gmail.com> <1287672077-5797-21-git-send-email-akinobu.mita@gmail.com>
-To: Akinobu Mita <akinobu.mita@gmail.com>
-X-Mailer: Apple Mail (2.1081)
+	Thu, 21 Oct 2010 13:59:33 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:x-enigmail-version:content-type
+         :content-transfer-encoding;
+        b=EkE9539FOH7R8SbhnFJEzxs4DDN0PEDFFPJZ8yQcm6pJgO6QAFLR3i7RovEC4fl7x4
+         sm0M4C0bLQj4fZHrR66nnhblFSGNflYjqSsM9P7tKwaK5C0+IgtmGHo7+Qq1o8ovR8gS
+         jWnn7B/EXPipIqmSrp9+QGSyPvcYS+AF0kw6I=
+Message-ID: <4CC07F7F.5050608@gmail.com>
+Date: Thu, 21 Oct 2010 19:59:27 +0200
+From: Jiri Slaby <jirislaby@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.11) Gecko/20101013 SUSE/3.1.5 Thunderbird/3.1.5
+MIME-Version: 1.0
+To: Valdis.Kletnieks@vt.edu
+CC: Takashi Iwai <tiwai@suse.de>, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org, mm-commits@vger.kernel.org,
+        clemens@ladisch.de, Jaroslav Kysela <perex@perex.cz>,
+        alsa-devel@alsa-project.org
+Subject: Re: HDA: no sound [was: mmotm 2010-10-20-15-01 uploaded]
+References: <201010202233.o9KMXNoL008303@imap1.linux-foundation.org> <4CBFEE94.7020103@gmail.com> <s5hlj5sc7do.wl%tiwai@suse.de>            <4CBFF25C.2080908@gmail.com> <13987.1287674569@localhost>
+In-Reply-To: <13987.1287674569@localhost>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2010-10-21, at 08:41, Akinobu Mita wrote:
-> As the result of conversions, there are no users of ext2 non-atomic bit
-> operations except for ext2 file system itself.  Now we can put them
-> into architecture independent code in ext2 file system, and remove
-> from asm/bitops.h for all architectures.
+On 10/21/2010 05:22 PM, Valdis.Kletnieks@vt.edu wrote:
+> Didn't we have some flustercluck a while back that gave pulseaudio
+> similar indigestion?  Oh, here it is, it was an fsnotify botch, of all things.
+> 
+> commit 2069601b3f0ea38170d4b509b89f3ca0a373bdc1
+> Author: Linus Torvalds <torvalds@linux-foundation.org>
+> Date:   Thu Aug 12 14:23:04 2010 -0700
+> 
+>     Revert "fsnotify: store struct file not struct path"
 
-Presumably there will be a separate patch series to remove the atomic ext2 bitops?  I was going to suggest removing the ext2 comment in bitops.h, but I notice that there are still the atomic bitops left.
+Yes, I was attacked by that in the past, but I doubt that's it now.
+Pulse was unable to start -- the second open of the snd device failed
+which doesn't seem to happen now.
 
-In any case, thanks for your efforts.  I agree that these ext2_* functions have no place in the generic code, and are only there for historical reasons.
+Going to switch hda intel from Y to M and play with that (revert the
+patches at first).
 
-> --- a/arch/arm/include/asm/bitops.h
-> +++ b/arch/arm/include/asm/bitops.h
-> @@ -327,22 +327,10 @@ static inline int fls(int x)
-> * Ext2 is defined to use little-endian byte ordering.
-> * These do not need to be atomic.
-> */
-> -#define ext2_set_bit(nr,p)			\
-> -		__test_and_set_le_bit(nr, (unsigned long *)(p))
-> #define ext2_set_bit_atomic(lock,nr,p)          \
-> 		test_and_set_le_bit(nr, (unsigned long *)(p))
-> -#define ext2_clear_bit(nr,p)			\
-> -		__test_and_clear_le_bit(nr, (unsigned long *)(p))
-> #define ext2_clear_bit_atomic(lock,nr,p)        \
-> 		test_and_clear_le_bit(nr, (unsigned long *)(p))
-> -#define ext2_test_bit(nr,p)			\
-> -		test_le_bit(nr, (unsigned long *)(p))
-> -#define ext2_find_first_zero_bit(p,sz)		\
-> -		find_first_zero_le_bit((unsigned long *)(p), sz)
-> -#define ext2_find_next_zero_bit(p,sz,off)	\
-> -		find_next_zero_le_bit((unsigned long *)(p), sz, off)
-> -#define ext2_find_next_bit(p, sz, off) \
-> -		find_next_le_bit((unsigned long *)(p), sz, off)
-
-
-Cheers, Andreas
-
-
-
-
-
+regards,
+-- 
+js
