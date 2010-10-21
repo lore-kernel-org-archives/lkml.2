@@ -1,66 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757203Ab0JUCiI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Oct 2010 22:38:08 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:33418 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756881Ab0JUCiG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Oct 2010 22:38:06 -0400
-Date: Wed, 20 Oct 2010 22:37:52 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: Huang Ying <ying.huang@intel.com>
-Cc: Robert Richter <robert.richter@amd.com>, "mingo@elte.hu" <mingo@elte.hu>,
-        "andi@firstfloor.org" <andi@firstfloor.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "peterz@infradead.org" <peterz@infradead.org>
-Subject: Re: [PATCH 4/5] x86, NMI: Allow NMI reason io port (0x61) to be
- processed on any CPU
-Message-ID: <20101021023752.GB12086@redhat.com>
-References: <1287195738-3136-1-git-send-email-dzickus@redhat.com>
- <1287195738-3136-5-git-send-email-dzickus@redhat.com>
- <20101019150701.GR5969@erda.amd.com>
- <20101019162507.GU5969@erda.amd.com>
- <20101019183720.GN4140@redhat.com>
- <1287534192.3026.9.camel@yhuang-dev>
- <20101020142734.GD19090@redhat.com>
- <1287621607.19320.7.camel@yhuang-dev>
- <20101021011813.GH19090@redhat.com>
- <1287624309.19320.52.camel@yhuang-dev>
+	id S1757223Ab0JUCki (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Oct 2010 22:40:38 -0400
+Received: from mail.digidescorp.com ([66.244.163.200]:28156 "EHLO
+	digidescorp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757042Ab0JUCkh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Oct 2010 22:40:37 -0400
+X-Greylist: delayed 314 seconds by postgrey-1.27 at vger.kernel.org; Wed, 20 Oct 2010 22:40:36 EDT
+X-Spam-Processed: digidescorp.com, Wed, 20 Oct 2010 21:35:20 -0500
+	(not processed: message was sent from localhost)
+X-Authenticated-Sender: steve@digidescorp.com
+X-Return-Path: prvs=191030265f=steve@digidescorp.com
+X-Envelope-From: steve@digidescorp.com
+X-MDaemon-Deliver-To: linux-kernel@vger.kernel.org
+Date: Wed, 20 Oct 2010 21:35:16 -0500
+From: "Steve Magnani" <steve@digidescorp.com>
+To: "KAMEZAWA Hiroyuki" <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: balbir@linux.vnet.ibm.com, linux-mm@kvack.org, dhowells@redhat.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH V2] nommu: add anonymous page memcg accounting
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1287624309.19320.52.camel@yhuang-dev>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+Content-Type: text/plain; charset="us-ascii"
+Message-ID: <WC20101021023516.32042E@digidescorp.com>
+X-Mailer: WorldClient 10.1.1
+In-Reply-To: <20101021090847.b4e23dde.kamezawa.hiroyu@jp.fujitsu.com>
+References: <1287491654-4005-1-git-send-email-steve@digidescorp.com> <20101019154819.GC15844@balbir.in.ibm.com> <1287512657.2500.31.camel@iscandar.digidescorp.com> <20101020091746.f0cc5dc2.kamezawa.hiroyu@jp.fujitsu.com> <1287578957.2603.34.camel@iscandar.digidescorp.com> <20101021090847.b4e23dde.kamezawa.hiroyu@jp.fujitsu.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 21, 2010 at 09:25:09AM +0800, Huang Ying wrote:
-> On Thu, 2010-10-21 at 09:18 +0800, Don Zickus wrote:
-> > On Thu, Oct 21, 2010 at 08:40:07AM +0800, Huang Ying wrote:
-> > > On Wed, 2010-10-20 at 22:27 +0800, Don Zickus wrote:
-> > > > I thought the point of this patch was to remove that restriction in the
-> > > > nmi handler, which would allow future patches to re-route these NMIs to
-> > > > another cpu, thus finally allowing people to hot-remove the bsp cpu, no?
-> > > 
-> > > Yes. We just want to make it possible to hot-remove the bsp cpu. Because
-> > > IOAPIC is configurable, I think it is possible to configure IOAPIC to
-> > > send PCI SERR NMI to one CPU while IOCK NMI to another CPU. Why not
-> > > support this situation too? It does not harm anything but performance to
-> > 
-> > Why would we want to?  It seems simpler to have one cpu dedicated to
-> > handling the external NMIs.
-> 
-> If we can guarantee that these NMIs will be only sent to one CPU, I am
-> fine with trylock.
+On Thu, 2010-10-21 at 09:08 +0900, KAMEZAWA Hiroyuki wrote:
+> I myself can't maintain NOMMU kernel. So, please test every -rc1 when
+> this patch merged. OK ?
 
-I guess I assumed the BIOS would only use the bsp CPU for the NMI, which
-would be passed on to the kernel.  Otherwise what happens if an NMI
-happens while the kernel is still bringing up the first cpu and it is
-routed to another CPU or if we boot with MAX_CPUS=1?
+It's reasonable to ask that features be tested every so often, and since the memory cgroup code seems to be 
+changing relatively frequently it probably needs exercising more often. I can't commit to this, though - I 
+don't know how much longer I'll be working with NOMMU kernels, and they are notoriously fragile. Any memory 
+access bug that would cause an oops (or SEGV) in a "normal" kernel can cause subtle and almost impossible to 
+debug behavior on a NOMMU system. For this reason I always try to work with "stable" kernels (recent threads 
+debating the term notwithstanding)...so it would be a pretty far jump to a -rc1 kernel.
 
-Then again people keep saying BIOS writers are crazy, so my assumption
-could be completely wrong. ;-p
+Is this a showstopper (in which case David's patch to make the CGROUP_MEM_RES_CTLR Kconfig option depend on MMU 
+should be implemented), or should I post V3 of the patch that has Balbir's suggested change? 
 
-Cheers,
-Don
+Steve
+
+
