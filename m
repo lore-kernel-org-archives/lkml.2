@@ -1,132 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755013Ab0JUPpy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Oct 2010 11:45:54 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:58185 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752149Ab0JUPpx (ORCPT
+	id S1757267Ab0JUPs4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Oct 2010 11:48:56 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:35680 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751118Ab0JUPsy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Oct 2010 11:45:53 -0400
-Date: Thu, 21 Oct 2010 17:45:44 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: Don Zickus <dzickus@redhat.com>
-Cc: Huang Ying <ying.huang@intel.com>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        Robert Richter <robert.richter@amd.com>,
-        "peterz@infradead.org" <peterz@infradead.org>
-Subject: Re: [PATCH -v3 5/6] x86, NMI, treat unknown NMI as hardware error
-Message-ID: <20101021154543.GD21695@basil.fritz.box>
-References: <1286606987-19879-1-git-send-email-ying.huang@intel.com>
- <1286606987-19879-5-git-send-email-ying.huang@intel.com>
- <20101011212006.GB23882@redhat.com>
- <1287555157.3026.21.camel@yhuang-dev>
- <20101020141558.GB19090@redhat.com>
- <1287623643.19320.40.camel@yhuang-dev>
- <20101021023135.GA12086@redhat.com>
- <1287638251.19320.190.camel@yhuang-dev>
- <20101021141002.GI19090@redhat.com>
+	Thu, 21 Oct 2010 11:48:54 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:content-type;
+        b=uzUNjqpieFL+nEfH7/yH8FX0dfOxDUD8Ooq/lEz0G5wByUo76nGRQo/lWr0KaMmsfs
+         zQR6JGNOC6YvZo10CVqlrsucY7zQzONOsiSQS7o6irMlgMyA6qc2hA9BQd9OWXYi1aTu
+         EftHfGk+u1Er1w9saNZDbMSXWlxtaq2RcVzqQ=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101021141002.GI19090@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Date: Thu, 21 Oct 2010 13:44:12 -0200
+Message-ID: <AANLkTikYZh2fG1+dkCC0dmOKbnA1GrmcxnwsvW6NdNcR@mail.gmail.com>
+Subject: 2.6.34.1 hangup with partial log file
+From: Robert Pipca <robertpipca@gmail.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 21, 2010 at 10:10:02AM -0400, Don Zickus wrote:
-> On Thu, Oct 21, 2010 at 01:17:31PM +0800, Huang Ying wrote:
-> > > > But there is some general rules for unknown NMI. We think unknown NMI is
-> > > > hardware error notification on all systems except systems with broken
-> > > > hardware or software bugs, stone age machines. Do you agree with that?
-> > > 
-> > > Nope.  In my experiences, most of our customers are still running
-> > > pre-Nehalem boxes, therefore most unknown NMIs are from broken hardware or
-> > > bad firmware (at least in the bugzillas I deal with).
-> > 
-> > It seems that we have different point of view for reason of unknown NMI.
-> > Should broken hardware be seen as hardware error?
-> 
-> Well, do you have an alternative way to handle broken hardware?  Broken
-> hardware has generated NMIs, sometimes if I am lucky SERRs.  The ones that
-> generate SERRs can be filtered through a different path, but what about
-> the ones that don't?
-> 
+Hi,
 
-Don, AFAIK you're saying the same thing as Ying: an unknown NMI is 
-a hardware error.
+I'm using a xfs filesystem on a sata-2 controller with 2.6.34.1 as a
+webcache machine on a 30Mbps ISP.
 
-The reason the hardware does that is that it wants to tell us:
+The machine frooze and sysadmin took a picture and restarted the
+machine. Syslog didn't record anything.
 
-"I lost track of an error. There is corrupted data somewhere in the system.
-Please stop, don't do anything that could consume that data. S.O.S."
+The photo had these:
 
-The correct answer for that is panic.
+[<ffffffff811c74d2>] blk_peek_request+0x162/0x176
+[<ffffffff8126e473>] ? scsi_dispatch_cmd+0x170/0x1a5
+ can't see this line....only end with "_fn+0x79/0x430
+[<ffffffff811c7b6d>] __blk_run_queue+7d/0x13f
+[<ffffffff811c7cda>] blk_run_queue+0x21/0x35
+[<ffffffff81272bdc>] scsi_run_queue+0x2d7/0x36e
+[<ffffffff81262867>] ? put_device+0x12/0x14
+[<ffffffff81273753>] scsi_next_command+0x36/0x47
+[<ffffffff811273fee>] scsi_io_completion+0x1d0/0x42b
+[<ffffffff8102a12e>] ? enqueue_entity+0x129/0x131
+[<ffffffff8126e2e8>] scsi_finish_command+0xb0/0xb9
+[<ffffffff81274355>] scsi_softirq_done+0xfc/0x105
+[<ffffffff811cbf6f>] blk_done_softirq+0x67/0x77
+[<ffffffff8103aa80>] __do_softirq+0x91/0x199
+[<ffffffff81019261>] ? ack_apic_level+0x79/0x1cf
+[<ffffffff810037cc>] call_softirq+0x1c/0x28
+[<ffffffff81005473>] do_softirq+0x33/0x68
+[<ffffffff8103a7ac>] irq_exit+0x36/0x78
+[<ffffffff81004b57>] do_IRQ+0xa7/0xbe
 
-The only problem we're trying to solve here is to distingush
-other cases, like when software uses NMIs for something else
-or there may be other cases
+Is this useful at all?
 
-> > 
-> > As far as I know, Windows treat unknown NMI as hardware errors. Although
-> > we are programming for Linux not Windows. Many hardware are built for
-> > Windows.
-> 
-> I was told Windows treats _any_ NMI as hardware errors, not just unknown
-> ones. :-)
+I could send you my .config if that helps...or the kernel image itself.
 
-I don't know details about Windows' code here, but I assume that 
-they have a way to hook into the NMI too, otherwise drivers like the HP
-watchdog wouldn't work on Windows. But yes we know they shut down.
+Please let me know what can I provide to find out what happened and
+how to fix it. This is a production machine and the ISP was on a
+bridge through this webcache...so the whole ISP went down.
 
-Essentially the hardware (and the BIOS) is designed 
-under the assumption that the OS behaves like Windows for this.
+Please help!
 
-In my long experience in making Linux work on all kinds
-of hardware I learned very firmly that trying to drive PC hardware 
-in a different way than Windows does is usually a bad idea.
-
-The approach of Ying's patch kit was really to make
-the behaviour more like Windows.
-
-
-> Probably.  I guess I don't fully understand your definition of hardware
-> error notification so I can't tell if we are arguing or agreeing (but
-> using different words).
-> 
-> How do you envision the code looking like with hardware error
-> notification?
-> 
-> I just wanted to keep the code in traps.c simple and clean and not
-> constantly add new #ifdefs every time Intel came up with an interesting
-> way to determine a hardware error condition.
-> 
-> For example, I am not the biggest fan of seeing stuff like edac or mce
-> inside the code and would prefer them to use notifiers.  But that is just
-> my opinion.
-
-mce is only for testing anyways, "real" mce doesn't need vector 0.
-So basically it's just a fancy "smp_call_nmi()" thingy.
-
-EDAC shouldn't need it either, if it's does it's some probably
-broken legacy behaviour.
-
-> If you have a framework that you wanted to propose that could encapsulate
-> an ever growing class of hardware error notifications, I would be
-> interested
-
-The trend in error reporting is away from NMIs and towards machine checks.
-My bunch is that NMI reporting is more or less a legacy problem, so we have
-to deal with what is there today.
-
-I don't think you need to worry about a lot more hardware NMI sources.
-
-The only thing that we need to worry about is more software NMI sources,
-these unfortunately like to multiply.
-
--Andi
-
--- 
-ak@linux.intel.com -- Speaking for myself only.
+- Robert
