@@ -1,61 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758413Ab0JUOGq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Oct 2010 10:06:46 -0400
-Received: from smtp.nokia.com ([147.243.1.47]:19518 "EHLO mgw-sa01.nokia.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758204Ab0JUOGo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Oct 2010 10:06:44 -0400
-Message-ID: <4CC0493F.1000701@nokia.com>
-Date: Thu, 21 Oct 2010 17:07:59 +0300
-From: Roger Quadros <roger.quadros@nokia.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.11) Gecko/20101013 Thunderbird/3.1.5
+	id S1758439Ab0JUOIS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Oct 2010 10:08:18 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:55035 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754583Ab0JUOIR (ORCPT
+	<rfc822;<linux-kernel@vger.kernel.org>>);
+	Thu, 21 Oct 2010 10:08:17 -0400
+Date: Thu, 21 Oct 2010 10:06:15 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+Subject: [GIT PULL] stable/swiotlb-0.9 for v2.6.37
+Message-ID: <20101021140615.GA31376@dumpdata.com>
 MIME-Version: 1.0
-To: ext Felipe Contreras <felipe.contreras@gmail.com>
-CC: "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        linux-omap <linux-omap@vger.kernel.org>,
-        linux-main <linux-kernel@vger.kernel.org>, Greg KH <greg@kroah.com>,
-        Felipe Balbi <balbi@ti.com>, Tony Lindgren <tony@atomide.com>,
-        David Brownell <dbrownell@users.sourceforge.net>
-Subject: Re: [PATCH v2 3/3] drivers: cleanup Kconfig stuff
-References: <1287482608-11320-1-git-send-email-felipe.contreras@gmail.com>	<1287482608-11320-4-git-send-email-felipe.contreras@gmail.com>	<4CBD9FD5.506@nokia.com>	<AANLkTinRRyrXzqEu=u+CCYkmSNGm03SSo1tVG=5_wdpo@mail.gmail.com>	<4CBE9E69.6060803@nokia.com>	<AANLkTinOYDBMVZ3ibG3Md7jdOuOC6NkGWaugvHwT6uqF@mail.gmail.com>	<4CBEB312.7060400@nokia.com>	<AANLkTikom=eRFqCJmYE+k1zn5K2MR9s8HhNXtjOvUqvr@mail.gmail.com>	<4CBEE186.8090701@nokia.com> <AANLkTinULxyUg_vHjk9RsQm4Row7vRC9ApzYXt7ZMQJD@mail.gmail.com>
-In-Reply-To: <AANLkTinULxyUg_vHjk9RsQm4Row7vRC9ApzYXt7ZMQJD@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Nokia-AV: Clean
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Hey Linus,
 
-On 10/20/2010 05:38 PM, ext Felipe Contreras wrote:
-> On Wed, Oct 20, 2010 at 3:33 PM, Roger Quadros<roger.quadros@nokia.com>  wrote:
->> On 10/20/2010 12:23 PM, ext Felipe Contreras wrote:
->>> On Wed, Oct 20, 2010 at 12:14 PM, Roger Quadros<roger.quadros@nokia.com>
->>>   wrote:
->>>> USB_G_NOKIA just needs a USB gadget controller to work. The gadget
->>>> controller used for the board should come from the board's Kconfig which
->>>> will ideally be supplied by the board's vendor.
->>>
->>> Ok, but USB_OMAP is not supposed to work on the N900? (I tried and it
->>> didn't)
->>
->> No it won't work. USB_OMAP was for older OMAP's. MUSB is on OMAP3 and later.
->> But MUSB is not limited to OMAP SoC.
->
-> config USB_GADGET_OMAP
->    depends ARCH_OMAP
->
-> So how about s/ARCH_OMAP/ARCH_OMAP1/
->
-> Then USB_GADGET_MUSB_HDRC would be selected by default on OMAP2+.
->
+Please pull from:
+  git://git.kernel.org/pub/scm/linux/kernel/git/konrad/swiotlb-2.6.git stable/swiotlb-0.9
 
-But I'm not sure that omap_udc is used only for OMAP1 architecture.
-Dave/Tony should confirm this.
+which contains two patches since git commit cb655d0f3d57c23db51b981648e452988c0223f9
+Author: Linus Torvalds <torvalds@linux-foundation.org>
+Date:   Wed Oct 6 13:39:52 2010 -0700
+
+    Linux 2.6.36-rc7
 
 
--- 
-regards,
--roger
+There are two patches there for the lib/swiotlb.c library.
+First is to cleanup the swiotlb.c library a bit and in the long-term remove the
+dependency on the overflow buffer. The other is to page-align the early
+buffer allocation so that if we don't use SWIOTLB we can de-allocate
+the buffers and save two pages.
+
+Thank you,
+Konrad
+
+The shortlog and diffstat:
+
+FUJITA Tomonori (1):
+      swiotlb: make io_tlb_overflow static
+
+Yinghai Lu (1):
+      swiotlb: Use page alignment for early buffer allocation
+
+ lib/swiotlb.c |   18 +++++++++---------
+ 1 files changed, 9 insertions(+), 9 deletions(-)
+
+
+---------------------
+diff --git a/lib/swiotlb.c b/lib/swiotlb.c
+index 34e3082..7c06ee5 100644
+--- a/lib/swiotlb.c
++++ b/lib/swiotlb.c
+@@ -70,7 +70,7 @@ static unsigned long io_tlb_nslabs;
+  */
+ static unsigned long io_tlb_overflow = 32*1024;
+ 
+-void *io_tlb_overflow_buffer;
++static void *io_tlb_overflow_buffer;
+ 
+ /*
+  * This is a free list describing the number of free entries available from
+@@ -147,16 +147,16 @@ void __init swiotlb_init_with_tbl(char *tlb, unsigned long nslabs, int verbose)
+ 	 * to find contiguous free memory regions of size up to IO_TLB_SEGSIZE
+ 	 * between io_tlb_start and io_tlb_end.
+ 	 */
+-	io_tlb_list = alloc_bootmem(io_tlb_nslabs * sizeof(int));
++	io_tlb_list = alloc_bootmem_pages(PAGE_ALIGN(io_tlb_nslabs * sizeof(int)));
+ 	for (i = 0; i < io_tlb_nslabs; i++)
+  		io_tlb_list[i] = IO_TLB_SEGSIZE - OFFSET(i, IO_TLB_SEGSIZE);
+ 	io_tlb_index = 0;
+-	io_tlb_orig_addr = alloc_bootmem(io_tlb_nslabs * sizeof(phys_addr_t));
++	io_tlb_orig_addr = alloc_bootmem_pages(PAGE_ALIGN(io_tlb_nslabs * sizeof(phys_addr_t)));
+ 
+ 	/*
+ 	 * Get the overflow emergency buffer
+ 	 */
+-	io_tlb_overflow_buffer = alloc_bootmem_low(io_tlb_overflow);
++	io_tlb_overflow_buffer = alloc_bootmem_low_pages(PAGE_ALIGN(io_tlb_overflow));
+ 	if (!io_tlb_overflow_buffer)
+ 		panic("Cannot allocate SWIOTLB overflow buffer!\n");
+ 	if (verbose)
+@@ -182,7 +182,7 @@ swiotlb_init_with_default_size(size_t default_size, int verbose)
+ 	/*
+ 	 * Get IO TLB memory from the low pages
+ 	 */
+-	io_tlb_start = alloc_bootmem_low_pages(bytes);
++	io_tlb_start = alloc_bootmem_low_pages(PAGE_ALIGN(bytes));
+ 	if (!io_tlb_start)
+ 		panic("Cannot allocate SWIOTLB buffer");
+ 
+@@ -308,13 +308,13 @@ void __init swiotlb_free(void)
+ 			   get_order(io_tlb_nslabs << IO_TLB_SHIFT));
+ 	} else {
+ 		free_bootmem_late(__pa(io_tlb_overflow_buffer),
+-				  io_tlb_overflow);
++				  PAGE_ALIGN(io_tlb_overflow));
+ 		free_bootmem_late(__pa(io_tlb_orig_addr),
+-				  io_tlb_nslabs * sizeof(phys_addr_t));
++				  PAGE_ALIGN(io_tlb_nslabs * sizeof(phys_addr_t)));
+ 		free_bootmem_late(__pa(io_tlb_list),
+-				  io_tlb_nslabs * sizeof(int));
++				  PAGE_ALIGN(io_tlb_nslabs * sizeof(int)));
+ 		free_bootmem_late(__pa(io_tlb_start),
+-				  io_tlb_nslabs << IO_TLB_SHIFT);
++				  PAGE_ALIGN(io_tlb_nslabs << IO_TLB_SHIFT));
+ 	}
+ }
+ 
