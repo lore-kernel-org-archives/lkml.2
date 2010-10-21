@@ -1,141 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932137Ab0JUVEL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Oct 2010 17:04:11 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:35299 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758002Ab0JUVB7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Oct 2010 17:01:59 -0400
-From: Cyril Chemparathy <cyril@ti.com>
-To: davinci-linux-open-source@linux.davincidsp.com,
-        spi-devel-general@lists.sourceforge.net,
-        broonie@opensource.wolfsonmicro.com, lrg@slimlogic.co.uk,
-        dbrownell@users.sourceforge.net, grant.likely@secretlab.ca,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        rpurdie@rpsys.net
-Cc: Cyril Chemparathy <cyril@ti.com>
-Subject: [PATCH v3 07/12] davinci: add tnetv107x evm regulators
-Date: Thu, 21 Oct 2010 17:01:08 -0400
-Message-Id: <1287694873-12904-8-git-send-email-cyril@ti.com>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1287694873-12904-1-git-send-email-cyril@ti.com>
-References: <1287694873-12904-1-git-send-email-cyril@ti.com>
+	id S1758052Ab0JUVFp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Oct 2010 17:05:45 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:39379 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751220Ab0JUVFn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Oct 2010 17:05:43 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=googlemail.com; s=gamma;
+        h=from:to:subject:date:user-agent:cc:references:in-reply-to
+         :mime-version:content-type:content-transfer-encoding:message-id;
+        b=ME2/F0TWqiPH6mR4LpLt31n3pddl302S75iOyLU00Q2C76/Ddp2UesX/80ve5MS6Uo
+         OZeAhQ43lP89Vju4TUNPRY5WHqQdAnzC6lPx5AlCSz8WSA+daYj13eVlFULybVsmDqP5
+         iCveZ2C3wmNzbLrZ5Falut7J37co0yqPcXLsw=
+From: Christian Lamparter <chunkeey@googlemail.com>
+To: Pavel Machek <pma@sysgo.com>
+Subject: Re: carl1970 driver for 2.6.34
+Date: Thu, 21 Oct 2010 23:05:24 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.36-rc8-wl+; KDE/4.4.5; x86_64; ; )
+Cc: kernel list <linux-kernel@vger.kernel.org>
+References: <20101021094638.GB23911@pma.sysgo.com>
+In-Reply-To: <20101021094638.GB23911@pma.sysgo.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201010212305.24825.chunkeey@googlemail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds regulator and spi board info definitions for the tps6524x
-power management IC found on tnetv107x evm boards.
-
-Signed-off-by: Cyril Chemparathy <cyril@ti.com>
----
- arch/arm/mach-davinci/board-tnetv107x-evm.c |   85 +++++++++++++++++++++++++++
- 1 files changed, 85 insertions(+), 0 deletions(-)
-
-diff --git a/arch/arm/mach-davinci/board-tnetv107x-evm.c b/arch/arm/mach-davinci/board-tnetv107x-evm.c
-index c37c5c6..d4c3d18 100644
---- a/arch/arm/mach-davinci/board-tnetv107x-evm.c
-+++ b/arch/arm/mach-davinci/board-tnetv107x-evm.c
-@@ -26,6 +26,9 @@
- #include <linux/input.h>
- #include <linux/input/matrix_keypad.h>
- #include <linux/spi/spi.h>
-+#include <linux/regulator/machine.h>
-+#include <linux/regulator/consumer.h>
-+#include <linux/regulator/driver.h>
- 
- #include <asm/mach/arch.h>
- #include <asm/mach-types.h>
-@@ -257,7 +260,89 @@ static struct tnetv107x_device_info evm_device_info __initconst = {
- 	.ssp_config		= &ssp_config,
- };
- 
-+static struct regulator_consumer_supply usb_consumers[] = {
-+	REGULATOR_SUPPLY("vbus", "musb_hdrc.1"),
-+};
-+
-+static struct regulator_consumer_supply lcd_consumers[] = {
-+	REGULATOR_SUPPLY("vlcd", "tps6116x"),
-+};
-+
-+static struct regulator_init_data regulators[] = {
-+	{
-+		.constraints		= {
-+			.name		= "DCDC1",
-+			.min_uV		= 1000000,
-+			.max_uV		= 1000000,
-+			.always_on	= 1,
-+			.boot_on	= 1,
-+		},
-+	},
-+	{
-+		.constraints		= {
-+			.name		= "DCDC2",
-+			.min_uV		= 1800000,
-+			.max_uV		= 1800000,
-+			.always_on	= 1,
-+			.boot_on	= 1,
-+		},
-+	},
-+	{
-+		.constraints		= {
-+			.name		= "DCDC3",
-+			.min_uV		= 3300000,
-+			.max_uV		= 3300000,
-+			.always_on	= 1,
-+			.boot_on	= 1,
-+		},
-+	},
-+	{
-+		.constraints		= {
-+			.name		= "LDO1",
-+			.min_uV		= 4800000,
-+			.max_uV		= 4800000,
-+			.always_on	= 1,
-+			.boot_on	= 1,
-+		},
-+	},
-+	{
-+		.constraints		= {
-+			.name		= "LDO1",
-+			.min_uV		= 3300000,
-+			.max_uV		= 3300000,
-+			.always_on	= 1,
-+			.boot_on	= 1,
-+		},
-+	},
-+	{
-+		.num_consumer_supplies	= ARRAY_SIZE(usb_consumers),
-+		.consumer_supplies	= usb_consumers,
-+		.constraints		= {
-+			.name		= "USB",
-+			.min_uA		= 200000,
-+			.max_uA		= 1000000,
-+			.valid_ops_mask	= REGULATOR_CHANGE_CURRENT |
-+					  REGULATOR_CHANGE_STATUS,
-+		},
-+	},
-+	{
-+		.num_consumer_supplies	= ARRAY_SIZE(lcd_consumers),
-+		.consumer_supplies	= lcd_consumers,
-+		.constraints		= {
-+			.name		= "LCD",
-+			.valid_ops_mask	= REGULATOR_CHANGE_STATUS,
-+		},
-+	},
-+};
-+
- static struct spi_board_info spi_info[] __initconst = {
-+	{
-+		.modalias	= "tps6524x",
-+		.bus_num	= 1,
-+		.chip_select	= 0,
-+		.mode		= SPI_MODE_0,
-+		.platform_data	= regulators,
-+	},
- };
- 
- static __init void tnetv107x_evm_board_init(void)
--- 
-1.7.0.4
-
+On Thursday 21 October 2010 11:46:38 Pavel Machek wrote:
+> Is there version of carl9170 atheros wlan driver for 2.6.34?
+no, because there isn't any.
