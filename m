@@ -1,80 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757217Ab0JUSeT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Oct 2010 14:34:19 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:57149 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753335Ab0JUSeS (ORCPT
+	id S1757292Ab0JUSeg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Oct 2010 14:34:36 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:56086 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757244Ab0JUSef (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Oct 2010 14:34:18 -0400
-Date: Thu, 21 Oct 2010 14:34:18 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Hong Liu <hong.liu@intel.com>
-cc: Alan Cox <alan@linux.intel.com>,
-        Kernel development list <linux-kernel@vger.kernel.org>,
-        Linux-pm mailing list <linux-pm@lists.linux-foundation.org>
-Subject: Re: [PATCH] apds9802als: add runtime PM support
-Message-ID: <Pine.LNX.4.44L0.1010211418520.1718-100000@iolanthe.rowland.org>
+	Thu, 21 Oct 2010 14:34:35 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:x-enigmail-version:content-type
+         :content-transfer-encoding;
+        b=NPU3EAMwQqwihqs6RO8mfSkFBJ55ZzgEo4T2xr3YEGK+Jn5pTOIXybrz8Hk54zHuRR
+         wJ8Q5lSVmV1oRIdzLIKYJ9e5hUYCmkoQdYsDu9WERTuPVjny0kP4x2nkhljsOb8CpQzX
+         GoVSD/jo0lBP/OyBZ14BBTm31824UHba+TGtY=
+Message-ID: <4CC085F5.9070905@gmail.com>
+Date: Thu, 21 Oct 2010 20:27:01 +0200
+From: Jiri Slaby <jirislaby@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.11) Gecko/20101013 SUSE/3.1.5 Thunderbird/3.1.5
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Takashi Iwai <tiwai@suse.de>
+CC: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        mm-commits@vger.kernel.org, clemens@ladisch.de,
+        Jaroslav Kysela <perex@perex.cz>, alsa-devel@alsa-project.org,
+        Valdis.Kletnieks@vt.edu
+Subject: Re: HDA: no sound [was: mmotm 2010-10-20-15-01 uploaded]
+References: <201010202233.o9KMXNoL008303@imap1.linux-foundation.org>	<4CBFEE94.7020103@gmail.com>	<s5hlj5sc7do.wl%tiwai@suse.de>	<4CBFF25C.2080908@gmail.com> <s5hfww0c6oj.wl%tiwai@suse.de>
+In-Reply-To: <s5hfww0c6oj.wl%tiwai@suse.de>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 15 Oct 2010, Alan Cox wrote:
-
-> From: Hong Liu <hong.liu@intel.com>
+On 10/21/2010 10:05 AM, Takashi Iwai wrote:
+> At Thu, 21 Oct 2010 09:57:16 +0200,
+> Jiri Slaby wrote:
+>> BUT, when I run pulse and it suspends the device (or whatever), all the
+>> levels get down to 0 back again. When I raise it and run mplayer, it
+>> gets to 0 immediately. If I raise it gets to 0 when mplayer finishes and
+>> pulse writes 'protocol-native.c: Connection died.'. It never raises
+>> automatically. And if I raise it during playback, nothing plays at all.
 > 
+> Hrm, I don't remember any so critical changes done recently in the
+> sound tree.  The only possibly affecting commits are:
 > 
->     Update the driver for the needed runtime power features. Remove the old
->     user controlled power functions.
+>   commit 1cc9e8f4c45999e6069f41521d9d391eeeccc3b3
+>     ALSA: hda - Fix codec muted after rebooting from Windows
 > 
->     Signed-off-by: Hong Liu <hong.liu@intel.com>
->     Signed-off-by: Alan Cox <alan@linux.intel.com>
+>   commit de8c85f7840e5e29629de95f5af24297fb325e0b
+>     ALSA: HDA: Sigmatel: work around incorrect master muting
 
-> diff --git a/drivers/misc/apds9802als.c b/drivers/misc/apds9802als.c
-> index fbe4960..15f9436 100644
-> --- a/drivers/misc/apds9802als.c
-> +++ b/drivers/misc/apds9802als.c
+Reverting this one helps.
 
-> @@ -265,13 +274,34 @@ static int apds9802als_suspend(struct i2c_client *client, pm_message_t mesg)
->  
->  static int apds9802als_resume(struct i2c_client *client)
->  {
-> -	struct als_data *data = i2c_get_clientdata(client);
-> +	als_set_default_config(client);
-> +
-> +	pm_runtime_get(&client->dev);
-> +	pm_runtime_put(&client->dev);
-> +	return 0;
-> +}
-
-This almost certainly does not do what you think.
-
-pm_runtime_get() will increment the device's usage count and queue an 
-asynchronous resume request.  However, since the PM workqueue is frozen 
-during system sleep transitions, the device will remain suspended.
-
-The pm_runtime_put() will decrement the usage count again, but since
-there is already an async resume on the queue it will not queue an
-async suspend.  The final result will be that when tasks are unfrozen,
-the device will finally be resumed -- long after it should have been.
-
-It looks like what you want to do here is simply call
-apds9802als_runtime_resume() directly.  And according to the advice in
-Documentation/power/runtime_pm.txt section 6, you should also call
-
-	pm_runtime_disable(dev);
-	pm_runtime_set_active(dev);
-	pm_runtime_enable(dev);
-
-You probably also do not want the asynchronous calls to 
-pm_runtime_get() and pm_runtime_put() in apds9802als_probe().  A more 
-common sequence is:
-
-	pm_runtime_set_active(dev);
-	pm_runtime_enable(dev);
-
-Alan Stern
-
+thanks,
+-- 
+js
