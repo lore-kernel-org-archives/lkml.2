@@ -1,230 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753626Ab0JUXiA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Oct 2010 19:38:00 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:48634 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751023Ab0JUXh7 (ORCPT
+	id S1753911Ab0JUXrn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Oct 2010 19:47:43 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:41569 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751701Ab0JUXrl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Oct 2010 19:37:59 -0400
-Date: Thu, 21 Oct 2010 16:37:13 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: achew@nvidia.com
-Cc: jmayo@nvidia.com, a.zummo@towertech.it, olof@lixom.net, greg@kroah.com,
-        mcuos.com@gmail.com, konkers@google.com, linux-kernel@vger.kernel.org,
-        linux-tegra@vger.kernel.org, rtc-linux@googlegroups.com
-Subject: Re: [PATCH 1/1 V4] rtc: Add real-time clock driver for Tegra.
-Message-Id: <20101021163713.a857fdd0.akpm@linux-foundation.org>
-In-Reply-To: <1287444796-27008-1-git-send-email-achew@nvidia.com>
-References: <1287444796-27008-1-git-send-email-achew@nvidia.com>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+	Thu, 21 Oct 2010 19:47:41 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=H6x+4ReNU9hkpndKvMdlcAEqFRFPwL0enacRdNbhsuzgRNe7FwKZXQderUwdvTUIvS
+         1tTacd90+iWgnvgInFxi49qjC0/2/QV5DsCbhYwX1GvGqoO7CCvINvOw8npeVAHPxvaQ
+         M+JXwyJSd/tVrorCfwt26oeGOC/vEgJsE1waU=
+Subject: Re: [PATCH] sdio: fix suspend/resume regression
+From: Maxim Levitsky <maximlevitsky@gmail.com>
+To: Ohad Ben-Cohen <ohad@wizery.com>
+Cc: linux-mmc@vger.kernel.org, Sven Neumann <s.neumann@raumfeld.com>,
+        Chris Ball <cjb@laptop.org>, Nicolas Pitre <nico@fluxnic.net>,
+        libertas-dev@lists.infradead.org, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Daniel Mack <daniel@caiaq.de>, Colin Cross <ccross@android.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, stable@kernel.org
+In-Reply-To: <1286955116-22793-1-git-send-email-ohad@wizery.com>
+References: <1286788315.3101.11.camel@sven>
+	 <1286955116-22793-1-git-send-email-ohad@wizery.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 22 Oct 2010 01:47:35 +0200
+Message-ID: <1287704855.12734.14.camel@maxim-laptop>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 18 Oct 2010 16:33:16 -0700
-achew@nvidia.com wrote:
-
-> From: Andrew Chew <achew@nvidia.com>
+On Wed, 2010-10-13 at 09:31 +0200, Ohad Ben-Cohen wrote:
+> Fix SDIO suspend/resume regression introduced by
+> 4c2ef25fe0b847d2ae818f74758ddb0be1c27d8e "mmc: fix all hangs related to
+> mmc/sd card insert/removal during suspend/resume":
 > 
-> This is a platform driver that supports the built-in real-time clock on
-> Tegra SOCs.
+> [ 5647.295953] PM: Syncing filesystems ... done.
+> [ 5647.318792] Freezing user space processes ... (elapsed 0.01 seconds) done.
+> [ 5647.337048] Freezing remaining freezable tasks ... (elapsed 0.01 seconds) done.
+> [ 5647.356915] Suspending console(s) (use no_console_suspend to debug)
+> [ 5647.366651] pm_op(): platform_pm_suspend+0x0/0x5c returns -38
+> [ 5647.366671] PM: Device pxa2xx-mci.0 failed to suspend: error -38
+> [ 5647.367082] PM: Some devices failed to suspend
 > 
->
-> ...
->
-> +static int tegra_rtc_wait_while_busy(struct device *dev)
-> +{
-> +	struct tegra_rtc_info *info = dev_get_drvdata(dev);
-> +
-> +	int retries = 500; /* ~490 us is the worst case, ~250 us is best. */
-> +
-> +	/* first wait for the RTC to become busy. this is when it
-> +	 * posts its updated seconds+msec registers to AHB side. */
-> +	while (tegra_rtc_check_busy(info)) {
-> +		if (!retries--)
-> +			goto retry_failed;
-> +		udelay(1);
-> +	}
-> +
-> +	/* now we have about 250 us to manipulate registers */
-> +	return 0;
-> +
-> +retry_failed:
-> +	dev_err(dev, "write failed:retry count exceeded.\n");
-> +	return -ETIMEDOUT;
+> 4c2ef25fe0b847d2ae818f74758ddb0be1c27d8e moved the card removal/insertion
+> mechanism out of MMC's suspend/resume path and into pm notifiers
+> (mmc_pm_notify), and that broke SDIO's expectation that mmc_suspend_host()
+> will remove the card, and squash the error, in case -ENOSYS is returned
+> from the bus suspend handler (mmc_sdio_suspend() in this case).
+> 
+> mmc_sdio_suspend() is using this whenever at least one of the card's SDIO
+> function drivers does not have suspend/resume handlers - in that case
+> it is agreed to force removal of the entire card.
+> 
+> This patch fixes this regression by trivially bringing back that part of
+> mmc_suspend_host(), which was removed by 4c2ef25fe0b847d2ae818f74758ddb0be1c27d8e.
+> 
+> Reported-and-tested-by: Sven Neumann <s.neumann@raumfeld.com>
+> Signed-off-by: Ohad Ben-Cohen <ohad@wizery.com>
+> Cc: Maxim Levitsky <maximlevitsky@gmail.com>
+> Cc: <stable@kernel.org>
+> --
+> 
+> It may still be desired to further clean this area up by using the card
+> removal mechanism in mmc_pm_notify() for SDIO as well.
+> 
+> To use mmc_pm_notify's card-removal code also for SDIO, we need it
+> to check if all the SDIO functions have suspend handlers. That
+> would probably make us add a new bus_ops handler (something like
+> host->bus_ops->remove_card_on_suspend ?).
+> 
+> It's starting to get a bit complicated though, and I'm not sure it
+> would make the code a lot more readable.
+> 
+> In addition, this would still not work for drivers like libertas sdio,
+> which do have a suspend handler, but sometimes let it return -ENOSYS,
+> expecting mmc_suspend_host() to remove the card and squash the error.
+> For those cases, we still need the old card-removal logic in mmc_suspend_host().
+> 
+> This brings up a question whether libertas_sdio really needs this
+> functionality; When MMC_PM_KEEP_POWER is not needed, can't it just return 0
+> (and as a result the card will be powered down, but not removed) ?
+> 
+> Until we have an agreement on this, I suggest we at least fix the
+> regression with this patch.
+> 
+> Thanks Sven Neumann for reporting and testing the issue and this patch.
+> 
+>  drivers/mmc/core/core.c |   13 +++++++++++++
+>  1 files changed, 13 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/mmc/core/core.c b/drivers/mmc/core/core.c
+> index c94565d..515ff39 100644
+> --- a/drivers/mmc/core/core.c
+> +++ b/drivers/mmc/core/core.c
+> @@ -1682,6 +1682,19 @@ int mmc_suspend_host(struct mmc_host *host)
+>  	if (host->bus_ops && !host->bus_dead) {
+>  		if (host->bus_ops->suspend)
+>  			err = host->bus_ops->suspend(host);
+> +		if (err == -ENOSYS || !host->bus_ops->resume) {
+This reintroduces the bug I fixed.
 
-Grumble.  Pet peeve.
+if the CONFIG_MMC_UNSAFE_RESUME isn't set (and that is default
+unfortunately), the host->bus_ops->resume will be NULL (see core/mmc.c
+mmc_ops), and therefore card will be removed, that will trigger a block
+device removal, sync, and deadlock).
 
-ETIMEDOUT is a networking error.  "Connection attempt timed out".  If
-this errno gets sent back to userspace from an operation against the
-RTC hardware then the user would be fully entitied to ask WTF?  and
-wonder what we had been smoking.
+I actually thought about the sdio case. Sorry for breaking yet.
 
-Also, most callers of tegra_rtc_wait_while_busy() simply ignore this
-error and proceed pretending that it didn't happen.
+My idea was to move the effective suspend/resume to a pm notifier,
+and the mmc_pm_notify is supposed to do the job.
 
-> +}
-> +
->
-> ...
->
-> +static int tegra_rtc_alarm_irq_enable(struct device *dev, unsigned int enabled)
-> +{
-> +	struct tegra_rtc_info *info = dev_get_drvdata(dev);
-> +	unsigned status;
-> +	unsigned long sl_irq_flags;
+Could you test why it fails?
 
-Plain old "flags" is idiomatic, and sufficient.
+The relevant code in mmc_pm_notify:
 
-> +	tegra_rtc_wait_while_busy(dev);
-> +	spin_lock_irqsave(&info->tegra_rtc_lock, sl_irq_flags);
-> +
-> +	/* read the original value, and OR in the flag. */
-> +	status = readl(info->rtc_base + TEGRA_RTC_REG_INTR_MASK);
-> +	if (enabled)
-> +		status |= TEGRA_RTC_INTR_MASK_SEC_ALARM0; /* set it */
-> +	else
-> +		status &= ~TEGRA_RTC_INTR_MASK_SEC_ALARM0; /* clear it */
-> +
-> +	writel(status, info->rtc_base + TEGRA_RTC_REG_INTR_MASK);
-> +
-> +	spin_unlock_irqrestore(&info->tegra_rtc_lock, sl_irq_flags);
-> +
-> +	return 0;
-> +}
-> +
->
-> ...
->
-> +static int tegra_rtc_proc(struct device *dev, struct seq_file *seq)
-> +{
-> +	if (!dev || !dev->driver)
-> +		return 0;
-> +
-> +	return seq_printf(seq, "name\t\t: %s\n", dev_name(dev));
-> +}
+		if (!host->bus_ops || host->bus_ops->suspend)
+			break;
 
-hm, what does the rtc_class_ops.proc() handler do?  There seems to be
-no consistency between different drivers which somewhat defeats the
-purpose of having a standardised RTC framework.
+		mmc_claim_host(host);
 
-> +static irqreturn_t tegra_rtc_irq_handler(int irq, void *data)
-> +{
-> +	struct device *dev = data;
-> +	struct tegra_rtc_info *info = dev_get_drvdata(dev);
-> +	unsigned long events = 0;
-> +	unsigned status;
-> +	unsigned long sl_irq_flags;
-> +
-> +	status = readl(info->rtc_base + TEGRA_RTC_REG_INTR_STATUS);
-> +	if (status) {
-> +		/* clear the interrupt masks and status on any irq. */
-> +		tegra_rtc_wait_while_busy(dev);
-> +		spin_lock_irqsave(&info->tegra_rtc_lock, sl_irq_flags);
-> +		writel(0, info->rtc_base + TEGRA_RTC_REG_INTR_MASK);
-> +		writel(status, info->rtc_base + TEGRA_RTC_REG_INTR_STATUS);
-> +		spin_unlock_irqrestore(&info->tegra_rtc_lock, sl_irq_flags);
-> +	}
-> +
-> +	/* check if Alarm */
-> +	if ((status & TEGRA_RTC_INTR_STATUS_SEC_ALARM0))
-> +		events |= RTC_IRQF | RTC_AF;
-> +
-> +	/* check if Periodic */
-> +	if ((status & TEGRA_RTC_INTR_STATUS_SEC_CDN_ALARM))
-> +		events |= RTC_IRQF | RTC_PF;
-> +
-> +	rtc_update_irq(info->rtc_dev, 1, events);
-> +
-> +	return IRQ_HANDLED;
-> +}
+		if (host->bus_ops->remove)
+			host->bus_ops->remove(host);
 
-This will return IRQ_HANDLED even if no interrupts were pending. 
-That's a bug if the IRQ is shared, and defeats the kernel's "screaming
-interrupt" detection logic.  Probably it's OK in the context of this
-device, but it does set a poor example for the kiddies.
+		mmc_detach_bus(host);
+		mmc_release_host(host);
+		host->pm_flags = 0;
+		break;
 
->
-> ...
->
-> +#ifdef CONFIG_PM
-> +static int tegra_rtc_suspend(struct platform_device *pdev, pm_message_t state)
-> +{
-> +	struct device *dev = &pdev->dev;
-> +	struct tegra_rtc_info *info = platform_get_drvdata(pdev);
-> +
-> +	tegra_rtc_wait_while_busy(dev);
-> +
-> +	/* only use ALARM0 as a wake source. */
-> +	writel(0xffffffff, info->rtc_base + TEGRA_RTC_REG_INTR_STATUS);
-> +	writel(TEGRA_RTC_INTR_STATUS_SEC_ALARM0,
-> +		info->rtc_base + TEGRA_RTC_REG_INTR_MASK);
-> +
-> +	dev_vdbg(dev, "alarm sec = %d\n",
-> +		readl(info->rtc_base + TEGRA_RTC_REG_SECONDS_ALARM0));
-> +
-> +	dev_vdbg(dev, "Suspend (device_may_wakeup=%d) irq:%d\n",
-> +		device_may_wakeup(dev), info->tegra_rtc_irq);
-> +
-> +	/* leave the alarms on as a wake source. */
-> +	if (device_may_wakeup(dev))
-> +		enable_irq_wake(info->tegra_rtc_irq);
-> +
-> +	return 0;
-> +}
-> +
-> +static int tegra_rtc_resume(struct platform_device *pdev)
-> +{
-> +	struct device *dev = &pdev->dev;
-> +	struct tegra_rtc_info *info = platform_get_drvdata(pdev);
-> +
-> +	dev_vdbg(dev, "Resume (device_may_wakeup=%d)\n",
-> +		device_may_wakeup(dev));
-> +	/* alarms were left on as a wake source, turn them off. */
-> +	if (device_may_wakeup(dev))
-> +		disable_irq_wake(info->tegra_rtc_irq);
-> +
-> +	return 0;
-> +}
-> +#endif
 
-It's more typical to put
+So NULL host->bus_ops->suspend should trigger a card remove by that
+function and it did here on my system without CONFIG_MMC_UNSAFE_RESUME.
 
-#else
-#define tegra_rtc_suspend NULL
-#define tegra_rtc_resume NULL
-#endif
+I suspect that in your case, the .suspend isn't NULL, but .resume is.
+Then, we just need an one liner change to mmc_pm_notify to account that
+case.
 
-here
+Note that I don't call the  host->bus_ops->suspend(host); in
+mmc_pm_notify on purpose as it is too early.
 
-> +static void tegra_rtc_shutdown(struct platform_device *pdev)
-> +{
-> +	dev_vdbg(&pdev->dev, "disabling interrupts.\n");
-> +	tegra_rtc_alarm_irq_enable(&pdev->dev, 0);
-> +}
-> +
-> +MODULE_ALIAS("platform:tegra_rtc");
-> +static struct platform_driver tegra_rtc_driver = {
-> +	.remove		= __devexit_p(tegra_rtc_remove),
-> +	.shutdown	= tegra_rtc_shutdown,
-> +	.driver		= {
-> +		.name	= "tegra_rtc",
-> +		.owner	= THIS_MODULE,
-> +	},
-> +#ifdef CONFIG_PM
-> +	.suspend	= tegra_rtc_suspend,
-> +	.resume		= tegra_rtc_resume,
-> +#endif
+So what happens if you set .suspend to NULL? instead of -ENOSYS return?
 
-and to omit this ifdef.
 
-> +};
-> +
->
-> ...
->
+
+> +			/*
+> +			 * We simply "remove" the card in this case.
+> +			 * It will be redetected on resume.
+> +			 */
+> +			if (host->bus_ops->remove)
+> +				host->bus_ops->remove(host);
+> +			mmc_claim_host(host);
+> +			mmc_detach_bus(host);
+> +			mmc_release_host(host);
+> +			host->pm_flags = 0;
+> +			err = 0;
+> +		}
+>  	}
+>  	mmc_bus_put(host);
+>  
+
+Best regards,
+	Maxim Levitsky
 
