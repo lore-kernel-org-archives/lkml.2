@@ -1,67 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756410Ab0JUKbv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Oct 2010 06:31:51 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:54505 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753406Ab0JUKbu (ORCPT
+	id S1756119Ab0JUKkr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Oct 2010 06:40:47 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:34008 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753745Ab0JUKkq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Oct 2010 06:31:50 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: Bruno Randolf <br1@einfach.org>
-Subject: Re: [PATCH v3] Add generic exponentially weighted moving average (EWMA) function
-Cc: kosaki.motohiro@jp.fujitsu.com, randy.dunlap@oracle.com,
-        akpm@linux-foundation.org, kevin.granade@gmail.com,
-        Lars_Ericsson@telia.com, blp@cs.stanford.edu,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <20101020082336.28281.77747.stgit@localhost6.localdomain6>
-References: <20101020082336.28281.77747.stgit@localhost6.localdomain6>
-Message-Id: <20101021192658.C8EE.A69D9226@jp.fujitsu.com>
-MIME-Version: 1.0
+	Thu, 21 Oct 2010 06:40:46 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:reply-to:to:cc:in-reply-to:references:content-type
+         :date:message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=Y3SLF2mCCIWcbmb7puADwAB2A4e8f3gE51uYJxkyh5dXgjWuoJp1nF7b4AeKo1lCjH
+         a4d/5L0n69J7HgeltKOYiYS79imkALt+8CDaCb98ictWKeEVCEcpebF/0jborbZ4QipN
+         wrb67FOD3XTAKvVc1WuAGnEh8fWKTFOLZl6BQ=
+Subject: Re: [PATCH] drivers/mtd/devices/phram.c: Use KBUILD_MODNAME
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Joe Perches <joe@perches.com>
+Cc: Joern Engel <joern@lazybastard.org>, David Woodhouse <dwmw2@infradead.org>,
+        linux-mtd <linux-mtd@lists.infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <1287596362.1813.205.camel@Joe-Laptop>
+References: <1287596362.1813.205.camel@Joe-Laptop>
 Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 21 Oct 2010 13:37:32 +0300
+Message-ID: <1287657452.2932.15.camel@localhost>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 (2.30.3-1.fc13) 
 Content-Transfer-Encoding: 8bit
-X-Mailer: Becky! ver. 2.50.07 [ja]
-Date: Thu, 21 Oct 2010 19:31:47 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+On Wed, 2010-10-20 at 10:39 -0700, Joe Perches wrote:
+> Use the more standard #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+> No change in output strings.
+> 
+> Signed-off-by: Joe Perches <joe@perches.com>
 
-I'm plaing this a bit and I have to say this doesn't works as I expected
-because ewma_init() has very easy confusable.
+Pushed to l2-mtd-2.6.git, thanks.
 
-so, I have one request.
-
-
-> +/**
-> + * ewma_init() - Initialize EWMA parameters
-> + * @avg: Average structure
-> + * @factor: Factor to use for the scaled up internal value. The maximum value
-> + *	of averages can be UINT_MAX/(factor*weight).
-> + * @weight: Exponential weight, or decay rate. This defines how fast the
-> + * 	influence of older values decreases. Has to be bigger than 1.
-> + *
-> + * Initialize the EWMA parameters for a given struct ewma @avg.
-> + */
-> +struct ewma*
-> +ewma_init(struct ewma *avg, const unsigned int factor,
-> +	  const unsigned int weight)
-> +{
-> +	WARN_ON(weight <= 1 || factor == 0);
-> +	avg->weight = weight;
-> +	avg->factor = factor;
-> +	return avg;
-> +}
-> +EXPORT_SYMBOL(ewma_init);
-
-Please initalize avg->internal too.
-
-
-and nit, I don't understand what you intend by 'const unsigned int'. I think
-we can remove this const safely. it's more easy readable.
-
-
-
+-- 
+Best Regards,
+Artem Bityutskiy (Артём Битюцкий)
 
