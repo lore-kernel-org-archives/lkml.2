@@ -1,76 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758397Ab0JUOxu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Oct 2010 10:53:50 -0400
-Received: from mailhost.informatik.uni-hamburg.de ([134.100.9.70]:33296 "EHLO
-	mailhost.informatik.uni-hamburg.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758229Ab0JUOxs (ORCPT
+	id S1755224Ab0JUO4f (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Oct 2010 10:56:35 -0400
+Received: from smtp110.prem.mail.ac4.yahoo.com ([76.13.13.93]:36414 "HELO
+	smtp110.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751825Ab0JUO4e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Oct 2010 10:53:48 -0400
-Message-ID: <4CC053E3.4050207@metafoo.de>
-Date: Thu, 21 Oct 2010 16:53:23 +0200
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla-Thunderbird 2.0.0.24 (X11/20100329)
-MIME-Version: 1.0
-To: piotr@hosowicz.com
-CC: rklein@nvidia.com, Anton Vorontsov <cbouatmailru@gmail.com>,
-        broonie@opensource.wolfsonmicro.com, achew@nvidia.com, olof@lixom.net,
+	Thu, 21 Oct 2010 10:56:34 -0400
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+X-YMail-OSG: _ohTirQVM1l.q9ucO5N6u6T6ywfgRI0gQVPebuJwP66K4PK
+ 91R9Mk7giCPxDOyF9vz4qeGiRcSzl5Rhws8yJvP5GzIDtrKB_2MOl6qp4JkU
+ v0WI_U3VPUfxrcTaG.llsYPMJGm3g9blftrBgmgQ.gGgYyoftizZkB0DodRp
+ s8vkvtoRqhzuQgmhvXPqPBg10Zna09xdxYDbjneWujCXbIPgL1o5bWMefiyH
+ XoPfLllDRNigwjwiEFhL9dfFZcWEA
+X-Yahoo-Newman-Property: ymail-3
+Date: Thu, 21 Oct 2010 09:56:29 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: David Rientjes <rientjes@google.com>
+cc: Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Casey Dahlin <cdahlin@redhat.com>, x86@kernel.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] POWER: Add gpio chager driver
-References: <4CC02FF9.3050804@metafoo.de> <1287663957-30099-1-git-send-email-lars@metafoo.de> <4CC03563.3060908@example.com>
-In-Reply-To: <4CC03563.3060908@example.com>
-X-Enigmail-Version: 0.95.0
-Content-Type: text/plain; charset=ISO-8859-2
-Content-Transfer-Encoding: 7bit
+Subject: Re: [patch] x86: allow ZONE_DMA to be configurable
+In-Reply-To: <alpine.DEB.2.00.1010150206190.8103@chino.kir.corp.google.com>
+Message-ID: <alpine.DEB.2.00.1010210948170.24115@router.home>
+References: <alpine.DEB.2.00.1010131713160.24646@chino.kir.corp.google.com> <20101014011056.a58bac55.akpm@linux-foundation.org> <alpine.DEB.2.00.1010141509270.3696@chino.kir.corp.google.com> <20101014153223.a710d70c.akpm@linux-foundation.org>
+ <alpine.DEB.2.00.1010150206190.8103@chino.kir.corp.google.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Piotr Hosowicz wrote:
-> On 21.10.2010 14:25, Lars-Peter Clausen wrote:
->> This patch adds a simple driver for chargers indicating their online
->> status
->> through a GPIO pin.
->>
->> Signed-off-by: Lars-Peter Clausen<lars@metafoo.de>
->> ---
->>   drivers/power/Kconfig              |   10 ++
->>   drivers/power/Makefile             |    1 +
->>   drivers/power/gpio-charger.c       |  184
->> ++++++++++++++++++++++++++++++++++++
->>   include/linux/power/gpio-charger.h |   39 ++++++++
->>   4 files changed, 234 insertions(+), 0 deletions(-)
->>   create mode 100644 drivers/power/gpio-charger.c
->>   create mode 100644 include/linux/power/gpio-charger.h
->>
->> diff --git a/drivers/power/Kconfig b/drivers/power/Kconfig
->> index 0734356..90b1940 100644
->> --- a/drivers/power/Kconfig
->> +++ b/drivers/power/Kconfig
->> @@ -166,4 +166,14 @@ config BATTERY_INTEL_MID
->>         Say Y here to enable the battery driver on Intel MID
->>         platforms.
->>
->> +config CHARGER_GPIO
->> +    tristate "GPIO charger"
->> +    depends on GPIOLIB
->> +    help
->> +      Say Y to include support for chargers which report their online
->> status
->> +      through a GPIO pin.
->> +
->> +      This driver can be build as a module. If so, the module will be
->> +      called gpio-chager.
-> 
-> Shouldn't it say gpio-charger not gpio-chager? A typo.
-> 
-> Regards,
-> 
-> Piotr Hosowicz
-> 
+On Fri, 15 Oct 2010, David Rientjes wrote:
 
-Hi
+> > hm.  It'd be better to make all the drivers depend on ZONE_DMA.  Good
+> > luck with that :)
+> >
+>
+> If they all truly depended on it then we'd never have been able to disable
+> it.  I think breaking the build when you have CONFIG_ZONE_DMA=n and
+> something is passing GFP_DMA would be the best alternative.
 
-Yes, thanks.
+Yes I also think that is best. Forces the issues to be finally addressed.
 
-- Lars
+Building without CONFIG_ZONE_DMA will remove the need to keep dma kmalloc
+caches around and avoid checking for __GFP_DMA in the hotpaths of the slab
+allocators.
