@@ -1,54 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932163Ab0JUOSh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Oct 2010 10:18:37 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:49209 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756881Ab0JUOSg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Oct 2010 10:18:36 -0400
+	id S932303Ab0JUOTK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Oct 2010 10:19:10 -0400
+Received: from www.tglx.de ([62.245.132.106]:41752 "EHLO www.tglx.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932207Ab0JUOTI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Oct 2010 10:19:08 -0400
+Date: Thu, 21 Oct 2010 16:18:23 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+cc: Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>
+Subject: [GIT pull] futex fixes for 2.6.37
+Message-ID: <alpine.LFD.2.00.1010211615550.2418@localhost6.localdomain6>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <1287669539-22644-1-git-send-email-jslaby@suse.cz>
-References: <1287669539-22644-1-git-send-email-jslaby@suse.cz>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Thu, 21 Oct 2010 07:17:34 -0700
-Message-ID: <AANLkTinZNekvQHn4FYm-aJqGziV_zeUkdwtWWDb09ofm@mail.gmail.com>
-Subject: Re: [PATCH 1/1] Char: TTY, restore tty_ldisc_wait_idle
-To: Jiri Slaby <jslaby@suse.cz>
-Cc: gregkh@suse.de, jirislaby@gmail.com, linux-kernel@vger.kernel.org,
-        Alan Cox <alan@linux.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 21, 2010 at 6:58 AM, Jiri Slaby <jslaby@suse.cz> wrote:
-> It was removed in 65b770468e98 (tty-ldisc: turn ldisc user count into
-> a proper refcount), but we need to wait for last user to quit the
-> ldisc before we close it in tty_set_ldisc.
->
-> Otherwise weird things start to happen. There might be processes
-> waiting in tty_read->n_tty_read on tty->read_wait for input to appear
-> and at that moment, a change of ldisc is fatal. n_tty_close is called,
-> it frees read_buf and the waiting process is still in the middle of
-> reading and goes nuts after it is woken.
+Linus,
 
-Hmm. Looks reasonable. And the waiting is outside the lock, so there
-aren't any of the problem cases that caused the original changes. And
-we don't need the lock, because the TTY_LDISC_CHANGING bit will
-protect against anything new coming in, so we don't have races with
-the count going up afterwards.
+Please pull the latest core-fixes-for-linus git tree from:
 
-And you're right about the lockless approach being reasonable inside
-the testing code too - it's atomic as you say, and we don't touch/care
-about anything else.
+   git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git core-fixes-for-linus
 
-So I don't have any objections, apart from thinking that the ldisc
-code is apparently still too fragile if this is needed.  But the ldisc
-change is so special that I don't think this is a unreasonable hack.
-Even if it _is_ a bit of a hack still.
+That fix didn't make 36.
 
-So feel free to add an acked-by: from me. Whoever saw the problem
-should probably test the patch first, though.
+Thanks,
 
-                                Linus
+	tglx
+
+------------------>
+Darren Hart (1):
+      futex: Fix errors in nested key ref-counting
+
+
+ kernel/futex.c |   31 ++++++++++++++++---------------
+ 1 files changed, 16 insertions(+), 15 deletions(-)
+
+diff --git a/kernel/futex.c b/kernel/futex.c
+index 6a3a5fa..e328f57 100644
+--- a/kernel/futex.c
++++ b/kernel/futex.c
+@@ -1363,7 +1363,6 @@ static inline struct futex_hash_bucket *queue_lock(struct futex_q *q)
+ {
+ 	struct futex_hash_bucket *hb;
+ 
+-	get_futex_key_refs(&q->key);
+ 	hb = hash_futex(&q->key);
+ 	q->lock_ptr = &hb->lock;
+ 
+@@ -1375,7 +1374,6 @@ static inline void
+ queue_unlock(struct futex_q *q, struct futex_hash_bucket *hb)
+ {
+ 	spin_unlock(&hb->lock);
+-	drop_futex_key_refs(&q->key);
+ }
+ 
+ /**
+@@ -1480,8 +1478,6 @@ static void unqueue_me_pi(struct futex_q *q)
+ 	q->pi_state = NULL;
+ 
+ 	spin_unlock(q->lock_ptr);
+-
+-	drop_futex_key_refs(&q->key);
+ }
+ 
+ /*
+@@ -1812,7 +1808,10 @@ static int futex_wait(u32 __user *uaddr, int fshared,
+ 	}
+ 
+ retry:
+-	/* Prepare to wait on uaddr. */
++	/*
++	 * Prepare to wait on uaddr. On success, holds hb lock and increments
++	 * q.key refs.
++	 */
+ 	ret = futex_wait_setup(uaddr, val, fshared, &q, &hb);
+ 	if (ret)
+ 		goto out;
+@@ -1822,24 +1821,23 @@ retry:
+ 
+ 	/* If we were woken (and unqueued), we succeeded, whatever. */
+ 	ret = 0;
++	/* unqueue_me() drops q.key ref */
+ 	if (!unqueue_me(&q))
+-		goto out_put_key;
++		goto out;
+ 	ret = -ETIMEDOUT;
+ 	if (to && !to->task)
+-		goto out_put_key;
++		goto out;
+ 
+ 	/*
+ 	 * We expect signal_pending(current), but we might be the
+ 	 * victim of a spurious wakeup as well.
+ 	 */
+-	if (!signal_pending(current)) {
+-		put_futex_key(fshared, &q.key);
++	if (!signal_pending(current))
+ 		goto retry;
+-	}
+ 
+ 	ret = -ERESTARTSYS;
+ 	if (!abs_time)
+-		goto out_put_key;
++		goto out;
+ 
+ 	restart = &current_thread_info()->restart_block;
+ 	restart->fn = futex_wait_restart;
+@@ -1856,8 +1854,6 @@ retry:
+ 
+ 	ret = -ERESTART_RESTARTBLOCK;
+ 
+-out_put_key:
+-	put_futex_key(fshared, &q.key);
+ out:
+ 	if (to) {
+ 		hrtimer_cancel(&to->timer);
+@@ -2236,7 +2232,10 @@ static int futex_wait_requeue_pi(u32 __user *uaddr, int fshared,
+ 	q.rt_waiter = &rt_waiter;
+ 	q.requeue_pi_key = &key2;
+ 
+-	/* Prepare to wait on uaddr. */
++	/*
++	 * Prepare to wait on uaddr. On success, increments q.key (key1) ref
++	 * count.
++	 */
+ 	ret = futex_wait_setup(uaddr, val, fshared, &q, &hb);
+ 	if (ret)
+ 		goto out_key2;
+@@ -2254,7 +2253,9 @@ static int futex_wait_requeue_pi(u32 __user *uaddr, int fshared,
+ 	 * In order for us to be here, we know our q.key == key2, and since
+ 	 * we took the hb->lock above, we also know that futex_requeue() has
+ 	 * completed and we no longer have to concern ourselves with a wakeup
+-	 * race with the atomic proxy lock acquition by the requeue code.
++	 * race with the atomic proxy lock acquisition by the requeue code. The
++	 * futex_requeue dropped our key1 reference and incremented our key2
++	 * reference count.
+ 	 */
+ 
+ 	/* Check if the requeue code acquired the second futex for us. */
