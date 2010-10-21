@@ -1,64 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758798Ab0JUWwR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Oct 2010 18:52:17 -0400
-Received: from web31812.mail.mud.yahoo.com ([68.142.207.75]:34575 "HELO
-	web31812.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1752044Ab0JUWwQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Oct 2010 18:52:16 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.com;
-  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Reply-To:Subject:To:MIME-Version:Content-Type;
-  b=5UpGcquzr5ypbLX+NUksASmy25X0RGejiNls2+Qk7QLBF2NhhsCbTANkWeRdGeU9TB+EYk+uWzRVpWvhaNAZDontzl4fTBW3VwRD94LET3GMbESihbMRyhf7/Wg1tmQESDzeXirhudsI6XaIX9l6ZOdCrmqBwVeClGhanQibPy8=;
-Message-ID: <662065.4331.qm@web31812.mail.mud.yahoo.com>
-X-YMail-OSG: o6CDFzQVM1ng29xJRouRxyoqev3OR28AHe.w0Gz57z2gS1d
- DM0zDlD6r2VnL9V95965dje7UyNQyCEoEN2FgcsThp6yHu6iIf6izzQfcAgj
- qNZT4FzciGa5YWxllIExHFlKnHgR.F2D90YRz16olTOFPh3KUzXgzbkvc142
- Y2jqoOrbBHJXjXQtJM1GV3DdGeRWsPYw0ITyXUx4DIGKZwNwiAeepdooDXHr
- DYZPbwaBIeueuRXL6N5u8EtYF5MC_F9cW7OuDBCKhdfP2rPxSA89EdvZBl2E
- 5Kuvh2IxJVYorqN9GrXe4wSqDaKaF3NtBcUwc9D.oxq3vuz51_tsZIjHmu8D
- R13gcIVYgIyeGlXpifpQhKkHhXadukCNpcA--
-X-Mailer: YahooMailClassic/11.4.9 YahooMailWebService/0.8.107.285259
-Date: Thu, 21 Oct 2010 15:52:12 -0700 (PDT)
-From: Luben Tuikov <ltuikov@yahoo.com>
-Reply-To: ltuikov@yahoo.com
-Subject: [PATCH] [USB] Allow retrieval of the Caching mode page
-To: Greg KH <greg@kroah.com>, linux-usb@vger.kernel.org,
-        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
+	id S1758875Ab0JUWzB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Oct 2010 18:55:01 -0400
+Received: from mga09.intel.com ([134.134.136.24]:25475 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753364Ab0JUWzA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Oct 2010 18:55:00 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.58,219,1286175600"; 
+   d="scan'208";a="669661442"
+Date: Fri, 22 Oct 2010 00:54:57 +0200
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Axel Lin <axel.lin@gmail.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        Harald Welte <laforge@openmoko.org>
+Subject: Re: [PATCH] mfd: Fix resource reclaim in pcf50633_remove()
+Message-ID: <20101021225457.GE11685@sortiz-mobl>
+References: <1287565019.7849.2.camel@mola>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1287565019.7849.2.camel@mola>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The statement of the comment removed by this
-patch, "A number of devices have problems with
-MODE SENSE for page x08, so we will skip it" is
-certainly too general to apply for *all*
-devices. This patch removes the unconditional
-retrieval constraint of the Caching mode page.
+Hi Axel,
 
-Signed-off-by: Luben Tuikov <ltuikov@yahoo.com>
----
- drivers/usb/storage/scsiglue.c |    4 ----
- 1 files changed, 0 insertions(+), 4 deletions(-)
+On Wed, Oct 20, 2010 at 04:56:59PM +0800, Axel Lin wrote:
+> Calling sysfs_remove_group() to remove sysfs entries
+> and unregister bl_pdev in pcf50633_remove().
+patch applied, thanks.
 
-diff --git a/drivers/usb/storage/scsiglue.c b/drivers/usb/storage/scsiglue.c
-index d8d98cf..c3cb60d 100644
---- a/drivers/usb/storage/scsiglue.c
-+++ b/drivers/usb/storage/scsiglue.c
-@@ -193,10 +193,6 @@ static int slave_configure(struct scsi_device *sdev)
- 		if (us->fflags & US_FL_NO_WP_DETECT)
- 			sdev->skip_ms_page_3f = 1;
- 
--		/* A number of devices have problems with MODE SENSE for
--		 * page x08, so we will skip it. */
--		sdev->skip_ms_page_8 = 1;
--
- 		/* Some disks return the total number of blocks in response
- 		 * to READ CAPACITY rather than the highest block number.
- 		 * If this device makes that mistake, tell the sd driver. */
+Cheers,
+Samuel.
+
+
+> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+> ---
+>  drivers/mfd/pcf50633-core.c |    2 ++
+>  1 files changed, 2 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/mfd/pcf50633-core.c b/drivers/mfd/pcf50633-core.c
+> index 6d4233f..501ce13 100644
+> --- a/drivers/mfd/pcf50633-core.c
+> +++ b/drivers/mfd/pcf50633-core.c
+> @@ -339,12 +339,14 @@ static int __devexit pcf50633_remove(struct i2c_client *client)
+>  	struct pcf50633 *pcf = i2c_get_clientdata(client);
+>  	int i;
+>  
+> +	sysfs_remove_group(&client->dev.kobj, &pcf_attr_group);
+>  	pcf50633_irq_free(pcf);
+>  
+>  	platform_device_unregister(pcf->input_pdev);
+>  	platform_device_unregister(pcf->rtc_pdev);
+>  	platform_device_unregister(pcf->mbc_pdev);
+>  	platform_device_unregister(pcf->adc_pdev);
+> +	platform_device_unregister(pcf->bl_pdev);
+>  
+>  	for (i = 0; i < PCF50633_NUM_REGULATORS; i++)
+>  		platform_device_unregister(pcf->regulator_pdev[i]);
+> -- 
+> 1.7.2
+> 
+> 
+> 
+
 -- 
-1.7.0.1
-
+Intel Open Source Technology Centre
+http://oss.intel.com/
