@@ -1,115 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758283Ab0JUOAG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Oct 2010 10:00:06 -0400
-Received: from minas.ics.muni.cz ([147.251.4.40]:54616 "EHLO minas.ics.muni.cz"
+	id S1758308Ab0JUOBU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Oct 2010 10:01:20 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:21571 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756956Ab0JUOAF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Oct 2010 10:00:05 -0400
-From: Jiri Slaby <jslaby@suse.cz>
-To: gregkh@suse.de
-Cc: jirislaby@gmail.com, linux-kernel@vger.kernel.org,
-        Jiri Slaby <jslaby@suse.cz>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Alan Cox <alan@linux.intel.com>
-Subject: [PATCH 1/1] Char: TTY, restore tty_ldisc_wait_idle
-Date: Thu, 21 Oct 2010 15:58:59 +0200
-Message-Id: <1287669539-22644-1-git-send-email-jslaby@suse.cz>
-X-Mailer: git-send-email 1.7.3.1
-X-Muni-Spam-TestIP: 147.251.48.3
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (minas.ics.muni.cz [147.251.4.35]); Thu, 21 Oct 2010 15:59:01 +0200 (CEST)
+	id S1757587Ab0JUOBT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Oct 2010 10:01:19 -0400
+Date: Thu, 21 Oct 2010 10:00:31 -0400
+From: Jason Baron <jbaron@redhat.com>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Steven Rostedt <rostedt@goodmis.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        2nddept-manager@sdl.hitachi.co.jp
+Subject: Re: [PATCH][GIT PULL] tracing: Fix compile issue for
+	trace_sched_wakeup.c
+Message-ID: <20101021140031.GC2920@redhat.com>
+References: <1287508282.16971.386.camel@gandalf.stny.rr.com> <20101019184111.GA17266@elte.hu> <20101020154045.GA18353@elte.hu> <20101020164324.GC7348@redhat.com> <4CBFAC70.30602@hitachi.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4CBFAC70.30602@hitachi.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It was removed in 65b770468e98 (tty-ldisc: turn ldisc user count into
-a proper refcount), but we need to wait for last user to quit the
-ldisc before we close it in tty_set_ldisc.
+On Thu, Oct 21, 2010 at 11:58:56AM +0900, Masami Hiramatsu wrote:
+> (2010/10/21 1:43), Jason Baron wrote:
+> > On Wed, Oct 20, 2010 at 05:40:45PM +0200, Ingo Molnar wrote:
+> >> FYI, there's a new mystery hang (sometimes crash) that triggers in -tip - and which 
+> >> seems to be tracing related. See the crashlog below - config attached.
+> >>
+> >> It's not bisectable - small changes in the kernel make the bug come/go. (might be a 
+> >> race of some sorts)
+> >>
+> >> Thanks,
+> >>
+> >> 	Ingo
+> >>
+> > 
+> > strange b/c it looks like we get though enabling/disabling the
+> > tracepoitns individually, but then when we go to enable all the
+> > tracepoints we hit this hang - perhaps, suggesting a race. Do we always
+> > fail after "Testing all events:" is printed? Does the crash have any
+> > more clues. I will try and re-produce this.
+> > 
+> > Also, I noticed some recent changes to text_poke_smp() usage of
+> > stop_machine() on Oct. 14th. That's related to the area where this appears
+> > to hang, so if things were working with this .config before then, that
+> > might be a place to look. Adding Masami to the 'cc list.
+> 
+> Recent changes of text_poke_smp() just removed unnecessary
+> get/put_online_cpu(), so I think it's not related this bug.
+> 
+> It seems there can be a bug in stop_machine() routine under
+> heavy use. usually that is called just once at a time, but jump
+> label and optprobe might call it heavily (thousands times?).
+> So some racy situation can be happen easily.
+> 
 
-Otherwise weird things start to happen. There might be processes
-waiting in tty_read->n_tty_read on tty->read_wait for input to appear
-and at that moment, a change of ldisc is fatal. n_tty_close is called,
-it frees read_buf and the waiting process is still in the middle of
-reading and goes nuts after it is woken.
+for most tracepoints there is 1 text location that needs to be
+updated...however, I know that for kmalloc, you can end up with
+hundredds or even thousands. So yes, we can end up calling
+stop_machine() thousands of times.
 
-Previously we prevented close to happen when others are in ldisc ops
-by tty_ldisc_wait_idle in tty_set_ldisc. But the commit above removed
-that. So revoke the change and test whether there is 1 user (=we), and
-allow the close then.
+There is a patch to reduce kmalloc tracepoint text locations by moving
+them out of line: http://lkml.org/lkml/2010/10/13/208
 
-I don't understand why tty_ldisc_lock would be needed when it's an
-atomic variable, so this is a lockless tty_ldisc_wait_idle.
+Also, text_poke_smp_batch() would allow us to update all these text
+locations at once.
 
-NOTE: This is an untested patch, because I cannot reproduce myself
-(partly because I haven't tried yet) and because I want to hear back
-from you.
+Nonetheless, there appears to be a underlying race condition...
 
-NOT-signed-off-by: Jiri Slaby <jslaby@suse.cz>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Alan Cox <alan@linux.intel.com>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>
----
- drivers/char/tty_ldisc.c |   26 ++++++++++++++++++++++++++
- 1 files changed, 26 insertions(+), 0 deletions(-)
+thanks,
 
-diff --git a/drivers/char/tty_ldisc.c b/drivers/char/tty_ldisc.c
-index 412f977..86032b5 100644
---- a/drivers/char/tty_ldisc.c
-+++ b/drivers/char/tty_ldisc.c
-@@ -47,6 +47,7 @@
- 
- static DEFINE_SPINLOCK(tty_ldisc_lock);
- static DECLARE_WAIT_QUEUE_HEAD(tty_ldisc_wait);
-+static DECLARE_WAIT_QUEUE_HEAD(tty_ldisc_idle);
- /* Line disc dispatch table */
- static struct tty_ldisc_ops *tty_ldiscs[NR_LDISCS];
- 
-@@ -83,6 +84,7 @@ static void put_ldisc(struct tty_ldisc *ld)
- 		return;
- 	}
- 	local_irq_restore(flags);
-+	wake_up(&tty_ldisc_idle);
- }
- 
- /**
-@@ -531,6 +533,23 @@ static int tty_ldisc_halt(struct tty_struct *tty)
- }
- 
- /**
-+ *	tty_ldisc_wait_idle	-	wait for the ldisc to become idle
-+ *	@tty: tty to wait for
-+ *
-+ *	Wait for the line discipline to become idle. The discipline must
-+ *	have been halted for this to guarantee it remains idle.
-+ */
-+static int tty_ldisc_wait_idle(struct tty_struct *tty)
-+{
-+	int ret;
-+	ret = wait_event_interruptible_timeout(tty_ldisc_idle,
-+			atomic_read(&tty->ldisc->users) == 1, 5 * HZ);
-+	if (ret < 0)
-+		return ret;
-+	return ret > 0 ? 0 : -EBUSY;
-+}
-+
-+/**
-  *	tty_set_ldisc		-	set line discipline
-  *	@tty: the terminal to set
-  *	@ldisc: the line discipline
-@@ -634,6 +653,13 @@ int tty_set_ldisc(struct tty_struct *tty, int ldisc)
- 
- 	flush_scheduled_work();
- 
-+	retval = tty_ldisc_wait_idle(tty);
-+	if (retval) {
-+		clear_bit(TTY_LDISC_CHANGING, &tty->flags);
-+		tty_ldisc_put(new_ldisc);
-+		return retval;
-+	}
-+
- 	tty_lock();
- 	mutex_lock(&tty->ldisc_mutex);
- 	if (test_bit(TTY_HUPPED, &tty->flags)) {
--- 
-1.7.3.1
-
+-Jason
