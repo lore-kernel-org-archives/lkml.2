@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756697Ab0JUAxy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Oct 2010 20:53:54 -0400
-Received: from bld-mail14.adl6.internode.on.net ([150.101.137.99]:47628 "EHLO
+	id S1756668Ab0JUAxw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Oct 2010 20:53:52 -0400
+Received: from bld-mail17.adl2.internode.on.net ([150.101.137.102]:42601 "EHLO
 	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756352Ab0JUAug (ORCPT
+	with ESMTP id S1756353Ab0JUAug (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 20 Oct 2010 20:50:36 -0400
 From: Dave Chinner <david@fromorbit.com>
 To: linux-fsdevel@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH 04/21] fs: Implement lazy LRU updates for inodes
-Date: Thu, 21 Oct 2010 11:49:29 +1100
-Message-Id: <1287622186-1935-5-git-send-email-david@fromorbit.com>
+Subject: [PATCH 07/21] exofs: use iput() for inode reference count decrements
+Date: Thu, 21 Oct 2010 11:49:32 +1100
+Message-Id: <1287622186-1935-8-git-send-email-david@fromorbit.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1287622186-1935-1-git-send-email-david@fromorbit.com>
 References: <1287622186-1935-1-git-send-email-david@fromorbit.com>
@@ -20,321 +20,40 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Nick Piggin <npiggin@suse.de>
+From: Dave Chinner <dchinner@redhat.com>
 
-Convert the inode LRU to use lazy updates to reduce lock and
-cacheline traffic.  We avoid moving inodes around in the LRU list
-during iget/iput operations so these frequent operations don't need
-to access the LRUs. Instead, we defer the refcount checks to
-reclaim-time and use a per-inode state flag, I_REFERENCED, to tell
-reclaim that iget has touched the inode in the past. This means that
-only reclaim should be touching the LRU with any frequency, hence
-significantly reducing lock acquisitions and the amount contention
-on LRU updates.
+Direct modification of the inode reference count is a no-no. Convert
+the exofs decrements to call iput() instead of acting directly on
+i_count.
 
-This also removes the inode_in_use list, which means we now only
-have one list for tracking the inode LRU status. This makes it much
-simpler to split out the LRU list operations under it's own lock.
-
-Signed-off-by: Nick Piggin <npiggin@suse.de>
 Signed-off-by: Dave Chinner <dchinner@redhat.com>
 Reviewed-by: Christoph Hellwig <hch@lst.de>
 ---
- fs/fs-writeback.c         |   14 +++---
- fs/inode.c                |  111 +++++++++++++++++++++++++++-----------------
- fs/internal.h             |    6 +++
- include/linux/fs.h        |   13 +++---
- include/linux/writeback.h |    1 -
- 5 files changed, 88 insertions(+), 57 deletions(-)
+ fs/exofs/inode.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/fs/fs-writeback.c b/fs/fs-writeback.c
-index 58a95b7..33e9857 100644
---- a/fs/fs-writeback.c
-+++ b/fs/fs-writeback.c
-@@ -408,16 +408,16 @@ writeback_single_inode(struct inode *inode, struct writeback_control *wbc)
- 			 * completion.
- 			 */
- 			redirty_tail(inode);
--		} else if (atomic_read(&inode->i_count)) {
--			/*
--			 * The inode is clean, inuse
--			 */
--			list_move(&inode->i_list, &inode_in_use);
- 		} else {
- 			/*
--			 * The inode is clean, unused
-+			 * The inode is clean. If it is unused, then make sure
-+			 * that it is put on the LRU correctly as iput_final()
-+			 * does not move dirty inodes to the LRU and dirty
-+			 * inodes are removed from the LRU during scanning.
- 			 */
--			list_move(&inode->i_list, &inode_unused);
-+			list_del_init(&inode->i_list);
-+			if (!atomic_read(&inode->i_count))
-+				inode_lru_list_add(inode);
- 		}
- 	}
- 	inode_sync_complete(inode);
-diff --git a/fs/inode.c b/fs/inode.c
-index b3b6a4b..f47ec71 100644
---- a/fs/inode.c
-+++ b/fs/inode.c
-@@ -72,7 +72,6 @@ static unsigned int i_hash_shift __read_mostly;
-  * allowing for low-overhead inode sync() operations.
-  */
+diff --git a/fs/exofs/inode.c b/fs/exofs/inode.c
+index b631ff3..0fb4d4c 100644
+--- a/fs/exofs/inode.c
++++ b/fs/exofs/inode.c
+@@ -1101,7 +1101,7 @@ static void create_done(struct exofs_io_state *ios, void *p)
  
--LIST_HEAD(inode_in_use);
- LIST_HEAD(inode_unused);
- static struct hlist_head *inode_hashtable __read_mostly;
+ 	set_obj_created(oi);
  
-@@ -291,6 +290,7 @@ void inode_init_once(struct inode *inode)
- 	INIT_HLIST_NODE(&inode->i_hash);
- 	INIT_LIST_HEAD(&inode->i_dentry);
- 	INIT_LIST_HEAD(&inode->i_devices);
-+	INIT_LIST_HEAD(&inode->i_list);
- 	INIT_RADIX_TREE(&inode->i_data.page_tree, GFP_ATOMIC);
- 	spin_lock_init(&inode->i_data.tree_lock);
- 	spin_lock_init(&inode->i_data.i_mmap_lock);
-@@ -317,12 +317,21 @@ static void init_once(void *foo)
-  */
- void __iget(struct inode *inode)
- {
--	if (atomic_inc_return(&inode->i_count) != 1)
--		return;
-+	atomic_inc(&inode->i_count);
-+}
-+
-+void inode_lru_list_add(struct inode *inode)
-+{
-+	list_add(&inode->i_list, &inode_unused);
-+	percpu_counter_inc(&nr_inodes_unused);
-+}
- 
--	if (!(inode->i_state & (I_DIRTY|I_SYNC)))
--		list_move(&inode->i_list, &inode_in_use);
--	percpu_counter_dec(&nr_inodes_unused);
-+void inode_lru_list_del(struct inode *inode)
-+{
-+	if (!list_empty(&inode->i_list)) {
-+		list_del_init(&inode->i_list);
-+		percpu_counter_dec(&nr_inodes_unused);
-+	}
+-	atomic_dec(&inode->i_count);
++	iput(inode);
+ 	wake_up(&oi->i_wq);
  }
  
- void end_writeback(struct inode *inode)
-@@ -367,7 +376,7 @@ static void dispose_list(struct list_head *head)
- 		struct inode *inode;
- 
- 		inode = list_first_entry(head, struct inode, i_list);
--		list_del(&inode->i_list);
-+		list_del_init(&inode->i_list);
- 
- 		evict(inode);
- 
-@@ -410,9 +419,9 @@ static int invalidate_list(struct list_head *head, struct list_head *dispose)
- 			continue;
- 		invalidate_inode_buffers(inode);
- 		if (!atomic_read(&inode->i_count)) {
--			list_move(&inode->i_list, dispose);
- 			WARN_ON(inode->i_state & I_NEW);
- 			inode->i_state |= I_FREEING;
-+			list_move(&inode->i_list, dispose);
- 			percpu_counter_dec(&nr_inodes_unused);
- 			continue;
- 		}
-@@ -447,31 +456,21 @@ int invalidate_inodes(struct super_block *sb)
- }
- EXPORT_SYMBOL(invalidate_inodes);
- 
--static int can_unuse(struct inode *inode)
--{
--	if (inode->i_state)
--		return 0;
--	if (inode_has_buffers(inode))
--		return 0;
--	if (atomic_read(&inode->i_count))
--		return 0;
--	if (inode->i_data.nrpages)
--		return 0;
--	return 1;
--}
--
- /*
-- * Scan `goal' inodes on the unused list for freeable ones. They are moved to
-- * a temporary list and then are freed outside inode_lock by dispose_list().
-+ * Scan `goal' inodes on the unused list for freeable ones. They are moved to a
-+ * temporary list and then are freed outside inode_lock by dispose_list().
-  *
-  * Any inodes which are pinned purely because of attached pagecache have their
-- * pagecache removed.  We expect the final iput() on that inode to add it to
-- * the front of the inode_unused list.  So look for it there and if the
-- * inode is still freeable, proceed.  The right inode is found 99.9% of the
-- * time in testing on a 4-way.
-+ * pagecache removed.  If the inode has metadata buffers attached to
-+ * mapping->private_list then try to remove them.
-  *
-- * If the inode has metadata buffers attached to mapping->private_list then
-- * try to remove them.
-+ * If the inode has the I_REFERENCED flag set, it means that it has been used
-+ * recently - the flag is set in iput_final(). When we encounter such an inode,
-+ * clear the flag and move it to the back of the LRU so it gets another pass
-+ * through the LRU before it gets reclaimed. This is necessary because of the
-+ * fact we are doing lazy LRU updates to minimise lock contention so the LRU
-+ * does not have strict ordering. Hence we don't want to reclaim inodes with
-+ * this flag set because they are the inodes that are out of order.
-  */
- static void prune_icache(int nr_to_scan)
- {
-@@ -489,8 +488,21 @@ static void prune_icache(int nr_to_scan)
- 
- 		inode = list_entry(inode_unused.prev, struct inode, i_list);
- 
--		if (inode->i_state || atomic_read(&inode->i_count)) {
-+		/*
-+		 * Referenced or dirty inodes are still in use. Give them
-+		 * another pass through the LRU as we canot reclaim them now.
-+		 */
-+		if (atomic_read(&inode->i_count) ||
-+		    (inode->i_state & ~I_REFERENCED)) {
-+			list_del_init(&inode->i_list);
-+			percpu_counter_dec(&nr_inodes_unused);
-+			continue;
-+		}
-+
-+		/* recently referenced inodes get one more pass */
-+		if (inode->i_state & I_REFERENCED) {
- 			list_move(&inode->i_list, &inode_unused);
-+			inode->i_state &= ~I_REFERENCED;
- 			continue;
- 		}
- 		if (inode_has_buffers(inode) || inode->i_data.nrpages) {
-@@ -500,13 +512,19 @@ static void prune_icache(int nr_to_scan)
- 				reap += invalidate_mapping_pages(&inode->i_data,
- 								0, -1);
- 			iput(inode);
--			spin_lock(&inode_lock);
- 
--			if (inode != list_entry(inode_unused.next,
--						struct inode, i_list))
--				continue;	/* wrong inode or list_empty */
--			if (!can_unuse(inode))
--				continue;
-+			/*
-+			 * Rather than try to determine if we can still use the
-+			 * inode after calling iput(), leave the inode where it
-+			 * is on the LRU. If we race with another reclaimer,
-+			 * that reclaimer will either see a reference count
-+			 * or the I_REFERENCED flag, and move the inode to the
-+			 * back of the LRU. If we don't race, then we'll see
-+			 * the I_REFERENCED flag on the next pass and do the
-+			 * same. Either way, we won't spin on it in this loop.
-+			 */
-+			spin_lock(&inode_lock);
-+			continue;
- 		}
- 		list_move(&inode->i_list, &freeable);
- 		WARN_ON(inode->i_state & I_NEW);
-@@ -621,7 +639,6 @@ static inline void
- __inode_add_to_lists(struct super_block *sb, struct hlist_head *head,
- 			struct inode *inode)
- {
--	list_add(&inode->i_list, &inode_in_use);
- 	list_add(&inode->i_sb_list, &sb->s_inodes);
- 	if (head)
- 		hlist_add_head(&inode->i_hash, head);
-@@ -1238,10 +1255,12 @@ static void iput_final(struct inode *inode)
- 		drop = generic_drop_inode(inode);
- 
- 	if (!drop) {
--		if (!(inode->i_state & (I_DIRTY|I_SYNC)))
--			list_move(&inode->i_list, &inode_unused);
--		percpu_counter_inc(&nr_inodes_unused);
- 		if (sb->s_flags & MS_ACTIVE) {
-+			inode->i_state |= I_REFERENCED;
-+			if (!(inode->i_state & (I_DIRTY|I_SYNC))) {
-+				list_del_init(&inode->i_list);
-+				inode_lru_list_add(inode);
-+			}
- 			spin_unlock(&inode_lock);
- 			return;
- 		}
-@@ -1252,13 +1271,19 @@ static void iput_final(struct inode *inode)
- 		spin_lock(&inode_lock);
- 		WARN_ON(inode->i_state & I_NEW);
- 		inode->i_state &= ~I_WILL_FREE;
--		percpu_counter_dec(&nr_inodes_unused);
- 		hlist_del_init(&inode->i_hash);
+@@ -1161,7 +1161,7 @@ struct inode *exofs_new_inode(struct inode *dir, int mode)
+ 	ios->cred = oi->i_cred;
+ 	ret = exofs_sbi_create(ios);
+ 	if (ret) {
+-		atomic_dec(&inode->i_count);
++		iput(inode);
+ 		exofs_put_io_state(ios);
+ 		return ERR_PTR(ret);
  	}
--	list_del_init(&inode->i_list);
--	list_del_init(&inode->i_sb_list);
- 	WARN_ON(inode->i_state & I_NEW);
- 	inode->i_state |= I_FREEING;
-+
-+	/*
-+	 * After we delete the inode from the LRU here, we avoid moving dirty
-+	 * inodes back onto the LRU now because I_FREEING is set and hence
-+	 * writeback_single_inode() won't move the inode around.
-+	 */
-+	inode_lru_list_del(inode);
-+
-+	list_del_init(&inode->i_sb_list);
- 	spin_unlock(&inode_lock);
- 	evict(inode);
- 	spin_lock(&inode_lock);
-diff --git a/fs/internal.h b/fs/internal.h
-index a6910e9..ece3565 100644
---- a/fs/internal.h
-+++ b/fs/internal.h
-@@ -101,3 +101,9 @@ extern void put_super(struct super_block *sb);
- struct nameidata;
- extern struct file *nameidata_to_filp(struct nameidata *);
- extern void release_open_intent(struct nameidata *);
-+
-+/*
-+ * inode.c
-+ */
-+extern void inode_lru_list_add(struct inode *inode);
-+extern void inode_lru_list_del(struct inode *inode);
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index 1fb92f9..af1d516 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -1632,16 +1632,17 @@ struct super_operations {
-  *
-  * Q: What is the difference between I_WILL_FREE and I_FREEING?
-  */
--#define I_DIRTY_SYNC		1
--#define I_DIRTY_DATASYNC	2
--#define I_DIRTY_PAGES		4
-+#define I_DIRTY_SYNC		0x01
-+#define I_DIRTY_DATASYNC	0x02
-+#define I_DIRTY_PAGES		0x04
- #define __I_NEW			3
- #define I_NEW			(1 << __I_NEW)
--#define I_WILL_FREE		16
--#define I_FREEING		32
--#define I_CLEAR			64
-+#define I_WILL_FREE		0x10
-+#define I_FREEING		0x20
-+#define I_CLEAR			0x40
- #define __I_SYNC		7
- #define I_SYNC			(1 << __I_SYNC)
-+#define I_REFERENCED		0x100
- 
- #define I_DIRTY (I_DIRTY_SYNC | I_DIRTY_DATASYNC | I_DIRTY_PAGES)
- 
-diff --git a/include/linux/writeback.h b/include/linux/writeback.h
-index 72a5d64..f956b66 100644
---- a/include/linux/writeback.h
-+++ b/include/linux/writeback.h
-@@ -10,7 +10,6 @@
- struct backing_dev_info;
- 
- extern spinlock_t inode_lock;
--extern struct list_head inode_in_use;
- extern struct list_head inode_unused;
- 
- /*
 -- 
 1.7.1
 
