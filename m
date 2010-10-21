@@ -1,45 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757720Ab0JULpp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Oct 2010 07:45:45 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:40325 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754660Ab0JULpo (ORCPT
+	id S1757743Ab0JUL7P (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Oct 2010 07:59:15 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:63193 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757706Ab0JUL7O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Oct 2010 07:45:44 -0400
+	Thu, 21 Oct 2010 07:59:14 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
+        d=gmail.com; s=gamma;
         h=mime-version:in-reply-to:references:date:message-id:subject:from:to
          :cc:content-type;
-        b=QtqQC1hJ/VSjPFFvRSOFK/a6IH10K6mhctiv+zN7FYXtLOyHbMux6LHvKAavV/ljD+
-         2DEnEuDwTv0/zV3yPKJg==
+        b=HLapgvvGGpTyOxaWfKzerj10Op3jQM302LCMEuVwe8WJGVZhQEhVcN4vum6/TAB8N/
+         787fzDO2ncPZwXnIrIoeYy3pzRbR/3bGJsma1J1jmbcJNX2kaeagl7+DnnzVsaYTwr4m
+         9yf2DenAgwTU4bq+HYnHfYuVWHX0N9hPTeNOA=
 MIME-Version: 1.0
-In-Reply-To: <1287660946.3488.105.camel@twins>
-References: <20101019134256.087045503@chello.nl>
-	<1287660946.3488.105.camel@twins>
-Date: Thu, 21 Oct 2010 13:45:41 +0200
-Message-ID: <AANLkTimWd680ARZ=RUGC9qXpgzLE2fpr2NuQiCPbAHzH@mail.gmail.com>
-Subject: Re: [PATCH 0/7] perf,x86: PEBS/BTS buffer allocation changes
-From: Stephane Eranian <eranian@google.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-X-System-Of-Record: true
+In-Reply-To: <20101021.031107.226775564.davem@davemloft.net>
+References: <1287201209-2101-1-git-send-email-tdent48227@gmail.com>
+	<20101021.031107.226775564.davem@davemloft.net>
+Date: Thu, 21 Oct 2010 07:59:13 -0400
+Message-ID: <AANLkTi=GJ7YLY=da3WRaBcXX3yRA2n1y0CR_4xNaKfL5@mail.gmail.com>
+Subject: Re: [PATCH] Drivers: atm: Makefile: replace the use of <module>-objs
+ with <module>-y
+From: Tracey Dent <tdent48227@gmail.com>
+To: David Miller <davem@davemloft.net>
+Cc: chas@cmf.nrl.navy.mil, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, linux-atm-general@lists.sourceforge.net
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 21, 2010 at 1:35 PM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
-> On Tue, 2010-10-19 at 15:42 +0200, Peter Zijlstra wrote:
->> Hi Stephane,
->>
->> Your PEBS/BTS buffer patch failed a .config dependent build, which on its own
->> was rather easy to fix, but Ingo objected to the size of the patch and asked me
->> to rewrite in smaller increments. This patch series is the result.
->>
->> What do you think?
+On 10/21/10, David Miller <davem@davemloft.net> wrote:
+> From: Tracey Dent <tdent48227@gmail.com>
+> Date: Fri, 15 Oct 2010 23:53:29 -0400
 >
-> Stephane, can I get an ack/review tag for this?
+>> Changed <module>-objs to <module>-y in Makefile.
+>>
+>> Signed-off-by: Tracey Dent <tdent48227@gmail.com>
 >
-At first glance, it looks okay, I will take a closer look this afternoon
-and get back to you.
+> Applied.
+>
+
+Thanks
