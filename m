@@ -1,20 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757487Ab0JUHHG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Oct 2010 03:07:06 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:36222 "EHLO
+	id S1757520Ab0JUHJK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Oct 2010 03:09:10 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:36300 "EHLO
 	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755194Ab0JUHHF (ORCPT
+	with ESMTP id S1755194Ab0JUHJI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Oct 2010 03:07:05 -0400
+	Thu, 21 Oct 2010 03:09:08 -0400
 X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Thu, 21 Oct 2010 16:01:34 +0900
+Date: Thu, 21 Oct 2010 16:03:43 +0900
 From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Cc: "akpm@linux-foundation.org" <akpm@linux-foundation.org>, steiner@sgi.com,
-        yinghai@kernel.org, mingo@elte.hu
-Subject: [PATCH v2 1/2] try to fix /proc/stat scalability of irq num per cpu
-Message-Id: <20101021160134.d4c99943.kamezawa.hiroyu@jp.fujitsu.com>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        steiner@sgi.com, yinghai@kernel.org, mingo@elte.hu
+Subject: [PATCH v2 2/2] try to fix /proc/stat scalability of irq sum of all
+ cpu
+Message-Id: <20101021160343.b7a0f60e.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20101021160134.d4c99943.kamezawa.hiroyu@jp.fujitsu.com>
+References: <20101021160134.d4c99943.kamezawa.hiroyu@jp.fujitsu.com>
 Organization: FUJITSU Co. LTD.
 X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
 Mime-Version: 1.0
@@ -24,94 +28,113 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Posting an updated version against mmotm because I noticed rebase is necessary.
-(kernel/irq/handle.c is modified.)
-I'll post this again after merge window.
-==
 From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 
-/proc/stat shows the total number of all interrupts to each cpu. But when
-the number of IRQs are very large, it take very long time and 'cat /proc/stat'
-takes more than 10 secs. This is because sum of all irq events are counted
-when /proc/stat is read. This patch adds "sum of all irq" counter percpu
-and reduce read costs.
+In /proc/stat, the number of per-IRQ event is shown by making a sum
+each irq's events on all cpus. But we can make use of kstat_irqs().
 
-The cost of reading /proc/stat is important because it's used by major
-applications as 'top', 'ps', 'w', etc....
+kstat_irqs() do the same calculation, If !CONFIG_GENERIC_HARDIRQ,
+it's not a big cost. (Both of the number of cpus and irqs are small.)
 
-A test on a mechin (4096cpu, 256 nodes, 4592 irqs) shows
+If a system is very big and CONFIG_GENERIC_HARDIRQ, it does
 
- %time cat /proc/stat > /dev/null
- Before Patch:  12.627 sec
- After  Patch:  2.459 sec
+	for_each_irq()
+		for_each_cpu()
+			- look up a radix tree
+			- read desc->irq_stat[cpu]
+This seems not efficient. This patch adds kstat_irqs() for
+CONFIG_GENRIC_HARDIRQ and change the calculation as
+
+	for_each_irq()
+		look up radix tree
+		for_each_cpu()
+			- read desc->irq_stat[cpu]
+
+This reduces cost.
+
+A test on (4096cpusp, 256 nodes, 4592 irqs) host (by Jack Steiner)
+
+%time cat /proc/stat > /dev/null
+
+Before Patch:	 2.459 sec
+After Patch :	  .561 sec
+
+Changelog:
+ - rebased onto mmotm-1020 (kernel/irq/handle.c is modified)
 
 Tested-by: Jack Steiner <steiner@sgi.com>
 Acked-by: Jack Steiner <steiner@sgi.com>
 Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 ---
- fs/proc/stat.c              |    4 +---
- include/linux/kernel_stat.h |   14 ++++++++++++--
- 2 files changed, 13 insertions(+), 5 deletions(-)
+ fs/proc/stat.c              |    9 ++-------
+ include/linux/kernel_stat.h |    4 ++++
+ kernel/irq/irqdesc.c        |   16 ++++++++++++++++
+ 3 files changed, 22 insertions(+), 7 deletions(-)
 
 Index: mmotm-1020/fs/proc/stat.c
 ===================================================================
 --- mmotm-1020.orig/fs/proc/stat.c
 +++ mmotm-1020/fs/proc/stat.c
-@@ -52,9 +52,7 @@ static int show_stat(struct seq_file *p,
- 		guest = cputime64_add(guest, kstat_cpu(i).cpustat.guest);
- 		guest_nice = cputime64_add(guest_nice,
- 			kstat_cpu(i).cpustat.guest_nice);
--		for_each_irq_nr(j) {
--			sum += kstat_irqs_cpu(j, i);
--		}
-+		sum += kstat_cpu_irqs_sum(i);
- 		sum += arch_irq_stat_cpu(i);
+@@ -108,13 +108,8 @@ static int show_stat(struct seq_file *p,
+ 	seq_printf(p, "intr %llu", (unsigned long long)sum);
  
- 		for (j = 0; j < NR_SOFTIRQS; j++) {
+ 	/* sum again ? it could be updated? */
+-	for_each_irq_nr(j) {
+-		per_irq_sum = 0;
+-		for_each_possible_cpu(i)
+-			per_irq_sum += kstat_irqs_cpu(j, i);
+-
+-		seq_printf(p, " %u", per_irq_sum);
+-	}
++	for_each_irq_nr(j)
++		seq_printf(p, " %u", kstat_irqs(j));
+ 
+ 	seq_printf(p,
+ 		"\nctxt %llu\n"
 Index: mmotm-1020/include/linux/kernel_stat.h
 ===================================================================
 --- mmotm-1020.orig/include/linux/kernel_stat.h
 +++ mmotm-1020/include/linux/kernel_stat.h
-@@ -33,6 +33,7 @@ struct kernel_stat {
- #ifndef CONFIG_GENERIC_HARDIRQS
-        unsigned int irqs[NR_IRQS];
- #endif
-+	unsigned long irqs_sum;
- 	unsigned int softirqs[NR_SOFTIRQS];
- };
- 
-@@ -54,6 +55,7 @@ static inline void kstat_incr_irqs_this_
- 					    struct irq_desc *desc)
+@@ -86,6 +86,7 @@ static inline unsigned int kstat_softirq
+ /*
+  * Number of interrupts per specific IRQ source, since bootup
+  */
++#ifndef CONFIG_GENERIC_HARDIRQS
+ static inline unsigned int kstat_irqs(unsigned int irq)
  {
- 	kstat_this_cpu.irqs[irq]++;
-+	kstat_this_cpu.irqs_sum++;
- }
+ 	unsigned int sum = 0;
+@@ -96,6 +97,9 @@ static inline unsigned int kstat_irqs(un
  
- static inline unsigned int kstat_irqs_cpu(unsigned int irq, int cpu)
-@@ -65,8 +67,9 @@ static inline unsigned int kstat_irqs_cp
- extern unsigned int kstat_irqs_cpu(unsigned int irq, int cpu);
- #define kstat_irqs_this_cpu(DESC) \
- 	((DESC)->kstat_irqs[smp_processor_id()])
--#define kstat_incr_irqs_this_cpu(irqno, DESC) \
--	((DESC)->kstat_irqs[smp_processor_id()]++)
-+#define kstat_incr_irqs_this_cpu(irqno, DESC) do {\
-+	((DESC)->kstat_irqs[smp_processor_id()]++);\
-+	kstat_this_cpu.irqs_sum++; } while (0)
- 
- #endif
- 
-@@ -94,6 +97,13 @@ static inline unsigned int kstat_irqs(un
  	return sum;
  }
- 
-+/*
-+ * Number of interrupts per cpu, since bootup
-+ */
-+static inline unsigned int kstat_cpu_irqs_sum(unsigned int cpu)
-+{
-+	return kstat_cpu(cpu).irqs_sum;
-+}
++#else
++extern unsigned int kstat_irqs(unsigned int irq);
++#endif
  
  /*
-  * Lock/unlock the current runqueue - to extract task statistics:
+  * Number of interrupts per cpu, since bootup
+Index: mmotm-1020/kernel/irq/irqdesc.c
+===================================================================
+--- mmotm-1020.orig/kernel/irq/irqdesc.c
++++ mmotm-1020/kernel/irq/irqdesc.c
+@@ -393,3 +393,19 @@ unsigned int kstat_irqs_cpu(unsigned int
+ 	struct irq_desc *desc = irq_to_desc(irq);
+ 	return desc ? desc->kstat_irqs[cpu] : 0;
+ }
++
++#ifdef CONFIG_GENERIC_HARDIRQS
++unsigned int  kstat_irqs(unsigned int irq)
++{
++	struct irq_desc *desc = irq_to_desc(irq);
++	int cpu;
++	int sum = 0;
++
++	if (!desc)
++		return 0;
++	for_each_possible_cpu(cpu)
++		sum += desc->kstat_irqs[cpu];
++	return sum;
++}
++EXPORT_SYMBOL_GPL(kstat_irqs);
++#endif /*CONFIG_GENERIC_HARDIRQS*/
 
