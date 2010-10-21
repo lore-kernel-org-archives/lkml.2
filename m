@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758149Ab0JUVCG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Oct 2010 17:02:06 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:35296 "EHLO bear.ext.ti.com"
+	id S932166Ab0JUVCK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Oct 2010 17:02:10 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:37444 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750920Ab0JUVB5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Oct 2010 17:01:57 -0400
+	id S1758156Ab0JUVCH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Oct 2010 17:02:07 -0400
 From: Cyril Chemparathy <cyril@ti.com>
 To: davinci-linux-open-source@linux.davincidsp.com,
         spi-devel-general@lists.sourceforge.net,
@@ -14,9 +14,9 @@ To: davinci-linux-open-source@linux.davincidsp.com,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         rpurdie@rpsys.net
 Cc: Cyril Chemparathy <cyril@ti.com>
-Subject: [PATCH v3 12/12] davinci: add tnetv107x evm i2c eeprom device
-Date: Thu, 21 Oct 2010 17:01:13 -0400
-Message-Id: <1287694873-12904-13-git-send-email-cyril@ti.com>
+Subject: [PATCH v3 06/12] regulator: add driver for tps6524x regulator
+Date: Thu, 21 Oct 2010 17:01:07 -0400
+Message-Id: <1287694873-12904-7-git-send-email-cyril@ti.com>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1287694873-12904-1-git-send-email-cyril@ti.com>
 References: <1287694873-12904-1-git-send-email-cyril@ti.com>
@@ -24,79 +24,748 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The tnetv107x evm board has an I2C device connected on one of the SSP ports.
-This patch adds board definitions for a GPIO based I2C master, as well as
-definitions for the eeprom device on these boards.
+TPS6524X provides three step-down converters and two general-purpose LDO
+voltage regulators.  This device is interfaced using SPI.
 
+Acked-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 Signed-off-by: Cyril Chemparathy <cyril@ti.com>
 ---
- arch/arm/mach-davinci/board-tnetv107x-evm.c |   30 +++++++++++++++++++++++++++
- 1 files changed, 30 insertions(+), 0 deletions(-)
+ drivers/regulator/Kconfig              |   10 +
+ drivers/regulator/Makefile             |    1 +
+ drivers/regulator/tps6524x-regulator.c |  692 ++++++++++++++++++++++++++++++++
+ 3 files changed, 703 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/regulator/tps6524x-regulator.c
 
-diff --git a/arch/arm/mach-davinci/board-tnetv107x-evm.c b/arch/arm/mach-davinci/board-tnetv107x-evm.c
-index ca61f8a..8b94a63 100644
---- a/arch/arm/mach-davinci/board-tnetv107x-evm.c
-+++ b/arch/arm/mach-davinci/board-tnetv107x-evm.c
-@@ -29,6 +29,9 @@
- #include <linux/regulator/machine.h>
- #include <linux/regulator/consumer.h>
- #include <linux/regulator/driver.h>
-+#include <linux/i2c.h>
-+#include <linux/i2c/at24.h>
-+#include <linux/i2c-gpio.h>
+diff --git a/drivers/regulator/Kconfig b/drivers/regulator/Kconfig
+index 172951b..7875c2e 100644
+--- a/drivers/regulator/Kconfig
++++ b/drivers/regulator/Kconfig
+@@ -235,5 +235,15 @@ config REGULATOR_TPS6586X
+ 	help
+ 	  This driver supports TPS6586X voltage regulator chips.
  
- #include <asm/mach/arch.h>
- #include <asm/mach-types.h>
-@@ -45,6 +48,8 @@
- #define EVM_MMC_WP_GPIO		21
- #define EVM_MMC_CD_GPIO		24
- #define EVM_SPI_CS_GPIO		54
-+#define EVM_I2C_SDA_GPIO	(SSP_GPIO_START + 0)
-+#define EVM_I2C_SCL_GPIO	(SSP_GPIO_START + 1)
- #define EVM_BACKLIGHT_GPIO	(SSP_GPIO_START + 2)
++config REGULATOR_TPS6524X
++	tristate "TI TPS6524X Power regulators"
++	depends on TI_SSP
++	help
++	  This driver supports TPS6524X voltage regulator chips. TPS6524X
++	  provides three step-down converters and two general-purpose LDO
++	  voltage regulators.  This device is interfaced using a customized
++	  serial interface currently supported on the sequencer serial
++	  port controller.
++
+ endif
  
- static int initialize_gpio(int gpio, char *desc)
-@@ -367,6 +372,29 @@ static struct platform_device backlight_device = {
- 	.dev.platform_data = (void *)EVM_BACKLIGHT_GPIO,
- };
+diff --git a/drivers/regulator/Makefile b/drivers/regulator/Makefile
+index 8285fd8..a8e5bc0 100644
+--- a/drivers/regulator/Makefile
++++ b/drivers/regulator/Makefile
+@@ -33,6 +33,7 @@ obj-$(CONFIG_REGULATOR_AB3100) += ab3100.o
  
-+struct i2c_gpio_platform_data i2c_data = {
-+	.sda_pin	= EVM_I2C_SDA_GPIO,
-+	.scl_pin	= EVM_I2C_SCL_GPIO,
+ obj-$(CONFIG_REGULATOR_TPS65023) += tps65023-regulator.o
+ obj-$(CONFIG_REGULATOR_TPS6507X) += tps6507x-regulator.o
++obj-$(CONFIG_REGULATOR_TPS6524X) += tps6524x-regulator.o
+ obj-$(CONFIG_REGULATOR_88PM8607) += 88pm8607.o
+ obj-$(CONFIG_REGULATOR_ISL6271A) += isl6271a-regulator.o
+ obj-$(CONFIG_REGULATOR_AB8500)	+= ab8500.o
+diff --git a/drivers/regulator/tps6524x-regulator.c b/drivers/regulator/tps6524x-regulator.c
+new file mode 100644
+index 0000000..6d6cc5e
+--- /dev/null
++++ b/drivers/regulator/tps6524x-regulator.c
+@@ -0,0 +1,692 @@
++/*
++ * Regulator driver for TPS6524x PMIC
++ *
++ * Copyright (C) 2010 Texas Instruments
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License as
++ * published by the Free Software Foundation version 2.
++ *
++ * This program is distributed "as is" WITHOUT ANY WARRANTY of any kind,
++ * whether express or implied; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++ * General Public License for more details.
++ */
++
++#include <linux/kernel.h>
++#include <linux/module.h>
++#include <linux/err.h>
++#include <linux/errno.h>
++#include <linux/slab.h>
++#include <linux/spi/spi.h>
++#include <linux/regulator/driver.h>
++#include <linux/regulator/machine.h>
++
++#define REG_LDO_SET		0x0
++#define LDO_ILIM_MASK		1	/* 0 = 400-800, 1 = 900-1500 */
++#define LDO_VSEL_MASK		0x0f
++#define LDO2_ILIM_SHIFT		12
++#define LDO2_VSEL_SHIFT		4
++#define LDO1_ILIM_SHIFT		8
++#define LDO1_VSEL_SHIFT		0
++
++#define REG_BLOCK_EN		0x1
++#define BLOCK_MASK		1
++#define BLOCK_LDO1_SHIFT	0
++#define BLOCK_LDO2_SHIFT	1
++#define BLOCK_LCD_SHIFT		2
++#define BLOCK_USB_SHIFT		3
++
++#define REG_DCDC_SET		0x2
++#define DCDC_VDCDC_MASK		0x1f
++#define DCDC_VDCDC1_SHIFT	0
++#define DCDC_VDCDC2_SHIFT	5
++#define DCDC_VDCDC3_SHIFT	10
++
++#define REG_DCDC_EN		0x3
++#define DCDCDCDC_EN_MASK	0x1
++#define DCDCDCDC1_EN_SHIFT	0
++#define DCDCDCDC1_PG_MSK	BIT(1)
++#define DCDCDCDC2_EN_SHIFT	2
++#define DCDCDCDC2_PG_MSK	BIT(3)
++#define DCDCDCDC3_EN_SHIFT	4
++#define DCDCDCDC3_PG_MSK	BIT(5)
++
++#define REG_USB			0x4
++#define USB_ILIM_SHIFT		0
++#define USB_ILIM_MASK		0x3
++#define USB_TSD_SHIFT		2
++#define USB_TSD_MASK		0x3
++#define USB_TWARN_SHIFT		4
++#define USB_TWARN_MASK		0x3
++#define USB_IWARN_SD		BIT(6)
++#define USB_FAST_LOOP		BIT(7)
++
++#define REG_ALARM		0x5
++#define ALARM_LDO1		BIT(0)
++#define ALARM_DCDC1		BIT(1)
++#define ALARM_DCDC2		BIT(2)
++#define ALARM_DCDC3		BIT(3)
++#define ALARM_LDO2		BIT(4)
++#define ALARM_USB_WARN		BIT(5)
++#define ALARM_USB_ALARM		BIT(6)
++#define ALARM_LCD		BIT(9)
++#define ALARM_TEMP_WARM		BIT(10)
++#define ALARM_TEMP_HOT		BIT(11)
++#define ALARM_NRST		BIT(14)
++#define ALARM_POWERUP		BIT(15)
++
++#define REG_INT_ENABLE		0x6
++#define INT_LDO1		BIT(0)
++#define INT_DCDC1		BIT(1)
++#define INT_DCDC2		BIT(2)
++#define INT_DCDC3		BIT(3)
++#define INT_LDO2		BIT(4)
++#define INT_USB_WARN		BIT(5)
++#define INT_USB_ALARM		BIT(6)
++#define INT_LCD			BIT(9)
++#define INT_TEMP_WARM		BIT(10)
++#define INT_TEMP_HOT		BIT(11)
++#define INT_GLOBAL_EN		BIT(15)
++
++#define REG_INT_STATUS		0x7
++#define STATUS_LDO1		BIT(0)
++#define STATUS_DCDC1		BIT(1)
++#define STATUS_DCDC2		BIT(2)
++#define STATUS_DCDC3		BIT(3)
++#define STATUS_LDO2		BIT(4)
++#define STATUS_USB_WARN		BIT(5)
++#define STATUS_USB_ALARM	BIT(6)
++#define STATUS_LCD		BIT(9)
++#define STATUS_TEMP_WARM	BIT(10)
++#define STATUS_TEMP_HOT		BIT(11)
++
++#define REG_SOFTWARE_RESET	0xb
++#define REG_WRITE_ENABLE	0xd
++#define REG_REV_ID		0xf
++
++#define N_DCDC			3
++#define N_LDO			2
++#define N_SWITCH		2
++#define N_REGULATORS		(3 /* DCDC */ + \
++				 2 /* LDO */  + \
++				 2 /* switch */)
++
++#define FIXED_ILIMSEL		BIT(0)
++#define FIXED_VOLTAGE		BIT(1)
++
++#define CMD_READ(reg)		((reg) << 6)
++#define CMD_WRITE(reg)		(BIT(5) | (reg) << 6)
++#define STAT_CLK		BIT(3)
++#define STAT_WRITE		BIT(2)
++#define STAT_INVALID		BIT(1)
++#define STAT_WP			BIT(0)
++
++struct field {
++	int		reg;
++	int		shift;
++	int		mask;
 +};
 +
-+static struct platform_device i2c_device = {
-+	.name		= "i2c-gpio",
-+	.id		= 0,
-+	.dev.platform_data = &i2c_data,
++struct supply_info {
++	const char	*name;
++	int		n_voltages;
++	const int	*voltages;
++	int		fixed_voltage;
++	int		n_ilimsels;
++	const int	*ilimsels;
++	int		fixed_ilimsel;
++	int		flags;
++	struct field	enable, voltage, ilimsel;
 +};
 +
-+static struct at24_platform_data at24_config = {
-+	.byte_len	= SZ_16K / 8,
-+	.page_size	= 16,
++struct tps6524x {
++	struct device		*dev;
++	struct spi_device	*spi;
++	struct mutex		lock;
++	struct regulator_desc	desc[N_REGULATORS];
++	struct regulator_dev	*rdev[N_REGULATORS];
 +};
 +
-+static struct i2c_board_info i2c_info[] __initconst =  {
++static int __read_reg(struct tps6524x *hw, int reg)
++{
++	int error = 0;
++	u16 cmd = CMD_READ(reg), in;
++	u8 status;
++	struct spi_message m;
++	struct spi_transfer t[3];
++
++	spi_message_init(&m);
++	memset(t, 0, sizeof(t));
++
++	t[0].tx_buf = &cmd;
++	t[0].len = 2;
++	t[0].bits_per_word = 12;
++	spi_message_add_tail(&t[0], &m);
++
++	t[1].rx_buf = &in;
++	t[1].len = 2;
++	t[1].bits_per_word = 16;
++	spi_message_add_tail(&t[1], &m);
++
++	t[2].rx_buf = &status;
++	t[2].len = 1;
++	t[2].bits_per_word = 4;
++	spi_message_add_tail(&t[2], &m);
++
++	error = spi_sync(hw->spi, &m);
++	if (error < 0)
++		return error;
++
++	dev_dbg(hw->dev, "read reg %d, data %x, status %x\n",
++		reg, in, status);
++
++	if (!(status & STAT_CLK) || (status & STAT_WRITE))
++		return -EIO;
++
++	if (status & STAT_INVALID)
++		return -EINVAL;
++
++	return in;
++}
++
++static int read_reg(struct tps6524x *hw, int reg)
++{
++	int ret;
++
++	mutex_lock(&hw->lock);
++	ret = __read_reg(hw, reg);
++	mutex_unlock(&hw->lock);
++
++	return ret;
++}
++
++static int __write_reg(struct tps6524x *hw, int reg, int val)
++{
++	int error = 0;
++	u16 cmd = CMD_WRITE(reg), out = val;
++	u8 status;
++	struct spi_message m;
++	struct spi_transfer t[3];
++
++	spi_message_init(&m);
++	memset(t, 0, sizeof(t));
++
++	t[0].tx_buf = &cmd;
++	t[0].len = 2;
++	t[0].bits_per_word = 12;
++	spi_message_add_tail(&t[0], &m);
++
++	t[1].tx_buf = &out;
++	t[1].len = 2;
++	t[1].bits_per_word = 16;
++	spi_message_add_tail(&t[1], &m);
++
++	t[2].rx_buf = &status;
++	t[2].len = 1;
++	t[2].bits_per_word = 4;
++	spi_message_add_tail(&t[2], &m);
++
++	error = spi_sync(hw->spi, &m);
++	if (error < 0)
++		return error;
++
++	dev_dbg(hw->dev, "wrote reg %d, data %x, status %x\n",
++		reg, out, status);
++
++	if (!(status & STAT_CLK) || !(status & STAT_WRITE))
++		return -EIO;
++
++	if (status & (STAT_INVALID | STAT_WP))
++		return -EINVAL;
++
++	return error;
++}
++
++static int __rmw_reg(struct tps6524x *hw, int reg, int mask, int val)
++{
++	int ret;
++
++	ret = __read_reg(hw, reg);
++	if (ret < 0)
++		return ret;
++
++	ret &= ~mask;
++	ret |= val;
++
++	ret = __write_reg(hw, reg, ret);
++
++	return (ret < 0) ? ret : 0;
++}
++
++static int rmw_protect(struct tps6524x *hw, int reg, int mask, int val)
++{
++	int ret;
++
++	mutex_lock(&hw->lock);
++
++	ret = __write_reg(hw, REG_WRITE_ENABLE, 1);
++	if (ret) {
++		dev_err(hw->dev, "failed to set write enable\n");
++		goto error;
++	}
++
++	ret = __rmw_reg(hw, reg, mask, val);
++	if (ret)
++		dev_err(hw->dev, "failed to rmw register %d\n", reg);
++
++	ret = __write_reg(hw, REG_WRITE_ENABLE, 0);
++	if (ret) {
++		dev_err(hw->dev, "failed to clear write enable\n");
++		goto error;
++	}
++
++error:
++	mutex_unlock(&hw->lock);
++
++	return ret;
++}
++
++static int read_field(struct tps6524x *hw, const struct field *field)
++{
++	int tmp;
++
++	tmp = read_reg(hw, field->reg);
++	if (tmp < 0)
++		return tmp;
++
++	return (tmp >> field->shift) & field->mask;
++}
++
++static int write_field(struct tps6524x *hw, const struct field *field,
++		       int val)
++{
++	if (val & ~field->mask)
++		return -EOVERFLOW;
++
++	return rmw_protect(hw, field->reg,
++				    field->mask << field->shift,
++				    val << field->shift);
++}
++
++static const int dcdc1_voltages[] = {
++	 800000,  825000,  850000,  875000,
++	 900000,  925000,  950000,  975000,
++	1000000, 1025000, 1050000, 1075000,
++	1100000, 1125000, 1150000, 1175000,
++	1200000, 1225000, 1250000, 1275000,
++	1300000, 1325000, 1350000, 1375000,
++	1400000, 1425000, 1450000, 1475000,
++	1500000, 1525000, 1550000, 1575000,
++};
++
++static const int dcdc2_voltages[] = {
++	1400000, 1450000, 1500000, 1550000,
++	1600000, 1650000, 1700000, 1750000,
++	1800000, 1850000, 1900000, 1950000,
++	2000000, 2050000, 2100000, 2150000,
++	2200000, 2250000, 2300000, 2350000,
++	2400000, 2450000, 2500000, 2550000,
++	2600000, 2650000, 2700000, 2750000,
++	2800000, 2850000, 2900000, 2950000,
++};
++
++static const int dcdc3_voltages[] = {
++	2400000, 2450000, 2500000, 2550000, 2600000,
++	2650000, 2700000, 2750000, 2800000, 2850000,
++	2900000, 2950000, 3000000, 3050000, 3100000,
++	3150000, 3200000, 3250000, 3300000, 3350000,
++	3400000, 3450000, 3500000, 3550000, 3600000,
++};
++
++static const int ldo1_voltages[] = {
++	4300000, 4350000, 4400000, 4450000,
++	4500000, 4550000, 4600000, 4650000,
++	4700000, 4750000, 4800000, 4850000,
++	4900000, 4950000, 5000000, 5050000,
++};
++
++static const int ldo2_voltages[] = {
++	1100000, 1150000, 1200000, 1250000,
++	1300000, 1700000, 1750000, 1800000,
++	1850000, 1900000, 3150000, 3200000,
++	3250000, 3300000, 3350000, 3400000,
++};
++
++static const int ldo_ilimsel[] = {
++	400000, 1500000
++};
++
++static const int usb_ilimsel[] = {
++	200000, 400000, 800000, 1000000
++};
++
++#define __MK_FIELD(_reg, _mask, _shift) \
++	{ .reg = (_reg), .mask = (_mask), .shift = (_shift), }
++
++static const struct supply_info supply_info[N_REGULATORS] = {
 +	{
-+		I2C_BOARD_INFO("24c16", 0x50),
-+		.platform_data	= &at24_config,
++		.name		= "DCDC1",
++		.flags		= FIXED_ILIMSEL,
++		.n_voltages	= ARRAY_SIZE(dcdc1_voltages),
++		.voltages	= dcdc1_voltages,
++		.fixed_ilimsel	= 2400000,
++		.enable		= __MK_FIELD(REG_DCDC_EN, DCDCDCDC_EN_MASK,
++					     DCDCDCDC1_EN_SHIFT),
++		.voltage	= __MK_FIELD(REG_DCDC_SET, DCDC_VDCDC_MASK,
++					     DCDC_VDCDC1_SHIFT),
++	},
++	{
++		.name		= "DCDC2",
++		.flags		= FIXED_ILIMSEL,
++		.n_voltages	= ARRAY_SIZE(dcdc2_voltages),
++		.voltages	= dcdc2_voltages,
++		.fixed_ilimsel	= 1200000,
++		.enable		= __MK_FIELD(REG_DCDC_EN, DCDCDCDC_EN_MASK,
++					     DCDCDCDC2_EN_SHIFT),
++		.voltage	= __MK_FIELD(REG_DCDC_SET, DCDC_VDCDC_MASK,
++					     DCDC_VDCDC2_SHIFT),
++	},
++	{
++		.name		= "DCDC3",
++		.flags		= FIXED_ILIMSEL,
++		.n_voltages	= ARRAY_SIZE(dcdc3_voltages),
++		.voltages	= dcdc3_voltages,
++		.fixed_ilimsel	= 1200000,
++		.enable		= __MK_FIELD(REG_DCDC_EN, DCDCDCDC_EN_MASK,
++					DCDCDCDC3_EN_SHIFT),
++		.voltage	= __MK_FIELD(REG_DCDC_SET, DCDC_VDCDC_MASK,
++					     DCDC_VDCDC3_SHIFT),
++	},
++	{
++		.name		= "LDO1",
++		.n_voltages	= ARRAY_SIZE(ldo1_voltages),
++		.voltages	= ldo1_voltages,
++		.n_ilimsels	= ARRAY_SIZE(ldo_ilimsel),
++		.ilimsels	= ldo_ilimsel,
++		.enable		= __MK_FIELD(REG_BLOCK_EN, BLOCK_MASK,
++					     BLOCK_LDO1_SHIFT),
++		.voltage	= __MK_FIELD(REG_LDO_SET, LDO_VSEL_MASK,
++					     LDO1_VSEL_SHIFT),
++		.ilimsel	= __MK_FIELD(REG_LDO_SET, LDO_ILIM_MASK,
++					     LDO1_ILIM_SHIFT),
++	},
++	{
++		.name		= "LDO2",
++		.n_voltages	= ARRAY_SIZE(ldo2_voltages),
++		.voltages	= ldo2_voltages,
++		.n_ilimsels	= ARRAY_SIZE(ldo_ilimsel),
++		.ilimsels	= ldo_ilimsel,
++		.enable		= __MK_FIELD(REG_BLOCK_EN, BLOCK_MASK,
++					     BLOCK_LDO2_SHIFT),
++		.voltage	= __MK_FIELD(REG_LDO_SET, LDO_VSEL_MASK,
++					     LDO2_VSEL_SHIFT),
++		.ilimsel	= __MK_FIELD(REG_LDO_SET, LDO_ILIM_MASK,
++					     LDO2_ILIM_SHIFT),
++	},
++	{
++		.name		= "USB",
++		.flags		= FIXED_VOLTAGE,
++		.fixed_voltage	= 5000000,
++		.n_ilimsels	= ARRAY_SIZE(usb_ilimsel),
++		.ilimsels	= usb_ilimsel,
++		.enable		= __MK_FIELD(REG_BLOCK_EN, BLOCK_MASK,
++					     BLOCK_USB_SHIFT),
++		.ilimsel	= __MK_FIELD(REG_USB, USB_ILIM_MASK,
++					     USB_ILIM_SHIFT),
++	},
++	{
++		.name		= "LCD",
++		.flags		= FIXED_VOLTAGE | FIXED_ILIMSEL,
++		.fixed_voltage	= 5000000,
++		.fixed_ilimsel	=  400000,
++		.enable		= __MK_FIELD(REG_BLOCK_EN, BLOCK_MASK,
++					     BLOCK_LCD_SHIFT),
 +	},
 +};
 +
- static __init void tnetv107x_evm_board_init(void)
- {
- 	davinci_cfg_reg_list(sdio1_pins);
-@@ -376,8 +404,10 @@ static __init void tnetv107x_evm_board_init(void)
- 	tnetv107x_devices_init(&evm_device_info);
- 
- 	platform_device_register(&backlight_device);
-+	platform_device_register(&i2c_device);
- 
- 	spi_register_board_info(spi_info, ARRAY_SIZE(spi_info));
-+	i2c_register_board_info(0, i2c_info, ARRAY_SIZE(i2c_info));
- }
- 
- #ifdef CONFIG_SERIAL_8250_CONSOLE
++static int list_voltage(struct regulator_dev *rdev, unsigned selector)
++{
++	const struct supply_info *info;
++	struct tps6524x *hw;
++
++	hw	= rdev_get_drvdata(rdev);
++	info	= &supply_info[rdev_get_id(rdev)];
++
++	if (info->flags & FIXED_VOLTAGE)
++		return selector ? -EINVAL : info->fixed_voltage;
++
++	if (selector < 0 || selector >= info->n_voltages)
++		return -EINVAL;
++
++	return info->voltages[selector];
++}
++
++static int set_voltage(struct regulator_dev *rdev, int min_uV, int max_uV)
++{
++	const struct supply_info *info;
++	struct tps6524x *hw;
++	int i;
++
++	hw	= rdev_get_drvdata(rdev);
++	info	= &supply_info[rdev_get_id(rdev)];
++
++	if (info->flags & FIXED_VOLTAGE)
++		return -EINVAL;
++
++	for (i = 0; i < info->n_voltages; i++)
++		if (min_uV <= info->voltages[i] &&
++		    max_uV >= info->voltages[i])
++			break;
++
++	if (i >= info->n_voltages)
++		return -EINVAL;
++
++	return write_field(hw, &info->voltage, i);
++}
++
++static int get_voltage(struct regulator_dev *rdev)
++{
++	const struct supply_info *info;
++	struct tps6524x *hw;
++	int ret;
++
++	hw	= rdev_get_drvdata(rdev);
++	info	= &supply_info[rdev_get_id(rdev)];
++
++	if (info->flags & FIXED_VOLTAGE)
++		return info->fixed_voltage;
++
++	ret = read_field(hw, &info->voltage);
++	if (ret < 0)
++		return ret;
++	if (WARN_ON(ret >= info->n_voltages))
++		return -EIO;
++
++	return info->voltages[ret];
++}
++
++static int set_current_limit(struct regulator_dev *rdev, int min_uA,
++			     int max_uA)
++{
++	const struct supply_info *info;
++	struct tps6524x *hw;
++	int i;
++
++	hw	= rdev_get_drvdata(rdev);
++	info	= &supply_info[rdev_get_id(rdev)];
++
++	if (info->flags & FIXED_ILIMSEL)
++		return -EINVAL;
++
++	for (i = 0; i < info->n_ilimsels; i++)
++		if (min_uA <= info->ilimsels[i] &&
++		    max_uA >= info->ilimsels[i])
++			break;
++
++	if (i >= info->n_ilimsels)
++		return -EINVAL;
++
++	return write_field(hw, &info->ilimsel, i);
++}
++
++static int get_current_limit(struct regulator_dev *rdev)
++{
++	const struct supply_info *info;
++	struct tps6524x *hw;
++	int ret;
++
++	hw	= rdev_get_drvdata(rdev);
++	info	= &supply_info[rdev_get_id(rdev)];
++
++	if (info->flags & FIXED_ILIMSEL)
++		return info->fixed_ilimsel;
++
++	ret = read_field(hw, &info->ilimsel);
++	if (ret < 0)
++		return ret;
++	if (WARN_ON(ret >= info->n_ilimsels))
++		return -EIO;
++
++	return info->ilimsels[ret];
++}
++
++static int enable_supply(struct regulator_dev *rdev)
++{
++	const struct supply_info *info;
++	struct tps6524x *hw;
++
++	hw	= rdev_get_drvdata(rdev);
++	info	= &supply_info[rdev_get_id(rdev)];
++
++	return write_field(hw, &info->enable, 1);
++}
++
++static int disable_supply(struct regulator_dev *rdev)
++{
++	const struct supply_info *info;
++	struct tps6524x *hw;
++
++	hw	= rdev_get_drvdata(rdev);
++	info	= &supply_info[rdev_get_id(rdev)];
++
++	return write_field(hw, &info->enable, 0);
++}
++
++static int is_supply_enabled(struct regulator_dev *rdev)
++{
++	const struct supply_info *info;
++	struct tps6524x *hw;
++
++	hw	= rdev_get_drvdata(rdev);
++	info	= &supply_info[rdev_get_id(rdev)];
++
++	return read_field(hw, &info->enable);
++}
++
++static struct regulator_ops regulator_ops = {
++	.is_enabled		= is_supply_enabled,
++	.enable			= enable_supply,
++	.disable		= disable_supply,
++	.get_voltage		= get_voltage,
++	.set_voltage		= set_voltage,
++	.list_voltage		= list_voltage,
++	.set_current_limit	= set_current_limit,
++	.get_current_limit	= get_current_limit,
++};
++
++static int __devexit pmic_remove(struct spi_device *spi)
++{
++	struct tps6524x *hw = spi_get_drvdata(spi);
++	int i;
++
++	if (!hw)
++		return 0;
++	for (i = 0; i < N_REGULATORS; i++) {
++		if (hw->rdev[i])
++			regulator_unregister(hw->rdev[i]);
++		hw->rdev[i] = NULL;
++	}
++	spi_set_drvdata(spi, NULL);
++	kfree(hw);
++	return 0;
++}
++
++static int __devinit pmic_probe(struct spi_device *spi)
++{
++	struct tps6524x *hw;
++	struct device *dev = &spi->dev;
++	const struct supply_info *info = supply_info;
++	struct regulator_init_data *init_data;
++	int ret = 0, i;
++
++	init_data = dev->platform_data;
++	if (!init_data) {
++		dev_err(dev, "could not find regulator platform data\n");
++		return -EINVAL;
++	}
++
++	hw = kzalloc(sizeof(struct tps6524x), GFP_KERNEL);
++	if (!hw) {
++		dev_err(dev, "cannot allocate regulator private data\n");
++		return -ENOMEM;
++	}
++	spi_set_drvdata(spi, hw);
++
++	memset(hw, 0, sizeof(struct tps6524x));
++	hw->dev = dev;
++	hw->spi = spi_dev_get(spi);
++	mutex_init(&hw->lock);
++
++	for (i = 0; i < N_REGULATORS; i++, info++, init_data++) {
++		hw->desc[i].name	= info->name;
++		hw->desc[i].id		= i;
++		hw->desc[i].n_voltages	= info->n_voltages;
++		hw->desc[i].ops		= &regulator_ops;
++		hw->desc[i].type	= REGULATOR_VOLTAGE;
++		hw->desc[i].owner	= THIS_MODULE;
++
++		if (info->flags & FIXED_VOLTAGE)
++			hw->desc[i].n_voltages = 1;
++
++		hw->rdev[i] = regulator_register(&hw->desc[i], dev,
++						 init_data, hw);
++		if (IS_ERR(hw->rdev[i])) {
++			ret = PTR_ERR(hw->rdev[i]);
++			hw->rdev[i] = NULL;
++			goto fail;
++		}
++	}
++
++	return 0;
++
++fail:
++	pmic_remove(spi);
++	return ret;
++}
++
++static struct spi_driver pmic_driver = {
++	.probe		= pmic_probe,
++	.remove		= __devexit_p(pmic_remove),
++	.driver		= {
++		.name	= "tps6524x",
++		.owner	= THIS_MODULE,
++	},
++};
++
++static int __init pmic_driver_init(void)
++{
++	return spi_register_driver(&pmic_driver);
++}
++subsys_initcall_sync(pmic_driver_init);
++
++static void __exit pmic_driver_exit(void)
++{
++	spi_unregister_driver(&pmic_driver);
++}
++module_exit(pmic_driver_exit);
++
++MODULE_DESCRIPTION("TPS6524X PMIC Driver");
++MODULE_AUTHOR("Cyril Chemparathy");
++MODULE_LICENSE("GPL");
++MODULE_ALIAS("spi:tps6524x");
 -- 
 1.7.0.4
 
