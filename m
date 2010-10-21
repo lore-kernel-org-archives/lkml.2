@@ -1,80 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757697Ab0JUO6t (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Oct 2010 10:58:49 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:63126 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751825Ab0JUO6r (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Oct 2010 10:58:47 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=nWoQpCpT5pihgBY8woVENxueSuxI2017wMTj42odIGh1c7TvVO4FnkjlyKPmVMvigb
-         83kOIb/2pZMUJ0q4rN6x2guV+0cIt4j2s7uGA/olCDn77r6mH+ACQ90D61FMPU+uGuKo
-         gc6Ppkt/dQq/E0vmdff50u3VyPloWMDXFqY+s=
-Subject: Re: [PATCH 1/6] Free up pf flag PF_KSOFTIRQD
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Venkatesh Pallipadi <venki@google.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        linux-kernel@vger.kernel.org, Paul Turner <pjt@google.com>,
-        Shaun Ruffell <sruffell@digium.com>,
-        Yong Zhang <yong.zhang0@gmail.com>
-In-Reply-To: <AANLkTi=QyTJ0vZ=U3Ts7bB-DGvtTuQ_M6k8igkKiv6EE@mail.gmail.com>
-References: <1287614941-32325-1-git-send-email-venki@google.com>
-	 <1287614941-32325-2-git-send-email-venki@google.com>
-	 <1287638608.2545.98.camel@edumazet-laptop>
-	 <AANLkTi=QyTJ0vZ=U3Ts7bB-DGvtTuQ_M6k8igkKiv6EE@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 21 Oct 2010 16:58:41 +0200
-Message-ID: <1287673121.6871.108.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 8bit
+	id S1758015Ab0JUPDg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Oct 2010 11:03:36 -0400
+Received: from imr3.ericy.com ([198.24.6.13]:35123 "EHLO imr3.ericy.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756922Ab0JUPDf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Oct 2010 11:03:35 -0400
+Date: Thu, 21 Oct 2010 08:03:00 -0700
+From: Guenter Roeck <guenter.roeck@ericsson.com>
+To: Jean Delvare <khali@linux-fr.org>
+CC: Ben Dooks <ben-linux@fluff.org>, Rodolfo Giometti <giometti@linux.it>,
+        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3] i2c/mux: Driver for PCA9541 I2C Master Selector
+Message-ID: <20101021150300.GB26460@ericsson.com>
+References: <1287546908-32634-1-git-send-email-guenter.roeck@ericsson.com>
+ <20101021164304.06770538@endymion.delvare>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20101021164304.06770538@endymion.delvare>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le jeudi 21 octobre 2010 à 07:36 -0700, Venkatesh Pallipadi a écrit :
-
-> Yes. I thought about static inline part. The reason I did not make
-> this static inline was because ksoftirqd was declared static in
-> softirq.c and this function was getting called from sched.c.
+On Thu, Oct 21, 2010 at 10:43:04AM -0400, Jean Delvare wrote:
+> On Tue, 19 Oct 2010 20:55:08 -0700, Guenter Roeck wrote:
+> > This patch adds support for PCA9541, an I2C Bus Master Selector.
+> > The driver is modeled as single channel I2C Multiplexer to be able to utilize
+> > the I2C multiplexer framework.
+> > 
+> > Signed-off-by: Guenter Roeck <guenter.roeck@ericsson.com>
+> > Reviewed-by: Tom Grennan <tom.grennan@ericsson.com>
+> > ---
+> > v3 changes:
+> > - Clarified and cleaned up comments.
+> > - No longer pass "struct i2c_adapter *" as parameter.
+> >   Get it from client->adapter if needed.
+> > - No longer pass "struct pca9541 *" as parameter. 
+> >   Pass "struct i2c_client *" instead and get "struct pca9541 *" from it
+> >   if needed.
+> > - Removed "struct i2c_client *client" from struct pca9541 since it is
+> >   no longer needed.
+> > - Moved "pca9541_release_bus(client);" ahead of i2c_add_mux_adapter()
+> >   to avoid a possible race condition. Also protect the call with
+> >   i2c_lock_adapter() / i2c_unlock_adapter().
+> > - Removed __devinit from pca9541_probe() and __devexit from pca9541_remove().
 > 
-
-I believe you can remove the 'static' for this kind of thing.
-
-> I did not know that this_cpu_read existed though. I guess I should be
-> looking at using that elsewhere in the patchset too.
+> Applied, thanks.
 > 
-
-Sure :)
-
-> Also, part of the overhead you see below I think is coming from
-> DEBUG_PREEMPT. That would be making every smp_processor_id() call more
-> expensive. No?
+> Would you mind adding yourself to MAINTAINERS as a maintainer for this
+> driver? While the driver is small, it's not trivial and it's difficult
+> to work on it without the right hardware setup.
 > 
+Sure. Not intentional - I wanted to do that, just forgot. And I agree,
+it is pretty much impossible to maintain it unless you have HW to test it.
 
-Right, but the point is the this_cpu_read() version doesnt have this
-overhead, even if DEBUG_PREEMPT is on, at least on x86.
+Want me to resubmit or send a separate patch ?
 
-BTW, I lied somehow, because the way this_cpu_read() is handled,
-following code :
-
-	p == this_cpu_read(ksoftirqd);
-
-generates :
-
-mov     %gs:offset,%rax
-cmp	%rdi,%rax
-
-not :
-
-cmp	%gs:offset,%rdi
-
-
-
+Thanks,
+Guenter
