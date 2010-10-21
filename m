@@ -1,150 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757842Ab0JUTLl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Oct 2010 15:11:41 -0400
-Received: from mailout-de.gmx.net ([213.165.64.22]:47984 "HELO mail.gmx.net"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
-	id S1755038Ab0JUTLj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Oct 2010 15:11:39 -0400
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX1/+F94mZ6H+12MJjWnKME3u5KRb7oP4fzJe89hEJ2
-	M7mqktTA6ZEWoa
-Subject: Re: [RFC/RFT PATCH] sched: automated per tty task groups
-From: Mike Galbraith <efault@gmx.de>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Ingo Molnar <mingo@elte.hu>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Markus Trippelsdorf <markus@trippelsdorf.de>
-In-Reply-To: <20101021162924.GA3225@redhat.com>
-References: <1287479765.9920.9.camel@marge.simson.net>
-	 <1287487757.24189.40.camel@marge.simson.net>
-	 <AANLkTik08s=S7gZOGWEEhPW-zJtNRCse2h6jH3HAjoJH@mail.gmail.com>
-	 <1287511983.7417.45.camel@marge.simson.net>
-	 <1287514410.7368.10.camel@marge.simson.net>
-	 <20101020025652.GB26822@elte.hu>
-	 <1287648715.9021.20.camel@marge.simson.net>
-	 <20101021105114.GA10216@Krystal> <1287660312.3488.103.camel@twins>
-	 <20101021162924.GA3225@redhat.com>
-Content-Type: text/plain
-Date: Thu, 21 Oct 2010 21:11:34 +0200
-Message-Id: <1287688294.7436.36.camel@marge.simson.net>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.24.1.1 
-Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
+	id S1757688Ab0JUTOp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Oct 2010 15:14:45 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:36519 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756760Ab0JUTOn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Oct 2010 15:14:43 -0400
+Date: Thu, 21 Oct 2010 21:14:41 +0200
+From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: Dinh.Nguyen@freescale.com
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux@arm.linux.org.uk, s.hauer@pengutronix.de,
+        valentin.longchamp@epfl.ch, daniel@caiaq.de, grant.likely@secretlab.ca,
+        bryan.wu@canonical.com, amit.kucheria@canonical.com,
+        xiao-lizhang@freescale.com
+Subject: Re: [PATCHv4 2/2] ARM: imx: Add wake functionality to GPIO
+Message-ID: <20101021191441.GY19834@pengutronix.de>
+References: <1287687324-6101-1-git-send-email-Dinh.Nguyen@freescale.com> <1287687324-6101-2-git-send-email-Dinh.Nguyen@freescale.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1287687324-6101-2-git-send-email-Dinh.Nguyen@freescale.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-10-21 at 18:29 +0200, Oleg Nesterov wrote:
-> On 10/21, Peter Zijlstra wrote:
-> >
-> > On Thu, 2010-10-21 at 06:51 -0400, Mathieu Desnoyers wrote:
-> > > * Mike Galbraith (efault@gmx.de) wrote:
-> > > [...]
-> > > > +static void
-> > > > +autogroup_attach_tty(struct task_struct *p, struct task_group **tg)
-> > > > +{
-> > > > +	struct tty_struct *tty = p->signal->tty;
-> > > > +
-> > > > +	if (!tty)
-> > > > +		return;
-> > > > +
-> > > > +	*tg = p->signal->tty->tg;
-> > > > +}
+On Thu, Oct 21, 2010 at 01:55:24PM -0500, Dinh.Nguyen@freescale.com wrote:
+> From: Dinh Nguyen <Dinh.Nguyen@freescale.com>
 > 
-> minor nit, I think in theory this needs barrier(), or
+> Add function definition for irq_chip.set_wake to enable GPIO to
+> wake-up the system.
 > 
-> 	struct tty_struct *tty = ACCESS_ONCE(p->signal->tty);
+> This patch is based on Sascha Hauer's imx/linux-2.6 for-rmk tree.
 > 
-> 	if (tty)
-> 		*tg = tty->tg;
-
-Thanks.
-
-> > > > +static inline void
-> > > > +autogroup_check_attach(struct task_struct *p, struct task_group **tg)
-> > > > +{
-> > > > +	if (!sysctl_sched_autogroup_enabled || *tg != &root_task_group ||
-> > > > +			p->sched_class != &fair_sched_class)
-> > > > +		return;
-> > > > +
-> > > > +	rcu_read_lock();
-> > > > +
-> > > > +	autogroup_attach_tty(p, tg);
-> > > > +
-> > > > +	rcu_read_unlock();
-> > > > +}
-> > > > +
-> >
-> > >  Meanwhile, a little question about locking here: how is
-> > > the read lock supposed to protect from p->signal (and p->signal->tty)
-> > > modifications ? What's the locking scheme here ? So maybe just simple
-> > > rcu_dereference are missing, or maybe the tsk->sighand->siglock might be
-> > > required. In all cases, I feel something is missing there.
-> >
-> > Oleg, could you comment?
+> This patch has been tested on a MX51 Babbage system that had suspend
+> code implemented. The set_wake implementation is necessary for a
+> GPIO to wake up a system from suspend.
 > 
-> No, I don't understand this ;) But I know nothig about task groups,
-> most probably this is OK.
+> Signed-off-by: Dinh Nguyen <Dinh.Nguyen@freescale.com>
+> ---
+>  arch/arm/plat-mxc/gpio.c |   32 ++++++++++++++++++++++++++++++++
+>  1 files changed, 32 insertions(+), 0 deletions(-)
 > 
-> It is not clear to me why do we need rcu_read_lock() and how it can help.
-> The tty can go away right after dereferencing signal->tty.
+> diff --git a/arch/arm/plat-mxc/gpio.c b/arch/arm/plat-mxc/gpio.c
+> index 9d38da0..9c3e362 100644
+> --- a/arch/arm/plat-mxc/gpio.c
+> +++ b/arch/arm/plat-mxc/gpio.c
+> @@ -20,6 +20,7 @@
+>   */
+>  
+>  #include <linux/init.h>
+> +#include <linux/interrupt.h>
+>  #include <linux/io.h>
+>  #include <linux/irq.h>
+>  #include <linux/gpio.h>
+> @@ -201,11 +202,42 @@ static void mx2_gpio_irq_handler(u32 irq, struct irq_desc *desc)
+>  	}
+>  }
+>  
+> +/*
+> + * Set interrupt number "irq" in the GPIO as a wake-up source.
+> + * While system is running, all registered GPIO interrupts need to have
+> + * wake-up enabled. When system is suspended, only selected GPIO interrupts
+> + * need to have wake-up enabled.
+> + * @param  irq          interrupt source number
+> + * @param  enable       enable as wake-up if equal to non-zero
+> + * @return       This function returns 0 on success.
+> + */
+> +static int gpio_set_wake_irq(u32 irq, u32 enable)
+> +{
+> +	u32 gpio = irq_to_gpio(irq);
+> +	u32 gpio_idx = gpio & 0x1F;
+> +	struct mxc_gpio_port *port = &mxc_gpio_ports[gpio / 32];
+> +
+> +	if (enable) {
+> +		if (port->irq_high && (gpio_idx >= 16))
+> +			enable_irq_wake(port->irq_high);
+> +		else
+> +			enable_irq_wake(port->irq);
+> +	} else {
+> +		if (port->irq_high && (gpio_idx >= 16))
+> +			disable_irq_wake(port->irq_high);
+> +		else
+> +			disable_irq_wake(port->irq);
+> +	}
+> +
+> +	return 0;
+> +}
+> +
+Is this really enough to let the CPU wake up?  Is this implementation
+correct for all i.MX SoCs?
 
-It was inherited.
+Best regards
+Uwe
 
-> Even if the task doesn't exit, it (or its sub-thread) can do sys_setsid()
-> at any moment and free this tty. If any thread was moved to tty->sg, doesn't
-> this mean that, say, ->cfs_rq will point to the already freed tg->cfs_rq?
-
-Ah, so isn't as safe as it looked. Thanks!
-
-> >From http://marc.info/?l=linux-kernel&m=128764874422614
+>  static struct irq_chip gpio_irq_chip = {
+>  	.ack = gpio_ack_irq,
+>  	.mask = gpio_mask_irq,
+>  	.unmask = gpio_unmask_irq,
+>  	.set_type = gpio_set_irq_type,
+> +	.set_wake = gpio_set_wake_irq,
+>  };
+>  
+>  static void _set_gpio_direction(struct gpio_chip *chip, unsigned offset,
+> -- 
+> 1.6.0.4
 > 
-> 	+int sched_autogroup_handler(struct ctl_table *table, int write,
-> 	+		void __user *buffer, size_t *lenp, loff_t *ppos)
-> 	+{
-> 	+	struct task_struct *p, *t;
-> 	+	struct task_group *tg;
-> 	+	int ret = proc_dointvec_minmax(table, write, buffer, lenp, ppos);
-> 	+
-> 	+	if (ret || !write)
-> 	+		return ret;
-> 	+
-> 	+	for_each_process(p) {
 > 
-> Hmm. This needs rcu lock at least?
-
-(used to be paranoid locking there.. vs required locking)
-
-> 	+		tg = task_group(p);
 > 
-> Why?
 
-A cleanup leftover.
-
-> 
-> 	+		sched_move_task(p);
-> 	+		list_for_each_entry_rcu(t, &p->thread_group, thread_group) {
-> 	+			sched_move_task(t);
-> 	+		}
-> 	+	}
-> 
-> Looks like, you can just do
-> 
-> 	do_each_thread(p, t) {
-> 		sched_move_task(t);
-> 	} while_each_thread(p, t);
-> 
-> With the same effect.
-
-Yeah.
-
-So in theory, the tty can go away on me.  I knew this was too easy.
-
-	-Mike
-
-
+-- 
+Pengutronix e.K.                           | Uwe Kleine-König            |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
