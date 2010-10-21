@@ -1,63 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758896Ab0JUXWM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Oct 2010 19:22:12 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:59158 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755890Ab0JUXWK (ORCPT
+	id S1758902Ab0JUXYM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Oct 2010 19:24:12 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:37866 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751754Ab0JUXYL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Oct 2010 19:22:10 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=w3GM4jqRNw83q1AzDO7RQGEP1Ib1C0YmduaBpIt5SgMrMy4EsjgMfRIdDHrMwTTfq0
-         fDAMVPw4MaqdVXKDtrawPbHIzNaqcjVue8w9c5NwPdP6NyxEdza+0Funyr+sRrOqR/k5
-         jSylXv5cDerwAYWSi/19C+e80J0QGRK9JxyfM=
-Subject: Re: [PATCH] percpu_counter : add percpu_counter_add_fast()
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Nick Piggin <npiggin@kernel.dk>, Dave Chinner <david@fromorbit.com>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Christoph Lameter <cl@linux-foundation.org>
-In-Reply-To: <20101021161801.8149e2fe.akpm@linux-foundation.org>
-References: <1285762729-17928-1-git-send-email-david@fromorbit.com>
-	 <1285762729-17928-17-git-send-email-david@fromorbit.com>
-	 <20100929215322.ff635d3e.akpm@linux-foundation.org>
-	 <20100930061039.GX5665@dastard> <20101016075510.GH19147@amd>
-	 <1287217748.2799.68.camel@edumazet-laptop>
-	 <20101016020744.366bd9c6.akpm@linux-foundation.org>
-	 <1287221475.2799.123.camel@edumazet-laptop>
-	 <1287238754.2799.376.camel@edumazet-laptop>
-	 <20101021154333.f67fd870.akpm@linux-foundation.org>
-	 <1287701894.2607.32.camel@edumazet-laptop>
-	 <20101021161801.8149e2fe.akpm@linux-foundation.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 22 Oct 2010 01:22:03 +0200
-Message-ID: <1287703323.2607.39.camel@edumazet-laptop>
+	Thu, 21 Oct 2010 19:24:11 -0400
+Date: Thu, 21 Oct 2010 16:24:10 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Mike Frysinger <vapier@gentoo.org>
+Cc: Luca Barbieri <luca@luca-barbieri.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] lib/atomic64_test: do not build on non-atomic64 systems
+Message-Id: <20101021162410.5c0d6720.akpm@linux-foundation.org>
+In-Reply-To: <AANLkTim6AFDw_1V9rtF4e_2tmgctbKHziQa-1e3=q7og@mail.gmail.com>
+References: <1287250035-30404-1-git-send-email-vapier@gentoo.org>
+	<20101021150250.f6499506.akpm@linux-foundation.org>
+	<201010211823.38287.vapier@gentoo.org>
+	<20101021155528.b3d6d027.akpm@linux-foundation.org>
+	<AANLkTim6AFDw_1V9rtF4e_2tmgctbKHziQa-1e3=q7og@mail.gmail.com>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le jeudi 21 octobre 2010 à 16:18 -0700, Andrew Morton a écrit :
-> On Fri, 22 Oct 2010 00:58:14 +0200
-> Eric Dumazet <eric.dumazet@gmail.com> wrote:
+On Thu, 21 Oct 2010 19:04:36 -0400
+Mike Frysinger <vapier@gentoo.org> wrote:
+
+> On Thu, Oct 21, 2010 at 18:55, Andrew Morton wrote:
+> > On Thu, 21 Oct 2010 18:23:37 -0400 Mike Frysinger wrote:
+> >> On Thursday, October 21, 2010 18:02:50 Andrew Morton wrote:
+> >> > On Sat, 16 Oct 2010 13:27:15 -0400 Mike Frysinger wrote:
+> >> > > If the arch doesn't provide atomic64 functionality (there are quite a
+> >> > > few), then don't bother trying to build this test.
+> >> >
+> >> > I don't get it. __If the arch doesn't implement atomic64 then this file
+> >> > will get zillions of build errors, won't it?
+> >>
+> >> ... which is why i added the ifdef protection
+> >
+> > So the changelog was poor. __Please write complete changelogs so I need
+> > to have this sort of conversation less often?
 > 
-> > Then 39 instructions in hot path (no lock taken)
+> the changelog seems pretty clear to me.  arch doesnt provide atomic64,
+> so dont build code that uses atomic64.
+
+That the patch fixes build errors is rather important information.
+
+> > I know that. __But the standard way for an architecture to indicate to
+> > the core that it impements a feature is for it to define CONFIG_HAVE_*.
+> > Picking some related #define which architectures happen to implement
+> > is atypical and unexpected.
+> >
+> > Will it cause problems? __Probably not, unless the arch goes and defines
+> > ATOMIC64_INIT without actually implementing atomic64. __But it's
+> > atypical and unexpected and, yes, lazy!
 > 
-> Wow, your compiler sucks.
-> 
+> you can say "lazy" all you like.  i dont see the point in going that route.
 
+Try
 
-Actually my machines are mostly 32bit. Is it a problem ?
+	grep HAVE arch/x86/Kconfig
 
-Compiler is OK, really.
+If all of those were instead to use some random #define which the
+particular feature happened to define in some header file then we would
+have a mess on our hands.
 
-percpu_counter() is misnamed, it should be named percpu_counter64() or
-something like that :-(
-
-
-
+There's your point.
