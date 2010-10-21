@@ -1,388 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932077Ab0JUMUi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Oct 2010 08:20:38 -0400
-Received: from mailhost.informatik.uni-hamburg.de ([134.100.9.70]:51170 "EHLO
-	mailhost.informatik.uni-hamburg.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753965Ab0JUMUh (ORCPT
+	id S1757745Ab0JUMW3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Oct 2010 08:22:29 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:59755 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753965Ab0JUMW2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Oct 2010 08:20:37 -0400
-Message-ID: <4CC02FF9.3050804@metafoo.de>
-Date: Thu, 21 Oct 2010 14:20:09 +0200
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla-Thunderbird 2.0.0.24 (X11/20100329)
+	Thu, 21 Oct 2010 08:22:28 -0400
+Date: Thu, 21 Oct 2010 08:22:22 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: Nick Piggin <npiggin@kernel.dk>
+Cc: Dave Chinner <david@fromorbit.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 04/21] fs: Implement lazy LRU updates for inodes
+Message-ID: <20101021122221.GA3236@infradead.org>
+References: <1287622186-1935-1-git-send-email-david@fromorbit.com>
+ <1287622186-1935-5-git-send-email-david@fromorbit.com>
+ <20101021100706.GA9797@amd>
 MIME-Version: 1.0
-To: rklein@nvidia.com
-CC: broonie@opensource.wolfsonmicro.com, cbouatmailru@gmail.com,
-        achew@nvidia.com, olof@lixom.net, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] power: bq24617: Adding initial charger support
-References: <1287622563-23900-1-git-send-email-rklein@nvidia.com>
-In-Reply-To: <1287622563-23900-1-git-send-email-rklein@nvidia.com>
-X-Enigmail-Version: 0.95.0
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101021100706.GA9797@amd>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
-
-rklein@nvidia.com wrote:
-> From: Rhyland Klein <rklein@nvidia.com>
+On Thu, Oct 21, 2010 at 09:07:06PM +1100, Nick Piggin wrote:
+> On Thu, Oct 21, 2010 at 11:49:29AM +1100, Dave Chinner wrote:
+> >  		} else {
+> >  			/*
+> > -			 * The inode is clean, unused
+> > +			 * The inode is clean. If it is unused, then make sure
+> > +			 * that it is put on the LRU correctly as iput_final()
+> > +			 * does not move dirty inodes to the LRU and dirty
+> > +			 * inodes are removed from the LRU during scanning.
+> >  			 */
+> > -			list_move(&inode->i_list, &inode_unused);
+> > +			list_del_init(&inode->i_list);
+> > +			if (!atomic_read(&inode->i_count))
+> > +				inode_lru_list_add(inode);
 > 
-> Initial checkin adding basic support for the TI BQ24617 battery charger where
-> the PG output is directed to the driver via a gpio. This gpio address needs to
-> be passed in the platform data to the driver.
+> This "optimisation" is surely wrong. How could we have no reference
+> on the inode at this point?
 
-There is not really anything specific to the BQ24617 in this driver except for the
-naming. It is a driver for charger which reports its online property through a gpio
-pin. I wrote a similar which I wanted to submit for 2.6.38. I'll send it as a reply
-to this mail. You'll might be able to reuse it.
+Good question.  iput_final does so for unlinked inodes or umount,
+and that should be about it as it's the only place setting I_WILL_FREE
+and we require that for a 0 refcount at the beginning of
+writeback_single_inode.  But adding it to the LRU case for that
+is rather pointless as we will remove it a little bit later.
 
-> 
-> Signed-off-by: Rhyland Klein <rklein@nvidia.com>
-> ---
-> Addressed comments by Mark Brown
->   * Removed dependency on TEGRA, changed to GPIO
->   * now using power_supply_changed()
->   * now using request_threaded_irq()
-> 
->  drivers/power/Kconfig   |    7 ++
->  drivers/power/Makefile  |    1 +
->  drivers/power/bq24617.c |  262 +++++++++++++++++++++++++++++++++++++++++++++++
->  include/linux/bq24617.h |   10 ++
->  4 files changed, 280 insertions(+), 0 deletions(-)
->  create mode 100644 drivers/power/bq24617.c
->  create mode 100644 include/linux/bq24617.h
-> 
-> diff --git a/drivers/power/Kconfig b/drivers/power/Kconfig
-> index 60d83d9..1901ccf 100644
-> --- a/drivers/power/Kconfig
-> +++ b/drivers/power/Kconfig
-> @@ -185,4 +185,11 @@ config CHARGER_TWL4030
->  	help
->  	  Say Y here to enable support for TWL4030 Battery Charge Interface.
->  
-> +config CHARGER_BQ24617
-> +	tristate "BQ24617 battery charger"
-> +	depends on I2C && GENERIC_GPIO
-
-The driver does not use any I2C functions, so it shouldn't depend on I2C
-
-> +	help
-> +	 Say Y to include support for the TI BQ24617 battery charger where PG
-> +	 is attached to a gpio.
-> +
->  endif # POWER_SUPPLY
-> diff --git a/drivers/power/Makefile b/drivers/power/Makefile
-> index c75772e..45cd557 100644
-> --- a/drivers/power/Makefile
-> +++ b/drivers/power/Makefile
-> @@ -32,3 +32,4 @@ obj-$(CONFIG_BATTERY_JZ4740)	+= jz4740-battery.o
->  obj-$(CONFIG_BATTERY_INTEL_MID)	+= intel_mid_battery.o
->  obj-$(CONFIG_CHARGER_ISP1704)	+= isp1704_charger.o
->  obj-$(CONFIG_CHARGER_TWL4030)	+= twl4030_charger.o
-> +obj-$(CONFIG_CHARGER_BQ24617)	+= bq24617.o
-> diff --git a/drivers/power/bq24617.c b/drivers/power/bq24617.c
-> new file mode 100644
-> index 0000000..64500e6
-> --- /dev/null
-> +++ b/drivers/power/bq24617.c
-> @@ -0,0 +1,262 @@
-> +/*
-> + * Charger driver for TI's BQ24617
-> + *
-> + * Copyright (c) 2010, NVIDIA Corporation.
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License as published by
-> + * the Free Software Foundation; either version 2 of the License, or
-> + * (at your option) any later version.
-> + *
-> + * This program is distributed in the hope that it will be useful, but WITHOUT
-> + * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-> + * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-> + * more details.
-> + *
-> + * You should have received a copy of the GNU General Public License along
-> + * with this program; if not, write to the Free Software Foundation, Inc.,
-> + * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
-> + */
-> +
-> +#include <linux/init.h>
-> +#include <linux/module.h>
-> +#include <linux/kernel.h>
-> +#include <linux/err.h>
-> +#include <linux/power_supply.h>
-> +#include <linux/slab.h>
-> +#include <linux/gpio.h>
-> +#include <linux/bq24617.h>
-> +#include <linux/interrupt.h>
-> +#include <linux/platform_device.h>
-> +#include <linux/irq.h>
-> +
-> +struct bq24617_info {
-> +	struct power_supply		power_supply;
-> +	struct bq24617_platform_data	*pdata;
-> +	struct platform_device		*pdev;
-> +	struct mutex			work_lock;
-> +	struct work_struct		ac_work;
-> +	int				status;
-> +};
-> +
-> +static enum power_supply_property bq24617_properties[] = {
-> +	POWER_SUPPLY_PROP_ONLINE,
-> +};
-> +
-> +static void bq24617_batt_update(struct bq24617_info *chip)
-> +{
-> +	int old_status = chip->status;
-> +	int new_status = old_status;
-> +	struct bq24617_platform_data *pdata;
-> +	int gpio_value = 0;
-> +
-> +	pdata = chip->pdata;
-> +
-> +	mutex_lock(&chip->work_lock);
-> +
-> +	gpio_value = gpio_get_value(pdata->gpio_addr);
-> +
-> +	new_status = !gpio_value;
-> +	chip->status = new_status;
-> +
-> +	mutex_unlock(&chip->work_lock);
-
-The mutex in its current form is quite useless since it does not protect against
-anything. In my opinion it can be dropped completly. There is then a chance that
-power_supply_changed is called twice although there was only one change, but that
-should not cause any problems.
-If you want to keep the lock you should move "old_status = chip->status" inside the
-the lock (And gpio_get_value out of it).
-
-> +
-> +	if (old_status != -1 &&
-
-If old_status is -1 it wont be equal to new_status so there is no need for an extra
-check.
-
-> +		old_status != new_status) {
-> +		dev_dbg(&chip->pdev->dev,
-> +			"%s: %i -> %i\n", __func__, old_status,
-> +			new_status);
-> +		power_supply_changed(&chip->power_supply);
-> +	}
-> +
-> +}
-> +
-> +static irqreturn_t bq24617_irq_switch(int irq, void *devid)
-> +{
-> +	struct bq24617_info *chip = devid;
-> +
-> +	schedule_work(&chip->ac_work);
-
-What Mark meant is that you should use a threaded irq so you can get rid of the
-workqueue and call bq24617_batt_update directly from inside the irq handler.
-
-> +
-> +	return IRQ_HANDLED;
-> +}
-> +
-> +static int bq24617_get_property(struct power_supply *psy,
-> +	enum power_supply_property psp,
-> +	union power_supply_propval *val)
-> +{
-> +	struct bq24617_info *chip = container_of(psy, struct bq24617_info,
-> +						power_supply);
-> +
-> +	switch (psp) {
-> +	case POWER_SUPPLY_PROP_ONLINE:
-> +		bq24617_batt_update(chip);
-> +		val->intval = chip->status;
-> +		break;
-> +	default:
-> +		dev_err(&chip->pdev->dev,
-> +			"%s: Unknown property requested.\n", __func__);
-> +		return -EINVAL;
-> +		break;
-> +	}
-> +	return 0;
-> +}
-> +
-> +static void bq24617_ac_work(struct work_struct *work)
-> +{
-> +	struct bq24617_info *chip;
-> +	chip = container_of(work, struct bq24617_info, ac_work);
-> +	bq24617_batt_update(chip);
-> +}
-> +
-> +static int bq24617_probe(struct platform_device *pdev)
-
-__devinit
-
-> +{
-> +	struct bq24617_info *chip;
-> +	struct bq24617_platform_data *pdata = pdev->dev.platform_data;
-> +	int rc;
-> +
-> +	if (!pdata) {
-> +		dev_err(&pdev->dev, "No platform data\n");
-> +		return -ENXIO;
-> +	}
-> +
-> +	if (!(gpio_is_valid(pdata->gpio_addr))) {
-> +		dev_err(&pdev->dev, "Gpio is not valid\n");
-> +		return -EINVAL;
-> +	}
-> +
-> +	chip = kzalloc(sizeof(struct bq24617_info), GFP_KERNEL);
-> +	if (!chip)
-> +		return -ENOMEM;
-> +
-> +	chip->pdata = pdata;
-> +	chip->pdev = pdev;
-> +	chip->power_supply.name = "ac";
-> +	chip->status = -1; /* set status to reflect unset */
-> +	chip->power_supply.type = POWER_SUPPLY_TYPE_MAINS;
-> +	chip->power_supply.properties = bq24617_properties;
-> +	chip->power_supply.num_properties = ARRAY_SIZE(bq24617_properties);
-> +	chip->power_supply.get_property = bq24617_get_property;
-> +	chip->power_supply.supplied_to = pdata->batteries;
-> +	chip->power_supply.num_supplicants = pdata->num_batteries;
-> +
-> +	mutex_init(&chip->work_lock);
-> +
-> +	platform_set_drvdata(pdev, chip);
-> +
-> +	rc = gpio_request(pdata->gpio_addr, "ac online");
-> +	if (rc) {
-> +		dev_err(&pdev->dev,
-> +			"%s: Failed to get gpio\n", __func__);
-> +		goto free_chip;
-> +	}
-> +
-> +	gpio_direction_input(pdata->gpio_addr);
-> +	if (rc) {
-> +		dev_err(&pdev->dev,
-> +			"%s: Failed to set gpio direction\n",
-> +			__func__);
-> +		goto release_gpio;
-> +	}
-> +
-> +	rc = request_threaded_irq (gpio_to_irq(pdata->gpio_addr),
-> +				NULL,
-> +				bq24617_irq_switch,
-> +				IRQF_TRIGGER_FALLING | IRQF_TRIGGER_RISING,
-> +				"ac detect",
-> +				chip);
-> +
-> +	if (rc) {
-> +		dev_err(&pdev->dev,
-> +			"%s: Failed to request threaded IRQ\n", __func__);
-> +		goto release_gpio;
-> +	}
-> +
-> +	INIT_WORK(&chip->ac_work, bq24617_ac_work);
-
-In theory the irq can fire before the work_struct has been initalised.
-
-> +
-> +	rc = power_supply_register(&pdev->dev, &chip->power_supply);
-> +	if (rc) {
-> +		dev_err(&pdev->dev,
-> +			"%s: Failed to register power supply\n", __func__);
-> +		goto free_irq;
-> +	}
-> +
-> +	dev_info(&pdev->dev,
-> +		"%s: battery charger ac device registered\n", pdev->name);
-> +
-> +	schedule_work(&chip->ac_work);
-> +
-> +	return 0;
-> +
-> +free_irq:
-> +	free_irq(gpio_to_irq(pdata->gpio_addr), chip);
-> +release_gpio:
-> +	gpio_free(pdata->gpio_addr);
-> +free_chip:
-> +	kfree(chip);
-> +	return rc;
-> +}
-> +
-> +static int bq24617_remove(struct platform_device *pdev)
-
-__devexit
-
-> +{
-> +	struct bq24617_info *chip = platform_get_drvdata(pdev);
-> +	struct bq24617_platform_data *pdata = chip->pdata;
-> +
-> +	flush_scheduled_work();
-> +
-> +	power_supply_unregister(&chip->power_supply);
-> +
-> +	free_irq(gpio_to_irq(pdata->gpio_addr), chip);
-> +	gpio_free(pdata->gpio_addr);
-> +	kfree(chip);
-> +
-> +	return 0;
-> +}
-> +
-> +#if CONFIG_PM
-> +static int bq24617_suspend(struct platform_device *pdev, pm_message_t state)
-> +{
-> +	flush_scheduled_work();
-> +
-> +	return 0;
-> +}
-> +
-> +static int bq24617_resume(struct platform_device *pdev)
-> +{
-> +	struct bq24617_info *chip = platform_get_drvdata(pdev);
-> +
-> +	schedule_work(&chip->ac_work);
-> +
-> +	return 0;
-> +}
-> +
-> +#else
-> +#define bq24617_suspend         NULL
-> +#define bq24617_resume          NULL
-> +#endif
-> +
-> +static struct platform_driver bq24617_driver = {
-> +	.driver = {
-> +		.name	= "bq24617",
-> +		.owner	= THIS_MODULE,
-> +	},
-> +	.probe		= bq24617_probe,
-> +	.remove		= __devexit_p(bq24617_remove),
-> +	.suspend	= bq24617_suspend,
-> +	.resume		= bq24617_resume,
-> +};
-> +
-> +static int __devinit bq24617_init(void)
-
-__init
-
-> +{
-> +	return platform_driver_register(&bq24617_driver);
-> +}
-> +module_init(bq24617_init);
-> +
-> +static void __devexit bq24617_exit(void)
-
-__exit
-
-> +{
-> +	platform_driver_unregister(&bq24617_driver);
-> +}
-> +module_exit(bq24617_exit);
-> +
-> +MODULE_AUTHOR("Rhyland Klein <rklein@nvidia.com");
-> +MODULE_DESCRIPTION("BQ24617 battery charger driver");
-> +MODULE_LICENSE("GPL");
-
-
-- Lars
-
+So I think the assignment can be safely removed, but I'd rather do in
+a separate, properly documented patch rather than hiding it somewhere
+unrelated.  That patch could however go towards the beggining of the
+series to make things easier.
