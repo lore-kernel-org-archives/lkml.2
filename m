@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758181Ab0JUNqL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Oct 2010 09:46:11 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:44045 "EHLO mx2.mail.elte.hu"
+	id S1758202Ab0JUNtL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Oct 2010 09:49:11 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:53440 "EHLO mx2.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756956Ab0JUNqJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Oct 2010 09:46:09 -0400
-Date: Thu, 21 Oct 2010 15:45:58 +0200
+	id S1757961Ab0JUNtJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Oct 2010 09:49:09 -0400
+Date: Thu, 21 Oct 2010 15:49:00 +0200
 From: Ingo Molnar <mingo@elte.hu>
 To: Linus Torvalds <torvalds@linux-foundation.org>
 Cc: linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
         Thomas Gleixner <tglx@linutronix.de>,
         Andrew Morton <akpm@linux-foundation.org>
-Subject: [GIT PULL] x86/fpu for v2.6.37
-Message-ID: <20101021134558.GA5859@elte.hu>
+Subject: [GIT PULL] x86/idle for v2.6.37
+Message-ID: <20101021134900.GA6130@elte.hu>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -31,588 +31,267 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Linus,
 
-Please pull the latest x86-fpu-for-linus git tree from:
+Please pull the latest x86-idle-for-linus git tree from:
 
-   git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git x86-fpu-for-linus
+   git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git x86-idle-for-linus
+
+out-of-topic modifications in x86-idle-for-linus:
+-------------------------------------------------
+drivers/acpi/acpi_pad.c            # bc83ccc: x86, mwait: Move mwait constants 
+drivers/idle/intel_idle.c          # bc83ccc: x86, mwait: Move mwait constants 
 
  Thanks,
 
 	Ingo
 
 ------------------>
-Brian Gerst (12):
-      x86: Use correct type for %cr4
-      x86, fpu: Merge fpu_init()
-      x86, fpu: Merge tolerant_fwait()
-      x86, fpu: Merge __save_init_fpu()
-      x86-64, fpu: Disable preemption when using TS_USEDFPU
-      x86-64, fpu: Fix %cs value in convert_from_fxsr()
-      x86-64, fpu: Simplify constraints for fxsave/fxtstor
-      x86-32, fpu: Remove math_emulate stub
-      x86, fpu: Remove unnecessary ifdefs from i387 code.
-      x86, fpu: Remove PSHUFB_XMM5_* macros
-      x86-32, fpu: Rewrite fpu_save_init()
-      x86, fpu: Merge fpu_save_init()
-
-Robert Richter (1):
-      x86, xsave: Disable xsave in i387 emulation mode
+H. Peter Anvin (4):
+      x86, mwait: Move mwait constants to a common header file
+      x86, hotplug: Use mwait to offline a processor, fix the legacy case
+      x86, hotplug: Move WBINVD back outside the play_dead loop
+      x86, hotplug: In the MWAIT case of play_dead, CLFLUSH the cache line
 
 
- arch/x86/include/asm/i387.h      |  195 ++++++++++---------------------------
- arch/x86/include/asm/processor.h |    4 +-
- arch/x86/kernel/cpu/common.c     |    7 --
- arch/x86/kernel/i387.c           |   58 ++++++------
- arch/x86/kernel/process_64.c     |    2 +-
- arch/x86/kernel/traps.c          |   35 +------
- 6 files changed, 90 insertions(+), 211 deletions(-)
+ arch/x86/include/asm/mwait.h     |   15 +++++++
+ arch/x86/include/asm/processor.h |   23 -----------
+ arch/x86/kernel/acpi/cstate.c    |   11 +-----
+ arch/x86/kernel/smpboot.c        |   80 +++++++++++++++++++++++++++++++++++++-
+ drivers/acpi/acpi_pad.c          |    7 +---
+ drivers/idle/intel_idle.c        |    9 +----
+ 6 files changed, 97 insertions(+), 48 deletions(-)
+ create mode 100644 arch/x86/include/asm/mwait.h
 
-diff --git a/arch/x86/include/asm/i387.h b/arch/x86/include/asm/i387.h
-index a73a8d5..70626ed 100644
---- a/arch/x86/include/asm/i387.h
-+++ b/arch/x86/include/asm/i387.h
-@@ -55,6 +55,12 @@ extern int save_i387_xstate_ia32(void __user *buf);
- extern int restore_i387_xstate_ia32(void __user *buf);
- #endif
- 
-+#ifdef CONFIG_MATH_EMULATION
-+extern void finit_soft_fpu(struct i387_soft_struct *soft);
-+#else
-+static inline void finit_soft_fpu(struct i387_soft_struct *soft) {}
-+#endif
+diff --git a/arch/x86/include/asm/mwait.h b/arch/x86/include/asm/mwait.h
+new file mode 100644
+index 0000000..bcdff99
+--- /dev/null
++++ b/arch/x86/include/asm/mwait.h
+@@ -0,0 +1,15 @@
++#ifndef _ASM_X86_MWAIT_H
++#define _ASM_X86_MWAIT_H
 +
- #define X87_FSW_ES (1 << 7)	/* Exception Summary */
- 
- static __always_inline __pure bool use_xsaveopt(void)
-@@ -67,6 +73,11 @@ static __always_inline __pure bool use_xsave(void)
- 	return static_cpu_has(X86_FEATURE_XSAVE);
- }
- 
-+static __always_inline __pure bool use_fxsr(void)
-+{
-+        return static_cpu_has(X86_FEATURE_FXSR);
-+}
++#define MWAIT_SUBSTATE_MASK		0xf
++#define MWAIT_CSTATE_MASK		0xf
++#define MWAIT_SUBSTATE_SIZE		4
++#define MWAIT_MAX_NUM_CSTATES		8
 +
- extern void __sanitize_i387_state(struct task_struct *);
- 
- static inline void sanitize_i387_state(struct task_struct *tsk)
-@@ -77,19 +88,11 @@ static inline void sanitize_i387_state(struct task_struct *tsk)
- }
- 
- #ifdef CONFIG_X86_64
--
--/* Ignore delayed exceptions from user space */
--static inline void tolerant_fwait(void)
--{
--	asm volatile("1: fwait\n"
--		     "2:\n"
--		     _ASM_EXTABLE(1b, 2b));
--}
--
- static inline int fxrstor_checking(struct i387_fxsave_struct *fx)
- {
- 	int err;
- 
-+	/* See comment in fxsave() below. */
- 	asm volatile("1:  rex64/fxrstor (%[fx])\n\t"
- 		     "2:\n"
- 		     ".section .fixup,\"ax\"\n"
-@@ -98,44 +101,10 @@ static inline int fxrstor_checking(struct i387_fxsave_struct *fx)
- 		     ".previous\n"
- 		     _ASM_EXTABLE(1b, 3b)
- 		     : [err] "=r" (err)
--#if 0 /* See comment in fxsave() below. */
--		     : [fx] "r" (fx), "m" (*fx), "0" (0));
--#else
--		     : [fx] "cdaSDb" (fx), "m" (*fx), "0" (0));
--#endif
-+		     : [fx] "R" (fx), "m" (*fx), "0" (0));
- 	return err;
- }
- 
--/* AMD CPUs don't save/restore FDP/FIP/FOP unless an exception
--   is pending. Clear the x87 state here by setting it to fixed
--   values. The kernel data segment can be sometimes 0 and sometimes
--   new user value. Both should be ok.
--   Use the PDA as safe address because it should be already in L1. */
--static inline void fpu_clear(struct fpu *fpu)
--{
--	struct xsave_struct *xstate = &fpu->state->xsave;
--	struct i387_fxsave_struct *fx = &fpu->state->fxsave;
--
--	/*
--	 * xsave header may indicate the init state of the FP.
--	 */
--	if (use_xsave() &&
--	    !(xstate->xsave_hdr.xstate_bv & XSTATE_FP))
--		return;
--
--	if (unlikely(fx->swd & X87_FSW_ES))
--		asm volatile("fnclex");
--	alternative_input(ASM_NOP8 ASM_NOP2,
--			  "    emms\n"		/* clear stack tags */
--			  "    fildl %%gs:0",	/* load to clear state */
--			  X86_FEATURE_FXSAVE_LEAK);
--}
--
--static inline void clear_fpu_state(struct task_struct *tsk)
--{
--	fpu_clear(&tsk->thread.fpu);
--}
--
- static inline int fxsave_user(struct i387_fxsave_struct __user *fx)
- {
- 	int err;
-@@ -149,6 +118,7 @@ static inline int fxsave_user(struct i387_fxsave_struct __user *fx)
- 	if (unlikely(err))
- 		return -EFAULT;
- 
-+	/* See comment in fxsave() below. */
- 	asm volatile("1:  rex64/fxsave (%[fx])\n\t"
- 		     "2:\n"
- 		     ".section .fixup,\"ax\"\n"
-@@ -157,11 +127,7 @@ static inline int fxsave_user(struct i387_fxsave_struct __user *fx)
- 		     ".previous\n"
- 		     _ASM_EXTABLE(1b, 3b)
- 		     : [err] "=r" (err), "=m" (*fx)
--#if 0 /* See comment in fxsave() below. */
--		     : [fx] "r" (fx), "0" (0));
--#else
--		     : [fx] "cdaSDb" (fx), "0" (0));
--#endif
-+		     : [fx] "R" (fx), "0" (0));
- 	if (unlikely(err) &&
- 	    __clear_user(fx, sizeof(struct i387_fxsave_struct)))
- 		err = -EFAULT;
-@@ -174,57 +140,26 @@ static inline void fpu_fxsave(struct fpu *fpu)
- 	/* Using "rex64; fxsave %0" is broken because, if the memory operand
- 	   uses any extended registers for addressing, a second REX prefix
- 	   will be generated (to the assembler, rex64 followed by semicolon
--	   is a separate instruction), and hence the 64-bitness is lost. */
--#if 0
--	/* Using "fxsaveq %0" would be the ideal choice, but is only supported
--	   starting with gas 2.16. */
--	__asm__ __volatile__("fxsaveq %0"
--			     : "=m" (fpu->state->fxsave));
--#elif 0
--	/* Using, as a workaround, the properly prefixed form below isn't
-+	   is a separate instruction), and hence the 64-bitness is lost.
-+	   Using "fxsaveq %0" would be the ideal choice, but is only supported
-+	   starting with gas 2.16.
-+	asm volatile("fxsaveq %0"
-+		     : "=m" (fpu->state->fxsave));
-+	   Using, as a workaround, the properly prefixed form below isn't
- 	   accepted by any binutils version so far released, complaining that
- 	   the same type of prefix is used twice if an extended register is
--	   needed for addressing (fix submitted to mainline 2005-11-21). */
--	__asm__ __volatile__("rex64/fxsave %0"
--			     : "=m" (fpu->state->fxsave));
--#else
--	/* This, however, we can work around by forcing the compiler to select
-+	   needed for addressing (fix submitted to mainline 2005-11-21).
-+	asm volatile("rex64/fxsave %0"
-+		     : "=m" (fpu->state->fxsave));
-+	   This, however, we can work around by forcing the compiler to select
- 	   an addressing mode that doesn't require extended registers. */
--	__asm__ __volatile__("rex64/fxsave (%1)"
--			     : "=m" (fpu->state->fxsave)
--			     : "cdaSDb" (&fpu->state->fxsave));
--#endif
--}
--
--static inline void fpu_save_init(struct fpu *fpu)
--{
--	if (use_xsave())
--		fpu_xsave(fpu);
--	else
--		fpu_fxsave(fpu);
--
--	fpu_clear(fpu);
--}
--
--static inline void __save_init_fpu(struct task_struct *tsk)
--{
--	fpu_save_init(&tsk->thread.fpu);
--	task_thread_info(tsk)->status &= ~TS_USEDFPU;
-+	asm volatile("rex64/fxsave (%[fx])"
-+		     : "=m" (fpu->state->fxsave)
-+		     : [fx] "R" (&fpu->state->fxsave));
- }
- 
- #else  /* CONFIG_X86_32 */
- 
--#ifdef CONFIG_MATH_EMULATION
--extern void finit_soft_fpu(struct i387_soft_struct *soft);
--#else
--static inline void finit_soft_fpu(struct i387_soft_struct *soft) {}
--#endif
--
--static inline void tolerant_fwait(void)
--{
--	asm volatile("fnclex ; fwait");
--}
--
- /* perform fxrstor iff the processor has extended states, otherwise frstor */
- static inline int fxrstor_checking(struct i387_fxsave_struct *fx)
- {
-@@ -241,6 +176,14 @@ static inline int fxrstor_checking(struct i387_fxsave_struct *fx)
- 	return 0;
- }
- 
-+static inline void fpu_fxsave(struct fpu *fpu)
-+{
-+	asm volatile("fxsave %[fx]"
-+		     : [fx] "=m" (fpu->state->fxsave));
-+}
++#define CPUID_MWAIT_LEAF		5
++#define CPUID5_ECX_EXTENSIONS_SUPPORTED 0x1
++#define CPUID5_ECX_INTERRUPT_BREAK	0x2
 +
-+#endif	/* CONFIG_X86_64 */
++#define MWAIT_ECX_INTERRUPT_BREAK	0x1
 +
- /* We need a safe address that is cheap to find and that is already
-    in L1 during context switch. The best choices are unfortunately
-    different for UP and SMP */
-@@ -256,47 +199,33 @@ static inline int fxrstor_checking(struct i387_fxsave_struct *fx)
- static inline void fpu_save_init(struct fpu *fpu)
- {
- 	if (use_xsave()) {
--		struct xsave_struct *xstate = &fpu->state->xsave;
--		struct i387_fxsave_struct *fx = &fpu->state->fxsave;
--
- 		fpu_xsave(fpu);
- 
- 		/*
- 		 * xsave header may indicate the init state of the FP.
- 		 */
--		if (!(xstate->xsave_hdr.xstate_bv & XSTATE_FP))
--			goto end;
--
--		if (unlikely(fx->swd & X87_FSW_ES))
--			asm volatile("fnclex");
--
--		/*
--		 * we can do a simple return here or be paranoid :)
--		 */
--		goto clear_state;
-+		if (!(fpu->state->xsave.xsave_hdr.xstate_bv & XSTATE_FP))
-+			return;
-+	} else if (use_fxsr()) {
-+		fpu_fxsave(fpu);
-+	} else {
-+		asm volatile("fsave %[fx]; fwait"
-+			     : [fx] "=m" (fpu->state->fsave));
-+		return;
- 	}
- 
--	/* Use more nops than strictly needed in case the compiler
--	   varies code */
--	alternative_input(
--		"fnsave %[fx] ;fwait;" GENERIC_NOP8 GENERIC_NOP4,
--		"fxsave %[fx]\n"
--		"bt $7,%[fsw] ; jnc 1f ; fnclex\n1:",
--		X86_FEATURE_FXSR,
--		[fx] "m" (fpu->state->fxsave),
--		[fsw] "m" (fpu->state->fxsave.swd) : "memory");
--clear_state:
-+	if (unlikely(fpu->state->fxsave.swd & X87_FSW_ES))
-+		asm volatile("fnclex");
-+
- 	/* AMD K7/K8 CPUs don't save/restore FDP/FIP/FOP unless an exception
- 	   is pending.  Clear the x87 state here by setting it to fixed
- 	   values. safe_address is a random variable that should be in L1 */
- 	alternative_input(
--		GENERIC_NOP8 GENERIC_NOP2,
-+		ASM_NOP8 ASM_NOP2,
- 		"emms\n\t"	  	/* clear stack tags */
--		"fildl %[addr]", 	/* set F?P to defined value */
-+		"fildl %P[addr]",	/* set F?P to defined value */
- 		X86_FEATURE_FXSAVE_LEAK,
- 		[addr] "m" (safe_address));
--end:
--	;
- }
- 
- static inline void __save_init_fpu(struct task_struct *tsk)
-@@ -305,9 +234,6 @@ static inline void __save_init_fpu(struct task_struct *tsk)
- 	task_thread_info(tsk)->status &= ~TS_USEDFPU;
- }
- 
--
--#endif	/* CONFIG_X86_64 */
--
- static inline int fpu_fxrstor_checking(struct fpu *fpu)
- {
- 	return fxrstor_checking(&fpu->state->fxsave);
-@@ -344,7 +270,10 @@ static inline void __unlazy_fpu(struct task_struct *tsk)
- static inline void __clear_fpu(struct task_struct *tsk)
- {
- 	if (task_thread_info(tsk)->status & TS_USEDFPU) {
--		tolerant_fwait();
-+		/* Ignore delayed exceptions from user space */
-+		asm volatile("1: fwait\n"
-+			     "2:\n"
-+			     _ASM_EXTABLE(1b, 2b));
- 		task_thread_info(tsk)->status &= ~TS_USEDFPU;
- 		stts();
- 	}
-@@ -405,19 +334,6 @@ static inline void irq_ts_restore(int TS_state)
- 		stts();
- }
- 
--#ifdef CONFIG_X86_64
--
--static inline void save_init_fpu(struct task_struct *tsk)
--{
--	__save_init_fpu(tsk);
--	stts();
--}
--
--#define unlazy_fpu	__unlazy_fpu
--#define clear_fpu	__clear_fpu
--
--#else  /* CONFIG_X86_32 */
--
- /*
-  * These disable preemption on their own and are safe
-  */
-@@ -443,8 +359,6 @@ static inline void clear_fpu(struct task_struct *tsk)
- 	preempt_enable();
- }
- 
--#endif	/* CONFIG_X86_64 */
--
- /*
-  * i387 state interaction
-  */
-@@ -508,7 +422,4 @@ extern void fpu_finit(struct fpu *fpu);
- 
- #endif /* __ASSEMBLY__ */
- 
--#define PSHUFB_XMM5_XMM0 .byte 0x66, 0x0f, 0x38, 0x00, 0xc5
--#define PSHUFB_XMM5_XMM6 .byte 0x66, 0x0f, 0x38, 0x00, 0xf5
--
- #endif /* _ASM_X86_I387_H */
++#endif /* _ASM_X86_MWAIT_H */
 diff --git a/arch/x86/include/asm/processor.h b/arch/x86/include/asm/processor.h
-index 325b7bd..396b80f 100644
+index 325b7bd..f358241 100644
 --- a/arch/x86/include/asm/processor.h
 +++ b/arch/x86/include/asm/processor.h
-@@ -602,7 +602,7 @@ extern unsigned long		mmu_cr4_features;
+@@ -764,29 +764,6 @@ extern unsigned long		idle_halt;
+ extern unsigned long		idle_nomwait;
+ extern bool			c1e_detected;
  
- static inline void set_in_cr4(unsigned long mask)
- {
--	unsigned cr4;
-+	unsigned long cr4;
- 
- 	mmu_cr4_features |= mask;
- 	cr4 = read_cr4();
-@@ -612,7 +612,7 @@ static inline void set_in_cr4(unsigned long mask)
- 
- static inline void clear_in_cr4(unsigned long mask)
- {
--	unsigned cr4;
-+	unsigned long cr4;
- 
- 	mmu_cr4_features &= ~mask;
- 	cr4 = read_cr4();
-diff --git a/arch/x86/kernel/cpu/common.c b/arch/x86/kernel/cpu/common.c
-index 490dac6..f9e23e8 100644
---- a/arch/x86/kernel/cpu/common.c
-+++ b/arch/x86/kernel/cpu/common.c
-@@ -1264,13 +1264,6 @@ void __cpuinit cpu_init(void)
- 	clear_all_debug_regs();
- 	dbg_restore_debug_regs();
- 
--	/*
--	 * Force FPU initialization:
--	 */
--	current_thread_info()->status = 0;
--	clear_used_math();
--	mxcsr_feature_mask_init();
+-/*
+- * on systems with caches, caches must be flashed as the absolute
+- * last instruction before going into a suspended halt.  Otherwise,
+- * dirty data can linger in the cache and become stale on resume,
+- * leading to strange errors.
+- *
+- * perform a variety of operations to guarantee that the compiler
+- * will not reorder instructions.  wbinvd itself is serializing
+- * so the processor will not reorder.
+- *
+- * Systems without cache can just go into halt.
+- */
+-static inline void wbinvd_halt(void)
+-{
+-	mb();
+-	/* check for clflush to determine if wbinvd is legal */
+-	if (cpu_has_clflush)
+-		asm volatile("cli; wbinvd; 1: hlt; jmp 1b" : : : "memory");
+-	else
+-		while (1)
+-			halt();
+-}
 -
- 	fpu_init();
- 	xsave_init();
- }
-diff --git a/arch/x86/kernel/i387.c b/arch/x86/kernel/i387.c
-index 1f11f5c..e795e36 100644
---- a/arch/x86/kernel/i387.c
-+++ b/arch/x86/kernel/i387.c
-@@ -67,19 +67,22 @@ static void __cpuinit init_thread_xstate(void)
- 	 */
+ extern void enable_sep_cpu(void);
+ extern int sysenter_setup(void);
  
- 	if (!HAVE_HWFP) {
-+		/*
-+		 * Disable xsave as we do not support it if i387
-+		 * emulation is enabled.
-+		 */
-+		setup_clear_cpu_cap(X86_FEATURE_XSAVE);
-+		setup_clear_cpu_cap(X86_FEATURE_XSAVEOPT);
- 		xstate_size = sizeof(struct i387_soft_struct);
- 		return;
- 	}
+diff --git a/arch/x86/kernel/acpi/cstate.c b/arch/x86/kernel/acpi/cstate.c
+index fb7a5f0..bcc4add 100644
+--- a/arch/x86/kernel/acpi/cstate.c
++++ b/arch/x86/kernel/acpi/cstate.c
+@@ -13,6 +13,7 @@
  
- 	if (cpu_has_fxsr)
- 		xstate_size = sizeof(struct i387_fxsave_struct);
--#ifdef CONFIG_X86_32
- 	else
- 		xstate_size = sizeof(struct i387_fsave_struct);
--#endif
- }
+ #include <acpi/processor.h>
+ #include <asm/acpi.h>
++#include <asm/mwait.h>
  
--#ifdef CONFIG_X86_64
  /*
-  * Called at bootup to set up the initial FPU state that is later cloned
-  * into all processes.
-@@ -87,12 +90,21 @@ static void __cpuinit init_thread_xstate(void)
+  * Initialize bm_flags based on the CPU cache properties
+@@ -65,16 +66,6 @@ static struct cstate_entry *cpu_cstate_entry;	/* per CPU ptr */
  
- void __cpuinit fpu_init(void)
- {
--	unsigned long oldcr0 = read_cr0();
+ static short mwait_supported[ACPI_PROCESSOR_MAX_POWER];
+ 
+-#define MWAIT_SUBSTATE_MASK	(0xf)
+-#define MWAIT_CSTATE_MASK	(0xf)
+-#define MWAIT_SUBSTATE_SIZE	(4)
 -
--	set_in_cr4(X86_CR4_OSFXSR);
--	set_in_cr4(X86_CR4_OSXMMEXCPT);
-+	unsigned long cr0;
-+	unsigned long cr4_mask = 0;
+-#define CPUID_MWAIT_LEAF (5)
+-#define CPUID5_ECX_EXTENSIONS_SUPPORTED (0x1)
+-#define CPUID5_ECX_INTERRUPT_BREAK	(0x2)
+-
+-#define MWAIT_ECX_INTERRUPT_BREAK	(0x1)
+-
+ #define NATIVE_CSTATE_BEYOND_HALT	(2)
  
--	write_cr0(oldcr0 & ~(X86_CR0_TS|X86_CR0_EM)); /* clear TS and EM */
-+	if (cpu_has_fxsr)
-+		cr4_mask |= X86_CR4_OSFXSR;
-+	if (cpu_has_xmm)
-+		cr4_mask |= X86_CR4_OSXMMEXCPT;
-+	if (cr4_mask)
-+		set_in_cr4(cr4_mask);
+ static long acpi_processor_ffh_cstate_probe_cpu(void *_cx)
+diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
+index 8b3bfc4..fdccfe9 100644
+--- a/arch/x86/kernel/smpboot.c
++++ b/arch/x86/kernel/smpboot.c
+@@ -62,6 +62,7 @@
+ #include <asm/pgtable.h>
+ #include <asm/tlbflush.h>
+ #include <asm/mtrr.h>
++#include <asm/mwait.h>
+ #include <asm/vmi.h>
+ #include <asm/apic.h>
+ #include <asm/setup.h>
+@@ -1383,11 +1384,88 @@ void play_dead_common(void)
+ 	local_irq_disable();
+ }
+ 
++/*
++ * We need to flush the caches before going to sleep, lest we have
++ * dirty data in our caches when we come back up.
++ */
++static inline void mwait_play_dead(void)
++{
++	unsigned int eax, ebx, ecx, edx;
++	unsigned int highest_cstate = 0;
++	unsigned int highest_subcstate = 0;
++	int i;
++	void *mwait_ptr;
 +
-+	cr0 = read_cr0();
-+	cr0 &= ~(X86_CR0_TS|X86_CR0_EM); /* clear TS and EM */
-+	if (!HAVE_HWFP)
-+		cr0 |= X86_CR0_EM;
-+	write_cr0(cr0);
- 
- 	if (!smp_processor_id())
- 		init_thread_xstate();
-@@ -103,24 +115,12 @@ void __cpuinit fpu_init(void)
- 	clear_used_math();
- }
- 
--#else	/* CONFIG_X86_64 */
--
--void __cpuinit fpu_init(void)
--{
--	if (!smp_processor_id())
--		init_thread_xstate();
--}
--
--#endif	/* CONFIG_X86_32 */
--
- void fpu_finit(struct fpu *fpu)
- {
--#ifdef CONFIG_X86_32
- 	if (!HAVE_HWFP) {
- 		finit_soft_fpu(&fpu->state->soft);
- 		return;
- 	}
--#endif
- 
- 	if (cpu_has_fxsr) {
- 		struct i387_fxsave_struct *fx = &fpu->state->fxsave;
-@@ -385,19 +385,17 @@ convert_from_fxsr(struct user_i387_ia32_struct *env, struct task_struct *tsk)
- #ifdef CONFIG_X86_64
- 	env->fip = fxsave->rip;
- 	env->foo = fxsave->rdp;
-+	/*
-+	 * should be actually ds/cs at fpu exception time, but
-+	 * that information is not available in 64bit mode.
-+	 */
-+	env->fcs = task_pt_regs(tsk)->cs;
- 	if (tsk == current) {
--		/*
--		 * should be actually ds/cs at fpu exception time, but
--		 * that information is not available in 64bit mode.
--		 */
--		asm("mov %%ds, %[fos]" : [fos] "=r" (env->fos));
--		asm("mov %%cs, %[fcs]" : [fcs] "=r" (env->fcs));
-+		savesegment(ds, env->fos);
- 	} else {
--		struct pt_regs *regs = task_pt_regs(tsk);
--
--		env->fos = 0xffff0000 | tsk->thread.ds;
--		env->fcs = regs->cs;
-+		env->fos = tsk->thread.ds;
- 	}
-+	env->fos |= 0xffff0000;
- #else
- 	env->fip = fxsave->fip;
- 	env->fcs = (u16) fxsave->fcs | ((u32) fxsave->fop << 16);
-diff --git a/arch/x86/kernel/process_64.c b/arch/x86/kernel/process_64.c
-index 3d9ea53..b3d7a3a 100644
---- a/arch/x86/kernel/process_64.c
-+++ b/arch/x86/kernel/process_64.c
-@@ -424,7 +424,7 @@ __switch_to(struct task_struct *prev_p, struct task_struct *next_p)
- 	load_TLS(next, cpu);
- 
- 	/* Must be after DS reload */
--	unlazy_fpu(prev_p);
-+	__unlazy_fpu(prev_p);
- 
- 	/* Make sure cpu is ready for new context */
- 	if (preload_fpu)
-diff --git a/arch/x86/kernel/traps.c b/arch/x86/kernel/traps.c
-index 60788de..d439685 100644
---- a/arch/x86/kernel/traps.c
-+++ b/arch/x86/kernel/traps.c
-@@ -776,21 +776,10 @@ asmlinkage void math_state_restore(void)
- }
- EXPORT_SYMBOL_GPL(math_state_restore);
- 
--#ifndef CONFIG_MATH_EMULATION
--void math_emulate(struct math_emu_info *info)
--{
--	printk(KERN_EMERG
--		"math-emulation not enabled and no coprocessor found.\n");
--	printk(KERN_EMERG "killing %s.\n", current->comm);
--	force_sig(SIGFPE, current);
--	schedule();
--}
--#endif /* CONFIG_MATH_EMULATION */
--
- dotraplinkage void __kprobes
- do_device_not_available(struct pt_regs *regs, long error_code)
- {
--#ifdef CONFIG_X86_32
-+#ifdef CONFIG_MATH_EMULATION
- 	if (read_cr0() & X86_CR0_EM) {
- 		struct math_emu_info info = { };
- 
-@@ -798,12 +787,12 @@ do_device_not_available(struct pt_regs *regs, long error_code)
- 
- 		info.regs = regs;
- 		math_emulate(&info);
--	} else {
--		math_state_restore(); /* interrupts still off */
--		conditional_sti(regs);
++	if (!cpu_has(&current_cpu_data, X86_FEATURE_MWAIT))
 +		return;
- 	}
--#else
--	math_state_restore();
-+#endif
-+	math_state_restore(); /* interrupts still off */
-+#ifdef CONFIG_X86_32
-+	conditional_sti(regs);
- #endif
++	if (!cpu_has(&current_cpu_data, X86_FEATURE_CLFLSH))
++		return;
++	if (current_cpu_data.cpuid_level < CPUID_MWAIT_LEAF)
++		return;
++
++	eax = CPUID_MWAIT_LEAF;
++	ecx = 0;
++	native_cpuid(&eax, &ebx, &ecx, &edx);
++
++	/*
++	 * eax will be 0 if EDX enumeration is not valid.
++	 * Initialized below to cstate, sub_cstate value when EDX is valid.
++	 */
++	if (!(ecx & CPUID5_ECX_EXTENSIONS_SUPPORTED)) {
++		eax = 0;
++	} else {
++		edx >>= MWAIT_SUBSTATE_SIZE;
++		for (i = 0; i < 7 && edx; i++, edx >>= MWAIT_SUBSTATE_SIZE) {
++			if (edx & MWAIT_SUBSTATE_MASK) {
++				highest_cstate = i;
++				highest_subcstate = edx & MWAIT_SUBSTATE_MASK;
++			}
++		}
++		eax = (highest_cstate << MWAIT_SUBSTATE_SIZE) |
++			(highest_subcstate - 1);
++	}
++
++	/*
++	 * This should be a memory location in a cache line which is
++	 * unlikely to be touched by other processors.  The actual
++	 * content is immaterial as it is not actually modified in any way.
++	 */
++	mwait_ptr = &current_thread_info()->flags;
++
++	wbinvd();
++
++	while (1) {
++		/*
++		 * The CLFLUSH is a workaround for erratum AAI65 for
++		 * the Xeon 7400 series.  It's not clear it is actually
++		 * needed, but it should be harmless in either case.
++		 * The WBINVD is insufficient due to the spurious-wakeup
++		 * case where we return around the loop.
++		 */
++		clflush(mwait_ptr);
++		__monitor(mwait_ptr, 0, 0);
++		mb();
++		__mwait(eax, 0);
++	}
++}
++
++static inline void hlt_play_dead(void)
++{
++	if (current_cpu_data.x86 >= 4)
++		wbinvd();
++
++	while (1) {
++		native_halt();
++	}
++}
++
+ void native_play_dead(void)
+ {
+ 	play_dead_common();
+ 	tboot_shutdown(TB_SHUTDOWN_WFS);
+-	wbinvd_halt();
++
++	mwait_play_dead();	/* Only returns on failure */
++	hlt_play_dead();
  }
  
-@@ -881,18 +870,6 @@ void __init trap_init(void)
- #endif
+ #else /* ... !CONFIG_HOTPLUG_CPU */
+diff --git a/drivers/acpi/acpi_pad.c b/drivers/acpi/acpi_pad.c
+index b76848c..ca2694d 100644
+--- a/drivers/acpi/acpi_pad.c
++++ b/drivers/acpi/acpi_pad.c
+@@ -30,18 +30,13 @@
+ #include <linux/slab.h>
+ #include <acpi/acpi_bus.h>
+ #include <acpi/acpi_drivers.h>
++#include <asm/mwait.h>
  
- #ifdef CONFIG_X86_32
--	if (cpu_has_fxsr) {
--		printk(KERN_INFO "Enabling fast FPU save and restore... ");
--		set_in_cr4(X86_CR4_OSFXSR);
--		printk("done.\n");
--	}
--	if (cpu_has_xmm) {
--		printk(KERN_INFO
--			"Enabling unmasked SIMD FPU exception support... ");
--		set_in_cr4(X86_CR4_OSXMMEXCPT);
--		printk("done.\n");
--	}
+ #define ACPI_PROCESSOR_AGGREGATOR_CLASS	"acpi_pad"
+ #define ACPI_PROCESSOR_AGGREGATOR_DEVICE_NAME "Processor Aggregator"
+ #define ACPI_PROCESSOR_AGGREGATOR_NOTIFY 0x80
+ static DEFINE_MUTEX(isolated_cpus_lock);
+ 
+-#define MWAIT_SUBSTATE_MASK	(0xf)
+-#define MWAIT_CSTATE_MASK	(0xf)
+-#define MWAIT_SUBSTATE_SIZE	(4)
+-#define CPUID_MWAIT_LEAF (5)
+-#define CPUID5_ECX_EXTENSIONS_SUPPORTED (0x1)
+-#define CPUID5_ECX_INTERRUPT_BREAK	(0x2)
+ static unsigned long power_saving_mwait_eax;
+ 
+ static unsigned char tsc_detected_unstable;
+diff --git a/drivers/idle/intel_idle.c b/drivers/idle/intel_idle.c
+index a10152b..065c804 100755
+--- a/drivers/idle/intel_idle.c
++++ b/drivers/idle/intel_idle.c
+@@ -59,18 +59,11 @@
+ #include <linux/hrtimer.h>	/* ktime_get_real() */
+ #include <trace/events/power.h>
+ #include <linux/sched.h>
++#include <asm/mwait.h>
+ 
+ #define INTEL_IDLE_VERSION "0.4"
+ #define PREFIX "intel_idle: "
+ 
+-#define MWAIT_SUBSTATE_MASK	(0xf)
+-#define MWAIT_CSTATE_MASK	(0xf)
+-#define MWAIT_SUBSTATE_SIZE	(4)
+-#define MWAIT_MAX_NUM_CSTATES	8
+-#define CPUID_MWAIT_LEAF (5)
+-#define CPUID5_ECX_EXTENSIONS_SUPPORTED (0x1)
+-#define CPUID5_ECX_INTERRUPT_BREAK	(0x2)
 -
- 	set_system_trap_gate(SYSCALL_VECTOR, &system_call);
- 	set_bit(SYSCALL_VECTOR, used_vectors);
- #endif
+ static struct cpuidle_driver intel_idle_driver = {
+ 	.name = "intel_idle",
+ 	.owner = THIS_MODULE,
