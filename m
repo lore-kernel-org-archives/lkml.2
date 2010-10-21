@@ -1,86 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753634Ab0JUQzM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Oct 2010 12:55:12 -0400
-Received: from www.tglx.de ([62.245.132.106]:40722 "EHLO www.tglx.de"
+	id S1753756Ab0JUQzi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Oct 2010 12:55:38 -0400
+Received: from THUNK.ORG ([69.25.196.29]:37397 "EHLO thunker.thunk.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751962Ab0JUQzK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Oct 2010 12:55:10 -0400
-Date: Thu, 21 Oct 2010 18:18:14 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Steven Rostedt <rostedt@goodmis.org>
-cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Koki Sanagi <sanagi.koki@jp.fujitsu.com>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Frederic Weisbecker <fweisbec@gmail.com>, nhorman@tuxdriver.com,
-        scott.a.mcmillan@intel.com, laijs@cn.fujitsu.com,
-        "H. Peter Anvin" <hpa@zytor.com>, LKML <linux-kernel@vger.kernel.org>,
-        eric.dumazet@gmail.com, kaneshige.kenji@jp.fujitsu.com,
-        David Miller <davem@davemloft.net>, izumi.taku@jp.fujitsu.com,
-        kosaki.motohiro@jp.fujitsu.com,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        "Luck, Tony" <tony.luck@intel.com>
-Subject: Re: [PATCH] tracing: Cleanup the convoluted softirq tracepoints
-In-Reply-To: <1287527634.16971.536.camel@gandalf.stny.rr.com>
-Message-ID: <alpine.LFD.2.00.1010211817540.2418@localhost6.localdomain6>
-References: <tip-2bf2160d8805de64308e2e7c3cd97813cb58ed2f@git.kernel.org>  <20100908112529.GA25931@elte.hu> <1287395077.29097.1543.camel@twins>  <1287398936.29097.1548.camel@twins> <4CBD79CF.2060706@jp.fujitsu.com>  <alpine.LFD.2.00.1010191428560.6815@localhost6.localdomain6>
-  <20101019132236.GA19197@Krystal>  <alpine.LFD.2.00.1010191524160.6815@localhost6.localdomain6>  <1287496495.16971.372.camel@gandalf.stny.rr.com>  <alpine.LFD.2.00.1010191558250.6815@localhost6.localdomain6>  <20101019142820.GA14520@Krystal> 
- <alpine.LFD.2.00.1010191842270.6815@localhost6.localdomain6>  <1287521757.16971.397.camel@gandalf.stny.rr.com>  <alpine.LFD.2.00.1010192302000.6815@localhost6.localdomain6>  <1287523439.16971.433.camel@gandalf.stny.rr.com>  <alpine.LFD.2.00.1010192359480.6815@localhost6.localdomain6>
- <1287527634.16971.536.camel@gandalf.stny.rr.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1752932Ab0JUQzg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Oct 2010 12:55:36 -0400
+Date: Thu, 21 Oct 2010 12:55:25 -0400
+From: "Ted Ts'o" <tytso@mit.edu>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>
+Subject: Re: What am I doing wrong?  submit_bio() suddenly stops working...
+Message-ID: <20101021165525.GB3127@thunk.org>
+Mail-Followup-To: Ted Ts'o <tytso@mit.edu>, Jens Axboe <axboe@kernel.dk>,
+	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+	"linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>
+References: <E1P8kSE-0001DW-8C@tytso-glaptop>
+ <4CBFE4E2.7050001@kernel.dk>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4CBFE4E2.7050001@kernel.dk>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on thunker.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-On Tue, 19 Oct 2010, Steven Rostedt wrote:
-
-> On Wed, 2010-10-20 at 00:04 +0200, Thomas Gleixner wrote:
+On Thu, Oct 21, 2010 at 08:59:46AM +0200, Jens Axboe wrote:
 > 
-> > hpa just posted code which does the _RIGHT_ _THING_ independent of any
-> > compiler madness and you tracer folks just missed it.
-> 
-> Thomas,
-> 
-> Can you try this patch and see if it makes the object code better?
+> I don't see anything immediately wrong with your approach. I suspect
+> we'll need to see sysrq-t traces of the relevant processes to make a
+> more educated guess!
 
-Nope, same result.
+I've uploaded a trace output that includes the sysrq-t trace, but I
+don't think it shows anything interesting.  We're not hanging on any
+kind of loack as near as I can tell.  It looks like
+__generic_make_request() is calling q->make_request_fn(), and this is
+returning without actually doing anything.
 
-Thanks,
+http://userweb.kernel.org/~tytso/ext4-bio-patches/kvm-console-2
 
-	tglx
+In this trace, I added a patch to prove that __generic_make_request()
+is calling __make_request (I wasn't sure what q->make_request_fn was
+indirecting to, so I added a brute force lookup to make sure I
+understood what was going on), but at one point, it just starts
+queuing the request, and it enters cfq, but the request never gets
+dispatched out.  Maybe this is a failure of the plugging/unplugging
+mechanisms?
 
-> -- Steve
-> 
-> 
-> diff --git a/include/linux/tracepoint.h b/include/linux/tracepoint.h
-> index a4a90b6..6264bd3 100644
-> --- a/include/linux/tracepoint.h
-> +++ b/include/linux/tracepoint.h
-> @@ -144,14 +144,19 @@ static inline void tracepoint_update_probe_range(struct tracepoint *begin,
->   */
->  #define __DECLARE_TRACE(name, proto, args, data_proto, data_args)	\
->  	extern struct tracepoint __tracepoint_##name;			\
-> -	static inline void trace_##name(proto)				\
-> +	static __always_inline int __trace_##name(proto)		\
->  	{								\
->  		JUMP_LABEL(&__tracepoint_##name.state, do_trace);	\
-> -		return;							\
-> +		return 0;						\
->  do_trace:								\
->  			__DO_TRACE(&__tracepoint_##name,		\
->  				TP_PROTO(data_proto),			\
->  				TP_ARGS(data_args));			\
-> +			return 1;					\
-> +	}								\
-> +	static inline void trace_##name(proto)				\
-> +	{								\
-> +		unlikely(__trace_##name(args));				\
->  	}								\
->  	static inline int						\
->  	register_trace_##name(void (*probe)(data_proto), void *data)	\
-> 
-> 
+I guess I can start putting in more brute-force printk's inside
+__make_request and inside the cfq scheduler to try to understand what
+is going on, but I'm really guessing at this point.
+
+If you have any suggestions about more elegant ways of figuring what
+is happening, please do let me know....
+
+						- Ted
