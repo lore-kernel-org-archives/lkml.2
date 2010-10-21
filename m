@@ -1,535 +1,473 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758171Ab0JUN0Q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Oct 2010 09:26:16 -0400
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:52029 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757994Ab0JUN0N convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Oct 2010 09:26:13 -0400
+	id S1758194Ab0JUN0s (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Oct 2010 09:26:48 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:58807 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757261Ab0JUN0p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Oct 2010 09:26:45 -0400
+Date: Thu, 21 Oct 2010 15:26:35 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [GIT PULL] x86/cleanups for v2.6.37
+Message-ID: <20101021132635.GA3988@elte.hu>
 MIME-Version: 1.0
-X-Originating-IP: [70.128.164.227]
-In-Reply-To: <1287525975-17187-1-git-send-email-pavan_savoy@ti.com>
-References: <1287525975-17187-1-git-send-email-pavan_savoy@ti.com>
-Date: Thu, 21 Oct 2010 09:26:09 -0400
-Message-ID: <AANLkTintn2pFAWP679=fmyEdGzMwZWdqyoG4YCdB_9Y9@mail.gmail.com>
-Subject: Re: [PATCH v4] Bluetooth: btwilink driver
-From: Pavan Savoy <pavan_savoy@sify.com>
-To: padovan@profusion.mobi, marcel@holtmann.org
-Cc: linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Pavan Savoy <pavan_savoy@ti.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Gustavo, Marcel,
+Linus,
 
-On Tue, Oct 19, 2010 at 6:06 PM,  <pavan_savoy@ti.com> wrote:
-> From: Pavan Savoy <pavan_savoy@ti.com>
->
-> v4 comments
->
-> module init now returns what platform_driver_register returns.
-> type casting of void* private data has been removed
+Please pull the latest x86-cleanups-for-linus git tree from:
 
-If there are no more critical comments, can it go in?
-Please review.
+   git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git x86-cleanups-for-linus
 
-Thanks,
-Pavan
+out-of-topic modifications in x86-cleanups-for-linus:
+-----------------------------------------------------
+include/linux/acpi_pmtmr.h         # 40ffa93: x86: Remove stale pmtimer_64.c
 
-> v3 comments
->
-> Lizardo,
-> I have taken care of most of the comments you had.
-> Have re-wrote some of the code commenting you've mentioned.
-> Thanks for the comments,
->
-> Marcel, Gustavo, & list,
-> Please review this version of patch.
->
-> The other few like -EPERM for platform driver registration is to keep
-> it similar to other drivers, type casting is maintained just to feel safe
-> and have style similar to other drivers.
-> BT_WILINK in Kconfig is similar to BT_MRVL.
-> I hope those aren't too critical.
->
-> -- patch description --
->
-> This is the bluetooth protocol driver for the TI WiLink7 chipsets.
-> Texas Instrument's WiLink chipsets combine wireless technologies
-> like BT, FM, GPS and WLAN onto a single chip.
->
-> This Bluetooth driver works on top of the TI_ST shared transport
-> line discipline driver which also allows other drivers like
-> FM V4L2 and GPS character driver to make use of the same UART interface.
->
-> Kconfig and Makefile modifications to enable the Bluetooth
-> driver for Texas Instrument's WiLink 7 chipset.
->
-> Signed-off-by: Pavan Savoy <pavan_savoy@ti.com>
-> ---
->  drivers/bluetooth/Kconfig    |   10 +
->  drivers/bluetooth/Makefile   |    1 +
->  drivers/bluetooth/btwilink.c |  411 ++++++++++++++++++++++++++++++++++++++++++
->  3 files changed, 422 insertions(+), 0 deletions(-)
->  create mode 100644 drivers/bluetooth/btwilink.c
->
-> diff --git a/drivers/bluetooth/Kconfig b/drivers/bluetooth/Kconfig
-> index 02deef4..8e0de9a 100644
-> --- a/drivers/bluetooth/Kconfig
-> +++ b/drivers/bluetooth/Kconfig
-> @@ -219,4 +219,14 @@ config BT_ATH3K
->          Say Y here to compile support for "Atheros firmware download driver"
->          into the kernel or say M to compile it as module (ath3k).
->
-> +config BT_WILINK
-> +       tristate "Texas Instruments WiLink7 driver"
-> +       depends on TI_ST
-> +       help
-> +         This enables the Bluetooth driver for Texas Instrument's BT/FM/GPS
-> +         combo devices. This makes use of shared transport line discipline
-> +         core driver to communicate with the BT core of the combo chip.
-> +
-> +         Say Y here to compile support for Texas Instrument's WiLink7 driver
-> +         into the kernel or say M to compile it as module.
->  endmenu
-> diff --git a/drivers/bluetooth/Makefile b/drivers/bluetooth/Makefile
-> index 71bdf13..f4460f4 100644
-> --- a/drivers/bluetooth/Makefile
-> +++ b/drivers/bluetooth/Makefile
-> @@ -18,6 +18,7 @@ obj-$(CONFIG_BT_HCIBTSDIO)    += btsdio.o
->  obj-$(CONFIG_BT_ATH3K)         += ath3k.o
->  obj-$(CONFIG_BT_MRVL)          += btmrvl.o
->  obj-$(CONFIG_BT_MRVL_SDIO)     += btmrvl_sdio.o
-> +obj-$(CONFIG_BT_WILINK)                += btwilink.o
->
->  btmrvl-y                       := btmrvl_main.o
->  btmrvl-$(CONFIG_DEBUG_FS)      += btmrvl_debugfs.o
-> diff --git a/drivers/bluetooth/btwilink.c b/drivers/bluetooth/btwilink.c
-> new file mode 100644
-> index 0000000..218efd6
-> --- /dev/null
-> +++ b/drivers/bluetooth/btwilink.c
-> @@ -0,0 +1,411 @@
-> +/*
-> + *  Texas Instrument's Bluetooth Driver For Shared Transport.
-> + *
-> + *  Bluetooth Driver acts as interface between HCI core and
-> + *  TI Shared Transport Layer.
-> + *
-> + *  Copyright (C) 2009-2010 Texas Instruments
-> + *  Author: Raja Mani <raja_mani@ti.com>
-> + *     Pavan Savoy <pavan_savoy@ti.com>
-> + *
-> + *  This program is free software; you can redistribute it and/or modify
-> + *  it under the terms of the GNU General Public License version 2 as
-> + *  published by the Free Software Foundation.
-> + *
-> + *  This program is distributed in the hope that it will be useful,
-> + *  but WITHOUT ANY WARRANTY; without even the implied warranty of
-> + *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> + *  GNU General Public License for more details.
-> + *
-> + *  You should have received a copy of the GNU General Public License
-> + *  along with this program; if not, write to the Free Software
-> + *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-> + *
-> + */
-> +
-> +#include <linux/platform_device.h>
-> +#include <net/bluetooth/bluetooth.h>
-> +#include <net/bluetooth/hci_core.h>
-> +
-> +#include <linux/ti_wilink_st.h>
-> +
-> +/* Bluetooth Driver Version */
-> +#define VERSION               "1.0"
-> +
-> +/* Number of seconds to wait for registration completion
-> + * when ST returns PENDING status.
-> + */
-> +#define BT_REGISTER_TIMEOUT   6000     /* 6 sec */
-> +
-> +/**
-> + * struct ti_st - driver operation structure
-> + * @hdev: hci device pointer which binds to bt driver
-> + * @reg_status: ST registration callback status
-> + * @st_write: write function provided by the ST driver
-> + *     to be used by the driver during send_frame.
-> + * @wait_reg_completion - completion sync between ti_st_open
-> + *     and ti_st_registration_completion_cb.
-> + */
-> +struct ti_st {
-> +       struct hci_dev *hdev;
-> +       char reg_status;
-> +       long (*st_write) (struct sk_buff *);
-> +       struct completion wait_reg_completion;
-> +};
-> +
-> +static int reset;
-> +
-> +/* Increments HCI counters based on pocket ID (cmd,acl,sco) */
-> +static inline void ti_st_tx_complete(struct ti_st *hst, int pkt_type)
-> +{
-> +       struct hci_dev *hdev;
-> +       hdev = hst->hdev;
-> +
-> +       /* Update HCI stat counters */
-> +       switch (pkt_type) {
-> +       case HCI_COMMAND_PKT:
-> +               hdev->stat.cmd_tx++;
-> +               break;
-> +
-> +       case HCI_ACLDATA_PKT:
-> +               hdev->stat.acl_tx++;
-> +               break;
-> +
-> +       case HCI_SCODATA_PKT:
-> +               hdev->stat.sco_tx++;
-> +               break;
-> +       }
-> +}
-> +
-> +/* ------- Interfaces to Shared Transport ------ */
-> +
-> +/* Called by ST layer to indicate protocol registration completion
-> + * status.ti_st_open() function will wait for signal from this
-> + * API when st_register() function returns ST_PENDING.
-> + */
-> +static void st_registration_completion_cb(void *priv_data, char data)
-> +{
-> +       struct ti_st *lhst = priv_data;
-> +
-> +       /* Save registration status for use in ti_st_open() */
-> +       lhst->reg_status = data;
-> +       /* complete the wait in ti_st_open() */
-> +       complete(&lhst->wait_reg_completion);
-> +}
-> +
-> +/* Called by Shared Transport layer when receive data is
-> + * available */
-> +static long st_receive(void *priv_data, struct sk_buff *skb)
-> +{
-> +       int err;
-> +       struct ti_st *lhst = priv_data;
-> +
-> +       if (!skb)
-> +               return -EFAULT;
-> +
-> +       if (!lhst) {
-> +               kfree_skb(skb);
-> +               return -EFAULT;
-> +       }
-> +
-> +       skb->dev = (struct net_device *)lhst->hdev;
-> +
-> +       /* Forward skb to HCI core layer */
-> +       err = hci_recv_frame(skb);
-> +       if (err) {
-> +               kfree_skb(skb);
-> +               BT_ERR("Unable to push skb to HCI core(%d)", err);
-> +               return err;
-> +       }
-> +
-> +       lhst->hdev->stat.byte_rx += skb->len;
-> +
-> +       return 0;
-> +}
-> +
-> +/* ------- Interfaces to HCI layer ------ */
-> +/* protocol structure registered with shared transport */
-> +static struct st_proto_s ti_st_proto = {
-> +       .type = ST_BT,
-> +       .recv = st_receive,
-> +       .reg_complete_cb = st_registration_completion_cb,
-> +       .priv_data = NULL,
-> +};
-> +
-> +/* Called from HCI core to initialize the device */
-> +static int ti_st_open(struct hci_dev *hdev)
-> +{
-> +       unsigned long timeleft;
-> +       struct ti_st *hst;
-> +       int err;
-> +
-> +       BT_DBG("%s %p", hdev->name, hdev);
-> +
-> +       /* provide contexts for callbacks from ST */
-> +       hst = hdev->driver_data;
-> +       ti_st_proto.priv_data = hst;
-> +
-> +       err = st_register(&ti_st_proto);
-> +       if (err == -EINPROGRESS) {
-> +               /* Prepare wait-for-completion handler data structures.
-> +                * Needed to synchronize this and
-> +                * st_registration_completion_cb() functions.
-> +                */
-> +               init_completion(&hst->wait_reg_completion);
-> +
-> +               /* Reset ST registration callback status flag , this value
-> +                * will be updated in ti_st_registration_completion_cb()
-> +                * function whenever it called from ST driver.
-> +                */
-> +               hst->reg_status = -EINPROGRESS;
-> +
-> +               /* ST is busy with either protocol registration or firmware
-> +                * download. Wait until the registration callback is called
-> +                */
-> +               BT_DBG(" waiting for registration completion signal from ST");
-> +
-> +               timeleft = wait_for_completion_timeout
-> +                       (&hst->wait_reg_completion,
-> +                        msecs_to_jiffies(BT_REGISTER_TIMEOUT));
-> +               if (!timeleft) {
-> +                       BT_ERR("Timeout(%d sec),didn't get reg "
-> +                                       "completion signal from ST",
-> +                                       BT_REGISTER_TIMEOUT / 1000);
-> +                       return -ETIMEDOUT;
-> +               }
-> +
-> +               /* Is ST registration callback called with ERROR status? */
-> +               if (hst->reg_status != 0) {
-> +                       BT_ERR("ST registration completed with invalid "
-> +                                       "status %d", hst->reg_status);
-> +                       return -EAGAIN;
-> +               }
-> +               err = 0;
-> +       } else if (err == -EPERM) {
-> +               BT_ERR("st_register failed %d", err);
-> +               return err;
-> +       }
-> +
-> +       hst->st_write = ti_st_proto.write;
-> +       if (!hst->st_write) {
-> +               BT_ERR("undefined ST write function");
-> +
-> +               /* Undo registration with ST */
-> +               err = st_unregister(ST_BT);
-> +               if (err)
-> +                       BT_ERR("st_unregister() failed with error %d", err);
-> +
-> +               hst->st_write = NULL;
-> +               return err;
-> +       }
-> +
-> +       /* Registration with ST layer is successful,
-> +        * hardware is ready to accept commands from HCI core.
-> +        */
-> +       set_bit(HCI_RUNNING, &hdev->flags);
-> +
-> +       return err;
-> +}
-> +
-> +/* Close device */
-> +static int ti_st_close(struct hci_dev *hdev)
-> +{
-> +       int err;
-> +       struct ti_st *hst = hdev->driver_data;
-> +
-> +       /* continue to unregister from transport */
-> +       err = st_unregister(ST_BT);
-> +       if (err)
-> +               BT_ERR("st_unregister() failed with error %d", err);
-> +
-> +       hst->st_write = NULL;
-> +
-> +       return err;
-> +}
-> +
-> +static int ti_st_send_frame(struct sk_buff *skb)
-> +{
-> +       struct hci_dev *hdev;
-> +       struct ti_st *hst;
-> +       long len;
-> +
-> +       if (!skb)
-> +               return -ENOMEM;
-> +
-> +       hdev = (struct hci_dev *)skb->dev;
-> +       if (!hdev)
-> +               return -ENODEV;
-> +
-> +       if (!test_bit(HCI_RUNNING, &hdev->flags))
-> +               return -EBUSY;
-> +
-> +       hst = hdev->driver_data;
-> +
-> +       /* Prepend skb with frame type */
-> +       memcpy(skb_push(skb, 1), &bt_cb(skb)->pkt_type, 1);
-> +
-> +       BT_DBG(" %s: type %d len %d", hdev->name, bt_cb(skb)->pkt_type,
-> +                       skb->len);
-> +
-> +       /* Insert skb to shared transport layer's transmit queue.
-> +        * Freeing skb memory is taken care in shared transport layer,
-> +        * so don't free skb memory here.
-> +        */
-> +       if (!hst->st_write) {
-> +               kfree_skb(skb);
-> +               BT_ERR(" Could not write to ST (st_write is NULL)");
-> +               return -EAGAIN;
-> +       }
-> +
-> +       len = hst->st_write(skb);
-> +       if (len < 0) {
-> +               kfree_skb(skb);
-> +               BT_ERR(" ST write failed (%ld)", len);
-> +               return -EAGAIN;
-> +       }
-> +
-> +       /* ST accepted our skb. So, Go ahead and do rest */
-> +       hdev->stat.byte_tx += len;
-> +       ti_st_tx_complete(hst, bt_cb(skb)->pkt_type);
-> +
-> +       return 0;
-> +}
-> +
-> +static void ti_st_destruct(struct hci_dev *hdev)
-> +{
-> +       if (!hdev)
-> +               return;
-> +
-> +       BT_DBG("%s", hdev->name);
-> +
-> +       /* free ti_st memory */
-> +       kfree(hdev->driver_data);
-> +
-> +       return;
-> +}
-> +
-> +/* Creates new HCI device */
-> +static int ti_st_register_dev(struct ti_st *hst)
-> +{
-> +       int err;
-> +       struct hci_dev *hdev;
-> +
-> +       /* Initialize and register HCI device */
-> +       hdev = hci_alloc_dev();
-> +       if (!hdev)
-> +               return -ENOMEM;
-> +
-> +       BT_DBG("hdev %p", hdev);
-> +
-> +       hst->hdev = hdev;
-> +       hdev->bus = HCI_UART;
-> +       hdev->driver_data = hst;
-> +       hdev->open = ti_st_open;
-> +       hdev->close = ti_st_close;
-> +       hdev->flush = NULL;
-> +       hdev->send = ti_st_send_frame;
-> +       hdev->destruct = ti_st_destruct;
-> +       hdev->owner = THIS_MODULE;
-> +
-> +       if (reset)
-> +               set_bit(HCI_QUIRK_NO_RESET, &hdev->quirks);
-> +
-> +       err = hci_register_dev(hdev);
-> +       if (err < 0) {
-> +               BT_ERR("Can't register HCI device error %d", err);
-> +               hci_free_dev(hdev);
-> +               return err;
-> +       }
-> +
-> +       BT_DBG(" HCI device registered (hdev %p)", hdev);
-> +       return 0;
-> +}
-> +
-> +
-> +static int bt_ti_probe(struct platform_device *pdev)
-> +{
-> +       int err;
-> +       static struct ti_st *hst;
-> +
-> +       BT_DBG(" Bluetooth Driver Version %s", VERSION);
-> +
-> +       hst = kzalloc(sizeof(struct ti_st), GFP_KERNEL);
-> +       if (!hst)
-> +               return -ENOMEM;
-> +
-> +       /* Expose "hciX" device to user space */
-> +       err = ti_st_register_dev(hst);
-> +       if (err) {
-> +               kfree(hst);
-> +               return err;
-> +       }
-> +
-> +       dev_set_drvdata(&pdev->dev, hst);
-> +       return err;
-> +}
-> +
-> +static int bt_ti_remove(struct platform_device *pdev)
-> +{
-> +       struct ti_st *hst;
-> +       struct hci_dev *hdev;
-> +
-> +       hst = dev_get_drvdata(&pdev->dev);
-> +
-> +       if (!hst)
-> +               return -EFAULT;
-> +
-> +       /* Deallocate local resource's memory  */
-> +       hdev = hst->hdev;
-> +
-> +       if (!hdev) {
-> +               BT_ERR("Invalid hdev memory");
-> +               kfree(hst);
-> +               return -EFAULT;
-> +       }
-> +
-> +       ti_st_close(hdev);
-> +       hci_unregister_dev(hdev);
-> +       /* Free HCI device memory */
-> +       hci_free_dev(hdev);
-> +
-> +       return 0;
-> +}
-> +
-> +static struct platform_driver btwilink_driver = {
-> +       .probe = bt_ti_probe,
-> +       .remove = bt_ti_remove,
-> +       .driver = {
-> +               .name = "btwilink",
-> +               .owner = THIS_MODULE,
-> +       },
-> +};
-> +
-> +/* ------- Module Init/Exit interfaces ------ */
-> +static int __init bt_drv_init(void)
-> +{
-> +       long ret;
-> +
-> +       ret = platform_driver_register(&btwilink_driver);
-> +       if (ret != 0) {
-> +               BT_ERR("btwilink platform driver registration failed");
-> +               return ret;
-> +       }
-> +       return 0;
-> +}
-> +
-> +static void __exit bt_drv_exit(void)
-> +{
-> +       platform_driver_unregister(&btwilink_driver);
-> +}
-> +
-> +module_init(bt_drv_init);
-> +module_exit(bt_drv_exit);
-> +
-> +/* ------ Module Info ------ */
-> +
-> +module_param(reset, bool, 0644);
-> +MODULE_PARM_DESC(reset, "Send HCI reset command on initialization");
-> +MODULE_AUTHOR("Raja Mani <raja_mani@ti.com>");
-> +MODULE_DESCRIPTION("Bluetooth Driver for TI Shared Transport" VERSION);
-> +MODULE_VERSION(VERSION);
-> +MODULE_LICENSE("GPL");
-> --
-> 1.6.5
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-bluetooth" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
+ Thanks,
+
+	Ingo
+
+------------------>
+Christian Dietrich (1):
+      x86: Remove unnecessary #ifdef ACPI/X86_IO_ACPI
+
+Jan Beulich (1):
+      x86, cleanups: Use clear_page/copy_page rather than memset/memcpy
+
+Robert Richter (1):
+      x86, cleanup: Remove obsolete boot_cpu_id variable
+
+Thomas Gleixner (1):
+      x86: Remove stale pmtimer_64.c
+
+
+ arch/x86/include/asm/apb_timer.h   |    1 -
+ arch/x86/include/asm/cpu.h         |    1 -
+ arch/x86/kernel/Makefile           |    1 -
+ arch/x86/kernel/apb_timer.c        |    2 +-
+ arch/x86/kernel/apic/io_apic.c     |   12 +++---
+ arch/x86/kernel/cpu/amd.c          |    2 +-
+ arch/x86/kernel/cpu/common.c       |    2 +-
+ arch/x86/kernel/cpu/intel.c        |    2 +-
+ arch/x86/kernel/early-quirks.c     |    2 -
+ arch/x86/kernel/machine_kexec_64.c |    4 +-
+ arch/x86/kernel/pmtimer_64.c       |   69 ------------------------------------
+ arch/x86/kernel/reboot.c           |    2 +-
+ arch/x86/kernel/setup.c            |    1 -
+ arch/x86/kernel/setup_percpu.c     |    2 +-
+ arch/x86/kvm/lapic.c               |    3 +-
+ arch/x86/mm/init_32.c              |    4 +-
+ arch/x86/mm/init_64.c              |    2 +-
+ arch/x86/mm/k8topology_64.c        |    6 ++--
+ include/linux/acpi_pmtmr.h         |    2 -
+ 19 files changed, 21 insertions(+), 99 deletions(-)
+ delete mode 100644 arch/x86/kernel/pmtimer_64.c
+
+diff --git a/arch/x86/include/asm/apb_timer.h b/arch/x86/include/asm/apb_timer.h
+index a69b1ac..2fefa50 100644
+--- a/arch/x86/include/asm/apb_timer.h
++++ b/arch/x86/include/asm/apb_timer.h
+@@ -54,7 +54,6 @@ extern struct clock_event_device *global_clock_event;
+ extern unsigned long apbt_quick_calibrate(void);
+ extern int arch_setup_apbt_irqs(int irq, int trigger, int mask, int cpu);
+ extern void apbt_setup_secondary_clock(void);
+-extern unsigned int boot_cpu_id;
+ 
+ extern struct sfi_timer_table_entry *sfi_get_mtmr(int hint);
+ extern void sfi_free_mtmr(struct sfi_timer_table_entry *mtmr);
+diff --git a/arch/x86/include/asm/cpu.h b/arch/x86/include/asm/cpu.h
+index b185091..4fab24d 100644
+--- a/arch/x86/include/asm/cpu.h
++++ b/arch/x86/include/asm/cpu.h
+@@ -32,6 +32,5 @@ extern void arch_unregister_cpu(int);
+ 
+ DECLARE_PER_CPU(int, cpu_state);
+ 
+-extern unsigned int boot_cpu_id;
+ 
+ #endif /* _ASM_X86_CPU_H */
+diff --git a/arch/x86/kernel/Makefile b/arch/x86/kernel/Makefile
+index 0925676..dd9a2e4 100644
+--- a/arch/x86/kernel/Makefile
++++ b/arch/x86/kernel/Makefile
+@@ -120,7 +120,6 @@ obj-$(CONFIG_SWIOTLB)			+= pci-swiotlb.o
+ # 64 bit specific files
+ ifeq ($(CONFIG_X86_64),y)
+ 	obj-$(CONFIG_X86_UV)		+= tlb_uv.o bios_uv.o uv_irq.o uv_sysfs.o uv_time.o
+-	obj-$(CONFIG_X86_PM_TIMER)	+= pmtimer_64.o
+ 	obj-$(CONFIG_AUDIT)		+= audit_64.o
+ 
+ 	obj-$(CONFIG_GART_IOMMU)	+= pci-gart_64.o aperture_64.o
+diff --git a/arch/x86/kernel/apb_timer.c b/arch/x86/kernel/apb_timer.c
+index 8dd7780..08f75fb 100644
+--- a/arch/x86/kernel/apb_timer.c
++++ b/arch/x86/kernel/apb_timer.c
+@@ -343,7 +343,7 @@ void apbt_setup_secondary_clock(void)
+ 
+ 	/* Don't register boot CPU clockevent */
+ 	cpu = smp_processor_id();
+-	if (cpu == boot_cpu_id)
++	if (!cpu)
+ 		return;
+ 	/*
+ 	 * We need to calculate the scaled math multiplication factor for
+diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
+index 4dc0084..8884928 100644
+--- a/arch/x86/kernel/apic/io_apic.c
++++ b/arch/x86/kernel/apic/io_apic.c
+@@ -162,7 +162,7 @@ int __init arch_early_irq_init(void)
+ 
+ 	cfg = irq_cfgx;
+ 	count = ARRAY_SIZE(irq_cfgx);
+-	node= cpu_to_node(boot_cpu_id);
++	node = cpu_to_node(0);
+ 
+ 	for (i = 0; i < count; i++) {
+ 		desc = irq_to_desc(i);
+@@ -1483,7 +1483,7 @@ static void __init setup_IO_APIC_irqs(void)
+ 	int notcon = 0;
+ 	struct irq_desc *desc;
+ 	struct irq_cfg *cfg;
+-	int node = cpu_to_node(boot_cpu_id);
++	int node = cpu_to_node(0);
+ 
+ 	apic_printk(APIC_VERBOSE, KERN_DEBUG "init IO_APIC IRQs\n");
+ 
+@@ -1548,7 +1548,7 @@ static void __init setup_IO_APIC_irqs(void)
+ void setup_IO_APIC_irq_extra(u32 gsi)
+ {
+ 	int apic_id = 0, pin, idx, irq;
+-	int node = cpu_to_node(boot_cpu_id);
++	int node = cpu_to_node(0);
+ 	struct irq_desc *desc;
+ 	struct irq_cfg *cfg;
+ 
+@@ -2925,7 +2925,7 @@ static inline void __init check_timer(void)
+ {
+ 	struct irq_desc *desc = irq_to_desc(0);
+ 	struct irq_cfg *cfg = desc->chip_data;
+-	int node = cpu_to_node(boot_cpu_id);
++	int node = cpu_to_node(0);
+ 	int apic1, pin1, apic2, pin2;
+ 	unsigned long flags;
+ 	int no_pin1 = 0;
+@@ -3279,7 +3279,7 @@ unsigned int create_irq_nr(unsigned int irq_want, int node)
+ 
+ int create_irq(void)
+ {
+-	int node = cpu_to_node(boot_cpu_id);
++	int node = cpu_to_node(0);
+ 	unsigned int irq_want;
+ 	int irq;
+ 
+@@ -3901,7 +3901,7 @@ static int __io_apic_set_pci_routing(struct device *dev, int irq,
+ 	if (dev)
+ 		node = dev_to_node(dev);
+ 	else
+-		node = cpu_to_node(boot_cpu_id);
++		node = cpu_to_node(0);
+ 
+ 	desc = irq_to_desc_alloc_node(irq, node);
+ 	if (!desc) {
+diff --git a/arch/x86/kernel/cpu/amd.c b/arch/x86/kernel/cpu/amd.c
+index 60a57b1..3a7c852 100644
+--- a/arch/x86/kernel/cpu/amd.c
++++ b/arch/x86/kernel/cpu/amd.c
+@@ -148,7 +148,7 @@ static void __cpuinit amd_k7_smp_check(struct cpuinfo_x86 *c)
+ {
+ #ifdef CONFIG_SMP
+ 	/* calling is from identify_secondary_cpu() ? */
+-	if (c->cpu_index == boot_cpu_id)
++	if (!c->cpu_index)
+ 		return;
+ 
+ 	/*
+diff --git a/arch/x86/kernel/cpu/common.c b/arch/x86/kernel/cpu/common.c
+index 490dac6..787b3c7 100644
+--- a/arch/x86/kernel/cpu/common.c
++++ b/arch/x86/kernel/cpu/common.c
+@@ -665,7 +665,7 @@ static void __init early_identify_cpu(struct cpuinfo_x86 *c)
+ 		this_cpu->c_early_init(c);
+ 
+ #ifdef CONFIG_SMP
+-	c->cpu_index = boot_cpu_id;
++	c->cpu_index = 0;
+ #endif
+ 	filter_cpuid_features(c, false);
+ }
+diff --git a/arch/x86/kernel/cpu/intel.c b/arch/x86/kernel/cpu/intel.c
+index 85f69cd..3a683ea 100644
+--- a/arch/x86/kernel/cpu/intel.c
++++ b/arch/x86/kernel/cpu/intel.c
+@@ -169,7 +169,7 @@ static void __cpuinit intel_smp_check(struct cpuinfo_x86 *c)
+ {
+ #ifdef CONFIG_SMP
+ 	/* calling is from identify_secondary_cpu() ? */
+-	if (c->cpu_index == boot_cpu_id)
++	if (!c->cpu_index)
+ 		return;
+ 
+ 	/*
+diff --git a/arch/x86/kernel/early-quirks.c b/arch/x86/kernel/early-quirks.c
+index e5cc7e8..e4bd78c 100644
+--- a/arch/x86/kernel/early-quirks.c
++++ b/arch/x86/kernel/early-quirks.c
+@@ -98,7 +98,6 @@ static void __init nvidia_bugs(int num, int slot, int func)
+ }
+ 
+ #if defined(CONFIG_ACPI) && defined(CONFIG_X86_IO_APIC)
+-#if defined(CONFIG_ACPI) && defined(CONFIG_X86_IO_APIC)
+ static u32 __init ati_ixp4x0_rev(int num, int slot, int func)
+ {
+ 	u32 d;
+@@ -116,7 +115,6 @@ static u32 __init ati_ixp4x0_rev(int num, int slot, int func)
+ 	d &= 0xff;
+ 	return d;
+ }
+-#endif
+ 
+ static void __init ati_bugs(int num, int slot, int func)
+ {
+diff --git a/arch/x86/kernel/machine_kexec_64.c b/arch/x86/kernel/machine_kexec_64.c
+index 035c8c5..b3ea9db 100644
+--- a/arch/x86/kernel/machine_kexec_64.c
++++ b/arch/x86/kernel/machine_kexec_64.c
+@@ -36,7 +36,7 @@ static int init_one_level2_page(struct kimage *image, pgd_t *pgd,
+ 		if (!page)
+ 			goto out;
+ 		pud = (pud_t *)page_address(page);
+-		memset(pud, 0, PAGE_SIZE);
++		clear_page(pud);
+ 		set_pgd(pgd, __pgd(__pa(pud) | _KERNPG_TABLE));
+ 	}
+ 	pud = pud_offset(pgd, addr);
+@@ -45,7 +45,7 @@ static int init_one_level2_page(struct kimage *image, pgd_t *pgd,
+ 		if (!page)
+ 			goto out;
+ 		pmd = (pmd_t *)page_address(page);
+-		memset(pmd, 0, PAGE_SIZE);
++		clear_page(pmd);
+ 		set_pud(pud, __pud(__pa(pmd) | _KERNPG_TABLE));
+ 	}
+ 	pmd = pmd_offset(pud, addr);
+diff --git a/arch/x86/kernel/pmtimer_64.c b/arch/x86/kernel/pmtimer_64.c
+deleted file mode 100644
+index b112406..0000000
+--- a/arch/x86/kernel/pmtimer_64.c
++++ /dev/null
+@@ -1,69 +0,0 @@
+-/* Ported over from i386 by AK, original copyright was:
+- *
+- * (C) Dominik Brodowski <linux@brodo.de> 2003
+- *
+- * Driver to use the Power Management Timer (PMTMR) available in some
+- * southbridges as primary timing source for the Linux kernel.
+- *
+- * Based on parts of linux/drivers/acpi/hardware/hwtimer.c, timer_pit.c,
+- * timer_hpet.c, and on Arjan van de Ven's implementation for 2.4.
+- *
+- * This file is licensed under the GPL v2.
+- *
+- * Dropped all the hardware bug workarounds for now. Hopefully they
+- * are not needed on 64bit chipsets.
+- */
+-
+-#include <linux/jiffies.h>
+-#include <linux/kernel.h>
+-#include <linux/time.h>
+-#include <linux/init.h>
+-#include <linux/cpumask.h>
+-#include <linux/acpi_pmtmr.h>
+-
+-#include <asm/io.h>
+-#include <asm/proto.h>
+-#include <asm/msr.h>
+-#include <asm/vsyscall.h>
+-
+-static inline u32 cyc2us(u32 cycles)
+-{
+-	/* The Power Management Timer ticks at 3.579545 ticks per microsecond.
+-	 * 1 / PM_TIMER_FREQUENCY == 0.27936511 =~ 286/1024 [error: 0.024%]
+-	 *
+-	 * Even with HZ = 100, delta is at maximum 35796 ticks, so it can
+-	 * easily be multiplied with 286 (=0x11E) without having to fear
+-	 * u32 overflows.
+-	 */
+-	cycles *= 286;
+-	return (cycles >> 10);
+-}
+-
+-static unsigned pmtimer_wait_tick(void)
+-{
+-	u32 a, b;
+-	for (a = b = inl(pmtmr_ioport) & ACPI_PM_MASK;
+-	     a == b;
+-	     b = inl(pmtmr_ioport) & ACPI_PM_MASK)
+-		cpu_relax();
+-	return b;
+-}
+-
+-/* note: wait time is rounded up to one tick */
+-void pmtimer_wait(unsigned us)
+-{
+-	u32 a, b;
+-	a = pmtimer_wait_tick();
+-	do {
+-		b = inl(pmtmr_ioport);
+-		cpu_relax();
+-	} while (cyc2us(b - a) < us);
+-}
+-
+-static int __init nopmtimer_setup(char *s)
+-{
+-	pmtmr_ioport = 0;
+-	return 1;
+-}
+-
+-__setup("nopmtimer", nopmtimer_setup);
+diff --git a/arch/x86/kernel/reboot.c b/arch/x86/kernel/reboot.c
+index e3af342..7a4cf14 100644
+--- a/arch/x86/kernel/reboot.c
++++ b/arch/x86/kernel/reboot.c
+@@ -84,7 +84,7 @@ static int __init reboot_setup(char *str)
+ 			}
+ 				/* we will leave sorting out the final value
+ 				   when we are ready to reboot, since we might not
+-				   have set up boot_cpu_id or smp_num_cpu */
++				   have detected BSP APIC ID or smp_num_cpu */
+ 			break;
+ #endif /* CONFIG_SMP */
+ 
+diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
+index b008e78..dede5c4 100644
+--- a/arch/x86/kernel/setup.c
++++ b/arch/x86/kernel/setup.c
+@@ -125,7 +125,6 @@ unsigned long max_pfn_mapped;
+ RESERVE_BRK(dmi_alloc, 65536);
+ #endif
+ 
+-unsigned int boot_cpu_id __read_mostly;
+ 
+ static __initdata unsigned long _brk_start = (unsigned long)__brk_base;
+ unsigned long _brk_end = (unsigned long)__brk_base;
+diff --git a/arch/x86/kernel/setup_percpu.c b/arch/x86/kernel/setup_percpu.c
+index a60df9a..2335c15 100644
+--- a/arch/x86/kernel/setup_percpu.c
++++ b/arch/x86/kernel/setup_percpu.c
+@@ -253,7 +253,7 @@ void __init setup_per_cpu_areas(void)
+ 		 * Up to this point, the boot CPU has been using .init.data
+ 		 * area.  Reload any changed state for the boot CPU.
+ 		 */
+-		if (cpu == boot_cpu_id)
++		if (!cpu)
+ 			switch_to_new_gdt(cpu);
+ 	}
+ 
+diff --git a/arch/x86/kvm/lapic.c b/arch/x86/kvm/lapic.c
+index 77d8c0f..22b06f7 100644
+--- a/arch/x86/kvm/lapic.c
++++ b/arch/x86/kvm/lapic.c
+@@ -1056,14 +1056,13 @@ int kvm_create_lapic(struct kvm_vcpu *vcpu)
+ 
+ 	vcpu->arch.apic = apic;
+ 
+-	apic->regs_page = alloc_page(GFP_KERNEL);
++	apic->regs_page = alloc_page(GFP_KERNEL|__GFP_ZERO);
+ 	if (apic->regs_page == NULL) {
+ 		printk(KERN_ERR "malloc apic regs error for vcpu %x\n",
+ 		       vcpu->vcpu_id);
+ 		goto nomem_free_apic;
+ 	}
+ 	apic->regs = page_address(apic->regs_page);
+-	memset(apic->regs, 0, PAGE_SIZE);
+ 	apic->vcpu = vcpu;
+ 
+ 	hrtimer_init(&apic->lapic_timer.timer, CLOCK_MONOTONIC,
+diff --git a/arch/x86/mm/init_32.c b/arch/x86/mm/init_32.c
+index bca7909..558f2d3 100644
+--- a/arch/x86/mm/init_32.c
++++ b/arch/x86/mm/init_32.c
+@@ -67,7 +67,7 @@ static __init void *alloc_low_page(void)
+ 		panic("alloc_low_page: ran out of memory");
+ 
+ 	adr = __va(pfn * PAGE_SIZE);
+-	memset(adr, 0, PAGE_SIZE);
++	clear_page(adr);
+ 	return adr;
+ }
+ 
+@@ -558,7 +558,7 @@ char swsusp_pg_dir[PAGE_SIZE]
+ 
+ static inline void save_pg_dir(void)
+ {
+-	memcpy(swsusp_pg_dir, swapper_pg_dir, PAGE_SIZE);
++	copy_page(swsusp_pg_dir, swapper_pg_dir);
+ }
+ #else /* !CONFIG_ACPI_SLEEP */
+ static inline void save_pg_dir(void)
+diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
+index 9a66746..7c48ad4 100644
+--- a/arch/x86/mm/init_64.c
++++ b/arch/x86/mm/init_64.c
+@@ -293,7 +293,7 @@ static __ref void *alloc_low_page(unsigned long *phys)
+ 		panic("alloc_low_page: ran out of memory");
+ 
+ 	adr = early_memremap(pfn * PAGE_SIZE, PAGE_SIZE);
+-	memset(adr, 0, PAGE_SIZE);
++	clear_page(adr);
+ 	*phys  = pfn * PAGE_SIZE;
+ 	return adr;
+ }
+diff --git a/arch/x86/mm/k8topology_64.c b/arch/x86/mm/k8topology_64.c
+index 970ed57..240f864 100644
+--- a/arch/x86/mm/k8topology_64.c
++++ b/arch/x86/mm/k8topology_64.c
+@@ -54,8 +54,8 @@ static __init int find_northbridge(void)
+ static __init void early_get_boot_cpu_id(void)
+ {
+ 	/*
+-	 * need to get boot_cpu_id so can use that to create apicid_to_node
+-	 * in k8_scan_nodes()
++	 * need to get the APIC ID of the BSP so can use that to
++	 * create apicid_to_node in k8_scan_nodes()
+ 	 */
+ #ifdef CONFIG_X86_MPPARSE
+ 	/*
+@@ -212,7 +212,7 @@ int __init k8_scan_nodes(void)
+ 	bits = boot_cpu_data.x86_coreid_bits;
+ 	cores = (1<<bits);
+ 	apicid_base = 0;
+-	/* need to get boot_cpu_id early for system with apicid lifting */
++	/* get the APIC ID of the BSP early for systems with apicid lifting */
+ 	early_get_boot_cpu_id();
+ 	if (boot_cpu_physical_apicid > 0) {
+ 		pr_info("BSP APIC ID: %02x\n", boot_cpu_physical_apicid);
+diff --git a/include/linux/acpi_pmtmr.h b/include/linux/acpi_pmtmr.h
+index 7e3d285..1d0ef1a 100644
+--- a/include/linux/acpi_pmtmr.h
++++ b/include/linux/acpi_pmtmr.h
+@@ -25,8 +25,6 @@ static inline u32 acpi_pm_read_early(void)
+ 	return acpi_pm_read_verified() & ACPI_PM_MASK;
+ }
+ 
+-extern void pmtimer_wait(unsigned);
+-
+ #else
+ 
+ static inline u32 acpi_pm_read_early(void)
