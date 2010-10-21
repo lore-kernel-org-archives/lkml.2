@@ -1,56 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754086Ab0JUFko (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Oct 2010 01:40:44 -0400
-Received: from mail30f.wh2.ocn.ne.jp ([220.111.41.203]:2207 "HELO
-	mail30f.wh2.ocn.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751403Ab0JUFkn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Oct 2010 01:40:43 -0400
-From: Bruno Randolf <br1@einfach.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [PATCH v3] Add generic exponentially weighted moving average (EWMA) function
-Date: Thu, 21 Oct 2010 14:40:24 +0900
-User-Agent: KMail/1.13.5 (Linux/2.6.35-22-generic; KDE/4.5.1; x86_64; ; )
-Cc: randy.dunlap@oracle.com, akpm@linux-foundation.org,
-        kevin.granade@gmail.com, Lars_Ericsson@telia.com, blp@cs.stanford.edu,
-        linux-kernel@vger.kernel.org
-References: <20101020082336.28281.77747.stgit@localhost6.localdomain6> <1287587023.3488.27.camel@twins>
-In-Reply-To: <1287587023.3488.27.camel@twins>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201010211440.24936.br1@einfach.org>
-X-SF-Loop: 1
+	id S1754250Ab0JUFlu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Oct 2010 01:41:50 -0400
+Received: from elasmtp-galgo.atl.sa.earthlink.net ([209.86.89.61]:53490 "EHLO
+	elasmtp-galgo.atl.sa.earthlink.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753438Ab0JUFlt convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Oct 2010 01:41:49 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=dk20050327; d=earthlink.net;
+  b=c/YHFmbXMvOQmcW6yp26TwXLkIYUg7+bJmrtlT3PKy6zvz9lt6gvSAzfbFT87hFU;
+  h=Received:From:Content-Type:Content-Transfer-Encoding:Subject:Date:Message-Id:To:Mime-Version:X-Mailer:X-ELNK-Trace:X-Originating-IP;
+From: Mitchell Erblich <erblichs@earthlink.net>
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8BIT
+Subject: Verification of SYScall changes because of CVE-2009-0029
+Date: Wed, 20 Oct 2010 22:40:08 -0700
+Message-Id: <7E55CE8C-959B-42B7-B991-4E385D1D6E38@earthlink.net>
+To: linux-kernel@vger.kernel.org
+Mime-Version: 1.0 (Apple Message framework v1081)
+X-Mailer: Apple Mail (2.1081)
+X-ELNK-Trace: 074f60c55517ea841aa676d7e74259b7b3291a7d08dfec79e5d154d657ac6f174d8deffc01c54a54350badd9bab72f9c350badd9bab72f9c350badd9bab72f9c
+X-Originating-IP: 4.246.235.72
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu October 21 2010 00:03:43 Peter Zijlstra wrote:
-> On Wed, 2010-10-20 at 17:23 +0900, Bruno Randolf wrote:
-> > +/**
-> > + * ewma_add() - Exponentially weighted moving average (EWMA)
-> > + * @avg: Average structure
-> > + * @val: Current value
-> > + *
-> > + * Add a sample to the average.
-> > + */
-> > +struct ewma*
-> > +ewma_add(struct ewma *avg, const unsigned int val)
-> > +{
-> > +       avg->internal = avg->internal  ?
-> > +               (((avg->internal * (avg->weight - 1)) +
-> > +                       (val * avg->factor)) / avg->weight) :
-> > +               (val * avg->factor);
-> > +       return avg;
-> > +}
-> > +EXPORT_SYMBOL(ewma_add);
-> 
-> How can it be a weighted avg if each sample has the same weight?
+he ABI in the Linux kernel 2.6.28 and earlier on s390, powerpc, sparc64, and mips 64-bit platforms requires that a 32-bit argument in a 64-bit register was properly sign extended when sent from a user-mode application, but cannot verify this, which allows local users to cause a denial of service (crash) or possibly gain privileges via a crafted system call.
 
-by applying the weight again and again, we get an exponential weighting.
+Has anyone been able to verify  (a program that exploits this issue) ?
 
-http://en.wikipedia.org/wiki/Exponentially_weighted_moving_average
-
-bruno
+Thanks,
+		Please copy me if you respond.		
+		Mitchell Erblich
