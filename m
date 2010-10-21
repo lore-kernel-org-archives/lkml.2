@@ -1,38 +1,216 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757471Ab0JUS65 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Oct 2010 14:58:57 -0400
-Received: from kroah.org ([198.145.64.141]:59368 "EHLO coco.kroah.org"
+	id S1757583Ab0JUTC1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Oct 2010 15:02:27 -0400
+Received: from gwu.lbox.cz ([62.245.111.132]:56229 "EHLO gwu.lbox.cz"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755875Ab0JUS64 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Oct 2010 14:58:56 -0400
-Date: Thu, 21 Oct 2010 11:57:51 -0700
-From: Greg KH <greg@kroah.com>
-To: linux-usb <linux-usb@vger.kernel.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: Linux USB tree merge window is closed
-Message-ID: <20101021185751.GA8990@kroah.com>
+	id S1757445Ab0JUTCZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Oct 2010 15:02:25 -0400
+Date: Thu, 21 Oct 2010 21:02:08 +0200
+From: Nikola Ciprich <extmaillist@linuxbox.cz>
+To: "Tantilov, Emil S" <emil.s.tantilov@intel.com>
+Cc: linux-net maillist <linux-net@vger.kernel.org>,
+        e1000-devel list <e1000-devel@lists.sourceforge.net>,
+        "nikola.ciprich@linuxbox.cz" <nikola.ciprich@linuxbox.cz>,
+        Linux kernel list <linux-kernel@vger.kernel.org>
+Subject: Re: [E1000-devel] 2.6.36-rc7-git2 - panic/GPF: e1000e/vlans?
+Message-ID: <20101021190208.GA7289@nik-comp.lan>
+References: <20101014052242.GA8998@pcnci.linuxbox.cz>
+ <EA929A9653AAE14F841771FB1DE5A1366027CEFF1C@rrsmsx501.amr.corp.intel.com>
+ <20101020144640.GA3009@pcnci.linuxbox.cz>
+ <20101020163659.GB3009@pcnci.linuxbox.cz>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20101020163659.GB3009@pcnci.linuxbox.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Antivirus: on lbxovapx by Kaspersky antivirus, 3960594 records (last update: 20101021)
+X-Spam-Score: N/A (trusted relay)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+Ok, here're the steps to reproduce the problem:
 
-Just to reiterate something that I've noted in a few other messages, the
-linux usb subsystem tree is now closed for any new features for the .37
-kernel release.
+ip link set up dev eth0
+vconfig add eth0 10
+ip link set up dev eth0.10
+brctl addbr brtest
+# to bylo ok, sundá to až:
+brctl add brtest eth0.10
 
-I'll be pushing what I have in my tree as of right now, to Linus in the
-next few days.  Then I'm taking next week off on vacation, and then the
-week after that is the Kernel Summit and Plumbers Conference in Boston.
+last command causes panic in few seconds..
 
-In other words, unless it's majorly urgent, don't send anything to me
-for the next two weeks and expect to get a response :)
+Interesting thing is that it're reproducible only for eth0, not for
+eth1 (both are onboard 80003ES2LAN)
 
-thanks,
+here's the lspci for those:
+06:00.0 Ethernet controller: Intel Corporation 80003ES2LAN Gigabit Ethernet Controller (Copper) (rev 01)
+	Subsystem: Super Micro Computer Inc Unknown device 0000
+	Flags: bus master, fast devsel, latency 0, IRQ 65
+	Memory at d8300000 (32-bit, non-prefetchable) [size=128K]
+	I/O ports at 3000 [size=32]
+	Capabilities: [c8] Power Management version 2
+	Capabilities: [d0] Message Signalled Interrupts: 64bit+ Queue=0/0 Enable+
+	Capabilities: [e0] Express Endpoint IRQ 0
+	Capabilities: [100] Advanced Error Reporting
+	Capabilities: [140] Device Serial Number 5a-19-34-ff-ff-48-30-00
 
-greg k-h
+06:00.1 Ethernet controller: Intel Corporation 80003ES2LAN Gigabit Ethernet Controller (Copper) (rev 01)
+	Subsystem: Super Micro Computer Inc Unknown device 0000
+	Flags: bus master, fast devsel, latency 0, IRQ 66
+	Memory at d8320000 (32-bit, non-prefetchable) [size=128K]
+	I/O ports at 3020 [size=32]
+	Capabilities: [c8] Power Management version 2
+	Capabilities: [d0] Message Signalled Interrupts: 64bit+ Queue=0/0 Enable+
+	Capabilities: [e0] Express Endpoint IRQ 0
+	Capabilities: [100] Advanced Error Reporting
+	Capabilities: [140] Device Serial Number 5a-19-34-ff-ff-48-30-00
+
+last but not least, I've done bisect and it leads to:
+commit ae878ae280bea286ff2b1e1cb6e609dd8cb4501d
+Author: Maciej Żenczykowski <maze@google.com>
+Date:   Sun Oct 3 14:49:00 2010 -0700                                                                                                                                                                                                      net: Fix IPv6 PMTU disc. w/ asymmetric routes
+
+doesn't seem to me to be related at all, but reverting really seems to fix the problem for me..
+I hope it helps..
+with best regards
+nik
+
+
+
+On Wed, Oct 20, 2010 at 06:36:59PM +0200, Nikola Ciprich wrote:
+> so unfortunately I have to take back what I just wrote :(
+> the problem still persists, it just seems to be more random
+> so I'll try to separate the exact command that causes the panic..
+> n.
+> 
+> On Wed, Oct 20, 2010 at 04:46:40PM +0200, Nikola Ciprich wrote:
+> > Hello Emil,
+> > 
+> > I tried it now, I can still 100% reproduce with 2.6.36-rc7-git2, but
+> > with 2.6.36-rc8-git5 it works OK. So it certainly got fixed in the meantime!
+> > I'll therefore close the bug in BZ.
+> > 
+> > have a nice day!
+> > 
+> > best regards
+> > 
+> > nik
+> > 
+> > 
+> > On Fri, Oct 15, 2010 at 10:58:15AM -0600, Tantilov, Emil S wrote:
+> > > >-----Original Message-----
+> > > >From: Nikola Ciprich [mailto:extmaillist@linuxbox.cz]
+> > > >Sent: Wednesday, October 13, 2010 10:23 PM
+> > > >To: Linux kernel list; linux-net maillist; e1000-devel list
+> > > >Cc: nikola.ciprich@linuxbox.cz
+> > > >Subject: [E1000-devel] 2.6.36-rc7-git2 - panic/GPF: e1000e/vlans?
+> > > >
+> > > >Hi,
+> > > >when I try to boot 2.6.36-rc7-git2 on one of my machines, it crashes while
+> > > >setting up the network.
+> > > 
+> > > Thanks for letting us know!
+> > > 
+> > > >The setup is quite complex, with bonding, lots of vlans and 3 intel
+> > > >adapters (system is quad x86_64)
+> > > 
+> > > Could you provide more details about the exact setup and the sequence of 
+> > > commands that lead to the crash? If you can narrow it down to the actual 
+> > > command that caused the crash that would be very helpful.
+> > > 
+> > > Also - are you testing from Linus or net-next tree? If you are not using 
+> > > net-next, could you give it a try and see if you can reproduce it there?
+> > > 
+> > > >
+> > > >snip of lspci:
+> > > >06:00.0 Ethernet controller: Intel Corporation 80003ES2LAN Gigabit Ethernet
+> > > >Controller (Copper) (rev 01)
+> > > >06:00.1 Ethernet controller: Intel Corporation 80003ES2LAN Gigabit Ethernet
+> > > >Controller (Copper) (rev 01)
+> > > >09:00.0 Ethernet controller: Intel Corporation 82574L Gigabit Network
+> > > >Connection
+> > > 
+> > > Could you provide the output of lspci -vvv and a kernel config?
+> > > 
+> > > Thanks,
+> > > Emil
+> > > --
+> > > To unsubscribe from this list: send the line "unsubscribe linux-net" in
+> > > the body of a message to majordomo@vger.kernel.org
+> > > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> > > 
+> > 
+> > -- 
+> > -------------------------------------
+> > Ing. Nikola CIPRICH
+> > LinuxBox.cz, s.r.o.
+> > 28. rijna 168, 709 01 Ostrava
+> > 
+> > tel.:   +420 596 603 142
+> > fax:    +420 596 621 273
+> > mobil:  +420 777 093 799
+> > www.linuxbox.cz
+> > 
+> > mobil servis: +420 737 238 656
+> > email servis: servis@linuxbox.cz
+> > -------------------------------------
+> > 
+> > ------------------------------------------------------------------------------
+> > Nokia and AT&T present the 2010 Calling All Innovators-North America contest
+> > Create new apps & games for the Nokia N8 for consumers in  U.S. and Canada
+> > $10 million total in prizes - $4M cash, 500 devices, nearly $6M in marketing
+> > Develop with Nokia Qt SDK, Web Runtime, or Java and Publish to Ovi Store 
+> > http://p.sf.net/sfu/nokia-dev2dev
+> > _______________________________________________
+> > E1000-devel mailing list
+> > E1000-devel@lists.sourceforge.net
+> > https://lists.sourceforge.net/lists/listinfo/e1000-devel
+> > To learn more about Intel&#174; Ethernet, visit http://communities.intel.com/community/wired
+> > 
+> 
+> -- 
+> -------------------------------------
+> Ing. Nikola CIPRICH
+> LinuxBox.cz, s.r.o.
+> 28. rijna 168, 709 01 Ostrava
+> 
+> tel.:   +420 596 603 142
+> fax:    +420 596 621 273
+> mobil:  +420 777 093 799
+> www.linuxbox.cz
+> 
+> mobil servis: +420 737 238 656
+> email servis: servis@linuxbox.cz
+> -------------------------------------
+> 
+> ------------------------------------------------------------------------------
+> Nokia and AT&T present the 2010 Calling All Innovators-North America contest
+> Create new apps & games for the Nokia N8 for consumers in  U.S. and Canada
+> $10 million total in prizes - $4M cash, 500 devices, nearly $6M in marketing
+> Develop with Nokia Qt SDK, Web Runtime, or Java and Publish to Ovi Store 
+> http://p.sf.net/sfu/nokia-dev2dev
+> _______________________________________________
+> E1000-devel mailing list
+> E1000-devel@lists.sourceforge.net
+> https://lists.sourceforge.net/lists/listinfo/e1000-devel
+> To learn more about Intel&#174; Ethernet, visit http://communities.intel.com/community/wired
+> 
+
+-- 
+-------------------------------------
+Ing. Nikola CIPRICH
+LinuxBox.cz, s.r.o.
+28. rijna 168, 709 01 Ostrava
+
+tel.:   +420 596 603 142
+fax:    +420 596 621 273
+mobil:  +420 777 093 799
+
+www.linuxbox.cz
+
+mobil servis: +420 737 238 656
+email servis: servis@linuxbox.cz
+-------------------------------------
