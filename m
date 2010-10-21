@@ -1,101 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758878Ab0JUWYg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Oct 2010 18:24:36 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:65451 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751149Ab0JUWYf (ORCPT
+	id S1758869Ab0JUW0J (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Oct 2010 18:26:09 -0400
+Received: from mail-px0-f174.google.com ([209.85.212.174]:50196 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756684Ab0JUW0H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Oct 2010 18:24:35 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:cc:subject:references
-         :in-reply-to:x-enigmail-version:content-type
-         :content-transfer-encoding;
-        b=Y3LyTxzsb5noWH3F5RC1FDjxcFtXpUSUVIaz3Scynk6N3xYJGtV0PKiQRVCSSlMeKM
-         j/uAXLLNjFj2sxAbyN2zLugsVlVsx/Hwv4SXYHHTM9Gz/4gaHU+oxgN72HCb1lYyeSkI
-         B0o3TmE86yZUSj1zO/gsTOFVAWNC8ZC4oQ1kA=
-Message-ID: <4CC0BD9C.8000203@gmail.com>
-Date: Fri, 22 Oct 2010 00:24:28 +0200
-From: Jiri Slaby <jirislaby@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.11) Gecko/20101013 SUSE/3.1.5 Thunderbird/3.1.5
+	Thu, 21 Oct 2010 18:26:07 -0400
+From: Kevin Hilman <khilman@deeprootsystems.com>
+To: Cyril Chemparathy <cyril@ti.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: davinci-linux-open-source@linux.davincidsp.com,
+        spi-devel-general@lists.sourceforge.net,
+        broonie@opensource.wolfsonmicro.com, lrg@slimlogic.co.uk,
+        dbrownell@users.sourceforge.net, grant.likely@secretlab.ca,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        rpurdie@rpsys.net
+Subject: Re: [PATCH v3 00/12] tnetv107x ssp driver stack
+Organization: Deep Root Systems, LLC
+References: <1287694873-12904-1-git-send-email-cyril@ti.com>
+Date: Thu, 21 Oct 2010 15:26:04 -0700
+In-Reply-To: <1287694873-12904-1-git-send-email-cyril@ti.com> (Cyril
+	Chemparathy's message of "Thu, 21 Oct 2010 17:01:01 -0400")
+Message-ID: <87mxq7p4hv.fsf@deeprootsystems.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1.50 (gnu/linux)
 MIME-Version: 1.0
-CC: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        mm-commits@vger.kernel.org, Antti Palosaari <crope@iki.fi>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>, Greg KH <gregkh@suse.de>,
-        USB list <linux-usb@vger.kernel.org>
-Subject: Re: DVB: af9015 defunct [was: mmotm 2010-10-20-15-01 uploaded]
-References: <201010202233.o9KMXNoL008303@imap1.linux-foundation.org> <4CC07DB4.20205@gmail.com>
-In-Reply-To: <4CC07DB4.20205@gmail.com>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-2
-Content-Transfer-Encoding: 7bit
-To: unlisted-recipients:; (no To-header on input)
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/21/2010 07:51 PM, Jiri Slaby wrote:
-> On 10/21/2010 12:01 AM, akpm@linux-foundation.org wrote:
->> The mm-of-the-moment snapshot 2010-10-20-15-01 has been uploaded to
-> 
-> Well, this release happens to be a multimedia failure :(.
-> 
-> I hit another regression against mmotm 2010-10-13-17-13, where
-> 0413:6029 (DVB USB tuner) can't be inited when plugged in. Even lsusb
-> waits inifitely.
+Cyril Chemparathy <cyril@ti.com> writes:
 
-Revert of the af9015 changes doesn't seem to help.
+> TI's sequencer serial port (TI-SSP) is a jack-of-all-trades type of serial port
+> device.  It has a built-in programmable execution engine that can be programmed
+> to operate as almost any serial bus (I2C, SPI, EasyScale, and others).
 
-> usb 2-6: new high speed USB device using ehci_hcd and address 5
-> dvb-usb: found a 'Leadtek WinFast DTV Dongle Gold' in cold state, will
-> try to load a firmware
-> dvb-usb: downloading firmware from file 'dvb-usb-af9015.fw'
-> dvb-usb: found a 'Leadtek WinFast DTV Dongle Gold' in warm state.
-> dvb-usb: will pass the complete MPEG2 transport stream to the software
-> demuxer.
-> DVB: registering new adapter (Leadtek WinFast DTV Dongle Gold)
-> af9013: firmware version:4.95.0.0
-> DVB: registering adapter 1 frontend 0 (Afatech AF9013 DVB-T)...
-> tda18271 18-00c0: creating new instance
-> TDA18271HD/C2 detected @ 18-00c0
-> af9015: command failed:1
-> tda18271_write_regs: [18-00c0|M] ERROR: idx = 0x0, len = 39,
-> i2c_transfer returned: -1
-> af9015: command failed:1
-> tda18271_write_regs: [18-00c0|M] ERROR: idx = 0x20, len = 1,
-> i2c_transfer returned: -1
-> af9015: command failed:1
-> tda18271_write_regs: [18-00c0|M] ERROR: idx = 0x20, len = 1,
-> i2c_transfer returned: -1
-> af9015: command failed:1
-> tda18271_write_regs: [18-00c0|M] ERROR: idx = 0x20, len = 1,
-> i2c_transfer returned: -1
-> af9015: command failed:1
-> tda18271_write_regs: [18-00c0|M] ERROR: idx = 0x20, len = 1,
-> i2c_transfer returned: -1
-> af9015: recv bulk message failed:-71
-> af9015: bulk message failed:-71 (8/0)
-> af9013: I2C read failed reg:d417
-> tda18271_write_regs: [18-00c0|M] ERROR: idx = 0x5, len = 11,
-> i2c_transfer returned: -1
-> af9015: bulk message failed:-71 (8/0)
-> af9013: I2C read failed reg:d417
-> af9015: bulk message failed:-71 (9/0)
-> af9015: bulk message failed:-71 (8/0)
-> af9013: I2C read failed reg:d417
-> tda18271_write_regs: [18-00c0|M] ERROR: idx = 0x13, len = 1,
-> i2c_transfer returned: -71
-> af9015: bulk message failed:-71 (8/0)
-> af9013: I2C read failed reg:d417
-> af9015: bulk message failed:-71 (9/0)
-> af9015: bulk message failed:-71 (8/0)
-> af9013: I2C read failed reg:d417
-> tda18271_write_regs: [18-00c0|M] ERROR: idx = 0x13, len = 1,
-> i2c_transfer returned: -71
-> 
-> regards,
+Andrew, looking for some advice here...
 
+This is a piece of davinci hardware, but introduces drivers in various
+subsystems.  I'm willing to merge this series via the davinci tree after
+getting acks from the various subsystem maintainers.  Is this an OK
+approach?  It seems best to me to merge this all together.
 
--- 
-js
+We already have acks for the regulator and gpio driver parts, and the
+backlight driver has a clear owner in MAINTAINERS.  However, who should
+be doing the final review/ack of the drivers/misc and drivers/gpio
+changes is less clear to me.  
+
+Any advice appreciated,
+
+Thanks,
+
+Kevin
+
+>  arch/arm/mach-davinci/board-tnetv107x-evm.c    |  199 +++++++
+>  arch/arm/mach-davinci/devices-tnetv107x.c      |   25 +
+>  arch/arm/mach-davinci/include/mach/ti_ssp.h    |   98 ++++
+>  arch/arm/mach-davinci/include/mach/tnetv107x.h |    2 +
+>  arch/arm/mach-davinci/tnetv107x.c              |    2 +-
+>  drivers/gpio/Kconfig                           |   10 +
+>  drivers/gpio/Makefile                          |    1 +
+>  drivers/gpio/ti-ssp-gpio.c                     |  200 +++++++
+>  drivers/misc/Kconfig                           |   11 +
+>  drivers/misc/Makefile                          |    1 +
+>  drivers/misc/ti_ssp.c                          |  436 +++++++++++++++
+>  drivers/regulator/Kconfig                      |   10 +
+>  drivers/regulator/Makefile                     |    1 +
+>  drivers/regulator/tps6524x-regulator.c         |  692 ++++++++++++++++++++++++
+>  drivers/spi/Kconfig                            |    7 +
+>  drivers/spi/Makefile                           |    1 +
+>  drivers/spi/spi_ti_ssp.c                       |  397 ++++++++++++++
+>  drivers/video/backlight/Kconfig                |    7 +
+>  drivers/video/backlight/Makefile               |    2 +-
+>  drivers/video/backlight/tps6116x.c             |  340 ++++++++++++
