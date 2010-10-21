@@ -1,57 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758228Ab0JUVV0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Oct 2010 17:21:26 -0400
-Received: from caiajhbdcaid.dreamhost.com ([208.97.132.83]:39134 "EHLO
-	homiemail-a4.g.dreamhost.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752931Ab0JUVVZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Oct 2010 17:21:25 -0400
-Subject: Re: [PATCH] gpio led: properly initialize return value
-From: Davidlohr Bueso <dave@gnu.org>
-Reply-To: dave@gnu.org
-To: rpurdie@rpsys.net
-Cc: raph@8d.com, tpiepho@freescale.com, LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <1287417219.4214.5.camel@cowboy>
-References: <1287417219.4214.5.camel@cowboy>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 21 Oct 2010 18:21:14 -0300
-Message-ID: <1287696074.2075.4.camel@cowboy>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	id S1758061Ab0JUVZD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Oct 2010 17:25:03 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:38985 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752931Ab0JUVZB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Oct 2010 17:25:01 -0400
+Message-ID: <4CC0AF76.4040008@zytor.com>
+Date: Thu, 21 Oct 2010 14:24:06 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc13 Thunderbird/3.1.4
+MIME-Version: 1.0
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Ingo Molnar <mingo@elte.hu>, Brian Gerst <brgerst@gmail.com>,
+        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [GIT PULL] x86/fpu for v2.6.37
+References: <20101021134558.GA5859@elte.hu> <AANLkTi=RKyHLNTq6iomZOXkc6Zw1j9iAgsq8388XmzwN@mail.gmail.com>
+In-Reply-To: <AANLkTi=RKyHLNTq6iomZOXkc6Zw1j9iAgsq8388XmzwN@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-10-18 at 12:53 -0300, Davidlohr Bueso wrote:
-> gpio led: properly initialize return value in gpio_led_init()
+On 10/21/2010 01:45 PM, Linus Torvalds wrote:
+> On Thu, Oct 21, 2010 at 6:45 AM, Ingo Molnar <mingo@elte.hu> wrote:
+>>
+>> Please pull the latest x86-fpu-for-linus git tree from:
+>>
+>>   git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git x86-fpu-for-linus
 > 
-> In the event that none of the configs are set (CONFIG_LEDS_GPIO_PLATFORM, CONFIG_LEDS_GPIO_OF, 
-> CONFIG_LEDS_GPIO_PLATFORM), we will return bogus when initializing the module.
+> This conflicted with the CONFIG_AS_FXSAVEQ changes from the asm tree.
+> 
+> I fixed it up, but I did it only for  the fpu_fxsave() function. I
+> suspect that the CONFIG_AS_FXSAVEQ thing should be used for
+> fxsave_user() too.
 > 
 
-Signed-off-by: Davidlohr Bueso <dave@gnu.org>
-Cc: Richard Purdie <rpurdie@rpsys.net>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Yes, and fxrestor.  I noticed that last night.  I will send you an
+update no later than early next week after I see the patch in your tree
+and have had time to test the update.
 
-> Signed-off-by: Davidlohr Bueso <dave@gnu.org>
-> ---
->  drivers/leds/leds-gpio.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/leds/leds-gpio.c b/drivers/leds/leds-gpio.c
-> index ea57e05..4d9fa38 100644
-> --- a/drivers/leds/leds-gpio.c
-> +++ b/drivers/leds/leds-gpio.c
-> @@ -316,7 +316,7 @@ static struct of_platform_driver of_gpio_leds_driver = {
->  
->  static int __init gpio_led_init(void)
->  {
-> -	int ret;
-> +	int ret = 0;
->  
->  #ifdef CONFIG_LEDS_GPIO_PLATFORM	
->  	ret = platform_driver_register(&gpio_led_driver);
-
-
+	-hpa
