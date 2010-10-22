@@ -1,39 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753074Ab0JVCAL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Oct 2010 22:00:11 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:32943 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751302Ab0JVCAI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Oct 2010 22:00:08 -0400
-Date: Fri, 22 Oct 2010 03:00:06 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: kevin granade <kevin.granade@gmail.com>
-Cc: "Artem S. Tashkinov" <t.artem@lycos.com>, linux-kernel@vger.kernel.org
-Subject: Re: On Linux numbering scheme
-Message-ID: <20101022020006.GF19804@ZenIV.linux.org.uk>
-References: <18536664.253751287691209904.JavaMail.root@mail-zbox20.bo3.lycos.com>
- <28654042.253821287691362834.JavaMail.root@mail-zbox20.bo3.lycos.com>
- <AANLkTimqNW7zArcjtOkBvrn-dk=YE0_RG+u3yoMDTjwV@mail.gmail.com>
+	id S1752411Ab0JVCAJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Oct 2010 22:00:09 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:52433 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751287Ab0JVCAH convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Oct 2010 22:00:07 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTimqNW7zArcjtOkBvrn-dk=YE0_RG+u3yoMDTjwV@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+In-Reply-To: <201010220050.o9M0ognt032167@hera.kernel.org>
+References: <201010220050.o9M0ognt032167@hera.kernel.org>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Thu, 21 Oct 2010 18:59:16 -0700
+Message-ID: <AANLkTi=2tPU6qwuoOEfS7NfsNX+7vCYhvkHzNOcx4Gf3@mail.gmail.com>
+Subject: Re: [GIT PULL] memblock for 2.6.37
+To: "H. Peter Anvin" <hpa@linux.intel.com>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        CAI Qian <caiqian@redhat.com>, "David S. Miller" <davem@davemloft.net>,
+        Felipe Balbi <balbi@ti.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Ingo Molnar <mingo@elte.hu>, Jan Beulich <jbeulich@novell.com>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
+        Jeremy Fitzhardinge <jeremy@goop.org>,
+        Kevin Hilman <khilman@deeprootsystems.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Michael Ellerman <michael@ellerman.id.au>,
+        Michal Simek <monstr@monstr.eu>, Paul Mundt <lethal@linux-sh.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Russell King <rmk@arm.linux.org.uk>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Tomi Valkeinen <tomi.valkeinen@nokia.com>,
+        Vivek Goyal <vgoyal@redhat.com>, Yinghai Lu <yinghai@kernel.org>,
+        ext Grazvydas Ignotas <notasas@gmail.com>, linux-mm@kvack.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 21, 2010 at 07:06:23PM -0500, kevin granade wrote:
+On Thu, Oct 21, 2010 at 5:50 PM, H. Peter Anvin <hpa@linux.intel.com> wrote:
+>
+> The unmerged branch is at:
+>
+>  git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git core-memblock-for-linus
+>
+> The premerged branch is at:
+>
+>  git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git core-memblock-for-linus-merged
 
-> Any particular reason not to continue the date-oriented format and
-> have the third number be the numerical representation of the month
-> rather than an incrementing numbering of the releases?  It would still
-> be monotonically increasing, which is the only requirement, right?
+I always tend to take the unmerged version, because I want to see what
+the conflicts are (it gives me some view of what clashes), but when
+people do pre-merges I then try to compare my merge against theirs.
 
-Why do we need to change it, anyway?
+However, in this case, your pre-merged version differs. But I think
+it's your merge that was incorrect. You left this line:
 
-Al, fully expecting to be whined at for discouraging potential contributors
-and horribly damaging Linux ecosystem by artificially increasing the entry
-barrier, or something...
+   obj-$(CONFIG_HAVE_EARLY_RES) += early_res.o
+
+in kernel/Makefile, even though kernel/early_res.c is gone.
+
+I'll push out my merge, but please do verify that it all looks ok.
+
+                               Linus
