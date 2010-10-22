@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932490Ab0JVSqW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 14:46:22 -0400
-Received: from kroah.org ([198.145.64.141]:45848 "EHLO coco.kroah.org"
+	id S1758780Ab0JVSrG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 14:47:06 -0400
+Received: from kroah.org ([198.145.64.141]:45790 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758328Ab0JVSi7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 14:38:59 -0400
-X-Mailbox-Line: From gregkh@clark.site Fri Oct 22 11:36:01 2010
-Message-Id: <20101022183601.021368626@clark.site>
+	id S1758256Ab0JVSiz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Oct 2010 14:38:55 -0400
+X-Mailbox-Line: From gregkh@clark.site Fri Oct 22 11:36:00 2010
+Message-Id: <20101022183600.570695237@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 22 Oct 2010 11:35:21 -0700
+Date: Fri, 22 Oct 2010 11:35:16 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Colin Ian King <colin.king@canonical.com>,
-        Len Brown <len.brown@intel.com>
-Subject: [54/66] ACPI: enable repeated PCIEXP wakeup by clearing PCIEXP_WAKE_STS on resume
+        Florian Fainelli <florian@openwrt.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Ben Hutchings <ben@decadent.org.uk>
+Subject: [49/66] r6040: fix r6040_multicast_list
 In-Reply-To: <20101022183711.GA23214@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,40 +27,68 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Colin Ian King <colin.king@canonical.com>
+From: Florian Fainelli <florian@openwrt.org>
 
-commit 573b638158029898caf9470c8214b7ddd29751e3 upstream.
+commit 3bcf8229a8c49769e48d3e0bd1e20d8e003f8106 upstream.
 
-Section 4.7.3.1.1 (PM1 Status Registers) of version 4.0 of
-the ACPI spec concerning PCIEXP_WAKE_STS points out in
-in the final note field in table 4-11 that if this bit is
-set to 1 and the system is put into a sleeping state then
-the system will not automatically wake.
+As reported in <https://bugzilla.kernel.org/show_bug.cgi?id=15355>, r6040_
+multicast_list currently crashes. This is due a wrong maximum of multicast
+entries. This patch fixes the following issues with multicast:
 
-This bit gets set by hardware to indicate that the system
-woke up due to a PCI Express wakeup event, so clear it during
-acpi_hw_clear_acpi_status() calls to enable subsequent
-resumes to work.
+- number of maximum entries if off-by-one (4 instead of 3)
 
-BugLink: http://bugs.launchpad.net/bugs/613381
+- the writing of the hash table index is not necessary and leads to invalid
+values being written into the MCR1 register, so the MAC is simply put in a non
+coherent state
 
-Signed-off-by: Colin Ian King <colin.king@canonical.com>
-Signed-off-by: Len Brown <len.brown@intel.com>
+- when we exceed the maximum number of mutlticast address, writing the
+broadcast address should be done in registers MID_1{L,M,H} instead of
+MID_O{L,M,H}, otherwise we would loose the adapter's MAC address
+
+[bwh: Adjust for 2.6.32; should also apply to 2.6.27]
+
+Signed-off-by: Florian Fainelli <florian@openwrt.org>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Cc: Ben Hutchings <ben@decadent.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/acpi/acpica/aclocal.h |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/net/r6040.c |   11 ++++-------
+ 1 file changed, 4 insertions(+), 7 deletions(-)
 
---- a/drivers/acpi/acpica/aclocal.h
-+++ b/drivers/acpi/acpica/aclocal.h
-@@ -846,6 +846,7 @@ struct acpi_bit_register_info {
- 	ACPI_BITMASK_POWER_BUTTON_STATUS   | \
- 	ACPI_BITMASK_SLEEP_BUTTON_STATUS   | \
- 	ACPI_BITMASK_RT_CLOCK_STATUS       | \
-+	ACPI_BITMASK_PCIEXP_WAKE_DISABLE   | \
- 	ACPI_BITMASK_WAKE_STATUS)
+--- a/drivers/net/r6040.c
++++ b/drivers/net/r6040.c
+@@ -135,7 +135,7 @@
+ #define RX_DESC_SIZE	(RX_DCNT * sizeof(struct r6040_descriptor))
+ #define TX_DESC_SIZE	(TX_DCNT * sizeof(struct r6040_descriptor))
+ #define MBCR_DEFAULT	0x012A	/* MAC Bus Control Register */
+-#define MCAST_MAX	4	/* Max number multicast addresses to filter */
++#define MCAST_MAX	3	/* Max number multicast addresses to filter */
  
- #define ACPI_BITMASK_TIMER_ENABLE               0x0001
+ /* Descriptor status */
+ #define DSC_OWNER_MAC	0x8000	/* MAC is the owner of this descriptor */
+@@ -985,9 +985,6 @@ static void r6040_multicast_list(struct
+ 			crc >>= 26;
+ 			hash_table[crc >> 4] |= 1 << (15 - (crc & 0xf));
+ 		}
+-		/* Write the index of the hash table */
+-		for (i = 0; i < 4; i++)
+-			iowrite16(hash_table[i] << 14, ioaddr + MCR1);
+ 		/* Fill the MAC hash tables with their values */
+ 		iowrite16(hash_table[0], ioaddr + MAR0);
+ 		iowrite16(hash_table[1], ioaddr + MAR1);
+@@ -1003,9 +1000,9 @@ static void r6040_multicast_list(struct
+ 		dmi = dmi->next;
+ 	}
+ 	for (i = dev->mc_count; i < MCAST_MAX; i++) {
+-		iowrite16(0xffff, ioaddr + MID_0L + 8*i);
+-		iowrite16(0xffff, ioaddr + MID_0M + 8*i);
+-		iowrite16(0xffff, ioaddr + MID_0H + 8*i);
++		iowrite16(0xffff, ioaddr + MID_1L + 8*i);
++		iowrite16(0xffff, ioaddr + MID_1M + 8*i);
++		iowrite16(0xffff, ioaddr + MID_1H + 8*i);
+ 	}
+ }
+ 
 
 
