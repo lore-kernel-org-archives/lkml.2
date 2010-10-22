@@ -1,132 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754428Ab0JVLQV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 07:16:21 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:58139 "EHLO
+	id S1755923Ab0JVLQa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 07:16:30 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:58569 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752890Ab0JVLQU (ORCPT
+	with ESMTP id S1755578Ab0JVLQ2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 07:16:20 -0400
+	Fri, 22 Oct 2010 07:16:28 -0400
 From: Arnd Bergmann <arnd@arndb.de>
 To: Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [GIT PULL] BKL as a config option
-Date: Fri, 22 Oct 2010 13:15:43 +0200
+Subject: [GIT PULL] automatic BKL conversion to mutexes
+Date: Fri, 22 Oct 2010 13:15:46 +0200
 User-Agent: KMail/1.13.5 (Linux/2.6.36-next-20101021+; KDE/4.5.1; x86_64; ; )
 Cc: linux-kernel@vger.kernel.org
 MIME-Version: 1.0
 Content-Type: Text/Plain;
   charset="us-ascii"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201010221315.43118.arnd@arndb.de>
-X-Provags-ID: V02:K0:eOpNiTtwp6A4fMrQhJU9ByOPg3q2YCGyQ/qojRgkJFL
- aXczfV8Syy+e2teIX0bu8Lc1ZkWJ88tls4ysmpgRf3TMnEL7xH
- lMAkWRzrPV8oSOTCn7LXraF5tH5jyAxN+QnOipfLykPA/uGP3N
- 3z3nZLQGZKv/fz2xKWDR6uqdGoaSvyZESPC27cxUh7tkgzC7aa
- +FCi4KD/wHwQtazIflB7Q==
+Message-Id: <201010221315.46143.arnd@arndb.de>
+X-Provags-ID: V02:K0:isaWzSC+5Bb0+HuVLLsOeJYmWQ5H4LaO9OED67pzK1S
+ 5wqN1E+4uZyYXHUDT1DZP4DCBW2aLIoleU1lWpaTZB8qDN/KOD
+ zTNjKXPiQMQCTcGQtpb1kF1cOo+n6rtfKSKwkbM7FOsfUiAiin
+ RAV7OV4YoHqGI84XmMzkezpBlqqdjI7w9Z32FpUhndI3xWEipt
+ B++GIiJ75GtxnzdO7f97w==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Hi Linus,
 
-This is a collection of BKL removal stuff that did not fit anywhere
-else. Most patches are conversions that are simple but could not
-be done with an automated script for some reason.
+These are all trivial conversions where we can replace the BKL
+in one driver with a mutex, done with a script to avoid typos.
 
-The final patch introduces CONFIG_BKL as we discussed a few weeks
-back. It only marks drivers as depends on BKL that don't have
-a patch in linux-next yet, so it misses the modules that get
-converted in other trees.
+A number of the patches that were originally in this series have
+been replaced by the maintainers with other patches to remove
+the BKL without a replacement, where that is safe to do. The same
+can still be done in the future for many of them, but the
+replacement is the fast and safe option in order to remove most
+of the trivial usage introduced over the years during BKL pushdown.
 
-CONFIG_FILE_LOCKING still selects CONFIG_BKL because a kernel
-without file locking is rather useless and that would make it
-easy for user to break. I will follow up with a patch to change
-that once the dependencies for that are merged, hopefully
-before -rc1.
+There is one known conflict in the pcmcia drivers that should
+be trivial to resolve (one line added versus another line removed).
 
 Please pull from:
 
-  git+ssh://master.kernel.org/pub/scm/linux/kernel/git/arnd/bkl.git config
+  git+ssh://master.kernel.org/pub/scm/linux/kernel/git/arnd/bkl.git trivial
 
+Arnd Bergmann (6):
+      scsi: autoconvert trivial BKL users to private mutex
+      mtd: autoconvert trivial BKL users to private mutex
+      mac: autoconvert trivial BKL users to private mutex
+      ipmi: autoconvert trivial BKL users to private mutex
+      drivers: autoconvert trivial BKL users to private mutex
+      block: autoconvert trivial BKL users to private mutex
 
-
----
-Al Viro (1):
-      fix rawctl compat ioctls breakage on amd64 and itanic
-
-Arnd Bergmann (15):
-      hpet: kill BKL, add compat_ioctl
-      s390/block: kill the big kernel lock
-      isapnp: BKL removal
-      alpha: kill big kernel lock
-      cris: autoconvert trivial BKL users
-      parisc: remove big kernel lock
-      uml: kill big kernel lock
-      tlclk: remove big kernel lock
-      dvb/bt8xx: kill the big kernel lock
-      dvb-core: kill the big kernel lock
-      rtmutex-tester: make it build without BKL
-      blktrace: remove the big kernel lock
-      sunrpc: remove the big kernel lock
-      dabusb: remove the BKL
-      BKL: introduce CONFIG_BKL.
-
-Namhyung Kim (1):
-      init/main.c: remove BKL notations
-
- arch/alpha/kernel/osf_sys.c                 |    5 -
- arch/alpha/kernel/traps.c                   |    3 -
- arch/cris/arch-v10/drivers/ds1302.c         |    7 +-
- arch/cris/arch-v10/drivers/pcf8563.c        |    6 +-
- arch/cris/arch-v10/drivers/sync_serial.c    |   11 +-
- arch/cris/arch-v32/drivers/cryptocop.c      |    4 +-
- arch/cris/arch-v32/drivers/mach-a3/gpio.c   |   11 +-
- arch/cris/arch-v32/drivers/mach-fs/gpio.c   |   11 +-
- arch/cris/arch-v32/drivers/pcf8563.c        |    6 +-
- arch/cris/arch-v32/drivers/sync_serial.c    |   11 +-
- arch/parisc/kernel/perf.c                   |    4 -
- arch/um/drivers/harddog_kern.c              |   13 +-
- arch/um/drivers/hostaudio_kern.c            |   12 +-
- arch/um/drivers/ubd_kern.c                  |   11 +-
- arch/um/kernel/exec.c                       |    2 -
- drivers/char/hpet.c                         |   98 +++++++----
- drivers/char/raw.c                          |  243 +++++++++++++++-----------
- drivers/char/tlclk.c                        |    6 +-
- drivers/gpu/drm/Kconfig                     |    5 +-
- drivers/media/Kconfig                       |    1 +
- drivers/media/dvb/bt8xx/dst_ca.c            |    7 +-
- drivers/media/dvb/dvb-core/dmxdev.c         |   17 +--
- drivers/media/dvb/dvb-core/dvb_ca_en50221.c |    8 +-
- drivers/media/dvb/dvb-core/dvb_net.c        |    9 +-
- drivers/media/dvb/dvb-core/dvbdev.c         |   17 +-
- drivers/media/video/dabusb.c                |   18 +--
- drivers/net/appletalk/Kconfig               |    1 +
- drivers/pnp/isapnp/proc.c                   |   15 +-
- drivers/s390/block/dasd.c                   |    6 -
- drivers/s390/block/dasd_ioctl.c             |   17 +--
- drivers/s390/block/dcssblk.c                |    5 -
- drivers/staging/cx25821/Kconfig             |    1 +
- drivers/staging/easycap/Kconfig             |    1 +
- drivers/staging/go7007/Kconfig              |    1 +
- drivers/staging/usbip/Kconfig               |    2 +-
- fs/Kconfig                                  |    1 +
- fs/adfs/Kconfig                             |    1 +
- fs/autofs/Kconfig                           |    1 +
- fs/compat_ioctl.c                           |   70 --------
- fs/hpfs/Kconfig                             |    1 +
- fs/nfs/Kconfig                              |    1 +
- fs/nfsd/Kconfig                             |    1 +
- fs/smbfs/Kconfig                            |    1 +
- fs/udf/Kconfig                              |    1 +
- fs/ufs/Kconfig                              |    1 +
- include/linux/smp_lock.h                    |    7 +-
- init/Kconfig                                |    2 +-
- init/main.c                                 |    2 -
- kernel/rtmutex-tester.c                     |    6 +
- kernel/trace/blktrace.c                     |   14 +--
- lib/Kconfig.debug                           |    9 +
- net/ipx/Kconfig                             |    1 +
- net/sunrpc/cache.c                          |   15 +--
- net/sunrpc/rpc_pipe.c                       |   26 +--
- net/x25/Kconfig                             |    1 +
- 55 files changed, 347 insertions(+), 410 deletions(-)
+ block/bsg.c                                |    3 --
+ drivers/block/DAC960.c                     |   11 ++++---
+ drivers/block/amiflop.c                    |   19 ++++++------
+ drivers/block/aoe/aoeblk.c                 |    9 +++--
+ drivers/block/aoe/aoechr.c                 |    9 +++--
+ drivers/block/ataflop.c                    |   15 +++++----
+ drivers/block/brd.c                        |    7 ++--
+ drivers/block/cciss.c                      |   14 ++++----
+ drivers/block/cpqarray.c                   |   15 +++++----
+ drivers/block/drbd/drbd_main.c             |   11 ++++---
+ drivers/block/floppy.c                     |   16 +++++-----
+ drivers/block/loop.c                       |   11 ++++---
+ drivers/block/nbd.c                        |    7 ++--
+ drivers/block/paride/pcd.c                 |   15 +++++----
+ drivers/block/paride/pd.c                  |   15 +++++----
+ drivers/block/paride/pf.c                  |   17 ++++++-----
+ drivers/block/paride/pg.c                  |    7 ++--
+ drivers/block/paride/pt.c                  |   19 ++++++------
+ drivers/block/pktcdvd.c                    |   16 +++++-----
+ drivers/block/swim.c                       |   15 +++++----
+ drivers/block/swim3.c                      |   15 +++++----
+ drivers/block/ub.c                         |   15 +++++----
+ drivers/block/viodasd.c                    |   11 ++++---
+ drivers/block/xd.c                         |    7 ++--
+ drivers/block/xen-blkfront.c               |   11 ++++---
+ drivers/block/xsysace.c                    |   11 ++++---
+ drivers/block/z2ram.c                      |   15 +++++----
+ drivers/cdrom/gdrom.c                      |   15 +++++----
+ drivers/cdrom/viocd.c                      |   15 +++++----
+ drivers/char/apm-emulation.c               |   11 ++++---
+ drivers/char/applicom.c                    |    9 +++--
+ drivers/char/ds1302.c                      |   15 +++++----
+ drivers/char/ds1620.c                      |    8 ++--
+ drivers/char/dsp56k.c                      |   27 +++++++++--------
+ drivers/char/dtlk.c                        |    8 ++--
+ drivers/char/generic_nvram.c               |    7 ++--
+ drivers/char/genrtc.c                      |   13 ++++----
+ drivers/char/i8k.c                         |    7 ++--
+ drivers/char/ip2/ip2main.c                 |    8 ++--
+ drivers/char/ipmi/ipmi_devintf.c           |   14 ++++----
+ drivers/char/ipmi/ipmi_watchdog.c          |    8 ++--
+ drivers/char/lp.c                          |   15 +++++----
+ drivers/char/mbcs.c                        |    8 ++--
+ drivers/char/mmtimer.c                     |    7 ++--
+ drivers/char/mwave/mwavedd.c               |   44 ++++++++++++++--------------
+ drivers/char/nvram.c                       |   11 ++++---
+ drivers/char/nwflash.c                     |   12 ++++----
+ drivers/char/pcmcia/cm4000_cs.c            |   11 ++++---
+ drivers/char/pcmcia/cm4040_cs.c            |    7 ++--
+ drivers/char/ppdev.c                       |    8 ++--
+ drivers/char/rio/rio_linux.c               |    7 ++--
+ drivers/char/snsc.c                        |    9 +++--
+ drivers/char/toshiba.c                     |    9 +++--
+ drivers/char/viotape.c                     |   11 ++++---
+ drivers/char/xilinx_hwicap/xilinx_hwicap.c |    6 ++--
+ drivers/hwmon/fschmd.c                     |    6 ++--
+ drivers/hwmon/w83793.c                     |    6 ++--
+ drivers/ide/ide-cd.c                       |   14 ++++----
+ drivers/ide/ide-disk_ioctl.c               |    7 ++--
+ drivers/ide/ide-floppy_ioctl.c             |    7 ++--
+ drivers/ide/ide-gd.c                       |   10 +++---
+ drivers/ide/ide-tape.c                     |   19 ++++++------
+ drivers/input/misc/hp_sdc_rtc.c            |    7 ++--
+ drivers/macintosh/adb.c                    |   10 +++---
+ drivers/macintosh/smu.c                    |    6 ++--
+ drivers/macintosh/via-pmu.c                |   11 ++++---
+ drivers/md/dm.c                            |   10 +++---
+ drivers/md/md.c                            |   13 ++++----
+ drivers/memstick/core/mspro_block.c        |   11 ++++---
+ drivers/message/fusion/mptctl.c            |   15 +++++----
+ drivers/message/i2o/i2o_block.c            |   15 +++++----
+ drivers/message/i2o/i2o_config.c           |   23 +++++++-------
+ drivers/misc/phantom.c                     |   11 ++++---
+ drivers/mmc/card/block.c                   |   10 +++---
+ drivers/mtd/mtd_blkdevs.c                  |   14 ++++----
+ drivers/mtd/mtdchar.c                      |   15 +++++----
+ drivers/pci/hotplug/cpqphp_sysfs.c         |   13 ++++----
+ drivers/rtc/rtc-m41t80.c                   |   13 ++++----
+ drivers/s390/char/tape_block.c             |   13 ++++----
+ drivers/sbus/char/jsflash.c                |   24 ++++++++-------
+ drivers/scsi/3w-9xxx.c                     |    7 ++--
+ drivers/scsi/3w-sas.c                      |    7 ++--
+ drivers/scsi/3w-xxxx.c                     |    9 ++---
+ drivers/scsi/aacraid/linit.c               |   15 +++++----
+ drivers/scsi/ch.c                          |    8 ++--
+ drivers/scsi/dpt_i2o.c                     |   18 ++++++------
+ drivers/scsi/gdth.c                        |   11 ++++---
+ drivers/scsi/megaraid.c                    |    8 ++--
+ drivers/scsi/megaraid/megaraid_mm.c        |    8 ++--
+ drivers/scsi/megaraid/megaraid_sas.c       |    2 -
+ drivers/scsi/mpt2sas/mpt2sas_ctl.c         |   11 ++++---
+ drivers/scsi/osst.c                        |   15 +++++----
+ drivers/scsi/scsi_tgt_if.c                 |    2 -
+ drivers/scsi/sg.c                          |   12 ++++---
+ drivers/scsi/sr.c                          |   14 ++++----
+ drivers/scsi/st.c                          |   12 ++++----
+ drivers/staging/hv/blkvsc_drv.c            |   11 ++++---
+ drivers/staging/spectra/ffsport.c          |    7 ++--
+ drivers/telephony/ixj.c                    |    7 ++--
+ drivers/watchdog/cpwd.c                    |   15 +++++----
+ 100 files changed, 612 insertions(+), 556 deletions(-)
