@@ -1,75 +1,218 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752951Ab0JVCUO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Oct 2010 22:20:14 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:52756 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751752Ab0JVCUM (ORCPT
+	id S1753270Ab0JVCUc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Oct 2010 22:20:32 -0400
+Received: from smtp103.sbc.mail.gq1.yahoo.com ([67.195.15.62]:42966 "HELO
+	smtp103.sbc.mail.gq1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1753013Ab0JVCU2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Oct 2010 22:20:12 -0400
-Date: Fri, 22 Oct 2010 03:20:10 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Nick Piggin <npiggin@kernel.dk>
-Cc: Dave Chinner <david@fromorbit.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: Inode Lock Scalability V7 (was V6)
-Message-ID: <20101022022010.GG19804@ZenIV.linux.org.uk>
-References: <1287622186-1935-1-git-send-email-david@fromorbit.com>
- <20101021050422.GP32255@dastard>
- <20101021132034.GB13620@amd>
- <20101021235227.GI12506@dastard>
- <20101022004540.GA5920@amd>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101022004540.GA5920@amd>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+	Thu, 21 Oct 2010 22:20:28 -0400
+X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
+X-YMail-OSG: UMiD7jwVM1mTf3MuWIS3DNGNZY2MmVWzZ7HLZgreAjawCFb
+ 7gxLD00VXbtNDX9_XrQRFLG3jH.Fdukkd8lqvYRM9giE.SXiu7Q7p5NIe_ZR
+ 1nDh3LD_FjVVsw484elOjiXKI5QnWWCWptZ7mW9mqB6TMevGa3gWjmwgIiU0
+ c.Ob7EIyEvylAQOc1wzQeHQnQdupHkLZnMw51pHAuXDHcxa.M.YH3cI2_78y
+ vc9DVEvYXY2MTJzWAJAl6gopV293iIciq3lvsfAq5qEr2XFm4tDdzAk2BKrB
+ QXflFASNcCXbvgz5FRcJWlyuLBQQ3_Kh3Zvl.1VP5IJQ.O7h3akV8TQr.ahU
+ E.DWVoxRk9JmfZ.QZ6O2.LcoaFpQNtI3y6g--
+X-Yahoo-Newman-Property: ymail-3
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Jens Axboe <axboe@kernel.dk>, Christoph Hellwig <hch@lst.de>
+Cc: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Mike Christie <michaelc@cs.wisc.edu>, Hannes Reinecke <hare@suse.de>,
+        James Bottomley <James.Bottomley@suse.de>,
+        Boaz Harrosh <bharrosh@panasas.com>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: [PATCH] tcm/iblock: Fix bio-set leak during bio exception handling
+Date: Thu, 21 Oct 2010 19:20:22 -0700
+Message-Id: <1287714022-16907-1-git-send-email-nab@linux-iscsi.org>
+X-Mailer: git-send-email 1.5.6.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 22, 2010 at 11:45:40AM +1100, Nick Piggin wrote:
+From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-> No you didn't make these points to me over the past couple of weeks.
-> Specifically, do you agree or disagree about these points:
-> - introducing new concurrency situations from not having a single lock
->   for an inode's icache state is a negative?
+This patch fixes two (one known and one potential) bio-set memory
+leak cases in TCM/IBLOCK when handling exception / shutdown scenarions
+for individually allocated struct bios.  The first case has been reported
+as a struct kmem_cache error during iblock_free_device() -> bioset_free()
+DRBD block device shutdown.  This was happening when iblock_bio_done() was
+called with a final (err != 0) status and bio_put() not being called.
 
-I disagree.
+This patch to iblock_bio_done() also now properly accounts for errors
+with multiple outstanding chained bios per individual struct se_task
+context by adding struct iblock_req->ib_bio_err_cnt.  This is used by
+transport_complete_task() in order to determine when to complete
+struct se_task w/ non GOOD status in the iblock_bio_done() (err == 0)
+case when other bios in the single outstanding chain already failed.
 
-> And I have kept saying I would welcome your idea to reduce i_lock width
-> in a small incremental patch. I still haven't figured out quite what
-> is so important that can't be achieved in simpler ways (like rcu, or
-> using a seperate inode lock).
+The second bio-set exception case this patch addresses can happen when
+iblock_map_task_SG() is called via transport_generic_map_buffers_to_tasks()
+to setup struct iblock_req->ib_bio, but the associated struct se_task is
+released during struct se_device shutdown before submit_bio() can be called
+via iblock_do_task() to dispatch the bios into struct block_device.
 
-No, it's not a small incremental.  It's your locking order being wrong;
-the natural one is
-	[hash, wb, sb] > ->i_lock > [lru]
-and that's one hell of a difference compared to what you are doing.
+So just to verify some items (jaxboe + hch please comment) about how bio_put()
+and the struct bio->bi_done() call should function:
 
-Look:
-	* iput_final() should happen under ->i_lock
-	* if it leaves the inode alive, that's it; we can put it on LRU list
-since lru lock nests inside ->i_lock
-	* if it decides to kill the inode, it sets I_FREEING or I_WILL_FREE
-before dropping ->i_lock.  Once that's done, the inode is ours and nobody
-will pick it through the lists.  We can release ->i_lock and then do what's
-needed.  Safely.
-	* accesses of ->i_state are under ->i_lock, including the switchover
-from I_WILL_FREE to I_FREEING
-	* walkers of the sb, wb and hash lists can grab ->i_lock at will;
-it nests inside their locks.
-	* prune_icache() grabs lru lock, then trylocks ->i_lock on the
-first element.  If trylock fails, we just give inode another spin through
-the list by moving it to the tail; if it doesn't, we are holding ->i_lock
-and can proceed safely.
+*) bio_put() should always be called during bio->bi_bio() -> iblock_bio_done()
+   to call bio->bi_destructor() -> iblock_bio_destructor() -> bio_free()
+*) bio->bi_bio() -> iblock_bio_done() must always do internal accounting 
+   for the completion of chained BIOs dispatched with a *single* call to sumbit_bio()
+   as to which is the last outstanding BIO to complete our struct se_task.
+*) In order to determine good status for the struct iblock_req <-> struct se_task,
+   using the following block in bio->bi_bio() -> iblock_bio_done() is still required:
 
-What you seem to miss is that there are very few places accessing inode through
-the lists (i.e. via pointers that do not contribute to refcount) and absolute
-majority already checks for I_FREEING/I_WILL_FREE, refusing to pick such
-inodes.  It's not an accidental subtle property of the code, it's bloody
-fundamental.
+        /*
+         * Set -EIO if !BIO_UPTODATE and the passed is still err=0
+         */
+        if (!(test_bit(BIO_UPTODATE, &bio->bi_flags)) && !(err))
+                err = -EIO;
 
-As I've said, I've no religious problems with trylocks; we *do* need them for
-prune_icache() to get a sane locking scheme.  But the way you put ->i_lock on
-the top of hierarchy is simply wrong.
+If these three points are correct, I think this patch should resolve the
+original reported issue and address the second 'add missing bio_put)'s for
+tasks aborted before submit_bio() is called' scenario as well.
+
+So far this has been lightly tested on v2.6.36-rc8 on TCM_Loop SCSI LUNs, but
+this will also need to be addressed on older stable / distro kernels in
+lio-core-backports.git code.
+
+Comments folks..?
+
+Signed-off-by: Nicholas A. Bellinger <nab@linux-iscsi.org>
+---
+ drivers/target/target_core_iblock.c |   55 ++++++++++++++++++++++++-----------
+ drivers/target/target_core_iblock.h |    1 +
+ 2 files changed, 39 insertions(+), 17 deletions(-)
+
+diff --git a/drivers/target/target_core_iblock.c b/drivers/target/target_core_iblock.c
+index e7840da..85126b1 100644
+--- a/drivers/target/target_core_iblock.c
++++ b/drivers/target/target_core_iblock.c
+@@ -318,14 +318,15 @@ static void *iblock_allocate_request(
+ {
+ 	struct iblock_req *ib_req;
+ 
+-	ib_req = kmalloc(sizeof(struct iblock_req), GFP_KERNEL);
++	ib_req = kzalloc(sizeof(struct iblock_req), GFP_KERNEL);
+ 	if (!(ib_req)) {
+ 		printk(KERN_ERR "Unable to allocate memory for struct iblock_req\n");
+ 		return NULL;
+ 	}
+ 
+ 	ib_req->ib_dev = dev->dev_ptr;
+-	return (void *)ib_req;
++	atomic_set(&ib_req->ib_bio_cnt, 0);
++	return ib_req;
+ }
+ 
+ static unsigned long long iblock_emulate_read_cap_with_block_size(
+@@ -543,11 +544,17 @@ static int iblock_do_discard(struct se_device *dev, sector_t lba, u32 range)
+ static void iblock_free_task(struct se_task *task)
+ {
+ 	struct iblock_req *req = task->transport_req;
+-
++	struct bio *bio, *hbio = req->ib_bio;
+ 	/*
+-	 * We do not release the bio(s) here associated with this task, as
+-	 * this is handled by bio_put() and iblock_bio_destructor().
++	 * We only release the bio(s) here if iblock_bio_done() has not called
++	 * bio_put() -> iblock_bio_destructor().
+ 	 */
++	while (hbio != NULL) {
++		bio = hbio;
++		hbio = hbio->bi_next;
++		bio->bi_next = NULL;
++		bio_put(bio);
++	}
+ 
+ 	kfree(req);
+ 	task->transport_req = NULL;
+@@ -767,8 +774,6 @@ static int iblock_map_task_SG(struct se_task *task)
+ 		return PYX_TRANSPORT_LU_COMM_FAILURE;
+ 	}
+ 
+-	atomic_set(&ib_req->ib_bio_cnt, 0);
+-
+ 	bio = iblock_get_bio(task, ib_req, ib_dev, &ret, block_lba, sg_num);
+ 	if (!(bio))
+ 		return ret;
+@@ -896,15 +901,32 @@ static sector_t iblock_get_blocks(struct se_device *dev)
+ 
+ static void iblock_bio_done(struct bio *bio, int err)
+ {
+-	struct se_task *task = (struct se_task *)bio->bi_private;
+-	struct iblock_req *ibr = (struct iblock_req *)task->transport_req;
++	struct se_task *task = bio->bi_private;
++	struct iblock_req *ibr = task->transport_req;
++	/*
++	 * Set -EIO if !BIO_UPTODATE and the passed is still err=0
++	 */
++	if (!(test_bit(BIO_UPTODATE, &bio->bi_flags)) && !(err))
++		err = -EIO;
+ 
+-	err = test_bit(BIO_UPTODATE, &bio->bi_flags) ? err : -EIO;
+ 	if (err != 0) {
+ 		printk(KERN_ERR "test_bit(BIO_UPTODATE) failed for bio: %p,"
+ 			" err: %d\n", bio, err);
++		/*
++		 * Bump the ib_bio_err_cnt and release bio.
++		 */
++		atomic_inc(&ibr->ib_bio_err_cnt);
++		smp_mb__after_atomic_inc();
++		bio_put(bio);
++		/*
++		 * Wait to complete the task until the last bio as completed.
++		 */
++		if (!(atomic_dec_and_test(&ibr->ib_bio_cnt)))
++			return;
++
++		ibr->ib_bio = NULL;
+ 		transport_complete_task(task, 0);
+-		goto out;
++		return;
+ 	}
+ 	DEBUG_IBLOCK("done[%p] bio: %p task_lba: %llu bio_lba: %llu err=%d\n",
+ 		task, bio, task->task_lba, bio->bi_sector, err);
+@@ -913,17 +935,16 @@ static void iblock_bio_done(struct bio *bio, int err)
+ 	 * to ibr->ib_bio_set.
+ 	 */
+ 	bio_put(bio);
+-
+ 	/*
+ 	 * Wait to complete the task until the last bio as completed.
+ 	 */
+ 	if (!(atomic_dec_and_test(&ibr->ib_bio_cnt)))
+-		goto out;
+-
++		return;
++	/*
++	 * Return GOOD status for task if zero ib_bio_err_cnt exists.
++	 */
+ 	ibr->ib_bio = NULL;
+-	transport_complete_task(task, (!err));
+-out:
+-	return;
++	transport_complete_task(task, (!atomic_read(&ibr->ib_bio_err_cnt)));
+ }
+ 
+ static struct se_subsystem_api iblock_template = {
+diff --git a/drivers/target/target_core_iblock.h b/drivers/target/target_core_iblock.h
+index 3582aac..4cbfbff 100644
+--- a/drivers/target/target_core_iblock.h
++++ b/drivers/target/target_core_iblock.h
+@@ -14,6 +14,7 @@ extern struct se_global *se_global;
+ struct iblock_req {
+ 	unsigned char ib_scsi_cdb[TCM_MAX_COMMAND_SIZE];
+ 	atomic_t ib_bio_cnt;
++	atomic_t ib_bio_err_cnt;
+ 	u32	ib_sg_count;
+ 	void	*ib_buf;
+ 	struct bio *ib_bio;
+-- 
+1.5.6.5
+
