@@ -1,52 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754793Ab0JVJpn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 05:45:43 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:63089 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751759Ab0JVJpm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 05:45:42 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:x-enigmail-version:content-type
-         :content-transfer-encoding;
-        b=TMLrLl9aSFtTqq2g2sWJAzDeItEgte3LqhEWt5lAy24gEtcFn3mxnoDUARbZ5mOojU
-         eGWd+SsVa9/MXiV9Op7uhylSulra/LsKHaROmIFnZO02sLyTSd50mx54OGhoFsyzgspR
-         py4AO5YmcOTFzLwvW2j8fw4mqmyj8Lq3ABQ5U=
-Message-ID: <4CC15D40.9070606@gmail.com>
-Date: Fri, 22 Oct 2010 11:45:36 +0200
-From: Jiri Slaby <jirislaby@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.11) Gecko/20101013 SUSE/3.1.5 Thunderbird/3.1.5
+	id S1753470Ab0JVJ4V (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 05:56:21 -0400
+Received: from hera.kernel.org ([140.211.167.34]:42347 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751759Ab0JVJ4U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Oct 2010 05:56:20 -0400
+Date: Fri, 22 Oct 2010 09:55:51 GMT
+From: tip-bot for Alexander van Heukelum <heukelum@fastmail.fm>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        jbeulich@novell.com, heukelum@fastmail.fm, tglx@linutronix.de,
+        mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        jbeulich@novell.com, heukelum@fastmail.fm, tglx@linutronix.de,
+        mingo@elte.hu
+In-Reply-To: <1287696649.20421.1401306095@webmail.messagingengine.com>
+References: <1287696649.20421.1401306095@webmail.messagingengine.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/debug] x86, asm: Fix ancient-GAS workaround
+Message-ID: <tip-a22dcdb0032c78c6b443f6897d7ac432a3b5a272@git.kernel.org>
+Git-Commit-ID: a22dcdb0032c78c6b443f6897d7ac432a3b5a272
+X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
-To: Takashi Iwai <tiwai@suse.de>
-CC: Colin Guthrie <gmane@colin.guthr.ie>, Valdis.Kletnieks@vt.edu,
-        linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        mm-commits@vger.kernel.org, clemens@ladisch.de,
-        Jaroslav Kysela <perex@perex.cz>, alsa-devel@alsa-project.org
-Subject: Re: HDA: no sound [was: mmotm 2010-10-20-15-01 uploaded]
-References: <201010202233.o9KMXNoL008303@imap1.linux-foundation.org>	<4CBFEE94.7020103@gmail.com>	<s5hlj5sc7do.wl%tiwai@suse.de>	<4CBFF25C.2080908@gmail.com>	<s5hfww0c6oj.wl%tiwai@suse.de>	<4CC085F5.9070905@gmail.com>	<s5heibjxsi4.wl%tiwai@suse.de>	<4CC092BC.9060504@gmail.com>	<s5h8w1rxrl3.wl%tiwai@suse.de>	<5220.1287692957@localhost>	<s5h39rzclx3.wl%tiwai@suse.de>	<8089.1287696264@localhost>	<s5hsjzzb5cf.wl%tiwai@suse.de>	<4CC0B3C1.9010106@gmail.com>	<4CC14F4E.4090509@colin.guthr.ie>	<s5hmxq6bnwj.wl%tiwai@suse.de>	<4CC156ED.8000104@gmail.com> <s5hiq0ubm5e.wl%tiwai@suse.de>
-In-Reply-To: <s5hiq0ubm5e.wl%tiwai@suse.de>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 22 Oct 2010 09:55:52 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/22/2010 11:40 AM, Takashi Iwai wrote:
-> Hrm, is it with alsa.rpm and libasound2.rpm from OBS
-> multimedia:audio:snapshot repo?
+Commit-ID:  a22dcdb0032c78c6b443f6897d7ac432a3b5a272
+Gitweb:     http://git.kernel.org/tip/a22dcdb0032c78c6b443f6897d7ac432a3b5a272
+Author:     Alexander van Heukelum <heukelum@fastmail.fm>
+AuthorDate: Thu, 21 Oct 2010 23:30:49 +0200
+Committer:  Ingo Molnar <mingo@elte.hu>
+CommitDate: Fri, 22 Oct 2010 10:45:02 +0200
 
-Aha, I dupped in the meantime and it vanished.
+x86, asm: Fix ancient-GAS workaround
 
-With the revert:
-http://www.alsa-project.org/db/?f=7b9b41e9494674b1e5a8ec0b5dd250058ecff887
+It turns out to generate something like this:
 
-Without the revert:
-http://www.alsa-project.org/db/?f=dc92721d4587f8f6289dfb25eb0ac523a2704f21
+    printk ( ("<3>") "something");
 
-regards,
--- 
-js
+The extra parentheses here break the UML compile.
+
+Change the sed-program to add the parentheses only for numbers.
+
+Reported-by: Ingo Molnar <mingo@elte.hu>
+Signed-off-by: Alexander van Heukelum <heukelum@fastmail.fm>
+Acked-by: Jan Beulich <jbeulich@novell.com>
+LKML-Reference: <1287696649.20421.1401306095@webmail.messagingengine.com>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
+---
+ Kbuild |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
+
+diff --git a/Kbuild b/Kbuild
+index 3995939..431f7ca 100644
+--- a/Kbuild
++++ b/Kbuild
+@@ -53,7 +53,8 @@ targets += arch/$(SRCARCH)/kernel/asm-offsets.s
+ # Default sed regexp - multiline due to syntax constraints
+ define sed-y
+ 	"/^->/{s:->#\(.*\):/* \1 */:; \
+-	s:^->\([^ ]*\) [\$$#]*\([^ ]*\) \(.*\):#define \1 (\2) /* \3 */:; \
++	s:^->\([^ ]*\) [\$$#]*\([-0-9]*\) \(.*\):#define \1 (\2) /* \3 */:; \
++	s:^->\([^ ]*\) [\$$#]*\([^ ]*\) \(.*\):#define \1 \2 /* \3 */:; \
+ 	s:->::; p;}"
+ endef
+ 
