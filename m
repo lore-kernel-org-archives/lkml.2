@@ -1,208 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754813Ab0JVHUh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 03:20:37 -0400
-Received: from beaker.bytemark.co.uk ([80.68.81.2]:49505 "EHLO
-	beaker.bytemark.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754556Ab0JVHUg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 03:20:36 -0400
-From: "Emilio G. Cota" <cota@braap.org>
-To: Greg KH <greg@kroah.com>
-Cc: Martyn Welch <martyn.welch@ge.com>, LKML <linux-kernel@vger.kernel.org>,
-        Juan David Gonzalez Cobas <david.cobas@gmail.com>
-Subject: [PATCH 12/30] staging/vme/ca91cx42: declare static functions as such
-Date: Fri, 22 Oct 2010 02:36:34 -0400
-Message-Id: <1287729412-24356-13-git-send-email-cota@braap.org>
-X-Mailer: git-send-email 1.7.3.1
-In-Reply-To: <1287729412-24356-1-git-send-email-cota@braap.org>
-References: <1287729412-24356-1-git-send-email-cota@braap.org>
+	id S1754686Ab0JVHVj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 03:21:39 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:49937 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1752703Ab0JVHVi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Oct 2010 03:21:38 -0400
+Message-ID: <4CC13BB8.7090003@cn.fujitsu.com>
+Date: Fri, 22 Oct 2010 15:22:32 +0800
+From: Li Zefan <lizf@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1b3pre) Gecko/20090513 Fedora/3.0-2.3.beta2.fc11 Thunderbird/3.0b2
+MIME-Version: 1.0
+To: Anton Blanchard <anton@samba.org>, subrata@linux.vnet.ibm.com
+CC: ltp-list@lists.sourceforge.net, Steven Rostedt <rostedt@goodmis.org>,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        Paul Mackerras <paulus@samba.org>, LKML <linux-kernel@vger.kernel.org>,
+        linuxppc-dev@lists.ozlabs.org
+Subject: Re: [PATCH] powerpc: Fix hcall tracepoint recursion
+References: <4C85A88D.10700@cn.fujitsu.com>	<1285689961.11429.12.camel@subratamodak.linux.ibm.com>	<1286954486.4893.15.camel@subratamodak.linux.ibm.com>	<4CB55FE6.6000604@cn.fujitsu.com>	<4CB5615C.4070406@cn.fujitsu.com>	<4CB59825.7060504@cn.fujitsu.com>	<1286995066.4893.17.camel@subratamodak.linux.ibm.com>	<4CBBBCB0.8070406@cn.fujitsu.com> <20101021215212.4a982c85@kryten>
+In-Reply-To: <20101021215212.4a982c85@kryten>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Emilio G. Cota <cota@braap.org>
+Anton Blanchard wrote:
+> Hi,
+> 
+>> This is a dead loop:
+>>
+>> trace_hcall_entry() -> trace_clock_global() -> trace_hcall_entry() ..
+>>
+>> And this is a PPC specific bug. Hope some ppc guys will fix it?
+>> Or we kill trace_clock_global() if no one actually uses it..
+> 
+> Nasty! How does the patch below look? I had to disable irqs otherwise
+> we would sometimes drop valid events (if we take an interrupt anywhere
+> in the region where depth is elevated, then the entire interrupt will
+> be blocked from calling hcall tracepoints.
+> 
 
-Signed-off-by: Emilio G. Cota <cota@braap.org>
----
- drivers/staging/vme/bridges/vme_ca91cx42.c |   38 ++++++++++++++--------------
- 1 files changed, 19 insertions(+), 19 deletions(-)
+Thanks!
 
-diff --git a/drivers/staging/vme/bridges/vme_ca91cx42.c b/drivers/staging/vme/bridges/vme_ca91cx42.c
-index 14e10a6..6dd895f 100644
---- a/drivers/staging/vme/bridges/vme_ca91cx42.c
-+++ b/drivers/staging/vme/bridges/vme_ca91cx42.c
-@@ -259,7 +259,7 @@ static void ca91cx42_irq_exit(struct ca91cx42_driver *bridge,
- /*
-  * Set up an VME interrupt
-  */
--void ca91cx42_irq_set(struct vme_bridge *ca91cx42_bridge, int level, int state,
-+static void ca91cx42_irq_set(struct vme_bridge *ca91cx42_bridge, int level, int state,
- 	int sync)
- 
- {
-@@ -287,7 +287,7 @@ void ca91cx42_irq_set(struct vme_bridge *ca91cx42_bridge, int level, int state,
- 	}
- }
- 
--int ca91cx42_irq_generate(struct vme_bridge *ca91cx42_bridge, int level,
-+static int ca91cx42_irq_generate(struct vme_bridge *ca91cx42_bridge, int level,
- 	int statid)
- {
- 	u32 tmp;
-@@ -323,7 +323,7 @@ int ca91cx42_irq_generate(struct vme_bridge *ca91cx42_bridge, int level,
- 	return 0;
- }
- 
--int ca91cx42_slave_set(struct vme_slave_resource *image, int enabled,
-+static int ca91cx42_slave_set(struct vme_slave_resource *image, int enabled,
- 	unsigned long long vme_base, unsigned long long size,
- 	dma_addr_t pci_base, vme_address_t aspace, vme_cycle_t cycle)
- {
-@@ -429,7 +429,7 @@ int ca91cx42_slave_set(struct vme_slave_resource *image, int enabled,
- 	return 0;
- }
- 
--int ca91cx42_slave_get(struct vme_slave_resource *image, int *enabled,
-+static int ca91cx42_slave_get(struct vme_slave_resource *image, int *enabled,
- 	unsigned long long *vme_base, unsigned long long *size,
- 	dma_addr_t *pci_base, vme_address_t *aspace, vme_cycle_t *cycle)
- {
-@@ -584,7 +584,7 @@ static void ca91cx42_free_resource(struct vme_master_resource *image)
- }
- 
- 
--int ca91cx42_master_set(struct vme_master_resource *image, int enabled,
-+static int ca91cx42_master_set(struct vme_master_resource *image, int enabled,
- 	unsigned long long vme_base, unsigned long long size,
- 	vme_address_t aspace, vme_cycle_t cycle, vme_width_t dwidth)
- {
-@@ -741,7 +741,7 @@ err_window:
- 	return retval;
- }
- 
--int __ca91cx42_master_get(struct vme_master_resource *image, int *enabled,
-+static int __ca91cx42_master_get(struct vme_master_resource *image, int *enabled,
- 	unsigned long long *vme_base, unsigned long long *size,
- 	vme_address_t *aspace, vme_cycle_t *cycle, vme_width_t *dwidth)
- {
-@@ -828,7 +828,7 @@ int __ca91cx42_master_get(struct vme_master_resource *image, int *enabled,
- 	return 0;
- }
- 
--int ca91cx42_master_get(struct vme_master_resource *image, int *enabled,
-+static int ca91cx42_master_get(struct vme_master_resource *image, int *enabled,
- 	unsigned long long *vme_base, unsigned long long *size,
- 	vme_address_t *aspace, vme_cycle_t *cycle, vme_width_t *dwidth)
- {
-@@ -844,7 +844,7 @@ int ca91cx42_master_get(struct vme_master_resource *image, int *enabled,
- 	return retval;
- }
- 
--ssize_t ca91cx42_master_read(struct vme_master_resource *image, void *buf,
-+static ssize_t ca91cx42_master_read(struct vme_master_resource *image, void *buf,
- 	size_t count, loff_t offset)
- {
- 	ssize_t retval;
-@@ -904,7 +904,7 @@ out:
- 	return retval;
- }
- 
--ssize_t ca91cx42_master_write(struct vme_master_resource *image, void *buf,
-+static ssize_t ca91cx42_master_write(struct vme_master_resource *image, void *buf,
- 	size_t count, loff_t offset)
- {
- 	ssize_t retval;
-@@ -959,7 +959,7 @@ out:
- 	return retval;
- }
- 
--unsigned int ca91cx42_master_rmw(struct vme_master_resource *image,
-+static unsigned int ca91cx42_master_rmw(struct vme_master_resource *image,
- 	unsigned int mask, unsigned int compare, unsigned int swap,
- 	loff_t offset)
- {
-@@ -1015,7 +1015,7 @@ out:
- 	return result;
- }
- 
--int ca91cx42_dma_list_add(struct vme_dma_list *list, struct vme_dma_attr *src,
-+static int ca91cx42_dma_list_add(struct vme_dma_list *list, struct vme_dma_attr *src,
- 	struct vme_dma_attr *dest, size_t count)
- {
- 	struct ca91cx42_dma_entry *entry, *prev;
-@@ -1176,7 +1176,7 @@ static int ca91cx42_dma_busy(struct vme_bridge *ca91cx42_bridge)
- 		return 1;
- }
- 
--int ca91cx42_dma_list_exec(struct vme_dma_list *list)
-+static int ca91cx42_dma_list_exec(struct vme_dma_list *list)
- {
- 	struct vme_dma_resource *ctrlr;
- 	struct ca91cx42_dma_entry *entry;
-@@ -1258,7 +1258,7 @@ int ca91cx42_dma_list_exec(struct vme_dma_list *list)
- 
- }
- 
--int ca91cx42_dma_list_empty(struct vme_dma_list *list)
-+static int ca91cx42_dma_list_empty(struct vme_dma_list *list)
- {
- 	struct list_head *pos, *temp;
- 	struct ca91cx42_dma_entry *entry;
-@@ -1280,7 +1280,7 @@ int ca91cx42_dma_list_empty(struct vme_dma_list *list)
-  * This does not enable the LM monitor - that should be done when the first
-  * callback is attached and disabled when the last callback is removed.
-  */
--int ca91cx42_lm_set(struct vme_lm_resource *lm, unsigned long long lm_base,
-+static int ca91cx42_lm_set(struct vme_lm_resource *lm, unsigned long long lm_base,
- 	vme_address_t aspace, vme_cycle_t cycle)
- {
- 	u32 temp_base, lm_ctl = 0;
-@@ -1348,7 +1348,7 @@ int ca91cx42_lm_set(struct vme_lm_resource *lm, unsigned long long lm_base,
- /* Get configuration of the callback monitor and return whether it is enabled
-  * or disabled.
-  */
--int ca91cx42_lm_get(struct vme_lm_resource *lm, unsigned long long *lm_base,
-+static int ca91cx42_lm_get(struct vme_lm_resource *lm, unsigned long long *lm_base,
- 	vme_address_t *aspace, vme_cycle_t *cycle)
- {
- 	u32 lm_ctl, enabled = 0;
-@@ -1391,7 +1391,7 @@ int ca91cx42_lm_get(struct vme_lm_resource *lm, unsigned long long *lm_base,
-  *
-  * Callback will be passed the monitor triggered.
-  */
--int ca91cx42_lm_attach(struct vme_lm_resource *lm, int monitor,
-+static int ca91cx42_lm_attach(struct vme_lm_resource *lm, int monitor,
- 	void (*callback)(int))
- {
- 	u32 lm_ctl, tmp;
-@@ -1440,7 +1440,7 @@ int ca91cx42_lm_attach(struct vme_lm_resource *lm, int monitor,
- /*
-  * Detach a callback function forn a specific location monitor.
-  */
--int ca91cx42_lm_detach(struct vme_lm_resource *lm, int monitor)
-+static int ca91cx42_lm_detach(struct vme_lm_resource *lm, int monitor)
- {
- 	u32 tmp;
- 	struct ca91cx42_driver *bridge;
-@@ -1473,7 +1473,7 @@ int ca91cx42_lm_detach(struct vme_lm_resource *lm, int monitor)
- 	return 0;
- }
- 
--int ca91cx42_slot_get(struct vme_bridge *ca91cx42_bridge)
-+static int ca91cx42_slot_get(struct vme_bridge *ca91cx42_bridge)
- {
- 	u32 slot = 0;
- 	struct ca91cx42_driver *bridge;
-@@ -1833,7 +1833,7 @@ err_struct:
- 
- }
- 
--void ca91cx42_remove(struct pci_dev *pdev)
-+static void ca91cx42_remove(struct pci_dev *pdev)
- {
- 	struct list_head *pos = NULL;
- 	struct vme_master_resource *master_image;
--- 
-1.7.1
+Subrata, could you test the patch below?
 
+> Anton
+> --
+> 
+> Subject: [PATCH] powerpc: Fix hcall tracepoint recursion
+> 
+> Spinlocks on shared processor partitions use H_YIELD to notify the
+> hypervisor we are waiting on another virtual CPU. Unfortunately this means
+> the hcall tracepoints can recurse.
+> 
+> The patch below adds a percpu depth and checks it on both the entry and
+> exit hcall tracepoints.
+> 
+> Signed-off-by: Anton Blanchard <anton@samba.org>
+> ---
+> 
+> Index: powerpc.git/arch/powerpc/platforms/pseries/lpar.c
+> ===================================================================
+> --- powerpc.git.orig/arch/powerpc/platforms/pseries/lpar.c	2010-10-21 17:32:00.980003644 +1100
+> +++ powerpc.git/arch/powerpc/platforms/pseries/lpar.c	2010-10-21 17:34:54.942681273 +1100
+> @@ -701,6 +701,13 @@ EXPORT_SYMBOL(arch_free_page);
+>  /* NB: reg/unreg are called while guarded with the tracepoints_mutex */
+>  extern long hcall_tracepoint_refcount;
+>  
+> +/* 
+> + * Since the tracing code might execute hcalls we need to guard against
+> + * recursion. One example of this are spinlocks calling H_YIELD on
+> + * shared processor partitions.
+> + */
+> +static DEFINE_PER_CPU(unsigned int, hcall_trace_depth);
+> +
+>  void hcall_tracepoint_regfunc(void)
+>  {
+>  	hcall_tracepoint_refcount++;
+> @@ -713,12 +720,42 @@ void hcall_tracepoint_unregfunc(void)
+>  
+>  void __trace_hcall_entry(unsigned long opcode, unsigned long *args)
+>  {
+> +	unsigned long flags;
+> +	unsigned int *depth;
+> +
+> +	local_irq_save(flags);
+> +
+> +	depth = &__get_cpu_var(hcall_trace_depth);
+> +
+> +	if (*depth)
+> +		goto out;
+> +
+> +	(*depth)++;
+>  	trace_hcall_entry(opcode, args);
+> +	(*depth)--;
+> +
+> +out:
+> +	local_irq_restore(flags);
+>  }
+>  
+>  void __trace_hcall_exit(long opcode, unsigned long retval,
+>  			unsigned long *retbuf)
+>  {
+> +	unsigned long flags;
+> +	unsigned int *depth;
+> +
+> +	local_irq_save(flags);
+> +
+> +	depth = &__get_cpu_var(hcall_trace_depth);
+> +
+> +	if (*depth)
+> +		goto out;
+> +
+> +	(*depth)++;
+>  	trace_hcall_exit(opcode, retval, retbuf);
+> +	(*depth)--;
+> +
+> +out:
+> +	local_irq_restore(flags);
+>  }
+>  #endif
+> 
+> 
