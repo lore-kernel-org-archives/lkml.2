@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758458Ab0JVSwS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 14:52:18 -0400
-Received: from kroah.org ([198.145.64.141]:45689 "EHLO coco.kroah.org"
+	id S1758900Ab0JVSwf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 14:52:35 -0400
+Received: from kroah.org ([198.145.64.141]:45664 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756428Ab0JVSia (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 14:38:30 -0400
+	id S1756311Ab0JVSi1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Oct 2010 14:38:27 -0400
 X-Mailbox-Line: From gregkh@clark.site Fri Oct 22 11:35:58 2010
-Message-Id: <20101022183558.303634758@clark.site>
+Message-Id: <20101022183558.029453290@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 22 Oct 2010 11:34:50 -0700
+Date: Fri, 22 Oct 2010 11:34:47 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Yinghai Lu <yhlu.kernel@gmail.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: [23/66] x86, irq: Plug memory leak in sparse irq
+        Alexey Osipov <lion-simba@pridelands.ru>,
+        "Beholder Intl. Ltd. Dmitry Belimov" <d.belimov@gmail.com>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>
+Subject: [20/66] V4L/DVB (13966): DVB-T regression fix for saa7134 cards
 In-Reply-To: <20101022183711.GA23214@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,51 +27,70 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thomas Gleixner <tglx@linutronix.de>
+From: Dmitri Belimov <d.belimov@gmail.com>
 
-commit 1cf180c94e9166cda083ff65333883ab3648e852 upstream.
+commit 08be64be3d1e5ecd72e7ba3147aea518e527f08e upstream.
 
-free_irq_cfg() is not freeing the cpumask_vars in irq_cfg. Fixing this
-triggers a use after free caused by the fact that copying struct
-irq_cfg is done with memcpy, which copies the pointer not the cpumask.
+Some customers has problem with quality of DVB-T
+https://bugs.launchpad.net/ubuntu/+source/linux/+bug/446575
 
-Fix both places.
+After this patch http://patchwork.kernel.org/patch/23345/
 
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Cc: Yinghai Lu <yhlu.kernel@gmail.com>
-LKML-Reference: <alpine.LFD.2.00.1009282052570.2416@localhost6.localdomain6>
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+This is patch for fix regression with DVB-T. Tested with many people.
+
+Signed-off-by: Alexey Osipov <lion-simba@pridelands.ru>
+Signed-off-by: Beholder Intl. Ltd. Dmitry Belimov <d.belimov@gmail.com>
+Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/x86/kernel/apic/io_apic.c |   11 ++++++++---
- 1 file changed, 8 insertions(+), 3 deletions(-)
+ drivers/media/video/saa7134/saa7134-core.c |   13 -------------
+ drivers/media/video/saa7134/saa7134-ts.c   |   13 +++++++++++++
+ 2 files changed, 13 insertions(+), 13 deletions(-)
 
---- a/arch/x86/kernel/apic/io_apic.c
-+++ b/arch/x86/kernel/apic/io_apic.c
-@@ -332,14 +332,19 @@ void arch_init_copy_chip_data(struct irq
+--- a/drivers/media/video/saa7134/saa7134-core.c
++++ b/drivers/media/video/saa7134/saa7134-core.c
+@@ -420,19 +420,6 @@ int saa7134_set_dmabits(struct saa7134_d
+ 		ctrl |= SAA7134_MAIN_CTRL_TE5;
+ 		irq  |= SAA7134_IRQ1_INTE_RA2_1 |
+ 			SAA7134_IRQ1_INTE_RA2_0;
+-
+-		/* dma: setup channel 5 (= TS) */
+-
+-		saa_writeb(SAA7134_TS_DMA0, (dev->ts.nr_packets - 1) & 0xff);
+-		saa_writeb(SAA7134_TS_DMA1,
+-			((dev->ts.nr_packets - 1) >> 8) & 0xff);
+-		/* TSNOPIT=0, TSCOLAP=0 */
+-		saa_writeb(SAA7134_TS_DMA2,
+-			(((dev->ts.nr_packets - 1) >> 16) & 0x3f) | 0x00);
+-		saa_writel(SAA7134_RS_PITCH(5), TS_PACKET_SIZE);
+-		saa_writel(SAA7134_RS_CONTROL(5), SAA7134_RS_CONTROL_BURST_16 |
+-						  SAA7134_RS_CONTROL_ME |
+-						  (dev->ts.pt_ts.dma >> 12));
+ 	}
  
- 	old_cfg = old_desc->chip_data;
+ 	/* set task conditions + field handling */
+--- a/drivers/media/video/saa7134/saa7134-ts.c
++++ b/drivers/media/video/saa7134/saa7134-ts.c
+@@ -250,6 +250,19 @@ int saa7134_ts_start(struct saa7134_dev
  
--	memcpy(cfg, old_cfg, sizeof(struct irq_cfg));
-+	cfg->vector = old_cfg->vector;
-+	cfg->move_in_progress = old_cfg->move_in_progress;
-+	cpumask_copy(cfg->domain, old_cfg->domain);
-+	cpumask_copy(cfg->old_domain, old_cfg->old_domain);
+ 	BUG_ON(dev->ts_started);
  
- 	init_copy_irq_2_pin(old_cfg, cfg, node);
- }
- 
--static void free_irq_cfg(struct irq_cfg *old_cfg)
-+static void free_irq_cfg(struct irq_cfg *cfg)
- {
--	kfree(old_cfg);
-+	free_cpumask_var(cfg->domain);
-+	free_cpumask_var(cfg->old_domain);
-+	kfree(cfg);
- }
- 
- void arch_free_chip_data(struct irq_desc *old_desc, struct irq_desc *desc)
++	/* dma: setup channel 5 (= TS) */
++	saa_writeb(SAA7134_TS_DMA0, (dev->ts.nr_packets - 1) & 0xff);
++	saa_writeb(SAA7134_TS_DMA1,
++		((dev->ts.nr_packets - 1) >> 8) & 0xff);
++	/* TSNOPIT=0, TSCOLAP=0 */
++	saa_writeb(SAA7134_TS_DMA2,
++		(((dev->ts.nr_packets - 1) >> 16) & 0x3f) | 0x00);
++	saa_writel(SAA7134_RS_PITCH(5), TS_PACKET_SIZE);
++	saa_writel(SAA7134_RS_CONTROL(5), SAA7134_RS_CONTROL_BURST_16 |
++					  SAA7134_RS_CONTROL_ME |
++					  (dev->ts.pt_ts.dma >> 12));
++
++	/* reset hardware TS buffers */
+ 	saa_writeb(SAA7134_TS_SERIAL1, 0x00);
+ 	saa_writeb(SAA7134_TS_SERIAL1, 0x03);
+ 	saa_writeb(SAA7134_TS_SERIAL1, 0x00);
 
 
