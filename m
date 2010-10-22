@@ -1,74 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756864Ab0JVNn0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 09:43:26 -0400
-Received: from a.ns.miles-group.at ([95.130.255.143]:55192 "EHLO radon.swed.at"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755283Ab0JVNnZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 09:43:25 -0400
-/m: 
-MIME-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8
+	id S1756468Ab0JVNtj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 09:49:39 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:50597 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752180Ab0JVNti (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Oct 2010 09:49:38 -0400
+X-Authority-Analysis: v=1.1 cv=NFUeGz0loTdi/T6hXKngYYtckjed7x3pKvNOqmBBK18= c=1 sm=0 a=A6yVOXcETFUA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=Uc76PqOG9uPNVy1IMfsA:9 a=-VW120tuk57w22jXuwRSsWzOUfMA:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [PATCH v2][GIT PULL] tracing: Prevent unloadable modules from
+ using trace_bprintk()
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Li Zefan <lizf@cn.fujitsu.com>
+Cc: Rusty Russell <rusty@rustcorp.com.au>, LKML <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>, Frederic Weisbecker <fweisbec@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+In-Reply-To: <4CC1218E.9090104@cn.fujitsu.com>
+References: <1287668742.16971.585.camel@gandalf.stny.rr.com>
+	 <201010221413.28588.rusty@rustcorp.com.au>
+	 <1287719918.16971.615.camel@gandalf.stny.rr.com>
+	 <201010221504.51535.rusty@rustcorp.com.au>
+	 <4CC1218E.9090104@cn.fujitsu.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Fri, 22 Oct 2010 09:49:33 -0400
+Message-ID: <1287755374.16971.629.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
-Date: Fri, 22 Oct 2010 15:43:22 +0200
-From: Richard Weinberger <richard@nod.at>
-To: <linux-kernel@vger.kernel.org>, <mingo@redhat.com>, <hpa@zytor.com>,
-        <tglx@linutronix.de>
-Cc: <linux-tip-commits@vger.kernel.org>
-Subject: Re: [tip:irq/core] genirq: Warn if enable_irq is called before irq is
- set up
-In-Reply-To: <tip-658fc358f9954083ea55abf82ca77a18f82412d7@git.kernel.org>
-References: <tip-658fc358f9954083ea55abf82ca77a18f82412d7@git.kernel.org>
-Message-ID: <2ae2295020fc2c103ca624e08e43c849@radon2.swed.at>
-User-Agent: RoundCube Webmail
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 22 Oct 2010 13:09:49 GMT, tip-bot for Thomas Gleixner
-<tglx@linutronix.de> wrote:
-> Commit-ID:  658fc358f9954083ea55abf82ca77a18f82412d7
-> Gitweb:    
-> http://git.kernel.org/tip/658fc358f9954083ea55abf82ca77a18f82412d7
-> Author:     Thomas Gleixner <tglx@linutronix.de>
-> AuthorDate: Fri, 22 Oct 2010 14:47:57 +0200
-> Committer:  Thomas Gleixner <tglx@linutronix.de>
-> CommitDate: Fri, 22 Oct 2010 15:05:35 +0200
+On Fri, 2010-10-22 at 13:30 +0800, Li Zefan wrote:
+
+> In fact tracepoint is free from this bug, because we'll empty the ring
+> buffer if the unloading module has tracepoints in it.
+
+Hehe, and I should know, I wrote that code :-)
+
+
 > 
-> genirq: Warn if enable_irq is called before irq is set up
+> So for trace_bprintk, why can't we do the same thing? If a module has
+> trace_bprintk calls in it, just empty the ring buffer when unloading
+> module.
 > 
-> The recent changes in the genirq core unearthed a bug in arch/um which
-> called enable_irq() before the interrupt was set up. 
+> And that's as simple as something like this:
 > 
-> Warn and return instead of crashing the machine with a NULL pointer
-> dereference.
-> 
-> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-> Cc: Richard Weinberger <richard@nod.at>
-> ---
->  kernel/irq/manage.c |    4 ++++
->  1 files changed, 4 insertions(+), 0 deletions(-)
-> 
-> diff --git a/kernel/irq/manage.c b/kernel/irq/manage.c
-> index 644e8d5..2806023 100644
-> --- a/kernel/irq/manage.c
-> +++ b/kernel/irq/manage.c
-> @@ -324,6 +324,10 @@ void enable_irq(unsigned int irq)
->  	if (!desc)
->  		return;
+> diff --git a/kernel/trace/trace_printk.c b/kernel/trace/trace_printk.c
+> index 2547d88..103987f 100644
+> --- a/kernel/trace/trace_printk.c
+> +++ b/kernel/trace/trace_printk.c
+> @@ -80,6 +80,13 @@ static int module_trace_bprintk_format_notify(struct notifier_block *self,
 >  
-> +	if (WARN(!desc->irq_data.chip || !desc->irq_data.chip->irq_enable,
-> +	    "KERN_ERR enable_irq before setup/request_irq: irq %u\n", irq))
+>  		if (val == MODULE_STATE_COMING)
+>  			hold_module_trace_bprintk_format(start, end);
+> +		else if (val == MODULE_STATE_GOING) {
+> +			/*
+> +			 * It is safest to reset the ring buffer if the
+> +			 * module being unloaded uses trace_bprintk.
+> +			 */
+> +			tracing_reset_current_online_cpus();
+> +		}
+>  	}
+>  	return 0;
+>  }
 
-Here is a little typo. The double quote should be after KERN_ERR.
+This could definitely work.
 
-Thanks,
-//richard
+But this prevents developers using trace_printk() in their exit() code.
+We should probably add a trace_mod_printk() or something that just
+forces the slow version that does not require flushing the ring buffer
+on removal. As long as there's not a single trace_printk() in the
+module, and it only uses the alternative, then this should work.
 
-> +		return;
-> +
->  	chip_bus_lock(desc);
->  	raw_spin_lock_irqsave(&desc->lock, flags);
->  	__enable_irq(desc, irq, false);
+-- Steve
+
 
