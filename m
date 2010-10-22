@@ -1,82 +1,218 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752623Ab0JVXD1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 19:03:27 -0400
-Received: from beaker.bytemark.co.uk ([80.68.81.2]:39777 "EHLO
-	beaker.bytemark.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750733Ab0JVXD0 (ORCPT
+	id S1753898Ab0JVXDy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 19:03:54 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:11347 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751037Ab0JVXDx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 19:03:26 -0400
-Date: Fri, 22 Oct 2010 19:03:17 -0400
-From: "Emilio G. Cota" <cota@braap.org>
-To: Martyn Welch <martyn.welch@ge.com>
-Cc: Greg KH <greg@kroah.com>, LKML <linux-kernel@vger.kernel.org>,
-        Juan David Gonzalez Cobas <david.cobas@gmail.com>
-Subject: Re: [-next] staging/vme: various fixes + new driver model for VME
-Message-ID: <20101022230317.GM10869@flamenco.cs.columbia.edu>
-References: <1287729412-24356-1-git-send-email-cota@braap.org>
- <4CC158B3.5010908@ge.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4CC158B3.5010908@ge.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Fri, 22 Oct 2010 19:03:53 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
+        b=SPGhpMSwsNLBRimQd7WJ+iVpkgBYlCqzCidACx3C9Ju/8ehZpLrK38HC44XItc4kUl
+         LFZn9VMbezE1Z4K/y9FA==
+From: Venkatesh Pallipadi <venki@google.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Damien Wyart <damien.wyart@free.fr>,
+        Chase Douglas <chase.douglas@canonical.com>,
+        Ingo Molnar <mingo@elte.hu>, tmhikaru@gmail.com,
+        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
+Subject: Re: High CPU load when machine is idle (related to PROBLEM: Unusually high load average when idle in 2.6.35, 2.6.35.1 and later)
+Date: Fri, 22 Oct 2010 16:03:42 -0700
+Message-Id: <1287788622-25860-1-git-send-email-venki@google.com>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <AANLkTin+HE09Oui89uCmG-rrHE14zXfJuRvZgsPCB1De@mail.gmail.com>
+References: <AANLkTin+HE09Oui89uCmG-rrHE14zXfJuRvZgsPCB1De@mail.gmail.com>
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 22, 2010 at 10:26:11 +0100, Martyn Welch wrote:
-> On 22/10/10 07:36, Emilio G. Cota wrote:
-> 
-> Hi Emilio,
-> 
-> Thank you for the fixes. After a quick glance, there seem to be a number
-> of valid fixes here, but I'm very concerned by the patches that change
-> the driver model. We discussed this approach in August last year, I am
-> still yet to be convinced by the approach you wish to take.
+(Sorry about the subjectless earlier mail)
 
-Yes I remember we discussed it privately. I didn't provide a solution
-at that point, I just told you that I believed the model could
-be improved--and this is my attempt.
+I started making small changes to the code, but none of the change helped much.
+I think the problem with the current code is that, even though idle CPUs
+update load, the fold only happens when one of the CPU is busy
+and we end up taking its load into global load.
 
-> > 
-> > - Make DMA work on the tsi148 (it's the only bridge I've got).
-> >   This will probably involve changing or extending the
-> >   current API.
-> 
-> The DMA is already working on the tsi148. In what way do you feel that
-> the current API needs changing or extending for DMA?
+So, I tried to simplify things and doing the updates directly from idle loop.
+This is only a test patch, and eventually we need to hook it off somewhere
+else, instead of idle loop and also this is expected work only as x86_64
+right now.
 
-Sorry I may be confused here. That's the impression I got after reading
-the DMA code a few months ago.
+Peter: Do you think something like this will work? loadavg went
+quite on two of my test systems after this change (4 cpu and 24 cpu).
 
-Anyway forget about this for the time being.
+Thanks,
+Venki
 
-> > - Test the whole thing with real hardware and a real VME driver
-> >   (currently out of tree as well, see [2]), which I'll try
-> >   to get merged, too--currently we just have vme_user.c which
-> >   really isn't a kosher driver.
-> > 
-> 
-> The current API has been tested with real hardware, for both supported
-> vme bridges, on multiple cards, by multiple people. If the changes to
-> the API are to be applied, they would need to be throughly tested before
-> they are applied. As I've said above - I am still not convinced by the
-> change in approach.
 
-Well what we have merged is just vme_user, which is an unusual driver
-that is not even finished yet. I can't speak of what's not merged.
+---
+ arch/x86/kernel/process_64.c |    2 +
+ kernel/sched.c               |   67 +++++++++++------------------------------
+ kernel/sched_idletask.c      |    1 -
+ 3 files changed, 20 insertions(+), 50 deletions(-)
 
-Don't get me wrong, I didn't mean to say that the current code has
-never been tested.
+diff --git a/arch/x86/kernel/process_64.c b/arch/x86/kernel/process_64.c
+index 3d9ea53..aaa8025 100644
+--- a/arch/x86/kernel/process_64.c
++++ b/arch/x86/kernel/process_64.c
+@@ -101,6 +101,7 @@ static inline void play_dead(void)
+ }
+ #endif
+ 
++void idle_load_update(void);
+ /*
+  * The idle thread. There's no useful work to be
+  * done, so just try to conserve power and have a
+@@ -140,6 +141,7 @@ void cpu_idle(void)
+ 			stop_critical_timings();
+ 			pm_idle();
+ 			start_critical_timings();
++			idle_load_update();
+ 
+ 			trace_power_end(smp_processor_id());
+ 
+diff --git a/kernel/sched.c b/kernel/sched.c
+index dc85ceb..6d589c1 100644
+--- a/kernel/sched.c
++++ b/kernel/sched.c
+@@ -1819,7 +1819,6 @@ static void cfs_rq_set_shares(struct cfs_rq *cfs_rq, unsigned long shares)
+ }
+ #endif
+ 
+-static void calc_load_account_idle(struct rq *this_rq);
+ static void update_sysctl(void);
+ static int get_update_sysctl_factor(void);
+ static void update_cpu_load(struct rq *this_rq);
+@@ -2959,11 +2958,12 @@ static unsigned long calc_load_update;
+ unsigned long avenrun[3];
+ EXPORT_SYMBOL(avenrun);
+ 
+-static long calc_load_fold_active(struct rq *this_rq)
++static long calc_load_fold(struct rq *this_rq, int idle)
+ {
+-	long nr_active, delta = 0;
++	long nr_active = 0, delta = 0;
+ 
+-	nr_active = this_rq->nr_running;
++	if (!idle)
++		nr_active = this_rq->nr_running;
+ 	nr_active += (long) this_rq->nr_uninterruptible;
+ 
+ 	if (nr_active != this_rq->calc_load_active) {
+@@ -2974,46 +2974,6 @@ static long calc_load_fold_active(struct rq *this_rq)
+ 	return delta;
+ }
+ 
+-#ifdef CONFIG_NO_HZ
+-/*
+- * For NO_HZ we delay the active fold to the next LOAD_FREQ update.
+- *
+- * When making the ILB scale, we should try to pull this in as well.
+- */
+-static atomic_long_t calc_load_tasks_idle;
+-
+-static void calc_load_account_idle(struct rq *this_rq)
+-{
+-	long delta;
+-
+-	delta = calc_load_fold_active(this_rq);
+-	if (delta)
+-		atomic_long_add(delta, &calc_load_tasks_idle);
+-}
+-
+-static long calc_load_fold_idle(void)
+-{
+-	long delta = 0;
+-
+-	/*
+-	 * Its got a race, we don't care...
+-	 */
+-	if (atomic_long_read(&calc_load_tasks_idle))
+-		delta = atomic_long_xchg(&calc_load_tasks_idle, 0);
+-
+-	return delta;
+-}
+-#else
+-static void calc_load_account_idle(struct rq *this_rq)
+-{
+-}
+-
+-static inline long calc_load_fold_idle(void)
+-{
+-	return 0;
+-}
+-#endif
+-
+ /**
+  * get_avenrun - get the load average array
+  * @loads:	pointer to dest load array
+@@ -3043,7 +3003,7 @@ calc_load(unsigned long load, unsigned long exp, unsigned long active)
+  */
+ void calc_global_load(void)
+ {
+-	unsigned long upd = calc_load_update + 10;
++	unsigned long upd = calc_load_update + LOAD_FREQ/2;
+ 	long active;
+ 
+ 	if (time_before(jiffies, upd))
+@@ -3063,21 +3023,30 @@ void calc_global_load(void)
+  * Called from update_cpu_load() to periodically update this CPU's
+  * active count.
+  */
+-static void calc_load_account_active(struct rq *this_rq)
++static void calc_load_account(struct rq *this_rq, int idle)
+ {
+ 	long delta;
+ 
+ 	if (time_before(jiffies, this_rq->calc_load_update))
+ 		return;
+ 
+-	delta  = calc_load_fold_active(this_rq);
+-	delta += calc_load_fold_idle();
++	delta  = calc_load_fold(this_rq, idle);
+ 	if (delta)
+ 		atomic_long_add(delta, &calc_load_tasks);
+ 
+ 	this_rq->calc_load_update += LOAD_FREQ;
+ }
+ 
++void idle_load_update(void)
++{
++	struct rq *rq = this_rq();
++	unsigned long flags;
++
++	raw_spin_lock_irqsave(&rq->lock, flags);
++	calc_load_account(rq, 1);
++	raw_spin_unlock_irqrestore(&rq->lock, flags);
++}
++
+ /*
+  * The exact cpuload at various idx values, calculated at every tick would be
+  * load = (2^idx - 1) / 2^idx * load + 1 / 2^idx * cur_load
+@@ -3194,7 +3163,7 @@ static void update_cpu_load_active(struct rq *this_rq)
+ {
+ 	update_cpu_load(this_rq);
+ 
+-	calc_load_account_active(this_rq);
++	calc_load_account(this_rq, 0);
+ }
+ 
+ #ifdef CONFIG_SMP
+diff --git a/kernel/sched_idletask.c b/kernel/sched_idletask.c
+index 9fa0f40..6ca191f 100644
+--- a/kernel/sched_idletask.c
++++ b/kernel/sched_idletask.c
+@@ -23,7 +23,6 @@ static void check_preempt_curr_idle(struct rq *rq, struct task_struct *p, int fl
+ static struct task_struct *pick_next_task_idle(struct rq *rq)
+ {
+ 	schedstat_inc(rq, sched_goidle);
+-	calc_load_account_idle(rq);
+ 	return rq->idle;
+ }
+ 
+-- 
+1.7.1
 
-What I wanted to say is that I could eventually merge a driver, and
-that could validate the whole thing. However I wouldn't like to
-port everything, test it, and then get a NAK because of the changed
-driver model. So that's why I'm sending this first--I don't mind
-if it's not yet merged, but at least I'd like to know if I'm on
-the right track.
-
-Thanks
-
-		Emilio
