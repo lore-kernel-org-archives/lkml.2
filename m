@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759832Ab0JVTPq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 15:15:46 -0400
+	id S1759837Ab0JVTQE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 15:16:04 -0400
 Received: from mail-bw0-f46.google.com ([209.85.214.46]:37529 "EHLO
 	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752672Ab0JVTN0 (ORCPT
+	with ESMTP id S1758596Ab0JVTNW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 15:13:26 -0400
+	Fri, 22 Oct 2010 15:13:22 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:x-mailer-version
          :in-reply-to:references;
-        b=UwS1u82oTz3sCBzA9Ls4M7RVFzZIgknoy3+h/s3uqCcFAPYd6D0A5yZS+kusG3GDur
-         oWqiSk5YK0bBEHcPxn6q/MZ3Hrp1oRbq1A168WTLm3VbEF1Oma2IAP/g7D+lK4OqPcv4
-         EOAzRa8iEGuo8HNHOZoTgFPgGNPXZLTzOWmFU=
+        b=LwC7f3DCL/mB9yWCz96dFCDmr4FZwwreTw/V0pXzHHccGwvqbSLXGszQ9WmWCdO1qz
+         gxTr7y0Q+G/dOmeNE/fPzu6ewCIxnIaKsUPYl9y7iaX4eSeutEM/hhsUMltUR7c0tePf
+         H49GCiBYGdPV3CnrzRldcpNqaA+97MkEzHKMM=
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: LKML <linux-kernel@vger.kernel.org>,
@@ -28,9 +28,9 @@ Cc: LKML <linux-kernel@vger.kernel.org>,
         Steven Rostedt <rostedt@goodmis.org>,
         Robert Richter <robert.richter@amd.com>,
         "Frank Ch. Eigler" <fche@redhat.com>
-Subject: [RFC PATCH 04/11] perf: Add ability to dump part of the user stack
-Date: Fri, 22 Oct 2010 21:13:05 +0200
-Message-Id: <1287774792-23123-5-git-send-regression-fweisbec@gmail.com>
+Subject: [RFC PATCH 02/11] perf: Unified API to record selective sets of arch registers
+Date: Fri, 22 Oct 2010 21:13:03 +0200
+Message-Id: <1287774792-23123-3-git-send-regression-fweisbec@gmail.com>
 X-Mailer: git-send-regression
 X-Mailer-version: 0.1, "The maintainer couldn't reproduce after one week full time debugging" special version.
 In-Reply-To: <1287774792-23123-1-git-send-regression-fweisbec@gmail.com>
@@ -39,16 +39,18 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Beeing able to dump parts of the user stack, starting from the
-stack pointer, will be useful to make a post mortem dwarf CFI based
-stack unwinding.
+This brings a new API to help the selective dump of registers on
+event sampling, and its implementation in x86-32.
 
-This is done through the new ustack_dump_size perf attribute. If it
-is non zero, the user stack will dumped in samples following the
-requested size in bytes.
+- The informations about the desired registers will be passed
+  to a single u64 mask. It's up to the architecture to map the
+  registers into the mask bits.
 
-The longer is the dump, the deeper will be the resulting retrieved
-callchain.
+- The architecture must provide a non-zero and unique id to
+  identify the origin of a register set because interpreting a
+  register dump requires to know from which architecture it comes.
+  The achitecture is considered different between the 32 and 64 bits
+  version. x86-32 has the id 1.
 
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Ingo Molnar <mingo@elte.hu>
@@ -63,185 +65,151 @@ Cc: Steven Rostedt <rostedt@goodmis.org>
 Cc: Robert Richter <robert.richter@amd.com>
 Cc: Frank Ch. Eigler <fche@redhat.com>
 ---
- include/linux/perf_event.h |    9 +++-
- kernel/perf_event.c        |  123 ++++++++++++++++++++++++++++++++++++--------
- 2 files changed, 108 insertions(+), 24 deletions(-)
+ arch/Kconfig                        |    7 +++
+ arch/x86/Kconfig                    |    1 +
+ arch/x86/include/asm/perf_regs.h    |   10 ++++
+ arch/x86/include/asm/perf_regs_32.h |   85 +++++++++++++++++++++++++++++++++++
+ 4 files changed, 103 insertions(+), 0 deletions(-)
+ create mode 100644 arch/x86/include/asm/perf_regs.h
+ create mode 100644 arch/x86/include/asm/perf_regs_32.h
 
-diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-index 28210d4..87441b5 100644
---- a/include/linux/perf_event.h
-+++ b/include/linux/perf_event.h
-@@ -236,6 +236,10 @@ struct perf_event_attr {
- 	 * samples. See asm/perf_regs.h for details.
- 	 */
- 	__u64			user_regs;
-+	__u32			ustack_dump_size;
+diff --git a/arch/Kconfig b/arch/Kconfig
+index 53d7f61..a2bcd04 100644
+--- a/arch/Kconfig
++++ b/arch/Kconfig
+@@ -158,6 +158,13 @@ config HAVE_PERF_EVENTS_NMI
+ 	  subsystem.  Also has support for calculating CPU cycle events
+ 	  to determine how many clock cycles in a given period.
+ 
++config HAVE_PERF_REGS_DEFS
++	bool
++	help
++	  Support selective register dumps for perf events. This includes
++	  bit-mapping of each registers and a unique architecture version,
++	  also different between 32 and 64 bits.
 +
-+	/* Future extension */
-+	__u32			__reserved_4;
- };
+ config HAVE_ARCH_JUMP_LABEL
+ 	bool
  
- /*
-@@ -1107,8 +1111,9 @@ extern int perf_output_begin(struct perf_output_handle *handle,
- 			     struct perf_event *event, unsigned int size,
- 			     int nmi, int sample);
- extern void perf_output_end(struct perf_output_handle *handle);
--extern void perf_output_copy(struct perf_output_handle *handle,
--			     const void *buf, unsigned int len);
-+extern unsigned int
-+perf_output_copy(struct perf_output_handle *handle,
-+		 const void *buf, unsigned int len);
- extern int perf_swevent_get_recursion_context(void);
- extern void perf_swevent_put_recursion_context(int rctx);
- extern void perf_event_enable(struct perf_event *event);
-diff --git a/kernel/perf_event.c b/kernel/perf_event.c
-index 0e4ab11..674ed25 100644
---- a/kernel/perf_event.c
-+++ b/kernel/perf_event.c
-@@ -3295,28 +3295,43 @@ out:
- 	preempt_enable();
- }
- 
--__always_inline void perf_output_copy(struct perf_output_handle *handle,
--		      const void *buf, unsigned int len)
--{
--	do {
--		unsigned long size = min_t(unsigned long, handle->size, len);
--
--		memcpy(handle->addr, buf, size);
--
--		len -= size;
--		handle->addr += size;
--		buf += size;
--		handle->size -= size;
--		if (!handle->size) {
--			struct perf_buffer *buffer = handle->buffer;
--
--			handle->page++;
--			handle->page &= buffer->nr_pages - 1;
--			handle->addr = buffer->data_pages[handle->page];
--			handle->size = PAGE_SIZE << page_order(buffer);
--		}
--	} while (len);
--}
-+static int memcpy_common(void *dst, const void *src, size_t n)
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index fd227d6..2b0ef54 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -58,6 +58,7 @@ config X86
+ 	select HAVE_MIXED_BREAKPOINTS_REGS
+ 	select PERF_EVENTS
+ 	select HAVE_PERF_EVENTS_NMI
++	select HAVE_PERF_REGS_DEFS if X86_32
+ 	select ANON_INODES
+ 	select HAVE_ARCH_KMEMCHECK
+ 	select HAVE_USER_RETURN_NOTIFIER
+diff --git a/arch/x86/include/asm/perf_regs.h b/arch/x86/include/asm/perf_regs.h
+new file mode 100644
+index 0000000..fdf5df5
+--- /dev/null
++++ b/arch/x86/include/asm/perf_regs.h
+@@ -0,0 +1,10 @@
++#ifndef _ASM_X86_PERF_REGS_H
++#define _ASM_X86_PERF_REGS_H
++
++#ifdef CONFIG_X86_32
++#include "perf_regs_32.h"
++#endif
++
++/* TODO: x86-64 and compat */
++
++#endif /* _ASM_X86_PERF_REGS_H */
+diff --git a/arch/x86/include/asm/perf_regs_32.h b/arch/x86/include/asm/perf_regs_32.h
+new file mode 100644
+index 0000000..660808b
+--- /dev/null
++++ b/arch/x86/include/asm/perf_regs_32.h
+@@ -0,0 +1,85 @@
++#ifndef _ASM_X86_PERF_REGS_32_H
++#define _ASM_X86_PERF_REGS_32_H
++
++#define PERF_X86_32_REG_VERSION		1ULL
++
++enum perf_event_x86_32_regs {
++	PERF_X86_32_REG_EAX,
++	PERF_X86_32_REG_EBX,
++	PERF_X86_32_REG_ECX,
++	PERF_X86_32_REG_EDX,
++	PERF_X86_32_REG_ESI,
++	PERF_X86_32_REG_EDI,
++	PERF_X86_32_REG_EBP,
++	PERF_X86_32_REG_ESP,
++	PERF_X86_32_REG_EIP,
++	PERF_X86_32_REG_FLAGS,
++	PERF_X86_32_REG_CS,
++	PERF_X86_32_REG_DS,
++	PERF_X86_32_REG_ES,
++	PERF_X86_32_REG_FS,
++	PERF_X86_32_REG_GS,
++
++	/* Non ABI */
++	PERF_X86_32_REG_MAX,
++};
++
++#ifdef __KERNEL__
++
++#define PERF_X86_32_REG_RESERVED (~((1ULL << PERF_X86_32_REG_MAX) - 1ULL))
++
++static inline u64 perf_reg_version(void)
 +{
-+	memcpy(dst, src, n);
-+
-+	return n;
++	return PERF_X86_32_REG_VERSION;
 +}
 +
-+#define DEFINE_PERF_OUTPUT_COPY(func_name, memcpy_func)				\
-+__always_inline unsigned int func_name(struct perf_output_handle *handle,	\
-+				       const void *buf, unsigned int len)	\
-+{										\
-+	unsigned long size, written;						\
-+										\
-+	do {									\
-+		size = min_t(unsigned long, handle->size, len);			\
-+										\
-+		written = memcpy_func(handle->addr, buf, size);			\
-+										\
-+		len -= written;							\
-+		handle->addr += written;					\
-+		buf += written;							\
-+		handle->size -= written;					\
-+		if (!handle->size) {						\
-+			struct perf_buffer *buffer = handle->buffer;		\
-+										\
-+			handle->page++;						\
-+			handle->page &= buffer->nr_pages - 1;			\
-+			handle->addr = buffer->data_pages[handle->page];	\
-+			handle->size = PAGE_SIZE << page_order(buffer);		\
-+		}								\
-+	} while (len && written == size);					\
-+										\
-+	return len;								\
++static inline int perf_reg_validate(u64 mask)
++{
++	if (mask & PERF_X86_32_REG_RESERVED)
++		return -EINVAL;
++
++	return 0;
 +}
 +
-+DEFINE_PERF_OUTPUT_COPY(perf_output_copy, memcpy_common)
-+DEFINE_PERF_OUTPUT_COPY(perf_output_copy_user_gup, copy_from_user_gup)
- 
- int perf_output_begin(struct perf_output_handle *handle,
- 		      struct perf_event *event, unsigned int size,
-@@ -3618,6 +3633,44 @@ void perf_output_sample(struct perf_output_handle *handle,
- 						event->attr.user_regs);
- 		}
- 	}
-+
-+	if (event->attr.ustack_dump_size) {
-+		unsigned long sp;
-+		unsigned int rem;
-+		u64 size, dyn_size;
-+
-+		/* Case of a kernel thread, nothing to dump */
-+		if (!data->uregs) {
-+			size = 0;
-+			perf_output_put(handle, size);
-+
-+			return;
-+		}
-+
-+		/*
-+		 * Static size: we always dump the size requested by the user
-+		 * because most of the time, the top of the user stack is not
-+		 * paged out. Perhaps we should force ustack_dump_size
-+		 * to be % 8.
-+		 */
-+		size = event->attr.ustack_dump_size;
-+		size = round_up(size, sizeof(u64));
-+		perf_output_put(handle, size);
-+
-+		/* CHECKME: might me missing on some archs */
-+		sp = user_stack_pointer(data->uregs);
-+		rem = perf_output_copy_user_gup(handle, (void *)sp, size);
-+		dyn_size = size - rem;
-+
-+		/* What couldn't be dumped is zero padded */
-+		while (rem--) {
-+			char zero = 0;
-+			perf_output_put(handle, zero);
-+		}
-+
-+		/* Dynamic size: whole dump - padding */
-+		perf_output_put(handle, dyn_size);
++static inline u64 perf_reg_value(struct pt_regs *regs, int idx)
++{
++	switch (idx) {
++	case PERF_X86_32_REG_EAX:
++		return regs->ax;
++	case PERF_X86_32_REG_EBX:
++		return regs->bx;
++	case PERF_X86_32_REG_ECX:
++		return regs->cx;
++	case PERF_X86_32_REG_EDX:
++		return regs->dx;
++	case PERF_X86_32_REG_ESI:
++		return regs->si;
++	case PERF_X86_32_REG_EDI:
++		return regs->di;
++	case PERF_X86_32_REG_EBP:
++		return regs->bp;
++	case PERF_X86_32_REG_ESP:
++		return regs->sp;
++	case PERF_X86_32_REG_EIP:
++		return regs->ip;
++	case PERF_X86_32_REG_FLAGS:
++		return regs->flags;
++	case PERF_X86_32_REG_CS:
++		return regs->cs;
++	case PERF_X86_32_REG_DS:
++		return regs->ds;
++	case PERF_X86_32_REG_ES:
++		return regs->es;
++	case PERF_X86_32_REG_FS:
++		return regs->fs;
++	case PERF_X86_32_REG_GS:
++		return regs->gs;
 +	}
- }
- 
- void perf_prepare_sample(struct perf_event_header *header,
-@@ -3716,6 +3769,32 @@ void perf_prepare_sample(struct perf_event_header *header,
- 
- 		header->size += size;
- 	}
 +
-+	if (event->attr.ustack_dump_size) {
-+		if (!event->attr.user_regs)
-+			data->uregs = perf_sample_uregs(regs);
++	/* Well... */
++	return 0;
++}
 +
-+		/*
-+		 * A first field that tells the _static_ size of the dump. 0 if
-+		 * there is nothing to dump (ie: we are in a kernel thread)
-+		 * otherwise the requested size.
-+		 */
-+		header->size += sizeof(u64);
++#endif /* __KERNEL__ */
 +
-+		/*
-+		 * If there is something to dump, add space for the dump itself
-+		 * and for the field that tells the _dynamic_ size, which is
-+		 * how many have been actually dumped. What couldn't be dumped
-+		 * will be zero-padded.
-+		 */
-+		if (data->uregs) {
-+			u64 size = event->attr.ustack_dump_size;
-+
-+			size = round_up(size, sizeof(u64));
-+			header->size += size;
-+			header->size += sizeof(u64);
-+		}
-+	}
- }
- 
- static void perf_event_output(struct perf_event *event, int nmi,
++#endif /* _ASM_X86_PERF_REGS_32_H */
 -- 
 1.6.2.3
 
