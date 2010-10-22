@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756589Ab0JVNDX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 09:03:23 -0400
-Received: from hera.kernel.org ([140.211.167.34]:40353 "EHLO hera.kernel.org"
+	id S1756605Ab0JVNDz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 09:03:55 -0400
+Received: from hera.kernel.org ([140.211.167.34]:40390 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754677Ab0JVNDW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 09:03:22 -0400
-Date: Fri, 22 Oct 2010 13:02:33 GMT
+	id S1756556Ab0JVNDx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Oct 2010 09:03:53 -0400
+Date: Fri, 22 Oct 2010 13:03:17 GMT
 From: tip-bot for Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: linux-kernel@vger.kernel.org, eranian@google.com, hpa@zytor.com,
         mingo@redhat.com, a.p.zijlstra@chello.nl, tglx@linutronix.de,
@@ -14,95 +14,105 @@ Cc: linux-kernel@vger.kernel.org, eranian@google.com, hpa@zytor.com,
 Reply-To: mingo@redhat.com, hpa@zytor.com, eranian@google.com,
         linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl,
         tglx@linutronix.de, mingo@elte.hu
-In-Reply-To: <20101019134808.196793164@chello.nl>
-References: <20101019134808.196793164@chello.nl>
+In-Reply-To: <20101019134808.304495776@chello.nl>
+References: <20101019134808.304495776@chello.nl>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] perf, x86: Extract PEBS/BTS buffer free routines
-Message-ID: <tip-b39f88acd7d989b6b247ba87c480fc24ed71d9c5@git.kernel.org>
-Git-Commit-ID: b39f88acd7d989b6b247ba87c480fc24ed71d9c5
+Subject: [tip:perf/urgent] perf, x86: Extract DS alloc/free functions
+Message-ID: <tip-65af94baca56beb3514d6cfce782634db9cf676d@git.kernel.org>
+Git-Commit-ID: 65af94baca56beb3514d6cfce782634db9cf676d
 X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 22 Oct 2010 13:02:33 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 22 Oct 2010 13:03:18 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  b39f88acd7d989b6b247ba87c480fc24ed71d9c5
-Gitweb:     http://git.kernel.org/tip/b39f88acd7d989b6b247ba87c480fc24ed71d9c5
+Commit-ID:  65af94baca56beb3514d6cfce782634db9cf676d
+Gitweb:     http://git.kernel.org/tip/65af94baca56beb3514d6cfce782634db9cf676d
 Author:     Peter Zijlstra <a.p.zijlstra@chello.nl>
-AuthorDate: Tue, 19 Oct 2010 14:08:29 +0200
+AuthorDate: Tue, 19 Oct 2010 14:37:23 +0200
 Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Fri, 22 Oct 2010 14:18:24 +0200
+CommitDate: Fri, 22 Oct 2010 14:18:25 +0200
 
-perf, x86: Extract PEBS/BTS buffer free routines
+perf, x86: Extract DS alloc/free functions
 
-So that we may grow additional call-sites..
+Again, mostly a cleanup to unclutter the reserve_ds_buffer() code.
 
 Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Acked-by: Stephane Eranian <eranian@google.com>
-LKML-Reference: <20101019134808.196793164@chello.nl>
+LKML-Reference: <20101019134808.304495776@chello.nl>
 Signed-off-by: Ingo Molnar <mingo@elte.hu>
 ---
- arch/x86/kernel/cpu/perf_event_intel_ds.c |   30 ++++++++++++++++++++++++----
- 1 files changed, 25 insertions(+), 5 deletions(-)
+ arch/x86/kernel/cpu/perf_event_intel_ds.c |   40 ++++++++++++++++++----------
+ 1 files changed, 26 insertions(+), 14 deletions(-)
 
 diff --git a/arch/x86/kernel/cpu/perf_event_intel_ds.c b/arch/x86/kernel/cpu/perf_event_intel_ds.c
-index 4977f9c..1bc1351 100644
+index 14d98bd..3c86f4d 100644
 --- a/arch/x86/kernel/cpu/perf_event_intel_ds.c
 +++ b/arch/x86/kernel/cpu/perf_event_intel_ds.c
-@@ -74,6 +74,28 @@ static void fini_debug_store_on_cpu(int cpu)
- 	wrmsr_on_cpu(cpu, MSR_IA32_DS_AREA, 0, 0);
+@@ -148,6 +148,30 @@ static void release_bts_buffer(int cpu)
+ 	ds->bts_buffer_base = 0;
  }
  
-+static void release_pebs_buffer(int cpu)
++static int alloc_ds_buffer(int cpu)
 +{
-+	struct debug_store *ds = per_cpu(cpu_hw_events, cpu).ds;
++	struct debug_store *ds;
 +
-+	if (!ds || !x86_pmu.pebs)
-+		return;
++	ds = kzalloc(sizeof(*ds), GFP_KERNEL);
++	if (unlikely(!ds))
++		return -ENOMEM;
 +
-+	kfree((void *)(unsigned long)ds->pebs_buffer_base);
-+	ds->pebs_buffer_base = 0;
++	per_cpu(cpu_hw_events, cpu).ds = ds;
++
++	return 0;
 +}
 +
-+static void release_bts_buffer(int cpu)
++static void release_ds_buffer(int cpu)
 +{
 +	struct debug_store *ds = per_cpu(cpu_hw_events, cpu).ds;
 +
-+	if (!ds || !x86_pmu.bts)
++	if (!ds)
 +		return;
 +
-+	kfree((void *)(unsigned long)ds->bts_buffer_base);
-+	ds->bts_buffer_base = 0;
++	per_cpu(cpu_hw_events, cpu).ds = NULL;
++	kfree(ds);
 +}
 +
  static void release_ds_buffers(void)
  {
  	int cpu;
-@@ -82,7 +104,6 @@ static void release_ds_buffers(void)
- 		return;
- 
- 	get_online_cpus();
--
- 	for_each_online_cpu(cpu)
+@@ -160,16 +184,9 @@ static void release_ds_buffers(void)
  		fini_debug_store_on_cpu(cpu);
  
-@@ -92,13 +113,12 @@ static void release_ds_buffers(void)
- 		if (!ds)
- 			continue;
- 
--		per_cpu(cpu_hw_events, cpu).ds = NULL;
-+		release_pebs_buffer(cpu);
-+		release_bts_buffer(cpu);
- 
--		kfree((void *)(unsigned long)ds->pebs_buffer_base);
--		kfree((void *)(unsigned long)ds->bts_buffer_base);
-+		per_cpu(cpu_hw_events, cpu).ds = NULL;
- 		kfree(ds);
- 	}
+ 	for_each_possible_cpu(cpu) {
+-		struct debug_store *ds = per_cpu(cpu_hw_events, cpu).ds;
 -
+-		if (!ds)
+-			continue;
+-
+ 		release_pebs_buffer(cpu);
+ 		release_bts_buffer(cpu);
+-
+-		per_cpu(cpu_hw_events, cpu).ds = NULL;
+-		kfree(ds);
++		release_ds_buffer(cpu);
+ 	}
  	put_online_cpus();
  }
+@@ -184,13 +201,8 @@ static int reserve_ds_buffers(void)
+ 	get_online_cpus();
  
+ 	for_each_possible_cpu(cpu) {
+-		struct debug_store *ds;
+-
+-		err = -ENOMEM;
+-		ds = kzalloc(sizeof(*ds), GFP_KERNEL);
+-		if (unlikely(!ds))
++		if (alloc_ds_buffer(cpu))
+ 			break;
+-		per_cpu(cpu_hw_events, cpu).ds = ds;
+ 
+ 		if (alloc_bts_buffer(cpu))
+ 			break;
