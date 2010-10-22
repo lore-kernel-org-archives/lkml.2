@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759099Ab0JVSyP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 14:54:15 -0400
-Received: from kroah.org ([198.145.64.141]:45611 "EHLO coco.kroah.org"
+	id S1758890Ab0JVSx7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 14:53:59 -0400
+Received: from kroah.org ([198.145.64.141]:45614 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755909Ab0JVSiT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 14:38:19 -0400
+	id S1755940Ab0JVSiU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Oct 2010 14:38:20 -0400
 X-Mailbox-Line: From gregkh@clark.site Fri Oct 22 11:35:57 2010
-Message-Id: <20101022183557.221106774@clark.site>
+Message-Id: <20101022183557.308463859@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 22 Oct 2010 11:34:38 -0700
+Date: Fri, 22 Oct 2010 11:34:39 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Steve Wise <swise@opengridcomputing.com>,
-        Roland Dreier <rolandd@cisco.com>
-Subject: [11/66] RDMA/cxgb3: Turn off RX coalescing for iWARP connections
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>, Chris Ball <cjb@laptop.org>
+Subject: [12/66] mmc: sdhci-s3c: fix NULL ptr access in sdhci_s3c_remove
 In-Reply-To: <20101022183711.GA23214@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,47 +26,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Steve Wise <swise@opengridcomputing.com>
+From: Marek Szyprowski <m.szyprowski@samsung.com>
 
-commit bec658ff31453a5726b1c188674d587a5d40c482 upstream.
+commit 9320f7cbbdd5febf013b0e91db29189724057738 upstream.
 
-The HW by default has RX coalescing on.  For iWARP connections, this
-causes a 100ms delay in connection establishement due to the ingress
-MPA Start message being stalled in HW.  So explicitly turn RX
-coalescing off when setting up iWARP connections.
+If not all clocks have been defined in platform data, the driver will
+cause a null pointer dereference when it is removed. This patch fixes
+this issue.
 
-This was causing very bad performance for NP64 gather operations using
-Open MPI, due to the way it sets up connections on larger jobs.
-
-Signed-off-by: Steve Wise <swise@opengridcomputing.com>
-Signed-off-by: Roland Dreier <rolandd@cisco.com>
+Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
+Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Chris Ball <cjb@laptop.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/infiniband/hw/cxgb3/iwch_cm.c |    6 ++++--
+ drivers/mmc/host/sdhci-s3c.c |    6 ++++--
  1 file changed, 4 insertions(+), 2 deletions(-)
 
---- a/drivers/infiniband/hw/cxgb3/iwch_cm.c
-+++ b/drivers/infiniband/hw/cxgb3/iwch_cm.c
-@@ -486,7 +486,8 @@ static int send_connect(struct iwch_ep *
- 	    V_MSS_IDX(mtu_idx) |
- 	    V_L2T_IDX(ep->l2t->idx) | V_TX_CHANNEL(ep->l2t->smt_idx);
- 	opt0l = V_TOS((ep->tos >> 2) & M_TOS) | V_RCV_BUFSIZ(rcv_win>>10);
--	opt2 = V_FLAVORS_VALID(1) | V_CONG_CONTROL_FLAVOR(cong_flavor);
-+	opt2 = F_RX_COALESCE_VALID | V_RX_COALESCE(0) | V_FLAVORS_VALID(1) |
-+	       V_CONG_CONTROL_FLAVOR(cong_flavor);
- 	skb->priority = CPL_PRIORITY_SETUP;
- 	set_arp_failure_handler(skb, act_open_req_arp_failure);
+--- a/drivers/mmc/host/sdhci-s3c.c
++++ b/drivers/mmc/host/sdhci-s3c.c
+@@ -379,8 +379,10 @@ static int __devexit sdhci_s3c_remove(st
+ 	sdhci_remove_host(host, 1);
  
-@@ -1303,7 +1304,8 @@ static void accept_cr(struct iwch_ep *ep
- 	    V_MSS_IDX(mtu_idx) |
- 	    V_L2T_IDX(ep->l2t->idx) | V_TX_CHANNEL(ep->l2t->smt_idx);
- 	opt0l = V_TOS((ep->tos >> 2) & M_TOS) | V_RCV_BUFSIZ(rcv_win>>10);
--	opt2 = V_FLAVORS_VALID(1) | V_CONG_CONTROL_FLAVOR(cong_flavor);
-+	opt2 = F_RX_COALESCE_VALID | V_RX_COALESCE(0) | V_FLAVORS_VALID(1) |
-+	       V_CONG_CONTROL_FLAVOR(cong_flavor);
- 
- 	rpl = cplhdr(skb);
- 	rpl->wr.wr_hi = htonl(V_WR_OP(FW_WROPCODE_FORWARD));
+ 	for (ptr = 0; ptr < 3; ptr++) {
+-		clk_disable(sc->clk_bus[ptr]);
+-		clk_put(sc->clk_bus[ptr]);
++		if (sc->clk_bus[ptr]) {
++			clk_disable(sc->clk_bus[ptr]);
++			clk_put(sc->clk_bus[ptr]);
++		}
+ 	}
+ 	clk_disable(sc->clk_io);
+ 	clk_put(sc->clk_io);
 
 
