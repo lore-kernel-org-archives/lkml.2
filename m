@@ -1,59 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751898Ab0JVCsj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Oct 2010 22:48:39 -0400
-Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:31935 "EHLO
-	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751149Ab0JVCsi (ORCPT
+	id S1751949Ab0JVCwx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Oct 2010 22:52:53 -0400
+Received: from casper.infradead.org ([85.118.1.10]:47768 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751149Ab0JVCwv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Oct 2010 22:48:38 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvsEAMaXwEx5Ldx0/2dsb2JhbAChXnK+KoVKBA
-Date: Fri, 22 Oct 2010 13:48:34 +1100
-From: Nick Piggin <npiggin@kernel.dk>
-To: Nick Piggin <npiggin@kernel.dk>
-Cc: Al Viro <viro@ZenIV.linux.org.uk>, Dave Chinner <david@fromorbit.com>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: Inode Lock Scalability V7 (was V6)
-Message-ID: <20101022024834.GA6708@amd>
-References: <1287622186-1935-1-git-send-email-david@fromorbit.com>
- <20101021050422.GP32255@dastard>
- <20101021132034.GB13620@amd>
- <20101021235227.GI12506@dastard>
- <20101022004540.GA5920@amd>
- <20101022022010.GG19804@ZenIV.linux.org.uk>
- <20101022023444.GA6573@amd>
- <20101022024152.GA6618@amd>
+	Thu, 21 Oct 2010 22:52:51 -0400
+Date: Fri, 22 Oct 2010 00:52:45 -0200
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Luming Yu <luming.yu@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: Re: why could cause PerfTop get nothing output ?
+Message-ID: <20101022025245.GJ23835@ghostprotocols.net>
+References: <AANLkTi=vJArRbLup=F2duoxx47LFGTT3++4QiFZHJbzQ@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20101022024152.GA6618@amd>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <AANLkTi=vJArRbLup=F2duoxx47LFGTT3++4QiFZHJbzQ@mail.gmail.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 22, 2010 at 01:41:52PM +1100, Nick Piggin wrote:
-> The locking in my lock break patch is ugly and wrong, yes. But it is
-> always an intermediate step. I want to argue that with RCU inode work
-> *anyway*, there is not much point to reducing the strength of the
-> i_lock property because locking can be cleaned up nicely and still
-> keep i_lock ~= inode_lock (for a single inode).
+Em Sat, Oct 09, 2010 at 05:07:42AM -0400, Luming Yu escreveu:
+> Hi acme,
+> 
+> I got nothing output as below, wondering if it was due to too few interrupts ?
 
-The other thing is that with RCU, the idea of locking an object in
-the data structure with a per object lock actually *is* much more
-natural. It's hard to do it properly with just a big data structure
-lock.
+Try using a higher frequency:
 
-If I want to take a reference to an inode from a data structre, how
-to do it with RCU?
+perf top -F 100000
 
-rcu_read_lock()
-list_for_each(inode) {
-  spin_lock(&big_lock); /* oops, might as well not even use RCU then */
-  if (!unhashed) {
-    iget();
-  }
-}
+> Is it possbile to get perf top based on samples from other Perf events?
 
+Yes, any event, just specify it like:
 
+perf top -e instructions
+
+- Arnaldo
+
+> [root@localhost clocksource0]# rpm -qa | grep perf
+> perf-2.6.36-0.35.rc7.git0.fc15.x86_64
+> [root@localhost clocksource0]# uname -a
+> Linux localhost.localdomain 2.6.36-0.35.rc7.git0.fc15.x86_64 #1 SMP
+> Wed Oct 6 22:02:54 UTC 2010 x86_64 x86_64 x86_64 GNU/Linux
+> [root@localhost clocksource0]# perf top
+> 
+> -------------------------------------------------------------------------------
+>    PerfTop:       0 irqs/sec  kernel:-nan%  exact: -nan% [1000Hz
+> cycles],  (all, 2 CPUs)
+> -------------------------------------------------------------------------------
+> 
+>              samples  pcnt  DSO
+>              _______ _____
