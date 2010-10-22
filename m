@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755397Ab0JVT1q (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 15:27:46 -0400
-Received: from kroah.org ([198.145.64.141]:41884 "EHLO coco.kroah.org"
+	id S1759861Ab0JVT2K (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 15:28:10 -0400
+Received: from kroah.org ([198.145.64.141]:41876 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758604Ab0JVSVm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 14:21:42 -0400
+	id S1758595Ab0JVSVl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Oct 2010 14:21:41 -0400
 From: Greg Kroah-Hartman <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org
-Cc: Jeff Mahoney <jeffm@suse.com>, Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
+Cc: Jeff Mahoney <jeffm@suse.com>, Geert Uytterhoeven <geert@linux-m68k.org>,
+        Roman Zippel <zippel@linux-m68k.org>,
         Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [PATCH 15/49] ioctl: Use asm-generic/ioctls.h on s390 (enables termiox)
-Date: Fri, 22 Oct 2010 11:20:54 -0700
-Message-Id: <1287771688-14805-15-git-send-email-gregkh@suse.de>
+Subject: [PATCH 13/49] ioctl: Use asm-generic/ioctls.h on m68k (enables termiox)
+Date: Fri, 22 Oct 2010 11:20:52 -0700
+Message-Id: <1287771688-14805-13-git-send-email-gregkh@suse.de>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <20101022175112.GC13489@kroah.com>
 References: <20101022175112.GC13489@kroah.com>
@@ -23,40 +23,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jeff Mahoney <jeffm@suse.com>
 
-This patch converts s390 to use asm-generic/ioctls.h instead of its
+This patch converts m68k to use asm-generic/ioctls.h instead of its
 own version.
 
 The differences between the arch-specific version and the generic
 version are as follows:
 
-- S390 defines its own value for FIOQSIZE, asm-generic/ioctls.h keeps it
-- The generic version adds TIOCGRS485 and TIOCGRS485, which are unused
-  by any driver available on this architecture
+- m68k defines its own value for FIOQSIZE, asm-generic/ioctls.h keeps it
+- The generic version adds TIOCSRS485 and TIOCGRS485m which are unused
+  by any driver available on this architecture.
 - The generic version adds support for termiox
 
-Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
-Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Roman Zippel <zippel@linux-m68k.org>
 Signed-off-by: Jeff Mahoney <jeffm@suse.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- arch/s390/include/asm/ioctls.h |   88 +---------------------------------------
- 1 files changed, 1 insertions(+), 87 deletions(-)
+ arch/m68k/include/asm/ioctls.h |   80 +---------------------------------------
+ 1 files changed, 1 insertions(+), 79 deletions(-)
 
-diff --git a/arch/s390/include/asm/ioctls.h b/arch/s390/include/asm/ioctls.h
-index 2f3d873..960a4c1 100644
---- a/arch/s390/include/asm/ioctls.h
-+++ b/arch/s390/include/asm/ioctls.h
-@@ -1,94 +1,8 @@
--/*
-- *  include/asm-s390/ioctls.h
-- *
-- *  S390 version
-- *
-- *  Derived from "include/asm-i386/ioctls.h"
-- */
--
- #ifndef __ARCH_S390_IOCTLS_H__
- #define __ARCH_S390_IOCTLS_H__
+diff --git a/arch/m68k/include/asm/ioctls.h b/arch/m68k/include/asm/ioctls.h
+index 91a57d6..1332bb4 100644
+--- a/arch/m68k/include/asm/ioctls.h
++++ b/arch/m68k/include/asm/ioctls.h
+@@ -1,86 +1,8 @@
+ #ifndef __ARCH_M68K_IOCTLS_H__
+ #define __ARCH_M68K_IOCTLS_H__
  
 -#include <asm/ioctl.h>
 -
@@ -141,7 +133,7 @@ index 2f3d873..960a4c1 100644
 -#define TIOCSER_TEMT    0x01	/* Transmitter physically empty */
 +#include <asm-generic/ioctls.h>
  
- #endif
+ #endif /* __ARCH_M68K_IOCTLS_H__ */
 -- 
 1.7.2
 
