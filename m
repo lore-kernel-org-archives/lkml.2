@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755902Ab0JVXyp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 19:54:45 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:60658 "EHLO
+	id S1756877Ab0JVX5F (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 19:57:05 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:39325 "EHLO
 	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755690Ab0JVXyg (ORCPT
+	with ESMTP id S1755967Ab0JVXyr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 19:54:36 -0400
+	Fri, 22 Oct 2010 19:54:47 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=rVZiaAnUsFV7U1UoekqIR/BmLXbSvCgwwTJvvig0nU/gbMuphv1w8cK6bEXETsJCY9
-         6fmp+fhh+3DxaFViOXdVKKXTDp7UsyA+Fakl59j9x5WbDsNi2NIQ3o1gncho4woV+1DK
-         0Kwhe6oGki1FxKrQZoV0aUarwqu+8f7Uug+c0=
+        b=X0x8E+tn9DWTobPR3Fte6hWjpek+RFclgMe4jKSqfuHl/KZyytrzd19Tiwb0P9NepD
+         d+7GEtlWLoiBLP4KI0PNf3F+S5C3tsLzXkFKj2n8A/P7y6kT/0HS8kOgWjdW+IBDKMJr
+         2SPxlBEupoYfDbl2IvV1YPQJqgj8SLxMeEx2c=
 From: Maxim Levitsky <maximlevitsky@gmail.com>
 To: Alex Dubov <oakad@yahoo.com>
 Cc: Andrew Morton <akpm@linux-foundation.org>,
         LKML <linux-kernel@vger.kernel.org>,
         Maxim Levitsky <maximlevitsky@gmail.com>
-Subject: [PATCH 15/29] memstick: jmb38x_ms: Create header
-Date: Sat, 23 Oct 2010 01:53:43 +0200
-Message-Id: <1287791637-10329-16-git-send-email-maximlevitsky@gmail.com>
+Subject: [PATCH 20/29] memstick: jmb38x_ms: rework PIO
+Date: Sat, 23 Oct 2010 01:53:48 +0200
+Message-Id: <1287791637-10329-21-git-send-email-maximlevitsky@gmail.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1287791637-10329-1-git-send-email-maximlevitsky@gmail.com>
 References: <1287791637-10329-1-git-send-email-maximlevitsky@gmail.com>
@@ -28,370 +28,426 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In the new header add:
+Rewrite PIO code to be just simplier and shorter,
+and comment not so obivous parts.
 
-* debug macros
-* Registers + some documntation
-
-Signed-off-by: Maxim Levitsky <maximlevitsky@gmail.com>
+Signed-off-by: Maxim Levitsky<maximlevitsky@gmail.com>
 ---
- drivers/memstick/host/jmb38x_ms.c |  139 +--------------------------
- drivers/memstick/host/jmb38x_ms.h |  188 +++++++++++++++++++++++++++++++++++++
- 2 files changed, 194 insertions(+), 133 deletions(-)
- create mode 100644 drivers/memstick/host/jmb38x_ms.h
+ drivers/memstick/host/jmb38x_ms.c |  283 +++++++++++++------------------------
+ drivers/memstick/host/jmb38x_ms.h |   17 +--
+ 2 files changed, 103 insertions(+), 197 deletions(-)
 
 diff --git a/drivers/memstick/host/jmb38x_ms.c b/drivers/memstick/host/jmb38x_ms.c
-index f2b894c..7a00bef 100644
+index bcdb785..5af0a52 100644
 --- a/drivers/memstick/host/jmb38x_ms.c
 +++ b/drivers/memstick/host/jmb38x_ms.c
-@@ -17,141 +17,10 @@
+@@ -17,6 +17,7 @@
  #include <linux/highmem.h>
  #include <linux/memstick.h>
  #include <linux/slab.h>
--
--#define DRIVER_NAME "jmb38x_ms"
-+#include "jmb38x_ms.h"
++#include <linux/scatterlist.h>
+ #include "jmb38x_ms.h"
  
  static int no_dma;
--module_param(no_dma, bool, 0644);
+@@ -103,39 +104,34 @@ static inline int j38ms_write_fifo_dword_pio(struct j38ms_host *host, u32 dword)
+ static unsigned int j38ms_read_fifo_pio(struct j38ms_host *host,
+ 				unsigned char *buf, unsigned int length)
+ {
+-	unsigned int off = 0;
++	unsigned int orig_len = length;
++	unsigned char tmp_buf[4];
+ 
+-	while (host->io_pos && length) {
+-		buf[off++] = host->io_word[0] & 0xff;
+-		host->io_word[0] >>= 8;
+-		length--;
+-		host->io_pos--;
++	/* Read bytes from last saved part */
++	if (host->pio_tmp_buf_len) {
++		int count = min(host->pio_tmp_buf_len, length);
++		memcpy(buf, host->pio_tmp_buf, count);
++		buf += count;
++		length -= count;
+ 	}
+ 
+-	if (!length)
+-		return off;
++	/* Read aligned data*/
++	for (; length >= 4 ; buf += 4, length -= 4)
++		if (j38ms_read_fifo_dword_pio(host, (u32 *)buf))
++			return orig_len - length;
+ 
+-	while (!(STATUS_FIFO_EMPTY & readl(host->addr + STATUS))) {
+-		if (length < 4)
+-			break;
+-		*(unsigned int *)(buf + off) = __raw_readl(host->addr + DATA);
+-		length -= 4;
+-		off += 4;
+-	}
++	/* Read last 4 bytes, and
++			save unconsumed part of it to the pio_tmp_buf */
++	if (length && !j38ms_read_fifo_dword_pio(host, (u32 *)tmp_buf)) {
+ 
+-	if (length
+-	    && !(STATUS_FIFO_EMPTY & readl(host->addr + STATUS))) {
+-		host->io_word[0] = readl(host->addr + DATA);
+-		for (host->io_pos = 4; host->io_pos; --host->io_pos) {
+-			buf[off++] = host->io_word[0] & 0xff;
+-			host->io_word[0] >>= 8;
+-			length--;
+-			if (!length)
+-				break;
+-		}
++		host->pio_tmp_buf_len = 4 - length;
++		memcpy(buf, tmp_buf, length);
++		memcpy(host->pio_tmp_buf,
++				tmp_buf + length, host->pio_tmp_buf_len);
++		length = 0;
+ 	}
+ 
+-	return off;
++	return orig_len - length;
+ }
+ 
+ /* Write TPC data through normal PIO fifo */
+@@ -143,175 +139,106 @@ static unsigned int j38ms_write_fifo_pio(struct j38ms_host *host,
+ 					 unsigned char *buf,
+ 					 unsigned int length)
+ {
+-	unsigned int off = 0;
 -
--enum {
--	DMA_ADDRESS       = 0x00,
--	BLOCK             = 0x04,
--	DMA_CONTROL       = 0x08,
--	TPC_P0            = 0x0c,
--	TPC_P1            = 0x10,
--	TPC               = 0x14,
--	HOST_CONTROL      = 0x18,
--	DATA              = 0x1c,
--	STATUS            = 0x20,
--	INT_STATUS        = 0x24,
--	INT_STATUS_ENABLE = 0x28,
--	INT_SIGNAL_ENABLE = 0x2c,
--	TIMER             = 0x30,
--	TIMER_CONTROL     = 0x34,
--	PAD_OUTPUT_ENABLE = 0x38,
--	PAD_PU_PD         = 0x3c,
--	CLOCK_DELAY       = 0x40,
--	ADMA_ADDRESS      = 0x44,
--	CLOCK_CONTROL     = 0x48,
--	LED_CONTROL       = 0x4c,
--	VERSION           = 0x50
--};
+-	if (host->io_pos) {
+-		while (host->io_pos < 4 && length) {
+-			host->io_word[0] |=  buf[off++] << (host->io_pos * 8);
+-			host->io_pos++;
+-			length--;
++	unsigned int orig_len = length;
++
++	/* Complete the last saved bytes*/
++	if (host->pio_tmp_buf_len) {
++		int count = min(4 - host->pio_tmp_buf_len, length);
++		memcpy(host->pio_tmp_buf + host->pio_tmp_buf_len, buf, count);
++		buf += count;
++		length -= count;
++
++		if (host->pio_tmp_buf_len == 4) {
++			if (j38ms_write_fifo_dword_pio(
++					host, *(u32 *)host->pio_tmp_buf))
++				return orig_len - length;
++			else
++				host->pio_tmp_buf_len = 0;
+ 		}
+ 	}
+ 
+-	if (host->io_pos == 4
+-	    && !(STATUS_FIFO_FULL & readl(host->addr + STATUS))) {
+-		writel(host->io_word[0], host->addr + DATA);
+-		host->io_pos = 0;
+-		host->io_word[0] = 0;
+-	} else if (host->io_pos) {
+-		return off;
+-	}
 -
--struct jmb38x_ms_host {
--	struct jmb38x_ms        *chip;
--	void __iomem            *addr;
--	spinlock_t              lock;
--	struct tasklet_struct   notify;
--	int                     id;
--	char                    host_id[32];
--	int                     irq;
+-	if (!length)
+-		return off;
+-
+-	while (!(STATUS_FIFO_FULL & readl(host->addr + STATUS))) {
+-		if (length < 4)
+-			break;
+-
+-		__raw_writel(*(unsigned int *)(buf + off),
+-			     host->addr + DATA);
+-		length -= 4;
+-		off += 4;
+-	}
++	/* Write aligned data to hardware */
++	for (; length >= 4 ; length -= 4, buf += 4)
++		if (j38ms_write_fifo_dword_pio(host, *(u32 *)buf))
++			return orig_len - length;
+ 
+-	switch (length) {
+-	case 3:
+-		host->io_word[0] |= buf[off + 2] << 16;
+-		host->io_pos++;
+-	case 2:
+-		host->io_word[0] |= buf[off + 1] << 8;
+-		host->io_pos++;
+-	case 1:
+-		host->io_word[0] |= buf[off];
+-		host->io_pos++;
++	/* Save last 3-1 bytes to buffer, because we can't send them now*/
++	if (length) {
++		memset(host->pio_tmp_buf, 0, 4);
++		memcpy(host->pio_tmp_buf, buf, length);
++		host->pio_tmp_buf_len = length;
+ 	}
+ 
+-	off += host->io_pos;
+-
+-	return off;
++	return orig_len - length;
+ }
+ 
++
+ /* Transfer data between current request and FIFO */
+-static int j38ms_transfer_data(struct j38ms_host *host)
++static void j38ms_transfer_pio(struct j38ms_host *host)
+ {
+-	unsigned int length;
+-	unsigned int off;
+-	unsigned int t_size, p_cnt;
+ 	unsigned char *buf;
+-	struct page *pg;
++	unsigned int len;
+ 	unsigned long flags = 0;
+ 
+-	if (host->req->long_data) {
+-		length = host->req->sg.length - host->block_pos;
+-		off = host->req->sg.offset + host->block_pos;
+-	} else {
+-		length = host->req->data_len - host->block_pos;
+-		off = 0;
+-	}
++	if (host->req->long_data)
++		local_irq_save(flags);
+ 
+-	while (length) {
+-		unsigned int uninitialized_var(p_off);
++	dbg_v(host, "PIO: new transfer");
+ 
++	while (1) {
+ 		if (host->req->long_data) {
+-			pg = nth_page(sg_page(&host->req->sg),
+-				      off >> PAGE_SHIFT);
+-			p_off = offset_in_page(off);
+-			p_cnt = PAGE_SIZE - p_off;
+-			p_cnt = min(p_cnt, length);
+-
+-			local_irq_save(flags);
+-			buf = kmap_atomic(pg, KM_BIO_SRC_IRQ) + p_off;
++			if (!sg_miter_next(&host->pio_sg_iter))
++				break;
++
++			buf = host->pio_sg_iter.addr;
++			len = host->pio_sg_iter.length;
+ 		} else {
+-			buf = host->req->data + host->block_pos;
+-			p_cnt = host->req->data_len - host->block_pos;
++			buf = host->req->data + host->pio_offset;
++			len = host->req->data_len - host->pio_offset;
++
++			if (!len)
++				break;
+ 		}
+ 
+-		if (host->req->data_dir == WRITE)
+-			t_size = !(host->cmd_flags & REG_DATA)
+-				 ? j38ms_write_fifo_pio(host, buf, p_cnt)
+-				 : j38ms_write_tpc_inline(host, buf, p_cnt);
+-		else
+-			t_size = !(host->cmd_flags & REG_DATA)
+-				 ? j38ms_read_fifo_pio(host, buf, p_cnt)
+-				 : j38ms_read_tpc_inline(host, buf, p_cnt);
++		len = host->req->data_dir == WRITE ?
++			j38ms_write_fifo_pio(host, buf, len) :
++			j38ms_read_fifo_pio(host, buf, len);
+ 
+-		if (host->req->long_data) {
+-			kunmap_atomic(buf - p_off, KM_BIO_SRC_IRQ);
+-			local_irq_restore(flags);
+-		}
++		if (host->req->long_data)
++			host->pio_sg_iter.consumed = len;
++		else
++			host->pio_offset += len;
+ 
+-		if (!t_size)
+-			break;
+-		host->block_pos += t_size;
+-		length -= t_size;
+-		off += t_size;
++		dbg(host, "PIO: transfered %d bytes", len);
++		if (!len)
++			goto exit;
+ 	}
+ 
+-	if (!length && host->req->data_dir == WRITE) {
+-		if (host->cmd_flags & REG_DATA) {
+-			writel(host->io_word[0], host->addr + TPC_P0);
+-			writel(host->io_word[1], host->addr + TPC_P1);
+-		} else if (host->io_pos) {
+-			writel(host->io_word[0], host->addr + DATA);
+-		}
++	/* Write last non-complete dword of the data */
++	if (host->req->data_dir == WRITE && host->pio_tmp_buf_len) {
++		if (!j38ms_write_fifo_dword_pio(host,
++						*(u32 *)host->pio_tmp_buf))
++			host->pio_tmp_buf_len = 0;
++	}
++exit:
++	if (host->req->long_data) {
++		sg_miter_stop(&host->pio_sg_iter);
++		local_irq_restore(flags);
+ 	}
+-
+-	return length;
+ }
+ 
+ /* Read short TPC data (up to 8 bytes) via 2 special registers*/
+-static unsigned int j38ms_read_tpc_inline(struct j38ms_host *host,
+-					    unsigned char *buf,
+-					    unsigned int length)
++static void j38ms_read_tpc_inline(struct j38ms_host *host)
+ {
+-	unsigned int off = 0;
+-
+-	while (host->io_pos > 4 && length) {
+-		buf[off++] = host->io_word[0] & 0xff;
+-		host->io_word[0] >>= 8;
+-		length--;
+-		host->io_pos--;
+-	}
+-
+-	if (!length)
+-		return off;
+-
+-	while (host->io_pos && length) {
+-		buf[off++] = host->io_word[1] & 0xff;
+-		host->io_word[1] >>= 8;
+-		length--;
+-		host->io_pos--;
+-	}
+-
+-	return off;
++       *(u32 *)(host->req->data + 0) = j38ms_read_reg_raw(host, TPC_P0);
++       *(u32 *)(host->req->data + 4) = j38ms_read_reg_raw(host, TPC_P1);
+ }
+ 
+ /* Write short TPC data (up to 8 bytes) through 2 special registers */
+-static unsigned int j38ms_write_tpc_inline(struct j38ms_host *host,
+-					     unsigned char *buf,
+-					     unsigned int length)
++static void j38ms_write_tpc_inline(struct j38ms_host *host)
+ {
+-	unsigned int off = 0;
+-
+-	while (host->io_pos < 4 && length) {
+-		host->io_word[0] &= ~(0xff << (host->io_pos * 8));
+-		host->io_word[0] |=  buf[off++] << (host->io_pos * 8);
+-		host->io_pos++;
+-		length--;
+-	}
+-
+-	if (!length)
+-		return off;
+-
+-	while (host->io_pos < 8 && length) {
+-		host->io_word[1] &= ~(0xff << (host->io_pos * 8));
+-		host->io_word[1] |=  buf[off++] << (host->io_pos * 8);
+-		host->io_pos++;
+-		length--;
+-	}
+-
+-	return off;
++	j38ms_write_reg_raw(host, TPC_P0, *(u32 *)(host->req->data + 0));
++	j38ms_write_reg_raw(host, TPC_P1, *(u32 *)(host->req->data + 4));
+ }
+ 
+ /*
+@@ -344,10 +271,6 @@ static int j38ms_execute_tpc(struct memstick_host *msh)
+ 	dev_dbg(&msh->dev, "hstatus %08x\n", readl(host->addr + STATUS));
+ 
+ 	host->cmd_flags = 0;
+-	host->block_pos = 0;
+-	host->io_pos = 0;
+-	host->io_word[0] = 0;
+-	host->io_word[1] = 0;
+ 
+ 	cmd = host->req->tpc << 16;
+ 	cmd |= TPC_DATA_SEL;
+@@ -407,11 +330,8 @@ static int j38ms_execute_tpc(struct memstick_host *msh)
+ 		host->cmd_flags |= REG_DATA;
+ 		cmd |= data_len & 0xf;
+ 
+-		if (host->req->data_dir == WRITE) {
+-			j38ms_transfer_data(host);
+-			writel(host->io_word[0], host->addr + TPC_P0);
+-			writel(host->io_word[1], host->addr + TPC_P1);
+-		}
++		if (host->req->data_dir == WRITE)
++			j38ms_write_tpc_inline(host);
+ 	}
+ 
+ 	mod_timer(&host->timer, jiffies + host->timeout_jiffies);
+@@ -504,10 +424,10 @@ static irqreturn_t j38ms_isr(int irq, void *dev_id)
+ 			} else {
+ 				if (irq_status & (INT_STATUS_FIFO_RRDY
+ 						  | INT_STATUS_FIFO_WRDY))
+-					j38ms_transfer_data(host);
++					j38ms_transfer_pio(host);
+ 
+ 				if (irq_status & INT_STATUS_EOTRAN) {
+-					j38ms_transfer_data(host);
++					j38ms_transfer_pio(host);
+ 					host->cmd_flags |= FIFO_READY;
+ 				}
+ 			}
+@@ -515,17 +435,8 @@ static irqreturn_t j38ms_isr(int irq, void *dev_id)
+ 			if (irq_status & INT_STATUS_EOTPC) {
+ 				host->cmd_flags |= CMD_READY;
+ 				if (host->cmd_flags & REG_DATA) {
+-					if (host->req->data_dir == READ) {
+-						host->io_word[0]
+-							= readl(host->addr
+-								+ TPC_P0);
+-						host->io_word[1]
+-							= readl(host->addr
+-								+ TPC_P1);
+-						host->io_pos = 8;
+-
+-						j38ms_transfer_data(host);
+-					}
++					if (host->req->data_dir == READ)
++						j38ms_read_tpc_inline(host);
+ 					host->cmd_flags |= FIFO_READY;
+ 				}
+ 			}
+diff --git a/drivers/memstick/host/jmb38x_ms.h b/drivers/memstick/host/jmb38x_ms.h
+index 35b8bca..d7dffb6 100644
+--- a/drivers/memstick/host/jmb38x_ms.h
++++ b/drivers/memstick/host/jmb38x_ms.h
+@@ -151,13 +151,16 @@ struct j38ms_host {
+ 	int                     id;
+ 	char                    host_id[32];
+ 	int                     irq;
 -	unsigned int            block_pos;
--	unsigned long           timeout_jiffies;
--	struct timer_list       timer;
--	struct memstick_request *req;
--	unsigned char           cmd_flags;
+ 	unsigned long           timeout_jiffies;
+ 	struct timer_list       timer;
+ 	struct memstick_request *req;
+ 	unsigned char           cmd_flags;
 -	unsigned char           io_pos;
 -	unsigned int            io_word[2];
--};
--
--struct jmb38x_ms {
--	struct pci_dev        *pdev;
--	int                   host_cnt;
--	struct memstick_host  *hosts[];
--};
--
--#define BLOCK_COUNT_MASK       0xffff0000
--#define BLOCK_SIZE_MASK        0x00000fff
--
--#define DMA_CONTROL_ENABLE     0x00000001
--
--#define TPC_DATA_SEL           0x00008000
--#define TPC_DIR                0x00004000
--#define TPC_WAIT_INT           0x00002000
--#define TPC_GET_INT            0x00000800
--#define TPC_CODE_SZ_MASK       0x00000700
--#define TPC_DATA_SZ_MASK       0x00000007
--
--#define HOST_CONTROL_TDELAY_EN 0x00040000
--#define HOST_CONTROL_HW_OC_P   0x00010000
--#define HOST_CONTROL_RESET_REQ 0x00008000
--#define HOST_CONTROL_REI       0x00004000
--#define HOST_CONTROL_LED       0x00000400
--#define HOST_CONTROL_FAST_CLK  0x00000200
--#define HOST_CONTROL_RESET     0x00000100
--#define HOST_CONTROL_POWER_EN  0x00000080
--#define HOST_CONTROL_CLOCK_EN  0x00000040
--#define HOST_CONTROL_REO       0x00000008
--#define HOST_CONTROL_IF_SHIFT  4
--
--#define HOST_CONTROL_IF_SERIAL 0x0
--#define HOST_CONTROL_IF_PAR4   0x1
--#define HOST_CONTROL_IF_PAR8   0x3
--
--#define STATUS_BUSY             0x00080000
--#define STATUS_MS_DAT7          0x00040000
--#define STATUS_MS_DAT6          0x00020000
--#define STATUS_MS_DAT5          0x00010000
--#define STATUS_MS_DAT4          0x00008000
--#define STATUS_MS_DAT3          0x00004000
--#define STATUS_MS_DAT2          0x00002000
--#define STATUS_MS_DAT1          0x00001000
--#define STATUS_MS_DAT0          0x00000800
--#define STATUS_HAS_MEDIA        0x00000400
--#define STATUS_FIFO_EMPTY       0x00000200
--#define STATUS_FIFO_FULL        0x00000100
--#define STATUS_MS_CED           0x00000080
--#define STATUS_MS_ERR           0x00000040
--#define STATUS_MS_BRQ           0x00000020
--#define STATUS_MS_CNK           0x00000001
--
--#define INT_STATUS_TPC_ERR      0x00080000
--#define INT_STATUS_CRC_ERR      0x00040000
--#define INT_STATUS_TIMER_TO     0x00020000
--#define INT_STATUS_HSK_TO       0x00010000
--#define INT_STATUS_ANY_ERR      0x00008000
--#define INT_STATUS_FIFO_WRDY    0x00000080
--#define INT_STATUS_FIFO_RRDY    0x00000040
--#define INT_STATUS_MEDIA_OUT    0x00000010
--#define INT_STATUS_MEDIA_IN     0x00000008
--#define INT_STATUS_DMA_BOUNDARY 0x00000004
--#define INT_STATUS_EOTRAN       0x00000002
--#define INT_STATUS_EOTPC        0x00000001
--
--#define INT_STATUS_ALL          0x000f801f
--
--#define PAD_OUTPUT_ENABLE_MS  0x0F3F
--
--#define PAD_PU_PD_OFF         0x7FFF0000
--#define PAD_PU_PD_ON_MS_SOCK0 0x5f8f0000
--#define PAD_PU_PD_ON_MS_SOCK1 0x0f0f0000
--
--#define CLOCK_CONTROL_40MHZ   0x00000001
--#define CLOCK_CONTROL_50MHZ   0x0000000a
--#define CLOCK_CONTROL_60MHZ   0x00000008
--#define CLOCK_CONTROL_62_5MHZ 0x0000000c
--#define CLOCK_CONTROL_OFF     0x00000000
--
--#define PCI_CTL_CLOCK_DLY_ADDR   0x000000b0
--#define PCI_CTL_CLOCK_DLY_MASK_A 0x00000f00
--#define PCI_CTL_CLOCK_DLY_MASK_B 0x0000f000
--
--enum {
--	CMD_READY    = 0x01,
--	FIFO_READY   = 0x02,
--	REG_DATA     = 0x04,
--	DMA_DATA     = 0x08
--};
-+static int debug;
++
++	/* PIO state */
++	struct sg_mapping_iter  pio_sg_iter;
++	unsigned char		pio_offset;
++	unsigned char           pio_tmp_buf[4];
++	unsigned int            pio_tmp_buf_len;
+ };
  
- static unsigned int jmb38x_ms_read_data(struct jmb38x_ms_host *host,
- 					unsigned char *buf, unsigned int length)
-@@ -1012,5 +881,9 @@ MODULE_DESCRIPTION("JMicron jmb38x MemoryStick driver");
- MODULE_LICENSE("GPL");
- MODULE_DEVICE_TABLE(pci, jmb38x_ms_id_tbl);
- 
-+module_param(no_dma, bool, S_IRUGO);
-+module_param(debug, bool, S_IRUGO);
-+
-+
- module_init(jmb38x_ms_init);
- module_exit(jmb38x_ms_exit);
-diff --git a/drivers/memstick/host/jmb38x_ms.h b/drivers/memstick/host/jmb38x_ms.h
-new file mode 100644
-index 0000000..5bca4b3
---- /dev/null
-+++ b/drivers/memstick/host/jmb38x_ms.h
-@@ -0,0 +1,188 @@
-+/*
-+ *  jmb38x_ms.c - JMicron jmb38x MemoryStick card reader
-+ *
-+ *  Copyright (C) 2008 Alex Dubov <oakad@yahoo.com>
-+ *  Copyright (C) 2010 Maxim Levitsky <maximlevitsky@gmail.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ */
-+
-+#define DRIVER_NAME "jmb38x_ms"
-+
-+/* physical address of a page for DMA */
-+#define	DMA_ADDRESS            0x00
-+
-+/* controls the size of the TPC */
-+#define	BLOCK                  0x04
-+#define BLOCK_COUNT_MASK        0xffff0000
-+#define BLOCK_COUNT_1BLOCK      0x00010000
-+#define BLOCK_SIZE_MASK         0x00000fff
-+
-+/* Enables the DMA */
-+#define	DMA_CONTROL            0x08
-+#define DMA_CONTROL_ENABLE      0x00000001
-+
-+/* A window for small TPCs to send the contents inline */
-+#define	TPC_P0                 0x0c
-+#define	TPC_P1                 0x10
-+
-+/* TPC execution register */
-+#define	TPC                    0x14
-+#define TPC_DATA_SEL            0x00008000
-+#define TPC_DIR                 0x00004000
-+#define TPC_WAIT_INT            0x00002000
-+#define TPC_GET_INT             0x00000800
-+#define TPC_CODE_SZ_MASK        0x00000700
-+#define TPC_DATA_SZ_MASK        0x00000007
-+
-+/* General device settings */
-+#define	HOST_CONTROL           0x18
-+#define HOST_CONTROL_TDELAY_EN  0x00040000
-+#define HOST_CONTROL_HW_OC_P    0x00010000
-+#define HOST_CONTROL_RESET_REQ  0x00008000
-+#define HOST_CONTROL_REI        0x00004000
-+#define HOST_CONTROL_LED        0x00000400
-+#define HOST_CONTROL_FAST_CLK   0x00000200
-+#define HOST_CONTROL_RESET      0x00000100
-+#define HOST_CONTROL_POWER_EN   0x00000080
-+#define HOST_CONTROL_CLOCK_EN   0x00000040
-+#define HOST_CONTROL_REO        0x00000008
-+#define HOST_CONTROL_BSY_TIME	0x00000007
-+
-+#define HOST_CONTROL_IF_SHIFT  4
-+#define HOST_CONTROL_IF_SERIAL 0x0
-+#define HOST_CONTROL_IF_PAR4   0x1
-+#define HOST_CONTROL_IF_PAR8   0x3
-+
-+
-+/* IO window for PIO access to internal FIFO*/
-+#define	DATA                   0x1c
-+
-+/* MS status */
-+#define	STATUS                 0x20
-+#define STATUS_BUSY             0x00080000
-+#define STATUS_MS_DAT7          0x00040000
-+#define STATUS_MS_DAT6          0x00020000
-+#define STATUS_MS_DAT5          0x00010000
-+#define STATUS_MS_DAT4          0x00008000
-+#define STATUS_MS_DAT3          0x00004000
-+#define STATUS_MS_DAT2          0x00002000
-+#define STATUS_MS_DAT1          0x00001000
-+#define STATUS_MS_DAT0          0x00000800
-+#define STATUS_HAS_MEDIA        0x00000400
-+#define STATUS_FIFO_EMPTY       0x00000200
-+#define STATUS_FIFO_FULL        0x00000100
-+#define STATUS_MS_CED           0x00000080
-+#define STATUS_MS_ERR           0x00000040
-+#define STATUS_MS_BRQ           0x00000020
-+#define STATUS_MS_CNK           0x00000001
-+
-+/* Device status */
-+#define	INT_STATUS             0x24
-+#define INT_STATUS_TPC_ERR      0x00080000
-+#define INT_STATUS_CRC_ERR      0x00040000
-+#define INT_STATUS_TIMER_TO     0x00020000
-+#define INT_STATUS_HSK_TO       0x00010000
-+#define INT_STATUS_ANY_ERR      0x00008000
-+#define INT_STATUS_FIFO_WRDY    0x00000080
-+#define INT_STATUS_FIFO_RRDY    0x00000040
-+#define INT_STATUS_MEDIA_OUT    0x00000010
-+#define INT_STATUS_MEDIA_IN     0x00000008
-+#define INT_STATUS_DMA_BOUNDARY 0x00000004
-+#define INT_STATUS_EOTRAN       0x00000002
-+#define INT_STATUS_EOTPC        0x00000001
-+#define INT_STATUS_ALL          0x000f801f
-+
-+/* Interrupt enable - ???*/
-+#define	INT_STATUS_ENABLE      0x28
-+
-+/* Interrupt enable*/
-+#define	INT_SIGNAL_ENABLE      0x2c
-+
-+/* Current timer value */
-+#define	TIMER                  0x30
-+
-+/* Enable/disable the timer */
-+#define	TIMER_CONTROL          0x34
-+
-+/* Output pad enable */
-+#define	PAD_OUTPUT_ENABLE      0x38
-+#define PAD_OUTPUT_ENABLE_MS    0x0F3F
-+
-+/* Ouput pad pull-up, pull-down control */
-+#define	PAD_PU_PD              0x3c
-+#define PAD_PU_PD_OFF           0x7fff0000
-+#define PAD_PU_PD_ON_MS_SOCK0   0x5f8f0000
-+#define PAD_PU_PD_ON_MS_SOCK1   0x0f0f0000
-+
-+/* Internal clock delay */
-+#define	CLOCK_DELAY            0x40
-+
-+/* ??? */
-+#define	ADMA_ADDRESS           0x44
-+
-+/* Set the device clock */
-+#define	CLOCK_CONTROL          0x48
-+#define CLOCK_CONTROL_RESET     0x00000008
-+#define CLOCK_CONTROL_40MHZ     0x00000009
-+#define CLOCK_CONTROL_50MHZ     0x0000000a
-+#define CLOCK_CONTROL_62_5MHZ   0x0000000c
-+#define CLOCK_CONTROL_OFF       0x00000000
-+
-+/* Led blink period */
-+#define	LED_CONTROL            0x4c
-+
-+/* Hardware version */
-+#define	VERSION                0x50
-+
-+#define PCI_CTL_CLOCK_DLY_ADDR   0x000000b0
-+#define PCI_CTL_CLOCK_DLY_MASK_A 0x00000f00
-+#define PCI_CTL_CLOCK_DLY_MASK_B 0x0000f000
-+
-+struct jmb38x_ms_host {
-+	struct jmb38x_ms        *chip;
-+	void __iomem            *addr;
-+	spinlock_t              lock;
-+	struct tasklet_struct   notify;
-+	int                     id;
-+	char                    host_id[32];
-+	int                     irq;
-+	unsigned int            block_pos;
-+	unsigned long           timeout_jiffies;
-+	struct timer_list       timer;
-+	struct memstick_request *req;
-+	unsigned char           cmd_flags;
-+	unsigned char           io_pos;
-+	unsigned int            io_word[2];
-+};
-+
-+struct jmb38x_ms {
-+	struct pci_dev        *pdev;
-+	int                   host_cnt;
-+	struct memstick_host  *hosts[];
-+};
-+
-+enum {
-+	CMD_READY    = 0x01,
-+	FIFO_READY   = 0x02,
-+	REG_DATA     = 0x04,
-+	DMA_DATA     = 0x08
-+};
-+
-+
-+#define __dbg(host, level, format, ...) \
-+	do { \
-+		if (debug >= level) \
-+			printk(KERN_DEBUG \
-+				"%s: " format "\n", dev_name(&host->msh->dev) \
-+					 , ## __VA_ARGS__); \
-+		else \
-+			dev_dbg(&host->msh->dev, format, ## __VA_ARGS__); \
-+	} while (0)
-+
-+#define dbg(host, format, ...)		__dbg(host, 1, format, ## __VA_ARGS__)
-+#define dbg_v(host, format, ...)	__dbg(host, 2, format, ## __VA_ARGS__)
-+#define dbg_reg(host, format, ...)	__dbg(host, 3, format, ## __VA_ARGS__)
+ struct j38ms {
+@@ -187,11 +190,3 @@ enum {
+ #define dbg(host, format, ...)		__dbg(host, 1, format, ## __VA_ARGS__)
+ #define dbg_v(host, format, ...)	__dbg(host, 2, format, ## __VA_ARGS__)
+ #define dbg_reg(host, format, ...)	__dbg(host, 3, format, ## __VA_ARGS__)
+-
+-static unsigned int j38ms_read_tpc_inline(struct j38ms_host *host,
+-					    unsigned char *buf,
+-					    unsigned int length);
+-
+-static unsigned int j38ms_write_tpc_inline(struct j38ms_host *host,
+-					     unsigned char *buf,
+-					     unsigned int length);
 -- 
 1.7.1
 
