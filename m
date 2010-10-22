@@ -1,72 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752700Ab0JVWqk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 18:46:40 -0400
-Received: from smtp13.ono.com ([62.42.230.16]:43293 "EHLO resmaa13.ono.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751718Ab0JVWqj convert rfc822-to-8bit (ORCPT
+	id S1752540Ab0JVWrc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 18:47:32 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:42954 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750837Ab0JVWra (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 18:46:39 -0400
-Date: Sat, 23 Oct 2010 00:46:36 +0200
-From: "J.A. =?ISO-8859-1?B?TWFnYWxs824=?=" <jamagallon@ono.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>, linux-cifs@vger.kernel.org
-Subject: Re: CIFS is slooow, gvfs is fast
-Message-ID: <20101023004636.1acdd81c@werewolf.home>
-In-Reply-To: <4CC16B1E.4060709@suse.de>
-References: <20101022013544.0fdab0e0@werewolf.home>
- <4CC16B1E.4060709@suse.de>
-X-Mailer: Claws Mail 3.7.6cvs54 (GTK+ 2.22.0; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Fri, 22 Oct 2010 18:47:30 -0400
+Date: Fri, 22 Oct 2010 23:46:12 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Cyril Chemparathy <cyril@ti.com>
+Cc: Arnd Bergmann <arnd@arndb.de>,
+        "davinci-linux-open-source@linux.davincidsp.com" 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        "dbrownell@users.sourceforge.net" <dbrownell@users.sourceforge.net>,
+        "broonie@opensource.wolfsonmicro.com" 
+	<broonie@opensource.wolfsonmicro.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
+        "rpurdie@rpsys.net" <rpurdie@rpsys.net>,
+        "spi-devel-general@lists.sourceforge.net" 
+	<spi-devel-general@lists.sourceforge.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "lrg@slimlogic.co.uk" <lrg@slimlogic.co.uk>
+Subject: Re: [PATCH v3 01/12] misc: add driver for sequencer serial port
+Message-ID: <20101022224612.GA6079@n2100.arm.linux.org.uk>
+References: <1287694873-12904-1-git-send-email-cyril@ti.com> <20101021161224.b4c0b623.akpm@linux-foundation.org> <4CC18605.80007@ti.com> <201010221448.17728.arnd@arndb.de> <4CC1E717.7070707@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4CC1E717.7070707@ti.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 22 Oct 2010 16:14:46 +0530, Suresh Jayaraman <sjayaraman@suse.de> wrote:
-
-> (Cc linux-cifs@vger.kernel.org)
-> 
-> On 10/22/2010 05:05 AM, J.A. Magallón wrote:
-> 
-> > I have a very strange behaviour with windows networking.
-> > I have an HTPC, which I access from my Linux desktop. It runs Windows 7.
-> > Network is GigaBit, routed by a Linksys WRT320N running latest DD-WRT.
-> > I setup an automount path under /net/htpc with CIFS filesystem.
-> > I can also access the drives in HTPC via gvfs from Gnome DE.
+On Fri, Oct 22, 2010 at 03:33:43PM -0400, Cyril Chemparathy wrote:
+> On 10/22/2010 08:48 AM, Arnd Bergmann wrote:
+> > On Friday 22 October 2010 14:39:33 Cyril Chemparathy wrote:
+> >>>> +/* Register Access Helpers */
+> >>>> +static inline u32 ssp_read(struct ti_ssp *ssp, int reg)
+> >>>> +{
+> >>>> +    return __raw_readl(ssp->regs + reg);
+> >>>> +}
+> >>>> +
+> >>>> +static inline void ssp_write(struct ti_ssp *ssp, int reg, u32 val)
+> >>>> +{
+> >>>> +    __raw_writel(val, ssp->regs + reg);
+> >>>> +}
+> >>>
+> >>> Why are the __raw functions used here?
+> >>>
+> >>
+> >> These registers are to be accessed native endian at all times, and
+> >> therefore the le32 conversion done otherwise is inappropriate.
 > > 
-> > Problem: speed is _VERY_ different.
-> > R/W through the automount point (CIFS fs), is roughly 7-8 MB/s (ridiculous
-> > for gigabit speeds).
-> > R/W through Gnome/gvfs (kind of fuse) goes around 35 - 40 MB/s (400 Mbits/s),
-> > that look much better.
+> > Won't that break on out-of-order CPUs that need the extra synchronization
+> > done in readl/writel?
+> > 
 > 
-> What is the kernel version In which you are seeing the problem? I'm not
+> AFAICS, ioremap()ed space on ARMv6 should be strongly ordered.
 
-Its just new 2.6.36 final, mandriva distro kernel.
+No.  ioremap'd space is device memory on ARMv6 and above, which means
+if you care about the ordering of writes to device vs memory, you
+need barriers.
 
-> seeing this on 2.6.36-rc4. Do you have a wired interface as well? Are
-
-Yes, boxes are all wired to the 320N router, at gigabit speeds.
-Just to double check, I also probed with my netbook with 100Mb ehternet.
-The effect is less obvious, but writing to the Win7 box through the
-cifs automount path goes at 3.5-4.0 Mb/s, and with gvfs it reaches
-7.5 Mb/s.
-
-> you sure that both are using the same network path?
-> 
-
-If you mean hardware network path (cabling, router), yes.
-For file paths, CIFS fs is under /net/htpc/media, and gvfs uses a mount
-point on '~/.gvfs/media on htpc'.
-
-And here comes the weird part. To rule out the desktop environment factor,
-I tried a dd in both paths. On /net, I get 16.6 MB/s, and on
-~/.gvfs/xxx, I just get 5.5 MB/s. I really don't understand anything...
-things get reversed depending if you use a gui or commandline.
-
-Weird, really weird...
-
--- 
-J.A. Magallon <jamagallon()ono!com>     \               Software is like sex:
-                                         \         It's better when it's free
+Nevertheless, individual reads/writes to devices will be in program
+order, but writes may be delayed.
