@@ -1,43 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753709Ab0JVXFI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 19:05:08 -0400
-Received: from beaker.bytemark.co.uk ([80.68.81.2]:39793 "EHLO
-	beaker.bytemark.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752087Ab0JVXFG (ORCPT
+	id S1753969Ab0JVXJJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 19:09:09 -0400
+Received: from einhorn.in-berlin.de ([192.109.42.8]:44185 "EHLO
+	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752070Ab0JVXJI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 19:05:06 -0400
-Date: Fri, 22 Oct 2010 19:04:59 -0400
-From: "Emilio G. Cota" <cota@braap.org>
-To: Martyn Welch <martyn.welch@ge.com>
-Cc: Greg KH <greg@kroah.com>, LKML <linux-kernel@vger.kernel.org>,
-        Juan David Gonzalez Cobas <david.cobas@gmail.com>
-Subject: Re: [-next] staging/vme: various fixes + new driver model for VME
-Message-ID: <20101022230459.GN10869@flamenco.cs.columbia.edu>
-References: <1287729412-24356-1-git-send-email-cota@braap.org>
- <4CC162BA.6080009@ge.com>
+	Fri, 22 Oct 2010 19:09:08 -0400
+X-Envelope-From: stefanr@s5r6.in-berlin.de
+Date: Sat, 23 Oct 2010 01:08:57 +0200 (CEST)
+From: Stefan Richter <stefanr@s5r6.in-berlin.de>
+Subject: [PATCH update] firewire: nosy: char device is not seekable
+To: Arnd Bergmann <arnd@arndb.de>
+cc: linux1394-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
+In-Reply-To: <201010131554.43089.arnd@arndb.de>
+Message-ID: <tkrat.f853df65a5128ca0@s5r6.in-berlin.de>
+References: <tkrat.42de7ec9907e63aa@s5r6.in-berlin.de>
+ <201010131554.43089.arnd@arndb.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4CC162BA.6080009@ge.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; CHARSET=us-ascii
+Content-Disposition: INLINE
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 22, 2010 at 11:08:58 +0100, Martyn Welch wrote:
-> Emilio,
-> 
-> The VME drivers are currently in the staging tree - please can you post
-> these patches to the mailing list identified in the maintainers file
-> (devel@driverdev.osuosl.org) so that these modifications can be
-> discussed there.
+Remove unnecessary .llseek handler that came in via an automated mass conversion.
+.llseek = NULL means no_llseek since commit 776c163b1b93.
 
-oops sorry about that, didn't realise.
+The only client that uses this interface is nosy-dump in linux/tools/firewire
+and it knows not to seek in this char dev.
 
-I'm sorry, don't want to pollute LKML re-sending the whole thing.
-However I'll keep this in mind for subsequent submissions, thanks
-for pointing it out.
+Signed-off-by: Stefan Richter <stefanr@s5r6.in-berlin.de>
+---
+I left out the addition of return nonseekable_open(...) in nosy_open in
+this update.  This works for nosy, but is it also formally correct?
 
-		Emilio
+ drivers/firewire/nosy.c |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/firewire/nosy.c b/drivers/firewire/nosy.c
+index bf184fb..8528b10 100644
+--- a/drivers/firewire/nosy.c
++++ b/drivers/firewire/nosy.c
+@@ -405,7 +405,6 @@ static const struct file_operations nosy_ops = {
+ 	.poll =			nosy_poll,
+ 	.open =			nosy_open,
+ 	.release =		nosy_release,
+-	.llseek =		noop_llseek,
+ };
+ 
+ #define PHY_PACKET_SIZE 12 /* 1 payload, 1 inverse, 1 ack = 3 quadlets */
+-- 
+Stefan Richter
+-=====-==-=- =-=- =-===
+http://arcgraph.de/sr/
 
