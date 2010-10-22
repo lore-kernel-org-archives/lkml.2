@@ -1,73 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757200Ab0JVOrG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 10:47:06 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:41911 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753152Ab0JVOrE convert rfc822-to-8bit (ORCPT
+	id S1756766Ab0JVOsj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 10:48:39 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:59106 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755471Ab0JVOsi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 10:47:04 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=SdIu0IeEVk6++9JFn9E/NBUr//2gdvTD9BuNmXV7Pewyut1tb7Ct3QcC2XSJdjc2Z7
-         0Xj896VdiY+qKHt6EbdqGsUvMxvuHesb23KdHpwGAj6AbS8MBn+MJK0+rXl1EYgIDQwp
-         FFyJSzOM6LkAff+aI6pwU+DYanY3T6c7t7Q7M=
+	Fri, 22 Oct 2010 10:48:38 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Alexey Charkov <alchark@gmail.com>
+Subject: Re: [PATCH 1/6] ARM: Add basic architecture support for VIA/WonderMedia 85xx SoC's
+Date: Fri, 22 Oct 2010 16:48:24 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.36-next-20101021+; KDE/4.5.1; x86_64; ; )
+Cc: vt8500-wm8505-linux-kernel@googlegroups.com,
+        linux-arm-kernel@lists.infradead.org,
+        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org
+References: <1287608139-21354-1-git-send-email-alchark@gmail.com> <201010221102.12329.arnd@arndb.de> <AANLkTi=F2VA_3L9-49OQ=Bj1KaD2T58Ske2qvHFqirM9@mail.gmail.com>
+In-Reply-To: <AANLkTi=F2VA_3L9-49OQ=Bj1KaD2T58Ske2qvHFqirM9@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20101022133130.4cb2cb96@absol.kitzblitz>
-References: <20101022133130.4cb2cb96@absol.kitzblitz>
-Date: Fri, 22 Oct 2010 16:47:02 +0200
-X-Google-Sender-Auth: QoYuWH1A__J65KQhOA84Jpv3piI
-Message-ID: <AANLkTimAb_gjx7m6pKvYHL=SjB9DousdUJA2K9uyPt1F@mail.gmail.com>
-Subject: Re: [PATCH] rivafb: dubious assignment
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Nicolas Kaiser <nikai@nikai.net>, Jeff Garzik <jgarzik@pobox.com>
-Cc: Antonino Daplas <adaplas@gmail.com>, linux-fbdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201010221648.25193.arnd@arndb.de>
+X-Provags-ID: V02:K0:Bs7zCzrHzK69z+4ZxZIonHeL2em6Per5GaVVXYcdL4Z
+ Ujul+G4bhP7L4Lwc9DrSQBSRtxtM6m5s2oKeNEiFUQsGkIsdHh
+ ZBO29O/20ZOed267yrvsP/K+RpNmOIjP1qmv8Wmh5GqhJNGQjM
+ vDPOtXS5b0wb6JCPWew2Nb7F3ZN8HPRCUaQeoiyXtzvmO4uPgQ
+ H7j+RVmAHsG8EYgxmghIQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 22, 2010 at 13:31, Nicolas Kaiser <nikai@nikai.net> wrote:
-> A duplicated assignment unconditionally changes max_gfsize to
-> GFIFO_SIZE.
->
-> It looks to me like this might not be intended, or is it?
->
-> Signed-off-by: Nicolas Kaiser <nikai@nikai.net>
-> ---
->  drivers/video/riva/riva_hw.c |    1 -
->  1 files changed, 0 insertions(+), 1 deletions(-)
->
-> diff --git a/drivers/video/riva/riva_hw.c b/drivers/video/riva/riva_hw.c
-> index 78fdbf5..936abfa 100644
-> --- a/drivers/video/riva/riva_hw.c
-> +++ b/drivers/video/riva/riva_hw.c
-> @@ -263,7 +263,6 @@ static int nv3_iterate(nv3_fifo_info *res_info, nv3_sim_state * state, nv3_arb_i
->     vmisses = 2;
->     if (ainfo->gburst_size == 128) max_gfsize = GFIFO_SIZE_128;
->     else  max_gfsize = GFIFO_SIZE;
-> -    max_gfsize = GFIFO_SIZE;
->     while (1)
->     {
->         if (ainfo->vid_en)
-> --
-> 1.7.2.2
+On Friday 22 October 2010 15:52:26 Alexey Charkov wrote:
+> 2010/10/22 Arnd Bergmann <arnd@arndb.de>:
+> > On Thursday 21 October 2010 23:08:39 Alexey Charkov wrote:
 
-According to full-history-linux, this comes from the initial drop in 2.3.49pre2,
-from nVidia code(?), imported by Jeff Garzik.
+> > Well, you could still build a specialized kernel with only support for
+> > one resolution if you care about every byte.
+> >
+> 
+> If it is fine to accept an option like "panel=<value_from_a_list>" at
+> map_io stage, then I'd rather go that way, and calculate the minimum
+> required buffer size for the current configuration. Especially if we
+> decide to make a unified image for different SoC revisions, as WM8505
+> requires 32bpp framebuffer, while VT8500 requires it to be 4MB-aligned
+> native-bpp.
 
-Gr{oetje,eeting}s,
+sounds ok to me.
 
-                        Geert
+> >> Cleaned this up in the development repo, thanks. Only left #ifdef's
+> >> for the sections where respective register/interrupt definitions would
+> >> be unavailable due to compiling for a different SoC version, and
+> >> adjusted the conditions accordingly.
+> >
+> > Ideally those should also be run-time decisions so you can build a
+> > kernel that works on both. It's all __init code, so it won't eat
+> > up any RAM afterwards.
+> >
+> 
+> I thought about that, and it should be quite useful. However, register
+> and interrupt definitions should then be converted into some indexed
+> data structures instead of macros (as they differ between VT8500 and
+> WM8505), and the correct index should be selectable at runtime.
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+Right.
 
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+> Is there any way to determine which mach type we are currently running
+> at after early head.S initialization completes and before we could
+> need to use any registers and/or interrupts? It could probably be done
+> in machine-specific fixup functions, but I'm unsure whether this would
+> be a correct way to go.
+
+Normally you put the register areas into the resources for platform
+devices, which are board specific. The drivers then ioremap the resource
+and use offsets into those ranges.
+
+> > For the IO_SPACE_LIMIT, just make it 0xffff
+> >
+> > For __io, you need to find a place in your virtual address space
+> > and map the real IO space.
+> >
+> > According to the VIA source code, the physical I/O window is at
+> > 0xd8000000, they also map it to the same address in virtual space
+> > but you can have anywhere convienient.
+> >
+> 
+> Are you sure about that? 0xd8000000 is the MMIO base, as far as I can
+> tell (see register definitions in <mach/vt8500.h>). In earlier
+> discussions you presumed [1] that IO could be at 0xc0000000, but I'm
+> not sure how to verify that. If so, should it then look something like
+> this:
+> 
+> #define __io(a) ((void __iomem *)(((a) + 0xc0000000) +
+> SOME_OFFSET_TO_VIRT_SPACE))
+
+You are right, 0xd8000000 is certainly not the PCI I/O space, it is
+the SoC MMIO area.
+
+The comment in the original PCI code says
+
+        /*
+         * PCI Bridge Memory Map is between 0xC0000:0000 - 0xC3FF:FFFF(64MB)
+         * The first 64KB is allocated for the PCI I/O Space, except for the
+         * 0xCF8 - 0xCFF(8Bytes) for the PCI Configuration
+         * Others are reserved for the MemorySpace.
+         */
+
+So this should be mapped somewhere. Best map this in your map_desc
+at boot time to a fixed __iomem address.
+ 
+> ?
+> By the way, other boards except for footbridge, integrator, ebsa110
+> and ixp4xx define IO_SPACE_LIMIT to be 0xffffffff. 0xffff seems more
+> plausbile, though...
+
+Yes, I have noticed that before and have thought about fixing them/
+If you don't have PCI or PCMCIA, it doesn't really matter. What some
+platforms do is to define the I/O port range to be 32 bit addressable
+and then have multiple PCI buses with long port numbers, relying on
+the bus to crop them to 16 bits again, but that breaks a few assumptions
+in other code.
+
+	Arnd
