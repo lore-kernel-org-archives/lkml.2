@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758904Ab0JVUDI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 16:03:08 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:57540 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754244Ab0JVUDG (ORCPT
+	id S1758263Ab0JVUED (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 16:04:03 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:52222 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755007Ab0JVUEB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 16:03:06 -0400
-Date: Fri, 22 Oct 2010 21:01:32 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] isl29020: ambient light sensor
-Message-ID: <20101022210132.72389768@lxorguk.ukuu.org.uk>
-In-Reply-To: <20101022125130.064710ba.akpm@linux-foundation.org>
-References: <20101022124554.19822.58177.stgit@localhost.localdomain>
-	<20101022125130.064710ba.akpm@linux-foundation.org>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+	Fri, 22 Oct 2010 16:04:01 -0400
+Date: Fri, 22 Oct 2010 13:03:24 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: linux-kernel@vger.kernel.org, Hong Liu <hong.liu@intel.com>
+Subject: Re: [PATCH] apds9802als: add runtime PM support
+Message-Id: <20101022130324.ce4ec019.akpm@linux-foundation.org>
+In-Reply-To: <20101015134713.25557.44608.stgit@localhost.localdomain>
+References: <20101015134713.25557.44608.stgit@localhost.localdomain>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
@@ -25,45 +23,64 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 22 Oct 2010 12:51:30 -0700
-Andrew Morton <akpm@linux-foundation.org> wrote:
+On Fri, 15 Oct 2010 14:47:25 +0100
+Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
 
-> On Fri, 22 Oct 2010 13:46:07 +0100
-> Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
-> 
-> > From: Kalhan Trisal <kalhan.trisal@intel.com>
-> > 
-> > The LS driver will read the latest Lux measurement based upon the
-> > light brightness and will report the LUX output through sysfs interface.
-> > 
-> > This hardware isn't quite the same as the ISL29003 so has a different driver.
-> > 
-> >
-> > ...
-> >
-> > +static ssize_t als_lux_input_data_show(struct device *dev,
-> > +			struct device_attribute *attr, char *buf)
-> > +{
-> > +	struct i2c_client *client = to_i2c_client(dev);
-> > +	int ret_val, val;
-> > +	unsigned long int lux;
-> > +	int temp;
-> > +
-> > +	pm_runtime_get_sync(dev);
-> > +	msleep(100);
-> 
-> The msleep() is a bit mysterious.  And long!  A little code comment
-> explaining why it's here would illuminate things (heh, I kill me).
+>     Update the driver for the needed runtime power features. Remove the old
+>     user controlled power functions.
 
-It takes that long to get a sensible answer from the device after you
-power it up and sysfs doesn't keep enough context around to do poll etc.
+How's this look?
 
-It may be possible to shorten it if we've not been suspended but there
-isn't a sane way I've found to track last suspended time nicely and race
-free in the runtime_pm layer.
 
-> Could/should we make the PM code disappear if !CONFIG_PM?  Such as
 
-Looks sensible. Will add to it.
+put PM code under CONFIG_PM
 
-Alan
+Cc: Alan Cox <alan@linux.intel.com>
+Cc: Hong Liu <hong.liu@intel.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+---
+
+ drivers/misc/apds9802als.c |   11 ++++++++++-
+ 1 file changed, 10 insertions(+), 1 deletion(-)
+
+diff -puN drivers/misc/apds9802als.c~drivers-misc-apds9802alsc-add-runtime-pm-support-fix drivers/misc/apds9802als.c
+--- a/drivers/misc/apds9802als.c~drivers-misc-apds9802alsc-add-runtime-pm-support-fix
++++ a/drivers/misc/apds9802als.c
+@@ -266,6 +266,7 @@ static int apds9802als_remove(struct i2c
+ 	return 0;
+ }
+ 
++#ifdef CONFIG_PM
+ static int apds9802als_suspend(struct i2c_client *client, pm_message_t mesg)
+ {
+ 	als_set_power_state(client, false);
+@@ -302,6 +303,14 @@ static const struct dev_pm_ops apds9802a
+ 	.runtime_resume = apds9802als_runtime_resume,
+ };
+ 
++#define APDS9802ALS_PM_OPS (&apds9802als_pm_ops)
++
++#else	/* CONFIG_PM */
++#define apds9802als_suspend NULL
++#define apds9802als_resume NULL
++#define APDS9802ALS_PM_OPS NULL
++#endif	/* CONFIG_PM */
++
+ static struct i2c_device_id apds9802als_id[] = {
+ 	{ DRIVER_NAME, 0 },
+ 	{ }
+@@ -312,7 +321,7 @@ MODULE_DEVICE_TABLE(i2c, apds9802als_id)
+ static struct i2c_driver apds9802als_driver = {
+ 	.driver = {
+ 		.name = DRIVER_NAME,
+-		.pm = &apds9802als_pm_ops,
++		.pm = APDS9802ALS_PM_OPS,
+ 	},
+ 	.probe = apds9802als_probe,
+ 	.remove = apds9802als_remove,
+_
+
+
+And a question.  This driver puts the .suspend and .resume pointers
+into the `struct i2c_driver'.  However drivers/misc/isl29020.c does not
+do that.  What's up with that?
