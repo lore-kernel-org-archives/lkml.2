@@ -1,171 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759207Ab0JVVMJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 17:12:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:27331 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753444Ab0JVVMH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 17:12:07 -0400
-Date: Fri, 22 Oct 2010 17:11:57 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Gui Jianfeng <guijianfeng@cn.fujitsu.com>
-Cc: Jens Axboe <axboe@kernel.dk>, Nauman Rafique <nauman@google.com>,
-        Chad Talbott <ctalbott@google.com>, Divyesh Shah <dpshah@google.com>,
-        linux kernel mailing list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/4 v2] cfq-iosched: add cfq group hierarchical
- scheduling support
-Message-ID: <20101022211157.GJ7020@redhat.com>
-References: <4CBFA64D.6050800@cn.fujitsu.com>
- <4CBFA6C9.3040604@cn.fujitsu.com>
- <20101022205437.GI7020@redhat.com>
+	id S1759317Ab0JVVMy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 17:12:54 -0400
+Received: from web31807.mail.mud.yahoo.com ([68.142.207.70]:27515 "HELO
+	web31807.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1757563Ab0JVVMx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Oct 2010 17:12:53 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=yahoo.com;
+  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Reply-To:Subject:To:MIME-Version:Content-Type;
+  b=mww/Gsg6BsG6FAwbW35GHabkvuAu/tCHPs6NVNx6qS1vHl1u9rji4LO88WEt6VM1Q+lR7BjtA5s3c3v8u0MjIFTVdrnG8hSUDNN+KcDh+qHOm8Ppevz38KrZxBGtSYtDtT8D8efu3LjlSkVa2lR5Ajh4laC/7oB41n4pS/wyCWs=;
+Message-ID: <985163.58416.qm@web31807.mail.mud.yahoo.com>
+X-YMail-OSG: LY1JBsoVM1nGIpTzAj0N_OptziqXENkCUtX17cv37osA.tL
+ 9CVoQcrpnxpCyJLHB42QO3yWH2InGyyO7JdYLYLrwVkey8vyEGwCS.ZiEFGz
+ T2oCE6rjpLqjtEyMpDqSjeqxCWDtRBwaWStjiSCXRCzIx1CPr4AYuWrYq5Fq
+ 16rcP4MDMdqd8_iJgic8PUP_bxeVSdVkuUh62Xr3gBtDKvSco4lghfB_NSUi
+ Fii5eE47K9DlHGgFUt37yEj8imea0LTJP0S0xesrThdH_Lih_0QktsofK5Hn
+ 63PdiU.yf7A1N0g5IEN_X_s0lBE_FLhaZQ7O6t7IDxBlGV0ljpkvASoHpYY_
+ _OUW84Ktmysp5HcsQEhcrmUr_afeHYuilbA--
+X-Mailer: YahooMailClassic/11.4.9 YahooMailWebService/0.8.107.285259
+Date: Fri, 22 Oct 2010 14:12:51 -0700 (PDT)
+From: Luben Tuikov <ltuikov@yahoo.com>
+Reply-To: ltuikov@yahoo.com
+Subject: [PATCH take 2] [USB] Use normalized sense when emulating autosense
+To: Greg KH <greg@kroah.com>, linux-usb@vger.kernel.org,
+        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101022205437.GI7020@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 22, 2010 at 04:54:37PM -0400, Vivek Goyal wrote:
-> On Thu, Oct 21, 2010 at 10:34:49AM +0800, Gui Jianfeng wrote:
-> > This patch enables cfq group hierarchical scheduling.
-> > 
-> > With this patch, you can create a cgroup directory deeper than level 1.
-> > Now, I/O Bandwidth is distributed in a hierarchy way. For example:
-> > We create cgroup directories as following(the number represents weight):
-> > 
-> >             Root grp
-> >            /       \
-> >        grp_1(100) grp_2(400)
-> >        /    \ 
-> >   grp_3(200) grp_4(300)
-> > 
-> > If grp_2 grp_3 and grp_4 are contending for I/O Bandwidth,
-> > grp_2 will share 80% of total bandwidth.
-> > For sub_groups, grp_3 shares 8%(20% * 40%), grp_4 shares 12%(20% * 60%)
-> > 
-> > Design:
-> >   o Each cfq group has its own group service tree. 
-> >   o Each cfq group contains a "group schedule entity" (gse) that 
-> >     schedules on parent cfq group's service tree.
-> >   o Each cfq group contains a "queue schedule entity"(qse), it
-> >     represents all cfqqs located on this cfq group. It schedules
-> >     on this group's service tree. For the time being, root group
-> >     qse's weight is 1000, and subgroup qse's weight is 500.
-> >   o All gses and qse which belones to a same cfq group schedules
-> >     on the same group service tree.
-> >   o cfq group allocates in a recursive manner, that means when a cfq 
-> >     group needs to be allocated, the upper level cfq groups are also
-> >     allocated.
-> >   o When a cfq group served, not only charge this cfq group but also
-> >     charge its ancestors.
-> 
-> Gui,
-> 
-> I have not been able to convince myself yet that not treating queue at
-> same level as group is a better idea than treating queue at the same
-> level as group. 
-> 
-> I am again trying to put my thoughts together that why I am not convinced.
-> 
-> - I really don't like the idea of hidden group and assumptions about the
->   weight of this group which user does not know or user can't control.
->  
-> - Secondly I think that both the following use cases are valid use cases.
-> 
-> 
->   case 1:
->   -------
-> 			  root
-> 			 / | \
-> 			q1 q2 G1
-> 			      / \
-> 			     q3  q4	 
-> 
->  In this case queues and group are treated at same level, and group G1's
->  share changes dynamically based on number of competiting queues. Assume
->  system admin has put one user's all tasks in G1, and default weight of G1
->  is 500, then admin might really want to keep G1's share dyanmic, so that
->  if root is not doing lots of IO (not many thread), then G1 gets more IO
->  done but if IO activity in root threads increases then G1 gets less
->  share. 
-> 
->  case 2:
->  -------  
->  The second case is where one wants a more deterministic share of a
->  group and does not want that share to change based on number of
->  processes. In that case one can simply create a child group and move
->  all root threads inside that group.
-> 
-> 			  root
-> 			   |  \
-> 		  root-threads G1
-> 			/ \    /\
-> 		       q1 q2  q3 q4
-> 
->  So if we design in such a way so that we treat queues at same level as
->  group, then we are not bounding user to a specific case. case 1, will
->  be default in hierarchical mode and user can easily achieve case 2. Instead
->  of locking down user to case 2 by default from kernel implementation and
->  assume nobody is going to use case 1.
-> 
->  IOW, treating queues at group level provides more flexibility.
-> 
-> - Treating queues at same level as groups will also help us better handle
->   the case of RT threads. Think of following.
-> 
-> 			  root
-> 			  |   \
-> 			q1(RT) G1
-> 			      / \
-> 			     q3  q4	 
-> 
->  In this case q1 is real time prio class. Now if we treat queue at same
->  level group, then we can try to give 100% IO disk time to q1. But with
->  hardcoding of hidden group, covering such cases will be hard.
-> 
-> - Other examples in kernel (CFS scheduler) already treat queue at same
->   level at group. So until and unless we have a good reason, we should
->   remain consistent. 
-> 
-> - If we try to draw analogy from other subsystems like virtual machine,
->   where weight of a KVM machine on cpu is decided by native threads
->   created on host (logical cpus) and not by how many threads are running
->   inside the guest. And share of these logical cpu threads varies
->   dynamically based on how many other threads are running on system.
-> 
->   In a simple case of 1 logical cpu, we will create 1 thread and say there
->   are 10 processes running inside guest, then effectively shares of these
->   10 processes changes dynamically based on how many threads are running. 
-> 
-> So I am not yet convinced that we should take the hidden group approach.
-> 
-> Now coming to the question of how to resolve conflict with the cfqq queue
-> scheduling algorithm. Can we do following.
-> 
-> - Give some kind of boost to queue entities based on their weight. So when
->   queue and group entities are hanging on a service tree, they are
->   scheduled according to their vdisktime, and vdisktime is calculated
->   based on entitie's weight and how much time entity spent on disk just
->   now.
-> 
->   Group entities can continue to follow existing method and we can try
->   to reduce the vdisktime of queue entities a bit based on their priority.
-> 
->   That way, one might see some service differentiation between ioprio
->   of queues and also the relative share between groups does not change.
->   The only problematic part is that when queue and groups are at same
->   level then it is not very predictable that group gets how much share
->   and queues get how much share. But I guess this is lesser of a problem
->   as compared to hidden group approach.
-> 
+This patch solves two things:
+1) Enables autosense emulation code to correctly
+interpret descriptor format sense data, and
+2) Fixes a bug whereby the autosense emulation
+code would overwrite descriptor format sense data
+with SENSE KEY HARDWARE ERROR in fixed format, to
+incorrectly look like this:
 
-Thinking more about it, I guess we can give a boost to vdisktime for newly
-queued entities and not for entities which just have consumed their slice
-and are being put again on service tree. That way I think we should be
-able to come close to logic of CFQ where service differentation between
-ioprio of cfqq can be created in select cases even if idling is disabled.
+Oct 21 14:11:07 localhost kernel: sd 7:0:0:0: [sdc]  Sense Key : Recovered Error [current] [descriptor]
+Oct 21 14:11:07 localhost kernel: Descriptor sense data with sense descriptors (in hex):
+Oct 21 14:11:07 localhost kernel:        72 01 04 1d 00 00 00 0e 09 0c 00 00 00 00 00 00
+Oct 21 14:11:07 localhost kernel:        00 4f 00 c2 00 50
+Oct 21 14:11:07 localhost kernel: sd 7:0:0:0: [sdc]  ASC=0x4 ASCQ=0x1d
 
-Thanks
-Vivek
+Signed-off-by: Luben Tuikov <ltuikov@yahoo.com>
+---
+ drivers/usb/storage/transport.c |   34 +++++++++++++++++++---------------
+ 1 files changed, 19 insertions(+), 15 deletions(-)
+
+diff --git a/drivers/usb/storage/transport.c b/drivers/usb/storage/transport.c
+index 64ec073..cb04664 100644
+--- a/drivers/usb/storage/transport.c
++++ b/drivers/usb/storage/transport.c
+@@ -691,6 +691,9 @@ void usb_stor_invoke_transport(struct scsi_cmnd *srb, struct us_data *us)
+ 		int temp_result;
+ 		struct scsi_eh_save ses;
+ 		int sense_size = US_SENSE_SIZE;
++		struct scsi_sense_hdr sshdr;
++		const u8 *scdd;
++		u8 fm_ili;
+ 
+ 		/* device supports and needs bigger sense buffer */
+ 		if (us->fflags & US_FL_SANE_SENSE)
+@@ -774,32 +777,30 @@ Retry_Sense:
+ 			srb->sense_buffer[7] = (US_SENSE_SIZE - 8);
+ 		}
+ 
++		scsi_normalize_sense(srb->sense_buffer, SCSI_SENSE_BUFFERSIZE,
++				     &sshdr);
++
+ 		US_DEBUGP("-- Result from auto-sense is %d\n", temp_result);
+ 		US_DEBUGP("-- code: 0x%x, key: 0x%x, ASC: 0x%x, ASCQ: 0x%x\n",
+-			  srb->sense_buffer[0],
+-			  srb->sense_buffer[2] & 0xf,
+-			  srb->sense_buffer[12], 
+-			  srb->sense_buffer[13]);
++			  sshdr.response_code, sshdr.sense_key,
++			  sshdr.asc, sshdr.ascq);
+ #ifdef CONFIG_USB_STORAGE_DEBUG
+-		usb_stor_show_sense(
+-			  srb->sense_buffer[2] & 0xf,
+-			  srb->sense_buffer[12], 
+-			  srb->sense_buffer[13]);
++		usb_stor_show_sense(sshdr.sense_key, sshdr.asc, sshdr.ascq);
+ #endif
+ 
+ 		/* set the result so the higher layers expect this data */
+ 		srb->result = SAM_STAT_CHECK_CONDITION;
+ 
++		scdd = scsi_sense_desc_find(srb->sense_buffer,
++					    SCSI_SENSE_BUFFERSIZE, 4);
++		fm_ili = (scdd ? scdd[3] : srb->sense_buffer[2]) & 0xA0;
++
+ 		/* We often get empty sense data.  This could indicate that
+ 		 * everything worked or that there was an unspecified
+ 		 * problem.  We have to decide which.
+ 		 */
+-		if (	/* Filemark 0, ignore EOM, ILI 0, no sense */
+-				(srb->sense_buffer[2] & 0xaf) == 0 &&
+-			/* No ASC or ASCQ */
+-				srb->sense_buffer[12] == 0 &&
+-				srb->sense_buffer[13] == 0) {
+-
++		if (sshdr.sense_key == 0 && sshdr.asc == 0 && sshdr.ascq == 0 &&
++		    fm_ili == 0) {
+ 			/* If things are really okay, then let's show that.
+ 			 * Zero out the sense buffer so the higher layers
+ 			 * won't realize we did an unsolicited auto-sense.
+@@ -814,7 +815,10 @@ Retry_Sense:
+ 			 */
+ 			} else {
+ 				srb->result = DID_ERROR << 16;
+-				srb->sense_buffer[2] = HARDWARE_ERROR;
++				if ((sshdr.response_code & 0x72) == 0x72)
++					srb->sense_buffer[1] = HARDWARE_ERROR;
++				else
++					srb->sense_buffer[2] = HARDWARE_ERROR;
+ 			}
+ 		}
+ 	}
+-- 
+1.7.0.1
+
