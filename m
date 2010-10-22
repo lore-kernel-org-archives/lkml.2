@@ -1,152 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755496Ab0JVA3c (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Oct 2010 20:29:32 -0400
-Received: from mga03.intel.com ([143.182.124.21]:57073 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754166Ab0JVA3b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Oct 2010 20:29:31 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.58,220,1286175600"; 
-   d="scan'208";a="339043317"
-Subject: Re: booting "nosmp" kernel causing ACPI errors
-From: Zhang Rui <rui.zhang@intel.com>
-To: Bernard Pidoux <bernard.pidoux@upmc.fr>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Bernard Pidoux <bpidoux@free.fr>
-In-Reply-To: <4CBE1179.2040003@upmc.fr>
-References: <4CB9D69D.60203@upmc.fr>  <4CBE1179.2040003@upmc.fr>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 22 Oct 2010 08:29:56 +0800
-Message-ID: <1287707396.2210.11.camel@rui>
+	id S1755940Ab0JVA3l (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Oct 2010 20:29:41 -0400
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:44490 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752696Ab0JVA3k (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Oct 2010 20:29:40 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=PXSuQvefo1REXw9dltv7IpBvBDRys5+XC77dYxoTujUYVSQ/TkZj/5enqxCuaGM4hJ
+         TvwlXHJmRO38UYfUFviqRfBH4LmgtC2hMhhIq+ZGaHaC5yC3rjj9Pj2O03BgAprCcApf
+         3gV/SXSJnJxBXDSUjyfeTt9WOQVt//E2jxk+I=
+Subject: [PATCH 2/2] mfd: Fix resource reclaim for max8998
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Cc: Samuel Ortiz <sameo@linux.intel.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>
+In-Reply-To: <1287707426.27802.3.camel@mola>
+References: <1287707426.27802.3.camel@mola>
+Content-Type: text/plain
+Date: Fri, 22 Oct 2010 08:31:49 +0800
+Message-Id: <1287707509.27802.5.camel@mola>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 8bit
+X-Mailer: Evolution 2.22.3.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Bernard,
+Properly free irq and unregister max8998->rtc device in
+max8998_i2c_probe() error path and max8998_i2c_remove().
 
-On Wed, 2010-10-20 at 05:45 +0800, Bernard Pidoux wrote:
-> Hi,
-> 
-> I needed to run Linux on UP mode in order to perform some application tests.
-> Using nosmp argument lead to bad interrupts set up.
-> 
-do you want to run a up kernel or just want to enable one processor?
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ drivers/mfd/max8998.c |    4 ++++
+ 1 files changed, 4 insertions(+), 0 deletions(-)
 
-> I finally found the explanation I was looking for in this acpi-linux 
-> thread :
-> http://marc.info/?l=linux-acpi&m=118794015205199&w=4
-> 
->   	maxcpus=	[SMP] Maximum number of processors that	an SMP kernel
-> 			should make use of.  maxcpus=n : n>= 0 limits the
-> 			kernel to using 'n' processors.  n=0 is a special case,
-> 			it is equivalent to "nosmp", which also disables
-> 			the IO APIC.
-> 
-> 	nosmp		[SMP] Tells an SMP kernel to act as a UP kernel,
-> 			and disable the IO APIC.  legacy for "maxcpus=0".
-> 
-> 
-> I understand that the reason why nosmp also disable IO APIC is for 
-> backward compatibility.
-> However this is not intuitive : one argument leading to two actions.
-> 
-> So, if I want to run my dual core CPU in UniProcessor mode I have to use
-> kernel argument maxcpus=1 in grub/menu.lst
-> 
-that's correct, but note that you're still running a smp kernel in this
-case.
+diff --git a/drivers/mfd/max8998.c b/drivers/mfd/max8998.c
+index 06ddf74..bb9977b 100644
+--- a/drivers/mfd/max8998.c
++++ b/drivers/mfd/max8998.c
+@@ -153,6 +153,8 @@ static int max8998_i2c_probe(struct i2c_client *i2c,
+ 
+ err:
+ 	mfd_remove_devices(max8998->dev);
++	max8998_irq_exit(max8998);
++	i2c_unregister_device(max8998->rtc);
+ 	kfree(max8998);
+ 	return ret;
+ }
+@@ -162,6 +164,8 @@ static int max8998_i2c_remove(struct i2c_client *i2c)
+ 	struct max8998_dev *max8998 = i2c_get_clientdata(i2c);
+ 
+ 	mfd_remove_devices(max8998->dev);
++	max8998_irq_exit(max8998);
++	i2c_unregister_device(max8998->rtc);
+ 	kfree(max8998);
+ 
+ 	return 0;
+-- 
+1.7.2
 
-when using maxcpus=1, you're running a *_smp_* kernel, which detects one
-processor and stops.
-when using maxcpus=0, you're running a up kernel which surely doesn't
-have the ioapic support, and is not able to detect the other processors.
-
-thanks,
-rui
-> Doing so, interrupts on my Linux system are correctly initialized and it 
-> is much more stable.
-> 
-> Bernard
-> 
-> 
-> 
-> Le 16/10/2010 18:45, Bernard Pidoux a écrit :
-> > Hi,
-> >
-> > I observed ACPI errors when booting 2.6.35.7 kernel with "nosmp" 
-> > argument.
-> > dmesg shows a warning message starting with :
-> > WARNING: at mm/page_alloc.c:1981 __alloc_pages_nodemask+0x5b4/0x6d0()
-> > +Hardware name: MS-7519
-> > +Modules linked in:
-> > +Pid: 1, comm: swapper Not tainted 2.6.35.7 #2
-> >
-> > This is followed by ACPI error messages and /proc/interrupts show that
-> > interrupts 0-15 are then handled by XT-PIC-XT
-> > instead of IO-APIC-edge and IO-APIC-fasteoi when runing smp kernel.
-> >
-> > Here is lspci dump :
-> >
-> > 00:00.0 Host bridge: Intel Corporation 4 Series Chipset DRAM 
-> > Controller (rev 03)
-> > 00:01.0 PCI bridge: Intel Corporation 4 Series Chipset PCI Express 
-> > Root Port (rev 03)
-> > 00:1a.0 USB Controller: Intel Corporation 82801JI (ICH10 Family) USB 
-> > UHCI Controller #4
-> > 00:1a.1 USB Controller: Intel Corporation 82801JI (ICH10 Family) USB 
-> > UHCI Controller #5
-> > 00:1a.2 USB Controller: Intel Corporation 82801JI (ICH10 Family) USB 
-> > UHCI Controller #6
-> > 00:1a.7 USB Controller: Intel Corporation 82801JI (ICH10 Family) USB2 
-> > EHCI Controller #2
-> > 00:1b.0 Audio device: Intel Corporation 82801JI (ICH10 Family) HD 
-> > Audio Controller
-> > 00:1c.0 PCI bridge: Intel Corporation 82801JI (ICH10 Family) PCI 
-> > Express Root Port 1
-> > 00:1c.1 PCI bridge: Intel Corporation 82801JI (ICH10 Family) PCI 
-> > Express Port 2
-> > 00:1c.5 PCI bridge: Intel Corporation 82801JI (ICH10 Family) PCI 
-> > Express Root Port 6
-> > 00:1d.0 USB Controller: Intel Corporation 82801JI (ICH10 Family) USB 
-> > UHCI Controller #1
-> > 00:1d.1 USB Controller: Intel Corporation 82801JI (ICH10 Family) USB 
-> > UHCI Controller #2
-> > 00:1d.2 USB Controller: Intel Corporation 82801JI (ICH10 Family) USB 
-> > UHCI Controller #3
-> > 00:1d.7 USB Controller: Intel Corporation 82801JI (ICH10 Family) USB2 
-> > EHCI Controller #1
-> > 00:1e.0 PCI bridge: Intel Corporation 82801 PCI Bridge (rev 90)
-> > 00:1f.0 ISA bridge: Intel Corporation 82801JIB (ICH10) LPC Interface 
-> > Controller
-> > 00:1f.2 IDE interface: Intel Corporation 82801JI (ICH10 Family) 4 port 
-> > SATA IDE Controller #1
-> > 00:1f.3 SMBus: Intel Corporation 82801JI (ICH10 Family) SMBus Controller
-> > 00:1f.5 IDE interface: Intel Corporation 82801JI (ICH10 Family) 2 port 
-> > SATA IDE Controller #2
-> > 01:00.0 VGA compatible controller: nVidia Corporation G98 [GeForce 
-> > 8400 GS] (rev a1)
-> > 02:00.0 IDE interface: JMicron Technology Corp. JMB368 IDE controller
-> > 04:00.0 Ethernet controller: Realtek Semiconductor Co., Ltd. 
-> > RTL8111/8168B PCI Express Gigabit Ethernet controller (rev 02)
-> >
-> > I observed the same issue with another machine with also an MSI 
-> > motherboard but using a PCI bridge VIA VT8237/VX700
-> > even when booting with "pci=use_crs" argument.
-> >
-> > Attached is diff -ruN file between 2.6.35.7 kernel without and with 
-> > "nosmp" boot argument.
-> >
-> > Bernard
-> >
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
 
 
