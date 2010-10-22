@@ -1,66 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754035Ab0JVJPW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 05:15:22 -0400
-Received: from c-67-162-90-113.hsd1.in.comcast.net ([67.162.90.113]:53111 "HELO
-	kosh.dhis.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1753367Ab0JVJPU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 05:15:20 -0400
-Message-ID: <20101022091519.1924.qmail@kosh.dhis.org>
-From: pacman@kosh.dhis.org
-Subject: Re: PROBLEM: memory corrupting bug, bisected to 6dda9d55
-To: benh@kernel.crashing.org (Benjamin Herrenschmidt)
-Date: Fri, 22 Oct 2010 04:15:19 -0500 (GMT+5)
-Cc: segher@kernel.crashing.org (Segher Boessenkool),
-        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
-In-Reply-To: <1287608215.2198.23.camel@pasglop>
+	id S1753734Ab0JVJSo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 05:18:44 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:63759 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753269Ab0JVJSm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Oct 2010 05:18:42 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:x-enigmail-version:content-type
+         :content-transfer-encoding;
+        b=ArHrjNluHyyEXN8x911lC54UMdSRouNggdhtHrp53gcCOnZO0e9nkQZJDVkDT7tApr
+         9GLGqAV7aPfQESGPQySGrMTqzyd197fA5G+mBypYa3zudjYxzIr32ppG98lYzczx6Qhz
+         PrwEHsnDFakEJYfB/Ca6Cy3P7H7ee3qzgq+M4=
+Message-ID: <4CC156ED.8000104@gmail.com>
+Date: Fri, 22 Oct 2010 11:18:37 +0200
+From: Jiri Slaby <jirislaby@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.11) Gecko/20101013 SUSE/3.1.5 Thunderbird/3.1.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+To: Takashi Iwai <tiwai@suse.de>
+CC: Colin Guthrie <gmane@colin.guthr.ie>, Valdis.Kletnieks@vt.edu,
+        linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        mm-commits@vger.kernel.org, clemens@ladisch.de,
+        Jaroslav Kysela <perex@perex.cz>, alsa-devel@alsa-project.org
+Subject: Re: HDA: no sound [was: mmotm 2010-10-20-15-01 uploaded]
+References: <201010202233.o9KMXNoL008303@imap1.linux-foundation.org>	<4CBFEE94.7020103@gmail.com>	<s5hlj5sc7do.wl%tiwai@suse.de>	<4CBFF25C.2080908@gmail.com>	<s5hfww0c6oj.wl%tiwai@suse.de>	<4CC085F5.9070905@gmail.com>	<s5heibjxsi4.wl%tiwai@suse.de>	<4CC092BC.9060504@gmail.com>	<s5h8w1rxrl3.wl%tiwai@suse.de>	<5220.1287692957@localhost>	<s5h39rzclx3.wl%tiwai@suse.de>	<8089.1287696264@localhost>	<s5hsjzzb5cf.wl%tiwai@suse.de>	<4CC0B3C1.9010106@gmail.com>	<4CC14F4E.4090509@colin.guthr.ie> <s5hmxq6bnwj.wl%tiwai@suse.de>
+In-Reply-To: <s5hmxq6bnwj.wl%tiwai@suse.de>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Benjamin Herrenschmidt writes:
-> 
-> On Wed, 2010-10-20 at 13:33 -0500, pacman@kosh.dhis.org wrote:
-> > > Just try :-) "quiesce" is something that afaik only apple ever
-> > > implemented anyways. It uses hooks inside their OF to shut down all
-> > > drivers that do bus master (among other HW sanitization tasks).
-> > 
-> > I booted a version with a prom_close_stdout after the last prom_debug. It
-> > didn't have any effect. That 1000Hz clock was still ticking. 
-> 
-> Ok so you'll have to make up a "workaround" in prom_init that looks for
-> OHCI's in the device-tree and disable them.
+On 10/22/2010 11:02 AM, Takashi Iwai wrote:
+> unpatched alsa-lib.  Jiri, could you regenerate alsa-info output with
+> the fixed alsa-lib packages?  With the fixed alsa-lib, the dB value
+> should be given correctly.
 
-I'm a long way from understanding how to do that.
+Sure, but I don't know which version you want, so with the patch reverted:
+http://www.alsa-project.org/db/?f=4efd8e3b74a51adbd014a85052a83b4a3c5bd9fc
 
-> 
-> Check if the OHCI node has some existing f-code words you can use for
-> that with "dev /path-to-ohci words" in OF for example. If not, you may
+with the patch NOT reverted:
+http://www.alsa-project.org/db/?f=e619bba74bb9ea007c2e5314761411a658ff677b
 
-Nothing there but open close decode-unit encode-unit
-
-> need to use the low level register accessors. Use OF client interface
-> "interpret" to run forth code from C.
-
-Here are the major problems:
-
-1. How do I locate all usb nodes in the device tree?
-
-2. How do I know if a particular usb node is OHCI?
-
-3. Knowing that a node is OHCI, how do I know where its control registers
-are? I'm sure this is calculated from the "reg" property but I don't see how.
-
-4. Knowing where the control registers are, how do I access them? Do I need
-to request a virt-to-phys mapping or can I assume that it's already mapped,
-or that the "rl!" command will do the right thing with a physical address?
-
-5. Which control register should I use to tell the OHCI to be quiet? Just do
-a general reset, or is there something that specifically turns off the
-counter that's been causing the trouble?
-
+regards,
 -- 
-Alan Curry
+js
