@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759295Ab0JVS4O (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 14:56:14 -0400
-Received: from kroah.org ([198.145.64.141]:34009 "EHLO coco.kroah.org"
+	id S1759717Ab0JVTSJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 15:18:09 -0400
+Received: from kroah.org ([198.145.64.141]:34046 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759260Ab0JVS4H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 14:56:07 -0400
-X-Mailbox-Line: From gregkh@clark.site Fri Oct 22 11:52:29 2010
-Message-Id: <20101022185229.483168553@clark.site>
+	id S1759294Ab0JVS4O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Oct 2010 14:56:14 -0400
+X-Mailbox-Line: From gregkh@clark.site Fri Oct 22 11:52:30 2010
+Message-Id: <20101022185230.127872831@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 22 Oct 2010 11:50:58 -0700
+Date: Fri, 22 Oct 2010 11:51:05 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        =?ISO-8859-15?q?Jean-Fran=C3=A7ois=20Moine?= <moinejf@free.fr>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>
-Subject: [024/103] V4L/DVB: gspca - sn9c20x: Bad transfer size of Bayer images
+        Hugh Dickins <hughd@google.com>,
+        Andrea Arcangeli <aarcange@redhat.com>
+Subject: [031/103] ksm: fix bad user data when swapping
 In-Reply-To: <20101022185455.GA9114@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,33 +26,64 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jean-François Moine <moinejf@free.fr>
+From: Hugh Dickins <hughd@google.com>
 
-commit 04d174e99a6eca2f62b56c10ae1d7d0499d83e9d upstream.
+commit 4e31635c367a9e21a43cfbfae4c9deda2e19d1f4 upstream.
 
-As the end of frame marker does not contain any pixel, it must not be
-transferred.
+Building under memory pressure, with KSM on 2.6.36-rc5, collapsed with
+an internal compiler error: typically indicating an error in swapping.
 
-Reported-by: Ivo Jager <ivo.jager@siliconfields.net>
-Signed-off-by: Jean-François Moine <moinejf@free.fr>
-Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+Perhaps there's a timing issue which makes it now more likely, perhaps
+it's just a long time since I tried for so long: this bug goes back to
+KSM swapping in 2.6.33.
+
+Notice how reuse_swap_page() allows an exclusive page to be reused, but
+only does SetPageDirty if it can delete it from swap cache right then -
+if it's currently under Writeback, it has to be left in cache and we
+don't SetPageDirty, but the page can be reused.  Fine, the dirty bit
+will get set in the pte; but notice how zap_pte_range() does not bother
+to transfer pte_dirty to page_dirty when unmapping a PageAnon.
+
+If KSM chooses to share such a page, it will look like a clean copy of
+swapcache, and not be written out to swap when its memory is needed;
+then stale data read back from swap when it's needed again.
+
+We could fix this in reuse_swap_page() (or even refuse to reuse a
+page under writeback), but it's more honest to fix my oversight in
+KSM's write_protect_page().  Several days of testing on three machines
+confirms that this fixes the issue they showed.
+
+Signed-off-by: Hugh Dickins <hughd@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Andrea Arcangeli <aarcange@redhat.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/media/video/gspca/sn9c20x.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ mm/ksm.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
---- a/drivers/media/video/gspca/sn9c20x.c
-+++ b/drivers/media/video/gspca/sn9c20x.c
-@@ -2368,8 +2368,7 @@ static void sd_pkt_scan(struct gspca_dev
- 			    (data[33] << 10);
- 		avg_lum >>= 9;
- 		atomic_set(&sd->avg_lum, avg_lum);
--		gspca_frame_add(gspca_dev, LAST_PACKET,
--				data, len);
-+		gspca_frame_add(gspca_dev, LAST_PACKET, NULL, 0);
- 		return;
+--- a/mm/ksm.c
++++ b/mm/ksm.c
+@@ -731,7 +731,7 @@ static int write_protect_page(struct vm_
+ 	if (!ptep)
+ 		goto out;
+ 
+-	if (pte_write(*ptep)) {
++	if (pte_write(*ptep) || pte_dirty(*ptep)) {
+ 		pte_t entry;
+ 
+ 		swapped = PageSwapCache(page);
+@@ -754,7 +754,9 @@ static int write_protect_page(struct vm_
+ 			set_pte_at(mm, addr, ptep, entry);
+ 			goto out_unlock;
+ 		}
+-		entry = pte_wrprotect(entry);
++		if (pte_dirty(entry))
++			set_page_dirty(page);
++		entry = pte_mkclean(pte_wrprotect(entry));
+ 		set_pte_at_notify(mm, addr, ptep, entry);
  	}
- 	if (gspca_dev->last_packet_type == LAST_PACKET) {
+ 	*orig_pte = *ptep;
 
 
