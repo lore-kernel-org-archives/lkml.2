@@ -1,125 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757406Ab0JVOlO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 10:41:14 -0400
-Received: from juliette.telenet-ops.be ([195.130.137.74]:54807 "EHLO
-	juliette.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755063Ab0JVOlK (ORCPT
+	id S1757200Ab0JVOrG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 10:47:06 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:41911 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753152Ab0JVOrE convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 10:41:10 -0400
-Date: Fri, 22 Oct 2010 16:41:03 +0200 (CEST)
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-cc: Andrew Morton <akpm@linux-foundation.org>, Greg Ungerer <gerg@uclinux.org>,
-        Linux/m68k <linux-m68k@vger.kernel.org>,
-        Linux Kernel Development <linux-kernel@vger.kernel.org>
-Subject: [git pull] m68k updates for 2.6.37
-Message-ID: <alpine.DEB.2.00.1010221057200.14783@ayla.of.borg>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Fri, 22 Oct 2010 10:47:04 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=SdIu0IeEVk6++9JFn9E/NBUr//2gdvTD9BuNmXV7Pewyut1tb7Ct3QcC2XSJdjc2Z7
+         0Xj896VdiY+qKHt6EbdqGsUvMxvuHesb23KdHpwGAj6AbS8MBn+MJK0+rXl1EYgIDQwp
+         FFyJSzOM6LkAff+aI6pwU+DYanY3T6c7t7Q7M=
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <20101022133130.4cb2cb96@absol.kitzblitz>
+References: <20101022133130.4cb2cb96@absol.kitzblitz>
+Date: Fri, 22 Oct 2010 16:47:02 +0200
+X-Google-Sender-Auth: QoYuWH1A__J65KQhOA84Jpv3piI
+Message-ID: <AANLkTimAb_gjx7m6pKvYHL=SjB9DousdUJA2K9uyPt1F@mail.gmail.com>
+Subject: Re: [PATCH] rivafb: dubious assignment
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Nicolas Kaiser <nikai@nikai.net>, Jeff Garzik <jgarzik@pobox.com>
+Cc: Antonino Daplas <adaplas@gmail.com>, linux-fbdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-	Hi Linus,
+On Fri, Oct 22, 2010 at 13:31, Nicolas Kaiser <nikai@nikai.net> wrote:
+> A duplicated assignment unconditionally changes max_gfsize to
+> GFIFO_SIZE.
+>
+> It looks to me like this might not be intended, or is it?
+>
+> Signed-off-by: Nicolas Kaiser <nikai@nikai.net>
+> ---
+>  drivers/video/riva/riva_hw.c |    1 -
+>  1 files changed, 0 insertions(+), 1 deletions(-)
+>
+> diff --git a/drivers/video/riva/riva_hw.c b/drivers/video/riva/riva_hw.c
+> index 78fdbf5..936abfa 100644
+> --- a/drivers/video/riva/riva_hw.c
+> +++ b/drivers/video/riva/riva_hw.c
+> @@ -263,7 +263,6 @@ static int nv3_iterate(nv3_fifo_info *res_info, nv3_sim_state * state, nv3_arb_i
+>     vmisses = 2;
+>     if (ainfo->gburst_size == 128) max_gfsize = GFIFO_SIZE_128;
+>     else  max_gfsize = GFIFO_SIZE;
+> -    max_gfsize = GFIFO_SIZE;
+>     while (1)
+>     {
+>         if (ainfo->vid_en)
+> --
+> 1.7.2.2
 
-The following changes since commit f6f94e2ab1b33f0082ac22d71f66385a60d8157f:
-  Linus Torvalds (1):
-        Linux 2.6.36
-
-are available in the git repository at:
-
-  master.kernel.org:/pub/scm/linux/kernel/git/geert/linux-m68k.git for-linus
-  git://git.kernel.org/pub/scm/linux/kernel/git/geert/linux-m68k.git for-linus
-
-Andrew Morton (1):
-      m68k: __pa(): cast arg to long
-
-Christian Dietrich (3):
-      m68k: Remove dead GG2 config option
-      m68k/m68knommu: Remove dead SMP config option
-      fbdev: atafb - Remove undead ifdef ATAFB_FALCON
-
-Geert Uytterhoeven (1):
-      m68k: Remove big kernel lock in cache flush code
-
-Greg Ungerer (7):
-      m68k: move definition of THREAD_SIZE into thread_info_mm.h
-      m68k/m68knommu: merge MMU and non-MMU string.h
-      m68k/m68knommu: merge machdep.h files into a single file
-      m68k/m68knommu: clean up page.h
-      m68k/m68knommu: merge MMU and non-MMU atomic.h
-      m68k/m68knommu: merge MMU and non-MMU thread_info.h
-      m68k/m68knommu: merge the MMU and non-MMU traps.h
-
-Henrik Kretzschmar (1):
-      fbdev/m68k: Fix section mismatches in q40fb.c
-
-Jeff Mahoney (1):
-      m68k: Use asm-generic/ioctls.h (enables termiox)
-
-Thorsten Glaser (1):
-      m68k: Add missing I/O macros {in,out}{w,l}_p() for !CONFIG_ISA
-
-Vasiliy Kulikov (1):
-      zorro: Fix device_register() error handling
-
- arch/m68k/Kconfig                        |    4 +-
- arch/m68k/include/asm/amigahw.h          |    1 -
- arch/m68k/include/asm/atomic.h           |  210 ++++++++++++++++++++++-
- arch/m68k/include/asm/atomic_mm.h        |  200 ----------------------
- arch/m68k/include/asm/atomic_no.h        |  155 -----------------
- arch/m68k/include/asm/entry_mm.h         |    3 +
- arch/m68k/include/asm/io_mm.h            |   43 +----
- arch/m68k/include/asm/ioctls.h           |   80 +---------
- arch/m68k/include/asm/machdep.h          |   49 +++++-
- arch/m68k/include/asm/machdep_mm.h       |   35 ----
- arch/m68k/include/asm/machdep_no.h       |   26 ---
- arch/m68k/include/asm/page.h             |   48 +++++-
- arch/m68k/include/asm/page_mm.h          |   57 +------
- arch/m68k/include/asm/page_no.h          |   51 +-----
- arch/m68k/include/asm/string.h           |  134 ++++++++++++++-
- arch/m68k/include/asm/string_mm.h        |  131 --------------
- arch/m68k/include/asm/string_no.h        |  126 --------------
- arch/m68k/include/asm/system_mm.h        |    2 -
- arch/m68k/include/asm/system_no.h        |    9 -
- arch/m68k/include/asm/thread_info.h      |  109 ++++++++++++-
- arch/m68k/include/asm/thread_info_mm.h   |   71 --------
- arch/m68k/include/asm/thread_info_no.h   |  102 -----------
- arch/m68k/include/asm/traps.h            |  275 +++++++++++++++++++++++++++++-
- arch/m68k/include/asm/traps_mm.h         |  272 -----------------------------
- arch/m68k/include/asm/traps_no.h         |  154 -----------------
- arch/m68k/kernel/setup.c                 |    6 -
- arch/m68k/kernel/sys_m68k.c              |    3 -
- arch/m68k/kernel/time.c                  |    2 -
- arch/m68k/sun3/sun3ints.c                |    2 -
- arch/m68knommu/kernel/time.c             |    3 +-
- arch/m68knommu/platform/coldfire/entry.S |    4 +-
- drivers/video/atafb.c                    |    2 -
- drivers/video/q40fb.c                    |    4 +-
- drivers/zorro/zorro.c                    |    2 +
- 34 files changed, 833 insertions(+), 1542 deletions(-)
- delete mode 100644 arch/m68k/include/asm/atomic_mm.h
- delete mode 100644 arch/m68k/include/asm/atomic_no.h
- delete mode 100644 arch/m68k/include/asm/machdep_mm.h
- delete mode 100644 arch/m68k/include/asm/machdep_no.h
- delete mode 100644 arch/m68k/include/asm/string_mm.h
- delete mode 100644 arch/m68k/include/asm/string_no.h
- delete mode 100644 arch/m68k/include/asm/thread_info_mm.h
- delete mode 100644 arch/m68k/include/asm/thread_info_no.h
- delete mode 100644 arch/m68k/include/asm/traps_mm.h
- delete mode 100644 arch/m68k/include/asm/traps_no.h
-
-Thanks for pulling!
+According to full-history-linux, this comes from the initial drop in 2.3.49pre2,
+from nVidia code(?), imported by Jeff Garzik.
 
 Gr{oetje,eeting}s,
 
-						Geert
+                        Geert
 
 --
 Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
 In personal conversations with technical people, I call myself a hacker. But
 when I'm talking to journalists I just say "programmer" or something like that.
-							    -- Linus Torvalds
+                                -- Linus Torvalds
