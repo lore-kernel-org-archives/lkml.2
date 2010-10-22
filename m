@@ -1,94 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752213Ab0JVIsn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 04:48:43 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:57078 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751527Ab0JVIsl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 04:48:41 -0400
-Date: Fri, 22 Oct 2010 10:48:00 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Casey Schaufler <casey@schaufler-ca.com>
-Cc: Eric Paris <eparis@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        hch@infradead.org, zohar@us.ibm.com, warthog9@kernel.org,
-        david@fromorbit.com, jmorris@namei.org, kyle@mcmartin.ca,
-        hpa@zytor.com, akpm@linux-foundation.org
-Subject: Re: [PATCH 1/3] IMA: move read/write counters into struct inode
-Message-ID: <20101022084800.GB9722@elte.hu>
-References: <20101019011650.25346.99614.stgit@paris.rdu.redhat.com>
- <AANLkTimGdjPyLXuknDNa7WNthDT9+2FdOuPdxwjRiMHD@mail.gmail.com>
- <1287506215.2530.187.camel@localhost.localdomain>
- <20101019165530.GT19804@ZenIV.linux.org.uk>
- <AANLkTimL=eChoCQHGoiouE5s6dGG=n9ZAQGhW-RW+gDj@mail.gmail.com>
- <1287528546.2530.277.camel@localhost.localdomain>
- <20101020143845.GB22271@elte.hu>
- <1287585996.2530.294.camel@localhost.localdomain>
- <20101020151555.GC22271@elte.hu>
- <4CC06721.8020308@schaufler-ca.com>
+	id S1752580Ab0JVIxe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 04:53:34 -0400
+Received: from brent.tribalogic.net ([78.86.109.144]:44916 "EHLO
+	summit.brent.tribalogic.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751985Ab0JVIxd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Oct 2010 04:53:33 -0400
+X-Greylist: delayed 450 seconds by postgrey-1.27 at vger.kernel.org; Fri, 22 Oct 2010 04:53:33 EDT
+Message-ID: <4CC14F4E.4090509@colin.guthr.ie>
+Date: Fri, 22 Oct 2010 09:46:06 +0100
+From: Colin Guthrie <gmane@colin.guthr.ie>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.11) Gecko/20101020 Mandriva/3.1.5-1mdv2011.0 (2011.0) Lightning/1.0b2 Thunderbird/3.1.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4CC06721.8020308@schaufler-ca.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+To: Jiri Slaby <jirislaby@gmail.com>
+CC: Takashi Iwai <tiwai@suse.de>, Valdis.Kletnieks@vt.edu,
+        linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        mm-commits@vger.kernel.org, clemens@ladisch.de,
+        Jaroslav Kysela <perex@perex.cz>, alsa-devel@alsa-project.org
+Subject: Re: HDA: no sound [was: mmotm 2010-10-20-15-01 uploaded]
+References: <201010202233.o9KMXNoL008303@imap1.linux-foundation.org>	<4CBFEE94.7020103@gmail.com>	<s5hlj5sc7do.wl%tiwai@suse.de>	<4CBFF25C.2080908@gmail.com>	<s5hfww0c6oj.wl%tiwai@suse.de>	<4CC085F5.9070905@gmail.com>	<s5heibjxsi4.wl%tiwai@suse.de>	<4CC092BC.9060504@gmail.com>	<s5h8w1rxrl3.wl%tiwai@suse.de>	<5220.1287692957@localhost>	<s5h39rzclx3.wl%tiwai@suse.de>	<8089.1287696264@localhost> <s5hsjzzb5cf.wl%tiwai@suse.de> <4CC0B3C1.9010106@gmail.com>
+In-Reply-To: <4CC0B3C1.9010106@gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Casey Schaufler <casey@schaufler-ca.com> wrote:
-
->  On 10/20/2010 8:15 AM, Ingo Molnar wrote:
-> > * Eric Paris <eparis@redhat.com> wrote:
-> >
-> >> On Wed, 2010-10-20 at 16:38 +0200, Ingo Molnar wrote:
-> >>> * Eric Paris <eparis@redhat.com> wrote:
-> >>>
-> >>>> Executive summary of the day's work:
-> >>>> Yesterday morning: 944 bytes per inode in core
-> >>>> Yesterday night: 24 bytes per inode in core
-> >>>> Tonight: 4 bytes per inode in core.
-> >>>>
-> >>>> That's a x236 time reduction in memory usage.  No I didn't even start looking 
-> >>>> at a freezer.  Which could bring that 4 down to 0, but would add a scalability 
-> >>>> penalty on all inodes when IMA was enabled.
-> >>> Why not use inode->i_security intelligently? That already exists so that way 
-> >>> it's 0 bytes.
-> >>>
-> >>> Thanks,
-> >> It still wouldn't be 0 bytes since there would be a 1-1 mapping from inode to 
-> >> i_security structs. [...]
-> > Only for IMA-affected files, right?
-> >
-> > My point is to keep it 0 overhead for the _non IMA common case_.
-> >
-> >> The real reason I don't pursue this route is because of the litany of different 
-> >> ways this pointer is used in different LSMs (or not used at all.)  And we all know 
-> >> that LSM authors aren't known for seeing the world the same way as each other.  As 
-> >> a maintainer of one of those LSMs even I'm scared to try pushing that forward....
-> > Ugh. That's a perfect reason to do it exactly like i suggested.
+'Twas brillig, and Jiri Slaby at 21/10/10 22:42 did gyre and gimble:
+> On 10/21/2010 11:31 PM, Takashi Iwai wrote:
+>> OK.  Maybe someone else can check it meanwhile.
 > 
-> If you would like to make a proposal on LSM stacking other than the traditional 
-> "rip the LSM out" I am sure that everyone in the IMA, SELinux, TOMOYO, AppArmor 
-> and Smack communities would be happy to have a look. Short of having a viable 
-> mechanism for multiple LSMs to coexist IMA needs its separate space. Yes, people 
-> do use both IMA and LSMs on the same machine at the same time.
+> Someone else rebooted the 13th time today and checked :):
+> $ rpm -q `rpmqpack |egrep 'alsa|asound'|sort`
+> alsa-1.0.22.git20101018-1.1.x86_64
+> alsa-firmware-1.0.23-3.7.noarch
+> alsa-oss-1.0.17-31.4.x86_64
+> alsa-plugins-1.0.23-4.5.x86_64
+> alsa-plugins-pulse-1.0.23-4.5.x86_64
+> alsa-plugins-pulse-32bit-1.0.23-4.5.x86_64
+> alsa-plugins-32bit-1.0.23-4.5.x86_64
+> alsa-utils-1.0.23-4.5.x86_64
+> libasound2-1.0.22.git20101018-1.1.x86_64
+> libasound2-32bit-1.0.23-6.5.x86_64
+> 
+> No success. I still need the revert.
+> 
+> regards,
 
-Yes, that's the essence of what i suggested: if various security concepts can be 
-present at once then inode->security should not be a stupid pointer to a single, 
-exclusive data structure (because that hardwires a "only a single security subsystem 
-active" assumption), but should be a pointer to a linked list of security structures 
-- as many as there are security subsystems interested in that inode.
- 
-Thanks,
+Just tested the latest kernel patch in a "proper" (i.e. patched in
+kernel) build (as opposed to my previous out-of-tree builds).
 
-	Ingo
+It's working great for me (stac9200)
+
+I tried without the userspace patch and things still work fine for me
+under this setup - it's just that PAs flat volumes do not properly
+control the Master+PCM pipeline (they both go to mute when master hits 0).
+
+But it doesn't seem to cause any other problems for me.
+
+I'm no expert at the kernel side, but can't see much in the code that
+would cause this.
+
+However, from Jiri's alsa-info, this looks a bit suspicious:
+
+Simple mixer control 'Master',0
+  Capabilities: pvolume pvolume-joined pswitch pswitch-joined penum
+  Playback channels: Mono
+  Limits: Playback 0 - 64
+  Mono: Playback 40 [62%] [1620.40dB] [on]
+
+1620.40dB?? Really?
+
+Is perhaps the TLV fix for min-is-mute conflicting with a db range fix?
+
+Col
+
+
+-- 
+
+Colin Guthrie
+gmane(at)colin.guthr.ie
+http://colin.guthr.ie/
+
+Day Job:
+  Tribalogic Limited [http://www.tribalogic.net/]
+Open Source:
+  Mageia Contributor [http://www.mageia.org/]
+  PulseAudio Hacker [http://www.pulseaudio.org/]
+  Trac Hacker [http://trac.edgewall.org/]
