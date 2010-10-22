@@ -1,86 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758009Ab0JVRAK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 13:00:10 -0400
-Received: from kroah.org ([198.145.64.141]:60351 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757933Ab0JVRAG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 13:00:06 -0400
-Date: Fri, 22 Oct 2010 09:18:10 -0700
-From: Greg KH <greg@kroah.com>
-To: Borislav Petkov <bp@amd64.org>
-Cc: "Roedel, Joerg" <Joerg.Roedel@amd.com>, Greg KH <gregkh@suse.de>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: Erratum 383 fix for 32 bit x86 kernels
-Message-ID: <20101022161810.GF18595@kroah.com>
-References: <20100924115239.GA9817@amd.com>
- <20100924160205.GB21235@kroah.com>
- <20100924162433.GB7627@aftab>
+	id S1758043Ab0JVRAR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 13:00:17 -0400
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:57181 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757933Ab0JVRAO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Oct 2010 13:00:14 -0400
+X-Mail-Handler: MailHop Outbound by DynDNS
+X-Originating-IP: 67.188.36.105
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1++sa2NNrSpJDJ6HabXu38a
+Date: Fri, 22 Oct 2010 10:00:09 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Ohad Ben-Cohen <ohad@wizery.com>
+Cc: linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, akpm@linux-foundation.org,
+        Greg KH <greg@kroah.com>, Benoit Cousson <b-cousson@ti.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Hari Kanigeri <h-kanigeri2@ti.com>, Suman Anna <s-anna@ti.com>,
+        Simon Que <sque@ti.com>, "Krishnamoorthy, Balaji T" <balajitk@ti.com>
+Subject: Re: [PATCH 1/3] drivers: misc: add omap_hwspinlock driver
+Message-ID: <20101022170008.GG9149@atomide.com>
+References: <1287387875-14168-1-git-send-email-ohad@wizery.com>
+ <1287387875-14168-2-git-send-email-ohad@wizery.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20100924162433.GB7627@aftab>
+In-Reply-To: <1287387875-14168-2-git-send-email-ohad@wizery.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 24, 2010 at 06:24:34PM +0200, Borislav Petkov wrote:
-> From: Greg KH <greg@kroah.com>
-> Date: Fri, Sep 24, 2010 at 12:02:06PM -0400
+* Ohad Ben-Cohen <ohad@wizery.com> [101018 00:41]:
+> From: Simon Que <sque@ti.com>
 > 
-> > >  extern unsigned long setup_trampoline(void);
-> > > +extern void __init setup_trampoline_page_table(void);
-> > >  extern void __init reserve_trampoline_memory(void);
-> > >  #else
-> > >  static inline void reserve_trampoline_memory(void) {};
-> > > +extern void __init setup_trampoline_page_table(void) {};
-> > >  #endif /* CONFIG_X86_TRAMPOLINE */
-> > 
-> > I don't think that last setup_trampoline_page_table() line is correct
-> > here.
-> > 
-> > Shouldn't it be:
-> > 	static inline void setup_trampoline_page_table(void) {};
-> > instead?
-> > 
-> > Otherwise I get the following error building the .32 code with this
-> > patch:
-> > 	  CC      arch/x86/kernel/setup.o
-> > 	  arch/x86/kernel/setup.c: In function ‘setup_arch’:
-> > 	  arch/x86/kernel/setup.c:1001:2: error: implicit declaration of function ‘setup_trampoline_page_table’
-> > 
-> > Is this really how the code looks upstream?
-> > 
-> > Hm, even with changing the function prototype, I still get an error
-> > building on the .32-stable tree on x86-64, so I'm dropping this patch
-> > from there.
+> Add driver for OMAP's Hardware Spinlock module.
 > 
-> Yeah, Joerg forgot 8848a91068c018bc91f597038a0f41462a0f88a4.
-> 
-> > Also, it didn't apply cleanly to .32-stable, I had to apply this chunk
-> > by hand, no big deal.
-> > 
-> > So, why not I just take the original git commits that are in Linus's
-> > tree?  That should work, right?  If so, do I just need to use those two
-> > above-mentioned commits?  Or something else?  I prefer taking the
-> > original commits as it makes spelunking over time much easier.
-> 
-> Sure, you need
-> 
-> 1. fd89a137924e0710078c3ae855e7cec1c43cb845	<-- erratum fix
-> 2. 8848a91068c018bc91f597038a0f41462a0f88a4	<-- build fix
-> 3. b7d460897739e02f186425b7276e3fdb1595cea7	<-- VMSPLIT_* fix
-> 
-> in that order and they should cherry-pick fine.
-> 
-> Let me know if you need something tested on our end.
+> The OMAP Hardware Spinlock module, initially introduced in OMAP4,
+> provides hardware assistance for synchronization between the
+> multiple processors in the device (Cortex-A9, Cortex-M3 and
+> C64x+ DSP).
 
-Nope, that worked out well, thanks for letting me know exactly which
-ones to apply in which order.
+...
 
-thanks,
+> +EXPORT_SYMBOL_GPL(omap_hwspin_trylock);
+> +EXPORT_SYMBOL_GPL(omap_hwspin_lock_timeout);
+> +EXPORT_SYMBOL_GPL(omap_hwspin_unlock);
+> +EXPORT_SYMBOL_GPL(omap_hwspinlock_request);
+> +EXPORT_SYMBOL_GPL(omap_hwspinlock_request_specific);
+> +EXPORT_SYMBOL_GPL(omap_hwspinlock_free);
+> +EXPORT_SYMBOL_GPL(omap_hwspinlock_get_id);
 
-greg k-h
+Please let's not add yet another omap specific layer that will
+make it incrementally harder to have generic drivers.
+
+Instead, we can do the omap specific locking in the
+platform code and then the drivers can use the functions
+passed in the platform_data if they're implemented.
+
+Regards,
+
+Tony
