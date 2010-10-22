@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759427Ab0JVS4p (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 14:56:45 -0400
-Received: from kroah.org ([198.145.64.141]:34247 "EHLO coco.kroah.org"
+	id S1759479Ab0JVTIV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 15:08:21 -0400
+Received: from kroah.org ([198.145.64.141]:34268 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759395Ab0JVS4m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 14:56:42 -0400
+	id S1759424Ab0JVS4o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Oct 2010 14:56:44 -0400
 X-Mailbox-Line: From gregkh@clark.site Fri Oct 22 11:52:33 2010
-Message-Id: <20101022185232.935749858@clark.site>
+Message-Id: <20101022185233.201065900@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 22 Oct 2010 11:51:36 -0700
+Date: Fri, 22 Oct 2010 11:51:39 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Chris Wilson <chris@chris-wilson.co.uk>
-Subject: [062/103] drm/i915: Sanity check pread/pwrite
+        Chris Wilson <chris@chris-wilson.co.uk>,
+        Dave Airlie <airlied@redhat.com>
+Subject: [065/103] drm: Hold the mutex when dropping the last GEM reference (v2)
 In-Reply-To: <20101022185455.GA9114@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,87 +28,105 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Chris Wilson <chris@chris-wilson.co.uk>
 
-commit ce9d419dbecc292cc3e06e8b1d6d123d3fa813a4 upstream.
+commit 39b4d07aa3583ceefe73622841303a0a3e942ca1 upstream.
 
-Move the access control up from the fast paths, which are no longer
-universally taken first, up into the caller. This then duplicates some
-sanity checking along the slow paths, but is much simpler.
-Tracked as CVE-2010-2962.
+In order to be fully threadsafe we need to check that the drm_gem_object
+refcount is still 0 after acquiring the mutex in order to call the free
+function. Otherwise, we may encounter scenarios like:
 
-Reported-by: Kees Cook <kees@ubuntu.com>
+Thread A:                                        Thread B:
+drm_gem_close
+unreference_unlocked
+kref_put                                         mutex_lock
+...                                              i915_gem_evict
+...                                              kref_get -> BUG
+...                                              i915_gem_unbind
+...                                              kref_put
+...                                              i915_gem_object_free
+...                                              mutex_unlock
+mutex_lock
+i915_gem_object_free -> BUG
+i915_gem_object_unbind
+kfree
+mutex_unlock
+
+Note that no driver is currently using the free_unlocked vfunc and it is
+scheduled for removal, hasten that process.
+
+Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=30454
+Reported-and-Tested-by: Magnus Kessler <Magnus.Kessler@gmx.net>
 Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/gpu/drm/i915/i915_gem.c |   28 ++++++++++++++++++++--------
- 1 file changed, 20 insertions(+), 8 deletions(-)
+ drivers/gpu/drm/drm_gem.c |   22 ----------------------
+ include/drm/drmP.h        |   10 ++++++----
+ 2 files changed, 6 insertions(+), 26 deletions(-)
 
---- a/drivers/gpu/drm/i915/i915_gem.c
-+++ b/drivers/gpu/drm/i915/i915_gem.c
-@@ -465,8 +465,15 @@ i915_gem_pread_ioctl(struct drm_device *
- 	 */
- 	if (args->offset > obj->size || args->size > obj->size ||
- 	    args->offset + args->size > obj->size) {
--		drm_gem_object_unreference_unlocked(obj);
--		return -EINVAL;
-+		ret = -EINVAL;
-+		goto err;
-+	}
-+
-+	if (!access_ok(VERIFY_WRITE,
-+		       (char __user *)(uintptr_t)args->data_ptr,
-+		       args->size)) {
-+		ret = -EFAULT;
-+		goto err;
- 	}
+--- a/drivers/gpu/drm/drm_gem.c
++++ b/drivers/gpu/drm/drm_gem.c
+@@ -451,28 +451,6 @@ drm_gem_object_free(struct kref *kref)
+ }
+ EXPORT_SYMBOL(drm_gem_object_free);
  
- 	if (i915_gem_object_needs_bit17_swizzle(obj)) {
-@@ -478,8 +485,8 @@ i915_gem_pread_ioctl(struct drm_device *
- 							file_priv);
- 	}
- 
-+err:
- 	drm_gem_object_unreference_unlocked(obj);
+-/**
+- * Called after the last reference to the object has been lost.
+- * Must be called without holding struct_mutex
+- *
+- * Frees the object
+- */
+-void
+-drm_gem_object_free_unlocked(struct kref *kref)
+-{
+-	struct drm_gem_object *obj = (struct drm_gem_object *) kref;
+-	struct drm_device *dev = obj->dev;
 -
- 	return ret;
+-	if (dev->driver->gem_free_object_unlocked != NULL)
+-		dev->driver->gem_free_object_unlocked(obj);
+-	else if (dev->driver->gem_free_object != NULL) {
+-		mutex_lock(&dev->struct_mutex);
+-		dev->driver->gem_free_object(obj);
+-		mutex_unlock(&dev->struct_mutex);
+-	}
+-}
+-EXPORT_SYMBOL(drm_gem_object_free_unlocked);
+-
+ static void drm_gem_object_ref_bug(struct kref *list_kref)
+ {
+ 	BUG();
+--- a/include/drm/drmP.h
++++ b/include/drm/drmP.h
+@@ -802,7 +802,6 @@ struct drm_driver {
+ 	 */
+ 	int (*gem_init_object) (struct drm_gem_object *obj);
+ 	void (*gem_free_object) (struct drm_gem_object *obj);
+-	void (*gem_free_object_unlocked) (struct drm_gem_object *obj);
+ 
+ 	/* vga arb irq handler */
+ 	void (*vgaarb_irq)(struct drm_device *dev, bool state);
+@@ -1431,7 +1430,6 @@ int drm_gem_init(struct drm_device *dev)
+ void drm_gem_destroy(struct drm_device *dev);
+ void drm_gem_object_release(struct drm_gem_object *obj);
+ void drm_gem_object_free(struct kref *kref);
+-void drm_gem_object_free_unlocked(struct kref *kref);
+ struct drm_gem_object *drm_gem_object_alloc(struct drm_device *dev,
+ 					    size_t size);
+ int drm_gem_object_init(struct drm_device *dev,
+@@ -1457,8 +1455,12 @@ drm_gem_object_unreference(struct drm_ge
+ static inline void
+ drm_gem_object_unreference_unlocked(struct drm_gem_object *obj)
+ {
+-	if (obj != NULL)
+-		kref_put(&obj->refcount, drm_gem_object_free_unlocked);
++	if (obj != NULL) {
++		struct drm_device *dev = obj->dev;
++		mutex_lock(&dev->struct_mutex);
++		kref_put(&obj->refcount, drm_gem_object_free);
++		mutex_unlock(&dev->struct_mutex);
++	}
  }
  
-@@ -568,8 +575,6 @@ i915_gem_gtt_pwrite_fast(struct drm_devi
- 
- 	user_data = (char __user *) (uintptr_t) args->data_ptr;
- 	remain = args->size;
--	if (!access_ok(VERIFY_READ, user_data, remain))
--		return -EFAULT;
- 
- 
- 	mutex_lock(&dev->struct_mutex);
-@@ -928,8 +933,15 @@ i915_gem_pwrite_ioctl(struct drm_device
- 	 */
- 	if (args->offset > obj->size || args->size > obj->size ||
- 	    args->offset + args->size > obj->size) {
--		drm_gem_object_unreference_unlocked(obj);
--		return -EINVAL;
-+		ret = -EINVAL;
-+		goto err;
-+	}
-+
-+	if (!access_ok(VERIFY_READ,
-+		       (char __user *)(uintptr_t)args->data_ptr,
-+		       args->size)) {
-+		ret = -EFAULT;
-+		goto err;
- 	}
- 
- 	/* We can only do the GTT pwrite on untiled buffers, as otherwise
-@@ -963,8 +975,8 @@ i915_gem_pwrite_ioctl(struct drm_device
- 		DRM_INFO("pwrite failed %d\n", ret);
- #endif
- 
-+err:
- 	drm_gem_object_unreference_unlocked(obj);
--
- 	return ret;
- }
- 
+ int drm_gem_handle_create(struct drm_file *file_priv,
 
 
