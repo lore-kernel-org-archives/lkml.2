@@ -1,208 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756907Ab0JVX5r (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 19:57:47 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:39325 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755813Ab0JVXyn (ORCPT
+	id S1756976Ab0JVX6O (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 19:58:14 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:41165 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755702Ab0JVX6M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 19:54:43 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=M5K9efntyWt9LjWcXbRtdFJw+O93KlPqeadclkHj7Rqu8BTIG/PJ9ij6Rx7JRoE5Uz
-         miDsMWEfBpT7z4AWymo9SXEGb7YRGEvXvKdJ9Vqr0q8C5o4Icp1XvoTjLr7wFJR3bZsh
-         9AkOA8+3qLZeX6UB/DLrOs7EZT747YhaHgx2o=
-From: Maxim Levitsky <maximlevitsky@gmail.com>
-To: Alex Dubov <oakad@yahoo.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Maxim Levitsky <maximlevitsky@gmail.com>
-Subject: [PATCH 18/29] memstick: jmb38x_ms: rename functions
-Date: Sat, 23 Oct 2010 01:53:46 +0200
-Message-Id: <1287791637-10329-19-git-send-email-maximlevitsky@gmail.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1287791637-10329-1-git-send-email-maximlevitsky@gmail.com>
-References: <1287791637-10329-1-git-send-email-maximlevitsky@gmail.com>
+	Fri, 22 Oct 2010 19:58:12 -0400
+Date: Fri, 22 Oct 2010 16:57:34 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Christian Bahls <lkml@qb352.de>
+Cc: linux-kernel@vger.kernel.org, Eric Dumazet <eric.dumazet@gmail.com>
+Subject: Re: __pm_runtime_resume() returns -1 Was: Regression in 2.6.36
+Message-Id: <20101022165734.d7ed2582.akpm@linux-foundation.org>
+In-Reply-To: <AANLkTinPyg2ijrBydVyoGJiQJCpL7j1_vnyQWnx0eucz@mail.gmail.com>
+References: <AANLkTinPyg2ijrBydVyoGJiQJCpL7j1_vnyQWnx0eucz@mail.gmail.com>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Give functions names that I hope will describe them better.
-Its a matter of personal taste somewhat, I admit.
+On Fri, 22 Oct 2010 15:38:01 +0200
+Christian Bahls <lkml@qb352.de> wrote:
 
-Signed-off-by: Maxim Levitsky <maximlevitsky@gmail.com>
----
- drivers/memstick/host/jmb38x_ms.c |   38 ++++++++++++++++++------------------
- drivers/memstick/host/jmb38x_ms.h |    4 +-
- 2 files changed, 21 insertions(+), 21 deletions(-)
+> Thanks to the help by Matthias Schniedermeyer
+>  i was able to bisect the change in less than 24 hours
+> 
+> The regression seems to have been introduced by the merge:
+>   92b4522f72916ff2675060e29e4b24cf26ab59ce
+> 
+> Parent: 67a3e12b05e055c0415c556a315a3d3eb637e29e (Linux 2.6.35-rc1)
+> Parent: 2903037400a26e7c0cc93ab75a7d62abfacdf485 (net: fix
+> sk_forward_alloc corruptions)
+> Branches: compile, remotes/origin/master, work
+> Follows: v2.6.35-rc1
+> Precedes: v2.6.36-rc1
+> 
+>     Merge branch 'master' of
+> master.kernel.org:/pub/scm/linux/kernel/git/davem/net-2.6
+> 
+> Which (according to git bisect visualize) contains following Change:
+> 
+> Author: Eric Dumazet <eric.dumazet@gmail.com>  2010-05-29 09:20:48
+> Committer: David S. Miller <davem@davemloft.net>  2010-05-29 09:20:48
+> Child:  92b4522f72916ff2675060e29e4b24cf26ab59ce (Merge branch
+> 'master' of master.kernel.org:/pub/scm/linux/kernel/git/davem/net-2.6)
+> Branches: compile, master, remotes/origin/master, remotes/v35/master, work
+> Follows: v2.6.34
+> Precedes: first_bad, v2.6.35-rc2
+> 
+>     net: fix sk_forward_alloc corruptions
+> 
+>     As David found out, sock_queue_err_skb() should be called with socket
+>     lock hold, or we risk sk_forward_alloc corruption, since we use non
+>     atomic operations to update this field.
+> 
+>     This patch adds bh_lock_sock()/bh_unlock_sock() pair to three spots.
+>     (BH already disabled)
+> 
+>     1) skb_tstamp_tx()
+>     2) Before calling ip_icmp_error(), in __udp4_lib_err()
+>     3) Before calling ipv6_icmp_error(), in __udp6_lib_err()
 
-diff --git a/drivers/memstick/host/jmb38x_ms.c b/drivers/memstick/host/jmb38x_ms.c
-index 2e10104..295f755 100644
---- a/drivers/memstick/host/jmb38x_ms.c
-+++ b/drivers/memstick/host/jmb38x_ms.c
-@@ -22,7 +22,7 @@
- static int no_dma;
- static int debug;
- 
--static unsigned int j38ms_read_data(struct j38ms_host *host,
-+static unsigned int j38ms_read_fifo_pio(struct j38ms_host *host,
- 					unsigned char *buf, unsigned int length)
- {
- 	unsigned int off = 0;
-@@ -60,7 +60,7 @@ static unsigned int j38ms_read_data(struct j38ms_host *host,
- 	return off;
- }
- 
--static unsigned int j38ms_write_data(struct j38ms_host *host,
-+static unsigned int j38ms_write_fifo_pio(struct j38ms_host *host,
- 					 unsigned char *buf,
- 					 unsigned int length)
- {
-@@ -149,12 +149,12 @@ static int j38ms_transfer_data(struct j38ms_host *host)
- 
- 		if (host->req->data_dir == WRITE)
- 			t_size = !(host->cmd_flags & REG_DATA)
--				 ? j38ms_write_data(host, buf, p_cnt)
--				 : j38ms_write_reg_data(host, buf, p_cnt);
-+				 ? j38ms_write_fifo_pio(host, buf, p_cnt)
-+				 : j38ms_write_tpc_inline(host, buf, p_cnt);
- 		else
- 			t_size = !(host->cmd_flags & REG_DATA)
--				 ? j38ms_read_data(host, buf, p_cnt)
--				 : j38ms_read_reg_data(host, buf, p_cnt);
-+				 ? j38ms_read_fifo_pio(host, buf, p_cnt)
-+				 : j38ms_read_tpc_inline(host, buf, p_cnt);
- 
- 		if (host->req->long_data) {
- 			kunmap_atomic(buf - p_off, KM_BIO_SRC_IRQ);
-@@ -180,7 +180,7 @@ static int j38ms_transfer_data(struct j38ms_host *host)
- 	return length;
- }
- 
--static unsigned int j38ms_read_reg_data(struct j38ms_host *host,
-+static unsigned int j38ms_read_tpc_inline(struct j38ms_host *host,
- 					    unsigned char *buf,
- 					    unsigned int length)
- {
-@@ -206,7 +206,7 @@ static unsigned int j38ms_read_reg_data(struct j38ms_host *host,
- 	return off;
- }
- 
--static unsigned int j38ms_write_reg_data(struct j38ms_host *host,
-+static unsigned int j38ms_write_tpc_inline(struct j38ms_host *host,
- 					     unsigned char *buf,
- 					     unsigned int length)
- {
-@@ -232,7 +232,7 @@ static unsigned int j38ms_write_reg_data(struct j38ms_host *host,
- 	return off;
- }
- 
--static int j38ms_issue_cmd(struct memstick_host *msh)
-+static int j38ms_execute_tpc(struct memstick_host *msh)
- {
- 	struct j38ms_host *host = memstick_priv(msh);
- 	unsigned char *data;
-@@ -330,7 +330,7 @@ static int j38ms_issue_cmd(struct memstick_host *msh)
- 	return 0;
- }
- 
--static void j38ms_complete_cmd(struct memstick_host *msh, int last)
-+static void j38ms_complete_tpc(struct memstick_host *msh, int last)
- {
- 	struct j38ms_host *host = memstick_priv(msh);
- 	unsigned int t_val = 0;
-@@ -370,7 +370,7 @@ static void j38ms_complete_cmd(struct memstick_host *msh, int last)
- 	if (!last) {
- 		do {
- 			rc = memstick_next_req(msh, &host->req);
--		} while (!rc && j38ms_issue_cmd(msh));
-+		} while (!rc && j38ms_execute_tpc(msh));
- 	} else {
- 		do {
- 			rc = memstick_next_req(msh, &host->req);
-@@ -446,13 +446,13 @@ static irqreturn_t j38ms_isr(int irq, void *dev_id)
- 	    && (((host->cmd_flags & CMD_READY)
- 		 && (host->cmd_flags & FIFO_READY))
- 		|| host->req->error))
--		j38ms_complete_cmd(msh, 0);
-+		j38ms_complete_tpc(msh, 0);
- 
- 	spin_unlock(&host->lock);
- 	return IRQ_HANDLED;
- }
- 
--static void j38ms_abort(unsigned long data)
-+static void j38ms_irq_timeout(unsigned long data)
- {
- 	struct memstick_host *msh = (struct memstick_host *)data;
- 	struct j38ms_host *host = memstick_priv(msh);
-@@ -462,12 +462,12 @@ static void j38ms_abort(unsigned long data)
- 	spin_lock_irqsave(&host->lock, flags);
- 	if (host->req) {
- 		host->req->error = -ETIME;
--		j38ms_complete_cmd(msh, 0);
-+		j38ms_complete_tpc(msh, 0);
- 	}
- 	spin_unlock_irqrestore(&host->lock, flags);
- }
- 
--static void j38ms_req_tasklet(unsigned long data)
-+static void j38ms_submit_tasklet(unsigned long data)
- {
- 	struct memstick_host *msh = (struct memstick_host *)data;
- 	struct j38ms_host *host = memstick_priv(msh);
-@@ -479,7 +479,7 @@ static void j38ms_req_tasklet(unsigned long data)
- 		do {
- 			rc = memstick_next_req(msh, &host->req);
- 			dev_dbg(&host->chip->pdev->dev, "tasklet req %d\n", rc);
--		} while (!rc && j38ms_issue_cmd(msh));
-+		} while (!rc && j38ms_execute_tpc(msh));
- 	}
- 	spin_unlock_irqrestore(&host->lock, flags);
- }
-@@ -713,13 +713,13 @@ static struct memstick_host *j38ms_alloc_host(struct j38ms *jm, int cnt)
- 	host->irq = jm->pdev->irq;
- 	host->timeout_jiffies = msecs_to_jiffies(1000);
- 
--	tasklet_init(&host->notify, j38ms_req_tasklet, (unsigned long)msh);
-+	tasklet_init(&host->notify, j38ms_submit_tasklet, (unsigned long)msh);
- 	msh->request = j38ms_submit_req;
- 	msh->set_param = j38ms_set_param;
- 
- 	msh->caps = MEMSTICK_CAP_PAR4 | MEMSTICK_CAP_PAR8;
- 
--	setup_timer(&host->timer, j38ms_abort, (unsigned long)msh);
-+	setup_timer(&host->timer, j38ms_irq_timeout, (unsigned long)msh);
- 
- 	if (!request_irq(host->irq, j38ms_isr, IRQF_SHARED, host->host_id,
- 			 msh))
-@@ -835,7 +835,7 @@ static void j38ms_remove(struct pci_dev *dev)
- 		spin_lock_irqsave(&host->lock, flags);
- 		if (host->req) {
- 			host->req->error = -ETIME;
--			j38ms_complete_cmd(jm->hosts[cnt], 1);
-+			j38ms_complete_tpc(jm->hosts[cnt], 1);
- 		}
- 		spin_unlock_irqrestore(&host->lock, flags);
- 
-diff --git a/drivers/memstick/host/jmb38x_ms.h b/drivers/memstick/host/jmb38x_ms.h
-index a940b5d..44e1fc1 100644
---- a/drivers/memstick/host/jmb38x_ms.h
-+++ b/drivers/memstick/host/jmb38x_ms.h
-@@ -187,10 +187,10 @@ enum {
- #define dbg_v(host, format, ...)	__dbg(host, 2, format, ## __VA_ARGS__)
- #define dbg_reg(host, format, ...)	__dbg(host, 3, format, ## __VA_ARGS__)
- 
--static unsigned int j38ms_read_reg_data(struct j38ms_host *host,
-+static unsigned int j38ms_read_tpc_inline(struct j38ms_host *host,
- 					    unsigned char *buf,
- 					    unsigned int length);
- 
--static unsigned int j38ms_write_reg_data(struct j38ms_host *host,
-+static unsigned int j38ms_write_tpc_inline(struct j38ms_host *host,
- 					     unsigned char *buf,
- 					     unsigned int length);
--- 
-1.7.1
+I suspect your bisection went wrong :(
+
+> 
+> ------------------------------ net/core/skbuff.c ------------------------------
+> index 4667d4d..f2913ae 100644
+> @@ -2992,7 +2992,11 @@ void skb_tstamp_tx(struct sk_buff *orig_skb,
+>  	memset(serr, 0, sizeof(*serr));
+>  	serr->ee.ee_errno = ENOMSG;
+>  	serr->ee.ee_origin = SO_EE_ORIGIN_TIMESTAMPING;
+> +
+> +	bh_lock_sock(sk);
+>  	err = sock_queue_err_skb(sk, skb);
+> +	bh_unlock_sock(sk);
+> +
+>  	if (err)
+>  		kfree_skb(skb);
+>  }
+> 
+> -------------------------------- net/ipv4/udp.c --------------------------------
+> index b9d0d40..acdc9be 100644
+> @@ -634,7 +634,9 @@ void __udp4_lib_err(struct sk_buff *skb, u32 info,
+> struct udp_table *udptable)
+>  		if (!harderr || sk->sk_state != TCP_ESTABLISHED)
+>  			goto out;
+>  	} else {
+> +		bh_lock_sock(sk);
+>  		ip_icmp_error(sk, skb, err, uh->dest, info, (u8 *)(uh+1));
+> +		bh_unlock_sock(sk);
+>  	}
+>  	sk->sk_err = err;
+>  	sk->sk_error_report(sk);
+> 
+> -------------------------------- net/ipv6/udp.c --------------------------------
+> index 87be586..3048f90 100644
+> @@ -466,9 +466,11 @@ void __udp6_lib_err(struct sk_buff *skb, struct
+> inet6_skb_parm *opt,
+>  	if (sk->sk_state != TCP_ESTABLISHED && !np->recverr)
+>  		goto out;
+> 
+> -	if (np->recverr)
+> +	if (np->recverr) {
+> +		bh_lock_sock(sk);
+>  		ipv6_icmp_error(sk, skb, err, uh->dest, ntohl(info), (u8 *)(uh+1));
+> -
+> +		bh_unlock_sock(sk);
+> +	}
+>  	sk->sk_err = err;
+>  	sk->sk_error_report(sk);
+>  out:
+
+It's really hard to see how that change could break the resume
+operation.
 
