@@ -1,41 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755526Ab0JVIOo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 04:14:44 -0400
-Received: from fep15.mx.upcmail.net ([62.179.121.35]:53520 "EHLO
-	fep15.mx.upcmail.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753987Ab0JVIOm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 04:14:42 -0400
-X-SourceIP: 80.56.199.130
-Subject: Re: [PATCH][GIT PULL] tracing: Fix compile issue for
- trace_sched_wakeup.c
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Jason Baron <jbaron@redhat.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Steven Rostedt <rostedt@goodmis.org>,
+	id S1755441Ab0JVIRt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 04:17:49 -0400
+Received: from hera.kernel.org ([140.211.167.34]:54627 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751838Ab0JVIRr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Oct 2010 04:17:47 -0400
+Message-ID: <4CC14868.60809@kernel.org>
+Date: Fri, 22 Oct 2010 10:16:40 +0200
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.11) Gecko/20101013 Lightning/1.0b2 Thunderbird/3.1.5
+MIME-Version: 1.0
+To: Jason Baron <jbaron@redhat.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>
+CC: Ingo Molnar <mingo@elte.hu>, Steven Rostedt <rostedt@goodmis.org>,
         LKML <linux-kernel@vger.kernel.org>,
         Andrew Morton <akpm@linux-foundation.org>,
         Frederic Weisbecker <fweisbec@gmail.com>,
         Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>, tj@kernel.org
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: Re: [PATCH][GIT PULL] tracing: Fix compile issue for trace_sched_wakeup.c
+References: <1287508282.16971.386.camel@gandalf.stny.rr.com> <20101019184111.GA17266@elte.hu> <20101020154045.GA18353@elte.hu> <1287659656.16971.573.camel@gandalf.stny.rr.com> <20101021112614.GB26984@elte.hu> <20101022014441.GA1948@redhat.com>
 In-Reply-To: <20101022014441.GA1948@redhat.com>
-References: <1287508282.16971.386.camel@gandalf.stny.rr.com>
-	 <20101019184111.GA17266@elte.hu> <20101020154045.GA18353@elte.hu>
-	 <1287659656.16971.573.camel@gandalf.stny.rr.com>
-	 <20101021112614.GB26984@elte.hu>  <20101022014441.GA1948@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 22 Oct 2010 10:14:31 +0200
-Message-ID: <1287735271.15336.18.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Cloudmark-Analysis: v=1.1 cv=O+FWVpunvrlG1gSnSO6WiIQ7o0MJ4laHqrEcUJ8XjIg= c=1 sm=0 a=LuwKl7ggZIAA:10 a=IkcTkHD0fZMA:10 a=Ux9TcuoMXH1ZqVfFiIQA:9 a=CaMxNW5FABa0TKShFKkA:7 a=33iUFdCBONMFPQR9djOxYduFjRwA:4 a=QEXdDO2ut3YA:10 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 22 Oct 2010 08:16:42 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-10-21 at 21:44 -0400, Jason Baron wrote:
+Hello,
 
+On 10/22/2010 03:44 AM, Jason Baron wrote:
+> (adding Tejun to the 'cc list)
+> 
 > I finally found that we actually continue to run after the above
 > apparent 'hang'. That is, we continue to make progress updating the jump
 > labels. And doing a dump of all the system tasks at the time of the hang
@@ -48,27 +46,10 @@ On Thu, 2010-10-21 at 21:44 -0400, Jason Baron wrote:
 > what might be going wrong with that scheduling...but maybe somebody else
 > knows...
 
-Hrmm, so are you saying rq->stop was runnable but not running?
+I'm afraid I don't have much idea about the new scheduling class.  I
+liked the idea but Peter did all the hard working on it.  Peter?
 
-That would imply broken wakeup-preemption, does something like the below
-cure that?
+Thanks.
 
-
----
- kernel/sched_stoptask.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
-
-diff --git a/kernel/sched_stoptask.c b/kernel/sched_stoptask.c
-index 45bddc0..50ad10f 100644
---- a/kernel/sched_stoptask.c
-+++ b/kernel/sched_stoptask.c
-@@ -35,6 +35,7 @@ static struct task_struct *pick_next_task_stop(struct rq *rq)
- static void
- enqueue_task_stop(struct rq *rq, struct task_struct *p, int flags)
- {
-+	resched_cpu(cpu_of(rq));
- }
- 
- static void
-
-
+-- 
+tejun
