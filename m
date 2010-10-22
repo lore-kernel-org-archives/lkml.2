@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755803Ab0JVKkg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 06:40:36 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:58197 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755447Ab0JVKke (ORCPT
+	id S1755839Ab0JVKlI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 06:41:08 -0400
+Received: from mail-bw0-f66.google.com ([209.85.214.66]:56268 "EHLO
+	mail-bw0-f66.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755595Ab0JVKlE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 06:40:34 -0400
+	Fri, 22 Oct 2010 06:41:04 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=mime-version:sender:reply-to:date:x-google-sender-auth:message-id
          :subject:from:to:content-type;
-        b=RSLnFyczp47j3HbUV+rrl7tUz/2i8uaqloj1pa/Mva+C0LE8hIxt1Jsy39GoLFhqUu
-         BW74ZZmw4dXDm6F0OK5LvT7y2nwzQCF3XXCReoQIDyrYw36wCi7JlRpuhLKdN7EWRWyA
-         KopLuJIfe9gq9goAABjp3huI5Ea1Ep6RCqq+0=
+        b=NMiWAGwN2eR7k7XM7vqlK+uRJF92s5s7kV0ZbSFDlXOpMkvgSzHIOMqtETzoyFtSoB
+         ExgeWN1PXpFfiK2wcMHezgXyoqVOzjOvbyxNOq7WFw9D81HOVgBVvJX64pZwCc9XQUIS
+         Rc4FeYpoNHGlVVW1fk1C69BjgFz89V4f6XV9U=
 MIME-Version: 1.0
 Reply-To: pghatwork@gmail.com
-Date: Fri, 22 Oct 2010 12:40:32 +0200
-X-Google-Sender-Auth: pruwUoY744CxIr8kH06da4X9qpg
-Message-ID: <AANLkTikwQYqwSJyeDXnBDRoVLHbmEzWwxYU=V2fb5oNU@mail.gmail.com>
-Subject: [PATCH 8/9] Bluetooth: Add support for the ST-Ericsson CG2900.
+Date: Fri, 22 Oct 2010 12:41:00 +0200
+X-Google-Sender-Auth: ZcmOvqcOLzAPZSfzazGOTrY5kPg
+Message-ID: <AANLkTi=SRdomXs-n4sSVocnM2SroSWFLP5AHzQqexZB3@mail.gmail.com>
+Subject: [PATCH 9/9] DocBook: Add ST-Ericsson CG2900 docs
 From: Par-Gunnar Hjalmdahl <par-gunnar.p.hjalmdahl@stericsson.com>
 To: linus.walleij@stericsson.com, linux-bluetooth@vger.kernel.org,
         linux-kernel@vger.kernel.org
@@ -28,979 +28,1558 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds support for the ST-Ericsson CG2900 Connectivity
-Combo controller.
-This patch registers to the Bluetooth stack and, when opened, it
-registers to the Bluetooth channels in the CG2900 MFD driver.
+This patch adds documentation for the ST-Ericsson CG2900
+Connectivity controller.
 
 Signed-off-by: Par-Gunnar Hjalmdahl <par-gunnar.p.hjalmdahl@stericsson.com>
 ---
- drivers/bluetooth/Kconfig    |    7 +
- drivers/bluetooth/Makefile   |    1 +
- drivers/bluetooth/btcg2900.c |  925 ++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 933 insertions(+), 0 deletions(-)
- create mode 100644 drivers/bluetooth/btcg2900.c
+ Documentation/DocBook/Makefile    |    2 +-
+ Documentation/DocBook/cg2900.tmpl | 1332 +++++++++++++++++++++++++++++++++++++
+ 2 files changed, 1333 insertions(+), 1 deletions(-)
+ create mode 100644 Documentation/DocBook/cg2900.tmpl
 
-diff --git a/drivers/bluetooth/Kconfig b/drivers/bluetooth/Kconfig
-index 02deef4..9ca8d69 100644
---- a/drivers/bluetooth/Kconfig
-+++ b/drivers/bluetooth/Kconfig
-@@ -219,4 +219,11 @@ config BT_ATH3K
- 	  Say Y here to compile support for "Atheros firmware download driver"
- 	  into the kernel or say M to compile it as module (ath3k).
+diff --git a/Documentation/DocBook/Makefile b/Documentation/DocBook/Makefile
+index 8b6e00a..e8319ec 100644
+--- a/Documentation/DocBook/Makefile
++++ b/Documentation/DocBook/Makefile
+@@ -14,7 +14,7 @@ DOCBOOKS := z8530book.xml mcabook.xml device-drivers.xml \
+ 	    genericirq.xml s390-drivers.xml uio-howto.xml scsi.xml \
+ 	    80211.xml debugobjects.xml sh.xml regulator.xml \
+ 	    alsa-driver-api.xml writing-an-alsa-driver.xml \
+-	    tracepoint.xml media.xml drm.xml
++	    tracepoint.xml media.xml drm.xml cg2900.xml
 
-+config BT_CG2900
-+	tristate "ST-Ericsson CG2900 driver"
-+	depends on MFD_CG2900 && BT
-+	help
-+	  Select if ST-Ericsson CG2900 Connectivity controller shall be used as
-+	  Bluetooth controller for BlueZ.
-+
- endmenu
-diff --git a/drivers/bluetooth/Makefile b/drivers/bluetooth/Makefile
-index 71bdf13..1f8ce2d 100644
---- a/drivers/bluetooth/Makefile
-+++ b/drivers/bluetooth/Makefile
-@@ -16,6 +16,7 @@ obj-$(CONFIG_BT_HCIBTUSB)	+= btusb.o
- obj-$(CONFIG_BT_HCIBTSDIO)	+= btsdio.o
-
- obj-$(CONFIG_BT_ATH3K)		+= ath3k.o
-+obj-$(CONFIG_BT_CG2900)		+= btcg2900.o
- obj-$(CONFIG_BT_MRVL)		+= btmrvl.o
- obj-$(CONFIG_BT_MRVL_SDIO)	+= btmrvl_sdio.o
-
-diff --git a/drivers/bluetooth/btcg2900.c b/drivers/bluetooth/btcg2900.c
+ ###
+ # The build process is as follows (targets):
+diff --git a/Documentation/DocBook/cg2900.tmpl
+b/Documentation/DocBook/cg2900.tmpl
 new file mode 100644
-index 0000000..11d6518
+index 0000000..e7eef1b
 --- /dev/null
-+++ b/drivers/bluetooth/btcg2900.c
-@@ -0,0 +1,925 @@
-+/*
-+ * Bluetooth driver for ST-Ericsson CG2900 connectivity controller.
-+ *
-+ * Copyright (C) ST-Ericsson SA 2010
-+ *
-+ * Authors:
-+ * Par-Gunnar Hjalmdahl (par-gunnar.p.hjalmdahl@stericsson.com)
-+ * Henrik Possung (henrik.possung@stericsson.com)
-+ * Josef Kindberg (josef.kindberg@stericsson.com)
-+ * Dariusz Szymszak (dariusz.xd.szymczak@stericsson.com)
-+ * Kjell Andersson (kjell.k.andersson@stericsson.com)
-+ *
-+ * License terms:  GNU General Public License (GPL), version 2
-+ */
-+
-+#include <asm/byteorder.h>
-+#include <linux/jiffies.h>
-+#include <linux/module.h>
-+#include <linux/sched.h>
-+#include <linux/platform_device.h>
-+#include <linux/skbuff.h>
-+#include <linux/time.h>
-+#include <linux/timer.h>
-+#include <linux/types.h>
-+#include <linux/wait.h>
-+#include <linux/workqueue.h>
-+#include <linux/mfd/cg2900.h>
-+#include <net/bluetooth/bluetooth.h>
-+#include <net/bluetooth/hci.h>
-+#include <net/bluetooth/hci_core.h>
-+
-+#define BT_VS_BT_ENABLE			0xFF10
-+
-+#define VS_BT_DISABLE			0x00
-+#define VS_BT_ENABLE			0x01
-+
-+#define BT_HEADER_LENGTH		0x03
-+
-+#define STLC2690_HCI_REV		0x0600
-+#define CG2900_PG1_HCI_REV		0x0101
-+#define CG2900_PG2_HCI_REV		0x0200
-+#define CG2900_PG1_SPECIAL_HCI_REV	0x0700
-+
-+#define NAME				"BTCG2900 "
-+
-+/* Wait for 5 seconds for a response to our requests */
-+#define RESP_TIMEOUT			5000
-+
-+/* Bluetooth error codes */
-+#define HCI_ERR_NO_ERROR		0x00
-+#define HCI_ERR_CMD_DISALLOWED		0x0C
-+
-+/**
-+ * enum reset_state - RESET-states of the HCI driver.
-+ *
-+ * @RESET_IDLE:		No reset in progress.
-+ * @RESET_ACTIVATED:	Reset in progress.
-+ * @RESET_UNREGISTERED:	hdev is unregistered.
-+ */
-+
-+enum reset_state {
-+	RESET_IDLE,
-+	RESET_ACTIVATED,
-+	RESET_UNREGISTERED
-+};
-+
-+/**
-+ * enum enable_state - ENABLE-states of the HCI driver.
-+ *
-+ * @ENABLE_IDLE:			The HCI driver is loaded but not opened.
-+ * @ENABLE_WAITING_BT_ENABLED_CC:	The HCI driver is waiting for a command
-+ *					complete event from the BT chip as a
-+ *					response to a BT Enable (true) command.
-+ * @ENABLE_BT_ENABLED:			The BT chip is enabled.
-+ * @ENABLE_WAITING_BT_DISABLED_CC:	The HCI driver is waiting for a command
-+ *					complete event from the BT chip as a
-+ *					response to a BT Enable (false) command.
-+ * @ENABLE_BT_DISABLED:			The BT chip is disabled.
-+ * @ENABLE_BT_ERROR:			The HCI driver is in a bad state, some
-+ *					thing has failed and is not expected to
-+ *					work properly.
-+ */
-+enum enable_state {
-+	ENABLE_IDLE,
-+	ENABLE_WAITING_BT_ENABLED_CC,
-+	ENABLE_BT_ENABLED,
-+	ENABLE_WAITING_BT_DISABLED_CC,
-+	ENABLE_BT_DISABLED,
-+	ENABLE_BT_ERROR
-+};
-+
-+/**
-+ * struct btcg2900_info - Specifies HCI driver private data.
-+ *
-+ * This type specifies CG2900 HCI driver private data.
-+ *
-+ * @bt_cmd:		Device structure for BT command channel.
-+ * @bt_evt:		Device structure for BT event channel.
-+ * @bt_acl:		Device structure for BT ACL channel.
-+ * @pdev:		Device structure for platform device.
-+ * @hdev:		Device structure for HCI device.
-+ * @reset_state:	Device enum for HCI driver reset state.
-+ * @enable_state:	Device enum for HCI driver BT enable state.
-+ */
-+struct btcg2900_info {
-+	struct cg2900_device	*bt_cmd;
-+	struct cg2900_device	*bt_evt;
-+	struct cg2900_device	*bt_acl;
-+	struct platform_device	*pdev;
-+	struct hci_dev		*hdev;
-+	enum reset_state	reset_state;
-+	enum enable_state	enable_state;
-+};
-+
-+/**
-+ * struct dev_info - Specifies private data used when receiving
-callbacks from CG2900 driver.
-+ *
-+ * @hdev:		Device structure for HCI device.
-+ * @hci_data_type:	Type of data according to BlueZ.
-+ */
-+struct dev_info {
-+	struct hci_dev	*hdev;
-+	u8		hci_data_type;
-+};
-+
-+/**
-+ * struct vs_bt_enable_cmd - Specifies HCI VS Bluetooth_Enable command.
-+ *
-+ * @op_code:	HCI command op code.
-+ * @len:	Parameter length of command.
-+ * @enable:	0 for disable BT, 1 for enable BT.
-+ */
-+struct vs_bt_enable_cmd {
-+	__le16	op_code;
-+	u8	len;
-+	u8	enable;
-+} __attribute__((packed));
-+
-+static struct btcg2900_info *btcg2900_info;
-+
-+/*
-+ * hci_wait_queue - Main Wait Queue in HCI driver.
-+ */
-+static DECLARE_WAIT_QUEUE_HEAD(hci_wait_queue);
-+
-+/* Internal function declarations */
-+static int register_bluetooth(void);
-+
-+/* Internal functions */
-+
-+/**
-+ * get_bt_enable_cmd() - Get HCI BT enable command.
-+ * @bt_enable:	true if Bluetooth IP shall be enabled, false otherwise.
-+ *
-+ * Returns:
-+ *   NULL if no command shall be sent,
-+ *   sk_buffer with command otherwise.
-+ */
-+struct sk_buff *get_bt_enable_cmd(bool bt_enable)
-+{
-+	struct sk_buff *skb;
-+	struct vs_bt_enable_cmd *cmd;
-+	struct cg2900_rev_data rev_data;
-+
-+	if (!cg2900_get_local_revision(&rev_data)) {
-+		BT_ERR(NAME "Couldn't get revision");
-+		return NULL;
-+	}
-+
-+	/* If connected chip does not support the command return NULL */
-+	if (CG2900_PG1_SPECIAL_HCI_REV != rev_data.revision &&
-+	    CG2900_PG1_HCI_REV != rev_data.revision &&
-+	    CG2900_PG2_HCI_REV != rev_data.revision)
-+		return NULL;
-+
-+	/* CG2900 used */
-+	skb = cg2900_alloc_skb(sizeof(*cmd), GFP_KERNEL);
-+	if (!skb) {
-+		BT_ERR(NAME "Could not allocate skb");
-+		return NULL;
-+	}
-+
-+	cmd = (struct vs_bt_enable_cmd *)skb_put(skb, sizeof(*cmd));
-+	cmd->op_code = cpu_to_le16(BT_VS_BT_ENABLE);
-+	cmd->len = sizeof(*cmd) - BT_HEADER_LENGTH;
-+	if (bt_enable)
-+		cmd->enable = VS_BT_ENABLE;
-+	else
-+		cmd->enable = VS_BT_DISABLE;
-+
-+	return skb;
-+}
-+
-+/**
-+ * remove_bt_users() - Unregister and remove any existing BT users.
-+ * @info:	HCI driver info structure.
-+ */
-+static void remove_bt_users(struct btcg2900_info *info)
-+{
-+	if (info->bt_cmd) {
-+		kfree(info->bt_cmd->user_data);
-+		info->bt_cmd->user_data = NULL;
-+		cg2900_deregister_user(info->bt_cmd);
-+		info->bt_cmd = NULL;
-+	}
-+
-+	if (info->bt_evt) {
-+		kfree(info->bt_evt->user_data);
-+		info->bt_evt->user_data = NULL;
-+		cg2900_deregister_user(info->bt_evt);
-+		info->bt_evt = NULL;
-+	}
-+
-+	if (info->bt_acl) {
-+		kfree(info->bt_acl->user_data);
-+		info->bt_acl->user_data = NULL;
-+		cg2900_deregister_user(info->bt_acl);
-+		info->bt_acl = NULL;
-+	}
-+}
-+
-+/**
-+ * hci_read_cb() - Callback for handling data received from CG2900 driver.
-+ * @dev:	Device receiving data.
-+ * @skb:	Buffer with data coming from device.
-+ */
-+static void hci_read_cb(struct cg2900_device *dev, struct sk_buff *skb)
-+{
-+	int err = 0;
-+	struct dev_info *dev_info;
-+	struct hci_event_hdr *evt;
-+	struct hci_ev_cmd_complete *cmd_complete;
-+	struct hci_ev_cmd_status *cmd_status;
-+	u8 status;
-+
-+	if (!skb) {
-+		BT_ERR(NAME "NULL supplied for skb");
-+		return;
-+	}
-+
-+	if (!dev) {
-+		BT_ERR(NAME "dev == NULL");
-+		goto fin_free_skb;
-+	}
-+
-+	dev_info = (struct dev_info *)dev->user_data;
-+
-+	if (!dev_info) {
-+		BT_ERR(NAME "dev_info == NULL");
-+		goto fin_free_skb;
-+	}
-+
-+	evt = (struct hci_event_hdr *)skb->data;
-+	cmd_complete = (struct hci_ev_cmd_complete *)(skb->data + sizeof(*evt));
-+	cmd_status = (struct hci_ev_cmd_status *)(skb->data + sizeof(*evt));
-+
-+	/*
-+	 * Check if HCI Driver it self is expecting a Command Complete packet
-+	 * from the chip after a BT Enable command.
-+	 */
-+	if ((btcg2900_info->enable_state == ENABLE_WAITING_BT_ENABLED_CC ||
-+	     btcg2900_info->enable_state == ENABLE_WAITING_BT_DISABLED_CC) &&
-+	    btcg2900_info->bt_evt->h4_channel == dev->h4_channel &&
-+	    evt->evt == HCI_EV_CMD_COMPLETE &&
-+	    le16_to_cpu(cmd_complete->opcode) == BT_VS_BT_ENABLE) {
-+		/*
-+		 * This is the command complete event for
-+		 * the HCI_Cmd_VS_Bluetooth_Enable.
-+		 * Check result and update state.
-+		 *
-+		 * The BT chip is enabled/disabled. Either it was enabled/
-+		 * disabled now (status NO_ERROR) or it was already enabled/
-+		 * disabled (assuming status CMD_DISALLOWED is already enabled/
-+		 * disabled).
-+		 */
-+		status = *(skb->data + sizeof(*evt) + sizeof(*cmd_complete));
-+		if (status != HCI_ERR_NO_ERROR &&
-+		    status != HCI_ERR_CMD_DISALLOWED) {
-+			BT_ERR(NAME "Could not enable/disable BT core (0x%X)",
-+				   status);
-+			BT_DBG("New enable_state: ENABLE_BT_ERROR");
-+			btcg2900_info->enable_state = ENABLE_BT_ERROR;
-+			goto fin_free_skb;
-+		}
-+
-+		if (btcg2900_info->enable_state ==
-+				ENABLE_WAITING_BT_ENABLED_CC) {
-+			BT_DBG("New enable_state: ENABLE_BT_ENABLED");
-+			btcg2900_info->enable_state = ENABLE_BT_ENABLED;
-+			BT_INFO("CG2900 BT core is enabled");
-+		} else {
-+			BT_DBG("New enable_state: ENABLE_BT_DISABLED");
-+			btcg2900_info->enable_state = ENABLE_BT_DISABLED;
-+			BT_INFO("CG2900 BT core is disabled");
-+		}
-+
-+		/* Wake up whom ever is waiting for this result. */
-+		wake_up_interruptible(&hci_wait_queue);
-+		goto fin_free_skb;
-+	} else if ((btcg2900_info->enable_state ==
-+			ENABLE_WAITING_BT_DISABLED_CC ||
-+		    btcg2900_info->enable_state ==
-+			ENABLE_WAITING_BT_ENABLED_CC) &&
-+		   btcg2900_info->bt_evt->h4_channel == dev->h4_channel &&
-+		   evt->evt == HCI_EV_CMD_STATUS &&
-+		   le16_to_cpu(cmd_status->opcode) == BT_VS_BT_ENABLE) {
-+		/*
-+		 * Clear the status events since the Bluez is not expecting
-+		 * them.
-+		 */
-+		BT_DBG("HCI Driver received Command Status (BT enable): 0x%X",
-+		       cmd_status->status);
-+		/*
-+		 * This is the command status event for
-+		 * the HCI_Cmd_VS_Bluetooth_Enable.
-+		 * Just free the packet.
-+		 */
-+		goto fin_free_skb;
-+	} else {
-+		bt_cb(skb)->pkt_type = dev_info->hci_data_type;
-+		skb->dev = (struct net_device *)dev_info->hdev;
-+		/* Update BlueZ stats */
-+		dev_info->hdev->stat.byte_rx += skb->len;
-+		if (bt_cb(skb)->pkt_type == HCI_ACLDATA_PKT)
-+			dev_info->hdev->stat.acl_rx++;
-+		else
-+			dev_info->hdev->stat.evt_rx++;
-+
-+		BT_DBG("Data receive %d bytes", skb->len);
-+
-+		/* Provide BlueZ with received frame*/
-+		err = hci_recv_frame(skb);
-+		/* If err, skb have been freed in hci_recv_frame() */
-+		if (err)
-+			BT_ERR(NAME "Failed in supplying packet to Bluetooth"
-+			       " stack (%d)", err);
-+	}
-+
-+	return;
-+
-+fin_free_skb:
-+	kfree_skb(skb);
-+}
-+
-+/**
-+ * hci_reset_cb() - Callback for handling reset from CG2900 driver.
-+ * @dev:	CPD device resetting.
-+ */
-+static void hci_reset_cb(struct cg2900_device *dev)
-+{
-+	int err;
-+	struct hci_dev *hdev;
-+	struct dev_info *dev_info;
-+	struct btcg2900_info *info;
-+
-+	BT_INFO(NAME "hci_reset_cb");
-+
-+	if (!dev) {
-+		BT_ERR(NAME "NULL supplied for dev");
-+		return;
-+	}
-+
-+	dev_info = (struct dev_info *)dev->user_data;
-+	if (!dev_info) {
-+		BT_ERR(NAME "NULL supplied for dev_info");
-+		return;
-+	}
-+
-+	hdev = dev_info->hdev;
-+	if (!hdev) {
-+		BT_ERR(NAME "NULL supplied for hdev");
-+		return;
-+	}
-+
-+	info = (struct btcg2900_info *)hdev->driver_data;
-+	if (!info) {
-+		BT_ERR(NAME "NULL supplied for driver_data");
-+		return;
-+	}
-+
-+	switch (dev_info->hci_data_type) {
-+
-+	case HCI_EVENT_PKT:
-+		info->bt_evt = NULL;
-+		break;
-+
-+	case HCI_COMMAND_PKT:
-+		info->bt_cmd = NULL;
-+		break;
-+
-+	case HCI_ACLDATA_PKT:
-+		info->bt_acl = NULL;
-+		break;
-+
-+	default:
-+		BT_ERR(NAME "Unknown HCI data type:%d",
-+		       dev_info->hci_data_type);
-+		return;
-+	}
-+
-+	BT_DBG("New reset_state: RESET_ACTIVATED");
-+	btcg2900_info->reset_state = RESET_ACTIVATED;
-+
-+	/*
-+	 * Free userdata as device info structure will be freed by CG2900
-+	 * when this callback returns.
-+	 */
-+	kfree(dev->user_data);
-+	dev->user_data = NULL;
-+
-+	/*
-+	 * Continue to deregister hdev if all channels has been reset else
-+	 * return.
-+	 */
-+	if (info->bt_evt || info->bt_cmd || info->bt_acl)
-+		return;
-+
-+	/*
-+	 * Deregister HCI device. Close and Destruct functions should
-+	 * in turn be called by BlueZ.
-+	 */
-+	BT_DBG("Deregister HCI device");
-+	err = hci_unregister_dev(hdev);
-+	if (err)
-+		BT_ERR(NAME "Can not deregister HCI device! (%d)", err);
-+		/*
-+		 * Now we are in trouble. Try to register a new hdev
-+		 * anyway even though this will cost some memory.
-+		 */
-+
-+	wait_event_interruptible_timeout(hci_wait_queue,
-+			(RESET_UNREGISTERED == btcg2900_info->reset_state),
-+			msecs_to_jiffies(RESP_TIMEOUT));
-+	if (RESET_UNREGISTERED != btcg2900_info->reset_state)
-+		/*
-+		 * Now we are in trouble. Try to register a new hdev
-+		 * anyway even though this will cost some memory.
-+		 */
-+		BT_ERR(NAME "Timeout expired. Could not deregister HCI device");
-+
-+	/* Init and register hdev */
-+	BT_DBG("Register HCI device");
-+	err = register_bluetooth();
-+	if (err)
-+		BT_ERR(NAME "HCI Device registration error (%d).", err);
-+}
-+
-+/*
-+ * struct cg2900_cb - Specifies callback structure for CG2900 user.
-+ *
-+ * @read_cb:	Callback function called when data is received from
-+ *		the controller.
-+ * @reset_cb:	Callback function called when the controller has been reset.
-+ */
-+static struct cg2900_callbacks cg2900_cb = {
-+	.read_cb = hci_read_cb,
-+	.reset_cb = hci_reset_cb
-+};
-+
-+/**
-+ * btcg2900_open() - Open HCI interface.
-+ * @hdev:	HCI device being opened.
-+ *
-+ * BlueZ callback function for opening HCI interface to device.
-+ *
-+ * Returns:
-+ *   0 if there is no error.
-+ *   -EINVAL if NULL pointer is supplied.
-+ *   -EOPNOTSUPP if supplied packet type is not supported.
-+ *   -EBUSY if device is already opened.
-+ *   -EACCES if opening of channels failed.
-+ */
-+static int btcg2900_open(struct hci_dev *hdev)
-+{
-+	struct btcg2900_info *info;
-+	struct dev_info *dev_info;
-+	struct sk_buff *enable_cmd;
-+	int err;
-+
-+	BT_INFO("Open ST-Ericsson CG2900 driver");
-+
-+	if (!hdev) {
-+		BT_ERR(NAME "NULL supplied for hdev");
-+		return -EINVAL;
-+	}
-+
-+	info = (struct btcg2900_info *)hdev->driver_data;
-+	if (!info) {
-+		BT_ERR(NAME "NULL supplied for driver_data");
-+		return -EINVAL;
-+	}
-+
-+	if (test_and_set_bit(HCI_RUNNING, &(hdev->flags))) {
-+		BT_ERR(NAME "Device already opened!");
-+		return -EBUSY;
-+	}
-+
-+	if (!(info->bt_cmd)) {
-+		info->bt_cmd = cg2900_register_user(CG2900_BT_CMD,
-+						     &cg2900_cb);
-+		if (info->bt_cmd) {
-+			dev_info = kmalloc(sizeof(*dev_info), GFP_KERNEL);
-+			if (dev_info) {
-+				dev_info->hdev = hdev;
-+				dev_info->hci_data_type = HCI_COMMAND_PKT;
-+			}
-+			info->bt_cmd->user_data = dev_info;
-+		} else {
-+			BT_ERR("Couldn't register CG2900_BT_CMD to CG2900");
-+			err = -EACCES;
-+			goto handle_error;
-+		}
-+	}
-+
-+	if (!(info->bt_evt)) {
-+		info->bt_evt = cg2900_register_user(CG2900_BT_EVT,
-+						     &cg2900_cb);
-+		if (info->bt_evt) {
-+			dev_info = kmalloc(sizeof(*dev_info), GFP_KERNEL);
-+			if (dev_info) {
-+				dev_info->hdev = hdev;
-+				dev_info->hci_data_type = HCI_EVENT_PKT;
-+			}
-+			info->bt_evt->user_data = dev_info;
-+		} else {
-+			BT_ERR("Couldn't register CG2900_BT_EVT to CG2900");
-+			err = -EACCES;
-+			goto handle_error;
-+		}
-+	}
-+
-+	if (!(info->bt_acl)) {
-+		info->bt_acl = cg2900_register_user(CG2900_BT_ACL,
-+						     &cg2900_cb);
-+		if (info->bt_acl) {
-+			dev_info = kmalloc(sizeof(*dev_info), GFP_KERNEL);
-+			if (dev_info) {
-+				dev_info->hdev = hdev;
-+				dev_info->hci_data_type = HCI_ACLDATA_PKT;
-+			}
-+			info->bt_acl->user_data = dev_info;
-+		} else {
-+			BT_ERR("Couldn't register CG2900_BT_ACL to CG2900");
-+			err = -EACCES;
-+			goto handle_error;
-+		}
-+	}
-+
-+	if (info->reset_state == RESET_ACTIVATED) {
-+		BT_DBG("New reset_state: RESET_IDLE");
-+		btcg2900_info->reset_state = RESET_IDLE;
-+	}
-+
-+	/*
-+	 * Call function that returns the chip dependent vs_bt_enable(true)
-+	 * HCI command.
-+	 * If NULL is returned, then no bt_enable command should be sent to the
-+	 * chip.
-+	 */
-+	enable_cmd = get_bt_enable_cmd(true);
-+	if (!enable_cmd) {
-+		/* The chip is enabled by default */
-+		BT_DBG("New enable_state: ENABLE_BT_ENABLED");
-+		btcg2900_info->enable_state = ENABLE_BT_ENABLED;
-+		return 0;
-+	}
-+
-+	/* Set the HCI state before sending command to chip. */
-+	BT_DBG("New enable_state: ENABLE_WAITING_BT_ENABLED_CC");
-+	btcg2900_info->enable_state = ENABLE_WAITING_BT_ENABLED_CC;
-+
-+	/* Send command to chip */
-+	cg2900_write(info->bt_cmd, enable_cmd);
-+
-+	/*
-+	 * Wait for callback to receive command complete and then wake us up
-+	 * again.
-+	 */
-+	wait_event_interruptible_timeout(hci_wait_queue,
-+				(info->enable_state == ENABLE_BT_ENABLED),
-+				msecs_to_jiffies(RESP_TIMEOUT));
-+	/* Check the current state to se that it worked. */
-+	if (info->enable_state != ENABLE_BT_ENABLED) {
-+		BT_ERR("Could not enable CG2900 BT core (%d)",
-+		       info->enable_state);
-+		err = -EACCES;
-+		BT_DBG("New enable_state: ENABLE_BT_DISABLED");
-+		btcg2900_info->enable_state = ENABLE_BT_DISABLED;
-+		goto handle_error;
-+	}
-+
-+	return 0;
-+
-+handle_error:
-+	remove_bt_users(info);
-+	clear_bit(HCI_RUNNING, &(hdev->flags));
-+	return err;
-+
-+}
-+
-+/**
-+ * btcg2900_close() - Close HCI interface.
-+ * @hdev:	HCI device being closed.
-+ *
-+ * BlueZ callback function for closing HCI interface.
-+ * It flushes the interface first.
-+ *
-+ * Returns:
-+ *   0 if there is no error.
-+ *   -EINVAL if NULL pointer is supplied.
-+ *   -EOPNOTSUPP if supplied packet type is not supported.
-+ *   -EBUSY if device is not opened.
-+ */
-+static int btcg2900_close(struct hci_dev *hdev)
-+{
-+	struct btcg2900_info *info = NULL;
-+	struct sk_buff *enable_cmd;
-+
-+	BT_DBG("btcg2900_close");
-+
-+	if (!hdev) {
-+		BT_ERR(NAME "NULL supplied for hdev");
-+		return -EINVAL;
-+	}
-+
-+	info = (struct btcg2900_info *)hdev->driver_data;
-+	if (!info) {
-+		BT_ERR(NAME "NULL supplied for driver_data");
-+		return -EINVAL;
-+	}
-+
-+	if (!test_and_clear_bit(HCI_RUNNING, &(hdev->flags))) {
-+		BT_ERR(NAME "Device already closed!");
-+		return -EBUSY;
-+	}
-+
-+	/* Do not do this if there is an reset ongoing */
-+	if (btcg2900_info->reset_state == RESET_ACTIVATED)
-+		goto remove_users;
-+
-+	/*
-+	 * Get the chip dependent BT Enable HCI command. The command parameter
-+	 * shall be set to false to disable the BT core.
-+	 * If NULL is returned, then no BT Enable command should be sent to the
-+	 * chip.
-+	 */
-+	enable_cmd = get_bt_enable_cmd(false);
-+	if (!enable_cmd) {
-+		/*
-+		 * The chip is enabled by default and we should not disable it.
-+		 */
-+		BT_DBG("New enable_state: ENABLE_BT_ENABLED");
-+		btcg2900_info->enable_state = ENABLE_BT_ENABLED;
-+		goto remove_users;
-+	}
-+
-+	/* Set the HCI state before sending command to chip */
-+	BT_DBG("New enable_state: ENABLE_WAITING_BT_DISABLED_CC");
-+	btcg2900_info->enable_state = ENABLE_WAITING_BT_DISABLED_CC;
-+
-+	/* Send command to chip */
-+	cg2900_write(info->bt_cmd, enable_cmd);
-+
-+	/*
-+	 * Wait for callback to receive command complete and then wake us up
-+	 * again.
-+	 */
-+	wait_event_interruptible_timeout(hci_wait_queue,
-+				(info->enable_state == ENABLE_BT_DISABLED),
-+				msecs_to_jiffies(RESP_TIMEOUT));
-+	/* Check the current state to se that it worked. */
-+	if (info->enable_state != ENABLE_BT_DISABLED) {
-+		BT_ERR("Could not disable CG2900 BT core.");
-+		BT_DBG("New enable_state: ENABLE_BT_ENABLED");
-+		btcg2900_info->enable_state = ENABLE_BT_ENABLED;
-+	}
-+
-+remove_users:
-+	/* Finally deregister all users and free allocated data */
-+	remove_bt_users(info);
-+	return 0;
-+}
-+
-+/**
-+ * btcg2900_send() - Send packet to device.
-+ * @skb:	sk buffer to be sent.
-+ *
-+ * BlueZ callback function for sending sk buffer.
-+ *
-+ * Returns:
-+ *   0 if there is no error.
-+ *   -EINVAL if NULL pointer is supplied.
-+ *   -EOPNOTSUPP if supplied packet type is not supported.
-+ *   Error codes from cg2900_write.
-+ */
-+static int btcg2900_send(struct sk_buff *skb)
-+{
-+	struct hci_dev *hdev;
-+	struct btcg2900_info *info;
-+	int err = 0;
-+
-+	if (!skb) {
-+		BT_ERR(NAME "NULL supplied for skb");
-+		return -EINVAL;
-+	}
-+
-+	hdev = (struct hci_dev *)(skb->dev);
-+	if (!hdev) {
-+		BT_ERR(NAME "NULL supplied for hdev");
-+		return -EINVAL;
-+	}
-+
-+	info = (struct btcg2900_info *)hdev->driver_data;
-+	if (!info) {
-+		BT_ERR(NAME "NULL supplied for info");
-+		return -EINVAL;
-+	}
-+
-+	/* Update BlueZ stats */
-+	hdev->stat.byte_tx += skb->len;
-+
-+	BT_DBG("Data transmit %d bytes", skb->len);
-+
-+	switch (bt_cb(skb)->pkt_type) {
-+	case HCI_COMMAND_PKT:
-+		BT_DBG("Sending HCI_COMMAND_PKT");
-+		err = cg2900_write(info->bt_cmd, skb);
-+		hdev->stat.cmd_tx++;
-+		break;
-+	case HCI_ACLDATA_PKT:
-+		BT_DBG("Sending HCI_ACLDATA_PKT");
-+		err = cg2900_write(info->bt_acl, skb);
-+		hdev->stat.acl_tx++;
-+		break;
-+	default:
-+		BT_ERR(NAME "Trying to transmit unsupported packet type"
-+		       " (0x%.2X)", bt_cb(skb)->pkt_type);
-+		err = -EOPNOTSUPP;
-+		break;
-+	};
-+
-+	return err;
-+}
-+
-+/**
-+ * btcg2900_destruct() - Destruct HCI interface.
-+ * @hdev:	HCI device being destructed.
-+ */
-+static void btcg2900_destruct(struct hci_dev *hdev)
-+{
-+	BT_DBG("btcg2900_destruct");
-+
-+	if (!btcg2900_info)
-+		return;
-+
-+	/*
-+	 * When destruct is called it means that the Bluetooth stack is done
-+	 * with the HCI device and we can now free it.
-+	 * Normally we do this only when removing the whole module through
-+	 * btcg2900_remove(), but when being reset we free the device here and
-+	 * we then set the reset state so that the reset handler can allocate a
-+	 * new HCI device and then register it to the Bluetooth stack.
-+	 */
-+	if (btcg2900_info->reset_state == RESET_ACTIVATED) {
-+		if (btcg2900_info->hdev)
-+			hci_free_dev(btcg2900_info->hdev);
-+		BT_DBG("New reset_state: RESET_UNREGISTERED");
-+		btcg2900_info->reset_state = RESET_UNREGISTERED;
-+		wake_up_interruptible(&hci_wait_queue);
-+	}
-+}
-+
-+/**
-+ * register_bluetooth() - Initialize module.
-+ *
-+ * Alloc, init, and register HCI device to BlueZ.
-+ *
-+ * Returns:
-+ *   0 if there is no error.
-+ *   -ENOMEM if allocation fails.
-+ *   Error codes from hci_register_dev.
-+ */
-+static int register_bluetooth(void)
-+{
-+	int err;
-+	static struct cg2900_bt_platform_data *pf_data;
-+
-+	pf_data = dev_get_platdata(&btcg2900_info->pdev->dev);
-+
-+	btcg2900_info->hdev = hci_alloc_dev();
-+	if (!btcg2900_info->hdev) {
-+		BT_ERR("Could not allocate mem for CG2900 BT driver");
-+		return -ENOMEM;
-+	}
-+
-+	SET_HCIDEV_DEV(btcg2900_info->hdev, &btcg2900_info->pdev->dev);
-+	if (pf_data) {
-+		btcg2900_info->hdev->bus = pf_data->bus;
-+	} else {
-+		BT_DBG(NAME "Missing platform data. Defaulting to UART");
-+		btcg2900_info->hdev->bus = HCI_UART;
-+	}
-+	btcg2900_info->hdev->driver_data = btcg2900_info;
-+	btcg2900_info->hdev->owner = THIS_MODULE;
-+	btcg2900_info->hdev->open = btcg2900_open;
-+	btcg2900_info->hdev->close = btcg2900_close;
-+	btcg2900_info->hdev->send = btcg2900_send;
-+	btcg2900_info->hdev->destruct = btcg2900_destruct;
-+
-+	err = hci_register_dev(btcg2900_info->hdev);
-+	if (err) {
-+		BT_ERR(NAME "Can not register HCI device (%d)", err);
-+		hci_free_dev(btcg2900_info->hdev);
-+	}
-+
-+	BT_DBG("New enable_state: ENABLE_IDLE");
-+	btcg2900_info->enable_state = ENABLE_IDLE;
-+	BT_DBG("New reset_state: RESET_IDLE");
-+	btcg2900_info->reset_state = RESET_IDLE;
-+
-+	return err;
-+}
-+
-+/**
-+ * btcg2900_probe() - Initialize module.
-+ *
-+ * Allocate and initialize private data. Register to Bluetooth stack.
-+ *
-+ * Returns:
-+ *   0 if there is no error.
-+ *   -ENOMEM if allocation fails.
-+ *   Error codes from register_bluetooth.
-+ */
-+static int __devinit btcg2900_probe(struct platform_device *pdev)
-+{
-+	int err;
-+
-+	BT_INFO("btcg2900_probe");
-+
-+	/* Initialize private data. */
-+	btcg2900_info = kzalloc(sizeof(*btcg2900_info), GFP_KERNEL);
-+	if (!btcg2900_info) {
-+		BT_ERR("Could not alloc btcg2900_info struct.");
-+		return -ENOMEM;
-+	}
-+
-+	btcg2900_info->pdev = pdev;
-+
-+	/* Init and register hdev */
-+	err = register_bluetooth();
-+	if (err) {
-+		BT_ERR("HCI Device registration error (%d)", err);
-+		kfree(btcg2900_info);
-+		btcg2900_info = NULL;
-+		return err;
-+	}
-+
-+	return 0;
-+}
-+
-+/**
-+ * btcg2900_remove() - Remove module.
-+ */
-+static int __devexit btcg2900_remove(struct platform_device *pdev)
-+{
-+	int err = 0;
-+
-+	BT_INFO("btcg2900_remove");
-+
-+	if (!btcg2900_info)
-+		return 0;
-+
-+	if (!btcg2900_info->hdev)
-+		goto finished;
-+
-+	err = hci_unregister_dev(btcg2900_info->hdev);
-+	if (err)
-+		BT_ERR("Can not unregister HCI device (%d)", err);
-+	hci_free_dev(btcg2900_info->hdev);
-+
-+finished:
-+	kfree(btcg2900_info);
-+	btcg2900_info = NULL;
-+	return err;
-+}
-+
-+static struct platform_driver btcg2900_driver = {
-+	.driver = {
-+		.name	= "cg2900-bt",
-+		.owner	= THIS_MODULE,
-+	},
-+	.probe	= btcg2900_probe,
-+	.remove	= __devexit_p(btcg2900_remove),
-+};
-+
-+/**
-+ * btcg2900_init() - Initialize module.
-+ *
-+ * Registers platform driver.
-+ */
-+static int __init btcg2900_init(void)
-+{
-+	BT_INFO("btcg2900_init");
-+	return platform_driver_register(&btcg2900_driver);
-+}
-+
-+/**
-+ * btcg2900_exit() - Remove module.
-+ *
-+ * Unregisters platform driver.
-+ */
-+static void __exit btcg2900_exit(void)
-+{
-+	BT_INFO("btcg2900_exit");
-+	platform_driver_unregister(&btcg2900_driver);
-+}
-+
-+module_init(btcg2900_init);
-+module_exit(btcg2900_exit);
-+
-+MODULE_AUTHOR("Par-Gunnar Hjalmdahl ST-Ericsson");
-+MODULE_AUTHOR("Henrik Possung ST-Ericsson");
-+MODULE_AUTHOR("Josef Kindberg ST-Ericsson");
-+MODULE_LICENSE("GPL v2");
-+MODULE_DESCRIPTION("Linux Bluetooth HCI H:4 Driver for ST-Ericsson
-controller");
++++ b/Documentation/DocBook/cg2900.tmpl
+@@ -0,0 +1,1332 @@
++<?xml version="1.0" encoding="UTF-8"?>
++<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.1.2//EN"
++	"http://www.oasis-open.org/docbook/xml/4.1.2/docbookx.dtd" []>
++
++<book id="STE-Connectivity-template">
++ <bookinfo>
++  <title>CG2900 Driver</title>
++
++  <authorgroup>
++   <author>
++    <firstname>Henrik</firstname>
++    <surname>Possung</surname>
++    <affiliation>
++     <address>
++      <email>henrik.possung@stericsson.com</email>
++     </address>
++    </affiliation>
++   </author>
++   <author>
++    <firstname>Par-Gunnar</firstname>
++    <surname>Hjalmdahl</surname>
++    <affiliation>
++     <address>
++      <email>par-gunnar.p.hjalmdahl@stericsson.com</email>
++     </address>
++    </affiliation>
++   </author>
++  </authorgroup>
++
++  <copyright>
++   <year>2010</year>
++   <holder>ST-Ericsson SA</holder>
++  </copyright>
++
++  <subjectset>
++    <subject>
++      <subjectterm>Connectivity</subjectterm>
++    </subject>
++  </subjectset>
++
++  <legalnotice>
++   <!-- Do NOT remove the legal notice below -->
++
++  <para>
++     This documentation is free software; you can redistribute
++     it and/or modify it under the terms of the GNU General Public
++     License as published by the Free Software Foundation; either
++     version 2 of the License, or (at your option) any later
++     version.
++   </para>
++
++   <para>
++     This program is distributed in the hope that it will be
++     useful, but WITHOUT ANY WARRANTY; without even the implied
++     warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
++     See the GNU General Public License for more details.
++   </para>
++
++   <para>
++     You should have received a copy of the GNU General Public
++     License along with this program; if not, write to the Free
++     Software Foundation, Inc., 59 Temple Place, Suite 330, Boston,
++     MA 02111-1307 USA
++   </para>
++
++   <para>
++     For more details see the file COPYING in the source
++     distribution of Linux.
++   </para>
++  </legalnotice>
++ </bookinfo>
++
++ <toc></toc>
++
++ <chapter id="intro">
++  <title>Introduction</title>
++  <!-- Do NOT change the chapter id or title! -->
++  <para>
++    This documentation describes the functions provided by the
+ST-Ericsson Connectivity Driver for enabling
++    ST-Ericsson Connectivity Combo Controller Hardware.
++
++  </para>
++ </chapter>
++
++ <chapter id="gettingstarted">
++  <title>Getting Started</title>
++  <!-- Do NOT change the chapter id or title! -->
++  <para>
++     There are no special compilation flags needed to build the STE
+connectivity driver.
++  </para>
++  <para>
++    There must be firmware and settings files that match the used
+chip version inside the firmware folder.
++    The files:
++    <itemizedlist>
++      <listitem><para>cg2900_patch_info.fw.org</para></listitem>
++      <listitem><para>cg2900_settings_info.fw.org</para></listitem>
++    </itemizedlist>
++    handle the mapping between chip version and correct firmware file
+(patch resp static settings file).
++    The necessary patch and settings files should be placed with the
+extension <constant>.fw.org.</constant>.
++    Note that there is a limitation in the Kernel firmware system
+regarding name length of a file.
++  </para>
++
++  <!-- TODO: If the driver needs preparations to be used
++        (special compilation flags, files in the file system,
++        knowledge about a specific domain etc), specify it here.
++        Remove this chapter completely if there is nothing
++        to mention and there is no tutorial needed.
++        Do NOT change the chapter id or title! -->
++  <!-- TODO: This guideline for this chapter may be extended
++        during the user-guide guidelines drop. -->
++
++  <section id="basic-tutorial">
++    <title>Basic Tutorial</title>
++    <para>
++      To enable the ST-Ericsson connectivity driver using KConfig go
+to <constant>Device Drivers -> Multifunction Device Drivers</constant>
++      and enable the STE Connectivity Driver. If BlueZ shall be used
+as Bluetooth stack also enable the STE HCI Connectivity driver.
++      Depending on choice the driver will either be included as LKM
+or built into the Kernel.
++      If building as LKM, 2 files will be generated:
++      <itemizedlist>
++        <listitem><para>cg2900.ko which contains the main
+driver</para></listitem>
++        <listitem><para>btcg2900.ko which contains the registration
+and mapping towards the BlueZ Bluetooth stack</para></listitem>
++      </itemizedlist>
++
++      <!-- TODO: Provide a basic tutorial, outlining how
++            to test the presence of the driver,
++            for example how to configure, compile and run the
++            example(s).
++            Several sections with different tutorials,
++            all located within the Getting Started
++            chapter may be provided. -->
++    </para>
++
++    <para>
++     <!-- TODO: This guideline for this section may be extended
++           during the user-guide guidelines drop. -->
++    </para>
++  </section>
++
++ </chapter>
++
++ <chapter id="concepts">
++  <title>Concepts</title>
++  <!-- Do NOT change the chapter id or title! -->
++  <para>
++     The ST-Ericsson Connectivity driver works as a multiplexer
+between different users, such as a Bluetooth stack and a FM driver,
++     and the connectivity chip. The driver supports multiple physical
+transports, currently SPI and UART.
++     Apart from just transporting data between stacks and the chip,
+the ST-Ericsson Connectivity driver also deals with power handling,
++     powering up and down the chip and also downloading necessary
+patches and settings for the chip to start up properly.
++     <!-- TODO: A brief introduction about the concepts
++           which are introduced by the driver.
++           Remove this chapter completely if there are no
++           special concepts introduced by this driver.
++           Do NOT change the chapter id or title! -->
++     <!-- TODO: This guideline for this chapter may be extended
++           during the user-guide guidelines drop. -->
++  </para>
++ </chapter>
++
++ <chapter id="tasks">
++   <title>Tasks</title>
++   <!-- Do NOT change the chapter id or title! -->
++
++   <para>
++     <variablelist>
++       <varlistentry>
++         <term>Opening a channel</term>
++         <listitem>
++         <para>
++           In order to be able to send and receive data on an H:4
+channel, the user (i.e. respective stack) must open the channel.
++           Opening a channel will make it possible to send data to
+and receive data from the connectivity controller.
++           If the controller were earlier powered down, opening a
+channel will also cause the controller to be powered up.
++           When chip is powered up, patches and settings for the ARM
+subsystem will be downloaded as well.
++           Other IPs within the controller must however download each
+respective patches and settings.
++           If chip was already powered up when opening the channel no
+patch will be automatically downloaded.
++
++           <variablelist>
++             <varlistentry>
++               <term>Opening a channel from Kernel space</term>
++               <listitem>
++               <para>
++                 When a stack is placed in Kernel space, it shall
+open a channel by calling the API function
+<function>cg2900_register_user</function>.
++                 This function will search for the supplied channel
+by using name look-up and open the channel.
++                 The function will return with a device reference
+that shall be used when calling the other CG2900 API functions.
++               </para>
++               </listitem>
++             </varlistentry>
++           </variablelist>
++
++           <variablelist>
++             <varlistentry>
++               <term>Opening a channel from User space</term>
++               <listitem>
++               <para>
++                 When a stack is placed in User space, it shall open
+a channel by calling the syscall function <function>open</function> on
+the corresponding file.
++                 The files are located in folder
+<filename>/dev/</filename> and are named
+<filename>cg2900_gnss</filename> and similar. Each file
++                 corresponds to one H:4 channel.
++                 This function will open the channel.
++               </para>
++               </listitem>
++             </varlistentry>
++           </variablelist>
++
++         </para>
++         </listitem>
++       </varlistentry>
++
++       <varlistentry>
++         <term>Closing a channel</term>
++         <listitem>
++         <para>
++           When a user, i.e. a stack has no need for a functionality,
+it should close the corresponding H:4 channel.
++           This is usually done when a user disables a certain
+feature, for example Bluetooth. The reason why the channels
++           need to be closed is that the ST-E connectivity driver
+will free the resources and also shutdown the controller if there are
++           no more active users of the chip. This will lower the
+power consumption thereby increasing battery life.
++
++           <variablelist>
++             <varlistentry>
++               <term>Closing a channel from Kernel space</term>
++               <listitem>
++               <para>
++                 When a stack is placed in Kernel space, it shall
+close a channel by calling the API function
++                 <function>cg2900_deregister_user</function>.
++                 This function will close the channel and also free
+the allocated device that was allocated when registering.
++               </para>
++               </listitem>
++             </varlistentry>
++           </variablelist>
++
++           <variablelist>
++             <varlistentry>
++               <term>Closing a channel from User space</term>
++               <listitem>
++               <para>
++                 When a stack is placed in User space, it shall close
+a channel by calling the syscall function
++                 <function>close</function> on the corresponding file.
++               </para>
++               </listitem>
++             </varlistentry>
++           </variablelist>
++
++         </para>
++         </listitem>
++       </varlistentry>
++
++       <varlistentry>
++         <term>Writing to a channel</term>
++         <listitem>
++         <para>
++           When a stack (Bluetooth, FM, or GNSS) wants to send a
+packet it shall perform a write operation.
++           The packet shall not contain the H:4 header since this is
+added by the ST-E connectivity driver.
++           All other data in the packet shall however exist in the
+packet in the format correct for that HCI channel.
++           The ST-E connectivity users need to perform flow control
+over channels so any ticket handling
++           or similar must be handled by respective stack.
++
++           <variablelist>
++             <varlistentry>
++               <term>Writing to a channel from Kernel space</term>
++               <listitem>
++               <para>
++                 When a stack is placed in Kernel space, it shall
+start with allocating a packet of the correct size using
++                 <function>cg2900_alloc_skb</function>. This function
+will return an sk_buff (Socket buffer) structure that
++                 has necessary space reserved for ST-E driver operation.
++                 The stack shall then copy the data, preferrably
+using <function>skb_put</function>, and then call
++                 <function>cg2900_write</function> to perform the
+write operation. When the function returns, the buffer has
++                 been transferred and there is no need for the
+calling function to free the buffer. If the operation fails, i.e.
++                 an error code is returned, the caller must however
+free the buffer.
++               </para>
++               </listitem>
++             </varlistentry>
++           </variablelist>
++
++           <variablelist>
++             <varlistentry>
++               <term>Writing to a channel from User space</term>
++               <listitem>
++               <para>
++                 When a stack is placed in User space, it shall call
+the <function>write</function> function on
++                 the corresponding file to perform a transmit
+operation. After function returns the data has been
++                 copied and is considered sent.
++                 The caller does not need to preserve the data.
++               </para>
++               </listitem>
++             </varlistentry>
++           </variablelist>
++
++           <variablelist>
++             <varlistentry>
++               <term>Writing to FM_Radio and FM_Audio channel</term>
++               <listitem>
++               <para>
++		CG2900 driver only supports FM legacy commands. The reason is that
+the FM_Radio and FM_Audio uses the same H4 channel aginst the chip,
++		in order to multiplex the FM user commands the data pakets are
+parsed by the CG2900 driver.
++               </para>
++               </listitem>
++             </varlistentry>
++           </variablelist>
++
++         </para>
++         </listitem>
++       </varlistentry>
++
++       <varlistentry>
++         <term>Reading from a channel</term>
++         <listitem>
++         <para>
++           When a stack (Bluetooth, FM, or GNSS) wants to receive a
+packet it shall perform a receive operation.
++           The packet returned does not contain the H:4 header since
+this is removed by the ST-E connectivity driver.
++           All other data in the packet in the packet is in the
+format correct for that HCI channel.
++           The ST-E connectivity driver does not perform any flow
+control over the H:4 channel so any ticket handling
++           or similar must be handled by respective stack.
++
++           <variablelist>
++             <varlistentry>
++               <term>Reading from a channel from Kernel space</term>
++               <listitem>
++               <para>
++                 When a stack is placed in Kernel space, it has to
+supply a callback function for the receive functionality when calling
++                 <function>cg2900_register_user</function>. This
+callback function will be called when the ST-E connectivity driver has
++                 received a packet. The packet received will always
+be a complete HCI packet, i.e. no fragmention on HCI layer.
++                 When the packet has been received it is the
+responsability of the receiver to see to that the packet is freed
+using
++                 <function>kfree_skb</function> when it is no more needed.
++               </para>
++               </listitem>
++             </varlistentry>
++           </variablelist>
++
++           <variablelist>
++             <varlistentry>
++               <term>Reading from a channel from User space</term>
++               <listitem>
++               <para>
++                 When a stack is placed in User space, it shall call
+the <function>read</function> function on
++                 the corresponding file to perform a receive
+operation. This function will read as many bytes as there are present
++                 up to the size of the supplied buffer. If no data is
+available the function will hang until data becomes available, reset
++                 occurs, or the channel is closed.
++                 For smooth operation it is recommended to use the
+<function>poll</function> functionality on the file, preferrably
++                 from a dedicated thread. This way one thread can
+monitor both read and reset operations in one common thread while
+transmit
++                 operations may continue unblocked in a separate thread.
++               </para>
++               </listitem>
++             </varlistentry>
++           </variablelist>
++
++         </para>
++         </listitem>
++       </varlistentry>
++
++       <varlistentry>
++         <term>Reset handling</term>
++         <listitem>
++         <para>
++           The stacks shall always try to avoid performing Reset
+operations. The Reset will result in a hardware reset of the
+controller
++           and will therefore cause all existing links and settings
+to be lost. All stacks using the controller must also be informed
++           about the reset and handle it in a proper way.
++           The reset operation should only be used when there is no
+other option to get the controller into a working state, for example
++           if the controller has stopped answering to commands.
++           After the hardware reset, the ST-E connectivity driver
+will automatically perform deregister the channel so it has to be
+reopened again.
++
++           <variablelist>
++             <varlistentry>
++               <term>Reset handling from Kernel space</term>
++               <listitem>
++               <para>
++                 When a stack is placed in Kernel space, it initiates
+a Reset operation by calling <function>cg2900_reset</function>.
++                 This will trigger a hardware reset of the
+controller. When the hardware reset is finished all registered users
+will be called
++                 through respective reset callback. When the callback
+function is finished the registered device will be removed and when
+all
++                 registered users have been informed and removed, the
+chip is shutdown. This is similar to a deregistration of all
+registered
++                 channels. The stack will then have to reregister to
+the ST-E connectivity driver in order to use the channel once again.
++               </para>
++               </listitem>
++             </varlistentry>
++           </variablelist>
++
++           <variablelist>
++             <varlistentry>
++               <term>Reset handling from User space</term>
++               <listitem>
++               <para>
++                 When a stack is placed in User space, it shall call
+the <function>ioctl</function> function on
++                 the corresponding file to perform a reset operation.
+The command parameter <constant>CG2900_CHAR_DEV_IOCTL_RESET</constant>
++                 shall be used when calling <function>ioctl</function>.
++                 When the <function>ioctl</function> returns, the
+stack shall close the channel and then re-open it again. This must be
+done so
++                 the channel is registered correctly in Kernel space.
++                 For smooth operation it is recommended to use the
+<function>poll</function> functionality on the file, preferrably
++                 from a dedicated thread. This way one thread can
+monitor both read and reset operations in one common thread while
+transmit
++                 operations may continue unblocked in a separate thread.
++               </para>
++               </listitem>
++             </varlistentry>
++           </variablelist>
++
++         </para>
++         </listitem>
++       </varlistentry>
++
++       <varlistentry>
++         <term>Example code Kernel space</term>
++         <listitem>
++         <para>
++           This example will register to the FM channel, write a
+packet, read a packet and then deregister.
++
++           <programlisting>
++             struct cg2900_device *my_dev;
++             bool event_received;
++
++             void read_cb(struct cg2900_device *dev, struct sk_buff *skb)
++             {
++               event_received = true;
++               kfree_skb(skb);
++             }
++
++             void reset_cb(struct cg2900_device *dev)
++             {
++               /* Handle reset. Device will be automatically freed by
+the ST-E driver */
++               my_dev = NULL;
++             }
++
++             static struct cg2900_callbacks my_cb = {
++               .read_cb = read_cb,
++               .reset_cb = reset_cb
++             };
++
++             void example_open(void)
++             {
++               my_dev = cg2900_register_user(CG2900_FM_RADIO, &amp;my_cb);
++               if (!my_dev) {
++                 printk("Error! Couldn't register!\n");
++               }
++             }
++
++             void example_close(void)
++             {
++               cg2900_deregister_user(my_dev);
++               my_dev = NULL;
++             }
++
++             void example_write_and_read(uint8_t *data, int len)
++             {
++               int err;
++               struct sk_buff *skb = cg2900_alloc_skb(len, GFP_KERNEL);
++
++               if (skb) {
++                 memcpy(skb_put(skb, len), data, len);
++                 err = cg2900_write(my_dev, skb);
++                 if (!err) {
++                   event_received = false;
++
++                   while (!event_received) {
++                     /* Wait for ack event. Received in read_cb() above */
++                     schedule_timeout_interruptible(jiffies + 50);
++                   }
++                 } else {
++                   printk("Couldn't write to controller (%d)\n", err);
++                   kfree_skb(skb);
++                 }
++               }
++             }
++           </programlisting>
++         </para>
++         </listitem>
++       </varlistentry>
++
++       <varlistentry>
++         <term>Example code User space</term>
++         <listitem>
++         <para>
++           This example will open the GNSS channel, write a packet,
+read a packet and then close the channel.
++           In this example all functions are performed in the same thread.
++           It is however adviced to perform <function>read</function>
+and <function>ioctl</function> read through a separate thread,
++           preferrably using <function>poll</function>.
++
++           <programlisting>
++             struct my_info_t {
++               int fd;
++             };
++
++             static struct my_info_t my_info;
++
++             /* This is a fake command and has nothing to do with
+real GNSS commands.
++              * Note that the command does NOT contain the H:4 header.
++              * The header is added by the ST-E Connectivity driver.
++              */
++             static const uint8_t tx_cmd[] = {0x12, 0x34, 0x56};
++
++             int main(int argc, char **argv)
++             {
++               uint8_t rx_buffer[100];
++               int rx_bytes = 0;
++               int err;
++
++               my_info.fd = open("/dev/cg2900_gnss", O_RDWR);
++               if (my_info.fd &lt; 0) {
++                 printf("Error on open file: %d (%s)\n", errno,
+strerror(errno));
++                 return errno;
++               }
++               if (0 &gt; write(my_info.fd, tx_cmd, sizeof(tx_cmd))) {
++                 printf("Error on write file: %d (%s)\n", errno,
+strerror(errno));
++                 return errno;
++               }
++               /* Read will sleep until there is data available */
++               rx_bytes = read(my_info.fd, rx_buffer, 100);
++               if (rx_bytes &gt;= 0) {
++                 printf("Received %d bytes\n", rx_bytes);
++               } else {
++                 printf("Error on read file: %d (%s)\n", errno,
+strerror(errno));
++                 return errno;
++               }
++               err = close(my_info.fd);
++               if (err) {
++                 printf("Error on close file: %d (%s)\n", errno,
+strerror(errno));
++                 return errno;
++               }
++               return 0;
++             }
++           </programlisting>
++         </para>
++         </listitem>
++       </varlistentry>
++     </variablelist>
++
++     <!-- TODO: Task descriptions are step by step instructions
++           for performing specific actions and tasks.
++           Each task is typically one scenario.
++           Each task is described in a separate (section).
++           (section) tags can be nested, which is
++           especially recommended if
++           the task consists of several scenarios.
++           Remove this chapter completely if there are no
++           tasks to mention and there is no tutorial needed.
++           Do NOT change the chapter id or title! -->
++     <!-- TODO: This guideline for this chapter may be extended
++           during the user-guide guidelines drop. -->
++   </para>
++ </chapter>
++
++ <chapter id="driver-configuration">
++   <title>Driver Configuration and Interaction</title>
++   <!-- Do NOT change the chapter id or title! -->
++   <para>
++     For debug purposes the define CG2900_DEBUG_LEVEL in the file
+cg2900_debug.h can be changed to set how much debug printouts
++     that shall be generated.
++     <itemizedlist>
++       <listitem><para>0 - No debug</para></listitem>
++       <listitem><para>1 - Error printouts</para></listitem>
++       <listitem><para>10 - Info printouts such as start of each
+function</para></listitem>
++       <listitem><para>20 - Debug printouts such as descriptions of
+operations</para></listitem>
++       <listitem><para>25 - Data printouts without content</para></listitem>
++       <listitem><para>30 - Data printouts with content</para></listitem>
++     </itemizedlist>
++     <!-- TODO: Use this paragraph as an introduction to driver
++           configuration and interaction. Describe the big picture. -->
++     <!-- TODO: This chapter contains driver specific way to perform
++           configuration and interaction. The chapter includes a
++           number of sections. They should not be removed and if
++           the driver does not have the specific support for
++           configuration or interaction should the text "not
++           applicable" be inserted. Do NOT change the chapter id
++           or title! -->
++     <!-- TODO: This guideline for this chapter may be extended
++           during the user-guide guidelines drop. -->
++   </para>
++
++   <section id="driver-implemented-operations">
++     <title>Implemented operations in driver</title>
++     <para>
++       <!-- TODO: Describe the actual usage of the driver. Specify the actual
++            implemented operations in struct
+<structname>file_operations</structname>
++            and any other set of operations. Create a table with two columns
++            (see example in intro chapter how to create a table).
++            Column one list all operations supported (read,
++            write, open, close, ioctl etc) and column two a description of the
++            semantics of the operations in the specific context of the device
++            driver from the users perspective. Document the operations in a way
++            that a user of the driver can be helped. -->
++     </para>
++     <para>
++       <table>
++         <title> Supported device driver operations when using
+character device </title>
++         <tgroup cols="2"><tbody>
++           <row><entry> open </entry> <entry> Opening a character
+device will register the caller to that HCI channel.</entry> </row>
++           <row><entry> release </entry> <entry> Releasing a
+character device will deregister the caller from that HCI
+channel</entry> </row>
++           <row><entry> poll </entry> <entry> Polling a character
+device will check if there is data to read on that HCI channel</entry>
+</row>
++           <row><entry> read </entry> <entry> Reading from a
+character device reads from that HCI channel</entry> </row>
++           <row><entry> write </entry> <entry> Writing to a character
+device writes to that HCI channel</entry> </row>
++           <row><entry> unlocked_ioctl </entry> <entry> Performing IO
+control on a character device will perform special operations such as
+reset on that HCI channel</entry> </row>
++         </tbody></tgroup>
++       </table>
++     </para>
++   </section>
++
++   <section id="driver-loading">
++     <title>Driver loading parameters</title>
++     <para>
++       <!-- TODO: Describe parameters that can be specified at kernel
++            driver loading with insmod or modprobe. If the driver
++            has no parameters to be specified at load time, replace this
++            text with "Not Applicable". -->
++     </para>
++     <variablelist>
++       <varlistentry>
++         <term>uart_default_baud</term>
++         <listitem>
++         <para>
++           <variablelist>
++             <varlistentry>
++               <term>Parameter type</term>
++               <listitem><synopsis><type>int</type></synopsis></listitem>
++             </varlistentry>
++             <varlistentry>
++               <term>Default value</term>
++               <listitem><para>115200</para></listitem>
++             </varlistentry>
++             <varlistentry>
++               <term>Runtime readable/modifiable</term>
++               <listitem><para>Readable</para></listitem>
++             </varlistentry>
++             <varlistentry>
++               <term>Description</term>
++               <listitem>
++               <para>
++                 The parameter uart_default_baud in cg2900_uart.c
+defines the baud rate used after a chip has just been powered up.
++                 It shall be set to the default baud rate of the controller.
++                 For ST-Ericsson controllers STLC2690 and CG2900 this
+value shall be 115200.
++               </para>
++               </listitem>
++             </varlistentry>
++           </variablelist>
++         </para>
++         </listitem>
++       </varlistentry>
++
++       <varlistentry>
++         <term>uart_high_baud</term>
++         <listitem>
++         <para>
++           <variablelist>
++             <varlistentry>
++               <term>Parameter type</term>
++               <listitem><synopsis><type>int</type></synopsis></listitem>
++             </varlistentry>
++             <varlistentry>
++               <term>Default value</term>
++               <listitem><para>3000000</para></listitem>
++             </varlistentry>
++             <varlistentry>
++               <term>Runtime readable/modifiable</term>
++               <listitem><para>Modifiable</para></listitem>
++             </varlistentry>
++             <varlistentry>
++               <term>Description</term>
++               <listitem>
++               <para>
++                 The parameter uart_high_baud in cg2900_uart.c
+defines the baud rate to use for normal data transfer.
++                 This should normally be the highest allowed by the
+system with regards to flow control, clocks, etc.
++                 For ST-Ericsson controllers STLC2690 and CG2900 the
+following values are supported:
++                 <itemizedlist>
++                   <listitem><para>57600</para></listitem>
++                   <listitem><para>115200</para></listitem>
++                   <listitem><para>230400</para></listitem>
++                   <listitem><para>460800</para></listitem>
++                   <listitem><para>921600</para></listitem>
++                   <listitem><para>2000000</para></listitem>
++                   <listitem><para>3000000</para></listitem>
++                   <listitem><para>4000000</para></listitem>
++                 </itemizedlist>
++               </para>
++               </listitem>
++             </varlistentry>
++           </variablelist>
++         </para>
++         </listitem>
++       </varlistentry>
++
++       <varlistentry>
++         <term>bd_address</term>
++         <listitem>
++         <para>
++           <variablelist>
++             <varlistentry>
++               <term>Parameter type</term>
++               <listitem><synopsis><type>array (Entered as comma
+separated value)</type></synopsis></listitem>
++             </varlistentry>
++             <varlistentry>
++               <term>Default value</term>
++               <listitem><para>0x00 0x80 0xDE 0xAD 0xBE 0xEF</para></listitem>
++             </varlistentry>
++             <varlistentry>
++               <term>Runtime readable/modifiable</term>
++               <listitem><para>Modifiable</para></listitem>
++             </varlistentry>
++             <varlistentry>
++               <term>Description</term>
++               <listitem>
++               <para>
++                 The parameter bd_address in cg2900_core.c defines
+the Bluetooth device address to use for the current device.
++                 The value is an array of 6 bytes and shall be
+entered as a comma separated value.
++               </para>
++               </listitem>
++             </varlistentry>
++           </variablelist>
++         </para>
++         </listitem>
++       </varlistentry>
++
++       <varlistentry>
++         <term>debug_level</term>
++         <listitem>
++         <para>
++           <variablelist>
++             <varlistentry>
++               <term>Parameter type</term>
++               <listitem><synopsis><type>int</type></synopsis></listitem>
++             </varlistentry>
++             <varlistentry>
++               <term>Default value</term>
++               <listitem><para>1</para></listitem>
++             </varlistentry>
++             <varlistentry>
++               <term>Runtime readable/modifiable</term>
++               <listitem><para>Modifiable</para></listitem>
++             </varlistentry>
++             <varlistentry>
++               <term>Description</term>
++               <listitem>
++               <para>
++                 The parameter debug_level in cg2900_core.c defines
+the debug level that is currently used.
++                 The higher the debug level the more print-outs are
+received in the terminal window.
++                 The following values are supported:
++                 <itemizedlist>
++                   <listitem><para>0  = No debug</para></listitem>
++                   <listitem><para>1  = Error prints</para></listitem>
++                   <listitem><para>10 = General info, e.g. function
+entries</para></listitem>
++                   <listitem><para>20 = Debug info, e.g. steps in a
+functionality</para></listitem>
++                   <listitem><para>25 = Data info, i.e. prints when
+data is transferred</para></listitem>
++                   <listitem><para>30 = Data content, i.e. contents
+of the transferred data</para></listitem>
++                 </itemizedlist>
++               </para>
++               </listitem>
++             </varlistentry>
++           </variablelist>
++         </para>
++         </listitem>
++       </varlistentry>
++       <varlistentry>
++         <term>sleep_timeout_ms</term>
++         <listitem>
++         <para>
++           <variablelist>
++             <varlistentry>
++               <term>Parameter type</term>
++               <listitem><synopsis><type>int</type></synopsis></listitem>
++             </varlistentry>
++             <varlistentry>
++               <term>Default value</term>
++               <listitem><para>0</para></listitem>
++             </varlistentry>
++             <varlistentry>
++               <term>Runtime readable/modifiable</term>
++               <listitem><para>Modifiable</para></listitem>
++             </varlistentry>
++             <varlistentry>
++               <term>Description</term>
++               <listitem>
++               <para>
++                 The parameter sleep_timeout_ms in cg2900_core.c
+defines the sleep timeout for data transmission in milliseconds.
++               </para>
++               </listitem>
++             </varlistentry>
++           </variablelist>
++         </para>
++         </listitem>
++       </varlistentry>
++      </variablelist>
++      <para>
++       <!-- TODO: This guideline for this section may be extended
++            during the user-guide guidelines drop. -->
++     </para>
++   </section>
++
++   <section id="driver-ioctl">
++     <title>Driver IO Control</title>
++     <para>
++       <!-- TODO: Describe driver parameters that can be modified
++            in runtime. Make a list of all device-dependent request code with
++            description of arguments, meaning etc.  If the driver has
+no IO control
++            interface, replace this text with "Not Applicable". -->
++     </para>
++     <variablelist>
++       <varlistentry>
++         <term><constant>CG2900_CHAR_DEV_IOCTL_RESET</constant></term>
++         <listitem>
++         <variablelist>
++           <varlistentry>
++             <term>Direction</term>
++             <listitem><para>Set</para></listitem>
++           </varlistentry>
++           <varlistentry>
++             <term>Parameter</term>
++             <listitem><synopsis><type>void</type></synopsis></listitem>
++           </varlistentry>
++           <varlistentry>
++             <term>Description</term>
++             <listitem>
++             <para>
++               The <constant>CG2900_CHAR_DEV_IOCTL_RESET</constant>
+IOCTL starts a reset
++               of the connectivity chip. This will affect the current
+open channel and
++               all other open channels as well.
++             </para><para>
++               IOCTL value created using <constant>_IOW('U', 210,
+int)</constant>.
++             </para><para>
++               Returned values are:
++               <itemizedlist>
++                 <listitem><para>If reset is performed without errors
+the IOCTL function will return 0.</para></listitem>
++                 <listitem><para>A negative value will indicate
+error.</para></listitem>
++               </itemizedlist>
++             </para>
++             </listitem>
++           </varlistentry>
++         </variablelist>
++         </listitem>
++       </varlistentry>
++
++       <varlistentry>
++         <term><constant>CG2900_CHAR_DEV_IOCTL_CHECK4RESET</constant></term>
++         <listitem>
++         <variablelist>
++           <varlistentry>
++             <term>Direction</term>
++             <listitem><para>Query</para></listitem>
++           </varlistentry>
++           <varlistentry>
++             <term>Parameter</term>
++             <listitem><synopsis><type>void</type></synopsis></listitem>
++           </varlistentry>
++           <varlistentry>
++             <term>Description</term>
++             <listitem>
++               <para>
++                 The
+<constant>CG2900_CHAR_DEV_IOCTL_CHECK4RESET</constant> IOCTL checks if
+a reset
++                 has been performed on a device.
++               </para><para>
++                 IOCTL value created using <constant>_IOR('U', 212,
+int)</constant>.
++               </para><para>
++                 Returned values are:
++                 <itemizedlist>
++                   <listitem><para>If device is still open the IOCTL
+function will return 0.</para></listitem>
++                   <listitem><para>If reset has occurred the IOCTL
+function will return 1.</para></listitem>
++                   <listitem><para>If device has been closed the
+IOCTL function will return 2.</para></listitem>
++                   <listitem><para>A negative value will indicate
+error.</para></listitem>
++                 </itemizedlist>
++               </para>
++             </listitem>
++           </varlistentry>
++         </variablelist>
++         </listitem>
++       </varlistentry>
++
++       <varlistentry>
++         <term><constant>CG2900_CHAR_DEV_IOCTL_GET_REVISION</constant></term>
++         <listitem>
++         <variablelist>
++           <varlistentry>
++             <term>Direction</term>
++             <listitem><para>Query</para></listitem>
++           </varlistentry>
++           <varlistentry>
++             <term>Parameter</term>
++             <listitem><synopsis><type>void</type></synopsis></listitem>
++           </varlistentry>
++           <varlistentry>
++             <term>Description</term>
++             <listitem>
++               <para>
++                 The
+<constant>CG2900_CHAR_DEV_IOCTL_GET_REVISION</constant> IOCTL returns
+the revision value
++                 of the local connectivity controller if such
+information is available.
++               </para><para>
++                 IOCTL value created using <constant>_IOR('U', 213,
+int)</constant>.
++               </para><para>
++                 Returned values are according to information that
+may be retrieved from chip manufacturer.
++                 It is however possible to get indications of the
+value by looking in the file
++                 <constant>firmware/cg2900_patch_info.fw.org</constant>.
++               </para>
++             </listitem>
++           </varlistentry>
++         </variablelist>
++         </listitem>
++       </varlistentry>
++
++       <varlistentry>
++         <term><constant>CG2900_CHAR_DEV_IOCTL_GET_SUB_VER</constant></term>
++         <listitem>
++         <variablelist>
++           <varlistentry>
++             <term>Direction</term>
++             <listitem><para>Query</para></listitem>
++           </varlistentry>
++           <varlistentry>
++             <term>Parameter</term>
++             <listitem><synopsis><type>void</type></synopsis></listitem>
++           </varlistentry>
++           <varlistentry>
++             <term>Description</term>
++             <listitem>
++               <para>
++                 The
+<constant>CG2900_CHAR_DEV_IOCTL_GET_SUB_VER</constant> IOCTL returns
+the sub-version value
++                 of the local connectivity controller if such
+information is available.
++               </para><para>
++                 IOCTL value created using <constant>_IOR('U', 214,
+int)</constant>.
++               </para><para>
++                 Returned values are according to information that
+may be retrieved from chip manufacturer.
++                 It is however possible to get indications of the
+value by looking in the file
++                 <constant>firmware/cg2900_patch_info.fw.org</constant>.
++               </para>
++             </listitem>
++           </varlistentry>
++         </variablelist>
++         </listitem>
++       </varlistentry>
++
++     </variablelist>
++   </section>
++
++   <section id="driver-sysfs">
++     <title>Driver Interaction with Sysfs</title>
++     <para>
++       <!-- TODO: Describe data available for read and write on the drivers
++            Sysfs entry.  Specify where the entry for the device is located in
++            Sysfs such as <filename>/sys/devices/*</filename>,
+<filename>/sys/devices/*</filename>
++            , etc.
++            Specify the data types for the attributes. Specify if the
++            attributes are read-only or write-only. If the driver has no Sysfs
++            interface, replace this text with "Not Applicable". -->
++       Not Applicable
++     </para>
++   </section>
++
++   <section id="driver-proc">
++     <title>Driver Interaction using /proc filesystem</title>
++     <para>
++       Not Applicable
++       <!-- TODO: Describe data available for read and write on the drivers
++            /proc entry. Specify where the entry for the device is located.
++            Specify the data types for the attributes. Specify if the
++            attributes are read-only or writeonly. If the driver has no /proc
++            interface, replace this text with "Not Applicable". -->
++     </para>
++   </section>
++
++   <section id="driver-other">
++     <title>Other means for Driver Interaction</title>
++     <para>
++       <!-- TODO: Does the driver have any configurations files?
+Describe other means
++            for driver status access or configuration. If the driver
+has no other
++            means (besides the one in already described in this
+chapter), replace
++            this text with "Not Applicable". -->
++       Not Applicable
++     </para>
++   </section>
++
++ <section id="driver-node">
++   <title>Driver Node File</title>
++     <variablelist>
++     <varlistentry>
++       <term>CG2900 main device</term>
++       <listitem>
++         <variablelist>
++           <varlistentry>
++             <term>File</term>
++             <listitem><para><filename>/dev/cg2900_driver0</filename></para></listitem>
++           </varlistentry>
++           <varlistentry>
++             <term>Description</term>
++             <listitem>
++             <para>The cg2900_driver represents the main parent node
+for all other character devices supplied in the ST-Ericsson
+connectivity driver except for the CCD Test device. It does not
+support any operations such as read or write.</para>
++             </listitem>
++           </varlistentry>
++         </variablelist>
++       </listitem>
++     </varlistentry>
++
++     <varlistentry>
++       <term>BT Command</term>
++       <listitem>
++         <variablelist>
++           <varlistentry>
++             <term>File</term>
++             <listitem><para><filename>/dev/cg2900_bt_cmd</filename></para></listitem>
++           </varlistentry>
++           <varlistentry>
++             <term>Description</term>
++             <listitem>
++             <para>The cg2900_bt_cmd is the device for the HCI
+Bluetooth command channel.</para>
++             </listitem>
++           </varlistentry>
++         </variablelist>
++       </listitem>
++     </varlistentry>
++
++     <varlistentry>
++       <term>BT ACL</term>
++       <listitem>
++         <variablelist>
++           <varlistentry>
++             <term>File</term>
++             <listitem><para><filename>/dev/cg2900_bt_acl</filename></para></listitem>
++           </varlistentry>
++           <varlistentry>
++             <term>Description</term>
++             <listitem>
++             <para>The cg2900_bt_acl is the device for the HCI
+Bluetooth ACL channel.</para>
++             </listitem>
++           </varlistentry>
++         </variablelist>
++       </listitem>
++     </varlistentry>
++
++     <varlistentry>
++       <term>BT Event</term>
++       <listitem>
++         <variablelist>
++           <varlistentry>
++             <term>File</term>
++             <listitem><para><filename>/dev/cg2900_bt_evt</filename></para></listitem>
++           </varlistentry>
++           <varlistentry>
++             <term>Description</term>
++             <listitem>
++             <para>The cg2900_bt_evt is the device for the HCI
+Bluetooth event channel.</para>
++             </listitem>
++           </varlistentry>
++         </variablelist>
++       </listitem>
++     </varlistentry>
++
++     <varlistentry>
++       <term>FM Radio</term>
++       <listitem>
++         <variablelist>
++           <varlistentry>
++             <term>File</term>
++             <listitem><para><filename>/dev/cg2900_fm_radio</filename></para></listitem>
++           </varlistentry>
++           <varlistentry>
++             <term>Description</term>
++             <listitem>
++             <para>The cg2900_fm_radio is the device for the HCI FM
+Radio channel.</para>
++             </listitem>
++           </varlistentry>
++         </variablelist>
++       </listitem>
++     </varlistentry>
++
++     <varlistentry>
++       <term>GNSS</term>
++       <listitem>
++         <variablelist>
++           <varlistentry>
++             <term>File</term>
++             <listitem><para><filename>/dev/cg2900_gnss</filename></para></listitem>
++           </varlistentry>
++           <varlistentry>
++             <term>Description</term>
++             <listitem>
++             <para>The cg2900_gnss is the device for the HCI GNSS
+channel.</para>
++             </listitem>
++           </varlistentry>
++         </variablelist>
++       </listitem>
++     </varlistentry>
++
++     <varlistentry>
++       <term>Debug</term>
++       <listitem>
++         <variablelist>
++           <varlistentry>
++             <term>File</term>
++             <listitem><para><filename>/dev/cg2900_debug</filename></para></listitem>
++           </varlistentry>
++           <varlistentry>
++             <term>Description</term>
++             <listitem>
++             <para>The cg2900_debug is the device for the HCI Debug
+channel.</para>
++             </listitem>
++           </varlistentry>
++         </variablelist>
++       </listitem>
++     </varlistentry>
++
++     <varlistentry>
++       <term>ST-Ericsson Tools</term>
++       <listitem>
++         <variablelist>
++           <varlistentry>
++             <term>File</term>
++             <listitem><para><filename>/dev/cg2900_ste_tools</filename></para></listitem>
++           </varlistentry>
++           <varlistentry>
++             <term>Description</term>
++             <listitem>
++             <para>The cg2900_ste_tools is the device for the HCI
+ST-Ericsson tools channel.</para>
++             </listitem>
++           </varlistentry>
++         </variablelist>
++       </listitem>
++     </varlistentry>
++
++     <varlistentry>
++       <term>HCI Logger</term>
++       <listitem>
++         <variablelist>
++           <varlistentry>
++             <term>File</term>
++             <listitem><para><filename>/dev/cg2900_hci_logger</filename></para></listitem>
++           </varlistentry>
++           <varlistentry>
++             <term>Description</term>
++             <listitem>
++             <para>The cg2900_hci_logger is the device for the HCI
+logger channel.</para>
++             </listitem>
++           </varlistentry>
++         </variablelist>
++       </listitem>
++     </varlistentry>
++
++     <varlistentry>
++       <term>User Space Control</term>
++       <listitem>
++         <variablelist>
++           <varlistentry>
++             <term>File</term>
++             <listitem><para><filename>/dev/cg2900_us_ctrl</filename></para></listitem>
++           </varlistentry>
++           <varlistentry>
++             <term>Description</term>
++             <listitem>
++             <para>The cg2900_us_ctrl is the device for
+initialization and control of the STE CONN driver.</para>
++             </listitem>
++           </varlistentry>
++         </variablelist>
++       </listitem>
++     </varlistentry>
++
++     <varlistentry>
++       <term>CCD Test stub</term>
++       <listitem>
++         <variablelist>
++           <varlistentry>
++             <term>File</term>
++             <listitem><para><filename>/dev/cg2900_ccd_test</filename></para></listitem>
++           </varlistentry>
++           <varlistentry>
++             <term>Description</term>
++             <listitem>
++             <para>The cg2900_ccd_test is the device for performing
+module tests of the ST-Ericsson connectivity driver. It acts as a stub
+replacing the transport towards the chip. It is of the type Misc
+devices.</para>
++             </listitem>
++           </varlistentry>
++         </variablelist>
++       </listitem>
++     </varlistentry>
++
++     <varlistentry>
++       <term>BT Audio</term>
++       <listitem>
++         <variablelist>
++           <varlistentry>
++             <term>File</term>
++             <listitem><para><filename>/dev/cg2900_bt_audio</filename></para></listitem>
++           </varlistentry>
++           <varlistentry>
++             <term>Description</term>
++             <listitem>
++             <para>The cg2900_bt_audio is the device for sending HCI
+BT Audio controll commands to the chip. </para>
++             </listitem>
++           </varlistentry>
++         </variablelist>
++       </listitem>
++     </varlistentry>
++
++     <varlistentry>
++       <term>FM Audio</term>
++       <listitem>
++         <variablelist>
++           <varlistentry>
++             <term>File</term>
++             <listitem><para><filename>/dev/cg2900_fm_audio</filename></para></listitem>
++           </varlistentry>
++           <varlistentry>
++             <term>Description</term>
++             <listitem>
++             <para>The cg2900_fm_audio is the device for sending HCI
+BT Audio controll commands to the chip.</para>
++             </listitem>
++           </varlistentry>
++         </variablelist>
++       </listitem>
++     </varlistentry>
++
++     <varlistentry>
++       <term>Core</term>
++       <listitem>
++         <variablelist>
++           <varlistentry>
++             <term>File</term>
++             <listitem><para><filename>/dev/cg2900_core</filename></para></listitem>
++           </varlistentry>
++           <varlistentry>
++             <term>Description</term>
++             <listitem>
++             <para>The cg2900_core is a device for turn on/off the
+chip. NOTE other devices will also turn on/off the chip if
+needed.</para>
++             </listitem>
++           </varlistentry>
++         </variablelist>
++       </listitem>
++     </varlistentry>
++
++     <varlistentry>
++       <term>CG29XX Audio</term>
++       <listitem>
++         <variablelist>
++           <varlistentry>
++             <term>File</term>
++             <listitem><para><filename>/dev/cg2900_audio</filename></para></listitem>
++           </varlistentry>
++           <varlistentry>
++             <term>Description</term>
++             <listitem>
++             <para>
++               The cg2900_audio is a device for testing the CG2900
+Audio driver from User space.
++               It replicates the normal CG2900 Audio interface
+through <constant>write/read</constant> operations.
++               The <constant>write</constant> command is used as following:
++               <itemizedlist>
++                 <listitem><para>4 byte op code (see below)</para></listitem>
++                 <listitem><para>Data field according to respective
+CG29XX Audio function (no session ID needed)</para></listitem>
++               </itemizedlist>
++               If the operation fails the <constant>write</constant>
+command operation will return the error.
++               Op codes are (4 bytes size):
++               <itemizedlist>
++                 <listitem><para>0x00000001 =
+CHAR_DEV_OP_CODE_SET_DAI_CONF</para></listitem>
++                 <listitem><para>0x00000002 =
+CHAR_DEV_OP_CODE_GET_DAI_CONF</para></listitem>
++                 <listitem><para>0x00000003 =
+CHAR_DEV_OP_CODE_CONFIGURE_ENDPOINT</para></listitem>
++                 <listitem><para>0x00000004 =
+CHAR_DEV_OP_CODE_CONNECT_AND_START_STREAM</para></listitem>
++                 <listitem><para>0x00000005 =
+CHAR_DEV_OP_CODE_STOP_STREAM</para></listitem>
++               </itemizedlist>
++
++               The <constant>read</constant> command is used for the
+commands <constant>CHAR_DEV_OP_CODE_GET_DAI_CONF</constant>
++               and
+<constant>CHAR_DEV_OP_CODE_CONNECT_AND_START_STREAM</constant> if the
+corresponding commands are successful.
++               The returned data will be formatted accordingly:
++               <itemizedlist>
++                 <listitem><para>4 byte op code (see below)</para></listitem>
++                 <listitem><para>Data field according to normal
+CG29XX Audio functions, e.g. stream handle or
+configuration</para></listitem>
++               </itemizedlist>
++               The <constant>CHAR_DEV_OP_CODE_GET_DAI_CONF</constant>
+is a bit special since it require an endpoint in-parameter
++               (when calling <constant>write</constant>) to return
+the corresponding DAI configuration when calling
+<constant>read</constant>.
++             </para>
++             </listitem>
++           </varlistentry>
++         </variablelist>
++       </listitem>
++     </varlistentry>
++
++    </variablelist>
++  </section>
++
++
++ </chapter>
++
++
++ <chapter id="bugs">
++   <title>Known Bugs And Assumptions</title>
++   <!--  Do NOT change the chapter id or title! -->
++   <para>
++     <variablelist>
++     <varlistentry>
++       <term>Driver supports only one user per HCI channel.</term>
++       <listitem>
++         <para>
++           To simplify design and limitation as well as keeping the
+API simple and reliable, the driver only supports one user per HCI
+channel.
++           <!-- TODO: Briefly describe the limitation, unless all
++              information is already present in the title.
++              Use full english sentences.
++              Repeat the varlistentry for each limitation.
++              If none are known, replace this varlistentry
++              with the one below. -->
++           <!-- TODO: This guideline for this chapter may be extended
++              during the user-guide guidelines drop. -->
++         </para>
++       </listitem>
++     </varlistentry>
++     </variablelist>
++   </para>
++ </chapter>
++
++<chapter id="pubfunctions">
++   <title>Public Functions Provided</title>
++   <para>
++	List of public functions.
++   </para>
++   <!-- Do NOT change the chapter id or title! -->
++   <!-- TODO: Replace with link to appropriate headerfile(s).
++        One per row, ensure the
++        exclamation mark is on the first column! If no
++        appropriate header file exist describing a public interface,
++        replace the inclusion with a paragraph containing the text
++        "Not Applicable" -->
++  <section id="cg2900.h">
++    <title>cg2900.h</title>
++!Edrivers/mfd/cg2900/cg2900_core.c
++  </section>
++  <section id="cg2900_audio.h">
++    <title>cg2900_audio.h</title>
++!Edrivers/mfd/cg2900/cg2900_audio.c
++  </section>
++
++</chapter>
++
++<chapter id="internal-functions">
++   <title>Internal Functions Provided</title>
++   <para>
++	List of internal functions.
++   </para>
++   <!-- Do NOT change the chapter id or title! -->
++   <!-- TODO: Replace with link to appropriate headerfile(s),
++        source file(s), or both. One per row, ensure the
++        exclamation mark is on the first column! If no
++        appropriate header or source file exist describing a public interface,
++        replace the inclusion with a paragraph containing the text
++        "Not Applicable"-->
++  <section id="cg2900_core.h">
++    <title>cg2900_core.h</title>
++!Edrivers/mfd/cg2900/cg2900_core.h
++  </section>
++</chapter>
++</book>
 -- 
 1.6.3.3
