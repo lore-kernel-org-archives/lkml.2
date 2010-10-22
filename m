@@ -1,218 +1,332 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753270Ab0JVCUc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Oct 2010 22:20:32 -0400
-Received: from smtp103.sbc.mail.gq1.yahoo.com ([67.195.15.62]:42966 "HELO
-	smtp103.sbc.mail.gq1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1753013Ab0JVCU2 (ORCPT
+	id S1751638Ab0JVCZs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Oct 2010 22:25:48 -0400
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:42047 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750898Ab0JVCZr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Oct 2010 22:20:28 -0400
-X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
-X-YMail-OSG: UMiD7jwVM1mTf3MuWIS3DNGNZY2MmVWzZ7HLZgreAjawCFb
- 7gxLD00VXbtNDX9_XrQRFLG3jH.Fdukkd8lqvYRM9giE.SXiu7Q7p5NIe_ZR
- 1nDh3LD_FjVVsw484elOjiXKI5QnWWCWptZ7mW9mqB6TMevGa3gWjmwgIiU0
- c.Ob7EIyEvylAQOc1wzQeHQnQdupHkLZnMw51pHAuXDHcxa.M.YH3cI2_78y
- vc9DVEvYXY2MTJzWAJAl6gopV293iIciq3lvsfAq5qEr2XFm4tDdzAk2BKrB
- QXflFASNcCXbvgz5FRcJWlyuLBQQ3_Kh3Zvl.1VP5IJQ.O7h3akV8TQr.ahU
- E.DWVoxRk9JmfZ.QZ6O2.LcoaFpQNtI3y6g--
-X-Yahoo-Newman-Property: ymail-3
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Jens Axboe <axboe@kernel.dk>, Christoph Hellwig <hch@lst.de>
-Cc: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Mike Christie <michaelc@cs.wisc.edu>, Hannes Reinecke <hare@suse.de>,
-        James Bottomley <James.Bottomley@suse.de>,
-        Boaz Harrosh <bharrosh@panasas.com>,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [PATCH] tcm/iblock: Fix bio-set leak during bio exception handling
-Date: Thu, 21 Oct 2010 19:20:22 -0700
-Message-Id: <1287714022-16907-1-git-send-email-nab@linux-iscsi.org>
-X-Mailer: git-send-email 1.5.6.5
+	Thu, 21 Oct 2010 22:25:47 -0400
+X-AuditID: b753bd60-a7f34ba000000226-d1-4cc0f62767ff
+Message-ID: <4CC0F61F.8000501@hitachi.com>
+Date: Fri, 22 Oct 2010 11:25:35 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Systems Development Lab., Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.11) Gecko/20101013 Thunderbird/3.1.5
+MIME-Version: 1.0
+To: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Steven Rostedt <rostedt@goodmis.org>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org, 2nddept-manager@sdl.hitachi.co.jp,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: Re: [PATCH -tip  6/7] perf probe: Show accessible global variables
+References: <20101021101243.3542.28282.stgit@ltc236.sdl.hitachi.co.jp> <20101021101335.3542.31003.stgit@ltc236.sdl.hitachi.co.jp> <20101021205051.GK3826@ghostprotocols.net>
+In-Reply-To: <20101021205051.GK3826@ghostprotocols.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
+X-FMFTCR: RANGEC
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Nicholas Bellinger <nab@linux-iscsi.org>
+(2010/10/22 5:50), Arnaldo Carvalho de Melo wrote:
+> Em Thu, Oct 21, 2010 at 07:13:35PM +0900, Masami Hiramatsu escreveu:
+>> Add --externs for allowing --vars to show accessible
+>> global(externally defined) variables from a given probe
+>> point too.
+>> This will give you a hint which globals can be accessible
+>> from the probe point.
+> 
+> Cool, but perhaps we need to filter out some of the globals? Things
+> like:
 
-This patch fixes two (one known and one potential) bio-set memory
-leak cases in TCM/IBLOCK when handling exception / shutdown scenarions
-for individually allocated struct bios.  The first case has been reported
-as a struct kmem_cache error during iblock_free_device() -> bioset_free()
-DRBD block device shutdown.  This was happening when iblock_bio_done() was
-called with a final (err != 0) status and bio_put() not being called.
+Hmm, yeah. So is that enough to filter out symbols which start with
+__k???tab_ and __crc_ ?
 
-This patch to iblock_bio_done() also now properly accounts for errors
-with multiple outstanding chained bios per individual struct se_task
-context by adding struct iblock_req->ib_bio_err_cnt.  This is used by
-transport_complete_task() in order to determine when to complete
-struct se_task w/ non GOOD status in the iblock_bio_done() (err == 0)
-case when other bios in the single outstanding chain already failed.
 
-The second bio-set exception case this patch addresses can happen when
-iblock_map_task_SG() is called via transport_generic_map_buffers_to_tasks()
-to setup struct iblock_req->ib_bio, but the associated struct se_task is
-released during struct se_device shutdown before submit_bio() can be called
-via iblock_do_task() to dispatch the bios into struct block_device.
+> 
+>                 long unsigned int       __kcrctab_tcp_hashinfo
+>                 long unsigned int       __kcrctab_tcp_proc_register
+>                 long unsigned int       __kcrctab_tcp_proc_unregister
+>                 long unsigned int       __kcrctab_tcp_prot
+> 
+> If --verbose is specified we could then show everything.
 
-So just to verify some items (jaxboe + hch please comment) about how bio_put()
-and the struct bio->bi_done() call should function:
+--verbose is already used for showing debug messages,  ;)
+so how about using --all/--allextras?
 
-*) bio_put() should always be called during bio->bi_bio() -> iblock_bio_done()
-   to call bio->bi_destructor() -> iblock_bio_destructor() -> bio_free()
-*) bio->bi_bio() -> iblock_bio_done() must always do internal accounting 
-   for the completion of chained BIOs dispatched with a *single* call to sumbit_bio()
-   as to which is the last outstanding BIO to complete our struct se_task.
-*) In order to determine good status for the struct iblock_req <-> struct se_task,
-   using the following block in bio->bi_bio() -> iblock_bio_done() is still required:
+Or, perhaps we can add more generic filtering for listing
+events/vars/funcs.
 
-        /*
-         * Set -EIO if !BIO_UPTODATE and the passed is still err=0
-         */
-        if (!(test_bit(BIO_UPTODATE, &bio->bi_flags)) && !(err))
-                err = -EIO;
+Thank you,
 
-If these three points are correct, I think this patch should resolve the
-original reported issue and address the second 'add missing bio_put)'s for
-tasks aborted before submit_bio() is called' scenario as well.
+> 
+> So that it doesn't get this long:
+> 
+> [root@emilia ~]# perf probe -V tcp_v4_do_rcv:28 --externs
+> Available variables at tcp_v4_do_rcv:28
+> 	@<tcp_v4_do_rcv+390>
+> 		(function_type)*	ip_nat_decode_session
+> 		(unknown_type)	__crc_ipv4_specific
+> 		(unknown_type)	__crc_sysctl_tcp_low_latency
+> 		(unknown_type)	__crc_tcp4_gro_complete
+> 		(unknown_type)	__crc_tcp4_gro_receive
+> 		(unknown_type)	__crc_tcp_hashinfo
+> 		(unknown_type)	__crc_tcp_proc_register
+> 		(unknown_type)	__crc_tcp_proc_unregister
+> 		(unknown_type)	__crc_tcp_prot
+> 		(unknown_type)	__crc_tcp_twsk_unique
+> 		(unknown_type)	__crc_tcp_v4_conn_request
+> 		(unknown_type)	__crc_tcp_v4_connect
+> 		(unknown_type)	__crc_tcp_v4_destroy_sock
+> 		(unknown_type)	__crc_tcp_v4_do_rcv
+> 		(unknown_type)	__crc_tcp_v4_md5_do_add
+> 		(unknown_type)	__crc_tcp_v4_md5_do_del
+> 		(unknown_type)	__crc_tcp_v4_md5_hash_skb
+> 		(unknown_type)	__crc_tcp_v4_md5_lookup
+> 		(unknown_type)	__crc_tcp_v4_remember_stamp
+> 		(unknown_type)	__crc_tcp_v4_send_check
+> 		(unknown_type)	__crc_tcp_v4_syn_recv_sock
+> 		__u8*	ip_tos2prio
+> 		atomic_long_t*	vm_stat
+> 		atomic_t	tcp_memory_allocated
+> 		bool	c1e_detected
+> 		char	__pcpu_scope_cpu_core_map
+> 		char	__pcpu_scope_cpu_info
+> 		char	__pcpu_scope_cpu_llc_id
+> 		char	__pcpu_scope_cpu_number
+> 		char	__pcpu_scope_cpu_sibling_map
+> 		char	__pcpu_scope_current_task
+> 		char	__pcpu_scope_init_tss
+> 		char	__pcpu_scope_irq_count
+> 		char	__pcpu_scope_irq_regs
+> 		char	__pcpu_scope_irq_stack_ptr
+> 		char	__pcpu_scope_irq_stack_union
+> 		char	__pcpu_scope_irq_stat
+> 		char	__pcpu_scope_kernel_stack
+> 		char	__pcpu_scope_numa_node
+> 		char	__pcpu_scope_orig_ist
+> 		char	__pcpu_scope_process_counts
+> 		char	__pcpu_scope_softirq_work_list
+> 		char	__pcpu_scope_softnet_data
+> 		char	__pcpu_scope_this_cpu_off
+> 		char	__pcpu_scope_tick_cpu_device
+> 		char	__pcpu_scope_vector_irq
+> 		char	__pcpu_scope_vm_event_states
+> 		char	__pcpu_scope_x2apic_extra_bits
+> 		char	__pcpu_scope_x86_bios_cpu_apicid
+> 		char	__pcpu_scope_x86_cpu_to_apicid
+> 		char	__pcpu_scope_x86_cpu_to_node_map
+> 		char*	__kstrtab_ipv4_specific
+> 		char*	__kstrtab_sysctl_tcp_low_latency
+> 		char*	__kstrtab_tcp4_gro_complete
+> 		char*	__kstrtab_tcp4_gro_receive
+> 		char*	__kstrtab_tcp_hashinfo
+> 		char*	__kstrtab_tcp_proc_register
+> 		char*	__kstrtab_tcp_proc_unregister
+> 		char*	__kstrtab_tcp_prot
+> 		char*	__kstrtab_tcp_twsk_unique
+> 		char*	__kstrtab_tcp_v4_conn_request
+> 		char*	__kstrtab_tcp_v4_connect
+> 		char*	__kstrtab_tcp_v4_destroy_sock
+> 		char*	__kstrtab_tcp_v4_do_rcv
+> 		char*	__kstrtab_tcp_v4_md5_do_add
+> 		char*	__kstrtab_tcp_v4_md5_do_del
+> 		char*	__kstrtab_tcp_v4_md5_hash_skb
+> 		char*	__kstrtab_tcp_v4_md5_lookup
+> 		char*	__kstrtab_tcp_v4_remember_stamp
+> 		char*	__kstrtab_tcp_v4_send_check
+> 		char*	__kstrtab_tcp_v4_syn_recv_sock
+> 		char*	hex_asc
+> 		char*	inet_csk_timer_bug_msg
+> 		cpumask_var_t	cpu_callout_mask
+> 		cpumask_var_t	cpu_core_map
+> 		cpumask_var_t	cpu_sibling_map
+> 		cpumask_var_t*	node_to_cpumask_map
+> 		int	acpi_disabled
+> 		int	acpi_noirq
+> 		int	acpi_pci_disabled
+> 		int	audit_enabled
+> 		int	cpu_number
+> 		int	debug_locks
+> 		int	disable_apic
+> 		int	net_msg_warn
+> 		int	nr_cpu_ids
+> 		int	nr_online_nodes
+> 		int	numa_node
+> 		int	page_group_by_mobility_disabled
+> 		int	percpu_counter_batch
+> 		int	prof_on
+> 		int	sched_mc_power_savings
+> 		int	sched_smt_power_savings
+> 		int	smp_found_config
+> 		int	sysctl_max_syn_backlog
+> 		int	sysctl_tcp_adv_win_scale
+> 		int	sysctl_tcp_cookie_size
+> 		int	sysctl_tcp_ecn
+> 		int	sysctl_tcp_fin_timeout
+> 		int	sysctl_tcp_keepalive_intvl
+> 		int	sysctl_tcp_keepalive_probes
+> 		int	sysctl_tcp_keepalive_time
+> 		int	sysctl_tcp_low_latency
+> 		int	sysctl_tcp_max_orphans
+> 		int	sysctl_tcp_reordering
+> 		int	sysctl_tcp_syncookies
+> 		int	sysctl_tcp_tw_reuse
+> 		int	tcp_memory_pressure
+> 		int	time_status
+> 		int	timer_stats_active
+> 		int	x2apic_phys
+> 		int	x86_cpu_to_node_map
+> 		int*	console_printk
+> 		int*	sysctl_tcp_mem
+> 		int*	sysctl_tcp_rmem
+> 		int*	sysctl_tcp_wmem
+> 		int*	x86_cpu_to_node_map_early_ptr
+> 		irq_cpustat_t	irq_stat
+> 		long unsigned int	__kcrctab_ipv4_specific
+> 		long unsigned int	__kcrctab_sysctl_tcp_low_latency
+> 		long unsigned int	__kcrctab_tcp4_gro_complete
+> 		long unsigned int	__kcrctab_tcp4_gro_receive
+> 		long unsigned int	__kcrctab_tcp_hashinfo
+> 		long unsigned int	__kcrctab_tcp_proc_register
+> 		long unsigned int	__kcrctab_tcp_proc_unregister
+> 		long unsigned int	__kcrctab_tcp_prot
+> 		long unsigned int	__kcrctab_tcp_twsk_unique
+> 		long unsigned int	__kcrctab_tcp_v4_conn_request
+> 		long unsigned int	__kcrctab_tcp_v4_connect
+> 		long unsigned int	__kcrctab_tcp_v4_destroy_sock
+> 		long unsigned int	__kcrctab_tcp_v4_do_rcv
+> 		long unsigned int	__kcrctab_tcp_v4_md5_do_add
+> 		long unsigned int	__kcrctab_tcp_v4_md5_do_del
+> 		long unsigned int	__kcrctab_tcp_v4_md5_hash_skb
+> 		long unsigned int	__kcrctab_tcp_v4_md5_lookup
+> 		long unsigned int	__kcrctab_tcp_v4_remember_stamp
+> 		long unsigned int	__kcrctab_tcp_v4_send_check
+> 		long unsigned int	__kcrctab_tcp_v4_syn_recv_sock
+> 		long unsigned int	jiffies
+> 		long unsigned int	kernel_stack
+> 		long unsigned int	mmap_min_addr
+> 		long unsigned int	mmu_cr4_features
+> 		long unsigned int*	__per_cpu_offset
+> 		long unsigned int*	cpu_bit_bitmap
+> 		long unsigned int*	sysctl_local_reserved_ports
+> 		nodemask_t*	node_states
+> 		pg_data_t**	node_data
+> 		physid_mask_t	phys_cpu_present_map
+> 		pteval_t	__supported_pte_mask
+> 		spinlock_t	dcache_lock
+> 		struct address_space	swapper_space
+> 		struct apic*	apic
+> 		struct cache_sizes*	malloc_sizes
+> 		struct cpuinfo_x86	boot_cpu_data
+> 		struct cpuinfo_x86	cpu_info
+> 		struct cpumask*	cpu_online_mask
+> 		struct cpumask*	cpu_possible_mask
+> 		struct cpumask*	cpu_present_mask
+> 		struct device	x86_dma_fallback_dev
+> 		struct dma_map_ops*	dma_ops
+> 		struct dqstats	dqstats
+> 		struct icmp_err*	icmp_err_convert
+> 		struct inet_connection_sock_af_ops	ipv4_specific
+> 		struct inet_hashinfo	tcp_hashinfo
+> 		struct inet_timewait_death_row	tcp_death_row
+> 		struct kernel_symbol	__ksymtab_ipv4_specific
+> 		struct kernel_symbol	__ksymtab_sysctl_tcp_low_latency
+> 		struct kernel_symbol	__ksymtab_tcp4_gro_complete
+> 		struct kernel_symbol	__ksymtab_tcp4_gro_receive
+> 		struct kernel_symbol	__ksymtab_tcp_hashinfo
+> 		struct kernel_symbol	__ksymtab_tcp_proc_register
+> 		struct kernel_symbol	__ksymtab_tcp_proc_unregister
+> 		struct kernel_symbol	__ksymtab_tcp_prot
+> 		struct kernel_symbol	__ksymtab_tcp_twsk_unique
+> 		struct kernel_symbol	__ksymtab_tcp_v4_conn_request
+> 		struct kernel_symbol	__ksymtab_tcp_v4_connect
+> 		struct kernel_symbol	__ksymtab_tcp_v4_destroy_sock
+> 		struct kernel_symbol	__ksymtab_tcp_v4_do_rcv
+> 		struct kernel_symbol	__ksymtab_tcp_v4_md5_do_add
+> 		struct kernel_symbol	__ksymtab_tcp_v4_md5_do_del
+> 		struct kernel_symbol	__ksymtab_tcp_v4_md5_hash_skb
+> 		struct kernel_symbol	__ksymtab_tcp_v4_md5_lookup
+> 		struct kernel_symbol	__ksymtab_tcp_v4_remember_stamp
+> 		struct kernel_symbol	__ksymtab_tcp_v4_send_check
+> 		struct kernel_symbol	__ksymtab_tcp_v4_syn_recv_sock
+> 		struct list_head*	nf_hooks
+> 		struct mem_section**	mem_section
+> 		struct memnode	memnode
+> 		struct neigh_table	nd_tbl
+> 		struct nf_afinfo**	nf_afinfo
+> 		struct percpu_counter	tcp_orphan_count
+> 		struct percpu_counter	tcp_sockets_allocated
+> 		struct pernet_operations	tcp4_net_ops
+> 		struct pernet_operations	tcp_sk_ops
+> 		struct pglist_data**	node_data
+> 		struct pid*	cad_pid
+> 		struct pid_namespace	init_pid_ns
+> 		struct proto	tcp_prot
+> 		struct pt_regs*	irq_regs
+> 		struct pv_apic_ops	pv_apic_ops
+> 		struct pv_cpu_ops	pv_cpu_ops
+> 		struct pv_info	pv_info
+> 		struct pv_irq_ops	pv_irq_ops
+> 		struct pv_mmu_ops	pv_mmu_ops
+> 		struct pv_time_ops	pv_time_ops
+> 		struct request_sock_ops	tcp_request_sock_ops
+> 		struct resource	ioport_resource
+> 		struct rps_sock_flow_table*	rps_sock_flow_table
+> 		struct sk_buff*	skb
+> 		struct smp_ops	smp_ops
+> 		struct sock*	sk
+> 		struct task_struct*	current_task
+> 		struct tcp_congestion_ops	tcp_init_congestion_ops
+> 		struct tcp_request_sock_ops	tcp_request_sock_ipv4_ops
+> 		struct tcp_seq_afinfo	tcp4_seq_afinfo
+> 		struct tcp_sock_af_ops	tcp_sock_ipv4_specific
+> 		struct timewait_sock_ops	tcp_timewait_sock_ops
+> 		struct tracepoint	__tracepoint_irq_handler_entry
+> 		struct tracepoint	__tracepoint_irq_handler_exit
+> 		struct tracepoint	__tracepoint_kfree
+> 		struct tracepoint	__tracepoint_kmalloc
+> 		struct tracepoint	__tracepoint_kmalloc_node
+> 		struct tracepoint	__tracepoint_kmem_cache_alloc
+> 		struct tracepoint	__tracepoint_kmem_cache_alloc_node
+> 		struct tracepoint	__tracepoint_kmem_cache_free
+> 		struct tracepoint	__tracepoint_mm_page_alloc
+> 		struct tracepoint	__tracepoint_mm_page_alloc_extfrag
+> 		struct tracepoint	__tracepoint_mm_page_alloc_zone_locked
+> 		struct tracepoint	__tracepoint_mm_page_free_direct
+> 		struct tracepoint	__tracepoint_mm_page_pcpu_drain
+> 		struct tracepoint	__tracepoint_mm_pagevec_free
+> 		struct tracepoint	__tracepoint_module_free
+> 		struct tracepoint	__tracepoint_module_get
+> 		struct tracepoint	__tracepoint_module_load
+> 		struct tracepoint	__tracepoint_module_put
+> 		struct tracepoint	__tracepoint_module_request
+> 		struct tracepoint	__tracepoint_softirq_entry
+> 		struct tracepoint	__tracepoint_softirq_exit
+> 		struct tracepoint	__tracepoint_softirq_raise
+> 		struct vm_event_state	vm_event_states
+> 		struct x86_init_ops	x86_init
+> 		struct x86_platform_ops	x86_platform
+> 		u16	x86_bios_cpu_apicid
+> 		u32	inet_ehash_secret
+> 		union irq_stack_union	irq_stack_union
+> 		unsigned int	apic_verbosity
+> 		unsigned int	sysctl_timer_migration
+> 
+> - Arnaldo
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-So far this has been lightly tested on v2.6.36-rc8 on TCM_Loop SCSI LUNs, but
-this will also need to be addressed on older stable / distro kernels in
-lio-core-backports.git code.
 
-Comments folks..?
-
-Signed-off-by: Nicholas A. Bellinger <nab@linux-iscsi.org>
----
- drivers/target/target_core_iblock.c |   55 ++++++++++++++++++++++++-----------
- drivers/target/target_core_iblock.h |    1 +
- 2 files changed, 39 insertions(+), 17 deletions(-)
-
-diff --git a/drivers/target/target_core_iblock.c b/drivers/target/target_core_iblock.c
-index e7840da..85126b1 100644
---- a/drivers/target/target_core_iblock.c
-+++ b/drivers/target/target_core_iblock.c
-@@ -318,14 +318,15 @@ static void *iblock_allocate_request(
- {
- 	struct iblock_req *ib_req;
- 
--	ib_req = kmalloc(sizeof(struct iblock_req), GFP_KERNEL);
-+	ib_req = kzalloc(sizeof(struct iblock_req), GFP_KERNEL);
- 	if (!(ib_req)) {
- 		printk(KERN_ERR "Unable to allocate memory for struct iblock_req\n");
- 		return NULL;
- 	}
- 
- 	ib_req->ib_dev = dev->dev_ptr;
--	return (void *)ib_req;
-+	atomic_set(&ib_req->ib_bio_cnt, 0);
-+	return ib_req;
- }
- 
- static unsigned long long iblock_emulate_read_cap_with_block_size(
-@@ -543,11 +544,17 @@ static int iblock_do_discard(struct se_device *dev, sector_t lba, u32 range)
- static void iblock_free_task(struct se_task *task)
- {
- 	struct iblock_req *req = task->transport_req;
--
-+	struct bio *bio, *hbio = req->ib_bio;
- 	/*
--	 * We do not release the bio(s) here associated with this task, as
--	 * this is handled by bio_put() and iblock_bio_destructor().
-+	 * We only release the bio(s) here if iblock_bio_done() has not called
-+	 * bio_put() -> iblock_bio_destructor().
- 	 */
-+	while (hbio != NULL) {
-+		bio = hbio;
-+		hbio = hbio->bi_next;
-+		bio->bi_next = NULL;
-+		bio_put(bio);
-+	}
- 
- 	kfree(req);
- 	task->transport_req = NULL;
-@@ -767,8 +774,6 @@ static int iblock_map_task_SG(struct se_task *task)
- 		return PYX_TRANSPORT_LU_COMM_FAILURE;
- 	}
- 
--	atomic_set(&ib_req->ib_bio_cnt, 0);
--
- 	bio = iblock_get_bio(task, ib_req, ib_dev, &ret, block_lba, sg_num);
- 	if (!(bio))
- 		return ret;
-@@ -896,15 +901,32 @@ static sector_t iblock_get_blocks(struct se_device *dev)
- 
- static void iblock_bio_done(struct bio *bio, int err)
- {
--	struct se_task *task = (struct se_task *)bio->bi_private;
--	struct iblock_req *ibr = (struct iblock_req *)task->transport_req;
-+	struct se_task *task = bio->bi_private;
-+	struct iblock_req *ibr = task->transport_req;
-+	/*
-+	 * Set -EIO if !BIO_UPTODATE and the passed is still err=0
-+	 */
-+	if (!(test_bit(BIO_UPTODATE, &bio->bi_flags)) && !(err))
-+		err = -EIO;
- 
--	err = test_bit(BIO_UPTODATE, &bio->bi_flags) ? err : -EIO;
- 	if (err != 0) {
- 		printk(KERN_ERR "test_bit(BIO_UPTODATE) failed for bio: %p,"
- 			" err: %d\n", bio, err);
-+		/*
-+		 * Bump the ib_bio_err_cnt and release bio.
-+		 */
-+		atomic_inc(&ibr->ib_bio_err_cnt);
-+		smp_mb__after_atomic_inc();
-+		bio_put(bio);
-+		/*
-+		 * Wait to complete the task until the last bio as completed.
-+		 */
-+		if (!(atomic_dec_and_test(&ibr->ib_bio_cnt)))
-+			return;
-+
-+		ibr->ib_bio = NULL;
- 		transport_complete_task(task, 0);
--		goto out;
-+		return;
- 	}
- 	DEBUG_IBLOCK("done[%p] bio: %p task_lba: %llu bio_lba: %llu err=%d\n",
- 		task, bio, task->task_lba, bio->bi_sector, err);
-@@ -913,17 +935,16 @@ static void iblock_bio_done(struct bio *bio, int err)
- 	 * to ibr->ib_bio_set.
- 	 */
- 	bio_put(bio);
--
- 	/*
- 	 * Wait to complete the task until the last bio as completed.
- 	 */
- 	if (!(atomic_dec_and_test(&ibr->ib_bio_cnt)))
--		goto out;
--
-+		return;
-+	/*
-+	 * Return GOOD status for task if zero ib_bio_err_cnt exists.
-+	 */
- 	ibr->ib_bio = NULL;
--	transport_complete_task(task, (!err));
--out:
--	return;
-+	transport_complete_task(task, (!atomic_read(&ibr->ib_bio_err_cnt)));
- }
- 
- static struct se_subsystem_api iblock_template = {
-diff --git a/drivers/target/target_core_iblock.h b/drivers/target/target_core_iblock.h
-index 3582aac..4cbfbff 100644
---- a/drivers/target/target_core_iblock.h
-+++ b/drivers/target/target_core_iblock.h
-@@ -14,6 +14,7 @@ extern struct se_global *se_global;
- struct iblock_req {
- 	unsigned char ib_scsi_cdb[TCM_MAX_COMMAND_SIZE];
- 	atomic_t ib_bio_cnt;
-+	atomic_t ib_bio_err_cnt;
- 	u32	ib_sg_count;
- 	void	*ib_buf;
- 	struct bio *ib_bio;
 -- 
-1.5.6.5
-
+Masami HIRAMATSU
+2nd Dept. Linux Technology Center
+Hitachi, Ltd., Systems Development Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
