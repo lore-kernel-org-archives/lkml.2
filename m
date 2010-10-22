@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759166Ab0JVSzt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 14:55:49 -0400
-Received: from kroah.org ([198.145.64.141]:33849 "EHLO coco.kroah.org"
+	id S1759231Ab0JVS4C (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 14:56:02 -0400
+Received: from kroah.org ([198.145.64.141]:33950 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759118Ab0JVSzr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 14:55:47 -0400
-X-Mailbox-Line: From gregkh@clark.site Fri Oct 22 11:52:27 2010
-Message-Id: <20101022185227.471763751@clark.site>
+	id S1755630Ab0JVSz6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Oct 2010 14:55:58 -0400
+X-Mailbox-Line: From gregkh@clark.site Fri Oct 22 11:52:28 2010
+Message-Id: <20101022185228.579017521@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 22 Oct 2010 11:50:36 -0700
+Date: Fri, 22 Oct 2010 11:50:48 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Dan Rosenberg <dan.j.rosenberg@gmail.com>,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [002/103] ALSA: sound/pci/rme9652: prevent reading uninitialized stack memory
+        Don Mullis <don.mullis@gmail.com>,
+        Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
+Subject: [014/103] lib/list_sort: do not pass bad pointers to cmp callback
 In-Reply-To: <20101022185455.GA9114@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,45 +26,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Rosenberg <drosenberg@vsecurity.com>
+From: Don Mullis <don.mullis@gmail.com>
 
-commit e68d3b316ab7b02a074edc4f770e6a746390cb7d upstream.
+commit f015ac3edd84ad72f88e08a4d83c56c360aae404 upstream.
 
-The SNDRV_HDSP_IOCTL_GET_CONFIG_INFO and
-SNDRV_HDSP_IOCTL_GET_CONFIG_INFO ioctls in hdspm.c and hdsp.c allow
-unprivileged users to read uninitialized kernel stack memory, because
-several fields of the hdsp{m}_config_info structs declared on the stack
-are not altered or zeroed before being copied back to the user.  This
-patch takes care of it.
+If the original list is a POT in length, the first callback from line 73
+will pass a==b both pointing to the original list_head.  This is dangerous
+because the 'list_sort()' user can use 'container_of()' and accesses the
+"containing" object, which does not necessary exist for the list head.  So
+the user can access RAM which does not belong to him.  If this is a write
+access, we can end up with memory corruption.
 
-Signed-off-by: Dan Rosenberg <dan.j.rosenberg@gmail.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Don Mullis <don.mullis@gmail.com>
+Tested-by: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
+Signed-off-by: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- sound/pci/rme9652/hdsp.c  |    1 +
- sound/pci/rme9652/hdspm.c |    1 +
- 2 files changed, 2 insertions(+)
+ lib/list_sort.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/sound/pci/rme9652/hdsp.c
-+++ b/sound/pci/rme9652/hdsp.c
-@@ -4609,6 +4609,7 @@ static int snd_hdsp_hwdep_ioctl(struct s
- 		if (err < 0)
- 			return err;
+--- a/lib/list_sort.c
++++ b/lib/list_sort.c
+@@ -70,7 +70,7 @@ static void merge_and_restore_back_links
+ 		 * element comparison is needed, so the client's cmp()
+ 		 * routine can invoke cond_resched() periodically.
+ 		 */
+-		(*cmp)(priv, tail, tail);
++		(*cmp)(priv, tail->next, tail->next);
  
-+		memset(&info, 0, sizeof(info));
- 		spin_lock_irqsave(&hdsp->lock, flags);
- 		info.pref_sync_ref = (unsigned char)hdsp_pref_sync_ref(hdsp);
- 		info.wordclock_sync_check = (unsigned char)hdsp_wc_sync_check(hdsp);
---- a/sound/pci/rme9652/hdspm.c
-+++ b/sound/pci/rme9652/hdspm.c
-@@ -4127,6 +4127,7 @@ static int snd_hdspm_hwdep_ioctl(struct
- 
- 	case SNDRV_HDSPM_IOCTL_GET_CONFIG_INFO:
- 
-+		memset(&info, 0, sizeof(info));
- 		spin_lock_irq(&hdspm->lock);
- 		info.pref_sync_ref = hdspm_pref_sync_ref(hdspm);
- 		info.wordclock_sync_check = hdspm_wc_sync_check(hdspm);
+ 		tail->next->prev = tail;
+ 		tail = tail->next;
 
 
