@@ -1,166 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752756Ab0JVDgN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Oct 2010 23:36:13 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:41315 "EHLO smtps.tip.net.au"
+	id S1752018Ab0JVDng (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Oct 2010 23:43:36 -0400
+Received: from ozlabs.org ([203.10.76.45]:43551 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751164Ab0JVDgM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Oct 2010 23:36:12 -0400
-Date: Fri, 22 Oct 2010 14:36:07 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Jeremy Fitzhardinge <jeremy@goop.org>,
-        Xen Devel <Xen-devel@lists.xensource.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Gianluca Guida <gianluca.guida@citrix.com>,
-        Yinghai Lu <yinghai@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: linux-next: manual merge of the xen tree with the tip tree
-Message-Id: <20101022143607.132d381c.sfr@canb.auug.org.au>
-In-Reply-To: <20101022140335.c4a3a48f.sfr@canb.auug.org.au>
-References: <20101022140335.c4a3a48f.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1751267Ab0JVDnf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Oct 2010 23:43:35 -0400
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [PATCH v2][GIT PULL] tracing: Prevent unloadable modules from using trace_bprintk()
+Date: Fri, 22 Oct 2010 14:13:28 +1030
+User-Agent: KMail/1.13.5 (Linux/2.6.35-22-generic; KDE/4.5.1; i686; ; )
+Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+References: <1287668742.16971.585.camel@gandalf.stny.rr.com> <201010220805.14454.rusty@rustcorp.com.au> <1287700463.16971.603.camel@gandalf.stny.rr.com>
+In-Reply-To: <1287700463.16971.603.camel@gandalf.stny.rr.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201010221413.28588.rusty@rustcorp.com.au>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jeremy,
-
-On Fri, 22 Oct 2010 14:03:35 +1100 Stephen Rothwell <sfr@canb.auug.org.au> wrote:
->
-> Today's linux-next merge of the xen tree got a conflict in
-> arch/x86/mm/init_32.c between commit
-> 1d931264af0f10649b35afa8fbd2e169da51ac08 ("x86-32, memblock: Make
-> add_highpages honor early reserved ranges") from the tip tree and commit
-> 07147a06ac3b1b028124ea00ba44e69eb8ea7685 ("x86/32: honor reservations of
-> high memory") from the xen tree.
+On Fri, 22 Oct 2010 09:04:23 am Steven Rostedt wrote:
+> On Fri, 2010-10-22 at 08:05 +1030, Rusty Russell wrote:
+> > On Fri, 22 Oct 2010 12:15:42 am Steven Rostedt wrote:
+> > > 
+> > > Ingo,
+> > > 
+> > > This is based off of my core-2 branch. I'm moved this patch after that
+> > > so if anyone has any objections, I can change this patch without holding
+> > > off the previous one.
+> > 
+> > I think disabling use in modules is lazy,
 > 
-> I have no idea how to fix this up, sorry, so I have used the xen tree
-> from next-20101021 for today.
+> and safer.
 
-It occurred to me that the conflicts might be useful to you, so here they
-are:
+Well then just delete trace_bprintk altogether.  Even safer!
 
-diff --cc arch/x86/mm/init_32.c
-index 5d0a671,573bc7f..0000000
---- a/arch/x86/mm/init_32.c
-+++ b/arch/x86/mm/init_32.c
-@@@ -423,28 -422,71 +423,78 @@@ static void __init add_one_highpage_ini
-  	totalhigh_pages++;
-  }
-  
- -struct add_highpages_data {
- -	unsigned long start_pfn;
- -	unsigned long end_pfn;
- -};
- -
- -static int __init add_highpages_work_fn(unsigned long start_pfn,
- -					 unsigned long end_pfn, void *datax)
- +void __init add_highpages_with_active_regions(int nid,
- +			 unsigned long start_pfn, unsigned long end_pfn)
-  {
-++<<<<<<< HEAD
- +	struct range *range;
- +	int nr_range;
- +	int i;
- +
- +	nr_range = __get_free_all_memory_range(&range, nid, start_pfn, end_pfn);
-++=======
-+ 	int node_pfn;
-+ 	struct page *page;
-+ 	phys_addr_t chunk_end, chunk_max;
-+ 	unsigned long final_start_pfn, final_end_pfn;
-+ 	struct add_highpages_data *data = (struct add_highpages_data *)datax;
-++>>>>>>> xen
-  
- -	final_start_pfn = max(start_pfn, data->start_pfn);
- -	final_end_pfn = min(end_pfn, data->end_pfn);
- -	if (final_start_pfn >= final_end_pfn)
- -		return 0;
- +	for (i = 0; i < nr_range; i++) {
- +		struct page *page;
- +		int node_pfn;
-  
-++<<<<<<< HEAD
- +		for (node_pfn = range[i].start; node_pfn < range[i].end;
- +		     node_pfn++) {
-++=======
-+ 	chunk_end = PFN_PHYS(final_start_pfn);
-+ 	chunk_max = PFN_PHYS(final_end_pfn);
-+ 
-+ 	/*
-+ 	 * Check for reserved areas.
-+ 	 */
-+ 	for (;;) {
-+ 		phys_addr_t chunk_start;
-+ 		chunk_start = early_res_next_free(chunk_end);
-+ 		
-+ 		/*
-+ 		 * Reserved area. Just count high mem pages.
-+ 		 */
-+ 		for (node_pfn = PFN_DOWN(chunk_end);
-+ 		     node_pfn < PFN_DOWN(chunk_start); node_pfn++) {
-+ 			if (pfn_valid(node_pfn))
-+ 				totalhigh_pages++;
-+ 		}
-+ 
-+ 		if (chunk_start >= chunk_max)
-+ 			break;
-+ 
-+ 		chunk_end = early_res_next_reserved(chunk_start, chunk_max);
-+ 		for (node_pfn = PFN_DOWN(chunk_start);
-+ 		     node_pfn < PFN_DOWN(chunk_end); node_pfn++) {
-++>>>>>>> xen
-  			if (!pfn_valid(node_pfn))
-  				continue;
-  			page = pfn_to_page(node_pfn);
-  			add_one_highpage_init(page);
-  		}
-  	}
- -
- -	return 0;
- -
-  }
-++<<<<<<< HEAD
-++=======
-+ 
-+ void __init add_highpages_with_active_regions(int nid, unsigned long start_pfn,
-+ 					      unsigned long end_pfn)
-+ {
-+ 	struct add_highpages_data data;
-+ 
-+ 	data.start_pfn = start_pfn;
-+ 	data.end_pfn = end_pfn;
-+ 	work_with_active_regions(nid, add_highpages_work_fn, &data);
-+ }
-+ 
-++>>>>>>> xen
-  #else
-  static inline void permanent_kmaps_init(pgd_t *pgd_base)
-  {
-diff --cc arch/x86/xen/mmu.c
-index f72d18c,930986d..0000000
---- a/arch/x86/xen/mmu.c
-+++ b/arch/x86/xen/mmu.c
-@@@ -56,7 -55,7 +56,11 @@@
-  #include <asm/e820.h>
-  #include <asm/linkage.h>
-  #include <asm/page.h>
-++<<<<<<< HEAD
- +#include <asm/init.h>
-++=======
-+ #include <asm/pat.h>
-++>>>>>>> xen
-  
-  #include <asm/xen/hypercall.h>
-  #include <asm/xen/hypervisor.h>
-* Unmerged path include/linux/early_res.h
-* Unmerged path kernel/early_res.c
+> > Can't you detect this on module unload and fix it up?  Or delay freeing the
+> > module until the trace ring is emptied?
+> 
+> One possibility is to magically make all string formats used in
+> trace_printk into its own section, and keep it allocated until the ring
+> buffer is empty. Or, we can just do that with the module's entire string
+> section, since we know whether or not that module has a trace_printk in
+> it or not.
 
--- 
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+Exactly.  Set a flag in the module if it resolves trace_printk, and defer freeing
+the module in that case.  This shouldn't be that hard...
+
+Rusty.
