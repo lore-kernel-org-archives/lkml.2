@@ -1,72 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752648Ab0JVDDs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Oct 2010 23:03:48 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:51178 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752018Ab0JVDDq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Oct 2010 23:03:46 -0400
-Date: Fri, 22 Oct 2010 14:03:35 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Jeremy Fitzhardinge <jeremy@goop.org>,
-        Xen Devel <Xen-devel@lists.xensource.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Gianluca Guida <gianluca.guida@citrix.com>,
-        Yinghai Lu <yinghai@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: linux-next: manual merge of the xen tree with the tip tree
-Message-Id: <20101022140335.c4a3a48f.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Fri__22_Oct_2010_14_03_35_+1100_P2b_wdij5HjiYeCF"
+	id S1752566Ab0JVDHd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Oct 2010 23:07:33 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:34574 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750932Ab0JVDHb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Oct 2010 23:07:31 -0400
+Date: Fri, 22 Oct 2010 04:07:28 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Nick Piggin <npiggin@kernel.dk>
+Cc: Dave Chinner <david@fromorbit.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: Inode Lock Scalability V7 (was V6)
+Message-ID: <20101022030728.GH19804@ZenIV.linux.org.uk>
+References: <1287622186-1935-1-git-send-email-david@fromorbit.com>
+ <20101021050422.GP32255@dastard>
+ <20101021132034.GB13620@amd>
+ <20101021235227.GI12506@dastard>
+ <20101022004540.GA5920@amd>
+ <20101022022010.GG19804@ZenIV.linux.org.uk>
+ <20101022023444.GA6573@amd>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101022023444.GA6573@amd>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__22_Oct_2010_14_03_35_+1100_P2b_wdij5HjiYeCF
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Fri, Oct 22, 2010 at 01:34:44PM +1100, Nick Piggin wrote:
 
-Hi all,
+> > 	* walkers of the sb, wb and hash lists can grab ->i_lock at will;
+> > it nests inside their locks.
+> 
+> What about if it is going on or off multiple data structures while
+> the inode is live, like inode_lock can protect today. Such as putting
+> it on the hash and sb list.
 
-Today's linux-next merge of the xen tree got a conflict in
-arch/x86/mm/init_32.c between commit
-1d931264af0f10649b35afa8fbd2e169da51ac08 ("x86-32, memblock: Make
-add_highpages honor early reserved ranges") from the tip tree and commit
-07147a06ac3b1b028124ea00ba44e69eb8ea7685 ("x86/32: honor reservations of
-high memory") from the xen tree.
+Look at the code.  You are overengineering it.  We do *not* need a framework
+for messing with these lists in arbitrary ways.  Where would we need to
+do that to an inode we don't hold a reference to or had placed I_FREEING
+on and would need i_lock held by caller?  Even assuming that we need to
+keep [present in hash, present on sb list] in sync (which I seriously doubt),
+we can bloody well grab both locks before i_lock.
 
-I have no idea how to fix this up, sorry, so I have used the xen tree
-from next-20101021 for today.
+> > inodes.  It's not an accidental subtle property of the code, it's bloody
+> > fundamental.
+> 
+> I didn't miss that, and I agree that at the point of my initial lock
+> break up, the locking is "wrong". Whether you correct it by changing
+> the lock ordering or by using RCU to do lookups is something I want to
+> debate further.
+> 
+> I think it is natural to be able to lock the inode and have it lock the
+> icache state.
 
-There were also conflicts in:
-	arch/x86/xen/mmu.c
-	include/linux/early_res.h
-	kernel/early_res.c
-
-These last two were deleted in the tip tree.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Fri__22_Oct_2010_14_03_35_+1100_P2b_wdij5HjiYeCF
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQEcBAEBAgAGBQJMwP8HAAoJEDMEi1NhKgbsaEEIAJXWPpVTAAffqsezu9MmSoYT
-4AsozAJPT6zQwna9uQ98vEOivlcTrbOHCmb6zXoKXFA8oohOc6AZYSvwls6Q+RCD
-x6WN3t+F2VYhrJLvtgUNGT1VkxTbt5Wj9NqsT+ncbCIII3A8eqNp7USkbWRigLCW
-RxEhiIuzZFVxlYTL1Hzk7bL37ieBZRHHiPOYDJGLFBJznMCwEsP9TR3Jb+CXtpuN
-1I0pBdSTdXermDDpDxbkl0jOizO4CS5S+QUcSJdT6N6RHCFvPElsxokBD9oH8Hh+
-edtW4UNZl395YqZWidlbvag5bxc79AVNI/8EY/a7BptpRo8BLM/LPgdf3UhfPdE=
-=8HgW
------END PGP SIGNATURE-----
-
---Signature=_Fri__22_Oct_2010_14_03_35_+1100_P2b_wdij5HjiYeCF--
+Code outside of fs/inode.c and fs/fs-writeback.c generally has no business
+looking at the full icache state, period.
