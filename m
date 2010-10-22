@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757336Ab0JVSjK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 14:39:10 -0400
+	id S1758681Ab0JVSjH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 14:39:07 -0400
 Received: from kroah.org ([198.145.64.141]:45881 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758333Ab0JVSjF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 14:39:05 -0400
+	id S1758319Ab0JVSjE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Oct 2010 14:39:04 -0400
 X-Mailbox-Line: From gregkh@clark.site Fri Oct 22 11:36:01 2010
-Message-Id: <20101022183601.551335503@clark.site>
+Message-Id: <20101022183601.460948927@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 22 Oct 2010 11:35:27 -0700
+Date: Fri, 22 Oct 2010 11:35:26 -0700
 From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org, Greg KH <greg@kroah.com>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Mike Galbraith <efault@gmx.de>
-Subject: [60/66] fix 2.6.32.23 suspend regression caused by commit 6f6198a
+        Jacob Pan <jacob.jun.pan@linux.intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@linux.intel.com>
+Subject: [59/66] x86: detect scattered cpuid features earlier
 In-Reply-To: <20101022183711.GA23214@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,65 +27,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mike Galbraith <efault@gmx.de>
+From: Jacob Pan <jacob.jun.pan@linux.intel.com>
 
-[Not upstream in the same way, as it was fixed differently there]
+commit 1dedefd1a066a795a87afca9c0236e1a94de9bf6 upstream.
 
-6f6198a sched: kill migration thread in CPU_POST_DEAD instead of CPU_DEAD
-leaves migration threads lying about.  Mask out CPU_TASKS_FROZEN.
+Some extra CPU features such as ARAT is needed in early boot so
+that x86_init function pointers can be set up properly.
+http://lkml.org/lkml/2010/5/18/519
+At start_kernel() level, this patch moves init_scattered_cpuid_features()
+from check_bugs() to setup_arch() -> early_cpu_init() which is earlier than
+platform specific x86_init layer setup. Suggested by HPA.
 
-Signed-off-by: Mike Galbraith <efault@gmx.de>
+Signed-off-by: Jacob Pan <jacob.jun.pan@linux.intel.com>
+LKML-Reference: <1274295685-6774-2-git-send-email-jacob.jun.pan@linux.intel.com>
+Acked-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- kernel/sched.c |    7 +------
- 1 file changed, 1 insertion(+), 6 deletions(-)
+ arch/x86/kernel/cpu/common.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/kernel/sched.c
-+++ b/kernel/sched.c
-@@ -7752,10 +7752,9 @@ migration_call(struct notifier_block *nf
- 	unsigned long flags;
- 	struct rq *rq;
+--- a/arch/x86/kernel/cpu/common.c
++++ b/arch/x86/kernel/cpu/common.c
+@@ -579,6 +579,7 @@ void __cpuinit get_cpu_cap(struct cpuinf
+ 	if (c->extended_cpuid_level >= 0x80000007)
+ 		c->x86_power = cpuid_edx(0x80000007);
  
--	switch (action) {
-+	switch (action & ~CPU_TASKS_FROZEN) {
++	init_scattered_cpuid_features(c);
+ }
  
- 	case CPU_UP_PREPARE:
--	case CPU_UP_PREPARE_FROZEN:
- 		p = kthread_create(migration_thread, hcpu, "migration/%d", cpu);
- 		if (IS_ERR(p))
- 			return NOTIFY_BAD;
-@@ -7770,7 +7769,6 @@ migration_call(struct notifier_block *nf
- 		break;
+ static void __cpuinit identify_cpu_without_cpuid(struct cpuinfo_x86 *c)
+@@ -727,7 +728,6 @@ static void __cpuinit generic_identify(s
  
- 	case CPU_ONLINE:
--	case CPU_ONLINE_FROZEN:
- 		/* Strictly unnecessary, as first user will wake it. */
- 		wake_up_process(cpu_rq(cpu)->migration_thread);
+ 	get_model_name(c); /* Default name */
  
-@@ -7787,7 +7785,6 @@ migration_call(struct notifier_block *nf
+-	init_scattered_cpuid_features(c);
+ 	detect_nopl(c);
+ }
  
- #ifdef CONFIG_HOTPLUG_CPU
- 	case CPU_UP_CANCELED:
--	case CPU_UP_CANCELED_FROZEN:
- 		if (!cpu_rq(cpu)->migration_thread)
- 			break;
- 		/* Unbind it from offline cpu so it can run. Fall thru. */
-@@ -7812,7 +7809,6 @@ migration_call(struct notifier_block *nf
- 		break;
- 
- 	case CPU_DEAD:
--	case CPU_DEAD_FROZEN:
- 		migrate_live_tasks(cpu);
- 		rq = cpu_rq(cpu);
- 		/* Idle task back to normal (off runqueue, low prio) */
-@@ -7846,7 +7842,6 @@ migration_call(struct notifier_block *nf
- 		break;
- 
- 	case CPU_DYING:
--	case CPU_DYING_FROZEN:
- 		/* Update our root-domain */
- 		rq = cpu_rq(cpu);
- 		spin_lock_irqsave(&rq->lock, flags);
 
 
