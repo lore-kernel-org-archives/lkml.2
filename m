@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759720Ab0JVTKy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 15:10:54 -0400
-Received: from kroah.org ([198.145.64.141]:34176 "EHLO coco.kroah.org"
+	id S932311Ab0JVTLM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 15:11:12 -0400
+Received: from kroah.org ([198.145.64.141]:34171 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759188Ab0JVS4c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 14:56:32 -0400
-X-Mailbox-Line: From gregkh@clark.site Fri Oct 22 11:52:32 2010
-Message-Id: <20101022185231.927586492@clark.site>
+	id S1759368Ab0JVS4b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Oct 2010 14:56:31 -0400
+X-Mailbox-Line: From gregkh@clark.site Fri Oct 22 11:52:31 2010
+Message-Id: <20101022185231.835057682@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 22 Oct 2010 11:51:25 -0700
+Date: Fri, 22 Oct 2010 11:51:24 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Jeff Mahoney <jeffm@suse.com>
-Subject: [051/103] reiserfs: fix dependency inversion between inode and reiserfs mutexes
+        Yegor Yefremov <yegorslists@googlemail.com>,
+        Jean Delvare <khali@linux-fr.org>
+Subject: [050/103] i2c-pca: Fix waitforcompletion() return value
 In-Reply-To: <20101022185455.GA9114@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,98 +26,86 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Frederic Weisbecker <fweisbec@gmail.com>
+From: Yegor Yefremov <yegor_sub1@visionsystems.de>
 
-commit 3f259d092c7a2fdf217823e8f1838530adb0cdb0 upstream.
+commit 6abb930af064fb1cf4177d32e2c7bfb89eee0fe5 upstream.
 
-The reiserfs mutex already depends on the inode mutex, so we can't lock
-the inode mutex in reiserfs_unpack() without using the safe locking API,
-because reiserfs_unpack() is always called with the reiserfs mutex locked.
+ret is still -1, if during the polling read_byte() returns at once
+with I2C_PCA_CON_SI set. So ret > 0 would lead *_waitforcompletion()
+to return 0, in spite of the proper behavior.
 
-This fixes:
+The routine was rewritten, so that ret has always a proper value,
+before returning.
 
-  =======================================================
-  [ INFO: possible circular locking dependency detected ]
-  2.6.35c #13
-  -------------------------------------------------------
-  lilo/1606 is trying to acquire lock:
-   (&sb->s_type->i_mutex_key#8){+.+.+.}, at: [<d0329450>] reiserfs_unpack+0x60/0x110 [reiserfs]
-
-  but task is already holding lock:
-   (&REISERFS_SB(s)->lock){+.+.+.}, at: [<d032a268>] reiserfs_write_lock+0x28/0x40 [reiserfs]
-
-  which lock already depends on the new lock.
-
-  the existing dependency chain (in reverse order) is:
-
-  -> #1 (&REISERFS_SB(s)->lock){+.+.+.}:
-         [<c1056347>] lock_acquire+0x67/0x80
-         [<c12f083d>] __mutex_lock_common+0x4d/0x410
-         [<c12f0c58>] mutex_lock_nested+0x18/0x20
-         [<d032a268>] reiserfs_write_lock+0x28/0x40 [reiserfs]
-         [<d0329e9a>] reiserfs_lookup_privroot+0x2a/0x90 [reiserfs]
-         [<d0316b81>] reiserfs_fill_super+0x941/0xe60 [reiserfs]
-         [<c10b7d17>] get_sb_bdev+0x117/0x170
-         [<d0313e21>] get_super_block+0x21/0x30 [reiserfs]
-         [<c10b74ba>] vfs_kern_mount+0x6a/0x1b0
-         [<c10b7659>] do_kern_mount+0x39/0xe0
-         [<c10cebe0>] do_mount+0x340/0x790
-         [<c10cf0b4>] sys_mount+0x84/0xb0
-         [<c12f25cd>] syscall_call+0x7/0xb
-
-  -> #0 (&sb->s_type->i_mutex_key#8){+.+.+.}:
-         [<c1056186>] __lock_acquire+0x1026/0x1180
-         [<c1056347>] lock_acquire+0x67/0x80
-         [<c12f083d>] __mutex_lock_common+0x4d/0x410
-         [<c12f0c58>] mutex_lock_nested+0x18/0x20
-         [<d0329450>] reiserfs_unpack+0x60/0x110 [reiserfs]
-         [<d0329772>] reiserfs_ioctl+0x272/0x320 [reiserfs]
-         [<c10c3228>] vfs_ioctl+0x28/0xa0
-         [<c10c3c5d>] do_vfs_ioctl+0x32d/0x5c0
-         [<c10c3f53>] sys_ioctl+0x63/0x70
-         [<c12f25cd>] syscall_call+0x7/0xb
-
-  other info that might help us debug this:
-
-  1 lock held by lilo/1606:
-   #0:  (&REISERFS_SB(s)->lock){+.+.+.}, at: [<d032a268>] reiserfs_write_lock+0x28/0x40 [reiserfs]
-
-  stack backtrace:
-  Pid: 1606, comm: lilo Not tainted 2.6.35c #13
-  Call Trace:
-   [<c1056186>] __lock_acquire+0x1026/0x1180
-   [<c1056347>] lock_acquire+0x67/0x80
-   [<c12f083d>] __mutex_lock_common+0x4d/0x410
-   [<c12f0c58>] mutex_lock_nested+0x18/0x20
-   [<d0329450>] reiserfs_unpack+0x60/0x110 [reiserfs]
-   [<d0329772>] reiserfs_ioctl+0x272/0x320 [reiserfs]
-   [<c10c3228>] vfs_ioctl+0x28/0xa0
-   [<c10c3c5d>] do_vfs_ioctl+0x32d/0x5c0
-   [<c10c3f53>] sys_ioctl+0x63/0x70
-   [<c12f25cd>] syscall_call+0x7/0xb
-
-Reported-by: Jarek Poplawski <jarkao2@gmail.com>
-Tested-by: Jarek Poplawski <jarkao2@gmail.com>
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Jeff Mahoney <jeffm@suse.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Yegor Yefremov <yegorslists@googlemail.com>
+Reviewed-by: Wolfram Sang <w.sang@pengutronix.de>
+Signed-off-by: Jean Delvare <khali@linux-fr.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/reiserfs/ioctl.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/i2c/busses/i2c-pca-isa.c      |   12 ++++++++----
+ drivers/i2c/busses/i2c-pca-platform.c |   11 +++++++----
+ 2 files changed, 15 insertions(+), 8 deletions(-)
 
---- a/fs/reiserfs/ioctl.c
-+++ b/fs/reiserfs/ioctl.c
-@@ -188,7 +188,7 @@ int reiserfs_unpack(struct inode *inode,
- 	/* we need to make sure nobody is changing the file size beneath
- 	 ** us
- 	 */
--	mutex_lock(&inode->i_mutex);
-+	reiserfs_mutex_lock_safe(&inode->i_mutex, inode->i_sb);
- 	reiserfs_write_lock(inode->i_sb);
+--- a/drivers/i2c/busses/i2c-pca-isa.c
++++ b/drivers/i2c/busses/i2c-pca-isa.c
+@@ -71,8 +71,8 @@ static int pca_isa_readbyte(void *pd, in
  
- 	write_from = inode->i_size & (blocksize - 1);
+ static int pca_isa_waitforcompletion(void *pd)
+ {
+-	long ret = ~0;
+ 	unsigned long timeout;
++	long ret;
+ 
+ 	if (irq > -1) {
+ 		ret = wait_event_timeout(pca_wait,
+@@ -81,11 +81,15 @@ static int pca_isa_waitforcompletion(voi
+ 	} else {
+ 		/* Do polling */
+ 		timeout = jiffies + pca_isa_ops.timeout;
+-		while (((pca_isa_readbyte(pd, I2C_PCA_CON)
+-				& I2C_PCA_CON_SI) == 0)
+-				&& (ret = time_before(jiffies, timeout)))
++		do {
++			ret = time_before(jiffies, timeout);
++			if (pca_isa_readbyte(pd, I2C_PCA_CON)
++					& I2C_PCA_CON_SI)
++				break;
+ 			udelay(100);
++		} while (ret);
+ 	}
++
+ 	return ret > 0;
+ }
+ 
+--- a/drivers/i2c/busses/i2c-pca-platform.c
++++ b/drivers/i2c/busses/i2c-pca-platform.c
+@@ -80,8 +80,8 @@ static void i2c_pca_pf_writebyte32(void
+ static int i2c_pca_pf_waitforcompletion(void *pd)
+ {
+ 	struct i2c_pca_pf_data *i2c = pd;
+-	long ret = ~0;
+ 	unsigned long timeout;
++	long ret;
+ 
+ 	if (i2c->irq) {
+ 		ret = wait_event_timeout(i2c->wait,
+@@ -90,10 +90,13 @@ static int i2c_pca_pf_waitforcompletion(
+ 	} else {
+ 		/* Do polling */
+ 		timeout = jiffies + i2c->adap.timeout;
+-		while (((i2c->algo_data.read_byte(i2c, I2C_PCA_CON)
+-				& I2C_PCA_CON_SI) == 0)
+-				&& (ret = time_before(jiffies, timeout)))
++		do {
++			ret = time_before(jiffies, timeout);
++			if (i2c->algo_data.read_byte(i2c, I2C_PCA_CON)
++					& I2C_PCA_CON_SI)
++				break;
+ 			udelay(100);
++		} while (ret);
+ 	}
+ 
+ 	return ret > 0;
 
 
