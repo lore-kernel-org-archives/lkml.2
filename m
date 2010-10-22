@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753874Ab0JVFSp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 01:18:45 -0400
+	id S1754027Ab0JVFTD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 01:19:03 -0400
 Received: from mail.perches.com ([173.55.12.10]:3464 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752845Ab0JVFR0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752793Ab0JVFR0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 22 Oct 2010 01:17:26 -0400
 From: Joe Perches <joe@perches.com>
 To: Jiri Kosina <trivial@kernel.org>
-Cc: Wan ZongShun <mcuos.com@gmail.com>,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        linux-arm-kernel@lists.infradead.org, rtc-linux@googlegroups.com,
+Cc: Geoff Levand <geoff@infradead.org>,
+        Grant Grundler <grundler@parisc-linux.org>,
+        Kyle McMartin <kyle@mcmartin.ca>, netdev@vger.kernel.org,
+        cbe-oss-dev@lists.ozlabs.org, linuxppc-dev@lists.ozlabs.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 4/9] drivers/rtc: typo fix of faild to failed
-Date: Thu, 21 Oct 2010 22:17:15 -0700
-Message-Id: <4279ee540bfed9c40ba26698bfe7abddb8921ee4.1287724261.git.joe@perches.com>
+Subject: [PATCH 3/9] drivers/net: typo fix of faild to failed
+Date: Thu, 21 Oct 2010 22:17:14 -0700
+Message-Id: <246fa5db6273b9f79c3bb27ab2abb22e85fe7b38.1287724261.git.joe@perches.com>
 X-Mailer: git-send-email 1.7.3.1.g432b3.dirty
 In-Reply-To: <cover.1287724261.git.joe@perches.com>
 References: <cover.1287724261.git.joe@perches.com>
@@ -24,22 +25,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Joe Perches <joe@perches.com>
 ---
- drivers/rtc/rtc-nuc900.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ drivers/net/ps3_gelic_net.c |    4 ++--
+ drivers/net/tulip/pnic2.c   |    2 +-
+ 2 files changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/rtc/rtc-nuc900.c b/drivers/rtc/rtc-nuc900.c
-index 62de66a..ddb0857 100644
---- a/drivers/rtc/rtc-nuc900.c
-+++ b/drivers/rtc/rtc-nuc900.c
-@@ -274,7 +274,7 @@ static int __devinit nuc900_rtc_probe(struct platform_device *pdev)
- 	nuc900_rtc->rtcdev = rtc_device_register(pdev->name, &pdev->dev,
- 						&nuc900_rtc_ops, THIS_MODULE);
- 	if (IS_ERR(nuc900_rtc->rtcdev)) {
--		dev_err(&pdev->dev, "rtc device register faild\n");
-+		dev_err(&pdev->dev, "rtc device register failed\n");
- 		err = PTR_ERR(nuc900_rtc->rtcdev);
- 		goto fail3;
- 	}
+diff --git a/drivers/net/ps3_gelic_net.c b/drivers/net/ps3_gelic_net.c
+index 87d6b8f..49f6700 100644
+--- a/drivers/net/ps3_gelic_net.c
++++ b/drivers/net/ps3_gelic_net.c
+@@ -642,7 +642,7 @@ static inline void gelic_card_disable_rxdmac(struct gelic_card *card)
+ 	status = lv1_net_stop_rx_dma(bus_id(card), dev_id(card), 0);
+ 	if (status)
+ 		dev_err(ctodev(card),
+-			"lv1_net_stop_rx_dma faild, %d\n", status);
++			"lv1_net_stop_rx_dma failed, %d\n", status);
+ }
+ 
+ /**
+@@ -660,7 +660,7 @@ static inline void gelic_card_disable_txdmac(struct gelic_card *card)
+ 	status = lv1_net_stop_tx_dma(bus_id(card), dev_id(card), 0);
+ 	if (status)
+ 		dev_err(ctodev(card),
+-			"lv1_net_stop_tx_dma faild, status=%d\n", status);
++			"lv1_net_stop_tx_dma failed, status=%d\n", status);
+ }
+ 
+ /**
+diff --git a/drivers/net/tulip/pnic2.c b/drivers/net/tulip/pnic2.c
+index b819766..186d725 100644
+--- a/drivers/net/tulip/pnic2.c
++++ b/drivers/net/tulip/pnic2.c
+@@ -59,7 +59,7 @@
+  * Bit 14:12 - autonegotiation state (write 001 to start autonegotiate)
+  * Bit 3     - Autopolarity state
+  * Bit 2     - LS10B - link state of 10baseT 0 - good, 1 - failed
+- * Bit 1     - LS100B - link state of 100baseT 0 - good, 1- faild
++ * Bit 1     - LS100B - link state of 100baseT 0 - good, 1- failed
+  *
+  *
+  * Data Port Selection Info
 -- 
 1.7.3.1.g432b3.dirty
 
