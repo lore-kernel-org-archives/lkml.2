@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758250Ab0JVSks (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 14:40:48 -0400
+	id S932331Ab0JVSlH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 14:41:07 -0400
 Received: from kroah.org ([198.145.64.141]:45881 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758671Ab0JVSjH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 14:39:07 -0400
+	id S1758643Ab0JVSjG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Oct 2010 14:39:06 -0400
 X-Mailbox-Line: From gregkh@clark.site Fri Oct 22 11:36:01 2010
-Message-Id: <20101022183601.727423229@clark.site>
+Message-Id: <20101022183601.635556593@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 22 Oct 2010 11:35:29 -0700
+Date: Fri, 22 Oct 2010 11:35:28 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
         Roland McGrath <roland@redhat.com>, Chuck Ebbert <cebbert@redhat.com>
-Subject: [62/66] execve: improve interactivity with large arguments
+Subject: [61/66] setup_arg_pages: diagnose excessive argument size
 In-Reply-To: <20101022183711.GA23214@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,17 +27,20 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Roland McGrath <roland@redhat.com>
 
-commit 7993bc1f4663c0db67bb8f0d98e6678145b387cd upstream.
+commit 1b528181b2ffa14721fb28ad1bd539fe1732c583 upstream.
 
-This adds a preemption point during the copying of the argument and
-environment strings for execve, in copy_strings().  There is already
-a preemption point in the count() loop, so this doesn't add any new
-points in the abstract sense.
+The CONFIG_STACK_GROWSDOWN variant of setup_arg_pages() does not
+check the size of the argument/environment area on the stack.
+When it is unworkably large, shift_arg_pages() hits its BUG_ON.
+This is exploitable with a very large RLIMIT_STACK limit, to
+create a crash pretty easily.
 
-When the total argument+environment strings are very large, the time
-spent copying them can be much more than a normal user time slice.
-So this change improves the interactivity of the rest of the system
-when one process is doing an execve with very large arguments.
+Check that the initial stack is not too large to make it possible
+to map in any executable.  We're not checking that the actual
+executable (or intepreter, for binfmt_elf) will fit.  So those
+mappings might clobber part of the initial stack mapping.  But
+that is just userland lossage that userland made happen, not a
+kernel problem.
 
 Signed-off-by: Roland McGrath <roland@redhat.com>
 Reviewed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
@@ -46,19 +49,22 @@ Cc: Chuck Ebbert <cebbert@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/exec.c |    2 ++
- 1 file changed, 2 insertions(+)
+ fs/exec.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
 --- a/fs/exec.c
 +++ b/fs/exec.c
-@@ -419,6 +419,8 @@ static int copy_strings(int argc, char _
- 		while (len > 0) {
- 			int offset, bytes_to_copy;
- 
-+			cond_resched();
+@@ -594,6 +594,11 @@ int setup_arg_pages(struct linux_binprm
+ #else
+ 	stack_top = arch_align_stack(stack_top);
+ 	stack_top = PAGE_ALIGN(stack_top);
 +
- 			offset = pos % PAGE_SIZE;
- 			if (offset == 0)
- 				offset = PAGE_SIZE;
++	if (unlikely(stack_top < mmap_min_addr) ||
++	    unlikely(vma->vm_end - vma->vm_start >= stack_top - mmap_min_addr))
++		return -ENOMEM;
++
+ 	stack_shift = vma->vm_end - stack_top;
+ 
+ 	bprm->p -= stack_shift;
 
 
