@@ -1,44 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752464Ab0JVVwn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 17:52:43 -0400
-Received: from web31804.mail.mud.yahoo.com ([68.142.207.67]:33408 "HELO
-	web31804.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1752313Ab0JVVwl convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 17:52:41 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.com;
-  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Reply-To:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type:Content-Transfer-Encoding;
-  b=hH0GlHFG94PLzXORWvxiqx1L0XKGZwPZXFW5+iOxGcFyBT6ZKex3gHktlyGeSCjl3etk6BIhT8wAE3kFLDNYyFY12VUehjDxlee2LzSTKWwHx53MgDD/YW9JKoOmcZueh3MaNlaoPGzDh+VLWNgR1gPaKmqLjBaW4wM0KbOc1y8=;
-Message-ID: <927255.77335.qm@web31804.mail.mud.yahoo.com>
-X-YMail-OSG: bq.AGzgVM1nGkUBG6eu_65_oi1vJ0M7Et6_lIOMbrU23g1H
- G9gNB.C2SdXkYWCjx0wdApS100Td40R4rdZ7XONDSukhdI53IPfzjYH.dMzo
- 0IHDvKeEgYEwq4SLY6cxwSLSD3_QKaaKhrO7JJmLnzl4ge8s_qEOxjk_OCXu
- q0NbjIo8VrBqxE8oUB.ygbWcQGAgl93KI9VVp3N.rU5EJhu7vorN9aqI.67N
- fBgj9scllMj3QZ3lI7hVOC4M1nV57Q4YtfKE8h7xOjbtiSn5STbcqECe2H13
- ZcdpVX3Aumc36K2koCHyqBPlpc2ibuEkmgnVf_bTSCcfmn2ImISwxxls81kc
- HFAoSzKUGuHc_7UW1Og3nhpQhHlvsTcvq9toGTw--
-X-Mailer: YahooMailClassic/11.4.9 YahooMailWebService/0.8.107.285259
-Date: Fri, 22 Oct 2010 14:52:40 -0700 (PDT)
-From: Luben Tuikov <ltuikov@yahoo.com>
-Reply-To: ltuikov@yahoo.com
-Subject: Re: [PATCH] [USB] Use normalized sense when emulating autosense
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: Greg KH <greg@kroah.com>, linux-usb@vger.kernel.org,
-        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
-In-Reply-To: <Pine.LNX.4.44L0.1010221726530.4510-100000@iolanthe.rowland.org>
+	id S1752877Ab0JVV5P (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 17:57:15 -0400
+Received: from e4.ny.us.ibm.com ([32.97.182.144]:49976 "EHLO e4.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751929Ab0JVV5O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Oct 2010 17:57:14 -0400
+Date: Fri, 22 Oct 2010 14:57:08 -0700
+From: Matt Helsley <matthltc@us.ibm.com>
+To: Matt Helsley <matthltc@us.ibm.com>
+Cc: Li Zefan <lizf@cn.fujitsu.com>, containers@lists.linux-foundation.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        Stephane Eranian <eranian@google.com>,
+        "akpm >> Andrew Morton" <akpm@linux-foundation.org>,
+        Paul Menage <menage@google.com>
+Subject: Re: [PATCH 5/7] cgroups: Make freezer subsystem bindable
+Message-ID: <20101022215708.GM10119@count0.beaverton.ibm.com>
+References: <4CC146A4.9090505@cn.fujitsu.com>
+ <4CC1473D.9070201@cn.fujitsu.com>
+ <20101022205755.GJ10119@count0.beaverton.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101022205755.GJ10119@count0.beaverton.ibm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---- On Fri, 10/22/10, Alan Stern <stern@rowland.harvard.edu> wrote:
-> Yeah, the new one is better.  I would have preferred
-> to see fm_ili 
-> explained in a comment, but this is okay.
+On Fri, Oct 22, 2010 at 01:57:55PM -0700, Matt Helsley wrote:
+> On Fri, Oct 22, 2010 at 04:11:41PM +0800, Li Zefan wrote:
+> > To make it bindable, we need to thaw all processes when unbinding
+> > the freezer subsystem from a cgroup hierarchy.
+> > 
+> > Signed-off-by: Li Zefan <lizf@cn.fujitsu.com>
+> 
+> Based on experience using cgroups and questions we've fielded in the
+> past on IRC I'd say users will really appreciate this.
+> 
+> We're planning to use the freezer in checkpoint/restart. Since
+> checkpoint requires the tasks to remain frozen for the duration of
+> the syscall we add a kernel-internal freezer subsystem interface
+> which prevents the cgroup from thawing. So we'll need some way to
+> "block" unbinding for that as well.
 
-Thanks. I tried to preserve the logic and the comments as much as possible and tried not to introduce neither additional comment nor additional logic. Is this an implicit ACK then? Or does Greg needs an explicit one?  Will he or I have to ask for an explicit ACK? From whom else?
+And in case you're curious here are the portions of the checkpoint/restart
+tree which implement the above:
 
+http://www.linux-cr.org/git/?p=linux-cr.git;a=commitdiff;h=a584c1c6b729a544c76cbb173ce62ffb6575b1d3
+http://www.linux-cr.org/git/?p=linux-cr.git;a=commitdiff;h=34869146ecd662352c0024e0769ec77e643fb1e1
+
+Cheers,
+	-Matt Helsley
