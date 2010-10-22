@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758986Ab0JVSny (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 14:43:54 -0400
-Received: from kroah.org ([198.145.64.141]:45967 "EHLO coco.kroah.org"
+	id S1758939Ab0JVSoM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 14:44:12 -0400
+Received: from kroah.org ([198.145.64.141]:45963 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758889Ab0JVSlf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 14:41:35 -0400
+	id S1758875Ab0JVSle (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Oct 2010 14:41:34 -0400
 X-Mailbox-Line: From gregkh@clark.site Fri Oct 22 11:40:33 2010
-Message-Id: <20101022184033.209913125@clark.site>
+Message-Id: <20101022184033.121199762@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 22 Oct 2010 11:39:33 -0700
+Date: Fri, 22 Oct 2010 11:39:32 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Luca Tettamanti <kronos.it@gmail.com>,
-        Chris Snook <chris.snook@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [08/17] atl1: fix resume
+        Johannes Berg <johannes.berg@intel.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [07/17] wext: fix potential private ioctl memory content leak
 In-Reply-To: <20101022184048.GA25391@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,40 +26,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Luca Tettamanti <kronos.it@gmail.com>
+From: Johannes Berg <johannes.berg@intel.com>
 
-commit ec5a32f67c603b11d68eb283d94eb89a4f6cfce1 upstream.
+commit df6d02300f7c2fbd0fbe626d819c8e5237d72c62 upstream.
 
-adapter->cmb.cmb is initialized when the device is opened and freed when
-it's closed. Accessing it unconditionally during resume results either
-in a crash (NULL pointer dereference, when the interface has not been
-opened yet) or data corruption (when the interface has been used and
-brought down adapter->cmb.cmb points to a deallocated memory area).
+When a driver doesn't fill the entire buffer, old
+heap contents may remain, and if it also doesn't
+update the length properly, this old heap content
+will be copied back to userspace.
 
-Signed-off-by: Luca Tettamanti <kronos.it@gmail.com>
-Acked-by: Chris Snook <chris.snook@gmail.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+It is very unlikely that this happens in any of
+the drivers using private ioctls since it would
+show up as junk being reported by iwpriv, but it
+seems better to be safe here, so use kzalloc.
+
+Reported-by: Jeff Mahoney <jeffm@suse.com>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/net/atlx/atl1.c |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ net/wireless/wext.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/net/atlx/atl1.c
-+++ b/drivers/net/atlx/atl1.c
-@@ -2881,10 +2881,11 @@ static int atl1_resume(struct pci_dev *p
- 	pci_enable_wake(pdev, PCI_D3cold, 0);
+--- a/net/wireless/wext.c
++++ b/net/wireless/wext.c
+@@ -947,7 +947,7 @@ static int ioctl_private_iw_point(struct
+ 	} else if (!iwp->pointer)
+ 		return -EFAULT;
  
- 	atl1_reset_hw(&adapter->hw);
--	adapter->cmb.cmb->int_stats = 0;
+-	extra = kmalloc(extra_size, GFP_KERNEL);
++	extra = kzalloc(extra_size, GFP_KERNEL);
+ 	if (!extra)
+ 		return -ENOMEM;
  
--	if (netif_running(netdev))
-+	if (netif_running(netdev)) {
-+		adapter->cmb.cmb->int_stats = 0;
- 		atl1_up(adapter);
-+	}
- 	netif_device_attach(netdev);
- 
- 	return 0;
 
 
