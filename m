@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757867Ab0JVSip (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 14:38:45 -0400
-Received: from kroah.org ([198.145.64.141]:45769 "EHLO coco.kroah.org"
+	id S1758848Ab0JVSsm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 14:48:42 -0400
+Received: from kroah.org ([198.145.64.141]:45790 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757676Ab0JVSin (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 14:38:43 -0400
+	id S1757973Ab0JVSiq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Oct 2010 14:38:46 -0400
 X-Mailbox-Line: From gregkh@clark.site Fri Oct 22 11:35:59 2010
-Message-Id: <20101022183559.504498040@clark.site>
+Message-Id: <20101022183559.768822964@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 22 Oct 2010 11:35:04 -0700
+Date: Fri, 22 Oct 2010 11:35:07 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Nagendra Singh Tomar <tomer_iisc@yahoo.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Jarek Poplawski <jarkao2@gmail.com>, Patrick McHardy <kaber@trash.net>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [37/66] net: Fix the condition passed to sk_wait_event()
+Subject: [40/66] ip: fix truesize mismatch in ip fragmentation
 In-Reply-To: <20101022183711.GA23214@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,69 +28,157 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Nagendra Tomar <tomer_iisc@yahoo.com>
+From: Eric Dumazet <eric.dumazet@gmail.com>
 
-[ Upstream commit 482964e56e1320cb7952faa1932d8ecf59c4bf75 ]
+[ Upstream commit 3d13008e7345fa7a79d8f6438150dc15d6ba6e9d ]
 
-This patch fixes the condition (3rd arg) passed to sk_wait_event() in
-sk_stream_wait_memory(). The incorrect check in sk_stream_wait_memory()
-causes the following soft lockup in tcp_sendmsg() when the global tcp
-memory pool has exhausted.
+Special care should be taken when slow path is hit in ip_fragment() :
 
->>> snip <<<
+When walking through frags, we transfert truesize ownership from skb to
+frags. Then if we hit a slow_path condition, we must undo this or risk
+uncharging frags->truesize twice, and in the end, having negative socket
+sk_wmem_alloc counter, or even freeing socket sooner than expected.
 
-localhost kernel: BUG: soft lockup - CPU#3 stuck for 11s! [sshd:6429]
-localhost kernel: CPU 3:
-localhost kernel: RIP: 0010:[sk_stream_wait_memory+0xcd/0x200]  [sk_stream_wait_memory+0xcd/0x200] sk_stream_wait_memory+0xcd/0x200
-localhost kernel:
-localhost kernel: Call Trace:
-localhost kernel:  [sk_stream_wait_memory+0x1b1/0x200] sk_stream_wait_memory+0x1b1/0x200
-localhost kernel:  [<ffffffff802557c0>] autoremove_wake_function+0x0/0x40
-localhost kernel:  [ipv6:tcp_sendmsg+0x6e6/0xe90] tcp_sendmsg+0x6e6/0xce0
-localhost kernel:  [sock_aio_write+0x126/0x140] sock_aio_write+0x126/0x140
-localhost kernel:  [xfs:do_sync_write+0xf1/0x130] do_sync_write+0xf1/0x130
-localhost kernel:  [<ffffffff802557c0>] autoremove_wake_function+0x0/0x40
-localhost kernel:  [hrtimer_start+0xe3/0x170] hrtimer_start+0xe3/0x170
-localhost kernel:  [vfs_write+0x185/0x190] vfs_write+0x185/0x190
-localhost kernel:  [sys_write+0x50/0x90] sys_write+0x50/0x90
-localhost kernel:  [system_call+0x7e/0x83] system_call+0x7e/0x83
+Many thanks to Nick Bowler, who provided a very clean bug report and
+test program.
 
->>> snip <<<
+Thanks to Jarek for reviewing my first patch and providing a V2
 
-What is happening is, that the sk_wait_event() condition passed from
-sk_stream_wait_memory() evaluates to true for the case of tcp global memory
-exhaustion. This is because both sk_stream_memory_free() and vm_wait are true
-which causes sk_wait_event() to *not* call schedule_timeout().
-Hence sk_stream_wait_memory() returns immediately to the caller w/o sleeping.
-This causes the caller to again try allocation, which again fails and again
-calls sk_stream_wait_memory(), and so on.
+While Nick bisection pointed to commit 2b85a34e911 (net: No more
+expensive sock_hold()/sock_put() on each tx), underlying bug is older
+(2.6.12-rc5)
 
-[ Bug introduced by commit c1cbe4b7ad0bc4b1d98ea708a3fecb7362aa4088
-  ("[NET]: Avoid atomic xchg() for non-error case") -DaveM ]
+A side effect is to extend work done in commit b2722b1c3a893e
+(ip_fragment: also adjust skb->truesize for packets not owned by a
+socket) to ipv6 as well.
 
-Signed-off-by: Nagendra Singh Tomar <tomer_iisc@yahoo.com>
+Reported-and-bisected-by: Nick Bowler <nbowler@elliptictech.com>
+Tested-by: Nick Bowler <nbowler@elliptictech.com>
+Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+CC: Jarek Poplawski <jarkao2@gmail.com>
+CC: Patrick McHardy <kaber@trash.net>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- net/core/stream.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ net/ipv4/ip_output.c  |   19 +++++++++++++------
+ net/ipv6/ip6_output.c |   18 +++++++++++++-----
+ 2 files changed, 26 insertions(+), 11 deletions(-)
 
---- a/net/core/stream.c
-+++ b/net/core/stream.c
-@@ -140,10 +140,10 @@ int sk_stream_wait_memory(struct sock *s
+--- a/net/ipv4/ip_output.c
++++ b/net/ipv4/ip_output.c
+@@ -476,9 +476,8 @@ int ip_fragment(struct sk_buff *skb, int
+ 	 * we can switch to copy when see the first bad fragment.
+ 	 */
+ 	if (skb_has_frags(skb)) {
+-		struct sk_buff *frag;
++		struct sk_buff *frag, *frag2;
+ 		int first_len = skb_pagelen(skb);
+-		int truesizes = 0;
  
- 		set_bit(SOCK_NOSPACE, &sk->sk_socket->flags);
- 		sk->sk_write_pending++;
--		sk_wait_event(sk, &current_timeo, !sk->sk_err &&
--						  !(sk->sk_shutdown & SEND_SHUTDOWN) &&
--						  sk_stream_memory_free(sk) &&
--						  vm_wait);
-+		sk_wait_event(sk, &current_timeo, sk->sk_err ||
-+						  (sk->sk_shutdown & SEND_SHUTDOWN) ||
-+						  (sk_stream_memory_free(sk) &&
-+						  !vm_wait));
- 		sk->sk_write_pending--;
+ 		if (first_len - hlen > mtu ||
+ 		    ((first_len - hlen) & 7) ||
+@@ -491,18 +490,18 @@ int ip_fragment(struct sk_buff *skb, int
+ 			if (frag->len > mtu ||
+ 			    ((frag->len & 7) && frag->next) ||
+ 			    skb_headroom(frag) < hlen)
+-			    goto slow_path;
++				goto slow_path_clean;
  
- 		if (vm_wait) {
+ 			/* Partially cloned skb? */
+ 			if (skb_shared(frag))
+-				goto slow_path;
++				goto slow_path_clean;
+ 
+ 			BUG_ON(frag->sk);
+ 			if (skb->sk) {
+ 				frag->sk = skb->sk;
+ 				frag->destructor = sock_wfree;
+ 			}
+-			truesizes += frag->truesize;
++			skb->truesize -= frag->truesize;
+ 		}
+ 
+ 		/* Everything is OK. Generate! */
+@@ -512,7 +511,6 @@ int ip_fragment(struct sk_buff *skb, int
+ 		frag = skb_shinfo(skb)->frag_list;
+ 		skb_frag_list_init(skb);
+ 		skb->data_len = first_len - skb_headlen(skb);
+-		skb->truesize -= truesizes;
+ 		skb->len = first_len;
+ 		iph->tot_len = htons(first_len);
+ 		iph->frag_off = htons(IP_MF);
+@@ -564,6 +562,15 @@ int ip_fragment(struct sk_buff *skb, int
+ 		}
+ 		IP_INC_STATS(dev_net(dev), IPSTATS_MIB_FRAGFAILS);
+ 		return err;
++
++slow_path_clean:
++		skb_walk_frags(skb, frag2) {
++			if (frag2 == frag)
++				break;
++			frag2->sk = NULL;
++			frag2->destructor = NULL;
++			skb->truesize += frag2->truesize;
++		}
+ 	}
+ 
+ slow_path:
+--- a/net/ipv6/ip6_output.c
++++ b/net/ipv6/ip6_output.c
+@@ -643,7 +643,7 @@ static int ip6_fragment(struct sk_buff *
+ 
+ 	if (skb_has_frags(skb)) {
+ 		int first_len = skb_pagelen(skb);
+-		int truesizes = 0;
++		struct sk_buff *frag2;
+ 
+ 		if (first_len - hlen > mtu ||
+ 		    ((first_len - hlen) & 7) ||
+@@ -655,18 +655,18 @@ static int ip6_fragment(struct sk_buff *
+ 			if (frag->len > mtu ||
+ 			    ((frag->len & 7) && frag->next) ||
+ 			    skb_headroom(frag) < hlen)
+-			    goto slow_path;
++				goto slow_path_clean;
+ 
+ 			/* Partially cloned skb? */
+ 			if (skb_shared(frag))
+-				goto slow_path;
++				goto slow_path_clean;
+ 
+ 			BUG_ON(frag->sk);
+ 			if (skb->sk) {
+ 				frag->sk = skb->sk;
+ 				frag->destructor = sock_wfree;
+-				truesizes += frag->truesize;
+ 			}
++			skb->truesize -= frag->truesize;
+ 		}
+ 
+ 		err = 0;
+@@ -697,7 +697,6 @@ static int ip6_fragment(struct sk_buff *
+ 
+ 		first_len = skb_pagelen(skb);
+ 		skb->data_len = first_len - skb_headlen(skb);
+-		skb->truesize -= truesizes;
+ 		skb->len = first_len;
+ 		ipv6_hdr(skb)->payload_len = htons(first_len -
+ 						   sizeof(struct ipv6hdr));
+@@ -760,6 +759,15 @@ static int ip6_fragment(struct sk_buff *
+ 			      IPSTATS_MIB_FRAGFAILS);
+ 		dst_release(&rt->u.dst);
+ 		return err;
++
++slow_path_clean:
++		skb_walk_frags(skb, frag2) {
++			if (frag2 == frag)
++				break;
++			frag2->sk = NULL;
++			frag2->destructor = NULL;
++			skb->truesize += frag2->truesize;
++		}
+ 	}
+ 
+ slow_path:
 
 
