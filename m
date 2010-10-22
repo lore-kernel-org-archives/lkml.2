@@ -1,91 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757981Ab0JVRAI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 13:00:08 -0400
-Received: from kroah.org ([198.145.64.141]:60357 "EHLO coco.kroah.org"
+	id S1758163Ab0JVRBA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 13:01:00 -0400
+Received: from kroah.org ([198.145.64.141]:60562 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753890Ab0JVRAH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 13:00:07 -0400
-Date: Fri, 22 Oct 2010 09:20:38 -0700
+	id S1758113Ab0JVRA7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Oct 2010 13:00:59 -0400
+Date: Fri, 22 Oct 2010 09:59:12 -0700
 From: Greg KH <greg@kroah.com>
-To: Borislav Petkov <bp@amd64.org>
-Cc: "Roedel, Joerg" <Joerg.Roedel@amd.com>, Greg KH <gregkh@suse.de>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: Erratum 383 fix for 32 bit x86 kernels
-Message-ID: <20101022162038.GA10343@kroah.com>
-References: <20100924115239.GA9817@amd.com>
- <20100924160205.GB21235@kroah.com>
- <20100924162433.GB7627@aftab>
- <20101022161810.GF18595@kroah.com>
+To: Artur Baruchi <mail.baruchi@gmail.com>
+Cc: 7eggert@gmx.de, linux-kernel@vger.kernel.org
+Subject: Re: Mapping Inode to File
+Message-ID: <20101022165912.GA18639@kroah.com>
+References: <fGqN4-2Ns-3@gated-at.bofh.it>
+ <E1P9Iy2-0001mY-UA@be1.7eggert.dyndns.org>
+ <AANLkTikebrSiW0unB8xy8UU1KNGaOZBu_HT=j9wQQeY5@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20101022161810.GF18595@kroah.com>
+In-Reply-To: <AANLkTikebrSiW0unB8xy8UU1KNGaOZBu_HT=j9wQQeY5@mail.gmail.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 22, 2010 at 09:18:10AM -0700, Greg KH wrote:
-> On Fri, Sep 24, 2010 at 06:24:34PM +0200, Borislav Petkov wrote:
-> > From: Greg KH <greg@kroah.com>
-> > Date: Fri, Sep 24, 2010 at 12:02:06PM -0400
-> > 
-> > > >  extern unsigned long setup_trampoline(void);
-> > > > +extern void __init setup_trampoline_page_table(void);
-> > > >  extern void __init reserve_trampoline_memory(void);
-> > > >  #else
-> > > >  static inline void reserve_trampoline_memory(void) {};
-> > > > +extern void __init setup_trampoline_page_table(void) {};
-> > > >  #endif /* CONFIG_X86_TRAMPOLINE */
-> > > 
-> > > I don't think that last setup_trampoline_page_table() line is correct
-> > > here.
-> > > 
-> > > Shouldn't it be:
-> > > 	static inline void setup_trampoline_page_table(void) {};
-> > > instead?
-> > > 
-> > > Otherwise I get the following error building the .32 code with this
-> > > patch:
-> > > 	  CC      arch/x86/kernel/setup.o
-> > > 	  arch/x86/kernel/setup.c: In function ‘setup_arch’:
-> > > 	  arch/x86/kernel/setup.c:1001:2: error: implicit declaration of function ‘setup_trampoline_page_table’
-> > > 
-> > > Is this really how the code looks upstream?
-> > > 
-> > > Hm, even with changing the function prototype, I still get an error
-> > > building on the .32-stable tree on x86-64, so I'm dropping this patch
-> > > from there.
-> > 
-> > Yeah, Joerg forgot 8848a91068c018bc91f597038a0f41462a0f88a4.
-> > 
-> > > Also, it didn't apply cleanly to .32-stable, I had to apply this chunk
-> > > by hand, no big deal.
-> > > 
-> > > So, why not I just take the original git commits that are in Linus's
-> > > tree?  That should work, right?  If so, do I just need to use those two
-> > > above-mentioned commits?  Or something else?  I prefer taking the
-> > > original commits as it makes spelunking over time much easier.
-> > 
-> > Sure, you need
-> > 
-> > 1. fd89a137924e0710078c3ae855e7cec1c43cb845	<-- erratum fix
-> > 2. 8848a91068c018bc91f597038a0f41462a0f88a4	<-- build fix
-> > 3. b7d460897739e02f186425b7276e3fdb1595cea7	<-- VMSPLIT_* fix
-> > 
-> > in that order and they should cherry-pick fine.
-> > 
-> > Let me know if you need something tested on our end.
-> 
-> Nope, that worked out well, thanks for letting me know exactly which
-> ones to apply in which order.
 
-Oops, nope, that didn't work for the .32 kernel tree.  If you want these
-patches there, please backport them and test them to verify that they
-build and work properly.
+A: No.
+Q: Should I include quotations after my reply?
+
+http://daringfireball.net/2007/07/on_top
+
+On Fri, Oct 22, 2010 at 02:09:44PM -0200, Artur Baruchi wrote:
+> Sorry, didnt understand your point.
+> 
+> Could you please clarify?
+
+The point is that, no, it's not simple to do this at all.
+
+> Note that I need to retrieve the file name in Kernel Space, Im able to
+> get the inode, but now I need to convert this inode to a name
+> (something that I could use).
+
+How about explaining why you need to get the file name from within the
+kernel?  Perhaps there's a better way to do what you are trying to
+accomplish.
 
 thanks,
 
