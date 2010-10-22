@@ -1,82 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757336Ab0JVOiO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 10:38:14 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:33701 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755197Ab0JVOiN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 10:38:13 -0400
-Date: Fri, 22 Oct 2010 10:36:57 -0400
-From: Jason Baron <jbaron@redhat.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Ingo Molnar <mingo@elte.hu>, Steven Rostedt <rostedt@goodmis.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>, tj@kernel.org
-Subject: Re: [PATCH][GIT PULL] tracing: Fix compile issue for
-	trace_sched_wakeup.c
-Message-ID: <20101022143656.GB6498@redhat.com>
-References: <1287508282.16971.386.camel@gandalf.stny.rr.com> <20101019184111.GA17266@elte.hu> <20101020154045.GA18353@elte.hu> <1287659656.16971.573.camel@gandalf.stny.rr.com> <20101021112614.GB26984@elte.hu> <20101022014441.GA1948@redhat.com> <1287735271.15336.18.camel@twins> <20101022141349.GA6498@redhat.com> <1287757382.15336.45.camel@twins>
+	id S1757334Ab0JVOjj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 10:39:39 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:50507 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755015Ab0JVOji convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Oct 2010 10:39:38 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=GAQVQpmqycnIBH289hvYpfINcYalAc4iaalNdcihi0sWs4FM8NQ+mABbsd8zvs4KKv
+         kVMhKIeG/xUzZnuxwU2jV+tYAV1Yx5i1oN81Cxv0c6v6T4IUMDen4SMyz8zqYtTngmhz
+         ulmuf6kGFFDh8bBgtzI1xAKGksSbbiXBCuFlo=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1287757382.15336.45.camel@twins>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <AANLkTik2qCGaMXV1bgs=FL121FwZe0fV946jm7LXqPrO@mail.gmail.com>
+References: <AANLkTim+vj_OAd22TdThuC-HSqUiDjguOHQWjyqFaq6N@mail.gmail.com>
+	<AANLkTi=Cpq2_vV2RGcoQhrqk8xpL59AvLFPzfvTBk5Xa@mail.gmail.com>
+	<4CBF8BDB.7090907@gmail.com>
+	<20101021075401.GC22100@n2100.arm.linux.org.uk>
+	<AANLkTikYtxiT+R3eb0N5U1hoDvaP=oevjWjUuAJ453p=@mail.gmail.com>
+	<AANLkTinvz7b7yQ-MP4rZHudNuD-0A+Ag7ut0=ZNaCvyV@mail.gmail.com>
+	<AANLkTik2qCGaMXV1bgs=FL121FwZe0fV946jm7LXqPrO@mail.gmail.com>
+Date: Fri, 22 Oct 2010 16:39:35 +0200
+Message-ID: <AANLkTin8Eq4MfBdqEiY=uchBNPt-BW_LS-U8mpxwCD7A@mail.gmail.com>
+Subject: Re: [RFC] Removal of dead code from arch/arm/*
+From: Zimny Lech <napohybelskurwysynom2010@gmail.com>
+To: =?ISO-8859-2?Q?Micha=B3_Miros=B3aw?= <mirqus@gmail.com>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Content-Type: text/plain; charset=ISO-8859-2
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 22, 2010 at 04:23:02PM +0200, Peter Zijlstra wrote:
-> On Fri, 2010-10-22 at 10:13 -0400, Jason Baron wrote:
-> > On Fri, Oct 22, 2010 at 10:14:31AM +0200, Peter Zijlstra wrote:
-> > > On Thu, 2010-10-21 at 21:44 -0400, Jason Baron wrote:
-> > > 
-> > > > I finally found that we actually continue to run after the above
-> > > > apparent 'hang'. That is, we continue to make progress updating the jump
-> > > > labels. And doing a dump of all the system tasks at the time of the hang
-> > > > showed the processes in various places besides the stop machine threads.
-> > > > Thus, I thought that perhaps, for some reason the stop machine threads
-> > > > weren't being scheduled.
-> > > > 
-> > > > Thus, I tried commenting out the special scheduling that is set up for
-> > > > stop machine threads, and that fixed the hang. I haven't yet looked into
-> > > > what might be going wrong with that scheduling...but maybe somebody else
-> > > > knows...
-> > > 
-> > > Hrmm, so are you saying rq->stop was runnable but not running?
-> > 
-> > yes, that's what it seems like.
-> > 
-> > > 
-> > > That would imply broken wakeup-preemption, does something like the below
-> > > cure that?
-> > > 
-> > > 
-> > 
-> > no still seeing the same hang with the below patch...also, as a data point I
-> > backed out the patch that adds the stop_sched_class and that resolved the hang
-> > as well - just as a data point.
-> 
-> Weird... and there's no hotplugging happening, right?
-> 
+W dniu 22 pa¼dziernika 2010 16:19 u¿ytkownik Micha³ Miros³aw
+<mirqus@gmail.com> napisa³:
+> 2010/10/22 Zimny Lech <napohybelskurwysynom2010@gmail.com>:
+>> 2010/10/21 Zimny Lech <napohybelskurwysynom2010@gmail.com>:
+>>> Ok, I dropped this patch. Recreated tree can be found here
+>>> git pull git://github.com/napohybelskurwysynom2010/Linux-2.6-nps.git rodc2
+>> Sorry, I had to change the username, because some jerk denunciated me
+>> on github ;)
+>> git pull git://github.com/zimnylech/Linux-2.6-nps.git rodc2
+>
+> You should use your real name and less offensive email address while
+> submitting patches. Unless you don't want to be taken seriously.
 
-don't think so.
+Leszek Zimny is my _real_ name. What's wrong with my gmail username?
+Does it affects quality of patch?
 
-> Can this be reproduced in qemu? I don't have a i386-smp machine around
-> to use.
-> 
+>
+> Best Regards,
+> Micha³ Miros³aw
+>
 
-its actually an amd 64-bit system with a 32-bit install of f13...
+Kind regards,
+Zimny
 
-> Could you trace the thing with all sched (except the sched_stat)
-> tracepoints enabled? I think there's a sysrq key to dump the trace once
-> the machine's stuck.. 
-> 
+-- 
+Slawa!
+N.P.S.
 
-the current test is triguring this on boot testing enabling/disabling the
-tracepoints...so it would be interesting to disable the boot test, and see if I
-can re-produce it at run-time...which will make getting the trace much easier :)
-
--Jason
+Les fleurs du mal unfold
+Comme les fleurs du mal
+Dark demons of my soul
+Un amour fatal
