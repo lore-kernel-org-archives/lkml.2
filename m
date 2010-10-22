@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755957Ab0JVSiU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 14:38:20 -0400
-Received: from kroah.org ([198.145.64.141]:49511 "EHLO coco.kroah.org"
+	id S1759023Ab0JVSxr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 14:53:47 -0400
+Received: from kroah.org ([198.145.64.141]:45624 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754813Ab0JVSiP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 14:38:15 -0400
-X-Mailbox-Line: From gregkh@clark.site Fri Oct 22 11:35:56 2010
-Message-Id: <20101022183556.871997053@clark.site>
+	id S1755333Ab0JVSiW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Oct 2010 14:38:22 -0400
+X-Mailbox-Line: From gregkh@clark.site Fri Oct 22 11:35:57 2010
+Message-Id: <20101022183557.501612901@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 22 Oct 2010 11:34:34 -0700
+Date: Fri, 22 Oct 2010 11:34:41 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Alan Stern <stern@rowland.harvard.edu>, Jiri Kosina <jkosina@suse.cz>
-Subject: [07/66] USB: fix bug in initialization of interface minor numbers
+        Joerg Roedel <joerg.roedel@amd.com>
+Subject: [14/66] x86/amd-iommu: Fix rounding-bug in __unmap_single
 In-Reply-To: <20101022183711.GA23214@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,118 +25,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alan Stern <stern@rowland.harvard.edu>
+From: Joerg Roedel <joerg.roedel@amd.com>
 
-commit 0026e00523a85b90a92a93ddf6660939ecef3e54 upstream.
+commit 04e0463e088b41060c08c255eb0d3278a504f094 upstream.
 
-Recent changes in the usbhid layer exposed a bug in usbcore.  If
-CONFIG_USB_DYNAMIC_MINORS is enabled then an interface may be assigned
-a minor number of 0.  However interfaces that aren't registered as USB
-class devices also have their minor number set to 0, during
-initialization.  As a result usb_find_interface() may return the
-wrong interface, leading to a crash.
+In the __unmap_single function the dma_addr is rounded down
+to a page boundary before the dma pages are unmapped. The
+address is later also used to flush the TLB entries for that
+mapping. But without the offset into the dma page the amount
+of pages to flush might be miscalculated in the TLB flushing
+path. This patch fixes this bug by using the original
+address to flush the TLB.
 
-This patch (as1418) fixes the problem by initializing every
-interface's minor number to -1.  It also cleans up the
-usb_register_dev() function, which besides being somewhat awkwardly
-written, does not unwind completely on all its error paths.
-
-Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
-Tested-by: Philip J. Turmel <philip@turmel.org>
-Tested-by: Gabriel Craciunescu <nix.or.die@googlemail.com>
-Tested-by: Alex Riesen <raa.lkml@gmail.com>
-Tested-by: Matthias Bayer <jackdachef@gmail.com>
-CC: Jiri Kosina <jkosina@suse.cz>
+Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/core/file.c    |   35 ++++++++++++++++-------------------
- drivers/usb/core/message.c |    1 +
- 2 files changed, 17 insertions(+), 19 deletions(-)
+ arch/x86/kernel/amd_iommu.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
---- a/drivers/usb/core/file.c
-+++ b/drivers/usb/core/file.c
-@@ -159,9 +159,9 @@ void usb_major_cleanup(void)
- int usb_register_dev(struct usb_interface *intf,
- 		     struct usb_class_driver *class_driver)
+--- a/arch/x86/kernel/amd_iommu.c
++++ b/arch/x86/kernel/amd_iommu.c
+@@ -1688,6 +1688,7 @@ static void __unmap_single(struct amd_io
+ 			   size_t size,
+ 			   int dir)
  {
--	int retval = -EINVAL;
-+	int retval;
- 	int minor_base = class_driver->minor_base;
--	int minor = 0;
-+	int minor;
- 	char name[20];
- 	char *temp;
++	dma_addr_t flush_addr;
+ 	dma_addr_t i, start;
+ 	unsigned int pages;
  
-@@ -173,12 +173,17 @@ int usb_register_dev(struct usb_interfac
- 	 */
- 	minor_base = 0;
- #endif
--	intf->minor = -1;
--
--	dbg ("looking for a minor, starting at %d", minor_base);
+@@ -1695,6 +1696,7 @@ static void __unmap_single(struct amd_io
+ 	    (dma_addr + size > dma_dom->aperture_size))
+ 		return;
  
- 	if (class_driver->fops == NULL)
--		goto exit;
-+		return -EINVAL;
-+	if (intf->minor >= 0)
-+		return -EADDRINUSE;
-+
-+	retval = init_usb_class();
-+	if (retval)
-+		return retval;
-+
-+	dev_dbg(&intf->dev, "looking for a minor, starting at %d", minor_base);
++	flush_addr = dma_addr;
+ 	pages = iommu_num_pages(dma_addr, size, PAGE_SIZE);
+ 	dma_addr &= PAGE_MASK;
+ 	start = dma_addr;
+@@ -1709,7 +1711,7 @@ static void __unmap_single(struct amd_io
+ 	dma_ops_free_addresses(dma_dom, dma_addr, pages);
  
- 	down_write(&minor_rwsem);
- 	for (minor = minor_base; minor < MAX_USB_MINORS; ++minor) {
-@@ -186,20 +191,12 @@ int usb_register_dev(struct usb_interfac
- 			continue;
- 
- 		usb_minors[minor] = class_driver->fops;
--
--		retval = 0;
-+		intf->minor = minor;
- 		break;
+ 	if (amd_iommu_unmap_flush || dma_dom->need_flush) {
+-		iommu_flush_pages(iommu, dma_dom->domain.id, dma_addr, size);
++		iommu_flush_pages(iommu, dma_dom->domain.id, flush_addr, size);
+ 		dma_dom->need_flush = false;
  	}
- 	up_write(&minor_rwsem);
--
--	if (retval)
--		goto exit;
--
--	retval = init_usb_class();
--	if (retval)
--		goto exit;
--
--	intf->minor = minor;
-+	if (intf->minor < 0)
-+		return -EXFULL;
- 
- 	/* create a usb class device for this usb interface */
- 	snprintf(name, sizeof(name), class_driver->name, minor - minor_base);
-@@ -213,11 +210,11 @@ int usb_register_dev(struct usb_interfac
- 				      "%s", temp);
- 	if (IS_ERR(intf->usb_dev)) {
- 		down_write(&minor_rwsem);
--		usb_minors[intf->minor] = NULL;
-+		usb_minors[minor] = NULL;
-+		intf->minor = -1;
- 		up_write(&minor_rwsem);
- 		retval = PTR_ERR(intf->usb_dev);
- 	}
--exit:
- 	return retval;
  }
- EXPORT_SYMBOL_GPL(usb_register_dev);
---- a/drivers/usb/core/message.c
-+++ b/drivers/usb/core/message.c
-@@ -1792,6 +1792,7 @@ free_interfaces:
- 		intf->dev.groups = usb_interface_groups;
- 		intf->dev.dma_mask = dev->dev.dma_mask;
- 		INIT_WORK(&intf->reset_ws, __usb_queue_reset_device);
-+		intf->minor = -1;
- 		device_initialize(&intf->dev);
- 		mark_quiesced(intf);
- 		dev_set_name(&intf->dev, "%d-%s:%d.%d",
 
 
