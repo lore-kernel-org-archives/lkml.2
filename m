@@ -1,68 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754819Ab0JVXmm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 19:42:42 -0400
-Received: from kroah.org ([198.145.64.141]:42604 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753744Ab0JVXml (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 19:42:41 -0400
-Date: Fri, 22 Oct 2010 16:43:22 -0700
-From: Greg KH <greg@kroah.com>
-To: linux-usb@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Subject: usbutils 0.91 release
-Message-ID: <20101022234322.GA11147@kroah.com>
+	id S1754739Ab0JVXoz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 19:44:55 -0400
+Received: from mailservice.tudelft.nl ([130.161.131.5]:60172 "EHLO
+	mailservice.tudelft.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753630Ab0JVXoy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Oct 2010 19:44:54 -0400
+X-Spam-Flag: NO
+X-Spam-Score: -21.89
+Message-ID: <4CC221F0.5040608@tremplin-utc.net>
+Date: Sat, 23 Oct 2010 01:44:48 +0200
+From: =?UTF-8?B?w4lyaWMgUGllbA==?= <Eric.Piel@tremplin-utc.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.11) Gecko/20101020 Mandriva/3.1.5-1mdv2011.0 (2011.0) Thunderbird/3.1.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.17 (2007-11-01)
+To: guenter.roeck@ericsson.com
+CC: Samu Onkalo <samu.p.onkalo@nokia.com>,
+        "khali@linux-fr.org" <khali@linux-fr.org>,
+        "jic23@cam.ac.uk" <jic23@cam.ac.uk>,
+        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
+        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 00/12] lis3 accelerator feature update
+References: <1287748654-2626-1-git-send-email-samu.p.onkalo@nokia.com> <1287778096.9690.401.camel@groeck-laptop>
+In-Reply-To: <1287778096.9690.401.camel@groeck-laptop>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Here's the 0.91 release of usbutils.
+Op 22-10-10 22:08, Guenter Roeck schreef:
+> On Fri, 2010-10-22 at 07:57 -0400, Samu Onkalo wrote:
+>> Changes are tested only with I2C interface using 8bit sensor since I don't
+>> have other possibilities. Some features are not enabled
+>> by default since I can't test them with all possible configurations.
+>> Platform data contains field which controls new features.
+>>
+> [ ... ]
+>>
+>> Samu Onkalo (12):
+>>   hwmon: lis3: pm_runtime support
+>>   hwmon: lis3: regulator control
+>>   hwmon: lis3: Cleanup interrupt handling
+>>   hwmon: lis3: Update coordinates at polled device open
+>>   hwmon: lis3: Power on corrections
+>>   hwmon: lis3: restore axis enabled bits
+>>   hwmon: lis3: New parameters to platform data
+>>   hwmon: lis3: Adjust fuzziness for 8 bit device
+>>   hwmon: lis3: use block read to access data registers
+>>   hwmon: lis3: Enhance lis3 selftest with IRQ line test
+>>   hwmon: lis3: Short explanations of platform data fields
+>>   hwmon: lis3: Release resources is case of failure
+>>
+>>  drivers/hwmon/lis3lv02d.c     |  304 ++++++++++++++++++++++++++++++++++------
+>>  drivers/hwmon/lis3lv02d.h     |   18 +++
+>>  drivers/hwmon/lis3lv02d_i2c.c |  127 +++++++++++++++--
+>>  drivers/hwmon/lis3lv02d_spi.c |    2 +-
+>>  include/linux/lis3lv02d.h     |   50 +++++++-
+>>  5 files changed, 439 insertions(+), 62 deletions(-)
+>>
+> Eric, can you Ack this series ?
+Hi, I'll try to review, test and ack the series this weekend :-)
 
-Big thing is here is the addition of the usbhid-dump tool from Nikolai
-Kondrashov, and a bunch of changes to handle USB 3.0 hubs (hopefully)
-properly.  Oh, and the build issues on non-Linux systems should be
-resolved now as well.
-
-The package can be downladed from kernel.org:
-	http://www.kernel.org/pub/linux/utils/usb/usbutils/
-
-We've switched over to using git for development now, which makes things
-much easier than the old cvs tree.  The tree can be found on both
-kernel.org and github.com if you want to fork it and send us changes
-easier:
-	http://git.kernel.org/?p=linux/kernel/git/gregkh/usbutils.git
-	http://github.com/gregkh/usbutils/tree/master
-
-thanks,
-
-greg k-h
-
------------
-
-Greg Kroah-Hartman (3):
-      add usbhid-dump to the autogen.sh script
-      usb.ids: add new device id for qemu audio device
-      Minor fixes
-
-Laurent Pinchart (1):
-      usbutils: Fix the UVC bmInterlaceFlags field decoding
-
-Mike Frysinger (2):
-      usbutils.pc: use datarootdir
-      fix building on non-Linux systems (e.g. BSD)
-
-Nikolai Kondrashov (1):
-      Integrate usbhid-dump
-
-Sarah Sharp (5):
-      usbutils: Fix Wireless USB descriptor fetching.
-      usbutils: Support USB 3.0 hub descriptor output.
-      usbutils: Print MaxStreams and Mult for USB 3.0 devices.
-      usbutils: Print Binary Object Store descriptor.
-      usbutils: Fix bug in link state description printing.
-
-
+Eric
