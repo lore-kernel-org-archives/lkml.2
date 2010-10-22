@@ -1,98 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932551Ab0JVSAG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 14:00:06 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:46902 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932486Ab0JVSAC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 14:00:02 -0400
-Date: Fri, 22 Oct 2010 13:58:45 -0400
-From: Jason Baron <jbaron@redhat.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Steven Rostedt <rostedt@goodmis.org>, LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        masami.hiramatsu.pt@hitachi.com
-Subject: Re: [PATCH][GIT PULL] tracing: Fix compile issue for
-	trace_sched_wakeup.c
-Message-ID: <20101022175845.GF6498@redhat.com>
-References: <1287508282.16971.386.camel@gandalf.stny.rr.com> <20101019184111.GA17266@elte.hu> <20101020154045.GA18353@elte.hu> <20101020164324.GC7348@redhat.com> <20101020183329.GA12666@elte.hu> <20101021110925.GA27219@elte.hu>
+	id S1758300Ab0JVSEE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 14:04:04 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:30146 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751406Ab0JVSEC (ORCPT
+	<rfc822;<linux-kernel@vger.kernel.org>>);
+	Fri, 22 Oct 2010 14:04:02 -0400
+Date: Fri, 22 Oct 2010 14:02:31 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Jeremy Fitzhardinge <jeremy@goop.org>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        "Xen-devel@lists.xensource.com" <Xen-devel@lists.xensource.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] x86: define arch_vm_get_page_prot to set _PAGE_IOMAP
+ on VM_IO vmas
+Message-ID: <20101022180231.GA26365@dumpdata.com>
+References: <4CC0C14E.5080205@goop.org>
+ <4CC0C318.90401@zytor.com>
+ <4CC0CA07.3000306@goop.org>
+ <4CC0DEB8.1060309@zytor.com>
+ <20101022150826.GA23325@dumpdata.com>
+ <4CC1BF58.9020001@zytor.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20101021110925.GA27219@elte.hu>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <4CC1BF58.9020001@zytor.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 21, 2010 at 01:09:25PM +0200, Ingo Molnar wrote:
-> * Ingo Molnar <mingo@elte.hu> wrote:
-> 
+On Fri, Oct 22, 2010 at 09:44:08AM -0700, H. Peter Anvin wrote:
+> On 10/22/2010 08:08 AM, Konrad Rzeszutek Wilk wrote:
+> >>
+> >> Okay, could you clarify this part a bit?  Why does the kernel need to
+> >> know the difference between "pseudo-physical" and "machine addresses" at
+> >> all?  If they overlap, there is a problem, and if they don't overlap, it
+> >> will be a 1:1 mapping anyway...
 > > 
-> > * Jason Baron <jbaron@redhat.com> wrote:
+> > The flag (_PAGE_IOMAP) is used when we set the PTE so that the MFN value is
+> > used instead of the PFN. We need that b/c when a driver does page_to_pfn()
+> > it ends up using the PFN as bus address to write out registers data.
 > > 
-> > > [...] Do we always fail after "Testing all events:" is printed? [...]
+> > Without this patch, the page->virt->PFN value is used and the PFN != to real MFN
+> > so we end up writing in a memory address that the PCI device has no idea about.
+> > By setting the PTE with the MFN, the virt->PFN gets the real MFN value.
 > > 
-> > Yes, in all cases i checked. Sometimes it's an oops.
+> > The drivers I am talking about are mostly, if not all, located in drivers/gpu
+> > and it looks that we are missing two more patches to utilize the patch
+> > that Jeremy posted.
+> > 
+> > Please note that I am _not_ suggesting that the two patches
+> > below should go out - I still need to post them on drm mailing list.
+> > 
 > 
-> Such as this one:
-> 
-> [    6.724449] Testing event kmalloc_node: OK
-> [    6.744459] Testing event kmem_cache_alloc_node: 
-> [    6.749111] BUG: unable to handle kernel paging request at ffffffff
-> [    6.752000] IP: [<f6425f7c>] 0xf6425f7c
-> [    6.752000] *pde = 01384067 *pte = 00000000 
-> [    6.752000] Oops: 0002 [#1] PREEMPT SMP 
-> [    6.752000] last sysfs file: 
-> [    6.752000] Modules linked in:
-> [    6.752000] 
-> [    6.752000] Pid: 2, comm: kthreadd Not tainted 2.6.36-rc8-tip+ #50831 /
-> [    6.752000] EIP: 0060:[<f6425f7c>] EFLAGS: 00010282 CPU: 0
-> [    6.752000] EIP is at 0xf6425f7c
-> [    6.752000] EAX: ffffffff EBX: c1021c4f ECX: 00000001 EDX: 00000000
-> [    6.752000] ESI: f6425f7c EDI: fffffff4 EBP: f640c000 ESP: f6425ee4
-> [    6.752000]  DS: 007b ES: 007b FS: 00d8 GS: 00e0 SS: 0068
-> [    6.752000] Process kthreadd (pid: 2, ti=f6424000 task=f640c000 task.ti=f6424000)
-> [    6.752000] Stack:
-> [    6.752000]  c1021c4f f640c02c 00800711 00000000 00000000 00000000 f6425f7c f6809880
-> [    6.752000] <0> f6425f7c 00000000 00000000 f6425f7c c1022a54 00000000 00000000 00000000
-> [    6.752000] <0> 00000000 00800711 00000000 00000000 00000000 c101d94a f6809880 c131f3a0
-> [    6.752000] Call Trace:
-> [    6.752000]  [<c1021c4f>] ? copy_process+0xa1/0xd6d
-> [    6.752000]  [<c1022a54>] ? do_fork+0x139/0x2ca
-> [    6.752000]  [<c101d94a>] ? dequeue_task+0xb9/0xc8
-> [    6.752000]  [<c1245597>] ? schedule+0x821/0x84b
-> [    6.752000]  [<c1038079>] ? kthread+0x0/0x68
-> [    6.752000]  [<c1007930>] ? kernel_thread+0x77/0x7f
-> [    6.752000]  [<c1038079>] ? kthread+0x0/0x68
-> [    6.752000]  [<c1002cbc>] ? kernel_thread_helper+0x0/0x10
-> [    6.752000]  [<c1038172>] ? kthreadd+0x91/0xc7
-> [    6.752000]  [<c10380e1>] ? kthreadd+0x0/0xc7
-> [    6.752000]  [<c1002cc2>] ? kernel_thread_helper+0x6/0x10
-> [    6.752000] Code: 98 80 f6 00 c0 40 f6 a9 37 61 f9 11 07 80 00 79 80 03 c1 c0 5f 42 f6 7c 5f 42 f6 30 79 00 c1 00 00 00 00 00 00 00 00 00 00 00 00 <00> 00 00 00 00 00 00 00 00 00 00 00 79 80 03 c1 70 3f 42 f6 00 
-> [    6.752000] EIP: [<f6425f7c>] 0xf6425f7c SS:ESP 0068:f6425ee4
-> [    6.752000] CR2: 00000000ffffffff
-> [    6.752000] ---[ end trace 6000cf675d3eddec ]---
-> 
-> (captured two days ago)
-> 
-> Full bootlog is attached below.
-> 
-> Thanks,
-> 
-> 	Ingo
-> 
+> I'm still seriously confused.  If I understand this correctly, we're
+> talking about DMA addresses here (as opposed to PIO addresses, i.e.
+> BARs), right?
 
-Hi,
+Correct. The BARs are ok since they go through the ioremap.
+> 
+> It's the bimodality that really bothers me.  I understand of course that
+> Xen imposes yet another address remapping layer, but I'm having a hard
+> time understanding any conditions under with we would need that layer to
+> go away, as long as DMA addresses are translated via the DMA APIs -- and
+> if they aren't, then iommus will break, too.
 
-this looks potentially like a separate issue from the 'hang' one - I'm
-wondering if this was re-produced with the same .config as the 'hang'
-case? I haven't been able to hit this one yet....
+That is it. They aren't using the DMA or PCI API completly(*).  Try doing
+'iommu=soft swiotlb=force' with your radeon card under baremetal
+(I used an ATI ES1000).  I think it will grind to halt during the writeback test.
 
-thanks,
+(*): This was with 2.6.34, I haven't touched 2.6.36 and there was an drm/iomem rewrite
+so it might be that this now working. The incomplete part of the graphics
+drivers was that it would not do pci_dma_sync_*, so when the MFN was programmed in the
+GTT/GART (check out radeon_gart_bind, the call to pci_map_page gets the bus address, also
+known as MFN). So the GPU would now have a virt->MFN mapping. However, on the CPU side
+when the driver writes a texture to virtual address, the mapping is virt->PFN.
 
--Jason
+So when we kick the GPU to do its magic, the VM on the graphics card would translate
+the virtual address to the MFN, which did not have the data that was written by the
+kernel to the PFN. In other words *PFN != *MFN, while we need *PFN == *MFN.
+There are two ways of making this work:
+ 1). PFN == MFN (this is what Jeremy's patch ends up doing) and under
+     baremetal it won't affect as baremetal doesn't care what the VM_IO flag
+     stands for.
+ 2). Add a whole bunch of pci_dma_sync in the appropiate sections in the 
+     graphic drivers.
+
+I am not qualified to do 2) - that code scares me. Also 1) is the easier :-)
+
+I am actually not sure how it works with AMD-Vi or Intel VT-d. I do remember
+something about letting certain devices bypass the VT-d, and I think I saw
+the nouveau making the DMAR throw a fit.
+
+> As such, I don't grok this page flag and what it does, and why it's
+> needed.  I'm not saying it's *wrong*, I'm saying the design is opaque to
+
+I hope my explanation cleared the confusion.
+
+> me and I'm not sure it is the right solution.
