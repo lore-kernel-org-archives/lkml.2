@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757709Ab0JVSin (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 14:38:43 -0400
-Received: from kroah.org ([198.145.64.141]:45741 "EHLO coco.kroah.org"
+	id S932583Ab0JVSt3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 14:49:29 -0400
+Received: from kroah.org ([198.145.64.141]:45764 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757263Ab0JVSij (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 14:38:39 -0400
+	id S1756837Ab0JVSim (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Oct 2010 14:38:42 -0400
 X-Mailbox-Line: From gregkh@clark.site Fri Oct 22 11:35:59 2010
-Message-Id: <20101022183559.168249029@clark.site>
+Message-Id: <20101022183559.335906536@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 22 Oct 2010 11:35:00 -0700
+Date: Fri, 22 Oct 2010 11:35:02 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk
-Subject: [33/66] De-pessimize rds_page_copy_user
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Ulrich Weber <uweber@astaro.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [35/66] xfrm4: strip ECN and IP Precedence bits in policy lookup
 In-Reply-To: <20101022183711.GA23214@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,78 +26,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Linus Torvalds <torvalds@linux-foundation.org>
 
-commit 799c10559d60f159ab2232203f222f18fa3c4a5f upstream.
+From: Ulrich Weber <uweber@astaro.com>
 
-Don't try to "optimize" rds_page_copy_user() by using kmap_atomic() and
-the unsafe atomic user mode accessor functions.  It's actually slower
-than the straightforward code on any reasonable modern CPU.
+[ Upstream commit 94e2238969e89f5112297ad2a00103089dde7e8f ]
 
-Back when the code was written (although probably not by the time it was
-actually merged, though), 32-bit x86 may have been the dominant
-architecture.  And there kmap_atomic() can be a lot faster than kmap()
-(unless you have very good locality, in which case the virtual address
-caching by kmap() can overcome all the downsides).
+dont compare ECN and IP Precedence bits in find_bundle
+and use ECN bit stripped TOS value in xfrm_lookup
 
-But these days, x86-64 may not be more populous, but it's getting there
-(and if you care about performance, it's definitely already there -
-you'd have upgraded your CPU's already in the last few years).  And on
-x86-64, the non-kmap_atomic() version is faster, simply because the code
-is simpler and doesn't have the "re-try page fault" case.
-
-People with old hardware are not likely to care about RDS anyway, and
-the optimization for the 32-bit case is simply buggy, since it doesn't
-verify the user addresses properly.
-
-Reported-by: Dan Rosenberg <drosenberg@vsecurity.com>
-Acked-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Ulrich Weber <uweber@astaro.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
 ---
- net/rds/page.c |   27 +++++++--------------------
- 1 file changed, 7 insertions(+), 20 deletions(-)
+ net/ipv4/xfrm4_policy.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/net/rds/page.c
-+++ b/net/rds/page.c
-@@ -56,30 +56,17 @@ int rds_page_copy_user(struct page *page
- 	unsigned long ret;
- 	void *addr;
+--- a/net/ipv4/xfrm4_policy.c
++++ b/net/ipv4/xfrm4_policy.c
+@@ -71,7 +71,7 @@ __xfrm4_find_bundle(struct flowi *fl, st
+ 		if (xdst->u.rt.fl.oif == fl->oif &&	/*XXX*/
+ 		    xdst->u.rt.fl.fl4_dst == fl->fl4_dst &&
+ 		    xdst->u.rt.fl.fl4_src == fl->fl4_src &&
+-		    xdst->u.rt.fl.fl4_tos == fl->fl4_tos &&
++                    !((xdst->u.rt.fl.fl4_tos ^ fl->fl4_tos) & IPTOS_RT_MASK) &&
+ 		    xfrm_bundle_ok(policy, xdst, fl, AF_INET, 0)) {
+ 			dst_clone(dst);
+ 			break;
+@@ -83,7 +83,7 @@ __xfrm4_find_bundle(struct flowi *fl, st
  
--	if (to_user)
-+	addr = kmap(page);
-+	if (to_user) {
- 		rds_stats_add(s_copy_to_user, bytes);
--	else
-+		ret = copy_to_user(ptr, addr + offset, bytes);
-+	} else {
- 		rds_stats_add(s_copy_from_user, bytes);
--
--	addr = kmap_atomic(page, KM_USER0);
--	if (to_user)
--		ret = __copy_to_user_inatomic(ptr, addr + offset, bytes);
--	else
--		ret = __copy_from_user_inatomic(addr + offset, ptr, bytes);
--	kunmap_atomic(addr, KM_USER0);
--
--	if (ret) {
--		addr = kmap(page);
--		if (to_user)
--			ret = copy_to_user(ptr, addr + offset, bytes);
--		else
--			ret = copy_from_user(addr + offset, ptr, bytes);
--		kunmap(page);
--		if (ret)
--			return -EFAULT;
-+		ret = copy_from_user(addr + offset, ptr, bytes);
- 	}
-+	kunmap(page);
- 
--	return 0;
-+	return ret ? -EFAULT : 0;
+ static int xfrm4_get_tos(struct flowi *fl)
+ {
+-	return fl->fl4_tos;
++	return IPTOS_RT_MASK & fl->fl4_tos; /* Strip ECN bits */
  }
- EXPORT_SYMBOL_GPL(rds_page_copy_user);
  
+ static int xfrm4_init_path(struct xfrm_dst *path, struct dst_entry *dst,
 
 
