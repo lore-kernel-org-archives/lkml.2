@@ -1,66 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759045Ab0JVSmn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 14:42:43 -0400
-Received: from kroah.org ([198.145.64.141]:46007 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758935Ab0JVSlk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 14:41:40 -0400
-X-Mailbox-Line: From gregkh@clark.site Fri Oct 22 11:40:33 2010
-Message-Id: <20101022184033.749005334@clark.site>
-User-Agent: quilt/0.48-11.2
-Date: Fri, 22 Oct 2010 11:39:39 -0700
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
-Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Paul Fertser <fercerpav@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [14/17] b44: fix carrier detection on bind
-In-Reply-To: <20101022184048.GA25391@kroah.com>
+	id S1759030Ab0JVSm1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 14:42:27 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:50596 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758964Ab0JVSmX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Oct 2010 14:42:23 -0400
+Message-ID: <4CC1DAA2.7030602@vlnb.net>
+Date: Fri, 22 Oct 2010 22:40:34 +0400
+From: Vladislav Bolkhovitin <vst@vlnb.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.10) Gecko/20100527 Thunderbird/3.0.5
+MIME-Version: 1.0
+To: Greg KH <greg@kroah.com>
+CC: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        scst-devel <scst-devel@lists.sourceforge.net>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Mike Christie <michaelc@cs.wisc.edu>, Vu Pham <vuhuong@mellanox.com>,
+        Bart Van Assche <bart.vanassche@gmail.com>,
+        James Smart <James.Smart@Emulex.Com>, Joe Eykholt <jeykholt@cisco.com>,
+        Andy Yan <ayan@marvell.com>, Chetan Loke <generationgnu@yahoo.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Hannes Reinecke <hare@suse.de>,
+        Richard Sharpe <realrichardsharpe@gmail.com>,
+        Daniel Henrique Debonzi <debonzi@linux.vnet.ibm.com>
+Subject: Re: [PATCH 8/19]: SCST SYSFS interface implementation
+References: <4CA653F0.1010008@vlnb.net> <4CA656AD.8020408@vlnb.net> <20101009212047.GB27180@kroah.com> <4CB36592.6060909@vlnb.net> <20101011213235.GA11489@kroah.com> <4CB4AEB9.30501@vlnb.net> <20101012190345.GA25737@kroah.com> <4CB75E81.7000208@vlnb.net> <20101014200413.GA30831@kroah.com> <4CC1CA4D.1090609@vlnb.net> <20101022175624.GA13640@kroah.com>
+In-Reply-To: <20101022175624.GA13640@kroah.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Provags-ID: V02:K0:ioGT9Z/axMuXEOGR+rQ/0/MU49KGtNNJZ6mTl/qGOmz
+ GZDk5o8mJjaHnOOxGsGRfq9YxFJQmu8KXr8RQHcML73j2NKn9D
+ Q1nR8IYK9wlhL+cSYFAq9stFXdOcesqeRo4wVoH3VzbRgT3M4G
+ 8Ikf092wpfx6ZbR/r6vDByLMlCG9NXSQ+kRQuTpmpL3JFeqZFa
+ /CItxUnGwmLy0zgrRko2w==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.27-stable review patch.  If anyone has any objections, please let us know.
+Greg KH, on 10/22/2010 09:56 PM wrote:
+> On Fri, Oct 22, 2010 at 09:30:53PM +0400, Vladislav Bolkhovitin wrote:
+>> +	unsigned int tgt_kobj_initialized:1;
+> 
+> It's the middle of the merge window, and I'm about to go on vacation, so
+> I didn't read this patch after this line.
+> 
+> It's obvious that this patch is wrong, you shouldn't need to worry about
+> this.  And even if you did, you don't need this flag.
+> 
+> Why are you trying to do something that no one else needs?  Why make
+> things harder than they have to be.
 
-------------------
+I tried to explain that to you in http://lkml.org/lkml/2010/10/14/291
+and mentioned there the need to create this flag to track
+half-initialized kobjects. You agreed
+(http://lkml.org/lkml/2010/10/14/299) that don't return half-initialized
+objects is a regular kernel practice, but then requested to strictly
+bound the larger object freeing to its kobject release(), which means
+that all SYSFS creating functions now have to return half-initialized
+SYSFS hierarchy in case of any error. Hence the flag to track it.
 
-From: Paul Fertser <fercerpav@gmail.com>
+Simply, any SCST object has a lot of other things to initialize besides
+its kobject, hence the need either to free it independently from its
+kobject, or track by a flag if its kobjects initialized.
 
-commit bcf64aa379fcadd074449cbf0c049da70071b06f upstream.
+For illustration, here is the simplified code from my previous example,
+i.e. without this patch. I added to it scst_unregister_target() to make
+it more complete.
 
-For carrier detection to work properly when binding the driver with a cable
-unplugged, netif_carrier_off() should be called after register_netdev(),
-not before.
+void scst_tgt_sysfs_del(struct scst_tgt *tgt)
+{
+...
+	kobject_put(&tgt->tgt_kobj);
+	wait_for_completion(&tgt->tgt_kobj_release_cmpl);
+}
 
-Signed-off-by: Paul Fertser <fercerpav@gmail.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+int scst_tgt_sysfs_create(struct scst_tgt *tgt)
+{
+	init_completion(&tgt->tgt_kobj_release_cmpl);
 
----
- drivers/net/b44.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+	res = kobject_init_and_add(&tgt->tgt_kobj, &tgt_ktype,
+			&tgt->tgtt->tgtt_kobj, tgt->tgt_name);
+	if (res != 0)
+		goto out;
 
---- a/drivers/net/b44.c
-+++ b/drivers/net/b44.c
-@@ -2164,8 +2164,6 @@ static int __devinit b44_init_one(struct
- 	dev->irq = sdev->irq;
- 	SET_ETHTOOL_OPS(dev, &b44_ethtool_ops);
- 
--	netif_carrier_off(dev);
--
- 	err = ssb_bus_powerup(sdev->bus, 0);
- 	if (err) {
- 		dev_err(sdev->dev,
-@@ -2205,6 +2203,8 @@ static int __devinit b44_init_one(struct
- 		goto err_out_powerdown;
- 	}
- 
-+	netif_carrier_off(dev);
-+
- 	ssb_set_drvdata(sdev, dev);
- 
- 	/* Chip reset provides power to the b44 MAC & PCI cores, which
+	res = sysfs_create_file(&tgt->tgt_kobj,
+			&tgt_enable_attr.attr);
+	if (res != 0)
+		goto out_err;
+...
+out:
+	return res;
 
+out_err:
+	scst_tgt_sysfs_del(tgt);
+	goto out;
+}
 
+struct scst_tgt *scst_register_target()
+{
+	struct scst_tgt *tgt;
+	int rc = 0;
+
+	rc = scst_alloc_tgt();
+	if (rc != 0)
+		goto out;
+...
+	tgt->tgt_name = kmalloc(strlen(target_name) + 1, GFP_KERNEL);
+	if (tgt->tgt_name == NULL)
+		goto out_free_tgt;
+...
+
+	mutex_lock();
+
+	rc = scst_tgt_sysfs_create(tgt);
+	if (rc < 0)
+		goto out_unlock;
+
+	tgt->default_acg = scst_alloc_add_acg();
+	if (tgt->default_acg == NULL)
+		goto out_sysfs_del;
+...
+
+out:
+	return tgt;
+
+out_sysfs_del:
+	mutex_unlock();
+	scst_tgt_sysfs_del(tgt)
+	goto out_free_tgt;
+
+out_unlock:
+	mutex_unlock();
+
+out_free_tgt:
+	scst_free_tgt(tgt);
+}
+
+void scst_unregister_target(struct scst_tgt *tgt)
+{
+...
+
+	scst_tgt_sysfs_del(tgt);
+...
+	scst_free_tgt(tgt);
+}
+
+You can see complete source code of those functions in the original
+patch set I sent in this thread (patches 4 and 8).
+
+What am I missing and how errors processing should be done with neither
+freeing tgt not in tgt_kobj release() as above, nor without
+tgt_kobj_initialized flag as in the patch?
+
+Thanks,
+Vlad
