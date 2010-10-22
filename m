@@ -1,161 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754926Ab0JVBoN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Oct 2010 21:44:13 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:50805 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751416Ab0JVBoM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Oct 2010 21:44:12 -0400
-Date: Thu, 21 Oct 2010 18:43:25 -0700
-From: Joel Becker <boel.becker@oracle.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Mark Fasheh <mfasheh@suse.com>, tao.ma@oracle.com,
-        "Patrick J. LoPresti" <lopresti@gmail.com>,
+	id S1754252Ab0JVBpY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Oct 2010 21:45:24 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:45887 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751332Ab0JVBpX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Oct 2010 21:45:23 -0400
+Date: Thu, 21 Oct 2010 21:44:41 -0400
+From: Jason Baron <jbaron@redhat.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Steven Rostedt <rostedt@goodmis.org>, LKML <linux-kernel@vger.kernel.org>,
         Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, ocfs2-devel@oss.oracle.com
-Subject: [GIT PULL] ocfs2 changes for 2.6.37
-Message-ID: <20101022014325.GE366@mail.oracle.com>
-Mail-Followup-To: Linus Torvalds <torvalds@linux-foundation.org>,
-	Mark Fasheh <mfasheh@suse.com>, tao.ma@oracle.com,
-	"Patrick J. LoPresti" <lopresti@gmail.com>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	linux-kernel@vger.kernel.org, ocfs2-devel@oss.oracle.com
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>, tj@kernel.org
+Subject: Re: [PATCH][GIT PULL] tracing: Fix compile issue for
+ trace_sched_wakeup.c
+Message-ID: <20101022014441.GA1948@redhat.com>
+References: <1287508282.16971.386.camel@gandalf.stny.rr.com>
+ <20101019184111.GA17266@elte.hu>
+ <20101020154045.GA18353@elte.hu>
+ <1287659656.16971.573.camel@gandalf.stny.rr.com>
+ <20101021112614.GB26984@elte.hu>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20101021112614.GB26984@elte.hu>
+User-Agent: Mutt/1.5.20 (2010-07-18)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus, et al,
-	Here are the ocfs2 changes for 2.6.37.  There are three major
-additions.  Tao Ma has added readahead to our CoW operations.  Sunil
-Mushran has added a global heartbeat mode, allowing one device
-heartbeat to support multiple ocfs2 mounts.  Finally, Patrick J.
-LoPresti has done the final work to enable ocfs2 mounts on devices larger
-than 16TB.  The ocfs2 disk format has always supported it, but Patrick
-finished the last mile of code.
-	Please pull.
+On Thu, Oct 21, 2010 at 01:26:14PM +0200, Ingo Molnar wrote:
+> * Steven Rostedt <rostedt@goodmis.org> wrote:
+> 
+> > On Wed, 2010-10-20 at 17:40 +0200, Ingo Molnar wrote:
+> > > FYI, there's a new mystery hang (sometimes crash) that triggers in -tip - and which 
+> > > seems to be tracing related. See the crashlog below - config attached.
+> > > 
+> > > It's not bisectable - small changes in the kernel make the bug come/go. (might be a 
+> > > race of some sorts)
+> > > 
+> > 
+> > 
+> > > [   42.324027] Testing all events: 
+> > > [  245.668090] INFO: task swapper:1 blocked for more than 120 seconds.
+> > > [  245.672051] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+> > > [  245.676026] swapper       D f6420b40  6544     1      0 0x00000000
+> > > [  245.684051]  f6437dac 00000046 f694aac0 f6420b40 f6438000 f6437d74 f6438294 f6438290
+> > > [  245.692237]  c2192ac0 c204e6c0 c2192ac0 c2192ac0 f6438290 00000000 f6438000 ff2ffa7d
+> > > [  245.701068]  00000009 f6420b40 f6437e5c 7fffffff f6438000 f6437dfc f6437e5c 7fffffff
+> > > [  245.709071] Call Trace:
+> > > [  245.711551]  [<c1a7f561>] schedule_timeout+0x1c/0x1e7
+> > > [  245.712036]  [<c1a818b6>] ? _raw_spin_unlock_irq+0x2d/0x43
+> > > [  245.716037]  [<c1027f2d>] ? sub_preempt_count+0x4/0x98
+> > > [  245.720061]  [<c1a818b6>] ? _raw_spin_unlock_irq+0x2d/0x43
+> > > [  245.724036]  [<c1027fb4>] ? sub_preempt_count+0x8b/0x98
+> > > [  245.728036]  [<c1a7e76b>] wait_for_common+0xc1/0x11a
+> > > [  245.732062]  [<c102de32>] ? default_wake_function+0x0/0x12
+> > > [  245.736041]  [<c1a7e863>] wait_for_completion+0x17/0x19
+> > > [  245.740069]  [<c10667a2>] __stop_cpus+0xdd/0x103
+> > > [  245.744072]  [<c1a7e6db>] ? wait_for_common+0x31/0x11a
+> > > [  245.748040]  [<c10665a4>] ? stop_machine_cpu_stop+0x0/0x9a
+> > > [  245.752040]  [<c106683d>] stop_cpus+0x2c/0x3f
+> > > [  245.756069]  [<c10668af>] __stop_machine+0x5f/0x67
+> > > [  245.760186]  [<c1006240>] ? stop_machine_text_poke+0x0/0x43
+> > > [  245.764040]  [<c1006240>] ? stop_machine_text_poke+0x0/0x43
+> > > [  245.768071]  [<c19f0a73>] ? cfdgml_create+0x2b/0xde
+> > > [  245.772040]  [<c10060fd>] text_poke_smp+0x3a/0x42
+> > > [  245.776039]  [<c19f0a73>] ? cfdgml_create+0x2b/0xde
+> > 
+> > 
+> > > [  245.780098]  [<c1005b9c>] arch_jump_label_transform+0x53/0x67
+> > > [  245.784042]  [<c104ef0d>] jump_label_update+0x49/0x98
+> > 
+> > Looks like this code had jump labels enabled. Do you have a dump where
+> > they are not enabled?
+> 
+> No. Good find - and the timeline agrees too, these crashes started triggering when i 
+> pulled jump labels from you.
+> 
+> Thanks,
+> 
+> 	Ingo
 
-Joel
+Hi,
+
+(adding Tejun to the 'cc list)
+
+I finally found that we actually continue to run after the above
+apparent 'hang'. That is, we continue to make progress updating the jump
+labels. And doing a dump of all the system tasks at the time of the hang
+showed the processes in various places besides the stop machine threads.
+Thus, I thought that perhaps, for some reason the stop machine threads
+weren't being scheduled.
+
+Thus, I tried commenting out the special scheduling that is set up for
+stop machine threads, and that fixed the hang. I haven't yet looked into
+what might be going wrong with that scheduling...but maybe somebody else
+knows...
+
+thanks,
+
+-Jason 
 
 
-The following changes since commit f6f94e2ab1b33f0082ac22d71f66385a60d8157f:
-
-  Linux 2.6.36 (2010-10-20 13:30:22 -0700)
-
-are available in the git repository at:
-  git://git.kernel.org/pub/scm/linux/kernel/git/jlbec/ocfs2.git upstream-linus
-
-Goldwyn Rodrigues (3):
-      Reorganize data elements to reduce struct sizes
-      Track negative entries v3
-      Initialize max_slots early
-
-Jan Kara (1):
-      ocfs2: Remove ocfs2_sync_inode()
-
-Jeff Liu (1):
-      ocfs2: Avoid to evaluate xattr block flags again.
-
-Joel Becker (5):
-      Merge branch 'cow_readahead' of git://oss.oracle.com/git/tma/linux-2.6 into merge-2
-      libfs: Fix shift bug in generic_check_addressable()
-      ocfs2: Silence unused warning.
-      ocfs2: Initialize the bktcnt variable properly, and call it bucket_count
-      Merge branch 'globalheartbeat-2' of git://oss.oracle.com/git/smushran/linux-2.6 into ocfs2-merge-window
-
-Patrick J. LoPresti (3):
-      ext3/ext4: Factor out disk addressability check
-      JBD2: Allow feature checks before journal recovery
-      OCFS2: Allow huge (> 16 TiB) volumes to mount
-
-Poyo VL (1):
-      When I tried to compile I got the following warning:
-
-Srinivas Eeda (1):
-      ocfs2: validate bg_free_bits_count after update
-
-Sunil Mushran (23):
-      ocfs2/cluster: Add heartbeat mode configfs parameter
-      ocfs2: Add an incompat feature flag OCFS2_FEATURE_INCOMPAT_CLUSTERINFO
-      ocfs2: Add support for heartbeat=global mount option
-      ocfs2/dlm: Expose dlm_protocol in dlm_state
-      ocfs2/cluster: Get all heartbeat regions
-      ocfs2/dlm: Add message DLM_QUERY_REGION
-      ocfs2: Print message if user mounts without starting global heartbeat
-      ocfs2/dlm: Add message DLM_QUERY_NODEINFO
-      ocfs2/cluster: Print messages when adding/removing heartbeat regions
-      ocfs2/cluster: Print messages when adding/removing nodes
-      ocfs2/cluster: Check slots for unconfigured live nodes
-      ocfs2/cluster: Reorganize o2hb debugfs init
-      ocfs2/cluster: Maintain live node bitmap per heartbeat region
-      ocfs2/cluster: Track number of global heartbeat regions
-      ocfs2/cluster: Track bitmap of live heartbeat regions
-      ocfs2/cluster: Maintain bitmap of quorum regions
-      ocfs2/cluster: Maintain bitmap of failed regions
-      ocfs2/cluster: Create debugfs files for live, quorum and failed region bitmaps
-      ocfs2/cluster: Create debugfs dir/files for each region
-      ocfs2/cluster: Add mlogs for heartbeat up/down events
-      ocfs2/cluster: Show per region heartbeat elapsed time
-      ocfs2/cluster: Bump up dlm protocol to version 1.1
-      ocfs2/cluster: Release debugfs file elapsed_time_in_ms
-
-Tao Ma (10):
-      ocfs2: pass struct file* to ocfs2_write_begin_nolock.
-      ocfs2: pass struct file* to ocfs2_prepare_inode_for_write.
-      ocfs2: Add struct file to ocfs2_refcount_cow.
-      ocfs2: Add readahead support for CoW.
-      ocfs2: Add readhead during CoW.
-      ocfs2: Add some trace log for orphan scan.
-      ocfs2: Remove obscure error handling in direct_write.
-      ocfs2: Remove unused old_id in ocfs2_commit_cache.
-      ocfs2: Remove obsolete comments before ocfs2_start_trans.
-      ocfs2: Cache system inodes of other slots.
-
-Tristan Ye (2):
-      Ocfs2: Add new OCFS2_IOC_INFO ioctl for ocfs2 v8.
-      ocfs2: Add a mount option "coherency=*" to handle cluster coherency for O_DIRECT writes.
-
- Documentation/filesystems/ocfs2.txt  |    7 +
- fs/ext3/super.c                      |    4 +-
- fs/ext4/super.c                      |    8 +-
- fs/jbd2/journal.c                    |    4 +
- fs/libfs.c                           |   29 ++
- fs/ocfs2/aops.c                      |    9 +-
- fs/ocfs2/aops.h                      |    3 +-
- fs/ocfs2/cluster/heartbeat.c         |  532 ++++++++++++++++++++++++++++++++--
- fs/ocfs2/cluster/heartbeat.h         |    4 +
- fs/ocfs2/cluster/masklog.h           |    3 +-
- fs/ocfs2/cluster/nodemanager.c       |    5 +
- fs/ocfs2/cluster/ocfs2_nodemanager.h |    6 +
- fs/ocfs2/cluster/tcp.c               |    5 +
- fs/ocfs2/dcache.c                    |   33 ++-
- fs/ocfs2/dcache.h                    |    1 +
- fs/ocfs2/dlm/dlmcommon.h             |   29 ++-
- fs/ocfs2/dlm/dlmdebug.c              |   12 +-
- fs/ocfs2/dlm/dlmdomain.c             |  400 +++++++++++++++++++++++++-
- fs/ocfs2/dlmglue.c                   |    8 +
- fs/ocfs2/file.c                      |   73 +++--
- fs/ocfs2/inode.c                     |    1 +
- fs/ocfs2/inode.h                     |   12 +-
- fs/ocfs2/ioctl.c                     |  356 +++++++++++++++++++++++
- fs/ocfs2/journal.c                   |    9 +-
- fs/ocfs2/journal.h                   |    3 +-
- fs/ocfs2/mmap.c                      |    7 +-
- fs/ocfs2/namei.c                     |    3 +-
- fs/ocfs2/ocfs2.h                     |   63 ++++-
- fs/ocfs2/ocfs2_fs.h                  |   46 +++-
- fs/ocfs2/ocfs2_ioctl.h               |   95 ++++++
- fs/ocfs2/refcounttree.c              |   43 +++-
- fs/ocfs2/refcounttree.h              |    7 +-
- fs/ocfs2/slot_map.c                  |    2 +-
- fs/ocfs2/stack_o2cb.c                |    2 +
- fs/ocfs2/suballoc.c                  |   16 +
- fs/ocfs2/super.c                     |  163 +++++++++--
- fs/ocfs2/sysfile.c                   |   60 +++-
- fs/ocfs2/xattr.c                     |    2 +-
- include/linux/fs.h                   |    2 +
- 39 files changed, 1894 insertions(+), 173 deletions(-)
+diff --git a/kernel/stop_machine.c b/kernel/stop_machine.c
+index 090c288..3013b85 100644
+--- a/kernel/stop_machine.c
++++ b/kernel/stop_machine.c
+@@ -307,7 +307,7 @@ static int __cpuinit cpu_stop_cpu_callback(struct notifier_block *nfb,
+ 			return NOTIFY_BAD;
+ 		get_task_struct(p);
+ 		kthread_bind(p, cpu);
+-		sched_set_stop_task(cpu, p);
++		//sched_set_stop_task(cpu, p);
+ 		stopper->thread = p;
+ 		break;
+ 
+@@ -326,7 +326,7 @@ static int __cpuinit cpu_stop_cpu_callback(struct notifier_block *nfb,
+ 	{
+ 		struct cpu_stop_work *work;
+ 
+-		sched_set_stop_task(cpu, NULL);
++		//sched_set_stop_task(cpu, NULL);
+ 		/* kill the stopper */
+ 		kthread_stop(stopper->thread);
+ 		/* drain remaining works */
