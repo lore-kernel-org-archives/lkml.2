@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932831Ab0JVTWh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 15:22:37 -0400
-Received: from kroah.org ([198.145.64.141]:33964 "EHLO coco.kroah.org"
+	id S932849Ab0JVTWw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 15:22:52 -0400
+Received: from kroah.org ([198.145.64.141]:33959 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759224Ab0JVS4B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 14:56:01 -0400
+	id S1759222Ab0JVS4A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Oct 2010 14:56:00 -0400
 X-Mailbox-Line: From gregkh@clark.site Fri Oct 22 11:52:28 2010
-Message-Id: <20101022185228.846056991@clark.site>
+Message-Id: <20101022185228.758769469@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 22 Oct 2010 11:50:51 -0700
+Date: Fri, 22 Oct 2010 11:50:50 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Robert Richter <robert.richter@amd.com>,
-        Will Deacon <will.deacon@arm.com>,
-        linux-arm-kernel@lists.infradead.org, Ingo Molnar <mingo@elte.hu>
-Subject: [017/103] oprofile, ARM: Release resources on failure
+        Jiri Olsa <jolsa@redhat.com>, Andi Kleen <ak@linux.intel.com>,
+        Robert Richter <robert.richter@amd.com>
+Subject: [016/103] oprofile: Add Support for Intel CPU Family 6 / Model 29
 In-Reply-To: <20101022185455.GA9114@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,61 +26,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Robert Richter <robert.richter@amd.com>
+From: Jiri Olsa <jolsa@redhat.com>
 
-commit 98d943b02f6f1b57787ff1aa6f34d019a407e3ee upstream.
+commit bb7ab785ad05a97a2c9ffb3a06547ed39f3133e8 upstream.
 
-This patch fixes a resource leak on failure, where the
-oprofilefs and some counters may not released properly.
+This patch adds CPU type detection for dunnington processor (Family 6
+/ Model 29) to be identified as core 2 family cpu type (wikipedia
+source).
 
+I tested oprofile on Intel(R) Xeon(R) CPU E7440 reporting itself as
+model 29, and it runs without an issue.
+
+Spec:
+
+ http://www.intel.com/Assets/en_US/PDF/specupdate/320336.pdf
+
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+Acked-by: Andi Kleen <ak@linux.intel.com>
 Signed-off-by: Robert Richter <robert.richter@amd.com>
-Acked-by: Will Deacon <will.deacon@arm.com>
-Cc: linux-arm-kernel@lists.infradead.org
-LKML-Reference: <20100929145225.GJ13563@erda.amd.com>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/arm/oprofile/common.c |    7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
+ arch/x86/oprofile/nmi_int.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/arch/arm/oprofile/common.c
-+++ b/arch/arm/oprofile/common.c
-@@ -102,6 +102,7 @@ static int op_create_counter(int cpu, in
- 	if (IS_ERR(pevent)) {
- 		ret = PTR_ERR(pevent);
- 	} else if (pevent->state != PERF_EVENT_STATE_ACTIVE) {
-+		perf_event_release_kernel(pevent);
- 		pr_warning("oprofile: failed to enable event %d "
- 				"on CPU %d\n", event, cpu);
- 		ret = -EBUSY;
-@@ -365,6 +366,7 @@ int __init oprofile_arch_init(struct opr
- 	ret = init_driverfs();
- 	if (ret) {
- 		kfree(counter_config);
-+		counter_config = NULL;
- 		return ret;
- 	}
- 
-@@ -402,7 +404,6 @@ void oprofile_arch_exit(void)
- 	struct perf_event *event;
- 
- 	if (*perf_events) {
--		exit_driverfs();
- 		for_each_possible_cpu(cpu) {
- 			for (id = 0; id < perf_num_counters; ++id) {
- 				event = perf_events[cpu][id];
-@@ -413,8 +414,10 @@ void oprofile_arch_exit(void)
- 		}
- 	}
- 
--	if (counter_config)
-+	if (counter_config) {
- 		kfree(counter_config);
-+		exit_driverfs();
-+	}
- }
- #else
- int __init oprofile_arch_init(struct oprofile_operations *ops)
+--- a/arch/x86/oprofile/nmi_int.c
++++ b/arch/x86/oprofile/nmi_int.c
+@@ -674,6 +674,7 @@ static int __init ppro_init(char **cpu_t
+ 	case 0x0f:
+ 	case 0x16:
+ 	case 0x17:
++	case 0x1d:
+ 		*cpu_type = "i386/core_2";
+ 		break;
+ 	case 0x1a:
 
 
