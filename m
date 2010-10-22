@@ -1,46 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753406Ab0JVAQQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Oct 2010 20:16:16 -0400
-Received: from nm9.bullet.mail.ac4.yahoo.com ([98.139.52.206]:36767 "HELO
-	nm9.bullet.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1752402Ab0JVAQP (ORCPT
+	id S1753438Ab0JVAZR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Oct 2010 20:25:17 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:50372 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752175Ab0JVAZO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Oct 2010 20:16:15 -0400
-X-Greylist: delayed 365 seconds by postgrey-1.27 at vger.kernel.org; Thu, 21 Oct 2010 20:16:15 EDT
-X-Yahoo-Newman-Property: ymail-3
-X-Yahoo-Newman-Id: 332537.6865.bm@omp1038.mail.ac4.yahoo.com
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.com;
-  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Subject:To:MIME-Version:Content-Type;
-  b=gMqz/bdlI21Tm3LF7WiyV1GFDQKkKEbJyP89JBCPCoqTI9J4Vs/Umh6Ysc6EqSR8bCZBCY8T1+e+tmEaVbJXa8y8gyOn6ketW8JBv7tZbhA2x5QugDWZ0wdgVyIm/VGEOeaRvK7W7tJLcKK+sKGh5ccuuYRYaUfe2Ntfn/faHeo=;
-Message-ID: <156151.99300.qm@web50207.mail.re2.yahoo.com>
-X-YMail-OSG: P_nUX4kVM1nj8fR4kUnPV0mG47RQFYYs3LHhO4D6uWw6S0i
- E4s7l6SmpcOIxx1AX72OtLV6zpkCFsdbg1fsEEaFv8leMZvERhFUw9Mdp1uY
- aIv5sVu80zJUXPdcA2DKc.z3VWcouYw3G4MZB0602_2e3r9PA4.nDqT6JbCL
- v_RUg3pUDWAEn4X4kgt_VBuwZwV6LbwM0TxcTwY.T5Xp7ALsdouuBJkGe4Hr
- g4m4.2sJbXaWJtawbNSFV1asYYBaHrVWy_dOsClIbynJFArXEomQsruYaRTD
- cCQgXr.jvzeEVsgbiiM6NHN_HHqS5sHjaC4xQVNRt58gErah24ClVWfhK
-X-Mailer: YahooMailClassic/11.4.9 YahooMailWebService/0.8.107.284920
-Date: Thu, 21 Oct 2010 17:10:10 -0700 (PDT)
-From: Alex Davis <alex14641@yahoo.com>
-Subject: Help tracing code path
-To: linux-kernel@vger.kernel.org
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	Thu, 21 Oct 2010 20:25:14 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=hjQEyh3PbI5y4fqDtqnlETgywNOBXukKVd4X7jRq/OBIX1PUQ18Q3yGKkGJAHS5q+t
+         N3hPMdFag7vXSCakWnAuWMSwAYCd+kElohhrnJNK2/IsVV0Bh2Ckfu1zGUG7guFVGUi/
+         UwBRH/hyXHamrlCMrnaf5OwaoOvIeBNWkZhVk=
+Subject: Re: [PATCH] sdio: fix suspend/resume regression
+From: Maxim Levitsky <maximlevitsky@gmail.com>
+To: Nicolas Pitre <nico@fluxnic.net>
+Cc: Ohad Ben-Cohen <ohad@wizery.com>, linux-mmc@vger.kernel.org,
+        Sven Neumann <s.neumann@raumfeld.com>, Chris Ball <cjb@laptop.org>,
+        libertas-dev@lists.infradead.org, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Daniel Mack <daniel@caiaq.de>, Colin Cross <ccross@android.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, stable@kernel.org
+In-Reply-To: <alpine.LFD.2.00.1010211952110.2764@xanadu.home>
+References: <1286788315.3101.11.camel@sven>
+	 <1286955116-22793-1-git-send-email-ohad@wizery.com>
+	 <1287704855.12734.14.camel@maxim-laptop>
+	 <alpine.LFD.2.00.1010211952110.2764@xanadu.home>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 22 Oct 2010 02:25:11 +0200
+Message-ID: <1287707111.12734.30.camel@maxim-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I am trying to determine the code path by which the size of a CD-ROM
-is updated when a new CD is inserted. I'm trying to fix an issue I've
-found in KVM: http://marc.info/?l=kvm&m=128761750822521&w=2
+On Thu, 2010-10-21 at 19:55 -0400, Nicolas Pitre wrote:
+> On Fri, 22 Oct 2010, Maxim Levitsky wrote:
+> 
+> > So what happens if you set .suspend to NULL? instead of -ENOSYS return?
+> 
+> At run time, the driver may decide to handle the suspend request and 
+> return 0, or decide to simply return -ENOSYS if it doesn't want to 
+> bother with the suspend meaning that the card should be removed, or 
+> return another error code meaning that the suspend request must be 
+> aborted.
 
-Thanks.
+I am afraid that this is very hard to support.
+If .suspend would be called from pm notifier, it would create problems
+last time I checked.
+Or maybe it won't?
+I will test that again, as it might be very nice solution.
+I could even just call the mmc_suspend_host from the pm notifier.
 
-I code, therefore I am
+Best regards,
+	Maxim Levitsky
 
-
-
-
-      
