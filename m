@@ -1,178 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752677Ab0JVBvT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Oct 2010 21:51:19 -0400
-Received: from mail30g.wh2.ocn.ne.jp ([220.111.41.239]:33524 "HELO
-	mail30g.wh2.ocn.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755320Ab0JVBvR (ORCPT
+	id S1751451Ab0JVBzn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Oct 2010 21:55:43 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:35806 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750901Ab0JVBzm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Oct 2010 21:51:17 -0400
-Subject: [PATCH v6] Add generic exponentially weighted moving average (EWMA)
-	function
-To: randy.dunlap@oracle.com, akpm@linux-foundation.org
-From: Bruno Randolf <br1@einfach.org>
-Cc: peterz@infradead.org, blp@cs.stanford.edu, linux-kernel@vger.kernel.org,
-        Lars_Ericsson@telia.com, kosaki.motohiro@jp.fujitsu.com,
-        kevin.granade@gmail.com
-Date: Fri, 22 Oct 2010 10:51:20 +0900
-Message-ID: <20101022015120.7073.91168.stgit@localhost6.localdomain6>
-User-Agent: StGit/0.15
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+	Thu, 21 Oct 2010 21:55:42 -0400
+Date: Thu, 21 Oct 2010 18:55:16 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Christoph Lameter <cl@linux.com>, Eric Dumazet <eric.dumazet@gmail.com>,
+        Nick Piggin <npiggin@kernel.dk>, Dave Chinner <david@fromorbit.com>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] percpu_counter : add percpu_counter_add_fast()
+Message-Id: <20101021185516.be13a83f.akpm@linux-foundation.org>
+In-Reply-To: <20101021174536.26213ab7.akpm@linux-foundation.org>
+References: <1285762729-17928-1-git-send-email-david@fromorbit.com>
+	<1285762729-17928-17-git-send-email-david@fromorbit.com>
+	<20100929215322.ff635d3e.akpm@linux-foundation.org>
+	<20100930061039.GX5665@dastard>
+	<20101016075510.GH19147@amd>
+	<1287217748.2799.68.camel@edumazet-laptop>
+	<20101016020744.366bd9c6.akpm@linux-foundation.org>
+	<1287221475.2799.123.camel@edumazet-laptop>
+	<1287238754.2799.376.camel@edumazet-laptop>
+	<20101021153719.c8bde251.akpm@linux-foundation.org>
+	<alpine.DEB.2.00.1010211807280.3431@router.home>
+	<20101021174536.26213ab7.akpm@linux-foundation.org>
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-SF-Loop: 1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This adds generic functions for calculating Exponentially Weighted Moving
-Averages (EWMA). This implementation makes use of a structure which keeps the
-EWMA parameters and a scaled up internal representation to reduce rounding
-errors.
+On Thu, 21 Oct 2010 17:45:36 -0700 Andrew Morton <akpm@linux-foundation.org> wrote:
 
-The original idea for this implementation came from the rt2x00 driver
-(rt2x00link.c). I would like to use it in several places in the mac80211 and
-ath5k code and I hope it can be useful in many other places in the kernel code.
+> this_cpu_add_return() isn't really needed in this application.
+> 
+> {
+> 	this_cpu_add(*fbc->counters, amount);
+> 	if (unlikely(abs(this_cpu_read(*fbc->counters)) > fbc->batch))
+> 		out_of_line_stuff();
+> }	
+> 
+> will work just fine.
 
-Signed-off-by: Bruno Randolf <br1@einfach.org>
-Reviewed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Did that.  Got alarmed at a few things.
 
---
-v6: Fixed ULONG_MAX in comment. Add reviewed by KOSAKI Motohiro.
+The compiler cannot CSE the above code - it has to reload the percpu
+base each time.  Doing it by hand:
 
-v5: Use unsigned long instead of insigned int.
 
-v4: Initialize internal variable to 0. Remove unneeded const qualifiers.
+{
+	long *p;
 
-v3: Addressing Andrew Mortons comments: Implement in lib/average.c and make
-    access and initalization functions. Use unsigned int for values. Rename
-    functions to ewma_* since there might be other moving average
-    implementations which are not exponentially weighted.
+	p = this_cpu_ptr(fbc->counters);
+	*p += amount;
+	if (unlikely(abs(*p) > fbc->batch))
+		out_of_line_stuff();
+}	
 
-v2: Renamed 'samples' to 'weight'. Added more documentation. Use avg_val
-    pointer. Add a WARN_ON_ONCE for invalid values of 'weight'. Divide
-    and round up/down.
----
- include/linux/average.h |   32 ++++++++++++++++++++++++++
- lib/Makefile            |    2 +-
- lib/average.c           |   58 +++++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 91 insertions(+), 1 deletions(-)
- create mode 100644 include/linux/average.h
- create mode 100644 lib/average.c
+generates better code.
 
-diff --git a/include/linux/average.h b/include/linux/average.h
-new file mode 100644
-index 0000000..f3b36d4
---- /dev/null
-+++ b/include/linux/average.h
-@@ -0,0 +1,32 @@
-+#ifndef _LINUX_AVERAGE_H
-+#define _LINUX_AVERAGE_H
-+
-+#include <linux/kernel.h>
-+
-+/* Exponentially weighted moving average (EWMA) */
-+
-+/* For more documentation see lib/average.c */
-+
-+struct ewma {
-+	unsigned long internal;
-+	unsigned long factor;
-+	unsigned long weight;
-+};
-+
-+extern struct ewma *ewma_init(struct ewma *avg, unsigned long factor,
-+			      unsigned long weight);
-+
-+extern struct ewma *ewma_add(struct ewma *avg, unsigned long val);
-+
-+/**
-+ * ewma_get() - Get average value
-+ * @avg: Average structure
-+ *
-+ * Returns the average value held in @avg.
-+ */
-+static inline unsigned long ewma_get(const struct ewma *avg)
-+{
-+	return DIV_ROUND_CLOSEST(avg->internal, avg->factor);
-+}
-+
-+#endif /* _LINUX_AVERAGE_H */
-diff --git a/lib/Makefile b/lib/Makefile
-index e6a3763..f66acf7 100644
---- a/lib/Makefile
-+++ b/lib/Makefile
-@@ -21,7 +21,7 @@ lib-y	+= kobject.o kref.o klist.o
+So this:
+
+static __always_inline void percpu_counter_add_batch(struct percpu_counter *fbc,
+						s64 amount, long batch)
+{
+	long *pcounter;
+
+	preempt_disable();
+	pcounter = this_cpu_ptr(fbc->counters);
+	*pcounter += amount;
+	if (unlikely(abs(*pcounter) >= batch))
+		percpu_counter_handle_overflow(fbc);
+	preempt_enable();
+}
+
+when compiling this:
+
+--- a/lib/proportions.c~b
++++ a/lib/proportions.c
+@@ -263,6 +263,11 @@ void __prop_inc_percpu(struct prop_descr
+ 	prop_put_global(pd, pg);
+ }
  
- obj-y += bcd.o div64.o sort.o parser.o halfmd4.o debug_locks.o random32.o \
- 	 bust_spinlocks.o hexdump.o kasprintf.o bitmap.o scatterlist.o \
--	 string_helpers.o gcd.o lcm.o list_sort.o uuid.o
-+	 string_helpers.o gcd.o lcm.o list_sort.o uuid.o average.o
- 
- ifeq ($(CONFIG_DEBUG_KOBJECT),y)
- CFLAGS_kobject.o += -DDEBUG
-diff --git a/lib/average.c b/lib/average.c
-new file mode 100644
-index 0000000..3262e04
---- /dev/null
-+++ b/lib/average.c
-@@ -0,0 +1,58 @@
-+/*
-+ * lib/average.c
-+ *
-+ * This source code is licensed under the GNU General Public License,
-+ * Version 2.  See the file COPYING for more details.
-+ */
-+
-+#include <linux/module.h>
-+#include <linux/average.h>
-+
-+/**
-+ * DOC: Exponentially Weighted Moving Average (EWMA)
-+ *
-+ * These are generic functions for calculating Exponentially Weighted Moving
-+ * Averages (EWMA). We keep a structure with the EWMA parameters and a scaled
-+ * up internal representation of the average value to prevent rounding errors.
-+ * The factor for scaling up and the exponential weight (or decay rate) have to
-+ * be specified thru the init fuction. The structure should not be accessed
-+ * directly but only thru the helper functions.
-+ */
-+
-+/**
-+ * ewma_init() - Initialize EWMA parameters
-+ * @avg: Average structure
-+ * @factor: Factor to use for the scaled up internal value. The maximum value
-+ *	of averages can be ULONG_MAX/(factor*weight).
-+ * @weight: Exponential weight, or decay rate. This defines how fast the
-+ *	influence of older values decreases. Has to be bigger than 1.
-+ *
-+ * Initialize the EWMA parameters for a given struct ewma @avg.
-+ */
-+struct ewma *ewma_init(struct ewma *avg, unsigned long factor,
-+		       unsigned long weight)
++void foo(struct prop_local_percpu *pl)
 +{
-+	WARN_ON(weight <= 1 || factor == 0);
-+	avg->internal = 0;
-+	avg->weight = weight;
-+	avg->factor = factor;
-+	return avg;
++	percpu_counter_add(&pl->events, 1);
 +}
-+EXPORT_SYMBOL(ewma_init);
 +
-+/**
-+ * ewma_add() - Exponentially weighted moving average (EWMA)
-+ * @avg: Average structure
-+ * @val: Current value
-+ *
-+ * Add a sample to the average.
-+ */
-+struct ewma *ewma_add(struct ewma *avg, unsigned long val)
-+{
-+	avg->internal = avg->internal  ?
-+		(((avg->internal * (avg->weight - 1)) +
-+			(val * avg->factor)) / avg->weight) :
-+		(val * avg->factor);
-+	return avg;
-+}
-+EXPORT_SYMBOL(ewma_add);
+ /*
+  * identical to __prop_inc_percpu, except that it limits this pl's fraction to
+  * @frac/PROP_FRAC_BASE by ignoring events when this limit has been exceeded.
+
+comes down to
+
+.globl foo
+	.type	foo, @function
+foo:
+	pushq	%rbp	#
+	movslq	percpu_counter_batch(%rip),%rcx	# percpu_counter_batch, batch
+	movq	96(%rdi), %rdx	# <variable>.counters, tcp_ptr__
+	movq	%rsp, %rbp	#,
+#APP
+	add %gs:this_cpu_off, %rdx	# this_cpu_off, tcp_ptr__
+#NO_APP
+	movq	(%rdx), %rax	#* tcp_ptr__, D.11817
+	incq	%rax	# D.11817
+	movq	%rax, (%rdx)	# D.11817,* tcp_ptr__
+	cqto
+	xorq	%rdx, %rax	# tmp67, D.11817
+	subq	%rdx, %rax	# tmp67, D.11817
+	cmpq	%rcx, %rax	# batch, D.11817
+	jl	.L33	#,
+	call	percpu_counter_handle_overflow	#
+.L33:
+	leave
+	ret
+
+
+But what's really alarming is that the compiler (4.0.2) is cheerily
+ignoring the inline directives and was generating out-of-line versions
+of most of the percpu_counter.h functions into lib/proportions.s. 
+That's rather a worry.
+
+lib/proportions.o got rather larger as a result of inlining things and
+it's not obvious that it's all a net benefit.
 
