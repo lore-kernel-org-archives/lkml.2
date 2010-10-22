@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759607Ab0JVS6E (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 14:58:04 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:49636 "EHLO
+	id S932564Ab0JVS6R (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 14:58:17 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:49640 "EHLO
 	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759481Ab0JVS6B (ORCPT
+	with ESMTP id S1759447Ab0JVS6P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 14:58:01 -0400
+	Fri, 22 Oct 2010 14:58:15 -0400
 From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: [PATCH] langwell_gpio: Add support for whitney point
+Subject: [PATCH (CORRECTED)] langwell_gpio: Add support for whitney point
 To: linux-kernel@vger.kernel.org, akpm@linux-foundation.org
-Date: Fri, 22 Oct 2010 19:03:35 +0100
-Message-ID: <20101022180317.11032.46614.stgit@localhost.localdomain>
+Date: Fri, 22 Oct 2010 19:04:19 +0100
+Message-ID: <20101022180354.11138.13104.stgit@localhost.localdomain>
 User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
@@ -19,6 +19,10 @@ Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+
+I must remember to refresh before sending, I must remember to refresh before
+sending. I must ...
+
 
 From: Alan Cox <alan@linux.intel.com>
 
@@ -31,12 +35,12 @@ Based on a separate internal whitney point driver by:
 Signed-off-by: Alan Cox <alan@linux.intel.com>
 ---
 
- drivers/gpio/langwell_gpio.c |   82 +++++++++++++++++++++++++++++++++++++++++-
- 1 files changed, 81 insertions(+), 1 deletions(-)
+ drivers/gpio/langwell_gpio.c |   83 +++++++++++++++++++++++++++++++++++++++++-
+ 1 files changed, 82 insertions(+), 1 deletions(-)
 
 
 diff --git a/drivers/gpio/langwell_gpio.c b/drivers/gpio/langwell_gpio.c
-index 8383a8d..b60945f 100644
+index 8383a8d..09d74b3 100644
 --- a/drivers/gpio/langwell_gpio.c
 +++ b/drivers/gpio/langwell_gpio.c
 @@ -18,10 +18,12 @@
@@ -52,7 +56,7 @@ index 8383a8d..b60945f 100644
  #include <linux/kernel.h>
  #include <linux/delay.h>
  #include <linux/stddef.h>
-@@ -300,9 +302,87 @@ static struct pci_driver lnw_gpio_driver = {
+@@ -300,9 +302,88 @@ static struct pci_driver lnw_gpio_driver = {
  	.probe		= lnw_gpio_probe,
  };
  
@@ -93,7 +97,8 @@ index 8383a8d..b60945f 100644
 +	gc->can_sleep = 0;
 +	retval = gpiochip_add(gc);
 +	if (retval) {
-+		dev_err(&pdev->dev, "whitneypoint gpiochip_add error %d\n", retval);
++		dev_err(&pdev->dev, "whitneypoint gpiochip_add error %d\n",
++								retval);
 +		goto err_ioremap;
 +	}
 +	platform_set_drvdata(pdev, lnw);
