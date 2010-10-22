@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758572Ab0JVSVh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 14:21:37 -0400
-Received: from kroah.org ([198.145.64.141]:41858 "EHLO coco.kroah.org"
+	id S1758597Ab0JVSVl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 14:21:41 -0400
+Received: from kroah.org ([198.145.64.141]:41870 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758496Ab0JVSVg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 14:21:36 -0400
+	id S1758496Ab0JVSVj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Oct 2010 14:21:39 -0400
 From: Greg Kroah-Hartman <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org
-Cc: Jeff Mahoney <jeffm@suse.com>, Mikael Starvik <starvik@axis.com>,
-        Jesper Nilsson <jesper.nilsson@axis.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [PATCH 08/49] ioctl: Use asm-generic/ioctls.h on cris (enables termiox)
-Date: Fri, 22 Oct 2010 11:20:47 -0700
-Message-Id: <1287771688-14805-8-git-send-email-gregkh@suse.de>
+Cc: Jeff Mahoney <jeffm@suse.com>, Tony Luck <tony.luck@intel.com>,
+        Fenghua Yu <fenghua.yu@intel.com>, Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [PATCH 11/49] ioctl: Use asm-generic/ioctls.h on ia64 (enables termiox)
+Date: Fri, 22 Oct 2010 11:20:50 -0700
+Message-Id: <1287771688-14805-11-git-send-email-gregkh@suse.de>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <20101022175112.GC13489@kroah.com>
 References: <20101022175112.GC13489@kroah.com>
@@ -23,42 +22,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jeff Mahoney <jeffm@suse.com>
 
-This patch converts cris to use asm-generic/ioctls.h instead of its
+This patch converts ia64 to use asm-generic/ioctls.h instead of its
 own version.
 
 The differences between the arch-specific version and the generic
 version are as follows:
 
-- CRIS defines two ioctls: TIOCSERSETRS485 and TIOCSERWRRS485,
-  kept in arch-specific portion
-- CRIS defines a different value for TIOCSRS485, kept via ifndef in generic
+- The generic version adds TIOCSRS485 and TIOCGRS485, which are unused
+  by any driver available on this architecture.
 - The generic version adds support for termiox
 
-Cc: Mikael Starvik <starvik@axis.com>
-Cc: Jesper Nilsson <jesper.nilsson@axis.com>
+Cc: Tony Luck <tony.luck@intel.com>
+Cc: Fenghua Yu <fenghua.yu@intel.com>
 Signed-off-by: Jeff Mahoney <jeffm@suse.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- arch/cris/include/asm/ioctls.h |   84 +---------------------------------------
- include/asm-generic/ioctls.h   |    2 +
- 2 files changed, 3 insertions(+), 83 deletions(-)
+ arch/ia64/include/asm/ioctls.h |   89 +---------------------------------------
+ 1 files changed, 1 insertions(+), 88 deletions(-)
 
-diff --git a/arch/cris/include/asm/ioctls.h b/arch/cris/include/asm/ioctls.h
-index c9129ed..488fbb3 100644
---- a/arch/cris/include/asm/ioctls.h
-+++ b/arch/cris/include/asm/ioctls.h
-@@ -1,93 +1,11 @@
- #ifndef __ARCH_CRIS_IOCTLS_H__
- #define __ARCH_CRIS_IOCTLS_H__
+diff --git a/arch/ia64/include/asm/ioctls.h b/arch/ia64/include/asm/ioctls.h
+index b79c385..f3aab55 100644
+--- a/arch/ia64/include/asm/ioctls.h
++++ b/arch/ia64/include/asm/ioctls.h
+@@ -1,93 +1,6 @@
+ #ifndef _ASM_IA64_IOCTLS_H
+ #define _ASM_IA64_IOCTLS_H
  
--/* verbatim copy of asm-i386/ioctls.h */
+-/*
+- * Based on <asm-i386/ioctls.h>
+- *
+- * Modified 1998, 1999, 2002
+- *	David Mosberger-Tang <davidm@hpl.hp.com>, Hewlett-Packard Co
+- */
 -
 -#include <asm/ioctl.h>
 -
 -/* 0x54 is just a magic number to make these relatively unique ('T') */
 -
 -#define TCGETS		0x5401
--#define TCSETS		0x5402
+-#define TCSETS		0x5402	/* Clashes with SNDCTL_TMR_START sound ioctl */
 -#define TCSETSW		0x5403
 -#define TCSETSF		0x5404
 -#define TCGETA		0x5405
@@ -114,7 +116,7 @@ index c9129ed..488fbb3 100644
 -#define TIOCSERSWILD	0x5455
 -#define TIOCGLCKTRMIOS	0x5456
 -#define TIOCSLCKTRMIOS	0x5457
- #define TIOCSERGSTRUCT	0x5458 /* For debugging only */
+-#define TIOCSERGSTRUCT	0x5458 /* For debugging only */
 -#define TIOCSERGETLSR   0x5459 /* Get line status register */
 -#define TIOCSERGETMULTI 0x545A /* Get multiport config  */
 -#define TIOCSERSETMULTI 0x545B /* Set multiport config */
@@ -122,11 +124,6 @@ index c9129ed..488fbb3 100644
 -#define TIOCMIWAIT	0x545C	/* wait for a change on serial input line(s) */
 -#define TIOCGICOUNT	0x545D	/* read serial port inline interrupt counts */
 -#define FIOQSIZE	0x5460
--
- #define TIOCSERSETRS485	0x5461  /* enable rs-485 (deprecated) */
- #define TIOCSERWRRS485	0x5462  /* write rs-485 */
- #define TIOCSRS485	0x5463  /* enable rs-485 */
--#define TIOCGRS485	0x542E  /* get rs-485 */
 -
 -/* Used for packet mode */
 -#define TIOCPKT_DATA		 0
@@ -137,25 +134,11 @@ index c9129ed..488fbb3 100644
 -#define TIOCPKT_NOSTOP		16
 -#define TIOCPKT_DOSTOP		32
 -#define TIOCPKT_IOCTL		64
- 
+-
 -#define TIOCSER_TEMT    0x01	/* Transmitter physically empty */
 +#include <asm-generic/ioctls.h>
  
- #endif
-diff --git a/include/asm-generic/ioctls.h b/include/asm-generic/ioctls.h
-index 8554cb6..a321665 100644
---- a/include/asm-generic/ioctls.h
-+++ b/include/asm-generic/ioctls.h
-@@ -62,7 +62,9 @@
- #define TCSETSW2	_IOW('T', 0x2C, struct termios2)
- #define TCSETSF2	_IOW('T', 0x2D, struct termios2)
- #define TIOCGRS485	0x542E
-+#ifndef TIOCSRS485
- #define TIOCSRS485	0x542F
-+#endif
- #define TIOCGPTN	_IOR('T', 0x30, unsigned int) /* Get Pty Number (of pty-mux device) */
- #define TIOCSPTLCK	_IOW('T', 0x31, int)  /* Lock/unlock Pty */
- #define TCGETX		0x5432 /* SYS5 TCGETX compatibility */
+ #endif /* _ASM_IA64_IOCTLS_H */
 -- 
 1.7.2
 
