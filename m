@@ -1,64 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757265Ab0JVOc0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 10:32:26 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:58075 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757212Ab0JVOcZ (ORCPT
+	id S1757228Ab0JVOdY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 10:33:24 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:54816 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755136Ab0JVOdX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 10:32:25 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:mime-version
-         :content-type:content-transfer-encoding;
-        b=HsofgritZR8OkfUU1eBCfy/wTd9cfksnx0HIHpTg3MZhvsyMrU+NUeyRKfdI2EWc/z
-         ZdeZqywUj+HHr+stOml7or39CDFBvJ0G+nHGfWhebxMMhKN9I34aY17zsNABetm4Ine7
-         7wj6ks9y7AGTx0mmF45fI0iTBS8wD8FIY8h8Q=
-From: Namhyung Kim <namhyung@gmail.com>
-To: Michal Marek <mmarek@suse.cz>
-Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] kbuild: check return value of asprintf()
-Date: Fri, 22 Oct 2010 23:32:10 +0900
-Message-Id: <1287757930-2766-1-git-send-email-namhyung@gmail.com>
-X-Mailer: git-send-email 1.7.0.4
+	Fri, 22 Oct 2010 10:33:23 -0400
+Date: Fri, 22 Oct 2010 10:33:21 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Luben Tuikov <ltuikov@yahoo.com>
+cc: Greg KH <greg@kroah.com>, <linux-usb@vger.kernel.org>,
+        <linux-scsi@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] [USB] Use normalized sense when emulating autosense
+In-Reply-To: <407253.45995.qm@web31802.mail.mud.yahoo.com>
+Message-ID: <Pine.LNX.4.44L0.1010221029430.1529-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Check return value of asprintf() in docsect() and exit if error
-occurs. This removes following warning:
+On Thu, 21 Oct 2010, Luben Tuikov wrote:
 
-  HOSTCC  scripts/basic/docproc
-scripts/basic/docproc.c: In function ‘docsect’:
-scripts/basic/docproc.c:336: warning: ignoring return value of ‘asprintf’,
-				declared with attribute warn_unused_result
+> This patch solves two things:
+> 1) Enables autosense emulation code to correctly
+> interpret descriptor format sense data, and
+> 2) Fixes a bug whereby the autosense emulation
+> code would overwrite descriptor format sense data
+> with SENSE KEY HARDWARE ERROR in fixed format, to
+> incorrectly look like this:
 
-Signed-off-by: Namhyung Kim <namhyung@gmail.com>
----
-The patch is on top of v2.6.36, thanks.
+...
 
- scripts/basic/docproc.c |    5 ++++-
- 1 files changed, 4 insertions(+), 1 deletions(-)
+> @@ -794,12 +793,7 @@ Retry_Sense:
+>  		 * everything worked or that there was an unspecified
+>  		 * problem.  We have to decide which.
+>  		 */
+> -		if (	/* Filemark 0, ignore EOM, ILI 0, no sense */
+> -				(srb->sense_buffer[2] & 0xaf) == 0 &&
+> -			/* No ASC or ASCQ */
+> -				srb->sense_buffer[12] == 0 &&
+> -				srb->sense_buffer[13] == 0) {
+> -
+> +		if (sshdr.sense_key == 0 && sshdr.asc == 0 && sshdr.ascq == 0) {
+>  			/* If things are really okay, then let's show that.
+>  			 * Zero out the sense buffer so the higher layers
+>  			 * won't realize we did an unsolicited auto-sense.
 
-diff --git a/scripts/basic/docproc.c b/scripts/basic/docproc.c
-index fc3b18d..98dec87 100644
---- a/scripts/basic/docproc.c
-+++ b/scripts/basic/docproc.c
-@@ -333,7 +333,10 @@ static void docsect(char *filename, char *line)
- 		if (*s == '\n')
- 			*s = '\0';
- 
--	asprintf(&s, "DOC: %s", line);
-+	if (asprintf(&s, "DOC: %s", line) < 0) {
-+		perror("asprintf");
-+		exit(1);
-+	}
- 	consume_symbol(s);
- 	free(s);
- 
--- 
-1.7.0.4
+What about the Filemark and ILI tests?  You mustn't get rid of them; 
+they are needed for tape drives.
+
+Alan Stern
 
