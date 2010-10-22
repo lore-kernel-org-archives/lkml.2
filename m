@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755480Ab0JVSiM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 14:38:12 -0400
-Received: from kroah.org ([198.145.64.141]:49478 "EHLO coco.kroah.org"
+	id S1759160Ab0JVT0z (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 15:26:55 -0400
+Received: from kroah.org ([198.145.64.141]:49501 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754813Ab0JVSiK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 14:38:10 -0400
+	id S1755524Ab0JVSiO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Oct 2010 14:38:14 -0400
 X-Mailbox-Line: From gregkh@clark.site Fri Oct 22 11:35:56 2010
-Message-Id: <20101022183556.341828426@clark.site>
+Message-Id: <20101022183556.704360143@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 22 Oct 2010 11:34:28 -0700
+Date: Fri, 22 Oct 2010 11:34:32 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: [01/66] x86, cpu: After uncapping CPUID, re-run CPU feature detection
+        Dan Rosenberg <drosenberg@vsecurity.com>, Takashi Iwai <tiwai@suse.de>
+Subject: [05/66] ALSA: prevent heap corruption in snd_ctl_new()
 In-Reply-To: <20101022183711.GA23214@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,55 +25,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: H. Peter Anvin <hpa@linux.intel.com>
+From: Dan Rosenberg <drosenberg@vsecurity.com>
 
-commit d900329e20f4476db6461752accebcf7935a8055 upstream.
+commit 5591bf07225523600450edd9e6ad258bb877b779 upstream.
 
-After uncapping the CPUID level, we need to also re-run the CPU
-feature detection code.
+The snd_ctl_new() function in sound/core/control.c allocates space for a
+snd_kcontrol struct by performing arithmetic operations on a
+user-provided size without checking for integer overflow.  If a user
+provides a large enough size, an overflow will occur, the allocated
+chunk will be too small, and a second user-influenced value will be
+written repeatedly past the bounds of this chunk.  This code is
+reachable by unprivileged users who have permission to open
+a /dev/snd/controlC* device (on many distros, this is group "audio") via
+the SNDRV_CTL_IOCTL_ELEM_ADD and SNDRV_CTL_IOCTL_ELEM_REPLACE ioctls.
 
-This resolves kernel bugzilla 16322.
-
-Reported-by: boris64 <bugzilla.kernel.org@boris64.net>
-LKML-Reference: <tip-@git.kernel.org>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Signed-off-by: Dan Rosenberg <drosenberg@vsecurity.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/x86/kernel/cpu/common.c |    2 +-
- arch/x86/kernel/cpu/cpu.h    |    1 +
- arch/x86/kernel/cpu/intel.c  |    1 +
- 3 files changed, 3 insertions(+), 1 deletion(-)
+ sound/core/control.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
---- a/arch/x86/kernel/cpu/common.c
-+++ b/arch/x86/kernel/cpu/common.c
-@@ -540,7 +540,7 @@ void __cpuinit cpu_detect(struct cpuinfo
- 	}
- }
+--- a/sound/core/control.c
++++ b/sound/core/control.c
+@@ -31,6 +31,7 @@
  
--static void __cpuinit get_cpu_cap(struct cpuinfo_x86 *c)
-+void __cpuinit get_cpu_cap(struct cpuinfo_x86 *c)
- {
- 	u32 tfms, xlvl;
- 	u32 ebx;
---- a/arch/x86/kernel/cpu/cpu.h
-+++ b/arch/x86/kernel/cpu/cpu.h
-@@ -33,5 +33,6 @@ extern const struct cpu_dev *const __x86
- 			    *const __x86_cpu_dev_end[];
+ /* max number of user-defined controls */
+ #define MAX_USER_CONTROLS	32
++#define MAX_CONTROL_COUNT	1028
  
- extern void display_cacheinfo(struct cpuinfo_x86 *c);
-+extern void get_cpu_cap(struct cpuinfo_x86 *c);
- 
- #endif
---- a/arch/x86/kernel/cpu/intel.c
-+++ b/arch/x86/kernel/cpu/intel.c
-@@ -40,6 +40,7 @@ static void __cpuinit early_init_intel(s
- 			misc_enable &= ~MSR_IA32_MISC_ENABLE_LIMIT_CPUID;
- 			wrmsrl(MSR_IA32_MISC_ENABLE, misc_enable);
- 			c->cpuid_level = cpuid_eax(0);
-+			get_cpu_cap(c);
- 		}
- 	}
- 
+ struct snd_kctl_ioctl {
+ 	struct list_head list;		/* list of all ioctls */
+@@ -190,6 +191,10 @@ static struct snd_kcontrol *snd_ctl_new(
+ 	
+ 	if (snd_BUG_ON(!control || !control->count))
+ 		return NULL;
++
++	if (control->count > MAX_CONTROL_COUNT)
++		return NULL;
++
+ 	kctl = kzalloc(sizeof(*kctl) + sizeof(struct snd_kcontrol_volatile) * control->count, GFP_KERNEL);
+ 	if (kctl == NULL) {
+ 		snd_printk(KERN_ERR "Cannot allocate control instance\n");
 
 
