@@ -1,63 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932294Ab0JVVcl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 17:32:41 -0400
-Received: from smtp.eu.citrix.com ([62.200.22.115]:54898 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757176Ab0JVVck (ORCPT
+	id S1751402Ab0JVVi0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 17:38:26 -0400
+Received: from e32.co.us.ibm.com ([32.97.110.150]:53334 "EHLO
+	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751032Ab0JVViY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 17:32:40 -0400
-X-IronPort-AV: E=Sophos;i="4.58,225,1286150400"; 
-   d="scan'208";a="2484614"
-Date: Fri, 22 Oct 2010 22:32:02 +0100
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball-desktop
-To: Jeremy Fitzhardinge <jeremy@goop.org>
-CC: Ingo Molnar <mingo@elte.hu>, Stephen Rothwell <sfr@canb.auug.org.au>,
-        Xen Devel <Xen-devel@lists.xensource.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Yinghai Lu <yinghai@kernel.org>,
-        Gianluca Guida <gianluca.guida@citrix.com>
-Subject: Re: [Xen-devel] Re: linux-next: manual merge of the xen tree with
- the tip tree
-In-Reply-To: <4CC1DA58.8000606@goop.org>
-Message-ID: <alpine.DEB.2.00.1010222153250.1407@kaball-desktop>
-References: <20101022140335.c4a3a48f.sfr@canb.auug.org.au> <20101022080129.GA8474@elte.hu> <4CC1DA58.8000606@goop.org>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Fri, 22 Oct 2010 17:38:24 -0400
+Date: Fri, 22 Oct 2010 14:38:19 -0700
+From: Matt Helsley <matthltc@us.ibm.com>
+To: Li Zefan <lizf@cn.fujitsu.com>
+Cc: "akpm >> Andrew Morton" <akpm@linux-foundation.org>,
+        containers@lists.linux-foundation.org, Paul Menage <menage@google.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH 2/7] cgroups: Allow to bind a subsystem to a cgroup
+ hierarchy
+Message-ID: <20101022213819.GK10119@count0.beaverton.ibm.com>
+References: <4CC146A4.9090505@cn.fujitsu.com>
+ <4CC146D4.7030009@cn.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4CC146D4.7030009@cn.fujitsu.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 22 Oct 2010, Jeremy Fitzhardinge wrote:
-> > Crap like that is just _NOT_ acceptable, and you know that perfectly well - if you 
-> > do this to arch/x86/ i'll be forced to ask for the Xen tree to be removed from 
-> > linux-next and be done via the x86 tree again.
+On Fri, Oct 22, 2010 at 04:09:56PM +0800, Li Zefan wrote:
+> Stephane posted a patchset to add perf_cgroup subsystem, so perf can
+> be used to monitor all threads belonging to a cgroup.
 > 
-> Hey, hey, hold your horses.  This is a wildly obsolete patch that we
-> were discussing a few weeks ago, but Yinghai did a proper alternative
-> for the memblock universe.
+> But if you already mounted a cgroup hierarchy but without perf_cgroup
+> and the hierarchy has sub-cgroups, you can't bind perf_cgroup to it,
+> and thus you're not able to use per-cgroup perf feature.
 > 
-> It was never in linux-next, and never intended to be.  I'm not sure why
-> it has appeared in linux-next now; it isn't in my branch.  I wonder if
-> it appeared in another Xen-related branch.  Let me investigate.
+> This patchset alleviates the pain, and then a subsytem can be bind/unbind
+> to/from a hierarchy which has sub-cgroups in it.
+> 
+> For a cgroup subsystem to become bindable, the can_bind flag of
+> struct cgroup_subsys should be set, and provide ->bind() callback
+> if necessary.
+> 
+> But for some constraints, not all subsystems can take advantage of
+> this patch. For example, we can't decide a cgroup's cpuset.mems and
+> cpuset.cpus automatically, so cpuset is not bindable.
 
-I think I merged in my tree a snapshot of Jeremy's upstream/xen that
-apparently was not meant for upstream at all.
-And I did that just to solve a trivial 5 lines conflict because my patch
-series don't actually depend on any of Jeremy's patches.
+<snip>
 
-I solved the problem taking the radical approach: I removed the
-merge with upstream/xen altogether and also removed the commit that
-conflicts with one of Jeremy's commits.
-There shouldn't be any more conflicts now, and surely there shouldn't be
-any more unwanted old commits.
+> diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+> index 6c36750..46df5f8 100644
+> --- a/kernel/cgroup.c
+> +++ b/kernel/cgroup.c
 
-I apologize for any problems caused but none of this was intentional.
+<snip>
 
+> +/*
+> + * cgroup_walk_herarchy - iterate through a cgroup hierarchy
+> + * @process_cgroup: callback called on each cgroup in the hierarchy
+> + * @data: will be passed to @process_cgroup
+> + * @top_cgrp: the root cgroup of the hierarchy
+> + *
+> + * For such a hierarchy:
+> + *        a1        c1
+> + *      /         /
+> + * Root - a2 - b1 - c2
+> + *      \
+> + *        a3
+> + *
+> + * The iterating order is: a1, a2, b1, c1, c2, a3. So a parent will be
+> + * processed before its children.
+> + */
 
+You could just say it's a depth-first walk except we process the parent before
+its children.
+
+> +static int cgroup_walk_hierarchy(int (*process_cgroup)(struct cgroup *, void *),
+> +				 void *data, struct cgroup *top_cgrp)
+
+<snip>
+
+> +static int hierarchy_populate_dir(struct cgroup *cgrp, void *data)
+> +{
+> +	mutex_lock_nested(&cgrp->dentry->d_inode->i_mutex, I_MUTEX_CHILD);
+> +	cgroup_populate_dir(cgrp);
+> +	mutex_unlock(&cgrp->dentry->d_inode->i_mutex);
+> +	return 0;
+> +}
+> +
+>  /*
+>   * Call with cgroup_mutex held. Drops reference counts on modules, including
+>   * any duplicate ones that parse_cgroupfs_options took. If this function
+> @@ -945,36 +1079,53 @@ static int rebind_subsystems(struct cgroupfs_root *root,
+>  	unsigned long added_bits, removed_bits;
+>  	struct cgroup *cgrp = &root->top_cgroup;
+>  	int i;
+> +	int err;
+> 
+>  	BUG_ON(!mutex_is_locked(&cgroup_mutex));
+> 
+>  	removed_bits = root->actual_subsys_bits & ~final_bits;
+>  	added_bits = final_bits & ~root->actual_subsys_bits;
+> +
+>  	/* Check that any added subsystems are currently free */
+> -	for (i = 0; i < CGROUP_SUBSYS_COUNT; i++) {
+> -		unsigned long bit = 1UL << i;
+> -		struct cgroup_subsys *ss = subsys[i];
+> -		if (!(bit & added_bits))
+> -			continue;
+> +	for_each_set_bit(i, &added_bits, CGROUP_SUBSYS_COUNT) {
+>  		/*
+>  		 * Nobody should tell us to do a subsys that doesn't exist:
+>  		 * parse_cgroupfs_options should catch that case and refcounts
+>  		 * ensure that subsystems won't disappear once selected.
+>  		 */
+> -		BUG_ON(ss == NULL);
+> -		if (ss->root != &rootnode) {
+> +		BUG_ON(subsys[i] == NULL);
+> +		if (subsys[i]->root != &rootnode) {
+>  			/* Subsystem isn't free */
+>  			return -EBUSY;
+>  		}
+>  	}
+> 
+> -	/* Currently we don't handle adding/removing subsystems when
+> -	 * any child cgroups exist. This is theoretically supportable
+> -	 * but involves complex error handling, so it's being left until
+> -	 * later */
+> -	if (root->number_of_cgroups > 1)
+> +	/* removing will be supported later */
+> +	if (root->number_of_cgroups > 1 && removed_bits)
+>  		return -EBUSY;
+> 
+> +	if (root->number_of_cgroups > 1) {
+
+Is there something wrong with the indentation here? I can't
+see the closing brace for the "if (root->number_of_cgroups > 1)"
+that should precede the for_each_set_bit() loop below.
+
+> +		for_each_set_bit(i, &added_bits, CGROUP_SUBSYS_COUNT)
+> +			if (!subsys[i]->can_bind)
+> +				return -EBUSY;
+
+I think you could avoid the can_bind flag field entirely and do:
+
+			if (!subsys[i]->bind)
+
+Also, if we're going with my "split out unbind" suggestion I think
+the part here would be:
+
+		for_each_set_bit(i, &removed_bits, CGROUP_SUBSYS_COUNT)
+			if (!subsys[i]->unbind)
+				return -EBUSY;
+
+<snip>
+
+Cheers,
+	-Matt Helsley
