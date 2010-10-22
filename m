@@ -1,63 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754061Ab0JVSdI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 14:33:08 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:43781 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758721Ab0JVSYr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1753548Ab0JVSdG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 14:33:06 -0400
+Received: from kroah.org ([198.145.64.141]:37737 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756737Ab0JVSYr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 22 Oct 2010 14:24:47 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:subject:references
-         :in-reply-to:content-type:content-transfer-encoding;
-        b=u/CQVZBEaASGyN8VOqWkmGCfGTE/QYWhiHJIEt1L58TUSTE7Tv3CExCIgTiNVmmMR5
-         PctUOkyz8Y8a/CLjev/5/nIaCMEFhK8TP3hyo7wMP9hPfRnZiWNin0zAFALP4ysqg08L
-         EBJMEnUO9emR7rtknkHcD8H25XZ9u1rO9Bp9M=
-Message-ID: <4CC1D6EA.5060002@gmail.com>
-Date: Fri, 22 Oct 2010 20:24:42 +0200
-From: "N.P.S." <napohybelskurwysynom2010@gmail.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.0; pl; rv:1.9.2.9) Gecko/20100915 Thunderbird/3.1.4
-MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, linuxppc-dev@lists.ozlabs.org
-Subject: [RFC][PATCH 6/8] Removal of dead code from arch/powerpc/kernel/process.c
-References: <4CC1D2D5.9050009@gmail.com>
-In-Reply-To: <4CC1D2D5.9050009@gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+From: Greg Kroah-Hartman <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org
+Cc: Daniel Drake <dsd@laptop.org>, Andrew Morton <akpm@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [PATCH 49/49] serial8250: ratelimit "too much work" error
+Date: Fri, 22 Oct 2010 11:21:28 -0700
+Message-Id: <1287771688-14805-49-git-send-email-gregkh@suse.de>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <20101022175112.GC13489@kroah.com>
+References: <20101022175112.GC13489@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-commit 12747993cb2b4a07df7a62f247f20aa4a6263cd9
-Author: N.P.S <napohybelskurwysynom2010@gmail.com>
-Date:   Thu Oct 21 23:36:00 2010 +0200
+From: Daniel Drake <dsd@laptop.org>
 
-    Removal of dead code from
-    arch/powerpc/kernel/process.c
-    
-    Signed-off-by: Zimny Lech <napohybelskurwysynom2010@gmail.com>
-    CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-    CC: Paul Mackerras <paulus@samba.org>
-    CC: <linuxppc-dev@lists.ozlabs.org>
-    CC: <linux-kernel@vger.kernel.org>
+Running a serial console, if too many kernel messages are generated within
+a short time causing a lot of serial I/O, the 8250 driver will generate
+another kernel message reporting this, which just adds to the I/O. It has
+a cascading effect and quickly results the system being brought to its knees
+by a flood of "too much work" messages.
 
-diff --git a/arch/powerpc/kernel/process.c b/arch/powerpc/kernel/process.c
-index b1c648a..e622887 100644
---- a/arch/powerpc/kernel/process.c
-+++ b/arch/powerpc/kernel/process.c
-@@ -670,12 +670,7 @@ void exit_thread(void)
- void flush_thread(void)
- {
- 	discard_lazy_cpu_state();
--
--#ifdef CONFIG_HAVE_HW_BREAKPOINTS
--	flush_ptrace_hw_breakpoint(current);
--#else /* CONFIG_HAVE_HW_BREAKPOINTS */
- 	set_debug_reg_defaults(&current->thread);
--#endif /* CONFIG_HAVE_HW_BREAKPOINTS */
- }
+Ratelimit the error message to avoid this.
+
+[akpm@linux-foundation.org: use the superior printk_ratelimited()]
+[akpm@linux-foundation.org: printk_ratelimited() needs ratelimit.h]
+Signed-off-by: Daniel Drake <dsd@laptop.org>
+Acked-by: Alan Cox <alan@linux.intel.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+---
+ drivers/serial/8250.c |    5 +++--
+ 1 files changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/serial/8250.c b/drivers/serial/8250.c
+index 37f19a6..167c4a6 100644
+--- a/drivers/serial/8250.c
++++ b/drivers/serial/8250.c
+@@ -31,6 +31,7 @@
+ #include <linux/delay.h>
+ #include <linux/platform_device.h>
+ #include <linux/tty.h>
++#include <linux/ratelimit.h>
+ #include <linux/tty_flip.h>
+ #include <linux/serial_reg.h>
+ #include <linux/serial_core.h>
+@@ -1600,8 +1601,8 @@ static irqreturn_t serial8250_interrupt(int irq, void *dev_id)
  
- void
+ 		if (l == i->head && pass_counter++ > PASS_LIMIT) {
+ 			/* If we hit this, we're dead. */
+-			printk(KERN_ERR "serial8250: too much work for "
+-				"irq%d\n", irq);
++			printk_ratelimited(KERN_ERR
++				"serial8250: too much work for irq%d\n", irq);
+ 			break;
+ 		}
+ 	} while (l != end);
+-- 
+1.7.2
+
