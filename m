@@ -1,72 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759176Ab0JVSzw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 14:55:52 -0400
-Received: from kroah.org ([198.145.64.141]:33870 "EHLO coco.kroah.org"
+	id S1759277Ab0JVTZL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 15:25:11 -0400
+Received: from kroah.org ([198.145.64.141]:33891 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755742Ab0JVSzu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 14:55:50 -0400
-X-Mailbox-Line: From gregkh@clark.site Fri Oct 22 11:52:27 2010
-Message-Id: <20101022185227.749815054@clark.site>
-User-Agent: quilt/0.48-11.2
-Date: Fri, 22 Oct 2010 11:50:39 -0700
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
-Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Dan Rosenberg <drosenberg@vsecurity.com>, Takashi Iwai <tiwai@suse.de>
-Subject: [005/103] ALSA: prevent heap corruption in snd_ctl_new()
-In-Reply-To: <20101022185455.GA9114@kroah.com>
+	id S1759175Ab0JVSzw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Oct 2010 14:55:52 -0400
+Date: Fri, 22 Oct 2010 11:54:37 -0700
+From: Greg KH <greg@kroah.com>
+To: Vladislav Bolkhovitin <vst@vlnb.net>
+Cc: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        scst-devel <scst-devel@lists.sourceforge.net>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Mike Christie <michaelc@cs.wisc.edu>, Vu Pham <vuhuong@mellanox.com>,
+        Bart Van Assche <bart.vanassche@gmail.com>,
+        James Smart <James.Smart@Emulex.Com>, Joe Eykholt <jeykholt@cisco.com>,
+        Andy Yan <ayan@marvell.com>, Chetan Loke <generationgnu@yahoo.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Hannes Reinecke <hare@suse.de>,
+        Richard Sharpe <realrichardsharpe@gmail.com>,
+        Daniel Henrique Debonzi <debonzi@linux.vnet.ibm.com>
+Subject: Re: [PATCH 8/19]: SCST SYSFS interface implementation
+Message-ID: <20101022185437.GA9103@kroah.com>
+References: <20101009212047.GB27180@kroah.com>
+ <4CB36592.6060909@vlnb.net>
+ <20101011213235.GA11489@kroah.com>
+ <4CB4AEB9.30501@vlnb.net>
+ <20101012190345.GA25737@kroah.com>
+ <4CB75E81.7000208@vlnb.net>
+ <20101014200413.GA30831@kroah.com>
+ <4CC1CA4D.1090609@vlnb.net>
+ <20101022175624.GA13640@kroah.com>
+ <4CC1DAA2.7030602@vlnb.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4CC1DAA2.7030602@vlnb.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.35-stable review patch.  If anyone has any objections, please let us know.
+On Fri, Oct 22, 2010 at 10:40:34PM +0400, Vladislav Bolkhovitin wrote:
+> Greg KH, on 10/22/2010 09:56 PM wrote:
+> > On Fri, Oct 22, 2010 at 09:30:53PM +0400, Vladislav Bolkhovitin wrote:
+> >> +	unsigned int tgt_kobj_initialized:1;
+> > 
+> > It's the middle of the merge window, and I'm about to go on vacation, so
+> > I didn't read this patch after this line.
+> > 
+> > It's obvious that this patch is wrong, you shouldn't need to worry about
+> > this.  And even if you did, you don't need this flag.
+> > 
+> > Why are you trying to do something that no one else needs?  Why make
+> > things harder than they have to be.
+> 
+> I tried to explain that to you in http://lkml.org/lkml/2010/10/14/291
+> and mentioned there the need to create this flag to track
+> half-initialized kobjects. You agreed
+> (http://lkml.org/lkml/2010/10/14/299) that don't return half-initialized
+> objects is a regular kernel practice, but then requested to strictly
+> bound the larger object freeing to its kobject release(), which means
+> that all SYSFS creating functions now have to return half-initialized
+> SYSFS hierarchy in case of any error. Hence the flag to track it.
 
-------------------
+I agreed that you needed to do something about it, not that this is the
+correct way to do it.
 
-From: Dan Rosenberg <drosenberg@vsecurity.com>
+Think for a second as to why your code path looks different from EVERY
+other kobject user in the kernel.  Perhaps it is incorrect?  You don't
+need all this completion mess, in fact, it's wrong.
 
-commit 5591bf07225523600450edd9e6ad258bb877b779 upstream.
+Just do what everyone else does please, as that is the simpler, and
+correct, way to do it.
 
-The snd_ctl_new() function in sound/core/control.c allocates space for a
-snd_kcontrol struct by performing arithmetic operations on a
-user-provided size without checking for integer overflow.  If a user
-provides a large enough size, an overflow will occur, the allocated
-chunk will be too small, and a second user-influenced value will be
-written repeatedly past the bounds of this chunk.  This code is
-reachable by unprivileged users who have permission to open
-a /dev/snd/controlC* device (on many distros, this is group "audio") via
-the SNDRV_CTL_IOCTL_ELEM_ADD and SNDRV_CTL_IOCTL_ELEM_REPLACE ioctls.
+Oh, and why are you using a kobject at all anyway?  Shouldn't you be
+using a 'struct device'?
 
-Signed-off-by: Dan Rosenberg <drosenberg@vsecurity.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+Anyway, I don't have time for this anymore for the next 2 weeks, good
+luck.
 
----
- sound/core/control.c |    5 +++++
- 1 file changed, 5 insertions(+)
-
---- a/sound/core/control.c
-+++ b/sound/core/control.c
-@@ -31,6 +31,7 @@
- 
- /* max number of user-defined controls */
- #define MAX_USER_CONTROLS	32
-+#define MAX_CONTROL_COUNT	1028
- 
- struct snd_kctl_ioctl {
- 	struct list_head list;		/* list of all ioctls */
-@@ -195,6 +196,10 @@ static struct snd_kcontrol *snd_ctl_new(
- 	
- 	if (snd_BUG_ON(!control || !control->count))
- 		return NULL;
-+
-+	if (control->count > MAX_CONTROL_COUNT)
-+		return NULL;
-+
- 	kctl = kzalloc(sizeof(*kctl) + sizeof(struct snd_kcontrol_volatile) * control->count, GFP_KERNEL);
- 	if (kctl == NULL) {
- 		snd_printk(KERN_ERR "Cannot allocate control instance\n");
-
-
+greg k-h
