@@ -1,42 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755846Ab0JVKlz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 06:41:55 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:41314 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755535Ab0JVKly (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 06:41:54 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=Lgv74iI+hX1yAUWM1J2i7HEakxCi9gCjaZStBasbZPYHIB3iLNmBSNc8u9BVjEKb7r
-         yY/gEdKxhqqgsZ7elQU7dG0HHjFUhUgPFfQgGprZkEojOh5XojpzM3hPMqn8GzoR5kBD
-         LkkCMjMLYKR95NSvHce4husfq2GCH3kxCCHzY=
+	id S1755813Ab0JVKoy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 06:44:54 -0400
+Received: from cantor.suse.de ([195.135.220.2]:39863 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754160Ab0JVKow (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Oct 2010 06:44:52 -0400
+Message-ID: <4CC16B1E.4060709@suse.de>
+Date: Fri, 22 Oct 2010 16:14:46 +0530
+From: Suresh Jayaraman <sjayaraman@suse.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100714 SUSE/3.0.6 Thunderbird/3.0.6
 MIME-Version: 1.0
-In-Reply-To: <30241116.270781287743584802.JavaMail.root@mail-zbox20.bo3.lycos.com>
-References: <5600814.270321287742009359.JavaMail.root@mail-zbox20.bo3.lycos.com>
-	<30241116.270781287743584802.JavaMail.root@mail-zbox20.bo3.lycos.com>
-Date: Fri, 22 Oct 2010 13:41:52 +0300
-Message-ID: <AANLkTin6rvckZ3q9xY8Chzc1iDvkV1ObTP42n9Ye943Y@mail.gmail.com>
-Subject: Re: On Linux numbering scheme
-From: Alexey Dobriyan <adobriyan@gmail.com>
-To: "Artem S. Tashkinov" <t.artem@lycos.com>
-Cc: Athanasius <link@miggy.org>, kevin granade <kevin.granade@gmail.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: =?ISO-8859-15?Q?=22J=2EA=2E_Magall=F3n=22?= <jamagallon@ono.com>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
+        linux-cifs <linux-cifs@vger.kernel.org>
+Subject: Re: CIFS is slooow, gvfs is fast
+References: <20101022013544.0fdab0e0@werewolf.home>
+In-Reply-To: <20101022013544.0fdab0e0@werewolf.home>
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 22, 2010 at 1:33 PM, Artem S. Tashkinov <t.artem@lycos.com> wrote:
-> What can you say about kernel 2.6.32? Almost nothing.
->
-> What can you say about kernel 3.11.3? - it is the third release of
-> Linux in 2011.
+(Cc linux-cifs@vger.kernel.org)
 
-And? What a useless information.
+On 10/22/2010 05:05 AM, J.A. Magallón wrote:
 
-BTW, it should be 3.2011.3, see Y2K.
+> I have a very strange behaviour with windows networking.
+> I have an HTPC, which I access from my Linux desktop. It runs Windows 7.
+> Network is GigaBit, routed by a Linksys WRT320N running latest DD-WRT.
+> I setup an automount path under /net/htpc with CIFS filesystem.
+> I can also access the drives in HTPC via gvfs from Gnome DE.
+> 
+> Problem: speed is _VERY_ different.
+> R/W through the automount point (CIFS fs), is roughly 7-8 MB/s (ridiculous
+> for gigabit speeds).
+> R/W through Gnome/gvfs (kind of fuse) goes around 35 - 40 MB/s (400 Mbits/s),
+> that look much better.
+
+What is the kernel version In which you are seeing the problem? I'm not
+seeing this on 2.6.36-rc4. Do you have a wired interface as well? Are
+you sure that both are using the same network path?
+
+> I have tried with different rsize/wsize in mount, but speed is the same
+> (perhaps I did not get the right values...).
+
+Does the changes reflect in /proc/mounts?
+
+
+-- 
+Suresh Jayaraman
