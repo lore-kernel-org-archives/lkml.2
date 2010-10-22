@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932783Ab0JVTLr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 15:11:47 -0400
-Received: from kroah.org ([198.145.64.141]:34156 "EHLO coco.kroah.org"
+	id S1759352Ab0JVS42 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 14:56:28 -0400
+Received: from kroah.org ([198.145.64.141]:34076 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759357Ab0JVS43 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 14:56:29 -0400
-X-Mailbox-Line: From gregkh@clark.site Fri Oct 22 11:52:31 2010
-Message-Id: <20101022185231.662903128@clark.site>
+	id S1759311Ab0JVS4S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Oct 2010 14:56:18 -0400
+X-Mailbox-Line: From gregkh@clark.site Fri Oct 22 11:52:30 2010
+Message-Id: <20101022185230.582791070@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 22 Oct 2010 11:51:22 -0700
+Date: Fri, 22 Oct 2010 11:51:10 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Julia Lawall <julia@diku.dk>, Chris Wilson <chris@chris-wilson.co.uk>
-Subject: [048/103] drivers/gpu/drm/i915/i915_gem.c: Add missing error handling code
+        Mauro Carvalho Chehab <mchehab@redhat.com>
+Subject: [036/103] V4L/DVB: Dont identify PV SBTVD Hybrid as a DibCom device
 In-Reply-To: <20101022185455.GA9114@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,52 +25,69 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Julia Lawall <julia@diku.dk>
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
 
-commit 929f49bf225b1b6cd04d0a7b9c0f7377d9131220 upstream.
+commit 3bfb317f97cfddbbec67bbe8e35ad38af3507397 upstream.
 
-Extend the error handling code with operations found in other nearby error
-handling code
+As reported by Carlos, Prolink Pixelview SBTVD Hybrid is based on
+Conexant cx231xx + Fujitsu 86A20S demodulator. However, both shares
+the same USB ID. So, we need to use USB bcdDevice, in order to
+properly discover what's the board.
 
-A simplified version of the sematic match that finds this problem is as
-follows: (http://coccinelle.lip6.fr/)
+We know for sure that bcd 0x100 is used for a dib0700 device, while
+bcd 0x4001 is used for a cx23102 device. This patch reserves two ranges,
+the first one from 0x0000-0x3f00 for dib0700, and the second from
+0x4000-0x4fff for cx231xx devices.
 
-// <smpl>
-@r exists@
-@r@
-statement S1,S2,S3;
-constant C1,C2,C3;
-@@
+This may need fixes in the future, as we get access to other devices.
 
-*if (...)
- {... S1 return -C1;}
-...
-*if (...)
- {... when != S1
-    return -C2;}
-...
-*if (...)
- {... S1 return -C3;}
-// </smpl>
-
-Signed-off-by: Julia Lawall <julia@diku.dk>
-Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
+Thanks-to: Carlos Americo Domiciano <c_domiciano@yahoo.com.br>
+Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/gpu/drm/i915/i915_gem.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/media/dvb/dvb-usb/dib0700_devices.c |    2 +-
+ drivers/media/video/cx231xx/Makefile        |    1 +
+ drivers/media/video/cx231xx/cx231xx-cards.c |    3 +++
+ 3 files changed, 5 insertions(+), 1 deletion(-)
 
---- a/drivers/gpu/drm/i915/i915_gem.c
-+++ b/drivers/gpu/drm/i915/i915_gem.c
-@@ -3367,6 +3367,8 @@ i915_gem_object_pin_and_relocate(struct
- 				  (int) reloc->offset,
- 				  reloc->read_domains,
- 				  reloc->write_domain);
-+			drm_gem_object_unreference(target_obj);
-+			i915_gem_object_unpin(obj);
- 			return -EINVAL;
- 		}
- 		if (reloc->write_domain & I915_GEM_DOMAIN_CPU ||
+--- a/drivers/media/dvb/dvb-usb/dib0700_devices.c
++++ b/drivers/media/dvb/dvb-usb/dib0700_devices.c
+@@ -2081,7 +2081,7 @@ struct usb_device_id dib0700_usb_id_tabl
+ /* 60 */{ USB_DEVICE(USB_VID_TERRATEC,	USB_PID_TERRATEC_CINERGY_T_XXS_2) },
+ 	{ USB_DEVICE(USB_VID_DIBCOM,    USB_PID_DIBCOM_STK807XPVR) },
+ 	{ USB_DEVICE(USB_VID_DIBCOM,    USB_PID_DIBCOM_STK807XP) },
+-	{ USB_DEVICE(USB_VID_PIXELVIEW, USB_PID_PIXELVIEW_SBTVD) },
++	{ USB_DEVICE_VER(USB_VID_PIXELVIEW, USB_PID_PIXELVIEW_SBTVD, 0x000, 0x3f00) },
+ 	{ USB_DEVICE(USB_VID_EVOLUTEPC, USB_PID_TVWAY_PLUS) },
+ /* 65 */{ USB_DEVICE(USB_VID_PINNACLE,	USB_PID_PINNACLE_PCTV73ESE) },
+ 	{ USB_DEVICE(USB_VID_PINNACLE,	USB_PID_PINNACLE_PCTV282E) },
+--- a/drivers/media/video/cx231xx/Makefile
++++ b/drivers/media/video/cx231xx/Makefile
+@@ -11,4 +11,5 @@ EXTRA_CFLAGS += -Idrivers/media/video
+ EXTRA_CFLAGS += -Idrivers/media/common/tuners
+ EXTRA_CFLAGS += -Idrivers/media/dvb/dvb-core
+ EXTRA_CFLAGS += -Idrivers/media/dvb/frontends
++EXTRA_CFLAGS += -Idrivers/media/dvb/dvb-usb
+ 
+--- a/drivers/media/video/cx231xx/cx231xx-cards.c
++++ b/drivers/media/video/cx231xx/cx231xx-cards.c
+@@ -32,6 +32,7 @@
+ #include <media/v4l2-chip-ident.h>
+ 
+ #include <media/cx25840.h>
++#include "dvb-usb-ids.h"
+ #include "xc5000.h"
+ 
+ #include "cx231xx.h"
+@@ -175,6 +176,8 @@ struct usb_device_id cx231xx_id_table[]
+ 	 .driver_info = CX231XX_BOARD_CNXT_RDE_250},
+ 	{USB_DEVICE(0x0572, 0x58A1),
+ 	 .driver_info = CX231XX_BOARD_CNXT_RDU_250},
++	{USB_DEVICE_VER(USB_VID_PIXELVIEW, USB_PID_PIXELVIEW_SBTVD, 0x4000,0x4fff),
++	 .driver_info = CX231XX_BOARD_UNKNOWN},
+ 	{},
+ };
+ 
 
 
