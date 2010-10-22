@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932666Ab0JVTNt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 15:13:49 -0400
+	id S1759733Ab0JVTN2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 15:13:28 -0400
 Received: from mail-bw0-f46.google.com ([209.85.214.46]:49359 "EHLO
 	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759362Ab0JVTNr (ORCPT
+	with ESMTP id S1759674Ab0JVTNY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 15:13:47 -0400
+	Fri, 22 Oct 2010 15:13:24 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:x-mailer-version
          :in-reply-to:references;
-        b=pcFNGlgx2cPVQikXjH0p1B3YcF0hWXl/P8TnldzYeFBQSagFOY/InM8iMNJ9NRdScp
-         D7X1SxYgTcSoAA33V7h2CHXWXf2FugcZvJTy997YuSXrN7V7V/4bqe+axeY9GmYYC9MA
-         3Ecjc/sknXKZoqmWWw8kMf5fgu6yx3emubi3w=
+        b=t2cO+6u0CWHFSNCVjKsWpKtA8KLs508EQ73EM9DkEbq+NHhVddLMH0jvyzvYZF5N4Q
+         9whP92/mfV2RHXoao9gKUA8qjtpft1Nqq1gprEw8flSXdglnjXlLxdwyxZm5BN/wHV7W
+         htWTd1wy1X16RxG8lUD+cjyjEDbLASPGYJIoc=
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: LKML <linux-kernel@vger.kernel.org>,
@@ -28,9 +28,9 @@ Cc: LKML <linux-kernel@vger.kernel.org>,
         Steven Rostedt <rostedt@goodmis.org>,
         Robert Richter <robert.richter@amd.com>,
         "Frank Ch. Eigler" <fche@redhat.com>
-Subject: [RFC PATCH 10/11] perf: Support user regs and stack in sample parsing
-Date: Fri, 22 Oct 2010 21:13:11 +0200
-Message-Id: <1287774792-23123-11-git-send-regression-fweisbec@gmail.com>
+Subject: [RFC PATCH 03/11] perf: Add ability to dump user regs
+Date: Fri, 22 Oct 2010 21:13:04 +0200
+Message-Id: <1287774792-23123-4-git-send-regression-fweisbec@gmail.com>
 X-Mailer: git-send-regression
 X-Mailer-version: 0.1, "The maintainer couldn't reproduce after one week full time debugging" special version.
 In-Reply-To: <1287774792-23123-1-git-send-regression-fweisbec@gmail.com>
@@ -39,7 +39,32 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This will be needed for stack unwinding.
+Add new attr->user_regs bitmap that lets a user choose a set
+of user registers to dump to the sample. The layout of this
+bitmap is described in asm/perf_regs.h for archs that
+support CONFIG_HAVE_PERF_REGS_DEFS, otherwise the perf
+syscall will fail if attr->user_regs is non zero.
+
+The register value here are those of the user space context as
+it was before the user entered the kernel for whatever reason
+(syscall, irq, exception, or a PMI happening in userspace).
+
+This is going to be useful to bring Dwarf CFI based stack unwinding
+on top of samples.
+
+FIXME: the issue of compat regs has yet to be solved. I think we
+need to split the regs bitmap in:
+
+	attr->user_regs32
+	attr->user_regs64
+
+So that userspace doesn't need to care about beeing a compat task or
+not, running on a 32 bits kernel or not, it can provide both bitmaps
+and let the kernel handle that, ignore user_regs64 if it is a 32 bits
+kernel, handle it otherwise and also user_regs32 for compat tasks,
+etc...
+
+Hmm?
 
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Ingo Molnar <mingo@elte.hu>
@@ -54,287 +79,179 @@ Cc: Steven Rostedt <rostedt@goodmis.org>
 Cc: Robert Richter <robert.richter@amd.com>
 Cc: Frank Ch. Eigler <fche@redhat.com>
 ---
- tools/perf/builtin-kmem.c      |    2 +-
- tools/perf/builtin-lock.c      |    2 +-
- tools/perf/builtin-sched.c     |    2 +-
- tools/perf/builtin-timechart.c |    2 +-
- tools/perf/builtin-trace.c     |    2 +-
- tools/perf/util/event.c        |   28 ++++++++++++++++++++++++++--
- tools/perf/util/event.h        |   15 ++++++++++++++-
- tools/perf/util/header.c       |   33 +++++++++++++++++++++++++++++++--
- tools/perf/util/header.h       |    3 ++-
- tools/perf/util/session.c      |    4 ++--
- tools/perf/util/session.h      |    6 ++++++
- 11 files changed, 86 insertions(+), 13 deletions(-)
+ include/linux/perf_event.h |   28 +++++++++++++++++++
+ kernel/perf_event.c        |   63 +++++++++++++++++++++++++++++++++++++++++++-
+ 2 files changed, 90 insertions(+), 1 deletions(-)
 
-diff --git a/tools/perf/builtin-kmem.c b/tools/perf/builtin-kmem.c
-index 31f60a2..2fee906 100644
---- a/tools/perf/builtin-kmem.c
-+++ b/tools/perf/builtin-kmem.c
-@@ -314,7 +314,7 @@ static int process_sample_event(event_t *event, struct perf_session *session)
- 	data.cpu = -1;
- 	data.period = 1;
- 
--	event__parse_sample(event, session->sample_type, &data);
-+	event__parse_sample(event, session, &data);
- 
- 	dump_printf("(IP, %d): %d/%d: %#Lx period: %Ld\n", event->header.misc,
- 		    data.pid, data.tid, data.ip, data.period);
-diff --git a/tools/perf/builtin-lock.c b/tools/perf/builtin-lock.c
-index 821c158..5791a25 100644
---- a/tools/perf/builtin-lock.c
-+++ b/tools/perf/builtin-lock.c
-@@ -840,7 +840,7 @@ static int process_sample_event(event_t *self, struct perf_session *s)
- 	struct thread *thread;
- 
- 	bzero(&data, sizeof(data));
--	event__parse_sample(self, s->sample_type, &data);
-+	event__parse_sample(self, s, &data);
- 
- 	thread = perf_session__findnew(s, data.tid);
- 	if (thread == NULL) {
-diff --git a/tools/perf/builtin-sched.c b/tools/perf/builtin-sched.c
-index 55f3b5d..5ef6075 100644
---- a/tools/perf/builtin-sched.c
-+++ b/tools/perf/builtin-sched.c
-@@ -1619,7 +1619,7 @@ static int process_sample_event(event_t *event, struct perf_session *session)
- 	data.cpu = -1;
- 	data.period = -1;
- 
--	event__parse_sample(event, session->sample_type, &data);
-+	event__parse_sample(event, session, &data);
- 
- 	dump_printf("(IP, %d): %d/%d: %#Lx period: %Ld\n", event->header.misc,
- 		    data.pid, data.tid, data.ip, data.period);
-diff --git a/tools/perf/builtin-timechart.c b/tools/perf/builtin-timechart.c
-index 9bcc38f..7d752d5 100644
---- a/tools/perf/builtin-timechart.c
-+++ b/tools/perf/builtin-timechart.c
-@@ -477,7 +477,7 @@ static int process_sample_event(event_t *event, struct perf_session *session)
- 
- 	memset(&data, 0, sizeof(data));
- 
--	event__parse_sample(event, session->sample_type, &data);
-+	event__parse_sample(event, session, &data);
- 
- 	if (session->sample_type & PERF_SAMPLE_TIME) {
- 		if (!first_time || first_time > data.time)
-diff --git a/tools/perf/builtin-trace.c b/tools/perf/builtin-trace.c
-index 40a6a29..224c586 100644
---- a/tools/perf/builtin-trace.c
-+++ b/tools/perf/builtin-trace.c
-@@ -74,7 +74,7 @@ static int process_sample_event(event_t *event, struct perf_session *session)
- 	data.cpu = -1;
- 	data.period = 1;
- 
--	event__parse_sample(event, session->sample_type, &data);
-+	event__parse_sample(event, session, &data);
- 
- 	dump_printf("(IP, %d): %d/%d: %#Lx period: %Ld\n", event->header.misc,
- 		    data.pid, data.tid, data.ip, data.period);
-diff --git a/tools/perf/util/event.c b/tools/perf/util/event.c
-index dab9e75..567f97a 100644
---- a/tools/perf/util/event.c
-+++ b/tools/perf/util/event.c
-@@ -676,7 +676,7 @@ int event__preprocess_sample(const event_t *self, struct perf_session *session,
- 	u8 cpumode = self->header.misc & PERF_RECORD_MISC_CPUMODE_MASK;
- 	struct thread *thread;
- 
--	event__parse_sample(self, session->sample_type, data);
-+	event__parse_sample(self, session, data);
- 
- 	dump_printf("(IP, %d): %d/%d: %#Lx period: %Ld cpu:%d\n",
- 		    self->header.misc, data->pid, data->tid, data->ip,
-@@ -766,9 +766,11 @@ out_filtered:
- 	return 0;
- }
- 
--int event__parse_sample(const event_t *event, u64 type, struct sample_data *data)
-+int event__parse_sample(const event_t *event, struct perf_session *session,
-+			struct sample_data *data)
- {
- 	const u64 *array = event->sample.array;
-+	u64 type = session->sample_type;
- 
- 	if (type & PERF_SAMPLE_IP) {
- 		data->ip = event->ip.ip;
-@@ -830,6 +832,28 @@ int event__parse_sample(const event_t *event, u64 type, struct sample_data *data
- 		data->raw_size = *p;
- 		p++;
- 		data->raw_data = p;
-+		array += 1 + (data->raw_size * sizeof(u64));
-+	}
+diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
+index 057bf22..28210d4 100644
+--- a/include/linux/perf_event.h
++++ b/include/linux/perf_event.h
+@@ -226,6 +226,16 @@ struct perf_event_attr {
+ 	__u32			bp_type;
+ 	__u64			bp_addr;
+ 	__u64			bp_len;
 +
-+	if (session->sample_uregs_nr) {
-+		data->uregs.version = *array++;
++	/* Future breakpoint fields extension */
++	__u64			__reserved_2;
++	__u64			__reserved_3;
 +
-+		if (data->uregs.version) {
-+			data->uregs.regs = (u64 *)array;
-+			array += session->sample_uregs_nr;
-+		}
-+	}
-+
-+	if (session->sample_ustack) {
-+		u64 size = *array++;
-+
-+		if (!size) {
-+			data->stack.size = 0;
-+		} else {
-+			data->stack.data = (char *)array;
-+			array += size / sizeof(*array);
-+			data->stack.size = *array;
-+		}
- 	}
- 
- 	return 0;
-diff --git a/tools/perf/util/event.h b/tools/perf/util/event.h
-index 8e790da..5a05396 100644
---- a/tools/perf/util/event.h
-+++ b/tools/perf/util/event.h
-@@ -61,6 +61,16 @@ struct sample_event {
- 	u64 array[];
++	/*
++	 * Arch specific mask that defines a set of user regs to dump on
++	 * samples. See asm/perf_regs.h for details.
++	 */
++	__u64			user_regs;
  };
  
-+struct user_regs {
-+	u64 version;
-+	u64 *regs;
-+};
+ /*
+@@ -475,6 +485,7 @@ struct perf_guest_info_callbacks {
+ #include <asm/hw_breakpoint.h>
+ #endif
+ 
 +
-+struct user_stack_dump {
-+	u64 size;
-+	char *data;
-+};
+ #include <linux/list.h>
+ #include <linux/mutex.h>
+ #include <linux/rculist.h>
+@@ -891,6 +902,22 @@ struct perf_output_handle {
+ 
+ #ifdef CONFIG_PERF_EVENTS
+ 
++#ifdef CONFIG_HAVE_PERF_REGS_DEFS
++#include <asm/perf_regs.h>
++#else
++static inline int perf_reg_value(struct pt_regs *regs, int idx) { return 0; }
 +
- struct sample_data {
- 	u64 ip;
- 	u32 pid, tid;
-@@ -73,6 +83,8 @@ struct sample_data {
- 	u32 raw_size;
- 	void *raw_data;
- 	struct ip_callchain *callchain;
-+	struct user_regs uregs;
-+	struct user_stack_dump stack;
- };
- 
- #define BUILD_ID_SIZE 20
-@@ -160,7 +172,8 @@ struct addr_location;
- int event__preprocess_sample(const event_t *self, struct perf_session *session,
- 			     struct addr_location *al, struct sample_data *data,
- 			     symbol_filter_t filter);
--int event__parse_sample(const event_t *event, u64 type, struct sample_data *data);
-+int event__parse_sample(const event_t *event, struct perf_session *session,
-+			struct sample_data *data);
- 
- extern const char *event__name[];
- 
-diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
-index d7e67b1..b73f481 100644
---- a/tools/perf/util/header.c
-+++ b/tools/perf/util/header.c
-@@ -922,9 +922,26 @@ out_errno:
- 	return -errno;
- }
- 
--u64 perf_header__sample_type(struct perf_header *header)
-+static int regs_weight(u64 user_regs)
++static inline int perf_reg_version(struct pt_regs *regs, int idx)
 +{
-+	int i, bits = 0;
-+
-+	for (i = 0; i < (int)sizeof(u64) * 8 && user_regs; i++) {
-+		if (user_regs & 1)
-+			bits++;
-+
-+		user_regs >>= 1;
-+	}
-+
-+	return bits;
++	return -EINVAL;
 +}
 +
-+void perf_header__sample_type(struct perf_header *header,
-+			      struct perf_session *session)
- {
- 	u64 type = 0;
-+	u64 uregs = 0;
-+	int uregs_nr = 0, ustack = false;
- 	int i;
- 
- 	for (i = 0; i < header->attrs; i++) {
-@@ -934,9 +951,21 @@ u64 perf_header__sample_type(struct perf_header *header)
- 			type = attr->attr.sample_type;
- 		else if (type != attr->attr.sample_type)
- 			die("non matching sample_type");
++static inline int perf_reg_validate(u64 mask)
++{
++	return -ENOSYS;
++}
++#endif /*CONFIG_HAVE_PERF_REGS_DUMP */
 +
-+		if (i == 0) {
-+			uregs = attr->attr.user_regs;
-+			uregs_nr = regs_weight(uregs);
-+			ustack = !!attr->attr.ustack_dump_size;
-+		} else if (uregs != attr->attr.user_regs ||
-+			   ustack != !!attr->attr.ustack_dump_size) {
-+			die("non matching sample_type");
+ extern int perf_pmu_register(struct pmu *pmu);
+ extern void perf_pmu_unregister(struct pmu *pmu);
+ 
+@@ -950,6 +977,7 @@ struct perf_sample_data {
+ 	u64				period;
+ 	struct perf_callchain_entry	*callchain;
+ 	struct perf_raw_record		*raw;
++	struct pt_regs			*uregs;
+ };
+ 
+ static inline
+diff --git a/kernel/perf_event.c b/kernel/perf_event.c
+index 05ecf6f..0e4ab11 100644
+--- a/kernel/perf_event.c
++++ b/kernel/perf_event.c
+@@ -2051,6 +2051,19 @@ exit_put:
+ 	return entry;
+ }
+ 
++static struct pt_regs *perf_sample_uregs(struct pt_regs *regs)
++{
++	if (!user_mode(regs)) {
++		if (current->mm)
++			regs = task_pt_regs(current);
++		else
++			regs = NULL;
++	}
++
++	return regs;
++}
++
++
+ /*
+  * Initialize the perf_event context in a task_struct:
+  */
+@@ -3502,6 +3515,25 @@ static void perf_output_read(struct perf_output_handle *handle,
+ 		perf_output_read_one(handle, event);
+ }
+ 
++static void
++perf_output_sample_regs(struct perf_output_handle *handle,
++			struct pt_regs *regs, u64 mask)
++{
++	int i = 0;
++
++	do {
++		u64 val;
++
++		if (mask & 1) {
++			val = perf_reg_value(regs, i);
++			perf_output_put(handle, val);
 +		}
++
++		mask >>= 1;
++		i++;
++	} while (mask);
++}
++
+ void perf_output_sample(struct perf_output_handle *handle,
+ 			struct perf_event_header *header,
+ 			struct perf_sample_data *data,
+@@ -3570,6 +3602,22 @@ void perf_output_sample(struct perf_output_handle *handle,
+ 			perf_output_put(handle, raw);
+ 		}
  	}
- 
--	return type;
-+	session->sample_type = type;
-+	session->sample_uregs = uregs;
-+	session->sample_uregs_nr = uregs_nr;
-+	session->sample_ustack = ustack;
++
++	if (event->attr.user_regs) {
++		u64 id;
++
++		/* If there is no regs to dump, notice it through a 0 version */
++		if (!data->uregs) {
++			id = 0;
++			perf_output_put(handle, id);
++		} else {
++
++			id = perf_reg_version();
++			perf_output_put(handle, id);
++			perf_output_sample_regs(handle, data->uregs,
++						event->attr.user_regs);
++		}
++	}
  }
  
- struct perf_event_attr *
-diff --git a/tools/perf/util/header.h b/tools/perf/util/header.h
-index 402ac24..6ec6af2 100644
---- a/tools/perf/util/header.h
-+++ b/tools/perf/util/header.h
-@@ -80,7 +80,8 @@ void perf_header_attr__delete(struct perf_header_attr *self);
- 
- int perf_header_attr__add_id(struct perf_header_attr *self, u64 id);
- 
--u64 perf_header__sample_type(struct perf_header *header);
-+void perf_header__sample_type(struct perf_header *header,
-+			      struct perf_session *session);
- struct perf_event_attr *
- perf_header__find_attr(u64 id, struct perf_header *header);
- void perf_header__set_feat(struct perf_header *self, int feat);
-diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
-index fa9d652..f0e427e 100644
---- a/tools/perf/util/session.c
-+++ b/tools/perf/util/session.c
-@@ -67,7 +67,7 @@ out_close:
- 
- void perf_session__update_sample_type(struct perf_session *self)
- {
--	self->sample_type = perf_header__sample_type(&self->header);
-+	perf_header__sample_type(&self->header, self);
+ void perf_prepare_sample(struct perf_event_header *header,
+@@ -3657,6 +3705,17 @@ void perf_prepare_sample(struct perf_event_header *header,
+ 		WARN_ON_ONCE(size & (sizeof(u64)-1));
+ 		header->size += size;
+ 	}
++
++	if (event->attr.user_regs) {
++		int size = sizeof(u64); /* the version size */
++
++		data->uregs = perf_sample_uregs(regs);
++		if (data->uregs)
++			/* Regs values */
++			size += hweight64(event->attr.user_regs) * sizeof(u64);
++
++		header->size += size;
++	}
  }
  
- int perf_session__create_kernel_maps(struct perf_session *self)
-@@ -576,7 +576,7 @@ static int perf_session__process_sample(event_t *event, struct perf_session *s,
- 		return ops->sample(event, s);
+ static void perf_event_output(struct perf_event *event, int nmi,
+@@ -5429,7 +5488,7 @@ static int perf_copy_attr(struct perf_event_attr __user *uattr,
+ 	if (attr->type >= PERF_TYPE_MAX)
+ 		return -EINVAL;
  
- 	bzero(&data, sizeof(struct sample_data));
--	event__parse_sample(event, s->sample_type, &data);
-+	event__parse_sample(event, s, &data);
+-	if (attr->__reserved_1)
++	if (attr->__reserved_1 || attr->__reserved_2 || attr->__reserved_3)
+ 		return -EINVAL;
  
- 	queue_sample_event(event, &data, s);
+ 	if (attr->sample_type & ~(PERF_SAMPLE_MAX-1))
+@@ -5438,6 +5497,8 @@ static int perf_copy_attr(struct perf_event_attr __user *uattr,
+ 	if (attr->read_format & ~(PERF_FORMAT_MAX-1))
+ 		return -EINVAL;
  
-diff --git a/tools/perf/util/session.h b/tools/perf/util/session.h
-index 9fa0fc2..ab9ebbc 100644
---- a/tools/perf/util/session.h
-+++ b/tools/perf/util/session.h
-@@ -39,6 +39,12 @@ struct perf_session {
- 	 */
- 	struct hists		hists;
- 	u64			sample_type;
-+	u64			sample_uregs;
-+	/* We should probably use a quick hweight64() in sample_uregs to get
-+	 * this instead of storing it.
-+	 */
-+	int			sample_uregs_nr;
-+	bool			sample_ustack;
- 	int			fd;
- 	bool			fd_pipe;
- 	bool			repipe;
++	ret = perf_reg_validate(attr->user_regs);
++
+ out:
+ 	return ret;
+ 
 -- 
 1.6.2.3
 
