@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759647Ab0JVTJP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 15:09:15 -0400
-Received: from kroah.org ([198.145.64.141]:34225 "EHLO coco.kroah.org"
+	id S1759391Ab0JVS4g (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 14:56:36 -0400
+Received: from kroah.org ([198.145.64.141]:34193 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759399Ab0JVS4i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 14:56:38 -0400
+	id S1759315Ab0JVS4e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Oct 2010 14:56:34 -0400
 X-Mailbox-Line: From gregkh@clark.site Fri Oct 22 11:52:32 2010
-Message-Id: <20101022185232.578669838@clark.site>
+Message-Id: <20101022185232.104229888@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 22 Oct 2010 11:51:32 -0700
+Date: Fri, 22 Oct 2010 11:51:27 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Borislav Petkov <borislav.petkov@amd.com>, Ingo Molnar <mingo@elte.hu>
-Subject: [058/103] x86, AMD, MCE thresholding: Fix the MCi_MISCj iteration order
+        Joel Becker <joel.becker@oracle.com>
+Subject: [053/103] ocfs2: Dont walk off the end of fast symlinks.
 In-Reply-To: <20101022185455.GA9114@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,61 +25,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Borislav Petkov <borislav.petkov@amd.com>
+From: Joel Becker <joel.becker@oracle.com>
 
-commit 6dcbfe4f0b4e17e289d56fa534b7ce5a6b7f63a3 upstream.
+commit 1fc8a117865b54590acd773a55fbac9221b018f0 upstream.
 
-This fixes possible cases of not collecting valid error info in
-the MCE error thresholding groups on F10h hardware.
+ocfs2 fast symlinks are NUL terminated strings stored inline in the
+inode data area.  However, disk corruption or a local attacker could, in
+theory, remove that NUL.  Because we're using strlen() (my fault,
+introduced in a731d1 when removing vfs_follow_link()), we could walk off
+the end of that string.
 
-The current code contains a subtle problem of checking only the
-Valid bit of MSR0000_0413 (which is MC4_MISC0 - DRAM
-thresholding group) in its first iteration and breaking out if
-the bit is cleared.
-
-But (!), this MSR contains an offset value, BlkPtr[31:24], which
-points to the remaining MSRs in this thresholding group which
-might contain valid information too. But if we bail out only
-after we checked the valid bit in the first MSR and not the
-block pointer too, we miss that other information.
-
-The thing is, MC4_MISC0[BlkPtr] is not predicated on
-MCi_STATUS[MiscV] or MC4_MISC0[Valid] and should be checked
-prior to iterating over the MCI_MISCj thresholding group,
-irrespective of the MC4_MISC0[Valid] setting.
-
-Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
+Signed-off-by: Joel Becker <joel.becker@oracle.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/x86/kernel/cpu/mcheck/mce_amd.c |    9 +++------
- 1 file changed, 3 insertions(+), 6 deletions(-)
+ fs/ocfs2/symlink.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/x86/kernel/cpu/mcheck/mce_amd.c
-+++ b/arch/x86/kernel/cpu/mcheck/mce_amd.c
-@@ -141,6 +141,7 @@ void mce_amd_feature_init(struct cpuinfo
- 				address = (low & MASK_BLKPTR_LO) >> 21;
- 				if (!address)
- 					break;
-+
- 				address += MCG_XBLK_ADDR;
- 			} else
- 				++address;
-@@ -148,12 +149,8 @@ void mce_amd_feature_init(struct cpuinfo
- 			if (rdmsr_safe(address, &low, &high))
- 				break;
+--- a/fs/ocfs2/symlink.c
++++ b/fs/ocfs2/symlink.c
+@@ -128,7 +128,7 @@ static void *ocfs2_fast_follow_link(stru
+ 	}
  
--			if (!(high & MASK_VALID_HI)) {
--				if (block)
--					continue;
--				else
--					break;
--			}
-+			if (!(high & MASK_VALID_HI))
-+				continue;
- 
- 			if (!(high & MASK_CNTP_HI)  ||
- 			     (high & MASK_LOCKED_HI))
+ 	/* Fast symlinks can't be large */
+-	len = strlen(target);
++	len = strnlen(target, ocfs2_fast_symlink_chars(inode->i_sb));
+ 	link = kzalloc(len + 1, GFP_NOFS);
+ 	if (!link) {
+ 		status = -ENOMEM;
 
 
