@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759289Ab0JVT3T (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 15:29:19 -0400
-Received: from smtp-outbound-2.vmware.com ([65.115.85.73]:55382 "EHLO
+	id S1758923Ab0JVT3P (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 15:29:15 -0400
+Received: from smtp-outbound-2.vmware.com ([65.115.85.73]:55374 "EHLO
 	smtp-outbound-2.vmware.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759036Ab0JVT3Q (ORCPT
+	by vger.kernel.org with ESMTP id S1753444Ab0JVT3M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 15:29:16 -0400
-Subject: [PATCH 2/2] x86, apic: Add apic timer calibration hook
+	Fri, 22 Oct 2010 15:29:12 -0400
+Subject: [PATCH 0/2] x86, apic: APIC timer calibration hook
 From: Alok Kataria <akataria@vmware.com>
 Reply-To: akataria@vmware.com
 To: Thomas Gleixner <tglx@linutronix.de>
@@ -16,8 +16,8 @@ Cc: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
         LKML <linux-kernel@vger.kernel.org>
 Content-Type: text/plain
 Organization: VMware INC.
-Date: Fri, 22 Oct 2010 12:29:15 -0700
-Message-Id: <1287775755.27008.59.camel@ank32.eng.vmware.com>
+Date: Fri, 22 Oct 2010 12:29:12 -0700
+Message-Id: <1287775752.27008.57.camel@ank32.eng.vmware.com>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.12.3 (2.12.3-8.el5_2.3) 
 Content-Transfer-Encoding: 7bit
@@ -25,173 +25,23 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add apic timer calibration hook.
+Hi,
 
-From: Alok N Kataria <akataria@vmware.com>
+We need a APIC calibration hook so that we can get the APIC frequency
+directly from the hypervisor instead of calibrating it, since
+calibration can be error prone in some cases when the kernel is running
+virtualized. 
 
-Add a new function ptr calibrate_APIC_clock to x86_init_timers structure.
-On native this does the usual apic calibration and local apic timer
-initialization. On VMware's platform we override it with a routine which
-gets that information from the hypervisor and initializes the local apic
-timer accordingly.
+These patches were posted earlier over here
+http://lkml.org/lkml/2010/9/20/424 to which Thomas did reply with some
+comments. There was no activity of on the thread after some email
+exchanges. I will like to post the 2 broken out patches for the 2.6.37
+merge window. Please take a look and let me know if you have any
+comments. 
 
-Signed-off-by: Alok N Kataria <akataria@vmware.com>
+1. Preparatory change to add apic timer calibration hook.
+2. Adds apic timer calibration hook.
 
-Index: linux-x86-tree.git/arch/x86/include/asm/apic.h
-===================================================================
---- linux-x86-tree.git.orig/arch/x86/include/asm/apic.h	2010-10-22 11:37:47.000000000 -0700
-+++ linux-x86-tree.git/arch/x86/include/asm/apic.h	2010-10-22 12:04:58.000000000 -0700
-@@ -17,6 +17,10 @@
- 
- #define ARCH_APICTIMER_STOPS_ON_C3	1
- 
-+/* Clock divisor */
-+#define APIC_DIVISOR	16
-+#define LAPIC_CAL_LOOPS	(HZ/10)
-+
- /*
-  * Debugging macros
-  */
-@@ -238,6 +242,8 @@ extern void setup_boot_APIC_clock(void);
- extern void setup_secondary_APIC_clock(void);
- extern int APIC_init_uniprocessor(void);
- extern void enable_NMI_through_LVT0(void);
-+extern int native_calibrate_APIC_clock(void);
-+extern int initialize_lapic_timer(long delta, unsigned int calibration_result);
- 
- /*
-  * On 32bit this is mach-xxx local
-Index: linux-x86-tree.git/arch/x86/include/asm/x86_init.h
-===================================================================
---- linux-x86-tree.git.orig/arch/x86/include/asm/x86_init.h	2010-10-22 11:37:47.000000000 -0700
-+++ linux-x86-tree.git/arch/x86/include/asm/x86_init.h	2010-10-22 11:54:45.000000000 -0700
-@@ -83,11 +83,14 @@ struct x86_init_paging {
-  *				boot cpu
-  * @tsc_pre_init:		platform function called before TSC init
-  * @timer_init:			initialize the platform timer (default PIT/HPET)
-+ * @calibrate_APIC_clock:	calibrate APIC clock freq (ticks per HZ) and
-+ *				initializes the local APIC timer.
-  */
- struct x86_init_timers {
- 	void (*setup_percpu_clockev)(void);
- 	void (*tsc_pre_init)(void);
- 	void (*timer_init)(void);
-+	int (*calibrate_APIC_clock)(void);
- };
- 
- /**
-Index: linux-x86-tree.git/arch/x86/kernel/cpu/vmware.c
-===================================================================
---- linux-x86-tree.git.orig/arch/x86/kernel/cpu/vmware.c	2010-10-22 11:37:47.000000000 -0700
-+++ linux-x86-tree.git/arch/x86/kernel/cpu/vmware.c	2010-10-22 11:55:27.000000000 -0700
-@@ -26,6 +26,7 @@
- #include <asm/div64.h>
- #include <asm/x86_init.h>
- #include <asm/hypervisor.h>
-+#include <asm/apic.h>
- 
- #define CPUID_VMWARE_INFO_LEAF	0x40000000
- #define VMWARE_HYPERVISOR_MAGIC	0x564D5868
-@@ -72,17 +73,40 @@ static unsigned long vmware_get_tsc_khz(
- 	return tsc_hz;
- }
- 
-+static int __init vmware_calibrate_APIC_clock(void)
-+{
-+	unsigned int calibration_result;
-+	uint32_t eax, ebx, ecx, edx;
-+	int err;
-+	long delta;
-+	unsigned long flags;
-+
-+	VMWARE_PORT(GETHZ, eax, ebx, ecx, edx);
-+	BUG_ON(!ecx);
-+	calibration_result = ecx / HZ;
-+
-+	printk(KERN_INFO "APIC bus freq read from hypervisor\n");
-+
-+	delta  = (calibration_result * LAPIC_CAL_LOOPS) / APIC_DIVISOR;
-+	local_irq_save(flags);
-+	err = initialize_lapic_timer(delta, calibration_result);
-+	local_irq_restore(flags);
-+
-+	return err;
-+}
-+
- static void __init vmware_platform_setup(void)
- {
- 	uint32_t eax, ebx, ecx, edx;
- 
- 	VMWARE_PORT(GETHZ, eax, ebx, ecx, edx);
- 
--	if (ebx != UINT_MAX)
-+	if (ebx != UINT_MAX) {
- 		x86_platform.calibrate_tsc = vmware_get_tsc_khz;
--	else
-+		x86_init.timers.calibrate_APIC_clock = vmware_calibrate_APIC_clock;
-+	} else
- 		printk(KERN_WARNING
--		       "Failed to get TSC freq from the hypervisor\n");
-+		       "Failed to setup VMware hypervisor platform\n");
- }
- 
- /*
-Index: linux-x86-tree.git/arch/x86/kernel/x86_init.c
-===================================================================
---- linux-x86-tree.git.orig/arch/x86/kernel/x86_init.c	2010-10-22 11:37:47.000000000 -0700
-+++ linux-x86-tree.git/arch/x86/kernel/x86_init.c	2010-10-22 11:53:27.000000000 -0700
-@@ -68,6 +68,7 @@ struct x86_init_ops x86_init __initdata 
- 		.setup_percpu_clockev	= setup_boot_APIC_clock,
- 		.tsc_pre_init		= x86_init_noop,
- 		.timer_init		= hpet_time_init,
-+		.calibrate_APIC_clock	= native_calibrate_APIC_clock
- 	},
- 
- 	.iommu = {
-Index: linux-x86-tree.git/arch/x86/kernel/apic/apic.c
-===================================================================
---- linux-x86-tree.git.orig/arch/x86/kernel/apic/apic.c	2010-10-22 11:47:47.000000000 -0700
-+++ linux-x86-tree.git/arch/x86/kernel/apic/apic.c	2010-10-22 11:58:30.000000000 -0700
-@@ -327,13 +327,6 @@ int lapic_get_maxlvt(void)
- }
- 
- /*
-- * Local APIC timer
-- */
--
--/* Clock divisor */
--#define APIC_DIVISOR 16
--
--/*
-  * This function sets up the local APIC timer, with a timeout of
-  * 'clocks' APIC bus clock. During calibration we actually call
-  * this function twice on the boot CPU, once with a bogus timeout
-@@ -550,8 +543,6 @@ static void __cpuinit setup_APIC_timer(v
-  * back to normal later in the boot process).
-  */
- 
--#define LAPIC_CAL_LOOPS		(HZ/10)
--
- static __initdata int lapic_cal_loops = -1;
- static __initdata long lapic_cal_t1, lapic_cal_t2;
- static __initdata unsigned long long lapic_cal_tsc1, lapic_cal_tsc2;
-@@ -677,7 +668,7 @@ int __init initialize_lapic_timer(long d
- }
- 
- /* Calibrates the APIC clock and initializes the local APIC timer */
--static int __init calibrate_APIC_clock(void)
-+int __init native_calibrate_APIC_clock(void)
- {
- 	struct clock_event_device *levt = &__get_cpu_var(lapic_events);
- 	void (*real_handler)(struct clock_event_device *dev);
-@@ -802,7 +793,7 @@ void __init setup_boot_APIC_clock(void)
- 	apic_printk(APIC_VERBOSE, "Using local APIC timer interrupts.\n"
- 		    "calibrating APIC timer ...\n");
- 
--	if (calibrate_APIC_clock()) {
-+	if (x86_init.timers.calibrate_APIC_clock()) {
- 		/* No broadcast on UP ! */
- 		if (num_possible_cpus() > 1)
- 			setup_APIC_timer();
-
+Thanks,
+Alok
 
