@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758552Ab0JVSsK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 14:48:10 -0400
-Received: from kroah.org ([198.145.64.141]:45787 "EHLO coco.kroah.org"
+	id S1757867Ab0JVSip (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 14:38:45 -0400
+Received: from kroah.org ([198.145.64.141]:45769 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758149Ab0JVSit (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 14:38:49 -0400
-X-Mailbox-Line: From gregkh@clark.site Fri Oct 22 11:36:00 2010
-Message-Id: <20101022183600.039453062@clark.site>
+	id S1757676Ab0JVSin (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Oct 2010 14:38:43 -0400
+X-Mailbox-Line: From gregkh@clark.site Fri Oct 22 11:35:59 2010
+Message-Id: <20101022183559.504498040@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 22 Oct 2010 11:35:10 -0700
+Date: Fri, 22 Oct 2010 11:35:04 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Eric Dumazet <eric.dumazet@gmail.com>,
+        Nagendra Singh Tomar <tomer_iisc@yahoo.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [43/66] netxen: dont set skb->truesize
+Subject: [37/66] net: Fix the condition passed to sk_wait_event()
 In-Reply-To: <20101022183711.GA23214@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,39 +27,69 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Eric Dumazet <eric.dumazet@gmail.com>
+From: Nagendra Tomar <tomer_iisc@yahoo.com>
 
-[ Upstream commit 7e96dc7045bff8758804b047c0dfb6868f182500 ]
+[ Upstream commit 482964e56e1320cb7952faa1932d8ecf59c4bf75 ]
 
-skb->truesize is set in core network.
+This patch fixes the condition (3rd arg) passed to sk_wait_event() in
+sk_stream_wait_memory(). The incorrect check in sk_stream_wait_memory()
+causes the following soft lockup in tcp_sendmsg() when the global tcp
+memory pool has exhausted.
 
-Dont change it unless dealing with fragments.
+>>> snip <<<
 
-Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+localhost kernel: BUG: soft lockup - CPU#3 stuck for 11s! [sshd:6429]
+localhost kernel: CPU 3:
+localhost kernel: RIP: 0010:[sk_stream_wait_memory+0xcd/0x200]  [sk_stream_wait_memory+0xcd/0x200] sk_stream_wait_memory+0xcd/0x200
+localhost kernel:
+localhost kernel: Call Trace:
+localhost kernel:  [sk_stream_wait_memory+0x1b1/0x200] sk_stream_wait_memory+0x1b1/0x200
+localhost kernel:  [<ffffffff802557c0>] autoremove_wake_function+0x0/0x40
+localhost kernel:  [ipv6:tcp_sendmsg+0x6e6/0xe90] tcp_sendmsg+0x6e6/0xce0
+localhost kernel:  [sock_aio_write+0x126/0x140] sock_aio_write+0x126/0x140
+localhost kernel:  [xfs:do_sync_write+0xf1/0x130] do_sync_write+0xf1/0x130
+localhost kernel:  [<ffffffff802557c0>] autoremove_wake_function+0x0/0x40
+localhost kernel:  [hrtimer_start+0xe3/0x170] hrtimer_start+0xe3/0x170
+localhost kernel:  [vfs_write+0x185/0x190] vfs_write+0x185/0x190
+localhost kernel:  [sys_write+0x50/0x90] sys_write+0x50/0x90
+localhost kernel:  [system_call+0x7e/0x83] system_call+0x7e/0x83
+
+>>> snip <<<
+
+What is happening is, that the sk_wait_event() condition passed from
+sk_stream_wait_memory() evaluates to true for the case of tcp global memory
+exhaustion. This is because both sk_stream_memory_free() and vm_wait are true
+which causes sk_wait_event() to *not* call schedule_timeout().
+Hence sk_stream_wait_memory() returns immediately to the caller w/o sleeping.
+This causes the caller to again try allocation, which again fails and again
+calls sk_stream_wait_memory(), and so on.
+
+[ Bug introduced by commit c1cbe4b7ad0bc4b1d98ea708a3fecb7362aa4088
+  ("[NET]: Avoid atomic xchg() for non-error case") -DaveM ]
+
+Signed-off-by: Nagendra Singh Tomar <tomer_iisc@yahoo.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- drivers/net/netxen/netxen_nic_init.c |    3 ---
- 1 file changed, 3 deletions(-)
+ net/core/stream.c |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
---- a/drivers/net/netxen/netxen_nic_init.c
-+++ b/drivers/net/netxen/netxen_nic_init.c
-@@ -1199,7 +1199,6 @@ netxen_process_rcv(struct netxen_adapter
- 	if (pkt_offset)
- 		skb_pull(skb, pkt_offset);
+--- a/net/core/stream.c
++++ b/net/core/stream.c
+@@ -140,10 +140,10 @@ int sk_stream_wait_memory(struct sock *s
  
--	skb->truesize = skb->len + sizeof(struct sk_buff);
- 	skb->protocol = eth_type_trans(skb, netdev);
+ 		set_bit(SOCK_NOSPACE, &sk->sk_socket->flags);
+ 		sk->sk_write_pending++;
+-		sk_wait_event(sk, &current_timeo, !sk->sk_err &&
+-						  !(sk->sk_shutdown & SEND_SHUTDOWN) &&
+-						  sk_stream_memory_free(sk) &&
+-						  vm_wait);
++		sk_wait_event(sk, &current_timeo, sk->sk_err ||
++						  (sk->sk_shutdown & SEND_SHUTDOWN) ||
++						  (sk_stream_memory_free(sk) &&
++						  !vm_wait));
+ 		sk->sk_write_pending--;
  
- 	napi_gro_receive(&sds_ring->napi, skb);
-@@ -1261,8 +1260,6 @@ netxen_process_lro(struct netxen_adapter
- 
- 	skb_put(skb, lro_length + data_offset);
- 
--	skb->truesize = skb->len + sizeof(struct sk_buff) + skb_headroom(skb);
--
- 	skb_pull(skb, l2_hdr_offset);
- 	skb->protocol = eth_type_trans(skb, netdev);
- 
+ 		if (vm_wait) {
 
 
