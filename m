@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758900Ab0JVSwf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 14:52:35 -0400
-Received: from kroah.org ([198.145.64.141]:45664 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756311Ab0JVSi1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1756274Ab0JVSi1 (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 22 Oct 2010 14:38:27 -0400
-X-Mailbox-Line: From gregkh@clark.site Fri Oct 22 11:35:58 2010
-Message-Id: <20101022183558.029453290@clark.site>
+Received: from kroah.org ([198.145.64.141]:45635 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754158Ab0JVSiY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Oct 2010 14:38:24 -0400
+X-Mailbox-Line: From gregkh@clark.site Fri Oct 22 11:35:57 2010
+Message-Id: <20101022183557.673045740@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 22 Oct 2010 11:34:47 -0700
+Date: Fri, 22 Oct 2010 11:34:43 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Alexey Osipov <lion-simba@pridelands.ru>,
-        "Beholder Intl. Ltd. Dmitry Belimov" <d.belimov@gmail.com>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>
-Subject: [20/66] V4L/DVB (13966): DVB-T regression fix for saa7134 cards
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: [16/66] tracing/x86: Dont use mcount in pvclock.c
 In-Reply-To: <20101022183711.GA23214@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,70 +26,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dmitri Belimov <d.belimov@gmail.com>
+From: Jeremy Fitzhardinge <jeremy@goop.org>
 
-commit 08be64be3d1e5ecd72e7ba3147aea518e527f08e upstream.
+commit 9ecd4e1689208afe9b059a5ce1333acb2f42c4d2 upstream.
 
-Some customers has problem with quality of DVB-T
-https://bugs.launchpad.net/ubuntu/+source/linux/+bug/446575
+When using a paravirt clock, pvclock.c can be used by sched_clock(),
+which in turn is used by the tracing mechanism for timestamps,
+which leads to infinite recursion.
 
-After this patch http://patchwork.kernel.org/patch/23345/
+Disable mcount/tracing for pvclock.o.
 
-This is patch for fix regression with DVB-T. Tested with many people.
-
-Signed-off-by: Alexey Osipov <lion-simba@pridelands.ru>
-Signed-off-by: Beholder Intl. Ltd. Dmitry Belimov <d.belimov@gmail.com>
-Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+LKML-Reference: <4C9A9A3F.4040201@goop.org>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/media/video/saa7134/saa7134-core.c |   13 -------------
- drivers/media/video/saa7134/saa7134-ts.c   |   13 +++++++++++++
- 2 files changed, 13 insertions(+), 13 deletions(-)
+ arch/x86/kernel/Makefile |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/media/video/saa7134/saa7134-core.c
-+++ b/drivers/media/video/saa7134/saa7134-core.c
-@@ -420,19 +420,6 @@ int saa7134_set_dmabits(struct saa7134_d
- 		ctrl |= SAA7134_MAIN_CTRL_TE5;
- 		irq  |= SAA7134_IRQ1_INTE_RA2_1 |
- 			SAA7134_IRQ1_INTE_RA2_0;
--
--		/* dma: setup channel 5 (= TS) */
--
--		saa_writeb(SAA7134_TS_DMA0, (dev->ts.nr_packets - 1) & 0xff);
--		saa_writeb(SAA7134_TS_DMA1,
--			((dev->ts.nr_packets - 1) >> 8) & 0xff);
--		/* TSNOPIT=0, TSCOLAP=0 */
--		saa_writeb(SAA7134_TS_DMA2,
--			(((dev->ts.nr_packets - 1) >> 16) & 0x3f) | 0x00);
--		saa_writel(SAA7134_RS_PITCH(5), TS_PACKET_SIZE);
--		saa_writel(SAA7134_RS_CONTROL(5), SAA7134_RS_CONTROL_BURST_16 |
--						  SAA7134_RS_CONTROL_ME |
--						  (dev->ts.pt_ts.dma >> 12));
- 	}
- 
- 	/* set task conditions + field handling */
---- a/drivers/media/video/saa7134/saa7134-ts.c
-+++ b/drivers/media/video/saa7134/saa7134-ts.c
-@@ -250,6 +250,19 @@ int saa7134_ts_start(struct saa7134_dev
- 
- 	BUG_ON(dev->ts_started);
- 
-+	/* dma: setup channel 5 (= TS) */
-+	saa_writeb(SAA7134_TS_DMA0, (dev->ts.nr_packets - 1) & 0xff);
-+	saa_writeb(SAA7134_TS_DMA1,
-+		((dev->ts.nr_packets - 1) >> 8) & 0xff);
-+	/* TSNOPIT=0, TSCOLAP=0 */
-+	saa_writeb(SAA7134_TS_DMA2,
-+		(((dev->ts.nr_packets - 1) >> 16) & 0x3f) | 0x00);
-+	saa_writel(SAA7134_RS_PITCH(5), TS_PACKET_SIZE);
-+	saa_writel(SAA7134_RS_CONTROL(5), SAA7134_RS_CONTROL_BURST_16 |
-+					  SAA7134_RS_CONTROL_ME |
-+					  (dev->ts.pt_ts.dma >> 12));
-+
-+	/* reset hardware TS buffers */
- 	saa_writeb(SAA7134_TS_SERIAL1, 0x00);
- 	saa_writeb(SAA7134_TS_SERIAL1, 0x03);
- 	saa_writeb(SAA7134_TS_SERIAL1, 0x00);
+--- a/arch/x86/kernel/Makefile
++++ b/arch/x86/kernel/Makefile
+@@ -11,6 +11,7 @@ ifdef CONFIG_FUNCTION_TRACER
+ CFLAGS_REMOVE_tsc.o = -pg
+ CFLAGS_REMOVE_rtc.o = -pg
+ CFLAGS_REMOVE_paravirt-spinlocks.o = -pg
++CFLAGS_REMOVE_pvclock.o = -pg
+ CFLAGS_REMOVE_ftrace.o = -pg
+ CFLAGS_REMOVE_early_printk.o = -pg
+ endif
 
 
