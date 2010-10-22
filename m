@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932311Ab0JVTLM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 15:11:12 -0400
-Received: from kroah.org ([198.145.64.141]:34171 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759368Ab0JVS4b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1759366Ab0JVS4b (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 22 Oct 2010 14:56:31 -0400
+Received: from kroah.org ([198.145.64.141]:34116 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759329Ab0JVS4Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Oct 2010 14:56:24 -0400
 X-Mailbox-Line: From gregkh@clark.site Fri Oct 22 11:52:31 2010
-Message-Id: <20101022185231.835057682@clark.site>
+Message-Id: <20101022185231.120901227@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 22 Oct 2010 11:51:24 -0700
+Date: Fri, 22 Oct 2010 11:51:16 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Yegor Yefremov <yegorslists@googlemail.com>,
-        Jean Delvare <khali@linux-fr.org>
-Subject: [050/103] i2c-pca: Fix waitforcompletion() return value
+        Thomas Gleixner <tglx@linutronix.de>,
+        Yinghai Lu <yhlu.kernel@gmail.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>
+Subject: [042/103] x86, irq: Plug memory leak in sparse irq
 In-Reply-To: <20101022185455.GA9114@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,86 +27,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Yegor Yefremov <yegor_sub1@visionsystems.de>
+From: Thomas Gleixner <tglx@linutronix.de>
 
-commit 6abb930af064fb1cf4177d32e2c7bfb89eee0fe5 upstream.
+commit 1cf180c94e9166cda083ff65333883ab3648e852 upstream.
 
-ret is still -1, if during the polling read_byte() returns at once
-with I2C_PCA_CON_SI set. So ret > 0 would lead *_waitforcompletion()
-to return 0, in spite of the proper behavior.
+free_irq_cfg() is not freeing the cpumask_vars in irq_cfg. Fixing this
+triggers a use after free caused by the fact that copying struct
+irq_cfg is done with memcpy, which copies the pointer not the cpumask.
 
-The routine was rewritten, so that ret has always a proper value,
-before returning.
+Fix both places.
 
-Signed-off-by: Yegor Yefremov <yegorslists@googlemail.com>
-Reviewed-by: Wolfram Sang <w.sang@pengutronix.de>
-Signed-off-by: Jean Delvare <khali@linux-fr.org>
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Cc: Yinghai Lu <yhlu.kernel@gmail.com>
+LKML-Reference: <alpine.LFD.2.00.1009282052570.2416@localhost6.localdomain6>
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/i2c/busses/i2c-pca-isa.c      |   12 ++++++++----
- drivers/i2c/busses/i2c-pca-platform.c |   11 +++++++----
- 2 files changed, 15 insertions(+), 8 deletions(-)
+ arch/x86/kernel/apic/io_apic.c |   11 ++++++++---
+ 1 file changed, 8 insertions(+), 3 deletions(-)
 
---- a/drivers/i2c/busses/i2c-pca-isa.c
-+++ b/drivers/i2c/busses/i2c-pca-isa.c
-@@ -71,8 +71,8 @@ static int pca_isa_readbyte(void *pd, in
+--- a/arch/x86/kernel/apic/io_apic.c
++++ b/arch/x86/kernel/apic/io_apic.c
+@@ -306,14 +306,19 @@ void arch_init_copy_chip_data(struct irq
  
- static int pca_isa_waitforcompletion(void *pd)
- {
--	long ret = ~0;
- 	unsigned long timeout;
-+	long ret;
+ 	old_cfg = old_desc->chip_data;
  
- 	if (irq > -1) {
- 		ret = wait_event_timeout(pca_wait,
-@@ -81,11 +81,15 @@ static int pca_isa_waitforcompletion(voi
- 	} else {
- 		/* Do polling */
- 		timeout = jiffies + pca_isa_ops.timeout;
--		while (((pca_isa_readbyte(pd, I2C_PCA_CON)
--				& I2C_PCA_CON_SI) == 0)
--				&& (ret = time_before(jiffies, timeout)))
-+		do {
-+			ret = time_before(jiffies, timeout);
-+			if (pca_isa_readbyte(pd, I2C_PCA_CON)
-+					& I2C_PCA_CON_SI)
-+				break;
- 			udelay(100);
-+		} while (ret);
- 	}
-+
- 	return ret > 0;
+-	memcpy(cfg, old_cfg, sizeof(struct irq_cfg));
++	cfg->vector = old_cfg->vector;
++	cfg->move_in_progress = old_cfg->move_in_progress;
++	cpumask_copy(cfg->domain, old_cfg->domain);
++	cpumask_copy(cfg->old_domain, old_cfg->old_domain);
+ 
+ 	init_copy_irq_2_pin(old_cfg, cfg, node);
  }
  
---- a/drivers/i2c/busses/i2c-pca-platform.c
-+++ b/drivers/i2c/busses/i2c-pca-platform.c
-@@ -80,8 +80,8 @@ static void i2c_pca_pf_writebyte32(void
- static int i2c_pca_pf_waitforcompletion(void *pd)
+-static void free_irq_cfg(struct irq_cfg *old_cfg)
++static void free_irq_cfg(struct irq_cfg *cfg)
  {
- 	struct i2c_pca_pf_data *i2c = pd;
--	long ret = ~0;
- 	unsigned long timeout;
-+	long ret;
+-	kfree(old_cfg);
++	free_cpumask_var(cfg->domain);
++	free_cpumask_var(cfg->old_domain);
++	kfree(cfg);
+ }
  
- 	if (i2c->irq) {
- 		ret = wait_event_timeout(i2c->wait,
-@@ -90,10 +90,13 @@ static int i2c_pca_pf_waitforcompletion(
- 	} else {
- 		/* Do polling */
- 		timeout = jiffies + i2c->adap.timeout;
--		while (((i2c->algo_data.read_byte(i2c, I2C_PCA_CON)
--				& I2C_PCA_CON_SI) == 0)
--				&& (ret = time_before(jiffies, timeout)))
-+		do {
-+			ret = time_before(jiffies, timeout);
-+			if (i2c->algo_data.read_byte(i2c, I2C_PCA_CON)
-+					& I2C_PCA_CON_SI)
-+				break;
- 			udelay(100);
-+		} while (ret);
- 	}
- 
- 	return ret > 0;
+ void arch_free_chip_data(struct irq_desc *old_desc, struct irq_desc *desc)
 
 
