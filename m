@@ -1,42 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759663Ab0JVTGq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 15:06:46 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:53683 "EHLO mail.zytor.com"
+	id S1756205Ab0JVS4u (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 14:56:50 -0400
+Received: from kroah.org ([198.145.64.141]:34253 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759495Ab0JVTGm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 15:06:42 -0400
-Message-ID: <4CC1E0B9.5060403@zytor.com>
-Date: Fri, 22 Oct 2010 12:06:33 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc13 Thunderbird/3.1.4
-MIME-Version: 1.0
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: Jeremy Fitzhardinge <jeremy@goop.org>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        "Xen-devel@lists.xensource.com" <Xen-devel@lists.xensource.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] x86: define arch_vm_get_page_prot to set _PAGE_IOMAP
- on VM_IO vmas
-References: <4CC0C14E.5080205@goop.org> <4CC0C318.90401@zytor.com> <4CC0CA07.3000306@goop.org> <4CC0DEB8.1060309@zytor.com> <20101022150826.GA23325@dumpdata.com> <4CC1BF58.9020001@zytor.com> <20101022180231.GA26365@dumpdata.com>
-In-Reply-To: <20101022180231.GA26365@dumpdata.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1756073Ab0JVS4n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Oct 2010 14:56:43 -0400
+X-Mailbox-Line: From gregkh@clark.site Fri Oct 22 11:52:33 2010
+Message-Id: <20101022185233.020270979@clark.site>
+User-Agent: quilt/0.48-11.2
+Date: Fri, 22 Oct 2010 11:51:37 -0700
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
+Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Chris Wilson <chris@chris-wilson.co.uk>
+Subject: [063/103] drm/i915: fix GMCH power reporting
+In-Reply-To: <20101022185455.GA9114@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/22/2010 11:02 AM, Konrad Rzeszutek Wilk wrote:
-> 
-> I hope my explanation cleared the confusion.
-> 
->> me and I'm not sure it is the right solution.
+2.6.35-stable review patch.  If anyone has any objections, please let us know.
 
-OK, now I'm *positive* this isn't the right solution...
+------------------
 
-	-hpa
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
 
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
+commit d270ae34eb77c58dea60e5b1e300a698d2ce39ac upstream.
+
+The IPS driver needs to know the current power consumption of the GMCH
+in order to make decisions about when to increase or decrease the CPU
+and/or GPU power envelope.  So fix up the divisions to save the results
+so the numbers are actually correct (contrary to some earlier comments
+and code, these functions do not modify the first argument and use it
+for the result).
+
+Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
+Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
+---
+ drivers/gpu/drm/i915/i915_dma.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+--- a/drivers/gpu/drm/i915/i915_dma.c
++++ b/drivers/gpu/drm/i915/i915_dma.c
+@@ -1778,9 +1778,9 @@ unsigned long i915_chipset_val(struct dr
+ 		}
+ 	}
+ 
+-	div_u64(diff, diff1);
++	diff = div_u64(diff, diff1);
+ 	ret = ((m * diff) + c);
+-	div_u64(ret, 10);
++	ret = div_u64(ret, 10);
+ 
+ 	dev_priv->last_count1 = total_count;
+ 	dev_priv->last_time1 = now;
+@@ -1849,7 +1849,7 @@ void i915_update_gfx_val(struct drm_i915
+ 
+ 	/* More magic constants... */
+ 	diff = diff * 1181;
+-	div_u64(diff, diffms * 10);
++	diff = div_u64(diff, diffms * 10);
+ 	dev_priv->gfx_power = diff;
+ }
+ 
+
 
