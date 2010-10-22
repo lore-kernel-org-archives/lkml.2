@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759325Ab0JVTTb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 15:19:31 -0400
-Received: from kroah.org ([198.145.64.141]:34023 "EHLO coco.kroah.org"
+	id S932789Ab0JVTTr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 15:19:47 -0400
+Received: from kroah.org ([198.145.64.141]:34019 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759274Ab0JVS4K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 14:56:10 -0400
+	id S1759267Ab0JVS4J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Oct 2010 14:56:09 -0400
 X-Mailbox-Line: From gregkh@clark.site Fri Oct 22 11:52:29 2010
-Message-Id: <20101022185229.762456257@clark.site>
+Message-Id: <20101022185229.670935582@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 22 Oct 2010 11:51:01 -0700
+Date: Fri, 22 Oct 2010 11:51:00 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
         Joerg Roedel <joerg.roedel@amd.com>
-Subject: [027/103] x86/amd-iommu: Fix rounding-bug in __unmap_single
+Subject: [026/103] x86/amd-iommu: Set iommu configuration flags in enable-loop
 In-Reply-To: <20101022185455.GA9114@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,49 +27,105 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Joerg Roedel <joerg.roedel@amd.com>
 
-commit 04e0463e088b41060c08c255eb0d3278a504f094 upstream.
+commit e9bf51971157e367aabfc111a8219db010f69cd4 upstream.
 
-In the __unmap_single function the dma_addr is rounded down
-to a page boundary before the dma pages are unmapped. The
-address is later also used to flush the TLB entries for that
-mapping. But without the offset into the dma page the amount
-of pages to flush might be miscalculated in the TLB flushing
-path. This patch fixes this bug by using the original
-address to flush the TLB.
+This patch moves the setting of the configuration and
+feature flags out out the acpi table parsing path and moves
+it into the iommu-enable path. This is needed to reliably
+fix resume-from-s3.
 
 Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/x86/kernel/amd_iommu.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ arch/x86/include/asm/amd_iommu_types.h |    3 ++
+ arch/x86/kernel/amd_iommu_init.c       |   49 ++++++++++++++++++---------------
+ 2 files changed, 30 insertions(+), 22 deletions(-)
 
---- a/arch/x86/kernel/amd_iommu.c
-+++ b/arch/x86/kernel/amd_iommu.c
-@@ -1953,6 +1953,7 @@ static void __unmap_single(struct dma_op
- 			   size_t size,
- 			   int dir)
- {
-+	dma_addr_t flush_addr;
- 	dma_addr_t i, start;
- 	unsigned int pages;
+--- a/arch/x86/include/asm/amd_iommu_types.h
++++ b/arch/x86/include/asm/amd_iommu_types.h
+@@ -368,6 +368,9 @@ struct amd_iommu {
+ 	/* capabilities of that IOMMU read from ACPI */
+ 	u32 cap;
  
-@@ -1960,6 +1961,7 @@ static void __unmap_single(struct dma_op
- 	    (dma_addr + size > dma_dom->aperture_size))
- 		return;
++	/* flags read from acpi table */
++	u8 acpi_flags;
++
+ 	/*
+ 	 * Capability pointer. There could be more than one IOMMU per PCI
+ 	 * device function if there are more than one AMD IOMMU capability
+--- a/arch/x86/kernel/amd_iommu_init.c
++++ b/arch/x86/kernel/amd_iommu_init.c
+@@ -649,29 +649,9 @@ static void __init init_iommu_from_acpi(
+ 	struct ivhd_entry *e;
  
-+	flush_addr = dma_addr;
- 	pages = iommu_num_pages(dma_addr, size, PAGE_SIZE);
- 	dma_addr &= PAGE_MASK;
- 	start = dma_addr;
-@@ -1974,7 +1976,7 @@ static void __unmap_single(struct dma_op
- 	dma_ops_free_addresses(dma_dom, dma_addr, pages);
+ 	/*
+-	 * First set the recommended feature enable bits from ACPI
+-	 * into the IOMMU control registers
++	 * First save the recommended feature enable bits from ACPI
+ 	 */
+-	h->flags & IVHD_FLAG_HT_TUN_EN_MASK ?
+-		iommu_feature_enable(iommu, CONTROL_HT_TUN_EN) :
+-		iommu_feature_disable(iommu, CONTROL_HT_TUN_EN);
+-
+-	h->flags & IVHD_FLAG_PASSPW_EN_MASK ?
+-		iommu_feature_enable(iommu, CONTROL_PASSPW_EN) :
+-		iommu_feature_disable(iommu, CONTROL_PASSPW_EN);
+-
+-	h->flags & IVHD_FLAG_RESPASSPW_EN_MASK ?
+-		iommu_feature_enable(iommu, CONTROL_RESPASSPW_EN) :
+-		iommu_feature_disable(iommu, CONTROL_RESPASSPW_EN);
+-
+-	h->flags & IVHD_FLAG_ISOC_EN_MASK ?
+-		iommu_feature_enable(iommu, CONTROL_ISOC_EN) :
+-		iommu_feature_disable(iommu, CONTROL_ISOC_EN);
+-
+-	/*
+-	 * make IOMMU memory accesses cache coherent
+-	 */
+-	iommu_feature_enable(iommu, CONTROL_COHERENT_EN);
++	iommu->acpi_flags = h->flags;
  
- 	if (amd_iommu_unmap_flush || dma_dom->need_flush) {
--		iommu_flush_pages(&dma_dom->domain, dma_addr, size);
-+		iommu_flush_pages(&dma_dom->domain, flush_addr, size);
- 		dma_dom->need_flush = false;
+ 	/*
+ 	 * Done. Now parse the device entries
+@@ -1116,6 +1096,30 @@ static void init_device_table(void)
  	}
  }
+ 
++static void iommu_init_flags(struct amd_iommu *iommu)
++{
++	iommu->acpi_flags & IVHD_FLAG_HT_TUN_EN_MASK ?
++		iommu_feature_enable(iommu, CONTROL_HT_TUN_EN) :
++		iommu_feature_disable(iommu, CONTROL_HT_TUN_EN);
++
++	iommu->acpi_flags & IVHD_FLAG_PASSPW_EN_MASK ?
++		iommu_feature_enable(iommu, CONTROL_PASSPW_EN) :
++		iommu_feature_disable(iommu, CONTROL_PASSPW_EN);
++
++	iommu->acpi_flags & IVHD_FLAG_RESPASSPW_EN_MASK ?
++		iommu_feature_enable(iommu, CONTROL_RESPASSPW_EN) :
++		iommu_feature_disable(iommu, CONTROL_RESPASSPW_EN);
++
++	iommu->acpi_flags & IVHD_FLAG_ISOC_EN_MASK ?
++		iommu_feature_enable(iommu, CONTROL_ISOC_EN) :
++		iommu_feature_disable(iommu, CONTROL_ISOC_EN);
++
++	/*
++	 * make IOMMU memory accesses cache coherent
++	 */
++	iommu_feature_enable(iommu, CONTROL_COHERENT_EN);
++}
++
+ /*
+  * This function finally enables all IOMMUs found in the system after
+  * they have been initialized
+@@ -1126,6 +1130,7 @@ static void enable_iommus(void)
+ 
+ 	for_each_iommu(iommu) {
+ 		iommu_disable(iommu);
++		iommu_init_flags(iommu);
+ 		iommu_set_device_table(iommu);
+ 		iommu_enable_command_buffer(iommu);
+ 		iommu_enable_event_buffer(iommu);
 
 
