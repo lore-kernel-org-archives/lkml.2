@@ -1,94 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758769Ab0JVSj2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 14:39:28 -0400
-Received: from claw.goop.org ([74.207.240.146]:51228 "EHLO claw.goop.org"
+	id S1758724Ab0JVSjy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 14:39:54 -0400
+Received: from kroah.org ([198.145.64.141]:45910 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757263Ab0JVSjZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 14:39:25 -0400
-Message-ID: <4CC1DA58.8000606@goop.org>
-Date: Fri, 22 Oct 2010 11:39:20 -0700
-From: Jeremy Fitzhardinge <jeremy@goop.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc13 Lightning/1.0b3pre Thunderbird/3.1.4
-MIME-Version: 1.0
-To: Ingo Molnar <mingo@elte.hu>
-CC: Stephen Rothwell <sfr@canb.auug.org.au>,
-        Xen Devel <Xen-devel@lists.xensource.com>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Gianluca Guida <gianluca.guida@citrix.com>,
-        Yinghai Lu <yinghai@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: linux-next: manual merge of the xen tree with the tip tree
-References: <20101022140335.c4a3a48f.sfr@canb.auug.org.au> <20101022080129.GA8474@elte.hu>
-In-Reply-To: <20101022080129.GA8474@elte.hu>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1758698Ab0JVSjJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Oct 2010 14:39:09 -0400
+X-Mailbox-Line: From gregkh@clark.site Fri Oct 22 11:36:02 2010
+Message-Id: <20101022183602.002071609@clark.site>
+User-Agent: quilt/0.48-11.2
+Date: Fri, 22 Oct 2010 11:35:32 -0700
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
+Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Stefan Bader <stefan.bader@canonical.com>
+Subject: [65/66] mm: Move vma_stack_continue into mm.h
+In-Reply-To: <20101022183711.GA23214@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- On 10/22/2010 01:01 AM, Ingo Molnar wrote:
-> * Stephen Rothwell <sfr@canb.auug.org.au> wrote:
->
->> Hi all,
->>
->> Today's linux-next merge of the xen tree got a conflict in
->> arch/x86/mm/init_32.c between commit
->> 1d931264af0f10649b35afa8fbd2e169da51ac08 ("x86-32, memblock: Make
->> add_highpages honor early reserved ranges") from the tip tree and commit
->> 07147a06ac3b1b028124ea00ba44e69eb8ea7685 ("x86/32: honor reservations of
->> high memory") from the xen tree.
-> Jeremy,
->
-> Commit 07147a06ac is all over the x86 tree:
->
->   arch/x86/mm/init_32.c     |   42 ++++++++++++++++++++++++++++++++----------
->   include/linux/early_res.h |    3 +++
->   kernel/early_res.c        |   30 ++++++++++++++++++++++++++++++
->   3 files changed, 65 insertions(+), 10 deletions(-)
->
-> ... but there's no x86 person who acked it or was Cc:-ed to this commit AFAICS. It 
-> was not even posted to lkml! Nor does the commit title suggest that it affects core 
-> kernel code as well.
->
-> Also, the AuthorDate field is a total lie:
->
->   commit 07147a06ac3b1b028124ea00ba44e69eb8ea7685
->   Author:     Gianluca Guida <gianluca.guida@citrix.com>
->   AuthorDate: Sun Aug 2 01:25:48 2009 +0100
->   Commit:     Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
->   CommitDate: Mon Oct 4 14:22:11 2010 -0700
->
->     x86/32: honor reservations of high memory
->
-> This commit was written on Aug 2 2009, really? kernel/early_res.c, which is modified 
-> by half of this commit, was _CREATED_ in February 2010 ...
+2.6.32-stable review patch.  If anyone has any objections, please let us know.
 
-Most of the code in early_res.c was simply moved from
-arch/x86/.../e820.c, so the patch chunks were applied to the new file
-when the code was moved.
+------------------
 
-> I realize that some original patch, much different from this one, was probably 
-> written in 2009, and that via a series of undocumented rebases and modifications to 
-> the patch you achieved this state.
+From: Stefan Bader <stefan.bader@canonical.com>
 
-The modified code was almost entirely unchanged over that period, so the
-datestamp and original authorship of the patch was basically correct.
+commit 39aa3cb3e8250db9188a6f1e3fb62ffa1a717678 upstream.
 
-However...
+So it can be used by all that need to check for that.
 
-> Crap like that is just _NOT_ acceptable, and you know that perfectly well - if you 
-> do this to arch/x86/ i'll be forced to ask for the Xen tree to be removed from 
-> linux-next and be done via the x86 tree again.
+Signed-off-by: Stefan Bader <stefan.bader@canonical.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
-Hey, hey, hold your horses.  This is a wildly obsolete patch that we
-were discussing a few weeks ago, but Yinghai did a proper alternative
-for the memblock universe.
+--- a/fs/proc/task_mmu.c
++++ b/fs/proc/task_mmu.c
+@@ -224,7 +224,8 @@ static void show_map_vma(struct seq_file *m, struct vm_area_struct *vma)
+ 	/* We don't show the stack guard page in /proc/maps */
+ 	start = vma->vm_start;
+ 	if (vma->vm_flags & VM_GROWSDOWN)
+-		start += PAGE_SIZE;
++		if (!vma_stack_continue(vma->vm_prev, vma->vm_start))
++			start += PAGE_SIZE;
+ 
+ 	seq_printf(m, "%08lx-%08lx %c%c%c%c %08llx %02x:%02x %lu %n",
+ 			start,
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index e6b1210..74949fb 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -864,6 +864,12 @@ int set_page_dirty(struct page *page);
+ int set_page_dirty_lock(struct page *page);
+ int clear_page_dirty_for_io(struct page *page);
+ 
++/* Is the vma a continuation of the stack vma above it? */
++static inline int vma_stack_continue(struct vm_area_struct *vma, unsigned long addr)
++{
++	return vma && (vma->vm_end == addr) && (vma->vm_flags & VM_GROWSDOWN);
++}
++
+ extern unsigned long move_page_tables(struct vm_area_struct *vma,
+ 		unsigned long old_addr, struct vm_area_struct *new_vma,
+ 		unsigned long new_addr, unsigned long len);
+diff --git a/mm/mlock.c b/mm/mlock.c
+index cbae7c5..b70919c 100644
+--- a/mm/mlock.c
++++ b/mm/mlock.c
+@@ -135,12 +135,6 @@ void munlock_vma_page(struct page *page)
+ 	}
+ }
+ 
+-/* Is the vma a continuation of the stack vma above it? */
+-static inline int vma_stack_continue(struct vm_area_struct *vma, unsigned long addr)
+-{
+-	return vma && (vma->vm_end == addr) && (vma->vm_flags & VM_GROWSDOWN);
+-}
+-
+ static inline int stack_guard_page(struct vm_area_struct *vma, unsigned long addr)
+ {
+ 	return (vma->vm_flags & VM_GROWSDOWN) &&
 
-It was never in linux-next, and never intended to be.  I'm not sure why
-it has appeared in linux-next now; it isn't in my branch.  I wonder if
-it appeared in another Xen-related branch.  Let me investigate.
 
-    J
