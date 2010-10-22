@@ -1,170 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752082Ab0JVWjX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 18:39:23 -0400
-Received: from smtp.gentoo.org ([140.211.166.183]:47583 "EHLO smtp.gentoo.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750910Ab0JVWjW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 18:39:22 -0400
-From: Mike Frysinger <vapier@gentoo.org>
-To: uclinux-dist-devel@blackfin.uclinux.org
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH 00/47] Blackfin updates for 2.6.37
-Date: Fri, 22 Oct 2010 18:39:01 -0400
-Message-Id: <1287787141-9021-1-git-send-email-vapier@gentoo.org>
-X-Mailer: git-send-email 1.7.3.2
+	id S1752700Ab0JVWqk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 18:46:40 -0400
+Received: from smtp13.ono.com ([62.42.230.16]:43293 "EHLO resmaa13.ono.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751718Ab0JVWqj convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Oct 2010 18:46:39 -0400
+Date: Sat, 23 Oct 2010 00:46:36 +0200
+From: "J.A. =?ISO-8859-1?B?TWFnYWxs824=?=" <jamagallon@ono.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>, linux-cifs@vger.kernel.org
+Subject: Re: CIFS is slooow, gvfs is fast
+Message-ID: <20101023004636.1acdd81c@werewolf.home>
+In-Reply-To: <4CC16B1E.4060709@suse.de>
+References: <20101022013544.0fdab0e0@werewolf.home>
+ <4CC16B1E.4060709@suse.de>
+X-Mailer: Claws Mail 3.7.6cvs54 (GTK+ 2.22.0; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We've got a few bug fixes, but mostly board updates (including two new
-boards).  The only real neat changes are initial preempt support, a
-new cacheflush() syscall for safe userspace trampolines, and resource
-conflict detection of related peripheral pins.
+On Fri, 22 Oct 2010 16:14:46 +0530, Suresh Jayaraman <sjayaraman@suse.de> wrote:
 
-Ashish Gupta (1):
-  Blackfin: tll6527m: new board port
+> (Cc linux-cifs@vger.kernel.org)
+> 
+> On 10/22/2010 05:05 AM, J.A. Magallón wrote:
+> 
+> > I have a very strange behaviour with windows networking.
+> > I have an HTPC, which I access from my Linux desktop. It runs Windows 7.
+> > Network is GigaBit, routed by a Linksys WRT320N running latest DD-WRT.
+> > I setup an automount path under /net/htpc with CIFS filesystem.
+> > I can also access the drives in HTPC via gvfs from Gnome DE.
+> > 
+> > Problem: speed is _VERY_ different.
+> > R/W through the automount point (CIFS fs), is roughly 7-8 MB/s (ridiculous
+> > for gigabit speeds).
+> > R/W through Gnome/gvfs (kind of fuse) goes around 35 - 40 MB/s (400 Mbits/s),
+> > that look much better.
+> 
+> What is the kernel version In which you are seeing the problem? I'm not
 
-Barry Song (8):
-  Blackfin: bf537-stamp: update GPIO CS devices
-  Blackfin: boards: update AD183x resources
-  Blackfin: bf537-stamp: add example ad1937 i2c resources
-  Blackfin: bf537-stamp: use correct spi mode with ad2s90 parts
-  Blackfin: ptrace: enable access to L1 stacks
-  Blackfin: bf561-ezkit: add AD1836 codec resources
-  Blackfin: access_ok: permit L1 stack
-  Blackfin: initial preempt support while returning from interrupt
+Its just new 2.6.36 final, mandriva distro kernel.
 
-Bob Liu (2):
-  Blackfin: bf51x/bf52x: fix 16/32bit SPORT MMR helpers
-  Blackfin: bf518-ezkit: add ssm2603 codec resources
+> seeing this on 2.6.36-rc4. Do you have a wired interface as well? Are
 
-Cliff Cai (1):
-  Blackfin: bf537-stamp: add example adau1373 i2c resources
+Yes, boxes are all wired to the 320N router, at gigabit speeds.
+Just to double check, I also probed with my netbook with 100Mb ehternet.
+The effect is less obvious, but writing to the Win7 box through the
+cifs automount path goes at 3.5-4.0 Mb/s, and with gvfs it reaches
+7.5 Mb/s.
 
-Michael Hennerich (6):
-  Blackfin: cm-bf548: add support for Socket CAN
-  Blackfin: boards: use proper irq flags with isp1362-hcd
-  Blackfin: bf537-stamp: add example IIO resources
-  Blackfin: SIC: BF537: change default data/error relative priorities
-  Blackfin: ad7160eval: new board port
-  Blackfin: SIC: fix off-by-one error in loop
+> you sure that both are using the same network path?
+> 
 
-Mike Frysinger (19):
-  Blackfin: punt short SPI MMR bit names
-  Blackfin: bf537-stamp: fix NAND resources
-  Blackfin: boards: fix num_chipselect values for on-chip SPI buses
-  Blackfin: i2c-gpio boards: use GPIO_PF# defines
-  Blackfin: bf51x: enable support for 0.2 silicon
-  Blackfin: bf548-ezkit: increase u-boot partition size
-  Blackfin: dma: bf54x: add missing break for SPORT1 TX IRQ
-  Blackfin: bf526-ezbrd/bf527-ezkit: add NAND partition for u-boot
-  Blackfin: coreb: add gpl module license
-  Blackfin: coreb: update ioctl numbers
-  Blackfin: update sparse flags for latest upstream changes
-  Blackfin: glue XIP/ROM kernel kconfigs
-  Blackfin: H8606: move 8250 irqflags to platform resources
-  Blackfin: bf54x: add missing SIC_RVECT definition
-  Blackfin: bf561: rewrite SICA_xxx to just SIC_xxx
-  Blackfin: bf538: add missing SIC_RVECT define
-  Blackfin: bfin_can.h: add missing VERSION/VERSION2 MMRs
-  Blackfin: bfin_ppi.h: start a common PPI/EPPI header
-  Blackfin: bfin_spi.h: add MMR peripheral layout
+If you mean hardware network path (cabling, router), yes.
+For file paths, CIFS fs is under /net/htpc/media, and gvfs uses a mount
+point on '~/.gvfs/media on htpc'.
 
-Robin Getz (1):
-  Blackfin: workaround anomaly 05000481 (corruption with ITEST MMRs)
+And here comes the weird part. To rule out the desktop environment factor,
+I tried a dd in both paths. On /net, I get 16.6 MB/s, and on
+~/.gvfs/xxx, I just get 5.5 MB/s. I really don't understand anything...
+things get reversed depending if you use a gui or commandline.
 
-Sonic Zhang (5):
-  Blackfin: bf537-stamp: re-use the fixed regulator voltage driver
-  Blackfin: bf537-stamp: re-use regulator framework with ad5398 parts
-  Blackfin: bf537-stamp: tweak i2c address for ad5280 add-on tftlcd
-    board
-  Blackfin: add new cacheflush syscall
-  Blackfin: merge kernel init memory back into main memory region
-
-Valentin Yakovenkov (1):
-  Blackfin: bf561-acvilon: fix NAND resources
-
-Yi Li (1):
-  Blackfin: bf537-stamp: add example adav801/3 resources
-
-steven miao (2):
-  Blackfin: boards: add example i2c resources for ad525x devices
-  Blackfin: gpio: add peripheral group check
-
- arch/blackfin/Kconfig                              |   12 +-
- arch/blackfin/Makefile                             |    3 +-
- arch/blackfin/configs/BF527-AD7160-EVAL_defconfig  |  105 +++
- arch/blackfin/configs/BF527-TLL6527M_defconfig     |  180 ++++
- arch/blackfin/include/asm/Kbuild                   |    1 +
- arch/blackfin/include/asm/bfin5xx_spi.h            |   19 +
- arch/blackfin/include/asm/bfin_can.h               |    9 +-
- arch/blackfin/include/asm/bfin_ppi.h               |   51 +
- arch/blackfin/include/asm/cachectl.h               |   20 +
- arch/blackfin/include/asm/cdef_LPBlackfin.h        |    9 +-
- arch/blackfin/include/asm/ptrace.h                 |    3 +
- arch/blackfin/include/asm/serial.h                 |    1 -
- arch/blackfin/include/asm/unistd.h                 |    3 +-
- arch/blackfin/kernel/bfin_gpio.c                   |  185 +++--
- arch/blackfin/kernel/process.c                     |    5 +
- arch/blackfin/kernel/ptrace.c                      |   12 +-
- arch/blackfin/kernel/sys_bfin.c                    |   15 +
- arch/blackfin/mach-bf518/boards/ezbrd.c            |   21 +-
- arch/blackfin/mach-bf518/boards/tcm-bf518.c        |    2 +-
- .../mach-bf518/include/mach/cdefBF51x_base.h       |   32 +-
- .../mach-bf518/include/mach/defBF51x_base.h        |   45 -
- arch/blackfin/mach-bf527/boards/Kconfig            |   10 +
- arch/blackfin/mach-bf527/boards/Makefile           |    2 +
- arch/blackfin/mach-bf527/boards/ad7160eval.c       |  870 +++++++++++++++++
- arch/blackfin/mach-bf527/boards/cm_bf527.c         |   12 +-
- arch/blackfin/mach-bf527/boards/ezbrd.c            |    6 +-
- arch/blackfin/mach-bf527/boards/ezkit.c            |   23 +-
- arch/blackfin/mach-bf527/boards/tll6527m.c         |  986 ++++++++++++++++++++
- .../mach-bf527/include/mach/cdefBF52x_base.h       |   32 +-
- .../mach-bf527/include/mach/defBF52x_base.h        |   45 -
- arch/blackfin/mach-bf533/boards/H8606.c            |   10 +-
- arch/blackfin/mach-bf533/boards/blackstamp.c       |    4 +-
- arch/blackfin/mach-bf533/boards/cm_bf533.c         |   10 +-
- arch/blackfin/mach-bf533/boards/ezkit.c            |   12 +-
- arch/blackfin/mach-bf533/boards/ip0x.c             |    2 +-
- arch/blackfin/mach-bf533/boards/stamp.c            |   19 +-
- arch/blackfin/mach-bf533/include/mach/defBF532.h   |   70 --
- arch/blackfin/mach-bf537/Kconfig                   |    4 +-
- arch/blackfin/mach-bf537/boards/cm_bf537e.c        |   10 +-
- arch/blackfin/mach-bf537/boards/cm_bf537u.c        |   10 +-
- arch/blackfin/mach-bf537/boards/pnav10.c           |   12 +-
- arch/blackfin/mach-bf537/boards/stamp.c            |  597 ++++++++++--
- arch/blackfin/mach-bf537/boards/tcm_bf537.c        |   10 +-
- arch/blackfin/mach-bf537/include/mach/defBF534.h   |   44 -
- arch/blackfin/mach-bf538/boards/ezkit.c            |    4 +-
- arch/blackfin/mach-bf538/include/mach/defBF539.h   |   73 +--
- arch/blackfin/mach-bf548/boards/cm_bf548.c         |   47 +-
- arch/blackfin/mach-bf548/boards/ezkit.c            |   31 +-
- arch/blackfin/mach-bf548/dma.c                     |    1 +
- .../mach-bf548/include/mach/cdefBF54x_base.h       |    2 +
- .../mach-bf548/include/mach/defBF54x_base.h        |   51 +-
- arch/blackfin/mach-bf561/boards/acvilon.c          |    2 +-
- arch/blackfin/mach-bf561/boards/cm_bf561.c         |   10 +-
- arch/blackfin/mach-bf561/boards/ezkit.c            |   68 ++-
- arch/blackfin/mach-bf561/coreb.c                   |   11 +-
- arch/blackfin/mach-bf561/include/mach/blackfin.h   |   33 +-
- arch/blackfin/mach-bf561/include/mach/cdefBF561.h  |   76 +-
- arch/blackfin/mach-bf561/include/mach/defBF561.h   |   94 +--
- arch/blackfin/mach-bf561/ints-priority.c           |   16 +-
- arch/blackfin/mach-bf561/smp.c                     |   24 +-
- arch/blackfin/mach-common/dpmc_modes.S             |   50 +-
- arch/blackfin/mach-common/entry.S                  |  113 +++-
- arch/blackfin/mach-common/interrupt.S              |   17 +
- arch/blackfin/mach-common/ints-priority.c          |   11 +-
- arch/blackfin/mm/init.c                            |    3 +
- 65 files changed, 3431 insertions(+), 839 deletions(-)
- create mode 100644 arch/blackfin/configs/BF527-AD7160-EVAL_defconfig
- create mode 100644 arch/blackfin/configs/BF527-TLL6527M_defconfig
- create mode 100644 arch/blackfin/include/asm/bfin_ppi.h
- create mode 100644 arch/blackfin/include/asm/cachectl.h
- create mode 100644 arch/blackfin/mach-bf527/boards/ad7160eval.c
- create mode 100644 arch/blackfin/mach-bf527/boards/tll6527m.c
+Weird, really weird...
 
 -- 
-1.7.3.2
-
+J.A. Magallon <jamagallon()ono!com>     \               Software is like sex:
+                                         \         It's better when it's free
