@@ -1,78 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758994Ab0JVSlp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 14:41:45 -0400
-Received: from kroah.org ([198.145.64.141]:46017 "EHLO coco.kroah.org"
+	id S1758786Ab0JVSl1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 14:41:27 -0400
+Received: from kroah.org ([198.145.64.141]:45873 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758911Ab0JVSln (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 14:41:43 -0400
-X-Mailbox-Line: From gregkh@clark.site Fri Oct 22 11:40:34 2010
-Message-Id: <20101022184034.003754079@clark.site>
+	id S1756348Ab0JVSjD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Oct 2010 14:39:03 -0400
+X-Mailbox-Line: From gregkh@clark.site Fri Oct 22 11:36:01 2010
+Message-Id: <20101022183601.379096062@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 22 Oct 2010 11:39:42 -0700
+Date: Fri, 22 Oct 2010 11:35:25 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Roland McGrath <roland@redhat.com>, Chuck Ebbert <cebbert@redhat.com>
-Subject: [17/17] execve: make responsive to SIGKILL with large arguments
-In-Reply-To: <20101022184048.GA25391@kroah.com>
+        Zhang Rui <rui.zhang@intel.com>, Len Brown <len.brown@intel.com>
+Subject: [58/66] ACPI: Disable Windows Vista compatibility for Toshiba P305D
+In-Reply-To: <20101022183711.GA23214@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.27-stable review patch.  If anyone has any objections, please let us know.
+2.6.32-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
 
-From: Roland McGrath <roland@redhat.com>
+From: Zhang Rui <rui.zhang@intel.com>
 
-commit 9aea5a65aa7a1af9a4236dfaeb0088f1624f9919 upstream.
+commit 337279ce3aa85d81d34c0f837d1c204df105103b upstream.
 
-An execve with a very large total of argument/environment strings
-can take a really long time in the execve system call.  It runs
-uninterruptibly to count and copy all the strings.  This change
-makes it abort the exec quickly if sent a SIGKILL.
+Disable the Windows Vista (SP1) compatibility for Toshiba P305D.
 
-Note that this is the conservative change, to interrupt only for
-SIGKILL, by using fatal_signal_pending().  It would be perfectly
-correct semantics to let any signal interrupt the string-copying in
-execve, i.e. use signal_pending() instead of fatal_signal_pending().
-We'll save that change for later, since it could have user-visible
-consequences, such as having a timer set too quickly make it so that
-an execve can never complete, though it always happened to work before.
+http://bugzilla.kernel.org/show_bug.cgi?id=14736
 
-Signed-off-by: Roland McGrath <roland@redhat.com>
-Reviewed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: Chuck Ebbert <cebbert@redhat.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Zhang Rui <rui.zhang@intel.com>
+Signed-off-by: Len Brown <len.brown@intel.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/exec.c |    7 +++++++
- 1 file changed, 7 insertions(+)
+ drivers/acpi/blacklist.c |    8 ++++++++
+ 1 file changed, 8 insertions(+)
 
---- a/fs/exec.c
-+++ b/fs/exec.c
-@@ -393,6 +393,9 @@ static int count(char __user * __user *
- 			argv++;
- 			if(++i > max)
- 				return -E2BIG;
-+
-+			if (fatal_signal_pending(current))
-+				return -ERESTARTNOHAND;
- 			cond_resched();
- 		}
- 	}
-@@ -436,6 +439,10 @@ static int copy_strings(int argc, char _
- 		while (len > 0) {
- 			int offset, bytes_to_copy;
+--- a/drivers/acpi/blacklist.c
++++ b/drivers/acpi/blacklist.c
+@@ -233,6 +233,14 @@ static struct dmi_system_id acpi_osi_dmi
+ 		     DMI_MATCH(DMI_PRODUCT_NAME, "K50IJ"),
+ 		},
+ 	},
++	{
++	.callback = dmi_disable_osi_vista,
++	.ident = "Toshiba P305D",
++	.matches = {
++		     DMI_MATCH(DMI_SYS_VENDOR, "TOSHIBA"),
++		     DMI_MATCH(DMI_PRODUCT_NAME, "Satellite P305D"),
++		},
++	},
  
-+			if (fatal_signal_pending(current)) {
-+				ret = -ERESTARTNOHAND;
-+				goto out;
-+			}
- 			cond_resched();
- 
- 			offset = pos % PAGE_SIZE;
+ 	/*
+ 	 * BIOS invocation of _OSI(Linux) is almost always a BIOS bug.
 
 
