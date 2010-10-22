@@ -1,72 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756675Ab0JVNEQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 09:04:16 -0400
-Received: from hera.kernel.org ([140.211.167.34]:40415 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756569Ab0JVNEO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 09:04:14 -0400
-Date: Fri, 22 Oct 2010 13:03:40 GMT
-From: tip-bot for Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: linux-kernel@vger.kernel.org, eranian@google.com, hpa@zytor.com,
-        mingo@redhat.com, a.p.zijlstra@chello.nl, tglx@linutronix.de,
-        mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, eranian@google.com,
-        linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl,
-        tglx@linutronix.de, mingo@elte.hu
-In-Reply-To: <20101019134808.354429461@chello.nl>
-References: <20101019134808.354429461@chello.nl>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] perf, x86: Fixup the precise_ip computation
-Message-ID: <tip-5553be2620ac901c21a25657bd5b59f73254e6d5@git.kernel.org>
-Git-Commit-ID: 5553be2620ac901c21a25657bd5b59f73254e6d5
-X-Mailer: tip-git-log-daemon
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 22 Oct 2010 13:03:40 +0000 (UTC)
+	id S1756711Ab0JVNEc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 09:04:32 -0400
+Received: from canuck.infradead.org ([134.117.69.58]:47976 "EHLO
+	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756566Ab0JVNEb convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Oct 2010 09:04:31 -0400
+Subject: Re: What am I doing wrong?  submit_bio() suddenly stops working...
+From: Peter Zijlstra <peterz@infradead.org>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: Boaz Harrosh <bharrosh@panasas.com>, "Ted Ts'o" <tytso@mit.edu>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>
+In-Reply-To: <4CC0817F.1020403@kernel.dk>
+References: <E1P8kSE-0001DW-8C@tytso-glaptop> <4CBFE4E2.7050001@kernel.dk>
+	 <20101021165525.GB3127@thunk.org> <4CC07B62.9070000@panasas.com>
+	 <4CC0817F.1020403@kernel.dk>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Fri, 22 Oct 2010 15:04:20 +0200
+Message-ID: <1287752660.15336.37.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  5553be2620ac901c21a25657bd5b59f73254e6d5
-Gitweb:     http://git.kernel.org/tip/5553be2620ac901c21a25657bd5b59f73254e6d5
-Author:     Peter Zijlstra <a.p.zijlstra@chello.nl>
-AuthorDate: Tue, 19 Oct 2010 14:38:11 +0200
-Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Fri, 22 Oct 2010 14:18:25 +0200
+On Thu, 2010-10-21 at 20:07 +0200, Jens Axboe wrote:
+> 
+> >> +    do {
+> >> +            bio = bio_alloc(GFP_NOIO, nvecs);
+> >> +            nvecs >>= 1;
+> >> +    } while (bio == NULL);
+> > 
+> > This is surly bad. bio_alloc must be allowed to fail
+> > (Specially with GFP_NOIO). You should only loop down to
+> > 1 and then prepare to return -ENOMEM from this function
+> > and handle it properly in callers. (Or schedule and wait
+> > like below)
+> 
+> Since __GFP_WAIT is set, it'll never return NULL. And as long as you
+> don't allocate more than 1 before doing you submit_bio(), it should be
+> OK in this case. 
 
-perf, x86: Fixup the precise_ip computation
+__GFP_WAIT can return NULL, on OOM and when the size is over a magic
+threshold.
 
-In case we don't have PEBS, the LBR fixup doesn't make sense.
-
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Acked-by: Stephane Eranian <eranian@google.com>
-LKML-Reference: <20101019134808.354429461@chello.nl>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
----
- arch/x86/kernel/cpu/perf_event.c |    9 +++++----
- 1 files changed, 5 insertions(+), 4 deletions(-)
-
-diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
-index fe73c18..f369c53 100644
---- a/arch/x86/kernel/cpu/perf_event.c
-+++ b/arch/x86/kernel/cpu/perf_event.c
-@@ -497,12 +497,13 @@ static int x86_pmu_hw_config(struct perf_event *event)
- 		int precise = 0;
- 
- 		/* Support for constant skid */
--		if (x86_pmu.pebs)
-+		if (x86_pmu.pebs) {
- 			precise++;
- 
--		/* Support for IP fixup */
--		if (x86_pmu.lbr_nr)
--			precise++;
-+			/* Support for IP fixup */
-+			if (x86_pmu.lbr_nr)
-+				precise++;
-+		}
- 
- 		if (event->attr.precise_ip > precise)
- 			return -EOPNOTSUPP;
+I find it bad form to rely on any allocation not failing.
