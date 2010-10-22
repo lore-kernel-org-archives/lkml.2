@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932876Ab0JVT0R (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 15:26:17 -0400
-Received: from kroah.org ([198.145.64.141]:33854 "EHLO coco.kroah.org"
+	id S1759308Ab0JVT0d (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 15:26:33 -0400
+Received: from kroah.org ([198.145.64.141]:33844 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759128Ab0JVSzs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 14:55:48 -0400
+	id S1759066Ab0JVSzq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Oct 2010 14:55:46 -0400
 X-Mailbox-Line: From gregkh@clark.site Fri Oct 22 11:52:27 2010
-Message-Id: <20101022185227.562240896@clark.site>
+Message-Id: <20101022185227.373997042@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 22 Oct 2010 11:50:37 -0700
+Date: Fri, 22 Oct 2010 11:50:35 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        "Erik J. Staab" <ejs@insightbb.com>,
-        Clemens Ladisch <clemens@ladisch.de>, Takashi Iwai <tiwai@suse.de>
-Subject: [003/103] ALSA: oxygen: fix analog capture on Claro halo cards
+        "H. Peter Anvin" <hpa@linux.intel.com>
+Subject: [001/103] x86, cpu: After uncapping CPUID, re-run CPU feature detection
 In-Reply-To: <20101022185455.GA9114@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,35 +25,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Erik J. Staab <ejs@insightbb.com>
+From: H. Peter Anvin <hpa@linux.intel.com>
 
-commit 0873a5ae747847ee55a63db409dff3476e45bcd9 upstream.
+commit d900329e20f4476db6461752accebcf7935a8055 upstream.
 
-On the HT-Omega Claro halo card, the ADC data must be captured from the
-second I2S input.  Using the default first input, which isn't connected
-to anything, would result in silence.
+After uncapping the CPUID level, we need to also re-run the CPU
+feature detection code.
 
-Signed-off-by: Erik J. Staab <ejs@insightbb.com>
-Signed-off-by: Clemens Ladisch <clemens@ladisch.de>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+This resolves kernel bugzilla 16322.
+
+Reported-by: boris64 <bugzilla.kernel.org@boris64.net>
+LKML-Reference: <tip-@git.kernel.org>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- sound/pci/oxygen/oxygen.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ arch/x86/kernel/cpu/common.c |    2 +-
+ arch/x86/kernel/cpu/cpu.h    |    1 +
+ arch/x86/kernel/cpu/intel.c  |    1 +
+ 3 files changed, 3 insertions(+), 1 deletion(-)
 
---- a/sound/pci/oxygen/oxygen.c
-+++ b/sound/pci/oxygen/oxygen.c
-@@ -543,6 +543,10 @@ static int __devinit get_oxygen_model(st
- 		chip->model.suspend = claro_suspend;
- 		chip->model.resume = claro_resume;
- 		chip->model.set_adc_params = set_ak5385_params;
-+		chip->model.device_config = PLAYBACK_0_TO_I2S |
-+					    PLAYBACK_1_TO_SPDIF |
-+					    CAPTURE_0_FROM_I2S_2 |
-+					    CAPTURE_1_FROM_SPDIF;
- 		break;
+--- a/arch/x86/kernel/cpu/common.c
++++ b/arch/x86/kernel/cpu/common.c
+@@ -537,7 +537,7 @@ void __cpuinit cpu_detect(struct cpuinfo
  	}
- 	if (id->driver_data == MODEL_MERIDIAN ||
+ }
+ 
+-static void __cpuinit get_cpu_cap(struct cpuinfo_x86 *c)
++void __cpuinit get_cpu_cap(struct cpuinfo_x86 *c)
+ {
+ 	u32 tfms, xlvl;
+ 	u32 ebx;
+--- a/arch/x86/kernel/cpu/cpu.h
++++ b/arch/x86/kernel/cpu/cpu.h
+@@ -33,5 +33,6 @@ extern const struct cpu_dev *const __x86
+ 			    *const __x86_cpu_dev_end[];
+ 
+ extern void cpu_detect_cache_sizes(struct cpuinfo_x86 *c);
++extern void get_cpu_cap(struct cpuinfo_x86 *c);
+ 
+ #endif
+--- a/arch/x86/kernel/cpu/intel.c
++++ b/arch/x86/kernel/cpu/intel.c
+@@ -39,6 +39,7 @@ static void __cpuinit early_init_intel(s
+ 			misc_enable &= ~MSR_IA32_MISC_ENABLE_LIMIT_CPUID;
+ 			wrmsrl(MSR_IA32_MISC_ENABLE, misc_enable);
+ 			c->cpuid_level = cpuid_eax(0);
++			get_cpu_cap(c);
+ 		}
+ 	}
+ 
 
 
