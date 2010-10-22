@@ -1,45 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759165Ab0JVABF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Oct 2010 20:01:05 -0400
-Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:52928 "EHLO
-	ipmail04.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759014Ab0JVABB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Oct 2010 20:01:01 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AhYEAJRxwEx5LdoFgWdsb2JhbAChXhYBARYiIr84hUoE
-Date: Fri, 22 Oct 2010 11:00:28 +1100
-From: Nick Piggin <npiggin@kernel.dk>
-To: Christoph Lameter <cl@linux.com>
-Cc: npiggin@kernel.dk, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch 13/14] fs: icache split IO and LRU lists
-Message-ID: <20101022000028.GE3270@amd>
-References: <20101021130829.442910807@kernel.dk>
- <20101021131017.274548424@kernel.dk>
- <alpine.DEB.2.00.1010211018250.24115@router.home>
+	id S1759161Ab0JVACy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Oct 2010 20:02:54 -0400
+Received: from ozlabs.org ([203.10.76.45]:47839 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756560Ab0JVACx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Oct 2010 20:02:53 -0400
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Peter Zijlstra <peterz@infradead.org>
+Subject: Re: Finishing off cpumask...
+Date: Fri, 22 Oct 2010 10:32:42 +1030
+User-Agent: KMail/1.13.5 (Linux/2.6.35-22-generic; KDE/4.5.1; i686; ; )
+Cc: Ingo Molnar <mingo@elte.hu>, Mike Travis <travis@sgi.com>, anton@samba.org,
+        linux-kernel@vger.kernel.org, x86@kernel.org
+References: <201010211735.23918.rusty@rustcorp.com.au> <1287652907.3488.64.camel@twins>
+In-Reply-To: <1287652907.3488.64.camel@twins>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1010211018250.24115@router.home>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201010221032.42687.rusty@rustcorp.com.au>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 21, 2010 at 10:28:42AM -0500, Christoph Lameter wrote:
-> On Fri, 22 Oct 2010, npiggin@kernel.dk wrote:
+On Thu, 21 Oct 2010 07:51:47 pm Peter Zijlstra wrote:
+> On Thu, 2010-10-21 at 17:35 +1030, Rusty Russell wrote:
+> > The next two turn off and break
+> > old-style cpumask uses when CONFIG_CPUMASK_OFFSTACK is set, 
 > 
-> > Split inode reclaim and writeback lists in preparation to scale them up
-> > (per-bdi locking for i_io and per-zone locking for i_lru)
-> 
-> Why per zone and not per node? Is there any chance of having lru lists for
-> ZONE_NORMAL and ZONE_DMA?
+> Breaking old style for !CONFIG_CPUMASK_OFFSTAK too would be awesome, but
+> I guess that's hard to do?
 
-I guess I see that as coupling a bit too much with the MM. We know that
-zones are the unit of allocation and reclaim, but I don't think we need
-to care about which zones we need to care about, or the node:zone
-relationship.
+There are four things we could do.
+(1) Get rid of the old cpus_ operators (=> cpumask_*).  They're just
+    confusing, and  removing them would be a clarity win.
+(2) Get rid of cpu_*_map (=> cpu_*_mask).  The maps are just wrappers.
+(3) Getting rid of cpumask_t (=> struct cpumask) and NR_CPUS
+    (=> CONFIG_NR_CPUS). These are totally cosmetic.
+(4) Getting rid of cpumask_t/struct cpumask (=> cpumask_var_t) is basically
+    only useful if an arch is thinking about CPUMASK_OFFSTACK, and most
+    painful.
 
+So, I've changed the CONFIG option which disables (1) and (2); now anyone
+will be able to turn it on if they want to test.  That might encourage
+the per-arch cleanup...
 
+Thanks,
+Rusty.
