@@ -1,53 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752093Ab0JVVrF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 17:47:05 -0400
-Received: from e35.co.us.ibm.com ([32.97.110.153]:50871 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751086Ab0JVVrC (ORCPT
+	id S1752321Ab0JVVuq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 17:50:46 -0400
+Received: from g6t0186.atlanta.hp.com ([15.193.32.63]:3921 "EHLO
+	g6t0186.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750952Ab0JVVuo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 17:47:02 -0400
-Date: Fri, 22 Oct 2010 14:46:50 -0700
-From: Matt Helsley <matthltc@us.ibm.com>
-To: Matt Helsley <matthltc@us.ibm.com>
-Cc: Li Zefan <lizf@cn.fujitsu.com>, containers@lists.linux-foundation.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        Stephane Eranian <eranian@google.com>,
-        "akpm >> Andrew Morton" <akpm@linux-foundation.org>,
-        Paul Menage <menage@google.com>
-Subject: Re: [PATCH 5/7] cgroups: Make freezer subsystem bindable
-Message-ID: <20101022214650.GL10119@count0.beaverton.ibm.com>
-References: <4CC146A4.9090505@cn.fujitsu.com>
- <4CC1473D.9070201@cn.fujitsu.com>
- <20101022205755.GJ10119@count0.beaverton.ibm.com>
+	Fri, 22 Oct 2010 17:50:44 -0400
+From: Bjorn Helgaas <bjorn.helgaas@hp.com>
+To: Ram Pai <linuxram@us.ibm.com>
+Subject: Re: [RFC v2 PATCH 1/1] PCI: override BIOS/firmware resource allocation
+Date: Fri, 22 Oct 2010 15:49:21 -0600
+User-Agent: KMail/1.13.2 (Linux/2.6.32-25-generic; KDE/4.4.2; x86_64; ; )
+Cc: Jesse Barnes <jbarnes@virtuousgeek.org>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org, clemens@ladisch.de,
+        Yinghai Lu <yinghai@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+References: <20101006225834.GE2945@ram-laptop> <201010221155.19123.bjorn.helgaas@hp.com> <20101022185937.GF24820@ram-laptop>
+In-Reply-To: <20101022185937.GF24820@ram-laptop>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101022205755.GJ10119@count0.beaverton.ibm.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201010221549.22124.bjorn.helgaas@hp.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 22, 2010 at 01:57:55PM -0700, Matt Helsley wrote:
-> On Fri, Oct 22, 2010 at 04:11:41PM +0800, Li Zefan wrote:
-> > To make it bindable, we need to thaw all processes when unbinding
-> > the freezer subsystem from a cgroup hierarchy.
-> > 
-> > Signed-off-by: Li Zefan <lizf@cn.fujitsu.com>
-
-<snip>
-
+On Friday, October 22, 2010 12:59:37 pm Ram Pai wrote:
+> On Fri, Oct 22, 2010 at 11:55:18AM -0600, Bjorn Helgaas wrote:
+> > If we assign resources to bridges with no devices behind them while
+> > starving bridges that DO have devices behind them, I think that's a bug.
+> > It'd be great if you could isolate and fix that before we complicate
+> > things by throwing Yinghai's patch into the mix.
 > 
-> Alternately you could split the bind/unbind op function pointers
-> and get rid of the boolean argument. Then just don't fill in the
-> freezer's unbind op and refuse to unbind subsystems that lack
-> the unbind op. That seems a bit cleaner for now at least.
+> Yes. I sent out a patch an hour back with a fix for that.
 
-Or alternately to the alternate :):  add a can_unbind:1 field and keep
-the boolean bind op argument. That might be best -- avoids an extra
-function pointer and still splits the bind/unbind-ability of a
-subsystem.
+Yeah, I saw that right after I hit "send" :-)
 
-Cheers,
-	-Matt Helsley
+> > I think it'd interesting to have a debug parameter like "pci=assign-all"
+> > that meant "ignore all BIOS PCI config and start from scratch."  I'm
+> > sure we'd trip over lots of issues and it would be easier to resolve them
+> > before trying to make things fancier.
+> 
+> The patch that I had sent 3-weeks back had that feature. It can be triggered
+> by pci=override=always.
+> 
+> However, your arguement earlier was that it would make no difference because
+> no one will enable that parameter by default. This means hardly anyone will
+> report any bugs. 
+
+I just meant as a development tool, maybe not even upstream, as a way
+to exercise the Linux allocation code.  I don't have much confidence
+in it yet.  We certainly don't want Linux to ignore the BIOS config in
+general; we should just use it unless we can tell it's broken.
+
+> Gating "Yinghai's patch or any other approach" on fixing all the bugs in the
+> pci subsystem, implicitly means 'go away' ;). I hope you dont mean that.
+
+Oh, no.
+
+> I propose to bring Yinghai's patch, for that will enable us to expose bugs and
+> at the same time it will enable SRIOV on *all* the platforms that don't have it.
+
+Yes, we should consider Yinghai's patch again after all the known issues
+with it are fixed.  I just don't know whether we're there yet.
+
+Bjorn
