@@ -1,62 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755419Ab0JVIIl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 04:08:41 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:58751 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1755357Ab0JVIIg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 04:08:36 -0400
-Message-ID: <4CC146BA.7080009@cn.fujitsu.com>
-Date: Fri, 22 Oct 2010 16:09:30 +0800
-From: Li Zefan <lizf@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1b3pre) Gecko/20090513 Fedora/3.0-2.3.beta2.fc11 Thunderbird/3.0b2
+	id S1755492Ab0JVIJI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 04:09:08 -0400
+Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:52846 "EHLO kernel.dk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753987Ab0JVIJG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Oct 2010 04:09:06 -0400
+Message-ID: <4CC146B1.8060906@kernel.dk>
+Date: Fri, 22 Oct 2010 10:09:21 +0200
+From: Jens Axboe <axboe@kernel.dk>
 MIME-Version: 1.0
-To: "akpm >> Andrew Morton" <akpm@linux-foundation.org>
-CC: Paul Menage <menage@google.com>, Stephane Eranian <eranian@google.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        containers@lists.linux-foundation.org
-Subject: [PATCH 1/7] cgroups: Shrink struct cgroup_subsys
-References: <4CC146A4.9090505@cn.fujitsu.com>
-In-Reply-To: <4CC146A4.9090505@cn.fujitsu.com>
-Content-Type: text/plain; charset=UTF-8
+To: Wu Fengguang <fengguang.wu@intel.com>
+CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Torsten Kaiser <just.for.lkml@googlemail.com>,
+        Neil Brown <neilb@suse.de>, Rik van Riel <riel@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "Li, Shaohua" <shaohua.li@intel.com>
+Subject: Re: Deadlock possibly caused by too_many_isolated.
+References: <AANLkTimVu+5gTDs8przJVP2EbWC=FX-zWW7aH08BtrHC@mail.gmail.com> <20101020055717.GA12752@localhost> <20101020150346.1832.A69D9226@jp.fujitsu.com> <20101020092739.GA23869@localhost> <4CBEE888.2090606@kernel.dk> <20101022053755.GB16804@localhost> <20101022080725.GA22594@localhost>
+In-Reply-To: <20101022080725.GA22594@localhost>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On x86_32, sizeof(struct cgroup_subsys) shrinks from 276 bytes
-to 264.
+On 2010-10-22 10:07, Wu Fengguang wrote:
+>>> We surely need 1 set aside for each level of that stack that will
+>>> potentially consume one. 1 should be enough for the generic pool, and
+>>> then clones will use a separate pool. So md and friends should really
+>>> have a pool per device, so that stacking will always work properly.
+>>
+>> Agreed for the deadlock problem.
+>>
+>>> There should be no throughput concerns, it should purely be a safe guard
+>>> measure to prevent us deadlocking when doing IO for reclaim.
+>>
+>> It's easy to verify whether the minimal size will have negative
+>> impacts on IO throughput. In Torsten's case, increase BIO_POOL_SIZE
+>> by one and check how it performs.
+> 
+> Sorry it seems simply increasing BIO_POOL_SIZE is not enough to fix
+> possible deadlocks. We need adding new mempool(s). Because when there
+> BIO_POOL_SIZE=2 and there are two concurrent reclaimers each take 1
+> reservation, they will deadlock each other when trying to take the
+> next bio at the raid1 level.
 
-Signed-off-by: Li Zefan <lizf@cn.fujitsu.com>
----
-include/linux/cgroup.h |   10 ++++++----
- 1 files changed, 6 insertions(+), 4 deletions(-)
+Yes, plus it's not a practical solution since you don't know how deep
+the stack is. As I wrote in the initial email, each consumer needs it's
+own private mempool (and just 1 entry should suffice).
 
-diff --git a/include/linux/cgroup.h b/include/linux/cgroup.h
-index ed4ba11..e23ded6 100644
---- a/include/linux/cgroup.h
-+++ b/include/linux/cgroup.h
-@@ -481,14 +481,16 @@ struct cgroup_subsys {
- 	void (*bind)(struct cgroup_subsys *ss, struct cgroup *root);
- 
- 	int subsys_id;
--	int active;
--	int disabled;
--	int early_init;
-+
-+	unsigned int active:1;
-+	unsigned int disabled:1;
-+	unsigned int early_init:1;
- 	/*
- 	 * True if this subsys uses ID. ID is not available before cgroup_init()
- 	 * (not available in early_init time.)
- 	 */
--	bool use_id;
-+	unsigned int use_id:1;
-+
- #define MAX_CGROUP_TYPE_NAMELEN 32
- 	const char *name;
- 
 -- 
-1.7.0.1
+Jens Axboe
 
