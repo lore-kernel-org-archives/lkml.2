@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757601Ab0JVSww (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 14:52:52 -0400
-Received: from kroah.org ([198.145.64.141]:45656 "EHLO coco.kroah.org"
+	id S1758924Ab0JVSxM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 14:53:12 -0400
+Received: from kroah.org ([198.145.64.141]:45648 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756260Ab0JVSi1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 14:38:27 -0400
-X-Mailbox-Line: From gregkh@clark.site Fri Oct 22 11:35:58 2010
-Message-Id: <20101022183557.941712232@clark.site>
+	id S1754977Ab0JVSi0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Oct 2010 14:38:26 -0400
+X-Mailbox-Line: From gregkh@clark.site Fri Oct 22 11:35:57 2010
+Message-Id: <20101022183557.841594177@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 22 Oct 2010 11:34:46 -0700
+Date: Fri, 22 Oct 2010 11:34:45 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Mauro Carvalho Chehab <mchehab@redhat.com>
-Subject: [19/66] V4L/DVB: cx231xx: Avoid an OOPS when card is unknown (card=0)
+        Mauro Carvalho Chehab <mchehab@infradead.org>
+Subject: [18/66] v4l1: fix 32-bit compat microcode loading translation
 In-Reply-To: <20101022183711.GA23214@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,53 +25,88 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
 
-commit c10469c637602c2385e2993d8c730cc44fd47d23 upstream.
+commit 3e645d6b485446c54c6745c5e2cf5c528fe4deec upstream.
 
-As reported by: Carlos Americo Domiciano <c_domiciano@yahoo.com.br>:
+The compat code for the VIDIOCSMICROCODE ioctl is totally buggered.
+It's only used by the VIDEO_STRADIS driver, and that one is scheduled to
+staging and eventually removed unless somebody steps up to maintain it
+(at which point it should use request_firmware() rather than some magic
+ioctl).  So we'll get rid of it eventually.
 
-[  220.033500] cx231xx v4l2 driver loaded.
-[  220.033571] cx231xx #0: New device Conexant Corporation Polaris AV Capturb @ 480 Mbps (1554:5010) with 6 interfaces
-[  220.033577] cx231xx #0: registering interface 0
-[  220.033591] cx231xx #0: registering interface 1
-[  220.033654] cx231xx #0: registering interface 6
-[  220.033910] cx231xx #0: Identified as Unknown CX231xx video grabber (card=0)
-[  220.033946] BUG: unable to handle kernel NULL pointer dereference at (null)
-[  220.033955] IP: [<ffffffffa0d3c8bd>] cx231xx_pre_card_setup+0x5d/0xb0 [cx231xx]
+But in the meantime, the compatibility ioctl code is broken, and this
+tries to get it to at least limp along (even if Mauro suggested just
+deleting it entirely, which may be the right thing to do - I don't think
+the compatibility translation code has ever worked unless you were very
+lucky).
 
-Thanks-to: Carlos Americo Domiciano <c_domiciano@yahoo.com.br>
-Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+Reported-by: Kees Cook <kees.cook@canonical.com>
+Cc: Mauro Carvalho Chehab <mchehab@infradead.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/media/video/cx231xx/cx231xx-cards.c |   14 ++++++++------
- 1 file changed, 8 insertions(+), 6 deletions(-)
+ drivers/media/video/v4l2-compat-ioctl32.c |   32 +++++++++++++++++++-----------
+ 1 file changed, 21 insertions(+), 11 deletions(-)
 
---- a/drivers/media/video/cx231xx/cx231xx-cards.c
-+++ b/drivers/media/video/cx231xx/cx231xx-cards.c
-@@ -225,14 +225,16 @@ void cx231xx_pre_card_setup(struct cx231
- 		     dev->board.name, dev->model);
+--- a/drivers/media/video/v4l2-compat-ioctl32.c
++++ b/drivers/media/video/v4l2-compat-ioctl32.c
+@@ -193,17 +193,24 @@ static int put_video_window32(struct vid
+ struct video_code32 {
+ 	char		loadwhat[16];	/* name or tag of file being passed */
+ 	compat_int_t	datasize;
+-	unsigned char	*data;
++	compat_uptr_t	data;
+ };
  
- 	/* set the direction for GPIO pins */
--	cx231xx_set_gpio_direction(dev, dev->board.tuner_gpio->bit, 1);
--	cx231xx_set_gpio_value(dev, dev->board.tuner_gpio->bit, 1);
--	cx231xx_set_gpio_direction(dev, dev->board.tuner_sif_gpio, 1);
-+	if (dev->board.tuner_gpio) {
-+		cx231xx_set_gpio_direction(dev, dev->board.tuner_gpio->bit, 1);
-+		cx231xx_set_gpio_value(dev, dev->board.tuner_gpio->bit, 1);
-+		cx231xx_set_gpio_direction(dev, dev->board.tuner_sif_gpio, 1);
+-static int get_microcode32(struct video_code *kp, struct video_code32 __user *up)
++static struct video_code __user *get_microcode32(struct video_code32 *kp)
+ {
+-	if (!access_ok(VERIFY_READ, up, sizeof(struct video_code32)) ||
+-		copy_from_user(kp->loadwhat, up->loadwhat, sizeof(up->loadwhat)) ||
+-		get_user(kp->datasize, &up->datasize) ||
+-		copy_from_user(kp->data, up->data, up->datasize))
+-			return -EFAULT;
+-	return 0;
++	struct video_code __user *up;
++
++	up = compat_alloc_user_space(sizeof(*up));
++
++	/*
++	 * NOTE! We don't actually care if these fail. If the
++	 * user address is invalid, the native ioctl will do
++	 * the error handling for us
++	 */
++	(void) copy_to_user(up->loadwhat, kp->loadwhat, sizeof(up->loadwhat));
++	(void) put_user(kp->datasize, &up->datasize);
++	(void) put_user(compat_ptr(kp->data), &up->data);
++	return up;
+ }
  
--	/* request some modules if any required */
-+		/* request some modules if any required */
+ #define VIDIOCGTUNER32		_IOWR('v', 4, struct video_tuner32)
+@@ -741,7 +748,7 @@ static long do_video_ioctl(struct file *
+ 		struct video_tuner vt;
+ 		struct video_buffer vb;
+ 		struct video_window vw;
+-		struct video_code vc;
++		struct video_code32 vc;
+ 		struct video_audio va;
+ #endif
+ 		struct v4l2_format v2f;
+@@ -820,8 +827,11 @@ static long do_video_ioctl(struct file *
+ 		break;
  
--	/* reset the Tuner */
--	cx231xx_gpio_set(dev, dev->board.tuner_gpio);
-+		/* reset the Tuner */
-+		cx231xx_gpio_set(dev, dev->board.tuner_gpio);
-+	}
+ 	case VIDIOCSMICROCODE:
+-		err = get_microcode32(&karg.vc, up);
+-		compatible_arg = 0;
++		/* Copy the 32-bit "video_code32" to kernel space */
++		if (copy_from_user(&karg.vc, up, sizeof(karg.vc)))
++			return -EFAULT;
++		/* Convert the 32-bit version to a 64-bit version in user space */
++		up = get_microcode32(&karg.vc);
+ 		break;
  
- 	/* set the mode to Analog mode initially */
- 	cx231xx_set_mode(dev, CX231XX_ANALOG_MODE);
+ 	case VIDIOCSFREQ:
 
 
