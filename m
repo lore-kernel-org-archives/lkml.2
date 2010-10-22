@@ -1,101 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755226Ab0JVKKW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 06:10:22 -0400
-Received: from exprod5og108.obsmtp.com ([64.18.0.186]:52331 "EHLO
-	exprod5og108.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753905Ab0JVKKV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 06:10:21 -0400
-Message-ID: <4CC162BA.6080009@ge.com>
-Date: Fri, 22 Oct 2010 11:08:58 +0100
-From: Martyn Welch <martyn.welch@ge.com>
-Organization: GE Intelligent Platforms
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.14) Gecko/20101006 Thunderbird/3.0.9
+	id S1755293Ab0JVKLS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 06:11:18 -0400
+Received: from lake.fysh.org ([81.94.195.195]:46604 "EHLO lake.fysh.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753905Ab0JVKLR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Oct 2010 06:11:17 -0400
+X-Greylist: delayed 1062 seconds by postgrey-1.27 at vger.kernel.org; Fri, 22 Oct 2010 06:11:17 EDT
+Date: Fri, 22 Oct 2010 10:53:33 +0100
+From: Athanasius <link@miggy.org>
+To: Al Viro <viro@ZenIV.linux.org.uk>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Cc: kevin granade <kevin.granade@gmail.com>,
+        "Artem S. Tashkinov" <t.artem@lycos.com>
+Subject: Re: On Linux numbering scheme
+Message-ID: <20101022095333.GA10047@fysh.org>
+Mail-Followup-To: Al Viro <viro@ZenIV.linux.org.uk>,
+	linux-kernel <linux-kernel@vger.kernel.org>,
+	kevin granade <kevin.granade@gmail.com>,
+	"Artem S. Tashkinov" <t.artem@lycos.com>
+References: <18536664.253751287691209904.JavaMail.root@mail-zbox20.bo3.lycos.com> <28654042.253821287691362834.JavaMail.root@mail-zbox20.bo3.lycos.com> <AANLkTimqNW7zArcjtOkBvrn-dk=YE0_RG+u3yoMDTjwV@mail.gmail.com> <20101022020006.GF19804@ZenIV.linux.org.uk>
 MIME-Version: 1.0
-To: "Emilio G. Cota" <cota@braap.org>
-CC: Greg KH <greg@kroah.com>, LKML <linux-kernel@vger.kernel.org>,
-        Juan David Gonzalez Cobas <david.cobas@gmail.com>
-Subject: Re: [-next] staging/vme: various fixes + new driver model for VME
-References: <1287729412-24356-1-git-send-email-cota@braap.org>
-In-Reply-To: <1287729412-24356-1-git-send-email-cota@braap.org>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 22 Oct 2010 10:10:18.0606 (UTC) FILETIME=[544458E0:01CB71D1]
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="fdj2RfSjLxBAspz7"
+Content-Disposition: inline
+In-Reply-To: <20101022020006.GF19804@ZenIV.linux.org.uk>
+X-gpg-fingerprint: E218CE1D
+X-gpg-key: http://www.fysh.org/~athan/gpg-key
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-On 22/10/10 07:36, Emilio G. Cota wrote:
-> Hi Greg,
-> 
-> This contains first a whole bunch of fixes to the existing vme
-> code in staging, to then introduce a new driver model for VME
-> in patch 27.
-> 
+--fdj2RfSjLxBAspz7
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Emilio,
+On Fri, Oct 22, 2010 at 03:00:06AM +0100, Al Viro wrote:
+> On Thu, Oct 21, 2010 at 07:06:23PM -0500, kevin granade wrote:
+>=20
+> > Any particular reason not to continue the date-oriented format and
+> > have the third number be the numerical representation of the month
+> > rather than an incrementing numbering of the releases?  It would still
+> > be monotonically increasing, which is the only requirement, right?
+>=20
+> Why do we need to change it, anyway?
 
-The VME drivers are currently in the staging tree - please can you post
-these patches to the mailing list identified in the maintainers file
-(devel@driverdev.osuosl.org) so that these modifications can be
-discussed there.
+  /agree
 
-MArtyn
+  For the most part it's only distribution maintainers that see or care
+about the kernel version number anyway.  Anyone else knows what they're
+getting into if they compile a kernel themselves, and otherwise is more
+likely to say they're using "Linux 10.10" right now ....
 
+  Having said that I had a lovely suggestion in the last round on this
+topic which would allow you to know when a kernel was released just from
+its version number :).
 
-> I have a short list of things to do after this patchset gets
-> reviewed:
-> 
-> - provide a saner API for VME drivers that just want to
->   map/unmap chunks of memory (knowing nothing about underlying
->   hardware features, such as windows). This is already
->   implemented in the out-of-tree driver in [1].
-> 
-> - Make DMA work on the tsi148 (it's the only bridge I've got).
->   This will probably involve changing or extending the
->   current API.
-> 
-> - Test the whole thing with real hardware and a real VME driver
->   (currently out of tree as well, see [2]), which I'll try
->   to get merged, too--currently we just have vme_user.c which
->   really isn't a kosher driver.
-> 
-> 
-> 
-> Note that the appended applies on top of linux-next.
-> 
-> The patchset can be pulled from:
-> git://github.com/cota/linux-2.6.git vme-next
-> 
-> Thanks,
-> 
->                 Emilio
-> 
-> 
-> [1] http://repo.or.cz/w/ht-drivers.git/tree/HEAD:/vmebridge/driver
-> [2] http://repo.or.cz/w/ht-drivers.git/tree/HEAD:/sis33/drivers
-> 
-> diffstat:
-> 
->  drivers/staging/vme/bridges/vme_ca91cx42.c |  222 ++++++------
->  drivers/staging/vme/bridges/vme_ca91cx42.h |    2 +-
->  drivers/staging/vme/bridges/vme_tsi148.c   |  259 +++++++-------
->  drivers/staging/vme/bridges/vme_tsi148.h   |    2 +-
->  drivers/staging/vme/devices/vme_user.c     |  159 ++++-----
->  drivers/staging/vme/vme.c                  |  569 +++++++++++++++-------------
->  drivers/staging/vme/vme.h                  |  229 ++++++++++-
->  drivers/staging/vme/vme_bridge.h           |  175 ---------
->  8 files changed, 831 insertions(+), 786 deletions(-)
-> 
-> 
+--=20
+- Athanasius =3D Athanasius(at)miggy.org / http://www.miggy.org/
+                  Finger athan(at)fysh.org for PGP key
+	   "And it's me who is my enemy. Me who beats me up.
+Me who makes the monsters. Me who strips my confidence." Paula Cole - ME
 
+--fdj2RfSjLxBAspz7
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+Content-Disposition: inline
 
--- 
-Martyn Welch (Principal Software Engineer)   |   Registered in England and
-GE Intelligent Platforms                     |   Wales (3828642) at 100
-T +44(0)127322748                            |   Barbirolli Square,
-Manchester,
-E martyn.welch@ge.com                        |   M2 3AB  VAT:GB 927559189
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.9 (GNU/Linux)
+
+iEYEARECAAYFAkzBXxwACgkQSEDmQuIYzh2CKgCgm8K8jCgUseloE/a11aU37Yd+
+EisAmgIWQYzH2WvNIa/TJgOni0amDj2h
+=mpVF
+-----END PGP SIGNATURE-----
+
+--fdj2RfSjLxBAspz7--
