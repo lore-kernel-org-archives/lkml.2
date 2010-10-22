@@ -1,78 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759596Ab0JVS51 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 14:57:27 -0400
-Received: from kroah.org ([198.145.64.141]:34514 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758948Ab0JVS5S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 14:57:18 -0400
-X-Mailbox-Line: From gregkh@clark.site Fri Oct 22 11:52:36 2010
-Message-Id: <20101022185236.453073855@clark.site>
-User-Agent: quilt/0.48-11.2
-Date: Fri, 22 Oct 2010 11:52:16 -0700
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
-Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Roland McGrath <roland@redhat.com>, Chuck Ebbert <cebbert@redhat.com>
-Subject: [102/103] execve: make responsive to SIGKILL with large arguments
-In-Reply-To: <20101022185455.GA9114@kroah.com>
+	id S1759607Ab0JVS6E (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 14:58:04 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:49636 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759481Ab0JVS6B (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Oct 2010 14:58:01 -0400
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: [PATCH] langwell_gpio: Add support for whitney point
+To: linux-kernel@vger.kernel.org, akpm@linux-foundation.org
+Date: Fri, 22 Oct 2010 19:03:35 +0100
+Message-ID: <20101022180317.11032.46614.stgit@localhost.localdomain>
+User-Agent: StGIT/0.14.3
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.35-stable review patch.  If anyone has any objections, please let us know.
+From: Alan Cox <alan@linux.intel.com>
 
-------------------
+In this case the logic is very similar but the IRQs are not exposed and the
+device is not picked up via PCI
 
-From: Roland McGrath <roland@redhat.com>
+Based on a separate internal whitney point driver by:
+    	Yin Kangkai <kangkai.yin@intel.com>
 
-commit 9aea5a65aa7a1af9a4236dfaeb0088f1624f9919 upstream.
-
-An execve with a very large total of argument/environment strings
-can take a really long time in the execve system call.  It runs
-uninterruptibly to count and copy all the strings.  This change
-makes it abort the exec quickly if sent a SIGKILL.
-
-Note that this is the conservative change, to interrupt only for
-SIGKILL, by using fatal_signal_pending().  It would be perfectly
-correct semantics to let any signal interrupt the string-copying in
-execve, i.e. use signal_pending() instead of fatal_signal_pending().
-We'll save that change for later, since it could have user-visible
-consequences, such as having a timer set too quickly make it so that
-an execve can never complete, though it always happened to work before.
-
-Signed-off-by: Roland McGrath <roland@redhat.com>
-Reviewed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: Chuck Ebbert <cebbert@redhat.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-
+Signed-off-by: Alan Cox <alan@linux.intel.com>
 ---
- fs/exec.c |    7 +++++++
- 1 file changed, 7 insertions(+)
 
---- a/fs/exec.c
-+++ b/fs/exec.c
-@@ -377,6 +377,9 @@ static int count(char __user * __user *
- 			argv++;
- 			if (i++ >= max)
- 				return -E2BIG;
+ drivers/gpio/langwell_gpio.c |   82 +++++++++++++++++++++++++++++++++++++++++-
+ 1 files changed, 81 insertions(+), 1 deletions(-)
+
+
+diff --git a/drivers/gpio/langwell_gpio.c b/drivers/gpio/langwell_gpio.c
+index 8383a8d..b60945f 100644
+--- a/drivers/gpio/langwell_gpio.c
++++ b/drivers/gpio/langwell_gpio.c
+@@ -18,10 +18,12 @@
+ /* Supports:
+  * Moorestown platform Langwell chip.
+  * Medfield platform Penwell chip.
++ * Whitney point.
+  */
+ 
+ #include <linux/module.h>
+ #include <linux/pci.h>
++#include <linux/platform_device.h>
+ #include <linux/kernel.h>
+ #include <linux/delay.h>
+ #include <linux/stddef.h>
+@@ -300,9 +302,87 @@ static struct pci_driver lnw_gpio_driver = {
+ 	.probe		= lnw_gpio_probe,
+ };
+ 
 +
-+			if (fatal_signal_pending(current))
-+				return -ERESTARTNOHAND;
- 			cond_resched();
- 		}
- 	}
-@@ -420,6 +423,10 @@ static int copy_strings(int argc, char _
- 		while (len > 0) {
- 			int offset, bytes_to_copy;
++static int __devinit wp_gpio_probe(struct platform_device *pdev)
++{
++	struct lnw_gpio *lnw;
++	struct gpio_chip *gc;
++	struct resource *rc;
++	int retval = 0;
++
++	rc = platform_get_resource(pdev, IORESOURCE_MEM, 0);
++	if (!rc)
++		return -EINVAL;
++
++	lnw = kzalloc(sizeof(struct lnw_gpio), GFP_KERNEL);
++	if (!lnw) {
++		dev_err(&pdev->dev,
++			"can't allocate whitneypoint_gpio chip data\n");
++		return -ENOMEM;
++	}
++	lnw->reg_base = ioremap_nocache(rc->start, resource_size(rc));
++	if (lnw->reg_base == NULL) {
++		retval = -EINVAL;
++		goto err_kmalloc;
++	}
++	spin_lock_init(&lnw->lock);
++	gc = &lnw->chip;
++	gc->label = dev_name(&pdev->dev);
++	gc->owner = THIS_MODULE;
++	gc->direction_input = lnw_gpio_direction_input;
++	gc->direction_output = lnw_gpio_direction_output;
++	gc->get = lnw_gpio_get;
++	gc->set = lnw_gpio_set;
++	gc->to_irq = NULL;
++	gc->base = 0;
++	gc->ngpio = 64;
++	gc->can_sleep = 0;
++	retval = gpiochip_add(gc);
++	if (retval) {
++		dev_err(&pdev->dev, "whitneypoint gpiochip_add error %d\n", retval);
++		goto err_ioremap;
++	}
++	platform_set_drvdata(pdev, lnw);
++	return 0;
++err_ioremap:
++	iounmap(lnw->reg_base);
++err_kmalloc:
++	kfree(lnw);
++	return retval;
++}
++
++static int __devexit wp_gpio_remove(struct platform_device *pdev)
++{
++	struct lnw_gpio *lnw = platform_get_drvdata(pdev);
++	int err;
++	err = gpiochip_remove(&lnw->chip);
++	if (err)
++		dev_err(&pdev->dev, "failed to remove gpio_chip.\n");
++	iounmap(lnw->reg_base);
++	kfree(lnw);
++	platform_set_drvdata(pdev, NULL);
++	return 0;
++}
++
++static struct platform_driver wp_gpio_driver = {
++	.probe		= wp_gpio_probe,
++	.remove		= __devexit_p(wp_gpio_remove),
++	.driver		= {
++		.name	= "wp_gpio",
++		.owner	= THIS_MODULE,
++	},
++};
++
+ static int __init lnw_gpio_init(void)
+ {
+-	return pci_register_driver(&lnw_gpio_driver);
++	int ret;
++	ret =  pci_register_driver(&lnw_gpio_driver);
++	if (ret < 0)
++		return ret;
++	ret = platform_driver_register(&wp_gpio_driver);
++	if (ret < 0)
++		pci_unregister_driver(&lnw_gpio_driver);
++	return ret;
+ }
  
-+			if (fatal_signal_pending(current)) {
-+				ret = -ERESTARTNOHAND;
-+				goto out;
-+			}
- 			cond_resched();
- 
- 			offset = pos % PAGE_SIZE;
-
+ device_initcall(lnw_gpio_init);
 
