@@ -1,80 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753788Ab0JVJYK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 05:24:10 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:39820 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751750Ab0JVJYI (ORCPT
+	id S1754126Ab0JVJYl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 05:24:41 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:60741 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751750Ab0JVJYk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 05:24:08 -0400
-Date: Fri, 22 Oct 2010 11:24:02 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: Don Zickus <dzickus@redhat.com>
-Cc: Andi Kleen <andi@firstfloor.org>, Huang Ying <ying.huang@intel.com>,
-        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Robert Richter <robert.richter@amd.com>,
-        "peterz@infradead.org" <peterz@infradead.org>
-Subject: Re: [PATCH -v3 5/6] x86, NMI, treat unknown NMI as hardware error
-Message-ID: <20101022092402.GB10456@basil.fritz.box>
-References: <1286606987-19879-5-git-send-email-ying.huang@intel.com>
- <20101011212006.GB23882@redhat.com>
- <1287555157.3026.21.camel@yhuang-dev>
- <20101020141558.GB19090@redhat.com>
- <1287623643.19320.40.camel@yhuang-dev>
- <20101021023135.GA12086@redhat.com>
- <1287638251.19320.190.camel@yhuang-dev>
- <20101021141002.GI19090@redhat.com>
- <20101021154543.GD21695@basil.fritz.box>
- <20101022014955.GP19090@redhat.com>
+	Fri, 22 Oct 2010 05:24:40 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: sedat.dilek@gmail.com
+Subject: Re: linux-next: next-20101022 broken with unset CONFIG_BKL
+Date: Fri, 22 Oct 2010 11:24:32 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.36-next-20101021+; KDE/4.5.1; x86_64; ; )
+Cc: LKML <linux-kernel@vger.kernel.org>, sfr@canb.auug.org.au,
+        Jan Harkes <jaharkes@cs.cmu.edu>
+References: <AANLkTi=vUA-u20egbpH1Wu4ek-craz7aZUxWmobL8OhD@mail.gmail.com>
+In-Reply-To: <AANLkTi=vUA-u20egbpH1Wu4ek-craz7aZUxWmobL8OhD@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101022014955.GP19090@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8bit
+Message-Id: <201010221124.32842.arnd@arndb.de>
+X-Provags-ID: V02:K0:mLfoh1hxxvemhrvs6LhUlEL6pS4ICd/OBPWBOuA1tju
+ Z+UxaV2ea0Jdz2sjyp/90EuN8C9Zz2wMDgCmFCIywfhYObVvhd
+ Go1b+BPQm/AQSjdLDaqDCAq0cjn0req7gWs6MKMEh+LnpCKD2h
+ 9pFR6pGO0jbwPH9m+UNnhWUPMl1/yKXm7Wj1oGILDMQ2pMZCcy
+ ZehsidOR+y6PkKAnqPgGg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 21, 2010 at 09:49:55PM -0400, Don Zickus wrote:
-> After re-reading Huang's patch, I am starting to understand what you mean
-> by broken hardware.  Basically you are trying to distinguish between
-> legacy systems that were 'broken' in the sense they would randomly send
-> uknown NMIs for no good reason, hence the 'Dazed and confused' messages
-> and hardware errors on more modern systems that say, 'Hardware error,
-> panicing check your BIOS for more info' (or whatever).
-
-Yes that's it.
-
-Unfortunately there are some cases where the BIOS lost it either,
-so the fallback has to be panic (at least for the modern boxes)
-
+On Friday 22 October 2010 11:13:23 Sedat Dilek wrote:
+> Hi,
 > 
-> So Huang's patch was sort of acting like a switch.  On legacy systems use
-> 'Dazed and confused' for unknown NMIs.  Whereas on whitelisted modern
-> systems use a more relavant 'Check BIOS for error' message.  Is that
-> right?
-
-Yes.
-
-> > I don't think you need to worry about a lot more hardware NMI sources.
+> I am trying to compile latest linux-next with unset CONFIG_BKL.
+> Yes, one patch is missing from [1] to be able to compile a BKL-free kernel.
+> (BTW, the patch needs a trivial fix, see v2 attached to this email.)
 > 
-> Well until those machines dominate the marketplace, I'm stuck supporting
-> those pre-Nahelam boxes with customers that committed to 10 years with
-> last year's technology.  ;-)
+> With next-20101022 the build breaks (sorry for the output in German):
+> 
+> [ build.log ]
+> ...
+>   LD [M]  fs/ceph/ceph.o
+>   LD      fs/coda/built-in.o
+>   CC [M]  fs/coda/psdev.o
+>   CC [M]  fs/cifs/misc.o
+> /home/sd/src/linux-2.6/linux-2.6.36/debian/build/source_i386_none/fs/coda/psdev.c:
+> In function ‘coda_psdev_write’:
+> /home/sd/src/linux-2.6/linux-2.6.36/debian/build/source_i386_none/fs/coda/psdev.c:140:
+> error: implicit declaration of function ‘lock_kernel’
+> /home/sd/src/linux-2.6/linux-2.6.36/debian/build/source_i386_none/fs/coda/psdev.c:142:
+> error: implicit declaration of function ‘unlock_kernel’
+>   CC      block/blk-settings.o
+> make[6]: *** [fs/coda/psdev.o] Fehler 1
+> make[5]: *** [fs/coda] Fehler 2
+> make[5]: *** Warte auf noch nicht beendete Prozesse...
+> ...
+> 
+> Just FYI.
+> 
 
-I should clarify that the NMI model I described long predates Nehalem.
-If you assume 3-5 years deprecation cycles on servers it should be pretty
-much universal in this space. 
+Ok, thanks for the report. There is a patch for coda to remove the BKL.
+We discussed it yesterday and I subsequently removed the switch that
+disables it on non-BKL configs.
 
-The HEDT detection was a proposed way to detect that, because most
-of these systems should have HEDT.
+We then agreed to not have the patch included in my series, and Jan's
+tree is not part of linux-next.
 
-The older machines still need to be supported, but it's ok to
-just behave the same as today on them, no need for great improvements
-here.
+There are more of these in mainline once Linus pulls my tree, but that
+just means that we need to get all the other trees into -rc1 that
+remove the BKL from other subsystems, before applying the patch that
+lets you build with CONFIG_FILE_LOCKING=y and CONFIG_BKL=n.
 
--Andi
+Right now, both allyesconfig (with BKL) and allnoconfig (without coda)
+work fine, we only get a few really obscure randconfigs breaking.
 
--- 
-ak@linux.intel.com -- Speaking for myself only.
+	Arnd
