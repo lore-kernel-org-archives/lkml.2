@@ -1,72 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758253Ab0JVR4l (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 13:56:41 -0400
-Received: from g5t0009.atlanta.hp.com ([15.192.0.46]:47469 "EHLO
-	g5t0009.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758199Ab0JVR4i (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 13:56:38 -0400
-From: Bjorn Helgaas <bjorn.helgaas@hp.com>
-To: Ram Pai <linuxram@us.ibm.com>
-Subject: Re: [RFC v2 PATCH 1/1] PCI: override BIOS/firmware resource allocation
-Date: Fri, 22 Oct 2010 11:55:18 -0600
-User-Agent: KMail/1.13.2 (Linux/2.6.32-25-generic; KDE/4.4.2; x86_64; ; )
-Cc: Jesse Barnes <jbarnes@virtuousgeek.org>, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org, clemens@ladisch.de,
-        Yinghai Lu <yinghai@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-References: <20101006225834.GE2945@ram-laptop> <20101019112439.53c4901e@jbarnes-desktop> <20101022002851.GB24820@ram-laptop>
-In-Reply-To: <20101022002851.GB24820@ram-laptop>
+	id S1758178Ab0JVR4c (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 13:56:32 -0400
+Received: from kroah.org ([198.145.64.141]:50633 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755733Ab0JVR4a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Oct 2010 13:56:30 -0400
+Date: Fri, 22 Oct 2010 10:56:24 -0700
+From: Greg KH <greg@kroah.com>
+To: Vladislav Bolkhovitin <vst@vlnb.net>
+Cc: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        scst-devel <scst-devel@lists.sourceforge.net>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Mike Christie <michaelc@cs.wisc.edu>, Vu Pham <vuhuong@mellanox.com>,
+        Bart Van Assche <bart.vanassche@gmail.com>,
+        James Smart <James.Smart@Emulex.Com>, Joe Eykholt <jeykholt@cisco.com>,
+        Andy Yan <ayan@marvell.com>, Chetan Loke <generationgnu@yahoo.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Hannes Reinecke <hare@suse.de>,
+        Richard Sharpe <realrichardsharpe@gmail.com>,
+        Daniel Henrique Debonzi <debonzi@linux.vnet.ibm.com>
+Subject: Re: [PATCH 8/19]: SCST SYSFS interface implementation
+Message-ID: <20101022175624.GA13640@kroah.com>
+References: <4CA653F0.1010008@vlnb.net>
+ <4CA656AD.8020408@vlnb.net>
+ <20101009212047.GB27180@kroah.com>
+ <4CB36592.6060909@vlnb.net>
+ <20101011213235.GA11489@kroah.com>
+ <4CB4AEB9.30501@vlnb.net>
+ <20101012190345.GA25737@kroah.com>
+ <4CB75E81.7000208@vlnb.net>
+ <20101014200413.GA30831@kroah.com>
+ <4CC1CA4D.1090609@vlnb.net>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201010221155.19123.bjorn.helgaas@hp.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4CC1CA4D.1090609@vlnb.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, October 21, 2010 06:28:51 pm Ram Pai wrote:
-> On Tue, Oct 19, 2010 at 11:24:39AM -0700, Jesse Barnes wrote:
+On Fri, Oct 22, 2010 at 09:30:53PM +0400, Vladislav Bolkhovitin wrote:
+> +	unsigned int tgt_kobj_initialized:1;
 
-> Ok. After further investigation, I find that the BIOS has not allocated any
-> resource to hotplug bridges that have no devices behind them. However
-> the OS tries to allocate some minimal resources, 4096 I/O ports and 2M mem
-> window, to the these hotplug bridges but fails because there are not enough
-> resources to satisfy all the hotplug bridges.
-> 
-> This issue exists even today with the latest mainline kernel but is masked
-> because no devices are really effected. However Yinghai's reallocation patch
-> exposed the issue, since it released the BIOS allocated window and tried to
-> reallocate. Unfortunately it ended up allocating in the wrong order. The
-> bridges with real devices got no resources, where as the hotplug bridges with
-> no devices got some mimimal resources.
-> 
-> The details are captured at: https://bugzilla.kernel.org/show_bug.cgi?id=15960
-> 
-> I suppose the solution is to not pre-allocate resources to hotplug bridges that
-> have no devices behind them, and then bring back Yinghai's reallocation patch.  
+It's the middle of the merge window, and I'm about to go on vacation, so
+I didn't read this patch after this line.
 
-If we assign resources to bridges with no devices behind them while
-starving bridges that DO have devices behind them, I think that's a bug.
-It'd be great if you could isolate and fix that before we complicate
-things by throwing Yinghai's patch into the mix.
+It's obvious that this patch is wrong, you shouldn't need to worry about
+this.  And even if you did, you don't need this flag.
 
-I think it'd interesting to have a debug parameter like "pci=assign-all"
-that meant "ignore all BIOS PCI config and start from scratch."  I'm
-sure we'd trip over lots of issues and it would be easier to resolve them
-before trying to make things fancier.
+Why are you trying to do something that no one else needs?  Why make
+things harder than they have to be.
 
-> > So on that note, does Windows on these machines support allocation of
-> > SRIOV resources?  If so, how is it handled?  Which resource ranges are
-> > used for the extra BARs?
-> 
-> No. I have not tried windows on these boxes. But last I heard windows
-> did not support SRIOV. Does it?
+{sigh}
 
-I've heard anecdotally that Windows supports SRIOV much better than
-Linux does, but I have no evidence.  I would guess that it depends on
-driver support in addition to Windows itself.
-
-Bjorn
+greg k-h
