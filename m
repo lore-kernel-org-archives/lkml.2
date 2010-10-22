@@ -1,97 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757704Ab0JVQVu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 12:21:50 -0400
-Received: from newsmtp5.atmel.com ([204.2.163.5]:48815 "EHLO
+	id S1757779Ab0JVQVv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 12:21:51 -0400
+Received: from newsmtp5.atmel.com ([204.2.163.5]:31069 "EHLO
 	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754442Ab0JVQVt (ORCPT
+	with ESMTP id S1754948Ab0JVQVt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 22 Oct 2010 12:21:49 -0400
 From: Nicolas Ferre <nicolas.ferre@atmel.com>
 To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
 Cc: avictor.za@gmail.com, plagnioj@jcrosoft.com,
         Nicolas Ferre <nicolas.ferre@atmel.com>
-Subject: [PATCH 1/2] AT91: pm: use plain cpu_do_idle() for "wait for interrupt"
-Date: Fri, 22 Oct 2010 19:28:58 +0200
-Message-Id: <af311282c5a0076ec618be68facdd3ad98d509b8.1287767949.git.nicolas.ferre@atmel.com>
+Subject: [PATCH] AT91: rtc: enable built-in RTC in Kconfig for at91sam9g45 family
+Date: Fri, 22 Oct 2010 19:29:01 +0200
+Message-Id: <1287768546-18513-2-git-send-email-nicolas.ferre@atmel.com>
 X-Mailer: git-send-email 1.7.3
+In-Reply-To: <af311282c5a0076ec618be68facdd3ad98d509b8.1287767949.git.nicolas.ferre@atmel.com>
+References: <af311282c5a0076ec618be68facdd3ad98d509b8.1287767949.git.nicolas.ferre@atmel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For power management at91_pm_enter() routine, use the cpu_do_idle() for a
-rock solid "wait for interrupt" implementation.
-For AT91SAM9 ARM 926 based chips, we can exceed the cache line length as
-we can access RAM even while in self-refresh mode.
-We keep plain access to CP15 for at91rm9200 as this feature is not
-available: instructions have to be in a single cache line.
+Enable built-in RTC IP in Kconfig and modify comments and help messages.
+RTT as RTC is still available but should not be selected in common case.
 
+Reported-by: Yegor Yefremov <yegor_sub1@visionsystems.de>
 Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
 ---
- arch/arm/mach-at91/pm.c |    6 ++++--
- arch/arm/mach-at91/pm.h |    4 ++++
- 2 files changed, 8 insertions(+), 2 deletions(-)
+ drivers/rtc/Kconfig |   12 ++++++------
+ 1 files changed, 6 insertions(+), 6 deletions(-)
 
-diff --git a/arch/arm/mach-at91/pm.c b/arch/arm/mach-at91/pm.c
-index 6156689..87a31ba 100644
---- a/arch/arm/mach-at91/pm.c
-+++ b/arch/arm/mach-at91/pm.c
-@@ -258,16 +258,18 @@ static int at91_pm_enter(suspend_state_t state)
- 			 * NOTE: the Wait-for-Interrupt instruction needs to be
- 			 * in icache so no SDRAM accesses are needed until the
- 			 * wakeup IRQ occurs and self-refresh is terminated.
-+			 * For ARM 926 based chips, this requirement is weaker
-+			 * as at91sam9 can access a RAM in self-refresh mode.
- 			 */
- 			asm("b 1f; .align 5; 1:");
- 			asm("mcr p15, 0, r0, c7, c10, 4");	/* drain write buffer */
- 			saved_lpr = sdram_selfrefresh_enable();
--			asm("mcr p15, 0, r0, c7, c0, 4");	/* wait for interrupt */
-+			wait_for_interrupt_enable();
- 			sdram_selfrefresh_disable(saved_lpr);
- 			break;
+diff --git a/drivers/rtc/Kconfig b/drivers/rtc/Kconfig
+index 48ca713..2785a0f 100644
+--- a/drivers/rtc/Kconfig
++++ b/drivers/rtc/Kconfig
+@@ -765,15 +765,15 @@ config RTC_DRV_AT32AP700X
+ 	  AT32AP700x family processors.
  
- 		case PM_SUSPEND_ON:
--			asm("mcr p15, 0, r0, c7, c0, 4");	/* wait for interrupt */
-+			cpu_do_idle();
- 			break;
+ config RTC_DRV_AT91RM9200
+-	tristate "AT91RM9200 or AT91SAM9RL"
+-	depends on ARCH_AT91RM9200 || ARCH_AT91SAM9RL
++	tristate "AT91RM9200 or some AT91SAM9 RTC"
++	depends on ARCH_AT91RM9200 || ARCH_AT91SAM9RL || ARCH_AT91SAM9G45
+ 	help
+ 	  Driver for the internal RTC (Realtime Clock) module found on
+-	  Atmel AT91RM9200's and AT91SAM9RL chips. On SAM9RL chips
++	  Atmel AT91RM9200's and some  AT91SAM9 chips. On AT91SAM9 chips
+ 	  this is powered by the backup power supply.
  
- 		default:
-diff --git a/arch/arm/mach-at91/pm.h b/arch/arm/mach-at91/pm.h
-index 8c87d0c..2c4424b 100644
---- a/arch/arm/mach-at91/pm.h
-+++ b/arch/arm/mach-at91/pm.h
-@@ -21,6 +21,7 @@ static inline u32 sdram_selfrefresh_enable(void)
- }
+ config RTC_DRV_AT91SAM9
+-	tristate "AT91SAM9x/AT91CAP9"
++	tristate "AT91SAM9x/AT91CAP9 RTT as RTC"
+ 	depends on ARCH_AT91 && !(ARCH_AT91RM9200 || ARCH_AT91X40)
+ 	help
+ 	  RTC driver for the Atmel AT91SAM9x and AT91CAP9 internal RTT
+@@ -781,8 +781,8 @@ config RTC_DRV_AT91SAM9
+ 	  supply (such as a small coin cell battery), but do not need to
+ 	  be used as RTCs.
  
- #define sdram_selfrefresh_disable(saved_lpr)	at91_sys_write(AT91_SDRAMC_LPR, saved_lpr)
-+#define wait_for_interrupt_enable()		asm("mcr p15, 0, r0, c7, c0, 4")
+-	  (On AT91SAM9rl chips you probably want to use the dedicated RTC
+-	  module and leave the RTT available for other uses.)
++	  (On AT91SAM9rl and AT91SAM9G45 chips you probably want to use the
++	  dedicated RTC module and leave the RTT available for other uses.)
  
- #elif defined(CONFIG_ARCH_AT91CAP9)
- #include <mach/at91cap9_ddrsdr.h>
-@@ -38,6 +39,7 @@ static inline u32 sdram_selfrefresh_enable(void)
- }
- 
- #define sdram_selfrefresh_disable(saved_lpr)	at91_ramc_write(0, AT91_DDRSDRC_LPR, saved_lpr)
-+#define wait_for_interrupt_enable()		cpu_do_idle()
- 
- #elif defined(CONFIG_ARCH_AT91SAM9G45)
- #include <mach/at91sam9_ddrsdr.h>
-@@ -74,6 +76,7 @@ static inline u32 sdram_selfrefresh_enable(void)
- 		at91_ramc_write(0, AT91_DDRSDRC_LPR, saved_lpr0); \
- 		at91_ramc_write(1, AT91_DDRSDRC_LPR, saved_lpr1); \
- 	} while (0)
-+#define wait_for_interrupt_enable()		cpu_do_idle()
- 
- #else
- #include <mach/at91sam9_sdramc.h>
-@@ -98,5 +101,6 @@ static inline u32 sdram_selfrefresh_enable(void)
- }
- 
- #define sdram_selfrefresh_disable(saved_lpr)	at91_ramc_write(0, AT91_SDRAMC_LPR, saved_lpr)
-+#define wait_for_interrupt_enable()		cpu_do_idle()
- 
- #endif
+ config RTC_DRV_AT91SAM9_RTT
+ 	int
 -- 
 1.7.3
 
