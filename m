@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759376Ab0JVS4d (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 14:56:33 -0400
-Received: from kroah.org ([198.145.64.141]:34126 "EHLO coco.kroah.org"
+	id S1759712Ab0JVTKB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 15:10:01 -0400
+Received: from kroah.org ([198.145.64.141]:34199 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759339Ab0JVS4Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 14:56:25 -0400
-X-Mailbox-Line: From gregkh@clark.site Fri Oct 22 11:52:31 2010
-Message-Id: <20101022185231.302549809@clark.site>
+	id S1759339Ab0JVS4e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Oct 2010 14:56:34 -0400
+X-Mailbox-Line: From gregkh@clark.site Fri Oct 22 11:52:32 2010
+Message-Id: <20101022185232.195843808@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 22 Oct 2010 11:51:18 -0700
+Date: Fri, 22 Oct 2010 11:51:28 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Dan Carpenter <error27@gmail.com>, Arnd Bergmann <arnd@arndb.de>,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [044/103] OSS: soundcard: locking bug in sound_ioctl()
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Samuel Ortiz <sameo@linux.intel.com>
+Subject: [054/103] mfd: Ignore non-GPIO IRQs when setting wm831x IRQ types
 In-Reply-To: <20101022185455.GA9114@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,40 +26,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Carpenter <error27@gmail.com>
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
 
-commit d4cfa4d12f46e2520f4c1d1a92e891ce068b7464 upstream.
+commit c9d66d3515bbb0ad8062721487de7ade02d2b936 upstream.
 
-We shouldn't return directly here because we're still holding the
-&soundcard_mutex.
+The driver was originally tested with an additional patch which
+made this unneeded but that patch had issuges and got lost on the
+way to mainline, causing problems when the errors are reported.
 
-This bug goes all the way back to the start of git.  It's strange that
-no one has complained about it as a runtime bug.
-
-Signed-off-by: Dan Carpenter <error27@gmail.com>
-Acked-by: Arnd Bergmann <arnd@arndb.de>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Signed-off-by: Samuel Ortiz <sameo@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- sound/oss/soundcard.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/mfd/wm831x-irq.c |    9 +++++++--
+ 1 file changed, 7 insertions(+), 2 deletions(-)
 
---- a/sound/oss/soundcard.c
-+++ b/sound/oss/soundcard.c
-@@ -389,11 +389,11 @@ static long sound_ioctl(struct file *fil
- 	case SND_DEV_DSP:
- 	case SND_DEV_DSP16:
- 	case SND_DEV_AUDIO:
--		return audio_ioctl(dev, file, cmd, p);
-+		ret = audio_ioctl(dev, file, cmd, p);
- 		break;
+--- a/drivers/mfd/wm831x-irq.c
++++ b/drivers/mfd/wm831x-irq.c
+@@ -394,8 +394,13 @@ static int wm831x_irq_set_type(unsigned
  
- 	case SND_DEV_MIDIN:
--		return MIDIbuf_ioctl(dev, file, cmd, p);
-+		ret = MIDIbuf_ioctl(dev, file, cmd, p);
- 		break;
+ 	irq = irq - wm831x->irq_base;
  
- 	}
+-	if (irq < WM831X_IRQ_GPIO_1 || irq > WM831X_IRQ_GPIO_11)
+-		return -EINVAL;
++	if (irq < WM831X_IRQ_GPIO_1 || irq > WM831X_IRQ_GPIO_11) {
++		/* Ignore internal-only IRQs */
++		if (irq >= 0 && irq < WM831X_NUM_IRQS)
++			return 0;
++		else
++			return -EINVAL;
++	}
+ 
+ 	switch (type) {
+ 	case IRQ_TYPE_EDGE_BOTH:
 
 
