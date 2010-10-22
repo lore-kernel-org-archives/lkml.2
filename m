@@ -1,58 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756995Ab0JVOHy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 10:07:54 -0400
-Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:49702 "EHLO kernel.dk"
+	id S1757044Ab0JVOJs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 10:09:48 -0400
+Received: from www.tglx.de ([62.245.132.106]:52455 "EHLO www.tglx.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754853Ab0JVOHx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 10:07:53 -0400
-Message-ID: <4CC19ACA.6060600@kernel.dk>
-Date: Fri, 22 Oct 2010 16:08:10 +0200
-From: Jens Axboe <axboe@kernel.dk>
+	id S1755979Ab0JVOJq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Oct 2010 10:09:46 -0400
+Date: Fri, 22 Oct 2010 16:09:17 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Richard Weinberger <richard@nod.at>
+cc: linux-kernel@vger.kernel.org, mingo@redhat.com, hpa@zytor.com,
+        linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:irq/core] genirq: Warn if enable_irq is called before irq
+ is set up
+In-Reply-To: <2ae2295020fc2c103ca624e08e43c849@radon2.swed.at>
+Message-ID: <alpine.LFD.2.00.1010221608400.14359@localhost6.localdomain6>
+References: <tip-658fc358f9954083ea55abf82ca77a18f82412d7@git.kernel.org> <2ae2295020fc2c103ca624e08e43c849@radon2.swed.at>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Boaz Harrosh <bharrosh@panasas.com>, "Ted Ts'o" <tytso@mit.edu>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>
-Subject: Re: What am I doing wrong?  submit_bio() suddenly stops working...
-References: <E1P8kSE-0001DW-8C@tytso-glaptop> <4CBFE4E2.7050001@kernel.dk>	 <20101021165525.GB3127@thunk.org> <4CC07B62.9070000@panasas.com>	 <4CC0817F.1020403@kernel.dk> <1287752660.15336.37.camel@twins>
-In-Reply-To: <1287752660.15336.37.camel@twins>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2010-10-22 15:04, Peter Zijlstra wrote:
-> On Thu, 2010-10-21 at 20:07 +0200, Jens Axboe wrote:
->>
->>>> +    do {
->>>> +            bio = bio_alloc(GFP_NOIO, nvecs);
->>>> +            nvecs >>= 1;
->>>> +    } while (bio == NULL);
->>>
->>> This is surly bad. bio_alloc must be allowed to fail
->>> (Specially with GFP_NOIO). You should only loop down to
->>> 1 and then prepare to return -ENOMEM from this function
->>> and handle it properly in callers. (Or schedule and wait
->>> like below)
->>
->> Since __GFP_WAIT is set, it'll never return NULL. And as long as you
->> don't allocate more than 1 before doing you submit_bio(), it should be
->> OK in this case. 
+On Fri, 22 Oct 2010, Richard Weinberger wrote:
+> On Fri, 22 Oct 2010 13:09:49 GMT, tip-bot for Thomas Gleixner
+> > @@ -324,6 +324,10 @@ void enable_irq(unsigned int irq)
+> >  	if (!desc)
+> >  		return;
+> >  
+> > +	if (WARN(!desc->irq_data.chip || !desc->irq_data.chip->irq_enable,
+> > +	    "KERN_ERR enable_irq before setup/request_irq: irq %u\n", irq))
 > 
-> __GFP_WAIT can return NULL, on OOM and when the size is over a magic
-> threshold.
+> Here is a little typo. The double quote should be after KERN_ERR.
 
-The memory allocator, yes, but a mempool backed allocation with
-__GFP_WAIT cannot. That's the difference.
+Crap, yes. It still compiles :)
 
-> I find it bad form to rely on any allocation not failing.
+Thanks,
 
-On that we can agree, but it's not always easily doable. I bet you would
-not like the block layer tossing IOs if it can't get a bio or request
-structure :-)
-
--- 
-Jens Axboe
-
+	tglx
