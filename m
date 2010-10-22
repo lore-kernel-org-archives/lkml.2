@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754663Ab0JVSik (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 14:38:40 -0400
-Received: from kroah.org ([198.145.64.141]:45705 "EHLO coco.kroah.org"
+	id S1757173Ab0JVSii (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 14:38:38 -0400
+Received: from kroah.org ([198.145.64.141]:45708 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756381Ab0JVSid (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 14:38:33 -0400
+	id S1756655Ab0JVSie (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Oct 2010 14:38:34 -0400
 X-Mailbox-Line: From gregkh@clark.site Fri Oct 22 11:35:58 2010
-Message-Id: <20101022183558.556148311@clark.site>
+Message-Id: <20101022183558.640991137@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 22 Oct 2010 11:34:53 -0700
+Date: Fri, 22 Oct 2010 11:34:54 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Simon Guinot <sguinot@lacie.com>,
-        saeed bishara <saeed.bishara@gmail.com>,
-        Dan Williams <dan.j.williams@intel.com>
-Subject: [26/66] dmaengine: fix interrupt clearing for mv_xor
+        Salman Qazi <sqazi@google.com>, Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [27/66] hrtimer: Preserve timer state in remove_hrtimer()
 In-Reply-To: <20101022183711.GA23214@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,42 +26,88 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Simon Guinot <sguinot@lacie.com>
+From: Salman Qazi <sqazi@google.com>
 
-commit cc60f8878eab892c03d06b10f389232b9b66bd83 upstream.
+commit f13d4f979c518119bba5439dd2364d76d31dcd3f upstream.
 
-When using simultaneously the two DMA channels on a same engine, some
-transfers are never completed. For example, an endless lock can occur
-while writing heavily on a RAID5 array (with async-tx offload support
-enabled).
+The race is described as follows:
 
-Note that this issue can also be reproduced by using the DMA test
-client.
+CPU X                                 CPU Y
+remove_hrtimer
+// state & QUEUED == 0
+timer->state = CALLBACK
+unlock timer base
+timer->f(n) //very long
+                                  hrtimer_start
+                                    lock timer base
+                                    remove_hrtimer // no effect
+                                    hrtimer_enqueue
+                                    timer->state = CALLBACK |
+                                                   QUEUED
+                                    unlock timer base
+                                  hrtimer_start
+                                    lock timer base
+                                    remove_hrtimer
+                                        mode = INACTIVE
+                                        // CALLBACK bit lost!
+                                    switch_hrtimer_base
+                                            CALLBACK bit not set:
+                                                    timer->base
+                                                    changes to a
+                                                    different CPU.
+lock this CPU's timer base
 
-On a same engine, the interrupt cause register is shared between two
-DMA channels. This patch make sure that the cause bit is only cleared
-for the requested channel.
+The bug was introduced with commit ca109491f (hrtimer: removing all ur
+callback modes) in 2.6.29
 
-Signed-off-by: Simon Guinot <sguinot@lacie.com>
-Tested-by: Luc Saillard <luc@saillard.org>
-Acked-by: saeed bishara <saeed.bishara@gmail.com>
-Signed-off-by: Dan Williams <dan.j.williams@intel.com>
+[ tglx: Feed new state via local variable and add a comment. ]
+
+Signed-off-by: Salman Qazi <sqazi@google.com>
+Cc: akpm@linux-foundation.org
+Cc: Peter Zijlstra <peterz@infradead.org>
+LKML-Reference: <20101012142351.8485.21823.stgit@dungbeetle.mtv.corp.google.com>
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/dma/mv_xor.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ kernel/hrtimer.c |   13 +++++++++++--
+ 1 file changed, 11 insertions(+), 2 deletions(-)
 
---- a/drivers/dma/mv_xor.c
-+++ b/drivers/dma/mv_xor.c
-@@ -161,7 +161,7 @@ static int mv_is_err_intr(u32 intr_cause
- 
- static void mv_xor_device_clear_eoc_cause(struct mv_xor_chan *chan)
+--- a/kernel/hrtimer.c
++++ b/kernel/hrtimer.c
+@@ -920,6 +920,7 @@ static inline int
+ remove_hrtimer(struct hrtimer *timer, struct hrtimer_clock_base *base)
  {
--	u32 val = (1 << (1 + (chan->idx * 16)));
-+	u32 val = ~(1 << (chan->idx * 16));
- 	dev_dbg(chan->device->common.dev, "%s, val 0x%08x\n", __func__, val);
- 	__raw_writel(val, XOR_INTR_CAUSE(chan));
+ 	if (hrtimer_is_queued(timer)) {
++		unsigned long state;
+ 		int reprogram;
+ 
+ 		/*
+@@ -933,8 +934,13 @@ remove_hrtimer(struct hrtimer *timer, st
+ 		debug_deactivate(timer);
+ 		timer_stats_hrtimer_clear_start_info(timer);
+ 		reprogram = base->cpu_base == &__get_cpu_var(hrtimer_bases);
+-		__remove_hrtimer(timer, base, HRTIMER_STATE_INACTIVE,
+-				 reprogram);
++		/*
++		 * We must preserve the CALLBACK state flag here,
++		 * otherwise we could move the timer base in
++		 * switch_hrtimer_base.
++		 */
++		state = timer->state & HRTIMER_STATE_CALLBACK;
++		__remove_hrtimer(timer, base, state, reprogram);
+ 		return 1;
+ 	}
+ 	return 0;
+@@ -1221,6 +1227,9 @@ static void __run_hrtimer(struct hrtimer
+ 		BUG_ON(timer->state != HRTIMER_STATE_CALLBACK);
+ 		enqueue_hrtimer(timer, base);
+ 	}
++
++	WARN_ON_ONCE(!(timer->state & HRTIMER_STATE_CALLBACK));
++
+ 	timer->state &= ~HRTIMER_STATE_CALLBACK;
  }
+ 
 
 
