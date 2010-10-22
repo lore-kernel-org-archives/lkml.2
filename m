@@ -1,55 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752211Ab0JVDeb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Oct 2010 23:34:31 -0400
-Received: from THUNK.ORG ([69.25.196.29]:53328 "EHLO thunker.thunk.org"
+	id S1752756Ab0JVDgN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Oct 2010 23:36:13 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:41315 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751320Ab0JVDea (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Oct 2010 23:34:30 -0400
-Date: Thu, 21 Oct 2010 23:34:24 -0400
-From: "Ted Ts'o" <tytso@mit.edu>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>
-Subject: Re: What am I doing wrong?  submit_bio() suddenly stops working...
-Message-ID: <20101022033424.GO3127@thunk.org>
-Mail-Followup-To: Ted Ts'o <tytso@mit.edu>, Jens Axboe <axboe@kernel.dk>,
-	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-	"linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>
-References: <E1P8kSE-0001DW-8C@tytso-glaptop>
- <4CBFE4E2.7050001@kernel.dk>
- <20101021165525.GB3127@thunk.org>
- <4CC07C67.9010502@kernel.dk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4CC07C67.9010502@kernel.dk>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on thunker.thunk.org); SAEximRunCond expanded to false
+	id S1751164Ab0JVDgM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Oct 2010 23:36:12 -0400
+Date: Fri, 22 Oct 2010 14:36:07 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Jeremy Fitzhardinge <jeremy@goop.org>,
+        Xen Devel <Xen-devel@lists.xensource.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Gianluca Guida <gianluca.guida@citrix.com>,
+        Yinghai Lu <yinghai@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: linux-next: manual merge of the xen tree with the tip tree
+Message-Id: <20101022143607.132d381c.sfr@canb.auug.org.au>
+In-Reply-To: <20101022140335.c4a3a48f.sfr@canb.auug.org.au>
+References: <20101022140335.c4a3a48f.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 21, 2010 at 07:46:15PM +0200, Jens Axboe wrote:
-> By the sound of things, if I were you I'd turn on the mem and slab
-> debugging to catch use-before-init and use-after-free. Mysterious hangs
-> in the IO sub system are usually caused by such bugs. And the regular
-> debugging aids, just to see if that produces anything of interest.
+Hi Jeremy,
 
-It looks like it was a use-after-free bug in my code.  I'm running a
-full set of set of tests now, but so far, it's gotten a lot further
-than it went before, so I think I've figured it out.
+On Fri, 22 Oct 2010 14:03:35 +1100 Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+>
+> Today's linux-next merge of the xen tree got a conflict in
+> arch/x86/mm/init_32.c between commit
+> 1d931264af0f10649b35afa8fbd2e169da51ac08 ("x86-32, memblock: Make
+> add_highpages honor early reserved ranges") from the tip tree and commit
+> 07147a06ac3b1b028124ea00ba44e69eb8ea7685 ("x86/32: honor reservations of
+> high memory") from the xen tree.
+> 
+> I have no idea how to fix this up, sorry, so I have used the xen tree
+> from next-20101021 for today.
 
-I'm not sure why it caused the weird behaviour that it did (I got as
-far as figuring out that somehow we lost the unplug timer, so after
-the queue got plugged it never got unplugged), but I'm not going to
-ask too many questions.  :-)
+It occurred to me that the conflicts might be useful to you, so here they
+are:
 
-Maybe later on I'll try to figure out if there's any way to add some
-kind of sanity checking so that screw ups in in the bio code's caller
-cause a clearer failure (such as a BUG_ON), but that'll have to wait
-for when I have some free time.
+diff --cc arch/x86/mm/init_32.c
+index 5d0a671,573bc7f..0000000
+--- a/arch/x86/mm/init_32.c
++++ b/arch/x86/mm/init_32.c
+@@@ -423,28 -422,71 +423,78 @@@ static void __init add_one_highpage_ini
+  	totalhigh_pages++;
+  }
+  
+ -struct add_highpages_data {
+ -	unsigned long start_pfn;
+ -	unsigned long end_pfn;
+ -};
+ -
+ -static int __init add_highpages_work_fn(unsigned long start_pfn,
+ -					 unsigned long end_pfn, void *datax)
+ +void __init add_highpages_with_active_regions(int nid,
+ +			 unsigned long start_pfn, unsigned long end_pfn)
+  {
+++<<<<<<< HEAD
+ +	struct range *range;
+ +	int nr_range;
+ +	int i;
+ +
+ +	nr_range = __get_free_all_memory_range(&range, nid, start_pfn, end_pfn);
+++=======
++ 	int node_pfn;
++ 	struct page *page;
++ 	phys_addr_t chunk_end, chunk_max;
++ 	unsigned long final_start_pfn, final_end_pfn;
++ 	struct add_highpages_data *data = (struct add_highpages_data *)datax;
+++>>>>>>> xen
+  
+ -	final_start_pfn = max(start_pfn, data->start_pfn);
+ -	final_end_pfn = min(end_pfn, data->end_pfn);
+ -	if (final_start_pfn >= final_end_pfn)
+ -		return 0;
+ +	for (i = 0; i < nr_range; i++) {
+ +		struct page *page;
+ +		int node_pfn;
+  
+++<<<<<<< HEAD
+ +		for (node_pfn = range[i].start; node_pfn < range[i].end;
+ +		     node_pfn++) {
+++=======
++ 	chunk_end = PFN_PHYS(final_start_pfn);
++ 	chunk_max = PFN_PHYS(final_end_pfn);
++ 
++ 	/*
++ 	 * Check for reserved areas.
++ 	 */
++ 	for (;;) {
++ 		phys_addr_t chunk_start;
++ 		chunk_start = early_res_next_free(chunk_end);
++ 		
++ 		/*
++ 		 * Reserved area. Just count high mem pages.
++ 		 */
++ 		for (node_pfn = PFN_DOWN(chunk_end);
++ 		     node_pfn < PFN_DOWN(chunk_start); node_pfn++) {
++ 			if (pfn_valid(node_pfn))
++ 				totalhigh_pages++;
++ 		}
++ 
++ 		if (chunk_start >= chunk_max)
++ 			break;
++ 
++ 		chunk_end = early_res_next_reserved(chunk_start, chunk_max);
++ 		for (node_pfn = PFN_DOWN(chunk_start);
++ 		     node_pfn < PFN_DOWN(chunk_end); node_pfn++) {
+++>>>>>>> xen
+  			if (!pfn_valid(node_pfn))
+  				continue;
+  			page = pfn_to_page(node_pfn);
+  			add_one_highpage_init(page);
+  		}
+  	}
+ -
+ -	return 0;
+ -
+  }
+++<<<<<<< HEAD
+++=======
++ 
++ void __init add_highpages_with_active_regions(int nid, unsigned long start_pfn,
++ 					      unsigned long end_pfn)
++ {
++ 	struct add_highpages_data data;
++ 
++ 	data.start_pfn = start_pfn;
++ 	data.end_pfn = end_pfn;
++ 	work_with_active_regions(nid, add_highpages_work_fn, &data);
++ }
++ 
+++>>>>>>> xen
+  #else
+  static inline void permanent_kmaps_init(pgd_t *pgd_base)
+  {
+diff --cc arch/x86/xen/mmu.c
+index f72d18c,930986d..0000000
+--- a/arch/x86/xen/mmu.c
++++ b/arch/x86/xen/mmu.c
+@@@ -56,7 -55,7 +56,11 @@@
+  #include <asm/e820.h>
+  #include <asm/linkage.h>
+  #include <asm/page.h>
+++<<<<<<< HEAD
+ +#include <asm/init.h>
+++=======
++ #include <asm/pat.h>
+++>>>>>>> xen
+  
+  #include <asm/xen/hypercall.h>
+  #include <asm/xen/hypervisor.h>
+* Unmerged path include/linux/early_res.h
+* Unmerged path kernel/early_res.c
 
-	    					- Ted
+-- 
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
