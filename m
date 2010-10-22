@@ -1,49 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752977Ab0JVIyj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 04:54:39 -0400
-Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:45212 "EHLO kernel.dk"
+	id S1753712Ab0JVIzw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 04:55:52 -0400
+Received: from mga01.intel.com ([192.55.52.88]:49875 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751985Ab0JVIyi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 04:54:38 -0400
-Message-ID: <4CC1515E.6080006@kernel.dk>
-Date: Fri, 22 Oct 2010 10:54:54 +0200
-From: Jens Axboe <axboe@kernel.dk>
-MIME-Version: 1.0
-To: Christoph Hellwig <hch@infradead.org>
-CC: Jeremy Fitzhardinge <jeremy@goop.org>,
-        Andreas Dilger <adilger.kernel@dilger.ca>,
-        "Theodore Ts'o" <tytso@mit.edu>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "Xen-devel@lists.xensource.com" <Xen-devel@lists.xensource.com>
-Subject: Re: linux-next regression: IO errors in with ext4 and xen-blkfront
-References: <4CBF83A0.8090802@goop.org> <4CBF84C9.6050606@goop.org> <4CC148E5.2030605@kernel.dk> <20101022082916.GA14070@infradead.org>
-In-Reply-To: <20101022082916.GA14070@infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1752005Ab0JVIzv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Oct 2010 04:55:51 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.58,222,1286175600"; 
+   d="scan'208";a="849949399"
+Subject: Re: [PATCH 0/9] ACPI, APEI patches for 2.6.37
+From: Huang Ying <ying.huang@intel.com>
+To: Len Brown <lenb@kernel.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>
+In-Reply-To: <alpine.LFD.2.00.1010220147560.27300@localhost.localdomain>
+References: <1287538620-7442-1-git-send-email-ying.huang@intel.com>
+	 <alpine.LFD.2.00.1010220147560.27300@localhost.localdomain>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 22 Oct 2010 16:55:42 +0800
+Message-ID: <1287737742.2862.241.camel@yhuang-dev>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2010-10-22 10:29, Christoph Hellwig wrote:
-> In the barriers tree Xen claims to support flushes, but I doesn't.
-> It never handles REQ_FLUSH requests.  Try commenting out the
+On Fri, 2010-10-22 at 13:50 +0800, Len Brown wrote:
+> On Wed, 20 Oct 2010, Huang Ying wrote:
 > 
-> 	blk_queue_flush(info->rq, info->feature_flush);
+> > [PATCH 2/9] Add lock-less version of bitmap_set/clear
+> > [PATCH 3/9] lock-less NULL terminated single list implementation
+> > [PATCH 4/9] lock-less general memory allocator
 > 
-> call and things should improve.  I still need to hear back from Xen
-> folks how to actually implement a cache flush - they only implement
-> a barrier write privilegue which could never implement an empty
-> cache flush.  Up to current kernels that meant it would implement
-> barrier writes with content correctly and silently ignore empty barriers
-> leading to very interesting data integrity bugs.  From 2.6.37 onwards
-> it simply won't work anymore at all, which is at least consistent
-> (modulo the bug of actually claiming to support flushes).
+> What kinds of tests has this lockless lib code been subject to?
 
-So how about we just disable barriers for Xen atm? I would really really
-like to push that branch out as well now, since I'll be travelling for
-most of the merge window this time.
+These code are used by GHES only now. We have a test suite for GHES.
+These code works well for GHES.
 
--- 
-Jens Axboe
+At the same time, we have test code dedicated for these lib too,
+including stress testing.
+
+> This is generic code, does it play on multiple architectures?
+
+We have tested the code on x86_64 and i386 architectures. For some other
+architectures, we have done compile testing. The code is quite simple,
+so I think it should run properly on other architectures too.
+
+Best Regards,
+Huang Ying
+
 
