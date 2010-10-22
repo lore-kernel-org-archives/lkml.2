@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759559Ab0JVTBc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 15:01:32 -0400
-Received: from kroah.org ([198.145.64.141]:34463 "EHLO coco.kroah.org"
+	id S932748Ab0JVTA7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 15:00:59 -0400
+Received: from kroah.org ([198.145.64.141]:34478 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759533Ab0JVS5L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 14:57:11 -0400
-X-Mailbox-Line: From gregkh@clark.site Fri Oct 22 11:52:35 2010
-Message-Id: <20101022185235.759841730@clark.site>
+	id S1759542Ab0JVS5N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Oct 2010 14:57:13 -0400
+X-Mailbox-Line: From gregkh@clark.site Fri Oct 22 11:52:36 2010
+Message-Id: <20101022185235.931051124@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 22 Oct 2010 11:52:08 -0700
+Date: Fri, 22 Oct 2010 11:52:10 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Len Brown <len.brown@intel.com>
-Subject: [094/103] PM / ACPI: Blacklist systems known to require acpi_sleep=nonvs
+        Zhenyu Wang <zhenyuw@linux.intel.com>,
+        Chris Wilson <chris@chris-wilson.co.uk>
+Subject: [096/103] agp/intel: Fix cache control for Sandybridge
 In-Reply-To: <20101022185455.GA9114@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,70 +26,180 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Rafael J. Wysocki <rjw@sisk.pl>
+From: Zhenyu Wang <zhenyuw@linux.intel.com>
 
-commit 539986482b0db07b7164ab086d167ab99b4d3061 upstream.
+commit f8f235e5bbf4e61f3e0886a44afb1dc4cfe8f337 upstream.
 
-Commit 2a6b69765ad794389f2fc3e14a0afa1a995221c2 (ACPI: Store NVS
-state even when entering suspend to RAM) changed the ACPI suspend
-to RAM code so that the NVS memory area is always unconditionally
-saved during suspend and restored during resume, since some systems
-evidently need that for the suspend-resume to work on them.  However,
-it turned out that this change broke suspend-resume on a few systems,
-so commit 72ad5d77fb981963edae15eee8196c80238f5ed0 (ACPI / Sleep:
-Allow the NVS saving to be skipped during suspend to RAM) introduced
-the acpi_sleep=nonvs command line switch to allow their users to
-work around this issue.  To keep track of the systems that require
-this workaround and to make the life of their users slightly easier
-blacklist them in acpisleep_dmi_table[].
+Sandybridge GTT has new cache control bits in PTE, which controls
+graphics page cache in LLC or LLC/MLC, so we need to extend the mask
+function to respect the new bits.
 
-https://bugzilla.kernel.org/show_bug.cgi?id=16396
+And set cache control to always LLC only by default on Gen6.
 
-Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
-Signed-off-by: Len Brown <len.brown@intel.com>
+Signed-off-by: Zhenyu Wang <zhenyuw@linux.intel.com>
+Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
----
- drivers/acpi/sleep.c |   22 ++++++++++++++++++++++
- 1 file changed, 22 insertions(+)
 
---- a/drivers/acpi/sleep.c
-+++ b/drivers/acpi/sleep.c
-@@ -362,6 +362,12 @@ static int __init init_old_suspend_order
- 	return 0;
+---
+ drivers/char/agp/intel-agp.c    |    1 
+ drivers/char/agp/intel-agp.h    |    6 ++++
+ drivers/char/agp/intel-gtt.c    |   50 ++++++++++++++++++++++++++++++++--------
+ drivers/gpu/drm/i915/i915_gem.c |    1 
+ include/linux/intel-gtt.h       |   20 ++++++++++++++++
+ 5 files changed, 68 insertions(+), 10 deletions(-)
+
+--- a/drivers/char/agp/intel-agp.c
++++ b/drivers/char/agp/intel-agp.c
+@@ -12,6 +12,7 @@
+ #include <asm/smp.h>
+ #include "agp.h"
+ #include "intel-agp.h"
++#include <linux/intel-gtt.h>
+ 
+ #include "intel-gtt.c"
+ 
+--- a/drivers/char/agp/intel-agp.h
++++ b/drivers/char/agp/intel-agp.h
+@@ -60,6 +60,12 @@
+ #define I810_PTE_LOCAL		0x00000002
+ #define I810_PTE_VALID		0x00000001
+ #define I830_PTE_SYSTEM_CACHED  0x00000006
++/* GT PTE cache control fields */
++#define GEN6_PTE_UNCACHED	0x00000002
++#define GEN6_PTE_LLC		0x00000004
++#define GEN6_PTE_LLC_MLC	0x00000006
++#define GEN6_PTE_GFDT		0x00000008
++
+ #define I810_SMRAM_MISCC	0x70
+ #define I810_GFX_MEM_WIN_SIZE	0x00010000
+ #define I810_GFX_MEM_WIN_32M	0x00010000
+--- a/drivers/char/agp/intel-gtt.c
++++ b/drivers/char/agp/intel-gtt.c
+@@ -49,6 +49,26 @@ static struct gatt_mask intel_i810_masks
+ 	 .type = INTEL_AGP_CACHED_MEMORY}
+ };
+ 
++#define INTEL_AGP_UNCACHED_MEMORY              0
++#define INTEL_AGP_CACHED_MEMORY_LLC            1
++#define INTEL_AGP_CACHED_MEMORY_LLC_GFDT       2
++#define INTEL_AGP_CACHED_MEMORY_LLC_MLC        3
++#define INTEL_AGP_CACHED_MEMORY_LLC_MLC_GFDT   4
++
++static struct gatt_mask intel_gen6_masks[] =
++{
++	{.mask = I810_PTE_VALID | GEN6_PTE_UNCACHED,
++	 .type = INTEL_AGP_UNCACHED_MEMORY },
++	{.mask = I810_PTE_VALID | GEN6_PTE_LLC,
++         .type = INTEL_AGP_CACHED_MEMORY_LLC },
++	{.mask = I810_PTE_VALID | GEN6_PTE_LLC | GEN6_PTE_GFDT,
++         .type = INTEL_AGP_CACHED_MEMORY_LLC_GFDT },
++	{.mask = I810_PTE_VALID | GEN6_PTE_LLC_MLC,
++         .type = INTEL_AGP_CACHED_MEMORY_LLC_MLC },
++	{.mask = I810_PTE_VALID | GEN6_PTE_LLC_MLC | GEN6_PTE_GFDT,
++         .type = INTEL_AGP_CACHED_MEMORY_LLC_MLC_GFDT },
++};
++
+ static struct _intel_private {
+ 	struct pci_dev *pcidev;	/* device one */
+ 	u8 __iomem *registers;
+@@ -175,13 +195,6 @@ static void intel_agp_insert_sg_entries(
+ 					off_t pg_start, int mask_type)
+ {
+ 	int i, j;
+-	u32 cache_bits = 0;
+-
+-	if (agp_bridge->dev->device == PCI_DEVICE_ID_INTEL_SANDYBRIDGE_HB ||
+-	    agp_bridge->dev->device == PCI_DEVICE_ID_INTEL_SANDYBRIDGE_M_HB)
+-	{
+-		cache_bits = I830_PTE_SYSTEM_CACHED;
+-	}
+ 
+ 	for (i = 0, j = pg_start; i < mem->page_count; i++, j++) {
+ 		writel(agp_bridge->driver->mask_memory(agp_bridge,
+@@ -314,6 +327,23 @@ static int intel_i830_type_to_mask_type(
+ 		return 0;
  }
  
-+static int __init init_nvs_nosave(const struct dmi_system_id *d)
++static int intel_gen6_type_to_mask_type(struct agp_bridge_data *bridge,
++					int type)
 +{
-+	acpi_nvs_nosave();
-+	return 0;
++	unsigned int type_mask = type & ~AGP_USER_CACHED_MEMORY_GFDT;
++	unsigned int gfdt = type & AGP_USER_CACHED_MEMORY_GFDT;
++
++	if (type_mask == AGP_USER_UNCACHED_MEMORY)
++		return INTEL_AGP_UNCACHED_MEMORY;
++	else if (type_mask == AGP_USER_CACHED_MEMORY_LLC_MLC)
++		return gfdt ? INTEL_AGP_CACHED_MEMORY_LLC_MLC_GFDT :
++			      INTEL_AGP_CACHED_MEMORY_LLC_MLC;
++	else /* set 'normal'/'cached' to LLC by default */
++		return gfdt ? INTEL_AGP_CACHED_MEMORY_LLC_GFDT :
++			      INTEL_AGP_CACHED_MEMORY_LLC;
 +}
 +
- static struct dmi_system_id __initdata acpisleep_dmi_table[] = {
- 	{
- 	.callback = init_old_suspend_ordering,
-@@ -396,6 +402,22 @@ static struct dmi_system_id __initdata a
- 		DMI_MATCH(DMI_BOARD_NAME, "CF51-2L"),
- 		},
- 	},
-+	{
-+	.callback = init_nvs_nosave,
-+	.ident = "Sony Vaio VGN-SR11M",
-+	.matches = {
-+		DMI_MATCH(DMI_SYS_VENDOR, "Sony Corporation"),
-+		DMI_MATCH(DMI_PRODUCT_NAME, "VGN-SR11M"),
-+		},
-+	},
-+	{
-+	.callback = init_nvs_nosave,
-+	.ident = "Everex StepNote Series",
-+	.matches = {
-+		DMI_MATCH(DMI_SYS_VENDOR, "Everex Systems, Inc."),
-+		DMI_MATCH(DMI_PRODUCT_NAME, "Everex StepNote Series"),
-+		},
-+	},
- 	{},
- };
- #endif /* CONFIG_SUSPEND */
++
+ static int intel_i810_insert_entries(struct agp_memory *mem, off_t pg_start,
+ 				int type)
+ {
+@@ -1155,7 +1185,7 @@ static int intel_i915_insert_entries(str
+ 
+ 	mask_type = agp_bridge->driver->agp_type_to_mask_type(agp_bridge, type);
+ 
+-	if (mask_type != 0 && mask_type != AGP_PHYS_MEMORY &&
++	if (!IS_SNB && mask_type != 0 && mask_type != AGP_PHYS_MEMORY &&
+ 	    mask_type != INTEL_AGP_CACHED_MEMORY)
+ 		goto out_err;
+ 
+@@ -1546,7 +1576,7 @@ static const struct agp_bridge_driver in
+ 	.fetch_size		= intel_i9xx_fetch_size,
+ 	.cleanup		= intel_i915_cleanup,
+ 	.mask_memory		= intel_gen6_mask_memory,
+-	.masks			= intel_i810_masks,
++	.masks			= intel_gen6_masks,
+ 	.agp_enable		= intel_i810_agp_enable,
+ 	.cache_flush		= global_cache_flush,
+ 	.create_gatt_table	= intel_i965_create_gatt_table,
+@@ -1559,7 +1589,7 @@ static const struct agp_bridge_driver in
+ 	.agp_alloc_pages        = agp_generic_alloc_pages,
+ 	.agp_destroy_page	= agp_generic_destroy_page,
+ 	.agp_destroy_pages      = agp_generic_destroy_pages,
+-	.agp_type_to_mask_type	= intel_i830_type_to_mask_type,
++	.agp_type_to_mask_type	= intel_gen6_type_to_mask_type,
+ 	.chipset_flush		= intel_i915_chipset_flush,
+ #ifdef USE_PCI_DMA_API
+ 	.agp_map_page		= intel_agp_map_page,
+--- a/drivers/gpu/drm/i915/i915_gem.c
++++ b/drivers/gpu/drm/i915/i915_gem.c
+@@ -34,6 +34,7 @@
+ #include <linux/slab.h>
+ #include <linux/swap.h>
+ #include <linux/pci.h>
++#include <linux/intel-gtt.h>
+ 
+ static void i915_gem_object_flush_gpu_write_domain(struct drm_gem_object *obj);
+ static void i915_gem_object_flush_gtt_write_domain(struct drm_gem_object *obj);
+--- /dev/null
++++ b/include/linux/intel-gtt.h
+@@ -0,0 +1,20 @@
++/*
++ * Common Intel AGPGART and GTT definitions.
++ */
++#ifndef _INTEL_GTT_H
++#define _INTEL_GTT_H
++
++#include <linux/agp_backend.h>
++
++/* This is for Intel only GTT controls.
++ *
++ * Sandybridge: AGP_USER_CACHED_MEMORY default to LLC only
++ */
++
++#define AGP_USER_CACHED_MEMORY_LLC_MLC (AGP_USER_TYPES + 2)
++#define AGP_USER_UNCACHED_MEMORY (AGP_USER_TYPES + 4)
++
++/* flag for GFDT type */
++#define AGP_USER_CACHED_MEMORY_GFDT (1 << 3)
++
++#endif
 
 
