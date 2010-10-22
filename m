@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757075Ab0JVX6x (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 19:58:53 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:60658 "EHLO
+	id S1755243Ab0JVXyQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 19:54:16 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:39325 "EHLO
 	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755469Ab0JVXy1 (ORCPT
+	with ESMTP id S1755021Ab0JVXyN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 19:54:27 -0400
+	Fri, 22 Oct 2010 19:54:13 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=O3Lt3sJsFxhPdJ6K9tMd1rxPmbTk148UJSEqS/hugQQ0UDoGluXGSGcLlii0m8gKI6
-         dPsKkwroT6H/jhkxY2lzcBLwxdPY5DYeMPFmHlt6StKn/wnRv0dzlAyOPZYU7uk7xPJv
-         9eCvFlrNvvu1US5GznBuS2U9WiQLEjkaQqpgk=
+        b=m9nqi0DprhF8EWey59Zf/bSkTBGTbENiwzmAjXJCoQk77/BXwERSH5bEypwxgaQXzx
+         IzaInQWIWBe4xd/300BFs/nBc/sicEdlHwQXFnD8ArDBuzde+Oq/bopQFC9UEUQbuvGg
+         MwjqrdE+leEicXiPUQwevc8spLAl2OGiz1jt8=
 From: Maxim Levitsky <maximlevitsky@gmail.com>
 To: Alex Dubov <oakad@yahoo.com>
 Cc: Andrew Morton <akpm@linux-foundation.org>,
         LKML <linux-kernel@vger.kernel.org>,
         Maxim Levitsky <maximlevitsky@gmail.com>
-Subject: [PATCH 11/29] memstick: mspro: use MS_TPC_EX_SET_CMD
-Date: Sat, 23 Oct 2010 01:53:39 +0200
-Message-Id: <1287791637-10329-12-git-send-email-maximlevitsky@gmail.com>
+Subject: [PATCH 04/29] memstick: core: rework state machines
+Date: Sat, 23 Oct 2010 01:53:32 +0200
+Message-Id: <1287791637-10329-5-git-send-email-maximlevitsky@gmail.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1287791637-10329-1-git-send-email-maximlevitsky@gmail.com>
 References: <1287791637-10329-1-git-send-email-maximlevitsky@gmail.com>
@@ -28,136 +28,148 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This little optimization done by Sony for
-PRO variant of the cards allows to bundle the param register
-with the command and therefore send one TPC less.
-
-This increases IO throughput somewhat.
-(4.4 -> 4.8 MB/s on Jmicron for example)
+Make state machines in memstick core follow the
+new style.
 
 Signed-off-by: Maxim Levitsky <maximlevitsky@gmail.com>
 ---
- drivers/memstick/core/mspro_block.c |   35 +++++++++++++----------------------
- drivers/memstick/core/mspro_block.h |    3 +--
- 2 files changed, 14 insertions(+), 24 deletions(-)
+ drivers/memstick/core/memstick.c |   82 ++++++++++++++++++++-----------------
+ 1 files changed, 44 insertions(+), 38 deletions(-)
 
-diff --git a/drivers/memstick/core/mspro_block.c b/drivers/memstick/core/mspro_block.c
-index 0d8b30b..e54d467 100644
---- a/drivers/memstick/core/mspro_block.c
-+++ b/drivers/memstick/core/mspro_block.c
-@@ -438,35 +438,28 @@ static int h_mspro_block_transfer_data(struct memstick_dev *card,
+diff --git a/drivers/memstick/core/memstick.c b/drivers/memstick/core/memstick.c
+index 9fe36c7..e1aa089 100644
+--- a/drivers/memstick/core/memstick.c
++++ b/drivers/memstick/core/memstick.c
+@@ -211,44 +211,57 @@ static int memstick_dummy_check(struct memstick_dev *card)
+  */
  
- 		if (!msb->io_error) {
- 			msb->io_error = (*mrq)->error;
--			card->state = 6;
-+			card->state = 5;
- 		}
+ static int h_memstick_read_dev_id(struct memstick_dev *card,
+-				  struct memstick_request **mrq)
++						struct memstick_request **mrq)
+ {
+ 	struct ms_id_register id_reg;
+ 
+-	if (!(*mrq)) {
+-		memstick_init_req(&card->current_mrq, MS_TPC_READ_REG, NULL,
+-				  sizeof(struct ms_id_register));
+-		*mrq = &card->current_mrq;
+-		return 0;
+-	} else {
+-		if (!(*mrq)->error) {
+-			memcpy(&id_reg, (*mrq)->data, sizeof(id_reg));
+-			card->id.match_flags = MEMSTICK_MATCH_ALL;
+-			card->id.type = id_reg.type;
+-			card->id.category = id_reg.category;
+-			card->id.class = id_reg.class;
+-			dev_dbg(&card->dev, "if_mode = %02x\n", id_reg.if_mode);
+-		}
+-		complete(&card->mrq_complete);
+-		return -EAGAIN;
++	memstick_allocate_request(card, mrq);
++	if ((*mrq)->error)
++		return memstick_exit_state_machine(card, *mrq, (*mrq)->error);
++
++	switch (card->state) {
++	case 0:
++		if (!memstick_read_regs(card,
++			offsetof(struct ms_register, id),
++			sizeof(struct ms_id_register), *mrq))
++			return 0;
++		break;
++	case 1:
++		memcpy(&id_reg, (*mrq)->data, sizeof(id_reg));
++		card->id.match_flags = MEMSTICK_MATCH_ALL;
++		card->id.type = id_reg.type;
++		card->id.category = id_reg.category;
++		card->id.class = id_reg.class;
++		dev_dbg(&card->dev, "if_mode = %02x\n", id_reg.if_mode);
++		return memstick_exit_state_machine(card, *mrq, 0);
  	}
- again:
- 	switch (card->state) {
++
++	card->state++;
++	return 0;
+ }
  
- 	case 0: /* send read/write command + args */
--		if (!memstick_write_regs(card,
--			offsetof(struct mspro_register, param),
--			sizeof(struct mspro_param_register),
--			(unsigned char *)&msb->arg, *mrq))
--			return 0;
--		break;
--	case 1:
--		memstick_init_req(*mrq, MS_TPC_SET_CMD,
--					&msb->transfer_cmd, 1);
-+		memstick_init_req(*mrq, MS_TPC_EX_SET_CMD,
-+					&msb->arg, sizeof(msb->arg));
- 		break;
+ static int h_memstick_set_rw_addr(struct memstick_dev *card,
+ 				  struct memstick_request **mrq)
+ {
+-	if (!(*mrq)) {
+-		memstick_init_req(&card->current_mrq, MS_TPC_SET_RW_REG_ADRS,
++	memstick_allocate_request(card, mrq);
++	if ((*mrq)->error)
++		return memstick_exit_state_machine(card, *mrq, (*mrq)->error);
++
++	switch (card->state) {
++	case 0:
++		memstick_init_req(*mrq, MS_TPC_SET_RW_REG_ADRS,
+ 				  (char *)&card->reg_addr,
+ 				  sizeof(card->reg_addr));
+-		*mrq = &card->current_mrq;
+-		return 0;
+-	} else {
+-		complete(&card->mrq_complete);
+-		return -EAGAIN;
++		break;
++	case 1:
++		return memstick_exit_state_machine(card, *mrq, 0);
+ 	}
++
++	card->state++;
++	return 0;
+ }
  
--	case 2: /* read the INT register */
-+	case 1: /* read the INT register */
- 		if (memstick_read_int_reg(card, *mrq, -1))
- 			break;
- 		card->state++;
++
+ static int h_memstick_default_bad(struct memstick_dev *card,
+ 				     struct memstick_request **mrq)
+ {
+@@ -281,18 +294,18 @@ static struct memstick_dev *memstick_alloc_card(struct memstick_host *host)
+ 		card->reg_addr.w_offset = offsetof(struct ms_register, id);
+ 		card->reg_addr.w_length = sizeof(id_reg);
  
--	case 3: /* process the int register */
-+	case 2: /* process the int register */
- 		intreg = (*mrq)->data[0];
++		host->card = card;
+ 		init_completion(&card->mrq_complete);
++		card->state = -1;
++		card->next_request = h_memstick_default_bad;
  
- 		if (intreg & (MEMSTICK_INT_CMDNAK | MEMSTICK_INT_ERR)) {
- 			dbg(card, "IO: card I/O error");
--			card->state = 6;
-+			card->state = 5;
- 			msb->io_error = -EIO;
- 			goto again;
- 		}
-@@ -479,7 +472,7 @@ again:
- 			}
+-		host->card = card;
+ 		if (memstick_set_rw_addr(card))
+ 			goto err_out;
  
- 			memstick_read_int_reg_cleanup(card);
--			card->state = 7;
-+			card->state = 6;
- 			goto again;
- 		}
- 
-@@ -492,7 +485,7 @@ again:
- 		memstick_read_int_reg_cleanup(card);
- 		card->state++;
- 
--	case 4: /* init transfer of the data */
-+	case 3: /* init transfer of the data */
- 		t_offset = msb->current_sg->offset + msb->current_sg_offset;
- 
- 		sg_init_table(&t_sg, 1);
-@@ -505,7 +498,7 @@ again:
- 		(*mrq)->need_card_int = 1;
- 		break;
- 
--	case 5: /* switch to next page */
-+	case 4: /* switch to next page */
- 		msb->current_sg_offset += msb->page_size;
- 		msb->data_transferred += msb->page_size;
- 
-@@ -514,15 +507,15 @@ again:
- 			msb->current_sg = sg_next(msb->current_sg);
- 		}
- 
--		card->state = 2;
-+		card->state = 1;
- 		goto again;
- 
--	case 6: /* after a error send STOP command */
-+	case 5: /* after a error send STOP command */
- 		command = MSPRO_CMD_STOP;
- 		memstick_init_req(*mrq, MS_TPC_SET_CMD, &command, 1);
- 		break;
- 
--	case 7: /* request complete - get next one*/
-+	case 6: /* request complete - get next one*/
- 		spin_lock_irqsave(&msb->q_lock, flags);
- 
- 		if (msb->io_error)
-@@ -572,9 +565,7 @@ static int mspro_block_setup_io(struct memstick_dev *card, int direction,
- 	msb->data_transferred = 0;
- 	msb->io_error = 0;
- 
--	msb->transfer_cmd = command;
+-		card->next_request = h_memstick_read_dev_id;
+-		memstick_new_req(host);
+-		wait_for_completion(&card->mrq_complete);
 -
--	msb->arg.system = msb->system;
-+	msb->arg.command = command;
- 	msb->arg.data_count = cpu_to_be16(pages);
- 	msb->arg.data_address = cpu_to_be32(sector);
- 	msb->data_dir = direction;
-diff --git a/drivers/memstick/core/mspro_block.h b/drivers/memstick/core/mspro_block.h
-index ba9f78c..82ae2fe 100644
---- a/drivers/memstick/core/mspro_block.h
-+++ b/drivers/memstick/core/mspro_block.h
-@@ -151,8 +151,7 @@ struct mspro_block_data {
+-		if (card->current_mrq.error)
++		if (memstick_run_state_machine(card,
++						h_memstick_read_dev_id, true))
+ 			goto err_out;
++
+ 	}
+ 	host->card = old_card;
+ 	return card;
+@@ -406,11 +419,7 @@ EXPORT_SYMBOL(memstick_unregister_driver);
+  */
+ int memstick_set_rw_addr(struct memstick_dev *card)
+ {
+-	card->next_request = h_memstick_set_rw_addr;
+-	memstick_new_req(card->host);
+-	wait_for_completion(&card->mrq_complete);
+-
+-	return card->current_mrq.error;
++	return memstick_run_state_machine(card, h_memstick_set_rw_addr, true);
+ }
+ EXPORT_SYMBOL(memstick_set_rw_addr);
  
- 	/* Handlers state */
- 	unsigned char                    system;
--	unsigned char                    transfer_cmd;
--	struct mspro_param_register      arg;
-+	struct mspro_cmdex_argument      arg;
- 
- 	struct scatterlist               *current_sg;
- 	unsigned int                     current_sg_offset;
+@@ -481,9 +490,6 @@ EXPORT_SYMBOL(memstick_run_state_machine);
+ int memstick_exit_state_machine(struct memstick_dev *card,
+ 			struct memstick_request *req, int error)
+ {
+-	if (error)
+-		req->error = error;
+-
+ 	card->state = -1;
+ 	card->exit_error = error;
+ 	card->next_request = h_memstick_default_bad;
 -- 
 1.7.1
 
