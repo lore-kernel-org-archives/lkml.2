@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759498Ab0JVTGY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 15:06:24 -0400
-Received: from kroah.org ([198.145.64.141]:34314 "EHLO coco.kroah.org"
+	id S1759456Ab0JVTHW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 15:07:22 -0400
+Received: from kroah.org ([198.145.64.141]:34299 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759453Ab0JVS4v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 14:56:51 -0400
+	id S1759445Ab0JVS4t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Oct 2010 14:56:49 -0400
 X-Mailbox-Line: From gregkh@clark.site Fri Oct 22 11:52:33 2010
-Message-Id: <20101022185233.828891512@clark.site>
+Message-Id: <20101022185233.644252976@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 22 Oct 2010 11:51:46 -0700
+Date: Fri, 22 Oct 2010 11:51:44 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Olivier Grenie <olivier.grenie@dibcom.fr>,
-        Patrick Boettcher <patrick.boettcher@dibcom.fr>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>
-Subject: [072/103] V4L/DVB: dib7770: enable the current mirror
+        Alex Deucher <alexdeucher@gmail.com>, Dave Airlie <airlied@redhat.com>
+Subject: [070/103] drm/radeon/kms: add quirk for MSI K9A2GM motherboard
 In-Reply-To: <20101022185455.GA9114@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,119 +25,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Olivier Grenie <olivier.grenie@dibcom.fr>
+From: Alex Deucher <alexdeucher@gmail.com>
 
-commit 90e12cec707204930934acdb5efce5f94a163a5f upstream.
+commit f36fce0f49ed40f3e843d45fa53d476d63444b58 upstream.
 
-To improve performance on DiB7770-devices enabling the current mirror
-is needed.
+Board has no digital connectors
 
-This patch adds an option to the dib7000p-driver to do that and it
-creates a separate device-entry in dib0700-device to use those changes
-on hardware which is using the DiB7770.
-
-Signed-off-by: Olivier Grenie <olivier.grenie@dibcom.fr>
-Signed-off-by: Patrick Boettcher <patrick.boettcher@dibcom.fr>
-Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+Reported-by: Andy Walls <awalls@md.metrocast.net>
+Tested-by: Andy Walls <awalls@md.metrocast.net>
+Signed-off-by: Alex Deucher <alexdeucher@gmail.com>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/media/dvb/dvb-usb/dib0700_devices.c |   53 +++++++++++++++++++++++++++-
- drivers/media/dvb/frontends/dib7000p.c      |    2 +
- drivers/media/dvb/frontends/dib7000p.h      |    3 +
- 3 files changed, 57 insertions(+), 1 deletion(-)
+ drivers/gpu/drm/radeon/radeon_atombios.c |    9 +++++++++
+ 1 file changed, 9 insertions(+)
 
---- a/drivers/media/dvb/dvb-usb/dib0700_devices.c
-+++ b/drivers/media/dvb/dvb-usb/dib0700_devices.c
-@@ -1240,6 +1240,57 @@ static int stk7070p_frontend_attach(stru
- 	return adap->fe == NULL ? -ENODEV : 0;
- }
+--- a/drivers/gpu/drm/radeon/radeon_atombios.c
++++ b/drivers/gpu/drm/radeon/radeon_atombios.c
+@@ -226,6 +226,15 @@ static bool radeon_atom_apply_quirks(str
+ 			*connector_type = DRM_MODE_CONNECTOR_DVID;
+ 	}
  
-+/* STK7770P */
-+static struct dib7000p_config dib7770p_dib7000p_config = {
-+	.output_mpeg2_in_188_bytes = 1,
-+
-+	.agc_config_count = 1,
-+	.agc = &dib7070_agc_config,
-+	.bw  = &dib7070_bw_config_12_mhz,
-+	.tuner_is_baseband = 1,
-+	.spur_protect = 1,
-+
-+	.gpio_dir = DIB7000P_GPIO_DEFAULT_DIRECTIONS,
-+	.gpio_val = DIB7000P_GPIO_DEFAULT_VALUES,
-+	.gpio_pwm_pos = DIB7000P_GPIO_DEFAULT_PWM_POS,
-+
-+	.hostbus_diversity = 1,
-+	.enable_current_mirror = 1,
-+};
-+
-+static int stk7770p_frontend_attach(struct dvb_usb_adapter *adap)
-+{
-+	struct usb_device_descriptor *p = &adap->dev->udev->descriptor;
-+	if (p->idVendor  == cpu_to_le16(USB_VID_PINNACLE) &&
-+	    p->idProduct == cpu_to_le16(USB_PID_PINNACLE_PCTV72E))
-+		dib0700_set_gpio(adap->dev, GPIO6, GPIO_OUT, 0);
-+	else
-+		dib0700_set_gpio(adap->dev, GPIO6, GPIO_OUT, 1);
-+	msleep(10);
-+	dib0700_set_gpio(adap->dev, GPIO9, GPIO_OUT, 1);
-+	dib0700_set_gpio(adap->dev, GPIO4, GPIO_OUT, 1);
-+	dib0700_set_gpio(adap->dev, GPIO7, GPIO_OUT, 1);
-+	dib0700_set_gpio(adap->dev, GPIO10, GPIO_OUT, 0);
-+
-+	dib0700_ctrl_clock(adap->dev, 72, 1);
-+
-+	msleep(10);
-+	dib0700_set_gpio(adap->dev, GPIO10, GPIO_OUT, 1);
-+	msleep(10);
-+	dib0700_set_gpio(adap->dev, GPIO0, GPIO_OUT, 1);
-+
-+	if (dib7000p_i2c_enumeration(&adap->dev->i2c_adap, 1, 18,
-+				     &dib7770p_dib7000p_config) != 0) {
-+		err("%s: dib7000p_i2c_enumeration failed.  Cannot continue\n",
-+		    __func__);
-+		return -ENODEV;
++	/* MSI K9A2GM V2/V3 board has no HDMI or DVI */
++	if ((dev->pdev->device == 0x796e) &&
++	    (dev->pdev->subsystem_vendor == 0x1462) &&
++	    (dev->pdev->subsystem_device == 0x7302)) {
++		if ((supported_device == ATOM_DEVICE_DFP2_SUPPORT) ||
++		    (supported_device == ATOM_DEVICE_DFP3_SUPPORT))
++			return false;
 +	}
 +
-+	adap->fe = dvb_attach(dib7000p_attach, &adap->dev->i2c_adap, 0x80,
-+		&dib7770p_dib7000p_config);
-+	return adap->fe == NULL ? -ENODEV : 0;
-+}
-+
- /* DIB807x generic */
- static struct dibx000_agc_config dib807x_agc_config[2] = {
- 	{
-@@ -2592,7 +2643,7 @@ struct dvb_usb_device_properties dib0700
- 				.pid_filter_count = 32,
- 				.pid_filter       = stk70x0p_pid_filter,
- 				.pid_filter_ctrl  = stk70x0p_pid_filter_ctrl,
--				.frontend_attach  = stk7070p_frontend_attach,
-+				.frontend_attach  = stk7770p_frontend_attach,
- 				.tuner_attach     = dib7770p_tuner_attach,
- 
- 				DIB0700_DEFAULT_STREAMING_CONFIG(0x02),
---- a/drivers/media/dvb/frontends/dib7000p.c
-+++ b/drivers/media/dvb/frontends/dib7000p.c
-@@ -260,6 +260,8 @@ static void dib7000p_set_adc_state(struc
- 
- //	dprintk( "908: %x, 909: %x\n", reg_908, reg_909);
- 
-+	reg_908 |= (state->cfg.enable_current_mirror & 1) << 7;
-+
- 	dib7000p_write_word(state, 908, reg_908);
- 	dib7000p_write_word(state, 909, reg_909);
- }
---- a/drivers/media/dvb/frontends/dib7000p.h
-+++ b/drivers/media/dvb/frontends/dib7000p.h
-@@ -33,6 +33,9 @@ struct dib7000p_config {
- 	int (*agc_control) (struct dvb_frontend *, u8 before);
- 
- 	u8 output_mode;
-+
-+	u8 enable_current_mirror : 1;
-+
- };
- 
- #define DEFAULT_DIB7000P_I2C_ADDRESS 18
+ 	/* a-bit f-i90hd - ciaranm on #radeonhd - this board has no DVI */
+ 	if ((dev->pdev->device == 0x7941) &&
+ 	    (dev->pdev->subsystem_vendor == 0x147b) &&
 
 
