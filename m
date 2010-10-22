@@ -1,49 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759725Ab0JVTKN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 15:10:13 -0400
-Received: from claw.goop.org ([74.207.240.146]:36169 "EHLO claw.goop.org"
+	id S1759688Ab0JVTKl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 15:10:41 -0400
+Received: from kroah.org ([198.145.64.141]:34185 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757661Ab0JVTKI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 15:10:08 -0400
-Message-ID: <4CC1E18E.9040502@goop.org>
-Date: Fri, 22 Oct 2010 12:10:06 -0700
-From: Jeremy Fitzhardinge <jeremy@goop.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc13 Lightning/1.0b3pre Thunderbird/3.1.4
-MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: Xen Devel <Xen-devel@lists.xensource.com>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Gianluca Guida <gianluca.guida@citrix.com>,
-        Yinghai Lu <yinghai@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: linux-next: manual merge of the xen tree with the tip tree
-References: <20101022140335.c4a3a48f.sfr@canb.auug.org.au>
-In-Reply-To: <20101022140335.c4a3a48f.sfr@canb.auug.org.au>
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
+	id S1759372Ab0JVS4d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Oct 2010 14:56:33 -0400
+X-Mailbox-Line: From gregkh@clark.site Fri Oct 22 11:52:32 2010
+Message-Id: <20101022185232.020882355@clark.site>
+User-Agent: quilt/0.48-11.2
+Date: Fri, 22 Oct 2010 11:51:26 -0700
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
+Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Jeff Mahoney <jeffm@suse.com>
+Subject: [052/103] reiserfs: fix unwanted reiserfs lock recursion
+In-Reply-To: <20101022185455.GA9114@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- On 10/21/2010 08:03 PM, Stephen Rothwell wrote:
-> Hi all,
->
-> Today's linux-next merge of the xen tree got a conflict in
-> arch/x86/mm/init_32.c between commit
-> 1d931264af0f10649b35afa8fbd2e169da51ac08 ("x86-32, memblock: Make
-> add_highpages honor early reserved ranges") from the tip tree and commit
-> 07147a06ac3b1b028124ea00ba44e69eb8ea7685 ("x86/32: honor reservations of
-> high memory") from the xen tree.
+2.6.35-stable review patch.  If anyone has any objections, please let us know.
 
-Hm, that change has been completely obsoleted by the memblock stuff from
-tip.  Oh, I see.  Another change which ended up reverting that patch via
-a merge got dropped, so it got left lying around.  I'll pull it out.
+------------------
 
-(Not sure why it merges cleanly for me however; I guess because you've
-already got the older xen branch in there which contains the merge.)
+From: Frederic Weisbecker <fweisbec@gmail.com>
 
-Anyway, update pushed.
+commit 9d8117e72bf453dd9d85e0cd322ce4a0f8bccbc0 upstream.
 
-    J
+Prevent from recursively locking the reiserfs lock in reiserfs_unpack()
+because we may call journal_begin() that requires the lock to be taken
+only once, otherwise it won't be able to release the lock while taking
+other mutexes, ending up in inverted dependencies between the journal
+mutex and the reiserfs lock for example.
+
+This fixes:
+
+  =======================================================
+  [ INFO: possible circular locking dependency detected ]
+  2.6.35.4.4a #3
+  -------------------------------------------------------
+  lilo/1620 is trying to acquire lock:
+   (&journal->j_mutex){+.+...}, at: [<d0325bff>] do_journal_begin_r+0x7f/0x340 [reiserfs]
+
+  but task is already holding lock:
+   (&REISERFS_SB(s)->lock){+.+.+.}, at: [<d032a278>] reiserfs_write_lock+0x28/0x40 [reiserfs]
+
+  which lock already depends on the new lock.
+
+  the existing dependency chain (in reverse order) is:
+
+  -> #1 (&REISERFS_SB(s)->lock){+.+.+.}:
+         [<c10562b7>] lock_acquire+0x67/0x80
+         [<c12facad>] __mutex_lock_common+0x4d/0x410
+         [<c12fb0c8>] mutex_lock_nested+0x18/0x20
+         [<d032a278>] reiserfs_write_lock+0x28/0x40 [reiserfs]
+         [<d0325c06>] do_journal_begin_r+0x86/0x340 [reiserfs]
+         [<d0325f77>] journal_begin+0x77/0x140 [reiserfs]
+         [<d0315be4>] reiserfs_remount+0x224/0x530 [reiserfs]
+         [<c10b6a20>] do_remount_sb+0x60/0x110
+         [<c10cee25>] do_mount+0x625/0x790
+         [<c10cf014>] sys_mount+0x84/0xb0
+         [<c12fca3d>] syscall_call+0x7/0xb
+
+  -> #0 (&journal->j_mutex){+.+...}:
+         [<c10560f6>] __lock_acquire+0x1026/0x1180
+         [<c10562b7>] lock_acquire+0x67/0x80
+         [<c12facad>] __mutex_lock_common+0x4d/0x410
+         [<c12fb0c8>] mutex_lock_nested+0x18/0x20
+         [<d0325bff>] do_journal_begin_r+0x7f/0x340 [reiserfs]
+         [<d0325f77>] journal_begin+0x77/0x140 [reiserfs]
+         [<d0326271>] reiserfs_persistent_transaction+0x41/0x90 [reiserfs]
+         [<d030d06c>] reiserfs_get_block+0x22c/0x1530 [reiserfs]
+         [<c10db9db>] __block_prepare_write+0x1bb/0x3a0
+         [<c10dbbe6>] block_prepare_write+0x26/0x40
+         [<d030b738>] reiserfs_prepare_write+0x88/0x170 [reiserfs]
+         [<d03294d6>] reiserfs_unpack+0xe6/0x120 [reiserfs]
+         [<d0329782>] reiserfs_ioctl+0x272/0x320 [reiserfs]
+         [<c10c3188>] vfs_ioctl+0x28/0xa0
+         [<c10c3bbd>] do_vfs_ioctl+0x32d/0x5c0
+         [<c10c3eb3>] sys_ioctl+0x63/0x70
+         [<c12fca3d>] syscall_call+0x7/0xb
+
+  other info that might help us debug this:
+
+  2 locks held by lilo/1620:
+   #0:  (&sb->s_type->i_mutex_key#8){+.+.+.}, at: [<d032945a>] reiserfs_unpack+0x6a/0x120 [reiserfs]
+   #1:  (&REISERFS_SB(s)->lock){+.+.+.}, at: [<d032a278>] reiserfs_write_lock+0x28/0x40 [reiserfs]
+
+  stack backtrace:
+  Pid: 1620, comm: lilo Not tainted 2.6.35.4.4a #3
+  Call Trace:
+   [<c10560f6>] __lock_acquire+0x1026/0x1180
+   [<c10562b7>] lock_acquire+0x67/0x80
+   [<c12facad>] __mutex_lock_common+0x4d/0x410
+   [<c12fb0c8>] mutex_lock_nested+0x18/0x20
+   [<d0325bff>] do_journal_begin_r+0x7f/0x340 [reiserfs]
+   [<d0325f77>] journal_begin+0x77/0x140 [reiserfs]
+   [<d0326271>] reiserfs_persistent_transaction+0x41/0x90 [reiserfs]
+   [<d030d06c>] reiserfs_get_block+0x22c/0x1530 [reiserfs]
+   [<c10db9db>] __block_prepare_write+0x1bb/0x3a0
+   [<c10dbbe6>] block_prepare_write+0x26/0x40
+   [<d030b738>] reiserfs_prepare_write+0x88/0x170 [reiserfs]
+   [<d03294d6>] reiserfs_unpack+0xe6/0x120 [reiserfs]
+   [<d0329782>] reiserfs_ioctl+0x272/0x320 [reiserfs]
+   [<c10c3188>] vfs_ioctl+0x28/0xa0
+   [<c10c3bbd>] do_vfs_ioctl+0x32d/0x5c0
+   [<c10c3eb3>] sys_ioctl+0x63/0x70
+   [<c12fca3d>] syscall_call+0x7/0xb
+
+Reported-by: Jarek Poplawski <jarkao2@gmail.com>
+Tested-by: Jarek Poplawski <jarkao2@gmail.com>
+Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Jeff Mahoney <jeffm@suse.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
+---
+ fs/reiserfs/ioctl.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+--- a/fs/reiserfs/ioctl.c
++++ b/fs/reiserfs/ioctl.c
+@@ -170,6 +170,7 @@ int reiserfs_prepare_write(struct file *
+ int reiserfs_unpack(struct inode *inode, struct file *filp)
+ {
+ 	int retval = 0;
++	int depth;
+ 	int index;
+ 	struct page *page;
+ 	struct address_space *mapping;
+@@ -189,7 +190,7 @@ int reiserfs_unpack(struct inode *inode,
+ 	 ** us
+ 	 */
+ 	reiserfs_mutex_lock_safe(&inode->i_mutex, inode->i_sb);
+-	reiserfs_write_lock(inode->i_sb);
++	depth = reiserfs_write_lock_once(inode->i_sb);
+ 
+ 	write_from = inode->i_size & (blocksize - 1);
+ 	/* if we are on a block boundary, we are already unpacked.  */
+@@ -224,6 +225,6 @@ int reiserfs_unpack(struct inode *inode,
+ 
+       out:
+ 	mutex_unlock(&inode->i_mutex);
+-	reiserfs_write_unlock(inode->i_sb);
++	reiserfs_write_unlock_once(inode->i_sb, depth);
+ 	return retval;
+ }
+
+
