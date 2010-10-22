@@ -1,62 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757680Ab0JVAqP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Oct 2010 20:46:15 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:47767 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757379Ab0JVAp4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Oct 2010 20:45:56 -0400
-Date: Thu, 21 Oct 2010 17:45:36 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Christoph Lameter <cl@linux.com>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>, Nick Piggin <npiggin@kernel.dk>,
-        Dave Chinner <david@fromorbit.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] percpu_counter : add percpu_counter_add_fast()
-Message-Id: <20101021174536.26213ab7.akpm@linux-foundation.org>
-In-Reply-To: <alpine.DEB.2.00.1010211807280.3431@router.home>
-References: <1285762729-17928-1-git-send-email-david@fromorbit.com>
-	<1285762729-17928-17-git-send-email-david@fromorbit.com>
-	<20100929215322.ff635d3e.akpm@linux-foundation.org>
-	<20100930061039.GX5665@dastard>
-	<20101016075510.GH19147@amd>
-	<1287217748.2799.68.camel@edumazet-laptop>
-	<20101016020744.366bd9c6.akpm@linux-foundation.org>
-	<1287221475.2799.123.camel@edumazet-laptop>
-	<1287238754.2799.376.camel@edumazet-laptop>
-	<20101021153719.c8bde251.akpm@linux-foundation.org>
-	<alpine.DEB.2.00.1010211807280.3431@router.home>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+	id S1757588Ab0JVAri (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Oct 2010 20:47:38 -0400
+Received: from mga14.intel.com ([143.182.124.37]:42787 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752151Ab0JVArh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Oct 2010 20:47:37 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.58,220,1286175600"; 
+   d="scan'208";a="339047677"
+Subject: Re: booting "nosmp" kernel causing ACPI errors
+From: Zhang Rui <rui.zhang@intel.com>
+To: Bernard Pidoux <bernard.pidoux@upmc.fr>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Bernard Pidoux <bpidoux@free.fr>
+In-Reply-To: <4CB9D69D.60203@upmc.fr>
+References: <4CB9D69D.60203@upmc.fr>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 22 Oct 2010 08:48:03 +0800
+Message-ID: <1287708483.2210.13.camel@rui>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 21 Oct 2010 18:10:13 -0500 (CDT) Christoph Lameter <cl@linux.com> wrote:
+Hi, Bernard,
 
-> On Thu, 21 Oct 2010, Andrew Morton wrote:
+On Sun, 2010-10-17 at 00:45 +0800, Bernard Pidoux wrote:
+> Hi,
 > 
-> > That isn't actually what I was suggesting.  I was suggesting the use of
-> > an inlined, this_cpu_add()-using percpu_counter_add() variant which
-> > still does the batched spilling into ->count.  IOW, just speed up the
-> > current implementation along the lines of
-> >
-> > {
-> > 	val = this_cpu_add_return(*fbc->counters, amount);
+> I observed ACPI errors when booting 2.6.35.7 kernel with "nosmp" argument.
+> dmesg shows a warning message starting with :
+> WARNING: at mm/page_alloc.c:1981 __alloc_pages_nodemask+0x5b4/0x6d0()
+> +Hardware name: MS-7519
+> +Modules linked in:
+> +Pid: 1, comm: swapper Not tainted 2.6.35.7 #2
 > 
-> this_cpu_add_return() is not in the kernel but could be realized using a
-> variant offshoot of cmpxchg_local. I had something like that initially but
-> omitted it since there was no use case.
+it seems that ACPI is trying to load an invalid table.
+would you please attach the acpidump of your laptop, both with and
+without "nosmp"?
 
-this_cpu_add_return() isn't really needed in this application.
+thanks,
+rui
+> This is followed by ACPI error messages and /proc/interrupts show that
+> interrupts 0-15 are then handled by XT-PIC-XT
+> instead of IO-APIC-edge and IO-APIC-fasteoi when runing smp kernel.
+> 
+> Here is lspci dump :
+> 
+> 00:00.0 Host bridge: Intel Corporation 4 Series Chipset DRAM Controller 
+> (rev 03)
+> 00:01.0 PCI bridge: Intel Corporation 4 Series Chipset PCI Express Root 
+> Port (rev 03)
+> 00:1a.0 USB Controller: Intel Corporation 82801JI (ICH10 Family) USB 
+> UHCI Controller #4
+> 00:1a.1 USB Controller: Intel Corporation 82801JI (ICH10 Family) USB 
+> UHCI Controller #5
+> 00:1a.2 USB Controller: Intel Corporation 82801JI (ICH10 Family) USB 
+> UHCI Controller #6
+> 00:1a.7 USB Controller: Intel Corporation 82801JI (ICH10 Family) USB2 
+> EHCI Controller #2
+> 00:1b.0 Audio device: Intel Corporation 82801JI (ICH10 Family) HD Audio 
+> Controller
+> 00:1c.0 PCI bridge: Intel Corporation 82801JI (ICH10 Family) PCI Express 
+> Root Port 1
+> 00:1c.1 PCI bridge: Intel Corporation 82801JI (ICH10 Family) PCI Express 
+> Port 2
+> 00:1c.5 PCI bridge: Intel Corporation 82801JI (ICH10 Family) PCI Express 
+> Root Port 6
+> 00:1d.0 USB Controller: Intel Corporation 82801JI (ICH10 Family) USB 
+> UHCI Controller #1
+> 00:1d.1 USB Controller: Intel Corporation 82801JI (ICH10 Family) USB 
+> UHCI Controller #2
+> 00:1d.2 USB Controller: Intel Corporation 82801JI (ICH10 Family) USB 
+> UHCI Controller #3
+> 00:1d.7 USB Controller: Intel Corporation 82801JI (ICH10 Family) USB2 
+> EHCI Controller #1
+> 00:1e.0 PCI bridge: Intel Corporation 82801 PCI Bridge (rev 90)
+> 00:1f.0 ISA bridge: Intel Corporation 82801JIB (ICH10) LPC Interface 
+> Controller
+> 00:1f.2 IDE interface: Intel Corporation 82801JI (ICH10 Family) 4 port 
+> SATA IDE Controller #1
+> 00:1f.3 SMBus: Intel Corporation 82801JI (ICH10 Family) SMBus Controller
+> 00:1f.5 IDE interface: Intel Corporation 82801JI (ICH10 Family) 2 port 
+> SATA IDE Controller #2
+> 01:00.0 VGA compatible controller: nVidia Corporation G98 [GeForce 8400 
+> GS] (rev a1)
+> 02:00.0 IDE interface: JMicron Technology Corp. JMB368 IDE controller
+> 04:00.0 Ethernet controller: Realtek Semiconductor Co., Ltd. 
+> RTL8111/8168B PCI Express Gigabit Ethernet controller (rev 02)
+> 
+> I observed the same issue with another machine with also an MSI 
+> motherboard but using a PCI bridge VIA VT8237/VX700
+> even when booting with "pci=use_crs" argument.
+> 
+> Attached is diff -ruN file between 2.6.35.7 kernel without and with 
+> "nosmp" boot argument.
+> 
+> Bernard
+> 
 
-{
-	this_cpu_add(*fbc->counters, amount);
-	if (unlikely(abs(this_cpu_read(*fbc->counters)) > fbc->batch))
-		out_of_line_stuff();
-}	
 
-will work just fine.				
