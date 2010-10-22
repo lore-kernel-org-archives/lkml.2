@@ -1,58 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759012Ab0JVSoq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 14:44:46 -0400
-Received: from kroah.org ([198.145.64.141]:45956 "EHLO coco.kroah.org"
+	id S1759026Ab0JVSo5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 14:44:57 -0400
+Received: from kroah.org ([198.145.64.141]:45953 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758864Ab0JVSlc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1758862Ab0JVSlc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 22 Oct 2010 14:41:32 -0400
-Date: Fri, 22 Oct 2010 11:40:48 -0700
+X-Mailbox-Line: From gregkh@clark.site Fri Oct 22 11:40:33 2010
+Message-Id: <20101022184032.942885623@clark.site>
+User-Agent: quilt/0.48-11.2
+Date: Fri, 22 Oct 2010 11:39:30 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk
-Subject: [00/17] 2.6.27.55-stable review
-Message-ID: <20101022184048.GA25391@kroah.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Mauro Carvalho Chehab <mchehab@infradead.org>
+Subject: [05/17] v4l1: fix 32-bit compat microcode loading translation
+In-Reply-To: <20101022184048.GA25391@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is the start of the stable review cycle for the 2.6.27.55 release.
-There are 17 patches in this series, all will be posted as a response
-to this one.  If anyone has any issues with these being applied, please
-let us know.  If anyone is a maintainer of the proper subsystem, and
-wants to add a Signed-off-by: line to the patch, please respond with it.
+2.6.27-stable review patch.  If anyone has any objections, please let us know.
 
-Responses should be made by Monday, October 25, 2010 16:00:00 UTC.
-Anything received after that time might be too late.
+------------------
 
-The whole patch series can be found in one patch at:
-	kernel.org/pub/linux/kernel/v2.6/stable-review/patch-2.6.27.55-rc1.gz
-and the diffstat can be found below.
+From: Linus Torvalds <torvalds@linux-foundation.org>
 
-thanks,
+commit 3e645d6b485446c54c6745c5e2cf5c528fe4deec upstream.
 
-greg k-h
+The compat code for the VIDIOCSMICROCODE ioctl is totally buggered.
+It's only used by the VIDEO_STRADIS driver, and that one is scheduled to
+staging and eventually removed unless somebody steps up to maintain it
+(at which point it should use request_firmware() rather than some magic
+ioctl).  So we'll get rid of it eventually.
 
- Makefile                             |    2 +-
- arch/powerpc/kernel/head_64.S        |   18 ++++++++++++------
- block/bsg.c                          |    2 +-
- drivers/dma/mv_xor.c                 |    2 +-
+But in the meantime, the compatibility ioctl code is broken, and this
+tries to get it to at least limp along (even if Mauro suggested just
+deleting it entirely, which may be the right thing to do - I don't think
+the compatibility translation code has ever worked unless you were very
+lucky).
+
+Reported-by: Kees Cook <kees.cook@canonical.com>
+Cc: Mauro Carvalho Chehab <mchehab@infradead.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
+---
  drivers/media/video/compat_ioctl32.c |   32 +++++++++++++++++++++-----------
- drivers/net/atlx/atl1.c              |    5 +++--
- drivers/net/b44.c                    |    4 ++--
- drivers/net/r6040.c                  |   12 +++++-------
- fs/aio.c                             |    3 +++
- fs/exec.c                            |   14 ++++++++++++++
- include/linux/mm.h                   |    8 +++++++-
- mm/memory.c                          |   15 +++++++++++----
- mm/mmap.c                            |    3 ---
- net/wireless/wext.c                  |    2 +-
- sound/core/control.c                 |    3 +++
- sound/pci/rme9652/hdsp.c             |    1 +
- sound/pci/rme9652/hdspm.c            |    1 +
- 17 files changed, 87 insertions(+), 40 deletions(-)
+ 1 file changed, 21 insertions(+), 11 deletions(-)
+
+--- a/drivers/media/video/compat_ioctl32.c
++++ b/drivers/media/video/compat_ioctl32.c
+@@ -499,17 +499,24 @@ struct video_code32
+ {
+ 	char		loadwhat[16];	/* name or tag of file being passed */
+ 	compat_int_t	datasize;
+-	unsigned char	*data;
++	compat_uptr_t	data;
+ };
+ 
+-static inline int microcode32(struct video_code *kp, struct video_code32 __user *up)
++static struct video_code __user *get_microcode32(struct video_code32 *kp)
+ {
+-	if(!access_ok(VERIFY_READ, up, sizeof(struct video_code32)) ||
+-		copy_from_user(kp->loadwhat, up->loadwhat, sizeof (up->loadwhat)) ||
+-		get_user(kp->datasize, &up->datasize) ||
+-		copy_from_user(kp->data, up->data, up->datasize))
+-			return -EFAULT;
+-	return 0;
++	struct video_code __user *up;
++
++	up = compat_alloc_user_space(sizeof(*up));
++
++	/*
++	 * NOTE! We don't actually care if these fail. If the
++	 * user address is invalid, the native ioctl will do
++	 * the error handling for us
++	 */
++	(void) copy_to_user(up->loadwhat, kp->loadwhat, sizeof(up->loadwhat));
++	(void) put_user(kp->datasize, &up->datasize);
++	(void) put_user(compat_ptr(kp->data), &up->data);
++	return up;
+ }
+ 
+ #define VIDIOCGTUNER32		_IOWR('v',4, struct video_tuner32)
+@@ -618,7 +625,7 @@ static int do_video_ioctl(struct file *f
+ 		struct video_tuner vt;
+ 		struct video_buffer vb;
+ 		struct video_window vw;
+-		struct video_code vc;
++		struct video_code32 vc;
+ 		struct video_audio va;
+ #endif
+ 		struct v4l2_format v2f;
+@@ -745,8 +752,11 @@ static int do_video_ioctl(struct file *f
+ 		break;
+ #ifdef CONFIG_VIDEO_V4L1_COMPAT
+ 	case VIDIOCSMICROCODE:
+-		err = microcode32(&karg.vc, up);
+-		compatible_arg = 0;
++		/* Copy the 32-bit "video_code32" to kernel space */
++		if (copy_from_user(&karg.vc, up, sizeof(karg.vc)))
++			return -EFAULT;
++		/* Convert the 32-bit version to a 64-bit version in user space */
++		up = get_microcode32(&karg.vc);
+ 		break;
+ #endif
+ 	};
+
+
