@@ -1,119 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754172Ab0JVJVK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 05:21:10 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:40902 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753399Ab0JVJVI (ORCPT
+	id S1753788Ab0JVJYK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 05:24:10 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:39820 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751750Ab0JVJYI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 05:21:08 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:x-enigmail-version:content-type
-         :content-transfer-encoding;
-        b=Xh5cOJUUuMsx0lIgK1ekW9I5FrlQx9LWwdYdwivgHw4uJIFItdbfODCO/10lCca9n8
-         wTxg+a/QyZ+7vVlL2A5SNrVzUfaO6TrnfbCIDY9JTPCKetXlWHqwDfg4ABQ+U0MTsM84
-         rm5zAar8jwNW4Fyb0ALy/Mue/p8uyqhFReHrE=
-Message-ID: <4CC1577F.9060207@gmail.com>
-Date: Fri, 22 Oct 2010 11:21:03 +0200
-From: Jiri Slaby <jirislaby@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.11) Gecko/20101013 SUSE/3.1.5 Thunderbird/3.1.5
+	Fri, 22 Oct 2010 05:24:08 -0400
+Date: Fri, 22 Oct 2010 11:24:02 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: Don Zickus <dzickus@redhat.com>
+Cc: Andi Kleen <andi@firstfloor.org>, Huang Ying <ying.huang@intel.com>,
+        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Robert Richter <robert.richter@amd.com>,
+        "peterz@infradead.org" <peterz@infradead.org>
+Subject: Re: [PATCH -v3 5/6] x86, NMI, treat unknown NMI as hardware error
+Message-ID: <20101022092402.GB10456@basil.fritz.box>
+References: <1286606987-19879-5-git-send-email-ying.huang@intel.com>
+ <20101011212006.GB23882@redhat.com>
+ <1287555157.3026.21.camel@yhuang-dev>
+ <20101020141558.GB19090@redhat.com>
+ <1287623643.19320.40.camel@yhuang-dev>
+ <20101021023135.GA12086@redhat.com>
+ <1287638251.19320.190.camel@yhuang-dev>
+ <20101021141002.GI19090@redhat.com>
+ <20101021154543.GD21695@basil.fritz.box>
+ <20101022014955.GP19090@redhat.com>
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-CC: akpm@linux-foundation.org, mm-commits@vger.kernel.org,
-        Antti Palosaari <crope@iki.fi>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>, Greg KH <gregkh@suse.de>,
-        USB list <linux-usb@vger.kernel.org>
-Subject: Re: DVB: af9015 defunct [was: mmotm 2010-10-20-15-01 uploaded]
-References: <201010202233.o9KMXNoL008303@imap1.linux-foundation.org> <4CC07DB4.20205@gmail.com>
-In-Reply-To: <4CC07DB4.20205@gmail.com>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-2
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101022014955.GP19090@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/21/2010 07:51 PM, Jiri Slaby wrote:
-> On 10/21/2010 12:01 AM, akpm@linux-foundation.org wrote:
->> The mm-of-the-moment snapshot 2010-10-20-15-01 has been uploaded to
+On Thu, Oct 21, 2010 at 09:49:55PM -0400, Don Zickus wrote:
+> After re-reading Huang's patch, I am starting to understand what you mean
+> by broken hardware.  Basically you are trying to distinguish between
+> legacy systems that were 'broken' in the sense they would randomly send
+> uknown NMIs for no good reason, hence the 'Dazed and confused' messages
+> and hardware errors on more modern systems that say, 'Hardware error,
+> panicing check your BIOS for more info' (or whatever).
+
+Yes that's it.
+
+Unfortunately there are some cases where the BIOS lost it either,
+so the fallback has to be panic (at least for the modern boxes)
+
 > 
-> Well, this release happens to be a multimedia failure :(.
+> So Huang's patch was sort of acting like a switch.  On legacy systems use
+> 'Dazed and confused' for unknown NMIs.  Whereas on whitelisted modern
+> systems use a more relavant 'Check BIOS for error' message.  Is that
+> right?
+
+Yes.
+
+> > I don't think you need to worry about a lot more hardware NMI sources.
 > 
-> I hit another regression against mmotm 2010-10-13-17-13, where
-> 0413:6029 (DVB USB tuner) can't be inited when plugged in. Even lsusb
-> waits inifitely.
+> Well until those machines dominate the marketplace, I'm stuck supporting
+> those pre-Nahelam boxes with customers that committed to 10 years with
+> last year's technology.  ;-)
 
-Revert of this commit helps:
+I should clarify that the NMI model I described long predates Nehalem.
+If you assume 3-5 years deprecation cycles on servers it should be pretty
+much universal in this space. 
 
-commit 99ef217e01780668ac21d600eaf4acd3f7666a02
-Author: Mauro Carvalho Chehab <mchehab@redhat.com>
-Date:   Sun Sep 26 22:58:28 2010 -0300
+The HEDT detection was a proposed way to detect that, because most
+of these systems should have HEDT.
 
-    [media] tda18271: allow restricting max out to 4 bytes
+The older machines still need to be supported, but it's ok to
+just behave the same as today on them, no need for great improvements
+here.
 
-    By default, tda18271 tries to optimize I2C bus by updating all registers
-    at the same time. Unfortunately, some devices doesn't support it.
+-Andi
 
-    The current logic has a problem when small_i2c is equal to 8, since
-there
-    are some transfers using 11 + 1 bytes.
-
-    Fix the problem by enforcing the max size at the right place, and allows
-    reducing it to max = 3 + 1.
-
-    Acked-by: Michael Krufky <mkrufky@kernellabs.com>
-    Acked-by: Sri Deevi <Srinivasa.Deevi@conexant.com>
-    Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
-
-> usb 2-6: new high speed USB device using ehci_hcd and address 5
-> dvb-usb: found a 'Leadtek WinFast DTV Dongle Gold' in cold state, will
-> try to load a firmware
-> dvb-usb: downloading firmware from file 'dvb-usb-af9015.fw'
-> dvb-usb: found a 'Leadtek WinFast DTV Dongle Gold' in warm state.
-> dvb-usb: will pass the complete MPEG2 transport stream to the software
-> demuxer.
-> DVB: registering new adapter (Leadtek WinFast DTV Dongle Gold)
-> af9013: firmware version:4.95.0.0
-> DVB: registering adapter 1 frontend 0 (Afatech AF9013 DVB-T)...
-> tda18271 18-00c0: creating new instance
-> TDA18271HD/C2 detected @ 18-00c0
-> af9015: command failed:1
-> tda18271_write_regs: [18-00c0|M] ERROR: idx = 0x0, len = 39,
-> i2c_transfer returned: -1
-> af9015: command failed:1
-> tda18271_write_regs: [18-00c0|M] ERROR: idx = 0x20, len = 1,
-> i2c_transfer returned: -1
-> af9015: command failed:1
-> tda18271_write_regs: [18-00c0|M] ERROR: idx = 0x20, len = 1,
-> i2c_transfer returned: -1
-> af9015: command failed:1
-> tda18271_write_regs: [18-00c0|M] ERROR: idx = 0x20, len = 1,
-> i2c_transfer returned: -1
-> af9015: command failed:1
-> tda18271_write_regs: [18-00c0|M] ERROR: idx = 0x20, len = 1,
-> i2c_transfer returned: -1
-> af9015: recv bulk message failed:-71
-> af9015: bulk message failed:-71 (8/0)
-> af9013: I2C read failed reg:d417
-> tda18271_write_regs: [18-00c0|M] ERROR: idx = 0x5, len = 11,
-> i2c_transfer returned: -1
-> af9015: bulk message failed:-71 (8/0)
-> af9013: I2C read failed reg:d417
-> af9015: bulk message failed:-71 (9/0)
-> af9015: bulk message failed:-71 (8/0)
-> af9013: I2C read failed reg:d417
-> tda18271_write_regs: [18-00c0|M] ERROR: idx = 0x13, len = 1,
-> i2c_transfer returned: -71
-> af9015: bulk message failed:-71 (8/0)
-> af9013: I2C read failed reg:d417
-> af9015: bulk message failed:-71 (9/0)
-> af9015: bulk message failed:-71 (8/0)
-> af9013: I2C read failed reg:d417
-> tda18271_write_regs: [18-00c0|M] ERROR: idx = 0x13, len = 1,
-> i2c_transfer returned: -71
-> 
-> regards,
 -- 
-js
+ak@linux.intel.com -- Speaking for myself only.
