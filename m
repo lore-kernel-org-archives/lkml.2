@@ -1,81 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750943Ab0JVIgR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 04:36:17 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:55343 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750743Ab0JVIgP (ORCPT
+	id S1751711Ab0JVIqG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 04:46:06 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:59046 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751406Ab0JVIqE convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 04:36:15 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:content-type:date:message-id:mime-version
-         :x-mailer:content-transfer-encoding;
-        b=NT5eJ2atJ6cwETSjQ2SDG6xVaYbGQUEcMpTfceu58Txy7PAQjzp03hSjtpSDBACBQl
-         Rl1+D4BMrsBG1MUWbCNvjH7IMMY03UnJYzHjwERMg6KEtgBAa/wafDivivmXYSpJ0N2o
-         NAaA9Sgi+X3825lS8MiARYPtVgXjwJhRBL9Uc=
-Subject: [PATCH] regulator: twl-regulator - fix twlreg_set_mode
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel <linux-kernel@vger.kernel.org>
-Cc: Liam Girdwood <lrg@slimlogic.co.uk>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Juha Keski-Saari <ext-juha.1.keski-saari@nokia.com>,
-        Rajendra Nayak <rnayak@ti.com>
-Content-Type: text/plain
-Date: Fri, 22 Oct 2010 16:38:22 +0800
-Message-Id: <1287736702.2996.4.camel@mola>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.22.3.1 
-Content-Transfer-Encoding: 7bit
+	Fri, 22 Oct 2010 04:46:04 -0400
+Message-ID: <4CC15051.3030207@cn.fujitsu.com>
+Date: Fri, 22 Oct 2010 16:50:25 +0800
+From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100713 Thunderbird/3.0.6
+MIME-Version: 1.0
+To: Avi Kivity <avi@redhat.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        KVM <kvm@vger.kernel.org>
+Subject: [PATCH] KVM: mark the function 'inline' defined in .h file
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Singular Message is 16 bits:
-        DEV_GRP[15:13] MT[12]  RES_ID[11:4]  RES_STATE[3:0]
+fix:
+arch/x86/include/asm/kvm_para.h:185: warning: ‘kvm_read_and_reset_pf_reason’ defined but not used
+  CC [M]  arch/x86/kvm/x86.o
+arch/x86/include/asm/kvm_para.h:185: warning: ‘kvm_read_and_reset_pf_reason’ defined but not used
+  CC [M]  arch/x86/kvm/mmu.o
+arch/x86/include/asm/kvm_para.h:185: warning: ‘kvm_read_and_reset_pf_reason’ defined but not used
+  CC [M]  arch/x86/kvm/emulate.o
 
-Current implementation return immedially after sucessfuly write MSB part.
-To properly set mode, we need to write the complete message ( MSB and LSB ).
-
-In twl.h, now we have defines for PM Master module register offsets,
-use it instead of hard coded 0x15/0x16.
-
-Use "message & 0xff" to ensure we send correct value for LSB.
-
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
+Signed-off-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
 ---
+ arch/x86/include/asm/kvm_para.h |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-I don't have this hardware handy, I appreciate if someone who has the
-hardware can test this patch.
-
-Regards,
-Axel
-
- drivers/regulator/twl-regulator.c |    6 +++---
- 1 files changed, 3 insertions(+), 3 deletions(-)
-
-diff --git a/drivers/regulator/twl-regulator.c b/drivers/regulator/twl-regulator.c
-index 7e5892e..a57262a 100644
---- a/drivers/regulator/twl-regulator.c
-+++ b/drivers/regulator/twl-regulator.c
-@@ -219,12 +219,12 @@ static int twlreg_set_mode(struct regulator_dev *rdev, unsigned mode)
- 		return -EACCES;
- 
- 	status = twl_i2c_write_u8(TWL_MODULE_PM_MASTER,
--			message >> 8, 0x15 /* PB_WORD_MSB */ );
--	if (status >= 0)
-+			message >> 8, TWL4030_PM_MASTER_PB_WORD_MSB);
-+	if (status < 0)
- 		return status;
- 
- 	return twl_i2c_write_u8(TWL_MODULE_PM_MASTER,
--			message, 0x16 /* PB_WORD_LSB */ );
-+			message & 0xff, TWL4030_PM_MASTER_PB_WORD_LSB);
+diff --git a/arch/x86/include/asm/kvm_para.h b/arch/x86/include/asm/kvm_para.h
+index d3a1a48..a427bf7 100644
+--- a/arch/x86/include/asm/kvm_para.h
++++ b/arch/x86/include/asm/kvm_para.h
+@@ -182,7 +182,7 @@ u32 kvm_read_and_reset_pf_reason(void);
+ #define kvm_guest_init() do { } while (0)
+ #define kvm_async_pf_task_wait(T) do {} while(0)
+ #define kvm_async_pf_task_wake(T) do {} while(0)
+-static u32 kvm_read_and_reset_pf_reason(void)
++static inline u32 kvm_read_and_reset_pf_reason(void)
+ {
+ 	return 0;
  }
- 
- /*----------------------------------------------------------------------*/
 -- 
-1.7.2
-
-
-
+1.7.0.4
