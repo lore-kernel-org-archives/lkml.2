@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932814Ab0JVTUI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 15:20:08 -0400
-Received: from kroah.org ([198.145.64.141]:34001 "EHLO coco.kroah.org"
+	id S932804Ab0JVTUL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 15:20:11 -0400
+Received: from kroah.org ([198.145.64.141]:33993 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759252Ab0JVS4G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 14:56:06 -0400
+	id S1759230Ab0JVS4F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Oct 2010 14:56:05 -0400
 X-Mailbox-Line: From gregkh@clark.site Fri Oct 22 11:52:29 2010
-Message-Id: <20101022185229.391234662@clark.site>
+Message-Id: <20101022185229.297656494@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 22 Oct 2010 11:50:57 -0700
+Date: Fri, 22 Oct 2010 11:50:56 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Jason Wang <jason77.wang@gmail.com>,
-        =?ISO-8859-15?q?Jean-Fran=C3=A7ois=20Moine?= <moinejf@free.fr>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>
-Subject: [023/103] V4L/DVB: gspca - main: Fix a crash of some webcams on ARM arch
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>
+Subject: [022/103] ARM: 6395/1: VExpress: Set bit 22 in the PL310 (cache controller) AuxCtlr register
 In-Reply-To: <20101022185455.GA9114@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,37 +27,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jason Wang <jason77.wang@gmail.com>
+From: Catalin Marinas <catalin.marinas@arm.com>
 
-commit 882787ff8fdeb0be790547ee9b22b281095e95da upstream.
+commit 1a8e41cd672f894bbd74874eac601e6cedf838fb upstream.
 
-When plugging some webcams on ARM, the system crashes.
-This is because we alloc buffer for an urb through usb_buffer_alloc,
-the alloced buffer is already in DMA coherent region, so we should
-set the flag of this urb to URB_NO_TRANSFER_DMA_MAP, otherwise when
-we submit this urb, the hcd core will handle this address as an
-non-DMA address and call dma_map_single/sg to map it. On arm
-architecture, dma_map_single a DMA coherent address will be catched
-by a BUG_ON().
+Clearing bit 22 in the PL310 Auxiliary Control register (shared
+attribute override enable) has the side effect of transforming Normal
+Shared Non-cacheable reads into Cacheable no-allocate reads.
 
-Signed-off-by: Jason Wang <jason77.wang@gmail.com>
-Signed-off-by: Jean-François Moine <moinejf@free.fr>
-Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+Coherent DMA buffers in Linux always have a Cacheable alias via the
+kernel linear mapping and the processor can speculatively load cache
+lines into the PL310 controller. With bit 22 cleared, Non-cacheable
+reads would unexpectedly hit such cache lines leading to buffer
+corruption.
+
+Cc: Nicolas Pitre <nicolas.pitre@linaro.org>
+Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/media/video/gspca/gspca.c |    1 +
- 1 file changed, 1 insertion(+)
+ arch/arm/mach-vexpress/ct-ca9x4.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/media/video/gspca/gspca.c
-+++ b/drivers/media/video/gspca/gspca.c
-@@ -223,6 +223,7 @@ static int alloc_and_submit_int_urb(stru
- 		usb_rcvintpipe(dev, ep->bEndpointAddress),
- 		buffer, buffer_len,
- 		int_irq, (void *)gspca_dev, interval);
-+	urb->transfer_flags |= URB_NO_TRANSFER_DMA_MAP;
- 	gspca_dev->int_urb = urb;
- 	ret = usb_submit_urb(urb, GFP_KERNEL);
- 	if (ret < 0) {
+--- a/arch/arm/mach-vexpress/ct-ca9x4.c
++++ b/arch/arm/mach-vexpress/ct-ca9x4.c
+@@ -225,7 +225,7 @@ static void ct_ca9x4_init(void)
+ 	int i;
+ 
+ #ifdef CONFIG_CACHE_L2X0
+-	l2x0_init(MMIO_P2V(CT_CA9X4_L2CC), 0x00000000, 0xfe0fffff);
++	l2x0_init(MMIO_P2V(CT_CA9X4_L2CC), 0x00400000, 0xfe0fffff);
+ #endif
+ 
+ 	clkdev_add_table(lookups, ARRAY_SIZE(lookups));
 
 
