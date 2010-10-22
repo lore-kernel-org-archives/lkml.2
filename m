@@ -1,90 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758931Ab0JVVWk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 17:22:40 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51714 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754244Ab0JVVWj (ORCPT
+	id S1759604Ab0JVVXU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 17:23:20 -0400
+Received: from out1.smtp.messagingengine.com ([66.111.4.25]:60073 "EHLO
+	out1.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756900Ab0JVVXT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 17:22:39 -0400
-From: Ben Hutchings <ben@decadent.org.uk>
-To: =?ISO-8859-1?Q?R=E9mi?= Denis-Courmont 
-	<remi.denis-courmont@nokia.com>,
-        Greg KH <gregkh@suse.de>
-Cc: linux-kernel@vger.kernel.org, stable@kernel.org, stable-review@kernel.org,
+	Fri, 22 Oct 2010 17:23:19 -0400
+X-Sasl-enc: 4Vkw9TJsOxYwOvrvYO8rKUy7B5+Y6JkTv2jO4J7Baanq 1287782598
+Message-ID: <4CC200C3.8000208@fastmail.fm>
+Date: Fri, 22 Oct 2010 22:23:15 +0100
+From: Jack Stone <jwjstone@fastmail.fm>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.0; en-GB; rv:1.9.2.11) Gecko/20101013 Lightning/1.0b2 Thunderbird/3.1.5
+MIME-Version: 1.0
+To: Ben Hutchings <ben@decadent.org.uk>
+CC: Greg KH <gregkh@suse.de>, linux-kernel@vger.kernel.org, stable@kernel.org,
+        Florian Fainelli <florian@openwrt.org>, stable-review@kernel.org,
         torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, "Eric W. Biederman" <ebiederm@xmission.com>,
-        "David S. Miller" <davem@davemloft.net>
-In-Reply-To: <20101022183601.910822183@clark.site>
-References: <20101022183601.910822183@clark.site>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="=-zZ2hfHN36PB72PjHdW8m"
-Date: Fri, 22 Oct 2010 22:22:33 +0100
-Message-ID: <1287782553.20865.253.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-X-SA-Exim-Connect-IP: 192.168.4.185
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-Subject: Re: [64/66] Phonet: disable network namespace support
-X-SA-Exim-Version: 4.2.1 (built Wed, 25 Jun 2008 17:14:11 +0000)
-X-SA-Exim-Scanned: Yes (on shadbolt.decadent.org.uk)
+        alan@lxorguk.ukuu.org.uk, 600155@bugs.debian.org,
+        Jason Heeris <jason.heeris@gmail.com>,
+        David Miller <davem@davemloft.net>, spamalot@hispeed.ch
+Subject: Re: [11/17] r6040: Fix multicast list iteration when hash filter
+ is used
+References: <20101022184033.486292826@clark.site>	 <4CC1E257.4070704@fastmail.fm> <20101022192350.GA10673@suse.de>	 <4CC1E610.4050605@fastmail.fm> <1287782286.20865.248.camel@localhost>
+In-Reply-To: <1287782286.20865.248.camel@localhost>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 22/10/2010 22:18, Ben Hutchings wrote:
+> On Fri, 2010-10-22 at 20:29 +0100, Jack Stone wrote:
+>> On 22/10/2010 20:23, Greg KH wrote:
+>>> On Fri, Oct 22, 2010 at 08:13:27PM +0100, Jack Stone wrote:
+>>>> On 22/10/2010 19:39, Greg KH wrote:
+>>>>>  drivers/net/r6040.c |    1 +
+>>>>>  1 file changed, 1 insertion(+)
+>>>>>
+>>>>> --- a/drivers/net/r6040.c
+>>>>> +++ b/drivers/net/r6040.c
+>>>>> @@ -976,6 +976,7 @@ static void r6040_multicast_list(struct
+>>>>>  		iowrite16(hash_table[3], ioaddr + MAR3);
+>>>>>  	}
+>>>>>  	/* Multicast Address 1~4 case */
+>>>>> +	dmi = dev->mc_list;
+>>>>>  	for (i = 0, dmi; (i < dev->mc_count) && (i < MCAST_MAX); i++) {
+>>>> Any reason for the dmi in the above line? As far as I can see it is a
+>>>> nop.
+>>>
+>>> Look closer at the for loop please.
+>>
+>> Maybe I'm missing something but:
+>> for (i = 0, ---->dmi <----; (i < ...
+>>
+>> The dmi here still doesn't seem to do anything?
+> 
+> It doesn't, but it doesn't do any harm either.  The loop has been
+> rewritten in mainline.
 
---=-zZ2hfHN36PB72PjHdW8m
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+Agreed, it causes no problems, but it seems like it was intended to be
+the dmi init, i.e.
 
-On Fri, 2010-10-22 at 11:35 -0700, Greg KH wrote:
-> 2.6.32-stable review patch.  If anyone has any objections, please let us =
-know.
->=20
-> ------------------
->=20
-> From: R=C3=A9mi Denis-Courmont <remi.denis-courmont@nokia.com>
->=20
-> [Solved differently upstream]
->=20
-> Network namespace in the Phonet socket stack causes an OOPS when a
-> namespace is destroyed. This occurs as the loopback exit_net handler is
-> called after the Phonet exit_net handler, and re-enters the Phonet
-> stack. I cannot think of any nice way to fix this in kernel <=3D 2.6.32.
->=20
-> For lack of a better solution, disable namespace support completely.
-> If you need that, upgrade to a newer kernel.
-[...]
+for (i = 0, dmi = dev->mc_list; ...
 
-I've had one report today that the bug is still reproducible in the
-current Debian kernel, which includes this change.  R=C3=A9mi, how have you
-tested this fix?
+I suppose it doesn't really matter but either removing the dmi in the
+for loop or moving the dmi init in there would make more sense to me.
 
-Ben.
+I really should learn to explain myself fully. Sorry for taking up
+your time.
 
---=20
-Ben Hutchings
-Once a job is fouled up, anything done to improve it makes it worse.
+Thanks,
 
---=-zZ2hfHN36PB72PjHdW8m
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQIVAwUATMIAmOe/yOyVhhEJAQJ6Aw//Qc/aWN95v4D5L1WRieqpHEihe7dCZW0Q
-pAnGJaK/KELejwUATbE4+l8X9rPiUIqxLvidDLBSmzLjQNghxSmKygmYUfvM/3fU
-S9Tw3kxUNXqoiPjwtUWPOk4Y2jDieRYfDFtqQ8SSj2s5t97VBVznN9tpeP/YEc9h
-TI61ZyVCrzbDGFSUMbPkHJaRiayIUosATsXLUY7z3qgnRqYW2Qbu5YaWu7gugFvk
-Ey8d9lcNiqBvF79P+jotHoxxmxoLumLJI7t2O6JaragTJ+HTVe9NeYswXWjPiNqs
-1He7vR6gVyC2+wjEvwvp5xdaQ8XDfYo0lwGio0tiuRMnuwQ2e+EDWrO9laNP+5H9
-DYWIoREYENxvAMtQXGA4VTkR9c0PZLLStHpjJvYBgzwIa8O90C0tgsOhsrje9n84
-3yyImpBXTBrvSTHQ1H50dzcO+Axs5IFgYIesYGXu91qlPVcA3UZ9u37vh/oyGpOf
-aYcRXopzuldU+ojoEw5EOAdSCcyoa3nwCAJPqPx21JUT/fbf5Oz+VfVnlWxH/4Tc
-TsB4cRRxwgl9pLDkKXx9dTQzM2EvOkkKBkKTTAzg8lbmt0530mckGeHFO4OTHeGG
-Nm6l8uE6+msgb66PA3xH/cOs+x/K4GqVY8duElidtaa1HYKs1Zjo+9jHpqWsR1F3
-H1sJMsz0S7k=
-=HRz6
------END PGP SIGNATURE-----
-
---=-zZ2hfHN36PB72PjHdW8m--
+Jack
