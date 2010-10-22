@@ -1,258 +1,607 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753240Ab0JVFiD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 01:38:03 -0400
-Received: from mga02.intel.com ([134.134.136.20]:2198 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751030Ab0JVFiB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 01:38:01 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.58,221,1286175600"; 
-   d="scan'208";a="566371121"
-Date: Fri, 22 Oct 2010 13:37:55 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Torsten Kaiser <just.for.lkml@googlemail.com>,
-        Neil Brown <neilb@suse.de>, Rik van Riel <riel@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "Li, Shaohua" <shaohua.li@intel.com>
-Subject: Re: Deadlock possibly caused by too_many_isolated.
-Message-ID: <20101022053755.GB16804@localhost>
-References: <AANLkTimVu+5gTDs8przJVP2EbWC=FX-zWW7aH08BtrHC@mail.gmail.com>
- <20101020055717.GA12752@localhost>
- <20101020150346.1832.A69D9226@jp.fujitsu.com>
- <20101020092739.GA23869@localhost>
- <4CBEE888.2090606@kernel.dk>
+	id S1753419Ab0JVFno (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 01:43:44 -0400
+Received: from dalsmrelay2.nai.com ([205.227.136.216]:38590 "EHLO
+	dalsmrelay2.nai.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751400Ab0JVFnl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Oct 2010 01:43:41 -0400
+Message-ID: <4CC123E7.1000409@snapgear.com>
+Date: Fri, 22 Oct 2010 15:40:55 +1000
+From: Greg Ungerer <gerg@snapgear.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.14) Gecko/20101006 Thunderbird/3.0.9
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4CBEE888.2090606@kernel.dk>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Akinobu Mita <akinobu.mita@gmail.com>
+CC: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        Arnd Bergmann <arnd@arndb.de>, Christoph Hellwig <hch@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Greg Ungerer <gerg@uclinux.org>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Roman Zippel <zippel@linux-m68k.org>,
+        Andreas Schwab <schwab@linux-m68k.org>, linux-m68k@vger.kernel.org,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>, linux390@de.ibm.com,
+        linux-s390@vger.kernel.org,
+        Yoshinori Sato <ysato@users.sourceforge.jp>,
+        Michal Simek <monstr@monstr.eu>, microblaze-uclinux@itee.uq.edu.au,
+        "David S. Miller" <davem@davemloft.net>, sparclinux@vger.kernel.org,
+        Hirokazu Takata <takata@linux-m32r.org>, linux-m32r@ml.linux-m32r.org,
+        Ralf Baechle <ralf@linux-mips.org>, linux-mips@linux-mips.org,
+        Paul Mundt <lethal@linux-sh.org>, linux-sh@vger.kernel.org,
+        Chris Zankel <chris@zankel.net>
+Subject: Re: [PATCH v2 22/22] bitops: remove minix bitops from asm/bitops.h
+References: <1287672077-5797-1-git-send-email-akinobu.mita@gmail.com> <1287672077-5797-23-git-send-email-akinobu.mita@gmail.com>
+In-Reply-To: <1287672077-5797-23-git-send-email-akinobu.mita@gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 22 Oct 2010 05:43:20.0782 (UTC) FILETIME=[08E65EE0:01CB71AC]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 20, 2010 at 09:03:04PM +0800, Jens Axboe wrote:
-> On 2010-10-20 11:27, Wu Fengguang wrote:
-> > On Wed, Oct 20, 2010 at 03:05:56PM +0800, KOSAKI Motohiro wrote:
-> >>> On Tue, Oct 19, 2010 at 06:06:21PM +0800, Torsten Kaiser wrote:
-> >>>> On Tue, Oct 19, 2010 at 10:43 AM, Torsten Kaiser
-> >>>> <just.for.lkml@googlemail.com> wrote:
-> >>>>> On Tue, Oct 19, 2010 at 1:11 AM, Neil Brown <neilb@suse.de> wrote:
-> >>>>>> Yes, thanks for the report.
-> >>>>>> This is a real bug exactly as you describe.
-> >>>>>>
-> >>>>>> This is how I think I will fix it, though it needs a bit of review and
-> >>>>>> testing before I can be certain.
-> >>>>>> Also I need to check raid10 etc to see if they can suffer too.
-> >>>>>>
-> >>>>>> If you can test it I would really appreciate it.
-> >>>>>
-> >>>>> I did test it, but while it seemed to fix the deadlock, the system
-> >>>>> still got unusable.
-> >>>>> The still running "vmstat 1" showed that the swapout was still
-> >>>>> progressing, but at a rate of ~20k sized bursts every 5 to 20 seconds.
-> >>>>>
-> >>>>> I also tried to additionally add Wu's patch:
-> >>>>> --- linux-next.orig/mm/vmscan.c 2010-10-13 12:35:14.000000000 +0800
-> >>>>> +++ linux-next/mm/vmscan.c      2010-10-19 00:13:04.000000000 +0800
-> >>>>> @@ -1163,6 +1163,13 @@ static int too_many_isolated(struct zone
-> >>>>>               isolated = zone_page_state(zone, NR_ISOLATED_ANON);
-> >>>>>       }
-> >>>>>
-> >>>>> +       /*
-> >>>>> +        * GFP_NOIO/GFP_NOFS callers are allowed to isolate more pages, so that
-> >>>>> +        * they won't get blocked by normal ones and form circular deadlock.
-> >>>>> +        */
-> >>>>> +       if ((sc->gfp_mask & GFP_IOFS) == GFP_IOFS)
-> >>>>> +               inactive >>= 3;
-> >>>>> +
-> >>>>>       return isolated > inactive;
-> >>>>>
-> >>>>> Either it did help somewhat, or I was more lucky on my second try, but
-> >>>>> this time I needed ~5 tries instead of only 2 to get the system mostly
-> >>>>> stuck again. On the testrun with Wu's patch the writeout pattern was
-> >>>>> more stable, a burst of ~80kb each 20 seconds. But I would suspect
-> >>>>> that the size of the burst is rather random.
-> >>>>>
-> >>>>> I do have a complete SysRq+T dump from the first run, I can send that
-> >>>>> to anyone how wants it.
-> >>>>> (It's 190k so I don't want not spam it to the list)
-> >>>>
-> >>>> Is this call trace from the SysRq+T violation the rule to only
-> >>>> allocate one bio from bio_alloc() until its submitted?
-> >>>>
-> >>>> [  549.700038] Call Trace:
-> >>>> [  549.700038]  [<ffffffff81566b54>] schedule_timeout+0x144/0x200
-> >>>> [  549.700038]  [<ffffffff81045cd0>] ? process_timeout+0x0/0x10
-> >>>> [  549.700038]  [<ffffffff81565e22>] io_schedule_timeout+0x42/0x60
-> >>>> [  549.700038]  [<ffffffff81083123>] mempool_alloc+0x163/0x1b0
-> >>>> [  549.700038]  [<ffffffff81053560>] ? autoremove_wake_function+0x0/0x40
-> >>>> [  549.700038]  [<ffffffff810ea2b9>] bio_alloc_bioset+0x39/0xf0
-> >>>> [  549.700038]  [<ffffffff810ea38d>] bio_clone+0x1d/0x50
-> >>>> [  549.700038]  [<ffffffff814318ed>] make_request+0x23d/0x850
-> >>>> [  549.700038]  [<ffffffff81082e20>] ? mempool_alloc_slab+0x10/0x20
-> >>>> [  549.700038]  [<ffffffff81045cd0>] ? process_timeout+0x0/0x10
-> >>>> [  549.700038]  [<ffffffff81436e63>] md_make_request+0xc3/0x220
-> >>>> [  549.700038]  [<ffffffff81083099>] ? mempool_alloc+0xd9/0x1b0
-> >>>> [  549.700038]  [<ffffffff811ec153>] generic_make_request+0x1b3/0x370
-> >>>> [  549.700038]  [<ffffffff810ea2d6>] ? bio_alloc_bioset+0x56/0xf0
-> >>>> [  549.700038]  [<ffffffff811ec36a>] submit_bio+0x5a/0xd0
-> >>>> [  549.700038]  [<ffffffff81080cf5>] ? unlock_page+0x25/0x30
-> >>>> [  549.700038]  [<ffffffff810a871e>] swap_writepage+0x7e/0xc0
-> >>>> [  549.700038]  [<ffffffff81090d99>] shmem_writepage+0x1c9/0x240
-> >>>> [  549.700038]  [<ffffffff8108c9cb>] pageout+0x11b/0x270
-> >>>> [  549.700038]  [<ffffffff8108cd78>] shrink_page_list+0x258/0x4d0
-> >>>> [  549.700038]  [<ffffffff8108d9e7>] shrink_inactive_list+0x187/0x310
-> >>>> [  549.700038]  [<ffffffff8102dcb1>] ? __wake_up_common+0x51/0x80
-> >>>> [  549.700038]  [<ffffffff811fc8b2>] ? cpumask_next_and+0x22/0x40
-> >>>> [  549.700038]  [<ffffffff8108e1c0>] shrink_zone+0x3e0/0x470
-> >>>> [  549.700038]  [<ffffffff8108e797>] try_to_free_pages+0x157/0x410
-> >>>> [  549.700038]  [<ffffffff81087c92>] __alloc_pages_nodemask+0x412/0x760
-> >>>> [  549.700038]  [<ffffffff810b27d6>] alloc_pages_current+0x76/0xe0
-> >>>> [  549.700038]  [<ffffffff810b6dad>] new_slab+0x1fd/0x2a0
-> >>>> [  549.700038]  [<ffffffff81045cd0>] ? process_timeout+0x0/0x10
-> >>>> [  549.700038]  [<ffffffff810b8721>] __slab_alloc+0x111/0x540
-> >>>> [  549.700038]  [<ffffffff81059961>] ? prepare_creds+0x21/0xb0
-> >>>> [  549.700038]  [<ffffffff810b92bb>] kmem_cache_alloc+0x9b/0xa0
-> >>>> [  549.700038]  [<ffffffff81059961>] prepare_creds+0x21/0xb0
-> >>>> [  549.700038]  [<ffffffff8104a919>] sys_setresgid+0x29/0x120
-> >>>> [  549.700038]  [<ffffffff8100242b>] system_call_fastpath+0x16/0x1b
-> >>>> [  549.700038]  ffff88011e125ea8 0000000000000046 ffff88011e125e08
-> >>>> ffffffff81073c59
-> >>>> [  549.700038]  0000000000012780 ffff88011ea905b0 ffff88011ea90808
-> >>>> ffff88011e125fd8
-> >>>> [  549.700038]  ffff88011ea90810 ffff88011e124010 0000000000012780
-> >>>> ffff88011e125fd8
-> >>>>
-> >>>> swap_writepage() uses get_swap_bio() which uses bio_alloc() to get one
-> >>>> bio. That bio is the submitted, but the submit path seems to get into
-> >>>> make_request from raid1.c and that allocates a second bio from
-> >>>> bio_alloc() via bio_clone().
-> >>>>
-> >>>> I am seeing this pattern (swap_writepage calling
-> >>>> md_make_request/make_request and then getting stuck in mempool_alloc)
-> >>>> more than 5 times in the SysRq+T output...
-> >>>
-> >>> I bet the root cause is the failure of pool->alloc(__GFP_NORETRY)
-> >>> inside mempool_alloc(), which can be fixed by this patch.
-> >>>
-> >>> Thanks,
-> >>> Fengguang
-> >>> ---
-> >>>
-> >>> concurrent direct page reclaim problem
-> >>>
-> >>>   __GFP_NORETRY page allocations may fail when there are many concurrent page
-> >>>   allocating tasks, but not necessary in real short of memory. The root cause
-> >>>   is, tasks will first run direct page reclaim to free some pages from the LRU
-> >>>   lists and put them to the per-cpu page lists and the buddy system, and then
-> >>>   try to get a free page from there.  However the free pages reclaimed by this
-> >>>   task may be consumed by other tasks when the direct reclaim task is able to
-> >>>   get the free page for itself.
-> >>>
-> >>>   Let's retry it a bit harder.
-> >>>
-> >>> --- linux-next.orig/mm/page_alloc.c	2010-10-20 13:44:50.000000000 +0800
-> >>> +++ linux-next/mm/page_alloc.c	2010-10-20 13:50:54.000000000 +0800
-> >>> @@ -1700,7 +1700,7 @@ should_alloc_retry(gfp_t gfp_mask, unsig
-> >>>  				unsigned long pages_reclaimed)
-> >>>  {
-> >>>  	/* Do not loop if specifically requested */
-> >>> -	if (gfp_mask & __GFP_NORETRY)
-> >>> +	if (gfp_mask & __GFP_NORETRY && pages_reclaimed > (1 << (order + 12)))
-> >>>  		return 0;
-> >>>  
-> >>>  	/*
-> >>
-> >> SLUB usually try high order allocation with __GFP_NORETRY at first. In
-> >> other words, It strongly depend on __GFP_NORETRY don't any retry. I'm
-> >> worry this...
-> > 
-> > Right. I noticed that too. Hopefully the "limited" retry won't impact
-> > it too much. That said, we do need a better solution than such hacks.
-> > 
-> >> And, in this case, stucked tasks have PF_MEMALLOC. allocation with PF_MEMALLOC
-> >> failure mean this zone have zero memory purely. So, retrying don't solve anything.
-> > 
-> > The zone has no free (buddy) memory, but has plenty of reclaimable pages.
-> > The concurrent page reclaimers may steal pages reclaimed by this task
-> > from time to time, but not always. So retry reclaiming will help.
-> > 
-> >> And I think the root cause is in another.
-> >>
-> >> bio_clone() use fs_bio_set internally.
-> >>
-> >> 	struct bio *bio_clone(struct bio *bio, gfp_t gfp_mask)
-> >> 	{
-> >> 	        struct bio *b = bio_alloc_bioset(gfp_mask, bio->bi_max_vecs, fs_bio_set);
-> >> 	...
-> >>
-> >> and fs_bio_set is initialized very small pool size.
-> >>
-> >> 	#define BIO_POOL_SIZE 2
-> >> 	static int __init init_bio(void)
-> >> 	{
-> >> 		..
-> >> 	        fs_bio_set = bioset_create(BIO_POOL_SIZE, 0);
-> > 
-> > Agreed. BIO_POOL_SIZE=2 is too small to be deadlock free.
-> > 
-> >> So, I think raid1.c need to use their own bioset instead fs_bio_set.
-> >> otherwise, bio pool exshost can happen very easily.
-> > 
-> > That would fix the deadlock, but not enough for good IO throughput
-> > when multiple CPUs are trying to submit IO. Increasing BIO_POOL_SIZE
-> > to a large value should help fix both the deadlock and IO throughput.
-> > 
-> >> But I'm not sure. I'm not IO expert.
-> > 
-> > [add CC to Jens]
-> 
-> We surely need 1 set aside for each level of that stack that will
-> potentially consume one. 1 should be enough for the generic pool, and
-> then clones will use a separate pool. So md and friends should really
-> have a pool per device, so that stacking will always work properly.
+On 22/10/10 00:41, Akinobu Mita wrote:
+> minix bit operations are only used by minix filesystem and useless
+> by other modules. Because byte order of inode and block bitmaps is
+> defferent on each architecture like below:
+>
+> m68k:
+> 	big-endian 16bit indexed bitmaps
+>
+> h8300, microblaze, s390, sparc, m68knommu:
+> 	big-endian 32 or 64bit indexed bitmaps
+>
+> m32r, mips, sh, xtensa:
+> 	big-endian 32 or 64bit indexed bitmaps for big-endian mode
+> 	little-endian bitmaps for little-endian mode
+>
+> Others:
+> 	little-endian bitmaps
+>
+> In order to move minix bit operations from asm/bitops.h to
+> architecture independent code in minix file system, this provides two
+> config options.
+>
+> CONFIG_MINIX_FS_BIG_ENDIAN_16BIT_INDEXED is only selected by m68k.
+> CONFIG_MINIX_FS_NATIVE_ENDIAN is selected by the architectures which
+> use native byte order bitmaps (h8300, microblaze, s390, sparc,
+> m68knommu, m32r, mips, sh, xtensa).
+> The architectures which always use little-endian bitmaps do not select
+> these options.
+>
+> Finally, we can remove minix bit operations from asm/bitops.h for
+> all architectures.
+>
+> Signed-off-by: Akinobu Mita<akinobu.mita@gmail.com>
+> Cc: Greg Ungerer<gerg@uclinux.org>
 
-Agreed for the deadlock problem.
+I have no problems with the m68k part.
 
-> There should be no throughput concerns, it should purely be a safe guard
-> measure to prevent us deadlocking when doing IO for reclaim.
+Acked-by: Greg Ungerer <gerg@uclinux.org>
 
-It's easy to verify whether the minimal size will have negative
-impacts on IO throughput. In Torsten's case, increase BIO_POOL_SIZE
-by one and check how it performs.
 
-My worry is the pool->alloc(__GFP_NORETRY) in mempool_alloc() may be
-failing _frequently_ when there are concurrent reclaimers. Hence the
-mem pool will be exhausted from time to time. Although the mem pool
-will quickly get out of the exhausted state whenever some flying bio
-is freed, if some unlucky task happen to hit allocation failure in the
-small exhausted window, it will be going into the 5-seconds sleep in
-mempool_alloc().
+> Cc: Geert Uytterhoeven<geert@linux-m68k.org>
+> Cc: Roman Zippel<zippel@linux-m68k.org>
+> Cc: Andreas Schwab<schwab@linux-m68k.org>
+> Cc: linux-m68k@lists.linux-m68k.org
+> Cc: Martin Schwidefsky<schwidefsky@de.ibm.com>
+> Cc: Heiko Carstens<heiko.carstens@de.ibm.com>
+> Cc: linux390@de.ibm.com
+> Cc: linux-s390@vger.kernel.org
+> Cc: Yoshinori Sato<ysato@users.sourceforge.jp>
+> Cc: Michal Simek<monstr@monstr.eu>
+> Cc: microblaze-uclinux@itee.uq.edu.au
+> Cc: "David S. Miller"<davem@davemloft.net>
+> Cc: sparclinux@vger.kernel.org
+> Cc: Hirokazu Takata<takata@linux-m32r.org>
+> Cc: linux-m32r@ml.linux-m32r.org
+> Cc: Ralf Baechle<ralf@linux-mips.org>
+> Cc: linux-mips@linux-mips.org
+> Cc: Paul Mundt<lethal@linux-sh.org>
+> Cc: linux-sh@vger.kernel.org
+> Cc: Chris Zankel<chris@zankel.net>
+> ---
+> Mostly rewritten since previous submission
+>
+>   arch/alpha/include/asm/bitops.h       |    2 -
+>   arch/arm/include/asm/bitops.h         |   14 ------
+>   arch/avr32/include/asm/bitops.h       |    1 -
+>   arch/blackfin/include/asm/bitops.h    |    1 -
+>   arch/cris/include/asm/bitops.h        |    1 -
+>   arch/frv/include/asm/bitops.h         |    2 -
+>   arch/h8300/include/asm/bitops.h       |    1 -
+>   arch/ia64/include/asm/bitops.h        |    1 -
+>   arch/m32r/include/asm/bitops.h        |    1 -
+>   arch/m68k/include/asm/bitops_mm.h     |   30 ------------
+>   arch/mips/include/asm/bitops.h        |    1 -
+>   arch/mn10300/include/asm/bitops.h     |    1 -
+>   arch/parisc/include/asm/bitops.h      |    2 -
+>   arch/powerpc/include/asm/bitops.h     |   14 ------
+>   arch/s390/include/asm/bitops.h        |    1 -
+>   arch/sh/include/asm/bitops.h          |    1 -
+>   arch/sparc/include/asm/bitops_32.h    |    1 -
+>   arch/sparc/include/asm/bitops_64.h    |    2 -
+>   arch/tile/include/asm/bitops.h        |    1 -
+>   arch/x86/include/asm/bitops.h         |    2 -
+>   arch/xtensa/include/asm/bitops.h      |    1 -
+>   fs/minix/Kconfig                      |    8 +++
+>   fs/minix/minix.h                      |   79 +++++++++++++++++++++++++++++++++
+>   include/asm-generic/bitops.h          |    1 -
+>   include/asm-generic/bitops/minix-le.h |   15 ------
+>   include/asm-generic/bitops/minix.h    |   15 ------
+>   26 files changed, 87 insertions(+), 112 deletions(-)
+>   delete mode 100644 include/asm-generic/bitops/minix-le.h
+>   delete mode 100644 include/asm-generic/bitops/minix.h
+>
+> diff --git a/arch/alpha/include/asm/bitops.h b/arch/alpha/include/asm/bitops.h
+> index 822433a..85b8152 100644
+> --- a/arch/alpha/include/asm/bitops.h
+> +++ b/arch/alpha/include/asm/bitops.h
+> @@ -459,8 +459,6 @@ sched_find_first_bit(const unsigned long b[2])
+>   #define ext2_set_bit_atomic(l,n,a)   test_and_set_bit(n,a)
+>   #define ext2_clear_bit_atomic(l,n,a) test_and_clear_bit(n,a)
+>
+> -#include<asm-generic/bitops/minix.h>
+> -
+>   #endif /* __KERNEL__ */
+>
+>   #endif /* _ALPHA_BITOPS_H */
+> diff --git a/arch/arm/include/asm/bitops.h b/arch/arm/include/asm/bitops.h
+> index ac2edb4..59a2a2b 100644
+> --- a/arch/arm/include/asm/bitops.h
+> +++ b/arch/arm/include/asm/bitops.h
+> @@ -332,20 +332,6 @@ static inline int fls(int x)
+>   #define ext2_clear_bit_atomic(lock,nr,p)        \
+>   		test_and_clear_le_bit(nr, (unsigned long *)(p))
+>
+> -/*
+> - * Minix is defined to use little-endian byte ordering.
+> - * These do not need to be atomic.
+> - */
+> -#define minix_set_bit(nr,p)			\
+> -		__set_le_bit(nr, (unsigned long *)(p))
+> -#define minix_test_bit(nr,p)			\
+> -		test_le_bit(nr, (unsigned long *)(p))
+> -#define minix_test_and_set_bit(nr,p)		\
+> -		__test_and_set_le_bit(nr, (unsigned long *)(p))
+> -#define minix_test_and_clear_bit(nr,p)		\
+> -		__test_and_clear_le_bit(nr, (unsigned long *)(p))
+> -#define minix_find_first_zero_bit(p,sz)		\
+> -		find_first_zero_le_bit((unsigned long *)(p), sz)
+>
+>   #endif /* __KERNEL__ */
+>
+> diff --git a/arch/avr32/include/asm/bitops.h b/arch/avr32/include/asm/bitops.h
+> index 73a163a..72444d9 100644
+> --- a/arch/avr32/include/asm/bitops.h
+> +++ b/arch/avr32/include/asm/bitops.h
+> @@ -301,6 +301,5 @@ static inline int ffs(unsigned long word)
+>
+>   #include<asm-generic/bitops/le.h>
+>   #include<asm-generic/bitops/ext2-atomic.h>
+> -#include<asm-generic/bitops/minix-le.h>
+>
+>   #endif /* __ASM_AVR32_BITOPS_H */
+> diff --git a/arch/blackfin/include/asm/bitops.h b/arch/blackfin/include/asm/bitops.h
+> index 2c549f7..68843fa 100644
+> --- a/arch/blackfin/include/asm/bitops.h
+> +++ b/arch/blackfin/include/asm/bitops.h
+> @@ -27,7 +27,6 @@
+>
+>   #include<asm-generic/bitops/le.h>
+>   #include<asm-generic/bitops/ext2-atomic.h>
+> -#include<asm-generic/bitops/minix.h>
+>
+>   #ifndef CONFIG_SMP
+>   #include<linux/irqflags.h>
+> diff --git a/arch/cris/include/asm/bitops.h b/arch/cris/include/asm/bitops.h
+> index 71bea40..310e0de 100644
+> --- a/arch/cris/include/asm/bitops.h
+> +++ b/arch/cris/include/asm/bitops.h
+> @@ -159,7 +159,6 @@ static inline int test_and_change_bit(int nr, volatile unsigned long *addr)
+>   #define ext2_set_bit_atomic(l,n,a)   test_and_set_bit(n,a)
+>   #define ext2_clear_bit_atomic(l,n,a) test_and_clear_bit(n,a)
+>
+> -#include<asm-generic/bitops/minix.h>
+>   #include<asm-generic/bitops/sched.h>
+>
+>   #endif /* __KERNEL__ */
+> diff --git a/arch/frv/include/asm/bitops.h b/arch/frv/include/asm/bitops.h
+> index e3ea644..a1d00b0 100644
+> --- a/arch/frv/include/asm/bitops.h
+> +++ b/arch/frv/include/asm/bitops.h
+> @@ -406,8 +406,6 @@ int __ilog2_u64(u64 n)
+>   #define ext2_set_bit_atomic(lock,nr,addr)	test_and_set_bit  ((nr) ^ 0x18, (addr))
+>   #define ext2_clear_bit_atomic(lock,nr,addr)	test_and_clear_bit((nr) ^ 0x18, (addr))
+>
+> -#include<asm-generic/bitops/minix-le.h>
+> -
+>   #endif /* __KERNEL__ */
+>
+>   #endif /* _ASM_BITOPS_H */
+> diff --git a/arch/h8300/include/asm/bitops.h b/arch/h8300/include/asm/bitops.h
+> index 23cea66..e856c1b 100644
+> --- a/arch/h8300/include/asm/bitops.h
+> +++ b/arch/h8300/include/asm/bitops.h
+> @@ -202,7 +202,6 @@ static __inline__ unsigned long __ffs(unsigned long word)
+>   #include<asm-generic/bitops/lock.h>
+>   #include<asm-generic/bitops/le.h>
+>   #include<asm-generic/bitops/ext2-atomic.h>
+> -#include<asm-generic/bitops/minix.h>
+>
+>   #endif /* __KERNEL__ */
+>
+> diff --git a/arch/ia64/include/asm/bitops.h b/arch/ia64/include/asm/bitops.h
+> index 336984a..b76f7e0 100644
+> --- a/arch/ia64/include/asm/bitops.h
+> +++ b/arch/ia64/include/asm/bitops.h
+> @@ -461,7 +461,6 @@ static __inline__ unsigned long __arch_hweight64(unsigned long x)
+>   #define ext2_set_bit_atomic(l,n,a)	test_and_set_bit(n,a)
+>   #define ext2_clear_bit_atomic(l,n,a)	test_and_clear_bit(n,a)
+>
+> -#include<asm-generic/bitops/minix.h>
+>   #include<asm-generic/bitops/sched.h>
+>
+>   #endif /* __KERNEL__ */
+> diff --git a/arch/m32r/include/asm/bitops.h b/arch/m32r/include/asm/bitops.h
+> index cdfb4c8..6300f22 100644
+> --- a/arch/m32r/include/asm/bitops.h
+> +++ b/arch/m32r/include/asm/bitops.h
+> @@ -268,7 +268,6 @@ static __inline__ int test_and_change_bit(int nr, volatile void * addr)
+>
+>   #include<asm-generic/bitops/le.h>
+>   #include<asm-generic/bitops/ext2-atomic.h>
+> -#include<asm-generic/bitops/minix.h>
+>
+>   #endif /* __KERNEL__ */
+>
+> diff --git a/arch/m68k/include/asm/bitops_mm.h b/arch/m68k/include/asm/bitops_mm.h
+> index f31ed5a..5f06275 100644
+> --- a/arch/m68k/include/asm/bitops_mm.h
+> +++ b/arch/m68k/include/asm/bitops_mm.h
+> @@ -325,36 +325,6 @@ static inline int __fls(int x)
+>   #include<asm-generic/bitops/hweight.h>
+>   #include<asm-generic/bitops/lock.h>
+>
+> -/* Bitmap functions for the minix filesystem */
+> -
+> -static inline int minix_find_first_zero_bit(const void *vaddr, unsigned size)
+> -{
+> -	const unsigned short *p = vaddr, *addr = vaddr;
+> -	unsigned short num;
+> -
+> -	if (!size)
+> -		return 0;
+> -
+> -	size = (size>>  4) + ((size&  15)>  0);
+> -	while (*p++ == 0xffff) {
+> -		if (--size == 0)
+> -			return (p - addr)<<  4;
+> -	}
+> -
+> -	num = *--p;
+> -	return ((p - addr)<<  4) + ffz(num);
+> -}
+> -
+> -#define minix_test_and_set_bit(nr, addr)	__test_and_set_bit((nr) ^ 16, (unsigned long *)(addr))
+> -#define minix_set_bit(nr,addr)			__set_bit((nr) ^ 16, (unsigned long *)(addr))
+> -#define minix_test_and_clear_bit(nr, addr)	__test_and_clear_bit((nr) ^ 16, (unsigned long *)(addr))
+> -
+> -static inline int minix_test_bit(int nr, const void *vaddr)
+> -{
+> -	const unsigned short *p = vaddr;
+> -	return (p[nr>>  4]&  (1U<<  (nr&  15))) != 0;
+> -}
+> -
+>   /* Bitmap functions for little endian. */
+>
+>   #define __set_le_bit(nr, addr)	\
+> diff --git a/arch/mips/include/asm/bitops.h b/arch/mips/include/asm/bitops.h
+> index 07ce5aa..6a2202c 100644
+> --- a/arch/mips/include/asm/bitops.h
+> +++ b/arch/mips/include/asm/bitops.h
+> @@ -706,7 +706,6 @@ static inline int ffs(int word)
+>
+>   #include<asm-generic/bitops/le.h>
+>   #include<asm-generic/bitops/ext2-atomic.h>
+> -#include<asm-generic/bitops/minix.h>
+>
+>   #endif /* __KERNEL__ */
+>
+> diff --git a/arch/mn10300/include/asm/bitops.h b/arch/mn10300/include/asm/bitops.h
+> index e1a9768..94ee844 100644
+> --- a/arch/mn10300/include/asm/bitops.h
+> +++ b/arch/mn10300/include/asm/bitops.h
+> @@ -234,7 +234,6 @@ int ffs(int x)
+>   	test_and_clear_bit((nr), (addr))
+>
+>   #include<asm-generic/bitops/le.h>
+> -#include<asm-generic/bitops/minix-le.h>
+>
+>   #endif /* __KERNEL__ */
+>   #endif /* __ASM_BITOPS_H */
+> diff --git a/arch/parisc/include/asm/bitops.h b/arch/parisc/include/asm/bitops.h
+> index 919d7ed..43c516f 100644
+> --- a/arch/parisc/include/asm/bitops.h
+> +++ b/arch/parisc/include/asm/bitops.h
+> @@ -234,6 +234,4 @@ static __inline__ int fls(int x)
+>
+>   #endif	/* __KERNEL__ */
+>
+> -#include<asm-generic/bitops/minix-le.h>
+> -
+>   #endif /* _PARISC_BITOPS_H */
+> diff --git a/arch/powerpc/include/asm/bitops.h b/arch/powerpc/include/asm/bitops.h
+> index eb9ce7f..bf5ccfc 100644
+> --- a/arch/powerpc/include/asm/bitops.h
+> +++ b/arch/powerpc/include/asm/bitops.h
+> @@ -308,20 +308,6 @@ unsigned long find_next_le_bit(const unsigned long *addr,
+>   #define ext2_clear_bit_atomic(lock, nr, addr) \
+>   	test_and_clear_le_bit((nr), (unsigned long*)addr)
+>
+> -/* Bitmap functions for the minix filesystem.  */
+> -
+> -#define minix_test_and_set_bit(nr,addr) \
+> -	__test_and_set_le_bit(nr, (unsigned long *)addr)
+> -#define minix_set_bit(nr,addr) \
+> -	__set_le_bit(nr, (unsigned long *)addr)
+> -#define minix_test_and_clear_bit(nr,addr) \
+> -	__test_and_clear_le_bit(nr, (unsigned long *)addr)
+> -#define minix_test_bit(nr,addr) \
+> -	test_le_bit(nr, (unsigned long *)addr)
+> -
+> -#define minix_find_first_zero_bit(addr,size) \
+> -	find_first_zero_le_bit((unsigned long *)addr, size)
+> -
+>   #include<asm-generic/bitops/sched.h>
+>
+>   #endif /* __KERNEL__ */
+> diff --git a/arch/s390/include/asm/bitops.h b/arch/s390/include/asm/bitops.h
+> index 1bd1e11..e537613 100644
+> --- a/arch/s390/include/asm/bitops.h
+> +++ b/arch/s390/include/asm/bitops.h
+> @@ -842,7 +842,6 @@ static inline int find_next_le_bit(void *vaddr, unsigned long size,
+>   #define ext2_clear_bit_atomic(lock, nr, addr)     \
+>   	test_and_clear_le_bit((nr), (unsigned long *)(addr))
+>
+> -#include<asm-generic/bitops/minix.h>
+>
+>   #endif /* __KERNEL__ */
+>
+> diff --git a/arch/sh/include/asm/bitops.h b/arch/sh/include/asm/bitops.h
+> index fc5cd5b..90fa3e4 100644
+> --- a/arch/sh/include/asm/bitops.h
+> +++ b/arch/sh/include/asm/bitops.h
+> @@ -96,7 +96,6 @@ static inline unsigned long ffz(unsigned long word)
+>   #include<asm-generic/bitops/sched.h>
+>   #include<asm-generic/bitops/le.h>
+>   #include<asm-generic/bitops/ext2-atomic.h>
+> -#include<asm-generic/bitops/minix.h>
+>   #include<asm-generic/bitops/fls.h>
+>   #include<asm-generic/bitops/__fls.h>
+>   #include<asm-generic/bitops/fls64.h>
+> diff --git a/arch/sparc/include/asm/bitops_32.h b/arch/sparc/include/asm/bitops_32.h
+> index 75da6f8..25a6766 100644
+> --- a/arch/sparc/include/asm/bitops_32.h
+> +++ b/arch/sparc/include/asm/bitops_32.h
+> @@ -105,7 +105,6 @@ static inline void change_bit(unsigned long nr, volatile unsigned long *addr)
+>   #include<asm-generic/bitops/find.h>
+>   #include<asm-generic/bitops/le.h>
+>   #include<asm-generic/bitops/ext2-atomic.h>
+> -#include<asm-generic/bitops/minix.h>
+>
+>   #endif /* __KERNEL__ */
+>
+> diff --git a/arch/sparc/include/asm/bitops_64.h b/arch/sparc/include/asm/bitops_64.h
+> index 66db28e..38e9aa1 100644
+> --- a/arch/sparc/include/asm/bitops_64.h
+> +++ b/arch/sparc/include/asm/bitops_64.h
+> @@ -96,8 +96,6 @@ static inline unsigned int __arch_hweight8(unsigned int w)
+>   #define ext2_clear_bit_atomic(lock,nr,addr) \
+>   	test_and_clear_bit((nr) ^ 0x38,(unsigned long *)(addr))
+>
+> -#include<asm-generic/bitops/minix.h>
+> -
+>   #endif /* __KERNEL__ */
+>
+>   #endif /* defined(_SPARC64_BITOPS_H) */
+> diff --git a/arch/tile/include/asm/bitops.h b/arch/tile/include/asm/bitops.h
+> index 5447add..132e6bb 100644
+> --- a/arch/tile/include/asm/bitops.h
+> +++ b/arch/tile/include/asm/bitops.h
+> @@ -123,6 +123,5 @@ static inline unsigned long __arch_hweight64(__u64 w)
+>   #include<asm-generic/bitops/find.h>
+>   #include<asm-generic/bitops/sched.h>
+>   #include<asm-generic/bitops/le.h>
+> -#include<asm-generic/bitops/minix.h>
+>
+>   #endif /* _ASM_TILE_BITOPS_H */
+> diff --git a/arch/x86/include/asm/bitops.h b/arch/x86/include/asm/bitops.h
+> index 3c95e07..69d5813 100644
+> --- a/arch/x86/include/asm/bitops.h
+> +++ b/arch/x86/include/asm/bitops.h
+> @@ -463,7 +463,5 @@ static inline int fls(int x)
+>   #define ext2_clear_bit_atomic(lock, nr, addr)			\
+>   	test_and_clear_bit((nr), (unsigned long *)(addr))
+>
+> -#include<asm-generic/bitops/minix.h>
+> -
+>   #endif /* __KERNEL__ */
+>   #endif /* _ASM_X86_BITOPS_H */
+> diff --git a/arch/xtensa/include/asm/bitops.h b/arch/xtensa/include/asm/bitops.h
+> index a56b7b5..c8fac8d 100644
+> --- a/arch/xtensa/include/asm/bitops.h
+> +++ b/arch/xtensa/include/asm/bitops.h
+> @@ -125,7 +125,6 @@ static inline unsigned long __fls(unsigned long word)
+>   #include<asm-generic/bitops/hweight.h>
+>   #include<asm-generic/bitops/lock.h>
+>   #include<asm-generic/bitops/sched.h>
+> -#include<asm-generic/bitops/minix.h>
+>
+>   #endif	/* __KERNEL__ */
+>
+> diff --git a/fs/minix/Kconfig b/fs/minix/Kconfig
+> index 0fd7ca9..6624684 100644
+> --- a/fs/minix/Kconfig
+> +++ b/fs/minix/Kconfig
+> @@ -15,3 +15,11 @@ config MINIX_FS
+>   	  module will be called minix.  Note that the file system of your root
+>   	  partition (the one containing the directory /) cannot be compiled as
+>   	  a module.
+> +
+> +config MINIX_FS_NATIVE_ENDIAN
+> +	def_bool MINIX_FS
+> +	depends on H8300 || M32R || MICROBLAZE || MIPS || S390 || SUPERH || SPARC || XTENSA || (M68K&&  !MMU)
+> +
+> +config MINIX_FS_BIG_ENDIAN_16BIT_INDEXED
+> +	def_bool MINIX_FS
+> +	depends on M68K&&  MMU
+> diff --git a/fs/minix/minix.h b/fs/minix/minix.h
+> index 407b1c8..9dfd62c 100644
+> --- a/fs/minix/minix.h
+> +++ b/fs/minix/minix.h
+> @@ -88,4 +88,83 @@ static inline struct minix_inode_info *minix_i(struct inode *inode)
+>   	return list_entry(inode, struct minix_inode_info, vfs_inode);
+>   }
+>
+> +#if defined(CONFIG_MINIX_FS_NATIVE_ENDIAN)&&  \
+> +	defined(CONFIG_MINIX_FS_BIG_ENDIAN_16BIT_INDEXED)
+> +
+> +#error Minix file system byte order broken
+> +
+> +#elif defined(CONFIG_MINIX_FS_NATIVE_ENDIAN)
+> +
+> +/*
+> + * big-endian 32 or 64 bit indexed bitmaps on big-endian system or
+> + * little-endian bitmaps on little-endian system
+> + */
+> +
+> +#define minix_test_and_set_bit(nr, addr)	\
+> +	__test_and_set_bit((nr), (unsigned long *)(addr))
+> +#define minix_set_bit(nr, addr)		\
+> +	__set_bit((nr), (unsigned long *)(addr))
+> +#define minix_test_and_clear_bit(nr, addr) \
+> +	__test_and_clear_bit((nr), (unsigned long *)(addr))
+> +#define minix_test_bit(nr, addr)		\
+> +	test_bit((nr), (unsigned long *)(addr))
+> +#define minix_find_first_zero_bit(addr, size) \
+> +	find_first_zero_bit((unsigned long *)(addr), (size))
+> +
+> +#elif defined(CONFIG_MINIX_FS_BIG_ENDIAN_16BIT_INDEXED)
+> +
+> +/*
+> + * big-endian 16bit indexed bitmaps
+> + */
+> +
+> +static inline int minix_find_first_zero_bit(const void *vaddr, unsigned size)
+> +{
+> +	const unsigned short *p = vaddr, *addr = vaddr;
+> +	unsigned short num;
+> +
+> +	if (!size)
+> +		return 0;
+> +
+> +	size = (size>>  4) + ((size&  15)>  0);
+> +	while (*p++ == 0xffff) {
+> +		if (--size == 0)
+> +			return (p - addr)<<  4;
+> +	}
+> +
+> +	num = *--p;
+> +	return ((p - addr)<<  4) + ffz(num);
+> +}
+> +
+> +#define minix_test_and_set_bit(nr, addr)	\
+> +	__test_and_set_bit((nr) ^ 16, (unsigned long *)(addr))
+> +#define minix_set_bit(nr, addr)	\
+> +	__set_bit((nr) ^ 16, (unsigned long *)(addr))
+> +#define minix_test_and_clear_bit(nr, addr)	\
+> +	__test_and_clear_bit((nr) ^ 16, (unsigned long *)(addr))
+> +
+> +static inline int minix_test_bit(int nr, const void *vaddr)
+> +{
+> +	const unsigned short *p = vaddr;
+> +	return (p[nr>>  4]&  (1U<<  (nr&  15))) != 0;
+> +}
+> +
+> +#else
+> +
+> +/*
+> + * little-endian bitmaps
+> + */
+> +
+> +#define minix_test_and_set_bit(nr, addr)	\
+> +	__test_and_set_le_bit((nr), (unsigned long *)(addr))
+> +#define minix_set_bit(nr, addr)		\
+> +	__set_le_bit((nr), (unsigned long *)(addr))
+> +#define minix_test_and_clear_bit(nr, addr) \
+> +	__test_and_clear_le_bit((nr), (unsigned long *)(addr))
+> +#define minix_test_bit(nr, addr)		\
+> +	test_le_bit((nr), (unsigned long *)(addr))
+> +#define minix_find_first_zero_bit(addr, size) \
+> +	find_first_zero_le_bit((unsigned long *)(addr), (size))
+> +
+> +#endif
+> +
+>   #endif /* FS_MINIX_H */
+> diff --git a/include/asm-generic/bitops.h b/include/asm-generic/bitops.h
+> index dd7c014..280ca7a 100644
+> --- a/include/asm-generic/bitops.h
+> +++ b/include/asm-generic/bitops.h
+> @@ -40,6 +40,5 @@
+>   #include<asm-generic/bitops/non-atomic.h>
+>   #include<asm-generic/bitops/le.h>
+>   #include<asm-generic/bitops/ext2-atomic.h>
+> -#include<asm-generic/bitops/minix.h>
+>
+>   #endif /* __ASM_GENERIC_BITOPS_H */
+> diff --git a/include/asm-generic/bitops/minix-le.h b/include/asm-generic/bitops/minix-le.h
+> deleted file mode 100644
+> index f366cfa..0000000
+> --- a/include/asm-generic/bitops/minix-le.h
+> +++ /dev/null
+> @@ -1,15 +0,0 @@
+> -#ifndef _ASM_GENERIC_BITOPS_MINIX_LE_H_
+> -#define _ASM_GENERIC_BITOPS_MINIX_LE_H_
+> -
+> -#define minix_test_and_set_bit(nr,addr)	\
+> -	__test_and_set_le_bit((nr), (unsigned long *)(addr))
+> -#define minix_set_bit(nr,addr)		\
+> -	__set_le_bit((nr), (unsigned long *)(addr))
+> -#define minix_test_and_clear_bit(nr,addr) \
+> -	__test_and_clear_le_bit((nr), (unsigned long *)(addr))
+> -#define minix_test_bit(nr,addr)		\
+> -	test_le_bit((nr), (unsigned long *)(addr))
+> -#define minix_find_first_zero_bit(addr,size) \
+> -	find_first_zero_le_bit((unsigned long *)(addr), (size))
+> -
+> -#endif /* _ASM_GENERIC_BITOPS_MINIX_LE_H_ */
+> diff --git a/include/asm-generic/bitops/minix.h b/include/asm-generic/bitops/minix.h
+> deleted file mode 100644
+> index 91f42e8..0000000
+> --- a/include/asm-generic/bitops/minix.h
+> +++ /dev/null
+> @@ -1,15 +0,0 @@
+> -#ifndef _ASM_GENERIC_BITOPS_MINIX_H_
+> -#define _ASM_GENERIC_BITOPS_MINIX_H_
+> -
+> -#define minix_test_and_set_bit(nr,addr)	\
+> -	__test_and_set_bit((nr),(unsigned long *)(addr))
+> -#define minix_set_bit(nr,addr)		\
+> -	__set_bit((nr),(unsigned long *)(addr))
+> -#define minix_test_and_clear_bit(nr,addr) \
+> -	__test_and_clear_bit((nr),(unsigned long *)(addr))
+> -#define minix_test_bit(nr,addr)		\
+> -	test_bit((nr),(unsigned long *)(addr))
+> -#define minix_find_first_zero_bit(addr,size) \
+> -	find_first_zero_bit((unsigned long *)(addr),(size))
+> -
+> -#endif /* _ASM_GENERIC_BITOPS_MINIX_H_ */
 
-Oops, the sleep don't need to be UNINTERRUPTIBLE.
 
----
-Subject: mempool: the mempool_alloc() sleep can be interrupted
-
-Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
----
- mm/mempool.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
---- linux-next.orig/mm/mempool.c	2010-10-22 13:35:17.000000000 +0800
-+++ linux-next/mm/mempool.c	2010-10-22 13:35:22.000000000 +0800
-@@ -235,7 +235,7 @@ repeat_alloc:
- 	/* Now start performing page reclaim */
- 	gfp_temp = gfp_mask;
- 	init_wait(&wait);
--	prepare_to_wait(&pool->wait, &wait, TASK_UNINTERRUPTIBLE);
-+	prepare_to_wait(&pool->wait, &wait, TASK_INTERRUPTIBLE);
- 	smp_mb();
- 	if (!pool->curr_nr) {
- 		/*
+-- 
+------------------------------------------------------------------------
+Greg Ungerer  --  Principal Engineer        EMAIL:     gerg@snapgear.com
+SnapGear Group, McAfee                      PHONE:       +61 7 3435 2888
+8 Gardner Close                             FAX:         +61 7 3217 5323
+Milton, QLD, 4064, Australia                WEB: http://www.SnapGear.com
