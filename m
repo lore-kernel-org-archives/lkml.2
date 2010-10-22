@@ -1,74 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755825Ab0JVLMX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 07:12:23 -0400
-Received: from www.tglx.de ([62.245.132.106]:55206 "EHLO www.tglx.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752183Ab0JVLMV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 07:12:21 -0400
-Date: Fri, 22 Oct 2010 13:12:02 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Richard Weinberger <richard@nod.at>
-cc: peterz@infradead.org, hpa@zytor.com, mingo@elte.hu,
-        linux-kernel@vger.kernel.org, linux-next@vger.kernel.org
-Subject: Re: linux-next: User Mode Linux broken
-In-Reply-To: <ed248baebfad9b050f53a6832435a9a5@radon2.swed.at>
-Message-ID: <alpine.LFD.2.00.1010221309370.3345@localhost6.localdomain6>
-References: <201010211315.26679.richard@nod.at> <201010212122.38437.richard@nod.at> <alpine.LFD.2.00.1010212143300.3467@localhost6.localdomain6> <201010212227.12919.richard@nod.at> <alpine.LFD.2.00.1010220900230.3467@localhost6.localdomain6>
- <ed248baebfad9b050f53a6832435a9a5@radon2.swed.at>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1754428Ab0JVLQV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 07:16:21 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:58139 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752890Ab0JVLQU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Oct 2010 07:16:20 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [GIT PULL] BKL as a config option
+Date: Fri, 22 Oct 2010 13:15:43 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.36-next-20101021+; KDE/4.5.1; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: Text/Plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201010221315.43118.arnd@arndb.de>
+X-Provags-ID: V02:K0:eOpNiTtwp6A4fMrQhJU9ByOPg3q2YCGyQ/qojRgkJFL
+ aXczfV8Syy+e2teIX0bu8Lc1ZkWJ88tls4ysmpgRf3TMnEL7xH
+ lMAkWRzrPV8oSOTCn7LXraF5tH5jyAxN+QnOipfLykPA/uGP3N
+ 3z3nZLQGZKv/fz2xKWDR6uqdGoaSvyZESPC27cxUh7tkgzC7aa
+ +FCi4KD/wHwQtazIflB7Q==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 22 Oct 2010, Richard Weinberger wrote:
+Hi Linus,
 
-> On Fri, 22 Oct 2010 09:03:44 +0200 (CEST), Thomas Gleixner
-> <tglx@linutronix.de> wrote:
-> > On Thu, 21 Oct 2010, Richard Weinberger wrote:
-> >> Am Donnerstag 21 Oktober 2010, 21:45:35 schrieb Thomas Gleixner:
-> >> > Why shold it solve it ? irq_enable is set to compat_irq_enable which
-> >> > in turn calls chip->enable.
-> >> >
-> >> > So how's that different ?
-> >>
-> >> I took a closer look on the issue.
-> >>
-> >> check_irq_resend() gets called before irq_chip_set_defaults().
-> >> In the first call to check_irq_resend() desc->irq_data.chip->irq_enable is
-> >> NULL. UML dies due to a NULL-pointer dereference...
-> >>
-> >> I don't know why check_irq_resend() is called before irq_chip_set_defaults().
-> >> It's your code. ;-)
-> > 
-> > Well, but it only gets called via enable_irq(). So that means
-> > something is calling enable_irq _before_ request/setup_irq().
-> > 
-> > arch/um/kernel/irq.c:init_IRQ() does that :)
-> 
-> Sorry I'm not very familiar with the IRQ stuff.
-> Does that mean init_IRQ() is not allowed to call enable_irq()?
+This is a collection of BKL removal stuff that did not fit anywhere
+else. Most patches are conversions that are simple but could not
+be done with an automated script for some reason.
 
-Well, nothing is supposed to call enable_irq() before an interrupt is
-installed with request_irq() or setup_irq().
+The final patch introduces CONFIG_BKL as we discussed a few weeks
+back. It only marks drivers as depends on BKL that don't have
+a patch in linux-next yet, so it misses the modules that get
+converted in other trees.
 
-Patch below should fix your problem.
+CONFIG_FILE_LOCKING still selects CONFIG_BKL because a kernel
+without file locking is rather useless and that would make it
+easy for user to break. I will follow up with a patch to change
+that once the dependencies for that are merged, hopefully
+before -rc1.
 
-Thanks,
+Please pull from:
 
-	tglx
+  git+ssh://master.kernel.org/pub/scm/linux/kernel/git/arnd/bkl.git config
+
+
+
 ---
-diff --git a/arch/um/kernel/irq.c b/arch/um/kernel/irq.c
-index a746e30..6abc1af 100644
---- a/arch/um/kernel/irq.c
-+++ b/arch/um/kernel/irq.c
-@@ -395,7 +395,6 @@ void __init init_IRQ(void)
- 	irq_desc[TIMER_IRQ].action = NULL;
- 	irq_desc[TIMER_IRQ].depth = 1;
- 	irq_desc[TIMER_IRQ].chip = &SIGVTALRM_irq_type;
--	enable_irq(TIMER_IRQ);
- 	for (i = 1; i < NR_IRQS; i++) {
- 		irq_desc[i].status = IRQ_DISABLED;
- 		irq_desc[i].action = NULL;
+Al Viro (1):
+      fix rawctl compat ioctls breakage on amd64 and itanic
+
+Arnd Bergmann (15):
+      hpet: kill BKL, add compat_ioctl
+      s390/block: kill the big kernel lock
+      isapnp: BKL removal
+      alpha: kill big kernel lock
+      cris: autoconvert trivial BKL users
+      parisc: remove big kernel lock
+      uml: kill big kernel lock
+      tlclk: remove big kernel lock
+      dvb/bt8xx: kill the big kernel lock
+      dvb-core: kill the big kernel lock
+      rtmutex-tester: make it build without BKL
+      blktrace: remove the big kernel lock
+      sunrpc: remove the big kernel lock
+      dabusb: remove the BKL
+      BKL: introduce CONFIG_BKL.
+
+Namhyung Kim (1):
+      init/main.c: remove BKL notations
+
+ arch/alpha/kernel/osf_sys.c                 |    5 -
+ arch/alpha/kernel/traps.c                   |    3 -
+ arch/cris/arch-v10/drivers/ds1302.c         |    7 +-
+ arch/cris/arch-v10/drivers/pcf8563.c        |    6 +-
+ arch/cris/arch-v10/drivers/sync_serial.c    |   11 +-
+ arch/cris/arch-v32/drivers/cryptocop.c      |    4 +-
+ arch/cris/arch-v32/drivers/mach-a3/gpio.c   |   11 +-
+ arch/cris/arch-v32/drivers/mach-fs/gpio.c   |   11 +-
+ arch/cris/arch-v32/drivers/pcf8563.c        |    6 +-
+ arch/cris/arch-v32/drivers/sync_serial.c    |   11 +-
+ arch/parisc/kernel/perf.c                   |    4 -
+ arch/um/drivers/harddog_kern.c              |   13 +-
+ arch/um/drivers/hostaudio_kern.c            |   12 +-
+ arch/um/drivers/ubd_kern.c                  |   11 +-
+ arch/um/kernel/exec.c                       |    2 -
+ drivers/char/hpet.c                         |   98 +++++++----
+ drivers/char/raw.c                          |  243 +++++++++++++++-----------
+ drivers/char/tlclk.c                        |    6 +-
+ drivers/gpu/drm/Kconfig                     |    5 +-
+ drivers/media/Kconfig                       |    1 +
+ drivers/media/dvb/bt8xx/dst_ca.c            |    7 +-
+ drivers/media/dvb/dvb-core/dmxdev.c         |   17 +--
+ drivers/media/dvb/dvb-core/dvb_ca_en50221.c |    8 +-
+ drivers/media/dvb/dvb-core/dvb_net.c        |    9 +-
+ drivers/media/dvb/dvb-core/dvbdev.c         |   17 +-
+ drivers/media/video/dabusb.c                |   18 +--
+ drivers/net/appletalk/Kconfig               |    1 +
+ drivers/pnp/isapnp/proc.c                   |   15 +-
+ drivers/s390/block/dasd.c                   |    6 -
+ drivers/s390/block/dasd_ioctl.c             |   17 +--
+ drivers/s390/block/dcssblk.c                |    5 -
+ drivers/staging/cx25821/Kconfig             |    1 +
+ drivers/staging/easycap/Kconfig             |    1 +
+ drivers/staging/go7007/Kconfig              |    1 +
+ drivers/staging/usbip/Kconfig               |    2 +-
+ fs/Kconfig                                  |    1 +
+ fs/adfs/Kconfig                             |    1 +
+ fs/autofs/Kconfig                           |    1 +
+ fs/compat_ioctl.c                           |   70 --------
+ fs/hpfs/Kconfig                             |    1 +
+ fs/nfs/Kconfig                              |    1 +
+ fs/nfsd/Kconfig                             |    1 +
+ fs/smbfs/Kconfig                            |    1 +
+ fs/udf/Kconfig                              |    1 +
+ fs/ufs/Kconfig                              |    1 +
+ include/linux/smp_lock.h                    |    7 +-
+ init/Kconfig                                |    2 +-
+ init/main.c                                 |    2 -
+ kernel/rtmutex-tester.c                     |    6 +
+ kernel/trace/blktrace.c                     |   14 +--
+ lib/Kconfig.debug                           |    9 +
+ net/ipx/Kconfig                             |    1 +
+ net/sunrpc/cache.c                          |   15 +--
+ net/sunrpc/rpc_pipe.c                       |   26 +--
+ net/x25/Kconfig                             |    1 +
+ 55 files changed, 347 insertions(+), 410 deletions(-)
