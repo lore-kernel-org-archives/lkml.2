@@ -1,65 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752411Ab0JVCAJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Oct 2010 22:00:09 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:52433 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751287Ab0JVCAH convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Oct 2010 22:00:07 -0400
+	id S1751839Ab0JVCDj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Oct 2010 22:03:39 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:57518 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750951Ab0JVCDi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Oct 2010 22:03:38 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:cc:content-type;
+        b=ArsOxguF7bRRu1RyJv7eXCd1DP4wo0imlUHuFfvIYkEWIh+16+GET+kLpvIqIjEWao
+         daM+EyLP7/AeLXsdJW6gCi2o0SLOLynJkn+uL1EBjxhM5qSZSYdVDbC7rhtsQl0zK+AB
+         ag04nTo+jvngqHgCfnEzCjpX53g14vbegApCQ=
 MIME-Version: 1.0
-In-Reply-To: <201010220050.o9M0ognt032167@hera.kernel.org>
-References: <201010220050.o9M0ognt032167@hera.kernel.org>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Thu, 21 Oct 2010 18:59:16 -0700
-Message-ID: <AANLkTi=2tPU6qwuoOEfS7NfsNX+7vCYhvkHzNOcx4Gf3@mail.gmail.com>
-Subject: Re: [GIT PULL] memblock for 2.6.37
-To: "H. Peter Anvin" <hpa@linux.intel.com>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        CAI Qian <caiqian@redhat.com>, "David S. Miller" <davem@davemloft.net>,
-        Felipe Balbi <balbi@ti.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Ingo Molnar <mingo@elte.hu>, Jan Beulich <jbeulich@novell.com>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
-        Jeremy Fitzhardinge <jeremy@goop.org>,
-        Kevin Hilman <khilman@deeprootsystems.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Michael Ellerman <michael@ellerman.id.au>,
-        Michal Simek <monstr@monstr.eu>, Paul Mundt <lethal@linux-sh.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Russell King <rmk@arm.linux.org.uk>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Tomi Valkeinen <tomi.valkeinen@nokia.com>,
-        Vivek Goyal <vgoyal@redhat.com>, Yinghai Lu <yinghai@kernel.org>,
-        ext Grazvydas Ignotas <notasas@gmail.com>, linux-mm@kvack.org
+Date: Thu, 21 Oct 2010 22:03:37 -0400
+Message-ID: <AANLkTi=BMrsMjj5-v4-VLhGWp+kny3mxgUmhF6ywHSy-@mail.gmail.com>
+Subject: Info regarding MTRR handling
+From: Andev <debiandev@gmail.com>
+To: rgooch@atnf.csiro.au, yinghai@kernel.org
+Cc: linux kernel <kernelnewbies@nl.linux.org>,
+        LKML <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 21, 2010 at 5:50 PM, H. Peter Anvin <hpa@linux.intel.com> wrote:
->
-> The unmerged branch is at:
->
->  git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git core-memblock-for-linus
->
-> The premerged branch is at:
->
->  git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git core-memblock-for-linus-merged
+Hi Richard,
 
-I always tend to take the unmerged version, because I want to see what
-the conflicts are (it gives me some view of what clashes), but when
-people do pre-merges I then try to compare my merge against theirs.
+I am having some trouble understanding the implementation of MTRR
+handling in Linux.
+I am trying to see the performance impact by disabling all cache. As a
+first step I am
+disabling MTRR.
 
-However, in this case, your pre-merged version differs. But I think
-it's your merge that was incorrect. You left this line:
+Intially when I boot up my mtrr file is as following:
 
-   obj-$(CONFIG_HAVE_EARLY_RES) += early_res.o
+$ cat /proc/mtrr
+reg00: base=0x00000000 (   0MB), size=131072MB: write-back, count=1
+reg01: base=0xcff00000 (3327MB), size=   1MB: uncachable, count=1
+reg02: base=0xd0000000 (3328MB), size= 256MB: uncachable, count=1
+reg03: base=0xe0000000 (3584MB), size= 512MB: uncachable, count=1
+reg04: base=0x1ff0000000 (130816MB), size= 256MB: uncachable, count=1
 
-in kernel/Makefile, even though kernel/early_res.c is gone.
+There seems to be a discrepancy because I have 8 gb RAM in my system.
 
-I'll push out my merge, but please do verify that it all looks ok.
+Now I run an OmpSCR benchmark
+-------------------------
+$ ./c_lu 800
 
-                               Linus
+This program is part of the OpenMP Source Code Repository (OmpSCR)
+
+Program:       ./c_lu
+Description:   LU reduction of a dense matrix.
+
+Argument size 800
+Argument NUMTHREADS 1
+
+Running ...
+
+Timer EXE_TIME     1.645332
+-----------------------
+
+So, I go ahead and disable the write-back cache as follows:
+
+$ echo "disable=00" > /proc/mtrr
+$ echo "base=0x00000000 size=0x80000000 type=uncachable" > /proc/mtrr
+
+Now I again run the benchmark
+
+$ ./c_lu 800
+
+This program is part of the OpenMP Source Code Repository (OmpSCR)
+
+Program:       ./c_lu
+Description:   LU reduction of a dense matrix.
+
+Argument size 800
+Argument NUMTHREADS 1
+
+Running ...
+ runs for a verry long time.(> 10 min)
+
+So there is some effect of disabling MTRR.
+Again when I enable the MTRR, I am not able to restore to intial state.
+
+$ echo "disable=00" > /proc/mtrr
+$ echo "base=0x00000000 size=0x80000000 type=write-back" > /proc/mtrr
+
+Even after doing this, there is no speedup compared to disabling MTRR.
+
+It will really be helpful if you could point me as to where I am wrong.
+
+Thanks,
+Andev.
