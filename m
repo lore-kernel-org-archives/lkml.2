@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758224Ab0JVSuy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 14:50:54 -0400
-Received: from kroah.org ([198.145.64.141]:45725 "EHLO coco.kroah.org"
+	id S1758812Ab0JVSu4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 14:50:56 -0400
+Received: from kroah.org ([198.145.64.141]:45720 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756605Ab0JVSih (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 14:38:37 -0400
+	id S1756772Ab0JVSig (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Oct 2010 14:38:36 -0400
 X-Mailbox-Line: From gregkh@clark.site Fri Oct 22 11:35:58 2010
-Message-Id: <20101022183558.910231219@clark.site>
+Message-Id: <20101022183558.821174052@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 22 Oct 2010 11:34:57 -0700
+Date: Fri, 22 Oct 2010 11:34:56 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Johannes Berg <johannes.berg@intel.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [30/66] wext: fix potential private ioctl memory content leak
+        Joel Becker <joel.becker@oracle.com>
+Subject: [29/66] ocfs2: Dont walk off the end of fast symlinks.
 In-Reply-To: <20101022183711.GA23214@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,39 +25,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johannes Berg <johannes.berg@intel.com>
+From: Joel Becker <joel.becker@oracle.com>
 
-commit df6d02300f7c2fbd0fbe626d819c8e5237d72c62 upstream.
+commit 1fc8a117865b54590acd773a55fbac9221b018f0 upstream.
 
-When a driver doesn't fill the entire buffer, old
-heap contents may remain, and if it also doesn't
-update the length properly, this old heap content
-will be copied back to userspace.
+ocfs2 fast symlinks are NUL terminated strings stored inline in the
+inode data area.  However, disk corruption or a local attacker could, in
+theory, remove that NUL.  Because we're using strlen() (my fault,
+introduced in a731d1 when removing vfs_follow_link()), we could walk off
+the end of that string.
 
-It is very unlikely that this happens in any of
-the drivers using private ioctls since it would
-show up as junk being reported by iwpriv, but it
-seems better to be safe here, so use kzalloc.
-
-Reported-by: Jeff Mahoney <jeffm@suse.com>
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Joel Becker <joel.becker@oracle.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- net/wireless/wext.c |    2 +-
+ fs/ocfs2/symlink.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/net/wireless/wext.c
-+++ b/net/wireless/wext.c
-@@ -1029,7 +1029,7 @@ static int ioctl_private_iw_point(struct
- 	} else if (!iwp->pointer)
- 		return -EFAULT;
+--- a/fs/ocfs2/symlink.c
++++ b/fs/ocfs2/symlink.c
+@@ -128,7 +128,7 @@ static void *ocfs2_fast_follow_link(stru
+ 	}
  
--	extra = kmalloc(extra_size, GFP_KERNEL);
-+	extra = kzalloc(extra_size, GFP_KERNEL);
- 	if (!extra)
- 		return -ENOMEM;
- 
+ 	/* Fast symlinks can't be large */
+-	len = strlen(target);
++	len = strnlen(target, ocfs2_fast_symlink_chars(inode->i_sb));
+ 	link = kzalloc(len + 1, GFP_NOFS);
+ 	if (!link) {
+ 		status = -ENOMEM;
 
 
