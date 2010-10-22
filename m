@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759634Ab0JVTGG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 15:06:06 -0400
-Received: from kroah.org ([198.145.64.141]:34323 "EHLO coco.kroah.org"
+	id S1759648Ab0JVTG1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 15:06:27 -0400
+Received: from kroah.org ([198.145.64.141]:34304 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759457Ab0JVS4w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 14:56:52 -0400
+	id S1759149Ab0JVS4u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Oct 2010 14:56:50 -0400
 X-Mailbox-Line: From gregkh@clark.site Fri Oct 22 11:52:33 2010
-Message-Id: <20101022185233.921638761@clark.site>
+Message-Id: <20101022185233.728945353@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 22 Oct 2010 11:51:47 -0700
+Date: Fri, 22 Oct 2010 11:51:45 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Johannes Weiner <hannes@cmpxchg.org>, Alex Elder <aelder@sgi.com>
-Subject: [073/103] xfs: properly account for reclaimed inodes
+        Ohad Ben-Cohen <ohad@wizery.com>,
+        Maxim Levitsky <maximlevitsky@gmail.com>,
+        Nicolas Pitre <nico@fluxnic.net>, Chris Ball <cjb@laptop.org>
+Subject: [071/103] mmc: sdio: fix SDIO suspend/resume regression
 In-Reply-To: <20101022185455.GA9114@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,101 +27,66 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johannes Weiner <hannes@cmpxchg.org>
+From: Ohad Ben-Cohen <ohad@wizery.com>
 
-commit 081003fff467ea0e727f66d5d435b4f473a789b3 upstream.
+commit 1c8cf9c997a4a6b36e907c7ede5f048aeaab1644 upstream.
 
-When marking an inode reclaimable, a per-AG counter is increased, the
-inode is tagged reclaimable in its per-AG tree, and, when this is the
-first reclaimable inode in the AG, the AG entry in the per-mount tree
-is also tagged.
+Fix SDIO suspend/resume regression introduced by 4c2ef25fe0b "mmc: fix
+all hangs related to mmc/sd card insert/removal during suspend/resume":
 
-When an inode is finally reclaimed, however, it is only deleted from
-the per-AG tree.  Neither the counter is decreased, nor is the parent
-tree's AG entry untagged properly.
+  PM: Syncing filesystems ... done.
+  Freezing user space processes ... (elapsed 0.01 seconds) done.
+  Freezing remaining freezable tasks ... (elapsed 0.01 seconds) done.
+  Suspending console(s) (use no_console_suspend to debug)
+  pm_op(): platform_pm_suspend+0x0/0x5c returns -38
+  PM: Device pxa2xx-mci.0 failed to suspend: error -38
+  PM: Some devices failed to suspend
 
-Since the tags in the per-mount tree are not cleared, the inode
-shrinker iterates over all AGs that have had reclaimable inodes at one
-point in time.
+4c2ef25fe0b moved the card removal/insertion mechanism out of MMC's
+suspend/resume path and into pm notifiers (mmc_pm_notify), and that
+broke SDIO's expectation that mmc_suspend_host() will remove the card,
+and squash the error, in case -ENOSYS is returned from the bus suspend
+handler (mmc_sdio_suspend() in this case).
 
-The counters on the other hand signal an increasing amount of slab
-objects to reclaim.  Since "70e60ce xfs: convert inode shrinker to
-per-filesystem context" this is not a real issue anymore because the
-shrinker bails out after one iteration.
+mmc_sdio_suspend() is using this whenever at least one of the card's SDIO
+function drivers does not have suspend/resume handlers - in that case
+it is agreed to force removal of the entire card.
 
-But the problem was observable on a machine running v2.6.34, where the
-reclaimable work increased and each process going into direct reclaim
-eventually got stuck on the xfs inode shrinking path, trying to scan
-several million objects.
+This patch fixes this regression by trivially bringing back that part of
+mmc_suspend_host(), which was removed by 4c2ef25fe0b.
 
-Fix this by properly unwinding the reclaimable-state tracking of an
-inode when it is reclaimed.
-
-Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
-Reviewed-by: Dave Chinner <dchinner@redhat.com>
-Signed-off-by: Alex Elder <aelder@sgi.com>
+Reported-and-tested-by: Sven Neumann <s.neumann@raumfeld.com>
+Signed-off-by: Ohad Ben-Cohen <ohad@wizery.com>
+Cc: Maxim Levitsky <maximlevitsky@gmail.com>
+Acked-by: Nicolas Pitre <nico@fluxnic.net>
+Signed-off-by: Chris Ball <cjb@laptop.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/xfs/linux-2.6/xfs_sync.c |   16 ++++++++++++----
- fs/xfs/linux-2.6/xfs_sync.h |    1 +
- fs/xfs/xfs_iget.c           |    1 +
- 3 files changed, 14 insertions(+), 4 deletions(-)
+ drivers/mmc/core/core.c |   13 +++++++++++++
+ 1 file changed, 13 insertions(+)
 
---- a/fs/xfs/linux-2.6/xfs_sync.c
-+++ b/fs/xfs/linux-2.6/xfs_sync.c
-@@ -711,13 +711,10 @@ xfs_inode_set_reclaim_tag(
- }
- 
- void
--__xfs_inode_clear_reclaim_tag(
--	xfs_mount_t	*mp,
-+__xfs_inode_clear_reclaim(
- 	xfs_perag_t	*pag,
- 	xfs_inode_t	*ip)
- {
--	radix_tree_tag_clear(&pag->pag_ici_root,
--			XFS_INO_TO_AGINO(mp, ip->i_ino), XFS_ICI_RECLAIM_TAG);
- 	pag->pag_ici_reclaimable--;
- 	if (!pag->pag_ici_reclaimable) {
- 		/* clear the reclaim tag from the perag radix tree */
-@@ -731,6 +728,17 @@ __xfs_inode_clear_reclaim_tag(
+--- a/drivers/mmc/core/core.c
++++ b/drivers/mmc/core/core.c
+@@ -1277,6 +1277,19 @@ int mmc_suspend_host(struct mmc_host *ho
+ 	if (host->bus_ops && !host->bus_dead) {
+ 		if (host->bus_ops->suspend)
+ 			err = host->bus_ops->suspend(host);
++		if (err == -ENOSYS || !host->bus_ops->resume) {
++			/*
++			 * We simply "remove" the card in this case.
++			 * It will be redetected on resume.
++			 */
++			if (host->bus_ops->remove)
++				host->bus_ops->remove(host);
++			mmc_claim_host(host);
++			mmc_detach_bus(host);
++			mmc_release_host(host);
++			host->pm_flags = 0;
++			err = 0;
++		}
  	}
- }
- 
-+void
-+__xfs_inode_clear_reclaim_tag(
-+	xfs_mount_t	*mp,
-+	xfs_perag_t	*pag,
-+	xfs_inode_t	*ip)
-+{
-+	radix_tree_tag_clear(&pag->pag_ici_root,
-+			XFS_INO_TO_AGINO(mp, ip->i_ino), XFS_ICI_RECLAIM_TAG);
-+	__xfs_inode_clear_reclaim(pag, ip);
-+}
-+
- /*
-  * Inodes in different states need to be treated differently, and the return
-  * value of xfs_iflush is not sufficient to get this right. The following table
---- a/fs/xfs/linux-2.6/xfs_sync.h
-+++ b/fs/xfs/linux-2.6/xfs_sync.h
-@@ -47,6 +47,7 @@ int xfs_reclaim_inodes(struct xfs_mount
- 
- void xfs_inode_set_reclaim_tag(struct xfs_inode *ip);
- void __xfs_inode_set_reclaim_tag(struct xfs_perag *pag, struct xfs_inode *ip);
-+void __xfs_inode_clear_reclaim(struct xfs_perag *pag, struct xfs_inode *ip);
- void __xfs_inode_clear_reclaim_tag(struct xfs_mount *mp, struct xfs_perag *pag,
- 				struct xfs_inode *ip);
- 
---- a/fs/xfs/xfs_iget.c
-+++ b/fs/xfs/xfs_iget.c
-@@ -492,6 +492,7 @@ xfs_ireclaim(
- 	write_lock(&pag->pag_ici_lock);
- 	if (!radix_tree_delete(&pag->pag_ici_root, agino))
- 		ASSERT(0);
-+	__xfs_inode_clear_reclaim(pag, ip);
- 	write_unlock(&pag->pag_ici_lock);
- 	xfs_perag_put(pag);
+ 	mmc_bus_put(host);
  
 
 
