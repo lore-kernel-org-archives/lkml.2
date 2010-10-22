@@ -1,18 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753952Ab0JVSc1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 14:32:27 -0400
-Received: from kroah.org ([198.145.64.141]:37758 "EHLO coco.kroah.org"
+	id S1753723Ab0JVScj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 14:32:39 -0400
+Received: from kroah.org ([198.145.64.141]:37750 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758906Ab0JVSZW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 14:25:22 -0400
+	id S1758889Ab0JVSZS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Oct 2010 14:25:18 -0400
 From: Greg Kroah-Hartman <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org
-Cc: Patrick Pannuto <ppannuto@codeaurora.org>,
-        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [PATCH 04/31] driver core: platform: Use drv->driver.bus instead of assuming platform_bus_type
-Date: Fri, 22 Oct 2010 11:24:49 -0700
-Message-Id: <1287771916-15016-4-git-send-email-gregkh@suse.de>
+Cc: Thomas Renninger <trenn@suse.de>, Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [PATCH 01/31] Dynamic Debug: Split out query string parsing/setup from proc_write
+Date: Fri, 22 Oct 2010 11:24:46 -0700
+Message-Id: <1287771916-15016-1-git-send-email-gregkh@suse.de>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <20101022175107.GB13489@kroah.com>
 References: <20101022175107.GB13489@kroah.com>
@@ -20,38 +19,87 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Patrick Pannuto <ppannuto@codeaurora.org>
+From: Thomas Renninger <trenn@suse.de>
 
-In theory (although not *yet* in practice), a driver being passed
-to platform_driver_probe might have driver.bus set to something
-other than platform_bus_type. Locking drv->driver.bus is always
-correct.
+The parsing and applying of dynamic debug strings is not only useful for
+/sys/../dynamic_debug/control write access, but can also be used for
+boot parameter parsing.
+The boot parameter is introduced in a follow up patch.
 
-Signed-off-by: Patrick Pannuto <ppannuto@codeaurora.org>
+Signed-off-by: Thomas Renninger <trenn@suse.de>
+Acked-by: jbaron@redhat.com
+Acked-by: Pekka Enberg <penberg@cs.helsinki.fi>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- drivers/base/platform.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+ lib/dynamic_debug.c |   40 +++++++++++++++++++++++++---------------
+ 1 files changed, 25 insertions(+), 15 deletions(-)
 
-diff --git a/drivers/base/platform.c b/drivers/base/platform.c
-index c6c933f..579906f 100644
---- a/drivers/base/platform.c
-+++ b/drivers/base/platform.c
-@@ -488,12 +488,12 @@ int __init_or_module platform_driver_probe(struct platform_driver *drv,
- 	 * if the probe was successful, and make sure any forced probes of
- 	 * new devices fail.
- 	 */
--	spin_lock(&platform_bus_type.p->klist_drivers.k_lock);
-+	spin_lock(&drv->driver.bus->p->klist_drivers.k_lock);
- 	drv->probe = NULL;
- 	if (code == 0 && list_empty(&drv->driver.p->klist_devices.k_list))
- 		retval = -ENODEV;
- 	drv->driver.probe = platform_drv_probe_fail;
--	spin_unlock(&platform_bus_type.p->klist_drivers.k_lock);
-+	spin_unlock(&drv->driver.bus->p->klist_drivers.k_lock);
+diff --git a/lib/dynamic_debug.c b/lib/dynamic_debug.c
+index 02afc25..84d103c4 100644
+--- a/lib/dynamic_debug.c
++++ b/lib/dynamic_debug.c
+@@ -429,6 +429,27 @@ static int ddebug_parse_flags(const char *str, unsigned int *flagsp,
+ 	return 0;
+ }
  
- 	if (code != retval)
- 		platform_driver_unregister(drv);
++static int ddebug_exec_query(char *query_string)
++{
++	unsigned int flags = 0, mask = 0;
++	struct ddebug_query query;
++#define MAXWORDS 9
++	int nwords;
++	char *words[MAXWORDS];
++
++	nwords = ddebug_tokenize(query_string, words, MAXWORDS);
++	if (nwords <= 0)
++		return -EINVAL;
++	if (ddebug_parse_query(words, nwords-1, &query))
++		return -EINVAL;
++	if (ddebug_parse_flags(words[nwords-1], &flags, &mask))
++		return -EINVAL;
++
++	/* actually go and implement the change */
++	ddebug_change(&query, flags, mask);
++	return 0;
++}
++
+ /*
+  * File_ops->write method for <debugfs>/dynamic_debug/conrol.  Gathers the
+  * command text from userspace, parses and executes it.
+@@ -436,12 +457,8 @@ static int ddebug_parse_flags(const char *str, unsigned int *flagsp,
+ static ssize_t ddebug_proc_write(struct file *file, const char __user *ubuf,
+ 				  size_t len, loff_t *offp)
+ {
+-	unsigned int flags = 0, mask = 0;
+-	struct ddebug_query query;
+-#define MAXWORDS 9
+-	int nwords;
+-	char *words[MAXWORDS];
+ 	char tmpbuf[256];
++	int ret;
+ 
+ 	if (len == 0)
+ 		return 0;
+@@ -455,16 +472,9 @@ static ssize_t ddebug_proc_write(struct file *file, const char __user *ubuf,
+ 		printk(KERN_INFO "%s: read %d bytes from userspace\n",
+ 			__func__, (int)len);
+ 
+-	nwords = ddebug_tokenize(tmpbuf, words, MAXWORDS);
+-	if (nwords <= 0)
+-		return -EINVAL;
+-	if (ddebug_parse_query(words, nwords-1, &query))
+-		return -EINVAL;
+-	if (ddebug_parse_flags(words[nwords-1], &flags, &mask))
+-		return -EINVAL;
+-
+-	/* actually go and implement the change */
+-	ddebug_change(&query, flags, mask);
++	ret = ddebug_exec_query(tmpbuf);
++	if (ret)
++		return ret;
+ 
+ 	*offp += len;
+ 	return len;
 -- 
 1.7.2
 
