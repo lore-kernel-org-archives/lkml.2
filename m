@@ -1,164 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756177Ab0JVUyw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 16:54:52 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:40434 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753134Ab0JVUyv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 16:54:51 -0400
-Date: Fri, 22 Oct 2010 16:54:37 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Gui Jianfeng <guijianfeng@cn.fujitsu.com>
-Cc: Jens Axboe <axboe@kernel.dk>, Nauman Rafique <nauman@google.com>,
-        Chad Talbott <ctalbott@google.com>, Divyesh Shah <dpshah@google.com>,
-        linux kernel mailing list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/4 v2] cfq-iosched: add cfq group hierarchical
- scheduling support
-Message-ID: <20101022205437.GI7020@redhat.com>
-References: <4CBFA64D.6050800@cn.fujitsu.com>
- <4CBFA6C9.3040604@cn.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4CBFA6C9.3040604@cn.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1759088Ab0JVU5J (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 16:57:09 -0400
+Received: from mail.windriver.com ([147.11.1.11]:36315 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754980Ab0JVU5G (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Oct 2010 16:57:06 -0400
+From: Jason Wessel <jason.wessel@windriver.com>
+To: torvalds@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org, kgdb-bugreport@lists.sourceforge.net,
+        Jason Wessel <jason.wessel@windriver.com>
+Subject: [PATCH 02/11] debug_core: move all watch dog syncs to a single function
+Date: Fri, 22 Oct 2010 15:56:22 -0500
+Message-Id: <1287780991-7476-3-git-send-email-jason.wessel@windriver.com>
+X-Mailer: git-send-email 1.6.4.rc1
+In-Reply-To: <1287780991-7476-1-git-send-email-jason.wessel@windriver.com>
+References: <1287780991-7476-1-git-send-email-jason.wessel@windriver.com>
+X-OriginalArrivalTime: 22 Oct 2010 20:56:49.0518 (UTC) FILETIME=[A573C8E0:01CB722B]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 21, 2010 at 10:34:49AM +0800, Gui Jianfeng wrote:
-> This patch enables cfq group hierarchical scheduling.
-> 
-> With this patch, you can create a cgroup directory deeper than level 1.
-> Now, I/O Bandwidth is distributed in a hierarchy way. For example:
-> We create cgroup directories as following(the number represents weight):
-> 
->             Root grp
->            /       \
->        grp_1(100) grp_2(400)
->        /    \ 
->   grp_3(200) grp_4(300)
-> 
-> If grp_2 grp_3 and grp_4 are contending for I/O Bandwidth,
-> grp_2 will share 80% of total bandwidth.
-> For sub_groups, grp_3 shares 8%(20% * 40%), grp_4 shares 12%(20% * 60%)
-> 
-> Design:
->   o Each cfq group has its own group service tree. 
->   o Each cfq group contains a "group schedule entity" (gse) that 
->     schedules on parent cfq group's service tree.
->   o Each cfq group contains a "queue schedule entity"(qse), it
->     represents all cfqqs located on this cfq group. It schedules
->     on this group's service tree. For the time being, root group
->     qse's weight is 1000, and subgroup qse's weight is 500.
->   o All gses and qse which belones to a same cfq group schedules
->     on the same group service tree.
->   o cfq group allocates in a recursive manner, that means when a cfq 
->     group needs to be allocated, the upper level cfq groups are also
->     allocated.
->   o When a cfq group served, not only charge this cfq group but also
->     charge its ancestors.
+Move the various clock and watch dog syncs to a single function in
+advance of adding another sync for the rcu stall detector.
 
-Gui,
+Signed-off-by: Jason Wessel <jason.wessel@windriver.com>
+---
+ kernel/debug/debug_core.c |   15 +++++++++------
+ 1 files changed, 9 insertions(+), 6 deletions(-)
 
-I have not been able to convince myself yet that not treating queue at
-same level as group is a better idea than treating queue at the same
-level as group. 
-
-I am again trying to put my thoughts together that why I am not convinced.
-
-- I really don't like the idea of hidden group and assumptions about the
-  weight of this group which user does not know or user can't control.
+diff --git a/kernel/debug/debug_core.c b/kernel/debug/debug_core.c
+index de407c7..c812857 100644
+--- a/kernel/debug/debug_core.c
++++ b/kernel/debug/debug_core.c
+@@ -470,6 +470,12 @@ static void dbg_cpu_switch(int cpu, int next_cpu)
+ 	kgdb_info[next_cpu].exception_state |= DCPU_NEXT_MASTER;
+ }
  
-- Secondly I think that both the following use cases are valid use cases.
++static void dbg_touch_watchdogs(void)
++{
++	touch_softlockup_watchdog_sync();
++	clocksource_touch_watchdog();
++}
++
+ static int kgdb_cpu_enter(struct kgdb_state *ks, struct pt_regs *regs)
+ {
+ 	unsigned long flags;
+@@ -523,8 +529,7 @@ return_normal:
+ 			if (trace_on)
+ 				tracing_on();
+ 			atomic_dec(&cpu_in_kgdb[cpu]);
+-			touch_softlockup_watchdog_sync();
+-			clocksource_touch_watchdog();
++			dbg_touch_watchdogs();
+ 			local_irq_restore(flags);
+ 			return 0;
+ 		}
+@@ -541,8 +546,7 @@ return_normal:
+ 	    (kgdb_info[cpu].task &&
+ 	     kgdb_info[cpu].task->pid != kgdb_sstep_pid) && --sstep_tries) {
+ 		atomic_set(&kgdb_active, -1);
+-		touch_softlockup_watchdog_sync();
+-		clocksource_touch_watchdog();
++		dbg_touch_watchdogs();
+ 		local_irq_restore(flags);
+ 
+ 		goto acquirelock;
+@@ -659,8 +663,7 @@ kgdb_restore:
+ 		tracing_on();
+ 	/* Free kgdb_active */
+ 	atomic_set(&kgdb_active, -1);
+-	touch_softlockup_watchdog_sync();
+-	clocksource_touch_watchdog();
++	dbg_touch_watchdogs();
+ 	local_irq_restore(flags);
+ 
+ 	return kgdb_info[cpu].ret_state;
+-- 
+1.6.3.3
 
-
-  case 1:
-  -------
-			  root
-			 / | \
-			q1 q2 G1
-			      / \
-			     q3  q4	 
-
- In this case queues and group are treated at same level, and group G1's
- share changes dynamically based on number of competiting queues. Assume
- system admin has put one user's all tasks in G1, and default weight of G1
- is 500, then admin might really want to keep G1's share dyanmic, so that
- if root is not doing lots of IO (not many thread), then G1 gets more IO
- done but if IO activity in root threads increases then G1 gets less
- share. 
-
- case 2:
- -------  
- The second case is where one wants a more deterministic share of a
- group and does not want that share to change based on number of
- processes. In that case one can simply create a child group and move
- all root threads inside that group.
-
-			  root
-			   |  \
-		  root-threads G1
-			/ \    /\
-		       q1 q2  q3 q4
-
- So if we design in such a way so that we treat queues at same level as
- group, then we are not bounding user to a specific case. case 1, will
- be default in hierarchical mode and user can easily achieve case 2. Instead
- of locking down user to case 2 by default from kernel implementation and
- assume nobody is going to use case 1.
-
- IOW, treating queues at group level provides more flexibility.
-
-- Treating queues at same level as groups will also help us better handle
-  the case of RT threads. Think of following.
-
-			  root
-			  |   \
-			q1(RT) G1
-			      / \
-			     q3  q4	 
-
- In this case q1 is real time prio class. Now if we treat queue at same
- level group, then we can try to give 100% IO disk time to q1. But with
- hardcoding of hidden group, covering such cases will be hard.
-
-- Other examples in kernel (CFS scheduler) already treat queue at same
-  level at group. So until and unless we have a good reason, we should
-  remain consistent. 
-
-- If we try to draw analogy from other subsystems like virtual machine,
-  where weight of a KVM machine on cpu is decided by native threads
-  created on host (logical cpus) and not by how many threads are running
-  inside the guest. And share of these logical cpu threads varies
-  dynamically based on how many other threads are running on system.
-
-  In a simple case of 1 logical cpu, we will create 1 thread and say there
-  are 10 processes running inside guest, then effectively shares of these
-  10 processes changes dynamically based on how many threads are running. 
-
-So I am not yet convinced that we should take the hidden group approach.
-
-Now coming to the question of how to resolve conflict with the cfqq queue
-scheduling algorithm. Can we do following.
-
-- Give some kind of boost to queue entities based on their weight. So when
-  queue and group entities are hanging on a service tree, they are
-  scheduled according to their vdisktime, and vdisktime is calculated
-  based on entitie's weight and how much time entity spent on disk just
-  now.
-
-  Group entities can continue to follow existing method and we can try
-  to reduce the vdisktime of queue entities a bit based on their priority.
-
-  That way, one might see some service differentiation between ioprio
-  of queues and also the relative share between groups does not change.
-  The only problematic part is that when queue and groups are at same
-  level then it is not very predictable that group gets how much share
-  and queues get how much share. But I guess this is lesser of a problem
-  as compared to hidden group approach.
-
-Thoughts?
-
-Thanks
-Vivek
