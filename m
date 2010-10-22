@@ -1,26 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752197Ab0JVB5Q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Oct 2010 21:57:16 -0400
-Received: from casper.infradead.org ([85.118.1.10]:50558 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751955Ab0JVB5O (ORCPT
+	id S1752469Ab0JVB5R (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Oct 2010 21:57:17 -0400
+Received: from canuck.infradead.org ([134.117.69.58]:55530 "EHLO
+	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752259Ab0JVB5Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Oct 2010 21:57:14 -0400
+	Thu, 21 Oct 2010 21:57:16 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@elte.hu>
 Cc: linux-kernel@vger.kernel.org,
         Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 1/7] perf probe: Fix type searching
-Date: Thu, 21 Oct 2010 23:56:58 -0200
-Message-Id: <1287712624-27540-2-git-send-email-acme@infradead.org>
+Subject: [PATCH 6/7] perf probe: Show accessible global variables
+Date: Thu, 21 Oct 2010 23:57:03 -0200
+Message-Id: <1287712624-27540-7-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.6.2.5
 In-Reply-To: <1287712624-27540-1-git-send-email-acme@infradead.org>
 References: <1287712624-27540-1-git-send-email-acme@infradead.org>
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
 	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,68 +29,235 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 
-Fix to get the actual type die of variables by using dwarf_attr_integrate()
-which gets attribute from die even if the type die is connected by
-DW_AT_abstract_origin.
+Add --externs for allowing --vars to show accessible global (externally
+defined) variables from a given probe point too.
+
+This will give you a hint which globals can be accessible from the probe point.
 
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Ingo Molnar <mingo@elte.hu>
-LKML-Reference: <20101021101302.3542.38549.stgit@ltc236.sdl.hitachi.co.jp>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+LKML-Reference: <20101021101335.3542.31003.stgit@ltc236.sdl.hitachi.co.jp>
 Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/probe-finder.c |   25 +++++++++++++++++--------
- 1 files changed, 17 insertions(+), 8 deletions(-)
+ tools/perf/Documentation/perf-probe.txt |    6 +++++-
+ tools/perf/builtin-probe.c              |    8 ++++++--
+ tools/perf/util/probe-event.c           |    8 ++++----
+ tools/perf/util/probe-event.h           |    2 +-
+ tools/perf/util/probe-finder.c          |   26 +++++++++++++++++++++-----
+ tools/perf/util/probe-finder.h          |    5 ++++-
+ 6 files changed, 41 insertions(+), 14 deletions(-)
 
+diff --git a/tools/perf/Documentation/perf-probe.txt b/tools/perf/Documentation/perf-probe.txt
+index 72f5d9e..148c178 100644
+--- a/tools/perf/Documentation/perf-probe.txt
++++ b/tools/perf/Documentation/perf-probe.txt
+@@ -18,7 +18,7 @@ or
+ or
+ 'perf probe' --line='FUNC[:RLN[+NUM|:RLN2]]|SRC:ALN[+NUM|:ALN2]'
+ or
+-'perf probe' --vars='PROBEPOINT'
++'perf probe' [--externs] --vars='PROBEPOINT'
+ 
+ DESCRIPTION
+ -----------
+@@ -64,6 +64,10 @@ OPTIONS
+ 	Show available local variables at given probe point. The argument
+ 	syntax is same as PROBE SYNTAX, but NO ARGs.
+ 
++--externs::
++	(Only for --vars) Show external defined variables in addition to local
++	variables.
++
+ -f::
+ --force::
+ 	Forcibly add events with existing name.
+diff --git a/tools/perf/builtin-probe.c b/tools/perf/builtin-probe.c
+index c777bec..bdf60cf 100644
+--- a/tools/perf/builtin-probe.c
++++ b/tools/perf/builtin-probe.c
+@@ -51,6 +51,7 @@ static struct {
+ 	bool force_add;
+ 	bool show_lines;
+ 	bool show_vars;
++	bool show_ext_vars;
+ 	bool mod_events;
+ 	int nevents;
+ 	struct perf_probe_event events[MAX_PROBES];
+@@ -162,7 +163,7 @@ static const char * const probe_usage[] = {
+ 	"perf probe --list",
+ #ifdef DWARF_SUPPORT
+ 	"perf probe --line 'LINEDESC'",
+-	"perf probe --vars 'PROBEPOINT'",
++	"perf probe [--externs] --vars 'PROBEPOINT'",
+ #endif
+ 	NULL
+ };
+@@ -207,6 +208,8 @@ static const struct option options[] = {
+ 	OPT_CALLBACK('V', "vars", NULL,
+ 		     "FUNC[@SRC][+OFF|%return|:RL|;PT]|SRC:AL|SRC;PT",
+ 		     "Show accessible variables on PROBEDEF", opt_show_vars),
++	OPT_BOOLEAN('\0', "externs", &params.show_ext_vars,
++		    "Show external variables too (with --vars only)"),
+ 	OPT_STRING('k', "vmlinux", &symbol_conf.vmlinux_name,
+ 		   "file", "vmlinux pathname"),
+ 	OPT_STRING('s', "source", &symbol_conf.source_prefix,
+@@ -287,7 +290,8 @@ int cmd_probe(int argc, const char **argv, const char *prefix __used)
+ 			usage_with_options(probe_usage, options);
+ 		}
+ 		ret = show_available_vars(params.events, params.nevents,
+-					  params.max_probe_points);
++					  params.max_probe_points,
++					  params.show_ext_vars);
+ 		if (ret < 0)
+ 			pr_err("  Error: Failed to show vars. (%d)\n", ret);
+ 		return ret;
+diff --git a/tools/perf/util/probe-event.c b/tools/perf/util/probe-event.c
+index 83192a5..82b0976 100644
+--- a/tools/perf/util/probe-event.c
++++ b/tools/perf/util/probe-event.c
+@@ -379,7 +379,7 @@ end:
+ }
+ 
+ static int show_available_vars_at(int fd, struct perf_probe_event *pev,
+-				  int max_vls)
++				  int max_vls, bool externs)
+ {
+ 	char *buf;
+ 	int ret, i;
+@@ -391,7 +391,7 @@ static int show_available_vars_at(int fd, struct perf_probe_event *pev,
+ 		return -EINVAL;
+ 	pr_debug("Searching variables at %s\n", buf);
+ 
+-	ret = find_available_vars_at(fd, pev, &vls, max_vls);
++	ret = find_available_vars_at(fd, pev, &vls, max_vls, externs);
+ 	if (ret > 0) {
+ 		/* Some variables were found */
+ 		fprintf(stdout, "Available variables at %s\n", buf);
+@@ -421,7 +421,7 @@ static int show_available_vars_at(int fd, struct perf_probe_event *pev,
+ 
+ /* Show available variables on given probe point */
+ int show_available_vars(struct perf_probe_event *pevs, int npevs,
+-			int max_vls)
++			int max_vls, bool externs)
+ {
+ 	int i, fd, ret = 0;
+ 
+@@ -438,7 +438,7 @@ int show_available_vars(struct perf_probe_event *pevs, int npevs,
+ 	setup_pager();
+ 
+ 	for (i = 0; i < npevs && ret >= 0; i++)
+-		ret = show_available_vars_at(fd, &pevs[i], max_vls);
++		ret = show_available_vars_at(fd, &pevs[i], max_vls, externs);
+ 
+ 	close(fd);
+ 	return ret;
+diff --git a/tools/perf/util/probe-event.h b/tools/perf/util/probe-event.h
+index 83130f6..c74b1fd 100644
+--- a/tools/perf/util/probe-event.h
++++ b/tools/perf/util/probe-event.h
+@@ -122,7 +122,7 @@ extern int del_perf_probe_events(struct strlist *dellist);
+ extern int show_perf_probe_events(void);
+ extern int show_line_range(struct line_range *lr);
+ extern int show_available_vars(struct perf_probe_event *pevs, int npevs,
+-			       int max_probe_points);
++			       int max_probe_points, bool externs);
+ 
+ 
+ /* Maximum index number of event-name postfix */
 diff --git a/tools/perf/util/probe-finder.c b/tools/perf/util/probe-finder.c
-index 32b81f7..a2d1f79 100644
+index 986027f..a274fd0 100644
 --- a/tools/perf/util/probe-finder.c
 +++ b/tools/perf/util/probe-finder.c
-@@ -160,26 +160,35 @@ static bool die_compare_name(Dwarf_Die *dw_die, const char *tname)
- 	return name ? (strcmp(tname, name) == 0) : false;
- }
+@@ -1312,12 +1312,13 @@ static int collect_variables_cb(Dwarf_Die *die_mem, void *data)
+ 						af->pf.fb_ops, NULL);
+ 		if (ret == 0) {
+ 			ret = die_get_varname(die_mem, buf, MAX_VAR_LEN);
++			pr_debug2("Add new var: %s\n", buf);
+ 			if (ret > 0)
+ 				strlist__add(vl->vars, buf);
+ 		}
+ 	}
  
-+/* Get type die */
-+static Dwarf_Die *die_get_type(Dwarf_Die *vr_die, Dwarf_Die *die_mem)
-+{
-+	Dwarf_Attribute attr;
+-	if (dwarf_haspc(die_mem, af->pf.addr))
++	if (af->child && dwarf_haspc(die_mem, af->pf.addr))
+ 		return DIE_FIND_CB_CONTINUE;
+ 	else
+ 		return DIE_FIND_CB_SIBLING;
+@@ -1329,8 +1330,8 @@ static int add_available_vars(Dwarf_Die *sp_die, struct probe_finder *pf)
+ 	struct available_var_finder *af =
+ 			container_of(pf, struct available_var_finder, pf);
+ 	struct variable_list *vl;
+-	Dwarf_Die die_mem;
+-	int ret;
++	Dwarf_Die die_mem, *scopes = NULL;
++	int ret, nscopes;
+ 
+ 	/* Check number of tevs */
+ 	if (af->nvls == af->max_vls) {
+@@ -1351,8 +1352,22 @@ static int add_available_vars(Dwarf_Die *sp_die, struct probe_finder *pf)
+ 	vl->vars = strlist__new(true, NULL);
+ 	if (vl->vars == NULL)
+ 		return -ENOMEM;
++	af->child = true;
+ 	die_find_child(sp_die, collect_variables_cb, (void *)af, &die_mem);
+ 
++	/* Find external variables */
++	if (!af->externs)
++		goto out;
++	/* Don't need to search child DIE for externs. */
++	af->child = false;
++	nscopes = dwarf_getscopes_die(sp_die, &scopes);
++	while (nscopes-- > 1)
++		die_find_child(&scopes[nscopes], collect_variables_cb,
++			       (void *)af, &die_mem);
++	if (scopes)
++		free(scopes);
 +
-+	if (dwarf_attr_integrate(vr_die, DW_AT_type, &attr) &&
-+	    dwarf_formref_die(&attr, die_mem))
-+		return die_mem;
-+	else
-+		return NULL;
-+}
-+
- /* Get type die, but skip qualifiers and typedef */
- static Dwarf_Die *die_get_real_type(Dwarf_Die *vr_die, Dwarf_Die *die_mem)
++out:
+ 	if (strlist__empty(vl->vars)) {
+ 		strlist__delete(vl->vars);
+ 		vl->vars = NULL;
+@@ -1363,11 +1378,12 @@ static int add_available_vars(Dwarf_Die *sp_die, struct probe_finder *pf)
+ 
+ /* Find available variables at given probe point */
+ int find_available_vars_at(int fd, struct perf_probe_event *pev,
+-			   struct variable_list **vls, int max_vls)
++			   struct variable_list **vls, int max_vls,
++			   bool externs)
  {
--	Dwarf_Attribute attr;
- 	int tag;
+ 	struct available_var_finder af = {
+ 			.pf = {.pev = pev, .callback = add_available_vars},
+-			.max_vls = max_vls};
++			.max_vls = max_vls, .externs = externs};
+ 	int ret;
  
- 	do {
--		if (dwarf_attr(vr_die, DW_AT_type, &attr) == NULL ||
--		    dwarf_formref_die(&attr, die_mem) == NULL)
--			return NULL;
--
--		tag = dwarf_tag(die_mem);
--		vr_die = die_mem;
-+		vr_die = die_get_type(vr_die, die_mem);
-+		if (!vr_die)
-+			break;
-+		tag = dwarf_tag(vr_die);
- 	} while (tag == DW_TAG_const_type ||
- 		 tag == DW_TAG_restrict_type ||
- 		 tag == DW_TAG_volatile_type ||
- 		 tag == DW_TAG_shared_type ||
- 		 tag == DW_TAG_typedef);
+ 	/* Allocate result vls array */
+diff --git a/tools/perf/util/probe-finder.h b/tools/perf/util/probe-finder.h
+index baffd25..516912a 100644
+--- a/tools/perf/util/probe-finder.h
++++ b/tools/perf/util/probe-finder.h
+@@ -30,7 +30,8 @@ extern int find_line_range(int fd, struct line_range *lr);
  
--	return die_mem;
-+	return vr_die;
- }
+ /* Find available variables */
+ extern int find_available_vars_at(int fd, struct perf_probe_event *pev,
+-				  struct variable_list **vls, int max_points);
++				  struct variable_list **vls, int max_points,
++				  bool externs);
  
- static bool die_is_signed_type(Dwarf_Die *tp_die)
+ #include <dwarf.h>
+ #include <libdw.h>
+@@ -70,6 +71,8 @@ struct available_var_finder {
+ 	struct variable_list	*vls;		/* Found variable lists */
+ 	int			nvls;		/* Number of variable lists */
+ 	int			max_vls;	/* Max no. of variable lists */
++	bool			externs;	/* Find external vars too */
++	bool			child;		/* Search child scopes */
+ };
+ 
+ struct line_finder {
 -- 
 1.6.2.5
 
