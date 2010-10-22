@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759539Ab0JVTCe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 15:02:34 -0400
-Received: from kroah.org ([198.145.64.141]:34438 "EHLO coco.kroah.org"
+	id S1759501Ab0JVS5E (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 14:57:04 -0400
+Received: from kroah.org ([198.145.64.141]:34365 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759514Ab0JVS5H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 14:57:07 -0400
-X-Mailbox-Line: From gregkh@clark.site Fri Oct 22 11:52:35 2010
-Message-Id: <20101022185235.409275003@clark.site>
+	id S1759439Ab0JVS45 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Oct 2010 14:56:57 -0400
+X-Mailbox-Line: From gregkh@clark.site Fri Oct 22 11:52:34 2010
+Message-Id: <20101022185234.445064901@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 22 Oct 2010 11:52:04 -0700
+Date: Fri, 22 Oct 2010 11:51:53 -0700
 From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
+To: linux-kernel@vger.kernel.org, stable@kernel.org, greg@kroah.com
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Len Brown <len.brown@intel.com>
-Subject: [090/103] intel_idle: PCI quirk to prevent Lenovo Ideapad s10-3 boot hang
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk, avi@redhat.com,
+        mtosatti@redhat.com, "Michael S. Tsirkin" <mst@redhat.com>,
+        Gregory Haskins <ghaskins@novell.com>
+Subject: [079/103] KVM: fix irqfd assign/deassign race
 In-Reply-To: <20101022185455.GA9114@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,58 +26,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Len Brown <len.brown@intel.com>
+From: Marcelo Tosatti <mtosatti@redhat.com>
 
-commit 4731fdcf6f7bdab3e369a3f844d4ea4d4017284d upstream.
+commit 6bbfb2653177a00f70e57e53625502d43804fed0 upstream.
 
-When the Lenovo Ideapad S10-3 is booted with HT enabled,
-it hits a boot hang in the intel_idle driver.
+I think I see the following (theoretical) race:
 
-This occurs when entering ATM-C4 for the first time,
-unless BM_STS is first cleared.
+During irqfd assign, we drop irqfds lock before we
+schedule inject work. Therefore, deassign running
+on another CPU could cause shutdown and flush to run
+before inject, causing user after free in inject.
 
-acpi_idle doesn't see this because it first checks
-and clears BM_STS, but it would hit the same hang
-if that check were disabled.
+A simple fix it to schedule inject under the lock.
 
-http://bugs.meego.com/show_bug.cgi?id=7093
-https://bugs.launchpad.net/ubuntu/+source/linux/+bug/634702
-
-Signed-off-by: Len Brown <len.brown@intel.com>
+Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+Acked-by: Gregory Haskins <ghaskins@novell.com>
+Signed-off-by: Marcelo Tosatti <mtosatti@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/pci/quirks.c |   20 ++++++++++++++++++++
- 1 file changed, 20 insertions(+)
+ virt/kvm/eventfd.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/pci/quirks.c
-+++ b/drivers/pci/quirks.c
-@@ -150,6 +150,26 @@ DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_NE
- DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_NEC,	PCI_DEVICE_ID_NEC_CBUS_3,	quirk_isa_dma_hangs);
+--- a/virt/kvm/eventfd.c
++++ b/virt/kvm/eventfd.c
+@@ -217,7 +217,6 @@ kvm_irqfd_assign(struct kvm *kvm, int fd
+ 	events = file->f_op->poll(file, &irqfd->pt);
  
- /*
-+ * Intel NM10 "TigerPoint" LPC PM1a_STS.BM_STS must be clear
-+ * for some HT machines to use C4 w/o hanging.
-+ */
-+static void __devinit quirk_tigerpoint_bm_sts(struct pci_dev *dev)
-+{
-+	u32 pmbase;
-+	u16 pm1a;
+ 	list_add_tail(&irqfd->list, &kvm->irqfds.items);
+-	spin_unlock_irq(&kvm->irqfds.lock);
+ 
+ 	/*
+ 	 * Check if there was an event already pending on the eventfd
+@@ -226,6 +225,8 @@ kvm_irqfd_assign(struct kvm *kvm, int fd
+ 	if (events & POLLIN)
+ 		schedule_work(&irqfd->inject);
+ 
++	spin_unlock_irq(&kvm->irqfds.lock);
 +
-+	pci_read_config_dword(dev, 0x40, &pmbase);
-+	pmbase = pmbase & 0xff80;
-+	pm1a = inw(pmbase);
-+
-+	if (pm1a & 0x10) {
-+		dev_info(&dev->dev, FW_BUG "TigerPoint LPC.BM_STS cleared\n");
-+		outw(0x10, pmbase);
-+	}
-+}
-+DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_TGP_LPC, quirk_tigerpoint_bm_sts);
-+
-+/*
-  *	Chipsets where PCI->PCI transfers vanish or hang
-  */
- static void __devinit quirk_nopcipci(struct pci_dev *dev)
+ 	/*
+ 	 * do not drop the file until the irqfd is fully initialized, otherwise
+ 	 * we might race against the POLLHUP
 
 
