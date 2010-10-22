@@ -1,49 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756658Ab0JVNdi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 09:33:38 -0400
-Received: from s3.sapience.com ([75.99.198.206]:34077 "EHLO s3.sapience.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751446Ab0JVNdh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 09:33:37 -0400
-X-Greylist: delayed 476 seconds by postgrey-1.27 at vger.kernel.org; Fri, 22 Oct 2010 09:33:36 EDT
-DomainKey-Signature: a=rsa-sha1; s=flash-2dk; d=sapience.com; c=simple; q=dns;
-	h=message-id:date:from:mime-version:to:subject:references:
-	in-reply-to:content-type:content-transfer-encoding;
-	b=nyxJx5NTAb0OUzrJvrZQ5xfty8wMHfqlos/CuR7Sh/wBHmhlNGuB/438qh6JmJFiF
-	RC2tA2Y+PoeAE7soz9CaQ==
-Message-ID: <4CC190D2.6070305@sapience.com>
-Date: Fri, 22 Oct 2010 09:25:38 -0400
-From: Genes MailLists <lists@sapience.com>
+	id S1755880Ab0JVNi2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 09:38:28 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:37351 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753863Ab0JVNi1 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Oct 2010 09:38:27 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:from:date:x-google-sender-auth:message-id
+         :subject:to:content-type:content-transfer-encoding;
+        b=UT3Y8vllwvAmFq1H+XjbmyDBCLeV9twRcYaJcjjRk3V9SyKkt0H8t31IUmvY6r5j/L
+         v0xvrQs7rPaqhPYqx7JyyXmkNpC9s5kaZ3iySjuY9FybD4yFfZ+e72nhW6D8ehXX62+H
+         bpcKAP+OMtcexh1eCV4PfnGIaqRDdL1zbOU1k=
 MIME-Version: 1.0
+From: Christian Bahls <lkml@qb352.de>
+Date: Fri, 22 Oct 2010 15:38:01 +0200
+X-Google-Sender-Auth: qEcb1Nod0WWmpFIEBPHwVal2bRs
+Message-ID: <AANLkTinPyg2ijrBydVyoGJiQJCpL7j1_vnyQWnx0eucz@mail.gmail.com>
+Subject: __pm_runtime_resume() returns -1 Was: Regression in 2.6.36
 To: linux-kernel@vger.kernel.org
-Subject: Re: On Linux numbering scheme
-References: <5600814.270321287742009359.JavaMail.root@mail-zbox20.bo3.lycos.com>	<30241116.270781287743584802.JavaMail.root@mail-zbox20.bo3.lycos.com> <AANLkTin6rvckZ3q9xY8Chzc1iDvkV1ObTP42n9Ye943Y@mail.gmail.com>
-In-Reply-To: <AANLkTin6rvckZ3q9xY8Chzc1iDvkV1ObTP42n9Ye943Y@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/22/2010 06:41 AM, Alexey Dobriyan wrote:
-> On Fri, Oct 22, 2010 at 1:33 PM, Artem S. Tashkinov <t.artem@lycos.com> wrote:
->> What can you say about kernel 2.6.32? Almost nothing.
+Thanks to the help by Matthias Schniedermeyer
+ i was able to bisect the change in less than 24 hours
+
+The regression seems to have been introduced by the merge:
+  92b4522f72916ff2675060e29e4b24cf26ab59ce
+
+Parent: 67a3e12b05e055c0415c556a315a3d3eb637e29e (Linux 2.6.35-rc1)
+Parent: 2903037400a26e7c0cc93ab75a7d62abfacdf485 (net: fix
+sk_forward_alloc corruptions)
+Branches: compile, remotes/origin/master, work
+Follows: v2.6.35-rc1
+Precedes: v2.6.36-rc1
+
+    Merge branch 'master' of
+master.kernel.org:/pub/scm/linux/kernel/git/davem/net-2.6
+
+Which (according to git bisect visualize) contains following Change:
+
+Author: Eric Dumazet <eric.dumazet@gmail.com>  2010-05-29 09:20:48
+Committer: David S. Miller <davem@davemloft.net>  2010-05-29 09:20:48
+Child:  92b4522f72916ff2675060e29e4b24cf26ab59ce (Merge branch
+'master' of master.kernel.org:/pub/scm/linux/kernel/git/davem/net-2.6)
+Branches: compile, master, remotes/origin/master, remotes/v35/master, work
+Follows: v2.6.34
+Precedes: first_bad, v2.6.35-rc2
+
+    net: fix sk_forward_alloc corruptions
+
+    As David found out, sock_queue_err_skb() should be called with socket
+    lock hold, or we risk sk_forward_alloc corruption, since we use non
+    atomic operations to update this field.
+
+    This patch adds bh_lock_sock()/bh_unlock_sock() pair to three spots.
+    (BH already disabled)
+
+    1) skb_tstamp_tx()
+    2) Before calling ip_icmp_error(), in __udp4_lib_err()
+    3) Before calling ipv6_icmp_error(), in __udp6_lib_err()
+
+    Reported-by: Anton Blanchard <anton@samba.org>
+    Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+    Signed-off-by: David S. Miller <davem@davemloft.net>
+
+------------------------------ net/core/skbuff.c ------------------------------
+index 4667d4d..f2913ae 100644
+@@ -2992,7 +2992,11 @@ void skb_tstamp_tx(struct sk_buff *orig_skb,
+ 	memset(serr, 0, sizeof(*serr));
+ 	serr->ee.ee_errno = ENOMSG;
+ 	serr->ee.ee_origin = SO_EE_ORIGIN_TIMESTAMPING;
++
++	bh_lock_sock(sk);
+ 	err = sock_queue_err_skb(sk, skb);
++	bh_unlock_sock(sk);
++
+ 	if (err)
+ 		kfree_skb(skb);
+ }
+
+-------------------------------- net/ipv4/udp.c --------------------------------
+index b9d0d40..acdc9be 100644
+@@ -634,7 +634,9 @@ void __udp4_lib_err(struct sk_buff *skb, u32 info,
+struct udp_table *udptable)
+ 		if (!harderr || sk->sk_state != TCP_ESTABLISHED)
+ 			goto out;
+ 	} else {
++		bh_lock_sock(sk);
+ 		ip_icmp_error(sk, skb, err, uh->dest, info, (u8 *)(uh+1));
++		bh_unlock_sock(sk);
+ 	}
+ 	sk->sk_err = err;
+ 	sk->sk_error_report(sk);
+
+-------------------------------- net/ipv6/udp.c --------------------------------
+index 87be586..3048f90 100644
+@@ -466,9 +466,11 @@ void __udp6_lib_err(struct sk_buff *skb, struct
+inet6_skb_parm *opt,
+ 	if (sk->sk_state != TCP_ESTABLISHED && !np->recverr)
+ 		goto out;
+
+-	if (np->recverr)
++	if (np->recverr) {
++		bh_lock_sock(sk);
+ 		ipv6_icmp_error(sk, skb, err, uh->dest, ntohl(info), (u8 *)(uh+1));
+-
++		bh_unlock_sock(sk);
++	}
+ 	sk->sk_err = err;
+ 	sk->sk_error_report(sk);
+ out:
+
+
+On Thu, Oct 21, 2010 at 5:24 PM, Matthias Schniedermeyer <ms@citd.de> wrote:
+> On 21.10.2010 16:34, Christian Bahls wrote:
+>> Dear List
 >>
->> What can you say about kernel 3.11.3? - it is the third release of
->> Linux in 2011.
-> 
-> And? What a useless information.
-> 
-> BTW, it should be 3.2011.3, see Y2K.
+>> PPS: bisecting this regression seems to be out of question
+>>  recompiling the kernel on this computer takes a few hours
+>>  as all the other computers i use are 64bit
+>>  i would alternatively have to setup a cross-compilation environment
+>>  which i have not done in years (and not without rocklinux either)
+>
+> As far as it is my experience, x86 32bit/64bit can build each other.
+>
+> On the "big" machine just add "ARCH=x86" to (all!) make invocations.
+> ARCH=x86 makes "CONFIG_64BIT" an actual configuration option and
+> honours whatever is configured in the .config-file.
+>
+>
+>
+>
+>
+> Bis denn
+>
 > --
-
-   If you -really- wanna go that route - may as well be
-
-      20.11.3.18
-
-    century.decade.month.day .. that way we don't have problem until we
-hit the year 10,000 ... :-)
-
-
-  g
+> Real Programmers consider "what you see is what you get" to be just as
+> bad a concept in Text Editors as it is in women. No, the Real Programmer
+> wants a "you asked for it, you got it" text editor -- complicated,
+> cryptic, powerful, unforgiving, dangerous.
+>
+>
