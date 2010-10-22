@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758924Ab0JVSxM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 14:53:12 -0400
-Received: from kroah.org ([198.145.64.141]:45648 "EHLO coco.kroah.org"
+	id S1754974Ab0JVSiX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 14:38:23 -0400
+Received: from kroah.org ([198.145.64.141]:45621 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754977Ab0JVSi0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 14:38:26 -0400
+	id S1754813Ab0JVSiV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Oct 2010 14:38:21 -0400
 X-Mailbox-Line: From gregkh@clark.site Fri Oct 22 11:35:57 2010
-Message-Id: <20101022183557.841594177@clark.site>
+Message-Id: <20101022183557.397556693@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 22 Oct 2010 11:34:45 -0700
+Date: Fri, 22 Oct 2010 11:34:40 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Mauro Carvalho Chehab <mchehab@infradead.org>
-Subject: [18/66] v4l1: fix 32-bit compat microcode loading translation
+        Joerg Roedel <joerg.roedel@amd.com>
+Subject: [13/66] x86/amd-iommu: Set iommu configuration flags in enable-loop
 In-Reply-To: <20101022183711.GA23214@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,88 +25,107 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Linus Torvalds <torvalds@linux-foundation.org>
+From: Joerg Roedel <joerg.roedel@amd.com>
 
-commit 3e645d6b485446c54c6745c5e2cf5c528fe4deec upstream.
+commit e9bf51971157e367aabfc111a8219db010f69cd4 upstream.
 
-The compat code for the VIDIOCSMICROCODE ioctl is totally buggered.
-It's only used by the VIDEO_STRADIS driver, and that one is scheduled to
-staging and eventually removed unless somebody steps up to maintain it
-(at which point it should use request_firmware() rather than some magic
-ioctl).  So we'll get rid of it eventually.
+This patch moves the setting of the configuration and
+feature flags out out the acpi table parsing path and moves
+it into the iommu-enable path. This is needed to reliably
+fix resume-from-s3.
 
-But in the meantime, the compatibility ioctl code is broken, and this
-tries to get it to at least limp along (even if Mauro suggested just
-deleting it entirely, which may be the right thing to do - I don't think
-the compatibility translation code has ever worked unless you were very
-lucky).
-
-Reported-by: Kees Cook <kees.cook@canonical.com>
-Cc: Mauro Carvalho Chehab <mchehab@infradead.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/media/video/v4l2-compat-ioctl32.c |   32 +++++++++++++++++++-----------
- 1 file changed, 21 insertions(+), 11 deletions(-)
+ arch/x86/include/asm/amd_iommu_types.h |    3 ++
+ arch/x86/kernel/amd_iommu_init.c       |   49 ++++++++++++++++++---------------
+ 2 files changed, 30 insertions(+), 22 deletions(-)
 
---- a/drivers/media/video/v4l2-compat-ioctl32.c
-+++ b/drivers/media/video/v4l2-compat-ioctl32.c
-@@ -193,17 +193,24 @@ static int put_video_window32(struct vid
- struct video_code32 {
- 	char		loadwhat[16];	/* name or tag of file being passed */
- 	compat_int_t	datasize;
--	unsigned char	*data;
-+	compat_uptr_t	data;
- };
+--- a/arch/x86/include/asm/amd_iommu_types.h
++++ b/arch/x86/include/asm/amd_iommu_types.h
+@@ -305,6 +305,9 @@ struct amd_iommu {
+ 	/* capabilities of that IOMMU read from ACPI */
+ 	u32 cap;
  
--static int get_microcode32(struct video_code *kp, struct video_code32 __user *up)
-+static struct video_code __user *get_microcode32(struct video_code32 *kp)
- {
--	if (!access_ok(VERIFY_READ, up, sizeof(struct video_code32)) ||
--		copy_from_user(kp->loadwhat, up->loadwhat, sizeof(up->loadwhat)) ||
--		get_user(kp->datasize, &up->datasize) ||
--		copy_from_user(kp->data, up->data, up->datasize))
--			return -EFAULT;
--	return 0;
-+	struct video_code __user *up;
++	/* flags read from acpi table */
++	u8 acpi_flags;
 +
-+	up = compat_alloc_user_space(sizeof(*up));
-+
-+	/*
-+	 * NOTE! We don't actually care if these fail. If the
-+	 * user address is invalid, the native ioctl will do
-+	 * the error handling for us
-+	 */
-+	(void) copy_to_user(up->loadwhat, kp->loadwhat, sizeof(up->loadwhat));
-+	(void) put_user(kp->datasize, &up->datasize);
-+	(void) put_user(compat_ptr(kp->data), &up->data);
-+	return up;
+ 	/*
+ 	 * Capability pointer. There could be more than one IOMMU per PCI
+ 	 * device function if there are more than one AMD IOMMU capability
+--- a/arch/x86/kernel/amd_iommu_init.c
++++ b/arch/x86/kernel/amd_iommu_init.c
+@@ -639,29 +639,9 @@ static void __init init_iommu_from_acpi(
+ 	struct ivhd_entry *e;
+ 
+ 	/*
+-	 * First set the recommended feature enable bits from ACPI
+-	 * into the IOMMU control registers
++	 * First save the recommended feature enable bits from ACPI
+ 	 */
+-	h->flags & IVHD_FLAG_HT_TUN_EN_MASK ?
+-		iommu_feature_enable(iommu, CONTROL_HT_TUN_EN) :
+-		iommu_feature_disable(iommu, CONTROL_HT_TUN_EN);
+-
+-	h->flags & IVHD_FLAG_PASSPW_EN_MASK ?
+-		iommu_feature_enable(iommu, CONTROL_PASSPW_EN) :
+-		iommu_feature_disable(iommu, CONTROL_PASSPW_EN);
+-
+-	h->flags & IVHD_FLAG_RESPASSPW_EN_MASK ?
+-		iommu_feature_enable(iommu, CONTROL_RESPASSPW_EN) :
+-		iommu_feature_disable(iommu, CONTROL_RESPASSPW_EN);
+-
+-	h->flags & IVHD_FLAG_ISOC_EN_MASK ?
+-		iommu_feature_enable(iommu, CONTROL_ISOC_EN) :
+-		iommu_feature_disable(iommu, CONTROL_ISOC_EN);
+-
+-	/*
+-	 * make IOMMU memory accesses cache coherent
+-	 */
+-	iommu_feature_enable(iommu, CONTROL_COHERENT_EN);
++	iommu->acpi_flags = h->flags;
+ 
+ 	/*
+ 	 * Done. Now parse the device entries
+@@ -1089,6 +1069,30 @@ static void init_device_table(void)
+ 	}
  }
  
- #define VIDIOCGTUNER32		_IOWR('v', 4, struct video_tuner32)
-@@ -741,7 +748,7 @@ static long do_video_ioctl(struct file *
- 		struct video_tuner vt;
- 		struct video_buffer vb;
- 		struct video_window vw;
--		struct video_code vc;
-+		struct video_code32 vc;
- 		struct video_audio va;
- #endif
- 		struct v4l2_format v2f;
-@@ -820,8 +827,11 @@ static long do_video_ioctl(struct file *
- 		break;
++static void iommu_init_flags(struct amd_iommu *iommu)
++{
++	iommu->acpi_flags & IVHD_FLAG_HT_TUN_EN_MASK ?
++		iommu_feature_enable(iommu, CONTROL_HT_TUN_EN) :
++		iommu_feature_disable(iommu, CONTROL_HT_TUN_EN);
++
++	iommu->acpi_flags & IVHD_FLAG_PASSPW_EN_MASK ?
++		iommu_feature_enable(iommu, CONTROL_PASSPW_EN) :
++		iommu_feature_disable(iommu, CONTROL_PASSPW_EN);
++
++	iommu->acpi_flags & IVHD_FLAG_RESPASSPW_EN_MASK ?
++		iommu_feature_enable(iommu, CONTROL_RESPASSPW_EN) :
++		iommu_feature_disable(iommu, CONTROL_RESPASSPW_EN);
++
++	iommu->acpi_flags & IVHD_FLAG_ISOC_EN_MASK ?
++		iommu_feature_enable(iommu, CONTROL_ISOC_EN) :
++		iommu_feature_disable(iommu, CONTROL_ISOC_EN);
++
++	/*
++	 * make IOMMU memory accesses cache coherent
++	 */
++	iommu_feature_enable(iommu, CONTROL_COHERENT_EN);
++}
++
+ /*
+  * This function finally enables all IOMMUs found in the system after
+  * they have been initialized
+@@ -1099,6 +1103,7 @@ static void enable_iommus(void)
  
- 	case VIDIOCSMICROCODE:
--		err = get_microcode32(&karg.vc, up);
--		compatible_arg = 0;
-+		/* Copy the 32-bit "video_code32" to kernel space */
-+		if (copy_from_user(&karg.vc, up, sizeof(karg.vc)))
-+			return -EFAULT;
-+		/* Convert the 32-bit version to a 64-bit version in user space */
-+		up = get_microcode32(&karg.vc);
- 		break;
- 
- 	case VIDIOCSFREQ:
+ 	for_each_iommu(iommu) {
+ 		iommu_disable(iommu);
++		iommu_init_flags(iommu);
+ 		iommu_set_device_table(iommu);
+ 		iommu_enable_command_buffer(iommu);
+ 		iommu_enable_event_buffer(iommu);
 
 
