@@ -1,61 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753564Ab0JVIHh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 04:07:37 -0400
-Received: from mga02.intel.com ([134.134.136.20]:47401 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752952Ab0JVIHb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 04:07:31 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.58,222,1286175600"; 
-   d="scan'208";a="566407105"
-Date: Fri, 22 Oct 2010 16:07:25 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Torsten Kaiser <just.for.lkml@googlemail.com>,
-        Neil Brown <neilb@suse.de>, Rik van Riel <riel@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "Li, Shaohua" <shaohua.li@intel.com>
-Subject: Re: Deadlock possibly caused by too_many_isolated.
-Message-ID: <20101022080725.GA22594@localhost>
-References: <AANLkTimVu+5gTDs8przJVP2EbWC=FX-zWW7aH08BtrHC@mail.gmail.com>
- <20101020055717.GA12752@localhost>
- <20101020150346.1832.A69D9226@jp.fujitsu.com>
- <20101020092739.GA23869@localhost>
- <4CBEE888.2090606@kernel.dk>
- <20101022053755.GB16804@localhost>
+	id S1755345Ab0JVIIX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 04:08:23 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:54101 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1752952Ab0JVIIS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Oct 2010 04:08:18 -0400
+Message-ID: <4CC146A4.9090505@cn.fujitsu.com>
+Date: Fri, 22 Oct 2010 16:09:08 +0800
+From: Li Zefan <lizf@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1b3pre) Gecko/20090513 Fedora/3.0-2.3.beta2.fc11 Thunderbird/3.0b2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101022053755.GB16804@localhost>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: "akpm >> Andrew Morton" <akpm@linux-foundation.org>
+CC: Paul Menage <menage@google.com>, Stephane Eranian <eranian@google.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        containers@lists.linux-foundation.org
+Subject: [PATCH 0/7] cgroups: Allow to bind/unbind subsystems to/from non-trival
+ hierarchy
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > We surely need 1 set aside for each level of that stack that will
-> > potentially consume one. 1 should be enough for the generic pool, and
-> > then clones will use a separate pool. So md and friends should really
-> > have a pool per device, so that stacking will always work properly.
-> 
-> Agreed for the deadlock problem.
-> 
-> > There should be no throughput concerns, it should purely be a safe guard
-> > measure to prevent us deadlocking when doing IO for reclaim.
-> 
-> It's easy to verify whether the minimal size will have negative
-> impacts on IO throughput. In Torsten's case, increase BIO_POOL_SIZE
-> by one and check how it performs.
+Stephane posted a patchset to add perf_cgroup subsystem, so perf can
+be used to monitor all threads belonging to a cgroup.
 
-Sorry it seems simply increasing BIO_POOL_SIZE is not enough to fix
-possible deadlocks. We need adding new mempool(s). Because when there
-BIO_POOL_SIZE=2 and there are two concurrent reclaimers each take 1
-reservation, they will deadlock each other when trying to take the
-next bio at the raid1 level.
+But if you already mounted a cgroup hierarchy but without perf_cgroup
+and the hierarchy has sub-cgroups, you can't bind perf_cgroup to it,
+and thus you're not able to use per-cgroup perf feature.
 
-Thanks,
-Fengguang
+This patchset alleviates the pain, and then a subsytem can be
+bound/unbound to/from a hierarchy which has sub-cgroups in it.
+
+Some subsystems still can't take advantage of this patchset, memcgroup
+and cpuset in specific.
+
+For cpuset, if a hierarchy has a sub-cgroup and the cgroup has tasks,
+we can't decide sub-cgroup's cpuset.mems and cpuset.cpus automatically
+if we try to bind cpuset to this hierarchy.
+
+For memcgroup, memcgroup uses css_get/put(), and due to some complexity,
+for now bindable subsystems should not use css_get/put().
+
+Usage:
+
+# mount -t cgroup -o cpuset xxx /mnt
+# mkdir /mnt/tmp
+# echo $$ > /mnt/tmp/tasks
+
+(add cpuacct to the hierarchy)
+# mount -o remount,cpuset,cpuacct xxx /mnt
+
+(remove it from the hierarchy)
+# mount -o remount,cpuset xxx /mnt
+
+There's another limitation, cpuacct should not be bound to any mounted
+hierarchy before the above operation. But that's not a problem, as you
+can remove it from a hierarchy and bind it to another one.
+
+---
+ Documentation/cgroups/cgroups.txt |   26 ++-
+ include/linux/cgroup.h            |   25 +++-
+ kernel/cgroup.c                   |  305 +++++++++++++++++++++++++++++++------
+ kernel/cgroup_freezer.c           |   19 ++-
+ kernel/sched.c                    |    1 +
+ net/sched/cls_cgroup.c            |    1 +
+ security/device_cgroup.c          |    1 +
+ 7 files changed, 311 insertions(+), 67 deletions(-)
