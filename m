@@ -1,157 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755923Ab0JVLQa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 07:16:30 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:58569 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755578Ab0JVLQ2 (ORCPT
+	id S1755957Ab0JVLQb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 07:16:31 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:35228 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755710Ab0JVLQ2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 22 Oct 2010 07:16:28 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [GIT PULL] automatic BKL conversion to mutexes
-Date: Fri, 22 Oct 2010 13:15:46 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.36-next-20101021+; KDE/4.5.1; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201010221315.46143.arnd@arndb.de>
-X-Provags-ID: V02:K0:isaWzSC+5Bb0+HuVLLsOeJYmWQ5H4LaO9OED67pzK1S
- 5wqN1E+4uZyYXHUDT1DZP4DCBW2aLIoleU1lWpaTZB8qDN/KOD
- zTNjKXPiQMQCTcGQtpb1kF1cOo+n6rtfKSKwkbM7FOsfUiAiin
- RAV7OV4YoHqGI84XmMzkezpBlqqdjI7w9Z32FpUhndI3xWEipt
- B++GIiJ75GtxnzdO7f97w==
+X-Originating-IP: [109.186.69.160]
+In-Reply-To: <B85A65D85D7EB246BE421B3FB0FBB593023458C2BA@dbde02.ent.ti.com>
+References: <1287387875-14168-1-git-send-email-ohad@wizery.com>
+ <1287387875-14168-4-git-send-email-ohad@wizery.com> <87r5fmxghm.fsf@deeprootsystems.com>
+ <AANLkTinZ2+ocJCfUpT15Ow3J9XBa-8XWnVC3gDDJ7s-v@mail.gmail.com>
+ <87bp6pviwf.fsf@deeprootsystems.com> <AANLkTikE1dCXW-7ScVoDgEK3sxai_TyFzstSG+zvNm2F@mail.gmail.com>
+ <8739s0sobc.fsf@deeprootsystems.com> <AANLkTikdjtYtzhgM_=io3SFdUZq=8Xcc8n24bW=SFgTA@mail.gmail.com>
+ <B85A65D85D7EB246BE421B3FB0FBB5930233F94602@dbde02.ent.ti.com>
+ <AANLkTi=dfw==t+u1Ap26iwPHH9A2M-cEU0hs92Gxdkxc@mail.gmail.com> <B85A65D85D7EB246BE421B3FB0FBB593023458C2BA@dbde02.ent.ti.com>
+From: Ohad Ben-Cohen <ohad@wizery.com>
+Date: Fri, 22 Oct 2010 13:16:06 +0200
+Message-ID: <AANLkTi=G_OM806-10Z_objj30Tats_RM4oiP=xKWUOnR@mail.gmail.com>
+Subject: Re: [PATCH 3/3] omap: add hwspinlock device
+To: "Kamoolkar, Mugdha" <mugdha@ti.com>
+Cc: Kevin Hilman <khilman@deeprootsystems.com>,
+        "Krishnamoorthy, Balaji T" <balajitk@ti.com>,
+        "Kamat, Nishant" <nskamat@ti.com>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        Greg KH <greg@kroah.com>, Tony Lindgren <tony@atomide.com>,
+        "Cousson, Benoit" <b-cousson@ti.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        "Kanigeri, Hari" <h-kanigeri2@ti.com>, "Anna, Suman" <s-anna@ti.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Fri, Oct 22, 2010 at 11:59 AM, Kamoolkar, Mugdha <mugdha@ti.com> wrote:
+>> From: Ohad Ben-Cohen [mailto:ohad@wizery.com]
+>> I agree.
+>>
+>> But we seem to have this sort of problem anyway:
+>>
+...
+> That is true. Perhaps we should consider adding a software
+> implementation over HW spinlocks.
 
-These are all trivial conversions where we can replace the BKL
-in one driver with a mutex, done with a script to avoid typos.
+Yes, this is probably inevitable.
 
-A number of the patches that were originally in this series have
-been replaced by the maintainers with other patches to remove
-the BKL without a replacement, where that is safe to do. The same
-can still be done in the future for many of them, but the
-replacement is the fast and safe option in order to remove most
-of the trivial usage introduced over the years during BKL pushdown.
+It would also be useful for the user space implementation of TI's
+RingIO and FrameQueue protocols coming in Syslink 3.0, which will also
+not be able to directly use the hwspinlock because of the same
+reasons.
 
-There is one known conflict in the pcmcia drivers that should
-be trivial to resolve (one line added versus another line removed).
+This layer would maintain the owner of each (virtual) lock in a
+non-cacheable shared memory entry, together with the id of the
+hwspinlock that would protect that 'owner' entry.
 
-Please pull from:
+This way we no longer need to use predefined hwspinlocks (the id of
+the hwspinlock is announced in the shared memory entry). So we can
+ditch the _request_specific() API, and we can move to arch_initcall
+(just to beat the current race with i2c-omap).
 
-  git+ssh://master.kernel.org/pub/scm/linux/kernel/git/arnd/bkl.git trivial
+> We were anyway considering doing this,
+> because the number of hw spinlocks available for our usage are not
+> sufficient when we look at multi-channel use-cases.
 
-Arnd Bergmann (6):
-      scsi: autoconvert trivial BKL users to private mutex
-      mtd: autoconvert trivial BKL users to private mutex
-      mac: autoconvert trivial BKL users to private mutex
-      ipmi: autoconvert trivial BKL users to private mutex
-      drivers: autoconvert trivial BKL users to private mutex
-      block: autoconvert trivial BKL users to private mutex
-
- block/bsg.c                                |    3 --
- drivers/block/DAC960.c                     |   11 ++++---
- drivers/block/amiflop.c                    |   19 ++++++------
- drivers/block/aoe/aoeblk.c                 |    9 +++--
- drivers/block/aoe/aoechr.c                 |    9 +++--
- drivers/block/ataflop.c                    |   15 +++++----
- drivers/block/brd.c                        |    7 ++--
- drivers/block/cciss.c                      |   14 ++++----
- drivers/block/cpqarray.c                   |   15 +++++----
- drivers/block/drbd/drbd_main.c             |   11 ++++---
- drivers/block/floppy.c                     |   16 +++++-----
- drivers/block/loop.c                       |   11 ++++---
- drivers/block/nbd.c                        |    7 ++--
- drivers/block/paride/pcd.c                 |   15 +++++----
- drivers/block/paride/pd.c                  |   15 +++++----
- drivers/block/paride/pf.c                  |   17 ++++++-----
- drivers/block/paride/pg.c                  |    7 ++--
- drivers/block/paride/pt.c                  |   19 ++++++------
- drivers/block/pktcdvd.c                    |   16 +++++-----
- drivers/block/swim.c                       |   15 +++++----
- drivers/block/swim3.c                      |   15 +++++----
- drivers/block/ub.c                         |   15 +++++----
- drivers/block/viodasd.c                    |   11 ++++---
- drivers/block/xd.c                         |    7 ++--
- drivers/block/xen-blkfront.c               |   11 ++++---
- drivers/block/xsysace.c                    |   11 ++++---
- drivers/block/z2ram.c                      |   15 +++++----
- drivers/cdrom/gdrom.c                      |   15 +++++----
- drivers/cdrom/viocd.c                      |   15 +++++----
- drivers/char/apm-emulation.c               |   11 ++++---
- drivers/char/applicom.c                    |    9 +++--
- drivers/char/ds1302.c                      |   15 +++++----
- drivers/char/ds1620.c                      |    8 ++--
- drivers/char/dsp56k.c                      |   27 +++++++++--------
- drivers/char/dtlk.c                        |    8 ++--
- drivers/char/generic_nvram.c               |    7 ++--
- drivers/char/genrtc.c                      |   13 ++++----
- drivers/char/i8k.c                         |    7 ++--
- drivers/char/ip2/ip2main.c                 |    8 ++--
- drivers/char/ipmi/ipmi_devintf.c           |   14 ++++----
- drivers/char/ipmi/ipmi_watchdog.c          |    8 ++--
- drivers/char/lp.c                          |   15 +++++----
- drivers/char/mbcs.c                        |    8 ++--
- drivers/char/mmtimer.c                     |    7 ++--
- drivers/char/mwave/mwavedd.c               |   44 ++++++++++++++--------------
- drivers/char/nvram.c                       |   11 ++++---
- drivers/char/nwflash.c                     |   12 ++++----
- drivers/char/pcmcia/cm4000_cs.c            |   11 ++++---
- drivers/char/pcmcia/cm4040_cs.c            |    7 ++--
- drivers/char/ppdev.c                       |    8 ++--
- drivers/char/rio/rio_linux.c               |    7 ++--
- drivers/char/snsc.c                        |    9 +++--
- drivers/char/toshiba.c                     |    9 +++--
- drivers/char/viotape.c                     |   11 ++++---
- drivers/char/xilinx_hwicap/xilinx_hwicap.c |    6 ++--
- drivers/hwmon/fschmd.c                     |    6 ++--
- drivers/hwmon/w83793.c                     |    6 ++--
- drivers/ide/ide-cd.c                       |   14 ++++----
- drivers/ide/ide-disk_ioctl.c               |    7 ++--
- drivers/ide/ide-floppy_ioctl.c             |    7 ++--
- drivers/ide/ide-gd.c                       |   10 +++---
- drivers/ide/ide-tape.c                     |   19 ++++++------
- drivers/input/misc/hp_sdc_rtc.c            |    7 ++--
- drivers/macintosh/adb.c                    |   10 +++---
- drivers/macintosh/smu.c                    |    6 ++--
- drivers/macintosh/via-pmu.c                |   11 ++++---
- drivers/md/dm.c                            |   10 +++---
- drivers/md/md.c                            |   13 ++++----
- drivers/memstick/core/mspro_block.c        |   11 ++++---
- drivers/message/fusion/mptctl.c            |   15 +++++----
- drivers/message/i2o/i2o_block.c            |   15 +++++----
- drivers/message/i2o/i2o_config.c           |   23 +++++++-------
- drivers/misc/phantom.c                     |   11 ++++---
- drivers/mmc/card/block.c                   |   10 +++---
- drivers/mtd/mtd_blkdevs.c                  |   14 ++++----
- drivers/mtd/mtdchar.c                      |   15 +++++----
- drivers/pci/hotplug/cpqphp_sysfs.c         |   13 ++++----
- drivers/rtc/rtc-m41t80.c                   |   13 ++++----
- drivers/s390/char/tape_block.c             |   13 ++++----
- drivers/sbus/char/jsflash.c                |   24 ++++++++-------
- drivers/scsi/3w-9xxx.c                     |    7 ++--
- drivers/scsi/3w-sas.c                      |    7 ++--
- drivers/scsi/3w-xxxx.c                     |    9 ++---
- drivers/scsi/aacraid/linit.c               |   15 +++++----
- drivers/scsi/ch.c                          |    8 ++--
- drivers/scsi/dpt_i2o.c                     |   18 ++++++------
- drivers/scsi/gdth.c                        |   11 ++++---
- drivers/scsi/megaraid.c                    |    8 ++--
- drivers/scsi/megaraid/megaraid_mm.c        |    8 ++--
- drivers/scsi/megaraid/megaraid_sas.c       |    2 -
- drivers/scsi/mpt2sas/mpt2sas_ctl.c         |   11 ++++---
- drivers/scsi/osst.c                        |   15 +++++----
- drivers/scsi/scsi_tgt_if.c                 |    2 -
- drivers/scsi/sg.c                          |   12 ++++---
- drivers/scsi/sr.c                          |   14 ++++----
- drivers/scsi/st.c                          |   12 ++++----
- drivers/staging/hv/blkvsc_drv.c            |   11 ++++---
- drivers/staging/spectra/ffsport.c          |    7 ++--
- drivers/telephony/ixj.c                    |    7 ++--
- drivers/watchdog/cpwd.c                    |   15 +++++----
- 100 files changed, 612 insertions(+), 556 deletions(-)
+Sure, this layer can provide any number of locks over a single
+hwspinlock (with the obvious price of hwspinlock contention).
