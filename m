@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757173Ab0JVSii (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 14:38:38 -0400
-Received: from kroah.org ([198.145.64.141]:45708 "EHLO coco.kroah.org"
+	id S1757680Ab0JVSue (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 14:50:34 -0400
+Received: from kroah.org ([198.145.64.141]:45734 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756655Ab0JVSie (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 14:38:34 -0400
-X-Mailbox-Line: From gregkh@clark.site Fri Oct 22 11:35:58 2010
-Message-Id: <20101022183558.640991137@clark.site>
+	id S1757154Ab0JVSii (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Oct 2010 14:38:38 -0400
+X-Mailbox-Line: From gregkh@clark.site Fri Oct 22 11:35:59 2010
+Message-Id: <20101022183559.080271578@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 22 Oct 2010 11:34:54 -0700
+Date: Fri, 22 Oct 2010 11:34:59 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Salman Qazi <sqazi@google.com>, Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: [27/66] hrtimer: Preserve timer state in remove_hrtimer()
+        Borislav Petkov <borislav.petkov@amd.com>, Ingo Molnar <mingo@elte.hu>
+Subject: [32/66] x86, AMD, MCE thresholding: Fix the MCi_MISCj iteration order
 In-Reply-To: <20101022183711.GA23214@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,88 +25,61 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Salman Qazi <sqazi@google.com>
+From: Borislav Petkov <borislav.petkov@amd.com>
 
-commit f13d4f979c518119bba5439dd2364d76d31dcd3f upstream.
+commit 6dcbfe4f0b4e17e289d56fa534b7ce5a6b7f63a3 upstream.
 
-The race is described as follows:
+This fixes possible cases of not collecting valid error info in
+the MCE error thresholding groups on F10h hardware.
 
-CPU X                                 CPU Y
-remove_hrtimer
-// state & QUEUED == 0
-timer->state = CALLBACK
-unlock timer base
-timer->f(n) //very long
-                                  hrtimer_start
-                                    lock timer base
-                                    remove_hrtimer // no effect
-                                    hrtimer_enqueue
-                                    timer->state = CALLBACK |
-                                                   QUEUED
-                                    unlock timer base
-                                  hrtimer_start
-                                    lock timer base
-                                    remove_hrtimer
-                                        mode = INACTIVE
-                                        // CALLBACK bit lost!
-                                    switch_hrtimer_base
-                                            CALLBACK bit not set:
-                                                    timer->base
-                                                    changes to a
-                                                    different CPU.
-lock this CPU's timer base
+The current code contains a subtle problem of checking only the
+Valid bit of MSR0000_0413 (which is MC4_MISC0 - DRAM
+thresholding group) in its first iteration and breaking out if
+the bit is cleared.
 
-The bug was introduced with commit ca109491f (hrtimer: removing all ur
-callback modes) in 2.6.29
+But (!), this MSR contains an offset value, BlkPtr[31:24], which
+points to the remaining MSRs in this thresholding group which
+might contain valid information too. But if we bail out only
+after we checked the valid bit in the first MSR and not the
+block pointer too, we miss that other information.
 
-[ tglx: Feed new state via local variable and add a comment. ]
+The thing is, MC4_MISC0[BlkPtr] is not predicated on
+MCi_STATUS[MiscV] or MC4_MISC0[Valid] and should be checked
+prior to iterating over the MCI_MISCj thresholding group,
+irrespective of the MC4_MISC0[Valid] setting.
 
-Signed-off-by: Salman Qazi <sqazi@google.com>
-Cc: akpm@linux-foundation.org
-Cc: Peter Zijlstra <peterz@infradead.org>
-LKML-Reference: <20101012142351.8485.21823.stgit@dungbeetle.mtv.corp.google.com>
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- kernel/hrtimer.c |   13 +++++++++++--
- 1 file changed, 11 insertions(+), 2 deletions(-)
+ arch/x86/kernel/cpu/mcheck/mce_amd.c |    9 +++------
+ 1 file changed, 3 insertions(+), 6 deletions(-)
 
---- a/kernel/hrtimer.c
-+++ b/kernel/hrtimer.c
-@@ -920,6 +920,7 @@ static inline int
- remove_hrtimer(struct hrtimer *timer, struct hrtimer_clock_base *base)
- {
- 	if (hrtimer_is_queued(timer)) {
-+		unsigned long state;
- 		int reprogram;
- 
- 		/*
-@@ -933,8 +934,13 @@ remove_hrtimer(struct hrtimer *timer, st
- 		debug_deactivate(timer);
- 		timer_stats_hrtimer_clear_start_info(timer);
- 		reprogram = base->cpu_base == &__get_cpu_var(hrtimer_bases);
--		__remove_hrtimer(timer, base, HRTIMER_STATE_INACTIVE,
--				 reprogram);
-+		/*
-+		 * We must preserve the CALLBACK state flag here,
-+		 * otherwise we could move the timer base in
-+		 * switch_hrtimer_base.
-+		 */
-+		state = timer->state & HRTIMER_STATE_CALLBACK;
-+		__remove_hrtimer(timer, base, state, reprogram);
- 		return 1;
- 	}
- 	return 0;
-@@ -1221,6 +1227,9 @@ static void __run_hrtimer(struct hrtimer
- 		BUG_ON(timer->state != HRTIMER_STATE_CALLBACK);
- 		enqueue_hrtimer(timer, base);
- 	}
+--- a/arch/x86/kernel/cpu/mcheck/mce_amd.c
++++ b/arch/x86/kernel/cpu/mcheck/mce_amd.c
+@@ -140,6 +140,7 @@ void mce_amd_feature_init(struct cpuinfo
+ 				address = (low & MASK_BLKPTR_LO) >> 21;
+ 				if (!address)
+ 					break;
 +
-+	WARN_ON_ONCE(!(timer->state & HRTIMER_STATE_CALLBACK));
-+
- 	timer->state &= ~HRTIMER_STATE_CALLBACK;
- }
+ 				address += MCG_XBLK_ADDR;
+ 			} else
+ 				++address;
+@@ -147,12 +148,8 @@ void mce_amd_feature_init(struct cpuinfo
+ 			if (rdmsr_safe(address, &low, &high))
+ 				break;
  
+-			if (!(high & MASK_VALID_HI)) {
+-				if (block)
+-					continue;
+-				else
+-					break;
+-			}
++			if (!(high & MASK_VALID_HI))
++				continue;
+ 
+ 			if (!(high & MASK_CNTP_HI)  ||
+ 			     (high & MASK_LOCKED_HI))
 
 
