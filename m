@@ -1,60 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753334Ab0JVS2L (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 14:28:11 -0400
-Received: from kroah.org ([198.145.64.141]:37827 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758967Ab0JVSZj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 14:25:39 -0400
-From: Greg Kroah-Hartman <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org
-Cc: Randy Dunlap <randy.dunlap@oracle.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [PATCH 19/31] FW_LOADER: fix kconfig dependency warning on HOTPLUG
-Date: Fri, 22 Oct 2010 11:25:04 -0700
-Message-Id: <1287771916-15016-19-git-send-email-gregkh@suse.de>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <20101022175107.GB13489@kroah.com>
-References: <20101022175107.GB13489@kroah.com>
+	id S1755149Ab0JVS2S (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 14:28:18 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:45444 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754107Ab0JVS2O (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Oct 2010 14:28:14 -0400
+Date: Fri, 22 Oct 2010 20:28:12 +0200
+From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: Dinh.Nguyen@freescale.com
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux@arm.linux.org.uk, s.hauer@pengutronix.de,
+        valentin.longchamp@epfl.ch, daniel@caiaq.de, grant.likely@secretlab.ca,
+        bryan.wu@canonical.com, amit.kucheria@canonical.com
+Subject: Re: [PATCHv5 2/3] ARM: imx: Add gpio-keys to plat-mxc
+Message-ID: <20101022182812.GA8554@pengutronix.de>
+References: <1287766575-4092-1-git-send-email-Dinh.Nguyen@freescale.com> <1287766575-4092-2-git-send-email-Dinh.Nguyen@freescale.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1287766575-4092-2-git-send-email-Dinh.Nguyen@freescale.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Randy Dunlap <randy.dunlap@oracle.com>
+On Fri, Oct 22, 2010 at 11:56:14AM -0500, Dinh.Nguyen@freescale.com wrote:
+> From: Dinh Nguyen <Dinh.Nguyen@freescale.com>
+> 
+> Add imx_add_gpio_keys function to add gpio-keys in plat-mxc
+> 
+> This patch is based on Sascha Hauer's imx/linux-2.6 for-rmk tree.
+(This information isn't interesting once the patch is in git, so it can
+better go after the tripple-dash below.)
 
-Fix kconfig dependency warning for FW_LOADER.
+> Signed-off-by: Dinh Nguyen <Dinh.Nguyen@freescale.com>
+Patch 1 depends on this one, so you should swap their order.
 
-Lots of drivers select FW_LOADER without bothering to depend on
-HOTPLUG and/or without selecting HOTPLUG.  A kernel builds fine
-when FW_LOADER is enabled, whether HOTPLUG is enabled or not, and
-a kernel config file (make oldconfig) is not changed by this patch.
-(Yes, drivers/base/firmware_class.c uses interfaces from linux/kobject.h,
-which does have some CONFIG_HOTPLUG dependencies, but this patch does
-not change that.)
+> ---
+>  arch/arm/plat-mxc/devices/Kconfig               |    4 +++
+>  arch/arm/plat-mxc/devices/Makefile              |    1 +
+>  arch/arm/plat-mxc/devices/platform-gpio_keys.c  |   27 +++++++++++++++++++++++
+>  arch/arm/plat-mxc/include/mach/devices-common.h |    4 +++
+>  arch/arm/plat-mxc/include/mach/iomux-mx51.h     |    2 +-
+>  5 files changed, 37 insertions(+), 1 deletions(-)
+>  create mode 100644 arch/arm/plat-mxc/devices/platform-gpio_keys.c
+> 
+> diff --git a/arch/arm/plat-mxc/devices/Kconfig b/arch/arm/plat-mxc/devices/Kconfig
+> index 4047994..f4772e7 100644
+> --- a/arch/arm/plat-mxc/devices/Kconfig
+> +++ b/arch/arm/plat-mxc/devices/Kconfig
+> @@ -9,6 +9,10 @@ config IMX_HAVE_PLATFORM_FLEXCAN
+>  	select HAVE_CAN_FLEXCAN
+>  	bool
+>  
+> +config IMX_HAVE_PLATFORM_GPIO_KEYS
+> +	bool
+> +	default y if ARCH_MX51
+> +	
+>  config IMX_HAVE_PLATFORM_IMX_I2C
+>  	bool
+>  
+> diff --git a/arch/arm/plat-mxc/devices/Makefile b/arch/arm/plat-mxc/devices/Makefile
+> index 0a3c1f0..45aefeb 100644
+> --- a/arch/arm/plat-mxc/devices/Makefile
+> +++ b/arch/arm/plat-mxc/devices/Makefile
+> @@ -1,6 +1,7 @@
+>  obj-$(CONFIG_IMX_HAVE_PLATFORM_ESDHC) += platform-esdhc.o
+>  obj-$(CONFIG_IMX_HAVE_PLATFORM_FEC) += platform-fec.o
+>  obj-$(CONFIG_IMX_HAVE_PLATFORM_FLEXCAN) += platform-flexcan.o
+> +obj-$(CONFIG_IMX_HAVE_PLATFORM_GPIO_KEYS) += platform-gpio_keys.o
+>  obj-y += platform-imx-dma.o
+>  obj-$(CONFIG_IMX_HAVE_PLATFORM_IMX_I2C) += platform-imx-i2c.o
+>  obj-$(CONFIG_IMX_HAVE_PLATFORM_IMX_SSI) += platform-imx-ssi.o
+> diff --git a/arch/arm/plat-mxc/devices/platform-gpio_keys.c b/arch/arm/plat-mxc/devices/platform-gpio_keys.c
+> new file mode 100644
+> index 0000000..1c53a53
+> --- /dev/null
+> +++ b/arch/arm/plat-mxc/devices/platform-gpio_keys.c
+> @@ -0,0 +1,27 @@
+> +/*
+> + * Copyright (C) 2010 Freescale Semiconductor, Inc. All Rights Reserved.
+> + *
+> + * This program is free software; you can redistribute it and/or
+> + * modify it under the terms of the GNU General Public License
+> + * as published by the Free Software Foundation; either version 2
+> + * of the License, or (at your option) any later version.
+> + * This program is distributed in the hope that it will be useful,
+> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + * GNU General Public License for more details.
+> + *
+> + * You should have received a copy of the GNU General Public License
+> + * along with this program; if not, write to the Free Software
+> + * Foundation, Inc., 51 Franklin Street, Fifth Floor,
+> + * Boston, MA  02110-1301, USA.
+> + */
+> +#include <asm/sizes.h>
+> +#include <mach/hardware.h>
+> +#include <mach/devices-common.h>
+> +
+> +struct platform_device *__init imx_add_gpio_keys(
+> +		const struct gpio_keys_platform_data *pdata)
+> +{
+> +	return imx_add_platform_device("gpio-keys", -1, NULL,
+> +		 0, pdata, sizeof(*pdata));
+> +}
+> diff --git a/arch/arm/plat-mxc/include/mach/devices-common.h b/arch/arm/plat-mxc/include/mach/devices-common.h
+> index 86d7575..8c6896f 100644
+> --- a/arch/arm/plat-mxc/include/mach/devices-common.h
+> +++ b/arch/arm/plat-mxc/include/mach/devices-common.h
+> @@ -29,6 +29,10 @@ struct platform_device *__init imx_add_flexcan(int id,
+>  		resource_size_t irq,
+>  		const struct flexcan_platform_data *pdata);
+>  
+> +#include <linux/gpio_keys.h>
+> +struct platform_device *__init imx_add_gpio_keys(
+> +		const struct gpio_keys_platform_data *pdata);
+> +
+>  #include <mach/i2c.h>
+>  struct imx_imx_i2c_data {
+>  	int id;
+> diff --git a/arch/arm/plat-mxc/include/mach/iomux-mx51.h b/arch/arm/plat-mxc/include/mach/iomux-mx51.h
+> index e46b1c2..7ae27e8 100644
+> --- a/arch/arm/plat-mxc/include/mach/iomux-mx51.h
+> +++ b/arch/arm/plat-mxc/include/mach/iomux-mx51.h
+> @@ -114,7 +114,7 @@ typedef enum iomux_config {
+>  #define MX51_PAD_EIM_A24__GPIO_2_18             IOMUX_PAD(0x450, 0x0bc, 1, 0x0,   0, NO_PAD_CTRL)
+>  #define MX51_PAD_EIM_A25__GPIO_2_19             IOMUX_PAD(0x454, 0x0c0, 1, 0x0,   0, NO_PAD_CTRL)
+>  #define MX51_PAD_EIM_A26__GPIO_2_20             IOMUX_PAD(0x458, 0x0c4, 1, 0x0,   0, NO_PAD_CTRL)
+> -#define MX51_PAD_EIM_A27__GPIO_2_21             IOMUX_PAD(0x45c, 0x0c8, 1, 0x0,   0, NO_PAD_CTRL)
+> +#define MX51_PAD_EIM_A27__GPIO_2_21             IOMUX_PAD(0x45c, 0x0c8, 1, 0x0,   0, MX51_GPIO_PAD_CTRL | PAD_CTL_PUS_100K_UP)
+I share the concerns of Arnaud.  MX51_GPIO_PAD_CTRL looks OK,
+PAD_CTL_PUS_100K_UP does not.
 
-warning: (MICROCODE || MICROCODE_INTEL && MICROCODE || MICROCODE_AMD && MICROCODE || PCMCIA_LOAD_CIS && PCCARD && PCMCIA && EXPERIMENTAL || USB_IRDA && NET && IRDA && USB || BT_HCIBCM203X && NET && BT && USB || BT_HCIBFUSB && NET && BT && USB || BT_HCIBT3C && NET && BT && PCMCIA || BT_MRVL_SDIO && NET
-...
-!STAGING_EXCLUDE_BUILD && USB && (X86 || ARM) && WLAN || DRM_NOUVEAU && STAGING && !STAGING_EXCLUDE_BUILD && DRM && PCI || TI_ST && STAGING && !STAGING_EXCLUDE_BUILD && RFKILL || DELL_RBU && X86) selects FW_LOADER which has unmet direct dependencies (HOTPLUG)
-(5200 byte line reduced a lot)
+>  #define MX51_PAD_EIM_EB0__EIM_EB0               IOMUX_PAD(0x460, 0x0cc, 0, 0x0,   0, NO_PAD_CTRL)
+>  #define MX51_PAD_EIM_EB1__EIM_EB1               IOMUX_PAD(0x464, 0x0d0, 0, 0x0,   0, NO_PAD_CTRL)
+>  #define MX51_PAD_EIM_EB2__GPIO_2_22             IOMUX_PAD(0x468, 0x0d4, 1, 0x0,   0, NO_PAD_CTRL)
 
-Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
----
- drivers/base/Kconfig |    1 -
- 1 files changed, 0 insertions(+), 1 deletions(-)
+Best regards
+Uwe
 
-diff --git a/drivers/base/Kconfig b/drivers/base/Kconfig
-index ef38aff..fd96345 100644
---- a/drivers/base/Kconfig
-+++ b/drivers/base/Kconfig
-@@ -71,7 +71,6 @@ config PREVENT_FIRMWARE_BUILD
- 
- config FW_LOADER
- 	tristate "Userspace firmware loading support" if EMBEDDED
--	depends on HOTPLUG
- 	default y
- 	---help---
- 	  This option is provided for the case where no in-kernel-tree modules
 -- 
-1.7.2
-
+Pengutronix e.K.                           | Uwe Kleine-König            |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
