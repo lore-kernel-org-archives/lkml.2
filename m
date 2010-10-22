@@ -1,71 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758486Ab0JVTez (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 15:34:55 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:45518 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756747Ab0JVTey (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 15:34:54 -0400
-Message-ID: <4CC1E717.7070707@ti.com>
-Date: Fri, 22 Oct 2010 15:33:43 -0400
-From: Cyril Chemparathy <cyril@ti.com>
-Reply-To: cyril@ti.com
-Organization: Texas Instruments
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.14) Gecko/20101006 Lightning/1.0b1 Thunderbird/3.0.9
+	id S1758526Ab0JVTgq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 15:36:46 -0400
+Received: from claw.goop.org ([74.207.240.146]:50099 "EHLO claw.goop.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758271Ab0JVTgo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Oct 2010 15:36:44 -0400
+Message-ID: <4CC1E7CB.8090106@goop.org>
+Date: Fri, 22 Oct 2010 12:36:43 -0700
+From: Jeremy Fitzhardinge <jeremy@goop.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc13 Lightning/1.0b3pre Thunderbird/3.1.4
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        "davinci-linux-open-source@linux.davincidsp.com" 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        "spi-devel-general@lists.sourceforge.net" 
-	<spi-devel-general@lists.sourceforge.net>,
-        "broonie@opensource.wolfsonmicro.com" 
-	<broonie@opensource.wolfsonmicro.com>,
-        "lrg@slimlogic.co.uk" <lrg@slimlogic.co.uk>,
-        "dbrownell@users.sourceforge.net" <dbrownell@users.sourceforge.net>,
-        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "rpurdie@rpsys.net" <rpurdie@rpsys.net>
-Subject: Re: [PATCH v3 01/12] misc: add driver for sequencer serial port
-References: <1287694873-12904-1-git-send-email-cyril@ti.com> <20101021161224.b4c0b623.akpm@linux-foundation.org> <4CC18605.80007@ti.com> <201010221448.17728.arnd@arndb.de>
-In-Reply-To: <201010221448.17728.arnd@arndb.de>
-Content-Type: text/plain; charset=ISO-8859-1
+To: "H. Peter Anvin" <hpa@zytor.com>
+CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        "Xen-devel@lists.xensource.com" <Xen-devel@lists.xensource.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] x86: define arch_vm_get_page_prot to set _PAGE_IOMAP
+ on VM_IO vmas
+References: <4CC0C14E.5080205@goop.org> <4CC0C318.90401@zytor.com> <4CC0CA07.3000306@goop.org> <4CC0DEB8.1060309@zytor.com> <20101022150826.GA23325@dumpdata.com> <4CC1BF58.9020001@zytor.com> <4CC1E0B6.3070303@goop.org> <4CC1E40F.60708@zytor.com>
+In-Reply-To: <4CC1E40F.60708@zytor.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/22/2010 08:48 AM, Arnd Bergmann wrote:
-> On Friday 22 October 2010 14:39:33 Cyril Chemparathy wrote:
->>>> +/* Register Access Helpers */
->>>> +static inline u32 ssp_read(struct ti_ssp *ssp, int reg)
->>>> +{
->>>> +    return __raw_readl(ssp->regs + reg);
->>>> +}
->>>> +
->>>> +static inline void ssp_write(struct ti_ssp *ssp, int reg, u32 val)
->>>> +{
->>>> +    __raw_writel(val, ssp->regs + reg);
->>>> +}
->>>
->>> Why are the __raw functions used here?
->>>
+ On 10/22/2010 12:20 PM, H. Peter Anvin wrote:
+> On 10/22/2010 12:06 PM, Jeremy Fitzhardinge wrote:
+>> Well, if you want to map a normal memory page, you'd use, say,
+>> pfn_pte(pfn, PAGE_KERNEL) to generate the pte.  The pfn is a
+>> domain-local pseudo-physical address.  When it ends up in
+>> xen_make_pte(), it will translate the the pfn into a machine-global mfn
+>> to generate a pte_t which can be inserted into a pagetable.  (And when
+>> that pagetable starts being used as such, Xen will validate that the mfn
+>> is actually one the domain is allowed to address.)
 >>
->> These registers are to be accessed native endian at all times, and
->> therefore the le32 conversion done otherwise is inappropriate.
-> 
-> Won't that break on out-of-order CPUs that need the extra synchronization
-> done in readl/writel?
-> 
+>> However, if you're doing an ioremap(), then the mapped address is a
+>> hardware one.  In that case, we construct the pte with
+>> pfn_pte(device_pfn, PAGE_KERNEL_IO), which sets the _PAGE_IOMAP flag in
+>> the pte flags.  When it gets to xen_make_pte(), it sees _PAGE_IOMAP and
+>> constructs a pte_t containing the literal untranslated device_pfn
+>> (really an mfn).  (And again, Xen will check that the domain has access
+>> to that mfn before allowing the mapping to be used.)
+>>
+> When you're doing an ioremap(), then the mapped address is *both* a PFN
+> and an MFN, right?  So why do your need a flag?  That is the part I
+> don't get...
 
-AFAICS, ioremap()ed space on ARMv6 should be strongly ordered.
+Xen always needs an mfn, so for memory the pfn needs to be converted to
+an mfn, but for devices the frame number is already an mfn.  You could
+look at it as having two distinct frame number address spaces, and the
+_PAGE_IOMAP flag tells the lower levels which address space the frame
+number is in.  Both memory and device mappings use the same interface -
+__pte() - to convert a (pfn,prot) tuple into a pte_t, so we use a bit in
+prot to distinguish them.
 
->
-> ...
->
+In the kernel, the places where device mappings vs memory mappings are
+quite well delineated.  There used to be a few places which could be
+either depending on context, but they've since been cleaned up by other
+efforts (the PAT/pageattr work did a lot of them, I think).
 
-Thanks
-Cyril.
+    J
+
