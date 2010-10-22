@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759501Ab0JVS5E (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 14:57:04 -0400
-Received: from kroah.org ([198.145.64.141]:34365 "EHLO coco.kroah.org"
+	id S1759593Ab0JVTDA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 15:03:00 -0400
+Received: from kroah.org ([198.145.64.141]:34423 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759439Ab0JVS45 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 14:56:57 -0400
-X-Mailbox-Line: From gregkh@clark.site Fri Oct 22 11:52:34 2010
-Message-Id: <20101022185234.445064901@clark.site>
+	id S1759439Ab0JVS5F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Oct 2010 14:57:05 -0400
+X-Mailbox-Line: From gregkh@clark.site Fri Oct 22 11:52:35 2010
+Message-Id: <20101022185235.235665989@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 22 Oct 2010 11:51:53 -0700
+Date: Fri, 22 Oct 2010 11:52:02 -0700
 From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org, greg@kroah.com
+To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk, avi@redhat.com,
-        mtosatti@redhat.com, "Michael S. Tsirkin" <mst@redhat.com>,
-        Gregory Haskins <ghaskins@novell.com>
-Subject: [079/103] KVM: fix irqfd assign/deassign race
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Herton Ronaldo Krzesinski <herton@mandriva.com.br>,
+        Takashi Iwai <tiwai@suse.de>,
+        David Henningsson <david.henningsson@canonical.com>
+Subject: [088/103] ALSA: hda - add ideapad model for Conexant 5051 codec
 In-Reply-To: <20101022185455.GA9114@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,46 +27,97 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Marcelo Tosatti <mtosatti@redhat.com>
+From: Herton Ronaldo Krzesinski <herton@mandriva.com.br>
 
-commit 6bbfb2653177a00f70e57e53625502d43804fed0 upstream.
+commit f7154de220f14073ef0d76638f85e254ad2e202f upstream.
 
-I think I see the following (theoretical) race:
+Lenovo IdeaPad Y430 has an additional subwoofer connected at pin 0x1b,
+which isn't muted when headphone is plugged in. This adds additional
+support to the extra subwoofer via new ideapad model.
 
-During irqfd assign, we drop irqfds lock before we
-schedule inject work. Therefore, deassign running
-on another CPU could cause shutdown and flush to run
-before inject, causing user after free in inject.
-
-A simple fix it to schedule inject under the lock.
-
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-Acked-by: Gregory Haskins <ghaskins@novell.com>
-Signed-off-by: Marcelo Tosatti <mtosatti@redhat.com>
+Signed-off-by: Herton Ronaldo Krzesinski <herton@mandriva.com.br>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Cc: David Henningsson <david.henningsson@canonical.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- virt/kvm/eventfd.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ Documentation/sound/alsa/HD-Audio-Models.txt |    1 +
+ sound/pci/hda/patch_conexant.c               |   20 ++++++++++++++++++++
+ 2 files changed, 21 insertions(+)
 
---- a/virt/kvm/eventfd.c
-+++ b/virt/kvm/eventfd.c
-@@ -217,7 +217,6 @@ kvm_irqfd_assign(struct kvm *kvm, int fd
- 	events = file->f_op->poll(file, &irqfd->pt);
+--- a/Documentation/sound/alsa/HD-Audio-Models.txt
++++ b/Documentation/sound/alsa/HD-Audio-Models.txt
+@@ -282,6 +282,7 @@ Conexant 5051
+   hp		HP Spartan laptop
+   hp-dv6736	HP dv6736
+   hp-f700	HP Compaq Presario F700
++  ideapad	Lenovo IdeaPad laptop
+   lenovo-x200	Lenovo X200 laptop
+   toshiba	Toshiba Satellite M300
  
- 	list_add_tail(&irqfd->list, &kvm->irqfds.items);
--	spin_unlock_irq(&kvm->irqfds.lock);
+--- a/sound/pci/hda/patch_conexant.c
++++ b/sound/pci/hda/patch_conexant.c
+@@ -1633,6 +1633,11 @@ static void cxt5051_update_speaker(struc
+ 	pinctl = (!spec->hp_present && spec->cur_eapd) ? PIN_OUT : 0;
+ 	snd_hda_codec_write(codec, 0x1a, 0, AC_VERB_SET_PIN_WIDGET_CONTROL,
+ 			    pinctl);
++	/* on ideapad there is an aditional speaker (subwoofer) to mute */
++	if (spec->ideapad)
++		snd_hda_codec_write(codec, 0x1b, 0,
++				    AC_VERB_SET_PIN_WIDGET_CONTROL,
++				    pinctl);
+ }
  
- 	/*
- 	 * Check if there was an event already pending on the eventfd
-@@ -226,6 +225,8 @@ kvm_irqfd_assign(struct kvm *kvm, int fd
- 	if (events & POLLIN)
- 		schedule_work(&irqfd->inject);
+ /* turn on/off EAPD (+ mute HP) as a master switch */
+@@ -1889,6 +1894,13 @@ static void cxt5051_init_mic_port(struct
+ #endif
+ }
  
-+	spin_unlock_irq(&kvm->irqfds.lock);
++static struct hda_verb cxt5051_ideapad_init_verbs[] = {
++	/* Subwoofer */
++	{0x1b, AC_VERB_SET_PIN_WIDGET_CONTROL, PIN_OUT},
++	{0x1b, AC_VERB_SET_CONNECT_SEL, 0x00},
++	{ } /* end */
++};
 +
- 	/*
- 	 * do not drop the file until the irqfd is fully initialized, otherwise
- 	 * we might race against the POLLHUP
+ /* initialize jack-sensing, too */
+ static int cxt5051_init(struct hda_codec *codec)
+ {
+@@ -1918,6 +1930,7 @@ enum {
+ 	CXT5051_LENOVO_X200,	/* Lenovo X200 laptop, also used for Advanced Mini Dock 250410 */
+ 	CXT5051_F700,       /* HP Compaq Presario F700 */
+ 	CXT5051_TOSHIBA,	/* Toshiba M300 & co */
++	CXT5051_IDEAPAD,	/* Lenovo IdeaPad Y430 */
+ 	CXT5051_MODELS
+ };
+ 
+@@ -1928,6 +1941,7 @@ static const char *cxt5051_models[CXT505
+ 	[CXT5051_LENOVO_X200]	= "lenovo-x200",
+ 	[CXT5051_F700]          = "hp-700",
+ 	[CXT5051_TOSHIBA]	= "toshiba",
++	[CXT5051_IDEAPAD]	= "ideapad",
+ };
+ 
+ static struct snd_pci_quirk cxt5051_cfg_tbl[] = {
+@@ -1939,6 +1953,7 @@ static struct snd_pci_quirk cxt5051_cfg_
+ 		      CXT5051_LAPTOP),
+ 	SND_PCI_QUIRK(0x14f1, 0x5051, "HP Spartan 1.1", CXT5051_HP),
+ 	SND_PCI_QUIRK(0x17aa, 0x20f2, "Lenovo X200", CXT5051_LENOVO_X200),
++	SND_PCI_QUIRK(0x17aa, 0x3a0d, "Lenovo IdeaPad", CXT5051_IDEAPAD),
+ 	{}
+ };
+ 
+@@ -2000,6 +2015,11 @@ static int patch_cxt5051(struct hda_code
+ 		spec->mixers[0] = cxt5051_toshiba_mixers;
+ 		spec->auto_mic = AUTO_MIC_PORTB;
+ 		break;
++	case CXT5051_IDEAPAD:
++		spec->init_verbs[spec->num_init_verbs++] =
++			cxt5051_ideapad_init_verbs;
++		spec->ideapad = 1;
++		break;
+ 	}
+ 
+ 	return 0;
 
 
