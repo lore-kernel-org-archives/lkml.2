@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758724Ab0JVSjy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 14:39:54 -0400
-Received: from kroah.org ([198.145.64.141]:45910 "EHLO coco.kroah.org"
+	id S1758285Ab0JVSi4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 14:38:56 -0400
+Received: from kroah.org ([198.145.64.141]:45790 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758698Ab0JVSjJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 14:39:09 -0400
-X-Mailbox-Line: From gregkh@clark.site Fri Oct 22 11:36:02 2010
-Message-Id: <20101022183602.002071609@clark.site>
+	id S1757775Ab0JVSiw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Oct 2010 14:38:52 -0400
+X-Mailbox-Line: From gregkh@clark.site Fri Oct 22 11:36:00 2010
+Message-Id: <20101022183600.299945982@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 22 Oct 2010 11:35:32 -0700
+Date: Fri, 22 Oct 2010 11:35:13 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Stefan Bader <stefan.bader@canonical.com>
-Subject: [65/66] mm: Move vma_stack_continue into mm.h
+        Stanislaw Gruszka <sgruszka@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [46/66] skge: add quirk to limit DMA
 In-Reply-To: <20101022183711.GA23214@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,61 +26,75 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stefan Bader <stefan.bader@canonical.com>
+From: Stanislaw Gruszka <sgruszka@redhat.com>
 
-commit 39aa3cb3e8250db9188a6f1e3fb62ffa1a717678 upstream.
+commit 392bd0cb000d4aac9e88e4f50823db85e7220688 upstream.
 
-So it can be used by all that need to check for that.
+Skge devices installed on some Gigabyte motherboards are not able to
+perform 64 dma correctly due to board PCI implementation, so limit
+DMA to 32bit if such boards are detected.
 
-Signed-off-by: Stefan Bader <stefan.bader@canonical.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Bug was reported here:
+https://bugzilla.redhat.com/show_bug.cgi?id=447489
+
+Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
+Tested-by: Luya Tshimbalanga <luya@fedoraproject.org>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
---- a/fs/proc/task_mmu.c
-+++ b/fs/proc/task_mmu.c
-@@ -224,7 +224,8 @@ static void show_map_vma(struct seq_file *m, struct vm_area_struct *vma)
- 	/* We don't show the stack guard page in /proc/maps */
- 	start = vma->vm_start;
- 	if (vma->vm_flags & VM_GROWSDOWN)
--		start += PAGE_SIZE;
-+		if (!vma_stack_continue(vma->vm_prev, vma->vm_start))
-+			start += PAGE_SIZE;
+---
+ drivers/net/skge.c |   18 +++++++++++++++++-
+ 1 file changed, 17 insertions(+), 1 deletion(-)
+
+--- a/drivers/net/skge.c
++++ b/drivers/net/skge.c
+@@ -40,6 +40,7 @@
+ #include <linux/sched.h>
+ #include <linux/seq_file.h>
+ #include <linux/mii.h>
++#include <linux/dmi.h>
+ #include <asm/irq.h>
  
- 	seq_printf(m, "%08lx-%08lx %c%c%c%c %08llx %02x:%02x %lu %n",
- 			start,
-diff --git a/include/linux/mm.h b/include/linux/mm.h
-index e6b1210..74949fb 100644
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -864,6 +864,12 @@ int set_page_dirty(struct page *page);
- int set_page_dirty_lock(struct page *page);
- int clear_page_dirty_for_io(struct page *page);
- 
-+/* Is the vma a continuation of the stack vma above it? */
-+static inline int vma_stack_continue(struct vm_area_struct *vma, unsigned long addr)
-+{
-+	return vma && (vma->vm_end == addr) && (vma->vm_flags & VM_GROWSDOWN);
-+}
-+
- extern unsigned long move_page_tables(struct vm_area_struct *vma,
- 		unsigned long old_addr, struct vm_area_struct *new_vma,
- 		unsigned long new_addr, unsigned long len);
-diff --git a/mm/mlock.c b/mm/mlock.c
-index cbae7c5..b70919c 100644
---- a/mm/mlock.c
-+++ b/mm/mlock.c
-@@ -135,12 +135,6 @@ void munlock_vma_page(struct page *page)
- 	}
+ #include "skge.h"
+@@ -3890,6 +3891,8 @@ static void __devinit skge_show_addr(str
+ 		       dev->name, dev->dev_addr);
  }
  
--/* Is the vma a continuation of the stack vma above it? */
--static inline int vma_stack_continue(struct vm_area_struct *vma, unsigned long addr)
--{
--	return vma && (vma->vm_end == addr) && (vma->vm_flags & VM_GROWSDOWN);
--}
--
- static inline int stack_guard_page(struct vm_area_struct *vma, unsigned long addr)
++static int only_32bit_dma;
++
+ static int __devinit skge_probe(struct pci_dev *pdev,
+ 				const struct pci_device_id *ent)
  {
- 	return (vma->vm_flags & VM_GROWSDOWN) &&
+@@ -3911,7 +3914,7 @@ static int __devinit skge_probe(struct p
+ 
+ 	pci_set_master(pdev);
+ 
+-	if (!pci_set_dma_mask(pdev, DMA_BIT_MASK(64))) {
++	if (!only_32bit_dma && !pci_set_dma_mask(pdev, DMA_BIT_MASK(64))) {
+ 		using_dac = 1;
+ 		err = pci_set_consistent_dma_mask(pdev, DMA_BIT_MASK(64));
+ 	} else if (!(err = pci_set_dma_mask(pdev, DMA_BIT_MASK(32)))) {
+@@ -4168,8 +4171,21 @@ static struct pci_driver skge_driver = {
+ 	.shutdown =	skge_shutdown,
+ };
+ 
++static struct dmi_system_id skge_32bit_dma_boards[] = {
++	{
++		.ident = "Gigabyte nForce boards",
++		.matches = {
++			DMI_MATCH(DMI_BOARD_VENDOR, "Gigabyte Technology Co"),
++			DMI_MATCH(DMI_BOARD_NAME, "nForce"),
++		},
++	},
++	{}
++};
++
+ static int __init skge_init_module(void)
+ {
++	if (dmi_check_system(skge_32bit_dma_boards))
++		only_32bit_dma = 1;
+ 	skge_debug_init();
+ 	return pci_register_driver(&skge_driver);
+ }
 
 
