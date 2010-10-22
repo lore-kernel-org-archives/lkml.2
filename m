@@ -1,73 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754905Ab0JVLvn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 07:51:43 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:60406 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753445Ab0JVLvm (ORCPT
+	id S1754749Ab0JVL5H (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 07:57:07 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:35778 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750801Ab0JVL5F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 07:51:42 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:x-enigmail-version:content-type
-         :content-transfer-encoding;
-        b=L8Fg5s/5btFVxivxTXZEYnstpP87M2dQfzeaSlgMV1uINN6BaOB1M/+ZKCSjs+BAcC
-         qtnjsi4sBqKp9J0SssqU267UKtICjVvlvDJjdHvSsCaImOFHnpS0phXGz+xmKQJHbdpJ
-         N0YsfOqmsxHCn/JAYTtN/RTNdXdQC5gF+hQXQ=
-Message-ID: <4CC17ACA.2090802@gmail.com>
-Date: Fri, 22 Oct 2010 13:51:38 +0200
-From: Jiri Slaby <jirislaby@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.11) Gecko/20101013 SUSE/3.1.5 Thunderbird/3.1.5
+	Fri, 22 Oct 2010 07:57:05 -0400
+Date: Fri, 22 Oct 2010 13:57:00 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: Huang Ying <ying.huang@intel.com>
+Cc: Len Brown <lenb@kernel.org>, linux-kernel@vger.kernel.org,
+        Andi Kleen <andi@firstfloor.org>, linux-acpi@vger.kernel.org
+Subject: Re: [PATCH 9/9] ACPI, APEI, Generic Hardware Error Source
+ POLL/IRQ/NMI notification type support
+Message-ID: <20101022115700.GC10456@basil.fritz.box>
+References: <1287538620-7442-1-git-send-email-ying.huang@intel.com>
+ <1287538620-7442-10-git-send-email-ying.huang@intel.com>
 MIME-Version: 1.0
-To: Clemens Ladisch <clemens@ladisch.de>
-CC: Takashi Iwai <tiwai@suse.de>, alsa-devel@alsa-project.org,
-        mm-commits@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Valdis.Kletnieks@vt.edu, akpm@linux-foundation.org
-Subject: Re: [alsa-devel] HDA: no sound [was: mmotm 2010-10-20-15-01	uploaded]
-References: <201010202233.o9KMXNoL008303@imap1.linux-foundation.org>	<4CBFEE94.7020103@gmail.com>	<s5hlj5sc7do.wl%tiwai@suse.de>	<4CBFF25C.2080908@gmail.com>	<s5hfww0c6oj.wl%tiwai@suse.de> <4CC085F5.9070905@gmail.com> <4CC17629.6050703@ladisch.de>
-In-Reply-To: <4CC17629.6050703@ladisch.de>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1287538620-7442-10-git-send-email-ying.huang@intel.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/22/2010 01:31 PM, Clemens Ladisch wrote:
-> Jiri Slaby wrote:
->> On 10/21/2010 10:05 AM, Takashi Iwai wrote:
->>>   commit de8c85f7840e5e29629de95f5af24297fb325e0b
->>>     ALSA: HDA: Sigmatel: work around incorrect master muting
->>
->> Reverting this one helps.
-> 
-> This one introduced even more wrong volume information on some codecs.
-> Pleasy try this patch on top:
+On Wed, Oct 20, 2010 at 09:37:00AM +0800, Huang Ying wrote:
 
-Yup, works for me.
+Hi Ying,
 
-> --- a/sound/pci/hda/patch_sigmatel.c
-> +++ b/sound/pci/hda/patch_sigmatel.c
-> @@ -32,6 +32,7 @@
->  #include <sound/core.h>
->  #include <sound/asoundef.h>
->  #include <sound/jack.h>
-> +#include <sound/tlv.h>
->  #include "hda_codec.h"
->  #include "hda_local.h"
->  #include "hda_beep.h"
-> @@ -1145,7 +1146,7 @@ static int stac92xx_build_controls(struct hda_codec *codec)
->  		/* correct volume offset */
->  		vmaster_tlv[2] += vmaster_tlv[3] * spec->volume_offset;
->  		/* minimum value is actually mute */
-> -		vmaster_tlv[3] |= 0x1000;
-> +		vmaster_tlv[3] |= TLV_DB_SCALE_MUTE;
->  		err = snd_hda_add_vmaster(codec, "Master Playback Volume",
->  					  vmaster_tlv, slave_vols);
->  		if (err < 0)
-> 
+Only some minor nits found in review. 
 
-thanks,
+I don't think they're merge blockers, but could be all fixed
+in followups later.
+
+Overall it looks all good.
+
+Reviewed-by: Andi Kleen <ak@linux.intel.com>
+
+> + * These 2 spinlock is used to prevent atomic ioremap virtual memory
+> + * area from being mapped simultaneously.
+> + */
+> +static DEFINE_RAW_SPINLOCK(ghes_ioremap_lock_nmi);
+> +static DEFINE_SPINLOCK(ghes_ioremap_lock_irq);
+> +
+> +static int ghes_ioremap_init(void)
+> +{
+> +	ghes_ioremap_area = __get_vm_area(PAGE_SIZE * 2, VM_IOREMAP,
+
+Should make the magic PAGE_SIZE * 2 into a define with a comment?
+
+> +			vaddr = ghes_ioremap_pfn_nmi(paddr >> PAGE_SHIFT);
+> +		} else {
+> +			spin_lock_irqsave(&ghes_ioremap_lock_irq, flags);
+> +			vaddr = ghes_ioremap_pfn_irq(paddr >> PAGE_SHIFT);
+> +		}
+> +		trunk = PAGE_SIZE - offset;
+> +		trunk = min(trunk, len);
+> +		if (from_phys)
+> +			memcpy(buffer, vaddr + offset, trunk);
+> +		else
+> +			memcpy(vaddr + offset, buffer, trunk);
+
+In generic Linux this would be memcpy_fromio. On x86 of course it's the same. 
+Still perhaps better use that to prevent sparse from freaking out with its 
+address space checks.
+
+> @@ -303,6 +390,43 @@ out:
+>  	return 0;
+>  }
+>  
+> +static void ghes_add_timer(struct ghes *ghes)
+> +{
+> +	struct acpi_hest_generic *g = ghes->generic;
+> +	unsigned long expire;
+> +
+> +	if (!g->notify.poll_interval) {
+> +		pr_warning(FW_WARN GHES_PFX "Poll interval is 0 for "
+> +			   "generaic hardware error source: %d, disabled.",
+
+generaic -> generic 
+
+This is user visible so should be fixed.
+
+
+> +			   g->header.source_id);
+> +		return;
+> +	}
+> +	expire = jiffies + msecs_to_jiffies(g->notify.poll_interval);
+> +	ghes->timer.expires = round_jiffies_relative(expire);
+> +	add_timer(&ghes->timer);
+
+Could actually make this a deferrable timer I guess to be even more
+friendly to power.
+
+> +		}
+> +		ret = NOTIFY_STOP;
+> +	}
+> +
+> +	if (ret == NOTIFY_DONE)
+> +		goto out;
+> +
+> +	if (sev_global >= GHES_SEV_PANIC) {
+> +		herr_persist_all_records();
+> +		oops_begin();
+> +		/* reboot to log the error! */
+> +		if (panic_timeout == 0)
+> +			panic_timeout = ghes_panic_timeout;
+> +		panic(GHES_PFX "generic hardware fatal error!\n");
+
+I suspect need some more explanation on this one.
+
+> +	case ACPI_HEST_NOTIFY_NMI:
+> +		mutex_lock(&ghes_list_mutex);
+> +		list_del_rcu(&ghes->list);
+> +		if (list_empty(&ghes_nmi))
+> +			unregister_die_notifier(&ghes_notifier_nmi);
+> +		mutex_unlock(&ghes_list_mutex);
+> +		synchronize_rcu();
+
+Should normally have a comment to describe what it synchronizes against.
+The NMI in this case I guess.
+
+-Andi
 -- 
-js
+ak@linux.intel.com -- Speaking for myself only.
