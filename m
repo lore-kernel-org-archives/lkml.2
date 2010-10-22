@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932574Ab0JVSVw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 14:21:52 -0400
-Received: from kroah.org ([198.145.64.141]:41909 "EHLO coco.kroah.org"
+	id S1754447Ab0JVSgT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 14:36:19 -0400
+Received: from kroah.org ([198.145.64.141]:41915 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932561Ab0JVSVu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 14:21:50 -0400
+	id S932561Ab0JVSVw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Oct 2010 14:21:52 -0400
 From: Greg Kroah-Hartman <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org
-Cc: Davidlohr Bueso <dave@gnu.org>, Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [PATCH 23/49] serial: max3107: Fix memory leaks when returning on error
-Date: Fri, 22 Oct 2010 11:21:02 -0700
-Message-Id: <1287771688-14805-23-git-send-email-gregkh@suse.de>
+Cc: Alan Cox <alan@linux.intel.com>, Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [PATCH 25/49] tty: Convert the USB drivers to the new icount interface
+Date: Fri, 22 Oct 2010 11:21:04 -0700
+Message-Id: <1287771688-14805-25-git-send-email-gregkh@suse.de>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <20101022175112.GC13489@kroah.com>
 References: <20101022175112.GC13489@kroah.com>
@@ -19,118 +19,673 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Davidlohr Bueso <dave@gnu.org>
+From: Alan Cox <alan@linux.intel.com>
 
-Fix memory leaks in max3107_probe() when returning on error.
+Simple pasting job using the new ops function. Also fix a couple of devices
+directly returning the internal struct (which happens at this point to match
+for the fields that matter but isn't correct or futureproof)
 
-Signed-off-by: Davidlohr Bueso <dave@gnu.org>
-Acked-by: Alan Cox <alan@linux.intel.com>
+Signed-off-by: Alan Cox <alan@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- drivers/serial/max3107.c |   34 +++++++++++++++++++++++++---------
- 1 files changed, 25 insertions(+), 9 deletions(-)
+ drivers/net/usb/hso.c                 |   35 ++++++++++-----------
+ drivers/usb/serial/ark3116.c          |   40 +++++++++++++-----------
+ drivers/usb/serial/ftdi_sio.c         |    1 +
+ drivers/usb/serial/io_edgeport.c      |   49 ++++++++++++++++-------------
+ drivers/usb/serial/io_tables.h        |    4 ++
+ drivers/usb/serial/io_ti.c            |   29 +++++++++++++----
+ drivers/usb/serial/mos7720.c          |   54 +++++++++++++++++---------------
+ drivers/usb/serial/mos7840.c          |   53 +++++++++++++++++--------------
+ drivers/usb/serial/ssu100.c           |   46 +++++++++++++++-------------
+ drivers/usb/serial/ti_usb_3410_5052.c |   37 +++++++++++++++++-----
+ 10 files changed, 203 insertions(+), 145 deletions(-)
 
-diff --git a/drivers/serial/max3107.c b/drivers/serial/max3107.c
-index 67283c1..910870e 100644
---- a/drivers/serial/max3107.c
-+++ b/drivers/serial/max3107.c
-@@ -986,12 +986,14 @@ int max3107_probe(struct spi_device *spi, struct max3107_plat *pdata)
- 	s->rxbuf = kzalloc(sizeof(u16) * (MAX3107_RX_FIFO_SIZE+2), GFP_KERNEL);
- 	if (!s->rxbuf) {
- 		pr_err("Allocating RX buffer failed\n");
--		return -ENOMEM;
-+		retval = -ENOMEM;
-+		goto err_free4;
- 	}
- 	s->rxstr = kzalloc(sizeof(u8) * MAX3107_RX_FIFO_SIZE, GFP_KERNEL);
- 	if (!s->rxstr) {
- 		pr_err("Allocating RX buffer failed\n");
--		return -ENOMEM;
-+		retval = -ENOMEM;
-+		goto err_free3;
- 	}
- 	/* SPI Tx buffer
- 	 * SPI transfer buffer
-@@ -1002,7 +1004,8 @@ int max3107_probe(struct spi_device *spi, struct max3107_plat *pdata)
- 	s->txbuf = kzalloc(sizeof(u16) * MAX3107_TX_FIFO_SIZE + 3, GFP_KERNEL);
- 	if (!s->txbuf) {
- 		pr_err("Allocating TX buffer failed\n");
--		return -ENOMEM;
-+		retval = -ENOMEM;
-+		goto err_free2;
- 	}
- 	/* Initialize shared data lock */
- 	spin_lock_init(&s->data_lock);
-@@ -1021,13 +1024,15 @@ int max3107_probe(struct spi_device *spi, struct max3107_plat *pdata)
- 	buf[0] = MAX3107_REVID_REG;
- 	if (max3107_rw(s, (u8 *)buf, (u8 *)buf, 2)) {
- 		dev_err(&s->spi->dev, "SPI transfer for REVID read failed\n");
--		return -EIO;
-+		retval = -EIO;
-+		goto err_free1;
- 	}
- 	if ((buf[0] & MAX3107_SPI_RX_DATA_MASK) != MAX3107_REVID1 &&
- 		(buf[0] & MAX3107_SPI_RX_DATA_MASK) != MAX3107_REVID2) {
- 		dev_err(&s->spi->dev, "REVID %x does not match\n",
- 				(buf[0] & MAX3107_SPI_RX_DATA_MASK));
--		return -ENODEV;
-+		retval = -ENODEV;
-+		goto err_free1;
- 	}
+diff --git a/drivers/net/usb/hso.c b/drivers/net/usb/hso.c
+index 1cd752f..b8e9572 100644
+--- a/drivers/net/usb/hso.c
++++ b/drivers/net/usb/hso.c
+@@ -1645,11 +1645,11 @@ hso_wait_modem_status(struct hso_serial *serial, unsigned long arg)
+  * NB: both 1->0 and 0->1 transitions are counted except for
+  *     RI where only 0->1 is counted.
+  */
+-static int hso_get_count(struct hso_serial *serial,
+-			  struct serial_icounter_struct __user *icnt)
++static int hso_get_count(struct tty_struct *tty,
++		  struct serial_icounter_struct *icount)
+ {
+-	struct serial_icounter_struct icount;
+ 	struct uart_icount cnow;
++	struct hso_serial *serial = get_serial_by_tty(tty);
+ 	struct hso_tiocmget  *tiocmget = serial->tiocmget;
  
- 	/* Disable all interrupts */
-@@ -1047,7 +1052,8 @@ int max3107_probe(struct spi_device *spi, struct max3107_plat *pdata)
- 	/* Perform SPI transfer */
- 	if (max3107_rw(s, (u8 *)buf, NULL, 4)) {
- 		dev_err(&s->spi->dev, "SPI transfer for init failed\n");
--		return -EIO;
-+		retval = -EIO;
-+		goto err_free1;
- 	}
+ 	memset(&icount, 0, sizeof(struct serial_icounter_struct));
+@@ -1660,19 +1660,19 @@ static int hso_get_count(struct hso_serial *serial,
+ 	memcpy(&cnow, &tiocmget->icount, sizeof(struct uart_icount));
+ 	spin_unlock_irq(&serial->serial_lock);
  
- 	/* Register UART driver */
-@@ -1055,7 +1061,7 @@ int max3107_probe(struct spi_device *spi, struct max3107_plat *pdata)
- 		retval = uart_register_driver(&max3107_uart_driver);
- 		if (retval) {
- 			dev_err(&s->spi->dev, "Registering UART driver failed\n");
--			return retval;
-+			goto err_free1;
- 		}
- 		driver_registered = 1;
- 	}
-@@ -1074,13 +1080,13 @@ int max3107_probe(struct spi_device *spi, struct max3107_plat *pdata)
- 	retval = uart_add_one_port(&max3107_uart_driver, &s->port);
- 	if (retval < 0) {
- 		dev_err(&s->spi->dev, "Adding UART port failed\n");
--		return retval;
-+		goto err_free1;
- 	}
+-	icount.cts         = cnow.cts;
+-	icount.dsr         = cnow.dsr;
+-	icount.rng         = cnow.rng;
+-	icount.dcd         = cnow.dcd;
+-	icount.rx          = cnow.rx;
+-	icount.tx          = cnow.tx;
+-	icount.frame       = cnow.frame;
+-	icount.overrun     = cnow.overrun;
+-	icount.parity      = cnow.parity;
+-	icount.brk         = cnow.brk;
+-	icount.buf_overrun = cnow.buf_overrun;
++	icount->cts         = cnow.cts;
++	icount->dsr         = cnow.dsr;
++	icount->rng         = cnow.rng;
++	icount->dcd         = cnow.dcd;
++	icount->rx          = cnow.rx;
++	icount->tx          = cnow.tx;
++	icount->frame       = cnow.frame;
++	icount->overrun     = cnow.overrun;
++	icount->parity      = cnow.parity;
++	icount->brk         = cnow.brk;
++	icount->buf_overrun = cnow.buf_overrun;
  
- 	if (pdata->configure) {
- 		retval = pdata->configure(s);
- 		if (retval < 0)
--			return retval;
-+			goto err_free1;
- 	}
- 
- 	/* Go to suspend mode */
-@@ -1088,6 +1094,16 @@ int max3107_probe(struct spi_device *spi, struct max3107_plat *pdata)
- 		pdata->hw_suspend(s, 1);
- 
- 	return 0;
-+
-+err_free1:
-+	kfree(s->txbuf);
-+err_free2:
-+	kfree(s->rxstr);
-+err_free3:
-+	kfree(s->rxbuf);
-+err_free4:
-+	kfree(s);
-+	return retval;
+-	return copy_to_user(icnt, &icount, sizeof(icount)) ? -EFAULT : 0;
++	return 0;
  }
- EXPORT_SYMBOL_GPL(max3107_probe);
  
+ 
+@@ -1764,10 +1764,6 @@ static int hso_serial_ioctl(struct tty_struct *tty, struct file *file,
+ 	case TIOCMIWAIT:
+ 		ret = hso_wait_modem_status(serial, arg);
+ 		break;
+-
+-	case TIOCGICOUNT:
+-		ret = hso_get_count(serial, uarg);
+-		break;
+ 	default:
+ 		ret = -ENOIOCTLCMD;
+ 		break;
+@@ -3300,6 +3296,7 @@ static const struct tty_operations hso_serial_ops = {
+ 	.chars_in_buffer = hso_serial_chars_in_buffer,
+ 	.tiocmget = hso_serial_tiocmget,
+ 	.tiocmset = hso_serial_tiocmset,
++	.get_icount = hso_get_count,
+ 	.unthrottle = hso_unthrottle
+ };
+ 
+diff --git a/drivers/usb/serial/ark3116.c b/drivers/usb/serial/ark3116.c
+index 4e41a2a..8f1d4fb 100644
+--- a/drivers/usb/serial/ark3116.c
++++ b/drivers/usb/serial/ark3116.c
+@@ -411,6 +411,26 @@ err_out:
+ 	return result;
+ }
+ 
++static int ark3116_get_icount(struct tty_struct *tty,
++					struct serial_icounter_struct *icount)
++{
++	struct usb_serial_port *port = tty->driver_data;
++	struct ark3116_private *priv = usb_get_serial_port_data(port);
++	struct async_icount cnow = priv->icount;
++	icount->cts = cnow.cts;
++	icount->dsr = cnow.dsr;
++	icount->rng = cnow.rng;
++	icount->dcd = cnow.dcd;
++	icount->rx = cnow.rx;
++	icount->tx = cnow.tx;
++	icount->frame = cnow.frame;
++	icount->overrun = cnow.overrun;
++	icount->parity = cnow.parity;
++	icount->brk = cnow.brk;
++	icount->buf_overrun = cnow.buf_overrun;
++	return 0;
++}
++
+ static int ark3116_ioctl(struct tty_struct *tty, struct file *file,
+ 			 unsigned int cmd, unsigned long arg)
+ {
+@@ -460,25 +480,6 @@ static int ark3116_ioctl(struct tty_struct *tty, struct file *file,
+ 				return 0;
+ 		}
+ 		break;
+-	case TIOCGICOUNT: {
+-		struct serial_icounter_struct icount;
+-		struct async_icount cnow = priv->icount;
+-		memset(&icount, 0, sizeof(icount));
+-		icount.cts = cnow.cts;
+-		icount.dsr = cnow.dsr;
+-		icount.rng = cnow.rng;
+-		icount.dcd = cnow.dcd;
+-		icount.rx = cnow.rx;
+-		icount.tx = cnow.tx;
+-		icount.frame = cnow.frame;
+-		icount.overrun = cnow.overrun;
+-		icount.parity = cnow.parity;
+-		icount.brk = cnow.brk;
+-		icount.buf_overrun = cnow.buf_overrun;
+-		if (copy_to_user(user_arg, &icount, sizeof(icount)))
+-			return -EFAULT;
+-		return 0;
+-	}
+ 	}
+ 
+ 	return -ENOIOCTLCMD;
+@@ -736,6 +737,7 @@ static struct usb_serial_driver ark3116_device = {
+ 	.ioctl =		ark3116_ioctl,
+ 	.tiocmget =		ark3116_tiocmget,
+ 	.tiocmset =		ark3116_tiocmset,
++	.get_icount =		ark3116_get_icount,
+ 	.open =			ark3116_open,
+ 	.close =		ark3116_close,
+ 	.break_ctl = 		ark3116_break_ctl,
+diff --git a/drivers/usb/serial/ftdi_sio.c b/drivers/usb/serial/ftdi_sio.c
+index 97cc87d..891c20e 100644
+--- a/drivers/usb/serial/ftdi_sio.c
++++ b/drivers/usb/serial/ftdi_sio.c
+@@ -2168,6 +2168,7 @@ static int ftdi_ioctl(struct tty_struct *tty, struct file *file,
+ 	 * - mask passed in arg for lines of interest
+ 	 *   (use |'ed TIOCM_RNG/DSR/CD/CTS for masking)
+ 	 * Caller should use TIOCGICOUNT to see which one it was.
++	 * (except that the driver doesn't support it !)
+ 	 *
+ 	 * This code is borrowed from linux/drivers/char/serial.c
+ 	 */
+diff --git a/drivers/usb/serial/io_edgeport.c b/drivers/usb/serial/io_edgeport.c
+index 76e6fb3..a0ab78a 100644
+--- a/drivers/usb/serial/io_edgeport.c
++++ b/drivers/usb/serial/io_edgeport.c
+@@ -222,6 +222,8 @@ static void edge_break(struct tty_struct *tty, int break_state);
+ static int  edge_tiocmget(struct tty_struct *tty, struct file *file);
+ static int  edge_tiocmset(struct tty_struct *tty, struct file *file,
+ 					unsigned int set, unsigned int clear);
++static int  edge_get_icount(struct tty_struct *tty,
++				struct serial_icounter_struct *icount);
+ static int  edge_startup(struct usb_serial *serial);
+ static void edge_disconnect(struct usb_serial *serial);
+ static void edge_release(struct usb_serial *serial);
+@@ -1624,6 +1626,31 @@ static int edge_tiocmget(struct tty_struct *tty, struct file *file)
+ 	return result;
+ }
+ 
++static int edge_get_icount(struct tty_struct *tty,
++				struct serial_icounter_struct *icount)
++{
++	struct usb_serial_port *port = tty->driver_data;
++	struct edgeport_port *edge_port = usb_get_serial_port_data(port);
++	struct async_icount cnow;
++	cnow = edge_port->icount;
++
++	icount->cts = cnow.cts;
++	icount->dsr = cnow.dsr;
++	icount->rng = cnow.rng;
++	icount->dcd = cnow.dcd;
++	icount->rx = cnow.rx;
++	icount->tx = cnow.tx;
++	icount->frame = cnow.frame;
++	icount->overrun = cnow.overrun;
++	icount->parity = cnow.parity;
++	icount->brk = cnow.brk;
++	icount->buf_overrun = cnow.buf_overrun;
++
++	dbg("%s (%d) TIOCGICOUNT RX=%d, TX=%d",
++			__func__,  port->number, icount->rx, icount->tx);
++	return 0;
++}
++
+ static int get_serial_info(struct edgeport_port *edge_port,
+ 				struct serial_struct __user *retinfo)
+ {
+@@ -1650,7 +1677,6 @@ static int get_serial_info(struct edgeport_port *edge_port,
+ }
+ 
+ 
+-
+ /*****************************************************************************
+  * SerialIoctl
+  *	this function handles any ioctl calls to the driver
+@@ -1663,7 +1689,6 @@ static int edge_ioctl(struct tty_struct *tty, struct file *file,
+ 	struct edgeport_port *edge_port = usb_get_serial_port_data(port);
+ 	struct async_icount cnow;
+ 	struct async_icount cprev;
+-	struct serial_icounter_struct icount;
+ 
+ 	dbg("%s - port %d, cmd = 0x%x", __func__, port->number, cmd);
+ 
+@@ -1702,26 +1727,6 @@ static int edge_ioctl(struct tty_struct *tty, struct file *file,
+ 		/* NOTREACHED */
+ 		break;
+ 
+-	case TIOCGICOUNT:
+-		cnow = edge_port->icount;
+-		memset(&icount, 0, sizeof(icount));
+-		icount.cts = cnow.cts;
+-		icount.dsr = cnow.dsr;
+-		icount.rng = cnow.rng;
+-		icount.dcd = cnow.dcd;
+-		icount.rx = cnow.rx;
+-		icount.tx = cnow.tx;
+-		icount.frame = cnow.frame;
+-		icount.overrun = cnow.overrun;
+-		icount.parity = cnow.parity;
+-		icount.brk = cnow.brk;
+-		icount.buf_overrun = cnow.buf_overrun;
+-
+-		dbg("%s (%d) TIOCGICOUNT RX=%d, TX=%d",
+-				__func__,  port->number, icount.rx, icount.tx);
+-		if (copy_to_user((void __user *)arg, &icount, sizeof(icount)))
+-			return -EFAULT;
+-		return 0;
+ 	}
+ 	return -ENOIOCTLCMD;
+ }
+diff --git a/drivers/usb/serial/io_tables.h b/drivers/usb/serial/io_tables.h
+index feb56a4..6ab2a3f 100644
+--- a/drivers/usb/serial/io_tables.h
++++ b/drivers/usb/serial/io_tables.h
+@@ -123,6 +123,7 @@ static struct usb_serial_driver edgeport_2port_device = {
+ 	.set_termios		= edge_set_termios,
+ 	.tiocmget		= edge_tiocmget,
+ 	.tiocmset		= edge_tiocmset,
++	.get_icount		= edge_get_icount,
+ 	.write			= edge_write,
+ 	.write_room		= edge_write_room,
+ 	.chars_in_buffer	= edge_chars_in_buffer,
+@@ -152,6 +153,7 @@ static struct usb_serial_driver edgeport_4port_device = {
+ 	.set_termios		= edge_set_termios,
+ 	.tiocmget		= edge_tiocmget,
+ 	.tiocmset		= edge_tiocmset,
++	.get_icount		= edge_get_icount,
+ 	.write			= edge_write,
+ 	.write_room		= edge_write_room,
+ 	.chars_in_buffer	= edge_chars_in_buffer,
+@@ -181,6 +183,7 @@ static struct usb_serial_driver edgeport_8port_device = {
+ 	.set_termios		= edge_set_termios,
+ 	.tiocmget		= edge_tiocmget,
+ 	.tiocmset		= edge_tiocmset,
++	.get_icount		= edge_get_icount,
+ 	.write			= edge_write,
+ 	.write_room		= edge_write_room,
+ 	.chars_in_buffer	= edge_chars_in_buffer,
+@@ -209,6 +212,7 @@ static struct usb_serial_driver epic_device = {
+ 	.set_termios		= edge_set_termios,
+ 	.tiocmget		= edge_tiocmget,
+ 	.tiocmset		= edge_tiocmset,
++	.get_icount		= edge_get_icount,
+ 	.write			= edge_write,
+ 	.write_room		= edge_write_room,
+ 	.chars_in_buffer	= edge_chars_in_buffer,
+diff --git a/drivers/usb/serial/io_ti.c b/drivers/usb/serial/io_ti.c
+index a7cfc59..4dad27a 100644
+--- a/drivers/usb/serial/io_ti.c
++++ b/drivers/usb/serial/io_ti.c
+@@ -2510,6 +2510,27 @@ static int edge_tiocmget(struct tty_struct *tty, struct file *file)
+ 	return result;
+ }
+ 
++static int edge_get_icount(struct tty_struct *tty,
++				struct serial_icounter_struct *icount)
++{
++	struct usb_serial_port *port = tty->driver_data;
++	struct edgeport_port *edge_port = usb_get_serial_port_data(port);
++	struct async_icount *ic = &edge_port->icount;
++
++	icount->cts = ic->cts;
++	icount->dsr = ic->dsr;
++	icount->rng = ic->rng;
++	icount->dcd = ic->dcd;
++	icount->tx = ic->tx;
++        icount->rx = ic->rx;
++        icount->frame = ic->frame;
++        icount->parity = ic->parity;
++        icount->overrun = ic->overrun;
++        icount->brk = ic->brk;
++        icount->buf_overrun = ic->buf_overrun;
++	return 0;
++}
++
+ static int get_serial_info(struct edgeport_port *edge_port,
+ 				struct serial_struct __user *retinfo)
+ {
+@@ -2572,13 +2593,6 @@ static int edge_ioctl(struct tty_struct *tty, struct file *file,
+ 		}
+ 		/* not reached */
+ 		break;
+-	case TIOCGICOUNT:
+-		dbg("%s - (%d) TIOCGICOUNT RX=%d, TX=%d", __func__,
+-		     port->number, edge_port->icount.rx, edge_port->icount.tx);
+-		if (copy_to_user((void __user *)arg, &edge_port->icount,
+-				sizeof(edge_port->icount)))
+-			return -EFAULT;
+-		return 0;
+ 	}
+ 	return -ENOIOCTLCMD;
+ }
+@@ -2758,6 +2772,7 @@ static struct usb_serial_driver edgeport_1port_device = {
+ 	.set_termios		= edge_set_termios,
+ 	.tiocmget		= edge_tiocmget,
+ 	.tiocmset		= edge_tiocmset,
++	.get_icount		= edge_get_icount,
+ 	.write			= edge_write,
+ 	.write_room		= edge_write_room,
+ 	.chars_in_buffer	= edge_chars_in_buffer,
+diff --git a/drivers/usb/serial/mos7720.c b/drivers/usb/serial/mos7720.c
+index aa66581..fd0b641 100644
+--- a/drivers/usb/serial/mos7720.c
++++ b/drivers/usb/serial/mos7720.c
+@@ -1896,10 +1896,37 @@ static int mos7720_tiocmset(struct tty_struct *tty, struct file *file,
+ 	return 0;
+ }
+ 
++static int mos7720_get_icount(struct tty_struct *tty,
++				struct serial_icounter_struct *icount)
++{
++	struct usb_serial_port *port = tty->driver_data;
++	struct moschip_port *mos7720_port;
++	struct async_icount cnow;
++
++	mos7720_port = usb_get_serial_port_data(port);
++	cnow = mos7720_port->icount;
++
++	icount->cts = cnow.cts;
++	icount->dsr = cnow.dsr;
++	icount->rng = cnow.rng;
++	icount->dcd = cnow.dcd;
++	icount->rx = cnow.rx;
++	icount->tx = cnow.tx;
++	icount->frame = cnow.frame;
++	icount->overrun = cnow.overrun;
++	icount->parity = cnow.parity;
++	icount->brk = cnow.brk;
++	icount->buf_overrun = cnow.buf_overrun;
++
++	dbg("%s (%d) TIOCGICOUNT RX=%d, TX=%d", __func__,
++		port->number, icount->rx, icount->tx);
++	return 0;
++}
++
+ static int set_modem_info(struct moschip_port *mos7720_port, unsigned int cmd,
+ 			  unsigned int __user *value)
+ {
+-	unsigned int mcr ;
++	unsigned int mcr;
+ 	unsigned int arg;
+ 
+ 	struct usb_serial_port *port;
+@@ -1973,7 +2000,6 @@ static int mos7720_ioctl(struct tty_struct *tty, struct file *file,
+ 	struct moschip_port *mos7720_port;
+ 	struct async_icount cnow;
+ 	struct async_icount cprev;
+-	struct serial_icounter_struct icount;
+ 
+ 	mos7720_port = usb_get_serial_port_data(port);
+ 	if (mos7720_port == NULL)
+@@ -2021,29 +2047,6 @@ static int mos7720_ioctl(struct tty_struct *tty, struct file *file,
+ 		}
+ 		/* NOTREACHED */
+ 		break;
+-
+-	case TIOCGICOUNT:
+-		cnow = mos7720_port->icount;
+-
+-		memset(&icount, 0, sizeof(struct serial_icounter_struct));
+-
+-		icount.cts = cnow.cts;
+-		icount.dsr = cnow.dsr;
+-		icount.rng = cnow.rng;
+-		icount.dcd = cnow.dcd;
+-		icount.rx = cnow.rx;
+-		icount.tx = cnow.tx;
+-		icount.frame = cnow.frame;
+-		icount.overrun = cnow.overrun;
+-		icount.parity = cnow.parity;
+-		icount.brk = cnow.brk;
+-		icount.buf_overrun = cnow.buf_overrun;
+-
+-		dbg("%s (%d) TIOCGICOUNT RX=%d, TX=%d", __func__,
+-		    port->number, icount.rx, icount.tx);
+-		if (copy_to_user((void __user *)arg, &icount, sizeof(icount)))
+-			return -EFAULT;
+-		return 0;
+ 	}
+ 
+ 	return -ENOIOCTLCMD;
+@@ -2212,6 +2215,7 @@ static struct usb_serial_driver moschip7720_2port_driver = {
+ 	.ioctl			= mos7720_ioctl,
+ 	.tiocmget		= mos7720_tiocmget,
+ 	.tiocmset		= mos7720_tiocmset,
++	.get_icount		= mos7720_get_icount,
+ 	.set_termios		= mos7720_set_termios,
+ 	.write			= mos7720_write,
+ 	.write_room		= mos7720_write_room,
+diff --git a/drivers/usb/serial/mos7840.c b/drivers/usb/serial/mos7840.c
+index 1a42bc2..93dad58 100644
+--- a/drivers/usb/serial/mos7840.c
++++ b/drivers/usb/serial/mos7840.c
+@@ -2209,6 +2209,34 @@ static int mos7840_get_serial_info(struct moschip_port *mos7840_port,
+ 	return 0;
+ }
+ 
++static int mos7840_get_icount(struct tty_struct *tty,
++			struct serial_icounter_struct *icount)
++{
++	struct usb_serial_port *port = tty->driver_data;
++	struct moschip_port *mos7840_port;
++	struct async_icount cnow;
++
++	mos7840_port = mos7840_get_port_private(port);
++	cnow = mos7840_port->icount;
++
++	smp_rmb();
++	icount->cts = cnow.cts;
++	icount->dsr = cnow.dsr;
++	icount->rng = cnow.rng;
++	icount->dcd = cnow.dcd;
++	icount->rx = cnow.rx;
++	icount->tx = cnow.tx;
++	icount->frame = cnow.frame;
++	icount->overrun = cnow.overrun;
++	icount->parity = cnow.parity;
++	icount->brk = cnow.brk;
++	icount->buf_overrun = cnow.buf_overrun;
++
++	dbg("%s (%d) TIOCGICOUNT RX=%d, TX=%d", __func__,
++		port->number, icount->rx, icount->tx);
++	return 0;
++}
++
+ /*****************************************************************************
+  * SerialIoctl
+  *	this function handles any ioctl calls to the driver
+@@ -2223,7 +2251,6 @@ static int mos7840_ioctl(struct tty_struct *tty, struct file *file,
+ 
+ 	struct async_icount cnow;
+ 	struct async_icount cprev;
+-	struct serial_icounter_struct icount;
+ 
+ 	if (mos7840_port_paranoia_check(port, __func__)) {
+ 		dbg("%s", "Invalid port");
+@@ -2282,29 +2309,6 @@ static int mos7840_ioctl(struct tty_struct *tty, struct file *file,
+ 		/* NOTREACHED */
+ 		break;
+ 
+-	case TIOCGICOUNT:
+-		cnow = mos7840_port->icount;
+-		smp_rmb();
+-
+-		memset(&icount, 0, sizeof(struct serial_icounter_struct));
+-
+-		icount.cts = cnow.cts;
+-		icount.dsr = cnow.dsr;
+-		icount.rng = cnow.rng;
+-		icount.dcd = cnow.dcd;
+-		icount.rx = cnow.rx;
+-		icount.tx = cnow.tx;
+-		icount.frame = cnow.frame;
+-		icount.overrun = cnow.overrun;
+-		icount.parity = cnow.parity;
+-		icount.brk = cnow.brk;
+-		icount.buf_overrun = cnow.buf_overrun;
+-
+-		dbg("%s (%d) TIOCGICOUNT RX=%d, TX=%d", __func__,
+-		    port->number, icount.rx, icount.tx);
+-		if (copy_to_user(argp, &icount, sizeof(icount)))
+-			return -EFAULT;
+-		return 0;
+ 	default:
+ 		break;
+ 	}
+@@ -2674,6 +2678,7 @@ static struct usb_serial_driver moschip7840_4port_device = {
+ 	.break_ctl = mos7840_break,
+ 	.tiocmget = mos7840_tiocmget,
+ 	.tiocmset = mos7840_tiocmset,
++	.get_icount = mos7840_get_icount,
+ 	.attach = mos7840_startup,
+ 	.disconnect = mos7840_disconnect,
+ 	.release = mos7840_release,
+diff --git a/drivers/usb/serial/ssu100.c b/drivers/usb/serial/ssu100.c
+index e986002..8bd60e3 100644
+--- a/drivers/usb/serial/ssu100.c
++++ b/drivers/usb/serial/ssu100.c
+@@ -416,6 +416,30 @@ static int wait_modem_info(struct usb_serial_port *port, unsigned int arg)
+ 	return 0;
+ }
+ 
++static int ssu100_get_icount(struct tty_struct *tty,
++			struct serial_icounter_struct *icount)
++{
++	struct usb_serial_port *port = tty->driver_data;
++	struct ssu100_port_private *priv = usb_get_serial_port_data(port);
++	struct async_icount cnow = priv->icount;
++
++	icount->cts = cnow.cts;
++	icount->dsr = cnow.dsr;
++	icount->rng = cnow.rng;
++	icount->dcd = cnow.dcd;
++	icount->rx = cnow.rx;
++	icount->tx = cnow.tx;
++	icount->frame = cnow.frame;
++	icount->overrun = cnow.overrun;
++	icount->parity = cnow.parity;
++	icount->brk = cnow.brk;
++	icount->buf_overrun = cnow.buf_overrun;
++
++	return 0;
++}
++
++
++
+ static int ssu100_ioctl(struct tty_struct *tty, struct file *file,
+ 		    unsigned int cmd, unsigned long arg)
+ {
+@@ -433,27 +457,6 @@ static int ssu100_ioctl(struct tty_struct *tty, struct file *file,
+ 	case TIOCMIWAIT:
+ 		return wait_modem_info(port, arg);
+ 
+-	case TIOCGICOUNT:
+-	{
+-		struct serial_icounter_struct icount;
+-		struct async_icount cnow = priv->icount;
+-		memset(&icount, 0, sizeof(icount));
+-		icount.cts = cnow.cts;
+-		icount.dsr = cnow.dsr;
+-		icount.rng = cnow.rng;
+-		icount.dcd = cnow.dcd;
+-		icount.rx = cnow.rx;
+-		icount.tx = cnow.tx;
+-		icount.frame = cnow.frame;
+-		icount.overrun = cnow.overrun;
+-		icount.parity = cnow.parity;
+-		icount.brk = cnow.brk;
+-		icount.buf_overrun = cnow.buf_overrun;
+-		if (copy_to_user(user_arg, &icount, sizeof(icount)))
+-			return -EFAULT;
+-		return 0;
+-	}
+-
+ 	default:
+ 		break;
+ 	}
+@@ -726,6 +729,7 @@ static struct usb_serial_driver ssu100_device = {
+ 	.process_read_urb    = ssu100_process_read_urb,
+ 	.tiocmget            = ssu100_tiocmget,
+ 	.tiocmset            = ssu100_tiocmset,
++	.get_icount	     = ssu100_get_icount,
+ 	.ioctl               = ssu100_ioctl,
+ 	.set_termios         = ssu100_set_termios,
+ 	.disconnect          = usb_serial_generic_disconnect,
+diff --git a/drivers/usb/serial/ti_usb_3410_5052.c b/drivers/usb/serial/ti_usb_3410_5052.c
+index 90979a1..b2902f3 100644
+--- a/drivers/usb/serial/ti_usb_3410_5052.c
++++ b/drivers/usb/serial/ti_usb_3410_5052.c
+@@ -108,6 +108,8 @@ static void ti_throttle(struct tty_struct *tty);
+ static void ti_unthrottle(struct tty_struct *tty);
+ static int ti_ioctl(struct tty_struct *tty, struct file *file,
+ 		unsigned int cmd, unsigned long arg);
++static int ti_get_icount(struct tty_struct *tty,
++		struct serial_icounter_struct *icount);
+ static void ti_set_termios(struct tty_struct *tty,
+ 		struct usb_serial_port *port, struct ktermios *old_termios);
+ static int ti_tiocmget(struct tty_struct *tty, struct file *file);
+@@ -237,6 +239,7 @@ static struct usb_serial_driver ti_1port_device = {
+ 	.set_termios		= ti_set_termios,
+ 	.tiocmget		= ti_tiocmget,
+ 	.tiocmset		= ti_tiocmset,
++	.get_icount		= ti_get_icount,
+ 	.break_ctl		= ti_break,
+ 	.read_int_callback	= ti_interrupt_callback,
+ 	.read_bulk_callback	= ti_bulk_in_callback,
+@@ -265,6 +268,7 @@ static struct usb_serial_driver ti_2port_device = {
+ 	.set_termios		= ti_set_termios,
+ 	.tiocmget		= ti_tiocmget,
+ 	.tiocmset		= ti_tiocmset,
++	.get_icount		= ti_get_icount,
+ 	.break_ctl		= ti_break,
+ 	.read_int_callback	= ti_interrupt_callback,
+ 	.read_bulk_callback	= ti_bulk_in_callback,
+@@ -788,6 +792,31 @@ static void ti_unthrottle(struct tty_struct *tty)
+ 	}
+ }
+ 
++static int ti_get_icount(struct tty_struct *tty,
++		struct serial_icounter_struct *icount)
++{
++	struct usb_serial_port *port = tty->driver_data;
++	struct ti_port *tport = usb_get_serial_port_data(port);
++	struct async_icount cnow = tport->tp_icount;
++
++	dbg("%s - (%d) TIOCGICOUNT RX=%d, TX=%d",
++		__func__, port->number,
++		cnow.rx, cnow.tx);
++
++	icount->cts = cnow.cts;
++	icount->dsr = cnow.dsr;
++	icount->rng = cnow.rng;
++	icount->dcd = cnow.dcd;
++	icount->rx = cnow.rx;
++	icount->tx = cnow.tx;
++	icount->frame = cnow.frame;
++	icount->overrun = cnow.overrun;
++	icount->parity = cnow.parity;
++	icount->brk = cnow.brk;
++	icount->buf_overrun = cnow.buf_overrun;
++
++	return 0;
++}
+ 
+ static int ti_ioctl(struct tty_struct *tty, struct file *file,
+ 	unsigned int cmd, unsigned long arg)
+@@ -830,14 +859,6 @@ static int ti_ioctl(struct tty_struct *tty, struct file *file,
+ 			cprev = cnow;
+ 		}
+ 		break;
+-	case TIOCGICOUNT:
+-		dbg("%s - (%d) TIOCGICOUNT RX=%d, TX=%d",
+-				__func__, port->number,
+-				tport->tp_icount.rx, tport->tp_icount.tx);
+-		if (copy_to_user((void __user *)arg, &tport->tp_icount,
+-					sizeof(tport->tp_icount)))
+-			return -EFAULT;
+-		return 0;
+ 	}
+ 	return -ENOIOCTLCMD;
+ }
 -- 
 1.7.2
 
