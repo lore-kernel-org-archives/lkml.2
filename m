@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756434Ab0JVS4V (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 14:56:21 -0400
-Received: from kroah.org ([198.145.64.141]:34053 "EHLO coco.kroah.org"
+	id S1759866Ab0JVTRX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 15:17:23 -0400
+Received: from kroah.org ([198.145.64.141]:34088 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759296Ab0JVS4O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 14:56:14 -0400
+	id S1759316Ab0JVS4U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Oct 2010 14:56:20 -0400
 X-Mailbox-Line: From gregkh@clark.site Fri Oct 22 11:52:30 2010
-Message-Id: <20101022185230.222613907@clark.site>
+Message-Id: <20101022185230.756319069@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 22 Oct 2010 11:51:06 -0700
+Date: Fri, 22 Oct 2010 11:51:12 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Marcin Slusarz <marcin.slusarz@gmail.com>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Doug Thompson <dougthompson@xmission.com>
-Subject: [032/103] i7core_edac: fix panic in udimm sysfs attributes registration
+        Aristeu Rozanski <aris@redhat.com>, Ping Cheng <pingc@wacom.com>,
+        Dmitry Torokhov <dtor@mail.ru>
+Subject: [038/103] Input: wacom - fix pressure in Cintiq 21UX2
 In-Reply-To: <20101022185455.GA9114@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,50 +26,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Marcin Slusarz <marcin.slusarz@gmail.com>
+From: Aristeu Rozanski <aris@redhat.com>
 
-commit 64aab720bdf8771214a7c88872bd8e3194c2d279 upstream.
+commit ca047fedd89bbb4b79b61e0656a7b799e4e45e6d upstream.
 
-Array of udimm sysfs attributes was not ended with NULL marker, leading to
-dereference of random memory.
+Currently the pressure range in Cintiq 21UX2 is limited to half of the
+supported. This patch fixes the problem.
 
-  EDAC DEBUG: edac_create_mci_instance_attributes: edac_create_mci_instance_attributes() file udimm0
-  EDAC DEBUG: edac_create_mci_instance_attributes: edac_create_mci_instance_attributes() file udimm1
-  EDAC DEBUG: edac_create_mci_instance_attributes: edac_create_mci_instance_attributes() file udimm2
-  BUG: unable to handle kernel NULL pointer dereference at 00000000000001a4
-  IP: [<ffffffff81330b36>] edac_create_mci_instance_attributes+0x148/0x1f1
-  Pid: 1, comm: swapper Not tainted 2.6.36-rc3-nv+ #483 P6T SE/System Product Name
-  RIP: 0010:[<ffffffff81330b36>]  [<ffffffff81330b36>] edac_create_mci_instance_attributes+0x148/0x1f1
-  (...)
-  Call Trace:
-   [<ffffffff81330b86>] edac_create_mci_instance_attributes+0x198/0x1f1
-   [<ffffffff81330c9a>] edac_create_sysfs_mci_device+0xbb/0x2b2
-   [<ffffffff8132f533>] edac_mc_add_mc+0x46b/0x557
-   [<ffffffff81428901>] i7core_probe+0xccf/0xec0
-  RIP  [<ffffffff81330b36>] edac_create_mci_instance_attributes+0x148/0x1f1
-  ---[ end trace 20de320855b81d78 ]---
-  Kernel panic - not syncing: Attempted to kill init!
-
-Signed-off-by: Marcin Slusarz <marcin.slusarz@gmail.com>
-Cc: Mauro Carvalho Chehab <mchehab@redhat.com>
-Acked-by: Doug Thompson <dougthompson@xmission.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Aristeu Rozanski <aris@redhat.com>
+Acked-by: Ping Cheng <pingc@wacom.com>
+Signed-off-by: Dmitry Torokhov <dtor@mail.ru>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/edac/i7core_edac.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/input/tablet/wacom_wac.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
---- a/drivers/edac/i7core_edac.c
-+++ b/drivers/edac/i7core_edac.c
-@@ -1140,6 +1140,7 @@ static struct mcidev_sysfs_attribute i7c
- 	ATTR_COUNTER(0),
- 	ATTR_COUNTER(1),
- 	ATTR_COUNTER(2),
-+	{ .attr = { .name = NULL } }
- };
- 
- static struct mcidev_sysfs_group i7core_udimm_counters = {
+--- a/drivers/input/tablet/wacom_wac.c
++++ b/drivers/input/tablet/wacom_wac.c
+@@ -409,8 +409,10 @@ static void wacom_intuos_general(struct
+ 	/* general pen packet */
+ 	if ((data[1] & 0xb8) == 0xa0) {
+ 		t = (data[6] << 2) | ((data[7] >> 6) & 3);
+-		if (features->type >= INTUOS4S && features->type <= INTUOS4L)
++		if ((features->type >= INTUOS4S && features->type <= INTUOS4L) ||
++		    features->type == WACOM_21UX2) {
+ 			t = (t << 1) | (data[1] & 1);
++		}
+ 		input_report_abs(input, ABS_PRESSURE, t);
+ 		input_report_abs(input, ABS_TILT_X,
+ 				((data[7] << 1) & 0x7e) | (data[8] >> 7));
 
 
