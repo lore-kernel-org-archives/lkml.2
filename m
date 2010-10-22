@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759023Ab0JVSxr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 14:53:47 -0400
-Received: from kroah.org ([198.145.64.141]:45624 "EHLO coco.kroah.org"
+	id S1759099Ab0JVSyP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 14:54:15 -0400
+Received: from kroah.org ([198.145.64.141]:45611 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755333Ab0JVSiW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 14:38:22 -0400
+	id S1755909Ab0JVSiT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Oct 2010 14:38:19 -0400
 X-Mailbox-Line: From gregkh@clark.site Fri Oct 22 11:35:57 2010
-Message-Id: <20101022183557.501612901@clark.site>
+Message-Id: <20101022183557.221106774@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 22 Oct 2010 11:34:41 -0700
+Date: Fri, 22 Oct 2010 11:34:38 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Joerg Roedel <joerg.roedel@amd.com>
-Subject: [14/66] x86/amd-iommu: Fix rounding-bug in __unmap_single
+        Steve Wise <swise@opengridcomputing.com>,
+        Roland Dreier <rolandd@cisco.com>
+Subject: [11/66] RDMA/cxgb3: Turn off RX coalescing for iWARP connections
 In-Reply-To: <20101022183711.GA23214@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,51 +26,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Joerg Roedel <joerg.roedel@amd.com>
+From: Steve Wise <swise@opengridcomputing.com>
 
-commit 04e0463e088b41060c08c255eb0d3278a504f094 upstream.
+commit bec658ff31453a5726b1c188674d587a5d40c482 upstream.
 
-In the __unmap_single function the dma_addr is rounded down
-to a page boundary before the dma pages are unmapped. The
-address is later also used to flush the TLB entries for that
-mapping. But without the offset into the dma page the amount
-of pages to flush might be miscalculated in the TLB flushing
-path. This patch fixes this bug by using the original
-address to flush the TLB.
+The HW by default has RX coalescing on.  For iWARP connections, this
+causes a 100ms delay in connection establishement due to the ingress
+MPA Start message being stalled in HW.  So explicitly turn RX
+coalescing off when setting up iWARP connections.
 
-Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
+This was causing very bad performance for NP64 gather operations using
+Open MPI, due to the way it sets up connections on larger jobs.
+
+Signed-off-by: Steve Wise <swise@opengridcomputing.com>
+Signed-off-by: Roland Dreier <rolandd@cisco.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/x86/kernel/amd_iommu.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ drivers/infiniband/hw/cxgb3/iwch_cm.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
---- a/arch/x86/kernel/amd_iommu.c
-+++ b/arch/x86/kernel/amd_iommu.c
-@@ -1688,6 +1688,7 @@ static void __unmap_single(struct amd_io
- 			   size_t size,
- 			   int dir)
- {
-+	dma_addr_t flush_addr;
- 	dma_addr_t i, start;
- 	unsigned int pages;
+--- a/drivers/infiniband/hw/cxgb3/iwch_cm.c
++++ b/drivers/infiniband/hw/cxgb3/iwch_cm.c
+@@ -486,7 +486,8 @@ static int send_connect(struct iwch_ep *
+ 	    V_MSS_IDX(mtu_idx) |
+ 	    V_L2T_IDX(ep->l2t->idx) | V_TX_CHANNEL(ep->l2t->smt_idx);
+ 	opt0l = V_TOS((ep->tos >> 2) & M_TOS) | V_RCV_BUFSIZ(rcv_win>>10);
+-	opt2 = V_FLAVORS_VALID(1) | V_CONG_CONTROL_FLAVOR(cong_flavor);
++	opt2 = F_RX_COALESCE_VALID | V_RX_COALESCE(0) | V_FLAVORS_VALID(1) |
++	       V_CONG_CONTROL_FLAVOR(cong_flavor);
+ 	skb->priority = CPL_PRIORITY_SETUP;
+ 	set_arp_failure_handler(skb, act_open_req_arp_failure);
  
-@@ -1695,6 +1696,7 @@ static void __unmap_single(struct amd_io
- 	    (dma_addr + size > dma_dom->aperture_size))
- 		return;
+@@ -1303,7 +1304,8 @@ static void accept_cr(struct iwch_ep *ep
+ 	    V_MSS_IDX(mtu_idx) |
+ 	    V_L2T_IDX(ep->l2t->idx) | V_TX_CHANNEL(ep->l2t->smt_idx);
+ 	opt0l = V_TOS((ep->tos >> 2) & M_TOS) | V_RCV_BUFSIZ(rcv_win>>10);
+-	opt2 = V_FLAVORS_VALID(1) | V_CONG_CONTROL_FLAVOR(cong_flavor);
++	opt2 = F_RX_COALESCE_VALID | V_RX_COALESCE(0) | V_FLAVORS_VALID(1) |
++	       V_CONG_CONTROL_FLAVOR(cong_flavor);
  
-+	flush_addr = dma_addr;
- 	pages = iommu_num_pages(dma_addr, size, PAGE_SIZE);
- 	dma_addr &= PAGE_MASK;
- 	start = dma_addr;
-@@ -1709,7 +1711,7 @@ static void __unmap_single(struct amd_io
- 	dma_ops_free_addresses(dma_dom, dma_addr, pages);
- 
- 	if (amd_iommu_unmap_flush || dma_dom->need_flush) {
--		iommu_flush_pages(iommu, dma_dom->domain.id, dma_addr, size);
-+		iommu_flush_pages(iommu, dma_dom->domain.id, flush_addr, size);
- 		dma_dom->need_flush = false;
- 	}
- }
+ 	rpl = cplhdr(skb);
+ 	rpl->wr.wr_hi = htonl(V_WR_OP(FW_WROPCODE_FORWARD));
 
 
