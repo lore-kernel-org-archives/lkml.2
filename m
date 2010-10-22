@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759593Ab0JVTDA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 15:03:00 -0400
-Received: from kroah.org ([198.145.64.141]:34423 "EHLO coco.kroah.org"
+	id S1759617Ab0JVTDC (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 15:03:02 -0400
+Received: from kroah.org ([198.145.64.141]:34416 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759439Ab0JVS5F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 14:57:05 -0400
+	id S1759502Ab0JVS5E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Oct 2010 14:57:04 -0400
 X-Mailbox-Line: From gregkh@clark.site Fri Oct 22 11:52:35 2010
-Message-Id: <20101022185235.235665989@clark.site>
+Message-Id: <20101022185235.149218983@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 22 Oct 2010 11:52:02 -0700
+Date: Fri, 22 Oct 2010 11:52:01 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Herton Ronaldo Krzesinski <herton@mandriva.com.br>,
-        Takashi Iwai <tiwai@suse.de>,
-        David Henningsson <david.henningsson@canonical.com>
-Subject: [088/103] ALSA: hda - add ideapad model for Conexant 5051 codec
+        Paul Fertser <fercerpav@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [087/103] b44: fix carrier detection on bind
 In-Reply-To: <20101022185455.GA9114@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,97 +26,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Herton Ronaldo Krzesinski <herton@mandriva.com.br>
+From: Paul Fertser <fercerpav@gmail.com>
 
-commit f7154de220f14073ef0d76638f85e254ad2e202f upstream.
+commit bcf64aa379fcadd074449cbf0c049da70071b06f upstream.
 
-Lenovo IdeaPad Y430 has an additional subwoofer connected at pin 0x1b,
-which isn't muted when headphone is plugged in. This adds additional
-support to the extra subwoofer via new ideapad model.
+For carrier detection to work properly when binding the driver with a cable
+unplugged, netif_carrier_off() should be called after register_netdev(),
+not before.
 
-Signed-off-by: Herton Ronaldo Krzesinski <herton@mandriva.com.br>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
-Cc: David Henningsson <david.henningsson@canonical.com>
+Signed-off-by: Paul Fertser <fercerpav@gmail.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- Documentation/sound/alsa/HD-Audio-Models.txt |    1 +
- sound/pci/hda/patch_conexant.c               |   20 ++++++++++++++++++++
- 2 files changed, 21 insertions(+)
+ drivers/net/b44.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/Documentation/sound/alsa/HD-Audio-Models.txt
-+++ b/Documentation/sound/alsa/HD-Audio-Models.txt
-@@ -282,6 +282,7 @@ Conexant 5051
-   hp		HP Spartan laptop
-   hp-dv6736	HP dv6736
-   hp-f700	HP Compaq Presario F700
-+  ideapad	Lenovo IdeaPad laptop
-   lenovo-x200	Lenovo X200 laptop
-   toshiba	Toshiba Satellite M300
+--- a/drivers/net/b44.c
++++ b/drivers/net/b44.c
+@@ -2168,8 +2168,6 @@ static int __devinit b44_init_one(struct
+ 	dev->irq = sdev->irq;
+ 	SET_ETHTOOL_OPS(dev, &b44_ethtool_ops);
  
---- a/sound/pci/hda/patch_conexant.c
-+++ b/sound/pci/hda/patch_conexant.c
-@@ -1633,6 +1633,11 @@ static void cxt5051_update_speaker(struc
- 	pinctl = (!spec->hp_present && spec->cur_eapd) ? PIN_OUT : 0;
- 	snd_hda_codec_write(codec, 0x1a, 0, AC_VERB_SET_PIN_WIDGET_CONTROL,
- 			    pinctl);
-+	/* on ideapad there is an aditional speaker (subwoofer) to mute */
-+	if (spec->ideapad)
-+		snd_hda_codec_write(codec, 0x1b, 0,
-+				    AC_VERB_SET_PIN_WIDGET_CONTROL,
-+				    pinctl);
- }
- 
- /* turn on/off EAPD (+ mute HP) as a master switch */
-@@ -1889,6 +1894,13 @@ static void cxt5051_init_mic_port(struct
- #endif
- }
- 
-+static struct hda_verb cxt5051_ideapad_init_verbs[] = {
-+	/* Subwoofer */
-+	{0x1b, AC_VERB_SET_PIN_WIDGET_CONTROL, PIN_OUT},
-+	{0x1b, AC_VERB_SET_CONNECT_SEL, 0x00},
-+	{ } /* end */
-+};
-+
- /* initialize jack-sensing, too */
- static int cxt5051_init(struct hda_codec *codec)
- {
-@@ -1918,6 +1930,7 @@ enum {
- 	CXT5051_LENOVO_X200,	/* Lenovo X200 laptop, also used for Advanced Mini Dock 250410 */
- 	CXT5051_F700,       /* HP Compaq Presario F700 */
- 	CXT5051_TOSHIBA,	/* Toshiba M300 & co */
-+	CXT5051_IDEAPAD,	/* Lenovo IdeaPad Y430 */
- 	CXT5051_MODELS
- };
- 
-@@ -1928,6 +1941,7 @@ static const char *cxt5051_models[CXT505
- 	[CXT5051_LENOVO_X200]	= "lenovo-x200",
- 	[CXT5051_F700]          = "hp-700",
- 	[CXT5051_TOSHIBA]	= "toshiba",
-+	[CXT5051_IDEAPAD]	= "ideapad",
- };
- 
- static struct snd_pci_quirk cxt5051_cfg_tbl[] = {
-@@ -1939,6 +1953,7 @@ static struct snd_pci_quirk cxt5051_cfg_
- 		      CXT5051_LAPTOP),
- 	SND_PCI_QUIRK(0x14f1, 0x5051, "HP Spartan 1.1", CXT5051_HP),
- 	SND_PCI_QUIRK(0x17aa, 0x20f2, "Lenovo X200", CXT5051_LENOVO_X200),
-+	SND_PCI_QUIRK(0x17aa, 0x3a0d, "Lenovo IdeaPad", CXT5051_IDEAPAD),
- 	{}
- };
- 
-@@ -2000,6 +2015,11 @@ static int patch_cxt5051(struct hda_code
- 		spec->mixers[0] = cxt5051_toshiba_mixers;
- 		spec->auto_mic = AUTO_MIC_PORTB;
- 		break;
-+	case CXT5051_IDEAPAD:
-+		spec->init_verbs[spec->num_init_verbs++] =
-+			cxt5051_ideapad_init_verbs;
-+		spec->ideapad = 1;
-+		break;
+-	netif_carrier_off(dev);
+-
+ 	err = ssb_bus_powerup(sdev->bus, 0);
+ 	if (err) {
+ 		dev_err(sdev->dev,
+@@ -2209,6 +2207,8 @@ static int __devinit b44_init_one(struct
+ 		goto err_out_powerdown;
  	}
  
- 	return 0;
++	netif_carrier_off(dev);
++
+ 	ssb_set_drvdata(sdev, dev);
+ 
+ 	/* Chip reset provides power to the b44 MAC & PCI cores, which
 
 
