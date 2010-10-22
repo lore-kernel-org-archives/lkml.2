@@ -1,107 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758816Ab0JVSkS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 14:40:18 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:34212 "EHLO mx1.redhat.com"
+	id S1758250Ab0JVSks (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 14:40:48 -0400
+Received: from kroah.org ([198.145.64.141]:45881 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758795Ab0JVSkP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 14:40:15 -0400
-Date: Fri, 22 Oct 2010 14:39:01 -0400
-From: Jason Baron <jbaron@redhat.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Steven Rostedt <rostedt@goodmis.org>, LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        masami.hiramatsu.pt@hitachi.com
-Subject: Re: [PATCH][GIT PULL] tracing: Fix compile issue for
-	trace_sched_wakeup.c
-Message-ID: <20101022183900.GG6498@redhat.com>
-References: <1287508282.16971.386.camel@gandalf.stny.rr.com> <20101019184111.GA17266@elte.hu> <20101020154045.GA18353@elte.hu> <20101020164324.GC7348@redhat.com> <20101020183329.GA12666@elte.hu> <20101021110925.GA27219@elte.hu> <20101022175845.GF6498@redhat.com> <20101022182433.GA24637@elte.hu>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101022182433.GA24637@elte.hu>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1758671Ab0JVSjH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Oct 2010 14:39:07 -0400
+X-Mailbox-Line: From gregkh@clark.site Fri Oct 22 11:36:01 2010
+Message-Id: <20101022183601.727423229@clark.site>
+User-Agent: quilt/0.48-11.2
+Date: Fri, 22 Oct 2010 11:35:29 -0700
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
+Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Roland McGrath <roland@redhat.com>, Chuck Ebbert <cebbert@redhat.com>
+Subject: [62/66] execve: improve interactivity with large arguments
+In-Reply-To: <20101022183711.GA23214@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 22, 2010 at 08:24:33PM +0200, Ingo Molnar wrote:
-> * Jason Baron <jbaron@redhat.com> wrote:
-> 
-> > On Thu, Oct 21, 2010 at 01:09:25PM +0200, Ingo Molnar wrote:
-> > > * Ingo Molnar <mingo@elte.hu> wrote:
-> > > 
-> > > > 
-> > > > * Jason Baron <jbaron@redhat.com> wrote:
-> > > > 
-> > > > > [...] Do we always fail after "Testing all events:" is printed? [...]
-> > > > 
-> > > > Yes, in all cases i checked. Sometimes it's an oops.
-> > > 
-> > > Such as this one:
-> > > 
-> > > [    6.724449] Testing event kmalloc_node: OK
-> > > [    6.744459] Testing event kmem_cache_alloc_node: 
-> > > [    6.749111] BUG: unable to handle kernel paging request at ffffffff
-> > > [    6.752000] IP: [<f6425f7c>] 0xf6425f7c
-> > > [    6.752000] *pde = 01384067 *pte = 00000000 
-> > > [    6.752000] Oops: 0002 [#1] PREEMPT SMP 
-> > > [    6.752000] last sysfs file: 
-> > > [    6.752000] Modules linked in:
-> > > [    6.752000] 
-> > > [    6.752000] Pid: 2, comm: kthreadd Not tainted 2.6.36-rc8-tip+ #50831 /
-> > > [    6.752000] EIP: 0060:[<f6425f7c>] EFLAGS: 00010282 CPU: 0
-> > > [    6.752000] EIP is at 0xf6425f7c
-> > > [    6.752000] EAX: ffffffff EBX: c1021c4f ECX: 00000001 EDX: 00000000
-> > > [    6.752000] ESI: f6425f7c EDI: fffffff4 EBP: f640c000 ESP: f6425ee4
-> > > [    6.752000]  DS: 007b ES: 007b FS: 00d8 GS: 00e0 SS: 0068
-> > > [    6.752000] Process kthreadd (pid: 2, ti=f6424000 task=f640c000 task.ti=f6424000)
-> > > [    6.752000] Stack:
-> > > [    6.752000]  c1021c4f f640c02c 00800711 00000000 00000000 00000000 f6425f7c f6809880
-> > > [    6.752000] <0> f6425f7c 00000000 00000000 f6425f7c c1022a54 00000000 00000000 00000000
-> > > [    6.752000] <0> 00000000 00800711 00000000 00000000 00000000 c101d94a f6809880 c131f3a0
-> > > [    6.752000] Call Trace:
-> > > [    6.752000]  [<c1021c4f>] ? copy_process+0xa1/0xd6d
-> > > [    6.752000]  [<c1022a54>] ? do_fork+0x139/0x2ca
-> > > [    6.752000]  [<c101d94a>] ? dequeue_task+0xb9/0xc8
-> > > [    6.752000]  [<c1245597>] ? schedule+0x821/0x84b
-> > > [    6.752000]  [<c1038079>] ? kthread+0x0/0x68
-> > > [    6.752000]  [<c1007930>] ? kernel_thread+0x77/0x7f
-> > > [    6.752000]  [<c1038079>] ? kthread+0x0/0x68
-> > > [    6.752000]  [<c1002cbc>] ? kernel_thread_helper+0x0/0x10
-> > > [    6.752000]  [<c1038172>] ? kthreadd+0x91/0xc7
-> > > [    6.752000]  [<c10380e1>] ? kthreadd+0x0/0xc7
-> > > [    6.752000]  [<c1002cc2>] ? kernel_thread_helper+0x6/0x10
-> > > [    6.752000] Code: 98 80 f6 00 c0 40 f6 a9 37 61 f9 11 07 80 00 79 80 03 c1 c0 5f 42 f6 7c 5f 42 f6 30 79 00 c1 00 00 00 00 00 00 00 00 00 00 00 00 <00> 00 00 00 00 00 00 00 00 00 00 00 79 80 03 c1 70 3f 42 f6 00 
-> > > [    6.752000] EIP: [<f6425f7c>] 0xf6425f7c SS:ESP 0068:f6425ee4
-> > > [    6.752000] CR2: 00000000ffffffff
-> > > [    6.752000] ---[ end trace 6000cf675d3eddec ]---
-> > > 
-> > > (captured two days ago)
-> > > 
-> > > Full bootlog is attached below.
-> > > 
-> > > Thanks,
-> > > 
-> > > 	Ingo
-> > > 
-> > 
-> > Hi,
-> > 
-> > this looks potentially like a separate issue from the 'hang' one - I'm wondering 
-> > if this was re-produced with the same .config as the 'hang' case? I haven't been 
-> > able to hit this one yet....
-> 
-> Not the same config, and it's very spurious - i.e. a slightly different -tip version 
-> with the same config will boot fine. (this suggests some race)
-> 
+2.6.32-stable review patch.  If anyone has any objections, please let us know.
 
-if possible, can you post that .config?
+------------------
 
-thanks,
+From: Roland McGrath <roland@redhat.com>
 
--Jason
+commit 7993bc1f4663c0db67bb8f0d98e6678145b387cd upstream.
+
+This adds a preemption point during the copying of the argument and
+environment strings for execve, in copy_strings().  There is already
+a preemption point in the count() loop, so this doesn't add any new
+points in the abstract sense.
+
+When the total argument+environment strings are very large, the time
+spent copying them can be much more than a normal user time slice.
+So this change improves the interactivity of the rest of the system
+when one process is doing an execve with very large arguments.
+
+Signed-off-by: Roland McGrath <roland@redhat.com>
+Reviewed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Chuck Ebbert <cebbert@redhat.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
+---
+ fs/exec.c |    2 ++
+ 1 file changed, 2 insertions(+)
+
+--- a/fs/exec.c
++++ b/fs/exec.c
+@@ -419,6 +419,8 @@ static int copy_strings(int argc, char _
+ 		while (len > 0) {
+ 			int offset, bytes_to_copy;
+ 
++			cond_resched();
++
+ 			offset = pos % PAGE_SIZE;
+ 			if (offset == 0)
+ 				offset = PAGE_SIZE;
+
+
