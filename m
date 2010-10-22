@@ -1,56 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754833Ab0JVHkw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 03:40:52 -0400
-Received: from e28smtp03.in.ibm.com ([122.248.162.3]:60717 "EHLO
-	e28smtp03.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753557Ab0JVHkv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 03:40:51 -0400
-Message-ID: <4CC13FFF.7040200@linux.vnet.ibm.com>
-Date: Fri, 22 Oct 2010 13:10:47 +0530
-From: divya <dipraksh@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.10) Gecko/20100527 Thunderbird/3.0.5
+	id S1754627Ab0JVHqG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 03:46:06 -0400
+Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:39649 "EHLO kernel.dk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753320Ab0JVHqE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Oct 2010 03:46:04 -0400
+Message-ID: <4CC1414B.8070102@fusionio.com>
+Date: Fri, 22 Oct 2010 09:46:19 +0200
+From: Jens Axboe <jaxboe@fusionio.com>
 MIME-Version: 1.0
-To: LKML <linux-kernel@vger.kernel.org>, benh@kernel.crashing.org,
-        linuxppc-dev@ozlabs.org
-Subject: Re: BUG with the kernel version 2.6.36-rc1 on power machine
-References: <4CC13B2C.7090908@linux.vnet.ibm.com>
-In-Reply-To: <4CC13B2C.7090908@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+To: Vivek Goyal <vgoyal@redhat.com>
+CC: linux kernel mailing list <linux-kernel@vger.kernel.org>,
+        Andi Kleen <ak@linux.intel.com>, Moyer Jeff Moyer <jmoyer@redhat.com>
+Subject: Re: [PATCH] cfq-iosched: Fix a gcc 4.5 warning and put some comments
+References: <20101021182403.GA8378@redhat.com>
+In-Reply-To: <20101021182403.GA8378@redhat.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 22 October 2010 12:50 PM, divya wrote:
-> Hi ,
->
-> With the latest version of kernel 2.6.36-rc1 running on the power 
-> machine, came across the following call trace
->
-> BUG: looking up invalid subclass: 31
-> turning off the locking correctness validator.
-> Call Trace:
-> [c00000000e0bfb60] [c0000000000119a0] .show_stack+0x6c/0x16c (unreliable)
-> [c00000000e0bfc10] [c0000000000c39b8] .lockdep_init_map+0x194/0x630
-> [c00000000e0bfcf0] [c0000000005524f8] .mousedev_create+0xcc/0x234
-> [c00000000e0bfda0] [c00000000093fb58] .mousedev_init+0x38/0xa0
-> [c00000000e0bfe30] [c0000000000097e4] .do_one_initcall+0xd8/0x1c8
-> [c00000000e0bfee0] [c0000000009004ac] .kernel_init+0x23c/0x2f8
-> [c00000000e0bff90] [c00000000002ad30] .kernel_thread+0x54/0x70
->
-> The config file used for make oldconfig is being attached
->
-> Thanks
-> Divya
->
->
->
->
-I meant 2.6.36-git1(b5153163ed580e) , and not 2.6.36-rc1.
-Sorry for the confusion.
+On 2010-10-21 20:24, Vivek Goyal wrote:
+> - Andi encountedred following warning with gcc 4.5
+> 
+>   linux/block/cfq-iosched.c: In function ‘cfq_dispatch_requests’:
+>   linux/block/cfq-iosched.c:2156:3: warning: array subscript is above array
+>   bounds
+> 
+> - Warning happens due to following code.
+> 
+>   slice = group_slice * count /
+> 		max_t(unsigned, cfqg->busy_queues_avg[cfqd->serving_prio],
+> 		cfq_group_busy_queues_wl(cfqd->serving_prio, cfqd, cfqg));
+> 
+>   gcc is complaining about cfqg->busy_queues_avg[] being indexed by CFQ
+>   prio classes (RT, BE and IDLE) while the array size is only 2.
+> 
+> - At run time, we never access cfqg->busy_queues_avg[IDLE] and return from
+>   function before this code hits.
+> 
+> - To fix warning increase the array size though it will remain unused. This
+>   patch also puts some comments to clarify some of the confusions.
+> 
+> - I have taken Jens's patch and modified it a bit.
+> 
+> - Compile tested with gcc 4.4 and boot tested. I don't have gcc 4.5
+>   running, Andi can you please test it with gcc 4.5 to make sure it
+>   worked.
+> 
+> Reported-by: Andi Kleen <ak@linux.intel.com>
+> Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
+> Signed-off-by: Jens Axboe <axboe@kernel.dk>
 
-Thanks
-Divya
+Thanks, I'll put this one in. BTW, you can't just add a signed-off-by
+from me (or anyone else, for that matter), they have to be provided
+explicitly by each individual.
+
+-- 
+Jens Axboe
 
