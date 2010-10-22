@@ -1,138 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759851Ab0JVT2m (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 15:28:42 -0400
-Received: from kroah.org ([198.145.64.141]:41872 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758583Ab0JVSVk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 14:21:40 -0400
-From: Greg Kroah-Hartman <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org
-Cc: Jeff Mahoney <jeffm@suse.com>, Hirokazu Takata <takata@linux-m32r.org>,
-        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [PATCH 12/49] ioctl: Use asm-generic/ioctls.h on m32r (enables termiox)
-Date: Fri, 22 Oct 2010 11:20:51 -0700
-Message-Id: <1287771688-14805-12-git-send-email-gregkh@suse.de>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <20101022175112.GC13489@kroah.com>
-References: <20101022175112.GC13489@kroah.com>
+	id S1759884Ab0JVT3q (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 15:29:46 -0400
+Received: from smtp-outbound-1.vmware.com ([65.115.85.69]:10393 "EHLO
+	smtp-outbound-1.vmware.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758593Ab0JVT3O (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Oct 2010 15:29:14 -0400
+Subject: [PATCH 1/2] x86, apic: cleanup for APIC timer calibration hook
+From: Alok Kataria <akataria@vmware.com>
+Reply-To: akataria@vmware.com
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain
+Organization: VMware INC.
+Date: Fri, 22 Oct 2010 12:29:14 -0700
+Message-Id: <1287775754.27008.58.camel@ank32.eng.vmware.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.12.3 (2.12.3-8.el5_2.3) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jeff Mahoney <jeffm@suse.com>
+Preparatory change to add apic timer calibration hook.
 
-This patch converts m32r to use asm-generic/ioctls.h instead of its
-own version.
+From: Alok N Kataria <akataria@vmware.com>
 
-The differences between the arch-specific version and the generic
-version are as follows:
+This change moves some APIC timer calibration code to a seperate function
+to facilitate adding a apic clock calibration hook. This change has no
+functional effect on the calibration routine.
 
-- The generic version adds TIOCGRS485 and TIOCGRS485, which are unused by
-  any driver available on this architecture.
-- The generic version adds support for termiox
+Signed-off-by: Alok N Kataria <akataria@vmware.com>
 
-Cc: Hirokazu Takata <takata@linux-m32r.org>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>
-Signed-off-by: Jeff Mahoney <jeffm@suse.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
----
- arch/m32r/include/asm/ioctls.h |   83 +---------------------------------------
- 1 files changed, 1 insertions(+), 82 deletions(-)
-
-diff --git a/arch/m32r/include/asm/ioctls.h b/arch/m32r/include/asm/ioctls.h
-index 6628806..349bf87 100644
---- a/arch/m32r/include/asm/ioctls.h
-+++ b/arch/m32r/include/asm/ioctls.h
-@@ -1,87 +1,6 @@
- #ifndef __ARCH_M32R_IOCTLS_H__
- #define __ARCH_M32R_IOCTLS_H__
+Index: linux-x86-tree.git/arch/x86/kernel/apic/apic.c
+===================================================================
+--- linux-x86-tree.git.orig/arch/x86/kernel/apic/apic.c	2010-10-21 13:55:08.000000000 -0700
++++ linux-x86-tree.git/arch/x86/kernel/apic/apic.c	2010-10-22 11:47:47.000000000 -0700
+@@ -177,7 +177,7 @@ static struct resource lapic_resource = 
+ 	.flags = IORESOURCE_MEM | IORESOURCE_BUSY,
+ };
  
--#include <asm/ioctl.h>
--
--/* 0x54 is just a magic number to make these relatively unique ('T') */
--
--#define TCGETS		0x5401
--#define TCSETS		0x5402 /* Clashes with SNDCTL_TMR_START sound ioctl */
--#define TCSETSW		0x5403
--#define TCSETSF		0x5404
--#define TCGETA		0x5405
--#define TCSETA		0x5406
--#define TCSETAW		0x5407
--#define TCSETAF		0x5408
--#define TCSBRK		0x5409
--#define TCXONC		0x540A
--#define TCFLSH		0x540B
--#define TIOCEXCL	0x540C
--#define TIOCNXCL	0x540D
--#define TIOCSCTTY	0x540E
--#define TIOCGPGRP	0x540F
--#define TIOCSPGRP	0x5410
--#define TIOCOUTQ	0x5411
--#define TIOCSTI		0x5412
--#define TIOCGWINSZ	0x5413
--#define TIOCSWINSZ	0x5414
--#define TIOCMGET	0x5415
--#define TIOCMBIS	0x5416
--#define TIOCMBIC	0x5417
--#define TIOCMSET	0x5418
--#define TIOCGSOFTCAR	0x5419
--#define TIOCSSOFTCAR	0x541A
--#define FIONREAD	0x541B
--#define TIOCINQ		FIONREAD
--#define TIOCLINUX	0x541C
--#define TIOCCONS	0x541D
--#define TIOCGSERIAL	0x541E
--#define TIOCSSERIAL	0x541F
--#define TIOCPKT		0x5420
--#define FIONBIO		0x5421
--#define TIOCNOTTY	0x5422
--#define TIOCSETD	0x5423
--#define TIOCGETD	0x5424
--#define TCSBRKP		0x5425	/* Needed for POSIX tcsendbreak() */
--/* #define TIOCTTYGSTRUCT 0x5426 - Former debugging-only ioctl */
--#define TIOCSBRK	0x5427  /* BSD compatibility */
--#define TIOCCBRK	0x5428  /* BSD compatibility */
--#define TIOCGSID	0x5429  /* Return the session ID of FD */
--#define TCGETS2		_IOR('T',0x2A, struct termios2)
--#define TCSETS2		_IOW('T',0x2B, struct termios2)
--#define TCSETSW2	_IOW('T',0x2C, struct termios2)
--#define TCSETSF2	_IOW('T',0x2D, struct termios2)
--#define TIOCGPTN	_IOR('T',0x30, unsigned int) /* Get Pty Number (of pty-mux device) */
--#define TIOCSPTLCK	_IOW('T',0x31, int)  /* Lock/unlock Pty */
--#define TIOCSIG		_IOW('T',0x36, int)  /* Generate signal on Pty slave */
--
--#define FIONCLEX	0x5450
--#define FIOCLEX		0x5451
--#define FIOASYNC	0x5452
--#define TIOCSERCONFIG	0x5453
--#define TIOCSERGWILD	0x5454
--#define TIOCSERSWILD	0x5455
--#define TIOCGLCKTRMIOS	0x5456
--#define TIOCSLCKTRMIOS	0x5457
--#define TIOCSERGSTRUCT	0x5458 /* For debugging only */
--#define TIOCSERGETLSR   0x5459 /* Get line status register */
--#define TIOCSERGETMULTI 0x545A /* Get multiport config  */
--#define TIOCSERSETMULTI 0x545B /* Set multiport config */
--
--#define TIOCMIWAIT	0x545C	/* wait for a change on serial input line(s) */
--#define TIOCGICOUNT	0x545D	/* read serial port inline interrupt counts */
--#define FIOQSIZE	0x5460
--
--/* Used for packet mode */
--#define TIOCPKT_DATA		 0
--#define TIOCPKT_FLUSHREAD	 1
--#define TIOCPKT_FLUSHWRITE	 2
--#define TIOCPKT_STOP		 4
--#define TIOCPKT_START		 8
--#define TIOCPKT_NOSTOP		16
--#define TIOCPKT_DOSTOP		32
--#define TIOCPKT_IOCTL		64
--
--#define TIOCSER_TEMT    0x01	/* Transmitter physically empty */
-+#include <asm-generic/ioctls.h>
+-static unsigned int calibration_result;
++static unsigned int apic_calibration_res;
  
- #endif /* __ARCH_M32R_IOCTLS_H__ */
--- 
-1.7.2
+ static int lapic_next_event(unsigned long delta,
+ 			    struct clock_event_device *evt);
+@@ -481,7 +481,7 @@ static void lapic_timer_setup(enum clock
+ 	switch (mode) {
+ 	case CLOCK_EVT_MODE_PERIODIC:
+ 	case CLOCK_EVT_MODE_ONESHOT:
+-		__setup_APIC_LVTT(calibration_result,
++		__setup_APIC_LVTT(apic_calibration_res,
+ 				  mode != CLOCK_EVT_MODE_PERIODIC, 1);
+ 		break;
+ 	case CLOCK_EVT_MODE_UNUSED:
+@@ -640,6 +640,43 @@ calibrate_by_pmtimer(long deltapm, long 
+ 	return 0;
+ }
+ 
++int __init initialize_lapic_timer(long delta, unsigned int calibration_result)
++{
++	struct clock_event_device *levt = &__get_cpu_var(lapic_events);
++
++	/* Calculate the scaled math multiplication factor */
++	lapic_clockevent.mult = div_sc(delta, TICK_NSEC * LAPIC_CAL_LOOPS,
++				       lapic_clockevent.shift);
++	lapic_clockevent.max_delta_ns =
++		clockevent_delta2ns(0x7FFFFF, &lapic_clockevent);
++	lapic_clockevent.min_delta_ns =
++		clockevent_delta2ns(0xF, &lapic_clockevent);
++
++	apic_calibration_res = calibration_result;
++
++	apic_printk(APIC_VERBOSE, "..... delta %ld\n", delta);
++	apic_printk(APIC_VERBOSE, "..... mult: %u\n", lapic_clockevent.mult);
++	apic_printk(APIC_VERBOSE, "..... calibration result: %u\n",
++		    calibration_result);
++
++	apic_printk(APIC_VERBOSE, "..... host bus clock speed is "
++		    "%u.%04u MHz.\n",
++		    calibration_result / (1000000 / HZ),
++		    calibration_result % (1000000 / HZ));
++
++	/*
++	 * Do a sanity check on the APIC calibration result
++	 */
++	if (calibration_result < (1000000 / HZ)) {
++		pr_warning("APIC frequency too slow, disabling apic timer\n");
++		return -1;
++	}
++
++	levt->features &= ~CLOCK_EVT_FEAT_DUMMY;
++	return 0;
++}
++
++/* Calibrates the APIC clock and initializes the local APIC timer */
+ static int __init calibrate_APIC_clock(void)
+ {
+ 	struct clock_event_device *levt = &__get_cpu_var(lapic_events);
+@@ -647,6 +684,7 @@ static int __init calibrate_APIC_clock(v
+ 	unsigned long deltaj;
+ 	long delta, deltatsc;
+ 	int pm_referenced = 0;
++	unsigned int calibration_result;
+ 
+ 	local_irq_disable();
+ 
+@@ -681,20 +719,12 @@ static int __init calibrate_APIC_clock(v
+ 	pm_referenced = !calibrate_by_pmtimer(lapic_cal_pm2 - lapic_cal_pm1,
+ 					&delta, &deltatsc);
+ 
+-	/* Calculate the scaled math multiplication factor */
+-	lapic_clockevent.mult = div_sc(delta, TICK_NSEC * LAPIC_CAL_LOOPS,
+-				       lapic_clockevent.shift);
+-	lapic_clockevent.max_delta_ns =
+-		clockevent_delta2ns(0x7FFFFF, &lapic_clockevent);
+-	lapic_clockevent.min_delta_ns =
+-		clockevent_delta2ns(0xF, &lapic_clockevent);
+-
+ 	calibration_result = (delta * APIC_DIVISOR) / LAPIC_CAL_LOOPS;
+ 
+-	apic_printk(APIC_VERBOSE, "..... delta %ld\n", delta);
+-	apic_printk(APIC_VERBOSE, "..... mult: %u\n", lapic_clockevent.mult);
+-	apic_printk(APIC_VERBOSE, "..... calibration result: %u\n",
+-		    calibration_result);
++	if (initialize_lapic_timer(delta, calibration_result)) {
++		local_irq_enable();
++		return -1;
++	}
+ 
+ 	if (cpu_has_tsc) {
+ 		apic_printk(APIC_VERBOSE, "..... CPU clock speed is "
+@@ -703,22 +733,6 @@ static int __init calibrate_APIC_clock(v
+ 			    (deltatsc / LAPIC_CAL_LOOPS) % (1000000 / HZ));
+ 	}
+ 
+-	apic_printk(APIC_VERBOSE, "..... host bus clock speed is "
+-		    "%u.%04u MHz.\n",
+-		    calibration_result / (1000000 / HZ),
+-		    calibration_result % (1000000 / HZ));
+-
+-	/*
+-	 * Do a sanity check on the APIC calibration result
+-	 */
+-	if (calibration_result < (1000000 / HZ)) {
+-		local_irq_enable();
+-		pr_warning("APIC frequency too slow, disabling apic timer\n");
+-		return -1;
+-	}
+-
+-	levt->features &= ~CLOCK_EVT_FEAT_DUMMY;
+-
+ 	/*
+ 	 * PM timer calibration failed or not turned on
+ 	 * so lets try APIC timer based calibration
+@@ -756,7 +770,7 @@ static int __init calibrate_APIC_clock(v
+ 
+ 	if (levt->features & CLOCK_EVT_FEAT_DUMMY) {
+ 		pr_warning("APIC timer disabled due to verification failure\n");
+-			return -1;
++		return -1;
+ 	}
+ 
+ 	return 0;
+
 
