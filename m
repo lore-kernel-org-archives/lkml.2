@@ -1,98 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932710Ab0JVS7v (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 14:59:51 -0400
-Received: from e2.ny.us.ibm.com ([32.97.182.142]:39652 "EHLO e2.ny.us.ibm.com"
+	id S932741Ab0JVTA3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 15:00:29 -0400
+Received: from kroah.org ([198.145.64.141]:34494 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932652Ab0JVS7m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 14:59:42 -0400
-Date: Fri, 22 Oct 2010 11:59:37 -0700
-From: Ram Pai <linuxram@us.ibm.com>
-To: Bjorn Helgaas <bjorn.helgaas@hp.com>
-Cc: Jesse Barnes <jbarnes@virtuousgeek.org>, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org, clemens@ladisch.de,
-        Yinghai Lu <yinghai@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [RFC v2 PATCH 1/1] PCI: override BIOS/firmware resource
- allocation
-Message-ID: <20101022185937.GF24820@ram-laptop>
-Reply-To: Ram Pai <linuxram@us.ibm.com>
-References: <20101006225834.GE2945@ram-laptop>
- <20101019112439.53c4901e@jbarnes-desktop>
- <20101022002851.GB24820@ram-laptop>
- <201010221155.19123.bjorn.helgaas@hp.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201010221155.19123.bjorn.helgaas@hp.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1759493Ab0JVS5P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Oct 2010 14:57:15 -0400
+X-Mailbox-Line: From gregkh@clark.site Fri Oct 22 11:52:36 2010
+Message-Id: <20101022185236.107057159@clark.site>
+User-Agent: quilt/0.48-11.2
+Date: Fri, 22 Oct 2010 11:52:12 -0700
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
+Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        "H. Peter Anvin" <hpa@zytor.com>, Joerg Roedel <joerg.roedel@amd.com>,
+        Borislav Petkov <borislav.petkov@amd.com>
+Subject: [098/103] x86-32: Fix dummy trampoline-related inline stubs
+In-Reply-To: <20101022185455.GA9114@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 22, 2010 at 11:55:18AM -0600, Bjorn Helgaas wrote:
-> On Thursday, October 21, 2010 06:28:51 pm Ram Pai wrote:
-> > On Tue, Oct 19, 2010 at 11:24:39AM -0700, Jesse Barnes wrote:
-> 
-> > Ok. After further investigation, I find that the BIOS has not allocated any
-> > resource to hotplug bridges that have no devices behind them. However
-> > the OS tries to allocate some minimal resources, 4096 I/O ports and 2M mem
-> > window, to the these hotplug bridges but fails because there are not enough
-> > resources to satisfy all the hotplug bridges.
-> > 
-> > This issue exists even today with the latest mainline kernel but is masked
-> > because no devices are really effected. However Yinghai's reallocation patch
-> > exposed the issue, since it released the BIOS allocated window and tried to
-> > reallocate. Unfortunately it ended up allocating in the wrong order. The
-> > bridges with real devices got no resources, where as the hotplug bridges with
-> > no devices got some mimimal resources.
-> > 
-> > The details are captured at: https://bugzilla.kernel.org/show_bug.cgi?id=15960
-> > 
-> > I suppose the solution is to not pre-allocate resources to hotplug bridges that
-> > have no devices behind them, and then bring back Yinghai's reallocation patch.  
-> 
-> If we assign resources to bridges with no devices behind them while
-> starving bridges that DO have devices behind them, I think that's a bug.
-> It'd be great if you could isolate and fix that before we complicate
-> things by throwing Yinghai's patch into the mix.
+2.6.35-stable review patch.  If anyone has any objections, please let us know.
 
-Yes. I sent out a patch an hour back with a fix for that.
+------------------
 
-> 
-> I think it'd interesting to have a debug parameter like "pci=assign-all"
-> that meant "ignore all BIOS PCI config and start from scratch."  I'm
-> sure we'd trip over lots of issues and it would be easier to resolve them
-> before trying to make things fancier.
+From: H. Peter Anvin <hpa@zytor.com>
 
-The patch that I had sent 3-weeks back had that feature. It can be triggered
-by pci=override=always.
+commit 8848a91068c018bc91f597038a0f41462a0f88a4 upstream.
 
-However, your arguement earlier was that it would make no difference because
-no one will enable that parameter by default. This means hardly anyone will
-report any bugs. 
+Fix dummy inline stubs for trampoline-related functions when no
+trampolines exist (until we get rid of the no-trampoline case
+entirely.)
 
-Moreover I am sure we will encounter lots of bugs if we enable that
-parameter, and that would mean we will be fixing bugs for a long long time.
+Signed-off-by: H. Peter Anvin <hpa@zytor.com>
+Cc: Joerg Roedel <joerg.roedel@amd.com>
+Cc: Borislav Petkov <borislav.petkov@amd.com>
+LKML-Reference: <4C6C294D.3030404@zytor.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
-Gating "Yinghai's patch or any other approach" on fixing all the bugs in the
-pci subsystem, implicitly means 'go away' ;). I hope you dont mean that.
+---
+ arch/x86/include/asm/trampoline.h |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-I propose to bring Yinghai's patch, for that will enable us to expose bugs and
-at the same time it will enable SRIOV on *all* the platforms that don't have it.
+--- a/arch/x86/include/asm/trampoline.h
++++ b/arch/x86/include/asm/trampoline.h
+@@ -22,8 +22,8 @@ extern unsigned long setup_trampoline(vo
+ extern void __init setup_trampoline_page_table(void);
+ extern void __init reserve_trampoline_memory(void);
+ #else
+-static inline void reserve_trampoline_memory(void) {};
+-extern void __init setup_trampoline_page_table(void) {};
++static inline void setup_trampoline_page_table(void) {}
++static inline void reserve_trampoline_memory(void) {}
+ #endif /* CONFIG_X86_TRAMPOLINE */
+ 
+ #endif /* __ASSEMBLY__ */
 
-RP
 
-> 
-> > > So on that note, does Windows on these machines support allocation of
-> > > SRIOV resources?  If so, how is it handled?  Which resource ranges are
-> > > used for the extra BARs?
-> > 
-> > No. I have not tried windows on these boxes. But last I heard windows
-> > did not support SRIOV. Does it?
-> 
-> I've heard anecdotally that Windows supports SRIOV much better than
-> Linux does, but I have no evidence.  I would guess that it depends on
-> driver support in addition to Windows itself.
-> 
-> Bjorn
