@@ -1,169 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755099Ab0JVShe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 14:37:34 -0400
-Received: from kroah.org ([198.145.64.141]:41895 "EHLO coco.kroah.org"
+	id S1755587Ab0JVSiO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 14:38:14 -0400
+Received: from kroah.org ([198.145.64.141]:49497 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932199Ab0JVSVq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 14:21:46 -0400
-From: Greg Kroah-Hartman <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org
-Cc: Jiri Slaby <jslaby@suse.cz>, Kulikov Vasiliy <segooon@gmail.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [PATCH 19/49] Char: mxser, call pci_disable_device from probe/remove
-Date: Fri, 22 Oct 2010 11:20:58 -0700
-Message-Id: <1287771688-14805-19-git-send-email-gregkh@suse.de>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <20101022175112.GC13489@kroah.com>
-References: <20101022175112.GC13489@kroah.com>
+	id S1754813Ab0JVSiN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Oct 2010 14:38:13 -0400
+X-Mailbox-Line: From gregkh@clark.site Fri Oct 22 11:35:56 2010
+Message-Id: <20101022183556.615730001@clark.site>
+User-Agent: quilt/0.48-11.2
+Date: Fri, 22 Oct 2010 11:34:31 -0700
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
+Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Luke Yelavich <luke.yelavich@canonical.com>,
+        Takashi Iwai <tiwai@suse.de>
+Subject: [04/66] ALSA: hda - Add Dell Latitude E6400 model quirk
+In-Reply-To: <20101022183711.GA23214@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jiri Slaby <jslaby@suse.cz>
+2.6.32-stable review patch.  If anyone has any objections, please let us know.
 
-Vasiliy found that pci_disable_device is not called on fail paths in
-mxser_probe. Actually, it is called from nowhere in the driver.
+------------------
 
-There are three changes needed:
-1) don't use pseudo-generic mxser_release_res. Let's use it only from
-   ISA paths from now on. All the pci stuff is moved to probe and
-   remove PCI-related functions.
-2) reorder fail-paths in the probe function so that it makes sense and
-   we can call them from the sequential code naturally (the further we
-   are the earlier label we go to).
-3) add pci_disable_device both to mxser_probe and mxser_remove.
+From: Luke Yelavich <luke.yelavich@canonical.com>
 
-There is a nit of adding CONFIG_PCI ifdef to mxser_remove. it is
-because this driver supports ISA-only compilations and it would choke
-up on the newly added calls now.
+commit 0f9f1ee9d1412d45a22bfd69dfd4d4324b506e9e upstream.
 
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-Cc: Kulikov Vasiliy <segooon@gmail.com>
+BugLink: https://bugs.launchpad.net/ubuntu/+source/linux/+bug/643891
+
+Set the Dell Latitude E6400 (1028:0233) SSID to use AD1984_DELL_DESKTOP
+
+Signed-off-by: Luke Yelavich <luke.yelavich@canonical.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
----
- drivers/char/mxser.c |   47 ++++++++++++++++++++++-------------------------
- 1 files changed, 22 insertions(+), 25 deletions(-)
 
-diff --git a/drivers/char/mxser.c b/drivers/char/mxser.c
-index 3fc89da..9d243de 100644
---- a/drivers/char/mxser.c
-+++ b/drivers/char/mxser.c
-@@ -2339,20 +2339,11 @@ struct tty_port_operations mxser_port_ops = {
-  * The MOXA Smartio/Industio serial driver boot-time initialization code!
-  */
+---
+ sound/pci/hda/patch_analog.c |    1 +
+ 1 file changed, 1 insertion(+)
+
+--- a/sound/pci/hda/patch_analog.c
++++ b/sound/pci/hda/patch_analog.c
+@@ -3510,6 +3510,7 @@ static struct snd_pci_quirk ad1984_cfg_t
+ 	/* Lenovo Thinkpad T61/X61 */
+ 	SND_PCI_QUIRK_VENDOR(0x17aa, "Lenovo Thinkpad", AD1984_THINKPAD),
+ 	SND_PCI_QUIRK(0x1028, 0x0214, "Dell T3400", AD1984_DELL_DESKTOP),
++	SND_PCI_QUIRK(0x1028, 0x0233, "Dell Latitude E6400", AD1984_DELL_DESKTOP),
+ 	{}
+ };
  
--static void mxser_release_res(struct mxser_board *brd, struct pci_dev *pdev,
--		unsigned int irq)
-+static void mxser_release_ISA_res(struct mxser_board *brd)
- {
--	if (irq)
--		free_irq(brd->irq, brd);
--	if (pdev != NULL) {	/* PCI */
--#ifdef CONFIG_PCI
--		pci_release_region(pdev, 2);
--		pci_release_region(pdev, 3);
--#endif
--	} else {
--		release_region(brd->ports[0].ioaddr, 8 * brd->info->nports);
--		release_region(brd->vector, 1);
--	}
-+	free_irq(brd->irq, brd);
-+	release_region(brd->ports[0].ioaddr, 8 * brd->info->nports);
-+	release_region(brd->vector, 1);
- }
- 
- static int __devinit mxser_initbrd(struct mxser_board *brd,
-@@ -2397,13 +2388,11 @@ static int __devinit mxser_initbrd(struct mxser_board *brd,
- 
- 	retval = request_irq(brd->irq, mxser_interrupt, IRQF_SHARED, "mxser",
- 			brd);
--	if (retval) {
-+	if (retval)
- 		printk(KERN_ERR "Board %s: Request irq failed, IRQ (%d) may "
- 			"conflict with another device.\n",
- 			brd->info->name, brd->irq);
--		/* We hold resources, we need to release them. */
--		mxser_release_res(brd, pdev, 0);
--	}
-+
- 	return retval;
- }
- 
-@@ -2555,7 +2544,7 @@ static int __devinit mxser_probe(struct pci_dev *pdev,
- 	ioaddress = pci_resource_start(pdev, 2);
- 	retval = pci_request_region(pdev, 2, "mxser(IO)");
- 	if (retval)
--		goto err;
-+		goto err_dis;
- 
- 	brd->info = &mxser_cards[ent->driver_data];
- 	for (i = 0; i < brd->info->nports; i++)
-@@ -2565,7 +2554,7 @@ static int __devinit mxser_probe(struct pci_dev *pdev,
- 	ioaddress = pci_resource_start(pdev, 3);
- 	retval = pci_request_region(pdev, 3, "mxser(vector)");
- 	if (retval)
--		goto err_relio;
-+		goto err_zero;
- 	brd->vector = ioaddress;
- 
- 	/* irq */
-@@ -2608,7 +2597,7 @@ static int __devinit mxser_probe(struct pci_dev *pdev,
- 	/* mxser_initbrd will hook ISR. */
- 	retval = mxser_initbrd(brd, pdev);
- 	if (retval)
--		goto err_null;
-+		goto err_rel3;
- 
- 	for (i = 0; i < brd->info->nports; i++)
- 		tty_register_device(mxvar_sdriver, brd->idx + i, &pdev->dev);
-@@ -2616,10 +2605,13 @@ static int __devinit mxser_probe(struct pci_dev *pdev,
- 	pci_set_drvdata(pdev, brd);
- 
- 	return 0;
--err_relio:
--	pci_release_region(pdev, 2);
--err_null:
-+err_rel3:
-+	pci_release_region(pdev, 3);
-+err_zero:
- 	brd->info = NULL;
-+	pci_release_region(pdev, 2);
-+err_dis:
-+	pci_disable_device(pdev);
- err:
- 	return retval;
- #else
-@@ -2629,14 +2621,19 @@ err:
- 
- static void __devexit mxser_remove(struct pci_dev *pdev)
- {
-+#ifdef CONFIG_PCI
- 	struct mxser_board *brd = pci_get_drvdata(pdev);
- 	unsigned int i;
- 
- 	for (i = 0; i < brd->info->nports; i++)
- 		tty_unregister_device(mxvar_sdriver, brd->idx + i);
- 
--	mxser_release_res(brd, pdev, 1);
-+	free_irq(pdev->irq, brd);
-+	pci_release_region(pdev, 2);
-+	pci_release_region(pdev, 3);
-+	pci_disable_device(pdev);
- 	brd->info = NULL;
-+#endif
- }
- 
- static struct pci_driver mxser_driver = {
-@@ -2741,7 +2738,7 @@ static void __exit mxser_module_exit(void)
- 
- 	for (i = 0; i < MXSER_BOARDS; i++)
- 		if (mxser_boards[i].info != NULL)
--			mxser_release_res(&mxser_boards[i], NULL, 1);
-+			mxser_release_ISA_res(&mxser_boards[i]);
- }
- 
- module_init(mxser_module_init);
--- 
-1.7.2
+
 
