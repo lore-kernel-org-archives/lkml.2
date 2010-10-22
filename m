@@ -1,125 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754652Ab0JVX1g (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 19:27:36 -0400
-Received: from statler.bytemark.co.uk ([212.110.162.18]:46868 "EHLO
-	statler.bytemark.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754571Ab0JVX1f (ORCPT
+	id S1754614Ab0JVXea (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 19:34:30 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:38803 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751228Ab0JVXe3 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 19:27:35 -0400
-Date: Sat, 23 Oct 2010 00:27:22 +0100
-From: "Emilio G. Cota" <cota@braap.org>
-To: Martyn Welch <martyn.welch@ge.com>
-Cc: Greg KH <greg@kroah.com>, LKML <linux-kernel@vger.kernel.org>,
-        Juan David Gonzalez Cobas <david.cobas@gmail.com>
-Subject: Re: [PATCH 27/30] staging/vme: rework the bus model
-Message-ID: <20101022232707.GA1370@braap.org>
-References: <1287729412-24356-1-git-send-email-cota@braap.org> <1287729412-24356-28-git-send-email-cota@braap.org>
+	Fri, 22 Oct 2010 19:34:29 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=HDZlDl0JteWyewuppKryp24ELFotVhPFMIf5/6nuR0hURDNPsmvoQhi55/V4BrMM7l
+         Yv5BXRGc0t7Qoa4oHV5A==
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1287729412-24356-28-git-send-email-cota@braap.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1287750199.15336.32.camel@twins>
+References: <1287614941-32325-1-git-send-email-venki@google.com>
+	<1287614941-32325-5-git-send-email-venki@google.com>
+	<1287672271.3488.139.camel@twins>
+	<AANLkTi=Yi4U_TjJZLGo4v1f6fjLYesO9GCxLnT42qkt0@mail.gmail.com>
+	<1287750199.15336.32.camel@twins>
+Date: Fri, 22 Oct 2010 16:34:25 -0700
+Message-ID: <AANLkTi=2ADcnHB86re3UHtgdSZSjyehmU-iiPauYyDuF@mail.gmail.com>
+Subject: Re: [PATCH 4/6] Export ns irqtimes from IRQ_TIME_ACCOUNTING through /proc/stat
+From: Venkatesh Pallipadi <venki@google.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        linux-kernel@vger.kernel.org, Paul Turner <pjt@google.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Shaun Ruffell <sruffell@digium.com>,
+        Yong Zhang <yong.zhang0@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 22, 2010 at 10:26:11 +0100, Martyn Welch wrote:
-> Hi Emilio,
-> 
-> Thank you for the fixes. After a quick glance, there seem to be a number
-> of valid fixes here, but I'm very concerned by the patches that change
-> the driver model. We discussed this approach in August last year, I am
-> still yet to be convinced by the approach you wish to take.
-(snip)
-> As I've said above - I am still not convinced by the change in approach.
+On Fri, Oct 22, 2010 at 5:23 AM, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Thu, 2010-10-21 at 12:25 -0700, Venkatesh Pallipadi wrote:
+>> > I'd do:
+>> >
+>> >  - hardirq
+>> >  - softirq
+>> >  - user
+>> >  - system
+>> >     - guest
+>> >     - really system
+>> >  - idle
+>> >
+>> > Since otherwise tiny slices of softirq would need to wait for a system
+>> > tick to happen before you fold them.
+>> >
+>> > Also, it is possible that in a single tick multiple counters overflow
+>> > the jiffy boundary, so something like:
+>> >
+>> >  if (irqtime_account_hi_update())
+>> >        cpustat->irq = ...
+>> >
+>> >  if (irqtime_account_si_update())
+>> >        cpustate->softirq = ...
+>> >
+>> >  if (user_tick) {
+>> >  } else if (...) {
+>> >
+>> >  } else ...
+>> >
+>> > would seem like the better approach.
+>> >
+>>
+>> I am not sure about checking for both si and hi. That would result in
+>> double accounting a tick and have some side-effects.
+>
+> Depends on how you look at it I guess, in order for this to occur a
+> previous tick would have to be not reported, eg. consider the case where
+> during two consecutive ticks the time is 50% for both sirq and hirq.
+>
+> Then, after the first tick, nothing will have progressed because they're
+> both at 50% of a tick, after the second tick both will have reached a
+> full jiffy's worth of time and need to roll over.
+>
+> In total two ticks happened, two ticks got accounted, {0,2}, your
+> approach would make it look like {0,1,1} two ticks worth of work
+> happened, two ticks got accounted, but it takes 3 ticks for that to
+> happen.
 
-I'd like to know what exactly doesn't convince you.
+Yes. But, the initial 50-50 tick would not be accounted to hirq or sirq, but to
+system/idle/user depending on other conditions. So, I think it is better to keep
+accounting a tick to one bucket, everytime we are called.
 
-Let's re-visit the commit message:
+>> Regarding moving si above user: Yes. That seems good.
+>> idle after system, That may not make so much of a difference, as there
+>> is no special way to check for system time, other than !idle.
+>
+> Right, so about user and system... we have a bit of a problem there.
+> There is overlap between si/hi and system. ksoftirqd time would be
+> accounted as system and si.
 
-Emilio G. Cota wrote:
-> From: Emilio G. Cota <cota@braap.org>
-> 
-> The way in which VME devices and drivers are currently bound together
-> involves unnecessary contortions. Controlling a device with a VME driver
-> requires the following steps, in this order:
-> 
-> - installing the VME core, eg insmod vme.ko
-> - installing the VME boards' drivers, where the devices to be controlled
->   are passed to the VME core through the so-called bind tables.  Note that
->   these modules are hooking stuff onto the VME core while the bridge driver
->   that provides the bus they'll to attach hasn't yet been loaded.
-> - insmod of the VME bridge driver. 32 devices (called slots) are _always_
->   created, and then the bus's .match method is called for each of them.
->   This works because the boards' drivers have already hooked stuff onto
->   the VME core (see previous step.)
-> 
-> There are a few things I dislike about the above:
-> 
-> * installing drivers even before the bridges they need are present
->   seems counter-intuitive and wrong.
-> * a VME bus may need more than 32 devices--the relation to the 32 slots on
->   a VME crate is artificial and confusing:
-> 	* Some VME cards may be best treated in the kernel as several
-> 	  independent devices, and therefore it is pointless to limit the
-> 	  number of devices on the bus.
-> 	* In VME jargon, a slot is a physical place where hardware is sitting,
-> 	  and is clearly out of the kernel's control. Users may thus have a
-> 	  misleading impression of 'this is what's on slot X', and then go
-> 	  to the crate and see that slot X is empty.
-> * .probe and .remove pass a pointer to a struct device representing a VME
->   bridge, instead of representing the device to be added/removed.
-> 	* a bridge's module may be removed anytime and things do fall over;
-> 	  there is no refcounting at all and thus all drivers attached to
-> 	  the removed bus will oops.
-> * the so-called "bind table" is tricky, unnecessary and boring code that just
->   duplicates what modparam's arrays do.
+Yes. In general this cannot be accurate, as long as we have fine
+granularity user/system. But,
+that involves system call path, where any overhead is not desirable.
+If only we had
+hardware counters for user/system on x86.
 
-Do we first agree on the shortcomings mentioned above?
-Because if we don't, then there's no point in discussing alternatives.
+overlap between ksoftirq and si, again it is kind of depending on
+sampling freq. We can probably change the logic to not include
+ksoftirqd time in softirqd folding. Instead, we can fallback to
+sampling model, and if ksoftirqd is running when we get this tick, we
+can account it as softirq. This still has a problem when hirq/sirq
+folding happens on the same tick then ksoftirqd may not get its
+chance. Anyways, this whole stat is sampling based. I think we have
+some flexibility to hand-wave-stuff :-).
 
+> Then there is the whole issue of per-task accounting not actually using
+> the system/user ticks. They use the ticks as a ratio for
+> se.sum_exec_runtime.
+>
 
-This is what the patch does:
+Yes. That was the reason why I removed hirq/sirq changing p->stime.
+So, we have a clearer user/system split. But, again its not accurate.
 
-
-> The appended implements a new driver model for VME that is free of the
-> shortcomings described above.
-> 
-> In short, a VME driver calls vme_register_driver, which takes the number of
-> devices to be matched as a parameter, say n. Then the driver's .match method
-> is called n times for each bus registered on the VME core. That is,
-> if there are m VME buses registered, m * n devices are created and passed
-> to .match. Devices that do match are probed, while devices that don't match
-> are removed. The only difference between this and what happens in most
-> buses is that here .match is passed down from the bus to the drivers, which
-> in VME are the only ones that can tell whether or not a particular device is
-> present.
-> 
-> A VME device is thus uniquely identified by the triplet
-> (driver_name,bus_id,dev_id), formatted as '$driver_name-$bus_id.$dev_id'.
-> 
-> The VME bus has no auto-discovery capabilities, an illness which the ISA
-> bus also suffers from. Not surprisingly then, most of the appended code has
-> been adapted from drivers/base/isa.c, added to the kernel in a5117ba7da. For
-> further explanations please read that a5117ba7da's commit message. The major
-> difference here is that several VME buses can coexist whereas in ISA only
-> a single bus is supported.
-
-The key here is to realise that .match is passed down to the drivers.
-This way drivers don't need to do contortions like the bind table
-and things flow naturally--e.g. when a bridge is installed, vme
-drivers can be installed/uninstalled on top of it, not the other
-way around.
-
-This is not my idea; I took it from ISA, where they had the same problem.
-
-The code is there, it works, and aligns the VME driver model closer with
-that of other buses supported by the kernel.
-
-Again, please let me know the precise source of your concerns.
-
-Thanks
-
-		Emilio
-
+Thanks,
+Venki
