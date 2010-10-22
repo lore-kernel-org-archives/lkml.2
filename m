@@ -1,158 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752495Ab0JVCTp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Oct 2010 22:19:45 -0400
-Received: from mail.perches.com ([173.55.12.10]:3445 "EHLO mail.perches.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751752Ab0JVCTo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Oct 2010 22:19:44 -0400
-Subject: [RFC PATCH] include/linux/kernel.h: Add config option for
- pr_fmt(fmt)
-From: Joe Perches <joe@perches.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Jean Delvare <khali@linux-fr.org>,
-        Guenter Roeck <guenter.roeck@ericsson.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 21 Oct 2010 19:19:42 -0700
-Message-ID: <1287713982.16920.39.camel@Joe-Laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1752951Ab0JVCUO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Oct 2010 22:20:14 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:52756 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751752Ab0JVCUM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Oct 2010 22:20:12 -0400
+Date: Fri, 22 Oct 2010 03:20:10 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Nick Piggin <npiggin@kernel.dk>
+Cc: Dave Chinner <david@fromorbit.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: Inode Lock Scalability V7 (was V6)
+Message-ID: <20101022022010.GG19804@ZenIV.linux.org.uk>
+References: <1287622186-1935-1-git-send-email-david@fromorbit.com>
+ <20101021050422.GP32255@dastard>
+ <20101021132034.GB13620@amd>
+ <20101021235227.GI12506@dastard>
+ <20101022004540.GA5920@amd>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101022004540.GA5920@amd>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Change the default #define pr_fmt(fmt) from:
-	- #define pr_fmt(fmt) fmt
-to:
-	- #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+On Fri, Oct 22, 2010 at 11:45:40AM +1100, Nick Piggin wrote:
 
-This will standard use of prefixes and prevent the
-addition of new #defines when using pr_<level>.
+> No you didn't make these points to me over the past couple of weeks.
+> Specifically, do you agree or disagree about these points:
+> - introducing new concurrency situations from not having a single lock
+>   for an inode's icache state is a negative?
 
-Adds a config option to use the old style if desired.
+I disagree.
 
-This adds prefixes to 326 strings in an x86 defconfig.
-Broken out by subsystem/module, the prefixes are:
+> And I have kept saying I would welcome your idea to reduce i_lock width
+> in a small incremental patch. I still haven't figured out quite what
+> is so important that can't be achieved in simpler ways (like rcu, or
+> using a seperate inode lock).
 
-     10 acpi                
-      2 act_api             
-      2 af_inet             
-      6 af_packet           
-     22 apic                
-      1 apic_noop           
-      2 blktrace            
-      1 boot                
-      4 calibrate           
-      1 centaur             
-      2 cleanup             
-      1 common              
-      2 dev                 
-      1 devinet             
-     17 edac_mce_amd        
-      1 ehci_hcd            
-      1 fb                  
-     13 generic             
-      9 hibernate           
-      2 i2c_algo_bit        
-      1 io_delay            
-      1 ip6table_filter     
-      1 iptable_filter      
-      2 iptable_nat         
-      3 ipv6                
-      2 irq                 
-      8 kexec               
-      5 libphy              
-     19 main                
-      2 manage              
-     11 mce                 
-      2 mount               
-      1 msr                 
-      5 nf_conntrack_ipv4   
-      7 nf_conntrack_ipv6   
-      4 nf_conntrack_netlink
-      2 nfnetlink           
-      2 nfnetlink_log       
-      1 ohci_hcd            
-      5 oom_kill            
-      1 pcieportdrv         
-      9 percpu              
-     21 perf_event          
-      1 pid                 
-      2 platform            
-      2 probe_32            
-      1 rtc_cmos            
-      2 setup               
-      1 setup_bus           
-      1 skbuff              
-      1 sleep               
-      8 smpboot             
-      4 snapshot            
-      3 suspend             
-      6 swap                
-      1 tcp_ipv4            
-      8 trace               
-     14 trace_events        
-     26 trace_kprobe        
-      3 trace_sched_switch  
-      1 trace_stat          
-      3 tsc_sync            
-     10 usbcore             
-      2 usb_storage         
-     10 vgaarb              
-      1 xt_state 
+No, it's not a small incremental.  It's your locking order being wrong;
+the natural one is
+	[hash, wb, sb] > ->i_lock > [lru]
+and that's one hell of a difference compared to what you are doing.
 
-Some of these add useful info, others are redundant
-and can and will be trivially fixed by adding either
-a new line to #define pr_fmt(fmt) fmt to the sources
-or by removing the internal prefix strings in the
-existing pr_<level> calls.
+Look:
+	* iput_final() should happen under ->i_lock
+	* if it leaves the inode alive, that's it; we can put it on LRU list
+since lru lock nests inside ->i_lock
+	* if it decides to kill the inode, it sets I_FREEING or I_WILL_FREE
+before dropping ->i_lock.  Once that's done, the inode is ours and nobody
+will pick it through the lists.  We can release ->i_lock and then do what's
+needed.  Safely.
+	* accesses of ->i_state are under ->i_lock, including the switchover
+from I_WILL_FREE to I_FREEING
+	* walkers of the sb, wb and hash lists can grab ->i_lock at will;
+it nests inside their locks.
+	* prune_icache() grabs lru lock, then trylocks ->i_lock on the
+first element.  If trylock fails, we just give inode another spin through
+the list by moving it to the tail; if it doesn't, we are holding ->i_lock
+and can proceed safely.
 
-Signed-off-by: Joe Perches <joe@perches.com>
----
- include/linux/kernel.h |    4 ++++
- init/Kconfig           |   10 ++++++++++
- 2 files changed, 14 insertions(+), 0 deletions(-)
+What you seem to miss is that there are very few places accessing inode through
+the lists (i.e. via pointers that do not contribute to refcount) and absolute
+majority already checks for I_FREEING/I_WILL_FREE, refusing to pick such
+inodes.  It's not an accidental subtle property of the code, it's bloody
+fundamental.
 
-diff --git a/include/linux/kernel.h b/include/linux/kernel.h
-index 1759ba5..9cb2e8f 100644
---- a/include/linux/kernel.h
-+++ b/include/linux/kernel.h
-@@ -409,8 +409,12 @@ static inline char *pack_hex_byte(char *buf, u8
-byte)
- extern int hex_to_bin(char ch);
- 
- #ifndef pr_fmt
-+#ifdef CONFIG_PR_FMT_IS_KBUILD_MODNAME
-+#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-+#else
- #define pr_fmt(fmt) fmt
- #endif
-+#endif
- 
- #define pr_emerg(fmt, ...) \
-         printk(KERN_EMERG pr_fmt(fmt), ##__VA_ARGS__)
-diff --git a/init/Kconfig b/init/Kconfig
-index 7b920aa..a406d1c 100644
---- a/init/Kconfig
-+++ b/init/Kconfig
-@@ -897,6 +897,16 @@ config PRINTK
- 	  very difficult to diagnose system problems, saying N here is
- 	  strongly discouraged.
- 
-+config PR_FMT_IS_KBUILD_MODNAME
-+	default y
-+	depends on PRINTK
-+	bool "Use KBUILD_MODNAME as prefix for pr_<level>"
-+	help
-+	  This option sets the default pr_fmt to KBUILD_MODNAME.
-+	  This will prefix all pr_<level> logging message calls with the
-+	  build system defined value unless there is an existing define
-+	  of pr_fmt in the source code.
-+
- config BUG
- 	bool "BUG() support" if EMBEDDED
- 	default y
-
-
+As I've said, I've no religious problems with trylocks; we *do* need them for
+prune_icache() to get a sane locking scheme.  But the way you put ->i_lock on
+the top of hierarchy is simply wrong.
