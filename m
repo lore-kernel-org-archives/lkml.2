@@ -1,91 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759292Ab0JVAGu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Oct 2010 20:06:50 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:41402 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759272Ab0JVAGq convert rfc822-to-8bit (ORCPT
+	id S932945Ab0JVAIi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Oct 2010 20:08:38 -0400
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:47580 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752315Ab0JVAIh convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Oct 2010 20:06:46 -0400
+	Thu, 21 Oct 2010 20:08:37 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=gzQKrC6H1tmv90nhWeEqSuBJBiFkBaHeo/eFdm3px6wlHOf3Tc08E017yZB/GMHDy2
-         gazzd0/9kHk+5atYlyEv/VySdY4h9eIaqJNXjKDEEC5vNM4lO9DLCo7SYK5vcR4kCJK3
-         Q3Rlsm4Fujov4S8CdYuBjq+6VbJrlCwVj/qLo=
+        h=mime-version:reply-to:in-reply-to:references:from:date:message-id
+         :subject:to:cc:content-type:content-transfer-encoding;
+        b=l3qDG/Vc8vvd1hwsY2m3yFRtVH5Vj6DFz87I0IPT3Xo6fTPkhgIGEnHkV3wv0G0+NQ
+         YfyfMfK6fkCoBiRqA0EPZ1A0E83IAUTkzY6Xlvof+qRvErVRki46p2DAEmGYNWtcOMOp
+         ELXlVD+/lWn7FgksrEhjCQLzvsDQJC76fg5cY=
 MIME-Version: 1.0
-In-Reply-To: <28654042.253821287691362834.JavaMail.root@mail-zbox20.bo3.lycos.com>
-References: <18536664.253751287691209904.JavaMail.root@mail-zbox20.bo3.lycos.com>
- <28654042.253821287691362834.JavaMail.root@mail-zbox20.bo3.lycos.com>
-From: kevin granade <kevin.granade@gmail.com>
-Date: Thu, 21 Oct 2010 19:06:23 -0500
-Message-ID: <AANLkTimqNW7zArcjtOkBvrn-dk=YE0_RG+u3yoMDTjwV@mail.gmail.com>
-Subject: Re: On Linux numbering scheme
-To: "Artem S. Tashkinov" <t.artem@lycos.com>
-Cc: linux-kernel@vger.kernel.org
+Reply-To: axel.lin@gmail.com
+In-Reply-To: <20101021225834.GF11685@sortiz-mobl>
+References: <1287565604.7849.4.camel@mola> <20101021225834.GF11685@sortiz-mobl>
+From: Axel Lin <axel.lin@gmail.com>
+Date: Fri, 22 Oct 2010 08:08:16 +0800
+Message-ID: <AANLkTimcQCp+2a59T81niJPGMUX8fE50Us_+Hw_c+JQo@mail.gmail.com>
+Subject: Re: [PATCH] mfd: max8998 cleanups
+To: Samuel Ortiz <sameo@linux.intel.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        Kyungmin Park <kyungmin.park@samsung.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 21, 2010 at 3:02 PM, Artem S. Tashkinov <t.artem@lycos.com> wrote:
->  Hello,
+2010/10/22 Samuel Ortiz <sameo@linux.intel.com>:
+> Hi Axel,
 >
+> On Wed, Oct 20, 2010 at 05:06:44PM +0800, Axel Lin wrote:
+>> This patch includes below fixes:
+>> 1. i2c_smbus_write_byte_data() returns zero or negative value,
+>>    therefore no need to check if ret is greater than zero or not.
+>> 2. Properly free irq and unregister max8998->rtc device in
+>>    max8998_i2c_probe() error path and max8998_i2c_remove().
+> The fixes make sense, I'd appreciate to get 2 separate patches for them
+> though.
 >
->
->  As time passes by, the Linux numbering scheme makes even less sense. Some time ago there was a discussion on LKML about a new numbering scheme but it didn't come to any positive conclusion and then the subject was forgotten entirely. Not meaning to raise a clamour here (and I suppose I represent a large group of Linux users here). I'm willing to suggest a numbering scheme which I hope will answer all known complaints and criticism.
+Ok. I will resend with 2 separate patches.
 
-What are the criticisms?  I think outlining the goals might be a good idea:
-1. Numbering scheme must monotonically increase with each release when
-evaluated as a version number, including transitioning from the
-current numbering system.
-2. Individual elements of the version number should remain relatively small.
+Regards,
+Axel
 
+> Cheers,
+> Samuel.
 >
 >
+>> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+>> ---
+>>  drivers/mfd/max8998.c |    6 ++++--
+>>  1 files changed, 4 insertions(+), 2 deletions(-)
+>>
+>> diff --git a/drivers/mfd/max8998.c b/drivers/mfd/max8998.c
+>> index a720f41..bb9977b 100644
+>> --- a/drivers/mfd/max8998.c
+>> +++ b/drivers/mfd/max8998.c
+>> @@ -110,8 +110,6 @@ int max8998_update_reg(struct i2c_client *i2c, u8 reg, u8 val, u8 mask)
+>>               u8 old_val = ret & 0xff;
+>>               u8 new_val = (val & mask) | (old_val & (~mask));
+>>               ret = i2c_smbus_write_byte_data(i2c, reg, new_val);
+>> -             if (ret >= 0)
+>> -                     ret = 0;
+>>       }
+>>       mutex_unlock(&max8998->iolock);
+>>       return ret;
+>> @@ -155,6 +153,8 @@ static int max8998_i2c_probe(struct i2c_client *i2c,
+>>
+>>  err:
+>>       mfd_remove_devices(max8998->dev);
+>> +     max8998_irq_exit(max8998);
+>> +     i2c_unregister_device(max8998->rtc);
+>>       kfree(max8998);
+>>       return ret;
+>>  }
+>> @@ -164,6 +164,8 @@ static int max8998_i2c_remove(struct i2c_client *i2c)
+>>       struct max8998_dev *max8998 = i2c_get_clientdata(i2c);
+>>
+>>       mfd_remove_devices(max8998->dev);
+>> +     max8998_irq_exit(max8998);
+>> +     i2c_unregister_device(max8998->rtc);
+>>       kfree(max8998);
+>>
+>>       return 0;
+>> --
+>> 1.7.2
+>>
+>>
+>>
 >
->  The scheme is simple. We start either from 3.0.1 [.stable] or from 3.10.0 [.stable].
->
->
->
->  The first digit will remain "3" forever, to preserve compatibility with all existing utilities and internal Linux kernel code. So, the concern about older utilities breakage is answered here: both 3.0.1 and 3.10.1 are bigger than any currently released kernel.
->
->
->
->  The second number will be either 10 (the current year) or 0 meaning we have reset the numbering altogether. However in my opinion 10 sounds better than 0.
->
->
->
->  Now, more about the second and third numbers. The second number is just the current year in the 21 century or the same number minus 10. The third number will be incremented with every new release until the next year hits. So, the real next year we'll have 3.11.1, 3.11.2, 3.11.3, etc.
-
-Any particular reason not to continue the date-oriented format and
-have the third number be the numerical representation of the month
-rather than an incrementing numbering of the releases?  It would still
-be monotonically increasing, which is the only requirement, right?
-
->
->
->
->  Now comes a problem, what if we release kernel 3.10.1 this year and the development of the next one commences also this year? What will be the next release number? I suggest to assign the next release number as the following:
->
->
->
->  1) Either regardless the actual year the next kernel gets released (this way the kernel development started in 2010 will yield kernel 3.10.2 even though we hit the next year) or
->
->  2) By the day the kernel gets released, so while in development the kernel version remained 3.10.1-rcX, on the 15th of January, we rename it to 3.11.1.
-
-I very much think the first option is superior, the version number
-would mark the opening of the merge window.  With the other option it
-introduces a discontinuity into the process that seems unnecessary.
-
->
->
->  Artem
 > --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> Intel Open Source Technology Centre
+> http://oss.intel.com/
 >
