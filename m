@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758969Ab0JVSln (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 14:41:43 -0400
-Received: from kroah.org ([198.145.64.141]:46011 "EHLO coco.kroah.org"
+	id S1758994Ab0JVSlp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 14:41:45 -0400
+Received: from kroah.org ([198.145.64.141]:46017 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758911Ab0JVSll (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 14:41:41 -0400
-X-Mailbox-Line: From gregkh@clark.site Fri Oct 22 11:40:33 2010
-Message-Id: <20101022184033.836726646@clark.site>
+	id S1758911Ab0JVSln (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Oct 2010 14:41:43 -0400
+X-Mailbox-Line: From gregkh@clark.site Fri Oct 22 11:40:34 2010
+Message-Id: <20101022184034.003754079@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 22 Oct 2010 11:39:40 -0700
+Date: Fri, 22 Oct 2010 11:39:42 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
         Roland McGrath <roland@redhat.com>, Chuck Ebbert <cebbert@redhat.com>
-Subject: [15/17] setup_arg_pages: diagnose excessive argument size
+Subject: [17/17] execve: make responsive to SIGKILL with large arguments
 In-Reply-To: <20101022184048.GA25391@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,44 +27,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Roland McGrath <roland@redhat.com>
 
-commit 1b528181b2ffa14721fb28ad1bd539fe1732c583 upstream.
+commit 9aea5a65aa7a1af9a4236dfaeb0088f1624f9919 upstream.
 
-The CONFIG_STACK_GROWSDOWN variant of setup_arg_pages() does not
-check the size of the argument/environment area on the stack.
-When it is unworkably large, shift_arg_pages() hits its BUG_ON.
-This is exploitable with a very large RLIMIT_STACK limit, to
-create a crash pretty easily.
+An execve with a very large total of argument/environment strings
+can take a really long time in the execve system call.  It runs
+uninterruptibly to count and copy all the strings.  This change
+makes it abort the exec quickly if sent a SIGKILL.
 
-Check that the initial stack is not too large to make it possible
-to map in any executable.  We're not checking that the actual
-executable (or intepreter, for binfmt_elf) will fit.  So those
-mappings might clobber part of the initial stack mapping.  But
-that is just userland lossage that userland made happen, not a
-kernel problem.
+Note that this is the conservative change, to interrupt only for
+SIGKILL, by using fatal_signal_pending().  It would be perfectly
+correct semantics to let any signal interrupt the string-copying in
+execve, i.e. use signal_pending() instead of fatal_signal_pending().
+We'll save that change for later, since it could have user-visible
+consequences, such as having a timer set too quickly make it so that
+an execve can never complete, though it always happened to work before.
 
 Signed-off-by: Roland McGrath <roland@redhat.com>
 Reviewed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Cc: Chuck Ebbert <cebbert@redhat.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 
 ---
- fs/exec.c |    5 +++++
- 1 file changed, 5 insertions(+)
+ fs/exec.c |    7 +++++++
+ 1 file changed, 7 insertions(+)
 
 --- a/fs/exec.c
 +++ b/fs/exec.c
-@@ -608,6 +608,11 @@ int setup_arg_pages(struct linux_binprm
- #else
- 	stack_top = arch_align_stack(stack_top);
- 	stack_top = PAGE_ALIGN(stack_top);
+@@ -393,6 +393,9 @@ static int count(char __user * __user *
+ 			argv++;
+ 			if(++i > max)
+ 				return -E2BIG;
 +
-+	if (unlikely(stack_top < mmap_min_addr) ||
-+	    unlikely(vma->vm_end - vma->vm_start >= stack_top - mmap_min_addr))
-+		return -ENOMEM;
-+
- 	stack_shift = vma->vm_end - stack_top;
++			if (fatal_signal_pending(current))
++				return -ERESTARTNOHAND;
+ 			cond_resched();
+ 		}
+ 	}
+@@ -436,6 +439,10 @@ static int copy_strings(int argc, char _
+ 		while (len > 0) {
+ 			int offset, bytes_to_copy;
  
- 	bprm->p -= stack_shift;
++			if (fatal_signal_pending(current)) {
++				ret = -ERESTARTNOHAND;
++				goto out;
++			}
+ 			cond_resched();
+ 
+ 			offset = pos % PAGE_SIZE;
 
 
