@@ -1,66 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756475Ab0JVMs3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 08:48:29 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:54467 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755432Ab0JVMs2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 08:48:28 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: cyril@ti.com
-Subject: Re: [PATCH v3 01/12] misc: add driver for sequencer serial port
-Date: Fri, 22 Oct 2010 14:48:17 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.36-next-20101021+; KDE/4.5.1; x86_64; ; )
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        "davinci-linux-open-source@linux.davincidsp.com" 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        "spi-devel-general@lists.sourceforge.net" 
-	<spi-devel-general@lists.sourceforge.net>,
-        "broonie@opensource.wolfsonmicro.com" 
-	<broonie@opensource.wolfsonmicro.com>,
-        "lrg@slimlogic.co.uk" <lrg@slimlogic.co.uk>,
-        "dbrownell@users.sourceforge.net" <dbrownell@users.sourceforge.net>,
-        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "rpurdie@rpsys.net" <rpurdie@rpsys.net>
-References: <1287694873-12904-1-git-send-email-cyril@ti.com> <20101021161224.b4c0b623.akpm@linux-foundation.org> <4CC18605.80007@ti.com>
-In-Reply-To: <4CC18605.80007@ti.com>
+	id S1756509Ab0JVMtY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 08:49:24 -0400
+Received: from spaceboyz.net ([87.106.131.203]:39926 "EHLO spaceboyz.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755432Ab0JVMtX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Oct 2010 08:49:23 -0400
+Date: Fri, 22 Oct 2010 14:48:58 +0200
+From: David Lamparter <equinox@diac24.net>
+To: Michael Leun <lkml20100708@newton.leun.net>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>, Greg KH <greg@kroah.com>,
+        netdev@vger.kernel.org, davem@davemloft.net,
+        linux-kernel@vger.kernel.org, Alexey Dobriyan <adobriyan@gmail.com>,
+        Patrick McHardy <kaber@trash.net>
+Subject: Re: NET_NS: unregister_netdevice: waiting for lo to become free
+ (adding ipv6 address to interface)
+Message-ID: <20101022124858.GA719746@jupiter.n2.diac24.net>
+References: <20100710235323.5336f627@xenia.leun.net>
+ <20100711192939.1c25dcaf@xenia.leun.net>
+ <20100804153543.56f6ecad@xenia.leun.net>
+ <20100804214618.GA6289@kroah.com>
+ <20100805001105.5a3453ed@xenia.leun.net>
+ <m1lj8l29zm.fsf@fess.ebiederm.org>
+ <20100805112538.60a46cb1@xenia.leun.net>
+ <m1y6clz8ta.fsf_-_@fess.ebiederm.org>
+ <20100805134707.0442a7b1@xenia.leun.net>
+ <20101021171532.54af5e97@xenia.leun.net>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201010221448.17728.arnd@arndb.de>
-X-Provags-ID: V02:K0:h4TsMJdiS1pH11DbiLdjZf8XxlifRAfIdLlywwPv+z/
- s0kM1xm6RazAV3ixOP1W4wbiXjx8cLx+RkhNfQ3U0YzHJOQSv4
- AHx0r8XM7aGEctlLFKuCn5s7xjpbriBtjQhYTzhpvScPISaK+o
- e+tXF2T71NtydE1cal9r1s7kOC7eR5IRfhSVp1AMztDM67x/tc
- Ih44JpmmIaXjQwFinI9Pg==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101021171532.54af5e97@xenia.leun.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 22 October 2010 14:39:33 Cyril Chemparathy wrote:
-> >> +/* Register Access Helpers */
-> >> +static inline u32 ssp_read(struct ti_ssp *ssp, int reg)
-> >> +{
-> >> +    return __raw_readl(ssp->regs + reg);
-> >> +}
-> >> +
-> >> +static inline void ssp_write(struct ti_ssp *ssp, int reg, u32 val)
-> >> +{
-> >> +    __raw_writel(val, ssp->regs + reg);
-> >> +}
-> > 
-> > Why are the __raw functions used here?
-> > 
-> 
-> These registers are to be accessed native endian at all times, and
-> therefore the le32 conversion done otherwise is inappropriate.
+On Thu, Oct 21, 2010 at 05:15:32PM +0200, Michael Leun wrote:
+> unfortunately the bug described below originally reported in 2.6.35-rcX
+> is still there in 2.6.36.
 
-Won't that break on out-of-order CPUs that need the extra synchronization
-done in readl/writel?
+can you post your full kernel .config?
 
-	Arnd
+I'm using network namespaces quite extensively - OpenVPN and IPv6
+included - and i haven't hit this bug. That makes it rather likely it
+depends on some option difference.
+
+btw, while the bridging bug is unrelated, it might be the same kind of
+origin - a skb not being free'd. can you leave the namespace running for
+a few minutes and check whether the usage count number is higher then?
+
+
+-David
+
