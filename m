@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755876Ab0JVS1K (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 14:27:10 -0400
-Received: from kroah.org ([198.145.64.141]:37851 "EHLO coco.kroah.org"
+	id S1753771Ab0JVS1f (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 14:27:35 -0400
+Received: from kroah.org ([198.145.64.141]:37848 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759005Ab0JVSZq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 14:25:46 -0400
+	id S1758992Ab0JVSZp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Oct 2010 14:25:45 -0400
 From: Greg Kroah-Hartman <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org
-Cc: dann frazier <dannf@hp.com>, Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [PATCH 27/31] hpilo: Despecificate driver from iLO generation
-Date: Fri, 22 Oct 2010 11:25:12 -0700
-Message-Id: <1287771916-15016-27-git-send-email-gregkh@suse.de>
+Cc: Robin Holt <holt@sgi.com>, Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [PATCH 26/31] driver core: Convert link_mem_sections to use find_memory_block_hinted.
+Date: Fri, 22 Oct 2010 11:25:11 -0700
+Message-Id: <1287771916-15016-26-git-send-email-gregkh@suse.de>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <20101022175107.GB13489@kroah.com>
 References: <20101022175107.GB13489@kroah.com>
@@ -19,56 +19,59 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: dann frazier <dannf@hp.com>
+From: Robin Holt <holt@sgi.com>
 
-This driver supports iLO, iLO2 and iLO3. However, comments and Kconfig
-reference only iLO and iLO2. Let's just call it "iLO" to avoid having to
-update strings for each iLO generation. This is similar to the change made
-to hpwdt in commit 36e3ff44cebd7e46756dec88f30c982bebefdab7.
+Modify link_mem_sections() to pass in the previous mem_block as a hint to
+locating the next mem_block.  Since they are typically added in order this
+results in a massive saving in time during boot of a very large system.
+For example, on a 16TB x86_64 machine, it reduced the total time spent
+linking all node's memory sections from 1 hour, 27 minutes to 46 seconds.
 
-Signed-off-by: dann frazier <dannf@hp.com>
+Signed-off-by: Robin Holt <holt@sgi.com>
+To: Gary Hade <garyhade@us.ibm.com>
+To: Badari Pulavarty <pbadari@us.ibm.com>
+To: Ingo Molnar <mingo@elte.hu>
+Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- drivers/misc/Kconfig |   10 +++++-----
- drivers/misc/hpilo.c |    2 +-
- 2 files changed, 6 insertions(+), 6 deletions(-)
+ drivers/base/node.c |    8 +++++---
+ 1 files changed, 5 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/misc/Kconfig b/drivers/misc/Kconfig
-index 6f46e27..db2fbe2 100644
---- a/drivers/misc/Kconfig
-+++ b/drivers/misc/Kconfig
-@@ -248,15 +248,15 @@ config CS5535_CLOCK_EVENT_SRC
- 	  generic PIT, and are suitable for use as high-res timers.
+diff --git a/drivers/base/node.c b/drivers/base/node.c
+index 2872e86..ee53558 100644
+--- a/drivers/base/node.c
++++ b/drivers/base/node.c
+@@ -409,25 +409,27 @@ static int link_mem_sections(int nid)
+ 	unsigned long start_pfn = NODE_DATA(nid)->node_start_pfn;
+ 	unsigned long end_pfn = start_pfn + NODE_DATA(nid)->node_spanned_pages;
+ 	unsigned long pfn;
++	struct memory_block *mem_blk = NULL;
+ 	int err = 0;
  
- config HP_ILO
--	tristate "Channel interface driver for HP iLO/iLO2 processor"
-+	tristate "Channel interface driver for the HP iLO processor"
- 	depends on PCI
- 	default n
- 	help
- 	  The channel interface driver allows applications to communicate
--	  with iLO/iLO2 management processors present on HP ProLiant
--	  servers.  Upon loading, the driver creates /dev/hpilo/dXccbN files,
--	  which can be used to gather data from the management processor,
--	  via read and write system calls.
-+	  with iLO management processors present on HP ProLiant servers.
-+	  Upon loading, the driver creates /dev/hpilo/dXccbN files, which
-+	  can be used to gather data from the management processor, via
-+	  read and write system calls.
+ 	for (pfn = start_pfn; pfn < end_pfn; pfn += PAGES_PER_SECTION) {
+ 		unsigned long section_nr = pfn_to_section_nr(pfn);
+ 		struct mem_section *mem_sect;
+-		struct memory_block *mem_blk;
+ 		int ret;
  
- 	  To compile this driver as a module, choose M here: the
- 	  module will be called hpilo.
-diff --git a/drivers/misc/hpilo.c b/drivers/misc/hpilo.c
-index 557a8c2..d4158ec 100644
---- a/drivers/misc/hpilo.c
-+++ b/drivers/misc/hpilo.c
-@@ -1,5 +1,5 @@
- /*
-- * Driver for HP iLO/iLO2 management processor.
-+ * Driver for the HP iLO management processor.
-  *
-  * Copyright (C) 2008 Hewlett-Packard Development Company, L.P.
-  *	David Altobelli <david.altobelli@hp.com>
+ 		if (!present_section_nr(section_nr))
+ 			continue;
+ 		mem_sect = __nr_to_section(section_nr);
+-		mem_blk = find_memory_block(mem_sect);
++		mem_blk = find_memory_block_hinted(mem_sect, mem_blk);
+ 		ret = register_mem_sect_under_node(mem_blk, nid);
+ 		if (!err)
+ 			err = ret;
+ 
+ 		/* discard ref obtained in find_memory_block() */
+-		kobject_put(&mem_blk->sysdev.kobj);
+ 	}
++
++	if (mem_blk)
++		kobject_put(&mem_blk->sysdev.kobj);
+ 	return err;
+ }
+ 
 -- 
 1.7.2
 
