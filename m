@@ -1,140 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757993Ab0JVQyd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 12:54:33 -0400
-Received: from tx2ehsobe002.messaging.microsoft.com ([65.55.88.12]:51848 "EHLO
-	TX2EHSOBE004.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757945Ab0JVQy1 (ORCPT
+	id S1756449Ab0JVQ4V (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 12:56:21 -0400
+Received: from mho-01-ewr.mailhop.org ([204.13.248.71]:62605 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754084Ab0JVQ4T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 12:54:27 -0400
-X-SpamScore: 3
-X-BigFish: VS3(zzc8kzz1202hzz8275bhz2dh2a8h61h)
-X-Spam-TCS-SCL: 0:0
-From: <Dinh.Nguyen@freescale.com>
-To: <linux-kernel@vger.kernel.org>
-CC: <linux-arm-kernel@lists.infradead.org>, <linux@arm.linux.org.uk>,
-        <s.hauer@pengutronix.de>, <u.kleine-koenig@pengutronix.de>,
-        <valentin.longchamp@epfl.ch>, <daniel@caiaq.de>,
-        <grant.likely@secretlab.ca>, <bryan.wu@canonical.com>,
-        <amit.kucheria@canonical.com>, Dinh Nguyen <Dinh.Nguyen@freescale.com>
-Subject: [PATCHv5 2/3] ARM: imx: Add gpio-keys to plat-mxc
-Date: Fri, 22 Oct 2010 11:56:14 -0500
-Message-ID: <1287766575-4092-2-git-send-email-Dinh.Nguyen@freescale.com>
-X-Mailer: git-send-email 1.6.0.4
-In-Reply-To: <1287766575-4092-1-git-send-email-Dinh.Nguyen@freescale.com>
-References: <1287766575-4092-1-git-send-email-Dinh.Nguyen@freescale.com>
+	Fri, 22 Oct 2010 12:56:19 -0400
+X-Mail-Handler: MailHop Outbound by DynDNS
+X-Originating-IP: 67.188.36.105
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1/bP0c4hMcd1swNbUQz561Q
+Date: Fri, 22 Oct 2010 09:56:13 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Ohad Ben-Cohen <ohad@wizery.com>
+Cc: Kevin Hilman <khilman@deeprootsystems.com>, Balaji T K <balajitk@ti.com>,
+        "Kamat, Nishant" <nskamat@ti.com>, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        akpm@linux-foundation.org, Greg KH <greg@kroah.com>,
+        Benoit Cousson <b-cousson@ti.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Hari Kanigeri <h-kanigeri2@ti.com>, Suman Anna <s-anna@ti.com>,
+        Simon Que <sque@ti.com>
+Subject: Re: [PATCH 3/3] omap: add hwspinlock device
+Message-ID: <20101022165612.GF9149@atomide.com>
+References: <1287387875-14168-1-git-send-email-ohad@wizery.com>
+ <1287387875-14168-4-git-send-email-ohad@wizery.com>
+ <87r5fmxghm.fsf@deeprootsystems.com>
+ <AANLkTinZ2+ocJCfUpT15Ow3J9XBa-8XWnVC3gDDJ7s-v@mail.gmail.com>
+ <87bp6pviwf.fsf@deeprootsystems.com>
+ <AANLkTikE1dCXW-7ScVoDgEK3sxai_TyFzstSG+zvNm2F@mail.gmail.com>
+ <8739s0sobc.fsf@deeprootsystems.com>
+ <AANLkTikdjtYtzhgM_=io3SFdUZq=8Xcc8n24bW=SFgTA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Reverse-DNS: de01egw01.freescale.net
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTikdjtYtzhgM_=io3SFdUZq=8Xcc8n24bW=SFgTA@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dinh Nguyen <Dinh.Nguyen@freescale.com>
+* Ohad Ben-Cohen <ohad@wizery.com> [101020 12:12]:
+> On Wed, Oct 20, 2010 at 8:37 PM, Kevin Hilman
+> <khilman@deeprootsystems.com> wrote:
+> >> Let's take the i2c-omap for example.
+> >>
+> >> It sounds like it must have a predefined hwspinlock, but what if:
+> >>
+> >> 1. It will use omap_hwspinlock_request() to dynamically allocate a hwspinlock
+> >> 2. Obviously, the hwspinlock id number must be communicated to the M3
+> >> BIOS, so the i2c-omap will publish that id using a small shared memory
+> >> entry that will be allocated for this sole purpose
+> >> 3. we will make sure that 1+2 completes before the remote processor is
+> >> taken out of reset
 
-Add imx_add_gpio_keys function to add gpio-keys in plat-mxc
+Guys, let's try to come up with a generic interface for this instead of
+polluting the device drivers with more omap specific interfaces.
 
-This patch is based on Sascha Hauer's imx/linux-2.6 for-rmk tree.
+We really want to keep the drivers generic and platform independent.
 
-Signed-off-by: Dinh Nguyen <Dinh.Nguyen@freescale.com>
----
- arch/arm/plat-mxc/devices/Kconfig               |    4 +++
- arch/arm/plat-mxc/devices/Makefile              |    1 +
- arch/arm/plat-mxc/devices/platform-gpio_keys.c  |   27 +++++++++++++++++++++++
- arch/arm/plat-mxc/include/mach/devices-common.h |    4 +++
- arch/arm/plat-mxc/include/mach/iomux-mx51.h     |    2 +-
- 5 files changed, 37 insertions(+), 1 deletions(-)
- create mode 100644 arch/arm/plat-mxc/devices/platform-gpio_keys.c
+Sure we still have some omap specific stuff in the drivers, like
+cpu_is_omapxxxx, and omap specific dma calls, but those will be going
+away.
 
-diff --git a/arch/arm/plat-mxc/devices/Kconfig b/arch/arm/plat-mxc/devices/Kconfig
-index 4047994..f4772e7 100644
---- a/arch/arm/plat-mxc/devices/Kconfig
-+++ b/arch/arm/plat-mxc/devices/Kconfig
-@@ -9,6 +9,10 @@ config IMX_HAVE_PLATFORM_FLEXCAN
- 	select HAVE_CAN_FLEXCAN
- 	bool
- 
-+config IMX_HAVE_PLATFORM_GPIO_KEYS
-+	bool
-+	default y if ARCH_MX51
-+	
- config IMX_HAVE_PLATFORM_IMX_I2C
- 	bool
- 
-diff --git a/arch/arm/plat-mxc/devices/Makefile b/arch/arm/plat-mxc/devices/Makefile
-index 0a3c1f0..45aefeb 100644
---- a/arch/arm/plat-mxc/devices/Makefile
-+++ b/arch/arm/plat-mxc/devices/Makefile
-@@ -1,6 +1,7 @@
- obj-$(CONFIG_IMX_HAVE_PLATFORM_ESDHC) += platform-esdhc.o
- obj-$(CONFIG_IMX_HAVE_PLATFORM_FEC) += platform-fec.o
- obj-$(CONFIG_IMX_HAVE_PLATFORM_FLEXCAN) += platform-flexcan.o
-+obj-$(CONFIG_IMX_HAVE_PLATFORM_GPIO_KEYS) += platform-gpio_keys.o
- obj-y += platform-imx-dma.o
- obj-$(CONFIG_IMX_HAVE_PLATFORM_IMX_I2C) += platform-imx-i2c.o
- obj-$(CONFIG_IMX_HAVE_PLATFORM_IMX_SSI) += platform-imx-ssi.o
-diff --git a/arch/arm/plat-mxc/devices/platform-gpio_keys.c b/arch/arm/plat-mxc/devices/platform-gpio_keys.c
-new file mode 100644
-index 0000000..1c53a53
---- /dev/null
-+++ b/arch/arm/plat-mxc/devices/platform-gpio_keys.c
-@@ -0,0 +1,27 @@
-+/*
-+ * Copyright (C) 2010 Freescale Semiconductor, Inc. All Rights Reserved.
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License
-+ * as published by the Free Software Foundation; either version 2
-+ * of the License, or (at your option) any later version.
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 51 Franklin Street, Fifth Floor,
-+ * Boston, MA  02110-1301, USA.
-+ */
-+#include <asm/sizes.h>
-+#include <mach/hardware.h>
-+#include <mach/devices-common.h>
-+
-+struct platform_device *__init imx_add_gpio_keys(
-+		const struct gpio_keys_platform_data *pdata)
-+{
-+	return imx_add_platform_device("gpio-keys", -1, NULL,
-+		 0, pdata, sizeof(*pdata));
-+}
-diff --git a/arch/arm/plat-mxc/include/mach/devices-common.h b/arch/arm/plat-mxc/include/mach/devices-common.h
-index 86d7575..8c6896f 100644
---- a/arch/arm/plat-mxc/include/mach/devices-common.h
-+++ b/arch/arm/plat-mxc/include/mach/devices-common.h
-@@ -29,6 +29,10 @@ struct platform_device *__init imx_add_flexcan(int id,
- 		resource_size_t irq,
- 		const struct flexcan_platform_data *pdata);
- 
-+#include <linux/gpio_keys.h>
-+struct platform_device *__init imx_add_gpio_keys(
-+		const struct gpio_keys_platform_data *pdata);
-+
- #include <mach/i2c.h>
- struct imx_imx_i2c_data {
- 	int id;
-diff --git a/arch/arm/plat-mxc/include/mach/iomux-mx51.h b/arch/arm/plat-mxc/include/mach/iomux-mx51.h
-index e46b1c2..7ae27e8 100644
---- a/arch/arm/plat-mxc/include/mach/iomux-mx51.h
-+++ b/arch/arm/plat-mxc/include/mach/iomux-mx51.h
-@@ -114,7 +114,7 @@ typedef enum iomux_config {
- #define MX51_PAD_EIM_A24__GPIO_2_18             IOMUX_PAD(0x450, 0x0bc, 1, 0x0,   0, NO_PAD_CTRL)
- #define MX51_PAD_EIM_A25__GPIO_2_19             IOMUX_PAD(0x454, 0x0c0, 1, 0x0,   0, NO_PAD_CTRL)
- #define MX51_PAD_EIM_A26__GPIO_2_20             IOMUX_PAD(0x458, 0x0c4, 1, 0x0,   0, NO_PAD_CTRL)
--#define MX51_PAD_EIM_A27__GPIO_2_21             IOMUX_PAD(0x45c, 0x0c8, 1, 0x0,   0, NO_PAD_CTRL)
-+#define MX51_PAD_EIM_A27__GPIO_2_21             IOMUX_PAD(0x45c, 0x0c8, 1, 0x0,   0, MX51_GPIO_PAD_CTRL | PAD_CTL_PUS_100K_UP)
- #define MX51_PAD_EIM_EB0__EIM_EB0               IOMUX_PAD(0x460, 0x0cc, 0, 0x0,   0, NO_PAD_CTRL)
- #define MX51_PAD_EIM_EB1__EIM_EB1               IOMUX_PAD(0x464, 0x0d0, 0, 0x0,   0, NO_PAD_CTRL)
- #define MX51_PAD_EIM_EB2__GPIO_2_22             IOMUX_PAD(0x468, 0x0d4, 1, 0x0,   0, NO_PAD_CTRL)
--- 
-1.6.0.4
+Unless somebody has better ideas, I suggest we pass a lock function
+in the platform_data to the drivers that need it, and do the omap
+specific nasty stuff in the platform code.
 
+Regards,
 
+Tony
