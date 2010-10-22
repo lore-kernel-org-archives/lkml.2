@@ -1,92 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753739Ab0JVJaT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 05:30:19 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:53593 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751750Ab0JVJaS convert rfc822-to-8bit (ORCPT
+	id S1754325Ab0JVJci (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 05:32:38 -0400
+Received: from exprod5og111.obsmtp.com ([64.18.0.22]:44716 "EHLO
+	exprod5og111.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753470Ab0JVJcg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 05:30:18 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=mime-version:reply-to:in-reply-to:references:date:message-id
-         :subject:from:to:cc:content-type:content-transfer-encoding;
-        b=GohiJ8VSS6QbYF1EWC9cA037ORHbWz4mQArZPYxn8pLjRb7+yfS6ygMroe1J4oLhgn
-         WwtxlAoHVQ1CTgHkyUwnWJ53hEGFScDLSknBfLZvio4b1gaOYVutUv/nW7qNzP5GBvP7
-         gLh3fTgVJIZ/6nk0OxjWuMdsS8+JFHR7e0hzc=
+	Fri, 22 Oct 2010 05:32:36 -0400
+X-Greylist: delayed 302 seconds by postgrey-1.27 at vger.kernel.org; Fri, 22 Oct 2010 05:32:36 EDT
+Message-ID: <4CC158B3.5010908@ge.com>
+Date: Fri, 22 Oct 2010 10:26:11 +0100
+From: Martyn Welch <martyn.welch@ge.com>
+Organization: GE Intelligent Platforms
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.14) Gecko/20101006 Thunderbird/3.0.9
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <201010221124.32842.arnd@arndb.de>
-References: <AANLkTi=vUA-u20egbpH1Wu4ek-craz7aZUxWmobL8OhD@mail.gmail.com>
-	<201010221124.32842.arnd@arndb.de>
-Date: Fri, 22 Oct 2010 11:30:17 +0200
-Message-ID: <AANLkTimn9u-m8eOA7dQH6kCNriebEnnbYZaP_=rnp1pv@mail.gmail.com>
-Subject: Re: linux-next: next-20101022 broken with unset CONFIG_BKL
-From: Sedat Dilek <sedat.dilek@googlemail.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: LKML <linux-kernel@vger.kernel.org>, sfr@canb.auug.org.au,
-        Jan Harkes <jaharkes@cs.cmu.edu>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: "Emilio G. Cota" <cota@braap.org>
+CC: Greg KH <greg@kroah.com>, LKML <linux-kernel@vger.kernel.org>,
+        Juan David Gonzalez Cobas <david.cobas@gmail.com>
+Subject: Re: [-next] staging/vme: various fixes + new driver model for VME
+References: <1287729412-24356-1-git-send-email-cota@braap.org>
+In-Reply-To: <1287729412-24356-1-git-send-email-cota@braap.org>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 22 Oct 2010 09:27:30.0630 (UTC) FILETIME=[59A24E60:01CB71CB]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 22, 2010 at 11:24 AM, Arnd Bergmann <arnd@arndb.de> wrote:
-> On Friday 22 October 2010 11:13:23 Sedat Dilek wrote:
->> Hi,
->>
->> I am trying to compile latest linux-next with unset CONFIG_BKL.
->> Yes, one patch is missing from [1] to be able to compile a BKL-free kernel.
->> (BTW, the patch needs a trivial fix, see v2 attached to this email.)
->>
->> With next-20101022 the build breaks (sorry for the output in German):
->>
->> [ build.log ]
->> ...
->>   LD [M]  fs/ceph/ceph.o
->>   LD      fs/coda/built-in.o
->>   CC [M]  fs/coda/psdev.o
->>   CC [M]  fs/cifs/misc.o
->> /home/sd/src/linux-2.6/linux-2.6.36/debian/build/source_i386_none/fs/coda/psdev.c:
->> In function ‘coda_psdev_write’:
->> /home/sd/src/linux-2.6/linux-2.6.36/debian/build/source_i386_none/fs/coda/psdev.c:140:
->> error: implicit declaration of function ‘lock_kernel’
->> /home/sd/src/linux-2.6/linux-2.6.36/debian/build/source_i386_none/fs/coda/psdev.c:142:
->> error: implicit declaration of function ‘unlock_kernel’
->>   CC      block/blk-settings.o
->> make[6]: *** [fs/coda/psdev.o] Fehler 1
->> make[5]: *** [fs/coda] Fehler 2
->> make[5]: *** Warte auf noch nicht beendete Prozesse...
->> ...
->>
->> Just FYI.
->>
->
-> Ok, thanks for the report. There is a patch for coda to remove the BKL.
-> We discussed it yesterday and I subsequently removed the switch that
-> disables it on non-BKL configs.
->
-> We then agreed to not have the patch included in my series, and Jan's
-> tree is not part of linux-next.
->
-> There are more of these in mainline once Linus pulls my tree, but that
-> just means that we need to get all the other trees into -rc1 that
-> remove the BKL from other subsystems, before applying the patch that
-> lets you build with CONFIG_FILE_LOCKING=y and CONFIG_BKL=n.
->
-> Right now, both allyesconfig (with BKL) and allnoconfig (without coda)
-> work fine, we only get a few really obscure randconfigs breaking.
->
->        Arnd
->
+On 22/10/10 07:36, Emilio G. Cota wrote:
+> Hi Greg,
+> 
+> This contains first a whole bunch of fixes to the existing vme
+> code in staging, to then introduce a new driver model for VME
+> in patch 27.
+> 
 
-Wow, you answer in realtime :-), Arnd.
-Thanks for the explanations and I agree with you to wait for 27-rc1
-and then to remove BKL.
-Me just doing early-testing...
+Hi Emilio,
 
-A pointer to the patch?
-Thanks in advance.
+Thank you for the fixes. After a quick glance, there seem to be a number
+of valid fixes here, but I'm very concerned by the patches that change
+the driver model. We discussed this approach in August last year, I am
+still yet to be convinced by the approach you wish to take.
 
-- Sedat -
+> I have a short list of things to do after this patchset gets
+> reviewed:
+> 
+> - provide a saner API for VME drivers that just want to
+>   map/unmap chunks of memory (knowing nothing about underlying
+>   hardware features, such as windows). This is already
+>   implemented in the out-of-tree driver in [1].
+> 
+> - Make DMA work on the tsi148 (it's the only bridge I've got).
+>   This will probably involve changing or extending the
+>   current API.
+> 
+
+The DMA is already working on the tsi148. In what way do you feel that
+the current API needs changing or extending for DMA?
+
+> - Test the whole thing with real hardware and a real VME driver
+>   (currently out of tree as well, see [2]), which I'll try
+>   to get merged, too--currently we just have vme_user.c which
+>   really isn't a kosher driver.
+> 
+
+The current API has been tested with real hardware, for both supported
+vme bridges, on multiple cards, by multiple people. If the changes to
+the API are to be applied, they would need to be throughly tested before
+they are applied. As I've said above - I am still not convinced by the
+change in approach.
+
+Martyn
+
+> 
+> 
+> Note that the appended applies on top of linux-next.
+> 
+> The patchset can be pulled from:
+> git://github.com/cota/linux-2.6.git vme-next
+> 
+> Thanks,
+> 
+>                 Emilio
+> 
+> 
+> [1] http://repo.or.cz/w/ht-drivers.git/tree/HEAD:/vmebridge/driver
+> [2] http://repo.or.cz/w/ht-drivers.git/tree/HEAD:/sis33/drivers
+> 
+> diffstat:
+> 
+>  drivers/staging/vme/bridges/vme_ca91cx42.c |  222 ++++++------
+>  drivers/staging/vme/bridges/vme_ca91cx42.h |    2 +-
+>  drivers/staging/vme/bridges/vme_tsi148.c   |  259 +++++++-------
+>  drivers/staging/vme/bridges/vme_tsi148.h   |    2 +-
+>  drivers/staging/vme/devices/vme_user.c     |  159 ++++-----
+>  drivers/staging/vme/vme.c                  |  569 +++++++++++++++-------------
+>  drivers/staging/vme/vme.h                  |  229 ++++++++++-
+>  drivers/staging/vme/vme_bridge.h           |  175 ---------
+>  8 files changed, 831 insertions(+), 786 deletions(-)
+> 
+> 
+
+
+-- 
+Martyn Welch (Principal Software Engineer)   |   Registered in England and
+GE Intelligent Platforms                     |   Wales (3828642) at 100
+T +44(0)127322748                            |   Barbirolli Square,
+Manchester,
+E martyn.welch@ge.com                        |   M2 3AB  VAT:GB 927559189
