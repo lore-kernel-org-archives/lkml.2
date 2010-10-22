@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759656Ab0JVTIr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 15:08:47 -0400
-Received: from kroah.org ([198.145.64.141]:34236 "EHLO coco.kroah.org"
+	id S1759678Ab0JVTI6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 15:08:58 -0400
+Received: from kroah.org ([198.145.64.141]:34231 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759409Ab0JVS4k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 14:56:40 -0400
+	id S1759405Ab0JVS4j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Oct 2010 14:56:39 -0400
 X-Mailbox-Line: From gregkh@clark.site Fri Oct 22 11:52:32 2010
-Message-Id: <20101022185232.760272391@clark.site>
+Message-Id: <20101022185232.670425351@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 22 Oct 2010 11:51:34 -0700
+Date: Fri, 22 Oct 2010 11:51:33 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Clemens Ladisch <clemens@ladisch.de>,
-        Stefan Richter <stefanr@s5r6.in-berlin.de>
-Subject: [060/103] firewire: ohci: fix TI TSB82AA2 regression since 2.6.35
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk
+Subject: [059/103] De-pessimize rds_page_copy_user
 In-Reply-To: <20101022185455.GA9114@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,83 +24,78 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stefan Richter <stefanr@s5r6.in-berlin.de>
+From: Linus Torvalds <torvalds@linux-foundation.org>
 
-commit aa0170fff3c26bf2b42159af2dd9cf86444c292a upstream.
+commit 799c10559d60f159ab2232203f222f18fa3c4a5f upstream.
 
-Revert commit 54672386ccf36ffa21d1de8e75624af83f9b0eeb
-"firewire: ohci: fix up configuration of TI chips".
-It caused massive slow-down and data corruption with a TSB82AA2 based
-StarTech EC1394B2 ExpressCard and FireWire 800 harddisks.
+Don't try to "optimize" rds_page_copy_user() by using kmap_atomic() and
+the unsafe atomic user mode accessor functions.  It's actually slower
+than the straightforward code on any reasonable modern CPU.
 
-https://bugs.launchpad.net/ubuntu/+source/linux/+bug/657081
-http://thread.gmane.org/gmane.linux.kernel.firewire.user/4013
+Back when the code was written (although probably not by the time it was
+actually merged, though), 32-bit x86 may have been the dominant
+architecture.  And there kmap_atomic() can be a lot faster than kmap()
+(unless you have very good locality, in which case the virtual address
+caching by kmap() can overcome all the downsides).
 
-The fact that some card EEPROMs do not program these enhancements may be
-related to TSB81BA3 phy chip errata, if not to bugs of TSB82AA2 itself.
-We could re-add these configuration steps, but only conditional on a
-whitelist of cards on which these enhancements bring a proven positive
-effect.
+But these days, x86-64 may not be more populous, but it's getting there
+(and if you care about performance, it's definitely already there -
+you'd have upgraded your CPU's already in the last few years).  And on
+x86-64, the non-kmap_atomic() version is faster, simply because the code
+is simpler and doesn't have the "re-try page fault" case.
 
-Reported-and-tested-by: Eric Shattow <lucent@gmail.com>
-Cc: Clemens Ladisch <clemens@ladisch.de>
-Signed-off-by: Stefan Richter <stefanr@s5r6.in-berlin.de>
+People with old hardware are not likely to care about RDS anyway, and
+the optimization for the 32-bit case is simply buggy, since it doesn't
+verify the user addresses properly.
+
+Reported-by: Dan Rosenberg <drosenberg@vsecurity.com>
+Acked-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/firewire/ohci.c |   19 +------------------
- drivers/firewire/ohci.h |    8 --------
- 2 files changed, 1 insertion(+), 26 deletions(-)
+ net/rds/page.c |   27 +++++++--------------------
+ 1 file changed, 7 insertions(+), 20 deletions(-)
 
---- a/drivers/firewire/ohci.c
-+++ b/drivers/firewire/ohci.c
-@@ -2439,7 +2439,7 @@ static int __devinit pci_probe(struct pc
- 			       const struct pci_device_id *ent)
- {
- 	struct fw_ohci *ohci;
--	u32 bus_options, max_receive, link_speed, version, link_enh;
-+	u32 bus_options, max_receive, link_speed, version;
- 	u64 guid;
- 	int i, err, n_ir, n_it;
- 	size_t size;
-@@ -2492,23 +2492,6 @@ static int __devinit pci_probe(struct pc
- 	if (param_quirks)
- 		ohci->quirks = param_quirks;
+--- a/net/rds/page.c
++++ b/net/rds/page.c
+@@ -57,30 +57,17 @@ int rds_page_copy_user(struct page *page
+ 	unsigned long ret;
+ 	void *addr;
  
--	/* TI OHCI-Lynx and compatible: set recommended configuration bits. */
--	if (dev->vendor == PCI_VENDOR_ID_TI) {
--		pci_read_config_dword(dev, PCI_CFG_TI_LinkEnh, &link_enh);
+-	if (to_user)
++	addr = kmap(page);
++	if (to_user) {
+ 		rds_stats_add(s_copy_to_user, bytes);
+-	else
++		ret = copy_to_user(ptr, addr + offset, bytes);
++	} else {
+ 		rds_stats_add(s_copy_from_user, bytes);
 -
--		/* adjust latency of ATx FIFO: use 1.7 KB threshold */
--		link_enh &= ~TI_LinkEnh_atx_thresh_mask;
--		link_enh |= TI_LinkEnh_atx_thresh_1_7K;
+-	addr = kmap_atomic(page, KM_USER0);
+-	if (to_user)
+-		ret = __copy_to_user_inatomic(ptr, addr + offset, bytes);
+-	else
+-		ret = __copy_from_user_inatomic(addr + offset, ptr, bytes);
+-	kunmap_atomic(addr, KM_USER0);
 -
--		/* use priority arbitration for asynchronous responses */
--		link_enh |= TI_LinkEnh_enab_unfair;
--
--		/* required for aPhyEnhanceEnable to work */
--		link_enh |= TI_LinkEnh_enab_accel;
--
--		pci_write_config_dword(dev, PCI_CFG_TI_LinkEnh, link_enh);
--	}
--
- 	ar_context_init(&ohci->ar_request_ctx, ohci,
- 			OHCI1394_AsReqRcvContextControlSet);
+-	if (ret) {
+-		addr = kmap(page);
+-		if (to_user)
+-			ret = copy_to_user(ptr, addr + offset, bytes);
+-		else
+-			ret = copy_from_user(addr + offset, ptr, bytes);
+-		kunmap(page);
+-		if (ret)
+-			return -EFAULT;
++		ret = copy_from_user(addr + offset, ptr, bytes);
+ 	}
++	kunmap(page);
  
---- a/drivers/firewire/ohci.h
-+++ b/drivers/firewire/ohci.h
-@@ -154,12 +154,4 @@
+-	return 0;
++	return ret ? -EFAULT : 0;
+ }
+ EXPORT_SYMBOL_GPL(rds_page_copy_user);
  
- #define OHCI1394_phy_tcode		0xe
- 
--/* TI extensions */
--
--#define PCI_CFG_TI_LinkEnh		0xf4
--#define  TI_LinkEnh_enab_accel		0x00000002
--#define  TI_LinkEnh_enab_unfair		0x00000080
--#define  TI_LinkEnh_atx_thresh_mask	0x00003000
--#define  TI_LinkEnh_atx_thresh_1_7K	0x00001000
--
- #endif /* _FIREWIRE_OHCI_H */
 
 
