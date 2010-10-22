@@ -1,82 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757528Ab0JVVIP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 17:08:15 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:58571 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753380Ab0JVVIN convert rfc822-to-8bit (ORCPT
+	id S1759116Ab0JVVJN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 17:09:13 -0400
+Received: from mxout1.idt.com ([157.165.5.25]:49397 "EHLO mxout1.idt.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753380Ab0JVVJL convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 17:08:13 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:from:date
-         :x-google-sender-auth:message-id:subject:to:cc:content-type
-         :content-transfer-encoding;
-        b=GVpJwgfggBPMN8ud37+g03S5EuWbiiukdLHRFz/RFx1ex+mfeAE/HVRHfibUo2KGCe
-         mQNcIz3rMxmkQij+37VoOIm7rCHAUsJcO1gavliIAsInjzBR3bAn9JK4uRXqZDZS+sw8
-         92Yin1OPFi4YHTKI+Y06Sk3qhC2xSLnZKIzU4=
+	Fri, 22 Oct 2010 17:09:11 -0400
+X-MimeOLE: Produced By Microsoft Exchange V6.5
+Content-class: urn:content-classes:message
 MIME-Version: 1.0
-In-Reply-To: <20101022140044.d5b0e9ce.akpm@linux-foundation.org>
-References: <1287250035-30404-1-git-send-email-vapier@gentoo.org>
- <20101021150250.f6499506.akpm@linux-foundation.org> <201010211823.38287.vapier@gentoo.org>
- <20101021155528.b3d6d027.akpm@linux-foundation.org> <AANLkTim6AFDw_1V9rtF4e_2tmgctbKHziQa-1e3=q7og@mail.gmail.com>
- <20101021162410.5c0d6720.akpm@linux-foundation.org> <AANLkTikGbK7=eW9L4A62Rin-E3usq4Ke_dPoCdStDyEw@mail.gmail.com>
- <20101022133138.6d82f79a.akpm@linux-foundation.org> <AANLkTi=MRU3Qi6NQfqnCwX34sHL2Rx8AyaqRwrxNVQoM@mail.gmail.com>
- <20101022140044.d5b0e9ce.akpm@linux-foundation.org>
-From: Mike Frysinger <vapier@gentoo.org>
-Date: Fri, 22 Oct 2010 17:07:52 -0400
-X-Google-Sender-Auth: tWpg6JdCHRaMuPzKNbB1eH_Nukg
-Message-ID: <AANLkTinTFcFHYv0KH7a=G11sZX8hWww8CvHYZ8xe9-3C@mail.gmail.com>
-Subject: Re: [PATCH] lib/atomic64_test: do not build on non-atomic64 systems
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Luca Barbieri <luca@luca-barbieri.com>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain;
+	charset="us-ascii"
 Content-Transfer-Encoding: 8BIT
+Subject: RE: [PATCH -mm 0/2] RapidIO: Changes to handling of RIO switches
+Date: Fri, 22 Oct 2010 14:04:38 -0700
+Message-ID: <0CE8B6BE3C4AD74AB97D9D29BD24E55201445A6B@CORPEXCH1.na.ads.idt.com>
+In-Reply-To: <4CC1D7DE.7060405@neli.hopto.org>
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+Thread-Topic: [PATCH -mm 0/2] RapidIO: Changes to handling of RIO switches
+Thread-Index: ActyFwOSx4f0SGp9QfONTMBPc30A+wAB8FxQ
+References: <1287688250-14226-1-git-send-email-alexandre.bounine@idt.com> <4CC0AD74.8070800@neli.hopto.org> <0CE8B6BE3C4AD74AB97D9D29BD24E55201445906@CORPEXCH1.na.ads.idt.com> <4CC1D7DE.7060405@neli.hopto.org>
+From: "Bounine, Alexandre" <Alexandre.Bounine@idt.com>
+To: "Micha Nelissen" <micha@neli.hopto.org>
+Cc: <akpm@linux-foundation.org>, <linux-kernel@vger.kernel.org>,
+        <linuxppc-dev@lists.ozlabs.org>,
+        "Matt Porter" <mporter@kernel.crashing.org>,
+        "Li Yang" <leoli@freescale.com>,
+        "Kumar Gala" <galak@kernel.crashing.org>,
+        "Thomas Moll" <thomas.moll@sysgo.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 22, 2010 at 17:00, Andrew Morton wrote:
-> On Fri, 22 Oct 2010 16:47:36 -0400 Mike Frysinger wrote:
->> On Fri, Oct 22, 2010 at 16:31, Andrew Morton wrote:
->> > On Fri, 22 Oct 2010 16:14:49 -0400 Mike Frysinger wrote:
->> >> On Thu, Oct 21, 2010 at 19:24, Andrew Morton wrote:
->> >> > On Thu, 21 Oct 2010 19:04:36 -0400 Mike Frysinger wrote:
->> >> >> you can say "lazy" all you like. __i dont see the point in going that route.
->> >> >
->> >> > Try
->> >> >
->> >> > __ __ __ __grep HAVE arch/x86/Kconfig
->> >> >
->> >> > If all of those were instead to use some random #define which the
->> >> > particular feature happened to define in some header file then we would
->> >> > have a mess on our hands.
->> >>
->> >> fun times. __new tact.
->> >>
->> >> Luca: your new atomic64_t test build fails on all arches that lack
->> >> atomic64_t. __please fix.
->> >
->> > That's only part of the problem. __The following won't build also:
->> >
->> > net/rds
->>
->> not true.  that code base is already using my suggestion:
->> net/rds/rds.h:
->> #ifdef ATOMIC64_INIT
->> #define KERNEL_HAS_ATOMIC64
->> #endif
->
-> IOW, your suggestion led to a nasty local hack.  One which would be
-> unneeded had we implemented this properly via Kconfig.
+Micha Nelissen <micha@neli.hopto.org> wrote:
+> 
+> Bounine, Alexandre wrote:
+> > Looks like I formulated it bad - better would be: they have
+different
+> > interpretation by hardware but logically in RapidIO they have single
+> > role - destid/hopcount are a device coordinates in the RIO network
+used
+> > to access that device.
+> 
+> They are logically different as well (for a non-host).
+> 
+> rswitch->destid with hopcount is the way to reach that switch.
+> 
 
-no.  mine was specific to the atomic64 api and not random consumers.
-the test code is tightly coupled to the atomic64 api by nature, so my
-proposal as constrained by the single instance makes perfect sense.
-as soon as you start talking about more things needing to know "is
-atomic64 available" and doing so at the config dependency level, then
-a Kconfig option makes sense.  thus i didnt and still dont buy your
-original argument against the original patch and constraint.  but with
-real tree data, your suggestion makes sense.  perhaps i'll implement
-it if i find time.
--mike
+OK. This is moved to rdev->destid now to make access unified with
+endpoints. 
+
+> rswitch->rdev->destid should be the id associated with a given switch,
+> so that every (processor) device can agree what id some switch has.
+For
+> a non-host, the path to reach a switch may use a different id than the
+> switch itself has; it's just the id by which it was discovered.
+> However, it's possible to fix that by fixing the id+hopcount once the
+> switch is found using the path with its own id: then you know the
+right
+> hopcount.
+
+I have got an impression that we are discussing slightly different
+implementations
+here. The suggested role of rswitch->rdev->destid is not clear to me.
+I agree that destid and hopcount for switch will be different for every
+processor.
+There is nothing wrong with it because a switch physically does not have
+its own ID.
+If we will need to identify the same physical switch by different
+processors we may use the component tag which now is unique for every
+device.
+
+This actually gives me another idea: instead of using global
+next_switchid counter make rswitch->switchid = component_tag and
+switches in sysfs will look identical for every processor (or just get
+rid of rswitch->switchid and use component_tag directly for switches).
+
+
+> >> can be defined to point to the switch that a given rio_dev is
+> > connected
+> >> to. This is useful for quick lookups. How else can to know to which
+> >> switch a given device is connected?
+> >
+> > rdev->rswitch is not a pointer to the entire switch device object -
+it
+> > is a pointer to the switch specific extension associated with given
+> > rio_dev (if applicable). There is no other role for rdev->rswitch.
+> 
+> I know this, it doesn't answer my question.
+> 
+> > Why would you keep a pointer to device data extension instead of the
+> > pointer to attached device object itself?
+> 
+> There is no particular reason, but this is a useful way to define the
+> fields that are there.
+> 
+> My point is, now that you remove the pointer field, that information
+(to
+> which switch is a particular device connected) cannot be stored in
+this
+> way, so do you have an alternative proposal for that? Maybe add a new
+field.
+>
+
+See my comment below ;).
+
+> > BTW, I have back and forward links added in previous patches and
+only
+> > one link that may be added later is a forward link from mport to the
+> > attached rio_dev (ptr to rio_switch will not work here because it
+can be
+> > switchless connection). But this reference has to be added into
+> > rio_mport.
+> 
+> Possible, but I suggest to put it in the rio_net: fields rdev_host,
+and
+> rdev_self. You can see it in the patch I sent you.
+
+Yes, we may rework rio_net that way and use some good things from there.
+
+Alex.
+
