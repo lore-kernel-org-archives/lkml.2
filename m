@@ -1,119 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752963Ab0JVFYJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 01:24:09 -0400
-Received: from mga02.intel.com ([134.134.136.20]:32503 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752646Ab0JVFYH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 01:24:07 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.58,221,1286175600"; 
-   d="scan'208";a="566368794"
-Subject: Re: [PATCH -v3 5/6] x86, NMI, treat unknown NMI as hardware error
-From: Huang Ying <ying.huang@intel.com>
-To: Don Zickus <dzickus@redhat.com>
-Cc: Andi Kleen <andi@firstfloor.org>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Robert Richter <robert.richter@amd.com>,
-        "peterz@infradead.org" <peterz@infradead.org>
-In-Reply-To: <20101022025657.GA10556@redhat.com>
-References: <20101011212006.GB23882@redhat.com>
-	 <1287555157.3026.21.camel@yhuang-dev> <20101020141558.GB19090@redhat.com>
-	 <1287623643.19320.40.camel@yhuang-dev> <20101021023135.GA12086@redhat.com>
-	 <1287638251.19320.190.camel@yhuang-dev> <20101021141002.GI19090@redhat.com>
-	 <20101021154543.GD21695@basil.fritz.box>
-	 <20101022014955.GP19090@redhat.com> <1287713110.2862.54.camel@yhuang-dev>
-	 <20101022025657.GA10556@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 22 Oct 2010 13:23:57 +0800
-Message-ID: <1287725037.2862.84.camel@yhuang-dev>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S1752912Ab0JVFaG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 01:30:06 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:64981 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1752094Ab0JVFaF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Oct 2010 01:30:05 -0400
+Message-ID: <4CC1218E.9090104@cn.fujitsu.com>
+Date: Fri, 22 Oct 2010 13:30:54 +0800
+From: Li Zefan <lizf@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1b3pre) Gecko/20090513 Fedora/3.0-2.3.beta2.fc11 Thunderbird/3.0b2
+MIME-Version: 1.0
+To: Rusty Russell <rusty@rustcorp.com.au>
+CC: Steven Rostedt <rostedt@goodmis.org>, LKML <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>, Frederic Weisbecker <fweisbec@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH v2][GIT PULL] tracing: Prevent unloadable modules from
+ using trace_bprintk()
+References: <1287668742.16971.585.camel@gandalf.stny.rr.com> <201010221413.28588.rusty@rustcorp.com.au> <1287719918.16971.615.camel@gandalf.stny.rr.com> <201010221504.51535.rusty@rustcorp.com.au>
+In-Reply-To: <201010221504.51535.rusty@rustcorp.com.au>
+Content-Type: text/plain; charset=ISO-8859-15
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-10-22 at 10:56 +0800, Don Zickus wrote:
-> On Fri, Oct 22, 2010 at 10:05:10AM +0800, Huang Ying wrote:
-> > > > > Well, do you have an alternative way to handle broken hardware?  Broken
-> > > > > hardware has generated NMIs, sometimes if I am lucky SERRs.  The ones that
-> > > > > generate SERRs can be filtered through a different path, but what about
-> > > > > the ones that don't?
-> > > > > 
-> > > > 
-> > > > Don, AFAIK you're saying the same thing as Ying: an unknown NMI is 
-> > > > a hardware error.
-> > > > 
-> > > > The reason the hardware does that is that it wants to tell us:
-> > > > 
-> > > > "I lost track of an error. There is corrupted data somewhere in the system.
-> > > > Please stop, don't do anything that could consume that data. S.O.S."
-> > > > 
-> > > > The correct answer for that is panic.
-> > > 
-> > > After re-reading Huang's patch, I am starting to understand what you mean
-> > > by broken hardware.  Basically you are trying to distinguish between
-> > > legacy systems that were 'broken' in the sense they would randomly send
-> > > uknown NMIs for no good reason, hence the 'Dazed and confused' messages
-> > > and hardware errors on more modern systems that say, 'Hardware error,
-> > > panicing check your BIOS for more info' (or whatever).
-> > 
-> > Yes.
-> > 
-> > > So Huang's patch was sort of acting like a switch.  On legacy systems use
-> > > 'Dazed and confused' for unknown NMIs.  Whereas on whitelisted modern
-> > > systems use a more relavant 'Check BIOS for error' message.  Is that
-> > > right?
-> > 
-> > In fact we want to go panic and 'check BIOS for error, contact your
-> > hardware vendor' for all systems. But as you said, there are some
-> > 'broken hardware' randomly send unknown NMIs for no good reason. So a
-> > white list is used for them. And not all pre-Nehalem machines are
-> > 'broken' in fact.
+>>>>> Can't you detect this on module unload and fix it up?  Or delay freeing the
+>>>>> module until the trace ring is emptied?
+>>>> One possibility is to magically make all string formats used in
+>>>> trace_printk into its own section, and keep it allocated until the ring
+>>>> buffer is empty. Or, we can just do that with the module's entire string
+>>>> section, since we know whether or not that module has a trace_printk in
+>>>> it or not.
+>>> Exactly.  Set a flag in the module if it resolves trace_printk, and defer freeing
+>>> the module in that case.  This shouldn't be that hard...
+>> Here's my worry.
+>>
+>> 1) Some module with tracepoints is loaded at boot up.
+>> 2) The user does tracing and forgets about it (ring buffer filled)
+>> 3) Unloads module (don't free)
+>> 4) loads module with trace points
+>> 5) unloads module (don't free)
+>> etc, etc
+>>
+>> memory leak.
 > 
-> Ok, I think I finally understand what you guys are trying to do.  I also
-> can't see a problem with it.  
-
-Thanks.
-
-> Though I think the patch could probably use
-> some clean up to make it more clear.  Off the top of my head perhaps a
-> function call that sets the variable unknown_nmi_as_hwerr instead of
-> setting it explicitly and maybe structuring unknown_nmi() with an if-then
-> modern-message; else legacy-message; to possibly make it obvious what the
-> code is trying to acheive.
-
-OK. Will do it.
-
-> And yeah I know not all pre-Nehalem machines are broken.  I am usually
-> sarcastic when I mention that just because being at IDF last year, I got
-> the impression that pre-Nehalem machines were considered the dark ages.
-> :-)
-
-Haha
-
-> I am actually curious to know how many x86_64 machines would be considered
-> broken?
-
-Don't know either.
-
-> > > That's why you guys are complaining that registering a die_notifier would
-> > > be silly?
-> > 
-> > I think whether going die_notifier or unknown_nmi_error() depends on it
-> > is general or specific for some hardware. Do you agree with that?
+> Sure.  Then mark the rb count or something in the module at init time,
+> then compare before deciding too dangerous to free.
 > 
-> Well I am hoping the only general case would be the one you want to use
-> now.  Everything else would be specific and require a die_notifier.  I
-> mean how many different ways do we want to have a printk/panic in
-> unknown_nmi()?
+>> Thus this is not that trivial. We probably need to have a way to lock a
+>> module when its tracepoint is activated, and only unlock it when the
+>> ring buffer is emptied.
+> 
+> How about the intuitive and completely obvious thing?  When a tp activated,
+> use the module.  When deactivated, unuse it?
+> 
 
-I think this one should be the only one for general unknown NMI
-processing.
+Do you mean inc module refcnt when a tp is activated, and dec the refcnt
+if deactivated? That's what we already have.
 
-Best Regards,
-Huang Ying
+In fact tracepoint is free from this bug, because we'll empty the ring
+buffer if the unloading module has tracepoints in it.
 
+So for trace_bprintk, why can't we do the same thing? If a module has
+trace_bprintk calls in it, just empty the ring buffer when unloading
+module.
 
+And that's as simple as something like this:
+
+diff --git a/kernel/trace/trace_printk.c b/kernel/trace/trace_printk.c
+index 2547d88..103987f 100644
+--- a/kernel/trace/trace_printk.c
++++ b/kernel/trace/trace_printk.c
+@@ -80,6 +80,13 @@ static int module_trace_bprintk_format_notify(struct notifier_block *self,
+ 
+ 		if (val == MODULE_STATE_COMING)
+ 			hold_module_trace_bprintk_format(start, end);
++		else if (val == MODULE_STATE_GOING) {
++			/*
++			 * It is safest to reset the ring buffer if the
++			 * module being unloaded uses trace_bprintk.
++			 */
++			tracing_reset_current_online_cpus();
++		}
+ 	}
+ 	return 0;
+ }
+
+>> Do we want to prevent the module from being unloaded while the ring
+>> buffer is full (after that module has been traced?), or do we let the
+>> module be unloaded, but just prevent this one section from being freed?
+> 
+> I was thinking the latter, basically defer the module_free() call.
+> 
