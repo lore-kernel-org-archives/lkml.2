@@ -1,70 +1,258 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753281Ab0JVFbb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 01:31:31 -0400
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:46300 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753089Ab0JVFba (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 01:31:30 -0400
-X-AuditID: b753bd60-a98ddba000000a18-ae-4cc121afe096
-Message-ID: <4CC121AD.7070105@hitachi.com>
-Date: Fri, 22 Oct 2010 14:31:25 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Systems Development Lab., Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.11) Gecko/20101013 Thunderbird/3.1.5
+	id S1753240Ab0JVFiD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 01:38:03 -0400
+Received: from mga02.intel.com ([134.134.136.20]:2198 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751030Ab0JVFiB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Oct 2010 01:38:01 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.58,221,1286175600"; 
+   d="scan'208";a="566371121"
+Date: Fri, 22 Oct 2010 13:37:55 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Torsten Kaiser <just.for.lkml@googlemail.com>,
+        Neil Brown <neilb@suse.de>, Rik van Riel <riel@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "Li, Shaohua" <shaohua.li@intel.com>
+Subject: Re: Deadlock possibly caused by too_many_isolated.
+Message-ID: <20101022053755.GB16804@localhost>
+References: <AANLkTimVu+5gTDs8przJVP2EbWC=FX-zWW7aH08BtrHC@mail.gmail.com>
+ <20101020055717.GA12752@localhost>
+ <20101020150346.1832.A69D9226@jp.fujitsu.com>
+ <20101020092739.GA23869@localhost>
+ <4CBEE888.2090606@kernel.dk>
 MIME-Version: 1.0
-To: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Steven Rostedt <rostedt@goodmis.org>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org, 2nddept-manager@sdl.hitachi.co.jp,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: [PATCH -tip  6/7] perf probe: Show accessible global variables
-References: <20101021101243.3542.28282.stgit@ltc236.sdl.hitachi.co.jp> <20101021101335.3542.31003.stgit@ltc236.sdl.hitachi.co.jp> <20101021205051.GK3826@ghostprotocols.net> <4CC0F61F.8000501@hitachi.com>
-In-Reply-To: <4CC0F61F.8000501@hitachi.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
-X-FMFTCR: RANGEC
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4CBEE888.2090606@kernel.dk>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2010/10/22 11:25), Masami Hiramatsu wrote:
-> (2010/10/22 5:50), Arnaldo Carvalho de Melo wrote:
->> Em Thu, Oct 21, 2010 at 07:13:35PM +0900, Masami Hiramatsu escreveu:
->>> Add --externs for allowing --vars to show accessible
->>> global(externally defined) variables from a given probe
->>> point too.
->>> This will give you a hint which globals can be accessible
->>> from the probe point.
->>
->> Cool, but perhaps we need to filter out some of the globals? Things
->> like:
+On Wed, Oct 20, 2010 at 09:03:04PM +0800, Jens Axboe wrote:
+> On 2010-10-20 11:27, Wu Fengguang wrote:
+> > On Wed, Oct 20, 2010 at 03:05:56PM +0800, KOSAKI Motohiro wrote:
+> >>> On Tue, Oct 19, 2010 at 06:06:21PM +0800, Torsten Kaiser wrote:
+> >>>> On Tue, Oct 19, 2010 at 10:43 AM, Torsten Kaiser
+> >>>> <just.for.lkml@googlemail.com> wrote:
+> >>>>> On Tue, Oct 19, 2010 at 1:11 AM, Neil Brown <neilb@suse.de> wrote:
+> >>>>>> Yes, thanks for the report.
+> >>>>>> This is a real bug exactly as you describe.
+> >>>>>>
+> >>>>>> This is how I think I will fix it, though it needs a bit of review and
+> >>>>>> testing before I can be certain.
+> >>>>>> Also I need to check raid10 etc to see if they can suffer too.
+> >>>>>>
+> >>>>>> If you can test it I would really appreciate it.
+> >>>>>
+> >>>>> I did test it, but while it seemed to fix the deadlock, the system
+> >>>>> still got unusable.
+> >>>>> The still running "vmstat 1" showed that the swapout was still
+> >>>>> progressing, but at a rate of ~20k sized bursts every 5 to 20 seconds.
+> >>>>>
+> >>>>> I also tried to additionally add Wu's patch:
+> >>>>> --- linux-next.orig/mm/vmscan.c 2010-10-13 12:35:14.000000000 +0800
+> >>>>> +++ linux-next/mm/vmscan.c      2010-10-19 00:13:04.000000000 +0800
+> >>>>> @@ -1163,6 +1163,13 @@ static int too_many_isolated(struct zone
+> >>>>>               isolated = zone_page_state(zone, NR_ISOLATED_ANON);
+> >>>>>       }
+> >>>>>
+> >>>>> +       /*
+> >>>>> +        * GFP_NOIO/GFP_NOFS callers are allowed to isolate more pages, so that
+> >>>>> +        * they won't get blocked by normal ones and form circular deadlock.
+> >>>>> +        */
+> >>>>> +       if ((sc->gfp_mask & GFP_IOFS) == GFP_IOFS)
+> >>>>> +               inactive >>= 3;
+> >>>>> +
+> >>>>>       return isolated > inactive;
+> >>>>>
+> >>>>> Either it did help somewhat, or I was more lucky on my second try, but
+> >>>>> this time I needed ~5 tries instead of only 2 to get the system mostly
+> >>>>> stuck again. On the testrun with Wu's patch the writeout pattern was
+> >>>>> more stable, a burst of ~80kb each 20 seconds. But I would suspect
+> >>>>> that the size of the burst is rather random.
+> >>>>>
+> >>>>> I do have a complete SysRq+T dump from the first run, I can send that
+> >>>>> to anyone how wants it.
+> >>>>> (It's 190k so I don't want not spam it to the list)
+> >>>>
+> >>>> Is this call trace from the SysRq+T violation the rule to only
+> >>>> allocate one bio from bio_alloc() until its submitted?
+> >>>>
+> >>>> [  549.700038] Call Trace:
+> >>>> [  549.700038]  [<ffffffff81566b54>] schedule_timeout+0x144/0x200
+> >>>> [  549.700038]  [<ffffffff81045cd0>] ? process_timeout+0x0/0x10
+> >>>> [  549.700038]  [<ffffffff81565e22>] io_schedule_timeout+0x42/0x60
+> >>>> [  549.700038]  [<ffffffff81083123>] mempool_alloc+0x163/0x1b0
+> >>>> [  549.700038]  [<ffffffff81053560>] ? autoremove_wake_function+0x0/0x40
+> >>>> [  549.700038]  [<ffffffff810ea2b9>] bio_alloc_bioset+0x39/0xf0
+> >>>> [  549.700038]  [<ffffffff810ea38d>] bio_clone+0x1d/0x50
+> >>>> [  549.700038]  [<ffffffff814318ed>] make_request+0x23d/0x850
+> >>>> [  549.700038]  [<ffffffff81082e20>] ? mempool_alloc_slab+0x10/0x20
+> >>>> [  549.700038]  [<ffffffff81045cd0>] ? process_timeout+0x0/0x10
+> >>>> [  549.700038]  [<ffffffff81436e63>] md_make_request+0xc3/0x220
+> >>>> [  549.700038]  [<ffffffff81083099>] ? mempool_alloc+0xd9/0x1b0
+> >>>> [  549.700038]  [<ffffffff811ec153>] generic_make_request+0x1b3/0x370
+> >>>> [  549.700038]  [<ffffffff810ea2d6>] ? bio_alloc_bioset+0x56/0xf0
+> >>>> [  549.700038]  [<ffffffff811ec36a>] submit_bio+0x5a/0xd0
+> >>>> [  549.700038]  [<ffffffff81080cf5>] ? unlock_page+0x25/0x30
+> >>>> [  549.700038]  [<ffffffff810a871e>] swap_writepage+0x7e/0xc0
+> >>>> [  549.700038]  [<ffffffff81090d99>] shmem_writepage+0x1c9/0x240
+> >>>> [  549.700038]  [<ffffffff8108c9cb>] pageout+0x11b/0x270
+> >>>> [  549.700038]  [<ffffffff8108cd78>] shrink_page_list+0x258/0x4d0
+> >>>> [  549.700038]  [<ffffffff8108d9e7>] shrink_inactive_list+0x187/0x310
+> >>>> [  549.700038]  [<ffffffff8102dcb1>] ? __wake_up_common+0x51/0x80
+> >>>> [  549.700038]  [<ffffffff811fc8b2>] ? cpumask_next_and+0x22/0x40
+> >>>> [  549.700038]  [<ffffffff8108e1c0>] shrink_zone+0x3e0/0x470
+> >>>> [  549.700038]  [<ffffffff8108e797>] try_to_free_pages+0x157/0x410
+> >>>> [  549.700038]  [<ffffffff81087c92>] __alloc_pages_nodemask+0x412/0x760
+> >>>> [  549.700038]  [<ffffffff810b27d6>] alloc_pages_current+0x76/0xe0
+> >>>> [  549.700038]  [<ffffffff810b6dad>] new_slab+0x1fd/0x2a0
+> >>>> [  549.700038]  [<ffffffff81045cd0>] ? process_timeout+0x0/0x10
+> >>>> [  549.700038]  [<ffffffff810b8721>] __slab_alloc+0x111/0x540
+> >>>> [  549.700038]  [<ffffffff81059961>] ? prepare_creds+0x21/0xb0
+> >>>> [  549.700038]  [<ffffffff810b92bb>] kmem_cache_alloc+0x9b/0xa0
+> >>>> [  549.700038]  [<ffffffff81059961>] prepare_creds+0x21/0xb0
+> >>>> [  549.700038]  [<ffffffff8104a919>] sys_setresgid+0x29/0x120
+> >>>> [  549.700038]  [<ffffffff8100242b>] system_call_fastpath+0x16/0x1b
+> >>>> [  549.700038]  ffff88011e125ea8 0000000000000046 ffff88011e125e08
+> >>>> ffffffff81073c59
+> >>>> [  549.700038]  0000000000012780 ffff88011ea905b0 ffff88011ea90808
+> >>>> ffff88011e125fd8
+> >>>> [  549.700038]  ffff88011ea90810 ffff88011e124010 0000000000012780
+> >>>> ffff88011e125fd8
+> >>>>
+> >>>> swap_writepage() uses get_swap_bio() which uses bio_alloc() to get one
+> >>>> bio. That bio is the submitted, but the submit path seems to get into
+> >>>> make_request from raid1.c and that allocates a second bio from
+> >>>> bio_alloc() via bio_clone().
+> >>>>
+> >>>> I am seeing this pattern (swap_writepage calling
+> >>>> md_make_request/make_request and then getting stuck in mempool_alloc)
+> >>>> more than 5 times in the SysRq+T output...
+> >>>
+> >>> I bet the root cause is the failure of pool->alloc(__GFP_NORETRY)
+> >>> inside mempool_alloc(), which can be fixed by this patch.
+> >>>
+> >>> Thanks,
+> >>> Fengguang
+> >>> ---
+> >>>
+> >>> concurrent direct page reclaim problem
+> >>>
+> >>>   __GFP_NORETRY page allocations may fail when there are many concurrent page
+> >>>   allocating tasks, but not necessary in real short of memory. The root cause
+> >>>   is, tasks will first run direct page reclaim to free some pages from the LRU
+> >>>   lists and put them to the per-cpu page lists and the buddy system, and then
+> >>>   try to get a free page from there.  However the free pages reclaimed by this
+> >>>   task may be consumed by other tasks when the direct reclaim task is able to
+> >>>   get the free page for itself.
+> >>>
+> >>>   Let's retry it a bit harder.
+> >>>
+> >>> --- linux-next.orig/mm/page_alloc.c	2010-10-20 13:44:50.000000000 +0800
+> >>> +++ linux-next/mm/page_alloc.c	2010-10-20 13:50:54.000000000 +0800
+> >>> @@ -1700,7 +1700,7 @@ should_alloc_retry(gfp_t gfp_mask, unsig
+> >>>  				unsigned long pages_reclaimed)
+> >>>  {
+> >>>  	/* Do not loop if specifically requested */
+> >>> -	if (gfp_mask & __GFP_NORETRY)
+> >>> +	if (gfp_mask & __GFP_NORETRY && pages_reclaimed > (1 << (order + 12)))
+> >>>  		return 0;
+> >>>  
+> >>>  	/*
+> >>
+> >> SLUB usually try high order allocation with __GFP_NORETRY at first. In
+> >> other words, It strongly depend on __GFP_NORETRY don't any retry. I'm
+> >> worry this...
+> > 
+> > Right. I noticed that too. Hopefully the "limited" retry won't impact
+> > it too much. That said, we do need a better solution than such hacks.
+> > 
+> >> And, in this case, stucked tasks have PF_MEMALLOC. allocation with PF_MEMALLOC
+> >> failure mean this zone have zero memory purely. So, retrying don't solve anything.
+> > 
+> > The zone has no free (buddy) memory, but has plenty of reclaimable pages.
+> > The concurrent page reclaimers may steal pages reclaimed by this task
+> > from time to time, but not always. So retry reclaiming will help.
+> > 
+> >> And I think the root cause is in another.
+> >>
+> >> bio_clone() use fs_bio_set internally.
+> >>
+> >> 	struct bio *bio_clone(struct bio *bio, gfp_t gfp_mask)
+> >> 	{
+> >> 	        struct bio *b = bio_alloc_bioset(gfp_mask, bio->bi_max_vecs, fs_bio_set);
+> >> 	...
+> >>
+> >> and fs_bio_set is initialized very small pool size.
+> >>
+> >> 	#define BIO_POOL_SIZE 2
+> >> 	static int __init init_bio(void)
+> >> 	{
+> >> 		..
+> >> 	        fs_bio_set = bioset_create(BIO_POOL_SIZE, 0);
+> > 
+> > Agreed. BIO_POOL_SIZE=2 is too small to be deadlock free.
+> > 
+> >> So, I think raid1.c need to use their own bioset instead fs_bio_set.
+> >> otherwise, bio pool exshost can happen very easily.
+> > 
+> > That would fix the deadlock, but not enough for good IO throughput
+> > when multiple CPUs are trying to submit IO. Increasing BIO_POOL_SIZE
+> > to a large value should help fix both the deadlock and IO throughput.
+> > 
+> >> But I'm not sure. I'm not IO expert.
+> > 
+> > [add CC to Jens]
 > 
-> Hmm, yeah. So is that enough to filter out symbols which start with
-> __k???tab_ and __crc_ ?
-> 
-> 
->>
->>                 long unsigned int       __kcrctab_tcp_hashinfo
->>                 long unsigned int       __kcrctab_tcp_proc_register
->>                 long unsigned int       __kcrctab_tcp_proc_unregister
->>                 long unsigned int       __kcrctab_tcp_prot
+> We surely need 1 set aside for each level of that stack that will
+> potentially consume one. 1 should be enough for the generic pool, and
+> then clones will use a separate pool. So md and friends should really
+> have a pool per device, so that stacking will always work properly.
 
-BTW, with my kernel (yesterday -tip/x86-64/gcc-4.4.4-10),
-perf probe doesn't find these __k???tab_ symbols in
-dwarf. (but those are still in /proc/kallsyms)
-Maybe, something has been changed or it depends on some
-config/environment.
+Agreed for the deadlock problem.
 
-Thank you,
+> There should be no throughput concerns, it should purely be a safe guard
+> measure to prevent us deadlocking when doing IO for reclaim.
 
+It's easy to verify whether the minimal size will have negative
+impacts on IO throughput. In Torsten's case, increase BIO_POOL_SIZE
+by one and check how it performs.
 
--- 
-Masami HIRAMATSU
-2nd Dept. Linux Technology Center
-Hitachi, Ltd., Systems Development Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
+My worry is the pool->alloc(__GFP_NORETRY) in mempool_alloc() may be
+failing _frequently_ when there are concurrent reclaimers. Hence the
+mem pool will be exhausted from time to time. Although the mem pool
+will quickly get out of the exhausted state whenever some flying bio
+is freed, if some unlucky task happen to hit allocation failure in the
+small exhausted window, it will be going into the 5-seconds sleep in
+mempool_alloc().
+
+Oops, the sleep don't need to be UNINTERRUPTIBLE.
+
+---
+Subject: mempool: the mempool_alloc() sleep can be interrupted
+
+Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
+---
+ mm/mempool.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- linux-next.orig/mm/mempool.c	2010-10-22 13:35:17.000000000 +0800
++++ linux-next/mm/mempool.c	2010-10-22 13:35:22.000000000 +0800
+@@ -235,7 +235,7 @@ repeat_alloc:
+ 	/* Now start performing page reclaim */
+ 	gfp_temp = gfp_mask;
+ 	init_wait(&wait);
+-	prepare_to_wait(&pool->wait, &wait, TASK_UNINTERRUPTIBLE);
++	prepare_to_wait(&pool->wait, &wait, TASK_INTERRUPTIBLE);
+ 	smp_mb();
+ 	if (!pool->curr_nr) {
+ 		/*
