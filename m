@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932624Ab0JVSWC (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 14:22:02 -0400
-Received: from kroah.org ([198.145.64.141]:41923 "EHLO coco.kroah.org"
+	id S932636Ab0JVSWG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 14:22:06 -0400
+Received: from kroah.org ([198.145.64.141]:41932 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932590Ab0JVSV6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 14:21:58 -0400
+	id S932590Ab0JVSWE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Oct 2010 14:22:04 -0400
 From: Greg Kroah-Hartman <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org
-Cc: "Dr. Werner Fink" <werner@suse.de>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [PATCH 28/49] tty: Add a new file /proc/tty/consoles
-Date: Fri, 22 Oct 2010 11:21:07 -0700
-Message-Id: <1287771688-14805-28-git-send-email-gregkh@suse.de>
+Cc: Nicolas Pitre <nico@fluxnic.net>,
+        Nicolas Pitre <nicolas.pitre@canonical.com>,
+        Alan Cox <alan@linux.intel.com>, Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [PATCH 30/49] vcs: invoke the vt update callback when /dev/vcs* is written to
+Date: Fri, 22 Oct 2010 11:21:09 -0700
+Message-Id: <1287771688-14805-30-git-send-email-gregkh@suse.de>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <20101022175112.GC13489@kroah.com>
 References: <20101022175112.GC13489@kroah.com>
@@ -20,254 +21,62 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dr. Werner Fink <werner@suse.de>
+From: Nicolas Pitre <nico@fluxnic.net>
 
-Add a new file /proc/tty/consoles to be able to determine the registered
-system console lines.  If the reading process holds /dev/console open at
-the regular standard input stream the active device will be marked by an
-asterisk.  Show possible operations and also decode the used flags of
-the listed console lines.
+A notifier chain is called whenever the vt code modifies a terminal
+content, except for one case which is when the modification comes
+through writes to /dev/vcs* devices.  Let's add the missing notifier
+invocation at the end of vcs_write() for that case too.
 
-Signed-off-by: Werner Fink <werner@suse.de>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Signed-off-by: Nicolas Pitre <nicolas.pitre@canonical.com>
+Cc: Alan Cox <alan@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- Documentation/filesystems/proc.txt |   32 +++++++
- fs/proc/proc_tty.c                 |  158 ++++++++++++++++++++++++++++++++++++
- 2 files changed, 190 insertions(+), 0 deletions(-)
+ drivers/char/vc_screen.c  |    2 ++
+ drivers/char/vt.c         |    5 +++++
+ include/linux/selection.h |    1 +
+ 3 files changed, 8 insertions(+), 0 deletions(-)
 
-diff --git a/Documentation/filesystems/proc.txt b/Documentation/filesystems/proc.txt
-index a6aca87..98223a6 100644
---- a/Documentation/filesystems/proc.txt
-+++ b/Documentation/filesystems/proc.txt
-@@ -1075,6 +1075,7 @@ Table 1-11: Files in /proc/tty
-  drivers       list of drivers and their usage                
-  ldiscs        registered line disciplines                    
-  driver/serial usage statistic and status of single tty lines 
-+ consoles      registered system console lines
- ..............................................................................
+diff --git a/drivers/char/vc_screen.c b/drivers/char/vc_screen.c
+index 6f7054e..273ab44 100644
+--- a/drivers/char/vc_screen.c
++++ b/drivers/char/vc_screen.c
+@@ -538,6 +538,8 @@ vcs_write(struct file *file, const char __user *buf, size_t count, loff_t *ppos)
+ 	}
+ 	*ppos += written;
+ 	ret = written;
++	if (written)
++		vcs_scr_updated(vc);
  
- To see  which  tty's  are  currently in use, you can simply look into the file
-@@ -1093,6 +1094,37 @@ To see  which  tty's  are  currently in use, you can simply look into the file
-   /dev/tty             /dev/tty        5       0 system:/dev/tty 
-   unknown              /dev/tty        4    1-63 console 
- 
-+To see which character device lines are currently used for the system console
-+/dev/console, you may simply look into the file /proc/tty/consoles:
-+
-+  > cat /proc/tty/consoles
-+  tty0                 -WU (ECp)       4:7
-+  ttyS0                -W- (Ep)        4:64
-+
-+The columns are:
-+
-+  device               name of the device
-+  operations           R = can do read operations
-+                       W = can do write operations
-+                       U = can do unblank
-+  flags                E = it is enabled
-+                       C = it is prefered console
-+                       B = it is primary boot console
-+                       p = it is used for printk buffer
-+                       b = it is not a TTY but a Braille device
-+                       a = it is safe to use when cpu is offline
-+                       * = it is standard input of the reading process
-+  major:minor          major and minor number of the device separated by a colon
-+
-+If the reading process holds /dev/console open at the regular standard input
-+stream the active device will be marked by an asterisk:
-+
-+  > cat /proc/tty/consoles < /dev/console
-+  tty0                 -WU (ECp*)      4:7
-+  ttyS0                -W- (Ep)        4:64
-+  > tty
-+  /dev/pts/3
-+
- 
- 1.8 Miscellaneous kernel statistics in /proc/stat
- -------------------------------------------------
-diff --git a/fs/proc/proc_tty.c b/fs/proc/proc_tty.c
-index 83adcc8..dc44f94 100644
---- a/fs/proc/proc_tty.c
-+++ b/fs/proc/proc_tty.c
-@@ -12,7 +12,10 @@
- #include <linux/proc_fs.h>
- #include <linux/stat.h>
- #include <linux/tty.h>
-+#include <linux/tty_driver.h>
-+#include <linux/console.h>
- #include <linux/seq_file.h>
-+#include <linux/fdtable.h>
- #include <linux/bitops.h>
- 
- /*
-@@ -137,6 +140,160 @@ static const struct file_operations proc_tty_drivers_operations = {
- };
- 
- /*
-+ * The device ID of file descriptor 0 of the current reading
-+ * task if a character device...
-+ */
-+static dev_t current_dev;
-+
-+/*
-+ * This is the handler for /proc/tty/consoles
-+ */
-+static int show_console_dev(struct seq_file *m, void *v)
-+{
-+	const struct tty_driver *driver;
-+	struct console *con;
-+	int index, len;
-+	char flags[10];
-+	dev_t dev;
-+
-+	if (v == SEQ_START_TOKEN)
-+		return 0;
-+	con = (struct console *)v;
-+	if (!con)
-+		return 0;
-+	driver = con->device(con, &index);
-+	if (!driver)
-+		return 0;
-+	dev = MKDEV(driver->major, driver->minor_start) + index;
-+
-+	index = 0;
-+	if (con->flags & CON_ENABLED)
-+		flags[index++] = 'E';
-+	if (con->flags & CON_CONSDEV)
-+		flags[index++] = 'C';
-+	if (con->flags & CON_BOOT)
-+		flags[index++] = 'B';
-+	if (con->flags & CON_PRINTBUFFER)
-+		flags[index++] = 'p';
-+	if (con->flags & CON_BRL)
-+		flags[index++] = 'b';
-+	if (con->flags & CON_ANYTIME)
-+		flags[index++] = 'a';
-+	if (current_dev == dev)
-+		flags[index++] = '*';
-+	flags[index] = 0;
-+
-+	seq_printf(m, "%s%d%n", con->name, con->index, &len);
-+	len = 21 - len;
-+	if (len < 1)
-+		len = 1;
-+	seq_printf(m, "%*c", len, ' ');
-+	seq_printf(m, "%c%c%c (%s)%n", con->read ? 'R' : '-',
-+			con->write ? 'W' : '-', con->unblank ? 'U' : '-',
-+			flags, &len);
-+	len = 13 - len;
-+	if (len < 1)
-+		len = 1;
-+	seq_printf(m, "%*c%4d:%d\n", len, ' ', MAJOR(dev), MINOR(dev));
-+
-+	return 0;
-+}
-+
-+/* iterator for consoles */
-+static void *c_start(struct seq_file *m, loff_t *pos)
-+{
-+	struct console *con;
-+	loff_t off = 0;
-+
-+	if (*pos == 0)
-+		return SEQ_START_TOKEN;
-+
-+	acquire_console_sem();
-+	for (con = console_drivers; con; con = con->next) {
-+		if (!con->device)
-+			continue;
-+		if (++off == *pos)
-+			break;
-+	}
-+	release_console_sem();
-+
-+	return con;
-+}
-+
-+static void *c_next(struct seq_file *m, void *v, loff_t *pos)
-+{
-+	struct console *con;
-+
-+	acquire_console_sem();
-+	if (v == SEQ_START_TOKEN)
-+		con = console_drivers;
-+	else
-+		con = ((struct console *)v)->next;
-+	for (; con; con = con->next) {
-+		if (!con->device)
-+			continue;
-+		++*pos;
-+		break;
-+	}
-+	release_console_sem();
-+
-+	return con;
-+}
-+
-+static void c_stop(struct seq_file *m, void *v)
-+{
-+}
-+
-+static const struct seq_operations tty_consoles_op = {
-+	.start	= c_start,
-+	.next	= c_next,
-+	.stop	= c_stop,
-+	.show	= show_console_dev
-+};
-+
-+/*
-+ * Used for open /proc/tty/consoles. Before this detect
-+ * the device ID of file descriptor 0 of the current
-+ * reading task if a character device...
-+ */
-+static int tty_consoles_open(struct inode *inode, struct file *file)
-+{
-+	struct files_struct *curfiles;
-+
-+	current_dev = 0;
-+	curfiles = get_files_struct(current);
-+	if (curfiles) {
-+		const struct file *curfp;
-+		spin_lock(&curfiles->file_lock);
-+		curfp = fcheck_files(curfiles, 0);
-+		if (curfp && curfp->private_data) {
-+			const struct inode *inode;
-+			dget(curfp->f_dentry);
-+			inode = curfp->f_dentry->d_inode;
-+			if (S_ISCHR(inode->i_mode)) {
-+				struct tty_struct *tty;
-+				tty = (struct tty_struct *)curfp->private_data;
-+				if (tty && tty->magic == TTY_MAGIC) {
-+					tty = tty_pair_get_tty(tty);
-+					current_dev = tty_devnum(tty);
-+				}
-+			}
-+			dput(curfp->f_dentry);
-+		}
-+		spin_unlock(&curfiles->file_lock);
-+		put_files_struct(curfiles);
-+	}
-+	return seq_open(file, &tty_consoles_op);
-+}
-+
-+static const struct file_operations proc_tty_consoles_operations = {
-+	.open		= tty_consoles_open,
-+	.read		= seq_read,
-+	.llseek		= seq_lseek,
-+	.release	= seq_release,
-+};
-+
-+/*
-  * This function is called by tty_register_driver() to handle
-  * registering the driver's /proc handler into /proc/tty/driver/<foo>
-  */
-@@ -186,4 +343,5 @@ void __init proc_tty_init(void)
- 	proc_tty_driver = proc_mkdir_mode("tty/driver", S_IRUSR|S_IXUSR, NULL);
- 	proc_create("tty/ldiscs", 0, NULL, &tty_ldiscs_proc_fops);
- 	proc_create("tty/drivers", 0, NULL, &proc_tty_drivers_operations);
-+	proc_create("tty/consoles", 0, NULL, &proc_tty_consoles_operations);
+ unlock_out:
+ 	release_console_sem();
+diff --git a/drivers/char/vt.c b/drivers/char/vt.c
+index 281aada..a8ec48e 100644
+--- a/drivers/char/vt.c
++++ b/drivers/char/vt.c
+@@ -4182,6 +4182,11 @@ void vcs_scr_writew(struct vc_data *vc, u16 val, u16 *org)
+ 	}
  }
+ 
++void vcs_scr_updated(struct vc_data *vc)
++{
++	notify_update(vc);
++}
++
+ /*
+  *	Visible symbols for modules
+  */
+diff --git a/include/linux/selection.h b/include/linux/selection.h
+index 8cdaa11..85193aa 100644
+--- a/include/linux/selection.h
++++ b/include/linux/selection.h
+@@ -39,5 +39,6 @@ extern void putconsxy(struct vc_data *vc, unsigned char *p);
+ 
+ extern u16 vcs_scr_readw(struct vc_data *vc, const u16 *org);
+ extern void vcs_scr_writew(struct vc_data *vc, u16 val, u16 *org);
++extern void vcs_scr_updated(struct vc_data *vc);
+ 
+ #endif
 -- 
 1.7.2
 
