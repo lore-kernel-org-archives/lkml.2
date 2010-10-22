@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758778Ab0JVSYl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 14:24:41 -0400
-Received: from kroah.org ([198.145.64.141]:37713 "EHLO coco.kroah.org"
+	id S1758841Ab0JVSYt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 14:24:49 -0400
+Received: from kroah.org ([198.145.64.141]:37731 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758721Ab0JVSYj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 14:24:39 -0400
+	id S1758832Ab0JVSYq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Oct 2010 14:24:46 -0400
 From: Greg Kroah-Hartman <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org
-Cc: Manuel Lauss <manuel.lauss@googlemail.com>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+Cc: Alan Cox <alan@linux.intel.com>, Dirk Brandewie <dirk.brandewie@gmail.com>,
         Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [PATCH 43/49] Alchemy: Add UART PM methods.
-Date: Fri, 22 Oct 2010 11:21:22 -0700
-Message-Id: <1287771688-14805-43-git-send-email-gregkh@suse.de>
+Subject: [PATCH 47/49] serial: abstraction for 8250 legacy ports
+Date: Fri, 22 Oct 2010 11:21:26 -0700
+Message-Id: <1287771688-14805-47-git-send-email-gregkh@suse.de>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <20101022175112.GC13489@kroah.com>
 References: <20101022175112.GC13489@kroah.com>
@@ -21,128 +20,77 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Manuel Lauss <manuel.lauss@googlemail.com>
+From: Alan Cox <alan@linux.intel.com>
 
-Custom UART PM hook for Alchemy chips:  do standard UART pm and
-additionally en/disable uart block clocks as needed.
-This allows to get rid of a debug port PM hack in the Alchemy pm code.
+Not every platform that has generic legacy 8250 ports manages to have them
+clocked the right way or without errata. Provide a generic interface to
+allow platforms to override the default behaviour in a manner that dumps
+the complexity in *their* code not the 8250 driver.
 
-Tested on Db1200.
-
-Signed-off-by: Manuel Lauss <manuel.lauss@googlemail.com>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Signed-off-by: Alan Cox <alan@linux.intel.com>
+Signed-off-by: Dirk Brandewie <dirk.brandewie@gmail.com>
+Acked-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- arch/mips/alchemy/common/platform.c |   28 ++++++++++++++++++++++++++++
- arch/mips/alchemy/common/power.c    |   35 -----------------------------------
- 2 files changed, 28 insertions(+), 35 deletions(-)
+ drivers/serial/8250.c       |   17 +++++++++++++++++
+ include/linux/serial_8250.h |    4 ++++
+ 2 files changed, 21 insertions(+), 0 deletions(-)
 
-diff --git a/arch/mips/alchemy/common/platform.c b/arch/mips/alchemy/common/platform.c
-index 1dc55ee..3691630 100644
---- a/arch/mips/alchemy/common/platform.c
-+++ b/arch/mips/alchemy/common/platform.c
-@@ -24,6 +24,33 @@
+diff --git a/drivers/serial/8250.c b/drivers/serial/8250.c
+index 6994afb..37f19a6 100644
+--- a/drivers/serial/8250.c
++++ b/drivers/serial/8250.c
+@@ -2672,6 +2672,16 @@ static struct uart_ops serial8250_pops = {
  
- #include <prom.h>
+ static struct uart_8250_port serial8250_ports[UART_NR];
  
-+static void alchemy_8250_pm(struct uart_port *port, unsigned int state,
-+			    unsigned int old_state)
-+{
-+	switch (state) {
-+	case 0:
-+		if ((__raw_readl(port->membase + UART_MOD_CNTRL) & 3) != 3) {
-+			/* power-on sequence as suggested in the databooks */
-+			__raw_writel(0, port->membase + UART_MOD_CNTRL);
-+			wmb();
-+			__raw_writel(1, port->membase + UART_MOD_CNTRL);
-+			wmb();
-+		}
-+		__raw_writel(3, port->membase + UART_MOD_CNTRL); /* full on */
-+		wmb();
-+		serial8250_do_pm(port, state, old_state);
-+		break;
-+	case 3:		/* power off */
-+		serial8250_do_pm(port, state, old_state);
-+		__raw_writel(0, port->membase + UART_MOD_CNTRL);
-+		wmb();
-+		break;
-+	default:
-+		serial8250_do_pm(port, state, old_state);
-+		break;
-+	}
-+}
++static void (*serial8250_isa_config)(int port, struct uart_port *up,
++	unsigned short *capabilities);
 +
- #define PORT(_base, _irq)					\
- 	{							\
- 		.mapbase	= _base,			\
-@@ -33,6 +60,7 @@
- 		.flags		= UPF_SKIP_TEST | UPF_IOREMAP |	\
- 				  UPF_FIXED_TYPE,		\
- 		.type		= PORT_16550A,			\
-+		.pm		= alchemy_8250_pm,		\
- 	}
- 
- static struct plat_serial8250_port au1x00_uart_data[] = {
-diff --git a/arch/mips/alchemy/common/power.c b/arch/mips/alchemy/common/power.c
-index 5ef06a1..e5916a5 100644
---- a/arch/mips/alchemy/common/power.c
-+++ b/arch/mips/alchemy/common/power.c
-@@ -49,11 +49,6 @@
-  * We only have to save/restore registers that aren't otherwise
-  * done as part of a driver pm_* function.
-  */
--static unsigned int sleep_uart0_inten;
--static unsigned int sleep_uart0_fifoctl;
--static unsigned int sleep_uart0_linectl;
--static unsigned int sleep_uart0_clkdiv;
--static unsigned int sleep_uart0_enable;
- static unsigned int sleep_usb[2];
- static unsigned int sleep_sys_clocks[5];
- static unsigned int sleep_sys_pinfunc;
-@@ -62,22 +57,6 @@ static unsigned int sleep_static_memctlr[4][3];
- 
- static void save_core_regs(void)
++void serial8250_set_isa_configurator(
++	void (*v)(int port, struct uart_port *up, unsigned short *capabilities))
++{
++	serial8250_isa_config = v;
++}
++EXPORT_SYMBOL(serial8250_set_isa_configurator);
++
+ static void __init serial8250_isa_init_ports(void)
  {
--	extern void save_au1xxx_intctl(void);
--	extern void pm_eth0_shutdown(void);
--
--	/*
--	 * Do the serial ports.....these really should be a pm_*
--	 * registered function by the driver......but of course the
--	 * standard serial driver doesn't understand our Au1xxx
--	 * unique registers.
--	 */
--	sleep_uart0_inten = au_readl(UART0_ADDR + UART_IER);
--	sleep_uart0_fifoctl = au_readl(UART0_ADDR + UART_FCR);
--	sleep_uart0_linectl = au_readl(UART0_ADDR + UART_LCR);
--	sleep_uart0_clkdiv = au_readl(UART0_ADDR + UART_CLK);
--	sleep_uart0_enable = au_readl(UART0_ADDR + UART_MOD_CNTRL);
--	au_sync();
--
- #ifndef CONFIG_SOC_AU1200
- 	/* Shutdown USB host/device. */
- 	sleep_usb[0] = au_readl(USB_HOST_CONFIG);
-@@ -175,20 +154,6 @@ static void restore_core_regs(void)
- 	au_writel(sleep_static_memctlr[3][0], MEM_STCFG3);
- 	au_writel(sleep_static_memctlr[3][1], MEM_STTIME3);
- 	au_writel(sleep_static_memctlr[3][2], MEM_STADDR3);
--
--	/*
--	 * Enable the UART if it was enabled before sleep.
--	 * I guess I should define module control bits........
--	 */
--	if (sleep_uart0_enable & 0x02) {
--		au_writel(0, UART0_ADDR + UART_MOD_CNTRL); au_sync();
--		au_writel(1, UART0_ADDR + UART_MOD_CNTRL); au_sync();
--		au_writel(3, UART0_ADDR + UART_MOD_CNTRL); au_sync();
--		au_writel(sleep_uart0_inten, UART0_ADDR + UART_IER); au_sync();
--		au_writel(sleep_uart0_fifoctl, UART0_ADDR + UART_FCR); au_sync();
--		au_writel(sleep_uart0_linectl, UART0_ADDR + UART_LCR); au_sync();
--		au_writel(sleep_uart0_clkdiv, UART0_ADDR + UART_CLK); au_sync();
--	}
+ 	struct uart_8250_port *up;
+@@ -2717,6 +2727,9 @@ static void __init serial8250_isa_init_ports(void)
+ 		up->port.regshift = old_serial_port[i].iomem_reg_shift;
+ 		set_io_from_upio(&up->port);
+ 		up->port.irqflags |= irqflag;
++		if (serial8250_isa_config != NULL)
++			serial8250_isa_config(i, &up->port, &up->capabilities);
++
+ 	}
  }
  
- void au_sleep(void)
+@@ -3178,6 +3191,10 @@ int serial8250_register_port(struct uart_port *port)
+ 		if (port->pm)
+ 			uart->port.pm = port->pm;
+ 
++		if (serial8250_isa_config != NULL)
++			serial8250_isa_config(0, &uart->port,
++					&uart->capabilities);
++
+ 		ret = uart_add_one_port(&serial8250_reg, &uart->port);
+ 		if (ret == 0)
+ 			ret = uart->port.line;
+diff --git a/include/linux/serial_8250.h b/include/linux/serial_8250.h
+index bf9c2bd..97f5b45 100644
+--- a/include/linux/serial_8250.h
++++ b/include/linux/serial_8250.h
+@@ -81,4 +81,8 @@ extern void serial8250_do_set_termios(struct uart_port *port,
+ extern void serial8250_do_pm(struct uart_port *port, unsigned int state,
+ 			     unsigned int oldstate);
+ 
++extern void serial8250_set_isa_configurator(void (*v)
++					(int port, struct uart_port *up,
++						unsigned short *capabilities));
++
+ #endif
 -- 
 1.7.2
 
