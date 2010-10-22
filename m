@@ -1,124 +1,209 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759284Ab0JVU5N (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 16:57:13 -0400
-Received: from mail.windriver.com ([147.11.1.11]:36323 "EHLO
+	id S1759458Ab0JVU6H (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 16:58:07 -0400
+Received: from mail.windriver.com ([147.11.1.11]:36319 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759105Ab0JVU5L (ORCPT
+	with ESMTP id S1753134Ab0JVU5H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 16:57:11 -0400
+	Fri, 22 Oct 2010 16:57:07 -0400
 From: Jason Wessel <jason.wessel@windriver.com>
 To: torvalds@linux-foundation.org
 Cc: linux-kernel@vger.kernel.org, kgdb-bugreport@lists.sourceforge.net,
         Jason Wessel <jason.wessel@windriver.com>
-Subject: [PATCH 11/11] kdb,debug_core: adjust master cpu switch logic against new debug_core locking
-Date: Fri, 22 Oct 2010 15:56:31 -0500
-Message-Id: <1287780991-7476-12-git-send-email-jason.wessel@windriver.com>
+Subject: [PATCH 04/11] kdb: Allow kernel loadable modules to add kdb shell functions
+Date: Fri, 22 Oct 2010 15:56:24 -0500
+Message-Id: <1287780991-7476-5-git-send-email-jason.wessel@windriver.com>
 X-Mailer: git-send-email 1.6.4.rc1
 In-Reply-To: <1287780991-7476-1-git-send-email-jason.wessel@windriver.com>
 References: <1287780991-7476-1-git-send-email-jason.wessel@windriver.com>
-X-OriginalArrivalTime: 22 Oct 2010 20:56:57.0331 (UTC) FILETIME=[AA1BF430:01CB722B]
+X-OriginalArrivalTime: 22 Oct 2010 20:56:50.0987 (UTC) FILETIME=[A653EFB0:01CB722B]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The kdb shell needs to enforce switching back to the original CPU that
-took the exception before restoring normal kernel execution.  Resuming
-from a different CPU than what took the original exception will cause
-problems with spin locks that are freed from the a different processor
-than had taken the lock.
+In order to allow kernel modules to dynamically add a command to the
+kdb shell the kdb_register, kdb_register_repeat, kdb_unregister, and
+kdb_printf need to be exported as GPL symbols.
 
-The special logic in dbg_cpu_switch() can go away entirely with
-because the state of what cpus want to be masters or slaves will
-remain unchanged between entry and exit of the debug_core exception
-context.
+Any kernel module that adds a dynamic kdb shell function should only
+need to include linux/kdb.h.
 
 Signed-off-by: Jason Wessel <jason.wessel@windriver.com>
 ---
- kernel/debug/debug_core.c       |   16 ++--------------
- kernel/debug/kdb/kdb_debugger.c |    3 +--
- kernel/debug/kdb/kdb_main.c     |   12 ++++++------
- 3 files changed, 9 insertions(+), 22 deletions(-)
+ include/linux/kdb.h            |   43 ++++++++++++++++++++++++++++++++++++++++
+ kernel/debug/kdb/kdb_io.c      |    2 +-
+ kernel/debug/kdb/kdb_main.c    |    4 +++
+ kernel/debug/kdb/kdb_private.h |   39 ------------------------------------
+ 4 files changed, 48 insertions(+), 40 deletions(-)
 
-diff --git a/kernel/debug/debug_core.c b/kernel/debug/debug_core.c
-index 26dbdc3..fec596d 100644
---- a/kernel/debug/debug_core.c
-+++ b/kernel/debug/debug_core.c
-@@ -460,19 +460,6 @@ static int kgdb_reenter_check(struct kgdb_state *ks)
- 	return 1;
- }
+diff --git a/include/linux/kdb.h b/include/linux/kdb.h
+index ea6e524..deda197 100644
+--- a/include/linux/kdb.h
++++ b/include/linux/kdb.h
+@@ -28,6 +28,41 @@ extern int kdb_poll_idx;
+ extern int kdb_initial_cpu;
+ extern atomic_t kdb_event;
  
--static void dbg_cpu_switch(int cpu, int next_cpu)
--{
--	/* Mark the cpu we are switching away from as a slave when it
--	 * holds the kgdb_active token.  This must be done so that the
--	 * that all the cpus wait in for the debug core will not enter
--	 * again as the master. */
--	if (cpu == atomic_read(&kgdb_active)) {
--		kgdb_info[cpu].exception_state |= DCPU_IS_SLAVE;
--		kgdb_info[cpu].exception_state &= ~DCPU_WANT_MASTER;
--	}
--	kgdb_info[next_cpu].exception_state |= DCPU_NEXT_MASTER;
--}
++/* Types and messages used for dynamically added kdb shell commands */
++
++#define KDB_MAXARGS    16 /* Maximum number of arguments to a function  */
++
++typedef enum {
++	KDB_REPEAT_NONE = 0,	/* Do not repeat this command */
++	KDB_REPEAT_NO_ARGS,	/* Repeat the command without arguments */
++	KDB_REPEAT_WITH_ARGS,	/* Repeat the command including its arguments */
++} kdb_repeat_t;
++
++typedef int (*kdb_func_t)(int, const char **);
++
++/* KDB return codes from a command or internal kdb function */
++#define KDB_NOTFOUND	(-1)
++#define KDB_ARGCOUNT	(-2)
++#define KDB_BADWIDTH	(-3)
++#define KDB_BADRADIX	(-4)
++#define KDB_NOTENV	(-5)
++#define KDB_NOENVVALUE	(-6)
++#define KDB_NOTIMP	(-7)
++#define KDB_ENVFULL	(-8)
++#define KDB_ENVBUFFULL	(-9)
++#define KDB_TOOMANYBPT	(-10)
++#define KDB_TOOMANYDBREGS (-11)
++#define KDB_DUPBPT	(-12)
++#define KDB_BPTNOTFOUND	(-13)
++#define KDB_BADMODE	(-14)
++#define KDB_BADINT	(-15)
++#define KDB_INVADDRFMT  (-16)
++#define KDB_BADREG      (-17)
++#define KDB_BADCPUNUM   (-18)
++#define KDB_BADLENGTH	(-19)
++#define KDB_NOBP	(-20)
++#define KDB_BADADDR	(-21)
++
+ /*
+  * kdb_diemsg
+  *
+@@ -105,9 +140,17 @@ int kdb_process_cpu(const struct task_struct *p)
+ /* kdb access to register set for stack dumping */
+ extern struct pt_regs *kdb_current_regs;
+ 
++/* Dynamic kdb shell command registration */
++extern int kdb_register(char *, kdb_func_t, char *, char *, short);
++extern int kdb_register_repeat(char *, kdb_func_t, char *, char *,
++			       short, kdb_repeat_t);
++extern int kdb_unregister(char *);
+ #else /* ! CONFIG_KGDB_KDB */
+ #define kdb_printf(...)
+ #define kdb_init(x)
++#define kdb_register(...)
++#define kdb_register_repeat(...)
++#define kdb_uregister(x)
+ #endif	/* CONFIG_KGDB_KDB */
+ enum {
+ 	KDB_NOT_INITIALIZED,
+diff --git a/kernel/debug/kdb/kdb_io.c b/kernel/debug/kdb/kdb_io.c
+index c9b7f4f..96fdaac 100644
+--- a/kernel/debug/kdb/kdb_io.c
++++ b/kernel/debug/kdb/kdb_io.c
+@@ -823,4 +823,4 @@ int kdb_printf(const char *fmt, ...)
+ 
+ 	return r;
+ }
 -
- static void dbg_touch_watchdogs(void)
- {
- 	touch_softlockup_watchdog_sync();
-@@ -638,7 +625,8 @@ cpu_master_loop:
- 		if (error == DBG_PASS_EVENT) {
- 			dbg_kdb_mode = !dbg_kdb_mode;
- 		} else if (error == DBG_SWITCH_CPU_EVENT) {
--			dbg_cpu_switch(cpu, dbg_switch_cpu);
-+			kgdb_info[dbg_switch_cpu].exception_state |=
-+				DCPU_NEXT_MASTER;
- 			goto cpu_loop;
- 		} else {
- 			kgdb_info[cpu].ret_state = error;
-diff --git a/kernel/debug/kdb/kdb_debugger.c b/kernel/debug/kdb/kdb_debugger.c
-index bf6e827..dd0b1b7 100644
---- a/kernel/debug/kdb/kdb_debugger.c
-+++ b/kernel/debug/kdb/kdb_debugger.c
-@@ -86,7 +86,7 @@ int kdb_stub(struct kgdb_state *ks)
- 	}
- 	/* Set initial kdb state variables */
- 	KDB_STATE_CLEAR(KGDB_TRANS);
--	kdb_initial_cpu = ks->cpu;
-+	kdb_initial_cpu = atomic_read(&kgdb_active);
- 	kdb_current_task = kgdb_info[ks->cpu].task;
- 	kdb_current_regs = kgdb_info[ks->cpu].debuggerinfo;
- 	/* Remove any breakpoints as needed by kdb and clear single step */
-@@ -105,7 +105,6 @@ int kdb_stub(struct kgdb_state *ks)
- 		ks->pass_exception = 1;
- 		KDB_FLAG_SET(CATASTROPHIC);
- 	}
--	kdb_initial_cpu = ks->cpu;
- 	if (KDB_STATE(SSBPT) && reason == KDB_REASON_SSTEP) {
- 		KDB_STATE_CLEAR(SSBPT);
- 		KDB_STATE_CLEAR(DOING_SS);
++EXPORT_SYMBOL_GPL(kdb_printf);
 diff --git a/kernel/debug/kdb/kdb_main.c b/kernel/debug/kdb/kdb_main.c
-index 4226f32..d7bda21 100644
+index caf057a..5448990 100644
 --- a/kernel/debug/kdb/kdb_main.c
 +++ b/kernel/debug/kdb/kdb_main.c
-@@ -1749,13 +1749,13 @@ static int kdb_go(int argc, const char **argv)
- 	int nextarg;
- 	long offset;
+@@ -2783,6 +2783,8 @@ int kdb_register_repeat(char *cmd,
  
-+	if (raw_smp_processor_id() != kdb_initial_cpu) {
-+		kdb_printf("go must execute on the entry cpu, "
-+			   "please use \"cpu %d\" and then execute go\n",
-+			   kdb_initial_cpu);
-+		return KDB_BADCPUNUM;
-+	}
- 	if (argc == 1) {
--		if (raw_smp_processor_id() != kdb_initial_cpu) {
--			kdb_printf("go <address> must be issued from the "
--				   "initial cpu, do cpu %d first\n",
--				   kdb_initial_cpu);
--			return KDB_ARGCOUNT;
--		}
- 		nextarg = 1;
- 		diag = kdbgetaddrarg(argc, argv, &nextarg,
- 				     &addr, &offset, NULL);
+ 	return 0;
+ }
++EXPORT_SYMBOL_GPL(kdb_register_repeat);
++
+ 
+ /*
+  * kdb_register - Compatibility register function for commands that do
+@@ -2805,6 +2807,7 @@ int kdb_register(char *cmd,
+ 	return kdb_register_repeat(cmd, func, usage, help, minlen,
+ 				   KDB_REPEAT_NONE);
+ }
++EXPORT_SYMBOL_GPL(kdb_register);
+ 
+ /*
+  * kdb_unregister - This function is used to unregister a kernel
+@@ -2833,6 +2836,7 @@ int kdb_unregister(char *cmd)
+ 	/* Couldn't find it.  */
+ 	return 1;
+ }
++EXPORT_SYMBOL_GPL(kdb_unregister);
+ 
+ /* Initialize the kdb command table. */
+ static void __init kdb_inittab(void)
+diff --git a/kernel/debug/kdb/kdb_private.h b/kernel/debug/kdb/kdb_private.h
+index be775f7..1921e6e 100644
+--- a/kernel/debug/kdb/kdb_private.h
++++ b/kernel/debug/kdb/kdb_private.h
+@@ -15,29 +15,6 @@
+ #include <linux/kgdb.h>
+ #include "../debug_core.h"
+ 
+-/* Kernel Debugger Error codes.  Must not overlap with command codes. */
+-#define KDB_NOTFOUND	(-1)
+-#define KDB_ARGCOUNT	(-2)
+-#define KDB_BADWIDTH	(-3)
+-#define KDB_BADRADIX	(-4)
+-#define KDB_NOTENV	(-5)
+-#define KDB_NOENVVALUE	(-6)
+-#define KDB_NOTIMP	(-7)
+-#define KDB_ENVFULL	(-8)
+-#define KDB_ENVBUFFULL	(-9)
+-#define KDB_TOOMANYBPT	(-10)
+-#define KDB_TOOMANYDBREGS (-11)
+-#define KDB_DUPBPT	(-12)
+-#define KDB_BPTNOTFOUND	(-13)
+-#define KDB_BADMODE	(-14)
+-#define KDB_BADINT	(-15)
+-#define KDB_INVADDRFMT  (-16)
+-#define KDB_BADREG      (-17)
+-#define KDB_BADCPUNUM   (-18)
+-#define KDB_BADLENGTH	(-19)
+-#define KDB_NOBP	(-20)
+-#define KDB_BADADDR	(-21)
+-
+ /* Kernel Debugger Command codes.  Must not overlap with error codes. */
+ #define KDB_CMD_GO	(-1001)
+ #define KDB_CMD_CPU	(-1002)
+@@ -93,17 +70,6 @@
+  */
+ #define KDB_MAXBPT	16
+ 
+-/* Maximum number of arguments to a function  */
+-#define KDB_MAXARGS    16
+-
+-typedef enum {
+-	KDB_REPEAT_NONE = 0,	/* Do not repeat this command */
+-	KDB_REPEAT_NO_ARGS,	/* Repeat the command without arguments */
+-	KDB_REPEAT_WITH_ARGS,	/* Repeat the command including its arguments */
+-} kdb_repeat_t;
+-
+-typedef int (*kdb_func_t)(int, const char **);
+-
+ /* Symbol table format returned by kallsyms. */
+ typedef struct __ksymtab {
+ 		unsigned long value;	/* Address of symbol */
+@@ -123,11 +89,6 @@ extern int kallsyms_symbol_next(char *prefix_name, int flag);
+ extern int kallsyms_symbol_complete(char *prefix_name, int max_len);
+ 
+ /* Exported Symbols for kernel loadable modules to use. */
+-extern int kdb_register(char *, kdb_func_t, char *, char *, short);
+-extern int kdb_register_repeat(char *, kdb_func_t, char *, char *,
+-			       short, kdb_repeat_t);
+-extern int kdb_unregister(char *);
+-
+ extern int kdb_getarea_size(void *, unsigned long, size_t);
+ extern int kdb_putarea_size(unsigned long, void *, size_t);
+ 
 -- 
 1.6.3.3
 
