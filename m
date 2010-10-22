@@ -1,39 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756057Ab0JVLhE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 07:37:04 -0400
-Received: from web81607.mail.mud.yahoo.com ([68.142.199.159]:44920 "HELO
-	web81607.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1755985Ab0JVLhA (ORCPT
+	id S1756045Ab0JVLko (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 07:40:44 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:52033 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754489Ab0JVLkn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 07:37:00 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=sbcglobal.net;
-  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Reply-To:Subject:To:MIME-Version:Content-Type;
-  b=S5h/bovBs59F2taAtECKMKIVvJ0orztBUrLX6AqxyeXVoVlVEHaH/ViilKSS4Jl0A5tI54m1ZhyxkOMwQiK1hzG3XXvhvkF9mgYSFDm2JL2ALuWv3b/kNqxNjs9pv1Fa/1QOt4wOQEBwy8+CViG9Wm8kpdSbGJt0jGNqBo5cDjs=;
-Message-ID: <847061.83768.qm@web81607.mail.mud.yahoo.com>
-X-YMail-OSG: UohP1.YVM1nlhBNe52CGgeAZiNRr8ds_V18It4Wi5tI_5IQ
- a.h9ZucWn5qtCf1hl0W0vQyyqhVOfMX0e1HrOR96vWRJomVvRliAZ7uLBmNp
- f0dEeDgM_5fFyb2Mk0a.WT4YQef0.V8bZmIr7jddESM9OqM3lo.PWWU9PPDz
- gqlHlchaxXKQO3f.pSx3x9j4O6jTQwXUDsHBvN0V53Z1l1KolCG9pcRaiBQR
- ku1cCYypV5AcRI34IOFBDu3KDwCxxDsWuF614B2TZIvv6tWOYQwAC0MB80dp
- Vl9V1cjD7xHR.Vft0X2xfgzeKjIgxt5zi
-X-Mailer: YahooMailClassic/11.4.9 YahooMailWebService/0.8.107.284920
-Date: Fri, 22 Oct 2010 04:36:58 -0700 (PDT)
-From: "Mrs. Rose Alvin" <richard-mullen@sbcglobal.net>
-Reply-To: rosealvin@hawamail.com
-Subject: Are You Interested??
-To: undisclosed recipients:;
+	Fri, 22 Oct 2010 07:40:43 -0400
+Date: Fri, 22 Oct 2010 07:40:33 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Dave Chinner <david@fromorbit.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 16/21] fs: Protect inode->i_state with the inode->i_lock
+Message-ID: <20101022114033.GA8859@infradead.org>
+References: <1287622186-1935-1-git-send-email-david@fromorbit.com>
+ <1287622186-1935-17-git-send-email-david@fromorbit.com>
+ <20101022015622.GE19804@ZenIV.linux.org.uk>
+ <20101022031431.GK12506@dastard>
+ <20101022103705.GK19804@ZenIV.linux.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101022103705.GK19804@ZenIV.linux.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Oct 22, 2010 at 11:37:05AM +0100, Al Viro wrote:
+> One more note: IMO sb list lock is better off inside the hash one; when we
+> do per-chain hash locks, we'll be better off if we don't have to hold sb
+> one over the entire chain search.
 
-Good Day,
+Why would you nest these two at all?
 
-My name is Mrs. Rose Alvin. I am a dying woman who have decided to WILL the sum of Ten Million Great British Pounds to a reliable individual for the good work of God, Reply with your information if you are interested.
-
-Sincerely,
-Mrs. Rose Alvin.
