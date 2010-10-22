@@ -1,39 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756370Ab0JVMr7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 08:47:59 -0400
-Received: from casper.infradead.org ([85.118.1.10]:42060 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754601Ab0JVMr6 convert rfc822-to-8bit (ORCPT
+	id S1756475Ab0JVMs3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 08:48:29 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:54467 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755432Ab0JVMs2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 08:47:58 -0400
-Subject: Re: [PATCH 2/7] cgroups: Allow to bind a subsystem to a cgroup
- hierarchy
-From: Peter Zijlstra <peterz@infradead.org>
-To: Li Zefan <lizf@cn.fujitsu.com>
-Cc: "akpm >> Andrew Morton" <akpm@linux-foundation.org>,
-        Paul Menage <menage@google.com>, Stephane Eranian <eranian@google.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        containers@lists.linux-foundation.org
-In-Reply-To: <4CC146D4.7030009@cn.fujitsu.com>
-References: <4CC146A4.9090505@cn.fujitsu.com>
-	 <4CC146D4.7030009@cn.fujitsu.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Fri, 22 Oct 2010 14:47:11 +0200
-Message-ID: <1287751631.15336.33.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Fri, 22 Oct 2010 08:48:28 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: cyril@ti.com
+Subject: Re: [PATCH v3 01/12] misc: add driver for sequencer serial port
+Date: Fri, 22 Oct 2010 14:48:17 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.36-next-20101021+; KDE/4.5.1; x86_64; ; )
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        "davinci-linux-open-source@linux.davincidsp.com" 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        "spi-devel-general@lists.sourceforge.net" 
+	<spi-devel-general@lists.sourceforge.net>,
+        "broonie@opensource.wolfsonmicro.com" 
+	<broonie@opensource.wolfsonmicro.com>,
+        "lrg@slimlogic.co.uk" <lrg@slimlogic.co.uk>,
+        "dbrownell@users.sourceforge.net" <dbrownell@users.sourceforge.net>,
+        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "rpurdie@rpsys.net" <rpurdie@rpsys.net>
+References: <1287694873-12904-1-git-send-email-cyril@ti.com> <20101021161224.b4c0b623.akpm@linux-foundation.org> <4CC18605.80007@ti.com>
+In-Reply-To: <4CC18605.80007@ti.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201010221448.17728.arnd@arndb.de>
+X-Provags-ID: V02:K0:h4TsMJdiS1pH11DbiLdjZf8XxlifRAfIdLlywwPv+z/
+ s0kM1xm6RazAV3ixOP1W4wbiXjx8cLx+RkhNfQ3U0YzHJOQSv4
+ AHx0r8XM7aGEctlLFKuCn5s7xjpbriBtjQhYTzhpvScPISaK+o
+ e+tXF2T71NtydE1cal9r1s7kOC7eR5IRfhSVp1AMztDM67x/tc
+ Ih44JpmmIaXjQwFinI9Pg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-10-22 at 16:09 +0800, Li Zefan wrote:
-> For example, we can't decide a cgroup's cpuset.mems and
-> cpuset.cpus automatically, so cpuset is not bindable. 
+On Friday 22 October 2010 14:39:33 Cyril Chemparathy wrote:
+> >> +/* Register Access Helpers */
+> >> +static inline u32 ssp_read(struct ti_ssp *ssp, int reg)
+> >> +{
+> >> +    return __raw_readl(ssp->regs + reg);
+> >> +}
+> >> +
+> >> +static inline void ssp_write(struct ti_ssp *ssp, int reg, u32 val)
+> >> +{
+> >> +    __raw_writel(val, ssp->regs + reg);
+> >> +}
+> > 
+> > Why are the __raw functions used here?
+> > 
+> 
+> These registers are to be accessed native endian at all times, and
+> therefore the le32 conversion done otherwise is inappropriate.
 
-You mean to say that you cannot add cpuset to an existing hierarchy
-right? Not that you cannot add perf/cpuacct to an existing cpuset
-hierarchy?
+Won't that break on out-of-order CPUs that need the extra synchronization
+done in readl/writel?
 
-
+	Arnd
