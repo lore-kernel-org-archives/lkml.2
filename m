@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753771Ab0JVS1f (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 14:27:35 -0400
-Received: from kroah.org ([198.145.64.141]:37848 "EHLO coco.kroah.org"
+	id S1756695Ab0JVS1q (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 14:27:46 -0400
+Received: from kroah.org ([198.145.64.141]:37844 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758992Ab0JVSZp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 14:25:45 -0400
+	id S1758990Ab0JVSZo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Oct 2010 14:25:44 -0400
 From: Greg Kroah-Hartman <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org
 Cc: Robin Holt <holt@sgi.com>, Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [PATCH 26/31] driver core: Convert link_mem_sections to use find_memory_block_hinted.
-Date: Fri, 22 Oct 2010 11:25:11 -0700
-Message-Id: <1287771916-15016-26-git-send-email-gregkh@suse.de>
+Subject: [PATCH 25/31] driver core: Introduce find_memory_block_hinted which utilizes kset_find_obj_hinted.
+Date: Fri, 22 Oct 2010 11:25:10 -0700
+Message-Id: <1287771916-15016-25-git-send-email-gregkh@suse.de>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <20101022175107.GB13489@kroah.com>
 References: <20101022175107.GB13489@kroah.com>
@@ -21,57 +21,90 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Robin Holt <holt@sgi.com>
 
-Modify link_mem_sections() to pass in the previous mem_block as a hint to
-locating the next mem_block.  Since they are typically added in order this
-results in a massive saving in time during boot of a very large system.
-For example, on a 16TB x86_64 machine, it reduced the total time spent
-linking all node's memory sections from 1 hour, 27 minutes to 46 seconds.
+Introduce a find_memory_block_hinted() which utilizes the
+recently added kset_find_obj_hinted().
 
 Signed-off-by: Robin Holt <holt@sgi.com>
-To: Gary Hade <garyhade@us.ibm.com>
-To: Badari Pulavarty <pbadari@us.ibm.com>
-To: Ingo Molnar <mingo@elte.hu>
+To: Dave Hansen <haveblue@us.ibm.com>
+To: Matt Tolentino <matthew.e.tolentino@intel.com>
 Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- drivers/base/node.c |    8 +++++---
- 1 files changed, 5 insertions(+), 3 deletions(-)
+ drivers/base/memory.c  |   28 ++++++++++++++++++----------
+ include/linux/memory.h |    2 ++
+ 2 files changed, 20 insertions(+), 10 deletions(-)
 
-diff --git a/drivers/base/node.c b/drivers/base/node.c
-index 2872e86..ee53558 100644
---- a/drivers/base/node.c
-+++ b/drivers/base/node.c
-@@ -409,25 +409,27 @@ static int link_mem_sections(int nid)
- 	unsigned long start_pfn = NODE_DATA(nid)->node_start_pfn;
- 	unsigned long end_pfn = start_pfn + NODE_DATA(nid)->node_spanned_pages;
- 	unsigned long pfn;
-+	struct memory_block *mem_blk = NULL;
- 	int err = 0;
- 
- 	for (pfn = start_pfn; pfn < end_pfn; pfn += PAGES_PER_SECTION) {
- 		unsigned long section_nr = pfn_to_section_nr(pfn);
- 		struct mem_section *mem_sect;
--		struct memory_block *mem_blk;
- 		int ret;
- 
- 		if (!present_section_nr(section_nr))
- 			continue;
- 		mem_sect = __nr_to_section(section_nr);
--		mem_blk = find_memory_block(mem_sect);
-+		mem_blk = find_memory_block_hinted(mem_sect, mem_blk);
- 		ret = register_mem_sect_under_node(mem_blk, nid);
- 		if (!err)
- 			err = ret;
- 
- 		/* discard ref obtained in find_memory_block() */
--		kobject_put(&mem_blk->sysdev.kobj);
- 	}
-+
-+	if (mem_blk)
-+		kobject_put(&mem_blk->sysdev.kobj);
- 	return err;
+diff --git a/drivers/base/memory.c b/drivers/base/memory.c
+index 933442f..a799440 100644
+--- a/drivers/base/memory.c
++++ b/drivers/base/memory.c
+@@ -468,28 +468,23 @@ static int add_memory_block(int nid, struct mem_section *section,
+ 	return ret;
  }
  
+-/*
+- * For now, we have a linear search to go find the appropriate
+- * memory_block corresponding to a particular phys_index. If
+- * this gets to be a real problem, we can always use a radix
+- * tree or something here.
+- *
+- * This could be made generic for all sysdev classes.
+- */
+-struct memory_block *find_memory_block(struct mem_section *section)
++struct memory_block *find_memory_block_hinted(struct mem_section *section,
++					      struct memory_block *hint)
+ {
+ 	struct kobject *kobj;
+ 	struct sys_device *sysdev;
+ 	struct memory_block *mem;
+ 	char name[sizeof(MEMORY_CLASS_NAME) + 9 + 1];
+ 
++	kobj = hint ? &hint->sysdev.kobj : NULL;
++
+ 	/*
+ 	 * This only works because we know that section == sysdev->id
+ 	 * slightly redundant with sysdev_register()
+ 	 */
+ 	sprintf(&name[0], "%s%d", MEMORY_CLASS_NAME, __section_nr(section));
+ 
+-	kobj = kset_find_obj(&memory_sysdev_class.kset, name);
++	kobj = kset_find_obj_hinted(&memory_sysdev_class.kset, name, kobj);
+ 	if (!kobj)
+ 		return NULL;
+ 
+@@ -499,6 +494,19 @@ struct memory_block *find_memory_block(struct mem_section *section)
+ 	return mem;
+ }
+ 
++/*
++ * For now, we have a linear search to go find the appropriate
++ * memory_block corresponding to a particular phys_index. If
++ * this gets to be a real problem, we can always use a radix
++ * tree or something here.
++ *
++ * This could be made generic for all sysdev classes.
++ */
++struct memory_block *find_memory_block(struct mem_section *section)
++{
++	return find_memory_block_hinted(section, NULL);
++}
++
+ int remove_memory_block(unsigned long node_id, struct mem_section *section,
+ 		int phys_device)
+ {
+diff --git a/include/linux/memory.h b/include/linux/memory.h
+index 85582e1..c4f3127 100644
+--- a/include/linux/memory.h
++++ b/include/linux/memory.h
+@@ -113,6 +113,8 @@ extern int memory_dev_init(void);
+ extern int remove_memory_block(unsigned long, struct mem_section *, int);
+ extern int memory_notify(unsigned long val, void *v);
+ extern int memory_isolate_notify(unsigned long val, void *v);
++extern struct memory_block *find_memory_block_hinted(struct mem_section *,
++							struct memory_block *);
+ extern struct memory_block *find_memory_block(struct mem_section *);
+ #define CONFIG_MEM_BLOCK_SIZE	(PAGES_PER_SECTION<<PAGE_SHIFT)
+ enum mem_add_context { BOOT, HOTPLUG };
 -- 
 1.7.2
 
