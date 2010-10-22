@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759456Ab0JVTHW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 15:07:22 -0400
-Received: from kroah.org ([198.145.64.141]:34299 "EHLO coco.kroah.org"
+	id S932325Ab0JVTHo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 15:07:44 -0400
+Received: from kroah.org ([198.145.64.141]:34295 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759445Ab0JVS4t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 14:56:49 -0400
+	id S1759303Ab0JVS4s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Oct 2010 14:56:48 -0400
 X-Mailbox-Line: From gregkh@clark.site Fri Oct 22 11:52:33 2010
-Message-Id: <20101022185233.644252976@clark.site>
+Message-Id: <20101022185233.552275590@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 22 Oct 2010 11:51:44 -0700
+Date: Fri, 22 Oct 2010 11:51:43 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
         Alex Deucher <alexdeucher@gmail.com>, Dave Airlie <airlied@redhat.com>
-Subject: [070/103] drm/radeon/kms: add quirk for MSI K9A2GM motherboard
+Subject: [069/103] drm/radeon/kms: fix potential segfault in r600_ioctl_wait_idle
 In-Reply-To: <20101022185455.GA9114@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,37 +27,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Alex Deucher <alexdeucher@gmail.com>
 
-commit f36fce0f49ed40f3e843d45fa53d476d63444b58 upstream.
+commit e488459a0e131acc9e14df093cfee740bc431953 upstream.
 
-Board has no digital connectors
+radeon_gem_wait_idle_ioctl can apparently get called prior to
+the vram page being set up or even if accel if false, so make
+sure it's valid before using it.
 
-Reported-by: Andy Walls <awalls@md.metrocast.net>
-Tested-by: Andy Walls <awalls@md.metrocast.net>
+Should fix:
+http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=597636
+https://bugs.freedesktop.org/show_bug.cgi?id=29834
+
 Signed-off-by: Alex Deucher <alexdeucher@gmail.com>
 Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/gpu/drm/radeon/radeon_atombios.c |    9 +++++++++
- 1 file changed, 9 insertions(+)
+ drivers/gpu/drm/radeon/r600.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/gpu/drm/radeon/radeon_atombios.c
-+++ b/drivers/gpu/drm/radeon/radeon_atombios.c
-@@ -226,6 +226,15 @@ static bool radeon_atom_apply_quirks(str
- 			*connector_type = DRM_MODE_CONNECTOR_DVID;
- 	}
+--- a/drivers/gpu/drm/radeon/r600.c
++++ b/drivers/gpu/drm/radeon/r600.c
+@@ -3522,7 +3522,8 @@ void r600_ioctl_wait_idle(struct radeon_
+ 	/* r7xx hw bug.  write to HDP_DEBUG1 followed by fb read
+ 	 * rather than write to HDP_REG_COHERENCY_FLUSH_CNTL
+ 	 */
+-	if ((rdev->family >= CHIP_RV770) && (rdev->family <= CHIP_RV740)) {
++	if ((rdev->family >= CHIP_RV770) && (rdev->family <= CHIP_RV740) &&
++	    rdev->vram_scratch.ptr) {
+ 		void __iomem *ptr = (void *)rdev->vram_scratch.ptr;
+ 		u32 tmp;
  
-+	/* MSI K9A2GM V2/V3 board has no HDMI or DVI */
-+	if ((dev->pdev->device == 0x796e) &&
-+	    (dev->pdev->subsystem_vendor == 0x1462) &&
-+	    (dev->pdev->subsystem_device == 0x7302)) {
-+		if ((supported_device == ATOM_DEVICE_DFP2_SUPPORT) ||
-+		    (supported_device == ATOM_DEVICE_DFP3_SUPPORT))
-+			return false;
-+	}
-+
- 	/* a-bit f-i90hd - ciaranm on #radeonhd - this board has no DVI */
- 	if ((dev->pdev->device == 0x7941) &&
- 	    (dev->pdev->subsystem_vendor == 0x147b) &&
 
 
