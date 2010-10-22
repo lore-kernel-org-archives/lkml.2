@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753064Ab0JVFR2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 01:17:28 -0400
-Received: from mail.perches.com ([173.55.12.10]:3459 "EHLO mail.perches.com"
+	id S1753432Ab0JVFSA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 01:18:00 -0400
+Received: from mail.perches.com ([173.55.12.10]:3482 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752731Ab0JVFRZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 01:17:25 -0400
+	id S1753084Ab0JVFR2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Oct 2010 01:17:28 -0400
 From: Joe Perches <joe@perches.com>
 To: Jiri Kosina <trivial@kernel.org>
-Cc: Jeff Garzik <jgarzik@pobox.com>, linux-ide@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 1/9] drivers/ata: typo fix of faild to failed
-Date: Thu, 21 Oct 2010 22:17:12 -0700
-Message-Id: <bedb981e6fff0e087135a9d7ef78e793dd73ee5e.1287724261.git.joe@perches.com>
+Cc: Dave Kleikamp <shaggy@linux.vnet.ibm.com>,
+        jfs-discussion@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Subject: [PATCH 7/9] fs/jfs: typo fix of faild to failed
+Date: Thu, 21 Oct 2010 22:17:18 -0700
+Message-Id: <2d82f543e3fd9a32ed14e6a660a92197be1ed476.1287724261.git.joe@perches.com>
 X-Mailer: git-send-email 1.7.3.1.g432b3.dirty
 In-Reply-To: <cover.1287724261.git.joe@perches.com>
 References: <cover.1287724261.git.joe@perches.com>
@@ -22,22 +22,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Joe Perches <joe@perches.com>
 ---
- drivers/ata/pata_bf54x.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ fs/jfs/jfs_mount.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/ata/pata_bf54x.c b/drivers/ata/pata_bf54x.c
-index ec2c777..7aed5c7 100644
---- a/drivers/ata/pata_bf54x.c
-+++ b/drivers/ata/pata_bf54x.c
-@@ -1588,7 +1588,7 @@ static int __devinit bfin_atapi_probe(struct platform_device *pdev)
- 	host->ports[0]->ioaddr.ctl_addr = (void *)res->start;
+diff --git a/fs/jfs/jfs_mount.c b/fs/jfs/jfs_mount.c
+index 7b698f2..9895595 100644
+--- a/fs/jfs/jfs_mount.c
++++ b/fs/jfs/jfs_mount.c
+@@ -97,7 +97,7 @@ int jfs_mount(struct super_block *sb)
  
- 	if (peripheral_request_list(atapi_io_port, "atapi-io-port")) {
--		dev_err(&pdev->dev, "Requesting Peripherals faild\n");
-+		dev_err(&pdev->dev, "Requesting Peripherals failed\n");
- 		return -EFAULT;
+ 	ipaimap = diReadSpecial(sb, AGGREGATE_I, 0);
+ 	if (ipaimap == NULL) {
+-		jfs_err("jfs_mount: Faild to read AGGREGATE_I");
++		jfs_err("jfs_mount: Failed to read AGGREGATE_I");
+ 		rc = -EIO;
+ 		goto errout20;
  	}
- 
+@@ -148,7 +148,7 @@ int jfs_mount(struct super_block *sb)
+ 	if ((sbi->mntflag & JFS_BAD_SAIT) == 0) {
+ 		ipaimap2 = diReadSpecial(sb, AGGREGATE_I, 1);
+ 		if (!ipaimap2) {
+-			jfs_err("jfs_mount: Faild to read AGGREGATE_I");
++			jfs_err("jfs_mount: Failed to read AGGREGATE_I");
+ 			rc = -EIO;
+ 			goto errout35;
+ 		}
 -- 
 1.7.3.1.g432b3.dirty
 
