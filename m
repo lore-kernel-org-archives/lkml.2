@@ -1,56 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755587Ab0JVSiO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 14:38:14 -0400
-Received: from kroah.org ([198.145.64.141]:49497 "EHLO coco.kroah.org"
+	id S1755345Ab0JVSh7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 14:37:59 -0400
+Received: from kroah.org ([198.145.64.141]:41887 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754813Ab0JVSiN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 14:38:13 -0400
-X-Mailbox-Line: From gregkh@clark.site Fri Oct 22 11:35:56 2010
-Message-Id: <20101022183556.615730001@clark.site>
-User-Agent: quilt/0.48-11.2
-Date: Fri, 22 Oct 2010 11:34:31 -0700
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
-Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Luke Yelavich <luke.yelavich@canonical.com>,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [04/66] ALSA: hda - Add Dell Latitude E6400 model quirk
-In-Reply-To: <20101022183711.GA23214@kroah.com>
+	id S1758607Ab0JVSVn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Oct 2010 14:21:43 -0400
+From: Greg Kroah-Hartman <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org
+Cc: Jason Wang <jason77.wang@gmail.com>, Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [PATCH 16/49] serial-core: skip call set_termios/console_start when no_console_suspend
+Date: Fri, 22 Oct 2010 11:20:55 -0700
+Message-Id: <1287771688-14805-16-git-send-email-gregkh@suse.de>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <20101022175112.GC13489@kroah.com>
+References: <20101022175112.GC13489@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.32-stable review patch.  If anyone has any objections, please let us know.
+From: Jason Wang <jason77.wang@gmail.com>
 
-------------------
+The commit 4547be7 rewrites suspend and resume functions, this
+introduces a problem on the OMAP3EVM platoform. when the kernel boots
+with no_console_suspend and we suspend the kernel, then resume it,
+the serial console will be not usable. This problem should be common
+for all platforms.
+The cause for this problem is that when enter suspend, if we choose
+no_console_suspend, the console_stop will be skiped. But in resume
+function, the console port will be set to uninitialized state by
+calling set_termios function and the console_start is called without
+checking whether the no_console_suspend is set, Now fix it.
 
-From: Luke Yelavich <luke.yelavich@canonical.com>
-
-commit 0f9f1ee9d1412d45a22bfd69dfd4d4324b506e9e upstream.
-
-BugLink: https://bugs.launchpad.net/ubuntu/+source/linux/+bug/643891
-
-Set the Dell Latitude E6400 (1028:0233) SSID to use AD1984_DELL_DESKTOP
-
-Signed-off-by: Luke Yelavich <luke.yelavich@canonical.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Jason Wang <jason77.wang@gmail.com>
+Acked-by: Stanislav Brabec <sbrabec@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
 ---
- sound/pci/hda/patch_analog.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/serial/serial_core.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
---- a/sound/pci/hda/patch_analog.c
-+++ b/sound/pci/hda/patch_analog.c
-@@ -3510,6 +3510,7 @@ static struct snd_pci_quirk ad1984_cfg_t
- 	/* Lenovo Thinkpad T61/X61 */
- 	SND_PCI_QUIRK_VENDOR(0x17aa, "Lenovo Thinkpad", AD1984_THINKPAD),
- 	SND_PCI_QUIRK(0x1028, 0x0214, "Dell T3400", AD1984_DELL_DESKTOP),
-+	SND_PCI_QUIRK(0x1028, 0x0233, "Dell Latitude E6400", AD1984_DELL_DESKTOP),
- 	{}
- };
- 
-
+diff --git a/drivers/serial/serial_core.c b/drivers/serial/serial_core.c
+index cd85112..ff21200 100644
+--- a/drivers/serial/serial_core.c
++++ b/drivers/serial/serial_core.c
+@@ -2065,7 +2065,7 @@ int uart_resume_port(struct uart_driver *drv, struct uart_port *uport)
+ 	/*
+ 	 * Re-enable the console device after suspending.
+ 	 */
+-	if (uart_console(uport)) {
++	if (console_suspend_enabled && uart_console(uport)) {
+ 		uart_change_pm(state, 0);
+ 		uport->ops->set_termios(uport, &termios, NULL);
+ 		console_start(uport->cons);
+-- 
+1.7.2
 
