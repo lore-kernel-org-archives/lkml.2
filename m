@@ -1,173 +1,162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759222Ab0JVTYa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 15:24:30 -0400
-Received: from kroah.org ([198.145.64.141]:33914 "EHLO coco.kroah.org"
+	id S932824Ab0JVTYl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 15:24:41 -0400
+Received: from kroah.org ([198.145.64.141]:33909 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759185Ab0JVSzy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 14:55:54 -0400
-X-Mailbox-Line: From gregkh@clark.site Fri Oct 22 11:52:28 2010
-Message-Id: <20101022185228.120524323@clark.site>
-User-Agent: quilt/0.48-11.2
-Date: Fri, 22 Oct 2010 11:50:43 -0700
+	id S1756306Ab0JVSzx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Oct 2010 14:55:53 -0400
+Date: Fri, 22 Oct 2010 11:54:55 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Ming Lei <tom.leiming@gmail.com>,
-        David Brownell <dbrownell@users.sourceforge.net>,
-        Anand Gadiyar <gadiyar@ti.com>, Mike Frysinger <vapier@gentoo.org>,
-        Sergei Shtylyov <sshtylyov@ru.mvista.com>, Felipe Balbi <balbi@ti.com>
-Subject: [009/103] usb: musb: gadget: fix kernel panic if using out ep with FIFO_TXRX style
-In-Reply-To: <20101022185455.GA9114@kroah.com>
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk
+Subject: [000/103] 2.6.35.8-stable review
+Message-ID: <20101022185455.GA9114@kroah.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.35-stable review patch.  If anyone has any objections, please let us know.
+NOTE:
+   There will only be 1 other .35-stable release after this one.
+   Everyone should be moving to the .36 kernel already.
 
-------------------
+This is the start of the stable review cycle for the 2.6.35.8 release.
+There are 103 patches in this series, all will be posted as a response
+to this one.  If anyone has any issues with these being applied, please
+let us know.  If anyone is a maintainer of the proper subsystem, and
+wants to add a Signed-off-by: line to the patch, please respond with it.
 
-From: Ming Lei <tom.leiming@gmail.com>
+Responses should be made by Monday, October 25, 2010 16:00:00 UTC.
+Anything received after that time might be too late.
 
-commit bd2e74d657fc7d514881cc2117e323790b257914 upstream.
+The whole patch series can be found in one patch at:
+	kernel.org/pub/linux/kernel/v2.6/stable-review/patch-2.6.35.8-rc1.gz
+and the diffstat can be found below.
 
-For shared fifo hw endpoint(with FIFO_TXRX style), only ep_in
-field of musb_hw_ep is intialized in musb_g_init_endpoints, and
-ep_out is not initialized, but musb_g_rx and rxstate may access
-ep_out field of musb_hw_ep by the method below:
+thanks,
 
-	musb_ep = &musb->endpoints[epnum].ep_out
+greg k-h
 
-which can cause the kernel panic[1] below, this patch fixes the issue
-by getting 'musb_ep' from '&musb->endpoints[epnum].ep_in' for shared fifo
-endpoint.
-
-[1], kernel panic
-[root@OMAP3EVM /]# musb_interrupt 1583: ** IRQ peripheral usb0008 tx0000 rx4000
-musb_stage0_irq 460: <== Power=f0, DevCtl=99, int_usb=0x8
-musb_g_rx 772: <== (null), rxcsr 4007 ffffffe8
-musb_g_rx 786:  iso overrun on ffffffe8
-Unable to handle kernel NULL pointer dereference at virtual address 00000008
-pgd = c0004000
-[00000008] *pgd=00000000
-Internal error: Oops: 17 [#1] PREEMPT
-last sysfs file: /sys/devices/platform/musb_hdrc/usb1/usb_device/usbdev1.1/dev
-Modules linked in: g_zero
-CPU: 0    Tainted: G        W    (2.6.35-rc6-gkh-wl+ #92)
-PC is at musb_g_rx+0xfc/0x2ec
-LR is at vprintk+0x3f4/0x458
-pc : [<c02c07a4>]    lr : [<c006ccb0>]    psr: 20000193
-sp : c760bd78  ip : c03c9d70  fp : c760bdbc
-r10: 00000000  r9 : fa0ab1e0  r8 : 0000000e
-r7 : c7e80158  r6 : ffffffe8  r5 : 00000001  r4 : 00004003
-r3 : 00010003  r2 : c760bcd8  r1 : c03cd030  r0 : 0000002e
-Flags: nzCv  IRQs off  FIQs on  Mode SVC_32  ISA ARM  Segment kernel
-Control: 10c5387d  Table: 8778c019  DAC: 00000017
-Process kmemleak (pid: 421, stack limit = 0xc760a2e8)
-Stack: (0xc760bd78 to 0xc760c000)
-bd60:                                                       ffffffe8 c04b1b58
-bd80: ffffffe8 c7c01ac0 00000000 c7e80d24 c0084238 00000001 00000001 c7e80158
-bda0: 0000000e 00000008 00000099 000000f0 c760be04 c760bdc0 c02bcd68 c02c06b4
-bdc0: 00000099 00000008 00004000 c760bdd8 c03cc4f8 00000000 00000002 c7e80158
-bde0: c7d2e300 60000193 c760a000 0000005c 00000000 00000000 c760be24 c760be08
-be00: c02bcecc c02bc1ac c7d2e300 c7d2e300 0000005c c760a000 c760be54 c760be28
-be20: c00ad698 c02bce6c 00000000 c7d2e300 c067c258 0000005c c067c294 00000001
-be40: c760a000 00000000 c760be74 c760be58 c00af984 c00ad5fc 0000005c 00000000
-be60: 00000000 00000002 c760be8c c760be78 c0039080 c00af8d0 ffffffff fa200000
-be80: c760beec c760be90 c0039b6c c003900c 00000001 00000000 c7d1e240 00000000
-bea0: 00000000 c068bae8 00000000 60000013 00000001 00000000 00000000 c760beec
-bec0: c0064ecc c760bed8 c00ff7d0 c003a0a8 60000013 ffffffff 00000000 c068bae8
-bee0: c760bf24 c760bef0 c00ff7d0 c0064ec4 00000001 00000000 c00ff700 00000000
-bf00: c0087f00 00000000 60000013 c0d76a70 c0e23795 00000001 c760bf4c c760bf28
-bf20: c00ffdd8 c00ff70c c068bb08 c068bae8 60000013 c0100938 c068bb30 00000000
-bf40: c760bf84 c760bf50 c010014c c00ffd84 00000001 00000000 c010000c 00012c00
-bf60: c7c33f04 00012c00 c7c33f04 00000000 c0100938 00000000 c760bf9c c760bf88
-bf80: c01009a8 c0100018 c760bfa8 c7c33f04 c760bff4 c760bfa0 c0088000 c0100944
-bfa0: c760bf98 00000000 00000000 00000001 dead4ead ffffffff ffffffff c08ba2bc
-bfc0: 00000000 c049e7fa 00000000 c0087f70 c760bfd0 c760bfd0 c7c33f04 c0087f70
-bfe0: c006f5e8 00000013 00000000 c760bff8 c006f5e8 c0087f7c 7f0004ff df2000ff
-Backtrace:
-[<c02c06a8>] (musb_g_rx+0x0/0x2ec) from [<c02bcd68>] (musb_interrupt+0xbc8/0xcc0)
-[<c02bc1a0>] (musb_interrupt+0x0/0xcc0) from [<c02bcecc>] (generic_interrupt+0x6c/0x84)
-[<c02bce60>] (generic_interrupt+0x0/0x84) from [<c00ad698>] (handle_IRQ_event+0xa8/0x1ec)
- r7:c760a000 r6:0000005c r5:c7d2e300 r4:c7d2e300
-[<c00ad5f0>] (handle_IRQ_event+0x0/0x1ec) from [<c00af984>] (handle_level_irq+0xc0/0x13c)
-[<c00af8c4>] (handle_level_irq+0x0/0x13c) from [<c0039080>] (asm_do_IRQ+0x80/0xa0)
- r7:00000002 r6:00000000 r5:00000000 r4:0000005c
-[<c0039000>] (asm_do_IRQ+0x0/0xa0) from [<c0039b6c>] (__irq_svc+0x4c/0xb4)
-Exception stack(0xc760be90 to 0xc760bed8)
-be80:                                     00000001 00000000 c7d1e240 00000000
-bea0: 00000000 c068bae8 00000000 60000013 00000001 00000000 00000000 c760beec
-bec0: c0064ecc c760bed8 c00ff7d0 c003a0a8 60000013 ffffffff
- r5:fa200000 r4:ffffffff
-[<c0064eb8>] (sub_preempt_count+0x0/0x100) from [<c00ff7d0>] (find_and_get_object+0xd0/0x110)
- r5:c068bae8 r4:00000000
-[<c00ff700>] (find_and_get_object+0x0/0x110) from [<c00ffdd8>] (scan_block+0x60/0x104)
- r8:00000001 r7:c0e23795 r6:c0d76a70 r5:60000013 r4:00000000
-[<c00ffd78>] (scan_block+0x0/0x104) from [<c010014c>] (kmemleak_scan+0x140/0x484)
-[<c010000c>] (kmemleak_scan+0x0/0x484) from [<c01009a8>] (kmemleak_scan_thread+0x70/0xcc)
- r8:00000000 r7:c0100938 r6:00000000 r5:c7c33f04 r4:00012c00
-[<c0100938>] (kmemleak_scan_thread+0x0/0xcc) from [<c0088000>] (kthread+0x90/0x98)
- r5:c7c33f04 r4:c760bfa8
-[<c0087f70>] (kthread+0x0/0x98) from [<c006f5e8>] (do_exit+0x0/0x684)
- r7:00000013 r6:c006f5e8 r5:c0087f70 r4:c7c33f04
-Code: e3002312 e58d6000 e2833e16 eb0422d5 (e5963020)
----[ end trace f3d5e96f75c297b7 ]---
-
-Signed-off-by: Ming Lei <tom.leiming@gmail.com>
-Reviewed-by:   Sergei Shtylyov <sshtylyov@mvista.com>
-Cc: David Brownell <dbrownell@users.sourceforge.net>
-Cc: Anand Gadiyar <gadiyar@ti.com>
-Cc: Mike Frysinger <vapier@gentoo.org>
-Cc: Sergei Shtylyov <sshtylyov@ru.mvista.com>
-Signed-off-by: Felipe Balbi <balbi@ti.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
----
- drivers/usb/musb/musb_gadget.c |   20 +++++++++++++++++---
- 1 file changed, 17 insertions(+), 3 deletions(-)
-
---- a/drivers/usb/musb/musb_gadget.c
-+++ b/drivers/usb/musb/musb_gadget.c
-@@ -568,11 +568,19 @@ static void rxstate(struct musb *musb, s
- {
- 	const u8		epnum = req->epnum;
- 	struct usb_request	*request = &req->request;
--	struct musb_ep		*musb_ep = &musb->endpoints[epnum].ep_out;
-+	struct musb_ep		*musb_ep;
- 	void __iomem		*epio = musb->endpoints[epnum].regs;
- 	unsigned		fifo_count = 0;
--	u16			len = musb_ep->packet_sz;
-+	u16			len;
- 	u16			csr = musb_readw(epio, MUSB_RXCSR);
-+	struct musb_hw_ep	*hw_ep = &musb->endpoints[epnum];
-+
-+	if (hw_ep->is_shared_fifo)
-+		musb_ep = &hw_ep->ep_in;
-+	else
-+		musb_ep = &hw_ep->ep_out;
-+
-+	len = musb_ep->packet_sz;
- 
- 	/* We shouldn't get here while DMA is active, but we do... */
- 	if (dma_channel_status(musb_ep->dma) == MUSB_DMA_STATUS_BUSY) {
-@@ -740,9 +748,15 @@ void musb_g_rx(struct musb *musb, u8 epn
- 	u16			csr;
- 	struct usb_request	*request;
- 	void __iomem		*mbase = musb->mregs;
--	struct musb_ep		*musb_ep = &musb->endpoints[epnum].ep_out;
-+	struct musb_ep		*musb_ep;
- 	void __iomem		*epio = musb->endpoints[epnum].regs;
- 	struct dma_channel	*dma;
-+	struct musb_hw_ep	*hw_ep = &musb->endpoints[epnum];
-+
-+	if (hw_ep->is_shared_fifo)
-+		musb_ep = &hw_ep->ep_in;
-+	else
-+		musb_ep = &hw_ep->ep_out;
- 
- 	musb_ep_select(mbase, epnum);
- 
-
-
+ Documentation/sound/alsa/HD-Audio-Models.txt |    1 +
+ Makefile                                     |    2 +-
+ arch/arm/Kconfig                             |    1 -
+ arch/arm/mach-vexpress/ct-ca9x4.c            |    2 +-
+ arch/arm/oprofile/common.c                   |    7 ++-
+ arch/powerpc/kernel/head_64.S                |   18 +++++--
+ arch/um/drivers/ubd_kern.c                   |    9 ++--
+ arch/x86/include/asm/amd_iommu_proto.h       |    6 ++
+ arch/x86/include/asm/amd_iommu_types.h       |   12 +++++
+ arch/x86/include/asm/pgtable_32.h            |    1 +
+ arch/x86/include/asm/trampoline.h            |    5 ++-
+ arch/x86/kernel/Makefile                     |    2 +
+ arch/x86/kernel/amd_iommu.c                  |    4 +-
+ arch/x86/kernel/amd_iommu_init.c             |   67 +++++++++++++++++--------
+ arch/x86/kernel/apic/io_apic.c               |   11 +++-
+ arch/x86/kernel/cpu/common.c                 |    4 +-
+ arch/x86/kernel/cpu/cpu.h                    |    1 +
+ arch/x86/kernel/cpu/intel.c                  |    1 +
+ arch/x86/kernel/cpu/mcheck/mce_amd.c         |    9 +--
+ arch/x86/kernel/head_32.S                    |    8 +++-
+ arch/x86/kernel/hpet.c                       |    2 +-
+ arch/x86/kernel/setup.c                      |    2 +
+ arch/x86/kernel/smpboot.c                    |   32 +++++-------
+ arch/x86/kernel/trampoline.c                 |   17 +++++++
+ arch/x86/kvm/irq.h                           |    2 +-
+ arch/x86/kvm/svm.c                           |    2 +-
+ arch/x86/mm/srat_64.c                        |    8 ++-
+ arch/x86/oprofile/nmi_int.c                  |    1 +
+ block/bsg.c                                  |    2 +-
+ drivers/acpi/acpica/aclocal.h                |    1 +
+ drivers/acpi/blacklist.c                     |   16 ++++++
+ drivers/acpi/bus.c                           |   14 +----
+ drivers/acpi/processor_core.c                |    7 +--
+ drivers/acpi/sleep.c                         |   22 ++++++++
+ drivers/ata/ahci.c                           |    4 ++
+ drivers/ata/ahci.h                           |   12 ++++-
+ drivers/ata/ahci_platform.c                  |    6 ++-
+ drivers/ata/libahci.c                        |   16 ++-----
+ drivers/block/virtio_blk.c                   |    6 ++-
+ drivers/char/agp/intel-agp.c                 |    1 +
+ drivers/char/agp/intel-agp.h                 |    6 ++
+ drivers/char/agp/intel-gtt.c                 |   50 +++++++++++++++----
+ drivers/char/virtio_console.c                |   17 +++++-
+ drivers/dma/ioat/dma_v2.c                    |    2 +-
+ drivers/dma/mv_xor.c                         |    2 +-
+ drivers/edac/i7core_edac.c                   |    1 +
+ drivers/firewire/ohci.c                      |   19 +-------
+ drivers/firewire/ohci.h                      |    8 ---
+ drivers/gpu/drm/drm_gem.c                    |   31 +++---------
+ drivers/gpu/drm/drm_vm.c                     |   28 +++++++----
+ drivers/gpu/drm/i915/i915_dma.c              |    9 ++-
+ drivers/gpu/drm/i915/i915_gem.c              |   31 +++++++++---
+ drivers/gpu/drm/radeon/evergreen.c           |    4 +-
+ drivers/gpu/drm/radeon/r600.c                |    3 +-
+ drivers/gpu/drm/radeon/radeon_atombios.c     |    9 ++++
+ drivers/gpu/drm/radeon/radeon_cursor.c       |   28 +++++------
+ drivers/gpu/drm/radeon/radeon_display.c      |    2 +
+ drivers/hid/hidraw.c                         |   11 ++++
+ drivers/hwmon/lis3lv02d.c                    |    4 +-
+ drivers/i2c/busses/i2c-pca-isa.c             |   12 +++--
+ drivers/i2c/busses/i2c-pca-platform.c        |   11 +++--
+ drivers/infiniband/hw/cxgb3/iwch_cm.c        |    6 ++-
+ drivers/input/joydev.c                       |    3 +
+ drivers/input/tablet/wacom_wac.c             |    4 +-
+ drivers/media/IR/ir-keytable.c               |    2 +-
+ drivers/media/dvb/dvb-usb/dib0700_devices.c  |   55 ++++++++++++++++++++-
+ drivers/media/dvb/frontends/dib7000p.c       |    2 +
+ drivers/media/dvb/frontends/dib7000p.h       |    3 +
+ drivers/media/video/cx231xx/Makefile         |    1 +
+ drivers/media/video/cx231xx/cx231xx-cards.c  |   17 ++++--
+ drivers/media/video/gspca/gspca.c            |    1 +
+ drivers/media/video/gspca/sn9c20x.c          |    3 +-
+ drivers/media/video/v4l2-compat-ioctl32.c    |   32 ++++++++----
+ drivers/mfd/wm831x-irq.c                     |    9 +++-
+ drivers/mmc/core/core.c                      |   13 +++++
+ drivers/mmc/host/sdhci-s3c.c                 |    6 ++-
+ drivers/net/atlx/atl1.c                      |    5 +-
+ drivers/net/b44.c                            |    4 +-
+ drivers/net/r8169.c                          |   12 ++--
+ drivers/net/skge.c                           |   18 +++++++-
+ drivers/pci/quirks.c                         |   20 ++++++++
+ drivers/scsi/scsi.c                          |    4 +-
+ drivers/usb/core/file.c                      |   35 ++++++-------
+ drivers/usb/core/message.c                   |    1 +
+ drivers/usb/musb/musb_gadget.c               |   22 +++++++--
+ drivers/usb/musb/musb_gadget.h               |    2 +
+ drivers/usb/musb/musb_gadget_ep0.c           |    9 ++++
+ fs/exec.c                                    |   14 +++++
+ fs/ocfs2/symlink.c                           |    2 +-
+ fs/proc/task_mmu.c                           |    3 +-
+ fs/reiserfs/ioctl.c                          |    7 ++-
+ fs/xfs/linux-2.6/xfs_sync.c                  |   16 +++++--
+ fs/xfs/linux-2.6/xfs_sync.h                  |    1 +
+ fs/xfs/xfs_iget.c                            |    1 +
+ include/drm/drmP.h                           |   11 +++--
+ include/drm/drm_pciids.h                     |    2 +-
+ include/linux/intel-gtt.h                    |   20 ++++++++
+ include/linux/mm.h                           |    6 ++
+ include/linux/pci_ids.h                      |    3 +
+ kernel/hrtimer.c                             |   13 ++++-
+ kernel/trace/ring_buffer.c                   |    2 +-
+ lib/list_sort.c                              |    2 +-
+ mm/ksm.c                                     |    6 ++-
+ mm/mlock.c                                   |    6 --
+ net/mac80211/rx.c                            |    4 --
+ net/rds/page.c                               |   27 +++--------
+ net/wireless/wext-priv.c                     |    2 +-
+ sound/core/control.c                         |    5 ++
+ sound/core/rawmidi.c                         |    4 +-
+ sound/oss/soundcard.c                        |    4 +-
+ sound/pci/hda/patch_analog.c                 |    1 +
+ sound/pci/hda/patch_conexant.c               |   20 ++++++++
+ sound/pci/oxygen/oxygen.c                    |    4 ++
+ sound/pci/rme9652/hdsp.c                     |    1 +
+ sound/pci/rme9652/hdspm.c                    |    1 +
+ virt/kvm/eventfd.c                           |    3 +-
+ virt/kvm/kvm_main.c                          |    4 +-
+ 117 files changed, 773 insertions(+), 343 deletions(-)
