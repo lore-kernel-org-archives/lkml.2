@@ -1,94 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759227Ab0JVTX6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 15:23:58 -0400
-Received: from kroah.org ([198.145.64.141]:33924 "EHLO coco.kroah.org"
+	id S932862Ab0JVTYK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 15:24:10 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:37982 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755923Ab0JVSzy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 14:55:54 -0400
-X-Mailbox-Line: From gregkh@clark.site Fri Oct 22 11:52:28 2010
-Message-Id: <20101022185228.206369696@clark.site>
-User-Agent: quilt/0.48-11.2
-Date: Fri, 22 Oct 2010 11:50:44 -0700
+	id S1759204Ab0JVTYI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Oct 2010 15:24:08 -0400
+Date: Fri, 22 Oct 2010 12:23:50 -0700
 From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
-Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Sergei Shtylyov <sshtylyov@ru.mvista.com>, Felipe Balbi <balbi@ti.com>
-Subject: [010/103] usb: musb: gadget: restart request on clearing endpoint halt
-In-Reply-To: <20101022185455.GA9114@kroah.com>
+To: Jack Stone <jwjstone@fastmail.fm>
+Cc: linux-kernel@vger.kernel.org, stable@kernel.org,
+        Florian Fainelli <florian@openwrt.org>, stable-review@kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, 600155@bugs.debian.org,
+        Jason Heeris <jason.heeris@gmail.com>,
+        David Miller <davem@davemloft.net>, spamalot@hispeed.ch,
+        Ben Hutchings <ben@decadent.org.uk>
+Subject: Re: [11/17] r6040: Fix multicast list iteration when hash filter
+ is used
+Message-ID: <20101022192350.GA10673@suse.de>
+References: <20101022184033.486292826@clark.site>
+ <4CC1E257.4070704@fastmail.fm>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4CC1E257.4070704@fastmail.fm>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.35-stable review patch.  If anyone has any objections, please let us know.
+On Fri, Oct 22, 2010 at 08:13:27PM +0100, Jack Stone wrote:
+> On 22/10/2010 19:39, Greg KH wrote:
+> >  drivers/net/r6040.c |    1 +
+> >  1 file changed, 1 insertion(+)
+> > 
+> > --- a/drivers/net/r6040.c
+> > +++ b/drivers/net/r6040.c
+> > @@ -976,6 +976,7 @@ static void r6040_multicast_list(struct
+> >  		iowrite16(hash_table[3], ioaddr + MAR3);
+> >  	}
+> >  	/* Multicast Address 1~4 case */
+> > +	dmi = dev->mc_list;
+> >  	for (i = 0, dmi; (i < dev->mc_count) && (i < MCAST_MAX); i++) {
+> Any reason for the dmi in the above line? As far as I can see it is a
+> nop.
 
-------------------
+Look closer at the for loop please.
 
-From: Sergei Shtylyov <sshtylyov@ru.mvista.com>
+thanks,
 
-commit a666e3e6098a9f56310e4ec2705f1dad124a34b5 upstream.
-
-Commit 46034dca515bc4ddca0399ae58106d1f5f0d809f (USB: musb_gadget_ep0: stop
-abusing musb_gadget_set_halt()) forgot to restart a queued request after
-clearing the endpoint halt feature. This results in a couple of USB resets
-while enumerating the file-backed storage gadget due to CSW packet not being
-sent for the MODE SENSE(10) command.
-
-Signed-off-by: Sergei Shtylyov <sshtylyov@ru.mvista.com>
-Signed-off-by: Felipe Balbi <balbi@ti.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
----
- drivers/usb/musb/musb_gadget.c     |    2 +-
- drivers/usb/musb/musb_gadget.h     |    2 ++
- drivers/usb/musb/musb_gadget_ep0.c |    9 +++++++++
- 3 files changed, 12 insertions(+), 1 deletion(-)
-
---- a/drivers/usb/musb/musb_gadget.c
-+++ b/drivers/usb/musb/musb_gadget.c
-@@ -1095,7 +1095,7 @@ struct free_record {
- /*
-  * Context: controller locked, IRQs blocked.
-  */
--static void musb_ep_restart(struct musb *musb, struct musb_request *req)
-+void musb_ep_restart(struct musb *musb, struct musb_request *req)
- {
- 	DBG(3, "<== %s request %p len %u on hw_ep%d\n",
- 		req->tx ? "TX/IN" : "RX/OUT",
---- a/drivers/usb/musb/musb_gadget.h
-+++ b/drivers/usb/musb/musb_gadget.h
-@@ -105,4 +105,6 @@ extern void musb_gadget_cleanup(struct m
- 
- extern void musb_g_giveback(struct musb_ep *, struct usb_request *, int);
- 
-+extern void musb_ep_restart(struct musb *, struct musb_request *);
-+
- #endif		/* __MUSB_GADGET_H */
---- a/drivers/usb/musb/musb_gadget_ep0.c
-+++ b/drivers/usb/musb/musb_gadget_ep0.c
-@@ -261,6 +261,7 @@ __acquires(musb->lock)
- 					ctrlrequest->wIndex & 0x0f;
- 				struct musb_ep		*musb_ep;
- 				struct musb_hw_ep	*ep;
-+				struct musb_request	*request;
- 				void __iomem		*regs;
- 				int			is_in;
- 				u16			csr;
-@@ -302,6 +303,14 @@ __acquires(musb->lock)
- 					musb_writew(regs, MUSB_RXCSR, csr);
- 				}
- 
-+				/* Maybe start the first request in the queue */
-+				request = to_musb_request(
-+						next_request(musb_ep));
-+				if (!musb_ep->busy && request) {
-+					DBG(3, "restarting the request\n");
-+					musb_ep_restart(musb, request);
-+				}
-+
- 				/* select ep0 again */
- 				musb_ep_select(mbase, 0);
- 				} break;
-
-
+greg k-h
