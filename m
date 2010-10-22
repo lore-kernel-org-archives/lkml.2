@@ -1,261 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756185Ab0JVT4q (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 15:56:46 -0400
-Received: from adsl-99-30-218-25.dsl.aus2tx.sbcglobal.net ([99.30.218.25]:44348
-	"EHLO gw.microgate.com" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
-	with ESMTP id S1754032Ab0JVT4p (ORCPT
+	id S1758904Ab0JVUDI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 16:03:08 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:57540 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754244Ab0JVUDG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 15:56:45 -0400
-Subject: [PATCH] synclink_gt add extended sync feature
-From: Paul Fulghum <paulkf@microgate.com>
+	Fri, 22 Oct 2010 16:03:06 -0400
+Date: Fri, 22 Oct 2010 21:01:32 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
 To: Andrew Morton <akpm@linux-foundation.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain
-Date: Fri, 22 Oct 2010 14:56:07 -0500
-Message-Id: <1287777367.19916.2.camel@x2.microgate.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] isl29020: ambient light sensor
+Message-ID: <20101022210132.72389768@lxorguk.ukuu.org.uk>
+In-Reply-To: <20101022125130.064710ba.akpm@linux-foundation.org>
+References: <20101022124554.19822.58177.stgit@localhost.localdomain>
+	<20101022125130.064710ba.akpm@linux-foundation.org>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
 Mime-Version: 1.0
-X-Mailer: Evolution 2.8.3 (2.8.3-2.fc6) 
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add support for extended byte synchronous mode feature of hardware.
+On Fri, 22 Oct 2010 12:51:30 -0700
+Andrew Morton <akpm@linux-foundation.org> wrote:
 
-Signed-off-by: Paul Fulghum <paulkf@microgate.com>
+> On Fri, 22 Oct 2010 13:46:07 +0100
+> Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
+> 
+> > From: Kalhan Trisal <kalhan.trisal@intel.com>
+> > 
+> > The LS driver will read the latest Lux measurement based upon the
+> > light brightness and will report the LUX output through sysfs interface.
+> > 
+> > This hardware isn't quite the same as the ISL29003 so has a different driver.
+> > 
+> >
+> > ...
+> >
+> > +static ssize_t als_lux_input_data_show(struct device *dev,
+> > +			struct device_attribute *attr, char *buf)
+> > +{
+> > +	struct i2c_client *client = to_i2c_client(dev);
+> > +	int ret_val, val;
+> > +	unsigned long int lux;
+> > +	int temp;
+> > +
+> > +	pm_runtime_get_sync(dev);
+> > +	msleep(100);
+> 
+> The msleep() is a bit mysterious.  And long!  A little code comment
+> explaining why it's here would illuminate things (heh, I kill me).
 
---- a/include/linux/synclink.h	2010-10-21 14:08:50.000000000 -0500
-+++ b/include/linux/synclink.h	2010-10-22 14:34:23.000000000 -0500
-@@ -126,6 +126,7 @@
- #define MGSL_MODE_BISYNC	4
- #define MGSL_MODE_RAW		6
- #define MGSL_MODE_BASE_CLOCK    7
-+#define MGSL_MODE_XSYNC         8
- 
- #define MGSL_BUS_TYPE_ISA	1
- #define MGSL_BUS_TYPE_EISA	2
-@@ -290,6 +291,10 @@ struct gpio_desc {
- #define MGSL_IOCSGPIO		_IOW(MGSL_MAGIC_IOC,16,struct gpio_desc)
- #define MGSL_IOCGGPIO		_IOR(MGSL_MAGIC_IOC,17,struct gpio_desc)
- #define MGSL_IOCWAITGPIO	_IOWR(MGSL_MAGIC_IOC,18,struct gpio_desc)
-+#define MGSL_IOCSXSYNC		_IO(MGSL_MAGIC_IOC, 19)
-+#define MGSL_IOCGXSYNC		_IO(MGSL_MAGIC_IOC, 20)
-+#define MGSL_IOCSXCTRL		_IO(MGSL_MAGIC_IOC, 21)
-+#define MGSL_IOCGXCTRL		_IO(MGSL_MAGIC_IOC, 22)
- 
- #ifdef __KERNEL__
- /* provide 32 bit ioctl compatibility on 64 bit systems */
---- a/drivers/char/synclink_gt.c	2010-10-21 14:08:37.000000000 -0500
-+++ b/drivers/char/synclink_gt.c	2010-10-22 14:35:22.000000000 -0500
-@@ -301,6 +301,8 @@ struct slgt_info {
- 	unsigned int rx_pio;
- 	unsigned int if_mode;
- 	unsigned int base_clock;
-+	unsigned int xsync;
-+	unsigned int xctrl;
- 
- 	/* device status */
- 
-@@ -405,6 +407,8 @@ static MGSL_PARAMS default_params = {
- #define TDCSR 0x94 /* tx DMA control/status */
- #define RDDAR 0x98 /* rx DMA descriptor address */
- #define TDDAR 0x9c /* tx DMA descriptor address */
-+#define XSR   0x40 /* extended sync pattern */
-+#define XCR   0x44 /* extended control */
- 
- #define RXIDLE      BIT14
- #define RXBREAK     BIT14
-@@ -517,6 +521,10 @@ static int  set_interface(struct slgt_in
- static int  set_gpio(struct slgt_info *info, struct gpio_desc __user *gpio);
- static int  get_gpio(struct slgt_info *info, struct gpio_desc __user *gpio);
- static int  wait_gpio(struct slgt_info *info, struct gpio_desc __user *gpio);
-+static int  get_xsync(struct slgt_info *info, int __user *if_mode);
-+static int  set_xsync(struct slgt_info *info, int if_mode);
-+static int  get_xctrl(struct slgt_info *info, int __user *if_mode);
-+static int  set_xctrl(struct slgt_info *info, int if_mode);
- 
- /*
-  * driver functions
-@@ -1077,6 +1085,14 @@ static int ioctl(struct tty_struct *tty,
- 		return get_gpio(info, argp);
- 	case MGSL_IOCWAITGPIO:
- 		return wait_gpio(info, argp);
-+	case MGSL_IOCGXSYNC:
-+		return get_xsync(info, argp);
-+	case MGSL_IOCSXSYNC:
-+		return set_xsync(info, (int)arg);
-+	case MGSL_IOCGXCTRL:
-+		return get_xctrl(info, argp);
-+	case MGSL_IOCSXCTRL:
-+		return set_xctrl(info, (int)arg);
- 	}
- 	mutex_lock(&info->port.mutex);
- 	switch (cmd) {
-@@ -1207,6 +1223,8 @@ static long slgt_compat_ioctl(struct tty
- 	case MGSL_IOCGGPIO:
- 	case MGSL_IOCWAITGPIO:
- 	case TIOCGICOUNT:
-+	case MGSL_IOCGXSYNC:
-+	case MGSL_IOCGXCTRL:
- 		rc = ioctl(tty, file, cmd, (unsigned long)(compat_ptr(arg)));
- 		break;
- 
-@@ -1216,6 +1234,8 @@ static long slgt_compat_ioctl(struct tty
- 	case MGSL_IOCTXABORT:
- 	case TIOCMIWAIT:
- 	case MGSL_IOCSIF:
-+	case MGSL_IOCSXSYNC:
-+	case MGSL_IOCSXCTRL:
- 		rc = ioctl(tty, file, cmd, arg);
- 		break;
- 	}
-@@ -1956,6 +1976,7 @@ static void bh_handler(struct work_struc
- 			case MGSL_MODE_RAW:
- 			case MGSL_MODE_MONOSYNC:
- 			case MGSL_MODE_BISYNC:
-+			case MGSL_MODE_XSYNC:
- 				while(rx_get_buf(info));
- 				break;
- 			}
-@@ -2881,6 +2902,69 @@ static int set_interface(struct slgt_inf
- 	return 0;
- }
- 
-+static int get_xsync(struct slgt_info *info, int __user *xsync)
-+{
-+	DBGINFO(("%s get_xsync=%x\n", info->device_name, info->xsync));
-+	if (put_user(info->xsync, xsync))
-+		return -EFAULT;
-+	return 0;
-+}
-+
-+/*
-+ * set extended sync pattern (1 to 4 bytes) for extended sync mode
-+ *
-+ * sync pattern is contained in least significant bytes of value
-+ * most significant byte of sync pattern is oldest (1st sent/detected)
-+ */
-+static int set_xsync(struct slgt_info *info, int xsync)
-+{
-+	unsigned long flags;
-+
-+	DBGINFO(("%s set_xsync=%x)\n", info->device_name, xsync));
-+	spin_lock_irqsave(&info->lock, flags);
-+	info->xsync = xsync;
-+	wr_reg32(info, XSR, xsync);
-+	spin_unlock_irqrestore(&info->lock, flags);
-+	return 0;
-+}
-+
-+static int get_xctrl(struct slgt_info *info, int __user *xctrl)
-+{
-+	DBGINFO(("%s get_xctrl=%x\n", info->device_name, info->xctrl));
-+	if (put_user(info->xctrl, xctrl))
-+		return -EFAULT;
-+	return 0;
-+}
-+
-+/*
-+ * set extended control options
-+ *
-+ * xctrl[31:19] reserved, must be zero
-+ * xctrl[18:17] extended sync pattern length in bytes
-+ *              00 = 1 byte  in xsr[7:0]
-+ *              01 = 2 bytes in xsr[15:0]
-+ *              10 = 3 bytes in xsr[23:0]
-+ *              11 = 4 bytes in xsr[31:0]
-+ * xctrl[16]    1 = enable terminal count, 0=disabled
-+ * xctrl[15:0]  receive terminal count for fixed length packets
-+ *              value is count minus one (0 = 1 byte packet)
-+ *              when terminal count is reached, receiver
-+ *              automatically returns to hunt mode and receive
-+ *              FIFO contents are flushed to DMA buffers with
-+ *              end of frame (EOF) status
-+ */
-+static int set_xctrl(struct slgt_info *info, int xctrl)
-+{
-+	unsigned long flags;
-+
-+	DBGINFO(("%s set_xctrl=%x)\n", info->device_name, xctrl));
-+	spin_lock_irqsave(&info->lock, flags);
-+	info->xctrl = xctrl;
-+	wr_reg32(info, XCR, xctrl);
-+	spin_unlock_irqrestore(&info->lock, flags);
-+	return 0;
-+}
-+
- /*
-  * set general purpose IO pin state and direction
-  *
-@@ -3760,7 +3844,9 @@ module_exit(slgt_exit);
- #define CALC_REGADDR() \
- 	unsigned long reg_addr = ((unsigned long)info->reg_addr) + addr; \
- 	if (addr >= 0x80) \
--		reg_addr += (info->port_num) * 32;
-+		reg_addr += (info->port_num) * 32; \
-+	else if (addr >= 0x40)	\
-+		reg_addr += (info->port_num) * 16;
- 
- static __u8 rd_reg8(struct slgt_info *info, unsigned int addr)
- {
-@@ -4179,7 +4265,13 @@ static void sync_mode(struct slgt_info *
- 
- 	/* TCR (tx control)
- 	 *
--	 * 15..13  mode, 000=HDLC 001=raw 010=async 011=monosync 100=bisync
-+	 * 15..13  mode
-+	 *         000=HDLC/SDLC
-+	 *         001=raw bit synchronous
-+	 *         010=asynchronous/isochronous
-+	 *         011=monosync byte synchronous
-+	 *         100=bisync byte synchronous
-+	 *         101=xsync byte synchronous
- 	 * 12..10  encoding
- 	 * 09      CRC enable
- 	 * 08      CRC32
-@@ -4194,6 +4286,9 @@ static void sync_mode(struct slgt_info *
- 	val = BIT2;
- 
- 	switch(info->params.mode) {
-+	case MGSL_MODE_XSYNC:
-+		val |= BIT15 + BIT13;
-+		break;
- 	case MGSL_MODE_MONOSYNC: val |= BIT14 + BIT13; break;
- 	case MGSL_MODE_BISYNC:   val |= BIT15; break;
- 	case MGSL_MODE_RAW:      val |= BIT13; break;
-@@ -4248,7 +4343,13 @@ static void sync_mode(struct slgt_info *
- 
- 	/* RCR (rx control)
- 	 *
--	 * 15..13  mode, 000=HDLC 001=raw 010=async 011=monosync 100=bisync
-+	 * 15..13  mode
-+	 *         000=HDLC/SDLC
-+	 *         001=raw bit synchronous
-+	 *         010=asynchronous/isochronous
-+	 *         011=monosync byte synchronous
-+	 *         100=bisync byte synchronous
-+	 *         101=xsync byte synchronous
- 	 * 12..10  encoding
- 	 * 09      CRC enable
- 	 * 08      CRC32
-@@ -4260,6 +4361,9 @@ static void sync_mode(struct slgt_info *
- 	val = 0;
- 
- 	switch(info->params.mode) {
-+	case MGSL_MODE_XSYNC:
-+		val |= BIT15 + BIT13;
-+		break;
- 	case MGSL_MODE_MONOSYNC: val |= BIT14 + BIT13; break;
- 	case MGSL_MODE_BISYNC:   val |= BIT15; break;
- 	case MGSL_MODE_RAW:      val |= BIT13; break;
-@@ -4676,6 +4780,7 @@ static bool rx_get_buf(struct slgt_info 
- 	switch(info->params.mode) {
- 	case MGSL_MODE_MONOSYNC:
- 	case MGSL_MODE_BISYNC:
-+	case MGSL_MODE_XSYNC:
- 		/* ignore residue in byte synchronous modes */
- 		if (desc_residue(info->rbufs[i]))
- 			count--;
+It takes that long to get a sensible answer from the device after you
+power it up and sysfs doesn't keep enough context around to do poll etc.
 
+It may be possible to shorten it if we've not been suspended but there
+isn't a sane way I've found to track last suspended time nicely and race
+free in the runtime_pm layer.
 
+> Could/should we make the PM code disappear if !CONFIG_PM?  Such as
+
+Looks sensible. Will add to it.
+
+Alan
