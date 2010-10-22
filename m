@@ -1,125 +1,171 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759116Ab0JVVJN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 17:09:13 -0400
-Received: from mxout1.idt.com ([157.165.5.25]:49397 "EHLO mxout1.idt.com"
+	id S1759207Ab0JVVMJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 17:12:09 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:27331 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753380Ab0JVVJL convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 17:09:11 -0400
-X-MimeOLE: Produced By Microsoft Exchange V6.5
-Content-class: urn:content-classes:message
+	id S1753444Ab0JVVMH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Oct 2010 17:12:07 -0400
+Date: Fri, 22 Oct 2010 17:11:57 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Gui Jianfeng <guijianfeng@cn.fujitsu.com>
+Cc: Jens Axboe <axboe@kernel.dk>, Nauman Rafique <nauman@google.com>,
+        Chad Talbott <ctalbott@google.com>, Divyesh Shah <dpshah@google.com>,
+        linux kernel mailing list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/4 v2] cfq-iosched: add cfq group hierarchical
+ scheduling support
+Message-ID: <20101022211157.GJ7020@redhat.com>
+References: <4CBFA64D.6050800@cn.fujitsu.com>
+ <4CBFA6C9.3040604@cn.fujitsu.com>
+ <20101022205437.GI7020@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-Subject: RE: [PATCH -mm 0/2] RapidIO: Changes to handling of RIO switches
-Date: Fri, 22 Oct 2010 14:04:38 -0700
-Message-ID: <0CE8B6BE3C4AD74AB97D9D29BD24E55201445A6B@CORPEXCH1.na.ads.idt.com>
-In-Reply-To: <4CC1D7DE.7060405@neli.hopto.org>
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Thread-Topic: [PATCH -mm 0/2] RapidIO: Changes to handling of RIO switches
-Thread-Index: ActyFwOSx4f0SGp9QfONTMBPc30A+wAB8FxQ
-References: <1287688250-14226-1-git-send-email-alexandre.bounine@idt.com> <4CC0AD74.8070800@neli.hopto.org> <0CE8B6BE3C4AD74AB97D9D29BD24E55201445906@CORPEXCH1.na.ads.idt.com> <4CC1D7DE.7060405@neli.hopto.org>
-From: "Bounine, Alexandre" <Alexandre.Bounine@idt.com>
-To: "Micha Nelissen" <micha@neli.hopto.org>
-Cc: <akpm@linux-foundation.org>, <linux-kernel@vger.kernel.org>,
-        <linuxppc-dev@lists.ozlabs.org>,
-        "Matt Porter" <mporter@kernel.crashing.org>,
-        "Li Yang" <leoli@freescale.com>,
-        "Kumar Gala" <galak@kernel.crashing.org>,
-        "Thomas Moll" <thomas.moll@sysgo.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101022205437.GI7020@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Micha Nelissen <micha@neli.hopto.org> wrote:
+On Fri, Oct 22, 2010 at 04:54:37PM -0400, Vivek Goyal wrote:
+> On Thu, Oct 21, 2010 at 10:34:49AM +0800, Gui Jianfeng wrote:
+> > This patch enables cfq group hierarchical scheduling.
+> > 
+> > With this patch, you can create a cgroup directory deeper than level 1.
+> > Now, I/O Bandwidth is distributed in a hierarchy way. For example:
+> > We create cgroup directories as following(the number represents weight):
+> > 
+> >             Root grp
+> >            /       \
+> >        grp_1(100) grp_2(400)
+> >        /    \ 
+> >   grp_3(200) grp_4(300)
+> > 
+> > If grp_2 grp_3 and grp_4 are contending for I/O Bandwidth,
+> > grp_2 will share 80% of total bandwidth.
+> > For sub_groups, grp_3 shares 8%(20% * 40%), grp_4 shares 12%(20% * 60%)
+> > 
+> > Design:
+> >   o Each cfq group has its own group service tree. 
+> >   o Each cfq group contains a "group schedule entity" (gse) that 
+> >     schedules on parent cfq group's service tree.
+> >   o Each cfq group contains a "queue schedule entity"(qse), it
+> >     represents all cfqqs located on this cfq group. It schedules
+> >     on this group's service tree. For the time being, root group
+> >     qse's weight is 1000, and subgroup qse's weight is 500.
+> >   o All gses and qse which belones to a same cfq group schedules
+> >     on the same group service tree.
+> >   o cfq group allocates in a recursive manner, that means when a cfq 
+> >     group needs to be allocated, the upper level cfq groups are also
+> >     allocated.
+> >   o When a cfq group served, not only charge this cfq group but also
+> >     charge its ancestors.
 > 
-> Bounine, Alexandre wrote:
-> > Looks like I formulated it bad - better would be: they have
-different
-> > interpretation by hardware but logically in RapidIO they have single
-> > role - destid/hopcount are a device coordinates in the RIO network
-used
-> > to access that device.
+> Gui,
 > 
-> They are logically different as well (for a non-host).
+> I have not been able to convince myself yet that not treating queue at
+> same level as group is a better idea than treating queue at the same
+> level as group. 
 > 
-> rswitch->destid with hopcount is the way to reach that switch.
+> I am again trying to put my thoughts together that why I am not convinced.
+> 
+> - I really don't like the idea of hidden group and assumptions about the
+>   weight of this group which user does not know or user can't control.
+>  
+> - Secondly I think that both the following use cases are valid use cases.
+> 
+> 
+>   case 1:
+>   -------
+> 			  root
+> 			 / | \
+> 			q1 q2 G1
+> 			      / \
+> 			     q3  q4	 
+> 
+>  In this case queues and group are treated at same level, and group G1's
+>  share changes dynamically based on number of competiting queues. Assume
+>  system admin has put one user's all tasks in G1, and default weight of G1
+>  is 500, then admin might really want to keep G1's share dyanmic, so that
+>  if root is not doing lots of IO (not many thread), then G1 gets more IO
+>  done but if IO activity in root threads increases then G1 gets less
+>  share. 
+> 
+>  case 2:
+>  -------  
+>  The second case is where one wants a more deterministic share of a
+>  group and does not want that share to change based on number of
+>  processes. In that case one can simply create a child group and move
+>  all root threads inside that group.
+> 
+> 			  root
+> 			   |  \
+> 		  root-threads G1
+> 			/ \    /\
+> 		       q1 q2  q3 q4
+> 
+>  So if we design in such a way so that we treat queues at same level as
+>  group, then we are not bounding user to a specific case. case 1, will
+>  be default in hierarchical mode and user can easily achieve case 2. Instead
+>  of locking down user to case 2 by default from kernel implementation and
+>  assume nobody is going to use case 1.
+> 
+>  IOW, treating queues at group level provides more flexibility.
+> 
+> - Treating queues at same level as groups will also help us better handle
+>   the case of RT threads. Think of following.
+> 
+> 			  root
+> 			  |   \
+> 			q1(RT) G1
+> 			      / \
+> 			     q3  q4	 
+> 
+>  In this case q1 is real time prio class. Now if we treat queue at same
+>  level group, then we can try to give 100% IO disk time to q1. But with
+>  hardcoding of hidden group, covering such cases will be hard.
+> 
+> - Other examples in kernel (CFS scheduler) already treat queue at same
+>   level at group. So until and unless we have a good reason, we should
+>   remain consistent. 
+> 
+> - If we try to draw analogy from other subsystems like virtual machine,
+>   where weight of a KVM machine on cpu is decided by native threads
+>   created on host (logical cpus) and not by how many threads are running
+>   inside the guest. And share of these logical cpu threads varies
+>   dynamically based on how many other threads are running on system.
+> 
+>   In a simple case of 1 logical cpu, we will create 1 thread and say there
+>   are 10 processes running inside guest, then effectively shares of these
+>   10 processes changes dynamically based on how many threads are running. 
+> 
+> So I am not yet convinced that we should take the hidden group approach.
+> 
+> Now coming to the question of how to resolve conflict with the cfqq queue
+> scheduling algorithm. Can we do following.
+> 
+> - Give some kind of boost to queue entities based on their weight. So when
+>   queue and group entities are hanging on a service tree, they are
+>   scheduled according to their vdisktime, and vdisktime is calculated
+>   based on entitie's weight and how much time entity spent on disk just
+>   now.
+> 
+>   Group entities can continue to follow existing method and we can try
+>   to reduce the vdisktime of queue entities a bit based on their priority.
+> 
+>   That way, one might see some service differentiation between ioprio
+>   of queues and also the relative share between groups does not change.
+>   The only problematic part is that when queue and groups are at same
+>   level then it is not very predictable that group gets how much share
+>   and queues get how much share. But I guess this is lesser of a problem
+>   as compared to hidden group approach.
 > 
 
-OK. This is moved to rdev->destid now to make access unified with
-endpoints. 
+Thinking more about it, I guess we can give a boost to vdisktime for newly
+queued entities and not for entities which just have consumed their slice
+and are being put again on service tree. That way I think we should be
+able to come close to logic of CFQ where service differentation between
+ioprio of cfqq can be created in select cases even if idling is disabled.
 
-> rswitch->rdev->destid should be the id associated with a given switch,
-> so that every (processor) device can agree what id some switch has.
-For
-> a non-host, the path to reach a switch may use a different id than the
-> switch itself has; it's just the id by which it was discovered.
-> However, it's possible to fix that by fixing the id+hopcount once the
-> switch is found using the path with its own id: then you know the
-right
-> hopcount.
-
-I have got an impression that we are discussing slightly different
-implementations
-here. The suggested role of rswitch->rdev->destid is not clear to me.
-I agree that destid and hopcount for switch will be different for every
-processor.
-There is nothing wrong with it because a switch physically does not have
-its own ID.
-If we will need to identify the same physical switch by different
-processors we may use the component tag which now is unique for every
-device.
-
-This actually gives me another idea: instead of using global
-next_switchid counter make rswitch->switchid = component_tag and
-switches in sysfs will look identical for every processor (or just get
-rid of rswitch->switchid and use component_tag directly for switches).
-
-
-> >> can be defined to point to the switch that a given rio_dev is
-> > connected
-> >> to. This is useful for quick lookups. How else can to know to which
-> >> switch a given device is connected?
-> >
-> > rdev->rswitch is not a pointer to the entire switch device object -
-it
-> > is a pointer to the switch specific extension associated with given
-> > rio_dev (if applicable). There is no other role for rdev->rswitch.
-> 
-> I know this, it doesn't answer my question.
-> 
-> > Why would you keep a pointer to device data extension instead of the
-> > pointer to attached device object itself?
-> 
-> There is no particular reason, but this is a useful way to define the
-> fields that are there.
-> 
-> My point is, now that you remove the pointer field, that information
-(to
-> which switch is a particular device connected) cannot be stored in
-this
-> way, so do you have an alternative proposal for that? Maybe add a new
-field.
->
-
-See my comment below ;).
-
-> > BTW, I have back and forward links added in previous patches and
-only
-> > one link that may be added later is a forward link from mport to the
-> > attached rio_dev (ptr to rio_switch will not work here because it
-can be
-> > switchless connection). But this reference has to be added into
-> > rio_mport.
-> 
-> Possible, but I suggest to put it in the rio_net: fields rdev_host,
-and
-> rdev_self. You can see it in the patch I sent you.
-
-Yes, we may rework rio_net that way and use some good things from there.
-
-Alex.
-
+Thanks
+Vivek
