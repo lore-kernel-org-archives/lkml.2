@@ -1,76 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759363Ab0JVU6d (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 16:58:33 -0400
-Received: from mail.windriver.com ([147.11.1.11]:36472 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753947Ab0JVU6a (ORCPT
+	id S932303Ab0JVU6E (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 16:58:04 -0400
+Received: from e35.co.us.ibm.com ([32.97.110.153]:40370 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758633Ab0JVU6A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 16:58:30 -0400
-From: Jason Wessel <jason.wessel@windriver.com>
-To: torvalds@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, kgdb-bugreport@lists.sourceforge.net,
-        Jason Wessel <jason.wessel@windriver.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, x86@kernel.org
-Subject: [PATCH 01/11] x86,kgdb: fix debugger hw breakpoint test regression in 2.6.35
-Date: Fri, 22 Oct 2010 15:56:21 -0500
-Message-Id: <1287780991-7476-2-git-send-email-jason.wessel@windriver.com>
-X-Mailer: git-send-email 1.6.4.rc1
-In-Reply-To: <1287780991-7476-1-git-send-email-jason.wessel@windriver.com>
-References: <1287780991-7476-1-git-send-email-jason.wessel@windriver.com>
-X-OriginalArrivalTime: 22 Oct 2010 20:56:48.0799 (UTC) FILETIME=[A50612F0:01CB722B]
+	Fri, 22 Oct 2010 16:58:00 -0400
+Date: Fri, 22 Oct 2010 13:57:55 -0700
+From: Matt Helsley <matthltc@us.ibm.com>
+To: Li Zefan <lizf@cn.fujitsu.com>
+Cc: "akpm >> Andrew Morton" <akpm@linux-foundation.org>,
+        Paul Menage <menage@google.com>, Stephane Eranian <eranian@google.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        containers@lists.linux-foundation.org, matthltc@us.ibm.com
+Subject: Re: [PATCH 5/7] cgroups: Make freezer subsystem bindable
+Message-ID: <20101022205755.GJ10119@count0.beaverton.ibm.com>
+References: <4CC146A4.9090505@cn.fujitsu.com>
+ <4CC1473D.9070201@cn.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4CC1473D.9070201@cn.fujitsu.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-HW breakpoints events stopped working correctly with kgdb as a result
-of commit: 018cbffe6819f6f8db20a0a3acd9bab9bfd667e4 (Merge commit
-'v2.6.33' into perf/core), later commit:
-ba773f7c510c0b252145933926c636c439889207 (x86,kgdb: Fix hw breakpoint
-regression) allowed breakpoints to propagate to the debugger core but
-did not completely address the original regression in functionality
-found in 2.6.35.
+On Fri, Oct 22, 2010 at 04:11:41PM +0800, Li Zefan wrote:
+> To make it bindable, we need to thaw all processes when unbinding
+> the freezer subsystem from a cgroup hierarchy.
+> 
+> Signed-off-by: Li Zefan <lizf@cn.fujitsu.com>
 
-When the DR_STEP flag is set in dr6 along with any of the DR_TRAP
-bits, the kgdb exception handler will enter once from the
-hw_breakpoint API call back and again from the die notifier for
-do_debug(), which causes the debugger to stop twice and also for the
-kgdb regression tests to fail running under kvm with:
+Based on experience using cgroups and questions we've fielded in the
+past on IRC I'd say users will really appreciate this.
 
-echo V2I1 > /sys/module/kgdbts/parameters/kgdbts
+We're planning to use the freezer in checkpoint/restart. Since
+checkpoint requires the tasks to remain frozen for the duration of
+the syscall we add a kernel-internal freezer subsystem interface
+which prevents the cgroup from thawing. So we'll need some way to
+"block" unbinding for that as well.
 
-To address the problem, the kgdb overflow handler needs to implement
-the same logic as the ptrace overflow handler call back with respect
-to updating the virtual copy of dr6.  This will allow the kgdb
-do_debug() die notifier to properly handle the exception and the
-attached debugger, or kgdb test suite, will only receive a single
-notification.
+Perhaps the bind op should be able to return an error when
+unbind == true? Although that raises the question of what to do if
+only one of multiple unbinds fails..
 
-Signed-off-by: Jason Wessel <jason.wessel@windriver.com>
-CC: Frederic Weisbecker <fweisbec@gmail.com>
-CC: x86@kernel.org
----
- arch/x86/kernel/kgdb.c |    7 ++++++-
- 1 files changed, 6 insertions(+), 1 deletions(-)
+Alternately you could split the bind/unbind op function pointers
+and get rid of the boolean argument. Then just don't fill in the
+freezer's unbind op and refuse to unbind subsystems that lack
+the unbind op. That seems a bit cleaner for now at least.
 
-diff --git a/arch/x86/kernel/kgdb.c b/arch/x86/kernel/kgdb.c
-index 852b819..497f973 100644
---- a/arch/x86/kernel/kgdb.c
-+++ b/arch/x86/kernel/kgdb.c
-@@ -621,7 +621,12 @@ int kgdb_arch_init(void)
- static void kgdb_hw_overflow_handler(struct perf_event *event, int nmi,
- 		struct perf_sample_data *data, struct pt_regs *regs)
- {
--	kgdb_ll_trap(DIE_DEBUG, "debug", regs, 0, 0, SIGTRAP);
-+	struct task_struct *tsk = current;
-+	int i;
-+
-+	for (i = 0; i < 4; i++)
-+		if (breakinfo[i].enabled)
-+			tsk->thread.debugreg6 |= (DR_TRAP0 << i);
- }
- 
- void kgdb_arch_late(void)
--- 
-1.6.3.3
+Cheers,
+	-Matt Helsley
 
+> ---
+>  include/linux/cgroup.h  |    3 ++-
+>  kernel/cgroup.c         |   22 ++++++++++++++++++++--
+>  kernel/cgroup_freezer.c |   19 +++++++++++++++++--
+>  3 files changed, 39 insertions(+), 5 deletions(-)
+> 
+> diff --git a/include/linux/cgroup.h b/include/linux/cgroup.h
+> index 49369ff..1e4e1df 100644
+> --- a/include/linux/cgroup.h
+> +++ b/include/linux/cgroup.h
+> @@ -478,7 +478,8 @@ struct cgroup_subsys {
+>  	int (*populate)(struct cgroup_subsys *ss,
+>  			struct cgroup *cgrp);
+>  	void (*post_clone)(struct cgroup_subsys *ss, struct cgroup *cgrp);
+> -	void (*bind)(struct cgroup_subsys *ss, struct cgroup *root);
+> +	void (*bind)(struct cgroup_subsys *ss, struct cgroup *cgrp,
+> +		     bool unbind);
+> 
+>  	int subsys_id;
+> 
+> diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+> index 6364bb5..12c1f7c 100644
+> --- a/kernel/cgroup.c
+> +++ b/kernel/cgroup.c
+> @@ -1105,6 +1105,22 @@ static int hierarchy_populate_dir(struct cgroup *cgrp, void *data)
+>  	return 0;
+>  }
+> 
+> +static int hierarchy_subsys_bind(struct cgroup *cgrp, void *data)
+> +{
+> +	struct cgroup_subsys *ss = data;
+> +
+> +	ss->bind(ss, cgrp, false);
+> +	return 0;
+> +}
+> +
+> +static int hierarchy_subsys_unbind(struct cgroup *cgrp, void *data)
+> +{
+> +	struct cgroup_subsys *ss = data;;
+
+nit: two semicolons
+
+> +
+> +	ss->bind(ss, cgrp, true);
+> +	return 0;
+> +}
+> +
+>  /*
+>   * Call with cgroup_mutex held. Drops reference counts on modules, including
+>   * any duplicate ones that parse_cgroupfs_options took. If this function
+> @@ -1172,7 +1188,8 @@ static int rebind_subsystems(struct cgroupfs_root *root,
+>  			list_move(&ss->sibling, &root->subsys_list);
+>  			ss->root = root;
+>  			if (ss->bind)
+> -				ss->bind(ss, cgrp);
+> +				cgroup_walk_hierarchy(hierarchy_subsys_bind,
+> +						      ss, cgrp);
+>  			mutex_unlock(&ss->hierarchy_mutex);
+>  			/* refcount was already taken, and we're keeping it */
+>  		} else if (bit & removed_bits) {
+> @@ -1180,7 +1197,8 @@ static int rebind_subsystems(struct cgroupfs_root *root,
+>  			BUG_ON(ss == NULL);
+>  			mutex_lock(&ss->hierarchy_mutex);
+>  			if (ss->bind)
+> -				ss->bind(ss, dummytop);
+> +				cgroup_walk_hierarchy(hierarchy_subsys_unbind,
+> +						      ss, cgrp);
+>  			subsys[i]->root = &rootnode;
+>  			list_move(&ss->sibling, &rootnode.subsys_list);
+>  			mutex_unlock(&ss->hierarchy_mutex);
+> diff --git a/kernel/cgroup_freezer.c b/kernel/cgroup_freezer.c
+> index e7bebb7..de13ce4 100644
+> --- a/kernel/cgroup_freezer.c
+> +++ b/kernel/cgroup_freezer.c
+> @@ -383,6 +383,21 @@ static int freezer_populate(struct cgroup_subsys *ss, struct cgroup *cgroup)
+>  	return cgroup_add_files(cgroup, ss, files, ARRAY_SIZE(files));
+>  }
+> 
+> +/*
+> + * Thaw all processes before unbinding the freezer subsysem from
+> + * cgroup hierarchy.
+> + * */
+> +static void freezer_bind(struct cgroup_subsys *ss, struct cgroup *cgrp,
+> +			 bool unbind)
+> +{
+> +	struct freezer *freezer = cgroup_freezer(cgrp);
+> +
+> +	if (!unbind)
+> +		return;
+> +
+> +	unfreeze_cgroup(cgrp, freezer);
+> +}
+> +
+>  struct cgroup_subsys freezer_subsys = {
+>  	.name		= "freezer",
+>  	.create		= freezer_create,
+> @@ -390,7 +405,7 @@ struct cgroup_subsys freezer_subsys = {
+>  	.populate	= freezer_populate,
+>  	.subsys_id	= freezer_subsys_id,
+>  	.can_attach	= freezer_can_attach,
+> -	.attach		= NULL,
+>  	.fork		= freezer_fork,
+> -	.exit		= NULL,
+> +	.bind		= freezer_bind,
+> +	.can_bind	= 1,
+>  };
+> -- 
+> 1.7.0.1
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
