@@ -1,97 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752912Ab0JVFaG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 01:30:06 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:64981 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752094Ab0JVFaF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 01:30:05 -0400
-Message-ID: <4CC1218E.9090104@cn.fujitsu.com>
-Date: Fri, 22 Oct 2010 13:30:54 +0800
-From: Li Zefan <lizf@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1b3pre) Gecko/20090513 Fedora/3.0-2.3.beta2.fc11 Thunderbird/3.0b2
+	id S1753281Ab0JVFbb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 01:31:31 -0400
+Received: from mail9.hitachi.co.jp ([133.145.228.44]:46300 "EHLO
+	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753089Ab0JVFba (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Oct 2010 01:31:30 -0400
+X-AuditID: b753bd60-a98ddba000000a18-ae-4cc121afe096
+Message-ID: <4CC121AD.7070105@hitachi.com>
+Date: Fri, 22 Oct 2010 14:31:25 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Systems Development Lab., Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.11) Gecko/20101013 Thunderbird/3.1.5
 MIME-Version: 1.0
-To: Rusty Russell <rusty@rustcorp.com.au>
-CC: Steven Rostedt <rostedt@goodmis.org>, LKML <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>, Frederic Weisbecker <fweisbec@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH v2][GIT PULL] tracing: Prevent unloadable modules from
- using trace_bprintk()
-References: <1287668742.16971.585.camel@gandalf.stny.rr.com> <201010221413.28588.rusty@rustcorp.com.au> <1287719918.16971.615.camel@gandalf.stny.rr.com> <201010221504.51535.rusty@rustcorp.com.au>
-In-Reply-To: <201010221504.51535.rusty@rustcorp.com.au>
-Content-Type: text/plain; charset=ISO-8859-15
+To: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Steven Rostedt <rostedt@goodmis.org>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org, 2nddept-manager@sdl.hitachi.co.jp,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: Re: [PATCH -tip  6/7] perf probe: Show accessible global variables
+References: <20101021101243.3542.28282.stgit@ltc236.sdl.hitachi.co.jp> <20101021101335.3542.31003.stgit@ltc236.sdl.hitachi.co.jp> <20101021205051.GK3826@ghostprotocols.net> <4CC0F61F.8000501@hitachi.com>
+In-Reply-To: <4CC0F61F.8000501@hitachi.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
+X-FMFTCR: RANGEC
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>>>> Can't you detect this on module unload and fix it up?  Or delay freeing the
->>>>> module until the trace ring is emptied?
->>>> One possibility is to magically make all string formats used in
->>>> trace_printk into its own section, and keep it allocated until the ring
->>>> buffer is empty. Or, we can just do that with the module's entire string
->>>> section, since we know whether or not that module has a trace_printk in
->>>> it or not.
->>> Exactly.  Set a flag in the module if it resolves trace_printk, and defer freeing
->>> the module in that case.  This shouldn't be that hard...
->> Here's my worry.
+(2010/10/22 11:25), Masami Hiramatsu wrote:
+> (2010/10/22 5:50), Arnaldo Carvalho de Melo wrote:
+>> Em Thu, Oct 21, 2010 at 07:13:35PM +0900, Masami Hiramatsu escreveu:
+>>> Add --externs for allowing --vars to show accessible
+>>> global(externally defined) variables from a given probe
+>>> point too.
+>>> This will give you a hint which globals can be accessible
+>>> from the probe point.
 >>
->> 1) Some module with tracepoints is loaded at boot up.
->> 2) The user does tracing and forgets about it (ring buffer filled)
->> 3) Unloads module (don't free)
->> 4) loads module with trace points
->> 5) unloads module (don't free)
->> etc, etc
+>> Cool, but perhaps we need to filter out some of the globals? Things
+>> like:
+> 
+> Hmm, yeah. So is that enough to filter out symbols which start with
+> __k???tab_ and __crc_ ?
+> 
+> 
 >>
->> memory leak.
-> 
-> Sure.  Then mark the rb count or something in the module at init time,
-> then compare before deciding too dangerous to free.
-> 
->> Thus this is not that trivial. We probably need to have a way to lock a
->> module when its tracepoint is activated, and only unlock it when the
->> ring buffer is emptied.
-> 
-> How about the intuitive and completely obvious thing?  When a tp activated,
-> use the module.  When deactivated, unuse it?
-> 
+>>                 long unsigned int       __kcrctab_tcp_hashinfo
+>>                 long unsigned int       __kcrctab_tcp_proc_register
+>>                 long unsigned int       __kcrctab_tcp_proc_unregister
+>>                 long unsigned int       __kcrctab_tcp_prot
 
-Do you mean inc module refcnt when a tp is activated, and dec the refcnt
-if deactivated? That's what we already have.
+BTW, with my kernel (yesterday -tip/x86-64/gcc-4.4.4-10),
+perf probe doesn't find these __k???tab_ symbols in
+dwarf. (but those are still in /proc/kallsyms)
+Maybe, something has been changed or it depends on some
+config/environment.
 
-In fact tracepoint is free from this bug, because we'll empty the ring
-buffer if the unloading module has tracepoints in it.
+Thank you,
 
-So for trace_bprintk, why can't we do the same thing? If a module has
-trace_bprintk calls in it, just empty the ring buffer when unloading
-module.
 
-And that's as simple as something like this:
-
-diff --git a/kernel/trace/trace_printk.c b/kernel/trace/trace_printk.c
-index 2547d88..103987f 100644
---- a/kernel/trace/trace_printk.c
-+++ b/kernel/trace/trace_printk.c
-@@ -80,6 +80,13 @@ static int module_trace_bprintk_format_notify(struct notifier_block *self,
- 
- 		if (val == MODULE_STATE_COMING)
- 			hold_module_trace_bprintk_format(start, end);
-+		else if (val == MODULE_STATE_GOING) {
-+			/*
-+			 * It is safest to reset the ring buffer if the
-+			 * module being unloaded uses trace_bprintk.
-+			 */
-+			tracing_reset_current_online_cpus();
-+		}
- 	}
- 	return 0;
- }
-
->> Do we want to prevent the module from being unloaded while the ring
->> buffer is full (after that module has been traced?), or do we let the
->> module be unloaded, but just prevent this one section from being freed?
-> 
-> I was thinking the latter, basically defer the module_free() call.
-> 
+-- 
+Masami HIRAMATSU
+2nd Dept. Linux Technology Center
+Hitachi, Ltd., Systems Development Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
