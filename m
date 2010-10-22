@@ -1,82 +1,175 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752743Ab0JVB2g (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Oct 2010 21:28:36 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:33500 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751534Ab0JVB2f (ORCPT
+	id S1752967Ab0JVBcL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Oct 2010 21:32:11 -0400
+Received: from mail30s.wh2.ocn.ne.jp ([125.206.180.198]:29597 "HELO
+	mail30s.wh2.ocn.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751534Ab0JVBcK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Oct 2010 21:28:35 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: Bruno Randolf <br1@einfach.org>
-Subject: Re: [PATCH v3] Add generic exponentially weighted moving average (EWMA) function
-Cc: kosaki.motohiro@jp.fujitsu.com, randy.dunlap@oracle.com,
-        akpm@linux-foundation.org, kevin.granade@gmail.com,
-        Lars_Ericsson@telia.com, blp@cs.stanford.edu,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <201010221025.30164.br1@einfach.org>
-References: <20101022100316.53A3.A69D9226@jp.fujitsu.com> <201010221025.30164.br1@einfach.org>
-Message-Id: <20101022102718.53A6.A69D9226@jp.fujitsu.com>
+	Thu, 21 Oct 2010 21:32:10 -0400
+Subject: [PATCH v5] Add generic exponentially weighted moving average (EWMA)
+	function
+To: randy.dunlap@oracle.com, akpm@linux-foundation.org
+From: Bruno Randolf <br1@einfach.org>
+Cc: peterz@infradead.org, blp@cs.stanford.edu, linux-kernel@vger.kernel.org,
+        Lars_Ericsson@telia.com, kosaki.motohiro@jp.fujitsu.com,
+        kevin.granade@gmail.com
+Date: Fri, 22 Oct 2010 10:32:14 +0900
+Message-ID: <20101022013214.6831.25967.stgit@localhost6.localdomain6>
+User-Agent: StGit/0.15
 MIME-Version: 1.0
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8bit
-X-Mailer: Becky! ver. 2.50.07 [ja]
-Date: Fri, 22 Oct 2010 10:28:30 +0900 (JST)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+X-SF-Loop: 1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Fri October 22 2010 10:11:38 KOSAKI Motohiro wrote:
-> > few additional reviewing comments is here.
-> > 
-> > > +struct ewma {
-> > > +	unsigned int internal;
-> > > +	unsigned int factor;
-> > > +	unsigned int weight;
-> > > +};
-> > 
-> > I think unsigned long is better because long is natual register size
-> > on both 32bit and 64bit arch.
-> > and, example, almost linux resource limit is using long or ulong. then
-> > uint may have overflow risk if we are using this one on 64bit arch.
-> > Does uint has any benefit? (note: scheduler loadavg has already used ulong)
-> 
-> You know more about this than me. I have no specific reason to use unsigned 
-> int. I'll change it to unsigned long, if that's better.
+This adds generic functions for calculating Exponentially Weighted Moving
+Averages (EWMA). This implementation makes use of a structure which keeps the
+EWMA parameters and a scaled up internal representation to reduce rounding
+errors.
 
-Thank you.
+The original idea for this implementation came from the rt2x00 driver
+(rt2x00link.c). I would like to use it in several places in the mac80211 and
+ath5k code and I hope it can be useful in many other places in the kernel code.
 
+Signed-off-by: Bruno Randolf <br1@einfach.org>
 
-> > > +struct ewma*
-> > > +ewma_add(struct ewma *avg, const unsigned int val)
-> > > +{
-> > > +	avg->internal = avg->internal  ?
-> > > +		(((avg->internal * (avg->weight - 1)) +
-> > > +			(val * avg->factor)) / avg->weight) :
-> > > +		(val * avg->factor);
-> > > +	return avg;
-> > 
-> > Hm, if ewma_add has this function prototype, we almost always need to
-> > typing "new = ewma_get(ewma_add(&ewma, val))". Is this intentional?
-> > if so, why?
-> >
-> > Why can't we simple do following?
-> > 
-> > unsigned long ewma_add(struct ewma *avg, const unsigned int val)
-> > {
-> > (snip)
-> > 	return ewma_get(avg);
-> > }
-> 
-> Hmm, I guess that depends on the way you want to use it. In my case, most of 
-> the times when I add a value to the average, I don't need to get the value. 
-> I'd call ewma_add() many more times than ewma_get(). Having the functions 
-> defined like this gives us the flexibility to choose and IMHO  
-> ewma_get(ewma_add(&ewma, val)) isn't so bad?
+--
+v5: Use unsigned long instead of insigned int.
 
-OK. I've got it. I agree we don't change this. Thank you for very
-quick responce!
+v4: Initialize internal variable to 0. Remove unneeded const qualifiers.
 
+v3: Addressing Andrew Mortons comments: Implement in lib/average.c and make
+    access and initalization functions. Use unsigned int for values. Rename
+    functions to ewma_* since there might be other moving average
+    implementations which are not exponentially weighted.
 
+v2: Renamed 'samples' to 'weight'. Added more documentation. Use avg_val
+    pointer. Add a WARN_ON_ONCE for invalid values of 'weight'. Divide
+    and round up/down.
+---
+ include/linux/average.h |   32 ++++++++++++++++++++++++++
+ lib/Makefile            |    2 +-
+ lib/average.c           |   58 +++++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 91 insertions(+), 1 deletions(-)
+ create mode 100644 include/linux/average.h
+ create mode 100644 lib/average.c
+
+diff --git a/include/linux/average.h b/include/linux/average.h
+new file mode 100644
+index 0000000..f3b36d4
+--- /dev/null
++++ b/include/linux/average.h
+@@ -0,0 +1,32 @@
++#ifndef _LINUX_AVERAGE_H
++#define _LINUX_AVERAGE_H
++
++#include <linux/kernel.h>
++
++/* Exponentially weighted moving average (EWMA) */
++
++/* For more documentation see lib/average.c */
++
++struct ewma {
++	unsigned long internal;
++	unsigned long factor;
++	unsigned long weight;
++};
++
++extern struct ewma *ewma_init(struct ewma *avg, unsigned long factor,
++			      unsigned long weight);
++
++extern struct ewma *ewma_add(struct ewma *avg, unsigned long val);
++
++/**
++ * ewma_get() - Get average value
++ * @avg: Average structure
++ *
++ * Returns the average value held in @avg.
++ */
++static inline unsigned long ewma_get(const struct ewma *avg)
++{
++	return DIV_ROUND_CLOSEST(avg->internal, avg->factor);
++}
++
++#endif /* _LINUX_AVERAGE_H */
+diff --git a/lib/Makefile b/lib/Makefile
+index e6a3763..f66acf7 100644
+--- a/lib/Makefile
++++ b/lib/Makefile
+@@ -21,7 +21,7 @@ lib-y	+= kobject.o kref.o klist.o
+ 
+ obj-y += bcd.o div64.o sort.o parser.o halfmd4.o debug_locks.o random32.o \
+ 	 bust_spinlocks.o hexdump.o kasprintf.o bitmap.o scatterlist.o \
+-	 string_helpers.o gcd.o lcm.o list_sort.o uuid.o
++	 string_helpers.o gcd.o lcm.o list_sort.o uuid.o average.o
+ 
+ ifeq ($(CONFIG_DEBUG_KOBJECT),y)
+ CFLAGS_kobject.o += -DDEBUG
+diff --git a/lib/average.c b/lib/average.c
+new file mode 100644
+index 0000000..bea39e5
+--- /dev/null
++++ b/lib/average.c
+@@ -0,0 +1,58 @@
++/*
++ * lib/average.c
++ *
++ * This source code is licensed under the GNU General Public License,
++ * Version 2.  See the file COPYING for more details.
++ */
++
++#include <linux/module.h>
++#include <linux/average.h>
++
++/**
++ * DOC: Exponentially Weighted Moving Average (EWMA)
++ *
++ * These are generic functions for calculating Exponentially Weighted Moving
++ * Averages (EWMA). We keep a structure with the EWMA parameters and a scaled
++ * up internal representation of the average value to prevent rounding errors.
++ * The factor for scaling up and the exponential weight (or decay rate) have to
++ * be specified thru the init fuction. The structure should not be accessed
++ * directly but only thru the helper functions.
++ */
++
++/**
++ * ewma_init() - Initialize EWMA parameters
++ * @avg: Average structure
++ * @factor: Factor to use for the scaled up internal value. The maximum value
++ *	of averages can be UINT_MAX/(factor*weight).
++ * @weight: Exponential weight, or decay rate. This defines how fast the
++ *	influence of older values decreases. Has to be bigger than 1.
++ *
++ * Initialize the EWMA parameters for a given struct ewma @avg.
++ */
++struct ewma *ewma_init(struct ewma *avg, unsigned long factor,
++		       unsigned long weight)
++{
++	WARN_ON(weight <= 1 || factor == 0);
++	avg->internal = 0;
++	avg->weight = weight;
++	avg->factor = factor;
++	return avg;
++}
++EXPORT_SYMBOL(ewma_init);
++
++/**
++ * ewma_add() - Exponentially weighted moving average (EWMA)
++ * @avg: Average structure
++ * @val: Current value
++ *
++ * Add a sample to the average.
++ */
++struct ewma *ewma_add(struct ewma *avg, unsigned long val)
++{
++	avg->internal = avg->internal  ?
++		(((avg->internal * (avg->weight - 1)) +
++			(val * avg->factor)) / avg->weight) :
++		(val * avg->factor);
++	return avg;
++}
++EXPORT_SYMBOL(ewma_add);
 
