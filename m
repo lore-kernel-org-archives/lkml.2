@@ -1,69 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756639Ab0JVN0O (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 09:26:14 -0400
-Received: from mail.digidescorp.com ([66.244.163.200]:40543 "EHLO
-	digidescorp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756424Ab0JVN0N (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 09:26:13 -0400
-X-Spam-Processed: digidescorp.com, Fri, 22 Oct 2010 08:26:12 -0500
-X-Authenticated-Sender: steve@digidescorp.com
-X-Return-Path: prvs=19113766f3=steve@digidescorp.com
-X-Envelope-From: steve@digidescorp.com
-X-MDaemon-Deliver-To: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V3] nommu: add anonymous page memcg accounting
-From: "Steven J. Magnani" <steve@digidescorp.com>
-Reply-To: steve@digidescorp.com
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: linux-mm@kvack.org, balbir@linux.vnet.ibm.com, dhowells@redhat.com,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <20101022122010.793bebac.kamezawa.hiroyu@jp.fujitsu.com>
-References: <1287664088-4483-1-git-send-email-steve@digidescorp.com>
-	 <20101022122010.793bebac.kamezawa.hiroyu@jp.fujitsu.com>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Digital Design Corporation
-Date: Fri, 22 Oct 2010 08:26:08 -0500
-Message-ID: <1287753968.2589.58.camel@iscandar.digidescorp.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
-Content-Transfer-Encoding: 7bit
+	id S1756694Ab0JVN1o (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 09:27:44 -0400
+Received: from www.tglx.de ([62.245.132.106]:41143 "EHLO www.tglx.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754794Ab0JVN1n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Oct 2010 09:27:43 -0400
+Date: Fri, 22 Oct 2010 15:27:18 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Richard Weinberger <richard@nod.at>
+cc: peterz@infradead.org, hpa@zytor.com, mingo@elte.hu,
+        linux-kernel@vger.kernel.org, linux-next@vger.kernel.org
+Subject: Re: linux-next: User Mode Linux broken
+In-Reply-To: <alpine.LFD.2.00.1010221309370.3345@localhost6.localdomain6>
+Message-ID: <alpine.LFD.2.00.1010221526080.29540@localhost6.localdomain6>
+References: <201010211315.26679.richard@nod.at> <201010212122.38437.richard@nod.at> <alpine.LFD.2.00.1010212143300.3467@localhost6.localdomain6> <201010212227.12919.richard@nod.at> <alpine.LFD.2.00.1010220900230.3467@localhost6.localdomain6>
+ <ed248baebfad9b050f53a6832435a9a5@radon2.swed.at> <alpine.LFD.2.00.1010221309370.3345@localhost6.localdomain6>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-10-22 at 12:20 +0900, KAMEZAWA Hiroyuki wrote:
-> BTW, have you tried oom_notifier+NOMMU memory limit oom-killer ?
-> It may be a chance to implement a custom OOM-Killer in userland on
-> EMBEDED systems.
+On Fri, 22 Oct 2010, Thomas Gleixner wrote:
+> On Fri, 22 Oct 2010, Richard Weinberger wrote:
+> Well, nothing is supposed to call enable_irq() before an interrupt is
+> installed with request_irq() or setup_irq().
+> 
+> Patch below should fix your problem.
 
-No - for what I need (simple sandboxing) just running my 'problem'
-process in a memory cgroup is sufficient. I might even be able to get
-away with oom_kill_allocating_task and no cgroup, but since that would
-allow dosfsck to run the system completely out of memory there's no
-guarantee that it would be the one that pushes the system over the edge.
+Yuck. Missed the second instance. Updated patch below.
 
-What do you mean by "NOMMU memory limit"? (Is there some other way to
-achieve the same functionality?)
-
-I looked into David's initial suggestion of using ulimit to create a
-sandbox but it seems that nommu.c doesn't respect RLIMIT_AS. When I can
-find some time I'll try to cook up a patch for that.
-
-Also it seems that nommu.c doesn't ever decrement mm->total_vm, which if
-I'm reading the code correctly (before the 2.6.36 OOM-killer rewrite)
-could throw off badness calculations for processes that do lots of
-malloc/free operations. In 2.6.36 it doesn't look to me like this would
-have any ill effects.
-
-Thanks for all the feedback. I fully agree that maintenance should be a
-strong consideration when merging new code.
-
-Regards,
-------------------------------------------------------------------------
- Steven J. Magnani               "I claim this network for MARS!
- www.digidescorp.com              Earthling, return my space modulator!"
-
- #include <standard.disclaimer>
-
-
+Thanks,
+ 
+ 	tglx
+---
+diff --git a/arch/um/kernel/irq.c b/arch/um/kernel/irq.c
+index a746e30..97e204b 100644
+--- a/arch/um/kernel/irq.c
++++ b/arch/um/kernel/irq.c
+@@ -395,13 +395,11 @@ void __init init_IRQ(void)
+ 	irq_desc[TIMER_IRQ].action = NULL;
+ 	irq_desc[TIMER_IRQ].depth = 1;
+ 	irq_desc[TIMER_IRQ].chip = &SIGVTALRM_irq_type;
+-	enable_irq(TIMER_IRQ);
+ 	for (i = 1; i < NR_IRQS; i++) {
+ 		irq_desc[i].status = IRQ_DISABLED;
+ 		irq_desc[i].action = NULL;
+ 		irq_desc[i].depth = 1;
+ 		irq_desc[i].chip = &normal_irq_type;
+-		enable_irq(i);
+ 	}
+ }
+ 
