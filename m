@@ -1,131 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757884Ab0JVQsP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 12:48:15 -0400
-Received: from isilmar-3.linta.de ([188.40.101.200]:39421 "EHLO linta.de"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1755449Ab0JVQsO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 12:48:14 -0400
-Date: Fri, 22 Oct 2010 18:47:48 +0200
-From: Dominik Brodowski <linux@dominikbrodowski.net>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Anca Emanuel <anca.emanuel@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
-        linux-pcmcia@lists.infradead.org
-Subject: [git pull] PCMCIA bugfixes
-Message-ID: <20101022164748.GA20440@comet.dominikbrodowski.net>
-Mail-Followup-To: Linus Torvalds <torvalds@linux-foundation.org>,
-	Anca Emanuel <anca.emanuel@gmail.com>,
-	LKML <linux-kernel@vger.kernel.org>,
-	linux-pcmcia@lists.infradead.org
-References: <AANLkTi=M3fpiqii_0qoZawRiZfw1=WZPOhLgKesjFaTu@mail.gmail.com>
- <AANLkTinm8okUNs8P_iFfnaG0d5g2DGTpphTVC766ofmm@mail.gmail.com>
+	id S1757689Ab0JVQv7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 12:51:59 -0400
+Received: from mxout1.idt.com ([157.165.5.25]:36477 "EHLO mxout1.idt.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754084Ab0JVQv6 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Oct 2010 12:51:58 -0400
+X-MimeOLE: Produced By Microsoft Exchange V6.5
+Content-class: urn:content-classes:message
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTinm8okUNs8P_iFfnaG0d5g2DGTpphTVC766ofmm@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain;
+	charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+Subject: RE: [PATCH -mm 0/2] RapidIO: Changes to handling of RIO switches
+Date: Fri, 22 Oct 2010 09:47:46 -0700
+Message-ID: <0CE8B6BE3C4AD74AB97D9D29BD24E55201445906@CORPEXCH1.na.ads.idt.com>
+In-Reply-To: <4CC0AD74.8070800@neli.hopto.org>
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+Thread-Topic: [PATCH -mm 0/2] RapidIO: Changes to handling of RIO switches
+Thread-Index: ActxZTVhIAwPi3XwSPaaiCn7hjV7oAAjVM7A
+References: <1287688250-14226-1-git-send-email-alexandre.bounine@idt.com> <4CC0AD74.8070800@neli.hopto.org>
+From: "Bounine, Alexandre" <Alexandre.Bounine@idt.com>
+To: "Micha Nelissen" <micha@neli.hopto.org>
+Cc: <akpm@linux-foundation.org>, <linux-kernel@vger.kernel.org>,
+        <linuxppc-dev@lists.ozlabs.org>,
+        "Matt Porter" <mporter@kernel.crashing.org>,
+        "Li Yang" <leoli@freescale.com>,
+        "Kumar Gala" <galak@kernel.crashing.org>,
+        "Thomas Moll" <thomas.moll@sysgo.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 22, 2010 at 08:21:15AM -0700, Linus Torvalds wrote:
-> On Fri, Oct 22, 2010 at 12:35 AM, Anca Emanuel <anca.emanuel@gmail.com> wrote:
-> >  CC [M]  drivers/net/wireless/hostap/hostap_cs.o
-> > drivers/staging/comedi/drivers/ni_daq_700.c: In function ‘dio700_config’:
-> > drivers/staging/comedi/drivers/ni_daq_700.c:499: error: ‘win_req_t’
-> > undeclared (first use in this function)
+Micha Nelissen <micha@neli.hopto.org> wrote:
 > 
-> Looks like the PCMCIA win_req_t fixup missed a driver or two.
+> Alexandre Bounine wrote:
+> > 1. Using one storage location common for switches and endpoints
+eliminates
+> > unnecessary device type checks during maintenance access operations.
+> > While destination IDs and hop counts have different meaning for
+endpoints and
+> > switches, this does not prevent us from storing them in the primary
+RIO device
+> > structure (rio_dev) for both types.
 > 
-> Dominik?
+> How can you say this? The two variables have different meanings, this
+> logically implies you can't merge them. So how do you say 'this does
+not
+> prevent us from ...' without providing a reason?
+
+Looks like I formulated it bad - better would be: they have different
+interpretation by hardware but logically in RapidIO they have single
+role - destid/hopcount are a device coordinates in the RIO network used
+to access that device.
+
+> > 2. Convert RIO switch device structures (rio_dev + rio_switch) into
+single
+> > allocation unit. This change is based on the fact that RIO switches
+are using
+> > common RIO device objects anyway. Allocating RIO switch objects as
+RIO devices
+> > with added space for switch information simplifies handling of RIO
+switch device
+> > objects.
 > 
-> And if somebody else wants to help out, look at commit cdb138080b78
-> ("pcmcia: do not use win_req_t when calling pcmcia_request_window()")
-> for guidance about what it is all about. That shows other drivers
-> being converted.
-> 
-> Anyway, in this case, it looks like the problem is literally that
-> _unused_ declaration of 'win_req_t req'. Just remove that line. Does
-> it compile and work then?
+> I still don't think that's a good idea because the rdev->rswitch
+pointer
+> can be defined to point to the switch that a given rio_dev is
+connected
+> to. This is useful for quick lookups. How else can to know to which
+> switch a given device is connected?
 
-Yes, that line is superfluous -- sorry about that. Could you please pull
-from
+rdev->rswitch is not a pointer to the entire switch device object - it
+is a pointer to the switch specific extension associated with given
+rio_dev (if applicable). There is no other role for rdev->rswitch.
 
-git://git.kernel.org/pub/scm/linux/kernel/git/brodo/pcmcia-2.6.git urgent
+Why would you keep a pointer to device data extension instead of the
+pointer to attached device object itself?
 
-for the two attached patches, please?
-
-Dominik Brodowski (2):
-      pcmcia: IOCARD is also required for using IRQs
-      pcmcia: fix ni_daq_700 compilation
-
- drivers/pcmcia/pcmcia_resource.c            |    4 +++-
- drivers/staging/comedi/drivers/ni_daq_700.c |    1 -
- include/pcmcia/ds.h                         |    2 ++
- 3 files changed, 5 insertions(+), 2 deletions(-)
-
-Thanks,
-	Dominik
-
-
-From: Dominik Brodowski <linux@dominikbrodowski.net>
-Date: Fri, 22 Oct 2010 18:39:23 +0200
-Subject: [PATCH] pcmcia: fix ni_daq_700 compilation
-
-Reported-by: Anca Emanuel <anca.emanuel@gmail.com>
-Signed-off-by: Dominik Brodowski <linux@dominikbrodowski.net>
-
-diff --git a/drivers/staging/comedi/drivers/ni_daq_700.c b/drivers/staging/comedi/drivers/ni_daq_700.c
-index fc772a8..6b7372e 100644
---- a/drivers/staging/comedi/drivers/ni_daq_700.c
-+++ b/drivers/staging/comedi/drivers/ni_daq_700.c
-@@ -496,7 +496,6 @@ static int dio700_pcmcia_config_loop(struct pcmcia_device *p_dev,
+BTW, I have back and forward links added in previous patches and only
+one link that may be added later is a forward link from mport to the
+attached rio_dev (ptr to rio_switch will not work here because it can be
+switchless connection). But this reference has to be added into
+rio_mport.
  
- static void dio700_config(struct pcmcia_device *link)
- {
--	win_req_t req;
- 	int ret;
- 
- 	printk(KERN_INFO "ni_daq_700:  cs-config\n");
+Alex.
 
-
-From: Dominik Brodowski <linux@dominikbrodowski.net>
-Date: Fri, 22 Oct 2010 08:46:36 +0200
-Subject: [PATCH] pcmcia: IOCARD is also required for using IRQs
-
-Dave Hinds pointed out to me that 37979e1546a7 will break b43 and
-ray_cs, as IOCARD is not -- as the name would suggest -- only needed
-for cards using IO ports. Instead, as it re-deines several pins, it
-is also required for using interrupts.
-
-Signed-off-by: Dominik Brodowski <linux@dominikbrodowski.net>
-
-diff --git a/drivers/pcmcia/pcmcia_resource.c b/drivers/pcmcia/pcmcia_resource.c
-index a9af0d7..0bdda5b 100644
---- a/drivers/pcmcia/pcmcia_resource.c
-+++ b/drivers/pcmcia/pcmcia_resource.c
-@@ -514,7 +514,9 @@ int pcmcia_enable_device(struct pcmcia_device *p_dev)
- 	}
- 
- 	/* Pick memory or I/O card, DMA mode, interrupt */
--	if (p_dev->_io)
-+	if (p_dev->_io || flags & CONF_ENABLE_IRQ)
-+		flags |= CONF_ENABLE_IOCARD;
-+	if (flags & CONF_ENABLE_IOCARD)
- 		s->socket.flags |= SS_IOCARD;
- 	if (flags & CONF_ENABLE_SPKR) {
- 		s->socket.flags |= SS_SPKR_ENA;
-diff --git a/include/pcmcia/ds.h b/include/pcmcia/ds.h
-index d830c87..8479b66 100644
---- a/include/pcmcia/ds.h
-+++ b/include/pcmcia/ds.h
-@@ -259,6 +259,8 @@ void pcmcia_disable_device(struct pcmcia_device *p_dev);
- #define CONF_ENABLE_SPKR        0x0002
- #define CONF_ENABLE_PULSE_IRQ   0x0004
- #define CONF_ENABLE_ESR         0x0008
-+#define CONF_ENABLE_IOCARD	0x0010 /* auto-enabled if IO resources or IRQ
-+					* (CONF_ENABLE_IRQ) in use */
- 
- /* flags used by pcmcia_loop_config() autoconfiguration */
- #define CONF_AUTO_CHECK_VCC	0x0100 /* check for matching Vcc? */
