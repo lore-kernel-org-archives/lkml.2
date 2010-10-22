@@ -1,144 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756768Ab0JVNaC (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 09:30:02 -0400
-Received: from relay2.sgi.com ([192.48.179.30]:35928 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751446Ab0JVNaA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 09:30:00 -0400
-From: Alex Elder <aelder@sgi.com>
-Message-Id: <201010221329.o9MDTs0Y001227@stout.americas.sgi.com>
-Date: Fri, 22 Oct 2010 08:29:54 -0500
-To: torvalds@linux-foundation.org
-Subject: [GIT PULL] XFS update for 2.6.37-rc1
-Cc: linux-kernel@vger.kernel.org, xfs@oss.sgi.com, akpm@linux-foundation.org
-User-Agent: Heirloom mailx 12.4 7/29/08
+	id S1756812Ab0JVNbF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 09:31:05 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:63302 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751446Ab0JVNbD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Oct 2010 09:31:03 -0400
+Date: Fri, 22 Oct 2010 09:31:01 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Jens Axboe <jaxboe@fusionio.com>
+Cc: linux kernel mailing list <linux-kernel@vger.kernel.org>,
+        Andi Kleen <ak@linux.intel.com>, Moyer Jeff Moyer <jmoyer@redhat.com>
+Subject: Re: [PATCH] cfq-iosched: Fix a gcc 4.5 warning and put some comments
+Message-ID: <20101022133101.GA7020@redhat.com>
+References: <20101021182403.GA8378@redhat.com>
+ <4CC1414B.8070102@fusionio.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <4CC1414B.8070102@fusionio.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit d4429f608abde89e8bc1e24b43cd503feb95c496:
+On Fri, Oct 22, 2010 at 09:46:19AM +0200, Jens Axboe wrote:
+> On 2010-10-21 20:24, Vivek Goyal wrote:
+> > - Andi encountedred following warning with gcc 4.5
+> > 
+> >   linux/block/cfq-iosched.c: In function ‘cfq_dispatch_requests’:
+> >   linux/block/cfq-iosched.c:2156:3: warning: array subscript is above array
+> >   bounds
+> > 
+> > - Warning happens due to following code.
+> > 
+> >   slice = group_slice * count /
+> > 		max_t(unsigned, cfqg->busy_queues_avg[cfqd->serving_prio],
+> > 		cfq_group_busy_queues_wl(cfqd->serving_prio, cfqd, cfqg));
+> > 
+> >   gcc is complaining about cfqg->busy_queues_avg[] being indexed by CFQ
+> >   prio classes (RT, BE and IDLE) while the array size is only 2.
+> > 
+> > - At run time, we never access cfqg->busy_queues_avg[IDLE] and return from
+> >   function before this code hits.
+> > 
+> > - To fix warning increase the array size though it will remain unused. This
+> >   patch also puts some comments to clarify some of the confusions.
+> > 
+> > - I have taken Jens's patch and modified it a bit.
+> > 
+> > - Compile tested with gcc 4.4 and boot tested. I don't have gcc 4.5
+> >   running, Andi can you please test it with gcc 4.5 to make sure it
+> >   worked.
+> > 
+> > Reported-by: Andi Kleen <ak@linux.intel.com>
+> > Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
+> > Signed-off-by: Jens Axboe <axboe@kernel.dk>
+> 
+> Thanks, I'll put this one in. BTW, you can't just add a signed-off-by
+> from me (or anyone else, for that matter), they have to be provided
+> explicitly by each individual.
 
-  Merge branch 'next' of git://git.kernel.org/pub/scm/linux/kernel/git/benh/powerpc (2010-10-21 21:19:54 -0700)
+Ok, sorry about that.
 
-are available in the git repository at:
+So in general, if I happen to pick somebody's patch, modify it and repost
+it, how do I reflect the Signed-off-by of original author.
 
-  git://oss.sgi.com/xfs/xfs for-linus
-
-Alex Elder (1):
-      Merge branch 'v2.6.36'
-
-Arkadiusz Mi?kiewicz (1):
-      xfs: Extend project quotas to support 32bit project ids
-
-Christoph Hellwig (14):
-      xfs: simplify xfs_qm_dqusage_adjust
-      xfs: stop using xfs_qm_dqtobp in xfs_qm_dqflush
-      xfs: remove the ->kill_root btree operation
-      xfs: remove XFS_MOUNT_NO_PERCPU_SB
-      xfs: do not use xfs_mod_incore_sb for per-cpu counters
-      xfs: do not use xfs_mod_incore_sb_batch for per-cpu counters
-      xfs: fix bogus m_maxagi check in xfs_iget
-      xfs: remove unused t_callback field in struct xfs_trans
-      xfs: fix the xfs_trans_committed
-      xfs: remove xfs_refcache.h
-      xfs: remove xfs_version.h
-      xfs: remove xfs_globals.h
-      xfs: remove xfs_cred.h
-      xfs: remove xfs_buf wrappers
-
-Dave Chinner (19):
-      xfs: use range primitives for xfs page cache operations
-      xfs: Introduce XFS_IOC_ZERO_RANGE
-      xfs: reduce the number of CIL lock round trips during commit
-      xfs: remove debug assert for per-ag reference counting
-      xfs: lockless per-ag lookups
-      xfs: don't use vfs writeback for pure metadata modifications
-      xfs: rename xfs_buf_get_nodaddr to be more appropriate
-      xfs: introduced uncached buffer read primitve
-      xfs: store xfs_mount in the buftarg instead of in the xfs_buf
-      xfs: kill XBF_FS_MANAGED buffers
-      xfs: use unhashed buffers for size checks
-      xfs: remove buftarg hash for external devices
-      xfs: split inode AG walking into separate code for reclaim
-      xfs: split out inode walk inode grabbing
-      xfs: implement batched inode lookups for AG walking
-      xfs: batch inode reclaim lookup
-      xfs: serialise inode reclaim within an AG
-      xfs: convert buffer cache hash to rbtree
-      xfs: pack xfs_buf structure more tightly
-
-Poyo VL (1):
-      xfs: eliminate some newly-reported gcc warnings
-
-Thomas Gleixner (1):
-      xfs: semaphore cleanup
-
- fs/xfs/linux-2.6/xfs_buf.c     |  219 ++++++++++++----------
- fs/xfs/linux-2.6/xfs_buf.h     |   70 +++----
- fs/xfs/linux-2.6/xfs_cred.h    |   28 ---
- fs/xfs/linux-2.6/xfs_fs_subr.c |   31 ++--
- fs/xfs/linux-2.6/xfs_globals.c |    1 -
- fs/xfs/linux-2.6/xfs_globals.h |   23 ---
- fs/xfs/linux-2.6/xfs_ioctl.c   |   19 +-
- fs/xfs/linux-2.6/xfs_ioctl32.c |    5 +-
- fs/xfs/linux-2.6/xfs_ioctl32.h |    6 +-
- fs/xfs/linux-2.6/xfs_iops.c    |   39 +----
- fs/xfs/linux-2.6/xfs_linux.h   |    5 +-
- fs/xfs/linux-2.6/xfs_super.c   |   24 +--
- fs/xfs/linux-2.6/xfs_super.h   |    1 +
- fs/xfs/linux-2.6/xfs_sync.c    |  413 +++++++++++++++++++++++-----------------
- fs/xfs/linux-2.6/xfs_sync.h    |    4 +-
- fs/xfs/linux-2.6/xfs_trace.h   |    4 +-
- fs/xfs/linux-2.6/xfs_version.h |   29 ---
- fs/xfs/quota/xfs_dquot.c       |  164 ++++++++---------
- fs/xfs/quota/xfs_qm.c          |  221 +++++++---------------
- fs/xfs/quota/xfs_qm_bhv.c      |    2 +-
- fs/xfs/quota/xfs_qm_syscalls.c |   16 +--
- fs/xfs/xfs_ag.h                |    9 +
- fs/xfs/xfs_alloc.c             |    4 +-
- fs/xfs/xfs_alloc_btree.c       |   33 ----
- fs/xfs/xfs_attr.c              |   37 ++---
- fs/xfs/xfs_bmap.c              |   44 +++--
- fs/xfs/xfs_bmap.h              |    9 +-
- fs/xfs/xfs_btree.c             |   56 +++++-
- fs/xfs/xfs_btree.h             |   14 +--
- fs/xfs/xfs_buf_item.c          |    7 +-
- fs/xfs/xfs_da_btree.c          |    2 +-
- fs/xfs/xfs_dinode.h            |    5 +-
- fs/xfs/xfs_dir2_leaf.c         |    2 +-
- fs/xfs/xfs_fs.h                |    7 +-
- fs/xfs/xfs_fsops.c             |   14 +-
- fs/xfs/xfs_ialloc.c            |    2 +-
- fs/xfs/xfs_ialloc_btree.c      |   33 ----
- fs/xfs/xfs_iget.c              |    4 +-
- fs/xfs/xfs_inode.c             |   17 +-
- fs/xfs/xfs_inode.h             |   30 +++-
- fs/xfs/xfs_inode_item.c        |    9 -
- fs/xfs/xfs_itable.c            |    3 +-
- fs/xfs/xfs_log.c               |    5 +-
- fs/xfs/xfs_log_cil.c           |  232 ++++++++++++----------
- fs/xfs/xfs_log_recover.c       |   25 ++--
- fs/xfs/xfs_mount.c             |  308 ++++++++++++------------------
- fs/xfs/xfs_mount.h             |    9 +-
- fs/xfs/xfs_refcache.h          |   52 -----
- fs/xfs/xfs_rename.c            |   14 +-
- fs/xfs/xfs_rtalloc.c           |   29 ++--
- fs/xfs/xfs_sb.h                |   10 +-
- fs/xfs/xfs_trans.c             |   91 ++++++----
- fs/xfs/xfs_trans.h             |    3 +-
- fs/xfs/xfs_trans_buf.c         |    2 +-
- fs/xfs/xfs_trans_inode.c       |   30 +++
- fs/xfs/xfs_types.h             |    2 -
- fs/xfs/xfs_utils.c             |    9 +-
- fs/xfs/xfs_utils.h             |    3 +-
- fs/xfs/xfs_vnodeops.c          |   65 ++++---
- fs/xfs/xfs_vnodeops.h          |    6 +-
- 60 files changed, 1185 insertions(+), 1375 deletions(-)
- delete mode 100644 fs/xfs/linux-2.6/xfs_cred.h
- delete mode 100644 fs/xfs/linux-2.6/xfs_globals.h
- delete mode 100644 fs/xfs/linux-2.6/xfs_version.h
- delete mode 100644 fs/xfs/xfs_refcache.h
+Thanks
+Vivek
