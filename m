@@ -1,65 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759133Ab0JVUJT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 16:09:19 -0400
-Received: from imr4.ericy.com ([198.24.6.8]:56371 "EHLO imr4.ericy.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754418Ab0JVUJR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 16:09:17 -0400
-Subject: Re: [PATCH 00/12] lis3 accelerator feature update
-From: Guenter Roeck <guenter.roeck@ericsson.com>
-Reply-To: guenter.roeck@ericsson.com
-To: Samu Onkalo <samu.p.onkalo@nokia.com>
-CC: "eric.piel@tremplin-utc.net" <eric.piel@tremplin-utc.net>,
-        "khali@linux-fr.org" <khali@linux-fr.org>,
-        "jic23@cam.ac.uk" <jic23@cam.ac.uk>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-In-Reply-To: <1287748654-2626-1-git-send-email-samu.p.onkalo@nokia.com>
-References: <1287748654-2626-1-git-send-email-samu.p.onkalo@nokia.com>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Ericsson
-Date: Fri, 22 Oct 2010 13:08:16 -0700
-Message-ID: <1287778096.9690.401.camel@groeck-laptop>
+	id S1758071Ab0JVUPM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 16:15:12 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:40976 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757177Ab0JVUPL convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Oct 2010 16:15:11 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:from:date
+         :x-google-sender-auth:message-id:subject:to:cc:content-type
+         :content-transfer-encoding;
+        b=bq+lQvvGa+xSwy0YtKbJCP0gBVxrg6pMpQ9OhgqrTukf3ZPZ3pAsxzpSeTT9NEGxtR
+         go4+WdgxdDJhlptu75s9DhDJUHhwMmZD4HNqYq1I8WMd/nqt1cT3nl6unAoBFCL/j98y
+         l82FpS03CvRnDllGpix+tTmTt1CAi+PBRpwwE=
 MIME-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20101021162410.5c0d6720.akpm@linux-foundation.org>
+References: <1287250035-30404-1-git-send-email-vapier@gentoo.org>
+ <20101021150250.f6499506.akpm@linux-foundation.org> <201010211823.38287.vapier@gentoo.org>
+ <20101021155528.b3d6d027.akpm@linux-foundation.org> <AANLkTim6AFDw_1V9rtF4e_2tmgctbKHziQa-1e3=q7og@mail.gmail.com>
+ <20101021162410.5c0d6720.akpm@linux-foundation.org>
+From: Mike Frysinger <vapier@gentoo.org>
+Date: Fri, 22 Oct 2010 16:14:49 -0400
+X-Google-Sender-Auth: h5Sa5GEVyp2cb5CZcWVTCz8pBEc
+Message-ID: <AANLkTikGbK7=eW9L4A62Rin-E3usq4Ke_dPoCdStDyEw@mail.gmail.com>
+Subject: Re: [PATCH] lib/atomic64_test: do not build on non-atomic64 systems
+To: Luca Barbieri <luca@luca-barbieri.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-10-22 at 07:57 -0400, Samu Onkalo wrote:
-> Changes are tested only with I2C interface using 8bit sensor since I don't
-> have other possibilities. Some features are not enabled
-> by default since I can't test them with all possible configurations.
-> Platform data contains field which controls new features.
-> 
-[ ... ]
-> 
-> Samu Onkalo (12):
->   hwmon: lis3: pm_runtime support
->   hwmon: lis3: regulator control
->   hwmon: lis3: Cleanup interrupt handling
->   hwmon: lis3: Update coordinates at polled device open
->   hwmon: lis3: Power on corrections
->   hwmon: lis3: restore axis enabled bits
->   hwmon: lis3: New parameters to platform data
->   hwmon: lis3: Adjust fuzziness for 8 bit device
->   hwmon: lis3: use block read to access data registers
->   hwmon: lis3: Enhance lis3 selftest with IRQ line test
->   hwmon: lis3: Short explanations of platform data fields
->   hwmon: lis3: Release resources is case of failure
-> 
->  drivers/hwmon/lis3lv02d.c     |  304 ++++++++++++++++++++++++++++++++++------
->  drivers/hwmon/lis3lv02d.h     |   18 +++
->  drivers/hwmon/lis3lv02d_i2c.c |  127 +++++++++++++++--
->  drivers/hwmon/lis3lv02d_spi.c |    2 +-
->  include/linux/lis3lv02d.h     |   50 +++++++-
->  5 files changed, 439 insertions(+), 62 deletions(-)
-> 
-Eric, can you Ack this series ?
+On Thu, Oct 21, 2010 at 19:24, Andrew Morton wrote:
+> On Thu, 21 Oct 2010 19:04:36 -0400 Mike Frysinger wrote:
+>> you can say "lazy" all you like.  i dont see the point in going that route.
+>
+> Try
+>
+>        grep HAVE arch/x86/Kconfig
+>
+> If all of those were instead to use some random #define which the
+> particular feature happened to define in some header file then we would
+> have a mess on our hands.
 
-Guenter
+fun times.  new tact.
 
-
+Luca: your new atomic64_t test build fails on all arches that lack
+atomic64_t.  please fix.
+-mike
