@@ -1,53 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759754Ab0JVTNc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 15:13:32 -0400
-Received: from out1.smtp.messagingengine.com ([66.111.4.25]:55395 "EHLO
-	out1.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759736Ab0JVTNa (ORCPT
+	id S1759370Ab0JVTO6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 15:14:58 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:49359 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759350Ab0JVTN2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 15:13:30 -0400
-X-Sasl-enc: oRYl2a5wp588Fp9b26XB8I8yJFxYOjyB6r9RIOT+psay 1287774809
-Message-ID: <4CC1E257.4070704@fastmail.fm>
-Date: Fri, 22 Oct 2010 20:13:27 +0100
-From: Jack Stone <jwjstone@fastmail.fm>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.0; en-GB; rv:1.9.2.11) Gecko/20101013 Lightning/1.0b2 Thunderbird/3.1.5
-MIME-Version: 1.0
-To: Greg KH <gregkh@suse.de>
-CC: linux-kernel@vger.kernel.org, stable@kernel.org,
-        Florian Fainelli <florian@openwrt.org>, stable-review@kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, 600155@bugs.debian.org,
-        Jason Heeris <jason.heeris@gmail.com>,
-        David Miller <davem@davemloft.net>, spamalot@hispeed.ch,
-        Ben Hutchings <ben@decadent.org.uk>
-Subject: Re: [11/17] r6040: Fix multicast list iteration when hash filter
- is used
-References: <20101022184033.486292826@clark.site>
-In-Reply-To: <20101022184033.486292826@clark.site>
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Fri, 22 Oct 2010 15:13:28 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer:x-mailer-version
+         :in-reply-to:references;
+        b=UjXj+0jHuAecpYcmGp4mv4ohpulUuxxuiluec7vbDLx/+DjNEUyJOXSYWfMdcIoJ39
+         kx9+PhFQONKk8HbGOFigf55PpHBW51TLZBZfA1Hkv1J9+BL/OasRe9oQSBKWxlgkCkej
+         VwCwtZ/uLh+TWOCmqqYO3YWeAHSMOKyFtEP+4=
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        Tom Zanussi <tzanussi@gmail.com>,
+        Masami Hiramatsu <mhiramat@redhat.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Robert Richter <robert.richter@amd.com>,
+        "Frank Ch. Eigler" <fche@redhat.com>
+Subject: [RFC PATCH 05/11] perf: New attribute to filter out user callchains
+Date: Fri, 22 Oct 2010 21:13:06 +0200
+Message-Id: <1287774792-23123-6-git-send-regression-fweisbec@gmail.com>
+X-Mailer: git-send-regression
+X-Mailer-version: 0.1, "The maintainer couldn't reproduce after one week full time debugging" special version.
+In-Reply-To: <1287774792-23123-1-git-send-regression-fweisbec@gmail.com>
+References: <1287774792-23123-1-git-send-regression-fweisbec@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 22/10/2010 19:39, Greg KH wrote:
->  drivers/net/r6040.c |    1 +
->  1 file changed, 1 insertion(+)
-> 
-> --- a/drivers/net/r6040.c
-> +++ b/drivers/net/r6040.c
-> @@ -976,6 +976,7 @@ static void r6040_multicast_list(struct
->  		iowrite16(hash_table[3], ioaddr + MAR3);
->  	}
->  	/* Multicast Address 1~4 case */
-> +	dmi = dev->mc_list;
->  	for (i = 0, dmi; (i < dev->mc_count) && (i < MCAST_MAX); i++) {
-Any reason for the dmi in the above line? As far as I can see it is a
-nop.
+Add the new exclude_user_callchain attribute to filter out
+frame pointer based user callchains. This is something we
+want to select when we use the dwarf cfi callchain mode,
+because frame pointer based user callchains are useless in
+this mode.
 
->  		adrp = (u16 *)dmi->dmi_addr;
->  		iowrite16(adrp[0], ioaddr + MID_1L + 8*i);
-> 
+Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Stephane Eranian <eranian@google.com>
+Cc: Cyrill Gorcunov <gorcunov@openvz.org>
+Cc: Tom Zanussi <tzanussi@gmail.com>
+Cc: Masami Hiramatsu <mhiramat@redhat.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Cc: Robert Richter <robert.richter@amd.com>
+Cc: Frank Ch. Eigler <fche@redhat.com>
+---
+ include/linux/perf_event.h |    3 ++-
+ kernel/perf_event.c        |    8 +++++---
+ 2 files changed, 7 insertions(+), 4 deletions(-)
+
+diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
+index 87441b5..86c988e 100644
+--- a/include/linux/perf_event.h
++++ b/include/linux/perf_event.h
+@@ -215,8 +215,9 @@ struct perf_event_attr {
+ 				 */
+ 				precise_ip     :  2, /* skid constraint       */
+ 				mmap_data      :  1, /* non-exec mmap data    */
++				exclude_user_callchain : 1, /* only record kernel callchains */
+ 
+-				__reserved_1   : 46;
++				__reserved_1   : 45;
+ 
+ 	union {
+ 		__u32		wakeup_events;	  /* wakeup every n events */
+diff --git a/kernel/perf_event.c b/kernel/perf_event.c
+index 674ed25..e76623a 100644
+--- a/kernel/perf_event.c
++++ b/kernel/perf_event.c
+@@ -2016,7 +2016,8 @@ put_callchain_entry(int rctx)
+ 	put_recursion_context(__get_cpu_var(callchain_recursion), rctx);
+ }
+ 
+-static struct perf_callchain_entry *perf_callchain(struct pt_regs *regs)
++static struct perf_callchain_entry *
++perf_callchain(struct pt_regs *regs, int user)
+ {
+ 	int rctx;
+ 	struct perf_callchain_entry *entry;
+@@ -2040,7 +2041,7 @@ static struct perf_callchain_entry *perf_callchain(struct pt_regs *regs)
+ 			regs = NULL;
+ 	}
+ 
+-	if (regs) {
++	if (user && regs) {
+ 		perf_callchain_store(entry, PERF_CONTEXT_USER);
+ 		perf_callchain_user(entry, regs);
+ 	}
+@@ -3738,8 +3739,9 @@ void perf_prepare_sample(struct perf_event_header *header,
+ 
+ 	if (sample_type & PERF_SAMPLE_CALLCHAIN) {
+ 		int size = 1;
++		int user = !event->attr.exclude_user_callchain;
+ 
+-		data->callchain = perf_callchain(regs);
++		data->callchain = perf_callchain(regs, user);
+ 
+ 		if (data->callchain)
+ 			size += data->callchain->nr;
+-- 
+1.6.2.3
 
