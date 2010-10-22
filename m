@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756274Ab0JVSi1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 14:38:27 -0400
-Received: from kroah.org ([198.145.64.141]:45635 "EHLO coco.kroah.org"
+	id S1757601Ab0JVSww (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 14:52:52 -0400
+Received: from kroah.org ([198.145.64.141]:45656 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754158Ab0JVSiY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 14:38:24 -0400
-X-Mailbox-Line: From gregkh@clark.site Fri Oct 22 11:35:57 2010
-Message-Id: <20101022183557.673045740@clark.site>
+	id S1756260Ab0JVSi1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Oct 2010 14:38:27 -0400
+X-Mailbox-Line: From gregkh@clark.site Fri Oct 22 11:35:58 2010
+Message-Id: <20101022183557.941712232@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 22 Oct 2010 11:34:43 -0700
+Date: Fri, 22 Oct 2010 11:34:46 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: [16/66] tracing/x86: Dont use mcount in pvclock.c
+        Mauro Carvalho Chehab <mchehab@redhat.com>
+Subject: [19/66] V4L/DVB: cx231xx: Avoid an OOPS when card is unknown (card=0)
 In-Reply-To: <20101022183711.GA23214@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,34 +25,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jeremy Fitzhardinge <jeremy@goop.org>
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
 
-commit 9ecd4e1689208afe9b059a5ce1333acb2f42c4d2 upstream.
+commit c10469c637602c2385e2993d8c730cc44fd47d23 upstream.
 
-When using a paravirt clock, pvclock.c can be used by sched_clock(),
-which in turn is used by the tracing mechanism for timestamps,
-which leads to infinite recursion.
+As reported by: Carlos Americo Domiciano <c_domiciano@yahoo.com.br>:
 
-Disable mcount/tracing for pvclock.o.
+[  220.033500] cx231xx v4l2 driver loaded.
+[  220.033571] cx231xx #0: New device Conexant Corporation Polaris AV Capturb @ 480 Mbps (1554:5010) with 6 interfaces
+[  220.033577] cx231xx #0: registering interface 0
+[  220.033591] cx231xx #0: registering interface 1
+[  220.033654] cx231xx #0: registering interface 6
+[  220.033910] cx231xx #0: Identified as Unknown CX231xx video grabber (card=0)
+[  220.033946] BUG: unable to handle kernel NULL pointer dereference at (null)
+[  220.033955] IP: [<ffffffffa0d3c8bd>] cx231xx_pre_card_setup+0x5d/0xb0 [cx231xx]
 
-Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-LKML-Reference: <4C9A9A3F.4040201@goop.org>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Thanks-to: Carlos Americo Domiciano <c_domiciano@yahoo.com.br>
+Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/x86/kernel/Makefile |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/media/video/cx231xx/cx231xx-cards.c |   14 ++++++++------
+ 1 file changed, 8 insertions(+), 6 deletions(-)
 
---- a/arch/x86/kernel/Makefile
-+++ b/arch/x86/kernel/Makefile
-@@ -11,6 +11,7 @@ ifdef CONFIG_FUNCTION_TRACER
- CFLAGS_REMOVE_tsc.o = -pg
- CFLAGS_REMOVE_rtc.o = -pg
- CFLAGS_REMOVE_paravirt-spinlocks.o = -pg
-+CFLAGS_REMOVE_pvclock.o = -pg
- CFLAGS_REMOVE_ftrace.o = -pg
- CFLAGS_REMOVE_early_printk.o = -pg
- endif
+--- a/drivers/media/video/cx231xx/cx231xx-cards.c
++++ b/drivers/media/video/cx231xx/cx231xx-cards.c
+@@ -225,14 +225,16 @@ void cx231xx_pre_card_setup(struct cx231
+ 		     dev->board.name, dev->model);
+ 
+ 	/* set the direction for GPIO pins */
+-	cx231xx_set_gpio_direction(dev, dev->board.tuner_gpio->bit, 1);
+-	cx231xx_set_gpio_value(dev, dev->board.tuner_gpio->bit, 1);
+-	cx231xx_set_gpio_direction(dev, dev->board.tuner_sif_gpio, 1);
++	if (dev->board.tuner_gpio) {
++		cx231xx_set_gpio_direction(dev, dev->board.tuner_gpio->bit, 1);
++		cx231xx_set_gpio_value(dev, dev->board.tuner_gpio->bit, 1);
++		cx231xx_set_gpio_direction(dev, dev->board.tuner_sif_gpio, 1);
+ 
+-	/* request some modules if any required */
++		/* request some modules if any required */
+ 
+-	/* reset the Tuner */
+-	cx231xx_gpio_set(dev, dev->board.tuner_gpio);
++		/* reset the Tuner */
++		cx231xx_gpio_set(dev, dev->board.tuner_gpio);
++	}
+ 
+ 	/* set the mode to Analog mode initially */
+ 	cx231xx_set_mode(dev, CX231XX_ANALOG_MODE);
 
 
