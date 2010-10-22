@@ -1,69 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758826Ab0JVSl3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 14:41:29 -0400
-Received: from kroah.org ([198.145.64.141]:45936 "EHLO coco.kroah.org"
+	id S1758713Ab0JVSpp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 14:45:45 -0400
+Received: from kroah.org ([198.145.64.141]:45869 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756348Ab0JVSl2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 14:41:28 -0400
-X-Mailbox-Line: From gregkh@clark.site Fri Oct 22 11:40:32 2010
-Message-Id: <20101022184032.582380063@clark.site>
+	id S1755890Ab0JVSjC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Oct 2010 14:39:02 -0400
+X-Mailbox-Line: From gregkh@clark.site Fri Oct 22 11:36:01 2010
+Message-Id: <20101022183601.288990254@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 22 Oct 2010 11:39:26 -0700
+Date: Fri, 22 Oct 2010 11:35:24 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Jeff Moyer <jmoyer@redhat.com>
-Subject: [01/17] aio: check for multiplication overflow in do_io_submit
-In-Reply-To: <20101022184048.GA25391@kroah.com>
+        Len Brown <len.brown@intel.com>
+Subject: [57/66] ACPI: delete ZEPTO idle=nomwait DMI quirk
+In-Reply-To: <20101022183711.GA23214@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.27-stable review patch.  If anyone has any objections, please let us know.
+2.6.32-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
 
-From: Jeff Moyer <jmoyer@redhat.com>
+From: Len Brown <len.brown@intel.com>
 
-commit 75e1c70fc31490ef8a373ea2a4bea2524099b478 upstream.
+commit 64a32307b710c100beb101e9c78f8022f0e8ba61 upstream.
 
-Tavis Ormandy pointed out that do_io_submit does not do proper bounds
-checking on the passed-in iocb array:
+per comments in the bug report, this entry
+seems to hurt at much as it helps.
 
-       if (unlikely(nr < 0))
-               return -EINVAL;
+https://bugzilla.kernel.org/show_bug.cgi?id=10807
 
-       if (unlikely(!access_ok(VERIFY_READ, iocbpp, (nr*sizeof(iocbpp)))))
-               return -EFAULT;                      ^^^^^^^^^^^^^^^^^^
-
-The attached patch checks for overflow, and if it is detected, the
-number of iocbs submitted is scaled down to a number that will fit in
-the long.  This is an ok thing to do, as sys_io_submit is documented as
-returning the number of iocbs submitted, so callers should handle a
-return value of less than the 'nr' argument passed in.
-
-Reported-by: Tavis Ormandy <taviso@cmpxchg8b.com>
-Signed-off-by: Jeff Moyer <jmoyer@redhat.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Len Brown <len.brown@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/aio.c |    3 +++
- 1 file changed, 3 insertions(+)
+ drivers/acpi/processor_core.c |    6 ------
+ 1 file changed, 6 deletions(-)
 
---- a/fs/aio.c
-+++ b/fs/aio.c
-@@ -1677,6 +1677,9 @@ SYSCALL_DEFINE3(io_submit, aio_context_t
- 	if (unlikely(nr < 0))
- 		return -EINVAL;
+--- a/drivers/acpi/processor_core.c
++++ b/drivers/acpi/processor_core.c
+@@ -134,12 +134,6 @@ static int set_no_mwait(const struct dmi
  
-+	if (unlikely(nr > LONG_MAX/sizeof(*iocbpp)))
-+		nr = LONG_MAX/sizeof(*iocbpp);
-+
- 	if (unlikely(!access_ok(VERIFY_READ, iocbpp, (nr*sizeof(*iocbpp)))))
- 		return -EFAULT;
- 
+ static struct dmi_system_id __cpuinitdata processor_idle_dmi_table[] = {
+ 	{
+-	set_no_mwait, "IFL91 board", {
+-	DMI_MATCH(DMI_BIOS_VENDOR, "COMPAL"),
+-	DMI_MATCH(DMI_SYS_VENDOR, "ZEPTO"),
+-	DMI_MATCH(DMI_PRODUCT_VERSION, "3215W"),
+-	DMI_MATCH(DMI_BOARD_NAME, "IFL91") }, NULL},
+-	{
+ 	set_no_mwait, "Extensa 5220", {
+ 	DMI_MATCH(DMI_BIOS_VENDOR, "Phoenix Technologies LTD"),
+ 	DMI_MATCH(DMI_SYS_VENDOR, "Acer"),
 
 
