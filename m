@@ -1,39 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932262Ab0JVV2J (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 17:28:09 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:43984 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1757089Ab0JVV2H (ORCPT
+	id S1758434Ab0JVVaf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 17:30:35 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:36602 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756056Ab0JVVae (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 17:28:07 -0400
-Date: Fri, 22 Oct 2010 17:28:04 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Luben Tuikov <ltuikov@yahoo.com>
-cc: Greg KH <greg@kroah.com>, <linux-usb@vger.kernel.org>,
-        <linux-scsi@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] [USB] Use normalized sense when emulating autosense
-In-Reply-To: <177615.57592.qm@web31810.mail.mud.yahoo.com>
-Message-ID: <Pine.LNX.4.44L0.1010221726530.4510-100000@iolanthe.rowland.org>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Fri, 22 Oct 2010 17:30:34 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=jBahvA7+hRZGSdh/8nNJ7C/daB+B56OK0/pPylH305ubL+bhI5up4LiCUQ6b0C3NBc
+         FRlm7+9TVKsitUZNd+ByKAA4dS7mXfMhr1XYe2bikU+aFZ5FKTJtZuFm4kCH8uu740wf
+         6sjk7L4dc7rh7n6hA2smDkXu1zVLrto8izMFo=
+From: Tracey Dent <tdent48227@gmail.com>
+To: greg@kroah.com
+Cc: linux-kernel@vger.kernel.org, Tracey Dent <tdent48227@gmail.com>
+Subject: [PATCH] Staging: msm: Makefile: replace the use of <module>-objs with <module>-y
+Date: Fri, 22 Oct 2010 17:30:28 -0400
+Message-Id: <1287783028-3864-1-git-send-email-tdent48227@gmail.com>
+X-Mailer: git-send-email 1.7.3.1.104.gc752e
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 22 Oct 2010, Luben Tuikov wrote:
+Changed <module>-objs to <module>-y in Makefile.
 
-> --- On Fri, 10/22/10, Alan Stern <stern@rowland.harvard.edu> wrote:
-> > What about the Filemark and ILI tests?  You mustn't
-> > get rid of them; 
-> > they are needed for tape drives.
-> 
-> I've resubmitted the patch.
+Signed-off-by: Tracey Dent <tdent48227@gmail.com>
+---
+ drivers/staging/msm/Makefile |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-Yeah, the new one is better.  I would have preferred to see fm_ili 
-explained in a comment, but this is okay.
-
-Alan Stern
+diff --git a/drivers/staging/msm/Makefile b/drivers/staging/msm/Makefile
+index bb3606f..07a89ec 100644
+--- a/drivers/staging/msm/Makefile
++++ b/drivers/staging/msm/Makefile
+@@ -41,11 +41,11 @@ obj-$(CONFIG_FB_MSM_EBI2) += ebi2_lcd.o
+ obj-$(CONFIG_FB_MSM_LCDC) += lcdc.o
+ 
+ # MDDI
+-msm_mddi-objs := mddi.o mddihost.o mddihosti.o
++msm_mddi-y := mddi.o mddihost.o mddihosti.o
+ obj-$(CONFIG_FB_MSM_MDDI) += msm_mddi.o
+ 
+ # External MDDI
+-msm_mddi_ext-objs := mddihost_e.o mddi_ext.o
++msm_mddi_ext-y := mddihost_e.o mddi_ext.o
+ obj-$(CONFIG_FB_MSM_EXTMDDI) += msm_mddi_ext.o
+ 
+ # TVEnc
+-- 
+1.7.3.1.104.gc752e
 
