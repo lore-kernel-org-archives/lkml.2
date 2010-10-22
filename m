@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752884Ab0JVWvN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 18:51:13 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:17516 "EHLO
+	id S1753364Ab0JVWwd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 18:52:33 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:18047 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751689Ab0JVWvM (ORCPT
+	with ESMTP id S1751922Ab0JVWwc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 18:51:12 -0400
+	Fri, 22 Oct 2010 18:52:32 -0400
 From: Mandeep Singh Baines <msb@chromium.org>
 To: Andrew Morton <akpm@linux-foundation.org>,
         KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
         Rik van Riel <riel@redhat.com>, Mel Gorman <mel@csn.ul.ie>,
         Minchan Kim <minchan.kim@gmail.com>,
-        Johannes Weiner <hannes@cmpxchg.org>
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Wu Fengguang <fengguang.wu@intel.com>
 Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org, wad@chromium.org,
         olofj@chromium.org, Mandeep Singh Baines <msb@chromium.org>
 Subject: [PATCH] vmscan: move referenced VM_EXEC pages to active list
-Date: Fri, 22 Oct 2010 15:49:50 -0700
-Message-Id: <1287787790-4170-1-git-send-email-msb@chromium.org>
+Date: Fri, 22 Oct 2010 15:51:51 -0700
+Message-Id: <1287787911-4257-1-git-send-email-msb@chromium.org>
 X-Mailer: git-send-email 1.7.1
 X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
