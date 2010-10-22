@@ -1,17 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758583Ab0JVTaX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 15:30:23 -0400
-Received: from kroah.org ([198.145.64.141]:41852 "EHLO coco.kroah.org"
+	id S1759914Ab0JVTau (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 15:30:50 -0400
+Received: from kroah.org ([198.145.64.141]:41838 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758508Ab0JVSVe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 14:21:34 -0400
+	id S1758288Ab0JVSVa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Oct 2010 14:21:30 -0400
 From: Greg Kroah-Hartman <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org
-Cc: Jeff Mahoney <jeffm@suse.com>, Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [PATCH 06/49] ioctl: Use asm-generic/ioctls.h on arm (enables termiox)
-Date: Fri, 22 Oct 2010 11:20:45 -0700
-Message-Id: <1287771688-14805-6-git-send-email-gregkh@suse.de>
+Cc: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [PATCH 02/49] serport: place serport serio device correctly in the device tree
+Date: Fri, 22 Oct 2010 11:20:41 -0700
+Message-Id: <1287771688-14805-2-git-send-email-gregkh@suse.de>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <20101022175112.GC13489@kroah.com>
 References: <20101022175112.GC13489@kroah.com>
@@ -19,119 +20,30 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jeff Mahoney <jeffm@suse.com>
+From: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
 
-This patch converts arm to use asm-generic/ioctls.h instead of its
-own version.
+Make serport serio device to be a child of corresponding tty device
+instead of just hanging at /sys/devices/serioX.
 
-The differences between the arch-specific version and the generic
-version are as follows:
-
-- ARM defines its own value for FIOQSIZE, asm-generic/ioctls.h keeps it
-- The generic version adds support for termiox
-
-Reviewed-by: Russell King <rmk+kernel@arm.linux.org.uk>
-Signed-off-by: Jeff Mahoney <jeffm@suse.com>
+Signed-off-by: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
+Acked-by: Dmitry Torokhov <dtor@mail.ru>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- arch/arm/include/asm/ioctls.h |   83 +----------------------------------------
- 1 files changed, 1 insertions(+), 82 deletions(-)
+ drivers/input/serio/serport.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-diff --git a/arch/arm/include/asm/ioctls.h b/arch/arm/include/asm/ioctls.h
-index 0b30894..9c96298 100644
---- a/arch/arm/include/asm/ioctls.h
-+++ b/arch/arm/include/asm/ioctls.h
-@@ -1,89 +1,8 @@
- #ifndef __ASM_ARM_IOCTLS_H
- #define __ASM_ARM_IOCTLS_H
+diff --git a/drivers/input/serio/serport.c b/drivers/input/serio/serport.c
+index 6d34511..6e362de 100644
+--- a/drivers/input/serio/serport.c
++++ b/drivers/input/serio/serport.c
+@@ -165,6 +165,7 @@ static ssize_t serport_ldisc_read(struct tty_struct * tty, struct file * file, u
+ 	serio->open = serport_serio_open;
+ 	serio->close = serport_serio_close;
+ 	serio->port_data = serport;
++	serio->dev.parent = tty->dev;
  
--#include <asm/ioctl.h>
--
--/* 0x54 is just a magic number to make these relatively unique ('T') */
--
--#define TCGETS		0x5401
--#define TCSETS		0x5402
--#define TCSETSW		0x5403
--#define TCSETSF		0x5404
--#define TCGETA		0x5405
--#define TCSETA		0x5406
--#define TCSETAW		0x5407
--#define TCSETAF		0x5408
--#define TCSBRK		0x5409
--#define TCXONC		0x540A
--#define TCFLSH		0x540B
--#define TIOCEXCL	0x540C
--#define TIOCNXCL	0x540D
--#define TIOCSCTTY	0x540E
--#define TIOCGPGRP	0x540F
--#define TIOCSPGRP	0x5410
--#define TIOCOUTQ	0x5411
--#define TIOCSTI		0x5412
--#define TIOCGWINSZ	0x5413
--#define TIOCSWINSZ	0x5414
--#define TIOCMGET	0x5415
--#define TIOCMBIS	0x5416
--#define TIOCMBIC	0x5417
--#define TIOCMSET	0x5418
--#define TIOCGSOFTCAR	0x5419
--#define TIOCSSOFTCAR	0x541A
--#define FIONREAD	0x541B
--#define TIOCINQ		FIONREAD
--#define TIOCLINUX	0x541C
--#define TIOCCONS	0x541D
--#define TIOCGSERIAL	0x541E
--#define TIOCSSERIAL	0x541F
--#define TIOCPKT		0x5420
--#define FIONBIO		0x5421
--#define TIOCNOTTY	0x5422
--#define TIOCSETD	0x5423
--#define TIOCGETD	0x5424
--#define TCSBRKP		0x5425	/* Needed for POSIX tcsendbreak() */
--#define TIOCSBRK	0x5427  /* BSD compatibility */
--#define TIOCCBRK	0x5428  /* BSD compatibility */
--#define TIOCGSID	0x5429  /* Return the session ID of FD */
--#define TCGETS2		_IOR('T',0x2A, struct termios2)
--#define TCSETS2		_IOW('T',0x2B, struct termios2)
--#define TCSETSW2	_IOW('T',0x2C, struct termios2)
--#define TCSETSF2	_IOW('T',0x2D, struct termios2)
--#define TIOCGPTN	_IOR('T',0x30, unsigned int) /* Get Pty Number (of pty-mux device) */
--#define TIOCSPTLCK	_IOW('T',0x31, int)  /* Lock/unlock Pty */
--#define TIOCSIG		_IOW('T',0x36, int)  /* Generate signal on Pty slave */
--
--#define TIOCGRS485      0x542E
--#define TIOCSRS485      0x542F
--
--#define FIONCLEX	0x5450  /* these numbers need to be adjusted. */
--#define FIOCLEX		0x5451
--#define FIOASYNC	0x5452
--#define TIOCSERCONFIG	0x5453
--#define TIOCSERGWILD	0x5454
--#define TIOCSERSWILD	0x5455
--#define TIOCGLCKTRMIOS	0x5456
--#define TIOCSLCKTRMIOS	0x5457
--#define TIOCSERGSTRUCT	0x5458 /* For debugging only */
--#define TIOCSERGETLSR   0x5459 /* Get line status register */
--#define TIOCSERGETMULTI 0x545A /* Get multiport config  */
--#define TIOCSERSETMULTI 0x545B /* Set multiport config */
--
--#define TIOCMIWAIT	0x545C	/* wait for a change on serial input line(s) */
--#define TIOCGICOUNT	0x545D	/* read serial port inline interrupt counts */
- #define FIOQSIZE	0x545E
- 
--/* Used for packet mode */
--#define TIOCPKT_DATA		 0
--#define TIOCPKT_FLUSHREAD	 1
--#define TIOCPKT_FLUSHWRITE	 2
--#define TIOCPKT_STOP		 4
--#define TIOCPKT_START		 8
--#define TIOCPKT_NOSTOP		16
--#define TIOCPKT_DOSTOP		32
--#define TIOCPKT_IOCTL		64
--
--#define TIOCSER_TEMT	0x01	/* Transmitter physically empty */
-+#include <asm-generic/ioctls.h>
- 
- #endif
+ 	serio_register_port(serport->serio);
+ 	printk(KERN_INFO "serio: Serial port %s\n", tty_name(tty, name));
 -- 
 1.7.2
 
