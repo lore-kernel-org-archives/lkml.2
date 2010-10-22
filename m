@@ -1,82 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759291Ab0JVTat (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 15:30:49 -0400
-Received: from kroah.org ([198.145.64.141]:41843 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758337Ab0JVSVc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 14:21:32 -0400
-From: Greg Kroah-Hartman <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org
-Cc: Michal Simek <monstr@monstr.eu>, Jason Wessel <jason.wessel@windriver.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [PATCH 04/49] serial: Add CONSOLE_POLL support for uartlite
-Date: Fri, 22 Oct 2010 11:20:43 -0700
-Message-Id: <1287771688-14805-4-git-send-email-gregkh@suse.de>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <20101022175112.GC13489@kroah.com>
-References: <20101022175112.GC13489@kroah.com>
+	id S1758486Ab0JVTez (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 15:34:55 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:45518 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756747Ab0JVTey (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Oct 2010 15:34:54 -0400
+Message-ID: <4CC1E717.7070707@ti.com>
+Date: Fri, 22 Oct 2010 15:33:43 -0400
+From: Cyril Chemparathy <cyril@ti.com>
+Reply-To: cyril@ti.com
+Organization: Texas Instruments
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.14) Gecko/20101006 Lightning/1.0b1 Thunderbird/3.0.9
+MIME-Version: 1.0
+To: Arnd Bergmann <arnd@arndb.de>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        "davinci-linux-open-source@linux.davincidsp.com" 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        "spi-devel-general@lists.sourceforge.net" 
+	<spi-devel-general@lists.sourceforge.net>,
+        "broonie@opensource.wolfsonmicro.com" 
+	<broonie@opensource.wolfsonmicro.com>,
+        "lrg@slimlogic.co.uk" <lrg@slimlogic.co.uk>,
+        "dbrownell@users.sourceforge.net" <dbrownell@users.sourceforge.net>,
+        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "rpurdie@rpsys.net" <rpurdie@rpsys.net>
+Subject: Re: [PATCH v3 01/12] misc: add driver for sequencer serial port
+References: <1287694873-12904-1-git-send-email-cyril@ti.com> <20101021161224.b4c0b623.akpm@linux-foundation.org> <4CC18605.80007@ti.com> <201010221448.17728.arnd@arndb.de>
+In-Reply-To: <201010221448.17728.arnd@arndb.de>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Michal Simek <monstr@monstr.eu>
+On 10/22/2010 08:48 AM, Arnd Bergmann wrote:
+> On Friday 22 October 2010 14:39:33 Cyril Chemparathy wrote:
+>>>> +/* Register Access Helpers */
+>>>> +static inline u32 ssp_read(struct ti_ssp *ssp, int reg)
+>>>> +{
+>>>> +    return __raw_readl(ssp->regs + reg);
+>>>> +}
+>>>> +
+>>>> +static inline void ssp_write(struct ti_ssp *ssp, int reg, u32 val)
+>>>> +{
+>>>> +    __raw_writel(val, ssp->regs + reg);
+>>>> +}
+>>>
+>>> Why are the __raw functions used here?
+>>>
+>>
+>> These registers are to be accessed native endian at all times, and
+>> therefore the le32 conversion done otherwise is inappropriate.
+> 
+> Won't that break on out-of-order CPUs that need the extra synchronization
+> done in readl/writel?
+> 
 
-CONSOLE_POLL support for uartlite enables
-KGDB debugging over serial line.
+AFAICS, ioremap()ed space on ARMv6 should be strongly ordered.
 
-Signed-off-by: Michal Simek <monstr@monstr.eu>
-Signed-off-by: Jason Wessel <jason.wessel@windriver.com>
-Acked-by: Peter Korsgaard <jacmet@sunsite.dk>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
----
- drivers/serial/uartlite.c |   26 +++++++++++++++++++++++++-
- 1 files changed, 25 insertions(+), 1 deletions(-)
+>
+> ...
+>
 
-diff --git a/drivers/serial/uartlite.c b/drivers/serial/uartlite.c
-index 9b03d7b..c4bf54b 100644
---- a/drivers/serial/uartlite.c
-+++ b/drivers/serial/uartlite.c
-@@ -322,6 +322,26 @@ static int ulite_verify_port(struct uart_port *port, struct serial_struct *ser)
- 	return -EINVAL;
- }
- 
-+#ifdef CONFIG_CONSOLE_POLL
-+static int ulite_get_poll_char(struct uart_port *port)
-+{
-+	if (!(ioread32be(port->membase + ULITE_STATUS)
-+						& ULITE_STATUS_RXVALID))
-+		return NO_POLL_CHAR;
-+
-+	return ioread32be(port->membase + ULITE_RX);
-+}
-+
-+static void ulite_put_poll_char(struct uart_port *port, unsigned char ch)
-+{
-+	while (ioread32be(port->membase + ULITE_STATUS) & ULITE_STATUS_TXFULL)
-+		cpu_relax();
-+
-+	/* write char to device */
-+	iowrite32be(ch, port->membase + ULITE_TX);
-+}
-+#endif
-+
- static struct uart_ops ulite_ops = {
- 	.tx_empty	= ulite_tx_empty,
- 	.set_mctrl	= ulite_set_mctrl,
-@@ -338,7 +358,11 @@ static struct uart_ops ulite_ops = {
- 	.release_port	= ulite_release_port,
- 	.request_port	= ulite_request_port,
- 	.config_port	= ulite_config_port,
--	.verify_port	= ulite_verify_port
-+	.verify_port	= ulite_verify_port,
-+#ifdef CONFIG_CONSOLE_POLL
-+	.poll_get_char	= ulite_get_poll_char,
-+	.poll_put_char	= ulite_put_poll_char,
-+#endif
- };
- 
- /* ---------------------------------------------------------------------
--- 
-1.7.2
-
+Thanks
+Cyril.
