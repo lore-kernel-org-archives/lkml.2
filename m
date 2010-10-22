@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932845Ab0JVTVH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 15:21:07 -0400
-Received: from g4t0017.houston.hp.com ([15.201.24.20]:4710 "EHLO
-	g4t0017.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758822Ab0JVTVE (ORCPT
+	id S932870Ab0JVTVP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 15:21:15 -0400
+Received: from g4t0014.houston.hp.com ([15.201.24.17]:45672 "EHLO
+	g4t0014.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932848Ab0JVTVN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 15:21:04 -0400
-Subject: [PATCH 1/5] cciss: remove controllers supported by hpsa
+	Fri, 22 Oct 2010 15:21:13 -0400
+Subject: [PATCH 3/5] cciss: Use kernel provided PCI state save and restore
+	functions
 To: axboe@kernel.dk
 From: "Stephen M. Cameron" <scameron@beardog.cce.hp.com>
 Cc: akpm@linux-foundation.org, smcameron@yahoo.com,
         linux-kernel@vger.kernel.org, mike.miller@hp.com, thenzl@redhat.com
-Date: Fri, 22 Oct 2010 14:21:01 -0500
-Message-ID: <20101022192101.25567.40578.stgit@beardog.cce.hp.com>
+Date: Fri, 22 Oct 2010 14:21:12 -0500
+Message-ID: <20101022192112.25567.24572.stgit@beardog.cce.hp.com>
 In-Reply-To: <20101022191738.25567.43468.stgit@beardog.cce.hp.com>
 References: <20101022191738.25567.43468.stgit@beardog.cce.hp.com>
 User-Agent: StGit/0.15
@@ -26,99 +27,142 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Stephen M. Cameron <scameron@beardog.cce.hp.com>
 
-We would prefer not to have any overlap between the two drivers.
-Remove the cciss_allow_hpsa option, as it it is no longer needed.
+and use the doorbell reset method if available (which doesn't
+lock up the controller if you properly save and restore all
+the PCI registers that you're supposed to.)
 
 Signed-off-by: Stephen M. Cameron <scameron@beardog.cce.hp.com>
 ---
- drivers/block/cciss.c |   46 ++++------------------------------------------
- 1 files changed, 4 insertions(+), 42 deletions(-)
+ drivers/block/cciss.c |   73 ++++++++++---------------------------------------
+ 1 files changed, 15 insertions(+), 58 deletions(-)
 
 diff --git a/drivers/block/cciss.c b/drivers/block/cciss.c
-index 41f9acb..dea1f2a 100644
+index a9e9db4..03afef8 100644
 --- a/drivers/block/cciss.c
 +++ b/drivers/block/cciss.c
-@@ -66,12 +66,6 @@ MODULE_SUPPORTED_DEVICE("HP Smart Array Controllers");
- MODULE_VERSION("3.6.26");
- MODULE_LICENSE("GPL");
+@@ -4321,36 +4321,6 @@ static __devinit int cciss_message(struct pci_dev *pdev, unsigned char opcode, u
+ #define cciss_soft_reset_controller(p) cciss_message(p, 1, 0)
+ #define cciss_noop(p) cciss_message(p, 3, 0)
  
--static int cciss_allow_hpsa;
--module_param(cciss_allow_hpsa, int, S_IRUGO|S_IWUSR);
--MODULE_PARM_DESC(cciss_allow_hpsa,
--	"Prevent cciss driver from accessing hardware known to be "
--	" supported by the hpsa driver");
+-static __devinit int cciss_reset_msi(struct pci_dev *pdev)
+-{
+-/* the #defines are stolen from drivers/pci/msi.h. */
+-#define msi_control_reg(base)		(base + PCI_MSI_FLAGS)
+-#define PCI_MSIX_FLAGS_ENABLE		(1 << 15)
 -
- #include "cciss_cmd.h"
- #include "cciss.h"
- #include <linux/cciss_ioctl.h>
-@@ -98,19 +92,6 @@ static const struct pci_device_id cciss_pci_device_id[] = {
- 	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSD,     0x103C, 0x3215},
- 	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSC,     0x103C, 0x3237},
- 	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSC,     0x103C, 0x323D},
--	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSE,     0x103C, 0x3241},
--	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSE,     0x103C, 0x3243},
--	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSE,     0x103C, 0x3245},
--	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSE,     0x103C, 0x3247},
--	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSE,     0x103C, 0x3249},
--	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSE,     0x103C, 0x324A},
--	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSE,     0x103C, 0x324B},
--	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSF,     0x103C, 0x3350},
--	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSF,     0x103C, 0x3351},
--	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSF,     0x103C, 0x3352},
--	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSF,     0x103C, 0x3353},
--	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSF,     0x103C, 0x3354},
--	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSF,     0x103C, 0x3355},
- 	{0,}
- };
- 
-@@ -131,6 +112,8 @@ static struct board_type products[] = {
- 	{0x409D0E11, "Smart Array 6400 EM", &SA5_access},
- 	{0x40910E11, "Smart Array 6i", &SA5_access},
- 	{0x3225103C, "Smart Array P600", &SA5_access},
-+	{0x3223103C, "Smart Array P800", &SA5_access},
-+	{0x3234103C, "Smart Array P400", &SA5_access},
- 	{0x3235103C, "Smart Array P400i", &SA5_access},
- 	{0x3211103C, "Smart Array E200i", &SA5_access},
- 	{0x3212103C, "Smart Array E200", &SA5_access},
-@@ -138,24 +121,7 @@ static struct board_type products[] = {
- 	{0x3214103C, "Smart Array E200i", &SA5_access},
- 	{0x3215103C, "Smart Array E200i", &SA5_access},
- 	{0x3237103C, "Smart Array E500", &SA5_access},
--/* controllers below this line are also supported by the hpsa driver. */
--#define HPSA_BOUNDARY 0x3223103C
--	{0x3223103C, "Smart Array P800", &SA5_access},
--	{0x3234103C, "Smart Array P400", &SA5_access},
--	{0x323D103C, "Smart Array P700m", &SA5_access},
--	{0x3241103C, "Smart Array P212", &SA5_access},
--	{0x3243103C, "Smart Array P410", &SA5_access},
--	{0x3245103C, "Smart Array P410i", &SA5_access},
--	{0x3247103C, "Smart Array P411", &SA5_access},
--	{0x3249103C, "Smart Array P812", &SA5_access},
--	{0x324A103C, "Smart Array P712m", &SA5_access},
--	{0x324B103C, "Smart Array P711m", &SA5_access},
--	{0x3350103C, "Smart Array", &SA5_access},
--	{0x3351103C, "Smart Array", &SA5_access},
--	{0x3352103C, "Smart Array", &SA5_access},
--	{0x3353103C, "Smart Array", &SA5_access},
--	{0x3354103C, "Smart Array", &SA5_access},
--	{0x3355103C, "Smart Array", &SA5_access},
-+	{0x323d103c, "Smart Array P700M", &SA5_access},
- };
- 
- /* How long to wait (in milliseconds) for board to go into simple mode */
-@@ -3967,13 +3933,9 @@ static int __devinit cciss_lookup_board_id(struct pci_dev *pdev, u32 *board_id)
- 	*board_id = ((subsystem_device_id << 16) & 0xffff0000) |
- 			subsystem_vendor_id;
- 
--	for (i = 0; i < ARRAY_SIZE(products); i++) {
--		/* Stand aside for hpsa driver on request */
--		if (cciss_allow_hpsa && products[i].board_id == HPSA_BOUNDARY)
--			return -ENODEV;
-+	for (i = 0; i < ARRAY_SIZE(products); i++)
- 		if (*board_id == products[i].board_id)
- 			return i;
+-	int pos;
+-	u16 control = 0;
+-
+-	pos = pci_find_capability(pdev, PCI_CAP_ID_MSI);
+-	if (pos) {
+-		pci_read_config_word(pdev, msi_control_reg(pos), &control);
+-		if (control & PCI_MSI_FLAGS_ENABLE) {
+-			dev_info(&pdev->dev, "resetting MSI\n");
+-			pci_write_config_word(pdev, msi_control_reg(pos), control & ~PCI_MSI_FLAGS_ENABLE);
+-		}
 -	}
- 	dev_warn(&pdev->dev, "unrecognized board ID: 0x%08x, ignoring.\n",
- 		*board_id);
- 	return -ENODEV;
+-
+-	pos = pci_find_capability(pdev, PCI_CAP_ID_MSIX);
+-	if (pos) {
+-		pci_read_config_word(pdev, msi_control_reg(pos), &control);
+-		if (control & PCI_MSIX_FLAGS_ENABLE) {
+-			dev_info(&pdev->dev, "resetting MSI-X\n");
+-			pci_write_config_word(pdev, msi_control_reg(pos), control & ~PCI_MSIX_FLAGS_ENABLE);
+-		}
+-	}
+-
+-	return 0;
+-}
+-
+ static int cciss_controller_hard_reset(struct pci_dev *pdev,
+ 	void * __iomem vaddr, bool use_doorbell)
+ {
+@@ -4405,17 +4375,17 @@ static int cciss_controller_hard_reset(struct pci_dev *pdev,
+  * states or using the doorbell register. */
+ static __devinit int cciss_kdump_hard_reset_controller(struct pci_dev *pdev)
+ {
+-	u16 saved_config_space[32];
+ 	u64 cfg_offset;
+ 	u32 cfg_base_addr;
+ 	u64 cfg_base_addr_index;
+ 	void __iomem *vaddr;
+ 	unsigned long paddr;
+ 	u32 misc_fw_support, active_transport;
+-	int rc, i;
++	int rc;
+ 	CfgTable_struct __iomem *cfgtable;
+ 	bool use_doorbell;
+ 	u32 board_id;
++	u16 command_register;
+ 
+ 	/* For controllers as old a the p600, this is very nearly
+ 	 * the same thing as
+@@ -4425,14 +4395,6 @@ static __devinit int cciss_kdump_hard_reset_controller(struct pci_dev *pdev)
+ 	 * pci_set_power_state(pci_dev, PCI_D0);
+ 	 * pci_restore_state(pci_dev);
+ 	 *
+-	 * but we can't use these nice canned kernel routines on
+-	 * kexec, because they also check the MSI/MSI-X state in PCI
+-	 * configuration space and do the wrong thing when it is
+-	 * set/cleared.  Also, the pci_save/restore_state functions
+-	 * violate the ordering requirements for restoring the
+-	 * configuration space from the CCISS document (see the
+-	 * comment below).  So we roll our own ....
+-	 *
+ 	 * For controllers newer than the P600, the pci power state
+ 	 * method of resetting doesn't work so we have another way
+ 	 * using the doorbell register.
+@@ -4451,8 +4413,13 @@ static __devinit int cciss_kdump_hard_reset_controller(struct pci_dev *pdev)
+ 		return -ENODEV;
+ 	}
+ 
+-	for (i = 0; i < 32; i++)
+-		pci_read_config_word(pdev, 2*i, &saved_config_space[i]);
++	/* Save the PCI command register */
++	pci_read_config_word(pdev, 4, &command_register);
++	/* Turn the board off.  This is so that later pci_restore_state()
++	 * won't turn the board on before the rest of config space is ready.
++	 */
++	pci_disable_device(pdev);
++	pci_save_state(pdev);
+ 
+ 	/* find the first memory BAR, so we can find the cfg table */
+ 	rc = cciss_pci_find_memory_BAR(pdev, &paddr);
+@@ -4481,21 +4448,13 @@ static __devinit int cciss_kdump_hard_reset_controller(struct pci_dev *pdev)
+ 	rc = cciss_controller_hard_reset(pdev, vaddr, use_doorbell);
+ 	if (rc)
+ 		goto unmap_cfgtable;
+-
+-	/* Restore the PCI configuration space.  The Open CISS
+-	 * Specification says, "Restore the PCI Configuration
+-	 * Registers, offsets 00h through 60h. It is important to
+-	 * restore the command register, 16-bits at offset 04h,
+-	 * last. Do not restore the configuration status register,
+-	 * 16-bits at offset 06h."  Note that the offset is 2*i.
+-	 */
+-	for (i = 0; i < 32; i++) {
+-		if (i == 2 || i == 3)
+-			continue;
+-		pci_write_config_word(pdev, 2*i, saved_config_space[i]);
++	pci_restore_state(pdev);
++	rc = pci_enable_device(pdev);
++	if (rc) {
++		dev_warn(&pdev->dev, "failed to enable device.\n");
++		goto unmap_cfgtable;
+ 	}
+-	wmb();
+-	pci_write_config_word(pdev, 4, saved_config_space[2]);
++	pci_write_config_word(pdev, 4, command_register);
+ 
+ 	/* Some devices (notably the HP Smart Array 5i Controller)
+ 	   need a little pause here */
+@@ -4555,8 +4514,6 @@ static __devinit int cciss_init_reset_devices(struct pci_dev *pdev)
+ 		return 0; /* just try to do the kdump anyhow. */
+ 	if (rc)
+ 		return -ENODEV;
+-	if (cciss_reset_msi(pdev))
+-		return -ENODEV;
+ 
+ 	/* Now try to get the controller to respond to a no-op */
+ 	for (i = 0; i < CCISS_POST_RESET_NOOP_RETRIES; i++) {
 
