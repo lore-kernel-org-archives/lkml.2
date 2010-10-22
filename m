@@ -1,71 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752540Ab0JVWrc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 18:47:32 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:42954 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750837Ab0JVWra (ORCPT
+	id S1752884Ab0JVWvN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 18:51:13 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:17516 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751689Ab0JVWvM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 18:47:30 -0400
-Date: Fri, 22 Oct 2010 23:46:12 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Cyril Chemparathy <cyril@ti.com>
-Cc: Arnd Bergmann <arnd@arndb.de>,
-        "davinci-linux-open-source@linux.davincidsp.com" 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        "dbrownell@users.sourceforge.net" <dbrownell@users.sourceforge.net>,
-        "broonie@opensource.wolfsonmicro.com" 
-	<broonie@opensource.wolfsonmicro.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
-        "rpurdie@rpsys.net" <rpurdie@rpsys.net>,
-        "spi-devel-general@lists.sourceforge.net" 
-	<spi-devel-general@lists.sourceforge.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "lrg@slimlogic.co.uk" <lrg@slimlogic.co.uk>
-Subject: Re: [PATCH v3 01/12] misc: add driver for sequencer serial port
-Message-ID: <20101022224612.GA6079@n2100.arm.linux.org.uk>
-References: <1287694873-12904-1-git-send-email-cyril@ti.com> <20101021161224.b4c0b623.akpm@linux-foundation.org> <4CC18605.80007@ti.com> <201010221448.17728.arnd@arndb.de> <4CC1E717.7070707@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4CC1E717.7070707@ti.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	Fri, 22 Oct 2010 18:51:12 -0400
+From: Mandeep Singh Baines <msb@chromium.org>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Rik van Riel <riel@redhat.com>, Mel Gorman <mel@csn.ul.ie>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Johannes Weiner <hannes@cmpxchg.org>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org, wad@chromium.org,
+        olofj@chromium.org, Mandeep Singh Baines <msb@chromium.org>
+Subject: [PATCH] vmscan: move referenced VM_EXEC pages to active list
+Date: Fri, 22 Oct 2010 15:49:50 -0700
+Message-Id: <1287787790-4170-1-git-send-email-msb@chromium.org>
+X-Mailer: git-send-email 1.7.1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 22, 2010 at 03:33:43PM -0400, Cyril Chemparathy wrote:
-> On 10/22/2010 08:48 AM, Arnd Bergmann wrote:
-> > On Friday 22 October 2010 14:39:33 Cyril Chemparathy wrote:
-> >>>> +/* Register Access Helpers */
-> >>>> +static inline u32 ssp_read(struct ti_ssp *ssp, int reg)
-> >>>> +{
-> >>>> +    return __raw_readl(ssp->regs + reg);
-> >>>> +}
-> >>>> +
-> >>>> +static inline void ssp_write(struct ti_ssp *ssp, int reg, u32 val)
-> >>>> +{
-> >>>> +    __raw_writel(val, ssp->regs + reg);
-> >>>> +}
-> >>>
-> >>> Why are the __raw functions used here?
-> >>>
-> >>
-> >> These registers are to be accessed native endian at all times, and
-> >> therefore the le32 conversion done otherwise is inappropriate.
-> > 
-> > Won't that break on out-of-order CPUs that need the extra synchronization
-> > done in readl/writel?
-> > 
-> 
-> AFAICS, ioremap()ed space on ARMv6 should be strongly ordered.
+In commit 64574746, "vmscan: detect mapped file pages used only once",
+Johannes Weiner, added logic to page_check_reference to cycle again
+used once pages.
 
-No.  ioremap'd space is device memory on ARMv6 and above, which means
-if you care about the ordering of writes to device vs memory, you
-need barriers.
+In commit 8cab4754, "vmscan: make mapped executable pages the first
+class citizen", Wu Fengguang, added logic to shrink_active_list which
+protects file-backed VM_EXEC pages by keeping them in the active_list if
+they are referenced.
 
-Nevertheless, individual reads/writes to devices will be in program
-order, but writes may be delayed.
+This patch adds logic to move such pages from the inactive list to the
+active list immediately if they have been referenced. If a VM_EXEC page
+is seen as referenced during an inactive list scan, that reference must
+have occurred after the page was put on the inactive list. There is no
+need to wait for the page to be referenced again.
+
+Change-Id: I17c312e916377e93e5a92c52518b6c829f9ab30b
+Signed-off-by: Mandeep Singh Baines <msb@chromium.org>
+---
+ mm/vmscan.c |   11 +++++++++++
+ 1 files changed, 11 insertions(+), 0 deletions(-)
+
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index c5dfabf..0984dee 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -593,6 +593,17 @@ static enum page_references page_check_references(struct page *page,
+ 	if (referenced_ptes) {
+ 		if (PageAnon(page))
+ 			return PAGEREF_ACTIVATE;
++
++		/*
++		 * Identify referenced, file-backed active pages and move them
++		 * to the active list. We know that this page has been
++		 * referenced since being put on the inactive list. VM_EXEC
++		 * pages are only moved to the inactive list when they have not
++		 * been referenced between scans (see shrink_active_list).
++		 */
++		if ((vm_flags & VM_EXEC) && page_is_file_cache(page))
++			return PAGEREF_ACTIVATE;
++
+ 		/*
+ 		 * All mapped pages start out with page table
+ 		 * references from the instantiating fault, so we need
+-- 
+1.7.1
+
