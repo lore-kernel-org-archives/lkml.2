@@ -1,90 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757689Ab0JVQv7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 12:51:59 -0400
-Received: from mxout1.idt.com ([157.165.5.25]:36477 "EHLO mxout1.idt.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754084Ab0JVQv6 convert rfc822-to-8bit (ORCPT
+	id S1757948Ab0JVQwE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 12:52:04 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:42152 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754084Ab0JVQwB convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 12:51:58 -0400
-X-MimeOLE: Produced By Microsoft Exchange V6.5
-Content-class: urn:content-classes:message
+	Fri, 22 Oct 2010 12:52:01 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=oJnNfLnvbW9ZCoFNBF1StaWKyGKGvB73XFf6oanxwHkJoyKBjiXYqOQ7XQLgnlGnmy
+         NBXLJb1idUW4AZil/fKiQi/HiwJnfqCWa7DMIMWzyCPWuEmlpxRi6ZkwtZtYyuE/6FCG
+         20WTmZyTBFFu3c9+m2Imxmav/JmxGDEKeogAI=
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
+In-Reply-To: <4CC190D2.6070305@sapience.com>
+References: <5600814.270321287742009359.JavaMail.root@mail-zbox20.bo3.lycos.com>
+ <30241116.270781287743584802.JavaMail.root@mail-zbox20.bo3.lycos.com>
+ <AANLkTin6rvckZ3q9xY8Chzc1iDvkV1ObTP42n9Ye943Y@mail.gmail.com> <4CC190D2.6070305@sapience.com>
+From: kevin granade <kevin.granade@gmail.com>
+Date: Fri, 22 Oct 2010 11:51:31 -0500
+Message-ID: <AANLkTikyyDuMemndfezEijTHHW6798+yQO_FmLyjyPTV@mail.gmail.com>
+Subject: Re: On Linux numbering scheme
+To: Genes MailLists <lists@sapience.com>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
-Subject: RE: [PATCH -mm 0/2] RapidIO: Changes to handling of RIO switches
-Date: Fri, 22 Oct 2010 09:47:46 -0700
-Message-ID: <0CE8B6BE3C4AD74AB97D9D29BD24E55201445906@CORPEXCH1.na.ads.idt.com>
-In-Reply-To: <4CC0AD74.8070800@neli.hopto.org>
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Thread-Topic: [PATCH -mm 0/2] RapidIO: Changes to handling of RIO switches
-Thread-Index: ActxZTVhIAwPi3XwSPaaiCn7hjV7oAAjVM7A
-References: <1287688250-14226-1-git-send-email-alexandre.bounine@idt.com> <4CC0AD74.8070800@neli.hopto.org>
-From: "Bounine, Alexandre" <Alexandre.Bounine@idt.com>
-To: "Micha Nelissen" <micha@neli.hopto.org>
-Cc: <akpm@linux-foundation.org>, <linux-kernel@vger.kernel.org>,
-        <linuxppc-dev@lists.ozlabs.org>,
-        "Matt Porter" <mporter@kernel.crashing.org>,
-        "Li Yang" <leoli@freescale.com>,
-        "Kumar Gala" <galak@kernel.crashing.org>,
-        "Thomas Moll" <thomas.moll@sysgo.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Micha Nelissen <micha@neli.hopto.org> wrote:
-> 
-> Alexandre Bounine wrote:
-> > 1. Using one storage location common for switches and endpoints
-eliminates
-> > unnecessary device type checks during maintenance access operations.
-> > While destination IDs and hop counts have different meaning for
-endpoints and
-> > switches, this does not prevent us from storing them in the primary
-RIO device
-> > structure (rio_dev) for both types.
-> 
-> How can you say this? The two variables have different meanings, this
-> logically implies you can't merge them. So how do you say 'this does
-not
-> prevent us from ...' without providing a reason?
+On Fri, Oct 22, 2010 at 8:25 AM, Genes MailLists <lists@sapience.com> wrote:
+> On 10/22/2010 06:41 AM, Alexey Dobriyan wrote:
+>> On Fri, Oct 22, 2010 at 1:33 PM, Artem S. Tashkinov <t.artem@lycos.com> wrote:
+>>> What can you say about kernel 2.6.32? Almost nothing.
+>>>
+>>> What can you say about kernel 3.11.3? - it is the third release of
+>>> Linux in 2011.
+>>
+>> And? What a useless information.
+>>
+>> BTW, it should be 3.2011.3, see Y2K.
+>> --
+>
+>   If you -really- wanna go that route - may as well be
+>
+>      20.11.3.18
 
-Looks like I formulated it bad - better would be: they have different
-interpretation by hardware but logically in RapidIO they have single
-role - destid/hopcount are a device coordinates in the RIO network used
-to access that device.
+I think the reason day was excluded by previous suggestions is that
+the current development model doesn't generate a "blessed" version on
+anything close to a daily rate.  Even if you wanted to incorporate the
+-rcs or -next into this scheme, it seems like it'd be somewhat
+problematic since the day field would drop in value during development
+e.g.
+20.11.3.18 = 2.6.37-rc1
+20.11.3.25 = 2.6.37-rc2
+20.11.4.2  = 2.6.36-rc3
 
-> > 2. Convert RIO switch device structures (rio_dev + rio_switch) into
-single
-> > allocation unit. This change is based on the fact that RIO switches
-are using
-> > common RIO device objects anyway. Allocating RIO switch objects as
-RIO devices
-> > with added space for switch information simplifies handling of RIO
-switch device
-> > objects.
-> 
-> I still don't think that's a good idea because the rdev->rswitch
-pointer
-> can be defined to point to the switch that a given rio_dev is
-connected
-> to. This is useful for quick lookups. How else can to know to which
-> switch a given device is connected?
+That having been said, <century>.<year>.<month> would be as valid as
+3.<year>.<month>, and might help drive home the point that the version
+number is "a point in development" rather than some kind of "indicator
+of feature releases".
 
-rdev->rswitch is not a pointer to the entire switch device object - it
-is a pointer to the switch specific extension associated with given
-rio_dev (if applicable). There is no other role for rdev->rswitch.
+>
+>    century.decade.month.day .. that way we don't have problem until we
+> hit the year 10,000 ... :-)
 
-Why would you keep a pointer to device data extension instead of the
-pointer to attached device object itself?
+Or until the New Galactic Calendar is introduced... ;)
 
-BTW, I have back and forward links added in previous patches and only
-one link that may be added later is a forward link from mport to the
-attached rio_dev (ptr to rio_switch will not work here because it can be
-switchless connection). But this reference has to be added into
-rio_mport.
- 
-Alex.
+Silliness aside, what are the deficiencies of the current numbering
+that are being addressed here?  The only things I can come up with
+are, "major number is getting too big" and "development no longer
+follows a major/minor feature based model, so the version numbering
+scheme should reflect this".  Are there any other reasons for a
+change?
 
+Kevin
+
+>
+>
+>  g
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
