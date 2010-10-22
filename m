@@ -1,217 +1,208 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754744Ab0JVHUT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 03:20:19 -0400
-Received: from e23smtp07.au.ibm.com ([202.81.31.140]:58977 "EHLO
-	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752703Ab0JVHUR (ORCPT
+	id S1754813Ab0JVHUh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 03:20:37 -0400
+Received: from beaker.bytemark.co.uk ([80.68.81.2]:49505 "EHLO
+	beaker.bytemark.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754556Ab0JVHUg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 03:20:17 -0400
-Message-ID: <4CC13B2C.7090908@linux.vnet.ibm.com>
-Date: Fri, 22 Oct 2010 12:50:12 +0530
-From: divya <dipraksh@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.10) Gecko/20100527 Thunderbird/3.0.5
-MIME-Version: 1.0
-To: LKML <linux-kernel@vger.kernel.org>, benh@kernel.crashing.org,
-        linuxppc-dev@ozlabs.org
-Subject: BUG with the kernel version 2.6.36-rc1 on power machine
-Content-Type: multipart/mixed;
- boundary="------------090502060101080704060508"
+	Fri, 22 Oct 2010 03:20:36 -0400
+From: "Emilio G. Cota" <cota@braap.org>
+To: Greg KH <greg@kroah.com>
+Cc: Martyn Welch <martyn.welch@ge.com>, LKML <linux-kernel@vger.kernel.org>,
+        Juan David Gonzalez Cobas <david.cobas@gmail.com>
+Subject: [PATCH 12/30] staging/vme/ca91cx42: declare static functions as such
+Date: Fri, 22 Oct 2010 02:36:34 -0400
+Message-Id: <1287729412-24356-13-git-send-email-cota@braap.org>
+X-Mailer: git-send-email 1.7.3.1
+In-Reply-To: <1287729412-24356-1-git-send-email-cota@braap.org>
+References: <1287729412-24356-1-git-send-email-cota@braap.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------090502060101080704060508
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+From: Emilio G. Cota <cota@braap.org>
 
-Hi ,
+Signed-off-by: Emilio G. Cota <cota@braap.org>
+---
+ drivers/staging/vme/bridges/vme_ca91cx42.c |   38 ++++++++++++++--------------
+ 1 files changed, 19 insertions(+), 19 deletions(-)
 
-With the latest version of kernel 2.6.36-rc1 running on the power machine, came across the following call trace
+diff --git a/drivers/staging/vme/bridges/vme_ca91cx42.c b/drivers/staging/vme/bridges/vme_ca91cx42.c
+index 14e10a6..6dd895f 100644
+--- a/drivers/staging/vme/bridges/vme_ca91cx42.c
++++ b/drivers/staging/vme/bridges/vme_ca91cx42.c
+@@ -259,7 +259,7 @@ static void ca91cx42_irq_exit(struct ca91cx42_driver *bridge,
+ /*
+  * Set up an VME interrupt
+  */
+-void ca91cx42_irq_set(struct vme_bridge *ca91cx42_bridge, int level, int state,
++static void ca91cx42_irq_set(struct vme_bridge *ca91cx42_bridge, int level, int state,
+ 	int sync)
+ 
+ {
+@@ -287,7 +287,7 @@ void ca91cx42_irq_set(struct vme_bridge *ca91cx42_bridge, int level, int state,
+ 	}
+ }
+ 
+-int ca91cx42_irq_generate(struct vme_bridge *ca91cx42_bridge, int level,
++static int ca91cx42_irq_generate(struct vme_bridge *ca91cx42_bridge, int level,
+ 	int statid)
+ {
+ 	u32 tmp;
+@@ -323,7 +323,7 @@ int ca91cx42_irq_generate(struct vme_bridge *ca91cx42_bridge, int level,
+ 	return 0;
+ }
+ 
+-int ca91cx42_slave_set(struct vme_slave_resource *image, int enabled,
++static int ca91cx42_slave_set(struct vme_slave_resource *image, int enabled,
+ 	unsigned long long vme_base, unsigned long long size,
+ 	dma_addr_t pci_base, vme_address_t aspace, vme_cycle_t cycle)
+ {
+@@ -429,7 +429,7 @@ int ca91cx42_slave_set(struct vme_slave_resource *image, int enabled,
+ 	return 0;
+ }
+ 
+-int ca91cx42_slave_get(struct vme_slave_resource *image, int *enabled,
++static int ca91cx42_slave_get(struct vme_slave_resource *image, int *enabled,
+ 	unsigned long long *vme_base, unsigned long long *size,
+ 	dma_addr_t *pci_base, vme_address_t *aspace, vme_cycle_t *cycle)
+ {
+@@ -584,7 +584,7 @@ static void ca91cx42_free_resource(struct vme_master_resource *image)
+ }
+ 
+ 
+-int ca91cx42_master_set(struct vme_master_resource *image, int enabled,
++static int ca91cx42_master_set(struct vme_master_resource *image, int enabled,
+ 	unsigned long long vme_base, unsigned long long size,
+ 	vme_address_t aspace, vme_cycle_t cycle, vme_width_t dwidth)
+ {
+@@ -741,7 +741,7 @@ err_window:
+ 	return retval;
+ }
+ 
+-int __ca91cx42_master_get(struct vme_master_resource *image, int *enabled,
++static int __ca91cx42_master_get(struct vme_master_resource *image, int *enabled,
+ 	unsigned long long *vme_base, unsigned long long *size,
+ 	vme_address_t *aspace, vme_cycle_t *cycle, vme_width_t *dwidth)
+ {
+@@ -828,7 +828,7 @@ int __ca91cx42_master_get(struct vme_master_resource *image, int *enabled,
+ 	return 0;
+ }
+ 
+-int ca91cx42_master_get(struct vme_master_resource *image, int *enabled,
++static int ca91cx42_master_get(struct vme_master_resource *image, int *enabled,
+ 	unsigned long long *vme_base, unsigned long long *size,
+ 	vme_address_t *aspace, vme_cycle_t *cycle, vme_width_t *dwidth)
+ {
+@@ -844,7 +844,7 @@ int ca91cx42_master_get(struct vme_master_resource *image, int *enabled,
+ 	return retval;
+ }
+ 
+-ssize_t ca91cx42_master_read(struct vme_master_resource *image, void *buf,
++static ssize_t ca91cx42_master_read(struct vme_master_resource *image, void *buf,
+ 	size_t count, loff_t offset)
+ {
+ 	ssize_t retval;
+@@ -904,7 +904,7 @@ out:
+ 	return retval;
+ }
+ 
+-ssize_t ca91cx42_master_write(struct vme_master_resource *image, void *buf,
++static ssize_t ca91cx42_master_write(struct vme_master_resource *image, void *buf,
+ 	size_t count, loff_t offset)
+ {
+ 	ssize_t retval;
+@@ -959,7 +959,7 @@ out:
+ 	return retval;
+ }
+ 
+-unsigned int ca91cx42_master_rmw(struct vme_master_resource *image,
++static unsigned int ca91cx42_master_rmw(struct vme_master_resource *image,
+ 	unsigned int mask, unsigned int compare, unsigned int swap,
+ 	loff_t offset)
+ {
+@@ -1015,7 +1015,7 @@ out:
+ 	return result;
+ }
+ 
+-int ca91cx42_dma_list_add(struct vme_dma_list *list, struct vme_dma_attr *src,
++static int ca91cx42_dma_list_add(struct vme_dma_list *list, struct vme_dma_attr *src,
+ 	struct vme_dma_attr *dest, size_t count)
+ {
+ 	struct ca91cx42_dma_entry *entry, *prev;
+@@ -1176,7 +1176,7 @@ static int ca91cx42_dma_busy(struct vme_bridge *ca91cx42_bridge)
+ 		return 1;
+ }
+ 
+-int ca91cx42_dma_list_exec(struct vme_dma_list *list)
++static int ca91cx42_dma_list_exec(struct vme_dma_list *list)
+ {
+ 	struct vme_dma_resource *ctrlr;
+ 	struct ca91cx42_dma_entry *entry;
+@@ -1258,7 +1258,7 @@ int ca91cx42_dma_list_exec(struct vme_dma_list *list)
+ 
+ }
+ 
+-int ca91cx42_dma_list_empty(struct vme_dma_list *list)
++static int ca91cx42_dma_list_empty(struct vme_dma_list *list)
+ {
+ 	struct list_head *pos, *temp;
+ 	struct ca91cx42_dma_entry *entry;
+@@ -1280,7 +1280,7 @@ int ca91cx42_dma_list_empty(struct vme_dma_list *list)
+  * This does not enable the LM monitor - that should be done when the first
+  * callback is attached and disabled when the last callback is removed.
+  */
+-int ca91cx42_lm_set(struct vme_lm_resource *lm, unsigned long long lm_base,
++static int ca91cx42_lm_set(struct vme_lm_resource *lm, unsigned long long lm_base,
+ 	vme_address_t aspace, vme_cycle_t cycle)
+ {
+ 	u32 temp_base, lm_ctl = 0;
+@@ -1348,7 +1348,7 @@ int ca91cx42_lm_set(struct vme_lm_resource *lm, unsigned long long lm_base,
+ /* Get configuration of the callback monitor and return whether it is enabled
+  * or disabled.
+  */
+-int ca91cx42_lm_get(struct vme_lm_resource *lm, unsigned long long *lm_base,
++static int ca91cx42_lm_get(struct vme_lm_resource *lm, unsigned long long *lm_base,
+ 	vme_address_t *aspace, vme_cycle_t *cycle)
+ {
+ 	u32 lm_ctl, enabled = 0;
+@@ -1391,7 +1391,7 @@ int ca91cx42_lm_get(struct vme_lm_resource *lm, unsigned long long *lm_base,
+  *
+  * Callback will be passed the monitor triggered.
+  */
+-int ca91cx42_lm_attach(struct vme_lm_resource *lm, int monitor,
++static int ca91cx42_lm_attach(struct vme_lm_resource *lm, int monitor,
+ 	void (*callback)(int))
+ {
+ 	u32 lm_ctl, tmp;
+@@ -1440,7 +1440,7 @@ int ca91cx42_lm_attach(struct vme_lm_resource *lm, int monitor,
+ /*
+  * Detach a callback function forn a specific location monitor.
+  */
+-int ca91cx42_lm_detach(struct vme_lm_resource *lm, int monitor)
++static int ca91cx42_lm_detach(struct vme_lm_resource *lm, int monitor)
+ {
+ 	u32 tmp;
+ 	struct ca91cx42_driver *bridge;
+@@ -1473,7 +1473,7 @@ int ca91cx42_lm_detach(struct vme_lm_resource *lm, int monitor)
+ 	return 0;
+ }
+ 
+-int ca91cx42_slot_get(struct vme_bridge *ca91cx42_bridge)
++static int ca91cx42_slot_get(struct vme_bridge *ca91cx42_bridge)
+ {
+ 	u32 slot = 0;
+ 	struct ca91cx42_driver *bridge;
+@@ -1833,7 +1833,7 @@ err_struct:
+ 
+ }
+ 
+-void ca91cx42_remove(struct pci_dev *pdev)
++static void ca91cx42_remove(struct pci_dev *pdev)
+ {
+ 	struct list_head *pos = NULL;
+ 	struct vme_master_resource *master_image;
+-- 
+1.7.1
 
-BUG: looking up invalid subclass: 31
-turning off the locking correctness validator.
-Call Trace:
-[c00000000e0bfb60] [c0000000000119a0] .show_stack+0x6c/0x16c (unreliable)
-[c00000000e0bfc10] [c0000000000c39b8] .lockdep_init_map+0x194/0x630
-[c00000000e0bfcf0] [c0000000005524f8] .mousedev_create+0xcc/0x234
-[c00000000e0bfda0] [c00000000093fb58] .mousedev_init+0x38/0xa0
-[c00000000e0bfe30] [c0000000000097e4] .do_one_initcall+0xd8/0x1c8
-[c00000000e0bfee0] [c0000000009004ac] .kernel_init+0x23c/0x2f8
-[c00000000e0bff90] [c00000000002ad30] .kernel_thread+0x54/0x70
-
-The config file used for make oldconfig is being attached
-
-Thanks
-Divya
-
-
-
-
-
---------------090502060101080704060508
-Content-Type: text/plain;
- name="config_ppc_slub"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
- filename="config_ppc_slub"
-
-CONFIG_ALTIVEC=y
-# CONFIG_WIRELESS is not set
-CONFIG_VSX=y
-CONFIG_TASKSTATS=y
-CONFIG_TASK_DELAY_ACCT=y
-CONFIG_TASK_XACCT=y
-CONFIG_TASK_IO_ACCOUNTING=y
-CONFIG_HAVE_KPROBES=y
-CONFIG_HAVE_KRETPROBES=y
-CONFIG_TREE_RCU=y
-CONFIG_RCU_FANOUT=64
-CONFIG_CGROUP_SCHED=y
-CONFIG_CGROUPS=y
-CONFIG_CGROUP_NS=y
-CONFIG_CGROUP_FREEZER=y
-CONFIG_CGROUP_DEVICE=y
-CONFIG_CPUSETS=y
-CONFIG_PROC_PID_CPUSET=y
-CONFIG_CGROUP_CPUACCT=y
-CONFIG_RESOURCE_COUNTERS=y
-CONFIG_CGROUP_MEM_RES_CTLR=y
-CONFIG_CGROUP_MEM_RES_CTLR_SWAP=y
-CONFIG_NAMESPACES=y
-CONFIG_UTS_NS=y
-CONFIG_IPC_NS=y
-CONFIG_USER_NS=y
-CONFIG_PID_NS=y
-CONFIG_NET_NS=y
-CONFIG_KALLSYMS=y
-CONFIG_KALLSYMS_ALL=y
-CONFIG_KPROBES=y
-CONFIG_CMM=y
-CONFIG_PPC_HAS_HASH_64K=y
-CONFIG_PPC_64K_PAGES=y
-CONFIG_FORCE_MAX_ZONEORDER=9
-CONFIG_PPC_SUBPAGE_PROT=y
-CONFIG_ARCH_ENABLE_MEMORY_HOTPLUG=y
-CONFIG_ARCH_HAS_WALK_MEMORY=y
-CONFIG_ARCH_ENABLE_MEMORY_HOTREMOVE=y
-CONFIG_KEXEC=y
-CONFIG_MEMORY_HOTPLUG=y
-CONFIG_MEMORY_HOTPLUG_SPARSE=y
-CONFIG_MEMORY_HOTREMOVE=y
-CONFIG_IBMEBUS=y
-CONFIG_EHEA=y
-CONFIG_SCSI_IBMVSCSI=y
-CONFIG_SCSI_IBMVFC=m
-CONFIG_SCSI_IPR=y
-CONFIG_DEBUG_KERNEL=y
-CONFIG_DETECT_SOFTLOCKUP=y
-CONFIG_DETECT_HUNG_TASK=y
-CONFIG_DEBUG_SPINLOCK=y
-CONFIG_DEBUG_SPINLOCK_SLEEP=y
-CONFIG_DEBUG_BUGVERBOSE=y
-CONFIG_DEBUG_INFO=y
-CONFIG_KPROBES_SANITY_TEST=y
-CONFIG_LATENCYTOP=y
-CONFIG_SYSCTL_SYSCALL_CHECK=y
-CONFIG_DEBUG_PAGEALLOC=y
-CONFIG_NOP_TRACER=y
-CONFIG_HAVE_FUNCTION_TRACER=y
-CONFIG_HAVE_FUNCTION_GRAPH_TRACER=y
-CONFIG_HAVE_DYNAMIC_FTRACE=y
-CONFIG_HAVE_FTRACE_MCOUNT_RECORD=y
-CONFIG_RING_BUFFER=y
-CONFIG_TRACING=y
-CONFIG_TRACING_SUPPORT=y
-ONFIG_BLK_DEV_IO_TRACE=y
-CONFIG_FTRACE_SELFTEST=y
-CONFIG_FTRACE_STARTUP_TEST=y
-CONFIG_KEYS=y
-CONFIG_KEYS_DEBUG_PROC_KEYS=y
-CONFIG_SECURITY=y
-CONFIG_SECURITYFS=y
-CONFIG_SECURITY_NETWORK=y
-CONFIG_RCU_CPU_STALL_DETECTOR=y
-CONFIG_EXT2_FS=y
-CONFIG_EXT2_FS_XATTR=y
-CONFIG_EXT2_FS_POSIX_ACL=y
-CONFIG_EXT2_FS_SECURITY=y
-CONFIG_EXT3_FS=y
-CONFIG_EXT3_FS_XATTR=y
-CONFIG_EXT3_FS_POSIX_ACL=y
-CONFIG_EXT3_FS_SECURITY=y
-CONFIG_EXT4_FS=y
-CONFIG_EXT4DEV_COMPAT=y
-CONFIG_EXT4_FS_XATTR=y
-CONFIG_EXT4_FS_POSIX_ACL=y
-CONFIG_EXT4_FS_SECURITY=y
-CONFIG_JBD=y
-CONFIG_JBD2=y
-CONFIG_REISERFS_PROC_INFO=y
-CONFIG_REISERFS_FS_XATTR=y
-CONFIG_REISERFS_FS_POSIX_ACL=y
-CONFIG_REISERFS_FS_SECURITY=y
-CONFIG_JFS_FS=m
-CONFIG_JFS_POSIX_ACL=y
-CONFIG_JFS_SECURITY=y
-CONFIG_JFS_STATISTICS=y
-CONFIG_FS_POSIX_ACL=y
-CONFIG_FILE_LOCKING=y
-CONFIG_XFS_FS=m
-CONFIG_XFS_QUOTA=y
-CONFIG_XFS_POSIX_ACL=y
-CONFIG_XFS_RT=y
-CONFIG_GFS2_FS=m
-CONFIG_GFS2_FS_LOCKING_DLM=m
-CONFIG_OCFS2_FS=m
-CONFIG_OCFS2_FS_O2CB=m
-CONFIG_OCFS2_FS_USERSPACE_CLUSTER=m
-CONFIG_OCFS2_FS_STATS=y
-CONFIG_BTRFS_FS=y
-CONFIG_BTRFS_FS_POSIX_ACL=y
-CONFIG_LOCALVERSION_AUTO=n
-CONFIG_LOCALVERSION=""
-CONFIG_SLUB_DEBUG=y
-CONFIG_SLUB=y
-CONFIG_DEVPTS_MULTIPLE_INSTANCES=y
-CONFIG_HAVE_PERF_COUNTERS=y
-CONFIG_PERF_COUNTERS=y
-CONFIG_DEFAULT_MMAP_MIN_ADDR=65536
-CONFIG_FSNOTIFY=y
-CONFIG_RCU_TORTURE_TEST=y
-CONFIG_RCU_TORTURE_TEST_RUNNABLE=y
-CONFIG_RCU_CPU_STALL_DETECTOR=y
-CONFIG_PERF_EVENTS=y
-CONFIG_PPC_OF_BOOT_TRAMPOLINE=y
-CONFIG_BLOCK=y
-CONFIG_BLK_DEV_BSG=y
-CONFIG_BLK_DEV_INTEGRITY=y
-CONFIG_BLK_CGROUP=y
-CONFIG_DEBUG_BLK_CGROUP=y
-CONFIG_BLOCK_COMPAT=y
-CONFIG_IOSCHED_NOOP=y
-CONFIG_IOSCHED_CFQ=y
-CONFIG_CFQ_GROUP_IOSCHED=y
-CONFIG_DEBUG_CFQ_IOSCHED=y
-CONFIG_DEFAULT_CFQ=y
-CONFIG_DEFAULT_IOSCHED="cfq"
-CONFIG_VIRTUALIZATION=y
-CONFIG_VIRTIO_PCI=y
-CONFIG_VIRTIO_BALLOON=y
-CONFIG_NR_IRQS=512
-CONFIG_MIGRATION=y
-CONFIG_KSM=y
-CONFIG_PM=y
-CONFIG_SUSPEND=y
-CONFIG_SUSPEND_FREEZER=y
-CONFIG_HIBERNATION=y
-CONFIG_SYSFS_DEPRECATED_V2=y
-CONFIG_LOCK_STAT=y
-CONFIG_LOCKDEP_SUPPORT=y
-CONFIG_LOCKDEP=y
-CONFIG_IXGBE_DCB=y
-CONFIG_DCB=y
-
-
---------------090502060101080704060508--
