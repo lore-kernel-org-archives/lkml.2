@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932583Ab0JVSt3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 14:49:29 -0400
-Received: from kroah.org ([198.145.64.141]:45764 "EHLO coco.kroah.org"
+	id S932373Ab0JVSt1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 14:49:27 -0400
+Received: from kroah.org ([198.145.64.141]:45767 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756837Ab0JVSim (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1757646Ab0JVSim (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 22 Oct 2010 14:38:42 -0400
 X-Mailbox-Line: From gregkh@clark.site Fri Oct 22 11:35:59 2010
-Message-Id: <20101022183559.335906536@clark.site>
+Message-Id: <20101022183559.422660646@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 22 Oct 2010 11:35:02 -0700
+Date: Fri, 22 Oct 2010 11:35:03 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Ulrich Weber <uweber@astaro.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [35/66] xfrm4: strip ECN and IP Precedence bits in policy lookup
+Subject: [36/66] tcp: Fix >4GB writes on 64-bit.
 In-Reply-To: <20101022183711.GA23214@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,39 +26,70 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Ulrich Weber <uweber@astaro.com>
+From: David S. Miller <davem@davemloft.net>
 
-[ Upstream commit 94e2238969e89f5112297ad2a00103089dde7e8f ]
+[ Upstream commit 01db403cf99f739f86903314a489fb420e0e254f ]
 
-dont compare ECN and IP Precedence bits in find_bundle
-and use ECN bit stripped TOS value in xfrm_lookup
+Fixes kernel bugzilla #16603
 
-Signed-off-by: Ulrich Weber <uweber@astaro.com>
+tcp_sendmsg() truncates iov_len to an 'int' which a 4GB write to write
+zero bytes, for example.
+
+There is also the problem higher up of how verify_iovec() works.  It
+wants to prevent the total length from looking like an error return
+value.
+
+However it does this using 'int', but syscalls return 'long' (and
+thus signed 64-bit on 64-bit machines).  So it could trigger
+false-positives on 64-bit as written.  So fix it to use 'long'.
+
+Reported-by: Olaf Bonorden <bono@onlinehome.de>
+Reported-by: Daniel Büse <dbuese@gmx.de>
+Reported-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- net/ipv4/xfrm4_policy.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ include/linux/socket.h |    2 +-
+ net/core/iovec.c       |    5 +++--
+ net/ipv4/tcp.c         |    2 +-
+ 3 files changed, 5 insertions(+), 4 deletions(-)
 
---- a/net/ipv4/xfrm4_policy.c
-+++ b/net/ipv4/xfrm4_policy.c
-@@ -71,7 +71,7 @@ __xfrm4_find_bundle(struct flowi *fl, st
- 		if (xdst->u.rt.fl.oif == fl->oif &&	/*XXX*/
- 		    xdst->u.rt.fl.fl4_dst == fl->fl4_dst &&
- 		    xdst->u.rt.fl.fl4_src == fl->fl4_src &&
--		    xdst->u.rt.fl.fl4_tos == fl->fl4_tos &&
-+                    !((xdst->u.rt.fl.fl4_tos ^ fl->fl4_tos) & IPTOS_RT_MASK) &&
- 		    xfrm_bundle_ok(policy, xdst, fl, AF_INET, 0)) {
- 			dst_clone(dst);
- 			break;
-@@ -83,7 +83,7 @@ __xfrm4_find_bundle(struct flowi *fl, st
+--- a/include/linux/socket.h
++++ b/include/linux/socket.h
+@@ -304,7 +304,7 @@ extern int csum_partial_copy_fromiovecen
+ 					  int offset, 
+ 					  unsigned int len, __wsum *csump);
  
- static int xfrm4_get_tos(struct flowi *fl)
+-extern int verify_iovec(struct msghdr *m, struct iovec *iov, struct sockaddr *address, int mode);
++extern long verify_iovec(struct msghdr *m, struct iovec *iov, struct sockaddr *address, int mode);
+ extern int memcpy_toiovec(struct iovec *v, unsigned char *kdata, int len);
+ extern int memcpy_toiovecend(const struct iovec *v, unsigned char *kdata,
+ 			     int offset, int len);
+--- a/net/core/iovec.c
++++ b/net/core/iovec.c
+@@ -36,9 +36,10 @@
+  *	in any case.
+  */
+ 
+-int verify_iovec(struct msghdr *m, struct iovec *iov, struct sockaddr *address, int mode)
++long verify_iovec(struct msghdr *m, struct iovec *iov, struct sockaddr *address, int mode)
  {
--	return fl->fl4_tos;
-+	return IPTOS_RT_MASK & fl->fl4_tos; /* Strip ECN bits */
- }
+-	int size, err, ct;
++	int size, ct;
++	long err;
  
- static int xfrm4_init_path(struct xfrm_dst *path, struct dst_entry *dst,
+ 	if (m->msg_namelen) {
+ 		if (mode == VERIFY_READ) {
+--- a/net/ipv4/tcp.c
++++ b/net/ipv4/tcp.c
+@@ -935,7 +935,7 @@ int tcp_sendmsg(struct kiocb *iocb, stru
+ 		goto out_err;
+ 
+ 	while (--iovlen >= 0) {
+-		int seglen = iov->iov_len;
++		size_t seglen = iov->iov_len;
+ 		unsigned char __user *from = iov->iov_base;
+ 
+ 		iov++;
 
 
