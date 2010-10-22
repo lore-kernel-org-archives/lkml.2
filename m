@@ -1,87 +1,185 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759599Ab0JVS56 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 14:57:58 -0400
-Received: from kroah.org ([198.145.64.141]:34518 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759568Ab0JVS5T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 14:57:19 -0400
-X-Mailbox-Line: From gregkh@clark.site Fri Oct 22 11:52:36 2010
-Message-Id: <20101022185236.538650794@clark.site>
-User-Agent: quilt/0.48-11.2
-Date: Fri, 22 Oct 2010 11:52:17 -0700
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
-Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Stefan Bader <stefan.bader@canonical.com>
-Subject: [103/103] mm: Move vma_stack_continue into mm.h
-In-Reply-To: <20101022185455.GA9114@kroah.com>
+	id S932619Ab0JVS6U (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 14:58:20 -0400
+Received: from tx2ehsobe001.messaging.microsoft.com ([65.55.88.11]:46360 "EHLO
+	TX2EHSOBE002.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759510Ab0JVS6D convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Oct 2010 14:58:03 -0400
+X-SpamScore: -23
+X-BigFish: VS-23(zz542N1432N98dN9371Pc8kzz1202hzz8275bhz2dh2a8h61h)
+X-Spam-TCS-SCL: 0:0
+X-MimeOLE: Produced By Microsoft Exchange V6.5
+Content-Class: urn:content-classes:message
+MIME-Version: 1.0
+Content-Type: text/plain; charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
+Subject: RE: [PATCHv5 2/3] ARM: imx: Add gpio-keys to plat-mxc
+Date: Fri, 22 Oct 2010 11:58:16 -0700
+Message-ID: <86A0E76937111F4C92FABEC0A2098851051D6090@az33exm21>
+In-Reply-To: <20101022182812.GA8554@pengutronix.de>
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+Thread-Topic: [PATCHv5 2/3] ARM: imx: Add gpio-keys to plat-mxc
+Thread-Index: ActyFvboA+RRRCMJShuu211DnmWBjwAA6M5Q
+References: <1287766575-4092-1-git-send-email-Dinh.Nguyen@freescale.com> <1287766575-4092-2-git-send-email-Dinh.Nguyen@freescale.com> <20101022182812.GA8554@pengutronix.de>
+From: Nguyen Dinh-R00091 <R00091@freescale.com>
+To: =?iso-8859-1?Q?Uwe_Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux@arm.linux.org.uk>, <s.hauer@pengutronix.de>,
+        <valentin.longchamp@epfl.ch>, <daniel@caiaq.de>,
+        <grant.likely@secretlab.ca>, <bryan.wu@canonical.com>,
+        <amit.kucheria@canonical.com>
+X-Reverse-DNS: az33egw01.freescale.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.35-stable review patch.  If anyone has any objections, please let us know.
+Hi Uwe,
 
-------------------
+>-----Original Message-----
+>From: Uwe Kleine-König [mailto:u.kleine-koenig@pengutronix.de]
+>Sent: Friday, October 22, 2010 1:28 PM
+>To: Nguyen Dinh-R00091
+>Cc: linux-kernel@vger.kernel.org; linux-arm-kernel@lists.infradead.org; linux@arm.linux.org.uk;
+>s.hauer@pengutronix.de; valentin.longchamp@epfl.ch; daniel@caiaq.de; grant.likely@secretlab.ca;
+>bryan.wu@canonical.com; amit.kucheria@canonical.com
+>Subject: Re: [PATCHv5 2/3] ARM: imx: Add gpio-keys to plat-mxc
+>
+>On Fri, Oct 22, 2010 at 11:56:14AM -0500, Dinh.Nguyen@freescale.com wrote:
+>> From: Dinh Nguyen <Dinh.Nguyen@freescale.com>
+>>
+>> Add imx_add_gpio_keys function to add gpio-keys in plat-mxc
+>>
+>> This patch is based on Sascha Hauer's imx/linux-2.6 for-rmk tree.
+>(This information isn't interesting once the patch is in git, so it can
+>better go after the tripple-dash below.)
+>
+>> Signed-off-by: Dinh Nguyen <Dinh.Nguyen@freescale.com>
+>Patch 1 depends on this one, so you should swap their order.
+>
+>> ---
+>>  arch/arm/plat-mxc/devices/Kconfig               |    4 +++
+>>  arch/arm/plat-mxc/devices/Makefile              |    1 +
+>>  arch/arm/plat-mxc/devices/platform-gpio_keys.c  |   27 +++++++++++++++++++++++
+>>  arch/arm/plat-mxc/include/mach/devices-common.h |    4 +++
+>>  arch/arm/plat-mxc/include/mach/iomux-mx51.h     |    2 +-
+>>  5 files changed, 37 insertions(+), 1 deletions(-)
+>>  create mode 100644 arch/arm/plat-mxc/devices/platform-gpio_keys.c
+>>
+>> diff --git a/arch/arm/plat-mxc/devices/Kconfig b/arch/arm/plat-mxc/devices/Kconfig
+>> index 4047994..f4772e7 100644
+>> --- a/arch/arm/plat-mxc/devices/Kconfig
+>> +++ b/arch/arm/plat-mxc/devices/Kconfig
+>> @@ -9,6 +9,10 @@ config IMX_HAVE_PLATFORM_FLEXCAN
+>>  	select HAVE_CAN_FLEXCAN
+>>  	bool
+>>
+>> +config IMX_HAVE_PLATFORM_GPIO_KEYS
+>> +	bool
+>> +	default y if ARCH_MX51
+>> +
+>>  config IMX_HAVE_PLATFORM_IMX_I2C
+>>  	bool
+>>
+>> diff --git a/arch/arm/plat-mxc/devices/Makefile b/arch/arm/plat-mxc/devices/Makefile
+>> index 0a3c1f0..45aefeb 100644
+>> --- a/arch/arm/plat-mxc/devices/Makefile
+>> +++ b/arch/arm/plat-mxc/devices/Makefile
+>> @@ -1,6 +1,7 @@
+>>  obj-$(CONFIG_IMX_HAVE_PLATFORM_ESDHC) += platform-esdhc.o
+>>  obj-$(CONFIG_IMX_HAVE_PLATFORM_FEC) += platform-fec.o
+>>  obj-$(CONFIG_IMX_HAVE_PLATFORM_FLEXCAN) += platform-flexcan.o
+>> +obj-$(CONFIG_IMX_HAVE_PLATFORM_GPIO_KEYS) += platform-gpio_keys.o
+>>  obj-y += platform-imx-dma.o
+>>  obj-$(CONFIG_IMX_HAVE_PLATFORM_IMX_I2C) += platform-imx-i2c.o
+>>  obj-$(CONFIG_IMX_HAVE_PLATFORM_IMX_SSI) += platform-imx-ssi.o
+>> diff --git a/arch/arm/plat-mxc/devices/platform-gpio_keys.c b/arch/arm/plat-mxc/devices/platform-
+>gpio_keys.c
+>> new file mode 100644
+>> index 0000000..1c53a53
+>> --- /dev/null
+>> +++ b/arch/arm/plat-mxc/devices/platform-gpio_keys.c
+>> @@ -0,0 +1,27 @@
+>> +/*
+>> + * Copyright (C) 2010 Freescale Semiconductor, Inc. All Rights Reserved.
+>> + *
+>> + * This program is free software; you can redistribute it and/or
+>> + * modify it under the terms of the GNU General Public License
+>> + * as published by the Free Software Foundation; either version 2
+>> + * of the License, or (at your option) any later version.
+>> + * This program is distributed in the hope that it will be useful,
+>> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+>> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+>> + * GNU General Public License for more details.
+>> + *
+>> + * You should have received a copy of the GNU General Public License
+>> + * along with this program; if not, write to the Free Software
+>> + * Foundation, Inc., 51 Franklin Street, Fifth Floor,
+>> + * Boston, MA  02110-1301, USA.
+>> + */
+>> +#include <asm/sizes.h>
+>> +#include <mach/hardware.h>
+>> +#include <mach/devices-common.h>
+>> +
+>> +struct platform_device *__init imx_add_gpio_keys(
+>> +		const struct gpio_keys_platform_data *pdata)
+>> +{
+>> +	return imx_add_platform_device("gpio-keys", -1, NULL,
+>> +		 0, pdata, sizeof(*pdata));
+>> +}
+>> diff --git a/arch/arm/plat-mxc/include/mach/devices-common.h b/arch/arm/plat-
+>mxc/include/mach/devices-common.h
+>> index 86d7575..8c6896f 100644
+>> --- a/arch/arm/plat-mxc/include/mach/devices-common.h
+>> +++ b/arch/arm/plat-mxc/include/mach/devices-common.h
+>> @@ -29,6 +29,10 @@ struct platform_device *__init imx_add_flexcan(int id,
+>>  		resource_size_t irq,
+>>  		const struct flexcan_platform_data *pdata);
+>>
+>> +#include <linux/gpio_keys.h>
+>> +struct platform_device *__init imx_add_gpio_keys(
+>> +		const struct gpio_keys_platform_data *pdata);
+>> +
+>>  #include <mach/i2c.h>
+>>  struct imx_imx_i2c_data {
+>>  	int id;
+>> diff --git a/arch/arm/plat-mxc/include/mach/iomux-mx51.h b/arch/arm/plat-mxc/include/mach/iomux-
+>mx51.h
+>> index e46b1c2..7ae27e8 100644
+>> --- a/arch/arm/plat-mxc/include/mach/iomux-mx51.h
+>> +++ b/arch/arm/plat-mxc/include/mach/iomux-mx51.h
+>> @@ -114,7 +114,7 @@ typedef enum iomux_config {
+>>  #define MX51_PAD_EIM_A24__GPIO_2_18             IOMUX_PAD(0x450, 0x0bc, 1, 0x0,   0, NO_PAD_CTRL)
+>>  #define MX51_PAD_EIM_A25__GPIO_2_19             IOMUX_PAD(0x454, 0x0c0, 1, 0x0,   0, NO_PAD_CTRL)
+>>  #define MX51_PAD_EIM_A26__GPIO_2_20             IOMUX_PAD(0x458, 0x0c4, 1, 0x0,   0, NO_PAD_CTRL)
+>> -#define MX51_PAD_EIM_A27__GPIO_2_21             IOMUX_PAD(0x45c, 0x0c8, 1, 0x0,   0, NO_PAD_CTRL)
+>> +#define MX51_PAD_EIM_A27__GPIO_2_21             IOMUX_PAD(0x45c, 0x0c8, 1, 0x0,   0,
+>MX51_GPIO_PAD_CTRL | PAD_CTL_PUS_100K_UP)
+>I share the concerns of Arnaud.  MX51_GPIO_PAD_CTRL looks OK,
+>PAD_CTL_PUS_100K_UP does not.
 
-From: Stefan Bader <stefan.bader@canonical.com>
+How do you suggest I define this pin for Babbage board only? Do I add to iomux-mx51.h
+#define MX51_BABBAGE_PAD_EIM_A27__GPIO_2_21             IOMUX_PAD(0x45c, 0x0c8, 1, 0x0,   0,MX51_GPIO_PAD_CTRL | PAD_CTL_PUS_100K_UP) ?
 
-commit 39aa3cb3e8250db9188a6f1e3fb62ffa1a717678 upstream.
+Or do I define the pin in the board file with a 100K_UP? Like how eukrea_mbimxsd-baseboard.c did for MBIMXSD_GPIO_3_31?
 
-So it can be used by all that need to check for that.
+>
+>>  #define MX51_PAD_EIM_EB0__EIM_EB0               IOMUX_PAD(0x460, 0x0cc, 0, 0x0,   0, NO_PAD_CTRL)
+>>  #define MX51_PAD_EIM_EB1__EIM_EB1               IOMUX_PAD(0x464, 0x0d0, 0, 0x0,   0, NO_PAD_CTRL)
+>>  #define MX51_PAD_EIM_EB2__GPIO_2_22             IOMUX_PAD(0x468, 0x0d4, 1, 0x0,   0, NO_PAD_CTRL)
+>
+>Best regards
+>Uwe
+>
+>--
+>Pengutronix e.K.                           | Uwe Kleine-König            |
+>Industrial Linux Solutions                 | http://www.pengutronix.de/  |
 
-Signed-off-by: Stefan Bader <stefan.bader@canonical.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+Thanks for your review comments...
 
----
- fs/proc/task_mmu.c |    3 ++-
- include/linux/mm.h |    6 ++++++
- mm/mlock.c         |    6 ------
- 3 files changed, 8 insertions(+), 7 deletions(-)
-
---- a/fs/proc/task_mmu.c
-+++ b/fs/proc/task_mmu.c
-@@ -224,7 +224,8 @@ static void show_map_vma(struct seq_file
- 	/* We don't show the stack guard page in /proc/maps */
- 	start = vma->vm_start;
- 	if (vma->vm_flags & VM_GROWSDOWN)
--		start += PAGE_SIZE;
-+		if (!vma_stack_continue(vma->vm_prev, vma->vm_start))
-+			start += PAGE_SIZE;
- 
- 	seq_printf(m, "%08lx-%08lx %c%c%c%c %08llx %02x:%02x %lu %n",
- 			start,
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -863,6 +863,12 @@ int set_page_dirty(struct page *page);
- int set_page_dirty_lock(struct page *page);
- int clear_page_dirty_for_io(struct page *page);
- 
-+/* Is the vma a continuation of the stack vma above it? */
-+static inline int vma_stack_continue(struct vm_area_struct *vma, unsigned long addr)
-+{
-+	return vma && (vma->vm_end == addr) && (vma->vm_flags & VM_GROWSDOWN);
-+}
-+
- extern unsigned long move_page_tables(struct vm_area_struct *vma,
- 		unsigned long old_addr, struct vm_area_struct *new_vma,
- 		unsigned long new_addr, unsigned long len);
---- a/mm/mlock.c
-+++ b/mm/mlock.c
-@@ -135,12 +135,6 @@ void munlock_vma_page(struct page *page)
- 	}
- }
- 
--/* Is the vma a continuation of the stack vma above it? */
--static inline int vma_stack_continue(struct vm_area_struct *vma, unsigned long addr)
--{
--	return vma && (vma->vm_end == addr) && (vma->vm_flags & VM_GROWSDOWN);
--}
--
- static inline int stack_guard_page(struct vm_area_struct *vma, unsigned long addr)
- {
- 	return (vma->vm_flags & VM_GROWSDOWN) &&
+Dinh
 
 
