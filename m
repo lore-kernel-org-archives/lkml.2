@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757680Ab0JVSue (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 14:50:34 -0400
-Received: from kroah.org ([198.145.64.141]:45734 "EHLO coco.kroah.org"
+	id S1758224Ab0JVSuy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 14:50:54 -0400
+Received: from kroah.org ([198.145.64.141]:45725 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757154Ab0JVSii (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 14:38:38 -0400
-X-Mailbox-Line: From gregkh@clark.site Fri Oct 22 11:35:59 2010
-Message-Id: <20101022183559.080271578@clark.site>
+	id S1756605Ab0JVSih (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Oct 2010 14:38:37 -0400
+X-Mailbox-Line: From gregkh@clark.site Fri Oct 22 11:35:58 2010
+Message-Id: <20101022183558.910231219@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 22 Oct 2010 11:34:59 -0700
+Date: Fri, 22 Oct 2010 11:34:57 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Borislav Petkov <borislav.petkov@amd.com>, Ingo Molnar <mingo@elte.hu>
-Subject: [32/66] x86, AMD, MCE thresholding: Fix the MCi_MISCj iteration order
+        Johannes Berg <johannes.berg@intel.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [30/66] wext: fix potential private ioctl memory content leak
 In-Reply-To: <20101022183711.GA23214@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,61 +26,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Borislav Petkov <borislav.petkov@amd.com>
+From: Johannes Berg <johannes.berg@intel.com>
 
-commit 6dcbfe4f0b4e17e289d56fa534b7ce5a6b7f63a3 upstream.
+commit df6d02300f7c2fbd0fbe626d819c8e5237d72c62 upstream.
 
-This fixes possible cases of not collecting valid error info in
-the MCE error thresholding groups on F10h hardware.
+When a driver doesn't fill the entire buffer, old
+heap contents may remain, and if it also doesn't
+update the length properly, this old heap content
+will be copied back to userspace.
 
-The current code contains a subtle problem of checking only the
-Valid bit of MSR0000_0413 (which is MC4_MISC0 - DRAM
-thresholding group) in its first iteration and breaking out if
-the bit is cleared.
+It is very unlikely that this happens in any of
+the drivers using private ioctls since it would
+show up as junk being reported by iwpriv, but it
+seems better to be safe here, so use kzalloc.
 
-But (!), this MSR contains an offset value, BlkPtr[31:24], which
-points to the remaining MSRs in this thresholding group which
-might contain valid information too. But if we bail out only
-after we checked the valid bit in the first MSR and not the
-block pointer too, we miss that other information.
-
-The thing is, MC4_MISC0[BlkPtr] is not predicated on
-MCi_STATUS[MiscV] or MC4_MISC0[Valid] and should be checked
-prior to iterating over the MCI_MISCj thresholding group,
-irrespective of the MC4_MISC0[Valid] setting.
-
-Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
+Reported-by: Jeff Mahoney <jeffm@suse.com>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/x86/kernel/cpu/mcheck/mce_amd.c |    9 +++------
- 1 file changed, 3 insertions(+), 6 deletions(-)
+ net/wireless/wext.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/x86/kernel/cpu/mcheck/mce_amd.c
-+++ b/arch/x86/kernel/cpu/mcheck/mce_amd.c
-@@ -140,6 +140,7 @@ void mce_amd_feature_init(struct cpuinfo
- 				address = (low & MASK_BLKPTR_LO) >> 21;
- 				if (!address)
- 					break;
-+
- 				address += MCG_XBLK_ADDR;
- 			} else
- 				++address;
-@@ -147,12 +148,8 @@ void mce_amd_feature_init(struct cpuinfo
- 			if (rdmsr_safe(address, &low, &high))
- 				break;
+--- a/net/wireless/wext.c
++++ b/net/wireless/wext.c
+@@ -1029,7 +1029,7 @@ static int ioctl_private_iw_point(struct
+ 	} else if (!iwp->pointer)
+ 		return -EFAULT;
  
--			if (!(high & MASK_VALID_HI)) {
--				if (block)
--					continue;
--				else
--					break;
--			}
-+			if (!(high & MASK_VALID_HI))
-+				continue;
+-	extra = kmalloc(extra_size, GFP_KERNEL);
++	extra = kzalloc(extra_size, GFP_KERNEL);
+ 	if (!extra)
+ 		return -ENOMEM;
  
- 			if (!(high & MASK_CNTP_HI)  ||
- 			     (high & MASK_LOCKED_HI))
 
 
