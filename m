@@ -1,41 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754837Ab0JVHfm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 03:35:42 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:46339 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753415Ab0JVHfl convert rfc822-to-8bit (ORCPT
+	id S1754833Ab0JVHkw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 03:40:52 -0400
+Received: from e28smtp03.in.ibm.com ([122.248.162.3]:60717 "EHLO
+	e28smtp03.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753557Ab0JVHkv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 03:35:41 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=BD94t/QY+XMMbWns5DWf12l339R5d3di7QN3wblKL/MnxoBzagrucwHJ/LY8EmEz0+
-         xO02XcSO+ZbV+NW3m+5tXmer6B21QQyHVBXNdFIkt/wRkfMNZj+KMjFTKXs/zfVZb6tS
-         oJgV7tAqFCeut2QvU28+trGNw6Hm1JnAknM+o=
+	Fri, 22 Oct 2010 03:40:51 -0400
+Message-ID: <4CC13FFF.7040200@linux.vnet.ibm.com>
+Date: Fri, 22 Oct 2010 13:10:47 +0530
+From: divya <dipraksh@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.10) Gecko/20100527 Thunderbird/3.0.5
 MIME-Version: 1.0
-Date: Fri, 22 Oct 2010 10:35:40 +0300
-Message-ID: <AANLkTi=M3fpiqii_0qoZawRiZfw1=WZPOhLgKesjFaTu@mail.gmail.com>
-Subject: 2.6.37-git1
-From: Anca Emanuel <anca.emanuel@gmail.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8BIT
+To: LKML <linux-kernel@vger.kernel.org>, benh@kernel.crashing.org,
+        linuxppc-dev@ozlabs.org
+Subject: Re: BUG with the kernel version 2.6.36-rc1 on power machine
+References: <4CC13B2C.7090908@linux.vnet.ibm.com>
+In-Reply-To: <4CC13B2C.7090908@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  CC [M]  drivers/net/wireless/hostap/hostap_cs.o
-drivers/staging/comedi/drivers/ni_daq_700.c: In function ‘dio700_config’:
-drivers/staging/comedi/drivers/ni_daq_700.c:499: error: ‘win_req_t’
-undeclared (first use in this function)
-drivers/staging/comedi/drivers/ni_daq_700.c:499: error: (Each
-undeclared identifier is reported only once
-drivers/staging/comedi/drivers/ni_daq_700.c:499: error: for each
-function it appears in.)
-drivers/staging/comedi/drivers/ni_daq_700.c:499: error: expected ‘;’
-before ‘req’
-drivers/staging/comedi/drivers/ni_daq_700.c:500: warning: ISO C90
-forbids mixed declarations and code
+On Friday 22 October 2010 12:50 PM, divya wrote:
+> Hi ,
+>
+> With the latest version of kernel 2.6.36-rc1 running on the power 
+> machine, came across the following call trace
+>
+> BUG: looking up invalid subclass: 31
+> turning off the locking correctness validator.
+> Call Trace:
+> [c00000000e0bfb60] [c0000000000119a0] .show_stack+0x6c/0x16c (unreliable)
+> [c00000000e0bfc10] [c0000000000c39b8] .lockdep_init_map+0x194/0x630
+> [c00000000e0bfcf0] [c0000000005524f8] .mousedev_create+0xcc/0x234
+> [c00000000e0bfda0] [c00000000093fb58] .mousedev_init+0x38/0xa0
+> [c00000000e0bfe30] [c0000000000097e4] .do_one_initcall+0xd8/0x1c8
+> [c00000000e0bfee0] [c0000000009004ac] .kernel_init+0x23c/0x2f8
+> [c00000000e0bff90] [c00000000002ad30] .kernel_thread+0x54/0x70
+>
+> The config file used for make oldconfig is being attached
+>
+> Thanks
+> Divya
+>
+>
+>
+>
+I meant 2.6.36-git1(b5153163ed580e) , and not 2.6.36-rc1.
+Sorry for the confusion.
+
+Thanks
+Divya
+
