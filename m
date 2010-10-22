@@ -1,62 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756162Ab0JVMg7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 08:36:59 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:64851 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752836Ab0JVMg6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 08:36:58 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [GIT PULL] asm-generic changes
-Date: Fri, 22 Oct 2010 14:36:46 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.36-next-20101021+; KDE/4.5.1; x86_64; ; )
-Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
+	id S1756274Ab0JVMkh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 08:40:37 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:48837 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753690Ab0JVMkg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Oct 2010 08:40:36 -0400
+Message-ID: <4CC18605.80007@ti.com>
+Date: Fri, 22 Oct 2010 08:39:33 -0400
+From: Cyril Chemparathy <cyril@ti.com>
+Reply-To: cyril@ti.com
+Organization: Texas Instruments
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.14) Gecko/20101006 Lightning/1.0b1 Thunderbird/3.0.9
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: "davinci-linux-open-source@linux.davincidsp.com" 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        "spi-devel-general@lists.sourceforge.net" 
+	<spi-devel-general@lists.sourceforge.net>,
+        "broonie@opensource.wolfsonmicro.com" 
+	<broonie@opensource.wolfsonmicro.com>,
+        "lrg@slimlogic.co.uk" <lrg@slimlogic.co.uk>,
+        "dbrownell@users.sourceforge.net" <dbrownell@users.sourceforge.net>,
+        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "rpurdie@rpsys.net" <rpurdie@rpsys.net>
+Subject: Re: [PATCH v3 01/12] misc: add driver for sequencer serial port
+References: <1287694873-12904-1-git-send-email-cyril@ti.com>	<1287694873-12904-2-git-send-email-cyril@ti.com> <20101021161224.b4c0b623.akpm@linux-foundation.org>
+In-Reply-To: <20101021161224.b4c0b623.akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Message-Id: <201010221436.46476.arnd@arndb.de>
-X-Provags-ID: V02:K0:XJ/IngZXebB9g6TmghUjrLZzJ2Pz1caJimyPiUbzTrX
- /c88X4yAjXvXqSU4RrnAyV78aYMRhAIw6QeD0ZhjyMZmUVfTj2
- fuGrIFWxkQM35zRap9lbJtYilFtI0NpDbV0nNfkOELt//z2+g1
- H/XHncKnAqgyIYuo2yeKXzx9rZYLcbDQ9tUT8ZSUdHVEnLzR/K
- ARr2mG1UlUqwc49GdRpoQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A few small cleanups and fixes for include/asm-generic.
-Please pull from:
+On 10/21/2010 07:12 PM, Andrew Morton wrote:
+>
+> ...
+>
+>> +/* Register Access Helpers */
+>> +static inline u32 ssp_read(struct ti_ssp *ssp, int reg)
+>> +{
+>> +	return __raw_readl(ssp->regs + reg);
+>> +}
+>> +
+>> +static inline void ssp_write(struct ti_ssp *ssp, int reg, u32 val)
+>> +{
+>> +	__raw_writel(val, ssp->regs + reg);
+>> +}
+> 
+> Why are the __raw functions used here?
+> 
 
-  git+ssh://master.kernel.org/pub/scm/linux/kernel/git/arnd/asm-generic.git master
+These registers are to be accessed native endian at all times, and
+therefore the le32 conversion done otherwise is inappropriate.
 
----
-Akinobu Mita (2):
-      bitops: make asm-generic/bitops/find.h more generic
-      bitops: remove duplicated extern declarations
+Thanks for the feedback.  I will post an updated series with these changes.
 
-Andrea Gelmini (1):
-      asm-generic: kdebug.h: Checkpatch cleanup
-
-Lucian Adrian Grijincu (1):
-      asm-generic: fcntl: make exported headers use strict posix types
-
-Mathieu Lacage (2):
-      asm-generic: make atomic_add_unless a function
-      asm-generic: cmpxchg does not handle non-long arguments
-
-Mike Frysinger (1):
-      asm-generic/io.h: allow people to override individual funcs
-
- arch/tile/include/asm/bitops.h    |    1 +
- arch/x86/include/asm/bitops.h     |    2 +
- include/asm-generic/atomic.h      |   34 ++++++++++++++--------------
- include/asm-generic/bitops/find.h |   39 ++++++++++++++++++++++++++++++-
- include/asm-generic/fcntl.h       |    2 +-
- include/asm-generic/io.h          |   26 +++++++++++++++++++++
- include/asm-generic/kdebug.h      |    2 +-
- include/asm-generic/system.h      |   20 +---------------
- include/linux/bitops.h            |   45 -------------------------------------
- 9 files changed, 86 insertions(+), 85 deletions(-)
+Regards
+Cyril.
