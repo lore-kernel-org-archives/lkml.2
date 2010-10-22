@@ -1,27 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759308Ab0JVT0d (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 15:26:33 -0400
-Received: from kroah.org ([198.145.64.141]:33844 "EHLO coco.kroah.org"
+	id S1755480Ab0JVSiM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 14:38:12 -0400
+Received: from kroah.org ([198.145.64.141]:49478 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759066Ab0JVSzq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 14:55:46 -0400
-X-Mailbox-Line: From gregkh@clark.site Fri Oct 22 11:52:27 2010
-Message-Id: <20101022185227.373997042@clark.site>
+	id S1754813Ab0JVSiK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Oct 2010 14:38:10 -0400
+X-Mailbox-Line: From gregkh@clark.site Fri Oct 22 11:35:56 2010
+Message-Id: <20101022183556.341828426@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 22 Oct 2010 11:50:35 -0700
+Date: Fri, 22 Oct 2010 11:34:28 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
         "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: [001/103] x86, cpu: After uncapping CPUID, re-run CPU feature detection
-In-Reply-To: <20101022185455.GA9114@kroah.com>
+Subject: [01/66] x86, cpu: After uncapping CPUID, re-run CPU feature detection
+In-Reply-To: <20101022183711.GA23214@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.35-stable review patch.  If anyone has any objections, please let us know.
+2.6.32-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
 
@@ -47,7 +47,7 @@ Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 --- a/arch/x86/kernel/cpu/common.c
 +++ b/arch/x86/kernel/cpu/common.c
-@@ -537,7 +537,7 @@ void __cpuinit cpu_detect(struct cpuinfo
+@@ -540,7 +540,7 @@ void __cpuinit cpu_detect(struct cpuinfo
  	}
  }
  
@@ -61,13 +61,13 @@ Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 @@ -33,5 +33,6 @@ extern const struct cpu_dev *const __x86
  			    *const __x86_cpu_dev_end[];
  
- extern void cpu_detect_cache_sizes(struct cpuinfo_x86 *c);
+ extern void display_cacheinfo(struct cpuinfo_x86 *c);
 +extern void get_cpu_cap(struct cpuinfo_x86 *c);
  
  #endif
 --- a/arch/x86/kernel/cpu/intel.c
 +++ b/arch/x86/kernel/cpu/intel.c
-@@ -39,6 +39,7 @@ static void __cpuinit early_init_intel(s
+@@ -40,6 +40,7 @@ static void __cpuinit early_init_intel(s
  			misc_enable &= ~MSR_IA32_MISC_ENABLE_LIMIT_CPUID;
  			wrmsrl(MSR_IA32_MISC_ENABLE, misc_enable);
  			c->cpuid_level = cpuid_eax(0);
