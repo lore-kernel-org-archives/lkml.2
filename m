@@ -1,94 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757613Ab0JVQKq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 12:10:46 -0400
-Received: from e6.ny.us.ibm.com ([32.97.182.146]:37333 "EHLO e6.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755374Ab0JVQKp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 12:10:45 -0400
-Date: Fri, 22 Oct 2010 09:10:32 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Lai Jiangshan <laijs@cn.fujitsu.com>
-Cc: Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/2 v2] rcu,cleanup: simplify the code when cpu is dying
-Message-ID: <20101022161032.GA2391@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <4CBE8872.1010905@cn.fujitsu.com>
- <20101020192503.GH2386@linux.vnet.ibm.com>
- <4CC13EB1.6020800@cn.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4CC13EB1.6020800@cn.fujitsu.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1757696Ab0JVQK6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 12:10:58 -0400
+Received: from fxip-0047f.externet.hu ([88.209.222.127]:55145 "EHLO
+	pomaz-ex.szeredi.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757617Ab0JVQK5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Oct 2010 12:10:57 -0400
+To: viro@ZenIV.linux.org.uk
+CC: dave@linux.vnet.ibm.com, akpm@linux-foundation.org,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+In-reply-to: <E1P9Gh4-00054y-EA@pomaz-ex.szeredi.hu> (message from Miklos
+	Szeredi on Fri, 22 Oct 2010 14:25:58 +0200)
+Subject: Re: [PATCH 7/9] vfs: protect remounting superblock read-only
+References: <20101005103108.288743609@szeredi.hu>
+ <20101005103144.051231469@szeredi.hu> <20101022064627.GA21607@ZenIV.linux.org.uk> <E1P9Gh4-00054y-EA@pomaz-ex.szeredi.hu>
+Message-Id: <E1P9KCY-0005YO-4i@pomaz-ex.szeredi.hu>
+From: Miklos Szeredi <miklos@szeredi.hu>
+Date: Fri, 22 Oct 2010 18:10:42 +0200
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 22, 2010 at 03:35:13PM +0800, Lai Jiangshan wrote:
-> On 10/21/2010 03:25 AM, Paul E. McKenney wrote:
-> > On Wed, Oct 20, 2010 at 02:13:06PM +0800, Lai Jiangshan wrote:
-> >> When we handle cpu notify DYING, the whole system is stopped except
-> >> current CPU, so we can touch any data, and we remove the orphan_cbs_tail
-> >> and send the callbacks to the dest CPU directly.
-> > 
-> > Queued along with the documentation/comment patch below, thank you!!!
-> > (Of course, please let me know if you see problems with my patch.)
+On Fri, 22 Oct 2010, Miklos Szeredi wrote:
+> >   Or, more subtle, tries to
+> > update atime on some opened struct file on that sb.
 > 
-> Your patch is good for me, please queue it, thanks.
-
-Very good, done!
-
-> > One remaining question...  You use cpumask_any() to select the destination
-> > CPU, which sounds good until you look at its definition.  The problem
-> > is that cpumask_any() always chooses the lowest-numbered online CPU.
-> > So imagine a (say) 64-CPU system and suppose that CPU 0 remains online.
-> > Suppose further that the other 63 CPUs each execute some workload that
-> > generates lots of RCU callbacks (perhaps creating then removing a large
-> > source tree), and periodically go offline and come back online.
-> > 
-> > All of the RCU callbacks from CPUs 1-63 could easily end up getting
-> > dumped onto CPU 0's callback lists.  It is easy to imagine that CPU 0
-> > might not be able to invoke these callbacks as fast as the other CPUs
-> > could generate them.
-> > 
-> > Or am I missing something?
+> Hmm, load_nls() will apparently do that.  Drat.
 > 
-> It happens in the worst case. It may also happen before this patch.
-> 
-> Before this patch, the callback move to the receive-CPU who handles the CPU_DEAD
-> event, and this CPU may be always cpu#0 in the worst case, the problem happens.
-> 
-> And it's not help if I introduce a choose_receive_cpu_very_smart(),
-> Suppose further that the other 63 CPUs each execute some workload that
-> generates lots of RCU callbacks (perhaps creating then removing a large
-> source tree), and periodically go offline and come back online. In worse
-> case, in some period, there is only cpu#0 online, So all of the RCU callbacks
-> from CPUs 1-63 could easily end up getting dumped onto CPU 0's callback lists. 
-> It is easy to imagine that CPU 0 might not be able to invoke these callbacks
-> as fast as the other CPUs could generate them.
-> 
-> Another bad case(it may happens without this patch/with this patch
-> /with choose_receive_cpu_very_smart()):
-> 	Live-Lock, suppose cpu#A and cpu#B periodically go offline and come
-> 	back online, the callback may be moved from A to B and from B to A
-> 	periodically, no callback is handled.
+> Plan B: remount all vfsmounts read-only before ->remount_fs() but
+> remember which ones were read-write and restore on failure.  Will
+> result in ugly transient write failures if remount_fs() fails, but I
+> don't think anybody would care in practice.
 
-Agreed, it -could- happen before in the worst case, but it required very
-bad luck for the task adopting the callbacks to always be the same.
-In contrast, cpumask_any() will always pick on the same CPU.
+And it's actually a pretty simple change.  Here's the incremental
+patch to "vfs: protect remounting superblock read-only", with "vfs:
+allow mnt_want_write() to sleep" reverted.
 
-That said, your approach called out below is intriguing...
+The full, updated patch with follow.
 
-> To fix these problems(it does really very hardly happen), we must force
-> all adopted callbacks are called before next cpu-offline. so we can use
-> work_on_cpu() or rcu_barrier() to do this. To make the code simpler, I will
-> use rcu_barrier().
+Thanks,
+Miklos
 
-This approach is nice, but requires extensive testing -- a start would
-be a script that randomly onlines and offlines CPUs while rcutorture
-is running in the background.  If you have not already done so, could
-you please give this an over-the-weekend test on the largest system
-you have access to?
 
-							Thanx, Paul
+
+Index: linux-2.6/fs/namespace.c
+===================================================================
+--- linux-2.6.orig/fs/namespace.c	2010-10-22 16:24:41.000000000 +0200
++++ linux-2.6/fs/namespace.c	2010-10-22 16:17:59.000000000 +0200
+@@ -435,11 +435,17 @@ int sb_prepare_remount_readonly(struct s
+ 			}
+ 		}
+ 	}
++	list_for_each_entry(mnt, &sb->s_mounts, mnt_instance) {
++		if (mnt->mnt_flags & MNT_WRITE_HOLD) {
++			if (!err) {
++				mnt->mnt_flags |= MNT_READONLY | MNT_WAS_WRITE;
++				smp_wmb();
++			}
++			mnt->mnt_flags &= ~MNT_WRITE_HOLD;
++		}
++	}
+ 	br_write_unlock(vfsmount_lock);
+ 
+-	if (err)
+-		sb_cancel_remount_readonly(sb);
+-
+ 	return err;
+ }
+ 
+@@ -449,12 +455,11 @@ void sb_cancel_remount_readonly(struct s
+ 
+ 	br_write_lock(vfsmount_lock);
+ 	list_for_each_entry(mnt, &sb->s_mounts, mnt_instance) {
+-		if (mnt->mnt_flags & MNT_WRITE_HOLD)
+-			mnt->mnt_flags &= ~MNT_WRITE_HOLD;
++		if (mnt->mnt_flags & MNT_WAS_WRITE)
++			mnt->mnt_flags &= ~(MNT_WAS_WRITE | MNT_READONLY);
+ 	}
+ 
+ 	br_write_unlock(vfsmount_lock);
+-	wake_up_all(&sb->s_wait_remount_readonly);
+ }
+ 
+ void sb_finish_remount_readonly(struct super_block *sb)
+@@ -463,15 +468,11 @@ void sb_finish_remount_readonly(struct s
+ 
+ 	br_write_lock(vfsmount_lock);
+ 	list_for_each_entry(mnt, &sb->s_mounts, mnt_instance) {
+-		if (!(mnt->mnt_flags & MNT_READONLY)) {
+-			mnt->mnt_flags |= MNT_READONLY;
+-			smp_wmb();
+-			mnt->mnt_flags &= ~MNT_WRITE_HOLD;
+-		}
++		if (mnt->mnt_flags & MNT_WAS_WRITE)
++			mnt->mnt_flags &= ~MNT_WAS_WRITE;
+ 	}
+ 	sb->s_flags |= MS_RDONLY;
+ 	br_write_unlock(vfsmount_lock);
+-	wake_up_all(&sb->s_wait_remount_readonly);
+ }
+ 
+ void simple_set_mnt(struct vfsmount *mnt, struct super_block *sb)
+Index: linux-2.6/include/linux/mount.h
+===================================================================
+--- linux-2.6.orig/include/linux/mount.h	2010-10-22 16:02:14.000000000 +0200
++++ linux-2.6/include/linux/mount.h	2010-10-22 16:20:26.000000000 +0200
+@@ -30,6 +30,7 @@ struct mnt_namespace;
+ 
+ #define MNT_SHRINKABLE	0x100
+ #define MNT_WRITE_HOLD	0x200
++#define MNT_WAS_WRITE	0x400   /* used by remount to remember write mounts */
+ 
+ #define MNT_SHARED	0x1000	/* if the vfsmount is a shared mount */
+ #define MNT_UNBINDABLE	0x2000	/* if the vfsmount is a unbindable mount */
