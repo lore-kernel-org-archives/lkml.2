@@ -1,53 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758071Ab0JVUPM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 16:15:12 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:40976 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757177Ab0JVUPL convert rfc822-to-8bit (ORCPT
+	id S1759324Ab0JVUPz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 16:15:55 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:43736 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757199Ab0JVUPw convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 16:15:11 -0400
+	Fri, 22 Oct 2010 16:15:52 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:from:date
-         :x-google-sender-auth:message-id:subject:to:cc:content-type
-         :content-transfer-encoding;
-        b=bq+lQvvGa+xSwy0YtKbJCP0gBVxrg6pMpQ9OhgqrTukf3ZPZ3pAsxzpSeTT9NEGxtR
-         go4+WdgxdDJhlptu75s9DhDJUHhwMmZD4HNqYq1I8WMd/nqt1cT3nl6unAoBFCL/j98y
-         l82FpS03CvRnDllGpix+tTmTt1CAi+PBRpwwE=
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=ZTQWBLq/NN1xB5i5HeK2OVC3uckqVhNzU/HBRhaENgKQ+TMPQhSDQnIaq34Yg/Mx+m
+         R1K1pcM2QdGTK1/kzMoqxIN1mpiI7XVI0xlrSCezZk/WvhTNHRCqsZFLmW2+VitvwndP
+         no8G74S4I/ZwWl6ntxZL2FBbWIh0T23/sfTNw=
 MIME-Version: 1.0
-In-Reply-To: <20101021162410.5c0d6720.akpm@linux-foundation.org>
-References: <1287250035-30404-1-git-send-email-vapier@gentoo.org>
- <20101021150250.f6499506.akpm@linux-foundation.org> <201010211823.38287.vapier@gentoo.org>
- <20101021155528.b3d6d027.akpm@linux-foundation.org> <AANLkTim6AFDw_1V9rtF4e_2tmgctbKHziQa-1e3=q7og@mail.gmail.com>
- <20101021162410.5c0d6720.akpm@linux-foundation.org>
-From: Mike Frysinger <vapier@gentoo.org>
-Date: Fri, 22 Oct 2010 16:14:49 -0400
-X-Google-Sender-Auth: h5Sa5GEVyp2cb5CZcWVTCz8pBEc
-Message-ID: <AANLkTikGbK7=eW9L4A62Rin-E3usq4Ke_dPoCdStDyEw@mail.gmail.com>
-Subject: Re: [PATCH] lib/atomic64_test: do not build on non-atomic64 systems
-To: Luca Barbieri <luca@luca-barbieri.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org
+In-Reply-To: <cover.1287724261.git.joe@perches.com>
+References: <cover.1287724261.git.joe@perches.com>
+From: Mike Frysinger <vapier.adi@gmail.com>
+Date: Fri, 22 Oct 2010 16:15:29 -0400
+Message-ID: <AANLkTi=qAAC6cFiR9iG9G0f9B+jOCSQfbi7xGUm43oAV@mail.gmail.com>
+Subject: Re: [PATCH 0/9] Typo fixes of faild to failed
+To: Joe Perches <joe@perches.com>
+Cc: Jiri Kosina <trivial@kernel.org>, linux-ide@vger.kernel.org,
+        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        netdev@vger.kernel.org, cbe-oss-dev@lists.ozlabs.org,
+        linuxppc-dev@lists.ozlabs.org, linux-arm-kernel@lists.infradead.org,
+        rtc-linux@googlegroups.com, osd-dev@open-osd.org,
+        jfs-discussion@lists.sourceforge.net
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 21, 2010 at 19:24, Andrew Morton wrote:
-> On Thu, 21 Oct 2010 19:04:36 -0400 Mike Frysinger wrote:
->> you can say "lazy" all you like.  i dont see the point in going that route.
->
-> Try
->
->        grep HAVE arch/x86/Kconfig
->
-> If all of those were instead to use some random #define which the
-> particular feature happened to define in some header file then we would
-> have a mess on our hands.
+On Fri, Oct 22, 2010 at 01:17, Joe Perches wrote:
+>  drivers/ata/pata_bf54x.c           |    2 +-
+>  drivers/video/bf54x-lq043fb.c      |    6 +++---
+>  drivers/video/bfin-t350mcqb-fb.c   |    2 +-
 
-fun times.  new tact.
-
-Luca: your new atomic64_t test build fails on all arches that lack
-atomic64_t.  please fix.
+Acked-by: Mike Frysinger <vapier@gentoo.org>
 -mike
