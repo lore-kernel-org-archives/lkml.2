@@ -1,52 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755333Ab0JVH77 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 03:59:59 -0400
-Received: from vpn.id2.novell.com ([195.33.99.129]:39156 "EHLO
-	vpn.id2.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753863Ab0JVH74 convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-JBeulich@novell.com:5:1>);
-	Fri, 22 Oct 2010 03:59:56 -0400
-Message-Id: <4CC15EE9020000780001E8B5@vpn.id2.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 8.0.1 
-Date: Fri, 22 Oct 2010 08:52:41 +0100
-From: "Jan Beulich" <JBeulich@novell.com>
-To: "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>
-Cc: <jeremy@goop.org>, <fujita.tomonori@lab.ntt.co.jp>, <hpa@linux.intel.com>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: Modularizing IOMMUs (devel/iommu-0.4)
-References: <20101020202006.GA30096@dumpdata.com>
-In-Reply-To: <20101020202006.GA30096@dumpdata.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+	id S1755397Ab0JVIAb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 04:00:31 -0400
+Received: from hera.kernel.org ([140.211.167.34]:49827 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753873Ab0JVIA2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Oct 2010 04:00:28 -0400
+Message-ID: <4CC14487.4020305@kernel.org>
+Date: Fri, 22 Oct 2010 10:00:07 +0200
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.11) Gecko/20101013 Lightning/1.0b2 Thunderbird/3.1.5
+MIME-Version: 1.0
+To: David Howells <dhowells@redhat.com>
+CC: linux-afs@lists.infradead.org, lkml <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2.6.36-rc7] afs: add afs_wq and use it instead of the
+ system workqueue
+References: <4CBDBE39.7080502@kernel.org> <25853.1287685570@redhat.com>
+In-Reply-To: <25853.1287685570@redhat.com>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 22 Oct 2010 08:00:09 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 20.10.10 at 22:20, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
-> Another way, less elegant was to manually enforce each function to be stuck
-> in the .iommu_text section. For that I made a macro: __iommu that would
-> force the function to be stuck in section specific for the IOMMU. So all
-> functions in pci-gart_64.c would be funneled in .iommu.gart.text. For 
-> calgary:
-> .iommu.calgary.text., and so on. This is accomplished by having at the 
-> beginning
-> of the the file the name of the IOMMU section, as so:
-> 
-> #define IOMMU_MODULE "gart"
-> 
-> And all of the functions would get stuck in .iommu.gart.text.
+Hello, David.
 
-For this particular approach - did you consider using objcopy's
---rename-section option?
+On 10/21/2010 08:26 PM, David Howells wrote:
+> Is that going away in the next merge window?
 
-> And then Question  #3): Is there a better way?
+Probably not that soon.  I'm thinking about marking it deprecated in
+the next merge window.
 
-Generally I like hpa's suggestion of using pre-loaded but unloadable
-modules much better, not the least because in the past I had seen
-potential uses for such a mechanism in other places of the kernel.
+Thanks.
 
-Jan
-
+-- 
+tejun
