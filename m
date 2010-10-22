@@ -1,133 +1,174 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756545Ab0JVNCt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 09:02:49 -0400
-Received: from hera.kernel.org ([140.211.167.34]:40323 "EHLO hera.kernel.org"
+	id S1756623Ab0JVNDY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 09:03:24 -0400
+Received: from hera.kernel.org ([140.211.167.34]:40354 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751562Ab0JVNCs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 09:02:48 -0400
-Date: Fri, 22 Oct 2010 13:02:09 GMT
+	id S1754688Ab0JVNDX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Oct 2010 09:03:23 -0400
+Date: Fri, 22 Oct 2010 13:02:55 GMT
 From: tip-bot for Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        a.p.zijlstra@chello.nl, efault@gmx.de, dima@android.com,
+Cc: linux-kernel@vger.kernel.org, eranian@google.com, hpa@zytor.com,
+        mingo@redhat.com, a.p.zijlstra@chello.nl, tglx@linutronix.de,
+        mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, eranian@google.com,
+        linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl,
         tglx@linutronix.de, mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        a.p.zijlstra@chello.nl, dima@android.com, efault@gmx.de,
-        tglx@linutronix.de, mingo@elte.hu
-In-Reply-To: <1287150604.29097.1513.camel@twins>
-References: <1287150604.29097.1513.camel@twins>
+In-Reply-To: <20101019134808.253453452@chello.nl>
+References: <20101019134808.253453452@chello.nl>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/urgent] sched, cgroup: Fixup broken cgroup movement
-Message-ID: <tip-b2b5ce022acf5e9f52f7b78c5579994fdde191d4@git.kernel.org>
-Git-Commit-ID: b2b5ce022acf5e9f52f7b78c5579994fdde191d4
+Subject: [tip:perf/urgent] perf, x86: Extract PEBS/BTS allocation functions
+Message-ID: <tip-5ee25c87318fa3722026fd77089fa7ba0db8d447@git.kernel.org>
+Git-Commit-ID: 5ee25c87318fa3722026fd77089fa7ba0db8d447
 X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 22 Oct 2010 13:02:11 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 22 Oct 2010 13:02:55 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  b2b5ce022acf5e9f52f7b78c5579994fdde191d4
-Gitweb:     http://git.kernel.org/tip/b2b5ce022acf5e9f52f7b78c5579994fdde191d4
+Commit-ID:  5ee25c87318fa3722026fd77089fa7ba0db8d447
+Gitweb:     http://git.kernel.org/tip/5ee25c87318fa3722026fd77089fa7ba0db8d447
 Author:     Peter Zijlstra <a.p.zijlstra@chello.nl>
-AuthorDate: Fri, 15 Oct 2010 15:24:15 +0200
+AuthorDate: Tue, 19 Oct 2010 14:15:04 +0200
 Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Fri, 22 Oct 2010 14:16:45 +0200
+CommitDate: Fri, 22 Oct 2010 14:18:25 +0200
 
-sched, cgroup: Fixup broken cgroup movement
+perf, x86: Extract PEBS/BTS allocation functions
 
-Dima noticed that we fail to correct the ->vruntime of sleeping tasks
-when we move them between cgroups.
+Mostly a cleanup.. it reduces code indentation and makes the code flow
+of reserve_ds_buffers() clearer.
 
-Reported-by: Dima Zavin <dima@android.com>
 Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Tested-by: Mike Galbraith <efault@gmx.de>
-LKML-Reference: <1287150604.29097.1513.camel@twins>
+Acked-by: Stephane Eranian <eranian@google.com>
+LKML-Reference: <20101019134808.253453452@chello.nl>
 Signed-off-by: Ingo Molnar <mingo@elte.hu>
 ---
- include/linux/sched.h |    2 +-
- kernel/sched.c        |    8 ++++----
- kernel/sched_fair.c   |   25 +++++++++++++++++++------
- 3 files changed, 24 insertions(+), 11 deletions(-)
+ arch/x86/kernel/cpu/perf_event_intel_ds.c |   92 ++++++++++++++++++-----------
+ 1 files changed, 57 insertions(+), 35 deletions(-)
 
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 2cca9a9..be312c1 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -1073,7 +1073,7 @@ struct sched_class {
- 					 struct task_struct *task);
- 
- #ifdef CONFIG_FAIR_GROUP_SCHED
--	void (*moved_group) (struct task_struct *p, int on_rq);
-+	void (*task_move_group) (struct task_struct *p, int on_rq);
- #endif
- };
- 
-diff --git a/kernel/sched.c b/kernel/sched.c
-index 5998222..3fe253e 100644
---- a/kernel/sched.c
-+++ b/kernel/sched.c
-@@ -8498,12 +8498,12 @@ void sched_move_task(struct task_struct *tsk)
- 	if (unlikely(running))
- 		tsk->sched_class->put_prev_task(rq, tsk);
- 
--	set_task_rq(tsk, task_cpu(tsk));
--
- #ifdef CONFIG_FAIR_GROUP_SCHED
--	if (tsk->sched_class->moved_group)
--		tsk->sched_class->moved_group(tsk, on_rq);
-+	if (tsk->sched_class->task_move_group)
-+		tsk->sched_class->task_move_group(tsk, on_rq);
-+	else
- #endif
-+		set_task_rq(tsk, task_cpu(tsk));
- 
- 	if (unlikely(running))
- 		tsk->sched_class->set_curr_task(rq);
-diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
-index 74cccfa..3acc2a4 100644
---- a/kernel/sched_fair.c
-+++ b/kernel/sched_fair.c
-@@ -3866,13 +3866,26 @@ static void set_curr_task_fair(struct rq *rq)
+diff --git a/arch/x86/kernel/cpu/perf_event_intel_ds.c b/arch/x86/kernel/cpu/perf_event_intel_ds.c
+index 1bc1351..14d98bd 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel_ds.c
++++ b/arch/x86/kernel/cpu/perf_event_intel_ds.c
+@@ -74,6 +74,32 @@ static void fini_debug_store_on_cpu(int cpu)
+ 	wrmsr_on_cpu(cpu, MSR_IA32_DS_AREA, 0, 0);
  }
  
- #ifdef CONFIG_FAIR_GROUP_SCHED
--static void moved_group_fair(struct task_struct *p, int on_rq)
-+static void task_move_group_fair(struct task_struct *p, int on_rq)
++static int alloc_pebs_buffer(int cpu)
++{
++	struct debug_store *ds = per_cpu(cpu_hw_events, cpu).ds;
++	int max, thresh = 1; /* always use a single PEBS record */
++	void *buffer;
++
++	if (!x86_pmu.pebs)
++		return 0;
++
++	buffer = kzalloc(PEBS_BUFFER_SIZE, GFP_KERNEL);
++	if (unlikely(!buffer))
++		return -ENOMEM;
++
++	max = PEBS_BUFFER_SIZE / x86_pmu.pebs_record_size;
++
++	ds->pebs_buffer_base = (u64)(unsigned long)buffer;
++	ds->pebs_index = ds->pebs_buffer_base;
++	ds->pebs_absolute_maximum = ds->pebs_buffer_base +
++		max * x86_pmu.pebs_record_size;
++
++	ds->pebs_interrupt_threshold = ds->pebs_buffer_base +
++		thresh * x86_pmu.pebs_record_size;
++
++	return 0;
++}
++
+ static void release_pebs_buffer(int cpu)
  {
--	struct cfs_rq *cfs_rq = task_cfs_rq(p);
--
--	update_curr(cfs_rq);
-+	/*
-+	 * If the task was not on the rq at the time of this cgroup movement
-+	 * it must have been asleep, sleeping tasks keep their ->vruntime
-+	 * absolute on their old rq until wakeup (needed for the fair sleeper
-+	 * bonus in place_entity()).
-+	 *
-+	 * If it was on the rq, we've just 'preempted' it, which does convert
-+	 * ->vruntime to a relative base.
-+	 *
-+	 * Make sure both cases convert their relative position when migrating
-+	 * to another cgroup's rq. This does somewhat interfere with the
-+	 * fair sleeper stuff for the first placement, but who cares.
-+	 */
-+	if (!on_rq)
-+		p->se.vruntime -= cfs_rq_of(&p->se)->min_vruntime;
-+	set_task_rq(p, task_cpu(p));
- 	if (!on_rq)
--		place_entity(cfs_rq, &p->se, 1);
-+		p->se.vruntime += cfs_rq_of(&p->se)->min_vruntime;
+ 	struct debug_store *ds = per_cpu(cpu_hw_events, cpu).ds;
+@@ -85,6 +111,32 @@ static void release_pebs_buffer(int cpu)
+ 	ds->pebs_buffer_base = 0;
  }
- #endif
  
-@@ -3924,7 +3937,7 @@ static const struct sched_class fair_sched_class = {
- 	.get_rr_interval	= get_rr_interval_fair,
++static int alloc_bts_buffer(int cpu)
++{
++	struct debug_store *ds = per_cpu(cpu_hw_events, cpu).ds;
++	int max, thresh;
++	void *buffer;
++
++	if (!x86_pmu.bts)
++		return 0;
++
++	buffer = kzalloc(BTS_BUFFER_SIZE, GFP_KERNEL);
++	if (unlikely(!buffer))
++		return -ENOMEM;
++
++	max = BTS_BUFFER_SIZE / BTS_RECORD_SIZE;
++	thresh = max / 16;
++
++	ds->bts_buffer_base = (u64)(unsigned long)buffer;
++	ds->bts_index = ds->bts_buffer_base;
++	ds->bts_absolute_maximum = ds->bts_buffer_base +
++		max * BTS_RECORD_SIZE;
++	ds->bts_interrupt_threshold = ds->bts_absolute_maximum -
++		thresh * BTS_RECORD_SIZE;
++
++	return 0;
++}
++
+ static void release_bts_buffer(int cpu)
+ {
+ 	struct debug_store *ds = per_cpu(cpu_hw_events, cpu).ds;
+@@ -133,8 +185,6 @@ static int reserve_ds_buffers(void)
  
- #ifdef CONFIG_FAIR_GROUP_SCHED
--	.moved_group		= moved_group_fair,
-+	.task_move_group	= task_move_group_fair,
- #endif
- };
+ 	for_each_possible_cpu(cpu) {
+ 		struct debug_store *ds;
+-		void *buffer;
+-		int max, thresh;
  
+ 		err = -ENOMEM;
+ 		ds = kzalloc(sizeof(*ds), GFP_KERNEL);
+@@ -142,39 +192,11 @@ static int reserve_ds_buffers(void)
+ 			break;
+ 		per_cpu(cpu_hw_events, cpu).ds = ds;
+ 
+-		if (x86_pmu.bts) {
+-			buffer = kzalloc(BTS_BUFFER_SIZE, GFP_KERNEL);
+-			if (unlikely(!buffer))
+-				break;
+-
+-			max = BTS_BUFFER_SIZE / BTS_RECORD_SIZE;
+-			thresh = max / 16;
+-
+-			ds->bts_buffer_base = (u64)(unsigned long)buffer;
+-			ds->bts_index = ds->bts_buffer_base;
+-			ds->bts_absolute_maximum = ds->bts_buffer_base +
+-				max * BTS_RECORD_SIZE;
+-			ds->bts_interrupt_threshold = ds->bts_absolute_maximum -
+-				thresh * BTS_RECORD_SIZE;
+-		}
++		if (alloc_bts_buffer(cpu))
++			break;
+ 
+-		if (x86_pmu.pebs) {
+-			buffer = kzalloc(PEBS_BUFFER_SIZE, GFP_KERNEL);
+-			if (unlikely(!buffer))
+-				break;
+-
+-			max = PEBS_BUFFER_SIZE / x86_pmu.pebs_record_size;
+-
+-			ds->pebs_buffer_base = (u64)(unsigned long)buffer;
+-			ds->pebs_index = ds->pebs_buffer_base;
+-			ds->pebs_absolute_maximum = ds->pebs_buffer_base +
+-				max * x86_pmu.pebs_record_size;
+-			/*
+-			 * Always use single record PEBS
+-			 */
+-			ds->pebs_interrupt_threshold = ds->pebs_buffer_base +
+-				x86_pmu.pebs_record_size;
+-		}
++		if (alloc_pebs_buffer(cpu))
++			break;
+ 
+ 		err = 0;
+ 	}
