@@ -1,96 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751839Ab0JVCDj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Oct 2010 22:03:39 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:57518 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750951Ab0JVCDi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Oct 2010 22:03:38 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:cc:content-type;
-        b=ArsOxguF7bRRu1RyJv7eXCd1DP4wo0imlUHuFfvIYkEWIh+16+GET+kLpvIqIjEWao
-         daM+EyLP7/AeLXsdJW6gCi2o0SLOLynJkn+uL1EBjxhM5qSZSYdVDbC7rhtsQl0zK+AB
-         ag04nTo+jvngqHgCfnEzCjpX53g14vbegApCQ=
-MIME-Version: 1.0
-Date: Thu, 21 Oct 2010 22:03:37 -0400
-Message-ID: <AANLkTi=BMrsMjj5-v4-VLhGWp+kny3mxgUmhF6ywHSy-@mail.gmail.com>
-Subject: Info regarding MTRR handling
-From: Andev <debiandev@gmail.com>
-To: rgooch@atnf.csiro.au, yinghai@kernel.org
-Cc: linux kernel <kernelnewbies@nl.linux.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1752401Ab0JVCFO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Oct 2010 22:05:14 -0400
+Received: from mga01.intel.com ([192.55.52.88]:14485 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750975Ab0JVCFN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Oct 2010 22:05:13 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.58,221,1286175600"; 
+   d="scan'208";a="619165299"
+Subject: Re: [PATCH -v3 5/6] x86, NMI, treat unknown NMI as hardware error
+From: Huang Ying <ying.huang@intel.com>
+To: Don Zickus <dzickus@redhat.com>
+Cc: Andi Kleen <andi@firstfloor.org>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Robert Richter <robert.richter@amd.com>,
+        "peterz@infradead.org" <peterz@infradead.org>
+In-Reply-To: <20101022014955.GP19090@redhat.com>
+References: <1286606987-19879-1-git-send-email-ying.huang@intel.com>
+	 <1286606987-19879-5-git-send-email-ying.huang@intel.com>
+	 <20101011212006.GB23882@redhat.com> <1287555157.3026.21.camel@yhuang-dev>
+	 <20101020141558.GB19090@redhat.com> <1287623643.19320.40.camel@yhuang-dev>
+	 <20101021023135.GA12086@redhat.com> <1287638251.19320.190.camel@yhuang-dev>
+	 <20101021141002.GI19090@redhat.com>
+	 <20101021154543.GD21695@basil.fritz.box>
+	 <20101022014955.GP19090@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 22 Oct 2010 10:05:10 +0800
+Message-ID: <1287713110.2862.54.camel@yhuang-dev>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Richard,
+On Fri, 2010-10-22 at 09:49 +0800, Don Zickus wrote:
+> On Thu, Oct 21, 2010 at 05:45:44PM +0200, Andi Kleen wrote:
+> > On Thu, Oct 21, 2010 at 10:10:02AM -0400, Don Zickus wrote:
+> > > On Thu, Oct 21, 2010 at 01:17:31PM +0800, Huang Ying wrote:
+> > > > > > But there is some general rules for unknown NMI. We think unknown NMI is
+> > > > > > hardware error notification on all systems except systems with broken
+> > > > > > hardware or software bugs, stone age machines. Do you agree with that?
+> > > > > 
+> > > > > Nope.  In my experiences, most of our customers are still running
+> > > > > pre-Nehalem boxes, therefore most unknown NMIs are from broken hardware or
+> > > > > bad firmware (at least in the bugzillas I deal with).
+> > > > 
+> > > > It seems that we have different point of view for reason of unknown NMI.
+> > > > Should broken hardware be seen as hardware error?
+> > > 
+> > > Well, do you have an alternative way to handle broken hardware?  Broken
+> > > hardware has generated NMIs, sometimes if I am lucky SERRs.  The ones that
+> > > generate SERRs can be filtered through a different path, but what about
+> > > the ones that don't?
+> > > 
+> > 
+> > Don, AFAIK you're saying the same thing as Ying: an unknown NMI is 
+> > a hardware error.
+> > 
+> > The reason the hardware does that is that it wants to tell us:
+> > 
+> > "I lost track of an error. There is corrupted data somewhere in the system.
+> > Please stop, don't do anything that could consume that data. S.O.S."
+> > 
+> > The correct answer for that is panic.
+> 
+> After re-reading Huang's patch, I am starting to understand what you mean
+> by broken hardware.  Basically you are trying to distinguish between
+> legacy systems that were 'broken' in the sense they would randomly send
+> uknown NMIs for no good reason, hence the 'Dazed and confused' messages
+> and hardware errors on more modern systems that say, 'Hardware error,
+> panicing check your BIOS for more info' (or whatever).
 
-I am having some trouble understanding the implementation of MTRR
-handling in Linux.
-I am trying to see the performance impact by disabling all cache. As a
-first step I am
-disabling MTRR.
+Yes.
 
-Intially when I boot up my mtrr file is as following:
+> So Huang's patch was sort of acting like a switch.  On legacy systems use
+> 'Dazed and confused' for unknown NMIs.  Whereas on whitelisted modern
+> systems use a more relavant 'Check BIOS for error' message.  Is that
+> right?
 
-$ cat /proc/mtrr
-reg00: base=0x00000000 (   0MB), size=131072MB: write-back, count=1
-reg01: base=0xcff00000 (3327MB), size=   1MB: uncachable, count=1
-reg02: base=0xd0000000 (3328MB), size= 256MB: uncachable, count=1
-reg03: base=0xe0000000 (3584MB), size= 512MB: uncachable, count=1
-reg04: base=0x1ff0000000 (130816MB), size= 256MB: uncachable, count=1
+In fact we want to go panic and 'check BIOS for error, contact your
+hardware vendor' for all systems. But as you said, there are some
+'broken hardware' randomly send unknown NMIs for no good reason. So a
+white list is used for them. And not all pre-Nehalem machines are
+'broken' in fact.
 
-There seems to be a discrepancy because I have 8 gb RAM in my system.
+> That's why you guys are complaining that registering a die_notifier would
+> be silly?
 
-Now I run an OmpSCR benchmark
--------------------------
-$ ./c_lu 800
+I think whether going die_notifier or unknown_nmi_error() depends on it
+is general or specific for some hardware. Do you agree with that?
 
-This program is part of the OpenMP Source Code Repository (OmpSCR)
+Best Regards,
+Huang Ying
 
-Program:       ./c_lu
-Description:   LU reduction of a dense matrix.
 
-Argument size 800
-Argument NUMTHREADS 1
-
-Running ...
-
-Timer EXE_TIME     1.645332
------------------------
-
-So, I go ahead and disable the write-back cache as follows:
-
-$ echo "disable=00" > /proc/mtrr
-$ echo "base=0x00000000 size=0x80000000 type=uncachable" > /proc/mtrr
-
-Now I again run the benchmark
-
-$ ./c_lu 800
-
-This program is part of the OpenMP Source Code Repository (OmpSCR)
-
-Program:       ./c_lu
-Description:   LU reduction of a dense matrix.
-
-Argument size 800
-Argument NUMTHREADS 1
-
-Running ...
- runs for a verry long time.(> 10 min)
-
-So there is some effect of disabling MTRR.
-Again when I enable the MTRR, I am not able to restore to intial state.
-
-$ echo "disable=00" > /proc/mtrr
-$ echo "base=0x00000000 size=0x80000000 type=write-back" > /proc/mtrr
-
-Even after doing this, there is no speedup compared to disabling MTRR.
-
-It will really be helpful if you could point me as to where I am wrong.
-
-Thanks,
-Andev.
