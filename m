@@ -1,141 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754566Ab0JVA3J (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Oct 2010 20:29:09 -0400
-Received: from e33.co.us.ibm.com ([32.97.110.151]:48452 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752203Ab0JVA3H (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Oct 2010 20:29:07 -0400
-Date: Thu, 21 Oct 2010 17:28:51 -0700
-From: Ram Pai <linuxram@us.ibm.com>
-To: Jesse Barnes <jbarnes@virtuousgeek.org>
-Cc: Bjorn Helgaas <bjorn.helgaas@hp.com>, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org, clemens@ladisch.de,
-        Yinghai Lu <yinghai@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [RFC v2 PATCH 1/1] PCI: override BIOS/firmware resource
- allocation
-Message-ID: <20101022002851.GB24820@ram-laptop>
-Reply-To: Ram Pai <linuxram@us.ibm.com>
-References: <20101006225834.GE2945@ram-laptop>
- <201010081416.57454.bjorn.helgaas@hp.com>
- <20101012070515.GA549@ram-laptop>
- <201010121301.54402.bjorn.helgaas@hp.com>
- <20101018131010.0e4771eb@jbarnes-desktop>
- <20101019171740.GC8437@ram-laptop>
- <20101019112439.53c4901e@jbarnes-desktop>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101019112439.53c4901e@jbarnes-desktop>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1755496Ab0JVA3c (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Oct 2010 20:29:32 -0400
+Received: from mga03.intel.com ([143.182.124.21]:57073 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754166Ab0JVA3b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Oct 2010 20:29:31 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.58,220,1286175600"; 
+   d="scan'208";a="339043317"
+Subject: Re: booting "nosmp" kernel causing ACPI errors
+From: Zhang Rui <rui.zhang@intel.com>
+To: Bernard Pidoux <bernard.pidoux@upmc.fr>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Bernard Pidoux <bpidoux@free.fr>
+In-Reply-To: <4CBE1179.2040003@upmc.fr>
+References: <4CB9D69D.60203@upmc.fr>  <4CBE1179.2040003@upmc.fr>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 22 Oct 2010 08:29:56 +0800
+Message-ID: <1287707396.2210.11.camel@rui>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 19, 2010 at 11:24:39AM -0700, Jesse Barnes wrote:
-> On Tue, 19 Oct 2010 10:17:40 -0700
-> Ram Pai <linuxram@us.ibm.com> wrote:
-> > > So where do we stand with this machine's problem?
-> > 
-> > I think, this machine with the latest mainline kernel, will see memory resource
-> > allocation failure messages. Since the latest kernel does not release and retry
-> > to allocate resources, the io resources allocated by the BIOS continue to stay
-> > put and hence the problem is masked.
-> > 
-> > However, any attempt to release and reallocate the resource on that machine
-> > will fail; because as pointed out by Bjorn, there is some weird allocation
-> > behavior in the current code. Unfortunately I cannot trigger that behavior on
-> > any of my machines. 
-> > 
-> > I have requested data from Peter, who originally reported the problem. 
-> > Hope he still has his setup with the Xonar card available for debugging.
-> > 
-> > Anyway, I do see a smoking gun in pbus_size_io() and pbus_size_mem().  They
-> > call resource_size() to find the size requirement of resources of all devices
-> > behind the bridge.  However for resources whose start and size are set to zero,
-> > resource_size() returns one. Later ALIGN() rounds it up to the next higher
-> > alignment boundary.
-> 
-> Right, if there are no devices with actual sizes behind a given bridge
-> window we shouldn't bother to allocate space (that may mean
-> re-allocation later if a device is added, but that needs extra work
-> anyway).
-> 
-> And like Bjorn said, I/O sizing has special requirements for PCI-PCI
-> bridges, but for others we may be able to make the windows smaller.
+Hi, Bernard,
 
-Ok. After further investigation, I find that the BIOS has not allocated any
-resource to hotplug bridges that have no devices behind them. However
-the OS tries to allocate some minimal resources, 4096 I/O ports and 2M mem
-window, to the these hotplug bridges but fails because there are not enough
-resources to satisfy all the hotplug bridges.
-
-This issue exists even today with the latest mainline kernel but is masked
-because no devices are really effected. However Yinghai's reallocation patch
-exposed the issue, since it released the BIOS allocated window and tried to
-reallocate. Unfortunately it ended up allocating in the wrong order. The
-bridges with real devices got no resources, where as the hotplug bridges with
-no devices got some mimimal resources.
-
-The details are captured at: https://bugzilla.kernel.org/show_bug.cgi?id=15960
-
-I suppose the solution is to not pre-allocate resources to hotplug bridges that
-have no devices behind them, and then bring back Yinghai's reallocation patch.  
-
-Do you agree with the approach?
-
-My concern is some, including Linus, might consider this as plugging yet
-another hole, with no gaurantees that it will not-regress any other platform.
-
-I hope Linus is listening.
-
+On Wed, 2010-10-20 at 05:45 +0800, Bernard Pidoux wrote:
+> Hi,
 > 
-> > > Ram, do you have other machines that require your override patch?
-> > 
-> > Yes, I have a couple of machines whose BIOS is unaware of SRIOV resources,
-> > These machines need the override patch. :(
+> I needed to run Linux on UP mode in order to perform some application tests.
+> Using nosmp argument lead to bad interrupts set up.
 > 
-> Ok, but hopefully we can make those machines work without extra kernel
-> options; at worst maybe we can special case SRIOV resources and cause
-> them to trigger more aggressive reallocation.
-> 
-> > > Until we understand what's failing and why, I'm hesitant to apply a
-> > > patch that will work around the problem but require an extra kernel
-> > > parameter.
-> > 
-> > We have already come a full circle here.  The original approach was
-> > reverted because it regressed a platform. Now we are rejecting this
-> > approach because we want the original approach. 
-> 
-> Well the original approach had several problems:
->   - unclear try= parameter
->   - undocumented and ad-hoc reallocation behavior
->   - poor (well, lack of) overall design
-> 
-> The root of the issue is still that we have poor data on where we're
-> allowed to put device resources.  Bjorn has been improving this, along
-> with changing the way we do allocations so as to avoid problem areas,
-> but ultimately this is the area where we need the most work.
-> 
-> We've tried and failed to add chipset specific drivers to give us safe
-> ranges, but those just can't keep up with the number of platforms and
-> variations out there.  On x86, I think the only reasonable approach is
-> to use the platforms as designed, i.e. use the resources Windows uses
-> and in the way Windows uses them.  Anything else just means we'll be
-> playing catch up.
-> 
-> As special cases arise (i.e. ways we use the platform that depart from
-> its original design and Windows version), as I suspect this SRIOV issue
-> is, we may need to apply additional conditions.  But I'd like to avoid
-> that if at all possible.
-> 
-> So on that note, does Windows on these machines support allocation of
-> SRIOV resources?  If so, how is it handled?  Which resource ranges are
-> used for the extra BARs?
+do you want to run a up kernel or just want to enable one processor?
 
-No. I have not tried windows on these boxes. But last I heard windows
-did not support SRIOV. Does it?
+> I finally found the explanation I was looking for in this acpi-linux 
+> thread :
+> http://marc.info/?l=linux-acpi&m=118794015205199&w=4
+> 
+>   	maxcpus=	[SMP] Maximum number of processors that	an SMP kernel
+> 			should make use of.  maxcpus=n : n>= 0 limits the
+> 			kernel to using 'n' processors.  n=0 is a special case,
+> 			it is equivalent to "nosmp", which also disables
+> 			the IO APIC.
+> 
+> 	nosmp		[SMP] Tells an SMP kernel to act as a UP kernel,
+> 			and disable the IO APIC.  legacy for "maxcpus=0".
+> 
+> 
+> I understand that the reason why nosmp also disable IO APIC is for 
+> backward compatibility.
+> However this is not intuitive : one argument leading to two actions.
+> 
+> So, if I want to run my dual core CPU in UniProcessor mode I have to use
+> kernel argument maxcpus=1 in grub/menu.lst
+> 
+that's correct, but note that you're still running a smp kernel in this
+case.
 
-RP
+when using maxcpus=1, you're running a *_smp_* kernel, which detects one
+processor and stops.
+when using maxcpus=0, you're running a up kernel which surely doesn't
+have the ioapic support, and is not able to detect the other processors.
+
+thanks,
+rui
+> Doing so, interrupts on my Linux system are correctly initialized and it 
+> is much more stable.
+> 
+> Bernard
+> 
+> 
+> 
+> Le 16/10/2010 18:45, Bernard Pidoux a écrit :
+> > Hi,
+> >
+> > I observed ACPI errors when booting 2.6.35.7 kernel with "nosmp" 
+> > argument.
+> > dmesg shows a warning message starting with :
+> > WARNING: at mm/page_alloc.c:1981 __alloc_pages_nodemask+0x5b4/0x6d0()
+> > +Hardware name: MS-7519
+> > +Modules linked in:
+> > +Pid: 1, comm: swapper Not tainted 2.6.35.7 #2
+> >
+> > This is followed by ACPI error messages and /proc/interrupts show that
+> > interrupts 0-15 are then handled by XT-PIC-XT
+> > instead of IO-APIC-edge and IO-APIC-fasteoi when runing smp kernel.
+> >
+> > Here is lspci dump :
+> >
+> > 00:00.0 Host bridge: Intel Corporation 4 Series Chipset DRAM 
+> > Controller (rev 03)
+> > 00:01.0 PCI bridge: Intel Corporation 4 Series Chipset PCI Express 
+> > Root Port (rev 03)
+> > 00:1a.0 USB Controller: Intel Corporation 82801JI (ICH10 Family) USB 
+> > UHCI Controller #4
+> > 00:1a.1 USB Controller: Intel Corporation 82801JI (ICH10 Family) USB 
+> > UHCI Controller #5
+> > 00:1a.2 USB Controller: Intel Corporation 82801JI (ICH10 Family) USB 
+> > UHCI Controller #6
+> > 00:1a.7 USB Controller: Intel Corporation 82801JI (ICH10 Family) USB2 
+> > EHCI Controller #2
+> > 00:1b.0 Audio device: Intel Corporation 82801JI (ICH10 Family) HD 
+> > Audio Controller
+> > 00:1c.0 PCI bridge: Intel Corporation 82801JI (ICH10 Family) PCI 
+> > Express Root Port 1
+> > 00:1c.1 PCI bridge: Intel Corporation 82801JI (ICH10 Family) PCI 
+> > Express Port 2
+> > 00:1c.5 PCI bridge: Intel Corporation 82801JI (ICH10 Family) PCI 
+> > Express Root Port 6
+> > 00:1d.0 USB Controller: Intel Corporation 82801JI (ICH10 Family) USB 
+> > UHCI Controller #1
+> > 00:1d.1 USB Controller: Intel Corporation 82801JI (ICH10 Family) USB 
+> > UHCI Controller #2
+> > 00:1d.2 USB Controller: Intel Corporation 82801JI (ICH10 Family) USB 
+> > UHCI Controller #3
+> > 00:1d.7 USB Controller: Intel Corporation 82801JI (ICH10 Family) USB2 
+> > EHCI Controller #1
+> > 00:1e.0 PCI bridge: Intel Corporation 82801 PCI Bridge (rev 90)
+> > 00:1f.0 ISA bridge: Intel Corporation 82801JIB (ICH10) LPC Interface 
+> > Controller
+> > 00:1f.2 IDE interface: Intel Corporation 82801JI (ICH10 Family) 4 port 
+> > SATA IDE Controller #1
+> > 00:1f.3 SMBus: Intel Corporation 82801JI (ICH10 Family) SMBus Controller
+> > 00:1f.5 IDE interface: Intel Corporation 82801JI (ICH10 Family) 2 port 
+> > SATA IDE Controller #2
+> > 01:00.0 VGA compatible controller: nVidia Corporation G98 [GeForce 
+> > 8400 GS] (rev a1)
+> > 02:00.0 IDE interface: JMicron Technology Corp. JMB368 IDE controller
+> > 04:00.0 Ethernet controller: Realtek Semiconductor Co., Ltd. 
+> > RTL8111/8168B PCI Express Gigabit Ethernet controller (rev 02)
+> >
+> > I observed the same issue with another machine with also an MSI 
+> > motherboard but using a PCI bridge VIA VT8237/VX700
+> > even when booting with "pci=use_crs" argument.
+> >
+> > Attached is diff -ruN file between 2.6.35.7 kernel without and with 
+> > "nosmp" boot argument.
+> >
+> > Bernard
+> >
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+
+
