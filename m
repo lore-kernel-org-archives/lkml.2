@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759532Ab0JVS5L (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 14:57:11 -0400
-Received: from kroah.org ([198.145.64.141]:34396 "EHLO coco.kroah.org"
+	id S1759559Ab0JVTBc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 15:01:32 -0400
+Received: from kroah.org ([198.145.64.141]:34463 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759422Ab0JVS5C (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 14:57:02 -0400
-X-Mailbox-Line: From gregkh@clark.site Fri Oct 22 11:52:34 2010
-Message-Id: <20101022185234.886620835@clark.site>
+	id S1759533Ab0JVS5L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Oct 2010 14:57:11 -0400
+X-Mailbox-Line: From gregkh@clark.site Fri Oct 22 11:52:35 2010
+Message-Id: <20101022185235.759841730@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 22 Oct 2010 11:51:58 -0700
+Date: Fri, 22 Oct 2010 11:52:08 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Yinghai Lu <yinghai@kernel.org>, Len Brown <len.brown@intel.com>
-Subject: [084/103] ACPI: Handle ACPI0007 Device in acpi_early_set_pdc
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Len Brown <len.brown@intel.com>
+Subject: [094/103] PM / ACPI: Blacklist systems known to require acpi_sleep=nonvs
 In-Reply-To: <20101022185455.GA9114@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,50 +25,70 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Yinghai Lu <yinghai@kernel.org>
+From: Rafael J. Wysocki <rjw@sisk.pl>
 
-commit c1e0ddbf0a97e1704d7f13b4934f9acca002402d upstream.
+commit 539986482b0db07b7164ab086d167ab99b4d3061 upstream.
 
-After
-| commit d8191fa4a33fdc817277da4f2b7f771ff605a41c
-| Author: Alex Chiang <achiang@hp.com>
-| Date:   Mon Feb 22 12:11:39 2010 -0700
-|
-|    ACPI: processor: driver doesn't need to evaluate _PDC
-|
-|    Now that the early _PDC evaluation path knows how to correctly
-|    evaluate _PDC on only physically present processors, there's no
-|    need for the processor driver to evaluate it later when it loads.
-|
-|    To cover the hotplug case, push _PDC evaluation down into the
-|    hotplug paths.
+Commit 2a6b69765ad794389f2fc3e14a0afa1a995221c2 (ACPI: Store NVS
+state even when entering suspend to RAM) changed the ACPI suspend
+to RAM code so that the NVS memory area is always unconditionally
+saved during suspend and restored during resume, since some systems
+evidently need that for the suspend-resume to work on them.  However,
+it turned out that this change broke suspend-resume on a few systems,
+so commit 72ad5d77fb981963edae15eee8196c80238f5ed0 (ACPI / Sleep:
+Allow the NVS saving to be skipped during suspend to RAM) introduced
+the acpi_sleep=nonvs command line switch to allow their users to
+work around this issue.  To keep track of the systems that require
+this workaround and to make the life of their users slightly easier
+blacklist them in acpisleep_dmi_table[].
 
-only cpu with Processor Statement get processed with _PDC
+https://bugzilla.kernel.org/show_bug.cgi?id=16396
 
-If bios is using Device object instead of Processor statement.
-SSDTs for Pstate/Cstate/Tstate can not be loaded dynamically.
-
-Need to try to scan ACPI0007 in addition to Processor.
-
-That commit is between 2.6.34-rc1 and 2.6.34-rc2, so stable tree for 2.6.34+
-need this patch.
-
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Reviewed-by: Bjorn Helgaas <bjorn.helgaas@hp.com>
+Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
 Signed-off-by: Len Brown <len.brown@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/acpi/processor_core.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/acpi/sleep.c |   22 ++++++++++++++++++++++
+ 1 file changed, 22 insertions(+)
 
---- a/drivers/acpi/processor_core.c
-+++ b/drivers/acpi/processor_core.c
-@@ -352,4 +352,5 @@ void __init acpi_early_processor_set_pdc
- 	acpi_walk_namespace(ACPI_TYPE_PROCESSOR, ACPI_ROOT_OBJECT,
- 			    ACPI_UINT32_MAX,
- 			    early_init_pdc, NULL, NULL, NULL);
-+	acpi_get_devices("ACPI0007", early_init_pdc, NULL, NULL);
+--- a/drivers/acpi/sleep.c
++++ b/drivers/acpi/sleep.c
+@@ -362,6 +362,12 @@ static int __init init_old_suspend_order
+ 	return 0;
  }
+ 
++static int __init init_nvs_nosave(const struct dmi_system_id *d)
++{
++	acpi_nvs_nosave();
++	return 0;
++}
++
+ static struct dmi_system_id __initdata acpisleep_dmi_table[] = {
+ 	{
+ 	.callback = init_old_suspend_ordering,
+@@ -396,6 +402,22 @@ static struct dmi_system_id __initdata a
+ 		DMI_MATCH(DMI_BOARD_NAME, "CF51-2L"),
+ 		},
+ 	},
++	{
++	.callback = init_nvs_nosave,
++	.ident = "Sony Vaio VGN-SR11M",
++	.matches = {
++		DMI_MATCH(DMI_SYS_VENDOR, "Sony Corporation"),
++		DMI_MATCH(DMI_PRODUCT_NAME, "VGN-SR11M"),
++		},
++	},
++	{
++	.callback = init_nvs_nosave,
++	.ident = "Everex StepNote Series",
++	.matches = {
++		DMI_MATCH(DMI_SYS_VENDOR, "Everex Systems, Inc."),
++		DMI_MATCH(DMI_PRODUCT_NAME, "Everex StepNote Series"),
++		},
++	},
+ 	{},
+ };
+ #endif /* CONFIG_SUSPEND */
 
 
