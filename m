@@ -1,89 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757905Ab0JVQdG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 12:33:06 -0400
-Received: from zone0.gcu-squad.org ([212.85.147.21]:39245 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753319Ab0JVQdE (ORCPT
+	id S1757548Ab0JVQnH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 12:43:07 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:60053 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755423Ab0JVQnG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 12:33:04 -0400
-Date: Fri, 22 Oct 2010 18:32:52 +0200
-From: Jean Delvare <khali@linux-fr.org>
-To: Seth Heasley <seth.heasley@intel.com>
-Cc: linux-kernel@vger.kernel.org, i2c@lm-sensors.org,
-        linux-pci@vger.kernel.org, jbarnes@virtuousgeek.org
-Subject: Re: [PATCH 2.6.36-next-20101021] SMBus patch for Intel Patsburg
- DeviceIDs
-Message-ID: <20101022183252.5502cfe5@endymion.delvare>
-In-Reply-To: <201010211104.51630.seth.heasley@intel.com>
-References: <201010211104.51630.seth.heasley@intel.com>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 22 Oct 2010 12:43:06 -0400
+Date: Fri, 22 Oct 2010 17:42:47 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        avictor.za@gmail.com, plagnioj@jcrosoft.com
+Subject: Re: [PATCH 2/2] AT91: pm: make sure that r0 is 0 when dealing with
+	cache operations
+Message-ID: <20101022164247.GB29119@n2100.arm.linux.org.uk>
+References: <af311282c5a0076ec618be68facdd3ad98d509b8.1287767949.git.nicolas.ferre@atmel.com> <86bb15f5a1aa3f21066ed13d7ee3f9f500d11087.1287767949.git.nicolas.ferre@atmel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <86bb15f5a1aa3f21066ed13d7ee3f9f500d11087.1287767949.git.nicolas.ferre@atmel.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 21 Oct 2010 11:04:51 -0700, Seth Heasley wrote:
-> This patch adds support for the Intel Patsburg PCH SMBus Controller.
-> 
-> Signed-off-by: Seth Heasley <seth.heasley@intel.com>
-> 
-> --- linux-2.6.35.7/include/linux/pci_ids.h.orig	2010-10-20 16:10:02.000000000 -0700
-> +++ linux-2.6.35.7/include/linux/pci_ids.h	2010-10-20 16:09:01.000000000 -0700
-> @@ -2423,6 +2423,7 @@
->  #define PCI_DEVICE_ID_INTEL_COUGARPOINT_SMBUS	0x1c22
->  #define PCI_DEVICE_ID_INTEL_COUGARPOINT_LPC_MIN	0x1c41
->  #define PCI_DEVICE_ID_INTEL_COUGARPOINT_LPC_MAX	0x1c5f
-> +#define PCI_DEVICE_ID_INTEL_PATSBURG_SMBUS	0x1d22
->  #define PCI_DEVICE_ID_INTEL_PATSBURG_LPC	0x1d40
->  #define PCI_DEVICE_ID_INTEL_82801AA_0	0x2410
->  #define PCI_DEVICE_ID_INTEL_82801AA_1	0x2411
-> --- linux-2.6.35.7/drivers/i2c/busses/Kconfig.orig	2010-10-20 16:13:38.000000000 -0700
-> +++ linux-2.6.35.7/drivers/i2c/busses/Kconfig	2010-10-20 16:10:55.000000000 -0700
-> @@ -99,6 +99,7 @@
->  	    ICH10
->  	    5/3400 Series (PCH)
->  	    Cougar Point (PCH)
-> +	    Patsburg (PCH)
->  
->  	  This driver can also be built as a module.  If so, the module
->  	  will be called i2c-i801.
-> --- linux-2.6.35.7/drivers/i2c/busses/i2c-i801.c.orig	2010-10-20 16:12:06.000000000 -0700
-> +++ linux-2.6.35.7/drivers/i2c/busses/i2c-i801.c	2010-10-20 16:12:27.000000000 -0700
-> @@ -43,6 +43,7 @@
->    ICH10                 0x3a60     32     hard     yes     yes     yes
->    5/3400 Series (PCH)   0x3b30     32     hard     yes     yes     yes
->    Cougar Point (PCH)    0x1c22     32     hard     yes     yes     yes
-> +  Patsburg (PCH)        0x1d22     32     hard     yes     yes     yes
->  
->    Features supported by this driver:
->    Software PEC                     no
-> @@ -592,6 +593,7 @@
->  	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_ICH10_5) },
->  	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_5_3400_SERIES_SMBUS) },
->  	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_COUGARPOINT_SMBUS) },
-> +	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_PATSBURG_SMBUS) },
->  	{ 0, }
->  };
->  
-> --- linux-2.6.35.7/Documentation/i2c/busses/i2c-i801.orig	2010-10-20 16:16:01.000000000 -0700
-> +++ linux-2.6.35.7/Documentation/i2c/busses/i2c-i801	2010-10-20 16:15:17.000000000 -0700
-> @@ -15,8 +15,9 @@
->    * Intel 82801I (ICH9)
->    * Intel EP80579 (Tolapai)
->    * Intel 82801JI (ICH10)
-> -  * Intel 3400/5 Series (PCH)
-> +  * Intel 5/3400 Series (PCH)
->    * Intel Cougar Point (PCH)
-> +  * Intel Patsburg (PCH)
->     Datasheets: Publicly available at the Intel website
->  
->  Authors: 
+On Fri, Oct 22, 2010 at 07:29:00PM +0200, Nicolas Ferre wrote:
+> When using CP15 cache operations (c7), we make sure that Rd (r0)
+> is actually 0 as ARM 926 TRM is saying.
 
-Applied, thanks.
+Err, no.  From the GCC manual:
+
+|    Note that even a volatile `asm' instruction can be moved in ways
+| that appear insignificant to the compiler, such as across jump
+| instructions.  You can't expect a sequence of volatile `asm'
+| instructions to remain perfectly consecutive.  If you want consecutive
+| output, use a single `asm'.  Also, GCC will perform some optimizations
+| across a volatile `asm' instruction; GCC does not "forget everything"
+| when it encounters a volatile `asm' instruction the way some other
+| compilers do.
+
+So:
+
+	asm volatile("foo");
+	asm volatile("bar");
+
+is not guaranteed to produce the following uninterrupted code sequence:
+
+	foo
+	bar
+
+The compiler is free to insert other instructions inbetween these two
+asm statements.
+
+It's also not permitted to modify registers without telling gcc that
+they've been modified.
+
+> +			asm("mov r0, #0");			/* clear r0 for CP15 accesses */
+>  			asm("b 1f; .align 5; 1:");
+>  			asm("mcr p15, 0, r0, c7, c10, 4");	/* drain write buffer */
+
+That means the above is completely unacceptable.  It should be:
+
+	asm("mov r0, #0;"
+	"b 1f;"
+	".align 5;"
+	"1: mcr p15, 0, r0, c7, c10, 4" : : : "r0");
 
 
--- 
-Jean Delvare
+
+>  			saved_lpr = sdram_selfrefresh_enable();
+> diff --git a/arch/arm/mach-at91/pm.h b/arch/arm/mach-at91/pm.h
+> index 2c4424b..be081c9 100644
+> --- a/arch/arm/mach-at91/pm.h
+> +++ b/arch/arm/mach-at91/pm.h
+> @@ -21,7 +21,7 @@ static inline u32 sdram_selfrefresh_enable(void)
+>  }
+>  
+>  #define sdram_selfrefresh_disable(saved_lpr)	at91_sys_write(AT91_SDRAMC_LPR, saved_lpr)
+> -#define wait_for_interrupt_enable()		asm("mcr p15, 0, r0, c7, c0, 4")
+> +#define wait_for_interrupt_enable()		asm("mcr p15, 0, r0, c7, c0, 4") /* r0 is 0 here */
+
+No, r0 is not guaranteed to be zero here.  Use dsb() here instead which
+gets it right.
+
+
+>  #elif defined(CONFIG_ARCH_AT91CAP9)
+>  #include <mach/at91cap9_ddrsdr.h>
+> diff --git a/arch/arm/mach-at91/pm_slowclock.S b/arch/arm/mach-at91/pm_slowclock.S
+> index b6b00a1..f7922a4 100644
+> --- a/arch/arm/mach-at91/pm_slowclock.S
+> +++ b/arch/arm/mach-at91/pm_slowclock.S
+> @@ -124,6 +124,7 @@ ENTRY(at91_slow_clock)
+>  	ldr	r5, .at91_va_base_ramc1
+>  
+>  	/* Drain write buffer */
+> +	mov	r0, #0
+>  	mcr	p15, 0, r0, c7, c10, 4
+
+This one being in asm code is fine.
