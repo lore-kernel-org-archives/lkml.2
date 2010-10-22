@@ -1,108 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756826Ab0JVNmK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 09:42:10 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:36590 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753440Ab0JVNmJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 09:42:09 -0400
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: [PATCH] pca953x: pca953x driver fixes for x86 mrst
-To: akpm@linux-foundation.org, linux-kernel@vger.kernel.org
-Date: Fri, 22 Oct 2010 13:47:47 +0100
-Message-ID: <20101022124716.19975.12805.stgit@localhost.localdomain>
-User-Agent: StGIT/0.14.3
+	id S1756864Ab0JVNn0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 09:43:26 -0400
+Received: from a.ns.miles-group.at ([95.130.255.143]:55192 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755283Ab0JVNnZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Oct 2010 09:43:25 -0400
+/m: 
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain;
+ charset=UTF-8
 Content-Transfer-Encoding: 7bit
+Date: Fri, 22 Oct 2010 15:43:22 +0200
+From: Richard Weinberger <richard@nod.at>
+To: <linux-kernel@vger.kernel.org>, <mingo@redhat.com>, <hpa@zytor.com>,
+        <tglx@linutronix.de>
+Cc: <linux-tip-commits@vger.kernel.org>
+Subject: Re: [tip:irq/core] genirq: Warn if enable_irq is called before irq is
+ set up
+In-Reply-To: <tip-658fc358f9954083ea55abf82ca77a18f82412d7@git.kernel.org>
+References: <tip-658fc358f9954083ea55abf82ca77a18f82412d7@git.kernel.org>
+Message-ID: <2ae2295020fc2c103ca624e08e43c849@radon2.swed.at>
+User-Agent: RoundCube Webmail
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Alek Du <alek.du@intel.com>
+On Fri, 22 Oct 2010 13:09:49 GMT, tip-bot for Thomas Gleixner
+<tglx@linutronix.de> wrote:
+> Commit-ID:  658fc358f9954083ea55abf82ca77a18f82412d7
+> Gitweb:    
+> http://git.kernel.org/tip/658fc358f9954083ea55abf82ca77a18f82412d7
+> Author:     Thomas Gleixner <tglx@linutronix.de>
+> AuthorDate: Fri, 22 Oct 2010 14:47:57 +0200
+> Committer:  Thomas Gleixner <tglx@linutronix.de>
+> CommitDate: Fri, 22 Oct 2010 15:05:35 +0200
+> 
+> genirq: Warn if enable_irq is called before irq is set up
+> 
+> The recent changes in the genirq core unearthed a bug in arch/um which
+> called enable_irq() before the interrupt was set up. 
+> 
+> Warn and return instead of crashing the machine with a NULL pointer
+> dereference.
+> 
+> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+> Cc: Richard Weinberger <richard@nod.at>
+> ---
+>  kernel/irq/manage.c |    4 ++++
+>  1 files changed, 4 insertions(+), 0 deletions(-)
+> 
+> diff --git a/kernel/irq/manage.c b/kernel/irq/manage.c
+> index 644e8d5..2806023 100644
+> --- a/kernel/irq/manage.c
+> +++ b/kernel/irq/manage.c
+> @@ -324,6 +324,10 @@ void enable_irq(unsigned int irq)
+>  	if (!desc)
+>  		return;
+>  
+> +	if (WARN(!desc->irq_data.chip || !desc->irq_data.chip->irq_enable,
+> +	    "KERN_ERR enable_irq before setup/request_irq: irq %u\n", irq))
 
-Our Moorestown platform has two max7315 chips which is covered by
-pca953x i2c gpio driver.
+Here is a little typo. The double quote should be after KERN_ERR.
 
-A while ago this driver got updated with nested irq thread support, and it
-broke the compatibity with "request_irq". For example, the gpio_keys.c
-driver can not work with this driver now. This patch fixes the issue by
-switching to generic_handle_irq.
+Thanks,
+//richard
 
-Also fix the irq_base issue: irq_base == 0 is valid, and a "-1" value
-should mean invalid. IRQ 0 is not a valid IRQ, irq_base of 0 is valid.
-
-Signed-off-by: Alek Du <alek.du@intel.com>
-Signed-off-by: Alan Cox <alan@linux.intel.com>
----
-
- drivers/gpio/pca953x.c |   13 +++++++------
- 1 files changed, 7 insertions(+), 6 deletions(-)
-
-
-diff --git a/drivers/gpio/pca953x.c b/drivers/gpio/pca953x.c
-index a2b12aa..5018666 100644
---- a/drivers/gpio/pca953x.c
-+++ b/drivers/gpio/pca953x.c
-@@ -345,7 +345,7 @@ static irqreturn_t pca953x_irq_handler(int irq, void *devid)
- 
- 	do {
- 		level = __ffs(pending);
--		handle_nested_irq(level + chip->irq_base);
-+		generic_handle_irq(level + chip->irq_base);
- 
- 		pending &= ~(1 << level);
- 	} while (pending);
-@@ -360,7 +360,8 @@ static int pca953x_irq_setup(struct pca953x_chip *chip,
- 	struct pca953x_platform_data *pdata = client->dev.platform_data;
- 	int ret;
- 
--	if (pdata->irq_base && (id->driver_data & PCA953X_INT)) {
-+	if (pdata->irq_base != -1
-+			&& (id->driver_data & PCA953X_INT)) {
- 		int lvl;
- 
- 		ret = pca953x_read_reg(chip, PCA953X_INPUT,
-@@ -383,7 +384,6 @@ static int pca953x_irq_setup(struct pca953x_chip *chip,
- 			set_irq_chip_data(irq, chip);
- 			set_irq_chip_and_handler(irq, &pca953x_irq_chip,
- 						 handle_edge_irq);
--			set_irq_nested_thread(irq, 1);
- #ifdef CONFIG_ARM
- 			set_irq_flags(irq, IRQF_VALID);
- #else
-@@ -394,6 +394,7 @@ static int pca953x_irq_setup(struct pca953x_chip *chip,
- 		ret = request_threaded_irq(client->irq,
- 					   NULL,
- 					   pca953x_irq_handler,
-+					   IRQF_TRIGGER_RISING |
- 					   IRQF_TRIGGER_FALLING | IRQF_ONESHOT,
- 					   dev_name(&client->dev), chip);
- 		if (ret) {
-@@ -408,13 +409,13 @@ static int pca953x_irq_setup(struct pca953x_chip *chip,
- 	return 0;
- 
- out_failed:
--	chip->irq_base = 0;
-+	chip->irq_base = -1;
- 	return ret;
- }
- 
- static void pca953x_irq_teardown(struct pca953x_chip *chip)
- {
--	if (chip->irq_base)
-+	if (chip->irq_base != -1)
- 		free_irq(chip->client->irq, chip);
- }
- #else /* CONFIG_GPIO_PCA953X_IRQ */
-@@ -424,7 +425,7 @@ static int pca953x_irq_setup(struct pca953x_chip *chip,
- 	struct i2c_client *client = chip->client;
- 	struct pca953x_platform_data *pdata = client->dev.platform_data;
- 
--	if (pdata->irq_base && (id->driver_data & PCA953X_INT))
-+	if (pdata->irq_base != -1 && (id->driver_data & PCA953X_INT))
- 		dev_warn(&client->dev, "interrupt support not compiled in\n");
- 
- 	return 0;
+> +		return;
+> +
+>  	chip_bus_lock(desc);
+>  	raw_spin_lock_irqsave(&desc->lock, flags);
+>  	__enable_irq(desc, irq, false);
 
