@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758939Ab0JVSoM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 14:44:12 -0400
-Received: from kroah.org ([198.145.64.141]:45963 "EHLO coco.kroah.org"
+	id S1758668Ab0JVSlc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 14:41:32 -0400
+Received: from kroah.org ([198.145.64.141]:45946 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758875Ab0JVSle (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 14:41:34 -0400
-X-Mailbox-Line: From gregkh@clark.site Fri Oct 22 11:40:33 2010
-Message-Id: <20101022184033.121199762@clark.site>
+	id S1758654Ab0JVSla (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Oct 2010 14:41:30 -0400
+X-Mailbox-Line: From gregkh@clark.site Fri Oct 22 11:40:32 2010
+Message-Id: <20101022184032.761252013@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 22 Oct 2010 11:39:32 -0700
+Date: Fri, 22 Oct 2010 11:39:28 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Johannes Berg <johannes.berg@intel.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [07/17] wext: fix potential private ioctl memory content leak
+        Dan Rosenberg <dan.j.rosenberg@gmail.com>,
+        Takashi Iwai <tiwai@suse.de>
+Subject: [03/17] ALSA: sound/pci/rme9652: prevent reading uninitialized stack memory
 In-Reply-To: <20101022184048.GA25391@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,39 +26,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johannes Berg <johannes.berg@intel.com>
+From: Dan Rosenberg <drosenberg@vsecurity.com>
 
-commit df6d02300f7c2fbd0fbe626d819c8e5237d72c62 upstream.
+commit e68d3b316ab7b02a074edc4f770e6a746390cb7d upstream.
 
-When a driver doesn't fill the entire buffer, old
-heap contents may remain, and if it also doesn't
-update the length properly, this old heap content
-will be copied back to userspace.
+The SNDRV_HDSP_IOCTL_GET_CONFIG_INFO and
+SNDRV_HDSP_IOCTL_GET_CONFIG_INFO ioctls in hdspm.c and hdsp.c allow
+unprivileged users to read uninitialized kernel stack memory, because
+several fields of the hdsp{m}_config_info structs declared on the stack
+are not altered or zeroed before being copied back to the user.  This
+patch takes care of it.
 
-It is very unlikely that this happens in any of
-the drivers using private ioctls since it would
-show up as junk being reported by iwpriv, but it
-seems better to be safe here, so use kzalloc.
-
-Reported-by: Jeff Mahoney <jeffm@suse.com>
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Dan Rosenberg <dan.j.rosenberg@gmail.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- net/wireless/wext.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ sound/pci/rme9652/hdsp.c  |    1 +
+ sound/pci/rme9652/hdspm.c |    1 +
+ 2 files changed, 2 insertions(+)
 
---- a/net/wireless/wext.c
-+++ b/net/wireless/wext.c
-@@ -947,7 +947,7 @@ static int ioctl_private_iw_point(struct
- 	} else if (!iwp->pointer)
- 		return -EFAULT;
+--- a/sound/pci/rme9652/hdsp.c
++++ b/sound/pci/rme9652/hdsp.c
+@@ -4569,6 +4569,7 @@ static int snd_hdsp_hwdep_ioctl(struct s
+ 			snd_printk(KERN_ERR "Hammerfall-DSP: Firmware needs to be uploaded to the card.\n");	
+ 			return -EINVAL;
+ 		}
++		memset(&info, 0, sizeof(info));
+ 		spin_lock_irqsave(&hdsp->lock, flags);
+ 		info.pref_sync_ref = (unsigned char)hdsp_pref_sync_ref(hdsp);
+ 		info.wordclock_sync_check = (unsigned char)hdsp_wc_sync_check(hdsp);
+--- a/sound/pci/rme9652/hdspm.c
++++ b/sound/pci/rme9652/hdspm.c
+@@ -4133,6 +4133,7 @@ static int snd_hdspm_hwdep_ioctl(struct
  
--	extra = kmalloc(extra_size, GFP_KERNEL);
-+	extra = kzalloc(extra_size, GFP_KERNEL);
- 	if (!extra)
- 		return -ENOMEM;
+ 	case SNDRV_HDSPM_IOCTL_GET_CONFIG_INFO:
  
++		memset(&info, 0, sizeof(info));
+ 		spin_lock_irq(&hdspm->lock);
+ 		info.pref_sync_ref = hdspm_pref_sync_ref(hdspm);
+ 		info.wordclock_sync_check = hdspm_wc_sync_check(hdspm);
 
 
