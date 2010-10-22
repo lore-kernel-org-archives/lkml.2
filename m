@@ -1,58 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756779Ab0JVOFp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 10:05:45 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:40062 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754117Ab0JVOFo (ORCPT
+	id S1756983Ab0JVOGp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 10:06:45 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:46411 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754995Ab0JVOGn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 10:05:44 -0400
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: [PATCH] bluetooth: Fix missing NULL check
-To: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org
-Date: Fri, 22 Oct 2010 14:11:26 +0100
-Message-ID: <20101022131035.5432.73129.stgit@localhost.localdomain>
-User-Agent: StGIT/0.14.3
+	Fri, 22 Oct 2010 10:06:43 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:x-enigmail-version:content-type
+         :content-transfer-encoding;
+        b=sM1u02EzTvLhpjs8MEIfwP9lbkgej7e9VkqrzqrR0IFvuulhnTfOFabSHt7pDnC07Z
+         tbfZy7BTmyaeQVVMbrwnMcO3WvAVRzlJtnydV9vpgfpCrDzrNID5ErqvyEC5qEifHayd
+         688/49/n1D3efirZ/TgfkBdB8q0jxHb6EtxPE=
+Message-ID: <4CC19A6E.8010909@gmail.com>
+Date: Fri, 22 Oct 2010 16:06:38 +0200
+From: Jiri Slaby <jirislaby@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.11) Gecko/20101013 SUSE/3.1.5 Thunderbird/3.1.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+To: Mauro Carvalho Chehab <mchehab@redhat.com>
+CC: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        mm-commits@vger.kernel.org, Antti Palosaari <crope@iki.fi>,
+        Greg KH <gregkh@suse.de>, USB list <linux-usb@vger.kernel.org>
+Subject: Re: DVB: af9015 defunct [was: mmotm 2010-10-20-15-01 uploaded]
+References: <201010202233.o9KMXNoL008303@imap1.linux-foundation.org> <4CC07DB4.20205@gmail.com> <4CC1577F.9060207@gmail.com> <4CC19804.1080109@redhat.com>
+In-Reply-To: <4CC19804.1080109@redhat.com>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-2
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Alan Cox <alan@linux.intel.com>
+On 10/22/2010 03:56 PM, Mauro Carvalho Chehab wrote:
+> --- a/drivers/media/dvb/dvb-usb/af9015.c
+> +++ b/drivers/media/dvb/dvb-usb/af9015.c
+> @@ -1144,7 +1144,7 @@ static struct qt1010_config af9015_qt1010_config = {
+>  
+>  static struct tda18271_config af9015_tda18271_config = {
+>  	.gate = TDA18271_GATE_DIGITAL,
+> -	.small_i2c = 1,
+> +	.small_i2c = TDA18271_16_BYTE_CHUNK_INIT;,
 
-Fortunately this is only exploitable on very unusual hardware.
+No, it doesn't help (note the i2c line which prints the small_i2c entry):
+dvb-usb: found a 'Leadtek WinFast DTV Dongle Gold' in cold state, will
+try to load a firmware
+dvb-usb: downloading firmware from file 'dvb-usb-af9015.fw'
+dvb-usb: found a 'Leadtek WinFast DTV Dongle Gold' in warm state.
+dvb-usb: will pass the complete MPEG2 transport stream to the software
+demuxer.
+DVB: registering new adapter (Leadtek WinFast DTV Dongle Gold)
+af9013: firmware version:4.95.0.0
+DVB: registering adapter 0 frontend 0 (Afatech AF9013 DVB-T)...
+af9015_tuner_attach: i2c 16
+tda18271 16-00c0: creating new instance
+TDA18271HD/C2 detected @ 16-00c0
+af9015: command failed:1
+tda18271_write_regs: [16-00c0|M] ERROR: idx = 0x0, len = 39,
+i2c_transfer returned: -1
+af9015: command failed:1
+tda18271_write_regs: [16-00c0|M] ERROR: idx = 0x20, len = 1,
+i2c_transfer returned: -1
+af9015: command failed:1
+tda18271_write_regs: [16-00c0|M] ERROR: idx = 0x20, len = 1,
+i2c_transfer returned: -1
+af9015: command failed:1
+tda18271_write_regs: [16-00c0|M] ERROR: idx = 0x20, len = 1,
+i2c_transfer returned: -1
+af9015: command failed:1
+tda18271_write_regs: [16-00c0|M] ERROR: idx = 0x20, len = 1,
+i2c_transfer returned: -1
+af9015: command failed:1
+tda18271_write_regs: [16-00c0|M] ERROR: idx = 0x5, len = 11,
+i2c_transfer returned: -1
+af9015: command failed:1
+tda18271_write_regs: [16-00c0|M] ERROR: idx = 0x13, len = 1,
+i2c_transfer returned: -1
+af9015: command failed:1
+tda18271_write_regs: [16-00c0|M] ERROR: idx = 0x13, len = 1,
+i2c_transfer returned: -1
+af9015: command failed:1
+tda18271_write_regs: [16-00c0|M] ERROR: idx = 0x3, len = 1, i2c_transfer
+returned: -1
+af9015: command failed:1
+tda18271_write_regs: [16-00c0|M] ERROR: idx = 0x5, len = 7, i2c_transfer
+returned: -1
+af9015: command failed:1
+tda18271_write_regs: [16-00c0|M] ERROR: idx = 0x4, len = 1, i2c_transfer
+returned: -1
+af9015: command failed:1
+tda18271_write_regs: [16-00c0|M] ERROR: idx = 0x5, len = 11,
+i2c_transfer returned: -1
+af9015: command failed:1
+tda18271_write_regs: [16-00c0|M] ERROR: idx = 0x3, len = 1, i2c_transfer
+returned: -1
+af9015: command failed:1
+tda18271_write_regs: [16-00c0|M] ERROR: idx = 0x5, len = 7, i2c_transfer
+returned: -1
+af9015: command failed:1
+tda18271_write_regs: [16-00c0|M] ERROR: idx = 0x4, len = 1, i2c_transfer
+returned: -1
+af9015: command failed:1
+tda18271_write_regs: [16-00c0|M] ERROR: idx = 0x5, len = 11,
+i2c_transfer returned: -1
+af9015: command failed:1
+tda18271_write_regs: [16-00c0|M] ERROR: idx = 0x3, len = 1, i2c_transfer
+returned: -1
+af9015: command failed:1
+tda18271_write_regs: [16-00c0|M] ERROR: idx = 0x5, len = 7, i2c_transfer
+returned: -1
+af9015: command failed:1
+tda18271_write_regs: [16-00c0|M] ERROR: idx = 0x4, len = 1, i2c_transfer
+returned: -1
+af9015: command failed:1
+tda18271_write_regs: [16-00c0|M] ERROR: idx = 0x6, len = 1, i2c_transfer
+returned: -1
+af9015: command failed:1
+tda18271_write_regs: [16-00c0|M] ERROR: idx = 0x3, len = 1, i2c_transfer
+returned: -1
+dvb-usb: Leadtek WinFast DTV Dongle Gold successfully initialized and
+connected.
+usbcore: registered new interface driver dvb_usb_af9015
 
-[Reported a while ago but nothing happened so just fixing it]
 
-Signed-off-by: Alan Cox <alan@linux.intel.com>
-Cc: stable@kernel.org
----
-
- drivers/bluetooth/hci_ldisc.c |    7 +++++++
- 1 files changed, 7 insertions(+), 0 deletions(-)
-
-
-diff --git a/drivers/bluetooth/hci_ldisc.c b/drivers/bluetooth/hci_ldisc.c
-index 74cb6f3..7201482 100644
---- a/drivers/bluetooth/hci_ldisc.c
-+++ b/drivers/bluetooth/hci_ldisc.c
-@@ -256,9 +256,16 @@ static int hci_uart_tty_open(struct tty_struct *tty)
- 
- 	BT_DBG("tty %p", tty);
- 
-+	/* FIXME: This btw is bogus, nothing requires the old ldisc to clear
-+	   the pointer */
- 	if (hu)
- 		return -EEXIST;
- 
-+	/* Error if the tty has no write op instead of leaving an exploitable
-+	   hole */
-+	if (tty->ops->write == NULL)
-+		return -EOPNOTSUPP;
-+
- 	if (!(hu = kzalloc(sizeof(struct hci_uart), GFP_KERNEL))) {
- 		BT_ERR("Can't allocate control structure");
- 		return -ENFILE;
-
+regards,
+-- 
+js
