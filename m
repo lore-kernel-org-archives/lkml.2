@@ -1,51 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753734Ab0JVJSo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 05:18:44 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:63759 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753269Ab0JVJSm (ORCPT
+	id S1753704Ab0JVJUV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 05:20:21 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:36433 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751800Ab0JVJUT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 05:18:42 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:x-enigmail-version:content-type
-         :content-transfer-encoding;
-        b=ArHrjNluHyyEXN8x911lC54UMdSRouNggdhtHrp53gcCOnZO0e9nkQZJDVkDT7tApr
-         9GLGqAV7aPfQESGPQySGrMTqzyd197fA5G+mBypYa3zudjYxzIr32ppG98lYzczx6Qhz
-         PrwEHsnDFakEJYfB/Ca6Cy3P7H7ee3qzgq+M4=
-Message-ID: <4CC156ED.8000104@gmail.com>
-Date: Fri, 22 Oct 2010 11:18:37 +0200
-From: Jiri Slaby <jirislaby@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.11) Gecko/20101013 SUSE/3.1.5 Thunderbird/3.1.5
+	Fri, 22 Oct 2010 05:20:19 -0400
+Date: Fri, 22 Oct 2010 05:20:15 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: Christoph Hellwig <hch@infradead.org>,
+        Jeremy Fitzhardinge <jeremy@goop.org>,
+        Andreas Dilger <adilger.kernel@dilger.ca>,
+        "Theodore Ts'o" <tytso@mit.edu>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "Xen-devel@lists.xensource.com" <Xen-devel@lists.xensource.com>
+Subject: Re: linux-next regression: IO errors in with ext4 and xen-blkfront
+Message-ID: <20101022092015.GA18290@infradead.org>
+References: <4CBF83A0.8090802@goop.org>
+ <4CBF84C9.6050606@goop.org>
+ <4CC148E5.2030605@kernel.dk>
+ <20101022082916.GA14070@infradead.org>
+ <4CC1515E.6080006@kernel.dk>
+ <20101022085624.GA5672@infradead.org>
+ <4CC15204.90206@kernel.dk>
 MIME-Version: 1.0
-To: Takashi Iwai <tiwai@suse.de>
-CC: Colin Guthrie <gmane@colin.guthr.ie>, Valdis.Kletnieks@vt.edu,
-        linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        mm-commits@vger.kernel.org, clemens@ladisch.de,
-        Jaroslav Kysela <perex@perex.cz>, alsa-devel@alsa-project.org
-Subject: Re: HDA: no sound [was: mmotm 2010-10-20-15-01 uploaded]
-References: <201010202233.o9KMXNoL008303@imap1.linux-foundation.org>	<4CBFEE94.7020103@gmail.com>	<s5hlj5sc7do.wl%tiwai@suse.de>	<4CBFF25C.2080908@gmail.com>	<s5hfww0c6oj.wl%tiwai@suse.de>	<4CC085F5.9070905@gmail.com>	<s5heibjxsi4.wl%tiwai@suse.de>	<4CC092BC.9060504@gmail.com>	<s5h8w1rxrl3.wl%tiwai@suse.de>	<5220.1287692957@localhost>	<s5h39rzclx3.wl%tiwai@suse.de>	<8089.1287696264@localhost>	<s5hsjzzb5cf.wl%tiwai@suse.de>	<4CC0B3C1.9010106@gmail.com>	<4CC14F4E.4090509@colin.guthr.ie> <s5hmxq6bnwj.wl%tiwai@suse.de>
-In-Reply-To: <s5hmxq6bnwj.wl%tiwai@suse.de>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4CC15204.90206@kernel.dk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/22/2010 11:02 AM, Takashi Iwai wrote:
-> unpatched alsa-lib.  Jiri, could you regenerate alsa-info output with
-> the fixed alsa-lib packages?  With the fixed alsa-lib, the dB value
-> should be given correctly.
+On Fri, Oct 22, 2010 at 10:57:40AM +0200, Jens Axboe wrote:
+> On 2010-10-22 10:56, Christoph Hellwig wrote:
+> > On Fri, Oct 22, 2010 at 10:54:54AM +0200, Jens Axboe wrote:
+> >> So how about we just disable barriers for Xen atm? I would really really
+> >> like to push that branch out as well now, since I'll be travelling for
+> >> most of the merge window this time.
+> > 
+> > Yes, that's what removing/commenting out that line does.
+> 
+> Certainly, but I meant in the barrier branch for submission. If
+> it doesn't do empty flushes to begin with, that should be fixed
+> up before being enabled in any case.
 
-Sure, but I don't know which version you want, so with the patch reverted:
-http://www.alsa-project.org/db/?f=4efd8e3b74a51adbd014a85052a83b4a3c5bd9fc
+Yes, it should have been disabled log ago.  I had a long discussion with
+them abnout it when they introduced the even more buggy barriers by
+tags mode for .36 but they simply ignored it.
 
-with the patch NOT reverted:
-http://www.alsa-project.org/db/?f=e619bba74bb9ea007c2e5314761411a658ff677b
+> I'll disable barrier support in xen-blkfront.c for now.
 
-regards,
--- 
-js
+Thanks.
+
