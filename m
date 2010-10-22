@@ -1,57 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752729Ab0JVE4A (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 00:56:00 -0400
-Received: from mga03.intel.com ([143.182.124.21]:59108 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752536Ab0JVEz7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 00:55:59 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.58,221,1286175600"; 
-   d="scan'208";a="339108644"
-Date: Fri, 22 Oct 2010 12:55:54 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Neil Brown <neilb@suse.de>, Rik van Riel <riel@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "Li, Shaohua" <shaohua.li@intel.com>
-Subject: [PATCH] vmscan: comment too_many_isolated()
-Message-ID: <20101022045554.GA17073@localhost>
-References: <20101022045509.GA16804@localhost>
+	id S1752749Ab0JVE4i (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 00:56:38 -0400
+Received: from mail9.hitachi.co.jp ([133.145.228.44]:39110 "EHLO
+	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752570Ab0JVE4h (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Oct 2010 00:56:37 -0400
+X-AuditID: b753bd60-a7533ba000000226-ca-4cc11981b488
+Message-ID: <4CC1197C.5040103@hitachi.com>
+Date: Fri, 22 Oct 2010 13:56:28 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Systems Development Lab., Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.11) Gecko/20101013 Thunderbird/3.1.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101022045509.GA16804@localhost>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Steven Rostedt <rostedt@goodmis.org>, Jason Baron <jbaron@redhat.com>,
+        Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        2nddept-manager@sdl.hitachi.co.jp
+Subject: Re: [PATCH][GIT PULL] tracing: Fix compile issue for trace_sched_wakeup.c
+References: <1287508282.16971.386.camel@gandalf.stny.rr.com>	 <20101019184111.GA17266@elte.hu> <20101020154045.GA18353@elte.hu>	 <20101020164324.GC7348@redhat.com>  <4CBFAC70.30602@hitachi.com>	 <1287645744.3488.57.camel@twins>	 <1287658862.16971.569.camel@gandalf.stny.rr.com> <1287659008.3488.102.camel@twins>
+In-Reply-To: <1287659008.3488.102.camel@twins>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
+X-FMFTCR: RANGEB
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Comment "Why it's doing so" rather than "What it does"
-as proposed by Andrew Morton.
+(2010/10/21 20:03), Peter Zijlstra wrote:
+> On Thu, 2010-10-21 at 07:01 -0400, Steven Rostedt wrote:
+>> On Thu, 2010-10-21 at 09:22 +0200, Peter Zijlstra wrote:
+>>> On Thu, 2010-10-21 at 11:58 +0900, Masami Hiramatsu wrote:
+>>>
+>>>> It seems there can be a bug in stop_machine() routine under
+>>>> heavy use. usually that is called just once at a time, but jump
+>>>> label and optprobe might call it heavily (thousands times?).
+>>>> So some racy situation can be happen easily.
+>>>
+>>> There are people doing hotplug stress testing, that too results in heavy
+>>> stop_machine usage.
+>>
+>> But with hotplug, isn't there a bit more time between stop machine
+>> calls? That is, you need to do a bit of work to bring down or up a CPU,
+>> and that will slow down the number of stop machine calls together.
+>>
+>> Here, we do a simple change and call stop machine() several times.
+>>
+>> Although, I agree, I do not think the bug is in stop machine itself, but
+>> perhaps the way we are using it might have some niche anomaly that we
+>> are hitting.
+> 
+> Possibly, but wouldn't it make sense to batch up the work and simply
+> call stop_machine only once? I mean, if you already know you're going to
+> do this...
+> 
 
-Reviewed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
-Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
----
- mm/vmscan.c |    6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
+Yeah, here is what I had tried;
 
---- linux-next.orig/mm/vmscan.c	2010-10-19 09:29:44.000000000 +0800
-+++ linux-next/mm/vmscan.c	2010-10-19 10:21:41.000000000 +0800
-@@ -1142,7 +1142,11 @@ int isolate_lru_page(struct page *page)
- }
- 
- /*
-- * Are there way too many processes in the direct reclaim path already?
-+ * A direct reclaimer may isolate SWAP_CLUSTER_MAX pages from the LRU list and
-+ * then get resheduled. When there are massive number of tasks doing page
-+ * allocation, such sleeping direct reclaimers may keep piling up on each CPU,
-+ * the LRU list will go small and be scanned faster than necessary, leading to
-+ * unnecessary swapping, thrashing and OOM.
-  */
- static int too_many_isolated(struct zone *zone, int file,
- 		struct scan_control *sc)
+http://sourceware.org/ml/systemtap/2010-q2/msg00294.html
+
+I agree that the crash will just disappear with this API,
+but it will be just hidden, still remains inside kernel.
+
+Anyway, this batch patching is needed from performance
+viewpoint too. I'll rework on it.
+
+Thank you,
+
+-- 
+Masami HIRAMATSU
+2nd Dept. Linux Technology Center
+Hitachi, Ltd., Systems Development Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
