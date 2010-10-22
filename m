@@ -1,45 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754486Ab0JVJgV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 05:36:21 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:57459 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753859Ab0JVJgU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 05:36:20 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: sedat.dilek@gmail.com
-Subject: Re: linux-next: next-20101022 broken with unset CONFIG_BKL
-Date: Fri, 22 Oct 2010 11:36:12 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.36-next-20101021+; KDE/4.5.1; x86_64; ; )
-Cc: LKML <linux-kernel@vger.kernel.org>, sfr@canb.auug.org.au,
-        Jan Harkes <jaharkes@cs.cmu.edu>
-References: <AANLkTi=vUA-u20egbpH1Wu4ek-craz7aZUxWmobL8OhD@mail.gmail.com> <201010221124.32842.arnd@arndb.de> <AANLkTimn9u-m8eOA7dQH6kCNriebEnnbYZaP_=rnp1pv@mail.gmail.com>
-In-Reply-To: <AANLkTimn9u-m8eOA7dQH6kCNriebEnnbYZaP_=rnp1pv@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201010221136.12073.arnd@arndb.de>
-X-Provags-ID: V02:K0:gA0AgJbQo3GkrPU7r+DMPUfS/b9jC9P6V77MXH79gX5
- 5EZ5ZkL9DXoO81M+TsNCJxWA4pkZBeu2zy+otImr6LOf2CFRd1
- Toe7nElqJKA9knqLD9SMyuacb03S8/gGuajLO7T6mj+csK2A+a
- 5J/3m2UHieaNf8Id66tWeYW2pg4+69ql2nhZ9wFny3r8OmYt+N
- uisVVza2MliiVeTRqAUIQ==
+	id S1754766Ab0JVJka (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 05:40:30 -0400
+Received: from rrzmta5.rz.uni-regensburg.de ([194.94.155.56]:55941 "EHLO
+	rrzmta5.rz.uni-regensburg.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754217Ab0JVJk2 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Oct 2010 05:40:28 -0400
+X-Greylist: delayed 366 seconds by postgrey-1.27 at vger.kernel.org; Fri, 22 Oct 2010 05:40:28 EDT
+Message-Id: <4CC176BC020000A10001090A@gwsmtp1.uni-regensburg.de>
+X-Mailer: Novell GroupWise Internet Agent 8.0.2 
+Date: Fri, 22 Oct 2010 11:34:20 +0200
+From: "Ulrich Windl" <Ulrich.Windl@rz.uni-regensburg.de>
+To: <linux-kernel@vger.kernel.org>
+Subject: Note: complete kernel freeze triggered by xenmon.py in SLES10
+ SP3 x86_64
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 22 October 2010 11:30:17 Sedat Dilek wrote:
+Hello!
+(Kids, don't do this)
 
-> Wow, you answer in realtime :-), Arnd.
-> Thanks for the explanations and I agree with you to wait for 27-rc1
-> and then to remove BKL.
-> Me just doing early-testing...
-> 
-> A pointer to the patch?
-> Thanks in advance.
+When I tried "xenmon.py" on a two dual-core Operon machine running SLES10 SP3 x86_64 in XEN#s Dom0, the machine froze (i.e. Dom0, all DomUs). Today with all current updates, the same happened again. After booting and fsck (reiserfs), I found no messages in syslog or XEN's logs. When the machine seemed frozen, the console did not react to key presses (screen was black).
 
-The thread is "Coda: remove BKL", You can find it on patchwork.
+# rpm -q kernel-xen xen
+kernel-xen-2.6.16.60-0.69.1
+xen-3.2.3_17040_20-0.4.2
 
-	Arnd
+Regards,
+Ulrich
+
+
