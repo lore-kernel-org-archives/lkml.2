@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756623Ab0JVSic (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 14:38:32 -0400
-Received: from kroah.org ([198.145.64.141]:45669 "EHLO coco.kroah.org"
+	id S1757650Ab0JVSvh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 14:51:37 -0400
+Received: from kroah.org ([198.145.64.141]:45715 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756381Ab0JVSi2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 14:38:28 -0400
+	id S1756675Ab0JVSif (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Oct 2010 14:38:35 -0400
 X-Mailbox-Line: From gregkh@clark.site Fri Oct 22 11:35:58 2010
-Message-Id: <20101022183558.127991243@clark.site>
+Message-Id: <20101022183558.731328280@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 22 Oct 2010 11:34:48 -0700
+Date: Fri, 22 Oct 2010 11:34:55 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Kenneth Waters <kwwaters@gmail.com>, Dmitry Torokhov <dtor@mail.ru>
-Subject: [21/66] Input: joydev - fix JSIOCSAXMAP ioctl
+        Yegor Yefremov <yegorslists@googlemail.com>,
+        Jean Delvare <khali@linux-fr.org>
+Subject: [28/66] i2c-pca: Fix waitforcompletion() return value
 In-Reply-To: <20101022183711.GA23214@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,33 +26,86 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kenneth Waters <kwwaters@gmail.com>
+From: Yegor Yefremov <yegor_sub1@visionsystems.de>
 
-commit d2520a426dc3033c00077e923a553fc6c98c7564 upstream.
+commit 6abb930af064fb1cf4177d32e2c7bfb89eee0fe5 upstream.
 
-Fixed JSIOCSAXMAP ioctl to update absmap, the map from hardware axis to
-event axis in addition to abspam.  This fixes a regression introduced
-by 999b874f.
+ret is still -1, if during the polling read_byte() returns at once
+with I2C_PCA_CON_SI set. So ret > 0 would lead *_waitforcompletion()
+to return 0, in spite of the proper behavior.
 
-Signed-off-by: Kenneth Waters <kwwaters@gmail.com>
-Signed-off-by: Dmitry Torokhov <dtor@mail.ru>
+The routine was rewritten, so that ret has always a proper value,
+before returning.
+
+Signed-off-by: Yegor Yefremov <yegorslists@googlemail.com>
+Reviewed-by: Wolfram Sang <w.sang@pengutronix.de>
+Signed-off-by: Jean Delvare <khali@linux-fr.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/input/joydev.c |    3 +++
- 1 file changed, 3 insertions(+)
+ drivers/i2c/busses/i2c-pca-isa.c      |   12 ++++++++----
+ drivers/i2c/busses/i2c-pca-platform.c |   11 +++++++----
+ 2 files changed, 15 insertions(+), 8 deletions(-)
 
---- a/drivers/input/joydev.c
-+++ b/drivers/input/joydev.c
-@@ -481,6 +481,9 @@ static int joydev_handle_JSIOCSAXMAP(str
+--- a/drivers/i2c/busses/i2c-pca-isa.c
++++ b/drivers/i2c/busses/i2c-pca-isa.c
+@@ -71,8 +71,8 @@ static int pca_isa_readbyte(void *pd, in
  
- 	memcpy(joydev->abspam, abspam, len);
+ static int pca_isa_waitforcompletion(void *pd)
+ {
+-	long ret = ~0;
+ 	unsigned long timeout;
++	long ret;
  
-+	for (i = 0; i < joydev->nabs; i++)
-+		joydev->absmap[joydev->abspam[i]] = i;
+ 	if (irq > -1) {
+ 		ret = wait_event_timeout(pca_wait,
+@@ -81,11 +81,15 @@ static int pca_isa_waitforcompletion(voi
+ 	} else {
+ 		/* Do polling */
+ 		timeout = jiffies + pca_isa_ops.timeout;
+-		while (((pca_isa_readbyte(pd, I2C_PCA_CON)
+-				& I2C_PCA_CON_SI) == 0)
+-				&& (ret = time_before(jiffies, timeout)))
++		do {
++			ret = time_before(jiffies, timeout);
++			if (pca_isa_readbyte(pd, I2C_PCA_CON)
++					& I2C_PCA_CON_SI)
++				break;
+ 			udelay(100);
++		} while (ret);
+ 	}
 +
-  out:
- 	kfree(abspam);
- 	return retval;
+ 	return ret > 0;
+ }
+ 
+--- a/drivers/i2c/busses/i2c-pca-platform.c
++++ b/drivers/i2c/busses/i2c-pca-platform.c
+@@ -80,8 +80,8 @@ static void i2c_pca_pf_writebyte32(void
+ static int i2c_pca_pf_waitforcompletion(void *pd)
+ {
+ 	struct i2c_pca_pf_data *i2c = pd;
+-	long ret = ~0;
+ 	unsigned long timeout;
++	long ret;
+ 
+ 	if (i2c->irq) {
+ 		ret = wait_event_timeout(i2c->wait,
+@@ -90,10 +90,13 @@ static int i2c_pca_pf_waitforcompletion(
+ 	} else {
+ 		/* Do polling */
+ 		timeout = jiffies + i2c->adap.timeout;
+-		while (((i2c->algo_data.read_byte(i2c, I2C_PCA_CON)
+-				& I2C_PCA_CON_SI) == 0)
+-				&& (ret = time_before(jiffies, timeout)))
++		do {
++			ret = time_before(jiffies, timeout);
++			if (i2c->algo_data.read_byte(i2c, I2C_PCA_CON)
++					& I2C_PCA_CON_SI)
++				break;
+ 			udelay(100);
++		} while (ret);
+ 	}
+ 
+ 	return ret > 0;
 
 
