@@ -1,127 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757531Ab0JVPto (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 11:49:44 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:50971 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755068Ab0JVPtn (ORCPT
+	id S1757564Ab0JVPuB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 11:50:01 -0400
+Received: from moorabbin.nexor.co.uk ([80.6.88.100]:47842 "EHLO
+	nexoruk1.nexor.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1757488Ab0JVPuA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 11:49:43 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: pghatwork@gmail.com
-Subject: Re: [PATCH 2/9] mfd: Add char devices for the ST-Ericsson CG2900.
-Date: Fri, 22 Oct 2010 17:49:37 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.36-next-20101021+; KDE/4.5.1; x86_64; ; )
-Cc: linus.walleij@stericsson.com, linux-bluetooth@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-References: <AANLkTimzWPqHBSDyeoObAcxewg_adubgkt1KQYUmpBRA@mail.gmail.com>
-In-Reply-To: <AANLkTimzWPqHBSDyeoObAcxewg_adubgkt1KQYUmpBRA@mail.gmail.com>
+	Fri, 22 Oct 2010 11:50:00 -0400
+X-Greylist: delayed 399 seconds by postgrey-1.27 at vger.kernel.org; Fri, 22 Oct 2010 11:49:59 EDT
+X-NetworkBox-HamSign: 0101;OUT;nexoruk1;d5cb0998c0a0a63f7ed0606c88a9a961;
+x-mimeole: Produced By Microsoft Exchange V6.5
+Content-class: urn:content-classes:message
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201010221749.37928.arnd@arndb.de>
-X-Provags-ID: V02:K0:E1Hg6zQCgojmnOifxb90G3Qcaqhz+42/B1/Cy3+1/6b
- ROqz9Bkwd+SeeKeZ4+qn2qeUxTGaqS1G/Kat9CdN1xL7gpb8Q6
- JBDGvndNmI455bT7564jQR37VKDpNrwchppPyjNvlSY5JBL0Ej
- U2K3/k+lRr72gqBc8Hz5VHjbh+aQ0qkfQKkSbeuC045ejOIH13
- SNf4jSrdptsfgl55Rro9A==
+Content-Type: text/plain;
+	charset="utf-8"
+Subject: [PATCH] audit: error message typo correction
+Date: Fri, 22 Oct 2010 16:43:17 +0100
+Message-ID: <DF69A264612A3D4B961979B6957E8CFB040F06D4@NEXCHANGE.nexor.co.uk>
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+Thread-Topic: [PATCH] audit: error message typo correction
+Thread-Index: Actx/9i86wiyAk2KTHmtuG7Jn76OSw==
+From: "Ross Kirk" <Ross.Kirk@nexor.com>
+To: <viro@zeniv.linux.org.uk>
+Cc: <trivial@kernel.org>, <linux-kernel@vger.kernel.org>, <eparis@redhat.com>
+X-NetworkBox-BounceSign-nexor: 0101;14904;5d2da758
+X-Scanned-By-nexoruk1: Virus scan performed by network-box
+X-Scanned-By-nexoruk1: Scanner file id is nexoruk1-1287762198.85-20407-000
+X-Scanned-By-nexoruk1: No known viruses found in message (received+scanned in 0.03/0.38 secs)
+X-Scanned-By-nexoruk1: Spam-Check-Result: No, hits=0 required=7 tests= autolearn=no version=2.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id o9MFoOkf017205
 
-On Friday 22 October 2010 12:36:09 Par-Gunnar Hjalmdahl wrote:
-> This patch adds char devices to the ST-Ericsson CG2900 driver.
-> The reason for this is to allow users of CG2900, such as GPS, to
-> be placed in user space.
 
-Can you be more specific how you expect this to be used?
+Fixes a typo in the error message raised by audit when auditd has died
 
-I guess you have hardware units that then each correspond to
-one character device and can be talked to over a pseudo socket
-interface, right?
+Signed-off-by: Ross Kirk <ross.kirk@nexor.com>
 
-For most devices (radio, audio, bluetooth, gps, ...), we already
-have existing user interfaces, so how do they interact with this
-one?
+--
 
-> +#define NAME					"CharDev "
+diff -up a/kernel/audit.c b/kernel/audit.c 
+--- a/kernel/audit.c    2010-10-22 16:25:40.000000000 +0100
++++ b/kernel/audit.c    2010-10-22 16:25:46.000000000 +0100
+@@ -400,7 +400,7 @@ static void kauditd_send_skb(struct sk_b
+        if (err < 0) {
+                BUG_ON(err != -ECONNREFUSED); /* Shouldn't happen */
+                printk(KERN_ERR "audit: *NO* daemon at audit_pid=%d\n", audit_pid);
+-               audit_log_lost("auditd dissapeared\n");
++               audit_log_lost("auditd disappeared\n");
+                audit_pid = 0;
+                /* we might get lucky and get this in the next auditd */
+                audit_hold_skb(skb);
 
-?
-
-> +/* Ioctls */
-> +#define CG2900_CHAR_DEV_IOCTL_RESET		_IOW('U', 210, int)
-> +#define CG2900_CHAR_DEV_IOCTL_CHECK4RESET	_IOR('U', 212, int)
-> +#define CG2900_CHAR_DEV_IOCTL_GET_REVISION	_IOR('U', 213, int)
-> +#define CG2900_CHAR_DEV_IOCTL_GET_SUB_VER	_IOR('U', 214, int)
-
-These definitions look wrong -- you never use the ioctl argument...
-
-> + *
-> + * Returns:
-> + *   Bytes successfully read (could be 0).
-> + *   -EBADF if NULL pointer was supplied in private data.
-> + *   -EFAULT if copy_to_user fails.
-> + *   Error codes from wait_event_interruptible.
-> + */
-> +static ssize_t char_dev_read(struct file *filp, char __user *buf, size_t count,
-> +			     loff_t *f_pos)
-
-The same comment applies here that I made for the test interface:
-Why is this not an AF_BLUETOOTH socket instead of a chardev?
-
-Unless I'm mistaken, you actually send bluetooth frames after all.
-
-> +	case CG2900_CHAR_DEV_IOCTL_RESET:
-> +		if (!dev) {
-> +			err = -EBADF;
-> +			goto error_handling;
-> +		}
-> +		CG2900_INFO("ioctl reset command for device %s", dev->name);
-> +		err = cg2900_reset(dev->dev);
-> +		break;
-> +
-> +	case CG2900_CHAR_DEV_IOCTL_CHECK4RESET:
-> +		if (!dev) {
-> +			CG2900_INFO("ioctl check for reset command for device");
-> +			/* Return positive value if closed */
-> +			err = CG2900_CHAR_DEV_IOCTL_EVENT_CLOSED;
-> +		} else if (dev->reset_state == CG2900_CHAR_RESET) {
-> +			CG2900_INFO("ioctl check for reset command for device "
-> +				    "%s", dev->name);
-> +			/* Return positive value if reset */
-> +			err = CG2900_CHAR_DEV_IOCTL_EVENT_RESET;
-> +		}
-> +		break;
-
-Strange interface. Why do you need to check for the reset?
-
-> +	case CG2900_CHAR_DEV_IOCTL_GET_REVISION:
-> +		CG2900_INFO("ioctl check for local revision info");
-> +		if (cg2900_get_local_revision(&rev_data)) {
-> +			CG2900_DBG("Read revision data revision %d "
-> +				   "sub_version %d",
-> +				   rev_data.revision, rev_data.sub_version);
-> +			err = rev_data.revision;
-> +		} else {
-> +			CG2900_DBG("No revision data available");
-> +			err = -EIO;
-> +		}
-> +		break;
-> +
-> +	case CG2900_CHAR_DEV_IOCTL_GET_SUB_VER:
-> +		CG2900_INFO("ioctl check for local sub-version info");
-> +		if (cg2900_get_local_revision(&rev_data)) {
-> +			CG2900_DBG("Read revision data revision %d "
-> +				   "sub_version %d",
-> +				   rev_data.revision, rev_data.sub_version);
-> +			err = rev_data.sub_version;
-> +		} else {
-> +			CG2900_DBG("No revision data available");
-> +			err = -EIO;
-> +		}
-> +		break;
-
-These look like could better live in a sysfs attribute of the platform device.
-
-	Arnd
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
