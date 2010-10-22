@@ -1,27 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758773Ab0JVSYI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 14:24:08 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:62638 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752833Ab0JVSYE (ORCPT
+	id S1758790Ab0JVSYZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 14:24:25 -0400
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:49977 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758755Ab0JVSYU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 14:24:04 -0400
+	Fri, 22 Oct 2010 14:24:20 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=message-id:date:from:user-agent:mime-version:to:subject:references
          :in-reply-to:content-type:content-transfer-encoding;
-        b=k++H1fmmf7u1NpYr2LQqZD1KmVL5fbsF/XEyCnD/MsW+BK2CkXIIkz8SEGH3YEEdzZ
-         odd2uH7K2oX33WQY65RFXNiQSDwgJYxYVitawk/TF6ZwloMLk/QxvEnaKZSJB/gb9vW2
-         bFHfpJrvMSIBQHh6081We6AUM0PxET7Q/LbNo=
-Message-ID: <4CC1D6BF.90204@gmail.com>
-Date: Fri, 22 Oct 2010 20:23:59 +0200
+        b=kYB+ZkXzqYi/beTkKh3ENoH2NZDVO7iHiJIFLLiXhQiPaiHCuPgrVb3NPCBvqNvWJW
+         F1v5gvr7fKSKv6P8Bz04se3do29OcgcqcR45gv3gGd/nWaTM38PPrOcvQWKdWLCNKgAx
+         17j49LGXrMRj8NcYHQbAIA9Pmj+n9wbOT6VAM=
+Message-ID: <4CC1D6D0.8040108@gmail.com>
+Date: Fri, 22 Oct 2010 20:24:16 +0200
 From: "N.P.S." <napohybelskurwysynom2010@gmail.com>
 User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.0; pl; rv:1.9.2.9) Gecko/20100915 Thunderbird/3.1.4
 MIME-Version: 1.0
 To: linux-kernel@vger.kernel.org, Li Yi <yi.li@analog.com>,
         uclinux-dist-devel@blackfin.uclinux.org
-Subject: [RFC][PATCH 1/8] Removal of dead code from arch/blackfin/kernel/traps.c
+Subject: [RFC][PATCH 3/8] Removal of dead code from arch/blackfin/include/asm/irqflags.h
 References: <4CC1D2D5.9050009@gmail.com>
 In-Reply-To: <4CC1D2D5.9050009@gmail.com>
 Content-Type: text/plain; charset=UTF-8
@@ -30,37 +30,62 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-commit de6f2dfdf5c3dcd0e5eeaf9ab690a5d1081c065c
+commit 12282e20f3cb7757bfe333cac43174751453c15b
 Author: N.P.S <napohybelskurwysynom2010@gmail.com>
-Date:   Fri Oct 22 00:01:41 2010 +0200
+Date:   Thu Oct 21 23:53:26 2010 +0200
 
     Removal of dead code from
-    arch/blackfin/kernel/traps.c
+    arch/blackfin/include/asm/irqflags.h
     
     Signed-off-by: Zimny Lech <napohybelskurwysynom2010@gmail.com>
     CC: Li Yi <yi.li@analog.com>
     CC: <uclinux-dist-devel@blackfin.uclinux.org>
     CC: <linux-kernel@vger.kernel.org>
 
-diff --git a/arch/blackfin/kernel/traps.c b/arch/blackfin/kernel/traps.c
-index 59c1df7..b20eca8 100644
---- a/arch/blackfin/kernel/traps.c
-+++ b/arch/blackfin/kernel/traps.c
-@@ -280,17 +280,7 @@ asmlinkage notrace void trap_c(struct pt_regs *fp)
- 			goto traps_done;
- 		else
- 			break;
--#ifdef CONFIG_BF535
--	/* 0x29 - Instruction fetch access error (535 only) */
--	case VEC_ISTRU_VL:      /* ADSP-BF535 only (MH) */
--		info.si_code = BUS_OPFETCH;
--		sig = SIGBUS;
--		strerror = KERN_NOTICE "BF535: VEC_ISTRU_VL\n";
--		CHK_DEBUGGER_TRAP_MAYBE();
--		break;
--#else
- 	/* 0x29 - Reserved, Caught by default */
--#endif
- 	/* 0x2A - Instruction fetch misaligned, handled here */
- 	case VEC_MISALI_I:
- 		info.si_code = BUS_ADRALN;
+diff --git a/arch/blackfin/include/asm/irqflags.h b/arch/blackfin/include/asm/irqflags.h
+index 813a1af..26dfd27 100644
+--- a/arch/blackfin/include/asm/irqflags.h
++++ b/arch/blackfin/include/asm/irqflags.h
+@@ -137,42 +137,10 @@ static inline void local_irq_restore_hw_notrace(unsigned long flags)
+ 		local_irq_enable_hw_notrace();
+ }
+ 
+-#ifdef CONFIG_IPIPE_TRACE_IRQSOFF
+-# define local_irq_disable_hw()				\
+-	do {						\
+-		if (!irqs_disabled_hw()) {		\
+-			local_irq_disable_hw_notrace();	\
+-			ipipe_trace_begin(0x80000000);	\
+-		}					\
+-	} while (0)
+-# define local_irq_enable_hw()				\
+-	do {						\
+-		if (irqs_disabled_hw()) {		\
+-			ipipe_trace_end(0x80000000);	\
+-			local_irq_enable_hw_notrace();	\
+-		}					\
+-	} while (0)
+-# define local_irq_save_hw(flags)			\
+-	do {						\
+-		local_save_flags_hw(flags);		\
+-		if (!irqs_disabled_flags_hw(flags)) {	\
+-			local_irq_disable_hw_notrace();	\
+-			ipipe_trace_begin(0x80000001);	\
+-		}					\
+-	} while (0)
+-# define local_irq_restore_hw(flags)			\
+-	do {						\
+-		if (!irqs_disabled_flags_hw(flags)) {	\
+-			ipipe_trace_end(0x80000001);	\
+-			local_irq_enable_hw_notrace();	\
+-		}					\
+-	} while (0)
+-#else /* !CONFIG_IPIPE_TRACE_IRQSOFF */
+ # define local_irq_disable_hw()		local_irq_disable_hw_notrace()
+ # define local_irq_enable_hw()		local_irq_enable_hw_notrace()
+ # define local_irq_save_hw(flags)	local_irq_save_hw_notrace(flags)
+ # define local_irq_restore_hw(flags)	local_irq_restore_hw_notrace(flags)
+-#endif /* !CONFIG_IPIPE_TRACE_IRQSOFF */
+ 
+ #else /* CONFIG_IPIPE */
+ 
