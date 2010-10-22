@@ -1,73 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753364Ab0JVWwd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 18:52:33 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:18047 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751922Ab0JVWwc (ORCPT
+	id S1753451Ab0JVW4R (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 18:56:17 -0400
+Received: from bunsen.bytemark.co.uk ([80.68.81.6]:45710 "EHLO
+	bunsen.bytemark.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752169Ab0JVW4Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 18:52:32 -0400
-From: Mandeep Singh Baines <msb@chromium.org>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Rik van Riel <riel@redhat.com>, Mel Gorman <mel@csn.ul.ie>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Wu Fengguang <fengguang.wu@intel.com>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org, wad@chromium.org,
-        olofj@chromium.org, Mandeep Singh Baines <msb@chromium.org>
-Subject: [PATCH] vmscan: move referenced VM_EXEC pages to active list
-Date: Fri, 22 Oct 2010 15:51:51 -0700
-Message-Id: <1287787911-4257-1-git-send-email-msb@chromium.org>
-X-Mailer: git-send-email 1.7.1
-X-System-Of-Record: true
+	Fri, 22 Oct 2010 18:56:16 -0400
+Date: Fri, 22 Oct 2010 18:56:03 -0400
+From: "Emilio G. Cota" <cota@braap.org>
+To: Greg KH <greg@kroah.com>
+Cc: Martyn Welch <martyn.welch@ge.com>, LKML <linux-kernel@vger.kernel.org>,
+        Juan David Gonzalez Cobas <david.cobas@gmail.com>
+Subject: Re: [-next] staging/vme: various fixes + new driver model for VME
+Message-ID: <20101022225603.GL10869@flamenco.cs.columbia.edu>
+References: <1287729412-24356-1-git-send-email-cota@braap.org>
+ <20101022135650.GB2386@kroah.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101022135650.GB2386@kroah.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In commit 64574746, "vmscan: detect mapped file pages used only once",
-Johannes Weiner, added logic to page_check_reference to cycle again
-used once pages.
+On Fri, Oct 22, 2010 at 06:56:50 -0700, Greg KH wrote:
+> On Fri, Oct 22, 2010 at 02:36:22AM -0400, Emilio G. Cota wrote:
+> > This contains first a whole bunch of fixes to the existing vme
+> > code in staging, to then introduce a new driver model for VME
+> > in patch 27.
+> 
+> You did see my message yesterday that stated "the merge window is closed
+> for .37 patches for staging", right?
 
-In commit 8cab4754, "vmscan: make mapped executable pages the first
-class citizen", Wu Fengguang, added logic to shrink_active_list which
-protects file-backed VM_EXEC pages by keeping them in the active_list if
-they are referenced.
+No problem with that, I'm in no rush to get this merged.
 
-This patch adds logic to move such pages from the inactive list to the
-active list immediately if they have been referenced. If a VM_EXEC page
-is seen as referenced during an inactive list scan, that reference must
-have occurred after the page was put on the inactive list. There is no
-need to wait for the page to be referenced again.
+> Also, these need to get Martyn's ack before I can accept them.  Please
+> work with him to get the different things resolved.
 
-Change-Id: I17c312e916377e93e5a92c52518b6c829f9ab30b
-Signed-off-by: Mandeep Singh Baines <msb@chromium.org>
----
- mm/vmscan.c |   11 +++++++++++
- 1 files changed, 11 insertions(+), 0 deletions(-)
+Will do.
 
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index c5dfabf..0984dee 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -593,6 +593,17 @@ static enum page_references page_check_references(struct page *page,
- 	if (referenced_ptes) {
- 		if (PageAnon(page))
- 			return PAGEREF_ACTIVATE;
-+
-+		/*
-+		 * Identify referenced, file-backed active pages and move them
-+		 * to the active list. We know that this page has been
-+		 * referenced since being put on the inactive list. VM_EXEC
-+		 * pages are only moved to the inactive list when they have not
-+		 * been referenced between scans (see shrink_active_list).
-+		 */
-+		if ((vm_flags & VM_EXEC) && page_is_file_cache(page))
-+			return PAGEREF_ACTIVATE;
-+
- 		/*
- 		 * All mapped pages start out with page table
- 		 * references from the instantiating fault, so we need
--- 
-1.7.1
+Thanks,
+
+		Emilio
 
