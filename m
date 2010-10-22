@@ -1,76 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758809Ab0JVSYf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 14:24:35 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:43781 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758579Ab0JVSYd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 14:24:33 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:subject:references
-         :in-reply-to:content-type:content-transfer-encoding;
-        b=tU7PxCko+BYH/Kxjz+yj4qCpvCGor7sCQGfTmksZTsFSeSkqT4Ja+iNv9NfcZ6L+Vg
-         3w51mqXXnONim9hamvzwFapNx+fhSH2Wea82MG+fiWf0N4T06Eu+t2Wa92ygo00qEoUR
-         D1voREnTBzJdZ6xhEVRk74nkz0LP6vuXtJ83o=
-Message-ID: <4CC1D6DC.1020101@gmail.com>
-Date: Fri, 22 Oct 2010 20:24:28 +0200
-From: "N.P.S." <napohybelskurwysynom2010@gmail.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.0; pl; rv:1.9.2.9) Gecko/20100915 Thunderbird/3.1.4
-MIME-Version: 1.0
+	id S1758783Ab0JVSYN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 14:24:13 -0400
+Received: from kroah.org ([198.145.64.141]:37706 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752833Ab0JVSYK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Oct 2010 14:24:10 -0400
+From: Greg Kroah-Hartman <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org
-Subject: [RFC][PATCH 5/8] Removal of dead code from arch/m68knommu/platform/68VZ328/config.c
-References: <4CC1D2D5.9050009@gmail.com>
-In-Reply-To: <4CC1D2D5.9050009@gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Cc: Anton Vorontsov <cbouatmailru@gmail.com>, Alan Cox <alan@linux.intel.com>
+Subject: [PATCH 41/49] altera_uart: Don't use plain integer as NULL pointer
+Date: Fri, 22 Oct 2010 11:21:20 -0700
+Message-Id: <1287771688-14805-41-git-send-email-gregkh@suse.de>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <20101022175112.GC13489@kroah.com>
+References: <20101022175112.GC13489@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-commit 5fef858951eaa6d10a219e7a8abad01810694af4
-Author: N.P.S <napohybelskurwysynom2010@gmail.com>
-Date:   Thu Oct 21 23:41:16 2010 +0200
+From: Anton Vorontsov <cbouatmailru@gmail.com>
 
-    Removal of dead code from
-    arch/m68knommu/platform/68VZ328/config.c
-    drivers/serial/68328serial.h
-    
-    Signed-off-by: Zimny Lech <napohybelskurwysynom2010@gmail.com>
-    CC: <linux-kernel@vger.kernel.org>
+Fixes sparse warning.
 
-diff --git a/arch/m68knommu/platform/68VZ328/config.c b/arch/m68knommu/platform/68VZ328/config.c
-index fc5c630..eabaabe 100644
---- a/arch/m68knommu/platform/68VZ328/config.c
-+++ b/arch/m68knommu/platform/68VZ328/config.c
-@@ -90,11 +90,6 @@ static void init_hardware(char *command, int size)
- 	PDIQEG &= ~PD(1);
- 	PDIRQEN |= PD(1);			/* IRQ enabled */
+Signed-off-by: Anton Vorontsov <cbouatmailru@gmail.com>
+Cc: Alan Cox <alan@linux.intel.com>
+Acked-by: Tobias Klauser <tklauser@distanz.ch>
+---
+ drivers/serial/altera_uart.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/serial/altera_uart.c b/drivers/serial/altera_uart.c
+index dfc1ecc..7212162 100644
+--- a/drivers/serial/altera_uart.c
++++ b/drivers/serial/altera_uart.c
+@@ -461,7 +461,7 @@ static int __init altera_uart_console_setup(struct console *co, char *options)
+ 	if (co->index < 0 || co->index >= CONFIG_SERIAL_ALTERA_UART_MAXPORTS)
+ 		return -EINVAL;
+ 	port = &altera_uart_ports[co->index].port;
+-	if (port->membase == 0)
++	if (!port->membase)
+ 		return -ENODEV;
  
--#ifdef CONFIG_68328_SERIAL_UART2
--	/* Enable RXD TXD port bits to enable UART2 */
--	PJSEL &= ~(PJ(5) | PJ(4));
--#endif
--
- #ifdef CONFIG_INIT_LCD
- 	/* initialize LCD controller */
- 	LSSA = (long) screen_bits;
-diff --git a/drivers/serial/68328serial.h b/drivers/serial/68328serial.h
-index 58aa215..c6d5382 100644
---- a/drivers/serial/68328serial.h
-+++ b/drivers/serial/68328serial.h
-@@ -181,13 +181,8 @@ struct m68k_serial {
- /* 
-  * Define the number of ports supported and their irqs.
-  */
--#ifndef CONFIG_68328_SERIAL_UART2
--#define NR_PORTS 1
--#define UART_IRQ_DEFNS {UART_IRQ_NUM}
--#else
- #define NR_PORTS 2
- #define UART_IRQ_DEFNS {UART1_IRQ_NUM, UART2_IRQ_NUM}
--#endif
- 
- #endif /* __KERNEL__ */
- #endif /* !(_MC683XX_SERIAL_H) */
+ 	if (options)
+-- 
+1.7.2
+
