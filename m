@@ -1,50 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755904Ab0JVKvZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 06:51:25 -0400
-Received: from webhosting01.bon.m2soft.com ([195.38.20.32]:53150 "EHLO
-	webhosting01.bon.m2soft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755537Ab0JVKvX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 06:51:23 -0400
-Date: Fri, 22 Oct 2010 12:47:24 +0200
-From: Nicolas Kaiser <nikai@nikai.net>
-To: Joern Engel <joern@lazybastard.org>
-Cc: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] block2mtd: dubious assignment
-Message-ID: <20101022124724.59eba464@absol.kitzblitz>
-Organization: -
-X-Face: "fF&[w2"Nws:JNH4'g|:gVhgGKLhj|X}}&w&V?]0=,7n`jy8D6e[Jh=7+ca|4~t5e[ItpL5
- N'y~Mvi-vJm`"1T5fi1^b!&EG]6nW~C!FN},=$G?^U2t~n[3;u\"5-|~H{-5]IQ2
-X-Mailer: Claws Mail (Linux)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1752975Ab0JVLGX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 07:06:23 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:40128 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751179Ab0JVLGW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Oct 2010 07:06:22 -0400
+From: Lukas Czerner <lczerner@redhat.com>
+To: linux-ext4@vger.kernel.org
+Cc: jmoyer@redhat.com, tytso@mit.edu, sandeen@redhat.com, adilger@dilger.ca,
+        axboe@kernel.dk, linux-kernel@vger.kernel.org, lczerner@redhat.com
+Subject: [PATCH] block: Make blkdev_issue_discard() interruptible
+Date: Fri, 22 Oct 2010 13:06:09 +0200
+Message-Id: <1287745569-11705-1-git-send-email-lczerner@redhat.com>
+In-Reply-To: <x49k4lb1oah.fsf@segfault.boston.devel.redhat.com>
+References: <x49k4lb1oah.fsf@segfault.boston.devel.redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When block2mtd_erase fails, a duplicated assignment instantly
-changes instr->state from MTD_ERASE_FAILED to MTD_ERASE_DONE.
+Since the discard may take quite long time, especially with really big
+extents (like the whole device for example), it would be nice to give to
+users the opportunity to abort it. This is especially useful for mkfs,
+when user can not know in advance how long it will take.
 
-It looks to me like this might not be intended, or is it?
+In conjunction with mke2fs patch "Inform user about ongoing discard"
+it gives the user all the comfort of being informed about discard and
+being able to abort the operation.
 
-Signed-off-by: Nicolas Kaiser <nikai@nikai.net>
+It has been tested on SSD device where mkfs.ext4 without -K takes rally
+long due to discarding whole device. With this patch I am able to
+successfully terminate that with ctrl+c. Aside that discard functionality
+remains unchanged.
+
+Signed-off-by: Lukas Czerner <lczerner@redhat.com>
 ---
- drivers/mtd/devices/block2mtd.c |    1 -
- 1 files changed, 0 insertions(+), 1 deletions(-)
+ block/blk-lib.c |    3 +++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/mtd/devices/block2mtd.c b/drivers/mtd/devices/block2mtd.c
-index 9365186..2cf0cc6 100644
---- a/drivers/mtd/devices/block2mtd.c
-+++ b/drivers/mtd/devices/block2mtd.c
-@@ -91,7 +91,6 @@ static int block2mtd_erase(struct mtd_info *mtd, struct erase_info *instr)
- 	} else
- 		instr->state = MTD_ERASE_DONE;
+diff --git a/block/blk-lib.c b/block/blk-lib.c
+index c392029..54994e7 100644
+--- a/block/blk-lib.c
++++ b/block/blk-lib.c
+@@ -101,6 +101,9 @@ int blkdev_issue_discard(struct block_device *bdev, sector_t sector,
+ 		else if (!bio_flagged(bio, BIO_UPTODATE))
+ 			ret = -EIO;
+ 		bio_put(bio);
++
++		if (unlikely(fatal_signal_pending(current)))
++			ret = -ERESTARTSYS;
+ 	}
  
--	instr->state = MTD_ERASE_DONE;
- 	mtd_erase_callback(instr);
- 	return err;
- }
+ 	return ret;
 -- 
-1.7.2.2
+1.7.2.3
+
