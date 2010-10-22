@@ -1,147 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758226Ab0JVRwK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 13:52:10 -0400
-Received: from kroah.org ([198.145.64.141]:36260 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758071Ab0JVRvf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 13:51:35 -0400
-Date: Fri, 22 Oct 2010 10:51:07 -0700
-From: Greg KH <gregkh@suse.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: [GIT PATCH] driver core merge for .37-rc1
-Message-ID: <20101022175107.GB13489@kroah.com>
+	id S1758253Ab0JVR4l (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 13:56:41 -0400
+Received: from g5t0009.atlanta.hp.com ([15.192.0.46]:47469 "EHLO
+	g5t0009.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758199Ab0JVR4i (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Oct 2010 13:56:38 -0400
+From: Bjorn Helgaas <bjorn.helgaas@hp.com>
+To: Ram Pai <linuxram@us.ibm.com>
+Subject: Re: [RFC v2 PATCH 1/1] PCI: override BIOS/firmware resource allocation
+Date: Fri, 22 Oct 2010 11:55:18 -0600
+User-Agent: KMail/1.13.2 (Linux/2.6.32-25-generic; KDE/4.4.2; x86_64; ; )
+Cc: Jesse Barnes <jbarnes@virtuousgeek.org>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org, clemens@ladisch.de,
+        Yinghai Lu <yinghai@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+References: <20101006225834.GE2945@ram-laptop> <20101019112439.53c4901e@jbarnes-desktop> <20101022002851.GB24820@ram-laptop>
+In-Reply-To: <20101022002851.GB24820@ram-laptop>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201010221155.19123.bjorn.helgaas@hp.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Here's the big driver-core merge for .37-rc1
+On Thursday, October 21, 2010 06:28:51 pm Ram Pai wrote:
+> On Tue, Oct 19, 2010 at 11:24:39AM -0700, Jesse Barnes wrote:
 
-The largest thing in here is a new misc driver, which seemed to make
-sense to go through this tree.  Other than that, it's a number of small
-things, all described below.
+> Ok. After further investigation, I find that the BIOS has not allocated any
+> resource to hotplug bridges that have no devices behind them. However
+> the OS tries to allocate some minimal resources, 4096 I/O ports and 2M mem
+> window, to the these hotplug bridges but fails because there are not enough
+> resources to satisfy all the hotplug bridges.
+> 
+> This issue exists even today with the latest mainline kernel but is masked
+> because no devices are really effected. However Yinghai's reallocation patch
+> exposed the issue, since it released the BIOS allocated window and tried to
+> reallocate. Unfortunately it ended up allocating in the wrong order. The
+> bridges with real devices got no resources, where as the hotplug bridges with
+> no devices got some mimimal resources.
+> 
+> The details are captured at: https://bugzilla.kernel.org/show_bug.cgi?id=15960
+> 
+> I suppose the solution is to not pre-allocate resources to hotplug bridges that
+> have no devices behind them, and then bring back Yinghai's reallocation patch.  
 
-Please pull from:
-	master.kernel.org:/pub/scm/linux/kernel/git/gregkh/driver-core-2.6.git/
+If we assign resources to bridges with no devices behind them while
+starving bridges that DO have devices behind them, I think that's a bug.
+It'd be great if you could isolate and fix that before we complicate
+things by throwing Yinghai's patch into the mix.
 
-All of these patches have been in the linux-next and mm trees for a
-while now.
+I think it'd interesting to have a debug parameter like "pci=assign-all"
+that meant "ignore all BIOS PCI config and start from scratch."  I'm
+sure we'd trip over lots of issues and it would be easier to resolve them
+before trying to make things fancier.
 
-The patches will be sent as a follow-on to this message to lkml for
-people to see.
+> > So on that note, does Windows on these machines support allocation of
+> > SRIOV resources?  If so, how is it handled?  Which resource ranges are
+> > used for the extra BARs?
+> 
+> No. I have not tried windows on these boxes. But last I heard windows
+> did not support SRIOV. Does it?
 
-thanks,
+I've heard anecdotally that Windows supports SRIOV much better than
+Linux does, but I have no evidence.  I would guess that it depends on
+driver support in addition to Windows itself.
 
-greg k-h
-
-------------
-
- Documentation/ABI/testing/sysfs-module |   12 +
- Documentation/dynamic-debug-howto.txt  |   22 +-
- Documentation/kernel-parameters.txt    |   16 +-
- MAINTAINERS                            |    4 +-
- block/genhd.c                          |    7 +-
- drivers/base/Kconfig                   |    1 -
- drivers/base/Makefile                  |    4 +-
- drivers/base/bus.c                     |   22 -
- drivers/base/class.c                   |   23 +-
- drivers/base/core.c                    |  208 ++--------
- drivers/base/memory.c                  |   94 +++--
- drivers/base/node.c                    |    8 +-
- drivers/base/platform.c                |   80 +++-
- drivers/base/sys.c                     |    8 +-
- drivers/misc/Kconfig                   |   22 +-
- drivers/misc/Makefile                  |    1 +
- drivers/misc/hpilo.c                   |    2 +-
- drivers/misc/pch_phub.c                |  717 ++++++++++++++++++++++++++++++++
- drivers/scsi/hosts.c                   |    2 -
- drivers/scsi/scsi_scan.c               |    2 -
- drivers/uio/uio.c                      |  163 +++-----
- drivers/uio/uio_pci_generic.c          |   13 +-
- fs/partitions/check.c                  |   19 +-
- fs/sysfs/bin.c                         |   68 ++--
- include/linux/device.h                 |    7 +
- include/linux/kobject.h                |    2 +
- include/linux/memory.h                 |    4 +
- include/linux/platform_device.h        |    3 +
- include/linux/uio_driver.h             |    2 +-
- include/sound/core.h                   |    6 -
- init/Kconfig                           |   64 ++--
- lib/dynamic_debug.c                    |   98 ++++--
- lib/kobject.c                          |   39 ++
- sound/core/init.c                      |   11 +-
- 34 files changed, 1238 insertions(+), 516 deletions(-)
- create mode 100644 Documentation/ABI/testing/sysfs-module
- create mode 100644 drivers/misc/pch_phub.c
-
----------------
-
-Andi Kleen (1):
-      SYSFS: Allow boot time switching between deprecated and modern sysfs layout
-
-Anton Vorontsov (2):
-      base/platform: Safe handling for NULL platform data and resources
-      base/platform: Simplifications for NULL platform data/resources handling
-
-Eric W. Biederman (7):
-      uio: Fix lack of locking in init_uio_class
-      uio: Don't clear driver data
-      uio: Cleanup irq handling.
-      uio: Support 2^MINOR_BITS minors
-      uio: Statically allocate uio_class and use class .dev_attrs.
-      sysfs: Fail bin file mmap if vma close is implemented.
-      sysfs: only access bin file vm_ops with the active lock
-
-Greg Kroah-Hartman (2):
-      pch_phub: fix build warnings
-      debugfs: mark me as the maintainer
-
-Kay Sievers (1):
-      driver core: remove CONFIG_SYSFS_DEPRECATED_V2 but keep it for block devices
-
-Kevin Hilman (1):
-      driver core: platform_bus: allow runtime override of dev_pm_ops
-
-Kulikov Vasiliy (1):
-      uio: do not use PCI resources before pci_enable_device()
-
-Mark Brown (1):
-      driver core: Display error codes when class suspend fails
-
-Masayuki Ohtak (1):
-      add Packet hub driver for Topcliff Platform controller hub
-
-Nathan Fontenot (3):
-      Driver core: Move find_memory_block routine
-      Driver core: Add mutex for adding/removing memory blocks
-      Driver core: Add section count to memory_block struct
-
-Patrick Pannuto (1):
-      driver core: platform: Use drv->driver.bus instead of assuming platform_bus_type
-
-Randy Dunlap (2):
-      FW_LOADER: fix kconfig dependency warning on HOTPLUG
-      driver core: fix build for CONFIG_BLOCK not enabled
-
-Robin Holt (3):
-      kobject: Introduce kset_find_obj_hinted.
-      driver core: Introduce find_memory_block_hinted which utilizes kset_find_obj_hinted.
-      driver core: Convert link_mem_sections to use find_memory_block_hinted.
-
-Thomas Renninger (3):
-      Dynamic Debug: Split out query string parsing/setup from proc_write
-      Dynamic Debug: Introduce ddebug_query= boot parameter
-      Dynamic Debug: Initialize dynamic debug earlier via arch_initcall
-
-dann frazier (1):
-      hpilo: Despecificate driver from iLO generation
-
-matt mooney (1):
-      driver-core: base: change to new flag variable
-
+Bjorn
