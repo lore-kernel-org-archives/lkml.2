@@ -1,44 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759641Ab0JVVN4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 17:13:56 -0400
-Received: from web31810.mail.mud.yahoo.com ([68.142.207.73]:37994 "HELO
-	web31810.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1755783Ab0JVVNz convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 17:13:55 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.com;
-  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Reply-To:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type:Content-Transfer-Encoding;
-  b=moL11rhdeyr2MHgcSzWYWCmizDcaY/+RA4+uBVAsJ/TpKRYkBsPQjGqvM0zw0sDTowMXjnx/bV5qhqDQXl8ek0lodbCpvnwrgxjOioEM43aMl0ZFiNUWfW+4NeZbQDulczOEtrcbVGmrCafPeGUhmAqZ9wxX2jtR2PV0hBOAaA4=;
-Message-ID: <177615.57592.qm@web31810.mail.mud.yahoo.com>
-X-YMail-OSG: PB95XyYVM1lbvKGiUnVOLz_b8ENLwvyk1aGlum8yBGY46xP
- U7gRNlBUklBtk0nc4jGIt15hqjKin55fqDIoiUFevDr1KIWw4bocmboQPDrm
- fORsULLXS_k0SJZZ3WqiE1oT_Qokj_T7ZNdYGSyEgekuOIHyQ0QU3cMiKMFB
- AnIMFylPgdan1NpvBiaOHLoU98FsUf_VrnEza995Ymw8bDzV3QfEo1DkJNB0
- aca6rhQB8F8EVB4lBFDDuvcRID7QG7fTKhbGJHf8xpNzlIf2oQMTBbiwTyPW
- iQzSTtXVcISvL55GNfo5KTcJuhEHzU0EqJhOLAkq7xTvaQbMKSBRxInBbd8F
- kGG9h6m4JBA--
-X-Mailer: YahooMailClassic/11.4.9 YahooMailWebService/0.8.107.285259
-Date: Fri, 22 Oct 2010 14:13:53 -0700 (PDT)
-From: Luben Tuikov <ltuikov@yahoo.com>
-Reply-To: ltuikov@yahoo.com
-Subject: Re: [PATCH] [USB] Use normalized sense when emulating autosense
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: Greg KH <greg@kroah.com>, linux-usb@vger.kernel.org,
-        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
-In-Reply-To: <Pine.LNX.4.44L0.1010221029430.1529-100000@iolanthe.rowland.org>
+	id S1758605Ab0JVVRR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 17:17:17 -0400
+Received: from e1.ny.us.ibm.com ([32.97.182.141]:53019 "EHLO e1.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753444Ab0JVVRP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Oct 2010 17:17:15 -0400
+Date: Fri, 22 Oct 2010 14:17:13 -0700
+From: Vernon Mauery <vernux@us.ibm.com>
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        Platform driver x86 <platform-driver-x86@vger.kernel.org>
+Subject: [Patch 2/2] ibm_rtl: check for efi_enabled
+Message-ID: <20101022211713.GI8754@lucy>
+References: <20101005224718.GC4046@lucy>
+ <20101021135429.GC22133@srcf.ucam.org>
+ <20101021142319.GA8754@lucy>
+ <20101021142523.GA23171@srcf.ucam.org>
+ <20101021143821.GB8754@lucy>
+ <20101021144234.GA23552@srcf.ucam.org>
+ <20101021150928.GC8754@lucy>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii; format=flowed
+Content-Disposition: inline
+In-Reply-To: <20101021150928.GC8754@lucy>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---- On Fri, 10/22/10, Alan Stern <stern@rowland.harvard.edu> wrote:
-> What about the Filemark and ILI tests?  You mustn't
-> get rid of them; 
-> they are needed for tape drives.
+I tested ibm_rtl on an IBM machine that is supported by this driver in 
+Legacy BIOS mode, but which was running in UEFI mode and the system 
+complained about remapping the EBDA because the EBDA should not have 
+been there to start with.  This patch fixes that:
 
-I've resubmitted the patch.
+--Vernon
 
+ibm_rtl: _RTL_ is not available in UEFI mode
+
+Some of the IBM servers that are supported by ibm_rtl
+can run in both Legacy mode (BIOS) and in UEFI mode.
+When running in UEFI mode, it is possible that the
+EBDA table exists but cannot be mapped and reports
+errors.  We need to make sure that by default we don't
+try to probe the machines if they are running in UEFI
+mode.
+
+Signed-off-by: Vernon Mauery <vernux@us.ibm.com>
+
+diff --git a/drivers/platform/x86/ibm_rtl.c b/drivers/platform/x86/ibm_rtl.c
+index c5a0061..3cff0e5 100644
+--- a/drivers/platform/x86/ibm_rtl.c
++++ b/drivers/platform/x86/ibm_rtl.c
+@@ -28,6 +28,7 @@
+  #include <linux/io.h>
+  #include <linux/sysdev.h>
+  #include <linux/dmi.h>
++#include <linux/efi.h>
+  #include <linux/mutex.h>
+  #include <asm/bios_ebda.h>
+  
+@@ -238,7 +239,7 @@ static int __init ibm_rtl_init(void) {
+  	if (force)
+  		pr_warning("ibm-rtl: module loaded by force\n");
+  	/* first ensure that we are running on IBM HW */
+-	else if (!dmi_check_system(ibm_rtl_dmi_table))
++	else if (efi_enabled || !dmi_check_system(ibm_rtl_dmi_table))
+  		return -ENODEV;
+  
+  	/* Get the address for the Extended BIOS Data Area */
