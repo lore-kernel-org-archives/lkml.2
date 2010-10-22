@@ -1,103 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757584Ab0JVQTb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 12:19:31 -0400
-Received: from ppsw-52.csi.cam.ac.uk ([131.111.8.152]:50120 "EHLO
-	ppsw-52.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756544Ab0JVQTa (ORCPT
+	id S1757704Ab0JVQVu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 12:21:50 -0400
+Received: from newsmtp5.atmel.com ([204.2.163.5]:48815 "EHLO
+	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754442Ab0JVQVt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 12:19:30 -0400
-X-Cam-AntiVirus: no malware found
-X-Cam-SpamDetails: not scanned
-X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
-Message-ID: <4CC1BAEE.3030708@cam.ac.uk>
-Date: Fri, 22 Oct 2010 17:25:18 +0100
-From: Jonathan Cameron <jic23@cam.ac.uk>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.11) Gecko/20101020 Lightning/1.0b3pre Thunderbird/3.1.5
-MIME-Version: 1.0
-To: Samu Onkalo <samu.p.onkalo@nokia.com>
-CC: eric.piel@tremplin-utc.net, khali@linux-fr.org, guenter.roeck@ericsson.com,
-        lm-sensors@lm-sensors.org, linux-i2c@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 11/12] hwmon: lis3: Short explanations of platform data
- fields
-References: <1287748654-2626-1-git-send-email-samu.p.onkalo@nokia.com> <1287748654-2626-12-git-send-email-samu.p.onkalo@nokia.com>
-In-Reply-To: <1287748654-2626-12-git-send-email-samu.p.onkalo@nokia.com>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Fri, 22 Oct 2010 12:21:49 -0400
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Cc: avictor.za@gmail.com, plagnioj@jcrosoft.com,
+        Nicolas Ferre <nicolas.ferre@atmel.com>
+Subject: [PATCH 1/2] AT91: pm: use plain cpu_do_idle() for "wait for interrupt"
+Date: Fri, 22 Oct 2010 19:28:58 +0200
+Message-Id: <af311282c5a0076ec618be68facdd3ad98d509b8.1287767949.git.nicolas.ferre@atmel.com>
+X-Mailer: git-send-email 1.7.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/22/10 12:57, Samu Onkalo wrote:
-> Short documentation at kernel doc format.
-> 
-Please check the use of tabs etc in the alignment of the documentation.
-It might work out right, but looks a bit random currently.
+For power management at91_pm_enter() routine, use the cpu_do_idle() for a
+rock solid "wait for interrupt" implementation.
+For AT91SAM9 ARM 926 based chips, we can exceed the cache line length as
+we can access RAM even while in self-refresh mode.
+We keep plain access to CP15 for at91rm9200 as this feature is not
+available: instructions have to be in a single cache line.
 
-Couple of typos.  Otherwise looks fine to me, but I'll only give
-a reviewed by on this as I really don't know the devices well enough!
-> Signed-off-by: Samu Onkalo <samu.p.onkalo@nokia.com>
-> ---
->  include/linux/lis3lv02d.h |   41 +++++++++++++++++++++++++++++++++++++++++
->  1 files changed, 41 insertions(+), 0 deletions(-)
-> 
-> diff --git a/include/linux/lis3lv02d.h b/include/linux/lis3lv02d.h
-> index c949612..da294cd 100644
-> --- a/include/linux/lis3lv02d.h
-> +++ b/include/linux/lis3lv02d.h
-> @@ -1,6 +1,47 @@
->  #ifndef __LIS3LV02D_H_
->  #define __LIS3LV02D_H_
->  
-> +/**
-> + * struct lis3lv02d_platform_data - lis3 chip family platform data
-> + * @click_flags:       Click detection unit configuration
-> + * @click_thresh_x:    Click detection unit x axis treshold
-threshold
-> + * @click_thresh_y:    Click detection unit y axis treshold
-> + * @click_thresh_z:    Click detection unit z axis treshold
-> + * @click_time_limit:  Click detection unit time parameter
-> + * @click_latency:     Click detection unit latency parameter
-> + * @click_window:      Click detection unit window parameter
-> + * @irq_cfg:	       On chip irq configuration (click / data available / wu)
-wu isn't a terribly helpful acronym, please put it in long hand.  iirc kernel
-doc lets you use multiple lines for parameter descriptions...
-> + * @irq_flags1:	       Additional irq triggering flags for irq channel 0
-> + * @irq_flags2:	       Additional irq triggering flags for irq channel 1
-> + * @duration1:	       Wake up unit 1 duration parameter
-> + * @duration2:	       Wake up unit 2 duration parameter
-> + * @wakeup_flags:      Wakeup unit 1 flags
-> + * @wakeup_thresh:     Wakeup unit 1 threshold value
-> + * @wakeup_flags2:     Wakeup unit 2 flags
-> + * @wakeup_thresh2:    Wakeup unit 2 threshold value
-> + * @hipass_ctrl:       Hi-pass filter control
-High-pass
-> + * @axis_x:	       Remap parameter for x-axis
-> + * @axis_y:	       Remap parameter for y-axis
-> + * @axis_z:	       Remap parameter for z-axis
-> + * @driver_features:   Enable bits for different features. Disabled by default
-> + * @default_rate:      Default sampling rate. 0 means reset default
-> + * @setup_resources:   Interrupt line setup call back function
-> + * @release_resources: Interrupt line release call back function
-> + * @st_min_limits[3]:  Selftest acceptance minimum values
-> + * @st_max_limits[3]:  Selftest accepratnce maximum values
-acceptance
-> + * @irq2:	       Irq line 2 number
-> + *
-> + * Platform data is used to setup the sensor chip. Meaning of the different
-> + * chip features can be found from the data sheet. Currently the data is used
-> + * only for the 8 bit device. The 8 bit device has two wake up / free fall
-> + * detection units and click detection unit. There are plenty of ways to
-> + * configure the chip which makes is quite impossible to explain meaning of the
-> + * fields here. Behaviour of the detection blocks varies heavily depending
-> + * on the configuration. Irq_flags can be used to enable interrupt detection
-> + * on the both edges. With proper chip configuration this produces interrupt
-> + * when some trigger starts and when it goes away.
-> + */
-> +
->  struct lis3lv02d_platform_data {
->  	/* please note: the 'click' feature is only supported for
->  	 * LIS[32]02DL variants of the chip and will be ignored for
+Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+---
+ arch/arm/mach-at91/pm.c |    6 ++++--
+ arch/arm/mach-at91/pm.h |    4 ++++
+ 2 files changed, 8 insertions(+), 2 deletions(-)
+
+diff --git a/arch/arm/mach-at91/pm.c b/arch/arm/mach-at91/pm.c
+index 6156689..87a31ba 100644
+--- a/arch/arm/mach-at91/pm.c
++++ b/arch/arm/mach-at91/pm.c
+@@ -258,16 +258,18 @@ static int at91_pm_enter(suspend_state_t state)
+ 			 * NOTE: the Wait-for-Interrupt instruction needs to be
+ 			 * in icache so no SDRAM accesses are needed until the
+ 			 * wakeup IRQ occurs and self-refresh is terminated.
++			 * For ARM 926 based chips, this requirement is weaker
++			 * as at91sam9 can access a RAM in self-refresh mode.
+ 			 */
+ 			asm("b 1f; .align 5; 1:");
+ 			asm("mcr p15, 0, r0, c7, c10, 4");	/* drain write buffer */
+ 			saved_lpr = sdram_selfrefresh_enable();
+-			asm("mcr p15, 0, r0, c7, c0, 4");	/* wait for interrupt */
++			wait_for_interrupt_enable();
+ 			sdram_selfrefresh_disable(saved_lpr);
+ 			break;
+ 
+ 		case PM_SUSPEND_ON:
+-			asm("mcr p15, 0, r0, c7, c0, 4");	/* wait for interrupt */
++			cpu_do_idle();
+ 			break;
+ 
+ 		default:
+diff --git a/arch/arm/mach-at91/pm.h b/arch/arm/mach-at91/pm.h
+index 8c87d0c..2c4424b 100644
+--- a/arch/arm/mach-at91/pm.h
++++ b/arch/arm/mach-at91/pm.h
+@@ -21,6 +21,7 @@ static inline u32 sdram_selfrefresh_enable(void)
+ }
+ 
+ #define sdram_selfrefresh_disable(saved_lpr)	at91_sys_write(AT91_SDRAMC_LPR, saved_lpr)
++#define wait_for_interrupt_enable()		asm("mcr p15, 0, r0, c7, c0, 4")
+ 
+ #elif defined(CONFIG_ARCH_AT91CAP9)
+ #include <mach/at91cap9_ddrsdr.h>
+@@ -38,6 +39,7 @@ static inline u32 sdram_selfrefresh_enable(void)
+ }
+ 
+ #define sdram_selfrefresh_disable(saved_lpr)	at91_ramc_write(0, AT91_DDRSDRC_LPR, saved_lpr)
++#define wait_for_interrupt_enable()		cpu_do_idle()
+ 
+ #elif defined(CONFIG_ARCH_AT91SAM9G45)
+ #include <mach/at91sam9_ddrsdr.h>
+@@ -74,6 +76,7 @@ static inline u32 sdram_selfrefresh_enable(void)
+ 		at91_ramc_write(0, AT91_DDRSDRC_LPR, saved_lpr0); \
+ 		at91_ramc_write(1, AT91_DDRSDRC_LPR, saved_lpr1); \
+ 	} while (0)
++#define wait_for_interrupt_enable()		cpu_do_idle()
+ 
+ #else
+ #include <mach/at91sam9_sdramc.h>
+@@ -98,5 +101,6 @@ static inline u32 sdram_selfrefresh_enable(void)
+ }
+ 
+ #define sdram_selfrefresh_disable(saved_lpr)	at91_ramc_write(0, AT91_SDRAMC_LPR, saved_lpr)
++#define wait_for_interrupt_enable()		cpu_do_idle()
+ 
+ #endif
+-- 
+1.7.3
 
