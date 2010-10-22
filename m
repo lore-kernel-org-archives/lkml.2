@@ -1,54 +1,217 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754440Ab0JVHTX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 03:19:23 -0400
-Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:33747 "EHLO kernel.dk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752671Ab0JVHTW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 03:19:22 -0400
-Message-ID: <4CC13B09.6030104@kernel.dk>
-Date: Fri, 22 Oct 2010 09:19:37 +0200
-From: Jens Axboe <axboe@kernel.dk>
+	id S1754744Ab0JVHUT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 03:20:19 -0400
+Received: from e23smtp07.au.ibm.com ([202.81.31.140]:58977 "EHLO
+	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752703Ab0JVHUR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Oct 2010 03:20:17 -0400
+Message-ID: <4CC13B2C.7090908@linux.vnet.ibm.com>
+Date: Fri, 22 Oct 2010 12:50:12 +0530
+From: divya <dipraksh@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.10) Gecko/20100527 Thunderbird/3.0.5
 MIME-Version: 1.0
-To: "Ted Ts'o" <tytso@mit.edu>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>
-Subject: Re: What am I doing wrong?  submit_bio() suddenly stops working...
-References: <E1P8kSE-0001DW-8C@tytso-glaptop> <4CBFE4E2.7050001@kernel.dk> <20101021165525.GB3127@thunk.org> <4CC07C67.9010502@kernel.dk> <20101022033424.GO3127@thunk.org>
-In-Reply-To: <20101022033424.GO3127@thunk.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+To: LKML <linux-kernel@vger.kernel.org>, benh@kernel.crashing.org,
+        linuxppc-dev@ozlabs.org
+Subject: BUG with the kernel version 2.6.36-rc1 on power machine
+Content-Type: multipart/mixed;
+ boundary="------------090502060101080704060508"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2010-10-22 05:34, Ted Ts'o wrote:
-> On Thu, Oct 21, 2010 at 07:46:15PM +0200, Jens Axboe wrote:
->> By the sound of things, if I were you I'd turn on the mem and slab
->> debugging to catch use-before-init and use-after-free. Mysterious hangs
->> in the IO sub system are usually caused by such bugs. And the regular
->> debugging aids, just to see if that produces anything of interest.
-> 
-> It looks like it was a use-after-free bug in my code.  I'm running a
-> full set of set of tests now, but so far, it's gotten a lot further
-> than it went before, so I think I've figured it out.
-> 
-> I'm not sure why it caused the weird behaviour that it did (I got as
-> far as figuring out that somehow we lost the unplug timer, so after
-> the queue got plugged it never got unplugged), but I'm not going to
-> ask too many questions.  :-)
-> 
-> Maybe later on I'll try to figure out if there's any way to add some
-> kind of sanity checking so that screw ups in in the bio code's caller
-> cause a clearer failure (such as a BUG_ON), but that'll have to wait
-> for when I have some free time.
+This is a multi-part message in MIME format.
+--------------090502060101080704060508
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 
-In my experience, use-after-free bugs are best caught using the
-allocator poisoning along with lock checking. I guess that didn't
-trigger for you?
+Hi ,
 
-Out of curiousity, what was the exact bug?
+With the latest version of kernel 2.6.36-rc1 running on the power machine, came across the following call trace
 
--- 
-Jens Axboe
+BUG: looking up invalid subclass: 31
+turning off the locking correctness validator.
+Call Trace:
+[c00000000e0bfb60] [c0000000000119a0] .show_stack+0x6c/0x16c (unreliable)
+[c00000000e0bfc10] [c0000000000c39b8] .lockdep_init_map+0x194/0x630
+[c00000000e0bfcf0] [c0000000005524f8] .mousedev_create+0xcc/0x234
+[c00000000e0bfda0] [c00000000093fb58] .mousedev_init+0x38/0xa0
+[c00000000e0bfe30] [c0000000000097e4] .do_one_initcall+0xd8/0x1c8
+[c00000000e0bfee0] [c0000000009004ac] .kernel_init+0x23c/0x2f8
+[c00000000e0bff90] [c00000000002ad30] .kernel_thread+0x54/0x70
 
+The config file used for make oldconfig is being attached
+
+Thanks
+Divya
+
+
+
+
+
+--------------090502060101080704060508
+Content-Type: text/plain;
+ name="config_ppc_slub"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+ filename="config_ppc_slub"
+
+CONFIG_ALTIVEC=y
+# CONFIG_WIRELESS is not set
+CONFIG_VSX=y
+CONFIG_TASKSTATS=y
+CONFIG_TASK_DELAY_ACCT=y
+CONFIG_TASK_XACCT=y
+CONFIG_TASK_IO_ACCOUNTING=y
+CONFIG_HAVE_KPROBES=y
+CONFIG_HAVE_KRETPROBES=y
+CONFIG_TREE_RCU=y
+CONFIG_RCU_FANOUT=64
+CONFIG_CGROUP_SCHED=y
+CONFIG_CGROUPS=y
+CONFIG_CGROUP_NS=y
+CONFIG_CGROUP_FREEZER=y
+CONFIG_CGROUP_DEVICE=y
+CONFIG_CPUSETS=y
+CONFIG_PROC_PID_CPUSET=y
+CONFIG_CGROUP_CPUACCT=y
+CONFIG_RESOURCE_COUNTERS=y
+CONFIG_CGROUP_MEM_RES_CTLR=y
+CONFIG_CGROUP_MEM_RES_CTLR_SWAP=y
+CONFIG_NAMESPACES=y
+CONFIG_UTS_NS=y
+CONFIG_IPC_NS=y
+CONFIG_USER_NS=y
+CONFIG_PID_NS=y
+CONFIG_NET_NS=y
+CONFIG_KALLSYMS=y
+CONFIG_KALLSYMS_ALL=y
+CONFIG_KPROBES=y
+CONFIG_CMM=y
+CONFIG_PPC_HAS_HASH_64K=y
+CONFIG_PPC_64K_PAGES=y
+CONFIG_FORCE_MAX_ZONEORDER=9
+CONFIG_PPC_SUBPAGE_PROT=y
+CONFIG_ARCH_ENABLE_MEMORY_HOTPLUG=y
+CONFIG_ARCH_HAS_WALK_MEMORY=y
+CONFIG_ARCH_ENABLE_MEMORY_HOTREMOVE=y
+CONFIG_KEXEC=y
+CONFIG_MEMORY_HOTPLUG=y
+CONFIG_MEMORY_HOTPLUG_SPARSE=y
+CONFIG_MEMORY_HOTREMOVE=y
+CONFIG_IBMEBUS=y
+CONFIG_EHEA=y
+CONFIG_SCSI_IBMVSCSI=y
+CONFIG_SCSI_IBMVFC=m
+CONFIG_SCSI_IPR=y
+CONFIG_DEBUG_KERNEL=y
+CONFIG_DETECT_SOFTLOCKUP=y
+CONFIG_DETECT_HUNG_TASK=y
+CONFIG_DEBUG_SPINLOCK=y
+CONFIG_DEBUG_SPINLOCK_SLEEP=y
+CONFIG_DEBUG_BUGVERBOSE=y
+CONFIG_DEBUG_INFO=y
+CONFIG_KPROBES_SANITY_TEST=y
+CONFIG_LATENCYTOP=y
+CONFIG_SYSCTL_SYSCALL_CHECK=y
+CONFIG_DEBUG_PAGEALLOC=y
+CONFIG_NOP_TRACER=y
+CONFIG_HAVE_FUNCTION_TRACER=y
+CONFIG_HAVE_FUNCTION_GRAPH_TRACER=y
+CONFIG_HAVE_DYNAMIC_FTRACE=y
+CONFIG_HAVE_FTRACE_MCOUNT_RECORD=y
+CONFIG_RING_BUFFER=y
+CONFIG_TRACING=y
+CONFIG_TRACING_SUPPORT=y
+ONFIG_BLK_DEV_IO_TRACE=y
+CONFIG_FTRACE_SELFTEST=y
+CONFIG_FTRACE_STARTUP_TEST=y
+CONFIG_KEYS=y
+CONFIG_KEYS_DEBUG_PROC_KEYS=y
+CONFIG_SECURITY=y
+CONFIG_SECURITYFS=y
+CONFIG_SECURITY_NETWORK=y
+CONFIG_RCU_CPU_STALL_DETECTOR=y
+CONFIG_EXT2_FS=y
+CONFIG_EXT2_FS_XATTR=y
+CONFIG_EXT2_FS_POSIX_ACL=y
+CONFIG_EXT2_FS_SECURITY=y
+CONFIG_EXT3_FS=y
+CONFIG_EXT3_FS_XATTR=y
+CONFIG_EXT3_FS_POSIX_ACL=y
+CONFIG_EXT3_FS_SECURITY=y
+CONFIG_EXT4_FS=y
+CONFIG_EXT4DEV_COMPAT=y
+CONFIG_EXT4_FS_XATTR=y
+CONFIG_EXT4_FS_POSIX_ACL=y
+CONFIG_EXT4_FS_SECURITY=y
+CONFIG_JBD=y
+CONFIG_JBD2=y
+CONFIG_REISERFS_PROC_INFO=y
+CONFIG_REISERFS_FS_XATTR=y
+CONFIG_REISERFS_FS_POSIX_ACL=y
+CONFIG_REISERFS_FS_SECURITY=y
+CONFIG_JFS_FS=m
+CONFIG_JFS_POSIX_ACL=y
+CONFIG_JFS_SECURITY=y
+CONFIG_JFS_STATISTICS=y
+CONFIG_FS_POSIX_ACL=y
+CONFIG_FILE_LOCKING=y
+CONFIG_XFS_FS=m
+CONFIG_XFS_QUOTA=y
+CONFIG_XFS_POSIX_ACL=y
+CONFIG_XFS_RT=y
+CONFIG_GFS2_FS=m
+CONFIG_GFS2_FS_LOCKING_DLM=m
+CONFIG_OCFS2_FS=m
+CONFIG_OCFS2_FS_O2CB=m
+CONFIG_OCFS2_FS_USERSPACE_CLUSTER=m
+CONFIG_OCFS2_FS_STATS=y
+CONFIG_BTRFS_FS=y
+CONFIG_BTRFS_FS_POSIX_ACL=y
+CONFIG_LOCALVERSION_AUTO=n
+CONFIG_LOCALVERSION=""
+CONFIG_SLUB_DEBUG=y
+CONFIG_SLUB=y
+CONFIG_DEVPTS_MULTIPLE_INSTANCES=y
+CONFIG_HAVE_PERF_COUNTERS=y
+CONFIG_PERF_COUNTERS=y
+CONFIG_DEFAULT_MMAP_MIN_ADDR=65536
+CONFIG_FSNOTIFY=y
+CONFIG_RCU_TORTURE_TEST=y
+CONFIG_RCU_TORTURE_TEST_RUNNABLE=y
+CONFIG_RCU_CPU_STALL_DETECTOR=y
+CONFIG_PERF_EVENTS=y
+CONFIG_PPC_OF_BOOT_TRAMPOLINE=y
+CONFIG_BLOCK=y
+CONFIG_BLK_DEV_BSG=y
+CONFIG_BLK_DEV_INTEGRITY=y
+CONFIG_BLK_CGROUP=y
+CONFIG_DEBUG_BLK_CGROUP=y
+CONFIG_BLOCK_COMPAT=y
+CONFIG_IOSCHED_NOOP=y
+CONFIG_IOSCHED_CFQ=y
+CONFIG_CFQ_GROUP_IOSCHED=y
+CONFIG_DEBUG_CFQ_IOSCHED=y
+CONFIG_DEFAULT_CFQ=y
+CONFIG_DEFAULT_IOSCHED="cfq"
+CONFIG_VIRTUALIZATION=y
+CONFIG_VIRTIO_PCI=y
+CONFIG_VIRTIO_BALLOON=y
+CONFIG_NR_IRQS=512
+CONFIG_MIGRATION=y
+CONFIG_KSM=y
+CONFIG_PM=y
+CONFIG_SUSPEND=y
+CONFIG_SUSPEND_FREEZER=y
+CONFIG_HIBERNATION=y
+CONFIG_SYSFS_DEPRECATED_V2=y
+CONFIG_LOCK_STAT=y
+CONFIG_LOCKDEP_SUPPORT=y
+CONFIG_LOCKDEP=y
+CONFIG_IXGBE_DCB=y
+CONFIG_DCB=y
+
+
+--------------090502060101080704060508--
