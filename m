@@ -1,54 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756509Ab0JVMtY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 08:49:24 -0400
-Received: from spaceboyz.net ([87.106.131.203]:39926 "EHLO spaceboyz.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755432Ab0JVMtX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 08:49:23 -0400
-Date: Fri, 22 Oct 2010 14:48:58 +0200
-From: David Lamparter <equinox@diac24.net>
-To: Michael Leun <lkml20100708@newton.leun.net>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>, Greg KH <greg@kroah.com>,
-        netdev@vger.kernel.org, davem@davemloft.net,
-        linux-kernel@vger.kernel.org, Alexey Dobriyan <adobriyan@gmail.com>,
-        Patrick McHardy <kaber@trash.net>
-Subject: Re: NET_NS: unregister_netdevice: waiting for lo to become free
- (adding ipv6 address to interface)
-Message-ID: <20101022124858.GA719746@jupiter.n2.diac24.net>
-References: <20100710235323.5336f627@xenia.leun.net>
- <20100711192939.1c25dcaf@xenia.leun.net>
- <20100804153543.56f6ecad@xenia.leun.net>
- <20100804214618.GA6289@kroah.com>
- <20100805001105.5a3453ed@xenia.leun.net>
- <m1lj8l29zm.fsf@fess.ebiederm.org>
- <20100805112538.60a46cb1@xenia.leun.net>
- <m1y6clz8ta.fsf_-_@fess.ebiederm.org>
- <20100805134707.0442a7b1@xenia.leun.net>
- <20101021171532.54af5e97@xenia.leun.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101021171532.54af5e97@xenia.leun.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1756508Ab0JVMuq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 08:50:46 -0400
+Received: from casper.infradead.org ([85.118.1.10]:46086 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756424Ab0JVMup convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Oct 2010 08:50:45 -0400
+Subject: Re: [PATCH 0/7] cgroups: Allow to bind/unbind subsystems to/from
+ non-trival hierarchy
+From: Peter Zijlstra <peterz@infradead.org>
+To: Li Zefan <lizf@cn.fujitsu.com>
+Cc: "akpm >> Andrew Morton" <akpm@linux-foundation.org>,
+        Paul Menage <menage@google.com>, Stephane Eranian <eranian@google.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        containers@lists.linux-foundation.org
+In-Reply-To: <4CC146A4.9090505@cn.fujitsu.com>
+References: <4CC146A4.9090505@cn.fujitsu.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Fri, 22 Oct 2010 14:50:01 +0200
+Message-ID: <1287751801.15336.35.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 21, 2010 at 05:15:32PM +0200, Michael Leun wrote:
-> unfortunately the bug described below originally reported in 2.6.35-rcX
-> is still there in 2.6.36.
+On Fri, 2010-10-22 at 16:09 +0800, Li Zefan wrote:
+> Stephane posted a patchset to add perf_cgroup subsystem, so perf can
+> be used to monitor all threads belonging to a cgroup.
+> 
+> But if you already mounted a cgroup hierarchy but without perf_cgroup
+> and the hierarchy has sub-cgroups, you can't bind perf_cgroup to it,
+> and thus you're not able to use per-cgroup perf feature.
+> 
+> This patchset alleviates the pain, and then a subsytem can be
+> bound/unbound to/from a hierarchy which has sub-cgroups in it.
+> 
+> Some subsystems still can't take advantage of this patchset, memcgroup
+> and cpuset in specific.
+> 
+> For cpuset, if a hierarchy has a sub-cgroup and the cgroup has tasks,
+> we can't decide sub-cgroup's cpuset.mems and cpuset.cpus automatically
+> if we try to bind cpuset to this hierarchy.
+> 
+> For memcgroup, memcgroup uses css_get/put(), and due to some complexity,
+> for now bindable subsystems should not use css_get/put().
+> 
+> Usage:
+> 
+> # mount -t cgroup -o cpuset xxx /mnt
+> # mkdir /mnt/tmp
+> # echo $$ > /mnt/tmp/tasks
+> 
+> (add cpuacct to the hierarchy)
+> # mount -o remount,cpuset,cpuacct xxx /mnt
+> 
+> (remove it from the hierarchy)
+> # mount -o remount,cpuset xxx /mnt
+> 
+> There's another limitation, cpuacct should not be bound to any mounted
+> hierarchy before the above operation. But that's not a problem, as you
+> can remove it from a hierarchy and bind it to another one.
 
-can you post your full kernel .config?
+Right, so the only remaining problem I see with this approach is that
+you cannot profile two different hierarchies at the same time, but I
+can't really think of a solution to that problem (nor do I care very
+much).
 
-I'm using network namespaces quite extensively - OpenVPN and IPv6
-included - and i haven't hit this bug. That makes it rather likely it
-depends on some option difference.
-
-btw, while the bridging bug is unrelated, it might be the same kind of
-origin - a skb not being free'd. can you leave the namespace running for
-a few minutes and check whether the usage count number is higher then?
-
-
--David
-
+Seems like a nice approach, Thanks Li!
