@@ -1,58 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755399Ab0JVKDo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 06:03:44 -0400
-Received: from sh.osrg.net ([192.16.179.4]:45697 "EHLO sh.osrg.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755232Ab0JVKDn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 06:03:43 -0400
-Date: Fri, 22 Oct 2010 19:03:30 +0900
-To: tj@kernel.org
-Cc: linux-scsi@vger.kernel.org, James.Bottomley@suse.de,
-        fujita.tomonori@lab.ntt.co.jp, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] scsi: don't use execute_in_process_context()
-From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-In-Reply-To: <4CBD95DC.8000001@kernel.org>
-References: <4CBD95C0.6060302@kernel.org>
-	<4CBD95DC.8000001@kernel.org>
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	id S1755226Ab0JVKKW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 06:10:22 -0400
+Received: from exprod5og108.obsmtp.com ([64.18.0.186]:52331 "EHLO
+	exprod5og108.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753905Ab0JVKKV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Oct 2010 06:10:21 -0400
+Message-ID: <4CC162BA.6080009@ge.com>
+Date: Fri, 22 Oct 2010 11:08:58 +0100
+From: Martyn Welch <martyn.welch@ge.com>
+Organization: GE Intelligent Platforms
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.14) Gecko/20101006 Thunderbird/3.0.9
+MIME-Version: 1.0
+To: "Emilio G. Cota" <cota@braap.org>
+CC: Greg KH <greg@kroah.com>, LKML <linux-kernel@vger.kernel.org>,
+        Juan David Gonzalez Cobas <david.cobas@gmail.com>
+Subject: Re: [-next] staging/vme: various fixes + new driver model for VME
+References: <1287729412-24356-1-git-send-email-cota@braap.org>
+In-Reply-To: <1287729412-24356-1-git-send-email-cota@braap.org>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Message-Id: <20101022185701H.fujita.tomonori@lab.ntt.co.jp>
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Fri, 22 Oct 2010 19:03:31 +0900 (JST)
+X-OriginalArrivalTime: 22 Oct 2010 10:10:18.0606 (UTC) FILETIME=[544458E0:01CB71D1]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 19 Oct 2010 14:58:04 +0200
-Tejun Heo <tj@kernel.org> wrote:
 
-> SCSI is the only subsystem which uses execute_in_process_context().
-> With the recent workqueue updates, unconditionally using work wouldn't
-> cause deadlocks around execution resources and the two places where
-> SCSI uses them are cold paths where using work unconditionally
-> wouldn't make any difference.  Drop execute_in_process_context() and
-> use work directly.
+On 22/10/10 07:36, Emilio G. Cota wrote:
+> Hi Greg,
 > 
-> * scsi_device->ew is replaced with release_work.  scsi_target->ew is
->   replaced with reap_work.
+> This contains first a whole bunch of fixes to the existing vme
+> code in staging, to then introduce a new driver model for VME
+> in patch 27.
 > 
-> * Both works are initialized with the respective release/reap function
->   during device/target init.  scsi_target_reap_usercontext() is moved
->   upwards to avoid needing forward declaration.
-> 
-> * scsi_alloc_target() now explicitly flushes the reap_work of the
->   found dying target before putting it instead of depending on
->   flush_scheduled_work().
-> 
-> This is in preparation of deprecation of flush_scheduled_work() and
-> execute_in_process_context().
-> 
-> Signed-off-by: Tejun Heo <tj@kernel.org>
-> ---
->  drivers/scsi/scsi_scan.c   |   26 +++++++++++++-------------
->  drivers/scsi/scsi_sysfs.c  |    8 +++++---
->  include/scsi/scsi_device.h |    4 ++--
->  3 files changed, 20 insertions(+), 18 deletions(-)
 
-Looks fine to me.
+Emilio,
+
+The VME drivers are currently in the staging tree - please can you post
+these patches to the mailing list identified in the maintainers file
+(devel@driverdev.osuosl.org) so that these modifications can be
+discussed there.
+
+MArtyn
+
+
+> I have a short list of things to do after this patchset gets
+> reviewed:
+> 
+> - provide a saner API for VME drivers that just want to
+>   map/unmap chunks of memory (knowing nothing about underlying
+>   hardware features, such as windows). This is already
+>   implemented in the out-of-tree driver in [1].
+> 
+> - Make DMA work on the tsi148 (it's the only bridge I've got).
+>   This will probably involve changing or extending the
+>   current API.
+> 
+> - Test the whole thing with real hardware and a real VME driver
+>   (currently out of tree as well, see [2]), which I'll try
+>   to get merged, too--currently we just have vme_user.c which
+>   really isn't a kosher driver.
+> 
+> 
+> 
+> Note that the appended applies on top of linux-next.
+> 
+> The patchset can be pulled from:
+> git://github.com/cota/linux-2.6.git vme-next
+> 
+> Thanks,
+> 
+>                 Emilio
+> 
+> 
+> [1] http://repo.or.cz/w/ht-drivers.git/tree/HEAD:/vmebridge/driver
+> [2] http://repo.or.cz/w/ht-drivers.git/tree/HEAD:/sis33/drivers
+> 
+> diffstat:
+> 
+>  drivers/staging/vme/bridges/vme_ca91cx42.c |  222 ++++++------
+>  drivers/staging/vme/bridges/vme_ca91cx42.h |    2 +-
+>  drivers/staging/vme/bridges/vme_tsi148.c   |  259 +++++++-------
+>  drivers/staging/vme/bridges/vme_tsi148.h   |    2 +-
+>  drivers/staging/vme/devices/vme_user.c     |  159 ++++-----
+>  drivers/staging/vme/vme.c                  |  569 +++++++++++++++-------------
+>  drivers/staging/vme/vme.h                  |  229 ++++++++++-
+>  drivers/staging/vme/vme_bridge.h           |  175 ---------
+>  8 files changed, 831 insertions(+), 786 deletions(-)
+> 
+> 
+
+
+-- 
+Martyn Welch (Principal Software Engineer)   |   Registered in England and
+GE Intelligent Platforms                     |   Wales (3828642) at 100
+T +44(0)127322748                            |   Barbirolli Square,
+Manchester,
+E martyn.welch@ge.com                        |   M2 3AB  VAT:GB 927559189
