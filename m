@@ -1,246 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757846Ab0JVQOM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 12:14:12 -0400
-Received: from fxip-0047f.externet.hu ([88.209.222.127]:55150 "EHLO
-	pomaz-ex.szeredi.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757810Ab0JVQOK (ORCPT
+	id S1757877Ab0JVQOS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 12:14:18 -0400
+Received: from ppsw-51.csi.cam.ac.uk ([131.111.8.151]:49966 "EHLO
+	ppsw-51.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757810Ab0JVQOP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 12:14:10 -0400
-To: viro@ZenIV.linux.org.uk
-CC: dave@linux.vnet.ibm.com, akpm@linux-foundation.org,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-In-reply-to: <E1P9KCY-0005YO-4i@pomaz-ex.szeredi.hu> (message from Miklos
-	Szeredi on Fri, 22 Oct 2010 18:10:42 +0200)
-Subject: [PATCH 7/9 updated] vfs: protect remounting superblock read-only
-References: <20101005103108.288743609@szeredi.hu>
- <20101005103144.051231469@szeredi.hu> <20101022064627.GA21607@ZenIV.linux.org.uk> <E1P9Gh4-00054y-EA@pomaz-ex.szeredi.hu> <E1P9KCY-0005YO-4i@pomaz-ex.szeredi.hu>
-Message-Id: <E1P9KFl-0005ZK-0q@pomaz-ex.szeredi.hu>
-From: Miklos Szeredi <miklos@szeredi.hu>
-Date: Fri, 22 Oct 2010 18:14:01 +0200
+	Fri, 22 Oct 2010 12:14:15 -0400
+X-Cam-AntiVirus: no malware found
+X-Cam-SpamDetails: not scanned
+X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
+Message-ID: <4CC1B9B3.2060402@cam.ac.uk>
+Date: Fri, 22 Oct 2010 17:20:03 +0100
+From: Jonathan Cameron <jic23@cam.ac.uk>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.11) Gecko/20101020 Lightning/1.0b3pre Thunderbird/3.1.5
+MIME-Version: 1.0
+To: Samu Onkalo <samu.p.onkalo@nokia.com>
+CC: eric.piel@tremplin-utc.net, khali@linux-fr.org, guenter.roeck@ericsson.com,
+        lm-sensors@lm-sensors.org, linux-i2c@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 09/12] hwmon: lis3: use block read to access data registers
+References: <1287748654-2626-1-git-send-email-samu.p.onkalo@nokia.com> <1287748654-2626-10-git-send-email-samu.p.onkalo@nokia.com>
+In-Reply-To: <1287748654-2626-10-git-send-email-samu.p.onkalo@nokia.com>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Miklos Szeredi <mszeredi@suse.cz>
+On 10/22/10 12:57, Samu Onkalo wrote:
+> Add optional blockread function to interface driver. If available
+> the chip driver uses it for data register access. For 12 bit device
+> it reads 6 bytes to get 3*16bit data. For 8 bit device it reads out
+> 5 bytes since every second byte is dummy.
+> This optimizes bus usage and reduces number of operations and
+> interrupts needed for one data update.
+> 
+All good now.
+> Signed-off-by: Samu Onkalo <samu.p.onkalo@nokia.com>
+Acked-by: Jonathan Cameron <jic23@cam.ac.uk>
+> ---
+>  drivers/hwmon/lis3lv02d.c     |   21 ++++++++++++++++++---
+>  drivers/hwmon/lis3lv02d.h     |    1 +
+>  drivers/hwmon/lis3lv02d_i2c.c |   13 +++++++++++++
+>  include/linux/lis3lv02d.h     |    1 +
+>  4 files changed, 33 insertions(+), 3 deletions(-)
+> 
+> diff --git a/drivers/hwmon/lis3lv02d.c b/drivers/hwmon/lis3lv02d.c
+> index 7555091..9fd946c 100644
+> --- a/drivers/hwmon/lis3lv02d.c
+> +++ b/drivers/hwmon/lis3lv02d.c
+> @@ -130,9 +130,24 @@ static void lis3lv02d_get_xyz(struct lis3lv02d *lis3, int *x, int *y, int *z)
+>  	int position[3];
+>  	int i;
+>  
+> -	position[0] = lis3->read_data(lis3, OUTX);
+> -	position[1] = lis3->read_data(lis3, OUTY);
+> -	position[2] = lis3->read_data(lis3, OUTZ);
+> +	if (lis3->blkread) {
+> +		if (lis3_dev.whoami == WAI_12B) {
+> +			u16 data[3];
+> +			lis3->blkread(lis3, OUTX_L, 6, (u8 *)data);
+> +			for (i = 0; i < 3; i++)
+> +				position[i] = (s16)le16_to_cpu(data[i]);
+> +		} else {
+> +			u8 data[5];
+> +			/* Data: x, dummy, y, dummy, z */
+> +			lis3->blkread(lis3, OUTX, 5, data);
+> +			for (i = 0; i < 3; i++)
+> +				position[i] = (s8)data[i * 2];
+> +		}
+> +	} else {
+> +		position[0] = lis3->read_data(lis3, OUTX);
+> +		position[1] = lis3->read_data(lis3, OUTY);
+> +		position[2] = lis3->read_data(lis3, OUTZ);
+> +	}
+>  
+>  	for (i = 0; i < 3; i++)
+>  		position[i] = (position[i] * lis3->scale) / LIS3_ACCURACY;
+> diff --git a/drivers/hwmon/lis3lv02d.h b/drivers/hwmon/lis3lv02d.h
+> index 2ac27b9..d3cb662 100644
+> --- a/drivers/hwmon/lis3lv02d.h
+> +++ b/drivers/hwmon/lis3lv02d.h
+> @@ -225,6 +225,7 @@ struct lis3lv02d {
+>  	int (*init) (struct lis3lv02d *lis3);
+>  	int (*write) (struct lis3lv02d *lis3, int reg, u8 val);
+>  	int (*read) (struct lis3lv02d *lis3, int reg, u8 *ret);
+> +	int (*blkread) (struct lis3lv02d *lis3, int reg, int len, u8 *ret);
+>  	int (*reg_ctrl) (struct lis3lv02d *lis3, bool state);
+>  
+>  	int                     *odrs;     /* Supported output data rates */
+> diff --git a/drivers/hwmon/lis3lv02d_i2c.c b/drivers/hwmon/lis3lv02d_i2c.c
+> index 36171bf..61c109b 100644
+> --- a/drivers/hwmon/lis3lv02d_i2c.c
+> +++ b/drivers/hwmon/lis3lv02d_i2c.c
+> @@ -66,6 +66,14 @@ static inline s32 lis3_i2c_read(struct lis3lv02d *lis3, int reg, u8 *v)
+>  	return 0;
+>  }
+>  
+> +static inline s32 lis3_i2c_blockread(struct lis3lv02d *lis3, int reg, int len,
+> +				u8 *v)
+> +{
+> +	struct i2c_client *c = lis3->bus_priv;
+> +	reg |= (1 << 7); /* 7th bit enables address auto incrementation */
+> +	return i2c_smbus_read_i2c_block_data(c, reg, len, v);
+> +}
+> +
+>  static int lis3_i2c_init(struct lis3lv02d *lis3)
+>  {
+>  	u8 reg;
+> @@ -103,6 +111,11 @@ static int __devinit lis3lv02d_i2c_probe(struct i2c_client *client,
+>  		if (pdata->driver_features & LIS3_USE_REGULATOR_CTRL)
+>  			lis3_dev.reg_ctrl = lis3_reg_ctrl;
+>  
+> +		if ((pdata->driver_features & LIS3_USE_BLOCK_READ) &&
+> +			(i2c_check_functionality(client->adapter,
+> +						I2C_FUNC_SMBUS_I2C_BLOCK)))
+> +			lis3_dev.blkread  = lis3_i2c_blockread;
+> +
+>  		if (pdata->axis_x)
+>  			lis3lv02d_axis_map.x = pdata->axis_x;
+>  
+> diff --git a/include/linux/lis3lv02d.h b/include/linux/lis3lv02d.h
+> index 18d578f..c949612 100644
+> --- a/include/linux/lis3lv02d.h
+> +++ b/include/linux/lis3lv02d.h
+> @@ -68,6 +68,7 @@ struct lis3lv02d_platform_data {
+>  	s8 axis_y;
+>  	s8 axis_z;
+>  #define LIS3_USE_REGULATOR_CTRL 0x01
+> +#define LIS3_USE_BLOCK_READ	0x02
+>  	u16 driver_features;
+>  	int default_rate;
+>  	int (*setup_resources)(void);
 
-Currently remouting superblock read-only is racy in a major way.
-
-With the per mount read-only infrastructure it is now possible to
-prevent most races, which this patch attempts.
-
-Before starting the remount read-only, set MNT_READONLY on all mounts
-so that writes are prevented during the remount.  Also set
-MNT_WAS_WRITE on mounts that were not read-only.
-
-If the remounting is unsuccessful, restore the mounts to read-write.
-This can result in transient EROFS errors.  Unfortunately hodling off
-writes is difficult as remount itself may touch the filesystem
-(e.g. through load_nls()) which would then deadlock.
-
-Careful thought needs to be given to places where mnt_flags are set
-such as do_add_mount() and clone_mnt() to ensure that a read-write
-mount is not added to a read-only superblock.
-
-Small races still remain because delayed writes due to nlink going to
-zero but inode still having a reference are not dealt with by this
-patch.
-
-Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
----
- fs/internal.h         |    3 ++
- fs/namespace.c        |   73 ++++++++++++++++++++++++++++++++++++++++++++++++--
- fs/super.c            |   25 ++++++++++++++---
- include/linux/mount.h |    1 
- 4 files changed, 96 insertions(+), 6 deletions(-)
-
-Index: linux-2.6/fs/internal.h
-===================================================================
---- linux-2.6.orig/fs/internal.h	2010-10-21 19:38:36.000000000 +0200
-+++ linux-2.6/fs/internal.h	2010-10-22 17:48:16.000000000 +0200
-@@ -69,6 +69,9 @@ extern void mnt_set_mountpoint(struct vf
- extern void release_mounts(struct list_head *);
- extern void umount_tree(struct vfsmount *, int, struct list_head *);
- extern struct vfsmount *copy_tree(struct vfsmount *, struct dentry *, int);
-+extern int sb_prepare_remount_readonly(struct super_block *);
-+extern void sb_cancel_remount_readonly(struct super_block *);
-+extern void sb_finish_remount_readonly(struct super_block *);
- 
- extern void __init mnt_init(void);
- 
-Index: linux-2.6/fs/namespace.c
-===================================================================
---- linux-2.6.orig/fs/namespace.c	2010-10-22 16:02:14.000000000 +0200
-+++ linux-2.6/fs/namespace.c	2010-10-22 17:59:30.000000000 +0200
-@@ -419,6 +419,62 @@ void sb_force_remount_readonly(struct su
- }
- EXPORT_SYMBOL(sb_force_remount_readonly);
- 
-+int sb_prepare_remount_readonly(struct super_block *sb)
-+{
-+	struct vfsmount *mnt;
-+	int err = 0;
-+
-+	br_write_lock(vfsmount_lock);
-+	list_for_each_entry(mnt, &sb->s_mounts, mnt_instance) {
-+		if (!(mnt->mnt_flags & MNT_READONLY)) {
-+			mnt->mnt_flags |= MNT_WRITE_HOLD;
-+			smp_mb();
-+			if (count_mnt_writers(mnt) > 0) {
-+				err = -EBUSY;
-+				break;
-+			}
-+		}
-+	}
-+	list_for_each_entry(mnt, &sb->s_mounts, mnt_instance) {
-+		if (mnt->mnt_flags & MNT_WRITE_HOLD) {
-+			if (!err) {
-+				mnt->mnt_flags |= MNT_READONLY | MNT_WAS_WRITE;
-+				smp_wmb();
-+			}
-+			mnt->mnt_flags &= ~MNT_WRITE_HOLD;
-+		}
-+	}
-+	br_write_unlock(vfsmount_lock);
-+
-+	return err;
-+}
-+
-+void sb_cancel_remount_readonly(struct super_block *sb)
-+{
-+	struct vfsmount *mnt;
-+
-+	br_write_lock(vfsmount_lock);
-+	list_for_each_entry(mnt, &sb->s_mounts, mnt_instance) {
-+		if (mnt->mnt_flags & MNT_WAS_WRITE)
-+			mnt->mnt_flags &= ~(MNT_WAS_WRITE | MNT_READONLY);
-+	}
-+
-+	br_write_unlock(vfsmount_lock);
-+}
-+
-+void sb_finish_remount_readonly(struct super_block *sb)
-+{
-+	struct vfsmount *mnt;
-+
-+	br_write_lock(vfsmount_lock);
-+	list_for_each_entry(mnt, &sb->s_mounts, mnt_instance) {
-+		if (mnt->mnt_flags & MNT_WAS_WRITE)
-+			mnt->mnt_flags &= ~MNT_WAS_WRITE;
-+	}
-+	sb->s_flags |= MS_RDONLY;
-+	br_write_unlock(vfsmount_lock);
-+}
-+
- void simple_set_mnt(struct vfsmount *mnt, struct super_block *sb)
- {
- 	mnt->mnt_sb = sb;
-@@ -608,7 +664,7 @@ static struct vfsmount *clone_mnt(struct
- 				goto out_free;
- 		}
- 
--		mnt->mnt_flags = old->mnt_flags & ~MNT_WRITE_HOLD;
-+		mnt->mnt_flags = old->mnt_flags & MNT_PROPAGATION_MASK;
- 		atomic_inc(&sb->s_active);
- 		mnt->mnt_sb = sb;
- 		mnt->mnt_root = dget(root);
-@@ -636,7 +692,13 @@ static struct vfsmount *clone_mnt(struct
- 				list_add(&mnt->mnt_expire, &old->mnt_expire);
- 		}
- 
-+		/*
-+		 * Add new mount to s_mounts.  Do this after fiddling
-+		 * with propagation flags to prevent races with
-+		 * remount ro/rw.
-+		 */
- 		br_write_lock(vfsmount_lock);
-+		mnt->mnt_flags |= old->mnt_flags & ~MNT_PROPAGATION_MASK;
- 		list_add_tail(&mnt->mnt_instance, &mnt->mnt_sb->s_mounts);
- 		br_write_unlock(vfsmount_lock);
- 	}
-@@ -1782,6 +1844,14 @@ int do_add_mount(struct vfsmount *newmnt
- 
- 	mnt_flags &= ~(MNT_SHARED | MNT_WRITE_HOLD | MNT_INTERNAL);
- 
-+	/* Locking is necessary to prevent racing with remount r/o */
-+	down_read(&newmnt->mnt_sb->s_umount);
-+	if (newmnt->mnt_sb->s_flags & MS_RDONLY)
-+		mnt_flags |= MNT_READONLY;
-+
-+	newmnt->mnt_flags = mnt_flags;
-+	up_read(&newmnt->mnt_sb->s_umount);
-+
- 	down_write(&namespace_sem);
- 	/* Something was mounted here while we slept */
- 	while (d_mountpoint(path->dentry) &&
-@@ -1801,7 +1871,6 @@ int do_add_mount(struct vfsmount *newmnt
- 	if (S_ISLNK(newmnt->mnt_root->d_inode->i_mode))
- 		goto unlock;
- 
--	newmnt->mnt_flags = mnt_flags;
- 	if ((err = graft_tree(newmnt, path)))
- 		goto unlock;
- 
-Index: linux-2.6/fs/super.c
-===================================================================
---- linux-2.6.orig/fs/super.c	2010-10-22 16:02:14.000000000 +0200
-+++ linux-2.6/fs/super.c	2010-10-22 17:48:16.000000000 +0200
-@@ -573,18 +573,31 @@ int do_remount_sb(struct super_block *sb
- 	/* If we are remounting RDONLY and current sb is read/write,
- 	   make sure there are no rw files opened */
- 	if (remount_ro) {
--		if (force)
-+		if (force) {
- 			mark_files_ro(sb);
--		else if (!fs_may_remount_ro(sb))
--			return -EBUSY;
-+		} else {
-+			retval = sb_prepare_remount_readonly(sb);
-+			if (retval)
-+				return retval;
-+
-+			retval = -EBUSY;
-+			if (!fs_may_remount_ro(sb))
-+				goto cancel_readonly;
-+		}
- 	}
- 
- 	if (sb->s_op->remount_fs) {
- 		retval = sb->s_op->remount_fs(sb, &flags, data);
- 		/* If forced remount, go ahead despite any errors */
--		if (retval && !force)
-+		if (retval && !force) {
-+			if (remount_ro)
-+				goto cancel_readonly;
- 			return retval;
-+		}
- 	}
-+	if (remount_ro && !force)
-+		sb_finish_remount_readonly(sb);
-+
- 	sb->s_flags = (sb->s_flags & ~MS_RMT_MASK) | (flags & MS_RMT_MASK);
- 
- 	/*
-@@ -598,6 +611,10 @@ int do_remount_sb(struct super_block *sb
- 	if (remount_ro && sb->s_bdev)
- 		invalidate_bdev(sb->s_bdev);
- 	return 0;
-+
-+cancel_readonly:
-+	sb_cancel_remount_readonly(sb);
-+	return retval;
- }
- 
- static void do_emergency_remount(struct work_struct *work)
-Index: linux-2.6/include/linux/mount.h
-===================================================================
---- linux-2.6.orig/include/linux/mount.h	2010-10-22 16:02:14.000000000 +0200
-+++ linux-2.6/include/linux/mount.h	2010-10-22 17:59:30.000000000 +0200
-@@ -30,6 +30,7 @@ struct mnt_namespace;
- 
- #define MNT_SHRINKABLE	0x100
- #define MNT_WRITE_HOLD	0x200
-+#define MNT_WAS_WRITE	0x400   /* used by remount to remember write mounts */
- 
- #define MNT_SHARED	0x1000	/* if the vfsmount is a shared mount */
- #define MNT_UNBINDABLE	0x2000	/* if the vfsmount is a unbindable mount */
