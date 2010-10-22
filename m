@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754377Ab0JVHGY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 03:06:24 -0400
-Received: from statler.bytemark.co.uk ([212.110.162.18]:36133 "EHLO
+	id S1754033Ab0JVHJc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 03:09:32 -0400
+Received: from statler.bytemark.co.uk ([212.110.162.18]:59126 "EHLO
 	statler.bytemark.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752015Ab0JVHGV (ORCPT
+	with ESMTP id S1751708Ab0JVHJb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 03:06:21 -0400
+	Fri, 22 Oct 2010 03:09:31 -0400
 From: "Emilio G. Cota" <cota@braap.org>
 To: Greg KH <greg@kroah.com>
 Cc: Martyn Welch <martyn.welch@ge.com>, LKML <linux-kernel@vger.kernel.org>,
         Juan David Gonzalez Cobas <david.cobas@gmail.com>
-Subject: [PATCH 21/30] staging/vme: keep a list of registered buses (bridges)
-Date: Fri, 22 Oct 2010 02:36:43 -0400
-Message-Id: <1287729412-24356-22-git-send-email-cota@braap.org>
+Subject: [PATCH 16/30] staging/vme_user: mark user-space buffers with __user
+Date: Fri, 22 Oct 2010 02:36:38 -0400
+Message-Id: <1287729412-24356-17-git-send-email-cota@braap.org>
 X-Mailer: git-send-email 1.7.3.1
 In-Reply-To: <1287729412-24356-1-git-send-email-cota@braap.org>
 References: <1287729412-24356-1-git-send-email-cota@braap.org>
@@ -23,113 +23,110 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Emilio G. Cota <cota@braap.org>
 
-This paves the way for upcoming changes.
-
 Signed-off-by: Emilio G. Cota <cota@braap.org>
 ---
- drivers/staging/vme/vme.c        |   25 ++++++++++++++++---------
- drivers/staging/vme/vme_bridge.h |    1 +
- 2 files changed, 17 insertions(+), 9 deletions(-)
+ drivers/staging/vme/devices/vme_user.c |   25 +++++++++++--------------
+ 1 files changed, 11 insertions(+), 14 deletions(-)
 
-diff --git a/drivers/staging/vme/vme.c b/drivers/staging/vme/vme.c
-index 357748e..10a6435 100644
---- a/drivers/staging/vme/vme.c
-+++ b/drivers/staging/vme/vme.c
-@@ -34,8 +34,12 @@
- #include "vme.h"
- #include "vme_bridge.h"
+diff --git a/drivers/staging/vme/devices/vme_user.c b/drivers/staging/vme/devices/vme_user.c
+index ead30d2..a7b97be 100644
+--- a/drivers/staging/vme/devices/vme_user.c
++++ b/drivers/staging/vme/devices/vme_user.c
+@@ -129,8 +129,8 @@ static const int type[VME_DEVS] = {	MASTER_MINOR,	MASTER_MINOR,
  
--/* Bitmask and mutex to keep track of bridge numbers */
-+/*
-+ * List of registered buses (bridges) and available bus numbers, both protected
-+ * by the same mutex.
-+ */
- static unsigned int vme_bus_numbers;
-+static LIST_HEAD(vme_buses_list);
- static DEFINE_MUTEX(vme_buses_lock);
+ static int vme_user_open(struct inode *, struct file *);
+ static int vme_user_release(struct inode *, struct file *);
+-static ssize_t vme_user_read(struct file *, char *, size_t, loff_t *);
+-static ssize_t vme_user_write(struct file *, const char *, size_t, loff_t *);
++static ssize_t vme_user_read(struct file *, char __user *, size_t, loff_t *);
++static ssize_t vme_user_write(struct file *, const char __user *, size_t, loff_t *);
+ static loff_t vme_user_llseek(struct file *, loff_t, int);
+ static long vme_user_unlocked_ioctl(struct file *, unsigned int, unsigned long);
  
- static void __exit vme_exit(void);
-@@ -1308,8 +1312,9 @@ EXPORT_SYMBOL(vme_slot_get);
- /* - Bridge Registration --------------------------------------------------- */
- 
- /* call with vme_buses_lock held */
--static int __vme_alloc_bus_num(int *bus)
-+static int __vme_register_bus(struct vme_bridge *bridge)
+@@ -246,7 +246,7 @@ static ssize_t resource_to_user(int minor, char __user *buf, size_t count,
+  * page) transfers will lock the user space buffer into memory and then
+  * transfer the data directly from the user space buffers out to VME.
+  */
+-static ssize_t resource_from_user(unsigned int minor, const char *buf,
++static ssize_t resource_from_user(unsigned int minor, const char __user *buf,
+ 	size_t count, loff_t *ppos)
  {
-+	int *bus = &bridge->num;
- 	int index;
- 
- 	if (*bus == -1) {
-@@ -1331,24 +1336,26 @@ static int __vme_alloc_bus_num(int *bus)
- 			return -EBUSY;
- 		}
- 	}
-+	list_add_tail(&bridge->buses_list, &vme_buses_list);
- 	vme_bus_numbers |= 1 << *bus;
- 	return 0;
- }
- 
--static int vme_alloc_bus_num(int *bus)
-+static int vme_register_bus(struct vme_bridge *bridge)
- {
- 	int ret;
- 
- 	mutex_lock(&vme_buses_lock);
--	ret = __vme_alloc_bus_num(bus);
-+	ret = __vme_register_bus(bridge);
- 	mutex_unlock(&vme_buses_lock);
- 	return ret;
- }
- 
--static void vme_free_bus_num(int bus)
-+static void vme_unregister_bus(struct vme_bridge *bridge)
- {
- 	mutex_lock(&vme_buses_lock);
--	vme_bus_numbers &= ~(0x1 << bus);
-+	vme_bus_numbers &= ~(0x1 << bridge->num);
-+	list_del(&bridge->buses_list);
- 	mutex_unlock(&vme_buses_lock);
- }
- 
-@@ -1363,7 +1370,7 @@ int vme_register_bridge(struct vme_bridge *bridge)
- 	int retval;
- 	int i;
- 
--	retval = vme_alloc_bus_num(&bridge->num);
-+	retval = vme_register_bus(bridge);
- 	if (retval)
- 		return retval;
- 
-@@ -1399,7 +1406,7 @@ err_reg:
- 		dev = &bridge->dev[i];
- 		device_unregister(dev);
- 	}
--	vme_free_bus_num(bridge->num);
-+	vme_unregister_bus(bridge);
+ 	ssize_t retval;
+@@ -293,7 +293,7 @@ static ssize_t buffer_to_user(unsigned int minor, char __user *buf,
  	return retval;
  }
- EXPORT_SYMBOL(vme_register_bridge);
-@@ -1414,7 +1421,7 @@ void vme_unregister_bridge(struct vme_bridge *bridge)
- 		dev = &bridge->dev[i];
- 		device_unregister(dev);
- 	}
--	vme_free_bus_num(bridge->num);
-+	vme_unregister_bus(bridge);
+ 
+-static ssize_t buffer_from_user(unsigned int minor, const char *buf,
++static ssize_t buffer_from_user(unsigned int minor, const char __user *buf,
+ 	size_t count, loff_t *ppos)
+ {
+ 	void *image_ptr;
+@@ -312,7 +312,7 @@ static ssize_t buffer_from_user(unsigned int minor, const char *buf,
+ 	return retval;
  }
- EXPORT_SYMBOL(vme_unregister_bridge);
  
-diff --git a/drivers/staging/vme/vme_bridge.h b/drivers/staging/vme/vme_bridge.h
-index 4c6ec31..3bb1d7b 100644
---- a/drivers/staging/vme/vme_bridge.h
-+++ b/drivers/staging/vme/vme_bridge.h
-@@ -113,6 +113,7 @@ struct vme_bridge {
+-static ssize_t vme_user_read(struct file *file, char *buf, size_t count,
++static ssize_t vme_user_read(struct file *file, char __user *buf, size_t count,
+ 			loff_t *ppos)
+ {
+ 	unsigned int minor = MINOR(file->f_dentry->d_inode->i_rdev);
+@@ -356,7 +356,7 @@ static ssize_t vme_user_read(struct file *file, char *buf, size_t count,
+ 	return retval;
+ }
  
- 	/* Bridge Info - XXX Move to private structure? */
- 	struct device *parent;	/* Generic device struct (pdev->dev for PCI) */
-+	struct list_head buses_list;
- 	void *driver_priv;	/* Private pointer for the bridge driver */
+-static ssize_t vme_user_write(struct file *file, const char *buf, size_t count,
++static ssize_t vme_user_write(struct file *file, const char __user *buf, size_t count,
+ 			 loff_t *ppos)
+ {
+ 	unsigned int minor = MINOR(file->f_dentry->d_inode->i_rdev);
+@@ -455,6 +455,7 @@ static int vme_user_ioctl(struct inode *inode, struct file *file,
+ 	unsigned int minor = MINOR(inode->i_rdev);
+ 	int retval;
+ 	dma_addr_t pci_addr;
++	void __user *argp = (void __user *)arg;
  
- 	struct device dev[VME_SLOTS_MAX];	/* Device registered with
+ 	statistics.ioctls++;
+ 
+@@ -474,8 +475,7 @@ static int vme_user_ioctl(struct inode *inode, struct file *file,
+ 				&master.size, &master.aspace,
+ 				&master.cycle, &master.dwidth);
+ 
+-			copied = copy_to_user((char *)arg, &master,
+-				sizeof(struct vme_master));
++			copied = copy_to_user(argp, &master, sizeof(struct vme_master));
+ 			if (copied != 0) {
+ 				printk(KERN_WARNING "Partial copy to "
+ 					"userspace\n");
+@@ -487,8 +487,7 @@ static int vme_user_ioctl(struct inode *inode, struct file *file,
+ 
+ 		case VME_SET_MASTER:
+ 
+-			copied = copy_from_user(&master, (char *)arg,
+-				sizeof(master));
++			copied = copy_from_user(&master, argp, sizeof(master));
+ 			if (copied != 0) {
+ 				printk(KERN_WARNING "Partial copy from "
+ 					"userspace\n");
+@@ -518,8 +517,7 @@ static int vme_user_ioctl(struct inode *inode, struct file *file,
+ 				&slave.size, &pci_addr, &slave.aspace,
+ 				&slave.cycle);
+ 
+-			copied = copy_to_user((char *)arg, &slave,
+-				sizeof(struct vme_slave));
++			copied = copy_to_user(argp, &slave, sizeof(struct vme_slave));
+ 			if (copied != 0) {
+ 				printk(KERN_WARNING "Partial copy to "
+ 					"userspace\n");
+@@ -531,8 +529,7 @@ static int vme_user_ioctl(struct inode *inode, struct file *file,
+ 
+ 		case VME_SET_SLAVE:
+ 
+-			copied = copy_from_user(&slave, (char *)arg,
+-				sizeof(slave));
++			copied = copy_from_user(&slave, argp, sizeof(slave));
+ 			if (copied != 0) {
+ 				printk(KERN_WARNING "Partial copy from "
+ 					"userspace\n");
 -- 
 1.7.1
 
