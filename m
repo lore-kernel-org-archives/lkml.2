@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932789Ab0JVTTr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 15:19:47 -0400
-Received: from kroah.org ([198.145.64.141]:34019 "EHLO coco.kroah.org"
+	id S932814Ab0JVTUI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 15:20:08 -0400
+Received: from kroah.org ([198.145.64.141]:34001 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759267Ab0JVS4J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 14:56:09 -0400
+	id S1759252Ab0JVS4G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Oct 2010 14:56:06 -0400
 X-Mailbox-Line: From gregkh@clark.site Fri Oct 22 11:52:29 2010
-Message-Id: <20101022185229.670935582@clark.site>
+Message-Id: <20101022185229.391234662@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 22 Oct 2010 11:51:00 -0700
+Date: Fri, 22 Oct 2010 11:50:57 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Joerg Roedel <joerg.roedel@amd.com>
-Subject: [026/103] x86/amd-iommu: Set iommu configuration flags in enable-loop
+        Jason Wang <jason77.wang@gmail.com>,
+        =?ISO-8859-15?q?Jean-Fran=C3=A7ois=20Moine?= <moinejf@free.fr>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>
+Subject: [023/103] V4L/DVB: gspca - main: Fix a crash of some webcams on ARM arch
 In-Reply-To: <20101022185455.GA9114@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,107 +27,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Joerg Roedel <joerg.roedel@amd.com>
+From: Jason Wang <jason77.wang@gmail.com>
 
-commit e9bf51971157e367aabfc111a8219db010f69cd4 upstream.
+commit 882787ff8fdeb0be790547ee9b22b281095e95da upstream.
 
-This patch moves the setting of the configuration and
-feature flags out out the acpi table parsing path and moves
-it into the iommu-enable path. This is needed to reliably
-fix resume-from-s3.
+When plugging some webcams on ARM, the system crashes.
+This is because we alloc buffer for an urb through usb_buffer_alloc,
+the alloced buffer is already in DMA coherent region, so we should
+set the flag of this urb to URB_NO_TRANSFER_DMA_MAP, otherwise when
+we submit this urb, the hcd core will handle this address as an
+non-DMA address and call dma_map_single/sg to map it. On arm
+architecture, dma_map_single a DMA coherent address will be catched
+by a BUG_ON().
 
-Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
+Signed-off-by: Jason Wang <jason77.wang@gmail.com>
+Signed-off-by: Jean-François Moine <moinejf@free.fr>
+Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/x86/include/asm/amd_iommu_types.h |    3 ++
- arch/x86/kernel/amd_iommu_init.c       |   49 ++++++++++++++++++---------------
- 2 files changed, 30 insertions(+), 22 deletions(-)
+ drivers/media/video/gspca/gspca.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/arch/x86/include/asm/amd_iommu_types.h
-+++ b/arch/x86/include/asm/amd_iommu_types.h
-@@ -368,6 +368,9 @@ struct amd_iommu {
- 	/* capabilities of that IOMMU read from ACPI */
- 	u32 cap;
- 
-+	/* flags read from acpi table */
-+	u8 acpi_flags;
-+
- 	/*
- 	 * Capability pointer. There could be more than one IOMMU per PCI
- 	 * device function if there are more than one AMD IOMMU capability
---- a/arch/x86/kernel/amd_iommu_init.c
-+++ b/arch/x86/kernel/amd_iommu_init.c
-@@ -649,29 +649,9 @@ static void __init init_iommu_from_acpi(
- 	struct ivhd_entry *e;
- 
- 	/*
--	 * First set the recommended feature enable bits from ACPI
--	 * into the IOMMU control registers
-+	 * First save the recommended feature enable bits from ACPI
- 	 */
--	h->flags & IVHD_FLAG_HT_TUN_EN_MASK ?
--		iommu_feature_enable(iommu, CONTROL_HT_TUN_EN) :
--		iommu_feature_disable(iommu, CONTROL_HT_TUN_EN);
--
--	h->flags & IVHD_FLAG_PASSPW_EN_MASK ?
--		iommu_feature_enable(iommu, CONTROL_PASSPW_EN) :
--		iommu_feature_disable(iommu, CONTROL_PASSPW_EN);
--
--	h->flags & IVHD_FLAG_RESPASSPW_EN_MASK ?
--		iommu_feature_enable(iommu, CONTROL_RESPASSPW_EN) :
--		iommu_feature_disable(iommu, CONTROL_RESPASSPW_EN);
--
--	h->flags & IVHD_FLAG_ISOC_EN_MASK ?
--		iommu_feature_enable(iommu, CONTROL_ISOC_EN) :
--		iommu_feature_disable(iommu, CONTROL_ISOC_EN);
--
--	/*
--	 * make IOMMU memory accesses cache coherent
--	 */
--	iommu_feature_enable(iommu, CONTROL_COHERENT_EN);
-+	iommu->acpi_flags = h->flags;
- 
- 	/*
- 	 * Done. Now parse the device entries
-@@ -1116,6 +1096,30 @@ static void init_device_table(void)
- 	}
- }
- 
-+static void iommu_init_flags(struct amd_iommu *iommu)
-+{
-+	iommu->acpi_flags & IVHD_FLAG_HT_TUN_EN_MASK ?
-+		iommu_feature_enable(iommu, CONTROL_HT_TUN_EN) :
-+		iommu_feature_disable(iommu, CONTROL_HT_TUN_EN);
-+
-+	iommu->acpi_flags & IVHD_FLAG_PASSPW_EN_MASK ?
-+		iommu_feature_enable(iommu, CONTROL_PASSPW_EN) :
-+		iommu_feature_disable(iommu, CONTROL_PASSPW_EN);
-+
-+	iommu->acpi_flags & IVHD_FLAG_RESPASSPW_EN_MASK ?
-+		iommu_feature_enable(iommu, CONTROL_RESPASSPW_EN) :
-+		iommu_feature_disable(iommu, CONTROL_RESPASSPW_EN);
-+
-+	iommu->acpi_flags & IVHD_FLAG_ISOC_EN_MASK ?
-+		iommu_feature_enable(iommu, CONTROL_ISOC_EN) :
-+		iommu_feature_disable(iommu, CONTROL_ISOC_EN);
-+
-+	/*
-+	 * make IOMMU memory accesses cache coherent
-+	 */
-+	iommu_feature_enable(iommu, CONTROL_COHERENT_EN);
-+}
-+
- /*
-  * This function finally enables all IOMMUs found in the system after
-  * they have been initialized
-@@ -1126,6 +1130,7 @@ static void enable_iommus(void)
- 
- 	for_each_iommu(iommu) {
- 		iommu_disable(iommu);
-+		iommu_init_flags(iommu);
- 		iommu_set_device_table(iommu);
- 		iommu_enable_command_buffer(iommu);
- 		iommu_enable_event_buffer(iommu);
+--- a/drivers/media/video/gspca/gspca.c
++++ b/drivers/media/video/gspca/gspca.c
+@@ -223,6 +223,7 @@ static int alloc_and_submit_int_urb(stru
+ 		usb_rcvintpipe(dev, ep->bEndpointAddress),
+ 		buffer, buffer_len,
+ 		int_irq, (void *)gspca_dev, interval);
++	urb->transfer_flags |= URB_NO_TRANSFER_DMA_MAP;
+ 	gspca_dev->int_urb = urb;
+ 	ret = usb_submit_urb(urb, GFP_KERNEL);
+ 	if (ret < 0) {
 
 
