@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932748Ab0JVTA7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 15:00:59 -0400
-Received: from kroah.org ([198.145.64.141]:34478 "EHLO coco.kroah.org"
+	id S1759517Ab0JVS5I (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 14:57:08 -0400
+Received: from kroah.org ([198.145.64.141]:34387 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759542Ab0JVS5N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 14:57:13 -0400
-X-Mailbox-Line: From gregkh@clark.site Fri Oct 22 11:52:36 2010
-Message-Id: <20101022185235.931051124@clark.site>
+	id S1759400Ab0JVS5A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Oct 2010 14:57:00 -0400
+X-Mailbox-Line: From gregkh@clark.site Fri Oct 22 11:52:34 2010
+Message-Id: <20101022185234.713243789@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 22 Oct 2010 11:52:10 -0700
+Date: Fri, 22 Oct 2010 11:51:56 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Zhenyu Wang <zhenyuw@linux.intel.com>,
-        Chris Wilson <chris@chris-wilson.co.uk>
-Subject: [096/103] agp/intel: Fix cache control for Sandybridge
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        James Bottomley <James.Bottomley@suse.de>
+Subject: [082/103] [SCSI] Fix VPD inquiry page wrapper
 In-Reply-To: <20101022185455.GA9114@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,180 +26,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Zhenyu Wang <zhenyuw@linux.intel.com>
+From: Martin K. Petersen <martin.petersen@oracle.com>
 
-commit f8f235e5bbf4e61f3e0886a44afb1dc4cfe8f337 upstream.
+commit 16d3ea26f82271fef9b1c4523b5e1ea31fa39eec upstream.
 
-Sandybridge GTT has new cache control bits in PTE, which controls
-graphics page cache in LLC or LLC/MLC, so we need to extend the mask
-function to respect the new bits.
+Fix two bugs in the VPD page wrapper:
 
-And set cache control to always LLC only by default on Gen6.
+    - Don't return failure if the user asked for page 0
 
-Signed-off-by: Zhenyu Wang <zhenyuw@linux.intel.com>
-Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
+    - The end of buffer check failed to account for the page header size
+      and consequently didn't work
+
+Signed-off-by: Martin K. Petersen <martin.petersen@oracle.com>
+Signed-off-by: James Bottomley <James.Bottomley@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
-
 ---
- drivers/char/agp/intel-agp.c    |    1 
- drivers/char/agp/intel-agp.h    |    6 ++++
- drivers/char/agp/intel-gtt.c    |   50 ++++++++++++++++++++++++++++++++--------
- drivers/gpu/drm/i915/i915_gem.c |    1 
- include/linux/intel-gtt.h       |   20 ++++++++++++++++
- 5 files changed, 68 insertions(+), 10 deletions(-)
+ drivers/scsi/scsi.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/char/agp/intel-agp.c
-+++ b/drivers/char/agp/intel-agp.c
-@@ -12,6 +12,7 @@
- #include <asm/smp.h>
- #include "agp.h"
- #include "intel-agp.h"
-+#include <linux/intel-gtt.h>
+--- a/drivers/scsi/scsi.c
++++ b/drivers/scsi/scsi.c
+@@ -1046,13 +1046,13 @@ int scsi_get_vpd_page(struct scsi_device
  
- #include "intel-gtt.c"
+ 	/* If the user actually wanted this page, we can skip the rest */
+ 	if (page == 0)
+-		return -EINVAL;
++		return 0;
  
---- a/drivers/char/agp/intel-agp.h
-+++ b/drivers/char/agp/intel-agp.h
-@@ -60,6 +60,12 @@
- #define I810_PTE_LOCAL		0x00000002
- #define I810_PTE_VALID		0x00000001
- #define I830_PTE_SYSTEM_CACHED  0x00000006
-+/* GT PTE cache control fields */
-+#define GEN6_PTE_UNCACHED	0x00000002
-+#define GEN6_PTE_LLC		0x00000004
-+#define GEN6_PTE_LLC_MLC	0x00000006
-+#define GEN6_PTE_GFDT		0x00000008
-+
- #define I810_SMRAM_MISCC	0x70
- #define I810_GFX_MEM_WIN_SIZE	0x00010000
- #define I810_GFX_MEM_WIN_32M	0x00010000
---- a/drivers/char/agp/intel-gtt.c
-+++ b/drivers/char/agp/intel-gtt.c
-@@ -49,6 +49,26 @@ static struct gatt_mask intel_i810_masks
- 	 .type = INTEL_AGP_CACHED_MEMORY}
- };
+ 	for (i = 0; i < min((int)buf[3], buf_len - 4); i++)
+ 		if (buf[i + 4] == page)
+ 			goto found;
  
-+#define INTEL_AGP_UNCACHED_MEMORY              0
-+#define INTEL_AGP_CACHED_MEMORY_LLC            1
-+#define INTEL_AGP_CACHED_MEMORY_LLC_GFDT       2
-+#define INTEL_AGP_CACHED_MEMORY_LLC_MLC        3
-+#define INTEL_AGP_CACHED_MEMORY_LLC_MLC_GFDT   4
-+
-+static struct gatt_mask intel_gen6_masks[] =
-+{
-+	{.mask = I810_PTE_VALID | GEN6_PTE_UNCACHED,
-+	 .type = INTEL_AGP_UNCACHED_MEMORY },
-+	{.mask = I810_PTE_VALID | GEN6_PTE_LLC,
-+         .type = INTEL_AGP_CACHED_MEMORY_LLC },
-+	{.mask = I810_PTE_VALID | GEN6_PTE_LLC | GEN6_PTE_GFDT,
-+         .type = INTEL_AGP_CACHED_MEMORY_LLC_GFDT },
-+	{.mask = I810_PTE_VALID | GEN6_PTE_LLC_MLC,
-+         .type = INTEL_AGP_CACHED_MEMORY_LLC_MLC },
-+	{.mask = I810_PTE_VALID | GEN6_PTE_LLC_MLC | GEN6_PTE_GFDT,
-+         .type = INTEL_AGP_CACHED_MEMORY_LLC_MLC_GFDT },
-+};
-+
- static struct _intel_private {
- 	struct pci_dev *pcidev;	/* device one */
- 	u8 __iomem *registers;
-@@ -175,13 +195,6 @@ static void intel_agp_insert_sg_entries(
- 					off_t pg_start, int mask_type)
- {
- 	int i, j;
--	u32 cache_bits = 0;
--
--	if (agp_bridge->dev->device == PCI_DEVICE_ID_INTEL_SANDYBRIDGE_HB ||
--	    agp_bridge->dev->device == PCI_DEVICE_ID_INTEL_SANDYBRIDGE_M_HB)
--	{
--		cache_bits = I830_PTE_SYSTEM_CACHED;
--	}
- 
- 	for (i = 0, j = pg_start; i < mem->page_count; i++, j++) {
- 		writel(agp_bridge->driver->mask_memory(agp_bridge,
-@@ -314,6 +327,23 @@ static int intel_i830_type_to_mask_type(
- 		return 0;
- }
- 
-+static int intel_gen6_type_to_mask_type(struct agp_bridge_data *bridge,
-+					int type)
-+{
-+	unsigned int type_mask = type & ~AGP_USER_CACHED_MEMORY_GFDT;
-+	unsigned int gfdt = type & AGP_USER_CACHED_MEMORY_GFDT;
-+
-+	if (type_mask == AGP_USER_UNCACHED_MEMORY)
-+		return INTEL_AGP_UNCACHED_MEMORY;
-+	else if (type_mask == AGP_USER_CACHED_MEMORY_LLC_MLC)
-+		return gfdt ? INTEL_AGP_CACHED_MEMORY_LLC_MLC_GFDT :
-+			      INTEL_AGP_CACHED_MEMORY_LLC_MLC;
-+	else /* set 'normal'/'cached' to LLC by default */
-+		return gfdt ? INTEL_AGP_CACHED_MEMORY_LLC_GFDT :
-+			      INTEL_AGP_CACHED_MEMORY_LLC;
-+}
-+
-+
- static int intel_i810_insert_entries(struct agp_memory *mem, off_t pg_start,
- 				int type)
- {
-@@ -1155,7 +1185,7 @@ static int intel_i915_insert_entries(str
- 
- 	mask_type = agp_bridge->driver->agp_type_to_mask_type(agp_bridge, type);
- 
--	if (mask_type != 0 && mask_type != AGP_PHYS_MEMORY &&
-+	if (!IS_SNB && mask_type != 0 && mask_type != AGP_PHYS_MEMORY &&
- 	    mask_type != INTEL_AGP_CACHED_MEMORY)
- 		goto out_err;
- 
-@@ -1546,7 +1576,7 @@ static const struct agp_bridge_driver in
- 	.fetch_size		= intel_i9xx_fetch_size,
- 	.cleanup		= intel_i915_cleanup,
- 	.mask_memory		= intel_gen6_mask_memory,
--	.masks			= intel_i810_masks,
-+	.masks			= intel_gen6_masks,
- 	.agp_enable		= intel_i810_agp_enable,
- 	.cache_flush		= global_cache_flush,
- 	.create_gatt_table	= intel_i965_create_gatt_table,
-@@ -1559,7 +1589,7 @@ static const struct agp_bridge_driver in
- 	.agp_alloc_pages        = agp_generic_alloc_pages,
- 	.agp_destroy_page	= agp_generic_destroy_page,
- 	.agp_destroy_pages      = agp_generic_destroy_pages,
--	.agp_type_to_mask_type	= intel_i830_type_to_mask_type,
-+	.agp_type_to_mask_type	= intel_gen6_type_to_mask_type,
- 	.chipset_flush		= intel_i915_chipset_flush,
- #ifdef USE_PCI_DMA_API
- 	.agp_map_page		= intel_agp_map_page,
---- a/drivers/gpu/drm/i915/i915_gem.c
-+++ b/drivers/gpu/drm/i915/i915_gem.c
-@@ -34,6 +34,7 @@
- #include <linux/slab.h>
- #include <linux/swap.h>
- #include <linux/pci.h>
-+#include <linux/intel-gtt.h>
- 
- static void i915_gem_object_flush_gpu_write_domain(struct drm_gem_object *obj);
- static void i915_gem_object_flush_gtt_write_domain(struct drm_gem_object *obj);
---- /dev/null
-+++ b/include/linux/intel-gtt.h
-@@ -0,0 +1,20 @@
-+/*
-+ * Common Intel AGPGART and GTT definitions.
-+ */
-+#ifndef _INTEL_GTT_H
-+#define _INTEL_GTT_H
-+
-+#include <linux/agp_backend.h>
-+
-+/* This is for Intel only GTT controls.
-+ *
-+ * Sandybridge: AGP_USER_CACHED_MEMORY default to LLC only
-+ */
-+
-+#define AGP_USER_CACHED_MEMORY_LLC_MLC (AGP_USER_TYPES + 2)
-+#define AGP_USER_UNCACHED_MEMORY (AGP_USER_TYPES + 4)
-+
-+/* flag for GFDT type */
-+#define AGP_USER_CACHED_MEMORY_GFDT (1 << 3)
-+
-+#endif
+-	if (i < buf[3] && i > buf_len)
++	if (i < buf[3] && i >= buf_len - 4)
+ 		/* ran off the end of the buffer, give us benefit of doubt */
+ 		goto found;
+ 	/* The device claims it doesn't support the requested page */
 
 
