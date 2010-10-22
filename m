@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758681Ab0JVSjH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 14:39:07 -0400
-Received: from kroah.org ([198.145.64.141]:45881 "EHLO coco.kroah.org"
+	id S1758788Ab0JVSkN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 14:40:13 -0400
+Received: from kroah.org ([198.145.64.141]:45895 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758319Ab0JVSjE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 14:39:04 -0400
+	id S1758683Ab0JVSjH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Oct 2010 14:39:07 -0400
 X-Mailbox-Line: From gregkh@clark.site Fri Oct 22 11:36:01 2010
-Message-Id: <20101022183601.460948927@clark.site>
+Message-Id: <20101022183601.817868003@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 22 Oct 2010 11:35:26 -0700
+Date: Fri, 22 Oct 2010 11:35:30 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Jacob Pan <jacob.jun.pan@linux.intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: [59/66] x86: detect scattered cpuid features earlier
+        Roland McGrath <roland@redhat.com>, Chuck Ebbert <cebbert@redhat.com>
+Subject: [63/66] execve: make responsive to SIGKILL with large arguments
 In-Reply-To: <20101022183711.GA23214@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,44 +25,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jacob Pan <jacob.jun.pan@linux.intel.com>
+From: Roland McGrath <roland@redhat.com>
 
-commit 1dedefd1a066a795a87afca9c0236e1a94de9bf6 upstream.
+commit 9aea5a65aa7a1af9a4236dfaeb0088f1624f9919 upstream.
 
-Some extra CPU features such as ARAT is needed in early boot so
-that x86_init function pointers can be set up properly.
-http://lkml.org/lkml/2010/5/18/519
-At start_kernel() level, this patch moves init_scattered_cpuid_features()
-from check_bugs() to setup_arch() -> early_cpu_init() which is earlier than
-platform specific x86_init layer setup. Suggested by HPA.
+An execve with a very large total of argument/environment strings
+can take a really long time in the execve system call.  It runs
+uninterruptibly to count and copy all the strings.  This change
+makes it abort the exec quickly if sent a SIGKILL.
 
-Signed-off-by: Jacob Pan <jacob.jun.pan@linux.intel.com>
-LKML-Reference: <1274295685-6774-2-git-send-email-jacob.jun.pan@linux.intel.com>
-Acked-by: Thomas Gleixner <tglx@linutronix.de>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+Note that this is the conservative change, to interrupt only for
+SIGKILL, by using fatal_signal_pending().  It would be perfectly
+correct semantics to let any signal interrupt the string-copying in
+execve, i.e. use signal_pending() instead of fatal_signal_pending().
+We'll save that change for later, since it could have user-visible
+consequences, such as having a timer set too quickly make it so that
+an execve can never complete, though it always happened to work before.
+
+Signed-off-by: Roland McGrath <roland@redhat.com>
+Reviewed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: Chuck Ebbert <cebbert@redhat.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 
 ---
- arch/x86/kernel/cpu/common.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/exec.c |    7 +++++++
+ 1 file changed, 7 insertions(+)
 
---- a/arch/x86/kernel/cpu/common.c
-+++ b/arch/x86/kernel/cpu/common.c
-@@ -579,6 +579,7 @@ void __cpuinit get_cpu_cap(struct cpuinf
- 	if (c->extended_cpuid_level >= 0x80000007)
- 		c->x86_power = cpuid_edx(0x80000007);
+--- a/fs/exec.c
++++ b/fs/exec.c
+@@ -376,6 +376,9 @@ static int count(char __user * __user *
+ 			argv++;
+ 			if (i++ >= max)
+ 				return -E2BIG;
++
++			if (fatal_signal_pending(current))
++				return -ERESTARTNOHAND;
+ 			cond_resched();
+ 		}
+ 	}
+@@ -419,6 +422,10 @@ static int copy_strings(int argc, char _
+ 		while (len > 0) {
+ 			int offset, bytes_to_copy;
  
-+	init_scattered_cpuid_features(c);
- }
++			if (fatal_signal_pending(current)) {
++				ret = -ERESTARTNOHAND;
++				goto out;
++			}
+ 			cond_resched();
  
- static void __cpuinit identify_cpu_without_cpuid(struct cpuinfo_x86 *c)
-@@ -727,7 +728,6 @@ static void __cpuinit generic_identify(s
- 
- 	get_model_name(c); /* Default name */
- 
--	init_scattered_cpuid_features(c);
- 	detect_nopl(c);
- }
- 
+ 			offset = pos % PAGE_SIZE;
 
 
