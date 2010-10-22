@@ -1,69 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754027Ab0JVFTD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 01:19:03 -0400
-Received: from mail.perches.com ([173.55.12.10]:3464 "EHLO mail.perches.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752793Ab0JVFR0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 01:17:26 -0400
-From: Joe Perches <joe@perches.com>
-To: Jiri Kosina <trivial@kernel.org>
-Cc: Geoff Levand <geoff@infradead.org>,
-        Grant Grundler <grundler@parisc-linux.org>,
-        Kyle McMartin <kyle@mcmartin.ca>, netdev@vger.kernel.org,
-        cbe-oss-dev@lists.ozlabs.org, linuxppc-dev@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 3/9] drivers/net: typo fix of faild to failed
-Date: Thu, 21 Oct 2010 22:17:14 -0700
-Message-Id: <246fa5db6273b9f79c3bb27ab2abb22e85fe7b38.1287724261.git.joe@perches.com>
-X-Mailer: git-send-email 1.7.3.1.g432b3.dirty
-In-Reply-To: <cover.1287724261.git.joe@perches.com>
+	id S1753186Ab0JVFVe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 01:21:34 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:55010 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752646Ab0JVFVd convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Oct 2010 01:21:33 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=tkdaz2EOoAU2e6WPck9lj3PY3Pj7CRwEwM1vxK/OMrKKYPYuSQkIaUy0tPmzt64ys+
+         xHyMN5MuOuQ5sabZTmlWVyZaWGDZXD0+IUYZt0O3ZUaLcvAJB9x343W5N7VsLwoywEFe
+         aqFJyVnhyK0RVyIw7RKCotuPJM9G6PQbNQS1g=
+MIME-Version: 1.0
+In-Reply-To: <4279ee540bfed9c40ba26698bfe7abddb8921ee4.1287724261.git.joe@perches.com>
 References: <cover.1287724261.git.joe@perches.com>
+	<4279ee540bfed9c40ba26698bfe7abddb8921ee4.1287724261.git.joe@perches.com>
+Date: Fri, 22 Oct 2010 13:21:29 +0800
+Message-ID: <AANLkTikG+n_Z4gY9i0gpVk5M+MHW46Tzg_xSnjVgih_e@mail.gmail.com>
+Subject: Re: [PATCH 4/9] drivers/rtc: typo fix of faild to failed
+From: Wan ZongShun <mcuos.com@gmail.com>
+To: Joe Perches <joe@perches.com>
+Cc: Jiri Kosina <trivial@kernel.org>, Alessandro Zummo <a.zummo@towertech.it>,
+        linux-arm-kernel@lists.infradead.org, rtc-linux@googlegroups.com,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Joe Perches <joe@perches.com>
----
- drivers/net/ps3_gelic_net.c |    4 ++--
- drivers/net/tulip/pnic2.c   |    2 +-
- 2 files changed, 3 insertions(+), 3 deletions(-)
+Hi, Joe,
 
-diff --git a/drivers/net/ps3_gelic_net.c b/drivers/net/ps3_gelic_net.c
-index 87d6b8f..49f6700 100644
---- a/drivers/net/ps3_gelic_net.c
-+++ b/drivers/net/ps3_gelic_net.c
-@@ -642,7 +642,7 @@ static inline void gelic_card_disable_rxdmac(struct gelic_card *card)
- 	status = lv1_net_stop_rx_dma(bus_id(card), dev_id(card), 0);
- 	if (status)
- 		dev_err(ctodev(card),
--			"lv1_net_stop_rx_dma faild, %d\n", status);
-+			"lv1_net_stop_rx_dma failed, %d\n", status);
- }
- 
- /**
-@@ -660,7 +660,7 @@ static inline void gelic_card_disable_txdmac(struct gelic_card *card)
- 	status = lv1_net_stop_tx_dma(bus_id(card), dev_id(card), 0);
- 	if (status)
- 		dev_err(ctodev(card),
--			"lv1_net_stop_tx_dma faild, status=%d\n", status);
-+			"lv1_net_stop_tx_dma failed, status=%d\n", status);
- }
- 
- /**
-diff --git a/drivers/net/tulip/pnic2.c b/drivers/net/tulip/pnic2.c
-index b819766..186d725 100644
---- a/drivers/net/tulip/pnic2.c
-+++ b/drivers/net/tulip/pnic2.c
-@@ -59,7 +59,7 @@
-  * Bit 14:12 - autonegotiation state (write 001 to start autonegotiate)
-  * Bit 3     - Autopolarity state
-  * Bit 2     - LS10B - link state of 10baseT 0 - good, 1 - failed
-- * Bit 1     - LS100B - link state of 100baseT 0 - good, 1- faild
-+ * Bit 1     - LS100B - link state of 100baseT 0 - good, 1- failed
-  *
-  *
-  * Data Port Selection Info
+Thanks for your help.
+
+2010/10/22 Joe Perches <joe@perches.com>:
+> Signed-off-by: Joe Perches <joe@perches.com>
+> ---
+>  drivers/rtc/rtc-nuc900.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+>
+> diff --git a/drivers/rtc/rtc-nuc900.c b/drivers/rtc/rtc-nuc900.c
+> index 62de66a..ddb0857 100644
+> --- a/drivers/rtc/rtc-nuc900.c
+> +++ b/drivers/rtc/rtc-nuc900.c
+> @@ -274,7 +274,7 @@ static int __devinit nuc900_rtc_probe(struct platform_device *pdev)
+>        nuc900_rtc->rtcdev = rtc_device_register(pdev->name, &pdev->dev,
+>                                                &nuc900_rtc_ops, THIS_MODULE);
+>        if (IS_ERR(nuc900_rtc->rtcdev)) {
+> -               dev_err(&pdev->dev, "rtc device register faild\n");
+> +               dev_err(&pdev->dev, "rtc device register failed\n");
+
+Acked-by: Wan ZongShun <mcuos.com@gmail.com>
+
+>                err = PTR_ERR(nuc900_rtc->rtcdev);
+>                goto fail3;
+>        }
+> --
+> 1.7.3.1.g432b3.dirty
+>
+>
+
+
+
 -- 
-1.7.3.1.g432b3.dirty
+*linux-arm-kernel mailing list
+mail addr:linux-arm-kernel@lists.infradead.org
+you can subscribe by:
+http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
 
+* linux-arm-NUC900 mailing list
+mail addr:NUC900@googlegroups.com
+main web: https://groups.google.com/group/NUC900
+you can subscribe it by sending me mail:
+mcuos.com@gmail.com
