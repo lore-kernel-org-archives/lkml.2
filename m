@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759688Ab0JVTKl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 15:10:41 -0400
-Received: from kroah.org ([198.145.64.141]:34185 "EHLO coco.kroah.org"
+	id S1759720Ab0JVTKy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 15:10:54 -0400
+Received: from kroah.org ([198.145.64.141]:34176 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759372Ab0JVS4d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 14:56:33 -0400
+	id S1759188Ab0JVS4c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Oct 2010 14:56:32 -0400
 X-Mailbox-Line: From gregkh@clark.site Fri Oct 22 11:52:32 2010
-Message-Id: <20101022185232.020882355@clark.site>
+Message-Id: <20101022185231.927586492@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 22 Oct 2010 11:51:26 -0700
+Date: Fri, 22 Oct 2010 11:51:25 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
         Frederic Weisbecker <fweisbec@gmail.com>,
         Jeff Mahoney <jeffm@suse.com>
-Subject: [052/103] reiserfs: fix unwanted reiserfs lock recursion
+Subject: [051/103] reiserfs: fix dependency inversion between inode and reiserfs mutexes
 In-Reply-To: <20101022185455.GA9114@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,88 +28,73 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Frederic Weisbecker <fweisbec@gmail.com>
 
-commit 9d8117e72bf453dd9d85e0cd322ce4a0f8bccbc0 upstream.
+commit 3f259d092c7a2fdf217823e8f1838530adb0cdb0 upstream.
 
-Prevent from recursively locking the reiserfs lock in reiserfs_unpack()
-because we may call journal_begin() that requires the lock to be taken
-only once, otherwise it won't be able to release the lock while taking
-other mutexes, ending up in inverted dependencies between the journal
-mutex and the reiserfs lock for example.
+The reiserfs mutex already depends on the inode mutex, so we can't lock
+the inode mutex in reiserfs_unpack() without using the safe locking API,
+because reiserfs_unpack() is always called with the reiserfs mutex locked.
 
 This fixes:
 
   =======================================================
   [ INFO: possible circular locking dependency detected ]
-  2.6.35.4.4a #3
+  2.6.35c #13
   -------------------------------------------------------
-  lilo/1620 is trying to acquire lock:
-   (&journal->j_mutex){+.+...}, at: [<d0325bff>] do_journal_begin_r+0x7f/0x340 [reiserfs]
+  lilo/1606 is trying to acquire lock:
+   (&sb->s_type->i_mutex_key#8){+.+.+.}, at: [<d0329450>] reiserfs_unpack+0x60/0x110 [reiserfs]
 
   but task is already holding lock:
-   (&REISERFS_SB(s)->lock){+.+.+.}, at: [<d032a278>] reiserfs_write_lock+0x28/0x40 [reiserfs]
+   (&REISERFS_SB(s)->lock){+.+.+.}, at: [<d032a268>] reiserfs_write_lock+0x28/0x40 [reiserfs]
 
   which lock already depends on the new lock.
 
   the existing dependency chain (in reverse order) is:
 
   -> #1 (&REISERFS_SB(s)->lock){+.+.+.}:
-         [<c10562b7>] lock_acquire+0x67/0x80
-         [<c12facad>] __mutex_lock_common+0x4d/0x410
-         [<c12fb0c8>] mutex_lock_nested+0x18/0x20
-         [<d032a278>] reiserfs_write_lock+0x28/0x40 [reiserfs]
-         [<d0325c06>] do_journal_begin_r+0x86/0x340 [reiserfs]
-         [<d0325f77>] journal_begin+0x77/0x140 [reiserfs]
-         [<d0315be4>] reiserfs_remount+0x224/0x530 [reiserfs]
-         [<c10b6a20>] do_remount_sb+0x60/0x110
-         [<c10cee25>] do_mount+0x625/0x790
-         [<c10cf014>] sys_mount+0x84/0xb0
-         [<c12fca3d>] syscall_call+0x7/0xb
+         [<c1056347>] lock_acquire+0x67/0x80
+         [<c12f083d>] __mutex_lock_common+0x4d/0x410
+         [<c12f0c58>] mutex_lock_nested+0x18/0x20
+         [<d032a268>] reiserfs_write_lock+0x28/0x40 [reiserfs]
+         [<d0329e9a>] reiserfs_lookup_privroot+0x2a/0x90 [reiserfs]
+         [<d0316b81>] reiserfs_fill_super+0x941/0xe60 [reiserfs]
+         [<c10b7d17>] get_sb_bdev+0x117/0x170
+         [<d0313e21>] get_super_block+0x21/0x30 [reiserfs]
+         [<c10b74ba>] vfs_kern_mount+0x6a/0x1b0
+         [<c10b7659>] do_kern_mount+0x39/0xe0
+         [<c10cebe0>] do_mount+0x340/0x790
+         [<c10cf0b4>] sys_mount+0x84/0xb0
+         [<c12f25cd>] syscall_call+0x7/0xb
 
-  -> #0 (&journal->j_mutex){+.+...}:
-         [<c10560f6>] __lock_acquire+0x1026/0x1180
-         [<c10562b7>] lock_acquire+0x67/0x80
-         [<c12facad>] __mutex_lock_common+0x4d/0x410
-         [<c12fb0c8>] mutex_lock_nested+0x18/0x20
-         [<d0325bff>] do_journal_begin_r+0x7f/0x340 [reiserfs]
-         [<d0325f77>] journal_begin+0x77/0x140 [reiserfs]
-         [<d0326271>] reiserfs_persistent_transaction+0x41/0x90 [reiserfs]
-         [<d030d06c>] reiserfs_get_block+0x22c/0x1530 [reiserfs]
-         [<c10db9db>] __block_prepare_write+0x1bb/0x3a0
-         [<c10dbbe6>] block_prepare_write+0x26/0x40
-         [<d030b738>] reiserfs_prepare_write+0x88/0x170 [reiserfs]
-         [<d03294d6>] reiserfs_unpack+0xe6/0x120 [reiserfs]
-         [<d0329782>] reiserfs_ioctl+0x272/0x320 [reiserfs]
-         [<c10c3188>] vfs_ioctl+0x28/0xa0
-         [<c10c3bbd>] do_vfs_ioctl+0x32d/0x5c0
-         [<c10c3eb3>] sys_ioctl+0x63/0x70
-         [<c12fca3d>] syscall_call+0x7/0xb
+  -> #0 (&sb->s_type->i_mutex_key#8){+.+.+.}:
+         [<c1056186>] __lock_acquire+0x1026/0x1180
+         [<c1056347>] lock_acquire+0x67/0x80
+         [<c12f083d>] __mutex_lock_common+0x4d/0x410
+         [<c12f0c58>] mutex_lock_nested+0x18/0x20
+         [<d0329450>] reiserfs_unpack+0x60/0x110 [reiserfs]
+         [<d0329772>] reiserfs_ioctl+0x272/0x320 [reiserfs]
+         [<c10c3228>] vfs_ioctl+0x28/0xa0
+         [<c10c3c5d>] do_vfs_ioctl+0x32d/0x5c0
+         [<c10c3f53>] sys_ioctl+0x63/0x70
+         [<c12f25cd>] syscall_call+0x7/0xb
 
   other info that might help us debug this:
 
-  2 locks held by lilo/1620:
-   #0:  (&sb->s_type->i_mutex_key#8){+.+.+.}, at: [<d032945a>] reiserfs_unpack+0x6a/0x120 [reiserfs]
-   #1:  (&REISERFS_SB(s)->lock){+.+.+.}, at: [<d032a278>] reiserfs_write_lock+0x28/0x40 [reiserfs]
+  1 lock held by lilo/1606:
+   #0:  (&REISERFS_SB(s)->lock){+.+.+.}, at: [<d032a268>] reiserfs_write_lock+0x28/0x40 [reiserfs]
 
   stack backtrace:
-  Pid: 1620, comm: lilo Not tainted 2.6.35.4.4a #3
+  Pid: 1606, comm: lilo Not tainted 2.6.35c #13
   Call Trace:
-   [<c10560f6>] __lock_acquire+0x1026/0x1180
-   [<c10562b7>] lock_acquire+0x67/0x80
-   [<c12facad>] __mutex_lock_common+0x4d/0x410
-   [<c12fb0c8>] mutex_lock_nested+0x18/0x20
-   [<d0325bff>] do_journal_begin_r+0x7f/0x340 [reiserfs]
-   [<d0325f77>] journal_begin+0x77/0x140 [reiserfs]
-   [<d0326271>] reiserfs_persistent_transaction+0x41/0x90 [reiserfs]
-   [<d030d06c>] reiserfs_get_block+0x22c/0x1530 [reiserfs]
-   [<c10db9db>] __block_prepare_write+0x1bb/0x3a0
-   [<c10dbbe6>] block_prepare_write+0x26/0x40
-   [<d030b738>] reiserfs_prepare_write+0x88/0x170 [reiserfs]
-   [<d03294d6>] reiserfs_unpack+0xe6/0x120 [reiserfs]
-   [<d0329782>] reiserfs_ioctl+0x272/0x320 [reiserfs]
-   [<c10c3188>] vfs_ioctl+0x28/0xa0
-   [<c10c3bbd>] do_vfs_ioctl+0x32d/0x5c0
-   [<c10c3eb3>] sys_ioctl+0x63/0x70
-   [<c12fca3d>] syscall_call+0x7/0xb
+   [<c1056186>] __lock_acquire+0x1026/0x1180
+   [<c1056347>] lock_acquire+0x67/0x80
+   [<c12f083d>] __mutex_lock_common+0x4d/0x410
+   [<c12f0c58>] mutex_lock_nested+0x18/0x20
+   [<d0329450>] reiserfs_unpack+0x60/0x110 [reiserfs]
+   [<d0329772>] reiserfs_ioctl+0x272/0x320 [reiserfs]
+   [<c10c3228>] vfs_ioctl+0x28/0xa0
+   [<c10c3c5d>] do_vfs_ioctl+0x32d/0x5c0
+   [<c10c3f53>] sys_ioctl+0x63/0x70
+   [<c12f25cd>] syscall_call+0x7/0xb
 
 Reported-by: Jarek Poplawski <jarkao2@gmail.com>
 Tested-by: Jarek Poplawski <jarkao2@gmail.com>
@@ -120,35 +105,19 @@ Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/reiserfs/ioctl.c |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ fs/reiserfs/ioctl.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
 --- a/fs/reiserfs/ioctl.c
 +++ b/fs/reiserfs/ioctl.c
-@@ -170,6 +170,7 @@ int reiserfs_prepare_write(struct file *
- int reiserfs_unpack(struct inode *inode, struct file *filp)
- {
- 	int retval = 0;
-+	int depth;
- 	int index;
- 	struct page *page;
- 	struct address_space *mapping;
-@@ -189,7 +190,7 @@ int reiserfs_unpack(struct inode *inode,
+@@ -188,7 +188,7 @@ int reiserfs_unpack(struct inode *inode,
+ 	/* we need to make sure nobody is changing the file size beneath
  	 ** us
  	 */
- 	reiserfs_mutex_lock_safe(&inode->i_mutex, inode->i_sb);
--	reiserfs_write_lock(inode->i_sb);
-+	depth = reiserfs_write_lock_once(inode->i_sb);
+-	mutex_lock(&inode->i_mutex);
++	reiserfs_mutex_lock_safe(&inode->i_mutex, inode->i_sb);
+ 	reiserfs_write_lock(inode->i_sb);
  
  	write_from = inode->i_size & (blocksize - 1);
- 	/* if we are on a block boundary, we are already unpacked.  */
-@@ -224,6 +225,6 @@ int reiserfs_unpack(struct inode *inode,
- 
-       out:
- 	mutex_unlock(&inode->i_mutex);
--	reiserfs_write_unlock(inode->i_sb);
-+	reiserfs_write_unlock_once(inode->i_sb, depth);
- 	return retval;
- }
 
 
