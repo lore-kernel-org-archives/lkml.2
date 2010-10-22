@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932568Ab0JVSqY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 14:46:24 -0400
-Received: from kroah.org ([198.145.64.141]:45790 "EHLO coco.kroah.org"
+	id S932490Ab0JVSqW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 14:46:22 -0400
+Received: from kroah.org ([198.145.64.141]:45848 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758538Ab0JVSi7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1758328Ab0JVSi7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 22 Oct 2010 14:38:59 -0400
 X-Mailbox-Line: From gregkh@clark.site Fri Oct 22 11:36:01 2010
-Message-Id: <20101022183601.111175109@clark.site>
+Message-Id: <20101022183601.021368626@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 22 Oct 2010 11:35:22 -0700
+Date: Fri, 22 Oct 2010 11:35:21 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Colin Ian King <colin.king@canonical.com>,
         Len Brown <len.brown@intel.com>
-Subject: [55/66] intel_idle: PCI quirk to prevent Lenovo Ideapad s10-3 boot hang
+Subject: [54/66] ACPI: enable repeated PCIEXP wakeup by clearing PCIEXP_WAKE_STS on resume
 In-Reply-To: <20101022183711.GA23214@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,58 +26,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Len Brown <len.brown@intel.com>
+From: Colin Ian King <colin.king@canonical.com>
 
-commit 4731fdcf6f7bdab3e369a3f844d4ea4d4017284d upstream.
+commit 573b638158029898caf9470c8214b7ddd29751e3 upstream.
 
-When the Lenovo Ideapad S10-3 is booted with HT enabled,
-it hits a boot hang in the intel_idle driver.
+Section 4.7.3.1.1 (PM1 Status Registers) of version 4.0 of
+the ACPI spec concerning PCIEXP_WAKE_STS points out in
+in the final note field in table 4-11 that if this bit is
+set to 1 and the system is put into a sleeping state then
+the system will not automatically wake.
 
-This occurs when entering ATM-C4 for the first time,
-unless BM_STS is first cleared.
+This bit gets set by hardware to indicate that the system
+woke up due to a PCI Express wakeup event, so clear it during
+acpi_hw_clear_acpi_status() calls to enable subsequent
+resumes to work.
 
-acpi_idle doesn't see this because it first checks
-and clears BM_STS, but it would hit the same hang
-if that check were disabled.
+BugLink: http://bugs.launchpad.net/bugs/613381
 
-http://bugs.meego.com/show_bug.cgi?id=7093
-https://bugs.launchpad.net/ubuntu/+source/linux/+bug/634702
-
+Signed-off-by: Colin Ian King <colin.king@canonical.com>
 Signed-off-by: Len Brown <len.brown@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/pci/quirks.c |   20 ++++++++++++++++++++
- 1 file changed, 20 insertions(+)
+ drivers/acpi/acpica/aclocal.h |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/pci/quirks.c
-+++ b/drivers/pci/quirks.c
-@@ -155,6 +155,26 @@ DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_NE
- DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_NEC,	PCI_DEVICE_ID_NEC_CBUS_3,	quirk_isa_dma_hangs);
+--- a/drivers/acpi/acpica/aclocal.h
++++ b/drivers/acpi/acpica/aclocal.h
+@@ -846,6 +846,7 @@ struct acpi_bit_register_info {
+ 	ACPI_BITMASK_POWER_BUTTON_STATUS   | \
+ 	ACPI_BITMASK_SLEEP_BUTTON_STATUS   | \
+ 	ACPI_BITMASK_RT_CLOCK_STATUS       | \
++	ACPI_BITMASK_PCIEXP_WAKE_DISABLE   | \
+ 	ACPI_BITMASK_WAKE_STATUS)
  
- /*
-+ * Intel NM10 "TigerPoint" LPC PM1a_STS.BM_STS must be clear
-+ * for some HT machines to use C4 w/o hanging.
-+ */
-+static void __devinit quirk_tigerpoint_bm_sts(struct pci_dev *dev)
-+{
-+	u32 pmbase;
-+	u16 pm1a;
-+
-+	pci_read_config_dword(dev, 0x40, &pmbase);
-+	pmbase = pmbase & 0xff80;
-+	pm1a = inw(pmbase);
-+
-+	if (pm1a & 0x10) {
-+		dev_info(&dev->dev, FW_BUG "TigerPoint LPC.BM_STS cleared\n");
-+		outw(0x10, pmbase);
-+	}
-+}
-+DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_TGP_LPC, quirk_tigerpoint_bm_sts);
-+
-+/*
-  *	Chipsets where PCI->PCI transfers vanish or hang
-  */
- static void __devinit quirk_nopcipci(struct pci_dev *dev)
+ #define ACPI_BITMASK_TIMER_ENABLE               0x0001
 
 
