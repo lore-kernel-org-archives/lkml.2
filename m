@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932896Ab0JVTV0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 15:21:26 -0400
-Received: from g4t0014.houston.hp.com ([15.201.24.17]:45708 "EHLO
-	g4t0014.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932848Ab0JVTVX (ORCPT
+	id S932826Ab0JVTWK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 15:22:10 -0400
+Received: from g4t0015.houston.hp.com ([15.201.24.18]:25037 "EHLO
+	g4t0015.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759230Ab0JVTU6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 15:21:23 -0400
-Subject: [PATCH 5/5] cciss: use usleep_range not msleep for small sleeps
+	Fri, 22 Oct 2010 15:20:58 -0400
+Subject: [PATCH 0/5] cciss updates, PCI ID changes, kdump reset fixes 
 To: axboe@kernel.dk
 From: "Stephen M. Cameron" <scameron@beardog.cce.hp.com>
 Cc: akpm@linux-foundation.org, smcameron@yahoo.com,
         linux-kernel@vger.kernel.org, mike.miller@hp.com, thenzl@redhat.com
-Date: Fri, 22 Oct 2010 14:21:22 -0500
-Message-ID: <20101022192122.25567.29350.stgit@beardog.cce.hp.com>
-In-Reply-To: <20101022191738.25567.43468.stgit@beardog.cce.hp.com>
-References: <20101022191738.25567.43468.stgit@beardog.cce.hp.com>
+Date: Fri, 22 Oct 2010 14:20:56 -0500
+Message-ID: <20101022191738.25567.43468.stgit@beardog.cce.hp.com>
 User-Agent: StGit/0.15
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
@@ -24,24 +22,28 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stephen M. Cameron <scameron@beardog.cce.hp.com>
+The following series implements fixes in the board resetting code
+invoked by the reset_devices kernel parameter, typically used
+by kdump kernels.
 
-Signed-off-by: Stephen M. Cameron <scameron@beardog.cce.hp.com>
+Also removes support for some controllers which are also supported
+by hpsa.  We do not wish to have any overlap between the two drivers.
+
+Also change one small msleep to use usleep_range.
+
 ---
- drivers/block/cciss.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/block/cciss.c b/drivers/block/cciss.c
-index 55fed21..95bd799 100644
---- a/drivers/block/cciss.c
-+++ b/drivers/block/cciss.c
-@@ -3749,7 +3749,7 @@ static void __devinit cciss_wait_for_mode_change_ack(ctlr_info_t *h)
- 	for (i = 0; i < MAX_CONFIG_WAIT; i++) {
- 		if (!(readl(h->vaddr + SA5_DOORBELL) & CFGTBL_ChangeReq))
- 			break;
--		msleep(10);
-+		usleep_range(10000, 20000);
- 	}
- }
- 
+Stephen M. Cameron (5):
+      cciss: remove controllers supported by hpsa
+      cciss: fix board status waiting code
+      cciss: Use kernel provided PCI state save and restore functions
+      cciss: limit commands allocated on reset_devices
+      cciss: use usleep_range not msleep for small sleeps
 
+
+ drivers/block/cciss.c |  169 +++++++++++++++++--------------------------------
+ drivers/block/cciss.h |    4 +
+ 2 files changed, 64 insertions(+), 109 deletions(-)
+
+-- 
+-- steve
