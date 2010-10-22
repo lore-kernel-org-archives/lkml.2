@@ -1,51 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758764Ab0JVSYA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 14:24:00 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:61863 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752833Ab0JVSX4 (ORCPT
+	id S1758773Ab0JVSYI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 14:24:08 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:62638 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752833Ab0JVSYE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 14:23:56 -0400
+	Fri, 22 Oct 2010 14:24:04 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:subject
-         :content-type:content-transfer-encoding;
-        b=SxacLhXzQ9gmuvnR2DbOIfUZvUzVJZZMbShx5ePfsgr48pl6TBL8J5ffCevwvNh2eE
-         bU5tjtFa53MJMH2ZEZbkOpfCi+s7Cl9AszssD4tkP3PZSifpuycEc3Bi+vEsEB0k0+7a
-         xLEljtxCB5PbpJTqd21MW7HJ/+LXdxvyacik4=
-Message-ID: <4CC1D6B6.7090702@gmail.com>
-Date: Fri, 22 Oct 2010 20:23:50 +0200
+        h=message-id:date:from:user-agent:mime-version:to:subject:references
+         :in-reply-to:content-type:content-transfer-encoding;
+        b=k++H1fmmf7u1NpYr2LQqZD1KmVL5fbsF/XEyCnD/MsW+BK2CkXIIkz8SEGH3YEEdzZ
+         odd2uH7K2oX33WQY65RFXNiQSDwgJYxYVitawk/TF6ZwloMLk/QxvEnaKZSJB/gb9vW2
+         bFHfpJrvMSIBQHh6081We6AUM0PxET7Q/LbNo=
+Message-ID: <4CC1D6BF.90204@gmail.com>
+Date: Fri, 22 Oct 2010 20:23:59 +0200
 From: "N.P.S." <napohybelskurwysynom2010@gmail.com>
 User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.0; pl; rv:1.9.2.9) Gecko/20100915 Thunderbird/3.1.4
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-Subject: [RFC][PATCH 0/8] removal of dead code from few files
+To: linux-kernel@vger.kernel.org, Li Yi <yi.li@analog.com>,
+        uclinux-dist-devel@blackfin.uclinux.org
+Subject: [RFC][PATCH 1/8] Removal of dead code from arch/blackfin/kernel/traps.c
+References: <4CC1D2D5.9050009@gmail.com>
+In-Reply-To: <4CC1D2D5.9050009@gmail.com>
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+commit de6f2dfdf5c3dcd0e5eeaf9ab690a5d1081c065c
+Author: N.P.S <napohybelskurwysynom2010@gmail.com>
+Date:   Fri Oct 22 00:01:41 2010 +0200
 
-This tree
-git pull git://github.com/zimnylech/Linux-2.6-nps.git rodc3
-contains 8 patches that removes dead code.
+    Removal of dead code from
+    arch/blackfin/kernel/traps.c
+    
+    Signed-off-by: Zimny Lech <napohybelskurwysynom2010@gmail.com>
+    CC: Li Yi <yi.li@analog.com>
+    CC: <uclinux-dist-devel@blackfin.uclinux.org>
+    CC: <linux-kernel@vger.kernel.org>
 
- arch/blackfin/include/asm/irqflags.h     |   32 -------------------------
- arch/blackfin/kernel/ipipe.c             |    7 -----
- arch/blackfin/kernel/traps.c             |   10 --------
- arch/h8300/kernel/time.c                 |    3 --
- arch/m68knommu/kernel/setup.c            |    3 --
- arch/m68knommu/platform/68VZ328/config.c |    5 ----
- arch/powerpc/include/asm/exception-64e.h |   38 ------------------------------
- arch/powerpc/kernel/process.c            |    5 ----
- arch/powerpc/mm/tlb_low_64e.S            |   10 --------
- drivers/serial/68328serial.h             |    5 ----
- 10 files changed, 0 insertions(+), 118 deletions(-)
-
-I have not tested this code yet - I'm waiting for comments like "yeah, this can be removed" or "don't touch this code moron, put down your crack pipe, and leave us alone" ;) (all comments about my gmail username will end up in spam folder)
-
-Kind regards,
-Zimny
+diff --git a/arch/blackfin/kernel/traps.c b/arch/blackfin/kernel/traps.c
+index 59c1df7..b20eca8 100644
+--- a/arch/blackfin/kernel/traps.c
++++ b/arch/blackfin/kernel/traps.c
+@@ -280,17 +280,7 @@ asmlinkage notrace void trap_c(struct pt_regs *fp)
+ 			goto traps_done;
+ 		else
+ 			break;
+-#ifdef CONFIG_BF535
+-	/* 0x29 - Instruction fetch access error (535 only) */
+-	case VEC_ISTRU_VL:      /* ADSP-BF535 only (MH) */
+-		info.si_code = BUS_OPFETCH;
+-		sig = SIGBUS;
+-		strerror = KERN_NOTICE "BF535: VEC_ISTRU_VL\n";
+-		CHK_DEBUGGER_TRAP_MAYBE();
+-		break;
+-#else
+ 	/* 0x29 - Reserved, Caught by default */
+-#endif
+ 	/* 0x2A - Instruction fetch misaligned, handled here */
+ 	case VEC_MISALI_I:
+ 		info.si_code = BUS_ADRALN;
