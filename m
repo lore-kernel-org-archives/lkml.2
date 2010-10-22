@@ -1,53 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755813Ab0JVKoy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 06:44:54 -0400
-Received: from cantor.suse.de ([195.135.220.2]:39863 "EHLO mx1.suse.de"
+	id S1755790Ab0JVKrM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 06:47:12 -0400
+Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:57295 "EHLO kernel.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754160Ab0JVKow (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 06:44:52 -0400
-Message-ID: <4CC16B1E.4060709@suse.de>
-Date: Fri, 22 Oct 2010 16:14:46 +0530
-From: Suresh Jayaraman <sjayaraman@suse.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100714 SUSE/3.0.6 Thunderbird/3.0.6
+	id S1754160Ab0JVKrK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Oct 2010 06:47:10 -0400
+Message-ID: <4CC16BBE.3080005@fusionio.com>
+Date: Fri, 22 Oct 2010 12:47:26 +0200
+From: Jens Axboe <jaxboe@fusionio.com>
 MIME-Version: 1.0
-To: =?ISO-8859-15?Q?=22J=2EA=2E_Magall=F3n=22?= <jamagallon@ono.com>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
-        linux-cifs <linux-cifs@vger.kernel.org>
-Subject: Re: CIFS is slooow, gvfs is fast
-References: <20101022013544.0fdab0e0@werewolf.home>
-In-Reply-To: <20101022013544.0fdab0e0@werewolf.home>
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 8bit
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [GIT PULL] Single misc fix for 2.6.37-rc1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(Cc linux-cifs@vger.kernel.org)
+Hi Linus,
 
-On 10/22/2010 05:05 AM, J.A. Magallón wrote:
+A recently discovered problem in fs/pipe.c can cause us to
+lose the error returned from buf-ops->confirm().
 
-> I have a very strange behaviour with windows networking.
-> I have an HTPC, which I access from my Linux desktop. It runs Windows 7.
-> Network is GigaBit, routed by a Linksys WRT320N running latest DD-WRT.
-> I setup an automount path under /net/htpc with CIFS filesystem.
-> I can also access the drives in HTPC via gvfs from Gnome DE.
-> 
-> Problem: speed is _VERY_ different.
-> R/W through the automount point (CIFS fs), is roughly 7-8 MB/s (ridiculous
-> for gigabit speeds).
-> R/W through Gnome/gvfs (kind of fuse) goes around 35 - 40 MB/s (400 Mbits/s),
-> that look much better.
+Please pull.
 
-What is the kernel version In which you are seeing the problem? I'm not
-seeing this on 2.6.36-rc4. Do you have a wired interface as well? Are
-you sure that both are using the same network path?
+  git://git.kernel.dk/linux-2.6-block.git for-2.6.37/misc
 
-> I have tried with different rsize/wsize in mount, but speed is the same
-> (perhaps I did not get the right values...).
+Nicolas Kaiser (1):
+      pipe: fix failure to return error code on ->confirm()
 
-Does the changes reflect in /proc/mounts?
+ fs/pipe.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
+diff --git a/fs/pipe.c b/fs/pipe.c
+index 279eef9..37eb1eb 100644
+--- a/fs/pipe.c
++++ b/fs/pipe.c
+@@ -382,7 +382,7 @@ pipe_read(struct kiocb *iocb, const struct iovec *_iov,
+ 			error = ops->confirm(pipe, buf);
+ 			if (error) {
+ 				if (!ret)
+-					error = ret;
++					ret = error;
+ 				break;
+ 			}
+ 
 
 -- 
-Suresh Jayaraman
+Jens Axboe
+
