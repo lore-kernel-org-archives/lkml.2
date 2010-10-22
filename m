@@ -1,38 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754600Ab0JVXtg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 19:49:36 -0400
-Received: from mx4.b2b2c.ca ([66.158.128.34]:50869 "EHLO mx4.b2b2c.ca"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751225Ab0JVXtf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 19:49:35 -0400
-X-Greylist: delayed 2016 seconds by postgrey-1.27 at vger.kernel.org; Fri, 22 Oct 2010 19:49:35 EDT
-Message-ID: <1287788275.4cc216f360601@webmail.b2b2c.ca>
-Date: Fri, 22 Oct 2010 18:57:55 -0400
-From: Dr Charles Lizzy <drclizy@dr.net>
-Reply-to: barr.morgan.o@gala.net
-To: info@you.net
-Subject: Mail
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-User-Agent: Internet Messaging Program (IMP) 3.2.8
-X-Originating-IP: 65.120.57.67
+	id S1754903Ab0JVXyH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 19:54:07 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:39325 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754319Ab0JVXyF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Oct 2010 19:54:05 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=oUo8jPz2HV0DKL7Pm1mR5Lkf7DpQWT6EPL+tsk42Zmo8epijAK8tMSenr2AxM6Tg9F
+         9AjVQvouHXSrq1G7xc+I0rYPnMKgFACps7yymosTXEDEsXeidUUrD1o9MrlkoTcH2nnw
+         0I54g1Km2n+wMEA11vxTFSbtBFCIYlEsESkcM=
+From: Maxim Levitsky <maximlevitsky@gmail.com>
+To: Alex Dubov <oakad@yahoo.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH 0/29] My patch queue for memorystick subsystem
+Date: Sat, 23 Oct 2010 01:53:28 +0200
+Message-Id: <1287791637-10329-1-git-send-email-maximlevitsky@gmail.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- Mrs Helen Cole told me to send this mail to you as at last two (2) weeks
-regarding you to contact her Lawyer but I forgot to do it and now that she
-is in state of comma I have to let you know what she told me to tell you.
+Hi,
 
-Below are the details she gave me for you to contact her lawyer.
+As requested, this is split up series of the work I did for the
+memorystick subsystem.
 
-Name - Barrister Morgan Owen.
-Email - Barr.Morgan.o@gala.net
+All patches compile tested.
+All patches except jmicron patches also run tested on my r592
+The end result of jmicron patches is exactly the same as my old patch
+that did work very well. I will test the patches tommorow though to ensure that
+all of them work for bisectability.
 
-Thank you:.
-Dr Lizzy.
+Please review & merge.
 
+Best regards,
+	Maxim Levitsky
 
 
