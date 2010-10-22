@@ -1,143 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758748Ab0JVSjL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 14:39:11 -0400
-Received: from kroah.org ([198.145.64.141]:45901 "EHLO coco.kroah.org"
+	id S1758769Ab0JVSj2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 14:39:28 -0400
+Received: from claw.goop.org ([74.207.240.146]:51228 "EHLO claw.goop.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755289Ab0JVSjI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 14:39:08 -0400
-X-Mailbox-Line: From gregkh@clark.site Fri Oct 22 11:36:01 2010
-Message-Id: <20101022183601.910822183@clark.site>
-User-Agent: quilt/0.48-11.2
-Date: Fri, 22 Oct 2010 11:35:31 -0700
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
-Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        =?ISO-8859-15?q?R=C3=A9mi=20Denis-Courmont?= 
-	<remi.denis-courmont@nokia.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Ben Hutchings <ben@decadent.org.uk>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [64/66] Phonet: disable network namespace support
-In-Reply-To: <20101022183711.GA23214@kroah.com>
+	id S1757263Ab0JVSjZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Oct 2010 14:39:25 -0400
+Message-ID: <4CC1DA58.8000606@goop.org>
+Date: Fri, 22 Oct 2010 11:39:20 -0700
+From: Jeremy Fitzhardinge <jeremy@goop.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc13 Lightning/1.0b3pre Thunderbird/3.1.4
+MIME-Version: 1.0
+To: Ingo Molnar <mingo@elte.hu>
+CC: Stephen Rothwell <sfr@canb.auug.org.au>,
+        Xen Devel <Xen-devel@lists.xensource.com>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Gianluca Guida <gianluca.guida@citrix.com>,
+        Yinghai Lu <yinghai@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: linux-next: manual merge of the xen tree with the tip tree
+References: <20101022140335.c4a3a48f.sfr@canb.auug.org.au> <20101022080129.GA8474@elte.hu>
+In-Reply-To: <20101022080129.GA8474@elte.hu>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.32-stable review patch.  If anyone has any objections, please let us know.
+ On 10/22/2010 01:01 AM, Ingo Molnar wrote:
+> * Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+>
+>> Hi all,
+>>
+>> Today's linux-next merge of the xen tree got a conflict in
+>> arch/x86/mm/init_32.c between commit
+>> 1d931264af0f10649b35afa8fbd2e169da51ac08 ("x86-32, memblock: Make
+>> add_highpages honor early reserved ranges") from the tip tree and commit
+>> 07147a06ac3b1b028124ea00ba44e69eb8ea7685 ("x86/32: honor reservations of
+>> high memory") from the xen tree.
+> Jeremy,
+>
+> Commit 07147a06ac is all over the x86 tree:
+>
+>   arch/x86/mm/init_32.c     |   42 ++++++++++++++++++++++++++++++++----------
+>   include/linux/early_res.h |    3 +++
+>   kernel/early_res.c        |   30 ++++++++++++++++++++++++++++++
+>   3 files changed, 65 insertions(+), 10 deletions(-)
+>
+> ... but there's no x86 person who acked it or was Cc:-ed to this commit AFAICS. It 
+> was not even posted to lkml! Nor does the commit title suggest that it affects core 
+> kernel code as well.
+>
+> Also, the AuthorDate field is a total lie:
+>
+>   commit 07147a06ac3b1b028124ea00ba44e69eb8ea7685
+>   Author:     Gianluca Guida <gianluca.guida@citrix.com>
+>   AuthorDate: Sun Aug 2 01:25:48 2009 +0100
+>   Commit:     Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+>   CommitDate: Mon Oct 4 14:22:11 2010 -0700
+>
+>     x86/32: honor reservations of high memory
+>
+> This commit was written on Aug 2 2009, really? kernel/early_res.c, which is modified 
+> by half of this commit, was _CREATED_ in February 2010 ...
 
-------------------
+Most of the code in early_res.c was simply moved from
+arch/x86/.../e820.c, so the patch chunks were applied to the new file
+when the code was moved.
 
-From: Rémi Denis-Courmont <remi.denis-courmont@nokia.com>
+> I realize that some original patch, much different from this one, was probably 
+> written in 2009, and that via a series of undocumented rebases and modifications to 
+> the patch you achieved this state.
 
-[Solved differently upstream]
+The modified code was almost entirely unchanged over that period, so the
+datestamp and original authorship of the patch was basically correct.
 
-Network namespace in the Phonet socket stack causes an OOPS when a
-namespace is destroyed. This occurs as the loopback exit_net handler is
-called after the Phonet exit_net handler, and re-enters the Phonet
-stack. I cannot think of any nice way to fix this in kernel <= 2.6.32.
+However...
 
-For lack of a better solution, disable namespace support completely.
-If you need that, upgrade to a newer kernel.
+> Crap like that is just _NOT_ acceptable, and you know that perfectly well - if you 
+> do this to arch/x86/ i'll be forced to ask for the Xen tree to be removed from 
+> linux-next and be done via the x86 tree again.
 
-Signed-off-by: Rémi Denis-Courmont <remi.denis-courmont@nokia.com>
-Cc: Eric W. Biederman <ebiederm@xmission.com>
-Cc: Ben Hutchings <ben@decadent.org.uk>
-Acked-by: David S. Miller <davem@davemloft.net>
+Hey, hey, hold your horses.  This is a wildly obsolete patch that we
+were discussing a few weeks ago, but Yinghai did a proper alternative
+for the memblock universe.
 
----
- net/phonet/af_phonet.c  |    4 ++++
- net/phonet/pn_dev.c     |   12 ++++++++++--
- net/phonet/pn_netlink.c |    9 ++++++++-
- 3 files changed, 22 insertions(+), 3 deletions(-)
+It was never in linux-next, and never intended to be.  I'm not sure why
+it has appeared in linux-next now; it isn't in my branch.  I wonder if
+it appeared in another Xen-related branch.  Let me investigate.
 
---- a/net/phonet/af_phonet.c
-+++ b/net/phonet/af_phonet.c
-@@ -67,6 +67,8 @@ static int pn_socket_create(struct net *
- 	struct phonet_protocol *pnp;
- 	int err;
- 
-+	if (!net_eq(net, &init_net))
-+		return -EAFNOSUPPORT;
- 	if (!capable(CAP_SYS_ADMIN))
- 		return -EPERM;
- 
-@@ -353,6 +355,8 @@ static int phonet_rcv(struct sk_buff *sk
- 	struct sockaddr_pn sa;
- 	u16 len;
- 
-+	if (!net_eq(net, &init_net))
-+		goto out;
- 	/* check we have at least a full Phonet header */
- 	if (!pskb_pull(skb, sizeof(struct phonethdr)))
- 		goto out;
---- a/net/phonet/pn_dev.c
-+++ b/net/phonet/pn_dev.c
-@@ -246,7 +246,11 @@ static struct notifier_block phonet_devi
- /* Per-namespace Phonet devices handling */
- static int phonet_init_net(struct net *net)
- {
--	struct phonet_net *pnn = kmalloc(sizeof(*pnn), GFP_KERNEL);
-+	struct phonet_net *pnn;
-+
-+	if (!net_eq(net, &init_net))
-+		return 0;
-+	pnn = kmalloc(sizeof(*pnn), GFP_KERNEL);
- 	if (!pnn)
- 		return -ENOMEM;
- 
-@@ -263,9 +267,13 @@ static int phonet_init_net(struct net *n
- 
- static void phonet_exit_net(struct net *net)
- {
--	struct phonet_net *pnn = net_generic(net, phonet_net_id);
-+	struct phonet_net *pnn;
- 	struct net_device *dev;
- 
-+	if (!net_eq(net, &init_net))
-+		return;
-+	pnn = net_generic(net, phonet_net_id);
-+
- 	rtnl_lock();
- 	for_each_netdev(net, dev)
- 		phonet_device_destroy(dev);
---- a/net/phonet/pn_netlink.c
-+++ b/net/phonet/pn_netlink.c
-@@ -68,6 +68,8 @@ static int addr_doit(struct sk_buff *skb
- 	int err;
- 	u8 pnaddr;
- 
-+	if (!net_eq(net, &init_net))
-+		return -EOPNOTSUPP;
- 	if (!capable(CAP_SYS_ADMIN))
- 		return -EPERM;
- 
-@@ -124,12 +126,16 @@ nla_put_failure:
- 
- static int getaddr_dumpit(struct sk_buff *skb, struct netlink_callback *cb)
- {
-+	struct net *net = sock_net(skb->sk);
- 	struct phonet_device_list *pndevs;
- 	struct phonet_device *pnd;
- 	int dev_idx = 0, dev_start_idx = cb->args[0];
- 	int addr_idx = 0, addr_start_idx = cb->args[1];
- 
--	pndevs = phonet_device_list(sock_net(skb->sk));
-+	if (!net_eq(net, &init_net))
-+		goto skip;
-+
-+	pndevs = phonet_device_list(net);
- 	spin_lock_bh(&pndevs->lock);
- 	list_for_each_entry(pnd, &pndevs->list, list) {
- 		u8 addr;
-@@ -154,6 +160,7 @@ static int getaddr_dumpit(struct sk_buff
- 
- out:
- 	spin_unlock_bh(&pndevs->lock);
-+skip:
- 	cb->args[0] = dev_idx;
- 	cb->args[1] = addr_idx;
- 
-
-
+    J
