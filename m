@@ -1,157 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758851Ab0JVSZX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 14:25:23 -0400
-Received: from kroah.org ([198.145.64.141]:37753 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758795Ab0JVSZT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 14:25:19 -0400
-From: Greg Kroah-Hartman <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org
-Cc: Thomas Renninger <trenn@suse.de>, Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [PATCH 02/31] Dynamic Debug: Introduce ddebug_query= boot parameter
-Date: Fri, 22 Oct 2010 11:24:47 -0700
-Message-Id: <1287771916-15016-2-git-send-email-gregkh@suse.de>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <20101022175107.GB13489@kroah.com>
-References: <20101022175107.GB13489@kroah.com>
+	id S1752580Ab0JVSbb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 14:31:31 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:50964 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758920Ab0JVSZ0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Oct 2010 14:25:26 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:subject:references
+         :in-reply-to:content-type:content-transfer-encoding;
+        b=j1KGP9uUwJoDjzXUQ47cT0MNx5naV8Hm7CJOqsYvpD5+n0PS9NG129suT833YJFW+F
+         sqMfZZ/QhrlyGiK1cSDhOrWzIUd3OlbFRBsGr/v64Sz7mWMXufmjPZjAE2vE8v26Iaci
+         k0OACDqMzukJFwef4Y4BNVsOSYY2TBVJpOCDc=
+Message-ID: <4CC1D710.1040704@gmail.com>
+Date: Fri, 22 Oct 2010 20:25:20 +0200
+From: "N.P.S." <napohybelskurwysynom2010@gmail.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.0; pl; rv:1.9.2.9) Gecko/20100915 Thunderbird/3.1.4
+MIME-Version: 1.0
+To: linux-kernel@vger.kernel.org, Yoshinori Sato <ysato@users.sourceforge.jp>
+Subject: [RFC][PATCH 8/8] Removal of dead code from arch/h8300/kernel/time.c
+References: <4CC1D2D5.9050009@gmail.com>
+In-Reply-To: <4CC1D2D5.9050009@gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Thomas Renninger <trenn@suse.de>
+commit df836d3ba767abc31e96ba95db318f4d023d9023
+Author: N.P.S <napohybelskurwysynom2010@gmail.com>
+Date:   Thu Oct 21 23:11:58 2010 +0200
 
-Dynamic debug lacks the ability to enable debug messages at boot time.
-One could patch initramfs or service startup scripts to write to
-/sys/../dynamic_debug/control, but this sucks.
+    Removal of dead code from arch/h8300/kernel/time.c
+    
+    Signed-off-by: Zimny Lech <napohybelskurwysynom2010@gmail.com>
+    CC: Yoshinori Sato <ysato@users.sourceforge.jp>
+    CC: <linux-kernel@vger.kernel.org>
 
-This patch makes it possible to pass a query in the same format one can
-write to /sys/../dynamic_debug/control via boot param.
-When dynamic debug gets initialized, this query will automatically be
-applied.
-
-
-Signed-off-by: Thomas Renninger <trenn@suse.de>
-Acked-by: jbaron@redhat.com
-Acked-by: Pekka Enberg <penberg@cs.helsinki.fi>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
----
- Documentation/dynamic-debug-howto.txt |   22 +++++++++++++++++++++-
- Documentation/kernel-parameters.txt   |    7 ++++++-
- lib/dynamic_debug.c                   |   25 +++++++++++++++++++++++++
- 3 files changed, 52 insertions(+), 2 deletions(-)
-
-diff --git a/Documentation/dynamic-debug-howto.txt b/Documentation/dynamic-debug-howto.txt
-index 674c566..58ea64a 100644
---- a/Documentation/dynamic-debug-howto.txt
-+++ b/Documentation/dynamic-debug-howto.txt
-@@ -24,7 +24,7 @@ Dynamic debug has even more useful features:
-    read to display the complete list of known debug statements, to help guide you
- 
- Controlling dynamic debug Behaviour
--===============================
-+===================================
- 
- The behaviour of pr_debug()/dev_debug()s are controlled via writing to a
- control file in the 'debugfs' filesystem. Thus, you must first mount the debugfs
-@@ -212,6 +212,26 @@ Note the regexp ^[-+=][scp]+$ matches a flags specification.
- Note also that there is no convenient syntax to remove all
- the flags at once, you need to use "-psc".
- 
-+
-+Debug messages during boot process
-+==================================
-+
-+To be able to activate debug messages during the boot process,
-+even before userspace and debugfs exists, use the boot parameter:
-+ddebug_query="QUERY"
-+
-+QUERY follows the syntax described above, but must not exceed 1023
-+characters. The enablement of debug messages is done as an arch_initcall.
-+Thus you can enable debug messages in all code processed after this
-+arch_initcall via this boot parameter.
-+On an x86 system for example ACPI enablement is a subsys_initcall and
-+ddebug_query="file ec.c +p"
-+will show early Embedded Controller transactions during ACPI setup if
-+your machine (typically a laptop) has an Embedded Controller.
-+PCI (or other devices) initialization also is a hot candidate for using
-+this boot parameter for debugging purposes.
-+
-+
- Examples
- ========
- 
-diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-index 8dd7248..3d854c9 100644
---- a/Documentation/kernel-parameters.txt
-+++ b/Documentation/kernel-parameters.txt
-@@ -43,10 +43,11 @@ parameter is applicable:
- 	AVR32	AVR32 architecture is enabled.
- 	AX25	Appropriate AX.25 support is enabled.
- 	BLACKFIN Blackfin architecture is enabled.
--	DRM	Direct Rendering Management support is enabled.
- 	EDD	BIOS Enhanced Disk Drive Services (EDD) is enabled
- 	EFI	EFI Partitioning (GPT) is enabled
- 	EIDE	EIDE/ATAPI support is enabled.
-+	DRM	Direct Rendering Management support is enabled.
-+	DYNAMIC_DEBUG Build in debug messages and enable them at runtime
- 	FB	The frame buffer device is enabled.
- 	GCOV	GCOV profiling is enabled.
- 	HW	Appropriate hardware is enabled.
-@@ -570,6 +571,10 @@ and is between 256 and 4096 characters. It is defined in the file
- 			Format: <port#>,<type>
- 			See also Documentation/input/joystick-parport.txt
- 
-+	ddebug_query=   [KNL,DYNAMIC_DEBUG] Enable debug messages at early boot
-+			time. See Documentation/dynamic-debug-howto.txt for
-+			details.
-+
- 	debug		[KNL] Enable kernel debugging (events log level).
- 
- 	debug_locks_verbose=
-diff --git a/lib/dynamic_debug.c b/lib/dynamic_debug.c
-index 84d103c4..44ce66b 100644
---- a/lib/dynamic_debug.c
-+++ b/lib/dynamic_debug.c
-@@ -450,6 +450,19 @@ static int ddebug_exec_query(char *query_string)
- 	return 0;
- }
- 
-+static __initdata char ddebug_setup_string[1024];
-+static __init int ddebug_setup_query(char *str)
-+{
-+	if (strlen(str) >= 1024) {
-+		pr_warning("ddebug boot param string too large\n");
-+		return 0;
-+	}
-+	strcpy(ddebug_setup_string, str);
-+	return 1;
-+}
-+
-+__setup("ddebug_query=", ddebug_setup_query);
-+
- /*
-  * File_ops->write method for <debugfs>/dynamic_debug/conrol.  Gathers the
-  * command text from userspace, parses and executes it.
-@@ -769,6 +782,18 @@ static int __init dynamic_debug_init(void)
- 		}
- 		ret = ddebug_add_module(iter_start, n, modname);
- 	}
-+
-+	/* ddebug_query boot param got passed -> set it up */
-+	if (ddebug_setup_string[0] != '\0') {
-+		ret = ddebug_exec_query(ddebug_setup_string);
-+		if (ret)
-+			pr_warning("Invalid ddebug boot param %s",
-+				   ddebug_setup_string);
-+		else
-+			pr_info("ddebug initialized with string %s",
-+				ddebug_setup_string);
-+	}
-+
- out_free:
- 	if (ret) {
- 		ddebug_remove_all_tables();
--- 
-1.7.2
-
+diff --git a/arch/h8300/kernel/time.c b/arch/h8300/kernel/time.c
+index 165005a..ebc3de3 100644
+--- a/arch/h8300/kernel/time.c
++++ b/arch/h8300/kernel/time.c
+@@ -51,9 +51,6 @@ void read_persistent_clock(struct timespec *ts)
+ 	year = 1980;
+ 	mon = day = 1;
+ 	hour = min = sec = 0;
+-#ifdef CONFIG_H8300_GETTOD
+-	h8300_gettod (&year, &mon, &day, &hour, &min, &sec);
+-#endif
+ 	if ((year += 1900) < 1970)
+ 		year += 100;
+ 	ts->tv_sec = mktime(year, mon, day, hour, min, sec);
