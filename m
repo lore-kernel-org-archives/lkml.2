@@ -1,85 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752264Ab0JVCxK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Oct 2010 22:53:10 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:47788 "EHLO mail.zytor.com"
+	id S1752200Ab0JVC5V (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Oct 2010 22:57:21 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:38727 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751267Ab0JVCxI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Oct 2010 22:53:08 -0400
-Message-ID: <4CC0FBDC.4010700@zytor.com>
-Date: Thu, 21 Oct 2010 19:50:04 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc13 Thunderbird/3.1.4
+	id S1751745Ab0JVC5U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Oct 2010 22:57:20 -0400
+Date: Thu, 21 Oct 2010 22:56:57 -0400
+From: Don Zickus <dzickus@redhat.com>
+To: Huang Ying <ying.huang@intel.com>
+Cc: Andi Kleen <andi@firstfloor.org>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Robert Richter <robert.richter@amd.com>,
+        "peterz@infradead.org" <peterz@infradead.org>
+Subject: Re: [PATCH -v3 5/6] x86, NMI, treat unknown NMI as hardware error
+Message-ID: <20101022025657.GA10556@redhat.com>
+References: <20101011212006.GB23882@redhat.com>
+ <1287555157.3026.21.camel@yhuang-dev>
+ <20101020141558.GB19090@redhat.com>
+ <1287623643.19320.40.camel@yhuang-dev>
+ <20101021023135.GA12086@redhat.com>
+ <1287638251.19320.190.camel@yhuang-dev>
+ <20101021141002.GI19090@redhat.com>
+ <20101021154543.GD21695@basil.fritz.box>
+ <20101022014955.GP19090@redhat.com>
+ <1287713110.2862.54.camel@yhuang-dev>
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: "H. Peter Anvin" <hpa@linux.intel.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        CAI Qian <caiqian@redhat.com>, "David S. Miller" <davem@davemloft.net>,
-        Felipe Balbi <balbi@ti.com>, Ingo Molnar <mingo@elte.hu>,
-        Jan Beulich <jbeulich@novell.com>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
-        Jeremy Fitzhardinge <jeremy@goop.org>,
-        Kevin Hilman <khilman@deeprootsystems.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Michael Ellerman <michael@ellerman.id.au>,
-        Michal Simek <monstr@monstr.eu>, Paul Mundt <lethal@linux-sh.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Russell King <rmk@arm.linux.org.uk>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Tomi Valkeinen <tomi.valkeinen@nokia.com>,
-        Vivek Goyal <vgoyal@redhat.com>, Yinghai Lu <yinghai@kernel.org>,
-        ext Grazvydas Ignotas <notasas@gmail.com>, linux-mm@kvack.org
-Subject: Re: [GIT PULL] memblock for 2.6.37
-References: <201010220050.o9M0ognt032167@hera.kernel.org> <AANLkTi=2tPU6qwuoOEfS7NfsNX+7vCYhvkHzNOcx4Gf3@mail.gmail.com>
-In-Reply-To: <AANLkTi=2tPU6qwuoOEfS7NfsNX+7vCYhvkHzNOcx4Gf3@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1287713110.2862.54.camel@yhuang-dev>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/21/2010 06:59 PM, Linus Torvalds wrote:
-> On Thu, Oct 21, 2010 at 5:50 PM, H. Peter Anvin <hpa@linux.intel.com> wrote:
->>
->> The unmerged branch is at:
->>
->>  git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git core-memblock-for-linus
->>
->> The premerged branch is at:
->>
->>  git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git core-memblock-for-linus-merged
+On Fri, Oct 22, 2010 at 10:05:10AM +0800, Huang Ying wrote:
+> > > > Well, do you have an alternative way to handle broken hardware?  Broken
+> > > > hardware has generated NMIs, sometimes if I am lucky SERRs.  The ones that
+> > > > generate SERRs can be filtered through a different path, but what about
+> > > > the ones that don't?
+> > > > 
+> > > 
+> > > Don, AFAIK you're saying the same thing as Ying: an unknown NMI is 
+> > > a hardware error.
+> > > 
+> > > The reason the hardware does that is that it wants to tell us:
+> > > 
+> > > "I lost track of an error. There is corrupted data somewhere in the system.
+> > > Please stop, don't do anything that could consume that data. S.O.S."
+> > > 
+> > > The correct answer for that is panic.
+> > 
+> > After re-reading Huang's patch, I am starting to understand what you mean
+> > by broken hardware.  Basically you are trying to distinguish between
+> > legacy systems that were 'broken' in the sense they would randomly send
+> > uknown NMIs for no good reason, hence the 'Dazed and confused' messages
+> > and hardware errors on more modern systems that say, 'Hardware error,
+> > panicing check your BIOS for more info' (or whatever).
 > 
-> I always tend to take the unmerged version, because I want to see what
-> the conflicts are (it gives me some view of what clashes), but when
-> people do pre-merges I then try to compare my merge against theirs.
+> Yes.
 > 
-
-Sounds like a very good idea.  I'll take it as a request to continue to
-do both if there are anything but trivial conflicts.
-
-
-> However, in this case, your pre-merged version differs. But I think
-> it's your merge that was incorrect. You left this line:
+> > So Huang's patch was sort of acting like a switch.  On legacy systems use
+> > 'Dazed and confused' for unknown NMIs.  Whereas on whitelisted modern
+> > systems use a more relavant 'Check BIOS for error' message.  Is that
+> > right?
 > 
->    obj-$(CONFIG_HAVE_EARLY_RES) += early_res.o
+> In fact we want to go panic and 'check BIOS for error, contact your
+> hardware vendor' for all systems. But as you said, there are some
+> 'broken hardware' randomly send unknown NMIs for no good reason. So a
+> white list is used for them. And not all pre-Nehalem machines are
+> 'broken' in fact.
+
+Ok, I think I finally understand what you guys are trying to do.  I also
+can't see a problem with it.  Though I think the patch could probably use
+some clean up to make it more clear.  Off the top of my head perhaps a
+function call that sets the variable unknown_nmi_as_hwerr instead of
+setting it explicitly and maybe structuring unknown_nmi() with an if-then
+modern-message; else legacy-message; to possibly make it obvious what the
+code is trying to acheive.
+
+And yeah I know not all pre-Nehalem machines are broken.  I am usually
+sarcastic when I mention that just because being at IDF last year, I got
+the impression that pre-Nehalem machines were considered the dark ages.
+:-)
+
+I am actually curious to know how many x86_64 machines would be considered
+broken?
+
 > 
-> in kernel/Makefile, even though kernel/early_res.c is gone.
+> > That's why you guys are complaining that registering a die_notifier would
+> > be silly?
 > 
-> I'll push out my merge, but please do verify that it all looks ok.
-> 
->                                Linus
-> 
+> I think whether going die_notifier or unknown_nmi_error() depends on it
+> is general or specific for some hardware. Do you agree with that?
 
-You're right, my mistake.  Thanks for checking and fixing it up.
+Well I am hoping the only general case would be the one you want to use
+now.  Everything else would be specific and require a die_notifier.  I
+mean how many different ways do we want to have a printk/panic in
+unknown_nmi()?
 
-I will pull your tree later and test if and add the fixes for the other
-trees.
-
-	-hpa
-
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
-
+Cheers,
+Don
