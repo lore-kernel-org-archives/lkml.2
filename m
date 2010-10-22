@@ -1,17 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932588Ab0JVSVx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 14:21:53 -0400
-Received: from kroah.org ([198.145.64.141]:41912 "EHLO coco.kroah.org"
+	id S1754593Ab0JVSfm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 14:35:42 -0400
+Received: from kroah.org ([198.145.64.141]:41927 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932566Ab0JVSVv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 14:21:51 -0400
+	id S932614Ab0JVSWB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Oct 2010 14:22:01 -0400
 From: Greg Kroah-Hartman <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org
-Cc: Alan Cox <alan@linux.intel.com>, Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [PATCH 24/49] tty: Make tiocgicount a handler
-Date: Fri, 22 Oct 2010 11:21:03 -0700
-Message-Id: <1287771688-14805-24-git-send-email-gregkh@suse.de>
+Cc: Nicolas Pitre <nico@fluxnic.net>,
+        Nicolas Pitre <nicolas.pitre@canonical.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [PATCH 29/49] vcs: add poll/fasync support
+Date: Fri, 22 Oct 2010 11:21:08 -0700
+Message-Id: <1287771688-14805-29-git-send-email-gregkh@suse.de>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <20101022175112.GC13489@kroah.com>
 References: <20101022175112.GC13489@kroah.com>
@@ -19,218 +22,218 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Alan Cox <alan@linux.intel.com>
+From: Nicolas Pitre <nico@fluxnic.net>
 
-Dan Rosenberg noted that various drivers return the struct with uncleared
-fields. Instead of spending forever trying to stomp all the drivers that
-get it wrong (and every new driver) do the job in one place.
+The /dev/vcs* devices are used, amongst other things, by accessibility
+applications such as BRLTTY to display the screen content onto refreshable
+braille displays.  Currently this is performed by constantly reading from
+/dev/vcsa0 whether or not the screen content has changed.  Given the
+default braille refresh rate of 25 times per second, this easily qualifies
+as the biggest source of wake-up events preventing laptops from entering
+deeper power saving states.
 
-This first patch adds the needed operations and hooks them up, including
-the needed USB midlayer and serial core plumbing.
+To avoid this periodic polling, let's add support for select()/poll() and
+SIGIO with the /dev/vcs* devices.  The implemented semantic is to report
+data availability whenever the corresponding vt has seen some update after
+the last read() operation.  The application still has to lseek() back
+as usual in order to read() the new data.
 
-Signed-off-by: Alan Cox <alan@linux.intel.com>
+Not to create unwanted overhead, the needed data structure is allocated
+and the vt notification callback is registered only when the poll or
+fasync method is invoked for the first time per file instance.
+
+Signed-off-by: Nicolas Pitre <nicolas.pitre@canonical.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Acked-by: Alan Cox <alan@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- drivers/char/tty_io.c           |   21 +++++++++++++++++++++
- drivers/serial/serial_core.c    |   37 +++++++++++++++++--------------------
- drivers/usb/serial/usb-serial.c |   13 +++++++++++++
- include/linux/tty_driver.h      |    9 +++++++++
- include/linux/usb/serial.h      |    2 ++
- 5 files changed, 62 insertions(+), 20 deletions(-)
+ drivers/char/vc_screen.c |  133 ++++++++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 133 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/char/tty_io.c b/drivers/char/tty_io.c
-index e185db3..c05c5af 100644
---- a/drivers/char/tty_io.c
-+++ b/drivers/char/tty_io.c
-@@ -96,6 +96,7 @@
- #include <linux/bitops.h>
- #include <linux/delay.h>
- #include <linux/seq_file.h>
-+#include <linux/serial.h>
+diff --git a/drivers/char/vc_screen.c b/drivers/char/vc_screen.c
+index bcce46c..6f7054e 100644
+--- a/drivers/char/vc_screen.c
++++ b/drivers/char/vc_screen.c
+@@ -35,6 +35,12 @@
+ #include <linux/console.h>
+ #include <linux/device.h>
+ #include <linux/smp_lock.h>
++#include <linux/sched.h>
++#include <linux/fs.h>
++#include <linux/poll.h>
++#include <linux/signal.h>
++#include <linux/slab.h>
++#include <linux/notifier.h>
  
- #include <linux/uaccess.h>
- #include <asm/system.h>
-@@ -2511,6 +2512,20 @@ static int tty_tiocmset(struct tty_struct *tty, struct file *file, unsigned int
- 	return tty->ops->tiocmset(tty, file, set, clear);
+ #include <asm/uaccess.h>
+ #include <asm/byteorder.h>
+@@ -45,6 +51,86 @@
+ #undef addr
+ #define HEADER_SIZE	4
+ 
++struct vcs_poll_data {
++	struct notifier_block notifier;
++	unsigned int cons_num;
++	bool seen_last_update;
++	wait_queue_head_t waitq;
++	struct fasync_struct *fasync;
++};
++
++static int
++vcs_notifier(struct notifier_block *nb, unsigned long code, void *_param)
++{
++	struct vt_notifier_param *param = _param;
++	struct vc_data *vc = param->vc;
++	struct vcs_poll_data *poll =
++		container_of(nb, struct vcs_poll_data, notifier);
++	int currcons = poll->cons_num;
++
++	if (code != VT_UPDATE)
++		return NOTIFY_DONE;
++
++	if (currcons == 0)
++		currcons = fg_console;
++	else
++		currcons--;
++	if (currcons != vc->vc_num)
++		return NOTIFY_DONE;
++
++	poll->seen_last_update = false;
++	wake_up_interruptible(&poll->waitq);
++	kill_fasync(&poll->fasync, SIGIO, POLL_IN);
++	return NOTIFY_OK;
++}
++
++static void
++vcs_poll_data_free(struct vcs_poll_data *poll)
++{
++	unregister_vt_notifier(&poll->notifier);
++	kfree(poll);
++}
++
++static struct vcs_poll_data *
++vcs_poll_data_get(struct file *file)
++{
++	struct vcs_poll_data *poll = file->private_data;
++
++	if (poll)
++		return poll;
++
++	poll = kzalloc(sizeof(*poll), GFP_KERNEL);
++	if (!poll)
++		return NULL;
++	poll->cons_num = iminor(file->f_path.dentry->d_inode) & 127;
++	init_waitqueue_head(&poll->waitq);
++	poll->notifier.notifier_call = vcs_notifier;
++	if (register_vt_notifier(&poll->notifier) != 0) {
++		kfree(poll);
++		return NULL;
++	}
++
++	/*
++	 * This code may be called either through ->poll() or ->fasync().
++	 * If we have two threads using the same file descriptor, they could
++	 * both enter this function, both notice that the structure hasn't
++	 * been allocated yet and go ahead allocating it in parallel, but
++	 * only one of them must survive and be shared otherwise we'd leak
++	 * memory with a dangling notifier callback.
++	 */
++	spin_lock(&file->f_lock);
++	if (!file->private_data) {
++		file->private_data = poll;
++	} else {
++		/* someone else raced ahead of us */
++		vcs_poll_data_free(poll);
++		poll = file->private_data;
++	}
++	spin_unlock(&file->f_lock);
++
++	return poll;
++}
++
+ static int
+ vcs_size(struct inode *inode)
+ {
+@@ -102,6 +188,7 @@ vcs_read(struct file *file, char __user *buf, size_t count, loff_t *ppos)
+ 	struct inode *inode = file->f_path.dentry->d_inode;
+ 	unsigned int currcons = iminor(inode);
+ 	struct vc_data *vc;
++	struct vcs_poll_data *poll;
+ 	long pos;
+ 	long viewed, attr, read;
+ 	int col, maxcol;
+@@ -134,6 +221,9 @@ vcs_read(struct file *file, char __user *buf, size_t count, loff_t *ppos)
+ 	ret = -EINVAL;
+ 	if (pos < 0)
+ 		goto unlock_out;
++	poll = file->private_data;
++	if (count && poll)
++		poll->seen_last_update = true;
+ 	read = 0;
+ 	ret = 0;
+ 	while (count) {
+@@ -457,6 +547,37 @@ unlock_out:
+ 	return ret;
  }
  
-+static int tty_tiocgicount(struct tty_struct *tty, void __user *arg)
++static unsigned int
++vcs_poll(struct file *file, poll_table *wait)
 +{
-+	int retval = -EINVAL;
-+	struct serial_icounter_struct icount;
-+	memset(&icount, 0, sizeof(icount));
-+	if (tty->ops->get_icount)
-+		retval = tty->ops->get_icount(tty, &icount);
-+	if (retval != 0)
-+		return retval;
-+	if (copy_to_user(arg, &icount, sizeof(icount)))
-+		return -EFAULT;
++	struct vcs_poll_data *poll = vcs_poll_data_get(file);
++	int ret = 0;
++
++	if (poll) {
++		poll_wait(file, &poll->waitq, wait);
++		if (!poll->seen_last_update)
++			ret = POLLIN | POLLRDNORM;
++	}
++	return ret;
++}
++
++static int
++vcs_fasync(int fd, struct file *file, int on)
++{
++	struct vcs_poll_data *poll = file->private_data;
++
++	if (!poll) {
++		/* don't allocate anything if all we want is disable fasync */
++		if (!on)
++			return 0;
++		poll = vcs_poll_data_get(file);
++		if (!poll)
++			return -ENOMEM;
++	}
++
++	return fasync_helper(fd, file, on, &poll->fasync);
++}
++
+ static int
+ vcs_open(struct inode *inode, struct file *filp)
+ {
+@@ -470,11 +591,23 @@ vcs_open(struct inode *inode, struct file *filp)
+ 	return ret;
+ }
+ 
++static int vcs_release(struct inode *inode, struct file *file)
++{
++	struct vcs_poll_data *poll = file->private_data;
++
++	if (poll)
++		vcs_poll_data_free(poll);
 +	return 0;
 +}
 +
- struct tty_struct *tty_pair_get_tty(struct tty_struct *tty)
- {
- 	if (tty->driver->type == TTY_DRIVER_TYPE_PTY &&
-@@ -2631,6 +2646,12 @@ long tty_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
- 	case TIOCMBIC:
- 	case TIOCMBIS:
- 		return tty_tiocmset(tty, file, cmd, p);
-+	case TIOCGICOUNT:
-+		retval = tty_tiocgicount(tty, p);
-+		/* For the moment allow fall through to the old method */
-+        	if (retval != -EINVAL)
-+			return retval;
-+		break;
- 	case TCFLSH:
- 		switch (arg) {
- 		case TCIFLUSH:
-diff --git a/drivers/serial/serial_core.c b/drivers/serial/serial_core.c
-index bc6cddd..c4ea146 100644
---- a/drivers/serial/serial_core.c
-+++ b/drivers/serial/serial_core.c
-@@ -1074,10 +1074,10 @@ uart_wait_modem_status(struct uart_state *state, unsigned long arg)
-  * NB: both 1->0 and 0->1 transitions are counted except for
-  *     RI where only 0->1 is counted.
-  */
--static int uart_get_count(struct uart_state *state,
--			  struct serial_icounter_struct __user *icnt)
-+static int uart_get_icount(struct tty_struct *tty,
-+			  struct serial_icounter_struct *icount)
- {
--	struct serial_icounter_struct icount;
-+	struct uart_state *state = tty->driver_data;
- 	struct uart_icount cnow;
- 	struct uart_port *uport = state->uart_port;
+ static const struct file_operations vcs_fops = {
+ 	.llseek		= vcs_lseek,
+ 	.read		= vcs_read,
+ 	.write		= vcs_write,
++	.poll		= vcs_poll,
++	.fasync		= vcs_fasync,
+ 	.open		= vcs_open,
++	.release	= vcs_release,
+ };
  
-@@ -1085,19 +1085,19 @@ static int uart_get_count(struct uart_state *state,
- 	memcpy(&cnow, &uport->icount, sizeof(struct uart_icount));
- 	spin_unlock_irq(&uport->lock);
- 
--	icount.cts         = cnow.cts;
--	icount.dsr         = cnow.dsr;
--	icount.rng         = cnow.rng;
--	icount.dcd         = cnow.dcd;
--	icount.rx          = cnow.rx;
--	icount.tx          = cnow.tx;
--	icount.frame       = cnow.frame;
--	icount.overrun     = cnow.overrun;
--	icount.parity      = cnow.parity;
--	icount.brk         = cnow.brk;
--	icount.buf_overrun = cnow.buf_overrun;
-+	icount->cts         = cnow.cts;
-+	icount->dsr         = cnow.dsr;
-+	icount->rng         = cnow.rng;
-+	icount->dcd         = cnow.dcd;
-+	icount->rx          = cnow.rx;
-+	icount->tx          = cnow.tx;
-+	icount->frame       = cnow.frame;
-+	icount->overrun     = cnow.overrun;
-+	icount->parity      = cnow.parity;
-+	icount->brk         = cnow.brk;
-+	icount->buf_overrun = cnow.buf_overrun;
- 
--	return copy_to_user(icnt, &icount, sizeof(icount)) ? -EFAULT : 0;
-+	return 0;
- }
- 
- /*
-@@ -1150,10 +1150,6 @@ uart_ioctl(struct tty_struct *tty, struct file *filp, unsigned int cmd,
- 	case TIOCMIWAIT:
- 		ret = uart_wait_modem_status(state, arg);
- 		break;
--
--	case TIOCGICOUNT:
--		ret = uart_get_count(state, uarg);
--		break;
- 	}
- 
- 	if (ret != -ENOIOCTLCMD)
-@@ -2295,6 +2291,7 @@ static const struct tty_operations uart_ops = {
- #endif
- 	.tiocmget	= uart_tiocmget,
- 	.tiocmset	= uart_tiocmset,
-+	.get_icount	= uart_get_icount,
- #ifdef CONFIG_CONSOLE_POLL
- 	.poll_init	= uart_poll_init,
- 	.poll_get_char	= uart_poll_get_char,
-diff --git a/drivers/usb/serial/usb-serial.c b/drivers/usb/serial/usb-serial.c
-index 7a2177c..e64da74 100644
---- a/drivers/usb/serial/usb-serial.c
-+++ b/drivers/usb/serial/usb-serial.c
-@@ -519,6 +519,18 @@ static int serial_tiocmset(struct tty_struct *tty, struct file *file,
- 	return -EINVAL;
- }
- 
-+static int serial_get_icount(struct tty_struct *tty,
-+				struct serial_icounter_struct *icount)
-+{
-+	struct usb_serial_port *port = tty->driver_data;
-+
-+	dbg("%s - port %d", __func__, port->number);
-+
-+	if (port->serial->type->get_icount)
-+		return port->serial->type->get_icount(tty, icount);
-+	return -EINVAL;
-+}
-+
- /*
-  * We would be calling tty_wakeup here, but unfortunately some line
-  * disciplines have an annoying habit of calling tty->write from
-@@ -1195,6 +1207,7 @@ static const struct tty_operations serial_ops = {
- 	.chars_in_buffer =	serial_chars_in_buffer,
- 	.tiocmget =		serial_tiocmget,
- 	.tiocmset =		serial_tiocmset,
-+	.get_icount = 		serial_get_icount,
- 	.cleanup = 		serial_cleanup,
- 	.install = 		serial_install,
- 	.proc_fops =		&serial_proc_fops,
-diff --git a/include/linux/tty_driver.h b/include/linux/tty_driver.h
-index b086779..db2d227 100644
---- a/include/linux/tty_driver.h
-+++ b/include/linux/tty_driver.h
-@@ -224,6 +224,12 @@
-  *	unless the tty also has a valid tty->termiox pointer.
-  *
-  *	Optional: Called under the termios lock
-+ *
-+ * int (*get_icount)(struct tty_struct *tty, struct serial_icounter *icount);
-+ *
-+ *	Called when the device receives a TIOCGICOUNT ioctl. Passed a kernel
-+ *	structure to complete. This method is optional and will only be called
-+ *	if provided (otherwise EINVAL will be returned).
-  */
- 
- #include <linux/fs.h>
-@@ -232,6 +238,7 @@
- 
- struct tty_struct;
- struct tty_driver;
-+struct serial_icounter_struct;
- 
- struct tty_operations {
- 	struct tty_struct * (*lookup)(struct tty_driver *driver,
-@@ -268,6 +275,8 @@ struct tty_operations {
- 			unsigned int set, unsigned int clear);
- 	int (*resize)(struct tty_struct *tty, struct winsize *ws);
- 	int (*set_termiox)(struct tty_struct *tty, struct termiox *tnew);
-+	int (*get_icount)(struct tty_struct *tty,
-+				struct serial_icounter_struct *icount);
- #ifdef CONFIG_CONSOLE_POLL
- 	int (*poll_init)(struct tty_driver *driver, int line, char *options);
- 	int (*poll_get_char)(struct tty_driver *driver, int line);
-diff --git a/include/linux/usb/serial.h b/include/linux/usb/serial.h
-index 55675b1..16d682f 100644
---- a/include/linux/usb/serial.h
-+++ b/include/linux/usb/serial.h
-@@ -271,6 +271,8 @@ struct usb_serial_driver {
- 	int  (*tiocmget)(struct tty_struct *tty, struct file *file);
- 	int  (*tiocmset)(struct tty_struct *tty, struct file *file,
- 			 unsigned int set, unsigned int clear);
-+	int  (*get_icount)(struct tty_struct *tty,
-+			struct serial_icounter_struct *icount);
- 	/* Called by the tty layer for port level work. There may or may not
- 	   be an attached tty at this point */
- 	void (*dtr_rts)(struct usb_serial_port *port, int on);
+ static struct class *vc_class;
 -- 
 1.7.2
 
