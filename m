@@ -1,111 +1,303 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757478Ab0JVPf3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 11:35:29 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:60201 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755068Ab0JVPf1 (ORCPT
+	id S1757461Ab0JVPhE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 11:37:04 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:49790 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753138Ab0JVPhC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 11:35:27 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=message-id:from:date:to:reply-to:cc:subject;
-        b=TltwW87/Bfv2bh8NiRqKqpDT5b6F2O8D3C5H4yT41yufCZ/QXOgoMCGLqyF8iZqqGm
-         vgbGvRA/HaVoP5hEFEbA==
-Message-ID: <4cc1af3c.8ee7d80a.5a28.ffff868e@mx.google.com>
-From: Stephane Eranian <eranian@google.com>
-Date: Fri, 22 Oct 2010 17:25:01 +0200
-To: linux-kernel@vger.kernel.org
-Reply-to: eranian@google.com
-Cc: acme@redhat.com, peterz@infradead.org, mingo@elte.hu, paulus@samba.org,
-        davem@davemloft.net, fweisbec@gmail.com, perfmon2-devel@lists.sf.net,
-        eranian@gmail.com, eranian@google.com, robert.richter@amd.com
-Subject: [PATCH] perf: fix issue with binaries using 16-bytes buildids (v2)
-X-System-Of-Record: true
+	Fri, 22 Oct 2010 11:37:02 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: "Par-Gunnar Hjalmdahl" <pghatwork@gmail.com>
+Subject: Re: [PATCH 1/9] mfd: Add support for the ST-Ericsson CG2900.
+Date: Fri, 22 Oct 2010 17:36:57 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.36-next-20101021+; KDE/4.5.1; x86_64; ; )
+Cc: linus.walleij@stericsson.com, linux-bluetooth@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+References: <AANLkTineXA2ZY0J7+dZhqywz+4aAVgzihu+LDDbsL8mu@mail.gmail.com>
+In-Reply-To: <AANLkTineXA2ZY0J7+dZhqywz+4aAVgzihu+LDDbsL8mu@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201010221736.57671.arnd@arndb.de>
+X-Provags-ID: V02:K0:mYHe7LYptnIufXwh8EuFllmUS7cr5jQgNxQmjiqGzJ1
+ +BON8+QJlY86wLRlHGzoglEvVAj+pVIONqetZatccxAAR3g/pY
+ 1Enp8iiRoTHcSqD+pTVFym6vJZytXs1dYM5j2y5bhJ+ImnfQPi
+ 5+VY8X5pb3lT5EsFwfm5elhoP7PycVjy6HoSeBK7Fkl/o2KXmQ
+ Y8fc12zB5OyshSj/VBSDQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Buildid can vary in size. According to the man page of ld, buildid can
-be 160 bits (sha1) or 128 bits (md5, uuid). Perf assumes buildid size
-of 20 bytes (160 bits) regardless. When dealing with md5 buildids, it
-would thus read more than needed and that would cause mismatches and
-samples without symbols.
+On Friday 22 October 2010 12:35:16 Par-Gunnar Hjalmdahl wrote:
+> This patch adds support for the ST-Ericsson CG2900 Connectivity
+> Combo controller.
+> This patch adds the central framework to be able to register CG2900 users,
+> transports, and chip handlers.
+> 
+> Signed-off-by: Par-Gunnar Hjalmdahl <par-gunnar.p.hjalmdahl@stericsson.com>
 
-This patch fixes this by taking into account the actual buildid size
-as encoded int he section header. The leftover bytes are also cleared.
+Looks ok from a coding style perspective, but some important information is
+missing from the description:
 
-This second version fixes a minor issue with the memset() base position.
+* What is a CG2900?
+* Why is it a MFD device rather than e.g. a bus or a subsystem?
 
-Signed-off-by: Stephane Eranian <eranian@google.com>
+> +config MFD_CG2900
+> +	tristate "Support ST-Ericsson CG2900 main structure"
+> +	depends on NET
+> +	help
+> +	  Support for ST-Ericsson CG2900 Connectivity Combo controller main structure.
+> +	  Supports multiple functionalities muxed over a Bluetooth HCI H:4 interface.
+> +	  CG2900 support Bluetooth, FM radio, and GPS.
+> +
 
----
+Can you explain what it means to mux over a H:4 interface? Does this mean
+you use bluetooth infrastructure that is designed for wireless communication
+in order to connect on-board or on-chip devices?
 
-diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
-index b39f499..b4fdb91 100644
---- a/tools/perf/util/symbol.c
-+++ b/tools/perf/util/symbol.c
-@@ -1027,8 +1027,7 @@ static int dso__load_sym(struct dso *self, struct map *map, const char *name,
- 	if (self->has_build_id) {
- 		u8 build_id[BUILD_ID_SIZE];
- 
--		if (elf_read_build_id(elf, build_id,
--				      BUILD_ID_SIZE) != BUILD_ID_SIZE)
-+		if (elf_read_build_id(elf, build_id, BUILD_ID_SIZE) < 0)
- 			goto out_elf_end;
- 
- 		if (!dso__build_id_equal(self, build_id))
-@@ -1287,8 +1286,8 @@ static int elf_read_build_id(Elf *elf, void *bf, size_t size)
- 	ptr = data->d_buf;
- 	while (ptr < (data->d_buf + data->d_size)) {
- 		GElf_Nhdr *nhdr = ptr;
--		int namesz = NOTE_ALIGN(nhdr->n_namesz),
--		    descsz = NOTE_ALIGN(nhdr->n_descsz);
-+		size_t namesz = NOTE_ALIGN(nhdr->n_namesz),
-+		       descsz = NOTE_ALIGN(nhdr->n_descsz);
- 		const char *name;
- 
- 		ptr += sizeof(*nhdr);
-@@ -1297,8 +1296,10 @@ static int elf_read_build_id(Elf *elf, void *bf, size_t size)
- 		if (nhdr->n_type == NT_GNU_BUILD_ID &&
- 		    nhdr->n_namesz == sizeof("GNU")) {
- 			if (memcmp(name, "GNU", sizeof("GNU")) == 0) {
--				memcpy(bf, ptr, BUILD_ID_SIZE);
--				err = BUILD_ID_SIZE;
-+				size_t sz = min(size, descsz);
-+				memcpy(bf, ptr, sz);
-+				memset(bf + sz, 0, size - sz);
-+				err = descsz;
- 				break;
- 			}
- 		}
-@@ -1350,7 +1351,7 @@ int sysfs__read_build_id(const char *filename, void *build_id, size_t size)
- 	while (1) {
- 		char bf[BUFSIZ];
- 		GElf_Nhdr nhdr;
--		int namesz, descsz;
-+		size_t namesz, descsz;
- 
- 		if (read(fd, &nhdr, sizeof(nhdr)) != sizeof(nhdr))
- 			break;
-@@ -1359,15 +1360,16 @@ int sysfs__read_build_id(const char *filename, void *build_id, size_t size)
- 		descsz = NOTE_ALIGN(nhdr.n_descsz);
- 		if (nhdr.n_type == NT_GNU_BUILD_ID &&
- 		    nhdr.n_namesz == sizeof("GNU")) {
--			if (read(fd, bf, namesz) != namesz)
-+			if (read(fd, bf, namesz) != (ssize_t)namesz)
- 				break;
- 			if (memcmp(bf, "GNU", sizeof("GNU")) == 0) {
--				if (read(fd, build_id,
--				    BUILD_ID_SIZE) == BUILD_ID_SIZE) {
-+				size_t sz = min(descsz, size);
-+				if (read(fd, build_id, sz) == (ssize_t)sz) {
-+					memset(build_id + sz, 0, size - sz);
- 					err = 0;
- 					break;
- 				}
--			} else if (read(fd, bf, descsz) != descsz)
-+			} else if (read(fd, bf, descsz) != (ssize_t)descsz)
- 				break;
- 		} else {
- 			int n = namesz + descsz;
+> @@ -0,0 +1,2401 @@
+> +/*
+> + * drivers/mfd/cg2900/cg2900_core.c
+> + *
+> + * Copyright (C) ST-Ericsson SA 2010
+> + * Authors:
+> + * Par-Gunnar Hjalmdahl (par-gunnar.p.hjalmdahl@stericsson.com) for
+> ST-Ericsson.
+
+Your email client rewraps lines. You need to fix so that other people
+can apply your patches.
+
+> +/*
+> + * chip_handlers - List of the register handlers for different chips.
+> + */
+> +LIST_HEAD(chip_handlers);
+
+Should this be static? Don't you need a lock to access the list?
+
+> +/**
+> + * find_h4_user() - Get H4 user based on supplied H4 channel.
+> + * @h4_channel:	H4 channel.
+> + * @dev:	Stored CG2900 device.
+> + * @skb:	(optional) skb with received packet. Set to NULL if NA.
+> + *
+> + * Returns:
+> + *   0 if there is no error.
+> + *   -EINVAL if bad channel is supplied or no user was found.
+> + *   -ENXIO if channel is audio channel but not registered with CG2900.
+> + */
+> +static int find_h4_user(int h4_channel, struct cg2900_device **dev,
+> +			const struct sk_buff * const skb)
+> +{
+> +	int err = 0;
+> +	struct cg2900_users *users = &(core_info->users);
+> +	struct cg2900_h4_channels *chan = &(core_info->h4_channels);
+> +
+> +	if (h4_channel == chan->bt_cmd_channel) {
+> +		*dev = users->bt_cmd;
+> +	} else if (h4_channel == chan->bt_acl_channel) {
+> +		*dev = users->bt_acl;
+> +	} else if (h4_channel == chan->bt_evt_channel) {
+> +		*dev = users->bt_evt;
+> +		/* Check if it's event generated by previously sent audio user
+> +		 * command. If so then that event should be dispatched to audio
+> +		 * user*/
+> +		err = find_bt_audio_user(h4_channel, dev, skb);
+> +	} else if (h4_channel == chan->gnss_channel) {
+> +		*dev = users->gnss;
+> +	} else if (h4_channel == chan->fm_radio_channel) {
+> +		*dev = users->fm_radio;
+> +		/* Check if it's an event generated by previously sent audio
+> +		 * user command. If so then that event should be dispatched to
+> +		 * audio user */
+> +		err = find_fm_audio_user(h4_channel, dev, skb);
+> +	} else if (h4_channel == chan->debug_channel) {
+> +		*dev = users->debug;
+> +	} else if (h4_channel == chan->ste_tools_channel) {
+> +		*dev = users->ste_tools;
+> +	} else if (h4_channel == chan->hci_logger_channel) {
+> +		*dev = users->hci_logger;
+> +	} else if (h4_channel == chan->us_ctrl_channel) {
+> +		*dev = users->us_ctrl;
+> +	} else if (h4_channel == chan->core_channel) {
+> +		*dev = users->core;
+> +	} else {
+> +		*dev = NULL;
+> +		CG2900_ERR("Bad H:4 channel supplied: 0x%X", h4_channel);
+> +		return -EINVAL;
+> +	}
+> +
+> +	return err;
+> +}
+
+You seem to have a number of functions that need to go through each
+possible user/channel/submodule. This looks like somethin is not
+abstracted well enough.
+
+> +
+> +/**
+> + * add_h4_user() - Add H4 user to user storage based on supplied H4 channel.
+> + * @dev:	Stored CG2900 device.
+> + * @name:	Device name to identify different devices that are using
+> + *		the same H4 channel.
+> + *
+> + * Returns:
+> + *   0 if there is no error.
+> + *   -EINVAL if NULL pointer or bad channel is supplied.
+> + *   -EBUSY if there already is a user for supplied channel.
+> + */
+> +static int add_h4_user(struct cg2900_device *dev, const char * const name)
+> +{
+
+Where does that name come from? Why not just use an enum if the name is
+only use for strncmp?
+
+> +static ssize_t test_char_dev_read(struct file *filp, char __user *buf,
+> +				  size_t count, loff_t *f_pos)
+> +{
+> +	struct sk_buff *skb;
+> +	int bytes_to_copy;
+> +	int err;
+> +	struct sk_buff_head *rx_queue = &core_info->test_char_dev->rx_queue;
+
+What is this read/write interface used for?
+
+The name suggests that this is only for testing and not an essential
+part of your driver. Could this be made a separate driver?
+
+It also looks like you do socket communication here, can't you use
+a proper AF_BLUETOOTH socket to do the same?
+
+> +	CG2900_INFO("test_char_dev_read");
+> +
+> +	if (skb_queue_empty(rx_queue))
+> +		wait_event_interruptible(char_wait_queue,
+> +					 !(skb_queue_empty(rx_queue)));
+> +
+> +	skb = skb_dequeue(rx_queue);
+> +	if (!skb) {
+> +		CG2900_INFO("skb queue is empty - return with zero bytes");
+> +		bytes_to_copy = 0;
+> +		goto finished;
+> +	}
+> +
+> +	bytes_to_copy = min(count, skb->len);
+> +	err = copy_to_user(buf, skb->data, bytes_to_copy);
+> +	if (err) {
+> +		skb_queue_head(rx_queue, skb);
+> +		return -EFAULT;
+> +	}
+> +
+> +	skb_pull(skb, bytes_to_copy);
+> +
+> +	if (skb->len > 0)
+> +		skb_queue_head(rx_queue, skb);
+> +	else
+> +		kfree_skb(skb);
+> +
+> +finished:
+> +	return bytes_to_copy;
+> +}
+
+This does not handle short/continued reads.
+
+> +EXPORT_SYMBOL(cg2900_reset);
+
+How about making your symbols EXPORT_SYMBOL_GPL instead of EXPORT_SYMBOL?
+
+> +module_param(cg2900_debug_level, int, S_IRUGO | S_IWUSR | S_IWGRP);
+> +MODULE_PARM_DESC(cg2900_debug_level,
+> +		 "Debug level. Default 1. Possible values:\n"
+> +		 "\t0  = No debug\n"
+> +		 "\t1  = Error prints\n"
+> +		 "\t10 = General info, e.g. function entries\n"
+> +		 "\t20 = Debug info, e.g. steps in a functionality\n"
+> +		 "\t25 = Data info, i.e. prints when data is transferred\n"
+> +		 "\t30 = Data content, i.e. contents of the transferred data");
+
+Please don't introduce new debugging frameworks, we have enough of them
+already. Syslog handles different levels of output just fine, so just
+remove all your debugging stuff and use dev_dbg, dev_info, etc to print
+messages about the device if you must.
+
+Many messages can probably be removed entirely.
+
+> +#define CG2900_DEFAULT_DEBUG_LEVEL 1
+> +
+> +/* module_param declared in cg2900_core.c */
+> +extern int cg2900_debug_level;
+> +
+> +#if defined(NDEBUG) || CG2900_DEFAULT_DEBUG_LEVEL == 0
+> +	#define CG2900_DBG_DATA_CONTENT(__prefix, __buf, __len)
+> +	#define CG2900_DBG_DATA(fmt, arg...)
+> +	#define CG2900_DBG(fmt, arg...)
+> +	#define CG2900_INFO(fmt, arg...)
+> +	#define CG2900_ERR(fmt, arg...)
+> +#else
+> +
+> +	#define CG2900_DBG_DATA_CONTENT(__prefix, __buf, __len)		\
+> +	do {								\
+> +		if (cg2900_debug_level >= 30)				\
+> +			print_hex_dump_bytes("CG2900 " __prefix ": " ,	\
+> +					     DUMP_PREFIX_NONE, __buf, __len); \
+> +	} while (0)
+> +
+> +	#define CG2900_DBG_DATA(fmt, arg...)				\
+> +	do {								\
+> +		if (cg2900_debug_level >= 25)				\
+> +			pr_debug("CG2900 %s: " fmt "\n" , __func__ , ## arg); \
+> +	} while (0)
+> +
+> +	#define CG2900_DBG(fmt, arg...)					\
+> +	do {								\
+> +		if (cg2900_debug_level >= 20)				\
+> +			pr_debug("CG2900 %s: " fmt "\n" , __func__ , ## arg); \
+> +	} while (0)
+> +
+> +	#define CG2900_INFO(fmt, arg...)				\
+> +	do {								\
+> +		if (cg2900_debug_level >= 10)				\
+> +			pr_info("CG2900: " fmt "\n" , ## arg);		\
+> +	} while (0)
+> +
+> +	#define CG2900_ERR(fmt, arg...)					\
+> +	do {								\
+> +		if (cg2900_debug_level >= 1)				\
+> +			pr_err("CG2900 %s: " fmt "\n" , __func__ , ## arg); \
+> +	} while (0)
+> +
+> +#endif /* NDEBUG */
+
+You'll feel relieved when all this is gone...
+
+> +
+> +#ifndef _BLUETOOTH_DEFINES_H_
+> +#define _BLUETOOTH_DEFINES_H_
+> +
+> +#include <linux/types.h>
+> +
+> +/* H:4 offset in an HCI packet */
+> +#define HCI_H4_POS				0
+> +#define HCI_H4_SIZE				1
+> +
+> +/* Standardized Bluetooth H:4 channels */
+> +#define HCI_BT_CMD_H4_CHANNEL			0x01
+> +#define HCI_BT_ACL_H4_CHANNEL			0x02
+> +#define HCI_BT_SCO_H4_CHANNEL			0x03
+> +#define HCI_BT_EVT_H4_CHANNEL			0x04
+> +
+> +/* Bluetooth Opcode Group Field (OGF) */
+> +#define HCI_BT_OGF_LINK_CTRL			0x01
+> +#define HCI_BT_OGF_LINK_POLICY			0x02
+> +#define HCI_BT_OGF_CTRL_BB			0x03
+> +#define HCI_BT_OGF_LINK_INFO			0x04
+> +#define HCI_BT_OGF_LINK_STATUS			0x05
+> +#define HCI_BT_OGF_LINK_TESTING			0x06
+> +#define HCI_BT_OGF_VS				0x3F
+
+These all look like generic bluetooth definitions, not cg2900
+specific. Should they be part of global headers? Are they perhaps
+already?
+
+	Arnd
