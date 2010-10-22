@@ -1,59 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751949Ab0JVCwx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Oct 2010 22:52:53 -0400
-Received: from casper.infradead.org ([85.118.1.10]:47768 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751149Ab0JVCwv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Oct 2010 22:52:51 -0400
-Date: Fri, 22 Oct 2010 00:52:45 -0200
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Luming Yu <luming.yu@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: Re: why could cause PerfTop get nothing output ?
-Message-ID: <20101022025245.GJ23835@ghostprotocols.net>
-References: <AANLkTi=vJArRbLup=F2duoxx47LFGTT3++4QiFZHJbzQ@mail.gmail.com>
+	id S1752264Ab0JVCxK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Oct 2010 22:53:10 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:47788 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751267Ab0JVCxI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Oct 2010 22:53:08 -0400
+Message-ID: <4CC0FBDC.4010700@zytor.com>
+Date: Thu, 21 Oct 2010 19:50:04 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc13 Thunderbird/3.1.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTi=vJArRbLup=F2duoxx47LFGTT3++4QiFZHJbzQ@mail.gmail.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: "H. Peter Anvin" <hpa@linux.intel.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        CAI Qian <caiqian@redhat.com>, "David S. Miller" <davem@davemloft.net>,
+        Felipe Balbi <balbi@ti.com>, Ingo Molnar <mingo@elte.hu>,
+        Jan Beulich <jbeulich@novell.com>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
+        Jeremy Fitzhardinge <jeremy@goop.org>,
+        Kevin Hilman <khilman@deeprootsystems.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Michael Ellerman <michael@ellerman.id.au>,
+        Michal Simek <monstr@monstr.eu>, Paul Mundt <lethal@linux-sh.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Russell King <rmk@arm.linux.org.uk>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Tomi Valkeinen <tomi.valkeinen@nokia.com>,
+        Vivek Goyal <vgoyal@redhat.com>, Yinghai Lu <yinghai@kernel.org>,
+        ext Grazvydas Ignotas <notasas@gmail.com>, linux-mm@kvack.org
+Subject: Re: [GIT PULL] memblock for 2.6.37
+References: <201010220050.o9M0ognt032167@hera.kernel.org> <AANLkTi=2tPU6qwuoOEfS7NfsNX+7vCYhvkHzNOcx4Gf3@mail.gmail.com>
+In-Reply-To: <AANLkTi=2tPU6qwuoOEfS7NfsNX+7vCYhvkHzNOcx4Gf3@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Sat, Oct 09, 2010 at 05:07:42AM -0400, Luming Yu escreveu:
-> Hi acme,
+On 10/21/2010 06:59 PM, Linus Torvalds wrote:
+> On Thu, Oct 21, 2010 at 5:50 PM, H. Peter Anvin <hpa@linux.intel.com> wrote:
+>>
+>> The unmerged branch is at:
+>>
+>>  git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git core-memblock-for-linus
+>>
+>> The premerged branch is at:
+>>
+>>  git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git core-memblock-for-linus-merged
 > 
-> I got nothing output as below, wondering if it was due to too few interrupts ?
-
-Try using a higher frequency:
-
-perf top -F 100000
-
-> Is it possbile to get perf top based on samples from other Perf events?
-
-Yes, any event, just specify it like:
-
-perf top -e instructions
-
-- Arnaldo
-
-> [root@localhost clocksource0]# rpm -qa | grep perf
-> perf-2.6.36-0.35.rc7.git0.fc15.x86_64
-> [root@localhost clocksource0]# uname -a
-> Linux localhost.localdomain 2.6.36-0.35.rc7.git0.fc15.x86_64 #1 SMP
-> Wed Oct 6 22:02:54 UTC 2010 x86_64 x86_64 x86_64 GNU/Linux
-> [root@localhost clocksource0]# perf top
+> I always tend to take the unmerged version, because I want to see what
+> the conflicts are (it gives me some view of what clashes), but when
+> people do pre-merges I then try to compare my merge against theirs.
 > 
-> -------------------------------------------------------------------------------
->    PerfTop:       0 irqs/sec  kernel:-nan%  exact: -nan% [1000Hz
-> cycles],  (all, 2 CPUs)
-> -------------------------------------------------------------------------------
+
+Sounds like a very good idea.  I'll take it as a request to continue to
+do both if there are anything but trivial conflicts.
+
+
+> However, in this case, your pre-merged version differs. But I think
+> it's your merge that was incorrect. You left this line:
 > 
->              samples  pcnt  DSO
->              _______ _____
+>    obj-$(CONFIG_HAVE_EARLY_RES) += early_res.o
+> 
+> in kernel/Makefile, even though kernel/early_res.c is gone.
+> 
+> I'll push out my merge, but please do verify that it all looks ok.
+> 
+>                                Linus
+> 
+
+You're right, my mistake.  Thanks for checking and fixing it up.
+
+I will pull your tree later and test if and add the fixes for the other
+trees.
+
+	-hpa
+
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
+
