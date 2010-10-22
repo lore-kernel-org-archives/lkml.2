@@ -1,84 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751807Ab0JVD6n (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Oct 2010 23:58:43 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:58026 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751003Ab0JVD6m (ORCPT
+	id S1751542Ab0JVEEh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 00:04:37 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:61803 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751126Ab0JVEEf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Oct 2010 23:58:42 -0400
-X-Authority-Analysis: v=1.1 cv=6ptpMFIBtxRk0xdOb6IhJTbTLVRlKjWFes7R4SsWCrA= c=1 sm=0 a=A6yVOXcETFUA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=QPNwdh67xy5aMDjlxJIA:9 a=2xgu3lP9YHmzrGFJlG1RX2o1WVsA:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: [PATCH v2][GIT PULL] tracing: Prevent unloadable modules from
- using trace_bprintk()
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-In-Reply-To: <201010221413.28588.rusty@rustcorp.com.au>
-References: <1287668742.16971.585.camel@gandalf.stny.rr.com>
-	 <201010220805.14454.rusty@rustcorp.com.au>
-	 <1287700463.16971.603.camel@gandalf.stny.rr.com>
-	 <201010221413.28588.rusty@rustcorp.com.au>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Thu, 21 Oct 2010 23:58:38 -0400
-Message-ID: <1287719918.16971.615.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Fri, 22 Oct 2010 00:04:35 -0400
+Message-ID: <4CC10D07.6000303@kernel.org>
+Date: Thu, 21 Oct 2010 21:03:19 -0700
+From: Yinghai Lu <yinghai@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.12) Gecko/20100914 SUSE/3.0.8 Thunderbird/3.0.8
+MIME-Version: 1.0
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: Jeremy Fitzhardinge <jeremy@goop.org>,
+        Xen Devel <Xen-devel@lists.xensource.com>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Gianluca Guida <gianluca.guida@citrix.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: linux-next: manual merge of the xen tree with the tip tree
+References: <20101022140335.c4a3a48f.sfr@canb.auug.org.au> <20101022143607.132d381c.sfr@canb.auug.org.au>
+In-Reply-To: <20101022143607.132d381c.sfr@canb.auug.org.au>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-10-22 at 14:13 +1030, Rusty Russell wrote:
-
-> > > 
-> > > I think disabling use in modules is lazy,
-> > 
-> > and safer.
+On 10/21/2010 08:36 PM, Stephen Rothwell wrote:
+> Hi Jeremy,
 > 
-> Well then just delete trace_bprintk altogether.  Even safer!
-
-Reminds me of the argument against lowering the speed limit to 55. "it's
-safer"... "Then lower it to zero, even safer!"
-
-
+> On Fri, 22 Oct 2010 14:03:35 +1100 Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+>>
+>> Today's linux-next merge of the xen tree got a conflict in
+>> arch/x86/mm/init_32.c between commit
+>> 1d931264af0f10649b35afa8fbd2e169da51ac08 ("x86-32, memblock: Make
+>> add_highpages honor early reserved ranges") from the tip tree and commit
+>> 07147a06ac3b1b028124ea00ba44e69eb8ea7685 ("x86/32: honor reservations of
+>> high memory") from the xen tree.
+>>
+>> I have no idea how to fix this up, sorry, so I have used the xen tree
+>> from next-20101021 for today.
 > 
-> > > Can't you detect this on module unload and fix it up?  Or delay freeing the
-> > > module until the trace ring is emptied?
-> > 
-> > One possibility is to magically make all string formats used in
-> > trace_printk into its own section, and keep it allocated until the ring
-> > buffer is empty. Or, we can just do that with the module's entire string
-> > section, since we know whether or not that module has a trace_printk in
-> > it or not.
-> 
-> Exactly.  Set a flag in the module if it resolves trace_printk, and defer freeing
-> the module in that case.  This shouldn't be that hard...
 
-Here's my worry.
+x86-32, memblock: Make add_highpages honor early reserved ranges
 
-1) Some module with tracepoints is loaded at boot up.
-2) The user does tracing and forgets about it (ring buffer filled)
-3) Unloads module (don't free)
-4) loads module with trace points
-5) unloads module (don't free)
-etc, etc
+is updated version with memblock for
 
-memory leak.
+x86/32: honor reservations of high memory
 
-Thus this is not that trivial. We probably need to have a way to lock a
-module when its tracepoint is activated, and only unlock it when the
-ring buffer is emptied.
+Assume Jeremy would update the xen tree.
 
-Do we want to prevent the module from being unloaded while the ring
-buffer is full (after that module has been traced?), or do we let the
-module be unloaded, but just prevent this one section from being freed?
+Thanks
 
--- Steve
-
+	Yinghai
 
