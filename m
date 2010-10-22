@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932636Ab0JVSWG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 14:22:06 -0400
-Received: from kroah.org ([198.145.64.141]:41932 "EHLO coco.kroah.org"
+	id S1758665Ab0JVSWX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 14:22:23 -0400
+Received: from kroah.org ([198.145.64.141]:41941 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932590Ab0JVSWE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 14:22:04 -0400
+	id S1755789Ab0JVSWV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Oct 2010 14:22:21 -0400
 From: Greg Kroah-Hartman <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org
-Cc: Nicolas Pitre <nico@fluxnic.net>,
-        Nicolas Pitre <nicolas.pitre@canonical.com>,
-        Alan Cox <alan@linux.intel.com>, Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [PATCH 30/49] vcs: invoke the vt update callback when /dev/vcs* is written to
-Date: Fri, 22 Oct 2010 11:21:09 -0700
-Message-Id: <1287771688-14805-30-git-send-email-gregkh@suse.de>
+Cc: David Daney <ddaney@caviumnetworks.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [PATCH 32/49] serial: 8250: Don't delay after transmitter is ready.
+Date: Fri, 22 Oct 2010 11:21:11 -0700
+Message-Id: <1287771688-14805-32-git-send-email-gregkh@suse.de>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <20101022175112.GC13489@kroah.com>
 References: <20101022175112.GC13489@kroah.com>
@@ -21,62 +20,42 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Nicolas Pitre <nico@fluxnic.net>
+From: David Daney <ddaney@caviumnetworks.com>
 
-A notifier chain is called whenever the vt code modifies a terminal
-content, except for one case which is when the modification comes
-through writes to /dev/vcs* devices.  Let's add the missing notifier
-invocation at the end of vcs_write() for that case too.
+The loop in wait_for_xmitr() is delaying one extra uS after the ready
+condition has been met.  Rewrite the loop to only delay if the
+transmitter is not ready.
 
-Signed-off-by: Nicolas Pitre <nicolas.pitre@canonical.com>
-Cc: Alan Cox <alan@linux.intel.com>
+Signed-off-by: David Daney <ddaney@caviumnetworks.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- drivers/char/vc_screen.c  |    2 ++
- drivers/char/vt.c         |    5 +++++
- include/linux/selection.h |    1 +
- 3 files changed, 8 insertions(+), 0 deletions(-)
+ drivers/serial/8250.c |    6 ++++--
+ 1 files changed, 4 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/char/vc_screen.c b/drivers/char/vc_screen.c
-index 6f7054e..273ab44 100644
---- a/drivers/char/vc_screen.c
-+++ b/drivers/char/vc_screen.c
-@@ -538,6 +538,8 @@ vcs_write(struct file *file, const char __user *buf, size_t count, loff_t *ppos)
- 	}
- 	*ppos += written;
- 	ret = written;
-+	if (written)
-+		vcs_scr_updated(vc);
+diff --git a/drivers/serial/8250.c b/drivers/serial/8250.c
+index 24110f6..31b8cca 100644
+--- a/drivers/serial/8250.c
++++ b/drivers/serial/8250.c
+@@ -1867,15 +1867,17 @@ static void wait_for_xmitr(struct uart_8250_port *up, int bits)
+ 	unsigned int status, tmout = 10000;
  
- unlock_out:
- 	release_console_sem();
-diff --git a/drivers/char/vt.c b/drivers/char/vt.c
-index 281aada..a8ec48e 100644
---- a/drivers/char/vt.c
-+++ b/drivers/char/vt.c
-@@ -4182,6 +4182,11 @@ void vcs_scr_writew(struct vc_data *vc, u16 val, u16 *org)
- 	}
- }
+ 	/* Wait up to 10ms for the character(s) to be sent. */
+-	do {
++	for (;;) {
+ 		status = serial_in(up, UART_LSR);
  
-+void vcs_scr_updated(struct vc_data *vc)
-+{
-+	notify_update(vc);
-+}
-+
- /*
-  *	Visible symbols for modules
-  */
-diff --git a/include/linux/selection.h b/include/linux/selection.h
-index 8cdaa11..85193aa 100644
---- a/include/linux/selection.h
-+++ b/include/linux/selection.h
-@@ -39,5 +39,6 @@ extern void putconsxy(struct vc_data *vc, unsigned char *p);
+ 		up->lsr_saved_flags |= status & LSR_SAVE_FLAGS;
  
- extern u16 vcs_scr_readw(struct vc_data *vc, const u16 *org);
- extern void vcs_scr_writew(struct vc_data *vc, u16 val, u16 *org);
-+extern void vcs_scr_updated(struct vc_data *vc);
++		if ((status & bits) == bits)
++			break;
+ 		if (--tmout == 0)
+ 			break;
+ 		udelay(1);
+-	} while ((status & bits) != bits);
++	}
  
- #endif
+ 	/* Wait up to 1s for flow control if necessary */
+ 	if (up->port.flags & UPF_CONS_FLOW) {
 -- 
 1.7.2
 
