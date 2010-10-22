@@ -1,101 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757548Ab0JVQnH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 12:43:07 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:60053 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755423Ab0JVQnG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 12:43:06 -0400
-Date: Fri, 22 Oct 2010 17:42:47 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        avictor.za@gmail.com, plagnioj@jcrosoft.com
-Subject: Re: [PATCH 2/2] AT91: pm: make sure that r0 is 0 when dealing with
-	cache operations
-Message-ID: <20101022164247.GB29119@n2100.arm.linux.org.uk>
-References: <af311282c5a0076ec618be68facdd3ad98d509b8.1287767949.git.nicolas.ferre@atmel.com> <86bb15f5a1aa3f21066ed13d7ee3f9f500d11087.1287767949.git.nicolas.ferre@atmel.com>
+	id S1757487Ab0JVQoU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 12:44:20 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:56298 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754548Ab0JVQoT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Oct 2010 12:44:19 -0400
+Message-ID: <4CC1BF58.9020001@zytor.com>
+Date: Fri, 22 Oct 2010 09:44:08 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc13 Thunderbird/3.1.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <86bb15f5a1aa3f21066ed13d7ee3f9f500d11087.1287767949.git.nicolas.ferre@atmel.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: Jeremy Fitzhardinge <jeremy@goop.org>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        "Xen-devel@lists.xensource.com" <Xen-devel@lists.xensource.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] x86: define arch_vm_get_page_prot to set _PAGE_IOMAP
+ on VM_IO vmas
+References: <4CC0C14E.5080205@goop.org> <4CC0C318.90401@zytor.com> <4CC0CA07.3000306@goop.org> <4CC0DEB8.1060309@zytor.com> <20101022150826.GA23325@dumpdata.com>
+In-Reply-To: <20101022150826.GA23325@dumpdata.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 22, 2010 at 07:29:00PM +0200, Nicolas Ferre wrote:
-> When using CP15 cache operations (c7), we make sure that Rd (r0)
-> is actually 0 as ARM 926 TRM is saying.
+On 10/22/2010 08:08 AM, Konrad Rzeszutek Wilk wrote:
+>>
+>> Okay, could you clarify this part a bit?  Why does the kernel need to
+>> know the difference between "pseudo-physical" and "machine addresses" at
+>> all?  If they overlap, there is a problem, and if they don't overlap, it
+>> will be a 1:1 mapping anyway...
+> 
+> The flag (_PAGE_IOMAP) is used when we set the PTE so that the MFN value is
+> used instead of the PFN. We need that b/c when a driver does page_to_pfn()
+> it ends up using the PFN as bus address to write out registers data.
+> 
+> Without this patch, the page->virt->PFN value is used and the PFN != to real MFN
+> so we end up writing in a memory address that the PCI device has no idea about.
+> By setting the PTE with the MFN, the virt->PFN gets the real MFN value.
+> 
+> The drivers I am talking about are mostly, if not all, located in drivers/gpu
+> and it looks that we are missing two more patches to utilize the patch
+> that Jeremy posted.
+> 
+> Please note that I am _not_ suggesting that the two patches
+> below should go out - I still need to post them on drm mailing list.
+> 
 
-Err, no.  From the GCC manual:
+I'm still seriously confused.  If I understand this correctly, we're
+talking about DMA addresses here (as opposed to PIO addresses, i.e.
+BARs), right?
 
-|    Note that even a volatile `asm' instruction can be moved in ways
-| that appear insignificant to the compiler, such as across jump
-| instructions.  You can't expect a sequence of volatile `asm'
-| instructions to remain perfectly consecutive.  If you want consecutive
-| output, use a single `asm'.  Also, GCC will perform some optimizations
-| across a volatile `asm' instruction; GCC does not "forget everything"
-| when it encounters a volatile `asm' instruction the way some other
-| compilers do.
+It's the bimodality that really bothers me.  I understand of course that
+Xen imposes yet another address remapping layer, but I'm having a hard
+time understanding any conditions under with we would need that layer to
+go away, as long as DMA addresses are translated via the DMA APIs -- and
+if they aren't, then iommus will break, too.
 
-So:
+As such, I don't grok this page flag and what it does, and why it's
+needed.  I'm not saying it's *wrong*, I'm saying the design is opaque to
+me and I'm not sure it is the right solution.
 
-	asm volatile("foo");
-	asm volatile("bar");
+	-hpa
 
-is not guaranteed to produce the following uninterrupted code sequence:
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
 
-	foo
-	bar
-
-The compiler is free to insert other instructions inbetween these two
-asm statements.
-
-It's also not permitted to modify registers without telling gcc that
-they've been modified.
-
-> +			asm("mov r0, #0");			/* clear r0 for CP15 accesses */
->  			asm("b 1f; .align 5; 1:");
->  			asm("mcr p15, 0, r0, c7, c10, 4");	/* drain write buffer */
-
-That means the above is completely unacceptable.  It should be:
-
-	asm("mov r0, #0;"
-	"b 1f;"
-	".align 5;"
-	"1: mcr p15, 0, r0, c7, c10, 4" : : : "r0");
-
-
-
->  			saved_lpr = sdram_selfrefresh_enable();
-> diff --git a/arch/arm/mach-at91/pm.h b/arch/arm/mach-at91/pm.h
-> index 2c4424b..be081c9 100644
-> --- a/arch/arm/mach-at91/pm.h
-> +++ b/arch/arm/mach-at91/pm.h
-> @@ -21,7 +21,7 @@ static inline u32 sdram_selfrefresh_enable(void)
->  }
->  
->  #define sdram_selfrefresh_disable(saved_lpr)	at91_sys_write(AT91_SDRAMC_LPR, saved_lpr)
-> -#define wait_for_interrupt_enable()		asm("mcr p15, 0, r0, c7, c0, 4")
-> +#define wait_for_interrupt_enable()		asm("mcr p15, 0, r0, c7, c0, 4") /* r0 is 0 here */
-
-No, r0 is not guaranteed to be zero here.  Use dsb() here instead which
-gets it right.
-
-
->  #elif defined(CONFIG_ARCH_AT91CAP9)
->  #include <mach/at91cap9_ddrsdr.h>
-> diff --git a/arch/arm/mach-at91/pm_slowclock.S b/arch/arm/mach-at91/pm_slowclock.S
-> index b6b00a1..f7922a4 100644
-> --- a/arch/arm/mach-at91/pm_slowclock.S
-> +++ b/arch/arm/mach-at91/pm_slowclock.S
-> @@ -124,6 +124,7 @@ ENTRY(at91_slow_clock)
->  	ldr	r5, .at91_va_base_ramc1
->  
->  	/* Drain write buffer */
-> +	mov	r0, #0
->  	mcr	p15, 0, r0, c7, c10, 4
-
-This one being in asm code is fine.
