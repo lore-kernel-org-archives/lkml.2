@@ -1,198 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753002Ab0JVS2n (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 14:28:43 -0400
-Received: from kroah.org ([198.145.64.141]:37824 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758934Ab0JVSZi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 14:25:38 -0400
-From: Greg Kroah-Hartman <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org
-Cc: "Eric W. Biederman" <ebiederm@aristanetworks.com>,
-        "Hans J. Koch" <hjk@linutronix.de>,
-        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [PATCH 18/31] uio: Statically allocate uio_class and use class .dev_attrs.
-Date: Fri, 22 Oct 2010 11:25:03 -0700
-Message-Id: <1287771916-15016-18-git-send-email-gregkh@suse.de>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <20101022175107.GB13489@kroah.com>
-References: <20101022175107.GB13489@kroah.com>
+	id S1752495Ab0JVS2y (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 14:28:54 -0400
+Received: from edu-smtp-01.edutel.nl ([88.159.1.175]:57386 "EHLO
+	edu-smtp-01.edutel.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751866Ab0JVS2s (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Oct 2010 14:28:48 -0400
+Message-ID: <4CC1D7DE.7060405@neli.hopto.org>
+Date: Fri, 22 Oct 2010 20:28:46 +0200
+From: Micha Nelissen <micha@neli.hopto.org>
+User-Agent: Mozilla-Thunderbird 2.0.0.22 (X11/20091109)
+MIME-Version: 1.0
+To: "Bounine, Alexandre" <Alexandre.Bounine@idt.com>
+CC: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org,
+        Matt Porter <mporter@kernel.crashing.org>,
+        Li Yang <leoli@freescale.com>, Kumar Gala <galak@kernel.crashing.org>,
+        Thomas Moll <thomas.moll@sysgo.com>
+Subject: Re: [PATCH -mm 0/2] RapidIO: Changes to handling of RIO switches
+References: <1287688250-14226-1-git-send-email-alexandre.bounine@idt.com> <4CC0AD74.8070800@neli.hopto.org> <0CE8B6BE3C4AD74AB97D9D29BD24E55201445906@CORPEXCH1.na.ads.idt.com>
+In-Reply-To: <0CE8B6BE3C4AD74AB97D9D29BD24E55201445906@CORPEXCH1.na.ads.idt.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Eric W. Biederman <ebiederm@aristanetworks.com>
+Bounine, Alexandre wrote:
+> Micha Nelissen <micha@neli.hopto.org> wrote:
+>> Alexandre Bounine wrote:
+>> How can you say this? The two variables have different meanings, this
+>> logically implies you can't merge them. So how do you say 'this does
+> not
+>> prevent us from ...' without providing a reason?
+> 
+> Looks like I formulated it bad - better would be: they have different
+> interpretation by hardware but logically in RapidIO they have single
+> role - destid/hopcount are a device coordinates in the RIO network used
+> to access that device.
 
-Instead of adding uio class attributes manually after the uio device has
-been created and we have sent a uevent to userspace, use the class
-attribute mechanism.  This removes races and makes the code simpler.
+They are logically different as well (for a non-host).
 
-At the same time don't bother to dynamically allocate a struct class for
-uio, just declare one statically.  Less code is needed and it is easier
-to set the class parameters.tune the class
+rswitch->destid with hopcount is the way to reach that switch.
 
-Signed-off-by: Eric W. Biederman <ebiederm@aristanetworks.com>
-Reviewed-by: Thomas Gleixner <tglx@linutronix.de>
-Signed-off-by: Hans J. Koch <hjk@linutronix.de>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
----
- drivers/uio/uio.c |   53 ++++++++++++++++++-----------------------------------
- 1 files changed, 18 insertions(+), 35 deletions(-)
+rswitch->rdev->destid should be the id associated with a given switch, 
+so that every (processor) device can agree what id some switch has. For 
+a non-host, the path to reach a switch may use a different id than the 
+switch itself has; it's just the id by which it was discovered.
 
-diff --git a/drivers/uio/uio.c b/drivers/uio/uio.c
-index 3d4d65b..3fe9a9d 100644
---- a/drivers/uio/uio.c
-+++ b/drivers/uio/uio.c
-@@ -46,9 +46,6 @@ static struct cdev *uio_cdev;
- static DEFINE_IDR(uio_idr);
- static const struct file_operations uio_fops;
- 
--/* UIO class infrastructure */
--static struct class *uio_class;
--
- /* Protect idr accesses */
- static DEFINE_MUTEX(minor_lock);
- 
-@@ -233,7 +230,6 @@ static ssize_t show_name(struct device *dev,
- 	struct uio_device *idev = dev_get_drvdata(dev);
- 	return sprintf(buf, "%s\n", idev->info->name);
- }
--static DEVICE_ATTR(name, S_IRUGO, show_name, NULL);
- 
- static ssize_t show_version(struct device *dev,
- 			    struct device_attribute *attr, char *buf)
-@@ -241,7 +237,6 @@ static ssize_t show_version(struct device *dev,
- 	struct uio_device *idev = dev_get_drvdata(dev);
- 	return sprintf(buf, "%s\n", idev->info->version);
- }
--static DEVICE_ATTR(version, S_IRUGO, show_version, NULL);
- 
- static ssize_t show_event(struct device *dev,
- 			  struct device_attribute *attr, char *buf)
-@@ -249,17 +244,18 @@ static ssize_t show_event(struct device *dev,
- 	struct uio_device *idev = dev_get_drvdata(dev);
- 	return sprintf(buf, "%u\n", (unsigned int)atomic_read(&idev->event));
- }
--static DEVICE_ATTR(event, S_IRUGO, show_event, NULL);
- 
--static struct attribute *uio_attrs[] = {
--	&dev_attr_name.attr,
--	&dev_attr_version.attr,
--	&dev_attr_event.attr,
--	NULL,
-+static struct device_attribute uio_class_attributes[] = {
-+	__ATTR(name, S_IRUGO, show_name, NULL),
-+	__ATTR(version, S_IRUGO, show_version, NULL),
-+	__ATTR(event, S_IRUGO, show_event, NULL),
-+	{}
- };
- 
--static struct attribute_group uio_attr_grp = {
--	.attrs = uio_attrs,
-+/* UIO class infrastructure */
-+static struct class uio_class = {
-+	.name = "uio",
-+	.dev_attrs = uio_class_attributes,
- };
- 
- /*
-@@ -276,10 +272,6 @@ static int uio_dev_add_attributes(struct uio_device *idev)
- 	struct uio_port *port;
- 	struct uio_portio *portio;
- 
--	ret = sysfs_create_group(&idev->dev->kobj, &uio_attr_grp);
--	if (ret)
--		goto err_group;
--
- 	for (mi = 0; mi < MAX_UIO_MAPS; mi++) {
- 		mem = &idev->info->mem[mi];
- 		if (mem->size == 0)
-@@ -347,8 +339,6 @@ err_map:
- 		kobject_put(&map->kobj);
- 	}
- 	kobject_put(idev->map_dir);
--	sysfs_remove_group(&idev->dev->kobj, &uio_attr_grp);
--err_group:
- 	dev_err(idev->dev, "error creating sysfs files (%d)\n", ret);
- 	return ret;
- }
-@@ -374,8 +364,6 @@ static void uio_dev_del_attributes(struct uio_device *idev)
- 		kobject_put(&port->portio->kobj);
- 	}
- 	kobject_put(idev->portio_dir);
--
--	sysfs_remove_group(&idev->dev->kobj, &uio_attr_grp);
- }
- 
- static int uio_get_minor(struct uio_device *idev)
-@@ -775,7 +763,6 @@ static void uio_major_cleanup(void)
- 
- static int init_uio_class(void)
- {
--	struct class *class;
- 	int ret;
- 
- 	/* This is the first time in here, set everything up properly */
-@@ -783,16 +770,14 @@ static int init_uio_class(void)
- 	if (ret)
- 		goto exit;
- 
--	class = class_create(THIS_MODULE, "uio");
--	if (IS_ERR(class)) {
--		ret = IS_ERR(class);
--		printk(KERN_ERR "class_create failed for uio\n");
--		goto err_class_create;
-+	ret = class_register(&uio_class);
-+	if (ret) {
-+		printk(KERN_ERR "class_register failed for uio\n");
-+		goto err_class_register;
- 	}
--	uio_class = class;
- 	return 0;
- 
--err_class_create:
-+err_class_register:
- 	uio_major_cleanup();
- exit:
- 	return ret;
-@@ -800,9 +785,7 @@ exit:
- 
- static void release_uio_class(void)
- {
--	/* Ok, we cheat as we know we only have one uio_class */
--	class_destroy(uio_class);
--	uio_class = NULL;
-+	class_unregister(&uio_class);
- 	uio_major_cleanup();
- }
- 
-@@ -841,7 +824,7 @@ int __uio_register_device(struct module *owner,
- 	if (ret)
- 		goto err_get_minor;
- 
--	idev->dev = device_create(uio_class, parent,
-+	idev->dev = device_create(&uio_class, parent,
- 				  MKDEV(uio_major, idev->minor), idev,
- 				  "uio%d", idev->minor);
- 	if (IS_ERR(idev->dev)) {
-@@ -868,7 +851,7 @@ int __uio_register_device(struct module *owner,
- err_request_irq:
- 	uio_dev_del_attributes(idev);
- err_uio_dev_add_attributes:
--	device_destroy(uio_class, MKDEV(uio_major, idev->minor));
-+	device_destroy(&uio_class, MKDEV(uio_major, idev->minor));
- err_device_create:
- 	uio_free_minor(idev);
- err_get_minor:
-@@ -899,7 +882,7 @@ void uio_unregister_device(struct uio_info *info)
- 
- 	uio_dev_del_attributes(idev);
- 
--	device_destroy(uio_class, MKDEV(uio_major, idev->minor));
-+	device_destroy(&uio_class, MKDEV(uio_major, idev->minor));
- 	kfree(idev);
- 
- 	return;
--- 
-1.7.2
+However, it's possible to fix that by fixing the id+hopcount once the 
+switch is found using the path with its own id: then you know the right 
+hopcount.
 
+>> can be defined to point to the switch that a given rio_dev is
+> connected
+>> to. This is useful for quick lookups. How else can to know to which
+>> switch a given device is connected?
+> 
+> rdev->rswitch is not a pointer to the entire switch device object - it
+> is a pointer to the switch specific extension associated with given
+> rio_dev (if applicable). There is no other role for rdev->rswitch.
+
+I know this, it doesn't answer my question.
+
+> Why would you keep a pointer to device data extension instead of the
+> pointer to attached device object itself?
+
+There is no particular reason, but this is a useful way to define the 
+fields that are there.
+
+My point is, now that you remove the pointer field, that information (to 
+which switch is a particular device connected) cannot be stored in this 
+way, so do you have an alternative proposal for that? Maybe add a new field.
+
+> BTW, I have back and forward links added in previous patches and only
+> one link that may be added later is a forward link from mport to the
+> attached rio_dev (ptr to rio_switch will not work here because it can be
+> switchless connection). But this reference has to be added into
+> rio_mport.
+
+Possible, but I suggest to put it in the rio_net: fields rdev_host, and 
+rdev_self. You can see it in the patch I sent you.
+
+Micha
