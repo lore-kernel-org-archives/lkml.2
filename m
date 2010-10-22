@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759873Ab0JVTRx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 15:17:53 -0400
-Received: from kroah.org ([198.145.64.141]:34070 "EHLO coco.kroah.org"
+	id S1759295Ab0JVS4O (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 14:56:14 -0400
+Received: from kroah.org ([198.145.64.141]:34009 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759302Ab0JVS4R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 14:56:17 -0400
-X-Mailbox-Line: From gregkh@clark.site Fri Oct 22 11:52:30 2010
-Message-Id: <20101022185230.490998180@clark.site>
+	id S1759260Ab0JVS4H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Oct 2010 14:56:07 -0400
+X-Mailbox-Line: From gregkh@clark.site Fri Oct 22 11:52:29 2010
+Message-Id: <20101022185229.483168553@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 22 Oct 2010 11:51:09 -0700
+Date: Fri, 22 Oct 2010 11:50:58 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Maxim Levitsky <maximlevitsky@gmail.com>,
-        Jarod Wilson <jarod@redhat.com>,
+        =?ISO-8859-15?q?Jean-Fran=C3=A7ois=20Moine?= <moinejf@free.fr>,
         Mauro Carvalho Chehab <mchehab@redhat.com>
-Subject: [035/103] V4L/DVB: IR: fix keys beeing stuck down forever
+Subject: [024/103] V4L/DVB: gspca - sn9c20x: Bad transfer size of Bayer images
 In-Reply-To: <20101022185455.GA9114@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,38 +26,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Maxim Levitsky <maximlevitsky@gmail.com>
+From: Jean-François Moine <moinejf@free.fr>
 
-commit e0172fd373ab77a83ea952fd6a75c612e1b0bf9e upstream.
+commit 04d174e99a6eca2f62b56c10ae1d7d0499d83e9d upstream.
 
-The logic in ir_timer_keyup was inverted.
+As the end of frame marker does not contain any pixel, it must not be
+transferred.
 
-In case that values aren't equal,
-the meaning of the time_is_after_eq_jiffies(ir->keyup_jiffies) is that
-ir->keyup_jiffies is after the the jiffies or equally that
-that jiffies are before the the ir->keyup_jiffies which is
-exactly the situation we want to avoid (that the timeout is in the future)
-Confusing Eh?
-
-Signed-off-by: Maxim Levitsky <maximlevitsky@gmail.com>
-Acked-by: Jarod Wilson <jarod@redhat.com>
+Reported-by: Ivo Jager <ivo.jager@siliconfields.net>
+Signed-off-by: Jean-François Moine <moinejf@free.fr>
 Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/media/IR/ir-keytable.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/media/video/gspca/sn9c20x.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
---- a/drivers/media/IR/ir-keytable.c
-+++ b/drivers/media/IR/ir-keytable.c
-@@ -319,7 +319,7 @@ static void ir_timer_keyup(unsigned long
- 	 * a keyup event might follow immediately after the keydown.
- 	 */
- 	spin_lock_irqsave(&ir->keylock, flags);
--	if (time_is_after_eq_jiffies(ir->keyup_jiffies))
-+	if (time_is_before_eq_jiffies(ir->keyup_jiffies))
- 		ir_keyup(ir);
- 	spin_unlock_irqrestore(&ir->keylock, flags);
- }
+--- a/drivers/media/video/gspca/sn9c20x.c
++++ b/drivers/media/video/gspca/sn9c20x.c
+@@ -2368,8 +2368,7 @@ static void sd_pkt_scan(struct gspca_dev
+ 			    (data[33] << 10);
+ 		avg_lum >>= 9;
+ 		atomic_set(&sd->avg_lum, avg_lum);
+-		gspca_frame_add(gspca_dev, LAST_PACKET,
+-				data, len);
++		gspca_frame_add(gspca_dev, LAST_PACKET, NULL, 0);
+ 		return;
+ 	}
+ 	if (gspca_dev->last_packet_type == LAST_PACKET) {
 
 
