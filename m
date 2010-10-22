@@ -1,149 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932564Ab0JVS6R (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 14:58:17 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:49640 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759447Ab0JVS6P (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 14:58:15 -0400
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: [PATCH (CORRECTED)] langwell_gpio: Add support for whitney point
-To: linux-kernel@vger.kernel.org, akpm@linux-foundation.org
-Date: Fri, 22 Oct 2010 19:04:19 +0100
-Message-ID: <20101022180354.11138.13104.stgit@localhost.localdomain>
-User-Agent: StGIT/0.14.3
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+	id S1759599Ab0JVS56 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 14:57:58 -0400
+Received: from kroah.org ([198.145.64.141]:34518 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759568Ab0JVS5T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Oct 2010 14:57:19 -0400
+X-Mailbox-Line: From gregkh@clark.site Fri Oct 22 11:52:36 2010
+Message-Id: <20101022185236.538650794@clark.site>
+User-Agent: quilt/0.48-11.2
+Date: Fri, 22 Oct 2010 11:52:17 -0700
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
+Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Stefan Bader <stefan.bader@canonical.com>
+Subject: [103/103] mm: Move vma_stack_continue into mm.h
+In-Reply-To: <20101022185455.GA9114@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I must remember to refresh before sending, I must remember to refresh before
-sending. I must ...
+2.6.35-stable review patch.  If anyone has any objections, please let us know.
 
+------------------
 
-From: Alan Cox <alan@linux.intel.com>
+From: Stefan Bader <stefan.bader@canonical.com>
 
-In this case the logic is very similar but the IRQs are not exposed and the
-device is not picked up via PCI
+commit 39aa3cb3e8250db9188a6f1e3fb62ffa1a717678 upstream.
 
-Based on a separate internal whitney point driver by:
-    	Yin Kangkai <kangkai.yin@intel.com>
+So it can be used by all that need to check for that.
 
-Signed-off-by: Alan Cox <alan@linux.intel.com>
+Signed-off-by: Stefan Bader <stefan.bader@canonical.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
 ---
+ fs/proc/task_mmu.c |    3 ++-
+ include/linux/mm.h |    6 ++++++
+ mm/mlock.c         |    6 ------
+ 3 files changed, 8 insertions(+), 7 deletions(-)
 
- drivers/gpio/langwell_gpio.c |   83 +++++++++++++++++++++++++++++++++++++++++-
- 1 files changed, 82 insertions(+), 1 deletions(-)
-
-
-diff --git a/drivers/gpio/langwell_gpio.c b/drivers/gpio/langwell_gpio.c
-index 8383a8d..09d74b3 100644
---- a/drivers/gpio/langwell_gpio.c
-+++ b/drivers/gpio/langwell_gpio.c
-@@ -18,10 +18,12 @@
- /* Supports:
-  * Moorestown platform Langwell chip.
-  * Medfield platform Penwell chip.
-+ * Whitney point.
-  */
+--- a/fs/proc/task_mmu.c
++++ b/fs/proc/task_mmu.c
+@@ -224,7 +224,8 @@ static void show_map_vma(struct seq_file
+ 	/* We don't show the stack guard page in /proc/maps */
+ 	start = vma->vm_start;
+ 	if (vma->vm_flags & VM_GROWSDOWN)
+-		start += PAGE_SIZE;
++		if (!vma_stack_continue(vma->vm_prev, vma->vm_start))
++			start += PAGE_SIZE;
  
- #include <linux/module.h>
- #include <linux/pci.h>
-+#include <linux/platform_device.h>
- #include <linux/kernel.h>
- #include <linux/delay.h>
- #include <linux/stddef.h>
-@@ -300,9 +302,88 @@ static struct pci_driver lnw_gpio_driver = {
- 	.probe		= lnw_gpio_probe,
- };
+ 	seq_printf(m, "%08lx-%08lx %c%c%c%c %08llx %02x:%02x %lu %n",
+ 			start,
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -863,6 +863,12 @@ int set_page_dirty(struct page *page);
+ int set_page_dirty_lock(struct page *page);
+ int clear_page_dirty_for_io(struct page *page);
  
-+
-+static int __devinit wp_gpio_probe(struct platform_device *pdev)
++/* Is the vma a continuation of the stack vma above it? */
++static inline int vma_stack_continue(struct vm_area_struct *vma, unsigned long addr)
 +{
-+	struct lnw_gpio *lnw;
-+	struct gpio_chip *gc;
-+	struct resource *rc;
-+	int retval = 0;
-+
-+	rc = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+	if (!rc)
-+		return -EINVAL;
-+
-+	lnw = kzalloc(sizeof(struct lnw_gpio), GFP_KERNEL);
-+	if (!lnw) {
-+		dev_err(&pdev->dev,
-+			"can't allocate whitneypoint_gpio chip data\n");
-+		return -ENOMEM;
-+	}
-+	lnw->reg_base = ioremap_nocache(rc->start, resource_size(rc));
-+	if (lnw->reg_base == NULL) {
-+		retval = -EINVAL;
-+		goto err_kmalloc;
-+	}
-+	spin_lock_init(&lnw->lock);
-+	gc = &lnw->chip;
-+	gc->label = dev_name(&pdev->dev);
-+	gc->owner = THIS_MODULE;
-+	gc->direction_input = lnw_gpio_direction_input;
-+	gc->direction_output = lnw_gpio_direction_output;
-+	gc->get = lnw_gpio_get;
-+	gc->set = lnw_gpio_set;
-+	gc->to_irq = NULL;
-+	gc->base = 0;
-+	gc->ngpio = 64;
-+	gc->can_sleep = 0;
-+	retval = gpiochip_add(gc);
-+	if (retval) {
-+		dev_err(&pdev->dev, "whitneypoint gpiochip_add error %d\n",
-+								retval);
-+		goto err_ioremap;
-+	}
-+	platform_set_drvdata(pdev, lnw);
-+	return 0;
-+err_ioremap:
-+	iounmap(lnw->reg_base);
-+err_kmalloc:
-+	kfree(lnw);
-+	return retval;
++	return vma && (vma->vm_end == addr) && (vma->vm_flags & VM_GROWSDOWN);
 +}
 +
-+static int __devexit wp_gpio_remove(struct platform_device *pdev)
-+{
-+	struct lnw_gpio *lnw = platform_get_drvdata(pdev);
-+	int err;
-+	err = gpiochip_remove(&lnw->chip);
-+	if (err)
-+		dev_err(&pdev->dev, "failed to remove gpio_chip.\n");
-+	iounmap(lnw->reg_base);
-+	kfree(lnw);
-+	platform_set_drvdata(pdev, NULL);
-+	return 0;
-+}
-+
-+static struct platform_driver wp_gpio_driver = {
-+	.probe		= wp_gpio_probe,
-+	.remove		= __devexit_p(wp_gpio_remove),
-+	.driver		= {
-+		.name	= "wp_gpio",
-+		.owner	= THIS_MODULE,
-+	},
-+};
-+
- static int __init lnw_gpio_init(void)
- {
--	return pci_register_driver(&lnw_gpio_driver);
-+	int ret;
-+	ret =  pci_register_driver(&lnw_gpio_driver);
-+	if (ret < 0)
-+		return ret;
-+	ret = platform_driver_register(&wp_gpio_driver);
-+	if (ret < 0)
-+		pci_unregister_driver(&lnw_gpio_driver);
-+	return ret;
+ extern unsigned long move_page_tables(struct vm_area_struct *vma,
+ 		unsigned long old_addr, struct vm_area_struct *new_vma,
+ 		unsigned long new_addr, unsigned long len);
+--- a/mm/mlock.c
++++ b/mm/mlock.c
+@@ -135,12 +135,6 @@ void munlock_vma_page(struct page *page)
+ 	}
  }
  
- device_initcall(lnw_gpio_init);
+-/* Is the vma a continuation of the stack vma above it? */
+-static inline int vma_stack_continue(struct vm_area_struct *vma, unsigned long addr)
+-{
+-	return vma && (vma->vm_end == addr) && (vma->vm_flags & VM_GROWSDOWN);
+-}
+-
+ static inline int stack_guard_page(struct vm_area_struct *vma, unsigned long addr)
+ {
+ 	return (vma->vm_flags & VM_GROWSDOWN) &&
+
 
