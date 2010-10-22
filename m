@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759588Ab0JVS5Y (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 14:57:24 -0400
-Received: from kroah.org ([198.145.64.141]:34508 "EHLO coco.kroah.org"
+	id S1759596Ab0JVS51 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 14:57:27 -0400
+Received: from kroah.org ([198.145.64.141]:34514 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759564Ab0JVS5R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 14:57:17 -0400
+	id S1758948Ab0JVS5S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Oct 2010 14:57:18 -0400
 X-Mailbox-Line: From gregkh@clark.site Fri Oct 22 11:52:36 2010
-Message-Id: <20101022185236.371676975@clark.site>
+Message-Id: <20101022185236.453073855@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 22 Oct 2010 11:52:15 -0700
+Date: Fri, 22 Oct 2010 11:52:16 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
         Roland McGrath <roland@redhat.com>, Chuck Ebbert <cebbert@redhat.com>
-Subject: [101/103] execve: improve interactivity with large arguments
+Subject: [102/103] execve: make responsive to SIGKILL with large arguments
 In-Reply-To: <20101022185455.GA9114@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,38 +27,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Roland McGrath <roland@redhat.com>
 
-commit 7993bc1f4663c0db67bb8f0d98e6678145b387cd upstream.
+commit 9aea5a65aa7a1af9a4236dfaeb0088f1624f9919 upstream.
 
-This adds a preemption point during the copying of the argument and
-environment strings for execve, in copy_strings().  There is already
-a preemption point in the count() loop, so this doesn't add any new
-points in the abstract sense.
+An execve with a very large total of argument/environment strings
+can take a really long time in the execve system call.  It runs
+uninterruptibly to count and copy all the strings.  This change
+makes it abort the exec quickly if sent a SIGKILL.
 
-When the total argument+environment strings are very large, the time
-spent copying them can be much more than a normal user time slice.
-So this change improves the interactivity of the rest of the system
-when one process is doing an execve with very large arguments.
+Note that this is the conservative change, to interrupt only for
+SIGKILL, by using fatal_signal_pending().  It would be perfectly
+correct semantics to let any signal interrupt the string-copying in
+execve, i.e. use signal_pending() instead of fatal_signal_pending().
+We'll save that change for later, since it could have user-visible
+consequences, such as having a timer set too quickly make it so that
+an execve can never complete, though it always happened to work before.
 
 Signed-off-by: Roland McGrath <roland@redhat.com>
 Reviewed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Cc: Chuck Ebbert <cebbert@redhat.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 
 ---
- fs/exec.c |    2 ++
- 1 file changed, 2 insertions(+)
+ fs/exec.c |    7 +++++++
+ 1 file changed, 7 insertions(+)
 
 --- a/fs/exec.c
 +++ b/fs/exec.c
-@@ -420,6 +420,8 @@ static int copy_strings(int argc, char _
+@@ -377,6 +377,9 @@ static int count(char __user * __user *
+ 			argv++;
+ 			if (i++ >= max)
+ 				return -E2BIG;
++
++			if (fatal_signal_pending(current))
++				return -ERESTARTNOHAND;
+ 			cond_resched();
+ 		}
+ 	}
+@@ -420,6 +423,10 @@ static int copy_strings(int argc, char _
  		while (len > 0) {
  			int offset, bytes_to_copy;
  
-+			cond_resched();
-+
++			if (fatal_signal_pending(current)) {
++				ret = -ERESTARTNOHAND;
++				goto out;
++			}
+ 			cond_resched();
+ 
  			offset = pos % PAGE_SIZE;
- 			if (offset == 0)
- 				offset = PAGE_SIZE;
 
 
