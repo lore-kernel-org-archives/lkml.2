@@ -1,27 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932331Ab0JVSlH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 14:41:07 -0400
-Received: from kroah.org ([198.145.64.141]:45881 "EHLO coco.kroah.org"
+	id S1758969Ab0JVSln (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 14:41:43 -0400
+Received: from kroah.org ([198.145.64.141]:46011 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758643Ab0JVSjG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 14:39:06 -0400
-X-Mailbox-Line: From gregkh@clark.site Fri Oct 22 11:36:01 2010
-Message-Id: <20101022183601.635556593@clark.site>
+	id S1758911Ab0JVSll (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Oct 2010 14:41:41 -0400
+X-Mailbox-Line: From gregkh@clark.site Fri Oct 22 11:40:33 2010
+Message-Id: <20101022184033.836726646@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 22 Oct 2010 11:35:28 -0700
+Date: Fri, 22 Oct 2010 11:39:40 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
         Roland McGrath <roland@redhat.com>, Chuck Ebbert <cebbert@redhat.com>
-Subject: [61/66] setup_arg_pages: diagnose excessive argument size
-In-Reply-To: <20101022183711.GA23214@kroah.com>
+Subject: [15/17] setup_arg_pages: diagnose excessive argument size
+In-Reply-To: <20101022184048.GA25391@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.32-stable review patch.  If anyone has any objections, please let us know.
+2.6.27-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
 
@@ -54,7 +54,7 @@ Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 --- a/fs/exec.c
 +++ b/fs/exec.c
-@@ -594,6 +594,11 @@ int setup_arg_pages(struct linux_binprm
+@@ -608,6 +608,11 @@ int setup_arg_pages(struct linux_binprm
  #else
  	stack_top = arch_align_stack(stack_top);
  	stack_top = PAGE_ALIGN(stack_top);
