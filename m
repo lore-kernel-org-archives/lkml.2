@@ -1,90 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932270Ab0JVU5t (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 16:57:49 -0400
-Received: from mail.windriver.com ([147.11.1.11]:36321 "EHLO
+	id S1759284Ab0JVU5N (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 16:57:13 -0400
+Received: from mail.windriver.com ([147.11.1.11]:36323 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757396Ab0JVU5I (ORCPT
+	with ESMTP id S1759105Ab0JVU5L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 16:57:08 -0400
+	Fri, 22 Oct 2010 16:57:11 -0400
 From: Jason Wessel <jason.wessel@windriver.com>
 To: torvalds@linux-foundation.org
 Cc: linux-kernel@vger.kernel.org, kgdb-bugreport@lists.sourceforge.net,
-        Dongdong Deng <dongdong.deng@windriver.com>,
         Jason Wessel <jason.wessel@windriver.com>
-Subject: [PATCH 08/11] debug_core: disable hw_breakpoints on all cores in kgdb_cpu_enter()
-Date: Fri, 22 Oct 2010 15:56:28 -0500
-Message-Id: <1287780991-7476-9-git-send-email-jason.wessel@windriver.com>
+Subject: [PATCH 11/11] kdb,debug_core: adjust master cpu switch logic against new debug_core locking
+Date: Fri, 22 Oct 2010 15:56:31 -0500
+Message-Id: <1287780991-7476-12-git-send-email-jason.wessel@windriver.com>
 X-Mailer: git-send-email 1.6.4.rc1
 In-Reply-To: <1287780991-7476-1-git-send-email-jason.wessel@windriver.com>
 References: <1287780991-7476-1-git-send-email-jason.wessel@windriver.com>
-X-OriginalArrivalTime: 22 Oct 2010 20:56:54.0502 (UTC) FILETIME=[A86C4860:01CB722B]
+X-OriginalArrivalTime: 22 Oct 2010 20:56:57.0331 (UTC) FILETIME=[AA1BF430:01CB722B]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dongdong Deng <dongdong.deng@windriver.com>
+The kdb shell needs to enforce switching back to the original CPU that
+took the exception before restoring normal kernel execution.  Resuming
+from a different CPU than what took the original exception will cause
+problems with spin locks that are freed from the a different processor
+than had taken the lock.
 
-The slave cpus do not have the hw breakpoints disabled upon entry to
-the debug_core and as a result could cause unrecoverable recursive
-faults on badly placed breakpoints, or get out of sync with the arch
-specific hw breakpoint operations.
+The special logic in dbg_cpu_switch() can go away entirely with
+because the state of what cpus want to be masters or slaves will
+remain unchanged between entry and exit of the debug_core exception
+context.
 
-This patch addresses the problem by invoking kgdb_disable_hw_debug()
-earlier in kgdb_enter_cpu for each cpu that enters the debug core.
-
-The hw breakpoint dis/enable flow should be:
-
-master_debug_cpu   slave_debug_cpu
-         \              /
-          kgdb_cpu_enter
-                |
-        kgdb_disable_hw_debug --> uninstall pre-enabled hw_breakpoint
-                |
- do add/rm dis/enable operates to hw_breakpoints on master_debug_cpu..
-                |
-        correct_hw_break --> correct/install the enabled hw_breakpoint
-                |
-           leave_kgdb
-
-Signed-off-by: Dongdong Deng <dongdong.deng@windriver.com>
 Signed-off-by: Jason Wessel <jason.wessel@windriver.com>
 ---
- kernel/debug/debug_core.c |    7 +++++--
- 1 files changed, 5 insertions(+), 2 deletions(-)
+ kernel/debug/debug_core.c       |   16 ++--------------
+ kernel/debug/kdb/kdb_debugger.c |    3 +--
+ kernel/debug/kdb/kdb_main.c     |   12 ++++++------
+ 3 files changed, 9 insertions(+), 22 deletions(-)
 
 diff --git a/kernel/debug/debug_core.c b/kernel/debug/debug_core.c
-index 5a3b04d..bb94977 100644
+index 26dbdc3..fec596d 100644
 --- a/kernel/debug/debug_core.c
 +++ b/kernel/debug/debug_core.c
-@@ -485,6 +485,9 @@ static int kgdb_cpu_enter(struct kgdb_state *ks, struct pt_regs *regs)
- 	int error;
- 	int i, cpu;
- 	int trace_on = 0;
-+
-+	kgdb_disable_hw_debug(ks->linux_regs);
-+
- acquirelock:
- 	/*
- 	 * Interrupts will be restored by the 'trap return' code, except when
-@@ -569,8 +572,6 @@ return_normal:
- 	if (dbg_io_ops->pre_exception)
- 		dbg_io_ops->pre_exception();
+@@ -460,19 +460,6 @@ static int kgdb_reenter_check(struct kgdb_state *ks)
+ 	return 1;
+ }
  
--	kgdb_disable_hw_debug(ks->linux_regs);
+-static void dbg_cpu_switch(int cpu, int next_cpu)
+-{
+-	/* Mark the cpu we are switching away from as a slave when it
+-	 * holds the kgdb_active token.  This must be done so that the
+-	 * that all the cpus wait in for the debug core will not enter
+-	 * again as the master. */
+-	if (cpu == atomic_read(&kgdb_active)) {
+-		kgdb_info[cpu].exception_state |= DCPU_IS_SLAVE;
+-		kgdb_info[cpu].exception_state &= ~DCPU_WANT_MASTER;
+-	}
+-	kgdb_info[next_cpu].exception_state |= DCPU_NEXT_MASTER;
+-}
 -
- 	/*
- 	 * Get the passive CPU lock which will hold all the non-primary
- 	 * CPU in a spin state while the debugger is active
-@@ -661,6 +662,8 @@ kgdb_restore:
- 		else
- 			kgdb_sstep_pid = 0;
+ static void dbg_touch_watchdogs(void)
+ {
+ 	touch_softlockup_watchdog_sync();
+@@ -638,7 +625,8 @@ cpu_master_loop:
+ 		if (error == DBG_PASS_EVENT) {
+ 			dbg_kdb_mode = !dbg_kdb_mode;
+ 		} else if (error == DBG_SWITCH_CPU_EVENT) {
+-			dbg_cpu_switch(cpu, dbg_switch_cpu);
++			kgdb_info[dbg_switch_cpu].exception_state |=
++				DCPU_NEXT_MASTER;
+ 			goto cpu_loop;
+ 		} else {
+ 			kgdb_info[cpu].ret_state = error;
+diff --git a/kernel/debug/kdb/kdb_debugger.c b/kernel/debug/kdb/kdb_debugger.c
+index bf6e827..dd0b1b7 100644
+--- a/kernel/debug/kdb/kdb_debugger.c
++++ b/kernel/debug/kdb/kdb_debugger.c
+@@ -86,7 +86,7 @@ int kdb_stub(struct kgdb_state *ks)
  	}
-+	if (arch_kgdb_ops.correct_hw_break)
-+		arch_kgdb_ops.correct_hw_break();
- 	if (trace_on)
- 		tracing_on();
- 	/* Free kgdb_active */
+ 	/* Set initial kdb state variables */
+ 	KDB_STATE_CLEAR(KGDB_TRANS);
+-	kdb_initial_cpu = ks->cpu;
++	kdb_initial_cpu = atomic_read(&kgdb_active);
+ 	kdb_current_task = kgdb_info[ks->cpu].task;
+ 	kdb_current_regs = kgdb_info[ks->cpu].debuggerinfo;
+ 	/* Remove any breakpoints as needed by kdb and clear single step */
+@@ -105,7 +105,6 @@ int kdb_stub(struct kgdb_state *ks)
+ 		ks->pass_exception = 1;
+ 		KDB_FLAG_SET(CATASTROPHIC);
+ 	}
+-	kdb_initial_cpu = ks->cpu;
+ 	if (KDB_STATE(SSBPT) && reason == KDB_REASON_SSTEP) {
+ 		KDB_STATE_CLEAR(SSBPT);
+ 		KDB_STATE_CLEAR(DOING_SS);
+diff --git a/kernel/debug/kdb/kdb_main.c b/kernel/debug/kdb/kdb_main.c
+index 4226f32..d7bda21 100644
+--- a/kernel/debug/kdb/kdb_main.c
++++ b/kernel/debug/kdb/kdb_main.c
+@@ -1749,13 +1749,13 @@ static int kdb_go(int argc, const char **argv)
+ 	int nextarg;
+ 	long offset;
+ 
++	if (raw_smp_processor_id() != kdb_initial_cpu) {
++		kdb_printf("go must execute on the entry cpu, "
++			   "please use \"cpu %d\" and then execute go\n",
++			   kdb_initial_cpu);
++		return KDB_BADCPUNUM;
++	}
+ 	if (argc == 1) {
+-		if (raw_smp_processor_id() != kdb_initial_cpu) {
+-			kdb_printf("go <address> must be issued from the "
+-				   "initial cpu, do cpu %d first\n",
+-				   kdb_initial_cpu);
+-			return KDB_ARGCOUNT;
+-		}
+ 		nextarg = 1;
+ 		diag = kdbgetaddrarg(argc, argv, &nextarg,
+ 				     &addr, &offset, NULL);
 -- 
 1.6.3.3
 
