@@ -1,129 +1,217 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757427Ab0JVVAs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 17:00:48 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:56520 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755698Ab0JVVAr (ORCPT
+	id S1757099Ab0JVVDv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 17:03:51 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:5715 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755190Ab0JVVDu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 17:00:47 -0400
-Date: Fri, 22 Oct 2010 14:00:44 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Mike Frysinger <vapier@gentoo.org>
-Cc: Luca Barbieri <luca@luca-barbieri.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] lib/atomic64_test: do not build on non-atomic64 systems
-Message-Id: <20101022140044.d5b0e9ce.akpm@linux-foundation.org>
-In-Reply-To: <AANLkTi=MRU3Qi6NQfqnCwX34sHL2Rx8AyaqRwrxNVQoM@mail.gmail.com>
-References: <1287250035-30404-1-git-send-email-vapier@gentoo.org>
-	<20101021150250.f6499506.akpm@linux-foundation.org>
-	<201010211823.38287.vapier@gentoo.org>
-	<20101021155528.b3d6d027.akpm@linux-foundation.org>
-	<AANLkTim6AFDw_1V9rtF4e_2tmgctbKHziQa-1e3=q7og@mail.gmail.com>
-	<20101021162410.5c0d6720.akpm@linux-foundation.org>
-	<AANLkTikGbK7=eW9L4A62Rin-E3usq4Ke_dPoCdStDyEw@mail.gmail.com>
-	<20101022133138.6d82f79a.akpm@linux-foundation.org>
-	<AANLkTi=MRU3Qi6NQfqnCwX34sHL2Rx8AyaqRwrxNVQoM@mail.gmail.com>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 22 Oct 2010 17:03:50 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
+        b=BgMt2uTMxsJKXbMCMvnANuxW3u6QsjKGhUq+is2VCIBkDWII2O1xi6w4afOBdHGRBQ
+         B2hLl4O2wbMeb2VWWhuQ==
+From: Venkatesh Pallipadi <venki@google.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Damien Wyart <damien.wyart@free.fr>,
+        Chase Douglas <chase.douglas@canonical.com>,
+        Ingo Molnar <mingo@elte.hu>, tmhikaru@gmail.com,
+        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
+Subject: 
+Date: Fri, 22 Oct 2010 14:03:23 -0700
+Message-Id: <1287781403-12357-1-git-send-email-venki@google.com>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <AANLkTin+HE09Oui89uCmG-rrHE14zXfJuRvZgsPCB1De@mail.gmail.com>
+References: <AANLkTin+HE09Oui89uCmG-rrHE14zXfJuRvZgsPCB1De@mail.gmail.com>
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 22 Oct 2010 16:47:36 -0400
-Mike Frysinger <vapier@gentoo.org> wrote:
 
-> On Fri, Oct 22, 2010 at 16:31, Andrew Morton wrote:
-> > On Fri, 22 Oct 2010 16:14:49 -0400 Mike Frysinger wrote:
-> >> On Thu, Oct 21, 2010 at 19:24, Andrew Morton wrote:
-> >> > On Thu, 21 Oct 2010 19:04:36 -0400 Mike Frysinger wrote:
-> >> >> you can say "lazy" all you like. __i dont see the point in going that route.
-> >> >
-> >> > Try
-> >> >
-> >> > __ __ __ __grep HAVE arch/x86/Kconfig
-> >> >
-> >> > If all of those were instead to use some random #define which the
-> >> > particular feature happened to define in some header file then we would
-> >> > have a mess on our hands.
-> >>
-> >> fun times. __new tact.
-> >>
-> >> Luca: your new atomic64_t test build fails on all arches that lack
-> >> atomic64_t. __please fix.
-> >
-> > That's only part of the problem. __The following won't build also:
-> >
-> > net/rds
-> 
-> not true.  that code base is already using my suggestion:
-> net/rds/rds.h:
-> #ifdef ATOMIC64_INIT
-> #define KERNEL_HAS_ATOMIC64
-> #endif
+I started making small changes to the code, but none of the change helped much.
+I think the problem with the current code is that, even though idle CPUs
+update load, the fold only happens when one of the CPU is busy
+and we end up taking its load into global load.
 
-IOW, your suggestion led to a nasty local hack.  One which would be
-unneeded had we implemented this properly via Kconfig.
+So, I tried to simplify things and doing the updates directly from idle loop.
+This is only a test patch, and eventually we need to hook it off somewhere
+else, instead of idle loop and also this is expected work only as x86_64
+right now.
 
-> but this isnt a matter of "use atomic64_t or atomic_t" ... this code
-> manually takes care of doing a spinlock around a u64 member.  i
-> imagine if you'd notice this before it was merged you'd have made them
-> fix this cleanly.
+Peter: Do you think something like this will work? loadavg went
+quite on two of my test systems after this change (4 cpu and 24 cpu).
 
-I'd have suggested that they use Kconfig.
+Thanks,
+Venki
 
-I'd also have suggested that they implement a generic spinlocked
-atomic64 library rather than open-coding stuff down in net/rds/.
 
-People do tend to prefer to do localised expedient things rather than
-sticking their necks out and implementing proper, generic kernel-wide
-functions.  If I see it happen, I'll tell them.  Usually I don't see
-it until months after it's merged :(
+---
+ arch/x86/kernel/process_64.c |    2 +
+ kernel/sched.c               |   67 +++++++++++------------------------------
+ kernel/sched_idletask.c      |    1 -
+ 3 files changed, 20 insertions(+), 50 deletions(-)
 
-> > kernel/perf_event.c
-> 
-> also not true -- this requires arches to opt in to HAVE_PERF_EVENTS
-> and only arches which have validated it works (i.e. they have
-> atomic64) have done that
-
-kernel/perf_event.c has a dependency on the missing CONFIG_HAVE_ATOMIC64.
-
-> > drivers/staging/octeon
-> 
-> not an issue -- this depends on CPU_CAVIUM_OCTEON which is only
-> provided by mips which provides atomic64
-> 
-> > drivers/infiniband/hw
-> 
-> the only code usage of atomic64 is in code that already depends on the
-> Kconfig symbol 64BIT
-
-Again, that's just wrong and it's a fluke.  Will break if a 64-bit arch
-doesn't implement atomic64.
-
-> as for why it depends on this, i dont know ... maybe it's because of atomic64_t
-> 
-> > Or, much better, we implement atomic64 on the offending architectures.
-> 
-> i dont want to give people the impression that 64 atomics are free to
-> use if in reality they're pretty expensive.  on a Blackfin system, i'd
-> need to implement every access with basically a spinlock.
-
-spin_lock_irqsave(), really.  Becomes local_irq_save() on UP.
-
-But what's the alternative?  Either entire features become unavailable
-on those architectures or we grow local hacks like rds_ib_get_ack()
-which, yup, uses spin_lock_irqsave().
-
-> > with more to come.  These things should be made dependent upon
-> > CONFIG_HAVE_ATOMIC64 in Kconfig.  (Can't use #ifdef ATOMIC64_INIT for this!)
-> 
-> these are actually compelling arguments unlike the original one.  even
-> if all these examples ended up not really being true (only the new
-> atomic64_t test code is available to build on arches that lack
-> atomic64).
-
-Really, the atomic64_t implementation was imcomplete.  It should have
-provided the generic arch-neutral fallback code.
+diff --git a/arch/x86/kernel/process_64.c b/arch/x86/kernel/process_64.c
+index 3d9ea53..aaa8025 100644
+--- a/arch/x86/kernel/process_64.c
++++ b/arch/x86/kernel/process_64.c
+@@ -101,6 +101,7 @@ static inline void play_dead(void)
+ }
+ #endif
+ 
++void idle_load_update(void);
+ /*
+  * The idle thread. There's no useful work to be
+  * done, so just try to conserve power and have a
+@@ -140,6 +141,7 @@ void cpu_idle(void)
+ 			stop_critical_timings();
+ 			pm_idle();
+ 			start_critical_timings();
++			idle_load_update();
+ 
+ 			trace_power_end(smp_processor_id());
+ 
+diff --git a/kernel/sched.c b/kernel/sched.c
+index dc85ceb..6d589c1 100644
+--- a/kernel/sched.c
++++ b/kernel/sched.c
+@@ -1819,7 +1819,6 @@ static void cfs_rq_set_shares(struct cfs_rq *cfs_rq, unsigned long shares)
+ }
+ #endif
+ 
+-static void calc_load_account_idle(struct rq *this_rq);
+ static void update_sysctl(void);
+ static int get_update_sysctl_factor(void);
+ static void update_cpu_load(struct rq *this_rq);
+@@ -2959,11 +2958,12 @@ static unsigned long calc_load_update;
+ unsigned long avenrun[3];
+ EXPORT_SYMBOL(avenrun);
+ 
+-static long calc_load_fold_active(struct rq *this_rq)
++static long calc_load_fold(struct rq *this_rq, int idle)
+ {
+-	long nr_active, delta = 0;
++	long nr_active = 0, delta = 0;
+ 
+-	nr_active = this_rq->nr_running;
++	if (!idle)
++		nr_active = this_rq->nr_running;
+ 	nr_active += (long) this_rq->nr_uninterruptible;
+ 
+ 	if (nr_active != this_rq->calc_load_active) {
+@@ -2974,46 +2974,6 @@ static long calc_load_fold_active(struct rq *this_rq)
+ 	return delta;
+ }
+ 
+-#ifdef CONFIG_NO_HZ
+-/*
+- * For NO_HZ we delay the active fold to the next LOAD_FREQ update.
+- *
+- * When making the ILB scale, we should try to pull this in as well.
+- */
+-static atomic_long_t calc_load_tasks_idle;
+-
+-static void calc_load_account_idle(struct rq *this_rq)
+-{
+-	long delta;
+-
+-	delta = calc_load_fold_active(this_rq);
+-	if (delta)
+-		atomic_long_add(delta, &calc_load_tasks_idle);
+-}
+-
+-static long calc_load_fold_idle(void)
+-{
+-	long delta = 0;
+-
+-	/*
+-	 * Its got a race, we don't care...
+-	 */
+-	if (atomic_long_read(&calc_load_tasks_idle))
+-		delta = atomic_long_xchg(&calc_load_tasks_idle, 0);
+-
+-	return delta;
+-}
+-#else
+-static void calc_load_account_idle(struct rq *this_rq)
+-{
+-}
+-
+-static inline long calc_load_fold_idle(void)
+-{
+-	return 0;
+-}
+-#endif
+-
+ /**
+  * get_avenrun - get the load average array
+  * @loads:	pointer to dest load array
+@@ -3043,7 +3003,7 @@ calc_load(unsigned long load, unsigned long exp, unsigned long active)
+  */
+ void calc_global_load(void)
+ {
+-	unsigned long upd = calc_load_update + 10;
++	unsigned long upd = calc_load_update + LOAD_FREQ/2;
+ 	long active;
+ 
+ 	if (time_before(jiffies, upd))
+@@ -3063,21 +3023,30 @@ void calc_global_load(void)
+  * Called from update_cpu_load() to periodically update this CPU's
+  * active count.
+  */
+-static void calc_load_account_active(struct rq *this_rq)
++static void calc_load_account(struct rq *this_rq, int idle)
+ {
+ 	long delta;
+ 
+ 	if (time_before(jiffies, this_rq->calc_load_update))
+ 		return;
+ 
+-	delta  = calc_load_fold_active(this_rq);
+-	delta += calc_load_fold_idle();
++	delta  = calc_load_fold(this_rq, idle);
+ 	if (delta)
+ 		atomic_long_add(delta, &calc_load_tasks);
+ 
+ 	this_rq->calc_load_update += LOAD_FREQ;
+ }
+ 
++void idle_load_update(void)
++{
++	struct rq *rq = this_rq();
++	unsigned long flags;
++
++	raw_spin_lock_irqsave(&rq->lock, flags);
++	calc_load_account(rq, 1);
++	raw_spin_unlock_irqrestore(&rq->lock, flags);
++}
++
+ /*
+  * The exact cpuload at various idx values, calculated at every tick would be
+  * load = (2^idx - 1) / 2^idx * load + 1 / 2^idx * cur_load
+@@ -3194,7 +3163,7 @@ static void update_cpu_load_active(struct rq *this_rq)
+ {
+ 	update_cpu_load(this_rq);
+ 
+-	calc_load_account_active(this_rq);
++	calc_load_account(this_rq, 0);
+ }
+ 
+ #ifdef CONFIG_SMP
+diff --git a/kernel/sched_idletask.c b/kernel/sched_idletask.c
+index 9fa0f40..6ca191f 100644
+--- a/kernel/sched_idletask.c
++++ b/kernel/sched_idletask.c
+@@ -23,7 +23,6 @@ static void check_preempt_curr_idle(struct rq *rq, struct task_struct *p, int fl
+ static struct task_struct *pick_next_task_idle(struct rq *rq)
+ {
+ 	schedstat_inc(rq, sched_goidle);
+-	calc_load_account_idle(rq);
+ 	return rq->idle;
+ }
+ 
+-- 
+1.7.1
 
