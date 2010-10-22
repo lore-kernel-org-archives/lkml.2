@@ -1,92 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759648Ab0JVTG1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 15:06:27 -0400
-Received: from kroah.org ([198.145.64.141]:34304 "EHLO coco.kroah.org"
+	id S1756352Ab0JVTGf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 15:06:35 -0400
+Received: from claw.goop.org ([74.207.240.146]:36111 "EHLO claw.goop.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759149Ab0JVS4u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 14:56:50 -0400
-X-Mailbox-Line: From gregkh@clark.site Fri Oct 22 11:52:33 2010
-Message-Id: <20101022185233.728945353@clark.site>
-User-Agent: quilt/0.48-11.2
-Date: Fri, 22 Oct 2010 11:51:45 -0700
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
-Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Ohad Ben-Cohen <ohad@wizery.com>,
-        Maxim Levitsky <maximlevitsky@gmail.com>,
-        Nicolas Pitre <nico@fluxnic.net>, Chris Ball <cjb@laptop.org>
-Subject: [071/103] mmc: sdio: fix SDIO suspend/resume regression
-In-Reply-To: <20101022185455.GA9114@kroah.com>
+	id S1758278Ab0JVTGc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Oct 2010 15:06:32 -0400
+Message-ID: <4CC1E0B6.3070303@goop.org>
+Date: Fri, 22 Oct 2010 12:06:30 -0700
+From: Jeremy Fitzhardinge <jeremy@goop.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc13 Lightning/1.0b3pre Thunderbird/3.1.4
+MIME-Version: 1.0
+To: "H. Peter Anvin" <hpa@zytor.com>
+CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        "Xen-devel@lists.xensource.com" <Xen-devel@lists.xensource.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] x86: define arch_vm_get_page_prot to set _PAGE_IOMAP
+ on VM_IO vmas
+References: <4CC0C14E.5080205@goop.org> <4CC0C318.90401@zytor.com> <4CC0CA07.3000306@goop.org> <4CC0DEB8.1060309@zytor.com> <20101022150826.GA23325@dumpdata.com> <4CC1BF58.9020001@zytor.com>
+In-Reply-To: <4CC1BF58.9020001@zytor.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.35-stable review patch.  If anyone has any objections, please let us know.
+ On 10/22/2010 09:44 AM, H. Peter Anvin wrote:
+> On 10/22/2010 08:08 AM, Konrad Rzeszutek Wilk wrote:
+>>> Okay, could you clarify this part a bit?  Why does the kernel need to
+>>> know the difference between "pseudo-physical" and "machine addresses" at
+>>> all?  If they overlap, there is a problem, and if they don't overlap, it
+>>> will be a 1:1 mapping anyway...
+>> The flag (_PAGE_IOMAP) is used when we set the PTE so that the MFN value is
+>> used instead of the PFN. We need that b/c when a driver does page_to_pfn()
+>> it ends up using the PFN as bus address to write out registers data.
+>>
+>> Without this patch, the page->virt->PFN value is used and the PFN != to real MFN
+>> so we end up writing in a memory address that the PCI device has no idea about.
+>> By setting the PTE with the MFN, the virt->PFN gets the real MFN value.
+>>
+>> The drivers I am talking about are mostly, if not all, located in drivers/gpu
+>> and it looks that we are missing two more patches to utilize the patch
+>> that Jeremy posted.
+>>
+>> Please note that I am _not_ suggesting that the two patches
+>> below should go out - I still need to post them on drm mailing list.
+>>
+> I'm still seriously confused.  If I understand this correctly, we're
+> talking about DMA addresses here (as opposed to PIO addresses, i.e.
+> BARs), right?
+>
+> It's the bimodality that really bothers me.  I understand of course that
+> Xen imposes yet another address remapping layer, but I'm having a hard
+> time understanding any conditions under with we would need that layer to
+> go away, as long as DMA addresses are translated via the DMA APIs -- and
+> if they aren't, then iommus will break, too.
+>
+> As such, I don't grok this page flag and what it does, and why it's
+> needed.  I'm not saying it's *wrong*, I'm saying the design is opaque to
+> me and I'm not sure it is the right solution.
 
-------------------
+Well, if you want to map a normal memory page, you'd use, say,
+pfn_pte(pfn, PAGE_KERNEL) to generate the pte.  The pfn is a
+domain-local pseudo-physical address.  When it ends up in
+xen_make_pte(), it will translate the the pfn into a machine-global mfn
+to generate a pte_t which can be inserted into a pagetable.  (And when
+that pagetable starts being used as such, Xen will validate that the mfn
+is actually one the domain is allowed to address.)
 
-From: Ohad Ben-Cohen <ohad@wizery.com>
+However, if you're doing an ioremap(), then the mapped address is a
+hardware one.  In that case, we construct the pte with
+pfn_pte(device_pfn, PAGE_KERNEL_IO), which sets the _PAGE_IOMAP flag in
+the pte flags.  When it gets to xen_make_pte(), it sees _PAGE_IOMAP and
+constructs a pte_t containing the literal untranslated device_pfn
+(really an mfn).  (And again, Xen will check that the domain has access
+to that mfn before allowing the mapping to be used.)
 
-commit 1c8cf9c997a4a6b36e907c7ede5f048aeaab1644 upstream.
+We use the DMA API to make sure that pfn<->mfn conversions happen
+correctly when setting up DMA (all the Xen swiotlb stuff Konrad has been
+working on).  _PAGE_IOMAP is used in the implementation of that, as well
+as in ioremap(), remap_pfn_range(), drm, etc.
 
-Fix SDIO suspend/resume regression introduced by 4c2ef25fe0b "mmc: fix
-all hangs related to mmc/sd card insert/removal during suspend/resume":
+All this machinery has been in the kernel for quite a while.  This
+particular patch fixes gap, making sure that a vma with VM_IO set will
+be mapped with _PAGE_IOMAP set, which makes a large class of drm, fbdev,
+capture, etc device drivers work properly under Xen unmodified.  (Though
+DRM is full of other pitfalls and Konrad has been up to his neck in
+piranhas lately, which is why is answer is a little fixated on the DRM
+aspect.)
 
-  PM: Syncing filesystems ... done.
-  Freezing user space processes ... (elapsed 0.01 seconds) done.
-  Freezing remaining freezable tasks ... (elapsed 0.01 seconds) done.
-  Suspending console(s) (use no_console_suspend to debug)
-  pm_op(): platform_pm_suspend+0x0/0x5c returns -38
-  PM: Device pxa2xx-mci.0 failed to suspend: error -38
-  PM: Some devices failed to suspend
-
-4c2ef25fe0b moved the card removal/insertion mechanism out of MMC's
-suspend/resume path and into pm notifiers (mmc_pm_notify), and that
-broke SDIO's expectation that mmc_suspend_host() will remove the card,
-and squash the error, in case -ENOSYS is returned from the bus suspend
-handler (mmc_sdio_suspend() in this case).
-
-mmc_sdio_suspend() is using this whenever at least one of the card's SDIO
-function drivers does not have suspend/resume handlers - in that case
-it is agreed to force removal of the entire card.
-
-This patch fixes this regression by trivially bringing back that part of
-mmc_suspend_host(), which was removed by 4c2ef25fe0b.
-
-Reported-and-tested-by: Sven Neumann <s.neumann@raumfeld.com>
-Signed-off-by: Ohad Ben-Cohen <ohad@wizery.com>
-Cc: Maxim Levitsky <maximlevitsky@gmail.com>
-Acked-by: Nicolas Pitre <nico@fluxnic.net>
-Signed-off-by: Chris Ball <cjb@laptop.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
----
- drivers/mmc/core/core.c |   13 +++++++++++++
- 1 file changed, 13 insertions(+)
-
---- a/drivers/mmc/core/core.c
-+++ b/drivers/mmc/core/core.c
-@@ -1277,6 +1277,19 @@ int mmc_suspend_host(struct mmc_host *ho
- 	if (host->bus_ops && !host->bus_dead) {
- 		if (host->bus_ops->suspend)
- 			err = host->bus_ops->suspend(host);
-+		if (err == -ENOSYS || !host->bus_ops->resume) {
-+			/*
-+			 * We simply "remove" the card in this case.
-+			 * It will be redetected on resume.
-+			 */
-+			if (host->bus_ops->remove)
-+				host->bus_ops->remove(host);
-+			mmc_claim_host(host);
-+			mmc_detach_bus(host);
-+			mmc_release_host(host);
-+			host->pm_flags = 0;
-+			err = 0;
-+		}
- 	}
- 	mmc_bus_put(host);
- 
-
-
+    J
