@@ -1,58 +1,312 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752018Ab0JVDng (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Oct 2010 23:43:36 -0400
-Received: from ozlabs.org ([203.10.76.45]:43551 "EHLO ozlabs.org"
+	id S1752259Ab0JVDvx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Oct 2010 23:51:53 -0400
+Received: from gate.crashing.org ([63.228.1.57]:59057 "EHLO gate.crashing.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751267Ab0JVDnf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Oct 2010 23:43:35 -0400
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [PATCH v2][GIT PULL] tracing: Prevent unloadable modules from using trace_bprintk()
-Date: Fri, 22 Oct 2010 14:13:28 +1030
-User-Agent: KMail/1.13.5 (Linux/2.6.35-22-generic; KDE/4.5.1; i686; ; )
-Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
+	id S1751003Ab0JVDvw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Oct 2010 23:51:52 -0400
+Subject: [git pull] Please pull powerpc.git next branch
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linuxppc-dev list <linuxppc-dev@ozlabs.org>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-References: <1287668742.16971.585.camel@gandalf.stny.rr.com> <201010220805.14454.rusty@rustcorp.com.au> <1287700463.16971.603.camel@gandalf.stny.rr.com>
-In-Reply-To: <1287700463.16971.603.camel@gandalf.stny.rr.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
+        Linux Kernel list <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 22 Oct 2010 14:51:02 +1100
+Message-ID: <1287719462.2198.37.camel@pasglop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
-Message-Id: <201010221413.28588.rusty@rustcorp.com.au>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 22 Oct 2010 09:04:23 am Steven Rostedt wrote:
-> On Fri, 2010-10-22 at 08:05 +1030, Rusty Russell wrote:
-> > On Fri, 22 Oct 2010 12:15:42 am Steven Rostedt wrote:
-> > > 
-> > > Ingo,
-> > > 
-> > > This is based off of my core-2 branch. I'm moved this patch after that
-> > > so if anyone has any objections, I can change this patch without holding
-> > > off the previous one.
-> > 
-> > I think disabling use in modules is lazy,
-> 
-> and safer.
+Hi Linus !
 
-Well then just delete trace_bprintk altogether.  Even safer!
+Here's powerpc's batch for this merge window. Mostly bits and pieces,
+such as Anton doing some performance tuning left and right, and the
+usual churn. One hilight is the support for the new Freescale e5500 core
+(64-bit BookE). Another one is that we now wire up the whole lot of
+socket calls as direct syscalls in addition to the old style indirect
+method.
 
-> > Can't you detect this on module unload and fix it up?  Or delay freeing the
-> > module until the trace ring is emptied?
-> 
-> One possibility is to magically make all string formats used in
-> trace_printk into its own section, and keep it allocated until the ring
-> buffer is empty. Or, we can just do that with the module's entire string
-> section, since we know whether or not that module has a trace_printk in
-> it or not.
+Cheers,
+Ben.
 
-Exactly.  Set a flag in the module if it resolves trace_printk, and defer freeing
-the module in that case.  This shouldn't be that hard...
+The following changes since commit e10117d36ef758da0690c95ecffc09d5dd7da479:
+  Linus Torvalds (1):
+        Merge branch 'upstream-linus' of git://git.kernel.org/.../jgarzik/libata-dev
 
-Rusty.
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/benh/powerpc.git next
+
+Andreas Schwab (1):
+      powerpc: Remove fpscr use from [kvm_]cvt_{fd,df}
+
+Anton Blanchard (5):
+      powerpc: Optimise 64bit csum_partial
+      powerpc: Optimise 64bit csum_partial_copy_generic and add csum_and_copy_from_user
+      powerpc: Add 64bit csum_and_copy_to_user
+      powerpc: Feature nop out reservation clear when stcx checks address
+      powerpc: Check end of stack canary at oops time
+
+Arnd Bergmann (1):
+      powerpc/spufs: Use llseek in all file operations
+
+Benjamin Herrenschmidt (4):
+      powerpc/dma: Add optional platform override of dma_set_mask()
+      powerpc/dart_iommu: Support for 64-bit iommu bypass window on PCIe
+      Merge remote branch 'kumar/merge' into next
+      Merge remote branch 'jwb/next' into next
+
+Denis Kirjanov (1):
+      powerpc: Use is_32bit_task() helper to test 32-bit binary
+
+Harninder Rai (1):
+      powerpc/85xx: add cache-sram support
+
+Ian Munsie (1):
+      powerpc: Wire up direct socket system calls
+
+Ilya Yanok (1):
+      powerpc/mpc83xx: Support for MPC8308 P1M board
+
+Joe Perches (2):
+      powerpc: Use static const char arrays
+      powerpc: Remove pr_<level> uses of KERN_<level>
+
+Josh Boyer (1):
+      powerpc/44x: Update ppc44x_defconfig
+
+Julia Lawall (7):
+      powerpc/via-pmu-led.c: Add of_node_put to avoid memory leak
+      powerpc/maple: Add of_node_put to avoid memory leak
+      powerpc/powermac/pfunc_core.c: Add of_node_put to avoid memory leak
+      powerpc/cell: Add of_node_put to avoid memory leak
+      powerpc/chrp/nvram.c: Add of_node_put to avoid memory leak
+      powerpc/irq.c: Add of_node_put to avoid memory leak
+      i2c/i2c-pasemi.c: Fix unsigned return type
+
+Kumar Gala (11):
+      powerpc/ppc64e: Fix link problem when building ppc64e_defconfig
+      powerpc/fsl-pci: Fix MSI support on 83xx platforms
+      powerpc/mpc8xxx_gpio: Add support for 'qoriq-gpio' controllers
+      powerpc/fsl-booke: Add PCI device ids for P2040/P3041/P5010/P5020 QoirQ chips
+      powerpc/fsl-booke: Add p3041 DS board support
+      powerpc: Fix compile error with paca code on ppc64e
+      powerpc/fsl-booke: Add support for FSL 64-bit e5500 core
+      powerpc/fsl-booke: Add support for FSL Arch v1.0 MMU in setup_page_sizes
+      powerpc/fsl-booke64: Use TLB CAMs to cover linear mapping on FSL 64-bit chips
+      powerpc/fsl-booke: Add p5020 DS board support
+      powerpc/fsl-booke: Add e55xx (64-bit) smp defconfig
+
+Matthew McClintock (7):
+      powerpc/mm: Assume first cpu is boot_cpuid not 0
+      powerpc/kexec: make masking/disabling interrupts generic
+      powerpc/85xx: Remove call to mpic_teardown_this_cpu in kexec
+      powerpc/85xx: Minor fixups for kexec on 85xx
+      powerpc/85xx: flush dcache before resetting cores
+      powerpc/fsl_soc: Search all global-utilities nodes for rstccr
+      powerpc/fsl_booke: Add support to boot from core other than 0
+
+Michael Neuling (1):
+      powerpc: Move arch_sd_sibling_asym_packing() to smp.c
+
+Nathan Fontenot (3):
+      powerpc/pseries: Export device tree updating routines
+      powerpc/pseries: Export rtas_ibm_suspend_me()
+      powerpc/pseries: Partition migration in the kernel
+
+Nishanth Aravamudan (8):
+      powerpc/pci: Fix return type of BUID_{HI,LO} macros
+      powerpc/dma: Fix dma_iommu_dma_supported compare
+      powerpc/dma: Fix check for direct DMA support
+      powerpc/vio: Use put_device() on device_register failure
+      powerpc/viobus: Free TCE table on device release
+      powerpc/pseries: Use kmemdup
+      powerpc/pci: Cleanup device dma setup code
+      powerpc/pseries/xics: Use cpu_possible_mask rather than cpu_all_mask
+
+Paul Gortmaker (1):
+      powerpc: Fix invalid page flags in create TLB CAM path for PTE_64BIT
+
+Paul Mackerras (5):
+      powerpc: Abstract indexing of lppaca structs
+      powerpc: Dynamically allocate most lppaca structs
+      powerpc: Account time using timebase rather than PURR
+      powerpc/pseries: Re-enable dispatch trace log userspace interface
+      powerpc/perf: Fix sampling enable for PPC970
+
+Scott Wood (1):
+      oprofile/fsl emb: Don't set MSR[PMM] until after clearing the interrupt.
+
+Sean MacLennan (2):
+      powerpc: Fix incorrect .stabs entry for copy_32.S
+      powerpc: mtmsrd not defined
+
+Shaohui Xie (1):
+      fsl_rio: Add comments for sRIO registers.
+
+Stephen Rothwell (1):
+      powerpc: define a compat_sys_recv cond_syscall
+
+Timur Tabi (5):
+      powerpc: export ppc_proc_freq and ppc_tb_freq as GPL symbols
+      powerpc/watchdog: Allow the Book-E driver to be compiled as a module
+      powerpc/p1022: Add probing for individual DMA channels
+      powerpc/85xx: add ngPIXIS FPGA device tree node to the P1022DS board
+      powerpc/watchdog: Make default timeout for Book-E watchdog a Kconfig option
+
+Tirumala Marri (1):
+      powerpc/44x: Add support for the AMCC APM821xx SoC
+
+matt mooney (1):
+      powerpc/Makefiles: Change to new flag variables
+
+ arch/powerpc/boot/addnote.c                    |    4 +-
+ arch/powerpc/boot/dts/bluestone.dts            |  254 +++++++++++++
+ arch/powerpc/boot/dts/mpc8308_p1m.dts          |  332 ++++++++++++++++
+ arch/powerpc/boot/dts/p1022ds.dts              |   11 +
+ arch/powerpc/configs/44x/bluestone_defconfig   |   68 ++++
+ arch/powerpc/configs/e55xx_smp_defconfig       |   84 ++++
+ arch/powerpc/configs/ppc44x_defconfig          |    9 +-
+ arch/powerpc/configs/ppc64e_defconfig          |    4 +-
+ arch/powerpc/include/asm/checksum.h            |   10 +
+ arch/powerpc/include/asm/compat.h              |    4 +-
+ arch/powerpc/include/asm/cputable.h            |   14 +-
+ arch/powerpc/include/asm/dma-mapping.h         |   14 +-
+ arch/powerpc/include/asm/elf.h                 |    2 +-
+ arch/powerpc/include/asm/exception-64s.h       |    3 +-
+ arch/powerpc/include/asm/fsl_85xx_cache_sram.h |   48 +++
+ arch/powerpc/include/asm/kexec.h               |    1 +
+ arch/powerpc/include/asm/kvm_fpu.h             |    4 +-
+ arch/powerpc/include/asm/lppaca.h              |   29 ++
+ arch/powerpc/include/asm/machdep.h             |    3 +
+ arch/powerpc/include/asm/mmu-book3e.h          |   15 +
+ arch/powerpc/include/asm/paca.h                |   10 +-
+ arch/powerpc/include/asm/page_64.h             |    4 +-
+ arch/powerpc/include/asm/ppc-pci.h             |    4 +-
+ arch/powerpc/include/asm/ppc_asm.h             |   50 ++-
+ arch/powerpc/include/asm/processor.h           |    4 +-
+ arch/powerpc/include/asm/pte-common.h          |    7 +
+ arch/powerpc/include/asm/rtas.h                |    1 +
+ arch/powerpc/include/asm/systbl.h              |   19 +
+ arch/powerpc/include/asm/system.h              |    4 +-
+ arch/powerpc/include/asm/time.h                |    5 -
+ arch/powerpc/include/asm/unistd.h              |   21 +-
+ arch/powerpc/kernel/Makefile                   |    4 +-
+ arch/powerpc/kernel/align.c                    |    4 +-
+ arch/powerpc/kernel/asm-offsets.c              |   12 +-
+ arch/powerpc/kernel/cpu_setup_44x.S            |    1 +
+ arch/powerpc/kernel/cpu_setup_fsl_booke.S      |   15 +
+ arch/powerpc/kernel/cputable.c                 |   43 ++-
+ arch/powerpc/kernel/crash.c                    |   13 +-
+ arch/powerpc/kernel/dma-iommu.c                |   21 +-
+ arch/powerpc/kernel/dma.c                      |   20 +-
+ arch/powerpc/kernel/entry_64.S                 |   40 ++
+ arch/powerpc/kernel/fpu.S                      |   10 -
+ arch/powerpc/kernel/head_fsl_booke.S           |   10 +-
+ arch/powerpc/kernel/irq.c                      |    6 +-
+ arch/powerpc/kernel/lparcfg.c                  |   14 +-
+ arch/powerpc/kernel/machine_kexec.c            |   24 ++
+ arch/powerpc/kernel/machine_kexec_32.c         |    4 +
+ arch/powerpc/kernel/paca.c                     |   70 ++++-
+ arch/powerpc/kernel/pci-common.c               |    4 +-
+ arch/powerpc/kernel/ppc970-pmu.c               |    2 +
+ arch/powerpc/kernel/process.c                  |   12 -
+ arch/powerpc/kernel/ptrace.c                   |    2 +-
+ arch/powerpc/kernel/rtas.c                     |    4 +-
+ arch/powerpc/kernel/setup_32.c                 |    2 +-
+ arch/powerpc/kernel/smp.c                      |   14 +-
+ arch/powerpc/kernel/time.c                     |  275 +++++++-------
+ arch/powerpc/kernel/traps.c                    |    5 +
+ arch/powerpc/kernel/vdso.c                     |    6 +-
+ arch/powerpc/kernel/vdso32/Makefile            |    6 +-
+ arch/powerpc/kernel/vdso64/Makefile            |    6 +-
+ arch/powerpc/kernel/vio.c                      |   10 +-
+ arch/powerpc/kvm/Makefile                      |    2 +-
+ arch/powerpc/kvm/book3s_paired_singles.c       |   44 +--
+ arch/powerpc/kvm/emulate.c                     |    4 +-
+ arch/powerpc/kvm/fpu.S                         |    8 -
+ arch/powerpc/lib/Makefile                      |    7 +-
+ arch/powerpc/lib/checksum_64.S                 |  482 +++++++++++++++++-------
+ arch/powerpc/lib/checksum_wrappers_64.c        |  102 +++++
+ arch/powerpc/lib/copy_32.S                     |    2 +-
+ arch/powerpc/lib/ldstfp.S                      |   36 +-
+ arch/powerpc/lib/locks.c                       |    4 +-
+ arch/powerpc/lib/sstep.c                       |    8 +
+ arch/powerpc/math-emu/Makefile                 |    2 +-
+ arch/powerpc/mm/Makefile                       |    6 +-
+ arch/powerpc/mm/fault.c                        |    6 +
+ arch/powerpc/mm/fsl_booke_mmu.c                |   15 +-
+ arch/powerpc/mm/mmu_context_nohash.c           |    6 +-
+ arch/powerpc/mm/mmu_decl.h                     |    5 +-
+ arch/powerpc/mm/tlb_nohash.c                   |   56 +++-
+ arch/powerpc/mm/tlb_nohash_low.S               |    2 +-
+ arch/powerpc/oprofile/Makefile                 |    4 +-
+ arch/powerpc/oprofile/backtrace.c              |    2 +-
+ arch/powerpc/oprofile/op_model_fsl_emb.c       |   15 +-
+ arch/powerpc/platforms/44x/Kconfig             |   16 +
+ arch/powerpc/platforms/44x/ppc44x_simple.c     |    1 +
+ arch/powerpc/platforms/83xx/Kconfig            |    4 +-
+ arch/powerpc/platforms/83xx/mpc830x_rdb.c      |    3 +-
+ arch/powerpc/platforms/85xx/Kconfig            |   28 ++-
+ arch/powerpc/platforms/85xx/Makefile           |    2 +
+ arch/powerpc/platforms/85xx/p1022_ds.c         |    2 +
+ arch/powerpc/platforms/85xx/p3041_ds.c         |   64 ++++
+ arch/powerpc/platforms/85xx/p5020_ds.c         |   69 ++++
+ arch/powerpc/platforms/85xx/smp.c              |   83 ++++-
+ arch/powerpc/platforms/Kconfig.cputype         |    8 +-
+ arch/powerpc/platforms/cell/ras.c              |    4 +-
+ arch/powerpc/platforms/cell/spider-pic.c       |    4 +-
+ arch/powerpc/platforms/cell/spufs/file.c       |   18 +
+ arch/powerpc/platforms/chrp/nvram.c            |    4 +-
+ arch/powerpc/platforms/iseries/Makefile        |    2 +-
+ arch/powerpc/platforms/iseries/dt.c            |    4 +-
+ arch/powerpc/platforms/iseries/smp.c           |    2 +-
+ arch/powerpc/platforms/maple/setup.c           |    1 +
+ arch/powerpc/platforms/powermac/pfunc_core.c   |    9 +-
+ arch/powerpc/platforms/pseries/Makefile        |   13 +-
+ arch/powerpc/platforms/pseries/dlpar.c         |    7 +-
+ arch/powerpc/platforms/pseries/dtl.c           |  224 +++++++++---
+ arch/powerpc/platforms/pseries/lpar.c          |   25 ++-
+ arch/powerpc/platforms/pseries/mobility.c      |  362 ++++++++++++++++++
+ arch/powerpc/platforms/pseries/pseries.h       |    9 +
+ arch/powerpc/platforms/pseries/setup.c         |   52 +++
+ arch/powerpc/platforms/pseries/xics.c          |    2 +-
+ arch/powerpc/sysdev/Makefile                   |    5 +-
+ arch/powerpc/sysdev/dart_iommu.c               |   74 ++++-
+ arch/powerpc/sysdev/fsl_85xx_cache_ctlr.h      |  101 +++++
+ arch/powerpc/sysdev/fsl_85xx_cache_sram.c      |  159 ++++++++
+ arch/powerpc/sysdev/fsl_85xx_l2ctlr.c          |  231 +++++++++++
+ arch/powerpc/sysdev/fsl_msi.c                  |    9 +-
+ arch/powerpc/sysdev/fsl_pci.c                  |   60 +++-
+ arch/powerpc/sysdev/fsl_pci.h                  |    1 +
+ arch/powerpc/sysdev/fsl_rio.c                  |   65 ++--
+ arch/powerpc/sysdev/fsl_soc.c                  |   20 +-
+ arch/powerpc/sysdev/mpc8xxx_gpio.c             |    3 +
+ arch/powerpc/sysdev/pmi.c                      |    2 +-
+ arch/powerpc/xmon/Makefile                     |    4 +-
+ drivers/i2c/busses/i2c-pasemi.c                |    2 +-
+ drivers/macintosh/via-pmu-led.c                |    4 +-
+ drivers/watchdog/Kconfig                       |   22 +-
+ drivers/watchdog/booke_wdt.c                   |   47 ++-
+ include/linux/pci_ids.h                        |    8 +
+ kernel/sys_ni.c                                |    1 +
+ 130 files changed, 3676 insertions(+), 683 deletions(-)
+ create mode 100644 arch/powerpc/boot/dts/bluestone.dts
+ create mode 100644 arch/powerpc/boot/dts/mpc8308_p1m.dts
+ create mode 100644 arch/powerpc/configs/44x/bluestone_defconfig
+ create mode 100644 arch/powerpc/configs/e55xx_smp_defconfig
+ create mode 100644 arch/powerpc/include/asm/fsl_85xx_cache_sram.h
+ create mode 100644 arch/powerpc/lib/checksum_wrappers_64.c
+ create mode 100644 arch/powerpc/platforms/85xx/p3041_ds.c
+ create mode 100644 arch/powerpc/platforms/85xx/p5020_ds.c
+ create mode 100644 arch/powerpc/platforms/pseries/mobility.c
+ create mode 100644 arch/powerpc/sysdev/fsl_85xx_cache_ctlr.h
+ create mode 100644 arch/powerpc/sysdev/fsl_85xx_cache_sram.c
+ create mode 100644 arch/powerpc/sysdev/fsl_85xx_l2ctlr.c
+
+
