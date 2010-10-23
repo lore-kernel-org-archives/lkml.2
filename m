@@ -1,88 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754968Ab0JWATX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 20:19:23 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:48131 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753011Ab0JWATW convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 20:19:22 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=Fhb89MGe8rViEmb9958L08EKvGFmxsajwMoByj2r9ZA3+tnEFJr9TpvUFclTqyvdWu
-         2Cj/oUEVxYXVJPKsknl0eS+WwsppA+Q6WuLXnVh/ot1FOpWeTPp5t5vqlk14t0OtW71Q
-         UScOpm8rRyNQlD5HExW5kHlWHnM/I0dm9FMmQ=
-MIME-Version: 1.0
-In-Reply-To: <20101022170255.7feab5de.rdunlap@xenotime.net>
-References: <1287753199.2122.0.camel@cowboy>
-	<20101022165517.effde8fb.akpm@linux-foundation.org>
-	<20101022170255.7feab5de.rdunlap@xenotime.net>
-Date: Sat, 23 Oct 2010 10:19:20 +1000
-Message-ID: <AANLkTi=w5p8Un_xyaDWVuV8Ksvj7HX0WDipptU4XGqEN@mail.gmail.com>
-Subject: Re: [PATCH RESEND] drm: include missing types header to drm_mode.h
-From: Dave Airlie <airlied@gmail.com>
-To: Randy Dunlap <rdunlap@xenotime.net>
-Cc: Andrew Morton <akpm@linux-foundation.org>, dave@gnu.org,
-        Dave Airlie <airlied@redhat.com>, Dave Airlie <airlied@linux.ie>,
-        LKML <linux-kernel@vger.kernel.org>,
-        dri-devel <dri-devel@lists.freedesktop.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1755295Ab0JWAWw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 20:22:52 -0400
+Received: from LUNGE.MIT.EDU ([18.54.1.69]:45951 "EHLO lunge.queued.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752541Ab0JWAWv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Oct 2010 20:22:51 -0400
+Date: Fri, 22 Oct 2010 17:22:47 -0700
+From: Andres Salomon <dilinger@queued.net>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: devicetree-discuss@lists.ozlabs.org, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] x86: OLPC: speed up device tree creation during boot
+Message-ID: <20101022172247.76cb3049@queued.net>
+In-Reply-To: <20101022155846.66cde32f@queued.net>
+References: <20101022155846.66cde32f@queued.net>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Oct 23, 2010 at 10:02 AM, Randy Dunlap <rdunlap@xenotime.net> wrote:
-> On Fri, 22 Oct 2010 16:55:17 -0700 Andrew Morton wrote:
->
->> On Fri, 22 Oct 2010 10:13:19 -0300
->> Davidlohr Bueso <dave@gnu.org> wrote:
->>
->> > drm: include missing types header to drm_mode.h
->> >
->> > Signed-off-by: Davidlohr Bueso <dave@gnu.org>
->> > ---
->> >  include/drm/drm_mode.h |    2 ++
->> >  1 files changed, 2 insertions(+), 0 deletions(-)
->> >
->> > diff --git a/include/drm/drm_mode.h b/include/drm/drm_mode.h
->> > index 0fc7397..eddd7f4 100644
->> > --- a/include/drm/drm_mode.h
->> > +++ b/include/drm/drm_mode.h
->> > @@ -24,6 +24,8 @@
->> >   * IN THE SOFTWARE.
->> >   */
->> >
->> > +#include <linux/types.h>
->> > +
->> >  #ifndef _DRM_MODE_H
->> >  #define _DRM_MODE_H
->> >
->>
->> Does this fix a build error?  If so, please send along the compiler
->> error output.
->
->
-> Every build that has CONFIG_HEADERS_CHECK=y reports the following:
->
-> linux-next-20101022/X64/usr/include/drm/drm_mode.h:85: found __[us]{8,16,32,64} type without #include <linux/types.h>
-> linux-next-20101022/X64/usr/include/drm/i915_drm.h:120: found __[us]{8,16,32,64} type without #include <linux/types.h>
-> linux-next-20101022/X64/usr/include/drm/mga_drm.h:260: found __[us]{8,16,32,64} type without #include <linux/types.h>
-> linux-next-20101022/X64/usr/include/drm/radeon_drm.h:758: found __[us]{8,16,32,64} type without #include <linux/types.h>
-> linux-next-20101022/X64/usr/include/drm/via_drm.h:117: found __[us]{8,16,32,64} type without #include <linux/types.h>
-> linux-next-20101022/X64/usr/include/scsi/scsi_netlink.h:108: found __[us]{8,16,32,64} type without #include <linux/types.h>
-> linux-next-20101022/X64/usr/include/linux/resource.h:49: found __[us]{8,16,32,64} type without #include <linux/types.h>
->
->
 
-Why doesn't the tool understand header recursion? drm_mode.h needs to
-include drm.h but the rest already include drm.h.
+Calling alloc_bootmem() for tiny chunks of memory over and over is really
+slow; on an XO-1, it caused the time between when the kernel started
+booting and when the display came alive (post-lxfb probe) to increase
+to 44s.  This patch optimizes the prom_early_alloc function by
+calling alloc_bootmem for 4k-sized blocks of memory, and handing out
+chunks of that to callers.  With this hack, the time between kernel load
+and display initialization decreased to 23s.  If there's a better way to
+do this early in the boot process, please let me know.
 
-Including drm.h includes linux/types.h if defined(__linux__)
+(Note: increasing the chunk size to 16k didn't noticably affect boot time,
+and wasted 9k.)
 
-So really I've said this a few times now, its the stupid tool that is
-broken for most of these, fix the tool and I'll fix drm_mode.h
+Signed-off-by: Andres Salomon <dilinger@queued.net>
+---
+ arch/x86/kernel/olpc_dt.c |   27 +++++++++++++++++++++++----
+ 1 files changed, 23 insertions(+), 4 deletions(-)
 
-Dave.
+diff --git a/arch/x86/kernel/olpc_dt.c b/arch/x86/kernel/olpc_dt.c
+index f660a11..44dd2ae 100644
+--- a/arch/x86/kernel/olpc_dt.c
++++ b/arch/x86/kernel/olpc_dt.c
+@@ -123,16 +123,35 @@ static int __init olpc_dt_pkg2path(phandle node, char *buf,
+ }
+ 
+ static unsigned int prom_early_allocated __initdata;
++#define DT_CHUNK_SIZE (1<<12)
+ 
+ void * __init prom_early_alloc(unsigned long size)
+ {
++	static u8 *mem = NULL;
++	static size_t free_mem = 0;
+ 	void *res;
+ 
+-	res = alloc_bootmem(size);
+-	if (res)
+-		memset(res, 0, size);
++	if (free_mem >= size) {
++		/* allocate from the local cache */
++		free_mem -= size;
++		res = mem;
++		mem += size;
++		return res;
++	}
+ 
+-	prom_early_allocated += size;
++	/*
++	 * To mimimize the number of allocations, grab 4k of memory (that's
++	 * an arbitrary choice that matches PAGE_SIZE on the platforms we care
++	 * about, and minimizes wasted bootmem) and hand off chunks of it to
++	 * callers.
++	 */
++	res = alloc_bootmem(DT_CHUNK_SIZE);
++	if (res) {
++		prom_early_allocated += DT_CHUNK_SIZE;
++		memset(res, 0, DT_CHUNK_SIZE);
++		free_mem = DT_CHUNK_SIZE - size;
++		mem = res + size;
++	}
+ 
+ 	return res;
+ }
+-- 
+1.5.6.5
+
