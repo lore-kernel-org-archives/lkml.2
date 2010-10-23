@@ -1,161 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752520Ab0JWJ1A (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Oct 2010 05:27:00 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:63206 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750965Ab0JWJ06 (ORCPT
+	id S1752601Ab0JWJ1t (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Oct 2010 05:27:49 -0400
+Received: from zone0.gcu-squad.org ([212.85.147.21]:40123 "EHLO
+	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751641Ab0JWJ1s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Oct 2010 05:26:58 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Subject: Re: linux-next: manual merge of the bkl-llseek tree with the wireless tree
-Date: Sat, 23 Oct 2010 11:27:35 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.35-16-generic; KDE/4.3.2; x86_64; ; )
-Cc: "John W. Linville" <linville@tuxdriver.com>,
-        David Miller <davem@davemloft.net>, netdev@vger.kernel.org,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Felix Fietkau <nbd@openwrt.org>, Linus <torvalds@linux-foundation.org>,
-        Christoph Hellwig <hch@infradead.org>
-References: <20101018173543.c33530e9.sfr@canb.auug.org.au> <20101023142312.533f6a42.sfr@canb.auug.org.au>
-In-Reply-To: <20101023142312.533f6a42.sfr@canb.auug.org.au>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+	Sat, 23 Oct 2010 05:27:48 -0400
+Date: Sat, 23 Oct 2010 11:27:32 +0200
+From: Jean Delvare <khali@linux-fr.org>
+To: Greg KH <gregkh@suse.de>
+Cc: linux-kernel@vger.kernel.org, stable@kernel.org, stable-review@kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, Huaxu Wan <huaxu.wan@linux.intel.com>,
+        Carsten Emde <C.Emde@osadl.org>,
+        Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
+        Yong Wang <yong.y.wang@linux.intel.com>,
+        Rudolf Marek <r.marek@assembler.cz>,
+        Brad Buce <Brad.Buce@elbitsystems-us.com>
+Subject: Re: [66/66] drivers/hwmon/coretemp.c: detect the thermal sensors by
+ CPUID
+Message-ID: <20101023112732.41a9c3f1@endymion.delvare>
+In-Reply-To: <20101022183602.094033497@clark.site>
+References: <20101022183711.GA23214@kroah.com>
+	<20101022183602.094033497@clark.site>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Message-Id: <201010231127.35785.arnd@arndb.de>
-X-Provags-ID: V02:K0:5a10rITafWmnTxsQO4h3ZxfPXSHEqznl+aS1L03D6hl
- +Q4n4WjJcckBKYwxChKktjb7ryGBXzYru1hum2ONDT8YQHPg9S
- zddM0wHEl2ryYCbiUIIF1QTfXBiLA9p97m7JRNjTAbbGQsX6Iq
- J7A51PE7CpEdju3SqwTrs0B/FNddfChRz50Y6KnUw6iiZgaoFO
- E0O5FpcJ+k+W0l9zw51ZQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday 23 October 2010, Stephen Rothwell wrote:
-> Hi John, Dave,
+On Fri, 22 Oct 2010 11:35:33 -0700, Greg KH wrote:
+> 2.6.32-stable review patch.  If anyone has any objections, please let us know.
+
+Yes, I have an objection. This isn't a bug fix and thus doesn't belong
+to a stable kernel series. Furthermore, this change will let the
+coretemp driver bind to CPU devices it doesn't properly support. Proper
+support for recent CPUs would need commit
+a321cedb12904114e2ba5041a3673ca24deb09c9 (drivers/hwmon/coretemp.c: get
+TjMax value from MSR) which is way too large and intrusive for a stable
+series.
+
+So please drop this patch from the 2.6.32-stable queue.
+
 > 
-> On Mon, 18 Oct 2010 17:35:43 +1100 Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> >
-> > Today's linux-next merge of the bkl-llseek tree got a conflict in
-> > drivers/net/wireless/ath/ath9k/debug.c between commit
-> > 772d5515635fef5bc7a9d0efee785b58b0181ee5 ("ath9k: make rate control
-> > debugfs stats per station") from the wireless tree and commit
-> > 6038f373a3dc1f1c26496e60b6c40b164716f07e ("llseek: automatically
-> > add .llseek fop") from the bkl-llseek tree.
-> > 
-> > The former moved some of the code modified by the latter to another file.
-> > 
-> > I added this merge fix patch:
+> ------------------
 > 
-> This patch (reproduced below) will now be needed if the wireless or net
-> tree is merged with Linus' tree.  I also think I have missed a similar
-> needed fix in drivers/net/wireless/ath/ath5k/debug.c ...
+> From: Carsten Emde <C.Emde@osadl.org>
+> 
+> commit 5db47b009d17d69a2f8d84357e7b24c3e3c2edec upstream.
+> 
+> The thermal sensors of Intel(R) CPUs can be detected by CPUID instruction,
+> indicated by CPUID.06H.EAX[0].
+> 
+> Signed-off-by: Huaxu Wan <huaxu.wan@linux.intel.com>
+> Signed-off-by: Carsten Emde <C.Emde@osadl.org>
+> Reviewed-by: Valdis Kletnieks <valdis.kletnieks@vt.edu>
+> Cc: Jean Delvare <khali@linux-fr.org>
+> Cc: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+> Cc: Yong Wang <yong.y.wang@linux.intel.com>
+> Cc: Rudolf Marek <r.marek@assembler.cz>
+> Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+> Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+> Cc: Brad Buce <Brad.Buce@elbitsystems-us.com>
+> Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+> 
+> ---
+>  drivers/hwmon/coretemp.c |   34 +++++++++++++---------------------
+>  1 file changed, 13 insertions(+), 21 deletions(-)
+> 
+> --- a/drivers/hwmon/coretemp.c
+> +++ b/drivers/hwmon/coretemp.c
+> @@ -479,28 +479,20 @@ static int __init coretemp_init(void)
+>  
+>  	for_each_online_cpu(i) {
+>  		struct cpuinfo_x86 *c = &cpu_data(i);
+> -
+> -		/* check if family 6, models 0xe (Pentium M DC),
+> -		  0xf (Core 2 DC 65nm), 0x16 (Core 2 SC 65nm),
+> -		  0x17 (Penryn 45nm), 0x1a (Nehalem), 0x1c (Atom),
+> -		  0x1e (Lynnfield) */
+> -		if ((c->cpuid_level < 0) || (c->x86 != 0x6) ||
+> -		    !((c->x86_model == 0xe) || (c->x86_model == 0xf) ||
+> -			(c->x86_model == 0x16) || (c->x86_model == 0x17) ||
+> -			(c->x86_model == 0x1a) || (c->x86_model == 0x1c) ||
+> -			(c->x86_model == 0x1e))) {
+> -
+> -			/* supported CPU not found, but report the unknown
+> -			   family 6 CPU */
+> -			if ((c->x86 == 0x6) && (c->x86_model > 0xf))
+> -				printk(KERN_WARNING DRVNAME ": Unknown CPU "
+> -					"model %x\n", c->x86_model);
+> -			continue;
+> +		/*
+> +		* CPUID.06H.EAX[0] indicates whether the CPU has thermal
+> +		* sensors. We check this bit only, all the early CPUs
+> +		* without thermal sensors will be filtered out.
+> +		*/
+> +		if (c->cpuid_level >= 6 && (cpuid_eax(0x06) & 0x01)) {
+> +			err = coretemp_device_add(i);
+> +			if (err)
+> +				goto exit_devices_unreg;
+> +
+> +		} else {
+> +			printk(KERN_INFO DRVNAME ": CPU (model=0x%x)"
+> +				" has no thermal sensor.\n", c->x86_model);
+>  		}
+> -
+> -		err = coretemp_device_add(i);
+> -		if (err)
+> -			goto exit_devices_unreg;
+>  	}
+>  	if (list_empty(&pdev_list)) {
+>  		err = -ENODEV;
+> 
+> 
 
-There are also new drivers for speakup, intel_sst and yurex that introduce
-additional file_operations in next, the patch below is what I had planned
-to submit once everything is in. I also expect the occasional driver that
-did not see linux-next, so I'll rerun my scripts after -rc1 to see what
-we got.
 
-As Christoph mentioned, we probably shouldn't make new drivers use
-noop_llssek if possible nor add an explicit no_llseek and we can just
-leave those with the implicit no_llseek.
-
-Once open question is what pread/pwrite should do if there is no
-llseek function. Right now they are both possible, but it would also
-be logical to turn this into an implicit nonseekable_open, which forbids
-pread/pwrite as well.
-
-	Arnd
-
-diff --git a/drivers/net/wireless/ath/ath5k/debug.c b/drivers/net/wireless/ath/ath5k/debug.c
-index e157646..b203034 100644
---- a/drivers/net/wireless/ath/ath5k/debug.c
-+++ b/drivers/net/wireless/ath/ath5k/debug.c
-@@ -537,6 +537,7 @@ static ssize_t read_file_misc(struct file *file, char __user *user_buf,
- static const struct file_operations fops_misc = {
- 	.read = read_file_misc,
- 	.open = ath5k_debugfs_open,
-+	.llseek = default_llseek,
- 	.owner = THIS_MODULE,
- };
- 
-diff --git a/drivers/staging/intel_sst/intel_sst.c b/drivers/staging/intel_sst/intel_sst.c
-index 24d3928..d9c4ae5 100644
---- a/drivers/staging/intel_sst/intel_sst.c
-+++ b/drivers/staging/intel_sst/intel_sst.c
-@@ -64,6 +64,7 @@ static const struct file_operations intel_sst_fops = {
- 	.mmap = intel_sst_mmap,
- 	.aio_read = intel_sst_aio_read,
- 	.aio_write = intel_sst_aio_write,
-+	.llseek = nonseekable_open,
- };
- static const struct file_operations intel_sst_fops_cntrl = {
- 	.owner = THIS_MODULE,
-diff --git a/drivers/staging/intel_sst/intel_sst_app_interface.c b/drivers/staging/intel_sst/intel_sst_app_interface.c
-index 82768fa..931c4ba 100644
---- a/drivers/staging/intel_sst/intel_sst_app_interface.c
-+++ b/drivers/staging/intel_sst/intel_sst_app_interface.c
-@@ -121,6 +121,7 @@ int intel_sst_open(struct inode *i_node, struct file *file_ptr)
- 		retval = -EUSERS;
- 		mutex_unlock(&sst_drv_ctx->stream_lock);
- 	}
-+	nonseekable_open(i_node, file_ptr);
- 	return retval;
- }
- 
-@@ -151,6 +152,7 @@ int intel_sst_open_cntrl(struct inode *i_node, struct file *file_ptr)
- 		retval = -EACCES;
- 
- 	mutex_unlock(&sst_drv_ctx->stream_lock);
-+	nonseekable_open(i_node, file_ptr);
- 	return retval;
- }
- 
-diff --git a/drivers/staging/speakup/devsynth.c b/drivers/staging/speakup/devsynth.c
-index 39dc586..5fc63fc 100644
---- a/drivers/staging/speakup/devsynth.c
-+++ b/drivers/staging/speakup/devsynth.c
-@@ -48,6 +48,8 @@ static int speakup_file_open(struct inode *ip, struct file *fp)
- 		return -ENODEV;
- 	if (xchg(&dev_opened, 1))
- 		return -EBUSY;
-+
-+	nonseekable_open(ip, fp);
- 	return 0;
- }
- 
-@@ -62,6 +64,7 @@ static const struct file_operations synth_fops = {
- 	.write = speakup_file_write,
- 	.open = speakup_file_open,
- 	.release = speakup_file_release,
-+	.llseek = no_llseek,
- };
- 
- static struct miscdevice synth_device = {
-diff --git a/drivers/staging/speakup/speakup_soft.c b/drivers/staging/speakup/speakup_soft.c
-index 2c85773..05c8006 100644
---- a/drivers/staging/speakup/speakup_soft.c
-+++ b/drivers/staging/speakup/speakup_soft.c
-@@ -305,6 +305,7 @@ static struct file_operations softsynth_fops = {
- 	.read = softsynth_read,
- 	.write = softsynth_write,
- 	.open = softsynth_open,
-+	.llseek = default_llseek,
- 	.release = softsynth_close,
- };
- 
-diff --git a/drivers/usb/misc/yurex.c b/drivers/usb/misc/yurex.c
-index 719c618..ac5bfd6 100644
---- a/drivers/usb/misc/yurex.c
-+++ b/drivers/usb/misc/yurex.c
-@@ -536,6 +536,7 @@ static const struct file_operations yurex_fops = {
- 	.open =		yurex_open,
- 	.release =	yurex_release,
- 	.fasync	=	yurex_fasync,
-+	.llseek =	default_llseek,
- };
- 
- 
+-- 
+Jean Delvare
