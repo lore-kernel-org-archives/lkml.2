@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757556Ab0JWPCr (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Oct 2010 11:02:47 -0400
-Received: from www.tglx.de ([62.245.132.106]:49034 "EHLO www.tglx.de"
+	id S1757570Ab0JWPDH (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Oct 2010 11:03:07 -0400
+Received: from www.tglx.de ([62.245.132.106]:49050 "EHLO www.tglx.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757041Ab0JWPCq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Oct 2010 11:02:46 -0400
-Date: Sat, 23 Oct 2010 17:02:25 +0200 (CEST)
+	id S1757041Ab0JWPDF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 23 Oct 2010 11:03:05 -0400
+Date: Sat, 23 Oct 2010 17:02:48 +0200 (CEST)
 From: Thomas Gleixner <tglx@linutronix.de>
 To: Linus Torvalds <torvalds@linux-foundation.org>
 cc: Andrew Morton <akpm@linux-foundation.org>,
         LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
         "H. Peter Anvin" <hpa@zytor.com>
-Subject: [GIT pull] x86 quirks for 2.6.37
-Message-ID: <alpine.LFD.2.00.1010231633080.2516@localhost6.localdomain6>
+Subject: [GIT pull] x86 setup for 2.6.37
+Message-ID: <alpine.LFD.2.00.1010231634010.2516@localhost6.localdomain6>
 User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
@@ -23,32 +23,65 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Linus,
 
-Please pull the latest x86-quirks-for-linus git tree from:
+Please pull the latest x86-setup-for-linus git tree from:
 
-   git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git x86-quirks-for-linus
+   git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git x86-setup-for-linus
 
 Thanks,
 
 	tglx
 
 ------------------>
-Udo van den Heuvel (1):
-      x86: HPET force enable for CX700 / VIA Epia LT
+Zhao Yakui (1):
+      x86, setup: Use string copy operation to optimze copy in kernel compression
 
 
- arch/x86/kernel/quirks.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
+ arch/x86/boot/compressed/misc.c |   29 +++++++++++++++++++++++------
+ 1 files changed, 23 insertions(+), 6 deletions(-)
 
-diff --git a/arch/x86/kernel/quirks.c b/arch/x86/kernel/quirks.c
-index 939b9e9..8bbe8c5 100644
---- a/arch/x86/kernel/quirks.c
-+++ b/arch/x86/kernel/quirks.c
-@@ -344,6 +344,8 @@ DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_VIA, PCI_DEVICE_ID_VIA_8235,
- 			 vt8237_force_enable_hpet);
- DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_VIA, PCI_DEVICE_ID_VIA_8237,
- 			 vt8237_force_enable_hpet);
-+DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_VIA, PCI_DEVICE_ID_VIA_CX700,
-+			 vt8237_force_enable_hpet);
+diff --git a/arch/x86/boot/compressed/misc.c b/arch/x86/boot/compressed/misc.c
+index 8f7bef8..23f315c 100644
+--- a/arch/x86/boot/compressed/misc.c
++++ b/arch/x86/boot/compressed/misc.c
+@@ -229,18 +229,35 @@ void *memset(void *s, int c, size_t n)
+ 		ss[i] = c;
+ 	return s;
+ }
+-
++#ifdef CONFIG_X86_32
+ void *memcpy(void *dest, const void *src, size_t n)
+ {
+-	int i;
+-	const char *s = src;
+-	char *d = dest;
++	int d0, d1, d2;
++	asm volatile(
++		"rep ; movsl\n\t"
++		"movl %4,%%ecx\n\t"
++		"rep ; movsb\n\t"
++		: "=&c" (d0), "=&D" (d1), "=&S" (d2)
++		: "0" (n >> 2), "g" (n & 3), "1" (dest), "2" (src)
++		: "memory");
  
- static void ati_force_hpet_resume(void)
+-	for (i = 0; i < n; i++)
+-		d[i] = s[i];
+ 	return dest;
+ }
++#else
++void *memcpy(void *dest, const void *src, size_t n)
++{
++	long d0, d1, d2;
++	asm volatile(
++		"rep ; movsq\n\t"
++		"movq %4,%%rcx\n\t"
++		"rep ; movsb\n\t"
++		: "=&c" (d0), "=&D" (d1), "=&S" (d2)
++		: "0" (n >> 3), "g" (n & 7), "1" (dest), "2" (src)
++		: "memory");
+ 
++	return dest;
++}
++#endif
+ 
+ static void error(char *x)
  {
