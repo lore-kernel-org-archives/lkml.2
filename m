@@ -1,199 +1,456 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751872Ab0JWEYj (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Oct 2010 00:24:39 -0400
-Received: from web31812.mail.mud.yahoo.com ([68.142.207.75]:45342 "HELO
-	web31812.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751089Ab0JWEYi convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Oct 2010 00:24:38 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.com;
-  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Reply-To:Subject:To:MIME-Version:Content-Type:Content-Transfer-Encoding;
-  b=dBZxG+pbCWaZDZe9bQDcpyCJJWaOi8meDgoo//h9qvQ2Nf+uftMNUIZceL5Ti99IAmcLD838WE8963rjCHIQUnsN5JU8DcsSk9+xsVbdlmpINAoRVnVDXTykAE14NjJUQrHC5ACNL9OLGqR3Ts7aEg7S1JeHnfEHB0ac2tReQPk=;
-Message-ID: <479061.81478.qm@web31812.mail.mud.yahoo.com>
-X-YMail-OSG: z5HcjiUVM1mPSF8PJdgf7Oj25T.AVQ8iwaKrU2ZytelVBJq
- mSiuOzl7KPFxLMwNAbnEun2B9tnPOtHjwaJWf5wZOkWmBXGNl4NkK_6Xfkdn
- RD.Z0dj_7WTtpqw_1JT1bqxrmYlPS7GUSZY894zSRX71MLIqTp93Ax5PGq2s
- dP4bvkMFtF1Jgwmi7JgC.jkJvksKiWZtMg4AWRcVEL26TLbEybz9ie8SnkrA
- Oh76cmsExQbvsTftLC9L8fHolwKTxJIOVFCDX9Cc1sbUEh8OH8bg_hrzJKLl
- 0NeX0gKm1Dv9xIHJJoEsvAnwafL4cYOyFev__lCgWgMOtuo3qqs7QXRwNPVx
- a_O3FqNXkr_DIeTK2C7l6AlYfr6v50fEujGU-
-X-Mailer: YahooMailClassic/11.4.9 YahooMailWebService/0.8.107.285259
-Date: Fri, 22 Oct 2010 21:24:36 -0700 (PDT)
-From: Luben Tuikov <ltuikov@yahoo.com>
-Reply-To: ltuikov@yahoo.com
-Subject: [PATCH] [SCSI] Retrieve the Caching mode page
-To: Greg KH <greg@kroah.com>, linux-usb@vger.kernel.org,
-        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        viro@zeniv.linux.org.uk
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1751657Ab0JWEk0 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Oct 2010 00:40:26 -0400
+Received: from vms173011pub.verizon.net ([206.46.173.11]:40178 "EHLO
+	vms173011pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751089Ab0JWEkZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 23 Oct 2010 00:40:25 -0400
+Date: Sat, 23 Oct 2010 00:40:18 -0400 (EDT)
+From: Len Brown <lenb@kernel.org>
+X-X-Sender: lenb@localhost.localdomain
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        linux-acpi@vger.kernel.org, x86@kernel.org
+Subject: [PATCH] tools: add x86_energy_perf_policy to program
+ MSR_IA32_ENERGY_PERF_BIAS
+In-reply-to: <alpine.LFD.2.00.1009281143070.14962@localhost.localdomain>
+Message-id: <alpine.LFD.2.00.1010230035360.29399@localhost.localdomain>
+References: <alpine.LFD.2.00.1006161659140.24913@localhost.localdomain>
+ <alpine.LFD.2.00.1009281143070.14962@localhost.localdomain>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+MIME-version: 1.0
+Content-type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some kernel transport drivers unconditionally disable
-retrieval of the Caching mode page. One such for example is
-the BBB/CBI transport over USB.  Such a restraint is too
-harsh as some devices do support the Caching mode
-page. Unconditionally enabling the retrieval of this mode
-page over those transports at their transport code level may
-result in some devices failing and becoming unusable.
+From: Len Brown <len.brown@intel.com>
 
-This patch implements a method of retrieving the Caching
-mode page without unconditionally enabling it in the
-transports which unconditionally disable it. The idea is to
-ask for all supported pages, page code 0x3F, and then search
-for the Caching mode page in the mode parameter data
-returned. The sd driver already asks for all the mode pages
-supported by the attached device by setting the page code to
-0x3F in order to find out if the media is write protected by
-reading the WP bit in the Device Specific Parameter
-field. It then attempts to retrieve only the Caching mode
-page by setting the page code to 8 and actually attempting
-to retrieve it if and only if the transport allows it.
+MSR_IA32_ENERGY_PERF_BIAS first became available on Westmere Xeon.
+It is implemented in all Sandy Bridge processors -- mobile, desktop and server.
+It is expected to become increasingly important in subsequent generations.
 
-The method implemented here is that if the transport doesn't
-allow retrieval of the Caching mode page and the device is
-not RBC, then we ask for all pages supported by setting the
-page code to 0x3F (similarly to how the WP bit is retrieved
-above), and then we search for the Caching mode page in the
-mode parameter data returned.
+x86_energy_perf_policy is a user-space utility to set this
+hardware energy vs performance policy hint in the processor.
+Most systems would benefit from "x86_energy_perf_policy normal"
+at system startup, as the hardware default is maximum performance
+at the expense of energy efficiency.  See the comments
+in the source code for more information.
 
-With this patch, devices over SATA, report this (no change):
+Linux-2.6.36 added "epb" to /proc/cpuinfo to indicate
+if an x86 processor supports MSR_IA32_ENERGY_PERF_BIAS,
+though the kernel does not actually program the MSR.
 
-Oct 22 18:45:58 localhost kernel: sd 0:0:0:0: [sda] 976773168 512-byte logical blocks: (500 GB/465 GiB)
-Oct 22 18:45:58 localhost kernel: sd 0:0:0:0: Attached scsi generic sg0 type 0
-Oct 22 18:45:58 localhost kernel: sd 0:0:0:0: [sda] Write Protect is off
-Oct 22 18:45:58 localhost kernel: sd 0:0:0:0: [sda] Mode Sense: 00 3a 00 00
-Oct 22 18:45:58 localhost kernel: sd 0:0:0:0: [sda] Write cache: enabled, read cache: enabled, doesn't support DPO or FUA
+In March, Venkatesh Pallipadi proposed a small driver
+that programmed MSR_IA32_ENERGY_PERF_BIAS, based on
+the cpufreq governor in use.  It also offered
+a boot-time cmdline option to override.
+http://lkml.org/lkml/2010/3/4/457
+But hiding the hardware policy behind the
+governor choice was deemed "kinda icky".
 
-Smart devices report their Caching mode page. This is a
-change where we'd previously see the kernel making
-assumption about the device's cache being write-through:
+So in June, I proposed a generic user/kernel API to
+consolidate the power/performance policy trade-off.
+"RFC: /sys/power/policy_preference"
+http://lkml.org/lkml/2010/6/16/399
+That is my preference for implementing this capability,
+but I received no support on the list.
 
-Oct 22 18:45:58 localhost kernel: sd 6:0:0:0: Attached scsi generic sg2 type 0
-Oct 22 18:45:58 localhost kernel: sd 6:0:0:0: [sdb] 610472646 4096-byte logical blocks: (2.50 TB/2.27 TiB)
-Oct 22 18:45:58 localhost kernel: sd 6:0:0:0: [sdb] Write Protect is off
-Oct 22 18:45:58 localhost kernel: sd 6:0:0:0: [sdb] Mode Sense: 47 00 10 08
-Oct 22 18:45:58 localhost kernel: sd 6:0:0:0: [sdb] Write cache: enabled, read cache: enabled, supports DPO and FUA
+So in September, I sent x86_energy_perf_policy.c to LKML,
+a user-space utility that scribbles directly to the MSR.
+http://lkml.org/lkml/2010/9/28/246
 
-And "dumb" devices over BBB, are correctly shown not to
-support reporting the Caching mode page:
+Here is the same utility re-sent, this time proposed
+to reside in the kernel tools directory.
 
-Oct 22 18:49:06 localhost kernel: sd 7:0:0:0: [sdc] 15663104 512-byte logical blocks: (8.01 GB/7.46 GiB)
-Oct 22 18:49:06 localhost kernel: sd 7:0:0:0: [sdc] Write Protect is off
-Oct 22 18:49:06 localhost kernel: sd 7:0:0:0: [sdc] Mode Sense: 23 00 00 00
-Oct 22 18:49:06 localhost kernel: sd 7:0:0:0: [sdc] No Caching mode page present
-Oct 22 18:49:06 localhost kernel: sd 7:0:0:0: [sdc] Assuming drive cache: write through
-
-Signed-off-by: Luben Tuikov <ltuikov@yahoo.com>
+Signed-off-by: Len Brown <len.brown@intel.com>
 ---
- drivers/scsi/sd.c |   63 +++++++++++++++++++++++++++++++++++++++-------------
- 1 files changed, 47 insertions(+), 16 deletions(-)
+ tools/power/x86/x86_energy_perf_policy/Makefile    |    7 +
+ .../x86_energy_perf_policy.c                       |  358 ++++++++++++++++++++
+ 2 files changed, 365 insertions(+), 0 deletions(-)
+ create mode 100644 tools/power/x86/x86_energy_perf_policy/Makefile
+ create mode 100644 tools/power/x86/x86_energy_perf_policy/x86_energy_perf_policy.c
 
-A note on the patch: I've removed the "len += ..." statement,
-since "data.length" already includes the mode parameter header length
-and the block descriptor length. If the device returns correctly
-formatted mode parameter data then this statement would most certainly
-add those two lengths to the data twice resulting in an incorrect "len"
-length.
-
-diff --git a/drivers/scsi/sd.c b/drivers/scsi/sd.c
-index ffa0689..81e83d7 100644
---- a/drivers/scsi/sd.c
-+++ b/drivers/scsi/sd.c
-@@ -1867,10 +1867,14 @@ sd_read_cache_type(struct scsi_disk *sdkp, unsigned char *buffer)
- 	int old_rcd = sdkp->RCD;
- 	int old_dpofua = sdkp->DPOFUA;
- 
--	if (sdp->skip_ms_page_8)
--		goto defaults;
--
--	if (sdp->type == TYPE_RBC) {
-+	if (sdp->skip_ms_page_8) {
-+		if (sdp->type == TYPE_RBC)
-+			goto defaults;
-+		else {
-+			modepage = 0x3F;
-+			dbd = 0;
-+		}
-+	} else if (sdp->type == TYPE_RBC) {
- 		modepage = 6;
- 		dbd = 8;
- 	} else {
-@@ -1898,13 +1902,11 @@ sd_read_cache_type(struct scsi_disk *sdkp, unsigned char *buffer)
- 	 */
- 	if (len < 3)
- 		goto bad_sense;
--	if (len > 20)
--		len = 20;
--
--	/* Take headers and block descriptors into account */
--	len += data.header_length + data.block_descriptor_length;
--	if (len > SD_BUF_SIZE)
--		goto bad_sense;
-+	else if (len > SD_BUF_SIZE) {
-+		sd_printk(KERN_NOTICE, sdkp, "Truncating mode parameter "
-+			  "data from %d to %d bytes\n", len, SD_BUF_SIZE);
-+		len = SD_BUF_SIZE;
-+	}
- 
- 	/* Get the data */
- 	res = sd_do_mode_sense(sdp, dbd, modepage, buffer, len, &data, &sshdr);
-@@ -1912,16 +1914,45 @@ sd_read_cache_type(struct scsi_disk *sdkp, unsigned char *buffer)
- 	if (scsi_status_is_good(res)) {
- 		int offset = data.header_length + data.block_descriptor_length;
- 
--		if (offset >= SD_BUF_SIZE - 2) {
--			sd_printk(KERN_ERR, sdkp, "Malformed MODE SENSE response\n");
--			goto defaults;
-+		while (offset < len) {
-+			u8 page_code = buffer[offset] & 0x3F;
-+			u8 spf       = buffer[offset] & 0x40;
+diff --git a/tools/power/x86/x86_energy_perf_policy/Makefile b/tools/power/x86/x86_energy_perf_policy/Makefile
+new file mode 100644
+index 0000000..b0763da
+--- /dev/null
++++ b/tools/power/x86/x86_energy_perf_policy/Makefile
+@@ -0,0 +1,7 @@
++x86_energy_perf_policy : x86_energy_perf_policy.c
 +
-+			if (page_code == 8 || page_code == 6) {
-+				/* We're interested only in the first 3 bytes.
-+				 */
-+				if (len - offset <= 2) {
-+					sd_printk(KERN_ERR, sdkp, "Incomplete "
-+						  "mode parameter data\n");
-+					goto defaults;
-+				} else {
-+					modepage = page_code;
-+					goto Page_found;
-+				}
-+			} else {
-+				/* Go to the next page */
-+				if (spf && len - offset > 3)
-+					offset += 4 + (buffer[offset+2] << 8) +
-+						buffer[offset+3];
-+				else if (!spf && len - offset > 1)
-+					offset += 2 + buffer[offset+1];
-+				else {
-+					sd_printk(KERN_ERR, sdkp, "Incomplete "
-+						  "mode parameter data\n");
-+					goto defaults;
-+				}
++clean :
++	rm -f x86_energy_perf_policy
++
++install :
++	install x86_energy_perf_policy /usr/bin/x86_energy_perf_policy
+diff --git a/tools/power/x86/x86_energy_perf_policy/x86_energy_perf_policy.c b/tools/power/x86/x86_energy_perf_policy/x86_energy_perf_policy.c
+new file mode 100644
+index 0000000..89394d9
+--- /dev/null
++++ b/tools/power/x86/x86_energy_perf_policy/x86_energy_perf_policy.c
+@@ -0,0 +1,358 @@
++/*
++ * x86_energy_perf_policy -- set the energy versus performance
++ * policy preference bias on recent X86 processors.
++ */
++/*
++ * Copyright (c) 2010, Intel Corporation.
++ * Len Brown <len.brown@intel.com>
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms and conditions of the GNU General Public License,
++ * version 2, as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope it will be useful, but WITHOUT
++ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
++ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
++ * more details.
++ *
++ * You should have received a copy of the GNU General Public License along with
++ * this program; if not, write to the Free Software Foundation, Inc.,
++ * 51 Franklin St - Fifth Floor, Boston, MA 02110-1301 USA.
++ */
++
++#include <stdio.h>
++#include <unistd.h>
++#include <sys/types.h>
++#include <sys/stat.h>
++#include <sys/resource.h>
++#include <fcntl.h>
++#include <signal.h>
++#include <sys/time.h>
++#include <stdlib.h>
++
++unsigned int verbose;		/* set with -v */
++unsigned int read_only;		/* set with -r */
++char *progname;
++unsigned long long new_bias;
++int cpu = -1;
++
++/*
++ * Usage:
++ *
++ * -c cpu: limit action to a single CPU (default is all CPUs)
++ * -v: verbose output (can invoke more than once)
++ * -r: read-only, don't change any settings
++ *
++ *  performance
++ *	Performance is paramount.
++ *	Unwilling to sacrafice any performance
++ *	for the sake of energy saving. (hardware default)
++ *
++ *  normal
++ *	Can tolerate minor performance compromise
++ *	for potentially significant energy savings.
++ *	(reasonable default for most desktops and servers)
++ *
++ *  powersave
++ *	Can tolerate significant performance hit
++ *	to maximize energy savings.
++ *
++ * n
++ *	a numerical value to write to the underlying MSR.
++ */
++void usage(void)
++{
++	printf("%s: [-c cpu] [-v] "
++		"(-r | 'performance' | 'normal' | 'powersave' | n)\n",
++		progname);
++}
++
++/*
++ * MSR_IA32_ENERGY_PERF_BIAS allows software to convey
++ * its policy for the relative importance of performance
++ * versus energy savings.
++ *
++ * The hardware uses this information in model-specific ways
++ * when it must choose trade-offs between performance and
++ * energy consumption.
++ *
++ * This policy hint does not supercede Processor Performance states
++ * (P-states) or CPU Idle power states (C-states), but allows
++ * software to have influence where it has been unable to
++ * express a preference in the past.
++ *
++ * For example, this setting may tell the hardware how
++ * aggressively or conservatively to control frequency
++ * in the "turbo range" above the explicitly OS-controlled
++ * P-state frequency range.  It may also tell the hardware
++ * how aggressively is should enter the OS requestec C-states.
++ *
++ * The support for this feature is indicated by CPUID.06H.ECX.bit3
++ * per the Intel Architectures Software Developer's Manual.
++ */
++
++#define MSR_IA32_ENERGY_PERF_BIAS	0x000001b0
++
++#define	BIAS_PERFORMANCE		0
++#define BIAS_BALANCE			6
++#define	BIAS_POWERSAVE			15
++
++cmdline(int argc, char **argv) {
++	int opt;
++
++	progname = argv[0];
++
++	while ((opt = getopt(argc, argv, "+rvc:")) != -1) {
++		switch (opt) {
++		case 'c':
++			cpu = atoi(optarg);
++			break;
++		case 'r':
++			read_only = 1;
++			break;
++		case 'v':
++			verbose++;
++			break;
++		default:
++			usage();
++			exit(-1);
++		}
++	}
++	/* if -r, then should be no additional optind */
++	if (read_only && (argc > optind)) {
++		usage();
++		exit(-1);
++	}
++
++	/*
++	 * if no -r , then must be one additional optind
++	 */
++	if (!read_only) {
++
++		if (argc != optind + 1) {
++			printf("must supply -r or policy param\n");
++			usage();
++			exit(-1);
 +			}
- 		}
- 
--		if ((buffer[offset] & 0x3f) != modepage) {
-+		if (modepage == 0x3F) {
-+			sd_printk(KERN_ERR, sdkp, "No Caching mode page "
-+				  "present\n");
-+			goto defaults;
-+		} else if ((buffer[offset] & 0x3f) != modepage) {
- 			sd_printk(KERN_ERR, sdkp, "Got wrong page\n");
- 			goto defaults;
- 		}
--
-+	Page_found:
- 		if (modepage == 8) {
- 			sdkp->WCE = ((buffer[offset + 2] & 0x04) != 0);
- 			sdkp->RCD = ((buffer[offset + 2] & 0x01) != 0);
++
++		if (!strcmp("performance", argv[optind])) {
++			new_bias = BIAS_PERFORMANCE;
++		} else if (!strcmp("normal", argv[optind])) {
++			new_bias = BIAS_BALANCE;
++		} else if (!strcmp("powersave", argv[optind])) {
++			new_bias = BIAS_POWERSAVE;
++		} else {
++			new_bias = atoll(argv[optind]);
++			if (new_bias > BIAS_POWERSAVE) {
++				usage();
++				exit(-1);
++			}
++		}
++	}
++}
++
++/*
++ * validate_cpuid()
++ * returns on success, quietly exits on failure (make verbose with -v)
++ */
++void validate_cpuid(void)
++{
++	unsigned int eax, ebx, ecx, edx, max_level;
++	char brand[16];
++	unsigned int fms, family, model, stepping, ht_capable;
++
++	eax = ebx = ecx = edx = 0;
++
++	asm("cpuid" : "=a" (max_level), "=b" (ebx), "=c" (ecx),
++		"=d" (edx) : "a" (0));
++
++	sprintf(brand, "%.4s%.4s%.4s", &ebx, &edx, &ecx);
++
++	if (strncmp(brand, "GenuineIntel", 12)) {
++		if (verbose)
++			printf("CPUID: %s != GenuineIntel\n", brand);
++		exit(-1);
++	}
++
++	asm("cpuid" : "=a" (fms), "=c" (ecx), "=d" (edx) : "a" (1) : "ebx");
++	family = (fms >> 8) & 0xf;
++	model = (fms >> 4) & 0xf;
++	stepping = fms & 0xf;
++	if (family == 6 || family == 0xf)
++		model += ((fms >> 16) & 0xf) << 4;
++
++	if (verbose > 1)
++		printf("CPUID %s %d levels family:model:stepping "
++			"0x%x:%x:%x (%d:%d:%d)\n", brand, max_level,
++			family, model, stepping, family, model, stepping);
++
++	if (!(edx & (1 << 5))) {
++		if (verbose)
++			printf("CPUID: no MSR\n");
++		exit(-1);
++	}
++
++	/*
++	 * Support for MSR_IA32_ENERGY_PERF_BIAS
++	 * is indicated by CPUID.06H.ECX.bit3
++	 */
++	asm("cpuid" : "=a" (eax), "=b" (ebx), "=c" (ecx), "=d" (edx) : "a" (6));
++	if (verbose)
++		printf("CPUID.06H.ECX: 0x%x\n", ecx);
++	if (!(ecx & (1 << 3))) {
++		if (verbose)
++			printf("CPUID: No MSR_IA32_ENERGY_PERF_BIAS\n");
++		exit(-1);
++	}
++	return;	/* success */
++}
++
++check_dev_msr() {
++	struct stat sb;
++
++	if (stat("/dev/cpu/0/msr", &sb)) {
++		printf("no /dev/cpu/0/msr\n");
++		printf("Try \"# modprobe msr\"\n");
++		exit(-5);
++	}
++}
++
++unsigned long long get_msr(int cpu, int offset)
++{
++	unsigned long long msr;
++	char msr_path[32];
++	int retval;
++	int fd;
++
++	sprintf(msr_path, "/dev/cpu/%d/msr", cpu);
++	fd = open(msr_path, O_RDONLY);
++	if (fd < 0) {
++		perror(msr_path);
++		exit(-1);
++	}
++
++	retval = pread(fd, &msr, sizeof msr, offset);
++
++	if (retval != sizeof msr) {
++		printf("pread cpu%d 0x%x = %d\n", cpu, offset, retval);
++		exit(-2);
++	}
++	close(fd);
++	return msr;
++}
++
++unsigned long long  put_msr(int cpu, unsigned long long new_msr, int offset)
++{
++	unsigned long long old_msr;
++	char msr_path[32];
++	int retval;
++	int fd;
++
++	sprintf(msr_path, "/dev/cpu/%d/msr", cpu);
++	fd = open(msr_path, O_RDWR);
++	if (fd < 0) {
++		perror(msr_path);
++		exit(-1);
++	}
++
++	retval = pread(fd, &old_msr, sizeof old_msr, offset);
++	if (retval != sizeof old_msr) {
++		perror("pwrite");
++		printf("pread cpu%d 0x%x = %d\n", cpu, offset, retval);
++		exit(-2);
++	}
++
++	retval = pwrite(fd, &new_msr, sizeof new_msr, offset);
++	if (retval != sizeof new_msr) {
++		perror("pwrite");
++		printf("pwrite cpu%d 0x%x = %d\n", cpu, offset, retval);
++		exit(-2);
++	}
++
++	close(fd);
++
++	return old_msr;
++}
++
++void print_msr(int cpu)
++{
++	printf("cpu%d: 0x%016llx\n",
++		cpu, get_msr(cpu, MSR_IA32_ENERGY_PERF_BIAS));
++}
++
++void update_msr(int cpu)
++{
++	unsigned long long previous_msr;
++
++	previous_msr = put_msr(cpu, new_bias, MSR_IA32_ENERGY_PERF_BIAS);
++
++	if (verbose)
++		printf("cpu%d  msr0x%x 0x%016llx -> 0x%016llx\n",
++			cpu, MSR_IA32_ENERGY_PERF_BIAS, previous_msr, new_bias);
++
++	return;
++}
++
++char *proc_stat = "/proc/stat";
++/*
++ * run func() on every cpu in /dev/cpu
++ */
++void for_every_cpu(void (func)(int))
++{
++	FILE *fp;
++	int cpu_count;
++	int retval;
++
++	fp = fopen(proc_stat, "r");
++	if (fp == NULL) {
++		perror(proc_stat);
++		exit(-1);
++	}
++
++	retval = fscanf(fp, "cpu %*d %*d %*d %*d %*d %*d %*d %*d %*d %*d\n");
++	if (retval != 0) {
++		perror("/proc/stat format");
++		exit(-1);
++	}
++
++	for (cpu_count = 0; ; cpu_count++) {
++		int cpu;
++
++		retval = fscanf(fp,
++			"cpu%u %*d %*d %*d %*d %*d %*d %*d %*d %*d %*d\n",
++			&cpu);
++		if (retval != 1)
++			return;
++
++		func(cpu);
++	}
++	fclose(fp);
++}
++
++int main(int argc, char **argv)
++{
++	cmdline(argc, argv);
++
++	if (verbose > 1)
++		printf("x86_energy_perf_policy Aug 2, 2010"
++				" - Len Brown <lenb@kernel.org>\n");
++	if (verbose > 1 && !read_only)
++		printf("new_bias %lld\n", new_bias);
++
++	validate_cpuid();
++	check_dev_msr();
++
++	if (cpu != -1) {
++		if (read_only)
++			print_msr(cpu);
++		else
++			update_msr(cpu);
++	} else {
++		if (read_only)
++			for_every_cpu(print_msr);
++		else
++			for_every_cpu(update_msr);
++	}
++
++	return 0;
++}
 -- 
-1.7.0.1
+1.7.3.1.127.g1bb28
+
 
