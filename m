@@ -1,61 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757208Ab0JWOPy (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Oct 2010 10:15:54 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:47892 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756080Ab0JWOPx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Oct 2010 10:15:53 -0400
-Date: Sat, 23 Oct 2010 16:15:34 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Borislav Petkov <bp@alien8.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Jaswinder Singh Rajput <jaswinderlinux@gmail.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [GIT PULL] x86/trampoline for 2.6.37
-Message-ID: <20101023141534.GC7768@elte.hu>
-References: <201010230117.o9N1H2Mk032101@hera.kernel.org>
- <AANLkTimOHBw19TuouqNsEaBcZnfU5kaBoB0Fm+QhRz4h@mail.gmail.com>
- <20101023092429.GA910@liondog.tnic>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101023092429.GA910@liondog.tnic>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+	id S1757323Ab0JWOTB (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Oct 2010 10:19:01 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:64463 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757199Ab0JWOS7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 23 Oct 2010 10:18:59 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=a+Gpmu7aNL166mhSd0AoLuz8I4MYXqo3Cs6LV52RSkHYPt7lx5BBMvMiMlgydihYAg
+         O37fH32jZNi4KI/POCZolgzeccFq56SGX+pevTSXRNjudc1JsqMD6nlr0WcVVWFabOlL
+         Bsund+BFSf79e8B0yxi89bM58Q8eUIy8wc3wY=
+Subject: Re: [PATCH] sdio: fix suspend/resume regression
+From: Maxim Levitsky <maximlevitsky@gmail.com>
+To: Ohad Ben-Cohen <ohad@wizery.com>
+Cc: linux-mmc@vger.kernel.org, Sven Neumann <s.neumann@raumfeld.com>,
+        Chris Ball <cjb@laptop.org>, Nicolas Pitre <nico@fluxnic.net>,
+        libertas-dev@lists.infradead.org, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Daniel Mack <daniel@caiaq.de>, Colin Cross <ccross@android.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, stable@kernel.org
+In-Reply-To: <AANLkTi=iC1uKyToEXrroOj+JxQ2mW97WRVEXjv+9oQEa@mail.gmail.com>
+References: <1286788315.3101.11.camel@sven>
+	 <1286955116-22793-1-git-send-email-ohad@wizery.com>
+	 <1287704855.12734.14.camel@maxim-laptop>
+	 <AANLkTi=iC1uKyToEXrroOj+JxQ2mW97WRVEXjv+9oQEa@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sat, 23 Oct 2010 16:18:50 +0200
+Message-ID: <1287843531.29752.10.camel@maxim-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Borislav Petkov <bp@alien8.de> wrote:
-
-> On Sat, Oct 23, 2010 at 11:17:42AM +0530, Jaswinder Singh Rajput wrote:
-> > > +#ifdef CONFIG_X86_32
-> > > +#include <asm/pgtable.h>
-> > > +#include <asm/pgtable_32.h>
-> > > +#endif
-> > > +
-> > 
-> > pgtable.h will take care of pgtable_32.h, why you are doing this ?
+On Sat, 2010-10-23 at 12:09 +0200, Ohad Ben-Cohen wrote:
+> Hi Maxim,
 > 
-> Frankly, I don't remember. Here's an updated patch.
+> On Fri, Oct 22, 2010 at 1:47 AM, Maxim Levitsky <maximlevitsky@gmail.com> wrote:
+> > On Wed, 2010-10-13 at 09:31 +0200, Ohad Ben-Cohen wrote:
+> >> Fix SDIO suspend/resume regression introduced by
+> >> 4c2ef25fe0b847d2ae818f74758ddb0be1c27d8e "mmc: fix all hangs related to
+> >> mmc/sd card insert/removal during suspend/resume":
+> ...
+> >> diff --git a/drivers/mmc/core/core.c b/drivers/mmc/core/core.c
+> >> index c94565d..515ff39 100644
+> >> --- a/drivers/mmc/core/core.c
+> >> +++ b/drivers/mmc/core/core.c
+> >> @@ -1682,6 +1682,19 @@ int mmc_suspend_host(struct mmc_host *host)
+> >>       if (host->bus_ops && !host->bus_dead) {
+> >>               if (host->bus_ops->suspend)
+> >>                       err = host->bus_ops->suspend(host);
+> >> +             if (err == -ENOSYS || !host->bus_ops->resume) {
+> > This reintroduces the bug I fixed.
+> >
+> > if the CONFIG_MMC_UNSAFE_RESUME isn't set (and that is default
+> > unfortunately), the host->bus_ops->resume will be NULL (see core/mmc.c
+> > mmc_ops), and therefore card will be removed, that will trigger a block
+> > device removal, sync, and deadlock).
 > 
-> Linus, you could apply the following one instead of pulling from the branch, if 
-> hpa is ok with it. It is against your tree of the moment v2.6.36-1431-gf5d9d24.
+> Have you reproduced this or is it just a general concern ?
+Only a general concern.
+> 
+> I'm asking this because if CONFIG_MMC_UNSAFE_RESUME isn't set, then
+> mmc_pm_notify() will remove the card and detach the bus.
+> 
+> As a result, host->bus_ops will be unset, and host->bus_dead will be set.
+> 
+> In this case, mmc_suspend_host() should skip the code you are concerned about.
+You are right here.
+There is a very unlikely case that suspend of sd/mmc card fails (with
+CONFIG_MMC_UNSAFE_RESUME set, and that will trigger the hang, but that
+currently isn't possible because both mmc_sd_suspend and mmc_suspend
+just return 0 unconditionally).
 
-Please send a delta patch and we can do any trivial changes via the usual channels. 
-The tree hpa sent to Linus is tested and this is tricky code.
+Btw, two above functions are identical, so some refactoring won't hurt.
 
-Thanks,
+So sorry for noise (and bug).
 
-	Ingo
+Best regards,
+	Maxim Levitsky
+
+
+
