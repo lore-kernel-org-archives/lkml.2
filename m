@@ -1,47 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758175Ab0JWVtF (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Oct 2010 17:49:05 -0400
-Received: from rtp-iport-2.cisco.com ([64.102.122.149]:14957 "EHLO
-	rtp-iport-2.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753220Ab0JWVtC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Oct 2010 17:49:02 -0400
-Authentication-Results: rtp-iport-2.cisco.com; dkim=neutral (message not signed) header.i=none
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvsEAPH0wkytJV2c/2dsb2JhbAChbnGfI5tPhUgEhFSFeQ
-X-IronPort-AV: E=Sophos;i="4.58,229,1286150400"; 
-   d="scan'208";a="174351914"
-From: Roland Dreier <rdreier@cisco.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
+	id S1758263Ab0JWWNf (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Oct 2010 18:13:35 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:48677 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757921Ab0JWWNd convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 23 Oct 2010 18:13:33 -0400
+MIME-Version: 1.0
+In-Reply-To: <ada8w1or36h.fsf@cisco.com>
+References: <1287764862.8930.220.camel@mulgrave.site> <AANLkTikZ-vePH+Wvf9S0-0PG1h+rRNByKEmXC2XENH1=@mail.gmail.com>
+ <ada8w1or36h.fsf@cisco.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Sat, 23 Oct 2010 15:13:10 -0700
+Message-ID: <AANLkTin+qS+kPZC-T7Ddu9WPbhudSXEObkyCawWisxH9@mail.gmail.com>
+Subject: Re: [GIT PULL] first round of SCSI updates for the merge window
+To: Roland Dreier <rdreier@cisco.com>
 Cc: James Bottomley <James.Bottomley@suse.de>,
         Andrew Morton <akpm@linux-foundation.org>,
         linux-scsi <linux-scsi@vger.kernel.org>,
         linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [GIT PULL] first round of SCSI updates for the merge window
-References: <1287764862.8930.220.camel@mulgrave.site>
-	<AANLkTikZ-vePH+Wvf9S0-0PG1h+rRNByKEmXC2XENH1=@mail.gmail.com>
-X-Message-Flag: Warning: May contain useful information
-Date: Sat, 23 Oct 2010 14:48:22 -0700
-In-Reply-To: <AANLkTikZ-vePH+Wvf9S0-0PG1h+rRNByKEmXC2XENH1=@mail.gmail.com>
-	(Linus Torvalds's message of "Fri, 22 Oct 2010 17:48:35 -0700")
-Message-ID: <ada8w1or36h.fsf@cisco.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- > There's a _single_ commit that looks like this:
- > 
- >  220 files changed, 34823 insertions(+), 43478 deletions(-)
+On Sat, Oct 23, 2010 at 2:48 PM, Roland Dreier <rdreier@cisco.com> wrote:
+>  > There's a _single_ commit that looks like this:
+>  >
+>  >  220 files changed, 34823 insertions(+), 43478 deletions(-)
+>
+> Hey, you're not using git properly... if I use '-M' to show moved
+> files, I see:
+>
+>  212 files changed, 30007 insertions(+), 38662 deletions(-)
+>
+> which is a lot nicer.
 
-Hey, you're not using git properly... if I use '-M' to show moved
-files, I see:
+It really doesn't make any difference what-so-ever. Lookie here:
 
- 212 files changed, 30007 insertions(+), 38662 deletions(-)
+  wc $(git ls-files drivers/scsi/bfa/)
+  ...
+  42946  114109 1118020 total
 
-which is a lot nicer.
+IOW, that driver only has 42k lines to begin with (well, it does now,
+it used to have a few more). Whether there were a couple of files that
+were similar enough after the fact to count as renames or not is
+totally immaterial. The driver was basically rewritten or re-indented
+or whatever, AND THE CHANGELOG DOESN'T EVEN _BEGIN_ TO EXPLAIN IT!
 
- - R.
+It's a two-line changelog, which isn't even accurate!
+
+Two lines of explanation! For 70 _thousand_ lines of changes? The fact
+that Bottomley signed off on that kind of crap, and then sent it on to
+me with a oneline "cleanup" commentary should say something. And what
+it says to me is "Never again". If I get stuff like this again, I stop
+pulling. Those SCSI drivers might as well be outside the kernel tree,
+there's no point having them in the tree if they are just code-drops.
+It really isn't as if they have enough users to merit being there
+anyway.
+
+Because that kind of shit is simply not acceptable in the kernel. We
+don't just do random undocumented code-drops. And dammit, James should
+have known better.
+
+                        Linus
