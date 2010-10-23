@@ -1,64 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757768Ab0JWPhS (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Oct 2010 11:37:18 -0400
-Received: from silver.sucs.swan.ac.uk ([137.44.10.1]:57507 "EHLO
-	silver.sucs.swan.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757692Ab0JWPhQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Oct 2010 11:37:16 -0400
-Date: Sat, 23 Oct 2010 16:36:37 +0100
-From: Sitsofe Wheeler <sitsofe@yahoo.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
-        Matthew Garrett <mjg59@srcf.ucam.org>, Len Brown <lenb@kernel.org>,
-        Zhang Rui <rui.zhang@intel.com>, David Zeuthen <davidz@redhat.com>,
-        Richard Hughes <richard@hughsie.com>, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ACPI / Battery: Return -ENODATA for unknown values in
-	get_property()
-Message-ID: <20101023153637.GA8994@sucs.org>
-References: <20101016141321.GA11054@sucs.org> <201010212157.47952.rjw@sisk.pl> <20101021204620.GB3318@sucs.org> <201010230019.14100.rjw@sisk.pl>
+	id S932085Ab0JWPnJ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Oct 2010 11:43:09 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:37256 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757743Ab0JWPnI convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 23 Oct 2010 11:43:08 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201010230019.14100.rjw@sisk.pl>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20101023152959.GA20930@elte.hu>
+References: <4CC143F5.3060202@fusionio.com> <20101023152959.GA20930@elte.hu>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Sat, 23 Oct 2010 08:42:37 -0700
+Message-ID: <AANLkTimwW1=z0Z1xX9ZgQWS+CcKocWwDAc2qFPq44gtA@mail.gmail.com>
+Subject: Re: [origin tree boot failure] Re: [GIT PULL] core block bits for 2.6.37-rc1
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Jens Axboe <jaxboe@fusionio.com>, Tejun Heo <tj@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Oct 23, 2010 at 12:19:13AM +0200, Rafael J. Wysocki wrote:
-> 
-> OK, so can you test the patch below, please?
+On Sat, Oct 23, 2010 at 8:29 AM, Ingo Molnar <mingo@elte.hu> wrote:
+>
+> [  116.080274]
+> [  116.080274] Pid: 1, comm: swapper Tainted: G        W   2.6.36-tip-03555-g825d9ec-dirty #51843 A8N-E/System Product Name
+> [  116.080274] RIP: 0010:[<ffffffff81064380>]  [<ffffffff81064380>] __ticket_spin_trylock+0x4/0x21
+> [  116.080274] RSP: 0018:ffff88003c417c10  EFLAGS: 00010082
+> [  116.080274] RAX: ffff88003c418000 RBX: 6b6b6b6b6b6b6b6a RCX: 0000000000000000
+> [  116.080274] RDX: 0000000000000000 RSI: 0000000000000000 RDI: 6b6b6b6b6b6b6b6a
+> [  116.080274] RBP: ffff88003c417c10 R08: 0000000000000002 R09: 0000000000000001
+> [  116.080274] R10: 0000000000000286 R11: ffff880032498738 R12: 6b6b6b6b6b6b6b82
 
-The latest patch seems to fix/workaround the problem. upower now reports
-0 as the energy rate, there are no warnings in dmesg and battery hotplug
-works. Looks good and there's the option for a future upower to
-interpret the missing sysfs as meaning "unknown".
+And we obviously have that "6b" pattern for a use-after free with slab
+poisoning. Jens, have you tried with slab debugging?
 
-Tested-by: Sitsofe Wheeler <sitsofe@yahoo.com>
-
-> The function acpi_battery_get_property() is called by the
-> power supply framework's function power_supply_show_property()
-> implementing the sysfs interface for power supply devices as the
-> ACPI battery driver's ->get_property() callback.  Thus it is supposed
-> to return error code if the value of the given property is unknown.
-> Unfortunately, however, it returns 0 in those cases and puts a
-> wrong (negative) value into the intval field of the
-> union power_supply_propval object provided by
-> power_supply_show_property().  In consequence, wron negative
-
-wron -> wrong?
-
-> Fix this by making acpi_battery_get_property() return -ENODEV
-> for properties with unknown values (-ENODEV is returned, because
-> power_supply_uevent() returns with error for any other error code
-> returned by power_supply_show_property()).
-
-OK that's sneaky and clever - technically power_supply_uevent should be
-more robust but presumably things are already prepared to handle -ENODEV
-so overloading the meaning leads to the smallest change.
-
--- 
-Sitsofe | http://sucs.org/~sits/
+                    Linus
