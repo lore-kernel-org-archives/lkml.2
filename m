@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752811Ab0JWHlI (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Oct 2010 03:41:08 -0400
-Received: from LUNGE.MIT.EDU ([18.54.1.69]:53934 "EHLO lunge.queued.net"
+	id S1754154Ab0JWHlU (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Oct 2010 03:41:20 -0400
+Received: from LUNGE.MIT.EDU ([18.54.1.69]:53947 "EHLO lunge.queued.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752032Ab0JWHlG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Oct 2010 03:41:06 -0400
-Date: Sat, 23 Oct 2010 00:41:02 -0700
+	id S1753840Ab0JWHlS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 23 Oct 2010 03:41:18 -0400
+Date: Sat, 23 Oct 2010 00:41:14 -0700
 From: Andres Salomon <dilinger@queued.net>
 To: Samuel Ortiz <sameo@linux.intel.com>
 Cc: linux-geode@lists.infradead.org, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org, cjb@laptop.org, dsd@laptop.org
-Subject: [PATCH 1/4] MFD: add cs5535-mfd driver for CS5535/CS5536 support
-Message-ID: <20101023004102.674cdc45@queued.net>
+        akpm@linux-foundation.org, dsd@laptop.org, cjb@laptop.org
+Subject: [PATCH 3/4] cs5535-mfgpt: convert from pci device to platform
+ device
+Message-ID: <20101023004114.5db539e2@queued.net>
 X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i486-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
@@ -22,205 +23,149 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-Add an MFD driver to handle the ISA device on CS5535 and CS5536 southbridges.
-This ISA bridge is actually multiple devices; GPIOs, MFGPTs, etc.
+The cs5535-mfd driver now takes care of the PCI BAR handling; this
+simplifies the mfgpt driver a bunch.
 
 Signed-off-by: Andres Salomon <dilinger@queued.net>
 ---
- drivers/mfd/Kconfig      |    8 +++
- drivers/mfd/Makefile     |    1 +
- drivers/mfd/cs5535-mfd.c |  151 ++++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 160 insertions(+), 0 deletions(-)
- create mode 100644 drivers/mfd/cs5535-mfd.c
+ drivers/misc/cs5535-mfgpt.c |   73 ++++++++++++------------------------------
+ 1 files changed, 21 insertions(+), 52 deletions(-)
 
-diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
-index db51ea1..b72627b 100644
---- a/drivers/mfd/Kconfig
-+++ b/drivers/mfd/Kconfig
-@@ -495,6 +495,14 @@ config AB3550_CORE
- 	  LEDs, vibrator, system power and temperature, power management
- 	  and ALSA sound.
+diff --git a/drivers/misc/cs5535-mfgpt.c b/drivers/misc/cs5535-mfgpt.c
+index 6f62180..499bd64 100644
+--- a/drivers/misc/cs5535-mfgpt.c
++++ b/drivers/misc/cs5535-mfgpt.c
+@@ -16,12 +16,11 @@
+ #include <linux/spinlock.h>
+ #include <linux/interrupt.h>
+ #include <linux/module.h>
+-#include <linux/pci.h>
++#include <linux/platform_device.h>
+ #include <linux/cs5535.h>
+ #include <linux/slab.h>
  
-+config MFD_CS5535
-+	tristate "Support for CS5535 and CS5536 southbridge core functions"
-+	select MFD_CORE
-+	depends on PCI
-+	---help---
-+	  This is the core driver for CS5535/CS5536 MFD functions.  This is
-+          necessary for using the board's GPIO and MFGPT functionality.
-+
- config MFD_TIMBERDALE
- 	tristate "Support for the Timberdale FPGA"
- 	select MFD_CORE
-diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
-index feaeeae..3d1b41a 100644
---- a/drivers/mfd/Makefile
-+++ b/drivers/mfd/Makefile
-@@ -69,6 +69,7 @@ obj-$(CONFIG_AB3100_CORE)	+= ab3100-core.o
- obj-$(CONFIG_AB3100_OTP)	+= ab3100-otp.o
- obj-$(CONFIG_AB3550_CORE)	+= ab3550-core.o
- obj-$(CONFIG_AB8500_CORE)	+= ab8500-core.o ab8500-spi.o
-+obj-$(CONFIG_MFD_CS5535)	+= cs5535-mfd.o
- obj-$(CONFIG_MFD_TIMBERDALE)    += timberdale.o
- obj-$(CONFIG_PMIC_ADP5520)	+= adp5520.o
- obj-$(CONFIG_LPC_SCH)		+= lpc_sch.o
-diff --git a/drivers/mfd/cs5535-mfd.c b/drivers/mfd/cs5535-mfd.c
-new file mode 100644
-index 0000000..b141ca7
---- /dev/null
-+++ b/drivers/mfd/cs5535-mfd.c
-@@ -0,0 +1,151 @@
-+/*
-+ * cs5535-mfd.c - core MFD driver for CS5535/CS5536 southbridges
-+ *
-+ * The CS5535 and CS5536 has an ISA bridge on the PCI bus that is
-+ * used for accessing GPIOs, MFGPTs, ACPI, etc.  Each subdevice has
-+ * an IO range that's specified in a single BAR.  The BAR order is
-+ * hardcoded in the CS553x specifications.
-+ *
-+ * Copyright (c) 2010  Andres Salomon <dilinger@queued.net>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
-+ */
-+
-+#include <linux/kernel.h>
-+#include <linux/init.h>
-+#include <linux/mfd/core.h>
-+#include <linux/module.h>
-+#include <linux/pci.h>
-+
-+#define DRV_NAME "cs5535-mfd"
-+
-+enum cs5535_mfd_bars {
-+	SMB_BAR = 0,
-+	GPIO_BAR = 1,
-+	MFGPT_BAR = 2,
-+	PMS_BAR = 4,
-+	ACPI_BAR = 5,
-+	NR_BARS,
-+};
-+
-+static __devinitdata struct resource cs5535_mfd_resources[NR_BARS];
-+
-+static __devinitdata struct mfd_cell cs5535_mfd_cells[] = {
-+	{
-+		.id = SMB_BAR,
-+		.name = "cs5535-smb",
-+		.num_resources = 1,
-+		.resources = &cs5535_mfd_resources[SMB_BAR],
+ #define DRV_NAME "cs5535-mfgpt"
+-#define MFGPT_BAR 2
+ 
+ static int mfgpt_reset_timers;
+ module_param_named(mfgptfix, mfgpt_reset_timers, int, 0644);
+@@ -37,7 +36,7 @@ static struct cs5535_mfgpt_chip {
+ 	DECLARE_BITMAP(avail, MFGPT_MAX_TIMERS);
+ 	resource_size_t base;
+ 
+-	struct pci_dev *pdev;
++	struct platform_device *pdev;
+ 	spinlock_t lock;
+ 	int initialized;
+ } cs5535_mfgpt_chip;
+@@ -290,10 +289,10 @@ static int __init scan_timers(struct cs5535_mfgpt_chip *mfgpt)
+ 	return timers;
+ }
+ 
+-static int __init cs5535_mfgpt_probe(struct pci_dev *pdev,
+-		const struct pci_device_id *pci_id)
++static int __devinit cs5535_mfgpt_probe(struct platform_device *pdev)
+ {
+-	int err, t;
++	struct resource *res;
++	int err = -EIO, t;
+ 
+ 	/* There are two ways to get the MFGPT base address; one is by
+ 	 * fetching it from MSR_LBAR_MFGPT, the other is by reading the
+@@ -302,29 +301,28 @@ static int __init cs5535_mfgpt_probe(struct pci_dev *pdev,
+ 	 * it turns out to be unreliable in the face of crappy BIOSes, we
+ 	 * can always go back to using MSRs.. */
+ 
+-	err = pci_enable_device_io(pdev);
+-	if (err) {
+-		dev_err(&pdev->dev, "can't enable device IO\n");
++	res = platform_get_resource(pdev, IORESOURCE_IO, 0);
++	if (!res) {
++		dev_err(&pdev->dev, "can't fetch device resource info\n");
+ 		goto done;
+ 	}
+ 
+-	err = pci_request_region(pdev, MFGPT_BAR, DRV_NAME);
+-	if (err) {
+-		dev_err(&pdev->dev, "can't alloc PCI BAR #%d\n", MFGPT_BAR);
++	if (!request_region(res->start, resource_size(res), pdev->name)) {
++		dev_err(&pdev->dev, "can't request region\n");
+ 		goto done;
+ 	}
+ 
+ 	/* set up the driver-specific struct */
+-	cs5535_mfgpt_chip.base = pci_resource_start(pdev, MFGPT_BAR);
++	cs5535_mfgpt_chip.base = res->start;
+ 	cs5535_mfgpt_chip.pdev = pdev;
+ 	spin_lock_init(&cs5535_mfgpt_chip.lock);
+ 
+-	dev_info(&pdev->dev, "allocated PCI BAR #%d: base 0x%llx\n", MFGPT_BAR,
+-			(unsigned long long) cs5535_mfgpt_chip.base);
++	dev_info(&pdev->dev, "region 0x%x - 0x%x reserved\n", res->start,
++			res->end);
+ 
+ 	/* detect the available timers */
+ 	t = scan_timers(&cs5535_mfgpt_chip);
+-	dev_info(&pdev->dev, DRV_NAME ": %d MFGPT timers available\n", t);
++	dev_info(&pdev->dev, "%d MFGPT timers available\n", t);
+ 	cs5535_mfgpt_chip.initialized = 1;
+ 	return 0;
+ 
+@@ -332,47 +330,18 @@ done:
+ 	return err;
+ }
+ 
+-static struct pci_device_id cs5535_mfgpt_pci_tbl[] = {
+-	{ PCI_DEVICE(PCI_VENDOR_ID_NS, PCI_DEVICE_ID_NS_CS5535_ISA) },
+-	{ PCI_DEVICE(PCI_VENDOR_ID_AMD, PCI_DEVICE_ID_AMD_CS5536_ISA) },
+-	{ 0, },
++static struct platform_driver cs5535_mfgpt_drv = {
++	.driver = {
++		.name = DRV_NAME,
++		.owner = THIS_MODULE,
 +	},
-+	{
-+		.id = GPIO_BAR,
-+		.name = "cs5535-gpio",
-+		.num_resources = 1,
-+		.resources = &cs5535_mfd_resources[GPIO_BAR],
-+	},
-+	{
-+		.id = MFGPT_BAR,
-+		.name = "cs5535-mfgpt",
-+		.num_resources = 1,
-+		.resources = &cs5535_mfd_resources[MFGPT_BAR],
-+	},
-+	{
-+		.id = PMS_BAR,
-+		.name = "cs5535-pms",
-+		.num_resources = 1,
-+		.resources = &cs5535_mfd_resources[PMS_BAR],
-+	},
-+	{
-+		.id = ACPI_BAR,
-+		.name = "cs5535-acpi",
-+		.num_resources = 1,
-+		.resources = &cs5535_mfd_resources[ACPI_BAR],
-+	},
-+};
-+
-+static int __devinit cs5535_mfd_probe(struct pci_dev *pdev,
-+		const struct pci_device_id *id)
-+{
-+	int err, i;
-+
-+	err = pci_enable_device(pdev);
-+	if (err)
-+		return err;
-+
-+	/* fill in IO range for each cell; subdrivers handle the region */
-+	for (i = 0; i < ARRAY_SIZE(cs5535_mfd_cells); i++) {
-+		int bar = cs5535_mfd_cells[i].id;
-+		struct resource *r = &cs5535_mfd_resources[bar];
-+
-+		r->flags = IORESOURCE_IO;
-+		r->start = pci_resource_start(pdev, bar);
-+		r->end = pci_resource_end(pdev, bar);
-+
-+		/* id is used for temporarily storing BAR; unset it now */
-+		cs5535_mfd_cells[i].id = 0;
-+	}
-+
-+	err = mfd_add_devices(&pdev->dev, -1, cs5535_mfd_cells,
-+			ARRAY_SIZE(cs5535_mfd_cells), NULL, 0);
-+	if (err) {
-+		dev_err(&pdev->dev, "MFD add devices failed: %d\n", err);
-+		goto err_disable;
-+	}
-+
-+	dev_info(&pdev->dev, "%d devices registered.\n",
-+			ARRAY_SIZE(cs5535_mfd_cells));
-+
-+	return 0;
-+
-+err_disable:
-+	pci_disable_device(pdev);
-+	return err;
-+}
-+
-+static void __devexit cs5535_mfd_remove(struct pci_dev *pdev)
-+{
-+	mfd_remove_devices(&pdev->dev);
-+	pci_disable_device(pdev);
-+}
-+
-+static struct pci_device_id cs5535_mfd_pci_tbl[] = {
-+	{ PCI_DEVICE(PCI_VENDOR_ID_NS, PCI_DEVICE_ID_NS_CS5535_ISA) },
-+	{ PCI_DEVICE(PCI_VENDOR_ID_AMD, PCI_DEVICE_ID_AMD_CS5536_ISA) },
-+	{ 0, }
-+};
-+MODULE_DEVICE_TABLE(pci, cs5535_mfd_pci_tbl);
-+
-+static struct pci_driver cs5535_mfd_drv = {
-+	.name = DRV_NAME,
-+	.id_table = cs5535_mfd_pci_tbl,
-+	.probe = cs5535_mfd_probe,
-+	.remove = __devexit_p(cs5535_mfd_remove),
-+};
-+
-+static int __init cs5535_mfd_init(void)
-+{
-+	return pci_register_driver(&cs5535_mfd_drv);
-+}
-+
-+static void __exit cs5535_mfd_exit(void)
-+{
-+	pci_unregister_driver(&cs5535_mfd_drv);
-+}
-+
-+module_init(cs5535_mfd_init);
-+module_exit(cs5535_mfd_exit);
-+
-+MODULE_AUTHOR("Andres Salomon <dilinger@queued.net>");
-+MODULE_DESCRIPTION("MFD driver for CS5535/CS5536 southbridge's ISA PCI device");
-+MODULE_LICENSE("GPL");
++	.probe = cs5535_mfgpt_probe,
+ };
+-MODULE_DEVICE_TABLE(pci, cs5535_mfgpt_pci_tbl);
+ 
+-/*
+- * Just like with the cs5535-gpio driver, we can't use the standard PCI driver
+- * registration stuff.  It only allows only one driver to bind to each PCI
+- * device, and we want the GPIO and MFGPT drivers to be able to share a PCI
+- * device.  Instead, we manually scan for the PCI device, request a single
+- * region, and keep track of the devices that we're using.
+- */
+-
+-static int __init cs5535_mfgpt_scan_pci(void)
+-{
+-	struct pci_dev *pdev;
+-	int err = -ENODEV;
+-	int i;
+-
+-	for (i = 0; i < ARRAY_SIZE(cs5535_mfgpt_pci_tbl); i++) {
+-		pdev = pci_get_device(cs5535_mfgpt_pci_tbl[i].vendor,
+-				cs5535_mfgpt_pci_tbl[i].device, NULL);
+-		if (pdev) {
+-			err = cs5535_mfgpt_probe(pdev,
+-					&cs5535_mfgpt_pci_tbl[i]);
+-			if (err)
+-				pci_dev_put(pdev);
+-
+-			/* we only support a single CS5535/6 southbridge */
+-			break;
+-		}
+-	}
+-
+-	return err;
+-}
+ 
+ static int __init cs5535_mfgpt_init(void)
+ {
+-	return cs5535_mfgpt_scan_pci();
++	return platform_driver_register(&cs5535_mfgpt_drv);
+ }
+ 
+ module_init(cs5535_mfgpt_init);
 -- 
 1.7.1
 
