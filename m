@@ -1,154 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756170Ab0JWRmX (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Oct 2010 13:42:23 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:36276 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754986Ab0JWRmW (ORCPT
+	id S1756288Ab0JWRtQ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Oct 2010 13:49:16 -0400
+Received: from vms173009pub.verizon.net ([206.46.173.9]:64654 "EHLO
+	vms173009pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753898Ab0JWRtP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Oct 2010 13:42:22 -0400
-Message-ID: <4CC31DF9.9020307@kernel.org>
-Date: Sat, 23 Oct 2010 10:40:09 -0700
-From: Yinghai Lu <yinghai@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.12) Gecko/20100914 SUSE/3.0.8 Thunderbird/3.0.8
-MIME-Version: 1.0
-To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-CC: linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@linux.intel.com>,
-        Pekka Enberg <penberg@cs.helsinki.fi>, Ingo Molnar <mingo@redhat.com>
-Subject: Re: [BUG 2.6.36] early serial console undefined refs
-References: <20101023144352.GA2818@Krystal> <4CC31D6E.6040206@kernel.org>
-In-Reply-To: <4CC31D6E.6040206@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Sat, 23 Oct 2010 13:49:15 -0400
+Date: Sat, 23 Oct 2010 13:48:56 -0400 (EDT)
+From: Len Brown <lenb@kernel.org>
+X-X-Sender: lenb@localhost.localdomain
+To: Christian Ruediger Bahls <lkml@qb352.de>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        Eric Dumazet <eric.dumazet@gmail.com>
+Subject: Re: intel_idle .. Was: __pm_runtime_resume() returns -1 Was:
+ Regression in 2.6.36
+In-reply-to: <20101023042607.GB449@pfau.e-technik1.uni-rostock.de>
+Message-id: <alpine.LFD.2.00.1010231346110.2565@localhost.localdomain>
+References: <AANLkTinPyg2ijrBydVyoGJiQJCpL7j1_vnyQWnx0eucz@mail.gmail.com>
+ <20101022165734.d7ed2582.akpm@linux-foundation.org>
+ <20101023042607.GB449@pfau.e-technik1.uni-rostock.de>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+MIME-version: 1.0
+Content-type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/23/2010 10:37 AM, Yinghai Lu wrote:
-> On 10/23/2010 07:43 AM, Mathieu Desnoyers wrote:
->> Hi,
->>
->> Building 2.6.36 fails for me with the following link error (config below).
->> I think commit f4ed2877b16e8146427306aea8819adac5c88374 is very likely to be the
->> culprit, but given other changes that were done afterward, the fix is not as
->> easy as a simple revert.
->>
->> Thoughts ?
->>
->>   Building modules, stage 2.
->>   MODPOST 65 modules
->>   LD      arch/x86/boot/setup.elf
->> arch/x86/boot/early_serial_console.o: In function `early_serial_init':
->> /home/compudj/git/morestable/linux-2.6-lttng/arch/x86/boot/early_serial_console.c:40: undefined reference to `early_serial_base'
-> 
-> your tree may have problem. Did you try clean tree from Linus ?
-> 
-> early_seria_console.c
-> 
-> #include "boot.h"
-> ...
-> static void early_serial_init(int port, int baud)
-> 
-> 
-> and in boot.h, we have
-> /* early_serial_console.c */
-> extern int early_serial_base;
 
-at least linus's tree and tip are ok with your config
+> and yes indeed booting with "intel_idle.max_cstate=0"
+> makes the system work again
 
-  MODPOST 65 modules
-  CC      arch/x86/boot/a20.o
-  CC      arch/x86/boot/cmdline.o
-  AS      arch/x86/boot/copy.o
-  HOSTCC  arch/x86/boot/mkcpustr
-  CC      arch/x86/ia32/ia32_aout.mod.o
-  CC      arch/x86/boot/cpucheck.o
-  CC      arch/x86/kvm/kvm-intel.mod.o
-  CC      arch/x86/boot/early_serial_console.o
-  CC      arch/x86/boot/edd.o
-  CC      arch/x86/kvm/kvm.mod.o
-  VOFFSET arch/x86/boot/voffset.h
-  CC      arch/x86/oprofile/oprofile.mod.o
-  CC      crypto/crc32c.mod.o
-  CC      drivers/ata/sata_mv.mod.o
-  CC      drivers/base/firmware_class.mod.o
-  LDS     arch/x86/boot/compressed/vmlinux.lds
-  AS      arch/x86/boot/compressed/head_64.o
-  CC      drivers/block/cryptoloop.mod.o
-  CC      arch/x86/boot/compressed/misc.o
-  CC      drivers/block/loop.mod.o
-  CC      drivers/cpufreq/cpufreq_ondemand.mod.o
-  CC      drivers/firmware/dcdbas.mod.o
-  CC      drivers/hwmon/hwmon-vid.mod.o
-  CC      drivers/hwmon/it87.mod.o
-  CC      drivers/input/input-polldev.mod.o
-  CC      drivers/md/dm-crypt.mod.o
-  CC      arch/x86/boot/compressed/string.o
-  CC      drivers/md/dm-delay.mod.o
-  CC      arch/x86/boot/compressed/cmdline.o
-  CC      drivers/md/dm-log.mod.o
-  CC      arch/x86/boot/compressed/early_serial_console.o
-  CC      drivers/md/dm-mirror.mod.o
-  OBJCOPY arch/x86/boot/compressed/vmlinux.bin
-  CC      drivers/md/dm-multipath.mod.o
-  GZIP    arch/x86/boot/compressed/vmlinux.bin.gz
-  CC      drivers/md/dm-region-hash.mod.o
-  CC      drivers/md/dm-round-robin.mod.o
-  CC      drivers/md/dm-snapshot.mod.o
-  CC      drivers/md/dm-zero.mod.o
-  CC      drivers/net/bonding/bonding.mod.o
-  CC      drivers/net/dummy.mod.o
-  CC      drivers/net/e1000/e1000.mod.o
-  CC      drivers/net/e1000e/e1000e.mod.o
-  CC      drivers/net/s2io.mod.o
-  CC      drivers/net/skge.mod.o
-  CC      drivers/net/sky2.mod.o
-  CC      drivers/net/tun.mod.o
-  CC      drivers/scsi/dpt_i2o.mod.o
-  CC      drivers/scsi/qla4xxx/qla4xxx.mod.o
-  CC      drivers/scsi/scsi_transport_iscsi.mod.o
-  CC      drivers/scsi/scsi_wait_scan.mod.o
-  MKPIGGY arch/x86/boot/compressed/piggy.S
-  AS      arch/x86/boot/compressed/piggy.o
-  CC      drivers/usb/misc/cytherm.mod.o
-  LD      arch/x86/boot/compressed/vmlinux
-  CC      arch/x86/boot/main.o
-  CC      drivers/usb/serial/pl2303.mod.o
-  CC      arch/x86/boot/mca.o
-  CC      arch/x86/boot/memory.o
-  CC      drivers/usb/serial/usbserial.mod.o
-  CC      arch/x86/boot/pm.o
-  AS      arch/x86/boot/pmjump.o
-  CC      drivers/video/output.mod.o
-  CC      arch/x86/boot/printf.o
-  CC      lib/libcrc32c.mod.o
-  CC      arch/x86/boot/regs.o
-  CC      arch/x86/boot/string.o
-  CC      net/ipv4/inet_diag.mod.o
-  CC      arch/x86/boot/tty.o
-  CC      arch/x86/boot/video.o
-  CC      net/ipv4/tcp_diag.mod.o
-  CC      arch/x86/boot/video-mode.o
-  CC      net/netfilter/nfnetlink.mod.o
-  CC      arch/x86/boot/version.o
-  CC      net/netfilter/nfnetlink_log.mod.o
-  CC      arch/x86/boot/video-vga.o
-  CC      arch/x86/boot/video-vesa.o
-  CC      net/netfilter/nfnetlink_queue.mod.o
-  CC      arch/x86/boot/video-bios.o
-  CC      samples/kprobes/jprobe_example.mod.o
-  OBJCOPY arch/x86/boot/vmlinux.bin
-  CPUSTR  arch/x86/boot/cpustr.h
-  ZOFFSET arch/x86/boot/zoffset.h
-  CC      samples/kprobes/kprobe_example.mod.o
-  CC      arch/x86/boot/cpu.o
-  AS      arch/x86/boot/header.o
-  LD      arch/x86/boot/setup.elf
-  CC      samples/kprobes/kretprobe_example.mod.o
-  OBJCOPY arch/x86/boot/setup.bin
-  BUILD   arch/x86/boot/bzImage
-Root device is (8, 6)
-Setup is 12972 bytes (padded to 13312 bytes).
-System is 3475 kB
-CRC f34900df
-Kernel: arch/x86/boot/bzImage is ready  (#210)
+Please file a sighting here:
+https://bugzilla.kernel.org/enter_bug.cgi?product=Power%20Management
+component: intel_idle
+
+and assign it to me.
+
+thanks,
+Len Brown, Intel Open Source Technology Center
+
+
+
