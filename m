@@ -1,106 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756357Ab0JWCo1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 22:44:27 -0400
-Received: from am1ehsobe003.messaging.microsoft.com ([213.199.154.206]:10926
-	"EHLO AM1EHSOBE003.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756307Ab0JWCoZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 22:44:25 -0400
-X-SpamScore: 0
-X-BigFish: VS0(zzzz1202hzz8275bhz2dh2a8h62h)
-X-Spam-TCS-SCL: 1:0
-From: <Dinh.Nguyen@freescale.com>
-To: <linux-kernel@vger.kernel.org>
-CC: <linux-arm-kernel@lists.infradead.org>, <linux@arm.linux.org.uk>,
-        <s.hauer@pengutronix.de>, <u.kleine-koenig@pengutronix.de>,
-        <valentin.longchamp@epfl.ch>, <daniel@caiaq.de>,
-        <grant.likely@secretlab.ca>, <amit.kucheria@canonical.com>,
-        Dinh Nguyen <Dinh.Nguyen@freescale.com>
-Subject: [PATCHv6 3/3] ARM: imx: Add wake functionality to GPIO
-Date: Fri, 22 Oct 2010 21:46:16 -0500
-Message-ID: <1287801976-5324-3-git-send-email-Dinh.Nguyen@freescale.com>
-X-Mailer: git-send-email 1.6.0.4
-In-Reply-To: <1287801976-5324-2-git-send-email-Dinh.Nguyen@freescale.com>
-References: <1287801976-5324-1-git-send-email-Dinh.Nguyen@freescale.com>
- <1287801976-5324-2-git-send-email-Dinh.Nguyen@freescale.com>
-MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: freescale.com
+	id S1756136Ab0JWCrx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 22:47:53 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:36633 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751605Ab0JWCrv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Oct 2010 22:47:51 -0400
+Date: Sat, 23 Oct 2010 13:47:42 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Theodore Tso <tytso@MIT.EDU>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Christoph Hellwig <hch@infradead.org>,
+        Lukas Czerner <lczerner@redhat.com>, Jens Axboe <axboe@kernel.dk>,
+        Linus <torvalds@linux-foundation.org>
+Subject: Re: linux-next: manual merge of the block tree with the ext4 tree
+Message-Id: <20101023134742.218ae337.sfr@canb.auug.org.au>
+In-Reply-To: <20100921140410.f1ba148e.sfr@canb.auug.org.au>
+References: <20100921140410.f1ba148e.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Sat__23_Oct_2010_13_47_42_+1100_pI9bdJsrIYsR/lk3"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dinh Nguyen <Dinh.Nguyen@freescale.com>
+--Signature=_Sat__23_Oct_2010_13_47_42_+1100_pI9bdJsrIYsR/lk3
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Add function definition for irq_chip.set_wake to enable GPIO to
-wake-up the system.
+Hi Ted,
 
-This patch has been tested on a MX51 Babbage system that had suspend
-code implemented. The set_wake implementation is necessary for a
-GPIO to wake up a system from suspend.
+On Tue, 21 Sep 2010 14:04:10 +1000 Stephen Rothwell <sfr@canb.auug.org.au> =
+wrote:
+>
+> Today's linux-next merge of the block tree got a conflict in
+> fs/ext4/mballoc.c between commit 9c543072a9dd7cf60cbf472914a6480ffda50b27
+> ("ext4: Check for negative error code from sb_issue_discard") from the
+> ext4 tree and commit 2cf6d26a354ab6362e301b5a323832b02867df47 ("block:
+> pass gfp_mask and flags to sb_issue_discard") from the block tree.
+>=20
+> Just context changes.  I fixed it up (see below) and can carry the fix as
+> necessary.
+>=20
+> diff --cc fs/ext4/mballoc.c
+> index e4f4dae,19aa0d4..0000000
+> --- a/fs/ext4/mballoc.c
+> +++ b/fs/ext4/mballoc.c
+> @@@ -2612,8 -2566,8 +2612,8 @@@ static inline void ext4_issue_discard(s
+>   	discard_block =3D block + ext4_group_first_block_no(sb, block_group);
+>   	trace_ext4_discard_blocks(sb,
+>   			(unsigned long long) discard_block, count);
+> - 	ret =3D sb_issue_discard(sb, discard_block, count);
+> + 	ret =3D sb_issue_discard(sb, discard_block, count, GFP_NOFS, 0);
+>  -	if (ret =3D=3D EOPNOTSUPP) {
+>  +	if (ret =3D=3D -EOPNOTSUPP) {
+>   		ext4_warning(sb, "discard not supported, disabling");
+>   		clear_opt(EXT4_SB(sb)->s_mount_opt, DISCARD);
+>   	}
 
-Signed-off-by: Dinh Nguyen <Dinh.Nguyen@freescale.com>
----
- arch/arm/plat-mxc/gpio.c |   32 ++++++++++++++++++++++++++++++++
- 1 files changed, 32 insertions(+), 0 deletions(-)
+This merge fix will now be necessary when merging with Linus' current tree.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
-diff --git a/arch/arm/plat-mxc/gpio.c b/arch/arm/plat-mxc/gpio.c
-index 9d38da0..9c3e362 100644
---- a/arch/arm/plat-mxc/gpio.c
-+++ b/arch/arm/plat-mxc/gpio.c
-@@ -20,6 +20,7 @@
-  */
- 
- #include <linux/init.h>
-+#include <linux/interrupt.h>
- #include <linux/io.h>
- #include <linux/irq.h>
- #include <linux/gpio.h>
-@@ -201,11 +202,42 @@ static void mx2_gpio_irq_handler(u32 irq, struct irq_desc *desc)
- 	}
- }
- 
-+/*
-+ * Set interrupt number "irq" in the GPIO as a wake-up source.
-+ * While system is running, all registered GPIO interrupts need to have
-+ * wake-up enabled. When system is suspended, only selected GPIO interrupts
-+ * need to have wake-up enabled.
-+ * @param  irq          interrupt source number
-+ * @param  enable       enable as wake-up if equal to non-zero
-+ * @return       This function returns 0 on success.
-+ */
-+static int gpio_set_wake_irq(u32 irq, u32 enable)
-+{
-+	u32 gpio = irq_to_gpio(irq);
-+	u32 gpio_idx = gpio & 0x1F;
-+	struct mxc_gpio_port *port = &mxc_gpio_ports[gpio / 32];
-+
-+	if (enable) {
-+		if (port->irq_high && (gpio_idx >= 16))
-+			enable_irq_wake(port->irq_high);
-+		else
-+			enable_irq_wake(port->irq);
-+	} else {
-+		if (port->irq_high && (gpio_idx >= 16))
-+			disable_irq_wake(port->irq_high);
-+		else
-+			disable_irq_wake(port->irq);
-+	}
-+
-+	return 0;
-+}
-+
- static struct irq_chip gpio_irq_chip = {
- 	.ack = gpio_ack_irq,
- 	.mask = gpio_mask_irq,
- 	.unmask = gpio_unmask_irq,
- 	.set_type = gpio_set_irq_type,
-+	.set_wake = gpio_set_wake_irq,
- };
- 
- static void _set_gpio_direction(struct gpio_chip *chip, unsigned offset,
--- 
-1.6.0.4
+--Signature=_Sat__23_Oct_2010_13_47_42_+1100_pI9bdJsrIYsR/lk3
+Content-Type: application/pgp-signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
 
+iQEcBAEBAgAGBQJMwkzOAAoJEDMEi1NhKgbsFOIIAISEIOsjRmhp2fEXuxqIs9W+
+dQWqhs6PJDyA1ZOGXf2OsgQ8mkCGzB0iZhGpYJG8domnuh7vzgGGqnQvsdJBGukG
+N5rVUdcAsEJVoV53tHk3COal9dvwZjr2544X2iJ/zN3xzY1RZQMJVgVtjXI+Ae/r
+FSS8ernkPFeRt92Oopl0EDPJ8bUrSyzA745AKPBCaM4LrAKIJ+OPNS4+OzGzyCm8
+erxop+7c21w3WePF0M0bp5N/F8g5Rqs3FUOPbysOxw146wo4UW2PjKUFzvllAUJz
+qBarh1RyMkt1rPnldq2/sowiGfPPPFWOI3JLbethbKou2vBUJOPe7HGbLZH/X8U=
+=FI0f
+-----END PGP SIGNATURE-----
+
+--Signature=_Sat__23_Oct_2010_13_47_42_+1100_pI9bdJsrIYsR/lk3--
