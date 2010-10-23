@@ -1,52 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756585Ab0JWB7k (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 21:59:40 -0400
-Received: from ironport2-out.teksavvy.com ([206.248.154.181]:24182 "EHLO
-	ironport2-out.pppoe.ca" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756182Ab0JWB7i (ORCPT
+	id S1755891Ab0JWCLi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 22:11:38 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:38511 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753028Ab0JWCLh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 21:59:38 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: ApIBAMvdwUxLd/sX/2dsb2JhbAAHgxjKWpF3gSKDMnQEj08
-X-IronPort-AV: E=Sophos;i="4.58,226,1286164800"; 
-   d="scan'208";a="80464326"
-Message-ID: <4CC24186.1040001@teksavvy.com>
-Date: Fri, 22 Oct 2010 21:59:34 -0400
-From: Mark Lord <kernel@teksavvy.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.11) Gecko/20101013 Thunderbird/3.1.5
+	Fri, 22 Oct 2010 22:11:37 -0400
 MIME-Version: 1.0
-To: =?UTF-8?B?TWF0aGlhcyBCdXLDqW4=?= <mathias.buren@gmail.com>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: sata_mv and Highpoint RocketRAID 230x, corruption?
-References: <AANLkTik02CcVyzn+fMH+VxuUmwwNLZq9qM0MPz81E+1h@mail.gmail.com>
-In-Reply-To: <AANLkTik02CcVyzn+fMH+VxuUmwwNLZq9qM0MPz81E+1h@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <tip-fd35fbcdd1b2579a6e00a1545f7124e4005d0474@git.kernel.org>
+References: <AANLkTi=RKyHLNTq6iomZOXkc6Zw1j9iAgsq8388XmzwN@mail.gmail.com> <tip-fd35fbcdd1b2579a6e00a1545f7124e4005d0474@git.kernel.org>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Fri, 22 Oct 2010 19:11:09 -0700
+Message-ID: <AANLkTi=KRVMrNh6MyDh5v-ZGB18iEKkqsW+6Eqp27M5X@mail.gmail.com>
+Subject: Re: [tip:x86/fpu] x86-64, asm: Use fxsaveq/fxrestorq in more places
+To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, tglx@linutronix.de
+Cc: linux-tip-commits@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10-10-20 04:03 PM, Mathias Burén wrote:
-..
-> I'm currently not using the BIOS of the raid controller for anything
-> else then staggered disk spinup. The HDD partitions start at sector
-> 2048 (to get a 1MB alignment since they're 4k sector drives, WD20EARS)
-> and end at the last sector.
-> What I'm worried about is the corruption mentioned in dmesg, is this
-> explained somewhere in more detail? Google didn't reveal much. Am I in
-> danger?
+On Fri, Oct 22, 2010 at 6:20 PM, tip-bot for H. Peter Anvin
+<hpa@zytor.com> wrote:
+>
+> Checkin d7acb92fea932ad2e7846480aeacddc2c03c8485 made use of fxsaveq
+> in fpu_fxsave() if the assembler supports it; this adds
+> fxsaveq/fxrstorq to fxrstor_checking() and fxsave_user() as well.
 
-Yes.  Just repartition the drives to avoid the final 2GB of each drive,
-and then you'll be safe.
+Hmm. I really think you should be able to do something like this
 
-The RocketRaid BIOS that I examined here a couple of years ago,
-liked to write "metadata" over top of whatever was in certain sectors
-near the end of the drive.  EVEN FOR NON-RAID DRIVES.
+  #ifdef CONFIG_AS_FXSAVEQ
+    #define FXSAVEQ_INSN "fxsaveq %[fx]"
+    #define FXRSTORQ_INSN "fxrstorq %[fx]"
+    #define FX_EXTRA(ptr)
+  #else
+    #define FXSAVEQ_INSN "rex64/fxsave (%[fxr])"
+    #define FXRSTORQ_INSN "rex64/fxrstor (%[fxr])"
+    #define FX_EXTRA(ptr)  [fxr] "R" (ptr)
+  #endif
 
-I think it was the last even (power-of-two) multiple of 1GB or something,
-so if you leave the final 2GB untouched, you're guaranteed to avoid it.
+and then you should be able to write the actual code something like
 
-Thus the recommendation.
+   asm volatile(FXSAVEQ_INSN
+      :[fx] "=m" (memory)
+      :FX_EXTRA(&memory))
 
-Cheers
+and
+
+  #define __COMMA_CONCAT(x) ,##x
+  #define COMMA_CONCAT(x) __COMMA_CONCAT(x)
+  asm volatile(FXRSTRORQ_INSN
+      : :[fx] "m" (memory) COMMA_CONCAT(FX_EXTRA(&memory)));
+
+or something like that (obviously you'll need the exception stuff too there).
+
+With no #ifdef's in the actual code. Hmm?
+
+                                      Linus
