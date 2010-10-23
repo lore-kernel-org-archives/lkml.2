@@ -1,52 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756105Ab0JWRkw (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Oct 2010 13:40:52 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:38927 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755406Ab0JWRku (ORCPT
+	id S1756170Ab0JWRmX (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Oct 2010 13:42:23 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:36276 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754986Ab0JWRmW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Oct 2010 13:40:50 -0400
-Date: Sat, 23 Oct 2010 10:40:36 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Namhyung Kim <namhyung@gmail.com>
-Cc: linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: A question on block_prepare_write()
-Message-Id: <20101023104036.2bec05a0.akpm@linux-foundation.org>
-In-Reply-To: <1287841482.1681.36.camel@leonhard>
-References: <1287841482.1681.36.camel@leonhard>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Sat, 23 Oct 2010 13:42:22 -0400
+Message-ID: <4CC31DF9.9020307@kernel.org>
+Date: Sat, 23 Oct 2010 10:40:09 -0700
+From: Yinghai Lu <yinghai@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.12) Gecko/20100914 SUSE/3.0.8 Thunderbird/3.0.8
+MIME-Version: 1.0
+To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+CC: linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@linux.intel.com>,
+        Pekka Enberg <penberg@cs.helsinki.fi>, Ingo Molnar <mingo@redhat.com>
+Subject: Re: [BUG 2.6.36] early serial console undefined refs
+References: <20101023144352.GA2818@Krystal> <4CC31D6E.6040206@kernel.org>
+In-Reply-To: <4CC31D6E.6040206@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 23 Oct 2010 22:44:42 +0900 Namhyung Kim <namhyung@gmail.com> wrote:
-
-> Hello,
+On 10/23/2010 10:37 AM, Yinghai Lu wrote:
+> On 10/23/2010 07:43 AM, Mathieu Desnoyers wrote:
+>> Hi,
+>>
+>> Building 2.6.36 fails for me with the following link error (config below).
+>> I think commit f4ed2877b16e8146427306aea8819adac5c88374 is very likely to be the
+>> culprit, but given other changes that were done afterward, the fix is not as
+>> easy as a simple revert.
+>>
+>> Thoughts ?
+>>
+>>   Building modules, stage 2.
+>>   MODPOST 65 modules
+>>   LD      arch/x86/boot/setup.elf
+>> arch/x86/boot/early_serial_console.o: In function `early_serial_init':
+>> /home/compudj/git/morestable/linux-2.6-lttng/arch/x86/boot/early_serial_console.c:40: undefined reference to `early_serial_base'
 > 
-> I see block_prepare_write() has local variable wait[2] to keep track of
-> buffer_heads which are not up-to-date. But I'm wondering how it could be
-> guaranteed there will be no more than 2 such buffer_heads? Is there any
-> restriction on the usage of the function? Using MAX_BUF_PER_PAGE instead
-> of the magic number 2 is just useless? I couldn't find any comments or
-> documentation on this.
+> your tree may have problem. Did you try clean tree from Linus ?
 > 
-> Any of your comments would be greatly appreciated. TIA. :-)
+> early_seria_console.c
 > 
+> #include "boot.h"
+> ...
+> static void early_serial_init(int port, int baud)
+> 
+> 
+> and in boot.h, we have
+> /* early_serial_console.c */
+> extern int early_serial_base;
 
-block_prepare_write() may need to preread any buffer_head which are
-being only partially modified by the write().
+at least linus's tree and tip are ok with your config
 
-Buffers which aren't being modified at all don't need to be preread. 
-Buffers which are being fully modified don't need to be preread
-(because all their data is being overwritten).
-
-page:                      |-----------------------|
-buffer_heads:              |-----|-----|-----|-----|
-area we're writing to:               |---------|
-
-There can only be a maximum of two partially-modified buffers in the page.
+  MODPOST 65 modules
+  CC      arch/x86/boot/a20.o
+  CC      arch/x86/boot/cmdline.o
+  AS      arch/x86/boot/copy.o
+  HOSTCC  arch/x86/boot/mkcpustr
+  CC      arch/x86/ia32/ia32_aout.mod.o
+  CC      arch/x86/boot/cpucheck.o
+  CC      arch/x86/kvm/kvm-intel.mod.o
+  CC      arch/x86/boot/early_serial_console.o
+  CC      arch/x86/boot/edd.o
+  CC      arch/x86/kvm/kvm.mod.o
+  VOFFSET arch/x86/boot/voffset.h
+  CC      arch/x86/oprofile/oprofile.mod.o
+  CC      crypto/crc32c.mod.o
+  CC      drivers/ata/sata_mv.mod.o
+  CC      drivers/base/firmware_class.mod.o
+  LDS     arch/x86/boot/compressed/vmlinux.lds
+  AS      arch/x86/boot/compressed/head_64.o
+  CC      drivers/block/cryptoloop.mod.o
+  CC      arch/x86/boot/compressed/misc.o
+  CC      drivers/block/loop.mod.o
+  CC      drivers/cpufreq/cpufreq_ondemand.mod.o
+  CC      drivers/firmware/dcdbas.mod.o
+  CC      drivers/hwmon/hwmon-vid.mod.o
+  CC      drivers/hwmon/it87.mod.o
+  CC      drivers/input/input-polldev.mod.o
+  CC      drivers/md/dm-crypt.mod.o
+  CC      arch/x86/boot/compressed/string.o
+  CC      drivers/md/dm-delay.mod.o
+  CC      arch/x86/boot/compressed/cmdline.o
+  CC      drivers/md/dm-log.mod.o
+  CC      arch/x86/boot/compressed/early_serial_console.o
+  CC      drivers/md/dm-mirror.mod.o
+  OBJCOPY arch/x86/boot/compressed/vmlinux.bin
+  CC      drivers/md/dm-multipath.mod.o
+  GZIP    arch/x86/boot/compressed/vmlinux.bin.gz
+  CC      drivers/md/dm-region-hash.mod.o
+  CC      drivers/md/dm-round-robin.mod.o
+  CC      drivers/md/dm-snapshot.mod.o
+  CC      drivers/md/dm-zero.mod.o
+  CC      drivers/net/bonding/bonding.mod.o
+  CC      drivers/net/dummy.mod.o
+  CC      drivers/net/e1000/e1000.mod.o
+  CC      drivers/net/e1000e/e1000e.mod.o
+  CC      drivers/net/s2io.mod.o
+  CC      drivers/net/skge.mod.o
+  CC      drivers/net/sky2.mod.o
+  CC      drivers/net/tun.mod.o
+  CC      drivers/scsi/dpt_i2o.mod.o
+  CC      drivers/scsi/qla4xxx/qla4xxx.mod.o
+  CC      drivers/scsi/scsi_transport_iscsi.mod.o
+  CC      drivers/scsi/scsi_wait_scan.mod.o
+  MKPIGGY arch/x86/boot/compressed/piggy.S
+  AS      arch/x86/boot/compressed/piggy.o
+  CC      drivers/usb/misc/cytherm.mod.o
+  LD      arch/x86/boot/compressed/vmlinux
+  CC      arch/x86/boot/main.o
+  CC      drivers/usb/serial/pl2303.mod.o
+  CC      arch/x86/boot/mca.o
+  CC      arch/x86/boot/memory.o
+  CC      drivers/usb/serial/usbserial.mod.o
+  CC      arch/x86/boot/pm.o
+  AS      arch/x86/boot/pmjump.o
+  CC      drivers/video/output.mod.o
+  CC      arch/x86/boot/printf.o
+  CC      lib/libcrc32c.mod.o
+  CC      arch/x86/boot/regs.o
+  CC      arch/x86/boot/string.o
+  CC      net/ipv4/inet_diag.mod.o
+  CC      arch/x86/boot/tty.o
+  CC      arch/x86/boot/video.o
+  CC      net/ipv4/tcp_diag.mod.o
+  CC      arch/x86/boot/video-mode.o
+  CC      net/netfilter/nfnetlink.mod.o
+  CC      arch/x86/boot/version.o
+  CC      net/netfilter/nfnetlink_log.mod.o
+  CC      arch/x86/boot/video-vga.o
+  CC      arch/x86/boot/video-vesa.o
+  CC      net/netfilter/nfnetlink_queue.mod.o
+  CC      arch/x86/boot/video-bios.o
+  CC      samples/kprobes/jprobe_example.mod.o
+  OBJCOPY arch/x86/boot/vmlinux.bin
+  CPUSTR  arch/x86/boot/cpustr.h
+  ZOFFSET arch/x86/boot/zoffset.h
+  CC      samples/kprobes/kprobe_example.mod.o
+  CC      arch/x86/boot/cpu.o
+  AS      arch/x86/boot/header.o
+  LD      arch/x86/boot/setup.elf
+  CC      samples/kprobes/kretprobe_example.mod.o
+  OBJCOPY arch/x86/boot/setup.bin
+  BUILD   arch/x86/boot/bzImage
+Root device is (8, 6)
+Setup is 12972 bytes (padded to 13312 bytes).
+System is 3475 kB
+CRC f34900df
+Kernel: arch/x86/boot/bzImage is ready  (#210)
