@@ -1,74 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756623Ab0JWME2 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Oct 2010 08:04:28 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:52055 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754671Ab0JWME1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Oct 2010 08:04:27 -0400
-Date: Sat, 23 Oct 2010 13:04:26 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Jiri Slaby <jslaby@suse.cz>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>, linux-kernel@vger.kernel.org,
-        "Dr. Werner Fink" <werner@suse.de>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: Re: [PATCH 28/49] tty: Add a new file /proc/tty/consoles
-Message-ID: <20101023120426.GN19804@ZenIV.linux.org.uk>
-References: <20101022175112.GC13489@kroah.com>
- <1287771688-14805-28-git-send-email-gregkh@suse.de>
- <4CC2C9A8.1040003@suse.cz>
- <20101023115129.GM19804@ZenIV.linux.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101023115129.GM19804@ZenIV.linux.org.uk>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+	id S1756649Ab0JWMMW (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Oct 2010 08:12:22 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:46271 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754671Ab0JWMMV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 23 Oct 2010 08:12:21 -0400
+From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+To: oprofile-list@lists.sf.net
+Cc: linux-kernel@vger.kernel.org, Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        sricharan <r.sricharan@ti.com>,
+        Robert Richter <robert.richter@amd.com>
+Subject: [PATCH] oprofile: Fix the hang while offline the cpu
+Date: Sat, 23 Oct 2010 17:42:06 +0530
+Message-Id: <1287835926-1957-1-git-send-email-santosh.shilimkar@ti.com>
+X-Mailer: git-send-email 1.5.6.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Oct 23, 2010 at 12:51:29PM +0100, Al Viro wrote:
-> On Sat, Oct 23, 2010 at 01:40:24PM +0200, Jiri Slaby wrote:
-> > On 10/22/2010 08:21 PM, Greg Kroah-Hartman wrote:
-> > > +/*
-> > > + * Used for open /proc/tty/consoles. Before this detect
-> > > + * the device ID of file descriptor 0 of the current
-> > > + * reading task if a character device...
-> > > + */
-> > > +static int tty_consoles_open(struct inode *inode, struct file *file)
-> > > +{
-> > > +	struct files_struct *curfiles;
-> > > +
-> > > +	current_dev = 0;
-> > > +	curfiles = get_files_struct(current);
-> > > +	if (curfiles) {
-> > > +		const struct file *curfp;
-> > > +		spin_lock(&curfiles->file_lock);
-> > > +		curfp = fcheck_files(curfiles, 0);
-> > > +		if (curfp && curfp->private_data) {
-> > > +			const struct inode *inode;
-> > > +			dget(curfp->f_dentry);
-> > > +			inode = curfp->f_dentry->d_inode;
-> > > +			if (S_ISCHR(inode->i_mode)) {
-> > > +				struct tty_struct *tty;
-> > > +				tty = (struct tty_struct *)curfp->private_data;
-> > > +				if (tty && tty->magic == TTY_MAGIC) {
-> > 
-> > Ah, I've just understood what this code does. It seems, that the 'tty'
-> > at this point may be already freed (e.g. people don't set private_data
-> > to NULL). Please explain in the code why it can't...
-> 
-> Please, don't.  Even leaving aside the fact that it's mind-bogglingly
-> broken (->private_data can be _ANYTHING_, including arbitrary number cast
-> to pointer), you really shouldn't screw your way through the descriptor
-> table in the first place.
-> 
-> Strongly NACKed.
+The kernel build with CONFIG_OPROFILE and CPU_HOTPLUG enabled.
+The oprofile is initialised using system timer in absence of hardware
+counters supports. Oprofile isn't started from userland.
 
-PS: "you" above applies to whoever had produced that patch, of course, not
-to Jiri.
+In this setup while doing a CPU offline the kernel hangs in infinite
+for loop inside lock_hrtimer_base() function
 
-PPS: "device name of stdin of last process opening that file, if that
-stdin happened to be a tty" is an interesting thing to put into global
-variable.  What does one do to it?
+This happens because as part of oprofile_cpu_notify(, it tries to
+stop an hrtimer which was never started. These per-cpu hrtimers
+are started when the oprfile is started.
+	echo 1	> /dev/oprofile/enable
+
+This patch fix this issue by adding a state variable so that
+these hrtimer start/stop is only attempted when oprofile is
+started
+
+Reported-by: Jan Sebastien <s-jan@ti.com>
+Signed-off-by: sricharan <r.sricharan@ti.com>
+Tested-by: sricharan <r.sricharan@ti.com>
+Signed-off-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+
+Cc: Robert Richter <robert.richter@amd.com>
+---
+ drivers/oprofile/timer_int.c |    9 +++++++++
+ 1 files changed, 9 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/oprofile/timer_int.c b/drivers/oprofile/timer_int.c
+index dc0ae4d..de487ba 100644
+--- a/drivers/oprofile/timer_int.c
++++ b/drivers/oprofile/timer_int.c
+@@ -21,6 +21,7 @@
+ #include "oprof.h"
+ 
+ static DEFINE_PER_CPU(struct hrtimer, oprofile_hrtimer);
++static int oprofile_hrtimer_started;
+ 
+ static enum hrtimer_restart oprofile_hrtimer_notify(struct hrtimer *hrtimer)
+ {
+@@ -33,6 +34,9 @@ static void __oprofile_hrtimer_start(void *unused)
+ {
+ 	struct hrtimer *hrtimer = &__get_cpu_var(oprofile_hrtimer);
+ 
++	if (!oprofile_hrtimer_started)
++		return;
++
+ 	hrtimer_init(hrtimer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
+ 	hrtimer->function = oprofile_hrtimer_notify;
+ 
+@@ -42,6 +46,7 @@ static void __oprofile_hrtimer_start(void *unused)
+ 
+ static int oprofile_hrtimer_start(void)
+ {
++	oprofile_hrtimer_started = 1;
+ 	on_each_cpu(__oprofile_hrtimer_start, NULL, 1);
+ 	return 0;
+ }
+@@ -50,6 +55,9 @@ static void __oprofile_hrtimer_stop(int cpu)
+ {
+ 	struct hrtimer *hrtimer = &per_cpu(oprofile_hrtimer, cpu);
+ 
++	if (!oprofile_hrtimer_started)
++		return;
++
+ 	hrtimer_cancel(hrtimer);
+ }
+ 
+@@ -59,6 +67,7 @@ static void oprofile_hrtimer_stop(void)
+ 
+ 	for_each_online_cpu(cpu)
+ 		__oprofile_hrtimer_stop(cpu);
++	oprofile_hrtimer_started = 0;
+ }
+ 
+ static int __cpuinit oprofile_cpu_notify(struct notifier_block *self,
+-- 
+1.6.0.4
+
