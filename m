@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758724Ab0JWU2y (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Oct 2010 16:28:54 -0400
-Received: from canuck.infradead.org ([134.117.69.58]:45566 "EHLO
+	id S1758572Ab0JWU2m (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Oct 2010 16:28:42 -0400
+Received: from canuck.infradead.org ([134.117.69.58]:45564 "EHLO
 	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758438Ab0JWU2l (ORCPT
+	with ESMTP id S1758247Ab0JWU2h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Oct 2010 16:28:41 -0400
+	Sat, 23 Oct 2010 16:28:37 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@elte.hu>
 Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
-        =?utf-8?q?Fr=C3=A9d=C3=A9ric=20Weisbecker?= <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: [PATCH 1/5] perf tools: Remove direct slang.h include
-Date: Sat, 23 Oct 2010 18:28:20 -0200
-Message-Id: <1287865704-3880-2-git-send-email-acme@infradead.org>
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Subject: [PATCH 5/5] perf probe: Fix format specified for Dwarf_Off parameter
+Date: Sat, 23 Oct 2010 18:28:24 -0200
+Message-Id: <1287865704-3880-6-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.6.2.5
 In-Reply-To: <1287865704-3880-1-git-send-email-acme@infradead.org>
 References: <1287865704-3880-1-git-send-email-acme@infradead.org>
@@ -32,33 +29,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-We wrap it in libslang.h because we need to deal with older slang release
-where HAVE_LONG_LONG is referenced as:
+Fixing the following error on 32-bit arches:
 
-So we need to define it.
+util/probe-finder.c: In function ‘line_range_search_cb’:
+util/probe-finder.c:1734: error: format ‘%lx’ expects type ‘long
+unsigned int’, but argument 3 has type ‘Dwarf_Off’
 
-Noticed when rebuilding the perf tools on a RHEL5 machine.
-
-Cc: Frédéric Weisbecker <fweisbec@gmail.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Stephane Eranian <eranian@google.com>
+Reported-by: Ingo Molnar <mingo@elte.hu>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 LKML-Reference: <new-submission>
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/ui/browser.c |    1 -
- 1 files changed, 0 insertions(+), 1 deletions(-)
+ tools/perf/util/probe-finder.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
 
-diff --git a/tools/perf/util/ui/browser.c b/tools/perf/util/ui/browser.c
-index 6d0df80..8bc010e 100644
---- a/tools/perf/util/ui/browser.c
-+++ b/tools/perf/util/ui/browser.c
-@@ -1,4 +1,3 @@
--#include <slang.h>
- #include "libslang.h"
- #include <linux/compiler.h>
- #include <linux/list.h>
+diff --git a/tools/perf/util/probe-finder.c b/tools/perf/util/probe-finder.c
+index c20bd52..3991d73 100644
+--- a/tools/perf/util/probe-finder.c
++++ b/tools/perf/util/probe-finder.c
+@@ -1731,7 +1731,8 @@ static int line_range_search_cb(Dwarf_Die *sp_die, void *data)
+ 	struct line_finder *lf = param->data;
+ 	struct line_range *lr = lf->lr;
+ 
+-	pr_debug("find (%lx) %s\n", dwarf_dieoffset(sp_die),
++	pr_debug("find (%llx) %s\n",
++		 (unsigned long long)dwarf_dieoffset(sp_die),
+ 		 dwarf_diename(sp_die));
+ 	if (dwarf_tag(sp_die) == DW_TAG_subprogram &&
+ 	    die_compare_name(sp_die, lr->function)) {
 -- 
 1.6.2.5
 
