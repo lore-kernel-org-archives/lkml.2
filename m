@@ -1,118 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752752Ab0JWJgs (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Oct 2010 05:36:48 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:55644 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751738Ab0JWJgq (ORCPT
+	id S1752670Ab0JWJuy (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Oct 2010 05:50:54 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:50280 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752119Ab0JWJuw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Oct 2010 05:36:46 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:reply-to:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=hq62rgCVprAMFkMDKLPFs3o2RiYhodioH/5KJwHMqaZA3gP/2oGCJ/mLzM3E5UilW+
-         UoTfI/dOfP4gIBvz9RLniswea1kbqMU1Al299wprEUR2wydSADbm32EW+8P/PdDUrjw5
-         cEfAhpCeAp/do7iVu/L//IB/2JxeY47N+86jA=
-Date: Sat, 23 Oct 2010 17:36:30 +0800
-From: Yong Zhang <yong.zhang0@gmail.com>
-To: Subrata Modak <subrata@linux.vnet.ibm.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        Linuxppc-dev <Linuxppc-dev@ozlabs.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Anton Blanchard <anton@samba.org>, Paul Mackerras <paulus@samba.org>,
-        divya <dipraksh@linux.vnet.ibm.com>
-Subject: Re: BUG with the kernel version 2.6.36-rc1 on power machine
-Message-ID: <20101023093630.GA3036@zhy>
-Reply-To: Yong Zhang <yong.zhang0@gmail.com>
-References: <4CC13B2C.7090908@linux.vnet.ibm.com>
- <4CC13FFF.7040200@linux.vnet.ibm.com>
- <AANLkTikmpohofzO_dV_Dv8EfcEMsyy4cdhGMUD-PAFO3@mail.gmail.com>
- <1287774802.19497.1.camel@subratamodak.linux.ibm.com>
+	Sat, 23 Oct 2010 05:50:52 -0400
+Date: Sat, 23 Oct 2010 11:50:49 +0200
+From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: Eric =?iso-8859-1?Q?B=E9nard?= <eric@eukrea.com>
+Cc: Dinh.Nguyen@freescale.com, linux-kernel@vger.kernel.org,
+        amit.kucheria@canonical.com, linux@arm.linux.org.uk,
+        s.hauer@pengutronix.de, grant.likely@secretlab.ca,
+        linux-arm-kernel@lists.infradead.org, daniel@caiaq.de,
+        valentin.longchamp@epfl.ch
+Subject: Re: [PATCHv6 1/3] ARM: imx: Add gpio-keys to plat-mxc
+Message-ID: <20101023095049.GC8554@pengutronix.de>
+References: <1287801976-5324-1-git-send-email-Dinh.Nguyen@freescale.com> <4CC2977D.8060409@eukrea.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <1287774802.19497.1.camel@subratamodak.linux.ibm.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <4CC2977D.8060409@eukrea.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Oct 23, 2010 at 12:43:21AM +0530, Subrata Modak wrote:
-> This is equally seen for both Power6 and Power7 machines.
+Hello Eric,
 
-Seems resolved by part of http://lkml.org/lkml/2010/10/13/67
+On Sat, Oct 23, 2010 at 10:06:21AM +0200, Eric Bénard wrote:
+> Le 23/10/2010 04:46, Dinh.Nguyen@freescale.com a écrit :
+>> +struct platform_device *__init imx_add_gpio_keys(
+>> +		const struct gpio_keys_platform_data *pdata)
+>> +{
+>> +	return imx_add_platform_device("gpio-keys", -1, NULL,
+>> +		 0, pdata, sizeof(*pdata));
+>> +}
+>
+> What is the added value of this ?
+Is is (more or less) in line with the other imx functions that
+dynamically add platform devices.
 
-Thanks,
-Yong
+> gpio-keys is not i.MX specific so why should that land in plat-mxc ?
+I consider it OK for now.  I know Eric does/wants something similar for
+pxa.  If you want to push forward unification here that's great, but
+IMHO this is nothing that should stop this patch which is a good step
+forward.
 
-> 
-> Regards--
-> Subrata
-> 
-> On Sat, 2010-10-23 at 00:37 +0530, Subrata Modak wrote:
-> > 
-> > 
-> > ---------- Forwarded message ----------
-> > From: divya <dipraksh@linux.vnet.ibm.com>
-> > Date: Fri, Oct 22, 2010 at 1:10 PM
-> > Subject: Re: BUG with the kernel version 2.6.36-rc1 on power machine
-> > To: LKML <linux-kernel@vger.kernel.org>, benh@kernel.crashing.org,
-> > linuxppc-dev@ozlabs.org
-> > 
-> > 
-> > 
-> > On Friday 22 October 2010 12:50 PM, divya wrote:
-> >         Hi ,
-> >         
-> >         With the latest version of kernel 2.6.36-rc1 running on the
-> >         power machine, came across the following call trace
-> >         
-> >         BUG: looking up invalid subclass: 31
-> >         turning off the locking correctness validator.
-> >         Call Trace:
-> >         [c00000000e0bfb60] [c0000000000119a0] .show_stack+0x6c/0x16c
-> >         (unreliable)
-> >         [c00000000e0bfc10] [c0000000000c39b8] .lockdep_init_map
-> >         +0x194/0x630
-> >         [c00000000e0bfcf0] [c0000000005524f8] .mousedev_create
-> >         +0xcc/0x234
-> >         [c00000000e0bfda0] [c00000000093fb58] .mousedev_init+0x38/0xa0
-> >         [c00000000e0bfe30] [c0000000000097e4] .do_one_initcall
-> >         +0xd8/0x1c8
-> >         [c00000000e0bfee0] [c0000000009004ac] .kernel_init+0x23c/0x2f8
-> >         [c00000000e0bff90] [c00000000002ad30] .kernel_thread+0x54/0x70
-> >         
-> >         The config file used for make oldconfig is being attached
-> >         
-> >         Thanks
-> >         Divya
-> >         
-> >         
-> >         
-> >         
-> > I meant 2.6.36-git1(b5153163ed580e) , and not 2.6.36-rc1.
-> > Sorry for the confusion.
-> > 
-> > Thanks
-> > Divya
-> > 
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe
-> > linux-kernel" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > Please read the FAQ at  http://www.tux.org/lkml/
-> > 
-> > 
-> > 
-> > 
-> > -- 
-> > Regards & Thanks--
-> > Subrata
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+BTW another low hanging fruit is to use use
+platform_device_register_resndata to implement imx_add_platform_device
+and add a few additional checks, like warn if CONFIG_DEBUG_SOMETHING is
+enabled and data is non-NULL and doesn't point to .init-memory.)
+
+Best regards
+Uwe
+
+-- 
+Pengutronix e.K.                           | Uwe Kleine-König            |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
