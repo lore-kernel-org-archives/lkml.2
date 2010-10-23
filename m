@@ -1,66 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757380Ab0JWO7c (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Oct 2010 10:59:32 -0400
-Received: from www.tglx.de ([62.245.132.106]:41022 "EHLO www.tglx.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754422Ab0JWO7b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Oct 2010 10:59:31 -0400
-Date: Sat, 23 Oct 2010 16:56:30 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>
-Subject: [GIT pull] softirq updates for 2.6.37
-Message-ID: <alpine.LFD.2.00.1010231643300.2516@localhost6.localdomain6>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1757501Ab0JWO7t (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Oct 2010 10:59:49 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:46249 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757475Ab0JWO7r convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 23 Oct 2010 10:59:47 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=googlemail.com; s=gamma;
+        h=mime-version:reply-to:in-reply-to:references:date:message-id
+         :subject:from:to:cc:content-type:content-transfer-encoding;
+        b=Tj/UUxgteHggL0iSn6YakKxIcOMbeHcSvHgod8KtaupvRvUwG9viV/b10eRMnrIbiV
+         zYxzO1SCVUwASJmXV1uveW9/dHLUuoO6PuV0y02orxQCmen5UrGpFX02PLjNy6rWOKAs
+         XKmfP46MVQcfdDoNqH9wkUgZQlaSHqacO0T7w=
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <AANLkTikqJGpVZLoReAWCrunpFPxgLjDW+uPAm_y6a5io@mail.gmail.com>
+References: <AANLkTi=XW2dgbi5trX7Kvoj_1L_CveLk2E-FC37NDM7W@mail.gmail.com>
+	<AANLkTikqJGpVZLoReAWCrunpFPxgLjDW+uPAm_y6a5io@mail.gmail.com>
+Date: Sat, 23 Oct 2010 16:59:46 +0200
+Message-ID: <AANLkTinc14ixXwXvvE347e4jLsHO+8gZW2FgyrkE8Dyb@mail.gmail.com>
+Subject: Re: linux-2.6 GIT not accessible?
+From: Sedat Dilek <sedat.dilek@googlemail.com>
+To: richard -rw- weinberger <richard.weinberger@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+On Sat, Oct 23, 2010 at 12:32 PM, richard -rw- weinberger
+<richard.weinberger@gmail.com> wrote:
+> On Sat, Oct 23, 2010 at 12:15 PM, Sedat Dilek
+> <sedat.dilek@googlemail.com> wrote:
+>> Known problem?
+>>
+>> $ git clone git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux-2.6.git
+>> Cloning into linux-2.6...
+>> fatal: The remote end hung up unexpectedly
+>>
+>> [1] http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=summary
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> Please read the FAQ at  http://www.tux.org/lkml/
+>>
+>
+> Same problem here. :-(
+>
+> --
+> Thanks,
+> //richard
+>
 
-Please pull the latest softirq-for-linus git tree from:
-
-   git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git softirq-for-linus
-
-Thanks,
-
-	tglx
-
------------------->
-Thomas Gleixner (1):
-      softirqs: Make wakeup_softirqd static
-
-
- include/linux/interrupt.h |    1 -
- kernel/softirq.c          |    2 +-
- 2 files changed, 1 insertions(+), 2 deletions(-)
-
-diff --git a/include/linux/interrupt.h b/include/linux/interrupt.h
-index a0384a4..0a9141e 100644
---- a/include/linux/interrupt.h
-+++ b/include/linux/interrupt.h
-@@ -410,7 +410,6 @@ extern void softirq_init(void);
- #define __raise_softirq_irqoff(nr) do { or_softirq_pending(1UL << (nr)); } while (0)
- extern void raise_softirq_irqoff(unsigned int nr);
- extern void raise_softirq(unsigned int nr);
--extern void wakeup_softirqd(void);
- 
- /* This is the worklist that queues up per-cpu softirq work.
-  *
-diff --git a/kernel/softirq.c b/kernel/softirq.c
-index 07b4f1b..80f6e3b 100644
---- a/kernel/softirq.c
-+++ b/kernel/softirq.c
-@@ -67,7 +67,7 @@ char *softirq_to_name[NR_SOFTIRQS] = {
-  * to the pending events, so lets the scheduler to balance
-  * the softirq load for us.
-  */
--void wakeup_softirqd(void)
-+static void wakeup_softirqd(void)
- {
- 	/* Interrupts are disabled: no need to stop preemption */
- 	struct task_struct *tsk = __get_cpu_var(ksoftirqd);
+GIT repo is UP.
