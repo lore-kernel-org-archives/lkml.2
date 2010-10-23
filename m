@@ -1,151 +1,245 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758438Ab0JWXap (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Oct 2010 19:30:45 -0400
-Received: from smtp14.ono.com ([62.42.230.176]:49973 "EHLO resmaa14.ono.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753406Ab0JWXan convert rfc822-to-8bit (ORCPT
+	id S1758486Ab0JWX5m (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Oct 2010 19:57:42 -0400
+Received: from nm10-vm0.bullet.mail.ne1.yahoo.com ([98.138.91.72]:21041 "HELO
+	nm10-vm0.bullet.mail.ne1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1758202Ab0JWX5k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Oct 2010 19:30:43 -0400
-Date: Sun, 24 Oct 2010 01:30:38 +0200
-From: "J.A. =?ISO-8859-1?B?TWFnYWxs824=?=" <jamagallon@ono.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>, linux-cifs@vger.kernel.org
-Subject: Re: CIFS is slooow, gvfs is fast
-Message-ID: <20101024013038.057442c0@werewolf.home>
-In-Reply-To: <20101023004636.1acdd81c@werewolf.home>
-References: <20101022013544.0fdab0e0@werewolf.home>
-	<4CC16B1E.4060709@suse.de>
-	<20101023004636.1acdd81c@werewolf.home>
-X-Mailer: Claws Mail 3.7.6cvs54 (GTK+ 2.22.0; x86_64-unknown-linux-gnu)
+	Sat, 23 Oct 2010 19:57:40 -0400
+X-Yahoo-Newman-Id: 915433.93698.bm@omp1045.mail.ne1.yahoo.com
+X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
+X-YMail-OSG: XUnmTpQVM1lrqZRt4SM3mQTVA3GnsbQ5wY4J4uFXFTBfzZU
+ 7xEkPnsFaeaPggCP5fFG32JDycuMXyRelVw8CEjfpEY3vRaF0lfHFNhLA7pO
+ H9QX2t7o_xJBdeiL1ZuEkYO7W45_x9y7.0RJYC2sGzfA7yBWSXCF5dMVoKd7
+ mw2IhUjBKZSn2G9iMFFW4r0LEPLmnJ5eOHCnwm2pgmJgIGxx2Ds_mPhuVo3w
+ 1y3pJ8WG6G2mzLkLNu.qt_tqByOpJeQ3ic0xTJzW3Pqxs1qNA7_e9GXNe5ou
+ liKbpklOL1P9eUkQUht18MZ26oQ3vDDSG3JRNWg--
+X-Yahoo-Newman-Property: ymail-3
+Subject: [GIT PULL] Updated lio-4.0.git/merge-for-37-v2 branch for mainline
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: LKML <linux-kernel@vger.kernel.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Christoph Hellwig <hch@lst.de>, Jens Axboe <axboe@kernel.dk>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Mike Christie <michaelc@cs.wisc.edu>, Hannes Reinecke <hare@suse.de>,
+        Joel Becker <joel.becker@oracle.com>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        Boaz Harrosh <bharrosh@panasas.com>,
+        "Love, Robert W" <robert.w.love@intel.com>,
+        Joe Eykholt <jeykholt@cisco.com>,
+        Philipp Reisner <philipp.reisner@linbit.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Douglas Gilbert <dgilbert@interlog.com>,
+        Konrad Rzeszutek Wilk <konrad@darnok.org>
+Content-Type: text/plain
+Date: Sat, 23 Oct 2010 16:52:41 -0700
+Message-Id: <1287877961.25701.61.camel@haakon2.linux-iscsi.org>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 2.22.3.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 23 Oct 2010 00:46:36 +0200, "J.A. Magallón" <jamagallon@ono.com> wrote:
+Greetings jejb, andrew, linus and co,
 
-> On Fri, 22 Oct 2010 16:14:46 +0530, Suresh Jayaraman <sjayaraman@suse.de> wrote:
-> 
-> > (Cc linux-cifs@vger.kernel.org)
-> > 
-> > On 10/22/2010 05:05 AM, J.A. Magallón wrote:
-> > 
-> > > I have a very strange behaviour with windows networking.
-> > > I have an HTPC, which I access from my Linux desktop. It runs Windows 7.
-> > > Network is GigaBit, routed by a Linksys WRT320N running latest DD-WRT.
-> > > I setup an automount path under /net/htpc with CIFS filesystem.
-> > > I can also access the drives in HTPC via gvfs from Gnome DE.
-> > > 
-> > > Problem: speed is _VERY_ different.
-> > > R/W through the automount point (CIFS fs), is roughly 7-8 MB/s (ridiculous
-> > > for gigabit speeds).
-> > > R/W through Gnome/gvfs (kind of fuse) goes around 35 - 40 MB/s (400 Mbits/s),
-> > > that look much better.
-> > 
-> > What is the kernel version In which you are seeing the problem? I'm not
-> 
-> Its just new 2.6.36 final, mandriva distro kernel.
-> 
-> > seeing this on 2.6.36-rc4. Do you have a wired interface as well? Are
-> 
-> Yes, boxes are all wired to the 320N router, at gigabit speeds.
-> Just to double check, I also probed with my netbook with 100Mb ehternet.
-> The effect is less obvious, but writing to the Win7 box through the
-> cifs automount path goes at 3.5-4.0 Mb/s, and with gvfs it reaches
-> 7.5 Mb/s.
-> 
-> > you sure that both are using the same network path?
-> > 
-> 
-> If you mean hardware network path (cabling, router), yes.
-> For file paths, CIFS fs is under /net/htpc/media, and gvfs uses a mount
-> point on '~/.gvfs/media on htpc'.
-> 
-> And here comes the weird part. To rule out the desktop environment factor,
-> I tried a dd in both paths. On /net, I get 16.6 MB/s, and on
-> ~/.gvfs/xxx, I just get 5.5 MB/s. I really don't understand anything...
-> things get reversed depending if you use a gui or commandline.
-> 
-> Weird, really weird...
-> 
+This patch contains a single commit / mergeable version of TCM/ConfigFS infrastructure
++ TCM_Loop v4.0.0-rc5+ code up to commit 3c4a5d31dd4b from lio-core-2.6.git/lio-4.0.
+This patch has been generated this afternoon against Linus's latest 'for-37'
+commit 35da7a307c535f containing Jen's + Christoph's + Tejun's for-2.6.37/core fixes
+which effects target_core_iblock.c's usage of blkdev_issue_flush() for SYNCHRONIZE_CACHE
+emulation.
 
-Well, to sort things out, I did some more tests (this does not mean things
-get any closer to be clear for me at least...).
+So as there have been no further code comments and one bugfix outstanding for feedback
+since RFCv3 awaiting Jen's and Christoph's freedback. please accept this as my formal merge
+request for TCM/ConfigFS + TCM_Loop v4.0.0-rc5+ into a tree (comments..?) destined for
+.37 mainline.  The pullable tree is here:
 
-Network card state in linux side:
+git://git.kernel.org/pub/scm/linux/kernel/git/nab/lio-4.0.git merge-for-37-v2
 
-werewolf:/etc/autofs# ethtool eth0
-Settings for eth0:
-    Supported ports: [ TP ]
-    Supported link modes:   10baseT/Half 10baseT/Full
-                            100baseT/Half 100baseT/Full
-                            1000baseT/Full
-    Supports auto-negotiation: Yes
-    Advertised link modes:  10baseT/Half 10baseT/Full
-                            100baseT/Half 100baseT/Full
-                            1000baseT/Full
-    Advertised auto-negotiation: Yes
-    Speed: 1000Mb/s
-    Duplex: Full
-    Port: Twisted Pair
-    PHYAD: 0
-    Transceiver: internal
-    Auto-negotiation: on
-    Supports Wake-on: pg
-    Wake-on: d
-    Current message level: 0x00000000 (0)
-    Link detected: yes
-    
-Raw iperf behaviour:
+which contains the following two commits:
 
-lnx -> win: [  3]  0.0-10.0 sec    988 MBytes    828 Mbits/sec
-win -> lnx: [  4]  0.0-10.0 sec    333 MBytes    279 Mbits/sec
+scsi: Add missing SPC-4 CDB and MAINTENANCE_[IN,OUT] and VARIABLE_LENGTH_CMD service actions
+tcm: Add TCM and TCM_Loop v4.0.0-rc5+ for .37
 
-Don't know why the difference, but anyways worst speed is 280 Mb/s.
+The 'git squashed' log of the main second patch as individual RFC commits appear as:
 
-auto.master:
-	/net/htpc   file:/etc/autofs/auto.htpc
-auto.htpc:
-	media -fstype=cifs,credentials=/etc/autofs/credentials/htpc,iocharset=utf8,uid=3001,gid=3000 ://htpc/media
+tcm: Add ConfigFS extended macro set
+tcm: Add v4 base data structures and struct target_core_fabric_ops
+tcm: Add SPC-4 explict and implict Asymmetric Logical Unit Access (ALUA)
+tcm: Add ConfigFS subsystem backstore infrastructure
+tcm: Add fabric and subsystem transport engine core
+tcm: Add HBA core infrastructure
+tcm: Add device core infrastructure
+tcm: Add target portal group infrastructure
+tcm: Add SPC-4 compliant Persistent Reservations (PR)
+tcm: Add Task Management infrastructure
+tcm: Add UNIT_ATTENTION infrastructure support
+tcm: Add SCSI MIB statistics support
+tcm: Add FILEIO subsystem plugin
+tcm: Add IBLOCK subsystem plugin
+tcm: Add PSCSI subsystem plugin
+tcm: Add RAMDISK_DR and RAMDISK_MCP subsystem plugins
+tcm: Add generic fabric independent ConfigFS infrastructure
+tcm: Add generic ProtoID and TransportID fabric handlers for SAS, FC, and iSCSI
+tcm: Add Kbuild and Kconfig for drivers/target and Documentation/target/
+tcm_loop: Add multi-fabric Linux/SCSI LLD fabric module
 
-Times for gnome-ui-copy are approximate, speed is what the copy window says.
+The respective RFCv3, RFCv2 and RFCv1 patches of TCM v4.0 for .37 can be
+found here:
 
-Case A: automount via cifs.
-/proc/mounts:
-	/etc/autofs/auto.htpc /net/htpc autofs rw,relatime,fd=6,pgrp=14361,timeout=300,minproto=5,maxproto=5,indirect 0 0
-	//htpc/media/ /net/htpc/media cifs rw,relatime,unc=\\htpc\media,username=media,uid=0,noforceuid,gid=0,noforcegid,addr=192.168.1.20,file_mode=0755,dir_mode=0755,serverino,rsize=130048,wsize=57344 0 0
+[RFCv3 00/21] TCM Core and TCM_Loop patches for v2.6.37
+http://marc.info/?l=linux-kernel&m=128744135522606&w=2
 
-- dd if=~/file of=file.dd bs=1M
-  292538368 bytes (293 MB) copied, 8.44771 s, 34.6 MB/s
-- time cp ~/file file.cp: real    0m7.429s
-- gnome UI copy: 39s, 7.8 MB/s
+[RFC v2 00/21] TCM Core and TCM_Loop patches for v2.6.37
+http://marc.info/?l=linux-kernel&m=128519571622744&w=2
 
-Case B: network mount via nautilus.
-/proc/mounts:
-	/etc/autofs/auto.htpc /net/htpc autofs rw,relatime,fd=6,pgrp=14361,timeout=300,minproto=5,maxproto=5,indirect 0 0
-	gvfs-fuse-daemon /home/magallon/.gvfs fuse.gvfs-fuse-daemon rw,nosuid,nodev,relatime,user_id=3001,group_id=3000 0 0
+[RFC 00/22] TCM Core and TCM_Loop patches for v2.6.37
+http://marc.info/?l=linux-scsi&m=128316004105485&w=2
 
-- dd if=~/file of=file.dd bs=1M
-  292538368 bytes (293 MB) copied, 50.4364 s, 5.8 MB/s
-- time cp ~/file file.cp: real    0m50.151s
-- gnome UI copy: 8s, 33.2 MB/s
+The individual TCM v4.0.0-rc announcements + changelogs can be found here:
 
-And the best of all:
+[ANNOUNCE] TCM/LIO v4.0.0-rc5 for 2.6.36-rc8
+http://marc.info/?l=linux-scsi&m=128739657813518&w=2
 
-werewolf:~> time smbclient -U media%XXXXX //htpc/media -c 'put file'
-Domain=[HOME] OS=[Windows 7 Enterprise 7600] Server=[Windows 7 Enterprise 6.1]
-putting file file as \file (66345.1 kb/s) (average 66345.1 kb/s)
+[ANNOUNCE] TCM/LIO v4.0.0-rc4 for 2.6.36-rc4
+http://marc.info/?l=linux-scsi&m=128497455919041&w=2
 
-real    0m4.318s
-user    0m0.466s
-sys 0m0.553s
+[ANNOUNCE] TCM/LIO v4.0.0-rc3 for 2.6.36-rc3
+http://marc.info/?l=linux-scsi&m=128312775110418&w=2
 
-Can anybody tell me whats going here...??
-It looks just like gui tools behave just in reverse of cli, and that a plain
-smbclient is faster that cifs. I'm really confused...
+[ANNOUNCE] TCM/LIO: v4.0.0-rc2 for v2.6.35
+http://marc.info/?l=linux-scsi&m=128090716528454&w=2
 
--- 
-J.A. Magallon <jamagallon()ono!com>     \               Software is like sex:
-                                         \         It's better when it's free
+So at this point folks please let me know of any other items that
+should be going into TCM v4.0.0-rc6 and I will follow up accordingly.
+
+Once again a huge thanks goes out to everyone who has contributed
+their time, review and code during the v4.0 development during the last
+~10 months!!  A pull request would not be complete without at least
+some recognition of the people who have helped get us to this point:
+
+Christoph Hellwig, James Bottomley, Jens Axboe, FUJITA Tomonori,
+Mike Christie, Hannes Reinecke, Joel Becker, Martin K. Petersen,
+Boaz Harrosh, Joe Eykholt, Robert Love, Phillip Reisner, Doug Gilbert
+Richard Sharpe, and Konrad Rzeszutek Wilk.
+
+There are certainly many more folks beyond these extra-ordinarily
+talented community members who have contributed their time, energy and
+determination to improve this code and to push the upstream code it
+depends upon within last year.  It would certainly not have been
+possible (or as nearly as fun and challenging) as it has been thus far.
+
+Thank you!
+
+Signed-off-by: Nicholas A. Bellinger <nab@linux-iscsi.org>
+---
+ Documentation/target/tcm_mod_builder.py        | 1094 +++
+ Documentation/target/tcm_mod_builder.txt       |  145 +
+ drivers/Kconfig                                |    2 +
+ drivers/Makefile                               |    1 +
+ drivers/target/Kbuild                          |   30 +
+ drivers/target/Kconfig                         |   36 +
+ drivers/target/target_core_alua.c              | 1993 +++++
+ drivers/target/target_core_alua.h              |  142 +
+ drivers/target/target_core_configfs.c          | 3499 +++++++++
+ drivers/target/target_core_device.c            | 1816 +++++
+ drivers/target/target_core_fabric_configfs.c   | 1001 +++
+ drivers/target/target_core_fabric_lib.c        |  451 ++
+ drivers/target/target_core_file.c              | 1052 +++
+ drivers/target/target_core_file.h              |   81 +
+ drivers/target/target_core_hba.c               |  211 +
+ drivers/target/target_core_hba.h               |   14 +
+ drivers/target/target_core_iblock.c            | 1018 +++
+ drivers/target/target_core_iblock.h            |   45 +
+ drivers/target/target_core_mib.c               | 1081 +++
+ drivers/target/target_core_mib.h               |   30 +
+ drivers/target/target_core_pr.c                | 4243 +++++++++++
+ drivers/target/target_core_pr.h                |   67 +
+ drivers/target/target_core_pscsi.c             | 1583 ++++
+ drivers/target/target_core_pscsi.h             |   73 +
+ drivers/target/target_core_rd.c                | 1412 ++++
+ drivers/target/target_core_rd.h                |   89 +
+ drivers/target/target_core_scdb.c              |  158 +
+ drivers/target/target_core_scdb.h              |   15 +
+ drivers/target/target_core_tmr.c               |  405 ++
+ drivers/target/target_core_tpg.c               |  830 +++
+ drivers/target/target_core_transport.c         | 9262 ++++++++++++++++++++++++
+ drivers/target/target_core_ua.c                |  332 +
+ drivers/target/target_core_ua.h                |   36 +
+ drivers/target/tcm_loop/Kbuild                 |   11 +
+ drivers/target/tcm_loop/Kconfig                |   13 +
+ drivers/target/tcm_loop/tcm_loop_configfs.c    |  647 ++
+ drivers/target/tcm_loop/tcm_loop_configfs.h    |    2 +
+ drivers/target/tcm_loop/tcm_loop_core.h        |   77 +
+ drivers/target/tcm_loop/tcm_loop_fabric.c      |  494 ++
+ drivers/target/tcm_loop/tcm_loop_fabric.h      |   40 +
+ drivers/target/tcm_loop/tcm_loop_fabric_scsi.c |  618 ++
+ drivers/target/tcm_loop/tcm_loop_fabric_scsi.h |   10 +
+ include/target/configfs_macros.h               |  147 +
+ include/target/target_core_base.h              | 1076 +++
+ include/target/target_core_configfs.h          |   57 +
+ include/target/target_core_device.h            |   73 +
+ include/target/target_core_fabric_configfs.h   |  106 +
+ include/target/target_core_fabric_lib.h        |   28 +
+ include/target/target_core_fabric_ops.h        |  100 +
+ include/target/target_core_tmr.h               |   43 +
+ include/target/target_core_tpg.h               |   39 +
+ include/target/target_core_transport.h         |  570 ++
+ 52 files changed, 36398 insertions(+), 0 deletions(-)
+ create mode 100755 Documentation/target/tcm_mod_builder.py
+ create mode 100644 Documentation/target/tcm_mod_builder.txt
+ create mode 100644 drivers/target/Kbuild
+ create mode 100644 drivers/target/Kconfig
+ create mode 100644 drivers/target/target_core_alua.c
+ create mode 100644 drivers/target/target_core_alua.h
+ create mode 100644 drivers/target/target_core_configfs.c
+ create mode 100644 drivers/target/target_core_device.c
+ create mode 100644 drivers/target/target_core_fabric_configfs.c
+ create mode 100644 drivers/target/target_core_fabric_lib.c
+ create mode 100644 drivers/target/target_core_file.c
+ create mode 100644 drivers/target/target_core_file.h
+ create mode 100644 drivers/target/target_core_hba.c
+ create mode 100644 drivers/target/target_core_hba.h
+ create mode 100644 drivers/target/target_core_iblock.c
+ create mode 100644 drivers/target/target_core_iblock.h
+ create mode 100644 drivers/target/target_core_mib.c
+ create mode 100644 drivers/target/target_core_mib.h
+ create mode 100644 drivers/target/target_core_pr.c
+ create mode 100644 drivers/target/target_core_pr.h
+ create mode 100644 drivers/target/target_core_pscsi.c
+ create mode 100644 drivers/target/target_core_pscsi.h
+ create mode 100644 drivers/target/target_core_rd.c
+ create mode 100644 drivers/target/target_core_rd.h
+ create mode 100644 drivers/target/target_core_scdb.c
+ create mode 100644 drivers/target/target_core_scdb.h
+ create mode 100644 drivers/target/target_core_tmr.c
+ create mode 100644 drivers/target/target_core_tpg.c
+ create mode 100644 drivers/target/target_core_transport.c
+ create mode 100644 drivers/target/target_core_ua.c
+ create mode 100644 drivers/target/target_core_ua.h
+ create mode 100644 drivers/target/tcm_loop/Kbuild
+ create mode 100644 drivers/target/tcm_loop/Kconfig
+ create mode 100644 drivers/target/tcm_loop/tcm_loop_configfs.c
+ create mode 100644 drivers/target/tcm_loop/tcm_loop_configfs.h
+ create mode 100644 drivers/target/tcm_loop/tcm_loop_core.h
+ create mode 100644 drivers/target/tcm_loop/tcm_loop_fabric.c
+ create mode 100644 drivers/target/tcm_loop/tcm_loop_fabric.h
+ create mode 100644 drivers/target/tcm_loop/tcm_loop_fabric_scsi.c
+ create mode 100644 drivers/target/tcm_loop/tcm_loop_fabric_scsi.h
+ create mode 100644 include/target/configfs_macros.h
+ create mode 100644 include/target/target_core_base.h
+ create mode 100644 include/target/target_core_configfs.h
+ create mode 100644 include/target/target_core_device.h
+ create mode 100644 include/target/target_core_fabric_configfs.h
+ create mode 100644 include/target/target_core_fabric_lib.h
+ create mode 100644 include/target/target_core_fabric_ops.h
+ create mode 100644 include/target/target_core_tmr.h
+ create mode 100644 include/target/target_core_tpg.h
+ create mode 100644 include/target/target_core_transport.h
+
+
