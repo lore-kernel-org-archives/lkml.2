@@ -1,52 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753258Ab0JWJvw (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Oct 2010 05:51:52 -0400
-Received: from isrv.corpit.ru ([86.62.121.231]:53464 "EHLO isrv.corpit.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752309Ab0JWJvv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Oct 2010 05:51:51 -0400
-Message-ID: <4CC2B033.7020806@msgid.tls.msk.ru>
-Date: Sat, 23 Oct 2010 13:51:47 +0400
-From: Michael Tokarev <mjt@tls.msk.ru>
-Organization: Telecom Service, JSC
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.12) Gecko/20100913 Icedove/3.0.7
+	id S1753439Ab0JWKJY (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Oct 2010 06:09:24 -0400
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:46736 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752309Ab0JWKJW convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 23 Oct 2010 06:09:22 -0400
 MIME-Version: 1.0
-To: Greg KH <gregkh@suse.de>
-CC: linux-kernel@vger.kernel.org, stable@kernel.org, greg@kroah.com,
-        stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Zachary Amsden <zamsden@redhat.com>, mtosatti@redhat.com,
-        avi@redhat.com
-Subject: Re: [077/103] KVM: x86: Fix SVM VMCB reset
-References: <20101022185234.270241682@clark.site>
-In-Reply-To: <20101022185234.270241682@clark.site>
-X-Enigmail-Version: 1.0.1
-OpenPGP: id=804465C5
+X-Originating-IP: [109.186.69.160]
+In-Reply-To: <1287704855.12734.14.camel@maxim-laptop>
+References: <1286788315.3101.11.camel@sven> <1286955116-22793-1-git-send-email-ohad@wizery.com>
+ <1287704855.12734.14.camel@maxim-laptop>
+From: Ohad Ben-Cohen <ohad@wizery.com>
+Date: Sat, 23 Oct 2010 12:09:01 +0200
+Message-ID: <AANLkTi=iC1uKyToEXrroOj+JxQ2mW97WRVEXjv+9oQEa@mail.gmail.com>
+Subject: Re: [PATCH] sdio: fix suspend/resume regression
+To: Maxim Levitsky <maximlevitsky@gmail.com>
+Cc: linux-mmc@vger.kernel.org, Sven Neumann <s.neumann@raumfeld.com>,
+        Chris Ball <cjb@laptop.org>, Nicolas Pitre <nico@fluxnic.net>,
+        libertas-dev@lists.infradead.org, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Daniel Mack <daniel@caiaq.de>, Colin Cross <ccross@android.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, stable@kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-22.10.2010 22:51, Greg KH wrote:
-> 2.6.35-stable review patch.  If anyone has any objections, please let us know.
-> ------------------
-> 
-> From: Marcelo Tosatti <mtosatti@redhat.com>
-> 
-> commit 58877679fd393d3ef71aa383031ac7817561463d upstream.
-> 
-> On reset, VMCB TSC should be set to zero.  Instead, code was setting
-> tsc_offset to zero, which passes through the underlying TSC.
+Hi Maxim,
 
-Not an objection, but shouldn't this and subsequent 078 "KVM: x86: Move
-TSC reset out of vmcb_init" patches be applied to 2.6.32 too?  The same
-problem exists in 2.6.32, and the two patches allows an smp linux guest
-to boot in there, or such a guest just hangs at boot.  (078 patch needs
-to be adjusted a bit for 2.6.32, since the code there is a bit different
-and it does not apply correctly; but the change is trivial).
+On Fri, Oct 22, 2010 at 1:47 AM, Maxim Levitsky <maximlevitsky@gmail.com> wrote:
+> On Wed, 2010-10-13 at 09:31 +0200, Ohad Ben-Cohen wrote:
+>> Fix SDIO suspend/resume regression introduced by
+>> 4c2ef25fe0b847d2ae818f74758ddb0be1c27d8e "mmc: fix all hangs related to
+>> mmc/sd card insert/removal during suspend/resume":
+...
+>> diff --git a/drivers/mmc/core/core.c b/drivers/mmc/core/core.c
+>> index c94565d..515ff39 100644
+>> --- a/drivers/mmc/core/core.c
+>> +++ b/drivers/mmc/core/core.c
+>> @@ -1682,6 +1682,19 @@ int mmc_suspend_host(struct mmc_host *host)
+>>       if (host->bus_ops && !host->bus_dead) {
+>>               if (host->bus_ops->suspend)
+>>                       err = host->bus_ops->suspend(host);
+>> +             if (err == -ENOSYS || !host->bus_ops->resume) {
+> This reintroduces the bug I fixed.
+>
+> if the CONFIG_MMC_UNSAFE_RESUME isn't set (and that is default
+> unfortunately), the host->bus_ops->resume will be NULL (see core/mmc.c
+> mmc_ops), and therefore card will be removed, that will trigger a block
+> device removal, sync, and deadlock).
 
-Thanks!
+Have you reproduced this or is it just a general concern ?
 
-/mjt
+I'm asking this because if CONFIG_MMC_UNSAFE_RESUME isn't set, then
+mmc_pm_notify() will remove the card and detach the bus.
+
+As a result, host->bus_ops will be unset, and host->bus_dead will be set.
+
+In this case, mmc_suspend_host() should skip the code you are concerned about.
+
+Regards,
+Ohad.
