@@ -1,146 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756142Ab0JWCvh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 22:51:37 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:36708 "EHLO smtps.tip.net.au"
+	id S1756223Ab0JWDCz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 23:02:55 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:63245 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751605Ab0JWCvg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 22:51:36 -0400
-Date: Sat, 23 Oct 2010 13:51:33 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: "Theodore Ts'o" <tytso@mit.edu>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Lukas Czerner <lczerner@redhat.com>, Jens Axboe <axboe@kernel.dk>,
-        Christoph Hellwig <hch@lst.de>, Linus <torvalds@linux-foundation.org>
-Subject: Re: linux-next: build failure after merge of the block tree
-Message-Id: <20101023135133.136f6e19.sfr@canb.auug.org.au>
-In-Reply-To: <20101011141838.fc59ee7c.sfr@canb.auug.org.au>
-References: <20101011141838.fc59ee7c.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+	id S1754119Ab0JWDCx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Oct 2010 23:02:53 -0400
+Subject: Re: [PATCH 1/6] IMA: move read/write counters into struct inode
+From: Eric Paris <eparis@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, hch@infradead.org, zohar@us.ibm.com,
+        warthog9@kernel.org, david@fromorbit.com, jmorris@namei.org,
+        kyle@mcmartin.ca, hpa@zytor.com, akpm@linux-foundation.org,
+        mingo@elte.hu, viro@zeniv.linux.org.uk
+In-Reply-To: <AANLkTikgHG+COx7Bps4NhbiLywUvPcwoQWhN1CWU6yUc@mail.gmail.com>
+References: <20101019225813.12396.2564.stgit@paris.rdu.redhat.com>
+	 <AANLkTikgHG+COx7Bps4NhbiLywUvPcwoQWhN1CWU6yUc@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 22 Oct 2010 23:01:54 -0400
+Message-ID: <1287802914.2734.44.camel@localhost.localdomain>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ted,
-
-On Mon, 11 Oct 2010 14:18:38 +1100 Stephen Rothwell <sfr@canb.auug.org.au> wrote:
->
-> After merging the block tree, today's linux-next build (powerpc
-> ppc64_defconfig) failed like this:
+On Tue, 2010-10-19 at 17:25 -0700, Linus Torvalds wrote:
+> On Tue, Oct 19, 2010 at 3:58 PM, Eric Paris <eparis@redhat.com> wrote:
+> >
+> > This patch does the minimum needed to move the location of the data.  Further
+> > cleanups, especially the location of counter updates, may still be possible.
 > 
-> In file included from init/do_mounts.h:2,
->                  from init/do_mounts_md.c:5:
-> include/linux/blkdev.h: In function 'sb_issue_zeroout':
-> include/linux/blkdev.h:900: error: too many arguments to function 'blkdev_issue_zeroout'
+> Hmm. The end result looks fine (adding four bytes to struct inode in
+> order to avoid all the complexity seems reasonable), but I do get the
+> feeling that this should likely be the last in the series, so that the
+> VFS level files would get minimal changes. IOW, do the cleanups inside
+> the IMA code first, and then do the switch-over to using counters in
+> the inode last.
 > 
-> Caused by commit dd3932eddf428571762596e17b65f5dc92ca361b ("block: remove
-> BLKDEV_IFL_WAIT") interacting with commit
-> 3be0ead7b05f0caaeb2f56b9902985b8120ef0cf ("Add helper function for
-> blkdev_issue_zeroout (sb_issue_discard)") from the ext4 tree.
+> Well, not last, since I think you need to do this before you can do
+> the "only allocate iint when needed" only after you've moved the
+> counters. But I think the logical order would be
+>  - switch to rbtree
+>  - drop opencount
+>  - switch counts to 'unsigned int'
+>  - drop iint->writecount and use i_writecount instead
+>  - move the remaining readcount to i_readcount
+>  - only allocate iint when necessary
 > 
-> I applied the following merge fixup patch which I can carry as necessary
-> (unless there is a better solution).
+> That way you'd only have _one_ patch that touches <linux/fs.h>, rather
+> than four, and the remaining patches would all be to security/ima.
+> 
+> But maybe I missed some reason for this particular ordering.
+> 
+> Oh, and btw, due to alignment reasons it looks like the 4-byte
+> i_readcount would take 8 bytes due to bad structure packing. I don't
+> know if that is avoidable, but I do think it would make more sense to
+> put it next to i_writecount instead of in between two pointers. That
+> still doesn't help (we've got 3 32-bit values next to each other), but
+> it's at least -closer- to working out.
 
-This fix (below) will now be necessary when the ext4 tree is merged with
-Linus' tree.
+Believe me, this series has not been forgotten over the week.  I know
+that IBM research tested my series from yesterday and found that it
+didn't break any of their test suite but they haven't reviewed them well
+enough to give an ACK.
 
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Mon, 11 Oct 2010 13:50:22 +1100
-Subject: [PATCH] ext4: merge fix for blkdev_issue_zeroout API change
+I probably should spend another couple of hours myself looking over my
+series before I ask for a pull from anyone but I'm willing to show my
+latest work.
 
-Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
----
- fs/ext4/extents.c      |    3 +--
- fs/ext4/ialloc.c       |    5 +----
- fs/ext4/resize.c       |    5 ++---
- include/linux/blkdev.h |    4 ++--
- 4 files changed, 6 insertions(+), 11 deletions(-)
+http://git.infradead.org/users/eparis/ima.git
+(these patches are still being changed so don't trust this tree)
 
-diff --git a/fs/ext4/extents.c b/fs/ext4/extents.c
-index a0e6230..a130f02 100644
---- a/fs/ext4/extents.c
-+++ b/fs/ext4/extents.c
-@@ -2545,8 +2545,7 @@ static int ext4_ext_zeroout(struct inode *inode, struct ext4_extent *ex)
- 	ee_len    = ext4_ext_get_actual_len(ex);
- 	ee_pblock = ext_pblock(ex);
- 
--	ret = sb_issue_zeroout(inode->i_sb, ee_pblock, ee_len,
--			       GFP_NOFS, BLKDEV_IFL_WAIT);
-+	ret = sb_issue_zeroout(inode->i_sb, ee_pblock, ee_len, GFP_NOFS);
- 	if (ret > 0)
- 		ret = 0;
- 
-diff --git a/fs/ext4/ialloc.c b/fs/ext4/ialloc.c
-index 87d228a..f7e25aa 100644
---- a/fs/ext4/ialloc.c
-+++ b/fs/ext4/ialloc.c
-@@ -1238,7 +1238,6 @@ extern int ext4_init_inode_table(struct super_block *sb, ext4_group_t group,
- 	handle_t *handle;
- 	ext4_fsblk_t blk;
- 	int num, ret = 0, used_blks = 0;
--	unsigned long flags = BLKDEV_IFL_WAIT;
- 
- 	/* This should not happen, but just to be sure check this */
- 	if (sb->s_flags & MS_RDONLY) {
-@@ -1303,9 +1302,7 @@ extern int ext4_init_inode_table(struct super_block *sb, ext4_group_t group,
- 
- 	ext4_debug("going to zero out inode table in group %d\n",
- 		   group);
--	if (barrier)
--		flags |= BLKDEV_IFL_BARRIER;
--	ret = sb_issue_zeroout(sb, blk, num, GFP_NOFS, flags);
-+	ret = sb_issue_zeroout(sb, blk, num, GFP_NOFS);
- 	if (ret < 0)
- 		goto err_out;
- 
-diff --git a/fs/ext4/resize.c b/fs/ext4/resize.c
-index 2f5e347..998a462 100644
---- a/fs/ext4/resize.c
-+++ b/fs/ext4/resize.c
-@@ -229,7 +229,7 @@ static int setup_new_group_blocks(struct super_block *sb,
- 	ext4_debug("clear inode table blocks %#04llx -> %#04llx\n",
- 			block, sbi->s_itb_per_group);
- 	err = sb_issue_zeroout(sb, gdblocks + start + 1, reserved_gdb,
--			       GFP_NOFS, BLKDEV_IFL_WAIT);
-+			       GFP_NOFS);
- 	if (err)
- 		goto exit_bh;
- 
-@@ -244,8 +244,7 @@ static int setup_new_group_blocks(struct super_block *sb,
- 	block = input->inode_table;
- 	ext4_debug("clear inode table blocks %#04llx -> %#04llx\n",
- 			block, sbi->s_itb_per_group);
--	err = sb_issue_zeroout(sb, block, sbi->s_itb_per_group,
--			       GFP_NOFS, BLKDEV_IFL_WAIT);
-+	err = sb_issue_zeroout(sb, block, sbi->s_itb_per_group, GFP_NOFS);
- 	if (err)
- 		goto exit_bh;
- 
-diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
-index a1dec60..1095272 100644
---- a/include/linux/blkdev.h
-+++ b/include/linux/blkdev.h
-@@ -892,12 +892,12 @@ static inline int sb_issue_discard(struct super_block *sb, sector_t block,
- 				    gfp_mask, flags);
- }
- static inline int sb_issue_zeroout(struct super_block *sb, sector_t block,
--		sector_t nr_blocks, gfp_t gfp_mask, unsigned long flags)
-+		sector_t nr_blocks, gfp_t gfp_mask)
- {
- 	return blkdev_issue_zeroout(sb->s_bdev,
- 				    block << (sb->s_blocksize_bits - 9),
- 				    nr_blocks << (sb->s_blocksize_bits - 9),
--				    gfp_mask, flags);
-+				    gfp_mask);
- }
- 
- extern int blk_verify_command(unsigned char *cmd, fmode_t has_write_perm);
--- 
-1.7.1
+Main changes from last series:
+1) did away with rcu altogether
+2) added a new inode->i_flags, S_IMA which gets set when an ima
+integrity structure is allocated so common case on inode free is
+lockless.
+3) shrunk the integrity structure more.  Now even with all of lock
+debugging turned on it's 232 bytes (most of that is a struct mutex i'm
+going to look at doing away with down the line)
 
--- 
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+-Eric
+
