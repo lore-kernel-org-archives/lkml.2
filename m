@@ -1,60 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755804Ab0JWRk2 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Oct 2010 13:40:28 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:24139 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755101Ab0JWRk1 (ORCPT
+	id S1756105Ab0JWRkw (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Oct 2010 13:40:52 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:38927 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755406Ab0JWRku (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Oct 2010 13:40:27 -0400
-Message-ID: <4CC31D6E.6040206@kernel.org>
-Date: Sat, 23 Oct 2010 10:37:50 -0700
-From: Yinghai Lu <yinghai@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.12) Gecko/20100914 SUSE/3.0.8 Thunderbird/3.0.8
-MIME-Version: 1.0
-To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-CC: linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@linux.intel.com>,
-        Pekka Enberg <penberg@cs.helsinki.fi>, Ingo Molnar <mingo@redhat.com>
-Subject: Re: [BUG 2.6.36] early serial console undefined refs
-References: <20101023144352.GA2818@Krystal>
-In-Reply-To: <20101023144352.GA2818@Krystal>
-Content-Type: text/plain; charset=ISO-8859-1
+	Sat, 23 Oct 2010 13:40:50 -0400
+Date: Sat, 23 Oct 2010 10:40:36 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Namhyung Kim <namhyung@gmail.com>
+Cc: linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: A question on block_prepare_write()
+Message-Id: <20101023104036.2bec05a0.akpm@linux-foundation.org>
+In-Reply-To: <1287841482.1681.36.camel@leonhard>
+References: <1287841482.1681.36.camel@leonhard>
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/23/2010 07:43 AM, Mathieu Desnoyers wrote:
-> Hi,
+On Sat, 23 Oct 2010 22:44:42 +0900 Namhyung Kim <namhyung@gmail.com> wrote:
+
+> Hello,
 > 
-> Building 2.6.36 fails for me with the following link error (config below).
-> I think commit f4ed2877b16e8146427306aea8819adac5c88374 is very likely to be the
-> culprit, but given other changes that were done afterward, the fix is not as
-> easy as a simple revert.
+> I see block_prepare_write() has local variable wait[2] to keep track of
+> buffer_heads which are not up-to-date. But I'm wondering how it could be
+> guaranteed there will be no more than 2 such buffer_heads? Is there any
+> restriction on the usage of the function? Using MAX_BUF_PER_PAGE instead
+> of the magic number 2 is just useless? I couldn't find any comments or
+> documentation on this.
 > 
-> Thoughts ?
+> Any of your comments would be greatly appreciated. TIA. :-)
 > 
->   Building modules, stage 2.
->   MODPOST 65 modules
->   LD      arch/x86/boot/setup.elf
-> arch/x86/boot/early_serial_console.o: In function `early_serial_init':
-> /home/compudj/git/morestable/linux-2.6-lttng/arch/x86/boot/early_serial_console.c:40: undefined reference to `early_serial_base'
 
-your tree may have problem. Did you try clean tree from Linus ?
+block_prepare_write() may need to preread any buffer_head which are
+being only partially modified by the write().
 
-early_seria_console.c
+Buffers which aren't being modified at all don't need to be preread. 
+Buffers which are being fully modified don't need to be preread
+(because all their data is being overwritten).
 
-#include "boot.h"
-...
-static void early_serial_init(int port, int baud)
+page:                      |-----------------------|
+buffer_heads:              |-----|-----|-----|-----|
+area we're writing to:               |---------|
 
-
-and in boot.h, we have
-/* early_serial_console.c */
-extern int early_serial_base;
-
-
-Thanks
-
-	Yinghai
-
+There can only be a maximum of two partially-modified buffers in the page.
