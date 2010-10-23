@@ -1,119 +1,238 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756779Ab0JWM5a (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Oct 2010 08:57:30 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:46243 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756682Ab0JWM52 convert rfc822-to-8bit (ORCPT
+	id S1756878Ab0JWM6V (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Oct 2010 08:58:21 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:61161 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756682Ab0JWM6U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Oct 2010 08:57:28 -0400
+	Sat, 23 Oct 2010 08:58:20 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :content-type:content-transfer-encoding;
-        b=eSGawLIt0FPef8gzjwnkBJW5/Bc5mxSCHOT0/XZqdeDUvUr4xFve29UYXHfqOpGHzY
-         tdV0EvAeYobyJO6wM6s9hS9BDgfUZmosx9gK6MROtymD30fSVU9CH5FXASlhuXauts+h
-         4RbsdEZ7XzeJwsgWc9oVsWgG+CfFoaOXA+Udk=
+         :cc:content-type;
+        b=FlsuNmg+J7gDmFycvSenesenZdRQlheInzNSfR4ucnEkE3U9R/+lmkc08Bfr/CpeTc
+         u84SxSbga48YUU63Jg24fzr6uEqig7lEMiBeVSMDAmymWAh9rjUSPz19Gfb7EGlYZOIW
+         bJcm/2qfJnQbECfyZOYZfWBfQ0igawMlB94pw=
 MIME-Version: 1.0
-In-Reply-To: <4CC24186.1040001@teksavvy.com>
-References: <AANLkTik02CcVyzn+fMH+VxuUmwwNLZq9qM0MPz81E+1h@mail.gmail.com>
-	<4CC24186.1040001@teksavvy.com>
-Date: Sat, 23 Oct 2010 13:57:26 +0100
-Message-ID: <AANLkTi=s9R-OEJAPRpoxoSkFY8MWhc22Pn_gcwCzxY=H@mail.gmail.com>
-Subject: Re: sata_mv and Highpoint RocketRAID 230x, corruption?
-From: =?UTF-8?Q?Mathias_Bur=C3=A9n?= <mathias.buren@gmail.com>
-To: Mark Lord <kernel@teksavvy.com>, linux-kernel@vger.kernel.org
+In-Reply-To: <1287838179-8872-1-git-send-email-felipe.contreras@gmail.com>
+References: <1287838179-8872-1-git-send-email-felipe.contreras@gmail.com>
+Date: Sat, 23 Oct 2010 15:58:18 +0300
+Message-ID: <AANLkTi=dcx57shzuAUvw0eJwE0u4QQYRdBMPUXu4xH4a@mail.gmail.com>
+Subject: Re: [PATCH] arm: mm: use memblock for memory init
+From: Felipe Contreras <felipe.contreras@gmail.com>
+To: linux-main <linux-kernel@vger.kernel.org>,
+        linux-arm <linux-arm-kernel@lists.infradead.org>
+Cc: Russell King <rmk+kernel@arm.linux.org.uk>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Felipe Contreras <felipe.contreras@gmail.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Yinghai Lu <yinghai@kernel.org>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-Thanks for the clarification. Since I've (stupidly enough) partitioned
-the drives from 1MB until the end, I'm most likely affected by this
-stupid RAID BIOS.
-That might explain why I'm getting this error (full dmesg at
-http://pastebin.ca/1970873 ):
-
-ata2.00: status: { DRDY }
-ata2: hard resetting link
-ata2: SATA link up 3.0 Gbps (SStatus 123 SControl 300)
-ata2.00: configured for UDMA/133
-ata2.00: device reported invalid CHS sector 0
-sd 1:0:0:0: [sdb]  Result: hostbyte=0x00 driverbyte=0x08
-sd 1:0:0:0: [sdb]  Sense Key : 0xb [current] [descriptor]
-Descriptor sense data with sense descriptors (in hex):
-        72 0b 00 00 00 00 00 0c 00 0a 80 00 00 00 00 00
-        00 00 00 00
-sd 1:0:0:0: [sdb]  ASC=0x0 ASCQ=0x0
-sd 1:0:0:0: [sdb] CDB: cdb[0]=0x28: 28 00 e7 70 c8 e8 00 05 40 00
-end_request: I/O error, dev sdb, sector 3882928360
-md/raid:md0: read error not correctable (sector 3882926312 on sdb1).
-md/raid:md0: Disk failure on sdb1, disabling device.
-<1>md/raid:md0: Operation continuing on 2 devices.
-md/raid:md0: read error not correctable (sector 3882926320 on sdb1).
-md/raid:md0: read error not correctable (sector 3882926328 on sdb1).
-md/raid:md0: read error not correctable (sector 3882926336 on sdb1).
-md/raid:md0: read error not correctable (sector 3882926344 on sdb1).
-md/raid:md0: read error not correctable (sector 3882926352 on sdb1).
-md/raid:md0: read error not correctable (sector 3882926360 on sdb1).
-md/raid:md0: read error not correctable (sector 3882926368 on sdb1).
-md/raid:md0: read error not correctable (sector 3882926376 on sdb1).
-md/raid:md0: read error not correctable (sector 3882926384 on sdb1).
-
-And:
-
-[root@ion ~]# fdisk -l /dev/sdb
-
-Disk /dev/sdb: 2000.4 GB, 2000398934016 bytes
-81 heads, 63 sectors/track, 765633 cylinders, total 3907029168 sectors
-Units = sectors of 1 * 512 = 512 bytes
-Sector size (logical/physical): 512 bytes / 512 bytes
-I/O size (minimum/optimal): 512 bytes / 512 bytes
-Disk identifier: 0x73ad1b41
-
-   Device Boot      Start         End      Blocks   Id  System
-/dev/sdb1            2048  3907029167  1953513560   fd  Linux raid autodetect
-[root@ion ~]#
-
-So the sectors are the last ones of the drive, the raid controllers
-BIOS corrupted my data... my mdadm RAID5 array is forever broken, I
-can't rebuild it!
-
-The only option that is left is to assemble the array with --force and
-save all the data, repartition the drives (1MB until (capacity -
-2GB)), and build the array from scratch?
-
-Now, where to store 6 terabytes of data while rebuilding everything. :-/
-
-Cheers
-
-
-On 23 October 2010 02:59, Mark Lord <kernel@teksavvy.com> wrote:
-> On 10-10-20 04:03 PM, Mathias Burén wrote:
-> ..
->>
->> I'm currently not using the BIOS of the raid controller for anything
->> else then staggered disk spinup. The HDD partitions start at sector
->> 2048 (to get a 1MB alignment since they're 4k sector drives, WD20EARS)
->> and end at the last sector.
->> What I'm worried about is the corruption mentioned in dmesg, is this
->> explained somewhere in more detail? Google didn't reveal much. Am I in
->> danger?
+On Sat, Oct 23, 2010 at 3:49 PM, Felipe Contreras
+<felipe.contreras@gmail.com> wrote:
+> From: Russell King <rmk+kernel@arm.linux.org.uk>
 >
-> Yes.  Just repartition the drives to avoid the final 2GB of each drive,
-> and then you'll be safe.
->
-> The RocketRaid BIOS that I examined here a couple of years ago,
-> liked to write "metadata" over top of whatever was in certain sectors
-> near the end of the drive.  EVEN FOR NON-RAID DRIVES.
->
-> I think it was the last even (power-of-two) multiple of 1GB or something,
-> so if you leave the final 2GB untouched, you're guaranteed to avoid it.
->
-> Thus the recommendation.
->
-> Cheers
->
+> The advantage with this is that memblock is now used as the basis for
+> determining where memory is, setting up the maps, freeing memory into
+> the pools, etc.
+
+Here is the interdiff from Russell's patch.
+
+Also, CC'ing some other people that might be interested.
+
+And BTW, I didn't test the highmem changes.
+
+diff --git a/arch/arm/mm/init.c b/arch/arm/mm/init.c
+index c3a9cf0..e3a2fb0 100644
+--- a/arch/arm/mm/init.c
++++ b/arch/arm/mm/init.c
+@@ -127,19 +127,22 @@ static void __init find_limits(unsigned long
+*min, unsigned long *max_low,
+ 	struct meminfo *mi = &meminfo;
+ 	int i;
+
+-	*min = memblock_start_pfn(&memblock.memory, 0);
+-	*max_high = PFN_DOWN(memblock_end_of_DRAM());
++	*min = -1UL;
++	*max_low = *max_high = 0;
+
+-	/* Use the old method to find the top of lowmem */
+-	*max_low = 0;
+ 	for_each_bank (i, mi) {
+ 		struct membank *bank = &mi->bank[i];
+-		unsigned long end;
++		unsigned long start, end;
+
++		start = bank_pfn_start(bank);
++		end = bank_pfn_end(bank);
++
++		if (*min > start)
++			*min = start;
++		if (*max_high < end)
++			*max_high = end;
+ 		if (bank->highmem)
+ 			continue;
+-
+-		end = bank_pfn_end(bank);
+ 		if (*max_low < end)
+ 			*max_low = end;
+ 	}
+@@ -152,7 +155,6 @@ static void __init arm_bootmem_init(unsigned long start_pfn,
+ 	unsigned int boot_pages;
+ 	phys_addr_t bitmap;
+ 	pg_data_t *pgdat;
+-	int i;
+
+ 	/*
+ 	 * Allocate the bootmem bitmap page.  This must be in a region
+@@ -171,9 +173,9 @@ static void __init arm_bootmem_init(unsigned long start_pfn,
+ 	init_bootmem_node(pgdat, __phys_to_pfn(bitmap), start_pfn, end_pfn);
+
+ 	/* Free the lowmem regions from memblock into bootmem. */
+-	for (i = 0; i < memblock.memory.cnt; i++) {
+-		unsigned long start = memblock_start_pfn(&memblock.memory, i);
+-		unsigned long end = memblock_end_pfn(&memblock.memory, i);
++	for_each_memblock(memory, reg) {
++		unsigned long start = memblock_region_memory_base_pfn(reg);
++		unsigned long end = memblock_region_memory_end_pfn(reg);
+
+ 		if (end >= end_pfn)
+ 			end = end_pfn;
+@@ -187,8 +189,8 @@ static void __init arm_bootmem_init(unsigned long start_pfn,
+ 	 * Reserve the memblock reserved regions in bootmem.
+ 	 */
+ 	for_each_memblock(reserved, reg) {
+-		phys_addr_t start = memblock_region_reserved_base_pfn(reg);
+-		phys_addr_t end = memblock_region_reserved_end_pfn(reg);
++		unsigned long start = memblock_region_reserved_base_pfn(reg);
++		unsigned long end = memblock_region_reserved_end_pfn(reg);
+ 		if (start >= start_pfn && end <= end_pfn)
+ 			reserve_bootmem_node(pgdat, __pfn_to_phys(start),
+ 					     (end - start) << PAGE_SHIFT,
+@@ -200,7 +202,7 @@ static void __init arm_bootmem_free(unsigned long
+min, unsigned long max_low,
+ 	unsigned long max_high)
+ {
+ 	unsigned long zone_size[MAX_NR_ZONES], zhole_size[MAX_NR_ZONES];
+-	int i;
++	struct memblock_region *reg;
+
+ 	/*
+ 	 * initialise the zones.
+@@ -222,20 +224,18 @@ static void __init arm_bootmem_free(unsigned
+long min, unsigned long max_low,
+ 	 *  holes = node_size - sum(bank_sizes)
+ 	 */
+ 	memcpy(zhole_size, zone_size, sizeof(zhole_size));
+-	for (i = 0; i < memblock.memory.cnt; i++) {
+-		unsigned long start = memblock_start_pfn(&memblock.memory, i);
+-		unsigned long end = memblock_end_pfn(&memblock.memory, i);
++	for_each_memblock(memory, reg) {
++		unsigned long start = memblock_region_memory_base_pfn(reg);
++		unsigned long end = memblock_region_memory_end_pfn(reg);
+
+ 		if (start < max_low) {
+ 			unsigned long low_end = min(end, max_low);
+-
+ 			zhole_size[0] -= low_end - start;
+ 		}
+
+ #ifdef CONFIG_HIGHMEM
+ 		if (end > max_low) {
+ 			unsigned long high_start = max(start, max_low);
+-
+ 			zhole_size[ZONE_HIGHMEM] -= end - high_start;
+ 		}
+ #endif
+@@ -429,12 +429,12 @@ static void __init free_highpages(void)
+ {
+ #ifdef CONFIG_HIGHMEM
+ 	unsigned long max_low = max_low_pfn + PHYS_PFN_OFFSET;
+-	int i, j;
++	struct memblock_region *mem_reg, *res_reg;
+
+ 	/* set highmem page free */
+-	for (i = j = 0; i < memblock.memory.cnt; i++) {
+-		unsigned long start = memblock_start_pfn(&memblock.memory, i);
+-		unsigned long end = memblock_end_pfn(&memblock.memory, i);
++	for_each_memblock(memory, mem_reg) {
++		unsigned long start = memblock_region_memory_base_pfn(mem_reg);
++		unsigned long end = memblock_region_memory_end_pfn(mem_reg);
+
+ 		/* Ignore complete lowmem entries */
+ 		if (end <= max_low)
+@@ -445,12 +445,11 @@ static void __init free_highpages(void)
+ 			start = max_low;
+
+ 		/* Find and exclude any reserved regions */
+-		for (; j < memblock.reserved.cnt; j++) {
+-			unsigned long res_start;
+-			unsigned long res_end;
+-
+-			res_start = memblock_start_pfn(&memblock.reserved, j);
+-			res_end = res_start + PFN_UP(memblock_size_bytes(&memblock.reserved, j));
++		for_each_memblock(reserved, res_reg) {
++			unsigned long res_start =
++				memblock_region_reserved_base_pfn(res_reg);
++			unsigned long res_end =
++				memblock_region_reserved_end_pfn(res_reg);
+
+ 			if (res_end < start)
+ 				continue;
+@@ -484,6 +483,7 @@ static void __init free_highpages(void)
+ void __init mem_init(void)
+ {
+ 	unsigned long reserved_pages, free_pages;
++	struct memblock_region *reg;
+ 	int i;
+ #ifdef CONFIG_HAVE_TCM
+ 	/* These pointers are filled in on TCM detection */
+@@ -534,8 +534,8 @@ void __init mem_init(void)
+ 	 */
+ 	printk(KERN_INFO "Memory:");
+ 	num_physpages = 0;
+-	for (i = 0; i < memblock.memory.cnt; i++) {
+-		unsigned long pages = memblock_size_pages(&memblock.memory, i);
++	for_each_memblock(memory, reg) {
++		unsigned long pages = reg->size >> PAGE_SHIFT;
+ 		num_physpages += pages;
+ 		printk(" %luMB", pages >> (20 - PAGE_SHIFT));
+ 	}
+diff --git a/arch/arm/mm/mmu.c b/arch/arm/mm/mmu.c
+index 3825b4f..e45a241 100644
+--- a/arch/arm/mm/mmu.c
++++ b/arch/arm/mm/mmu.c
+@@ -875,7 +875,7 @@ static inline void prepare_page_table(void)
+ 	 * Find the end of the first block of lowmem.  This is complicated
+ 	 * when we use memblock.
+ 	 */
+-	end = memblock.memory.region[0].base + memblock.memory.region[0].size;
++	end = memblock.memory.regions[0].base + memblock.memory.regions[0].size;
+ 	if (end >= lowmem_end_addr)
+ 		end = lowmem_end_addr;
+
+@@ -1002,12 +1002,12 @@ static void __init kmap_init(void)
+
+ static void __init map_lowmem(void)
+ {
+-	int i;
++	struct memblock_region *reg;
+
+ 	/* Map all the lowmem memory banks. */
+-	for (i = 0; i < memblock.memory.cnt; i++) {
+-		phys_addr_t start = memblock.memory.region[i].base;
+-		phys_addr_t end = start + memblock.memory.region[i].size;
++	for_each_memblock(memory, reg) {
++		phys_addr_t start = reg->base;
++		phys_addr_t end = start + reg->size;
+ 		struct map_desc map;
+
+ 		if (end >= lowmem_end_addr)
+
+-- 
+Felipe Contreras
