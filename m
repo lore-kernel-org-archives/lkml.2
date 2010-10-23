@@ -1,63 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756567Ab0JWLjH (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Oct 2010 07:39:07 -0400
-Received: from 63.mail-out.ovh.net ([91.121.185.56]:52369 "HELO
-	63.mail-out.ovh.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1756019Ab0JWLjE (ORCPT
+	id S1755636Ab0JWLka (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Oct 2010 07:40:30 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:40150 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755149Ab0JWLk3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Oct 2010 07:39:04 -0400
-Message-ID: <4CC2C94A.9040700@eukrea.com>
-Date: Sat, 23 Oct 2010 13:38:50 +0200
-From: =?ISO-8859-1?Q?Eric_B=E9nard?= <eric@eukrea.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; fr; rv:1.9.2.11) Gecko/20101013 Thunderbird/3.1.5
+	Sat, 23 Oct 2010 07:40:29 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:x-enigmail-version:content-type
+         :content-transfer-encoding;
+        b=VlywWeaV7t1z360v2TY2ldLMxZ4h5gEh4kExwpV323VT0XdJn8J+Htiv05yVqsiuXM
+         2ioJz8nEg0iA861iBWHEbmfx86pTfRzj5nKz5TEhdVMctPFihlagAMto/OMzrOOupePE
+         ePNu4QeFfVfLQKnFPVvsZ2T9LDllRMBJ/MzDE=
+Message-ID: <4CC2C9A8.1040003@suse.cz>
+Date: Sat, 23 Oct 2010 13:40:24 +0200
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.11) Gecko/20101013 SUSE/3.1.5 Thunderbird/3.1.5
 MIME-Version: 1.0
-To: =?ISO-8859-1?Q?Uwe_Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-CC: Dinh.Nguyen@freescale.com, linux-kernel@vger.kernel.org,
-        amit.kucheria@canonical.com, linux@arm.linux.org.uk,
-        s.hauer@pengutronix.de, grant.likely@secretlab.ca,
-        linux-arm-kernel@lists.infradead.org, daniel@caiaq.de,
-        valentin.longchamp@epfl.ch
-Subject: Re: [PATCHv6 1/3] ARM: imx: Add gpio-keys to plat-mxc
-References: <1287801976-5324-1-git-send-email-Dinh.Nguyen@freescale.com> <4CC2977D.8060409@eukrea.com> <20101023095049.GC8554@pengutronix.de>
-In-Reply-To: <20101023095049.GC8554@pengutronix.de>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 8bit
-X-Ovh-Tracer-Id: 14504687025585106272
-X-Ovh-Remote: 82.233.81.124 (tal33-3-82-233-81-124.fbx.proxad.net)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-Spam-Check: DONE|U 0.5/N
+To: Greg Kroah-Hartman <gregkh@suse.de>
+CC: linux-kernel@vger.kernel.org, "Dr. Werner Fink" <werner@suse.de>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: Re: [PATCH 28/49] tty: Add a new file /proc/tty/consoles
+References: <20101022175112.GC13489@kroah.com> <1287771688-14805-28-git-send-email-gregkh@suse.de>
+In-Reply-To: <1287771688-14805-28-git-send-email-gregkh@suse.de>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-2
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Uwe,
+On 10/22/2010 08:21 PM, Greg Kroah-Hartman wrote:
+> +/*
+> + * Used for open /proc/tty/consoles. Before this detect
+> + * the device ID of file descriptor 0 of the current
+> + * reading task if a character device...
+> + */
+> +static int tty_consoles_open(struct inode *inode, struct file *file)
+> +{
+> +	struct files_struct *curfiles;
+> +
+> +	current_dev = 0;
+> +	curfiles = get_files_struct(current);
+> +	if (curfiles) {
+> +		const struct file *curfp;
+> +		spin_lock(&curfiles->file_lock);
+> +		curfp = fcheck_files(curfiles, 0);
+> +		if (curfp && curfp->private_data) {
+> +			const struct inode *inode;
+> +			dget(curfp->f_dentry);
+> +			inode = curfp->f_dentry->d_inode;
+> +			if (S_ISCHR(inode->i_mode)) {
+> +				struct tty_struct *tty;
+> +				tty = (struct tty_struct *)curfp->private_data;
+> +				if (tty && tty->magic == TTY_MAGIC) {
 
-Le 23/10/2010 11:50, Uwe Kleine-König a écrit :
-> On Sat, Oct 23, 2010 at 10:06:21AM +0200, Eric Bénard wrote:
->> Le 23/10/2010 04:46, Dinh.Nguyen@freescale.com a écrit :
->>> +struct platform_device *__init imx_add_gpio_keys(
->>> +		const struct gpio_keys_platform_data *pdata)
->>> +{
->>> +	return imx_add_platform_device("gpio-keys", -1, NULL,
->>> +		 0, pdata, sizeof(*pdata));
->>> +}
->>
->> What is the added value of this ?
-> Is is (more or less) in line with the other imx functions that
-> dynamically add platform devices.
->
->> gpio-keys is not i.MX specific so why should that land in plat-mxc ?
-> I consider it OK for now.  I know Eric does/wants something similar for
-> pxa.  If you want to push forward unification here that's great, but
-> IMHO this is nothing that should stop this patch which is a good step
-> forward.
->
-Does that mean that, for example, for cpuimx51 and cpuimx51sd boards, I should 
-create : imx_add_gpio_leds, imx_add_serial_8250 and imx_add_i2c_gpio functions 
-instead of creating the platform_device structure in the board's files and 
-using platform_add_devices to register it ?
+Ah, I've just understood what this code does. It seems, that the 'tty'
+at this point may be already freed (e.g. people don't set private_data
+to NULL). Please explain in the code why it can't...
 
-Thanks,
-Eric
+Maybe I wouldn't bother with marking the "current" console by star at
+all as it seems not to pay off.
+
+> +					tty = tty_pair_get_tty(tty);
+> +					current_dev = tty_devnum(tty);
+> +				}
+> +			}
+> +			dput(curfp->f_dentry);
+> +		}
+> +		spin_unlock(&curfiles->file_lock);
+> +		put_files_struct(curfiles);
+> +	}
+> +	return seq_open(file, &tty_consoles_op);
+> +}
+
+regards,
+-- 
+js
+suse labs
