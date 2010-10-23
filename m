@@ -1,541 +1,368 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756730Ab0JWMmt (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Oct 2010 08:42:49 -0400
-Received: from mailout-de.gmx.net ([213.165.64.23]:57857 "HELO mail.gmx.net"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
-	id S1753645Ab0JWMmr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Oct 2010 08:42:47 -0400
-X-Authenticated: #46851621
-X-Provags-ID: V01U2FsdGVkX1/MnCNX8//MnFWpC/jY89fYfOY0pNsB1qba+xskEq
-	Yz76pS1lHvp9ei
-Message-ID: <4CC2D80E.1050807@gmx.de>
-Date: Sat, 23 Oct 2010 14:41:50 +0200
-From: Peter Henn <peter_henn@gmx.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.9.2.7) Gecko/20100713 Thunderbird/3.1.1
-MIME-Version: 1.0
-To: Carlos Chinea <carlos.chinea@nokia.com>
-CC: Linux Kernel Development <linux-kernel@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>
-Subject: Re: [RFC PATCHv3 1/7] HSI: Introducing HSI framework
-References: <5BC1940B997A254A9C54B26A6B7E50C807A1810400@mucse403.eu.infineon.com>	 <4CBB1D13.3000709@gmx.de> <1287399186.6570.1044.camel@localhost>
-In-Reply-To: <1287399186.6570.1044.camel@localhost>
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
+	id S1756752Ab0JWMtx (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Oct 2010 08:49:53 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:35927 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756280Ab0JWMtv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 23 Oct 2010 08:49:51 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=kFFFnSlO+56asL+6uZzhDcVdUt4lWr+/7vWCYpKhg7JClYPWuurLFs53nE5PBxORhz
+         0pVsYoC8erTex1TV7xmtkhrgEof0S/veng1IF62dMIyMzHo/a/926I+gF3WCf3FrD7R1
+         zjTAgGG6noOVDCtZ4dWxITkWKYzopvEpwwI9s=
+From: Felipe Contreras <felipe.contreras@gmail.com>
+To: linux-main <linux-kernel@vger.kernel.org>,
+        linux-arm <linux-arm-kernel@lists.infradead.org>
+Cc: Russell King <rmk+kernel@arm.linux.org.uk>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Felipe Contreras <felipe.contreras@gmail.com>
+Subject: [PATCH] arm: mm: use memblock for memory init
+Date: Sat, 23 Oct 2010 15:49:39 +0300
+Message-Id: <1287838179-8872-1-git-send-email-felipe.contreras@gmail.com>
+X-Mailer: git-send-email 1.7.3.2.2.g0dc5c
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Carlos,
-please find my comments inline
+From: Russell King <rmk+kernel@arm.linux.org.uk>
 
-Am 18.10.2010 12:53, schrieb Carlos Chinea:
-> Hi Peter,
-> 
->>> +/**
->>> + * struct hsi_config - Configuration for RX/TX HSI modules
->>> + * @mode: Bit transmission mode (STREAM or FRAME)
->>> + * @flow: Flow type (SYNCHRONIZED or PIPELINE)
->>> + * @channels: Number of channels to use [1..16]
->>> + * @speed: Max bit transmission speed (Kbit/s)
->>> + * @arb_mode: Arbitration mode for TX frame (Round robin, priority)
->>> + */
->>> +struct hsi_config {
->>> +       unsigned int    mode;
->>> +       unsigned int    flow;
->>> +       unsigned int    channels;
->>> +       unsigned int    speed;
->>> +       unsigned int    arb_mode; /* TX only */
->>> +};
->>> +
->>
->> Enums for "mode" and "flow"!
->> Does the flow control be really a TX link property?
-> 
-> Hmm, yep it does not. I'll fix that.
-> 
->> In RX direction a speed range helps changing the baudrate on the fly.
-> 
-> Clients just tell which is the TX max bit rate allowed. 
-> In the case of TX the HW driver is allowed to change the speed from the maximum to the HW minimum.
-yes
+The advantage with this is that memblock is now used as the basis for
+determining where memory is, setting up the maps, freeing memory into
+the pools, etc.
 
-> In the case of RX the HW driver has to be able to handle that TX speed from the transmitter.
-The RX speed shall setup the following things:
-- the maximum system clock need to ensure proper data receiving. That
-  effects not even the receiver, which mostly reconstruct the RX clock
-  from data and flag, but all the other data management hardware behind.
-  Too high values would prevent power saving here.
-- the minimum value shall be used to setup the frame timeout and
-  message timeout counter inside the HSI controller hardware
+This allows code in ->reserve callback to remove some chunks of memory
+from the normal kernel managed memory:
 
->  
->> A configuration flag for wakeup is missing, which defines the wakeup
->> either GPIO or Ready line controlled.
-> 
-> This is just tied to the HW controller, it is internal data that can be
-> passed to HW driver through other ways.
-Yes, it is a host controller setting. Could you add this to the
-framework, which acts here as an API?
+	size = min(size, SZ_2M);
+	base = memblock_alloc(size, min(align, SZ_2M));
+	memblock_free(base, size);
+	memblock_remove(base, size);
 
-> Clients can only set HW configuration values that affects directly their
-> protocol behavior.
-> 
->> A maximum RX frame burst counter value for each channel is missing.
-> 
-> Again tied to the HW driver.
-Yepp, the same as above.
+This allows drivers to issue ioremap() calls and avoid the memory to
+have multiple mappings.
 
+Ported by Felipe Contreras, comments by Catalin Marinas.
 
->> A TX send priority for each channel is possibly missing, too.
->>
-> 
-> Do you have a HW implementing that kind of feature ? And also does
-> any protocol make direct use of that feature, meaning it changes the
-> behavior of the protocol ?
-> 
-> If the answers are yes, I am willing to add support for that, otherwise
-> I will wait until someone really needs it. Please note the current
-> ARB_PRIO value means that channel 0 has the highest priority and
-> MAX_CHANNEL the lowest.
-I know at least two HSI chip vendors, which has a more complex
-arbitration and priority mechanism than only preferring channel 0 or
-round robin. You may drop me a separate email, if you are interested to
-known details. Just reserving a byte for each channel would work here to
-represent such a special priority behavior.
+Cc: Catalin Marinas <catalin.marinas@arm.com>
+Cc: Russell King <rmk+kernel@arm.linux.org.uk>
+Signed-off-by: Felipe Contreras <felipe.contreras@gmail.com>
+---
+ arch/arm/mm/init.c |  129 +++++++++++++++++++++++++++++++++++++--------------
+ arch/arm/mm/mmu.c  |   45 ++++++++++--------
+ 2 files changed, 119 insertions(+), 55 deletions(-)
 
-> 
->> TX and RX initial port properties AKA config could be combined e.g.:
-> 
-> It is a matter of taste, and with the tx flow change the memory
-> footprint will be the same.
-Yepp, and I guess normally both hsi_config structures for tx and rx
-setup will be handled mostly close together or not?
-
-> 
->> struct hsi_port_properties {
->>         __u16 tx_ch_count;      /* required number of TX channels */
->>         __u16 rx_ch_count;      /* required number of RX channels */
->>         __u32 tx_speed;         /* TX speed in HZ */
->>         __u32 rx_min_speed;     /* RX min. speed in HZ */
->>         __u32 rx_max_speed;     /* RX max. speed in HZ */
->>         enum hsi_transfer_mode tx_transfer_mode;
->>         enum hsi_transfer_mode rx_transfer_mode;
->>         enum hsi_flow_ctrl_mode flow_ctrl_mode; /* only need for RX */
->>         enum hsi_arb_mode arb_mode;             /* only need for TX */
->>         bool tx_wakeup_mode;    /* true: wakeup line ... */
->>         bool rx_wakeup_mode;    /* ... false: ready line */
->> };
->>
->> Example for channel:
->> struct hsi_channel_properties {
->>         ...
->>         unsigned char prio;             /* only need for TX */
->>         unsigned short frame_burst;     /* only need for RX */
->> }
->>
->>> +/**
->>> + * struct hsi_board_info - HSI client board info
->>> + * @name: Name for the HSI device
->>> + * @hsi_id: HSI controller id where the client sits
->>> + * @port: Port number in the controller where the client sits
->>> + * @tx_cfg: HSI TX configuration
->>> + * @rx_cfg: HSI RX configuration
->>> + * @platform_data: Platform related data
->>> + * @archdata: Architecture-dependent device data
->>> + */
->>> +struct hsi_board_info {
->>> +       const char              *name;
->>> +       int                     hsi_id;
->>> +       unsigned int            port;
->>> +       struct hsi_config       tx_cfg;
->>> +       struct hsi_config       rx_cfg;
->>> +       void                    *platform_data;
->>> +       struct dev_archdata     *archdata;
->>> +};
->>> +
->>> +#ifdef CONFIG_HSI
->>> +extern int hsi_register_board_info(struct hsi_board_info const *info,
->>> +                                                       unsigned int len);
->>> +#else
->>> +static inline int hsi_register_board_info(struct hsi_board_info const *info,
->>> +                                                       unsigned int len)
->>> +{
->>> +       return 0;
->>> +}
->>> +#endif
->>> +
->>> +/**
->>> + * struct hsi_client - HSI client attached to an HSI port
->>> + * @device: Driver model representation of the device
->>> + * @tx_cfg: HSI TX configuration
->>> + * @rx_cfg: HSI RX configuration
->>> + * @hsi_start_rx: Called after incoming wake line goes high
->>> + * @hsi_stop_rx: Called after incoming wake line goes low
->>> + */
->>> +struct hsi_client {
->>> +       struct device           device;
->>> +       struct hsi_config       tx_cfg;
->>> +       struct hsi_config       rx_cfg;
->>> +       void                    (*hsi_start_rx)(struct hsi_client *cl);
->>> +       void                    (*hsi_stop_rx)(struct hsi_client *cl);
->>> +       /* private: */
->>> +       unsigned int            pclaimed:1;
->>> +       struct list_head        link;
->>> +};
->>> +
->>> +#define to_hsi_client(dev) container_of(dev, struct hsi_client, device)
->>> +
->>> +static inline void hsi_client_set_drvdata(struct hsi_client *cl, void *data)
->>> +{
->>> +       dev_set_drvdata(&cl->device, data);
->>> +}
->>> +
->>> +static inline void *hsi_client_drvdata(struct hsi_client *cl)
->>> +{
->>> +       return dev_get_drvdata(&cl->device);
->>> +}
->>> +
->>> +/**
->>> + * struct hsi_client_driver - Driver associated to an HSI client
->>> + * @driver: Driver model representation of the driver
->>> + */
->>> +struct hsi_client_driver {
->>> +       struct device_driver    driver;
->>> +};
->>
->> Either using here direct "struct device_driver" or supporting an own
->> hsi_probe, hsi_remove called from the framework, example:
->>
->> struct hsi_client_driver {
->>         const char *name;
->>         int (*probe) (struct hsi_client *);
->>         void (*disconnect) (struct hsi_client *);
->>         int (*suspend) (struct hsi_client *, pm_message_t);
->>         int (*resume) (struct hsi_client *);
->>         int (*event) (struct hsi_client *, u32 hsi_event);
->>
->>         struct device_driver driver;
->> };
-> 
-> Hmm, I will keep it as it is. No need to have currently custom probe()/
-> remove(). They will just be a wrap up. Having the device_driver wrap
-> like this forces the clients to register using
-Yes, SPI uses these simple wrappers.
-
-> hsi_register_client_driver instead of allowing them to use also the
-> device_register() directly which will be wrong as they will not be tied
-> to the HSI bus. 
-So the hsi_client will also in future plans direct related to the Linux
-Device Core.  And there is no plan for some client specific
-configuration support by that framework as a general code part?
-
-However, that becomes anyway difficult using the HSI-port sharing
-mechanism for different vendor specific HSI client drivers.
-
-> 
->> #define to_hsi_client_driver(d) \
->>         container_of(d, struct hsi_client_driver, driver)
->>
-> Ok for the cosmetic change.
->>
->>> +
->>> +#define to_hsi_client_driver(drv) container_of(drv, struct hsi_client_driver,\
->>> +                                                                       driver)
->>> +
->>> +int hsi_register_client_driver(struct hsi_client_driver *drv);
->>> +
->>> +static inline void hsi_unregister_client_driver(struct hsi_client_driver *drv)
->>> +{
->>> +       driver_unregister(&drv->driver);
->>> +}
->>> +
->>> +/**
->>> + * struct hsi_msg - HSI message descriptor
->>> + * @link: Free to use by the current descriptor owner
->>> + * @cl: HSI device client that issues the transfer
->>> + * @sgt: Head of the scatterlist array
->>> + * @context: Client context data associated to the transfer
->>> + * @complete: Transfer completion callback
->>> + * @destructor: Destructor to free resources when flushing
->>> + * @status: Status of the transfer when completed
->>> + * @actual_len: Actual length of data transfered on completion
->>> + * @channel: Channel were to TX/RX the message
->>> + * @ttype: Transfer type (TX if set, RX otherwise)
->>> + * @break_frame: if true HSI will send/receive a break frame (FRAME MODE)
->>> + */
->>> +struct hsi_msg {
->>> +       struct list_head        link;
->>> +       struct hsi_client       *cl;
->>> +       struct sg_table         sgt;
->>> +       void                    *context;
->>> +
->>> +       void                    (*complete)(struct hsi_msg *msg);
->>> +       void                    (*destructor)(struct hsi_msg *msg);
->>> +
->>> +       int                     status;
->>> +       unsigned int            actual_len;
->>> +       unsigned int            channel;
->>> +       unsigned int            ttype:1;
->>> +       unsigned int            break_frame:1;
->>> +};
->>
->> Either HSI transfer data or that break "1 bit message".
->>
-> 
-> And that's how it works. The omap_ssi driver works exactly like that.
-> Maybe some extra documentation explaining this is needed.
-> 
-Yes, if sgt _and_ break_frame bit is defined, what shall the HSI
-controller do:
-- send/have received 1st the message, than the break frame
-- send/have received 1st the break frame, then the message
-- send/have received only the break frame
-
->> Normally a break affects all HSI channels of a HSI link and is planned
->> to be used as an error indication of the HSI link.  It could be a
->> special HSI port initialization/reset/flush or setup property.
->>
-> 
-> Yes but yet again the client wants to send/receive a frame. It is just
-> that turns to be a special one that only the HW can generate.
-> So I prefer to keep that on the HSI sending/receiving API. 
-> 
->>
->>> +
->>> +struct hsi_msg *hsi_alloc_msg(unsigned int n_frag, gfp_t flags);
->>> +void hsi_free_msg(struct hsi_msg *msg);
->>> +
->>> +/**
->>> + * struct hsi_port - HSI port device
->>> + * @device: Driver model representation of the device
->>> + * @tx_cfg: Current TX path configuration
->>> + * @rx_cfg: Current RX path configuration
->>> + * @num: Port number
->>> + * @shared: Set when port can be shared by different clients
->>> + * @claimed: Reference count of clients which claimed the port
->>> + * @lock: Serialize port claim
->>> + * @async: Asynchronous transfer callback
->>> + * @setup: Callback to set the HSI client configuration
->>> + * @flush: Callback to clean the HW state and destroy all pending transfers
->>> + * @start_tx: Callback to inform that a client wants to TX data
->>> + * @stop_tx: Callback to inform that a client no longer wishes to TX data
->>> + * @release: Callback to inform that a client no longer uses the port
->>> + * @clients: List of hsi_clients using the port.
->>> + * @clock: Lock to serialize access to the clients list.
->>> + */
->>> +struct hsi_port {
->>> +       struct device                   device;
->>> +       struct hsi_config               tx_cfg;
->>> +       struct hsi_config               rx_cfg;
->>> +       unsigned int                    num;
->>> +       unsigned int                    shared:1;
->>> +       int                             claimed;
->>> +       struct mutex                    lock;
->>> +       int                             (*async)(struct hsi_msg *msg);
->>> +       int                             (*setup)(struct hsi_client *cl);
->>
->> A synchronous call makes problems using a HSI-USB dongle like the
->> Asamalab with its delayed transaction over USB.  
-> 
-> I expect hsi_setup to be called in process context, therefore being able
-> to block. So in that case, the driver can wait for the transaction to
-> succeed before returning. Maybe some extra comments, about which
-> interfaces must be called in process context, are needed.
-That would make at least baudrate changes controlled by a link layer
-driver code difficult.  Please keep in mind that we might have something
-like a selective suspend known form USB in the future here, which
-requires more often changing the baudrate to reduce power consumption.
-
-> 
->> Please add an
->> completion callback here.
->>
->>> +       int                             (*flush)(struct hsi_client *cl);
->>
->> Name "flush" could be unclear, if it is indeed a "port reset".
->>
-> 
-> I'll give a thought on that.
-> 
->>> +       int                             (*start_tx)(struct hsi_client *cl);
->>> +       int                             (*stop_tx)(struct hsi_client *cl);
->>> +       int                             (*release)(struct hsi_client *cl);
->>> +       struct list_head                clients;
->>> +       spinlock_t                      clock;
->>> +};
->>
->> The number of available DMA engines helps a link layer,
->> if (DMA_engines < parallel_channel_endpoint_conections_via_DMA)
->>
-> 
-> Hmm, the whole idea here is that clients are not bother about DMAs. They
-> just sent a request and it is the HW driver which decides what to use
-> for the transfer. In the case of not having enough DMA channels
-> available, the HW driver can just fall back to PIO transfers (omap_ssi
-> does that) or just hold the request in its internal queue/s until DMA
-> resources are available.
-PIO mode for single frames or short frames would be ok and possibly more
-efficient than using DMA.  But how shall both link layer drivers - host
-and mode side - prevent one of the HSI Host controller drivers falling
-back into PIO mode for long HSI frame bursts, if that controller has
-limited resources?  That becomes especially important for the poor HSI
-controller, which has to spend all its DMA resources for incoming HSI
-frame burst, because the sender does take care here.
-
-> 
->> Something like that filled up from the HCD and given by the registration
->> call:
->> struct hsi_hcd_limits {
->>         unsigned int tx_max_ch_bits;
->>         unsigned int rx_max_ch_bits;
->>         unsigned int tx_min_speed;
->>         unsigned int tx_max_speed;
->>         unsigned int rx_min_speed;
->>         unsigned int rx_max_speed;
->>         unsigned int max_burst_jobs;
->>         unsigned int tx_wakeup_support:1;
->>         unsigned int rx_wakeup_support:1;
->>         unsigned int tx_loopback_support:1;
->> };
->>
->>
->>> +
->>> +#define to_hsi_port(dev) container_of(dev, struct hsi_port, device)
->>> +#define hsi_get_port(cl) to_hsi_port((cl)->device.parent)
->>> +
->>> +void hsi_event(struct hsi_port *port, unsigned int event);
->>> +int hsi_claim_port(struct hsi_client *cl, unsigned int share);
->>> +void hsi_release_port(struct hsi_client *cl);
->>> +
->>> +static inline int hsi_port_claimed(struct hsi_client *cl)
->>> +{
->>> +       return cl->pclaimed;
->>> +}
-Would you please explain, which use cases you have in mind for that type
-of "HSI port sharing" between HSI client drivers in the documentation?
-
-I would expect you are thinking about some kind of HSI port/link/channel
-high-jacking between a vendor specific hsi_client driver and the
-hsi_char_driver.
-
->>> +
->>> +static inline void hsi_port_set_drvdata(struct hsi_port *port, void *data)
->>> +{
->>> +       dev_set_drvdata(&port->device, data);
->>> +}
->>> +
->>> +static inline void *hsi_port_drvdata(struct hsi_port *port)
->>> +{
->>> +       return dev_get_drvdata(&port->device);
->>> +}
->>> +
->>> +/**
->>> + * struct hsi_controller - HSI controller device
->>> + * @device: Driver model representation of the device
->>> + * @id: HSI controller ID
->>> + * @num_ports: Number of ports in the HSI controller
->>> + * @port: Array of HSI ports
->>> + */
->>> +struct hsi_controller {
->>> +       struct device           device;
->>
->> Device is only needed for platform device.  PCIe or USB related
->> controller would have their own device, like in USB-core in the hcd.c
->>
-> 
-> Hmmm no. It is needed. The device is not tied to the platform bus is
-> tied to the HSI bus. In the case of USB , it is expected that
-> registration of the HSI controller device is done in the probe()
-> function of the usb_driver. This works pretty much the same also for the
-> platform bus (see omap_ssi) and others.
-Yes, you are right!  I had another approach in mind.
-
-> 
->>> +       int                     id;
->>> +       unsigned int            num_ports;
->>> +       struct hsi_port         *port;
->>> +};
->>> +
->>> +#define to_hsi_controller(dev) container_of(dev, struct hsi_controller, device)
->>> +
->>> +struct hsi_controller *hsi_alloc_controller(unsigned int n_ports, gfp_t flags);
->>> +void hsi_free_controller(struct hsi_controller *hsi);
->>> +int hsi_register_controller(struct hsi_controller *hsi);
->>> +void hsi_unregister_controller(struct hsi_controller *hsi);
->>> +
->>> +static inline void hsi_controller_set_drvdata(struct hsi_controller *hsi,
->>> +                                                               void *data)
->>> +{
->>> +       dev_set_drvdata(&hsi->device, data);
->>> +}
->>> +
->>> +static inline void *hsi_controller_drvdata(struct hsi_controller *hsi)
->>> +{
->>> +       return dev_get_drvdata(&hsi->device);
->>> +}
->>> +
->>> +static inline struct hsi_port *hsi_find_port_num(struct hsi_controller *hsi,
->>> +                                                       unsigned int num)
->>> +{
->>> +       return (num < hsi->num_ports) ? &hsi->port[num] : NULL;
->>> +}
->>> +
->>> +/*
->>> + * API for HSI clients
->>> + */
->>> +int hsi_async(struct hsi_client *cl, struct hsi_msg *msg);
->>> +
->>> +/**
->>> + * hsi_setup - Configure the client's port
->>> + * @cl: Pointer to the HSI client
->>> + *
->>> + * When sharing ports, clients should either relay on a single
->>> + * client setup or have the same setup for all of them.
->>> + *
->>> + * Return -errno on failure, 0 on success
->>> + */
->>> +static inline int hsi_setup(struct hsi_client *cl)
->>> +{
->>> +       if (!hsi_port_claimed(cl))
->>> +               return -EACCES;
->>> +       return  hsi_get_port(cl)->setup(cl);
->>> +}
->>> +
->>> +/**
->>> + * hsi_flush - Flush all pending transactions on the client's port
->>> + * @cl: Pointer to the HSI client
->>> + *
->>> + * This function will destroy all pending hsi_msg in the port and reset
->>> + * the HW port so it is ready to receive and transmit from a clean state.
->>> + *
->>> + * Return -errno on failure, 0 on success
->>> + */
->>> +static inline int hsi_flush(struct hsi_client *cl)
->>> +{
->>> +       if (!hsi_port_claimed(cl))
->>> +               return -EACCES;
->>> +       return hsi_get_port(cl)->flush(cl);
->>> +}
->>
->> Also here "hsi_port_reset" would be more self-explanatory than hsi_flush.
-> 
-> Well, as I said I will have a look to this, but reset can also be
-> understood that you reset the whole port (=> reseting also the
-> configuration to the default HW values) and does not what this function
-> does. It is just destroying all pending request and flush all the
-> internal buffers, leaving the port in a clean state ready to
-> send/receive more frames with the same configuration.
-> 
->> Regards,
->>
->> Peter
->>
-> 
-> Br,
-> Carlos
-Kind Regards,
-
-Peter
+diff --git a/arch/arm/mm/init.c b/arch/arm/mm/init.c
+index 63f4417..e3a2fb0 100644
+--- a/arch/arm/mm/init.c
++++ b/arch/arm/mm/init.c
+@@ -121,9 +121,10 @@ void show_mem(void)
+ 	printk("%d pages swap cached\n", cached);
+ }
+ 
+-static void __init find_limits(struct meminfo *mi,
+-	unsigned long *min, unsigned long *max_low, unsigned long *max_high)
++static void __init find_limits(unsigned long *min, unsigned long *max_low,
++	unsigned long *max_high)
+ {
++	struct meminfo *mi = &meminfo;
+ 	int i;
+ 
+ 	*min = -1UL;
+@@ -147,14 +148,13 @@ static void __init find_limits(struct meminfo *mi,
+ 	}
+ }
+ 
+-static void __init arm_bootmem_init(struct meminfo *mi,
+-	unsigned long start_pfn, unsigned long end_pfn)
++static void __init arm_bootmem_init(unsigned long start_pfn,
++	unsigned long end_pfn)
+ {
+ 	struct memblock_region *reg;
+ 	unsigned int boot_pages;
+ 	phys_addr_t bitmap;
+ 	pg_data_t *pgdat;
+-	int i;
+ 
+ 	/*
+ 	 * Allocate the bootmem bitmap page.  This must be in a region
+@@ -172,18 +172,25 @@ static void __init arm_bootmem_init(struct meminfo *mi,
+ 	pgdat = NODE_DATA(0);
+ 	init_bootmem_node(pgdat, __phys_to_pfn(bitmap), start_pfn, end_pfn);
+ 
+-	for_each_bank(i, mi) {
+-		struct membank *bank = &mi->bank[i];
+-		if (!bank->highmem)
+-			free_bootmem(bank_phys_start(bank), bank_phys_size(bank));
++	/* Free the lowmem regions from memblock into bootmem. */
++	for_each_memblock(memory, reg) {
++		unsigned long start = memblock_region_memory_base_pfn(reg);
++		unsigned long end = memblock_region_memory_end_pfn(reg);
++
++		if (end >= end_pfn)
++			end = end_pfn;
++		if (start >= end)
++			break;
++
++		free_bootmem(__pfn_to_phys(start), (end - start) << PAGE_SHIFT);
+ 	}
+ 
+ 	/*
+ 	 * Reserve the memblock reserved regions in bootmem.
+ 	 */
+ 	for_each_memblock(reserved, reg) {
+-		phys_addr_t start = memblock_region_reserved_base_pfn(reg);
+-		phys_addr_t end = memblock_region_reserved_end_pfn(reg);
++		unsigned long start = memblock_region_reserved_base_pfn(reg);
++		unsigned long end = memblock_region_reserved_end_pfn(reg);
+ 		if (start >= start_pfn && end <= end_pfn)
+ 			reserve_bootmem_node(pgdat, __pfn_to_phys(start),
+ 					     (end - start) << PAGE_SHIFT,
+@@ -191,11 +198,11 @@ static void __init arm_bootmem_init(struct meminfo *mi,
+ 	}
+ }
+ 
+-static void __init arm_bootmem_free(struct meminfo *mi, unsigned long min,
+-	unsigned long max_low, unsigned long max_high)
++static void __init arm_bootmem_free(unsigned long min, unsigned long max_low,
++	unsigned long max_high)
+ {
+ 	unsigned long zone_size[MAX_NR_ZONES], zhole_size[MAX_NR_ZONES];
+-	int i;
++	struct memblock_region *reg;
+ 
+ 	/*
+ 	 * initialise the zones.
+@@ -217,13 +224,21 @@ static void __init arm_bootmem_free(struct meminfo *mi, unsigned long min,
+ 	 *  holes = node_size - sum(bank_sizes)
+ 	 */
+ 	memcpy(zhole_size, zone_size, sizeof(zhole_size));
+-	for_each_bank(i, mi) {
+-		int idx = 0;
++	for_each_memblock(memory, reg) {
++		unsigned long start = memblock_region_memory_base_pfn(reg);
++		unsigned long end = memblock_region_memory_end_pfn(reg);
++
++		if (start < max_low) {
++			unsigned long low_end = min(end, max_low);
++			zhole_size[0] -= low_end - start;
++		}
++
+ #ifdef CONFIG_HIGHMEM
+-		if (mi->bank[i].highmem)
+-			idx = ZONE_HIGHMEM;
++		if (end > max_low) {
++			unsigned long high_start = max(start, max_low);
++			zhole_size[ZONE_HIGHMEM] -= end - high_start;
++		}
+ #endif
+-		zhole_size[idx] -= bank_pfn_size(&mi->bank[i]);
+ 	}
+ 
+ 	/*
+@@ -292,14 +307,13 @@ void __init arm_memblock_init(struct meminfo *mi, struct machine_desc *mdesc)
+ 
+ void __init bootmem_init(void)
+ {
+-	struct meminfo *mi = &meminfo;
+ 	unsigned long min, max_low, max_high;
+ 
+ 	max_low = max_high = 0;
+ 
+-	find_limits(mi, &min, &max_low, &max_high);
++	find_limits(&min, &max_low, &max_high);
+ 
+-	arm_bootmem_init(mi, min, max_low);
++	arm_bootmem_init(min, max_low);
+ 
+ 	/*
+ 	 * Sparsemem tries to allocate bootmem in memory_present(),
+@@ -317,7 +331,7 @@ void __init bootmem_init(void)
+ 	 * the sparse mem_map arrays initialized by sparse_init()
+ 	 * for memmap_init_zone(), otherwise all PFNs are invalid.
+ 	 */
+-	arm_bootmem_free(mi, min, max_low, max_high);
++	arm_bootmem_free(min, max_low, max_high);
+ 
+ 	high_memory = __va((max_low << PAGE_SHIFT) - 1) + 1;
+ 
+@@ -411,6 +425,56 @@ static void __init free_unused_memmap(struct meminfo *mi)
+ 	}
+ }
+ 
++static void __init free_highpages(void)
++{
++#ifdef CONFIG_HIGHMEM
++	unsigned long max_low = max_low_pfn + PHYS_PFN_OFFSET;
++	struct memblock_region *mem_reg, *res_reg;
++
++	/* set highmem page free */
++	for_each_memblock(memory, mem_reg) {
++		unsigned long start = memblock_region_memory_base_pfn(mem_reg);
++		unsigned long end = memblock_region_memory_end_pfn(mem_reg);
++
++		/* Ignore complete lowmem entries */
++		if (end <= max_low)
++			continue;
++
++		/* Truncate partial highmem entries */
++		if (start < max_low)
++			start = max_low;
++
++		/* Find and exclude any reserved regions */
++		for_each_memblock(reserved, res_reg) {
++			unsigned long res_start =
++				memblock_region_reserved_base_pfn(res_reg);
++			unsigned long res_end =
++				memblock_region_reserved_end_pfn(res_reg);
++
++			if (res_end < start)
++				continue;
++			if (res_start < start)
++				res_start = start;
++			if (res_start > end)
++				res_start = end;
++			if (res_end > end)
++				res_end = end;
++			if (res_start != start)
++				totalhigh_pages += free_area(start, res_start,
++							     NULL);
++			start = res_end;
++			if (start == end)
++				break;
++		}
++
++		/* And now free anything which remains */
++		if (start < end)
++			totalhigh_pages += free_area(start, end, NULL);
++	}
++	totalram_pages += totalhigh_pages;
++#endif
++}
++
+ /*
+  * mem_init() marks the free areas in the mem_map and tells us how much
+  * memory is free.  This is done after various parts of the system have
+@@ -419,6 +483,7 @@ static void __init free_unused_memmap(struct meminfo *mi)
+ void __init mem_init(void)
+ {
+ 	unsigned long reserved_pages, free_pages;
++	struct memblock_region *reg;
+ 	int i;
+ #ifdef CONFIG_HAVE_TCM
+ 	/* These pointers are filled in on TCM detection */
+@@ -439,16 +504,7 @@ void __init mem_init(void)
+ 				    __phys_to_pfn(__pa(swapper_pg_dir)), NULL);
+ #endif
+ 
+-#ifdef CONFIG_HIGHMEM
+-	/* set highmem page free */
+-	for_each_bank (i, &meminfo) {
+-		unsigned long start = bank_pfn_start(&meminfo.bank[i]);
+-		unsigned long end = bank_pfn_end(&meminfo.bank[i]);
+-		if (start >= max_low_pfn + PHYS_PFN_OFFSET)
+-			totalhigh_pages += free_area(start, end, NULL);
+-	}
+-	totalram_pages += totalhigh_pages;
+-#endif
++	free_highpages();
+ 
+ 	reserved_pages = free_pages = 0;
+ 
+@@ -478,9 +534,10 @@ void __init mem_init(void)
+ 	 */
+ 	printk(KERN_INFO "Memory:");
+ 	num_physpages = 0;
+-	for (i = 0; i < meminfo.nr_banks; i++) {
+-		num_physpages += bank_pfn_size(&meminfo.bank[i]);
+-		printk(" %ldMB", bank_phys_size(&meminfo.bank[i]) >> 20);
++	for_each_memblock(memory, reg) {
++		unsigned long pages = reg->size >> PAGE_SHIFT;
++		num_physpages += pages;
++		printk(" %luMB", pages >> (20 - PAGE_SHIFT));
+ 	}
+ 	printk(" = %luMB total\n", num_physpages >> (20 - PAGE_SHIFT));
+ 
+diff --git a/arch/arm/mm/mmu.c b/arch/arm/mm/mmu.c
+index e8ed9dc..e45a241 100644
+--- a/arch/arm/mm/mmu.c
++++ b/arch/arm/mm/mmu.c
+@@ -856,6 +856,7 @@ static void __init sanity_check_meminfo(void)
+ static inline void prepare_page_table(void)
+ {
+ 	unsigned long addr;
++	phys_addr_t end;
+ 
+ 	/*
+ 	 * Clear out all the mappings below the kernel image.
+@@ -871,10 +872,18 @@ static inline void prepare_page_table(void)
+ 		pmd_clear(pmd_off_k(addr));
+ 
+ 	/*
++	 * Find the end of the first block of lowmem.  This is complicated
++	 * when we use memblock.
++	 */
++	end = memblock.memory.regions[0].base + memblock.memory.regions[0].size;
++	if (end >= lowmem_end_addr)
++		end = lowmem_end_addr;
++
++	/*
+ 	 * Clear out all the kernel space mappings, except for the first
+ 	 * memory bank, up to the end of the vmalloc region.
+ 	 */
+-	for (addr = __phys_to_virt(bank_phys_end(&meminfo.bank[0]));
++	for (addr = __phys_to_virt(end);
+ 	     addr < VMALLOC_END; addr += PGDIR_SIZE)
+ 		pmd_clear(pmd_off_k(addr));
+ }
+@@ -991,29 +1000,27 @@ static void __init kmap_init(void)
+ #endif
+ }
+ 
+-static inline void map_memory_bank(struct membank *bank)
+-{
+-	struct map_desc map;
+-
+-	map.pfn = bank_pfn_start(bank);
+-	map.virtual = __phys_to_virt(bank_phys_start(bank));
+-	map.length = bank_phys_size(bank);
+-	map.type = MT_MEMORY;
+-
+-	create_mapping(&map);
+-}
+-
+ static void __init map_lowmem(void)
+ {
+-	struct meminfo *mi = &meminfo;
+-	int i;
++	struct memblock_region *reg;
+ 
+ 	/* Map all the lowmem memory banks. */
+-	for (i = 0; i < mi->nr_banks; i++) {
+-		struct membank *bank = &mi->bank[i];
++	for_each_memblock(memory, reg) {
++		phys_addr_t start = reg->base;
++		phys_addr_t end = start + reg->size;
++		struct map_desc map;
++
++		if (end >= lowmem_end_addr)
++			end = lowmem_end_addr;
++		if (start >= end)
++			break;
++
++		map.pfn = __phys_to_pfn(start);
++		map.virtual = __phys_to_virt(start);
++		map.length = end - start;
++		map.type = MT_MEMORY;
+ 
+-		if (!bank->highmem)
+-			map_memory_bank(bank);
++		create_mapping(&map);
+ 	}
+ }
+ 
+-- 
+1.7.3.2.2.g0dc5c
 
