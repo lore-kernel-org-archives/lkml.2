@@ -1,54 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758028Ab0JWVmq (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Oct 2010 17:42:46 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:41313 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752107Ab0JWVmn (ORCPT
+	id S1758175Ab0JWVtF (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Oct 2010 17:49:05 -0400
+Received: from rtp-iport-2.cisco.com ([64.102.122.149]:14957 "EHLO
+	rtp-iport-2.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753220Ab0JWVtC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Oct 2010 17:42:43 -0400
-Date: Sat, 23 Oct 2010 22:42:35 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Miklos Szeredi <miklos@szeredi.hu>
-Cc: dave@linux.vnet.ibm.com, akpm@linux-foundation.org,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 7/9 updated] vfs: protect remounting superblock read-only
-Message-ID: <20101023214235.GT19804@ZenIV.linux.org.uk>
-References: <20101005103108.288743609@szeredi.hu>
- <20101005103144.051231469@szeredi.hu>
- <20101022064627.GA21607@ZenIV.linux.org.uk>
- <E1P9Gh4-00054y-EA@pomaz-ex.szeredi.hu>
- <E1P9KCY-0005YO-4i@pomaz-ex.szeredi.hu>
- <E1P9KFl-0005ZK-0q@pomaz-ex.szeredi.hu>
- <20101023161948.GP19804@ZenIV.linux.org.uk>
- <E1P9js4-0007cE-9G@pomaz-ex.szeredi.hu>
+	Sat, 23 Oct 2010 17:49:02 -0400
+Authentication-Results: rtp-iport-2.cisco.com; dkim=neutral (message not signed) header.i=none
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvsEAPH0wkytJV2c/2dsb2JhbAChbnGfI5tPhUgEhFSFeQ
+X-IronPort-AV: E=Sophos;i="4.58,229,1286150400"; 
+   d="scan'208";a="174351914"
+From: Roland Dreier <rdreier@cisco.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: James Bottomley <James.Bottomley@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [GIT PULL] first round of SCSI updates for the merge window
+References: <1287764862.8930.220.camel@mulgrave.site>
+	<AANLkTikZ-vePH+Wvf9S0-0PG1h+rRNByKEmXC2XENH1=@mail.gmail.com>
+X-Message-Flag: Warning: May contain useful information
+Date: Sat, 23 Oct 2010 14:48:22 -0700
+In-Reply-To: <AANLkTikZ-vePH+Wvf9S0-0PG1h+rRNByKEmXC2XENH1=@mail.gmail.com>
+	(Linus Torvalds's message of "Fri, 22 Oct 2010 17:48:35 -0700")
+Message-ID: <ada8w1or36h.fsf@cisco.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <E1P9js4-0007cE-9G@pomaz-ex.szeredi.hu>
-User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Oct 23, 2010 at 09:35:16PM +0200, Miklos Szeredi wrote:
+ > There's a _single_ commit that looks like this:
+ > 
+ >  220 files changed, 34823 insertions(+), 43478 deletions(-)
 
-> > Another thing:
-> > 	"If clone_mnt() happens while mnt_make_readonly() is running, the
-> > 	cloned mount might have MNT_WRITE_HOLD flag set, which results in
-> > 	mnt_want_write() spinning forever on this mount."
-> > actually means
-> > 	"neither clone_mnt() nor remounts should ever be done without
-> > namespace_sem held exclusive; if that ever happens, we have a serious
-> > bug that can lead to any number of bad things happening".
-> > 
-> > Do you actually see such places?  If so, that's what needs fixing.
-> 
-> do_remount() takes s_umount, but not namespace_sem.
+Hey, you're not using git properly... if I use '-M' to show moved
+files, I see:
 
-Duh...  Right, ignore that part; we really don't want to do anything
-blocking beyond simple allocations under namespace_sem (e.g. everything
-that gets unmounted is collected to be dropped after namespace_sem
-is released).
+ 212 files changed, 30007 insertions(+), 38662 deletions(-)
 
-Applied.
+which is a lot nicer.
+
+ - R.
