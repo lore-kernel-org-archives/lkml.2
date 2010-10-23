@@ -1,46 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757924Ab0JWSGE (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Oct 2010 14:06:04 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:44353
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756352Ab0JWSGC (ORCPT
+	id S1758097Ab0JWSHa (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Oct 2010 14:07:30 -0400
+Received: from vms173009pub.verizon.net ([206.46.173.9]:37960 "EHLO
+	vms173009pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756204Ab0JWSH3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Oct 2010 14:06:02 -0400
-Date: Sat, 23 Oct 2010 11:06:24 -0700 (PDT)
-Message-Id: <20101023.110624.226758370.davem@davemloft.net>
-To: rostedt@goodmis.org
-CC: jbaron@redhat.com, linux-kernel@vger.kernel.org,
-        sparclinux@vger.kernel.org
-Subject: [PATCH] jump_label: Fix unaligned traps on sparc.
-From: David Miller <davem@davemloft.net>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Sat, 23 Oct 2010 14:07:29 -0400
+Date: Sat, 23 Oct 2010 14:07:17 -0400 (EDT)
+From: Len Brown <lenb@kernel.org>
+X-X-Sender: lenb@localhost.localdomain
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Matthew Garrett <mjg59@srcf.ucam.org>, Zhang Rui <rui.zhang@intel.com>,
+        Sitsofe Wheeler <sitsofe@yahoo.com>
+Subject: Re: [Resend][PATCH] ACPI / Battery: Return -ENODEV for unknown values
+ in get_property()
+In-reply-to: <201010231935.16178.rjw@sisk.pl>
+Message-id: <alpine.LFD.2.00.1010231407130.2565@localhost.localdomain>
+References: <201010231935.16178.rjw@sisk.pl>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+MIME-version: 1.0
+Content-type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+applied
 
-The vmlinux.lds.h knobs to emit the __jump_table section in the main
-kernel image takes care to align the section, but this doesn't help
-for the __jump_table section that gets emitted into modules.
+thanks,
+Len Brown, Intel Open Source Technology Center
 
-Fix the resulting lack of section alignment by explicitly specifying
-it in the assembler.
-
-Signed-off-by: David S. Miller <davem@davemloft.net>
-
-diff --git a/arch/sparc/include/asm/jump_label.h b/arch/sparc/include/asm/jump_label.h
-index 62e66d7..d95cf44 100644
---- a/arch/sparc/include/asm/jump_label.h
-+++ b/arch/sparc/include/asm/jump_label.h
-@@ -14,6 +14,7 @@
- 			 "nop\n\t"				\
- 			 "nop\n\t"				\
- 			 ".pushsection __jump_table,  \"a\"\n\t"\
-+			 ".align 4\n\t"				\
- 			 ".word 1b, %l[" #label "], %c0\n\t"	\
- 			 ".popsection \n\t"			\
- 			 : :  "i" (key) :  : label);\
