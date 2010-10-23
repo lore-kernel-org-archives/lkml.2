@@ -1,86 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756223Ab0JWDCz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 23:02:55 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:63245 "EHLO mx1.redhat.com"
+	id S1756345Ab0JWDXS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 23:23:18 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:43857 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754119Ab0JWDCx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 23:02:53 -0400
-Subject: Re: [PATCH 1/6] IMA: move read/write counters into struct inode
-From: Eric Paris <eparis@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, hch@infradead.org, zohar@us.ibm.com,
-        warthog9@kernel.org, david@fromorbit.com, jmorris@namei.org,
-        kyle@mcmartin.ca, hpa@zytor.com, akpm@linux-foundation.org,
-        mingo@elte.hu, viro@zeniv.linux.org.uk
-In-Reply-To: <AANLkTikgHG+COx7Bps4NhbiLywUvPcwoQWhN1CWU6yUc@mail.gmail.com>
-References: <20101019225813.12396.2564.stgit@paris.rdu.redhat.com>
-	 <AANLkTikgHG+COx7Bps4NhbiLywUvPcwoQWhN1CWU6yUc@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 22 Oct 2010 23:01:54 -0400
-Message-ID: <1287802914.2734.44.camel@localhost.localdomain>
+	id S1755661Ab0JWDXR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Oct 2010 23:23:17 -0400
+Date: Sat, 23 Oct 2010 14:23:12 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: "John W. Linville" <linville@tuxdriver.com>,
+        David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Arnd Bergmann <arnd@arndb.de>, Felix Fietkau <nbd@openwrt.org>,
+        Linus <torvalds@linux-foundation.org>
+Subject: Re: linux-next: manual merge of the bkl-llseek tree with the
+ wireless tree
+Message-Id: <20101023142312.533f6a42.sfr@canb.auug.org.au>
+In-Reply-To: <20101018173543.c33530e9.sfr@canb.auug.org.au>
+References: <20101018173543.c33530e9.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
 Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-10-19 at 17:25 -0700, Linus Torvalds wrote:
-> On Tue, Oct 19, 2010 at 3:58 PM, Eric Paris <eparis@redhat.com> wrote:
-> >
-> > This patch does the minimum needed to move the location of the data.  Further
-> > cleanups, especially the location of counter updates, may still be possible.
+Hi John, Dave,
+
+On Mon, 18 Oct 2010 17:35:43 +1100 Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+>
+> Today's linux-next merge of the bkl-llseek tree got a conflict in
+> drivers/net/wireless/ath/ath9k/debug.c between commit
+> 772d5515635fef5bc7a9d0efee785b58b0181ee5 ("ath9k: make rate control
+> debugfs stats per station") from the wireless tree and commit
+> 6038f373a3dc1f1c26496e60b6c40b164716f07e ("llseek: automatically
+> add .llseek fop") from the bkl-llseek tree.
 > 
-> Hmm. The end result looks fine (adding four bytes to struct inode in
-> order to avoid all the complexity seems reasonable), but I do get the
-> feeling that this should likely be the last in the series, so that the
-> VFS level files would get minimal changes. IOW, do the cleanups inside
-> the IMA code first, and then do the switch-over to using counters in
-> the inode last.
+> The former moved some of the code modified by the latter to another file.
 > 
-> Well, not last, since I think you need to do this before you can do
-> the "only allocate iint when needed" only after you've moved the
-> counters. But I think the logical order would be
->  - switch to rbtree
->  - drop opencount
->  - switch counts to 'unsigned int'
->  - drop iint->writecount and use i_writecount instead
->  - move the remaining readcount to i_readcount
->  - only allocate iint when necessary
-> 
-> That way you'd only have _one_ patch that touches <linux/fs.h>, rather
-> than four, and the remaining patches would all be to security/ima.
-> 
-> But maybe I missed some reason for this particular ordering.
-> 
-> Oh, and btw, due to alignment reasons it looks like the 4-byte
-> i_readcount would take 8 bytes due to bad structure packing. I don't
-> know if that is avoidable, but I do think it would make more sense to
-> put it next to i_writecount instead of in between two pointers. That
-> still doesn't help (we've got 3 32-bit values next to each other), but
-> it's at least -closer- to working out.
+> I added this merge fix patch:
 
-Believe me, this series has not been forgotten over the week.  I know
-that IBM research tested my series from yesterday and found that it
-didn't break any of their test suite but they haven't reviewed them well
-enough to give an ACK.
+This patch (reproduced below) will now be needed if the wireless or net
+tree is merged with Linus' tree.  I also think I have missed a similar
+needed fix in drivers/net/wireless/ath/ath5k/debug.c ...
 
-I probably should spend another couple of hours myself looking over my
-series before I ask for a pull from anyone but I'm willing to show my
-latest work.
+-- 
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
-http://git.infradead.org/users/eparis/ima.git
-(these patches are still being changed so don't trust this tree)
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Mon, 18 Oct 2010 17:33:25 +1100
+Subject: [PATCH] ath9k: fix up for .llseek fop change
 
-Main changes from last series:
-1) did away with rcu altogether
-2) added a new inode->i_flags, S_IMA which gets set when an ima
-integrity structure is allocated so common case on inode free is
-lockless.
-3) shrunk the integrity structure more.  Now even with all of lock
-debugging turned on it's 232 bytes (most of that is a struct mutex i'm
-going to look at doing away with down the line)
+Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+---
+ drivers/net/wireless/ath/ath9k/rc.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
 
--Eric
-
+diff --git a/drivers/net/wireless/ath/ath9k/rc.c b/drivers/net/wireless/ath/ath9k/rc.c
+index 0cee90c..e4c1ea3 100644
+--- a/drivers/net/wireless/ath/ath9k/rc.c
++++ b/drivers/net/wireless/ath/ath9k/rc.c
+@@ -1582,7 +1582,8 @@ static ssize_t read_file_rcstat(struct file *file, char __user *user_buf,
+ static const struct file_operations fops_rcstat = {
+ 	.read = read_file_rcstat,
+ 	.open = ath9k_debugfs_open,
+-	.owner = THIS_MODULE
++	.owner = THIS_MODULE,
++	.llseek = default_llseek,
+ };
+ 
+ static void ath_rate_add_sta_debugfs(void *priv, void *priv_sta,
+-- 
+1.7.1
