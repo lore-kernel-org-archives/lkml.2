@@ -1,44 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754676Ab0JWIRV (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Oct 2010 04:17:21 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:53066 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753853Ab0JWIRT (ORCPT
+	id S1755345Ab0JWIZV (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Oct 2010 04:25:21 -0400
+Received: from s15228384.onlinehome-server.info ([87.106.30.177]:45839 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754061Ab0JWIZS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Oct 2010 04:17:19 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :x-enigmail-version:content-type:content-transfer-encoding;
-        b=o2QojA+uikUQkn4kX2NcCclf2+KqctTF5KX/+CYUxX46H0MxEXhnGBl6dCrvIx0FJ2
-         6Tti5a7hARXhQjsUCaGXOjfrVow7VkACDcvNxoJDO909wvTsejc/w/EbSt8d5cxOoKC2
-         xkpcY6nGc1QN7nw2iXPAEFkmJ4LG/6HkKM2f8=
-Message-ID: <4CC29A0A.7070405@gmail.com>
-Date: Sat, 23 Oct 2010 10:17:14 +0200
-From: Jiri Slaby <jirislaby@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.11) Gecko/20101013 SUSE/3.1.5 Thunderbird/3.1.5
+	Sat, 23 Oct 2010 04:25:18 -0400
+Date: Sat, 23 Oct 2010 10:26:28 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: Greg KH <greg@kroah.com>
+Cc: Borislav Petkov <bp@amd64.org>, "Roedel, Joerg" <Joerg.Roedel@amd.com>,
+        Greg KH <gregkh@suse.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: Erratum 383 fix for 32 bit x86 kernels
+Message-ID: <20101023082628.GB27125@aftab>
+References: <20100924115239.GA9817@amd.com>
+ <20100924160205.GB21235@kroah.com>
+ <20100924162433.GB7627@aftab>
+ <20101022161810.GF18595@kroah.com>
+ <20101022162038.GA10343@kroah.com>
 MIME-Version: 1.0
-To: andiry.xu@amd.com
-CC: dong.nguyen@amd.com, libin.yang@amd.com, sarah.a.sharp@linux.intel.com,
-        Greg KH <gregkh@suse.de>, USB list <linux-usb@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: XHCI: sleep inside atomic
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-2
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101022162038.GA10343@kroah.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Fri, Oct 22, 2010 at 12:20:38PM -0400, Greg KH wrote:
+> Oops, nope, that didn't work for the .32 kernel tree.  If you want these
+> patches there, please backport them and test them to verify that they
+> build and work properly.
 
-Stanse found that commit
-    USB: xHCI: PCI power management implementation
-added xhci_setup_msix->kmalloc(GFP_KERNEL) and request_irq inside
-xhci->lock spinlock. As these functions may sleep, this is deadlockable.
-Could you fix that?
+I'll try to get to it next week, thanks.
 
-thanks,
 -- 
-js
+Regards/Gruss,
+Boris.
+
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+General Managers: Alberto Bozzo, Andrew Bowd
+Registration: Dornach, Gemeinde Aschheim, Landkreis Muenchen
+Registergericht Muenchen, HRB Nr. 43632
