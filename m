@@ -1,151 +1,226 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753193Ab0JWGmr (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Oct 2010 02:42:47 -0400
-Received: from sh.osrg.net ([192.16.179.4]:34415 "EHLO sh.osrg.net"
+	id S1752811Ab0JWHlI (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Oct 2010 03:41:08 -0400
+Received: from LUNGE.MIT.EDU ([18.54.1.69]:53934 "EHLO lunge.queued.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752659Ab0JWGmq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Oct 2010 02:42:46 -0400
-Date: Sat, 23 Oct 2010 15:42:07 +0900 (JST)
-Message-Id: <20101023.154207.46110234.ryusuke@osrg.net>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org,
-        Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>,
-        linux-nilfs@vger.kernel.org
-Subject: [GIT PULL] nilfs2 updates for 2.6.37-rc1
-From: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
-X-Mailer: Mew version 5.2 on Emacs 22.2 / Mule 5.0 (SAKAKI)
+	id S1752032Ab0JWHlG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 23 Oct 2010 03:41:06 -0400
+Date: Sat, 23 Oct 2010 00:41:02 -0700
+From: Andres Salomon <dilinger@queued.net>
+To: Samuel Ortiz <sameo@linux.intel.com>
+Cc: linux-geode@lists.infradead.org, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org, cjb@laptop.org, dsd@laptop.org
+Subject: [PATCH 1/4] MFD: add cs5535-mfd driver for CS5535/CS5536 support
+Message-ID: <20101023004102.674cdc45@queued.net>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i486-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Sat, 23 Oct 2010 15:42:08 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
 
-please pull from
+Add an MFD driver to handle the ISA device on CS5535 and CS5536 southbridges.
+This ISA bridge is actually multiple devices; GPIOs, MFGPTs, etc.
 
-  git+ssh://master.kernel.org/pub/scm/linux/kernel/git/ryusuke/nilfs2.git for-linus
+Signed-off-by: Andres Salomon <dilinger@queued.net>
+---
+ drivers/mfd/Kconfig      |    8 +++
+ drivers/mfd/Makefile     |    1 +
+ drivers/mfd/cs5535-mfd.c |  151 ++++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 160 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/mfd/cs5535-mfd.c
 
-to receive nilfs2 updates for 2.6.37.
+diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
+index db51ea1..b72627b 100644
+--- a/drivers/mfd/Kconfig
++++ b/drivers/mfd/Kconfig
+@@ -495,6 +495,14 @@ config AB3550_CORE
+ 	  LEDs, vibrator, system power and temperature, power management
+ 	  and ALSA sound.
+ 
++config MFD_CS5535
++	tristate "Support for CS5535 and CS5536 southbridge core functions"
++	select MFD_CORE
++	depends on PCI
++	---help---
++	  This is the core driver for CS5535/CS5536 MFD functions.  This is
++          necessary for using the board's GPIO and MFGPT functionality.
++
+ config MFD_TIMBERDALE
+ 	tristate "Support for the Timberdale FPGA"
+ 	select MFD_CORE
+diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
+index feaeeae..3d1b41a 100644
+--- a/drivers/mfd/Makefile
++++ b/drivers/mfd/Makefile
+@@ -69,6 +69,7 @@ obj-$(CONFIG_AB3100_CORE)	+= ab3100-core.o
+ obj-$(CONFIG_AB3100_OTP)	+= ab3100-otp.o
+ obj-$(CONFIG_AB3550_CORE)	+= ab3550-core.o
+ obj-$(CONFIG_AB8500_CORE)	+= ab8500-core.o ab8500-spi.o
++obj-$(CONFIG_MFD_CS5535)	+= cs5535-mfd.o
+ obj-$(CONFIG_MFD_TIMBERDALE)    += timberdale.o
+ obj-$(CONFIG_PMIC_ADP5520)	+= adp5520.o
+ obj-$(CONFIG_LPC_SCH)		+= lpc_sch.o
+diff --git a/drivers/mfd/cs5535-mfd.c b/drivers/mfd/cs5535-mfd.c
+new file mode 100644
+index 0000000..b141ca7
+--- /dev/null
++++ b/drivers/mfd/cs5535-mfd.c
+@@ -0,0 +1,151 @@
++/*
++ * cs5535-mfd.c - core MFD driver for CS5535/CS5536 southbridges
++ *
++ * The CS5535 and CS5536 has an ISA bridge on the PCI bus that is
++ * used for accessing GPIOs, MFGPTs, ACPI, etc.  Each subdevice has
++ * an IO range that's specified in a single BAR.  The BAR order is
++ * hardcoded in the CS553x specifications.
++ *
++ * Copyright (c) 2010  Andres Salomon <dilinger@queued.net>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
++ */
++
++#include <linux/kernel.h>
++#include <linux/init.h>
++#include <linux/mfd/core.h>
++#include <linux/module.h>
++#include <linux/pci.h>
++
++#define DRV_NAME "cs5535-mfd"
++
++enum cs5535_mfd_bars {
++	SMB_BAR = 0,
++	GPIO_BAR = 1,
++	MFGPT_BAR = 2,
++	PMS_BAR = 4,
++	ACPI_BAR = 5,
++	NR_BARS,
++};
++
++static __devinitdata struct resource cs5535_mfd_resources[NR_BARS];
++
++static __devinitdata struct mfd_cell cs5535_mfd_cells[] = {
++	{
++		.id = SMB_BAR,
++		.name = "cs5535-smb",
++		.num_resources = 1,
++		.resources = &cs5535_mfd_resources[SMB_BAR],
++	},
++	{
++		.id = GPIO_BAR,
++		.name = "cs5535-gpio",
++		.num_resources = 1,
++		.resources = &cs5535_mfd_resources[GPIO_BAR],
++	},
++	{
++		.id = MFGPT_BAR,
++		.name = "cs5535-mfgpt",
++		.num_resources = 1,
++		.resources = &cs5535_mfd_resources[MFGPT_BAR],
++	},
++	{
++		.id = PMS_BAR,
++		.name = "cs5535-pms",
++		.num_resources = 1,
++		.resources = &cs5535_mfd_resources[PMS_BAR],
++	},
++	{
++		.id = ACPI_BAR,
++		.name = "cs5535-acpi",
++		.num_resources = 1,
++		.resources = &cs5535_mfd_resources[ACPI_BAR],
++	},
++};
++
++static int __devinit cs5535_mfd_probe(struct pci_dev *pdev,
++		const struct pci_device_id *id)
++{
++	int err, i;
++
++	err = pci_enable_device(pdev);
++	if (err)
++		return err;
++
++	/* fill in IO range for each cell; subdrivers handle the region */
++	for (i = 0; i < ARRAY_SIZE(cs5535_mfd_cells); i++) {
++		int bar = cs5535_mfd_cells[i].id;
++		struct resource *r = &cs5535_mfd_resources[bar];
++
++		r->flags = IORESOURCE_IO;
++		r->start = pci_resource_start(pdev, bar);
++		r->end = pci_resource_end(pdev, bar);
++
++		/* id is used for temporarily storing BAR; unset it now */
++		cs5535_mfd_cells[i].id = 0;
++	}
++
++	err = mfd_add_devices(&pdev->dev, -1, cs5535_mfd_cells,
++			ARRAY_SIZE(cs5535_mfd_cells), NULL, 0);
++	if (err) {
++		dev_err(&pdev->dev, "MFD add devices failed: %d\n", err);
++		goto err_disable;
++	}
++
++	dev_info(&pdev->dev, "%d devices registered.\n",
++			ARRAY_SIZE(cs5535_mfd_cells));
++
++	return 0;
++
++err_disable:
++	pci_disable_device(pdev);
++	return err;
++}
++
++static void __devexit cs5535_mfd_remove(struct pci_dev *pdev)
++{
++	mfd_remove_devices(&pdev->dev);
++	pci_disable_device(pdev);
++}
++
++static struct pci_device_id cs5535_mfd_pci_tbl[] = {
++	{ PCI_DEVICE(PCI_VENDOR_ID_NS, PCI_DEVICE_ID_NS_CS5535_ISA) },
++	{ PCI_DEVICE(PCI_VENDOR_ID_AMD, PCI_DEVICE_ID_AMD_CS5536_ISA) },
++	{ 0, }
++};
++MODULE_DEVICE_TABLE(pci, cs5535_mfd_pci_tbl);
++
++static struct pci_driver cs5535_mfd_drv = {
++	.name = DRV_NAME,
++	.id_table = cs5535_mfd_pci_tbl,
++	.probe = cs5535_mfd_probe,
++	.remove = __devexit_p(cs5535_mfd_remove),
++};
++
++static int __init cs5535_mfd_init(void)
++{
++	return pci_register_driver(&cs5535_mfd_drv);
++}
++
++static void __exit cs5535_mfd_exit(void)
++{
++	pci_unregister_driver(&cs5535_mfd_drv);
++}
++
++module_init(cs5535_mfd_init);
++module_exit(cs5535_mfd_exit);
++
++MODULE_AUTHOR("Andres Salomon <dilinger@queued.net>");
++MODULE_DESCRIPTION("MFD driver for CS5535/CS5536 southbridge's ISA PCI device");
++MODULE_LICENSE("GPL");
+-- 
+1.7.1
 
-Most part of these patches are for sanitizing inode usage and reducing
-code duplication between nilfs and vfs; these remove nilfs' own inode
-hash table and own inode allocator, which were used in garbage
-collection cache and metadata management respectively.
-
-Collaterally there is an internal change in terms of the way to hold
-snapshots on memory.  Previously, nilfs allocated an sb instance per
-snapshot, and multiple sb instances could be allocated for one device.
-Now all snapshots on the same device are handled with one sb, and the
-relation between bdev and sb is put right.
-
-The full patches and note are found in series "nilfs2: remove own
-inode hash used for GC" and "nilfs2: remove own inode allocator" on
-linux-fsdevel.
-
-Other changes include:
-
- * support filesystem freeze/unfreeze interface
-
- * fix potential overflow in checkpoint number argument of "cp=<n>"
-   mount option which is used when mounting snapshots.
-
- * disable compatibility check by revision level for future revisions.
-   (feature sets, which were integrated to the last kernel, will take
-    over the role).
-
- * sparse warning fixes, and so forth.
-
-
-Thanks!
-
-Ryusuke Konishi
-
---
-The following changes since commit f5d9d249b9a6884daff513ef08afa43d3f7e085f:
-  Linus Torvalds (1):
-        Merge branch 'urgent' of git://git.kernel.org/.../brodo/pcmcia-2.6
-
-are available in the git repository at:
-
-  git+ssh://master.kernel.org/pub/scm/linux/kernel/git/ryusuke/nilfs2.git for-linus
-
-Jiro SEKIBA (2):
-      nilfs2: eliminate sparse warnings - "symbol not declared"
-      nilfs2: eliminate sparse warning - "context imbalance"
-
-Ryusuke Konishi (34):
-      nilfs2: accept future revisions
-      nilfs2: allow nilfs_destroy_inode to destroy metadata file inodes
-      nilfs2: allow nilfs_dirty_inode to mark metadata file inodes dirty
-      nilfs2: keep zero value in i_cno except for gc-inodes
-      nilfs2: use iget5_locked to get inode
-      nilfs2: separate initializer of metadata file inode
-      nilfs2: remove own inode hash used for GC
-      nilfs2: add checkpoint tree to nilfs object
-      nilfs2: set pointer to root object in inodes
-      nilfs2: make snapshots in checkpoint tree exportable
-      nilfs2: use root object to get ifile
-      nilfs2: move inode count and block count into root object
-      nilfs2: use checkpoint tree for mount check of snapshots
-      nilfs2: deny write access to inodes in snapshots
-      nilfs2: split out nilfs_get_root_dentry
-      nilfs2: split out nilfs_attach_snapshot
-      nilfs2: do not allocate multiple super block instances for a device
-      nilfs2: simplify life cycle management of nilfs object
-      nilfs2: get rid of snapshot mount flag
-      nilfs2: allow nilfs_clear_inode to clear metadata file inodes
-      nilfs2: do not allocate nilfs_mdt_info structure to gc-inodes
-      nilfs2: add routines to save and restore bmap state
-      nilfs2: add routines to roll back state of DAT file
-      nilfs2: add routines to redirect access to buffers of DAT file
-      nilfs2: get rid of GCDAT inode
-      nilfs2: use iget for all metadata files
-      nilfs2: see state of root dentry for mount check of snapshots
-      nilfs2: get rid of mi_nilfs back pointer to nilfs object
-      nilfs2: get rid of back pointer to writable sb instance
-      nilfs2: remove own inode allocator and destructor for metadata files
-      nilfs2: accept 64-bit checkpoint numbers in cp mount option
-      nilfs2: add bdev freeze/thaw support
-      nilfs2: change license of exported header file
-      nilfs2: get rid of bdi from nilfs object
-
- fs/nilfs2/Makefile        |    2 +-
- fs/nilfs2/bmap.c          |   22 +-
- fs/nilfs2/bmap.h          |   10 +-
- fs/nilfs2/btnode.c        |   17 +--
- fs/nilfs2/cpfile.c        |   72 +++---
- fs/nilfs2/cpfile.h        |    4 +-
- fs/nilfs2/dat.c           |   92 +++++--
- fs/nilfs2/dat.h           |    4 +-
- fs/nilfs2/export.h        |   17 ++
- fs/nilfs2/gcdat.c         |   87 -------
- fs/nilfs2/gcinode.c       |  134 ++--------
- fs/nilfs2/ifile.c         |   51 +++--
- fs/nilfs2/ifile.h         |    4 +-
- fs/nilfs2/inode.c         |  167 ++++++++++---
- fs/nilfs2/ioctl.c         |   23 +-
- fs/nilfs2/mdt.c           |  313 ++++++++++++-----------
- fs/nilfs2/mdt.h           |   32 ++-
- fs/nilfs2/namei.c         |  139 +++++++++--
- fs/nilfs2/nilfs.h         |   38 ++--
- fs/nilfs2/page.c          |   55 +++--
- fs/nilfs2/page.h          |    6 +
- fs/nilfs2/recovery.c      |   19 +-
- fs/nilfs2/sb.h            |   10 -
- fs/nilfs2/segbuf.c        |    3 +-
- fs/nilfs2/segment.c       |  102 ++++----
- fs/nilfs2/segment.h       |   10 +-
- fs/nilfs2/sufile.c        |   77 ++++---
- fs/nilfs2/sufile.h        |    6 +-
- fs/nilfs2/super.c         |  609 ++++++++++++++++++++++++---------------------
- fs/nilfs2/the_nilfs.c     |  339 ++++++++-----------------
- fs/nilfs2/the_nilfs.h     |  101 +++-----
- include/linux/exportfs.h  |   13 +
- include/linux/nilfs2_fs.h |   18 +-
- 33 files changed, 1339 insertions(+), 1257 deletions(-)
- create mode 100644 fs/nilfs2/export.h
- delete mode 100644 fs/nilfs2/gcdat.c
