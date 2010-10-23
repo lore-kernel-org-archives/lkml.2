@@ -1,75 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757564Ab0JWPFF (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Oct 2010 11:05:05 -0400
-Received: from www.tglx.de ([62.245.132.106]:49081 "EHLO www.tglx.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757041Ab0JWPFD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Oct 2010 11:05:03 -0400
-Date: Sat, 23 Oct 2010 17:04:47 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: [GIT pull] x86 vm86 for 2.6.37
-Message-ID: <alpine.LFD.2.00.1010231704270.5231@localhost6.localdomain6>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1757613Ab0JWPTm (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Oct 2010 11:19:42 -0400
+Received: from ironport2-out.teksavvy.com ([206.248.154.181]:8796 "EHLO
+	ironport2-out.pppoe.ca" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1757041Ab0JWPTl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 23 Oct 2010 11:19:41 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: ApIBAFSZwkxLd/sX/2dsb2JhbAAHgxfIYpFZgSKDMnQEj1E
+X-IronPort-AV: E=Sophos;i="4.58,228,1286164800"; 
+   d="scan'208";a="80487065"
+Message-ID: <4CC2FD0A.9090409@teksavvy.com>
+Date: Sat, 23 Oct 2010 11:19:38 -0400
+From: Mark Lord <kernel@teksavvy.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.11) Gecko/20101013 Thunderbird/3.1.5
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: =?UTF-8?B?TWF0aGlhcyBCdXLDqW4=?= <mathias.buren@gmail.com>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: sata_mv and Highpoint RocketRAID 230x, corruption?
+References: <AANLkTik02CcVyzn+fMH+VxuUmwwNLZq9qM0MPz81E+1h@mail.gmail.com>	<4CC24186.1040001@teksavvy.com> <AANLkTi=s9R-OEJAPRpoxoSkFY8MWhc22Pn_gcwCzxY=H@mail.gmail.com>
+In-Reply-To: <AANLkTi=s9R-OEJAPRpoxoSkFY8MWhc22Pn_gcwCzxY=H@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+On 10-10-23 08:57 AM, Mathias Burén wrote:
+> Hi,
+>
+> Thanks for the clarification. Since I've (stupidly enough) partitioned
+> the drives from 1MB until the end, I'm most likely affected by this
+> stupid RAID BIOS.
+> That might explain why I'm getting this error (full dmesg at
+> http://pastebin.ca/1970873 ):
+>
+> ata2.00: status: { DRDY }
+> ata2: hard resetting link
+> ata2: SATA link up 3.0 Gbps (SStatus 123 SControl 300)
+> ata2.00: configured for UDMA/133
+> ata2.00: device reported invalid CHS sector 0
+> sd 1:0:0:0: [sdb]  Result: hostbyte=0x00 driverbyte=0x08
+> sd 1:0:0:0: [sdb]  Sense Key : 0xb [current] [descriptor]
+> Descriptor sense data with sense descriptors (in hex):
+>          72 0b 00 00 00 00 00 0c 00 0a 80 00 00 00 00 00
+>          00 00 00 00
+> sd 1:0:0:0: [sdb]  ASC=0x0 ASCQ=0x0
+> sd 1:0:0:0: [sdb] CDB: cdb[0]=0x28: 28 00 e7 70 c8 e8 00 05 40 00
+> end_request: I/O error, dev sdb, sector 3882928360
+> md/raid:md0: read error not correctable (sector 3882926312 on sdb1).
+> md/raid:md0: Disk failure on sdb1, disabling device.
 
-Please pull the latest x86-vm86-for-linus git tree from:
 
-   git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git x86-vm86-for-linus
+No, that error looks like a real disk media error -- bad sector(s) on the drive.
 
-Thanks,
-
-	tglx
-
------------------->
-Bart Oldeman (1):
-      x86, vm86: Fix preemption bug for int1 debug and int3 breakpoint handlers.
-
-
- arch/x86/kernel/traps.c   |    1 +
- arch/x86/kernel/vm86_32.c |   10 ++++++++--
- 2 files changed, 9 insertions(+), 2 deletions(-)
-
-diff --git a/arch/x86/kernel/traps.c b/arch/x86/kernel/traps.c
-index 60788de..9f4edeb 100644
---- a/arch/x86/kernel/traps.c
-+++ b/arch/x86/kernel/traps.c
-@@ -575,6 +575,7 @@ dotraplinkage void __kprobes do_debug(struct pt_regs *regs, long error_code)
- 	if (regs->flags & X86_VM_MASK) {
- 		handle_vm86_trap((struct kernel_vm86_regs *) regs,
- 				error_code, 1);
-+		preempt_conditional_cli(regs);
- 		return;
- 	}
- 
-diff --git a/arch/x86/kernel/vm86_32.c b/arch/x86/kernel/vm86_32.c
-index 5ffb562..61fb985 100644
---- a/arch/x86/kernel/vm86_32.c
-+++ b/arch/x86/kernel/vm86_32.c
-@@ -551,8 +551,14 @@ cannot_handle:
- int handle_vm86_trap(struct kernel_vm86_regs *regs, long error_code, int trapno)
- {
- 	if (VMPI.is_vm86pus) {
--		if ((trapno == 3) || (trapno == 1))
--			return_to_32bit(regs, VM86_TRAP + (trapno << 8));
-+		if ((trapno == 3) || (trapno == 1)) {
-+			KVM86->regs32->ax = VM86_TRAP + (trapno << 8);
-+			/* setting this flag forces the code in entry_32.S to
-+			   call save_v86_state() and change the stack pointer
-+			   to KVM86->regs32 */
-+			set_thread_flag(TIF_IRET);
-+			return 0;
-+		}
- 		do_int(regs, trapno, (unsigned char __user *) (regs->pt.ss << 4), SP(regs));
- 		return 0;
- 	}
+The BIOS issue merely gives corrupted data, not read errors.
