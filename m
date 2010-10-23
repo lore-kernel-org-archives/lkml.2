@@ -1,77 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756345Ab0JWDXS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 23:23:18 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:43857 "EHLO smtps.tip.net.au"
+	id S1756378Ab0JWDkT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 23:40:19 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:52754 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755661Ab0JWDXR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 23:23:17 -0400
-Date: Sat, 23 Oct 2010 14:23:12 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: "John W. Linville" <linville@tuxdriver.com>,
-        David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Arnd Bergmann <arnd@arndb.de>, Felix Fietkau <nbd@openwrt.org>,
-        Linus <torvalds@linux-foundation.org>
-Subject: Re: linux-next: manual merge of the bkl-llseek tree with the
- wireless tree
-Message-Id: <20101023142312.533f6a42.sfr@canb.auug.org.au>
-In-Reply-To: <20101018173543.c33530e9.sfr@canb.auug.org.au>
-References: <20101018173543.c33530e9.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1755882Ab0JWDkR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Oct 2010 23:40:17 -0400
+Message-ID: <4CC2590B.5080109@zytor.com>
+Date: Fri, 22 Oct 2010 20:39:55 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc13 Thunderbird/3.1.4
+MIME-Version: 1.0
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: mingo@redhat.com, linux-kernel@vger.kernel.org, tglx@linutronix.de,
+        linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:x86/fpu] x86-64, asm: Use fxsaveq/fxrestorq in more places
+References: <AANLkTi=RKyHLNTq6iomZOXkc6Zw1j9iAgsq8388XmzwN@mail.gmail.com> <tip-fd35fbcdd1b2579a6e00a1545f7124e4005d0474@git.kernel.org> <AANLkTi=KRVMrNh6MyDh5v-ZGB18iEKkqsW+6Eqp27M5X@mail.gmail.com>
+In-Reply-To: <AANLkTi=KRVMrNh6MyDh5v-ZGB18iEKkqsW+6Eqp27M5X@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi John, Dave,
-
-On Mon, 18 Oct 2010 17:35:43 +1100 Stephen Rothwell <sfr@canb.auug.org.au> wrote:
->
-> Today's linux-next merge of the bkl-llseek tree got a conflict in
-> drivers/net/wireless/ath/ath9k/debug.c between commit
-> 772d5515635fef5bc7a9d0efee785b58b0181ee5 ("ath9k: make rate control
-> debugfs stats per station") from the wireless tree and commit
-> 6038f373a3dc1f1c26496e60b6c40b164716f07e ("llseek: automatically
-> add .llseek fop") from the bkl-llseek tree.
+On 10/22/2010 07:11 PM, Linus Torvalds wrote:
+> On Fri, Oct 22, 2010 at 6:20 PM, tip-bot for H. Peter Anvin
+> <hpa@zytor.com> wrote:
+>>
+>> Checkin d7acb92fea932ad2e7846480aeacddc2c03c8485 made use of fxsaveq
+>> in fpu_fxsave() if the assembler supports it; this adds
+>> fxsaveq/fxrstorq to fxrstor_checking() and fxsave_user() as well.
 > 
-> The former moved some of the code modified by the latter to another file.
+> Hmm. I really think you should be able to do something like this
 > 
-> I added this merge fix patch:
+>   #ifdef CONFIG_AS_FXSAVEQ
+>     #define FXSAVEQ_INSN "fxsaveq %[fx]"
+>     #define FXRSTORQ_INSN "fxrstorq %[fx]"
+>     #define FX_EXTRA(ptr)
+>   #else
+>     #define FXSAVEQ_INSN "rex64/fxsave (%[fxr])"
+>     #define FXRSTORQ_INSN "rex64/fxrstor (%[fxr])"
+>     #define FX_EXTRA(ptr)  [fxr] "R" (ptr)
+>   #endif
+> 
+> and then you should be able to write the actual code something like
+> 
+>    asm volatile(FXSAVEQ_INSN
+>       :[fx] "=m" (memory)
+>       :FX_EXTRA(&memory))
+> 
+> and
+> 
+>   #define __COMMA_CONCAT(x) ,##x
+>   #define COMMA_CONCAT(x) __COMMA_CONCAT(x)
+>   asm volatile(FXRSTRORQ_INSN
+>       : :[fx] "m" (memory) COMMA_CONCAT(FX_EXTRA(&memory)));
+> 
+> or something like that (obviously you'll need the exception stuff too there).
+> 
+> With no #ifdef's in the actual code. Hmm?
+> 
 
-This patch (reproduced below) will now be needed if the wireless or net
-tree is merged with Linus' tree.  I also think I have missed a similar
-needed fix in drivers/net/wireless/ath/ath5k/debug.c ...
+Well sure, but it is already encapsulated in 3 inlines.  To me, the
+above is quite frankly quite a bit harder to read than the broken-out form.
+
+	-hpa
 
 -- 
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
 
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Mon, 18 Oct 2010 17:33:25 +1100
-Subject: [PATCH] ath9k: fix up for .llseek fop change
-
-Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
----
- drivers/net/wireless/ath/ath9k/rc.c |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/net/wireless/ath/ath9k/rc.c b/drivers/net/wireless/ath/ath9k/rc.c
-index 0cee90c..e4c1ea3 100644
---- a/drivers/net/wireless/ath/ath9k/rc.c
-+++ b/drivers/net/wireless/ath/ath9k/rc.c
-@@ -1582,7 +1582,8 @@ static ssize_t read_file_rcstat(struct file *file, char __user *user_buf,
- static const struct file_operations fops_rcstat = {
- 	.read = read_file_rcstat,
- 	.open = ath9k_debugfs_open,
--	.owner = THIS_MODULE
-+	.owner = THIS_MODULE,
-+	.llseek = default_llseek,
- };
- 
- static void ath_rate_add_sta_debugfs(void *priv, void *priv_sta,
--- 
-1.7.1
