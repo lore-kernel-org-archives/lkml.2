@@ -1,49 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757089Ab0JWRy7 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Oct 2010 13:54:59 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:40882 "EHLO mx2.mail.elte.hu"
+	id S1756976Ab0JWR6U (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Oct 2010 13:58:20 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:46666 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756255Ab0JWRy6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Oct 2010 13:54:58 -0400
-Date: Sat, 23 Oct 2010 19:54:50 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Corrado Zoccolo <czoccolo@gmail.com>
-Cc: Jens Axboe <axboe@kernel.dk>, Linux-Kernel <linux-kernel@vger.kernel.org>,
-        Jeff Moyer <jmoyer@redhat.com>, Vivek Goyal <vgoyal@redhat.com>
-Subject: Re: [PATCH] cfq: improve fsync performance for small files
-Message-ID: <20101023175450.GA31667@elte.hu>
-References: <201007202209.04627.czoccolo@gmail.com>
- <AANLkTinajj76EBUQE6RXeQmZ9AEWU1g3x+pyW3Cmku0x@mail.gmail.com>
- <4C976060.1010008@kernel.dk>
- <AANLkTi=VZ0-ysHZ1oqK6b0DsohgD8G65UY=_tUfyK7bh@mail.gmail.com>
+	id S1755902Ab0JWR6T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 23 Oct 2010 13:58:19 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Christian Ruediger Bahls <lkml@qb352.de>
+Subject: Re: intel_idle .. Was: __pm_runtime_resume() returns -1 Was: Regression in 2.6.36
+Date: Sat, 23 Oct 2010 19:57:28 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.36-rjw+; KDE/4.4.4; x86_64; ; )
+Cc: Andrew Morton <akpm@linux-foundation.org>, Len Brown <len.brown@intel.com>,
+        linux-kernel@vger.kernel.org, Eric Dumazet <eric.dumazet@gmail.com>
+References: <AANLkTinPyg2ijrBydVyoGJiQJCpL7j1_vnyQWnx0eucz@mail.gmail.com> <20101022165734.d7ed2582.akpm@linux-foundation.org> <20101023042607.GB449@pfau.e-technik1.uni-rostock.de>
+In-Reply-To: <20101023042607.GB449@pfau.e-technik1.uni-rostock.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTi=VZ0-ysHZ1oqK6b0DsohgD8G65UY=_tUfyK7bh@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201010231957.28276.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Saturday, October 23, 2010, Christian Ruediger Bahls wrote:
+> [2010-10-23 01:58] Andrew Morton <akpm@linux-foundation.org> wrote:
+> > On Fri, 22 Oct 2010 15:38:01 +0200
+> > Christian Bahls <lkml@qb352.de> wrote:
+> > > The regression seems to have been introduced by the merge:
+> > >   92b4522f72916ff2675060e29e4b24cf26ab59ce
+> > > 
+> >
+> > I suspect your bisection went wrong :(
+> ...
+> > It's really hard to see how that change could break the resume
+> > operation.
+> 
+> you were right ..
+> 
+> btw: this is not resume but system boot .. either cold or warm
+>  [pressing any button(even the power-button) makes the boot continue]
+> 
+> the failure has lots of different incarnations:
+>  during booting it sometimes stalls:
+>  on initializing the sata drive
+>  while mounting/un-mounting the sata drive
+>  or other obscure occasions (syncing drives/initializing hardware)
+> 
+> in later versions of the kernel it throws the 
+>  "__pm_runtime_resume() returns -1"-warnings
 
-* Corrado Zoccolo <czoccolo@gmail.com> wrote:
+Do you have CONFIG_PM_VERBOSE set in your .config by chance?
 
-> Hi Jens,
-> I've not seen this patch in your pull request to Linus for .37.
-> Any problem with it during test?
-
-Your improvement seems to be upstream:
-
-  749ef9f: cfq: improve fsync performance for small files
-
-Thanks,
-
-	Ingo
+Rafael
