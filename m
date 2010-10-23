@@ -1,98 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756649Ab0JWMMW (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Oct 2010 08:12:22 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:46271 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754671Ab0JWMMV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Oct 2010 08:12:21 -0400
-From: Santosh Shilimkar <santosh.shilimkar@ti.com>
-To: oprofile-list@lists.sf.net
-Cc: linux-kernel@vger.kernel.org, Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        sricharan <r.sricharan@ti.com>,
-        Robert Richter <robert.richter@amd.com>
-Subject: [PATCH] oprofile: Fix the hang while offline the cpu
-Date: Sat, 23 Oct 2010 17:42:06 +0530
-Message-Id: <1287835926-1957-1-git-send-email-santosh.shilimkar@ti.com>
-X-Mailer: git-send-email 1.5.6.6
+	id S1756707Ab0JWM0P (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Oct 2010 08:26:15 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:51205 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756668Ab0JWM0O (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 23 Oct 2010 08:26:14 -0400
+Date: Sat, 23 Oct 2010 13:26:12 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Jiri Slaby <jslaby@suse.cz>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>, linux-kernel@vger.kernel.org,
+        "Dr. Werner Fink" <werner@suse.de>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH 28/49] tty: Add a new file /proc/tty/consoles
+Message-ID: <20101023122612.GO19804@ZenIV.linux.org.uk>
+References: <20101022175112.GC13489@kroah.com>
+ <1287771688-14805-28-git-send-email-gregkh@suse.de>
+ <4CC2C9A8.1040003@suse.cz>
+ <20101023115129.GM19804@ZenIV.linux.org.uk>
+ <4CC2CE66.7010405@suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4CC2CE66.7010405@suse.cz>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The kernel build with CONFIG_OPROFILE and CPU_HOTPLUG enabled.
-The oprofile is initialised using system timer in absence of hardware
-counters supports. Oprofile isn't started from userland.
+On Sat, Oct 23, 2010 at 02:00:38PM +0200, Jiri Slaby wrote:
 
-In this setup while doing a CPU offline the kernel hangs in infinite
-for loop inside lock_hrtimer_base() function
+> > Please, don't.  Even leaving aside the fact that it's mind-bogglingly
+> > broken (->private_data can be _ANYTHING_, including arbitrary number cast
+> > to pointer), you really shouldn't screw your way through the descriptor
+> > table in the first place.
+> > 
+> > Strongly NACKed.
+> 
+> Well, our complains are -ETOOLATE -- it's commit f4a3e0bceb57466c
+> upstream. So please fix this up.
 
-This happens because as part of oprofile_cpu_notify(, it tries to
-stop an hrtimer which was never started. These per-cpu hrtimers
-are started when the oprfile is started.
-	echo 1	> /dev/oprofile/enable
+FVO "fix" equal to "revert".  Belated review:
 
-This patch fix this issue by adding a state variable so that
-these hrtimer start/stop is only attempted when oprofile is
-started
+a) global variable depending on stdin of the last opener?  Affecting
+output of read(2)?  Really?
 
-Reported-by: Jan Sebastien <s-jan@ti.com>
-Signed-off-by: sricharan <r.sricharan@ti.com>
-Tested-by: sricharan <r.sricharan@ti.com>
-Signed-off-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+b) iterator is broken; list should be locked in ->start(), unlocked
+in ->stop() and *NOT* unlocked/relocked in ->next()
 
-Cc: Robert Richter <robert.richter@amd.com>
----
- drivers/oprofile/timer_int.c |    9 +++++++++
- 1 files changed, 9 insertions(+), 0 deletions(-)
+c) ->show() ought to do nothing in case of ->device == NULL, instead
+of skipping those in ->next()/->start()
 
-diff --git a/drivers/oprofile/timer_int.c b/drivers/oprofile/timer_int.c
-index dc0ae4d..de487ba 100644
---- a/drivers/oprofile/timer_int.c
-+++ b/drivers/oprofile/timer_int.c
-@@ -21,6 +21,7 @@
- #include "oprof.h"
- 
- static DEFINE_PER_CPU(struct hrtimer, oprofile_hrtimer);
-+static int oprofile_hrtimer_started;
- 
- static enum hrtimer_restart oprofile_hrtimer_notify(struct hrtimer *hrtimer)
- {
-@@ -33,6 +34,9 @@ static void __oprofile_hrtimer_start(void *unused)
- {
- 	struct hrtimer *hrtimer = &__get_cpu_var(oprofile_hrtimer);
- 
-+	if (!oprofile_hrtimer_started)
-+		return;
-+
- 	hrtimer_init(hrtimer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
- 	hrtimer->function = oprofile_hrtimer_notify;
- 
-@@ -42,6 +46,7 @@ static void __oprofile_hrtimer_start(void *unused)
- 
- static int oprofile_hrtimer_start(void)
- {
-+	oprofile_hrtimer_started = 1;
- 	on_each_cpu(__oprofile_hrtimer_start, NULL, 1);
- 	return 0;
- }
-@@ -50,6 +55,9 @@ static void __oprofile_hrtimer_stop(int cpu)
- {
- 	struct hrtimer *hrtimer = &per_cpu(oprofile_hrtimer, cpu);
- 
-+	if (!oprofile_hrtimer_started)
-+		return;
-+
- 	hrtimer_cancel(hrtimer);
- }
- 
-@@ -59,6 +67,7 @@ static void oprofile_hrtimer_stop(void)
- 
- 	for_each_online_cpu(cpu)
- 		__oprofile_hrtimer_stop(cpu);
-+	oprofile_hrtimer_started = 0;
- }
- 
- static int __cpuinit oprofile_cpu_notify(struct notifier_block *self,
--- 
-1.6.0.4
+d) regardless of the merits of the bright idea about asterisk at that
+line in output *and* regardless of (a), the implementation is not only
+atrociously ugly, it's actually very likely to be a roothole.  Verifying
+that Cthulhu knows what number happens to be address of a tty_struct by
+blindly dereferencing memory at that address...  Ouch.
 
+Please revert that crap.
