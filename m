@@ -1,63 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757386Ab0JWOsn (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Oct 2010 10:48:43 -0400
-Received: from thunk.org ([69.25.196.29]:53889 "EHLO thunker.thunk.org"
+	id S1757380Ab0JWO7c (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Oct 2010 10:59:32 -0400
+Received: from www.tglx.de ([62.245.132.106]:41022 "EHLO www.tglx.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756896Ab0JWOsl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Oct 2010 10:48:41 -0400
-Date: Sat, 23 Oct 2010 10:48:36 -0400
-From: "Ted Ts'o" <tytso@mit.edu>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>
-Subject: Re: What am I doing wrong?  submit_bio() suddenly stops working...
-Message-ID: <20101023144836.GA24650@thunk.org>
-Mail-Followup-To: Ted Ts'o <tytso@mit.edu>, Jens Axboe <axboe@kernel.dk>,
-	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-	"linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>
-References: <E1P8kSE-0001DW-8C@tytso-glaptop>
- <4CBFE4E2.7050001@kernel.dk>
- <20101021165525.GB3127@thunk.org>
- <4CC07C67.9010502@kernel.dk>
- <20101022033424.GO3127@thunk.org>
- <4CC13B09.6030104@kernel.dk>
+	id S1754422Ab0JWO7b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 23 Oct 2010 10:59:31 -0400
+Date: Sat, 23 Oct 2010 16:56:30 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+cc: Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>
+Subject: [GIT pull] softirq updates for 2.6.37
+Message-ID: <alpine.LFD.2.00.1010231643300.2516@localhost6.localdomain6>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4CC13B09.6030104@kernel.dk>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on thunker.thunk.org); SAEximRunCond expanded to false
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 22, 2010 at 09:19:37AM +0200, Jens Axboe wrote:
-> 
-> In my experience, use-after-free bugs are best caught using the
-> allocator poisoning along with lock checking. I guess that didn't
-> trigger for you?
+Linus,
 
-No, I tried adding slab_debug=FP, but the structure got reused too
-quickly.  And I've always had lock checking enabled.
+Please pull the latest softirq-for-linus git tree from:
 
-> Out of curiousity, what was the exact bug?
+   git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git softirq-for-linus
 
-To be honest, I don't know why it was causing the problem.  I had a 
+Thanks,
 
-       if (test_bit(BIO_UPTODATE, &bio->bi_flags))
-               error = 0;
+	tglx
 
-After the bio_put, which was clearly wrong, so I fixed it.  But
-test_bit is a read-only instruction, and if error should have been
-zero since I'm testing using kvm and there haven't been any errors.
-(I need to test to make sure my error handling paths work correctly;
-later).
+------------------>
+Thomas Gleixner (1):
+      softirqs: Make wakeup_softirqd static
 
-But it's now working, and at this point, given that I have something
-that works, although I'm curious what was causing the mysterious
-failures, I may be willing to just let it be a mystery...
 
-	    	   	      	   - Ted
+ include/linux/interrupt.h |    1 -
+ kernel/softirq.c          |    2 +-
+ 2 files changed, 1 insertions(+), 2 deletions(-)
+
+diff --git a/include/linux/interrupt.h b/include/linux/interrupt.h
+index a0384a4..0a9141e 100644
+--- a/include/linux/interrupt.h
++++ b/include/linux/interrupt.h
+@@ -410,7 +410,6 @@ extern void softirq_init(void);
+ #define __raise_softirq_irqoff(nr) do { or_softirq_pending(1UL << (nr)); } while (0)
+ extern void raise_softirq_irqoff(unsigned int nr);
+ extern void raise_softirq(unsigned int nr);
+-extern void wakeup_softirqd(void);
+ 
+ /* This is the worklist that queues up per-cpu softirq work.
+  *
+diff --git a/kernel/softirq.c b/kernel/softirq.c
+index 07b4f1b..80f6e3b 100644
+--- a/kernel/softirq.c
++++ b/kernel/softirq.c
+@@ -67,7 +67,7 @@ char *softirq_to_name[NR_SOFTIRQS] = {
+  * to the pending events, so lets the scheduler to balance
+  * the softirq load for us.
+  */
+-void wakeup_softirqd(void)
++static void wakeup_softirqd(void)
+ {
+ 	/* Interrupts are disabled: no need to stop preemption */
+ 	struct task_struct *tsk = __get_cpu_var(ksoftirqd);
