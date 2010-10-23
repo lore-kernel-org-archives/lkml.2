@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757265Ab0JWOLB (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Oct 2010 10:11:01 -0400
-Received: from am1ehsobe004.messaging.microsoft.com ([213.199.154.207]:45872
-	"EHLO AM1EHSOBE004.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757199Ab0JWOK6 (ORCPT
+	id S1757203Ab0JWOLi (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Oct 2010 10:11:38 -0400
+Received: from am1ehsobe003.messaging.microsoft.com ([213.199.154.206]:54162
+	"EHLO AM1EHSOBE003.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756115Ab0JWOLh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Oct 2010 10:10:58 -0400
-X-SpamScore: 11
-X-BigFish: VS11(zzb922la1fflzz1202hzz8275bhz2dh2a8h45k61h)
-X-Spam-TCS-SCL: 0:0
+	Sat, 23 Oct 2010 10:11:37 -0400
+X-SpamScore: 3
+X-BigFish: VS3(zzc8kzz1202hzz8275bhz2dh2a8h63h)
+X-Spam-TCS-SCL: 2:0
 X-FB-SS: 0,
 From: <Dinh.Nguyen@freescale.com>
 To: <linux-kernel@vger.kernel.org>
@@ -18,12 +18,10 @@ CC: <linux-arm-kernel@lists.infradead.org>, <linux@arm.linux.org.uk>,
         <valentin.longchamp@epfl.ch>, <daniel@caiaq.de>,
         <grant.likely@secretlab.ca>, <amit.kucheria@canonical.com>,
         Dinh Nguyen <Dinh.Nguyen@freescale.com>
-Subject: [PATCHv7 2/3] ARM: mx5: Add gpio-keys to mx51 babbage board
-Date: Sat, 23 Oct 2010 09:12:47 -0500
-Message-ID: <1287843168-18164-2-git-send-email-Dinh.Nguyen@freescale.com>
+Subject: [PATCHv7 1/3] ARM: imx: Add gpio-keys to plat-mxc
+Date: Sat, 23 Oct 2010 09:12:46 -0500
+Message-ID: <1287843168-18164-1-git-send-email-Dinh.Nguyen@freescale.com>
 X-Mailer: git-send-email 1.6.0.4
-In-Reply-To: <1287843168-18164-1-git-send-email-Dinh.Nguyen@freescale.com>
-References: <1287843168-18164-1-git-send-email-Dinh.Nguyen@freescale.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 X-Reverse-DNS: de01egw01.freescale.net
@@ -33,103 +31,106 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Dinh Nguyen <Dinh.Nguyen@freescale.com>
 
-Add functionality for the power button on MX51 Babbage board.
+Add imx_add_gpio_keys function to add gpio-keys in plat-mxc
 
 Signed-off-by: Dinh Nguyen <Dinh.Nguyen@freescale.com>
 ---
- arch/arm/configs/mx51_defconfig        |    1 +
- arch/arm/mach-mx5/board-mx51_babbage.c |   24 ++++++++++++++++++++++++
- arch/arm/mach-mx5/devices-imx51.h      |    2 ++
- 3 files changed, 27 insertions(+), 0 deletions(-)
+ arch/arm/plat-mxc/devices/Kconfig               |    4 +++
+ arch/arm/plat-mxc/devices/Makefile              |    1 +
+ arch/arm/plat-mxc/devices/platform-gpio_keys.c  |   27 +++++++++++++++++++++++
+ arch/arm/plat-mxc/include/mach/devices-common.h |    4 +++
+ arch/arm/plat-mxc/include/mach/iomux-mx51.h     |    2 +
+ 5 files changed, 38 insertions(+), 0 deletions(-)
+ create mode 100644 arch/arm/plat-mxc/devices/platform-gpio_keys.c
 
-diff --git a/arch/arm/configs/mx51_defconfig b/arch/arm/configs/mx51_defconfig
-index 163cfee..5c7a872 100644
---- a/arch/arm/configs/mx51_defconfig
-+++ b/arch/arm/configs/mx51_defconfig
-@@ -82,6 +82,7 @@ CONFIG_FEC=y
- CONFIG_INPUT_FF_MEMLESS=m
- # CONFIG_INPUT_MOUSEDEV_PSAUX is not set
- CONFIG_INPUT_EVDEV=y
-+CONFIG_KEYBOARD_GPIO=y
- CONFIG_INPUT_EVBUG=m
- CONFIG_MOUSE_PS2=m
- CONFIG_MOUSE_PS2_ELANTECH=y
-diff --git a/arch/arm/mach-mx5/board-mx51_babbage.c b/arch/arm/mach-mx5/board-mx51_babbage.c
-index 23ee4a4..276a1fb 100644
---- a/arch/arm/mach-mx5/board-mx51_babbage.c
-+++ b/arch/arm/mach-mx5/board-mx51_babbage.c
-@@ -18,6 +18,8 @@
- #include <linux/io.h>
- #include <linux/fsl_devices.h>
- #include <linux/fec.h>
+diff --git a/arch/arm/plat-mxc/devices/Kconfig b/arch/arm/plat-mxc/devices/Kconfig
+index 4047994..f4772e7 100644
+--- a/arch/arm/plat-mxc/devices/Kconfig
++++ b/arch/arm/plat-mxc/devices/Kconfig
+@@ -9,6 +9,10 @@ config IMX_HAVE_PLATFORM_FLEXCAN
+ 	select HAVE_CAN_FLEXCAN
+ 	bool
+ 
++config IMX_HAVE_PLATFORM_GPIO_KEYS
++	bool
++	default y if ARCH_MX51
++	
+ config IMX_HAVE_PLATFORM_IMX_I2C
+ 	bool
+ 
+diff --git a/arch/arm/plat-mxc/devices/Makefile b/arch/arm/plat-mxc/devices/Makefile
+index 0a3c1f0..45aefeb 100644
+--- a/arch/arm/plat-mxc/devices/Makefile
++++ b/arch/arm/plat-mxc/devices/Makefile
+@@ -1,6 +1,7 @@
+ obj-$(CONFIG_IMX_HAVE_PLATFORM_ESDHC) += platform-esdhc.o
+ obj-$(CONFIG_IMX_HAVE_PLATFORM_FEC) += platform-fec.o
+ obj-$(CONFIG_IMX_HAVE_PLATFORM_FLEXCAN) += platform-flexcan.o
++obj-$(CONFIG_IMX_HAVE_PLATFORM_GPIO_KEYS) += platform-gpio_keys.o
+ obj-y += platform-imx-dma.o
+ obj-$(CONFIG_IMX_HAVE_PLATFORM_IMX_I2C) += platform-imx-i2c.o
+ obj-$(CONFIG_IMX_HAVE_PLATFORM_IMX_SSI) += platform-imx-ssi.o
+diff --git a/arch/arm/plat-mxc/devices/platform-gpio_keys.c b/arch/arm/plat-mxc/devices/platform-gpio_keys.c
+new file mode 100644
+index 0000000..1c53a53
+--- /dev/null
++++ b/arch/arm/plat-mxc/devices/platform-gpio_keys.c
+@@ -0,0 +1,27 @@
++/*
++ * Copyright (C) 2010 Freescale Semiconductor, Inc. All Rights Reserved.
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License
++ * as published by the Free Software Foundation; either version 2
++ * of the License, or (at your option) any later version.
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 51 Franklin Street, Fifth Floor,
++ * Boston, MA  02110-1301, USA.
++ */
++#include <asm/sizes.h>
++#include <mach/hardware.h>
++#include <mach/devices-common.h>
++
++struct platform_device *__init imx_add_gpio_keys(
++		const struct gpio_keys_platform_data *pdata)
++{
++	return imx_add_platform_device("gpio-keys", -1, NULL,
++		 0, pdata, sizeof(*pdata));
++}
+diff --git a/arch/arm/plat-mxc/include/mach/devices-common.h b/arch/arm/plat-mxc/include/mach/devices-common.h
+index 86d7575..8c6896f 100644
+--- a/arch/arm/plat-mxc/include/mach/devices-common.h
++++ b/arch/arm/plat-mxc/include/mach/devices-common.h
+@@ -29,6 +29,10 @@ struct platform_device *__init imx_add_flexcan(int id,
+ 		resource_size_t irq,
+ 		const struct flexcan_platform_data *pdata);
+ 
 +#include <linux/gpio_keys.h>
-+#include <linux/input.h>
- 
- #include <mach/common.h>
- #include <mach/hardware.h>
-@@ -37,6 +39,7 @@
- #define BABBAGE_USBH1_STP	(0*32 + 27)	/* GPIO_1_27 */
- #define BABBAGE_PHY_RESET	(1*32 + 5)	/* GPIO_2_5 */
- #define BABBAGE_FEC_PHY_RESET	(1*32 + 14)	/* GPIO_2_14 */
-+#define BABBAGE_POWER_KEY	(1*32 + 21)	/* GPIO_2_21 */
- 
- /* USB_CTRL_1 */
- #define MX51_USB_CTRL_1_OFFSET			0x10
-@@ -46,6 +49,21 @@
- #define	MX51_USB_PLL_DIV_19_2_MHZ	0x01
- #define	MX51_USB_PLL_DIV_24_MHZ	0x02
- 
-+static struct gpio_keys_button babbage_buttons[] = {
-+	{
-+		.gpio		= BABBAGE_POWER_KEY,
-+		.code		= BTN_0,
-+		.desc		= "PWR",
-+		.active_low	= 1,
-+		.wakeup		= 1,
-+	},
-+};
++struct platform_device *__init imx_add_gpio_keys(
++		const struct gpio_keys_platform_data *pdata);
 +
-+static const struct gpio_keys_platform_data imx_button_data __initconst = {
-+	.buttons	= babbage_buttons,
-+	.nbuttons	= ARRAY_SIZE(babbage_buttons),
-+};
-+
- static struct pad_desc mx51babbage_pads[] = {
- 	/* UART1 */
- 	MX51_PAD_UART1_RXD__UART1_RXD,
-@@ -281,6 +299,7 @@ __setup("otg_mode=", babbage_otg_mode);
- static void __init mxc_board_init(void)
- {
- 	struct pad_desc usbh1stp = MX51_PAD_USBH1_STP__USBH1_STP;
-+	struct pad_desc power_key = MX51_PAD_EIM_A27__GPIO_2_21;
- 
- 	mxc_iomux_v3_setup_multiple_pads(mx51babbage_pads,
- 					ARRAY_SIZE(mx51babbage_pads));
-@@ -288,6 +307,11 @@ static void __init mxc_board_init(void)
- 	babbage_fec_reset();
- 	imx51_add_fec(NULL);
- 
-+	/* Set the PAD settings for the pwr key. */
-+	power_key.pad_ctrl = MX51_GPIO_PAD_CTRL_2;
-+	mxc_iomux_v3_setup_pad(&power_key);
-+	imx51_add_gpio_keys(&imx_button_data);
-+
- 	imx51_add_imx_i2c(0, &babbage_i2c_data);
- 	imx51_add_imx_i2c(1, &babbage_i2c_data);
- 	mxc_register_device(&mxc_hsi2c_device, &babbage_hsi2c_data);
-diff --git a/arch/arm/mach-mx5/devices-imx51.h b/arch/arm/mach-mx5/devices-imx51.h
-index 5cc910e..8c50cb5 100644
---- a/arch/arm/mach-mx5/devices-imx51.h
-+++ b/arch/arm/mach-mx5/devices-imx51.h
-@@ -13,6 +13,8 @@ extern const struct imx_fec_data imx51_fec_data __initconst;
- #define imx51_add_fec(pdata)	\
- 	imx_add_fec(&imx51_fec_data, pdata)
- 
-+#define imx51_add_gpio_keys(pdata) imx_add_gpio_keys(pdata)
-+
- extern const struct imx_imx_i2c_data imx51_imx_i2c_data[] __initconst;
- #define imx51_add_imx_i2c(id, pdata)	\
- 	imx_add_imx_i2c(&imx51_imx_i2c_data[id], pdata)
+ #include <mach/i2c.h>
+ struct imx_imx_i2c_data {
+ 	int id;
+diff --git a/arch/arm/plat-mxc/include/mach/iomux-mx51.h b/arch/arm/plat-mxc/include/mach/iomux-mx51.h
+index e46b1c2..d7a41e9 100644
+--- a/arch/arm/plat-mxc/include/mach/iomux-mx51.h
++++ b/arch/arm/plat-mxc/include/mach/iomux-mx51.h
+@@ -45,6 +45,8 @@ typedef enum iomux_config {
+ 				PAD_CTL_PKE | PAD_CTL_HYS)
+ #define MX51_GPIO_PAD_CTRL		(PAD_CTL_DSE_HIGH | PAD_CTL_PKE | \
+ 				PAD_CTL_SRE_FAST)
++#define MX51_GPIO_PAD_CTRL_2	(PAD_CTL_SRE_FAST | PAD_CTL_DSE_HIGH | \
++					PAD_CTL_PUS_100K_UP)
+ #define MX51_ECSPI_PAD_CTRL	(PAD_CTL_HYS | PAD_CTL_PKE | PAD_CTL_DSE_HIGH | \
+ 				PAD_CTL_SRE_FAST)
+ #define MX51_SDHCI_PAD_CTRL	(PAD_CTL_DSE_HIGH | PAD_CTL_PUS_47K_UP | \
 -- 
 1.6.0.4
 
