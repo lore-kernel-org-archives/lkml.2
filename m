@@ -1,121 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756129Ab0JWCno (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 22:43:44 -0400
-Received: from mail.wdtv.com ([66.118.69.84]:39825 "EHLO mail.wdtv.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755293Ab0JWCnn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 22:43:43 -0400
-From: Gene Heskett <gene.heskett@gmail.com>
-To: Ken Moffat <zarniwhoop@ntlworld.com>
-Subject: Re: 2.6.36, make oldconfig broken
-Date: Fri, 22 Oct 2010 22:43:37 -0400
-User-Agent: KMail/1.13.5 (Linux/2.6.36; KDE/4.5.2; i686; ; )
-Cc: Randy Dunlap <randy.dunlap@oracle.com>,
-        LKML <linux-kernel@vger.kernel.org>
-References: <201010221229.36996.gene.heskett@gmail.com> <201010222054.52066.gene.heskett@gmail.com> <20101023013943.GB20750@deepthought>
-In-Reply-To: <20101023013943.GB20750@deepthought>
+	id S1756255Ab0JWCoT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 22:44:19 -0400
+Received: from db3ehsobe001.messaging.microsoft.com ([213.199.154.139]:44236
+	"EHLO DB3EHSOBE001.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755441Ab0JWCoR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Oct 2010 22:44:17 -0400
+X-SpamScore: 3
+X-BigFish: VS3(zzc8kzz1202hzz8275bhz2dh2a8h63h)
+X-Spam-TCS-SCL: 2:0
+From: <Dinh.Nguyen@freescale.com>
+To: <linux-kernel@vger.kernel.org>
+CC: <linux-arm-kernel@lists.infradead.org>, <linux@arm.linux.org.uk>,
+        <s.hauer@pengutronix.de>, <u.kleine-koenig@pengutronix.de>,
+        <valentin.longchamp@epfl.ch>, <daniel@caiaq.de>,
+        <grant.likely@secretlab.ca>, <amit.kucheria@canonical.com>,
+        Dinh Nguyen <Dinh.Nguyen@freescale.com>
+Subject: [PATCHv6 1/3] ARM: imx: Add gpio-keys to plat-mxc
+Date: Fri, 22 Oct 2010 21:46:14 -0500
+Message-ID: <1287801976-5324-1-git-send-email-Dinh.Nguyen@freescale.com>
+X-Mailer: git-send-email 1.6.0.4
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201010222243.37890.gene.heskett@gmail.com>
+Content-Type: text/plain
+X-Reverse-DNS: de01egw01.freescale.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, October 22, 2010, Ken Moffat wrote:
->On Fri, Oct 22, 2010 at 08:54:51PM -0400, Gene Heskett wrote:
->> It hasn't been edited since I ran it, so I'll attach it.  Maybe you can
->> see something I missed.
->
->Hi Gene,
->
-> I don't see anything that is immediately wrong (but, it's late and
->I'll be going to bed as soon as webkit has finished compiling on my
->desktop, so my concentration might be lacking), but it does seem
->overly complex.  I've long since given up trying to script kernel
->builds, it mostly isn't necessary if you aren't creating a distro.
->
-> I appreciate your comment about fingers - mine are mostly ok, but
->prone to operating in the wrong order so that I often generate typos
->such as 'teh'.  What works for me is -
->
-Damn, and I thought I had a patent on that. Or at least prior art? ;)
+From: Dinh Nguyen <Dinh.Nguyen@freescale.com>
 
->1. build in ~/ : I often have current and "previous, but still
->usable" systems on the same machine, and I share /home between them.
->Arguably, building as a user may prevent some disastrous actions,
->but backups are always useful - I remember your past comments about
->using amanda so I'm sure you've already got that covered.
->
->2. for each kernel version of interest (typically, current and next
->- over time the old one drops out and a new one rolls in) :
-> create a first version (untar, or untar and patch).
-> I then rename it to 2.6.xx-stable or 2.6.xx-rc.
->
-> For the patches I use
->bzcat /path/to/patch-2.6.whatever.bz2 | patch -p1
->(yes, send me tickets for "useless uses of cat" if you wish ;)
+Add imx_add_gpio_keys function to add gpio-keys in plat-mxc
 
-Noted.  ;)  But then I also use another script to drive the make and 
-install, with everything in it having an ' && \' at the end of the lines so 
-any error bails out right there leaving the message still on-screen
+Signed-off-by: Dinh Nguyen <Dinh.Nguyen@freescale.com>
+---
+ arch/arm/plat-mxc/devices/Kconfig               |    4 +++
+ arch/arm/plat-mxc/devices/Makefile              |    1 +
+ arch/arm/plat-mxc/devices/platform-gpio_keys.c  |   27 +++++++++++++++++++++++
+ arch/arm/plat-mxc/include/mach/devices-common.h |    4 +++
+ arch/arm/plat-mxc/include/mach/iomux-mx51.h     |    2 +
+ 5 files changed, 38 insertions(+), 0 deletions(-)
+ create mode 100644 arch/arm/plat-mxc/devices/platform-gpio_keys.c
 
-Its a bit longer as I've hacked around to ensure continuity over the years 
-of the firmware trees etc.  I can post that too if anyone wants it.
-
->3. When I want to test a new -rc, or a release has come out, cd into
->the tree and
-> head Makefile
->to confirm which (-rc) patch was last applied.
->revert that: bzcat /path/to/that-patch.bz2 | patch -p1 -R
->apply the new one
->
->and then just make oldconfig and continue (or, for the first rc of a
->new version, zcat /proc/config.gz >.config && make oldconfig.
->
-> To keep track of errant fingers, you can read the commandline
->before hitting <enter>, you can also run 'make modules_install' as a
->user - it won't work, but it will confirm which version it is trying
->to install.
->
-> Sorry if this comes across as trying to teach you things you
->already know, but the process should be simple enough to not need
->scripting!  Of course, my video hardware doesn't need out-of-tree
->firmware nor other drivers.  Perhaps in that situation I might try
->to script it all.  From painful experience, the usual problem with
->scripts is a failure to detect errors or unexpected results.  Keep
->things simple if you can.
-
-I use the scripts, which of course are subject to internal revision if it 
-proves I am not doing it right, as a way to get absolute consistency.  For 
-the makeit script, it has only one var, $VER, assigned at the top to be the 
-2.6.whatever its building.  All I have to do if it runs to completion is 
-construct a new entry in /boot/grub/menu.lst. change the default and 
-reboot.
-
-Otherwise I'd forget (senor moment ;) some step in the middle and wind up 
-needing more naproxin sodium to quell the headache I got from beating it on 
-the wall....
-
->ken
-
-Ken may have a point, next time I reboot, I'll drag out an install cd and 
-run the memtest from it for at least 1 full cycle.
-
-Another item I might add is that I have now tried several different number 
-formats for the kernel command line option vga=, trying std octal, std 
-0xhex, and plain decimal, but it always hangs like I'd entered vga=ask.
-The boot continues normally in the selected 1680x1050x32 screen if I enter 
-either a 'z' or a '369' at that point.  So something seems to be preventing 
-the vga= from working correctly as a command line argument.  Who knows, 
-maybe there is a bad address line on one of the 4 sticks again and it hits 
-that exact address at each boot.  Murphy again, darn him.
-
+diff --git a/arch/arm/plat-mxc/devices/Kconfig b/arch/arm/plat-mxc/devices/Kconfig
+index 4047994..f4772e7 100644
+--- a/arch/arm/plat-mxc/devices/Kconfig
++++ b/arch/arm/plat-mxc/devices/Kconfig
+@@ -9,6 +9,10 @@ config IMX_HAVE_PLATFORM_FLEXCAN
+ 	select HAVE_CAN_FLEXCAN
+ 	bool
+ 
++config IMX_HAVE_PLATFORM_GPIO_KEYS
++	bool
++	default y if ARCH_MX51
++	
+ config IMX_HAVE_PLATFORM_IMX_I2C
+ 	bool
+ 
+diff --git a/arch/arm/plat-mxc/devices/Makefile b/arch/arm/plat-mxc/devices/Makefile
+index 0a3c1f0..45aefeb 100644
+--- a/arch/arm/plat-mxc/devices/Makefile
++++ b/arch/arm/plat-mxc/devices/Makefile
+@@ -1,6 +1,7 @@
+ obj-$(CONFIG_IMX_HAVE_PLATFORM_ESDHC) += platform-esdhc.o
+ obj-$(CONFIG_IMX_HAVE_PLATFORM_FEC) += platform-fec.o
+ obj-$(CONFIG_IMX_HAVE_PLATFORM_FLEXCAN) += platform-flexcan.o
++obj-$(CONFIG_IMX_HAVE_PLATFORM_GPIO_KEYS) += platform-gpio_keys.o
+ obj-y += platform-imx-dma.o
+ obj-$(CONFIG_IMX_HAVE_PLATFORM_IMX_I2C) += platform-imx-i2c.o
+ obj-$(CONFIG_IMX_HAVE_PLATFORM_IMX_SSI) += platform-imx-ssi.o
+diff --git a/arch/arm/plat-mxc/devices/platform-gpio_keys.c b/arch/arm/plat-mxc/devices/platform-gpio_keys.c
+new file mode 100644
+index 0000000..1c53a53
+--- /dev/null
++++ b/arch/arm/plat-mxc/devices/platform-gpio_keys.c
+@@ -0,0 +1,27 @@
++/*
++ * Copyright (C) 2010 Freescale Semiconductor, Inc. All Rights Reserved.
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License
++ * as published by the Free Software Foundation; either version 2
++ * of the License, or (at your option) any later version.
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 51 Franklin Street, Fifth Floor,
++ * Boston, MA  02110-1301, USA.
++ */
++#include <asm/sizes.h>
++#include <mach/hardware.h>
++#include <mach/devices-common.h>
++
++struct platform_device *__init imx_add_gpio_keys(
++		const struct gpio_keys_platform_data *pdata)
++{
++	return imx_add_platform_device("gpio-keys", -1, NULL,
++		 0, pdata, sizeof(*pdata));
++}
+diff --git a/arch/arm/plat-mxc/include/mach/devices-common.h b/arch/arm/plat-mxc/include/mach/devices-common.h
+index 86d7575..8c6896f 100644
+--- a/arch/arm/plat-mxc/include/mach/devices-common.h
++++ b/arch/arm/plat-mxc/include/mach/devices-common.h
+@@ -29,6 +29,10 @@ struct platform_device *__init imx_add_flexcan(int id,
+ 		resource_size_t irq,
+ 		const struct flexcan_platform_data *pdata);
+ 
++#include <linux/gpio_keys.h>
++struct platform_device *__init imx_add_gpio_keys(
++		const struct gpio_keys_platform_data *pdata);
++
+ #include <mach/i2c.h>
+ struct imx_imx_i2c_data {
+ 	int id;
+diff --git a/arch/arm/plat-mxc/include/mach/iomux-mx51.h b/arch/arm/plat-mxc/include/mach/iomux-mx51.h
+index e46b1c2..d7a41e9 100644
+--- a/arch/arm/plat-mxc/include/mach/iomux-mx51.h
++++ b/arch/arm/plat-mxc/include/mach/iomux-mx51.h
+@@ -45,6 +45,8 @@ typedef enum iomux_config {
+ 				PAD_CTL_PKE | PAD_CTL_HYS)
+ #define MX51_GPIO_PAD_CTRL		(PAD_CTL_DSE_HIGH | PAD_CTL_PKE | \
+ 				PAD_CTL_SRE_FAST)
++#define MX51_GPIO_PAD_CTRL_2	(PAD_CTL_SRE_FAST | PAD_CTL_DSE_HIGH | \
++					PAD_CTL_PUS_100K_UP)
+ #define MX51_ECSPI_PAD_CTRL	(PAD_CTL_HYS | PAD_CTL_PKE | PAD_CTL_DSE_HIGH | \
+ 				PAD_CTL_SRE_FAST)
+ #define MX51_SDHCI_PAD_CTRL	(PAD_CTL_DSE_HIGH | PAD_CTL_PUS_47K_UP | \
 -- 
-Cheers, Gene
-"There are four boxes to be used in defense of liberty:
- soap, ballot, jury, and ammo. Please use in that order."
--Ed Howdershelt (Author)
-Old soldiers never die.  Young ones do.
+1.6.0.4
+
+
