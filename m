@@ -1,68 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758263Ab0JWWNf (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Oct 2010 18:13:35 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:48677 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757921Ab0JWWNd convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Oct 2010 18:13:33 -0400
+	id S1758376Ab0JWW5X (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Oct 2010 18:57:23 -0400
+Received: from redmars.org ([92.243.31.175]:53695 "EHLO deckard.alcopop.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753406Ab0JWW5W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 23 Oct 2010 18:57:22 -0400
+X-Greylist: delayed 2638 seconds by postgrey-1.27 at vger.kernel.org; Sat, 23 Oct 2010 18:57:21 EDT
+Date: Sat, 23 Oct 2010 23:12:53 +0100
+From: Jon Dowland <jmtd@debian.org>
+To: Matthew Garrett <mjg@redhat.com>
+Cc: platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] toshiba_acpi.c: Add key_entry for a lone FN keypress
+Message-ID: <20101023221253.GA4829@hathor>
 MIME-Version: 1.0
-In-Reply-To: <ada8w1or36h.fsf@cisco.com>
-References: <1287764862.8930.220.camel@mulgrave.site> <AANLkTikZ-vePH+Wvf9S0-0PG1h+rRNByKEmXC2XENH1=@mail.gmail.com>
- <ada8w1or36h.fsf@cisco.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Sat, 23 Oct 2010 15:13:10 -0700
-Message-ID: <AANLkTin+qS+kPZC-T7Ddu9WPbhudSXEObkyCawWisxH9@mail.gmail.com>
-Subject: Re: [GIT PULL] first round of SCSI updates for the merge window
-To: Roland Dreier <rdreier@cisco.com>
-Cc: James Bottomley <James.Bottomley@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="UugvWAfsgieZRqgk"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Oct 23, 2010 at 2:48 PM, Roland Dreier <rdreier@cisco.com> wrote:
->  > There's a _single_ commit that looks like this:
->  >
->  >  220 files changed, 34823 insertions(+), 43478 deletions(-)
->
-> Hey, you're not using git properly... if I use '-M' to show moved
-> files, I see:
->
->  212 files changed, 30007 insertions(+), 38662 deletions(-)
->
-> which is a lot nicer.
 
-It really doesn't make any difference what-so-ever. Lookie here:
+--UugvWAfsgieZRqgk
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-  wc $(git ls-files drivers/scsi/bfa/)
-  ...
-  42946  114109 1118020 total
+A lone FN key press on a Toshiba Port=E9g=E9 R700 without another key in
+conjunction results in an ACPI event and a spurious error message on
+the console.
 
-IOW, that driver only has 42k lines to begin with (well, it does now,
-it used to have a few more). Whether there were a couple of files that
-were similar enough after the fact to count as renames or not is
-totally immaterial. The driver was basically rewritten or re-indented
-or whatever, AND THE CHANGELOG DOESN'T EVEN _BEGIN_ TO EXPLAIN IT!
+Add a key entry to map this event to a KEY_UNKNOWN keypress silences
+this message.
 
-It's a two-line changelog, which isn't even accurate!
+Signed-off-by: Jon Dowland <jmtd@debian.org>
 
-Two lines of explanation! For 70 _thousand_ lines of changes? The fact
-that Bottomley signed off on that kind of crap, and then sent it on to
-me with a oneline "cleanup" commentary should say something. And what
-it says to me is "Never again". If I get stuff like this again, I stop
-pulling. Those SCSI drivers might as well be outside the kernel tree,
-there's no point having them in the tree if they are just code-drops.
-It really isn't as if they have enough users to merit being there
-anyway.
+----
 
-Because that kind of shit is simply not acceptable in the kernel. We
-don't just do random undocumented code-drops. And dammit, James should
-have known better.
+diff --git a/drivers/platform/x86/toshiba_acpi.c b/drivers/platform/x86/tos=
+hiba_acpi.c
+index a388bd6..954443e 100644
+--- a/drivers/platform/x86/toshiba_acpi.c
++++ b/drivers/platform/x86/toshiba_acpi.c
+@@ -142,6 +142,7 @@ static struct key_entry toshiba_acpi_keymap[]  =3D {
+ 	{KE_KEY, 0x141, KEY_BRIGHTNESSUP},
+ 	{KE_KEY, 0x142, KEY_WLAN},
+ 	{KE_KEY, 0x143, KEY_PROG1},
++	{KE_KEY, 0x17f, KEY_UNKNOWN}, /* FN key by itself */
+ 	{KE_KEY, 0xb05, KEY_PROG2},
+ 	{KE_KEY, 0xb06, KEY_WWW},
+ 	{KE_KEY, 0xb07, KEY_MAIL},
 
-                        Linus
+--UugvWAfsgieZRqgk
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+Content-Disposition: inline
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEARECAAYFAkzDXeUACgkQFotOcXAy8jjwlwCgqqtWItROnb0rbb17a58pcgC6
+B/AAoJEBDH/c76NCcFJZ6kFuDw0TUT73
+=VgLO
+-----END PGP SIGNATURE-----
+
+--UugvWAfsgieZRqgk--
