@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756165Ab0JWCoS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Oct 2010 22:44:18 -0400
-Received: from tx2ehsobe004.messaging.microsoft.com ([65.55.88.14]:16723 "EHLO
-	TX2EHSOBE007.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755293Ab0JWCoQ (ORCPT
+	id S1756357Ab0JWCo1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Oct 2010 22:44:27 -0400
+Received: from am1ehsobe003.messaging.microsoft.com ([213.199.154.206]:10926
+	"EHLO AM1EHSOBE003.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756307Ab0JWCoZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Oct 2010 22:44:16 -0400
-X-SpamScore: 11
-X-BigFish: VS11(zzb922la1fflzz1202hzz8275bhz2dh2a8h45k61h)
-X-Spam-TCS-SCL: 0:0
+	Fri, 22 Oct 2010 22:44:25 -0400
+X-SpamScore: 0
+X-BigFish: VS0(zzzz1202hzz8275bhz2dh2a8h62h)
+X-Spam-TCS-SCL: 1:0
 From: <Dinh.Nguyen@freescale.com>
 To: <linux-kernel@vger.kernel.org>
 CC: <linux-arm-kernel@lists.infradead.org>, <linux@arm.linux.org.uk>,
@@ -17,118 +17,89 @@ CC: <linux-arm-kernel@lists.infradead.org>, <linux@arm.linux.org.uk>,
         <valentin.longchamp@epfl.ch>, <daniel@caiaq.de>,
         <grant.likely@secretlab.ca>, <amit.kucheria@canonical.com>,
         Dinh Nguyen <Dinh.Nguyen@freescale.com>
-Subject: [PATCHv6 2/3] ARM: mx5: Add gpio-keys to mx51 babbage board
-Date: Fri, 22 Oct 2010 21:46:15 -0500
-Message-ID: <1287801976-5324-2-git-send-email-Dinh.Nguyen@freescale.com>
+Subject: [PATCHv6 3/3] ARM: imx: Add wake functionality to GPIO
+Date: Fri, 22 Oct 2010 21:46:16 -0500
+Message-ID: <1287801976-5324-3-git-send-email-Dinh.Nguyen@freescale.com>
 X-Mailer: git-send-email 1.6.0.4
-In-Reply-To: <1287801976-5324-1-git-send-email-Dinh.Nguyen@freescale.com>
+In-Reply-To: <1287801976-5324-2-git-send-email-Dinh.Nguyen@freescale.com>
 References: <1287801976-5324-1-git-send-email-Dinh.Nguyen@freescale.com>
+ <1287801976-5324-2-git-send-email-Dinh.Nguyen@freescale.com>
 MIME-Version: 1.0
 Content-Type: text/plain
-X-Reverse-DNS: az33egw01.freescale.net
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Dinh Nguyen <Dinh.Nguyen@freescale.com>
 
-Add functionality for the power button on MX51 Babbage board.
+Add function definition for irq_chip.set_wake to enable GPIO to
+wake-up the system.
+
+This patch has been tested on a MX51 Babbage system that had suspend
+code implemented. The set_wake implementation is necessary for a
+GPIO to wake up a system from suspend.
 
 Signed-off-by: Dinh Nguyen <Dinh.Nguyen@freescale.com>
 ---
- arch/arm/configs/mx51_defconfig        |    1 +
- arch/arm/mach-mx5/board-mx51_babbage.c |   24 ++++++++++++++++++++++++
- arch/arm/mach-mx5/devices-imx51.h      |    2 ++
- 3 files changed, 27 insertions(+), 0 deletions(-)
+ arch/arm/plat-mxc/gpio.c |   32 ++++++++++++++++++++++++++++++++
+ 1 files changed, 32 insertions(+), 0 deletions(-)
 
-diff --git a/arch/arm/configs/mx51_defconfig b/arch/arm/configs/mx51_defconfig
-index 163cfee..5c7a872 100644
---- a/arch/arm/configs/mx51_defconfig
-+++ b/arch/arm/configs/mx51_defconfig
-@@ -82,6 +82,7 @@ CONFIG_FEC=y
- CONFIG_INPUT_FF_MEMLESS=m
- # CONFIG_INPUT_MOUSEDEV_PSAUX is not set
- CONFIG_INPUT_EVDEV=y
-+CONFIG_KEYBOARD_GPIO=y
- CONFIG_INPUT_EVBUG=m
- CONFIG_MOUSE_PS2=m
- CONFIG_MOUSE_PS2_ELANTECH=y
-diff --git a/arch/arm/mach-mx5/board-mx51_babbage.c b/arch/arm/mach-mx5/board-mx51_babbage.c
-index 23ee4a4..8c4fd92 100644
---- a/arch/arm/mach-mx5/board-mx51_babbage.c
-+++ b/arch/arm/mach-mx5/board-mx51_babbage.c
-@@ -18,6 +18,8 @@
+diff --git a/arch/arm/plat-mxc/gpio.c b/arch/arm/plat-mxc/gpio.c
+index 9d38da0..9c3e362 100644
+--- a/arch/arm/plat-mxc/gpio.c
++++ b/arch/arm/plat-mxc/gpio.c
+@@ -20,6 +20,7 @@
+  */
+ 
+ #include <linux/init.h>
++#include <linux/interrupt.h>
  #include <linux/io.h>
- #include <linux/fsl_devices.h>
- #include <linux/fec.h>
-+#include <linux/gpio_keys.h>
-+#include <linux/input.h>
+ #include <linux/irq.h>
+ #include <linux/gpio.h>
+@@ -201,11 +202,42 @@ static void mx2_gpio_irq_handler(u32 irq, struct irq_desc *desc)
+ 	}
+ }
  
- #include <mach/common.h>
- #include <mach/hardware.h>
-@@ -37,6 +39,7 @@
- #define BABBAGE_USBH1_STP	(0*32 + 27)	/* GPIO_1_27 */
- #define BABBAGE_PHY_RESET	(1*32 + 5)	/* GPIO_2_5 */
- #define BABBAGE_FEC_PHY_RESET	(1*32 + 14)	/* GPIO_2_14 */
-+#define BABBAGE_POWER_KEY	(1*32 + 21)	/* GPIO_2_21 */
- 
- /* USB_CTRL_1 */
- #define MX51_USB_CTRL_1_OFFSET			0x10
-@@ -46,6 +49,21 @@
- #define	MX51_USB_PLL_DIV_19_2_MHZ	0x01
- #define	MX51_USB_PLL_DIV_24_MHZ	0x02
- 
-+static struct gpio_keys_button babbage_buttons[] = {
-+	{
-+		.gpio		= BABBAGE_POWER_KEY,
-+		.code		= BTN_0,
-+		.desc		= "PWR",
-+		.active_low	= 1,
-+		.wakeup		= 1,
-+	},
-+};
++/*
++ * Set interrupt number "irq" in the GPIO as a wake-up source.
++ * While system is running, all registered GPIO interrupts need to have
++ * wake-up enabled. When system is suspended, only selected GPIO interrupts
++ * need to have wake-up enabled.
++ * @param  irq          interrupt source number
++ * @param  enable       enable as wake-up if equal to non-zero
++ * @return       This function returns 0 on success.
++ */
++static int gpio_set_wake_irq(u32 irq, u32 enable)
++{
++	u32 gpio = irq_to_gpio(irq);
++	u32 gpio_idx = gpio & 0x1F;
++	struct mxc_gpio_port *port = &mxc_gpio_ports[gpio / 32];
 +
-+static const struct gpio_keys_platform_data imx_button_data __initconst = {
-+	.buttons	= babbage_buttons,
-+	.nbuttons	= ARRAY_SIZE(babbage_buttons),
-+};
++	if (enable) {
++		if (port->irq_high && (gpio_idx >= 16))
++			enable_irq_wake(port->irq_high);
++		else
++			enable_irq_wake(port->irq);
++	} else {
++		if (port->irq_high && (gpio_idx >= 16))
++			disable_irq_wake(port->irq_high);
++		else
++			disable_irq_wake(port->irq);
++	}
 +
- static struct pad_desc mx51babbage_pads[] = {
- 	/* UART1 */
- 	MX51_PAD_UART1_RXD__UART1_RXD,
-@@ -281,6 +299,7 @@ __setup("otg_mode=", babbage_otg_mode);
- static void __init mxc_board_init(void)
- {
- 	struct pad_desc usbh1stp = MX51_PAD_USBH1_STP__USBH1_STP;
-+	struct pad_desc power_key = MX51_PAD_EIM_A27__GPIO_2_21
- 
- 	mxc_iomux_v3_setup_multiple_pads(mx51babbage_pads,
- 					ARRAY_SIZE(mx51babbage_pads));
-@@ -288,6 +307,11 @@ static void __init mxc_board_init(void)
- 	babbage_fec_reset();
- 	imx51_add_fec(NULL);
- 
-+	/* Set the PAD settings for the pwr key. */
-+	power_key.pad_ctrl = MX51_GPIO_PAD_CTRL_2;
-+	mxc_iomux_v3_setup_pad(&power_key);
-+	imx51_add_gpio_keys(&imx_button_data);
++	return 0;
++}
 +
- 	imx51_add_imx_i2c(0, &babbage_i2c_data);
- 	imx51_add_imx_i2c(1, &babbage_i2c_data);
- 	mxc_register_device(&mxc_hsi2c_device, &babbage_hsi2c_data);
-diff --git a/arch/arm/mach-mx5/devices-imx51.h b/arch/arm/mach-mx5/devices-imx51.h
-index 5cc910e..8c50cb5 100644
---- a/arch/arm/mach-mx5/devices-imx51.h
-+++ b/arch/arm/mach-mx5/devices-imx51.h
-@@ -13,6 +13,8 @@ extern const struct imx_fec_data imx51_fec_data __initconst;
- #define imx51_add_fec(pdata)	\
- 	imx_add_fec(&imx51_fec_data, pdata)
+ static struct irq_chip gpio_irq_chip = {
+ 	.ack = gpio_ack_irq,
+ 	.mask = gpio_mask_irq,
+ 	.unmask = gpio_unmask_irq,
+ 	.set_type = gpio_set_irq_type,
++	.set_wake = gpio_set_wake_irq,
+ };
  
-+#define imx51_add_gpio_keys(pdata) imx_add_gpio_keys(pdata)
-+
- extern const struct imx_imx_i2c_data imx51_imx_i2c_data[] __initconst;
- #define imx51_add_imx_i2c(id, pdata)	\
- 	imx_add_imx_i2c(&imx51_imx_i2c_data[id], pdata)
+ static void _set_gpio_direction(struct gpio_chip *chip, unsigned offset,
 -- 
 1.6.0.4
 
