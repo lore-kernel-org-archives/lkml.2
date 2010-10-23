@@ -1,71 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758085Ab0JWSA5 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Oct 2010 14:00:57 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:43095 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756378Ab0JWSAz (ORCPT
+	id S1757924Ab0JWSGE (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Oct 2010 14:06:04 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:44353
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756352Ab0JWSGC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Oct 2010 14:00:55 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=AAro/awQ1fc/IbYX0JMOY1xRSaL7cDaBtCcrUM4TUlxsXU7+CquAVmjgaf/h9SIAVr
-         Z2V3yNyWavDfobN2N0rdXSg21HqBGa5+ia087ZH3DZs/nVD0YGNUfqSMycwWXuACSwi0
-         BZOcVJttX277yWJrWluUV1d1cX8rddjv6gjeA=
-Subject: Re: A question on block_prepare_write()
-From: Namhyung Kim <namhyung@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <20101023104036.2bec05a0.akpm@linux-foundation.org>
-References: <1287841482.1681.36.camel@leonhard>
-	 <20101023104036.2bec05a0.akpm@linux-foundation.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sun, 24 Oct 2010 03:00:46 +0900
-Message-ID: <1287856846.1681.58.camel@leonhard>
+	Sat, 23 Oct 2010 14:06:02 -0400
+Date: Sat, 23 Oct 2010 11:06:24 -0700 (PDT)
+Message-Id: <20101023.110624.226758370.davem@davemloft.net>
+To: rostedt@goodmis.org
+CC: jbaron@redhat.com, linux-kernel@vger.kernel.org,
+        sparclinux@vger.kernel.org
+Subject: [PATCH] jump_label: Fix unaligned traps on sparc.
+From: David Miller <davem@davemloft.net>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 8bit
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010-10-23 (토), 10:40 -0700, Andrew Morton:
-> On Sat, 23 Oct 2010 22:44:42 +0900 Namhyung Kim <namhyung@gmail.com> wrote:
-> 
-> > Hello,
-> > 
-> > I see block_prepare_write() has local variable wait[2] to keep track of
-> > buffer_heads which are not up-to-date. But I'm wondering how it could be
-> > guaranteed there will be no more than 2 such buffer_heads? Is there any
-> > restriction on the usage of the function? Using MAX_BUF_PER_PAGE instead
-> > of the magic number 2 is just useless? I couldn't find any comments or
-> > documentation on this.
-> > 
-> > Any of your comments would be greatly appreciated. TIA. :-)
-> > 
-> 
-> block_prepare_write() may need to preread any buffer_head which are
-> being only partially modified by the write().
-> 
-> Buffers which aren't being modified at all don't need to be preread. 
-> Buffers which are being fully modified don't need to be preread
-> (because all their data is being overwritten).
-> 
-> page:                      |-----------------------|
-> buffer_heads:              |-----|-----|-----|-----|
-> area we're writing to:               |---------|
-> 
-> There can only be a maximum of two partially-modified buffers in the page.
 
-I see. It considers both edges of the to-be-written data. Thanks for
-your clear and kindly explanation. :-)
+The vmlinux.lds.h knobs to emit the __jump_table section in the main
+kernel image takes care to align the section, but this doesn't help
+for the __jump_table section that gets emitted into modules.
 
+Fix the resulting lack of section alignment by explicitly specifying
+it in the assembler.
 
--- 
-Regards,
-Namhyung Kim
+Signed-off-by: David S. Miller <davem@davemloft.net>
 
-
+diff --git a/arch/sparc/include/asm/jump_label.h b/arch/sparc/include/asm/jump_label.h
+index 62e66d7..d95cf44 100644
+--- a/arch/sparc/include/asm/jump_label.h
++++ b/arch/sparc/include/asm/jump_label.h
+@@ -14,6 +14,7 @@
+ 			 "nop\n\t"				\
+ 			 "nop\n\t"				\
+ 			 ".pushsection __jump_table,  \"a\"\n\t"\
++			 ".align 4\n\t"				\
+ 			 ".word 1b, %l[" #label "], %c0\n\t"	\
+ 			 ".popsection \n\t"			\
+ 			 : :  "i" (key) :  : label);\
