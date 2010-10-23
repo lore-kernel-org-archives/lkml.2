@@ -1,55 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757837Ab0JWPoG (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Oct 2010 11:44:06 -0400
-Received: from silver.sucs.swan.ac.uk ([137.44.10.1]:44422 "EHLO
-	silver.sucs.swan.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757738Ab0JWPoE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Oct 2010 11:44:04 -0400
-Date: Sat, 23 Oct 2010 16:43:56 +0100
-From: Sitsofe Wheeler <sitsofe@yahoo.com>
-To: Richard Hughes <hughsient@gmail.com>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
-        Matthew Garrett <mjg59@srcf.ucam.org>, Len Brown <lenb@kernel.org>,
-        Zhang Rui <rui.zhang@intel.com>, David Zeuthen <davidz@redhat.com>,
-        Richard Hughes <richard@hughsie.com>, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ACPI / Battery: Return -ENODATA for unknown values in
-	get_property()
-Message-ID: <20101023154355.GB8994@sucs.org>
-References: <20101016141321.GA11054@sucs.org> <20101017131016.GB13015@khazad-dum.debian.net> <20101017145025.GA32599@sucs.org> <201010172032.43206.rjw@sisk.pl> <20101021165420.GA8718@sucs.org> <AANLkTimJQN=SNCDwOJLo0MKXEcutTKZ3qd81hNAKeXGg@mail.gmail.com>
+	id S1757865Ab0JWPp4 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Oct 2010 11:45:56 -0400
+Received: from cantor.suse.de ([195.135.220.2]:50540 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757818Ab0JWPpz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 23 Oct 2010 11:45:55 -0400
+Date: Sat, 23 Oct 2010 08:46:36 -0700
+From: Greg KH <gregkh@suse.de>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Jiri Slaby <jslaby@suse.cz>, linux-kernel@vger.kernel.org,
+        "Dr. Werner Fink" <werner@suse.de>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH 28/49] tty: Add a new file /proc/tty/consoles
+Message-ID: <20101023154636.GA18786@suse.de>
+References: <20101022175112.GC13489@kroah.com> <1287771688-14805-28-git-send-email-gregkh@suse.de> <4CC2C9A8.1040003@suse.cz> <20101023115129.GM19804@ZenIV.linux.org.uk> <4CC2CE66.7010405@suse.cz> <20101023122612.GO19804@ZenIV.linux.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <AANLkTimJQN=SNCDwOJLo0MKXEcutTKZ3qd81hNAKeXGg@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20101023122612.GO19804@ZenIV.linux.org.uk>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 22, 2010 at 01:31:28PM +0100, Richard Hughes wrote:
-> On 21 October 2010 17:54, Sitsofe Wheeler <sitsofe@yahoo.com> wrote:
-> > I guess there are a whole bunch of other attributes that could
-> > theoretically be -1 and shouldn't be used if they return it...
+On Sat, Oct 23, 2010 at 01:26:12PM +0100, Al Viro wrote:
+> On Sat, Oct 23, 2010 at 02:00:38PM +0200, Jiri Slaby wrote:
 > 
-> I think checking for <0 is probably a good idea, and I'm a little
-> surprised we don't do this already. Patch welcome, if this is what you
-> decide to do.
+> > > Please, don't.  Even leaving aside the fact that it's mind-bogglingly
+> > > broken (->private_data can be _ANYTHING_, including arbitrary number cast
+> > > to pointer), you really shouldn't screw your way through the descriptor
+> > > table in the first place.
+> > > 
+> > > Strongly NACKed.
+> > 
+> > Well, our complains are -ETOOLATE -- it's commit f4a3e0bceb57466c
+> > upstream. So please fix this up.
+> 
+> FVO "fix" equal to "revert".  Belated review:
+> 
+> a) global variable depending on stdin of the last opener?  Affecting
+> output of read(2)?  Really?
+> 
+> b) iterator is broken; list should be locked in ->start(), unlocked
+> in ->stop() and *NOT* unlocked/relocked in ->next()
+> 
+> c) ->show() ought to do nothing in case of ->device == NULL, instead
+> of skipping those in ->next()/->start()
+> 
+> d) regardless of the merits of the bright idea about asterisk at that
+> line in output *and* regardless of (a), the implementation is not only
+> atrociously ugly, it's actually very likely to be a roothole.  Verifying
+> that Cthulhu knows what number happens to be address of a tty_struct by
+> blindly dereferencing memory at that address...  Ouch.
+> 
+> Please revert that crap.
 
-I can only guess that at some point in upower's past negative values for
-current_rate were found to be valid so upower took the route of making
-them absolute to work around that behaviour. If so, it would be good to
-know whether there are still devices in this category running a stock
-kernel.
+I'll revert it and send the pull request to Linus.
 
-If the latest patch to return -ENODEV goes in, then there's the
-possibility for upower to detect the unknown state and report unknown
-back to its users. Would the existing interfaces support outputting
-unknown instead of a number? If not (and there are no plans to) I
-suspect the best thing to do is to remove the test for 0xffff and
-continue to return 0.
+Sorry about this.
 
--- 
-Sitsofe | http://sucs.org/~sits/
+greg k-h
