@@ -1,63 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756642Ab0JWLww (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Oct 2010 07:52:52 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:62200 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756540Ab0JWLwv (ORCPT
+	id S1756449Ab0JWMAo (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Oct 2010 08:00:44 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:56755 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754671Ab0JWMAn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Oct 2010 07:52:51 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Alessio Igor Bogani <abogani@texware.it>
-Subject: Re: [PATCH 1/6] udf: Replace BKL with superblock's mutex s_lock
-Date: Sat, 23 Oct 2010 13:53:12 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.35-16-generic; KDE/4.3.2; x86_64; ; )
-Cc: Tim Bird <tim.bird@am.sony.com>, LKML <linux-kernel@vger.kernel.org>
-References: <1287833853-4175-1-git-send-email-abogani@texware.it>
-In-Reply-To: <1287833853-4175-1-git-send-email-abogani@texware.it>
+	Sat, 23 Oct 2010 08:00:43 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:x-enigmail-version:content-type
+         :content-transfer-encoding;
+        b=xAuexwJWVS+zjashubkDhKKgmMzxmQAX+Xuo/oVs/bgPzAzZSrTltY35jRs+dc6HH/
+         Hb5oerrBBIuk/RcY3WWkZHp1aTF2rsMcuQUzU9/UqulM8v7x7Pvwl11Vwgyq72QfYpEf
+         q3UKaSuSifz8mBKOySt9jRgIzbJIyAtT/3KIc=
+Message-ID: <4CC2CE66.7010405@suse.cz>
+Date: Sat, 23 Oct 2010 14:00:38 +0200
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.11) Gecko/20101013 SUSE/3.1.5 Thunderbird/3.1.5
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
+To: Al Viro <viro@ZenIV.linux.org.uk>
+CC: Greg Kroah-Hartman <gregkh@suse.de>, linux-kernel@vger.kernel.org,
+        "Dr. Werner Fink" <werner@suse.de>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH 28/49] tty: Add a new file /proc/tty/consoles
+References: <20101022175112.GC13489@kroah.com> <1287771688-14805-28-git-send-email-gregkh@suse.de> <4CC2C9A8.1040003@suse.cz> <20101023115129.GM19804@ZenIV.linux.org.uk>
+In-Reply-To: <20101023115129.GM19804@ZenIV.linux.org.uk>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Message-Id: <201010231353.12709.arnd@arndb.de>
-X-Provags-ID: V02:K0:HQ9GhhxECEoW+YKzfwHQ/BKvr8LHzmymGO9DpuXPwhe
- mry/gARYgNbEUL4kWqPi0IDPNVfq0zNIZ5caqz6r6a5CN8Dg0z
- Gns5H/UloXZyXkw2XfIJeqLRByJt8vK4i0EfsnAEm5Okl3QX/u
- AxKjPEJSN3f2W67hIQPW4c5yTnO6h8nPO2CnH/Ka0YeILTLrRJ
- yDl6i3mH2MsmmJb6W+cRQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday 23 October 2010, Alessio Igor Bogani wrote:
-> This work was supported by a hardware donation from the CE Linux Forum.
+On 10/23/2010 01:51 PM, Al Viro wrote:
+> On Sat, Oct 23, 2010 at 01:40:24PM +0200, Jiri Slaby wrote:
+>> On 10/22/2010 08:21 PM, Greg Kroah-Hartman wrote:
+>>> +/*
+>>> + * Used for open /proc/tty/consoles. Before this detect
+>>> + * the device ID of file descriptor 0 of the current
+>>> + * reading task if a character device...
+>>> + */
+>>> +static int tty_consoles_open(struct inode *inode, struct file *file)
+>>> +{
+>>> +	struct files_struct *curfiles;
+>>> +
+>>> +	current_dev = 0;
+>>> +	curfiles = get_files_struct(current);
+>>> +	if (curfiles) {
+>>> +		const struct file *curfp;
+>>> +		spin_lock(&curfiles->file_lock);
+>>> +		curfp = fcheck_files(curfiles, 0);
+>>> +		if (curfp && curfp->private_data) {
+>>> +			const struct inode *inode;
+>>> +			dget(curfp->f_dentry);
+>>> +			inode = curfp->f_dentry->d_inode;
+>>> +			if (S_ISCHR(inode->i_mode)) {
+>>> +				struct tty_struct *tty;
+>>> +				tty = (struct tty_struct *)curfp->private_data;
+>>> +				if (tty && tty->magic == TTY_MAGIC) {
+>>
+>> Ah, I've just understood what this code does. It seems, that the 'tty'
+>> at this point may be already freed (e.g. people don't set private_data
+>> to NULL). Please explain in the code why it can't...
 > 
-> Signed-off-by: Alessio Igor Bogani <abogani@texware.it>
+> Please, don't.  Even leaving aside the fact that it's mind-bogglingly
+> broken (->private_data can be _ANYTHING_, including arbitrary number cast
+> to pointer), you really shouldn't screw your way through the descriptor
+> table in the first place.
+> 
+> Strongly NACKed.
 
-Hi Alessio,
+Well, our complains are -ETOOLATE -- it's commit f4a3e0bceb57466c
+upstream. So please fix this up.
 
-Thanks a lot for joining in on the effort. Your patches look good for the
-most part, but there are a few details you should change before they
-go upstream. Most importantly, the subject lines of patches are currently
-not unique and they tell very little about what is going on. You can
-probably merge the three "remove BKL" patches into one and explain
-why that is safe in a combined changelog.
-
-> @@ -568,7 +568,7 @@ static int udf_remount_fs(struct super_block *sb, int *flags, char *options)
->  	if (!udf_parse_options(options, &uopt, true))
->  		return -EINVAL;
->  
-> -	lock_kernel();
-> +	mutex_lock(&sb->s_lock);
->  	sbi->s_flags = uopt.flags;
->  	sbi->s_uid   = uopt.uid;
->  	sbi->s_gid   = uopt.gid;
-
-As I recently learned, there is also an effort to get rid of sb->s_lock, so
-the change in super.c is not all that helpful. When you need a per-filesystem
-mutex, please instead add a new one to udf_sb_info. There is already the
-s_alloc_mutex. While I haven't looked at that, maybe it can be extended to
-cover the other areas that are under s_lock with your patch. Watch out for
-put_super freeing sb_info under the lock though.
-
-	Arnd
+regards,
+-- 
+js
+suse labs
