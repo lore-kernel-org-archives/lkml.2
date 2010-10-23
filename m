@@ -1,178 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757704Ab0JWPbz (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Oct 2010 11:31:55 -0400
-Received: from hera.kernel.org ([140.211.167.34]:40089 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757600Ab0JWPbx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Oct 2010 11:31:53 -0400
-Date: Sat, 23 Oct 2010 15:31:13 GMT
-From: tip-bot for Thomas Gleixner <tglx@linutronix.de>
-Cc: dirk.j.brandewie@intel.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
-        mingo@redhat.com, tglx@linutronix.de
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        dirk.j.brandewie@intel.com, tglx@linutronix.de
-In-Reply-To: <1287510389-8388-1-git-send-email-dirk.brandewie@gmail.com>
-References: <1287510389-8388-1-git-send-email-dirk.brandewie@gmail.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/apic] x86: Allow platforms to force enable apic
-Message-ID: <tip-5a7ae78fd478624df3059cb6f55056b85d074acc@git.kernel.org>
-Git-Commit-ID: 5a7ae78fd478624df3059cb6f55056b85d074acc
-X-Mailer: tip-git-log-daemon
+	id S1757768Ab0JWPhS (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Oct 2010 11:37:18 -0400
+Received: from silver.sucs.swan.ac.uk ([137.44.10.1]:57507 "EHLO
+	silver.sucs.swan.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757692Ab0JWPhQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 23 Oct 2010 11:37:16 -0400
+Date: Sat, 23 Oct 2010 16:36:37 +0100
+From: Sitsofe Wheeler <sitsofe@yahoo.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
+        Matthew Garrett <mjg59@srcf.ucam.org>, Len Brown <lenb@kernel.org>,
+        Zhang Rui <rui.zhang@intel.com>, David Zeuthen <davidz@redhat.com>,
+        Richard Hughes <richard@hughsie.com>, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ACPI / Battery: Return -ENODATA for unknown values in
+	get_property()
+Message-ID: <20101023153637.GA8994@sucs.org>
+References: <20101016141321.GA11054@sucs.org> <201010212157.47952.rjw@sisk.pl> <20101021204620.GB3318@sucs.org> <201010230019.14100.rjw@sisk.pl>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sat, 23 Oct 2010 15:31:15 +0000 (UTC)
+In-Reply-To: <201010230019.14100.rjw@sisk.pl>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  5a7ae78fd478624df3059cb6f55056b85d074acc
-Gitweb:     http://git.kernel.org/tip/5a7ae78fd478624df3059cb6f55056b85d074acc
-Author:     Thomas Gleixner <tglx@linutronix.de>
-AuthorDate: Tue, 19 Oct 2010 10:46:28 -0700
-Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Sat, 23 Oct 2010 17:27:43 +0200
+On Sat, Oct 23, 2010 at 12:19:13AM +0200, Rafael J. Wysocki wrote:
+> 
+> OK, so can you test the patch below, please?
 
-x86: Allow platforms to force enable apic
+The latest patch seems to fix/workaround the problem. upower now reports
+0 as the energy rate, there are no warnings in dmesg and battery hotplug
+works. Looks good and there's the option for a future upower to
+interpret the missing sysfs as meaning "unknown".
 
-Some embedded x86 platforms don't setup the APIC in the
-BIOS/bootloader and would be forced to add "lapic" on the kernel
-command line. That's a bit akward.
+Tested-by: Sitsofe Wheeler <sitsofe@yahoo.com>
 
-Split out the force enable code from detect_init_APIC() and allow
-platform code to call it from the platform setup. That avoids the
-command line parameter and possible replication of the MSR dance in
-the force enable code.
+> The function acpi_battery_get_property() is called by the
+> power supply framework's function power_supply_show_property()
+> implementing the sysfs interface for power supply devices as the
+> ACPI battery driver's ->get_property() callback.  Thus it is supposed
+> to return error code if the value of the given property is unknown.
+> Unfortunately, however, it returns 0 in those cases and puts a
+> wrong (negative) value into the intval field of the
+> union power_supply_propval object provided by
+> power_supply_show_property().  In consequence, wron negative
 
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-LKML-Reference: <1287510389-8388-1-git-send-email-dirk.brandewie@gmail.com>
-Signed-off-by: Dirk Brandewie <dirk.j.brandewie@intel.com>
----
- arch/x86/include/asm/apic.h |    1 +
- arch/x86/kernel/apic/apic.c |   87 ++++++++++++++++++++++++++----------------
- 2 files changed, 55 insertions(+), 33 deletions(-)
+wron -> wrong?
 
-diff --git a/arch/x86/include/asm/apic.h b/arch/x86/include/asm/apic.h
-index 286de34..ad50aaa 100644
---- a/arch/x86/include/asm/apic.h
-+++ b/arch/x86/include/asm/apic.h
-@@ -238,6 +238,7 @@ extern void setup_boot_APIC_clock(void);
- extern void setup_secondary_APIC_clock(void);
- extern int APIC_init_uniprocessor(void);
- extern void enable_NMI_through_LVT0(void);
-+extern int apic_force_enable(void);
- 
- /*
-  * On 32bit this is mach-xxx local
-diff --git a/arch/x86/kernel/apic/apic.c b/arch/x86/kernel/apic/apic.c
-index 850657d..4638396 100644
---- a/arch/x86/kernel/apic/apic.c
-+++ b/arch/x86/kernel/apic/apic.c
-@@ -1531,13 +1531,60 @@ static int __init detect_init_APIC(void)
- 	return 0;
- }
- #else
-+
-+static int apic_verify(void)
-+{
-+	u32 features, h, l;
-+
-+	/*
-+	 * The APIC feature bit should now be enabled
-+	 * in `cpuid'
-+	 */
-+	features = cpuid_edx(1);
-+	if (!(features & (1 << X86_FEATURE_APIC))) {
-+		pr_warning("Could not enable APIC!\n");
-+		return -1;
-+	}
-+	set_cpu_cap(&boot_cpu_data, X86_FEATURE_APIC);
-+	mp_lapic_addr = APIC_DEFAULT_PHYS_BASE;
-+
-+	/* The BIOS may have set up the APIC at some other address */
-+	rdmsr(MSR_IA32_APICBASE, l, h);
-+	if (l & MSR_IA32_APICBASE_ENABLE)
-+		mp_lapic_addr = l & MSR_IA32_APICBASE_BASE;
-+
-+	pr_info("Found and enabled local APIC!\n");
-+	return 0;
-+}
-+
-+int apic_force_enable(void)
-+{
-+	u32 h, l;
-+
-+	if (disable_apic)
-+		return -1;
-+
-+	/*
-+	 * Some BIOSes disable the local APIC in the APIC_BASE
-+	 * MSR. This can only be done in software for Intel P6 or later
-+	 * and AMD K7 (Model > 1) or later.
-+	 */
-+	rdmsr(MSR_IA32_APICBASE, l, h);
-+	if (!(l & MSR_IA32_APICBASE_ENABLE)) {
-+		pr_info("Local APIC disabled by BIOS -- reenabling.\n");
-+		l &= ~MSR_IA32_APICBASE_BASE;
-+		l |= MSR_IA32_APICBASE_ENABLE | APIC_DEFAULT_PHYS_BASE;
-+		wrmsr(MSR_IA32_APICBASE, l, h);
-+		enabled_via_apicbase = 1;
-+	}
-+	return apic_verify();
-+}
-+
- /*
-  * Detect and initialize APIC
-  */
- static int __init detect_init_APIC(void)
- {
--	u32 h, l, features;
--
- 	/* Disabled by kernel option? */
- 	if (disable_apic)
- 		return -1;
-@@ -1567,38 +1614,12 @@ static int __init detect_init_APIC(void)
- 				"you can enable it with \"lapic\"\n");
- 			return -1;
- 		}
--		/*
--		 * Some BIOSes disable the local APIC in the APIC_BASE
--		 * MSR. This can only be done in software for Intel P6 or later
--		 * and AMD K7 (Model > 1) or later.
--		 */
--		rdmsr(MSR_IA32_APICBASE, l, h);
--		if (!(l & MSR_IA32_APICBASE_ENABLE)) {
--			pr_info("Local APIC disabled by BIOS -- reenabling.\n");
--			l &= ~MSR_IA32_APICBASE_BASE;
--			l |= MSR_IA32_APICBASE_ENABLE | APIC_DEFAULT_PHYS_BASE;
--			wrmsr(MSR_IA32_APICBASE, l, h);
--			enabled_via_apicbase = 1;
--		}
--	}
--	/*
--	 * The APIC feature bit should now be enabled
--	 * in `cpuid'
--	 */
--	features = cpuid_edx(1);
--	if (!(features & (1 << X86_FEATURE_APIC))) {
--		pr_warning("Could not enable APIC!\n");
--		return -1;
-+		if (apic_force_enable())
-+			return -1;
-+	} else {
-+		if (apic_verify())
-+			return -1;
- 	}
--	set_cpu_cap(&boot_cpu_data, X86_FEATURE_APIC);
--	mp_lapic_addr = APIC_DEFAULT_PHYS_BASE;
--
--	/* The BIOS may have set up the APIC at some other address */
--	rdmsr(MSR_IA32_APICBASE, l, h);
--	if (l & MSR_IA32_APICBASE_ENABLE)
--		mp_lapic_addr = l & MSR_IA32_APICBASE_BASE;
--
--	pr_info("Found and enabled local APIC!\n");
- 
- 	apic_pm_activate();
- 
+> Fix this by making acpi_battery_get_property() return -ENODEV
+> for properties with unknown values (-ENODEV is returned, because
+> power_supply_uevent() returns with error for any other error code
+> returned by power_supply_show_property()).
+
+OK that's sneaky and clever - technically power_supply_uevent should be
+more robust but presumably things are already prepared to handle -ENODEV
+so overloading the meaning leads to the smallest change.
+
+-- 
+Sitsofe | http://sucs.org/~sits/
