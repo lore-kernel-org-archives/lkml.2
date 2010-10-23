@@ -1,66 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757875Ab0JWQMJ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Oct 2010 12:12:09 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:37585 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755945Ab0JWQMI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Oct 2010 12:12:08 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=kFsdjEAOKK75oy3LQ85IrgJ0Mv+TD49lR5KYeioEk4FEqBUN3d4BfTvCLa6gKTYDzm
-         L2RDBMzjUqAOUiYsx1ovLXJlXteRvV19RzuIPYG5eLbgrttJhaKf63WAtE4l1es+funy
-         8d7lACf2qz8kiyA2x3wbxjceNXu5m67TJo/70=
-From: Namhyung Kim <namhyung@gmail.com>
-To: Alexander Viro <viro@zeniv.linux.org.uk>
-Cc: Christoph Hellwig <hch@lst.de>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH UPDATED] fs/buffer.c: call __block_write_begin() if we have page
-Date: Sun, 24 Oct 2010 01:11:54 +0900
-Message-Id: <1287850314-13663-1-git-send-email-namhyung@gmail.com>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1287848786-13347-1-git-send-email-namhyung@gmail.com>
-References: <1287848786-13347-1-git-send-email-namhyung@gmail.com>
+	id S1757891Ab0JWQQN (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Oct 2010 12:16:13 -0400
+Received: from igloo.linux.gr ([62.1.205.36]:52782 "EHLO igloo.linux.gr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756908Ab0JWQQM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 23 Oct 2010 12:16:12 -0400
+X-Greylist: delayed 560 seconds by postgrey-1.27 at vger.kernel.org; Sat, 23 Oct 2010 12:16:11 EDT
+X-Hellug-MailScanner-From: serzan@hellug.gr
+X-Hellug-MailScanner-SpamCheck: not spam, SpamAssassin (not cached,
+	score=-2.9, required 5, autolearn=not spam, ALL_TRUSTED -1.00,
+	BAYES_00 -1.90)
+X-Hellug-MailScanner: Found to be clean
+X-Hellug-MailScanner-ID: o9NG6XJC030119
+From: Serafeim Zanikolas <sez@debian.org>
+To: linux-kernel@vger.kernel.org
+Subject: [PATCH] time: jiffies.c: fix typos in comment
+Date: Sat, 23 Oct 2010 18:06:26 +0200
+Message-Id: <1287849986-5936-1-git-send-email-sez@debian.org>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If we have the appropriate page already, call __block_write_begin()
-directly instead of releasing and regrabbing it inside of
-block_write_begin().
 
-Signed-off-by: Namhyung Kim <namhyung@gmail.com>
+Signed-off-by: Serafeim Zanikolas <sez@debian.org>
 ---
-Fix error path.
+ kernel/time/jiffies.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
- fs/buffer.c |   12 +++++++-----
- 1 files changed, 7 insertions(+), 5 deletions(-)
-
-diff --git a/fs/buffer.c b/fs/buffer.c
-index 7f0b9b0..f5755f7 100644
---- a/fs/buffer.c
-+++ b/fs/buffer.c
-@@ -2466,11 +2466,13 @@ int nobh_write_begin(struct address_space *mapping,
- 	*fsdata = NULL;
- 
- 	if (page_has_buffers(page)) {
--		unlock_page(page);
--		page_cache_release(page);
--		*pagep = NULL;
--		return block_write_begin(mapping, pos, len, flags, pagep,
--					 get_block);
-+		ret = __block_write_begin(page, pos, len, get_block);
-+		if (unlikely(ret)) {
-+			unlock_page(page);
-+			page_cache_release(page);
-+			*pagep = NULL;
-+		}
-+		return ret;
- 	}
- 
- 	if (PageMappedToDisk(page))
+diff --git a/kernel/time/jiffies.c b/kernel/time/jiffies.c
+index 5404a84..12ba9a7 100644
+--- a/kernel/time/jiffies.c
++++ b/kernel/time/jiffies.c
+@@ -30,8 +30,8 @@
+  * the timer interrupt frequency HZ and it suffers
+  * inaccuracies caused by missed or lost timer
+  * interrupts and the inability for the timer
+- * interrupt hardware to accuratly tick at the
+- * requested HZ value. It is also not reccomended
++ * interrupt hardware to accurately tick at the
++ * requested HZ value. It is also not recommended
+  * for "tick-less" systems.
+  */
+ #define NSEC_PER_JIFFY	((u32)((((u64)NSEC_PER_SEC)<<8)/ACTHZ))
 -- 
-1.7.0.4
+1.7.1
 
