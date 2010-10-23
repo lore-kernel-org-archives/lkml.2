@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757590Ab0JWPDS (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Oct 2010 11:03:18 -0400
-Received: from www.tglx.de ([62.245.132.106]:49064 "EHLO www.tglx.de"
+	id S1757564Ab0JWPFF (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Oct 2010 11:05:05 -0400
+Received: from www.tglx.de ([62.245.132.106]:49081 "EHLO www.tglx.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757483Ab0JWPDR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Oct 2010 11:03:17 -0400
-Date: Sat, 23 Oct 2010 17:03:03 +0200 (CEST)
+	id S1757041Ab0JWPFD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 23 Oct 2010 11:05:03 -0400
+Date: Sat, 23 Oct 2010 17:04:47 +0200 (CEST)
 From: Thomas Gleixner <tglx@linutronix.de>
 To: Linus Torvalds <torvalds@linux-foundation.org>
 cc: Andrew Morton <akpm@linux-foundation.org>,
         LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
         "H. Peter Anvin" <hpa@zytor.com>
-Subject: [GIT pull] x86 uv for 2.6.37
-Message-ID: <alpine.LFD.2.00.1010231634420.2516@localhost6.localdomain6>
+Subject: [GIT pull] x86 vm86 for 2.6.37
+Message-ID: <alpine.LFD.2.00.1010231704270.5231@localhost6.localdomain6>
 User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
@@ -23,50 +23,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Linus,
 
-Please pull the latest x86-uv-for-linus git tree from:
+Please pull the latest x86-vm86-for-linus git tree from:
 
-   git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git x86-uv-for-linus
+   git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git x86-vm86-for-linus
 
 Thanks,
 
 	tglx
 
 ------------------>
-Dan Carpenter (1):
-      x86, UV: Use allocated buffer in tlb_uv.c:tunables_read()
+Bart Oldeman (1):
+      x86, vm86: Fix preemption bug for int1 debug and int3 breakpoint handlers.
 
 
- arch/x86/kernel/tlb_uv.c |   11 ++++++++---
- 1 files changed, 8 insertions(+), 3 deletions(-)
+ arch/x86/kernel/traps.c   |    1 +
+ arch/x86/kernel/vm86_32.c |   10 ++++++++--
+ 2 files changed, 9 insertions(+), 2 deletions(-)
 
-diff --git a/arch/x86/kernel/tlb_uv.c b/arch/x86/kernel/tlb_uv.c
-index 312ef02..33e77e4 100644
---- a/arch/x86/kernel/tlb_uv.c
-+++ b/arch/x86/kernel/tlb_uv.c
-@@ -1001,10 +1001,10 @@ static int uv_ptc_seq_show(struct seq_file *file, void *data)
- static ssize_t tunables_read(struct file *file, char __user *userbuf,
- 						size_t count, loff_t *ppos)
+diff --git a/arch/x86/kernel/traps.c b/arch/x86/kernel/traps.c
+index 60788de..9f4edeb 100644
+--- a/arch/x86/kernel/traps.c
++++ b/arch/x86/kernel/traps.c
+@@ -575,6 +575,7 @@ dotraplinkage void __kprobes do_debug(struct pt_regs *regs, long error_code)
+ 	if (regs->flags & X86_VM_MASK) {
+ 		handle_vm86_trap((struct kernel_vm86_regs *) regs,
+ 				error_code, 1);
++		preempt_conditional_cli(regs);
+ 		return;
+ 	}
+ 
+diff --git a/arch/x86/kernel/vm86_32.c b/arch/x86/kernel/vm86_32.c
+index 5ffb562..61fb985 100644
+--- a/arch/x86/kernel/vm86_32.c
++++ b/arch/x86/kernel/vm86_32.c
+@@ -551,8 +551,14 @@ cannot_handle:
+ int handle_vm86_trap(struct kernel_vm86_regs *regs, long error_code, int trapno)
  {
--	char buf[300];
-+	char *buf;
- 	int ret;
- 
--	ret = snprintf(buf, 300, "%s %s %s\n%d %d %d %d %d %d %d %d %d\n",
-+	buf = kasprintf(GFP_KERNEL, "%s %s %s\n%d %d %d %d %d %d %d %d %d\n",
- 		"max_bau_concurrent plugged_delay plugsb4reset",
- 		"timeoutsb4reset ipi_reset_limit complete_threshold",
- 		"congested_response_us congested_reps congested_period",
-@@ -1012,7 +1012,12 @@ static ssize_t tunables_read(struct file *file, char __user *userbuf,
- 		timeoutsb4reset, ipi_reset_limit, complete_threshold,
- 		congested_response_us, congested_reps, congested_period);
- 
--	return simple_read_from_buffer(userbuf, count, ppos, buf, ret);
-+	if (!buf)
-+		return -ENOMEM;
-+
-+	ret = simple_read_from_buffer(userbuf, count, ppos, buf, strlen(buf));
-+	kfree(buf);
-+	return ret;
- }
- 
- /*
+ 	if (VMPI.is_vm86pus) {
+-		if ((trapno == 3) || (trapno == 1))
+-			return_to_32bit(regs, VM86_TRAP + (trapno << 8));
++		if ((trapno == 3) || (trapno == 1)) {
++			KVM86->regs32->ax = VM86_TRAP + (trapno << 8);
++			/* setting this flag forces the code in entry_32.S to
++			   call save_v86_state() and change the stack pointer
++			   to KVM86->regs32 */
++			set_thread_flag(TIF_IRET);
++			return 0;
++		}
+ 		do_int(regs, trapno, (unsigned char __user *) (regs->pt.ss << 4), SP(regs));
+ 		return 0;
+ 	}
