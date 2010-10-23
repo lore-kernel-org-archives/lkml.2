@@ -1,70 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757931Ab0JWQ0v (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Oct 2010 12:26:51 -0400
-Received: from mail.wdtv.com ([66.118.69.84]:34018 "EHLO mail.wdtv.com"
+	id S1758060Ab0JWQk0 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Oct 2010 12:40:26 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:34155 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756042Ab0JWQ0u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Oct 2010 12:26:50 -0400
-From: Gene Heskett <gene.heskett@gmail.com>
-To: Ingo Molnar <mingo@elte.hu>
-Subject: Re: 2.6.36, make oldconfig broken
-Date: Sat, 23 Oct 2010 12:26:45 -0400
-User-Agent: KMail/1.13.5 (Linux/2.6.36; KDE/4.5.2; i686; ; )
-Cc: Randy Dunlap <randy.dunlap@oracle.com>,
-        LKML <linux-kernel@vger.kernel.org>, linux-kbuild@vger.kernel.org
-References: <201010221229.36996.gene.heskett@gmail.com> <201010221608.36754.gene.heskett@gmail.com> <20101023134102.GA7893@elte.hu>
-In-Reply-To: <20101023134102.GA7893@elte.hu>
+	id S1757997Ab0JWQkZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 23 Oct 2010 12:40:25 -0400
+Date: Sat, 23 Oct 2010 09:37:47 -0700
+From: Greg KH <gregkh@suse.de>
+To: Alon Ziv <alon+git@nolaviz.org>
+Cc: linux-usb@vger.kernel.org, Johan Hovold <jhovold@gmail.com>,
+        Stefani Seibold <stefani@seibold.net>,
+        Jason Wessel <jason.wessel@windriver.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] Export usb_serial_generic_write_room for use in
+	other modules
+Message-ID: <20101023163747.GA20381@suse.de>
+References: <1287850818-12050-1-git-send-email-alon-git@nolaviz.org> <1287850818-12050-2-git-send-email-alon-git@nolaviz.org>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201010231226.45446.gene.heskett@gmail.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1287850818-12050-2-git-send-email-alon-git@nolaviz.org>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday, October 23, 2010, Ingo Molnar wrote:
->hi Gene,
->
->* Gene Heskett <gene.heskett@gmail.com> wrote:
->> > Please send your 2.6.35.7 .config file so that we can generate & see
->> > the changes.
->> 
->> Attached Randy, & many thanks.
->> 
->> Just for S&G I overwrote the generated .config in the 2.6.36 tree with
->> these files, and ran a make xconfig, which bitched about line 3109,
->> and which I don't recall ever playing with, "RAR_REGISTER" IIRC, so I
->> saved it without any other changes and built/installed & booted from
->> that now.
->
->In case it's useful: i take old .config's and put them into new kernels
->all the time, and i very much depend on configured drivers and options
->not going away suddenly. I know lots of other developers depend on that
->as well.
->
->In the hundreds or so cases i've done this manually in the past few years
->i only remember less than 5 cases where this didnt work in an 'as
->expected' way.
->
->So this should really work for you. If it doesnt when going from 2.6.35
->to 2.6.36 then that's very likely a bug somewhere which we want to fix
->...
->
->Thanks,
->
->	Ingo
+On Sat, Oct 23, 2010 at 06:20:17PM +0200, Alon Ziv wrote:
+> Any module using usb_serial_generic_write (which is already exported)
+> had better use usb_serial_generic_write_room as well.
 
-It was suggested elsewhere in this thread that I run memcheck the next time 
-I reboot.  Maybe that will spit something out.  I'll post if it does or 
-doesn't when I do.
+Are you implying that the one driver using this function today is
+broken?  Care to provide a patch for it as well?
 
--- 
-Cheers, Gene
-"There are four boxes to be used in defense of liberty:
- soap, ballot, jury, and ammo. Please use in that order."
--Ed Howdershelt (Author)
-Bride, n.:
-	A woman with a fine prospect of happiness behind her.
-		-- Ambrose Bierce, "The Devil's Dictionary"
+thanks,
+
+greg k-h
