@@ -1,64 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757865Ab0JWPp4 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Oct 2010 11:45:56 -0400
-Received: from cantor.suse.de ([195.135.220.2]:50540 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757818Ab0JWPpz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Oct 2010 11:45:55 -0400
-Date: Sat, 23 Oct 2010 08:46:36 -0700
-From: Greg KH <gregkh@suse.de>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: Jiri Slaby <jslaby@suse.cz>, linux-kernel@vger.kernel.org,
-        "Dr. Werner Fink" <werner@suse.de>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH 28/49] tty: Add a new file /proc/tty/consoles
-Message-ID: <20101023154636.GA18786@suse.de>
-References: <20101022175112.GC13489@kroah.com> <1287771688-14805-28-git-send-email-gregkh@suse.de> <4CC2C9A8.1040003@suse.cz> <20101023115129.GM19804@ZenIV.linux.org.uk> <4CC2CE66.7010405@suse.cz> <20101023122612.GO19804@ZenIV.linux.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101023122612.GO19804@ZenIV.linux.org.uk>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+	id S1757888Ab0JWPql (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Oct 2010 11:46:41 -0400
+Received: from mail-px0-f174.google.com ([209.85.212.174]:38068 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757841Ab0JWPqj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 23 Oct 2010 11:46:39 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=Uh34O+h4IvDY+4P0pKuMUNJPhtHLyudQyQ4DhwXQUMijAPlv8ZfmMe+kqDqFE0u2eA
+         nkYBLsvhuSOAmPmoSjRgMXSc3Z/dIzTSlpR8JwK6WeLKODVhjRzyOUuH8c2bDl9pJpUD
+         YjLO0lhjo95V+lmZLT5LpohE1GvzvFFCX0o2I=
+From: Namhyung Kim <namhyung@gmail.com>
+To: Alexander Viro <viro@zeniv.linux.org.uk>
+Cc: Christoph Hellwig <hch@lst.de>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] fs/buffer.c: call __block_write_begin() if we have page
+Date: Sun, 24 Oct 2010 00:46:26 +0900
+Message-Id: <1287848786-13347-1-git-send-email-namhyung@gmail.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Oct 23, 2010 at 01:26:12PM +0100, Al Viro wrote:
-> On Sat, Oct 23, 2010 at 02:00:38PM +0200, Jiri Slaby wrote:
-> 
-> > > Please, don't.  Even leaving aside the fact that it's mind-bogglingly
-> > > broken (->private_data can be _ANYTHING_, including arbitrary number cast
-> > > to pointer), you really shouldn't screw your way through the descriptor
-> > > table in the first place.
-> > > 
-> > > Strongly NACKed.
-> > 
-> > Well, our complains are -ETOOLATE -- it's commit f4a3e0bceb57466c
-> > upstream. So please fix this up.
-> 
-> FVO "fix" equal to "revert".  Belated review:
-> 
-> a) global variable depending on stdin of the last opener?  Affecting
-> output of read(2)?  Really?
-> 
-> b) iterator is broken; list should be locked in ->start(), unlocked
-> in ->stop() and *NOT* unlocked/relocked in ->next()
-> 
-> c) ->show() ought to do nothing in case of ->device == NULL, instead
-> of skipping those in ->next()/->start()
-> 
-> d) regardless of the merits of the bright idea about asterisk at that
-> line in output *and* regardless of (a), the implementation is not only
-> atrociously ugly, it's actually very likely to be a roothole.  Verifying
-> that Cthulhu knows what number happens to be address of a tty_struct by
-> blindly dereferencing memory at that address...  Ouch.
-> 
-> Please revert that crap.
+If we have the appropriate page already, call __block_write_begin()
+directly instead of releasing and regrabbing it inside of
+block_write_begin().
 
-I'll revert it and send the pull request to Linus.
+Signed-off-by: Namhyung Kim <namhyung@gmail.com>
+---
+ fs/buffer.c |    9 ++++-----
+ 1 files changed, 4 insertions(+), 5 deletions(-)
 
-Sorry about this.
+diff --git a/fs/buffer.c b/fs/buffer.c
+index 7f0b9b0..d4b3ada 100644
+--- a/fs/buffer.c
++++ b/fs/buffer.c
+@@ -2466,11 +2466,10 @@ int nobh_write_begin(struct address_space *mapping,
+ 	*fsdata = NULL;
+ 
+ 	if (page_has_buffers(page)) {
+-		unlock_page(page);
+-		page_cache_release(page);
+-		*pagep = NULL;
+-		return block_write_begin(mapping, pos, len, flags, pagep,
+-					 get_block);
++		ret = __block_write_begin(page, pos, len, get_block);
++		if (unlikely(ret))
++			*pagep = NULL;
++		return ret;
+ 	}
+ 
+ 	if (PageMappedToDisk(page))
+-- 
+1.7.0.4
 
-greg k-h
