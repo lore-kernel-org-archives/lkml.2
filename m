@@ -1,494 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752423Ab0JWJYk (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Oct 2010 05:24:40 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:41784 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750965Ab0JWJYi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Oct 2010 05:24:38 -0400
-Date: Sat, 23 Oct 2010 11:24:29 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Jaswinder Singh Rajput <jaswinderlinux@gmail.com>
-Cc: "H. Peter Anvin" <hpa@linux.intel.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Ingo Molnar <mingo@elte.hu>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [GIT PULL] x86/trampoline for 2.6.37
-Message-ID: <20101023092429.GA910@liondog.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Jaswinder Singh Rajput <jaswinderlinux@gmail.com>,
-	"H. Peter Anvin" <hpa@linux.intel.com>,
-	"H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
-	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-	Thomas Gleixner <tglx@linutronix.de>
-References: <201010230117.o9N1H2Mk032101@hera.kernel.org>
- <AANLkTimOHBw19TuouqNsEaBcZnfU5kaBoB0Fm+QhRz4h@mail.gmail.com>
+	id S1752520Ab0JWJ1A (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Oct 2010 05:27:00 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:63206 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750965Ab0JWJ06 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 23 Oct 2010 05:26:58 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Subject: Re: linux-next: manual merge of the bkl-llseek tree with the wireless tree
+Date: Sat, 23 Oct 2010 11:27:35 +0200
+User-Agent: KMail/1.12.2 (Linux/2.6.35-16-generic; KDE/4.3.2; x86_64; ; )
+Cc: "John W. Linville" <linville@tuxdriver.com>,
+        David Miller <davem@davemloft.net>, netdev@vger.kernel.org,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Felix Fietkau <nbd@openwrt.org>, Linus <torvalds@linux-foundation.org>,
+        Christoph Hellwig <hch@infradead.org>
+References: <20101018173543.c33530e9.sfr@canb.auug.org.au> <20101023142312.533f6a42.sfr@canb.auug.org.au>
+In-Reply-To: <20101023142312.533f6a42.sfr@canb.auug.org.au>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <AANLkTimOHBw19TuouqNsEaBcZnfU5kaBoB0Fm+QhRz4h@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201010231127.35785.arnd@arndb.de>
+X-Provags-ID: V02:K0:5a10rITafWmnTxsQO4h3ZxfPXSHEqznl+aS1L03D6hl
+ +Q4n4WjJcckBKYwxChKktjb7ryGBXzYru1hum2ONDT8YQHPg9S
+ zddM0wHEl2ryYCbiUIIF1QTfXBiLA9p97m7JRNjTAbbGQsX6Iq
+ J7A51PE7CpEdju3SqwTrs0B/FNddfChRz50Y6KnUw6iiZgaoFO
+ E0O5FpcJ+k+W0l9zw51ZQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Oct 23, 2010 at 11:17:42AM +0530, Jaswinder Singh Rajput wrote:
-> > +#ifdef CONFIG_X86_32
-> > +#include <asm/pgtable.h>
-> > +#include <asm/pgtable_32.h>
-> > +#endif
-> > +
+On Saturday 23 October 2010, Stephen Rothwell wrote:
+> Hi John, Dave,
 > 
-> pgtable.h will take care of pgtable_32.h, why you are doing this ?
+> On Mon, 18 Oct 2010 17:35:43 +1100 Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> >
+> > Today's linux-next merge of the bkl-llseek tree got a conflict in
+> > drivers/net/wireless/ath/ath9k/debug.c between commit
+> > 772d5515635fef5bc7a9d0efee785b58b0181ee5 ("ath9k: make rate control
+> > debugfs stats per station") from the wireless tree and commit
+> > 6038f373a3dc1f1c26496e60b6c40b164716f07e ("llseek: automatically
+> > add .llseek fop") from the bkl-llseek tree.
+> > 
+> > The former moved some of the code modified by the latter to another file.
+> > 
+> > I added this merge fix patch:
+> 
+> This patch (reproduced below) will now be needed if the wireless or net
+> tree is merged with Linus' tree.  I also think I have missed a similar
+> needed fix in drivers/net/wireless/ath/ath5k/debug.c ...
 
-Frankly, I don't remember. Here's an updated patch.
+There are also new drivers for speakup, intel_sst and yurex that introduce
+additional file_operations in next, the patch below is what I had planned
+to submit once everything is in. I also expect the occasional driver that
+did not see linux-next, so I'll rerun my scripts after -rc1 to see what
+we got.
 
-Linus, you could apply the following one instead of pulling from the
-branch, if hpa is ok with it. It is against your tree of the moment
-v2.6.36-1431-gf5d9d24.
+As Christoph mentioned, we probably shouldn't make new drivers use
+noop_llssek if possible nor add an explicit no_llseek and we can just
+leave those with the implicit no_llseek.
 
---
-From: Borislav Petkov <bp@alien8.de>
-Date: Sat, 28 Aug 2010 15:58:33 +0200
-Subject: [PATCH] x86-32, mm: Add an initial page table for core bootstrapping
+Once open question is what pread/pwrite should do if there is no
+llseek function. Right now they are both possible, but it would also
+be logical to turn this into an implicit nonseekable_open, which forbids
+pread/pwrite as well.
 
-This patch adds an initial page table with low mappings used exclusively
-for booting APs/resuming after ACPI suspend/machine restart. After this,
-there's no need to add low mappings to swapper_pg_dir and zap them later
-or create own swsusp PGD page solely for ACPI sleep needs - we have
-initial_page_table for that.
+	Arnd
 
-[ v1.1 Fix suspend-to-ram ]
-[ v1.2 Remove duplicated include ]
-
-Signed-off-by: Borislav Petkov <bp@alien8.de>
----
- arch/x86/include/asm/pgtable_32.h |    2 +-
- arch/x86/include/asm/tlbflush.h   |    2 -
- arch/x86/include/asm/trampoline.h |    3 --
- arch/x86/kernel/acpi/sleep.c      |    6 +++-
- arch/x86/kernel/head32.c          |    1 +
- arch/x86/kernel/head_32.S         |   55 +++++++++++++++++--------------------
- arch/x86/kernel/reboot.c          |   10 +-----
- arch/x86/kernel/setup.c           |   18 +++++++++++-
- arch/x86/kernel/smpboot.c         |   16 +++--------
- arch/x86/kernel/trampoline.c      |   16 -----------
- arch/x86/mm/init_32.c             |   45 ------------------------------
- 11 files changed, 55 insertions(+), 119 deletions(-)
-
-diff --git a/arch/x86/include/asm/pgtable_32.h b/arch/x86/include/asm/pgtable_32.h
-index f686f49..8abde9e 100644
---- a/arch/x86/include/asm/pgtable_32.h
-+++ b/arch/x86/include/asm/pgtable_32.h
-@@ -26,7 +26,7 @@ struct mm_struct;
- struct vm_area_struct;
+diff --git a/drivers/net/wireless/ath/ath5k/debug.c b/drivers/net/wireless/ath/ath5k/debug.c
+index e157646..b203034 100644
+--- a/drivers/net/wireless/ath/ath5k/debug.c
++++ b/drivers/net/wireless/ath/ath5k/debug.c
+@@ -537,6 +537,7 @@ static ssize_t read_file_misc(struct file *file, char __user *user_buf,
+ static const struct file_operations fops_misc = {
+ 	.read = read_file_misc,
+ 	.open = ath5k_debugfs_open,
++	.llseek = default_llseek,
+ 	.owner = THIS_MODULE,
+ };
  
- extern pgd_t swapper_pg_dir[1024];
--extern pgd_t trampoline_pg_dir[1024];
-+extern pgd_t initial_page_table[1024];
- 
- static inline void pgtable_cache_init(void) { }
- static inline void check_pgt_cache(void) { }
-diff --git a/arch/x86/include/asm/tlbflush.h b/arch/x86/include/asm/tlbflush.h
-index 7f3eba0..169be89 100644
---- a/arch/x86/include/asm/tlbflush.h
-+++ b/arch/x86/include/asm/tlbflush.h
-@@ -172,6 +172,4 @@ static inline void flush_tlb_kernel_range(unsigned long start,
- 	flush_tlb_all();
+diff --git a/drivers/staging/intel_sst/intel_sst.c b/drivers/staging/intel_sst/intel_sst.c
+index 24d3928..d9c4ae5 100644
+--- a/drivers/staging/intel_sst/intel_sst.c
++++ b/drivers/staging/intel_sst/intel_sst.c
+@@ -64,6 +64,7 @@ static const struct file_operations intel_sst_fops = {
+ 	.mmap = intel_sst_mmap,
+ 	.aio_read = intel_sst_aio_read,
+ 	.aio_write = intel_sst_aio_write,
++	.llseek = nonseekable_open,
+ };
+ static const struct file_operations intel_sst_fops_cntrl = {
+ 	.owner = THIS_MODULE,
+diff --git a/drivers/staging/intel_sst/intel_sst_app_interface.c b/drivers/staging/intel_sst/intel_sst_app_interface.c
+index 82768fa..931c4ba 100644
+--- a/drivers/staging/intel_sst/intel_sst_app_interface.c
++++ b/drivers/staging/intel_sst/intel_sst_app_interface.c
+@@ -121,6 +121,7 @@ int intel_sst_open(struct inode *i_node, struct file *file_ptr)
+ 		retval = -EUSERS;
+ 		mutex_unlock(&sst_drv_ctx->stream_lock);
+ 	}
++	nonseekable_open(i_node, file_ptr);
+ 	return retval;
  }
  
--extern void zap_low_mappings(bool early);
--
- #endif /* _ASM_X86_TLBFLUSH_H */
-diff --git a/arch/x86/include/asm/trampoline.h b/arch/x86/include/asm/trampoline.h
-index 4dde797..f4500fb 100644
---- a/arch/x86/include/asm/trampoline.h
-+++ b/arch/x86/include/asm/trampoline.h
-@@ -13,16 +13,13 @@ extern unsigned char *trampoline_base;
+@@ -151,6 +152,7 @@ int intel_sst_open_cntrl(struct inode *i_node, struct file *file_ptr)
+ 		retval = -EACCES;
  
- extern unsigned long init_rsp;
- extern unsigned long initial_code;
--extern unsigned long initial_page_table;
- extern unsigned long initial_gs;
+ 	mutex_unlock(&sst_drv_ctx->stream_lock);
++	nonseekable_open(i_node, file_ptr);
+ 	return retval;
+ }
  
- #define TRAMPOLINE_SIZE roundup(trampoline_end - trampoline_data, PAGE_SIZE)
- 
- extern unsigned long setup_trampoline(void);
--extern void __init setup_trampoline_page_table(void);
- extern void __init reserve_trampoline_memory(void);
- #else
--static inline void setup_trampoline_page_table(void) {}
- static inline void reserve_trampoline_memory(void) {}
- #endif /* CONFIG_X86_TRAMPOLINE */
- 
-diff --git a/arch/x86/kernel/acpi/sleep.c b/arch/x86/kernel/acpi/sleep.c
-index e125207..69fd72a 100644
---- a/arch/x86/kernel/acpi/sleep.c
-+++ b/arch/x86/kernel/acpi/sleep.c
-@@ -13,6 +13,10 @@
- #include <asm/segment.h>
- #include <asm/desc.h>
- 
-+#ifdef CONFIG_X86_32
-+#include <asm/pgtable.h>
-+#endif
+diff --git a/drivers/staging/speakup/devsynth.c b/drivers/staging/speakup/devsynth.c
+index 39dc586..5fc63fc 100644
+--- a/drivers/staging/speakup/devsynth.c
++++ b/drivers/staging/speakup/devsynth.c
+@@ -48,6 +48,8 @@ static int speakup_file_open(struct inode *ip, struct file *fp)
+ 		return -ENODEV;
+ 	if (xchg(&dev_opened, 1))
+ 		return -EBUSY;
 +
- #include "realmode/wakeup.h"
- #include "sleep.h"
- 
-@@ -91,7 +95,7 @@ int acpi_save_state_mem(void)
- 
- #ifndef CONFIG_64BIT
- 	header->pmode_entry = (u32)&wakeup_pmode_return;
--	header->pmode_cr3 = (u32)(swsusp_pg_dir - __PAGE_OFFSET);
-+	header->pmode_cr3 = (u32)__pa(&initial_page_table);
- 	saved_magic = 0x12345678;
- #else /* CONFIG_64BIT */
- 	header->trampoline_segment = setup_trampoline() >> 4;
-diff --git a/arch/x86/kernel/head32.c b/arch/x86/kernel/head32.c
-index 9a6ca23..7633101 100644
---- a/arch/x86/kernel/head32.c
-+++ b/arch/x86/kernel/head32.c
-@@ -18,6 +18,7 @@
- #include <asm/apic.h>
- #include <asm/io_apic.h>
- #include <asm/bios_ebda.h>
-+#include <asm/tlbflush.h>
- 
- static void __init i386_default_early_setup(void)
- {
-diff --git a/arch/x86/kernel/head_32.S b/arch/x86/kernel/head_32.S
-index fa8c1b8..bcece91 100644
---- a/arch/x86/kernel/head_32.S
-+++ b/arch/x86/kernel/head_32.S
-@@ -183,13 +183,12 @@ default_entry:
- #ifdef CONFIG_X86_PAE
- 
- 	/*
--	 * In PAE mode swapper_pg_dir is statically defined to contain enough
--	 * entries to cover the VMSPLIT option (that is the top 1, 2 or 3
--	 * entries). The identity mapping is handled by pointing two PGD
--	 * entries to the first kernel PMD.
-+	 * In PAE mode initial_page_table is statically defined to contain
-+	 * enough entries to cover the VMSPLIT option (that is the top 1, 2 or 3
-+	 * entries). The identity mapping is handled by pointing two PGD entries
-+	 * to the first kernel PMD.
- 	 *
--	 * Note the upper half of each PMD or PTE are always zero at
--	 * this stage.
-+	 * Note the upper half of each PMD or PTE are always zero at this stage.
- 	 */
- 
- #define KPMDS (((-__PAGE_OFFSET) >> 30) & 3) /* Number of kernel PMDs */
-@@ -197,7 +196,7 @@ default_entry:
- 	xorl %ebx,%ebx				/* %ebx is kept at zero */
- 
- 	movl $pa(__brk_base), %edi
--	movl $pa(swapper_pg_pmd), %edx
-+	movl $pa(initial_pg_pmd), %edx
- 	movl $PTE_IDENT_ATTR, %eax
- 10:
- 	leal PDE_IDENT_ATTR(%edi),%ecx		/* Create PMD entry */
-@@ -226,14 +225,14 @@ default_entry:
- 	movl %eax, pa(max_pfn_mapped)
- 
- 	/* Do early initialization of the fixmap area */
--	movl $pa(swapper_pg_fixmap)+PDE_IDENT_ATTR,%eax
--	movl %eax,pa(swapper_pg_pmd+0x1000*KPMDS-8)
-+	movl $pa(initial_pg_fixmap)+PDE_IDENT_ATTR,%eax
-+	movl %eax,pa(initial_pg_pmd+0x1000*KPMDS-8)
- #else	/* Not PAE */
- 
- page_pde_offset = (__PAGE_OFFSET >> 20);
- 
- 	movl $pa(__brk_base), %edi
--	movl $pa(swapper_pg_dir), %edx
-+	movl $pa(initial_page_table), %edx
- 	movl $PTE_IDENT_ATTR, %eax
- 10:
- 	leal PDE_IDENT_ATTR(%edi),%ecx		/* Create PDE entry */
-@@ -257,8 +256,8 @@ page_pde_offset = (__PAGE_OFFSET >> 20);
- 	movl %eax, pa(max_pfn_mapped)
- 
- 	/* Do early initialization of the fixmap area */
--	movl $pa(swapper_pg_fixmap)+PDE_IDENT_ATTR,%eax
--	movl %eax,pa(swapper_pg_dir+0xffc)
-+	movl $pa(initial_pg_fixmap)+PDE_IDENT_ATTR,%eax
-+	movl %eax,pa(initial_page_table+0xffc)
- #endif
- 	jmp 3f
- /*
-@@ -334,7 +333,7 @@ ENTRY(startup_32_smp)
- /*
-  * Enable paging
-  */
--	movl pa(initial_page_table), %eax
-+	movl $pa(initial_page_table), %eax
- 	movl %eax,%cr3		/* set the page table pointer.. */
- 	movl %cr0,%eax
- 	orl  $X86_CR0_PG,%eax
-@@ -614,8 +613,6 @@ ignore_int:
- .align 4
- ENTRY(initial_code)
- 	.long i386_start_kernel
--ENTRY(initial_page_table)
--	.long pa(swapper_pg_dir)
- 
- /*
-  * BSS section
-@@ -623,20 +620,18 @@ ENTRY(initial_page_table)
- __PAGE_ALIGNED_BSS
- 	.align PAGE_SIZE_asm
- #ifdef CONFIG_X86_PAE
--swapper_pg_pmd:
-+initial_pg_pmd:
- 	.fill 1024*KPMDS,4,0
- #else
--ENTRY(swapper_pg_dir)
-+ENTRY(initial_page_table)
- 	.fill 1024,4,0
- #endif
--swapper_pg_fixmap:
-+initial_pg_fixmap:
- 	.fill 1024,4,0
--#ifdef CONFIG_X86_TRAMPOLINE
--ENTRY(trampoline_pg_dir)
--	.fill 1024,4,0
--#endif
- ENTRY(empty_zero_page)
- 	.fill 4096,1,0
-+ENTRY(swapper_pg_dir)
-+	.fill 1024,4,0
- 
- /*
-  * This starts the data section.
-@@ -645,20 +640,20 @@ ENTRY(empty_zero_page)
- __PAGE_ALIGNED_DATA
- 	/* Page-aligned for the benefit of paravirt? */
- 	.align PAGE_SIZE_asm
--ENTRY(swapper_pg_dir)
--	.long	pa(swapper_pg_pmd+PGD_IDENT_ATTR),0	/* low identity map */
-+ENTRY(initial_page_table)
-+	.long	pa(initial_pg_pmd+PGD_IDENT_ATTR),0	/* low identity map */
- # if KPMDS == 3
--	.long	pa(swapper_pg_pmd+PGD_IDENT_ATTR),0
--	.long	pa(swapper_pg_pmd+PGD_IDENT_ATTR+0x1000),0
--	.long	pa(swapper_pg_pmd+PGD_IDENT_ATTR+0x2000),0
-+	.long	pa(initial_pg_pmd+PGD_IDENT_ATTR),0
-+	.long	pa(initial_pg_pmd+PGD_IDENT_ATTR+0x1000),0
-+	.long	pa(initial_pg_pmd+PGD_IDENT_ATTR+0x2000),0
- # elif KPMDS == 2
- 	.long	0,0
--	.long	pa(swapper_pg_pmd+PGD_IDENT_ATTR),0
--	.long	pa(swapper_pg_pmd+PGD_IDENT_ATTR+0x1000),0
-+	.long	pa(initial_pg_pmd+PGD_IDENT_ATTR),0
-+	.long	pa(initial_pg_pmd+PGD_IDENT_ATTR+0x1000),0
- # elif KPMDS == 1
- 	.long	0,0
- 	.long	0,0
--	.long	pa(swapper_pg_pmd+PGD_IDENT_ATTR),0
-+	.long	pa(initial_pg_pmd+PGD_IDENT_ATTR),0
- # else
- #  error "Kernel PMDs should be 1, 2 or 3"
- # endif
-diff --git a/arch/x86/kernel/reboot.c b/arch/x86/kernel/reboot.c
-index 7a4cf14..f7f53dc 100644
---- a/arch/x86/kernel/reboot.c
-+++ b/arch/x86/kernel/reboot.c
-@@ -371,16 +371,10 @@ void machine_real_restart(const unsigned char *code, int length)
- 	CMOS_WRITE(0x00, 0x8f);
- 	spin_unlock(&rtc_lock);
- 
--	/* Remap the kernel at virtual address zero, as well as offset zero
--	   from the kernel segment.  This assumes the kernel segment starts at
--	   virtual address PAGE_OFFSET. */
--	memcpy(swapper_pg_dir, swapper_pg_dir + KERNEL_PGD_BOUNDARY,
--		sizeof(swapper_pg_dir [0]) * KERNEL_PGD_PTRS);
--
- 	/*
--	 * Use `swapper_pg_dir' as our page directory.
-+	 * Switch back to the initial page table.
- 	 */
--	load_cr3(swapper_pg_dir);
-+	load_cr3(initial_page_table);
- 
- 	/* Write 0x1234 to absolute memory location 0x472.  The BIOS reads
- 	   this on booting to tell it to "Bypass memory test (also warm
-diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
-index 420e641..95a3274 100644
---- a/arch/x86/kernel/setup.c
-+++ b/arch/x86/kernel/setup.c
-@@ -700,6 +700,17 @@ void __init setup_arch(char **cmdline_p)
- #ifdef CONFIG_X86_32
- 	memcpy(&boot_cpu_data, &new_cpu_data, sizeof(new_cpu_data));
- 	visws_early_detect();
-+
-+	/*
-+	 * copy kernel address range established so far and switch
-+	 * to the proper swapper page table
-+	 */
-+	clone_pgd_range(swapper_pg_dir     + KERNEL_PGD_BOUNDARY,
-+			initial_page_table + KERNEL_PGD_BOUNDARY,
-+			KERNEL_PGD_PTRS);
-+
-+	load_cr3(swapper_pg_dir);
-+	__flush_tlb_all();
- #else
- 	printk(KERN_INFO "Command line: %s\n", boot_command_line);
- #endif
-@@ -985,7 +996,12 @@ void __init setup_arch(char **cmdline_p)
- 	paging_init();
- 	x86_init.paging.pagetable_setup_done(swapper_pg_dir);
- 
--	setup_trampoline_page_table();
-+#ifdef CONFIG_X86_32
-+	/* sync back kernel address range */
-+	clone_pgd_range(initial_page_table + KERNEL_PGD_BOUNDARY,
-+			swapper_pg_dir     + KERNEL_PGD_BOUNDARY,
-+			KERNEL_PGD_PTRS);
-+#endif
- 
- 	tboot_probe();
- 
-diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
-index dfb5089..6af1185 100644
---- a/arch/x86/kernel/smpboot.c
-+++ b/arch/x86/kernel/smpboot.c
-@@ -299,22 +299,16 @@ notrace static void __cpuinit start_secondary(void *unused)
- 	 * fragile that we want to limit the things done here to the
- 	 * most necessary things.
- 	 */
-+	cpu_init();
-+	preempt_disable();
-+	smp_callin();
- 
- #ifdef CONFIG_X86_32
--	/*
--	 * Switch away from the trampoline page-table
--	 *
--	 * Do this before cpu_init() because it needs to access per-cpu
--	 * data which may not be mapped in the trampoline page-table.
--	 */
-+	/* switch away from the initial page table */
- 	load_cr3(swapper_pg_dir);
- 	__flush_tlb_all();
- #endif
- 
--	cpu_init();
--	preempt_disable();
--	smp_callin();
--
- 	/* otherwise gcc will move up smp_processor_id before the cpu_init */
- 	barrier();
- 	/*
-@@ -785,7 +779,6 @@ do_rest:
- #ifdef CONFIG_X86_32
- 	/* Stack for startup_32 can be just as for start_secondary onwards */
- 	irq_ctx_init(cpu);
--	initial_page_table = __pa(&trampoline_pg_dir);
- #else
- 	clear_tsk_thread_flag(c_idle.idle, TIF_FORK);
- 	initial_gs = per_cpu_offset(cpu);
-@@ -934,7 +927,6 @@ int __cpuinit native_cpu_up(unsigned int cpu)
- 	per_cpu(cpu_state, cpu) = CPU_UP_PREPARE;
- 
- 	err = do_boot_cpu(apicid, cpu);
--
- 	if (err) {
- 		pr_debug("do_boot_cpu failed %d\n", err);
- 		return -EIO;
-diff --git a/arch/x86/kernel/trampoline.c b/arch/x86/kernel/trampoline.c
-index 4c3da56..a375616 100644
---- a/arch/x86/kernel/trampoline.c
-+++ b/arch/x86/kernel/trampoline.c
-@@ -38,19 +38,3 @@ unsigned long __trampinit setup_trampoline(void)
- 	memcpy(trampoline_base, trampoline_data, TRAMPOLINE_SIZE);
- 	return virt_to_phys(trampoline_base);
- }
--
--void __init setup_trampoline_page_table(void)
--{
--#ifdef CONFIG_X86_32
--	/* Copy kernel address range */
--	clone_pgd_range(trampoline_pg_dir + KERNEL_PGD_BOUNDARY,
--			swapper_pg_dir + KERNEL_PGD_BOUNDARY,
--			KERNEL_PGD_PTRS);
--
--	/* Initialize low mappings */
--	clone_pgd_range(trampoline_pg_dir,
--			swapper_pg_dir + KERNEL_PGD_BOUNDARY,
--			min_t(unsigned long, KERNEL_PGD_PTRS,
--			      KERNEL_PGD_BOUNDARY));
--#endif
--}
-diff --git a/arch/x86/mm/init_32.c b/arch/x86/mm/init_32.c
-index 5d0a671..0e969f9 100644
---- a/arch/x86/mm/init_32.c
-+++ b/arch/x86/mm/init_32.c
-@@ -528,48 +528,6 @@ static void __init pagetable_init(void)
- 	permanent_kmaps_init(pgd_base);
++	nonseekable_open(ip, fp);
+ 	return 0;
  }
  
--#ifdef CONFIG_ACPI_SLEEP
--/*
-- * ACPI suspend needs this for resume, because things like the intel-agp
-- * driver might have split up a kernel 4MB mapping.
-- */
--char swsusp_pg_dir[PAGE_SIZE]
--	__attribute__ ((aligned(PAGE_SIZE)));
--
--static inline void save_pg_dir(void)
--{
--	copy_page(swsusp_pg_dir, swapper_pg_dir);
--}
--#else /* !CONFIG_ACPI_SLEEP */
--static inline void save_pg_dir(void)
--{
--}
--#endif /* !CONFIG_ACPI_SLEEP */
--
--void zap_low_mappings(bool early)
--{
--	int i;
--
--	/*
--	 * Zap initial low-memory mappings.
--	 *
--	 * Note that "pgd_clear()" doesn't do it for
--	 * us, because pgd_clear() is a no-op on i386.
--	 */
--	for (i = 0; i < KERNEL_PGD_BOUNDARY; i++) {
--#ifdef CONFIG_X86_PAE
--		set_pgd(swapper_pg_dir+i, __pgd(1 + __pa(empty_zero_page)));
--#else
--		set_pgd(swapper_pg_dir+i, __pgd(0));
--#endif
--	}
--
--	if (early)
--		__flush_tlb();
--	else
--		flush_tlb_all();
--}
--
- pteval_t __supported_pte_mask __read_mostly = ~(_PAGE_NX | _PAGE_GLOBAL | _PAGE_IOMAP);
- EXPORT_SYMBOL_GPL(__supported_pte_mask);
+@@ -62,6 +64,7 @@ static const struct file_operations synth_fops = {
+ 	.write = speakup_file_write,
+ 	.open = speakup_file_open,
+ 	.release = speakup_file_release,
++	.llseek = no_llseek,
+ };
  
-@@ -882,9 +840,6 @@ void __init mem_init(void)
+ static struct miscdevice synth_device = {
+diff --git a/drivers/staging/speakup/speakup_soft.c b/drivers/staging/speakup/speakup_soft.c
+index 2c85773..05c8006 100644
+--- a/drivers/staging/speakup/speakup_soft.c
++++ b/drivers/staging/speakup/speakup_soft.c
+@@ -305,6 +305,7 @@ static struct file_operations softsynth_fops = {
+ 	.read = softsynth_read,
+ 	.write = softsynth_write,
+ 	.open = softsynth_open,
++	.llseek = default_llseek,
+ 	.release = softsynth_close,
+ };
  
- 	if (boot_cpu_data.wp_works_ok < 0)
- 		test_wp_bit();
--
--	save_pg_dir();
--	zap_low_mappings(true);
- }
+diff --git a/drivers/usb/misc/yurex.c b/drivers/usb/misc/yurex.c
+index 719c618..ac5bfd6 100644
+--- a/drivers/usb/misc/yurex.c
++++ b/drivers/usb/misc/yurex.c
+@@ -536,6 +536,7 @@ static const struct file_operations yurex_fops = {
+ 	.open =		yurex_open,
+ 	.release =	yurex_release,
+ 	.fasync	=	yurex_fasync,
++	.llseek =	default_llseek,
+ };
  
- #ifdef CONFIG_MEMORY_HOTPLUG
--- 
-1.7.2.3
-
--- 
-Regards/Gruss,
-    Boris.
+ 
