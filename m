@@ -1,52 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932967Ab0JXUyM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Oct 2010 16:54:12 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:56538 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932438Ab0JXUyL (ORCPT
+	id S932982Ab0JXVRl (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Oct 2010 17:17:41 -0400
+Received: from ipmail05.adl6.internode.on.net ([150.101.137.143]:12907 "EHLO
+	ipmail05.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932970Ab0JXVRj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Oct 2010 16:54:11 -0400
+	Sun, 24 Oct 2010 17:17:39 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvsEALM+xEx5Ld2G/2dsb2JhbAChXXK6IYVIBIUM
+Date: Mon, 25 Oct 2010 08:17:35 +1100
+From: Nick Piggin <npiggin@kernel.dk>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Christoph Hellwig <hch@infradead.org>, Nick Piggin <npiggin@kernel.dk>,
+        Andi Kleen <andi@firstfloor.org>, Dave Chinner <david@fromorbit.com>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 11/18] fs: Introduce per-bucket inode hash locks
+Message-ID: <20101024211735.GB3137@amd>
+References: <20101016075703.GO19147@amd>
+ <20101016161642.GC16861@infradead.org>
+ <20101016171213.GC3240@amd>
+ <20101017004610.GB29677@dastard>
+ <20101017022539.GA3317@amd>
+ <87iq0za32l.fsf@basil.nowhere.org>
+ <20101018162105.GB9571@infradead.org>
+ <20101019070057.GA7770@amd>
+ <20101019165044.GA13531@infradead.org>
+ <alpine.LFD.2.00.1010241728510.11642@localhost6.localdomain6>
 MIME-Version: 1.0
-In-Reply-To: <4CC49AAB.5090809@fusionio.com>
-References: <4CC49274.3030803@fusionio.com> <AANLkTik4qAzZPLO8HHBCM34_NLEEdPj04RyXPfeR-wSv@mail.gmail.com>
- <4CC49A4B.8010300@fusionio.com> <4CC49AAB.5090809@fusionio.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Sun, 24 Oct 2010 13:53:41 -0700
-Message-ID: <AANLkTin-xocNea5k2m+P2a9XGfyoOf_0ZN=kj0fxm8Pg@mail.gmail.com>
-Subject: Re: [GIT PULL] Revert of the IO stat fix
-To: Jens Axboe <jaxboe@fusionio.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Vivek Goyal <vgoyal@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LFD.2.00.1010241728510.11642@localhost6.localdomain6>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Oct 24, 2010 at 1:44 PM, Jens Axboe <jaxboe@fusionio.com> wrote:
->>
->> The patch itself is sound, the problems are around the area of it not
->> really liking non-elevator devices with the elv_quiesce_start/end()
->> parts. I had the below patch for that, but then I could not decide
->> whether we were fully safe on queue free after talking to Vivek about
->> it.
->
-> Forgot to include it, here it is. I'll be offline from now and 1-2 days
-> forward.
+On Sun, Oct 24, 2010 at 05:44:24PM +0200, Thomas Gleixner wrote:
+> On Tue, 19 Oct 2010, Christoph Hellwig wrote:
+> 
+> > On Tue, Oct 19, 2010 at 06:00:57PM +1100, Nick Piggin wrote:
+> > > But it is still "magic". Because you don't even know whether it
+> > > is a spin or sleeping lock, let alone whether it is irq or bh safe.
+> > > You get far more information seeing a bit_spin_lock(0, &hlist) call
+> > > than hlist_lock().
+> 
+> Errm, when hlist_lock() has proper documentation than it should not be
+> rocket science to figure out what it does.
 
-Hmm. I actually like this patch more than the revert. Except that I
-think the __elv_quiesce_start/end() functions should be static, and
-not exposed in the header file. There don't seem to be any other files
-that would want to use them anyway, and the whole change looks very
-sane since all the outside users used to have to take the lock
-explicitly (and thus moving it inside the elv_quiesce_start/end
-functions seems to be a nice cleanup).
+Right, a look at the docmentation and another layer of indirection
+for a reader.
 
-So if this patch is supposed to fix things and doesn't have any
-*known* problems, but you're just not entirely sure about it and we're
-talking just a few days of you being gone, I'd almost rather take the
-risk. If worst comes to worst, I can revert both this patch and the
-original one. We _are_ in the middle of the merge window after all, so
-I'm much more open to risks than I would be later in the -rc series..
+And it's not exactly "properly" documented. It doesn't say if it may
+turn into a sleeping lock or is allowed to be used from irq or bh
+context.
 
-                                 Linus
+
+> And if you use bit 0 of hlist then you better have helper functions to
+> access it anyway. We do that with other data types which (ab)use the
+> lower two bits of pointers.
+> 
+> > To get back a bit to the point:
+> > 
+> >  - we have a new bl_hlist sturcture which combines a hash list and a
+> >    lock embedded into the head
+> >  - the reason why we do it is to be able to use a bitlock
+> 
+> And if you design that structure clever, then simple dereferencing of
+> it (w/o casting magic) should make the compiler barf. So you are
+> forced to use the helper functions.
+> 
+> > Furthermore it allows the RT people to simply throw a mutex into the
+> > head and everything keeps working without touching a sinlge line of
+> > code outside of hlist_bl.h.
+> 
+> Yes, please use proper helper functions. Having to change code is a
+> horror for RT, when we can get away with a single change in a header
+> file.
+> 
+> Aside of RT there is another advantage of being able to change the
+> lock implementation at a single place: you can change it to a real
+> spinlock and have lockdep coverage of that code. I fundamentally hate
+> bit_spin_locks for sneaking around lockdep.
+
+You do not want to add a bloated mutex to each inode hash bucket and
+think you can just dust off your hands and walk away.  You would
+probably make a smaller auxiliary hash of locks, sanely sized, and
+protect it with that.
+
+So it would be wrong to just bloat hlist_bl by a factor of several times
+(how big is a mutex in -rt?) without doing anything else.
+
+Although a sane locking macro and structure like I had, would perfectly
+allow you to switch locks in a single place just the same.
+
