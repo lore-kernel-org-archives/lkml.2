@@ -1,60 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751009Ab0JXWwu (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Oct 2010 18:52:50 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:45899 "EHLO
+	id S1751081Ab0JXWzM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Oct 2010 18:55:12 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:38495 "EHLO
 	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750907Ab0JXWwt (ORCPT
+	with ESMTP id S1750908Ab0JXWzK convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Oct 2010 18:52:49 -0400
+	Sun, 24 Oct 2010 18:55:10 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=UtJkBIpDnipZfbLb5EIuzG/PtAm4idiacBfRWB3lEHaSLWIiSnN55BfWjRsyEPFJJR
-         Hrq6q8lx6I5tOFndbTVxUsq5BvqKpjQQtE0Dzv0E9U6UjMZTKQH7iB40zYL3viLcrfPY
-         jlZsS6HNkHLEukvr/YPRZTe5uML4ZjBaYH8rc=
+         :cc:content-type:content-transfer-encoding;
+        b=cNf30qFSY6/4E3YC0BfmI+BLE2n0tMw2xDicbucAcsaPQP446x78SYpEudC/kScWyt
+         ijP8mQZQISMQYvwCqg6/LoEbKpxGIcnOQMZO9ve5sY5gojTyJsW+0wZ7jTp6CoRrgCBK
+         sMsUTtD5NYoMnwjkrLdEt/F64iR4tqtambic0=
 MIME-Version: 1.0
-In-Reply-To: <1287787911-4257-1-git-send-email-msb@chromium.org>
-References: <1287787911-4257-1-git-send-email-msb@chromium.org>
-Date: Mon, 25 Oct 2010 07:52:47 +0900
-Message-ID: <AANLkTinWp-M4S5EXz6-xJvHAnzdk96_5+d2OJVjCycsm@mail.gmail.com>
-Subject: Re: [PATCH] vmscan: move referenced VM_EXEC pages to active list
+In-Reply-To: <20101022045509.GA16804@localhost>
+References: <20101022045509.GA16804@localhost>
+Date: Mon, 25 Oct 2010 07:55:09 +0900
+Message-ID: <AANLkTinU7UqBpoUOzE=JfMLtk006Ou=EVJ+6dB1KnBVj@mail.gmail.com>
+Subject: Re: [PATCH] mm: Avoid possible deadlock caused by too_many_isolated()
 From: Minchan Kim <minchan.kim@gmail.com>
-To: Mandeep Singh Baines <msb@chromium.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
+To: Wu Fengguang <fengguang.wu@intel.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Neil Brown <neilb@suse.de>,
+        Rik van Riel <riel@redhat.com>,
         KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Rik van Riel <riel@redhat.com>, Mel Gorman <mel@csn.ul.ie>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Wu Fengguang <fengguang.wu@intel.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, wad@chromium.org, olofj@chromium.org,
-        Shaohua Li <shaohua.li@intel.com>
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "Li, Shaohua" <shaohua.li@intel.com>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Oct 23, 2010 at 7:51 AM, Mandeep Singh Baines <msb@chromium.org> wrote:
-> In commit 64574746, "vmscan: detect mapped file pages used only once",
-> Johannes Weiner, added logic to page_check_reference to cycle again
-> used once pages.
+On Fri, Oct 22, 2010 at 1:55 PM, Wu Fengguang <fengguang.wu@intel.com> wrote:
+> Neil find that if too_many_isolated() returns true while performing
+> direct reclaim we can end up waiting for other threads to complete their
+> direct reclaim.  If those threads are allowed to enter the FS or IO to
+> free memory, but this thread is not, then it is possible that those
+> threads will be waiting on this thread and so we get a circular
+> deadlock.
 >
-> In commit 8cab4754, "vmscan: make mapped executable pages the first
-> class citizen", Wu Fengguang, added logic to shrink_active_list which
-> protects file-backed VM_EXEC pages by keeping them in the active_list if
-> they are referenced.
+> some task enters direct reclaim with GFP_KERNEL
+>  => too_many_isolated() false
+>    => vmscan and run into dirty pages
+>      => pageout()
+>        => take some FS lock
+>          => fs/block code does GFP_NOIO allocation
+>            => enter direct reclaim again
+>              => too_many_isolated() true
+>                  => waiting for others to progress, however the other
+>                     tasks may be circular waiting for the FS lock..
 >
-> This patch adds logic to move such pages from the inactive list to the
-> active list immediately if they have been referenced. If a VM_EXEC page
-> is seen as referenced during an inactive list scan, that reference must
-> have occurred after the page was put on the inactive list. There is no
-> need to wait for the page to be referenced again.
+> The fix is to let !__GFP_IO and !__GFP_FS direct reclaims enjoy higher
+> priority than normal ones, by lowering the throttle threshold for the
+> latter.
 >
-> Change-Id: I17c312e916377e93e5a92c52518b6c829f9ab30b
-> Signed-off-by: Mandeep Singh Baines <msb@chromium.org>
-
-It seems to be similar to http://www.spinics.net/lists/linux-mm/msg09617.html.
-I don't know what it is going. Shaohua?
+> Allowing ~1/8 isolated pages in normal is large enough. For example,
+> for a 1GB LRU list, that's ~128MB isolated pages, or 1k blocked tasks
+> (each isolates 32 4KB pages), or 64 blocked tasks per logical CPU
+> (assuming 16 logical CPUs per NUMA node). So it's not likely some CPU
+> goes idle waiting (when it could make progress) because of this limit:
+> there are much more sleeping reclaim tasks than the number of CPU, so
+> the task may well be blocked by some low level queue/lock anyway.
+>
+> Now !GFP_IOFS reclaims won't be waiting for GFP_IOFS reclaims to
+> progress. They will be blocked only when there are too many concurrent
+> !GFP_IOFS reclaims, however that's very unlikely because the IO-less
+> direct reclaims is able to progress much more faster, and they won't
+> deadlock each other. The threshold is raised high enough for them, so
+> that there can be sufficient parallel progress of !GFP_IOFS reclaims.
+>
+> CC: Torsten Kaiser <just.for.lkml@googlemail.com>
+> CC: Minchan Kim <minchan.kim@gmail.com>
+> Tested-by: NeilBrown <neilb@suse.de>
+> Acked-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
+Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
 
 
 
