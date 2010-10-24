@@ -1,54 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757463Ab0JXOwZ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Oct 2010 10:52:25 -0400
-Received: from solo.fdn.fr ([80.67.169.19]:53931 "EHLO solo.fdn.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752356Ab0JXOwY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Oct 2010 10:52:24 -0400
-X-Greylist: delayed 628 seconds by postgrey-1.27 at vger.kernel.org; Sun, 24 Oct 2010 10:52:24 EDT
-Date: Sun, 24 Oct 2010 16:41:51 +0200
-From: Samuel Thibault <sthibault@debian.org>
-To: Tom Vier <tom@triadsys.com>
-Cc: 594089@bugs.debian.org, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org, dtor@mail.ru
-Subject: Re: Bug#594089: keyboard-configuration: caps lock keycode problem
-Message-ID: <20101024144150.GV24091@const.famille.thibault.fr>
-Mail-Followup-To: Samuel Thibault <sthibault@debian.org>,
-	Tom Vier <tom@triadsys.com>, 594089@bugs.debian.org,
-	linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-	dtor@mail.ru
-References: <20100823154353.2805.13525.reportbug@tom.tse> <20100903235540.GA9149@const> <4C866913.3030201@triadsys.com> <4C8E6861.1070502@triadsys.com>
+	id S932678Ab0JXPDc (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Oct 2010 11:03:32 -0400
+Received: from e28smtp01.in.ibm.com ([122.248.162.1]:59712 "EHLO
+	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757493Ab0JXPDa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 24 Oct 2010 11:03:30 -0400
+From: "Aneesh Kumar K. V" <aneesh.kumar@linux.vnet.ibm.com>
+To: hch@infradead.org, viro@zeniv.linux.org.uk, adilger@sun.com,
+        corbet@lwn.net, neilb@suse.de, npiggin@kernel.dk,
+        hooanon05@yahoo.co.jp, bfields@fieldses.org, miklos@szeredi.hu
+Cc: linux-fsdevel@vger.kernel.org, sfrench@us.ibm.com, philippe.deniel@CEA.FR,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH -V21 00/12] Generic name to handle and open by handle syscalls
+In-Reply-To: <1286274140-26533-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+References: <1286274140-26533-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+User-Agent: Notmuch/0.3.1-90-g8071c5c (http://notmuchmail.org) Emacs/24.0.50.1 (i686-pc-linux-gnu)
+Date: Sun, 24 Oct 2010 20:33:23 +0530
+Message-ID: <m3y69nzl8k.fsf@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <4C8E6861.1070502@triadsys.com>
-User-Agent: Mutt/1.5.12-2006-07-14
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The short story is: Tom's keyboard sends all that when he presses caps
-lock:
+On Tue,  5 Oct 2010 15:52:08 +0530, "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com> wrote:
+> Hi,
+> 
+> The below set of patches implement open by handle support using exportfs
+> operations. This allows user space application to map a file name to file
+> handle and later open the file using handle. This should be usable
+> for userspace NFS [1] and 9P server [2]. XFS already support this with the ioctls
+> XFS_IOC_PATH_TO_HANDLE and XFS_IOC_OPEN_BY_HANDLE.
+> 
+> [1] http://nfs-ganesha.sourceforge.net/
+> [2] http://thread.gmane.org/gmane.comp.emulators.qemu/68992
+> 
+> git repo for the patchset at:
+> git://git.kernel.org/pub/scm/linux/kernel/git/kvaneesh/linux-open-handle.git open-by-handle
+> 
+> Test case can be found at
+> http://git.kernel.org/?p=fs/ext2/kvaneesh/handle-test.git
+> git://git.kernel.org/pub/scm/fs/ext2/kvaneesh/handle-test.git
+> 
+> Changes from V20:
+> a) Use better variable names
+> b) change handle_size type to __u32
+> c) max handle size is now nfsv4 handle size. Considering file system would
+>    want to support a handle that can fit into nfsv4 handle size limiting
+>    max handle size to 128 rather than 4096 is the right thing.
+> d) I didn't add Ceph changes in the series. I am expecting the changes
+>    will go via Ceph tree.
+> 
 
-press: 0x3a 0xe0 0x66
-repeat: 0x3a
-release: 0xba 0xe0 0xe6
+Hi Al,
 
-0xe0 0x66 happens to be the "favorites" key on his keyboard with
-internet navigation keys.  I thus believe there's a bug in his keyboard
-that needs to be filtered at the kernel level.
+Any update on this ? Can we get this merged in this merge window.
 
-The long story can be read on http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=594089
-
-Tom Vier, le Mon 13 Sep 2010 14:07:29 -0400, a écrit :
-> Here's xev from Stable. It looks like in Testing that some of the extra 
-> key codes that show up in showkey are getting interpreted as additional 
-> key presses in Testing's xorg but not Stable's.
-
-Yes, as I said in a previous mail, squeeze Xorg now interprets the
-internet scancodes by default, while it wouldn't in lenny and previous,
-thus not showing the bug.
-
-Samuel
+-aneesh
