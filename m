@@ -1,88 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932774Ab0JXRKb (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Oct 2010 13:10:31 -0400
-Received: from freeflow.nu ([178.79.134.28]:56519 "EHLO freeflow.nu"
+	id S932885Ab0JXRLh (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Oct 2010 13:11:37 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:40078 "EHLO mx2.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932203Ab0JXRKa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Oct 2010 13:10:30 -0400
-Date: Sun, 24 Oct 2010 20:10:20 +0300 (EEST)
-From: Pekka Enberg <penberg@kernel.org>
-X-X-Sender: penberg@tiger
-To: torvalds@linux-foundation.org
-cc: cl@linux-foundation.org, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org, tj@kernel.org
-Subject: [GIT PULL] SLAB updates for 2.6.37-rc1
-Message-ID: <alpine.DEB.2.00.1010242005280.4447@tiger>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S932203Ab0JXRLg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 24 Oct 2010 13:11:36 -0400
+Date: Sun, 24 Oct 2010 19:11:05 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Arjan van de Ven <arjan@infradead.org>
+Cc: Sitsofe Wheeler <sitsofe@yahoo.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: perf timechart segfault
+Message-ID: <20101024171105.GA14276@elte.hu>
+References: <20101024162302.GA5586@sucs.org>
+ <20101024100356.7af1f4dd@infradead.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; format=flowed; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101024100356.7af1f4dd@infradead.org>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0009]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
 
-The bulk of changes here are from Christoph Lameter's SLUB unification 
-patch series. I've included SLUB cleanups that don't change the core 
-allocator and hope to queue the more interesting patches for 2.6.38. 
-There's also bug fixes and other cleanups included here from David 
-Rientjes and Namhyung Kim.
+* Arjan van de Ven <arjan@infradead.org> wrote:
 
-The SLUB patches were built on Tejun Heo's UP per-CPU patches which is why 
-they show up in the pull request although you already have them in 
-master.
+> > 2. (On -tip) Running
+> >    perf timechart record echo
+> >    outputs
+> >    invalid or unsupported event: 'power:power_start'
+> >    Run 'perf list' for a list of valid events
+> 
+> tip broke ABI :-(
 
-                         Pekka
+hm, i'm not aware of that - where, which commit?
 
-The following changes since commit 35da7a307c535f9c2929cae277f3df425c9f9b1e:
-   Linus Torvalds (1):
-         Merge branch 'for-2.6.37/core' of git://git.kernel.dk/linux-2.6-block
+Thanks,
 
-are available in the git repository at:
-
-   ssh://master.kernel.org/pub/scm/linux/kernel/git/penberg/slab-2.6.git for-linus
-
-Christoph Lameter (14):
-       slub: Force no inlining of debug functions
-       slub: Remove dynamic dma slab allocation
-       slub: Remove static kmem_cache_cpu array for boot
-       slub: Dynamically size kmalloc cache allocations
-       slub: Extract hooks for memory checkers from hotpaths
-       slub: Move gfpflag masking out of the hotpath
-       slub: Add dummy functions for the !SLUB_DEBUG case
-       slub: Fix up missing kmalloc_cache -> kmem_cache_node case for memoryhotplug
-       Slub: UP bandaid
-       slub: reduce differences between SMP and NUMA
-       SLUB: Pass active and inactive redzone flags instead of boolean to debug functions
-       slub: extract common code to remove objects from partial list without locking
-       slub: Enable sysfs support for !CONFIG_SLUB_DEBUG
-       slub: Move functions to reduce #ifdefs
-
-David Rientjes (2):
-       slob: fix gfp flags for order-0 page allocations
-       slub: fix SLUB_RESILIENCY_TEST for dynamic kmalloc caches
-
-Namhyung Kim (3):
-       slub: Fix signedness warnings
-       slub: Add lock release annotation
-       slub: Move NUMA-related functions under CONFIG_NUMA
-
-Pekka Enberg (5):
-       SLUB: Fix merged slab cache names
-       Revert "Slub: UP bandaid"
-       SLUB: Optimize slab_free() debug check
-       SLUB: Fix memory hotplug with !NUMA
-       Merge branch 'master' into for-linus
-
-Tejun Heo (4):
-       vmalloc: pcpu_get/free_vm_areas() aren't needed on UP
-       percpu: reduce PCPU_MIN_UNIT_SIZE to 32k
-       percpu: use percpu allocator on UP too
-       percpu: clear memory allocated with the km allocator
-
-  include/linux/slub_def.h |   14 +-
-  lib/Kconfig.debug        |    2 +-
-  mm/slob.c                |    4 +-
-  mm/slub.c                |  788 ++++++++++++++++++++++++----------------------
-  4 files changed, 424 insertions(+), 384 deletions(-)
+	Ingo
