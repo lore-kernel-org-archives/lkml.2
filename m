@@ -1,79 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932555Ab0JXRDt (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Oct 2010 13:03:49 -0400
-Received: from casper.infradead.org ([85.118.1.10]:55277 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758822Ab0JXRDs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Oct 2010 13:03:48 -0400
-Date: Sun, 24 Oct 2010 10:03:56 -0700
-From: Arjan van de Ven <arjan@infradead.org>
-To: Sitsofe Wheeler <sitsofe@yahoo.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@elte.hu>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: perf timechart segfault
-Message-ID: <20101024100356.7af1f4dd@infradead.org>
-In-Reply-To: <20101024162302.GA5586@sucs.org>
-References: <20101024162302.GA5586@sucs.org>
-Organization: Intel
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i386-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S932701Ab0JXRGF (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Oct 2010 13:06:05 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:32551 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932176Ab0JXRGD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 24 Oct 2010 13:06:03 -0400
+Message-ID: <4CC46773.2000606@redhat.com>
+Date: Sun, 24 Oct 2010 19:05:55 +0200
+From: Milan Broz <mbroz@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100914 Thunderbird/3.1.3
+MIME-Version: 1.0
+To: dave b <db.pub.mail@gmail.com>
+CC: Linux Kernel <linux-kernel@vger.kernel.org>,
+        device-mapper development <dm-devel@redhat.com>
+Subject: Re: Fwd: [dm-crypt] [BUG] bad performance and system stalls when
+ using dm-crypt
+References: <AANLkTinbeAn4ObFSb4f4znjYHGNKTMnfV7eQja+cnsLe@mail.gmail.com> <20100911065725.GA6279@fancy-poultry.org> <AANLkTikTq=GTy-XPD6ye6kStASNL4Pa07wHhH_ABmpm1@mail.gmail.com> <AANLkTim7RvpOcBajyqCkrBP8EW-FwNysvwuF5MaDJiFV@mail.gmail.com> <AANLkTi=PCd1=w-mkc=Sj4EEda=PnTv0JGyV1Ysxq4ej4@mail.gmail.com> <AANLkTikLSFFpbgX+rBR5banBygmB6rRvzMBYKfPcFPuJ@mail.gmail.com> <4C8C9834.8060201@redhat.com> <AANLkTi=8jJMz3f0VGwg+6P+BJEfxj6i-jBkGmqx8hCVg@mail.gmail.com> <AANLkTinohRReVsYoetEjqAp-XrL9C2jxGgXLVnLafSUM@mail.gmail.com> <AANLkTikqhMbW7sWbbU_we5YE9Y9U=MPUTm553AmCyH51@mail.gmail.com> <4CC45F56.7010305@redhat.com> <AANLkTi=Hw-iU98rTjyDFAPSqqrWvzhOnE_0UBV-tMeie@mail.gmail.com>
+In-Reply-To: <AANLkTi=Hw-iU98rTjyDFAPSqqrWvzhOnE_0UBV-tMeie@mail.gmail.com>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-X-SRS-Rewrite: SMTP reverse-path rewritten from <arjan@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 24 Oct 2010 17:23:02 +0100
-Sitsofe Wheeler <sitsofe@yahoo.com> wrote:
-
-> Hi,
+On 10/24/2010 06:52 PM, dave b wrote:
+>> So there are now several known situations when dm-crypt doesn't
+>> perform as expected (another problem just appeared when using CFQ,
+>> (because dm(-crypt) lost the issuing process reference)
+>> see http://lkml.org/lkml/2010/10/24/59).
 > 
-> I've run into a couple of issues using perf timechart:
-> 
-> 1. (On 2.6.36) If I issue
->    echo 0 > /proc/sys/kernel/perf_event_paranoid
->    as root before running
->    perf timechart record echo
->    as a normal user the following is printed:
-> 
->    Fatal: Permission error - are you root?
->   	 Consider tweaking /proc/sys/kernel/perf_event_paranoid.
-> 
->    Shouldn't it just say it needs root permissions for a timechart
->    record?
+> Thank for you replying  ^ ^
+> I was aware with the problems and I am following Andi's dm-crypt
+> per-cpu patch (I haven't applied or tested it). However, I didn't know
+> about http://lkml.org/lkml/2010/10/24/59 -->
+> So this may well be the root of the problem!
+> Also, won't http://lkml.org/lkml/2010/10/24/59  need to be altered
+> (again) to work with Andi's patch ?
 
-timechart needs root perms since it gets very global data.
+CFQ related problem should be solved - probably device-mapper core
+have to provide some help. (It is not only about dm-crypt,
+lot of situations when IO is submitted from different internal process.
+The proposed patch is not the proper and complete way how to solve it.)
 
-> 
-> 2. (On -tip) Running
->    perf timechart record echo
->    outputs
->    invalid or unsupported event: 'power:power_start'
->    Run 'perf list' for a list of valid events
+For the per-cpu patch - I am waiting for replay, apparently some
+additional work there is needed.
+But I would like to solve it ASAP.
 
-tip broke ABI :-(
-That's one for Ingo to deal with for now.
-
-> 
-> 3. (On 2.6.36) I can't seem to convince timechart to ever capture more
->    than 34000 samples. When trying to record using
->    perf timechart record -fga sleep 10
->    and then creating a graph using perf timechart, it only ever
-> outputs a few seconds worth.
-
-does this happen even without the "fga" ?
-I've used timechart to capture a minute of data before
-(but... you need a rather quiet system for that to be useful.... you
-otherwise get an impossibly big SVG file)
-
-
--- 
-Arjan van de Ven 	Intel Open Source Technology Centre
-For development, discussion and tips for power savings, 
-visit http://www.lesswatts.org
+Milan
