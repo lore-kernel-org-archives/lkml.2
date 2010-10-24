@@ -1,67 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758886Ab0JXRBv (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Oct 2010 13:01:51 -0400
-Received: from imr3.ericy.com ([198.24.6.13]:49673 "EHLO imr3.ericy.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758602Ab0JXRBu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Oct 2010 13:01:50 -0400
-Date: Sun, 24 Oct 2010 10:01:20 -0700
-From: Guenter Roeck <guenter.roeck@ericsson.com>
-To: =?iso-8859-1?Q?=C9ric?= Piel <eric.piel@tremplin-utc.net>
-CC: "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>
-Subject: Re: [lm-sensors] [PATCH 00/12] lis3 accelerator feature update
-Message-ID: <20101024170120.GA14747@ericsson.com>
-References: <1287748654-2626-1-git-send-email-samu.p.onkalo@nokia.com>
- <4CC44B3D.5030404@tremplin-utc.net>
- <20101024153548.GA14303@ericsson.com>
- <20101024163529.GA14650@ericsson.com>
+	id S1758939Ab0JXRCD (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Oct 2010 13:02:03 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:49881 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758602Ab0JXRCB convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 24 Oct 2010 13:02:01 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="iso-8859-1"
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20101024163529.GA14650@ericsson.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <alpine.LFD.2.00.1010241618480.8736@localhost6.localdomain6>
+References: <1287849986-5936-1-git-send-email-sez@debian.org> <alpine.LFD.2.00.1010241618480.8736@localhost6.localdomain6>
+From: Kyle Moffett <kyle@moffetthome.net>
+Date: Sun, 24 Oct 2010 13:01:39 -0400
+Message-ID: <AANLkTin2-h3+ts2JuZ4rxLSppr3Lqh1VCoi3sRQEHoaB@mail.gmail.com>
+Subject: Re: [PATCH] time: jiffies.c: fix typos in comment
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Serafeim Zanikolas <sez@debian.org>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Oct 24, 2010 at 12:35:29PM -0400, Guenter Roeck wrote:
-> On Sun, Oct 24, 2010 at 11:35:48AM -0400, Guenter Roeck wrote:
-> > On Sun, Oct 24, 2010 at 11:05:33AM -0400, �ric Piel wrote:
-> > > Op 22-10-10 13:57, Samu Onkalo schreef:
-> > > > Changes are tested only with I2C interface using 8bit sensor since I don't
-> > > > have other possibilities. Some features are not enabled
-> > > > by default since I can't test them with all possible configurations.
-> > > > Platform data contains field which controls new features.
-> > > Thanks Samu for persevering with the automatic power down feature. 
-> > > Hopefully I'll find also some time to activate it on the hp_accel side.
-> > > 
-> > > For now, I've reviewed the changes and everything looked fine, as well 
-> > > as tested them on my HP laptop (with a 12 bits sensor). Although most of 
-> > > the changes are not visible on this platform, at least there shouldn't 
-> > > be any regression.
-> > > 
-> > Great, thanks.
-> > 
-> > Unfortunately, the patches don't apply to my staging branch, probably
-> > because of the other pending lis3 changes.
-> > 
-> > Samu, please rebase your patches to 
-> > 	git://git.kernel.org/pub/scm/linux/kernel/git/groeck/staging.git hwmon-next
-> > and resubmit.
-> > 
-> Never mind. Played a bit with git, learned something new, and got it all merged.
-> Now compiling.
-> 
-> Eric, once I pushed the changes into above branch (hopefully by tonight),
-> would be great if you could give it another test run.
-> 
-Compiled and applied to hwmon-next. I'll let it rest there for a couple of days
-before sending it off to Linus. Eric, would be great if you can sanity test
-the merged version.
+On Sun, Oct 24, 2010 at 10:22, Thomas Gleixner <tglx@linutronix.de> wrote:
+> On Sat, 23 Oct 2010, Serafeim Zanikolas wrote:
+>> diff --git a/kernel/time/jiffies.c b/kernel/time/jiffies.c
+>> index 5404a84..12ba9a7 100644
+>> --- a/kernel/time/jiffies.c
+>> +++ b/kernel/time/jiffies.c
+>> @@ -30,8 +30,8 @@
+>>   * the timer interrupt frequency HZ and it suffers
+>>   * inaccuracies caused by missed or lost timer
+>>   * interrupts and the inability for the timer
+>> - * interrupt hardware to accuratly tick at the
+>> - * requested HZ value. It is also not reccomended
+>> + * interrupt hardware to accurately tick at the
+>> + * requested HZ value. It is also not recommended
+>>   * for "tick-less" systems.
+>
+> You are not only correcting a typo. You are changing the sense of the
+> comment, unfortunately in the wrong way.
+>
+> Why wouldn't it be recommended that the interrupt hardware ticks at
+> the requested HZ value ?
+>
+> The inability of it to tick accurately at the requested HZ value is
+> one of the causes which make jiffies clocksource inaccurate. And that
+> what the comment says.
 
-Thanks,
-Guenter
+Thomas,
+
+Please reread the patch again, I think it does exactly what he said it
+did.  Specifically, the old text is:
+>>   * the timer interrupt frequency HZ and it suffers
+>>   * inaccuracies caused by missed or lost timer
+>>   * interrupts and the inability for the timer
+>>   * interrupt hardware to accuratly tick at the
+>>   * requested HZ value. It is also not reccomended
+>>   * for "tick-less" systems.
+
+While the new text is:
+>>   * the timer interrupt frequency HZ and it suffers
+>>   * inaccuracies caused by missed or lost timer
+>>   * interrupts and the inability for the timer
+>>   * interrupt hardware to accurately tick at the
+>>   * requested HZ value. It is also not recommended
+>>   * for "tick-less" systems.
+
+I misread it the first time myself, mentally combining the second line
+of the old text with the new text; what you probably saw was:
+
+>> - * requested HZ value. It is also not reccomended
+>> + * interrupt hardware to accurately tick at the
+>> + * requested HZ value.
+
+Cheers,
+Kyle Moffett
