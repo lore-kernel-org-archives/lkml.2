@@ -1,16 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757837Ab0JXPGS (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Oct 2010 11:06:18 -0400
-Received: from mailservice.tudelft.nl ([130.161.131.5]:39516 "EHLO
+	id S1758020Ab0JXPGX (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Oct 2010 11:06:23 -0400
+Received: from mailservice.tudelft.nl ([130.161.131.5]:56881 "EHLO
 	mailservice.tudelft.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757367Ab0JXPGL (ORCPT
+	with ESMTP id S1757884Ab0JXPGV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Oct 2010 11:06:11 -0400
+	Sun, 24 Oct 2010 11:06:21 -0400
 X-Spam-Flag: NO
 X-Spam-Score: -21.89
-Message-ID: <4CC44035.5070303@tremplin-utc.net>
-Date: Sun, 24 Oct 2010 16:18:29 +0200
+Message-ID: <4CC4423E.9010403@tremplin-utc.net>
+Date: Sun, 24 Oct 2010 16:27:10 +0200
 From: =?UTF-8?B?w4lyaWMgUGllbA==?= <eric.piel@tremplin-utc.net>
 User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.11) Gecko/20101020 Mandriva/3.1.5-1mdv2011.0 (2011.0) Thunderbird/3.1.5
 MIME-Version: 1.0
@@ -18,9 +18,9 @@ To: Samu Onkalo <samu.p.onkalo@nokia.com>
 CC: khali@linux-fr.org, guenter.roeck@ericsson.com, jic23@cam.ac.uk,
         lm-sensors@lm-sensors.org, linux-i2c@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 03/12] hwmon: lis3: Cleanup interrupt handling
-References: <1287748654-2626-1-git-send-email-samu.p.onkalo@nokia.com> <1287748654-2626-4-git-send-email-samu.p.onkalo@nokia.com>
-In-Reply-To: <1287748654-2626-4-git-send-email-samu.p.onkalo@nokia.com>
+Subject: Re: [PATCH 07/12] hwmon: lis3: New parameters to platform data
+References: <1287748654-2626-1-git-send-email-samu.p.onkalo@nokia.com> <1287748654-2626-8-git-send-email-samu.p.onkalo@nokia.com>
+In-Reply-To: <1287748654-2626-8-git-send-email-samu.p.onkalo@nokia.com>
 Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
@@ -28,126 +28,114 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Op 22-10-10 13:57, Samu Onkalo schreef:
-> Irqcfg moved to chip data instead of platform data.
-> This simplifies access in interrupt handler little bit.
->
-> Input device open and close functions set status for
-> interrupt threaded handler once.
->
-> Unnecessary check for interrupt source removed since
-> it is enough that active interrupt line indicates that
-> there was an interrupt.
+> Added default output data rate setting to platform data.
+> If default rate is 0, reset default value is used.
+> Added control for duration via platform data.
+> Added possibility to configure interrupts to trig on
+> both rising and falling edge. The lis3 WU unit can be
+> configured quite many ways and with some configurations it
+> is quite handy to get coordinate refresh when some
+> event trigs and when it reason goes away.
 >
 > Signed-off-by: Samu Onkalo<samu.p.onkalo@nokia.com>
 Acked-by: Eric Piel <eric.piel@tremplin-utc.net>
+
 > ---
->   drivers/hwmon/lis3lv02d.c |   33 +++++++++++----------------------
->   drivers/hwmon/lis3lv02d.h |    2 ++
->   2 files changed, 13 insertions(+), 22 deletions(-)
+>   drivers/hwmon/lis3lv02d.c |   21 ++++++++++++++-------
+>   include/linux/lis3lv02d.h |    6 +++++-
+>   2 files changed, 19 insertions(+), 8 deletions(-)
 >
 > diff --git a/drivers/hwmon/lis3lv02d.c b/drivers/hwmon/lis3lv02d.c
-> index ade6f3a..fe97390 100644
+> index b44d4c5..d66cbe1 100644
 > --- a/drivers/hwmon/lis3lv02d.c
 > +++ b/drivers/hwmon/lis3lv02d.c
-> @@ -309,10 +309,14 @@ static void lis3lv02d_joystick_open(struct input_polled_dev *pidev)
->   {
->   	if (lis3_dev.pm_dev)
->   		pm_runtime_get_sync(lis3_dev.pm_dev);
-> +
-> +	if (lis3_dev.pdata&&  lis3_dev.whoami == WAI_8B&&  lis3_dev.idev)
-> +		atomic_set(&lis3_dev.wake_thread, 1);
->   }
->
->   static void lis3lv02d_joystick_close(struct input_polled_dev *pidev)
->   {
-> +	atomic_set(&lis3_dev.wake_thread, 0);
->   	if (lis3_dev.pm_dev)
->   		pm_runtime_put(lis3_dev.pm_dev);
->   }
-> @@ -332,8 +336,7 @@ static irqreturn_t lis302dl_interrupt(int irq, void *dummy)
->   	wake_up_interruptible(&lis3_dev.misc_wait);
->   	kill_fasync(&lis3_dev.async_queue, SIGIO, POLL_IN);
->   out:
-> -	if (lis3_dev.pdata&&  lis3_dev.whoami == WAI_8B&&  lis3_dev.idev&&
-> -	    lis3_dev.idev->input->users)
-> +	if (atomic_read(&lis3_dev.wake_thread))
->   		return IRQ_WAKE_THREAD;
->   	return IRQ_HANDLED;
->   }
-> @@ -364,31 +367,15 @@ static void lis302dl_interrupt_handle_click(struct lis3lv02d *lis3)
->   	mutex_unlock(&lis3->mutex);
->   }
->
-> -static void lis302dl_interrupt_handle_ff_wu(struct lis3lv02d *lis3)
-> -{
-> -	u8 wu1_src;
-> -	u8 wu2_src;
-> -
-> -	lis3->read(lis3, FF_WU_SRC_1,&wu1_src);
-> -	lis3->read(lis3, FF_WU_SRC_2,&wu2_src);
-> -
-> -	wu1_src = wu1_src&  FF_WU_SRC_IA ? wu1_src : 0;
-> -	wu2_src = wu2_src&  FF_WU_SRC_IA ? wu2_src : 0;
-> -
-> -	/* joystick poll is internally protected by the lis3->mutex. */
-> -	if (wu1_src || wu2_src)
-> -		lis3lv02d_joystick_poll(lis3_dev.idev);
-> -}
-> -
->   static irqreturn_t lis302dl_interrupt_thread1_8b(int irq, void *data)
->   {
->
->   	struct lis3lv02d *lis3 = data;
->
-> -	if ((lis3->pdata->irq_cfg&  LIS3_IRQ1_MASK) == LIS3_IRQ1_CLICK)
-> +	if ((lis3->irq_cfg&  LIS3_IRQ1_MASK) == LIS3_IRQ1_CLICK)
->   		lis302dl_interrupt_handle_click(lis3);
->   	else
-> -		lis302dl_interrupt_handle_ff_wu(lis3);
-> +		lis3lv02d_joystick_poll(lis3->idev);
->
->   	return IRQ_HANDLED;
->   }
-> @@ -398,10 +385,10 @@ static irqreturn_t lis302dl_interrupt_thread2_8b(int irq, void *data)
->
->   	struct lis3lv02d *lis3 = data;
->
-> -	if ((lis3->pdata->irq_cfg&  LIS3_IRQ2_MASK) == LIS3_IRQ2_CLICK)
-> +	if ((lis3->irq_cfg&  LIS3_IRQ2_MASK) == LIS3_IRQ2_CLICK)
->   		lis302dl_interrupt_handle_click(lis3);
->   	else
-> -		lis302dl_interrupt_handle_ff_wu(lis3);
-> +		lis3lv02d_joystick_poll(lis3->idev);
->
->   	return IRQ_HANDLED;
->   }
-> @@ -788,6 +775,7 @@ int lis3lv02d_init_device(struct lis3lv02d *dev)
+> @@ -706,16 +706,16 @@ static void lis3lv02d_8b_configure(struct lis3lv02d *dev,
+>   	if (p->wakeup_flags) {
+>   		dev->write(dev, FF_WU_CFG_1, p->wakeup_flags);
+>   		dev->write(dev, FF_WU_THS_1, p->wakeup_thresh&  0x7f);
+> -		/* default to 2.5ms for now */
+> -		dev->write(dev, FF_WU_DURATION_1, 1);
+> +		/* pdata value + 1 to keep this backward compatible*/
+> +		dev->write(dev, FF_WU_DURATION_1, p->duration1 + 1);
+>   		ctrl2 ^= HP_FF_WU1; /* Xor to keep compatible with old pdata*/
 >   	}
 >
->   	mutex_init(&dev->mutex);
-> +	atomic_set(&dev->wake_thread, 0);
+>   	if (p->wakeup_flags2) {
+>   		dev->write(dev, FF_WU_CFG_2, p->wakeup_flags2);
+>   		dev->write(dev, FF_WU_THS_2, p->wakeup_thresh2&  0x7f);
+> -		/* default to 2.5ms for now */
+> -		dev->write(dev, FF_WU_DURATION_2, 1);
+> +		/* pdata value + 1 to keep this backward compatible*/
+> +		dev->write(dev, FF_WU_DURATION_2, p->duration2 + 1);
+>   		ctrl2 ^= HP_FF_WU2; /* Xor to keep compatible with old pdata*/
+>   	}
+>   	/* Configure hipass filters */
+> @@ -725,8 +725,8 @@ static void lis3lv02d_8b_configure(struct lis3lv02d *dev,
+>   		err = request_threaded_irq(p->irq2,
+>   					NULL,
+>   					lis302dl_interrupt_thread2_8b,
+> -					IRQF_TRIGGER_RISING |
+> -					IRQF_ONESHOT,
+> +					IRQF_TRIGGER_RISING | IRQF_ONESHOT |
+> +					(p->irq_flags2&  IRQF_TRIGGER_MASK),
+>   					DRIVER_NAME,&lis3_dev);
+>   		if (err<  0)
+>   			printk(KERN_ERR DRIVER_NAME
+> @@ -742,6 +742,7 @@ int lis3lv02d_init_device(struct lis3lv02d *dev)
+>   {
+>   	int err;
+>   	irq_handler_t thread_fn;
+> +	int irq_flags = 0;
 >
->   	lis3lv02d_add_fs(dev);
->   	lis3lv02d_poweron(dev);
-> @@ -808,6 +796,7 @@ int lis3lv02d_init_device(struct lis3lv02d *dev)
+>   	dev->whoami = lis3lv02d_read_8(dev, WHO_AM_I);
+>
+> @@ -804,9 +805,14 @@ int lis3lv02d_init_device(struct lis3lv02d *dev)
 >   		if (dev->whoami == WAI_8B)
 >   			lis3lv02d_8b_configure(dev, p);
 >
-> +		dev->irq_cfg = p->irq_cfg;
+> +		irq_flags = p->irq_flags1&  IRQF_TRIGGER_MASK;
+> +
+>   		dev->irq_cfg = p->irq_cfg;
 >   		if (p->irq_cfg)
 >   			dev->write(dev, CTRL_REG3, p->irq_cfg);
+> +
+> +		if (p->default_rate)
+> +			lis3lv02d_set_odr(p->default_rate);
 >   	}
-> diff --git a/drivers/hwmon/lis3lv02d.h b/drivers/hwmon/lis3lv02d.h
-> index 7661e59..66e37b1 100644
-> --- a/drivers/hwmon/lis3lv02d.h
-> +++ b/drivers/hwmon/lis3lv02d.h
-> @@ -252,6 +252,8 @@ struct lis3lv02d {
->   	struct fasync_struct	*async_queue; /* queue for the misc device */
->   	wait_queue_head_t	misc_wait; /* Wait queue for the misc device */
->   	unsigned long		misc_opened; /* bit0: whether the device is open */
-> +	atomic_t                wake_thread;
-> +	unsigned char           irq_cfg;
 >
->   	struct lis3lv02d_platform_data *pdata;	/* for passing board config */
->   	struct mutex		mutex;     /* Serialize poll and selftest */
+>   	/* bail if we did not get an IRQ from the bus layer */
+> @@ -834,7 +840,8 @@ int lis3lv02d_init_device(struct lis3lv02d *dev)
+>
+>   	err = request_threaded_irq(dev->irq, lis302dl_interrupt,
+>   				thread_fn,
+> -				IRQF_TRIGGER_RISING | IRQF_ONESHOT,
+> +				IRQF_TRIGGER_RISING | IRQF_ONESHOT |
+> +				irq_flags,
+>   				DRIVER_NAME,&lis3_dev);
+>
+>   	if (err<  0) {
+> diff --git a/include/linux/lis3lv02d.h b/include/linux/lis3lv02d.h
+> index c4a4a52..18d578f 100644
+> --- a/include/linux/lis3lv02d.h
+> +++ b/include/linux/lis3lv02d.h
+> @@ -36,7 +36,10 @@ struct lis3lv02d_platform_data {
+>   #define LIS3_IRQ_OPEN_DRAIN	(1<<  6)
+>   #define LIS3_IRQ_ACTIVE_LOW	(1<<  7)
+>   	unsigned char irq_cfg;
+> -
+> +	unsigned char irq_flags1; /* Additional irq edge / level flags */
+> +	unsigned char irq_flags2; /* Additional irq edge / level flags */
+> +	unsigned char duration1;
+> +	unsigned char duration2;
+>   #define LIS3_WAKEUP_X_LO	(1<<  0)
+>   #define LIS3_WAKEUP_X_HI	(1<<  1)
+>   #define LIS3_WAKEUP_Y_LO	(1<<  2)
+> @@ -66,6 +69,7 @@ struct lis3lv02d_platform_data {
+>   	s8 axis_z;
+>   #define LIS3_USE_REGULATOR_CTRL 0x01
+>   	u16 driver_features;
+> +	int default_rate;
+>   	int (*setup_resources)(void);
+>   	int (*release_resources)(void);
+>   	/* Limits for selftest are specified in chip data sheet */
 
