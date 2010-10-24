@@ -1,44 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933111Ab0JXWWo (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Oct 2010 18:22:44 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:41733
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933030Ab0JXWWn (ORCPT
+	id S933121Ab0JXWYG (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Oct 2010 18:24:06 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:49987 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933103Ab0JXWYF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Oct 2010 18:22:43 -0400
-Date: Sun, 24 Oct 2010 15:23:06 -0700 (PDT)
-Message-Id: <20101024.152306.48512783.davem@davemloft.net>
-To: Joshua.Hoke@sixnet.com
-Cc: nicolas.ferre@atmel.com, jpirko@redhat.com, peter.korsgaard@barco.com,
-        eric.dumazet@gmail.com, haavard.skinnemoen@atmel.com,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org
-Subject: Re: [PATCH] macb: Don't re-enable interrupts while in polling mode
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <C8F551D39A7C724E987CF8DD11D3178304D02F88@svr3.sixnetio.com>
-References: <C8F551D39A7C724E987CF8DD11D3178304D02F88@svr3.sixnetio.com>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	Sun, 24 Oct 2010 18:24:05 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=wuHjNw8PyuUryt6pxwboOvV7LlFOvhPap57iXJCQTHYKmDdO32csnG+9itFOM45dzm
+         ErnKSTZJs8VlaTLVMSj756jwN5KGvwwTUjM+Dvuknn1d4ynaACOkYONgrk+kj/GCIP2T
+         CxSoUWZ6QtLPZD60j1M3tIC4QuZTB+1gXDpbw=
+Message-ID: <4CC4B210.2010608@lwfinger.net>
+Date: Sun, 24 Oct 2010 17:24:16 -0500
+From: Larry Finger <Larry.Finger@lwfinger.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.12) Gecko/20100914 SUSE/3.0.8 Thunderbird/3.0.8
+MIME-Version: 1.0
+To: Nicolas Kaiser <nikai@nikai.net>
+CC: Luciano Coelho <luciano.coelho@nokia.com>, linux-wireless@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] wireless/wl1271: remove redundant if-statement
+References: <20101025000744.17f7086e@absol.kitzblitz>
+In-Reply-To: <20101025000744.17f7086e@absol.kitzblitz>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Joshua Hoke" <Joshua.Hoke@sixnet.com>
-Date: Tue, 19 Oct 2010 12:48:22 -0400
+On 10/24/2010 05:07 PM, Nicolas Kaiser wrote:
+> Apparently the return value of wl1271_ps_elp_sleep never gets
+> checked anyway.
 
-> diff --git a/drivers/net/macb.c b/drivers/net/macb.c
-> index ff2f158..36cf594 100644
-> --- a/drivers/net/macb.c
-> +++ b/drivers/net/macb.c
-> @@ -515,14 +515,15 @@ static int macb_poll(struct napi_struct *napi, int
-> budget)
+The patch is fine, but this comment is a little misleading as
+wl1271_ps_elp_sleep() is void and cannot return a value.
 
-Your email client is breaking up long lines which corrupts the
-patch.
-
-Please fix this up in your email client and resubmit.
-
-Thank you.
+Larry
