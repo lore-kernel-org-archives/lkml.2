@@ -1,86 +1,256 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932934Ab0JXSSD (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Oct 2010 14:18:03 -0400
-Received: from zone0.gcu-squad.org ([212.85.147.21]:4824 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932301Ab0JXSSB (ORCPT
+	id S1758479Ab0JXSpK (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Oct 2010 14:45:10 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:12158 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756942Ab0JXSpI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Oct 2010 14:18:01 -0400
-Date: Sun, 24 Oct 2010 20:17:52 +0200
-From: Jean Delvare <khali@linux-fr.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Linux I2C <linux-i2c@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: [GIT PULL] i2c updates for 2.6.37
-Message-ID: <20101024201752.68cd9404@endymion.delvare>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Sun, 24 Oct 2010 14:45:08 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=from:to:cc:subject:references:date:message-id:user-agent:
+	mime-version:content-type;
+	b=WcQtwDnnxx5YmeTUtNt4HwvqQIgKcQCGjQPJQSrE3uxm3vtJHeHJMHvFbUAdkF7vs
+	ft4+xDZH0qcQHqZzbDJXA==
+From: Greg Thelen <gthelen@google.com>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, containers@lists.osdl.org,
+        Andrea Righi <arighi@develer.com>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Ciju Rajan K <ciju@linux.vnet.ibm.com>,
+        David Rientjes <rientjes@google.com>
+Subject: Re: [PATCH v2][memcg+dirtylimit] Fix  overwriting global vm dirty limit setting by memcg (Re: [PATCH v3 00/11] memcg: per cgroup dirty page accounting
+References: <1287448784-25684-1-git-send-email-gthelen@google.com>
+	<20101020122144.47f2b60b.kamezawa.hiroyu@jp.fujitsu.com>
+	<20101020140255.5b8afb63.kamezawa.hiroyu@jp.fujitsu.com>
+Date: Sun, 24 Oct 2010 11:44:38 -0700
+Message-ID: <xr937hh7sa5l.fsf@ninji.mtv.corp.google.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> writes:
 
-Please pull i2c subsystem updates for Linux 2.6.37 from:
+> Fixed one here.
+> ==
+> From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+>
+> Now, at calculating dirty limit, vm_dirty_param() is called.
+> This function returns dirty-limit related parameters considering
+> memory cgroup settings.
+>
+> Now, assume that vm_dirty_bytes=100M (global dirty limit) and
+> memory cgroup has 1G of pages and 40 dirty_ratio, dirtyable memory is
+> 500MB.
+>
+> In this case, global_dirty_limits will consider dirty_limt as
+> 500 *0.4 = 200MB. This is bad...memory cgroup is not back door.
+>
+> This patch limits the return value of vm_dirty_param() considring
+> global settings.
+>
+> Changelog:
+>  - fixed an argument "mem" int to u64
+>  - fixed to use global available memory to cap memcg's value.
+>
+> Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> ---
+>  include/linux/memcontrol.h |    5 +++--
+>  mm/memcontrol.c            |   30 +++++++++++++++++++++++++++++-
+>  mm/page-writeback.c        |    3 ++-
+>  3 files changed, 34 insertions(+), 4 deletions(-)
+>
+> Index: dirty_limit_new/mm/memcontrol.c
+> ===================================================================
+> --- dirty_limit_new.orig/mm/memcontrol.c
+> +++ dirty_limit_new/mm/memcontrol.c
+> @@ -1171,9 +1171,11 @@ static void __mem_cgroup_dirty_param(str
+>   * can be moved after our access and writeback tends to take long time.  At
+>   * least, "memcg" will not be freed while holding rcu_read_lock().
+>   */
+> -void vm_dirty_param(struct vm_dirty_param *param)
+> +void vm_dirty_param(struct vm_dirty_param *param,
+> +	 u64 mem, u64 global)
+>  {
+>  	struct mem_cgroup *memcg;
+> +	u64 limit, bglimit;
+>  
+>  	if (mem_cgroup_disabled()) {
+>  		global_vm_dirty_param(param);
+> @@ -1183,6 +1185,32 @@ void vm_dirty_param(struct vm_dirty_para
+>  	rcu_read_lock();
+>  	memcg = mem_cgroup_from_task(current);
+>  	__mem_cgroup_dirty_param(param, memcg);
+> +	/*
+> +	 * A limitation under memory cgroup is under global vm, too.
+> +	 */
+> +	if (vm_dirty_ratio)
+> +		limit = global * vm_dirty_ratio / 100;
+> +	else
+> +		limit = vm_dirty_bytes;
+> +	if (param->dirty_ratio) {
+> +		param->dirty_bytes = mem * param->dirty_ratio / 100;
+> +		param->dirty_ratio = 0;
+> +	}
+> +	if (param->dirty_bytes > limit)
+> +		param->dirty_bytes = limit;
+> +
+> +	if (dirty_background_ratio)
+> +		bglimit = global * dirty_background_ratio / 100;
+> +	else
+> +		bglimit = dirty_background_bytes;
+> +
+> +	if (param->dirty_background_ratio) {
+> +		param->dirty_background_bytes =
+> +			mem * param->dirty_background_ratio / 100;
+> +		param->dirty_background_ratio = 0;
+> +	}
+> +	if (param->dirty_background_bytes > bglimit)
+> +		param->dirty_background_bytes = bglimit;
+>  	rcu_read_unlock();
+>  }
+>  
+> Index: dirty_limit_new/include/linux/memcontrol.h
+> ===================================================================
+> --- dirty_limit_new.orig/include/linux/memcontrol.h
+> +++ dirty_limit_new/include/linux/memcontrol.h
+> @@ -171,7 +171,7 @@ static inline void mem_cgroup_dec_page_s
+>  }
+>  
+>  bool mem_cgroup_has_dirty_limit(void);
+> -void vm_dirty_param(struct vm_dirty_param *param);
+> +void vm_dirty_param(struct vm_dirty_param *param, u64 mem, u64 global);
+>  s64 mem_cgroup_page_stat(enum mem_cgroup_nr_pages_item item);
+>  
+>  unsigned long mem_cgroup_soft_limit_reclaim(struct zone *zone, int order,
+> @@ -360,7 +360,8 @@ static inline bool mem_cgroup_has_dirty_
+>  	return false;
+>  }
+>  
+> -static inline void vm_dirty_param(struct vm_dirty_param *param)
+> +static inline void vm_dirty_param(struct vm_dirty_param *param,
+> +		u64 mem, u64 global)
+>  {
+>  	global_vm_dirty_param(param);
+>  }
+> Index: dirty_limit_new/mm/page-writeback.c
+> ===================================================================
+> --- dirty_limit_new.orig/mm/page-writeback.c
+> +++ dirty_limit_new/mm/page-writeback.c
+> @@ -466,7 +466,8 @@ void global_dirty_limits(unsigned long *
+>  	struct task_struct *tsk;
+>  	struct vm_dirty_param dirty_param;
+>  
+> -	vm_dirty_param(&dirty_param);
+> +	vm_dirty_param(&dirty_param,
+> +		available_memory, global_dirtyable_memory());
+>  
+>  	if (dirty_param.dirty_bytes)
+>  		dirty = DIV_ROUND_UP(dirty_param.dirty_bytes, PAGE_SIZE);
 
-git://git.kernel.org/pub/scm/linux/kernel/git/jdelvare/staging.git i2c-for-linus
+I think there is a problem with the patch above.  In the patch
+vm_dirty_param() sets param->dirty_[background_]bytes to the smallest
+limits considering the memcg and global limits.  Assuming the current
+task is in a memcg, then the memcg dirty (not system-wide) usage is
+always compared to the selected limits (which may be per-memcg or
+system).  The problem is that if:
+a) per-memcg dirty limit is smaller than system then vm_dirty_param()
+   will select per-memcg dirty limit, and
+b) per-memcg dirty usage is well below memcg dirty limit, and
+b) system usage is at system limit
+Then the above patch will not trigger writeback.  Example with two
+memcg:
+         sys
+        B   C
+      
+      limit  usage
+  sys  10     10
+   B    7      6
+   C    5      4
 
- MAINTAINERS                           |    6 +
- drivers/gpu/drm/nouveau/nouveau_i2c.h |    1 -
- drivers/gpu/drm/radeon/radeon_mode.h  |    1 -
- drivers/i2c/Kconfig                   |    3 +-
- drivers/i2c/Makefile                  |    4 +-
- drivers/i2c/algos/Kconfig             |   12 +
- drivers/i2c/algos/Makefile            |    4 +-
- drivers/i2c/busses/Makefile           |    4 +-
- drivers/i2c/busses/i2c-amd8111.c      |  163 +++++++++----
- drivers/i2c/busses/i2c-ibm_iic.c      |    1 -
- drivers/i2c/busses/i2c-nuc900.c       |    1 -
- drivers/i2c/busses/i2c-pca-platform.c |    2 +-
- drivers/i2c/busses/i2c-pxa.c          |    1 -
- drivers/i2c/busses/i2c-s3c2410.c      |    1 -
- drivers/i2c/busses/i2c-viapro.c       |    8 +-
- drivers/i2c/i2c-core.c                |   45 ++--
- drivers/i2c/i2c-dev.c                 |   13 +-
- drivers/i2c/muxes/Kconfig             |   10 +
- drivers/i2c/muxes/Makefile            |    5 +-
- drivers/i2c/muxes/pca9541.c           |  411 +++++++++++++++++++++++++++++++++
- drivers/i2c/muxes/pca954x.c           |    8 +-
- drivers/video/aty/radeon_i2c.c        |    1 -
- drivers/video/i810/i810.h             |    1 -
- drivers/video/intelfb/intelfb_i2c.c   |    1 -
- drivers/video/savage/savagefb.h       |    1 -
- include/linux/i2c.h                   |   12 +-
- 26 files changed, 603 insertions(+), 117 deletions(-)
- create mode 100644 drivers/i2c/muxes/pca9541.c
+If B wants to grow, the system will exceed system limit of 10 and should
+be throttled.  However, the smaller limit (7) will be selected and
+applied to memcg usage (6), which indicates no need to throttle, so the
+system could get as bad as:
 
----------------
+      limit  usage
+  sys  10     12
+   B    7      7
+   C    5      5
 
-Guenter Roeck (3):
-      i2c/mux: Driver for PCA9541 I2C Master Selector
-      MAINTAINERS: Add maintainer for PCA9541 I2C bus master selector driver
-      i2c/pca954x: Remove __devinit and __devexit from probe and remove functions
+In this case the system usage exceeds the system limit because each
+the per-memcg checks see no per-memcg problems.
 
-Jean Delvare (7):
-      i2c: Fix Kconfig dependencies
-      i2c: Simplify i2c_parent_is_i2c_adapter
-      i2c: Let i2c_parent_is_i2c_adapter return the parent adapter
-      i2c: Remove unneeded inclusions of <linux/i2c-id.h>
-      i2c: Discard warning message on device instantiation from user-space
-      i2c: Optimize function i2c_detect()
-      i2c-viapro: Don't log nacks
+To solve this I propose we create a new structure to aggregate both
+dirty limit and usage data:
+	struct dirty_limits {
+	       unsigned long dirty_thresh;
+	       unsigned long background_thresh;
+	       unsigned long nr_reclaimable;
+	       unsigned long nr_writeback;
+	};
 
-Julia Lawall (1):
-      i2c-amd8111: Add proper error handling
+global_dirty_limits() would then query both the global and memcg limits
+and dirty usage of one that is closest to its limit.  This change makes
+global_dirty_limits() look like:
 
-Nobuhiro Iwamatsu (1):
-      i2c-pca-platform: Change device name of request_irq
+void global_dirty_limits(struct dirty_limits *limits)
+{
+	unsigned long background;
+	unsigned long dirty;
+	unsigned long nr_reclaimable;
+	unsigned long nr_writeback;
+	unsigned long available_memory = determine_dirtyable_memory();
+	struct task_struct *tsk;
 
-matt mooney (1):
-      i2c: Change to new flag variable
+	if (vm_dirty_bytes)
+		dirty = DIV_ROUND_UP(vm_dirty_bytes, PAGE_SIZE);
+	else
+		dirty = (vm_dirty_ratio * available_memory) / 100;
 
-Thanks,
--- 
-Jean Delvare
+	if (dirty_background_bytes)
+		background = DIV_ROUND_UP(dirty_background_bytes, PAGE_SIZE);
+	else
+		background = (dirty_background_ratio * available_memory) / 100;
+
+	nr_reclaimable = global_page_state(NR_FILE_DIRTY) +
+				global_page_state(NR_UNSTABLE_NFS);
+	nr_writeback = global_page_state(NR_WRITEBACK);
+
+	if (mem_cgroup_dirty_limits(available_memory, limits) &&
+	    dirty_available(limits->dirty_thresh, limits->nr_reclaimable,
+			    limits->nr_writeback) <
+	    dirty_available(dirty, nr_reclaimable, nr_writeback)) {
+		dirty = min(dirty, limits->dirty_thresh);
+		background = min(background, limits->background_thresh);
+	} else {
+		limits->nr_reclaimable = nr_reclaimable;
+		limits->nr_writeback = nr_writeback;
+	}
+
+	if (background >= dirty)
+		background = dirty / 2;
+	tsk = current;
+	if (tsk->flags & PF_LESS_THROTTLE || rt_task(tsk)) {
+		background += background / 4;
+		dirty += dirty / 4;
+	}
+	limits->background_thresh = background;
+	limits->dirty_thresh = dirty;
+}
+
+Because this approach considered both memcg and system limits, the
+problem described above is avoided.
+
+I have this change integrated into the memcg dirty limit series (-v3 was
+the last post; v4 is almost ready with this change).  I will post -v4
+with this approach is there is no strong objection.
+
+--
+Greg
