@@ -1,84 +1,220 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756879Ab0JXJni (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Oct 2010 05:43:38 -0400
-Received: from hera.kernel.org ([140.211.167.34]:56007 "EHLO hera.kernel.org"
+	id S932317Ab0JXJoA (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Oct 2010 05:44:00 -0400
+Received: from hera.kernel.org ([140.211.167.34]:56023 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755256Ab0JXJng (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Oct 2010 05:43:36 -0400
-Date: Sun, 24 Oct 2010 09:42:58 GMT
-From: tip-bot for Sonny Rao <sonnyrao@linux.vnet.ibm.com>
+	id S1755635Ab0JXJn6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 24 Oct 2010 05:43:58 -0400
+Date: Sun, 24 Oct 2010 09:43:20 GMT
+From: tip-bot for Ben Hutchings <ben@decadent.org.uk>
 Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
         hpa@zytor.com, mingo@redhat.com, a.p.zijlstra@chello.nl,
-        sonnyrao@linux.vnet.ibm.com, robert.richter@amd.com,
-        tglx@linutronix.de, mingo@elte.hu
+        ben@decadent.org.uk, tglx@linutronix.de, mingo@elte.hu
 Reply-To: mingo@redhat.com, hpa@zytor.com, paulus@samba.org,
-        linux-kernel@vger.kernel.org, acme@redhat.com, robert.richter@amd.com,
-        a.p.zijlstra@chello.nl, tglx@linutronix.de,
-        sonnyrao@linux.vnet.ibm.com, mingo@elte.hu
-In-Reply-To: <1287107460-12112-1-git-send-email-sonnyrao@linux.vnet.ibm.com>
-References: <1287107460-12112-1-git-send-email-sonnyrao@linux.vnet.ibm.com>
+        linux-kernel@vger.kernel.org, acme@redhat.com, a.p.zijlstra@chello.nl,
+        ben@decadent.org.uk, tglx@linutronix.de, mingo@elte.hu
+In-Reply-To: <1286723403.2955.205.camel@localhost>
+References: <1286723403.2955.205.camel@localhost>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf tools: Document event modifiers
-Message-ID: <tip-ffec516976f64b4e3e59ba1bb8a5020008cc678a@git.kernel.org>
-Git-Commit-ID: ffec516976f64b4e3e59ba1bb8a5020008cc678a
+Subject: [tip:perf/core] perf trace: Use $PERF_EXEC_PATH in canned report scripts
+Message-ID: <tip-44e668c6faa9a6c477a32788e7e88f0754c54a4e@git.kernel.org>
+Git-Commit-ID: 44e668c6faa9a6c477a32788e7e88f0754c54a4e
 X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sun, 24 Oct 2010 09:43:00 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sun, 24 Oct 2010 09:43:21 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  ffec516976f64b4e3e59ba1bb8a5020008cc678a
-Gitweb:     http://git.kernel.org/tip/ffec516976f64b4e3e59ba1bb8a5020008cc678a
-Author:     Sonny Rao <sonnyrao@linux.vnet.ibm.com>
-AuthorDate: Thu, 14 Oct 2010 20:51:00 -0500
+Commit-ID:  44e668c6faa9a6c477a32788e7e88f0754c54a4e
+Gitweb:     http://git.kernel.org/tip/44e668c6faa9a6c477a32788e7e88f0754c54a4e
+Author:     Ben Hutchings <ben@decadent.org.uk>
+AuthorDate: Sun, 10 Oct 2010 16:10:03 +0100
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
 CommitDate: Sat, 23 Oct 2010 15:31:20 -0200
 
-perf tools: Document event modifiers
+perf trace: Use $PERF_EXEC_PATH in canned report scripts
 
-Existing documentation doesn't discuss event modifiers, so add a description of
-what's currently possible to the documentation of perf-list.
+Set $PERF_EXEC_PATH before starting the record and report scripts, and
+make them use it where necessary.
 
 Cc: Ingo Molnar <mingo@elte.hu>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Robert Richter <robert.richter@amd.com>
-LKML-Reference: <1287107460-12112-1-git-send-email-sonnyrao@linux.vnet.ibm.com>
-Signed-off-by: Sonny Rao <sonnyrao@linux.vnet.ibm.com>
+LKML-Reference: <1286723403.2955.205.camel@localhost>
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/Documentation/perf-list.txt |   17 +++++++++++++++++
- 1 files changed, 17 insertions(+), 0 deletions(-)
+ tools/perf/builtin-trace.c                         |    6 +++---
+ tools/perf/scripts/perl/bin/failed-syscalls-report |    2 +-
+ tools/perf/scripts/perl/bin/rw-by-file-report      |    2 +-
+ tools/perf/scripts/perl/bin/rw-by-pid-report       |    2 +-
+ tools/perf/scripts/perl/bin/rwtop-report           |    2 +-
+ tools/perf/scripts/perl/bin/wakeup-latency-report  |    2 +-
+ tools/perf/scripts/perl/bin/workqueue-stats-report |    2 +-
+ .../python/bin/failed-syscalls-by-pid-report       |    2 +-
+ tools/perf/scripts/python/bin/netdev-times-report  |    2 +-
+ .../perf/scripts/python/bin/sched-migration-report |    2 +-
+ tools/perf/scripts/python/bin/sctop-report         |    2 +-
+ .../python/bin/syscall-counts-by-pid-report        |    2 +-
+ .../perf/scripts/python/bin/syscall-counts-report  |    2 +-
+ 13 files changed, 15 insertions(+), 15 deletions(-)
 
-diff --git a/tools/perf/Documentation/perf-list.txt b/tools/perf/Documentation/perf-list.txt
-index 43e3dd2..399751b 100644
---- a/tools/perf/Documentation/perf-list.txt
-+++ b/tools/perf/Documentation/perf-list.txt
-@@ -15,6 +15,23 @@ DESCRIPTION
- This command displays the symbolic event types which can be selected in the
- various perf commands with the -e option.
+diff --git a/tools/perf/builtin-trace.c b/tools/perf/builtin-trace.c
+index 40a6a29..3ea6219 100644
+--- a/tools/perf/builtin-trace.c
++++ b/tools/perf/builtin-trace.c
+@@ -46,9 +46,6 @@ static struct scripting_ops	*scripting_ops;
  
-+EVENT MODIFIERS
-+---------------
+ static void setup_scripting(void)
+ {
+-	/* make sure PERF_EXEC_PATH is set for scripts */
+-	perf_set_argv_exec_path(perf_exec_path());
+-
+ 	setup_perl_scripting();
+ 	setup_python_scripting();
+ 
+@@ -593,6 +590,9 @@ int cmd_trace(int argc, const char **argv, const char *prefix __used)
+ 		suffix = REPORT_SUFFIX;
+ 	}
+ 
++	/* make sure PERF_EXEC_PATH is set for scripts */
++	perf_set_argv_exec_path(perf_exec_path());
 +
-+Events can optionally have a modifer by appending a colon and one or
-+more modifiers.  Modifiers allow the user to restrict when events are
-+counted with 'u' for user-space, 'k' for kernel, 'h' for hypervisor.
-+
-+The 'p' modifier can be used for specifying how precise the instruction
-+address should be. The 'p' modifier is currently only implemented for
-+Intel PEBS and can be specified multiple times:
-+  0 - SAMPLE_IP can have arbitrary skid
-+  1 - SAMPLE_IP must have constant skid
-+  2 - SAMPLE_IP requested to have 0 skid
-+  3 - SAMPLE_IP must have 0 skid
-+
-+The PEBS implementation now supports up to 2.
-+
- RAW HARDWARE EVENT DESCRIPTOR
- -----------------------------
- Even when an event is not available in a symbolic form within perf right now,
+ 	if (!suffix && argc >= 2 && strncmp(argv[1], "-", strlen("-")) != 0) {
+ 		char *record_script_path, *report_script_path;
+ 		int live_pipe[2];
+diff --git a/tools/perf/scripts/perl/bin/failed-syscalls-report b/tools/perf/scripts/perl/bin/failed-syscalls-report
+index e3a5e55..4028d92 100644
+--- a/tools/perf/scripts/perl/bin/failed-syscalls-report
++++ b/tools/perf/scripts/perl/bin/failed-syscalls-report
+@@ -7,4 +7,4 @@ if [ $# -gt 0 ] ; then
+ 	shift
+     fi
+ fi
+-perf trace $@ -s ~/libexec/perf-core/scripts/perl/failed-syscalls.pl $comm
++perf trace $@ -s "$PERF_EXEC_PATH"/scripts/perl/failed-syscalls.pl $comm
+diff --git a/tools/perf/scripts/perl/bin/rw-by-file-report b/tools/perf/scripts/perl/bin/rw-by-file-report
+index d83070b..ba25f4d 100644
+--- a/tools/perf/scripts/perl/bin/rw-by-file-report
++++ b/tools/perf/scripts/perl/bin/rw-by-file-report
+@@ -7,7 +7,7 @@ if [ $# -lt 1 ] ; then
+ fi
+ comm=$1
+ shift
+-perf trace $@ -s ~/libexec/perf-core/scripts/perl/rw-by-file.pl $comm
++perf trace $@ -s "$PERF_EXEC_PATH"/scripts/perl/rw-by-file.pl $comm
+ 
+ 
+ 
+diff --git a/tools/perf/scripts/perl/bin/rw-by-pid-report b/tools/perf/scripts/perl/bin/rw-by-pid-report
+index 7ef4698..641a3f5 100644
+--- a/tools/perf/scripts/perl/bin/rw-by-pid-report
++++ b/tools/perf/scripts/perl/bin/rw-by-pid-report
+@@ -1,6 +1,6 @@
+ #!/bin/bash
+ # description: system-wide r/w activity
+-perf trace $@ -s ~/libexec/perf-core/scripts/perl/rw-by-pid.pl
++perf trace $@ -s "$PERF_EXEC_PATH"/scripts/perl/rw-by-pid.pl
+ 
+ 
+ 
+diff --git a/tools/perf/scripts/perl/bin/rwtop-report b/tools/perf/scripts/perl/bin/rwtop-report
+index 93e698c..4918dba 100644
+--- a/tools/perf/scripts/perl/bin/rwtop-report
++++ b/tools/perf/scripts/perl/bin/rwtop-report
+@@ -17,7 +17,7 @@ if [ "$n_args" -gt 0 ] ; then
+     interval=$1
+     shift
+ fi
+-perf trace $@ -s ~/libexec/perf-core/scripts/perl/rwtop.pl $interval
++perf trace $@ -s "$PERF_EXEC_PATH"/scripts/perl/rwtop.pl $interval
+ 
+ 
+ 
+diff --git a/tools/perf/scripts/perl/bin/wakeup-latency-report b/tools/perf/scripts/perl/bin/wakeup-latency-report
+index a0d898f..49052eb 100644
+--- a/tools/perf/scripts/perl/bin/wakeup-latency-report
++++ b/tools/perf/scripts/perl/bin/wakeup-latency-report
+@@ -1,6 +1,6 @@
+ #!/bin/bash
+ # description: system-wide min/max/avg wakeup latency
+-perf trace $@ -s ~/libexec/perf-core/scripts/perl/wakeup-latency.pl
++perf trace $@ -s "$PERF_EXEC_PATH"/scripts/perl/wakeup-latency.pl
+ 
+ 
+ 
+diff --git a/tools/perf/scripts/perl/bin/workqueue-stats-report b/tools/perf/scripts/perl/bin/workqueue-stats-report
+index 3508113..df0c65f 100644
+--- a/tools/perf/scripts/perl/bin/workqueue-stats-report
++++ b/tools/perf/scripts/perl/bin/workqueue-stats-report
+@@ -1,6 +1,6 @@
+ #!/bin/bash
+ # description: workqueue stats (ins/exe/create/destroy)
+-perf trace $@ -s ~/libexec/perf-core/scripts/perl/workqueue-stats.pl
++perf trace $@ -s "$PERF_EXEC_PATH"/scripts/perl/workqueue-stats.pl
+ 
+ 
+ 
+diff --git a/tools/perf/scripts/python/bin/failed-syscalls-by-pid-report b/tools/perf/scripts/python/bin/failed-syscalls-by-pid-report
+index 3029354..0358702 100644
+--- a/tools/perf/scripts/python/bin/failed-syscalls-by-pid-report
++++ b/tools/perf/scripts/python/bin/failed-syscalls-by-pid-report
+@@ -7,4 +7,4 @@ if [ $# -gt 0 ] ; then
+ 	shift
+     fi
+ fi
+-perf trace $@ -s ~/libexec/perf-core/scripts/python/failed-syscalls-by-pid.py $comm
++perf trace $@ -s "$PERF_EXEC_PATH"/scripts/python/failed-syscalls-by-pid.py $comm
+diff --git a/tools/perf/scripts/python/bin/netdev-times-report b/tools/perf/scripts/python/bin/netdev-times-report
+index c3d0a63..4ad361b 100644
+--- a/tools/perf/scripts/python/bin/netdev-times-report
++++ b/tools/perf/scripts/python/bin/netdev-times-report
+@@ -2,4 +2,4 @@
+ # description: display a process of packet and processing time
+ # args: [tx] [rx] [dev=] [debug]
+ 
+-perf trace -s ~/libexec/perf-core/scripts/python/netdev-times.py $@
++perf trace -s "$PERF_EXEC_PATH"/scripts/python/netdev-times.py $@
+diff --git a/tools/perf/scripts/python/bin/sched-migration-report b/tools/perf/scripts/python/bin/sched-migration-report
+index 61d05f7..df1791f 100644
+--- a/tools/perf/scripts/python/bin/sched-migration-report
++++ b/tools/perf/scripts/python/bin/sched-migration-report
+@@ -1,3 +1,3 @@
+ #!/bin/bash
+ # description: sched migration overview
+-perf trace $@ -s ~/libexec/perf-core/scripts/python/sched-migration.py
++perf trace $@ -s "$PERF_EXEC_PATH"/scripts/python/sched-migration.py
+diff --git a/tools/perf/scripts/python/bin/sctop-report b/tools/perf/scripts/python/bin/sctop-report
+index b01c842..36b409c 100644
+--- a/tools/perf/scripts/python/bin/sctop-report
++++ b/tools/perf/scripts/python/bin/sctop-report
+@@ -21,4 +21,4 @@ elif [ "$n_args" -gt 0 ] ; then
+     interval=$1
+     shift
+ fi
+-perf trace $@ -s ~/libexec/perf-core/scripts/python/sctop.py $comm $interval
++perf trace $@ -s "$PERF_EXEC_PATH"/scripts/python/sctop.py $comm $interval
+diff --git a/tools/perf/scripts/python/bin/syscall-counts-by-pid-report b/tools/perf/scripts/python/bin/syscall-counts-by-pid-report
+index 9e9d8dd..4eb88c9 100644
+--- a/tools/perf/scripts/python/bin/syscall-counts-by-pid-report
++++ b/tools/perf/scripts/python/bin/syscall-counts-by-pid-report
+@@ -7,4 +7,4 @@ if [ $# -gt 0 ] ; then
+ 	shift
+     fi
+ fi
+-perf trace $@ -s ~/libexec/perf-core/scripts/python/syscall-counts-by-pid.py $comm
++perf trace $@ -s "$PERF_EXEC_PATH"/scripts/python/syscall-counts-by-pid.py $comm
+diff --git a/tools/perf/scripts/python/bin/syscall-counts-report b/tools/perf/scripts/python/bin/syscall-counts-report
+index dc076b6..cb2f9c5 100644
+--- a/tools/perf/scripts/python/bin/syscall-counts-report
++++ b/tools/perf/scripts/python/bin/syscall-counts-report
+@@ -7,4 +7,4 @@ if [ $# -gt 0 ] ; then
+ 	shift
+     fi
+ fi
+-perf trace $@ -s ~/libexec/perf-core/scripts/python/syscall-counts.py $comm
++perf trace $@ -s "$PERF_EXEC_PATH"/scripts/python/syscall-counts.py $comm
