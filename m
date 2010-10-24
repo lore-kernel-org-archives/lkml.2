@@ -1,51 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932964Ab0JXUrv (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Oct 2010 16:47:51 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:58174 "EHLO
+	id S932967Ab0JXUyM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Oct 2010 16:54:12 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:56538 "EHLO
 	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932831Ab0JXUru convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Oct 2010 16:47:50 -0400
+	by vger.kernel.org with ESMTP id S932438Ab0JXUyL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 24 Oct 2010 16:54:11 -0400
 MIME-Version: 1.0
-In-Reply-To: <alpine.LNX.2.00.1010232317360.6879@pobox.suse.cz>
-References: <alpine.LNX.2.00.1010232317360.6879@pobox.suse.cz>
+In-Reply-To: <4CC49AAB.5090809@fusionio.com>
+References: <4CC49274.3030803@fusionio.com> <AANLkTik4qAzZPLO8HHBCM34_NLEEdPj04RyXPfeR-wSv@mail.gmail.com>
+ <4CC49A4B.8010300@fusionio.com> <4CC49AAB.5090809@fusionio.com>
 From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Sun, 24 Oct 2010 13:47:23 -0700
-Message-ID: <AANLkTinhODbKSMiwau0zRZw+5O+DPBo5UwpxM4q+Ytjb@mail.gmail.com>
-Subject: Re: [GIT] trivial
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: linux-kernel@vger.kernel.org
+Date: Sun, 24 Oct 2010 13:53:41 -0700
+Message-ID: <AANLkTin-xocNea5k2m+P2a9XGfyoOf_0ZN=kj0fxm8Pg@mail.gmail.com>
+Subject: Re: [GIT PULL] Revert of the IO stat fix
+To: Jens Axboe <jaxboe@fusionio.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Vivek Goyal <vgoyal@redhat.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Oct 23, 2010 at 2:39 PM, Jiri Kosina <jkosina@suse.cz> wrote:
+On Sun, Oct 24, 2010 at 1:44 PM, Jens Axboe <jaxboe@fusionio.com> wrote:
+>>
+>> The patch itself is sound, the problems are around the area of it not
+>> really liking non-elevator devices with the elv_quiesce_start/end()
+>> parts. I had the below patch for that, but then I could not decide
+>> whether we were fully safe on queue free after talking to Vivek about
+>> it.
 >
-> please pull from 'for-next' branch at
->
->  git://git.kernel.org/pub/scm/linux/kernel/git/jikos/trivial.git for-next
+> Forgot to include it, here it is. I'll be offline from now and 1-2 days
+> forward.
 
-Pulled. With one modification: I didn't take the top merge commit.
+Hmm. I actually like this patch more than the revert. Except that I
+think the __elv_quiesce_start/end() functions should be static, and
+not exposed in the header file. There don't seem to be any other files
+that would want to use them anyway, and the whole change looks very
+sane since all the outside users used to have to take the lock
+explicitly (and thus moving it inside the elv_quiesce_start/end
+functions seems to be a nice cleanup).
 
-I _really_ prefer to see the clashes myself, and the extra merges just
-make history less readable. So if the conflicts are trivial, please
-don't pre-merge stuff - it just hides things from me.
+So if this patch is supposed to fix things and doesn't have any
+*known* problems, but you're just not entirely sure about it and we're
+talking just a few days of you being gone, I'd almost rather take the
+risk. If worst comes to worst, I can revert both this patch and the
+original one. We _are_ in the middle of the merge window after all, so
+I'm much more open to risks than I would be later in the -rc series..
 
-Now, admittedly the things it hides shouldn't matter for something
-like the trivial tree, but at the same time, exactly because it's the
-trivial tree I would also expect the conflicts to be really trivial,
-so I'd rather just have people follow the general rule of "please
-don't pre-merge" regardless.
-
-It's a good idea to perhaps do a private merge just to see how nasty
-things are, and to perhaps give me a heads-up (and maybe even export
-the pre-merged thing as a "btw, if you're lazy and don't care about
-the conflicts, you can pull this other pre-merged branch" branch). But
-on the whole, I tend to find the conflicts to be the most telling
-parts of any merge, and be a good hint about what development trees
-clashed with each other.
-
-                        Linus
+                                 Linus
