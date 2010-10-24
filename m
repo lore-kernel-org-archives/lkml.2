@@ -1,44 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756411Ab0JXCkS (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Oct 2010 22:40:18 -0400
-Received: from eddie.linux-mips.org ([78.24.191.182]:41141 "EHLO
-	cvs.linux-mips.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754676Ab0JXCkQ (ORCPT
+	id S1757105Ab0JXDvB (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Oct 2010 23:51:01 -0400
+Received: from mail-px0-f174.google.com ([209.85.212.174]:52694 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756550Ab0JXDvA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Oct 2010 22:40:16 -0400
-Date: Sun, 24 Oct 2010 03:40:15 +0100 (BST)
-From: "Maciej W. Rozycki" <macro@linux-mips.org>
-To: Kevin Cernekee <cernekee@gmail.com>
-cc: Ralf Baechle <ralf@linux-mips.org>, linux-mips@linux-mips.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 8/9] MIPS: Honor L2 bypass bit
-In-Reply-To: <AANLkTinJ4wU30AaBhcvJRLZ_iw-eo9tEkds8QA1S=Nqw@mail.gmail.com>
-Message-ID: <alpine.LFD.2.00.1010240325170.15889@eddie.linux-mips.org>
-References: <74b5d3ba9506b2e6d885546bd6dcdaec@localhost>        <20101021125809.GA15031@linux-mips.org> <AANLkTinJ4wU30AaBhcvJRLZ_iw-eo9tEkds8QA1S=Nqw@mail.gmail.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Sat, 23 Oct 2010 23:51:00 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=I6qfQ9IcSSFREJTm81pPZRafeG2epF3JvGECCEVk1F5F7IyOtaemyF5kAcsoqXpA1e
+         PcukcPIfw/2KIlgsjqFsqc+q53QHuoVCadImk/JFJKyr0PIPdDx36HUiMtnbB9zXiXO6
+         1m4UwXwbdcnsmByN5y0mHBzNKCIctJyUUWupw=
+From: Yong Zhang <yong.zhang0@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: tglx@linutronix.de
+Subject: [PATCH] hrtimer: remove comment on curr_timer
+Date: Sun, 24 Oct 2010 11:50:53 +0800
+Message-Id: <1287892253-2587-1-git-send-email-yong.zhang0@gmail.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 21 Oct 2010, Kevin Cernekee wrote:
+From: Yong Zhang <yong.zhang@windriver.com>
 
-> FWIW, I did check the software user's manual for each of the four
-> processors in the list and verified that L2B is at CONFIG2 bit 12.  It
-> would be very rude for an L2 designer to redefine those bits in
-> defiance of the SUM, no?
+Now curr_timer doesn't resident in struct hrtimer_cpu_base anymore.
 
- To err is human -- people do all kinds of weird stuff, not necessarily on 
-purpose.  I think it should be safe to assume the bit is used properly 
-until proved otherwise.
+Signed-off-by: Yong Zhang <yong.zhang0@gmail.com>
+---
+ include/linux/hrtimer.h |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
 
-> I also rechecked 24KE just now, and found that L2B is defined in the
-> latest rev of the SUM, but in my local copy (Revision 01.02) bit 12 is
-> the MSB of SS instead.  Hmmm.
+diff --git a/include/linux/hrtimer.h b/include/linux/hrtimer.h
+index fd0c1b8..dd9954b 100644
+--- a/include/linux/hrtimer.h
++++ b/include/linux/hrtimer.h
+@@ -158,7 +158,6 @@ struct hrtimer_clock_base {
+  * @lock:		lock protecting the base and associated clock bases
+  *			and timers
+  * @clock_base:		array of clock bases for this cpu
+- * @curr_timer:		the timer which is executing a callback right now
+  * @expires_next:	absolute time of the next event which was scheduled
+  *			via clock_set_next_event()
+  * @hres_active:	State of high resolution mode
+-- 
+1.7.0.4
 
- Clearly a documentation bug -- notice how the width of the field 
-disagress with the bit indices quoted.
-
-  Maciej
