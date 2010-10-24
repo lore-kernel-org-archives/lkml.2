@@ -1,51 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932701Ab0JXRGF (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Oct 2010 13:06:05 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:32551 "EHLO mx1.redhat.com"
+	id S932774Ab0JXRKb (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Oct 2010 13:10:31 -0400
+Received: from freeflow.nu ([178.79.134.28]:56519 "EHLO freeflow.nu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932176Ab0JXRGD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Oct 2010 13:06:03 -0400
-Message-ID: <4CC46773.2000606@redhat.com>
-Date: Sun, 24 Oct 2010 19:05:55 +0200
-From: Milan Broz <mbroz@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100914 Thunderbird/3.1.3
+	id S932203Ab0JXRKa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 24 Oct 2010 13:10:30 -0400
+Date: Sun, 24 Oct 2010 20:10:20 +0300 (EEST)
+From: Pekka Enberg <penberg@kernel.org>
+X-X-Sender: penberg@tiger
+To: torvalds@linux-foundation.org
+cc: cl@linux-foundation.org, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org, tj@kernel.org
+Subject: [GIT PULL] SLAB updates for 2.6.37-rc1
+Message-ID: <alpine.DEB.2.00.1010242005280.4447@tiger>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-To: dave b <db.pub.mail@gmail.com>
-CC: Linux Kernel <linux-kernel@vger.kernel.org>,
-        device-mapper development <dm-devel@redhat.com>
-Subject: Re: Fwd: [dm-crypt] [BUG] bad performance and system stalls when
- using dm-crypt
-References: <AANLkTinbeAn4ObFSb4f4znjYHGNKTMnfV7eQja+cnsLe@mail.gmail.com> <20100911065725.GA6279@fancy-poultry.org> <AANLkTikTq=GTy-XPD6ye6kStASNL4Pa07wHhH_ABmpm1@mail.gmail.com> <AANLkTim7RvpOcBajyqCkrBP8EW-FwNysvwuF5MaDJiFV@mail.gmail.com> <AANLkTi=PCd1=w-mkc=Sj4EEda=PnTv0JGyV1Ysxq4ej4@mail.gmail.com> <AANLkTikLSFFpbgX+rBR5banBygmB6rRvzMBYKfPcFPuJ@mail.gmail.com> <4C8C9834.8060201@redhat.com> <AANLkTi=8jJMz3f0VGwg+6P+BJEfxj6i-jBkGmqx8hCVg@mail.gmail.com> <AANLkTinohRReVsYoetEjqAp-XrL9C2jxGgXLVnLafSUM@mail.gmail.com> <AANLkTikqhMbW7sWbbU_we5YE9Y9U=MPUTm553AmCyH51@mail.gmail.com> <4CC45F56.7010305@redhat.com> <AANLkTi=Hw-iU98rTjyDFAPSqqrWvzhOnE_0UBV-tMeie@mail.gmail.com>
-In-Reply-To: <AANLkTi=Hw-iU98rTjyDFAPSqqrWvzhOnE_0UBV-tMeie@mail.gmail.com>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; format=flowed; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/24/2010 06:52 PM, dave b wrote:
->> So there are now several known situations when dm-crypt doesn't
->> perform as expected (another problem just appeared when using CFQ,
->> (because dm(-crypt) lost the issuing process reference)
->> see http://lkml.org/lkml/2010/10/24/59).
-> 
-> Thank for you replying  ^ ^
-> I was aware with the problems and I am following Andi's dm-crypt
-> per-cpu patch (I haven't applied or tested it). However, I didn't know
-> about http://lkml.org/lkml/2010/10/24/59 -->
-> So this may well be the root of the problem!
-> Also, won't http://lkml.org/lkml/2010/10/24/59  need to be altered
-> (again) to work with Andi's patch ?
+Hi Linus,
 
-CFQ related problem should be solved - probably device-mapper core
-have to provide some help. (It is not only about dm-crypt,
-lot of situations when IO is submitted from different internal process.
-The proposed patch is not the proper and complete way how to solve it.)
+The bulk of changes here are from Christoph Lameter's SLUB unification 
+patch series. I've included SLUB cleanups that don't change the core 
+allocator and hope to queue the more interesting patches for 2.6.38. 
+There's also bug fixes and other cleanups included here from David 
+Rientjes and Namhyung Kim.
 
-For the per-cpu patch - I am waiting for replay, apparently some
-additional work there is needed.
-But I would like to solve it ASAP.
+The SLUB patches were built on Tejun Heo's UP per-CPU patches which is why 
+they show up in the pull request although you already have them in 
+master.
 
-Milan
+                         Pekka
+
+The following changes since commit 35da7a307c535f9c2929cae277f3df425c9f9b1e:
+   Linus Torvalds (1):
+         Merge branch 'for-2.6.37/core' of git://git.kernel.dk/linux-2.6-block
+
+are available in the git repository at:
+
+   ssh://master.kernel.org/pub/scm/linux/kernel/git/penberg/slab-2.6.git for-linus
+
+Christoph Lameter (14):
+       slub: Force no inlining of debug functions
+       slub: Remove dynamic dma slab allocation
+       slub: Remove static kmem_cache_cpu array for boot
+       slub: Dynamically size kmalloc cache allocations
+       slub: Extract hooks for memory checkers from hotpaths
+       slub: Move gfpflag masking out of the hotpath
+       slub: Add dummy functions for the !SLUB_DEBUG case
+       slub: Fix up missing kmalloc_cache -> kmem_cache_node case for memoryhotplug
+       Slub: UP bandaid
+       slub: reduce differences between SMP and NUMA
+       SLUB: Pass active and inactive redzone flags instead of boolean to debug functions
+       slub: extract common code to remove objects from partial list without locking
+       slub: Enable sysfs support for !CONFIG_SLUB_DEBUG
+       slub: Move functions to reduce #ifdefs
+
+David Rientjes (2):
+       slob: fix gfp flags for order-0 page allocations
+       slub: fix SLUB_RESILIENCY_TEST for dynamic kmalloc caches
+
+Namhyung Kim (3):
+       slub: Fix signedness warnings
+       slub: Add lock release annotation
+       slub: Move NUMA-related functions under CONFIG_NUMA
+
+Pekka Enberg (5):
+       SLUB: Fix merged slab cache names
+       Revert "Slub: UP bandaid"
+       SLUB: Optimize slab_free() debug check
+       SLUB: Fix memory hotplug with !NUMA
+       Merge branch 'master' into for-linus
+
+Tejun Heo (4):
+       vmalloc: pcpu_get/free_vm_areas() aren't needed on UP
+       percpu: reduce PCPU_MIN_UNIT_SIZE to 32k
+       percpu: use percpu allocator on UP too
+       percpu: clear memory allocated with the km allocator
+
+  include/linux/slub_def.h |   14 +-
+  lib/Kconfig.debug        |    2 +-
+  mm/slob.c                |    4 +-
+  mm/slub.c                |  788 ++++++++++++++++++++++++----------------------
+  4 files changed, 424 insertions(+), 384 deletions(-)
