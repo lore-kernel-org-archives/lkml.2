@@ -1,48 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756567Ab0JXONV (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Oct 2010 10:13:21 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:47995 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755179Ab0JXONU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Oct 2010 10:13:20 -0400
-Date: Sun, 24 Oct 2010 10:13:10 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: Dave Chinner <david@fromorbit.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 16/21] fs: Protect inode->i_state with the inode->i_lock
-Message-ID: <20101024141310.GA21513@infradead.org>
-References: <1287622186-1935-1-git-send-email-david@fromorbit.com>
- <1287622186-1935-17-git-send-email-david@fromorbit.com>
- <20101022015622.GE19804@ZenIV.linux.org.uk>
- <20101022031431.GK12506@dastard>
- <20101022103705.GK19804@ZenIV.linux.org.uk>
- <20101023213752.GR19804@ZenIV.linux.org.uk>
+	id S1756985Ab0JXOXs (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Oct 2010 10:23:48 -0400
+Received: from www.tglx.de ([62.245.132.106]:51729 "EHLO www.tglx.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751809Ab0JXOXr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 24 Oct 2010 10:23:47 -0400
+Date: Sun, 24 Oct 2010 16:22:57 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Serafeim Zanikolas <sez@debian.org>
+cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] time: jiffies.c: fix typos in comment
+In-Reply-To: <1287849986-5936-1-git-send-email-sez@debian.org>
+Message-ID: <alpine.LFD.2.00.1010241618480.8736@localhost6.localdomain6>
+References: <1287849986-5936-1-git-send-email-sez@debian.org>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101023213752.GR19804@ZenIV.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Oct 23, 2010 at 10:37:52PM +0100, Al Viro wrote:
-> 	* invalidate_inodes() - collect I_FREEING/I_WILL_FREE on a separate
-> list, then (after we'd evicted the stuff we'd decided to evict) wait until
-> they get freed by whatever's freeing them already.
 
-Note that we would only have to do this for the umount case.  For others
-it's pretty pointless.
 
-But I think there's a better way to do it, and that's per-sb inode lru
-lists.  By adopting the scheme from prune_dcache we'd always have
-s_umount exclusive for inode reclaims, and per defintion we would not
-have any ongoing reclaim when we do enter umount.  It would also allow
-us to get rid of iprune_sem and the nasty unsolved locking issues it
-causes.
+On Sat, 23 Oct 2010, Serafeim Zanikolas wrote:
 
+> 
+> Signed-off-by: Serafeim Zanikolas <sez@debian.org>
+> ---
+>  kernel/time/jiffies.c |    4 ++--
+>  1 files changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/kernel/time/jiffies.c b/kernel/time/jiffies.c
+> index 5404a84..12ba9a7 100644
+> --- a/kernel/time/jiffies.c
+> +++ b/kernel/time/jiffies.c
+> @@ -30,8 +30,8 @@
+>   * the timer interrupt frequency HZ and it suffers
+>   * inaccuracies caused by missed or lost timer
+>   * interrupts and the inability for the timer
+> - * interrupt hardware to accuratly tick at the
+> - * requested HZ value. It is also not reccomended
+> + * interrupt hardware to accurately tick at the
+> + * requested HZ value. It is also not recommended
+>   * for "tick-less" systems.
+
+You are not only correcting a typo. You are changing the sense of the
+comment, unfortunately in the wrong way.
+
+Why wouldn't it be recommended that the interrupt hardware ticks at
+the requested HZ value ? 
+
+The inability of it to tick accurately at the requested HZ value is
+one of the causes which make jiffies clocksource inaccurate. And that
+what the comment says.
+
+Thanks,
+
+	tglx
