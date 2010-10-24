@@ -1,74 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751345Ab0JXX2p (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Oct 2010 19:28:45 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:59396 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751164Ab0JXX2o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Oct 2010 19:28:44 -0400
-Date: Mon, 25 Oct 2010 10:28:33 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Avi Kivity <avi@redhat.com>, linux-kernel <linux-kernel@vger.kernel.org>,
-        KVM list <kvm@vger.kernel.org>, Marcelo Tosatti <mtosatti@redhat.com>
-Subject: Re: [GIT PULL] KVM updates for the 2.6.37 merge window
-Message-Id: <20101025102833.a8f7f252.sfr@canb.auug.org.au>
-In-Reply-To: <4CC434A8.1000903@redhat.com>
-References: <4CC434A8.1000903@redhat.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Mon__25_Oct_2010_10_28_33_+1100_eMUJSf_QNyNyFHei"
+	id S1751400Ab0JXXbP (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Oct 2010 19:31:15 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:52185 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751164Ab0JXXbN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 24 Oct 2010 19:31:13 -0400
+Message-ID: <4CC4C1B4.9090907@monstr.eu>
+Date: Mon, 25 Oct 2010 09:31:00 +1000
+From: Michal Simek <monstr@monstr.eu>
+Reply-To: monstr@monstr.eu
+User-Agent: Thunderbird 2.0.0.18 (X11/20081120)
+MIME-Version: 1.0
+To: microblaze-uclinux@itee.uq.edu.au
+CC: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org
+Subject: Re: [microblaze-uclinux] Re: [PATCH v2 22/22] bitops: remove minix
+ bitops from asm/bitops.h
+References: <1287672077-5797-1-git-send-email-akinobu.mita@gmail.com>	<1287672077-5797-23-git-send-email-akinobu.mita@gmail.com>	<4CC0CA8E.4050600@monstr.eu> <AANLkTikgRWWH0RhR2S5cFE+jkJbW30Arwsjic4UANuVd@mail.gmail.com>
+In-Reply-To: <AANLkTikgRWWH0RhR2S5cFE+jkJbW30Arwsjic4UANuVd@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__25_Oct_2010_10_28_33_+1100_eMUJSf_QNyNyFHei
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
 
-Hey Linus,
 
-On Sun, 24 Oct 2010 15:29:12 +0200 Avi Kivity <avi@redhat.com> wrote:
->
->   Linus, the repository and branch
->=20
->    git://git.kernel.org/pub/scm/virt/kvm/kvm.git kvm-updates/2.6.37
->=20
-> contains the kvm updates for the 2.6.37 merge window.  Major changes=20
-> this time around include powerpc paravirtualization, a virtual tsc=20
-> rework, and exposing npt to the guest for fast nested virtualization. =20
-> Please pull.
+Akinobu Mita wrote:
+> 2010/10/22 Michal Simek <monstr@monstr.eu>:
+>> Akinobu Mita wrote:
+>>> minix bit operations are only used by minix filesystem and useless
+>>> by other modules. Because byte order of inode and block bitmaps is
+>>> defferent on each architecture like below:
+>>>
+>>> m68k:
+>>>       big-endian 16bit indexed bitmaps
+>>>
+>>> h8300, microblaze, s390, sparc, m68knommu:
+>>>       big-endian 32 or 64bit indexed bitmaps
+>> Just one small fix microblaze little endian support is ready for merging
+>> to mainline which means that microblaze is
+>> big-endian 32bit  and  little-endian 32bit
+>>
+>>> m32r, mips, sh, xtensa:
+>>>       big-endian 32 or 64bit indexed bitmaps for big-endian mode
+>>>       little-endian bitmaps for little-endian mode
+>>>
+>>> Others:
+>>>       little-endian bitmaps
+>>>
+>>> In order to move minix bit operations from asm/bitops.h to
+>>> architecture independent code in minix file system, this provides two
+>>> config options.
+>>>
+>>> CONFIG_MINIX_FS_BIG_ENDIAN_16BIT_INDEXED is only selected by m68k.
+>>> CONFIG_MINIX_FS_NATIVE_ENDIAN is selected by the architectures which
+>>> use native byte order bitmaps (h8300, microblaze, s390, sparc,
+>>> m68knommu, m32r, mips, sh, xtensa).
+>>> The architectures which always use little-endian bitmaps do not select
+>>> these options.
+>> I haven't created any Kconfig option for little/big endian microblaze
+>> but there should be a little bit different handling for MINIX_FS_NATIVE_ENDIAN
+>> as you are describing above.
+>> Anyway I think you don't need to reflect this in your patch because
+>> we are not using that filesystem and I will write it to my to-do list and
+>> will fix it later.
+> 
+> If upcomming microblade little-endian mode will use little-endian
+> bitmaps for minixfs, microblade can continue to select
+> CONFIG_MINIX_FS_NATIVE_ENDIAN and you don't need to change it.
+> 
+> But if it will use big-endian bitmaps, it may need some extra work
+> to support it. Becuase there is no little-endian architecture
+> which uses bit-endian bitmaps for minixfs.
 
-This entire branch was rebased just 11 hours or so before being merged
-and you have "talked" about this for many merge windows that I can
-remember.  "Just saying" :-)
+As I wrote I don't know anybody who wants to use minixfs that's why we don't
+need to do anything with it. I can test it but it has no high priority.
 
-[Avi, I am not particularly picking on you, your tree just happened to
-strike me this morning ... there are many others.  At least you also
-updated your linux-next branch so I won't have to cope with two slightly
-different versions and all the conflicts that causes :-)]
+Michal
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
 
---Signature=_Mon__25_Oct_2010_10_28_33_+1100_eMUJSf_QNyNyFHei
-Content-Type: application/pgp-signature
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
 
-iQEcBAEBAgAGBQJMxMEhAAoJEDMEi1NhKgbs1mwH/12wLk/HzFiDdoVOXS9S0JPq
-rUbJ8akQSqy4OrMqdI+D1k4vn8/LsBKIKAzkKThv7n6WpW6QKZNamGwwRLmDLrao
-1Ay+HN4V1fMViomVOLK/OohcjkXDAGXFCfVvbN8+oRqVahxgt2Uz7qhIzG38XgGw
-kb1929B6tQ3HyBc84NkW8mp+QxiDn5vPLwN0uJU5omrfq/IxBpeZfBcueo+z5y/7
-uNske91yVvUaeGbOIVV63AEpKbbppo1JqZnU4cYqlHiZ+EvFxzUProHLr5vqGn7D
-YZ/FU9cglu/L/4b13cYOPkW+nwb3Wp9iGs2ch9evXcqfUHvvZ2joXC2QmNupb5Q=
-=WZiJ
------END PGP SIGNATURE-----
-
---Signature=_Mon__25_Oct_2010_10_28_33_+1100_eMUJSf_QNyNyFHei--
+-- 
+Michal Simek, Ing. (M.Eng)
+w: www.monstr.eu p: +42-0-721842854
+Maintainer of Linux kernel 2.6 Microblaze Linux - http://www.monstr.eu/fdt/
+Microblaze U-BOOT custodian
