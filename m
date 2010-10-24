@@ -1,78 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758939Ab0JXRCD (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Oct 2010 13:02:03 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:49881 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758602Ab0JXRCB convert rfc822-to-8bit (ORCPT
+	id S932555Ab0JXRDt (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Oct 2010 13:03:49 -0400
+Received: from casper.infradead.org ([85.118.1.10]:55277 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758822Ab0JXRDs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Oct 2010 13:02:01 -0400
-MIME-Version: 1.0
-In-Reply-To: <alpine.LFD.2.00.1010241618480.8736@localhost6.localdomain6>
-References: <1287849986-5936-1-git-send-email-sez@debian.org> <alpine.LFD.2.00.1010241618480.8736@localhost6.localdomain6>
-From: Kyle Moffett <kyle@moffetthome.net>
-Date: Sun, 24 Oct 2010 13:01:39 -0400
-Message-ID: <AANLkTin2-h3+ts2JuZ4rxLSppr3Lqh1VCoi3sRQEHoaB@mail.gmail.com>
-Subject: Re: [PATCH] time: jiffies.c: fix typos in comment
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Serafeim Zanikolas <sez@debian.org>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Sun, 24 Oct 2010 13:03:48 -0400
+Date: Sun, 24 Oct 2010 10:03:56 -0700
+From: Arjan van de Ven <arjan@infradead.org>
+To: Sitsofe Wheeler <sitsofe@yahoo.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@elte.hu>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: perf timechart segfault
+Message-ID: <20101024100356.7af1f4dd@infradead.org>
+In-Reply-To: <20101024162302.GA5586@sucs.org>
+References: <20101024162302.GA5586@sucs.org>
+Organization: Intel
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i386-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-SRS-Rewrite: SMTP reverse-path rewritten from <arjan@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Oct 24, 2010 at 10:22, Thomas Gleixner <tglx@linutronix.de> wrote:
-> On Sat, 23 Oct 2010, Serafeim Zanikolas wrote:
->> diff --git a/kernel/time/jiffies.c b/kernel/time/jiffies.c
->> index 5404a84..12ba9a7 100644
->> --- a/kernel/time/jiffies.c
->> +++ b/kernel/time/jiffies.c
->> @@ -30,8 +30,8 @@
->>   * the timer interrupt frequency HZ and it suffers
->>   * inaccuracies caused by missed or lost timer
->>   * interrupts and the inability for the timer
->> - * interrupt hardware to accuratly tick at the
->> - * requested HZ value. It is also not reccomended
->> + * interrupt hardware to accurately tick at the
->> + * requested HZ value. It is also not recommended
->>   * for "tick-less" systems.
->
-> You are not only correcting a typo. You are changing the sense of the
-> comment, unfortunately in the wrong way.
->
-> Why wouldn't it be recommended that the interrupt hardware ticks at
-> the requested HZ value ?
->
-> The inability of it to tick accurately at the requested HZ value is
-> one of the causes which make jiffies clocksource inaccurate. And that
-> what the comment says.
+On Sun, 24 Oct 2010 17:23:02 +0100
+Sitsofe Wheeler <sitsofe@yahoo.com> wrote:
 
-Thomas,
+> Hi,
+> 
+> I've run into a couple of issues using perf timechart:
+> 
+> 1. (On 2.6.36) If I issue
+>    echo 0 > /proc/sys/kernel/perf_event_paranoid
+>    as root before running
+>    perf timechart record echo
+>    as a normal user the following is printed:
+> 
+>    Fatal: Permission error - are you root?
+>   	 Consider tweaking /proc/sys/kernel/perf_event_paranoid.
+> 
+>    Shouldn't it just say it needs root permissions for a timechart
+>    record?
 
-Please reread the patch again, I think it does exactly what he said it
-did.  Specifically, the old text is:
->>   * the timer interrupt frequency HZ and it suffers
->>   * inaccuracies caused by missed or lost timer
->>   * interrupts and the inability for the timer
->>   * interrupt hardware to accuratly tick at the
->>   * requested HZ value. It is also not reccomended
->>   * for "tick-less" systems.
+timechart needs root perms since it gets very global data.
 
-While the new text is:
->>   * the timer interrupt frequency HZ and it suffers
->>   * inaccuracies caused by missed or lost timer
->>   * interrupts and the inability for the timer
->>   * interrupt hardware to accurately tick at the
->>   * requested HZ value. It is also not recommended
->>   * for "tick-less" systems.
+> 
+> 2. (On -tip) Running
+>    perf timechart record echo
+>    outputs
+>    invalid or unsupported event: 'power:power_start'
+>    Run 'perf list' for a list of valid events
 
-I misread it the first time myself, mentally combining the second line
-of the old text with the new text; what you probably saw was:
+tip broke ABI :-(
+That's one for Ingo to deal with for now.
 
->> - * requested HZ value. It is also not reccomended
->> + * interrupt hardware to accurately tick at the
->> + * requested HZ value.
+> 
+> 3. (On 2.6.36) I can't seem to convince timechart to ever capture more
+>    than 34000 samples. When trying to record using
+>    perf timechart record -fga sleep 10
+>    and then creating a graph using perf timechart, it only ever
+> outputs a few seconds worth.
 
-Cheers,
-Kyle Moffett
+does this happen even without the "fga" ?
+I've used timechart to capture a minute of data before
+(but... you need a rather quiet system for that to be useful.... you
+otherwise get an impossibly big SVG file)
+
+
+-- 
+Arjan van de Ven 	Intel Open Source Technology Centre
+For development, discussion and tips for power savings, 
+visit http://www.lesswatts.org
