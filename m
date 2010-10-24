@@ -1,226 +1,162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932673Ab0JXMuJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Oct 2010 08:50:09 -0400
-Received: from silver.sucs.swan.ac.uk ([137.44.10.1]:53334 "EHLO
-	silver.sucs.swan.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932606Ab0JXMuH (ORCPT
+	id S932682Ab0JXMwZ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Oct 2010 08:52:25 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:53088 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932606Ab0JXMwX convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Oct 2010 08:50:07 -0400
-Date: Sun, 24 Oct 2010 13:50:04 +0100
-From: Sitsofe Wheeler <sitsofe@yahoo.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@elte.hu>, Corentin Chary <corentincj@iksaif.net>
-Subject: Re: EeePC 900 reboots/hangs when using using perf -a -f -g
-Message-ID: <20101024125003.GA3323@sucs.org>
-References: <20100912102854.GA7359@sucs.org> <1284289027.2251.95.camel@laptop> <20100912112105.GA28420@sucs.org> <20100912124653.GA5342@nowhere> <20100912162141.GB30698@sucs.org> <20100917030125.GA5389@nowhere> <20100921172711.GA31352@sucs.org> <20101002210314.GA5373@nowhere>
+	Sun, 24 Oct 2010 08:52:23 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=tahjQg9bTxoWXGaSm8PNk++ogePeoywkI00OhQHi9ijBp82p1CTytbdUhkAzLzv5SO
+         QPTEoCHvOq5jayOjCYFi5v4RuH2vO1PuMb4Urtj0EodEyldnWEL747njCIF9kF+YSKNi
+         l2JIC3i7QOgtt4JfrP3nymCNFf1IqHbVAs0no=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101002210314.GA5373@nowhere>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <AANLkTin9wiBZjkeKxYKnJaSA1vxs8ELGTWYVMM1DfYKu@mail.gmail.com>
+References: <AANLkTik02CcVyzn+fMH+VxuUmwwNLZq9qM0MPz81E+1h@mail.gmail.com>
+	<4CC24186.1040001@teksavvy.com>
+	<AANLkTi=s9R-OEJAPRpoxoSkFY8MWhc22Pn_gcwCzxY=H@mail.gmail.com>
+	<4CC2FD0A.9090409@teksavvy.com>
+	<AANLkTin3QRgV5P4=BsTCeWhynGYMi3pd7BXrFpBXkWvj@mail.gmail.com>
+	<4CC303FD.1000802@teksavvy.com>
+	<AANLkTin9wiBZjkeKxYKnJaSA1vxs8ELGTWYVMM1DfYKu@mail.gmail.com>
+Date: Sun, 24 Oct 2010 13:52:22 +0100
+Message-ID: <AANLkTikzPgq0VG1V_hZsw78i2pYMxzrPJM3dFUyGeaU1@mail.gmail.com>
+Subject: Re: sata_mv and Highpoint RocketRAID 230x, corruption?
+From: =?UTF-8?Q?Mathias_Bur=C3=A9n?= <mathias.buren@gmail.com>
+To: Mark Lord <kernel@teksavvy.com>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Frederic,
+On 23 October 2010 17:08, Mathias Burén <mathias.buren@gmail.com> wrote:
+> Good! (that it's not a media error) I've ran extended SMART tests on
+> the drive as well, and everything seemed fine.
+>
+> I'm going to try with 2.6.35 series now, see if I can salvage some data.
+>
+> Thanks,
+>
+> // Mathias
+>
+> On 23 October 2010 16:49, Mark Lord <kernel@teksavvy.com> wrote:
+>> On 10-10-23 11:20 AM, Mathias Burén wrote:
+>>>
+>>> Hi,
+>>>
+>>> Interesting, as the badblocks program doesn't think these sectors are
+>>> bad. Can I test them any other way?
+>>
+>> ..
+>>>
+>>> On 23 October 2010 16:19, Mark Lord<kernel@teksavvy.com>  wrote:
+>>>>
+>>>> On 10-10-23 08:57 AM, Mathias Burén wrote:
+>>
+>> ..
+>>>>>
+>>>>> ata2.00: status: { DRDY }
+>>>>> ata2: hard resetting link
+>>>>> ata2: SATA link up 3.0 Gbps (SStatus 123 SControl 300)
+>>>>> ata2.00: configured for UDMA/133
+>>>>> ata2.00: device reported invalid CHS sector 0
+>>>>> sd 1:0:0:0: [sdb]  Result: hostbyte=0x00 driverbyte=0x08
+>>>>> sd 1:0:0:0: [sdb]  Sense Key : 0xb [current] [descriptor]
+>>>>> Descriptor sense data with sense descriptors (in hex):
+>>>>>         72 0b 00 00 00 00 00 0c 00 0a 80 00 00 00 00 00
+>>>>>         00 00 00 00
+>>>>> sd 1:0:0:0: [sdb]  ASC=0x0 ASCQ=0x0
+>>>>> sd 1:0:0:0: [sdb] CDB: cdb[0]=0x28: 28 00 e7 70 c8 e8 00 05 40 00
+>>>>> end_request: I/O error, dev sdb, sector 3882928360
+>>>>> md/raid:md0: read error not correctable (sector 3882926312 on sdb1).
+>>>>> md/raid:md0: Disk failure on sdb1, disabling device.
+>>>>
+>>>>
+>>>> No, that error looks like a real disk media error -- bad sector(s) on the
+>>>> drive.
+>>>>
+>>>> The BIOS issue merely gives corrupted data, not read errors.
+>>
+>> MMm.. you're right.
+>> I just now looked at the full dmesg you posted,
+>> and those are NOT media errors.
+>>
+>> It looks like NCQ commands are behaving strangely for some reason
+>> in your 2.6.36 kernel.
+>>
+>> Can you retest with, say, 2.6.34 ?
+>> There were a number of sata_mv updates in between,
+>> and I'm wondering if perhaps one of them broke something?
+>>
+>> Or if you just want to stabilize things, then turn off NCQ.
+>>
+>> Cheers
+>>
+>
 
-Sorry I'm not quite sure how I missed your reply - I've only just
-noticed it:
+Hey again,
 
-On Sat, Oct 02, 2010 at 11:03:17PM +0200, Frederic Weisbecker wrote:
-> 
-> I've been unable to reproduce with your config in latest tip:/perf/core,
-> I haven't tested in a eeepc though.
-> 
-> Did you check with 2.6.36-rc4 or with a tip branch?
+Wow, somehow it looks like it's actually OK now. I don't know why to
+be honest. Details:
 
-I was checking with 2.6.36-rc4. I have just checked again with a recent
-tip:/perf/core (66a301c380d4e463424db572b348de4913ec191a) and the
-problem can still be reliably triggered.
+[root@ion raid-MBR-backup]# cat /proc/mdstat
+Personalities : [raid6] [raid5] [raid4]
+md0 : active raid5 sdg1[0] sdc1[3] sdd1[4] sdb1[1]
+      5851054080 blocks super 1.2 level 5, 128k chunk, algorithm 2 [4/4] [UUUU]
 
-I've narrowed the steps to cause the problem too. Running
-perf record -a -f -g "sleep 5s"
-and then doing
-echo 0 > /sys/class/backlight/eeepc/brightness
-will reliably trigger the problem (on this EeePC 900 the brightness
-controls are provided by the eeepc-laptop driver).
+unused devices: <none>
 
-One other thing to note is that I am building perf on a Fedora 12 system
-and running the binary on an Ubuntu 10.04 system. I build perf
-statically and at the during compilation the following is printed:
-$ LDFLAGS=-static make
-Makefile:568: newt not found, disables TUI support. Please install newt-devel or libnewt-dev
-[...]
-    LINK perf
-/usr/lib/gcc/i686-redhat-linux/4.4.4/../../../libpthread.a(libpthread.o): In function `sem_open':
-(.text+0x6afa): warning: the use of `mktemp' is dangerous, better use `mkstemp'
-/usr/lib/gcc/i686-redhat-linux/4.4.4/../../../libdw.a(dwarf_getcfi.o): In function `dwarf_getcfi':
-(.text+0xbf): undefined reference to `elf_getident'
-/usr/lib/gcc/i686-redhat-linux/4.4.4/../../../libdw.a(dwfl_module.o): In function `__libdwfl_module_free':
-(.text+0x143): undefined reference to `ebl_closebackend'
-/usr/lib/gcc/i686-redhat-linux/4.4.4/../../../libdw.a(offline.o): In function `process_file':
-(.text+0x7c): undefined reference to `elf_getarhdr'
-/usr/lib/gcc/i686-redhat-linux/4.4.4/../../../libdw.a(offline.o): In function `process_file':
-(.text+0x161): undefined reference to `elf_next'
-/usr/lib/gcc/i686-redhat-linux/4.4.4/../../../libdw.a(offline.o): In function `process_file':
-(.text+0x1ec): undefined reference to `elf_next'
-/usr/lib/gcc/i686-redhat-linux/4.4.4/../../../libdw.a(offline.o): In function `process_file':
-(.text+0x2b9): undefined reference to `elf_cntl'
-/usr/lib/gcc/i686-redhat-linux/4.4.4/../../../libdw.a(dwfl_module_getdwarf.o): In function `find_dynsym':
-(.text+0x170): undefined reference to `elf_getphdrnum'
-/usr/lib/gcc/i686-redhat-linux/4.4.4/../../../libdw.a(dwfl_module_getdwarf.o): In function `find_dynsym':
-(.text+0x1c9): undefined reference to `gelf_getphdr'
-/usr/lib/gcc/i686-redhat-linux/4.4.4/../../../libdw.a(dwfl_module_getdwarf.o): In function `find_dynsym':
-(.text+0x1fe): undefined reference to `elf_getdata_rawchunk'
-/usr/lib/gcc/i686-redhat-linux/4.4.4/../../../libdw.a(dwfl_module_getdwarf.o): In function `find_dynsym':
-(.text+0x2b4): undefined reference to `gelf_getdyn'
-/usr/lib/gcc/i686-redhat-linux/4.4.4/../../../libdw.a(dwfl_module_getdwarf.o): In function `find_dynsym':
-(.text+0x365): undefined reference to `gelf_getphdr'
-/usr/lib/gcc/i686-redhat-linux/4.4.4/../../../libdw.a(dwfl_module_getdwarf.o): In function `find_dynsym':
-(.text+0x48e): undefined reference to `elf_getdata_rawchunk'
-/usr/lib/gcc/i686-redhat-linux/4.4.4/../../../libdw.a(dwfl_module_getdwarf.o): In function `find_dynsym':
-(.text+0x55c): undefined reference to `elf_getdata_rawchunk'
-/usr/lib/gcc/i686-redhat-linux/4.4.4/../../../libdw.a(dwfl_module_getdwarf.o): In function `find_dynsym':
-(.text+0x598): undefined reference to `elf_getdata_rawchunk'
-/usr/lib/gcc/i686-redhat-linux/4.4.4/../../../libdw.a(dwfl_module_getdwarf.o): In function `find_dynsym':
-(.text+0x657): undefined reference to `elf_getdata_rawchunk'
-/usr/lib/gcc/i686-redhat-linux/4.4.4/../../../libdw.a(dwfl_module_getdwarf.o): In function `find_dynsym':
-(.text+0x695): undefined reference to `gelf_getclass'
-/usr/lib/gcc/i686-redhat-linux/4.4.4/../../../libdw.a(dwfl_module_getdwarf.o): In function `find_dynsym':
-(.text+0x6f6): undefined reference to `elf_getdata_rawchunk'
-/usr/lib/gcc/i686-redhat-linux/4.4.4/../../../libdw.a(dwfl_module_getdwarf.o): In function `find_dynsym':
-(.text+0x7e1): undefined reference to `elf_getdata_rawchunk'
-/usr/lib/gcc/i686-redhat-linux/4.4.4/../../../libdw.a(dwfl_module_getdwarf.o): In function `__libdwfl_getelf':
-(.text+0xa1a): undefined reference to `elf_getphdrnum'
-/usr/lib/gcc/i686-redhat-linux/4.4.4/../../../libdw.a(dwfl_module_getdwarf.o): In function `__libdwfl_getelf':
-(.text+0xa5e): undefined reference to `gelf_getphdr'
-/usr/lib/gcc/i686-redhat-linux/4.4.4/../../../libdw.a(dwfl_module_getdwarf.o): In function `__libdwfl_module_getebl':
-(.text+0xddd): undefined reference to `ebl_openbackend'
-/usr/lib/gcc/i686-redhat-linux/4.4.4/../../../libdw.a(dwfl_module_getdwarf.o): In function `find_debuginfo':
-(.text+0xe53): undefined reference to `elf_getshdrstrndx'
-/usr/lib/gcc/i686-redhat-linux/4.4.4/../../../libdw.a(dwfl_module_getdwarf.o): In function `find_debuginfo':
-(.text+0xfaa): undefined reference to `elf_getphdrnum'
-/usr/lib/gcc/i686-redhat-linux/4.4.4/../../../libdw.a(dwfl_module_getdwarf.o): In function `find_debuginfo':
-(.text+0xfee): undefined reference to `gelf_getphdr'
-/usr/lib/gcc/i686-redhat-linux/4.4.4/../../../libdw.a(dwfl_module_getdwarf.o): In function `find_debuginfo':
-(.text+0x1227): undefined reference to `gelf_xlatetom'
-/usr/lib/gcc/i686-redhat-linux/4.4.4/../../../libdw.a(dwfl_module_getdwarf.o): In function `load_dw':
-(.text+0x15df): undefined reference to `elf_cntl'
-/usr/lib/gcc/i686-redhat-linux/4.4.4/../../../libdw.a(dwfl_module_getdwarf.o): In function `load_dw':
-(.text+0x1600): undefined reference to `elf_cntl'
-/usr/lib/gcc/i686-redhat-linux/4.4.4/../../../libdw.a(open.o): In function `what_kind':
-(.text+0xcd): undefined reference to `elf_memory'
-/usr/lib/gcc/i686-redhat-linux/4.4.4/../../../libdw.a(gzip.o): In function `__libdw_gunzip':
-(.text+0x219): undefined reference to `gzdopen'
-/usr/lib/gcc/i686-redhat-linux/4.4.4/../../../libdw.a(gzip.o): In function `__libdw_gunzip':
-(.text+0x22e): undefined reference to `gzdirect'
-/usr/lib/gcc/i686-redhat-linux/4.4.4/../../../libdw.a(gzip.o): In function `__libdw_gunzip':
-(.text+0x281): undefined reference to `gzread'
-/usr/lib/gcc/i686-redhat-linux/4.4.4/../../../libdw.a(gzip.o): In function `__libdw_gunzip':
-(.text+0x30f): undefined reference to `gzerror'
-/usr/lib/gcc/i686-redhat-linux/4.4.4/../../../libdw.a(gzip.o): In function `__libdw_gunzip':
-(.text+0x31a): undefined reference to `gzclose'
-/usr/lib/gcc/i686-redhat-linux/4.4.4/../../../libdw.a(gzip.o): In function `__libdw_gunzip':
-(.text+0x337): undefined reference to `gzclose'
-/usr/lib/gcc/i686-redhat-linux/4.4.4/../../../libdw.a(gzip.o): In function `__libdw_gunzip':
-(.text+0x37a): undefined reference to `gzclose'
-/usr/lib/gcc/i686-redhat-linux/4.4.4/../../../libdw.a(gzip.o): In function `__libdw_gunzip':
-(.text+0x467): undefined reference to `gzclose'
-/usr/lib/gcc/i686-redhat-linux/4.4.4/../../../libdw.a(bzip2.o): In function `__libdw_bunzip2':
-(.text+0x1bf): undefined reference to `BZ2_bzDecompressInit'
-/usr/lib/gcc/i686-redhat-linux/4.4.4/../../../libdw.a(bzip2.o): In function `__libdw_bunzip2':
-(.text+0x227): undefined reference to `BZ2_bzDecompressEnd'
-/usr/lib/gcc/i686-redhat-linux/4.4.4/../../../libdw.a(bzip2.o): In function `__libdw_bunzip2':
-(.text+0x2ac): undefined reference to `BZ2_bzDecompress'
-/usr/lib/gcc/i686-redhat-linux/4.4.4/../../../libdw.a(bzip2.o): In function `__libdw_bunzip2':
-(.text+0x2e0): undefined reference to `BZ2_bzDecompressEnd'
-/usr/lib/gcc/i686-redhat-linux/4.4.4/../../../libdw.a(bzip2.o): In function `__libdw_bunzip2':
-(.text+0x394): undefined reference to `BZ2_bzDecompressEnd'
-/usr/lib/gcc/i686-redhat-linux/4.4.4/../../../libdw.a(lzma.o): In function `__libdw_unlzma':
-(.text+0x1c0): undefined reference to `lzma_auto_decoder'
-/usr/lib/gcc/i686-redhat-linux/4.4.4/../../../libdw.a(lzma.o): In function `__libdw_unlzma':
-(.text+0x232): undefined reference to `lzma_end'
-/usr/lib/gcc/i686-redhat-linux/4.4.4/../../../libdw.a(lzma.o): In function `__libdw_unlzma':
-(.text+0x2ec): undefined reference to `lzma_code'
-/usr/lib/gcc/i686-redhat-linux/4.4.4/../../../libdw.a(lzma.o): In function `__libdw_unlzma':
-(.text+0x31e): undefined reference to `lzma_end'
-/usr/lib/gcc/i686-redhat-linux/4.4.4/../../../libdw.a(lzma.o): In function `__libdw_unlzma':
-(.text+0x44a): undefined reference to `lzma_end'
-/usr/lib/gcc/i686-redhat-linux/4.4.4/../../../libdw.a(cfi.o): In function `__libdw_frame_at_address':
-(.text+0x1c8d): undefined reference to `ebl_abi_cfi'
-/usr/lib/gcc/i686-redhat-linux/4.4.4/../../../libdw.a(cfi.o): In function `__libdw_frame_at_address':
-(.text+0x1de1): undefined reference to `ebl_openbackend'
-/usr/lib/gcc/i686-redhat-linux/4.4.4/../../../libdw.a(dwfl_report_elf.o): In function `__libdwfl_report_elf':
-(.text+0x9a): undefined reference to `elf_getphdrnum'
-/usr/lib/gcc/i686-redhat-linux/4.4.4/../../../libdw.a(dwfl_report_elf.o): In function `__libdwfl_report_elf':
-(.text+0xf0): undefined reference to `gelf_getphdr'
-/usr/lib/gcc/i686-redhat-linux/4.4.4/../../../libdw.a(dwfl_report_elf.o): In function `__libdwfl_report_elf':
-(.text+0x1af): undefined reference to `gelf_getphdr'
-/usr/lib/gcc/i686-redhat-linux/4.4.4/../../../libdw.a(dwfl_report_elf.o): In function `__libdwfl_report_elf':
-(.text+0x44b): undefined reference to `gelf_update_shdr'
-/usr/lib/gcc/i686-redhat-linux/4.4.4/../../../libdw.a(dwfl_report_elf.o): In function `__libdwfl_report_elf':
-(.text+0xa5e): undefined reference to `gelf_update_shdr'
-/usr/lib/gcc/i686-redhat-linux/4.4.4/../../../libdw.a(relocate.o): In function `__libdwfl_relocate_value':
-(.text+0x7a): undefined reference to `elf_getshdrstrndx'
-/usr/lib/gcc/i686-redhat-linux/4.4.4/../../../libdw.a(relocate.o): In function `__libdwfl_relocate_value':
-(.text+0x107): undefined reference to `gelf_update_shdr'
-/usr/lib/gcc/i686-redhat-linux/4.4.4/../../../libdw.a(relocate.o): In function `relocate.7048':
-(.text+0x200): undefined reference to `ebl_reloc_simple_type'
-/usr/lib/gcc/i686-redhat-linux/4.4.4/../../../libdw.a(relocate.o): In function `relocate.7048':
-(.text+0x3c1): undefined reference to `gelf_xlatetof'
-/usr/lib/gcc/i686-redhat-linux/4.4.4/../../../libdw.a(relocate.o): In function `relocate.7048':
-(.text+0x4b8): undefined reference to `gelf_getsymshndx'
-/usr/lib/gcc/i686-redhat-linux/4.4.4/../../../libdw.a(relocate.o): In function `relocate.7048':
-(.text+0x5c3): undefined reference to `gelf_getsymshndx'
-/usr/lib/gcc/i686-redhat-linux/4.4.4/../../../libdw.a(relocate.o): In function `relocate.7048':
-(.text+0x703): undefined reference to `gelf_xlatetom'
-/usr/lib/gcc/i686-redhat-linux/4.4.4/../../../libdw.a(relocate.o): In function `relocate_section':
-(.text+0xc2b): undefined reference to `ebl_get_elfmachine'
-/usr/lib/gcc/i686-redhat-linux/4.4.4/../../../libdw.a(relocate.o): In function `relocate_section':
-(.text+0xc87): undefined reference to `gelf_update_rela'
-/usr/lib/gcc/i686-redhat-linux/4.4.4/../../../libdw.a(relocate.o): In function `relocate_section':
-(.text+0xd36): undefined reference to `ebl_debugscn_p'
-/usr/lib/gcc/i686-redhat-linux/4.4.4/../../../libdw.a(relocate.o): In function `relocate_section':
-(.text+0xdbe): undefined reference to `ebl_get_elfmachine'
-/usr/lib/gcc/i686-redhat-linux/4.4.4/../../../libdw.a(relocate.o): In function `relocate_section':
-(.text+0xe20): undefined reference to `gelf_update_rel'
-/usr/lib/gcc/i686-redhat-linux/4.4.4/../../../libdw.a(relocate.o): In function `relocate_section':
-(.text+0xe73): undefined reference to `gelf_update_shdr'
-/usr/lib/gcc/i686-redhat-linux/4.4.4/../../../libdw.a(relocate.o): In function `relocate_section':
-(.text+0xf08): undefined reference to `gelf_update_rela'
-/usr/lib/gcc/i686-redhat-linux/4.4.4/../../../libdw.a(relocate.o): In function `relocate_section':
-(.text+0xf85): undefined reference to `gelf_update_rel'
-/usr/lib/gcc/i686-redhat-linux/4.4.4/../../../libdw.a(relocate.o): In function `__libdwfl_relocate_section':
-(.text+0x102c): undefined reference to `elf_getshdrstrndx'
-/usr/lib/gcc/i686-redhat-linux/4.4.4/../../../libdw.a(relocate.o): In function `__libdwfl_relocate':
-(.text+0x114f): undefined reference to `elf_getshdrstrndx'
-/usr/lib/gcc/i686-redhat-linux/4.4.4/../../../libdw.a(dwfl_module_build_id.o): In function `check_notes':
-(.text+0x3d): undefined reference to `gelf_getnote'
-/usr/lib/gcc/i686-redhat-linux/4.4.4/../../../libdw.a(dwfl_module_build_id.o): In function `__libdwfl_find_build_id':
-(.text+0x294): undefined reference to `elf_ndxscn'
-/usr/lib/gcc/i686-redhat-linux/4.4.4/../../../libdw.a(dwfl_module_build_id.o): In function `__libdwfl_find_build_id':
-(.text+0x2ea): undefined reference to `elf_getphdrnum'
-/usr/lib/gcc/i686-redhat-linux/4.4.4/../../../libdw.a(dwfl_module_build_id.o): In function `__libdwfl_find_build_id':
-(.text+0x328): undefined reference to `gelf_getphdr'
-/usr/lib/gcc/i686-redhat-linux/4.4.4/../../../libdw.a(dwfl_module_build_id.o): In function `__libdwfl_find_build_id':
-(.text+0x380): undefined reference to `elf_getdata_rawchunk'
-collect2: ld returned 1 exit status
-make: *** [perf] Error 1
+So it successfully grew to 4 devices. Yay! It's online and happy. The
+~3.7TB ext4 fs under the LVM beneath md0 is fine.
 
-Which is strange as RPM reports the following:
+What I need to do now, is shrink each partition of the 4 drives making
+the RAID, to avoid the last 2 GB.
 
-$ rpm -qa *elf* | sort
-elfutils-0.148-1.fc12.i686
-elfutils-devel-0.148-1.fc12.i686
-elfutils-devel-static-0.148-1.fc12.i686
-elfutils-libelf-0.148-1.fc12.i686
-elfutils-libelf-devel-0.148-1.fc12.i686
-elfutils-libelf-devel-static-0.148-1.fc12.i686
-elfutils-libs-0.148-1.fc12.i686
+What I've done is, I shrinked md0 with mdadm --grow, so now it looks
+like this on one of the drives:
 
-So I build a dynamically linked perf.
+[root@ion raid-MBR-backup]# mdadm -E /dev/sdc1
+/dev/sdc1:
+          Magic : a92b4efc
+        Version : 1.2
+    Feature Map : 0x0
+     Array UUID : e6595c64:b3ae90b3:f01133ac:3f402d20
+           Name : ion:0  (local to host ion)
+  Creation Time : Tue Oct 19 08:58:41 2010
+     Raid Level : raid5
+   Raid Devices : 4
 
--- 
-Sitsofe | http://sucs.org/~sits/
+ Avail Dev Size : 3907025072 (1863.01 GiB 2000.40 GB)
+     Array Size : 11702108160 (5580.00 GiB 5991.48 GB)
+  Used Dev Size : 3900702720 (1860.00 GiB 1997.16 GB)
+    Data Offset : 2048 sectors
+   Super Offset : 8 sectors
+          State : clean
+    Device UUID : 634f3893:7af5fdd3:7ff344c7:8e3c4cff
+
+    Update Time : Sun Oct 24 14:31:00 2010
+       Checksum : 1a7657ec - correct
+         Events : 30786
+
+         Layout : left-symmetric
+     Chunk Size : 128K
+
+   Device Role : Active device 3
+   Array State : AAAA ('A' == active, '.' == missing)
+
+My question is, is it safe for me to stop md0, delete all 4 partitions
+that make up md0, recreate them at the same starting sector, but
+ending 2GB from the last sector? Is this safe, will I lose any data?
+Just in case I've backuped the MBR (first 512 bytes) of each HDD that
+has the partition.
+
+(sorry for top posting..)
+
+Kind regards,
+// Mathias
