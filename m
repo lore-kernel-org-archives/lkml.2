@@ -1,180 +1,205 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932431Ab0JXKJi (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Oct 2010 06:09:38 -0400
-Received: from exprod5og104.obsmtp.com ([64.18.0.178]:34625 "HELO
-	exprod5og104.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S932331Ab0JXKJh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Oct 2010 06:09:37 -0400
-Message-ID: <4CC405DC.7070507@panasas.com>
-Date: Sun, 24 Oct 2010 12:09:32 +0200
-From: Boaz Harrosh <bharrosh@panasas.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.12) Gecko/20100907 Fedora/3.0.7-1.fc12 Thunderbird/3.0.7
+	id S932446Ab0JXKQk (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Oct 2010 06:16:40 -0400
+Received: from www.tglx.de ([62.245.132.106]:46448 "EHLO www.tglx.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932370Ab0JXKQj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 24 Oct 2010 06:16:39 -0400
+Date: Sun, 24 Oct 2010 12:15:27 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Yinghai Lu <yinghai@kernel.org>
+cc: Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>, Len Brown <lenb@kernel.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 15/15] x86: Disabling x2apic if nox2apic is specified
+In-Reply-To: <1287882149-29275-16-git-send-email-yinghai@kernel.org>
+Message-ID: <alpine.LFD.2.00.1010241204470.2466@localhost6.localdomain6>
+References: <1287882149-29275-1-git-send-email-yinghai@kernel.org> <1287882149-29275-16-git-send-email-yinghai@kernel.org>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-To: Joe Perches <joe@perches.com>
-CC: Jiri Kosina <trivial@kernel.org>, Benny Halevy <bhalevy@panasas.com>,
-        osd-dev@open-osd.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 6/9] fs/exofs: typo fix of faild to failed
-References: <cover.1287724261.git.joe@perches.com> <517d9c755442feaa09d82fe484e94bc39f755507.1287724261.git.joe@perches.com>
-In-Reply-To: <517d9c755442feaa09d82fe484e94bc39f755507.1287724261.git.joe@perches.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 24 Oct 2010 10:09:35.0279 (UTC) FILETIME=[8F44ABF0:01CB7363]
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/22/2010 07:17 AM, Joe Perches wrote:
-> Signed-off-by: Joe Perches <joe@perches.com>
+On Sat, 23 Oct 2010, Yinghai Lu wrote:
 
-Applied to osd/linux-next. I'll push it for 2.6.37
-
-Thanks
-Boaz
-
-> ---
->  fs/exofs/dir.c   |    4 ++--
->  fs/exofs/inode.c |   14 +++++++-------
->  fs/exofs/ios.c   |   10 +++++-----
->  3 files changed, 14 insertions(+), 14 deletions(-)
+> For
+> 1. x2apic preenabled system
+> 2. first kernel have x2apic enabled, and try to boot second kernel with "nox2apic"
 > 
-> diff --git a/fs/exofs/dir.c b/fs/exofs/dir.c
-> index d91e9d8..dcc941d 100644
-> --- a/fs/exofs/dir.c
-> +++ b/fs/exofs/dir.c
-> @@ -420,7 +420,7 @@ int exofs_set_link(struct inode *dir, struct exofs_dir_entry *de,
->  	err = exofs_write_begin(NULL, page->mapping, pos, len,
->  				AOP_FLAG_UNINTERRUPTIBLE, &page, NULL);
->  	if (err)
-> -		EXOFS_ERR("exofs_set_link: exofs_write_begin FAILD => %d\n",
-> +		EXOFS_ERR("exofs_set_link: exofs_write_begin FAILED => %d\n",
->  			  err);
+> Will put back cpu with apic id < 255 into xapic mode, instead of panic.
+> 
+> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+> ---
+>  arch/x86/include/asm/apic.h    |    6 ++++
+>  arch/x86/include/asm/apicdef.h |    1 +
+>  arch/x86/kernel/acpi/boot.c    |   10 ++++++-
+>  arch/x86/kernel/apic/apic.c    |   54 +++++++++++++++++++++++++++++++--------
+>  arch/x86/mm/srat_64.c          |   12 ++++++++-
+>  5 files changed, 69 insertions(+), 14 deletions(-)
+> 
+> diff --git a/arch/x86/include/asm/apic.h b/arch/x86/include/asm/apic.h
+> index 69879dd..522f39b 100644
+> --- a/arch/x86/include/asm/apic.h
+> +++ b/arch/x86/include/asm/apic.h
+> @@ -176,6 +176,7 @@ static inline u64 native_x2apic_icr_read(void)
+>  }
 >  
->  	de->inode_no = cpu_to_le64(inode->i_ino);
-> @@ -556,7 +556,7 @@ int exofs_delete_entry(struct exofs_dir_entry *dir, struct page *page)
->  	err = exofs_write_begin(NULL, page->mapping, pos, to - from, 0,
->  							&page, NULL);
->  	if (err)
-> -		EXOFS_ERR("exofs_delete_entry: exofs_write_begin FAILD => %d\n",
-> +		EXOFS_ERR("exofs_delete_entry: exofs_write_begin FAILED => %d\n",
->  			  err);
->  	if (pde)
->  		pde->rec_len = cpu_to_le16(to - from);
-> diff --git a/fs/exofs/inode.c b/fs/exofs/inode.c
-> index 3eadd97..4460275 100644
-> --- a/fs/exofs/inode.c
-> +++ b/fs/exofs/inode.c
-> @@ -511,7 +511,7 @@ static int write_exec(struct page_collect *pcol)
->  
->  	pcol_copy = kmalloc(sizeof(*pcol_copy), GFP_KERNEL);
->  	if (!pcol_copy) {
-> -		EXOFS_ERR("write_exec: Faild to kmalloc(pcol)\n");
-> +		EXOFS_ERR("write_exec: Failed to kmalloc(pcol)\n");
->  		ret = -ENOMEM;
->  		goto err;
->  	}
-> @@ -527,7 +527,7 @@ static int write_exec(struct page_collect *pcol)
->  
->  	ret = exofs_oi_write(oi, ios);
->  	if (unlikely(ret)) {
-> -		EXOFS_ERR("write_exec: exofs_oi_write() Faild\n");
-> +		EXOFS_ERR("write_exec: exofs_oi_write() Failed\n");
->  		goto err;
->  	}
->  
-> @@ -628,7 +628,7 @@ try_again:
->  		/* split the request, next loop will start again */
->  		ret = write_exec(pcol);
->  		if (unlikely(ret)) {
-> -			EXOFS_DBGMSG("write_exec faild => %d", ret);
-> +			EXOFS_DBGMSG("write_exec failed => %d", ret);
->  			goto fail;
->  		}
->  
-> @@ -719,7 +719,7 @@ int exofs_write_begin(struct file *file, struct address_space *mapping,
->  		ret = simple_write_begin(file, mapping, pos, len, flags, pagep,
->  					 fsdata);
->  		if (ret) {
-> -			EXOFS_DBGMSG("simple_write_begin faild\n");
-> +			EXOFS_DBGMSG("simple_write_begin failed\n");
->  			goto out;
->  		}
->  
-> @@ -732,7 +732,7 @@ int exofs_write_begin(struct file *file, struct address_space *mapping,
->  		if (ret) {
->  			/*SetPageError was done by _readpage. Is it ok?*/
->  			unlock_page(page);
-> -			EXOFS_DBGMSG("__readpage_filler faild\n");
-> +			EXOFS_DBGMSG("__readpage_filler failed\n");
->  		}
->  	}
->  out:
-> @@ -1095,7 +1095,7 @@ static void create_done(struct exofs_io_state *ios, void *p)
->  	atomic_dec(&sbi->s_curr_pending);
->  
->  	if (unlikely(ret)) {
-> -		EXOFS_ERR("object=0x%llx creation faild in pid=0x%llx",
-> +		EXOFS_ERR("object=0x%llx creation failed in pid=0x%llx",
->  			  _LLU(exofs_oi_objno(oi)), _LLU(sbi->layout.s_pid));
->  		/*TODO: When FS is corrupted creation can fail, object already
->  		 * exist. Get rid of this asynchronous creation, if exist
-> @@ -1215,7 +1215,7 @@ static int exofs_update_inode(struct inode *inode, int do_sync)
->  
->  	args = kzalloc(sizeof(*args), GFP_KERNEL);
->  	if (!args) {
-> -		EXOFS_DBGMSG("Faild kzalloc of args\n");
-> +		EXOFS_DBGMSG("Failed kzalloc of args\n");
->  		return -ENOMEM;
->  	}
->  
-> diff --git a/fs/exofs/ios.c b/fs/exofs/ios.c
-> index 6550bf7..f74a2ec 100644
-> --- a/fs/exofs/ios.c
-> +++ b/fs/exofs/ios.c
-> @@ -55,7 +55,7 @@ int exofs_read_kern(struct osd_dev *od, u8 *cred, struct osd_obj_id *obj,
->  
->  	ret = osd_finalize_request(or, 0, cred, NULL);
->  	if (unlikely(ret)) {
-> -		EXOFS_DBGMSG("Faild to osd_finalize_request() => %d\n", ret);
-> +		EXOFS_DBGMSG("Failed to osd_finalize_request() => %d\n", ret);
->  		goto out;
->  	}
->  
-> @@ -79,7 +79,7 @@ int exofs_get_io_state(struct exofs_layout *layout,
->  	 */
->  	ios = kzalloc(exofs_io_state_size(layout->s_numdevs), GFP_KERNEL);
->  	if (unlikely(!ios)) {
-> -		EXOFS_DBGMSG("Faild kzalloc bytes=%d\n",
-> +		EXOFS_DBGMSG("Failed kzalloc bytes=%d\n",
->  			     exofs_io_state_size(layout->s_numdevs));
->  		*pios = NULL;
->  		return -ENOMEM;
-> @@ -172,7 +172,7 @@ static int exofs_io_execute(struct exofs_io_state *ios)
->  
->  		ret = osd_finalize_request(or, 0, ios->cred, NULL);
->  		if (unlikely(ret)) {
-> -			EXOFS_DBGMSG("Faild to osd_finalize_request() => %d\n",
-> +			EXOFS_DBGMSG("Failed to osd_finalize_request() => %d\n",
->  				     ret);
->  			return ret;
->  		}
-> @@ -361,7 +361,7 @@ static int _add_stripe_unit(struct exofs_io_state *ios,  unsigned *cur_pg,
->  
->  		per_dev->bio = bio_kmalloc(GFP_KERNEL, bio_size);
->  		if (unlikely(!per_dev->bio)) {
-> -			EXOFS_DBGMSG("Faild to allocate BIO size=%u\n",
-> +			EXOFS_DBGMSG("Failed to allocate BIO size=%u\n",
->  				     bio_size);
->  			return -ENOMEM;
->  		}
-> @@ -564,7 +564,7 @@ static int _sbi_write_mirror(struct exofs_io_state *ios, int cur_comp)
->  						  master_dev->bio->bi_max_vecs);
->  				if (unlikely(!bio)) {
->  					EXOFS_DBGMSG(
-> -					      "Faild to allocate BIO size=%u\n",
-> +					      "Failed to allocate BIO size=%u\n",
->  					      master_dev->bio->bi_max_vecs);
->  					ret = -ENOMEM;
->  					goto out;
+>  extern int x2apic_phys;
+> +extern int nox2apic;
 
+Can you please use a sensible variable name like  x2apic_disabled ?
+
+>  extern void check_x2apic(void);
+>  extern void enable_x2apic(void);
+>  extern void x2apic_icr_write(u32 low, u32 id);
+> @@ -186,6 +187,10 @@ static inline int x2apic_enabled(void)
+>  	if (!cpu_has_x2apic)
+>  		return 0;
+>  
+> +	/* avoid to read msr */
+
+That comment is useless. I wish you would add comments to complex code
+not to obvious one.
+
+Also it can be folded into the above check
+
+     if (!cpu_has_x2apic || x2apic_disabled)
+     	
+
+> +	if (nox2apic)
+> +		return 0;
+> +
+>  	rdmsr(MSR_IA32_APICBASE, msr, msr2);
+>  	if (msr & X2APIC_ENABLE)
+>  		return 1;
+
+> diff --git a/arch/x86/kernel/apic/apic.c b/arch/x86/kernel/apic/apic.c
+> index d286db1..ebb13e8 100644
+> --- a/arch/x86/kernel/apic/apic.c
+> +++ b/arch/x86/kernel/apic/apic.c
+> @@ -138,15 +138,14 @@ int x2apic_mode;
+>  #ifdef CONFIG_X86_X2APIC
+>  /* x2apic enabled before OS handover */
+>  static int x2apic_preenabled;
+> +int nox2apic;
+>  static __init int setup_nox2apic(char *str)
+>  {
+> -	if (x2apic_enabled()) {
+> -		pr_warning("Bios already enabled x2apic, "
+> -			   "can't enforce nox2apic");
+> -		return 0;
+> -	}
+> +	if (x2apic_enabled())
+> +		pr_warning("Bios already enabled x2apic, will disable it");
+> +
+> +	nox2apic = 1;
+>  
+> -	setup_clear_cpu_cap(X86_FEATURE_X2APIC);
+
+Why is this removed ?
+
+>  	return 0;
+>  }
+>  early_param("nox2apic", setup_nox2apic);
+> @@ -1393,8 +1392,33 @@ void __cpuinit end_local_APIC_setup(void)
+>  }
+>  
+>  #ifdef CONFIG_X86_X2APIC
+> +
+> +static void disable_x2apic(void)
+> +{
+> +	int msr, msr2;
+> +
+> +	if (!cpu_has_x2apic)
+> +		return;
+> +
+> +	rdmsr(MSR_IA32_APICBASE, msr, msr2);
+> +	if (msr & X2APIC_ENABLE) {
+> +		pr_info("Disabling x2apic\n");
+> +		/*
+> +		 * Need to disable xapic and x2apic at the same time at first
+> +		 *  then enable xapic
+> +		 */
+> +		wrmsr(MSR_IA32_APICBASE, msr & ~(X2APIC_ENABLE | XAPIC_ENABLE),
+> +			 0);
+> +		wrmsr(MSR_IA32_APICBASE, msr & ~X2APIC_ENABLE, 0);
+> +	}
+> +}
+>  void check_x2apic(void)
+>  {
+> +	if (nox2apic) {
+> +		disable_x2apic();
+> +		return;
+> +	}
+> +
+>  	if (x2apic_enabled()) {
+>  		pr_info("x2apic enabled by BIOS, switching to x2apic ops\n");
+>  		x2apic_preenabled = x2apic_mode = 1;
+> @@ -1405,6 +1429,11 @@ void enable_x2apic(void)
+>  {
+>  	int msr, msr2;
+>  
+> +	if (nox2apic) {
+> +		disable_x2apic();
+> +		return;
+> +	}
+> +
+>  	if (!x2apic_mode)
+>  		return;
+>  
+> @@ -1430,7 +1459,7 @@ int __init enable_IR(void)
+>  		return 0;
+>  	}
+>  
+> -	if (enable_intr_remapping(x2apic_supported()))
+> +	if (enable_intr_remapping(x2apic_supported() && !nox2apic))
+
+Do we really need all these extra checks ? Can't we simply make all
+this one variable wich is set to 1 when x2apic is available and not
+disabled on the kernel command line ?
+
+> diff --git a/arch/x86/mm/srat_64.c b/arch/x86/mm/srat_64.c
+> index a35cb9d..baa9eab 100644
+> --- a/arch/x86/mm/srat_64.c
+> +++ b/arch/x86/mm/srat_64.c
+> @@ -126,6 +126,13 @@ acpi_numa_x2apic_affinity_init(struct acpi_srat_x2apic_cpu_affinity *pa)
+>  	if ((pa->flags & ACPI_SRAT_CPU_ENABLED) == 0)
+>  		return;
+>  	pxm = pa->proximity_domain;
+> +	apic_id = pa->apic_id;
+> +#ifdef CONFIG_X86_X2APIC
+
+Why conditional? No need to duplicate the printk. It just needs some
+thought.
+
+> +	if (nox2apic && (apic_id >= 0xff)) {
+> +		printk(KERN_INFO "SRAT: PXM %u -> X2APIC 0x%04x ignored\n",
+> +			 pxm, apic_id);
+> +		return;
+> +	}
+>  	node = setup_node(pxm);
+>  	if (node < 0) {
+>  		printk(KERN_ERR "SRAT: Too many proximity domains %x\n", pxm);
+> @@ -133,12 +140,15 @@ acpi_numa_x2apic_affinity_init(struct acpi_srat_x2apic_cpu_affinity *pa)
+>  		return;
+>  	}
+>  
+> -	apic_id = pa->apic_id;
+>  	apicid_to_node[apic_id] = node;
+>  	node_set(node, cpu_nodes_parsed);
+>  	acpi_numa = 1;
+>  	printk(KERN_INFO "SRAT: PXM %u -> APIC 0x%04x -> Node %u\n",
+>  	       pxm, apic_id, node);
+> +#else
+> +	printk(KERN_INFO "SRAT: PXM %u -> X2APIC 0x%04x ignored\n",
+> +		 pxm, apic_id);
+> +#endif
+>  }
+>  
+>  /* Callback for Proximity Domain -> LAPIC mapping */
+> -- 
+> 1.7.1
+> 
