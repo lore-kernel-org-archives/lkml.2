@@ -1,41 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933121Ab0JXWYG (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Oct 2010 18:24:06 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:49987 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933103Ab0JXWYF (ORCPT
+	id S933136Ab0JXW2I (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Oct 2010 18:28:08 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:57987
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S933104Ab0JXW2H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Oct 2010 18:24:05 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=wuHjNw8PyuUryt6pxwboOvV7LlFOvhPap57iXJCQTHYKmDdO32csnG+9itFOM45dzm
-         ErnKSTZJs8VlaTLVMSj756jwN5KGvwwTUjM+Dvuknn1d4ynaACOkYONgrk+kj/GCIP2T
-         CxSoUWZ6QtLPZD60j1M3tIC4QuZTB+1gXDpbw=
-Message-ID: <4CC4B210.2010608@lwfinger.net>
-Date: Sun, 24 Oct 2010 17:24:16 -0500
-From: Larry Finger <Larry.Finger@lwfinger.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.12) Gecko/20100914 SUSE/3.0.8 Thunderbird/3.0.8
-MIME-Version: 1.0
-To: Nicolas Kaiser <nikai@nikai.net>
-CC: Luciano Coelho <luciano.coelho@nokia.com>, linux-wireless@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] wireless/wl1271: remove redundant if-statement
-References: <20101025000744.17f7086e@absol.kitzblitz>
-In-Reply-To: <20101025000744.17f7086e@absol.kitzblitz>
-Content-Type: text/plain; charset=ISO-8859-1
+	Sun, 24 Oct 2010 18:28:07 -0400
+Date: Sun, 24 Oct 2010 15:28:30 -0700 (PDT)
+Message-Id: <20101024.152830.102557040.davem@davemloft.net>
+To: holt@sgi.com
+Cc: w@1wt.eu, linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        linux-sctp@vger.kernel.org, kuznet@ms2.inr.ac.ru, pekkas@netcore.fi,
+        jmorris@namei.org, yoshfuji@linux-ipv6.org, kaber@trash.net,
+        vladislav.yasevich@hp.com, sri@us.ibm.com
+Subject: Re: [Patch] Limit sysctl_tcp_mem and sysctl_udp_mem initializers
+ to prevent integer overflows.
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20101020120345.436404838@gulag1.americas.sgi.com>
+References: <20101020120336.967805943@gulag1.americas.sgi.com>
+	<20101020120345.436404838@gulag1.americas.sgi.com>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/24/2010 05:07 PM, Nicolas Kaiser wrote:
-> Apparently the return value of wl1271_ps_elp_sleep never gets
-> checked anyway.
+From: Robin Holt <holt@sgi.com>
+Date: Wed, 20 Oct 2010 07:03:37 -0500
 
-The patch is fine, but this comment is a little misleading as
-wl1271_ps_elp_sleep() is void and cannot return a value.
+> Subject: [Patch] Limit sysctl_tcp_mem and sysctl_udp_mem initializers to prevent integer overflows.
+> 
+> On a 16TB x86_64 machine, sysctl_tcp_mem[2], sysctl_udp_mem[2], and
+> sysctl_sctp_mem[2] can integer overflow.  Set limit such that they are
+> maximized without overflowing.
+> 
+> Signed-off-by: Robin Holt <holt@sgi.com>
 
-Larry
+I'll queue this up for -stable, thanks Robin!
