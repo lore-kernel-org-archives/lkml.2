@@ -1,53 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932094Ab0JXGTJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Oct 2010 02:19:09 -0400
-Received: from cantor.suse.de ([195.135.220.2]:36166 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753811Ab0JXGTI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Oct 2010 02:19:08 -0400
-Date: Sun, 24 Oct 2010 08:19:06 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Jarod Wilson <jarod@wilsonet.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [GIT] HID
-In-Reply-To: <AANLkTikc74bA+OPJjhLUHu_mp59L=SKnPTXjPK=E28U5@mail.gmail.com>
-Message-ID: <alpine.LNX.2.00.1010240816140.6879@pobox.suse.cz>
-References: <alpine.LNX.2.00.1010232314400.6879@pobox.suse.cz> <AANLkTikc74bA+OPJjhLUHu_mp59L=SKnPTXjPK=E28U5@mail.gmail.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1755375Ab0JXGoj (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Oct 2010 02:44:39 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:38204 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754483Ab0JXGoi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 24 Oct 2010 02:44:38 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=FZaqCwFYd02po5/Gxlwz/ug7TamNASj2kqlLuj4ZMPDZKnzF+bh9+AItjNKfkuJkVE
+         4auW4d4jgkghSiWCWv3wCKBhH7rIqY+UwDK0LEKwa4ZHgHaSFYYxyH20MeFWSr7uSV8p
+         CHM7HpzZUOUYddj8Fgz89GjbOhX9aL7ZW6oQs=
+Subject: Re: [BUG] disk_free_ptbl_rcu_cb() crash
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Jens Axboe <jaxboe@fusionio.com>
+Cc: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+In-Reply-To: <4CC3CC6F.8090606@fusionio.com>
+References: <1287868201.2658.563.camel@edumazet-laptop>
+	 <4CC3CC6F.8090606@fusionio.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sun, 24 Oct 2010 08:44:30 +0200
+Message-ID: <1287902670.2658.580.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 23 Oct 2010, Jarod Wilson wrote:
-
-> > please pull from 'for-linus' branch at
-> >
-> > �git://git.kernel.org/pub/scm/linux/kernel/git/jikos/hid.git for-linus
-> >
-> > to receive the HID subsystem patches below. Mostly adding support for a
-> > few new multitouch toys, and improving already existing drivers. Plus some
-> > bugfixes which were not urgent enough for .36.
+Le dimanche 24 octobre 2010 à 08:04 +0200, Jens Axboe a écrit :
+> On 2010-10-23 23:10, Eric Dumazet wrote:
+> > Current Linus tree makes my machine crash in disk_free_ptbl_rcu_cb(),
+> > while booting...
+> > 
+> > commit 7681bfeeccff5ef seems the problem ?
+> > 
+> > Following patch solves the NULL dereference, but this is only to show
+> > you where the problem is, not a real fix, of course.
 > 
-> *cough*
+> Darn. Your fix is on the right path, you missed one though. I think it's
+> cleaner to move this into the elevator helpers, so that the callers can
+> remain clean.
 > 
-> https://patchwork.kernel.org/patch/161481/
-> 
-> What's a guy gotta do to get that patch merged too? :)
+> Can you verify that this works too?
 
-Bah, it's still pending in my TODO folder, sorry for that. I am not really 
-convinced whether it's the right aproach.
+Sure, I did right now and it works too, thanks !
 
-First, I'll go check HUT how much non-standard the usages you are adding 
-to generic code, are. Perhaps it would satisfy separate driver on the hid 
-bus?
-(Second, I hope to shovel all the 'drivers' which only do specialized 
-mappings into userspace/udev actually).
 
--- 
-Jiri Kosina
-SUSE Labs, Novell Inc.
