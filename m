@@ -1,290 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933083Ab0JXWLy (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Oct 2010 18:11:54 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:31617 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933047Ab0JXWLx (ORCPT
+	id S933099Ab0JXWPe (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Oct 2010 18:15:34 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:56791 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933062Ab0JXWPb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Oct 2010 18:11:53 -0400
-Message-ID: <4CC4AEAB.4030505@kernel.org>
-Date: Sun, 24 Oct 2010 15:09:47 -0700
-From: Yinghai Lu <yinghai@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.12) Gecko/20100914 SUSE/3.0.8 Thunderbird/3.0.8
+	Sun, 24 Oct 2010 18:15:31 -0400
+Message-ID: <4CC4AFF9.90009@pengutronix.de>
+Date: Mon, 25 Oct 2010 00:15:21 +0200
+From: Marc Kleine-Budde <mkl@pengutronix.de>
+Organization: Pengutronix
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.14) Gecko/20101006 Thunderbird/3.0.9
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>, Len Brown <lenb@kernel.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 15/15] x86: Disabling x2apic if nox2apic is specified
-References: <1287882149-29275-1-git-send-email-yinghai@kernel.org> <1287882149-29275-16-git-send-email-yinghai@kernel.org> <alpine.LFD.2.00.1010241204470.2466@localhost6.localdomain6>
-In-Reply-To: <alpine.LFD.2.00.1010241204470.2466@localhost6.localdomain6>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+To: David Miller <davem@davemloft.net>
+CC: andrew.chih.howe.khor@intel.com, socketcan-core@lists.berlios.de,
+        sameo@linux.intel.com, margie.foster@intel.com, netdev@vger.kernel.org,
+        chripell@fsfe.org, linux-kernel@vger.kernel.org, yong.y.wang@intel.com,
+        masa-korg@dsn.okisemi.com, kok.howg.ewe@intel.com,
+        joel.clark@intel.com, morinaga526@dsn.okisemi.com, wg@grandegger.com,
+        qi.wang@intel.com
+Subject: Re: [PATCH net-next-2.6 v1] can: Topcliff: Update PCH_CAN driver
+ to 2.6.35
+References: <4CB8506C.3060600@dsn.okisemi.com>	<20101024.144312.104048720.davem@davemloft.net>	<4CC4ADA5.8@pengutronix.de> <20101024.150905.39179588.davem@davemloft.net>
+In-Reply-To: <20101024.150905.39179588.davem@davemloft.net>
+X-Enigmail-Version: 1.0.1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="------------enigF19D9FFDB3F1EE694E8482CE"
+X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
+X-SA-Exim-Mail-From: mkl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/24/2010 03:15 AM, Thomas Gleixner wrote:
->> diff --git a/arch/x86/kernel/apic/apic.c b/arch/x86/kernel/apic/apic.c
->> index d286db1..ebb13e8 100644
->> --- a/arch/x86/kernel/apic/apic.c
->> +++ b/arch/x86/kernel/apic/apic.c
->> @@ -138,15 +138,14 @@ int x2apic_mode;
->>  #ifdef CONFIG_X86_X2APIC
->>  /* x2apic enabled before OS handover */
->>  static int x2apic_preenabled;
->> +int nox2apic;
->>  static __init int setup_nox2apic(char *str)
->>  {
->> -	if (x2apic_enabled()) {
->> -		pr_warning("Bios already enabled x2apic, "
->> -			   "can't enforce nox2apic");
->> -		return 0;
->> -	}
->> +	if (x2apic_enabled())
->> +		pr_warning("Bios already enabled x2apic, will disable it");
->> +
->> +	nox2apic = 1;
->>  
->> -	setup_clear_cpu_cap(X86_FEATURE_X2APIC);
-> 
-> Why is this removed ?
-> 
+This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
+--------------enigF19D9FFDB3F1EE694E8482CE
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-need to check that bit with disable_x2apic.
+On 10/25/2010 12:09 AM, David Miller wrote:
+> From: Marc Kleine-Budde <mkl@pengutronix.de>
+> Date: Mon, 25 Oct 2010 00:05:25 +0200
+>=20
+>> On 10/24/2010 11:43 PM, David Miller wrote:
+>>> From: Masayuki Ohtak <masa-korg@dsn.okisemi.com>
+>>> Date: Fri, 15 Oct 2010 22:00:28 +0900
+>>>
+>>>> CAN driver of Topcliff PCH
+>>>>
+>>>> Topcliff PCH is the platform controller hub that is going to be used=
+ in
+>>>> Intel's upcoming general embedded platform. All IO peripherals in
+>>>> Topcliff PCH are actually devices sitting on AMBA bus.=20
+>>>> Topcliff PCH has CAN I/F. This driver enables CAN function.
+>>>>
+>>>> Signed-off-by: Masayuki Ohtake <masa-korg@dsn.okisemi.com>
+>>>
+>>> Applied, thanks.
+>>
+>> IMHO this driver needs some improvements. There are some open points
+>> from Wolfgangs and my review. On the other side, it's a new driver and=
 
-+static void disable_x2apic(void)
-+{
-+       int msr, msr2;
-+
-+       if (!cpu_has_x2apic)
-+               return;
+>> there's some time left before it hits mainline.
+>=20
+> When people have more than a week to review and provide feedback,
+> and don't, I have zero sympathy especially this early in the
+> release cycle.
 
-other concern should be addressed. please check -v2.
+Let me see....Crap, it's my fault, I just replied to the socketcan
+mailinglist ;( [1]
 
-Thanks
+> So if adding it to the tree is what I have to do to get you guys to
+> post your comments and suggest fixes, then that's what I am going to
+> (continue) to do. :-)
 
-	Yinghai
+=2E..or to learn how to reply properly :)
 
-[PATCH -v2] x86: Disable x2apic if nox2apic is specified
+regards, Marc
 
-For
-1. x2apic preenabled system
-2. first kernel have x2apic enabled, and try to kexec second kernel with "nox2apic"
+[1]
+https://lists.berlios.de/pipermail/socketcan-core/2010-October/004757.htm=
+l
+--=20
+Pengutronix e.K.                  | Marc Kleine-Budde           |
+Industrial Linux Solutions        | Phone: +49-231-2826-924     |
+Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
+Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
 
-Will put back cpu with apic id < 255 into xapic mode, instead of panic.
 
--v2: use x2apic_disabled instead of nox2apic, Suggested by Thomas
-     update x2apic_supported with x2apic_disabled, Suggested by Thomas
+--------------enigF19D9FFDB3F1EE694E8482CE
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
 
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
 
----
- arch/x86/include/asm/apic.h    |    6 +++--
- arch/x86/include/asm/apicdef.h |    1 
- arch/x86/kernel/acpi/boot.c    |   10 +++++++-
- arch/x86/kernel/apic/apic.c    |   46 ++++++++++++++++++++++++++++++++++-------
- arch/x86/mm/srat_64.c          |    7 +++++-
- 5 files changed, 58 insertions(+), 12 deletions(-)
+iEYEARECAAYFAkzEr/0ACgkQjTAFq1RaXHNN1QCgic3MJusAQnGIGNIFqgpl7oR3
+5QMAn0VvKXyVl/IUFVQDZRcE9l5M4SlM
+=qrqH
+-----END PGP SIGNATURE-----
 
-Index: linux-2.6/arch/x86/include/asm/apic.h
-===================================================================
---- linux-2.6.orig/arch/x86/include/asm/apic.h
-+++ linux-2.6/arch/x86/include/asm/apic.h
-@@ -176,6 +176,7 @@ static inline u64 native_x2apic_icr_read
- }
- 
- extern int x2apic_phys;
-+extern int x2apic_disabled;
- extern void check_x2apic(void);
- extern void enable_x2apic(void);
- extern void x2apic_icr_write(u32 low, u32 id);
-@@ -183,7 +184,7 @@ static inline int x2apic_enabled(void)
- {
- 	int msr, msr2;
- 
--	if (!cpu_has_x2apic)
-+	if (!cpu_has_x2apic || x2apic_disabled)
- 		return 0;
- 
- 	rdmsr(MSR_IA32_APICBASE, msr, msr2);
-@@ -192,7 +193,7 @@ static inline int x2apic_enabled(void)
- 	return 0;
- }
- 
--#define x2apic_supported()	(cpu_has_x2apic)
-+#define x2apic_supported()	(cpu_has_x2apic && !x2apic_disabled)
- static inline void x2apic_force_phys(void)
- {
- 	x2apic_phys = 1;
-@@ -214,6 +215,7 @@ static inline void x2apic_force_phys(voi
- 
- #define	x2apic_preenabled 0
- #define	x2apic_supported()	0
-+#define	x2apic_disabled	1
- #endif
- 
- extern void enable_IR_x2apic(void);
-Index: linux-2.6/arch/x86/kernel/acpi/boot.c
-===================================================================
---- linux-2.6.orig/arch/x86/kernel/acpi/boot.c
-+++ linux-2.6/arch/x86/kernel/acpi/boot.c
-@@ -213,6 +213,8 @@ static int __init
- acpi_parse_x2apic(struct acpi_subtable_header *header, const unsigned long end)
- {
- 	struct acpi_madt_local_x2apic *processor = NULL;
-+	int apic_id;
-+	u8 enabled;
- 
- 	processor = (struct acpi_madt_local_x2apic *)header;
- 
-@@ -221,6 +223,8 @@ acpi_parse_x2apic(struct acpi_subtable_h
- 
- 	acpi_table_print_madt_entry(header);
- 
-+	apic_id = processor->local_apic_id;
-+	enabled = processor->lapic_flags & ACPI_MADT_ENABLED;
- #ifdef CONFIG_X86_X2APIC
- 	/*
- 	 * We need to register disabled CPU as well to permit
-@@ -229,8 +233,10 @@ acpi_parse_x2apic(struct acpi_subtable_h
- 	 * to not preallocating memory for all NR_CPUS
- 	 * when we use CPU hotplug.
- 	 */
--	acpi_register_lapic(processor->local_apic_id,	/* APIC ID */
--			    processor->lapic_flags & ACPI_MADT_ENABLED);
-+	if (x2apic_disabled && (apic_id >= 0xff) && enabled)
-+		printk(KERN_WARNING PREFIX "x2apic entry ignored\n");
-+	else
-+		acpi_register_lapic(apic_id, enabled);
- #else
- 	printk(KERN_WARNING PREFIX "x2apic entry ignored\n");
- #endif
-Index: linux-2.6/arch/x86/kernel/apic/apic.c
-===================================================================
---- linux-2.6.orig/arch/x86/kernel/apic/apic.c
-+++ linux-2.6/arch/x86/kernel/apic/apic.c
-@@ -138,15 +138,14 @@ int x2apic_mode;
- #ifdef CONFIG_X86_X2APIC
- /* x2apic enabled before OS handover */
- static int x2apic_preenabled;
-+int x2apic_disabled;
- static __init int setup_nox2apic(char *str)
- {
--	if (x2apic_enabled()) {
--		pr_warning("Bios already enabled x2apic, "
--			   "can't enforce nox2apic");
--		return 0;
--	}
-+	if (x2apic_enabled())
-+		pr_warning("Bios already enabled x2apic, will disable it");
-+
-+	x2apic_disabled = 1;
- 
--	setup_clear_cpu_cap(X86_FEATURE_X2APIC);
- 	return 0;
- }
- early_param("nox2apic", setup_nox2apic);
-@@ -1393,8 +1392,33 @@ void __cpuinit end_local_APIC_setup(void
- }
- 
- #ifdef CONFIG_X86_X2APIC
-+
-+static void disable_x2apic(void)
-+{
-+	int msr, msr2;
-+
-+	if (!cpu_has_x2apic)
-+		return;
-+
-+	rdmsr(MSR_IA32_APICBASE, msr, msr2);
-+	if (msr & X2APIC_ENABLE) {
-+		pr_info("Disabling x2apic\n");
-+		/*
-+		 * Need to disable xapic and x2apic at the same time at first
-+		 *  then enable xapic
-+		 */
-+		wrmsr(MSR_IA32_APICBASE, msr & ~(X2APIC_ENABLE | XAPIC_ENABLE),
-+			 0);
-+		wrmsr(MSR_IA32_APICBASE, msr & ~X2APIC_ENABLE, 0);
-+	}
-+}
- void check_x2apic(void)
- {
-+	if (x2apic_disabled) {
-+		disable_x2apic();
-+		return;
-+	}
-+
- 	if (x2apic_enabled()) {
- 		pr_info("x2apic enabled by BIOS, switching to x2apic ops\n");
- 		x2apic_preenabled = x2apic_mode = 1;
-@@ -1405,6 +1429,11 @@ void enable_x2apic(void)
- {
- 	int msr, msr2;
- 
-+	if (x2apic_disabled) {
-+		disable_x2apic();
-+		return;
-+	}
-+
- 	if (!x2apic_mode)
- 		return;
- 
-@@ -1473,6 +1502,9 @@ void __init enable_IR_x2apic(void)
- 	else
- 		ret = enable_IR();
- 
-+	if (x2apic_disabled)
-+		goto nox2apic;
-+
- 	if (!ret) {
- 		/* IR is required if there is APIC ID > 255 even when running
- 		 * under KVM
-@@ -1509,7 +1541,7 @@ out:
- 
- 	if (x2apic_preenabled)
- 		panic("x2apic: enabled by BIOS but kernel init failed.");
--	else if (cpu_has_x2apic)
-+	else if (cpu_has_x2apic && !x2apic_disabled)
- 		pr_info("Not enabling x2apic, Intr-remapping init failed.\n");
- }
- 
-Index: linux-2.6/arch/x86/mm/srat_64.c
-===================================================================
---- linux-2.6.orig/arch/x86/mm/srat_64.c
-+++ linux-2.6/arch/x86/mm/srat_64.c
-@@ -126,6 +126,12 @@ acpi_numa_x2apic_affinity_init(struct ac
- 	if ((pa->flags & ACPI_SRAT_CPU_ENABLED) == 0)
- 		return;
- 	pxm = pa->proximity_domain;
-+	apic_id = pa->apic_id;
-+	if (x2apic_disabled && (apic_id >= 0xff)) {
-+		printk(KERN_INFO "SRAT: PXM %u -> X2APIC 0x%04x ignored\n",
-+			 pxm, apic_id);
-+		return;
-+	}
- 	node = setup_node(pxm);
- 	if (node < 0) {
- 		printk(KERN_ERR "SRAT: Too many proximity domains %x\n", pxm);
-@@ -133,7 +139,6 @@ acpi_numa_x2apic_affinity_init(struct ac
- 		return;
- 	}
- 
--	apic_id = pa->apic_id;
- 	apicid_to_node[apic_id] = node;
- 	node_set(node, cpu_nodes_parsed);
- 	acpi_numa = 1;
-Index: linux-2.6/arch/x86/include/asm/apicdef.h
-===================================================================
---- linux-2.6.orig/arch/x86/include/asm/apicdef.h
-+++ linux-2.6/arch/x86/include/asm/apicdef.h
-@@ -141,6 +141,7 @@
- 
- #define APIC_BASE (fix_to_virt(FIX_APIC_BASE))
- #define APIC_BASE_MSR	0x800
-+#define XAPIC_ENABLE	(1UL << 11)
- #define X2APIC_ENABLE	(1UL << 10)
- 
- #ifdef CONFIG_X86_32
+--------------enigF19D9FFDB3F1EE694E8482CE--
