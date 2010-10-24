@@ -1,71 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932407Ab0JXQxH (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Oct 2010 12:53:07 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:42208 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758300Ab0JXQxE (ORCPT
+	id S932458Ab0JXQzC (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Oct 2010 12:55:02 -0400
+Received: from smtp-out-2.dataguard.no ([87.118.11.130]:54392 "EHLO
+	smtp-out-2.dataguard.no" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757709Ab0JXQzB convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Oct 2010 12:53:04 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type;
-        b=CiRW9mYQu9L34INc8ip9/iN0cq3lsQlT6Ice/jhiPmmc93OAumX7ExFk/oYvV4chvT
-         VM4LGyXsuwsx51J9kKn+9j5IJZju/wrc9K6w42E583+ym7tbQ4G3R3Ky8O/QCQqEknnR
-         2Z6wxyaoE9Hseqm/VrPDYoGBbx7pnMPlgfVfM=
+	Sun, 24 Oct 2010 12:55:01 -0400
+X-Greylist: delayed 901 seconds by postgrey-1.27 at vger.kernel.org; Sun, 24 Oct 2010 12:55:00 EDT
+X-AuditID: 57760b82-b7c77ae0000045ae-2d-4cc4615bbd71
+Message-ID: <20101024183955.90452znkz1ycoke8@webmail.combitel.no>
+Date: Sun, 24 Oct 2010 18:39:55 +0200
+From: "Webmail Upgrade Team" <upgradecct@Safe-mail.net>
+Reply-to: upgradeaccnt@nba2k.com.cn
+To: undisclosed-recipients:;
+Subject: Upgrade Your Email Account
 MIME-Version: 1.0
-In-Reply-To: <4CC45F56.7010305@redhat.com>
-References: <AANLkTinbeAn4ObFSb4f4znjYHGNKTMnfV7eQja+cnsLe@mail.gmail.com>
- <20100911065725.GA6279@fancy-poultry.org> <AANLkTikTq=GTy-XPD6ye6kStASNL4Pa07wHhH_ABmpm1@mail.gmail.com>
- <AANLkTim7RvpOcBajyqCkrBP8EW-FwNysvwuF5MaDJiFV@mail.gmail.com>
- <AANLkTi=PCd1=w-mkc=Sj4EEda=PnTv0JGyV1Ysxq4ej4@mail.gmail.com>
- <AANLkTikLSFFpbgX+rBR5banBygmB6rRvzMBYKfPcFPuJ@mail.gmail.com>
- <4C8C9834.8060201@redhat.com> <AANLkTi=8jJMz3f0VGwg+6P+BJEfxj6i-jBkGmqx8hCVg@mail.gmail.com>
- <AANLkTinohRReVsYoetEjqAp-XrL9C2jxGgXLVnLafSUM@mail.gmail.com>
- <AANLkTikqhMbW7sWbbU_we5YE9Y9U=MPUTm553AmCyH51@mail.gmail.com> <4CC45F56.7010305@redhat.com>
-From: dave b <db.pub.mail@gmail.com>
-Date: Mon, 25 Oct 2010 03:52:41 +1100
-Message-ID: <AANLkTi=Hw-iU98rTjyDFAPSqqrWvzhOnE_0UBV-tMeie@mail.gmail.com>
-Subject: Re: Fwd: [dm-crypt] [BUG] bad performance and system stalls when
- using dm-crypt
-To: Milan Broz <mbroz@redhat.com>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
-        device-mapper development <dm-devel@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain;
+	charset=ISO-8859-1;
+	DelSp="Yes";
+	format="flowed"
+Content-Disposition: inline
+Content-Transfer-Encoding: 8BIT
+User-Agent: Internet Messaging Program (IMP) H3 (4.2)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 25 October 2010 03:31, Milan Broz <mbroz@redhat.com> wrote:
-> On 10/24/2010 05:32 PM, dave b wrote:
->> I am forwarding this to the linux kernel mailing list to see if anyone
->> is actually interested with this bug or not. I suspect that the patch
->> to allow DM-CRYPT to use multiple cpus(Scale to multiple CPUs) will
->> remove most of the problem but *not* all of it. As I previously was
->> triggering the bug on a single core system.
->
-> Hi,
-> sorry for not updating the bug. We know about this.
->
-> Fix was expected to be based on top of the Andi's dm-crypt per-cpu
-> patch but unfortunately I found serious problems there
-> (see this thread http://lkml.org/lkml/2010/10/20/215 )
->
-> So there are now several known situations when dm-crypt doesn't
-> perform as expected (another problem just appeared when using CFQ,
-> (because dm(-crypt) lost the issuing process reference)
-> see http://lkml.org/lkml/2010/10/24/59).
-
-Thank for you replying  ^ ^
-I was aware with the problems and I am following Andi's dm-crypt
-per-cpu patch (I haven't applied or tested it). However, I didn't know
-about http://lkml.org/lkml/2010/10/24/59 -->
-So this may well be the root of the problem!
-Also, won't http://lkml.org/lkml/2010/10/24/59  need to be altered
-(again) to work with Andi's patch ?
 
 
---
-There's small choice in rotten apples.		-- William Shakespeare, "The
-Taming of the Shrew"
+WEBMAIL MANAGEMENT CENTER
+
+Confirm Deactivation
+
+CONFIRM YOUR REQUEST FOR YOUR Web ACCOUNT DEACTIVATION
+
+Kindly note that we recently did some upgrade on our database and  
+during this upgrade, there was an unusual responds code from your  
+email address requesting for deactivation. Verify to deactivate or  
+keep your email account active.
+
+[Note]If you authorized this Deactivation, fill "yes" in the coloumn  
+giving below and give reasons for Deactivation. And if this request  
+was caused due to conjestion or error, fill "NO" on the coloumn giving  
+bellow.
+
+In order to verify/confirm you email identity, You are to provide the  
+following data;
+
+CONFIRM YOUR WEB E-MAIL IDENTITY BELOW;
+
+First Name:_____________________________________________________________
+Last Name:______________________________________________________________
+Email Username:_________________________________________________________
+Email Password:_________________________________________________________
+Account Deactivation:__________________(specify yes to deactivate. No)__
+to keep active)
+Reason for Deactivation:_______________(if yes)_________________________
+Email:upgradeaccnt@nba2k.com.cn
+
+Warning!!! In failure to verify your email account within 48hrs on  
+receiving this notification, This will automatically execute your  
+outstanding request for account Deactivation and your email will be  
+removed from our data base.
+
+Thank you for using our Web.Account e-mail!
+We hope to serve you better
+warning Code: ASPH8B02AXV
+
+Kind regards,
+Webmail Service Team Management.
+ABN 33
+All rights reserved ©2010.
+
+----------------------------------------------------------------
+This message was sent using IMP, the Internet Messaging Program.
+
