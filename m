@@ -1,72 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932226Ab0JXIiI (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Oct 2010 04:38:08 -0400
-Received: from mail.karo-electronics.de ([213.146.116.110]:42128 "EHLO
-	mail.karo-electronics.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932193Ab0JXIiG (ORCPT
+	id S932289Ab0JXIi2 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Oct 2010 04:38:28 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:46038 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S932229Ab0JXIi0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Oct 2010 04:38:06 -0400
-Message-ID: <19651.61503.118511.923142@ipc1.ka-ro>
-Date: Sun, 24 Oct 2010 10:37:19 +0200
-From: =?iso-8859-15?Q?Lothar_Wa=DFmann?= <LW@KARO-electronics.de>
-To: Nguyen Dinh-R00091 <R00091@freescale.com>
-Cc: Uwe =?iso-8859-15?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        amit.kucheria@canonical.com, linux@arm.linux.org.uk,
-        s.hauer@pengutronix.de, linux-kernel@vger.kernel.org,
-        grant.likely@secretlab.ca, valentin.longchamp@epfl.ch, daniel@caiaq.de,
-        bryan.wu@canonical.com, linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset=iso-8859-1
-Content-Transfer-Encoding: 8bit
-Subject: RE: [PATCHv5 2/3] ARM: imx: Add gpio-keys to plat-mxc
-In-Reply-To: <86A0E76937111F4C92FABEC0A2098851051D6116@az33exm21>
-References: <1287766575-4092-1-git-send-email-Dinh.Nguyen@freescale.com>
-	<1287766575-4092-2-git-send-email-Dinh.Nguyen@freescale.com>
-	<20101022182812.GA8554@pengutronix.de>
-	<86A0E76937111F4C92FABEC0A2098851051D6090@az33exm21>
-	<20101022194215.GB8554@pengutronix.de>
-	<86A0E76937111F4C92FABEC0A2098851051D6116@az33exm21>
-X-Mailer: VM 8.0.9 under Emacs 22.2.1 (i486-pc-linux-gnu)
+	Sun, 24 Oct 2010 04:38:26 -0400
+Date: Sun, 24 Oct 2010 09:37:01 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Alon Ziv <alon@nolaviz.org>
+Cc: Greg KH <gregkh@suse.de>, Alon Ziv <alon+git@nolaviz.org>,
+        linux-usb@vger.kernel.org, Johan Hovold <jhovold@gmail.com>,
+        Stefani Seibold <stefani@seibold.net>,
+        Jason Wessel <jason.wessel@windriver.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] Export usb_serial_generic_write_room for use in
+ other modules
+Message-ID: <20101024093701.67850d1b@lxorguk.ukuu.org.uk>
+In-Reply-To: <4CC3159E.3030500@nolaviz.org>
+References: <1287850818-12050-1-git-send-email-alon-git@nolaviz.org>
+	<1287850818-12050-2-git-send-email-alon-git@nolaviz.org>
+	<20101023163747.GA20381@suse.de>
+	<4CC3159E.3030500@nolaviz.org>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-> >> How do you suggest I define this pin for Babbage board only? Do I add to iomux-mx51.h
-> >> #define MX51_BABBAGE_PAD_EIM_A27__GPIO_2_21             IOMUX_PAD(0x45c, 0x0c8, 1, 0x0,
-> >0,MX51_GPIO_PAD_CTRL | PAD_CTL_PUS_100K_UP) ?
-> >>
-> >> Or do I define the pin in the board file with a 100K_UP? Like how eukrea_mbimxsd-baseboard.c did for
-> >MBIMXSD_GPIO_3_31?
-> >I'd suggest something local to your machine file.  Unfortunately I don't
-> >see an easy way to reuse the generic MX51_PAD_EIM_A27__GPIO_2_21 to
-> >define your local symbol.  So I think something like you wrote above
-> >should be fine.
-> >
-> >Too bad that
-> >
-> >	#define MX51_BABBAGE_PAD_EIM_A27__GPIO_2_21 (MX51_PAD_EIM_A27__GPIO_2_21 | PAD_CTL_PUS_100K_UP)
-> >
-> >doesn't work.
-> 
-> Yes, I also wish I didn't have to redefine the pin just because of PAD setting change. I am going to send out another patch that basically sets the pad_desc.pad_ctrl=PAD_SETTING in mxc_init_board() function. I think it's a bit cleaner than having to redefine the pin.
-> 
-IMO the 'struct pad_desc' should be replaced with an u64 bitmap that
-would allow for the pullup and other definitions that may be board
-specific to be simply or'ed to the pad definition.
+> The generic code does not invoke the write_room callback before invoking
+> break_ctl, so there is no way to use this function in usb_serial.
 
-I could try to provide a patch if this is agreed on.
+Why would it ?
 
-
-Lothar Waßmann
--- 
-___________________________________________________________
-
-Ka-Ro electronics GmbH | Pascalstraße 22 | D - 52076 Aachen
-Phone: +49 2408 1402-0 | Fax: +49 2408 1402-10
-Geschäftsführer: Matthias Kaussen
-Handelsregistereintrag: Amtsgericht Aachen, HRB 4996
-
-www.karo-electronics.de | info@karo-electronics.de
-___________________________________________________________
+Alan
