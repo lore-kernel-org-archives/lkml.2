@@ -1,96 +1,176 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932982Ab0JXVRl (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Oct 2010 17:17:41 -0400
-Received: from ipmail05.adl6.internode.on.net ([150.101.137.143]:12907 "EHLO
-	ipmail05.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932970Ab0JXVRj (ORCPT
+	id S932987Ab0JXVSc (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Oct 2010 17:18:32 -0400
+Received: from mail.openrapids.net ([64.15.138.104]:48517 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S932970Ab0JXVSa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Oct 2010 17:17:39 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvsEALM+xEx5Ld2G/2dsb2JhbAChXXK6IYVIBIUM
-Date: Mon, 25 Oct 2010 08:17:35 +1100
-From: Nick Piggin <npiggin@kernel.dk>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Christoph Hellwig <hch@infradead.org>, Nick Piggin <npiggin@kernel.dk>,
-        Andi Kleen <andi@firstfloor.org>, Dave Chinner <david@fromorbit.com>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 11/18] fs: Introduce per-bucket inode hash locks
-Message-ID: <20101024211735.GB3137@amd>
-References: <20101016075703.GO19147@amd>
- <20101016161642.GC16861@infradead.org>
- <20101016171213.GC3240@amd>
- <20101017004610.GB29677@dastard>
- <20101017022539.GA3317@amd>
- <87iq0za32l.fsf@basil.nowhere.org>
- <20101018162105.GB9571@infradead.org>
- <20101019070057.GA7770@amd>
- <20101019165044.GA13531@infradead.org>
- <alpine.LFD.2.00.1010241728510.11642@localhost6.localdomain6>
+	Sun, 24 Oct 2010 17:18:30 -0400
+Date: Sun, 24 Oct 2010 17:18:24 -0400
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@linux.intel.com>,
+        Pekka Enberg <penberg@cs.helsinki.fi>, Ingo Molnar <mingo@redhat.com>
+Subject: Re: [BUG 2.6.36] early serial console undefined refs
+Message-ID: <20101024211824.GA19172@Krystal>
+References: <20101023144352.GA2818@Krystal> <4CC31D6E.6040206@kernel.org> <4CC31DF9.9020307@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.00.1010241728510.11642@localhost6.localdomain6>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <4CC31DF9.9020307@kernel.org>
+X-Editor: vi
+X-Info: http://www.efficios.com
+X-Operating-System: Linux/2.6.26-2-686 (i686)
+X-Uptime: 17:16:49 up 32 days,  1:19,  4 users,  load average: 0.14, 0.20,
+	0.13
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Oct 24, 2010 at 05:44:24PM +0200, Thomas Gleixner wrote:
-> On Tue, 19 Oct 2010, Christoph Hellwig wrote:
-> 
-> > On Tue, Oct 19, 2010 at 06:00:57PM +1100, Nick Piggin wrote:
-> > > But it is still "magic". Because you don't even know whether it
-> > > is a spin or sleeping lock, let alone whether it is irq or bh safe.
-> > > You get far more information seeing a bit_spin_lock(0, &hlist) call
-> > > than hlist_lock().
-> 
-> Errm, when hlist_lock() has proper documentation than it should not be
-> rocket science to figure out what it does.
-
-Right, a look at the docmentation and another layer of indirection
-for a reader.
-
-And it's not exactly "properly" documented. It doesn't say if it may
-turn into a sleeping lock or is allowed to be used from irq or bh
-context.
-
-
-> And if you use bit 0 of hlist then you better have helper functions to
-> access it anyway. We do that with other data types which (ab)use the
-> lower two bits of pointers.
-> 
-> > To get back a bit to the point:
+* Yinghai Lu (yinghai@kernel.org) wrote:
+> On 10/23/2010 10:37 AM, Yinghai Lu wrote:
+> > On 10/23/2010 07:43 AM, Mathieu Desnoyers wrote:
+> >> Hi,
+> >>
+> >> Building 2.6.36 fails for me with the following link error (config below).
+> >> I think commit f4ed2877b16e8146427306aea8819adac5c88374 is very likely to be the
+> >> culprit, but given other changes that were done afterward, the fix is not as
+> >> easy as a simple revert.
+> >>
+> >> Thoughts ?
+> >>
+> >>   Building modules, stage 2.
+> >>   MODPOST 65 modules
+> >>   LD      arch/x86/boot/setup.elf
+> >> arch/x86/boot/early_serial_console.o: In function `early_serial_init':
+> >> /home/compudj/git/morestable/linux-2.6-lttng/arch/x86/boot/early_serial_console.c:40: undefined reference to `early_serial_base'
 > > 
-> >  - we have a new bl_hlist sturcture which combines a hash list and a
-> >    lock embedded into the head
-> >  - the reason why we do it is to be able to use a bitlock
+> > your tree may have problem. Did you try clean tree from Linus ?
+> > 
+> > early_seria_console.c
+> > 
+> > #include "boot.h"
+> > ...
+> > static void early_serial_init(int port, int baud)
+> > 
+> > 
+> > and in boot.h, we have
+> > /* early_serial_console.c */
+> > extern int early_serial_base;
 > 
-> And if you design that structure clever, then simple dereferencing of
-> it (w/o casting magic) should make the compiler barf. So you are
-> forced to use the helper functions.
+> at least linus's tree and tip are ok with your config
+
+I did a make clean, and it fixed the problem. I tried checking out a 2.6.35.7
+kernel, build it, checkout 2.6.36 on top, then build without make clean, and it
+works fine now. So I cannot reproduce the problem.
+
+Thanks for the hint!
+
+Mathieu
+
+
 > 
-> > Furthermore it allows the RT people to simply throw a mutex into the
-> > head and everything keeps working without touching a sinlge line of
-> > code outside of hlist_bl.h.
-> 
-> Yes, please use proper helper functions. Having to change code is a
-> horror for RT, when we can get away with a single change in a header
-> file.
-> 
-> Aside of RT there is another advantage of being able to change the
-> lock implementation at a single place: you can change it to a real
-> spinlock and have lockdep coverage of that code. I fundamentally hate
-> bit_spin_locks for sneaking around lockdep.
+>   MODPOST 65 modules
+>   CC      arch/x86/boot/a20.o
+>   CC      arch/x86/boot/cmdline.o
+>   AS      arch/x86/boot/copy.o
+>   HOSTCC  arch/x86/boot/mkcpustr
+>   CC      arch/x86/ia32/ia32_aout.mod.o
+>   CC      arch/x86/boot/cpucheck.o
+>   CC      arch/x86/kvm/kvm-intel.mod.o
+>   CC      arch/x86/boot/early_serial_console.o
+>   CC      arch/x86/boot/edd.o
+>   CC      arch/x86/kvm/kvm.mod.o
+>   VOFFSET arch/x86/boot/voffset.h
+>   CC      arch/x86/oprofile/oprofile.mod.o
+>   CC      crypto/crc32c.mod.o
+>   CC      drivers/ata/sata_mv.mod.o
+>   CC      drivers/base/firmware_class.mod.o
+>   LDS     arch/x86/boot/compressed/vmlinux.lds
+>   AS      arch/x86/boot/compressed/head_64.o
+>   CC      drivers/block/cryptoloop.mod.o
+>   CC      arch/x86/boot/compressed/misc.o
+>   CC      drivers/block/loop.mod.o
+>   CC      drivers/cpufreq/cpufreq_ondemand.mod.o
+>   CC      drivers/firmware/dcdbas.mod.o
+>   CC      drivers/hwmon/hwmon-vid.mod.o
+>   CC      drivers/hwmon/it87.mod.o
+>   CC      drivers/input/input-polldev.mod.o
+>   CC      drivers/md/dm-crypt.mod.o
+>   CC      arch/x86/boot/compressed/string.o
+>   CC      drivers/md/dm-delay.mod.o
+>   CC      arch/x86/boot/compressed/cmdline.o
+>   CC      drivers/md/dm-log.mod.o
+>   CC      arch/x86/boot/compressed/early_serial_console.o
+>   CC      drivers/md/dm-mirror.mod.o
+>   OBJCOPY arch/x86/boot/compressed/vmlinux.bin
+>   CC      drivers/md/dm-multipath.mod.o
+>   GZIP    arch/x86/boot/compressed/vmlinux.bin.gz
+>   CC      drivers/md/dm-region-hash.mod.o
+>   CC      drivers/md/dm-round-robin.mod.o
+>   CC      drivers/md/dm-snapshot.mod.o
+>   CC      drivers/md/dm-zero.mod.o
+>   CC      drivers/net/bonding/bonding.mod.o
+>   CC      drivers/net/dummy.mod.o
+>   CC      drivers/net/e1000/e1000.mod.o
+>   CC      drivers/net/e1000e/e1000e.mod.o
+>   CC      drivers/net/s2io.mod.o
+>   CC      drivers/net/skge.mod.o
+>   CC      drivers/net/sky2.mod.o
+>   CC      drivers/net/tun.mod.o
+>   CC      drivers/scsi/dpt_i2o.mod.o
+>   CC      drivers/scsi/qla4xxx/qla4xxx.mod.o
+>   CC      drivers/scsi/scsi_transport_iscsi.mod.o
+>   CC      drivers/scsi/scsi_wait_scan.mod.o
+>   MKPIGGY arch/x86/boot/compressed/piggy.S
+>   AS      arch/x86/boot/compressed/piggy.o
+>   CC      drivers/usb/misc/cytherm.mod.o
+>   LD      arch/x86/boot/compressed/vmlinux
+>   CC      arch/x86/boot/main.o
+>   CC      drivers/usb/serial/pl2303.mod.o
+>   CC      arch/x86/boot/mca.o
+>   CC      arch/x86/boot/memory.o
+>   CC      drivers/usb/serial/usbserial.mod.o
+>   CC      arch/x86/boot/pm.o
+>   AS      arch/x86/boot/pmjump.o
+>   CC      drivers/video/output.mod.o
+>   CC      arch/x86/boot/printf.o
+>   CC      lib/libcrc32c.mod.o
+>   CC      arch/x86/boot/regs.o
+>   CC      arch/x86/boot/string.o
+>   CC      net/ipv4/inet_diag.mod.o
+>   CC      arch/x86/boot/tty.o
+>   CC      arch/x86/boot/video.o
+>   CC      net/ipv4/tcp_diag.mod.o
+>   CC      arch/x86/boot/video-mode.o
+>   CC      net/netfilter/nfnetlink.mod.o
+>   CC      arch/x86/boot/version.o
+>   CC      net/netfilter/nfnetlink_log.mod.o
+>   CC      arch/x86/boot/video-vga.o
+>   CC      arch/x86/boot/video-vesa.o
+>   CC      net/netfilter/nfnetlink_queue.mod.o
+>   CC      arch/x86/boot/video-bios.o
+>   CC      samples/kprobes/jprobe_example.mod.o
+>   OBJCOPY arch/x86/boot/vmlinux.bin
+>   CPUSTR  arch/x86/boot/cpustr.h
+>   ZOFFSET arch/x86/boot/zoffset.h
+>   CC      samples/kprobes/kprobe_example.mod.o
+>   CC      arch/x86/boot/cpu.o
+>   AS      arch/x86/boot/header.o
+>   LD      arch/x86/boot/setup.elf
+>   CC      samples/kprobes/kretprobe_example.mod.o
+>   OBJCOPY arch/x86/boot/setup.bin
+>   BUILD   arch/x86/boot/bzImage
+> Root device is (8, 6)
+> Setup is 12972 bytes (padded to 13312 bytes).
+> System is 3475 kB
+> CRC f34900df
+> Kernel: arch/x86/boot/bzImage is ready  (#210)
 
-You do not want to add a bloated mutex to each inode hash bucket and
-think you can just dust off your hands and walk away.  You would
-probably make a smaller auxiliary hash of locks, sanely sized, and
-protect it with that.
-
-So it would be wrong to just bloat hlist_bl by a factor of several times
-(how big is a mutex in -rt?) without doing anything else.
-
-Although a sane locking macro and structure like I had, would perfectly
-allow you to switch locks in a single place just the same.
-
+-- 
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
