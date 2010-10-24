@@ -1,49 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932856Ab0JXPKn (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Oct 2010 11:10:43 -0400
-Received: from webhosting01.bon.m2soft.com ([195.38.20.32]:37423 "EHLO
-	webhosting01.bon.m2soft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932085Ab0JXPKm (ORCPT
+	id S932859Ab0JXPdO (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Oct 2010 11:33:14 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:49236 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932106Ab0JXPdN convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Oct 2010 11:10:42 -0400
-Date: Sun, 24 Oct 2010 17:09:19 +0200
-From: Nicolas Kaiser <nikai@nikai.net>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Sundar Iyer <sundar.iyer@stericsson.com>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] drivers/input: ab8500-ponkey: fix error path
-Message-ID: <20101024170919.18cf4372@absol.kitzblitz>
-Organization: -
-X-Face: "fF&[w2"Nws:JNH4'g|:gVhgGKLhj|X}}&w&V?]0=,7n`jy8D6e[Jh=7+ca|4~t5e[ItpL5
- N'y~Mvi-vJm`"1T5fi1^b!&EG]6nW~C!FN},=$G?^U2t~n[3;u\"5-|~H{-5]IQ2
-X-Mailer: Claws Mail (Linux)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Sun, 24 Oct 2010 11:33:13 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :content-type:content-transfer-encoding;
+        b=GZNoccUo/U/Dxl1z98ry/WnTrnFJnelRYXTv4ox9n1s3WgQslFgpArwuv1cDJ2tJVl
+         Xd6AzsnMJznT3NIzUR+stfgIMR9EAc3sH62nJjnKEmFwgGOXv8ADm/eqo/adtUXfeNqN
+         gSGpT/QeLOmlGYOJUNF6g6aZrk7L0Eq8nxh10=
+MIME-Version: 1.0
+In-Reply-To: <AANLkTinohRReVsYoetEjqAp-XrL9C2jxGgXLVnLafSUM@mail.gmail.com>
+References: <AANLkTinbeAn4ObFSb4f4znjYHGNKTMnfV7eQja+cnsLe@mail.gmail.com>
+ <20100911065725.GA6279@fancy-poultry.org> <AANLkTikTq=GTy-XPD6ye6kStASNL4Pa07wHhH_ABmpm1@mail.gmail.com>
+ <AANLkTim7RvpOcBajyqCkrBP8EW-FwNysvwuF5MaDJiFV@mail.gmail.com>
+ <AANLkTi=PCd1=w-mkc=Sj4EEda=PnTv0JGyV1Ysxq4ej4@mail.gmail.com>
+ <AANLkTikLSFFpbgX+rBR5banBygmB6rRvzMBYKfPcFPuJ@mail.gmail.com>
+ <4C8C9834.8060201@redhat.com> <AANLkTi=8jJMz3f0VGwg+6P+BJEfxj6i-jBkGmqx8hCVg@mail.gmail.com>
+ <AANLkTinohRReVsYoetEjqAp-XrL9C2jxGgXLVnLafSUM@mail.gmail.com>
+From: dave b <db.pub.mail@gmail.com>
+Date: Mon, 25 Oct 2010 02:32:52 +1100
+Message-ID: <AANLkTikqhMbW7sWbbU_we5YE9Y9U=MPUTm553AmCyH51@mail.gmail.com>
+Subject: Fwd: [dm-crypt] [BUG] bad performance and system stalls when using dm-crypt
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Looks like an obvious typo to me.
+I am forwarding this to the linux kernel mailing list to see if anyone
+is actually interested with this bug or not. I suspect that the patch
+to allow DM-CRYPT to use multiple cpus(Scale to multiple CPUs) will
+remove most of the problem but *not* all of it. As I previously was
+triggering the bug on a single core system.
 
-Signed-off-by: Nicolas Kaiser <nikai@nikai.net>
----
- drivers/input/misc/ab8500-ponkey.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+See https://bugzilla.kernel.org/show_bug.cgi?id=18302 for the original thread.
+I filed this as bug  18302 at
+https://bugzilla.kernel.org/show_bug.cgi?id=18302 .
 
-diff --git a/drivers/input/misc/ab8500-ponkey.c b/drivers/input/misc/ab8500-ponkey.c
-index 98f8ede..3d3288a 100644
---- a/drivers/input/misc/ab8500-ponkey.c
-+++ b/drivers/input/misc/ab8500-ponkey.c
-@@ -107,7 +107,7 @@ static int __devinit ab8500_ponkey_probe(struct platform_device *pdev)
- 	return 0;
- 
- err_free_dbr_irq:
--	free_irq(ponkey->irq_dbf, ponkey);
-+	free_irq(ponkey->irq_dbr, ponkey);
- err_free_dbf_irq:
- 	free_irq(ponkey->irq_dbf, ponkey);
- err_free_mem:
--- 
-1.7.2.2
+
+
+---------- Forwarded message ----------
+From: dave b <db.pub.mail@gmail.com>
+Date: 7 October 2010 04:58
+Subject: Re: [dm-crypt] [BUG] bad performance and system stalls when
+using dm-crypt
+To: Milan Broz <mbroz@redhat.com>
+Cc: dm-crypt@saout.de
+
+
+On 12 September 2010 21:45, dave b <db.pub.mail@gmail.com> wrote:
+> On 12 September 2010 19:07, Milan Broz <mbroz@redhat.com> wrote:
+>> On 09/12/2010 10:36 AM, dave b wrote:
+>>>
+>>> Should I forward my 'bug' to the linux kernel maliing list ?
+>>
+>> Better report it to kernel bugzilla, it is better for tracking.
+>> (Also see https://bugzilla.kernel.org/show_bug.cgi?id=17892 )
+>
+> Will do :)
+>
+
+Ok no one has responded to that bug ... :/
+On a system lock up I ssh into the box and saw wait time was 83% in top.
+I also saw that kcrypd was using 23% of cpu time - and that only one
+core was in use.
+1012 root      20   0     0    0    0 S   11  0.0  30:15.46 kcryptd
+
+The system was stalled for 20minutes ...
+
+load average: 19.16, 15.74, 11.43
+
+--
+Let me take you a button-hole lower.            -- William Shakespeare, "Love's
+Labour's Lost"
