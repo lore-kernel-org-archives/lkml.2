@@ -1,81 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753047Ab0JXFMr (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Oct 2010 01:12:47 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:46390 "EHLO mx2.suse.de"
+	id S1752791Ab0JXFNj (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Oct 2010 01:13:39 -0400
+Received: from mail.wdtv.com ([66.118.69.84]:47742 "EHLO mail.wdtv.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752666Ab0JXFMp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Oct 2010 01:12:45 -0400
-Subject: Re: [GIT PULL] first round of SCSI updates for the merge window
-From: James Bottomley <James.Bottomley@suse.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-In-Reply-To: <AANLkTikZ-vePH+Wvf9S0-0PG1h+rRNByKEmXC2XENH1=@mail.gmail.com>
-References: <1287764862.8930.220.camel@mulgrave.site>
-	 <AANLkTikZ-vePH+Wvf9S0-0PG1h+rRNByKEmXC2XENH1=@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sun, 24 Oct 2010 00:12:36 -0500
-Message-ID: <1287897156.3003.373.camel@mulgrave.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.1.2 
+	id S1751275Ab0JXFNi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 24 Oct 2010 01:13:38 -0400
+From: Gene Heskett <gene.heskett@gmail.com>
+To: Randy Dunlap <randy.dunlap@oracle.com>
+Subject: Re: 2.6.36, make oldconfig broken
+Date: Sun, 24 Oct 2010 01:13:32 -0400
+User-Agent: KMail/1.13.5 (Linux/2.6.36; KDE/4.5.2; i686; ; )
+References: <201010221229.36996.gene.heskett@gmail.com> <201010222054.52066.gene.heskett@gmail.com> <4CC38D8F.7010104@oracle.com>
+In-Reply-To: <4CC38D8F.7010104@oracle.com>
+Cc: LKML <linux-kernel@vger.kernel.org>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201010240113.33015.gene.heskett@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-10-22 at 17:48 -0700, Linus Torvalds wrote:
-> On Fri, Oct 22, 2010 at 9:27 AM, James Bottomley
-> <James.Bottomley@suse.de> wrote:
-> > This represents the usual assortment of driver updates (bnx2i, zfcp,
-> > qla, lpfc, ipr ..) plus several libfc and fcoe updates and a partial bfa
-> > cleanup.
-> 
-> Why do you say "bfa cleanup"?
-> 
-> There's a _single_ commit that looks like this:
-> 
->  220 files changed, 34823 insertions(+), 43478 deletions(-)
-> 
-> and which apparently rewrites the whole f*cking driver, with no
-> explanations, no nothing. Why should anything like this be considered
-> acceptable?
-> 
-> I'm going to pull it this once, because let's face it, nobody sane
-> cares about that idiotic driver to begin with (and it does remove a
-> lot more lines than it adds). But really, if I see something like that
-> again, I will just tell you to go away and not send me crap like this
-> again.
-> 
-> If it's that kind of crap, it should go into staging, or it shouldn't
-> have been merged into the kernel in the first place.
-> 
-> Seriously. You need to start showing better taste. I realize that most
-> of SCSI is crazy specialty hardware that is used by just a few people,
-> but if you don't start pushing back on those vendors and make them do
-> proper changes in small pieces and with actual commentary, then _I_ am
-> going to push back at you. Hard. By simply not pulling crap.
-> 
-> This is not the first time I've been disgusted with the SCSI tree. And
-> quite frankly, drivers like BFA are so totally irrelevant to anything,
-> that I will have absolutely no problems with just saying "screw it, if
-> they can't behave, they get removed from the kernel".
-> 
-> And don't blame it on bad vendors that won't do a good job. If they
-> don't do a good job, then STOP TAKING THEIR CRAP. Make them understand
-> that they need to work with the process, not do some kind of random
-> "change everything, with no actual explanations". Blame me if you
-> can't grow the balls to stand up to them. Tell them that I simply
-> won't take it unless they clean up their act.
-> 
-> Because I really won't.
+On Saturday, October 23, 2010, Randy Dunlap wrote:
+>On 10/22/10 17:54, Gene Heskett wrote:
+>> On Friday, October 22, 2010, Randy Dunlap wrote:
+>>> On 10/22/10 13:08, Gene Heskett wrote:
+>>>> On Friday, October 22, 2010, Randy Dunlap wrote:
+>>>>> On Fri, 22 Oct 2010 12:29:36 -0400 Gene Heskett wrote:
+>>>>> 
+>>>>> [adding linux-kbuild]
+>>>>> 
+>>>>>> Greets all;
+>>>>>> 
+>>>>>> I have managed to get 2.6.36 to a semi-usable state, but I have
+>>>>>> major breakage yet.
+>>>>>> 
+>>>>>> Question: what happens if I simply move my working 2.6.35.7 .config
+>>>>>> into the 2.6.36 tree and build it from that?
+>>>>> 
+>>>>> I think that it runs 'make oldconfig' automatically for you.
+>>>>> 
+>>>>>> It can't be any worse than what the broken 'make oldconfig' did to
+>>>>>> it. What it output changed the disk drivers, graphic card drivers
+>>>>>> and just plain threw away at least a hundred lines in the
+>>>>>> multimedia drivers section.
+>>> 
+>>> When I use your config-2.6.36.7 file on 2.6.36 and run 'make
+>>> oldconfig',
+>> 
+>> Correction, that config was from 2.6.35.7.
+>> 
+>>> I don't see anything like changes in disk or graphics card drivers and
+>>> I don't see 100 or more lines thrown away in the multimedia drivers.
+>>> 
+>>> Did you use 'make oldconfig' or did you use that script that you have
+>>> mentioned and posted in the past?  Could it be causing problems?
+>> 
+>> My script (buildit26) takes an old argument and a new argument, that
+>> and any patch names needed are edited into it, not passed as
+>> arguments, although I have thought of doing that, but as that can lead
+>> to typu's getting past these old fingers, I don't trust me doing it
+>> with live arguments.  It copy's the old .configs to /tmp long enough
+>> to unpack the new, then copy's them into the new tree.  And they do a
+>> make oldconfig after any patches have been applied.
+>> 
+>> It hasn't been edited since I ran it, so I'll attach it.  Maybe you can
+>> see something I missed.
+>
+>Hi Gene,
+>
+>I don't understand the last few lines of buildit26 script:
+>
+>make oldconfig
+>make mrproper
+>make xconfig
+>
+>
+>'make mrproper' is going to blow away the .config file that was just
+>generated by 'make oldconfig'.  'make help' in the kernel top-level
+>directory says (for mrproper):
+>
+>  mrproper        - Remove all generated files + config + various backup
+>files
+>
+>then 'make xconfig' is basically going to give you a 'make defconfig', so
+>yes, you would see lots of .config file differences from the previous
+>kernel version.
 
-OK, so message received and understood.   The warning has already been
-conveyed to the bfa maintainers (over a month ago). All of us appreciate
-the one time grace.  I think this driver will finally start moving in
-the right direction.
+Oops, damn, I think I just proved I have oldtimers.
 
-James
+I'll nuke that mrproper line then.  It was the top stanza in the error log 
+generated by the failed dkms build that caused me to add it in the first 
+place.
 
+In other words, an outright attack of dumbass on my part.  Thanks for not 
+saying it that way. :)
 
+-- 
+Cheers, Gene
+"There are four boxes to be used in defense of liberty:
+ soap, ballot, jury, and ammo. Please use in that order."
+-Ed Howdershelt (Author)
+NOTICE: anyone seen smoking will be assumed to be on fire and will be
+        summarily put out.
