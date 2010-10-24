@@ -1,62 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932954Ab0JXUg0 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Oct 2010 16:36:26 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:33720 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932793Ab0JXUgY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Oct 2010 16:36:24 -0400
-Date: Sun, 24 Oct 2010 21:36:20 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: Dave Chinner <david@fromorbit.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 16/21] fs: Protect inode->i_state with the inode->i_lock
-Message-ID: <20101024203620.GV19804@ZenIV.linux.org.uk>
-References: <1287622186-1935-1-git-send-email-david@fromorbit.com>
- <1287622186-1935-17-git-send-email-david@fromorbit.com>
- <20101022015622.GE19804@ZenIV.linux.org.uk>
- <20101022031431.GK12506@dastard>
- <20101022103705.GK19804@ZenIV.linux.org.uk>
- <20101023213752.GR19804@ZenIV.linux.org.uk>
- <20101024141310.GA21513@infradead.org>
- <20101024162131.GA23677@infradead.org>
- <20101024191735.GU19804@ZenIV.linux.org.uk>
- <20101024200432.GA21376@infradead.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101024200432.GA21376@infradead.org>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+	id S932941Ab0JXUgH (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Oct 2010 16:36:07 -0400
+Received: from igloo.linux.gr ([62.1.205.36]:33390 "EHLO igloo.linux.gr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932698Ab0JXUgD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 24 Oct 2010 16:36:03 -0400
+X-Hellug-MailScanner-From: serzan@hellug.gr
+X-Hellug-MailScanner-SpamCheck: not spam, SpamAssassin (not cached,
+	score=-2.9, required 5, autolearn=not spam, ALL_TRUSTED -1.00,
+	BAYES_00 -1.90)
+X-Hellug-MailScanner: Found to be clean
+X-Hellug-MailScanner-ID: o9OKWI5D003670
+From: Serafeim Zanikolas <sez@debian.org>
+To: herton@mandriva.com.br, htl10@users.sourceforge.net,
+        Larry.Finger@lwfinger.net, linville@tuxdriver.com, joe@perches.com,
+        davem@davemloft.net, linux-wireless@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: Serafeim Zanikolas <sez@debian.org>
+Subject: [PATCH] drivers: rtl818x: request DMA-able memory
+Date: Sun, 24 Oct 2010 22:32:07 +0200
+Message-Id: <1287952327-9924-1-git-send-email-sez@debian.org>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Oct 24, 2010 at 04:04:32PM -0400, Christoph Hellwig wrote:
-> On Sun, Oct 24, 2010 at 08:17:35PM +0100, Al Viro wrote:
-> > 	* call in ext2_remount() is hogwash - we do that with at least
-> > root inode pinned down, so it will fail, along with the remount attempt.
-> 
-> And having it fail is a good thing.  XIP mode means different file and
-> address_space operations, which we don't even try to deal with right
-> now.  Not allowing transitions from/to it is the right thing.
+Despite the indicated intention in comment, the kmalloc() call was not
+explicitly requesting memory from ZONE_DMA.
 
-Exactly.  But that should be done without that ridiculous call to
-invalidate_inodes() - we should simply fail remount() and be done
-with that.
+Signed-off-by: Serafeim Zanikolas <sez@debian.org>
+---
+ drivers/net/wireless/rtl818x/rtl8187_dev.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
 
-> > 	* smb reconnect logics.  AFAICS, that's complete crap; we *never*
-> > retain inodes on smbfs.  IOW, nothing for invalidate_inodes() to do, other
-> > than evict fsnotify marks.  Which is to say, we are calling the wrong
-> > function there, even assuming that fsnotify should try to work there.
-> 
-> I don't think it should mess with fsnotify.  fsnotify_unmount_inodes
-> assumes it's only called on umount right now, and sends umount
-> notifications to userspace (see my mail from a few days ago).  So if
-> you split invalidate_inodes it really should only go into the umount
-> one.
+diff --git a/drivers/net/wireless/rtl818x/rtl8187_dev.c b/drivers/net/wireless/rtl818x/rtl8187_dev.c
+index 38fa824..771794d 100644
+--- a/drivers/net/wireless/rtl818x/rtl8187_dev.c
++++ b/drivers/net/wireless/rtl818x/rtl8187_dev.c
+@@ -1343,7 +1343,8 @@ static int __devinit rtl8187_probe(struct usb_interface *intf,
+ 	priv->is_rtl8187b = (id->driver_info == DEVICE_RTL8187B);
+ 
+ 	/* allocate "DMA aware" buffer for register accesses */
+-	priv->io_dmabuf = kmalloc(sizeof(*priv->io_dmabuf), GFP_KERNEL);
++	priv->io_dmabuf = kmalloc(sizeof(*priv->io_dmabuf),
++				  GFP_DMA | GFP_KERNEL);
+ 	if (!priv->io_dmabuf) {
+ 		err = -ENOMEM;
+ 		goto err_free_dev;
+-- 
+1.7.1
 
-No, I mean that it's not obvious that fsnotify clients can realistically
-work on smbfs in the first place.  I.e. I suspect that fsnotify should
-refuse to set marks on that sucker.
