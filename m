@@ -1,67 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932916Ab0JXPpO (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Oct 2010 11:45:14 -0400
-Received: from www.tglx.de ([62.245.132.106]:35809 "EHLO www.tglx.de"
+	id S1754946Ab0JXQJL (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Oct 2010 12:09:11 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:7168 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932896Ab0JXPpM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Oct 2010 11:45:12 -0400
-Date: Sun, 24 Oct 2010 17:44:24 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Christoph Hellwig <hch@infradead.org>
-cc: Nick Piggin <npiggin@kernel.dk>, Andi Kleen <andi@firstfloor.org>,
-        Dave Chinner <david@fromorbit.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 11/18] fs: Introduce per-bucket inode hash locks
-In-Reply-To: <20101019165044.GA13531@infradead.org>
-Message-ID: <alpine.LFD.2.00.1010241728510.11642@localhost6.localdomain6>
-References: <1286515292-15882-12-git-send-email-david@fromorbit.com> <20101008185409.GA29251@infradead.org> <20101016075703.GO19147@amd> <20101016161642.GC16861@infradead.org> <20101016171213.GC3240@amd> <20101017004610.GB29677@dastard> <20101017022539.GA3317@amd>
- <87iq0za32l.fsf@basil.nowhere.org> <20101018162105.GB9571@infradead.org> <20101019070057.GA7770@amd> <20101019165044.GA13531@infradead.org>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1754308Ab0JXQJJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 24 Oct 2010 12:09:09 -0400
+Message-ID: <4CC45A22.7090801@redhat.com>
+Date: Sun, 24 Oct 2010 18:09:06 +0200
+From: Milan Broz <mbroz@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100914 Thunderbird/3.1.3
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Jeff Chua <jeff.chua.linux@gmail.com>
+CC: lkml <linux-kernel@vger.kernel.org>
+Subject: Re: linux-2.6.36 WARNING: at fs/sysfs/dir.c:451 sysfs_add_one+0x82/0x95()
+References: <AANLkTikmGE2Pz0=57i4CQZrnunFzQHpmFdha2nwivm=Q@mail.gmail.com>
+In-Reply-To: <AANLkTikmGE2Pz0=57i4CQZrnunFzQHpmFdha2nwivm=Q@mail.gmail.com>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 19 Oct 2010, Christoph Hellwig wrote:
-
-> On Tue, Oct 19, 2010 at 06:00:57PM +1100, Nick Piggin wrote:
-> > But it is still "magic". Because you don't even know whether it
-> > is a spin or sleeping lock, let alone whether it is irq or bh safe.
-> > You get far more information seeing a bit_spin_lock(0, &hlist) call
-> > than hlist_lock().
-
-Errm, when hlist_lock() has proper documentation than it should not be
-rocket science to figure out what it does.
-
-And if you use bit 0 of hlist then you better have helper functions to
-access it anyway. We do that with other data types which (ab)use the
-lower two bits of pointers.
-
-> To get back a bit to the point:
+On 10/24/2010 03:51 PM, Jeff Chua wrote:
+> Git pulled latest linux 2.6.36 (at
+> 35da7a307c535f9c2929cae277f3df425c9f9b1e), and 2nd mount for loop
+> device resulted in the following error. Has this been reported or
+> shall I bisect?
 > 
->  - we have a new bl_hlist sturcture which combines a hash list and a
->    lock embedded into the head
->  - the reason why we do it is to be able to use a bitlock
+> # mount -o loop cd.iso /mnt
+> # umount /mnt
+> 
+> # repeat a second time
+> # mount -o loop cd.iso /mnt
+> 
+> ------------[ cut here ]------------
+> WARNING: at fs/sysfs/dir.c:451 sysfs_add_one+0x82/0x95()
 
-And if you design that structure clever, then simple dereferencing of
-it (w/o casting magic) should make the compiler barf. So you are
-forced to use the helper functions.
-
-> Furthermore it allows the RT people to simply throw a mutex into the
-> head and everything keeps working without touching a sinlge line of
-> code outside of hlist_bl.h.
-
-Yes, please use proper helper functions. Having to change code is a
-horror for RT, when we can get away with a single change in a header
-file.
-
-Aside of RT there is another advantage of being able to change the
-lock implementation at a single place: you can change it to a real
-spinlock and have lockdep coverage of that code. I fundamentally hate
-bit_spin_locks for sneaking around lockdep.
+Please can you try patch I posted here 
+http://lkml.org/lkml/2010/10/24/30 ?
 
 Thanks,
-
-	tglx
+Milan
