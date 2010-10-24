@@ -1,63 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933071Ab0JXWIn (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Oct 2010 18:08:43 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:43901
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933047Ab0JXWIm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Oct 2010 18:08:42 -0400
-Date: Sun, 24 Oct 2010 15:09:05 -0700 (PDT)
-Message-Id: <20101024.150905.39179588.davem@davemloft.net>
-To: mkl@pengutronix.de
-Cc: masa-korg@dsn.okisemi.com, andrew.chih.howe.khor@intel.com,
-        sameo@linux.intel.com, margie.foster@intel.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, socketcan-core@lists.berlios.de,
-        kok.howg.ewe@intel.com, wg@grandegger.com, morinaga526@dsn.okisemi.com,
-        joel.clark@intel.com, yong.y.wang@intel.com, chripell@fsfe.org,
-        qi.wang@intel.com
-Subject: Re: [PATCH net-next-2.6 v1] can: Topcliff: Update PCH_CAN driver
- to 2.6.35
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <4CC4ADA5.8@pengutronix.de>
-References: <4CB8506C.3060600@dsn.okisemi.com>
-	<20101024.144312.104048720.davem@davemloft.net>
-	<4CC4ADA5.8@pengutronix.de>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	id S933078Ab0JXWKN (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Oct 2010 18:10:13 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:37116 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933047Ab0JXWKL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 24 Oct 2010 18:10:11 -0400
+Message-ID: <4CC4AEBB.6000505@suse.cz>
+Date: Mon, 25 Oct 2010 00:10:03 +0200
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.1.11) Gecko/20100714 SUSE/3.0.6 Thunderbird/3.0.6
+MIME-Version: 1.0
+To: Namhyung Kim <namhyung@gmail.com>
+Cc: Roman Zippel <zippel@linux-m68k.org>, linux-kbuild@vger.kernel.org,
+        "David S. Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] kconfig: don't select 64 bit option on sparc32 all{yes,mod}config
+References: <1287762484-8154-1-git-send-email-namhyung@gmail.com>
+In-Reply-To: <1287762484-8154-1-git-send-email-namhyung@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-2
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Marc Kleine-Budde <mkl@pengutronix.de>
-Date: Mon, 25 Oct 2010 00:05:25 +0200
-
-> On 10/24/2010 11:43 PM, David Miller wrote:
->> From: Masayuki Ohtak <masa-korg@dsn.okisemi.com>
->> Date: Fri, 15 Oct 2010 22:00:28 +0900
->> 
->>> CAN driver of Topcliff PCH
->>>
->>> Topcliff PCH is the platform controller hub that is going to be used in
->>> Intel's upcoming general embedded platform. All IO peripherals in
->>> Topcliff PCH are actually devices sitting on AMBA bus. 
->>> Topcliff PCH has CAN I/F. This driver enables CAN function.
->>>
->>> Signed-off-by: Masayuki Ohtake <masa-korg@dsn.okisemi.com>
->> 
->> Applied, thanks.
+On 22.10.2010 17:48, Namhyung Kim wrote:
+> The SPARC architecture provides 64BIT config option to select
+> build type and it is set to 1 on ARCH=sparc64 as a default value.
+> But in case of 32-bit, it is also set to 1 by the allyesconfig
+> logic, end result would be the same as of sparc64. So I think
+> it would be better if plain ARCH=sparc all{yes,mod}config do not
+> set it then we can test 32-bit build by default.
 > 
-> IMHO this driver needs some improvements. There are some open points
-> from Wolfgangs and my review. On the other side, it's a new driver and
-> there's some time left before it hits mainline.
+> Signed-off-by: Namhyung Kim <namhyung@gmail.com>
+> ---
+>  scripts/kconfig/confdata.c |    4 ++++
 
-When people have more than a week to review and provide feedback,
-and don't, I have zero sympathy especially this early in the
-release cycle.
+Can't this be fixed in the sparc Makefile/Kconfig instead? E.g. have
+ARCH=sparc -> ask
+ARCH=sparc64 -> CONFIG_64BIT=y
+ARCH=sparc32 -> # CONFIG_64BIT is not set
+like the x86/i386/x86_64 ARCH option for x86.
 
-So if adding it to the tree is what I have to do to get you guys to
-post your comments and suggest fixes, then that's what I am going to
-(continue) to do. :-)
-
+Michal
