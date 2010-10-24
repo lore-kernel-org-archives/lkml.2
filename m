@@ -1,42 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933136Ab0JXW2I (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Oct 2010 18:28:08 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:57987
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933104Ab0JXW2H (ORCPT
+	id S1751009Ab0JXWwu (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Oct 2010 18:52:50 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:45899 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750907Ab0JXWwt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Oct 2010 18:28:07 -0400
-Date: Sun, 24 Oct 2010 15:28:30 -0700 (PDT)
-Message-Id: <20101024.152830.102557040.davem@davemloft.net>
-To: holt@sgi.com
-Cc: w@1wt.eu, linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        linux-sctp@vger.kernel.org, kuznet@ms2.inr.ac.ru, pekkas@netcore.fi,
-        jmorris@namei.org, yoshfuji@linux-ipv6.org, kaber@trash.net,
-        vladislav.yasevich@hp.com, sri@us.ibm.com
-Subject: Re: [Patch] Limit sysctl_tcp_mem and sysctl_udp_mem initializers
- to prevent integer overflows.
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20101020120345.436404838@gulag1.americas.sgi.com>
-References: <20101020120336.967805943@gulag1.americas.sgi.com>
-	<20101020120345.436404838@gulag1.americas.sgi.com>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Sun, 24 Oct 2010 18:52:49 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=UtJkBIpDnipZfbLb5EIuzG/PtAm4idiacBfRWB3lEHaSLWIiSnN55BfWjRsyEPFJJR
+         Hrq6q8lx6I5tOFndbTVxUsq5BvqKpjQQtE0Dzv0E9U6UjMZTKQH7iB40zYL3viLcrfPY
+         jlZsS6HNkHLEukvr/YPRZTe5uML4ZjBaYH8rc=
+MIME-Version: 1.0
+In-Reply-To: <1287787911-4257-1-git-send-email-msb@chromium.org>
+References: <1287787911-4257-1-git-send-email-msb@chromium.org>
+Date: Mon, 25 Oct 2010 07:52:47 +0900
+Message-ID: <AANLkTinWp-M4S5EXz6-xJvHAnzdk96_5+d2OJVjCycsm@mail.gmail.com>
+Subject: Re: [PATCH] vmscan: move referenced VM_EXEC pages to active list
+From: Minchan Kim <minchan.kim@gmail.com>
+To: Mandeep Singh Baines <msb@chromium.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Rik van Riel <riel@redhat.com>, Mel Gorman <mel@csn.ul.ie>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Wu Fengguang <fengguang.wu@intel.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, wad@chromium.org, olofj@chromium.org,
+        Shaohua Li <shaohua.li@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Robin Holt <holt@sgi.com>
-Date: Wed, 20 Oct 2010 07:03:37 -0500
+On Sat, Oct 23, 2010 at 7:51 AM, Mandeep Singh Baines <msb@chromium.org> wrote:
+> In commit 64574746, "vmscan: detect mapped file pages used only once",
+> Johannes Weiner, added logic to page_check_reference to cycle again
+> used once pages.
+>
+> In commit 8cab4754, "vmscan: make mapped executable pages the first
+> class citizen", Wu Fengguang, added logic to shrink_active_list which
+> protects file-backed VM_EXEC pages by keeping them in the active_list if
+> they are referenced.
+>
+> This patch adds logic to move such pages from the inactive list to the
+> active list immediately if they have been referenced. If a VM_EXEC page
+> is seen as referenced during an inactive list scan, that reference must
+> have occurred after the page was put on the inactive list. There is no
+> need to wait for the page to be referenced again.
+>
+> Change-Id: I17c312e916377e93e5a92c52518b6c829f9ab30b
+> Signed-off-by: Mandeep Singh Baines <msb@chromium.org>
 
-> Subject: [Patch] Limit sysctl_tcp_mem and sysctl_udp_mem initializers to prevent integer overflows.
-> 
-> On a 16TB x86_64 machine, sysctl_tcp_mem[2], sysctl_udp_mem[2], and
-> sysctl_sctp_mem[2] can integer overflow.  Set limit such that they are
-> maximized without overflowing.
-> 
-> Signed-off-by: Robin Holt <holt@sgi.com>
+It seems to be similar to http://www.spinics.net/lists/linux-mm/msg09617.html.
+I don't know what it is going. Shaohua?
 
-I'll queue this up for -stable, thanks Robin!
+
+
+-- 
+Kind regards,
+Minchan Kim
