@@ -1,43 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932301Ab0JXTmw (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Oct 2010 15:42:52 -0400
-Received: from vms173011pub.verizon.net ([206.46.173.11]:46268 "EHLO
-	vms173011pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759091Ab0JXTmw (ORCPT
+	id S1759158Ab0JXTu5 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Oct 2010 15:50:57 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:33411 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758914Ab0JXTuz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Oct 2010 15:42:52 -0400
-Message-id: <4CC48FA8.6010608@verizon.net>
-Date: Sun, 24 Oct 2010 15:57:28 -0400
-From: Lucas Philippidis <lucasphilippidis@verizon.net>
-Reply-to: lucasphilippidis@verizon.net
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.8) Gecko/20100227
- Thunderbird/3.0.3
-MIME-version: 1.0
-To: linux-kernel@vger.kernel.org
-Subject: Question about Kernel Headers
-Content-type: text/plain; charset=ISO-8859-1; format=flowed
-Content-transfer-encoding: 7bit
+	Sun, 24 Oct 2010 15:50:55 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:mail-followup-to:mime-version
+         :content-type:content-disposition:user-agent;
+        b=lNOcErfeECj1TCAQRVswLA7xKamPbsKfvQ8OPr8QZ403H+cZRRlRhzyA+CvqMOINNa
+         zvyWxPJ4ARgoLU85c9gPXFy0VhKnThQt6gLthiYG0dZIEZz8zVQtPTAqrIzQtPi1yZkk
+         dHLYN5gw4HNcU79tkmNMVAu5D4+6sE1eBJXhY=
+Date: Sun, 24 Oct 2010 21:50:42 +0200
+From: Dan Carpenter <error27@gmail.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Stephane Eranian <eranian@google.com>, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org
+Subject: [patch] perf: off by one in perf_swevent_init()
+Message-ID: <20101024195041.GT5985@bicker>
+Mail-Followup-To: Dan Carpenter <error27@gmail.com>,
+	Peter Zijlstra <a.p.zijlstra@chello.nl>,
+	Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
+	Arnaldo Carvalho de Melo <acme@redhat.com>,
+	Frederic Weisbecker <fweisbec@gmail.com>,
+	Stephane Eranian <eranian@google.com>, linux-kernel@vger.kernel.org,
+	kernel-janitors@vger.kernel.org
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+The perf_swevent_enabled[] array has PERF_COUNT_SW_MAX elements.
 
-Please forgive this post but I am new. I am building an installation 
-media set and I am looking for the Linux-libc-headers for 2.6.35.7.
-I am following instructions from:
-http://www.tldp.org/LDP/lfs/LFS-BOOK-6.1.1-HTML/index.html and
-http://www.phenix.bnl.gov/~purschke/RescueCD/
+Signed-off-by: Dan Carpenter <error27@gmail.com>
 
-I want to use my old computers (Presario 433 with Evergreen AMD 586
-overdrive) to participate as a debugger. I figure if I can find
-problems between the various base packages, I can inform the
-appropriate list. The packages I plan on integrating are listed at the
-tldp.org site. I would also like to know the name of the lists that
-test software integration.
-
-Thank you for your time.
-
-Sincerely,
-Lucas
+diff --git a/kernel/perf_event.c b/kernel/perf_event.c
+index f309e80..c45396d 100644
+--- a/kernel/perf_event.c
++++ b/kernel/perf_event.c
+@@ -4687,7 +4687,7 @@ static int perf_swevent_init(struct perf_event *event)
+ 		break;
+ 	}
+ 
+-	if (event_id > PERF_COUNT_SW_MAX)
++	if (event_id >= PERF_COUNT_SW_MAX)
+ 		return -ENOENT;
+ 
+ 	if (!event->parent) {
