@@ -1,120 +1,221 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932523Ab0JXL0H (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Oct 2010 07:26:07 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:34029 "EHLO mx3.mail.elte.hu"
+	id S932527Ab0JXL3v (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Oct 2010 07:29:51 -0400
+Received: from borg.asidev.net ([95.141.38.199]:38308 "EHLO borg.asidev.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932497Ab0JXL0E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Oct 2010 07:26:04 -0400
-Date: Sun, 24 Oct 2010 13:25:40 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Jason Baron <jbaron@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        masami.hiramatsu.pt@hitachi.com
-Subject: Re: [PATCH][GIT PULL] tracing: Fix compile issue for
- trace_sched_wakeup.c
-Message-ID: <20101024112540.GA21267@elte.hu>
-References: <20101019184111.GA17266@elte.hu>
- <20101020154045.GA18353@elte.hu>
- <20101020164324.GC7348@redhat.com>
- <20101020183329.GA12666@elte.hu>
- <20101021110925.GA27219@elte.hu>
- <20101022175845.GF6498@redhat.com>
- <20101022182433.GA24637@elte.hu>
- <20101022183900.GG6498@redhat.com>
- <20101023200216.GA19324@elte.hu>
- <1287881618.16971.657.camel@gandalf.stny.rr.com>
+	id S932448Ab0JXL3t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 24 Oct 2010 07:29:49 -0400
+Message-ID: <4CC418A9.6090602@evidence.eu.com>
+Date: Sun, 24 Oct 2010 13:29:45 +0200
+From: Claudio Scordino <claudio@evidence.eu.com>
+User-Agent: Thunderbird 2.0.0.23 (X11/20090817)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1287881618.16971.657.camel@gandalf.stny.rr.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+To: Grant Edwards <grant.b.edwards@gmail.com>
+CC: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-serial@vger.kernel.org, Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: Re: [PATCH] Documentation about RS485 serial communications
+References: <20100408111310.524f7354@lxorguk.ukuu.org.uk>	<4CBD8EE4.5040808@evidence.eu.com> <i9ka0s$4ua$1@dough.gmane.org>	<201010191727.53314.alexander.stein@systec-electronic.com> <i9kk4o$svc$1@dough.gmane.org>
+In-Reply-To: <i9kk4o$svc$1@dough.gmane.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Steven Rostedt <rostedt@goodmis.org> wrote:
-
-> On Sat, 2010-10-23 at 22:02 +0200, Ingo Molnar wrote:
-> > * Jason Baron <jbaron@redhat.com> wrote:
-> > 
-> > > > Not the same config, and it's very spurious - i.e. a slightly different -tip 
-> > > > version with the same config will boot fine. (this suggests some race)
-> > > 
-> > > if possible, can you post that .config?
-> > 
-> > I just reproduced it again with tip-1128a72 - config and full bootlog attached.
-> > 
-> > The crash picture tends to vary - sometimes it crashes in fork, sometimes in the 
-> > timer interrupt. Here's the current one:
-> > 
-> > [   15.384483] Running tests on trace events:
-> > [   15.388580] Testing event kfree_skb: 
-> > [   15.392381] BUG: unable to handle kernel NULL pointer dereference at (null)
-> > [   15.395408] IP: [<(null)>] (null)
+Grant Edwards ha scritto:
+> On 2010-10-19, Alexander Stein <alexander.stein@systec-electronic.com> wrote:
+>> On Tuesday 19 October 2010, 16:29:48 Grant Edwards wrote:
+>>> On 2010-10-19, Claudio Scordino <claudio@evidence.eu.com> wrote:
+>>>> +2. HARDWARE-RELATED CONSIDERATIONS
+>>>> +
+>>>> +   Some CPUs (e.g., Atmel AT91) contain a transceiver capable of working
+>>>> both +   as RS232 and RS485.
+>>> Pardon my curiosity, but I've looked at a few AT91 parts, and I've
+>>> never seen on with an internal transceiver -- nor does Google seem
+>>> able to find any.
+>>>
+>>> Frankly, I'd be pretty surprised, since it would be very difficult
+>>> (fab-wise), to build a mircoprocessor with I/O cells capable of
+>>> withstanding the voltage levels specified in RS232.
+>>>
+>>> Can you specify to which parts you're referring?
+>> I doubt the AT91 do have an internal transceiver but it has a
+>> dedicated pin feature (RTS or CTS or something) which can be used to
+>> switch between RS232 and RS485 by setting a bit in the USART provided
+>> the pin is connected properly.
 > 
-> Interesting, the jump was to NULL. I'm thinking it hit a trace point and
-> jumped to a NULL address. I guess there's some strange race here. Is a
-> cache flush missing somewhere. I'll look more into this on Monday.
+> Yes, the AT91 UARTs do have a built-in half-duplex mode that will
+> automatically control line direction by toggling RTS.
+> 
+> That can used to control external half-duplex hardware like an RS485
+> transceiver or any RS232-connected half-duplex device like some
+> modems.
+> 
+> Though the Atmel docs refer to it as "RS485 mode" there is no RS485
+> transceiver in the AT91 parts (AFAIK), and "RS485 mode" isn't specific
+> to RS485 - it can be used with any external half-duplex hardware.
 
-NULL wasnt the only crash i've seen in the past though, here's an older one:
+Hi all,
 
- [    4.983527] Running tests on all trace events:
- [    4.988002] Testing all events:
- [    5.001006] BUG: unable to handle kernel paging request at 7d693ae5
- [    5.001999] IP: [<bf206c23>] 0xbf206c23
- [    5.001999] *pde = 00000000
- [    5.001999] Oops: 0002 [#1] SMP
- [    5.001999] last sysfs file:
- [    5.001999] Modules linked in:
- [    5.001999]
- [    5.001999] Pid: 0, comm: kworker/0:0 Not tainted 2.6.36-rc7-tip+ #48497 /
- [    5.001999] EIP: 0060:[<bf206c23>] EFLAGS: 00010082 CPU: 1
- [    5.001999] EIP is at 0xbf206c23
- [    5.001999] EAX: bf206c25 EBX: 25a98103 ECX: 0001ba00 EDX: 00000000
- [    5.001999] ESI: be48cec0 EDI: 813cba88 EBP: bf206c00 ESP: bec89ee0
- [    5.001999]  DS: 007b ES: 007b FS: 00d8 GS: 0000 SS: 0068
+	sorry for the misuse of the term "transceiver", and thank you
+for your corrections.
 
-Another one was:
+Hopefully, this new version of the document is slightly better.
 
- [    6.980461] Testing event hrtimer_expire_entry:
- [    7.000007] BUG: unable to handle kernel paging request at a0fe7dfc
- [    7.004000] IP: [<c101b631>] __ticket_spin_lock+0x5/0x15
- [    7.004000] *pde = 00000000
- [    7.004000] Oops: 0002 [#1] SMP
- [    7.004000] last sysfs file:
- [    7.004000] Modules linked in:
- [    7.004000]
- [    7.004000] Pid: 0, comm: kworker/0:0 Not tainted 2.6.36-rc7-tip-01858-g336fdd2-dirty #48488 A8N-E/System Product Name
- [    7.004000] EIP: 0060:[<c101b631>] EFLAGS: 00010002 CPU: 1
- [    7.004000] EIP is at __ticket_spin_lock+0x5/0x15
- [    7.004000] Call Trace:
- [    7.004000]  [<c127e84c>] ? _raw_spin_lock+0x5/0x7
- [    7.004000]  [<c1044699>] ? hrtimer_run_queues+0x1af/0x1fd
- [    7.004000]  [<c1036da9>] ? run_local_timers+0x5/0xf
- [    7.004000]  [<c1036dd4>] ? update_process_times+0x21/0x43
- [    7.004000]  [<c104be84>] ? tick_handle_periodic+0x14/0x68
- [    7.004000]  [<c1015c84>] ? smp_apic_timer_interrupt+0x66/0x75
- [    7.004000]  [<c127f0ff>] ? apic_timer_interrupt+0x2f/0x34
- [    7.004000]  [<c101afc4>] ? native_safe_halt+0x2/0x3
- [    7.004000]  [<c10081c8>] ? default_idle+0x66/0x91
- [    7.004000]  [<c1001901>] ? cpu_idle+0x53/0x9a
+Many thanks,
 
-so i'd suggest to not limit things to a NULL overwrite alone.
+	Claudio	
 
-Thanks,
 
-	Ingo
+Documentation about RS485 serial communications
+
+Signed-off-by: Claudio Scordino <claudio@evidence.eu.com>
+---
+ Documentation/serial/00-INDEX         |    2 +
+ Documentation/serial/serial-rs485.txt |  119 +++++++++++++++++++++++++++++++++
+ 2 files changed, 121 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/serial/serial-rs485.txt
+
+diff --git a/Documentation/serial/00-INDEX b/Documentation/serial/00-INDEX
+index 07dcdb0..e09468a 100644
+--- a/Documentation/serial/00-INDEX
++++ b/Documentation/serial/00-INDEX
+@@ -14,6 +14,8 @@ riscom8.txt
+ 	- notes on using the RISCom/8 multi-port serial driver.
+ rocket.txt
+ 	- info on the Comtrol RocketPort multiport serial driver.
++serial-rs485.txt
++	- info about RS485 structures and support in the kernel.
+ specialix.txt
+ 	- info on hardware/driver for specialix IO8+ multiport serial card.
+ stallion.txt
+diff --git a/Documentation/serial/serial-rs485.txt b/Documentation/serial/serial-rs485.txt
+new file mode 100644
+index 0000000..40f09c6
+--- /dev/null
++++ b/Documentation/serial/serial-rs485.txt
+@@ -0,0 +1,119 @@
++                        RS485 SERIAL COMMUNICATIONS
++
++1. INTRODUCTION
++
++   EIA-485, also known as TIA/EIA-485 or RS-485, is a standard defining the
++   electrical characteristics of drivers and receivers for use in balanced
++   digital multipoint systems.
++   This standard is widely used for communications in industrial automation
++   because it can be used effectively over long distances and in electrically
++   noisy environments.
++
++2. HARDWARE-RELATED CONSIDERATIONS
++
++   Some CPUs (e.g., Atmel AT91) contain a built-in half-duplex mode capable of
++   automatically controlling line direction by toggling RTS. That can used to
++   control external half-duplex hardware like an RS485 transceiver or any
++   RS232-connected half-duplex device like some modems.
++
++   For these microcontrollers, the Linux driver should be made capable of
++   working in both modes, and proper ioctls (see later) should be made
++   available at user-level to allow switching from one mode to the other, and
++   vice versa.
++
++3. DATA STRUCTURES ALREADY AVAILABLE IN THE KERNEL
++
++   The Linux kernel provides the serial_rs485 structure (see [1]) to handle
++   RS485 communications. This data structure is used to set and configure RS485
++   parameters in the platform data and in ioctls.
++
++   Any driver for devices capable of working both as RS232 and RS485 should
++   provide at least the following ioctls:
++
++    - TIOCSRS485 (typically associated with number 0x542F). This ioctl is used
++      to enable/disable RS485 mode from user-space
++
++    - TIOCGRS485 (typically associated with number 0x542E). This ioctl is used
++      to get RS485 mode from kernel-space (i.e., driver) to user-space.
++
++   In other words, the serial driver should contain a code similar to the next
++   one:
++
++	static struct uart_ops atmel_pops = {
++		/* ... */
++		.ioctl		= handle_ioctl,
++	};
++
++	static int handle_ioctl(struct uart_port *port,
++		unsigned int cmd,
++		unsigned long arg)
++	{
++		struct serial_rs485 rs485conf;
++
++		switch (cmd) {
++		case TIOCSRS485:
++			if (copy_from_user(&rs485conf,
++				(struct serial_rs485 *) arg,
++				sizeof(rs485conf)))
++					return -EFAULT;
++
++			/* ... */
++			break;
++
++		case TIOCGRS485:
++			if (copy_to_user((struct serial_rs485 *) arg,
++				...,
++				sizeof(rs485conf)))
++					return -EFAULT;
++			/* ... */
++			break;
++
++		/* ... */
++		}
++	}
++
++
++4. USAGE FROM USER-LEVEL
++
++   From user-level, RS485 configuration can be get/set using the previous
++   ioctls. For instance, to set RS485 you can use the following code:
++
++	#include <linux/serial.h>
++
++	/* Driver-specific ioctls: */
++	#define TIOCGRS485      0x542E
++	#define TIOCSRS485      0x542F
++
++	/* Open your specific device (e.g., /dev/mydevice): */
++	int fd = open ("/dev/mydevice", O_RDWR);
++	if (fd < 0) {
++		/* Error handling. See errno. */
++	}
++
++	struct serial_rs485 rs485conf;
++
++	/* Set RS485 mode: */
++	rs485conf.flags |= SER_RS485_ENABLED;
++
++	/* Set rts delay before send, if needed: */
++	rs485conf.flags |= SER_RS485_RTS_BEFORE_SEND;
++	rs485conf.delay_rts_before_send = ...;
++
++	/* Set rts delay after send, if needed: */
++	rs485conf.flags |= SER_RS485_RTS_AFTER_SEND;
++	rs485conf.delay_rts_after_send = ...;
++
++	if (ioctl (fd, TIOCSRS485, &rs485conf) < 0) {
++		/* Error handling. See errno. */
++	}
++
++	/* Use read() and write() syscalls here... */
++
++	/* Close the device when finished: */
++	if (close (fd) < 0) {
++		/* Error handling. See errno. */
++	}
++
++5. REFERENCES
++
++ [1]	include/linux/serial.h
+-- 
+1.6.0.4
+
