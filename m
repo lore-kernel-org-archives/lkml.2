@@ -1,245 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758486Ab0JWX5m (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Oct 2010 19:57:42 -0400
-Received: from nm10-vm0.bullet.mail.ne1.yahoo.com ([98.138.91.72]:21041 "HELO
-	nm10-vm0.bullet.mail.ne1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1758202Ab0JWX5k (ORCPT
+	id S1758668Ab0JXAxo (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Oct 2010 20:53:44 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:35189 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758612Ab0JXAxn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Oct 2010 19:57:40 -0400
-X-Yahoo-Newman-Id: 915433.93698.bm@omp1045.mail.ne1.yahoo.com
-X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
-X-YMail-OSG: XUnmTpQVM1lrqZRt4SM3mQTVA3GnsbQ5wY4J4uFXFTBfzZU
- 7xEkPnsFaeaPggCP5fFG32JDycuMXyRelVw8CEjfpEY3vRaF0lfHFNhLA7pO
- H9QX2t7o_xJBdeiL1ZuEkYO7W45_x9y7.0RJYC2sGzfA7yBWSXCF5dMVoKd7
- mw2IhUjBKZSn2G9iMFFW4r0LEPLmnJ5eOHCnwm2pgmJgIGxx2Ds_mPhuVo3w
- 1y3pJ8WG6G2mzLkLNu.qt_tqByOpJeQ3ic0xTJzW3Pqxs1qNA7_e9GXNe5ou
- liKbpklOL1P9eUkQUht18MZ26oQ3vDDSG3JRNWg--
-X-Yahoo-Newman-Property: ymail-3
-Subject: [GIT PULL] Updated lio-4.0.git/merge-for-37-v2 branch for mainline
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: LKML <linux-kernel@vger.kernel.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
+	Sat, 23 Oct 2010 20:53:43 -0400
+X-Authority-Analysis: v=1.1 cv=+c36koQ5Dcj/1qolKHjtkYAGXvrVJRRiKMp+84F5sLg= c=1 sm=0 a=LuwKl7ggZIAA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=20KFwNOVAAAA:8 a=NReUeh_FT3k6cPml724A:9 a=Mrjqd2x8bkBZVG6EFgGypK_5ResA:4 a=PUjeQqilurYA:10 a=jEp0ucaQiEUA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [PATCH][GIT PULL] tracing: Fix compile issue for
+ trace_sched_wakeup.c
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Jason Baron <jbaron@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Christoph Hellwig <hch@lst.de>, Jens Axboe <axboe@kernel.dk>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Mike Christie <michaelc@cs.wisc.edu>, Hannes Reinecke <hare@suse.de>,
-        Joel Becker <joel.becker@oracle.com>,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        Boaz Harrosh <bharrosh@panasas.com>,
-        "Love, Robert W" <robert.w.love@intel.com>,
-        Joe Eykholt <jeykholt@cisco.com>,
-        Philipp Reisner <philipp.reisner@linbit.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Douglas Gilbert <dgilbert@interlog.com>,
-        Konrad Rzeszutek Wilk <konrad@darnok.org>
-Content-Type: text/plain
-Date: Sat, 23 Oct 2010 16:52:41 -0700
-Message-Id: <1287877961.25701.61.camel@haakon2.linux-iscsi.org>
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        masami.hiramatsu.pt@hitachi.com
+In-Reply-To: <20101023200216.GA19324@elte.hu>
+References: <1287508282.16971.386.camel@gandalf.stny.rr.com>
+	 <20101019184111.GA17266@elte.hu> <20101020154045.GA18353@elte.hu>
+	 <20101020164324.GC7348@redhat.com> <20101020183329.GA12666@elte.hu>
+	 <20101021110925.GA27219@elte.hu> <20101022175845.GF6498@redhat.com>
+	 <20101022182433.GA24637@elte.hu> <20101022183900.GG6498@redhat.com>
+	 <20101023200216.GA19324@elte.hu>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Sat, 23 Oct 2010 20:53:38 -0400
+Message-ID: <1287881618.16971.657.camel@gandalf.stny.rr.com>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.22.3.1 
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Greetings jejb, andrew, linus and co,
+On Sat, 2010-10-23 at 22:02 +0200, Ingo Molnar wrote:
+> * Jason Baron <jbaron@redhat.com> wrote:
+> 
+> > > Not the same config, and it's very spurious - i.e. a slightly different -tip 
+> > > version with the same config will boot fine. (this suggests some race)
+> > 
+> > if possible, can you post that .config?
+> 
+> I just reproduced it again with tip-1128a72 - config and full bootlog attached.
+> 
+> The crash picture tends to vary - sometimes it crashes in fork, sometimes in the 
+> timer interrupt. Here's the current one:
+> 
+> [   15.384483] Running tests on trace events:
+> [   15.388580] Testing event kfree_skb: 
+> [   15.392381] BUG: unable to handle kernel NULL pointer dereference at (null)
+> [   15.395408] IP: [<(null)>] (null)
 
-This patch contains a single commit / mergeable version of TCM/ConfigFS infrastructure
-+ TCM_Loop v4.0.0-rc5+ code up to commit 3c4a5d31dd4b from lio-core-2.6.git/lio-4.0.
-This patch has been generated this afternoon against Linus's latest 'for-37'
-commit 35da7a307c535f containing Jen's + Christoph's + Tejun's for-2.6.37/core fixes
-which effects target_core_iblock.c's usage of blkdev_issue_flush() for SYNCHRONIZE_CACHE
-emulation.
+Interesting, the jump was to NULL. I'm thinking it hit a trace point and
+jumped to a NULL address. I guess there's some strange race here. Is a
+cache flush missing somewhere. I'll look more into this on Monday.
 
-So as there have been no further code comments and one bugfix outstanding for feedback
-since RFCv3 awaiting Jen's and Christoph's freedback. please accept this as my formal merge
-request for TCM/ConfigFS + TCM_Loop v4.0.0-rc5+ into a tree (comments..?) destined for
-.37 mainline.  The pullable tree is here:
+-- Steve
 
-git://git.kernel.org/pub/scm/linux/kernel/git/nab/lio-4.0.git merge-for-37-v2
 
-which contains the following two commits:
-
-scsi: Add missing SPC-4 CDB and MAINTENANCE_[IN,OUT] and VARIABLE_LENGTH_CMD service actions
-tcm: Add TCM and TCM_Loop v4.0.0-rc5+ for .37
-
-The 'git squashed' log of the main second patch as individual RFC commits appear as:
-
-tcm: Add ConfigFS extended macro set
-tcm: Add v4 base data structures and struct target_core_fabric_ops
-tcm: Add SPC-4 explict and implict Asymmetric Logical Unit Access (ALUA)
-tcm: Add ConfigFS subsystem backstore infrastructure
-tcm: Add fabric and subsystem transport engine core
-tcm: Add HBA core infrastructure
-tcm: Add device core infrastructure
-tcm: Add target portal group infrastructure
-tcm: Add SPC-4 compliant Persistent Reservations (PR)
-tcm: Add Task Management infrastructure
-tcm: Add UNIT_ATTENTION infrastructure support
-tcm: Add SCSI MIB statistics support
-tcm: Add FILEIO subsystem plugin
-tcm: Add IBLOCK subsystem plugin
-tcm: Add PSCSI subsystem plugin
-tcm: Add RAMDISK_DR and RAMDISK_MCP subsystem plugins
-tcm: Add generic fabric independent ConfigFS infrastructure
-tcm: Add generic ProtoID and TransportID fabric handlers for SAS, FC, and iSCSI
-tcm: Add Kbuild and Kconfig for drivers/target and Documentation/target/
-tcm_loop: Add multi-fabric Linux/SCSI LLD fabric module
-
-The respective RFCv3, RFCv2 and RFCv1 patches of TCM v4.0 for .37 can be
-found here:
-
-[RFCv3 00/21] TCM Core and TCM_Loop patches for v2.6.37
-http://marc.info/?l=linux-kernel&m=128744135522606&w=2
-
-[RFC v2 00/21] TCM Core and TCM_Loop patches for v2.6.37
-http://marc.info/?l=linux-kernel&m=128519571622744&w=2
-
-[RFC 00/22] TCM Core and TCM_Loop patches for v2.6.37
-http://marc.info/?l=linux-scsi&m=128316004105485&w=2
-
-The individual TCM v4.0.0-rc announcements + changelogs can be found here:
-
-[ANNOUNCE] TCM/LIO v4.0.0-rc5 for 2.6.36-rc8
-http://marc.info/?l=linux-scsi&m=128739657813518&w=2
-
-[ANNOUNCE] TCM/LIO v4.0.0-rc4 for 2.6.36-rc4
-http://marc.info/?l=linux-scsi&m=128497455919041&w=2
-
-[ANNOUNCE] TCM/LIO v4.0.0-rc3 for 2.6.36-rc3
-http://marc.info/?l=linux-scsi&m=128312775110418&w=2
-
-[ANNOUNCE] TCM/LIO: v4.0.0-rc2 for v2.6.35
-http://marc.info/?l=linux-scsi&m=128090716528454&w=2
-
-So at this point folks please let me know of any other items that
-should be going into TCM v4.0.0-rc6 and I will follow up accordingly.
-
-Once again a huge thanks goes out to everyone who has contributed
-their time, review and code during the v4.0 development during the last
-~10 months!!  A pull request would not be complete without at least
-some recognition of the people who have helped get us to this point:
-
-Christoph Hellwig, James Bottomley, Jens Axboe, FUJITA Tomonori,
-Mike Christie, Hannes Reinecke, Joel Becker, Martin K. Petersen,
-Boaz Harrosh, Joe Eykholt, Robert Love, Phillip Reisner, Doug Gilbert
-Richard Sharpe, and Konrad Rzeszutek Wilk.
-
-There are certainly many more folks beyond these extra-ordinarily
-talented community members who have contributed their time, energy and
-determination to improve this code and to push the upstream code it
-depends upon within last year.  It would certainly not have been
-possible (or as nearly as fun and challenging) as it has been thus far.
-
-Thank you!
-
-Signed-off-by: Nicholas A. Bellinger <nab@linux-iscsi.org>
----
- Documentation/target/tcm_mod_builder.py        | 1094 +++
- Documentation/target/tcm_mod_builder.txt       |  145 +
- drivers/Kconfig                                |    2 +
- drivers/Makefile                               |    1 +
- drivers/target/Kbuild                          |   30 +
- drivers/target/Kconfig                         |   36 +
- drivers/target/target_core_alua.c              | 1993 +++++
- drivers/target/target_core_alua.h              |  142 +
- drivers/target/target_core_configfs.c          | 3499 +++++++++
- drivers/target/target_core_device.c            | 1816 +++++
- drivers/target/target_core_fabric_configfs.c   | 1001 +++
- drivers/target/target_core_fabric_lib.c        |  451 ++
- drivers/target/target_core_file.c              | 1052 +++
- drivers/target/target_core_file.h              |   81 +
- drivers/target/target_core_hba.c               |  211 +
- drivers/target/target_core_hba.h               |   14 +
- drivers/target/target_core_iblock.c            | 1018 +++
- drivers/target/target_core_iblock.h            |   45 +
- drivers/target/target_core_mib.c               | 1081 +++
- drivers/target/target_core_mib.h               |   30 +
- drivers/target/target_core_pr.c                | 4243 +++++++++++
- drivers/target/target_core_pr.h                |   67 +
- drivers/target/target_core_pscsi.c             | 1583 ++++
- drivers/target/target_core_pscsi.h             |   73 +
- drivers/target/target_core_rd.c                | 1412 ++++
- drivers/target/target_core_rd.h                |   89 +
- drivers/target/target_core_scdb.c              |  158 +
- drivers/target/target_core_scdb.h              |   15 +
- drivers/target/target_core_tmr.c               |  405 ++
- drivers/target/target_core_tpg.c               |  830 +++
- drivers/target/target_core_transport.c         | 9262 ++++++++++++++++++++++++
- drivers/target/target_core_ua.c                |  332 +
- drivers/target/target_core_ua.h                |   36 +
- drivers/target/tcm_loop/Kbuild                 |   11 +
- drivers/target/tcm_loop/Kconfig                |   13 +
- drivers/target/tcm_loop/tcm_loop_configfs.c    |  647 ++
- drivers/target/tcm_loop/tcm_loop_configfs.h    |    2 +
- drivers/target/tcm_loop/tcm_loop_core.h        |   77 +
- drivers/target/tcm_loop/tcm_loop_fabric.c      |  494 ++
- drivers/target/tcm_loop/tcm_loop_fabric.h      |   40 +
- drivers/target/tcm_loop/tcm_loop_fabric_scsi.c |  618 ++
- drivers/target/tcm_loop/tcm_loop_fabric_scsi.h |   10 +
- include/target/configfs_macros.h               |  147 +
- include/target/target_core_base.h              | 1076 +++
- include/target/target_core_configfs.h          |   57 +
- include/target/target_core_device.h            |   73 +
- include/target/target_core_fabric_configfs.h   |  106 +
- include/target/target_core_fabric_lib.h        |   28 +
- include/target/target_core_fabric_ops.h        |  100 +
- include/target/target_core_tmr.h               |   43 +
- include/target/target_core_tpg.h               |   39 +
- include/target/target_core_transport.h         |  570 ++
- 52 files changed, 36398 insertions(+), 0 deletions(-)
- create mode 100755 Documentation/target/tcm_mod_builder.py
- create mode 100644 Documentation/target/tcm_mod_builder.txt
- create mode 100644 drivers/target/Kbuild
- create mode 100644 drivers/target/Kconfig
- create mode 100644 drivers/target/target_core_alua.c
- create mode 100644 drivers/target/target_core_alua.h
- create mode 100644 drivers/target/target_core_configfs.c
- create mode 100644 drivers/target/target_core_device.c
- create mode 100644 drivers/target/target_core_fabric_configfs.c
- create mode 100644 drivers/target/target_core_fabric_lib.c
- create mode 100644 drivers/target/target_core_file.c
- create mode 100644 drivers/target/target_core_file.h
- create mode 100644 drivers/target/target_core_hba.c
- create mode 100644 drivers/target/target_core_hba.h
- create mode 100644 drivers/target/target_core_iblock.c
- create mode 100644 drivers/target/target_core_iblock.h
- create mode 100644 drivers/target/target_core_mib.c
- create mode 100644 drivers/target/target_core_mib.h
- create mode 100644 drivers/target/target_core_pr.c
- create mode 100644 drivers/target/target_core_pr.h
- create mode 100644 drivers/target/target_core_pscsi.c
- create mode 100644 drivers/target/target_core_pscsi.h
- create mode 100644 drivers/target/target_core_rd.c
- create mode 100644 drivers/target/target_core_rd.h
- create mode 100644 drivers/target/target_core_scdb.c
- create mode 100644 drivers/target/target_core_scdb.h
- create mode 100644 drivers/target/target_core_tmr.c
- create mode 100644 drivers/target/target_core_tpg.c
- create mode 100644 drivers/target/target_core_transport.c
- create mode 100644 drivers/target/target_core_ua.c
- create mode 100644 drivers/target/target_core_ua.h
- create mode 100644 drivers/target/tcm_loop/Kbuild
- create mode 100644 drivers/target/tcm_loop/Kconfig
- create mode 100644 drivers/target/tcm_loop/tcm_loop_configfs.c
- create mode 100644 drivers/target/tcm_loop/tcm_loop_configfs.h
- create mode 100644 drivers/target/tcm_loop/tcm_loop_core.h
- create mode 100644 drivers/target/tcm_loop/tcm_loop_fabric.c
- create mode 100644 drivers/target/tcm_loop/tcm_loop_fabric.h
- create mode 100644 drivers/target/tcm_loop/tcm_loop_fabric_scsi.c
- create mode 100644 drivers/target/tcm_loop/tcm_loop_fabric_scsi.h
- create mode 100644 include/target/configfs_macros.h
- create mode 100644 include/target/target_core_base.h
- create mode 100644 include/target/target_core_configfs.h
- create mode 100644 include/target/target_core_device.h
- create mode 100644 include/target/target_core_fabric_configfs.h
- create mode 100644 include/target/target_core_fabric_lib.h
- create mode 100644 include/target/target_core_fabric_ops.h
- create mode 100644 include/target/target_core_tmr.h
- create mode 100644 include/target/target_core_tpg.h
- create mode 100644 include/target/target_core_transport.h
+> [   15.395408] *pde = 00000000 
+> [   15.395408] Oops: 0000 [#1] SMP 
+> [   15.395408] last sysfs file: 
+> [   15.395408] 
+> [   15.395408] Pid: 2, comm: kthreadd Not tainted 2.6.36-tip-03573-g1128a72-dirty #51926 A8N-E/System Product Name
+> [   15.395408] EIP: 0060:[<00000000>] EFLAGS: 00010086 CPU: 0
+> [   15.395408] EIP is at 0x0
+> [   15.395408] EAX: c1049bb5 EBX: 00000286 ECX: 00000000 EDX: 00000000
+> [   15.395408] ESI: 00000000 EDI: f5cd96e0 EBP: 00000063 ESP: f6449f24
+> [   15.395408]  DS: 007b ES: 007b FS: 00d8 GS: 00e0 SS: 0068
+> [   15.395408] Process kthreadd (pid: 2, ti=f6448000 task=f64443d0 task.ti=f6448000)
+> [   15.395408] Stack:
+> [   15.395408]  c104d4e6 00800711 00000000 00000000 00000000 00000001 f6a09b00 f64443d0
+> [   15.395408]  c188a238 c1dffb00 c1f1f200 00000000 c1049c53 b3420a74 00800711 c1061a4b
+> [   15.395408]  f6449fc0 f6449f7c c102ea40 00000000 00000000 00000000 00000000 00000000
+> [   15.395408] Call Trace:
+> [   15.395408]  [<c104d4e6>] ? do_fork+0x205/0x2aa
+> [   15.395408]  [<c1049c53>] ? dequeue_task+0x97/0xa6
+> [   15.395408]  [<c1061a4b>] ? kthread+0x0/0x68
+> [   15.395408]  [<c102ea40>] ? kernel_thread+0x77/0x7f
+> [   15.395408]  [<c1061a4b>] ? kthread+0x0/0x68
+> [   15.395408]  [<c10299c0>] ? kernel_thread_helper+0x0/0x10
+> [   15.395408]  [<c1061b40>] ? kthreadd+0x8d/0xbf
+> [   15.395408]  [<c1061ab3>] ? kthreadd+0x0/0xbf
+> [   15.395408]  [<c10299c6>] ? kernel_thread_helper+0x6/0x10
+> [   15.395408] Code:  Bad EIP value.
+> [   15.395408] EIP: [<00000000>] 0x0 SS:ESP 0068:f6449f24
+> [   15.395408] CR2: 0000000000000000
+> [   15.395408] ---[ end trace 105d75af79111d22 ]---
+> 
+> (One possibility would be kernel text corruption perhaps.)
+> 
+> Thanks,
+> 
+> 	Ingo
 
 
