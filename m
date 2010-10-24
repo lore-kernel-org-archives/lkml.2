@@ -1,66 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933008Ab0JXVYQ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Oct 2010 17:24:16 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:61451 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932973Ab0JXVYO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Oct 2010 17:24:14 -0400
-From: Brian Gitonga Marete <marete@toshnix.com>
-Cc: Brian Gitonga Marete <marete@toshnix.com>, Ingo Molnar <mingo@elte.hu>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: [PATCH] Fix a compile error with -fstack-protector, -Wstack-protector and -Werror.
-Date: Mon, 25 Oct 2010 00:23:19 +0300
-Message-Id: <1287955399-25354-1-git-send-email-marete@toshnix.com>
-X-Mailer: git-send-email 1.7.1.1
-In-Reply-To: <20101019131152.GB3826@ghostprotocols.net>
-References: <20101019131152.GB3826@ghostprotocols.net>
-To: Arnaldo Carvalho de Melo <acme@infradead.org>
+	id S932998Ab0JXVYM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Oct 2010 17:24:12 -0400
+Received: from h5.dl5rb.org.uk ([81.2.74.5]:52945 "EHLO h5.dl5rb.org.uk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932973Ab0JXVYL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 24 Oct 2010 17:24:11 -0400
+Date: Sun, 24 Oct 2010 22:23:50 +0100
+From: Ralf Baechle <ralf@linux-mips.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-mips@linux-mips.org,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        James Morris <jmorris@namei.org>
+Subject: [PATCH] MIPS: MT: Fix build error iFPU affinity code
+Message-ID: <20101024212350.GA18747@linux-mips.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following is as per Ingo's suggestion. Agains 2.6.36. Thanks.
+> commit b0ae19811375031ae3b3fecc65b702a9c6e5cc28
+> Author: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> Date:   Fri Oct 15 04:21:18 2010 +0900
+>
+>     security: remove unused parameter from security_task_setscheduler()
 
-In the function ui__dialog_yesno(), automatic buffers have to be used as long
-as we are compiling perf with the -Wwrite-stings and -Werror options. This is because the
-Newt library does not declare the string parameters in newtWinChoice() as
-constant when it should.
+broke the build of arch/mips/kernel/mips-mt-fpaff.c.  The function
+arguments were unnecessary, not the semicolon ...
 
-But the automatic buffers are not large enough to benefit from ssp at least on some gcc versions, e.g. the one that comes with Ubuntu 9.0.4. This along with -Wstack-protector causes a compile warning which is turned into an error by
--Werror.
+Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
 
-This patch works around this problem by making the buffers global and static.
+ arch/mips/kernel/mips-mt-fpaff.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Signed-off-by: Brian Gitonga Marete <marete@toshnix.com>
----
- tools/perf/util/ui/util.c |    4 +++-
- 1 files changed, 3 insertions(+), 1 deletions(-)
-
-diff --git a/tools/perf/util/ui/util.c b/tools/perf/util/ui/util.c
-index 04600e2..c7dc022 100644
---- a/tools/perf/util/ui/util.c
-+++ b/tools/perf/util/ui/util.c
-@@ -11,6 +11,9 @@
- #include "helpline.h"
- #include "util.h"
+diff --git a/arch/mips/kernel/mips-mt-fpaff.c b/arch/mips/kernel/mips-mt-fpaff.c
+index 9a526ba..802e616 100644
+--- a/arch/mips/kernel/mips-mt-fpaff.c
++++ b/arch/mips/kernel/mips-mt-fpaff.c
+@@ -103,7 +103,7 @@ asmlinkage long mipsmt_sys_sched_setaffinity(pid_t pid, unsigned int len,
+ 	if (!check_same_owner(p) && !capable(CAP_SYS_NICE))
+ 		goto out_unlock;
  
-+static char yes[] = "Yes";
-+static char no[] = "No";
-+
- newtComponent newt_form__new(void);
+-	retval = security_task_setscheduler(p)
++	retval = security_task_setscheduler(p);
+ 	if (retval)
+ 		goto out_unlock;
  
- static void newt_form__set_exit_keys(newtComponent self)
-@@ -109,6 +112,5 @@ out_destroy_form:
- bool ui__dialog_yesno(const char *msg)
- {
- 	/* newtWinChoice should really be accepting const char pointers... */
--	char yes[] = "Yes", no[] = "No";
- 	return newtWinChoice(NULL, yes, no, (char *)msg) == 1;
- }
--- 
-1.7.1.1
-
