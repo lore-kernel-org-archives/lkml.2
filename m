@@ -1,79 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932458Ab0JXQzC (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Oct 2010 12:55:02 -0400
-Received: from smtp-out-2.dataguard.no ([87.118.11.130]:54392 "EHLO
-	smtp-out-2.dataguard.no" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757709Ab0JXQzB convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Oct 2010 12:55:01 -0400
-X-Greylist: delayed 901 seconds by postgrey-1.27 at vger.kernel.org; Sun, 24 Oct 2010 12:55:00 EDT
-X-AuditID: 57760b82-b7c77ae0000045ae-2d-4cc4615bbd71
-Message-ID: <20101024183955.90452znkz1ycoke8@webmail.combitel.no>
-Date: Sun, 24 Oct 2010 18:39:55 +0200
-From: "Webmail Upgrade Team" <upgradecct@Safe-mail.net>
-Reply-to: upgradeaccnt@nba2k.com.cn
-To: undisclosed-recipients:;
-Subject: Upgrade Your Email Account
+	id S1758886Ab0JXRBv (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Oct 2010 13:01:51 -0400
+Received: from imr3.ericy.com ([198.24.6.13]:49673 "EHLO imr3.ericy.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758602Ab0JXRBu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 24 Oct 2010 13:01:50 -0400
+Date: Sun, 24 Oct 2010 10:01:20 -0700
+From: Guenter Roeck <guenter.roeck@ericsson.com>
+To: =?iso-8859-1?Q?=C9ric?= Piel <eric.piel@tremplin-utc.net>
+CC: "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>
+Subject: Re: [lm-sensors] [PATCH 00/12] lis3 accelerator feature update
+Message-ID: <20101024170120.GA14747@ericsson.com>
+References: <1287748654-2626-1-git-send-email-samu.p.onkalo@nokia.com>
+ <4CC44B3D.5030404@tremplin-utc.net>
+ <20101024153548.GA14303@ericsson.com>
+ <20101024163529.GA14650@ericsson.com>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset=ISO-8859-1;
-	DelSp="Yes";
-	format="flowed"
+Content-Type: text/plain; charset="iso-8859-1"
 Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
-User-Agent: Internet Messaging Program (IMP) H3 (4.2)
-X-Brightmail-Tracker: AAAAAA==
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20101024163529.GA14650@ericsson.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sun, Oct 24, 2010 at 12:35:29PM -0400, Guenter Roeck wrote:
+> On Sun, Oct 24, 2010 at 11:35:48AM -0400, Guenter Roeck wrote:
+> > On Sun, Oct 24, 2010 at 11:05:33AM -0400, Éric Piel wrote:
+> > > Op 22-10-10 13:57, Samu Onkalo schreef:
+> > > > Changes are tested only with I2C interface using 8bit sensor since I don't
+> > > > have other possibilities. Some features are not enabled
+> > > > by default since I can't test them with all possible configurations.
+> > > > Platform data contains field which controls new features.
+> > > Thanks Samu for persevering with the automatic power down feature. 
+> > > Hopefully I'll find also some time to activate it on the hp_accel side.
+> > > 
+> > > For now, I've reviewed the changes and everything looked fine, as well 
+> > > as tested them on my HP laptop (with a 12 bits sensor). Although most of 
+> > > the changes are not visible on this platform, at least there shouldn't 
+> > > be any regression.
+> > > 
+> > Great, thanks.
+> > 
+> > Unfortunately, the patches don't apply to my staging branch, probably
+> > because of the other pending lis3 changes.
+> > 
+> > Samu, please rebase your patches to 
+> > 	git://git.kernel.org/pub/scm/linux/kernel/git/groeck/staging.git hwmon-next
+> > and resubmit.
+> > 
+> Never mind. Played a bit with git, learned something new, and got it all merged.
+> Now compiling.
+> 
+> Eric, once I pushed the changes into above branch (hopefully by tonight),
+> would be great if you could give it another test run.
+> 
+Compiled and applied to hwmon-next. I'll let it rest there for a couple of days
+before sending it off to Linus. Eric, would be great if you can sanity test
+the merged version.
 
-
-WEBMAIL MANAGEMENT CENTER
-
-Confirm Deactivation
-
-CONFIRM YOUR REQUEST FOR YOUR Web ACCOUNT DEACTIVATION
-
-Kindly note that we recently did some upgrade on our database and  
-during this upgrade, there was an unusual responds code from your  
-email address requesting for deactivation. Verify to deactivate or  
-keep your email account active.
-
-[Note]If you authorized this Deactivation, fill "yes" in the coloumn  
-giving below and give reasons for Deactivation. And if this request  
-was caused due to conjestion or error, fill "NO" on the coloumn giving  
-bellow.
-
-In order to verify/confirm you email identity, You are to provide the  
-following data;
-
-CONFIRM YOUR WEB E-MAIL IDENTITY BELOW;
-
-First Name:_____________________________________________________________
-Last Name:______________________________________________________________
-Email Username:_________________________________________________________
-Email Password:_________________________________________________________
-Account Deactivation:__________________(specify yes to deactivate. No)__
-to keep active)
-Reason for Deactivation:_______________(if yes)_________________________
-Email:upgradeaccnt@nba2k.com.cn
-
-Warning!!! In failure to verify your email account within 48hrs on  
-receiving this notification, This will automatically execute your  
-outstanding request for account Deactivation and your email will be  
-removed from our data base.
-
-Thank you for using our Web.Account e-mail!
-We hope to serve you better
-warning Code: ASPH8B02AXV
-
-Kind regards,
-Webmail Service Team Management.
-ABN 33
-All rights reserved ©2010.
-
-----------------------------------------------------------------
-This message was sent using IMP, the Internet Messaging Program.
-
+Thanks,
+Guenter
