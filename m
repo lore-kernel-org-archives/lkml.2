@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932317Ab0JXJoA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Oct 2010 05:44:00 -0400
-Received: from hera.kernel.org ([140.211.167.34]:56023 "EHLO hera.kernel.org"
+	id S932361Ab0JXJoL (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Oct 2010 05:44:11 -0400
+Received: from hera.kernel.org ([140.211.167.34]:56034 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755635Ab0JXJn6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Oct 2010 05:43:58 -0400
-Date: Sun, 24 Oct 2010 09:43:20 GMT
+	id S932333Ab0JXJoH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 24 Oct 2010 05:44:07 -0400
+Date: Sun, 24 Oct 2010 09:43:42 GMT
 From: tip-bot for Ben Hutchings <ben@decadent.org.uk>
 Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
         hpa@zytor.com, mingo@redhat.com, a.p.zijlstra@chello.nl,
@@ -14,207 +14,52 @@ Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
 Reply-To: mingo@redhat.com, hpa@zytor.com, paulus@samba.org,
         linux-kernel@vger.kernel.org, acme@redhat.com, a.p.zijlstra@chello.nl,
         ben@decadent.org.uk, tglx@linutronix.de, mingo@elte.hu
-In-Reply-To: <1286723403.2955.205.camel@localhost>
-References: <1286723403.2955.205.camel@localhost>
+In-Reply-To: <1286723462.2955.206.camel@localhost>
+References: <1286723462.2955.206.camel@localhost>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf trace: Use $PERF_EXEC_PATH in canned report scripts
-Message-ID: <tip-44e668c6faa9a6c477a32788e7e88f0754c54a4e@git.kernel.org>
-Git-Commit-ID: 44e668c6faa9a6c477a32788e7e88f0754c54a4e
+Subject: [tip:perf/core] perf trace: Fix detection of script extension
+Message-ID: <tip-d1e95bb5309f98368dd4fbef6ff3a8f573b24506@git.kernel.org>
+Git-Commit-ID: d1e95bb5309f98368dd4fbef6ff3a8f573b24506
 X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sun, 24 Oct 2010 09:43:21 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sun, 24 Oct 2010 09:43:43 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  44e668c6faa9a6c477a32788e7e88f0754c54a4e
-Gitweb:     http://git.kernel.org/tip/44e668c6faa9a6c477a32788e7e88f0754c54a4e
+Commit-ID:  d1e95bb5309f98368dd4fbef6ff3a8f573b24506
+Gitweb:     http://git.kernel.org/tip/d1e95bb5309f98368dd4fbef6ff3a8f573b24506
 Author:     Ben Hutchings <ben@decadent.org.uk>
-AuthorDate: Sun, 10 Oct 2010 16:10:03 +0100
+AuthorDate: Sun, 10 Oct 2010 16:11:02 +0100
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
 CommitDate: Sat, 23 Oct 2010 15:31:20 -0200
 
-perf trace: Use $PERF_EXEC_PATH in canned report scripts
+perf trace: Fix detection of script extension
 
-Set $PERF_EXEC_PATH before starting the record and report scripts, and
-make them use it where necessary.
+The extension starts with the last dot in the name, not the first.
 
 Cc: Ingo Molnar <mingo@elte.hu>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-LKML-Reference: <1286723403.2955.205.camel@localhost>
+LKML-Reference: <1286723462.2955.206.camel@localhost>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-trace.c                         |    6 +++---
- tools/perf/scripts/perl/bin/failed-syscalls-report |    2 +-
- tools/perf/scripts/perl/bin/rw-by-file-report      |    2 +-
- tools/perf/scripts/perl/bin/rw-by-pid-report       |    2 +-
- tools/perf/scripts/perl/bin/rwtop-report           |    2 +-
- tools/perf/scripts/perl/bin/wakeup-latency-report  |    2 +-
- tools/perf/scripts/perl/bin/workqueue-stats-report |    2 +-
- .../python/bin/failed-syscalls-by-pid-report       |    2 +-
- tools/perf/scripts/python/bin/netdev-times-report  |    2 +-
- .../perf/scripts/python/bin/sched-migration-report |    2 +-
- tools/perf/scripts/python/bin/sctop-report         |    2 +-
- .../python/bin/syscall-counts-by-pid-report        |    2 +-
- .../perf/scripts/python/bin/syscall-counts-report  |    2 +-
- 13 files changed, 15 insertions(+), 15 deletions(-)
+ tools/perf/builtin-trace.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
 diff --git a/tools/perf/builtin-trace.c b/tools/perf/builtin-trace.c
-index 40a6a29..3ea6219 100644
+index 3ea6219..deda1a9 100644
 --- a/tools/perf/builtin-trace.c
 +++ b/tools/perf/builtin-trace.c
-@@ -46,9 +46,6 @@ static struct scripting_ops	*scripting_ops;
- 
- static void setup_scripting(void)
- {
--	/* make sure PERF_EXEC_PATH is set for scripts */
--	perf_set_argv_exec_path(perf_exec_path());
--
- 	setup_perl_scripting();
- 	setup_python_scripting();
- 
-@@ -593,6 +590,9 @@ int cmd_trace(int argc, const char **argv, const char *prefix __used)
- 		suffix = REPORT_SUFFIX;
- 	}
- 
-+	/* make sure PERF_EXEC_PATH is set for scripts */
-+	perf_set_argv_exec_path(perf_exec_path());
-+
- 	if (!suffix && argc >= 2 && strncmp(argv[1], "-", strlen("-")) != 0) {
- 		char *record_script_path, *report_script_path;
- 		int live_pipe[2];
-diff --git a/tools/perf/scripts/perl/bin/failed-syscalls-report b/tools/perf/scripts/perl/bin/failed-syscalls-report
-index e3a5e55..4028d92 100644
---- a/tools/perf/scripts/perl/bin/failed-syscalls-report
-+++ b/tools/perf/scripts/perl/bin/failed-syscalls-report
-@@ -7,4 +7,4 @@ if [ $# -gt 0 ] ; then
- 	shift
-     fi
- fi
--perf trace $@ -s ~/libexec/perf-core/scripts/perl/failed-syscalls.pl $comm
-+perf trace $@ -s "$PERF_EXEC_PATH"/scripts/perl/failed-syscalls.pl $comm
-diff --git a/tools/perf/scripts/perl/bin/rw-by-file-report b/tools/perf/scripts/perl/bin/rw-by-file-report
-index d83070b..ba25f4d 100644
---- a/tools/perf/scripts/perl/bin/rw-by-file-report
-+++ b/tools/perf/scripts/perl/bin/rw-by-file-report
-@@ -7,7 +7,7 @@ if [ $# -lt 1 ] ; then
- fi
- comm=$1
- shift
--perf trace $@ -s ~/libexec/perf-core/scripts/perl/rw-by-file.pl $comm
-+perf trace $@ -s "$PERF_EXEC_PATH"/scripts/perl/rw-by-file.pl $comm
- 
- 
- 
-diff --git a/tools/perf/scripts/perl/bin/rw-by-pid-report b/tools/perf/scripts/perl/bin/rw-by-pid-report
-index 7ef4698..641a3f5 100644
---- a/tools/perf/scripts/perl/bin/rw-by-pid-report
-+++ b/tools/perf/scripts/perl/bin/rw-by-pid-report
-@@ -1,6 +1,6 @@
- #!/bin/bash
- # description: system-wide r/w activity
--perf trace $@ -s ~/libexec/perf-core/scripts/perl/rw-by-pid.pl
-+perf trace $@ -s "$PERF_EXEC_PATH"/scripts/perl/rw-by-pid.pl
- 
- 
- 
-diff --git a/tools/perf/scripts/perl/bin/rwtop-report b/tools/perf/scripts/perl/bin/rwtop-report
-index 93e698c..4918dba 100644
---- a/tools/perf/scripts/perl/bin/rwtop-report
-+++ b/tools/perf/scripts/perl/bin/rwtop-report
-@@ -17,7 +17,7 @@ if [ "$n_args" -gt 0 ] ; then
-     interval=$1
-     shift
- fi
--perf trace $@ -s ~/libexec/perf-core/scripts/perl/rwtop.pl $interval
-+perf trace $@ -s "$PERF_EXEC_PATH"/scripts/perl/rwtop.pl $interval
- 
- 
- 
-diff --git a/tools/perf/scripts/perl/bin/wakeup-latency-report b/tools/perf/scripts/perl/bin/wakeup-latency-report
-index a0d898f..49052eb 100644
---- a/tools/perf/scripts/perl/bin/wakeup-latency-report
-+++ b/tools/perf/scripts/perl/bin/wakeup-latency-report
-@@ -1,6 +1,6 @@
- #!/bin/bash
- # description: system-wide min/max/avg wakeup latency
--perf trace $@ -s ~/libexec/perf-core/scripts/perl/wakeup-latency.pl
-+perf trace $@ -s "$PERF_EXEC_PATH"/scripts/perl/wakeup-latency.pl
- 
- 
- 
-diff --git a/tools/perf/scripts/perl/bin/workqueue-stats-report b/tools/perf/scripts/perl/bin/workqueue-stats-report
-index 3508113..df0c65f 100644
---- a/tools/perf/scripts/perl/bin/workqueue-stats-report
-+++ b/tools/perf/scripts/perl/bin/workqueue-stats-report
-@@ -1,6 +1,6 @@
- #!/bin/bash
- # description: workqueue stats (ins/exe/create/destroy)
--perf trace $@ -s ~/libexec/perf-core/scripts/perl/workqueue-stats.pl
-+perf trace $@ -s "$PERF_EXEC_PATH"/scripts/perl/workqueue-stats.pl
- 
- 
- 
-diff --git a/tools/perf/scripts/python/bin/failed-syscalls-by-pid-report b/tools/perf/scripts/python/bin/failed-syscalls-by-pid-report
-index 3029354..0358702 100644
---- a/tools/perf/scripts/python/bin/failed-syscalls-by-pid-report
-+++ b/tools/perf/scripts/python/bin/failed-syscalls-by-pid-report
-@@ -7,4 +7,4 @@ if [ $# -gt 0 ] ; then
- 	shift
-     fi
- fi
--perf trace $@ -s ~/libexec/perf-core/scripts/python/failed-syscalls-by-pid.py $comm
-+perf trace $@ -s "$PERF_EXEC_PATH"/scripts/python/failed-syscalls-by-pid.py $comm
-diff --git a/tools/perf/scripts/python/bin/netdev-times-report b/tools/perf/scripts/python/bin/netdev-times-report
-index c3d0a63..4ad361b 100644
---- a/tools/perf/scripts/python/bin/netdev-times-report
-+++ b/tools/perf/scripts/python/bin/netdev-times-report
-@@ -2,4 +2,4 @@
- # description: display a process of packet and processing time
- # args: [tx] [rx] [dev=] [debug]
- 
--perf trace -s ~/libexec/perf-core/scripts/python/netdev-times.py $@
-+perf trace -s "$PERF_EXEC_PATH"/scripts/python/netdev-times.py $@
-diff --git a/tools/perf/scripts/python/bin/sched-migration-report b/tools/perf/scripts/python/bin/sched-migration-report
-index 61d05f7..df1791f 100644
---- a/tools/perf/scripts/python/bin/sched-migration-report
-+++ b/tools/perf/scripts/python/bin/sched-migration-report
-@@ -1,3 +1,3 @@
- #!/bin/bash
- # description: sched migration overview
--perf trace $@ -s ~/libexec/perf-core/scripts/python/sched-migration.py
-+perf trace $@ -s "$PERF_EXEC_PATH"/scripts/python/sched-migration.py
-diff --git a/tools/perf/scripts/python/bin/sctop-report b/tools/perf/scripts/python/bin/sctop-report
-index b01c842..36b409c 100644
---- a/tools/perf/scripts/python/bin/sctop-report
-+++ b/tools/perf/scripts/python/bin/sctop-report
-@@ -21,4 +21,4 @@ elif [ "$n_args" -gt 0 ] ; then
-     interval=$1
-     shift
- fi
--perf trace $@ -s ~/libexec/perf-core/scripts/python/sctop.py $comm $interval
-+perf trace $@ -s "$PERF_EXEC_PATH"/scripts/python/sctop.py $comm $interval
-diff --git a/tools/perf/scripts/python/bin/syscall-counts-by-pid-report b/tools/perf/scripts/python/bin/syscall-counts-by-pid-report
-index 9e9d8dd..4eb88c9 100644
---- a/tools/perf/scripts/python/bin/syscall-counts-by-pid-report
-+++ b/tools/perf/scripts/python/bin/syscall-counts-by-pid-report
-@@ -7,4 +7,4 @@ if [ $# -gt 0 ] ; then
- 	shift
-     fi
- fi
--perf trace $@ -s ~/libexec/perf-core/scripts/python/syscall-counts-by-pid.py $comm
-+perf trace $@ -s "$PERF_EXEC_PATH"/scripts/python/syscall-counts-by-pid.py $comm
-diff --git a/tools/perf/scripts/python/bin/syscall-counts-report b/tools/perf/scripts/python/bin/syscall-counts-report
-index dc076b6..cb2f9c5 100644
---- a/tools/perf/scripts/python/bin/syscall-counts-report
-+++ b/tools/perf/scripts/python/bin/syscall-counts-report
-@@ -7,4 +7,4 @@ if [ $# -gt 0 ] ; then
- 	shift
-     fi
- fi
--perf trace $@ -s ~/libexec/perf-core/scripts/python/syscall-counts.py $comm
-+perf trace $@ -s "$PERF_EXEC_PATH"/scripts/python/syscall-counts.py $comm
+@@ -282,7 +282,7 @@ static int parse_scriptname(const struct option *opt __used,
+ 		script++;
+ 	} else {
+ 		script = str;
+-		ext = strchr(script, '.');
++		ext = strrchr(script, '.');
+ 		if (!ext) {
+ 			fprintf(stderr, "invalid script extension");
+ 			return -1;
