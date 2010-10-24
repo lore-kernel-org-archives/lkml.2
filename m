@@ -1,61 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932678Ab0JXPDc (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Oct 2010 11:03:32 -0400
-Received: from e28smtp01.in.ibm.com ([122.248.162.1]:59712 "EHLO
-	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757493Ab0JXPDa (ORCPT
+	id S1757564Ab0JXPFm (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Oct 2010 11:05:42 -0400
+Received: from mailservice.tudelft.nl ([130.161.131.5]:44990 "EHLO
+	mailservice.tudelft.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757367Ab0JXPFk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Oct 2010 11:03:30 -0400
-From: "Aneesh Kumar K. V" <aneesh.kumar@linux.vnet.ibm.com>
-To: hch@infradead.org, viro@zeniv.linux.org.uk, adilger@sun.com,
-        corbet@lwn.net, neilb@suse.de, npiggin@kernel.dk,
-        hooanon05@yahoo.co.jp, bfields@fieldses.org, miklos@szeredi.hu
-Cc: linux-fsdevel@vger.kernel.org, sfrench@us.ibm.com, philippe.deniel@CEA.FR,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH -V21 00/12] Generic name to handle and open by handle syscalls
-In-Reply-To: <1286274140-26533-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-References: <1286274140-26533-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-User-Agent: Notmuch/0.3.1-90-g8071c5c (http://notmuchmail.org) Emacs/24.0.50.1 (i686-pc-linux-gnu)
-Date: Sun, 24 Oct 2010 20:33:23 +0530
-Message-ID: <m3y69nzl8k.fsf@linux.vnet.ibm.com>
+	Sun, 24 Oct 2010 11:05:40 -0400
+X-Spam-Flag: NO
+X-Spam-Score: -21.89
+Message-ID: <4CC44B3D.5030404@tremplin-utc.net>
+Date: Sun, 24 Oct 2010 17:05:33 +0200
+From: =?UTF-8?B?w4lyaWMgUGllbA==?= <eric.piel@tremplin-utc.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.11) Gecko/20101020 Mandriva/3.1.5-1mdv2011.0 (2011.0) Thunderbird/3.1.5
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Samu Onkalo <samu.p.onkalo@nokia.com>
+CC: khali@linux-fr.org, guenter.roeck@ericsson.com, jic23@cam.ac.uk,
+        lm-sensors@lm-sensors.org, linux-i2c@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 00/12] lis3 accelerator feature update
+References: <1287748654-2626-1-git-send-email-samu.p.onkalo@nokia.com>
+In-Reply-To: <1287748654-2626-1-git-send-email-samu.p.onkalo@nokia.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue,  5 Oct 2010 15:52:08 +0530, "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com> wrote:
-> Hi,
-> 
-> The below set of patches implement open by handle support using exportfs
-> operations. This allows user space application to map a file name to file
-> handle and later open the file using handle. This should be usable
-> for userspace NFS [1] and 9P server [2]. XFS already support this with the ioctls
-> XFS_IOC_PATH_TO_HANDLE and XFS_IOC_OPEN_BY_HANDLE.
-> 
-> [1] http://nfs-ganesha.sourceforge.net/
-> [2] http://thread.gmane.org/gmane.comp.emulators.qemu/68992
-> 
-> git repo for the patchset at:
-> git://git.kernel.org/pub/scm/linux/kernel/git/kvaneesh/linux-open-handle.git open-by-handle
-> 
-> Test case can be found at
-> http://git.kernel.org/?p=fs/ext2/kvaneesh/handle-test.git
-> git://git.kernel.org/pub/scm/fs/ext2/kvaneesh/handle-test.git
-> 
-> Changes from V20:
-> a) Use better variable names
-> b) change handle_size type to __u32
-> c) max handle size is now nfsv4 handle size. Considering file system would
->    want to support a handle that can fit into nfsv4 handle size limiting
->    max handle size to 128 rather than 4096 is the right thing.
-> d) I didn't add Ceph changes in the series. I am expecting the changes
->    will go via Ceph tree.
-> 
+Op 22-10-10 13:57, Samu Onkalo schreef:
+> Changes are tested only with I2C interface using 8bit sensor since I don't
+> have other possibilities. Some features are not enabled
+> by default since I can't test them with all possible configurations.
+> Platform data contains field which controls new features.
+Thanks Samu for persevering with the automatic power down feature. 
+Hopefully I'll find also some time to activate it on the hp_accel side.
 
-Hi Al,
+For now, I've reviewed the changes and everything looked fine, as well 
+as tested them on my HP laptop (with a 12 bits sensor). Although most of 
+the changes are not visible on this platform, at least there shouldn't 
+be any regression.
 
-Any update on this ? Can we get this merged in this merge window.
-
--aneesh
+Thanks,
+Eric
