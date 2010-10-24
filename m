@@ -1,71 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932470Ab0JXK61 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Oct 2010 06:58:27 -0400
-Received: from borg.asidev.net ([95.141.38.199]:50013 "EHLO borg.asidev.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932370Ab0JXK60 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Oct 2010 06:58:26 -0400
-X-Greylist: delayed 591 seconds by postgrey-1.27 at vger.kernel.org; Sun, 24 Oct 2010 06:58:26 EDT
-Message-ID: <4CC40EFD.8070000@evidence.eu.com>
-Date: Sun, 24 Oct 2010 12:48:29 +0200
-From: Claudio Scordino <claudio@evidence.eu.com>
-User-Agent: Thunderbird 2.0.0.23 (X11/20090817)
-MIME-Version: 1.0
-To: Nicolas Ferre <nicolas.ferre@atmel.com>
-CC: =?UTF-8?B?QXJrYWRpdXN6IEJ1YmHFgmE=?= <arkadiusz.bubala@gmail.com>,
-        linux@maxim.org.za,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>
-Subject: atmel_serial: fix RTS high after initialization in RS485 mode
-Content-Type: text/plain; charset=UTF-8
+	id S932511Ab0JXLSR (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Oct 2010 07:18:17 -0400
+Received: from webhosting01.bon.m2soft.com ([195.38.20.32]:54637 "EHLO
+	webhosting01.bon.m2soft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932492Ab0JXLSQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 24 Oct 2010 07:18:16 -0400
+Date: Sun, 24 Oct 2010 13:12:21 +0200
+From: Nicolas Kaiser <nikai@nikai.net>
+To: drbd-dev@lists.linbit.com
+Cc: drbd-user@lists.linbit.com, linux-kernel@vger.kernel.org
+Subject: [PATCH] block/drbd: fix error path
+Message-ID: <20101024131221.1cf6e0f2@absol.kitzblitz>
+Organization: -
+X-Face: "fF&[w2"Nws:JNH4'g|:gVhgGKLhj|X}}&w&V?]0=,7n`jy8D6e[Jh=7+ca|4~t5e[ItpL5
+ N'y~Mvi-vJm`"1T5fi1^b!&EG]6nW~C!FN},=$G?^U2t~n[3;u\"5-|~H{-5]IQ2
+X-Mailer: Claws Mail (Linux)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Nicolas,
+Failure to create drbd_ee_mempool appears not to get checked.
+Looks like a copy-and-paste problem to me.
 
-	when working in RS485 mode, the atmel_serial driver keeps RTS
-high after the initialization of the serial port. It goes low only after
-the first character has been sent. 
-
-This patch fixes this behavior. It has been already tested by Arkadiusz (CC:-ed).
-
-Best regards,
-
-	Claudio
-
-
-atmel_serial: RTS line low after initialization of the serial port
-
-Signed-off-by: Claudio Scordino <claudio@evidence.eu.com>
-Signed-off-by: Arkadiusz Bubala <arkadiusz.bubala@gmail.com>
+Signed-off-by: Nicolas Kaiser <nikai@nikai.net>
 ---
- drivers/serial/atmel_serial.c |    9 +++++++++
- 1 files changed, 9 insertions(+), 0 deletions(-)
+ drivers/block/drbd/drbd_main.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/serial/atmel_serial.c b/drivers/serial/atmel_serial.c
-index 3892666..85aa66f 100644
---- a/drivers/serial/atmel_serial.c
-+++ b/drivers/serial/atmel_serial.c
-@@ -1732,6 +1732,15 @@ static int __devinit atmel_serial_probe(struct platform_device *pdev)
- 	device_init_wakeup(&pdev->dev, 1);
- 	platform_set_drvdata(pdev, port);
+diff --git a/drivers/block/drbd/drbd_main.c b/drivers/block/drbd/drbd_main.c
+index c5dfe64..25c7a73 100644
+--- a/drivers/block/drbd/drbd_main.c
++++ b/drivers/block/drbd/drbd_main.c
+@@ -2982,7 +2982,7 @@ static int drbd_create_mempools(void)
  
-+	if (port->rs485.flags & SER_RS485_ENABLED) {
-+		unsigned int control = 0;
-+		unsigned int mode = 0;
-+		control |= ATMEL_US_RTSEN;
-+		mode |= ATMEL_US_USMODE_NORMAL;
-+		UART_PUT_MR(&port->uart, mode);
-+		UART_PUT_CR(&port->uart, control);
-+	}
-+
- 	return 0;
+ 	drbd_ee_mempool = mempool_create(number,
+ 		mempool_alloc_slab, mempool_free_slab, drbd_ee_cache);
+-	if (drbd_request_mempool == NULL)
++	if (drbd_ee_mempool == NULL)
+ 		goto Enomem;
  
- err_add_port:
+ 	/* drbd's page pool */
 -- 
-1.6.0.4
-
+1.7.2.2
