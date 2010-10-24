@@ -1,87 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751081Ab0JXWzM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Oct 2010 18:55:12 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:38495 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750908Ab0JXWzK convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Oct 2010 18:55:10 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=cNf30qFSY6/4E3YC0BfmI+BLE2n0tMw2xDicbucAcsaPQP446x78SYpEudC/kScWyt
-         ijP8mQZQISMQYvwCqg6/LoEbKpxGIcnOQMZO9ve5sY5gojTyJsW+0wZ7jTp6CoRrgCBK
-         sMsUTtD5NYoMnwjkrLdEt/F64iR4tqtambic0=
-MIME-Version: 1.0
-In-Reply-To: <20101022045509.GA16804@localhost>
-References: <20101022045509.GA16804@localhost>
-Date: Mon, 25 Oct 2010 07:55:09 +0900
-Message-ID: <AANLkTinU7UqBpoUOzE=JfMLtk006Ou=EVJ+6dB1KnBVj@mail.gmail.com>
-Subject: Re: [PATCH] mm: Avoid possible deadlock caused by too_many_isolated()
-From: Minchan Kim <minchan.kim@gmail.com>
-To: Wu Fengguang <fengguang.wu@intel.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Neil Brown <neilb@suse.de>,
-        Rik van Riel <riel@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "Li, Shaohua" <shaohua.li@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1751345Ab0JXX2p (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Oct 2010 19:28:45 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:59396 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751164Ab0JXX2o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 24 Oct 2010 19:28:44 -0400
+Date: Mon, 25 Oct 2010 10:28:33 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Avi Kivity <avi@redhat.com>, linux-kernel <linux-kernel@vger.kernel.org>,
+        KVM list <kvm@vger.kernel.org>, Marcelo Tosatti <mtosatti@redhat.com>
+Subject: Re: [GIT PULL] KVM updates for the 2.6.37 merge window
+Message-Id: <20101025102833.a8f7f252.sfr@canb.auug.org.au>
+In-Reply-To: <4CC434A8.1000903@redhat.com>
+References: <4CC434A8.1000903@redhat.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Mon__25_Oct_2010_10_28_33_+1100_eMUJSf_QNyNyFHei"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 22, 2010 at 1:55 PM, Wu Fengguang <fengguang.wu@intel.com> wrote:
-> Neil find that if too_many_isolated() returns true while performing
-> direct reclaim we can end up waiting for other threads to complete their
-> direct reclaim.  If those threads are allowed to enter the FS or IO to
-> free memory, but this thread is not, then it is possible that those
-> threads will be waiting on this thread and so we get a circular
-> deadlock.
->
-> some task enters direct reclaim with GFP_KERNEL
->  => too_many_isolated() false
->    => vmscan and run into dirty pages
->      => pageout()
->        => take some FS lock
->          => fs/block code does GFP_NOIO allocation
->            => enter direct reclaim again
->              => too_many_isolated() true
->                  => waiting for others to progress, however the other
->                     tasks may be circular waiting for the FS lock..
->
-> The fix is to let !__GFP_IO and !__GFP_FS direct reclaims enjoy higher
-> priority than normal ones, by lowering the throttle threshold for the
-> latter.
->
-> Allowing ~1/8 isolated pages in normal is large enough. For example,
-> for a 1GB LRU list, that's ~128MB isolated pages, or 1k blocked tasks
-> (each isolates 32 4KB pages), or 64 blocked tasks per logical CPU
-> (assuming 16 logical CPUs per NUMA node). So it's not likely some CPU
-> goes idle waiting (when it could make progress) because of this limit:
-> there are much more sleeping reclaim tasks than the number of CPU, so
-> the task may well be blocked by some low level queue/lock anyway.
->
-> Now !GFP_IOFS reclaims won't be waiting for GFP_IOFS reclaims to
-> progress. They will be blocked only when there are too many concurrent
-> !GFP_IOFS reclaims, however that's very unlikely because the IO-less
-> direct reclaims is able to progress much more faster, and they won't
-> deadlock each other. The threshold is raised high enough for them, so
-> that there can be sufficient parallel progress of !GFP_IOFS reclaims.
->
-> CC: Torsten Kaiser <just.for.lkml@googlemail.com>
-> CC: Minchan Kim <minchan.kim@gmail.com>
-> Tested-by: NeilBrown <neilb@suse.de>
-> Acked-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-> Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
-Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
+--Signature=_Mon__25_Oct_2010_10_28_33_+1100_eMUJSf_QNyNyFHei
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
+Hey Linus,
 
+On Sun, 24 Oct 2010 15:29:12 +0200 Avi Kivity <avi@redhat.com> wrote:
+>
+>   Linus, the repository and branch
+>=20
+>    git://git.kernel.org/pub/scm/virt/kvm/kvm.git kvm-updates/2.6.37
+>=20
+> contains the kvm updates for the 2.6.37 merge window.  Major changes=20
+> this time around include powerpc paravirtualization, a virtual tsc=20
+> rework, and exposing npt to the guest for fast nested virtualization. =20
+> Please pull.
 
--- 
-Kind regards,
-Minchan Kim
+This entire branch was rebased just 11 hours or so before being merged
+and you have "talked" about this for many merge windows that I can
+remember.  "Just saying" :-)
+
+[Avi, I am not particularly picking on you, your tree just happened to
+strike me this morning ... there are many others.  At least you also
+updated your linux-next branch so I won't have to cope with two slightly
+different versions and all the conflicts that causes :-)]
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Mon__25_Oct_2010_10_28_33_+1100_eMUJSf_QNyNyFHei
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iQEcBAEBAgAGBQJMxMEhAAoJEDMEi1NhKgbs1mwH/12wLk/HzFiDdoVOXS9S0JPq
+rUbJ8akQSqy4OrMqdI+D1k4vn8/LsBKIKAzkKThv7n6WpW6QKZNamGwwRLmDLrao
+1Ay+HN4V1fMViomVOLK/OohcjkXDAGXFCfVvbN8+oRqVahxgt2Uz7qhIzG38XgGw
+kb1929B6tQ3HyBc84NkW8mp+QxiDn5vPLwN0uJU5omrfq/IxBpeZfBcueo+z5y/7
+uNske91yVvUaeGbOIVV63AEpKbbppo1JqZnU4cYqlHiZ+EvFxzUProHLr5vqGn7D
+YZ/FU9cglu/L/4b13cYOPkW+nwb3Wp9iGs2ch9evXcqfUHvvZ2joXC2QmNupb5Q=
+=WZiJ
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__25_Oct_2010_10_28_33_+1100_eMUJSf_QNyNyFHei--
