@@ -1,46 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932532Ab0JXLuE (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Oct 2010 07:50:04 -0400
-Received: from einhorn.in-berlin.de ([192.109.42.8]:54832 "EHLO
-	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932370Ab0JXLuB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Oct 2010 07:50:01 -0400
-X-Envelope-From: stefanr@s5r6.in-berlin.de
-Message-ID: <4CC41D61.7020303@s5r6.in-berlin.de>
-Date: Sun, 24 Oct 2010 13:49:53 +0200
-From: Stefan Richter <stefanr@s5r6.in-berlin.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.8.1.23) Gecko/20100627 SeaMonkey/1.1.18
-MIME-Version: 1.0
-To: Alan Stern <stern@rowland.harvard.edu>
-CC: David Brownell <david-b@pacbell.net>, USB list <linux-usb@vger.kernel.org>,
-        Kernel development list <linux-kernel@vger.kernel.org>
-Subject: Re: 2.6.36-rc7: NULL pointer dereference in ehci_clear_tt_buffer_complete
-References: <Pine.LNX.4.44L0.1010191049440.1786-100000@iolanthe.rowland.org>
-In-Reply-To: <Pine.LNX.4.44L0.1010191049440.1786-100000@iolanthe.rowland.org>
-X-Enigmail-Version: 0.96.0
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S932551Ab0JXL6l (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Oct 2010 07:58:41 -0400
+Received: from verein.lst.de ([213.95.11.210]:35061 "EHLO verein.lst.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932443Ab0JXL6k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 24 Oct 2010 07:58:40 -0400
+Date: Sun, 24 Oct 2010 13:58:37 +0200
+From: Christoph Hellwig <hch@lst.de>
+To: Jens Axboe <jaxboe@fusionio.com>
+Cc: Christoph Hellwig <hch@lst.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>
+Subject: Re: [PATCH] block: remove REQ_HARDBARRIER
+Message-ID: <20101024115837.GA25644@lst.de>
+References: <1281977523-19335-1-git-send-email-tj@kernel.org> <201008241745.35242.philipp.reisner@linbit.com> <20101022083511.GA7853@lst.de> <201010231318.33517.philipp.reisner@linbit.com> <4CC311D5.9040904@fusionio.com> <20101023165924.GA1395@lst.de> <4CC3326E.5020009@fusionio.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4CC3326E.5020009@fusionio.com>
+User-Agent: Mutt/1.3.28i
+X-Spam-Score: -0.001 () BAYES_44
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Alan Stern wrote:
-> Okay, here's a patch which definitely causes the problem to surface.  
-> It contains some extra debugging printouts but you can ignore them.  Or 
-> you can edit out the hunks that affect ehci-q.c.
-> 
-> Ideally, you would test this while forcing the card reader to run at
-> full speed, by putting a USB-1.1 hub between the monitor and the card
-> reader.  But if you don't have one available, don't worry -- the error
-> message should still appear even though it won't lead to an oops.
-> 
-> And of course, when you run this along with the proposed fix, the error 
-> message should go away.  :-)
+On Sat, Oct 23, 2010 at 09:07:26PM +0200, Jens Axboe wrote:
+> Thanks Christoph, applied for 2.6.37 (but with a few days of brewing).
 
-Thanks, I will try it RSN, hopefully one of the next few days.
--- 
-Stefan Richter
--=====-==-=- =-=- ==---
-http://arcgraph.de/sr/
+Btw, in case it wasn't clear - this needs to be applied only after the
+drbd patches that remove the drbd use of REQ_HARDBARRIER.
