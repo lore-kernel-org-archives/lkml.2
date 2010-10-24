@@ -1,60 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757908Ab0JXQVA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Oct 2010 12:21:00 -0400
-Received: from sj-iport-6.cisco.com ([171.71.176.117]:4026 "EHLO
-	sj-iport-6.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754820Ab0JXQU7 (ORCPT
+	id S1758085Ab0JXQVf (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Oct 2010 12:21:35 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:41394 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754820Ab0JXQVe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Oct 2010 12:20:59 -0400
-Authentication-Results: sj-iport-6.cisco.com; dkim=neutral (message not signed) header.i=none
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvsEAAb6w0yrRN+K/2dsb2JhbAChZnGeV5s0hUgEhFSFeYUE
-X-IronPort-AV: E=Sophos;i="4.58,232,1286150400"; 
-   d="scan'208";a="609059865"
-From: Roland Dreier <rdreier@cisco.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Mike Frysinger <vapier@gentoo.org>, Luca Barbieri <luca@luca-barbieri.com>,
+	Sun, 24 Oct 2010 12:21:34 -0400
+Date: Sun, 24 Oct 2010 12:21:31 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Dave Chinner <david@fromorbit.com>, linux-fsdevel@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] lib/atomic64_test: do not build on non-atomic64 systems
-References: <1287250035-30404-1-git-send-email-vapier@gentoo.org>
-	<20101021150250.f6499506.akpm@linux-foundation.org>
-	<201010211823.38287.vapier@gentoo.org>
-	<20101021155528.b3d6d027.akpm@linux-foundation.org>
-	<AANLkTim6AFDw_1V9rtF4e_2tmgctbKHziQa-1e3=q7og@mail.gmail.com>
-	<20101021162410.5c0d6720.akpm@linux-foundation.org>
-	<AANLkTikGbK7=eW9L4A62Rin-E3usq4Ke_dPoCdStDyEw@mail.gmail.com>
-	<20101022133138.6d82f79a.akpm@linux-foundation.org>
-X-Message-Flag: Warning: May contain useful information
-Date: Sun, 24 Oct 2010 09:20:34 -0700
-In-Reply-To: <20101022133138.6d82f79a.akpm@linux-foundation.org> (Andrew
-	Morton's message of "Fri, 22 Oct 2010 13:31:38 -0700")
-Message-ID: <adavd4ro94d.fsf@cisco.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
+Subject: Re: [PATCH 16/21] fs: Protect inode->i_state with the inode->i_lock
+Message-ID: <20101024162131.GA23677@infradead.org>
+References: <1287622186-1935-1-git-send-email-david@fromorbit.com>
+ <1287622186-1935-17-git-send-email-david@fromorbit.com>
+ <20101022015622.GE19804@ZenIV.linux.org.uk>
+ <20101022031431.GK12506@dastard>
+ <20101022103705.GK19804@ZenIV.linux.org.uk>
+ <20101023213752.GR19804@ZenIV.linux.org.uk>
+ <20101024141310.GA21513@infradead.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101024141310.GA21513@infradead.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- > That's only part of the problem.  The following won't build also:
+On Sun, Oct 24, 2010 at 10:13:10AM -0400, Christoph Hellwig wrote:
+> On Sat, Oct 23, 2010 at 10:37:52PM +0100, Al Viro wrote:
+> > 	* invalidate_inodes() - collect I_FREEING/I_WILL_FREE on a separate
+> > list, then (after we'd evicted the stuff we'd decided to evict) wait until
+> > they get freed by whatever's freeing them already.
+> 
+> Note that we would only have to do this for the umount case.  For others
+> it's pretty pointless.
 
- > drivers/infiniband/hw
+Now that I've looked into it I think we basically fine right now.
 
-Interesting... I hadn't looked at that usage before.  Both drivers that
-seem to use atomic64 already depend on 64BIT in Kconfig, so I suspect
-the intersection of 64BIT and !ATOMIC64 is empty?
+If we're in umount there should be no other I_FREEING inodes.
 
-But eg drivers/infiniband/hw/qib/qib_rc.c does essentially:
+ - concurrent prune_icache is prevented by iprune_sem.
+ - concurrent other invalidate_inodes should not happen because we're
+   in unmount and the filesystem should not be reachable any more,
+   and even if it did iprune_sem would protect us.
+ - how could a concurrent iput_final happen?  filesystem is not
+   accessible anymore, and iput of fs internal inodes is single-threaded
+   with the rest of the actual umount process.
 
-	atomic64_t *maddr;
-	u64 sdata = <something>
-	...
-	maddr = (atomic64_t *) qp->r_sge.sge.vaddr;
-	atomic64_add_return(sdata, maddr)
-
-is it legit to cast some random address to atomic64_t and expect it to
-work across archs that implement atomic64?  (I expect x86_64 is probably
-OK but I wonder if other architectures might not be so understanding)
-
- - R.
+So just skipping over I_FREEING inodes here should be fine for
+non-umount callers, and for umount we could even do a WARN_ON.
