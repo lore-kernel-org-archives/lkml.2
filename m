@@ -1,74 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759124Ab0JXTVA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Oct 2010 15:21:00 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:47874 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758979Ab0JXTU7 (ORCPT
+	id S932301Ab0JXTmw (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Oct 2010 15:42:52 -0400
+Received: from vms173011pub.verizon.net ([206.46.173.11]:46268 "EHLO
+	vms173011pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759091Ab0JXTmw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Oct 2010 15:20:59 -0400
-Date: Sun, 24 Oct 2010 21:20:53 +0200
-From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: Lothar =?iso-8859-1?Q?Wa=DFmann?= <LW@KARO-electronics.de>
-Cc: Nguyen Dinh-R00091 <R00091@freescale.com>, amit.kucheria@canonical.com,
-        linux@arm.linux.org.uk, s.hauer@pengutronix.de,
-        linux-kernel@vger.kernel.org, grant.likely@secretlab.ca,
-        valentin.longchamp@epfl.ch, daniel@caiaq.de, bryan.wu@canonical.com,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCHv5 2/3] ARM: imx: Add gpio-keys to plat-mxc
-Message-ID: <20101024192053.GB25810@pengutronix.de>
-References: <1287766575-4092-1-git-send-email-Dinh.Nguyen@freescale.com> <1287766575-4092-2-git-send-email-Dinh.Nguyen@freescale.com> <20101022182812.GA8554@pengutronix.de> <86A0E76937111F4C92FABEC0A2098851051D6090@az33exm21> <20101022194215.GB8554@pengutronix.de> <86A0E76937111F4C92FABEC0A2098851051D6116@az33exm21> <19651.61503.118511.923142@ipc1.ka-ro>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <19651.61503.118511.923142@ipc1.ka-ro>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Sun, 24 Oct 2010 15:42:52 -0400
+Message-id: <4CC48FA8.6010608@verizon.net>
+Date: Sun, 24 Oct 2010 15:57:28 -0400
+From: Lucas Philippidis <lucasphilippidis@verizon.net>
+Reply-to: lucasphilippidis@verizon.net
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.8) Gecko/20100227
+ Thunderbird/3.0.3
+MIME-version: 1.0
+To: linux-kernel@vger.kernel.org
+Subject: Question about Kernel Headers
+Content-type: text/plain; charset=ISO-8859-1; format=flowed
+Content-transfer-encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Lothar,
+Hello,
 
-On Sun, Oct 24, 2010 at 10:37:19AM +0200, Lothar Waßmann wrote:
-> Hi,
-> > >> How do you suggest I define this pin for Babbage board only? Do I add to iomux-mx51.h
-> > >> #define MX51_BABBAGE_PAD_EIM_A27__GPIO_2_21             IOMUX_PAD(0x45c, 0x0c8, 1, 0x0,
-> > >0,MX51_GPIO_PAD_CTRL | PAD_CTL_PUS_100K_UP) ?
-> > >>
-> > >> Or do I define the pin in the board file with a 100K_UP? Like how eukrea_mbimxsd-baseboard.c did for
-> > >MBIMXSD_GPIO_3_31?
-> > >I'd suggest something local to your machine file.  Unfortunately I don't
-> > >see an easy way to reuse the generic MX51_PAD_EIM_A27__GPIO_2_21 to
-> > >define your local symbol.  So I think something like you wrote above
-> > >should be fine.
-> > >
-> > >Too bad that
-> > >
-> > >	#define MX51_BABBAGE_PAD_EIM_A27__GPIO_2_21 (MX51_PAD_EIM_A27__GPIO_2_21 | PAD_CTL_PUS_100K_UP)
-> > >
-> > >doesn't work.
-> > 
-> > Yes, I also wish I didn't have to redefine the pin just because of PAD setting change. I am going to send out another patch that basically sets the pad_desc.pad_ctrl=PAD_SETTING in mxc_init_board() function. I think it's a bit cleaner than having to redefine the pin.
-> > 
-> IMO the 'struct pad_desc' should be replaced with an u64 bitmap that
-> would allow for the pullup and other definitions that may be board
-> specific to be simply or'ed to the pad definition.
-> 
-> I could try to provide a patch if this is agreed on.
-Hmm, I thought about that, too, when writing my mail and when I added
-the needed space for a struct pad_desc I stopped when it became >64.
-Somehow I must have got it wrong.  After rechecking now it's ==64, so
-yes, I'd like it.
+Please forgive this post but I am new. I am building an installation 
+media set and I am looking for the Linux-libc-headers for 2.6.35.7.
+I am following instructions from:
+http://www.tldp.org/LDP/lfs/LFS-BOOK-6.1.1-HTML/index.html and
+http://www.phenix.bnl.gov/~purschke/RescueCD/
 
-Best regards
-Uwe
+I want to use my old computers (Presario 433 with Evergreen AMD 586
+overdrive) to participate as a debugger. I figure if I can find
+problems between the various base packages, I can inform the
+appropriate list. The packages I plan on integrating are listed at the
+tldp.org site. I would also like to know the name of the lists that
+test software integration.
 
--- 
-Pengutronix e.K.                           | Uwe Kleine-König            |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Thank you for your time.
+
+Sincerely,
+Lucas
