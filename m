@@ -1,81 +1,328 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753323Ab0JYHVh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Oct 2010 03:21:37 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:50684 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751538Ab0JYHVg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Oct 2010 03:21:36 -0400
-Date: Mon, 25 Oct 2010 09:21:26 +0200
-From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: Lothar =?iso-8859-1?Q?Wa=DFmann?= <LW@KARO-electronics.de>
-Cc: Nguyen Dinh-R00091 <R00091@freescale.com>, amit.kucheria@canonical.com,
-        linux@arm.linux.org.uk, s.hauer@pengutronix.de,
-        linux-kernel@vger.kernel.org, grant.likely@secretlab.ca,
-        valentin.longchamp@epfl.ch, daniel@caiaq.de, bryan.wu@canonical.com,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCHv5 2/3] ARM: imx: Add gpio-keys to plat-mxc
-Message-ID: <20101025072126.GG8554@pengutronix.de>
-References: <1287766575-4092-1-git-send-email-Dinh.Nguyen@freescale.com> <1287766575-4092-2-git-send-email-Dinh.Nguyen@freescale.com> <20101022182812.GA8554@pengutronix.de> <86A0E76937111F4C92FABEC0A2098851051D6090@az33exm21> <20101022194215.GB8554@pengutronix.de> <86A0E76937111F4C92FABEC0A2098851051D6116@az33exm21> <19651.61503.118511.923142@ipc1.ka-ro> <20101024192053.GB25810@pengutronix.de> <19653.11169.583189.236012@ipc1.ka-ro>
+	id S1753193Ab0JYH0Y (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Oct 2010 03:26:24 -0400
+Received: from mga14.intel.com ([143.182.124.37]:17020 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752127Ab0JYH0X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Oct 2010 03:26:23 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.58,235,1286175600"; 
+   d="scan'208";a="340004487"
+Date: Mon, 25 Oct 2010 15:26:17 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Neil Brown <neilb@suse.de>
+Cc: Jens Axboe <axboe@kernel.dk>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Torsten Kaiser <just.for.lkml@googlemail.com>,
+        Rik van Riel <riel@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "Li, Shaohua" <shaohua.li@intel.com>
+Subject: Re: Deadlock possibly caused by too_many_isolated.
+Message-ID: <20101025072616.GA5452@localhost>
+References: <AANLkTimVu+5gTDs8przJVP2EbWC=FX-zWW7aH08BtrHC@mail.gmail.com>
+ <20101020055717.GA12752@localhost>
+ <20101020150346.1832.A69D9226@jp.fujitsu.com>
+ <20101020092739.GA23869@localhost>
+ <4CBEE888.2090606@kernel.dk>
+ <20101022053755.GB16804@localhost>
+ <20101022080725.GA22594@localhost>
+ <4CC146B1.8060906@kernel.dk>
+ <20101024165234.GA23508@localhost>
+ <20101025174051.31a00481@notabene>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <19653.11169.583189.236012@ipc1.ka-ro>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+In-Reply-To: <20101025174051.31a00481@notabene>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Lothar,
-
-On Mon, Oct 25, 2010 at 09:02:57AM +0200, Lothar Waßmann wrote:
-> Uwe Kleine-König writes:
-> > On Sun, Oct 24, 2010 at 10:37:19AM +0200, Lothar Waßmann wrote:
-> > > Hi,
-> > > > >> How do you suggest I define this pin for Babbage board only? Do I add to iomux-mx51.h
-> > > > >> #define MX51_BABBAGE_PAD_EIM_A27__GPIO_2_21             IOMUX_PAD(0x45c, 0x0c8, 1, 0x0,
-> > > > >0,MX51_GPIO_PAD_CTRL | PAD_CTL_PUS_100K_UP) ?
-> > > > >>
-> > > > >> Or do I define the pin in the board file with a 100K_UP? Like how eukrea_mbimxsd-baseboard.c did for
-> > > > >MBIMXSD_GPIO_3_31?
-> > > > >I'd suggest something local to your machine file.  Unfortunately I don't
-> > > > >see an easy way to reuse the generic MX51_PAD_EIM_A27__GPIO_2_21 to
-> > > > >define your local symbol.  So I think something like you wrote above
-> > > > >should be fine.
-> > > > >
-> > > > >Too bad that
-> > > > >
-> > > > >	#define MX51_BABBAGE_PAD_EIM_A27__GPIO_2_21 (MX51_PAD_EIM_A27__GPIO_2_21 | PAD_CTL_PUS_100K_UP)
-> > > > >
-> > > > >doesn't work.
+On Mon, Oct 25, 2010 at 02:40:51PM +0800, Neil Brown wrote:
+> On Mon, 25 Oct 2010 00:52:34 +0800
+> Wu Fengguang <fengguang.wu@intel.com> wrote:
+> 
+> > On Fri, Oct 22, 2010 at 04:09:21PM +0800, Jens Axboe wrote:
+> > > On 2010-10-22 10:07, Wu Fengguang wrote:
+> > > >>> We surely need 1 set aside for each level of that stack that will
+> > > >>> potentially consume one. 1 should be enough for the generic pool, and
+> > > >>> then clones will use a separate pool. So md and friends should really
+> > > >>> have a pool per device, so that stacking will always work properly.
+> > > >>
+> > > >> Agreed for the deadlock problem.
+> > > >>
+> > > >>> There should be no throughput concerns, it should purely be a safe guard
+> > > >>> measure to prevent us deadlocking when doing IO for reclaim.
+> > > >>
+> > > >> It's easy to verify whether the minimal size will have negative
+> > > >> impacts on IO throughput. In Torsten's case, increase BIO_POOL_SIZE
+> > > >> by one and check how it performs.
 > > > > 
-> > > > Yes, I also wish I didn't have to redefine the pin just because of PAD setting change. I am going to send out another patch that basically sets the pad_desc.pad_ctrl=PAD_SETTING in mxc_init_board() function. I think it's a bit cleaner than having to redefine the pin.
-> > > > 
-> > > IMO the 'struct pad_desc' should be replaced with an u64 bitmap that
-> > > would allow for the pullup and other definitions that may be board
-> > > specific to be simply or'ed to the pad definition.
+> > > > Sorry it seems simply increasing BIO_POOL_SIZE is not enough to fix
+> > > > possible deadlocks. We need adding new mempool(s). Because when there
+> > > > BIO_POOL_SIZE=2 and there are two concurrent reclaimers each take 1
+> > > > reservation, they will deadlock each other when trying to take the
+> > > > next bio at the raid1 level.
 > > > 
-> > > I could try to provide a patch if this is agreed on.
-> > Hmm, I thought about that, too, when writing my mail and when I added
-> > the needed space for a struct pad_desc I stopped when it became >64.
-> > Somehow I must have got it wrong.  After rechecking now it's ==64, so
-> > yes, I'd like it.
+> > > Yes, plus it's not a practical solution since you don't know how deep
+> > > the stack is. As I wrote in the initial email, each consumer needs it's
+> > > own private mempool (and just 1 entry should suffice).
 > > 
-> What kernel version should I base it on?
-> The master branch of git://git.pengutronix.de/git/imx/linux-2.6.git?
-I'd use the the for-rmk branch that rmk just pulled for .37.  imx/master
-is at v2.6.35-rc4 which feels wrong.
+> > You are right. The below scratch patch adds minimal mempool code for raid1.
+> > It passed simple stress test of resync + 3 dd writers. Although write
+> > throughput is rather slow in my qemu, I don't observe any
+> > temporary/permanent stuck ups.
+> 
+> Hi,
+>   thanks for the patch.  I'll make a few changes to what I finally apply -
+>   for example we don't really need mempools in r1buf_poll_alloc as that isn't
+>   on the writeout path - so I'll tidy that up first.
 
-Best regards
-Uwe
+OK. That change is not absolutely necessary for the deadlock fix.
 
--- 
-Pengutronix e.K.                           | Uwe Kleine-König            |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+It's done just in hope of improving things a bit under memory
+pressure: r1buf_poll_alloc() allocates N bios at one time, which might
+temporarily exhaust BIO_POOL_SIZE. Since that path is independent of
+the normal write path, so I simply reuse the r1_bio_set.
+
+>   Also I'll avoid making changes to fs/bio.c at first.  It may still be a
+>   good idea to have a bio_clone_bioset, but that should be a separate patch -
+>   there are at least 3 places that would use it.
+
+Fair enough. I did the
+
+        fs_bio_set->bio_destructor = bio_fs_destructor;
+
+hack for the same reason: it's better to pass the destructor func as
+a parameter to bioset_create(), however that requires changing more
+places.
+
+> Thanks - I'll try to get this into the current merge window.
+
+Thank you!
+
+Thanks,
+Fengguang
+
+> > 
+> >  drivers/md/raid1.c  |   32 ++++++++++++++++++++++++++++----
+> >  drivers/md/raid1.h  |    2 ++
+> >  fs/bio.c            |   31 +++++++++++++++++++++----------
+> >  include/linux/bio.h |    2 ++
+> >  4 files changed, 53 insertions(+), 14 deletions(-)
+> > 
+> > --- linux-next.orig/drivers/md/raid1.c	2010-10-25 00:02:40.000000000 +0800
+> > +++ linux-next/drivers/md/raid1.c	2010-10-25 00:28:16.000000000 +0800
+> > @@ -76,6 +76,14 @@ static void r1bio_pool_free(void *r1_bio
+> >  	kfree(r1_bio);
+> >  }
+> >  
+> > +static void r1_bio_destructor(struct bio *bio)
+> > +{
+> > +	r1bio_t *r1_bio = bio->bi_private;
+> > +	conf_t *conf = r1_bio->mddev->private;
+> > +
+> > +	bio_free(bio, conf->r1_bio_set);
+> > +}
+> > +
+> >  #define RESYNC_BLOCK_SIZE (64*1024)
+> >  //#define RESYNC_BLOCK_SIZE PAGE_SIZE
+> >  #define RESYNC_SECTORS (RESYNC_BLOCK_SIZE >> 9)
+> > @@ -85,6 +93,7 @@ static void r1bio_pool_free(void *r1_bio
+> >  static void * r1buf_pool_alloc(gfp_t gfp_flags, void *data)
+> >  {
+> >  	struct pool_info *pi = data;
+> > +	conf_t *conf = pi->mddev->private;
+> >  	struct page *page;
+> >  	r1bio_t *r1_bio;
+> >  	struct bio *bio;
+> > @@ -100,7 +109,8 @@ static void * r1buf_pool_alloc(gfp_t gfp
+> >  	 * Allocate bios : 1 for reading, n-1 for writing
+> >  	 */
+> >  	for (j = pi->raid_disks ; j-- ; ) {
+> > -		bio = bio_alloc(gfp_flags, RESYNC_PAGES);
+> > +		bio = bio_alloc_bioset(gfp_flags, RESYNC_PAGES,
+> > +				       conf->r1_bio_set);
+> >  		if (!bio)
+> >  			goto out_free_bio;
+> >  		r1_bio->bios[j] = bio;
+> > @@ -386,6 +396,10 @@ static void raid1_end_write_request(stru
+> >  				!test_bit(R1BIO_Degraded, &r1_bio->state),
+> >  				behind);
+> >  		md_write_end(r1_bio->mddev);
+> > +		if (to_put) {
+> > +			bio_put(to_put);
+> > +			to_put = NULL;
+> > +		}
+> >  		raid_end_bio_io(r1_bio);
+> >  	}
+> >  
+> > @@ -851,7 +865,7 @@ static int make_request(mddev_t *mddev, 
+> >  		}
+> >  		r1_bio->read_disk = rdisk;
+> >  
+> > -		read_bio = bio_clone(bio, GFP_NOIO);
+> > +		read_bio = bio_clone_bioset(bio, GFP_NOIO, conf->r1_bio_set);
+> >  
+> >  		r1_bio->bios[rdisk] = read_bio;
+> >  
+> > @@ -946,7 +960,7 @@ static int make_request(mddev_t *mddev, 
+> >  		if (!r1_bio->bios[i])
+> >  			continue;
+> >  
+> > -		mbio = bio_clone(bio, GFP_NOIO);
+> > +		mbio = bio_clone_bioset(bio, GFP_NOIO, conf->r1_bio_set);
+> >  		r1_bio->bios[i] = mbio;
+> >  
+> >  		mbio->bi_sector	= r1_bio->sector + conf->mirrors[i].rdev->data_offset;
+> > @@ -1646,7 +1660,9 @@ static void raid1d(mddev_t *mddev)
+> >  					mddev->ro ? IO_BLOCKED : NULL;
+> >  				r1_bio->read_disk = disk;
+> >  				bio_put(bio);
+> > -				bio = bio_clone(r1_bio->master_bio, GFP_NOIO);
+> > +				bio = bio_clone_bioset(r1_bio->master_bio,
+> > +						       GFP_NOIO,
+> > +						       conf->r1_bio_set);
+> >  				r1_bio->bios[r1_bio->read_disk] = bio;
+> >  				rdev = conf->mirrors[disk].rdev;
+> >  				if (printk_ratelimit())
+> > @@ -1948,6 +1964,10 @@ static conf_t *setup_conf(mddev_t *mddev
+> >  					  conf->poolinfo);
+> >  	if (!conf->r1bio_pool)
+> >  		goto abort;
+> > +	conf->r1_bio_set = bioset_create(mddev->raid_disks * 2, 0);
+> > +	if (!conf->r1_bio_set)
+> > +		goto abort;
+> > +	conf->r1_bio_set->bio_destructor = r1_bio_destructor;
+> >  
+> >  	conf->poolinfo->mddev = mddev;
+> >  
+> > @@ -2012,6 +2032,8 @@ static conf_t *setup_conf(mddev_t *mddev
+> >  	if (conf) {
+> >  		if (conf->r1bio_pool)
+> >  			mempool_destroy(conf->r1bio_pool);
+> > +		if (conf->r1_bio_set)
+> > +			bioset_free(conf->r1_bio_set);
+> >  		kfree(conf->mirrors);
+> >  		safe_put_page(conf->tmppage);
+> >  		kfree(conf->poolinfo);
+> > @@ -2121,6 +2143,8 @@ static int stop(mddev_t *mddev)
+> >  	blk_sync_queue(mddev->queue); /* the unplug fn references 'conf'*/
+> >  	if (conf->r1bio_pool)
+> >  		mempool_destroy(conf->r1bio_pool);
+> > +	if (conf->r1_bio_set)
+> > +		bioset_free(conf->r1_bio_set);
+> >  	kfree(conf->mirrors);
+> >  	kfree(conf->poolinfo);
+> >  	kfree(conf);
+> > --- linux-next.orig/fs/bio.c	2010-10-25 00:02:39.000000000 +0800
+> > +++ linux-next/fs/bio.c	2010-10-25 00:03:37.000000000 +0800
+> > @@ -306,6 +306,7 @@ out_set:
+> >  	bio->bi_flags |= idx << BIO_POOL_OFFSET;
+> >  	bio->bi_max_vecs = nr_iovecs;
+> >  	bio->bi_io_vec = bvl;
+> > +	bio->bi_destructor = bs->bio_destructor;
+> >  	return bio;
+> >  
+> >  err_free:
+> > @@ -340,12 +341,7 @@ static void bio_fs_destructor(struct bio
+> >   */
+> >  struct bio *bio_alloc(gfp_t gfp_mask, int nr_iovecs)
+> >  {
+> > -	struct bio *bio = bio_alloc_bioset(gfp_mask, nr_iovecs, fs_bio_set);
+> > -
+> > -	if (bio)
+> > -		bio->bi_destructor = bio_fs_destructor;
+> > -
+> > -	return bio;
+> > +	return bio_alloc_bioset(gfp_mask, nr_iovecs, fs_bio_set);
+> >  }
+> >  EXPORT_SYMBOL(bio_alloc);
+> >  
+> > @@ -460,20 +456,21 @@ void __bio_clone(struct bio *bio, struct
+> >  EXPORT_SYMBOL(__bio_clone);
+> >  
+> >  /**
+> > - *	bio_clone	-	clone a bio
+> > + *	bio_clone_bioset	-	clone a bio
+> >   *	@bio: bio to clone
+> >   *	@gfp_mask: allocation priority
+> > + *	@bs: bio_set to allocate from
+> >   *
+> >   * 	Like __bio_clone, only also allocates the returned bio
+> >   */
+> > -struct bio *bio_clone(struct bio *bio, gfp_t gfp_mask)
+> > +struct bio *
+> > +bio_clone_bioset(struct bio *bio, gfp_t gfp_mask, struct bio_set *bs)
+> >  {
+> > -	struct bio *b = bio_alloc_bioset(gfp_mask, bio->bi_max_vecs, fs_bio_set);
+> > +	struct bio *b = bio_alloc_bioset(gfp_mask, bio->bi_max_vecs, bs);
+> >  
+> >  	if (!b)
+> >  		return NULL;
+> >  
+> > -	b->bi_destructor = bio_fs_destructor;
+> >  	__bio_clone(b, bio);
+> >  
+> >  	if (bio_integrity(bio)) {
+> > @@ -489,6 +486,19 @@ struct bio *bio_clone(struct bio *bio, g
+> >  
+> >  	return b;
+> >  }
+> > +EXPORT_SYMBOL(bio_clone_bioset);
+> > +
+> > +/**
+> > + *	bio_clone	-	clone a bio
+> > + *	@bio: bio to clone
+> > + *	@gfp_mask: allocation priority
+> > + *
+> > + *	Like __bio_clone, only also allocates the returned bio
+> > + */
+> > +struct bio *bio_clone(struct bio *bio, gfp_t gfp_mask)
+> > +{
+> > +	return bio_clone_bioset(bio, gfp_mask, fs_bio_set);
+> > +}
+> >  EXPORT_SYMBOL(bio_clone);
+> >  
+> >  /**
+> > @@ -1664,6 +1674,7 @@ static int __init init_bio(void)
+> >  	fs_bio_set = bioset_create(BIO_POOL_SIZE, 0);
+> >  	if (!fs_bio_set)
+> >  		panic("bio: can't allocate bios\n");
+> > +	fs_bio_set->bio_destructor = bio_fs_destructor;
+> >  
+> >  	bio_split_pool = mempool_create_kmalloc_pool(BIO_SPLIT_ENTRIES,
+> >  						     sizeof(struct bio_pair));
+> > --- linux-next.orig/include/linux/bio.h	2010-10-25 00:02:40.000000000 +0800
+> > +++ linux-next/include/linux/bio.h	2010-10-25 00:03:37.000000000 +0800
+> > @@ -227,6 +227,7 @@ extern int bio_phys_segments(struct requ
+> >  
+> >  extern void __bio_clone(struct bio *, struct bio *);
+> >  extern struct bio *bio_clone(struct bio *, gfp_t);
+> > +extern struct bio *bio_clone_bioset(struct bio *, gfp_t, struct bio_set *);
+> >  
+> >  extern void bio_init(struct bio *);
+> >  
+> > @@ -299,6 +300,7 @@ struct bio_set {
+> >  	mempool_t *bio_integrity_pool;
+> >  #endif
+> >  	mempool_t *bvec_pool;
+> > +	bio_destructor_t	*bio_destructor;
+> >  };
+> >  
+> >  struct biovec_slab {
+> > --- linux-next.orig/drivers/md/raid1.h	2010-10-25 00:02:40.000000000 +0800
+> > +++ linux-next/drivers/md/raid1.h	2010-10-25 00:03:37.000000000 +0800
+> > @@ -60,6 +60,8 @@ struct r1_private_data_s {
+> >  	mempool_t *r1bio_pool;
+> >  	mempool_t *r1buf_pool;
+> >  
+> > +	struct bio_set *r1_bio_set;
+> > +
+> >  	/* When taking over an array from a different personality, we store
+> >  	 * the new thread here until we fully activate the array.
+> >  	 */
