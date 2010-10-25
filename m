@@ -1,69 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755763Ab0JYODU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Oct 2010 10:03:20 -0400
-Received: from g5t0009.atlanta.hp.com ([15.192.0.46]:35882 "EHLO
-	g5t0009.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751912Ab0JYODS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Oct 2010 10:03:18 -0400
-Date: Mon, 25 Oct 2010 09:03:16 -0500
-From: scameron@beardog.cce.hp.com
-To: Vasiliy Kulikov <segooon@gmail.com>
-Cc: kernel-janitors@vger.kernel.org, Mike Miller <mike.miller@hp.com>,
-        Jens Axboe <jaxboe@fusionio.com>,
-        Andrew Morton <akpm@linux-foundation.org>, iss_storagedev@hp.com,
-        linux-kernel@vger.kernel.org, scameron@beardog.cce.hp.com
-Subject: Re: [PATCH 1/2] block: cciss: fix information leak to userland
-Message-ID: <20101025140316.GO9901@beardog.cce.hp.com>
-References: <1287822311-14783-1-git-send-email-segooon@gmail.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1287822311-14783-1-git-send-email-segooon@gmail.com>
-User-Agent: Mutt/1.4.2.2i
+	id S1755878Ab0JYODs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Oct 2010 10:03:48 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:31316 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752871Ab0JYODp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Oct 2010 10:03:45 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+Subject: [PATCH] Partially revert patch that encloses asm-offset.h numbers
+ in brackets
+To: torvalds@osdl.org, akpm@linux-foundation.org
+From: David Howells <dhowells@redhat.com>
+Cc: linux-arch@vger.kernel.org, Alexander van Heukelum <heukelum@fastmail.fm>,
+        linux-kernel@vger.kernel.org, Jan Beulich <jbeulich@novell.com>,
+        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@linux.intel.com>
+Date: Mon, 25 Oct 2010 15:02:18 +0100
+Message-ID: <20101025140218.5092.74117.stgit@warthog.procyon.org.uk>
+User-Agent: StGit/0.15-97-g9680-dirty
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Oct 23, 2010 at 12:25:11PM +0400, Vasiliy Kulikov wrote:
-> Structure IOCTL_Command_struct is copied to userland with some
-> padding fields at the end of the struct unitialized.
-> It leads to leaking of stack memory.
+Partially revert patch:
 
-leaking of contents of kernel stack memory to userland,
-not a memory leak, just to be clear.
+	commit 3234282f33b29d349bcada40204fc7c8fda7fe72
+	Author: Jan Beulich <JBeulich@novell.com>
+	Date:   Tue Oct 19 14:52:26 2010 +0100
+	x86, asm: Fix CFI macro invocations to deal with shortcomings in gas
 
-> 
-> Signed-off-by: Vasiliy Kulikov <segooon@gmail.com>
-> ---
->  drivers/block/cciss.c |    1 +
->  1 files changed, 1 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/block/cciss.c b/drivers/block/cciss.c
-> index 762a81a..cd08324 100644
-> --- a/drivers/block/cciss.c
-> +++ b/drivers/block/cciss.c
-> @@ -1142,6 +1142,7 @@ static int cciss_ioctl32_passthru(struct block_device *bdev, fmode_t mode,
->  	int err;
->  	u32 cp;
->  
-> +	memset(&arg64, 0, sizeof(arg64));
->  	err = 0;
->  	err |=
->  	    copy_from_user(&arg64.LUN_info, &arg32->LUN_info,
-> -- 
-> 1.7.0.4
+This breaks MN10300 arch as this changes many instances of instructions
+similar to the following:
 
-Ack.  
+	MOV	number,D0
 
-Thanks.
+which represents an immediate value load into:
 
-I would think hpsa needs a similar fix, and also cciss_ioctl32_big_passthru().
-I suppose it's possible the big passthru alignment just "works out", (I haven't
-checked), but even if that is the case, probably best not to rely on such an
-accident,
+	MOV	(number),D0
 
--- steve
+which the assembler then interprets as a load from absolute address.
 
+arch/mn10300/kernel/entry.S:64: Error: Invalid opcode/operands
+arch/mn10300/kernel/entry.S:65: Error: junk at end of line, first unrecognized character is `0'
+arch/mn10300/kernel/entry.S:74: Error: Invalid opcode/operands
+arch/mn10300/kernel/entry.S:74: Error: junk at end of line, first unrecognized character is `1'
+arch/mn10300/kernel/entry.S:75: Error: Invalid opcode/operands
+arch/mn10300/kernel/entry.S:76: Error: junk at end of line, first unrecognized character is `0'
+
+cc: Jan Beulich <jbeulich@novell.com>
+cc: Alexander van Heukelum <heukelum@fastmail.fm>
+cc: H. Peter Anvin <hpa@linux.intel.com>
+cc: Ingo Molnar <mingo@elte.hu>
+Signed-off-by: David Howells <dhowells@redhat.com>
+---
+
+ Kbuild |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+
+diff --git a/Kbuild b/Kbuild
+index 431f7ca..b00037a 100644
+--- a/Kbuild
++++ b/Kbuild
+@@ -53,7 +53,7 @@ targets += arch/$(SRCARCH)/kernel/asm-offsets.s
+ # Default sed regexp - multiline due to syntax constraints
+ define sed-y
+ 	"/^->/{s:->#\(.*\):/* \1 */:; \
+-	s:^->\([^ ]*\) [\$$#]*\([-0-9]*\) \(.*\):#define \1 (\2) /* \3 */:; \
++	s:^->\([^ ]*\) [\$$#]*\([-0-9]*\) \(.*\):#define \1 \2 /* \3 */:; \
+ 	s:^->\([^ ]*\) [\$$#]*\([^ ]*\) \(.*\):#define \1 \2 /* \3 */:; \
+ 	s:->::; p;}"
+ endef
 
