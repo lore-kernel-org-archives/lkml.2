@@ -1,92 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757316Ab0JYQhN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Oct 2010 12:37:13 -0400
-Received: from g4t0017.houston.hp.com ([15.201.24.20]:15496 "EHLO
-	g4t0017.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755825Ab0JYQhM convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Oct 2010 12:37:12 -0400
-From: "Miller, Mike (OS Dev)" <Mike.Miller@hp.com>
-To: "Miller, Mike (OS Dev)" <Mike.Miller@hp.com>,
-        Vasiliy Kulikov <segooon@gmail.com>,
-        "kernel-janitors@vger.kernel.org" <kernel-janitors@vger.kernel.org>
-CC: Jens Axboe <jaxboe@fusionio.com>,
-        "Stephen M. Cameron" <scameron@beardog.cce.hp.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        ISS StorageDev <iss_storagedev@hp.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Mon, 25 Oct 2010 16:36:28 +0000
-Subject: RE: [PATCH 1/2] block: cciss: fix information leak to userland
-Thread-Topic: [PATCH 1/2] block: cciss: fix information leak to userland
-Thread-Index: Actyi9MAiynw/EFuTcKVj9SuPgH/YgBxq23gAAQAf6A=
-Message-ID: <0F5B06BAB751E047AB5C87D1F77A77887D0E280943@GVW0547EXC.americas.hpqcorp.net>
-References: <1287822311-14783-1-git-send-email-segooon@gmail.com>
- <0F5B06BAB751E047AB5C87D1F77A77887D0E2807DF@GVW0547EXC.americas.hpqcorp.net>
-In-Reply-To: <0F5B06BAB751E047AB5C87D1F77A77887D0E2807DF@GVW0547EXC.americas.hpqcorp.net>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1757508Ab0JYQhz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Oct 2010 12:37:55 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:48659 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755825Ab0JYQhy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Oct 2010 12:37:54 -0400
+Message-ID: <4CC5B246.5070909@zytor.com>
+Date: Mon, 25 Oct 2010 09:37:26 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc13 Thunderbird/3.1.4
 MIME-Version: 1.0
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Jan Beulich <JBeulich@novell.com>,
+        Alexander van Heukelum <heukelum@fastmail.fm>,
+        Ingo Molnar <mingo@elte.hu>, akpm@linux-foundation.org,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        David Howells <dhowells@redhat.com>, linux-arch@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Partially revert patch that encloses asm-offset.h numbers
+ in brackets
+References: <4CC5B1A1020000780001EF7C@vpn.id2.novell.com> <20101025140218.5092.74117.stgit@warthog.procyon.org.uk> <28707.1288018465@redhat.com> <4CC5B8D3020000780001EFB4@vpn.id2.novell.com> <AANLkTi=mpKRQgZp5zCoCsBtkuWHrpkOq2Zch-OOGu4CC@mail.gmail.com> <4CC5A748.6050903@zytor.com> <AANLkTik1HB-P0x0e8ucHz7323F-_qAzkaHrHy1Yq4qwo@mail.gmail.com>
+In-Reply-To: <AANLkTik1HB-P0x0e8ucHz7323F-_qAzkaHrHy1Yq4qwo@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-> -----Original Message-----
-> From: Miller, Mike (OS Dev)
-> Sent: Monday, October 25, 2010 9:41 AM
-> To: Vasiliy Kulikov; kernel-janitors@vger.kernel.org
-> Cc: Jens Axboe; Stephen M. Cameron; Andrew Morton; ISS StorageDev;
-> linux-kernel@vger.kernel.org
-> Subject: RE: [PATCH 1/2] block: cciss: fix information leak to userland
+On 10/25/2010 09:16 AM, Linus Torvalds wrote:
+> On Mon, Oct 25, 2010 at 8:50 AM, H. Peter Anvin <hpa@zytor.com> wrote:
+>>
+>> As such, the only options I can really think about overriding the sed
+>> expression for x86 or just saying gcc 2.16.90 or later is required...
 > 
+> gas, not gcc. But yeah, maybe we can do that. How long has this space
+> breakage been going on? If it's a "we got a report from this one guy"
+> kind of thing, then just saying "we don't support old gas versions
+> because they are too broken" is probably the right thing to do.
 > 
+> No reason to make for maintenance problems and uglier code if we can
+> just say "get a newer gas" to a few people. It's not like we haven't
+> done that with gcc and other tools too.
 > 
-> > -----Original Message-----
-> > From: Vasiliy Kulikov [mailto:segooon@gmail.com]
-> > Sent: Saturday, October 23, 2010 3:25 AM
-> > To: kernel-janitors@vger.kernel.org
-> > Cc: Miller, Mike (OS Dev); Jens Axboe; Stephen M. Cameron;
-> > Andrew Morton; ISS StorageDev; linux-kernel@vger.kernel.org
-> > Subject: [PATCH 1/2] block: cciss: fix information leak to userland
-> >
-> > Structure IOCTL_Command_struct is copied to userland with
-> > some padding fields at the end of the struct unitialized.
-> > It leads to leaking of stack memory.
-> >
-> > Signed-off-by: Vasiliy Kulikov <segooon@gmail.com>
-> > ---
-> >  drivers/block/cciss.c |    1 +
-> >  1 files changed, 1 insertions(+), 0 deletions(-)
-> >
-> > diff --git a/drivers/block/cciss.c b/drivers/block/cciss.c
-> > index 762a81a..cd08324 100644
-> > --- a/drivers/block/cciss.c
-> > +++ b/drivers/block/cciss.c
-> > @@ -1142,6 +1142,7 @@ static int
-> > cciss_ioctl32_passthru(struct block_device *bdev, fmode_t mode,
-> >  	int err;
-> >  	u32 cp;
-> >
-> > +	memset(&arg64, 0, sizeof(arg64));
-> >  	err = 0;
-> >  	err |=
-> >  	    copy_from_user(&arg64.LUN_info, &arg32->LUN_info,
-> > --
-> 
-> Acked-by: Mike Miller <mike.miller@hp.com>
+>                        Linus
 
-BTW: this change needs to go into the cciss_ioctl32_big_passthru and the other passthru ioctls, also.
+The problem is that 2.16 isn't all that old; al lot of the "enterprise"
+distros still ship it or AFAIK even older versions.  2.6.90 which I
+*think* is the first fixed version dates from April 2005, so is
+currently 5 years old; maybe that is within reason to kill off.
 
--- mikem
+	-hpa
 
-> 
-> > 1.7.0.4
-> >
-> >
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
+
