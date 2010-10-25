@@ -1,66 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752801Ab0JYSmo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Oct 2010 14:42:44 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:57341 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750875Ab0JYSmm convert rfc822-to-8bit (ORCPT
+	id S1756649Ab0JYSsT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Oct 2010 14:48:19 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:38713 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751380Ab0JYSsS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Oct 2010 14:42:42 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=g7ecnT+crS6S35Bh954qNvIq2/9/UPGtBQ0WettRAMxnnWx6IXAmoq3q5NM1wmXICE
-         xUYm68DX0UQ9t2qaQvXwKsXlTDk3f8bMV9HDIG0y69pfz+lQpFCfvgfVLzY+fasnZCyf
-         vRaa3ys44WUwOROeqOtovNLrArihDE0HJ3boo=
+	Mon, 25 Oct 2010 14:48:18 -0400
+Date: Mon, 25 Oct 2010 14:47:56 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: Christoph Hellwig <hch@infradead.org>, daniel.stodden@citrix.com,
+        Jens Axboe <axboe@kernel.dk>, "Theodore Ts'o" <tytso@mit.edu>,
+        Jeremy Fitzhardinge <jeremy@goop.org>,
+        "Xen-devel@lists.xensource.com" <Xen-devel@lists.xensource.com>,
+        Andreas Dilger <adilger.kernel@dilger.ca>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [Xen-devel] Re: linux-next regression: IO errors in with ext4
+ and xen-blkfront
+Message-ID: <20101025184756.GA26230@infradead.org>
+References: <4CBF83A0.8090802@goop.org>
+ <4CBF84C9.6050606@goop.org>
+ <4CC148E5.2030605@kernel.dk>
+ <20101022082916.GA14070@infradead.org>
+ <20101025182630.GA6036@dumpdata.com>
 MIME-Version: 1.0
-In-Reply-To: <201010251127.37374.dmitry.torokhov@gmail.com>
-References: <20101023221253.GA4829@hathor>
-	<201010251127.37374.dmitry.torokhov@gmail.com>
-Date: Mon, 25 Oct 2010 12:42:41 -0600
-Message-ID: <AANLkTikcnJQnWYP+BTpUAvizU1iwwUo4=Nabe0L6xMXa@mail.gmail.com>
-Subject: Re: [PATCH] toshiba_acpi.c: Add key_entry for a lone FN keypress
-From: Azael Avalos <coproscefalo@gmail.com>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Jon Dowland <jmtd@debian.org>, Matthew Garrett <mjg@redhat.com>,
-        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101025182630.GA6036@dumpdata.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Mon, Oct 25, 2010 at 02:26:30PM -0400, Konrad Rzeszutek Wilk wrote:
+> I think we just blindly assume that we would pass the request
+> to the backend. And if the backend is running under an ancient
+> version (2.6.18), the behavior would be quite different.
 
-It actually generates on key press/release with different key codes,
-0x17f and 0x100 respectively. So I think that both should be added.
+I don't think this has much to do with the backend.  Xen never
+implemented empty barriers correctly.  This has been a bug since day
+one, although before no one noticed because the cruft in the old
+barrier code made them look like they succeed without them actually
+succeeding.  With the new barrier code you do get an error back for
+them - and you do get them more often because cache flushes aka
+empty barriers are the only thing we send now.
 
-On Mon, Oct 25, 2010 at 12:27 PM, Dmitry Torokhov
-<dmitry.torokhov@gmail.com> wrote:
-> On Saturday, October 23, 2010 03:12:53 pm Jon Dowland wrote:
->> A lone FN key press on a Toshiba Portégé R700 without another key in
->> conjunction results in an ACPI event and a spurious error message on
->> the console.
->>
->> Add a key entry to map this event to a KEY_UNKNOWN keypress silences
->> this message.
->>
->
-> Well, if FN key can generate separate events then we should report
-> KEY_FN, not KEY_UNKNOWN.
->
-> Thanks.
->
-> --
-> Dmitry
-> --
-> To unsubscribe from this list: send the line "unsubscribe platform-driver-x86" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
+The right fix is to add a cache flush command to the protocol which
+will do the right things for all guests.  In fact I read on a netbsd
+lists they had to do exactly that command to get their cache flushes
+to work, so it must exist for some versions of the backends.
 
-
-
--- 
--- El mundo apesta y vosotros apestais tambien --
