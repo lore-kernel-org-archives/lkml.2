@@ -1,74 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759317Ab0JYSCU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Oct 2010 14:02:20 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:55761 "EHLO SMTP.CITRIX.COM"
+	id S1759329Ab0JYSD0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Oct 2010 14:03:26 -0400
+Received: from solo.fdn.fr ([80.67.169.19]:51711 "EHLO solo.fdn.fr"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759226Ab0JYSCT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Oct 2010 14:02:19 -0400
-X-IronPort-AV: E=Sophos;i="4.58,236,1286164800"; 
-   d="scan'208";a="10798218"
-Subject: Re: [PATCH 1/5] xen: events: use irq_alloc_desc(_at) instead of
- open-coding an IRQ allocator.
-From: Ian Campbell <Ian.Campbell@eu.citrix.com>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: Jeremy Fitzhardinge <jeremy@goop.org>,
-        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "mingo@elte.hu" <mingo@elte.hu>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "tglx@linutronix.de" <tglx@linutronix.de>
-In-Reply-To: <20101025173522.GA5590@dumpdata.com>
-References: <1288023736.11153.40.camel@zakaz.uk.xensource.com>
-	 <1288023813-31989-1-git-send-email-ian.campbell@citrix.com>
-	 <20101025173522.GA5590@dumpdata.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Organization: Citrix Systems, Inc.
-Date: Mon, 25 Oct 2010 19:02:16 +0100
-Message-ID: <1288029736.10179.35.camel@localhost.localdomain>
+	id S1759226Ab0JYSDY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Oct 2010 14:03:24 -0400
+Date: Mon, 25 Oct 2010 20:03:20 +0200
+From: Samuel Thibault <sthibault@debian.org>
+To: Tom Vier <tom@triadsys.com>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, 594089@bugs.debian.org,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: Bug#594089: keyboard-configuration: caps lock keycode problem
+Message-ID: <20101025180320.GA4725@const.famille.thibault.fr>
+Mail-Followup-To: Samuel Thibault <sthibault@debian.org>,
+	Tom Vier <tom@triadsys.com>,
+	Dmitry Torokhov <dmitry.torokhov@gmail.com>, 594089@bugs.debian.org,
+	linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <20100823154353.2805.13525.reportbug@tom.tse> <20100903235540.GA9149@const> <4C866913.3030201@triadsys.com> <4C8E6861.1070502@triadsys.com> <20101024144150.GV24091@const.famille.thibault.fr> <20101025045003.GA1438@core.coreip.homeip.net> <4CC58816.3090301@triadsys.com>
 MIME-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <4CC58816.3090301@triadsys.com>
+User-Agent: Mutt/1.5.12-2006-07-14
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-10-25 at 18:35 +0100, Konrad Rzeszutek Wilk wrote:
-> So I am curious what the /proc/interrupts looks?The issue (and the reason
-> for this implementation above) was that under PV with PCI devices we would
-> overlap PCI devices IRQs with Xen event channels. So we could have a USB device
-> at IRQ 16 _and_ also a xen_spinlock4 handler. That would throw off the system
-> since the xen_spinlock4 was an edge type handler while the USB device was an
-> level (at least on my box).
+Tom Vier, le Mon 25 Oct 2010 09:37:26 -0400, a écrit :
+> On 10/25/2010 12:50 AM, Dmitry Torokhov wrote:
+> >On Sun, Oct 24, 2010 at 04:41:51PM +0200, Samuel Thibault wrote:
+> >>The short story is: Tom's keyboard sends all that when he presses caps
+> >>lock:
+> >>
+> >>press: 0x3a 0xe0 0x66
+> >>repeat: 0x3a
+> >>release: 0xba 0xe0 0xe6
+> >>
+> >>0xe0 0x66 happens to be the "favorites" key on his keyboard with
+> >>internet navigation keys.  I thus believe there's a bug in his keyboard
+> >>that needs to be filtered at the kernel level.
+> >>
+> >>The long story can be read on 
+> >>http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=594089
+> >
+> >Hmm, the question is whether the real "favorites" key send the same
+> >usage and the fake one after caps lock. Any chance Tom could locate
+> >evtest utility and see what MSC_SCAN events being emitted?
+> 
+> Sure. Here's caps-lock:
+> 
+> Event: time 1288013671.633008, -------------- Report Sync ------------
+> Event: time 1288013674.171812, type 4 (Misc), code 4 (ScanCode), value 70039
+> Event: time 1288013674.171853, type 1 (Key), code 58 (CapsLock), value 1
+> Event: time 1288013674.171862, -------------- Report Sync ------------
+> Event: time 1288013674.172210, type 17 (LED), code 1 (CapsLock), value 1
+> Event: time 1288013674.299553, type 4 (Misc), code 4 (ScanCode), value 70039
+> Event: time 1288013674.299580, type 1 (Key), code 58 (CapsLock), value 0
+> Event: time 1288013674.299593, -------------- Report Sync ------------
+> 
+> 
+> Right-shift (the other problem key):
+> 
+> Event: time 1288013798.388025, -------------- Report Sync ------------
+> Event: time 1288013800.742088, type 4 (Misc), code 4 (ScanCode), value 700e5
+> Event: time 1288013800.742130, type 1 (Key), code 54 (RightShift), value 1
+> Event: time 1288013800.742142, -------------- Report Sync ------------
+> Event: time 1288013800.861777, type 4 (Misc), code 4 (ScanCode), value 700e5
+> Event: time 1288013800.861812, type 1 (Key), code 54 (RightShift), value 0
+> Event: time 1288013800.861824, -------------- Report Sync ------------
 
-I suspect what we should really be doing is to segregate the different
-classes of event channel in IRQ space. I _think_ this new stuff is happy
-with a discontinuous (but presumably clustered) IRQ space, I should
-probably check.
+Could you also post results when pressing the "favorite" and the "prev"
+internet keys of your keyboard?
 
-e.g. regular interdomain event channels, VIRQs and the like should
-probably request allocations from some range higher than nr_hw_irqs,
-thus avoiding conflicts with hardware PIRQ event channels which would
-ask for a 1-1 mapping with the GSI (i.e. same interrupt numbers as the
-device would get under native, AIUI).
-
-We might even decide to start the interdomain event channel range even
-higher than nr_hw_irqs in order to leave room for the more dynamic h/w
-PIRQs (e.g. MSIs) just after nr_hw_irqs. Assuming this is consistent
-with what would happen on native then it is probably worthwhile.
-
-> But with this shinny sparse_irq rework, maybe this is not an issue anymore?
-> Can we mix a level and edge chip handler under one IRQ?
-
-I doubt the sparse irq rework had any impact on this aspect, but it does
-help us more easily arrange for them not to be shared in that way in the
-first place.
-
-> What do you see when you pass in a PCI device and say give the guest 32 CPUs??
-
-I can try tomorrow and see, based on what you say above without
-implementing what I described I suspect the answer will be "carnage". 
-
-Ian.
-
+Samuel
