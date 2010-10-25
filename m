@@ -1,71 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758407Ab0JYXwt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Oct 2010 19:52:49 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:47065 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757170Ab0JYXwr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Oct 2010 19:52:47 -0400
-Date: Tue, 26 Oct 2010 10:52:39 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Randy Dunlap <randy.dunlap@oracle.com>
-Cc: coda@cs.cmu.edu, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: linux-next: Tree for October 25 (coda)
-Message-Id: <20101026105239.e3866312.sfr@canb.auug.org.au>
-In-Reply-To: <20101025163339.a2ffca49.randy.dunlap@oracle.com>
+	id S1758343Ab0JYXx2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Oct 2010 19:53:28 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:24927 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751305Ab0JYXx1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Oct 2010 19:53:27 -0400
+Date: Mon, 25 Oct 2010 16:51:45 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>, linux-acpi@vger.kernel.org
+Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: linux-next: Tree for October 25 (acpi/apei-related)
+Message-Id: <20101025165145.1b48cd69.randy.dunlap@oracle.com>
+In-Reply-To: <20101025145834.9b68e026.sfr@canb.auug.org.au>
 References: <20101025145834.9b68e026.sfr@canb.auug.org.au>
-	<20101025163339.a2ffca49.randy.dunlap@oracle.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Tue__26_Oct_2010_10_52_39_+1100_EvEeHx=3oeWDMo/O"
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__26_Oct_2010_10_52_39_+1100_EvEeHx=3oeWDMo/O
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Mon, 25 Oct 2010 14:58:34 +1100 Stephen Rothwell wrote:
 
-Hi Randy,
+> Hi all,
 
-On Mon, 25 Oct 2010 16:33:39 -0700 Randy Dunlap <randy.dunlap@oracle.com> w=
-rote:
->
-> The coda BKL fixes (git tree) are not in here yet, right?
+drivers/built-in.o: In function `herr_record_init':
+(.text+0x85149): undefined reference to `trace_clock_local'
+drivers/built-in.o: In function `herr_record_alloc':
+(.text+0x851ab): undefined reference to `trace_clock_local'
+drivers/built-in.o: In function `herr_record_alloc':
+(.text+0x8521c): undefined reference to `trace_clock_local'
 
-I have no coda tree in linux-next (hint, hint :-)).  However, there were
-a few coda patches went into Linus' tree overnight (my time).
 
-> fs/coda/* currently has 12 warnings like these:
->=20
-> fs/coda/psdev.c:140: error: implicit declaration of function 'lock_kernel'
-> fs/coda/psdev.c:142: error: implicit declaration of function 'unlock_kern=
-el'
+config ACPI_APEI
+	bool "ACPI Platform Error Interface (APEI)"
+	depends on X86
+	select HERR_DEV_CORE
 
-Hopefully these are fixed today by the above commits?
+but kernel/trace/trace_clock is not built unless one of these symbols
+is enabled:
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+obj-$(CONFIG_FUNCTION_TRACER) += trace/
+obj-$(CONFIG_TRACING) += trace/
+obj-$(CONFIG_X86_DS) += trace/
+obj-$(CONFIG_RING_BUFFER) += trace/
 
---Signature=_Tue__26_Oct_2010_10_52_39_+1100_EvEeHx=3oeWDMo/O
-Content-Type: application/pgp-signature
+and in this case, none of these is enabled.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQEcBAEBAgAGBQJMxhhHAAoJEDMEi1NhKgbsLvcH/AiWQvTr7JSOVDQ5dG7JBekx
-P8y+I+rmfboZo8caQ5lv55y9OTIbfkVAj/qid3LFLXQ+14buoXhCaMe1by8eBRXV
-faBP5WFuijQZ5CQkw9U5NlmascTq1CFO73LLs2Pler29X7emhPdOKo9GPTwcajZo
-MO495R8DUTEXUrjDs+xrN7E6o7EJym7ielGLlAKmzrCsXvA+sUcSa8lHzTo9V49C
-dyX16hS58XQKI7v4N4qx1ATLDjPPHJrlV9Glxo8U4oyY+zTsiL/ZV1hP83DTRYsG
-FrlvAOCDIqpauhcWZEy5zEck0Zw6k/D7D8D1GAAtjmayEdSVwmCifQr97+np0HA=
-=aXwr
------END PGP SIGNATURE-----
-
---Signature=_Tue__26_Oct_2010_10_52_39_+1100_EvEeHx=3oeWDMo/O--
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
