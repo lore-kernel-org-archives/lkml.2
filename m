@@ -1,71 +1,183 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755334Ab0JYL7z (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Oct 2010 07:59:55 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:57053 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751574Ab0JYL7y (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Oct 2010 07:59:54 -0400
-Subject: Re: [RFC PATCH 06/18] ARM: LPAE: Introduce the 3-level page table
- format definitions
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-In-Reply-To: <201010251315.53304.arnd@arndb.de>
+	id S1755362Ab0JYMBd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Oct 2010 08:01:33 -0400
+Received: from shutemov.name ([188.40.19.243]:51537 "EHLO shutemov.name"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751574Ab0JYMBc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Oct 2010 08:01:32 -0400
+Date: Mon, 25 Oct 2010 15:01:31 +0300
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
+To: Catalin Marinas <catalin.marinas@arm.com>
+Cc: linux-arm-kernel@lists.infradead.org, Will Deacon <will.deacon@arm.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH 17/18] ARM: LPAE: define printk format for physical
+ addresses and page table entries
+Message-ID: <20101025120131.GB32026@shutemov.name>
 References: <20101025085812.25275.55757.stgit@e102109-lin.cambridge.arm.com>
-	 <20101025090007.25275.99918.stgit@e102109-lin.cambridge.arm.com>
-	 <201010251315.53304.arnd@arndb.de>
-Content-Type: text/plain; charset="UTF-8"
-Organization: ARM Limited
-Date: Mon, 25 Oct 2010 12:59:37 +0100
-Message-ID: <1288007977.14756.41.camel@e102109-lin.cambridge.arm.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 25 Oct 2010 11:59:38.0028 (UTC) FILETIME=[1939F6C0:01CB743C]
+ <20101025090109.25275.23930.stgit@e102109-lin.cambridge.arm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101025090109.25275.23930.stgit@e102109-lin.cambridge.arm.com>
+User-Agent: Mutt/1.5.20 (2010-08-04)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-10-25 at 12:15 +0100, Arnd Bergmann wrote:
-> On Monday 25 October 2010, Catalin Marinas wrote:
-> > +/*
-> > + * With LPAE, there are 3 levels of page tables. Each level has 512 entries of
-> > + * 8 bytes each, occupying a 4K page. The first level table covers a range of
-> > + * 512GB, each entry representing 1GB. Since we are limited to 4GB input
-> > + * address range, only 4 entries in the PGD are used.
-> > + *
-> > + * There are enough spare bits in a page table entry for the kernel specific
-> > + * state.
-> > + */
-> > +#define PTRS_PER_PTE           512
-> > +#define PTRS_PER_PMD           512
-> > +#define PTRS_PER_PGD           4
+On Mon, Oct 25, 2010 at 10:01:10AM +0100, Catalin Marinas wrote:
+> From: Will Deacon <will.deacon@arm.com>
 > 
-> Since the PGD is so extremely small, would it be possible to fold it
-> into the mm_context_t in order to save an allocation?
-> Or does the PGD still require page alignment?
+> Now that the Kernel supports 2 level and 3 level page tables, physical
+> addresses (and also page table entries) may be 32 or 64-bits depending
+> upon the configuration.
+> 
+> This patch adds a conversion specifier (PHYS_ADDR_FMT) which represents
+> a u32 or u64 depending on the width of a physical address.
+> 
+> Signed-off-by: Will Deacon <will.deacon@arm.com>
+> Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
+> ---
+>  arch/arm/include/asm/types.h |    6 ++++++
+>  arch/arm/kernel/setup.c      |    2 +-
+>  arch/arm/mm/fault.c          |    8 ++++----
+>  arch/arm/mm/mmu.c            |   18 +++++++++---------
+>  4 files changed, 20 insertions(+), 14 deletions(-)
+> 
+> diff --git a/arch/arm/include/asm/types.h b/arch/arm/include/asm/types.h
+> index 039dd8f..88190c0 100644
+> --- a/arch/arm/include/asm/types.h
+> +++ b/arch/arm/include/asm/types.h
+> @@ -6,6 +6,12 @@
+>  #ifdef __KERNEL__
+>  #define BITS_PER_LONG 32
+>  
+> +#ifdef CONFIG_PHYS_ADDR_T_64BIT
+> +#define PHYS_ADDR_FMT	"%016Lx"
 
-There are alignment restrictions, though not to a page size. Given the
-TTBR0 access range of the full 4GB (TTBCR.T0SZ = 0), the alignment
-required is 64 (2^6). We get this for the slab allocator anyway when the
-L1_CACHE_SHIFT is 6 but I could make this requirement explicit by
-creating a kmem_cache with the required alignment.
+I think, better to use ANSI C compatible 'll' instead of 'L'.
 
-> Do you also have patches to allow 40-bit virtual space? I suppose we
-> will need that for KVM support in the future.
+> +#else
+> +#define PHYS_ADDR_FMT	"%08x"
+> +#endif
+> +
+>  #ifndef __ASSEMBLY__
+>  typedef dma_addr_t dma64_addr_t;
+>  #endif /* __ASSEMBLY__ */
+> diff --git a/arch/arm/kernel/setup.c b/arch/arm/kernel/setup.c
+> index a6a37d5..80ff616 100644
+> --- a/arch/arm/kernel/setup.c
+> +++ b/arch/arm/kernel/setup.c
+> @@ -413,7 +413,7 @@ static int __init arm_add_memory(phys_addr_t start, unsigned long size)
+>  
+>  	if (meminfo.nr_banks >= NR_BANKS) {
+>  		printk(KERN_CRIT "NR_BANKS too low, "
+> -			"ignoring memory at %#lx\n", start);
+> +			"ignoring memory at " PHYS_ADDR_FMT "\n", start);
+>  		return -EINVAL;
+>  	}
+>  
+> diff --git a/arch/arm/mm/fault.c b/arch/arm/mm/fault.c
+> index b662aea..df33362 100644
+> --- a/arch/arm/mm/fault.c
+> +++ b/arch/arm/mm/fault.c
+> @@ -81,7 +81,7 @@ void show_pte(struct mm_struct *mm, unsigned long addr)
+>  
+>  	printk(KERN_ALERT "pgd = %p\n", mm->pgd);
+>  	pgd = pgd_offset(mm, addr);
+> -	printk(KERN_ALERT "[%08lx] *pgd=%08lx", addr, pgd_val(*pgd));
+> +	printk(KERN_ALERT "[%08lx] *pgd=" PHYS_ADDR_FMT, addr, pgd_val(*pgd));
+>  
+>  	do {
+>  		pmd_t *pmd;
+> @@ -97,7 +97,7 @@ void show_pte(struct mm_struct *mm, unsigned long addr)
+>  
+>  		pmd = pmd_offset(pgd, addr);
+>  		if (PTRS_PER_PMD != 1)
+> -			printk(", *pmd=%08lx", pmd_val(*pmd));
+> +			printk(", *pmd=" PHYS_ADDR_FMT, pmd_val(*pmd));
+>  
+>  		if (pmd_none(*pmd))
+>  			break;
+> @@ -112,9 +112,9 @@ void show_pte(struct mm_struct *mm, unsigned long addr)
+>  			break;
+>  
+>  		pte = pte_offset_map(pmd, addr);
+> -		printk(", *pte=%08lx", pte_val(*pte));
+> +		printk(", *pte=" PHYS_ADDR_FMT, pte_val(*pte));
+>  #ifndef CONFIG_ARM_LPAE
+> -		printk(", *ppte=%08lx", pte_val(pte[-LINUX_PTE_OFFSET]));
+> +		printk(", *ppte=" PHYS_ADDR_FMT, pte_val(pte[-LINUX_PTE_OFFSET]));
+>  #endif
+>  		pte_unmap(pte);
+>  	} while(0);
+> diff --git a/arch/arm/mm/mmu.c b/arch/arm/mm/mmu.c
+> index f8f8e06..87460bb 100644
+> --- a/arch/arm/mm/mmu.c
+> +++ b/arch/arm/mm/mmu.c
+> @@ -622,7 +622,7 @@ static void __init create_36bit_mapping(struct map_desc *md,
+>  
+>  	if (!(cpu_architecture() >= CPU_ARCH_ARMv6 || cpu_is_xsc3())) {
+>  		printk(KERN_ERR "MM: CPU does not support supersection "
+> -		       "mapping for 0x%08llx at 0x%08lx\n",
+> +		       "mapping for 0x" PHYS_ADDR_FMT " at 0x%08lx\n",
+>  		       __pfn_to_phys((u64)md->pfn), addr);
+>  		return;
+>  	}
+> @@ -635,14 +635,14 @@ static void __init create_36bit_mapping(struct map_desc *md,
+>  	 */
+>  	if (type->domain) {
+>  		printk(KERN_ERR "MM: invalid domain in supersection "
+> -		       "mapping for 0x%08llx at 0x%08lx\n",
+> +		       "mapping for 0x" PHYS_ADDR_FMT " at 0x%08lx\n",
+>  		       __pfn_to_phys((u64)md->pfn), addr);
+>  		return;
+>  	}
+>  
+>  	if ((addr | length | __pfn_to_phys(md->pfn)) & ~SUPERSECTION_MASK) {
+> -		printk(KERN_ERR "MM: cannot create mapping for "
+> -		       "0x%08llx at 0x%08lx invalid alignment\n",
+> +		printk(KERN_ERR "MM: cannot create mapping for 0x" PHYS_ADDR_FMT
+> +		       " at 0x%08lx invalid alignment\n",
+>  		       __pfn_to_phys((u64)md->pfn), addr);
+>  		return;
+>  	}
+> @@ -684,16 +684,16 @@ static void __init create_mapping(struct map_desc *md)
+>  	pgd_t *pgd;
+>  
+>  	if (md->virtual != vectors_base() && md->virtual < TASK_SIZE) {
+> -		printk(KERN_WARNING "BUG: not creating mapping for "
+> -		       "0x%08llx at 0x%08lx in user region\n",
+> +		printk(KERN_WARNING "BUG: not creating mapping for 0x"
+> +		       PHYS_ADDR_FMT " at 0x%08lx in user region\n",
+>  		       __pfn_to_phys((u64)md->pfn), md->virtual);
+>  		return;
+>  	}
+>  
+>  	if ((md->type == MT_DEVICE || md->type == MT_ROM) &&
+>  	    md->virtual >= PAGE_OFFSET && md->virtual < VMALLOC_END) {
+> -		printk(KERN_WARNING "BUG: mapping for 0x%08llx at 0x%08lx "
+> -		       "overlaps vmalloc space\n",
+> +		printk(KERN_WARNING "BUG: mapping for 0x" PHYS_ADDR_FMT
+> +		       " at 0x%08lx overlaps vmalloc space\n",
+>  		       __pfn_to_phys((u64)md->pfn), md->virtual);
+>  	}
+>  
+> @@ -714,7 +714,7 @@ static void __init create_mapping(struct map_desc *md)
+>  	length = PAGE_ALIGN(md->length + (md->virtual & ~PAGE_MASK));
+>  
+>  	if (type->prot_l1 == 0 && ((addr | phys | length) & ~SECTION_MASK)) {
+> -		printk(KERN_WARNING "BUG: map for 0x%08lx at 0x%08lx can not "
+> +		printk(KERN_WARNING "BUG: map for 0x" PHYS_ADDR_FMT " at 0x%08lx can not "
+>  		       "be mapped using pages, ignoring.\n",
+>  		       __pfn_to_phys(md->pfn), addr);
+>  		return;
+> 
+> 
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
 
-I'm not sure how these would look like since the architecture is 32-bit
-(and I'm not familiar with KVM). With the MMU disabled, you can't access
-beyond the 4GB space anyway. KVM could use something like the pfn but in
-the virtual space.
-
-Cortex-A15 comes with both LPAE and Virtualisation Extensions, so the
-latter could be used for something like KVM. There is another stage of
-page table translations, so the one set up by Linux actually generates
-an intermediate physical address (IPA) which gets translated to the real
-PA in the second stage. The IPA is 40-bit wide.
-
-Catalin
-
+-- 
+ Kirill A. Shutemov
