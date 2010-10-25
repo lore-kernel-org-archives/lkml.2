@@ -1,55 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755532Ab0JYNbU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Oct 2010 09:31:20 -0400
-Received: from webhosting01.bon.m2soft.com ([195.38.20.32]:44144 "EHLO
-	webhosting01.bon.m2soft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750962Ab0JYNbT (ORCPT
+	id S1755627Ab0JYNbk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Oct 2010 09:31:40 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:50351 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755594Ab0JYNbi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Oct 2010 09:31:19 -0400
-Date: Mon, 25 Oct 2010 15:30:03 +0200
-From: Nicolas Kaiser <nikai@nikai.net>
-To: Luciano Coelho <luciano.coelho@nokia.com>
-Cc: Larry Finger <Larry.Finger@lwfinger.net>, linux-wireless@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] wireless/wl1271: remove redundant if-statement v2
-Message-ID: <20101025153003.3aa7c168@absol.kitzblitz>
-In-Reply-To: <1288012245.21130.24.camel@chilepepper>
-References: <20101025000744.17f7086e@absol.kitzblitz>
-	<4CC4B210.2010608@lwfinger.net>
-	<1288012245.21130.24.camel@chilepepper>
-Organization: -
-X-Face: "fF&[w2"Nws:JNH4'g|:gVhgGKLhj|X}}&w&V?]0=,7n`jy8D6e[Jh=7+ca|4~t5e[ItpL5
- N'y~Mvi-vJm`"1T5fi1^b!&EG]6nW~C!FN},=$G?^U2t~n[3;u\"5-|~H{-5]IQ2
-X-Mailer: Claws Mail (Linux)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Mon, 25 Oct 2010 09:31:38 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: monstr@monstr.eu
+Subject: Re: [microblaze-uclinux] Re: [PATCH v2 22/22] bitops: remove minix bitops from asm/bitops.h
+Date: Mon, 25 Oct 2010 15:31:35 +0200
+User-Agent: KMail/1.12.2 (Linux/2.6.35-16-generic; KDE/4.3.2; x86_64; ; )
+Cc: microblaze-uclinux@itee.uq.edu.au, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org
+References: <1287672077-5797-1-git-send-email-akinobu.mita@gmail.com> <AANLkTikgRWWH0RhR2S5cFE+jkJbW30Arwsjic4UANuVd@mail.gmail.com> <4CC4C1B4.9090907@monstr.eu>
+In-Reply-To: <4CC4C1B4.9090907@monstr.eu>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201010251531.35485.arnd@arndb.de>
+X-Provags-ID: V02:K0:dQPmYAkkSV2eurA52YOFlyc12IMKEGSkFerCCZtDIUo
+ gJj6oWj6WbvTrWhPcuHLiY6G0M6fnMy02sa93VjOFCLgUTOep3
+ lpQcr2JQwkIDYvWQedZSMsCdTnL40kBmQWCON8bDVDgnHWeVUV
+ eVsdmpzp1V8iLe1A529er+IXqrvWqW153Y3us3RvxrY2EC/2hs
+ L4d8teJA/C4mdnum4s+mA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-wl1271_ps_elp_sleep() is void and cannot return a value.
+On Monday 25 October 2010, Michal Simek wrote:
+> > If upcomming microblade little-endian mode will use little-endian
+> > bitmaps for minixfs, microblade can continue to select
+> > CONFIG_MINIX_FS_NATIVE_ENDIAN and you don't need to change it.
+> > 
+> > But if it will use big-endian bitmaps, it may need some extra work
+> > to support it. Becuase there is no little-endian architecture
+> > which uses bit-endian bitmaps for minixfs.
+> 
+> As I wrote I don't know anybody who wants to use minixfs that's why we don't
+> need to do anything with it. I can test it but it has no high priority.
 
-Signed-off-by: Nicolas Kaiser <nikai@nikai.net>
----
-Sorry for the poor wording of the initial description.
+I think it needs to be set up in a way that new architectures (and those
+that never cared about minixfs) automatically get a reasonable default
+and should not need to set anything.
 
- drivers/net/wireless/wl12xx/wl1271_event.c |    2 --
- 1 files changed, 0 insertions(+), 2 deletions(-)
+I don't see a reason why little-endian microblaze should use big-endian
+bitops in minixfs, since that file system layout would also be incompatible
+with every other one.
 
-diff --git a/drivers/net/wireless/wl12xx/wl1271_event.c b/drivers/net/wireless/wl12xx/wl1271_event.c
-index 7b3f503..38ccef7 100644
---- a/drivers/net/wireless/wl12xx/wl1271_event.c
-+++ b/drivers/net/wireless/wl12xx/wl1271_event.c
-@@ -134,8 +134,6 @@ static int wl1271_event_ps_report(struct wl1271 *wl,
- 
- 		/* go to extremely low power mode */
- 		wl1271_ps_elp_sleep(wl);
--		if (ret < 0)
--			break;
- 		break;
- 	case EVENT_EXIT_POWER_SAVE_FAIL:
- 		wl1271_debug(DEBUG_PSM, "PSM exit failed");
--- 
-1.7.2.2
+CONFIG_MINIX_FS_NATIVE_ENDIAN seems reasonable for both big- and little-
+endian microblaze, but new architectures should just keep the default
+little-endian bitops IMHO.
+I also don't see a reason for testing. Any new users on microblaze or
+future architectures would use a modern file system anyway.
+
+	Arnd
