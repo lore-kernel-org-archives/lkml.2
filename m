@@ -1,39 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754337Ab0JYV0S (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Oct 2010 17:26:18 -0400
-Received: from ironport2-out.teksavvy.com ([206.248.154.183]:39307 "EHLO
-	ironport2-out.pppoe.ca" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751053Ab0JYV0R (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Oct 2010 17:26:17 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: ApIBAAOTxUxLd/sX/2dsb2JhbAAHgxjMFZIpgSKDMnQEj1Q
-X-IronPort-AV: E=Sophos;i="4.58,237,1286164800"; 
-   d="scan'208";a="80664937"
-Message-ID: <4CC5F5F5.3060503@teksavvy.com>
-Date: Mon, 25 Oct 2010 17:26:13 -0400
-From: Mark Lord <kernel@teksavvy.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-GB; rv:1.9.2.9) Gecko/20100915 Thunderbird/3.1.4
+	id S1753246Ab0JYV1f (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Oct 2010 17:27:35 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:24976 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751053Ab0JYV1e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Oct 2010 17:27:34 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+Subject: [PATCH] workqueue: Fix alignment calculation in alloc_cwqs()
+To: torvalds@osdl.org, akpm@linux-foundation.org
+From: David Howells <dhowells@redhat.com>
+Cc: Tejun Heo <tj@kernel.org>, linux-am33-list@redhat.com,
+        linux-kernel@vger.kernel.org,
+        Akira Takeuchi <takeuchi.akr@jp.panasonic.com>,
+        Mark Salter <msalter@redhat.com>
+Date: Mon, 25 Oct 2010 22:27:06 +0100
+Message-ID: <20101025212706.27798.23957.stgit@warthog.procyon.org.uk>
+User-Agent: StGit/0.15-97-g9680-dirty
 MIME-Version: 1.0
-To: =?UTF-8?B?TWF0aGlhcyBCdXLDqW4=?= <mathias.buren@gmail.com>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: sata_mv and Highpoint RocketRAID 230x, corruption?
-References: <AANLkTik02CcVyzn+fMH+VxuUmwwNLZq9qM0MPz81E+1h@mail.gmail.com>	<4CC24186.1040001@teksavvy.com>	<AANLkTi=s9R-OEJAPRpoxoSkFY8MWhc22Pn_gcwCzxY=H@mail.gmail.com>	<4CC2FD0A.9090409@teksavvy.com>	<AANLkTin3QRgV5P4=BsTCeWhynGYMi3pd7BXrFpBXkWvj@mail.gmail.com>	<4CC303FD.1000802@teksavvy.com>	<AANLkTin9wiBZjkeKxYKnJaSA1vxs8ELGTWYVMM1DfYKu@mail.gmail.com> <AANLkTikzPgq0VG1V_hZsw78i2pYMxzrPJM3dFUyGeaU1@mail.gmail.com>
-In-Reply-To: <AANLkTikzPgq0VG1V_hZsw78i2pYMxzrPJM3dFUyGeaU1@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10-10-24 08:52 AM, Mathias Burén wrote:
->
-> My question is, is it safe for me to stop md0, delete all 4 partitions
-> that make up md0, recreate them at the same starting sector, but
-> ending 2GB from the last sector? Is this safe, will I lose any data?
-> Just in case I've backuped the MBR (first 512 bytes) of each HDD that
-> has the partition.
-..
+In the MN10300 arch, we occasionally see an assertion being tripped in
+alloc_cwqs() at the following line:
 
-Dunno.  I'm no RAID expert.  :)
+	/* just in case, make sure it's actually aligned */
+  --->	BUG_ON(!IS_ALIGNED(wq->cpu_wq.v, align));
+	return wq->cpu_wq.v ? 0 : -ENOMEM;
+
+The values are:
+
+	wa->cpu_wq.v => 0x902776e0
+	align => 0x100
+
+and align is calculated by the following:
+
+	const size_t align = max_t(size_t, 1 << WORK_STRUCT_FLAG_BITS,
+				   __alignof__(unsigned long long));
+
+which is wrong.  __alignof__() returns its value in bytes, but:
+
+	1 << WORK_STRUCT_FLAG_BITS
+
+returns the value in bits.  It needs dividing by the number of bits in a byte.
+
+Reported-by: Akira Takeuchi <takeuchi.akr@jp.panasonic.com>
+Signed-off-by: David Howells <dhowells@redhat.com>
+Acked-by: Mark Salter <msalter@redhat.com>
+cc: Tejun Heo <tj@kernel.org>
+---
+
+ kernel/workqueue.c |    5 +++--
+ 1 files changed, 3 insertions(+), 2 deletions(-)
+
+
+diff --git a/kernel/workqueue.c b/kernel/workqueue.c
+index 30acdb7..e29ebd4 100644
+--- a/kernel/workqueue.c
++++ b/kernel/workqueue.c
+@@ -2766,8 +2766,9 @@ static int alloc_cwqs(struct workqueue_struct *wq)
+ 	 * unsigned long long.
+ 	 */
+ 	const size_t size = sizeof(struct cpu_workqueue_struct);
+-	const size_t align = max_t(size_t, 1 << WORK_STRUCT_FLAG_BITS,
+-				   __alignof__(unsigned long long));
++	const size_t align =
++		max_t(size_t, 1 << (WORK_STRUCT_FLAG_BITS - BITS_PER_BYTE),
++		      __alignof__(unsigned long long));
+ #ifdef CONFIG_SMP
+ 	bool percpu = !(wq->flags & WQ_UNBOUND);
+ #else
+
