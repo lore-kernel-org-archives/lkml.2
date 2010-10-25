@@ -1,75 +1,305 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753942Ab0JYJTY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Oct 2010 05:19:24 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:33144 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751680Ab0JYJTW (ORCPT
+	id S1754069Ab0JYJWU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Oct 2010 05:22:20 -0400
+Received: from hosting.visp.net.lb ([194.146.153.11]:58179 "EHLO
+	hosting.visp.net.lb" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751909Ab0JYJWT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Oct 2010 05:19:22 -0400
-Date: Mon, 25 Oct 2010 11:19:13 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: Huang Ying <ying.huang@intel.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Len Brown <lenb@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        Borislav Petkov <petkovbb@googlemail.com>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Don Zickus <dzickus@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>
-Subject: Re: [NAK] Re: [PATCH -v2 9/9] ACPI, APEI, Generic Hardware Error
- Source POLL/IRQ/NMI notification type support
-Message-ID: <20101025091913.GA17622@basil.fritz.box>
-References: <1287992610-14996-1-git-send-email-ying.huang@intel.com>
- <1287992610-14996-10-git-send-email-ying.huang@intel.com>
- <20101025084553.GA27119@elte.hu>
- <1287997112.2862.322.camel@yhuang-dev>
+	Mon, 25 Oct 2010 05:22:19 -0400
+From: Denys Fedoryshchenko <nuclearcat@nuclearcat.com>
+To: Thomas Gleixner <tglx@linutronix.de>, Paul Mackerras <paulus@samba.org>,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+Subject: 2.6.35->2.6.36 regression, vanilla kernel panic, ppp or hrtimers crashing
+Date: Mon, 25 Oct 2010 12:22:36 +0300
+User-Agent: KMail/1.13.5 (Linux/2.6.35-rc6-git5-home1; KDE/4.4.5; x86_64; ; )
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1287997112.2862.322.camel@yhuang-dev>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="koi8-r"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201010251222.37191.nuclearcat@nuclearcat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > Sigh, please integrate all this into EDAC (drivers/edac/) properly, instead of 
-> > turning it into YET ANOTHER hardware vendor special hw-errors thing. We can do 
-> > better than this. EDAC is almost there: it has support for Nehalem, AMD, a couple
-> > of older chips.
-> 
-> I think APEI (ACPI Platform Error Interface) is another driver. Why
-> integrate two drivers?
+Hi
 
-Yes they're solving quite different problems from EDAC with different
-interfaces and for different devices in the ACPI space.
+Here is what i got from netconsole
+ [  259.238755] BUG: unable to handle kernel 
+ paging request
+ at f8ba001c
+ [  259.238953] IP:
+ [<c0199ebe>] do_select+0x2cc/0x502
+ [  259.239008] *pdpt = 0000000000a55001 
+ *pde = 0000000036dd6067 
+ *pte = 0000000000000000 
+ 
+ [  259.239008] Oops: 0000 [#1] 
+ SMP 
+ 
+ [  259.239008] last sysfs file: /sys/devices/pnp0/00:02/rtc/rtc0/dev
+ [  259.239008] Modules linked in:
+ rtc_cmos
+ rtc_core
+ rtc_lib
+ act_skbedit
+ sch_ingress
+ sch_prio
+ 
+ configfs
+ cls_flow
+ cls_u32
+ em_meta
+ cls_basic
+ xt_dscp
+ ipt_REJECT
+ ts_bm
+ xt_string
+ xt_hl
+ ifb
+ cls_fw
+ sch_tbf
+ sch_htb
+ act_ipt
+ act_mirred
+ pppoe
+ pppox
+ ppp_generic
+ slhc
+ ipt_REDIRECT
+ ipt_MASQUERADE
+ xt_TCPMSS
+ xt_DSCP
+ xt_mark
+ xt_tcpudp
+ iptable_mangle
+ iptable_nat
+ nf_nat
+ nf_conntrack_ipv4
+ nf_conntrack
+ nf_defrag_ipv4
+ iptable_filter
+ ip_tables
+ x_tables
+ 8021q
+ garp
+ stp
+ llc
+ loop
+ usb_storage
+ iTCO_wdt
+ iTCO_vendor_support
+ ata_generic
+ pata_acpi
+ ata_piix
+ libata
+ 8139cp
+ sr_mod
+ cdrom
+ tulip
+ r8169
+ sky2
+ via_velocity
+ via_rhine
+ sis900
+ ne2k_pci
+ 8390
+ skge
+ tg3
+ libphy
+ 8139too
+ e1000
+ e100
+ usbhid
+ ohci_hcd
+ uhci_hcd
+ ehci_hcd
+ usbcore
+ nls_base
+ 
+ [  259.239008] 
+ [  259.239008] Pid: 3307, comm: pppd Not tainted 2.6.36-build-0053 #14 
+D915GAV                        /        
+ [  259.239008] EIP: 0060:[<c0199ebe>] EFLAGS: 00010286 CPU: 0
+ [  259.239008] EIP is at do_select+0x2cc/0x502
+ [  259.239008] EAX: f610a600 EBX: 00000080 ECX: f8ba0000 EDX: f60f1808
+ [  259.239008] ESI: 00000000 EDI: f610a600 EBP: f60eae4c ESP: f60eab64
+ [  259.239008]  DS: 007b ES: 007b FS: 00d8 GS: 0033 SS: 0068
+ [  259.239008] Process pppd (pid: 3307, ti=f60ea000 task=f66a0000 
+task.ti=f60ea000)
+ [  259.239008] Stack:
+ [  259.239008]  0e95bb42
+ 0000003d
+ 000000d0
+ 00000000
+ f60eaf60
+ f66a0000
+ f60eae6c
+ f60eae70
+ 
+ [  259.239008] <0>
+ f60eae74
+ f60eae60
+ f60eae64
+ f60eae68
+ 00000180
+ 00000020
+ 010eabdc
+ 002dc698
+ 
+ [  259.239008] <0>
+ f60eae34
+ 00000180
+ 00000000
+ 00000180
+ 00000000
+ 00000000
+ 00000000
+ 00000000
+ 
+ [  259.239008] Call Trace:
+ [  259.239008]  [<c019a484>] ? __pollwait+0x0/0xa5
+ [  259.239008]  [<c019a529>] ? pollwake+0x0/0x63
+ [  259.239008]  [<c019a529>] ? pollwake+0x0/0x63
+ [  259.239008]  [<c0143f37>] ? sched_clock_local+0x17/0x13d
+ [  259.239008]  [<c0122ac4>] ? update_curr+0x84/0x15c
+ [  259.239008]  [<c011f5a3>] ? kmap_atomic_prot+0xe1/0xe3
+ [  259.239008]  [<c0143f37>] ? sched_clock_local+0x17/0x13d
+ [  259.239008]  [<c02044ee>] ? put_dec+0x2a/0x74
+ [  259.239008]  [<c0204689>] ? number+0x151/0x223
+ [  259.239008]  [<c012461f>] ? dequeue_task_fair+0x283/0x28b
+ [  259.239008]  [<c0123845>] ? __dequeue_entity+0x23/0x27
+ [  259.239008]  [<c01238d6>] ? set_next_entity+0x8d/0xf7
+ [  259.239008]  [<c012889c>] ? finish_task_switch+0x33/0x7a
+ [  259.239008]  [<c02f931c>] ? schedule+0x5c0/0x5ff
+ [  259.239008]  [<c019a208>] ? core_sys_select+0x114/0x190
+ [  259.239008]  [<c015ce1c>] ? call_rcu_sched+0xd/0xf
+ [  259.239008]  [<c015ce26>] ? call_rcu+0x8/0xa
+ [  259.239008]  [<c012f80b>] ? release_task+0x28d/0x29d
+ [  259.239008]  [<c012fc80>] ? wait_consider_task+0x465/0x7b7
+ [  259.239008]  [<c013fa7f>] ? spin_unlock_irqrestore+0x8/0xa
+ [  259.239008]  [<c013fc10>] ? remove_wait_queue+0x31/0x36
+ [  259.239008]  [<f8bacff1>] ? ppp_read+0x101/0x145 [ppp_generic]
+ [  259.239008]  [<c0145ceb>] ? timekeeping_get_ns+0x11/0x4f
+ [  259.239008]  [<c014688a>] ? ktime_get_ts+0x89/0x93
+ [  259.239008]  [<c019a42e>] ? sys_select+0x68/0x84
+ [  259.239008]  [<c02fa625>] ? syscall_call+0x7/0xb
+ [  259.239008] Code: 
+ 85 
+ 9d 
+ 48 
+ fd 
+ ff 
+ ff 
+ 0f 
+ 84 
+ cb 
+ 00 
+ 00 
+ 00 
+ 8b 
+ 85 
+ 7c 
+ fd 
+ ff 
+ ff 
+ 8d 
+ 55 
+ f0 
+ e8 
+ c1 
+ 55 
+ ff 
+ ff 
+ 85 
+ c0 
+ 89 
+ c7 
+ 0f 
+ 84 
+ b3 
+ 00 
+ 00 
+ 00 
+ 8b 
+ 48 
+ 10 
+ 85 
+ c9 
+ 74 
+ 3a 
+ 
+ 79 
+ 1c 
+ 00 
+ 74 
+ 34 
+ 85 
+ f6 
+ 74 
+ 25 
+ c7 
+ 46 
+ 04 
+ 02 
+ 00 
+ 00 
+ 00 
+ 85 
+ 9d 
+ 5c 
+ fd 
+ 
+ [  259.239008] EIP: [<c0199ebe>] 
+ do_select+0x2cc/0x502
+ SS:ESP 0068:f60eab64
+ [  259.239008] CR2: 00000000f8ba001c
+ [  259.239008] ---[ end trace a6117b9e067aeb87 ]---
+ [  259.239008] Kernel panic - not syncing: Fatal exception
+ [  259.239008] Pid: 3307, comm: pppd Tainted: G      D     2.6.36-build-0053 
+#14
+ [  259.239008] Call Trace:
+ [  259.239008]  [<c02f8ace>] ? printk+0xf/0x11
+ [  259.239008]  [<c02f89cb>] panic+0x50/0x144
+ [  259.239008]  [<c0105061>] oops_end+0x8b/0x9a
+ [  259.239008]  [<c011af70>] no_context+0x13e/0x148
+ [  259.239008]  [<c0142b8c>] ? hrtimer_try_to_cancel+0x60/0x69
+ [  259.239008]  [<c011b05f>] __bad_area_nosemaphore+0xe5/0xed
+ [  259.239008]  [<c011b074>] bad_area_nosemaphore+0xd/0x10
+ [  259.239008]  [<c011b2d6>] do_page_fault+0xf6/0x230
+ [  259.239008]  [<c011b1e0>] ? do_page_fault+0x0/0x230
+ [  259.239008]  [<c02fac22>] error_code+0x5a/0x60
+ [  259.239008]  [<c019007b>] ? grab_super+0x30/0x56
+ [  259.239008]  [<c011b1e0>] ? do_page_fault+0x0/0x230
+ [  259.239008]  [<c0199ebe>] ? do_select+0x2cc/0x502
+ [  259.239008]  [<c019a484>] ? __pollwait+0x0/0xa5
+ [  259.239008]  [<c019a529>] ? pollwake+0x0/0x63
+ [  259.239008]  [<c019a529>] ? pollwake+0x0/0x63
+ [  259.239008]  [<c0143f37>] ? sched_clock_local+0x17/0x13d
+ [  259.239008]  [<c0122ac4>] ? update_curr+0x84/0x15c
+ [  259.239008]  [<c011f5a3>] ? kmap_atomic_prot+0xe1/0xe3
+ [  259.239008]  [<c0143f37>] ? sched_clock_local+0x17/0x13d
+ [  259.239008]  [<c02044ee>] ? put_dec+0x2a/0x74
+ [  259.239008]  [<c0204689>] ? number+0x151/0x223
+ [  259.239008]  [<c012461f>] ? dequeue_task_fair+0x283/0x28b
+ [  259.239008]  [<c0123845>] ? __dequeue_entity+0x23/0x27
+ [  259.239008]  [<c01238d6>] ? set_next_entity+0x8d/0xf7
+ [  259.239008]  [<c012889c>] ? finish_task_switch+0x33/0x7a
+ [  259.239008]  [<c02f931c>] ? schedule+0x5c0/0x5ff
+ [  259.239008]  [<c019a208>] core_sys_select+0x114/0x190
+ [  259.239008]  [<c015ce1c>] ? call_rcu_sched+0xd/0xf
+ [  259.239008]  [<c015ce26>] ? call_rcu+0x8/0xa
+ [  259.239008]  [<c012f80b>] ? release_task+0x28d/0x29d
+ [  259.239008]  [<c012fc80>] ? wait_consider_task+0x465/0x7b7
+ [  259.239008]  [<c013fa7f>] ? spin_unlock_irqrestore+0x8/0xa
+ [  259.239008]  [<c013fc10>] ? remove_wait_queue+0x31/0x36
+ [  259.239008]  [<f8bacff1>] ? ppp_read+0x101/0x145 [ppp_generic]
+ [  259.239008]  [<c0145ceb>] ? timekeeping_get_ns+0x11/0x4f
+ [  259.239008]  [<c014688a>] ? ktime_get_ts+0x89/0x93
+ [  259.239008]  [<c019a42e>] sys_select+0x68/0x84
+ [  259.239008]  [<c02fa625>] syscall_call+0x7/0xb
+ [  259.239008] Rebooting in 5 seconds..
 
-The earlier nack seems to be based on a lot of confusion on what the code 
-does.
-
-Besides it nacks code in areas Ingo doesn't even maintain.
-(if he's allowed to nack random other code he doesn't like do I get this 
-right too? :-)
-
-> > einj.c: it's about the 3rd separate 'error injection' concept that got introduced 
-> > ...
-> 
-> EINJ is a true platform feature, not just software feature. We need to
-> support it to debug various hardware error features.
-
-Also having multiple error injecting interfaces is a good thing.
-
-Error injection is hard and one size definitely doesn't fit all. You need
-quite different ones depending on what you want to test, in which
-context etc.
-
-For hwpoison we currently have three different injectors at least and I expect
-that to even grow more in the future as different features get added.
-
--Andi
-
--- 
-ak@linux.intel.com -- Speaking for myself only.
+It is not easy to do full git bisect(it is semi-embedded distro), but i can 
+try reversing particular commits, if someone can give idea which one, and can 
+try debug patches.
