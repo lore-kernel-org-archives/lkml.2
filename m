@@ -1,144 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751664Ab0JYKt7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Oct 2010 06:49:59 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:56185 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750915Ab0JYKt6 (ORCPT
+	id S1752639Ab0JYK5b (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Oct 2010 06:57:31 -0400
+Received: from mailx.hitachi.co.jp ([133.145.228.49]:61682 "EHLO
+	mailx.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750821Ab0JYK53 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Oct 2010 06:49:58 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
-        Hugh Dickins <hughd@google.com>
-Subject: mem-hotplug + ksm make lockdep warning
-Cc: kosaki.motohiro@jp.fujitsu.com
-Message-Id: <20101025193711.917F.A69D9226@jp.fujitsu.com>
+	Mon, 25 Oct 2010 06:57:29 -0400
+X-AuditID: b753bd60-a84dbba000000a18-db-4cc562139e4d
+Message-ID: <4CC56206.8080700@hitachi.com>
+Date: Mon, 25 Oct 2010 19:55:02 +0900
+From: Nao Nishijima <nao.nishijima.xt@hitachi.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.9) Gecko/20100915 Thunderbird/3.1.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Becky! ver. 2.50.07 [ja]
-Date: Mon, 25 Oct 2010 19:49:50 +0900 (JST)
+To: Kay Sievers <kay.sievers@vrfy.org>, greg@kroah.com
+Cc: James.Bottomley@suse.de, rwheeler@redhat.com, linux-kernel@vger.kernel.org,
+        linux-hotplug@vger.kernel.org, masami.hiramatsu.pt@hitachi.com,
+        Matt_Domsch@dell.com
+Subject: Re: [RFD] Device Renaming Mechanism
+References: <4CAEAAD4.2080504@hitachi.com> <20101008204802.GA21542@kroah.com> <4CBC32CC.6010506@hitachi.com> <AANLkTi=HzjWZbz7J92h9LCQijG8Zsv1YptFzN7d_G7eG@mail.gmail.com>
+In-Reply-To: <AANLkTi=HzjWZbz7J92h9LCQijG8Zsv1YptFzN7d_G7eG@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+X-Brightmail-Tracker: AAAAAA==
+X-FMFTCR: RANGEC
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Hugh,
+Hello,
 
-commit 62b61f611e(ksm: memory hotremove migration only) makes following
-lockdep warnings. Is this intentional?
+(2010/10/18 21:33), Kay Sievers wrote:
+> 
+> In short: it's a complete nightmare from the view of reliability, and
+> I strongly suggest not even to think about to try that model on any
+> other subsystem.
 
-More detail: current lockdep hieralcy is here.
-
-memory_notify
-	offline_pages
-		lock_system_sleep();
-			mutex_lock(&pm_mutex);
-		memory_notify(MEM_GOING_OFFLINE)
-			__blocking_notifier_call_chain
-				down_read(memory_chain.rwsem)
-				ksm_memory_callback()
-					mutex_lock(&ksm_thread_mutex);  // memory_chain.rmsem -> ksm_thread_mutex order
-				up_read(memory_chain.rwsem)
-		memory_notify(MEM_OFFLINE)
-			__blocking_notifier_call_chain
-				down_read(memory_chain.rwsem)		// ksm_thread_mutex -> memory_chain.rmsem order
-				ksm_memory_callback()
-					mutex_unlock(&ksm_thread_mutex);
-				up_read(memory_chain.rwsem)
-		unlock_system_sleep();
-			mutex_unlock(&pm_mutex);
-
-So, I think pm_mutex protect ABBA deadlock. but it exist only when
-CONFIG_HIBERNATION=y. IOW, this code is not correct generically. Am I
-missing something?
-
-Thanks.
+I see. I understood that network interface and block device are different.
 
 
+> Device-mapper could maybe make the dm UUID mandatory, and use it as
+> the device name. It will break a bunch of tools, which match on device
+> names, but I guess it *could* be made working (if it does not involve
+> any later renaming).
 
-=======================================================
-[ INFO: possible circular locking dependency detected ]
-2.6.36-rc7-mm1+ #148
--------------------------------------------------------
-bash/1621 is trying to acquire lock:
- ((memory_chain).rwsem){.+.+.+}, at: [<ffffffff81079339>] __blocking_notifier_call_chain+0x69/0xc0
+Indeed, device-mapper can provide a fixed name. However, still there is
+mismatch between the dm device name and the troubling device name in kernel
+log. That is the reason why I'm still sticking around the device renaming method.
 
-but task is already holding lock:
- (ksm_thread_mutex){+.+.+.}, at: [<ffffffff8113a3aa>] ksm_memory_callback+0x3a/0xc0
+In addition, using of device-mapper is worry about the performance and
+management cost.
 
-which lock already depends on the new lock.
+I think the method of using the intermediate device is the simplest solution.
+Furthermore that method is compatible with old applications which are hard to
+modify.
 
 
-the existing dependency chain (in reverse order) is:
+> I wouldn't even try. Besides the mentioned device mapper
+> mandatory/non-changeable UUID==device-name approach which could work,
+> I don't think that renaming of sd devices can be made working, without
+> rewriting half of all existing userspace. :)
 
--> #1 (ksm_thread_mutex){+.+.+.}:
-       [<ffffffff8108b70a>] lock_acquire+0xaa/0x140
-       [<ffffffff81505d74>] __mutex_lock_common+0x44/0x3f0
-       [<ffffffff81506228>] mutex_lock_nested+0x48/0x60
-       [<ffffffff8113a3aa>] ksm_memory_callback+0x3a/0xc0		
-       [<ffffffff8150c21c>] notifier_call_chain+0x8c/0xe0
-       [<ffffffff8107934e>] __blocking_notifier_call_chain+0x7e/0xc0	
-       [<ffffffff810793a6>] blocking_notifier_call_chain+0x16/0x20
-       [<ffffffff813afbfb>] memory_notify+0x1b/0x20
-       [<ffffffff81141b7c>] remove_memory+0x1cc/0x5f0
-       [<ffffffff813af53d>] memory_block_change_state+0xfd/0x1a0
-       [<ffffffff813afd62>] store_mem_state+0xe2/0xf0
-       [<ffffffff813a0bb0>] sysdev_store+0x20/0x30
-       [<ffffffff811bc116>] sysfs_write_file+0xe6/0x170
-       [<ffffffff8114f398>] vfs_write+0xc8/0x190
-       [<ffffffff8114fc14>] sys_write+0x54/0x90
-       [<ffffffff810028b2>] system_call_fastpath+0x16/0x1b
+Even though, if it is only way to solve log-mismatch problem, I'd rather try to
+rewrite a half of those tools. :-)
 
--> #0 ((memory_chain).rwsem){.+.+.+}:
-       [<ffffffff8108b5ba>] __lock_acquire+0x155a/0x1600
-       [<ffffffff8108b70a>] lock_acquire+0xaa/0x140
-       [<ffffffff81506601>] down_read+0x51/0xa0
-       [<ffffffff81079339>] __blocking_notifier_call_chain+0x69/0xc0	
-       [<ffffffff810793a6>] blocking_notifier_call_chain+0x16/0x20
-       [<ffffffff813afbfb>] memory_notify+0x1b/0x20
-       [<ffffffff81141f1e>] remove_memory+0x56e/0x5f0
-       [<ffffffff813af53d>] memory_block_change_state+0xfd/0x1a0
-       [<ffffffff813afd62>] store_mem_state+0xe2/0xf0
-       [<ffffffff813a0bb0>] sysdev_store+0x20/0x30
-       [<ffffffff811bc116>] sysfs_write_file+0xe6/0x170
-       [<ffffffff8114f398>] vfs_write+0xc8/0x190
-       [<ffffffff8114fc14>] sys_write+0x54/0x90
-       [<ffffffff810028b2>] system_call_fastpath+0x16/0x1b
 
-other info that might help us debug this:
+> 
+> Kay
+> 
+> 
 
-5 locks held by bash/1621:
- #0:  (&buffer->mutex){+.+.+.}, at: [<ffffffff811bc074>] sysfs_write_file+0x44/0x170
- #1:  (s_active#110){.+.+.+}, at: [<ffffffff811bc0fd>] sysfs_write_file+0xcd/0x170
- #2:  (&mem->state_mutex){+.+.+.}, at: [<ffffffff813af478>] memory_block_change_state+0x38/0x1a0
- #3:  (pm_mutex){+.+.+.}, at: [<ffffffff81141ad9>] remove_memory+0x129/0x5f0
- #4:  (ksm_thread_mutex){+.+.+.}, at: [<ffffffff8113a3aa>] ksm_memory_callback+0x3a/0xc0
+Thank you for your advice.
+Best Regards,
 
-stack backtrace:
-Pid: 1621, comm: bash Not tainted 2.6.36-rc7-mm1+ #148
-Call Trace:
- [<ffffffff81088b5b>] print_circular_bug+0xeb/0xf0
- [<ffffffff8108b5ba>] __lock_acquire+0x155a/0x1600
- [<ffffffff8103a1f9>] ? finish_task_switch+0x79/0xe0
- [<ffffffff815049a9>] ? schedule+0x419/0xa80
- [<ffffffff8108b70a>] lock_acquire+0xaa/0x140
- [<ffffffff81079339>] ? __blocking_notifier_call_chain+0x69/0xc0	
- [<ffffffff81506601>] down_read+0x51/0xa0
- [<ffffffff81079339>] ? __blocking_notifier_call_chain+0x69/0xc0
- [<ffffffff81079339>] __blocking_notifier_call_chain+0x69/0xc0
- [<ffffffff81110f06>] ? next_online_pgdat+0x26/0x50
- [<ffffffff810793a6>] blocking_notifier_call_chain+0x16/0x20
- [<ffffffff813afbfb>] memory_notify+0x1b/0x20			
- [<ffffffff81141f1e>] remove_memory+0x56e/0x5f0
- [<ffffffff8108ba98>] ? lock_release_non_nested+0x2f8/0x3a0
- [<ffffffff813af53d>] memory_block_change_state+0xfd/0x1a0
- [<ffffffff8111705c>] ? might_fault+0x5c/0xb0
- [<ffffffff813afd62>] store_mem_state+0xe2/0xf0
- [<ffffffff811bc0fd>] ? sysfs_write_file+0xcd/0x170
- [<ffffffff813a0bb0>] sysdev_store+0x20/0x30
- [<ffffffff811bc116>] sysfs_write_file+0xe6/0x170
- [<ffffffff8114f398>] vfs_write+0xc8/0x190
- [<ffffffff8114fc14>] sys_write+0x54/0x90
- [<ffffffff810028b2>] system_call_fastpath+0x16/0x1b
-
+-- 
+Nao NISHIJIMA
+2nd Dept. Linux Technology Center
+Hitachi, Ltd., Systems Development Laboratory
+Email： nao.nishijima.xt@hitachi.com
