@@ -1,94 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756251Ab0JYOnX (ORCPT <rfc822;w@1wt.eu>);
+	id S1756340Ab0JYOnZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Oct 2010 10:43:25 -0400
+Received: from mta-2.ms.rz.RWTH-Aachen.DE ([134.130.7.73]:64987 "EHLO
+	mta-2.ms.rz.rwth-aachen.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756245Ab0JYOnX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 25 Oct 2010 10:43:23 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:40750 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755849Ab0JYOnU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Oct 2010 10:43:20 -0400
-Date: Mon, 25 Oct 2010 16:43:03 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Jan Beulich <JBeulich@novell.com>
-Cc: akpm@linux-foundation.org, torvalds@osdl.org,
-        David Howells <dhowells@redhat.com>,
-        Alexander van Heukelum <heukelum@fastmail.fm>,
-        "H. Peter Anvin" <hpa@linux.intel.com>, linux-arch@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Partially revert patch that encloses asm-offset.h
- numbers in brackets
-Message-ID: <20101025144303.GB13310@elte.hu>
-References: <20101025140218.5092.74117.stgit@warthog.procyon.org.uk>
- <4CC5B1A1020000780001EF7C@vpn.id2.novell.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4CC5B1A1020000780001EF7C@vpn.id2.novell.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+Content-transfer-encoding: 7BIT
+X-IronPort-AV: E=Sophos;i="4.58,236,1286143200";   d="scan'208";a="78392581"
+From: Arnd Hannemann <arnd@arndnet.de>
+To: "David S. Miller" <davem@davemloft.net>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-wireless@vger.kernel.org, Arnd Hannemann <arnd@arndnet.de>
+Subject: [PATCH] net: b43legacy: fix compile error
+Date: Mon, 25 Oct 2010 16:41:30 +0200
+Message-id: <1288017690-31248-1-git-send-email-arnd@arndnet.de>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On todays linus tree the following compile error happened to me:
 
-* Jan Beulich <JBeulich@novell.com> wrote:
+  CC [M]  drivers/net/wireless/b43legacy/xmit.o
+In file included from include/net/dst.h:11,
+                 from drivers/net/wireless/b43legacy/xmit.c:31:
+include/net/dst_ops.h:28: error: expected ':', ',', ';', '}' or '__attribute__' before '____cacheline_aligned_in_smp'
+include/net/dst_ops.h: In function 'dst_entries_get_fast':
+include/net/dst_ops.h:33: error: 'struct dst_ops' has no member named 'pcpuc_entries'
+include/net/dst_ops.h: In function 'dst_entries_get_slow':
+include/net/dst_ops.h:41: error: 'struct dst_ops' has no member named 'pcpuc_entries'
+include/net/dst_ops.h: In function 'dst_entries_add':
+include/net/dst_ops.h:49: error: 'struct dst_ops' has no member named 'pcpuc_entries'
+include/net/dst_ops.h: In function 'dst_entries_init':
+include/net/dst_ops.h:55: error: 'struct dst_ops' has no member named 'pcpuc_entries'
+include/net/dst_ops.h: In function 'dst_entries_destroy':
+include/net/dst_ops.h:60: error: 'struct dst_ops' has no member named 'pcpuc_entries'
+make[4]: *** [drivers/net/wireless/b43legacy/xmit.o] Error 1
+make[3]: *** [drivers/net/wireless/b43legacy] Error 2
+make[2]: *** [drivers/net/wireless] Error 2
+make[1]: *** [drivers/net] Error 2
+make: *** [drivers] Error 2
 
-> >>> On 25.10.10 at 16:02, David Howells <dhowells@redhat.com> wrote:
-> > Partially revert patch:
-> > 
-> > 	commit 3234282f33b29d349bcada40204fc7c8fda7fe72
-> > 	Author: Jan Beulich <JBeulich@novell.com>
-> > 	Date:   Tue Oct 19 14:52:26 2010 +0100
-> > 	x86, asm: Fix CFI macro invocations to deal with shortcomings in gas
-> 
-> No, that's not going to work for x86. You're removing the parentheses again, which 
-> were added intentionally.
+This patch fixes this issue by adding "linux/cache.h" as an include to
+"include/net/dst_ops.h".
 
-But that's not a valid argument - MN10300 worked before and we broke it => that's a 
-regression.
+Signed-off-by: Arnd Hannemann <arnd@arndnet.de>
+---
+ include/net/dst_ops.h |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-> > This breaks MN10300 arch as this changes many instances of instructions similar 
-> > to the following:
-> > 
-> > 	MOV	number,D0
-> > 
-> > which represents an immediate value load into:
-> > 
-> > 	MOV	(number),D0
-> > 
-> > which the assembler then interprets as a load from absolute address.
-> > 
-> > arch/mn10300/kernel/entry.S:64: Error: Invalid opcode/operands
-> > arch/mn10300/kernel/entry.S:65: Error: junk at end of line, first 
-> > unrecognized character is `0'
-> > arch/mn10300/kernel/entry.S:74: Error: Invalid opcode/operands
-> > arch/mn10300/kernel/entry.S:74: Error: junk at end of line, first 
-> > unrecognized character is `1'
-> > arch/mn10300/kernel/entry.S:75: Error: Invalid opcode/operands
-> > arch/mn10300/kernel/entry.S:76: Error: junk at end of line, first 
-> > unrecognized character is `0'
-> 
-> Isn't this a gas bug then? Anywhere you use a plain number you should also be 
-> permitted to use an expression.
+diff --git a/include/net/dst_ops.h b/include/net/dst_ops.h
+index 1fa5306..51665b3 100644
+--- a/include/net/dst_ops.h
++++ b/include/net/dst_ops.h
+@@ -2,6 +2,7 @@
+ #define _NET_DST_OPS_H
+ #include <linux/types.h>
+ #include <linux/percpu_counter.h>
++#include <linux/cache.h>
+ 
+ struct dst_entry;
+ struct kmem_cachep;
+-- 
+1.7.0.4
 
-This argument is not valid either - we added this change to fix a GAS bug to begin 
-with ...
-
-> >  	"/^->/{s:->#\(.*\):/* \1 */:; \
-> > -	s:^->\([^ ]*\) [\$$#]*\([-0-9]*\) \(.*\):#define \1 (\2) /* \3 */:; \
-> > +	s:^->\([^ ]*\) [\$$#]*\([-0-9]*\) \(.*\):#define \1 \2 /* \3 */:; \
-> 
-> This basically gets us back to the way things were before, thus
-> reverting to the state we had before the patch that changed this.
-
-Correct - we should apply David's partial revert and then we'll need to solve our 
-x86 quirk differently: for example by using a x86 and broken-GAS specific quirk.
-
-Thanks,
-
-	Ingo
