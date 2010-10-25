@@ -1,82 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751752Ab0JYBGc (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Oct 2010 21:06:32 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:63454 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751407Ab0JYBGb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Oct 2010 21:06:31 -0400
-Message-ID: <4CC4D84C.5000705@cn.fujitsu.com>
-Date: Mon, 25 Oct 2010 09:07:24 +0800
-From: Li Zefan <lizf@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1b3pre) Gecko/20090513 Fedora/3.0-2.3.beta2.fc11 Thunderbird/3.0b2
-MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: "akpm >> Andrew Morton" <akpm@linux-foundation.org>,
-        Paul Menage <menage@google.com>, Stephane Eranian <eranian@google.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        containers@lists.linux-foundation.org
-Subject: Re: [PATCH 0/7] cgroups: Allow to bind/unbind subsystems to/from
- non-trival hierarchy
-References: <4CC146A4.9090505@cn.fujitsu.com> <1287751801.15336.35.camel@twins>
-In-Reply-To: <1287751801.15336.35.camel@twins>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1752213Ab0JYBMu (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Oct 2010 21:12:50 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:37786 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751479Ab0JYBMs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 24 Oct 2010 21:12:48 -0400
+Date: Mon, 25 Oct 2010 12:12:38 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Chris Ball <cjb@laptop.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Olof Johansson <olof@lixom.net>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: linux-next: build failure after merge of the mmc tree
+Message-Id: <20101025121238.db983f90.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Mon__25_Oct_2010_12_12_38_+1100_kaIWNxW5l+iXcrK6"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Peter Zijlstra wrote:
-> On Fri, 2010-10-22 at 16:09 +0800, Li Zefan wrote:
->> Stephane posted a patchset to add perf_cgroup subsystem, so perf can
->> be used to monitor all threads belonging to a cgroup.
->>
->> But if you already mounted a cgroup hierarchy but without perf_cgroup
->> and the hierarchy has sub-cgroups, you can't bind perf_cgroup to it,
->> and thus you're not able to use per-cgroup perf feature.
->>
->> This patchset alleviates the pain, and then a subsytem can be
->> bound/unbound to/from a hierarchy which has sub-cgroups in it.
->>
->> Some subsystems still can't take advantage of this patchset, memcgroup
->> and cpuset in specific.
->>
->> For cpuset, if a hierarchy has a sub-cgroup and the cgroup has tasks,
->> we can't decide sub-cgroup's cpuset.mems and cpuset.cpus automatically
->> if we try to bind cpuset to this hierarchy.
->>
->> For memcgroup, memcgroup uses css_get/put(), and due to some complexity,
->> for now bindable subsystems should not use css_get/put().
->>
->> Usage:
->>
->> # mount -t cgroup -o cpuset xxx /mnt
->> # mkdir /mnt/tmp
->> # echo $$ > /mnt/tmp/tasks
->>
->> (add cpuacct to the hierarchy)
->> # mount -o remount,cpuset,cpuacct xxx /mnt
->>
->> (remove it from the hierarchy)
->> # mount -o remount,cpuset xxx /mnt
->>
->> There's another limitation, cpuacct should not be bound to any mounted
->> hierarchy before the above operation. But that's not a problem, as you
->> can remove it from a hierarchy and bind it to another one.
-> 
-> Right, so the only remaining problem I see with this approach is that
-> you cannot profile two different hierarchies at the same time, but I
-> can't really think of a solution to that problem (nor do I care very
-> much).
-> 
+--Signature=_Mon__25_Oct_2010_12_12_38_+1100_kaIWNxW5l+iXcrK6
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Paul had a patch to allow some subsystems to be added to multi-hierarchies,
-which may help. But it forbids accessing t->cgroups, which makes this
-feature of limited use.
+Hi Chris,
 
-Anyway I too don't care much about this.
+After merging the mmc tree, today's linux-next build (x86_64 allmodconfig)
+failed like this:
 
-> Seems like a nice approach, Thanks Li!
-> 
+drivers/mmc/card/block.c:57: error: 'CONFIG_MMC_BLOCK_MINORS' undeclared he=
+re (not in a function)
 
-Thanks!
+Caused by commit d8714fbfc66e16fc64a4525c02eebc34bac8385c ("mmc: make
+number of mmcblk minors configurable").  Forget to include a Kconfig
+update?
+
+I have used the mmc tree from next-20101022 for today.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Mon__25_Oct_2010_12_12_38_+1100_kaIWNxW5l+iXcrK6
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iQEcBAEBAgAGBQJMxNmGAAoJEDMEi1NhKgbsn/QIAJ8Frolbjy/66XzmfpBt+bU0
+Yae3oPqHVxQZKovkhOwb0SeK5cMS/7yizoAfgmgUpaWXgBiC65hdTj9/9TnIMb2d
+r5P5dofGKPtiW/4vY4xL02k6Qyo6iamI20Vf7NgnQF3uj3xHUhsmb14MTlGYcY9L
+Xtc23dDiUqGHCPYYuWcBpmIsvyMPaFtr2pYlthmCYIHcPsdN7m0m5B2j027dUz7G
+F39hzd7gWovI7vFXTRCqaOYwzU9H3jU8rZm/ib/npBPnsD9kwT+TJK2iR38N9zns
+zX6IJkPP1jFszuvAJI4EahjsPFRgCudZ952aMY3saPDdeHNgcMhrT76Ai6VFd6w=
+=Z6v1
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__25_Oct_2010_12_12_38_+1100_kaIWNxW5l+iXcrK6--
