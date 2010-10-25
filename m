@@ -1,99 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759478Ab0JYTYa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Oct 2010 15:24:30 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:25306 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752007Ab0JYTY3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Oct 2010 15:24:29 -0400
-Date: Mon, 25 Oct 2010 15:24:19 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Jens Axboe <jaxboe@fusionio.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Maxim Levitsky <maximlevitsky@gmail.com>
-Subject: Re: [GIT PULL] Revert of the IO stat fix
-Message-ID: <20101025192419.GB14895@redhat.com>
-References: <4CC49274.3030803@fusionio.com>
- <AANLkTik4qAzZPLO8HHBCM34_NLEEdPj04RyXPfeR-wSv@mail.gmail.com>
+	id S1759575Ab0JYT2E (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Oct 2010 15:28:04 -0400
+Received: from Mycroft.westnet.com ([216.187.52.7]:40983 "EHLO
+	mycroft.westnet.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759341Ab0JYT2C (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Oct 2010 15:28:02 -0400
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTik4qAzZPLO8HHBCM34_NLEEdPj04RyXPfeR-wSv@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7bit
+Message-ID: <19653.55831.692904.538148@quad.stoffel.home>
+Date: Mon, 25 Oct 2010 15:27:19 -0400
+From: "John Stoffel" <john@stoffel.org>
+To: Eric Paris <eparis@redhat.com>
+Cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, hch@infradead.org, zohar@us.ibm.com,
+        warthog9@kernel.org, david@fromorbit.com, jmorris@namei.org,
+        kyle@mcmartin.ca, hpa@zytor.com, akpm@linux-foundation.org,
+        torvalds@linux-foundation.org, mingo@elte.hu, viro@zeniv.linux.org.uk
+Subject: Re: [PATCH 06/11] IMA: use i_writecount rather than a private counter
+In-Reply-To: <20101025184152.20504.94048.stgit@paris.rdu.redhat.com>
+References: <20101025184118.20504.24290.stgit@paris.rdu.redhat.com>
+	<20101025184152.20504.94048.stgit@paris.rdu.redhat.com>
+X-Mailer: VM 8.1.1 under 23.2.1 (x86_64-pc-linux-gnu)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Oct 24, 2010 at 01:35:33PM -0700, Linus Torvalds wrote:
-> On Sun, Oct 24, 2010 at 1:09 PM, Jens Axboe <jaxboe@fusionio.com> wrote:
-> >
-> > The fix for cross-partition merges screwing up disk stats turns out
-> > to be problematic on various levels. Lets revert this one so we have
-> > time to come up with a proper solution for this.
-> 
-> Hmm.. I think the reverted patch looks like it really is the right
-> thing to do, so I hate reverting it this early. What were the problems
-> with it?
-> 
-> Btw, one thing that seems to be missing in the original commit (which
-> is not necessarily the reason for the trouble, of course), is that
-> elv_rq_merge_ok() seems to not check the partition. As far as I can
-> tell, we should have a
-> 
->     if (req->part != bio->bi_bdev->bd_part)
->        return 0;
+>>>>> "Eric" == Eric Paris <eparis@redhat.com> writes:
 
-Ok, not allowing requests of different partitions to merge will atleast
-solve part of the problem for Yasuaki Ishimatsu. (in-flight accounting
-going out of sync due to request merging across partitions).
+Eric> IMA tracks the number of struct files which are holding a given
+Eric> inode readonly and the number which are holding the inode write
+Eric> or r/w.  It needs this information so when a new reader or
+Eric> writer comes in it can tell if this new file will be able to
+Eric> invalidate results it already made about existing files.
 
-> 
-> there, no? And you should _not_ set rq->part in "drive_stat_acct()",
-> you should set it from bio->bi_bdev->bd_part when you create the
-> request.
+Eric> aka if a task is holding a struct file open RO, IMA measured the
+Eric> file and recorded those measurements and then a task opens the
+Eric> file RW IMA needs to note in the logs that the old measurement
+Eric> may not be correct.  It's called a "Time of Measure Time of Use"
+Eric> (ToMToU) issue.  The same is true is a RO file is opened to an
+Eric> inode which has an open writer.  We cannot, with any validity,
+Eric> measure the file in question since it could be changing.
 
-Not allowing request merging across partitions, I guess should remove
-the need of storing this info in request and allow us to remove req->part
-as introduced by commit 7681bfeeccff5efa9eb29bf09249a3c400b15327.
+So if ToMToU is blown away by opening a file RW, how do you handle a
+denial of attack which just opens and closes a bunch of files under
+IMA control as fast as it can?  
 
-> 
-> (And if it is NULL, just don't do partition accounting at all)
-> 
-> Hmm? What am I missing? What were the bugs?
+What happens then?  Does IMA try to re-calculate it's integrity
+measurement each and every time this happens?  What does this do to
+system performance?  
 
-I think atleast one of the bugs was that we don't know whether request
-queue pointer obtained from disk->queue is still valid or not.
+If I open a file RO, read 512 bytes in a random block, then writes
+those same 512 bytes back to the exact same spot, what happens?  
 
-Looking at the backtrace of crash reported by Maxim Levitsky here.
+While I'm really concerned about the overhead when it's disabled, I'm
+not sure you've explained the overhead when it *IS* enabled, esp on
+systems with lots of disks and lots of files.  
 
-http://lkml.org/lkml/2010/10/23/165
+The problems with kernel.org is a perfect exmaple of how an annocuous
+feature like this, can kill a system's performance.
 
-mspro_block_remove() calls blk_cleanup_queue() to put its reference on the
-queue and which in turn would call kmem_cache_free(blk_requestq_cachep, q)
-and free up the queue.
+John
 
-Now driver calls mspro_block_disk_release() and which in turn ends up
-accessing request queue and trying to make sure there are no inflight
-requests. But request queue might be gone by now and we might end up
-accessing freed object.
 
-So one of the quick solutions probably is to set disk->queue = NULL after
-del_gendisk() and before blk_cleanup_queue(). IIUC, blk_cleanup_queue()
-driver's reference to the request queue and driver should in-turn cleanup
-the disk->queue, atleast in theory.
+Eric> This patch attempts to use the i_writecount field to track writers.  The
+Eric> i_writecount field actually embeds more information in it's value than IMA
+Eric> needs but it should work for our purposes and allow us to shrink the struct
+Eric> inode even more.
 
-Later disk_replace_part_tbl() can do
+Eric> Signed-off-by: Eric Paris <eparis@redhat.com>
+Eric> Acked-by: Mimi Zohar <zohar@linux.vnet.ibm.com>
+Eric> ---
 
-q = disk->queue;
+Eric>  security/integrity/ima/ima.h      |    1 -
+Eric>  security/integrity/ima/ima_iint.c |    6 ------
+Eric>  security/integrity/ima/ima_main.c |   16 ++++++----------
+Eric>  3 files changed, 6 insertions(+), 17 deletions(-)
 
-if (q)
-	quiesce_elevator;
+Eric> diff --git a/security/integrity/ima/ima.h b/security/integrity/ima/ima.h
+Eric> index 80aca3d..b546b90 100644
+Eric> --- a/security/integrity/ima/ima.h
+Eric> +++ b/security/integrity/ima/ima.h
+Eric> @@ -108,7 +108,6 @@ struct ima_iint_cache {
+Eric>  	struct mutex mutex;	/* protects: version, flags, digest */
+Eric>  	/* protected by inode->i_lock */
+Eric>  	unsigned int readcount;	/* measured files readcount */
+Eric> -	unsigned int writecount;/* measured files writecount */
+Eric>  	struct kref refcount;	/* ima_iint_cache reference count */
+Eric>  };
+ 
+Eric> diff --git a/security/integrity/ima/ima_iint.c b/security/integrity/ima/ima_iint.c
+Eric> index db71a13..e68891f 100644
+Eric> --- a/security/integrity/ima/ima_iint.c
+Eric> +++ b/security/integrity/ima/ima_iint.c
+Eric> @@ -129,11 +129,6 @@ void iint_free(struct kref *kref)
+iint-> readcount);
+iint-> readcount = 0;
+Eric>  	}
+Eric> -	if (iint->writecount != 0) {
+Eric> -		printk(KERN_INFO "%s: writecount: %u\n", __func__,
+Eric> -		       iint->writecount);
+Eric> -		iint->writecount = 0;
+Eric> -	}
+Eric>  	kref_init(&iint->refcount);
+Eric>  	kmem_cache_free(iint_cache, iint);
+Eric>  }
+Eric> @@ -166,7 +161,6 @@ static void init_once(void *foo)
+iint-> flags = 0UL;
+Eric>  	mutex_init(&iint->mutex);
+iint-> readcount = 0;
+Eric> -	iint->writecount = 0;
+Eric>  	kref_init(&iint->refcount);
+Eric>  }
+ 
+Eric> diff --git a/security/integrity/ima/ima_main.c b/security/integrity/ima/ima_main.c
+Eric> index 2f9b5d5..24660bf 100644
+Eric> --- a/security/integrity/ima/ima_main.c
+Eric> +++ b/security/integrity/ima/ima_main.c
+Eric> @@ -94,8 +94,6 @@ static void ima_inc_counts(struct ima_iint_cache *iint, fmode_t mode)
+ 
+Eric>  	if ((mode & (FMODE_READ | FMODE_WRITE)) == FMODE_READ)
+iint-> readcount++;
+Eric> -	if (mode & FMODE_WRITE)
+Eric> -		iint->writecount++;
+Eric>  }
+ 
+Eric>  /*
+Eric> @@ -173,18 +171,16 @@ static void ima_dec_counts(struct ima_iint_cache *iint, struct inode *inode,
+iint-> readcount--;
+Eric>  	}
+Eric>  	if (mode & FMODE_WRITE) {
+Eric> -		if (unlikely(iint->writecount == 0))
+Eric> +		if (atomic_read(&inode->i_writecount) <= 0)
+Eric>  			dump = true;
+Eric> -		iint->writecount--;
+Eric> -		if (iint->writecount == 0) {
+Eric> -			if (iint->version != inode->i_version)
+Eric> -				iint->flags &= ~IMA_MEASURED;
+Eric> -		}
+Eric> +		if (atomic_read(&inode->i_writecount) == 1 &&
+Eric> +		    iint->version != inode->i_version)
+Eric> +			iint->flags &= ~IMA_MEASURED;
+Eric>  	}
+ 
+Eric>  	if (dump && !ima_limit_imbalance(file)) {
+Eric> -		printk(KERN_INFO "%s: open/free imbalance (r:%u w:%u)\n",
+Eric> -		       __func__, iint->readcount, iint->writecount);
+Eric> +		printk(KERN_INFO "%s: open/free imbalance (r:%u)\n",
+Eric> +		       __func__, iint->readcount);
+Eric>  		dump_stack();
+Eric>  	}
+Eric>  }
 
-I am not sure if it is completely race free or not from the other call
-path of disk_expand_part_tbl(). What kind of locking is there to make
-sure once disk->queue is fetched, some other cpu does not do
-blk_cleanup_queue().
+Eric> --
+Eric> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+Eric> the body of a message to majordomo@vger.kernel.org
+Eric> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Eric> Please read the FAQ at  http://www.tux.org/lkml/
 
-Thanks
-Vivek 
+-- 
