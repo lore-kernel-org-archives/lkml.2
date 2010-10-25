@@ -1,78 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754001Ab0JYIx7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Oct 2010 04:53:59 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:48417 "EHLO smtps.tip.net.au"
+	id S1752685Ab0JYIyu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Oct 2010 04:54:50 -0400
+Received: from hera.kernel.org ([140.211.167.34]:38648 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751884Ab0JYIx6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Oct 2010 04:53:58 -0400
-Date: Mon, 25 Oct 2010 19:53:49 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Jean Delvare <khali@linux-fr.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jesse Barnes <jbarnes@virtuousgeek.org>
-Subject: Re: linux-next: error importing i2c quilt series
-Message-Id: <20101025195349.f5ac62eb.sfr@canb.auug.org.au>
-In-Reply-To: <20101025103404.73c24f45@endymion.delvare>
-References: <20101025105900.83472a69.sfr@canb.auug.org.au>
-	<20101025103404.73c24f45@endymion.delvare>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Mon__25_Oct_2010_19_53_49_+1100_CXlm2./E65s.neWm"
+	id S1751103Ab0JYIyt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Oct 2010 04:54:49 -0400
+Message-ID: <4CC545D2.9020303@kernel.org>
+Date: Mon, 25 Oct 2010 10:54:42 +0200
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.11) Gecko/20101013 Lightning/1.0b2 Thunderbird/3.1.5
+MIME-Version: 1.0
+To: Christoph Hellwig <hch@lst.de>
+CC: Jens Axboe <jaxboe@fusionio.com>, linux-kernel@vger.kernel.org,
+        linux-scsi@vger.kernel.org
+Subject: Re: [PATCH] block: remove REQ_HARDBARRIER
+References: <1281977523-19335-1-git-send-email-tj@kernel.org> <201008241745.35242.philipp.reisner@linbit.com> <20101022083511.GA7853@lst.de> <201010231318.33517.philipp.reisner@linbit.com> <4CC311D5.9040904@fusionio.com> <20101023165924.GA1395@lst.de>
+In-Reply-To: <20101023165924.GA1395@lst.de>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 25 Oct 2010 08:54:45 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__25_Oct_2010_19_53_49_+1100_CXlm2./E65s.neWm
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 10/23/2010 06:59 PM, Christoph Hellwig wrote:
+> REQ_HARDBARRIER is dead now, so remove the leftovers.  What's left
+> at this point is:
+> 
+>  - various checks inside the block layer.
+>  - sanity checks in bio based drivers.
+>  - now unused bio_empty_barrier helper.
+>  - Xen blockfront use of BLKIF_OP_WRITE_BARRIER - it's dead for a while,
+>    but Xen really needs to sort out it's barrier situaton.
+>  - setting of ordered tags in uas - dead code copied from old scsi
+>    drivers.
+>  - scsi different retry for barriers - it's dead and should have been
+>    removed when flushes were converted to FS requests.
+>  - blktrace handling of barriers - removed.  Someone who knows blktrace
+>    better should add support for REQ_FLUSH and REQ_FUA, though.
+> 
+> Signed-off-by: Christoph Hellwig <hch@lst.de>
 
-Hi Jean,
+Looks good to me.
 
-On Mon, 25 Oct 2010 10:34:04 +0200 Jean Delvare <khali@linux-fr.org> wrote:
->
-> This patch depends on a patch adding/updating PCI IDs which I thought
-> was in Jesse Barnes' pci tree which you also pull in linux-next.
-> Apparently my assumption was wrong.
+Reviewed-by: Tejun Heo <tj@kernel.org>
 
-Your series file says that your series is based on 2.6.36-git5, not
-Jesse's pci tree.  You can add:
+Thanks.
 
-# NEXT-BASE pci
-
-to your series file to force me to import your series on top of Jesse's
-tree instead of 2.6.36-rc5.
-
-> Jesse, where's this patch?
->   https://patchwork.kernel.org/patch/230361/
-> I certainly hope it's scheduled for merge soon!
->=20
-> Meanwhile I've removed the other patch from my i2c-next tree, it will
-> be back only when I'm certain it applied fine.
-
-OK, thanks
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Mon__25_Oct_2010_19_53_49_+1100_CXlm2./E65s.neWm
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQEcBAEBAgAGBQJMxUWdAAoJEDMEi1NhKgbskTMH/25DsYpqv103XjfwozsgJSYa
-NuZYIBEtcc0gWRCjeSSVXhkRTg+7bS3X4+9DOEhW5LeJSoL60/dpZ1Cvnx5JkObZ
-0IhC1gV1KkVdLVmxHVWh+ib1hKmYjlzUw9o4Awu+icuO/Tpq/IwQekqp+IeUcjhC
-K+yV+7gvVn8HJwBuzkskT1F98z2wFbFJWY0Mb9DXycdtsvlmRpUTHe2P5fviIdqL
-1YrS8YiRwGxN1DJB67LY161vBeS4uNdn7BlLpRNQhwT8reu7111OgojVHJOf5dRU
-ThJTAqzgFiCez1VxDoT/B3h9xm9theIl1gEqx/7FCNukFdYxnv2Dw/Xp5HcNgaw=
-=xSS/
------END PGP SIGNATURE-----
-
---Signature=_Mon__25_Oct_2010_19_53_49_+1100_CXlm2./E65s.neWm--
+-- 
+tejun
