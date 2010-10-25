@@ -1,58 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756741Ab0JYQF7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Oct 2010 12:05:59 -0400
-Received: from web37608.mail.mud.yahoo.com ([209.191.87.91]:27339 "HELO
-	web37608.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1756378Ab0JYQF6 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Oct 2010 12:05:58 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.com;
-  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type:Content-Transfer-Encoding;
-  b=le78U0FWgdsaMaaOpn9+7UEuFppESmdDQ5GLzfB0G77CH1fl5FIQ+KYGUQwWUv6xKSR6KzaClVFiOUadgB7/qlFj3HzIMTtGAB0xyZ6pg3gFvxrzsL+ZhzwOcOgMp6dp6oOtSe93PCyx3y7RjW2aoasBCfTPDY5pHl7XFmHf5pc=;
-Message-ID: <728583.65798.qm@web37608.mail.mud.yahoo.com>
-X-YMail-OSG: dnfmy5sVM1k3FZgD9Ukl8p9atWapG7gTlPReru6TjGTI2a0
- .Fa8vUw8A3N.UL2j.cAvS9IrFta6RMHEj4GPqgMj393nwY0uuOEjwdf_q8zV
- BVf8zj2l9Kw4d7qclNogC2yxQuXE2FrCCRId84NyLAxb54WGV40l5TR67_x0
- jtNWdrrGfCCkY5TGebyN_7EshGkhXDxWAlmW94N3DzDUu.gB4nIEbSUjJoeh
- 5u0h47kgkB6EdwXLbbZ1tIHKDTAf7ux_22xno6irwCCMQATW1FASCHmzEBA0
- ndtIskKgrc5YOKrdp3CD1FJ8FCeY1poxcgtdrK1wLJ1GeJT0e1V9UY2cJKZu
- cRRz03vMJAOHNXrJegzLbsA--
-X-Mailer: YahooMailClassic/11.4.9 YahooMailWebService/0.8.107.284920
-Date: Mon, 25 Oct 2010 09:05:56 -0700 (PDT)
-From: Alex Dubov <oakad@yahoo.com>
-Subject: Re: [PATCH 20/29] memstick: jmb38x_ms: rework PIO
-To: Maxim Levitsky <maximlevitsky@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Maxim Levitsky <maximlevitsky@gmail.com>
-In-Reply-To: <1287791637-10329-21-git-send-email-maximlevitsky@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+	id S1756571Ab0JYQHl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Oct 2010 12:07:41 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:52895 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751267Ab0JYQHk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Oct 2010 12:07:40 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=Xm7qYMsfTBKJHOlDUHcfdshE2pIdgtqxjkpXcup8OaDWmG4PoW80b2+4OZDboXnzPm
+         f3OMW+t0pj7gBQYhByK9ECHOjuB0XH4/WEEzJ5fMRGY63cq15skY52aImzqIqluAMHG5
+         A1ja4/uzn+dBr3eBvDGtKsE8UnWoUuP6ckajA=
+Subject: Re: [PATCH 3/3] sparc32: fix build failure on CONFIG_SPARC_LEON
+From: Namhyung Kim <namhyung@gmail.com>
+To: David Miller <davem@davemloft.net>
+Cc: sparclinux@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <20101025.090043.71110898.davem@davemloft.net>
+References: <1288021958-3130-1-git-send-email-namhyung@gmail.com>
+	 <1288021958-3130-3-git-send-email-namhyung@gmail.com>
+	 <20101025.090043.71110898.davem@davemloft.net>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 26 Oct 2010 01:07:29 +0900
+Message-ID: <1288022849.1689.14.camel@leonhard>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
---- On Fri, 22/10/10, Maxim Levitsky <maximlevitsky@gmail.com> wrote:
-
-> From: Maxim Levitsky <maximlevitsky@gmail.com>
-> Subject: [PATCH 20/29] memstick: jmb38x_ms: rework PIO
-> To: "Alex Dubov" <oakad@yahoo.com>
-> Cc: "Andrew Morton" <akpm@linux-foundation.org>, "LKML" <linux-kernel@vger.kernel.org>, "Maxim Levitsky" <maximlevitsky@gmail.com>
-> Received: Friday, 22 October, 2010, 4:53 PM
-> Rewrite PIO code to be just simplier
-> and shorter,
-> and comment not so obivous parts.
+2010-10-25 (월), 09:00 -0700, David Miller:
+> From: Namhyung Kim <namhyung@gmail.com>
+> Date: Tue, 26 Oct 2010 00:52:38 +0900
 > 
-> Signed-off-by: Maxim Levitsky<maximlevitsky@gmail.com>
-> ---
+> >   CC      arch/sparc/kernel/irq_32.o
+> > arch/sparc/kernel/irq_32.c: In function 'request_fast_irq':
+> > arch/sparc/kernel/irq_32.c:370:25: error: conflicting types for 'trapbase_cpu1'
+> 
+> I doubt SMP LEON chips even exist, so better to just anti-dep
+> this in arch/sparc/Kconfig
 
-Yet, you are fixing something that was not broken before.
+If I understood correctly, you meant this?
 
 
+diff --git a/arch/sparc/Kconfig b/arch/sparc/Kconfig
+index 4db8bc0..a6685ba 100644
+--- a/arch/sparc/Kconfig
++++ b/arch/sparc/Kconfig
+@@ -463,7 +463,7 @@ config SERIAL_CONSOLE
+ 
+ config SPARC_LEON
+        bool "Sparc Leon processor family"
+-       depends on SPARC32
++       depends on SPARC32 && !SMP
+        ---help---
+          If you say Y here if you are running on a SPARC-LEON
+processor.
+          The LEON processor is a synthesizable VHDL model of the
 
-      
+
+-- 
+Regards,
+Namhyung Kim
+
+
