@@ -1,209 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754385Ab0JYJAe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Oct 2010 05:00:34 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:46478 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754306Ab0JYJAa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Oct 2010 05:00:30 -0400
-Subject: [RFC PATCH 09/18] ARM: LPAE: Add fault handling support
-To: linux-arm-kernel@lists.infradead.org
-From: Catalin Marinas <catalin.marinas@arm.com>
-Cc: linux-kernel@vger.kernel.org
-Date: Mon, 25 Oct 2010 10:00:24 +0100
-Message-ID: <20101025090024.25275.59418.stgit@e102109-lin.cambridge.arm.com>
-In-Reply-To: <20101025085812.25275.55757.stgit@e102109-lin.cambridge.arm.com>
-References: <20101025085812.25275.55757.stgit@e102109-lin.cambridge.arm.com>
-User-Agent: StGit/0.15-103-g0e84
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 25 Oct 2010 09:00:24.0784 (UTC) FILETIME=[0FCB2500:01CB7423]
+	id S1754494Ab0JYJC7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Oct 2010 05:02:59 -0400
+Received: from smtp.gentoo.org ([140.211.166.183]:59632 "EHLO smtp.gentoo.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754119Ab0JYJAB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Oct 2010 05:00:01 -0400
+From: Mike Frysinger <vapier@gentoo.org>
+To: linux-kernel@vger.kernel.org
+Cc: uclinux-dist-devel@blackfin.uclinux.org
+Subject: [PATCH 0/5] Blackfin updates for 2.6.37 (part 2)
+Date: Mon, 25 Oct 2010 05:00:07 -0400
+Message-Id: <1287997207-30661-1-git-send-email-vapier@gentoo.org>
+X-Mailer: git-send-email 1.7.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The DFSR and IFSR register format is different when LPAE is enabled. In
-addition, DFSR and IFSR have the similar definitions for the fault type.
-This modifies modifies the fault code to correctly handle the new
-format.
+My last push meant to include the new bfin_twi header, but I guess I
+fat fingered it.  Other than a few tweaks the existing Blackfin tree,
+this pulls in the bfin_mac platform resource clean up as acked by
+David.  He wanted one changeset to preserve bisection.
 
-Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
----
- arch/arm/mm/alignment.c |    8 ++++-
- arch/arm/mm/fault.c     |   80 +++++++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 87 insertions(+), 1 deletions(-)
+Mike Frysinger (4):
+  Blackfin: bfin_twi.h: start a common TWI header
+  Blackfin: update defconfigs
+  Blackfin: ppi/spi/twi headers: add missing __BFP undef
+  Blackfin: fix inverted anomaly 05000481 logic
 
-diff --git a/arch/arm/mm/alignment.c b/arch/arm/mm/alignment.c
-index 724ba3b..bc98a6e 100644
---- a/arch/arm/mm/alignment.c
-+++ b/arch/arm/mm/alignment.c
-@@ -906,6 +906,12 @@ do_alignment(unsigned long addr, unsigned int fsr, struct pt_regs *regs)
- 	return 0;
- }
- 
-+#ifdef CONFIG_ARM_LPAE
-+#define ALIGNMENT_FAULT		33
-+#else
-+#define ALIGNMENT_FAULT		1
-+#endif
-+
- /*
-  * This needs to be done after sysctl_init, otherwise sys/ will be
-  * overwritten.  Actually, this shouldn't be in sys/ at all since
-@@ -939,7 +945,7 @@ static int __init alignment_init(void)
- 		ai_usermode = UM_FIXUP;
- 	}
- 
--	hook_fault_code(1, do_alignment, SIGBUS, BUS_ADRALN,
-+	hook_fault_code(ALIGNMENT_FAULT, do_alignment, SIGBUS, BUS_ADRALN,
- 			"alignment exception");
- 
- 	/*
-diff --git a/arch/arm/mm/fault.c b/arch/arm/mm/fault.c
-index 2966897..b662aea 100644
---- a/arch/arm/mm/fault.c
-+++ b/arch/arm/mm/fault.c
-@@ -33,10 +33,15 @@
- #define FSR_WRITE		(1 << 11)
- #define FSR_FS4			(1 << 10)
- #define FSR_FS3_0		(15)
-+#define FSR_FS5_0		(0x3f)
- 
- static inline int fsr_fs(unsigned int fsr)
- {
-+#ifdef CONFIG_ARM_LPAE
-+	return fsr & FSR_FS5_0;
-+#else
- 	return (fsr & FSR_FS3_0) | (fsr & FSR_FS4) >> 6;
-+#endif
- }
- 
- #ifdef CONFIG_MMU
-@@ -108,7 +113,9 @@ void show_pte(struct mm_struct *mm, unsigned long addr)
- 
- 		pte = pte_offset_map(pmd, addr);
- 		printk(", *pte=%08lx", pte_val(*pte));
-+#ifndef CONFIG_ARM_LPAE
- 		printk(", *ppte=%08lx", pte_val(pte[-LINUX_PTE_OFFSET]));
-+#endif
- 		pte_unmap(pte);
- 	} while(0);
- 
-@@ -467,6 +474,72 @@ static struct fsr_info {
- 	int	code;
- 	const char *name;
- } fsr_info[] = {
-+#ifdef CONFIG_ARM_LPAE
-+	{ do_bad,		SIGBUS,  0,		"unknown 0"			},
-+	{ do_bad,		SIGBUS,  0,		"unknown 1"			},
-+	{ do_bad,		SIGBUS,  0,		"unknown 2"			},
-+	{ do_bad,		SIGBUS,  0,		"unknown 3"			},
-+	{ do_bad,		SIGBUS,  0,		"reserved translation fault"	},
-+	{ do_translation_fault,	SIGSEGV, SEGV_MAPERR,	"level 1 translation fault"	},
-+	{ do_translation_fault,	SIGSEGV, SEGV_MAPERR,	"level 2 translation fault"	},
-+	{ do_page_fault,	SIGSEGV, SEGV_MAPERR,	"level 3 translation fault"	},
-+	{ do_bad,		SIGBUS,  0,		"reserved access flag fault"	},
-+	{ do_bad,		SIGSEGV, SEGV_ACCERR,	"level 1 access flag fault"	},
-+	{ do_bad,		SIGSEGV, SEGV_ACCERR,	"level 2 access flag fault"	},
-+	{ do_page_fault,	SIGSEGV, SEGV_ACCERR,	"level 3 access flag fault"	},
-+	{ do_bad,		SIGBUS,  0,		"reserved permission fault"	},
-+	{ do_bad,		SIGSEGV, SEGV_ACCERR,	"level 1 permission fault"	},
-+	{ do_sect_fault,	SIGSEGV, SEGV_ACCERR,	"level 2 permission fault"	},
-+	{ do_page_fault,	SIGSEGV, SEGV_ACCERR,	"level 3 permission fault"	},
-+	{ do_bad,		SIGBUS,  0,		"synchronous external abort"	},
-+	{ do_bad,		SIGBUS,  0,		"asynchronous external abort"	},
-+	{ do_bad,		SIGBUS,  0,		"unknown 18"			},
-+	{ do_bad,		SIGBUS,  0,		"unknown 19"			},
-+	{ do_bad,		SIGBUS,  0,		"synchronous abort (translation table walk)" },
-+	{ do_bad,		SIGBUS,  0,		"synchronous abort (translation table walk)" },
-+	{ do_bad,		SIGBUS,  0,		"synchronous abort (translation table walk)" },
-+	{ do_bad,		SIGBUS,  0,		"synchronous abort (translation table walk)" },
-+	{ do_bad,		SIGBUS,  0,		"synchronous parity error"	},
-+	{ do_bad,		SIGBUS,  0,		"asynchronous parity error"	},
-+	{ do_bad,		SIGBUS,  0,		"unknown 26"			},
-+	{ do_bad,		SIGBUS,  0,		"unknown 27"			},
-+	{ do_bad,		SIGBUS,  0,		"synchronous parity error (translation table walk" },
-+	{ do_bad,		SIGBUS,  0,		"synchronous parity error (translation table walk" },
-+	{ do_bad,		SIGBUS,  0,		"synchronous parity error (translation table walk" },
-+	{ do_bad,		SIGBUS,  0,		"synchronous parity error (translation table walk" },
-+	{ do_bad,		SIGBUS,  0,		"unknown 32"			},
-+	{ do_bad,		SIGILL,  BUS_ADRALN,	"alignment fault"		},
-+	{ do_bad,		SIGBUS,  0,		"debug event"			},
-+	{ do_bad,		SIGBUS,  0,		"unknown 35"			},
-+	{ do_bad,		SIGBUS,  0,		"unknown 36"			},
-+	{ do_bad,		SIGBUS,  0,		"unknown 37"			},
-+	{ do_bad,		SIGBUS,  0,		"unknown 38"			},
-+	{ do_bad,		SIGBUS,  0,		"unknown 39"			},
-+	{ do_bad,		SIGBUS,  0,		"unknown 40"			},
-+	{ do_bad,		SIGBUS,  0,		"unknown 41"			},
-+	{ do_bad,		SIGBUS,  0,		"unknown 42"			},
-+	{ do_bad,		SIGBUS,  0,		"unknown 43"			},
-+	{ do_bad,		SIGBUS,  0,		"unknown 44"			},
-+	{ do_bad,		SIGBUS,  0,		"unknown 45"			},
-+	{ do_bad,		SIGBUS,  0,		"unknown 46"			},
-+	{ do_bad,		SIGBUS,  0,		"unknown 47"			},
-+	{ do_bad,		SIGBUS,  0,		"unknown 48"			},
-+	{ do_bad,		SIGBUS,  0,		"unknown 49"			},
-+	{ do_bad,		SIGBUS,  0,		"unknown 50"			},
-+	{ do_bad,		SIGBUS,  0,		"unknown 51"			},
-+	{ do_bad,		SIGBUS,  0,		"implementation fault (lockdown abort)" },
-+	{ do_bad,		SIGBUS,  0,		"unknown 53"			},
-+	{ do_bad,		SIGBUS,  0,		"unknown 54"			},
-+	{ do_bad,		SIGBUS,  0,		"unknown 55"			},
-+	{ do_bad,		SIGBUS,  0,		"unknown 56"			},
-+	{ do_bad,		SIGBUS,  0,		"unknown 57"			},
-+	{ do_bad,		SIGBUS,  0,		"implementation fault (coprocessor abort)" },
-+	{ do_bad,		SIGBUS,  0,		"unknown 59"			},
-+	{ do_bad,		SIGBUS,  0,		"unknown 60"			},
-+	{ do_bad,		SIGBUS,  0,		"unknown 61"			},
-+	{ do_bad,		SIGBUS,  0,		"unknown 62"			},
-+	{ do_bad,		SIGBUS,  0,		"unknown 63"			},
-+#else	/* !CONFIG_ARM_LPAE */
- 	/*
- 	 * The following are the standard ARMv3 and ARMv4 aborts.  ARMv5
- 	 * defines these to be "precise" aborts.
-@@ -508,6 +581,7 @@ static struct fsr_info {
- 	{ do_bad,		SIGBUS,  0,		"unknown 29"			   },
- 	{ do_bad,		SIGBUS,  0,		"unknown 30"			   },
- 	{ do_bad,		SIGBUS,  0,		"unknown 31"			   }
-+#endif	/* CONFIG_ARM_LPAE */
- };
- 
- void __init
-@@ -546,6 +620,9 @@ do_DataAbort(unsigned long addr, unsigned int fsr, struct pt_regs *regs)
- }
- 
- 
-+#ifdef CONFIG_ARM_LPAE
-+#define ifsr_info	fsr_info
-+#else	/* !CONFIG_ARM_LPAE */
- static struct fsr_info ifsr_info[] = {
- 	{ do_bad,		SIGBUS,  0,		"unknown 0"			   },
- 	{ do_bad,		SIGBUS,  0,		"unknown 1"			   },
-@@ -580,6 +657,7 @@ static struct fsr_info ifsr_info[] = {
- 	{ do_bad,		SIGBUS,  0,		"unknown 30"			   },
- 	{ do_bad,		SIGBUS,  0,		"unknown 31"			   },
- };
-+#endif	/* CONFIG_ARM_LPAE */
- 
- asmlinkage void __exception
- do_PrefetchAbort(unsigned long addr, unsigned int ifsr, struct pt_regs *regs)
-@@ -602,6 +680,7 @@ do_PrefetchAbort(unsigned long addr, unsigned int ifsr, struct pt_regs *regs)
- 
- static int __init exceptions_init(void)
- {
-+#ifndef CONFIG_ARM_LPAE
- 	if (cpu_architecture() >= CPU_ARCH_ARMv6) {
- 		hook_fault_code(4, do_translation_fault, SIGSEGV, SEGV_MAPERR,
- 				"I-cache maintenance fault");
-@@ -617,6 +696,7 @@ static int __init exceptions_init(void)
- 		hook_fault_code(6, do_bad, SIGSEGV, SEGV_MAPERR,
- 				"section access flag fault");
- 	}
-+#endif
- 
- 	return 0;
- }
+Sonic Zhang (1):
+  netdev: bfin_mac: push settings to platform resources
+
+ arch/blackfin/configs/BF518F-EZBRD_defconfig      |    2 +-
+ arch/blackfin/configs/BF526-EZBRD_defconfig       |    2 +-
+ arch/blackfin/configs/BF527-AD7160-EVAL_defconfig |    2 +-
+ arch/blackfin/configs/BF527-EZKIT-V2_defconfig    |    3 +-
+ arch/blackfin/configs/BF527-EZKIT_defconfig       |    3 +-
+ arch/blackfin/configs/BF527-TLL6527M_defconfig    |    1 -
+ arch/blackfin/configs/BF533-EZKIT_defconfig       |    2 +-
+ arch/blackfin/configs/BF533-STAMP_defconfig       |    2 +-
+ arch/blackfin/configs/BF537-STAMP_defconfig       |    3 +-
+ arch/blackfin/configs/BF538-EZKIT_defconfig       |    3 +-
+ arch/blackfin/configs/BF548-EZKIT_defconfig       |    4 +-
+ arch/blackfin/configs/BF561-ACVILON_defconfig     |    4 +-
+ arch/blackfin/configs/BF561-EZKIT_defconfig       |    1 +
+ arch/blackfin/configs/BlackStamp_defconfig        |    3 +-
+ arch/blackfin/configs/CM-BF527_defconfig          |    4 +-
+ arch/blackfin/configs/CM-BF533_defconfig          |    3 +-
+ arch/blackfin/configs/CM-BF537E_defconfig         |    3 +-
+ arch/blackfin/configs/CM-BF537U_defconfig         |    3 +-
+ arch/blackfin/configs/CM-BF548_defconfig          |    3 +-
+ arch/blackfin/configs/CM-BF561_defconfig          |    3 +-
+ arch/blackfin/configs/H8606_defconfig             |    3 +-
+ arch/blackfin/configs/IP0X_defconfig              |    3 +-
+ arch/blackfin/configs/PNAV-10_defconfig           |    2 +-
+ arch/blackfin/configs/SRV1_defconfig              |    3 +-
+ arch/blackfin/configs/TCM-BF518_defconfig         |    1 -
+ arch/blackfin/configs/TCM-BF537_defconfig         |    2 +
+ arch/blackfin/include/asm/bfin5xx_spi.h           |    2 +
+ arch/blackfin/include/asm/bfin_ppi.h              |    2 +
+ arch/blackfin/include/asm/bfin_twi.h              |   45 +++++++
+ arch/blackfin/include/asm/cdef_LPBlackfin.h       |    2 +-
+ arch/blackfin/mach-bf518/boards/ezbrd.c           |   44 ++++++-
+ arch/blackfin/mach-bf518/boards/tcm-bf518.c       |   24 ++++-
+ arch/blackfin/mach-bf527/boards/cm_bf527.c        |   24 ++++-
+ arch/blackfin/mach-bf527/boards/ezbrd.c           |   24 ++++-
+ arch/blackfin/mach-bf527/boards/ezkit.c           |   24 ++++-
+ arch/blackfin/mach-bf527/boards/tll6527m.c        |   24 ++++-
+ arch/blackfin/mach-bf537/boards/cm_bf537e.c       |   24 ++++-
+ arch/blackfin/mach-bf537/boards/cm_bf537u.c       |   24 ++++-
+ arch/blackfin/mach-bf537/boards/minotaur.c        |   24 ++++-
+ arch/blackfin/mach-bf537/boards/pnav10.c          |   24 ++++-
+ arch/blackfin/mach-bf537/boards/stamp.c           |   24 ++++-
+ arch/blackfin/mach-bf537/boards/tcm_bf537.c       |   24 ++++-
+ drivers/net/Kconfig                               |    8 -
+ drivers/net/bfin_mac.c                            |  145 +++++++++++++-------
+ drivers/net/bfin_mac.h                            |    2 +
+ include/linux/bfin_mac.h                          |   29 ++++
+ 46 files changed, 513 insertions(+), 98 deletions(-)
+ create mode 100644 arch/blackfin/include/asm/bfin_twi.h
+ create mode 100644 include/linux/bfin_mac.h
+
+-- 
+1.7.3.2
 
