@@ -1,144 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756264Ab0JYVvk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Oct 2010 17:51:40 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:36985 "EHLO mail.skyhub.de"
+	id S1756238Ab0JYVtx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Oct 2010 17:49:53 -0400
+Received: from imr3.ericy.com ([198.24.6.13]:55675 "EHLO imr3.ericy.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751730Ab0JYVvh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Oct 2010 17:51:37 -0400
-Date: Mon, 25 Oct 2010 23:51:32 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Tony Luck <tony.luck@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Huang Ying <ying.huang@intel.com>,
-        Len Brown <lenb@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        Borislav Petkov <petkovbb@googlemail.com>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Don Zickus <dzickus@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>
-Subject: Re: [NAK] Re: [PATCH -v2 9/9] ACPI, APEI, Generic Hardware Error
- Source POLL/IRQ/NMI notification type support
-Message-ID: <20101025215132.GA23427@liondog.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Tony Luck <tony.luck@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-	Huang Ying <ying.huang@intel.com>, Len Brown <lenb@kernel.org>,
-	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-	Andi Kleen <andi@firstfloor.org>,
-	"linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-	Borislav Petkov <petkovbb@googlemail.com>,
-	Thomas Gleixner <tglx@linutronix.de>,
-	"H. Peter Anvin" <hpa@zytor.com>, Don Zickus <dzickus@redhat.com>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	Mauro Carvalho Chehab <mchehab@redhat.com>
-References: <1287992610-14996-1-git-send-email-ying.huang@intel.com>
- <1287992610-14996-10-git-send-email-ying.huang@intel.com>
- <20101025084553.GA27119@elte.hu>
- <1287997112.2862.322.camel@yhuang-dev>
- <20101025092557.GA11544@elte.hu>
- <AANLkTi=2SVT1M+nDZUB7EB05jh+tsuKcew_t66QORrwb@mail.gmail.com>
- <20101025202344.GC13652@liondog.tnic>
- <AANLkTi=DEmss+3uX_5uw=VJDY9+cFPayjQkCQHa+r+Ye@mail.gmail.com>
+	id S1751730Ab0JYVtw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Oct 2010 17:49:52 -0400
+From: Guenter Roeck <guenter.roeck@ericsson.com>
+To: torvalds@linux-foundation.org
+CC: linux-kernel@vger.kernel.org, lm-sensors@lm-sensors.org
+Subject: [GIT PULL] hwmon changes for 2.6.37
+Date: Mon, 25 Oct 2010 15:03:53 -0700
+Message-ID: <1288044233-6567-1-git-send-email-guenter.roeck@ericsson.com>
+X-Mailer: git-send-email 1.7.3.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTi=DEmss+3uX_5uw=VJDY9+cFPayjQkCQHa+r+Ye@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 25, 2010 at 02:23:12PM -0700, Tony Luck wrote:
-> On Mon, Oct 25, 2010 at 1:23 PM, Borislav Petkov <bp@alien8.de> wrote:
-> 
-> > You may be right but what we actually want is a consistent RAS
-> > infrastructure. Didn't you point out at the last edac meeting in Boston
-> > that concerning RAS Linux were in the stone ages? (at least this is what
-> > I remember reading).
-> 
-> That meeting was in San Francisco - but your recollection is correct.
-> Right now we have ways to count errors, and to attribute them to
-> specific hardware components (if we are lucky). This is only the
-> beginning of the feature set that is needed to be "advanced RAS".
+Hi Linus,
 
-Yep.
+Please pull hwmon subsystem changes for Linux 2.6.37 from:
 
-> > What we should do is put all that post-system-reset error info, ECC
-> > errors mapping to DRAM devices, L3 cache index manipulation based on
-> > excessive errors - you name it - together and stick it in ras/ or
-> > drivers/ras or whatever. And all with a nice and easy to use userspace
-> > tool on top.
-> 
-> This is what we should be working towards.  I don't think we have
-> a clear picture of what that high level infrastructure looks like. It
-> needs to be very flexible to take input from all sorts of platform
-> specific "driver" code that collects data.  The "perf events"
-> mechanism looks plausible as a transport mechanism for
-> reporting corrected (or otherwise non-fatal) events.
+    git://git.kernel.org/pub/scm/linux/kernel/git/groeck/staging.git hwmon-for-linus
 
-Also agreed.
+Thanks,
+Guenter Roeck
 
-> But the errors that didn't kill the system are only part of the RAS
-> picture.
+------
 
-Concerning fatal errors, take a look at drivers/edac/mce_amd.(c|h)¹ -
-this is not in arch/x86/ and still decodes MCEs in the kernel. And it
-works fine - it even helped in several cases where people simply read
-their serial console/dmesg and didn't have to collect it first and run
-it through some tool to understand which functional unit in the CPU is
-mchecking.
+The following changes since commit 72e58063d63c5f0a7bf65312f1e3a5ed9bb5c2ff:
 
-And I have an error injection module which can inject MCEs using 2
-/sysfs files only. It is software injection only for now but still, you
-can even inject in the shell.
+  Merge branch 'davinci-for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/khilman/linux-davinci (2010-10-25 10:59:31 -0700)
 
-So I think having RAS decoupled from x86 proper could work but it has to
-be done smart. In the example above, I've hooked into the machine check
-notifier chain. And yes, this is just an example but you get the idea
-and where we want to go.
+are available in the git repository at:
 
-> > Now it looks like a wart on arch/x86/ which truly doesn't belong there.
-> > And I don't buy all that crap that it can't be done right.
-> 
-> Of course it is a wart ... look up ACPI in any dictionary and you'll
-> find a picture of a stereotypical Halloween witch :-)
+  git://git.kernel.org/pub/scm/linux/kernel/git/groeck/staging.git hwmon-for-linus
 
-LOL. Can I have the ACPI witch on a t-shirt please?
+Chen Gong (2):
+      hwmon: (pkgtemp) align driver initialization style with coretemp
+      hwmon: ({core, pkg, via-cpu}temp) remove unnecessary CONFIG_HOTPLUG_CPU ifdefs
 
-> I don't see other architectures lining up to support ACPI ... but
-> we shouldn't just ignore it in x86. The APEI pieces that were added
-> to ACPI 4.0 have some interesting and useful features.
+Guenter Roeck (1):
+      hwmon: LTC4261 Hardware monitoring driver
 
-Yeah, I like the error info after system reset thing using nvram.
-This might make a lot of sense with certain critical errors where we
-syncflood the ht links to prevent corrupted data propagation.
+Jan Beulich (4):
+      x86/hwmon: {core, pkg, via}cpu_temp_device_remove() can all be __cpuinit
+      x86/hwmon: (coretemp) cosmetic cleanup
+      x86/hwmon: remove inclusion of unnecessary headers from {core, pkg, via-cpu}temp.c
+      hwmon: (coretemp) fix reading of microcode revision (v2)
 
-> Most of them are already implemented on shipping platforms because
-> the APEI bits were simply documenting WHEA (Windows Hardware Error
-> Architecture) features. Look for this stuff in dmesg:
->
-> ACPI: HEST 000000007fb1c000 000A8 (v01 INTEL    SFC4UR 00000001 INTL 00000001)
-> ACPI: BERT 000000007fb1b000 00030 (v01 INTEL    SFC4UR 00000001 INTL 00000001)
-> ACPI: ERST 000000007fb1a000 00230 (v01 INTEL    SFC4UR 00000001 INTL 00000001)
-> ACPI: EINJ 000000007fb19000 00130 (v01 INTEL    SFC4UR 00000001 INTL 00000001)
+Masanari Iida (1):
+      hwmon: (hp_accel) Add HP Mini 510x family support
 
-Yeah, I'm not saying we shouldn't have those - I'm just saying that we
-should think up a good infrastructure design first and hook them into it
-so that users can have the highest benefit.
+Samu Onkalo (12):
+      hwmon: lis3: pm_runtime support
+      hwmon: lis3: regulator control
+      hwmon: lis3: Cleanup interrupt handling
+      hwmon: lis3: Update coordinates at polled device open
+      hwmon: lis3: Power on corrections
+      hwmon: lis3: restore axis enabled bits
+      hwmon: lis3: New parameters to platform data
+      hwmon: lis3: Adjust fuzziness for 8 bit device
+      hwmon: lis3: use block read to access data registers
+      hwmon: lis3: Enhance lis3 selftest with IRQ line test
+      hwmon: lis3: Short explanations of platform data fields
+      hwmon: lis3: Release resources in case of failure
 
-And then have a single tool which talks to the high level interface and
-all different arches implement whatever makes sense for them. Basically
-what you said above about the flexible high level infrastructure.
+Simon Guinot (2):
+      hwmon: add generic GPIO fan driver
+      Kirkwood: add fan support for Network Space Max v2
 
-Thanks.
+Takashi Iwai (2):
+      hwmon: (lis3) Add support for new LIS3DC / HP3DC chip
+      hwmon: (lis3) add axes module parameter for custom axis-mapping
 
-¹in current git, in 2.6.36 the files were called edac_mce_amd(c|h).
-
--- 
-Regards/Gruss,
-    Boris.
+ Documentation/hwmon/ltc4261                |   63 ++++
+ MAINTAINERS                                |    7 +
+ arch/arm/mach-kirkwood/netspace_v2-setup.c |   43 +++
+ drivers/hwmon/Kconfig                      |   20 +
+ drivers/hwmon/Makefile                     |    2 +
+ drivers/hwmon/coretemp.c                   |   28 +-
+ drivers/hwmon/gpio-fan.c                   |  558 ++++++++++++++++++++++++++++
+ drivers/hwmon/hp_accel.c                   |   32 +-
+ drivers/hwmon/lis3lv02d.c                  |  364 +++++++++++++++---
+ drivers/hwmon/lis3lv02d.h                  |   47 ++-
+ drivers/hwmon/lis3lv02d_i2c.c              |  132 ++++++-
+ drivers/hwmon/lis3lv02d_spi.c              |    5 +-
+ drivers/hwmon/ltc4261.c                    |  315 ++++++++++++++++
+ drivers/hwmon/pkgtemp.c                    |   32 +--
+ drivers/hwmon/via-cputemp.c                |   11 +-
+ include/linux/gpio-fan.h                   |   36 ++
+ include/linux/lis3lv02d.h                  |   55 +++-
+ 17 files changed, 1619 insertions(+), 131 deletions(-)
+ create mode 100644 Documentation/hwmon/ltc4261
+ create mode 100644 drivers/hwmon/gpio-fan.c
+ create mode 100644 drivers/hwmon/ltc4261.c
+ create mode 100644 include/linux/gpio-fan.h
