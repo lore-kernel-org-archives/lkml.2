@@ -1,66 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751728Ab0JYAzt (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Oct 2010 20:55:49 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:53760 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751470Ab0JYAzs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Oct 2010 20:55:48 -0400
-Message-ID: <4CC4D5CA.3080409@cn.fujitsu.com>
-Date: Mon, 25 Oct 2010 08:56:42 +0800
-From: Li Zefan <lizf@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1b3pre) Gecko/20090513 Fedora/3.0-2.3.beta2.fc11 Thunderbird/3.0b2
-MIME-Version: 1.0
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-CC: "akpm >> Andrew Morton" <akpm@linux-foundation.org>,
-        containers@lists.linux-foundation.org, Paul Menage <menage@google.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH 7/7] cgroups: Update documentation for bindable subsystems
-References: <4CC146A4.9090505@cn.fujitsu.com>	<4CC14769.2000406@cn.fujitsu.com> <20101025093617.7de750c0.kamezawa.hiroyu@jp.fujitsu.com> <4CC4D4B9.3020807@cn.fujitsu.com>
-In-Reply-To: <4CC4D4B9.3020807@cn.fujitsu.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1752106Ab0JYAz7 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Oct 2010 20:55:59 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:56868 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751899Ab0JYAz6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 24 Oct 2010 20:55:58 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=o1UNfJ5Drl/7dOjWdKaxYi9sA4enGkdr4qC1oZ2NfOrN+/W+3N3cuAY4/CCVbe0hnS
+         2srep656tCA3Sbit1pCRlgnumBgOS6mLlDD+/FiyEUJs7XLC4tWrkkXM5LHCO6+nlAtv
+         76ySKBxgBMNuY7wL93F7XBQd50XDYyV+gXBLo=
+Subject: Re: [GIT PULL] Revert of the IO stat fix
+From: Maxim Levitsky <maximlevitsky@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Jens Axboe <jaxboe@fusionio.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <AANLkTi=VH03ZL023VT+KYUXKHhZ80TzwqhQeRf17oENG@mail.gmail.com>
+References: <4CC49274.3030803@fusionio.com>
+	 <AANLkTik4qAzZPLO8HHBCM34_NLEEdPj04RyXPfeR-wSv@mail.gmail.com>
+	 <4CC49A4B.8010300@fusionio.com> <1287957832.24074.19.camel@maxim-laptop>
+	 <AANLkTi=VH03ZL023VT+KYUXKHhZ80TzwqhQeRf17oENG@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 25 Oct 2010 02:55:52 +0200
+Message-ID: <1287968152.3976.0.camel@maxim-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Li Zefan wrote:
-> KAMEZAWA Hiroyuki wrote:
->> On Fri, 22 Oct 2010 16:12:25 +0800
->> Li Zefan <lizf@cn.fujitsu.com> wrote:
->>
->>> Provide a usage example, and update the bind() callback API.
->>>
->>> Signed-off-by: Li Zefan <lizf@cn.fujitsu.com>
->>> ---
->>>  Documentation/cgroups/cgroups.txt |   26 +++++++++++++++++---------
->>>  1 files changed, 17 insertions(+), 9 deletions(-)
->>>
->>> diff --git a/Documentation/cgroups/cgroups.txt b/Documentation/cgroups/cgroups.txt
->>> index 190018b..5b5382a 100644
->>> --- a/Documentation/cgroups/cgroups.txt
->>> +++ b/Documentation/cgroups/cgroups.txt
->>> @@ -363,17 +363,23 @@ Note this will add ns to the hierarchy but won't remove memory or
->>>  cpuset, because the new options are appended to the old ones:
->>>  # mount -o remount,ns /dev/cgroup
->>>  
->>> +For some subsystems you can bind them to a mounted hierarchy or
->>> +remove them from it, even if there're sub-cgroups in it:
->>> +# mount -t cgroup -o freezer hier1 /dev/cgroup
->>> +# echo $$ > /dev/cgroup/my_cgroup
->>> +# mount -o freezer,cpuset hier1 /dev/cgroup
->>> +(failed)
->>> +# mount -o freezer,cpuacct hier1 /dev/cgroup
->>> +# mount -o cpuacct hier1 /dev/cgroup
->>> +
->>> +Note cpuacct should be sit in the default hierarchy before remount.
->>> +
->> Can this operation be used with noop cgroup ?
->> (IOW, perf cgroup can be attached to noop cgroup ?)
->>
+On Sun, 2010-10-24 at 17:07 -0700, Linus Torvalds wrote:
+> On Sun, Oct 24, 2010 at 3:03 PM, Maxim Levitsky <maximlevitsky@gmail.com> wrote:
+> >
+> > Btw I had that bug reproduced 100% for all removeable devices I have.
+> > (xD, ms, usb).
 > 
-> Yes, you can. I've tested it.
+> Does Jens' suggested patch (the non-revert one) fix your oops? Or only
+> the revert?
+The suggested patch doesn't fix the oops.
+Testing revert now.
 
-But, wait. It stuck when I moved a task from a sub-cgroup to the root.
-Need to dig more..
+
+Best regards,
+	Maxim Levitsky
+
+> 
+> IOW, I would want to know whether I could try just merging the fix
+> instead of backing out the patch that looks like a real improvement..
+> 
+>                     Linus
+
+
