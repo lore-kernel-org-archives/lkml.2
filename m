@@ -1,62 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756552Ab0JYVxj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Oct 2010 17:53:39 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:33818 "EHLO mx1.redhat.com"
+	id S1756662Ab0JYV4A (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Oct 2010 17:56:00 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:35239 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753373Ab0JYVxi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Oct 2010 17:53:38 -0400
-Subject: Re: [PATCH 06/11] IMA: use i_writecount rather than a private
- counter
-From: Eric Paris <eparis@redhat.com>
-To: John Stoffel <john@stoffel.org>
-Cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, hch@infradead.org, zohar@us.ibm.com,
-        warthog9@kernel.org, david@fromorbit.com, jmorris@namei.org,
-        kyle@mcmartin.ca, hpa@zytor.com, akpm@linux-foundation.org,
-        torvalds@linux-foundation.org, mingo@elte.hu, viro@zeniv.linux.org.uk
-In-Reply-To: <19653.55831.692904.538148@quad.stoffel.home>
-References: <20101025184118.20504.24290.stgit@paris.rdu.redhat.com>
-	 <20101025184152.20504.94048.stgit@paris.rdu.redhat.com>
-	 <19653.55831.692904.538148@quad.stoffel.home>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 25 Oct 2010 17:52:37 -0400
-Message-ID: <1288043557.2655.34.camel@localhost.localdomain>
-Mime-Version: 1.0
+	id S1753373Ab0JYVz7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Oct 2010 17:55:59 -0400
+Message-ID: <4CC5FC99.8090203@zytor.com>
+Date: Mon, 25 Oct 2010 14:54:33 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc13 Thunderbird/3.1.4
+MIME-Version: 1.0
+To: Jason Baron <jbaron@redhat.com>
+CC: Steven Rostedt <rostedt@goodmis.org>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Koki Sanagi <sanagi.koki@jp.fujitsu.com>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Frederic Weisbecker <fweisbec@gmail.com>, nhorman@tuxdriver.com,
+        scott.a.mcmillan@intel.com, laijs@cn.fujitsu.com,
+        LKML <linux-kernel@vger.kernel.org>, eric.dumazet@gmail.com,
+        kaneshige.kenji@jp.fujitsu.com, David Miller <davem@davemloft.net>,
+        izumi.taku@jp.fujitsu.com, kosaki.motohiro@jp.fujitsu.com,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        "Luck, Tony" <tony.luck@intel.com>
+Subject: Re: [PATCH] tracing: Cleanup the convoluted softirq tracepoints
+References: <alpine.LFD.2.00.1010191558250.6815@localhost6.localdomain6> <20101019142820.GA14520@Krystal> <alpine.LFD.2.00.1010191842270.6815@localhost6.localdomain6> <1287521757.16971.397.camel@gandalf.stny.rr.com> <alpine.LFD.2.00.1010192302000.6815@localhost6.localdomain6> <1287523439.16971.433.camel@gandalf.stny.rr.com> <4CBE122B.9020807@zytor.com> <20101019224126.GD3519@Krystal> <4CBE206A.20702@zytor.com> <1287529515.16971.538.camel@gandalf.stny.rr.com> <20101020152745.GA7348@redhat.com>
+In-Reply-To: <20101020152745.GA7348@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-10-25 at 15:27 -0400, John Stoffel wrote:
+On 10/20/2010 08:27 AM, Jason Baron wrote:
+> 
+> sure. The idea of the 'jmp 0' was simply to be an lcd for x86, if
+> there's a better lcd for x86, I'll update it. But note, that since the
+> 'jmp 0' is patched to a better nop at boot, we wouldn't see much gain.
+> And in the boot path we are using 'text_poke_early()', so avoiding that
+> isn't going to improve things much.
+> 
 
-> The problems with kernel.org is a perfect exmaple of how an annocuous
-> feature like this, can kill a system's performance.
+It's still a completely unnecessary waste of startup time some
+potentially significant fraction of the time.  Startup time matters,
+especially as the number of tracepoints grow.
 
-You admit that you don't know what you are talking about and then state
-that this kills systems performance.  Interesting conclusion.
-
-I'm not going to try to refute you point by point but will instead paint
-a broad picture.  I see 3 possible states:
-1) Configured out - 0 overhead.  period.
-2) Configured in but default disabled
-3) Configured in and enabled by admin intervention
-
-I have (I think) pretty clearly discussed the overhead and the changes
-made in case #2.  We expand struct inode by 4 bytes, we increment and
-decrement those 4 bytes on open/close() and we use a new inode->i_flags.
-
-In you e-mail you seemed to be asking about case #3 where you explicitly
-chose to load a measurement policy (either custom or using the imb_tcb=1
-boot option).  There are additional overheads in that case if the inode
-in question matches the measurement policy.  I don't see the need to go
-into the details of that overhead since you have 0 intention of using
-this feature no matter what and don't seem to be interested in helping
-to change those overheads for users of the subsystem.  Please correct me
-if I'm wrong.  I do readily admit there is overhead, and that overhead
-will be higher if inodes which have been deemed integrity relevant by
-the measurement policy you chose to load are changed in certain
-patterns.
-
--Eric
-
+	-hpa
