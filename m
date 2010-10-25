@@ -1,80 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757325Ab0JYQZ2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Oct 2010 12:25:28 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:48310 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756203Ab0JYQZ1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Oct 2010 12:25:27 -0400
-Date: Mon, 25 Oct 2010 18:25:23 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Jaswinder Singh Rajput <jaswinderlinux@gmail.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH] x86-32, mm: Remove duplicated include
-Message-ID: <20101025162523.GA4712@a1.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Ingo Molnar <mingo@elte.hu>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Jaswinder Singh Rajput <jaswinderlinux@gmail.com>,
-	"H. Peter Anvin" <hpa@linux.intel.com>,
-	"H. Peter Anvin" <hpa@zytor.com>,
-	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-	Thomas Gleixner <tglx@linutronix.de>
-References: <201010230117.o9N1H2Mk032101@hera.kernel.org>
- <AANLkTimOHBw19TuouqNsEaBcZnfU5kaBoB0Fm+QhRz4h@mail.gmail.com>
- <20101023092429.GA910@liondog.tnic>
- <20101023141534.GC7768@elte.hu>
+	id S1757426Ab0JYQZ5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Oct 2010 12:25:57 -0400
+Received: from web37602.mail.mud.yahoo.com ([209.191.87.85]:33118 "HELO
+	web37602.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1757316Ab0JYQZ4 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Oct 2010 12:25:56 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=yahoo.com;
+  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type:Content-Transfer-Encoding;
+  b=hnmmcT+FDJoGsKes5ju1yBLJugnqZHXAk9cGsMCAqV/61hjwT6qi6CjUyBq8yaYiIFW9j6v/Ym025mhmldBvOcqzlAPXYlevwRc11kq1I8qN0vDWuZ0Jo/KFrAxYNT4FhNc8BQjDzQT6HX0rBZsBpxtTVbpWWh7gDR5gNG9B4E4=;
+Message-ID: <221435.47733.qm@web37602.mail.mud.yahoo.com>
+X-YMail-OSG: mLQechsVM1kuzq0XSzuWPRm5bWGYK0BTQ0vAl72xWNED6MW
+ YKyqlN34R0ILPpfFBFx2nOxPrHMYREDkH_sSklKsoQeQjpi25NRjZuGJyQRs
+ JTiTldmqOwz0KqU3sKZfJ7V5_hote.MCunFt2jG7ruVwnqe7KmUY2lh3O9gP
+ e9SbcCpx1EbVwf5muICWkbNl6DBeo8cC8DvinlsMHYkQvHVNrkVwJB9pXCD1
+ DUJWkKeyk3JQZbqCXNj0JXPtFEFWhbJ_XrFva22acPB0SiTFhovapk1ka5nj
+ dQ8Zx7lm4WXx.oHKC6Inol92iGtmN09dTPcaVK8jTpM1SgnuJV.4bWL.FkD6
+ zZgDs0P.Hau4-
+X-Mailer: YahooMailClassic/11.4.9 YahooMailWebService/0.8.107.284920
+Date: Mon, 25 Oct 2010 09:25:54 -0700 (PDT)
+From: Alex Dubov <oakad@yahoo.com>
+Subject: Re: [PATCH 0/29] My patch queue for memorystick subsystem
+To: Maxim Levitsky <maximlevitsky@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <1287972070.5205.12.camel@maxim-laptop>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20101023141534.GC7768@elte.hu>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Oct 23, 2010 at 04:15:34PM +0200, Ingo Molnar wrote:
-> Please send a delta patch and we can do any trivial changes via the
-> usual channels. The tree hpa sent to Linus is tested and this is
-> tricky code.
+I would like to summarize my impression until now:
 
-Ok, here it is, 32-bit randconfig tested for a day.
+1. There are 3 functional fixes to Jmicron driver, which are rather small
+when taken to their essence (disregarding renames and idle code movements).
 
---
-From: Borislav Petkov <bp@alien8.de>
-Date: Mon, 25 Oct 2010 18:15:22 +0200
-Subject: [PATCH] x86-32, mm: Remove duplicated include
+2. There is 1 functional enhancement to the MS Pro driver, not too big,
+pertaining to extended command execution and resulting in 10% speedup in
+some cases.
 
-b40827fa7268fda8a62490728a61c2856f33830b added an include directive
-which is needless and is taken care of by a previous one. Remove it.
+3. There are 25 patches which just rewrite everything for no good reason
+(by this I mean bugs or missing functionality).
 
-Caught-by: Jaswinder Singh Rajput <jaswinderlinux@gmail.com>
-Signed-off-by: Borislav Petkov <bp@alien8.de>
----
- arch/x86/kernel/acpi/sleep.c |    1 -
- 1 files changed, 0 insertions(+), 1 deletions(-)
+Why don't we deal with p.1 and p.2 first, before going to the p.3, as I
+suggested from the beginning?
 
-diff --git a/arch/x86/kernel/acpi/sleep.c b/arch/x86/kernel/acpi/sleep.c
-index 74a8478..69fd72a 100644
---- a/arch/x86/kernel/acpi/sleep.c
-+++ b/arch/x86/kernel/acpi/sleep.c
-@@ -15,7 +15,6 @@
- 
- #ifdef CONFIG_X86_32
- #include <asm/pgtable.h>
--#include <asm/pgtable_32.h>
- #endif
- 
- #include "realmode/wakeup.h"
--- 
-1.7.1
+I don't have any specific objections to Ricoh driver as it is.
 
 
--- 
-Regards/Gruss,
-Boris.
+
+      
