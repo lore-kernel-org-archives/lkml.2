@@ -1,55 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754335Ab0JYKOw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Oct 2010 06:14:52 -0400
-Received: from cantor.suse.de ([195.135.220.2]:41367 "EHLO mx1.suse.de"
+	id S1755053Ab0JYKPw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Oct 2010 06:15:52 -0400
+Received: from tundra.namei.org ([65.99.196.166]:55316 "EHLO tundra.namei.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751616Ab0JYKOv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Oct 2010 06:14:51 -0400
-Message-ID: <4CC55894.5040509@suse.de>
-Date: Mon, 25 Oct 2010 15:44:44 +0530
-From: Suresh Jayaraman <sjayaraman@suse.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100714 SUSE/3.0.6 Thunderbird/3.0.6
+	id S1751616Ab0JYKPv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Oct 2010 06:15:51 -0400
+Date: Mon, 25 Oct 2010 21:15:29 +1100 (EST)
+From: James Morris <jmorris@namei.org>
+To: Ralf Baechle <ralf@linux-mips.org>
+cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-mips@linux-mips.org,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Subject: Re: [PATCH] MIPS: MT: Fix build error iFPU affinity code
+In-Reply-To: <20101024212350.GA18747@linux-mips.org>
+Message-ID: <alpine.LRH.2.00.1010252115020.28519@tundra.namei.org>
+References: <20101024212350.GA18747@linux-mips.org>
+User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
 MIME-Version: 1.0
-To: =?UTF-8?B?IkouQS4gTWFnYWxsw7NuIg==?= <jamagallon@ono.com>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>, linux-cifs@vger.kernel.org
-Subject: Re: CIFS is slooow, gvfs is fast
-References: <20101022013544.0fdab0e0@werewolf.home>	<4CC16B1E.4060709@suse.de>	<20101023004636.1acdd81c@werewolf.home> <20101024013038.057442c0@werewolf.home>
-In-Reply-To: <20101024013038.057442c0@werewolf.home>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/24/2010 05:00 AM, J.A. Magallón wrote:
-> On Sat, 23 Oct 2010 00:46:36 +0200, "J.A. Magall�n" <jamagallon@ono.com> wrote:
-> 
->>
->> If you mean hardware network path (cabling, router), yes.
->> For file paths, CIFS fs is under /net/htpc/media, and gvfs uses a mount
->> point on '~/.gvfs/media on htpc'.
->>
->> And here comes the weird part. To rule out the desktop environment factor,
->> I tried a dd in both paths. On /net, I get 16.6 MB/s, and on
->> ~/.gvfs/xxx, I just get 5.5 MB/s. I really don't understand anything...
->> things get reversed depending if you use a gui or commandline.
->>
->> Weird, really weird...
->>
-> 
-> Well, to sort things out, I did some more tests (this does not mean things
-> get any closer to be clear for me at least...).
-> 
-> Can anybody tell me whats going here...??
-> It looks just like gui tools behave just in reverse of cli, and that a plain
-> smbclient is faster that cifs. I'm really confused...
-> 
+On Sun, 24 Oct 2010, Ralf Baechle wrote:
 
-Could you try mounting from commandline with something like
-  `mount -t cifs //server/share /mnt/point -o user=user1`
-(commenting out the fstab entry) and try copying the file?
+> > commit b0ae19811375031ae3b3fecc65b702a9c6e5cc28
+> > Author: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> > Date:   Fri Oct 15 04:21:18 2010 +0900
+> >
+> >     security: remove unused parameter from security_task_setscheduler()
+> 
+> broke the build of arch/mips/kernel/mips-mt-fpaff.c.  The function
+> arguments were unnecessary, not the semicolon ...
+> 
+> Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
+> 
+>  arch/mips/kernel/mips-mt-fpaff.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
 
+Acked-by: James Morris <jmorris@namei.org>
+
+
+> 
+> diff --git a/arch/mips/kernel/mips-mt-fpaff.c b/arch/mips/kernel/mips-mt-fpaff.c
+> index 9a526ba..802e616 100644
+> --- a/arch/mips/kernel/mips-mt-fpaff.c
+> +++ b/arch/mips/kernel/mips-mt-fpaff.c
+> @@ -103,7 +103,7 @@ asmlinkage long mipsmt_sys_sched_setaffinity(pid_t pid, unsigned int len,
+>  	if (!check_same_owner(p) && !capable(CAP_SYS_NICE))
+>  		goto out_unlock;
+>  
+> -	retval = security_task_setscheduler(p)
+> +	retval = security_task_setscheduler(p);
+>  	if (retval)
+>  		goto out_unlock;
+>  
+> 
 
 -- 
-Suresh Jayaraman
+James Morris
+<jmorris@namei.org>
