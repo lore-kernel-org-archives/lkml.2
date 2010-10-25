@@ -1,103 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753154Ab0JYI6g (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Oct 2010 04:58:36 -0400
-Received: from mga01.intel.com ([192.55.52.88]:31550 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751856Ab0JYI6f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Oct 2010 04:58:35 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.58,235,1286175600"; 
-   d="scan'208";a="850699899"
-Subject: Re: [NAK] Re: [PATCH -v2 9/9] ACPI, APEI, Generic Hardware Error
- Source POLL/IRQ/NMI notification type support
-From: Huang Ying <ying.huang@intel.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Len Brown <lenb@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        Borislav Petkov <petkovbb@googlemail.com>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Don Zickus <dzickus@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>
-In-Reply-To: <20101025084553.GA27119@elte.hu>
-References: <1287992610-14996-1-git-send-email-ying.huang@intel.com>
-	 <1287992610-14996-10-git-send-email-ying.huang@intel.com>
-	 <20101025084553.GA27119@elte.hu>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 25 Oct 2010 16:58:32 +0800
-Message-ID: <1287997112.2862.322.camel@yhuang-dev>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S1753898Ab0JYI7q (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Oct 2010 04:59:46 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:46301 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753059Ab0JYI7o (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Oct 2010 04:59:44 -0400
+Subject: [RFC PATCH 00/18] ARM: Add support for the Large Physical Address
+ Extensions
+To: linux-arm-kernel@lists.infradead.org
+From: Catalin Marinas <catalin.marinas@arm.com>
+Cc: linux-kernel@vger.kernel.org
+Date: Mon, 25 Oct 2010 09:59:33 +0100
+Message-ID: <20101025085812.25275.55757.stgit@e102109-lin.cambridge.arm.com>
+User-Agent: StGit/0.15-103-g0e84
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 25 Oct 2010 08:59:33.0864 (UTC) FILETIME=[F1715E80:01CB7422]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-10-25 at 16:45 +0800, Ingo Molnar wrote:
-> * Huang Ying <ying.huang@intel.com> wrote:
-> 
-> > Generic Hardware Error Source provides a way to report platform
-> > hardware errors (such as that from chipset). It works in so called
-> > "Firmware First" mode, that is, hardware errors are reported to
-> > firmware firstly, then reported to Linux by firmware. This way, some
-> > non-standard hardware error registers or non-standard hardware link
-> > can be checked by firmware to produce more valuable hardware error
-> > information for Linux.
-> > 
-> > This patch adds POLL/IRQ/NMI notification types support.
-> > 
-> > Because the memory area used to transfer hardware error information
-> > from BIOS to Linux can be determined only in NMI, IRQ or timer
-> > handler, but general ioremap can not be used in atomic context, so a
-> > special version of atomic ioremap is implemented for that.
-> > 
-> > Signed-off-by: Huang Ying <ying.huang@intel.com>
-> > Reviewed-by: Andi Kleen <ak@linux.intel.com>
-> > ---
-> >  arch/x86/kernel/acpi/boot.c |    1 
-> >  arch/x86/kernel/dumpstack.c |    1 
-> >  drivers/acpi/apei/ghes.c    |  397 ++++++++++++++++++++++++++++++++++++--------
-> >  kernel/panic.c              |    1 
-> >  lib/ioremap.c               |    2 
-> >  mm/vmalloc.c                |    1 
-> >  6 files changed, 333 insertions(+), 70 deletions(-)
-> 
-> WTF?
-> 
-> Sigh, please integrate all this into EDAC (drivers/edac/) properly, instead of 
-> turning it into YET ANOTHER hardware vendor special hw-errors thing. We can do 
-> better than this. EDAC is almost there: it has support for Nehalem, AMD, a couple
-> of older chips.
+Hi,
 
-I think APEI (ACPI Platform Error Interface) is another driver. Why
-integrate two drivers?
+This set of patches adds support for the Large Physical Extensions on
+the ARM architecture (available with the Cortex-A15 processor). LPAE
+comes with a 3-level page table format (compared to 2-level for the
+classic one), allowing up to 40-bit physical address space.
 
-> Guys, instead of carving out a special driver area where you can produce crap 
-> without anyone looking too much, and pretending that the EDAC code does not exist, 
-> please try to work with others who are aiming higher and who are using saner 
-> interfaces.
-> 
-> Just look at the higher level structure in drivers/acpi/apei/:
-> 
->   apei-base.c  apei-internal.h  cper.c  einj.c  erst.c  erst-dbg.c  ghes.c  hest.c  Kconfig  Makefile
-> 
-> ghes, einj, cper, erst? Someone's been abbreviating too much.
+These patches split the arch/arm/ page table definitions into
+corresponding 2-level and 3-level files and ensure that the common code
+works with both variants.  They also fix assumptions regarding the size
+of the physical address.  The outer cache support is currently
+restricted to 32-bit physical addresses.
 
-Maybe they are not good name. But they are defined in ACPI
-specification. Using the same name makes it easier for people to link
-the specification to corresponding implementation.
+The LPAE page table format uses the simplified permission model (as
+described in the ARM ARM) and domains are no longer available (requiring
+an additional patch which is already in RMK's patch system).
 
-> einj.c: it's about the 3rd separate 'error injection' concept that got introduced 
-> ...
+The ARM LPAE documentation is available from (free registration needed):
 
-EINJ is a true platform feature, not just software feature. We need to
-support it to debug various hardware error features.
+http://infocenter.arm.com/help/topic/com.arm.doc.ddi0406b_virtualization_extns/index.html
 
-Best Regards,
-Huang Ying
+The full set of patches (kernel fixes, LPAE and support for an emulated
+Versatile Express with Cortex-A15 tile) is available on this branch:
+
+git://git.kernel.org/pub/scm/linux/kernel/git/cmarinas/linux-2.6-cm.git arm-lpae
+
+Any comments are welcome. Thanks.
 
 
+Catalin Marinas (11):
+      ARM: LPAE: Use PMD_(SHIFT|SIZE|MASK) instead of PGDIR_*
+      ARM: LPAE: Factor out 2-level page table definitions into separate files
+      ARM: LPAE: Do not assume Linux PTEs are always at PTRS_PER_PTE offset
+      ARM: LPAE: Introduce L_PTE_NOEXEC and L_PTE_NOWRITE
+      ARM: LPAE: Introduce the 3-level page table format definitions
+      ARM: LPAE: Page table maintenance for the 3-level format
+      ARM: LPAE: MMU setup for the 3-level page table format
+      ARM: LPAE: Add fault handling support
+      ARM: LPAE: Add context switching support
+      ARM: LPAE: Add SMP support for the 3-level page table format
+      ARM: LPAE: Add the Kconfig entries
+
+Will Deacon (7):
+      ARM: LPAE: use u32 instead of unsigned long for 32-bit ptes
+      ARM: LPAE: use phys_addr_t instead of unsigned long for physical addresses
+      ARM: LPAE: ensure dma_addr_t is the same size as phys_addr_t
+      ARM: LPAE: mark memory banks with start > ULONG_MAX as highmem
+      ARM: LPAE: use phys_addr_t for physical start address in early_mem
+      ARM: LPAE: add support for ATAG_MEM64
+      ARM: LPAE: define printk format for physical addresses and page table entries
+
+
+ arch/arm/include/asm/cpu-multi32.h          |    8 +
+ arch/arm/include/asm/cpu-single.h           |    4 
+ arch/arm/include/asm/memory.h               |   17 +-
+ arch/arm/include/asm/outercache.h           |   14 +
+ arch/arm/include/asm/page-nommu.h           |    8 -
+ arch/arm/include/asm/page.h                 |   42 ----
+ arch/arm/include/asm/pgalloc.h              |   34 +++
+ arch/arm/include/asm/pgtable-2level-hwdef.h |   91 +++++++++
+ arch/arm/include/asm/pgtable-2level-types.h |   64 ++++++
+ arch/arm/include/asm/pgtable-2level.h       |  150 +++++++++++++++
+ arch/arm/include/asm/pgtable-3level-hwdef.h |   78 ++++++++
+ arch/arm/include/asm/pgtable-3level-types.h |   55 ++++++
+ arch/arm/include/asm/pgtable-3level.h       |  113 +++++++++++
+ arch/arm/include/asm/pgtable-hwdef.h        |   81 +-------
+ arch/arm/include/asm/pgtable.h              |  267 +++++++++++----------------
+ arch/arm/include/asm/proc-fns.h             |   13 +
+ arch/arm/include/asm/setup.h                |   12 +
+ arch/arm/include/asm/types.h                |   25 +--
+ arch/arm/kernel/compat.c                    |    4 
+ arch/arm/kernel/head.S                      |   87 +++++++--
+ arch/arm/kernel/module.c                    |    2 
+ arch/arm/kernel/setup.c                     |   19 ++
+ arch/arm/kernel/smp.c                       |   36 +++-
+ arch/arm/mm/Kconfig                         |   10 +
+ arch/arm/mm/alignment.c                     |    8 +
+ arch/arm/mm/context.c                       |   18 ++
+ arch/arm/mm/dma-mapping.c                   |    6 -
+ arch/arm/mm/fault.c                         |   88 ++++++++-
+ arch/arm/mm/init.c                          |    9 +
+ arch/arm/mm/ioremap.c                       |    8 +
+ arch/arm/mm/mm.h                            |    8 -
+ arch/arm/mm/mmu.c                           |   94 ++++++----
+ arch/arm/mm/pgd.c                           |   18 +-
+ arch/arm/mm/proc-macros.S                   |    5 -
+ arch/arm/mm/proc-v7.S                       |  102 ++++++++++
+ 35 files changed, 1193 insertions(+), 405 deletions(-)
+ create mode 100644 arch/arm/include/asm/pgtable-2level-hwdef.h
+ create mode 100644 arch/arm/include/asm/pgtable-2level-types.h
+ create mode 100644 arch/arm/include/asm/pgtable-2level.h
+ create mode 100644 arch/arm/include/asm/pgtable-3level-hwdef.h
+ create mode 100644 arch/arm/include/asm/pgtable-3level-types.h
+ create mode 100644 arch/arm/include/asm/pgtable-3level.h
+
+-- 
+Catalin
