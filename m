@@ -1,110 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759356Ab0JYSZe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Oct 2010 14:25:34 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:59737 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759341Ab0JYSZd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Oct 2010 14:25:33 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Subject: Re: [RFC PATCH 06/18] ARM: LPAE: Introduce the 3-level page table format definitions
-Date: Mon, 25 Oct 2010 20:25:24 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.36+; KDE/4.5.1; x86_64; ; )
-Cc: Catalin Marinas <catalin.marinas@arm.com>, linux-kernel@vger.kernel.org
-References: <20101025085812.25275.55757.stgit@e102109-lin.cambridge.arm.com> <201010251525.09002.arnd@arndb.de> <1288023534.14756.109.camel@e102109-lin.cambridge.arm.com>
-In-Reply-To: <1288023534.14756.109.camel@e102109-lin.cambridge.arm.com>
+	id S1759364Ab0JYS0Q (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Oct 2010 14:26:16 -0400
+Received: from slowhand.arndnet.de ([88.198.19.76]:58557 "EHLO mail.unitix.de"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751518Ab0JYS0P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Oct 2010 14:26:15 -0400
+Message-ID: <4CC5CBC4.7060308@arndnet.de>
+Date: Mon, 25 Oct 2010 20:26:12 +0200
+From: Arnd Hannemann <arnd@arndnet.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.14) Gecko/20101006 Lightning/1.0b1 Thunderbird/3.0.9
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+To: Larry Finger <Larry.Finger@lwfinger.net>
+CC: "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-wireless@vger.kernel.org
+Subject: Re: [PATCH] net: b43legacy: fix compile error
+References: <1288017690-31248-1-git-send-email-arnd@arndnet.de> <4CC5A301.1080606@lwfinger.net>
+In-Reply-To: <4CC5A301.1080606@lwfinger.net>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Message-Id: <201010252025.24128.arnd@arndb.de>
-X-Provags-ID: V02:K0:7AWMATjM3kEZyoXYbGb1KBzHUqvtdzjoiUCLBE5fwLd
- U4O4hJHj4cC50wZUOHFwXx9S+895YCl0lyYZrjfX07hAb0jD0P
- 3OD1Hx85d2khRBumJnyJGO3mW00DH1M351Jc4eZEPQfD2M3Tey
- VOX3UD1h6tB3ClfsNh7rU/4l65zb6xOSM1YvLPHdeceMv5qDI2
- XOg85VjNQbl134/tBtLuQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 25 October 2010 18:18:54 Catalin Marinas wrote:
-> On Mon, 2010-10-25 at 14:25 +0100, Arnd Bergmann wrote:
-> > On Monday 25 October 2010, Catalin Marinas wrote:
-> > > On Mon, 2010-10-25 at 12:15 +0100, Arnd Bergmann wrote:
-> > > > On Monday 25 October 2010, Catalin Marinas wrote:
-> > > >
-> > > > Since the PGD is so extremely small, would it be possible to fold it
-> > > > into the mm_context_t in order to save an allocation?
-> > > > Or does the PGD still require page alignment?
-> > >
-> > > There are alignment restrictions, though not to a page size. Given the
-> > > TTBR0 access range of the full 4GB (TTBCR.T0SZ = 0), the alignment
-> > > required is 64 (2^6). We get this for the slab allocator anyway when the
-> > > L1_CACHE_SHIFT is 6 but I could make this requirement explicit by
-> > > creating a kmem_cache with the required alignment.
-> > 
-> > I think you only need to set ARCH_MIN_TASKALIGN for that, which
-> > also defaults to L1_CACHE_SHIFT.
+Am 25.10.2010 17:32, schrieb Larry Finger:
+> On 10/25/2010 09:41 AM, Arnd Hannemann wrote:
+>> On todays linus tree the following compile error happened to me:
+>>
+>>   CC [M]  drivers/net/wireless/b43legacy/xmit.o
+>> In file included from include/net/dst.h:11,
+>>                  from drivers/net/wireless/b43legacy/xmit.c:31:
+>> include/net/dst_ops.h:28: error: expected ':', ',', ';', '}' or '__attribute__' before '____cacheline_aligned_in_smp'
+>> include/net/dst_ops.h: In function 'dst_entries_get_fast':
+>> include/net/dst_ops.h:33: error: 'struct dst_ops' has no member named 'pcpuc_entries'
+>> include/net/dst_ops.h: In function 'dst_entries_get_slow':
+>> include/net/dst_ops.h:41: error: 'struct dst_ops' has no member named 'pcpuc_entries'
+>> include/net/dst_ops.h: In function 'dst_entries_add':
+>> include/net/dst_ops.h:49: error: 'struct dst_ops' has no member named 'pcpuc_entries'
+>> include/net/dst_ops.h: In function 'dst_entries_init':
+>> include/net/dst_ops.h:55: error: 'struct dst_ops' has no member named 'pcpuc_entries'
+>> include/net/dst_ops.h: In function 'dst_entries_destroy':
+>> include/net/dst_ops.h:60: error: 'struct dst_ops' has no member named 'pcpuc_entries'
+>> make[4]: *** [drivers/net/wireless/b43legacy/xmit.o] Error 1
+>> make[3]: *** [drivers/net/wireless/b43legacy] Error 2
+>> make[2]: *** [drivers/net/wireless] Error 2
+>> make[1]: *** [drivers/net] Error 2
+>> make: *** [drivers] Error 2
+>>
+>> This patch fixes this issue by adding "linux/cache.h" as an include to
+>> "include/net/dst_ops.h".
 > 
-> The mm_context_t is part of mm_struct, so I'm not sure how
-> ARCH_MIN_TASKALIGN would affect this (unless I misunderstood your
-> point).
+> Strange. Compiling b43legacy from the linux-2.6.git tree (git describe is
+> v2.6.36-4464-g229aebb) works fine on x86_64. I wonder what is different.
 
-Sorry about that, I was following the wrong code path. It should
-be ARCH_MIN_MMSTRUCT_ALIGN, which is normally zero.
+Exactly the same git describe here.
+Maybe your arch includes cache.h already, in my case its a compile for ARM (shmobile).
 
-> > I was only talking about the Virtualization Extensions, my impression from
-> > the information that is publically available was that you'd only need
-> > to set some mode bits differently in order to make the virtual address
-> > space (I suppose that's what you call IPA) up to 40 bits instead of 32,
-> > and you'd be able to have the guest use a 40 bit physical address space
-> > from that.
-> 
-> You can look at the IPA as the virtual address translation set up by the
-> hypervisor (stage 2 translation). The guest OS only sets up stage 1
-> translations but can use 40-bit physical addresses (via stage 1) with or
-> without the hypervisor. The input to the stage 1 translations is always
-> 32-bit.
-
-
-Right, that's what I thought.
-
-> > Are there any significant differences to Linux between setting up page
-> > tables for a 32 bit VA space or a 40 bit IPA space, other than the
-> > size of the PGD?
-> 
-> I think I get what you were asking :).
-> 
-> >From KVM you could indeed set up stage 2 translations that a guest OS
-> can use (you need some code running in hypervisor mode to turn this on).
-> The format is pretty close to the stage 1 tables, so the Linux macros
-> could be reused. The PGD size would be different (depending on whether
-> you want to emulate 40-bit physical address space or a 32-bit one).
-> There are also a few bits (memory attributes) that may differ but you
-> could handle them in KVM.
-> 
-> If KVM would reuse the existing pgd/pmd/pte Linux macros, it would
-> indeed be restricted to 32-bit IPA (sizeof(long)). You may need to
-> define different macros to use either a pfn or long long as address
-> input.
-
-Ok.
-
-> But if KVM uses qemu for platform emulation, this may only support
-> 32-bit physical address space so the guest OS could only generate 32-bit
-> IPA.
-
-Good point. At the very least, qemu would need a way to get at the highmem
-portion of the guest that is not normally part of the qemu virtual address
-space. In fact this would already be required without LPAE in order to run
-a VM with 4GB guest physical addressing.
-
-There are probable (slow) ways of doing that, e.g. remap_file_pages or
-a new syscall for accessing high guest memory. It's not entirely clear
-to me how useful that is, the most sensible way to start here is certainly
-to start out with a 32-bit IPA as you suggested and see how badly that
-limits guests in real-world setups.
-
-	Arnd
+Regards
+Arnd
