@@ -1,17 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753936Ab0JYVQ4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Oct 2010 17:16:56 -0400
-Received: from g5t0008.atlanta.hp.com ([15.192.0.45]:39609 "EHLO
-	g5t0008.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752085Ab0JYVQy (ORCPT
+	id S1755916Ab0JYVRh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Oct 2010 17:17:37 -0400
+Received: from cpoproxy1-pub.bluehost.com ([69.89.21.11]:38477 "HELO
+	cpoproxy1-pub.bluehost.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1753297Ab0JYVRf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Oct 2010 17:16:54 -0400
-From: Bjorn Helgaas <bjorn.helgaas@hp.com>
-To: Jesse Barnes <jbarnes@virtuousgeek.org>
-Subject: Re: [PATCH v4 6/6] x86: allocate space within a region top-down
-Date: Mon, 25 Oct 2010 15:15:29 -0600
-User-Agent: KMail/1.13.2 (Linux/2.6.32-25-generic; KDE/4.4.2; x86_64; ; )
+	Mon, 25 Oct 2010 17:17:35 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
+	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
+	b=tIvPorm4GMGiHYqR5Qv49vm7GCXkt/S2v5ta5pCSyfEK5SRU3P6yCV/5Xc9NCnmJFmWuwMNUzX4gafEgBnHZcEt8POFw3S4NL35aySx4P2HLHG/4VpPsy7XipxkyIcAK;
+Date: Mon, 25 Oct 2010 14:17:31 -0700
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+To: Bjorn Helgaas <bjorn.helgaas@hp.com>
 Cc: Bob Picco <bpicco@redhat.com>, Brian Bloniarz <phunge0@hotmail.com>,
         Charles Butterfield <charles.butterfield@nextcentury.com>,
         Denys Vlasenko <dvlasenk@redhat.com>, linux-pci@vger.kernel.org,
@@ -21,20 +22,26 @@ Cc: Bob Picco <bpicco@redhat.com>, Brian Bloniarz <phunge0@hotmail.com>,
         Yinghai Lu <yinghai@kernel.org>,
         Leann Ogasawara <leann.ogasawara@canonical.com>,
         Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Chuck Ebbert <cebbert@redhat.com>
-References: <20101014231804.536.62138.stgit@bob.kio> <20101025140154.66f1e1bd@jbarnes-desktop> <201010251508.49165.bjorn.helgaas@hp.com>
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH v4 6/6] x86: allocate space within a region top-down
+Message-ID: <20101025141731.30c73256@jbarnes-desktop>
 In-Reply-To: <201010251508.49165.bjorn.helgaas@hp.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+References: <20101014231804.536.62138.stgit@bob.kio>
+	<20101014231852.536.42958.stgit@bob.kio>
+	<20101025140154.66f1e1bd@jbarnes-desktop>
+	<201010251508.49165.bjorn.helgaas@hp.com>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Message-Id: <201010251515.30491.bjorn.helgaas@hp.com>
+X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.174.193.198 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, October 25, 2010 03:08:48 pm Bjorn Helgaas wrote:
+On Mon, 25 Oct 2010 15:08:48 -0600
+Bjorn Helgaas <bjorn.helgaas@hp.com> wrote:
+
 > On Monday, October 25, 2010 03:01:54 pm Jesse Barnes wrote:
 > > On Thu, 14 Oct 2010 17:18:52 -0600
 > > Bjorn Helgaas <bjorn.helgaas@hp.com> wrote:
@@ -54,10 +61,11 @@ On Monday, October 25, 2010 03:08:48 pm Bjorn Helgaas wrote:
 > 
 > We tripped over another issue in Fedora:
 >   https://bugzilla.redhat.com/show_bug.cgi?id=646027
+> 
+> I think I see the problem, and posted a patch for testing.  When it's
+> resolved, I'll post an updated series.
 
-By the way, it's been a *great* help to have Fedora being willing to
-go out on a limb and help get these tested.  I know it sucks to get
-those Rawhide bug reports, but they have been extremely useful to me.
-Thanks!
+Ok thanks, I'll drop it from -next then.
 
-Bjorn
+-- 
+Jesse Barnes, Intel Open Source Technology Center
