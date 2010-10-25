@@ -1,61 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759364Ab0JYS0Q (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Oct 2010 14:26:16 -0400
-Received: from slowhand.arndnet.de ([88.198.19.76]:58557 "EHLO mail.unitix.de"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751518Ab0JYS0P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Oct 2010 14:26:15 -0400
-Message-ID: <4CC5CBC4.7060308@arndnet.de>
-Date: Mon, 25 Oct 2010 20:26:12 +0200
-From: Arnd Hannemann <arnd@arndnet.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.14) Gecko/20101006 Lightning/1.0b1 Thunderbird/3.0.9
+	id S1759213Ab0JYS1s (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Oct 2010 14:27:48 -0400
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:47002 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751518Ab0JYS1q convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Oct 2010 14:27:46 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:subject:date:user-agent:cc:references:in-reply-to
+         :mime-version:content-type:content-transfer-encoding:message-id;
+        b=MPDPWd+r7eToNLhnKMOgNrColF2fMDiY1EdkMwcX6JjobGjKzE+Q0RL0t2ykCve9h6
+         rhhk+sRiiE6MharFeP+GCgnqson9Yeqbh+XhgIJL1tDOP2McKiMMx38TMLus0kOSxxZd
+         Jv1XP5qlkskjtvORWbGfpxS+8nWPI650YyjsQ=
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Jon Dowland <jmtd@debian.org>
+Subject: Re: [PATCH] toshiba_acpi.c: Add key_entry for a lone FN keypress
+Date: Mon, 25 Oct 2010 11:27:35 -0700
+User-Agent: KMail/1.13.5 (Linux/2.6.34.7-61.fc13.x86_64; KDE/4.4.5; x86_64; ; )
+Cc: Matthew Garrett <mjg@redhat.com>, platform-driver-x86@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+References: <20101023221253.GA4829@hathor>
+In-Reply-To: <20101023221253.GA4829@hathor>
 MIME-Version: 1.0
-To: Larry Finger <Larry.Finger@lwfinger.net>
-CC: "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-wireless@vger.kernel.org
-Subject: Re: [PATCH] net: b43legacy: fix compile error
-References: <1288017690-31248-1-git-send-email-arnd@arndnet.de> <4CC5A301.1080606@lwfinger.net>
-In-Reply-To: <4CC5A301.1080606@lwfinger.net>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201010251127.37374.dmitry.torokhov@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 25.10.2010 17:32, schrieb Larry Finger:
-> On 10/25/2010 09:41 AM, Arnd Hannemann wrote:
->> On todays linus tree the following compile error happened to me:
->>
->>   CC [M]  drivers/net/wireless/b43legacy/xmit.o
->> In file included from include/net/dst.h:11,
->>                  from drivers/net/wireless/b43legacy/xmit.c:31:
->> include/net/dst_ops.h:28: error: expected ':', ',', ';', '}' or '__attribute__' before '____cacheline_aligned_in_smp'
->> include/net/dst_ops.h: In function 'dst_entries_get_fast':
->> include/net/dst_ops.h:33: error: 'struct dst_ops' has no member named 'pcpuc_entries'
->> include/net/dst_ops.h: In function 'dst_entries_get_slow':
->> include/net/dst_ops.h:41: error: 'struct dst_ops' has no member named 'pcpuc_entries'
->> include/net/dst_ops.h: In function 'dst_entries_add':
->> include/net/dst_ops.h:49: error: 'struct dst_ops' has no member named 'pcpuc_entries'
->> include/net/dst_ops.h: In function 'dst_entries_init':
->> include/net/dst_ops.h:55: error: 'struct dst_ops' has no member named 'pcpuc_entries'
->> include/net/dst_ops.h: In function 'dst_entries_destroy':
->> include/net/dst_ops.h:60: error: 'struct dst_ops' has no member named 'pcpuc_entries'
->> make[4]: *** [drivers/net/wireless/b43legacy/xmit.o] Error 1
->> make[3]: *** [drivers/net/wireless/b43legacy] Error 2
->> make[2]: *** [drivers/net/wireless] Error 2
->> make[1]: *** [drivers/net] Error 2
->> make: *** [drivers] Error 2
->>
->> This patch fixes this issue by adding "linux/cache.h" as an include to
->> "include/net/dst_ops.h".
+On Saturday, October 23, 2010 03:12:53 pm Jon Dowland wrote:
+> A lone FN key press on a Toshiba Portégé R700 without another key in
+> conjunction results in an ACPI event and a spurious error message on
+> the console.
 > 
-> Strange. Compiling b43legacy from the linux-2.6.git tree (git describe is
-> v2.6.36-4464-g229aebb) works fine on x86_64. I wonder what is different.
+> Add a key entry to map this event to a KEY_UNKNOWN keypress silences
+> this message.
+> 
 
-Exactly the same git describe here.
-Maybe your arch includes cache.h already, in my case its a compile for ARM (shmobile).
+Well, if FN key can generate separate events then we should report
+KEY_FN, not KEY_UNKNOWN.
 
-Regards
-Arnd
+Thanks.
+
+-- 
+Dmitry
