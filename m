@@ -1,86 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757726Ab0JYUJZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Oct 2010 16:09:25 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:48220 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751518Ab0JYUJY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Oct 2010 16:09:24 -0400
-Subject: Re: [PATCH 01/13] cciss: remove controllers supported by hpsa
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: "Stephen M. Cameron" <scameron@beardog.cce.hp.com>
-Cc: axboe@kernel.dk, akpm@linux-foundation.org, thenzl@redhat.com,
-        mike.miller@hp.com, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <20101008200606.24279.37953.stgit@beardog.cce.hp.com>
-References: <20101008200453.24279.6638.stgit@beardog.cce.hp.com>
-	 <20101008200606.24279.37953.stgit@beardog.cce.hp.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 25 Oct 2010 15:09:20 -0500
-Message-ID: <1288037360.5487.730.camel@mulgrave.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.1.2 
+	id S1759416Ab0JYUNK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Oct 2010 16:13:10 -0400
+Received: from slowhand.arndnet.de ([88.198.19.76]:50974 "EHLO mail.unitix.de"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1757740Ab0JYUNI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Oct 2010 16:13:08 -0400
+Message-ID: <4CC5E4D2.6080606@arndnet.de>
+Date: Mon, 25 Oct 2010 22:13:06 +0200
+From: Arnd Hannemann <arnd@arndnet.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.14) Gecko/20101006 Lightning/1.0b1 Thunderbird/3.0.9
+MIME-Version: 1.0
+To: Larry Finger <Larry.Finger@lwfinger.net>
+CC: "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-wireless@vger.kernel.org,
+        Eric Dumazet <eric.dumazet@gmail.com>
+Subject: Re: [PATCH] net: b43legacy: fix compile error
+References: <1288017690-31248-1-git-send-email-arnd@arndnet.de> <4CC5A301.1080606@lwfinger.net> <4CC5CBC4.7060308@arndnet.de> <4CC5CE47.2020607@lwfinger.net> <4CC5D01C.20804@arndnet.de> <4CC5D3A7.3080709@lwfinger.net>
+In-Reply-To: <4CC5D3A7.3080709@lwfinger.net>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-10-08 at 15:06 -0500, Stephen M. Cameron wrote:
-> From: Stephen M. Cameron <scameron@beardog.cce.hp.com>
+Am 25.10.2010 20:59, schrieb Larry Finger:
+> On 10/25/2010 01:44 PM, Arnd Hannemann wrote:
+>> Am 25.10.2010 20:36, schrieb Larry Finger:
+>>> On 10/25/2010 01:26 PM, Arnd Hannemann wrote:
+>>>> Am 25.10.2010 17:32, schrieb Larry Finger:
+>>>>> On 10/25/2010 09:41 AM, Arnd Hannemann wrote:
+>>>>>> On todays linus tree the following compile error happened to me:
+>>>>>>
+>>>>>>   CC [M]  drivers/net/wireless/b43legacy/xmit.o
+>>>>>> In file included from include/net/dst.h:11,
+>>>>>>                  from drivers/net/wireless/b43legacy/xmit.c:31:
+>>>>>> include/net/dst_ops.h:28: error: expected ':', ',', ';', '}' or '__attribute__' before '____cacheline_aligned_in_smp'
+>>>>>> include/net/dst_ops.h: In function 'dst_entries_get_fast':
+>>>>>> include/net/dst_ops.h:33: error: 'struct dst_ops' has no member named 'pcpuc_entries'
+>>>>>> include/net/dst_ops.h: In function 'dst_entries_get_slow':
+>>>>>> include/net/dst_ops.h:41: error: 'struct dst_ops' has no member named 'pcpuc_entries'
+>>>>>> include/net/dst_ops.h: In function 'dst_entries_add':
+>>>>>> include/net/dst_ops.h:49: error: 'struct dst_ops' has no member named 'pcpuc_entries'
+>>>>>> include/net/dst_ops.h: In function 'dst_entries_init':
+>>>>>> include/net/dst_ops.h:55: error: 'struct dst_ops' has no member named 'pcpuc_entries'
+>>>>>> include/net/dst_ops.h: In function 'dst_entries_destroy':
+>>>>>> include/net/dst_ops.h:60: error: 'struct dst_ops' has no member named 'pcpuc_entries'
+>>>>>> make[4]: *** [drivers/net/wireless/b43legacy/xmit.o] Error 1
+>>>>>> make[3]: *** [drivers/net/wireless/b43legacy] Error 2
+>>>>>> make[2]: *** [drivers/net/wireless] Error 2
+>>>>>> make[1]: *** [drivers/net] Error 2
+>>>>>> make: *** [drivers] Error 2
+>>>>>>
+>>>>>> This patch fixes this issue by adding "linux/cache.h" as an include to
+>>>>>> "include/net/dst_ops.h".
+>>>>>
+>>>>> Strange. Compiling b43legacy from the linux-2.6.git tree (git describe is
+>>>>> v2.6.36-4464-g229aebb) works fine on x86_64. I wonder what is different.
+>>>>
+>>>> Exactly the same git describe here.
+>>>> Maybe your arch includes cache.h already, in my case its a compile for ARM (shmobile).
+>>>
+>>> That probably makes the difference. Using Eric's fix that removes the #include
+>>> <linux/dst.h> should be better. Does it work for you?
+>>>
+>>> There are probably a lot more of the system includes that may not be needed. If
+>>> I send you a patch removing them, could you test?
+>>
+>> As it turns out my card is not supported by b43legacy, but compilation testing,
+>> sure I can test that.
 > 
-> We would prefer not to have any overlap between the two drivers.
-> Remove the cciss_allow_hpsa option, as it it is no longer needed.
-> 
-> Signed-off-by: Stephen M. Cameron <scameron@beardog.cce.hp.com>
-> ---
->  drivers/block/cciss.c |   38 +-------------------------------------
->  1 files changed, 1 insertions(+), 37 deletions(-)
-> 
-> diff --git a/drivers/block/cciss.c b/drivers/block/cciss.c
-> index 5e4fadc..ca900ea 100644
-> --- a/drivers/block/cciss.c
-> +++ b/drivers/block/cciss.c
-> @@ -66,12 +66,6 @@ MODULE_SUPPORTED_DEVICE("HP Smart Array Controllers");
->  MODULE_VERSION("3.6.26");
->  MODULE_LICENSE("GPL");
->  
-> -static int cciss_allow_hpsa;
-> -module_param(cciss_allow_hpsa, int, S_IRUGO|S_IWUSR);
-> -MODULE_PARM_DESC(cciss_allow_hpsa,
-> -	"Prevent cciss driver from accessing hardware known to be "
-> -	" supported by the hpsa driver");
-> -
->  #include "cciss_cmd.h"
->  #include "cciss.h"
->  #include <linux/cciss_ioctl.h>
-> @@ -98,18 +92,6 @@ static const struct pci_device_id cciss_pci_device_id[] = {
->  	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSD,     0x103C, 0x3215},
->  	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSC,     0x103C, 0x3237},
->  	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSC,     0x103C, 0x323D},
-> -	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSE,     0x103C, 0x3241},
-> -	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSE,     0x103C, 0x3243},
-> -	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSE,     0x103C, 0x3245},
-> -	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSE,     0x103C, 0x3247},
-> -	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSE,     0x103C, 0x3249},
-> -	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSE,     0x103C, 0x324A},
-> -	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSE,     0x103C, 0x324B},
-> -	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSE,     0x103C, 0x3250},
-> -	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSE,     0x103C, 0x3251},
-> -	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSE,     0x103C, 0x3252},
-> -	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSE,     0x103C, 0x3253},
-> -	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSE,     0x103C, 0x3254},
+> If it is a Broadcom card, it is likely handled by b43.
 
-This hunk conflicts with the update Mike Miller sent
+Yes. It seems it should work with b43 (its an SDIO card) and it almost does...
 
-commit 6362beea8914cbd4630ccde3617d944aeca2d48f
-Author: Mike Miller <mike.miller@hp.com>
-Date:   Tue Oct 19 09:40:34 2010 +0200
+> Attached is a trial removal of a number of include statements. Does it compile?
 
-    cciss: fix PCI IDs for new Smart Array controllers
+Nope:
+NSTALL_MOD_PATH=/home/arnd/projekte/renesas-2/nfs modules
+  CHK     include/linux/version.h
+  CHK     include/generated/utsrelease.h
+make[1]: `include/generated/mach-types.h' is up to date.
+  CALL    scripts/checksyscalls.sh
+  CC [M]  drivers/net/wireless/b43legacy/main.o
+drivers/net/wireless/b43legacy/main.c: In function 'b43legacy_upload_microcode':
+drivers/net/wireless/b43legacy/main.c:1688: error: implicit declaration of function 'signal_pending'
+make[4]: *** [drivers/net/wireless/b43legacy/main.o] Error 1
+make[3]: *** [drivers/net/wireless/b43legacy] Error 2
+make[2]: *** [drivers/net/wireless] Error 2
+make[1]: *** [drivers/net] Error 2
+make: *** [drivers] Error 2
 
-And which is now mainline.
-
-James
-
-
+Thanks,
+Arnd
