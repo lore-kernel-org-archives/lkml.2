@@ -1,86 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754494Ab0JYJC7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Oct 2010 05:02:59 -0400
-Received: from smtp.gentoo.org ([140.211.166.183]:59632 "EHLO smtp.gentoo.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754119Ab0JYJAB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Oct 2010 05:00:01 -0400
-From: Mike Frysinger <vapier@gentoo.org>
-To: linux-kernel@vger.kernel.org
-Cc: uclinux-dist-devel@blackfin.uclinux.org
-Subject: [PATCH 0/5] Blackfin updates for 2.6.37 (part 2)
-Date: Mon, 25 Oct 2010 05:00:07 -0400
-Message-Id: <1287997207-30661-1-git-send-email-vapier@gentoo.org>
-X-Mailer: git-send-email 1.7.3.2
+	id S1754706Ab0JYJDQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Oct 2010 05:03:16 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:46324 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754117Ab0JYJAA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Oct 2010 05:00:00 -0400
+Subject: [RFC PATCH 04/18] ARM: LPAE: Do not assume Linux PTEs are always at
+ PTRS_PER_PTE offset
+To: linux-arm-kernel@lists.infradead.org
+From: Catalin Marinas <catalin.marinas@arm.com>
+Cc: linux-kernel@vger.kernel.org
+Date: Mon, 25 Oct 2010 09:59:56 +0100
+Message-ID: <20101025085956.25275.20223.stgit@e102109-lin.cambridge.arm.com>
+In-Reply-To: <20101025085812.25275.55757.stgit@e102109-lin.cambridge.arm.com>
+References: <20101025085812.25275.55757.stgit@e102109-lin.cambridge.arm.com>
+User-Agent: StGit/0.15-103-g0e84
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 25 Oct 2010 08:59:56.0613 (UTC) FILETIME=[FF009750:01CB7422]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-My last push meant to include the new bfin_twi header, but I guess I
-fat fingered it.  Other than a few tweaks the existing Blackfin tree,
-this pulls in the bfin_mac platform resource clean up as acked by
-David.  He wanted one changeset to preserve bisection.
+Placing the Linux PTEs at a 2KB offset inside a page is a workaround for
+the 2-level page table format where not enough spare bits are available.
+With LPAE this is no longer required. This patch changes such assumption
+by using a different macro, LINUX_PTE_OFFSET, which is defined to
+PTRS_PER_PTE for the 2-level page tables.
 
-Mike Frysinger (4):
-  Blackfin: bfin_twi.h: start a common TWI header
-  Blackfin: update defconfigs
-  Blackfin: ppi/spi/twi headers: add missing __BFP undef
-  Blackfin: fix inverted anomaly 05000481 logic
+Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
+---
+ arch/arm/include/asm/pgalloc.h        |    6 +++---
+ arch/arm/include/asm/pgtable-2level.h |    1 +
+ arch/arm/include/asm/pgtable.h        |    6 +++---
+ arch/arm/mm/fault.c                   |    2 +-
+ arch/arm/mm/mmu.c                     |    3 ++-
+ 5 files changed, 10 insertions(+), 8 deletions(-)
 
-Sonic Zhang (1):
-  netdev: bfin_mac: push settings to platform resources
-
- arch/blackfin/configs/BF518F-EZBRD_defconfig      |    2 +-
- arch/blackfin/configs/BF526-EZBRD_defconfig       |    2 +-
- arch/blackfin/configs/BF527-AD7160-EVAL_defconfig |    2 +-
- arch/blackfin/configs/BF527-EZKIT-V2_defconfig    |    3 +-
- arch/blackfin/configs/BF527-EZKIT_defconfig       |    3 +-
- arch/blackfin/configs/BF527-TLL6527M_defconfig    |    1 -
- arch/blackfin/configs/BF533-EZKIT_defconfig       |    2 +-
- arch/blackfin/configs/BF533-STAMP_defconfig       |    2 +-
- arch/blackfin/configs/BF537-STAMP_defconfig       |    3 +-
- arch/blackfin/configs/BF538-EZKIT_defconfig       |    3 +-
- arch/blackfin/configs/BF548-EZKIT_defconfig       |    4 +-
- arch/blackfin/configs/BF561-ACVILON_defconfig     |    4 +-
- arch/blackfin/configs/BF561-EZKIT_defconfig       |    1 +
- arch/blackfin/configs/BlackStamp_defconfig        |    3 +-
- arch/blackfin/configs/CM-BF527_defconfig          |    4 +-
- arch/blackfin/configs/CM-BF533_defconfig          |    3 +-
- arch/blackfin/configs/CM-BF537E_defconfig         |    3 +-
- arch/blackfin/configs/CM-BF537U_defconfig         |    3 +-
- arch/blackfin/configs/CM-BF548_defconfig          |    3 +-
- arch/blackfin/configs/CM-BF561_defconfig          |    3 +-
- arch/blackfin/configs/H8606_defconfig             |    3 +-
- arch/blackfin/configs/IP0X_defconfig              |    3 +-
- arch/blackfin/configs/PNAV-10_defconfig           |    2 +-
- arch/blackfin/configs/SRV1_defconfig              |    3 +-
- arch/blackfin/configs/TCM-BF518_defconfig         |    1 -
- arch/blackfin/configs/TCM-BF537_defconfig         |    2 +
- arch/blackfin/include/asm/bfin5xx_spi.h           |    2 +
- arch/blackfin/include/asm/bfin_ppi.h              |    2 +
- arch/blackfin/include/asm/bfin_twi.h              |   45 +++++++
- arch/blackfin/include/asm/cdef_LPBlackfin.h       |    2 +-
- arch/blackfin/mach-bf518/boards/ezbrd.c           |   44 ++++++-
- arch/blackfin/mach-bf518/boards/tcm-bf518.c       |   24 ++++-
- arch/blackfin/mach-bf527/boards/cm_bf527.c        |   24 ++++-
- arch/blackfin/mach-bf527/boards/ezbrd.c           |   24 ++++-
- arch/blackfin/mach-bf527/boards/ezkit.c           |   24 ++++-
- arch/blackfin/mach-bf527/boards/tll6527m.c        |   24 ++++-
- arch/blackfin/mach-bf537/boards/cm_bf537e.c       |   24 ++++-
- arch/blackfin/mach-bf537/boards/cm_bf537u.c       |   24 ++++-
- arch/blackfin/mach-bf537/boards/minotaur.c        |   24 ++++-
- arch/blackfin/mach-bf537/boards/pnav10.c          |   24 ++++-
- arch/blackfin/mach-bf537/boards/stamp.c           |   24 ++++-
- arch/blackfin/mach-bf537/boards/tcm_bf537.c       |   24 ++++-
- drivers/net/Kconfig                               |    8 -
- drivers/net/bfin_mac.c                            |  145 +++++++++++++-------
- drivers/net/bfin_mac.h                            |    2 +
- include/linux/bfin_mac.h                          |   29 ++++
- 46 files changed, 513 insertions(+), 98 deletions(-)
- create mode 100644 arch/blackfin/include/asm/bfin_twi.h
- create mode 100644 include/linux/bfin_mac.h
-
--- 
-1.7.3.2
+diff --git a/arch/arm/include/asm/pgalloc.h b/arch/arm/include/asm/pgalloc.h
+index b12cc98..c2a1f64 100644
+--- a/arch/arm/include/asm/pgalloc.h
++++ b/arch/arm/include/asm/pgalloc.h
+@@ -62,7 +62,7 @@ pte_alloc_one_kernel(struct mm_struct *mm, unsigned long addr)
+ 	pte = (pte_t *)__get_free_page(PGALLOC_GFP);
+ 	if (pte) {
+ 		clean_dcache_area(pte, sizeof(pte_t) * PTRS_PER_PTE);
+-		pte += PTRS_PER_PTE;
++		pte += LINUX_PTE_OFFSET;
+ 	}
+ 
+ 	return pte;
+@@ -95,7 +95,7 @@ pte_alloc_one(struct mm_struct *mm, unsigned long addr)
+ static inline void pte_free_kernel(struct mm_struct *mm, pte_t *pte)
+ {
+ 	if (pte) {
+-		pte -= PTRS_PER_PTE;
++		pte -= LINUX_PTE_OFFSET;
+ 		free_page((unsigned long)pte);
+ 	}
+ }
+@@ -128,7 +128,7 @@ pmd_populate_kernel(struct mm_struct *mm, pmd_t *pmdp, pte_t *ptep)
+ 	 * The pmd must be loaded with the physical
+ 	 * address of the PTE table
+ 	 */
+-	pte_ptr -= PTRS_PER_PTE * sizeof(void *);
++	pte_ptr -= LINUX_PTE_OFFSET * sizeof(void *);
+ 	__pmd_populate(pmdp, __pa(pte_ptr) | _PAGE_KERNEL_TABLE);
+ }
+ 
+diff --git a/arch/arm/include/asm/pgtable-2level.h b/arch/arm/include/asm/pgtable-2level.h
+index d60bda9..36bdef7 100644
+--- a/arch/arm/include/asm/pgtable-2level.h
++++ b/arch/arm/include/asm/pgtable-2level.h
+@@ -71,6 +71,7 @@
+ #define PTRS_PER_PTE		512
+ #define PTRS_PER_PMD		1
+ #define PTRS_PER_PGD		2048
++#define LINUX_PTE_OFFSET	PTRS_PER_PTE
+ 
+ /*
+  * PMD_SHIFT determines the size of the area a second-level page table can map
+diff --git a/arch/arm/include/asm/pgtable.h b/arch/arm/include/asm/pgtable.h
+index 49dd19e..5b45463 100644
+--- a/arch/arm/include/asm/pgtable.h
++++ b/arch/arm/include/asm/pgtable.h
+@@ -137,8 +137,8 @@ extern struct page *empty_zero_page;
+ #define __pte_map(dir,km)	pmd_page_vaddr(*(dir))
+ #define __pte_unmap(pte,km)	do { } while (0)
+ #else
+-#define __pte_map(dir,km)	((pte_t *)kmap_atomic(pmd_page(*(dir)), km) + PTRS_PER_PTE)
+-#define __pte_unmap(pte,km)	kunmap_atomic((pte - PTRS_PER_PTE), km)
++#define __pte_map(dir,km)	((pte_t *)kmap_atomic(pmd_page(*(dir)), km) + LINUX_PTE_OFFSET)
++#define __pte_unmap(pte,km)	kunmap_atomic((pte - LINUX_PTE_OFFSET), km)
+ #endif
+ 
+ #define set_pte_ext(ptep,pte,ext) cpu_set_pte_ext(ptep,pte,ext)
+@@ -234,7 +234,7 @@ static inline pte_t *pmd_page_vaddr(pmd_t pmd)
+ 	unsigned long ptr;
+ 
+ 	ptr = pmd_val(pmd) & ~(PTRS_PER_PTE * sizeof(void *) - 1);
+-	ptr += PTRS_PER_PTE * sizeof(void *);
++	ptr += LINUX_PTE_OFFSET * sizeof(void *);
+ 
+ 	return __va(ptr);
+ }
+diff --git a/arch/arm/mm/fault.c b/arch/arm/mm/fault.c
+index 23b0b03..2966897 100644
+--- a/arch/arm/mm/fault.c
++++ b/arch/arm/mm/fault.c
+@@ -108,7 +108,7 @@ void show_pte(struct mm_struct *mm, unsigned long addr)
+ 
+ 		pte = pte_offset_map(pmd, addr);
+ 		printk(", *pte=%08lx", pte_val(*pte));
+-		printk(", *ppte=%08lx", pte_val(pte[-PTRS_PER_PTE]));
++		printk(", *ppte=%08lx", pte_val(pte[-LINUX_PTE_OFFSET]));
+ 		pte_unmap(pte);
+ 	} while(0);
+ 
+diff --git a/arch/arm/mm/mmu.c b/arch/arm/mm/mmu.c
+index 56df812..3d6b206 100644
+--- a/arch/arm/mm/mmu.c
++++ b/arch/arm/mm/mmu.c
+@@ -538,7 +538,8 @@ static void __init *early_alloc(unsigned long sz)
+ static pte_t * __init early_pte_alloc(pmd_t *pmd, unsigned long addr, unsigned long prot)
+ {
+ 	if (pmd_none(*pmd)) {
+-		pte_t *pte = early_alloc(2 * PTRS_PER_PTE * sizeof(pte_t));
++		pte_t *pte = early_alloc((LINUX_PTE_OFFSET +
++					  PTRS_PER_PTE) * sizeof(pte_t));
+ 		__pmd_populate(pmd, __pa(pte) | prot);
+ 	}
+ 	BUG_ON(pmd_bad(*pmd));
 
