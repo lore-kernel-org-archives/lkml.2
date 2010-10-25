@@ -1,68 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759614Ab0JYUb2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Oct 2010 16:31:28 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:52653 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757986Ab0JYUb1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Oct 2010 16:31:27 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Paul Fulghum <paulkf@microgate.com>
-Subject: Re: [PATCH] n_hdlc fix read and write locking
-Date: Mon, 25 Oct 2010 22:31:06 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.36+; KDE/4.5.1; x86_64; ; )
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-References: <1288030959.19909.28.camel@x2.microgate.com>
-In-Reply-To: <1288030959.19909.28.camel@x2.microgate.com>
+	id S1758111Ab0JYUhc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Oct 2010 16:37:32 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:51644 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756967Ab0JYUha (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Oct 2010 16:37:30 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Pavel Machek <pavel@ucw.cz>
+Subject: Re: [PATCH] ACPI / Battery: Return -ENODATA for unknown values in get_property()
+Date: Mon, 25 Oct 2010 22:36:31 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.36-rjw+; KDE/4.4.4; x86_64; ; )
+Cc: Sitsofe Wheeler <sitsofe@yahoo.com>,
+        Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
+        Matthew Garrett <mjg59@srcf.ucam.org>, Len Brown <lenb@kernel.org>,
+        Zhang Rui <rui.zhang@intel.com>, David Zeuthen <davidz@redhat.com>,
+        Richard Hughes <richard@hughsie.com>, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+References: <20101016141321.GA11054@sucs.org> <201010172032.43206.rjw@sisk.pl> <20101025131728.GC2162@ucw.cz>
+In-Reply-To: <20101025131728.GC2162@ucw.cz>
 MIME-Version: 1.0
 Content-Type: Text/Plain;
-  charset="iso-8859-15"
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201010252231.06794.arnd@arndb.de>
-X-Provags-ID: V02:K0:ISiTpzVYZOpnlkReOvOqnxDt/9x/aMcD2LK6b5Q1EN7
- QyfUbM1l8Kzp2+uYrFi9c4wNWcILPfSs5QrWgwFzsnnakNpXjj
- TdOUhhxB888hKwKD52mLqRadFcQBBVHYNDxdiPC+fJMMbQNPGc
- ALEIpyNKRjW9y3QNhhotwloPI8a8KcElm4QMFC9XyGcIm3tR7s
- Nsb4XGtEJboRXXveRu0dg==
+Message-Id: <201010252236.31530.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 25 October 2010 20:22:39 Paul Fulghum wrote:
-> Fix locking in read and write code of n_hdlc line discipline.
+On Monday, October 25, 2010, Pavel Machek wrote:
+> Hi!
 > 
-> 2.6.36 replaced lock_kernel() with tty_lock().
-> The tty mutex is not dropped automatically when the thread
-> sleeps like the BKL. This results in a blocked read or write holding
-> the tty mutex and stalling operations by other devices that use
-> the tty mutex.
+> > That's why I suggested to use -ENODATA. :-)
+> > 
+> > Still, if user space has problems with failing reads from the sysfs attributes,
+> > it may be better to simply put -1 in there.  Patch is appended, please test.
 > 
-> A review of n_hdlc read and write code shows:
-> 1. neither BKL or tty mutex are required for correct operation
-> 2. read can block while read data is available if data is posted
->    between availability check and call to interruptible_sleep_on()
-> 3. write does not set process state to TASK_INTERRUPTIBLE
->    on each pass through the processing loop which can cause
->    unneeded scheduling of the thread
+> I'd say that reporting -1 for unknown is ugly. You can have -1A
+> current easily (charging at 1A), and I've seen machines reporting <0
+> current -- when charging. Logical and well-defined.
 
-Right. I must have missed this when I was not checking for
-interruptible_sleep_on(). I did systematically check for
-this problem with the wait_event family as well as
-work_queues, mutexes, semaphores and hand-written schedule
-loops, but for some reason I did not check for sleep_on :(
+I posted a patch fixing that in a different way (makng the battery driver return
+-ENODEV instead of -ENODATA) in the meantime, which has been confirmed to work.
 
-I've double-checked it now, and it seems that all other
-instances of sleep_on are waiting for close_wait in
-block_til_ready or open functions, and I remember that
-I did check those and convinced myself that they are fine.
-
-> Write corrected to set process state to
-> TASK_INTERRUPTIBLE on each pass through processing loop.
-
-Would it be possible to express the same using
-wait_event_interruptible()?
-
-	Arnd
+Thanks,
+Rafael
