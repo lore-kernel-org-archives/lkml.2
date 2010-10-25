@@ -1,497 +1,209 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754456Ab0JYJAg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Oct 2010 05:00:36 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:46468 "EHLO
+	id S1754385Ab0JYJAe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Oct 2010 05:00:34 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:46478 "EHLO
 	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754080Ab0JYJA3 (ORCPT
+	by vger.kernel.org with ESMTP id S1754306Ab0JYJAa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Oct 2010 05:00:29 -0400
-Subject: [RFC PATCH 08/18] ARM: LPAE: MMU setup for the 3-level page table
- format
+	Mon, 25 Oct 2010 05:00:30 -0400
+Subject: [RFC PATCH 09/18] ARM: LPAE: Add fault handling support
 To: linux-arm-kernel@lists.infradead.org
 From: Catalin Marinas <catalin.marinas@arm.com>
 Cc: linux-kernel@vger.kernel.org
-Date: Mon, 25 Oct 2010 10:00:18 +0100
-Message-ID: <20101025090018.25275.85077.stgit@e102109-lin.cambridge.arm.com>
+Date: Mon, 25 Oct 2010 10:00:24 +0100
+Message-ID: <20101025090024.25275.59418.stgit@e102109-lin.cambridge.arm.com>
 In-Reply-To: <20101025085812.25275.55757.stgit@e102109-lin.cambridge.arm.com>
 References: <20101025085812.25275.55757.stgit@e102109-lin.cambridge.arm.com>
 User-Agent: StGit/0.15-103-g0e84
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 25 Oct 2010 09:00:19.0113 (UTC) FILETIME=[0C69D190:01CB7423]
+X-OriginalArrivalTime: 25 Oct 2010 09:00:24.0784 (UTC) FILETIME=[0FCB2500:01CB7423]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds the MMU initialisation for the LPAE page table format.
-The swapper_pg_dir size with LPAE is 5 rather than 4 pages. The
-__v7_setup function configures the TTBRx split based on the PAGE_OFFSET
-and sets the corresponding TTB control and MAIRx bits (similar to
-PRRR/NMRR for TEX remapping). The 36-bit mappings (supersections) and
-a few other memory types in mmu.c are conditionally compiled.
+The DFSR and IFSR register format is different when LPAE is enabled. In
+addition, DFSR and IFSR have the similar definitions for the fault type.
+This modifies modifies the fault code to correctly handle the new
+format.
 
 Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
 ---
- arch/arm/kernel/head.S    |   77 +++++++++++++++++++++++++++++++++-------
- arch/arm/mm/mmu.c         |   32 ++++++++++++++++-
- arch/arm/mm/proc-macros.S |    5 ++-
- arch/arm/mm/proc-v7.S     |   86 ++++++++++++++++++++++++++++++++++++++++++---
- 4 files changed, 179 insertions(+), 21 deletions(-)
+ arch/arm/mm/alignment.c |    8 ++++-
+ arch/arm/mm/fault.c     |   80 +++++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 87 insertions(+), 1 deletions(-)
 
-diff --git a/arch/arm/kernel/head.S b/arch/arm/kernel/head.S
-index eb62bf9..eb59839 100644
---- a/arch/arm/kernel/head.S
-+++ b/arch/arm/kernel/head.S
-@@ -41,11 +41,18 @@
- #error KERNEL_RAM_VADDR must start at 0xXXXX8000
- #endif
- 
-+#ifdef CONFIG_ARM_LPAE
-+	/* LPAE requires an additional page for the PGD */
-+#define PG_DIR_SIZE	0x5000
-+#else
-+#define PG_DIR_SIZE	0x4000
-+#endif
-+
- 	.globl	swapper_pg_dir
--	.equ	swapper_pg_dir, KERNEL_RAM_VADDR - 0x4000
-+	.equ	swapper_pg_dir, KERNEL_RAM_VADDR - PG_DIR_SIZE
- 
- 	.macro	pgtbl, rd
--	ldr	\rd, =(KERNEL_RAM_PADDR - 0x4000)
-+	ldr	\rd, =(KERNEL_RAM_PADDR - PG_DIR_SIZE)
- 	.endm
- 
- #ifdef CONFIG_XIP_KERNEL
-@@ -172,12 +179,17 @@ __enable_mmu:
- #ifdef CONFIG_CPU_ICACHE_DISABLE
- 	bic	r0, r0, #CR_I
- #endif
-+#ifdef CONFIG_ARM_LPAE
-+	mov	r5, #0
-+	mcrr	p15, 0, r4, r5, c2		@ load TTBR0
-+#else
- 	mov	r5, #(domain_val(DOMAIN_USER, DOMAIN_MANAGER) | \
- 		      domain_val(DOMAIN_KERNEL, DOMAIN_MANAGER) | \
- 		      domain_val(DOMAIN_TABLE, DOMAIN_MANAGER) | \
- 		      domain_val(DOMAIN_IO, DOMAIN_CLIENT))
- 	mcr	p15, 0, r5, c3, c0, 0		@ load domain access register
- 	mcr	p15, 0, r4, c2, c0, 0		@ load page table pointer
-+#endif
- 	b	__turn_mmu_on
- ENDPROC(__enable_mmu)
- 
-@@ -220,11 +232,11 @@ __create_page_tables:
- 	pgtbl	r4				@ page table address
- 
- 	/*
--	 * Clear the 16K level 1 swapper page table
-+	 * Clear the swapper page table
- 	 */
- 	mov	r0, r4
- 	mov	r3, #0
--	add	r6, r0, #0x4000
-+	add	r6, r0, #PG_DIR_SIZE
- 1:	str	r3, [r0], #4
- 	str	r3, [r0], #4
- 	str	r3, [r0], #4
-@@ -232,31 +244,57 @@ __create_page_tables:
- 	teq	r0, r6
- 	bne	1b
- 
-+#ifdef CONFIG_ARM_LPAE
-+	/*
-+	 * Build the PGD table (first level) to point to the PMD table. A PGD
-+	 * entry is 64-bit wide and the top 32 bits are 0.
-+	 */
-+	mov	r0, r4
-+	add	r3, r4, #4096			@ first PMD table address
-+	orr	r3, r3, #3			@ PGD block type
-+	mov	r6, #4				@ PTRS_PER_PGD
-+1:	str	r3, [r0], #8			@ set PGD entry
-+	add	r3, r3, #4096			@ next PMD table
-+	subs	r6, r6, #1
-+	bne	1b
-+
-+	add	r4, r4, #4096			@ point to the PMD tables
-+#endif
-+
- 	ldr	r7, [r10, #PROCINFO_MM_MMUFLAGS] @ mm_mmuflags
- 
- 	/*
--	 * Create identity mapping for first MB of kernel to
-+	 * Create identity mapping for first 1 or 2 MB of kernel to
- 	 * cater for the MMU enable.  This identity mapping
- 	 * will be removed by paging_init().  We use our current program
- 	 * counter to determine corresponding section base address.
- 	 */
- 	mov	r6, pc
--	mov	r6, r6, lsr #20			@ start of kernel section
--	orr	r3, r7, r6, lsl #20		@ flags + kernel base
--	str	r3, [r4, r6, lsl #2]		@ identity mapping
-+	mov	r6, r6, lsr #21			@ start of kernel section
-+	orr	r3, r7, r6, lsl #21		@ flags + kernel base
-+	str	r3, [r4, r6, lsl #3]		@ identity mapping
- 
- 	/*
- 	 * Now setup the pagetables for our kernel direct
- 	 * mapped region.
- 	 */
- 	add	r0, r4,  #(KERNEL_START & 0xff000000) >> 18
--	str	r3, [r0, #(KERNEL_START & 0x00f00000) >> 18]!
-+	str	r3, [r0, #(KERNEL_START & 0x00e00000) >> 18]!
- 	ldr	r6, =(KERNEL_END - 1)
-+#ifdef CONFIG_ARM_LPAE
-+	add	r0, r0, #8
-+#else
- 	add	r0, r0, #4
-+#endif
- 	add	r6, r4, r6, lsr #18
- 1:	cmp	r0, r6
-+#ifdef CONFIG_ARM_LPAE
-+	add	r3, r3, #1 << 21
-+	strls	r3, [r0], #8
-+#else
- 	add	r3, r3, #1 << 20
- 	strls	r3, [r0], #4
-+#endif
- 	bls	1b
- 
- #ifdef CONFIG_XIP_KERNEL
-@@ -279,12 +317,12 @@ __create_page_tables:
- #endif
- 
- 	/*
--	 * Then map first 1MB of ram in case it contains our boot params.
-+	 * Then map first 1 or 2 MB of ram in case it contains our boot params.
- 	 */
- 	add	r0, r4, #PAGE_OFFSET >> 18
- 	orr	r6, r7, #(PHYS_OFFSET & 0xff000000)
--	.if	(PHYS_OFFSET & 0x00f00000)
--	orr	r6, r6, #(PHYS_OFFSET & 0x00f00000)
-+	.if	(PHYS_OFFSET & 0x00e00000)
-+	orr	r6, r6, #(PHYS_OFFSET & 0x00e00000)
- 	.endif
- 	str	r6, [r0]
- 
-@@ -303,8 +341,18 @@ __create_page_tables:
- 	add	r6, r0, r3
- 	ldr	r3, [r8, #MACHINFO_PHYSIO]
- 	orr	r3, r3, r7
--1:	str	r3, [r0], #4
-+#ifdef CONFIG_ARM_LPAE
-+	mov	r7, #1 << (54 - 32)		@ XN
-+#endif
-+1:
-+#ifdef CONFIG_ARM_LPAE
-+	str	r3, [r0], #4
-+	str	r7, [r0], #4
-+	add	r3, r3, #1 << 21
-+#else
-+	str	r3, [r0], #4
- 	add	r3, r3, #1 << 20
-+#endif
- 	teq	r0, r6
- 	bne	1b
- #if defined(CONFIG_ARCH_NETWINDER) || defined(CONFIG_ARCH_CATS)
-@@ -329,6 +377,9 @@ __create_page_tables:
- 	str	r3, [r0]
- #endif
- #endif
-+#ifdef CONFIG_ARM_LPAE
-+	sub	r4, r4, #4096		@ point to the PGD table
-+#endif
- 	mov	pc, lr
- ENDPROC(__create_page_tables)
- 	.ltorg
-diff --git a/arch/arm/mm/mmu.c b/arch/arm/mm/mmu.c
-index 4fc28ee..42929fb 100644
---- a/arch/arm/mm/mmu.c
-+++ b/arch/arm/mm/mmu.c
-@@ -153,6 +153,7 @@ static int __init early_nowrite(char *__unused)
- }
- early_param("nowb", early_nowrite);
- 
-+#ifndef CONFIG_ARM_LPAE
- static int __init early_ecc(char *p)
- {
- 	if (memcmp(p, "on", 2) == 0)
-@@ -162,6 +163,7 @@ static int __init early_ecc(char *p)
+diff --git a/arch/arm/mm/alignment.c b/arch/arm/mm/alignment.c
+index 724ba3b..bc98a6e 100644
+--- a/arch/arm/mm/alignment.c
++++ b/arch/arm/mm/alignment.c
+@@ -906,6 +906,12 @@ do_alignment(unsigned long addr, unsigned int fsr, struct pt_regs *regs)
  	return 0;
  }
- early_param("ecc", early_ecc);
-+#endif
- 
- static int __init noalign_setup(char *__unused)
- {
-@@ -231,10 +233,12 @@ static struct mem_type mem_types[] = {
- 		.prot_sect = PMD_TYPE_SECT | PMD_SECT_XN,
- 		.domain    = DOMAIN_KERNEL,
- 	},
-+#ifndef CONFIG_ARM_LPAE
- 	[MT_MINICLEAN] = {
- 		.prot_sect = PMD_TYPE_SECT | PMD_SECT_XN | PMD_SECT_MINICACHE,
- 		.domain    = DOMAIN_KERNEL,
- 	},
-+#endif
- 	[MT_LOW_VECTORS] = {
- 		.prot_pte  = L_PTE_PRESENT | L_PTE_YOUNG | L_PTE_DIRTY |
- 				L_PTE_EXEC | L_PTE_NOWRITE,
-@@ -429,6 +433,7 @@ static void __init build_mem_type_table(void)
- 	 * ARMv6 and above have extended page tables.
- 	 */
- 	if (cpu_arch >= CPU_ARCH_ARMv6 && (cr & CR_XP)) {
-+#ifndef CONFIG_ARM_LPAE
- 		/*
- 		 * Mark cache clean areas and XIP ROM read only
- 		 * from SVC mode and no access from userspace.
-@@ -436,6 +441,7 @@ static void __init build_mem_type_table(void)
- 		mem_types[MT_ROM].prot_sect |= PMD_SECT_APX|PMD_SECT_AP_WRITE;
- 		mem_types[MT_MINICLEAN].prot_sect |= PMD_SECT_APX|PMD_SECT_AP_WRITE;
- 		mem_types[MT_CACHECLEAN].prot_sect |= PMD_SECT_APX|PMD_SECT_AP_WRITE;
-+#endif
- 
- #ifdef CONFIG_SMP
- 		/*
-@@ -473,6 +479,18 @@ static void __init build_mem_type_table(void)
- 		mem_types[MT_MEMORY_NONCACHED].prot_sect |= PMD_SECT_BUFFERABLE;
- 	}
  
 +#ifdef CONFIG_ARM_LPAE
-+	/*
-+	 * Do not generate access flag faults for the kernel mappings.
-+	 */
-+	for (i = 0; i < ARRAY_SIZE(mem_types); i++) {
-+		mem_types[i].prot_pte |= PTE_EXT_AF;
-+		mem_types[i].prot_sect |= PMD_SECT_AF;
-+	}
-+	kern_pgprot |= PTE_EXT_AF;
-+	vecs_pgprot |= PTE_EXT_AF;
-+#endif
-+
- 	for (i = 0; i < 16; i++) {
- 		unsigned long v = pgprot_val(protection_map[i]);
- 		protection_map[i] = __pgprot(v | user_pgprot);
-@@ -590,6 +608,7 @@ static void __init alloc_init_section(pgd_t *pgd, unsigned long addr,
- 	}
- }
- 
-+#ifndef CONFIG_ARM_LPAE
- static void __init create_36bit_mapping(struct map_desc *md,
- 					const struct mem_type *type)
- {
-@@ -647,6 +666,7 @@ static void __init create_36bit_mapping(struct map_desc *md,
- 		pgd += SUPERSECTION_SIZE >> PGDIR_SHIFT;
- 	} while (addr != end);
- }
-+#endif	/* !CONFIG_ARM_LPAE */
- 
- /*
-  * Create the page directory entries and any necessary
-@@ -677,6 +697,7 @@ static void __init create_mapping(struct map_desc *md)
- 
- 	type = &mem_types[md->type];
- 
-+#ifndef CONFIG_ARM_LPAE
- 	/*
- 	 * Catch 36-bit addresses
- 	 */
-@@ -684,6 +705,7 @@ static void __init create_mapping(struct map_desc *md)
- 		create_36bit_mapping(md, type);
- 		return;
- 	}
-+#endif
- 
- 	addr = md->virtual & PAGE_MASK;
- 	phys = (unsigned long)__pfn_to_phys(md->pfn);
-@@ -881,6 +903,14 @@ static inline void prepare_page_table(void)
- 		pmd_clear(pmd_off_k(addr));
- }
- 
-+#ifdef CONFIG_ARM_LPAE
-+/* the first page is reserved for pgd */
-+#define SWAPPER_PG_DIR_SIZE	(PAGE_SIZE + \
-+				 PTRS_PER_PGD * PTRS_PER_PMD * sizeof(pmd_t))
++#define ALIGNMENT_FAULT		33
 +#else
-+#define SWAPPER_PG_DIR_SIZE	(PTRS_PER_PGD * sizeof(pgd_t))
++#define ALIGNMENT_FAULT		1
 +#endif
 +
  /*
-  * Reserve the special regions of memory
-  */
-@@ -890,7 +920,7 @@ void __init arm_mm_memblock_reserve(void)
- 	 * Reserve the page tables.  These are already in use,
- 	 * and can only be in node 0.
- 	 */
--	memblock_reserve(__pa(swapper_pg_dir), PTRS_PER_PGD * sizeof(pgd_t));
-+	memblock_reserve(__pa(swapper_pg_dir), SWAPPER_PG_DIR_SIZE);
+  * This needs to be done after sysctl_init, otherwise sys/ will be
+  * overwritten.  Actually, this shouldn't be in sys/ at all since
+@@ -939,7 +945,7 @@ static int __init alignment_init(void)
+ 		ai_usermode = UM_FIXUP;
+ 	}
  
- #ifdef CONFIG_SA1111
+-	hook_fault_code(1, do_alignment, SIGBUS, BUS_ADRALN,
++	hook_fault_code(ALIGNMENT_FAULT, do_alignment, SIGBUS, BUS_ADRALN,
+ 			"alignment exception");
+ 
  	/*
-diff --git a/arch/arm/mm/proc-macros.S b/arch/arm/mm/proc-macros.S
-index 337f102..fed053c 100644
---- a/arch/arm/mm/proc-macros.S
-+++ b/arch/arm/mm/proc-macros.S
-@@ -81,8 +81,9 @@
- #if L_PTE_SHARED != PTE_EXT_SHARED
- #error PTE shared bit mismatch
- #endif
--#if (L_PTE_EXEC+L_PTE_USER+L_PTE_WRITE+L_PTE_DIRTY+L_PTE_YOUNG+\
--     L_PTE_FILE+L_PTE_PRESENT) > L_PTE_SHARED
-+#if !defined(CONFIG_ARM_LPAE) && \
-+		(L_PTE_EXEC+L_PTE_USER+L_PTE_WRITE+L_PTE_DIRTY+L_PTE_YOUNG+ \
-+		 L_PTE_FILE+L_PTE_PRESENT) > L_PTE_SHARED
- #error Invalid Linux PTE bit settings
- #endif
- #endif	/* CONFIG_MMU */
-diff --git a/arch/arm/mm/proc-v7.S b/arch/arm/mm/proc-v7.S
-index 8c7b0f1..4db926c 100644
---- a/arch/arm/mm/proc-v7.S
-+++ b/arch/arm/mm/proc-v7.S
-@@ -19,6 +19,19 @@
+diff --git a/arch/arm/mm/fault.c b/arch/arm/mm/fault.c
+index 2966897..b662aea 100644
+--- a/arch/arm/mm/fault.c
++++ b/arch/arm/mm/fault.c
+@@ -33,10 +33,15 @@
+ #define FSR_WRITE		(1 << 11)
+ #define FSR_FS4			(1 << 10)
+ #define FSR_FS3_0		(15)
++#define FSR_FS5_0		(0x3f)
  
- #include "proc-macros.S"
- 
+ static inline int fsr_fs(unsigned int fsr)
+ {
 +#ifdef CONFIG_ARM_LPAE
-+#define TTB_IRGN_NC	((0 << 8) | (0 << 24))
-+#define TTB_IRGN_WBWA	((1 << 8) | (1 << 24))
-+#define TTB_IRGN_WT	((2 << 8) | (2 << 24))
-+#define TTB_IRGN_WB	((3 << 8) | (3 << 24))
-+#define TTB_RGN_NC	((0 << 10) | (0 << 26))
-+#define TTB_RGN_OC_WBWA	((1 << 10) | (1 << 26))
-+#define TTB_RGN_OC_WT	((2 << 10) | (2 << 26))
-+#define TTB_RGN_OC_WB	((3 << 10) | (3 << 26))
-+#define TTB_S		((3 << 12) | (3 << 28))
-+#define TTB_NOS		(0)
-+#define TTB_EAE		(1 << 31)
++	return fsr & FSR_FS5_0;
 +#else
- #define TTB_S		(1 << 1)
- #define TTB_RGN_NC	(0 << 3)
- #define TTB_RGN_OC_WBWA	(1 << 3)
-@@ -29,6 +42,7 @@
- #define TTB_IRGN_WBWA	((0 << 0) | (1 << 6))
- #define TTB_IRGN_WT	((1 << 0) | (0 << 6))
- #define TTB_IRGN_WB	((1 << 0) | (1 << 6))
+ 	return (fsr & FSR_FS3_0) | (fsr & FSR_FS4) >> 6;
 +#endif
+ }
  
- #ifndef CONFIG_SMP
- /* PTWs cacheable, inner WB not shareable, outer WB not shareable */
-@@ -280,9 +294,41 @@ __v7_setup:
- 	dsb
  #ifdef CONFIG_MMU
- 	mcr	p15, 0, r10, c8, c7, 0		@ invalidate I + D TLBs
+@@ -108,7 +113,9 @@ void show_pte(struct mm_struct *mm, unsigned long addr)
+ 
+ 		pte = pte_offset_map(pmd, addr);
+ 		printk(", *pte=%08lx", pte_val(*pte));
++#ifndef CONFIG_ARM_LPAE
+ 		printk(", *ppte=%08lx", pte_val(pte[-LINUX_PTE_OFFSET]));
++#endif
+ 		pte_unmap(pte);
+ 	} while(0);
+ 
+@@ -467,6 +474,72 @@ static struct fsr_info {
+ 	int	code;
+ 	const char *name;
+ } fsr_info[] = {
 +#ifdef CONFIG_ARM_LPAE
-+	ldr	r5, =TTB_FLAGS|TTB_EAE
-+	mrc	p15, 0, r10, c2, c0, 2
-+	orr	r10, r10, r5
-+#if PHYS_OFFSET <= PAGE_OFFSET
-+	/*
-+	 * TTBR0/TTBR1 split (PAGE_OFFSET):
-+	 *   0x40000000: T0SZ = 2, T1SZ = 0 (not used)
-+	 *   0x80000000: T0SZ = 0, T1SZ = 1
-+	 *   0xc0000000: T0SZ = 0, T1SZ = 2
-+	 *
-+	 * Only use this feature if PAGE_OFFSET <=  PAGE_OFFSET, otherwise
-+	 * booting secondary CPUs would end up using TTBR1 for the identity
-+	 * mapping set up in TTBR0.
-+	 */
-+	orr	r10, r10, #(((PAGE_OFFSET >> 30) - 1) << 16)	@ TTBCR.T1SZ
-+#endif
-+#endif
- 	mcr	p15, 0, r10, c2, c0, 2		@ TTB control register
-+#ifdef CONFIG_ARM_LPAE
-+	mov	r5, #0
-+#if defined CONFIG_VMSPLIT_2G
-+	/* PAGE_OFFSET == 0x80000000, T1SZ == 1 */
-+	add	r6, r4, #1 << 4			@ skip two L1 entries
-+#elif defined CONFIG_VMSPLIT_3G
-+	/* PAGE_OFFSET == 0xc0000000, T1SZ == 2 */
-+	add	r6, r4, #4096 * (1 + 3)		@ only L2 used, skip pgd+3*pmd
-+#else
-+	mov	r6, r4
-+#endif
-+	mcrr	p15, 1, r6, r5, c2		@ load TTBR1
++	{ do_bad,		SIGBUS,  0,		"unknown 0"			},
++	{ do_bad,		SIGBUS,  0,		"unknown 1"			},
++	{ do_bad,		SIGBUS,  0,		"unknown 2"			},
++	{ do_bad,		SIGBUS,  0,		"unknown 3"			},
++	{ do_bad,		SIGBUS,  0,		"reserved translation fault"	},
++	{ do_translation_fault,	SIGSEGV, SEGV_MAPERR,	"level 1 translation fault"	},
++	{ do_translation_fault,	SIGSEGV, SEGV_MAPERR,	"level 2 translation fault"	},
++	{ do_page_fault,	SIGSEGV, SEGV_MAPERR,	"level 3 translation fault"	},
++	{ do_bad,		SIGBUS,  0,		"reserved access flag fault"	},
++	{ do_bad,		SIGSEGV, SEGV_ACCERR,	"level 1 access flag fault"	},
++	{ do_bad,		SIGSEGV, SEGV_ACCERR,	"level 2 access flag fault"	},
++	{ do_page_fault,	SIGSEGV, SEGV_ACCERR,	"level 3 access flag fault"	},
++	{ do_bad,		SIGBUS,  0,		"reserved permission fault"	},
++	{ do_bad,		SIGSEGV, SEGV_ACCERR,	"level 1 permission fault"	},
++	{ do_sect_fault,	SIGSEGV, SEGV_ACCERR,	"level 2 permission fault"	},
++	{ do_page_fault,	SIGSEGV, SEGV_ACCERR,	"level 3 permission fault"	},
++	{ do_bad,		SIGBUS,  0,		"synchronous external abort"	},
++	{ do_bad,		SIGBUS,  0,		"asynchronous external abort"	},
++	{ do_bad,		SIGBUS,  0,		"unknown 18"			},
++	{ do_bad,		SIGBUS,  0,		"unknown 19"			},
++	{ do_bad,		SIGBUS,  0,		"synchronous abort (translation table walk)" },
++	{ do_bad,		SIGBUS,  0,		"synchronous abort (translation table walk)" },
++	{ do_bad,		SIGBUS,  0,		"synchronous abort (translation table walk)" },
++	{ do_bad,		SIGBUS,  0,		"synchronous abort (translation table walk)" },
++	{ do_bad,		SIGBUS,  0,		"synchronous parity error"	},
++	{ do_bad,		SIGBUS,  0,		"asynchronous parity error"	},
++	{ do_bad,		SIGBUS,  0,		"unknown 26"			},
++	{ do_bad,		SIGBUS,  0,		"unknown 27"			},
++	{ do_bad,		SIGBUS,  0,		"synchronous parity error (translation table walk" },
++	{ do_bad,		SIGBUS,  0,		"synchronous parity error (translation table walk" },
++	{ do_bad,		SIGBUS,  0,		"synchronous parity error (translation table walk" },
++	{ do_bad,		SIGBUS,  0,		"synchronous parity error (translation table walk" },
++	{ do_bad,		SIGBUS,  0,		"unknown 32"			},
++	{ do_bad,		SIGILL,  BUS_ADRALN,	"alignment fault"		},
++	{ do_bad,		SIGBUS,  0,		"debug event"			},
++	{ do_bad,		SIGBUS,  0,		"unknown 35"			},
++	{ do_bad,		SIGBUS,  0,		"unknown 36"			},
++	{ do_bad,		SIGBUS,  0,		"unknown 37"			},
++	{ do_bad,		SIGBUS,  0,		"unknown 38"			},
++	{ do_bad,		SIGBUS,  0,		"unknown 39"			},
++	{ do_bad,		SIGBUS,  0,		"unknown 40"			},
++	{ do_bad,		SIGBUS,  0,		"unknown 41"			},
++	{ do_bad,		SIGBUS,  0,		"unknown 42"			},
++	{ do_bad,		SIGBUS,  0,		"unknown 43"			},
++	{ do_bad,		SIGBUS,  0,		"unknown 44"			},
++	{ do_bad,		SIGBUS,  0,		"unknown 45"			},
++	{ do_bad,		SIGBUS,  0,		"unknown 46"			},
++	{ do_bad,		SIGBUS,  0,		"unknown 47"			},
++	{ do_bad,		SIGBUS,  0,		"unknown 48"			},
++	{ do_bad,		SIGBUS,  0,		"unknown 49"			},
++	{ do_bad,		SIGBUS,  0,		"unknown 50"			},
++	{ do_bad,		SIGBUS,  0,		"unknown 51"			},
++	{ do_bad,		SIGBUS,  0,		"implementation fault (lockdown abort)" },
++	{ do_bad,		SIGBUS,  0,		"unknown 53"			},
++	{ do_bad,		SIGBUS,  0,		"unknown 54"			},
++	{ do_bad,		SIGBUS,  0,		"unknown 55"			},
++	{ do_bad,		SIGBUS,  0,		"unknown 56"			},
++	{ do_bad,		SIGBUS,  0,		"unknown 57"			},
++	{ do_bad,		SIGBUS,  0,		"implementation fault (coprocessor abort)" },
++	{ do_bad,		SIGBUS,  0,		"unknown 59"			},
++	{ do_bad,		SIGBUS,  0,		"unknown 60"			},
++	{ do_bad,		SIGBUS,  0,		"unknown 61"			},
++	{ do_bad,		SIGBUS,  0,		"unknown 62"			},
++	{ do_bad,		SIGBUS,  0,		"unknown 63"			},
 +#else	/* !CONFIG_ARM_LPAE */
- 	orr	r4, r4, #TTB_FLAGS
- 	mcr	p15, 0, r4, c2, c0, 1		@ load TTB1
-+#endif	/* CONFIG_ARM_LPAE */
  	/*
- 	 * Memory region attributes with SCTLR.TRE=1
- 	 *
-@@ -310,11 +356,33 @@ __v7_setup:
- 	 *   NS0 = PRRR[18] = 0		- normal shareable property
- 	 *   NS1 = PRRR[19] = 1		- normal shareable property
- 	 *   NOS = PRRR[24+n] = 1	- not outer shareable
-+	 *
-+	 * Memory region attributes for LPAE (defined in pgtable-3level.h):
-+	 *
-+	 *   n = AttrIndx[2:0]
-+	 *
-+	 *			n	MAIR
-+	 *   UNCACHED		000	00000000
-+	 *   BUFFERABLE		001	01000100
-+	 *   DEV_WC		001	01000100
-+	 *   WRITETHROUGH	010	10101010
-+	 *   WRITEBACK		011	11101110
-+	 *   DEV_CACHED		011	11101110
-+	 *   DEV_SHARED		100	00000100
-+	 *   DEV_NONSHARED	100	00000100
-+	 *   unused		101
-+	 *   unused		110
-+	 *   WRITEALLOC		111	11111111
- 	 */
-+#ifdef CONFIG_ARM_LPAE
-+	ldr	r5, =0xeeaa4400			@ MAIR0
-+	ldr	r6, =0xff000004			@ MAIR1
-+#else
- 	ldr	r5, =0xff0a81a8			@ PRRR
- 	ldr	r6, =0x40e040e0			@ NMRR
--	mcr	p15, 0, r5, c10, c2, 0		@ write PRRR
--	mcr	p15, 0, r6, c10, c2, 1		@ write NMRR
-+#endif
-+	mcr	p15, 0, r5, c10, c2, 0		@ write PRRR/MAIR0
-+	mcr	p15, 0, r6, c10, c2, 1		@ write NMRR/MAIR1
- #endif
- 	adr	r5, v7_crval
- 	ldmia	r5, {r5, r6}
-@@ -333,14 +401,19 @@ __v7_setup:
- ENDPROC(__v7_setup)
+ 	 * The following are the standard ARMv3 and ARMv4 aborts.  ARMv5
+ 	 * defines these to be "precise" aborts.
+@@ -508,6 +581,7 @@ static struct fsr_info {
+ 	{ do_bad,		SIGBUS,  0,		"unknown 29"			   },
+ 	{ do_bad,		SIGBUS,  0,		"unknown 30"			   },
+ 	{ do_bad,		SIGBUS,  0,		"unknown 31"			   }
++#endif	/* CONFIG_ARM_LPAE */
+ };
  
- 	/*   AT
--	 *  TFR   EV X F   I D LR    S
--	 * .EEE ..EE PUI. .T.T 4RVI ZWRS BLDP WCAM
-+	 *  TFR   EV X F   IHD LR    S
-+	 * .EEE ..EE PUI. .TAT 4RVI ZWRS BLDP WCAM
- 	 * rxxx rrxx xxx0 0101 xxxx xxxx x111 xxxx < forced
- 	 *    1    0 110       0011 1100 .111 1101 < we want
-+	 *   11    0 110    1  0011 1100 .111 1101 < we want (LPAE)
- 	 */
- 	.type	v7_crval, #object
- v7_crval:
+ void __init
+@@ -546,6 +620,9 @@ do_DataAbort(unsigned long addr, unsigned int fsr, struct pt_regs *regs)
+ }
+ 
+ 
 +#ifdef CONFIG_ARM_LPAE
-+	crval	clear=0x0120c302, mmuset=0x30c23c7d, ucset=0x00c01c7c
-+#else
- 	crval	clear=0x0120c302, mmuset=0x10c03c7d, ucset=0x00c01c7c
++#define ifsr_info	fsr_info
++#else	/* !CONFIG_ARM_LPAE */
+ static struct fsr_info ifsr_info[] = {
+ 	{ do_bad,		SIGBUS,  0,		"unknown 0"			   },
+ 	{ do_bad,		SIGBUS,  0,		"unknown 1"			   },
+@@ -580,6 +657,7 @@ static struct fsr_info ifsr_info[] = {
+ 	{ do_bad,		SIGBUS,  0,		"unknown 30"			   },
+ 	{ do_bad,		SIGBUS,  0,		"unknown 31"			   },
+ };
++#endif	/* CONFIG_ARM_LPAE */
+ 
+ asmlinkage void __exception
+ do_PrefetchAbort(unsigned long addr, unsigned int ifsr, struct pt_regs *regs)
+@@ -602,6 +680,7 @@ do_PrefetchAbort(unsigned long addr, unsigned int ifsr, struct pt_regs *regs)
+ 
+ static int __init exceptions_init(void)
+ {
++#ifndef CONFIG_ARM_LPAE
+ 	if (cpu_architecture() >= CPU_ARCH_ARMv6) {
+ 		hook_fault_code(4, do_translation_fault, SIGSEGV, SEGV_MAPERR,
+ 				"I-cache maintenance fault");
+@@ -617,6 +696,7 @@ static int __init exceptions_init(void)
+ 		hook_fault_code(6, do_bad, SIGSEGV, SEGV_MAPERR,
+ 				"section access flag fault");
+ 	}
 +#endif
  
- __v7_setup_stack:
- 	.space	4 * 11				@ 11 registers
-@@ -404,11 +477,14 @@ __v7_proc_info:
- 	.long   PMD_TYPE_SECT | \
- 		PMD_SECT_AP_WRITE | \
- 		PMD_SECT_AP_READ | \
-+		PMD_SECT_AF | \
- 		PMD_FLAGS
-+		/* PMD_SECT_XN is set explicitly in head.S for LPAE */
- 	.long   PMD_TYPE_SECT | \
- 		PMD_SECT_XN | \
- 		PMD_SECT_AP_WRITE | \
--		PMD_SECT_AP_READ
-+		PMD_SECT_AP_READ | \
-+		PMD_SECT_AF
- 	b	__v7_setup
- 	.long	cpu_arch_name
- 	.long	cpu_elf_name
+ 	return 0;
+ }
 
