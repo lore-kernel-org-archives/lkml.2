@@ -1,42 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757601Ab0JYTzK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Oct 2010 15:55:10 -0400
-Received: from asmtpout026.mac.com ([17.148.16.101]:35009 "EHLO
-	asmtpout026.mac.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757566Ab0JYTzI (ORCPT
+	id S1757633Ab0JYT5Y (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Oct 2010 15:57:24 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:42126 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757555Ab0JYT5X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Oct 2010 15:55:08 -0400
-MIME-version: 1.0
-Content-transfer-encoding: 7BIT
-Content-type: text/plain; charset=us-ascii
-X-Proofpoint-Spam-Details: rule=notspam policy=default score=0 spamscore=0
- ipscore=0 suspectscore=0 phishscore=0 bulkscore=0 adultscore=0 classifier=spam
- adjust=0 reason=mlx engine=6.0.2-1004200000 definitions=main-1010250125
-X-Proofpoint-Virus-Version: vendor=fsecure
- engine=2.50.10432:5.2.15,1.0.148,0.0.0000
- definitions=2010-10-25_08:2010-10-25,2010-10-25,1970-01-01 signatures=0
-From: Elvis Dowson <elvis.dowson@mac.com>
-Subject: How to prevent + being appended to kernel image name
-Date: Mon, 25 Oct 2010 23:54:44 +0400
-Message-id: <D1A25074-F603-450B-BF77-FED5FAFC54C5@mac.com>
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-X-Mailer: Apple Mail (2.1081)
+	Mon, 25 Oct 2010 15:57:23 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=MhG9G5liyksd/Ky1rFGioMr6lXVS/mxoiistNYolEFdd/jQ8CHArtMNjAUQp2fsdPx
+         06w4Exj77QkyjHh4iGarTz1/KJ+Fj5etLd/LsBnW100OA8WV+Yfcp9h6F+FymPCWxH5I
+         DoWeJx/ECYNzeivR/wFiQONuYpHVHnbYcz60g=
+Subject: Re: [PATCH] net: b43legacy: fix compile error
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Larry Finger <Larry.Finger@lwfinger.net>
+Cc: Arnd Hannemann <arnd@arndnet.de>, "David S. Miller" <davem@davemloft.net>,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-wireless@vger.kernel.org
+In-Reply-To: <4CC5C863.9070801@lwfinger.net>
+References: <1288017690-31248-1-git-send-email-arnd@arndnet.de>
+	 <4CC5A301.1080606@lwfinger.net> <1288021905.2826.142.camel@edumazet-laptop>
+	 <4CC5C863.9070801@lwfinger.net>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 25 Oct 2010 21:56:52 +0200
+Message-ID: <1288036613.2451.2.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-       When I build the linux-2.6.36 kernel (wl12xx wireless repo) using OpenEmbedded (OE), the kernel image that gets created has the name "Linux-2.6.36-rc8-wl"
+Le lundi 25 octobre 2010 à 13:11 -0500, Larry Finger a écrit :
 
-However, when I build it from within TI CCS v5 (eclipse IDE), the resulting kernel image name has a + sign appended to the image name "Linux-2.6.36-rc8-wl+"
+> I have no idea why that header was included - likely historical in the
+> transformation from bcm43xx to b43legacy. For completeness, there are 2 more
+> places to change:
 
-How can I prevent the + symbol from being prefixed to the kernel image name? 
+Anyway, Arnd patch is fine by me, I didnt want to supply an alternate
+patch.
 
-I'm using OE to build the rootfilesystem and the kernel driver modules, but using TI CCS v5 to incrementally modify my board definition file, and quickly compile the kernel and test it. Because of the + prefix, I'm unable to load kernel modules correctly due to the mismatch in the kernel image names.
-
-Elvis Dowson
-
-
-
+I only was wondering why the include was in this driver...
 
