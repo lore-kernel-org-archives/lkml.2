@@ -1,87 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752480Ab0JYB2o (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Oct 2010 21:28:44 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:44671 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752017Ab0JYB2m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Oct 2010 21:28:42 -0400
-Date: Mon, 25 Oct 2010 03:21:24 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        Gleb Natapov <gleb@redhat.com>, Jan Kiszka <jan.kiszka@siemens.com>,
-        Sheng Yang <sheng@linux.intel.com>, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH RFC] kvm: write protect memory after slot swap
-Message-ID: <20101025012124.GA31262@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-To: unlisted-recipients:; (no To-header on input)
+	id S1752568Ab0JYBae (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Oct 2010 21:30:34 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:37962 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752389Ab0JYBad (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 24 Oct 2010 21:30:33 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=IzKASNULvwmEqbx2bjEfxBiXHW3RV3hYR/64V0Oo57tWD3nulk9xzley7tok2PFJmr
+         3S65KWZBXpQDABeCISlMWiN2TzmueZZNJq78uH7QVqR53uREVlUEVvc45YnyJ5h1egGy
+         ZPt6QS+1CHP4L2xTCLlRL0dkSjxW/nVNRiAdg=
+Subject: Re: [GIT PULL] Revert of the IO stat fix
+From: Maxim Levitsky <maximlevitsky@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Jens Axboe <jaxboe@fusionio.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <1287968152.3976.0.camel@maxim-laptop>
+References: <4CC49274.3030803@fusionio.com>
+	 <AANLkTik4qAzZPLO8HHBCM34_NLEEdPj04RyXPfeR-wSv@mail.gmail.com>
+	 <4CC49A4B.8010300@fusionio.com> <1287957832.24074.19.camel@maxim-laptop>
+	 <AANLkTi=VH03ZL023VT+KYUXKHhZ80TzwqhQeRf17oENG@mail.gmail.com>
+	 <1287968152.3976.0.camel@maxim-laptop>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 25 Oct 2010 03:30:28 +0200
+Message-ID: <1287970228.5205.0.camel@maxim-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I have observed the following bug trigger:
+On Mon, 2010-10-25 at 02:55 +0200, Maxim Levitsky wrote:
+> On Sun, 2010-10-24 at 17:07 -0700, Linus Torvalds wrote:
+> > On Sun, Oct 24, 2010 at 3:03 PM, Maxim Levitsky <maximlevitsky@gmail.com> wrote:
+> > >
+> > > Btw I had that bug reproduced 100% for all removeable devices I have.
+> > > (xD, ms, usb).
+> > 
+> > Does Jens' suggested patch (the non-revert one) fix your oops? Or only
+> > the revert?
+> The suggested patch doesn't fix the oops.
+> Testing revert now.
 
-1. userspace calls GET_DIRTY_LOG
-2. kvm_mmu_slot_remove_write_access is called and makes a page ro
-3. page fault happens and makes the page writeable
-   fault is logged in the bitmap appropriately
-4. kvm_vm_ioctl_get_dirty_log swaps slot pointers
+Yes, revert works.
+Tested xD, MS, USB.
 
-a lot of time passes
 
-5. guest writes into the page
-6. userspace calls GET_DIRTY_LOG
+Best regards,
+	Maxim Levitsky
 
-At point (5), bitmap is clean and page is writeable,
-thus, guest modification of memory is not logged
-and GET_DIRTY_LOG returns an empty bitmap.
+> 
+> > 
+> > IOW, I would want to know whether I could try just merging the fix
+> > instead of backing out the patch that looks like a real improvement..
+> > 
+> >                     Linus
+> 
+> 
 
-The rule is that all pages are either dirty in the current bitmap,
-or write-protected, which is violated here.
 
-It seems that just moving kvm_mmu_slot_remove_write_access down
-to after the slot pointer swap should fix this bug.
-
-Warning: completely untested.
-Please comment.
-Note: fix will be needed for -stable etc.
-
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
----
- arch/x86/kvm/x86.c |    8 ++++----
- 1 files changed, 4 insertions(+), 4 deletions(-)
-
-diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-index 3a09c62..4ca1d7f 100644
---- a/arch/x86/kvm/x86.c
-+++ b/arch/x86/kvm/x86.c
-@@ -2912,10 +2912,6 @@ int kvm_vm_ioctl_get_dirty_log(struct kvm *kvm,
- 		struct kvm_memslots *slots, *old_slots;
- 		unsigned long *dirty_bitmap;
- 
--		spin_lock(&kvm->mmu_lock);
--		kvm_mmu_slot_remove_write_access(kvm, log->slot);
--		spin_unlock(&kvm->mmu_lock);
--
- 		r = -ENOMEM;
- 		dirty_bitmap = vmalloc(n);
- 		if (!dirty_bitmap)
-@@ -2937,6 +2933,10 @@ int kvm_vm_ioctl_get_dirty_log(struct kvm *kvm,
- 		dirty_bitmap = old_slots->memslots[log->slot].dirty_bitmap;
- 		kfree(old_slots);
- 
-+		spin_lock(&kvm->mmu_lock);
-+		kvm_mmu_slot_remove_write_access(kvm, log->slot);
-+		spin_unlock(&kvm->mmu_lock);
-+
- 		r = -EFAULT;
- 		if (copy_to_user(log->dirty_bitmap, dirty_bitmap, n)) {
- 			vfree(dirty_bitmap);
--- 
-1.7.3-rc1
