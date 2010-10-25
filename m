@@ -1,95 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754146Ab0JYNX3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Oct 2010 09:23:29 -0400
-Received: from mxout1.idt.com ([157.165.5.25]:56089 "EHLO mxout1.idt.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751164Ab0JYNX2 convert rfc822-to-8bit (ORCPT
+	id S1755490Ab0JYNYh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Oct 2010 09:24:37 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:50898 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751414Ab0JYNYf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Oct 2010 09:23:28 -0400
-X-MimeOLE: Produced By Microsoft Exchange V6.5
-Content-class: urn:content-classes:message
+	Mon, 25 Oct 2010 09:24:35 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=OCKf7Rj6uaWZsPI8nrRanJI9OkhAckBxfO4BG/jelSiteqcfSLiTTPqZUkxZBVaXc4
+         /uKboYEoVsZDNrVPY3Wx/BYGXFfO5bsZnS1biJ+WEaESzKBWypmATMxGZKZz1Myg8DT9
+         5F1gR+64DU4hjRa6lko6q0Mp99xMVZ/02CP0s=
+Message-ID: <4CC5851D.1040204@lwfinger.net>
+Date: Mon, 25 Oct 2010 08:24:45 -0500
+From: Larry Finger <Larry.Finger@lwfinger.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.12) Gecko/20100914 SUSE/3.0.8 Thunderbird/3.0.8
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-Subject: RE: [PATCH -mm 0/2] RapidIO: Changes to handling of RIO switches
-Date: Mon, 25 Oct 2010 06:22:54 -0700
-Message-ID: <0CE8B6BE3C4AD74AB97D9D29BD24E55201445BA4@CORPEXCH1.na.ads.idt.com>
-In-Reply-To: <4CC20923.8050400@neli.hopto.org>
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Thread-Topic: [PATCH -mm 0/2] RapidIO: Changes to handling of RIO switches
-Thread-Index: ActyNGCMLZ12e7KpTgOBNROMC2NIVgCCnKvw
-References: <1287688250-14226-1-git-send-email-alexandre.bounine@idt.com> <4CC0AD74.8070800@neli.hopto.org> <0CE8B6BE3C4AD74AB97D9D29BD24E55201445906@CORPEXCH1.na.ads.idt.com> <4CC1D7DE.7060405@neli.hopto.org> <0CE8B6BE3C4AD74AB97D9D29BD24E55201445A6B@CORPEXCH1.na.ads.idt.com> <4CC20923.8050400@neli.hopto.org>
-From: "Bounine, Alexandre" <Alexandre.Bounine@idt.com>
-To: "Micha Nelissen" <micha@neli.hopto.org>
-Cc: <akpm@linux-foundation.org>, <linux-kernel@vger.kernel.org>,
-        <linuxppc-dev@lists.ozlabs.org>,
-        "Matt Porter" <mporter@kernel.crashing.org>,
-        "Li Yang" <leoli@freescale.com>,
-        "Kumar Gala" <galak@kernel.crashing.org>,
-        "Thomas Moll" <thomas.moll@sysgo.com>
+To: Serafeim Zanikolas <sez@debian.org>
+CC: herton@mandriva.com.br, htl10@users.sourceforge.net,
+        linville@tuxdriver.com, joe@perches.com, davem@davemloft.net,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] drivers: rtl818x: request DMA-able memory
+References: <1287952327-9924-1-git-send-email-sez@debian.org>
+In-Reply-To: <1287952327-9924-1-git-send-email-sez@debian.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Micha Nelissen <micha@neli.hopto.org> wrote:
-> Bounine, Alexandre wrote:
-> > If we will need to identify the same physical switch by different
-> > processors we may use the component tag which now is unique for
-every
-> > device.
+On 10/24/2010 03:32 PM, Serafeim Zanikolas wrote:
+> Despite the indicated intention in comment, the kmalloc() call was not
+> explicitly requesting memory from ZONE_DMA.
 > 
-> Yes, identification is the point. I think it might be confusing to
-have
-> a destid *and* a component tag id which are slightly different. The
-> destid is unambiguous (if you know whether the device is a switch or
-> endpoint) so I think it makes sense to use that if possible.
-
-The component tag is the way to identify a RIO device (switch or
-endpoint).
-1. it is defined by RIO spec as a register existing in both types of
-devices (this provides a universal access to the identification
-information by any processor).
-2. the Error Management specification already uses the CT as a device
-identifier.
-3. the CT value is large enough to be unique for max number of endpoints
-in the large system and any reasonable number of switches. BTW, I am
-planning to provide a patch that defines CT fields to ensure future
-compatibility.
-
-The destid does not exists as a HW element of switches and therefore
-cannot be used as a universal identification token.
-
-> > This actually gives me another idea: instead of using global
-> > next_switchid counter make rswitch->switchid = component_tag and
-> > switches in sysfs will look identical for every processor (or just
-get
-> > rid of rswitch->switchid and use component_tag directly for
-switches).
+> Signed-off-by: Serafeim Zanikolas <sez@debian.org>
+> ---
+>  drivers/net/wireless/rtl818x/rtl8187_dev.c |    3 ++-
+>  1 files changed, 2 insertions(+), 1 deletions(-)
 > 
-> I still prefer the destid as the single identification id.
+> diff --git a/drivers/net/wireless/rtl818x/rtl8187_dev.c b/drivers/net/wireless/rtl818x/rtl8187_dev.c
+> index 38fa824..771794d 100644
+> --- a/drivers/net/wireless/rtl818x/rtl8187_dev.c
+> +++ b/drivers/net/wireless/rtl818x/rtl8187_dev.c
+> @@ -1343,7 +1343,8 @@ static int __devinit rtl8187_probe(struct usb_interface *intf,
+>  	priv->is_rtl8187b = (id->driver_info == DEVICE_RTL8187B);
+>  
+>  	/* allocate "DMA aware" buffer for register accesses */
+> -	priv->io_dmabuf = kmalloc(sizeof(*priv->io_dmabuf), GFP_KERNEL);
+> +	priv->io_dmabuf = kmalloc(sizeof(*priv->io_dmabuf),
+> +				  GFP_DMA | GFP_KERNEL);
+>  	if (!priv->io_dmabuf) {
+>  		err = -ENOMEM;
+>  		goto err_free_dev;
 
-As I answered above, destid cannot be used as a universal identification
-token - it is a routing element. The destID has register in endpoints
-only to provide a packet filtering.
+ACK.
 
-In your patch you allocate individual destid for switches. This method
-has two problems:
-1. The destid for the switch needs an additional mechanism to share it
-among processors in the RIO network,
-2. It takes ID value away from the pool of available IDs, what will
-reduce number of IDs that can be assigned to endpoints. (NOTE: I am
-actually working on destID assignment scheme that will recycle destID in
-case of hot-swap events, i.e. if device is extracted its destID will be
-returned to the pool of available IDs and may be reused later for device
-insertion).
-
-The only case when assigning individual destid to the switch is
-justified is an "empty" switch - one without any endpoints attached to
-it. But that destid should be assigned to an endpoint as soon as it is
-attached to that switch.  
-
-Alex.
+Larry
 
