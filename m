@@ -1,63 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752260Ab0JYFwJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Oct 2010 01:52:09 -0400
-Received: from mail.windriver.com ([147.11.1.11]:65152 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751103Ab0JYFwH (ORCPT
+	id S1752699Ab0JYFyp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Oct 2010 01:54:45 -0400
+Received: from casper.infradead.org ([85.118.1.10]:59870 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752054Ab0JYFyo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Oct 2010 01:52:07 -0400
-Message-ID: <4CC51C7C.3050400@windriver.com>
-Date: Mon, 25 Oct 2010 13:58:20 +0800
-From: DDD <dongdong.deng@windriver.com>
-User-Agent: Thunderbird 2.0.0.24 (X11/20100317)
-MIME-Version: 1.0
-To: Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>
-CC: mingo@elte.hu, acme@redhat.com, paulus@samba.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] perf: fix possible divide-by-zero in	perf_swevent_overflow()
-References: <1282824438-13970-1-git-send-email-dongdong.deng@windriver.com> <1282824727.1975.747.camel@laptop> <4C765FD3.9060904@windriver.com> <1282827486.1975.845.camel@laptop> <4C77ADC1.5030502@windriver.com> <1282913445.1975.2414.camel@laptop> <4C77BB6B.9090706@windriver.com> <20100827133735.GC5241@nowhere>
-In-Reply-To: <20100827133735.GC5241@nowhere>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Mon, 25 Oct 2010 01:54:44 -0400
+Subject: [PATCH v2] apic, x86: Need to set offset before using it
+From: Jaswinder Singh <jaswinder@infradead.org>
+To: Robert Richter <robert.richter@amd.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Stephen Rothwell <sfr@canb.auug.org.au>,
+        LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <1287985605.2940.4.camel@netbook.satnam>
+References: <1287985605.2940.4.camel@netbook.satnam>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 25 Oct 2010 11:28:08 +0530
+Message-ID: <1287986288.2940.6.camel@netbook.satnam>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 (2.30.3-1.fc13) 
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 25 Oct 2010 05:51:18.0282 (UTC) FILETIME=[A4C056A0:01CB7408]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Frederic Weisbecker wrote:
-> On Fri, Aug 27, 2010 at 09:19:39PM +0800, DDD wrote:
->> Peter Zijlstra wrote:
->>> On Fri, 2010-08-27 at 20:21 +0800, DDD wrote:
->>>
->>>>>> Maybe the root cause was from kgdb/hw_breakpoint_layer,
->>>>> Yeah, I think there's a bug in the hw_breakpoint stuff, does something
->>>>> like the below fix it?
->>>> Thanks for your patch, but I still could reproduce the problem with 
->>>> your patch.
->>> Frederic, any clue as to what makes hw breakpoints go funny and have
->>> last_period == 0?
->> Hi Peter,
->>
->> Thanks for you take care of it, I have got the root cause of it now.
->>
->> It is the kgdb using hw_breakpoint_layer's API problem, and I have a RFC  
->> patch for it.(maybe it is not correctly), I will contact with Jason to  
->> fix this problem.
->>
->> Thank you very much,
->> Dongdong
-> 
-> 
-> Thanks!
-> 
-> We are waiting for your patch then.
 
-Hello Frederic,
+Fix the issue pointed by Stephen.
+ 
+Stephen Rothwell wrote :
+In building Linus' tree, today's linux-next build (x86_64 allmodconfig)
+produced this warning:
 
-Sorry for delay, the patch have been accepted by Jason.
+arch/x86/oprofile/op_model_amd.c: In function 'ibs_eilvt_valid':
+arch/x86/oprofile/op_model_amd.c:289: warning: 'offset' may be used uninitialized in this function
 
-http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commit;h=c1bb9a9c1911036549c5cdfb23f32d7d20ffdc5a
+Signed-off-by: Jaswinder Singh Rajput <jaswinderrajput@gmail.com>
+Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Robert Richter <robert.richter@amd.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+---
+ arch/x86/oprofile/op_model_amd.c |    3 +--
+ 1 files changed, 1 insertions(+), 2 deletions(-)
 
-Dongdong
+diff --git a/arch/x86/oprofile/op_model_amd.c b/arch/x86/oprofile/op_model_amd.c
+index 42fb46f..c65a924 100644
+--- a/arch/x86/oprofile/op_model_amd.c
++++ b/arch/x86/oprofile/op_model_amd.c
+@@ -285,6 +285,7 @@ static inline int ibs_eilvt_valid(void)
+ 	int offset;
+ 
+ 	rdmsrl(MSR_AMD64_IBSCTL, val);
++	offset = val & IBSCTL_LVT_OFFSET_MASK;
+ 	if (!(val & IBSCTL_LVT_OFFSET_VALID)) {
+ 		pr_err(FW_BUG "cpu %d, invalid IBS "
+ 		       "interrupt offset %d (MSR%08X=0x%016llx)",
+@@ -293,8 +294,6 @@ static inline int ibs_eilvt_valid(void)
+ 		return 0;
+ 	}
+ 
+-	offset = val & IBSCTL_LVT_OFFSET_MASK;
+-
+ 	if (eilvt_is_available(offset))
+ 		return !0;
+ 
+-- 
+1.7.2.3
+
+
