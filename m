@@ -1,41 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758357Ab0JYXr0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Oct 2010 19:47:26 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:52732
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757170Ab0JYXrY (ORCPT
+	id S1758441Ab0JYXr3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Oct 2010 19:47:29 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:59900 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758368Ab0JYXr1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Oct 2010 19:47:24 -0400
-Date: Mon, 25 Oct 2010 16:47:47 -0700 (PDT)
-Message-Id: <20101025.164747.189713145.davem@davemloft.net>
-To: randy.dunlap@oracle.com
-Cc: sfr@canb.auug.org.au, netdev@vger.kernel.org, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, akpm@linux-foundation.org
-Subject: Re: [PATCH -next] pch_can: depends on PCI
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20101025162524.570fc82a.randy.dunlap@oracle.com>
-References: <20101025145834.9b68e026.sfr@canb.auug.org.au>
-	<20101025162524.570fc82a.randy.dunlap@oracle.com>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+	Mon, 25 Oct 2010 19:47:27 -0400
+Date: Mon, 25 Oct 2010 16:46:55 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: Dave Chinner <david@fromorbit.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [bug 2.6.37-git] lockdep: invalid subclass in mousedev_create()
+Message-Id: <20101025164655.390c76a3.randy.dunlap@oracle.com>
+In-Reply-To: <20101025234026.GX32255@dastard>
+References: <20101025234026.GX32255@dastard>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Randy Dunlap <randy.dunlap@oracle.com>
-Date: Mon, 25 Oct 2010 16:25:24 -0700
+On Tue, 26 Oct 2010 10:40:26 +1100 Dave Chinner wrote:
 
-> From: Randy Dunlap <randy.dunlap@oracle.com>
+> Folks,
 > 
-> Fix pch_can build when CONFIG_PCI is not enabled.  It uses pci interfaces
-> and data structures, so it should depend on PCI.
+> Just got this booting a VM on a 2.6.37-git tree from a couple of days ago:
 > 
-> drivers/net/can/pch_can.c:1044: error: implicit declaration of function 'pci_enable_msi'
-> drivers/net/can/pch_can.c:1079: error: implicit declaration of function 'pci_disable_msi'
+> [    1.547497] BUG: looking up invalid subclass: 31
+> [    1.548238] turning off the locking correctness validator.
+> [    1.548923] Pid: 1, comm: swapper Not tainted 2.6.36-dgc+ #580
+> [    1.549637] Call Trace:
+> [    1.550024]  [<ffffffff810b88b0>] register_lock_class+0x540/0x550
+> [    1.550880]  [<ffffffff810baded>] ? trace_hardirqs_on+0xd/0x10
+> [    1.552001]  [<ffffffff810b8925>] ? lockdep_init_map+0x65/0x150
+> [    1.553564]  [<ffffffff810b8990>] lockdep_init_map+0xd0/0x150
+> [    1.554980]  [<ffffffff8197c7a7>] mousedev_create+0x247/0x2e0
+> [    1.556461]  [<ffffffff821af4ee>] ? mousedev_init+0x0/0x61
+> [    1.557857]  [<ffffffff821af50a>] mousedev_init+0x1c/0x61
+> [    1.559343]  [<ffffffff810001e3>] do_one_initcall+0x43/0x190
+> [    1.560724]  [<ffffffff8217a75d>] kernel_init+0x15d/0x1e7
+> [    1.562117]  [<ffffffff81037e64>] kernel_thread_helper+0x4/0x10
+> [    1.563693]  [<ffffffff81afe690>] ? restore_args+0x0/0x30
+> [    1.565150]  [<ffffffff8217a600>] ? kernel_init+0x0/0x1e7
+> [    1.566647]  [<ffffffff81037e60>] ? kernel_thread_helper+0x0/0x10
 > 
-> Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
+> Looks like it does:
+> 
+> #define MOUSEDEV_MIX 31
+> ....
+> 	lockdep_set_subclass(&mousedev->mutex,
+>                              minor == MOUSEDEV_MIX ? MOUSEDEV_MIX : 0);
 
-Applied, thanks Randy.
+Hi Dave,
+Please see this reply:
+http://lkml.org/lkml/2010/10/25/48
+
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
