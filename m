@@ -1,73 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932768Ab0JYSpW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Oct 2010 14:45:22 -0400
-Received: from slowhand.arndnet.de ([88.198.19.76]:46428 "EHLO mail.unitix.de"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1756608Ab0JYSoq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Oct 2010 14:44:46 -0400
-Message-ID: <4CC5D01C.20804@arndnet.de>
-Date: Mon, 25 Oct 2010 20:44:44 +0200
-From: Arnd Hannemann <arnd@arndnet.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.14) Gecko/20101006 Lightning/1.0b1 Thunderbird/3.0.9
+	id S1759485Ab0JYSpp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Oct 2010 14:45:45 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:39396 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757802Ab0JYSmv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Oct 2010 14:42:51 -0400
+From: Eric Paris <eparis@redhat.com>
+Subject: [PATCH 03/11] IMA: use unsigned int instead of long for counters
+To: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org
+Cc: hch@infradead.org, zohar@us.ibm.com, warthog9@kernel.org,
+        david@fromorbit.com, jmorris@namei.org, kyle@mcmartin.ca,
+        hpa@zytor.com, akpm@linux-foundation.org,
+        torvalds@linux-foundation.org, mingo@elte.hu, eparis@redhat.com,
+        viro@zeniv.linux.org.uk
+Date: Mon, 25 Oct 2010 14:41:32 -0400
+Message-ID: <20101025184132.20504.2026.stgit@paris.rdu.redhat.com>
+In-Reply-To: <20101025184118.20504.24290.stgit@paris.rdu.redhat.com>
+References: <20101025184118.20504.24290.stgit@paris.rdu.redhat.com>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-To: Larry Finger <Larry.Finger@lwfinger.net>
-CC: "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-wireless@vger.kernel.org,
-        Eric Dumazet <eric.dumazet@gmail.com>
-Subject: Re: [PATCH] net: b43legacy: fix compile error
-References: <1288017690-31248-1-git-send-email-arnd@arndnet.de> <4CC5A301.1080606@lwfinger.net> <4CC5CBC4.7060308@arndnet.de> <4CC5CE47.2020607@lwfinger.net>
-In-Reply-To: <4CC5CE47.2020607@lwfinger.net>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 25.10.2010 20:36, schrieb Larry Finger:
-> On 10/25/2010 01:26 PM, Arnd Hannemann wrote:
->> Am 25.10.2010 17:32, schrieb Larry Finger:
->>> On 10/25/2010 09:41 AM, Arnd Hannemann wrote:
->>>> On todays linus tree the following compile error happened to me:
->>>>
->>>>   CC [M]  drivers/net/wireless/b43legacy/xmit.o
->>>> In file included from include/net/dst.h:11,
->>>>                  from drivers/net/wireless/b43legacy/xmit.c:31:
->>>> include/net/dst_ops.h:28: error: expected ':', ',', ';', '}' or '__attribute__' before '____cacheline_aligned_in_smp'
->>>> include/net/dst_ops.h: In function 'dst_entries_get_fast':
->>>> include/net/dst_ops.h:33: error: 'struct dst_ops' has no member named 'pcpuc_entries'
->>>> include/net/dst_ops.h: In function 'dst_entries_get_slow':
->>>> include/net/dst_ops.h:41: error: 'struct dst_ops' has no member named 'pcpuc_entries'
->>>> include/net/dst_ops.h: In function 'dst_entries_add':
->>>> include/net/dst_ops.h:49: error: 'struct dst_ops' has no member named 'pcpuc_entries'
->>>> include/net/dst_ops.h: In function 'dst_entries_init':
->>>> include/net/dst_ops.h:55: error: 'struct dst_ops' has no member named 'pcpuc_entries'
->>>> include/net/dst_ops.h: In function 'dst_entries_destroy':
->>>> include/net/dst_ops.h:60: error: 'struct dst_ops' has no member named 'pcpuc_entries'
->>>> make[4]: *** [drivers/net/wireless/b43legacy/xmit.o] Error 1
->>>> make[3]: *** [drivers/net/wireless/b43legacy] Error 2
->>>> make[2]: *** [drivers/net/wireless] Error 2
->>>> make[1]: *** [drivers/net] Error 2
->>>> make: *** [drivers] Error 2
->>>>
->>>> This patch fixes this issue by adding "linux/cache.h" as an include to
->>>> "include/net/dst_ops.h".
->>>
->>> Strange. Compiling b43legacy from the linux-2.6.git tree (git describe is
->>> v2.6.36-4464-g229aebb) works fine on x86_64. I wonder what is different.
->>
->> Exactly the same git describe here.
->> Maybe your arch includes cache.h already, in my case its a compile for ARM (shmobile).
-> 
-> That probably makes the difference. Using Eric's fix that removes the #include
-> <linux/dst.h> should be better. Does it work for you?
-> 
-> There are probably a lot more of the system includes that may not be needed. If
-> I send you a patch removing them, could you test?
+Currently IMA uses 2 longs in struct inode.  To save space (and as it seems
+impossible to overflow 32 bits) we switch these to unsigned int.  The
+switch to unsigned does require slightly different checks for underflow,
+but it isn't complex.
 
-As it turns out my card is not supported by b43legacy, but compilation testing,
-sure I can test that.
+Signed-off-by: Eric Paris <eparis@redhat.com>
+Acked-by: Mimi Zohar <zohar@linux.vnet.ibm.com>
+---
 
-Regards,
-Arnd
+ security/integrity/ima/ima.h      |    4 ++--
+ security/integrity/ima/ima_iint.c |    4 ++--
+ security/integrity/ima/ima_main.c |   15 ++++++++++-----
+ 3 files changed, 14 insertions(+), 9 deletions(-)
+
+diff --git a/security/integrity/ima/ima.h b/security/integrity/ima/ima.h
+index 3d70108..000d13a 100644
+--- a/security/integrity/ima/ima.h
++++ b/security/integrity/ima/ima.h
+@@ -106,8 +106,8 @@ struct ima_iint_cache {
+ 	unsigned long flags;
+ 	u8 digest[IMA_DIGEST_SIZE];
+ 	struct mutex mutex;	/* protects: version, flags, digest */
+-	long readcount;		/* measured files readcount */
+-	long writecount;	/* measured files writecount */
++	unsigned int readcount;	/* measured files readcount */
++	unsigned int writecount;/* measured files writecount */
+ 	struct kref refcount;	/* ima_iint_cache reference count */
+ };
+ 
+diff --git a/security/integrity/ima/ima_iint.c b/security/integrity/ima/ima_iint.c
+index 8e64313..db71a13 100644
+--- a/security/integrity/ima/ima_iint.c
++++ b/security/integrity/ima/ima_iint.c
+@@ -125,12 +125,12 @@ void iint_free(struct kref *kref)
+ 	iint->version = 0;
+ 	iint->flags = 0UL;
+ 	if (iint->readcount != 0) {
+-		printk(KERN_INFO "%s: readcount: %ld\n", __func__,
++		printk(KERN_INFO "%s: readcount: %u\n", __func__,
+ 		       iint->readcount);
+ 		iint->readcount = 0;
+ 	}
+ 	if (iint->writecount != 0) {
+-		printk(KERN_INFO "%s: writecount: %ld\n", __func__,
++		printk(KERN_INFO "%s: writecount: %u\n", __func__,
+ 		       iint->writecount);
+ 		iint->writecount = 0;
+ 	}
+diff --git a/security/integrity/ima/ima_main.c b/security/integrity/ima/ima_main.c
+index 995bd1b..5a1bf3d 100644
+--- a/security/integrity/ima/ima_main.c
++++ b/security/integrity/ima/ima_main.c
+@@ -178,11 +178,18 @@ static void ima_dec_counts(struct ima_iint_cache *iint, struct inode *inode,
+ 			   struct file *file)
+ {
+ 	mode_t mode = file->f_mode;
++	bool dump = false;
++
+ 	BUG_ON(!mutex_is_locked(&iint->mutex));
+ 
+-	if ((mode & (FMODE_READ | FMODE_WRITE)) == FMODE_READ)
++	if ((mode & (FMODE_READ | FMODE_WRITE)) == FMODE_READ) {
++		if (unlikely(iint->readcount == 0))
++			dump = true;
+ 		iint->readcount--;
++	}
+ 	if (mode & FMODE_WRITE) {
++		if (unlikely(iint->writecount == 0))
++			dump = true;
+ 		iint->writecount--;
+ 		if (iint->writecount == 0) {
+ 			if (iint->version != inode->i_version)
+@@ -190,10 +197,8 @@ static void ima_dec_counts(struct ima_iint_cache *iint, struct inode *inode,
+ 		}
+ 	}
+ 
+-	if (((iint->readcount < 0) ||
+-	     (iint->writecount < 0)) &&
+-	    !ima_limit_imbalance(file)) {
+-		printk(KERN_INFO "%s: open/free imbalance (r:%ld w:%ld)\n",
++	if (dump && !ima_limit_imbalance(file)) {
++		printk(KERN_INFO "%s: open/free imbalance (r:%u w:%u)\n",
+ 		       __func__, iint->readcount, iint->writecount);
+ 		dump_stack();
+ 	}
+
