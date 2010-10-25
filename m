@@ -1,74 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756057Ab0JYOaP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Oct 2010 10:30:15 -0400
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:48305 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755891Ab0JYOaN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Oct 2010 10:30:13 -0400
-Date: Mon, 25 Oct 2010 10:22:32 -0400
-From: "John W. Linville" <linville@tuxdriver.com>
-To: Hin-Tak Leung <htl10@users.sourceforge.net>
-Cc: Larry Finger <Larry.Finger@lwfinger.net>,
-        Serafeim Zanikolas <sez@debian.org>, herton@mandriva.com.br,
-        joe@perches.com, davem@davemloft.net, linux-wireless@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] drivers: rtl818x: request DMA-able memory
-Message-ID: <20101025142232.GC2414@tuxdriver.com>
-References: <1287952327-9924-1-git-send-email-sez@debian.org>
- <4CC5851D.1040204@lwfinger.net>
- <4CC5900A.2050209@users.sourceforge.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1756077Ab0JYOeu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Oct 2010 10:34:50 -0400
+Received: from vpn.id2.novell.com ([195.33.99.129]:51512 "EHLO
+	vpn.id2.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755676Ab0JYOer convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-JBeulich@novell.com:7:2>);
+	Mon, 25 Oct 2010 10:34:47 -0400
+Message-Id: <4CC5B1A1020000780001EF7C@vpn.id2.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 8.0.1 
+Date: Mon, 25 Oct 2010 15:34:41 +0100
+From: "Jan Beulich" <JBeulich@novell.com>
+To: <akpm@linux-foundation.org>, <torvalds@osdl.org>,
+        "David Howells" <dhowells@redhat.com>
+Cc: "Ingo Molnar" <mingo@elte.hu>,
+        "Alexander van Heukelum" <heukelum@fastmail.fm>,
+        "H. Peter Anvin" <hpa@linux.intel.com>, <linux-arch@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] Partially revert patch that encloses asm-offset.h
+	 numbers in brackets
+References: <20101025140218.5092.74117.stgit@warthog.procyon.org.uk>
+In-Reply-To: <20101025140218.5092.74117.stgit@warthog.procyon.org.uk>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
 Content-Disposition: inline
-In-Reply-To: <4CC5900A.2050209@users.sourceforge.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 25, 2010 at 03:11:22PM +0100, Hin-Tak Leung wrote:
+>>> On 25.10.10 at 16:02, David Howells <dhowells@redhat.com> wrote:
+> Partially revert patch:
 > 
-> 
-> Larry Finger wrote:
-> >On 10/24/2010 03:32 PM, Serafeim Zanikolas wrote:
-> >>Despite the indicated intention in comment, the kmalloc() call was not
-> >>explicitly requesting memory from ZONE_DMA.
-> >>
-> >>Signed-off-by: Serafeim Zanikolas <sez@debian.org>
-> >>---
-> >> drivers/net/wireless/rtl818x/rtl8187_dev.c |    3 ++-
-> >> 1 files changed, 2 insertions(+), 1 deletions(-)
-> >>
-> >>diff --git a/drivers/net/wireless/rtl818x/rtl8187_dev.c b/drivers/net/wireless/rtl818x/rtl8187_dev.c
-> >>index 38fa824..771794d 100644
-> >>--- a/drivers/net/wireless/rtl818x/rtl8187_dev.c
-> >>+++ b/drivers/net/wireless/rtl818x/rtl8187_dev.c
-> >>@@ -1343,7 +1343,8 @@ static int __devinit rtl8187_probe(struct usb_interface *intf,
-> >> 	priv->is_rtl8187b = (id->driver_info == DEVICE_RTL8187B);
-> >> 	/* allocate "DMA aware" buffer for register accesses */
-> >>-	priv->io_dmabuf = kmalloc(sizeof(*priv->io_dmabuf), GFP_KERNEL);
-> >>+	priv->io_dmabuf = kmalloc(sizeof(*priv->io_dmabuf),
-> >>+				  GFP_DMA | GFP_KERNEL);
-> >> 	if (!priv->io_dmabuf) {
-> >> 		err = -ENOMEM;
-> >> 		goto err_free_dev;
-> >
-> >ACK.
-> >
-> >Larry
-> 
-> Acked-by: Hin-Tak Leung <htl10@users.sourceforge.net>
-> 
-> I had a quick look for similiar constructs and AFAIK only the
-> b43/b43legacy drivers uses DMA buffers. Seems to be a rare practice.
-> Is that something we should or should not do?
+> 	commit 3234282f33b29d349bcada40204fc7c8fda7fe72
+> 	Author: Jan Beulich <JBeulich@novell.com>
+> 	Date:   Tue Oct 19 14:52:26 2010 +0100
+> 	x86, asm: Fix CFI macro invocations to deal with shortcomings in gas
 
-It doesn't mean what you think it means.  It is a relic of the past,
-used to indicate memory below 16MB so that ISA devices could do DMA.
+No, that's not going to work for x86. You're removing the parentheses
+again, which were added intentionally.
 
-John
--- 
-John W. Linville		Someday the world will need a hero, and you
-linville@tuxdriver.com			might be all we have.  Be ready.
+> This breaks MN10300 arch as this changes many instances of instructions
+> similar to the following:
+> 
+> 	MOV	number,D0
+> 
+> which represents an immediate value load into:
+> 
+> 	MOV	(number),D0
+> 
+> which the assembler then interprets as a load from absolute address.
+> 
+> arch/mn10300/kernel/entry.S:64: Error: Invalid opcode/operands
+> arch/mn10300/kernel/entry.S:65: Error: junk at end of line, first 
+> unrecognized character is `0'
+> arch/mn10300/kernel/entry.S:74: Error: Invalid opcode/operands
+> arch/mn10300/kernel/entry.S:74: Error: junk at end of line, first 
+> unrecognized character is `1'
+> arch/mn10300/kernel/entry.S:75: Error: Invalid opcode/operands
+> arch/mn10300/kernel/entry.S:76: Error: junk at end of line, first 
+> unrecognized character is `0'
+
+Isn't this a gas bug then? Anywhere you use a plain number you
+should also be permitted to use an expression.
+
+> cc: Jan Beulich <jbeulich@novell.com>
+> cc: Alexander van Heukelum <heukelum@fastmail.fm>
+> cc: H. Peter Anvin <hpa@linux.intel.com>
+> cc: Ingo Molnar <mingo@elte.hu>
+> Signed-off-by: David Howells <dhowells@redhat.com>
+> ---
+> 
+>  Kbuild |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> 
+> diff --git a/Kbuild b/Kbuild
+> index 431f7ca..b00037a 100644
+> --- a/Kbuild
+> +++ b/Kbuild
+> @@ -53,7 +53,7 @@ targets += arch/$(SRCARCH)/kernel/asm-offsets.s
+>  # Default sed regexp - multiline due to syntax constraints
+>  define sed-y
+>  	"/^->/{s:->#\(.*\):/* \1 */:; \
+> -	s:^->\([^ ]*\) [\$$#]*\([-0-9]*\) \(.*\):#define \1 (\2) /* \3 */:; \
+> +	s:^->\([^ ]*\) [\$$#]*\([-0-9]*\) \(.*\):#define \1 \2 /* \3 */:; \
+
+This basically gets us back to the way things were before, thus
+reverting to the state we had before the patch that changed this.
+
+>  	s:^->\([^ ]*\) [\$$#]*\([^ ]*\) \(.*\):#define \1 \2 /* \3 */:; \
+>  	s:->::; p;}"
+>  endef
+
+Jan
+
