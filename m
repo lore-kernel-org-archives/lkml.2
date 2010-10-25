@@ -1,50 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753451Ab0JYPS0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Oct 2010 11:18:26 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:33799 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751487Ab0JYPSZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Oct 2010 11:18:25 -0400
+	id S1754903Ab0JYPSu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Oct 2010 11:18:50 -0400
+Received: from web37606.mail.mud.yahoo.com ([209.191.87.89]:36948 "HELO
+	web37606.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1754278Ab0JYPSt convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Oct 2010 11:18:49 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=yahoo.com;
+  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type:Content-Transfer-Encoding;
+  b=nczCpfNcGrvSChFUF4Khl49feszJ3BCabVuXmFh92eEbE+JlRQDs6aMeMSSd2VSrS9ygDHH6tkm/6LasQqLqOVupSFYL/cBQrv5bMSh164lVuKWd+K23CePJ+q8r1gLJIe7swTMTuXBPjqOJdjYY3ZQhxt1cF3eppDdSsxdgB9o=;
+Message-ID: <479817.96049.qm@web37606.mail.mud.yahoo.com>
+X-YMail-OSG: 3P_JyH4VM1nm.NuLcDWjfifCA6coPjh5svHsl2Q4Q8cwEuS
+ rx4.t5Wz1ch4eJG0JRKIyzICA6tUsD2UR7V1WOn2Pg71oh74odQ6s2kmVNeU
+ 49n9h4j5mFHRNfh2Z9zepT7hpgnRNyDb3mJVO.AGdlij8IEi0ZY5Ta1Lx9eJ
+ HhL8yqAZDV4jXdyYICfKysyT6NsKFQT9NtkyqrMQrCgbE98eS9XHONFRKS30
+ B3Ddy62gAk3TawUH98LoDzlLKuQWBPqA2hSQjCbPqzozOC6NmCY1jYvLKWHy
+ FR2W9uE1BuI_cE1gGFvEmGsFX0sAkH9oKzduTQAt7Ncr9_ypsVMIZq6L1vwa
+ BAHux6COaDzhRMTvSw1h1_YJGmXBEfwQIJk.fSlSYM4mZZSjYnQ--
+X-Mailer: YahooMailClassic/11.4.9 YahooMailWebService/0.8.107.284920
+Date: Mon, 25 Oct 2010 08:18:48 -0700 (PDT)
+From: Alex Dubov <oakad@yahoo.com>
+Subject: Re: [PATCH 08/29] memstick: mspro: add comments to few functions
+To: Maxim Levitsky <maximlevitsky@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Maxim Levitsky <maximlevitsky@gmail.com>
+In-Reply-To: <1287791637-10329-9-git-send-email-maximlevitsky@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <4CC5B8D3020000780001EFB4@vpn.id2.novell.com>
-References: <4CC5B1A1020000780001EF7C@vpn.id2.novell.com> <20101025140218.5092.74117.stgit@warthog.procyon.org.uk>
- <28707.1288018465@redhat.com> <4CC5B8D3020000780001EFB4@vpn.id2.novell.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Mon, 25 Oct 2010 08:17:12 -0700
-Message-ID: <AANLkTi=mpKRQgZp5zCoCsBtkuWHrpkOq2Zch-OOGu4CC@mail.gmail.com>
-Subject: Re: [PATCH] Partially revert patch that encloses asm-offset.h numbers
- in brackets
-To: Jan Beulich <JBeulich@novell.com>
-Cc: Alexander van Heukelum <heukelum@fastmail.fm>, Ingo Molnar <mingo@elte.hu>,
-        akpm@linux-foundation.org, "H. Peter Anvin" <hpa@linux.intel.com>,
-        David Howells <dhowells@redhat.com>, linux-arch@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 25, 2010 at 8:05 AM, Jan Beulich <JBeulich@novell.com> wrote:
->
-> Alexander, you seem to be having access to a worst case system -
-> could you give this a try?
+--- On Fri, 22/10/10, Maxim Levitsky <maximlevitsky@gmail.com> wrote:
 
-This all seems very wrong.
+> From: Maxim Levitsky <maximlevitsky@gmail.com>
+> Subject: [PATCH 08/29] memstick: mspro: add comments to few functions
+> To: "Alex Dubov" <oakad@yahoo.com>
+> Cc: "Andrew Morton" <akpm@linux-foundation.org>, "LKML" <linux-kernel@vger.kernel.org>, "Maxim Levitsky" <maximlevitsky@gmail.com>
+> Received: Friday, 22 October, 2010, 4:53 PM
+> a comment before function is not only
+> a good way
+> to give some information to the reader, but
+> it serves as a good anchor point for diff so that
+> it doesn't produce a diff between different
+> functions (sigh...)
+> 
 
-The whole "add parenthesis" seems to break several architectures
-(Power apparently had problems too due to redefining one of the
-macros), and it is ugly.
+Comments of new functions belong to the patch which introduces these new
+functions. And those functions (as I already said) belong to the patch
+which introduces new functionality, using these functions, desirably,
+one function at a time.
 
-And the whole thing was added for some stupid gas bug for a very
-specific case, and now we're adding _more_ crap to an already ugly
-workaround.
 
-How about just removing the idiotic workaround entirely, and then on
-x86 passing "-traditional" to cpp for asm input so that it doesn't add
-spaces in argument expansion? Make the workaround more targeted to the
-actual problem, rather than working around it in some unrelated
-thing..
 
-                                       Linus
+
+
+      
