@@ -1,92 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932787Ab0JYTBb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Oct 2010 15:01:31 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:59326 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759406Ab0JYTBa (ORCPT
+	id S932828Ab0JYTC1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Oct 2010 15:02:27 -0400
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:58877 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759406Ab0JYTC0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Oct 2010 15:01:30 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:content-type;
-        b=FBV57gdzq1BYuPs+uBit7W4Di3g+ExmoE9EtFZ8o5D/i2OTSPAlwfsUrzakDHd/6Gu
-         hkNvLsuR8+eh9T/38KUM3H87IoZri978dIf6Sm93UdSHQL3KRbiajKPhFk15DRJCbudo
-         0TnnKoJQKj0gZ33hf0JLqd0NNjMnpTkx6VmYw=
+	Mon, 25 Oct 2010 15:02:26 -0400
+X-Mail-Handler: MailHop Outbound by DynDNS
+X-Originating-IP: 67.188.36.105
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX18l3kG7aT1TijuuF89dWMxL
+Date: Mon, 25 Oct 2010 12:02:21 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Ohad Ben-Cohen <ohad@wizery.com>
+Cc: Kevin Hilman <khilman@deeprootsystems.com>, Balaji T K <balajitk@ti.com>,
+        "Kamat, Nishant" <nskamat@ti.com>, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        akpm@linux-foundation.org, Greg KH <greg@kroah.com>,
+        Benoit Cousson <b-cousson@ti.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Hari Kanigeri <h-kanigeri2@ti.com>, Suman Anna <s-anna@ti.com>
+Subject: Re: [PATCH 3/3] omap: add hwspinlock device
+Message-ID: <20101025190221.GC7206@atomide.com>
+References: <1287387875-14168-1-git-send-email-ohad@wizery.com>
+ <1287387875-14168-4-git-send-email-ohad@wizery.com>
+ <87r5fmxghm.fsf@deeprootsystems.com>
+ <AANLkTinZ2+ocJCfUpT15Ow3J9XBa-8XWnVC3gDDJ7s-v@mail.gmail.com>
+ <87bp6pviwf.fsf@deeprootsystems.com>
+ <AANLkTikE1dCXW-7ScVoDgEK3sxai_TyFzstSG+zvNm2F@mail.gmail.com>
+ <8739s0sobc.fsf@deeprootsystems.com>
+ <AANLkTikdjtYtzhgM_=io3SFdUZq=8Xcc8n24bW=SFgTA@mail.gmail.com>
+ <20101022165612.GF9149@atomide.com>
+ <AANLkTimysu4L+ecFvpGAQ0bj3fhLQC1cveWddFNNp=JQ@mail.gmail.com>
 MIME-Version: 1.0
-Date: Mon, 25 Oct 2010 14:01:29 -0500
-Message-ID: <AANLkTimmAhZAZHoyWhfUC1eLXFs77tD-aWsN_mpRexFh@mail.gmail.com>
-Subject: linux thread scheduling (on multi-socket nehalem)?
-From: Matt Garman <matthew.garman@gmail.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTimysu4L+ecFvpGAQ0bj3fhLQC1cveWddFNNp=JQ@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello list,
+* Ohad Ben-Cohen <ohad@wizery.com> [101024 10:45]:
+> Hi Tony,
+> 
+> On Fri, Oct 22, 2010 at 6:56 PM, Tony Lindgren <tony@atomide.com> wrote:
+> > Guys, let's try to come up with a generic interface for this instead of
+> > polluting the device drivers with more omap specific interfaces.
+> >
+> > We really want to keep the drivers generic and platform independent.
+> 
+> I share this concern as well.
+> 
+> We basically have three options here:
+> 
+> 1. Have the hwspinlock driver inside the omap folders and use pdata func ptrs
+> 2. Have a generic hwspinlock framework, with a small omap-specific
+> implementation
+> 3. Have a misc driver which is currently omap specific, but can very
+> easily be converted to a common framework
+> 
+> I don't like (1) so much; it's a driver that has very little that is
+> hardware specific (mainly just the two lines that actually access the
+> hardware - the lock and the unlock), and it's growing. E.g., we will
+> need to add it a user space interface (to allow userland IPC
+> implementations), we will need to add it a "virtual" locks layer that
+> would provide more locks than the hardware currently has, etc..
+> 
+> In addition, there seem to be a general discontent about drivers
+> piling up in the ARM folders, instead of having them visible in
+> drivers/ so they can become useful for other platforms as well.
+> 
+> Here's something Linus wrote about this awhile back:
+> 
+> http://www.spinics.net/lists/linux-arm-msm/msg00324.html
+> 
+> So initially I opted for (2). I have an implementation ready - it's a
+> common drivers/hwspinlock/core.c framework with a small omap-specific
+> part at drivers/hwspinlock/omap_hwspinlock.c. The core has all the
+> logic while the latter, omap-specific implementation, is really small
+> - it is basically just registering lock instances, that have a
+> trylock/unlock/relax ops struct, with the common framework.
+> 
+> But lack of additional users (besides the OMAP hardware), and lack of
+> generic drivers that would use it (we have syslink, which currently
+> tend to only need this from user space, i2c-omap and omap's upcoming
+> resource manager), made it look like an overkill for now.
+> 
+> So simplicity won, and (3) was eventually submitted. It exposes
+> exactly the same interface like (2) would (s/omap_hwspin/hwspin/), and
+> it's relatively easy to turn it back into a common framework in case
+> additional users show up.
+> 
+> But if you feel that (2) is justifiable/desirable, I would be more
+> than happy to submit that version.
 
-Can someone give a general explanation of how Linux's
-thread-scheduling algorithm works?  Or provide a link to a document
-that describes it?  I've searched the web, but can't find any recent
-documents.  In particular, the question I am trying to answer is: does
-Linux generally try spread threads out as far as possible across
-physical CPU cores, or try to keep them close together?  Furthermore,
-have their been any changes to this strategy recently ("recent" as in
-the last few years)?  And how is this behavior affected when running
-on the Intel Nehalem-based CPUs (if at all)?
+Yes (2) please. I would assume there will be more use of this. And then
+we (or probably me again!) don't have to deal with cleaning up the drivers
+again in the future.
+ 
+> > Unless somebody has better ideas, I suggest we pass a lock function
+> > in the platform_data to the drivers that need it, and do the omap
+> > specific nasty stuff in the platform code.
+> 
+> Do you mean (1) and then pass the whole bunch of APIs
+> (request/free/lock variants/unlock/get_id) via pdata ?
+> 
+> Or do you mean a variation of (2) with only the specific locking bits
+> coming from pdata func pointers ? I guess that in this case we just
+> might as well go with the full (2).
 
-I ask because I have a program that displays very different
-performance characteristics from one kernel to the next.  The two
-kernels I am looking at are the CentOS 4.x (RHEL4) and CentOS 5.x
-(RHEL5) kernels on a dual-socket Nehalem (Xeon 5500/Xeon 5600)
-machines.  Basically, the program is a pipeline, which has three
-threads and two queues (a detailed description is below).  The program
-was run on two different architectures (multi socket Core2-based Xeons
-vs multi socket Nehalems), and two different kernels (RHEL4 vs RHEL5).
- So, four total tests.  The service time for a message averaged about
-20 microseconds (with low variance) in all cases *except* RHEL5 +
-Nehalem.  In that case, service time varied wildly, anywhere from 50
-microseconds to over 100.  However, I could "fix" this by either using
-taskset on the commandline (or sched_setaffinity() in the program) to
-bind the threads to the *same physical socket*.  Even more curious, I
-could *not* replicate the poor behavior on RHEL4+Nehalem by
-deliberately putting the threads on different physical sockets.
+Yes variation of (2) where you only pass the locking function via
+platform data would be best.
 
-So it's clear to me that something changed with regards to thread
-scheduling on Nehalem between these two kernels.  I realize these are
-vendor-specific kernels, but I'm hoping someone on this list can speak
-to this behavior.  Someone suggested to me that the Linux kernel
-thread scheduling strategy is to place threads as far apart as
-possible.  That is fine, but I would like to confirm it.  But that
-does not explain the fact that I can't replicate the wacky behavior on
-RHEL4+Nehalem.
+Regards,
 
-Here is a description of my "pipeline" program.  The timestamp deltas
-are the "service time" I refer to above.
-
-Thread 1: in a continuous loop, about every 1--3 milliseconds:
-    - takes a timestamp using gettimeofday()
-    - creates an object about 100 bytes in size
-    - stores the timestamp in the object
-    - pushes the object into a thread-safe queue, called Queue A
-
-Thread 2: in a continuous loop:
-    - pulls objects off of Queue A (waits on a condition variable)
-    - does some processing (a basic CRC calculation, works on fixed
-static, data, takes about 10 microseconds)
-    - creates a new object about 200 bytes in size
-    - copies the timestamp from the dequeued object to the new object
-    - deletes the dequeued object
-    - pushes the new object into another thread-safe queue, called Queue B
-
-Thread 3: in a continuous loop:
-    - pulls object off of Queue B (waits on a condition variable)
-    - takes a timestamp using gettimeofday()
-    - writes the delta of the two timestamps to a fixed, pre-allocated array
-    - delete the dequeued object
-    - after a fixed number of objects are processed (usually 25,000),
-generate statistics on the timestamp deltas
-
-Thank you,
-Matt
+Tony
