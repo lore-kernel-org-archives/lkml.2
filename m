@@ -1,81 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752967Ab0JYHFq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Oct 2010 03:05:46 -0400
-Received: from mail-out.m-online.net ([212.18.0.10]:45228 "EHLO
-	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752685Ab0JYHFp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Oct 2010 03:05:45 -0400
-X-Auth-Info: Q090/e2zJcrXBUJIv3IRHXAzbubn4+K0lMRJIBZXjAA=
-Message-ID: <4CC52C86.1050205@grandegger.com>
-Date: Mon, 25 Oct 2010 09:06:46 +0200
-From: Wolfgang Grandegger <wg@grandegger.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.12) Gecko/20100907 Fedora/3.0.7-1.fc12 Thunderbird/3.0.7
-MIME-Version: 1.0
-To: Marc Kleine-Budde <mkl@pengutronix.de>
-CC: David Miller <davem@davemloft.net>, andrew.chih.howe.khor@intel.com,
-        socketcan-core@lists.berlios.de, sameo@linux.intel.com,
-        margie.foster@intel.com, netdev@vger.kernel.org, chripell@fsfe.org,
-        linux-kernel@vger.kernel.org, yong.y.wang@intel.com,
-        masa-korg@dsn.okisemi.com, kok.howg.ewe@intel.com,
-        joel.clark@intel.com, morinaga526@dsn.okisemi.com, qi.wang@intel.com
-Subject: Re: [PATCH net-next-2.6 v1] can: Topcliff: Update PCH_CAN driver
- to 2.6.35
-References: <4CB8506C.3060600@dsn.okisemi.com>	<20101024.144312.104048720.davem@davemloft.net>	<4CC4ADA5.8@pengutronix.de> <20101024.150905.39179588.davem@davemloft.net> <4CC4AFF9.90009@pengutronix.de>
-In-Reply-To: <4CC4AFF9.90009@pengutronix.de>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1753493Ab0JYHMZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Oct 2010 03:12:25 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:16536 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751804Ab0JYHMX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Oct 2010 03:12:23 -0400
+From: Milan Broz <mbroz@redhat.com>
+To: axboe@kernel.dk
+Cc: jeff.chua.linux@gmail.com, hch@lst.de, linux-kernel@vger.kernel.org,
+        Milan Broz <mbroz@redhat.com>
+Subject: [PATCH] loop: Properly clear sysfs in autoclear mode
+Date: Mon, 25 Oct 2010 09:11:38 +0200
+Message-Id: <1287990698-21690-1-git-send-email-mbroz@redhat.com>
+In-Reply-To: <20101023155950.GA31946@lst.de>
+References: <20101023155950.GA31946@lst.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/25/2010 12:15 AM, Marc Kleine-Budde wrote:
-> On 10/25/2010 12:09 AM, David Miller wrote:
->> From: Marc Kleine-Budde <mkl@pengutronix.de>
->> Date: Mon, 25 Oct 2010 00:05:25 +0200
->>
->>> On 10/24/2010 11:43 PM, David Miller wrote:
->>>> From: Masayuki Ohtak <masa-korg@dsn.okisemi.com>
->>>> Date: Fri, 15 Oct 2010 22:00:28 +0900
->>>>
->>>>> CAN driver of Topcliff PCH
->>>>>
->>>>> Topcliff PCH is the platform controller hub that is going to be used in
->>>>> Intel's upcoming general embedded platform. All IO peripherals in
->>>>> Topcliff PCH are actually devices sitting on AMBA bus. 
->>>>> Topcliff PCH has CAN I/F. This driver enables CAN function.
->>>>>
->>>>> Signed-off-by: Masayuki Ohtake <masa-korg@dsn.okisemi.com>
->>>>
->>>> Applied, thanks.
->>>
->>> IMHO this driver needs some improvements. There are some open points
->>> from Wolfgangs and my review. On the other side, it's a new driver and
->>> there's some time left before it hits mainline.
->>
->> When people have more than a week to review and provide feedback,
->> and don't, I have zero sympathy especially this early in the
->> release cycle.
-> 
-> Let me see....Crap, it's my fault, I just replied to the socketcan
-> mailinglist ;( [1]
-> 
->> So if adding it to the tree is what I have to do to get you guys to
->> post your comments and suggest fixes, then that's what I am going to
->> (continue) to do. :-)
-> 
-> ...or to learn how to reply properly :)
+In autoclear mode bdev is NULL but the sysfs
+entry should be destroyed otherwise this warning appears:
 
-Ah, oh, and I added my review to yours :-(. Sorry, for the inconvenience
-it caused:
+WARNING: at fs/sysfs/dir.c:451 sysfs_add_one+0x82/0x95()
+sysfs: cannot create duplicate filename '/devices/virtual/block/loop0/loop'
 
-https://lists.berlios.de/pipermail/socketcan-core/2010-October/004787.html
+Fixes commit ee86273062cbb310665fe49e1f1937d2cf85b0b9
 
-Anyway, Ohtake should have received the review. The driver is *not* yet
-ready for inclusion. Therefore, please fix the remaining issues asap.
+Signed-off-by: Milan Broz <mbroz@redhat.com>
+---
+ drivers/block/loop.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Thanks,
+diff --git a/drivers/block/loop.c b/drivers/block/loop.c
+index 6c48b35..c21d4f3 100644
+--- a/drivers/block/loop.c
++++ b/drivers/block/loop.c
+@@ -1049,9 +1049,9 @@ static int loop_clr_fd(struct loop_device *lo, struct block_device *bdev)
+ 	if (bdev)
+ 		invalidate_bdev(bdev);
+ 	set_capacity(lo->lo_disk, 0);
++	loop_sysfs_exit(lo);
+ 	if (bdev) {
+ 		bd_set_size(bdev, 0);
+-		loop_sysfs_exit(lo);
+ 		/* let user-space know about this change */
+ 		kobject_uevent(&disk_to_dev(bdev->bd_disk)->kobj, KOBJ_CHANGE);
+ 	}
+-- 
+1.7.2.3
 
-Wolfgang.
