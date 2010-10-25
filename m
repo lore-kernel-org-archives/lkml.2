@@ -1,65 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751839Ab0JYAjJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Oct 2010 20:39:09 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:55432 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750942Ab0JYAjI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Oct 2010 20:39:08 -0400
-Date: Mon, 25 Oct 2010 11:38:58 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Linus <torvalds@linux-foundation.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Mike Miller <mike.miller@hp.com>, Jens Axboe <jaxboe@fusionio.com>
-Subject: linux-next: build warning in Linus' tree
-Message-Id: <20101025113858.feeff8a7.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Mon__25_Oct_2010_11_38_58_+1100_5miTshLFRzd.KrE."
+	id S1752175Ab0JYAkc (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Oct 2010 20:40:32 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:38321 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750942Ab0JYAkb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 24 Oct 2010 20:40:31 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: Ralf Baechle <ralf@linux-mips.org>
+Subject: Re: [PATCH] MIPS: MT: Fix build error iFPU affinity code
+Cc: kosaki.motohiro@jp.fujitsu.com,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-mips@linux-mips.org,
+        James Morris <jmorris@namei.org>
+In-Reply-To: <20101024212350.GA18747@linux-mips.org>
+References: <20101024212350.GA18747@linux-mips.org>
+Message-Id: <20101025093921.9151.A69D9226@jp.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="US-ASCII"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Becky! ver. 2.50.07 [ja]
+Date: Mon, 25 Oct 2010 09:40:28 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__25_Oct_2010_11_38_58_+1100_5miTshLFRzd.KrE.
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> > commit b0ae19811375031ae3b3fecc65b702a9c6e5cc28
+> > Author: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> > Date:   Fri Oct 15 04:21:18 2010 +0900
+> >
+> >     security: remove unused parameter from security_task_setscheduler()
+> 
+> broke the build of arch/mips/kernel/mips-mt-fpaff.c.  The function
+> arguments were unnecessary, not the semicolon ...
+> 
+> Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
+> 
+>  arch/mips/kernel/mips-mt-fpaff.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/arch/mips/kernel/mips-mt-fpaff.c b/arch/mips/kernel/mips-mt-fpaff.c
+> index 9a526ba..802e616 100644
+> --- a/arch/mips/kernel/mips-mt-fpaff.c
+> +++ b/arch/mips/kernel/mips-mt-fpaff.c
+> @@ -103,7 +103,7 @@ asmlinkage long mipsmt_sys_sched_setaffinity(pid_t pid, unsigned int len,
+>  	if (!check_same_owner(p) && !capable(CAP_SYS_NICE))
+>  		goto out_unlock;
+>  
+> -	retval = security_task_setscheduler(p)
+> +	retval = security_task_setscheduler(p);
+>  	if (retval)
+>  		goto out_unlock;
+>  
 
-Hi Linus,
+Agh! Thank you for fixing this!
 
-After merging the hid tree, today's linux-next build (x86_64 allmodconfig)
-produced this warning:
 
-drivers/scsi/hpsa.c:94:1: warning: "PCI_DEVICE_ID_HP_CISSF" redefined
-In file included from include/linux/pci.h:58,
-                 from drivers/scsi/hpsa.c:25:
-include/linux/pci_ids.h:746:1: warning: this is the location of the previou=
-s definition
-
-Introduced by commit 6362beea8914cbd4630ccde3617d944aeca2d48f ("cciss:
-fix PCI IDs for new Smart Array controllers") a commit that never made it
-to linus-next :-(.
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Mon__25_Oct_2010_11_38_58_+1100_5miTshLFRzd.KrE.
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQEcBAEBAgAGBQJMxNGiAAoJEDMEi1NhKgbsBRMIAIiKOxW8uDB82ncT1qPRmNng
-T1ZRrcYBPYGBJn7UtiQt2xoRZcyzPuxwE/mWppUWObjS2kBo4P3vgRGA0iWnSz0z
-Km48xoeae3yYjXzyg5rMVjAL0vYH+UAuWRdX56QoY97ZbJDWqX+LZ3u8O6Ts65XG
-kbqpmo0vtZ9pA7U/FRnXWXc9My5GO3Zwr/7bddQRMpUxLfCqGLkJNOqQdW+XPvWZ
-9olssiZBlqWrYkfCmKkq9Th6R+ALkkT+cbe01rGR9N8Qtt1NLpCuy3NrlTPtf7Vj
-F7LanX8Im1fkNa3kmKez0Ke1nieYAjnRWmcglKOA25tysmtgLXlckVqAtJAAS2U=
-=Q/D/
------END PGP SIGNATURE-----
-
---Signature=_Mon__25_Oct_2010_11_38_58_+1100_5miTshLFRzd.KrE.--
