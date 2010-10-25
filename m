@@ -1,37 +1,218 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753564Ab0JYHnh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Oct 2010 03:43:37 -0400
-Received: from mga14.intel.com ([143.182.124.37]:45374 "EHLO mga14.intel.com"
+	id S1753950Ab0JYHpB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Oct 2010 03:45:01 -0400
+Received: from mga14.intel.com ([143.182.124.37]:36703 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751305Ab0JYHng (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Oct 2010 03:43:36 -0400
+	id S1751305Ab0JYHnj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Oct 2010 03:43:39 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.58,235,1286175600"; 
-   d="scan'208";a="340009264"
+   d="scan'208";a="340009289"
 From: Huang Ying <ying.huang@intel.com>
 To: Len Brown <lenb@kernel.org>
 Cc: linux-kernel@vger.kernel.org, Andi Kleen <andi@firstfloor.org>,
         ying.huang@intel.com, linux-acpi@vger.kernel.org
-Subject: [PATCH -v2 0/9] ACPI, APEI patches for 2.6.37
-Date: Mon, 25 Oct 2010 15:43:21 +0800
-Message-Id: <1287992610-14996-1-git-send-email-ying.huang@intel.com>
+Subject: [PATCH -v2 3/9] lock-less NULL terminated single list implementation
+Date: Mon, 25 Oct 2010 15:43:24 +0800
+Message-Id: <1287992610-14996-4-git-send-email-ying.huang@intel.com>
 X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1287992610-14996-1-git-send-email-ying.huang@intel.com>
+References: <1287992610-14996-1-git-send-email-ying.huang@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-v2:
+Cmpxchg is used to implement adding new entry to list, deleting first
+entry of the list and some other operations.
 
-- Some minor changes according to Andi's comments.
+Because this is a single list, so the tail can not be accessed in O(1).
 
+This can be used in NMI handler.
 
-[PATCH -v2 1/9] ACPI, APEI, Add ERST record ID cache
-[PATCH -v2 2/9] Add lock-less version of bitmap_set/clear
-[PATCH -v2 3/9] lock-less NULL terminated single list implementation
-[PATCH -v2 4/9] lock-less general memory allocator
-[PATCH -v2 5/9] Hardware error device core
-[PATCH -v2 6/9] Hardware error record persistent support
-[PATCH -v2 7/9] ACPI, APEI, Use ERST for hardware error persisting before panic
-[PATCH -v2 8/9] ACPI, APEI, Report GHES error record with hardware error device core
-[PATCH -v2 9/9] ACPI, APEI, Generic Hardware Error Source POLL/IRQ/NMI notification type support
+Signed-off-by: Huang Ying <ying.huang@intel.com>
+Reviewed-by: Andi Kleen <ak@linux.intel.com>
+---
+ include/linux/llist.h |   64 ++++++++++++++++++++++++++++++++++++++
+ lib/Kconfig           |    3 +
+ lib/Makefile          |    2 +
+ lib/llist.c           |   84 ++++++++++++++++++++++++++++++++++++++++++++++++++
+ 4 files changed, 153 insertions(+)
+ create mode 100644 include/linux/llist.h
+ create mode 100644 lib/llist.c
+
+--- /dev/null
++++ b/include/linux/llist.h
+@@ -0,0 +1,64 @@
++#ifndef LLIST_H
++#define LLIST_H
++
++/* lock-less NULL terminated single linked list */
++struct llist_head {
++	struct llist_head *next;
++};
++
++#define LLIST_HEAD_INIT(name) { NULL }
++
++#define LLIST_HEAD(name)				\
++	struct llist_head name = LLIST_HEAD_INIT(name)
++
++/**
++ * init_llist_head - initialize lock-less list head
++ * @head:	the head for your lock-less list
++ */
++static inline void init_llist_head(struct llist_head *list)
++{
++	list->next = NULL;
++}
++
++/**
++ * llist_entry - get the struct of this entry
++ * @ptr:	the &struct llist_head pointer.
++ * @type:	the type of the struct this is embedded in.
++ * @member:	the name of the llist_head within the struct.
++ */
++#define llist_entry(ptr, type, member)		\
++	container_of(ptr, type, member)
++
++/**
++ * llist_for_each - iterate over a lock-less list
++ * @pos:	the &struct llist_head to use as a loop cursor
++ * @head:	the head for your lock-less list
++ */
++#define llist_for_each(pos, head)					\
++	for (pos = (head)->next; pos; pos = pos->next)
++
++/**
++ * llist_for_each_entry - iterate over lock-less list of given type
++ * @pos:	the type * to use as a loop cursor.
++ * @head:	the head for your lock-less list.
++ * @member:	the name of the llist_head with the struct.
++ */
++#define llist_for_each_entry(pos, head, member)				\
++	for (pos = llist_entry((head)->next, typeof(*pos), member);	\
++	     &pos->member != NULL;					\
++	     pos = llist_entry(pos->member.next, typeof(*pos), member))
++
++/**
++ * llist_empty - tests whether a lock-less list is empty
++ * @head:	the list to test
++ */
++static inline int llist_empty(const struct llist_head *head)
++{
++	return head->next == NULL;
++}
++
++void llist_add(struct llist_head *new, struct llist_head *head);
++struct llist_head *llist_del_first(struct llist_head *head);
++void llist_move_all(struct llist_head *list, struct llist_head *head);
++
++#endif /* LLIST_H */
+--- a/lib/Kconfig
++++ b/lib/Kconfig
+@@ -210,4 +210,7 @@ config GENERIC_ATOMIC64
+ config LRU_CACHE
+ 	tristate
+ 
++config LLIST
++	bool
++
+ endmenu
+--- a/lib/Makefile
++++ b/lib/Makefile
+@@ -106,6 +106,8 @@ obj-$(CONFIG_GENERIC_ATOMIC64) += atomic
+ 
+ obj-$(CONFIG_ATOMIC64_SELFTEST) += atomic64_test.o
+ 
++obj-$(CONFIG_LLIST) += llist.o
++
+ hostprogs-y	:= gen_crc32table
+ clean-files	:= crc32table.h
+ 
+--- /dev/null
++++ b/lib/llist.c
+@@ -0,0 +1,84 @@
++/*
++ * Simple lock-less NULL terminated single list implementation
++ *
++ * Copyright 2010 Intel Corp.
++ *   Author: Huang Ying <ying.huang@intel.com>
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License version
++ * 2 as published by the Free Software Foundation;
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
++ */
++#include <linux/kernel.h>
++#include <linux/module.h>
++#include <linux/llist.h>
++#include <linux/errno.h>
++
++#include <asm/system.h>
++
++/**
++ * llist_add - add a new entry
++ * @new:	new entry to be added
++ * @head:	the head for your lock-less list
++ */
++void llist_add(struct llist_head *new, struct llist_head *head)
++{
++	struct llist_head *entry;
++
++	do {
++		entry = head->next;
++		new->next = entry;
++	} while (cmpxchg(&head->next, entry, new) != entry);
++}
++EXPORT_SYMBOL_GPL(llist_add);
++
++/**
++ * llist_del_first - delete the first entry of lock-less list
++ * @head:	the head for your lock-less list
++ *
++ * If list is empty, return NULL, otherwise, return the first entry deleted.
++ *
++ * Only one llist_del_first user can be used simultaneously with
++ * multiple llist_add users without lock. Because otherwise
++ * llist_del_first, llist_add, llist_add sequence in another user may
++ * change @head->next->next, but keep @head->next. If multiple
++ * consumers are needed, please use llist_move_all.
++ */
++struct llist_head *llist_del_first(struct llist_head *head)
++{
++	struct llist_head *entry;
++
++	do {
++		entry = head->next;
++		if (entry == NULL)
++			return NULL;
++	} while (cmpxchg(&head->next, entry, entry->next) != entry);
++
++	return entry;
++}
++EXPORT_SYMBOL_GPL(llist_del_first);
++
++/**
++ * llist_move_all - delete all entries from one list and add them to another list
++ * @list:	the head of lock-less list to delete all entries
++ * @head:	the head of lock-less list to add the entries
++ *
++ * Remove all entries from @list lock-lessly, then add the entries to
++ * lock-less list @head.
++ */
++void llist_move_all(struct llist_head *list, struct llist_head *head)
++{
++	struct llist_head *entry;
++
++	entry = xchg(&list->next, NULL);
++	head->next = entry;
++}
++EXPORT_SYMBOL_GPL(llist_move_all);
