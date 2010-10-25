@@ -1,49 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756533Ab0JYPvk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Oct 2010 11:51:40 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:37689 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751542Ab0JYPvi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Oct 2010 11:51:38 -0400
-Message-ID: <4CC5A748.6050903@zytor.com>
-Date: Mon, 25 Oct 2010 08:50:32 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc13 Thunderbird/3.1.4
-MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Jan Beulich <JBeulich@novell.com>,
-        Alexander van Heukelum <heukelum@fastmail.fm>,
-        Ingo Molnar <mingo@elte.hu>, akpm@linux-foundation.org,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        David Howells <dhowells@redhat.com>, linux-arch@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Partially revert patch that encloses asm-offset.h numbers
- in brackets
-References: <4CC5B1A1020000780001EF7C@vpn.id2.novell.com> <20101025140218.5092.74117.stgit@warthog.procyon.org.uk> <28707.1288018465@redhat.com> <4CC5B8D3020000780001EFB4@vpn.id2.novell.com> <AANLkTi=mpKRQgZp5zCoCsBtkuWHrpkOq2Zch-OOGu4CC@mail.gmail.com>
-In-Reply-To: <AANLkTi=mpKRQgZp5zCoCsBtkuWHrpkOq2Zch-OOGu4CC@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1756639Ab0JYPv5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Oct 2010 11:51:57 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:43822 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756590Ab0JYPv4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Oct 2010 11:51:56 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=E62gCLuLM8+xu+XjekUGgbm2K5ioMuiVeNCONxKQnNAD16N/zvut9aMHUF+NH6gbd7
+         Vt+6fkgQCNlWbOfxBKOYPwciNk0Sw7qZ90MtfvM22VLK4aW2cJ3qRu718nGC4b1nhg1d
+         ACClWbm8h9BRweJlrIoNAjPGhqN+XdUaQPrBE=
+Subject: Re: [PATCH] net: b43legacy: fix compile error
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Larry Finger <Larry.Finger@lwfinger.net>
+Cc: Arnd Hannemann <arnd@arndnet.de>, "David S. Miller" <davem@davemloft.net>,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-wireless@vger.kernel.org
+In-Reply-To: <4CC5A301.1080606@lwfinger.net>
+References: <1288017690-31248-1-git-send-email-arnd@arndnet.de>
+	 <4CC5A301.1080606@lwfinger.net>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 25 Oct 2010 17:51:45 +0200
+Message-ID: <1288021905.2826.142.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/25/2010 08:17 AM, Linus Torvalds wrote:
+Le lundi 25 octobre 2010 à 10:32 -0500, Larry Finger a écrit :
+> On 10/25/2010 09:41 AM, Arnd Hannemann wrote:
+> > On todays linus tree the following compile error happened to me:
+> > 
+> >   CC [M]  drivers/net/wireless/b43legacy/xmit.o
+> > In file included from include/net/dst.h:11,
+> >                  from drivers/net/wireless/b43legacy/xmit.c:31:
+> > include/net/dst_ops.h:28: error: expected ':', ',', ';', '}' or '__attribute__' before '____cacheline_aligned_in_smp'
+> > include/net/dst_ops.h: In function 'dst_entries_get_fast':
+> > include/net/dst_ops.h:33: error: 'struct dst_ops' has no member named 'pcpuc_entries'
+> > include/net/dst_ops.h: In function 'dst_entries_get_slow':
+> > include/net/dst_ops.h:41: error: 'struct dst_ops' has no member named 'pcpuc_entries'
+> > include/net/dst_ops.h: In function 'dst_entries_add':
+> > include/net/dst_ops.h:49: error: 'struct dst_ops' has no member named 'pcpuc_entries'
+> > include/net/dst_ops.h: In function 'dst_entries_init':
+> > include/net/dst_ops.h:55: error: 'struct dst_ops' has no member named 'pcpuc_entries'
+> > include/net/dst_ops.h: In function 'dst_entries_destroy':
+> > include/net/dst_ops.h:60: error: 'struct dst_ops' has no member named 'pcpuc_entries'
+> > make[4]: *** [drivers/net/wireless/b43legacy/xmit.o] Error 1
+> > make[3]: *** [drivers/net/wireless/b43legacy] Error 2
+> > make[2]: *** [drivers/net/wireless] Error 2
+> > make[1]: *** [drivers/net] Error 2
+> > make: *** [drivers] Error 2
+> > 
+> > This patch fixes this issue by adding "linux/cache.h" as an include to
+> > "include/net/dst_ops.h".
 > 
-> How about just removing the idiotic workaround entirely, and then on
-> x86 passing "-traditional" to cpp for asm input so that it doesn't add
-> spaces in argument expansion? Make the workaround more targeted to the
-> actual problem, rather than working around it in some unrelated
-> thing..
-> 
+> Strange. Compiling b43legacy from the linux-2.6.git tree (git describe is
+> v2.6.36-4464-g229aebb) works fine on x86_64. I wonder what is different.
 
-We already tried using -traditional, it didn't help the gas braindamage
-and it caused severe problems with header files (since -traditional
-removes the support for #x and x ## y).  Bringing it back won't help.
+Well, x86_64 must include cache.h, this is probably why I missed it in
+my build tests.
 
-As such, the only options I can really think about overriding the sed
-expression for x86 or just saying gcc 2.16.90 or later is required...
+I wonder also why #include <net/dst.h> is needed at all in this
+driver...
 
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
+diff --git a/drivers/net/wireless/b43legacy/xmit.c
+b/drivers/net/wireless/b43legacy/xmit.c
+index 7d177d9..a261aec 100644
+--- a/drivers/net/wireless/b43legacy/xmit.c
++++ b/drivers/net/wireless/b43legacy/xmit.c
+@@ -28,8 +28,6 @@
+ 
+ */
+ 
+-#include <net/dst.h>
+-
+ #include "xmit.h"
+ #include "phy.h"
+ #include "dma.h"
+
+
+
