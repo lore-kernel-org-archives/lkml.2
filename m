@@ -1,124 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758041Ab0JYWb5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Oct 2010 18:31:57 -0400
-Received: from smtp-out.google.com ([74.125.121.35]:47098 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756459Ab0JYWbD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Oct 2010 18:31:03 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=QhQOXUzbyFIInbGs+KmUgIZ++TrotGgB3vPU30zZ/oW1IKTgqkIsK3c1iEA7V9EyRS
-         7w5GjuKfCvn7szl2nXdw==
-From: Venkatesh Pallipadi <venki@google.com>
-To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>
-Cc: linux-kernel@vger.kernel.org, Paul Turner <pjt@google.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Shaun Ruffell <sruffell@digium.com>,
-        Yong Zhang <yong.zhang0@gmail.com>,
-        Venkatesh Pallipadi <venki@google.com>
-Subject: [PATCH 3/6] Add nsecs_to_cputime64 interface for asm-generic -v1
-Date: Mon, 25 Oct 2010 15:30:14 -0700
-Message-Id: <1288045817-3135-4-git-send-email-venki@google.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1288045817-3135-1-git-send-email-venki@google.com>
-References: <1288045817-3135-1-git-send-email-venki@google.com>
-X-System-Of-Record: true
+	id S932214Ab0JYWcE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Oct 2010 18:32:04 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:38979 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755531Ab0JYWcA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Oct 2010 18:32:00 -0400
+Message-ID: <4CC60529.7030102@zytor.com>
+Date: Mon, 25 Oct 2010 15:31:05 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc13 Thunderbird/3.1.4
+MIME-Version: 1.0
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: Steven Rostedt <rostedt@goodmis.org>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Koki Sanagi <sanagi.koki@jp.fujitsu.com>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Frederic Weisbecker <fweisbec@gmail.com>, nhorman@tuxdriver.com,
+        scott.a.mcmillan@intel.com, laijs@cn.fujitsu.com,
+        LKML <linux-kernel@vger.kernel.org>, eric.dumazet@gmail.com,
+        kaneshige.kenji@jp.fujitsu.com, David Miller <davem@davemloft.net>,
+        izumi.taku@jp.fujitsu.com, kosaki.motohiro@jp.fujitsu.com,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        "Luck, Tony" <tony.luck@intel.com>
+Subject: Re: [PATCH] tracing: Cleanup the convoluted softirq tracepoints
+References: <tip-2bf2160d8805de64308e2e7c3cd97813cb58ed2f@git.kernel.org>  <1287395077.29097.1543.camel@twins>  <1287398936.29097.1548.camel@twins> <4CBD79CF.2060706@jp.fujitsu.com>  <alpine.LFD.2.00.1010191428560.6815@localhost6.localdomain6>  <20101019132236.GA19197@Krystal>  <alpine.LFD.2.00.1010191524160.6815@localhost6.localdomain6>  <1287496495.16971.372.camel@gandalf.stny.rr.com>  <alpine.LFD.2.00.1010191558250.6815@localhost6.localdomain6>  <20101019142820.GA14520@Krystal>  <alpine.LFD.2.00.1010191842270.6815@localhost6.localdomain6>  <1287521757.16971.397.camel@gandalf.stny.rr.com>  <alpine.LFD.2.00.1010192302000.6815@localhost6.localdomain6>  <1287523439.16971.433.camel@gandalf.stny.rr.com>  <alpine.LFD.2.00.1010192359480.6815@localhost6.localdomain6>  <1287527634.16971.536.camel@gandalf.stny.rr.com>  <alpine.LFD.2.00.1010211817540.2418@localhost6.localdomain6> <1287680725.16971.586.camel@gandalf.stny.rr.com> <alpine.LFD.2.00.1010212149480.3467@localhost6.localdoma!
+ in6>
+In-Reply-To: <alpine.LFD.2.00.1010212149480.3467@localhost6.localdomain6>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add nsecs_to_cputime64 interface. This is used in following patches that
-updates cpu irq stat based on ns granularity info in IRQ_TIME_ACCOUNTING.
+On 10/21/2010 12:56 PM, Thomas Gleixner wrote:
+> On Thu, 21 Oct 2010, Steven Rostedt wrote:
+> 
+>> On Thu, 2010-10-21 at 18:18 +0200, Thomas Gleixner wrote:
+>>>
+>>> On Tue, 19 Oct 2010, Steven Rostedt wrote:
+>>>
+>>>> On Wed, 2010-10-20 at 00:04 +0200, Thomas Gleixner wrote:
+>>>>
+>>>>> hpa just posted code which does the _RIGHT_ _THING_ independent of any
+>>>>> compiler madness and you tracer folks just missed it.
+>>>>
+>>>> Thomas,
+>>>>
+>>>> Can you try this patch and see if it makes the object code better?
+>>>
+>>> Nope, same result.
+>>
+>> Yeah, I figured. Do you have CC_OPTIMIZE_FOR_SIZE set? And if you do,
+>> what happens if you disable it?
+> 
+> Hmm. Indeed. That gets rid of the double jump.
+> 
 
-Tested-by: Shaun Ruffell <sruffell@digium.com>
+-Os unfortunately drops a bunch of optimizations.
 
-Signed-off-by: Venkatesh Pallipadi <venki@google.com>
----
- include/asm-generic/cputime.h |    3 +++
- include/linux/jiffies.h       |    1 +
- kernel/time.c                 |   23 +++++++++++++++++++++--
- 3 files changed, 25 insertions(+), 2 deletions(-)
+With gcc 4.5.1 there is actually a way to guarantee to get rid of double
+jumps, which is that you tell gcc that it is branching to one of two
+targets:
 
-diff --git a/include/asm-generic/cputime.h b/include/asm-generic/cputime.h
-index ca0f239..c0f0da0 100644
---- a/include/asm-generic/cputime.h
-+++ b/include/asm-generic/cputime.h
-@@ -30,6 +30,9 @@ typedef u64 cputime64_t;
- #define cputime64_to_jiffies64(__ct)	(__ct)
- #define jiffies64_to_cputime64(__jif)	(__jif)
- #define cputime_to_cputime64(__ct)	((u64) __ct)
-+#define cputime64_gt(__a, __b)		((__a) >  (__b))
-+
-+#define nsecs_to_cputime64(__ct)	nsecs_to_jiffies64(__ct)
- 
- 
- /*
-diff --git a/include/linux/jiffies.h b/include/linux/jiffies.h
-index 6811f4b..922aa31 100644
---- a/include/linux/jiffies.h
-+++ b/include/linux/jiffies.h
-@@ -307,6 +307,7 @@ extern clock_t jiffies_to_clock_t(long x);
- extern unsigned long clock_t_to_jiffies(unsigned long x);
- extern u64 jiffies_64_to_clock_t(u64 x);
- extern u64 nsec_to_clock_t(u64 x);
-+extern u64 nsecs_to_jiffies64(u64 n);
- extern unsigned long nsecs_to_jiffies(u64 n);
- 
- #define TIMESTAMP_SIZE	30
-diff --git a/kernel/time.c b/kernel/time.c
-index ba9b338..fde4691 100644
---- a/kernel/time.c
-+++ b/kernel/time.c
-@@ -645,7 +645,7 @@ u64 nsec_to_clock_t(u64 x)
- }
- 
- /**
-- * nsecs_to_jiffies - Convert nsecs in u64 to jiffies
-+ * nsecs_to_jiffies64 - Convert nsecs in u64 to jiffies64
-  *
-  * @n:	nsecs in u64
-  *
-@@ -657,7 +657,7 @@ u64 nsec_to_clock_t(u64 x)
-  *   NSEC_PER_SEC = 10^9 = (5^9 * 2^9) = (1953125 * 512)
-  *   ULLONG_MAX ns = 18446744073.709551615 secs = about 584 years
-  */
--unsigned long nsecs_to_jiffies(u64 n)
-+u64 nsecs_to_jiffies64(u64 n)
- {
- #if (NSEC_PER_SEC % HZ) == 0
- 	/* Common case, HZ = 100, 128, 200, 250, 256, 500, 512, 1000 etc. */
-@@ -674,6 +674,25 @@ unsigned long nsecs_to_jiffies(u64 n)
- #endif
- }
- 
-+
-+/**
-+ * nsecs_to_jiffies - Convert nsecs in u64 to jiffies
-+ *
-+ * @n:	nsecs in u64
-+ *
-+ * Unlike {m,u}secs_to_jiffies, type of input is not unsigned int but u64.
-+ * And this doesn't return MAX_JIFFY_OFFSET since this function is designed
-+ * for scheduler, not for use in device drivers to calculate timeout value.
-+ *
-+ * note:
-+ *   NSEC_PER_SEC = 10^9 = (5^9 * 2^9) = (1953125 * 512)
-+ *   ULLONG_MAX ns = 18446744073.709551615 secs = about 584 years
-+ */
-+unsigned long nsecs_to_jiffies(u64 n)
-+{
-+	return (unsigned long)nsecs_to_jiffies64(n);
-+}
-+
- #if (BITS_PER_LONG < 64)
- u64 get_jiffies_64(void)
- {
--- 
-1.7.1
+                asm goto("1: .byte 0xe9 ; .long %l[t_no]-2f\n"
+			 "2:\n"
+		         /* patching infrastructure goes here */
+                         : : "i" (bit) : : t_no, t_yes);
+	        __builtin_unreachable();
+t_no:
+                return false;
+t_yes:
+                return true;
 
+[The open-coding of the jump is necessary to force the 5-byte form
+instead of the 2-byte form.]
+
+The patching machinery can recognize the case where the jump offset is
+zero and patch in a NOP instead.
+
+There does, however, seem to be a couple of problems:
+
+a) gcc 4.5.1 is required due to a bug in previous versions of gcc when
+an asm goto doesn't have a fallthrough case.
+
+b) it seems to encourage gcc to actively jump around as it reorders
+blocks, since gcc no longer sees a fallthrough case at all.
+
+Not sure I have a good solution for this, at least not with current gcc.
+
+	-hpa
