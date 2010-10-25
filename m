@@ -1,32 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755558Ab0JYNRz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Oct 2010 09:17:55 -0400
-Received: from ksp.mff.cuni.cz ([195.113.26.206]:53405 "EHLO
+	id S1755263Ab0JYNSm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Oct 2010 09:18:42 -0400
+Received: from ksp.mff.cuni.cz ([195.113.26.206]:53506 "EHLO
 	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753436Ab0JYNRx (ORCPT
+	by vger.kernel.org with ESMTP id S1751228Ab0JYNSk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Oct 2010 09:17:53 -0400
-Date: Mon, 25 Oct 2010 15:17:28 +0200
+	Mon, 25 Oct 2010 09:18:40 -0400
+Date: Mon, 25 Oct 2010 15:18:30 +0200
 From: Pavel Machek <pavel@ucw.cz>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Sitsofe Wheeler <sitsofe@yahoo.com>,
-        Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
-        Matthew Garrett <mjg59@srcf.ucam.org>, Len Brown <lenb@kernel.org>,
-        Zhang Rui <rui.zhang@intel.com>, David Zeuthen <davidz@redhat.com>,
-        Richard Hughes <richard@hughsie.com>, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ACPI / Battery: Return -ENODATA for unknown values in
- get_property()
-Message-ID: <20101025131728.GC2162@ucw.cz>
-References: <20101016141321.GA11054@sucs.org>
- <20101017131016.GB13015@khazad-dum.debian.net>
- <20101017145025.GA32599@sucs.org>
- <201010172032.43206.rjw@sisk.pl>
+To: James Morris <jmorris@namei.org>
+Cc: Christoph Hellwig <hch@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Kyle McMartin <kyle@mcmartin.ca>, kernel@lists.fedoraproject.org,
+        Mimi Zohar <zohar@us.ibm.com>, warthog9@kernel.org,
+        Dave Chinner <david@fromorbit.com>, linux-kernel@vger.kernel.org,
+        "H. Peter Anvin" <hpa@zytor.com>, Serge Hallyn <serue@us.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: ima: use of radix tree cache indexing == massive waste of
+ memory?
+Message-ID: <20101025131829.GD2162@ucw.cz>
+References: <20101016065206.GO4681@dastard>
+ <20101016192027.GA6883@infradead.org>
+ <ebc4973c-6c11-4397-b8b0-c212a27abce4@email.android.com>
+ <20101017004945.GE1614@infradead.org>
+ <20101017054008.GA16383@elte.hu>
+ <20101017184652.GB28060@infradead.org>
+ <alpine.LRH.2.00.1010181127480.9476@tundra.namei.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <201010172032.43206.rjw@sisk.pl>
+In-Reply-To: <alpine.LRH.2.00.1010181127480.9476@tundra.namei.org>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -34,59 +38,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Hi!
 
-> That's why I suggested to use -ENODATA. :-)
+> > Especially as our merge requirements for security/ are a lot lower than
+> > for the rest of the kernel given that James is very afraid of getting
+> > whacked by Linux for not mering things.
 > 
-> Still, if user space has problems with failing reads from the sysfs attributes,
-> it may be better to simply put -1 in there.  Patch is appended, please test.
+> I think historically you'll see that I'm not afraid of getting whacked by 
+> Linus.
+> 
+> A procedure for merging security features has been adopted by consensus, 
+> based on suggestions from Arjan, with the aim of preventing the literally 
+> endless arguments which arise from security feature discussions.  It's 
+> sometimes referred to as the Arjan protocol, essentially:
+> 
+>   If the feature correctly implements a well-defined security goal, meets 
+>   user needs without incurring unreasonable overheads, passes technical 
+>   review, and is supported by competent developers, then it is likely to 
+>   be merged.
+> 
+> If you disagree with a specific feature, you need to step up while it's 
+> being reviewed and make a case against it according to the above
+> criteria.
 
-I'd say that reporting -1 for unknown is ugly. You can have -1A
-current easily (charging at 1A), and I've seen machines reporting <0
-current -- when charging. Logical and well-defined.
+Well, I'm arguing that the criteria are wrong. Duplicated crap is
+creeping in (TOMOYO vs. AppArmor), and strange stuff that has no
+legitimate use is in (IMA -- what is it good for? locking machines
+down, iPhone style).
 
-								Pavel
+> If you disagree with the protocol, then you need to come up with a better 
+> one, and probably implement it yourself, to the satisfaction of all 
+> parties.
 
-
->  	case POWER_SUPPLY_PROP_VOLTAGE_MIN_DESIGN:
-> -		val->intval = battery->design_voltage * 1000;
-> +		if (battery->design_voltage != ACPI_BATTERY_VALUE_UNKNOWN)
-> +			val->intval = battery->design_voltage * 1000;
->  		break;
->  	case POWER_SUPPLY_PROP_VOLTAGE_NOW:
-> -		val->intval = battery->voltage_now * 1000;
-> +		if (battery->voltage_now != ACPI_BATTERY_VALUE_UNKNOWN)
-> +			val->intval = battery->voltage_now * 1000;
->  		break;
->  	case POWER_SUPPLY_PROP_CURRENT_NOW:
->  	case POWER_SUPPLY_PROP_POWER_NOW:
-> -		val->intval = battery->rate_now * 1000;
-> +		if (battery->rate_now != ACPI_BATTERY_VALUE_UNKNOWN)
-> +			val->intval = battery->rate_now * 1000;
->  		break;
->  	case POWER_SUPPLY_PROP_CHARGE_FULL_DESIGN:
->  	case POWER_SUPPLY_PROP_ENERGY_FULL_DESIGN:
-> -		val->intval = battery->design_capacity * 1000;
-> +		if (battery->design_capacity != ACPI_BATTERY_VALUE_UNKNOWN)
-> +			val->intval = battery->design_capacity * 1000;
->  		break;
->  	case POWER_SUPPLY_PROP_CHARGE_FULL:
->  	case POWER_SUPPLY_PROP_ENERGY_FULL:
-> -		val->intval = battery->full_charge_capacity * 1000;
-> +		if (battery->full_charge_capacity != ACPI_BATTERY_VALUE_UNKNOWN)
-> +			val->intval = battery->full_charge_capacity * 1000;
->  		break;
->  	case POWER_SUPPLY_PROP_CHARGE_NOW:
->  	case POWER_SUPPLY_PROP_ENERGY_NOW:
-> -		val->intval = battery->capacity_now * 1000;
-> +		if (battery->capacity_now != ACPI_BATTERY_VALUE_UNKNOWN)
-> +			val->intval = battery->capacity_now * 1000;
->  		break;
->  	case POWER_SUPPLY_PROP_MODEL_NAME:
->  		val->strval = battery->model_number;
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+I do disagree, and I do not think 'satistfaction of all parties' is
+reasonable goal. Rest of kernel has different rules, and IMO they are better.
 
 -- 
 (english) http://www.livejournal.com/~pavelmachek
