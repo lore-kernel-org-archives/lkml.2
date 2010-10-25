@@ -1,71 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755916Ab0JYVRh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Oct 2010 17:17:37 -0400
-Received: from cpoproxy1-pub.bluehost.com ([69.89.21.11]:38477 "HELO
-	cpoproxy1-pub.bluehost.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1753297Ab0JYVRf (ORCPT
+	id S1756581Ab0JYVXQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Oct 2010 17:23:16 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:44948 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751487Ab0JYVXO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Oct 2010 17:17:35 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
-	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
-	b=tIvPorm4GMGiHYqR5Qv49vm7GCXkt/S2v5ta5pCSyfEK5SRU3P6yCV/5Xc9NCnmJFmWuwMNUzX4gafEgBnHZcEt8POFw3S4NL35aySx4P2HLHG/4VpPsy7XipxkyIcAK;
-Date: Mon, 25 Oct 2010 14:17:31 -0700
-From: Jesse Barnes <jbarnes@virtuousgeek.org>
-To: Bjorn Helgaas <bjorn.helgaas@hp.com>
-Cc: Bob Picco <bpicco@redhat.com>, Brian Bloniarz <phunge0@hotmail.com>,
-        Charles Butterfield <charles.butterfield@nextcentury.com>,
-        Denys Vlasenko <dvlasenk@redhat.com>, linux-pci@vger.kernel.org,
-        "Horst H. von Brand" <vonbrand@inf.utfsm.cl>,
-        Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
-        Stefan Becker <chemobejk@gmail.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Yinghai Lu <yinghai@kernel.org>,
-        Leann Ogasawara <leann.ogasawara@canonical.com>,
+	Mon, 25 Oct 2010 17:23:14 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :content-type;
+        b=cjZZErE7OCn4z4HtenNMaqarfTkNmcsVCkFtBKhxDTRCfJmLouLVZyIyQQ0GSC0E8c
+         rFFzBcMpl8GNlW/4pAtg2fphm4oT+3AcY+eMGOSCunuWGEBZOK0jVuw+0yeEa0SgVezh
+         5RS+/ENiD7r0sjCiDZuS0rZDFjuaDP8eswZXM=
+MIME-Version: 1.0
+In-Reply-To: <20101025202344.GC13652@liondog.tnic>
+References: <1287992610-14996-1-git-send-email-ying.huang@intel.com>
+	<1287992610-14996-10-git-send-email-ying.huang@intel.com>
+	<20101025084553.GA27119@elte.hu>
+	<1287997112.2862.322.camel@yhuang-dev>
+	<20101025092557.GA11544@elte.hu>
+	<AANLkTi=2SVT1M+nDZUB7EB05jh+tsuKcew_t66QORrwb@mail.gmail.com>
+	<20101025202344.GC13652@liondog.tnic>
+Date: Mon, 25 Oct 2010 14:23:12 -0700
+Message-ID: <AANLkTi=DEmss+3uX_5uw=VJDY9+cFPayjQkCQHa+r+Ye@mail.gmail.com>
+Subject: Re: [NAK] Re: [PATCH -v2 9/9] ACPI, APEI, Generic Hardware Error
+ Source POLL/IRQ/NMI notification type support
+From: Tony Luck <tony.luck@gmail.com>
+To: Borislav Petkov <bp@alien8.de>, Tony Luck <tony.luck@gmail.com>,
+        Ingo Molnar <mingo@elte.hu>, Huang Ying <ying.huang@intel.com>,
+        Len Brown <lenb@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        Borislav Petkov <petkovbb@googlemail.com>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Don Zickus <dzickus@redhat.com>,
         Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH v4 6/6] x86: allocate space within a region top-down
-Message-ID: <20101025141731.30c73256@jbarnes-desktop>
-In-Reply-To: <201010251508.49165.bjorn.helgaas@hp.com>
-References: <20101014231804.536.62138.stgit@bob.kio>
-	<20101014231852.536.42958.stgit@bob.kio>
-	<20101025140154.66f1e1bd@jbarnes-desktop>
-	<201010251508.49165.bjorn.helgaas@hp.com>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.174.193.198 authed with jbarnes@virtuousgeek.org}
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 25 Oct 2010 15:08:48 -0600
-Bjorn Helgaas <bjorn.helgaas@hp.com> wrote:
+On Mon, Oct 25, 2010 at 1:23 PM, Borislav Petkov <bp@alien8.de> wrote:
 
-> On Monday, October 25, 2010 03:01:54 pm Jesse Barnes wrote:
-> > On Thu, 14 Oct 2010 17:18:52 -0600
-> > Bjorn Helgaas <bjorn.helgaas@hp.com> wrote:
-> > 
-> > > 
-> > > Request that allocate_resource() use available space from high addresses
-> > > first, rather than the default of using low addresses first.
-> > > 
-> > > The most common place this makes a difference is when we move or assign
-> > > new PCI device resources.  Low addresses are generally scarce, so it's
-> > > better to use high addresses when possible.  This follows Windows practice
-> > > for PCI allocation.
-> > 
-> > Applied this series to linux-next; assuming nothing blows up I'll send
-> > it to Linus this week (previous versions got some testing and landed in
-> > a separate branch so this should be fine).
-> 
-> We tripped over another issue in Fedora:
->   https://bugzilla.redhat.com/show_bug.cgi?id=646027
-> 
-> I think I see the problem, and posted a patch for testing.  When it's
-> resolved, I'll post an updated series.
+> You may be right but what we actually want is a consistent RAS
+> infrastructure. Didn't you point out at the last edac meeting in Boston
+> that concerning RAS Linux were in the stone ages? (at least this is what
+> I remember reading).
 
-Ok thanks, I'll drop it from -next then.
+That meeting was in San Francisco - but your recollection is correct.
+Right now we have ways to count errors, and to attribute them to
+specific hardware components (if we are lucky). This is only the
+beginning of the feature set that is needed to be "advanced RAS".
 
--- 
-Jesse Barnes, Intel Open Source Technology Center
+> What we should do is put all that post-system-reset error info, ECC
+> errors mapping to DRAM devices, L3 cache index manipulation based on
+> excessive errors - you name it - together and stick it in ras/ or
+> drivers/ras or whatever. And all with a nice and easy to use userspace
+> tool on top.
+
+This is what we should be working towards.  I don't think we have
+a clear picture of what that high level infrastructure looks like. It
+needs to be very flexible to take input from all sorts of platform
+specific "driver" code that collects data.  The "perf events"
+mechanism looks plausible as a transport mechanism for
+reporting corrected (or otherwise non-fatal) events. But the
+errors that didn't kill the system are only part of the RAS picture.
+
+> Now it looks like a wart on arch/x86/ which truly doesn't belong there.
+> And I don't buy all that crap that it can't be done right.
+
+Of course it is a wart ... look up ACPI in any dictionary and you'll
+find a picture of a stereotypical Halloween witch :-) I don't see other
+architectures lining up to support ACPI ... but we shouldn't just
+ignore it in x86.  The APEI pieces that were added to ACPI 4.0
+have some interesting and useful features.  Most of them are
+already implemented on shipping platforms because the APEI
+bits were simply documenting WHEA (Windows Hardware Error
+Architecture) features.  Look for this stuff in dmesg:
+
+ACPI: HEST 000000007fb1c000 000A8 (v01 INTEL    SFC4UR 00000001 INTL 00000001)
+ACPI: BERT 000000007fb1b000 00030 (v01 INTEL    SFC4UR 00000001 INTL 00000001)
+ACPI: ERST 000000007fb1a000 00230 (v01 INTEL    SFC4UR 00000001 INTL 00000001)
+ACPI: EINJ 000000007fb19000 00130 (v01 INTEL    SFC4UR 00000001 INTL 00000001)
+
+-Tony
