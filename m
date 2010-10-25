@@ -1,47 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757633Ab0JYT5Y (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Oct 2010 15:57:24 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:42126 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757555Ab0JYT5X (ORCPT
+	id S932750Ab0JYT57 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Oct 2010 15:57:59 -0400
+Received: from mxout5.netvision.net.il ([194.90.9.29]:48775 "EHLO
+	mxout5.netvision.net.il" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757588Ab0JYT55 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Oct 2010 15:57:23 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=MhG9G5liyksd/Ky1rFGioMr6lXVS/mxoiistNYolEFdd/jQ8CHArtMNjAUQp2fsdPx
-         06w4Exj77QkyjHh4iGarTz1/KJ+Fj5etLd/LsBnW100OA8WV+Yfcp9h6F+FymPCWxH5I
-         DoWeJx/ECYNzeivR/wFiQONuYpHVHnbYcz60g=
-Subject: Re: [PATCH] net: b43legacy: fix compile error
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Larry Finger <Larry.Finger@lwfinger.net>
-Cc: Arnd Hannemann <arnd@arndnet.de>, "David S. Miller" <davem@davemloft.net>,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-wireless@vger.kernel.org
-In-Reply-To: <4CC5C863.9070801@lwfinger.net>
-References: <1288017690-31248-1-git-send-email-arnd@arndnet.de>
-	 <4CC5A301.1080606@lwfinger.net> <1288021905.2826.142.camel@edumazet-laptop>
-	 <4CC5C863.9070801@lwfinger.net>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 25 Oct 2010 21:56:52 +0200
-Message-ID: <1288036613.2451.2.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 8bit
+	Mon, 25 Oct 2010 15:57:57 -0400
+MIME-version: 1.0
+Content-transfer-encoding: 7BIT
+Content-type: text/plain; CHARSET=US-ASCII
+Message-id: <4CC5E131.9040408@nolaviz.org>
+Date: Mon, 25 Oct 2010 21:57:37 +0200
+From: Alon Ziv <alon@nolaviz.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.14)
+ Gecko/20101006 Lightning/1.0b1 Thunderbird/3.0.9
+To: Johan Hovold <jhovold@gmail.com>
+Cc: Alon Ziv <alon+git@nolaviz.org>, linux-usb@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@suse.de>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 1/2] Export usb_serial_generic_write_room for use in
+ modules
+References: <1287859409-13810-1-git-send-email-alon-git@nolaviz.org>
+ <1287859409-13810-2-git-send-email-alon-git@nolaviz.org>
+ <20101025112043.GB4046@localhost>
+In-reply-to: <20101025112043.GB4046@localhost>
+X-Enigmail-Version: 1.0.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le lundi 25 octobre 2010 à 13:11 -0500, Larry Finger a écrit :
+Hi Johan,
 
-> I have no idea why that header was included - likely historical in the
-> transformation from bcm43xx to b43legacy. For completeness, there are 2 more
-> places to change:
+On 10/25/2010 01:20 PM, you wrote:
+>> Any module using usb_serial_generic_write (which is already exported)
+>> had better use usb_serial_generic_write_room as well, or be prepared
+>> for failures.
+>
+> As I mentioned elsewhere, this description is a little misleading as any
+> driver can use the generic write_room implementation simply by not
+> overriding it (i.e. leaving the write_room field undefined).
+>
+> There is nothing wrong with exporting it, but it is currently only your
+> other patch that requires that. Could you perhaps just modify the patch
+> description?
+>
+Well... the latest changes (due to your review) removed even my driver's
+use of this function. So probably there is no need to export it (at
+least not yet).
 
-Anyway, Arnd patch is fine by me, I didnt want to supply an alternate
-patch.
+If you prefer that I leave the export in place (and unused), I will
+clarify the patch description.
 
-I only was wondering why the include was in this driver...
-
+-az
