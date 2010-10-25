@@ -1,68 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759238Ab0JYRjt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Oct 2010 13:39:49 -0400
-Received: from mail.openrapids.net ([64.15.138.104]:54126 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1758937Ab0JYRjs (ORCPT
+	id S1759162Ab0JYRqS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Oct 2010 13:46:18 -0400
+Received: from casper.infradead.org ([85.118.1.10]:54195 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751518Ab0JYRqS convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Oct 2010 13:39:48 -0400
-Date: Mon, 25 Oct 2010 13:39:43 -0400
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: David Goulet <david.goulet@polymtl.ca>
-Cc: Nils Carlson <nils.carlson@ericsson.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-        ltt-dev@lists.casi.polymtl.ca
-Subject: [RFC] TRACE_EVENT: mapping "=" and memcpy to macros
-Message-ID: <20101025173943.GA29970@Krystal>
-References: <4CC1BAA1.9070202@polymtl.ca> <913BC6918ED247478A38326BC12AAECE04D399B2@ESESSCMS0358.eemea.ericsson.se> <913BC6918ED247478A38326BC12AAECE04D399CF@ESESSCMS0358.eemea.ericsson.se> <913BC6918ED247478A38326BC12AAECE04D39AD7@ESESSCMS0358.eemea.ericsson.se> <4CC5AA98.7020308@polymtl.ca> <20101025171954.GD11891@Krystal> <4CC5BDC2.9020401@polymtl.ca>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4CC5BDC2.9020401@polymtl.ca>
-X-Editor: vi
-X-Info: http://www.efficios.com
-X-Operating-System: Linux/2.6.26-2-686 (i686)
-X-Uptime: 13:30:14 up 32 days, 21:32,  3 users,  load average: 0.20, 0.16,
-	0.10
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	Mon, 25 Oct 2010 13:46:18 -0400
+Subject: Re: [PATCH][GIT PULL] tracing: Fix compile issue for
+ trace_sched_wakeup.c
+From: Peter Zijlstra <peterz@infradead.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Steven Rostedt <rostedt@goodmis.org>, Jason Baron <jbaron@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        masami.hiramatsu.pt@hitachi.com
+In-Reply-To: <1288021672.15336.63.camel@twins>
+References: <20101021110925.GA27219@elte.hu>
+	 <20101022175845.GF6498@redhat.com> <20101022182433.GA24637@elte.hu>
+	 <20101022183900.GG6498@redhat.com> <20101023200216.GA19324@elte.hu>
+	 <1287881618.16971.657.camel@gandalf.stny.rr.com>
+	 <20101024112540.GA21267@elte.hu> <20101025085927.GA11025@elte.hu>
+	 <20101025093045.GA21997@elte.hu> <20101025114501.GA2000@elte.hu>
+	 <20101025121059.GA3063@elte.hu>  <1288009103.15336.58.camel@twins>
+	 <1288021672.15336.63.camel@twins>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Mon, 25 Oct 2010 19:45:46 +0200
+Message-ID: <1288028746.3673.11.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-LTTng needs to override the assignment primitives to deal with cross-page
-writes. A first step needed to move LTTng to TRACE_EVENT is to introduce the
-following macros:
+On Mon, 2010-10-25 at 17:47 +0200, Peter Zijlstra wrote:
 
-for ftrace and perf:
+> NOP'ed vs JMP'ed
+> 
 
-#define __assign(dest, src)                  (dest) = (src)
-#define __assign_memcpy(dest, src, len)      memcpy(dest, src, len)
+>   56:	6a 00                	push   $0x0                          6a 00                	push   $0x0
+>   58:	e8 b7 fe ff ff       	call   0xffffff14                    e8 b7 fe ff ff       	call   0xffffff14
+>   5d:	8b 43 1c             	mov    0x1c(%ebx),%eax               8b 43 1c             	mov    0x1c(%ebx),%eax
+>   60:	89 44 24 04          	mov    %eax,0x4(%esp)                89 44 24 04          	mov    %eax,0x4(%esp)
+>   64:	f0 fe 07             	lock incb (%edi)                     f0 fe 07             	lock incb (%edi)
+>   67:*	0f 1f 44 00 00       	nopl   0x0(%eax,%eax,1)              e9 03 00 00 00       	jmp    0x6f              <--- PATCHED INSN
+>   6c:	58                   	pop    %eax                          58                   	pop    %eax
+>   6d:	eb 1d                	jmp    0x8c                          eb 1d                	jmp    0x8c
+>   6f:	8b 35 70 ad 40 c1    	mov    0xc140ad70,%esi               8b 35 70 ad 40 c1    	mov    0xc140ad70,%esi
+>   75:	85 f6                	test   %esi,%esi                     85 f6                	test   %esi,%esi
+>   77:	74 13                	je     0x8c                          74 13                	je     0x8c
+>   79:	8b 46 04             	mov    0x4(%esi),%eax                8b 46 04             	mov    0x4(%esi),%eax
+>   7c:	89 da                	mov    %ebx,%edx                     89 da                	mov    %ebx,%edx
+>   7e:	8b 4c 24 04          	mov    0x4(%esp),%ecx                8b 4c 24 04          	mov    0x4(%esp),%ecx
+>   82:	ff 16                	call   *(%esi)                       ff 16                	call   *(%esi)
+>   84:	83 c6 08             	add    $0x8,%esi                     83 c6 08             	add    $0x8,%esi
+>   87:	83 3e 00             	cmpl   $0x0,(%esi)                   83 3e 00             	cmpl   $0x0,(%esi)
+>   8a:	eb eb                	jmp    0x77                          eb eb                	jmp    0x77
+>   8c:	89 d8                	mov    %ebx,%eax                     89 d8                	mov    %ebx,%eax
+>   8e:	ff 14 24             	call   *(%esp)                       ff 14 24             	call   *(%esp)
 
-which would turn (e.g.)
+OK, new theory.. 
 
-        TP_fast_assign(
-                memcpy(__entry->comm, t->comm, TASK_COMM_LEN);
-                __entry->pid    = t->pid;
-        ),
+56 pushl 0
+67 nopl         jmp 0x6f
+   popl
+   jmp 0x8c
 
-into
+6f              mov
+                test
+		je 0x8c
 
-        TP_fast_assign(
-                __assign_memcpy(__entry->comm, t->comm, TASK_COMM_LEN);
-                __assign(__entry->pid, t->pid);
-        ),
+8c mov
+   call *(%esp)
 
-So LTTng (and other tracers) can override these with their own primitives. This
-is a basic step required to bring the LTTng tree closer to mainline.
 
-Thoughts ?
+So in the jumped path we miss a popl which pop's the 0 pushed before,
+which is the exact address call is failing on..
 
-Mathieu
+Looks like gcc got its branches confused or something..
 
--- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
+Am I reading this right?
