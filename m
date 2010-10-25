@@ -1,160 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756333Ab0JYOqY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Oct 2010 10:46:24 -0400
-Received: from smtp-gw11.han.skanova.net ([81.236.55.20]:44969 "EHLO
-	smtp-gw11.han.skanova.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755475Ab0JYOqW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Oct 2010 10:46:22 -0400
-Subject: [PATCH 2/2 v3] mfd: Add timberdale video-in driver to timberdale
-From: Richard =?ISO-8859-1?Q?R=F6jfors?= 
-	<richard.rojfors@pelagicore.com>
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Cc: Linux Media Mailing List <linux-media@vger.kernel.org>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Douglas Schilling Landgraf <dougsland@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 25 Oct 2010 16:40:24 +0200
-Message-ID: <1288017624.8517.28.camel@debian>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 8bit
+	id S1752836Ab0JYOuh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Oct 2010 10:50:37 -0400
+Received: from web37603.mail.mud.yahoo.com ([209.191.87.86]:39866 "HELO
+	web37603.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751518Ab0JYOug convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Oct 2010 10:50:36 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=yahoo.com;
+  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type:Content-Transfer-Encoding;
+  b=oNIDUTFRPT9UZSWEdmp/yYBxR7h6uvz2un5qtPkvNw5iRd9d28ORvz4b2ROH4mzjlaOydxFZKWaq71kCTKqyzsqzTn1fcs82mKMwulPq93EuGOZrC1m3CK4x+nBLMGsr4yEMd023HoZBqylE5/oceRfUVgo9akKXcLiMk9zCThQ=;
+Message-ID: <779344.19696.qm@web37603.mail.mud.yahoo.com>
+X-YMail-OSG: qpW85BUVM1nY7OzKcH.nH8sGSoXDiYwzDPHjINxALn6wCzo
+ 05tcvm3cPOBInoP3c1bfFWHJqO9DW_.obYR_hVwP2o18cV2nO4rRx8uo5XoC
+ _M5ncBHs7.8VAyZw6Ksv.._N7bDETX_hBN40xCt1.ioriwGdLKG1HooAS_Qe
+ KhoakL5hruhnmxdteMNMyyVPRsZE5F0L8vgx.D_kOODBFe1b6TP9vIhneSkD
+ EPXBpoJaJjSH3d86.eL9glyo4GcWna0pjLUMz3jgBGFlhG.iXo0C1a6mQF.O
+ qmV.RUs1X1uxLRWLUQaWqs.MOKdfYuKN5OW9Fd7oLgafQdrJgSfyXvErF_.Q
+ XwvuKTEcbNXjOoTCYdmAMQwg.C97xngS7nio-
+X-Mailer: YahooMailClassic/11.4.9 YahooMailWebService/0.8.107.284920
+Date: Mon, 25 Oct 2010 07:50:34 -0700 (PDT)
+From: Alex Dubov <oakad@yahoo.com>
+Subject: Re: [PATCH 02/29] memstick: core: reorder functions This patch just reorders functions in memstick.c So that host specific and card driver specific functions are now grouped together. This makes it easier to understand the code.
+To: Maxim Levitsky <maximlevitsky@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Maxim Levitsky <maximlevitsky@gmail.com>
+In-Reply-To: <1287791637-10329-3-git-send-email-maximlevitsky@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch defines platform data for the video-in driver
-and adds it to all configurations of timberdale.
 
-Signed-off-by: Richard Röjfors <richard.rojfors@pelagicore.com>
-Acked-by: Samuel Ortiz <sameo@linux.intel.com>
----
-diff --git a/drivers/mfd/timberdale.c b/drivers/mfd/timberdale.c
-index ac59950..52a651b 100644
---- a/drivers/mfd/timberdale.c
-+++ b/drivers/mfd/timberdale.c
-@@ -40,6 +40,7 @@
- #include <linux/spi/mc33880.h>
- 
- #include <media/timb_radio.h>
-+#include <media/timb_video.h>
- 
- #include <linux/timb_dma.h>
- 
-@@ -238,7 +239,24 @@ static const __devinitconst struct resource timberdale_uartlite_resources[] = {
- 	},
- };
- 
--static const __devinitconst struct resource timberdale_radio_resources[] = {
-+static __devinitdata struct i2c_board_info timberdale_adv7180_i2c_board_info = {
-+	/* Requires jumper JP9 to be off */
-+	I2C_BOARD_INFO("adv7180", 0x42 >> 1),
-+	.irq = IRQ_TIMBERDALE_ADV7180
-+};
-+
-+static __devinitdata struct timb_video_platform_data
-+	timberdale_video_platform_data = {
-+	.dma_channel = DMA_VIDEO_RX,
-+	.i2c_adapter = 0,
-+	.encoder = {
-+		.module_name = "adv7180",
-+		.info = &timberdale_adv7180_i2c_board_info
-+	}
-+};
-+
-+static const __devinitconst struct resource
-+timberdale_radio_resources[] = {
- 	{
- 		.start	= RDSOFFSET,
- 		.end	= RDSEND,
-@@ -272,6 +290,18 @@ static __devinitdata struct timb_radio_platform_data
- 	}
- };
- 
-+static const __devinitconst struct resource timberdale_video_resources[] = {
-+	{
-+		.start	= LOGIWOFFSET,
-+		.end	= LOGIWEND,
-+		.flags	= IORESOURCE_MEM,
-+	},
-+	/*
-+	note that the "frame buffer" is located in DMA area
-+	starting at 0x1200000
-+	*/
-+};
-+
- static __devinitdata struct timb_dma_platform_data timb_dma_platform_data = {
- 	.nr_channels = 10,
- 	.channels = {
-@@ -372,6 +402,13 @@ static __devinitdata struct mfd_cell timberdale_cells_bar0_cfg0[] = {
- 		.data_size = sizeof(timberdale_gpio_platform_data),
- 	},
- 	{
-+		.name = "timb-video",
-+		.num_resources = ARRAY_SIZE(timberdale_video_resources),
-+		.resources = timberdale_video_resources,
-+		.platform_data = &timberdale_video_platform_data,
-+		.data_size = sizeof(timberdale_video_platform_data),
-+	},
-+	{
- 		.name = "timb-radio",
- 		.num_resources = ARRAY_SIZE(timberdale_radio_resources),
- 		.resources = timberdale_radio_resources,
-@@ -430,6 +467,13 @@ static __devinitdata struct mfd_cell timberdale_cells_bar0_cfg1[] = {
- 		.resources = timberdale_mlogicore_resources,
- 	},
- 	{
-+		.name = "timb-video",
-+		.num_resources = ARRAY_SIZE(timberdale_video_resources),
-+		.resources = timberdale_video_resources,
-+		.platform_data = &timberdale_video_platform_data,
-+		.data_size = sizeof(timberdale_video_platform_data),
-+	},
-+	{
- 		.name = "timb-radio",
- 		.num_resources = ARRAY_SIZE(timberdale_radio_resources),
- 		.resources = timberdale_radio_resources,
-@@ -478,6 +522,13 @@ static __devinitdata struct mfd_cell timberdale_cells_bar0_cfg2[] = {
- 		.data_size = sizeof(timberdale_gpio_platform_data),
- 	},
- 	{
-+		.name = "timb-video",
-+		.num_resources = ARRAY_SIZE(timberdale_video_resources),
-+		.resources = timberdale_video_resources,
-+		.platform_data = &timberdale_video_platform_data,
-+		.data_size = sizeof(timberdale_video_platform_data),
-+	},
-+	{
- 		.name = "timb-radio",
- 		.num_resources = ARRAY_SIZE(timberdale_radio_resources),
- 		.resources = timberdale_radio_resources,
-@@ -521,6 +572,13 @@ static __devinitdata struct mfd_cell timberdale_cells_bar0_cfg3[] = {
- 		.data_size = sizeof(timberdale_gpio_platform_data),
- 	},
- 	{
-+		.name = "timb-video",
-+		.num_resources = ARRAY_SIZE(timberdale_video_resources),
-+		.resources = timberdale_video_resources,
-+		.platform_data = &timberdale_video_platform_data,
-+		.data_size = sizeof(timberdale_video_platform_data),
-+	},
-+	{
- 		.name = "timb-radio",
- 		.num_resources = ARRAY_SIZE(timberdale_radio_resources),
- 		.resources = timberdale_radio_resources,
-diff --git a/drivers/mfd/timberdale.h b/drivers/mfd/timberdale.h
-index c11bf6e..4412acd 100644
---- a/drivers/mfd/timberdale.h
-+++ b/drivers/mfd/timberdale.h
-@@ -23,7 +23,7 @@
- #ifndef MFD_TIMBERDALE_H
- #define MFD_TIMBERDALE_H
- 
--#define DRV_VERSION		"0.2"
-+#define DRV_VERSION		"0.3"
- 
- /* This driver only support versions >= 3.8 and < 4.0  */
- #define TIMB_SUPPORTED_MAJOR	3
 
+--- On Fri, 22/10/10, Maxim Levitsky <maximlevitsky@gmail.com> wrote:
+
+> From: Maxim Levitsky <maximlevitsky@gmail.com>
+> Subject: [PATCH 02/29] memstick: core: reorder functions This patch just reorders functions in memstick.c So that host specific and card driver specific functions are now grouped together. This makes it easier to understand the code.
+
+
+I'm not sure this purely subjective patch is of any real utility.
+And at any rate, it belongs to the end of the patchset (where the clean-up
+normally go), not to the beginning.
+
+
+
+
+      
