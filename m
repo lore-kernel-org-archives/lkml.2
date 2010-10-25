@@ -1,57 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758340Ab0JYXf3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Oct 2010 19:35:29 -0400
+	id S1758385Ab0JYXfp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Oct 2010 19:35:45 -0400
 Received: from mail-qw0-f46.google.com ([209.85.216.46]:37756 "EHLO
 	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758272Ab0JYXf1 (ORCPT
+	with ESMTP id S1757108Ab0JYXfn convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Oct 2010 19:35:27 -0400
+	Mon, 25 Oct 2010 19:35:43 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=hIoDy7rDr9+3iL/UUWHd/dHuGINjgwfVMAeBp+QXAOYicblN29T18nPHsZJX8QKoXP
-         h5LBFY6vH+2hOmCSmecxXWejJCcuqt7/adNVlPfXU6nazqTEECYBdbIIKChac4i7LvoB
-         cilQh6iTMRFCUxoOUyHGEaKHxh6ycER3q13LY=
+         :content-type:content-transfer-encoding;
+        b=ADIhi7pF0jb0cHNTce86PpUMSkAqnU98Vs7JHwocYv9I7SIto5S30QR5rEdEOHOvsZ
+         ZSBy4LNuhUPWnYYogJENDqNhSJguMlbX2EgZGMn+889/Svns04132Bj8aIZFs34nHd2w
+         ezRrk+8zwIPpB/ikREVTb6i6WOCMKjgmfH+qw=
 MIME-Version: 1.0
-In-Reply-To: <AANLkTinvz7b7yQ-MP4rZHudNuD-0A+Ag7ut0=ZNaCvyV@mail.gmail.com>
-References: <AANLkTim+vj_OAd22TdThuC-HSqUiDjguOHQWjyqFaq6N@mail.gmail.com>
-	<AANLkTi=Cpq2_vV2RGcoQhrqk8xpL59AvLFPzfvTBk5Xa@mail.gmail.com>
-	<4CBF8BDB.7090907@gmail.com>
-	<20101021075401.GC22100@n2100.arm.linux.org.uk>
-	<AANLkTikYtxiT+R3eb0N5U1hoDvaP=oevjWjUuAJ453p=@mail.gmail.com>
-	<AANLkTinvz7b7yQ-MP4rZHudNuD-0A+Ag7ut0=ZNaCvyV@mail.gmail.com>
-Date: Tue, 26 Oct 2010 01:35:26 +0200
-Message-ID: <AANLkTiniPdzC4YEmq5_kJwv94fGmjE65i=Cjmd9VDMg5@mail.gmail.com>
-Subject: Re: [RFC] Removal of dead code from arch/arm/*
-From: Zimny Lech <napohybelskurwysynom2010@gmail.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+In-Reply-To: <20101025215132.GA23427@liondog.tnic>
+References: <1287992610-14996-1-git-send-email-ying.huang@intel.com>
+	<1287992610-14996-10-git-send-email-ying.huang@intel.com>
+	<20101025084553.GA27119@elte.hu>
+	<1287997112.2862.322.camel@yhuang-dev>
+	<20101025092557.GA11544@elte.hu>
+	<AANLkTi=2SVT1M+nDZUB7EB05jh+tsuKcew_t66QORrwb@mail.gmail.com>
+	<20101025202344.GC13652@liondog.tnic>
+	<AANLkTi=DEmss+3uX_5uw=VJDY9+cFPayjQkCQHa+r+Ye@mail.gmail.com>
+	<20101025215132.GA23427@liondog.tnic>
+Date: Mon, 25 Oct 2010 16:35:43 -0700
+Message-ID: <AANLkTi=pJFUWusDNrwQA8bWYy4q5QZBHxkbikZGKvHLY@mail.gmail.com>
+Subject: Re: [NAK] Re: [PATCH -v2 9/9] ACPI, APEI, Generic Hardware Error
+ Source POLL/IRQ/NMI notification type support
+From: Tony Luck <tony.luck@gmail.com>
+To: Borislav Petkov <bp@alien8.de>, Tony Luck <tony.luck@gmail.com>,
+        Ingo Molnar <mingo@elte.hu>, Huang Ying <ying.huang@intel.com>,
+        Len Brown <lenb@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        Borislav Petkov <petkovbb@googlemail.com>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Don Zickus <dzickus@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/10/22 Zimny Lech <napohybelskurwysynom2010@gmail.com>:
-> 2010/10/21 Zimny Lech <napohybelskurwysynom2010@gmail.com>:
->> Ok, I dropped this patch. Recreated tree can be found here
->> git pull git://github.com/napohybelskurwysynom2010/Linux-2.6-nps.git rodc2
->
-> Sorry, I had to change the username, because some jerk denunciated me
-> on github ;)
-> git pull git://github.com/zimnylech/Linux-2.6-nps.git rodc2
+On Mon, Oct 25, 2010 at 2:51 PM, Borislav Petkov <bp@alien8.de> wrote:
+> Concerning fatal errors, take a look at drivers/edac/mce_amd.(c|h)¹ -
+> this is not in arch/x86/ and still decodes MCEs in the kernel. And it
+> works fine - it even helped in several cases where people simply read
+> their serial console/dmesg and didn't have to collect it first and run
+> it through some tool to understand which functional unit in the CPU is
+> mchecking.
 
-Ping?
+That looks neat ... but end-users seem to have some conflicting requirements
+here. Your uses seem to like it but the LLNL folks at the S.F. meeting said
+that solutions that involved looking at console logs from thousands
+of machines in a cluster were not acceptable.
 
-Kind regards,
-Macavity
+I doubt very much if any end-user cares which unit *within* a cpu
+failed (their replaceable unit is the whole of the cpu). So much of
+your driver could be replaced with: printk("CPU%d is bad\n", cpu);
 
--- 
-Slawa!
-N.P.S.
-
-Les fleurs du mal unfold
-Comme les fleurs du mal
-Dark demons of my soul
-Un amour fatal
+-Tony
