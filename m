@@ -1,76 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755263Ab0JYNSm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Oct 2010 09:18:42 -0400
-Received: from ksp.mff.cuni.cz ([195.113.26.206]:53506 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751228Ab0JYNSk (ORCPT
+	id S1754146Ab0JYNX3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Oct 2010 09:23:29 -0400
+Received: from mxout1.idt.com ([157.165.5.25]:56089 "EHLO mxout1.idt.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751164Ab0JYNX2 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Oct 2010 09:18:40 -0400
-Date: Mon, 25 Oct 2010 15:18:30 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: James Morris <jmorris@namei.org>
-Cc: Christoph Hellwig <hch@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Kyle McMartin <kyle@mcmartin.ca>, kernel@lists.fedoraproject.org,
-        Mimi Zohar <zohar@us.ibm.com>, warthog9@kernel.org,
-        Dave Chinner <david@fromorbit.com>, linux-kernel@vger.kernel.org,
-        "H. Peter Anvin" <hpa@zytor.com>, Serge Hallyn <serue@us.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: ima: use of radix tree cache indexing == massive waste of
- memory?
-Message-ID: <20101025131829.GD2162@ucw.cz>
-References: <20101016065206.GO4681@dastard>
- <20101016192027.GA6883@infradead.org>
- <ebc4973c-6c11-4397-b8b0-c212a27abce4@email.android.com>
- <20101017004945.GE1614@infradead.org>
- <20101017054008.GA16383@elte.hu>
- <20101017184652.GB28060@infradead.org>
- <alpine.LRH.2.00.1010181127480.9476@tundra.namei.org>
+	Mon, 25 Oct 2010 09:23:28 -0400
+X-MimeOLE: Produced By Microsoft Exchange V6.5
+Content-class: urn:content-classes:message
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LRH.2.00.1010181127480.9476@tundra.namei.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain;
+	charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+Subject: RE: [PATCH -mm 0/2] RapidIO: Changes to handling of RIO switches
+Date: Mon, 25 Oct 2010 06:22:54 -0700
+Message-ID: <0CE8B6BE3C4AD74AB97D9D29BD24E55201445BA4@CORPEXCH1.na.ads.idt.com>
+In-Reply-To: <4CC20923.8050400@neli.hopto.org>
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+Thread-Topic: [PATCH -mm 0/2] RapidIO: Changes to handling of RIO switches
+Thread-Index: ActyNGCMLZ12e7KpTgOBNROMC2NIVgCCnKvw
+References: <1287688250-14226-1-git-send-email-alexandre.bounine@idt.com> <4CC0AD74.8070800@neli.hopto.org> <0CE8B6BE3C4AD74AB97D9D29BD24E55201445906@CORPEXCH1.na.ads.idt.com> <4CC1D7DE.7060405@neli.hopto.org> <0CE8B6BE3C4AD74AB97D9D29BD24E55201445A6B@CORPEXCH1.na.ads.idt.com> <4CC20923.8050400@neli.hopto.org>
+From: "Bounine, Alexandre" <Alexandre.Bounine@idt.com>
+To: "Micha Nelissen" <micha@neli.hopto.org>
+Cc: <akpm@linux-foundation.org>, <linux-kernel@vger.kernel.org>,
+        <linuxppc-dev@lists.ozlabs.org>,
+        "Matt Porter" <mporter@kernel.crashing.org>,
+        "Li Yang" <leoli@freescale.com>,
+        "Kumar Gala" <galak@kernel.crashing.org>,
+        "Thomas Moll" <thomas.moll@sysgo.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
-
-> > Especially as our merge requirements for security/ are a lot lower than
-> > for the rest of the kernel given that James is very afraid of getting
-> > whacked by Linux for not mering things.
+Micha Nelissen <micha@neli.hopto.org> wrote:
+> Bounine, Alexandre wrote:
+> > If we will need to identify the same physical switch by different
+> > processors we may use the component tag which now is unique for
+every
+> > device.
 > 
-> I think historically you'll see that I'm not afraid of getting whacked by 
-> Linus.
+> Yes, identification is the point. I think it might be confusing to
+have
+> a destid *and* a component tag id which are slightly different. The
+> destid is unambiguous (if you know whether the device is a switch or
+> endpoint) so I think it makes sense to use that if possible.
+
+The component tag is the way to identify a RIO device (switch or
+endpoint).
+1. it is defined by RIO spec as a register existing in both types of
+devices (this provides a universal access to the identification
+information by any processor).
+2. the Error Management specification already uses the CT as a device
+identifier.
+3. the CT value is large enough to be unique for max number of endpoints
+in the large system and any reasonable number of switches. BTW, I am
+planning to provide a patch that defines CT fields to ensure future
+compatibility.
+
+The destid does not exists as a HW element of switches and therefore
+cannot be used as a universal identification token.
+
+> > This actually gives me another idea: instead of using global
+> > next_switchid counter make rswitch->switchid = component_tag and
+> > switches in sysfs will look identical for every processor (or just
+get
+> > rid of rswitch->switchid and use component_tag directly for
+switches).
 > 
-> A procedure for merging security features has been adopted by consensus, 
-> based on suggestions from Arjan, with the aim of preventing the literally 
-> endless arguments which arise from security feature discussions.  It's 
-> sometimes referred to as the Arjan protocol, essentially:
-> 
->   If the feature correctly implements a well-defined security goal, meets 
->   user needs without incurring unreasonable overheads, passes technical 
->   review, and is supported by competent developers, then it is likely to 
->   be merged.
-> 
-> If you disagree with a specific feature, you need to step up while it's 
-> being reviewed and make a case against it according to the above
-> criteria.
+> I still prefer the destid as the single identification id.
 
-Well, I'm arguing that the criteria are wrong. Duplicated crap is
-creeping in (TOMOYO vs. AppArmor), and strange stuff that has no
-legitimate use is in (IMA -- what is it good for? locking machines
-down, iPhone style).
+As I answered above, destid cannot be used as a universal identification
+token - it is a routing element. The destID has register in endpoints
+only to provide a packet filtering.
 
-> If you disagree with the protocol, then you need to come up with a better 
-> one, and probably implement it yourself, to the satisfaction of all 
-> parties.
+In your patch you allocate individual destid for switches. This method
+has two problems:
+1. The destid for the switch needs an additional mechanism to share it
+among processors in the RIO network,
+2. It takes ID value away from the pool of available IDs, what will
+reduce number of IDs that can be assigned to endpoints. (NOTE: I am
+actually working on destID assignment scheme that will recycle destID in
+case of hot-swap events, i.e. if device is extracted its destID will be
+returned to the pool of available IDs and may be reused later for device
+insertion).
 
-I do disagree, and I do not think 'satistfaction of all parties' is
-reasonable goal. Rest of kernel has different rules, and IMO they are better.
+The only case when assigning individual destid to the switch is
+justified is an "empty" switch - one without any endpoints attached to
+it. But that destid should be assigned to an endpoint as soon as it is
+attached to that switch.  
 
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+Alex.
+
