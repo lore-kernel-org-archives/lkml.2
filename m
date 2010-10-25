@@ -1,164 +1,222 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932630Ab0JYRIX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Oct 2010 13:08:23 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:38255 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756170Ab0JYRIW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Oct 2010 13:08:22 -0400
-From: Kevin Hilman <khilman@deeprootsystems.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org,
-        davinci-linux-open-source@linux.davincidsp.com
-Subject: [GIT PULL] davinci updates for 2.6.37
-Organization: Deep Root Systems, LLC
-Date: Mon, 25 Oct 2010 18:08:15 +0100
-Message-ID: <87sjzukxog.fsf@deeprootsystems.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1.50 (gnu/linux)
+	id S1759118Ab0JYRKx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Oct 2010 13:10:53 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:38794 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756950Ab0JYRKv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Oct 2010 13:10:51 -0400
+Date: Mon, 25 Oct 2010 19:10:22 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: Huang Ying <ying.huang@intel.com>, Len Brown <lenb@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        Borislav Petkov <petkovbb@googlemail.com>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Don Zickus <dzickus@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Arjan van de Ven <arjan@infradead.org>
+Subject: Re: [NAK] Re: [PATCH -v2 9/9] ACPI, APEI, Generic Hardware Error
+ Source POLL/IRQ/NMI notification type support
+Message-ID: <20101025171022.GA29803@elte.hu>
+References: <1287992610-14996-10-git-send-email-ying.huang@intel.com>
+ <20101025084553.GA27119@elte.hu>
+ <1287997112.2862.322.camel@yhuang-dev>
+ <20101025091913.GA17622@basil.fritz.box>
+ <20101025111530.GA27659@elte.hu>
+ <20101025123753.GB17622@basil.fritz.box>
+ <20101025125531.GA6075@elte.hu>
+ <20101025131127.GC17622@basil.fritz.box>
+ <20101025134740.GA8888@elte.hu>
+ <20101025151427.GD17622@basil.fritz.box>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101025151427.GD17622@basil.fritz.box>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
 
-Please pull davinci platform updates for 2.6.37:
+* Andi Kleen <andi@firstfloor.org> wrote:
 
-  ssh://master.kernel.org/pub/scm/linux/kernel/git/khilman/linux-davinci.git davinci-for-linus
+> [...]
+>
+> They are really all quite different.
 
-Note that I also merged Russell King's devel branch (which you already
-merged) in order to fixup some final conflicts.  diffstat/shortlog
-follows for just the davinci specific parts.
+The differences in those tools do not seem natural. Those tools are mostly just 
+different for difference's sake - which is sad.
+
+They could also admittedly benefit from a proper build mechanism and other 
+integration goodies. For example when building mce-inject i get:
+
+  $ make
+  Makefile:42: .depend: No such file or directory
+
+When running the mce-inject tool it apparently hangs:
+
+  $ ./mce-inject 
+
+(it's waiting for stdin)
+  
+it does not recognize any of the standard arguments:
+
+  $ ./mce-inject -h
+  -h: No such file or directory
+  $ ./mce-inject --help
+  --help: No such file or directory
+  $ 
+
+That's rather user-unfriendly.
+
+Also, that's all besides the point, exactly _why_ should bad tooling examples be 
+justification for us to continue that bad example in kernel-space and to ignore good 
+user-space tooling examples?
+
+Also, my NAK is not really against your user-space tooling - my NAK is against the 
+kernel bits.
+
+> On merging them:
+> 
+> Well ok in theory one could have ras test1|test2|test3
+
+It's a good first step to realize that.
+
+> But you would end up like git and perf where you have lots of different tools just 
+> linked into the same executable. [...]
+
+... or LTP, which too is a suite of many tests.
+
+For testing it's especially good to think in 'suites', as there are many repetitive 
+components and people quite often tend to want to use all the tests when they are 
+validating, certifying, debugging a particular piece of hardware.
+
+> [...] Not really an advantage, would you agree on that?
+
+If you only look at Git, perf and LTP as examples then them offering a consistent, 
+integrated command, configuration and handling interface is _wildly_ advantageous.
+
+There's a common help system, common documentation, common parameters, common 
+workflow and a common philosophy behind those tools - and more. There's development 
+process advantages as well: beyond sharing code via common libraries the developers 
+cross much easier and generally advantages of economy of scale apply.
+
+Note, i'm not telling you to follow those examples. I only point out that they exist 
+and that we try to shape the kernel interfaces based on sane examples not based on 
+insane examples.
+
+> Ok i understand in the git/perf case there's also a common library, but at least 
+> in the error injection case there isn't really.
+
+There isnt really mostly because you are not making use of common facilities. That's 
+my whole point. It's a bug, not a feature. You make this area flow apart into 
+inconsistent utilities, there's no coherency.
+
+Which is fine to me as long as you dont contaminate the kernel with that kind of 
+incoherency ...
+
+> Anyways if the request is to link everything into a single binary it could be 
+> looked at, but I must admit I personally don't see any advantage from that.
+
+Why do you limit the advantages of Git et al to 'linking into a single binary' 
+artificially? It isnt the only or even main advantage.
+
+( That claim isnt even true technically, perf for example supports and uses script
+  extensions that are separate from the main binary. Git has similar helpers as well
+  although it tends to integrate all core functionality. )
+
+> Or you could have a single kernel inject interface with a bazillion modi and 
+> different options that needs to be extended all the time to cover some new case. 
+> Aka the ioctl multiplexer from hell. [...]
+
+Why use an ioctl multiplexer from hell?
+
+A proper system call or sysfs based approach should be used - that way the hierarchy 
+and structure is achieved via a VFS namespace.
+
+         CPU events would be under /sys/devices/system/cpu/cpu0/events/
+     IO-APIC events would be under /sys/devices/system/ioapic/ioapic0/events/
+   NUMA node events would be under /sys/devices/system/node/node0/events/
+ PCI chipset events would be under /sys/devices/pci0000:00/events/
+
+etc.
+
+There would be a /sys/class/events/ iterator to find all events, etc.
+
+There is no messy ioctl demux - just a clean hiearchy of hw structure, and event and 
+hardware specific implementations of them (with a good deal of sane default 
+behavior, as many events dont need special treatment).
+
+The main 'global' property that is absolutely needed is event enumeration.
+
+Regular event reporting is event 'output' - while injection is really event 'input' 
+with custom handlers to make it trigger under the right circumstances, but it's 
+essentially the same abstract model that stands behind them.
+
+> [...] I don't think that's really an appealing alternative. It would work if all 
+> the injections were very similar, but they are really not. They are all different.
+
+If you are artificially limiting options to an insane solution then of course it 
+looks all unappealing to you ...
+
+How about not doing that and considering the model we outlined?
+
+> Current way is to have own files in debugfs for each or put in other places where 
+> it fits (e.g. madvise for in process injection)
+
+As i mentioned it several times (and even in the previous mail) we are moving it to 
+sysfs - several versions of patches have been posted.
+
+So why are you pretending that debugfs is our main goal? It isnt.
+
+> Is the problem that there is no cleanly defined place in debugfs for it? Maybe 
+> could simply define a standard directory structure in debugfs?
+> 
+> I don't have a problem with that. Right now the approach was to put it into a 
+> directory per subsystem, but perhaps there could be something better.
+
+Right. A first good step would be to log all those ERST events via TRACE_EVENT() and 
+map out any missing bits you may need to get them logged.
+
+Another useful area would be to help out Ling Ming finish up the sysfs bits, and to 
+have events attach to existing topologies that Linux enumerates already.
+
+Another good place to help would be Boris and the RAS tool, which involves the 
+definition of new events that cover all the relevant event sources, and the 
+population of tools/edac/ with tooling. That too could grow APEI and ERST logging 
+(and later, injection) awareness.
+
+Yet another useful area would be to define injection capabilities to TRACE_EVENT() 
+type of events.
+
+> > Your refusal to even consider this possibility and to look at the EDAC/RAS 
+> > patches that deal with this is puzzling to me.
+> 
+> What I find puzzling is that you really continue to ignore all the practical 
+> details, and still nack other people's work without even trying to understand it.
+
+If only you listed practical details then we could address them ...
+
+But as long as you come up with vague objections there's little i can do but to 
+point out crap when it happens later: when you ignore what i suggest and then post a 
+messy solution a few months down the line.
+
+> That's not really the old Ingo I used to know.
+
+That comes with me being a maintainer i'm afraid, i'm more directly affected by bad 
+patches so i object to them more frequently. I'm also kind of expected to do that.
 
 Thanks,
 
-Kevin
-
-
-
- MAINTAINERS                                     |    4 +-
- arch/arm/configs/da8xx_omapl_defconfig          |    3 +
- arch/arm/mach-davinci/Kconfig                   |   76 +-
- arch/arm/mach-davinci/Makefile                  |    4 +-
- arch/arm/mach-davinci/aemif.c                   |  133 +++
- arch/arm/mach-davinci/board-da830-evm.c         |   24 +-
- arch/arm/mach-davinci/board-da850-evm.c         |   92 ++-
- arch/arm/mach-davinci/board-dm365-evm.c         |   11 +-
- arch/arm/mach-davinci/board-dm644x-evm.c        |   20 +-
- arch/arm/mach-davinci/board-dm646x-evm.c        |   21 +-
- arch/arm/mach-davinci/board-mityomapl138.c      |  424 +++++++
- arch/arm/mach-davinci/board-neuros-osd2.c       |    7 +-
- arch/arm/mach-davinci/board-omapl138-hawk.c     |   64 ++
- arch/arm/mach-davinci/board-sffsdr.c            |    7 +-
- arch/arm/mach-davinci/board-tnetv107x-evm.c     |   56 +
- arch/arm/mach-davinci/clock.c                   |   75 ++-
- arch/arm/mach-davinci/clock.h                   |    5 +
- arch/arm/mach-davinci/cpufreq.c                 |   28 +-
- arch/arm/mach-davinci/da850.c                   |   76 +-
- arch/arm/mach-davinci/devices-da8xx.c           |   70 ++-
- arch/arm/mach-davinci/devices-tnetv107x.c       |   50 +
- arch/arm/mach-davinci/devices.c                 |    2 +-
- arch/arm/mach-davinci/dm365.c                   |   23 +-
- arch/arm/mach-davinci/dm644x.c                  |   23 +-
- arch/arm/mach-davinci/dm646x.c                  |   22 +-
- arch/arm/mach-davinci/dma.c                     |    8 +-
- arch/arm/mach-davinci/include/mach/aemif.h      |   36 +
- arch/arm/mach-davinci/include/mach/da8xx.h      |    7 +-
- arch/arm/mach-davinci/include/mach/dm365.h      |    2 +-
- arch/arm/mach-davinci/include/mach/dm644x.h     |    2 +-
- arch/arm/mach-davinci/include/mach/dm646x.h     |    2 +-
- arch/arm/mach-davinci/include/mach/nand.h       |    6 +-
- arch/arm/mach-davinci/include/mach/psc.h        |    1 +
- arch/arm/mach-davinci/include/mach/tnetv107x.h  |    3 +
- arch/arm/mach-davinci/include/mach/uncompress.h |    2 +
- arch/arm/mach-davinci/tnetv107x.c               |   11 +-
- arch/arm/mach-omap2/board-am3517evm.c           |   31 +-
- drivers/input/keyboard/Kconfig                  |    9 +
- drivers/input/keyboard/Makefile                 |    1 +
- drivers/input/keyboard/tnetv107x-keypad.c       |  340 ++++++
- drivers/input/touchscreen/Kconfig               |    9 +
- drivers/input/touchscreen/Makefile              |    1 +
- drivers/input/touchscreen/tnetv107x-ts.c        |  396 +++++++
- drivers/mtd/nand/davinci_nand.c                 |   61 +-
- drivers/net/Kconfig                             |   21 +
- drivers/net/Makefile                            |    2 +
- drivers/net/davinci_cpdma.c                     |  965 ++++++++++++++++
- drivers/net/davinci_cpdma.h                     |  108 ++
- drivers/net/davinci_emac.c                      | 1338 +++--------------------
- drivers/net/davinci_mdio.c                      |  475 ++++++++
- include/linux/davinci_emac.h                    |   16 +-
- 51 files changed, 3814 insertions(+), 1359 deletions(-)
-
-Cyril Chemparathy (17):
-      Davinci: tnetv107x: retain psc reg base after init
-      davinci: add idcode for tnetv107x rev 1.1/1.2
-      net: davinci_emac: separate out davinci mdio
-      davinci: add mdio platform devices
-      omap: add mdio platform devices
-      net: davinci_emac: switch to new mdio
-      davinci: cleanup mdio arch code and switch to phy_id
-      omap: cleanup unused davinci mdio arch code
-      net: davinci_emac: cleanup unused mdio emac code
-      net: davinci_emac: separate out cpdma code
-      net: davinci_emac: switch to new cpdma layer
-      net: davinci_emac: cleanup unused cpdma code
-      input: add driver for tnetv107x on-chip keypad controller
-      davinci: add tnetv107x keypad platform device
-      davinci: add keypad config for tnetv107x evm board
-      input: add driver for tnetv107x touchscreen controller
-      davinci: add tnetv107x touchscreen platform device
-
-Juha Kuikka (3):
-      DA850: Add LPSC id for MMCSD1 peripheral
-      DA850: Split MMCSD clock into two to support both MMCSD peripherals
-      DA850: Add MMCSD1 resources, platform device and convenience registration function
-
-Kevin Hilman (1):
-      davinci: clock: make 'disable unused clocks' printk debug only
-
-Kulikov Vasiliy (1):
-      arm: mach-davinci: check irq2ctlr() result
-
-Michael Williamson (5):
-      davinci: Add machine checks to DA8XX serial console init routines
-      davinci: Add CONFIG_REGULATOR_DUMMY to DA8XX defconfig file.
-      davinci: Initial support for MityDSP-L138/MityARM-1808
-      davinci: Add I2C0 devices to MityDSP-L138/MityARM-1808 platform
-      davinci: MityDSP-L138/MityARM-1808 read MAC address from I2C Prom
-
-Nicolas Kaiser (1):
-      arm/davinci: remove duplicated include
-
-Sekhar Nori (17):
-      davinci: da850 evm: sparse cleanup: make file local variables static
-      MAINTAINERS: Add Kevin's e-mail in entry for TI DaVinci
-      davinci: cpufreq: bailout on regulator errors
-      davinci: clean up inconsistent usage of spaces in Kconfig
-      davinci: introduce support for AM1x ARM9 microprocessors
-      davinci: am18x/da850/omap-l138: use 'NOM' voltage defined in datasheet as min voltage
-      davinci: dm365: disable pulldowns for all MMC/SD1 pins.
-      davinci: clock: add support for setting sysclk rate
-      davinci: cpufreq: add support for keeping an additional clock constant
-      davinci: am18x/da850/omap-l138: keep async clock constant with cpufreq
-      davinci: dm365 evm: use EDMAQ_3 as the audio DMA queue
-      davinci: add support for aemif timing configuration
-      nand: davinci: add support for timing configuration
-      davinci: dm644x evm: setup NAND flash timing
-      davinci: am18x/da850/omap-l138 evm: setup NAND flash timing
-      davinci: dm6467t evm: setup NAND flash timing
-      davinci: mityomapl138: make file local data static
-
-Sergei Shtylyov (2):
-      DA850: move NAND/NOR pin lists to the board file
-      DA850: move MII/RMII pin lists to the board file
-
-Sudhakar Rajashekhara (1):
-      davinci: am17x/da830/omap-l137 evm: setup NAND flash timing
-
-Victor Rodriguez (1):
-      davinci: Initial support for Omapl138-Hawkboard
-
-
-
+	Ingo
