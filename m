@@ -1,65 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756622Ab0JYQDR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Oct 2010 12:03:17 -0400
-Received: from web37601.mail.mud.yahoo.com ([209.191.87.84]:27074 "HELO
-	web37601.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751414Ab0JYQDQ convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Oct 2010 12:03:16 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.com;
-  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type:Content-Transfer-Encoding;
-  b=YUqWbjvLz3+qiMyk9vpTy7TNHathhL2cpfyWvNbgsUQquMqIZTgzl67/89+8reuSJjuAzWSijqPJ6phP4uA9f68zeHQgug3aCuEBFbyijJYgDFDkaanDUxXwaLJExsZ4BTlCLefopjms3RIWgjBnOA7eDF+5X5srRpE9sAP7/4Q=;
-Message-ID: <747229.25358.qm@web37601.mail.mud.yahoo.com>
-X-YMail-OSG: lTKQl5MVM1md_wHCbKmjhi15YILlI8d3bZcFaT7sVQiTy6A
- 7jV80lvSzeuZoTzw2EF4CcvU6Wn.8erQHw8fLDQ7nE0SzzhISpUqBRDZXsij
- c3zcxEV9xyIX5bskKV4Mmw.U8U2f.cg7GjBJ6rdfiwcfUFozFGdIyEQjWAjn
- Cd3nSVDFn4bMpvFRFJ1Kr9L.3COomADJ78g2JgNlMsz57ClVJhXhTlE4K5qv
- w3uzjv45gE1fdcA76PzbzQBGG0pzMm.6TaaXkf2f.MMJ8kr7FA36eH97GomV
- kP0oXrBD9e7cdAzS5Ns1uYu7oi2CAbmxhjT1RnaKZ0vgf6fm6lcwsT5KwBQo
- mApkyHHlBXPH9fCtVPU2rlVZXtkJJED5YE1i8kkUKtaT5YYuC
-X-Mailer: YahooMailClassic/11.4.9 YahooMailWebService/0.8.107.284920
-Date: Mon, 25 Oct 2010 09:03:15 -0700 (PDT)
-From: Alex Dubov <oakad@yahoo.com>
-Subject: Re: [PATCH 19/29] memstick: jmb38x_ms: add register read/write functions
-To: Maxim Levitsky <maximlevitsky@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Maxim Levitsky <maximlevitsky@gmail.com>
-In-Reply-To: <1287791637-10329-20-git-send-email-maximlevitsky@gmail.com>
+	id S1756900Ab0JYQDs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Oct 2010 12:03:48 -0400
+Received: from hera.kernel.org ([140.211.167.34]:37380 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756707Ab0JYQDr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Oct 2010 12:03:47 -0400
+Message-ID: <4CC5AA5F.9060909@kernel.org>
+Date: Mon, 25 Oct 2010 18:03:43 +0200
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.11) Gecko/20101013 Lightning/1.0b2 Thunderbird/3.1.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+To: paulmck@linux.vnet.ibm.com
+CC: linux-kernel@vger.kernel.org
+Subject: Re: Question about synchronize_sched_expedited()
+References: <20101025154358.GA6919@linux.vnet.ibm.com>
+In-Reply-To: <20101025154358.GA6919@linux.vnet.ibm.com>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 25 Oct 2010 16:03:45 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---- On Fri, 22/10/10, Maxim Levitsky <maximlevitsky@gmail.com> wrote:
+Hello, Paul.
 
-> From: Maxim Levitsky <maximlevitsky@gmail.com>
-> Subject: [PATCH 19/29] memstick: jmb38x_ms: add register read/write functions
-> To: "Alex Dubov" <oakad@yahoo.com>
-> Cc: "Andrew Morton" <akpm@linux-foundation.org>, "LKML" <linux-kernel@vger.kernel.org>, "Maxim Levitsky" <maximlevitsky@gmail.com>
-> Received: Friday, 22 October, 2010, 4:53 PM
-> All over the code it is a bit easier
-> to see the
-> register access with this patch. Also set/clear mask
-> helpers refactor code a bit, but the biggest reason
-> for this patch is to make it possible to trace register
-> read/writes with a flip of a module param.
+On 10/25/2010 05:43 PM, Paul E. McKenney wrote:
+> Hello, Tejun,
 > 
-> Currently these functions are unused, but will be by later
-> code
+> I was taking another look at synchronize_sched_expedited(), and was
+> concerned about the scenario listed out in the following commit.
+> Is this scenario a real problem, or am I missing the synchronization
+> that makes it safe?
 > 
-> Signed-off-by: Maxim Levitsky <maximlevitsky@gmail.com>
+> (If my concerns are valid, I should also be able to change this
+> to non-atomically increment synchronize_sched_expedited_count, but
+> one step at a time...)
 
-This looks like a case of:
-1. You've run into a technical difficulty.
-2. You used some temporary code to resolve and document it.
-3. Now this temporary code is forever here to stay.
+I think your concern is valid and this can happen w/o preemption given
+enough cpus and perfect timing.  Was the original code free from this
+problem?
 
+IMHO the counter based mechanism is a bit too difficult to ponder and
+verify.  Can we do more conventional double queueing (ie. flipping
+pending and executing queues so that multiple sync calls can get
+coalesced while another one is in progress)?  That's what the code is
+trying to achieve anyway, right?
 
+Thanks.
 
-
-      
+-- 
+tejun
