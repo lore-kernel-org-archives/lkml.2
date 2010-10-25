@@ -1,82 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757789Ab0JYWzL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Oct 2010 18:55:11 -0400
-Received: from mail.openrapids.net ([64.15.138.104]:48384 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752695Ab0JYWzJ (ORCPT
+	id S1757627Ab0JYW6L (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Oct 2010 18:58:11 -0400
+Received: from mta02.eastlink.ca ([24.224.136.13]:63301 "EHLO
+	mta02.eastlink.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752049Ab0JYW6J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Oct 2010 18:55:09 -0400
-Date: Mon, 25 Oct 2010 18:55:07 -0400
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Jason Baron <jbaron@redhat.com>, Steven Rostedt <rostedt@goodmis.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Koki Sanagi <sanagi.koki@jp.fujitsu.com>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Frederic Weisbecker <fweisbec@gmail.com>, nhorman@tuxdriver.com,
-        scott.a.mcmillan@intel.com, laijs@cn.fujitsu.com,
-        LKML <linux-kernel@vger.kernel.org>, eric.dumazet@gmail.com,
-        kaneshige.kenji@jp.fujitsu.com, David Miller <davem@davemloft.net>,
-        izumi.taku@jp.fujitsu.com, kosaki.motohiro@jp.fujitsu.com,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        "Luck, Tony" <tony.luck@intel.com>
-Subject: Re: [PATCH] tracing: Cleanup the convoluted softirq tracepoints
-Message-ID: <20101025225507.GA14561@Krystal>
-References: <alpine.LFD.2.00.1010192302000.6815@localhost6.localdomain6> <1287523439.16971.433.camel@gandalf.stny.rr.com> <4CBE122B.9020807@zytor.com> <20101019224126.GD3519@Krystal> <4CBE206A.20702@zytor.com> <1287529515.16971.538.camel@gandalf.stny.rr.com> <20101020152745.GA7348@redhat.com> <4CC5FC99.8090203@zytor.com> <20101025220105.GB26517@Krystal> <4CC600DA.2000609@zytor.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4CC600DA.2000609@zytor.com>
-X-Editor: vi
-X-Info: http://www.efficios.com
-X-Operating-System: Linux/2.6.26-2-686 (i686)
-X-Uptime: 18:54:03 up 33 days,  2:56,  3 users,  load average: 0.18, 0.11,
-	0.09
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	Mon, 25 Oct 2010 18:58:09 -0400
+MIME-version: 1.0
+Content-transfer-encoding: 7BIT
+Content-type: text/plain; CHARSET=US-ASCII
+X-CMAE-Score: 0
+X-CMAE-Analysis: v=1.1 cv=zW4qkwwpA+AM09VaNOLkucDBqffYZTwBSaEYifkV/P4= c=1
+	sm=1 a=zSz3ktiuD6UA:10 a=Ypq7LaExe90A:10 a=wPDyFdB5xvgA:10		a=8nJEP1OIZ-IA:10
+ a=bB6KIzsGkqXFyU686GhRjg==:17 a=zWSFQDO9AAAA:8		a=HN_xP2EaAAAA:8
+ a=7s3vI9SRdEK9_Mj_yzAA:9 a=kLKNXiy7FMeW5Mzi-CgA:7
+	a=CTem3rR_KZaaJThRzKkLih_ZMRgA:4 a=wPNLvfGTeEIA:10 a=hf5JduTN0RkA:10
+	a=g6Pke8wnkHEA:10 a=84tsCWNHjc4A:10 a=i0OLthd5PyPFhtoU:21
+	a=JbVk0bcgUW1E8zgQ:21 a=E/PVjAe7IbPkHCM0BPV0xg==:117
+Message-id: <b55233207c7420ec488717692d11a045.squirrel@mail.amtelecom.net>
+Date: Mon, 25 Oct 2010 18:58:07 -0400 (EDT)
+Subject: AWARD WINNING PRIZE: CLAIMING IS FREE!!
+From: British Canada Award Promo <info@amtelecom.net>
+Reply-to: dr.garry0107lee@live.co.uk
+User-Agent: SquirrelMail/1.4.17
+X-Priority: 3 (Normal)
+Importance: Normal
+To: Undisclosed recipients:;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* H. Peter Anvin (hpa@zytor.com) wrote:
-> On 10/25/2010 03:01 PM, Mathieu Desnoyers wrote:
-> > * H. Peter Anvin (hpa@zytor.com) wrote:
-> >> On 10/20/2010 08:27 AM, Jason Baron wrote:
-> >>>
-> >>> sure. The idea of the 'jmp 0' was simply to be an lcd for x86, if
-> >>> there's a better lcd for x86, I'll update it. But note, that since the
-> >>> 'jmp 0' is patched to a better nop at boot, we wouldn't see much gain.
-> >>> And in the boot path we are using 'text_poke_early()', so avoiding that
-> >>> isn't going to improve things much.
-> >>>
-> >>
-> >> It's still a completely unnecessary waste of startup time some
-> >> potentially significant fraction of the time.  Startup time matters,
-> >> especially as the number of tracepoints grow.
-> > 
-> > We're still waiting for input for the best single-5-byte-instruction nop that
-> > will work on all x86 variants. Please note that the GENERIC_NOP5 is actually two
-> > instructions one next to each other, which is not appropriate here.
-> > 
-> 
-> On 64 bits, use P6_NOP5; it seems to not suck on any platform.
-> 
-> On 32 bits, 3E 8D 74 26 00 (i.e. DS: + GENERIC_NOP4) seems to at least
-> do okay.
-> 
-> I can't say these are the *best* (in fact, they are guaranteed not the
-> best on some significant number of chips), but they haven't sucked on
-> any chips I have been able to measure -- and are way faster than JMP.
-
-Cool, thanks for the info! Steven and Jason should probably update their
-respective infrastructure to use the 32-bit 5-byte nop you propose rather than
-the 5-byte jump.
-
-Mathieu
 
 
--- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
+
+TO REDEEM YOUR PRIZE IS FREE OF CHARGE!!
+
+Your E-ID was selected online in this week's AWARD PROMO BRITISH CANADIAN
+ LOTTERY BC-49 05 07 14 20 32 34 06 Your draw has a total value of
+$1,000,000.00 USD
+And your Winning No:05 07 14 20 32 34 06. Please acknowledge the receipt
+of this mail
+with the details below to our claim agent.
+
+Contact Agent: Mr.Garry Lee.
+E-mail: dr.garry0107lee@live.co.uk
+
+Claims Requirements
+
+1.Full name
+2.Home Address
+3.Age
+4.Sex
+5.Occupation
+6.Phone Number
+7.Nationality
+8.Country Of Residence
+
+Confirm
+
+Winning:http://www.canada.com/life/lotteries/lottery_results.html
+
