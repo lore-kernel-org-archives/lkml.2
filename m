@@ -1,72 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756255Ab0JYPlY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Oct 2010 11:41:24 -0400
-Received: from web37608.mail.mud.yahoo.com ([209.191.87.91]:29412 "HELO
-	web37608.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1754671Ab0JYPlX convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Oct 2010 11:41:23 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.com;
-  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type:Content-Transfer-Encoding;
-  b=cAcEUSuBAzbh1E8w9Id5I2/4efwHv3UIB3lq1yAaDzzlz5S3qi/QmI4mK4iz296+mzierHNCRlEpaR8zZL8ChkSocp9o8r2/6AkVWwOH9GEBc3adUlL4/IhvoMYjk7yliyAeuhzSooP0MSb/dxLG4KG8MS7EROSPGYVdazPWWYU=;
-Message-ID: <254156.53235.qm@web37608.mail.mud.yahoo.com>
-X-YMail-OSG: END3WTAVM1m.M3Htt95Cjf.tfdPChWdKExGqYKYzq4YjrBK
- B17fnzclUPTZ3OXo20pAIdjTz2HnGleVPQPMOpiqOWpJbh5JEEyymaDxrN3z
- DVF4pe1a43ZO4pEkZxBNZ38DP3bijh5dpHDbhTuIN3qK0YdQG0QUNtMnfsL0
- C3LbsbBW0BVRDt7QS1BBEu.sjvkkD0TU4LMwIeDqDFxt4Wmw.DyavPqYLMMR
- Lgqwro0ylduH.sNFhzwc0_Pr4.3TMudYVnGRJjVGpdrPW4G6TbfzzwD1LaeA
- lxre3_yLj6jH0mDYQnB9HGPSGS_mEZO28ymA85y6JTLU0GbCzfp.hqe7eLpa
- JXdVmoesOLGR0J8.9n1RakQ--
-X-Mailer: YahooMailClassic/11.4.9 YahooMailWebService/0.8.107.284920
-Date: Mon, 25 Oct 2010 08:41:20 -0700 (PDT)
-From: Alex Dubov <oakad@yahoo.com>
-Subject: Re: [PATCH 13/29] memstick: core: stop passing pointer to card->current_mrq
-To: Maxim Levitsky <maximlevitsky@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Maxim Levitsky <maximlevitsky@gmail.com>
-In-Reply-To: <1287791637-10329-14-git-send-email-maximlevitsky@gmail.com>
+	id S1756480Ab0JYPqE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Oct 2010 11:46:04 -0400
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:47458 "EHLO e7.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756170Ab0JYPqD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Oct 2010 11:46:03 -0400
+Date: Mon, 25 Oct 2010 08:43:58 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: tj@kernel.org
+Cc: linux-kernel@vger.kernel.org
+Subject: Question about synchronize_sched_expedited()
+Message-ID: <20101025154358.GA6919@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello, Tejun,
 
+I was taking another look at synchronize_sched_expedited(), and was
+concerned about the scenario listed out in the following commit.
+Is this scenario a real problem, or am I missing the synchronization
+that makes it safe?
 
---- On Fri, 22/10/10, Maxim Levitsky <maximlevitsky@gmail.com> wrote:
+(If my concerns are valid, I should also be able to change this
+to non-atomically increment synchronize_sched_expedited_count, but
+one step at a time...)
 
-> From: Maxim Levitsky <maximlevitsky@gmail.com>
-> Subject: [PATCH 13/29] memstick: core: stop passing pointer to card->current_mrq
-> To: "Alex Dubov" <oakad@yahoo.com>
-> Cc: "Andrew Morton" <akpm@linux-foundation.org>, "LKML" <linux-kernel@vger.kernel.org>, "Maxim Levitsky" <maximlevitsky@gmail.com>
-> Received: Friday, 22 October, 2010, 4:53 PM
-> This cleans up a lot of code and
-> makes the assumption
-> (*mrq == &card->current_mrq) official.
-> 
-> Signed-off-by: Maxim Levitsky <maximlevitsky@gmail.com>
-> ---
+						Thanx, Paul
 
-Unfortunately, the description does not match the patch.
-While the main optimization (merging req and card arguments for good) is
-fully reasonable given the posterior knowledge of MSPro evolution, this
-patch introduces some functional changes as well, which can not be
-considered to be a pure cleanup. Some WARN_ONs also appear to be misplaced:
+------------------------------------------------------------------------
 
->         if (msb->block_req) {
-> -            mspro_block_complete_req(card, (*mrq)->error);
-> +            mspro_block_complete_req(card, mrq->error);
->             error = mspro_block_issue_req(card, false);
-> 
-> -            if (!msb->block_req) {
-> +            if (error) {
-> +                WARN_ON(msb->block_req);
+commit 1c2f788a742b87f8fae692b0b3014732124ee3c6
+Author: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Date:   Mon Oct 25 07:39:22 2010 -0700
 
+    rcu: fix race condition in synchronize_sched_expedited()
+    
+    The new (early 2010) implementation of synchronize_sched_expedited() uses
+    try_stop_cpu() to force a context switch on every CPU.  It also permits
+    concurrent calls to synchronize_sched_expedited() to share a single call
+    to try_stop_cpu() through use of an atomically incremented
+    synchronize_sched_expedited_count variable.  Unfortunately, this is
+    subject to failure as follows:
+    
+    o	Task A invokes synchronize_sched_expedited(), try_stop_cpus()
+    	succeeds, but Task A is preempted before getting to the atomic
+    	increment of synchronize_sched_expedited_count.
+    
+    o	Task B also invokes synchronize_sched_expedited(), with exactly
+    	the same outcome as Task A.
+    
+    o	Task C also invokes synchronize_sched_expedited(), again with
+    	exactly the same outcome as Tasks A and B.
+    
+    o	Task D also invokes synchronize_sched_expedited(), but only
+    	gets as far as acquiring the mutex within try_stop_cpus()
+    	before being preempted, interrupted, or otherwise delayed.
+    
+    o	Task E also invokes synchronize_sched_expedited(), but only
+    	gets to the snapshotting of synchronize_sched_expedited_count.
+    
+    o	Tasks A, B, and C all increment synchronize_sched_expedited_count.
+    
+    o	Task E fails to get the mutex, so checks the new value
+    	of synchronize_sched_expedited_count.  It finds that the
+    	value has increased, so (wrongly) assumes that its work
+    	has been done, returning despite there having been no
+    	expedited grace period since it began.
+    
+    The solution is to have the lowest-numbered CPU atomically increment
+    the synchronize_sched_expedited_count variable within the
+    synchronize_sched_expedited_cpu_stop() function, which is under
+    the protection of the mutex acquired by try_stop_cpus().
+    
+    Cc: Tejun Heo <tj@kernel.org>
+    Cc: Lai Jiangshan <laijs@cn.fujitsu.com>
+    Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 
-
-
-      
+diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
+index 32e76d4..16bf339 100644
+--- a/kernel/rcutree_plugin.h
++++ b/kernel/rcutree_plugin.h
+@@ -1041,6 +1041,8 @@ static int synchronize_sched_expedited_cpu_stop(void *data)
+ 	 * robustness against future implementation changes.
+ 	 */
+ 	smp_mb(); /* See above comment block. */
++	if (cpumask_first(cpu_online_mask) == smp_processor_id())
++		atomic_inc(&synchronize_sched_expedited_count);
+ 	return 0;
+ }
+ 
+@@ -1077,7 +1079,6 @@ void synchronize_sched_expedited(void)
+ 		}
+ 		get_online_cpus();
+ 	}
+-	atomic_inc(&synchronize_sched_expedited_count);
+ 	smp_mb__after_atomic_inc(); /* ensure post-GP actions seen after GP. */
+ 	put_online_cpus();
+ }
