@@ -1,114 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752656Ab0JYGwm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Oct 2010 02:52:42 -0400
-Received: from hera.kernel.org ([140.211.167.34]:37370 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751011Ab0JYGwl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Oct 2010 02:52:41 -0400
-Date: Mon, 25 Oct 2010 06:52:03 GMT
-From: tip-bot for Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        torvalds@linux-foundation.org, robert.richter@amd.com,
-        tglx@linutronix.de, sfr@canb.auug.org.au, mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        robert.richter@amd.com, torvalds@linux-foundation.org,
-        sfr@canb.auug.org.au, tglx@linutronix.de, mingo@elte.hu
-In-Reply-To: <20101025115736.41d51abe.sfr@canb.auug.org.au>
-References: <20101025115736.41d51abe.sfr@canb.auug.org.au>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] x86/oprofile: Fix uninitialized variable use in debug printk
-Message-ID: <tip-2c78ffeca98fcd5a1dfd4a322438944506ed5e64@git.kernel.org>
-Git-Commit-ID: 2c78ffeca98fcd5a1dfd4a322438944506ed5e64
-X-Mailer: tip-git-log-daemon
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 25 Oct 2010 06:52:04 +0000 (UTC)
+	id S1751989Ab0JYHDY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Oct 2010 03:03:24 -0400
+Received: from mail.karo-electronics.de ([213.146.116.110]:60421 "EHLO
+	mail.karo-electronics.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751538Ab0JYHDX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Oct 2010 03:03:23 -0400
+Message-ID: <19653.11169.583189.236012@ipc1.ka-ro>
+Date: Mon, 25 Oct 2010 09:02:57 +0200
+From: =?iso-8859-15?Q?Lothar_Wa=DFmann?= <LW@KARO-electronics.de>
+To: Uwe =?iso-8859-15?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+Cc: Nguyen Dinh-R00091 <R00091@freescale.com>, amit.kucheria@canonical.com,
+        linux@arm.linux.org.uk, s.hauer@pengutronix.de,
+        linux-kernel@vger.kernel.org, grant.likely@secretlab.ca,
+        valentin.longchamp@epfl.ch, daniel@caiaq.de, bryan.wu@canonical.com,
+        linux-arm-kernel@lists.infradead.org
+Content-Type: text/plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8bit
+Subject: Re: [PATCHv5 2/3] ARM: imx: Add gpio-keys to plat-mxc
+In-Reply-To: <20101024192053.GB25810@pengutronix.de>
+References: <1287766575-4092-1-git-send-email-Dinh.Nguyen@freescale.com>
+	<1287766575-4092-2-git-send-email-Dinh.Nguyen@freescale.com>
+	<20101022182812.GA8554@pengutronix.de>
+	<86A0E76937111F4C92FABEC0A2098851051D6090@az33exm21>
+	<20101022194215.GB8554@pengutronix.de>
+	<86A0E76937111F4C92FABEC0A2098851051D6116@az33exm21>
+	<19651.61503.118511.923142@ipc1.ka-ro>
+	<20101024192053.GB25810@pengutronix.de>
+X-Mailer: VM 8.0.9 under Emacs 22.2.1 (i486-pc-linux-gnu)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  2c78ffeca98fcd5a1dfd4a322438944506ed5e64
-Gitweb:     http://git.kernel.org/tip/2c78ffeca98fcd5a1dfd4a322438944506ed5e64
-Author:     Ingo Molnar <mingo@elte.hu>
-AuthorDate: Mon, 25 Oct 2010 08:41:09 +0200
-Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Mon, 25 Oct 2010 08:46:20 +0200
+Hi Uwe,
 
-x86/oprofile: Fix uninitialized variable use in debug printk
+Uwe Kleine-König writes:
+> Hi Lothar,
+> 
+> On Sun, Oct 24, 2010 at 10:37:19AM +0200, Lothar Waßmann wrote:
+> > Hi,
+> > > >> How do you suggest I define this pin for Babbage board only? Do I add to iomux-mx51.h
+> > > >> #define MX51_BABBAGE_PAD_EIM_A27__GPIO_2_21             IOMUX_PAD(0x45c, 0x0c8, 1, 0x0,
+> > > >0,MX51_GPIO_PAD_CTRL | PAD_CTL_PUS_100K_UP) ?
+> > > >>
+> > > >> Or do I define the pin in the board file with a 100K_UP? Like how eukrea_mbimxsd-baseboard.c did for
+> > > >MBIMXSD_GPIO_3_31?
+> > > >I'd suggest something local to your machine file.  Unfortunately I don't
+> > > >see an easy way to reuse the generic MX51_PAD_EIM_A27__GPIO_2_21 to
+> > > >define your local symbol.  So I think something like you wrote above
+> > > >should be fine.
+> > > >
+> > > >Too bad that
+> > > >
+> > > >	#define MX51_BABBAGE_PAD_EIM_A27__GPIO_2_21 (MX51_PAD_EIM_A27__GPIO_2_21 | PAD_CTL_PUS_100K_UP)
+> > > >
+> > > >doesn't work.
+> > > 
+> > > Yes, I also wish I didn't have to redefine the pin just because of PAD setting change. I am going to send out another patch that basically sets the pad_desc.pad_ctrl=PAD_SETTING in mxc_init_board() function. I think it's a bit cleaner than having to redefine the pin.
+> > > 
+> > IMO the 'struct pad_desc' should be replaced with an u64 bitmap that
+> > would allow for the pullup and other definitions that may be board
+> > specific to be simply or'ed to the pad definition.
+> > 
+> > I could try to provide a patch if this is agreed on.
+> Hmm, I thought about that, too, when writing my mail and when I added
+> the needed space for a struct pad_desc I stopped when it became >64.
+> Somehow I must have got it wrong.  After rechecking now it's ==64, so
+> yes, I'd like it.
+> 
+What kernel version should I base it on?
+The master branch of git://git.pengutronix.de/git/imx/linux-2.6.git?
 
-Stephen Rothwell reported this build warning:
 
-  arch/x86/oprofile/op_model_amd.c: In function 'ibs_eilvt_valid':
-  arch/x86/oprofile/op_model_amd.c:289: warning: 'offset' may be used uninitialized in this function
+Lothar Waßmann
+-- 
+___________________________________________________________
 
-And correctly observed that indeed the variable is used uninitialized in
-this function. The result of this bug can be a debug printk with a bogus
-value.
+Ka-Ro electronics GmbH | Pascalstraße 22 | D - 52076 Aachen
+Phone: +49 2408 1402-0 | Fax: +49 2408 1402-10
+Geschäftsführer: Matthias Kaussen
+Handelsregistereintrag: Amtsgericht Aachen, HRB 4996
 
-Also fix a few more small details that made this function hard to read
-and which probably contributed to the bug being introduced to begin with:
-
- - Use more symmetric error conditions
-
- - Remove the !0 obfuscation
-
- - Add newlines to the printk output
-
- - Remove bogus linebreaks in printk strings and elsewhere
-
-Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Robert Richter <robert.richter@amd.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-LKML-Reference: <20101025115736.41d51abe.sfr@canb.auug.org.au>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
----
- arch/x86/oprofile/op_model_amd.c |   26 +++++++++++---------------
- 1 files changed, 11 insertions(+), 15 deletions(-)
-
-diff --git a/arch/x86/oprofile/op_model_amd.c b/arch/x86/oprofile/op_model_amd.c
-index 42fb46f..68759e7 100644
---- a/arch/x86/oprofile/op_model_amd.c
-+++ b/arch/x86/oprofile/op_model_amd.c
-@@ -281,29 +281,25 @@ static inline int eilvt_is_available(int offset)
- 
- static inline int ibs_eilvt_valid(void)
- {
--	u64 val;
- 	int offset;
-+	u64 val;
- 
- 	rdmsrl(MSR_AMD64_IBSCTL, val);
-+	offset = val & IBSCTL_LVT_OFFSET_MASK;
-+
- 	if (!(val & IBSCTL_LVT_OFFSET_VALID)) {
--		pr_err(FW_BUG "cpu %d, invalid IBS "
--		       "interrupt offset %d (MSR%08X=0x%016llx)",
--		       smp_processor_id(), offset,
--		       MSR_AMD64_IBSCTL, val);
-+		pr_err(FW_BUG "cpu %d, invalid IBS interrupt offset %d (MSR%08X=0x%016llx)\n",
-+		       smp_processor_id(), offset, MSR_AMD64_IBSCTL, val);
- 		return 0;
- 	}
- 
--	offset = val & IBSCTL_LVT_OFFSET_MASK;
--
--	if (eilvt_is_available(offset))
--		return !0;
--
--	pr_err(FW_BUG "cpu %d, IBS interrupt offset %d "
--	       "not available (MSR%08X=0x%016llx)",
--	       smp_processor_id(), offset,
--	       MSR_AMD64_IBSCTL, val);
-+	if (!eilvt_is_available(offset)) {
-+		pr_err(FW_BUG "cpu %d, IBS interrupt offset %d not available (MSR%08X=0x%016llx)\n",
-+		       smp_processor_id(), offset, MSR_AMD64_IBSCTL, val);
-+		return 0;
-+	}
- 
--	return 0;
-+	return 1;
- }
- 
- static inline int get_ibs_offset(void)
+www.karo-electronics.de | info@karo-electronics.de
+___________________________________________________________
