@@ -1,54 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757502Ab0JYWdr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Oct 2010 18:33:47 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:57986 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753263Ab0JYWdp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Oct 2010 18:33:45 -0400
-Message-ID: <4CC60585.70503@zytor.com>
-Date: Mon, 25 Oct 2010 15:32:37 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc13 Thunderbird/3.1.4
+	id S1756459Ab0JYWlE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Oct 2010 18:41:04 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:49829 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752999Ab0JYWlB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Oct 2010 18:41:01 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=TBTDFHBhjVcZe8o+Kbkz6Kh9T1/MqZv8YIYtYtugzxLNMKyBDnLJhs3HUkWE7pnjDZ
+         CCclVoocR1mK/HGJ+J/lhjwDOUp2w71lWySLhyVilJ3saDKBHd7e8elQjz+lg3nmtMz5
+         KgmozsItgjMt87hfnaXUGZI3YMy827mxAM9Cc=
+Date: Tue, 26 Oct 2010 00:40:45 +0200
+From: Johan Hovold <jhovold@gmail.com>
+To: Alon Ziv <alon@nolaviz.org>
+Cc: Alon Ziv <alon+git@nolaviz.org>, linux-usb@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@suse.de>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 1/2] Export usb_serial_generic_write_room for use in
+ modules
+Message-ID: <20101025224045.GB26070@localhost>
+References: <1287859409-13810-1-git-send-email-alon-git@nolaviz.org>
+ <1287859409-13810-2-git-send-email-alon-git@nolaviz.org>
+ <20101025112043.GB4046@localhost>
+ <4CC5E131.9040408@nolaviz.org>
 MIME-Version: 1.0
-To: Jason Baron <jbaron@redhat.com>
-CC: Steven Rostedt <rostedt@goodmis.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Koki Sanagi <sanagi.koki@jp.fujitsu.com>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Frederic Weisbecker <fweisbec@gmail.com>, nhorman@tuxdriver.com,
-        scott.a.mcmillan@intel.com, laijs@cn.fujitsu.com,
-        LKML <linux-kernel@vger.kernel.org>, eric.dumazet@gmail.com,
-        kaneshige.kenji@jp.fujitsu.com, David Miller <davem@davemloft.net>,
-        izumi.taku@jp.fujitsu.com, kosaki.motohiro@jp.fujitsu.com,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        "Luck, Tony" <tony.luck@intel.com>
-Subject: Re: [PATCH] tracing: Cleanup the convoluted softirq tracepoints
-References: <20101019132236.GA19197@Krystal> <alpine.LFD.2.00.1010191524160.6815@localhost6.localdomain6> <1287496495.16971.372.camel@gandalf.stny.rr.com> <alpine.LFD.2.00.1010191558250.6815@localhost6.localdomain6> <20101019142820.GA14520@Krystal> <alpine.LFD.2.00.1010191842270.6815@localhost6.localdomain6> <20101019212816.GA2855@redhat.com> <alpine.LFD.2.00.1010192347390.6815@localhost6.localdomain6> <alpine.LFD.2.00.1010200015320.6815@localhost6.localdomain6> <1287538590.16971.548.camel@gandalf.stny.rr.com> <20101020015227.GA2011@redhat.com>
-In-Reply-To: <20101020015227.GA2011@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4CC5E131.9040408@nolaviz.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/19/2010 06:52 PM, Jason Baron wrote:
+On Mon, Oct 25, 2010 at 09:57:37PM +0200, Alon Ziv wrote:
+> Hi Johan,
 > 
-> thanks Steve. I was about to say this. When CONFIG_CC_OPTIMIZE_FOR_SIZE
-> is not set we don't get the double 'jmp' and the tracepoint code is
-> moved out of line. It was mentioned that a number of distros ship with
-> CONFIG_CC_OPTIMIZE_FOR_SIZE not set, and as Steve mentioned my original
-> patch set was conditional on !CONFIG_CC_OPTIMIZE_FOR_SIZE.
+> On 10/25/2010 01:20 PM, you wrote:
+> >> Any module using usb_serial_generic_write (which is already exported)
+> >> had better use usb_serial_generic_write_room as well, or be prepared
+> >> for failures.
+> >
+> > As I mentioned elsewhere, this description is a little misleading as any
+> > driver can use the generic write_room implementation simply by not
+> > overriding it (i.e. leaving the write_room field undefined).
+> >
+> > There is nothing wrong with exporting it, but it is currently only your
+> > other patch that requires that. Could you perhaps just modify the patch
+> > description?
+> >
+> Well... the latest changes (due to your review) removed even my driver's
+> use of this function. So probably there is no need to export it (at
+> least not yet).
 > 
-> using hot/cold labels gcc can fix the CONFIG_CC_OPTIMIZE_FOR_SIZE case,
-> but its a non-trivial amount of work for gcc. I was hoping that if jump
-> labels are included, we could make the gcc work happen.
-> 
+> If you prefer that I leave the export in place (and unused), I will
+> clarify the patch description.
 
-That's fair.  I think jump labels are still a win even in the
-double-jump case (especially if the the tracepoint turns into a NOP
-rather than a JMP.)
+There's no need to export it unless it's got a use (and it's easily done
+later should need arise).
 
-Code generated with -Os has a bunch of other problems, too.
+I'm off for a week to UK (Embedded Linux Conference and some holidays)
+with limited mail access from tomorrow so I'll have to get back to you
+on your other mail when I'm back.
 
-	-hpa
+Thanks,
+Johan
