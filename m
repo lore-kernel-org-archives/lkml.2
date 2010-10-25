@@ -1,176 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757716Ab0JYUFw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Oct 2010 16:05:52 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:41096 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757607Ab0JYUFv (ORCPT
+	id S932775Ab0JYUHA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Oct 2010 16:07:00 -0400
+Received: from edu-smtp-02.edutel.nl ([88.159.1.176]:50341 "EHLO
+	edu-smtp-02.edutel.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757583Ab0JYUG7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Oct 2010 16:05:51 -0400
-Date: Mon, 25 Oct 2010 13:05:02 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Paul Fulghum <paulkf@microgate.com>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Greg KH <greg@kroah.com>, Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [PATCH] n_hdlc fix read and write locking
-Message-Id: <20101025130502.77685ac1.akpm@linux-foundation.org>
-In-Reply-To: <1288030959.19909.28.camel@x2.microgate.com>
-References: <1288030959.19909.28.camel@x2.microgate.com>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Mon, 25 Oct 2010 16:06:59 -0400
+Message-ID: <4CC5E354.80009@neli.hopto.org>
+Date: Mon, 25 Oct 2010 22:06:44 +0200
+From: Micha Nelissen <micha@neli.hopto.org>
+User-Agent: Mozilla-Thunderbird 2.0.0.22 (X11/20091109)
+MIME-Version: 1.0
+To: "Bounine, Alexandre" <Alexandre.Bounine@idt.com>
+CC: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org,
+        Matt Porter <mporter@kernel.crashing.org>,
+        Li Yang <leoli@freescale.com>, Kumar Gala <galak@kernel.crashing.org>,
+        Thomas Moll <thomas.moll@sysgo.com>
+Subject: Re: [PATCH -mm 0/2] RapidIO: Changes to handling of RIO switches
+References: <1287688250-14226-1-git-send-email-alexandre.bounine@idt.com> <4CC0AD74.8070800@neli.hopto.org> <0CE8B6BE3C4AD74AB97D9D29BD24E55201445906@CORPEXCH1.na.ads.idt.com> <4CC1D7DE.7060405@neli.hopto.org> <0CE8B6BE3C4AD74AB97D9D29BD24E55201445A6B@CORPEXCH1.na.ads.idt.com> <4CC20923.8050400@neli.hopto.org> <0CE8B6BE3C4AD74AB97D9D29BD24E55201445BA4@CORPEXCH1.na.ads.idt.com> <4CC5ACAB.7070309@neli.hopto.org> <0CE8B6BE3C4AD74AB97D9D29BD24E5520147D5C2@CORPEXCH1.na.ads.idt.com>
+In-Reply-To: <0CE8B6BE3C4AD74AB97D9D29BD24E5520147D5C2@CORPEXCH1.na.ads.idt.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 25 Oct 2010 13:22:39 -0500
-Paul Fulghum <paulkf@microgate.com> wrote:
-
-> Fix locking in read and write code of n_hdlc line discipline.
-
-Missing a couple of cc's here...
-
-> 2.6.36 replaced lock_kernel() with tty_lock().
-> The tty mutex is not dropped automatically when the thread
-> sleeps like the BKL. This results in a blocked read or write holding
-> the tty mutex and stalling operations by other devices that use
-> the tty mutex.
+Bounine, Alexandre wrote:
+> Micha Nelissen <micha@neli.hopto.org> wrote:
+>> that switch. The tag uses one extra bit to identify the device as a
+>> switch instead of an endpoint. This provides the information to
+>> unambiguously identify a switch from an endpoint.
 > 
-> A review of n_hdlc read and write code shows:
-> 1. neither BKL or tty mutex are required for correct operation
-> 2. read can block while read data is available if data is posted
->    between availability check and call to interruptible_sleep_on()
-> 3. write does not set process state to TASK_INTERRUPTIBLE
->    on each pass through the processing loop which can cause
->    unneeded scheduling of the thread
-> 
-> The unnecessary tty mutex references have been removed.
-> 
-> Read changed to use same code as n_tty read
-> for completing reads and blocking.
-> 
-> Write corrected to set process state to
-> TASK_INTERRUPTIBLE on each pass through processing loop.
-> 
+> OK taking away #2. But do not see how it justifies storing two values of
+> destid.
 
-And a signed-off-by:, please.
+I look at it this way: it prevents the need for another layer of 
+indirection: translating component tag to a destid.
 
-> --- a/drivers/char/n_hdlc.c	2010-10-22 14:22:22.000000000 -0500
-> +++ b/drivers/char/n_hdlc.c	2010-10-25 12:36:12.000000000 -0500
-> @@ -581,8 +581,9 @@ static ssize_t n_hdlc_tty_read(struct tt
->  			   __u8 __user *buf, size_t nr)
->  {
->  	struct n_hdlc *n_hdlc = tty2n_hdlc(tty);
-> -	int ret;
-> +	int ret = 0;
->  	struct n_hdlc_buf *rbuf;
-> +	DECLARE_WAITQUEUE(wait, current);
->  
->  	if (debuglevel >= DEBUG_LEVEL_INFO)	
->  		printk("%s(%d)n_hdlc_tty_read() called\n",__FILE__,__LINE__);
-> @@ -598,57 +599,55 @@ static ssize_t n_hdlc_tty_read(struct tt
->  		return -EFAULT;
->  	}
->  
-> -	tty_lock();
-> +	add_wait_queue(&tty->read_wait, &wait);
->  
->  	for (;;) {
->  		if (test_bit(TTY_OTHER_CLOSED, &tty->flags)) {
-> -			tty_unlock();
-> -			return -EIO;
-> +			ret = -EIO;
-> +			break;
->  		}
-> +		if (tty_hung_up_p(file))
-> +			break;
->  
-> -		n_hdlc = tty2n_hdlc (tty);
-> -		if (!n_hdlc || n_hdlc->magic != HDLC_MAGIC ||
-> -			 tty != n_hdlc->tty) {
-> -			tty_unlock();
-> -			return 0;
-> -		}
-> +		set_current_state(TASK_INTERRUPTIBLE);
->  
->  		rbuf = n_hdlc_buf_get(&n_hdlc->rx_buf_list);
-> -		if (rbuf)
-> +		if (rbuf) {
-> +			if (rbuf->count > nr) {
-> +				/* too large for caller's buffer */
-> +				ret = -EOVERFLOW;
-> +			} else {
-> +				if (copy_to_user(buf, rbuf->buf, rbuf->count))
+> And you have just confirmed using CT for unique identification. 
 
-It's not a bug afaict, but beware that a copy_to_user() will
-unconditionally flip this task back into TASK_RUNNING state if it takes
-a pagefault.  This means that the below schedule() will fall straight
-through.  It looks like the code will handle this correctly?  If so,
-it's just a little suboptimal.
+That's correct, but I never said (intended to say) I didn't.
 
-> +					ret = -EFAULT;
-> +				else
-> +					ret = rbuf->count;
-> +			}
-> +
-> +			if (n_hdlc->rx_free_buf_list.count >
-> +			    DEFAULT_RX_BUF_COUNT)
-> +				kfree(rbuf);
-> +			else
-> +				n_hdlc_buf_put(&n_hdlc->rx_free_buf_list, rbuf);
->  			break;
-> +		}
->  			
->  		/* no data */
->  		if (file->f_flags & O_NONBLOCK) {
-> -			tty_unlock();
-> -			return -EAGAIN;
-> +			ret = -EAGAIN;
-> +			break;
->  		}
-> -			
-> -		interruptible_sleep_on (&tty->read_wait);
-> +
-> +		schedule();
-> +
->  		if (signal_pending(current)) {
-> -			tty_unlock();
-> -			return -EINTR;
-> +			ret = -EINTR;
-> +			break;
->  		}
->  	}
-> -		
-> -	if (rbuf->count > nr)
-> -		/* frame too large for caller's buffer (discard frame) */
-> -		ret = -EOVERFLOW;
-> -	else {
-> -		/* Copy the data to the caller's buffer */
-> -		if (copy_to_user(buf, rbuf->buf, rbuf->count))
-> -			ret = -EFAULT;
-> -		else
-> -			ret = rbuf->count;
-> -	}
-> -	
-> -	/* return HDLC buffer to free list unless the free list */
-> -	/* count has exceeded the default value, in which case the */
-> -	/* buffer is freed back to the OS to conserve memory */
-> -	if (n_hdlc->rx_free_buf_list.count > DEFAULT_RX_BUF_COUNT)
-> -		kfree(rbuf);
-> -	else	
-> -		n_hdlc_buf_put(&n_hdlc->rx_free_buf_list,rbuf);
-> -	tty_unlock();
-> +
-> +	remove_wait_queue(&tty->read_wait, &wait);
-> +	set_current_state(TASK_RUNNING);
+> We
+> simply have differences in interpretation of CT: you are using component
+> tag to pass unique identification and I am using CT as a unique
+> identification. I prefer not to assume any relationship between routing
+> information and the component tag.
 
-We normally use __set_current_state() here - it saves a few cycles.
+Why no relation? My experience is that during debugging it's useful to 
+have the destid directly at hand, it's just very practical. (Otherwise 
+any drawing of a random network would need two "identification" numbers 
+per drawn node: the component tag (true identification), and destid 
+since that's what everyone uses to identify a device, what needs to 
+programmed into the LUTs of a switch, identification in sysfs, etc.).
 
->  	return ret;
->  	
->  }	/* end of n_hdlc_tty_read() */
->
-> ...
->
+Micha
