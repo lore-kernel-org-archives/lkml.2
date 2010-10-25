@@ -1,41 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758482Ab0JYXn0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Oct 2010 19:43:26 -0400
-Received: from srv3.cfsadmin.org ([67.205.74.171]:44526 "EHLO
-	srv3.cfsadmin.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758024Ab0JYXnX (ORCPT
+	id S1758357Ab0JYXr0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Oct 2010 19:47:26 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:52732
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757170Ab0JYXrY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Oct 2010 19:43:23 -0400
-Message-ID: <20101025135016.39al2aioysock88g@webmail.utgsu.ca>
-Date: Mon, 25 Oct 2010 13:50:16 -0400
-From: Webmaster Help Desk Support <health@utgsu.ca>
-To: undisclosed-recipients:;
-Subject: Technical Support
-MIME-Version: 1.0
-Content-Type: text/plain;
-	charset=ISO-8859-1;
-	DelSp="Yes";
-	format="flowed"
-Content-Disposition: inline
+	Mon, 25 Oct 2010 19:47:24 -0400
+Date: Mon, 25 Oct 2010 16:47:47 -0700 (PDT)
+Message-Id: <20101025.164747.189713145.davem@davemloft.net>
+To: randy.dunlap@oracle.com
+Cc: sfr@canb.auug.org.au, netdev@vger.kernel.org, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, akpm@linux-foundation.org
+Subject: Re: [PATCH -next] pch_can: depends on PCI
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20101025162524.570fc82a.randy.dunlap@oracle.com>
+References: <20101025145834.9b68e026.sfr@canb.auug.org.au>
+	<20101025162524.570fc82a.randy.dunlap@oracle.com>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-User-Agent: Internet Messaging Program (IMP) H3 (4.1.6)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Randy Dunlap <randy.dunlap@oracle.com>
+Date: Mon, 25 Oct 2010 16:25:24 -0700
 
--- 
-You have reached the limit of your email quota.
-You will not be able to send or receive new mail until you boost your mailbox
-size.
+> From: Randy Dunlap <randy.dunlap@oracle.com>
+> 
+> Fix pch_can build when CONFIG_PCI is not enabled.  It uses pci interfaces
+> and data structures, so it should depend on PCI.
+> 
+> drivers/net/can/pch_can.c:1044: error: implicit declaration of function 'pci_enable_msi'
+> drivers/net/can/pch_can.c:1079: error: implicit declaration of function 'pci_disable_msi'
+> 
+> Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
 
-Click the below link and fill the form to upgrade your account.
-http://use.my/system-helpdeskdesk/
-
-Technical Support
-192.168.0.1
-
-
-
-
+Applied, thanks Randy.
