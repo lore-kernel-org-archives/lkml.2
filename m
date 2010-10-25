@@ -1,39 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757007Ab0JYQIF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Oct 2010 12:08:05 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:35695 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752764Ab0JYQIC (ORCPT
+	id S1756831Ab0JYQJe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Oct 2010 12:09:34 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:37666
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755259Ab0JYQJd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Oct 2010 12:08:02 -0400
-Date: Mon, 25 Oct 2010 09:07:21 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Alex Dubov <oakad@yahoo.com>
-Cc: Maxim Levitsky <maximlevitsky@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/29] My patch queue for memorystick subsystem
-Message-Id: <20101025090721.c5d3fdc6.akpm@linux-foundation.org>
-In-Reply-To: <408703.12417.qm@web37603.mail.mud.yahoo.com>
-References: <1287972070.5205.12.camel@maxim-laptop>
-	<408703.12417.qm@web37603.mail.mud.yahoo.com>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+	Mon, 25 Oct 2010 12:09:33 -0400
+Date: Mon, 25 Oct 2010 09:09:57 -0700 (PDT)
+Message-Id: <20101025.090957.104053185.davem@davemloft.net>
+To: namhyung@gmail.com
+Cc: sparclinux@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/3] sparc32: fix build failure on CONFIG_SPARC_LEON
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1288022849.1689.14.camel@leonhard>
+References: <1288021958-3130-3-git-send-email-namhyung@gmail.com>
+	<20101025.090043.71110898.davem@davemloft.net>
+	<1288022849.1689.14.camel@leonhard>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: Text/Plain; charset=euc-kr
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 25 Oct 2010 07:39:58 -0700 (PDT) Alex Dubov <oakad@yahoo.com> wrote:
+From: Namhyung Kim <namhyung@gmail.com>
+Date: Tue, 26 Oct 2010 01:07:29 +0900
 
-> Normally, functional
-> patches should precede the cosmetic one, so that the functionality can be
-> discussed first.
+> 2010-10-25 (¿ù), 09:00 -0700, David Miller:
+>> From: Namhyung Kim <namhyung@gmail.com>
+>> Date: Tue, 26 Oct 2010 00:52:38 +0900
+>> 
+>> >   CC      arch/sparc/kernel/irq_32.o
+>> > arch/sparc/kernel/irq_32.c: In function 'request_fast_irq':
+>> > arch/sparc/kernel/irq_32.c:370:25: error: conflicting types for 'trapbase_cpu1'
+>> 
+>> I doubt SMP LEON chips even exist, so better to just anti-dep
+>> this in arch/sparc/Kconfig
+> 
+> If I understood correctly, you meant this?
 
-More usually it's the other way around, actually: cleanups come first.
-
-Because the cleanups are usually uncontroversial, and because
-substantive changes against cleaner code are easier to
-review/understand and because the substantive changes are then easier
-to revert or fix.
+Yes, something like that.
