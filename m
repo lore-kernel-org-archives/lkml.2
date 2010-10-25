@@ -1,57 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755630Ab0JYP2z (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Oct 2010 11:28:55 -0400
-Received: from web37607.mail.mud.yahoo.com ([209.191.87.90]:32534 "HELO
-	web37607.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751483Ab0JYP2y convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Oct 2010 11:28:54 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.com;
-  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type:Content-Transfer-Encoding;
-  b=YHnmBR4yhXy23pURCNmtPYpf639+qThyu/DrVT+B4mFZCkJkHbZ4wfabHYJ6jJqmiIER7DYhqTJvxgQ58dwKDT9vopzmGcs3UTKwytgsn60ActbeVQXKwckAW6yBW9kvNP+xor/RTpo5vGvEEBccHJyHbGFiN51uDYZyMSwpBrs=;
-Message-ID: <596336.88845.qm@web37607.mail.mud.yahoo.com>
-X-YMail-OSG: fHhGKGMVM1lhX5kN4m8aA1_e032R2cNWivwkwqkL4ZeiDFc
- ognxRduUAh_xVg2LDKDoohUSaM70vEiwkwromKinb6oxSMJoI1FmwoRD3.sj
- IjTC_daYMl7mOzkefkvgcWSw8TNRU2CPVwucEAHIl_v37aVnAyVsjR8tCNS0
- r5cc7Gk7Vp1P1x3SUw3JwWVvXmcQ8YIynFjLOzFWEZHPSffDhZDm3A8pGVkr
- nVWpHUrY7Wkx71q4sfSudxNt20T_ZYagJyYgrAeg7slOUkgBApAFglDBIqU3
- iAWQ2ZSQ__tSuc_ILNPju4ll_gt6ag0F4qIoiGY9ZMmDb04uvsTEnj5eNnW2
- dz.KAIICLSI1Ubq9ue.NttilZVBbD_FcfXuu9lh2duRFSRh0iXA--
-X-Mailer: YahooMailClassic/11.4.9 YahooMailWebService/0.8.107.284920
-Date: Mon, 25 Oct 2010 08:28:53 -0700 (PDT)
-From: Alex Dubov <oakad@yahoo.com>
-Subject: Re: [PATCH 12/29] memstick: mspro: rework interface switch
-To: Maxim Levitsky <maximlevitsky@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Maxim Levitsky <maximlevitsky@gmail.com>
-In-Reply-To: <1287791637-10329-13-git-send-email-maximlevitsky@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+	id S1756198Ab0JYP3r (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Oct 2010 11:29:47 -0400
+Received: from vpn.id2.novell.com ([195.33.99.129]:50606 "EHLO
+	vpn.id2.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751487Ab0JYP3p convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-JBeulich@novell.com:6:2>);
+	Mon, 25 Oct 2010 11:29:45 -0400
+Message-Id: <4CC5BE83020000780001EFE4@vpn.id2.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 8.0.1 
+Date: Mon, 25 Oct 2010 16:29:39 +0100
+From: "Jan Beulich" <JBeulich@novell.com>
+To: "Linus Torvalds" <torvalds@linux-foundation.org>
+Cc: "Ingo Molnar" <mingo@elte.hu>,
+        "Alexander van Heukelum" <heukelum@fastmail.fm>,
+        <akpm@linux-foundation.org>, "H. Peter Anvin" <hpa@linux.intel.com>,
+        "David Howells" <dhowells@redhat.com>, <linux-arch@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] Partially revert patch that encloses asm-offset.h
+	 numbers in brackets
+References: <4CC5B1A1020000780001EF7C@vpn.id2.novell.com>
+ <20101025140218.5092.74117.stgit@warthog.procyon.org.uk>
+ <28707.1288018465@redhat.com>
+ <4CC5B8D3020000780001EFB4@vpn.id2.novell.com>
+ <AANLkTi=mpKRQgZp5zCoCsBtkuWHrpkOq2Zch-OOGu4CC@mail.gmail.com>
+In-Reply-To: <AANLkTi=mpKRQgZp5zCoCsBtkuWHrpkOq2Zch-OOGu4CC@mail.gmail.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+>>> On 25.10.10 at 17:17, Linus Torvalds <torvalds@linux-foundation.org> wrote:
+> How about just removing the idiotic workaround entirely, and then on
+> x86 passing "-traditional" to cpp for asm input so that it doesn't add
+> spaces in argument expansion? Make the workaround more targeted to the
+> actual problem, rather than working around it in some unrelated
+> thing..
 
+Hmm, I think it was an actual improvement to remove the use of
+-traditional. If fiddling with the globally used sed expression isn't
+considered acceptable, how about allowing the architecture to
+override it as necessary?
 
---- On Fri, 22/10/10, Maxim Levitsky <maximlevitsky@gmail.com> wrote:
+Jan
 
-> From: Maxim Levitsky <maximlevitsky@gmail.com>
-> Subject: [PATCH 12/29] memstick: mspro: rework interface switch
-> To: "Alex Dubov" <oakad@yahoo.com>
-> Cc: "Andrew Morton" <akpm@linux-foundation.org>, "LKML" <linux-kernel@vger.kernel.org>, "Maxim Levitsky" <maximlevitsky@gmail.com>
-> Received: Friday, 22 October, 2010, 4:53 PM
-> Now no old style state machine
-> exist.
-> Thus this patch removes now unused code.
-> 
-
-This patch does somewhat more, than just removing the dead code.
-Description/rationale?
-
-
-
-      
