@@ -1,39 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752975Ab0JYCTk (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Oct 2010 22:19:40 -0400
-Received: from hscantispam.hsc.usf.edu ([131.247.67.45]:52471 "EHLO
-	hscantispam.health.usf.edu" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752000Ab0JYCTj convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Oct 2010 22:19:39 -0400
-X-ASG-Debug-ID: 1287972241-17b1025a0000-xx1T2L
-X-Barracuda-URL: http://hscantispam.health.usf.edu:8000/cgi-bin/mark.cgi
-X-Barracuda-Envelope-From: rszekely@health.usf.edu
-From: "Szekely, Robin" <rszekely@health.usf.edu>
-To: "info@yahoo.com" <info@yahoo.com>
-Date: Sun, 24 Oct 2010 22:04:00 -0400
-X-ASG-Orig-Subj: 
-Subject: 
-Thread-Index: AQHLc+jjl13oaDr57EOqYSBZ0DtBIA==
-Message-ID: <9C506127A1E8D64EB1A3CBF7A321E59417B440D9B5@MAILSERVER2.hscnet.hsc.usf.edu>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1753087Ab0JYCVI (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Oct 2010 22:21:08 -0400
+Received: from void.printf.net ([89.145.121.20]:43767 "EHLO void.printf.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750996Ab0JYCVG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 24 Oct 2010 22:21:06 -0400
+Date: Mon, 25 Oct 2010 03:21:02 +0100
+From: Chris Ball <cjb@laptop.org>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Olof Johansson <olof@lixom.net>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: linux-next: build failure after merge of the mmc tree
+Message-ID: <20101025022102.GA23049@void.printf.net>
+References: <20101025121238.db983f90.sfr@canb.auug.org.au>
 MIME-Version: 1.0
-X-Barracuda-Connect: UNKNOWN[10.119.4.12]
-X-Barracuda-Start-Time: 1287972241
-X-Barracuda-Virus-Scanned: by USF Health AntiSpam System at health.usf.edu
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101025121238.db983f90.sfr@canb.auug.org.au>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Stephen,
 
-MY name is Capt James Roy, I am in artillery military unit here in Iraq, we discovered some oil money in 
-Iraq, we are working for the government we can not keep it.We want you to keep the funds for us.
-reply to this email address (r.captjames@yahoo.com.hk)
+On Mon, Oct 25, 2010 at 12:12:38PM +1100, Stephen Rothwell wrote:
+> Hi Chris,
+> 
+> After merging the mmc tree, today's linux-next build (x86_64 allmodconfig)
+> failed like this:
+> 
+> drivers/mmc/card/block.c:57: error: 'CONFIG_MMC_BLOCK_MINORS' undeclared here (not in a function)
+> 
+> Caused by commit d8714fbfc66e16fc64a4525c02eebc34bac8385c ("mmc: make
+> number of mmcblk minors configurable").  Forget to include a Kconfig
+> update?
+> 
+> I have used the mmc tree from next-20101022 for today.
 
+Sorry, yes.  I've tested and pushed a fixed version. 
+
+Thanks very much,
+
+-- 
+Chris Ball   <cjb@laptop.org>   <http://printf.net/>
+One Laptop Per Child
