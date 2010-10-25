@@ -1,86 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759162Ab0JYRqS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Oct 2010 13:46:18 -0400
-Received: from casper.infradead.org ([85.118.1.10]:54195 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751518Ab0JYRqS convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Oct 2010 13:46:18 -0400
-Subject: Re: [PATCH][GIT PULL] tracing: Fix compile issue for
- trace_sched_wakeup.c
-From: Peter Zijlstra <peterz@infradead.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Steven Rostedt <rostedt@goodmis.org>, Jason Baron <jbaron@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        masami.hiramatsu.pt@hitachi.com
-In-Reply-To: <1288021672.15336.63.camel@twins>
-References: <20101021110925.GA27219@elte.hu>
-	 <20101022175845.GF6498@redhat.com> <20101022182433.GA24637@elte.hu>
-	 <20101022183900.GG6498@redhat.com> <20101023200216.GA19324@elte.hu>
-	 <1287881618.16971.657.camel@gandalf.stny.rr.com>
-	 <20101024112540.GA21267@elte.hu> <20101025085927.GA11025@elte.hu>
-	 <20101025093045.GA21997@elte.hu> <20101025114501.GA2000@elte.hu>
-	 <20101025121059.GA3063@elte.hu>  <1288009103.15336.58.camel@twins>
-	 <1288021672.15336.63.camel@twins>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Mon, 25 Oct 2010 19:45:46 +0200
-Message-ID: <1288028746.3673.11.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S1759231Ab0JYRr7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Oct 2010 13:47:59 -0400
+Received: from igloo.linux.gr ([62.1.205.36]:54184 "EHLO igloo.linux.gr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751518Ab0JYRr5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Oct 2010 13:47:57 -0400
+X-Hellug-MailScanner-From: serzan@hellug.gr
+X-Hellug-MailScanner-SpamCheck: not spam, SpamAssassin (not cached,
+	score=-2.9, required 5, autolearn=not spam, ALL_TRUSTED -1.00,
+	BAYES_00 -1.90)
+X-Hellug-MailScanner: Found to be clean
+X-Hellug-MailScanner-ID: o9PHiQu5026161
+Date: Mon, 25 Oct 2010 19:44:20 +0200
+From: Serafeim Zanikolas <sez@debian.org>
+To: "John W. Linville" <linville@tuxdriver.com>
+Cc: Hin-Tak Leung <htl10@users.sourceforge.net>,
+        Larry Finger <Larry.Finger@lwfinger.net>, herton@mandriva.com.br,
+        joe@perches.com, davem@davemloft.net, linux-wireless@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] drivers: rtl818x: request DMA-able memory
+Message-ID: <20101025174420.GA3425@mobee>
+References: <1287952327-9924-1-git-send-email-sez@debian.org>
+ <4CC5851D.1040204@lwfinger.net>
+ <4CC5900A.2050209@users.sourceforge.net>
+ <20101025142232.GC2414@tuxdriver.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101025142232.GC2414@tuxdriver.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-10-25 at 17:47 +0200, Peter Zijlstra wrote:
-
-> NOP'ed vs JMP'ed
+On Mon, Oct 25, 2010 at 10:22:32AM -0400, John W. Linville wrote:
+> On Mon, Oct 25, 2010 at 03:11:22PM +0100, Hin-Tak Leung wrote:
+> > 
+> > 
+> > Larry Finger wrote:
+> > >On 10/24/2010 03:32 PM, Serafeim Zanikolas wrote:
+> > >>Despite the indicated intention in comment, the kmalloc() call was not
+> > >>explicitly requesting memory from ZONE_DMA.
+> > >>
+> > >>Signed-off-by: Serafeim Zanikolas <sez@debian.org>
+> > >>---
+> > >> drivers/net/wireless/rtl818x/rtl8187_dev.c |    3 ++-
+> > >> 1 files changed, 2 insertions(+), 1 deletions(-)
+> > >>
+> > >>diff --git a/drivers/net/wireless/rtl818x/rtl8187_dev.c b/drivers/net/wireless/rtl818x/rtl8187_dev.c
+> > >>index 38fa824..771794d 100644
+> > >>--- a/drivers/net/wireless/rtl818x/rtl8187_dev.c
+> > >>+++ b/drivers/net/wireless/rtl818x/rtl8187_dev.c
+> > >>@@ -1343,7 +1343,8 @@ static int __devinit rtl8187_probe(struct usb_interface *intf,
+> > >> 	priv->is_rtl8187b = (id->driver_info == DEVICE_RTL8187B);
+> > >> 	/* allocate "DMA aware" buffer for register accesses */
+> > >>-	priv->io_dmabuf = kmalloc(sizeof(*priv->io_dmabuf), GFP_KERNEL);
+> > >>+	priv->io_dmabuf = kmalloc(sizeof(*priv->io_dmabuf),
+> > >>+				  GFP_DMA | GFP_KERNEL);
+> > >> 	if (!priv->io_dmabuf) {
+> > >> 		err = -ENOMEM;
+> > >> 		goto err_free_dev;
+> > >
+> > >ACK.
+> > >
+> > >Larry
+> > 
+> > Acked-by: Hin-Tak Leung <htl10@users.sourceforge.net>
+> > 
+> > I had a quick look for similiar constructs and AFAIK only the
+> > b43/b43legacy drivers uses DMA buffers. Seems to be a rare practice.
+> > Is that something we should or should not do?
 > 
+> It doesn't mean what you think it means.  It is a relic of the past,
+> used to indicate memory below 16MB so that ISA devices could do DMA.
 
->   56:	6a 00                	push   $0x0                          6a 00                	push   $0x0
->   58:	e8 b7 fe ff ff       	call   0xffffff14                    e8 b7 fe ff ff       	call   0xffffff14
->   5d:	8b 43 1c             	mov    0x1c(%ebx),%eax               8b 43 1c             	mov    0x1c(%ebx),%eax
->   60:	89 44 24 04          	mov    %eax,0x4(%esp)                89 44 24 04          	mov    %eax,0x4(%esp)
->   64:	f0 fe 07             	lock incb (%edi)                     f0 fe 07             	lock incb (%edi)
->   67:*	0f 1f 44 00 00       	nopl   0x0(%eax,%eax,1)              e9 03 00 00 00       	jmp    0x6f              <--- PATCHED INSN
->   6c:	58                   	pop    %eax                          58                   	pop    %eax
->   6d:	eb 1d                	jmp    0x8c                          eb 1d                	jmp    0x8c
->   6f:	8b 35 70 ad 40 c1    	mov    0xc140ad70,%esi               8b 35 70 ad 40 c1    	mov    0xc140ad70,%esi
->   75:	85 f6                	test   %esi,%esi                     85 f6                	test   %esi,%esi
->   77:	74 13                	je     0x8c                          74 13                	je     0x8c
->   79:	8b 46 04             	mov    0x4(%esi),%eax                8b 46 04             	mov    0x4(%esi),%eax
->   7c:	89 da                	mov    %ebx,%edx                     89 da                	mov    %ebx,%edx
->   7e:	8b 4c 24 04          	mov    0x4(%esp),%ecx                8b 4c 24 04          	mov    0x4(%esp),%ecx
->   82:	ff 16                	call   *(%esi)                       ff 16                	call   *(%esi)
->   84:	83 c6 08             	add    $0x8,%esi                     83 c6 08             	add    $0x8,%esi
->   87:	83 3e 00             	cmpl   $0x0,(%esi)                   83 3e 00             	cmpl   $0x0,(%esi)
->   8a:	eb eb                	jmp    0x77                          eb eb                	jmp    0x77
->   8c:	89 d8                	mov    %ebx,%eax                     89 d8                	mov    %ebx,%eax
->   8e:	ff 14 24             	call   *(%esp)                       ff 14 24             	call   *(%esp)
+Right. Sorry for the noise.
 
-OK, new theory.. 
-
-56 pushl 0
-67 nopl         jmp 0x6f
-   popl
-   jmp 0x8c
-
-6f              mov
-                test
-		je 0x8c
-
-8c mov
-   call *(%esp)
-
-
-So in the jumped path we miss a popl which pop's the 0 pushed before,
-which is the exact address call is failing on..
-
-Looks like gcc got its branches confused or something..
-
-Am I reading this right?
+-S
