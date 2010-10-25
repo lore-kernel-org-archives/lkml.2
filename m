@@ -1,48 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755531Ab0JYWu7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Oct 2010 18:50:59 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:23863 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751208Ab0JYWu6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Oct 2010 18:50:58 -0400
-Date: Mon, 25 Oct 2010 18:50:55 -0400
-From: Dave Jones <davej@redhat.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: conflicting options in makefile ?
-Message-ID: <20101025225055.GA6840@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Linux Kernel <linux-kernel@vger.kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1757482Ab0JYWyp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Oct 2010 18:54:45 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:32865 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752049Ab0JYWyn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Oct 2010 18:54:43 -0400
+Date: Mon, 25 Oct 2010 15:54:10 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Claudio Scordino <claudio@evidence.eu.com>
+Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Arkadiusz =?UTF-8?Q?Buba?= =?UTF-8?Q?=C5=82a?= 
+	<arkadiusz.bubala@gmail.com>,
+        linux@maxim.org.za,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>,
+        Greg KH <greg@kroah.com>
+Subject: Re: atmel_serial: fix RTS high after initialization in RS485 mode
+Message-Id: <20101025155410.f960fcd5.akpm@linux-foundation.org>
+In-Reply-To: <4CC40EFD.8070000@evidence.eu.com>
+References: <4CC40EFD.8070000@evidence.eu.com>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-While diagnosing a ccache problem, I noticed the following command line being used..
+On Sun, 24 Oct 2010 12:48:29 +0200
+Claudio Scordino <claudio@evidence.eu.com> wrote:
 
-[2010-10-25T18:45:16.715078 25689] Executing /usr/bin/cc -D__KERNEL__
--Wall -Wundef -Wstrict-prototypes -Wno-trigraphs -fno-strict-aliasing
--fno-common -Werror-implicit-function-declaration -Wno-format-security
--fno-delete-null-pointer-checks -Os -m64 -mtune=generic -mno-red-zone
--mcmodel=kernel -funit-at-a-time -maccumulate-outgoing-args
--fstack-protector -DCONFIG_AS_CFI=1 -DCONFIG_AS_CFI_SIGNAL_FRAME=1
--DCONFIG_AS_CFI_SECTIONS=1 -DCONFIG_AS_FXSAVEQ=1 -pipe -Wno-sign-compare
--fno-asynchronous-unwind-tables -mno-sse -mno-mmx -mno-sse2 -mno-3dnow
--Wframe-larger-than=2048 -fno-omit-frame-pointer
--fno-optimize-sibling-calls -g -femit-struct-debug-baseonly -pg
--Wdeclaration-after-statement -Wno-pointer-sign -fno-strict-overflow
--fconserve-stack -DCC_HAVE_ASM_GOTO -fno-unit-at-a-time -c -xc /dev/null
--o .25644.tmp
+> Hi Nicolas,
+> 
+> 	when working in RS485 mode, the atmel_serial driver keeps RTS
+> high after the initialization of the serial port. It goes low only after
+> the first character has been sent. 
+> 
+> This patch fixes this behavior. It has been already tested by Arkadiusz (CC:-ed).
+> 
+> Best regards,
+> 
+> 	Claudio
+> 
+> 
+> atmel_serial: RTS line low after initialization of the serial port
+> 
+> Signed-off-by: Claudio Scordino <claudio@evidence.eu.com>
+> Signed-off-by: Arkadiusz Bubala <arkadiusz.bubala@gmail.com>
+> ---
+>  drivers/serial/atmel_serial.c |    9 +++++++++
+>  1 files changed, 9 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/serial/atmel_serial.c b/drivers/serial/atmel_serial.c
+> index 3892666..85aa66f 100644
+> --- a/drivers/serial/atmel_serial.c
+> +++ b/drivers/serial/atmel_serial.c
+> @@ -1732,6 +1732,15 @@ static int __devinit atmel_serial_probe(struct platform_device *pdev)
+>  	device_init_wakeup(&pdev->dev, 1);
+>  	platform_set_drvdata(pdev, port);
+>  
+> +	if (port->rs485.flags & SER_RS485_ENABLED) {
+> +		unsigned int control = 0;
+> +		unsigned int mode = 0;
+> +		control |= ATMEL_US_RTSEN;
+> +		mode |= ATMEL_US_USMODE_NORMAL;
+> +		UART_PUT_MR(&port->uart, mode);
+> +		UART_PUT_CR(&port->uart, control);
+> +	}
+> +
+>  	return 0;
+>  
 
+That was a lot of code!  How about just this?
 
-Note that we pass -funit-at-a-time and -fno-unit-at-a-time.
-Looking at arch/x86/Makefile, there's a test that adds the -fno-unit-at-a-time.
-if gcc is < 4.0 (I'm using 4.5)
-
-What's happening here?
-
-	Dave
+	if (port->rs485.flags & SER_RS485_ENABLED) {
+		UART_PUT_MR(&port->uart, ATMEL_US_USMODE_NORMAL);
+		UART_PUT_CR(&port->uart, ATMEL_US_RTSEN);
+	}
 
