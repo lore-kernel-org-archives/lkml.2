@@ -1,58 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757508Ab0JYQhz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Oct 2010 12:37:55 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:48659 "EHLO mail.zytor.com"
+	id S1757458Ab0JYQj0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Oct 2010 12:39:26 -0400
+Received: from www.tglx.de ([62.245.132.106]:35975 "EHLO www.tglx.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755825Ab0JYQhy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Oct 2010 12:37:54 -0400
-Message-ID: <4CC5B246.5070909@zytor.com>
-Date: Mon, 25 Oct 2010 09:37:26 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc13 Thunderbird/3.1.4
+	id S1755923Ab0JYQjY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Oct 2010 12:39:24 -0400
+Date: Mon, 25 Oct 2010 18:38:40 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Andi Kleen <andi@firstfloor.org>
+cc: Huang Ying <ying.huang@intel.com>, Ingo Molnar <mingo@elte.hu>,
+        Len Brown <lenb@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        Borislav Petkov <petkovbb@googlemail.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Don Zickus <dzickus@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Tony Luck <tony.luck@intel.com>
+Subject: Re: [NAK] Re: [PATCH -v2 9/9] ACPI, APEI, Generic Hardware Error
+ Source POLL/IRQ/NMI notification type support
+In-Reply-To: <20101025091913.GA17622@basil.fritz.box>
+Message-ID: <alpine.LFD.2.00.1010251821260.3955@localhost6.localdomain6>
+References: <1287992610-14996-1-git-send-email-ying.huang@intel.com> <1287992610-14996-10-git-send-email-ying.huang@intel.com> <20101025084553.GA27119@elte.hu> <1287997112.2862.322.camel@yhuang-dev> <20101025091913.GA17622@basil.fritz.box>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Jan Beulich <JBeulich@novell.com>,
-        Alexander van Heukelum <heukelum@fastmail.fm>,
-        Ingo Molnar <mingo@elte.hu>, akpm@linux-foundation.org,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        David Howells <dhowells@redhat.com>, linux-arch@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Partially revert patch that encloses asm-offset.h numbers
- in brackets
-References: <4CC5B1A1020000780001EF7C@vpn.id2.novell.com> <20101025140218.5092.74117.stgit@warthog.procyon.org.uk> <28707.1288018465@redhat.com> <4CC5B8D3020000780001EFB4@vpn.id2.novell.com> <AANLkTi=mpKRQgZp5zCoCsBtkuWHrpkOq2Zch-OOGu4CC@mail.gmail.com> <4CC5A748.6050903@zytor.com> <AANLkTik1HB-P0x0e8ucHz7323F-_qAzkaHrHy1Yq4qwo@mail.gmail.com>
-In-Reply-To: <AANLkTik1HB-P0x0e8ucHz7323F-_qAzkaHrHy1Yq4qwo@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/25/2010 09:16 AM, Linus Torvalds wrote:
-> On Mon, Oct 25, 2010 at 8:50 AM, H. Peter Anvin <hpa@zytor.com> wrote:
->>
->> As such, the only options I can really think about overriding the sed
->> expression for x86 or just saying gcc 2.16.90 or later is required...
+On Mon, 25 Oct 2010, Andi Kleen wrote:
+> > > Sigh, please integrate all this into EDAC (drivers/edac/) properly, instead of 
+> > > turning it into YET ANOTHER hardware vendor special hw-errors thing. We can do 
+> > > better than this. EDAC is almost there: it has support for Nehalem, AMD, a couple
+> > > of older chips.
+> > 
+> > I think APEI (ACPI Platform Error Interface) is another driver. Why
+> > integrate two drivers?
 > 
-> gas, not gcc. But yeah, maybe we can do that. How long has this space
-> breakage been going on? If it's a "we got a report from this one guy"
-> kind of thing, then just saying "we don't support old gas versions
-> because they are too broken" is probably the right thing to do.
+> Yes they're solving quite different problems from EDAC with different
+> interfaces and for different devices in the ACPI space.
 > 
-> No reason to make for maintenance problems and uglier code if we can
-> just say "get a newer gas" to a few people. It's not like we haven't
-> done that with gcc and other tools too.
+> The earlier nack seems to be based on a lot of confusion on what the code 
+> does.
+
+Errm. That patch series carries a lot of other weird stuff including a
+new "memory allocator", a new ioremap implementation private to the
+acpi code and new character device driver for hardware error
+reporting.
+
+> Subject: [PATCH -v2 5/9] Hardware error device core
 > 
->                        Linus
+> Hardware error device is a kind of device which can report hardware
+> errors.  The examples of hardware error device include APEI GHES, PCIe
+> AER, etc.
+> 
+> Hardware error device core in this patch provides common services for
+> various hardware error devices.
 
-The problem is that 2.16 isn't all that old; al lot of the "enterprise"
-distros still ship it or AFAIK even older versions.  2.6.90 which I
-*think* is the first fixed version dates from April 2005, so is
-currently 5 years old; maybe that is within reason to kill off.
+But it does not even make an attempt to explain why this error
+reporting cannot be done via the existing interfaces and why they
+can't be extended to fit your needs. What's so special about APEI GHES
+and PCIe AER that we need another incompatible "just fits your needs"
+ABI which makes tooling folks deal with another completely different
+interface ?
 
-	-hpa
+The only explanation I have is that you are simply not willing to work
+with others and this is just another proof of a repeating problem.
 
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
+Thanks,
 
+	tglx
