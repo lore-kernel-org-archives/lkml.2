@@ -1,57 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753850Ab0JYIeS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Oct 2010 04:34:18 -0400
-Received: from zone0.gcu-squad.org ([212.85.147.21]:4491 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751434Ab0JYIeR (ORCPT
+	id S1753873Ab0JYIl1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Oct 2010 04:41:27 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:43172 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751708Ab0JYIl0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Oct 2010 04:34:17 -0400
-Date: Mon, 25 Oct 2010 10:34:04 +0200
-From: Jean Delvare <khali@linux-fr.org>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jesse Barnes <jbarnes@virtuousgeek.org>
-Subject: Re: linux-next: error importing i2c quilt series
-Message-ID: <20101025103404.73c24f45@endymion.delvare>
-In-Reply-To: <20101025105900.83472a69.sfr@canb.auug.org.au>
-References: <20101025105900.83472a69.sfr@canb.auug.org.au>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 25 Oct 2010 04:41:26 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:content-type;
+        b=o4jYFRd+pHpkUrKO30nxptBQT+SXyG+Zrgv1BBPKptGT31vylDSyClabB9uEGzcaqO
+         KwWGfC7xuCZaKT6js7jc61rMCwL0V9H8CEN8G8wKC7HDrGeM6Zg7h7evQleMZECAepq8
+         jUK3fWefo6fRqR4/A15bc3AInYy95U3+OBx9I=
+MIME-Version: 1.0
+Date: Mon, 25 Oct 2010 09:41:24 +0100
+Message-ID: <AANLkTinX=hNOWsJFxvBEe63My6sETgFzH4qoPCbbB2rX@mail.gmail.com>
+Subject: ext4 file system size limit
+From: =?UTF-8?Q?Mathias_Bur=C3=A9n?= <mathias.buren@gmail.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Stephen,
+Hi lkml,
 
-On Mon, 25 Oct 2010 10:59:00 +1100, Stephen Rothwell wrote:
-> Hi Jean,
-> 
-> Trying to import today's i2c quilt series gave me these errors:
-> 
-> i2c-i801-add-intel-patsburg-device-id.patch
-> error: patch failed: include/linux/pci_ids.h:2444
-> error: include/linux/pci_ids.h: patch does not apply
-> Context reduced to (1/1) to apply fragment at 101
-> Context reduced to (1/1) to apply fragment at 45
-> error: patch failed: drivers/i2c/busses/i2c-i801.c:592
-> error: drivers/i2c/busses/i2c-i801.c: patch does not apply
-> 
-> I will use the i2c tree from next-20101022 for today.
+(please cc as not subscribed)
 
-This patch depends on a patch adding/updating PCI IDs which I thought
-was in Jesse Barnes' pci tree which you also pull in linux-next.
-Apparently my assumption was wrong.
+The ext4 documentation says the current file system size limit is
+16TB. I currently have an fs of 6TB which is working fine, but I'm
+planning to expand it.
 
-Jesse, where's this patch?
-  https://patchwork.kernel.org/patch/230361/
-I certainly hope it's scheduled for merge soon!
+Are there any known bugs with large file systems, or is it safe for me
+to proceed and extent the fs? (up to 16TB)
 
-Meanwhile I've removed the other patch from my i2c-next tree, it will
-be back only when I'm certain it applied fine.
-
-Thanks,
--- 
-Jean Delvare
+Regards,
+// Mathias
