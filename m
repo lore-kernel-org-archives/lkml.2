@@ -1,59 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932691Ab0JYRO4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Oct 2010 13:14:56 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:45977 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932108Ab0JYROy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Oct 2010 13:14:54 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=LVbeF+UfMw50BjHfob9rCzbSKsPF2SsR/t5h/SK+vV2QHn9zizTitJrG1XK57FLSRY
-         xp+fdyY7tPbQjYGImRoQD7MkA/xih7zdMH9h8TMVa9A9nhq7nvirY8xv4TVHZMQn8ID8
-         2llsSFsCrdU+HfDG/mFSdL2h2HXkdBLYFWBVk=
+	id S1759149Ab0JYRQm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Oct 2010 13:16:42 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:34023 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751101Ab0JYRQl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Oct 2010 13:16:41 -0400
+Date: Mon, 25 Oct 2010 19:16:30 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Robert Richter <robert.richter@amd.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "oprofile-list@lists.sourceforge.net" 
+	<oprofile-list@lists.sourceforge.net>
+Subject: Re: [GIT PULL] oprofile updates for v2.6.37
+Message-ID: <20101025171630.GB1636@elte.hu>
+References: <20101025154601.GM5969@erda.amd.com>
 MIME-Version: 1.0
-In-Reply-To: <20101025092557.GA11544@elte.hu>
-References: <1287992610-14996-1-git-send-email-ying.huang@intel.com>
-	<1287992610-14996-10-git-send-email-ying.huang@intel.com>
-	<20101025084553.GA27119@elte.hu>
-	<1287997112.2862.322.camel@yhuang-dev>
-	<20101025092557.GA11544@elte.hu>
-Date: Mon, 25 Oct 2010 10:14:52 -0700
-Message-ID: <AANLkTi=2SVT1M+nDZUB7EB05jh+tsuKcew_t66QORrwb@mail.gmail.com>
-Subject: Re: [NAK] Re: [PATCH -v2 9/9] ACPI, APEI, Generic Hardware Error
- Source POLL/IRQ/NMI notification type support
-From: Tony Luck <tony.luck@gmail.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Huang Ying <ying.huang@intel.com>, Len Brown <lenb@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        Borislav Petkov <petkovbb@googlemail.com>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Don Zickus <dzickus@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101025154601.GM5969@erda.amd.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 25, 2010 at 2:25 AM, Ingo Molnar <mingo@elte.hu> wrote:
 
-> drivers/acpi/apei/ overlaps and duplicates drivers/edac/. We dont want two
-> facilities, two ABIs, two sets of behavior. erst-dbg even defines a /dev node with
-> two ioctls, and a debugfs file to read/write records ...
+* Robert Richter <robert.richter@amd.com> wrote:
 
-As mentioned above these 4-letter names from from the ACPI specification. ERST
-is perhaps the dumbest name of them all - "Error Record Serialization Table" is
-ACPI-speak for platform level non-volatile memory.  This code simply provides
-a mechanism for Linux to stash some information in nvram before the system is
-reset, and to retrieve it after the reboot.
+> Ingo,
+> 
+> please consider to pull AMD oprofile cpu updates for tip/perf/core and
+> v2.6.37:
+> 
+>  git://git.kernel.org/pub/scm/linux/kernel/git/rric/oprofile.git x86
+> 
+> Thanks,
+> 
+> -Robert
+> 
+> 
+> The following changes since commit d4429f608abde89e8bc1e24b43cd503feb95c496:
+> 
+>   Merge branch 'next' of git://git.kernel.org/pub/scm/linux/kernel/git/benh/powerpc (2010-10-21 21:19:54 -0700)
+> 
+> are available in the git repository at:
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/rric/oprofile.git for-next
+> 
+> Robert Richter (10):
+>       oprofile, x86: Add support for AMD family 12h
+>       oprofile, x86: Add support for AMD family 14h
+>       oprofile, x86: Check IBS capability bits 1 and 2
+>       oprofile, x86: Remove duplicate check for IBS_CAPS_OPCNT
+>       oprofile, x86: Introduce struct ibs_state
+>       oprofile, x86: Add support for IBS branch target address reporting
+>       oprofile, x86: Add support for IBS periodic op counter extension
+>       Merge commit 'v2.6.36' into oprofile/core
+>       Merge commit 'linux-2.6/master' (early part) into oprofile/core
+>       Merge branch 'oprofile/core' into oprofile/x86
+> 
+>  arch/x86/include/asm/msr-index.h  |    1 +
+>  arch/x86/include/asm/perf_event.h |   19 +++---
+>  arch/x86/oprofile/nmi_int.c       |    6 ++
+>  arch/x86/oprofile/op_model_amd.c  |  120 +++++++++++++++++++++++++-----------
+>  4 files changed, 100 insertions(+), 46 deletions(-)
 
-The naming could be better - but I don't see any overlap with EDAC here.
+Pulled, thanks Robert!
 
--Tony
+	Ingo
