@@ -1,280 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751950Ab0JYA3g (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Oct 2010 20:29:36 -0400
-Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:60537 "EHLO
-	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750920Ab0JYA3f (ORCPT
+	id S1751936Ab0JYAbA (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Oct 2010 20:31:00 -0400
+Received: from dalsmrelay2.nai.com ([205.227.136.216]:31881 "EHLO
+	dalsmrelay2.nai.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751407Ab0JYAa5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Oct 2010 20:29:35 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Mon, 25 Oct 2010 09:24:01 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Greg Thelen <gthelen@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, containers@lists.osdl.org,
-        Andrea Righi <arighi@develer.com>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Ciju Rajan K <ciju@linux.vnet.ibm.com>,
-        David Rientjes <rientjes@google.com>
-Subject: Re: [PATCH v2][memcg+dirtylimit] Fix  overwriting global vm dirty
- limit setting by memcg (Re: [PATCH v3 00/11] memcg: per cgroup dirty page
- accounting
-Message-Id: <20101025092401.d81a4dce.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <xr937hh7sa5l.fsf@ninji.mtv.corp.google.com>
-References: <1287448784-25684-1-git-send-email-gthelen@google.com>
-	<20101020122144.47f2b60b.kamezawa.hiroyu@jp.fujitsu.com>
-	<20101020140255.5b8afb63.kamezawa.hiroyu@jp.fujitsu.com>
-	<xr937hh7sa5l.fsf@ninji.mtv.corp.google.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Sun, 24 Oct 2010 20:30:57 -0400
+Date: Mon, 25 Oct 2010 10:29:24 +1000
+From: Greg Ungerer <gerg@snapgear.com>
+Message-ID: <201010250029.o9P0TO2v003092@goober.internal.moreton.com.au>
+CC: <gerg@uclinux.org>, <linux-kernel@vger.kernel.org>,
+        <linux-m68k@vger.kernel.org>
+Subject: [git pull] m68knommu arch updates
+To: <torvalds@linux-foundation.org>
+X-Mailer: mail (GNU Mailutils 2.1)
+X-OriginalArrivalTime: 25 Oct 2010 00:30:42.0941 (UTC) FILETIME=[DB983AD0:01CB73DB]
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 24 Oct 2010 11:44:38 -0700
-Greg Thelen <gthelen@google.com> wrote:
 
-> KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> writes:
-> 
-> > Fixed one here.
-> > ==
-> > From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> >
-> > Now, at calculating dirty limit, vm_dirty_param() is called.
-> > This function returns dirty-limit related parameters considering
-> > memory cgroup settings.
-> >
-> > Now, assume that vm_dirty_bytes=100M (global dirty limit) and
-> > memory cgroup has 1G of pages and 40 dirty_ratio, dirtyable memory is
-> > 500MB.
-> >
-> > In this case, global_dirty_limits will consider dirty_limt as
-> > 500 *0.4 = 200MB. This is bad...memory cgroup is not back door.
-> >
-> > This patch limits the return value of vm_dirty_param() considring
-> > global settings.
-> >
-> > Changelog:
-> >  - fixed an argument "mem" int to u64
-> >  - fixed to use global available memory to cap memcg's value.
-> >
-> > Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> > ---
-> >  include/linux/memcontrol.h |    5 +++--
-> >  mm/memcontrol.c            |   30 +++++++++++++++++++++++++++++-
-> >  mm/page-writeback.c        |    3 ++-
-> >  3 files changed, 34 insertions(+), 4 deletions(-)
-> >
-> > Index: dirty_limit_new/mm/memcontrol.c
-> > ===================================================================
-> > --- dirty_limit_new.orig/mm/memcontrol.c
-> > +++ dirty_limit_new/mm/memcontrol.c
-> > @@ -1171,9 +1171,11 @@ static void __mem_cgroup_dirty_param(str
-> >   * can be moved after our access and writeback tends to take long time.  At
-> >   * least, "memcg" will not be freed while holding rcu_read_lock().
-> >   */
-> > -void vm_dirty_param(struct vm_dirty_param *param)
-> > +void vm_dirty_param(struct vm_dirty_param *param,
-> > +	 u64 mem, u64 global)
-> >  {
-> >  	struct mem_cgroup *memcg;
-> > +	u64 limit, bglimit;
-> >  
-> >  	if (mem_cgroup_disabled()) {
-> >  		global_vm_dirty_param(param);
-> > @@ -1183,6 +1185,32 @@ void vm_dirty_param(struct vm_dirty_para
-> >  	rcu_read_lock();
-> >  	memcg = mem_cgroup_from_task(current);
-> >  	__mem_cgroup_dirty_param(param, memcg);
-> > +	/*
-> > +	 * A limitation under memory cgroup is under global vm, too.
-> > +	 */
-> > +	if (vm_dirty_ratio)
-> > +		limit = global * vm_dirty_ratio / 100;
-> > +	else
-> > +		limit = vm_dirty_bytes;
-> > +	if (param->dirty_ratio) {
-> > +		param->dirty_bytes = mem * param->dirty_ratio / 100;
-> > +		param->dirty_ratio = 0;
-> > +	}
-> > +	if (param->dirty_bytes > limit)
-> > +		param->dirty_bytes = limit;
-> > +
-> > +	if (dirty_background_ratio)
-> > +		bglimit = global * dirty_background_ratio / 100;
-> > +	else
-> > +		bglimit = dirty_background_bytes;
-> > +
-> > +	if (param->dirty_background_ratio) {
-> > +		param->dirty_background_bytes =
-> > +			mem * param->dirty_background_ratio / 100;
-> > +		param->dirty_background_ratio = 0;
-> > +	}
-> > +	if (param->dirty_background_bytes > bglimit)
-> > +		param->dirty_background_bytes = bglimit;
-> >  	rcu_read_unlock();
-> >  }
-> >  
-> > Index: dirty_limit_new/include/linux/memcontrol.h
-> > ===================================================================
-> > --- dirty_limit_new.orig/include/linux/memcontrol.h
-> > +++ dirty_limit_new/include/linux/memcontrol.h
-> > @@ -171,7 +171,7 @@ static inline void mem_cgroup_dec_page_s
-> >  }
-> >  
-> >  bool mem_cgroup_has_dirty_limit(void);
-> > -void vm_dirty_param(struct vm_dirty_param *param);
-> > +void vm_dirty_param(struct vm_dirty_param *param, u64 mem, u64 global);
-> >  s64 mem_cgroup_page_stat(enum mem_cgroup_nr_pages_item item);
-> >  
-> >  unsigned long mem_cgroup_soft_limit_reclaim(struct zone *zone, int order,
-> > @@ -360,7 +360,8 @@ static inline bool mem_cgroup_has_dirty_
-> >  	return false;
-> >  }
-> >  
-> > -static inline void vm_dirty_param(struct vm_dirty_param *param)
-> > +static inline void vm_dirty_param(struct vm_dirty_param *param,
-> > +		u64 mem, u64 global)
-> >  {
-> >  	global_vm_dirty_param(param);
-> >  }
-> > Index: dirty_limit_new/mm/page-writeback.c
-> > ===================================================================
-> > --- dirty_limit_new.orig/mm/page-writeback.c
-> > +++ dirty_limit_new/mm/page-writeback.c
-> > @@ -466,7 +466,8 @@ void global_dirty_limits(unsigned long *
-> >  	struct task_struct *tsk;
-> >  	struct vm_dirty_param dirty_param;
-> >  
-> > -	vm_dirty_param(&dirty_param);
-> > +	vm_dirty_param(&dirty_param,
-> > +		available_memory, global_dirtyable_memory());
-> >  
-> >  	if (dirty_param.dirty_bytes)
-> >  		dirty = DIV_ROUND_UP(dirty_param.dirty_bytes, PAGE_SIZE);
-> 
-> I think there is a problem with the patch above.  In the patch
-> vm_dirty_param() sets param->dirty_[background_]bytes to the smallest
-> limits considering the memcg and global limits.  Assuming the current
-> task is in a memcg, then the memcg dirty (not system-wide) usage is
-> always compared to the selected limits (which may be per-memcg or
-> system).  The problem is that if:
-> a) per-memcg dirty limit is smaller than system then vm_dirty_param()
->    will select per-memcg dirty limit, and
-> b) per-memcg dirty usage is well below memcg dirty limit, and
-> b) system usage is at system limit
-> Then the above patch will not trigger writeback.  Example with two
-> memcg:
->          sys
->         B   C
->       
->       limit  usage
->   sys  10     10
->    B    7      6
->    C    5      4
-> 
-> If B wants to grow, the system will exceed system limit of 10 and should
-> be throttled.  However, the smaller limit (7) will be selected and
-> applied to memcg usage (6), which indicates no need to throttle, so the
-> system could get as bad as:
-> 
->       limit  usage
->   sys  10     12
->    B    7      7
->    C    5      5
-> 
-> In this case the system usage exceeds the system limit because each
-> the per-memcg checks see no per-memcg problems.
-> 
+Hi Linus,
 
-ok.
+Can you please pull the m68knommu git tree, for-linus branch.
 
-> To solve this I propose we create a new structure to aggregate both
-> dirty limit and usage data:
-> 	struct dirty_limits {
-> 	       unsigned long dirty_thresh;
-> 	       unsigned long background_thresh;
-> 	       unsigned long nr_reclaimable;
-> 	       unsigned long nr_writeback;
-> 	};
-> 
-> global_dirty_limits() would then query both the global and memcg limits
-> and dirty usage of one that is closest to its limit.  This change makes
-> global_dirty_limits() look like:
-> 
-> void global_dirty_limits(struct dirty_limits *limits)
-> {
-> 	unsigned long background;
-> 	unsigned long dirty;
-> 	unsigned long nr_reclaimable;
-> 	unsigned long nr_writeback;
-> 	unsigned long available_memory = determine_dirtyable_memory();
-> 	struct task_struct *tsk;
-> 
-> 	if (vm_dirty_bytes)
-> 		dirty = DIV_ROUND_UP(vm_dirty_bytes, PAGE_SIZE);
-> 	else
-> 		dirty = (vm_dirty_ratio * available_memory) / 100;
-> 
-> 	if (dirty_background_bytes)
-> 		background = DIV_ROUND_UP(dirty_background_bytes, PAGE_SIZE);
-> 	else
-> 		background = (dirty_background_ratio * available_memory) / 100;
-> 
-> 	nr_reclaimable = global_page_state(NR_FILE_DIRTY) +
-> 				global_page_state(NR_UNSTABLE_NFS);
-> 	nr_writeback = global_page_state(NR_WRITEBACK);
-> 
-> 	if (mem_cgroup_dirty_limits(available_memory, limits) &&
-> 	    dirty_available(limits->dirty_thresh, limits->nr_reclaimable,
-> 			    limits->nr_writeback) <
-> 	    dirty_available(dirty, nr_reclaimable, nr_writeback)) {
-> 		dirty = min(dirty, limits->dirty_thresh);
-> 		background = min(background, limits->background_thresh);
-> 	} else {
-> 		limits->nr_reclaimable = nr_reclaimable;
-> 		limits->nr_writeback = nr_writeback;
-> 	}
-> 
+  git://git.kernel.org/pub/scm/linux/kernel/git/gerg/m68knommu.git for-linus
 
-Hmm. I think it's better to add enough comments.
+Changes include support for the ColdFire 548x family, removal of
+__do_IRQ use, strace cleanups, some minor bug fixes, and quite a
+few cleanup patches (remove un-used symbols, whitespace formating,
+comments, etc).
 
-Or easier logic will be simple double-check.
-
-1) calculates global-dirty-limit (always do)
-	If this hits global_dirty_limit, skip below.
-2) if under memcg, calculate memcg-dirty-limit.
-   and check memcg-dirty-limit.
+Thanks
+Greg
 
 
 
+The following changes since commit f6f94e2ab1b33f0082ac22d71f66385a60d8157f:
+  Linus Torvalds (1):
+        Linux 2.6.36
 
+are available in the git repository at:
 
-> 	if (background >= dirty)
-> 		background = dirty / 2;
-> 	tsk = current;
-> 	if (tsk->flags & PF_LESS_THROTTLE || rt_task(tsk)) {
-> 		background += background / 4;
-> 		dirty += dirty / 4;
-> 	}
-> 	limits->background_thresh = background;
-> 	limits->dirty_thresh = dirty;
-> }
-> 
-> Because this approach considered both memcg and system limits, the
-> problem described above is avoided.
-> 
-> I have this change integrated into the memcg dirty limit series (-v3 was
-> the last post; v4 is almost ready with this change).  I will post -v4
-> with this approach is there is no strong objection.
-> 
-Sure. Thank you.
+  git://git.kernel.org/pub/scm/linux/kernel/git/gerg/m68knommu.git for-linus
 
--Kame
+Christian Dietrich (5):
+      arch/m68knommu: Removing dead M68000 config option
+      arch/m68knommu: Removing dead RELOCATE config option
+      arch/m68knommu: Removing dead M68KFPU_EMU config option
+      arch/m68knommu: Removing dead RAM_{16,32}_MB config option
+      arch/m68knommu: Removing dead 68328_SERIAL_UART2 config option
 
+Greg Ungerer (5):
+      m68knommu: stop using __do_IRQ
+      m68knommu: mask of vector bits in exception word properly
+      m68knommu: support the external GPIO based interrupts of the 5272
+      m68knommu: some boards use fixed phy for FEC ethernet
+      m68knommu: convert to using tracehook_report_syscall_*
+
+Philippe De Muyter (10):
+      m68knommu: fix default starting date
+      m68knommu: fix strace support for 68328/68360
+      m68knommu: Document supported chips in intc-2.c and intc-simr.c.
+      m68knommu: whitespace cleanup in 68328/entry.S
+      m68k{nommu}: Remove unused DEFINE's from asm-offsets.c
+      m68knommu: add support for Coldfire 547x/548x interrupt controller
+      m68knommu: rename PT_OFF_VECTOR to PT_OFF_FORMATVEC.
+      m68knommu: .gitignore vmlinux.lds
+      m68knommu: add basic mmu-less m548x support
+      m68knommu: Fix MCFUART_TXFIFOSIZE for m548x.
+
+matt mooney (1):
+      m68knommu: change to new flag variables
+
+ arch/m68k/include/asm/cacheflush_no.h        |    2 +-
+ arch/m68k/include/asm/coldfire.h             |    4 +-
+ arch/m68k/include/asm/gpio.h                 |    7 +-
+ arch/m68k/include/asm/m548xgpt.h             |   88 ++++++++++++++++
+ arch/m68k/include/asm/m548xsim.h             |   55 ++++++++++
+ arch/m68k/include/asm/mcfcache.h             |    2 +-
+ arch/m68k/include/asm/mcfsim.h               |    2 +
+ arch/m68k/include/asm/mcfslt.h               |   44 ++++++++
+ arch/m68k/include/asm/mcfuart.h              |    9 ++-
+ arch/m68k/kernel/asm-offsets.c               |   12 --
+ arch/m68knommu/Kconfig                       |   11 ++-
+ arch/m68knommu/Makefile                      |    3 +
+ arch/m68knommu/kernel/.gitignore             |    1 +
+ arch/m68knommu/kernel/asm-offsets.c          |   11 +--
+ arch/m68knommu/kernel/ptrace.c               |   47 +++------
+ arch/m68knommu/kernel/setup.c                |    3 -
+ arch/m68knommu/kernel/time.c                 |   13 ++-
+ arch/m68knommu/kernel/traps.c                |   26 ++---
+ arch/m68knommu/platform/5206/Makefile        |    4 +-
+ arch/m68knommu/platform/5206e/Makefile       |    4 +-
+ arch/m68knommu/platform/520x/Makefile        |    4 +-
+ arch/m68knommu/platform/523x/Makefile        |    4 +-
+ arch/m68knommu/platform/5249/Makefile        |    4 +-
+ arch/m68knommu/platform/5272/Makefile        |    4 +-
+ arch/m68knommu/platform/5272/config.c        |   16 +++
+ arch/m68knommu/platform/5272/intc.c          |   60 +++++++++--
+ arch/m68knommu/platform/527x/Makefile        |    4 +-
+ arch/m68knommu/platform/528x/Makefile        |    4 +-
+ arch/m68knommu/platform/5307/Makefile        |    4 +-
+ arch/m68knommu/platform/532x/Makefile        |    4 +-
+ arch/m68knommu/platform/5407/Makefile        |    4 +-
+ arch/m68knommu/platform/548x/Makefile        |   18 +++
+ arch/m68knommu/platform/548x/config.c        |  115 ++++++++++++++++++++
+ arch/m68knommu/platform/68328/entry.S        |   36 +++---
+ arch/m68knommu/platform/68328/head-de2.S     |    6 -
+ arch/m68knommu/platform/68328/head-ram.S     |   27 -----
+ arch/m68knommu/platform/68328/ints.c         |    6 +-
+ arch/m68knommu/platform/68360/entry.S        |   13 ++-
+ arch/m68knommu/platform/68360/ints.c         |    6 +-
+ arch/m68knommu/platform/68VZ328/config.c     |    5 -
+ arch/m68knommu/platform/coldfire/Makefile    |    5 +-
+ arch/m68knommu/platform/coldfire/entry.S     |    4 +-
+ arch/m68knommu/platform/coldfire/intc-2.c    |   53 ++++++++--
+ arch/m68knommu/platform/coldfire/intc-simr.c |   10 +-
+ arch/m68knommu/platform/coldfire/intc.c      |    8 +-
+ arch/m68knommu/platform/coldfire/sltimers.c  |  145 ++++++++++++++++++++++++++
+ drivers/serial/68328serial.h                 |    5 -
+ 47 files changed, 707 insertions(+), 215 deletions(-)
+ create mode 100644 arch/m68k/include/asm/m548xgpt.h
+ create mode 100644 arch/m68k/include/asm/m548xsim.h
+ create mode 100644 arch/m68k/include/asm/mcfslt.h
+ create mode 100644 arch/m68knommu/kernel/.gitignore
+ create mode 100644 arch/m68knommu/platform/548x/Makefile
+ create mode 100644 arch/m68knommu/platform/548x/config.c
+ create mode 100644 arch/m68knommu/platform/coldfire/sltimers.c
