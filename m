@@ -1,53 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753044Ab0JYVOY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Oct 2010 17:14:24 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:48706 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751107Ab0JYVOX (ORCPT
+	id S1753936Ab0JYVQ4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Oct 2010 17:16:56 -0400
+Received: from g5t0008.atlanta.hp.com ([15.192.0.45]:39609 "EHLO
+	g5t0008.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752085Ab0JYVQy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Oct 2010 17:14:23 -0400
-X-Authority-Analysis: v=1.1 cv=NFUeGz0loTdi/T6hXKngYYtckjed7x3pKvNOqmBBK18= c=1 sm=0 a=Ot7i4hbfXkcA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=Br9LfDWDAAAA:8 a=8Vl6CzlF76fnNVb1kmgA:9 a=Ekxte3zw7uETnTrmPjIA:7 a=lGorKWexhtV31t6T0wZSatQFqaQA:4 a=PUjeQqilurYA:10 a=xbPm7rTzZdSoenoi:21 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: bug in streamline_config.pl
-From: Steven Rostedt <rostedt@goodmis.org>
-To: member graysky <graysky@archlinux.us>
-Cc: LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <AANLkTikdVu4k21K0G9C8vZ54=yGiBFKpGxdPaZM9cEPv@mail.gmail.com>
-References: <AANLkTikHTu=MsoYu=PPxAh7t6oGPKnp=FybNMPXkMSx3@mail.gmail.com>
-	 <1288013006.18238.0.camel@gandalf.stny.rr.com>
-	 <AANLkTikdVu4k21K0G9C8vZ54=yGiBFKpGxdPaZM9cEPv@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Mon, 25 Oct 2010 17:14:21 -0400
-Message-ID: <1288041261.18238.7.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Mon, 25 Oct 2010 17:16:54 -0400
+From: Bjorn Helgaas <bjorn.helgaas@hp.com>
+To: Jesse Barnes <jbarnes@virtuousgeek.org>
+Subject: Re: [PATCH v4 6/6] x86: allocate space within a region top-down
+Date: Mon, 25 Oct 2010 15:15:29 -0600
+User-Agent: KMail/1.13.2 (Linux/2.6.32-25-generic; KDE/4.4.2; x86_64; ; )
+Cc: Bob Picco <bpicco@redhat.com>, Brian Bloniarz <phunge0@hotmail.com>,
+        Charles Butterfield <charles.butterfield@nextcentury.com>,
+        Denys Vlasenko <dvlasenk@redhat.com>, linux-pci@vger.kernel.org,
+        "Horst H. von Brand" <vonbrand@inf.utfsm.cl>,
+        Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
+        Stefan Becker <chemobejk@gmail.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Yinghai Lu <yinghai@kernel.org>,
+        Leann Ogasawara <leann.ogasawara@canonical.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Chuck Ebbert <cebbert@redhat.com>
+References: <20101014231804.536.62138.stgit@bob.kio> <20101025140154.66f1e1bd@jbarnes-desktop> <201010251508.49165.bjorn.helgaas@hp.com>
+In-Reply-To: <201010251508.49165.bjorn.helgaas@hp.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201010251515.30491.bjorn.helgaas@hp.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-10-25 at 16:05 -0400, member graysky wrote:
-> Hey man.  If I use it the way you suggested, it doesn't work.  I
-> documented it in this thread:
+On Monday, October 25, 2010 03:08:48 pm Bjorn Helgaas wrote:
+> On Monday, October 25, 2010 03:01:54 pm Jesse Barnes wrote:
+> > On Thu, 14 Oct 2010 17:18:52 -0600
+> > Bjorn Helgaas <bjorn.helgaas@hp.com> wrote:
+> > 
+> > > 
+> > > Request that allocate_resource() use available space from high addresses
+> > > first, rather than the default of using low addresses first.
+> > > 
+> > > The most common place this makes a difference is when we move or assign
+> > > new PCI device resources.  Low addresses are generally scarce, so it's
+> > > better to use high addresses when possible.  This follows Windows practice
+> > > for PCI allocation.
+> > 
+> > Applied this series to linux-next; assuming nothing blows up I'll send
+> > it to Linus this week (previous versions got some testing and landed in
+> > a separate branch so this should be fine).
 > 
-> https://bbs.archlinux.org/viewtopic.php?pid=830221#p830221
-> 
-> Please let me know what you think.  Note that it works perfectly call
-> it without the make localmodconfig
+> We tripped over another issue in Fedora:
+>   https://bugzilla.redhat.com/show_bug.cgi?id=646027
 
-Then this is a bug and should be reported. I've add LKML to the Cc list,
-so that this becomes public for all kernel developers.
-
-I'm a bit confused to exactly what is broken? What did you do on what
-kernel and what did you find that broke?
-
-Could you try the lastest stable kernel and see if it is broken there
-too? 2.6.36.
-
+By the way, it's been a *great* help to have Fedora being willing to
+go out on a limb and help get these tested.  I know it sucks to get
+those Rawhide bug reports, but they have been extremely useful to me.
 Thanks!
 
--- Steve
-
-
+Bjorn
