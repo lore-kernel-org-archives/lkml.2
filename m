@@ -1,93 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757414Ab0JYQbd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Oct 2010 12:31:33 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:33367 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752232Ab0JYQbb (ORCPT
+	id S1757316Ab0JYQhN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Oct 2010 12:37:13 -0400
+Received: from g4t0017.houston.hp.com ([15.201.24.20]:15496 "EHLO
+	g4t0017.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755825Ab0JYQhM convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Oct 2010 12:31:31 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=tIL284KUxMAKGBl0UoM6VH617ZMEfshXKBQU/CoQvg9vDOX2urVDNvUvfYnVJrSZOy
-         WQNBy03o6YrLORYTD8wrkwzoH+AAEfzFopatAlKNkOzIv4zh/r6jfAYNkxJPt4z2prbg
-         V4N+a/48Nx/kxHAxMxWRGkh7K+HPQtOgA6yPM=
-Subject: Re: [PATCH 2/3] sparc32: remove CONFIG_HAVE_PERF_EVENTS option
-From: Namhyung Kim <namhyung@gmail.com>
-To: David Miller <davem@davemloft.net>
-Cc: sparclinux@vger.kernel.org, linux-kernel@vger.kernel.org
-In-Reply-To: <20101025.085937.226775583.davem@davemloft.net>
-References: <1288021958-3130-1-git-send-email-namhyung@gmail.com>
-	 <1288021958-3130-2-git-send-email-namhyung@gmail.com>
-	 <20101025.085937.226775583.davem@davemloft.net>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 26 Oct 2010 01:31:19 +0900
-Message-ID: <1288024279.1689.23.camel@leonhard>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 8bit
+	Mon, 25 Oct 2010 12:37:12 -0400
+From: "Miller, Mike (OS Dev)" <Mike.Miller@hp.com>
+To: "Miller, Mike (OS Dev)" <Mike.Miller@hp.com>,
+        Vasiliy Kulikov <segooon@gmail.com>,
+        "kernel-janitors@vger.kernel.org" <kernel-janitors@vger.kernel.org>
+CC: Jens Axboe <jaxboe@fusionio.com>,
+        "Stephen M. Cameron" <scameron@beardog.cce.hp.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        ISS StorageDev <iss_storagedev@hp.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Mon, 25 Oct 2010 16:36:28 +0000
+Subject: RE: [PATCH 1/2] block: cciss: fix information leak to userland
+Thread-Topic: [PATCH 1/2] block: cciss: fix information leak to userland
+Thread-Index: Actyi9MAiynw/EFuTcKVj9SuPgH/YgBxq23gAAQAf6A=
+Message-ID: <0F5B06BAB751E047AB5C87D1F77A77887D0E280943@GVW0547EXC.americas.hpqcorp.net>
+References: <1287822311-14783-1-git-send-email-segooon@gmail.com>
+ <0F5B06BAB751E047AB5C87D1F77A77887D0E2807DF@GVW0547EXC.americas.hpqcorp.net>
+In-Reply-To: <0F5B06BAB751E047AB5C87D1F77A77887D0E2807DF@GVW0547EXC.americas.hpqcorp.net>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010-10-25 (월), 08:59 -0700, David Miller:
-> From: Namhyung Kim <namhyung@gmail.com>
-> Date: Tue, 26 Oct 2010 00:52:37 +0900
+
+
+> -----Original Message-----
+> From: Miller, Mike (OS Dev)
+> Sent: Monday, October 25, 2010 9:41 AM
+> To: Vasiliy Kulikov; kernel-janitors@vger.kernel.org
+> Cc: Jens Axboe; Stephen M. Cameron; Andrew Morton; ISS StorageDev;
+> linux-kernel@vger.kernel.org
+> Subject: RE: [PATCH 1/2] block: cciss: fix information leak to userland
 > 
-> > Remove HAVE_PERF_EVENTS and PERF_USE_VMALLOC under config
-> > SPARC because they're under SPARC64 too. Supporting
-> > perf_event needs atomic64 operations but AFAIK sparc32
-> > doesn't provide them, CMIIW. ;-) Also removes redundant
-> > HAVE_IRQ_WORK line.
-> > 
-> > Signed-off-by: Namhyung Kim <namhyung@gmail.com>
 > 
-> The generic non-hw perf event stuff builds fine on sparc32,
-> please don't remove this unless you have a legitimate build
-> failure to report and fix.
 > 
-> Even if sparc32 doesn't provide atomic64_t support, it very
-> easily could do so using include/asm-generic/atomic64.h which
-> implements them using spinlocks.
+> > -----Original Message-----
+> > From: Vasiliy Kulikov [mailto:segooon@gmail.com]
+> > Sent: Saturday, October 23, 2010 3:25 AM
+> > To: kernel-janitors@vger.kernel.org
+> > Cc: Miller, Mike (OS Dev); Jens Axboe; Stephen M. Cameron;
+> > Andrew Morton; ISS StorageDev; linux-kernel@vger.kernel.org
+> > Subject: [PATCH 1/2] block: cciss: fix information leak to userland
+> >
+> > Structure IOCTL_Command_struct is copied to userland with
+> > some padding fields at the end of the struct unitialized.
+> > It leads to leaking of stack memory.
+> >
+> > Signed-off-by: Vasiliy Kulikov <segooon@gmail.com>
+> > ---
+> >  drivers/block/cciss.c |    1 +
+> >  1 files changed, 1 insertions(+), 0 deletions(-)
+> >
+> > diff --git a/drivers/block/cciss.c b/drivers/block/cciss.c
+> > index 762a81a..cd08324 100644
+> > --- a/drivers/block/cciss.c
+> > +++ b/drivers/block/cciss.c
+> > @@ -1142,6 +1142,7 @@ static int
+> > cciss_ioctl32_passthru(struct block_device *bdev, fmode_t mode,
+> >  	int err;
+> >  	u32 cp;
+> >
+> > +	memset(&arg64, 0, sizeof(arg64));
+> >  	err = 0;
+> >  	err |=
+> >  	    copy_from_user(&arg64.LUN_info, &arg32->LUN_info,
+> > --
+> 
+> Acked-by: Mike Miller <mike.miller@hp.com>
 
-Now I see following build failure without this patch. Maybe some work is
-needed to deal with atomic64_t. I'll try to prepare for it soon. Thanks.
+BTW: this change needs to go into the cciss_ioctl32_big_passthru and the other passthru ioctls, also.
 
+-- mikem
 
-  CC      arch/sparc/kernel/setup_32.o
-In file included from arch/sparc/include/asm/local64.h:1:0,
-                 from include/linux/perf_event.h:465,
-                 from include/linux/ftrace_event.h:8,
-                 from include/trace/syscall.h:6,
-                 from include/linux/syscalls.h:76,
-                 from arch/sparc/kernel/setup_32.c:23:
-include/asm-generic/local64.h:62:2: error: expected
-                            specifier-qualifier-list before 'atomic64_t'
-In file included from include/linux/ftrace_event.h:8:0,
-                 from include/trace/syscall.h:6,
-                 from include/linux/syscalls.h:76,
-                 from arch/sparc/kernel/setup_32.c:23:
-include/linux/perf_event.h:722:2: error: expected
-                            specifier-qualifier-list before 'atomic64_t'
-include/linux/perf_event.h: In function 'perf_fetch_caller_regs':
-include/linux/perf_event.h:1004:2: error: 'struct pt_regs' has no member
-                                           named 'tstate'
-include/linux/perf_event.h:1004:2: error: 'struct pt_regs' has no member
-                                           named 'tpc'
-include/linux/perf_event.h:1004:2: error: 'struct pt_regs' has no member
-                                           named 'tnpc'
-include/linux/perf_event.h:1004:2: error: 'struct pt_regs' has no member
-                                           named 'tpc'
-make[3]: *** [arch/sparc/kernel/setup_32.o] Error 1
-make[2]: *** [arch/sparc/kernel] Error 2
-make[1]: *** [sub-make] Error 2
-make: *** [all] Error 2
-
-
--- 
-Regards,
-Namhyung Kim
-
-
+> 
+> > 1.7.0.4
+> >
+> >
