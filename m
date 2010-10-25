@@ -1,79 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759206Ab0JYRdN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Oct 2010 13:33:13 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:60632 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752048Ab0JYRdM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Oct 2010 13:33:12 -0400
-Date: Mon, 25 Oct 2010 19:32:50 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>, Jason Baron <jbaron@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        masami.hiramatsu.pt@hitachi.com
-Subject: Re: [PATCH][GIT PULL] tracing: Fix compile issue for
- trace_sched_wakeup.c
-Message-ID: <20101025173250.GA3670@elte.hu>
-References: <20101023200216.GA19324@elte.hu>
- <1287881618.16971.657.camel@gandalf.stny.rr.com>
- <20101024112540.GA21267@elte.hu>
- <20101025085927.GA11025@elte.hu>
- <20101025093045.GA21997@elte.hu>
- <20101025114501.GA2000@elte.hu>
- <20101025121059.GA3063@elte.hu>
- <1288009103.15336.58.camel@twins>
- <1288021672.15336.63.camel@twins>
- <20101025172521.GC1636@elte.hu>
+	id S1759202Ab0JYRfr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Oct 2010 13:35:47 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:55113 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754522Ab0JYRfq (ORCPT
+	<rfc822;<linux-kernel@vger.kernel.org>>);
+	Mon, 25 Oct 2010 13:35:46 -0400
+Date: Mon, 25 Oct 2010 13:35:22 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Ian Campbell <ian.campbell@citrix.com>
+Cc: Jeremy Fitzhardinge <jeremy@goop.org>,
+        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org,
+        mingo@elte.hu, xen-devel@lists.xensource.com, tglx@linutronix.de
+Subject: Re: [PATCH 1/5] xen: events: use irq_alloc_desc(_at) instead of
+ open-coding an IRQ allocator.
+Message-ID: <20101025173522.GA5590@dumpdata.com>
+References: <1288023736.11153.40.camel@zakaz.uk.xensource.com>
+ <1288023813-31989-1-git-send-email-ian.campbell@citrix.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20101025172521.GC1636@elte.hu>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+In-Reply-To: <1288023813-31989-1-git-send-email-ian.campbell@citrix.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Oct 25, 2010 at 05:23:29PM +0100, Ian Campbell wrote:
+> Encapsulate allocate and free in xen_irq_alloc and xen_irq_free.
+> 
+> Signed-off-by: Ian Campbell <ian.campbell@citrix.com>
+> ---
+>  drivers/xen/events.c |   68 ++++++++++++++++++++-----------------------------
+>  1 files changed, 28 insertions(+), 40 deletions(-)
+> 
+> diff --git a/drivers/xen/events.c b/drivers/xen/events.c
+> index 97612f5..c8f3e43 100644
+> --- a/drivers/xen/events.c
+> +++ b/drivers/xen/events.c
+> @@ -394,41 +394,29 @@ static int find_unbound_pirq(void)
+>  	return -1;
+>  }
+>  
+> -static int find_unbound_irq(void)
+> +static int xen_irq_alloc(void)
+>  {
+> -	struct irq_data *data;
+> -	int irq, res;
+> -	int start = get_nr_hw_irqs();
+> +	int irq = irq_alloc_desc(0);
+>  
+> -	if (start == nr_irqs)
+> -		goto no_irqs;
+> -
+> -	/* nr_irqs is a magic value. Must not use it.*/
+> -	for (irq = nr_irqs-1; irq > start; irq--) {
+> -		data = irq_get_irq_data(irq);
+> -		/* only 0->15 have init'd desc; handle irq > 16 */
+> -		if (!data)
+> -			break;
+> -		if (data->chip == &no_irq_chip)
+> -			break;
+> -		if (data->chip != &xen_dynamic_chip)
+> -			continue;
+> -		if (irq_info[irq].type == IRQT_UNBOUND)
+> -			return irq;
+> -	}
+> -
+> -	if (irq == start)
+> -		goto no_irqs;
+> +	if (irq < 0)
+> +		panic("No available IRQ to bind to: increase nr_irqs!\n");
+>  
+> -	res = irq_alloc_desc_at(irq, 0);
+> +	return irq;
+> +}
 
-another data point is that applying the patch below from Peter seems to stabilize 
-things, i've got 130 successful randconfig iterations so far and no crash.
+So I am curious what the /proc/interrupts looks?The issue (and the reason
+for this implementation above) was that under PV with PCI devices we would
+overlap PCI devices IRQs with Xen event channels. So we could have a USB device
+at IRQ 16 _and_ also a xen_spinlock4 handler. That would throw off the system
+since the xen_spinlock4 was an edge type handler while the USB device was an
+level (at least on my box).
 
-I.e. it's directly jump labels related.
-
-Thanks,
-
-	Ingo
-
-NOT-Signed-off-by: Ingo Molnar <mingo@elte.hu>
----
- include/linux/jump_label.h |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
-
-diff --git a/include/linux/jump_label.h b/include/linux/jump_label.h
-index b67cb18..4732acd 100644
---- a/include/linux/jump_label.h
-+++ b/include/linux/jump_label.h
-@@ -1,10 +1,12 @@
- #ifndef _LINUX_JUMP_LABEL_H
- #define _LINUX_JUMP_LABEL_H
- 
-+#if 0
- #if defined(CC_HAVE_ASM_GOTO) && defined(CONFIG_HAVE_ARCH_JUMP_LABEL)
- # include <asm/jump_label.h>
- # define HAVE_JUMP_LABEL
- #endif
-+#endif
- 
- enum jump_label_type {
- 	JUMP_LABEL_ENABLE,
+But with this shinny sparse_irq rework, maybe this is not an issue anymore?
+Can we mix a level and edge chip handler under one IRQ?
+What do you see when you pass in a PCI device and say give the guest 32 CPUs??
