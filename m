@@ -1,234 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753467Ab0JYHOE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Oct 2010 03:14:04 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:49613 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751771Ab0JYHOD (ORCPT
+	id S1753546Ab0JYHOS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Oct 2010 03:14:18 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:43598 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753485Ab0JYHOR convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Oct 2010 03:14:03 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Mon, 25 Oct 2010 16:08:26 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Ciju Rajan K <ciju@linux.vnet.ibm.com>
-Cc: Greg Thelen <gthelen@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        containers@lists.osdl.org, Andrea Righi <arighi@develer.com>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        David Rientjes <rientjes@google.com>
-Subject: Re: [PATCH v2][memcg+dirtylimit] Fix  overwriting global vm dirty
- limit setting by memcg (Re: [PATCH v3 00/11] memcg: per cgroup dirty page
- accounting
-Message-Id: <20101025160826.3889328c.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <4CC52BBB.8010407@linux.vnet.ibm.com>
-References: <1287448784-25684-1-git-send-email-gthelen@google.com>
-	<20101020122144.47f2b60b.kamezawa.hiroyu@jp.fujitsu.com>
-	<20101020140255.5b8afb63.kamezawa.hiroyu@jp.fujitsu.com>
-	<xr937hh7sa5l.fsf@ninji.mtv.corp.google.com>
-	<4CC52BBB.8010407@linux.vnet.ibm.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 25 Oct 2010 03:14:17 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=sj36Vs0LWp7eXVxsSxY19bJpogCKx9+IBnvqsJ8Q/gE1jRhQNo0nJgfZDOqqb3To9r
+         kPKxoBeieEaYkUIzGBHv1DGeT8ZQJgNN6clLtXhGyh8c+WwRKtpXBv/GkCfjgDjIXrCf
+         IPWD6+1tFO3l3YJdQsYO3Ce71zyyuSsXo9i3Q=
+MIME-Version: 1.0
+Date: Mon, 25 Oct 2010 13:14:15 +0600
+Message-ID: <AANLkTi=wE=nB_FXupXVYoetSEg9n2uQ6_HRz8d42e4GW@mail.gmail.com>
+Subject: [PATCH]: char, mxser: Fix compilation warning in mxser.c
+From: Rakib Mullick <rakib.mullick@gmail.com>
+To: Greg KH <greg@kroah.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Jiri Slaby <jirislaby@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
+        Kulikov Vasiliy <segooon@gmail.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 25 Oct 2010 12:33:23 +0530
-Ciju Rajan K <ciju@linux.vnet.ibm.com> wrote:
+Both function mxser_disable_must_enchance_mode() and
+mxser_get_must_hardware_id() called from function CheckIsMoxaMust(),
+when CONFIG_PCI=y. So mark both the functions under CONFIG_PCI.
 
-> Greg Thelen wrote:
-> > KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> writes:
-> >
-> >   
-> >> Fixed one here.
-> >> ==
-> >> From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> >>
-> >> Now, at calculating dirty limit, vm_dirty_param() is called.
-> >> This function returns dirty-limit related parameters considering
-> >> memory cgroup settings.
-> >>
-> >> Now, assume that vm_dirty_bytes=100M (global dirty limit) and
-> >> memory cgroup has 1G of pages and 40 dirty_ratio, dirtyable memory is
-> >> 500MB.
-> >>
-> >> In this case, global_dirty_limits will consider dirty_limt as
-> >> 500 *0.4 = 200MB. This is bad...memory cgroup is not back door.
-> >>
-> >> This patch limits the return value of vm_dirty_param() considring
-> >> global settings.
-> >>
-> >> Changelog:
-> >>  - fixed an argument "mem" int to u64
-> >>  - fixed to use global available memory to cap memcg's value.
-> >>
-> >> Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> >> ---
-> >>  include/linux/memcontrol.h |    5 +++--
-> >>  mm/memcontrol.c            |   30 +++++++++++++++++++++++++++++-
-> >>  mm/page-writeback.c        |    3 ++-
-> >>  3 files changed, 34 insertions(+), 4 deletions(-)
-> >>
-> >> Index: dirty_limit_new/mm/memcontrol.c
-> >> ===================================================================
-> >> --- dirty_limit_new.orig/mm/memcontrol.c
-> >> +++ dirty_limit_new/mm/memcontrol.c
-> >> @@ -1171,9 +1171,11 @@ static void __mem_cgroup_dirty_param(str
-> >>   * can be moved after our access and writeback tends to take long time.  At
-> >>   * least, "memcg" will not be freed while holding rcu_read_lock().
-> >>   */
-> >> -void vm_dirty_param(struct vm_dirty_param *param)
-> >> +void vm_dirty_param(struct vm_dirty_param *param,
-> >> +	 u64 mem, u64 global)
-> >>  {
-> >>  	struct mem_cgroup *memcg;
-> >> +	u64 limit, bglimit;
-> >>  
-> >>  	if (mem_cgroup_disabled()) {
-> >>  		global_vm_dirty_param(param);
-> >> @@ -1183,6 +1185,32 @@ void vm_dirty_param(struct vm_dirty_para
-> >>  	rcu_read_lock();
-> >>  	memcg = mem_cgroup_from_task(current);
-> >>  	__mem_cgroup_dirty_param(param, memcg);
-> >> +	/*
-> >> +	 * A limitation under memory cgroup is under global vm, too.
-> >> +	 */
-> >> +	if (vm_dirty_ratio)
-> >> +		limit = global * vm_dirty_ratio / 100;
-> >> +	else
-> >> +		limit = vm_dirty_bytes;
-> >> +	if (param->dirty_ratio) {
-> >> +		param->dirty_bytes = mem * param->dirty_ratio / 100;
-> >> +		param->dirty_ratio = 0;
-> >> +	}
-> >> +	if (param->dirty_bytes > limit)
-> >> +		param->dirty_bytes = limit;
-> >> +
-> >> +	if (dirty_background_ratio)
-> >> +		bglimit = global * dirty_background_ratio / 100;
-> >> +	else
-> >> +		bglimit = dirty_background_bytes;
-> >> +
-> >> +	if (param->dirty_background_ratio) {
-> >> +		param->dirty_background_bytes =
-> >> +			mem * param->dirty_background_ratio / 100;
-> >> +		param->dirty_background_ratio = 0;
-> >> +	}
-> >> +	if (param->dirty_background_bytes > bglimit)
-> >> +		param->dirty_background_bytes = bglimit;
-> >>  	rcu_read_unlock();
-> >>  }
-> >>  
-> >> Index: dirty_limit_new/include/linux/memcontrol.h
-> >> ===================================================================
-> >> --- dirty_limit_new.orig/include/linux/memcontrol.h
-> >> +++ dirty_limit_new/include/linux/memcontrol.h
-> >> @@ -171,7 +171,7 @@ static inline void mem_cgroup_dec_page_s
-> >>  }
-> >>  
-> >>  bool mem_cgroup_has_dirty_limit(void);
-> >> -void vm_dirty_param(struct vm_dirty_param *param);
-> >> +void vm_dirty_param(struct vm_dirty_param *param, u64 mem, u64 global);
-> >>  s64 mem_cgroup_page_stat(enum mem_cgroup_nr_pages_item item);
-> >>  
-> >>  unsigned long mem_cgroup_soft_limit_reclaim(struct zone *zone, int order,
-> >> @@ -360,7 +360,8 @@ static inline bool mem_cgroup_has_dirty_
-> >>  	return false;
-> >>  }
-> >>  
-> >> -static inline void vm_dirty_param(struct vm_dirty_param *param)
-> >> +static inline void vm_dirty_param(struct vm_dirty_param *param,
-> >> +		u64 mem, u64 global)
-> >>  {
-> >>  	global_vm_dirty_param(param);
-> >>  }
-> >> Index: dirty_limit_new/mm/page-writeback.c
-> >> ===================================================================
-> >> --- dirty_limit_new.orig/mm/page-writeback.c
-> >> +++ dirty_limit_new/mm/page-writeback.c
-> >> @@ -466,7 +466,8 @@ void global_dirty_limits(unsigned long *
-> >>  	struct task_struct *tsk;
-> >>  	struct vm_dirty_param dirty_param;
-> >>  
-> >> -	vm_dirty_param(&dirty_param);
-> >> +	vm_dirty_param(&dirty_param,
-> >> +		available_memory, global_dirtyable_memory());
-> >>  
-> >>  	if (dirty_param.dirty_bytes)
-> >>  		dirty = DIV_ROUND_UP(dirty_param.dirty_bytes, PAGE_SIZE);
-> >>     
-> >
-> > I think there is a problem with the patch above.  In the patch
-> > vm_dirty_param() sets param->dirty_[background_]bytes to the smallest
-> > limits considering the memcg and global limits.  Assuming the current
-> > task is in a memcg, then the memcg dirty (not system-wide) usage is
-> > always compared to the selected limits (which may be per-memcg or
-> > system).  The problem is that if:
-> > a) per-memcg dirty limit is smaller than system then vm_dirty_param()
-> >    will select per-memcg dirty limit, and
-> > b) per-memcg dirty usage is well below memcg dirty limit, and
-> > b) system usage is at system limit
-> > Then the above patch will not trigger writeback.  Example with two
-> > memcg:
-> >          sys
-> >         B   C
-> >       
-> >       limit  usage
-> >   sys  10     10
-> >    B    7      6
-> >    C    5      4
-> >
-> > If B wants to grow, the system will exceed system limit of 10 and should
-> > be throttled.  However, the smaller limit (7) will be selected and
-> > applied to memcg usage (6), which indicates no need to throttle, so the
-> > system could get as bad as:
-> >
-> >       limit  usage
-> >   sys  10     12
-> >    B    7      7
-> >    C    5      5
-> >
-> > In this case the system usage exceeds the system limit because each
-> > the per-memcg checks see no per-memcg problems.
-> >
-> >   
-> What about the following scenarios?
-> a) limit usage
-> sys 9 7
-> B 8 6
-> A 4 1
-> Now assume B consumes 2 more. The total of B reaches 8 (memcg max) and 
-> the system total reaches 9 (Global limit).
-> The scenario will be like this.
-> 
-> limit usage
-> sys 9 9
-> B 8 8
-> A 4 1
-> 
-> In this case, group A is not getting a fair chance to utilize its limit.
-> Do we need to consider this case also?
-> 
+We were warned by the following warning.
 
-IMHO, it's admin's job to make the limitation fair.
-In general, all cgroups should use the same dirty_ratio for getting fairness.
-
-> b) Even though we are defining per cgroup dirty limit, it is not 
-> actually the case.
-> Is it indirectly dependent on the the total system wide limit in this 
-> implementation?
-> 
-Yes, it should be. memory cgroup isn't a backdoor to break system's control.
-
-Thanks,
--Kame
+drivers/char/mxser.c:306: warning: ‘mxser_disable_must_enchance_mode’
+defined but not used
+drivers/char/mxser.c:391: warning: ‘mxser_get_must_hardware_id’
+defined but not used
 
 
+Signed-off-by: Rakib Mullick <rakib.mullick@gmail.com>
+---
 
+diff --git a/drivers/char/mxser.c b/drivers/char/mxser.c
+index 3fc89da..2bdadd4 100644
+--- a/drivers/char/mxser.c
++++ b/drivers/char/mxser.c
+@@ -303,6 +303,7 @@ static void
+mxser_enable_must_enchance_mode(unsigned long baseio)
+ 	outb(oldlcr, baseio + UART_LCR);
+ }
 
++#ifdef	CONFIG_PCI
+ static void mxser_disable_must_enchance_mode(unsigned long baseio)
+ {
+ 	u8 oldlcr;
+@@ -317,6 +318,7 @@ static void
+mxser_disable_must_enchance_mode(unsigned long baseio)
+ 	outb(efr, baseio + MOXA_MUST_EFR_REGISTER);
+ 	outb(oldlcr, baseio + UART_LCR);
+ }
++#endif
 
+ static void mxser_set_must_xon1_value(unsigned long baseio, u8 value)
+ {
+@@ -388,6 +390,7 @@ static void mxser_set_must_enum_value(unsigned
+long baseio, u8 value)
+ 	outb(oldlcr, baseio + UART_LCR);
+ }
+
++#ifdef CONFIG_PCI
+ static void mxser_get_must_hardware_id(unsigned long baseio, u8 *pId)
+ {
+ 	u8 oldlcr;
+@@ -404,6 +407,7 @@ static void mxser_get_must_hardware_id(unsigned
+long baseio, u8 *pId)
+ 	*pId = inb(baseio + MOXA_MUST_HWID_REGISTER);
+ 	outb(oldlcr, baseio + UART_LCR);
+ }
++#endif
+
+ static void SET_MOXA_MUST_NO_SOFTWARE_FLOW_CONTROL(unsigned long baseio)
+ {
