@@ -1,77 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753771Ab0JYHpS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Oct 2010 03:45:18 -0400
-Received: from smtp.nokia.com ([147.243.1.47]:29305 "EHLO mgw-sa01.nokia.com"
+	id S1753597Ab0JYHva (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Oct 2010 03:51:30 -0400
+Received: from cantor.suse.de ([195.135.220.2]:37211 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753616Ab0JYHpQ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Oct 2010 03:45:16 -0400
-From: "=?utf-8?q?R=C3=A9mi?= Denis-Courmont" 
-	<remi.denis-courmont@nokia.com>
-Organization: Maemo Devices - Nokia
-To: ext Ben Hutchings <ben@decadent.org.uk>
-Subject: Re: [64/66] Phonet: disable network namespace support
-Date: Mon, 25 Oct 2010 10:43:32 +0300
-User-Agent: KMail/1.13.5 (Linux/2.6.35.7; KDE/4.5.1; i686; ; )
-Cc: Greg KH <gregkh@suse.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "stable@kernel.org" <stable@kernel.org>,
-        "stable-review@kernel.org" <stable-review@kernel.org>,
-        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "alan@lxorguk.ukuu.org.uk" <alan@lxorguk.ukuu.org.uk>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        "David S. Miller" <davem@davemloft.net>
-References: <20101022183601.910822183@clark.site> <1287782553.20865.253.camel@localhost>
-In-Reply-To: <1287782553.20865.253.camel@localhost>
+	id S1753154Ab0JYHv3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Oct 2010 03:51:29 -0400
+Date: Mon, 25 Oct 2010 09:51:25 +0200
+From: "Dr. Werner Fink" <werner@suse.de>
+To: Jiri Slaby <jslaby@suse.cz>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>, linux-kernel@vger.kernel.org,
+        "Dr. Werner Fink" <werner@suse.de>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: Re: [PATCH 28/49] tty: Add a new file /proc/tty/consoles
+Message-ID: <20101025075125.GA29179@boole.suse.de>
+Mail-Followup-To: Jiri Slaby <jslaby@suse.cz>,
+	Greg Kroah-Hartman <gregkh@suse.de>, linux-kernel@vger.kernel.org,
+	"Dr. Werner Fink" <werner@suse.de>,
+	Alan Cox <alan@lxorguk.ukuu.org.uk>
+References: <20101022175112.GC13489@kroah.com>
+ <1287771688-14805-28-git-send-email-gregkh@suse.de>
+ <4CC2C9A8.1040003@suse.cz>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201010251043.32952.remi.denis-courmont@nokia.com>
-X-Nokia-AV: Clean
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <4CC2C9A8.1040003@suse.cz>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday 23 October 2010 00:22:33 ext Ben Hutchings, you wrote:
-> On Fri, 2010-10-22 at 11:35 -0700, Greg KH wrote:
-> I've had one report today that the bug is still reproducible in the
-> current Debian kernel, which includes this change.  Rémi, how have you
-> tested this fix?
+On Sat, Oct 23, 2010 at 01:40:24PM +0200, Jiri Slaby wrote:
+> On 10/22/2010 08:21 PM, Greg Kroah-Hartman wrote:
+> > +/*
+> > + * Used for open /proc/tty/consoles. Before this detect
+> > + * the device ID of file descriptor 0 of the current
+> > + * reading task if a character device...
+> > + */
+> > +static int tty_consoles_open(struct inode *inode, struct file *file)
+> > +{
+> > +	struct files_struct *curfiles;
+> > +
+> > +	current_dev = 0;
+> > +	curfiles = get_files_struct(current);
+> > +	if (curfiles) {
+> > +		const struct file *curfp;
+> > +		spin_lock(&curfiles->file_lock);
+> > +		curfp = fcheck_files(curfiles, 0);
+> > +		if (curfp && curfp->private_data) {
+> > +			const struct inode *inode;
+> > +			dget(curfp->f_dentry);
+> > +			inode = curfp->f_dentry->d_inode;
+> > +			if (S_ISCHR(inode->i_mode)) {
+> > +				struct tty_struct *tty;
+> > +				tty = (struct tty_struct *)curfp->private_data;
+> > +				if (tty && tty->magic == TTY_MAGIC) {
+> 
+> Ah, I've just understood what this code does. It seems, that the 'tty'
+> at this point may be already freed (e.g. people don't set private_data
+> to NULL). Please explain in the code why it can't...
+> 
+> Maybe I wouldn't bother with marking the "current" console by star at
+> all as it seems not to pay off.
 
-I don´t actually remember, but I obviously missed something :-(
-With similar problem reports in Nokia/MeeGo, that´ s what I added last week:
+This is the main reason for what I've done this patch:
+To see on which console line the reading process is
+located. Please do not skip this part as this is
+currently the only way to detect the real console below
+/dev/console ... it could be used in user space: e.g. in
+plymouth or bootlogd (to deterime the main console) or
+sulogin (to be able to provide a prompt on all console
+lines).
 
-From: Rémi Denis-Courmont <remi.denis-courmont@nokia.com>
-Subject: [PATCH] Phonet: device notifier only runs on initial namespace
+> 
+> > +					tty = tty_pair_get_tty(tty);
+> > +					current_dev = tty_devnum(tty);
+> > +				}
+> > +			}
+> > +			dput(curfp->f_dentry);
+> > +		}
+> > +		spin_unlock(&curfiles->file_lock);
+> > +		put_files_struct(curfiles);
+> > +	}
+> > +	return seq_open(file, &tty_consoles_op);
+> > +}
 
-This should really fix the OOPS when doing:
+Werner
 
-  unshare(CLONE_NEWNET);
-  exit(0);
-
-while the phonet module is loaded.
-
-Signed-off-by: Rémi Denis-Courmont <remi.denis-courmont@nokia.com>
----
- net/phonet/pn_dev.c |    3 +++
- 1 files changed, 3 insertions(+), 0 deletions(-)
-
-diff --git a/net/phonet/pn_dev.c b/net/phonet/pn_dev.c
-index 5a2275c..d94ca91 100644
---- a/net/phonet/pn_dev.c
-+++ b/net/phonet/pn_dev.c
-@@ -225,6 +225,9 @@ static int phonet_device_notify(struct notifier_block *me, unsigned long what,
- {
- 	struct net_device *dev = arg;
- 
-+	if (!net_eq(dev_net(dev), &init_net))
-+		return 0;
-+
- 	switch (what) {
- 	case NETDEV_REGISTER:
- 		if (dev->type == ARPHRD_PHONET)
 -- 
-1.7.1
+  "Having a smoking section in a restaurant is like having
+          a peeing section in a swimming pool." -- Edward Burr
