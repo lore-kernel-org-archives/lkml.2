@@ -1,35 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756962Ab0JYQAX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Oct 2010 12:00:23 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:35114
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756798Ab0JYQAU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Oct 2010 12:00:20 -0400
-Date: Mon, 25 Oct 2010 09:00:43 -0700 (PDT)
-Message-Id: <20101025.090043.71110898.davem@davemloft.net>
-To: namhyung@gmail.com
-Cc: sparclinux@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/3] sparc32: fix build failure on CONFIG_SPARC_LEON
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1288021958-3130-3-git-send-email-namhyung@gmail.com>
-References: <1288021958-3130-1-git-send-email-namhyung@gmail.com>
-	<1288021958-3130-3-git-send-email-namhyung@gmail.com>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	id S1757075Ab0JYQA4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Oct 2010 12:00:56 -0400
+Received: from web37607.mail.mud.yahoo.com ([209.191.87.90]:23852 "HELO
+	web37607.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1757017Ab0JYQAz convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Oct 2010 12:00:55 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=yahoo.com;
+  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type:Content-Transfer-Encoding;
+  b=saljEqwEHVuxT9Da41QQIYM4XK/ZfYZf+7WylPy5TlU7vXMBh0yENIoM6Js+8L9yPL7f5GMWJxNwcyhiO6R8RfhiGHWmngmzrWO/tUZqKpIMSv92WbllaTU0VmfS/qte76ktOd7U+ollLNYd5qxeWVV8FH0QajfFdgBlp9gRsDg=;
+Message-ID: <896945.97413.qm@web37607.mail.mud.yahoo.com>
+X-YMail-OSG: Fc6XKVEVM1m.6sp_ajFaIX2i6coPTSqjWFDVdwtvmnB6XPd
+ l6a0a7eYw7uQXNQISS3.37jeSUikSQ0XTHkjC4gpwXVAjJ1GJ43zss5Yr6cF
+ TuHCaylQgqNtLI_yluX62yHC7HoAW2lhbX8Q.CthirTH7nSdZU3q8j9wMj_w
+ UmuBAFu4nj9kUkCNnnRUBjtX1GQ9Wmk7hRrS9Hzr8M84Lh3FxQg.AkbH195Z
+ Eel9z0F7fiaISBNjoNLjjiY5zNhygQgtv9SlDIs3UGRmvEM2IlbZ8cN1FEdZ
+ h6Mt1mbo3ZqYgqouBz0O8yGndPrmwseCamlOE3OHSz0OqDrtGEp8m.oYhgXb
+ DbdPkLQnK1Lmt3p3NJEaTAMAEK6v_IkjbIDcAC0itlyqHhxD7
+X-Mailer: YahooMailClassic/11.4.9 YahooMailWebService/0.8.107.284920
+Date: Mon, 25 Oct 2010 09:00:54 -0700 (PDT)
+From: Alex Dubov <oakad@yahoo.com>
+Subject: Re: [PATCH 18/29] memstick: jmb38x_ms: rename functions
+To: Maxim Levitsky <maximlevitsky@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Maxim Levitsky <maximlevitsky@gmail.com>
+In-Reply-To: <1287791637-10329-19-git-send-email-maximlevitsky@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namhyung Kim <namhyung@gmail.com>
-Date: Tue, 26 Oct 2010 00:52:38 +0900
 
->   CC      arch/sparc/kernel/irq_32.o
-> arch/sparc/kernel/irq_32.c: In function 'request_fast_irq':
-> arch/sparc/kernel/irq_32.c:370:25: error: conflicting types for 'trapbase_cpu1'
 
-I doubt SMP LEON chips even exist, so better to just anti-dep
-this in arch/sparc/Kconfig
+--- On Fri, 22/10/10, Maxim Levitsky <maximlevitsky@gmail.com> wrote:
+
+> From: Maxim Levitsky <maximlevitsky@gmail.com>
+> Subject: [PATCH 18/29] memstick: jmb38x_ms: rename functions
+> To: "Alex Dubov" <oakad@yahoo.com>
+> Cc: "Andrew Morton" <akpm@linux-foundation.org>, "LKML" <linux-kernel@vger.kernel.org>, "Maxim Levitsky" <maximlevitsky@gmail.com>
+> Received: Friday, 22 October, 2010, 4:53 PM
+> Give functions names that I hope will
+> describe them better.
+> Its a matter of personal taste somewhat, I admit.
+> 
+> Signed-off-by: Maxim Levitsky <maximlevitsky@gmail.com>
+> ---
+
+Just like 2/3 of your patches in this pack, until now.
+
+
+
+      
