@@ -1,45 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752910Ab0JYNLx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Oct 2010 09:11:53 -0400
-Received: from smtp.nokia.com ([192.100.122.230]:42151 "EHLO
-	mgw-mx03.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752519Ab0JYNLw (ORCPT
+	id S1753508Ab0JYNRB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Oct 2010 09:17:01 -0400
+Received: from fxip-0047f.externet.hu ([88.209.222.127]:58675 "EHLO
+	pomaz-ex.szeredi.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751179Ab0JYNRA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Oct 2010 09:11:52 -0400
-Subject: Re: [PATCH] wireless/wl1271: remove redundant if-statement
-From: Luciano Coelho <luciano.coelho@nokia.com>
-To: Nicolas Kaiser <nikai@nikai.net>
-Cc: "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Larry Finger <Larry.Finger@lwfinger.net>
-In-Reply-To: <4CC4B210.2010608@lwfinger.net>
-References: <20101025000744.17f7086e@absol.kitzblitz>
-	 <4CC4B210.2010608@lwfinger.net>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 25 Oct 2010 16:10:45 +0300
-Message-ID: <1288012245.21130.24.camel@chilepepper>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 25 Oct 2010 13:10:49.0546 (UTC) FILETIME=[0B3FE2A0:01CB7446]
-X-Nokia-AV: Clean
+	Mon, 25 Oct 2010 09:17:00 -0400
+To: Al Viro <viro@ZenIV.linux.org.uk>
+CC: akpm@linux-foundation.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] vfs: fix possible use after free in finish_open()
+Message-Id: <E1PAMux-0002CG-8a@pomaz-ex.szeredi.hu>
+From: Miklos Szeredi <miklos@szeredi.hu>
+Date: Mon, 25 Oct 2010 15:16:51 +0200
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-10-25 at 00:24 +0200, ext Larry Finger wrote:
-> On 10/24/2010 05:07 PM, Nicolas Kaiser wrote:
-> > Apparently the return value of wl1271_ps_elp_sleep never gets
-> > checked anyway.
-> 
-> The patch is fine, but this comment is a little misleading as
-> wl1271_ps_elp_sleep() is void and cannot return a value.
+From: Miklos Szeredi <mszeredi@suse.cz>
 
-Yes, this patch is good, but please rewrite the description, as Larry
-suggested.
+In finish_open() nd->path is used after nameidata_to_filp() already
+released it.  Fix by acquiring a ref to nd->path and releasing after
+the last use.
 
--- 
-Cheers,
-Luca.
+Similar fix needed in do_last().
 
+Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
+CC: stable@kernel.org
+---
+ fs/namei.c |   15 +++++++++++++--
+ 1 file changed, 13 insertions(+), 2 deletions(-)
+
+Index: linux-2.6/fs/namei.c
+===================================================================
+--- linux-2.6.orig/fs/namei.c	2010-10-25 15:07:17.000000000 +0200
++++ linux-2.6/fs/namei.c	2010-10-25 15:07:32.000000000 +0200
+@@ -1549,11 +1549,16 @@ static struct file *finish_open(struct n
+ 		error = mnt_want_write(nd->path.mnt);
+ 		if (error)
+ 			goto exit;
++
++		/* nameidata_to_filp() puts nd->path */
++		path_get(&nd->path);
+ 	}
+ 	error = may_open(&nd->path, acc_mode, open_flag);
+ 	if (error) {
+-		if (will_truncate)
++		if (will_truncate) {
+ 			mnt_drop_write(nd->path.mnt);
++			path_put(&nd->path);
++		}
+ 		goto exit;
+ 	}
+ 	filp = nameidata_to_filp(nd);
+@@ -1578,8 +1583,10 @@ static struct file *finish_open(struct n
+ 	 * because the filp has had a write taken
+ 	 * on its behalf.
+ 	 */
+-	if (will_truncate)
++	if (will_truncate) {
+ 		mnt_drop_write(nd->path.mnt);
++		path_put(&nd->path);
++	}
+ 	return filp;
+ 
+ exit:
+@@ -1679,8 +1686,12 @@ static struct file *do_last(struct namei
+ 			mnt_drop_write(nd->path.mnt);
+ 			goto exit;
+ 		}
++		/* nameidata_to_filp() puts nd->path */
++		mntget(nd->path.mnt);
+ 		filp = nameidata_to_filp(nd);
+ 		mnt_drop_write(nd->path.mnt);
++		mntput(nd->path.mnt);
++		path_put(&nd->path);
+ 		if (!IS_ERR(filp)) {
+ 			error = ima_file_check(filp, acc_mode);
+ 			if (error) {
