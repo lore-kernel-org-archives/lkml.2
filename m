@@ -1,69 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757361Ab0JYQ3P (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Oct 2010 12:29:15 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:48174 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754308Ab0JYQ3O (ORCPT
+	id S1757414Ab0JYQbd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Oct 2010 12:31:33 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:33367 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752232Ab0JYQbb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Oct 2010 12:29:14 -0400
+	Mon, 25 Oct 2010 12:31:31 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=fQGuVvXOVptZylmW6+GN7CC9Sw7PLQEHU8vilWaqesvQILKnymz2Ik3VNLdk7LoyHU
-         5sM4xrZ3r2h7EyfcpP2Q==
-MIME-Version: 1.0
-In-Reply-To: <1288001573.15336.52.camel@twins>
-References: <AANLkTin+HE09Oui89uCmG-rrHE14zXfJuRvZgsPCB1De@mail.gmail.com>
-	<1287788622-25860-1-git-send-email-venki@google.com>
-	<1288001573.15336.52.camel@twins>
-Date: Mon, 25 Oct 2010 09:29:12 -0700
-Message-ID: <AANLkTi=m4U4BR=nbu+Tu3hag886q2E2mPa6PJwciGg2R@mail.gmail.com>
-Subject: Re: High CPU load when machine is idle (related to PROBLEM: Unusually
- high load average when idle in 2.6.35, 2.6.35.1 and later)
-From: Venkatesh Pallipadi <venki@google.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Damien Wyart <damien.wyart@free.fr>,
-        Chase Douglas <chase.douglas@canonical.com>,
-        Ingo Molnar <mingo@elte.hu>, tmhikaru@gmail.com,
-        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=tIL284KUxMAKGBl0UoM6VH617ZMEfshXKBQU/CoQvg9vDOX2urVDNvUvfYnVJrSZOy
+         WQNBy03o6YrLORYTD8wrkwzoH+AAEfzFopatAlKNkOzIv4zh/r6jfAYNkxJPt4z2prbg
+         V4N+a/48Nx/kxHAxMxWRGkh7K+HPQtOgA6yPM=
+Subject: Re: [PATCH 2/3] sparc32: remove CONFIG_HAVE_PERF_EVENTS option
+From: Namhyung Kim <namhyung@gmail.com>
+To: David Miller <davem@davemloft.net>
+Cc: sparclinux@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <20101025.085937.226775583.davem@davemloft.net>
+References: <1288021958-3130-1-git-send-email-namhyung@gmail.com>
+	 <1288021958-3130-2-git-send-email-namhyung@gmail.com>
+	 <20101025.085937.226775583.davem@davemloft.net>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 26 Oct 2010 01:31:19 +0900
+Message-ID: <1288024279.1689.23.camel@leonhard>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 25, 2010 at 3:12 AM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Fri, 2010-10-22 at 16:03 -0700, Venkatesh Pallipadi wrote:
->> I started making small changes to the code, but none of the change helped much.
->> I think the problem with the current code is that, even though idle CPUs
->> update load, the fold only happens when one of the CPU is busy
->> and we end up taking its load into global load.
->>
->> So, I tried to simplify things and doing the updates directly from idle loop.
->> This is only a test patch, and eventually we need to hook it off somewhere
->> else, instead of idle loop and also this is expected work only as x86_64
->> right now.
->>
->> Peter: Do you think something like this will work? loadavg went
->> quite on two of my test systems after this change (4 cpu and 24 cpu).
->
-> Not really, CPUs can stay idle for _very_ long times (!x86 cpus that
-> don't have crappy timers like HPET which roll around every 2-4 seconds).
->
-> But all CPUs staying idle for a long time is exactly the scenario you
-> fix before using the decay_load_misses() stuff, except that is for the
-> load-balancer per-cpu load numbers not the global cpu load avg. Won't a
-> similar approach work here?
->
+2010-10-25 (월), 08:59 -0700, David Miller:
+> From: Namhyung Kim <namhyung@gmail.com>
+> Date: Tue, 26 Oct 2010 00:52:37 +0900
+> 
+> > Remove HAVE_PERF_EVENTS and PERF_USE_VMALLOC under config
+> > SPARC because they're under SPARC64 too. Supporting
+> > perf_event needs atomic64 operations but AFAIK sparc32
+> > doesn't provide them, CMIIW. ;-) Also removes redundant
+> > HAVE_IRQ_WORK line.
+> > 
+> > Signed-off-by: Namhyung Kim <namhyung@gmail.com>
+> 
+> The generic non-hw perf event stuff builds fine on sparc32,
+> please don't remove this unless you have a legitimate build
+> failure to report and fix.
+> 
+> Even if sparc32 doesn't provide atomic64_t support, it very
+> easily could do so using include/asm-generic/atomic64.h which
+> implements them using spinlocks.
 
-Yes. Thought about that. One problem there is that works with nohz_idle_balance,
-which will not be called if all the CPUs are idle for example.
-As this is once in 5 secs, probably doing nr_running() and
-nr_uninterruptible() should
-be OK even on huge systems. But, that was the original code here, except that
-it was inside xtime_lock.
+Now I see following build failure without this patch. Maybe some work is
+needed to deal with atomic64_t. I'll try to prepare for it soon. Thanks.
 
-Thanks,
-Venki
+
+  CC      arch/sparc/kernel/setup_32.o
+In file included from arch/sparc/include/asm/local64.h:1:0,
+                 from include/linux/perf_event.h:465,
+                 from include/linux/ftrace_event.h:8,
+                 from include/trace/syscall.h:6,
+                 from include/linux/syscalls.h:76,
+                 from arch/sparc/kernel/setup_32.c:23:
+include/asm-generic/local64.h:62:2: error: expected
+                            specifier-qualifier-list before 'atomic64_t'
+In file included from include/linux/ftrace_event.h:8:0,
+                 from include/trace/syscall.h:6,
+                 from include/linux/syscalls.h:76,
+                 from arch/sparc/kernel/setup_32.c:23:
+include/linux/perf_event.h:722:2: error: expected
+                            specifier-qualifier-list before 'atomic64_t'
+include/linux/perf_event.h: In function 'perf_fetch_caller_regs':
+include/linux/perf_event.h:1004:2: error: 'struct pt_regs' has no member
+                                           named 'tstate'
+include/linux/perf_event.h:1004:2: error: 'struct pt_regs' has no member
+                                           named 'tpc'
+include/linux/perf_event.h:1004:2: error: 'struct pt_regs' has no member
+                                           named 'tnpc'
+include/linux/perf_event.h:1004:2: error: 'struct pt_regs' has no member
+                                           named 'tpc'
+make[3]: *** [arch/sparc/kernel/setup_32.o] Error 1
+make[2]: *** [arch/sparc/kernel] Error 2
+make[1]: *** [sub-make] Error 2
+make: *** [all] Error 2
+
+
+-- 
+Regards,
+Namhyung Kim
+
+
