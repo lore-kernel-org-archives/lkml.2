@@ -1,50 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759385Ab0JYSxK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Oct 2010 14:53:10 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:55868
+	id S1759446Ab0JYSzG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Oct 2010 14:55:06 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:55871
 	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751518Ab0JYSxI (ORCPT
+	by vger.kernel.org with ESMTP id S1755049Ab0JYSzD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Oct 2010 14:53:08 -0400
-Date: Mon, 25 Oct 2010 11:53:31 -0700 (PDT)
-Message-Id: <20101025.115331.193708760.davem@davemloft.net>
-To: sam@ravnborg.org
-Cc: namhyung@gmail.com, sparclinux@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/3] sparc32: fix build failure on CONFIG_SPARC_LEON
+	Mon, 25 Oct 2010 14:55:03 -0400
+Date: Mon, 25 Oct 2010 11:55:27 -0700 (PDT)
+Message-Id: <20101025.115527.226780270.davem@davemloft.net>
+To: namhyung@gmail.com
+Cc: sparclinux@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/3] sparc32: remove CONFIG_HAVE_PERF_EVENTS option
 From: David Miller <davem@davemloft.net>
-In-Reply-To: <20101025161122.GA25358@merkur.ravnborg.org>
-References: <1288021958-3130-3-git-send-email-namhyung@gmail.com>
-	<20101025.090043.71110898.davem@davemloft.net>
-	<20101025161122.GA25358@merkur.ravnborg.org>
+In-Reply-To: <1288024279.1689.23.camel@leonhard>
+References: <1288021958-3130-2-git-send-email-namhyung@gmail.com>
+	<20101025.085937.226775583.davem@davemloft.net>
+	<1288024279.1689.23.camel@leonhard>
 X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+Content-Type: Text/Plain; charset=euc-kr
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Sam Ravnborg <sam@ravnborg.org>
-Date: Mon, 25 Oct 2010 18:11:22 +0200
+From: Namhyung Kim <namhyung@gmail.com>
+Date: Tue, 26 Oct 2010 01:31:19 +0900
 
-> On Mon, Oct 25, 2010 at 09:00:43AM -0700, David Miller wrote:
+> 2010-10-25 (¿ù), 08:59 -0700, David Miller:
 >> From: Namhyung Kim <namhyung@gmail.com>
->> Date: Tue, 26 Oct 2010 00:52:38 +0900
+>> Date: Tue, 26 Oct 2010 00:52:37 +0900
 >> 
->> >   CC      arch/sparc/kernel/irq_32.o
->> > arch/sparc/kernel/irq_32.c: In function 'request_fast_irq':
->> > arch/sparc/kernel/irq_32.c:370:25: error: conflicting types for 'trapbase_cpu1'
+>> > Remove HAVE_PERF_EVENTS and PERF_USE_VMALLOC under config
+>> > SPARC because they're under SPARC64 too. Supporting
+>> > perf_event needs atomic64 operations but AFAIK sparc32
+>> > doesn't provide them, CMIIW. ;-) Also removes redundant
+>> > HAVE_IRQ_WORK line.
+>> > 
+>> > Signed-off-by: Namhyung Kim <namhyung@gmail.com>
 >> 
->> I doubt SMP LEON chips even exist, so better to just anti-dep
->> this in arch/sparc/Kconfig
+>> The generic non-hw perf event stuff builds fine on sparc32,
+>> please don't remove this unless you have a legitimate build
+>> failure to report and fix.
+>> 
+>> Even if sparc32 doesn't provide atomic64_t support, it very
+>> easily could do so using include/asm-generic/atomic64.h which
+>> implements them using spinlocks.
 > 
-> I have a nice eval board at my desk with a dual-core LEON4 processor.
-> I only lack time to play with it...
+> Now I see following build failure without this patch. Maybe some work is
+> needed to deal with atomic64_t. I'll try to prepare for it soon. Thanks.
 
-Ok.  But whenever someone gets a time to play with it and
-verify it works, we can sort out this build failure by
-modifying the code as needed.
+Nevermind, I see the issue.  Ok, your patch is fine:
 
-But for now I prefer the Kconfig SMP dependency fix.
+Acked-by: David S. Miller <davem@davemloft.net>
