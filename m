@@ -1,148 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753473Ab0JYHdP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Oct 2010 03:33:15 -0400
-Received: from einhorn.in-berlin.de ([192.109.42.8]:60630 "EHLO
-	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753221Ab0JYHdO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Oct 2010 03:33:14 -0400
-X-Envelope-From: stefanr@s5r6.in-berlin.de
-Date: Mon, 25 Oct 2010 09:32:58 +0200 (CEST)
-From: Stefan Richter <stefanr@s5r6.in-berlin.de>
-Subject: [git pull] FireWire updates post 2.6.36 (ieee1394 removal)
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-cc: linux-kernel@vger.kernel.org, linux1394-devel@lists.sourceforge.net
-Message-ID: <tkrat.4e75ce27ff762e5b@s5r6.in-berlin.de>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; CHARSET=us-ascii
-Content-Disposition: INLINE
+	id S1753621Ab0JYHnj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Oct 2010 03:43:39 -0400
+Received: from mga14.intel.com ([143.182.124.37]:36703 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753588Ab0JYHni (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Oct 2010 03:43:38 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.58,235,1286175600"; 
+   d="scan'208";a="340009280"
+From: Huang Ying <ying.huang@intel.com>
+To: Len Brown <lenb@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Andi Kleen <andi@firstfloor.org>,
+        ying.huang@intel.com, linux-acpi@vger.kernel.org
+Subject: [PATCH -v2 2/9] Add lock-less version of bitmap_set/clear
+Date: Mon, 25 Oct 2010 15:43:23 +0800
+Message-Id: <1287992610-14996-3-git-send-email-ying.huang@intel.com>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1287992610-14996-1-git-send-email-ying.huang@intel.com>
+References: <1287992610-14996-1-git-send-email-ying.huang@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus, please pull from the ieee1394-removal branch at
+cmpxchg is used to change the bitmap instead of the ordinary unsigned
+long assigning. Several users can set/clear the same bitmap
+simultaneously without lock. If there is conflict between two user,
+(set/clear same bit), one will return remain bits immediately.
 
-    git://git.kernel.org/pub/scm/linux/kernel/git/ieee1394/linux1394-2.6.git ieee1394-removal
+This can be used to implement the lock-less resource allocator.
 
-to receive what it says on the outside.  The replacement,
-drivers/firewire/, although superior in many respects, still has some
-issues that are not present in the old drivers.  But I think we are at a
-point now where two IEEE 1394 stacks in the kernel are becoming more
-burden than convenience for downstreams.
+Signed-off-by: Huang Ying <ying.huang@intel.com>
+Reviewed-by: Andi Kleen <ak@linux.intel.com>
+---
+ include/linux/bitmap.h |    4 +
+ lib/bitmap.c           |  101 +++++++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 105 insertions(+)
 
-There is a trivial merge conflict:  The net tree edited a file which
-is to be removed now.
-
-Stefan Richter (2):
-      ieee1394: move init_ohci1394_dma to drivers/firewire/
-      ieee1394: remove the old IEEE 1394 driver stack
-
- Documentation/ABI/obsolete/dv1394                  |    9 -
- Documentation/ABI/removed/dv1394                   |   14 +
- Documentation/ABI/removed/raw1394                  |   15 +
- .../ABI/removed/raw1394_legacy_isochronous         |   16 -
- Documentation/ABI/removed/video1394                |   16 +
- Documentation/feature-removal-schedule.txt         |   10 -
- drivers/Makefile                                   |    1 -
- drivers/firewire/Kconfig                           |    5 -
- drivers/firewire/Makefile                          |    1 +
- drivers/{ieee1394 => firewire}/init_ohci1394_dma.c |   76 +-
- drivers/ieee1394/Kconfig                           |  182 -
- drivers/ieee1394/Makefile                          |   18 -
- drivers/ieee1394/config_roms.c                     |  194 --
- drivers/ieee1394/config_roms.h                     |   19 -
- drivers/ieee1394/csr.c                             |  843 -----
- drivers/ieee1394/csr.h                             |   99 -
- drivers/ieee1394/csr1212.c                         | 1467 --------
- drivers/ieee1394/csr1212.h                         |  383 ---
- drivers/ieee1394/dma.c                             |  289 --
- drivers/ieee1394/dma.h                             |   89 -
- drivers/ieee1394/dv1394-private.h                  |  587 ----
- drivers/ieee1394/dv1394.c                          | 2584 --------------
- drivers/ieee1394/dv1394.h                          |  305 --
- drivers/ieee1394/eth1394.c                         | 1736 ----------
- drivers/ieee1394/eth1394.h                         |  234 --
- drivers/ieee1394/highlevel.c                       |  691 ----
- drivers/ieee1394/highlevel.h                       |  141 -
- drivers/ieee1394/hosts.c                           |  249 --
- drivers/ieee1394/hosts.h                           |  201 --
- drivers/ieee1394/ieee1394-ioctl.h                  |  106 -
- drivers/ieee1394/ieee1394.h                        |  220 --
- drivers/ieee1394/ieee1394_core.c                   | 1380 --------
- drivers/ieee1394/ieee1394_core.h                   |  172 -
- drivers/ieee1394/ieee1394_hotplug.h                |   19 -
- drivers/ieee1394/ieee1394_transactions.c           |  595 ----
- drivers/ieee1394/ieee1394_transactions.h           |   40 -
- drivers/ieee1394/ieee1394_types.h                  |   69 -
- drivers/ieee1394/iso.c                             |  568 ----
- drivers/ieee1394/iso.h                             |  195 --
- drivers/ieee1394/nodemgr.c                         | 1901 -----------
- drivers/ieee1394/nodemgr.h                         |  186 -
- drivers/ieee1394/ohci1394.c                        | 3590 --------------------
- drivers/ieee1394/ohci1394.h                        |  453 ---
- drivers/ieee1394/pcilynx.c                         | 1554 ---------
- drivers/ieee1394/pcilynx.h                         |  468 ---
- drivers/ieee1394/raw1394-private.h                 |   81 -
- drivers/ieee1394/raw1394.c                         | 3096 -----------------
- drivers/ieee1394/raw1394.h                         |  191 --
- drivers/ieee1394/sbp2.c                            | 2138 ------------
- drivers/ieee1394/sbp2.h                            |  346 --
- drivers/ieee1394/video1394.c                       | 1528 ---------
- drivers/ieee1394/video1394.h                       |   67 -
- 52 files changed, 96 insertions(+), 29341 deletions(-)
- delete mode 100644 Documentation/ABI/obsolete/dv1394
- create mode 100644 Documentation/ABI/removed/dv1394
- create mode 100644 Documentation/ABI/removed/raw1394
- delete mode 100644 Documentation/ABI/removed/raw1394_legacy_isochronous
- create mode 100644 Documentation/ABI/removed/video1394
- rename drivers/{ieee1394 => firewire}/init_ohci1394_dma.c (84%)
- delete mode 100644 drivers/ieee1394/Kconfig
- delete mode 100644 drivers/ieee1394/Makefile
- delete mode 100644 drivers/ieee1394/config_roms.c
- delete mode 100644 drivers/ieee1394/config_roms.h
- delete mode 100644 drivers/ieee1394/csr.c
- delete mode 100644 drivers/ieee1394/csr.h
- delete mode 100644 drivers/ieee1394/csr1212.c
- delete mode 100644 drivers/ieee1394/csr1212.h
- delete mode 100644 drivers/ieee1394/dma.c
- delete mode 100644 drivers/ieee1394/dma.h
- delete mode 100644 drivers/ieee1394/dv1394-private.h
- delete mode 100644 drivers/ieee1394/dv1394.c
- delete mode 100644 drivers/ieee1394/dv1394.h
- delete mode 100644 drivers/ieee1394/eth1394.c
- delete mode 100644 drivers/ieee1394/eth1394.h
- delete mode 100644 drivers/ieee1394/highlevel.c
- delete mode 100644 drivers/ieee1394/highlevel.h
- delete mode 100644 drivers/ieee1394/hosts.c
- delete mode 100644 drivers/ieee1394/hosts.h
- delete mode 100644 drivers/ieee1394/ieee1394-ioctl.h
- delete mode 100644 drivers/ieee1394/ieee1394.h
- delete mode 100644 drivers/ieee1394/ieee1394_core.c
- delete mode 100644 drivers/ieee1394/ieee1394_core.h
- delete mode 100644 drivers/ieee1394/ieee1394_hotplug.h
- delete mode 100644 drivers/ieee1394/ieee1394_transactions.c
- delete mode 100644 drivers/ieee1394/ieee1394_transactions.h
- delete mode 100644 drivers/ieee1394/ieee1394_types.h
- delete mode 100644 drivers/ieee1394/iso.c
- delete mode 100644 drivers/ieee1394/iso.h
- delete mode 100644 drivers/ieee1394/nodemgr.c
- delete mode 100644 drivers/ieee1394/nodemgr.h
- delete mode 100644 drivers/ieee1394/ohci1394.c
- delete mode 100644 drivers/ieee1394/ohci1394.h
- delete mode 100644 drivers/ieee1394/pcilynx.c
- delete mode 100644 drivers/ieee1394/pcilynx.h
- delete mode 100644 drivers/ieee1394/raw1394-private.h
- delete mode 100644 drivers/ieee1394/raw1394.c
- delete mode 100644 drivers/ieee1394/raw1394.h
- delete mode 100644 drivers/ieee1394/sbp2.c
- delete mode 100644 drivers/ieee1394/sbp2.h
- delete mode 100644 drivers/ieee1394/video1394.c
- delete mode 100644 drivers/ieee1394/video1394.h
-
--- 
-Stefan Richter
--=====-==-=- =-=- ==--=
-http://arcgraph.de/sr/
-
+--- a/include/linux/bitmap.h
++++ b/include/linux/bitmap.h
+@@ -44,6 +44,8 @@
+  * bitmap_weight(src, nbits)			Hamming Weight: number set bits
+  * bitmap_set(dst, pos, nbits)			Set specified bit area
+  * bitmap_clear(dst, pos, nbits)		Clear specified bit area
++ * bitmap_set_ll(dst, pos, nbits)		Set specified bit area, lock-less version
++ * bitmap_clear_ll(dst, pos, nbits)		Clear specified bit area, lock-less version
+  * bitmap_find_next_zero_area(buf, len, pos, n, mask)	Find bit free area
+  * bitmap_shift_right(dst, src, n, nbits)	*dst = *src >> n
+  * bitmap_shift_left(dst, src, n, nbits)	*dst = *src << n
+@@ -113,6 +115,8 @@ extern int __bitmap_weight(const unsigne
+ 
+ extern void bitmap_set(unsigned long *map, int i, int len);
+ extern void bitmap_clear(unsigned long *map, int start, int nr);
++extern int bitmap_set_ll(unsigned long *map, int i, int len);
++extern int bitmap_clear_ll(unsigned long *map, int start, int nr);
+ extern unsigned long bitmap_find_next_zero_area(unsigned long *map,
+ 					 unsigned long size,
+ 					 unsigned long start,
+--- a/lib/bitmap.c
++++ b/lib/bitmap.c
+@@ -315,6 +315,107 @@ void bitmap_clear(unsigned long *map, in
+ }
+ EXPORT_SYMBOL(bitmap_clear);
+ 
++static inline int set_bits_ll(unsigned long *addr, unsigned long mask_to_set)
++{
++	unsigned long val, nval;
++
++	nval = *addr;
++	do {
++		val = nval;
++		if (val & mask_to_set)
++			return -EBUSY;
++	} while ((nval = cmpxchg(addr, val, val | mask_to_set)) != val);
++
++	return 0;
++}
++
++static inline int clear_bits_ll(unsigned long *addr,
++				unsigned long mask_to_clear)
++{
++	unsigned long val, nval;
++
++	nval = *addr;
++	do {
++		val = nval;
++		if ((val & mask_to_clear) != mask_to_clear)
++			return -EBUSY;
++	} while ((nval = cmpxchg(addr, val, val & ~mask_to_clear)) != val);
++
++	return 0;
++}
++
++/**
++ * bitmap_set_ll - set the specified number of bits at the specified position
++ * @map: pointer to a bitmap
++ * @start: a bit position in @map
++ * @nr: number of bits to set
++ *
++ * Set @nr bits start from @start in @map lock-lessly. Several users
++ * can set/clear the same bitmap simultaneously without lock. If two
++ * users set the same bit, one user will return remain bits, otherwise
++ * return 0.
++ */
++int bitmap_set_ll(unsigned long *map, int start, int nr)
++{
++	unsigned long *p = map + BIT_WORD(start);
++	const int size = start + nr;
++	int bits_to_set = BITS_PER_LONG - (start % BITS_PER_LONG);
++	unsigned long mask_to_set = BITMAP_FIRST_WORD_MASK(start);
++
++	while (nr - bits_to_set >= 0) {
++		if (set_bits_ll(p, mask_to_set))
++			return nr;
++		nr -= bits_to_set;
++		bits_to_set = BITS_PER_LONG;
++		mask_to_set = ~0UL;
++		p++;
++	}
++	if (nr) {
++		mask_to_set &= BITMAP_LAST_WORD_MASK(size);
++		if (set_bits_ll(p, mask_to_set))
++			return nr;
++	}
++
++	return 0;
++}
++EXPORT_SYMBOL(bitmap_set_ll);
++
++/**
++ * bitmap_clear_ll - clear the specified number of bits at the specified position
++ * @map: pointer to a bitmap
++ * @start: a bit position in @map
++ * @nr: number of bits to set
++ *
++ * Clear @nr bits start from @start in @map lock-lessly. Several users
++ * can set/clear the same bitmap simultaneously without lock. If two
++ * users clear the same bit, one user will return remain bits,
++ * otherwise return 0.
++ */
++int bitmap_clear_ll(unsigned long *map, int start, int nr)
++{
++	unsigned long *p = map + BIT_WORD(start);
++	const int size = start + nr;
++	int bits_to_clear = BITS_PER_LONG - (start % BITS_PER_LONG);
++	unsigned long mask_to_clear = BITMAP_FIRST_WORD_MASK(start);
++
++	while (nr - bits_to_clear >= 0) {
++		if (clear_bits_ll(p, mask_to_clear))
++			return nr;
++		nr -= bits_to_clear;
++		bits_to_clear = BITS_PER_LONG;
++		mask_to_clear = ~0UL;
++		p++;
++	}
++	if (nr) {
++		mask_to_clear &= BITMAP_LAST_WORD_MASK(size);
++		if (clear_bits_ll(p, mask_to_clear))
++			return nr;
++	}
++
++	return 0;
++}
++EXPORT_SYMBOL(bitmap_clear_ll);
++
+ /*
+  * bitmap_find_next_zero_area - find a contiguous aligned zero area
+  * @map: The address to base the search on
