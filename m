@@ -1,76 +1,242 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753318Ab0JYH41 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Oct 2010 03:56:27 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:50222 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751657Ab0JYH40 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Oct 2010 03:56:26 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=ExsmLu9qj8JUnt4REogZMOyZ0HRjcm1iwvVfjqcbX/zbcrxfkIAVEHEXGPe0186HLW
-         p0NT7l154WnvbiPkMPbhso1Cyl4BFAv4FXxDIWluVsVwVXZnIWQwPCljH5NULlHf7Zkx
-         p0iDXX9By7h/6ufLdivSkD3pupc8jftkraswU=
-Date: Mon, 25 Oct 2010 00:56:17 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Miles Lane <miles.lane@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Alessandro Rubini <rubini@cvml.unipv.it>
-Subject: Re: 2.6.36-git4 -- BUG: looking up invalid subclass: 31 -- turning
- off the locking correctness validator.
-Message-ID: <20101025075617.GE1438@core.coreip.homeip.net>
-References: <AANLkTinDR=r-x+CDO0tFUOYMjwYBH0DvvxxgjCYfaXrJ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTinDR=r-x+CDO0tFUOYMjwYBH0DvvxxgjCYfaXrJ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753744Ab0JYIDh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Oct 2010 04:03:37 -0400
+Received: from mga02.intel.com ([134.134.136.20]:63456 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751884Ab0JYIDg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Oct 2010 04:03:36 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.58,235,1286175600"; 
+   d="scan'208";a="567062067"
+From: Feng Tang <feng.tang@intel.com>
+To: linux-kernel@vger.kernel.org
+Cc: jacob.jun.pan@intel.com, alan@linux.intel.com,
+        Feng Tang <feng.tang@intel.com>, Len Brown <len.brown@intel.com>
+Subject: [PATCH] x86: unify current 3 similar ways of saving IRQ info
+Date: Mon, 25 Oct 2010 16:36:40 +0800
+Message-Id: <1287995800-5107-1-git-send-email-feng.tang@intel.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Miles,
+There are 3 places defining the similar function of saving IRQ
+vector info into mp_irqs[] array: mmparse/acpi/sfi. This patch
+will reduce the redundant code, and make it only one API:
+	void mp_save_irq(struct mpc_intsrc *m);
 
-On Sun, Oct 24, 2010 at 06:00:30PM -0400, Miles Lane wrote:
-> BUG: looking up invalid subclass: 31
-> turning off the locking correctness validator.
-> Pid: 1, comm: swapper Not tainted 2.6.36-git4 #3
-> Call Trace:
->  [<ffffffff810634a7>] look_up_lock_class+0x66/0xe6
->  [<ffffffff81063940>] register_lock_class+0x1e/0x30e
->  [<ffffffff81062d07>] ? trace_hardirqs_on+0xd/0xf
->  [<ffffffff81064f70>] lockdep_init_map+0xf9/0x10c
->  [<ffffffff812a949b>] mousedev_create+0xb3/0x1e7
->  [<ffffffff816a2afe>] ? mousedev_init+0x0/0x62
->  [<ffffffff816a2b1a>] mousedev_init+0x1c/0x62
->  [<ffffffff81000336>] do_one_initcall+0x7a/0x130
->  [<ffffffff8167ad1e>] kernel_init+0x148/0x1d2
->  [<ffffffff81003854>] kernel_thread_helper+0x4/0x10
->  [<ffffffff8102ea4f>] ? finish_task_switch+0x3f/0x9a
->  [<ffffffff813619c0>] ? restore_args+0x0/0x30
->  [<ffffffff8167abd6>] ? kernel_init+0x0/0x1d2
->  [<ffffffff81003850>] ? kernel_thread_helper+0x0/0x10
+Signed-off-by: Feng Tang <feng.tang@intel.com>
+Cc: x86@kernel.org <x86 maintainers>
+Cc: Len Brown <len.brown@intel.com>
+---
+ arch/x86/include/asm/mpspec.h |    6 ++++++
+ arch/x86/kernel/acpi/boot.c   |   32 +++-----------------------------
+ arch/x86/kernel/mpparse.c     |   14 +++++++-------
+ arch/x86/kernel/mrst.c        |   30 ++----------------------------
+ 4 files changed, 18 insertions(+), 64 deletions(-)
 
-This should be fixed by:
-
-commit f74eef95e33a07379aa2b950c7f313cbfd55ebbe
-Author: Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>
-Date:   Wed Oct 13 11:35:40 2010 -0700
-
-    Input: mousedev - correct lockdep annotation
-    
-    When annotating mutex to avoid false lockdep reports we should not
-    be using MOUSEDEV_MIX as lock subclass but rather SINGLE_DEPTH_NESTING.
-    
-    Signed-off-by: Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>
-    Signed-off-by: Dmitry Torokhov <dtor@mail.ru>
-
-once Linus pulls from my tree.
-
-Thanks.
-
+diff --git a/arch/x86/include/asm/mpspec.h b/arch/x86/include/asm/mpspec.h
+index c82868e..17f4314 100644
+--- a/arch/x86/include/asm/mpspec.h
++++ b/arch/x86/include/asm/mpspec.h
+@@ -42,6 +42,12 @@ extern int quad_local_to_mp_bus_id [NR_CPUS/4][4];
+ 
+ #endif /* CONFIG_X86_64 */
+ 
++#ifdef CONFIG_X86_IO_APIC
++void mp_save_irq(struct mpc_intsrc *m);
++#else
++static inline void mp_save_irq(struct mpc_intsrc *m) {}
++#endif
++
+ #if defined(CONFIG_MCA) || defined(CONFIG_EISA)
+ extern int mp_bus_id_to_type[MAX_MP_BUSSES];
+ #endif
+diff --git a/arch/x86/kernel/acpi/boot.c b/arch/x86/kernel/acpi/boot.c
+index c05872a..4334d29 100644
+--- a/arch/x86/kernel/acpi/boot.c
++++ b/arch/x86/kernel/acpi/boot.c
+@@ -922,32 +922,6 @@ static int __init acpi_parse_madt_lapic_entries(void)
+ extern int es7000_plat;
+ #endif
+ 
+-static void assign_to_mp_irq(struct mpc_intsrc *m,
+-				    struct mpc_intsrc *mp_irq)
+-{
+-	memcpy(mp_irq, m, sizeof(struct mpc_intsrc));
+-}
+-
+-static int mp_irq_cmp(struct mpc_intsrc *mp_irq,
+-				struct mpc_intsrc *m)
+-{
+-	return memcmp(mp_irq, m, sizeof(struct mpc_intsrc));
+-}
+-
+-static void save_mp_irq(struct mpc_intsrc *m)
+-{
+-	int i;
+-
+-	for (i = 0; i < mp_irq_entries; i++) {
+-		if (!mp_irq_cmp(&mp_irqs[i], m))
+-			return;
+-	}
+-
+-	assign_to_mp_irq(m, &mp_irqs[mp_irq_entries]);
+-	if (++mp_irq_entries == MAX_IRQ_SOURCES)
+-		panic("Max # of irq sources exceeded!!\n");
+-}
+-
+ void __init mp_override_legacy_irq(u8 bus_irq, u8 polarity, u8 trigger, u32 gsi)
+ {
+ 	int ioapic;
+@@ -978,7 +952,7 @@ void __init mp_override_legacy_irq(u8 bus_irq, u8 polarity, u8 trigger, u32 gsi)
+ 	mp_irq.dstapic = mp_ioapics[ioapic].apicid; /* APIC ID */
+ 	mp_irq.dstirq = pin;	/* INTIN# */
+ 
+-	save_mp_irq(&mp_irq);
++	mp_save_irq(&mp_irq);
+ 
+ 	isa_irq_to_gsi[bus_irq] = gsi;
+ }
+@@ -1053,7 +1027,7 @@ void __init mp_config_acpi_legacy_irqs(void)
+ 		mp_irq.srcbusirq = i; /* Identity mapped */
+ 		mp_irq.dstirq = pin;
+ 
+-		save_mp_irq(&mp_irq);
++		mp_save_irq(&mp_irq);
+ 	}
+ }
+ 
+@@ -1090,7 +1064,7 @@ static int mp_config_acpi_gsi(struct device *dev, u32 gsi, int trigger,
+ 	mp_irq.dstapic = mp_ioapics[ioapic].apicid;
+ 	mp_irq.dstirq = mp_find_ioapic_pin(ioapic, gsi);
+ 
+-	save_mp_irq(&mp_irq);
++	mp_save_irq(&mp_irq);
+ #endif
+ 	return 0;
+ }
+diff --git a/arch/x86/kernel/mpparse.c b/arch/x86/kernel/mpparse.c
+index 9af64d9..ecaa897 100644
+--- a/arch/x86/kernel/mpparse.c
++++ b/arch/x86/kernel/mpparse.c
+@@ -144,7 +144,7 @@ static void __init print_mp_irq_info(struct mpc_intsrc *mp_irq)
+ 		mp_irq->srcbusirq, mp_irq->dstapic, mp_irq->dstirq);
+ }
+ 
+-static void __init assign_to_mp_irq(struct mpc_intsrc *m,
++static void assign_to_mp_irq(struct mpc_intsrc *m,
+ 				    struct mpc_intsrc *mp_irq)
+ {
+ 	mp_irq->dstapic = m->dstapic;
+@@ -168,7 +168,7 @@ static void __init assign_to_mpc_intsrc(struct mpc_intsrc *mp_irq,
+ 	m->dstirq = mp_irq->dstirq;
+ }
+ 
+-static int __init mp_irq_mpc_intsrc_cmp(struct mpc_intsrc *mp_irq,
++static int mp_irq_mpc_intsrc_cmp(struct mpc_intsrc *mp_irq,
+ 					struct mpc_intsrc *m)
+ {
+ 	if (mp_irq->dstapic != m->dstapic)
+@@ -189,7 +189,8 @@ static int __init mp_irq_mpc_intsrc_cmp(struct mpc_intsrc *mp_irq,
+ 	return 0;
+ }
+ 
+-static void __init MP_intsrc_info(struct mpc_intsrc *m)
++/* Will also be called in acpi/sfi related code */
++void mp_save_irq(struct mpc_intsrc *m)
+ {
+ 	int i;
+ 
+@@ -207,7 +208,6 @@ static void __init MP_intsrc_info(struct mpc_intsrc *m)
+ #else /* CONFIG_X86_IO_APIC */
+ static inline void __init MP_bus_info(struct mpc_bus *m) {}
+ static inline void __init MP_ioapic_info(struct mpc_ioapic *m) {}
+-static inline void __init MP_intsrc_info(struct mpc_intsrc *m) {}
+ #endif /* CONFIG_X86_IO_APIC */
+ 
+ 
+@@ -337,7 +337,7 @@ static int __init smp_read_mpc(struct mpc_table *mpc, unsigned early)
+ 			skip_entry(&mpt, &count, sizeof(struct mpc_ioapic));
+ 			break;
+ 		case MP_INTSRC:
+-			MP_intsrc_info((struct mpc_intsrc *)mpt);
++			mp_save_irq((struct mpc_intsrc *)mpt);
+ 			skip_entry(&mpt, &count, sizeof(struct mpc_intsrc));
+ 			break;
+ 		case MP_LINTSRC:
+@@ -429,13 +429,13 @@ static void __init construct_default_ioirq_mptable(int mpc_default_type)
+ 
+ 		intsrc.srcbusirq = i;
+ 		intsrc.dstirq = i ? i : 2;	/* IRQ0 to INTIN2 */
+-		MP_intsrc_info(&intsrc);
++		mp_save_irq(&intsrc);
+ 	}
+ 
+ 	intsrc.irqtype = mp_ExtINT;
+ 	intsrc.srcbusirq = 0;
+ 	intsrc.dstirq = 0;	/* 8259A to INTIN0 */
+-	MP_intsrc_info(&intsrc);
++	mp_save_irq(&intsrc);
+ }
+ 
+ 
+diff --git a/arch/x86/kernel/mrst.c b/arch/x86/kernel/mrst.c
+index 79ae681..cf0fe78 100644
+--- a/arch/x86/kernel/mrst.c
++++ b/arch/x86/kernel/mrst.c
+@@ -59,32 +59,6 @@ struct sfi_rtc_table_entry sfi_mrtc_array[SFI_MRTC_MAX];
+ EXPORT_SYMBOL_GPL(sfi_mrtc_array);
+ int sfi_mrtc_num;
+ 
+-static inline void assign_to_mp_irq(struct mpc_intsrc *m,
+-				    struct mpc_intsrc *mp_irq)
+-{
+-	memcpy(mp_irq, m, sizeof(struct mpc_intsrc));
+-}
+-
+-static inline int mp_irq_cmp(struct mpc_intsrc *mp_irq,
+-				struct mpc_intsrc *m)
+-{
+-	return memcmp(mp_irq, m, sizeof(struct mpc_intsrc));
+-}
+-
+-static void save_mp_irq(struct mpc_intsrc *m)
+-{
+-	int i;
+-
+-	for (i = 0; i < mp_irq_entries; i++) {
+-		if (!mp_irq_cmp(&mp_irqs[i], m))
+-			return;
+-	}
+-
+-	assign_to_mp_irq(m, &mp_irqs[mp_irq_entries]);
+-	if (++mp_irq_entries == MAX_IRQ_SOURCES)
+-		panic("Max # of irq sources exceeded!!\n");
+-}
+-
+ /* parse all the mtimer info to a static mtimer array */
+ static int __init sfi_parse_mtmr(struct sfi_table_header *table)
+ {
+@@ -118,7 +92,7 @@ static int __init sfi_parse_mtmr(struct sfi_table_header *table)
+ 			mp_irq.srcbusirq = pentry->irq;	/* IRQ */
+ 			mp_irq.dstapic = MP_APIC_ALL;
+ 			mp_irq.dstirq = pentry->irq;
+-			save_mp_irq(&mp_irq);
++			mp_save_irq(&mp_irq);
+ 	}
+ 
+ 	return 0;
+@@ -188,7 +162,7 @@ int __init sfi_parse_mrtc(struct sfi_table_header *table)
+ 		mp_irq.srcbusirq = pentry->irq;	/* IRQ */
+ 		mp_irq.dstapic = MP_APIC_ALL;
+ 		mp_irq.dstirq = pentry->irq;
+-		save_mp_irq(&mp_irq);
++		mp_save_irq(&mp_irq);
+ 	}
+ 	return 0;
+ }
 -- 
-Dmitry
+1.7.0.4
+
