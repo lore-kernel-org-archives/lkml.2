@@ -1,94 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754617Ab0JYJa6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Oct 2010 05:30:58 -0400
-Received: from dhruva1.ncra.tifr.res.in ([158.144.12.129]:60485 "EHLO
-	dhruva1.ncra.tifr.res.in" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754386Ab0JYJa4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Oct 2010 05:30:56 -0400
-From: "Raju Rameshwar Uprade" <rajsingh@ncra.tifr.res.in>
-To: Greg KH <greg@kroah.com>,
-        Raju Rameshwar Uprade <rajsingh@ncra.tifr.res.in>
-Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
-Subject: Re: pl2303 ttyUSB0: pl2303_write - failed submitting write urb, error -22
-Date: Mon, 25 Oct 2010 15:00:35 +0530
-Message-Id: <20101025092607.M73014@admin-gateway.ncra.tifr.res.in>
-In-Reply-To: <20101019124713.GA31828@kroah.com>
-References: <20101018102001.M46961@admin-gateway.ncra.tifr.res.in> <20101019033522.GA32577@kroah.com> <20101019050336.M39015@admin-gateway.ncra.tifr.res.in> <20101019124713.GA31828@kroah.com>
-X-Mailer: OpenWebMail 2.53 (08:Aug:2008)
-X-OriginatingIP: 158.144.12.129
+	id S1754796Ab0JYJbN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Oct 2010 05:31:13 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:56890 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754689Ab0JYJbJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Oct 2010 05:31:09 -0400
+Date: Mon, 25 Oct 2010 11:30:45 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Jason Baron <jbaron@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        masami.hiramatsu.pt@hitachi.com
+Subject: Re: [PATCH][GIT PULL] tracing: Fix compile issue for
+ trace_sched_wakeup.c
+Message-ID: <20101025093045.GA21997@elte.hu>
+References: <20101020164324.GC7348@redhat.com>
+ <20101020183329.GA12666@elte.hu>
+ <20101021110925.GA27219@elte.hu>
+ <20101022175845.GF6498@redhat.com>
+ <20101022182433.GA24637@elte.hu>
+ <20101022183900.GG6498@redhat.com>
+ <20101023200216.GA19324@elte.hu>
+ <1287881618.16971.657.camel@gandalf.stny.rr.com>
+ <20101024112540.GA21267@elte.hu>
+ <20101025085927.GA11025@elte.hu>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset=utf-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101025085927.GA11025@elte.hu>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-> > > What kernel version are you using?
-> > > 
+* Ingo Molnar <mingo@elte.hu> wrote:
+
+> * Ingo Molnar <mingo@elte.hu> wrote:
+> 
+> > > Interesting, the jump was to NULL. I'm thinking it hit a trace point and jumped 
+> > > to a NULL address. I guess there's some strange race here. Is a cache flush 
+> > > missing somewhere. I'll look more into this on Monday.
 > > 
-> > I am using kernel version 2.6.25.I cann't use current linux kernel version because it
-> > uses the generic write function and for my application I need pl2303_write.
+> > NULL wasnt the only crash i've seen in the past though, here's an older one:
 > 
-> Then you are really on your own here, sorry.
-> 
-> good luck,
-> 
-> greg k-h
+> here's another crash:
 
+here's a repeat bootup with the same config:
 
-Hi Greg.
-             
-          I am now able to transmit the Address byte with mark parity and data bytes
-with space parity properly.
+Testing event kmalloc: OK
+Testing event kmem_cache_alloc: OK
+Testing event kmalloc_node: OK
+Testing event kmem_cache_alloc_node: 
+BUG: unable to handle kernel paging request at ffffffff
+IP: [<b6c35f7c>] 0xb6c35f7c
+*pde = 01b29067 *pte = 00000000 
+Oops: 0002 [#1] SMP 
+last sysfs file: 
 
-Thanks a lot greg for you help....
+Pid: 2, comm: kthreadd Not tainted 2.6.36-tip+ #52248 /
+EIP: 0060:[<b6c35f7c>] EFLAGS: 00010282 CPU: 1
+EAX: ffffffff EBX: 7902361a ECX: 00000000 EDX: 00000000
+ESI: b6c35f7c EDI: fffffff4 EBP: b6c09c00 ESP: b6c35ee4
+ DS: 007b ES: 007b FS: 00d8 GS: 00e0 SS: 0068
+Process kthreadd (pid: 2, ti=b6c34000 task=b6c09c00 task.ti=b6c34000)
+Stack:
+ 7902361a 00000001 00800711 00000400 b7006688 00000000 b6c35f7c 00000000
+ b6c35f7c 00000000 00000000 b6c35f7c 790242e2 00000000 00000000 00000000
+ 00000000 00800711 00000000 00000000 00000000 00000000 00000409 00000400
+Call Trace:
+ [<7902361a>] ? 0x7902361a
+ [<790242e2>] ? 0x790242e2
+ [<79036c86>] ? 0x79036c86
+ [<79007c1a>] ? 0x79007c1a
+ [<79036c86>] ? 0x79036c86
+ [<79002b78>] ? 0x79002b78
+ [<79036d7b>] ? 0x79036d7b
+ [<79036cee>] ? 0x79036cee
+ [<79002b7e>] ? 0x79002b7e
+Code: 00 00 00 40 99 20 00 b5 f9 e6 c0 11 07 80 00 86 6c 03 79 c0 5f c3 b6 7c 5f c3 b6 1a 7c 00 79 00 00 00 00 00 00 00 00 00 00 00 00 <00> 00 00 00 00 00 00 00 00 00 00 00 86 6c 03 79 74 3f c3 b6 00 
+EIP: [<b6c35f7c>]  SS:ESP 0068:b6c35ee4
+CR2: 00000000ffffffff
 
-Below is the control signal and data going out on USB bus number 7.
+similar crash pattern, but slightly different place of crash.
 
-f5aafd00 2277683484 S Co:7:002:0 s 21 20 0000 0000 0007 7 = 80250000 000308  // Control
-signal for  mark parity
-
-f5aafd00 2277684456 C Co:7:002:0 0 7 >
-f5aafd00 2277684497 S Co:7:002:0 s 21 22 0003 0000 0000 0
-f5aafd00 2277685456 C Co:7:002:0 0 0
-f2b8e900 2277685476 S Bo:7:002:2 -115 1 = 05        // Address byte
-f5aafd00 2277685482 S Ci:7:002:0 s a1 21 0000 0000 0007 7 <
-f5aafd00 2277686455 C Ci:7:002:0 0 7 = 80250000 000308
-f2b8e900 2277686461 C Bo:7:002:2 0 1 >
-f5aafd00 2277686518 S Co:7:002:0 s 21 20 0000 0000 0007 7 = 80250000 000408            
-       // Control signal for Space parity
-f5aafd00 2277687457 C Co:7:002:0 0 7 >
-f2b8e900 2277687471 S Bo:7:002:2 -115 8 = 08000000 000000f8  // Data bytes
-f5aafd00 2277687474 S Ci:7:002:0 s a1 21 0000 0000 0007 7 <
-f5aafd00 2277688455 C Ci:7:002:0 0 7 = 80250000 000408
-f2b8e900 2277688461 C Bo:7:002:2 0 8 >
-f5aafd00 2277697534 S Co:7:002:0 s 21 22 0000 0000 0000 0
-f5aafd00 2277698456 C Co:7:002:0 0 0
-f2b8e580 2277700457 C Ii:7:002:1 0:1 10 = a1200000 00000200 4000  // What I am receiving
-currently.
-f2b8e580 2277700486 S Ii:7:002:1 -115:1 10 <
-f2b8e580 2277702455 C Ii:7:002:1 0:1 10 = a1200000 00000200 4000
-f2b8e580 2277702478 S Ii:7:002:1 -115:1 10 <
-f2b8e580 2277704455 C Ii:7:002:1 0:1 10 = a1200000 00000200 4000
-f2b8e580 2277704477 S Ii:7:002:1 -115:1 10 <
-f2b8e580 2277706457 C Ii:7:002:1 0:1 10 = a1200000 00000200 4000
-f2b8e580 2277706480 S Ii:7:002:1 -115:1 10 <
-f2b8e580 2277708455 C Ii:7:002:1 0:1 10 = a1200000 00000200 4000
-f2b8e580 2277708476 S Ii:7:002:1 -115:1 10 <
-f2b8e580 2277710455 C Ii:7:002:1 0:1 10 = a1200000 00000200 4000
-f2b8e580 2277710484 S Ii:7:002:1 -115:1 10 <
-f2b8e580 2277712455 C Ii:7:002:1 0:1 10 = a1200000 00000200 4000
-f2b8e580 2277712477 S Ii:7:002:1 -115:1 10 <
-f2b8e580 2277714454 C Ii:7:002:1 0:1 10 = a1200000 00000200 4000
-f2b8e580 2277714471 S Ii:7:002:1 -115:1 10 <
-f2b8e580 2277716452 C Ii:7:002:1 0:1 10 = a1200000 00000200 4000
-f2b8e580 2277716464 S Ii:7:002:1 -115:1 10 <
-f2b8e580 2277718455 C Ii:7:002:1 0:1 10 = a1200000 00000200 0000
-f2b8e580 2277718480 S Ii:7:002:1 -115:1 10 <
-
-
-Thanks & Regards,
- Raj.
+	Ingo
