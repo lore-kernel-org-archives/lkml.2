@@ -1,75 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757458Ab0JYQj0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Oct 2010 12:39:26 -0400
-Received: from www.tglx.de ([62.245.132.106]:35975 "EHLO www.tglx.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755923Ab0JYQjY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Oct 2010 12:39:24 -0400
-Date: Mon, 25 Oct 2010 18:38:40 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Andi Kleen <andi@firstfloor.org>
-cc: Huang Ying <ying.huang@intel.com>, Ingo Molnar <mingo@elte.hu>,
-        Len Brown <lenb@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        Borislav Petkov <petkovbb@googlemail.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Don Zickus <dzickus@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Tony Luck <tony.luck@intel.com>
-Subject: Re: [NAK] Re: [PATCH -v2 9/9] ACPI, APEI, Generic Hardware Error
- Source POLL/IRQ/NMI notification type support
-In-Reply-To: <20101025091913.GA17622@basil.fritz.box>
-Message-ID: <alpine.LFD.2.00.1010251821260.3955@localhost6.localdomain6>
-References: <1287992610-14996-1-git-send-email-ying.huang@intel.com> <1287992610-14996-10-git-send-email-ying.huang@intel.com> <20101025084553.GA27119@elte.hu> <1287997112.2862.322.camel@yhuang-dev> <20101025091913.GA17622@basil.fritz.box>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1757483Ab0JYQnO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Oct 2010 12:43:14 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:39118 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756267Ab0JYQnN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Oct 2010 12:43:13 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:cc:content-type;
+        b=gc5kkdTzk1D2RVXZJM6a3GSh+tsvwckGIFu6yaEXRXlPoiUvl9Ii04xznlaccTN1+d
+         YMSUI/jZUwWxGNP4l0fWSs9i8UbKD0TbCa8HF8a3pUe5qX9hgBAgQ2y2UdCOADJBENzQ
+         9qZV89vhOykX7cVI0GKMDpFff/HuMsrq4g3h0=
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Date: Mon, 25 Oct 2010 18:43:12 +0200
+Message-ID: <AANLkTikDEF=K05Pfi62+EcDRACU7horv7w54bRn_HwtQ@mail.gmail.com>
+Subject: DMAENGINE: Client reuse of desc
+From: Per Forlin <per.lkml@gmail.com>
+To: dan.j.williams@intel.com
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 25 Oct 2010, Andi Kleen wrote:
-> > > Sigh, please integrate all this into EDAC (drivers/edac/) properly, instead of 
-> > > turning it into YET ANOTHER hardware vendor special hw-errors thing. We can do 
-> > > better than this. EDAC is almost there: it has support for Nehalem, AMD, a couple
-> > > of older chips.
-> > 
-> > I think APEI (ACPI Platform Error Interface) is another driver. Why
-> > integrate two drivers?
-> 
-> Yes they're solving quite different problems from EDAC with different
-> interfaces and for different devices in the ACPI space.
-> 
-> The earlier nack seems to be based on a lot of confusion on what the code 
-> does.
+Hi,
 
-Errm. That patch series carries a lot of other weird stuff including a
-new "memory allocator", a new ioremap implementation private to the
-acpi code and new character device driver for hardware error
-reporting.
+DMA_CTRL_ACK is used if the client needs to set up a dependency chain
+of descriptor. This mean the driver cannot reuse or free the
+descriptor until the client release it. I wonder if the client is
+permitted/safe to reuse the descriptor and submit it again to the
+driver? Or would dmaengine need an additional flag for this feature.
 
-> Subject: [PATCH -v2 5/9] Hardware error device core
-> 
-> Hardware error device is a kind of device which can report hardware
-> errors.  The examples of hardware error device include APEI GHES, PCIe
-> AER, etc.
-> 
-> Hardware error device core in this patch provides common services for
-> various hardware error devices.
+I know that the intent of DMA_CTRL_ACK is not to allow reuse of desc
+from a client perspective. I am asking because I made this assumption
+when implementing it in ste_dma40.
 
-But it does not even make an attempt to explain why this error
-reporting cannot be done via the existing interfaces and why they
-can't be extended to fit your needs. What's so special about APEI GHES
-and PCIe AER that we need another incompatible "just fits your needs"
-ABI which makes tooling folks deal with another completely different
-interface ?
+Example:
+The client prepares a desc "A", submits "A" and starts the transfer.
+When tx finished, the client then fills in new data in the desc
+"A"-buffer and submits it again.
 
-The only explanation I have is that you are simply not willing to work
-with others and this is just another proof of a repeating problem.
-
-Thanks,
-
-	tglx
+/Per
