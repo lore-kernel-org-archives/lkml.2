@@ -1,132 +1,186 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759313Ab0JYSLh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Oct 2010 14:11:37 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:52089 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751542Ab0JYSLf (ORCPT
+	id S932698Ab0JYSW7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Oct 2010 14:22:59 -0400
+Received: from adsl-99-30-218-25.dsl.aus2tx.sbcglobal.net ([99.30.218.25]:58252
+	"EHLO gw.microgate.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751316Ab0JYSW6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Oct 2010 14:11:35 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=l0rZ7CdqFYHLWfrB42y9oZINmp2fJ4oQIXWCBR7yzD6whsdVS66o+9LCinAm7nFO/n
-         Dc+QTloHPD7Pm8+ANzq5l0/7kRhPxvQsnFqPyuq7ps9xU2u5890Vj8Ea2GVk5wx/hmQZ
-         xp9cyDW7zyFSBbEDVxiziFo1h5cSc9Mgsz3aA=
-Message-ID: <4CC5C863.9070801@lwfinger.net>
-Date: Mon, 25 Oct 2010 13:11:47 -0500
-From: Larry Finger <Larry.Finger@lwfinger.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.12) Gecko/20100914 SUSE/3.0.8 Thunderbird/3.0.8
-MIME-Version: 1.0
-To: Eric Dumazet <eric.dumazet@gmail.com>
-CC: Arnd Hannemann <arnd@arndnet.de>, "David S. Miller" <davem@davemloft.net>,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-wireless@vger.kernel.org
-Subject: Re: [PATCH] net: b43legacy: fix compile error
-References: <1288017690-31248-1-git-send-email-arnd@arndnet.de>	 <4CC5A301.1080606@lwfinger.net> <1288021905.2826.142.camel@edumazet-laptop>
-In-Reply-To: <1288021905.2826.142.camel@edumazet-laptop>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	Mon, 25 Oct 2010 14:22:58 -0400
+Subject: [PATCH] n_hdlc fix read and write locking
+From: Paul Fulghum <paulkf@microgate.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain
+Date: Mon, 25 Oct 2010 13:22:39 -0500
+Message-Id: <1288030959.19909.28.camel@x2.microgate.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.8.3 (2.8.3-2.fc6) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/25/2010 10:51 AM, Eric Dumazet wrote:
-> Le lundi 25 octobre 2010 à 10:32 -0500, Larry Finger a écrit :
->> On 10/25/2010 09:41 AM, Arnd Hannemann wrote:
->>> On todays linus tree the following compile error happened to me:
->>>
->>>   CC [M]  drivers/net/wireless/b43legacy/xmit.o
->>> In file included from include/net/dst.h:11,
->>>                  from drivers/net/wireless/b43legacy/xmit.c:31:
->>> include/net/dst_ops.h:28: error: expected ':', ',', ';', '}' or '__attribute__' before '____cacheline_aligned_in_smp'
->>> include/net/dst_ops.h: In function 'dst_entries_get_fast':
->>> include/net/dst_ops.h:33: error: 'struct dst_ops' has no member named 'pcpuc_entries'
->>> include/net/dst_ops.h: In function 'dst_entries_get_slow':
->>> include/net/dst_ops.h:41: error: 'struct dst_ops' has no member named 'pcpuc_entries'
->>> include/net/dst_ops.h: In function 'dst_entries_add':
->>> include/net/dst_ops.h:49: error: 'struct dst_ops' has no member named 'pcpuc_entries'
->>> include/net/dst_ops.h: In function 'dst_entries_init':
->>> include/net/dst_ops.h:55: error: 'struct dst_ops' has no member named 'pcpuc_entries'
->>> include/net/dst_ops.h: In function 'dst_entries_destroy':
->>> include/net/dst_ops.h:60: error: 'struct dst_ops' has no member named 'pcpuc_entries'
->>> make[4]: *** [drivers/net/wireless/b43legacy/xmit.o] Error 1
->>> make[3]: *** [drivers/net/wireless/b43legacy] Error 2
->>> make[2]: *** [drivers/net/wireless] Error 2
->>> make[1]: *** [drivers/net] Error 2
->>> make: *** [drivers] Error 2
->>>
->>> This patch fixes this issue by adding "linux/cache.h" as an include to
->>> "include/net/dst_ops.h".
->>
->> Strange. Compiling b43legacy from the linux-2.6.git tree (git describe is
->> v2.6.36-4464-g229aebb) works fine on x86_64. I wonder what is different.
-> 
-> Well, x86_64 must include cache.h, this is probably why I missed it in
-> my build tests.
-> 
-> I wonder also why #include <net/dst.h> is needed at all in this
-> driver...
-> 
-> diff --git a/drivers/net/wireless/b43legacy/xmit.c
-> b/drivers/net/wireless/b43legacy/xmit.c
-> index 7d177d9..a261aec 100644
-> --- a/drivers/net/wireless/b43legacy/xmit.c
-> +++ b/drivers/net/wireless/b43legacy/xmit.c
-> @@ -28,8 +28,6 @@
->  
->  */
->  
-> -#include <net/dst.h>
-> -
->  #include "xmit.h"
->  #include "phy.h"
->  #include "dma.h"
+Fix locking in read and write code of n_hdlc line discipline.
 
-I have no idea why that header was included - likely historical in the
-transformation from bcm43xx to b43legacy. For completeness, there are 2 more
-places to change:
+2.6.36 replaced lock_kernel() with tty_lock().
+The tty mutex is not dropped automatically when the thread
+sleeps like the BKL. This results in a blocked read or write holding
+the tty mutex and stalling operations by other devices that use
+the tty mutex.
 
-Index: linux-2.6/drivers/net/wireless/b43legacy/dma.c
-===================================================================
---- linux-2.6.orig/drivers/net/wireless/b43legacy/dma.c
-+++ linux-2.6/drivers/net/wireless/b43legacy/dma.c
-@@ -38,7 +38,6 @@
- #include <linux/delay.h>
- #include <linux/skbuff.h>
- #include <linux/slab.h>
--#include <net/dst.h>
+A review of n_hdlc read and write code shows:
+1. neither BKL or tty mutex are required for correct operation
+2. read can block while read data is available if data is posted
+   between availability check and call to interruptible_sleep_on()
+3. write does not set process state to TASK_INTERRUPTIBLE
+   on each pass through the processing loop which can cause
+   unneeded scheduling of the thread
 
- /* 32bit DMA ops. */
- static
-Index: linux-2.6/drivers/net/wireless/b43legacy/main.c
-===================================================================
---- linux-2.6.orig/drivers/net/wireless/b43legacy/main.c
-+++ linux-2.6/drivers/net/wireless/b43legacy/main.c
-@@ -41,7 +41,6 @@
- #include <linux/skbuff.h>
- #include <linux/dma-mapping.h>
- #include <linux/slab.h>
--#include <net/dst.h>
- #include <asm/unaligned.h>
+The unnecessary tty mutex references have been removed.
 
- #include "b43legacy.h"
-Index: linux-2.6/drivers/net/wireless/b43legacy/xmit.c
-===================================================================
---- linux-2.6.orig/drivers/net/wireless/b43legacy/xmit.c
-+++ linux-2.6/drivers/net/wireless/b43legacy/xmit.c
-@@ -28,8 +28,6 @@
+Read changed to use same code as n_tty read
+for completing reads and blocking.
 
- */
+Write corrected to set process state to
+TASK_INTERRUPTIBLE on each pass through processing loop.
 
--#include <net/dst.h>
+--- a/drivers/char/n_hdlc.c	2010-10-22 14:22:22.000000000 -0500
++++ b/drivers/char/n_hdlc.c	2010-10-25 12:36:12.000000000 -0500
+@@ -581,8 +581,9 @@ static ssize_t n_hdlc_tty_read(struct tt
+ 			   __u8 __user *buf, size_t nr)
+ {
+ 	struct n_hdlc *n_hdlc = tty2n_hdlc(tty);
+-	int ret;
++	int ret = 0;
+ 	struct n_hdlc_buf *rbuf;
++	DECLARE_WAITQUEUE(wait, current);
+ 
+ 	if (debuglevel >= DEBUG_LEVEL_INFO)	
+ 		printk("%s(%d)n_hdlc_tty_read() called\n",__FILE__,__LINE__);
+@@ -598,57 +599,55 @@ static ssize_t n_hdlc_tty_read(struct tt
+ 		return -EFAULT;
+ 	}
+ 
+-	tty_lock();
++	add_wait_queue(&tty->read_wait, &wait);
+ 
+ 	for (;;) {
+ 		if (test_bit(TTY_OTHER_CLOSED, &tty->flags)) {
+-			tty_unlock();
+-			return -EIO;
++			ret = -EIO;
++			break;
+ 		}
++		if (tty_hung_up_p(file))
++			break;
+ 
+-		n_hdlc = tty2n_hdlc (tty);
+-		if (!n_hdlc || n_hdlc->magic != HDLC_MAGIC ||
+-			 tty != n_hdlc->tty) {
+-			tty_unlock();
+-			return 0;
+-		}
++		set_current_state(TASK_INTERRUPTIBLE);
+ 
+ 		rbuf = n_hdlc_buf_get(&n_hdlc->rx_buf_list);
+-		if (rbuf)
++		if (rbuf) {
++			if (rbuf->count > nr) {
++				/* too large for caller's buffer */
++				ret = -EOVERFLOW;
++			} else {
++				if (copy_to_user(buf, rbuf->buf, rbuf->count))
++					ret = -EFAULT;
++				else
++					ret = rbuf->count;
++			}
++
++			if (n_hdlc->rx_free_buf_list.count >
++			    DEFAULT_RX_BUF_COUNT)
++				kfree(rbuf);
++			else
++				n_hdlc_buf_put(&n_hdlc->rx_free_buf_list, rbuf);
+ 			break;
++		}
+ 			
+ 		/* no data */
+ 		if (file->f_flags & O_NONBLOCK) {
+-			tty_unlock();
+-			return -EAGAIN;
++			ret = -EAGAIN;
++			break;
+ 		}
+-			
+-		interruptible_sleep_on (&tty->read_wait);
++
++		schedule();
++
+ 		if (signal_pending(current)) {
+-			tty_unlock();
+-			return -EINTR;
++			ret = -EINTR;
++			break;
+ 		}
+ 	}
+-		
+-	if (rbuf->count > nr)
+-		/* frame too large for caller's buffer (discard frame) */
+-		ret = -EOVERFLOW;
+-	else {
+-		/* Copy the data to the caller's buffer */
+-		if (copy_to_user(buf, rbuf->buf, rbuf->count))
+-			ret = -EFAULT;
+-		else
+-			ret = rbuf->count;
+-	}
+-	
+-	/* return HDLC buffer to free list unless the free list */
+-	/* count has exceeded the default value, in which case the */
+-	/* buffer is freed back to the OS to conserve memory */
+-	if (n_hdlc->rx_free_buf_list.count > DEFAULT_RX_BUF_COUNT)
+-		kfree(rbuf);
+-	else	
+-		n_hdlc_buf_put(&n_hdlc->rx_free_buf_list,rbuf);
+-	tty_unlock();
++
++	remove_wait_queue(&tty->read_wait, &wait);
++	set_current_state(TASK_RUNNING);
++
+ 	return ret;
+ 	
+ }	/* end of n_hdlc_tty_read() */
+@@ -691,14 +690,15 @@ static ssize_t n_hdlc_tty_write(struct t
+ 		count = maxframe;
+ 	}
+ 	
+-	tty_lock();
 -
- #include "xmit.h"
- #include "phy.h"
- #include "dma.h"
+ 	add_wait_queue(&tty->write_wait, &wait);
+-	set_current_state(TASK_INTERRUPTIBLE);
++
++	for (;;) {
++		set_current_state(TASK_INTERRUPTIBLE);
+ 	
+-	/* Allocate transmit buffer */
+-	/* sleep until transmit buffer available */		
+-	while (!(tbuf = n_hdlc_buf_get(&n_hdlc->tx_free_buf_list))) {
++		tbuf = n_hdlc_buf_get(&n_hdlc->tx_free_buf_list);
++		if (tbuf)
++			break;
++
+ 		if (file->f_flags & O_NONBLOCK) {
+ 			error = -EAGAIN;
+ 			break;
+@@ -731,7 +731,7 @@ static ssize_t n_hdlc_tty_write(struct t
+ 		n_hdlc_buf_put(&n_hdlc->tx_buf_list,tbuf);
+ 		n_hdlc_send_frames(n_hdlc,tty);
+ 	}
+-	tty_unlock();
++
+ 	return error;
+ 	
+ }	/* end of n_hdlc_tty_write() */
 
-Will you push the complete patch to Linus or DaveM?
-
-Larry
 
