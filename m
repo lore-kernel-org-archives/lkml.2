@@ -1,64 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752213Ab0JYBMu (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Oct 2010 21:12:50 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:37786 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751479Ab0JYBMs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Oct 2010 21:12:48 -0400
-Date: Mon, 25 Oct 2010 12:12:38 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Chris Ball <cjb@laptop.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Olof Johansson <olof@lixom.net>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: linux-next: build failure after merge of the mmc tree
-Message-Id: <20101025121238.db983f90.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Mon__25_Oct_2010_12_12_38_+1100_kaIWNxW5l+iXcrK6"
+	id S1752198Ab0JYBOr (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Oct 2010 21:14:47 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:59254 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751407Ab0JYBOq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 24 Oct 2010 21:14:46 -0400
+Message-ID: <4CC4DA38.6000907@cn.fujitsu.com>
+Date: Mon, 25 Oct 2010 09:15:36 +0800
+From: Li Zefan <lizf@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1b3pre) Gecko/20090513 Fedora/3.0-2.3.beta2.fc11 Thunderbird/3.0b2
+MIME-Version: 1.0
+To: Matt Helsley <matthltc@us.ibm.com>
+CC: "akpm >> Andrew Morton" <akpm@linux-foundation.org>,
+        Paul Menage <menage@google.com>, Stephane Eranian <eranian@google.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        containers@lists.linux-foundation.org
+Subject: Re: [PATCH 5/7] cgroups: Make freezer subsystem bindable
+References: <4CC146A4.9090505@cn.fujitsu.com> <4CC1473D.9070201@cn.fujitsu.com> <20101022205755.GJ10119@count0.beaverton.ibm.com>
+In-Reply-To: <20101022205755.GJ10119@count0.beaverton.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__25_Oct_2010_12_12_38_+1100_kaIWNxW5l+iXcrK6
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Matt Helsley wrote:
+> On Fri, Oct 22, 2010 at 04:11:41PM +0800, Li Zefan wrote:
+>> To make it bindable, we need to thaw all processes when unbinding
+>> the freezer subsystem from a cgroup hierarchy.
+>>
+>> Signed-off-by: Li Zefan <lizf@cn.fujitsu.com>
+> 
+> Based on experience using cgroups and questions we've fielded in the
+> past on IRC I'd say users will really appreciate this.
+> 
+> We're planning to use the freezer in checkpoint/restart. Since
+> checkpoint requires the tasks to remain frozen for the duration of
+> the syscall we add a kernel-internal freezer subsystem interface
+> which prevents the cgroup from thawing. So we'll need some way to
+> "block" unbinding for that as well.
+> 
 
-Hi Chris,
+How about, we allow unbinding only when all the cgroups' state is
+THAWED ?
 
-After merging the mmc tree, today's linux-next build (x86_64 allmodconfig)
-failed like this:
+> Perhaps the bind op should be able to return an error when
+> unbind == true? Although that raises the question of what to do if
+> only one of multiple unbinds fails..
+> 
+> Alternately you could split the bind/unbind op function pointers
+> and get rid of the boolean argument. Then just don't fill in the
+> freezer's unbind op and refuse to unbind subsystems that lack
+> the unbind op. That seems a bit cleaner for now at least.
+> 
 
-drivers/mmc/card/block.c:57: error: 'CONFIG_MMC_BLOCK_MINORS' undeclared he=
-re (not in a function)
+We can use bindable:1 along with a callback can_bind().
 
-Caused by commit d8714fbfc66e16fc64a4525c02eebc34bac8385c ("mmc: make
-number of mmcblk minors configurable").  Forget to include a Kconfig
-update?
-
-I have used the mmc tree from next-20101022 for today.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Mon__25_Oct_2010_12_12_38_+1100_kaIWNxW5l+iXcrK6
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQEcBAEBAgAGBQJMxNmGAAoJEDMEi1NhKgbsn/QIAJ8Frolbjy/66XzmfpBt+bU0
-Yae3oPqHVxQZKovkhOwb0SeK5cMS/7yizoAfgmgUpaWXgBiC65hdTj9/9TnIMb2d
-r5P5dofGKPtiW/4vY4xL02k6Qyo6iamI20Vf7NgnQF3uj3xHUhsmb14MTlGYcY9L
-Xtc23dDiUqGHCPYYuWcBpmIsvyMPaFtr2pYlthmCYIHcPsdN7m0m5B2j027dUz7G
-F39hzd7gWovI7vFXTRCqaOYwzU9H3jU8rZm/ib/npBPnsD9kwT+TJK2iR38N9zns
-zX6IJkPP1jFszuvAJI4EahjsPFRgCudZ952aMY3saPDdeHNgcMhrT76Ai6VFd6w=
-=Z6v1
------END PGP SIGNATURE-----
-
---Signature=_Mon__25_Oct_2010_12_12_38_+1100_kaIWNxW5l+iXcrK6--
+For some subsystems, we just set bindable to true. For freezer subsystem,
+we set it to true and provide freezer_can_bind(), and return true only
+if no cgroup's state is FROZEN.
