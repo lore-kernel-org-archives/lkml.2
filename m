@@ -1,59 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752283Ab0JYAp1 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Oct 2010 20:45:27 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:55909 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751377Ab0JYAp0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Oct 2010 20:45:26 -0400
-Date: Mon, 25 Oct 2010 11:45:20 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Linus <torvalds@linux-foundation.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Mike Miller <mike.miller@hp.com>, Jens Axboe <jaxboe@fusionio.com>
-Subject: Re: linux-next: build warning in Linus' tree
-Message-Id: <20101025114520.fb19b192.sfr@canb.auug.org.au>
-In-Reply-To: <20101025113858.feeff8a7.sfr@canb.auug.org.au>
-References: <20101025113858.feeff8a7.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Mon__25_Oct_2010_11_45_20_+1100_Qs2EGBo/IqG56O.k"
+	id S1752409Ab0JYAps (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Oct 2010 20:45:48 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:59036 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751534Ab0JYApr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 24 Oct 2010 20:45:47 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=kzkYGdL7oCcc7w0Cc6XP5Z7Pmouh6Xz+BHjE8ZAr4moH1vib6hbUBnzm5MEL3g/5Pv
+         MSnI4GeSdaql49L33zotpqpO291OL3imBIr2X4Tu/WTdy4e2dDhV0+ieOvY0D1GZI+VJ
+         orzLmYRjcq7owd56FVTOPrKDvwKsxiosREqwU=
+MIME-Version: 1.0
+In-Reply-To: <4CC45A22.7090801@redhat.com>
+References: <AANLkTikmGE2Pz0=57i4CQZrnunFzQHpmFdha2nwivm=Q@mail.gmail.com>
+	<4CC45A22.7090801@redhat.com>
+Date: Mon, 25 Oct 2010 08:45:46 +0800
+Message-ID: <AANLkTinveacu_w+cFa=o+XhL8oiLykGck+8spY=G1yfd@mail.gmail.com>
+Subject: Re: linux-2.6.36 WARNING: at fs/sysfs/dir.c:451 sysfs_add_one+0x82/0x95()
+From: Jeff Chua <jeff.chua.linux@gmail.com>
+To: Milan Broz <mbroz@redhat.com>
+Cc: lkml <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__25_Oct_2010_11_45_20_+1100_Qs2EGBo/IqG56O.k
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-On Mon, 25 Oct 2010 11:38:58 +1100 Stephen Rothwell <sfr@canb.auug.org.au> =
-wrote:
+On Mon, Oct 25, 2010 at 12:09 AM, Milan Broz <mbroz@redhat.com> wrote:
+> On 10/24/2010 03:51 PM, Jeff Chua wrote:
+>> Git pulled latest linux 2.6.36 (at
+>> 35da7a307c535f9c2929cae277f3df425c9f9b1e), and 2nd mount for loop
+>> device resulted in the following error. Has this been reported or
+>> shall I bisect?
+>>
+>> # mount -o loop cd.iso /mnt
+>> # umount /mnt
+>>
+>> # repeat a second time
+>> # mount -o loop cd.iso /mnt
+>>
+>> ------------[ cut here ]------------
+>> WARNING: at fs/sysfs/dir.c:451 sysfs_add_one+0x82/0x95()
 >
-> After merging the hid tree, today's linux-next build (x86_64 allmodconfig)
-  ^^^^^^^^^^^^^^^^^^^^^^^^^^
-Ignore this :-)
+> Please can you try patch I posted here
+> http://lkml.org/lkml/2010/10/24/30 ?
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+Milan,
 
---Signature=_Mon__25_Oct_2010_11_45_20_+1100_Qs2EGBo/IqG56O.k
-Content-Type: application/pgp-signature
+That worked!
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQEcBAEBAgAGBQJMxNMgAAoJEDMEi1NhKgbsVT0H+waa4pErKEx8ARVoFcerDwje
-yv4a6JWLwJRVauoT+gHiAwimUYyVvuV5wmaLpaGcBe2phFRELMYkrRrHeurifSyR
-OqpHvVi+0m0PR6wWZpSwW4lMHXdLBQIjEsdpOIb5zB455qWjYuqJfmp2t4UC7N53
-F6PLxJqOyk84WhnXzC3jOb0a3R2LZ61h2KRe8UKq6qAiwJTv/ggOhcuYUJ0DXtFq
-bF3rFVqzOx3sVTr67uLppvD3ES7quCGqaW9glCFfPOFJf6MYieayRb0LVsW4puZj
-8UbMvfxiqMI05zSc/Zb1BgWemirl0J1lmbmXEVSfPJnr0as9HWQAtP8B7nsrbQU=
-=nNxA
------END PGP SIGNATURE-----
-
---Signature=_Mon__25_Oct_2010_11_45_20_+1100_Qs2EGBo/IqG56O.k--
+Thanks,
+Jeff
