@@ -1,52 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758128Ab0JYVD7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Oct 2010 17:03:59 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:57202 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757810Ab0JYVD4 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Oct 2010 17:03:56 -0400
+	id S1752504Ab0JYVKS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Oct 2010 17:10:18 -0400
+Received: from g6t0186.atlanta.hp.com ([15.193.32.63]:42763 "EHLO
+	g6t0186.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751107Ab0JYVKQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Oct 2010 17:10:16 -0400
+From: Bjorn Helgaas <bjorn.helgaas@hp.com>
+To: Jesse Barnes <jbarnes@virtuousgeek.org>
+Subject: Re: [PATCH v4 6/6] x86: allocate space within a region top-down
+Date: Mon, 25 Oct 2010 15:08:48 -0600
+User-Agent: KMail/1.13.2 (Linux/2.6.32-25-generic; KDE/4.4.2; x86_64; ; )
+Cc: Bob Picco <bpicco@redhat.com>, Brian Bloniarz <phunge0@hotmail.com>,
+        Charles Butterfield <charles.butterfield@nextcentury.com>,
+        Denys Vlasenko <dvlasenk@redhat.com>, linux-pci@vger.kernel.org,
+        "Horst H. von Brand" <vonbrand@inf.utfsm.cl>,
+        Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
+        Stefan Becker <chemobejk@gmail.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Yinghai Lu <yinghai@kernel.org>,
+        Leann Ogasawara <leann.ogasawara@canonical.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+References: <20101014231804.536.62138.stgit@bob.kio> <20101014231852.536.42958.stgit@bob.kio> <20101025140154.66f1e1bd@jbarnes-desktop>
+In-Reply-To: <20101025140154.66f1e1bd@jbarnes-desktop>
 MIME-Version: 1.0
-In-Reply-To: <4CC5DCBB.1070505@kernel.org>
-References: <20101025184118.20504.24290.stgit@paris.rdu.redhat.com>
- <19653.55494.240658.165153@quad.stoffel.home> <4CC5DCBB.1070505@kernel.org>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Mon, 25 Oct 2010 13:55:09 -0700
-Message-ID: <AANLkTim5-QDaG3G_8hq3k83csWsdM-4Pt7V92WtmVx3i@mail.gmail.com>
-Subject: Re: [PATCH 01/11] IMA: use rbtree instead of radix tree for inode
- information cache
-To: "J.H." <warthog9@kernel.org>
-Cc: John Stoffel <john@stoffel.org>, Eric Paris <eparis@redhat.com>,
-        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, hch@infradead.org, zohar@us.ibm.com,
-        david@fromorbit.com, jmorris@namei.org, kyle@mcmartin.ca,
-        hpa@zytor.com, akpm@linux-foundation.org, mingo@elte.hu,
-        viro@zeniv.linux.org.uk
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201010251508.49165.bjorn.helgaas@hp.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 25, 2010 at 12:38 PM, J.H. <warthog9@kernel.org> wrote:
->
-> I'll second both points.  If IMA is disabled, but compiled in, it *HAS*
-> to consume 0 resources.
+On Monday, October 25, 2010 03:01:54 pm Jesse Barnes wrote:
+> On Thu, 14 Oct 2010 17:18:52 -0600
+> Bjorn Helgaas <bjorn.helgaas@hp.com> wrote:
+> 
+> > 
+> > Request that allocate_resource() use available space from high addresses
+> > first, rather than the default of using low addresses first.
+> > 
+> > The most common place this makes a difference is when we move or assign
+> > new PCI device resources.  Low addresses are generally scarce, so it's
+> > better to use high addresses when possible.  This follows Windows practice
+> > for PCI allocation.
+> 
+> Applied this series to linux-next; assuming nothing blows up I'll send
+> it to Linus this week (previous versions got some testing and landed in
+> a separate branch so this should be fine).
 
-I disagree. First off, this isn't actually true. Look at things like
-quota support: it eats more memory in the inode than IMA does after
-this patch-series (two pointers), and most people don't use that
-either. So the "it must use zero extra memory" is bogus - it's a
-balance between simplicity of the code and memory use.
+We tripped over another issue in Fedora:
+  https://bugzilla.redhat.com/show_bug.cgi?id=646027
 
-Secondly, right now we're in the situation that IMA just sucks. Sucks
-with all capital letters, in fact. This patch-series may not be
-perfect, but it's _so_ much better than the current situation that I
-don't really see why people are so adamantly negative about it.
+I think I see the problem, and posted a patch for testing.  When it's
+resolved, I'll post an updated series.
 
-Please do feel free to be constructive about it, and I'm sure there
-are ways to improve even more, but right now "constructive" is not
-what the objections seem to be.
-
-                            Linus
+Bjorn
