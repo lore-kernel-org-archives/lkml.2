@@ -1,53 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754192Ab0JYJIT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Oct 2010 05:08:19 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:43453 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752336Ab0JYJIQ (ORCPT
+	id S1753942Ab0JYJTY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Oct 2010 05:19:24 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:33144 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751680Ab0JYJTW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Oct 2010 05:08:16 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:x-enigmail-version:content-type
-         :content-transfer-encoding;
-        b=v200orj+OQJl7XLYPB2k8kAC8NSViB2GFJhArdM+yprVmGp+qaZzZ4FysIW6vMc4ss
-         khXlCSvqDLgooREEzre0mAkulsXGr1ru1qh371g07mU3DobpqbVBRc763OuOLLHhRD4x
-         UqU5sWsBTF84BKQMwwmPC3iVkCwx7FLsUdiLQ=
-Message-ID: <4CC548F8.1090307@gmail.com>
-Date: Mon, 25 Oct 2010 11:08:08 +0200
-From: Tejun Heo <htejun@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.11) Gecko/20101013 Lightning/1.0b2 Thunderbird/3.1.5
+	Mon, 25 Oct 2010 05:19:22 -0400
+Date: Mon, 25 Oct 2010 11:19:13 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: Huang Ying <ying.huang@intel.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Len Brown <lenb@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        Borislav Petkov <petkovbb@googlemail.com>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Don Zickus <dzickus@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>
+Subject: Re: [NAK] Re: [PATCH -v2 9/9] ACPI, APEI, Generic Hardware Error
+ Source POLL/IRQ/NMI notification type support
+Message-ID: <20101025091913.GA17622@basil.fritz.box>
+References: <1287992610-14996-1-git-send-email-ying.huang@intel.com>
+ <1287992610-14996-10-git-send-email-ying.huang@intel.com>
+ <20101025084553.GA27119@elte.hu>
+ <1287997112.2862.322.camel@yhuang-dev>
 MIME-Version: 1.0
-To: Al Viro <viro@ZenIV.linux.org.uk>
-CC: kevin granade <kevin.granade@gmail.com>,
-        "Artem S. Tashkinov" <t.artem@lycos.com>, linux-kernel@vger.kernel.org
-Subject: Re: On Linux numbering scheme
-References: <18536664.253751287691209904.JavaMail.root@mail-zbox20.bo3.lycos.com> <28654042.253821287691362834.JavaMail.root@mail-zbox20.bo3.lycos.com> <AANLkTimqNW7zArcjtOkBvrn-dk=YE0_RG+u3yoMDTjwV@mail.gmail.com> <20101022020006.GF19804@ZenIV.linux.org.uk>
-In-Reply-To: <20101022020006.GF19804@ZenIV.linux.org.uk>
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1287997112.2862.322.camel@yhuang-dev>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/22/2010 04:00 AM, Al Viro wrote:
-> On Thu, Oct 21, 2010 at 07:06:23PM -0500, kevin granade wrote:
+> > Sigh, please integrate all this into EDAC (drivers/edac/) properly, instead of 
+> > turning it into YET ANOTHER hardware vendor special hw-errors thing. We can do 
+> > better than this. EDAC is almost there: it has support for Nehalem, AMD, a couple
+> > of older chips.
 > 
->> Any particular reason not to continue the date-oriented format and
->> have the third number be the numerical representation of the month
->> rather than an incrementing numbering of the releases?  It would still
->> be monotonically increasing, which is the only requirement, right?
-> 
-> Why do we need to change it, anyway?
+> I think APEI (ACPI Platform Error Interface) is another driver. Why
+> integrate two drivers?
 
-Agreed.  These days, I use just the last digit, as in kernel 36, in
-casual contexts.  It's a number as good as any other.  I don't think
-it needs to be changed actively.  If the 2.6. prefix is bothering,
-just use the last number and maybe that will become semi-official in
-the future, or maybe not.  Doesn't really matter.
+Yes they're solving quite different problems from EDAC with different
+interfaces and for different devices in the ACPI space.
+
+The earlier nack seems to be based on a lot of confusion on what the code 
+does.
+
+Besides it nacks code in areas Ingo doesn't even maintain.
+(if he's allowed to nack random other code he doesn't like do I get this 
+right too? :-)
+
+> > einj.c: it's about the 3rd separate 'error injection' concept that got introduced 
+> > ...
+> 
+> EINJ is a true platform feature, not just software feature. We need to
+> support it to debug various hardware error features.
+
+Also having multiple error injecting interfaces is a good thing.
+
+Error injection is hard and one size definitely doesn't fit all. You need
+quite different ones depending on what you want to test, in which
+context etc.
+
+For hwpoison we currently have three different injectors at least and I expect
+that to even grow more in the future as different features get added.
+
+-Andi
 
 -- 
-tejun
+ak@linux.intel.com -- Speaking for myself only.
