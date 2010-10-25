@@ -1,59 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755627Ab0JYNbk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Oct 2010 09:31:40 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:50351 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755594Ab0JYNbi (ORCPT
+	id S1755619Ab0JYNeN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Oct 2010 09:34:13 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:61735 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754277Ab0JYNeM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Oct 2010 09:31:38 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: monstr@monstr.eu
-Subject: Re: [microblaze-uclinux] Re: [PATCH v2 22/22] bitops: remove minix bitops from asm/bitops.h
-Date: Mon, 25 Oct 2010 15:31:35 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.35-16-generic; KDE/4.3.2; x86_64; ; )
-Cc: microblaze-uclinux@itee.uq.edu.au, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org
-References: <1287672077-5797-1-git-send-email-akinobu.mita@gmail.com> <AANLkTikgRWWH0RhR2S5cFE+jkJbW30Arwsjic4UANuVd@mail.gmail.com> <4CC4C1B4.9090907@monstr.eu>
-In-Reply-To: <4CC4C1B4.9090907@monstr.eu>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+	Mon, 25 Oct 2010 09:34:12 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:content-type:date:message-id:mime-version:x-mailer
+         :content-transfer-encoding;
+        b=satSbPQblJQ8RmDZxt+LfP26yFSQ6NS3phuip/PoAsojRmeNA5uDXybY2BLq06Nk8j
+         QRYloRwKfEJ0xdyIYWhT3k0P1WSYckFHwI8r4GnnfiRdG26M3I4p3nnd52gHVGkY+4bp
+         bs+6uT5BskH7Grt78Ud2m/CN43f6OjcqJYR3o=
+Subject: [PATCH] mm/rmap.c: fix comment
+From: "Figo.zhang" <figo1802@gmail.com>
+To: lkml <linux-kernel@vger.kernel.org>, Rik van Riel <riel@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 25 Oct 2010 21:32:52 +0800
+Message-ID: <1288013572.3108.3.camel@localhost.localdomain>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.0 
 Content-Transfer-Encoding: 7bit
-Message-Id: <201010251531.35485.arnd@arndb.de>
-X-Provags-ID: V02:K0:dQPmYAkkSV2eurA52YOFlyc12IMKEGSkFerCCZtDIUo
- gJj6oWj6WbvTrWhPcuHLiY6G0M6fnMy02sa93VjOFCLgUTOep3
- lpQcr2JQwkIDYvWQedZSMsCdTnL40kBmQWCON8bDVDgnHWeVUV
- eVsdmpzp1V8iLe1A529er+IXqrvWqW153Y3us3RvxrY2EC/2hs
- L4d8teJA/C4mdnum4s+mA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 25 October 2010, Michal Simek wrote:
-> > If upcomming microblade little-endian mode will use little-endian
-> > bitmaps for minixfs, microblade can continue to select
-> > CONFIG_MINIX_FS_NATIVE_ENDIAN and you don't need to change it.
-> > 
-> > But if it will use big-endian bitmaps, it may need some extra work
-> > to support it. Becuase there is no little-endian architecture
-> > which uses bit-endian bitmaps for minixfs.
-> 
-> As I wrote I don't know anybody who wants to use minixfs that's why we don't
-> need to do anything with it. I can test it but it has no high priority.
+clean up comment. 
 
-I think it needs to be set up in a way that new architectures (and those
-that never cared about minixfs) automatically get a reasonable default
-and should not need to set anything.
+Signed-off-by: Figo.zhang <figo1802@gmail.com>
+---
+mm/rmap.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-I don't see a reason why little-endian microblaze should use big-endian
-bitops in minixfs, since that file system layout would also be incompatible
-with every other one.
+diff --git a/mm/rmap.c b/mm/rmap.c
+index 92e6757..479540d 100644
+--- a/mm/rmap.c
++++ b/mm/rmap.c
+@@ -94,7 +94,7 @@ void anon_vma_chain_free(struct anon_vma_chain *anon_vma_chain)
+  * anonymous pages mapped into it with that anon_vma.
+  *
+  * The common case will be that we already have one, but if
+- * if not we either need to find an adjacent mapping that we
++ * not we either need to find an adjacent mapping that we
+  * can re-use the anon_vma from (very common when the only
+  * reason for splitting a vma has been mprotect()), or we
+  * allocate a new one.
 
-CONFIG_MINIX_FS_NATIVE_ENDIAN seems reasonable for both big- and little-
-endian microblaze, but new architectures should just keep the default
-little-endian bitops IMHO.
-I also don't see a reason for testing. Any new users on microblaze or
-future architectures would use a modern file system anyway.
 
-	Arnd
