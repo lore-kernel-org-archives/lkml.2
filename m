@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759369Ab0JYSmv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Oct 2010 14:42:51 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:45517 "EHLO mx1.redhat.com"
+	id S1759397Ab0JYSm7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Oct 2010 14:42:59 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:11705 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752232Ab0JYSms (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Oct 2010 14:42:48 -0400
+	id S1751730Ab0JYSmz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Oct 2010 14:42:55 -0400
 From: Eric Paris <eparis@redhat.com>
-Subject: [PATCH 10/11] IMA: explicit IMA i_flag to remove global lock on
-	inode_delete
+Subject: [PATCH 02/11] IMA: drop the inode opencount since it isn't needed for
+	operation
 To: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
         linux-fsdevel@vger.kernel.org
 Cc: hch@infradead.org, zohar@us.ibm.com, warthog9@kernel.org,
@@ -16,8 +16,8 @@ Cc: hch@infradead.org, zohar@us.ibm.com, warthog9@kernel.org,
         hpa@zytor.com, akpm@linux-foundation.org,
         torvalds@linux-foundation.org, mingo@elte.hu, eparis@redhat.com,
         viro@zeniv.linux.org.uk
-Date: Mon, 25 Oct 2010 14:42:19 -0400
-Message-ID: <20101025184219.20504.7019.stgit@paris.rdu.redhat.com>
+Date: Mon, 25 Oct 2010 14:41:26 -0400
+Message-ID: <20101025184126.20504.77463.stgit@paris.rdu.redhat.com>
 In-Reply-To: <20101025184118.20504.24290.stgit@paris.rdu.redhat.com>
 References: <20101025184118.20504.24290.stgit@paris.rdu.redhat.com>
 User-Agent: StGIT/0.14.3
@@ -28,110 +28,91 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently for every removed inode IMA must take a global lock and search
-the IMA rbtree looking for an associated integrity structure.  Instead we
-explicitly mark an inode when we add an integrity structure so we only have
-to take the global lock and do the removal if it exists.
+The opencount was used to help debugging to make sure that everything which
+created a struct file also correctly made the IMA calls.  Since we moved
+all of that into the VFS this isn't as necessary.  We should be able to get
+the same amount of debugging out of just the reader and write count.
 
 Signed-off-by: Eric Paris <eparis@redhat.com>
 Acked-by: Mimi Zohar <zohar@linux.vnet.ibm.com>
 ---
 
- include/linux/fs.h                |    2 ++
- security/integrity/ima/ima_iint.c |   16 +++++++++++-----
- security/integrity/ima/ima_main.c |    1 +
- 3 files changed, 14 insertions(+), 5 deletions(-)
+ security/integrity/ima/ima.h      |    1 -
+ security/integrity/ima/ima_iint.c |    6 ------
+ security/integrity/ima/ima_main.c |   10 +++-------
+ 3 files changed, 3 insertions(+), 14 deletions(-)
 
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index cb9dbd0..b228b3a 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -231,6 +231,7 @@ struct inodes_stat_t {
- #define S_NOCMTIME	128	/* Do not update file c/mtime */
- #define S_SWAPFILE	256	/* Do not truncate: swapon got its bmaps */
- #define S_PRIVATE	512	/* Inode is fs-internal */
-+#define S_IMA		1024	/* Inode has an associated IMA struct */
+diff --git a/security/integrity/ima/ima.h b/security/integrity/ima/ima.h
+index 7557791..3d70108 100644
+--- a/security/integrity/ima/ima.h
++++ b/security/integrity/ima/ima.h
+@@ -108,7 +108,6 @@ struct ima_iint_cache {
+ 	struct mutex mutex;	/* protects: version, flags, digest */
+ 	long readcount;		/* measured files readcount */
+ 	long writecount;	/* measured files writecount */
+-	long opencount;		/* opens reference count */
+ 	struct kref refcount;	/* ima_iint_cache reference count */
+ };
  
- /*
-  * Note that nosuid etc flags are inode-specific: setting some file-system
-@@ -265,6 +266,7 @@ struct inodes_stat_t {
- #define IS_NOCMTIME(inode)	((inode)->i_flags & S_NOCMTIME)
- #define IS_SWAPFILE(inode)	((inode)->i_flags & S_SWAPFILE)
- #define IS_PRIVATE(inode)	((inode)->i_flags & S_PRIVATE)
-+#define IS_IMA(inode)		((inode)->i_flags & S_IMA)
- 
- /* the read-only stuff doesn't really belong here, but any other place is
-    probably as bad and I don't want to create yet another include file. */
 diff --git a/security/integrity/ima/ima_iint.c b/security/integrity/ima/ima_iint.c
-index 969a1c1..c442e47 100644
+index 8395f0f..8e64313 100644
 --- a/security/integrity/ima/ima_iint.c
 +++ b/security/integrity/ima/ima_iint.c
-@@ -59,6 +59,9 @@ struct ima_iint_cache *ima_iint_find(struct inode *inode)
- {
- 	struct ima_iint_cache *iint;
- 
-+	if (!IS_IMA(inode))
-+		return NULL;
-+
- 	spin_lock(&ima_iint_lock);
- 	iint = __ima_iint_find(inode);
- 	spin_unlock(&ima_iint_lock);
-@@ -91,6 +94,7 @@ int ima_inode_alloc(struct inode *inode)
- 	new_iint->inode = inode;
- 	new_node = &new_iint->rb_node;
- 
-+	mutex_lock(&inode->i_mutex); /* i_flags */
- 	spin_lock(&ima_iint_lock);
- 
- 	p = &ima_iint_tree.rb_node;
-@@ -107,14 +111,17 @@ int ima_inode_alloc(struct inode *inode)
- 			goto out_err;
+@@ -134,11 +134,6 @@ void iint_free(struct kref *kref)
+ 		       iint->writecount);
+ 		iint->writecount = 0;
  	}
- 
-+	inode->i_flags |= S_IMA;
- 	rb_link_node(new_node, parent, p);
- 	rb_insert_color(new_node, &ima_iint_tree);
- 
- 	spin_unlock(&ima_iint_lock);
-+	mutex_unlock(&inode->i_mutex); /* i_flags */
- 
- 	return 0;
- out_err:
- 	spin_unlock(&ima_iint_lock);
-+	mutex_unlock(&inode->i_mutex); /* i_flags */
- 	iint_free(new_iint);
- 
- 	return rc;
-@@ -135,15 +142,14 @@ void ima_inode_free(struct inode *inode)
- 
- 	inode->i_readcount = 0;
- 
-+	if (!IS_IMA(inode))
-+		return;
-+
- 	spin_lock(&ima_iint_lock);
- 	iint = __ima_iint_find(inode);
--	if (iint)
--		rb_erase(&iint->rb_node, &ima_iint_tree);
-+	rb_erase(&iint->rb_node, &ima_iint_tree);
- 	spin_unlock(&ima_iint_lock);
- 
--	if (!iint)
--		return;
--
- 	iint_free(iint);
+-	if (iint->opencount != 0) {
+-		printk(KERN_INFO "%s: opencount: %ld\n", __func__,
+-		       iint->opencount);
+-		iint->opencount = 0;
+-	}
+ 	kref_init(&iint->refcount);
+ 	kmem_cache_free(iint_cache, iint);
+ }
+@@ -172,7 +167,6 @@ static void init_once(void *foo)
+ 	mutex_init(&iint->mutex);
+ 	iint->readcount = 0;
+ 	iint->writecount = 0;
+-	iint->opencount = 0;
+ 	kref_init(&iint->refcount);
  }
  
 diff --git a/security/integrity/ima/ima_main.c b/security/integrity/ima/ima_main.c
-index 1dccafe..60dd615 100644
+index e662b89..995bd1b 100644
 --- a/security/integrity/ima/ima_main.c
 +++ b/security/integrity/ima/ima_main.c
-@@ -211,6 +211,7 @@ void ima_file_free(struct file *file)
+@@ -122,7 +122,6 @@ static void ima_inc_counts(struct ima_iint_cache *iint, fmode_t mode)
+ {
+ 	BUG_ON(!mutex_is_locked(&iint->mutex));
  
- 	if (!iint_initialized || !S_ISREG(inode->i_mode))
- 		return;
-+
- 	iint = ima_iint_find(inode);
+-	iint->opencount++;
+ 	if ((mode & (FMODE_READ | FMODE_WRITE)) == FMODE_READ)
+ 		iint->readcount++;
+ 	if (mode & FMODE_WRITE)
+@@ -181,7 +180,6 @@ static void ima_dec_counts(struct ima_iint_cache *iint, struct inode *inode,
+ 	mode_t mode = file->f_mode;
+ 	BUG_ON(!mutex_is_locked(&iint->mutex));
  
- 	if (iint)
+-	iint->opencount--;
+ 	if ((mode & (FMODE_READ | FMODE_WRITE)) == FMODE_READ)
+ 		iint->readcount--;
+ 	if (mode & FMODE_WRITE) {
+@@ -192,13 +190,11 @@ static void ima_dec_counts(struct ima_iint_cache *iint, struct inode *inode,
+ 		}
+ 	}
+ 
+-	if (((iint->opencount < 0) ||
+-	     (iint->readcount < 0) ||
++	if (((iint->readcount < 0) ||
+ 	     (iint->writecount < 0)) &&
+ 	    !ima_limit_imbalance(file)) {
+-		printk(KERN_INFO "%s: open/free imbalance (r:%ld w:%ld o:%ld)\n",
+-		       __func__, iint->readcount, iint->writecount,
+-		       iint->opencount);
++		printk(KERN_INFO "%s: open/free imbalance (r:%ld w:%ld)\n",
++		       __func__, iint->readcount, iint->writecount);
+ 		dump_stack();
+ 	}
+ }
 
