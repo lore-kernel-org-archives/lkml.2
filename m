@@ -1,67 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756691Ab0JYQMz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Oct 2010 12:12:55 -0400
-Received: from web37607.mail.mud.yahoo.com ([209.191.87.90]:31952 "HELO
-	web37607.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751414Ab0JYQMx convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Oct 2010 12:12:53 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.com;
-  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type:Content-Transfer-Encoding;
-  b=oGQFXD3xrevW6ftV+x7xOKRiHPeoRzfOd48QC3/+QbQNjfoa1U4j28S4vaxhg1G74+6Ryj3aaXe/2xtl6dXCw9515OXnTZX9dbsr0WS9IErUbOIgv+kLgHyQhM5RLB7dD3Dun4iSVbFCnKeZIRo61nSPw4njdoeIXpb/yTNdxko=;
-Message-ID: <327472.13750.qm@web37607.mail.mud.yahoo.com>
-X-YMail-OSG: nEKHvX0VM1n.nn2rPb5SNVSDoctUvtflg1DrIlHLGEGbPPu
- zDZOVaGEDZ5YyAhcRSQRDouCcOm5T16dvayWudhz9fPokVyir7ibBBms0inu
- LhWrGQTWAdhpVi1NcOuR.8eakqbfWpDz04GKhgFluuTDOUjZKzYpZttfpqMQ
- nqYkhplvFPqie7kCD_00pZ6_kNaaYarNmD2c6ZLrDV2vnh.edzW3154YBIj0
- pouYfibAeX.EPYCwYUGeyxMROx44aU1FdrG7RpP5.XGTeDpRL0HyZGTLuv9S
- VKJk7OdWh8RlgIXzO9vuhH427vFxDSaJHNLfZIDiR.we5_RNdCX6SIsOZoO2
- PtOKldRIgzC7yj0v.psb1sgwYs6jL6GBip61QMWrI_aR4W_XF
-X-Mailer: YahooMailClassic/11.4.9 YahooMailWebService/0.8.107.284920
-Date: Mon, 25 Oct 2010 09:12:51 -0700 (PDT)
-From: Alex Dubov <oakad@yahoo.com>
-Subject: Re: [PATCH 23/29] memstick: jmb38x_ms: use DMA for all TPCs with len greater that 8 by default
-To: Maxim Levitsky <maximlevitsky@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Maxim Levitsky <maximlevitsky@gmail.com>
-In-Reply-To: <1287791637-10329-24-git-send-email-maximlevitsky@gmail.com>
+	id S1757206Ab0JYQNf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Oct 2010 12:13:35 -0400
+Received: from edu-smtp-02.edutel.nl ([88.159.1.176]:52163 "EHLO
+	edu-smtp-02.edutel.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756667Ab0JYQNe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Oct 2010 12:13:34 -0400
+Message-ID: <4CC5ACAB.7070309@neli.hopto.org>
+Date: Mon, 25 Oct 2010 18:13:31 +0200
+From: Micha Nelissen <micha@neli.hopto.org>
+User-Agent: Thunderbird 2.0.0.5 (Windows/20070716)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+To: "Bounine, Alexandre" <Alexandre.Bounine@idt.com>
+CC: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org,
+        Matt Porter <mporter@kernel.crashing.org>,
+        Li Yang <leoli@freescale.com>, Kumar Gala <galak@kernel.crashing.org>,
+        Thomas Moll <thomas.moll@sysgo.com>
+Subject: Re: [PATCH -mm 0/2] RapidIO: Changes to handling of RIO switches
+References: <1287688250-14226-1-git-send-email-alexandre.bounine@idt.com> <4CC0AD74.8070800@neli.hopto.org> <0CE8B6BE3C4AD74AB97D9D29BD24E55201445906@CORPEXCH1.na.ads.idt.com> <4CC1D7DE.7060405@neli.hopto.org> <0CE8B6BE3C4AD74AB97D9D29BD24E55201445A6B@CORPEXCH1.na.ads.idt.com> <4CC20923.8050400@neli.hopto.org> <0CE8B6BE3C4AD74AB97D9D29BD24E55201445BA4@CORPEXCH1.na.ads.idt.com>
+In-Reply-To: <0CE8B6BE3C4AD74AB97D9D29BD24E55201445BA4@CORPEXCH1.na.ads.idt.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---- On Fri, 22/10/10, Maxim Levitsky <maximlevitsky@gmail.com> wrote:
-
-> From: Maxim Levitsky <maximlevitsky@gmail.com>
-> Subject: [PATCH 23/29] memstick: jmb38x_ms: use DMA for all TPCs with len greater that 8 by default
-> To: "Alex Dubov" <oakad@yahoo.com>
-> Cc: "Andrew Morton" <akpm@linux-foundation.org>, "LKML" <linux-kernel@vger.kernel.org>, "Maxim Levitsky" <maximlevitsky@gmail.com>
-> Received: Friday, 22 October, 2010, 4:53 PM
-> This is to workaround a wierd
-> hardware bug:
+Bounine, Alexandre wrote:
+> Micha Nelissen <micha@neli.hopto.org> wrote:
+>>> rid of rswitch->switchid and use component_tag directly for
+> switches).
+>> I still prefer the destid as the single identification id.
 > 
-> If PIO write is used, and then after it DMA write is used,
-> DMA
-> engine stops doing writes.
-> That condition even persists after device reset.
-> 
-> To be maxumum safe, we do dma to a scratch page
-> and memcpy from/to it.
-> 
-> Besides this change should just improve performance.
-> 
-> Signed-off-by: Maxim Levitsky <maximlevitsky@gmail.com>
-> ---
+> In your patch you allocate individual destid for switches. This method
+> has two problems:
+> 1. The destid for the switch needs an additional mechanism to share it
+> among processors in the RIO network,
 
-I have not noticed this one before, and for all I know the driver was
-tested at Jmicron.
-Can you explain the issue a bit more?
+? See comment for 2)
 
+> 2. It takes ID value away from the pool of available IDs, what will
 
+It does not take an ID away, it shares it with a connected endpoint to 
+that switch. The tag uses one extra bit to identify the device as a 
+switch instead of an endpoint. This provides the information to 
+unambiguously identify a switch from an endpoint.
 
-      
+Micha
