@@ -1,76 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758246Ab0JYXXs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Oct 2010 19:23:48 -0400
-Received: from bld-mail16.adl2.internode.on.net ([150.101.137.101]:56153 "EHLO
-	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1758124Ab0JYXXq (ORCPT
+	id S1758256Ab0JYX0K (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Oct 2010 19:26:10 -0400
+Received: from helcar.apana.org.au ([209.40.204.226]:54927 "EHLO
+	fornost.hengli.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758121Ab0JYX0I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Oct 2010 19:23:46 -0400
-Date: Tue, 26 Oct 2010 10:22:30 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: Eric Paris <eparis@redhat.com>
-Cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, hch@infradead.org, zohar@us.ibm.com,
-        warthog9@kernel.org, jmorris@namei.org, kyle@mcmartin.ca,
-        hpa@zytor.com, akpm@linux-foundation.org,
-        torvalds@linux-foundation.org, mingo@elte.hu, viro@zeniv.linux.org.uk
-Subject: Re: [PATCH 01/11] IMA: use rbtree instead of radix tree for inode
- information cache
-Message-ID: <20101025232230.GW32255@dastard>
-References: <20101025184118.20504.24290.stgit@paris.rdu.redhat.com>
+	Mon, 25 Oct 2010 19:26:08 -0400
+Date: Mon, 25 Oct 2010 19:26:04 -0400
+From: Herbert Xu <herbert@gondor.hengli.com.au>
+To: David Miller <davem@davemloft.net>
+Cc: nikai@nikai.net, linux-crypto@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] drivers/crypto: dubious error check
+Message-ID: <20101025232604.GA5728@gondor.apana.org.au>
+References: <20101024150556.22f49c6a@absol.kitzblitz> <20101024.093949.71101214.davem@davemloft.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20101025184118.20504.24290.stgit@paris.rdu.redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20101024.093949.71101214.davem@davemloft.net>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 25, 2010 at 02:41:18PM -0400, Eric Paris wrote:
-> The IMA code needs to store the number of tasks which have an open fd
-> granting permission to write a file even when IMA is not in use.  It needs
-> this information in order to be enabled at a later point in time without
-> losing it's integrity garantees.  At the moment that means we store a
-> little bit of data about every inode in a cache.  We use a radix tree key'd
-> on the inode's memory address.  Dave Chinner pointed out that a radix tree
-> is a terrible data structure for such a sparse key space.  This patch
-> switches to using an rbtree which should be more efficient.
+On Sun, Oct 24, 2010 at 09:39:49AM -0700, David Miller wrote:
+> From: Nicolas Kaiser <nikai@nikai.net>
+> Date: Sun, 24 Oct 2010 15:05:56 +0200
+> 
+> > Looks like a copy-and-paste problem to me.
+> > 
+> > Signed-off-by: Nicolas Kaiser <nikai@nikai.net>
+> 
+> Acked-by: David S. Miller <davem@davemloft.net>
 
-I'm not sure this is the right fix, though.
-
-Realistically, there is a 1:1 relationship between the inode and the
-IMA information. I fail to see why an external index is needed here
-at all - just use a separate structure to store the IMA information
-that the inode points to. That makes the need for a new global index
-and global lock go away completely.
-
-You're already adding 8 bytes to the inode, so why not make it a
-pointer. We've got 4 conditions:
-
-1. not configured - no overhead
-2. configured, boot time disabled - 8 bytes per inode
-3. configured, boot time enabled, runtime disabled - 8 bytes per
-inode + small IMA structure
-4. configured, boot time enabled, runtime enabled - 8 bytes per
-inode + large IMA structure
-
-Anyone who wants the option of runtime enablement can take the extra
-allocation overhead, but otherwise nobody is affected apart from 8
-bytes of additional memory per inode. I doubt that will change
-anything unless it increases the size of the inode enough to push it
-over slab boundaries. And if LSM stacking is introduced, then that 8
-bytes per inode overhead will go away, anyway.
-
-This approach doesn't introduce new global lock and lookup overhead
-into the main VFS paths, allows you to remove a bunch of code and
-has a path forward for removing the 8 byte per inode overhead as
-well. Seems like the best compromise to me....
-
-Cheers,
-
-Dave.
+Applied to crypto-2.6.  Thanks!
 -- 
-Dave Chinner
-david@fromorbit.com
+Email: Herbert Xu <herbert@gondor.apana.org.au>
+Home Page: http://gondor.apana.org.au/~herbert/
+PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
