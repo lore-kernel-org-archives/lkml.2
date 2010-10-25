@@ -1,79 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753246Ab0JYV1f (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Oct 2010 17:27:35 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:24976 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751053Ab0JYV1e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Oct 2010 17:27:34 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-Subject: [PATCH] workqueue: Fix alignment calculation in alloc_cwqs()
-To: torvalds@osdl.org, akpm@linux-foundation.org
-From: David Howells <dhowells@redhat.com>
-Cc: Tejun Heo <tj@kernel.org>, linux-am33-list@redhat.com,
-        linux-kernel@vger.kernel.org,
-        Akira Takeuchi <takeuchi.akr@jp.panasonic.com>,
-        Mark Salter <msalter@redhat.com>
-Date: Mon, 25 Oct 2010 22:27:06 +0100
-Message-ID: <20101025212706.27798.23957.stgit@warthog.procyon.org.uk>
-User-Agent: StGit/0.15-97-g9680-dirty
+	id S1753649Ab0JYVbF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Oct 2010 17:31:05 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:63329 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751053Ab0JYVbD convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Oct 2010 17:31:03 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=P69KzuBAT2DPqPH/67BAxwEqMmngstmvugFacqAvLj1/xA05NdlGpiy138Rhdn3fYX
+         b7HTgYNy1uFu1GsO9Kejv5M5+1gzcDk+pzMEb2KmDD0r5cvXIA9x7f+rrRmKXZKs1ktP
+         hkoqX+d1mSRKdfKARBJ53kDufwPufdTt+A2w0=
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <4CC5F5F5.3060503@teksavvy.com>
+References: <AANLkTik02CcVyzn+fMH+VxuUmwwNLZq9qM0MPz81E+1h@mail.gmail.com>
+	<4CC24186.1040001@teksavvy.com>
+	<AANLkTi=s9R-OEJAPRpoxoSkFY8MWhc22Pn_gcwCzxY=H@mail.gmail.com>
+	<4CC2FD0A.9090409@teksavvy.com>
+	<AANLkTin3QRgV5P4=BsTCeWhynGYMi3pd7BXrFpBXkWvj@mail.gmail.com>
+	<4CC303FD.1000802@teksavvy.com>
+	<AANLkTin9wiBZjkeKxYKnJaSA1vxs8ELGTWYVMM1DfYKu@mail.gmail.com>
+	<AANLkTikzPgq0VG1V_hZsw78i2pYMxzrPJM3dFUyGeaU1@mail.gmail.com>
+	<4CC5F5F5.3060503@teksavvy.com>
+Date: Mon, 25 Oct 2010 22:31:02 +0100
+Message-ID: <AANLkTi=pr=fWe8eN=KQ2j3NDwZ061kq-xw5648RSwnPZ@mail.gmail.com>
+Subject: Re: sata_mv and Highpoint RocketRAID 230x, corruption?
+From: =?UTF-8?Q?Mathias_Bur=C3=A9n?= <mathias.buren@gmail.com>
+To: Mark Lord <kernel@teksavvy.com>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In the MN10300 arch, we occasionally see an assertion being tripped in
-alloc_cwqs() at the following line:
+Sorry for the noise,
 
-	/* just in case, make sure it's actually aligned */
-  --->	BUG_ON(!IS_ALIGNED(wq->cpu_wq.v, align));
-	return wq->cpu_wq.v ? 0 : -ENOMEM;
+I already tried that and it broke the RAID. Instead I shrunk the "Used
+Dev Size" of each RAID member, like so (mdadm -E dev):
 
-The values are:
+Avail Dev Size : 3907025072 (1863.01 GiB 2000.40 GB)
+Used Dev Size : 3900702720 (1860.00 GiB 1997.16 GB)
 
-	wa->cpu_wq.v => 0x902776e0
-	align => 0x100
+I hope that should be OK. Thanks for all the info.
 
-and align is calculated by the following:
-
-	const size_t align = max_t(size_t, 1 << WORK_STRUCT_FLAG_BITS,
-				   __alignof__(unsigned long long));
-
-which is wrong.  __alignof__() returns its value in bytes, but:
-
-	1 << WORK_STRUCT_FLAG_BITS
-
-returns the value in bits.  It needs dividing by the number of bits in a byte.
-
-Reported-by: Akira Takeuchi <takeuchi.akr@jp.panasonic.com>
-Signed-off-by: David Howells <dhowells@redhat.com>
-Acked-by: Mark Salter <msalter@redhat.com>
-cc: Tejun Heo <tj@kernel.org>
----
-
- kernel/workqueue.c |    5 +++--
- 1 files changed, 3 insertions(+), 2 deletions(-)
+// Mathias
 
 
-diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-index 30acdb7..e29ebd4 100644
---- a/kernel/workqueue.c
-+++ b/kernel/workqueue.c
-@@ -2766,8 +2766,9 @@ static int alloc_cwqs(struct workqueue_struct *wq)
- 	 * unsigned long long.
- 	 */
- 	const size_t size = sizeof(struct cpu_workqueue_struct);
--	const size_t align = max_t(size_t, 1 << WORK_STRUCT_FLAG_BITS,
--				   __alignof__(unsigned long long));
-+	const size_t align =
-+		max_t(size_t, 1 << (WORK_STRUCT_FLAG_BITS - BITS_PER_BYTE),
-+		      __alignof__(unsigned long long));
- #ifdef CONFIG_SMP
- 	bool percpu = !(wq->flags & WQ_UNBOUND);
- #else
-
+On 25 October 2010 22:26, Mark Lord <kernel@teksavvy.com> wrote:
+> On 10-10-24 08:52 AM, Mathias Burén wrote:
+>>
+>> My question is, is it safe for me to stop md0, delete all 4 partitions
+>> that make up md0, recreate them at the same starting sector, but
+>> ending 2GB from the last sector? Is this safe, will I lose any data?
+>> Just in case I've backuped the MBR (first 512 bytes) of each HDD that
+>> has the partition.
+>
+> ..
+>
+> Dunno.  I'm no RAID expert.  :)
+>
