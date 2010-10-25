@@ -1,69 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753732Ab0JYJHH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Oct 2010 05:07:07 -0400
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:57926 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751499Ab0JYJHF convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Oct 2010 05:07:05 -0400
-Date: Mon, 25 Oct 2010 11:09:23 +0200
-From: =?utf-8?B?TWljaGHFgiBOYXphcmV3aWN6?= <m.nazarewicz@samsung.com>
-Subject: Re: [PATCH v6] USB device driver of Topcliff PCH
-In-reply-to: <4CC53D2D.7070309@dsn.okisemi.com>
-To: Toshiharu Okada <toshiharu-linux@dsn.okisemi.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, linux-usb <linux-usb@vger.kernel.org>,
-        "Wang, Qi" <qi.wang@intel.com>, "Wang, Yong Y" <yong.y.wang@intel.com>,
-        Andrew <andrew.chih.howe.khor@intel.com>,
-        Intel OTC <joel.clark@intel.com>,
-        "Foster, Margie" <margie.foster@intel.com>,
-        "Ewe, Kok Howg" <kok.howg.ewe@intel.com>
-Message-id: <op.vk4jpxyt7p4s8u@pikus>
-Organization: Samsung Electronics
-MIME-version: 1.0
-Content-type: text/plain; charset=utf-8; format=flowed; delsp=yes
-Content-transfer-encoding: 8BIT
-User-Agent: Opera Mail/10.62 (Linux)
-References: <4CC53D2D.7070309@dsn.okisemi.com>
+	id S1754078Ab0JYJIF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Oct 2010 05:08:05 -0400
+Received: from david.siemens.de ([192.35.17.14]:22440 "EHLO david.siemens.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751617Ab0JYJIE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Oct 2010 05:08:04 -0400
+Message-ID: <4CC548C1.3060009@siemens.com>
+Date: Mon, 25 Oct 2010 11:07:13 +0200
+From: Jan Kiszka <jan.kiszka@siemens.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
+MIME-Version: 1.0
+To: "Michael S. Tsirkin" <mst@redhat.com>
+CC: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, "x86@kernel.org" <x86@kernel.org>,
+        Gleb Natapov <gleb@redhat.com>, Sheng Yang <sheng@linux.intel.com>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH RFC] kvm: write protect memory after slot swap
+References: <20101025012124.GA31262@redhat.com>
+In-Reply-To: <20101025012124.GA31262@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 25 Oct 2010 10:17:49 +0200, Toshiharu Okada <toshiharu-linux@dsn.okisemi.com> wrote:
-> This driver AUTHOR was changed to "Toshiharu Okada" from "Masayuki Ohtake".
-> We updated the Kconfig and Makefile, renamed "Topcliff" to "EG20T".
->
-> This patch had not been added to the Linus's kernel tree yet after your "Acked-by".
-> Do we need other actions in order to add this driver to the Linus's kernel tree.
+Am 25.10.2010 03:21, Michael S. Tsirkin wrote:
+> I have observed the following bug trigger:
+> 
+> 1. userspace calls GET_DIRTY_LOG
+> 2. kvm_mmu_slot_remove_write_access is called and makes a page ro
+> 3. page fault happens and makes the page writeable
+>    fault is logged in the bitmap appropriately
+> 4. kvm_vm_ioctl_get_dirty_log swaps slot pointers
+> 
+> a lot of time passes
+> 
+> 5. guest writes into the page
+> 6. userspace calls GET_DIRTY_LOG
+> 
+> At point (5), bitmap is clean and page is writeable,
+> thus, guest modification of memory is not logged
+> and GET_DIRTY_LOG returns an empty bitmap.
+> 
 
-I'm in no power of deciding what gets accepted or rejected.  My Acked-by only meant
-that after looking at the code a few times, I saw no obvious problems with the patch.
-If you wish for this patch to be included you should send it to or at least cc
-"Greg Kroah-Hartman" <gregkh@suse.de>.
+Cool, seems to be the key to the corruptions I've seen. Applying your
+patch make them disappear.
 
+> The rule is that all pages are either dirty in the current bitmap,
+> or write-protected, which is violated here.
+> 
+> It seems that just moving kvm_mmu_slot_remove_write_access down
+> to after the slot pointer swap should fix this bug.
+> 
+> Warning: completely untested.
+> Please comment.
+> Note: fix will be needed for -stable etc.
 
-> +static int __init pch_udc_pci_init(void)
-> +{
-> +	return pci_register_driver(&pch_udc_driver);
-> +}
-> +module_init(pch_udc_pci_init);
+Assuming that a page cannot be write-enabled without having a dirty
+entry in the old bitmap and due to the fact that user space won't get
+hold of that old bitmap to read out the page before we reset write
+access again, your patch should actually be safe.
+
+If no one else sees some remaining race, let's get this applied upstream
+ASAP and pushed down to the stable trees.
+
+Thanks,
+Jan
+
+> 
+> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+> ---
+>  arch/x86/kvm/x86.c |    8 ++++----
+>  1 files changed, 4 insertions(+), 4 deletions(-)
+> 
+> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+> index 3a09c62..4ca1d7f 100644
+> --- a/arch/x86/kvm/x86.c
+> +++ b/arch/x86/kvm/x86.c
+> @@ -2912,10 +2912,6 @@ int kvm_vm_ioctl_get_dirty_log(struct kvm *kvm,
+>  		struct kvm_memslots *slots, *old_slots;
+>  		unsigned long *dirty_bitmap;
+>  
+> -		spin_lock(&kvm->mmu_lock);
+> -		kvm_mmu_slot_remove_write_access(kvm, log->slot);
+> -		spin_unlock(&kvm->mmu_lock);
+> -
+>  		r = -ENOMEM;
+>  		dirty_bitmap = vmalloc(n);
+>  		if (!dirty_bitmap)
+> @@ -2937,6 +2933,10 @@ int kvm_vm_ioctl_get_dirty_log(struct kvm *kvm,
+>  		dirty_bitmap = old_slots->memslots[log->slot].dirty_bitmap;
+>  		kfree(old_slots);
+>  
+> +		spin_lock(&kvm->mmu_lock);
+> +		kvm_mmu_slot_remove_write_access(kvm, log->slot);
+> +		spin_unlock(&kvm->mmu_lock);
 > +
-> +static void __exit pch_udc_pci_exit(void)
-> +{
-> +	pci_unregister_driver(&pch_udc_driver);
-> +}
-> +module_exit(pch_udc_pci_exit);
-> +
-> +MODULE_DESCRIPTION("OKI SEMICONDUCTOR PCH USB Device Controller");
-> +MODULE_AUTHOR("OKI SEMICONDUCTOR, <toshiharu-linux@dsn.okisemi.com>");
-> +MODULE_LICENSE("GPL");
-> +
-
-Also, emtpy line at the end of file.  If you're going to resend the patch,
-please remove the line.
+>  		r = -EFAULT;
+>  		if (copy_to_user(log->dirty_bitmap, dirty_bitmap, n)) {
+>  			vfree(dirty_bitmap);
 
 -- 
-Best regards,                                        _     _
-| Humble Liege of Serenely Enlightened Majesty of  o' \,=./ `o
-| Computer Science,  Michał "mina86" Nazarewicz       (o o)
-+----[mina86*mina86.com]---[mina86*jabber.org]----ooO--(_)--Ooo--
+Siemens AG, Corporate Technology, CT T DE IT 1
+Corporate Competence Center Embedded Linux
