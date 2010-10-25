@@ -1,37 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756877Ab0JYP7x (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Oct 2010 11:59:53 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:35498 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756637Ab0JYP7v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Oct 2010 11:59:51 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <4CC5A748.6050903@zytor.com>
-References: <4CC5A748.6050903@zytor.com> <4CC5B1A1020000780001EF7C@vpn.id2.novell.com> <20101025140218.5092.74117.stgit@warthog.procyon.org.uk> <28707.1288018465@redhat.com> <4CC5B8D3020000780001EFB4@vpn.id2.novell.com> <AANLkTi=mpKRQgZp5zCoCsBtkuWHrpkOq2Zch-OOGu4CC@mail.gmail.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: dhowells@redhat.com, Linus Torvalds <torvalds@linux-foundation.org>,
-        Jan Beulich <JBeulich@novell.com>,
-        Alexander van Heukelum <heukelum@fastmail.fm>,
-        Ingo Molnar <mingo@elte.hu>, akpm@linux-foundation.org,
-        "H. Peter Anvin" <hpa@linux.intel.com>, linux-arch@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Partially revert patch that encloses asm-offset.h numbers in brackets
-Date: Mon, 25 Oct 2010 16:59:30 +0100
-Message-ID: <30620.1288022370@redhat.com>
+	id S1756918Ab0JYQAI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Oct 2010 12:00:08 -0400
+Received: from web37607.mail.mud.yahoo.com ([209.191.87.90]:23252 "HELO
+	web37607.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1756634Ab0JYQAH convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Oct 2010 12:00:07 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=yahoo.com;
+  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type:Content-Transfer-Encoding;
+  b=WtI75pTHV9E7OWD9F3bTfcZVU4D7r3YqcT5T7NwVMPoAcAkPnd7eBwsNdx0Iu3w+kNdSien9rVW3Q9n3jHllv4RQ8bWCrX50uL1UzkMvEUc9tVIvJnXFvJqHlyKoFIfZwQm6Wbo1SEUYH+yiQiFqNzRttPLFF8eGrqMwFNOuHQc=;
+Message-ID: <237904.5831.qm@web37607.mail.mud.yahoo.com>
+X-YMail-OSG: Z32h.NkVM1nVihusFKbGcmw0JdIhyLOSQURopkZ168YAA_a
+ DGm0VTZfRpwhW1R7r09eQLn9q6e6k4lK6rZMD16CxHgxgA.I9bhcSsNW5WiY
+ pZe7M.VlsM8SMvNbuE3MOrRIqlAsfloI6.3bes.kvESHRW0xReE4zuA3K0jA
+ 9zde.IERg6doqfG7vzC8gkQbXH9b7GP.Yudd4.SJhicX4bFee8hNTlupBrYo
+ dJr1e6uOJJ_24WLmTbR1qRZp_7GJgTg197V4CFBoZzLpmRVuwN.Nju3O0BU1
+ GOREwG03t8T6Q.2BfGIXFNRbK2HwtpFnSlCSfOti.YqwL0nhENUOZDEQAXIl
+ lITF6xUXbD.5dtdtPF8ktLWaaNZYBUD25Vd_7tK2UOZ.OgXyHIQ--
+X-Mailer: YahooMailClassic/11.4.9 YahooMailWebService/0.8.107.284920
+Date: Mon, 25 Oct 2010 09:00:03 -0700 (PDT)
+From: Alex Dubov <oakad@yahoo.com>
+Subject: Re: [PATCH 17/29] memstick: jmb38x_ms: move "reg_data" functions together.
+To: Maxim Levitsky <maximlevitsky@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Maxim Levitsky <maximlevitsky@gmail.com>
+In-Reply-To: <1287791637-10329-18-git-send-email-maximlevitsky@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-H. Peter Anvin <hpa@zytor.com> wrote:
 
-> As such, the only options I can really think about overriding the sed
-> expression for x86 or just saying gcc 2.16.90 or later is required...
 
-Do you mean binutils-2.16.90?
+--- On Fri, 22/10/10, Maxim Levitsky <maximlevitsky@gmail.com> wrote:
 
-Davod
+> From: Maxim Levitsky <maximlevitsky@gmail.com>
+> Subject: [PATCH 17/29] memstick: jmb38x_ms: move "reg_data" functions together.
+> To: "Alex Dubov" <oakad@yahoo.com>
+> Cc: "Andrew Morton" <akpm@linux-foundation.org>, "LKML" <linux-kernel@vger.kernel.org>, "Maxim Levitsky" <maximlevitsky@gmail.com>
+> Received: Friday, 22 October, 2010, 4:53 PM
+> No functional changes, just group
+> these funtions together.
+> 
+> Signed-off-by: Maxim Levitsky <maximlevitsky@gmail.com>
+> ---
+
+As before, patch with dubious utility.
+
+
+
+      
