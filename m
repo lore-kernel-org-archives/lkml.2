@@ -1,63 +1,220 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755053Ab0JYKPw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Oct 2010 06:15:52 -0400
-Received: from tundra.namei.org ([65.99.196.166]:55316 "EHLO tundra.namei.org"
+	id S1755037Ab0JYKRN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Oct 2010 06:17:13 -0400
+Received: from shutemov.name ([188.40.19.243]:47292 "EHLO shutemov.name"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751616Ab0JYKPv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Oct 2010 06:15:51 -0400
-Date: Mon, 25 Oct 2010 21:15:29 +1100 (EST)
-From: James Morris <jmorris@namei.org>
-To: Ralf Baechle <ralf@linux-mips.org>
-cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-mips@linux-mips.org,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Subject: Re: [PATCH] MIPS: MT: Fix build error iFPU affinity code
-In-Reply-To: <20101024212350.GA18747@linux-mips.org>
-Message-ID: <alpine.LRH.2.00.1010252115020.28519@tundra.namei.org>
-References: <20101024212350.GA18747@linux-mips.org>
-User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
+	id S1752555Ab0JYKRM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Oct 2010 06:17:12 -0400
+Date: Mon, 25 Oct 2010 13:17:11 +0300
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
+To: Catalin Marinas <catalin.marinas@arm.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH 09/18] ARM: LPAE: Add fault handling support
+Message-ID: <20101025101711.GA32026@shutemov.name>
+References: <20101025085812.25275.55757.stgit@e102109-lin.cambridge.arm.com>
+ <20101025090024.25275.59418.stgit@e102109-lin.cambridge.arm.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101025090024.25275.59418.stgit@e102109-lin.cambridge.arm.com>
+User-Agent: Mutt/1.5.20 (2010-08-04)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 24 Oct 2010, Ralf Baechle wrote:
-
-> > commit b0ae19811375031ae3b3fecc65b702a9c6e5cc28
-> > Author: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-> > Date:   Fri Oct 15 04:21:18 2010 +0900
-> >
-> >     security: remove unused parameter from security_task_setscheduler()
+On Mon, Oct 25, 2010 at 10:00:24AM +0100, Catalin Marinas wrote:
+> The DFSR and IFSR register format is different when LPAE is enabled. In
+> addition, DFSR and IFSR have the similar definitions for the fault type.
+> This modifies modifies the fault code to correctly handle the new
+> format.
 > 
-> broke the build of arch/mips/kernel/mips-mt-fpaff.c.  The function
-> arguments were unnecessary, not the semicolon ...
+> Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
+> ---
+>  arch/arm/mm/alignment.c |    8 ++++-
+>  arch/arm/mm/fault.c     |   80 +++++++++++++++++++++++++++++++++++++++++++++++
+>  2 files changed, 87 insertions(+), 1 deletions(-)
 > 
-> Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
-> 
->  arch/mips/kernel/mips-mt-fpaff.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-
-Acked-by: James Morris <jmorris@namei.org>
-
-
-> 
-> diff --git a/arch/mips/kernel/mips-mt-fpaff.c b/arch/mips/kernel/mips-mt-fpaff.c
-> index 9a526ba..802e616 100644
-> --- a/arch/mips/kernel/mips-mt-fpaff.c
-> +++ b/arch/mips/kernel/mips-mt-fpaff.c
-> @@ -103,7 +103,7 @@ asmlinkage long mipsmt_sys_sched_setaffinity(pid_t pid, unsigned int len,
->  	if (!check_same_owner(p) && !capable(CAP_SYS_NICE))
->  		goto out_unlock;
+> diff --git a/arch/arm/mm/alignment.c b/arch/arm/mm/alignment.c
+> index 724ba3b..bc98a6e 100644
+> --- a/arch/arm/mm/alignment.c
+> +++ b/arch/arm/mm/alignment.c
+> @@ -906,6 +906,12 @@ do_alignment(unsigned long addr, unsigned int fsr, struct pt_regs *regs)
+>  	return 0;
+>  }
 >  
-> -	retval = security_task_setscheduler(p)
-> +	retval = security_task_setscheduler(p);
->  	if (retval)
->  		goto out_unlock;
+> +#ifdef CONFIG_ARM_LPAE
+> +#define ALIGNMENT_FAULT		33
+> +#else
+> +#define ALIGNMENT_FAULT		1
+> +#endif
+> +
+>  /*
+>   * This needs to be done after sysctl_init, otherwise sys/ will be
+>   * overwritten.  Actually, this shouldn't be in sys/ at all since
+> @@ -939,7 +945,7 @@ static int __init alignment_init(void)
+>  		ai_usermode = UM_FIXUP;
+>  	}
 >  
+> -	hook_fault_code(1, do_alignment, SIGBUS, BUS_ADRALN,
+> +	hook_fault_code(ALIGNMENT_FAULT, do_alignment, SIGBUS, BUS_ADRALN,
+>  			"alignment exception");
+>  
+>  	/*
+> diff --git a/arch/arm/mm/fault.c b/arch/arm/mm/fault.c
+> index 2966897..b662aea 100644
+> --- a/arch/arm/mm/fault.c
+> +++ b/arch/arm/mm/fault.c
+> @@ -33,10 +33,15 @@
+>  #define FSR_WRITE		(1 << 11)
+>  #define FSR_FS4			(1 << 10)
+>  #define FSR_FS3_0		(15)
+> +#define FSR_FS5_0		(0x3f)
+>  
+>  static inline int fsr_fs(unsigned int fsr)
+>  {
+> +#ifdef CONFIG_ARM_LPAE
+> +	return fsr & FSR_FS5_0;
+> +#else
+>  	return (fsr & FSR_FS3_0) | (fsr & FSR_FS4) >> 6;
+> +#endif
+>  }
+>  
+>  #ifdef CONFIG_MMU
+> @@ -108,7 +113,9 @@ void show_pte(struct mm_struct *mm, unsigned long addr)
+>  
+>  		pte = pte_offset_map(pmd, addr);
+>  		printk(", *pte=%08lx", pte_val(*pte));
+> +#ifndef CONFIG_ARM_LPAE
+>  		printk(", *ppte=%08lx", pte_val(pte[-LINUX_PTE_OFFSET]));
+> +#endif
+>  		pte_unmap(pte);
+>  	} while(0);
+>  
+> @@ -467,6 +474,72 @@ static struct fsr_info {
+>  	int	code;
+>  	const char *name;
+>  } fsr_info[] = {
+> +#ifdef CONFIG_ARM_LPAE
+> +	{ do_bad,		SIGBUS,  0,		"unknown 0"			},
+> +	{ do_bad,		SIGBUS,  0,		"unknown 1"			},
+> +	{ do_bad,		SIGBUS,  0,		"unknown 2"			},
+> +	{ do_bad,		SIGBUS,  0,		"unknown 3"			},
+> +	{ do_bad,		SIGBUS,  0,		"reserved translation fault"	},
+> +	{ do_translation_fault,	SIGSEGV, SEGV_MAPERR,	"level 1 translation fault"	},
+> +	{ do_translation_fault,	SIGSEGV, SEGV_MAPERR,	"level 2 translation fault"	},
+> +	{ do_page_fault,	SIGSEGV, SEGV_MAPERR,	"level 3 translation fault"	},
+> +	{ do_bad,		SIGBUS,  0,		"reserved access flag fault"	},
+> +	{ do_bad,		SIGSEGV, SEGV_ACCERR,	"level 1 access flag fault"	},
+> +	{ do_bad,		SIGSEGV, SEGV_ACCERR,	"level 2 access flag fault"	},
+> +	{ do_page_fault,	SIGSEGV, SEGV_ACCERR,	"level 3 access flag fault"	},
+> +	{ do_bad,		SIGBUS,  0,		"reserved permission fault"	},
+> +	{ do_bad,		SIGSEGV, SEGV_ACCERR,	"level 1 permission fault"	},
+> +	{ do_sect_fault,	SIGSEGV, SEGV_ACCERR,	"level 2 permission fault"	},
+> +	{ do_page_fault,	SIGSEGV, SEGV_ACCERR,	"level 3 permission fault"	},
+> +	{ do_bad,		SIGBUS,  0,		"synchronous external abort"	},
+> +	{ do_bad,		SIGBUS,  0,		"asynchronous external abort"	},
+> +	{ do_bad,		SIGBUS,  0,		"unknown 18"			},
+> +	{ do_bad,		SIGBUS,  0,		"unknown 19"			},
+> +	{ do_bad,		SIGBUS,  0,		"synchronous abort (translation table walk)" },
+> +	{ do_bad,		SIGBUS,  0,		"synchronous abort (translation table walk)" },
+> +	{ do_bad,		SIGBUS,  0,		"synchronous abort (translation table walk)" },
+> +	{ do_bad,		SIGBUS,  0,		"synchronous abort (translation table walk)" },
+> +	{ do_bad,		SIGBUS,  0,		"synchronous parity error"	},
+> +	{ do_bad,		SIGBUS,  0,		"asynchronous parity error"	},
+> +	{ do_bad,		SIGBUS,  0,		"unknown 26"			},
+> +	{ do_bad,		SIGBUS,  0,		"unknown 27"			},
+> +	{ do_bad,		SIGBUS,  0,		"synchronous parity error (translation table walk" },
+> +	{ do_bad,		SIGBUS,  0,		"synchronous parity error (translation table walk" },
+> +	{ do_bad,		SIGBUS,  0,		"synchronous parity error (translation table walk" },
+> +	{ do_bad,		SIGBUS,  0,		"synchronous parity error (translation table walk" },
+> +	{ do_bad,		SIGBUS,  0,		"unknown 32"			},
+> +	{ do_bad,		SIGILL,  BUS_ADRALN,	"alignment fault"		},
+
+s/SIGILL/SIGBUS/
+
+> +	{ do_bad,		SIGBUS,  0,		"debug event"			},
+> +	{ do_bad,		SIGBUS,  0,		"unknown 35"			},
+> +	{ do_bad,		SIGBUS,  0,		"unknown 36"			},
+> +	{ do_bad,		SIGBUS,  0,		"unknown 37"			},
+> +	{ do_bad,		SIGBUS,  0,		"unknown 38"			},
+> +	{ do_bad,		SIGBUS,  0,		"unknown 39"			},
+> +	{ do_bad,		SIGBUS,  0,		"unknown 40"			},
+> +	{ do_bad,		SIGBUS,  0,		"unknown 41"			},
+> +	{ do_bad,		SIGBUS,  0,		"unknown 42"			},
+> +	{ do_bad,		SIGBUS,  0,		"unknown 43"			},
+> +	{ do_bad,		SIGBUS,  0,		"unknown 44"			},
+> +	{ do_bad,		SIGBUS,  0,		"unknown 45"			},
+> +	{ do_bad,		SIGBUS,  0,		"unknown 46"			},
+> +	{ do_bad,		SIGBUS,  0,		"unknown 47"			},
+> +	{ do_bad,		SIGBUS,  0,		"unknown 48"			},
+> +	{ do_bad,		SIGBUS,  0,		"unknown 49"			},
+> +	{ do_bad,		SIGBUS,  0,		"unknown 50"			},
+> +	{ do_bad,		SIGBUS,  0,		"unknown 51"			},
+> +	{ do_bad,		SIGBUS,  0,		"implementation fault (lockdown abort)" },
+> +	{ do_bad,		SIGBUS,  0,		"unknown 53"			},
+> +	{ do_bad,		SIGBUS,  0,		"unknown 54"			},
+> +	{ do_bad,		SIGBUS,  0,		"unknown 55"			},
+> +	{ do_bad,		SIGBUS,  0,		"unknown 56"			},
+> +	{ do_bad,		SIGBUS,  0,		"unknown 57"			},
+> +	{ do_bad,		SIGBUS,  0,		"implementation fault (coprocessor abort)" },
+> +	{ do_bad,		SIGBUS,  0,		"unknown 59"			},
+> +	{ do_bad,		SIGBUS,  0,		"unknown 60"			},
+> +	{ do_bad,		SIGBUS,  0,		"unknown 61"			},
+> +	{ do_bad,		SIGBUS,  0,		"unknown 62"			},
+> +	{ do_bad,		SIGBUS,  0,		"unknown 63"			},
+> +#else	/* !CONFIG_ARM_LPAE */
+>  	/*
+>  	 * The following are the standard ARMv3 and ARMv4 aborts.  ARMv5
+>  	 * defines these to be "precise" aborts.
+> @@ -508,6 +581,7 @@ static struct fsr_info {
+>  	{ do_bad,		SIGBUS,  0,		"unknown 29"			   },
+>  	{ do_bad,		SIGBUS,  0,		"unknown 30"			   },
+>  	{ do_bad,		SIGBUS,  0,		"unknown 31"			   }
+> +#endif	/* CONFIG_ARM_LPAE */
+>  };
+>  
+>  void __init
+> @@ -546,6 +620,9 @@ do_DataAbort(unsigned long addr, unsigned int fsr, struct pt_regs *regs)
+>  }
+>  
+>  
+> +#ifdef CONFIG_ARM_LPAE
+> +#define ifsr_info	fsr_info
+> +#else	/* !CONFIG_ARM_LPAE */
+>  static struct fsr_info ifsr_info[] = {
+>  	{ do_bad,		SIGBUS,  0,		"unknown 0"			   },
+>  	{ do_bad,		SIGBUS,  0,		"unknown 1"			   },
+> @@ -580,6 +657,7 @@ static struct fsr_info ifsr_info[] = {
+>  	{ do_bad,		SIGBUS,  0,		"unknown 30"			   },
+>  	{ do_bad,		SIGBUS,  0,		"unknown 31"			   },
+>  };
+> +#endif	/* CONFIG_ARM_LPAE */
+>  
+>  asmlinkage void __exception
+>  do_PrefetchAbort(unsigned long addr, unsigned int ifsr, struct pt_regs *regs)
+> @@ -602,6 +680,7 @@ do_PrefetchAbort(unsigned long addr, unsigned int ifsr, struct pt_regs *regs)
+>  
+>  static int __init exceptions_init(void)
+>  {
+> +#ifndef CONFIG_ARM_LPAE
+>  	if (cpu_architecture() >= CPU_ARCH_ARMv6) {
+>  		hook_fault_code(4, do_translation_fault, SIGSEGV, SEGV_MAPERR,
+>  				"I-cache maintenance fault");
+> @@ -617,6 +696,7 @@ static int __init exceptions_init(void)
+>  		hook_fault_code(6, do_bad, SIGSEGV, SEGV_MAPERR,
+>  				"section access flag fault");
+>  	}
+> +#endif
+>  
+>  	return 0;
+>  }
 > 
+> 
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
 
 -- 
-James Morris
-<jmorris@namei.org>
+ Kirill A. Shutemov
