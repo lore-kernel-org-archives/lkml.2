@@ -1,61 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753143Ab0JYGK7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Oct 2010 02:10:59 -0400
-Received: from smtp.nokia.com ([192.100.122.233]:58635 "EHLO
-	mgw-mx06.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752772Ab0JYGK5 (ORCPT
+	id S1753177Ab0JYGf6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Oct 2010 02:35:58 -0400
+Received: from mail4.hitachi.co.jp ([133.145.228.5]:51996 "EHLO
+	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751499Ab0JYGf5 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Oct 2010 02:10:57 -0400
-From: <samu.p.onkalo@nokia.com>
-To: <eric.piel@tremplin-utc.net>, <jic23@cam.ac.uk>
-CC: <khali@linux-fr.org>, <guenter.roeck@ericsson.com>,
-        <lm-sensors@lm-sensors.org>, <linux-i2c@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Date: Mon, 25 Oct 2010 08:10:01 +0200
-Subject: RE: [PATCH 00/12] lis3 accelerator feature update
-Thread-Topic: [PATCH 00/12] lis3 accelerator feature update
-Thread-Index: ActzjO+dsoYGQ9gcTtalcCNcLGzYjwAfiV9Q
-Message-ID: <62697B07E9803846BC582181BD6FB6B836EAE847F1@NOK-EUMSG-02.mgdnok.nokia.com>
-References: <1287748654-2626-1-git-send-email-samu.p.onkalo@nokia.com>
- <4CC44B3D.5030404@tremplin-utc.net>
-In-Reply-To: <4CC44B3D.5030404@tremplin-utc.net>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="utf-8"
+	Mon, 25 Oct 2010 02:35:57 -0400
+X-AuditID: b753bd60-a87a8ba000003e7d-f8-4cc5254ba062
+Message-ID: <4CC52540.7000905@hitachi.com>
+Date: Mon, 25 Oct 2010 15:35:44 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Systems Development Lab., Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.11) Gecko/20101013 Thunderbird/3.1.5
 MIME-Version: 1.0
-X-OriginalArrivalTime: 25 Oct 2010 06:10:04.0458 (UTC) FILETIME=[440128A0:01CB740B]
-X-Nokia-AV: Clean
+To: Arnaldo Carvalho de Melo <acme@infradead.org>
+Cc: Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: Re: [PATCH 5/5] perf probe: Fix format specified for Dwarf_Off parameter
+References: <1287865704-3880-1-git-send-email-acme@infradead.org> <1287865704-3880-6-git-send-email-acme@infradead.org>
+In-Reply-To: <1287865704-3880-6-git-send-email-acme@infradead.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+X-Brightmail-Tracker: AAAAAA==
+X-FMFTCR: RANGEC
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id o9P6BAl4000848
 
->-----Original Message-----
->From: linux-i2c-owner@vger.kernel.org [mailto:linux-i2c-
->owner@vger.kernel.org] On Behalf Of ext Ã‰ric Piel
->
->Op 22-10-10 13:57, Samu Onkalo schreef:
->> Changes are tested only with I2C interface using 8bit sensor since I
->don't
->> have other possibilities. Some features are not enabled
->> by default since I can't test them with all possible configurations.
->> Platform data contains field which controls new features.
->Thanks Samu for persevering with the automatic power down feature.
->Hopefully I'll find also some time to activate it on the hp_accel side.
->
->For now, I've reviewed the changes and everything looked fine, as well
->as tested them on my HP laptop (with a 12 bits sensor). Although most of
->the changes are not visible on this platform, at least there shouldn't
->be any regression.
->
+(2010/10/24 5:28), Arnaldo Carvalho de Melo wrote:
+> From: Arnaldo Carvalho de Melo <acme@redhat.com>
+> 
+> Fixing the following error on 32-bit arches:
+> 
+> util/probe-finder.c: In function â€˜line_range_search_cbâ€™:
+> util/probe-finder.c:1734: error: format â€˜%lxâ€™ expects type â€˜long
+> unsigned intâ€™, but argument 3 has type â€˜Dwarf_Offâ€™
 
-Thanks for the review.
+Oops, right. Thanks Arnaldo!
 
--Samu
- 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+
+> 
+> Reported-by: Ingo Molnar <mingo@elte.hu>
+> Cc: Frederic Weisbecker <fweisbec@gmail.com>
+> Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+> LKML-Reference: <new-submission>
+> Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+> ---
+>  tools/perf/util/probe-finder.c |    3 ++-
+>  1 files changed, 2 insertions(+), 1 deletions(-)
+> 
+> diff --git a/tools/perf/util/probe-finder.c b/tools/perf/util/probe-finder.c
+> index c20bd52..3991d73 100644
+> --- a/tools/perf/util/probe-finder.c
+> +++ b/tools/perf/util/probe-finder.c
+> @@ -1731,7 +1731,8 @@ static int line_range_search_cb(Dwarf_Die *sp_die, void *data)
+>  	struct line_finder *lf = param->data;
+>  	struct line_range *lr = lf->lr;
+>  
+> -	pr_debug("find (%lx) %s\n", dwarf_dieoffset(sp_die),
+> +	pr_debug("find (%llx) %s\n",
+> +		 (unsigned long long)dwarf_dieoffset(sp_die),
+>  		 dwarf_diename(sp_die));
+>  	if (dwarf_tag(sp_die) == DW_TAG_subprogram &&
+>  	    die_compare_name(sp_die, lr->function)) {
+
+
+-- 
+Masami HIRAMATSU
+2nd Dept. Linux Technology Center
+Hitachi, Ltd., Systems Development Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
