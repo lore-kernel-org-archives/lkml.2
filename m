@@ -1,49 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760078Ab0JZQrx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Oct 2010 12:47:53 -0400
-Received: from webhosting01.bon.m2soft.com ([195.38.20.32]:55492 "EHLO
-	webhosting01.bon.m2soft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754809Ab0JZQrw (ORCPT
+	id S1760091Ab0JZQst (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Oct 2010 12:48:49 -0400
+Received: from casper.infradead.org ([85.118.1.10]:41977 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759628Ab0JZQss (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Oct 2010 12:47:52 -0400
-Date: Tue, 26 Oct 2010 18:45:05 +0200
-From: Nicolas Kaiser <nikai@nikai.net>
-To: "David S. Miller" <davem@davemloft.net>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] drivers/net: sgiseeq: fix return on error
-Message-ID: <20101026184505.077246a2@absol.kitzblitz>
-Organization: -
-X-Face: "fF&[w2"Nws:JNH4'g|:gVhgGKLhj|X}}&w&V?]0=,7n`jy8D6e[Jh=7+ca|4~t5e[ItpL5
- N'y~Mvi-vJm`"1T5fi1^b!&EG]6nW~C!FN},=$G?^U2t~n[3;u\"5-|~H{-5]IQ2
-X-Mailer: Claws Mail (Linux)
+	Tue, 26 Oct 2010 12:48:48 -0400
+Subject: RE: linux-next: build warnings after merge of the final tree (mtd
+ tree related)
+From: David Woodhouse <dwmw2@infradead.org>
+To: H Hartley Sweeten <hartleys@visionengravers.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <0D753D10438DA54287A00B027084269764818E2136@AUSP01VMBX24.collaborationhost.net>
+References: <20101026134959.86b807d1.sfr@canb.auug.org.au>
+	 <1288083108.29264.14.camel@macbook.infradead.org>
+	 <1288090180.29264.26.camel@macbook.infradead.org>
+	 <0D753D10438DA54287A00B027084269764818E2136@AUSP01VMBX24.collaborationhost.net>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 26 Oct 2010 17:48:34 +0100
+Message-ID: <1288111714.8551.0.camel@macbook.infradead.org>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Mailer: Evolution 2.32.0 (2.32.0-2.fc14) 
 Content-Transfer-Encoding: 7bit
+X-SRS-Rewrite: SMTP reverse-path rewritten from <dwmw2@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If we continue on error, we'd likely free the IRQ that we
-didn't get, right?
+On Tue, 2010-10-26 at 11:43 -0500, H Hartley Sweeten wrote:
+> I didn't follow the logic for the MTD_MAP_BANK_WIDTH_* all the way thru.
+> 
+> Honestly I still don't quite get it.  If MTD_CFI_GEOMETRY is n wouldn't
+> all the MTD_MAP_BANK_WIDTH_* also be n? 
 
-Signed-off-by: Nicolas Kaiser <nikai@nikai.net>
----
- drivers/net/sgiseeq.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+config MTD_CFI_GEOMETRY
+        bool "Specific CFI Flash geometry selection"
+        depends on MTD_CFI_ADV_OPTIONS
+        help
+          This option does not affect the code directly, but will enable
+          some other configuration options which would allow you to reduce
+          the size of the kernel by including support for only certain
+          arrangements of CFI chips. If unsure, say 'N' and all options
+          which are supported by the current code will be enabled.
 
-diff --git a/drivers/net/sgiseeq.c b/drivers/net/sgiseeq.c
-index 9265315..3a0cc63 100644
---- a/drivers/net/sgiseeq.c
-+++ b/drivers/net/sgiseeq.c
-@@ -531,7 +531,7 @@ static int sgiseeq_open(struct net_device *dev)
- 
- 	if (request_irq(irq, sgiseeq_interrupt, 0, sgiseeqstr, dev)) {
- 		printk(KERN_ERR "Seeq8003: Can't get irq %d\n", dev->irq);
--		err = -EAGAIN;
-+		return -EAGAIN;
- 	}
- 
- 	err = init_seeq(dev, sp, sregs);
 -- 
-1.7.2.2
+David Woodhouse                            Open Source Technology Centre
+David.Woodhouse@intel.com                              Intel Corporation
+
