@@ -1,74 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760170Ab0JZRnc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Oct 2010 13:43:32 -0400
-Received: from freeflow.nu ([178.79.134.28]:47127 "EHLO freeflow.nu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760124Ab0JZRnb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Oct 2010 13:43:31 -0400
-Message-ID: <4CC71345.9050907@kernel.org>
-Date: Tue, 26 Oct 2010 20:43:33 +0300
-From: Pekka Enberg <penberg@kernel.org>
-User-Agent: Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10.4; en-US; rv:1.9.2.11) Gecko/20101013 Thunderbird/3.1.5
+	id S1760180Ab0JZRpq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Oct 2010 13:45:46 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:60117 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755473Ab0JZRpp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Oct 2010 13:45:45 -0400
+Date: Tue, 26 Oct 2010 18:45:40 +0100
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: Corey Minyard <cminyard@mvista.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ipmi: Run a dummy command before submitting a new
+	command
+Message-ID: <20101026174540.GA15395@srcf.ucam.org>
+References: <1280246493-964-1-git-send-email-mjg@redhat.com> <4C4F123F.3010700@mvista.com> <20100727172100.GC7324@srcf.ucam.org>
 MIME-Version: 1.0
-To: Richard Kennedy <richard@rsk.demon.co.uk>
-CC: Christoph Lameter <cl@linux-foundation.org>,
-        lkml <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [PATCH] [v2] slub tracing: move trace calls out of always inlined
- functions to reduce kernel code size
-References: <1286986178.1901.60.camel@castor.rsk>	 <4CB6ACB7.8060006@kernel.org>  <1287049769.1909.4.camel@castor.rsk> <1287653359.1906.13.camel@castor.rsk>
-In-Reply-To: <1287653359.1906.13.camel@castor.rsk>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100727172100.GC7324@srcf.ucam.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 21.10.2010 12.29, Richard Kennedy wrote:
-> Having the trace calls defined in the always inlined kmalloc functions
-> in include/linux/slub_def.h causes a lot of code duplication as the
-> trace functions get instantiated for each kamalloc call site. This can
-> simply be removed by pushing the trace calls down into the functions in
-> slub.c.
->
-> On my x86_64 built this patch shrinks the code size of the kernel by
-> approx 36K and also shrinks the code size of many modules -- too many to
-> list here ;)
->
-> size vmlinux (2.6.36) reports
->         text        data     bss     dec     hex filename
->      5410611	 743172	 828928	6982711	 6a8c37	vmlinux
->      5373738	 744244	 828928	6946910	 6a005e	vmlinux + patch
->
-> The resulting kernel has had some testing&  kmalloc trace still seems to
-> work.
->
-> This patch
-> - moves trace_kmalloc out of the inlined kmalloc() and pushes it down
-> into kmem_cache_alloc_trace() so this it only get instantiated once.
->
-> - rename kmem_cache_alloc_notrace()  to kmem_cache_alloc_trace() to
-> indicate that now is does have tracing. (maybe this would better being
-> called something like kmalloc_kmem_cache ?)
->
-> - adds a new function kmalloc_order() to handle allocation and tracing
-> of large allocations of page order.
->
-> - removes tracing from the inlined kmalloc_large() replacing them with a
-> call to kmalloc_order();
->
-> - move tracing out of inlined kmalloc_node() and pushing it down into
-> kmem_cache_alloc_node_trace
->
-> - rename kmem_cache_alloc_node_notrace() to
-> kmem_cache_alloc_node_trace()
->
-> - removes the include of trace/events/kmem.h from slub_def.h.
->
-> v2
-> - keep kmalloc_order_trace inline when !CONFIG_TRACE
->
-> Signed-off-by: Richard Kennedy<richard@rsk.demon.co.uk>
+I've finally had time to look at this more closely. The following patch 
+seems to make things happy, but I still don't have a full understanding 
+of what's going on.
 
-Applied, thanks!
+(Background: Some HP ilo firmware versions are unhappy due to 
+3326f4f2276791561af1fd5f2020be0186459813 . Running a dummy command in 
+schedule() works around this but clearly isn't the right answer. Turns 
+out that this also breaks IPMI on some Suns, and Oracle reverted this in 
+their kernel but never told me. Thoracle)
+
+diff --git a/drivers/char/ipmi/ipmi_si_intf.c b/drivers/char/ipmi/ipmi_si_intf.c
+index e537610..763af8f 100644
+--- a/drivers/char/ipmi/ipmi_si_intf.c
++++ b/drivers/char/ipmi/ipmi_si_intf.c
+@@ -901,6 +901,8 @@ static void sender(void                *send_info,
+ 
+ 	mod_timer(&smi_info->si_timer, jiffies + SI_TIMEOUT_JIFFIES);
+ 
++	smi_info->last_timeout_jiffies = jiffies;
++
+ 	if (smi_info->thread)
+ 		wake_up_process(smi_info->thread);
+ 
+
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
