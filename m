@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759292Ab0JZCzX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Oct 2010 22:55:23 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:4314 "EHLO mx1.redhat.com"
+	id S1756372Ab0JZCz2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Oct 2010 22:55:28 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:1028 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751159Ab0JZCzU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Oct 2010 22:55:20 -0400
+	id S1757554Ab0JZCzZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Oct 2010 22:55:25 -0400
 Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
 	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
 	Kingdom.
 	Registered in England and Wales under Company Registration No. 3798903
-Subject: [PATCH 24/43] MN10300: Make the boot wrapper able to use writeback
- caching
+Subject: [PATCH 25/43] MN10300: AM34 erratum requires MMUCTR read and write
+ on exception entry
 To: linux-am33-list@redhat.com
 From: David Howells <dhowells@redhat.com>
 Cc: linux-kernel@vger.kernel.org,
         Akira Takeuchi <takeuchi.akr@jp.panasonic.com>,
         Kiyoshi Owada <owada.kiyoshi@jp.panasonic.com>
-Date: Tue, 26 Oct 2010 03:55:09 +0100
-Message-ID: <20101026025509.23512.307.stgit@warthog.procyon.org.uk>
+Date: Tue, 26 Oct 2010 03:55:15 +0100
+Message-ID: <20101026025515.23512.96853.stgit@warthog.procyon.org.uk>
 In-Reply-To: <20101026025301.23512.24525.stgit@warthog.procyon.org.uk>
 References: <20101026025301.23512.24525.stgit@warthog.procyon.org.uk>
 User-Agent: StGit/0.15-97-g9680-dirty
@@ -31,102 +31,155 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Akira Takeuchi <takeuchi.akr@jp.panasonic.com>
 
-Make the boot wrapper able to use writeback caching, including flushing the
-cache before jumping to the main kernel.
+An AM34 erratum requires MMUCTR read and write on entry to certain exceptions,
+prior to EPSW.NMID being cleared to allow NMIs to happen.
 
 Signed-off-by: Akira Takeuchi <takeuchi.akr@jp.panasonic.com>
 Signed-off-by: Kiyoshi Owada <owada.kiyoshi@jp.panasonic.com>
 Signed-off-by: David Howells <dhowells@redhat.com>
 ---
 
- arch/mn10300/boot/compressed/head.S |   49 ++++++++++++++++++++++++++++++++++-
- 1 files changed, 48 insertions(+), 1 deletions(-)
+ arch/mn10300/Kconfig          |    3 +++
+ arch/mn10300/kernel/entry.S   |    8 ++++++++
+ arch/mn10300/mm/tlb-mn10300.S |   32 ++++++++++++++++++++++++++------
+ 3 files changed, 37 insertions(+), 6 deletions(-)
 
 
-diff --git a/arch/mn10300/boot/compressed/head.S b/arch/mn10300/boot/compressed/head.S
-index 502e1eb..4ef608a 100644
---- a/arch/mn10300/boot/compressed/head.S
-+++ b/arch/mn10300/boot/compressed/head.S
-@@ -14,6 +14,7 @@
+diff --git a/arch/mn10300/Kconfig b/arch/mn10300/Kconfig
+index 21e2a53..dd7b570 100644
+--- a/arch/mn10300/Kconfig
++++ b/arch/mn10300/Kconfig
+@@ -20,6 +20,9 @@ config AM34_2
+ 	select MN10300_HAS_ATOMIC_OPS_UNIT
+ 	select MN10300_HAS_CACHE_SNOOP
  
- #include <linux/linkage.h>
- #include <asm/cpu-regs.h>
-+#include <asm/cache.h>
- 
- 	.globl startup_32
- startup_32:
-@@ -37,8 +38,15 @@ startup_32:
- 	mov	(a0),d0
- 	btst	CHCTR_ICBUSY|CHCTR_DCBUSY,d0		# wait till not busy
- 	lne
--	mov	CHCTR_ICEN|CHCTR_DCEN|CHCTR_DCWTMD,d0	# writethru dcache
++config ERRATUM_NEED_TO_RELOAD_MMUCTR
++	def_bool y if AM33_3 || AM34_2
 +
-+#ifdef CONFIG_MN10300_CACHE_ENABLED
-+#ifdef CONFIG_MN10300_CACHE_WBACK
-+	mov	CHCTR_ICEN|CHCTR_DCEN|CHCTR_DCWTMD_WRBACK,d0
-+#else
-+	mov	CHCTR_ICEN|CHCTR_DCEN|CHCTR_DCWTMD_WRTHROUGH,d0
-+#endif /* WBACK */
- 	movhu	d0,(a0)					# enable
-+#endif /* !ENABLED */
+ config MMU
+ 	def_bool y
  
- 	# clear the BSS area
- 	mov	__bss_start,a0
-@@ -54,6 +62,9 @@ bssclear_end:
- 
- 	# decompress the kernel
- 	call	decompress_kernel[],0
-+#ifdef CONFIG_MN10300_CACHE_WBACK
-+	call	mn10300_dcache_flush_inv[],0
+diff --git a/arch/mn10300/kernel/entry.S b/arch/mn10300/kernel/entry.S
+index b82ce7b..355f681 100644
+--- a/arch/mn10300/kernel/entry.S
++++ b/arch/mn10300/kernel/entry.S
+@@ -251,6 +251,10 @@ double_fault_loop:
+ ENTRY(raw_bus_error)
+ 	add	-4,sp
+ 	mov	d0,(sp)
++#if defined(CONFIG_ERRATUM_NEED_TO_RELOAD_MMUCTR)
++	mov	(MMUCTR),d0
++	mov	d0,(MMUCTR)
++#endif
+ 	mov	(BCBERR),d0		# what
+ 	btst	BCBERR_BEMR_DMA,d0	# see if it was an external bus error
+ 	beq	__common_exception_aux	# it wasn't
+@@ -282,6 +286,10 @@ ENTRY(nmi_handler)
+ ENTRY(__common_exception)
+ 	add	-4,sp
+ 	mov	d0,(sp)
++#if defined(CONFIG_ERRATUM_NEED_TO_RELOAD_MMUCTR)
++	mov	(MMUCTR),d0
++	mov	d0,(MMUCTR)
 +#endif
  
- 	# disable caches again
- 	mov	CHCTR,a0
-@@ -69,10 +80,46 @@ bssclear_end:
- 	mov	(4,a0),d1
- 	mov	(8,a0),d2
+ __common_exception_aux:
+ 	mov	(TBR),d0
+diff --git a/arch/mn10300/mm/tlb-mn10300.S b/arch/mn10300/mm/tlb-mn10300.S
+index 7095147..ccf6229 100644
+--- a/arch/mn10300/mm/tlb-mn10300.S
++++ b/arch/mn10300/mm/tlb-mn10300.S
+@@ -27,7 +27,6 @@
+ ###############################################################################
+ 	.type	itlb_miss,@function
+ ENTRY(itlb_miss)
+-	and	~EPSW_NMID,epsw
+ #ifdef CONFIG_GDBSTUB
+ 	movm	[d2,d3,a2],(sp)
+ #else
+@@ -38,6 +37,12 @@ ENTRY(itlb_miss)
+ 	nop
+ #endif
  
-+	# jump to the kernel proper entry point
- 	mov	a3,sp
- 	mov	CONFIG_KERNEL_TEXT_ADDRESS,a0
- 	jmp	(a0)
++#if defined(CONFIG_ERRATUM_NEED_TO_RELOAD_MMUCTR)
++	mov	(MMUCTR),d2
++	mov	d2,(MMUCTR)
++#endif
++
++	and	~EPSW_NMID,epsw
+ 	mov	(IPTEU),d3
+ 	mov	(PTBR),a2
+ 	mov	d3,d2
+@@ -79,7 +84,6 @@ itlb_miss_fault:
+ ###############################################################################
+ 	.type	dtlb_miss,@function
+ ENTRY(dtlb_miss)
+-	and	~EPSW_NMID,epsw
+ #ifdef CONFIG_GDBSTUB
+ 	movm	[d2,d3,a2],(sp)
+ #else
+@@ -90,6 +94,12 @@ ENTRY(dtlb_miss)
+ 	nop
+ #endif
  
++#if defined(CONFIG_ERRATUM_NEED_TO_RELOAD_MMUCTR)
++	mov	(MMUCTR),d2
++	mov	d2,(MMUCTR)
++#endif
 +
-+###############################################################################
-+#
-+# Cache flush routines
-+#
-+###############################################################################
-+#ifdef CONFIG_MN10300_CACHE_WBACK
-+mn10300_dcache_flush_inv:
-+	movhu	(CHCTR),d0
-+	btst	CHCTR_DCEN,d0
-+	beq	mn10300_dcache_flush_inv_end
++	and	~EPSW_NMID,epsw
+ 	mov	(DPTEU),d3
+ 	mov	(PTBR),a2
+ 	mov	d3,d2
+@@ -130,9 +140,15 @@ dtlb_miss_fault:
+ ###############################################################################
+ 	.type	itlb_aerror,@function
+ ENTRY(itlb_aerror)
+-	and	~EPSW_NMID,epsw
+ 	add	-4,sp
+ 	SAVE_ALL
 +
-+	mov	L1_CACHE_NENTRIES,d1
-+	clr	a1
++#if defined(CONFIG_ERRATUM_NEED_TO_RELOAD_MMUCTR)
++	mov	(MMUCTR),d1
++	mov	d1,(MMUCTR)
++#endif
 +
-+mn10300_dcache_flush_inv_loop:
-+	mov	(DCACHE_PURGE_WAY0(0),a1),d0	# unconditional purge
-+	mov	(DCACHE_PURGE_WAY1(0),a1),d0	# unconditional purge
-+	mov	(DCACHE_PURGE_WAY2(0),a1),d0	# unconditional purge
-+	mov	(DCACHE_PURGE_WAY3(0),a1),d0	# unconditional purge
++	and	~EPSW_NMID,epsw
+ 	add	-4,sp				# need to pass three params
+ 
+ 	# calculate the fault code
+@@ -148,7 +164,6 @@ ENTRY(itlb_aerror)
+ 	clr	d0
+ 	mov	d0,(IPTEL)
+ 
+-	and	~EPSW_NMID,epsw
+ 	or	EPSW_IE,epsw
+ 	mov	fp,d0
+ 	call	do_page_fault[],0		# do_page_fault(regs,code,addr
+@@ -163,10 +178,16 @@ ENTRY(itlb_aerror)
+ ###############################################################################
+ 	.type	dtlb_aerror,@function
+ ENTRY(dtlb_aerror)
+-	and	~EPSW_NMID,epsw
+ 	add	-4,sp
+ 	SAVE_ALL
 +
-+	add	L1_CACHE_BYTES,a1
-+	add	-1,d1
-+	bne	mn10300_dcache_flush_inv_loop
++#if defined(CONFIG_ERRATUM_NEED_TO_RELOAD_MMUCTR)
++	mov	(MMUCTR),d1
++	mov	d1,(MMUCTR)
++#endif
 +
-+mn10300_dcache_flush_inv_end:
-+	ret	[],0
-+#endif /* CONFIG_MN10300_CACHE_WBACK */
-+
-+
-+###############################################################################
-+#
-+# Data areas
-+#
-+###############################################################################
- 	.data
- 	.align		4
- param_save_area:
+ 	add	-4,sp				# need to pass three params
++	and	~EPSW_NMID,epsw
+ 
+ 	# calculate the fault code
+ 	movhu	(MMUFCR_DFC),d1
+@@ -180,7 +201,6 @@ ENTRY(dtlb_aerror)
+ 	clr	d0
+ 	mov	d0,(DPTEL)
+ 
+-	and	~EPSW_NMID,epsw
+ 	or	EPSW_IE,epsw
+ 	mov	fp,d0
+ 	call	do_page_fault[],0		# do_page_fault(regs,code,addr
 
