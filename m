@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759625Ab0JZKTt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Oct 2010 06:19:49 -0400
-Received: from mgw2.diku.dk ([130.225.96.92]:60775 "EHLO mgw2.diku.dk"
+	id S1759643Ab0JZKUF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Oct 2010 06:20:05 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:60773 "EHLO mgw2.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752695Ab0JZKSV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Oct 2010 06:18:21 -0400
+	id S1759437Ab0JZKSU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Oct 2010 06:18:20 -0400
 From: Julia Lawall <julia@diku.dk>
-To: Henrique de Moraes Holschuh <ibm-acpi@hmh.eng.br>
-Cc: kernel-janitors@vger.kernel.org, Matthew Garrett <mjg@redhat.com>,
-        ibm-acpi-devel@lists.sourceforge.net,
-        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 8/14] drivers/platform/x86/thinkpad_acpi.c: delete double assignment
-Date: Tue, 26 Oct 2010 12:25:37 +0200
-Message-Id: <1288088743-3725-9-git-send-email-julia@diku.dk>
+To: David Dillow <dave@thedillows.org>
+Cc: kernel-janitors@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 7/14] drivers/net/typhoon.c: delete double assignment
+Date: Tue, 26 Oct 2010 12:25:36 +0200
+Message-Id: <1288088743-3725-8-git-send-email-julia@diku.dk>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1288088743-3725-1-git-send-email-julia@diku.dk>
 References: <1288088743-3725-1-git-send-email-julia@diku.dk>
@@ -23,7 +22,9 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Julia Lawall <julia@diku.dk>
 
-Delete successive assignments to the same location.
+Delete successive assignments to the same location.  The current definition
+does not initialize the respRing structure, which has the same type as the
+cmdRing structure, so initialize that one instead.
 
 A simplified version of the semantic match that finds this problem is as
 follows: (http://coccinelle.lip6.fr/)
@@ -40,19 +41,22 @@ expression i;
 Signed-off-by: Julia Lawall <julia@diku.dk>
 
 ---
- drivers/platform/x86/thinkpad_acpi.c |    1 -
- 1 file changed, 1 deletion(-)
+This changes the semantics and has not been tested.
 
-diff --git a/drivers/platform/x86/thinkpad_acpi.c b/drivers/platform/x86/thinkpad_acpi.c
-index 2d61186..e8c2199 100644
---- a/drivers/platform/x86/thinkpad_acpi.c
-+++ b/drivers/platform/x86/thinkpad_acpi.c
-@@ -8497,7 +8497,6 @@ static void ibm_exit(struct ibm_struct *ibm)
- 					   ibm->acpi->type,
- 					   dispatch_acpi_notify);
- 		ibm->flags.acpi_notify_installed = 0;
--		ibm->flags.acpi_notify_installed = 0;
- 	}
+ drivers/net/typhoon.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/net/typhoon.c b/drivers/net/typhoon.c
+index 1cc6713..fc014eb 100644
+--- a/drivers/net/typhoon.c
++++ b/drivers/net/typhoon.c
+@@ -1328,7 +1328,7 @@ typhoon_init_rings(struct typhoon *tp)
+ 	tp->rxHiRing.lastWrite = 0;
+ 	tp->rxBuffRing.lastWrite = 0;
+ 	tp->cmdRing.lastWrite = 0;
+-	tp->cmdRing.lastWrite = 0;
++	tp->respRing.lastWrite = 0;
  
- 	if (ibm->flags.proc_created) {
+ 	tp->txLoRing.lastRead = 0;
+ 	tp->txHiRing.lastRead = 0;
 
