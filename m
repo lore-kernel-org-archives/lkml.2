@@ -1,398 +1,468 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759009Ab0JZKNm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Oct 2010 06:13:42 -0400
-Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:44604 "EHLO
-	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752695Ab0JZKNl (ORCPT
+	id S1756297Ab0JZKOu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Oct 2010 06:14:50 -0400
+Received: from he.sipsolutions.net ([78.46.109.217]:40773 "EHLO
+	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751018Ab0JZKOt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Oct 2010 06:13:41 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Tue, 26 Oct 2010 19:08:09 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+	Tue, 26 Oct 2010 06:14:49 -0400
+Subject: Re: mmotm 2010-10-13-17-13 uploaded (leds)
+From: Johannes Berg <johannes@sipsolutions.net>
+To: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "minchan.kim@gmail.com" <minchan.kim@gmail.com>, andi.kleen@intel.com,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        fujita.tomonori@lab.ntt.co.jp, felipe.contreras@gmail.com
-Subject: [RFC][PATCH 3/3] a big contig memory allocator
-Message-Id: <20101026190809.4869b4f0.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20101026190042.57f30338.kamezawa.hiroyu@jp.fujitsu.com>
-References: <20101026190042.57f30338.kamezawa.hiroyu@jp.fujitsu.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
+        rpurdie@rpsys.net
+In-Reply-To: <4CB768F7.90009@oracle.com>
+References: <201010140044.o9E0iuR3029069@imap1.linux-foundation.org>
+	 <20101013212902.2fec6413.randy.dunlap@oracle.com>
+	 <1287056312.4641.296.camel@jlt3.sipsolutions.net>
+	 <4CB72C62.1030204@oracle.com>
+	 <1287087217.4641.442.camel@jlt3.sipsolutions.net>
+	 <4CB768F7.90009@oracle.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 26 Oct 2010 12:14:41 +0200
+Message-ID: <1288088081.3761.31.camel@jlt3.sipsolutions.net>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+On Thu, 2010-10-14 at 13:32 -0700, Randy Dunlap wrote:
 
-Add an function to allocate contiguous memory larger than MAX_ORDER.
-The main difference between usual page allocator is that this uses
-memory offline technique (Isolate pages and migrate remaining pages.).
+> >> The patch does not apply cleanly to mmotm, but it seems
+> >> like a good plan...
 
-I think this is not 100% solution because we can't avoid fragmentation,
-but we have kernelcore= boot option and can create MOVABLE zone. That
-helps us to allow allocate a contiguous range on demand.
+Here's a version that I prepared against mmotm from the 23rd.
 
-The new function is
-
-  alloc_contig_pages(base, end, nr_pages, alignment)
-
-This function will allocate contiguous pages of nr_pages from the range
-[base, end). If [base, end) is bigger than nr_pages, some pfn which
-meats alignment will be allocated. If alignment is smaller than MAX_ORDER,
-it will be raised to be MAX_ORDER.
-
-__alloc_contig_pages() has much more arguments.
-
-Some drivers allocates contig pages by bootmem or hiding some memory
-from the kernel at boot. But if contig pages are necessary only in some
-situation, kernelcore= boot option and using page migration is a choice.
-
-Note: I'm not 100% sure __GFP_HARDWALL check is required or not..
+johannes
 
 
-Changelog: 2010-10-26
- - support gfp_t
- - support zonelist/nodemask
- - support [base, end) 
- - support alignment
 
-Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: leds: fix up dependencies
+
+From: Johannes Berg <johannes.berg@intel.com>
+
+It's not useful to build LED triggers when
+there's no LEDs that can be triggered by
+them. Therefore, fix up the dependencies
+so that this cannot happen, and fix a few
+users that select triggers to depend on
+LEDS_CLASS as well (there is also one user
+that also selects LEDS_CLASS, which is OK).
+
+As a result, we can now make everything a
+module again if desired (including the LED
+triggers, which previously could only be
+built in) -- and add back the warning in
+rt2x00's Kconfig I previously removed.
+
+Reported-by: Randy Dunlap <randy.dunlap@oracle.com>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
 ---
- include/linux/page-isolation.h |   15 ++
- mm/page_alloc.c                |   29 ++++
- mm/page_isolation.c            |  239 +++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 283 insertions(+)
+ drivers/leds/Kconfig                |   57 +++++++++++++++++++++++++++++-------
+ drivers/macintosh/Kconfig           |    1 
+ drivers/net/wireless/rt2x00/Kconfig |    3 +
+ net/mac80211/Kconfig                |    2 -
+ 4 files changed, 51 insertions(+), 12 deletions(-)
 
-Index: mmotm-1024/mm/page_isolation.c
-===================================================================
---- mmotm-1024.orig/mm/page_isolation.c
-+++ mmotm-1024/mm/page_isolation.c
-@@ -5,6 +5,7 @@
- #include <linux/mm.h>
- #include <linux/page-isolation.h>
- #include <linux/pageblock-flags.h>
-+#include <linux/swap.h>
- #include <linux/memcontrol.h>
- #include <linux/migrate.h>
- #include <linux/memory_hotplug.h>
-@@ -398,3 +399,241 @@ retry:
- 	}
- 	return 0;
- }
-+
-+/*
-+ * Comparing user specified [user_start, user_end) with physical memory layout
-+ * [phys_start, phys_end). If no intersection of length nr_pages, return 1.
-+ * If there is an intersection, return 0 and fill range in [*start, *end)
-+ */
-+static int
-+__calc_search_range(unsigned long user_start, unsigned long user_end,
-+		unsigned long nr_pages,
-+		unsigned long phys_start, unsigned long phys_end,
-+		unsigned long *start, unsigned long *end)
-+{
-+	if ((user_start >= phys_end) || (user_end <= phys_start))
-+		return 1;
-+	if (user_start <= phys_start) {
-+		*start = phys_start;
-+		*end = min(user_end, phys_end);
-+	} else {
-+		*start = user_start;
-+		*end = min(user_end, phys_end);
-+	}
-+	if (*end - *start < nr_pages)
-+		return 1;
-+	return 0;
-+}
-+
-+
-+/**
-+ * __alloc_contig_pages - allocate a contiguous physical pages
-+ * @base: the lowest pfn which caller wants.
-+ * @end:  the highest pfn which caller wants.
-+ * @nr_pages: the length of a chunk of pages to be allocated.
-+ * @align_order: alignment of start address of returned chunk in order.
-+ *   Returned' page's order will be aligned to (1 << align_order).If smaller
-+ *   than MAX_ORDER, it's raised to MAX_ORDER.
-+ * @node: allocate near memory to the node, If -1, current node is used.
-+ * @gfpflag: used to specify what zone the memory should be from.
-+ * @nodemask: allocate memory within the nodemask.
-+ *
-+ * Search a memory range [base, end) and allocates physically contiguous
-+ * pages. If end - base is larger than nr_pages, a chunk in [base, end) will
-+ * be allocated
-+ *
-+ * This returns a page of the beginning of contiguous block. At failure, NULL
-+ * is returned.
-+ *
-+ * Limitation: at allocation, nr_pages may be increased to be aligned to
-+ * MAX_ORDER before searching a range. So, even if there is a enough chunk
-+ * for nr_pages, it may not be able to be allocated. Extra tail pages of
-+ * allocated chunk is returned to buddy allocator before returning the caller.
-+ */
-+
-+#define MIGRATION_RETRY	(5)
-+struct page *__alloc_contig_pages(unsigned long base, unsigned long end,
-+			unsigned long nr_pages, int align_order,
-+			int node, gfp_t gfpflag, nodemask_t *mask)
-+{
-+	unsigned long found, aligned_pages, start;
-+	struct page *ret = NULL;
-+	int migration_failed;
-+	bool no_search = false;
-+	unsigned long align_mask;
-+	struct zoneref *z;
-+	struct zone *zone;
-+	struct zonelist *zonelist;
-+	enum zone_type highzone_idx = gfp_zone(gfpflag);
-+	unsigned long zone_start, zone_end, rs, re, pos;
-+
-+	if (node == -1)
-+		node = numa_node_id();
-+
-+	/* check unsupported flags */
-+	if (gfpflag & __GFP_NORETRY)
-+		return NULL;
-+	if ((gfpflag & (__GFP_WAIT | __GFP_IO | __GFP_FS | __GFP_HARDWALL)) !=
-+		(__GFP_WAIT | __GFP_IO | __GFP_FS | __GFP_HARDWALL))
-+		return NULL;
-+
-+	if (gfpflag & __GFP_THISNODE)
-+		zonelist = &NODE_DATA(node)->node_zonelists[1];
-+	else
-+		zonelist = &NODE_DATA(node)->node_zonelists[0];
-+	/*
-+	 * Base/nr_page/end should be aligned to MAX_ORDER
-+	 */
-+	found = 0;
-+
-+	if (align_order < MAX_ORDER)
-+		align_order = MAX_ORDER;
-+
-+	align_mask = (1 << align_order) - 1;
-+	if (end - base == nr_pages)
-+		no_search = true;
-+	/*
-+	 * We allocates MAX_ORDER aligned pages and cut tail pages later.
-+	 */
-+	aligned_pages = ALIGN(nr_pages, (1 << MAX_ORDER));
-+	/*
-+	 * If end - base == nr_pages, we can't search range. base must be
-+	 * aligned.
-+	 */
-+	if ((end - base == nr_pages) && (base & align_mask))
-+		return NULL;
-+
-+	base = ALIGN(base, (1 << align_order));
-+	if ((end <= base) || (end - base < aligned_pages))
-+		return NULL;
-+
-+	/*
-+	 * searching contig memory range within [pos, end).
-+	 * pos is updated at migration failure to find next chunk in zone.
-+	 * pos is reset to the base at searching next zone.
-+	 * (see for_each_zone_zonelist_nodemask in mmzone.h)
-+	 *
-+	 * Note: we cannot assume zones/nodes are in linear memory layout.
-+	 */
-+	z = first_zones_zonelist(zonelist, highzone_idx, mask, &zone);
-+	pos = base;
-+retry:
-+	if (!zone)
-+		return NULL;
-+
-+	zone_start = ALIGN(zone->zone_start_pfn, 1 << align_order);
-+	zone_end = zone->zone_start_pfn + zone->spanned_pages;
-+
-+	/* check [pos, end) is in this zone. */
-+	if ((pos >= end) ||
-+	     (__calc_search_range(pos, end, aligned_pages,
-+			zone_start, zone_end, &rs, &re))) {
-+next_zone:
-+		/* go to the next zone */
-+		z = next_zones_zonelist(++z, highzone_idx, mask, &zone);
-+		/* reset the pos */
-+		pos = base;
-+		goto retry;
-+	}
-+	/* [pos, end) is trimmed to [rs, re) in this zone. */
-+	pos = rs;
-+
-+	found = find_contig_block(rs, re, aligned_pages, align_order, zone);
-+	if (!found)
-+		goto next_zone;
-+
-+	/*
-+	 * OK, here, we have contiguous pageblock marked as "isolated"
-+	 * try migration.
-+	 */
-+	drain_all_pages();
-+	lru_add_drain_all();
-+
-+	/*
-+	 * scan_lru_pages() finds the next PG_lru page in the range
-+	 * scan_lru_pages() returns 0 when it reaches the end.
-+	 */
-+	migration_failed = 0;
-+	rs = found;
-+	re = found + aligned_pages;
-+	for (rs = scan_lru_pages(rs, re);
-+	     rs && rs < re;
-+	     rs = scan_lru_pages(rs, re)) {
-+		if (do_migrate_range(rs, re)) {
-+			/* it's better to try another block ? */
-+			if (++migration_failed >= MIGRATION_RETRY)
-+				break;
-+			/* take a rest and synchronize LRU etc. */
-+			drain_all_pages();
-+			lru_add_drain_all();
-+		} else /* reset migration_failure counter */
-+			migration_failed = 0;
-+	}
-+
-+	if (!migration_failed) {
-+		drain_all_pages();
-+		lru_add_drain_all();
-+	}
-+	/* Check all pages are isolated */
-+	if (test_pages_isolated(found, found + aligned_pages)) {
-+		undo_isolate_page_range(found, aligned_pages);
-+		/*
-+		 * We failed at [found...found+aligned_pages) migration.
-+		 * "rs" is the last pfn scan_lru_pages() found that the page
-+		 * is LRU page. Update pos and try next chunk.
-+		 */
-+		pos = ALIGN(rs + 1, (1 << align_order));
-+		goto retry; /* goto next chunk */
-+	}
-+	/*
-+	 * OK, here, [found...found+pages) memory are isolated.
-+	 * All pages in the range will be moved into the list with
-+	 * page_count(page)=1.
-+	 */
-+	ret = pfn_to_page(found);
-+	alloc_contig_freed_pages(found, found + aligned_pages, gfpflag);
-+	/* unset ISOLATE */
-+	undo_isolate_page_range(found, aligned_pages);
-+	/* Free unnecessary pages in tail */
-+	for (start = found + nr_pages; start < found + aligned_pages; start++)
-+		__free_page(pfn_to_page(start));
-+	return ret;
-+
-+}
-+EXPORT_SYMBOL_GPL(__alloc_contig_pages);
-+
-+void free_contig_pages(struct page *page, int nr_pages)
-+{
-+	int i;
-+	for (i = 0; i < nr_pages; i++)
-+		__free_page(page + i);
-+}
-+EXPORT_SYMBOL_GPL(free_contig_pages);
-+
-+/*
-+ * Allocated pages will not be MOVABLE but MOVABLE zone is a suitable
-+ * for allocating big chunk. So, using ZONE_MOVABLE is a default.
-+ */
-+
-+struct page *alloc_contig_pages(unsigned long base, unsigned long end,
-+			unsigned long nr_pages, int align_order)
-+{
-+	return __alloc_contig_pages(base, end, nr_pages, align_order, -1,
-+				GFP_KERNEL | __GFP_MOVABLE, NULL);
-+}
-+EXPORT_SYMBOL_GPL(alloc_contig_pages);
-+
-+struct page *alloc_contig_pages_host(unsigned long nr_pages, int align_order)
-+{
-+	return __alloc_contig_pages(0, max_pfn, nr_pages, align_order, -1,
-+				GFP_KERNEL | __GFP_MOVABLE, NULL);
-+}
-+EXPORT_SYMBOL_GPL(alloc_contig_pages_host);
-+
-+struct page *alloc_contig_pages_node(int nid, unsigned long nr_pages,
-+				int align_order)
-+{
-+	return __alloc_contig_pages(0, max_pfn, nr_pages, align_order, nid,
-+			GFP_KERNEL | __GFP_THISNODE | __GFP_MOVABLE, NULL);
-+}
-+EXPORT_SYMBOL_GPL(alloc_contig_pages_node);
-Index: mmotm-1024/include/linux/page-isolation.h
-===================================================================
---- mmotm-1024.orig/include/linux/page-isolation.h
-+++ mmotm-1024/include/linux/page-isolation.h
-@@ -32,6 +32,8 @@ test_pages_isolated(unsigned long start_
-  */
- extern int set_migratetype_isolate(struct page *page);
- extern void unset_migratetype_isolate(struct page *page);
-+extern void alloc_contig_freed_pages(unsigned long pfn,
-+		unsigned long pages, gfp_t flag);
+--- linux-older.orig/drivers/leds/Kconfig	2010-10-26 12:10:47.000000000 +0200
++++ linux-older/drivers/leds/Kconfig	2010-10-26 12:12:39.000000000 +0200
+@@ -4,20 +4,20 @@ menuconfig NEW_LEDS
+ 	  Say Y to enable Linux LED support.  This allows control of supported
+ 	  LEDs from both userspace and optionally, by kernel events (triggers).
  
- /*
-  * For migration.
-@@ -41,4 +43,17 @@ int test_pages_in_a_zone(unsigned long s
- unsigned long scan_lru_pages(unsigned long start, unsigned long end);
- int do_migrate_range(unsigned long start_pfn, unsigned long end_pfn);
+-if NEW_LEDS
+-
+ config LEDS_CLASS
+-	bool "LED Class Support"
++	tristate "LED Class Support"
++	depends on NEW_LEDS
+ 	help
+ 	  This option enables the led sysfs class in /sys/class/leds.  You'll
+ 	  need this to do anything useful with LEDs.  If unsure, say N.
  
-+/*
-+ * For large alloc.
-+ */
-+struct page *__alloc_contig_pages(unsigned long base, unsigned long end,
-+				unsigned long nr_pages, int align_order,
-+				int node, gfp_t flag, nodemask_t *mask);
-+struct page *alloc_contig_pages(unsigned long base, unsigned long end,
-+				unsigned long nr_pages, int align_order);
-+struct page *alloc_contig_pages_host(unsigned long nr_pages, int align_order);
-+struct page *alloc_contig_pages_node(int nid, unsigned long nr_pages,
-+		int align_order);
-+void free_contig_pages(struct page *page, int nr_pages);
-+
- #endif
-Index: mmotm-1024/mm/page_alloc.c
-===================================================================
---- mmotm-1024.orig/mm/page_alloc.c
-+++ mmotm-1024/mm/page_alloc.c
-@@ -5430,6 +5430,35 @@ out:
- 	spin_unlock_irqrestore(&zone->lock, flags);
- }
+-if LEDS_CLASS
++if NEW_LEDS
  
+ comment "LED drivers"
+ 
+ config LEDS_88PM860X
+ 	tristate "LED Support for Marvell 88PM860x PMIC"
++	depends on LEDS_CLASS
+ 	depends on MFD_88PM860X
+ 	help
+ 	  This option enables support for on-chip LED drivers found on Marvell
+@@ -33,6 +33,7 @@ config LEDS_INPUT
+ 
+ config LEDS_ATMEL_PWM
+ 	tristate "LED Support using Atmel PWM outputs"
++	depends on LEDS_CLASS
+ 	depends on ATMEL_PWM
+ 	help
+ 	  This option enables support for LEDs driven using outputs
+@@ -40,6 +41,7 @@ config LEDS_ATMEL_PWM
+ 
+ config LEDS_LOCOMO
+ 	tristate "LED Support for Locomo device"
++	depends on LEDS_CLASS
+ 	depends on SHARP_LOCOMO
+ 	help
+ 	  This option enables support for the LEDs on Sharp Locomo.
+@@ -47,6 +49,7 @@ config LEDS_LOCOMO
+ 
+ config LEDS_MIKROTIK_RB532
+ 	tristate "LED Support for Mikrotik Routerboard 532"
++	depends on LEDS_CLASS
+ 	depends on MIKROTIK_RB532
+ 	help
+ 	  This option enables support for the so called "User LED" of
+@@ -54,6 +57,7 @@ config LEDS_MIKROTIK_RB532
+ 
+ config LEDS_S3C24XX
+ 	tristate "LED Support for Samsung S3C24XX GPIO LEDs"
++	depends on LEDS_CLASS
+ 	depends on ARCH_S3C2410
+ 	help
+ 	  This option enables support for LEDs connected to GPIO lines
+@@ -61,12 +65,14 @@ config LEDS_S3C24XX
+ 
+ config LEDS_AMS_DELTA
+ 	tristate "LED Support for the Amstrad Delta (E3)"
++	depends on LEDS_CLASS
+ 	depends on MACH_AMS_DELTA
+ 	help
+ 	  This option enables support for the LEDs on Amstrad Delta (E3).
+ 
+ config LEDS_NET48XX
+ 	tristate "LED Support for Soekris net48xx series Error LED"
++	depends on LEDS_CLASS
+ 	depends on SCx200_GPIO
+ 	help
+ 	  This option enables support for the Soekris net4801 and net4826 error
+@@ -84,18 +90,21 @@ config LEDS_NET5501
+ 
+ config LEDS_FSG
+ 	tristate "LED Support for the Freecom FSG-3"
++	depends on LEDS_CLASS
+ 	depends on MACH_FSG
+ 	help
+ 	  This option enables support for the LEDs on the Freecom FSG-3.
+ 
+ config LEDS_WRAP
+ 	tristate "LED Support for the WRAP series LEDs"
++	depends on LEDS_CLASS
+ 	depends on SCx200_GPIO
+ 	help
+ 	  This option enables support for the PCEngines WRAP programmable LEDs.
+ 
+ config LEDS_ALIX2
+ 	tristate "LED Support for ALIX.2 and ALIX.3 series"
++	depends on LEDS_CLASS
+ 	depends on X86 && !GPIO_CS5535 && !CS5535_GPIO
+ 	help
+ 	  This option enables support for the PCEngines ALIX.2 and ALIX.3 LEDs.
+@@ -103,12 +112,14 @@ config LEDS_ALIX2
+ 
+ config LEDS_H1940
+ 	tristate "LED Support for iPAQ H1940 device"
++	depends on LEDS_CLASS
+ 	depends on ARCH_H1940
+ 	help
+ 	  This option enables support for the LEDs on the h1940.
+ 
+ config LEDS_COBALT_QUBE
+ 	tristate "LED Support for the Cobalt Qube series front LED"
++	depends on LEDS_CLASS
+ 	depends on MIPS_COBALT
+ 	help
+ 	  This option enables support for the front LED on Cobalt Qube series
+@@ -122,6 +133,7 @@ config LEDS_COBALT_RAQ
+ 
+ config LEDS_SUNFIRE
+ 	tristate "LED support for SunFire servers."
++	depends on LEDS_CLASS
+ 	depends on SPARC64
+ 	select LEDS_TRIGGERS
+ 	help
+@@ -130,6 +142,7 @@ config LEDS_SUNFIRE
+ 
+ config LEDS_HP6XX
+ 	tristate "LED Support for the HP Jornada 6xx"
++	depends on LEDS_CLASS
+ 	depends on SH_HP6XX
+ 	help
+ 	  This option enables LED support for the handheld
+@@ -137,6 +150,7 @@ config LEDS_HP6XX
+ 
+ config LEDS_PCA9532
+ 	tristate "LED driver for PCA9532 dimmer"
++	depends on LEDS_CLASS
+ 	depends on I2C && INPUT && EXPERIMENTAL
+ 	help
+ 	  This option enables support for NXP pca9532
+@@ -145,6 +159,7 @@ config LEDS_PCA9532
+ 
+ config LEDS_GPIO
+ 	tristate "LED Support for GPIO connected LEDs"
++	depends on LEDS_CLASS
+ 	depends on GENERIC_GPIO
+ 	help
+ 	  This option enables support for the LEDs connected to GPIO
+@@ -155,6 +170,7 @@ config LEDS_GPIO
+ 
+ config LEDS_GPIO_PLATFORM
+ 	bool "Platform device bindings for GPIO LEDs"
++	depends on LEDS_CLASS
+ 	depends on LEDS_GPIO
+ 	default y
+ 	help
+@@ -163,6 +179,7 @@ config LEDS_GPIO_PLATFORM
+ 
+ config LEDS_GPIO_OF
+ 	bool "OpenFirmware platform device bindings for GPIO LEDs"
++	depends on LEDS_CLASS
+ 	depends on LEDS_GPIO && OF_DEVICE
+ 	default y
+ 	help
+@@ -172,6 +189,7 @@ config LEDS_GPIO_OF
+ 
+ config LEDS_LP3944
+ 	tristate "LED Support for N.S. LP3944 (Fun Light) I2C chip"
++	depends on LEDS_CLASS
+ 	depends on I2C
+ 	help
+ 	  This option enables support for LEDs connected to the National
+@@ -201,6 +219,7 @@ config LEDS_LP5523
+ 
+ config LEDS_CLEVO_MAIL
+ 	tristate "Mail LED on Clevo notebook"
++	depends on LEDS_CLASS
+ 	depends on X86 && SERIO_I8042 && DMI
+ 	help
+ 	  This driver makes the mail LED accessible from userspace
+@@ -231,6 +250,7 @@ config LEDS_CLEVO_MAIL
+ 
+ config LEDS_PCA955X
+ 	tristate "LED Support for PCA955x I2C chips"
++	depends on LEDS_CLASS
+ 	depends on I2C
+ 	help
+ 	  This option enables support for LEDs connected to PCA955x
+@@ -239,6 +259,7 @@ config LEDS_PCA955X
+ 
+ config LEDS_WM831X_STATUS
+ 	tristate "LED support for status LEDs on WM831x PMICs"
++	depends on LEDS_CLASS
+ 	depends on MFD_WM831X
+ 	help
+ 	  This option enables support for the status LEDs of the WM831x
+@@ -246,6 +267,7 @@ config LEDS_WM831X_STATUS
+ 
+ config LEDS_WM8350
+ 	tristate "LED Support for WM8350 AudioPlus PMIC"
++	depends on LEDS_CLASS
+ 	depends on MFD_WM8350
+ 	help
+ 	  This option enables support for LEDs driven by the Wolfson
+@@ -253,6 +275,7 @@ config LEDS_WM8350
+ 
+ config LEDS_DA903X
+ 	tristate "LED Support for DA9030/DA9034 PMIC"
++	depends on LEDS_CLASS
+ 	depends on PMIC_DA903X
+ 	help
+ 	  This option enables support for on-chip LED drivers found
+@@ -260,6 +283,7 @@ config LEDS_DA903X
+ 
+ config LEDS_DAC124S085
+ 	tristate "LED Support for DAC124S085 SPI DAC"
++	depends on LEDS_CLASS
+ 	depends on SPI
+ 	help
+ 	  This option enables support for DAC124S085 SPI DAC from NatSemi,
+@@ -267,18 +291,21 @@ config LEDS_DAC124S085
+ 
+ config LEDS_PWM
+ 	tristate "PWM driven LED Support"
++	depends on LEDS_CLASS
+ 	depends on HAVE_PWM
+ 	help
+ 	  This option enables support for pwm driven LEDs
+ 
+ config LEDS_REGULATOR
+ 	tristate "REGULATOR driven LED support"
++	depends on LEDS_CLASS
+ 	depends on REGULATOR
+ 	help
+ 	  This option enables support for regulator driven LEDs.
+ 
+ config LEDS_BD2802
+ 	tristate "LED driver for BD2802 RGB LED"
++	depends on LEDS_CLASS
+ 	depends on I2C
+ 	help
+ 	  This option enables support for BD2802GU RGB LED driver chips
+@@ -286,6 +313,7 @@ config LEDS_BD2802
+ 
+ config LEDS_INTEL_SS4200
+ 	tristate "LED driver for Intel NAS SS4200 series"
++	depends on LEDS_CLASS
+ 	depends on PCI && DMI
+ 	help
+ 	  This option enables support for the Intel SS4200 series of
+@@ -295,6 +323,7 @@ config LEDS_INTEL_SS4200
+ 
+ config LEDS_LT3593
+ 	tristate "LED driver for LT3593 controllers"
++	depends on LEDS_CLASS
+ 	depends on GENERIC_GPIO
+ 	help
+ 	  This option enables support for LEDs driven by a Linear Technology
+@@ -303,6 +332,7 @@ config LEDS_LT3593
+ 
+ config LEDS_ADP5520
+ 	tristate "LED Support for ADP5520/ADP5501 PMIC"
++	depends on LEDS_CLASS
+ 	depends on PMIC_ADP5520
+ 	help
+ 	  This option enables support for on-chip LED drivers found
+@@ -313,6 +343,7 @@ config LEDS_ADP5520
+ 
+ config LEDS_DELL_NETBOOKS
+ 	tristate "External LED on Dell Business Netbooks"
++	depends on LEDS_CLASS
+ 	depends on X86 && ACPI_WMI
+ 	help
+ 	  This adds support for the Latitude 2100 and similar
+@@ -320,6 +351,7 @@ config LEDS_DELL_NETBOOKS
+ 
+ config LEDS_MC13783
+ 	tristate "LED Support for MC13783 PMIC"
++	depends on LEDS_CLASS
+ 	depends on MFD_MC13783
+ 	help
+ 	  This option enable support for on-chip LED drivers found
+@@ -327,6 +359,7 @@ config LEDS_MC13783
+ 
+ config LEDS_NS2
+ 	tristate "LED support for Network Space v2 GPIO LEDs"
++	depends on LEDS_CLASS
+ 	depends on MACH_NETSPACE_V2 || MACH_INETSPACE_V2 || MACH_NETSPACE_MAX_V2 || D2NET_V2
+ 	default y
+ 	help
+@@ -336,6 +369,7 @@ config LEDS_NS2
+ 
+ config LEDS_NETXBIG
+ 	tristate "LED support for Big Network series LEDs"
++	depends on LEDS_CLASS
+ 	depends on MACH_NET2BIG_V2 || MACH_NET5BIG_V2
+ 	default y
+ 	help
+@@ -344,18 +378,18 @@ config LEDS_NETXBIG
+ 	  controlled through a GPIO extension bus.
+ 
+ config LEDS_TRIGGERS
+-	bool "LED Trigger support"
++	tristate "LED Trigger support"
++	depends on LEDS_CLASS
+ 	help
+ 	  This option enables trigger support for the leds class.
+ 	  These triggers allow kernel events to drive the LEDs and can
+ 	  be configured via sysfs. If unsure, say Y.
+ 
+-if LEDS_TRIGGERS
+-
+ comment "LED Triggers"
+ 
+ config LEDS_TRIGGER_TIMER
+ 	tristate "LED Timer Trigger"
++	depends on LEDS_TRIGGERS
+ 	help
+ 	  This allows LEDs to be controlled by a programmable timer
+ 	  via sysfs. Some LED hardware can be programmed to start
+@@ -367,12 +401,14 @@ config LEDS_TRIGGER_TIMER
+ config LEDS_TRIGGER_IDE_DISK
+ 	bool "LED IDE Disk Trigger"
+ 	depends on IDE_GD_ATA
++	depends on LEDS_TRIGGERS
+ 	help
+ 	  This allows LEDs to be controlled by IDE disk activity.
+ 	  If unsure, say Y.
+ 
+ config LEDS_TRIGGER_HEARTBEAT
+ 	tristate "LED Heartbeat Trigger"
++	depends on LEDS_TRIGGERS
+ 	help
+ 	  This allows LEDs to be controlled by a CPU load average.
+ 	  The flash frequency is a hyperbolic function of the 1-minute
+@@ -381,6 +417,7 @@ config LEDS_TRIGGER_HEARTBEAT
+ 
+ config LEDS_TRIGGER_BACKLIGHT
+ 	tristate "LED backlight Trigger"
++	depends on LEDS_TRIGGERS
+ 	help
+ 	  This allows LEDs to be controlled as a backlight device: they
+ 	  turn off and on when the display is blanked and unblanked.
+@@ -389,6 +426,7 @@ config LEDS_TRIGGER_BACKLIGHT
+ 
+ config LEDS_TRIGGER_GPIO
+ 	tristate "LED GPIO Trigger"
++	depends on LEDS_TRIGGERS
+ 	depends on GPIOLIB
+ 	help
+ 	  This allows LEDs to be controlled by gpio events. It's good
+@@ -401,6 +439,7 @@ config LEDS_TRIGGER_GPIO
+ 
+ config LEDS_TRIGGER_DEFAULT_ON
+ 	tristate "LED Default ON Trigger"
++	depends on LEDS_TRIGGERS
+ 	help
+ 	  This allows LEDs to be initialised in the ON state.
+ 	  If unsure, say Y.
+@@ -415,8 +454,4 @@ config LEDS_TRIGGER_INPUT
+ comment "iptables trigger is under Netfilter config (LED target)"
+ 	depends on LEDS_TRIGGERS
+ 
+-endif # LEDS_TRIGGERS
+-
+-endif # LEDS_CLASS
+-
+ endif # NEW_LEDS
+--- linux-older.orig/drivers/macintosh/Kconfig	2010-10-26 12:10:25.000000000 +0200
++++ linux-older/drivers/macintosh/Kconfig	2010-10-26 12:11:20.000000000 +0200
+@@ -102,6 +102,7 @@ config ADB_PMU_LED
+ config ADB_PMU_LED_IDE
+ 	bool "Use front LED as IDE LED by default"
+ 	depends on ADB_PMU_LED
++	depends on LEDS_CLASS=y
+ 	select LEDS_TRIGGERS
+ 	select LEDS_TRIGGER_IDE_DISK
+ 	help
+--- linux-older.orig/net/mac80211/Kconfig	2010-10-26 12:06:11.000000000 +0200
++++ linux-older/net/mac80211/Kconfig	2010-10-26 12:11:20.000000000 +0200
+@@ -92,7 +92,7 @@ config MAC80211_MESH
+ config MAC80211_LEDS
+ 	bool "Enable LED triggers"
+ 	depends on MAC80211
+-	select NEW_LEDS
++	depends on LEDS_CLASS=y || LEDS_CLASS=MAC80211
+ 	select LEDS_TRIGGERS
+ 	---help---
+ 	  This option enables a few LED triggers for different
+--- linux-older.orig/drivers/net/wireless/rt2x00/Kconfig	2010-10-26 12:10:47.000000000 +0200
++++ linux-older/drivers/net/wireless/rt2x00/Kconfig	2010-10-26 12:11:20.000000000 +0200
+@@ -221,6 +221,9 @@ config RT2X00_LIB_LEDS
+ 	boolean
+ 	default y if (RT2X00_LIB=y && LEDS_CLASS=y) || (RT2X00_LIB=m && LEDS_CLASS!=n)
+ 
++comment "rt2x00 leds support disabled due to modularized LEDS_CLASS and built-in rt2x00"
++	depends on RT2X00_LIB=y && LEDS_CLASS=m
 +
-+void alloc_contig_freed_pages(unsigned long pfn,  unsigned long end, gfp_t flag)
-+{
-+	struct page *page;
-+	struct zone *zone;
-+	int order;
-+	unsigned long start = pfn;
-+
-+	zone = page_zone(pfn_to_page(pfn));
-+	spin_lock_irq(&zone->lock);
-+	while (pfn < end) {
-+		VM_BUG_ON(!pfn_valid(pfn));
-+		page = pfn_to_page(pfn);
-+		VM_BUG_ON(page_count(page));
-+		VM_BUG_ON(!PageBuddy(page));
-+		list_del(&page->lru);
-+		order = page_order(page);
-+		zone->free_area[order].nr_free--;
-+		rmv_page_order(page);
-+		__mod_zone_page_state(zone, NR_FREE_PAGES, -(1UL << order));
-+		pfn += 1 << order;
-+	}
-+	spin_unlock_irq(&zone->lock);
-+
-+	/*After this, pages in the range can be freed one be one */
-+	for (pfn = start; pfn < end; pfn++)
-+		prep_new_page(pfn_to_page(pfn), 0, flag);
-+}
-+
- #ifdef CONFIG_MEMORY_HOTREMOVE
- /*
-  * All pages in the range must be isolated before calling this.
+ config RT2X00_LIB_DEBUGFS
+ 	bool "Ralink debugfs support"
+ 	depends on RT2X00_LIB && MAC80211_DEBUGFS
+
 
