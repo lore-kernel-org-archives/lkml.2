@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755544Ab0JZBL7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Oct 2010 21:11:59 -0400
-Received: from beaker.bytemark.co.uk ([80.68.81.2]:38624 "EHLO
+	id S1757602Ab0JZBQt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Oct 2010 21:16:49 -0400
+Received: from beaker.bytemark.co.uk ([80.68.81.2]:38649 "EHLO
 	beaker.bytemark.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755349Ab0JZBL4 (ORCPT
+	with ESMTP id S1755349Ab0JZBMA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Oct 2010 21:11:56 -0400
+	Mon, 25 Oct 2010 21:12:00 -0400
 From: "Emilio G. Cota" <cota@braap.org>
 To: Martyn Welch <martyn.welch@ge.com>
 Cc: Greg KH <greg@kroah.com>, LKML <linux-kernel@vger.kernel.org>,
         devel@driverdev.osuosl.org,
         Juan David Gonzalez Cobas <david.cobas@gmail.com>,
         Bill Pemberton <wfp5p@virginia.edu>, "Emilio G. Cota" <cota@braap.org>
-Subject: [PATCH 02/30] staging/vme_user: return the appropriate error code when module_init fails
-Date: Mon, 25 Oct 2010 21:10:48 -0400
-Message-Id: <1288055476-19438-3-git-send-email-cota@braap.org>
+Subject: [PATCH 11/30] staging/vme/tsi148: declare static functions as such
+Date: Mon, 25 Oct 2010 21:10:57 -0400
+Message-Id: <1288055476-19438-12-git-send-email-cota@braap.org>
 X-Mailer: git-send-email 1.7.3.2
 In-Reply-To: <1288055476-19438-1-git-send-email-cota@braap.org>
 References: <1288055476-19438-1-git-send-email-cota@braap.org>
@@ -25,55 +25,186 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Emilio G. Cota <cota@braap.org>
 
-When init_module fails, 0 is returned anyway; the module is then installed
-and oopses when we try to remove it:
-
-[ 3236.368009] WARNING: at drivers/base/driver.c:262 driver_unregister+0x36/0x6f()
-[ 3236.368012] Hardware name:
-[ 3236.368014] Unexpected driver unregister!
-[ 3236.368016] Modules linked in: vme_user(-) vme_tsi148 vme e1000e iTCO_wdt iTCO_vendor_support [last unloaded: vme]
-[ 3236.368027] Pid: 16162, comm: rmmod Not tainted 2.6.35 #2
-[ 3236.368029] Call Trace:
-[ 3236.368037]  [<ffffffff81036ea3>] warn_slowpath_common+0x80/0x98
-[ 3236.368044]  [<ffffffff81060a65>] ? __try_stop_module+0x0/0x58
-[ 3236.368049]  [<ffffffff81036f4f>] warn_slowpath_fmt+0x41/0x43
-[ 3236.368054]  [<ffffffff81060a65>] ? __try_stop_module+0x0/0x58
-[ 3236.368059]  [<ffffffff811e8f78>] driver_unregister+0x36/0x6f
-[ 3236.368066]  [<ffffffffa004aa44>] vme_unregister_driver+0xd/0xf [vme]
-[ 3236.368072]  [<ffffffffa00616c8>] vme_user_exit+0x10/0x1e [vme_user]
-[ 3236.368076]  [<ffffffff810612c1>] sys_delete_module+0x1ba/0x226
-[ 3236.368082]  [<ffffffff812d6e14>] ? do_page_fault+0x25d/0x28a
-[ 3236.368088]  [<ffffffff8100202b>] system_call_fastpath+0x16/0x1b
-[ 3236.368092] ---[ end trace cab6d88ebc44c1de ]---
-
-The appended fixes it by returning the appropriate error code in module_init
-whenever something goes wrong, thus cancelling the insertion of the module.
-
 Signed-off-by: Emilio G. Cota <cota@braap.org>
 ---
- drivers/staging/vme/devices/vme_user.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
+ drivers/staging/vme/bridges/vme_tsi148.c |   38 +++++++++++++++---------------
+ 1 files changed, 19 insertions(+), 19 deletions(-)
 
-diff --git a/drivers/staging/vme/devices/vme_user.c b/drivers/staging/vme/devices/vme_user.c
-index cbe2e11..a6f6116 100644
---- a/drivers/staging/vme/devices/vme_user.c
-+++ b/drivers/staging/vme/devices/vme_user.c
-@@ -611,6 +611,7 @@ static int __init vme_user_init(void)
- 	if (bus_num == 0) {
- 		printk(KERN_ERR "%s: No cards, skipping registration\n",
- 			driver_name);
-+		retval = -ENODEV;
- 		goto err_nocard;
- 	}
+diff --git a/drivers/staging/vme/bridges/vme_tsi148.c b/drivers/staging/vme/bridges/vme_tsi148.c
+index c08927e..3ef5f48 100644
+--- a/drivers/staging/vme/bridges/vme_tsi148.c
++++ b/drivers/staging/vme/bridges/vme_tsi148.c
+@@ -392,7 +392,7 @@ static void tsi148_irq_exit(struct vme_bridge *tsi148_bridge, struct pci_dev *pd
+ /*
+  * Check to see if an IACk has been received, return true (1) or false (0).
+  */
+-int tsi148_iack_received(struct tsi148_driver *bridge)
++static int tsi148_iack_received(struct tsi148_driver *bridge)
+ {
+ 	u32 tmp;
  
-@@ -629,6 +630,7 @@ static int __init vme_user_init(void)
- 	if (ids == NULL) {
- 		printk(KERN_ERR "%s: Unable to allocate ID table\n",
- 			driver_name);
-+		retval = -ENOMEM;
- 		goto err_id;
- 	}
+@@ -407,7 +407,7 @@ int tsi148_iack_received(struct tsi148_driver *bridge)
+ /*
+  * Configure VME interrupt
+  */
+-void tsi148_irq_set(struct vme_bridge *tsi148_bridge, int level,
++static void tsi148_irq_set(struct vme_bridge *tsi148_bridge, int level,
+ 	int state, int sync)
+ {
+ 	struct pci_dev *pdev;
+@@ -447,7 +447,7 @@ void tsi148_irq_set(struct vme_bridge *tsi148_bridge, int level,
+  * Generate a VME bus interrupt at the requested level & vector. Wait for
+  * interrupt to be acked.
+  */
+-int tsi148_irq_generate(struct vme_bridge *tsi148_bridge, int level, int statid)
++static int tsi148_irq_generate(struct vme_bridge *tsi148_bridge, int level, int statid)
+ {
+ 	u32 tmp;
+ 	struct tsi148_driver *bridge;
+@@ -547,7 +547,7 @@ static void tsi148_clear_errors(struct vme_bridge *tsi148_bridge,
+ /*
+  * Initialize a slave window with the requested attributes.
+  */
+-int tsi148_slave_set(struct vme_slave_resource *image, int enabled,
++static int tsi148_slave_set(struct vme_slave_resource *image, int enabled,
+ 	unsigned long long vme_base, unsigned long long size,
+ 	dma_addr_t pci_base, vme_address_t aspace, vme_cycle_t cycle)
+ {
+@@ -697,7 +697,7 @@ int tsi148_slave_set(struct vme_slave_resource *image, int enabled,
+ /*
+  * Get slave window configuration.
+  */
+-int tsi148_slave_get(struct vme_slave_resource *image, int *enabled,
++static int tsi148_slave_get(struct vme_slave_resource *image, int *enabled,
+ 	unsigned long long *vme_base, unsigned long long *size,
+ 	dma_addr_t *pci_base, vme_address_t *aspace, vme_cycle_t *cycle)
+ {
+@@ -893,7 +893,7 @@ static void tsi148_free_resource(struct vme_master_resource *image)
+ /*
+  * Set the attributes of an outbound window.
+  */
+-int tsi148_master_set(struct vme_master_resource *image, int enabled,
++static int tsi148_master_set(struct vme_master_resource *image, int enabled,
+ 	unsigned long long vme_base, unsigned long long size,
+ 	vme_address_t aspace, vme_cycle_t cycle, vme_width_t dwidth)
+ {
+@@ -1129,7 +1129,7 @@ err_window:
+  *
+  * XXX Not parsing prefetch information.
+  */
+-int __tsi148_master_get(struct vme_master_resource *image, int *enabled,
++static int __tsi148_master_get(struct vme_master_resource *image, int *enabled,
+ 	unsigned long long *vme_base, unsigned long long *size,
+ 	vme_address_t *aspace, vme_cycle_t *cycle, vme_width_t *dwidth)
+ {
+@@ -1239,7 +1239,7 @@ int __tsi148_master_get(struct vme_master_resource *image, int *enabled,
+ }
  
+ 
+-int tsi148_master_get(struct vme_master_resource *image, int *enabled,
++static int tsi148_master_get(struct vme_master_resource *image, int *enabled,
+ 	unsigned long long *vme_base, unsigned long long *size,
+ 	vme_address_t *aspace, vme_cycle_t *cycle, vme_width_t *dwidth)
+ {
+@@ -1255,7 +1255,7 @@ int tsi148_master_get(struct vme_master_resource *image, int *enabled,
+ 	return retval;
+ }
+ 
+-ssize_t tsi148_master_read(struct vme_master_resource *image, void *buf,
++static ssize_t tsi148_master_read(struct vme_master_resource *image, void *buf,
+ 	size_t count, loff_t offset)
+ {
+ 	int retval, enabled;
+@@ -1297,7 +1297,7 @@ skip_chk:
+ }
+ 
+ 
+-ssize_t tsi148_master_write(struct vme_master_resource *image, void *buf,
++static ssize_t tsi148_master_write(struct vme_master_resource *image, void *buf,
+ 	size_t count, loff_t offset)
+ {
+ 	int retval = 0, enabled;
+@@ -1364,7 +1364,7 @@ skip_chk:
+  *
+  * Requires a previously configured master window, returns final value.
+  */
+-unsigned int tsi148_master_rmw(struct vme_master_resource *image,
++static unsigned int tsi148_master_rmw(struct vme_master_resource *image,
+ 	unsigned int mask, unsigned int compare, unsigned int swap,
+ 	loff_t offset)
+ {
+@@ -1611,7 +1611,7 @@ static int tsi148_dma_set_vme_dest_attributes(struct device *dev, u32 *attr,
+ /*
+  * Add a link list descriptor to the list
+  */
+-int tsi148_dma_list_add(struct vme_dma_list *list, struct vme_dma_attr *src,
++static int tsi148_dma_list_add(struct vme_dma_list *list, struct vme_dma_attr *src,
+ 	struct vme_dma_attr *dest, size_t count)
+ {
+ 	struct tsi148_dma_entry *entry, *prev;
+@@ -1784,7 +1784,7 @@ static int tsi148_dma_busy(struct vme_bridge *tsi148_bridge, int channel)
+  *
+  * XXX Need to provide control register configuration.
+  */
+-int tsi148_dma_list_exec(struct vme_dma_list *list)
++static int tsi148_dma_list_exec(struct vme_dma_list *list)
+ {
+ 	struct vme_dma_resource *ctrlr;
+ 	int channel, retval = 0;
+@@ -1864,7 +1864,7 @@ int tsi148_dma_list_exec(struct vme_dma_list *list)
+  *
+  * We have a separate function, don't assume that the chain can't be reused.
+  */
+-int tsi148_dma_list_empty(struct vme_dma_list *list)
++static int tsi148_dma_list_empty(struct vme_dma_list *list)
+ {
+ 	struct list_head *pos, *temp;
+ 	struct tsi148_dma_entry *entry;
+@@ -1886,7 +1886,7 @@ int tsi148_dma_list_empty(struct vme_dma_list *list)
+  * This does not enable the LM monitor - that should be done when the first
+  * callback is attached and disabled when the last callback is removed.
+  */
+-int tsi148_lm_set(struct vme_lm_resource *lm, unsigned long long lm_base,
++static int tsi148_lm_set(struct vme_lm_resource *lm, unsigned long long lm_base,
+ 	vme_address_t aspace, vme_cycle_t cycle)
+ {
+ 	u32 lm_base_high, lm_base_low, lm_ctl = 0;
+@@ -1953,7 +1953,7 @@ int tsi148_lm_set(struct vme_lm_resource *lm, unsigned long long lm_base,
+ /* Get configuration of the callback monitor and return whether it is enabled
+  * or disabled.
+  */
+-int tsi148_lm_get(struct vme_lm_resource *lm, unsigned long long *lm_base,
++static int tsi148_lm_get(struct vme_lm_resource *lm, unsigned long long *lm_base,
+ 	vme_address_t *aspace, vme_cycle_t *cycle)
+ {
+ 	u32 lm_base_high, lm_base_low, lm_ctl, enabled = 0;
+@@ -2004,7 +2004,7 @@ int tsi148_lm_get(struct vme_lm_resource *lm, unsigned long long *lm_base,
+  *
+  * Callback will be passed the monitor triggered.
+  */
+-int tsi148_lm_attach(struct vme_lm_resource *lm, int monitor,
++static int tsi148_lm_attach(struct vme_lm_resource *lm, int monitor,
+ 	void (*callback)(int))
+ {
+ 	u32 lm_ctl, tmp;
+@@ -2059,7 +2059,7 @@ int tsi148_lm_attach(struct vme_lm_resource *lm, int monitor,
+ /*
+  * Detach a callback function forn a specific location monitor.
+  */
+-int tsi148_lm_detach(struct vme_lm_resource *lm, int monitor)
++static int tsi148_lm_detach(struct vme_lm_resource *lm, int monitor)
+ {
+ 	u32 lm_en, tmp;
+ 	struct tsi148_driver *bridge;
+@@ -2099,7 +2099,7 @@ int tsi148_lm_detach(struct vme_lm_resource *lm, int monitor)
+ /*
+  * Determine Geographical Addressing
+  */
+-int tsi148_slot_get(struct vme_bridge *tsi148_bridge)
++static int tsi148_slot_get(struct vme_bridge *tsi148_bridge)
+ {
+ 	u32 slot = 0;
+ 	struct tsi148_driver *bridge;
 -- 
 1.7.1
 
