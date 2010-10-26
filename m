@@ -1,74 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757912Ab0JZOIk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Oct 2010 10:08:40 -0400
-Received: from Mycroft.westnet.com ([216.187.52.7]:48026 "EHLO
-	mycroft.westnet.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756992Ab0JZOIh convert rfc822-to-8bit (ORCPT
+	id S1757983Ab0JZOJb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Oct 2010 10:09:31 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:59032 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751167Ab0JZOJa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Oct 2010 10:08:37 -0400
+	Tue, 26 Oct 2010 10:09:30 -0400
+Date: Tue, 26 Oct 2010 10:09:27 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Michal Nazarewicz <m.nazarewicz@samsung.com>
+cc: Greg Kroah-Hartman <gregkh@suse.de>, <linux-usb@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, Michal Nazarewicz <mina86@mina86.com>
+Subject: Re: [PATCH 1/7] USB: gadget: file_storage: put_device() in error
+ recovery
+In-Reply-To: <7214986593243afb11434ddb86da7e0460dc1f51.1288099890.git.m.nazarewicz@samsung.com>
+Message-ID: <Pine.LNX.4.44L0.1010261002210.1634-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
-Message-ID: <19654.57503.448600.856000@quad.stoffel.home>
-Date: Tue, 26 Oct 2010 10:07:27 -0400
-From: "John Stoffel" <john@stoffel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: "J.H." <warthog9@kernel.org>, John Stoffel <john@stoffel.org>,
-        Eric Paris <eparis@redhat.com>, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        hch@infradead.org, zohar@us.ibm.com, david@fromorbit.com,
-        jmorris@namei.org, kyle@mcmartin.ca, hpa@zytor.com,
-        akpm@linux-foundation.org, mingo@elte.hu, viro@zeniv.linux.org.uk
-Subject: Re: [PATCH 01/11] IMA: use rbtree instead of radix tree for inode
- information cache
-In-Reply-To: <AANLkTim5-QDaG3G_8hq3k83csWsdM-4Pt7V92WtmVx3i@mail.gmail.com>
-References: <20101025184118.20504.24290.stgit@paris.rdu.redhat.com>
-	<19653.55494.240658.165153@quad.stoffel.home>
-	<4CC5DCBB.1070505@kernel.org>
-	<AANLkTim5-QDaG3G_8hq3k83csWsdM-4Pt7V92WtmVx3i@mail.gmail.com>
-X-Mailer: VM 8.1.1 under 23.2.1 (x86_64-pc-linux-gnu)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>>>> "Linus" == Linus Torvalds <torvalds@linux-foundation.org> writes:
+On Tue, 26 Oct 2010, Michal Nazarewicz wrote:
 
-Linus> On Mon, Oct 25, 2010 at 12:38 PM, J.H. <warthog9@kernel.org> wrote:
->> 
->> I'll second both points.  If IMA is disabled, but compiled in, it *HAS*
->> to consume 0 resources.
+> From: Michal Nazarewicz <mina86@mina86.com>
+> 
+> This commit fixes some issues with File-backed Storage Gadget
+> error recovery when registering LUN's devices.
+> 
+> First of all, when device_register() fails the device still
+> needs to be put.  However, because lun_release() decreases
+> fsg->ref reference counter the counter must be incremented
+> beforehand.
 
-Linus> I disagree. First off, this isn't actually true. Look at things
-Linus> like quota support: it eats more memory in the inode than IMA
-Linus> does after this patch-series (two pointers), and most people
-Linus> don't use that either. So the "it must use zero extra memory"
-Linus> is bogus - it's a balance between simplicity of the code and
-Linus> memory use.
+Correct.
 
-Quotas are useful in a much more general sense for managing a limited
-resource (disk space) and for a larger audience as well.  And hey,
-let's target quotas next!  *grin*
+> Second of all, after any of the device_create_file()s fails,
+> device_unregister() is called which in turn (indirectly) calls
+> lun_release() which decrements fsg->ref.  So, again, the
+> reference counter must be incremented beforehand.
 
-Linus> Secondly, right now we're in the situation that IMA just
-Linus> sucks. Sucks with all capital letters, in fact. This
-Linus> patch-series may not be perfect, but it's _so_ much better than
-Linus> the current situation that I don't really see why people are so
-Linus> adamantly negative about it.
+Correct.
 
-I'm negative about it because I forsee very limited applicability to
-normal day to day use of Linux in my work.  Quotas I use every day.  
+> Lastly, if the first or the second device_create_file()
+> succeeds, the files are never removed.  To fix it,
+> device_remove_file() needs to be called.  This is done by
+> simply marking LUN as registered prior to creating files so
+> that fsg_unbind() can handle removing files.
 
-Linus> Please do feel free to be constructive about it, and I'm sure
-Linus> there are ways to improve even more, but right now
-Linus> "constructive" is not what the objections seem to be.
+Correct.
 
-Sorry, will certainly try to be more positive about my objections to
-this system.  
+> Signed-off-by: Michal Nazarewicz <mina86@mina86.com>
+> Reported-by: Rahul Ruikar <rahul.ruikar@gmail.com>
+> Cc: Alan Stern <stern@rowland.harvard.edu>
+> ---
+>  drivers/usb/gadget/file_storage.c |   20 +++++++++-----------
+>  1 files changed, 9 insertions(+), 11 deletions(-)
+> 
+> Rahul sent an invalid fix for the missing put_device() problem some time
+> ago.  This is, I believe, a correct one.  It also fixes the problem with
+> device files not being removed (as described in commit message); not sure
+> if the latter is a big issue though.
+> 
+> Hope I'm not late for 37?
 
-Mostly I'd really like to just see:
+No doubt it is too late to get into the merge window.  But it's not
+too late for bug fixes to get into 2.6.37 -- there are still eight or
+nine -rc's to go.  :-)
 
-       - documentation
-       - Kconfig updated to default to N.
+> diff --git a/drivers/usb/gadget/file_storage.c b/drivers/usb/gadget/file_storage.c
+> index d4fdf65..e0504a1 100644
+> --- a/drivers/usb/gadget/file_storage.c
+> +++ b/drivers/usb/gadget/file_storage.c
+> @@ -3392,21 +3392,19 @@ static int __init fsg_bind(struct usb_gadget *gadget)
+>  		dev_set_name(&curlun->dev,"%s-lun%d",
+>  			     dev_name(&gadget->dev), i);
+>  
+> -		if ((rc = device_register(&curlun->dev)) != 0) {
+> +		kref_get(&fsg->ref);
+> +		rc = device_register(&curlun->dev);
+> +		if (rc) {
+>  			INFO(fsg, "failed to register LUN%d: %d\n", i, rc);
+> -			goto out;
+> -		}
+> -		if ((rc = device_create_file(&curlun->dev,
+> -					&dev_attr_ro)) != 0 ||
+> -				(rc = device_create_file(&curlun->dev,
+> -					&dev_attr_nofua)) != 0 ||
+> -				(rc = device_create_file(&curlun->dev,
+> -					&dev_attr_file)) != 0) {
+> -			device_unregister(&curlun->dev);
+> +			put_device(&curlun->dev);
+>  			goto out;
+>  		}
+>  		curlun->registered = 1;
+> -		kref_get(&fsg->ref);
+> +
+> +		if ((rc = device_create_file(&curlun->dev, &dev_attr_ro))  ||
+> +		    (rc = device_create_file(&curlun->dev, &dev_attr_nofua)) ||
+> +		    (rc = device_create_file(&curlun->dev, &dev_attr_file)))
+> +			goto out;
 
-John
+As long as you're changing these anyway, you may as well use the style
+most developers seem to prefer:
+
+		rc = device_create_file(&curlun->dev, &dev_attr_ro);
+		if (rc)
+			goto out;
+		...
+
+After all, you did the same thing in the device_register() call above.
+Apart from this small matter, ACK.
+
+Alan Stern
+
