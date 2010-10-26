@@ -1,83 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933139Ab0JZMZS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Oct 2010 08:25:18 -0400
-Received: from mgw2.diku.dk ([130.225.96.92]:60785 "EHLO mgw2.diku.dk"
+	id S933129Ab0JZM2k (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Oct 2010 08:28:40 -0400
+Received: from hera.kernel.org ([140.211.167.34]:52940 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932478Ab0JZMZR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Oct 2010 08:25:17 -0400
-Date: Tue, 26 Oct 2010 14:25:14 +0200 (CEST)
-From: Julia Lawall <julia@diku.dk>
-To: walter harms <wharms@bfs.de>
-Cc: netdev@vger.kernel.org, kernel-janitors@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 5/14] drivers/net/sb1000.c: delete double assignment
-In-Reply-To: <4CC6C252.7080905@bfs.de>
-Message-ID: <Pine.LNX.4.64.1010261423070.25281@ask.diku.dk>
-References: <1288088743-3725-1-git-send-email-julia@diku.dk>
- <1288088743-3725-6-git-send-email-julia@diku.dk> <4CC6C252.7080905@bfs.de>
+	id S932478Ab0JZM2j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Oct 2010 08:28:39 -0400
+Message-ID: <4CC6C941.2080003@kernel.org>
+Date: Tue, 26 Oct 2010 14:27:45 +0200
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.11) Gecko/20101013 Lightning/1.0b2 Thunderbird/3.1.5
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: David Howells <dhowells@redhat.com>
+CC: torvalds@osdl.org, akpm@linux-foundation.org, linux-am33-list@redhat.com,
+        linux-kernel@vger.kernel.org,
+        Akira Takeuchi <takeuchi.akr@jp.panasonic.com>,
+        Mark Salter <msalter@redhat.com>
+Subject: Re: [PATCH] MN10300: Fix the PERCPU() alignment to allow for workqueues
+References: <4CC69B22.2050708@kernel.org> <20101025224111.7798.38960.stgit@warthog.procyon.org.uk> <12101.1288088542@redhat.com> <4CC6C62F.1000804@kernel.org>
+In-Reply-To: <4CC6C62F.1000804@kernel.org>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 26 Oct 2010 12:27:47 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 26 Oct 2010, walter harms wrote:
-
+On 10/26/2010 02:14 PM, Tejun Heo wrote:
+>>> That said, I think it might be better to just remove the alignment parameter
+>>> from the macro and force align to PAGE_SIZE.
+>>
+>> That's not necessarily good.  Two arches to note:
+>>
+>> 	arch/x86/kernel/vmlinux.lds.S:  PERCPU(THREAD_SIZE)
 > 
-> 
-> Julia Lawall schrieb:
-> > From: Julia Lawall <julia@diku.dk>
-> > 
-> > The other code around these duplicated assignments initializes the 0 1 2
-> > and 3 elements of an array, so change the initialization of the
-> > rx_session_id array to do the same.
-> > 
-> > A simplified version of the semantic match that finds this problem is as
-> > follows: (http://coccinelle.lip6.fr/)
-> > 
-> > // <smpl>
-> > @@
-> > expression i;
-> > @@
-> > 
-> > *i = ...;
-> >  i = ...;
-> > // </smpl>
-> > 
-> > Signed-off-by: Julia Lawall <julia@diku.dk>
-> > 
-> > ---
-> > This changes the semantics and has not been tested.
-> > 
-> >  drivers/net/sb1000.c |    6 +++---
-> >  1 file changed, 3 insertions(+), 3 deletions(-)
-> > 
-> > diff --git a/drivers/net/sb1000.c b/drivers/net/sb1000.c
-> > index a9ae505..66c2f1a 100644
-> > --- a/drivers/net/sb1000.c
-> > +++ b/drivers/net/sb1000.c
-> > @@ -961,9 +961,9 @@ sb1000_open(struct net_device *dev)
-> >  	lp->rx_error_count = 0;
-> >  	lp->rx_error_dpc_count = 0;
-> >  	lp->rx_session_id[0] = 0x50;
-> > -	lp->rx_session_id[0] = 0x48;
-> > -	lp->rx_session_id[0] = 0x44;
-> > -	lp->rx_session_id[0] = 0x42;
-> > +	lp->rx_session_id[1] = 0x48;
-> > +	lp->rx_session_id[2] = 0x44;
-> > +	lp->rx_session_id[3] = 0x42;
-> >  	lp->rx_frame_id[0] = 0;
-> >  	lp->rx_frame_id[1] = 0;
-> >  	lp->rx_frame_id[2] = 0;
-> > 
-> 
-> /me is surprised that this did not cause more problems.
-> Is it needed at all ?
+> I don't think the current percpu allocator honors alignment larger
+> than PAGE_SIZE no matter how large the alignment for the percpu output
+> section is.  I'll look into it deeper but I think we might just have
+> been lucky and the alignment somehow didn't bite us yet.  The only
+> user of THREAD_SIZE mask at this point seems to be cpu_init().  Maybe
+> we can remove this requirement.  I'll look into it.
 
-The field appears to be useful.  However, there is an ioctl that also 
-initializes the elements of this field with these values and that is 
-implemented correctly.  Perhaps that was sufficient to hide the problem in 
-practice.
+Okay, this was added by commit fe8e0c2 in this merge window.  It's
+broken and needs to be reverted.  I'll send a patch to revert it.
 
-julia
+Thanks.
+
+-- 
+tejun
