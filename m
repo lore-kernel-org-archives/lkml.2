@@ -1,240 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932217Ab0JZKWq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Oct 2010 06:22:46 -0400
-Received: from hera.kernel.org ([140.211.167.34]:34348 "EHLO hera.kernel.org"
+	id S1759248Ab0JZKXO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Oct 2010 06:23:14 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:19007 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753830Ab0JZKWo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Oct 2010 06:22:44 -0400
-Date: Tue, 26 Oct 2010 10:22:10 GMT
-From: tip-bot for Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: linux-kernel@vger.kernel.org, eranian@google.com, paulus@samba.org,
-        acme@redhat.com, hpa@zytor.com, mingo@redhat.com, tzanussi@gmail.com,
-        peterz@infradead.org, efault@gmx.de, davem@davemloft.net,
-        fweisbec@gmail.com, tglx@linutronix.de, mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
-        eranian@google.com, linux-kernel@vger.kernel.org, tzanussi@gmail.com,
-        efault@gmx.de, peterz@infradead.org, davem@davemloft.net,
-        fweisbec@gmail.com, tglx@linutronix.de, mingo@elte.hu
-In-Reply-To: <new-submission>
-References: <new-submission>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] perf python scripting: Improve the failed-syscalls-by-pid script
-Message-ID: <tip-6cc7361440e499abb3a30cdbcfedad03e43c92ae@git.kernel.org>
-Git-Commit-ID: 6cc7361440e499abb3a30cdbcfedad03e43c92ae
-X-Mailer: tip-git-log-daemon
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 26 Oct 2010 10:22:12 +0000 (UTC)
+	id S1753830Ab0JZKXM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Oct 2010 06:23:12 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <4CC69B22.2050708@kernel.org>
+References: <4CC69B22.2050708@kernel.org> <20101025224111.7798.38960.stgit@warthog.procyon.org.uk>
+To: Tejun Heo <tj@kernel.org>
+Cc: dhowells@redhat.com, torvalds@osdl.org, akpm@linux-foundation.org,
+        linux-am33-list@redhat.com, linux-kernel@vger.kernel.org,
+        Akira Takeuchi <takeuchi.akr@jp.panasonic.com>,
+        Mark Salter <msalter@redhat.com>
+Subject: Re: [PATCH] MN10300: Fix the PERCPU() alignment to allow for workqueues
+Date: Tue, 26 Oct 2010 11:22:22 +0100
+Message-ID: <12101.1288088542@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  6cc7361440e499abb3a30cdbcfedad03e43c92ae
-Gitweb:     http://git.kernel.org/tip/6cc7361440e499abb3a30cdbcfedad03e43c92ae
-Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
-AuthorDate: Mon, 25 Oct 2010 15:15:10 -0200
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Mon, 25 Oct 2010 18:46:41 -0200
+Tejun Heo <tj@kernel.org> wrote:
 
-perf python scripting: Improve the failed-syscalls-by-pid script
+> Ah, okay, but I'm not quite sure how that would affect the alignment
+> of dynamically allocated percpu memory.  Is this SMP or UP build?
 
-. Print message at script start telling how to get te summary
-. Print the syscall name using the audit-lib-python package, if
-  installed
-. Print the errno string
-. Accept both pid (if numeric) or COMM name
+It is definitely SMP.
 
-Now it looks like this:
+> Can you please double check the bug doesn't trigger with the section
+> alignment updated?
 
-[root@emilia ~]# perf trace failed-syscalls-by-pid
-Press control+C to stop and show the summary
-^C
-syscall errors:
+It can be made to trigger consistently without the change, and simply updating
+that alignment makes it go away.  It seems unlikely that it's affecting
+subsequent stuff in the final link since the PERCPU() is immediately followed
+by an alignment to PAGE_SIZE:
 
-comm [pid]                           count
-------------------------------  ----------
+	PERCPU(PAGE_SIZE)
+	. = ALIGN(PAGE_SIZE);
 
-automount [1670]
-  syscall: futex
-    err = ETIMEDOUT                     39
+I've attached the kernel log below.  CPUID is 0 indicating this happened on
+CPU 0 (the boot CPU).
 
-irqbalance [1462]
-  syscall: openat
-    err = ENOENT                         4
+> That said, I think it might be better to just remove the alignment parameter
+> from the macro and force align to PAGE_SIZE.
 
-perf [7888]
-  syscall: lseek
-    err = ESPIPE                         1
-  syscall: open
-    err = ENOENT                        24
+That's not necessarily good.  Two arches to note:
 
-perf [7889]
-  syscall: ioctl
-    err = EINVAL                         1
-  syscall: readlink
-    err = EINVAL                         2
-  syscall: open
-    err = ENOENT                       389
-  syscall: stat
-    err = ENOENT                       141
-  syscall: lseek
-    err = ESPIPE                         3
-[root@emilia ~]#
+	arch/x86/kernel/vmlinux.lds.S:  PERCPU(THREAD_SIZE)
 
-[root@emilia ~]# perf trace failed-syscalls-by-pid 1670
-Press control+C to stop and show the summary
-^C
-syscall errors:
+which may be bigger than PAGE_SIZE and:
 
-comm [pid]                           count
-------------------------------  ----------
+	arch/frv/kernel/vmlinux.lds.S:  PERCPU(4096)
 
-automount [1670]
-  syscall: futex
-    err = ETIMEDOUT                      2
-[root@emilia ~]#
-[root@emilia ~]#
-[root@emilia ~]#
-[root@emilia ~]# perf trace failed-syscalls-by-pid automount
-Press control+C to stop and show the summary
-^C
-syscall errors for automount:
+FRV's page size is 16KB, so on that we really don't want it to be PAGE_SIZE.
 
-comm [pid]                           count
-------------------------------  ----------
-
-automount [1669]
-  syscall: futex
-    err = ETIMEDOUT                      1
-
-automount [1670]
-  syscall: futex
-    err = ETIMEDOUT                      5
-[root@emilia ~]#
-
-Cc: David S. Miller <davem@davemloft.net>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Cc: Tom Zanussi <tzanussi@gmail.com>
-LKML-Reference: <new-submission>
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+David
 ---
- .../python/Perf-Trace-Util/lib/Perf/Trace/Util.py  |   37 ++++++++++++++++++++
- .../perf/scripts/python/failed-syscalls-by-pid.py  |   21 +++++++----
- 2 files changed, 50 insertions(+), 8 deletions(-)
+Linux version 2.6.36-rc7-01208-g3e148cd (takeuchi@shampoo.scd.mei.co.jp) (gcc version 4.2.1 20100927 (GNUPro 07r1) (Based on: GCC 4.2, BINUTILS 2.17, GDB 6.6)) #3 SMP PREEMPT Fri Oct 22 16:37:22 JST 2010
+Panasonic am34-2, rev 1
+DDR2-SDRAM: 384MB/512MB memory available @0x84000000.
+On node 0 totalpages: 16384
+free_area_init_node: node 0, pgdat 9025cf80, node_mem_map 902c5000
+  Normal zone: 128 pages used for memmap
+  Normal zone: 0 pages reserved
+  Normal zone: 16256 pages, LIFO batch:3
+PERCPU: Embedded 7 pages/cpu @90348000 s6176 r8192 d14304 u65536
+pcpu-alloc: s6176 r8192 d14304 u65536 alloc=16*4096
+pcpu-alloc: [0] 0 [0] 1
+Built 1 zonelists in Zone order, mobility grouping on.  Total pages: 16256
+Kernel command line: root=/dev/nfs rw console=ttySM0,115200 nfsroot=192.168.10.1:/home/takeuchi/AM-Linux-2.6/nfsroot init=/bin/sh -l ip=192.168.10.72:192.168.10.1:192.168.10.1:255.255.255.0:iar-takeuchi:eth0:off debug mem=64M
+PID hash table entries: 256 (order: -2, 1024 bytes)
+Dentry cache hash table entries: 8192 (order: 3, 32768 bytes)
+Inode-cache hash table entries: 4096 (order: 2, 16384 bytes)
+Memory: 62072k/65536k available (1859k kernel code, 3464k reserved, 557k data, 96k init, 0k highmem)
+Hierarchical RCU implementation.
+        RCU-based detection of stalled CPUs is disabled.
+        Verbose stalled-CPUs detection is disabled.
+NR_IRQS:197
+timestamp counter I/O clock running at 100.00 (calibrated against RTC)
+console [ttySM0] enabled
+Calibrating delay loop... 162.30 BogoMIPS (lpj=324608)
+pid_max: default: 32768 minimum: 301
+Mount-cache hash table entries: 512
+Initializing cgroup subsys ns
+Initializing cgroup subsys cpuacct
+Initializing cgroup subsys devices
+Initializing cgroup subsys freezer
+CPU#0 : ioclk speed: 100.00MHz : bogomips : 162.30
+Booting CPU#1
+Initializing CPU#1
+CPU#1 : ioclk speed: 100.00MHz : bogomips : 162.30
+------------[ cut here ]------------
+Kernel BUG at 9002a159 [verbose debug info unavailable]
 
-diff --git a/tools/perf/scripts/python/Perf-Trace-Util/lib/Perf/Trace/Util.py b/tools/perf/scripts/python/Perf-Trace-Util/lib/Perf/Trace/Util.py
-index 9689bc0..9d15f48 100644
---- a/tools/perf/scripts/python/Perf-Trace-Util/lib/Perf/Trace/Util.py
-+++ b/tools/perf/scripts/python/Perf-Trace-Util/lib/Perf/Trace/Util.py
-@@ -6,6 +6,8 @@
- # Public License ("GPL") version 2 as published by the Free Software
- # Foundation.
- 
-+import errno, os
-+
- NSECS_PER_SEC    = 1000000000
- 
- def avg(total, n):
-@@ -26,3 +28,38 @@ def nsecs_str(nsecs):
- 
- def clear_term():
-     print("\x1b[H\x1b[2J")
-+
-+audit_package_warned = False
-+
-+try:
-+	import audit
-+	machine_to_id = {
-+		'x86_64': audit.MACH_86_64,
-+		'alpha'	: audit.MACH_ALPHA,
-+		'armeb'	: audit.MACH_ARMEB,
-+		'ia64'	: audit.MACH_IA64,
-+		'ppc'	: audit.MACH_PPC,
-+		'ppc64'	: audit.MACH_PPC64,
-+		's390'	: audit.MACH_S390,
-+		's390x'	: audit.MACH_S390X,
-+		'i386'	: audit.MACH_X86,
-+		'i586'	: audit.MACH_X86,
-+		'i686'	: audit.MACH_X86,
-+	}
-+	machine_id = machine_to_id[os.uname()[4]]
-+except:
-+	if not audit_package_warned:
-+		audit_package_warned = True
-+		print "Install the audit-libs-python package to get syscall names"
-+
-+def syscall_name(id):
-+	try:
-+		return audit.audit_syscall_to_name(id, machine_id)
-+	except:
-+		return str(id)
-+
-+def strerror(nr):
-+	try:
-+		return errno.errorcode[abs(nr)]
-+	except:
-+		return "Unknown %d errno" % nr
-diff --git a/tools/perf/scripts/python/failed-syscalls-by-pid.py b/tools/perf/scripts/python/failed-syscalls-by-pid.py
-index 0ca0227..acd7848 100644
---- a/tools/perf/scripts/python/failed-syscalls-by-pid.py
-+++ b/tools/perf/scripts/python/failed-syscalls-by-pid.py
-@@ -13,21 +13,26 @@ sys.path.append(os.environ['PERF_EXEC_PATH'] + \
- 
- from perf_trace_context import *
- from Core import *
-+from Util import *
- 
--usage = "perf trace -s syscall-counts-by-pid.py [comm]\n";
-+usage = "perf trace -s syscall-counts-by-pid.py [comm|pid]\n";
- 
- for_comm = None
-+for_pid = None
- 
- if len(sys.argv) > 2:
- 	sys.exit(usage)
- 
- if len(sys.argv) > 1:
--	for_comm = sys.argv[1]
-+	try:
-+		for_pid = int(sys.argv[1])
-+	except:
-+		for_comm = sys.argv[1]
- 
- syscalls = autodict()
- 
- def trace_begin():
--	pass
-+	print "Press control+C to stop and show the summary"
- 
- def trace_end():
- 	print_error_totals()
-@@ -35,9 +40,9 @@ def trace_end():
- def raw_syscalls__sys_exit(event_name, context, common_cpu,
- 	common_secs, common_nsecs, common_pid, common_comm,
- 	id, ret):
--	if for_comm is not None:
--		if common_comm != for_comm:
--			return
-+	if (for_comm and common_comm != for_comm) or \
-+	   (for_pid  and common_pid  != for_pid ):
-+		return
- 
- 	if ret < 0:
- 		try:
-@@ -62,7 +67,7 @@ def print_error_totals():
- 		    print "\n%s [%d]\n" % (comm, pid),
- 		    id_keys = syscalls[comm][pid].keys()
- 		    for id in id_keys:
--			    print "  syscall: %-16d\n" % (id),
-+			    print "  syscall: %-16s\n" % syscall_name(id),
- 			    ret_keys = syscalls[comm][pid][id].keys()
- 			    for ret, val in sorted(syscalls[comm][pid][id].iteritems(), key = lambda(k, v): (v, k),  reverse = True):
--				    print "    err = %-20d  %10d\n" % (ret, val),
-+				    print "    err = %-20s  %10d\n" % (strerror(ret), val),
+An unsupported syscall insn was used by the kernel
+: 0378
+PC:  9002a157 EPSW:  00000f00  SSP: 93c25ec4 mode: Super
+d0:  902776e0   d1:  000000e0   d2: 90217fec   d3: 93c16c60
+a0:  902776e0   a1:  902538ec   a2: 93c1ef60   a3: 93c1ef60
+e0:  00000002   e1:  00000000   e2: 00000000   e3: 00000002
+e4:  00000000   e5:  9002ab90   e6: 00000100   e7: 93c1ef68
+lar: 900ed2d8   lir: 41f00ef1  mdr: 901cf10d  usp: 00000000
+cvf: 00000000   crl: 00000000  crh: 00000000  drq: 00000000
+threadinfo=93c24000 task=93c22be0)
+Process swapper (pid: 1)
+CPUID:  00000000
+CPUP:   0080
+TBR:    900002a0
+DEAR:   6f9f2709
+sISR:   04000000
+NMICR:  0000
+BCBERR: 00000000
+BCBEAR: 4c00050c
+MMUFCR: 00000000
+IPTEU : 08063c00  IPTEL2: 00000200
+DPTEU:  300fa000  DPTEL2: 00000200
+
+Stack:
+  9002a037 00000001 9002ab90 902b695c 90011805 902b5740 00000002 93c16c60
+  00000000 00000004 00000001 9002ab90 902b573c 902617c6 90217fec 90019280
+  00000000 00000000 00000000 90261628 9027365c 00000000 00000000 00000000
+
+Call Trace: [<9002a037>] __alloc_workqueue_key+0xa7/0x370
+ [<9002ab90>] idle_worker_timeout+0x0/0x68
+ [<90011805>] wake_up_process+0x11/0x18
+ [<9002ab90>] idle_worker_timeout+0x0/0x68
+ [<902617c6>] init_workqueues+0x19e/0x2b4
+ [<90019280>] cpu_maps_update_done+0x10/0x14
+ [<90261628>] init_workqueues+0x0/0x2b4
+ [<9000149a>] do_one_initcall+0x116/0x1f0
+ [<9025e431>] kernel_init+0x65/0x224
+ [<9025e3cc>] kernel_init+0x0/0x224
+ [<9001b188>] do_exit+0x0/0x714
+ [<9000108c>] loop_set_secondary_icr+0x7c/0x8e
+
+
+Kernel panic - not syncing: Attempted to kill init!
