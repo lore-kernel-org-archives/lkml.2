@@ -1,20 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758689Ab0JZCov (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Oct 2010 22:44:51 -0400
-Received: from mail.perches.com ([173.55.12.10]:3567 "EHLO mail.perches.com"
+	id S1758729Ab0JZCpM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Oct 2010 22:45:12 -0400
+Received: from mail.perches.com ([173.55.12.10]:3557 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758049Ab0JZCof (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Oct 2010 22:44:35 -0400
+	id S1756994Ab0JZCoe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Oct 2010 22:44:34 -0400
 From: Joe Perches <joe@perches.com>
 To: Jiri Kosina <trivial@kernel.org>
-Cc: David Brown <davidb@codeaurora.org>,
-        Daniel Walker <dwalker@codeaurora.org>,
-        Bryan Huntsman <bryanh@codeaurora.org>, linux-arm-msm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 09/10] drivers/video/msm/mddi.c: Remove multiple KERN_<level> uses
-Date: Mon, 25 Oct 2010 19:44:27 -0700
-Message-Id: <f1dbb5d550e2146508541335999374cf8910ff59.1288059486.git.joe@perches.com>
+Cc: "James E.J. Bottomley" <James.Bottomley@suse.de>,
+        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 08/10] drivers/scsi:mvsas/mv_sas.c: Remove KERN_DEBUG from mv_dprintk use
+Date: Mon, 25 Oct 2010 19:44:26 -0700
+Message-Id: <df0b06c1f6f55bc1571296f07fc1bc059fc070bc.1288059486.git.joe@perches.com>
 X-Mailer: git-send-email 1.7.3.2.90.gd4c43
 In-Reply-To: <cover.1288059486.git.joe@perches.com>
 References: <cover.1288059486.git.joe@perches.com>
@@ -24,32 +22,22 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Joe Perches <joe@perches.com>
 ---
- drivers/video/msm/mddi.c |    5 ++---
- 1 files changed, 2 insertions(+), 3 deletions(-)
+ drivers/scsi/mvsas/mv_sas.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/video/msm/mddi.c b/drivers/video/msm/mddi.c
-index 7c316c3..b66d86a 100644
---- a/drivers/video/msm/mddi.c
-+++ b/drivers/video/msm/mddi.c
-@@ -318,7 +318,7 @@ static long mddi_wait_interrupt_timeout(struct mddi_info *mddi,
- static void mddi_wait_interrupt(struct mddi_info *mddi, uint32_t intmask)
- {
- 	if (mddi_wait_interrupt_timeout(mddi, intmask, HZ/10) == 0)
--		printk(KERN_INFO KERN_ERR "mddi_wait_interrupt %d, timeout "
-+		printk(KERN_INFO "mddi_wait_interrupt %d, timeout "
- 		       "waiting for %x, INT = %x, STAT = %x gotint = %x\n",
- 		       current->pid, intmask, mddi_readl(INT), mddi_readl(STAT),
- 		       mddi->got_int);
-@@ -465,8 +465,7 @@ static int __init mddi_get_client_caps(struct mddi_info *mddi)
- 
- 		if (mddi->flags & FLAG_HAVE_CAPS)
- 			break;
--		printk(KERN_INFO KERN_ERR "mddi_init, timeout waiting for "
--				"caps\n");
-+		printk(KERN_INFO "mddi_init, timeout waiting for caps\n");
- 	}
- 	return mddi->flags & FLAG_HAVE_CAPS;
- }
+diff --git a/drivers/scsi/mvsas/mv_sas.c b/drivers/scsi/mvsas/mv_sas.c
+index adedaa9..f8bed25 100644
+--- a/drivers/scsi/mvsas/mv_sas.c
++++ b/drivers/scsi/mvsas/mv_sas.c
+@@ -1698,7 +1698,7 @@ int mvs_abort_task(struct sas_task *task)
+ 			struct task_status_struct *tstat;
+ 			u32 slot_idx = (u32)(slot - mvi->slot_info);
+ 			tstat = &task->task_status;
+-			mv_dprintk(KERN_DEBUG "mv_abort_task() mvi=%p task=%p "
++			mv_dprintk("mv_abort_task() mvi=%p task=%p "
+ 				   "slot=%p slot_idx=x%x\n",
+ 				   mvi, task, slot, slot_idx);
+ 			tstat->stat = SAS_ABORTED_TASK;
 -- 
 1.7.3.dirty
 
