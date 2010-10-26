@@ -1,50 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760068Ab0JZQqz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Oct 2010 12:46:55 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:55986 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754809Ab0JZQqx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Oct 2010 12:46:53 -0400
-Message-ID: <4CC705ED.1020105@zytor.com>
-Date: Tue, 26 Oct 2010 09:46:37 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc13 Thunderbird/3.1.4
-MIME-Version: 1.0
-To: Andi Kleen <andi@firstfloor.org>
-CC: kvm@vger.kernel.org, avi@redhat.com, linux-kernel@vger.kernel.org
-Subject: Re: fyi: gcc33-hammer crashes when compiling kvm emulate.c
-References: <20101026123828.GA30434@basil.fritz.box> <4CC70333.80400@zytor.com> <20101026163748.GB29961@basil.fritz.box>
-In-Reply-To: <20101026163748.GB29961@basil.fritz.box>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1756000Ab0JZQqy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Oct 2010 12:46:54 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:56578 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753274Ab0JZQqw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Oct 2010 12:46:52 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=HP8Kv87f/TzUuiPYdELsGcrXrBrSiTAjTeP08deAtRa6BpYX/Ac5cU3ZJig2+fwuyQ
+         O/fUoMzefyOhqiPXAZfDsxSxRLSsGGgQi6v9cETOr9iIVZ/gpyAhTwtEhTc+YbiOXKUq
+         GWfYy/jW602c9BVAjX6J0bma1BWY1KwMTmmZE=
+Subject: Re: [PATCH] sparc32: make CONFIG_SPARC_LEON depends on !SMP to fix
+ build failure
+From: Namhyung Kim <namhyung@gmail.com>
+To: David Miller <davem@davemloft.net>
+Cc: sparclinux@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <20101026.093213.115933777.davem@davemloft.net>
+References: <20101026.085338.104057457.davem@davemloft.net>
+	 <1288108960.1717.1.camel@leonhard>
+	 <20101026.090428.189722351.davem@davemloft.net>
+	 <20101026.093213.115933777.davem@davemloft.net>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 27 Oct 2010 01:46:43 +0900
+Message-ID: <1288111603.1717.6.camel@leonhard>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/26/2010 09:37 AM, Andi Kleen wrote:
->> We have said 3.4 minimum for x86 for a long time now, and have an RFC
+2010-10-26 (화), 09:32 -0700, David Miller:
+> From: David Miller <davem@davemloft.net>
+> Date: Tue, 26 Oct 2010 09:04:28 -0700 (PDT)
 > 
-> Ok makes sense. I thought it was still at 3.3. I should retire
-> this 3.3 fossil anyways, it's really only for old compat testing.
+> > From: Namhyung Kim <namhyung@gmail.com>
+> > Date: Wed, 27 Oct 2010 01:02:40 +0900
+> > 
+> >> 2010-10-26 (화), 08:53 -0700, David Miller:
+> >>> Great, I'll apply all three of your patches thanks.
+> >> 
+> >> Thanks. BTW, can you please take a look below too?
+> >> 
+> >> http://lkml.org/lkml/2010/10/25/13
+> > 
+> > Sure.
 > 
-> I don't remember seeing a warning -- aren't there supposed to be warnings
-> for unsupported compilers?
+> I've applied this.
 > 
+> Please CC: sparclinux@vger.kernel.org on such patches next time, so
+> that it gets into my patchwork queue and you don't need to ask me
+> to go looking around in other places for your patches.
+> 
+> Thanks.
 
-Not unless they are actively known to break.  People get huffy about it
-because even if it is known to have problems it doesn't break *their*
-particular configuration.  I'm getting to be of the opinion that people
-who compile modern kernels with ancient compilers and expect it to work
-are suffering from some particular kind of insanity -- it's nothing the
-distros do.  The only exception are embedded people who compile with the
-latest 3.4 gcc; they have explained they do so because newer gccs have
-too many dependencies (the actual compiler, not the generated code) and
-for speed.
+OK. I accidentally missed that, sorry. And thanks again for your quick
+responses and all great works. :-)
 
-	-hpa
 
 -- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
+Regards,
+Namhyung Kim
+
 
