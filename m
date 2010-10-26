@@ -1,155 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933297Ab0JZNiT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Oct 2010 09:38:19 -0400
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:41748 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757122Ab0JZNgq (ORCPT
+	id S1758107Ab0JZNjt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Oct 2010 09:39:49 -0400
+Received: from mognix.dark-green.com ([88.116.226.179]:55275 "EHLO
+	mognix.dark-green.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757016Ab0JZNjq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Oct 2010 09:36:46 -0400
-Date: Tue, 26 Oct 2010 15:38:55 +0200
-From: Michal Nazarewicz <m.nazarewicz@samsung.com>
-Subject: [PATCH 4/7] USB: gadget: f_mass_storage: drop START_TRANSFER() macro
-In-reply-to: <e4d7faa839773178984edc8e17cffed7b44e1411.1288099890.git.m.nazarewicz@samsung.com>
-To: Greg Kroah-Hartman <gregkh@suse.de>
-Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Michal Nazarewicz <mina86@mina86.com>
-Message-id: <1fb12ac8cc8a5dfd642353eaf4a5e8ba3e868baa.1288099890.git.m.nazarewicz@samsung.com>
-MIME-version: 1.0
-X-Mailer: git-send-email 1.7.1
-Content-type: TEXT/PLAIN
-Content-transfer-encoding: 7BIT
-References: <7214986593243afb11434ddb86da7e0460dc1f51.1288099890.git.m.nazarewicz@samsung.com>
- <4a6e11ec91ee592689f553dc69df515b4302691b.1288099890.git.m.nazarewicz@samsung.com>
- <e4d7faa839773178984edc8e17cffed7b44e1411.1288099890.git.m.nazarewicz@samsung.com>
+	Tue, 26 Oct 2010 09:39:46 -0400
+MIME-Version: 1.0
+Date: Tue, 26 Oct 2010 15:05:58 +0200
+From: gimli <gimli@dark-green.com>
+To: <linux-kernel@vger.kernel.org>
+Subject: [PATCH 2/4] MacbookAir3,1 and 3,2 bcm5974 touchpad support
+Message-ID: <a26352e5c2db085252aa7df0438867e5@mognix.dark-green.com>
+User-Agent: RoundCube Webmail/0.2.2
+Content-Type: multipart/mixed;
+	boundary="=_33a3fdaa80ecb282c5299ebba6430df8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Michal Nazarewicz <mina86@mina86.com>
+--=_33a3fdaa80ecb282c5299ebba6430df8
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset="UTF-8"
 
-This commit drops START_TRANSFER_OR() and START_TRANSFER()
-macros with a pair of nice inline functions which are actually
-more readable and easier to use.
+This patch adds support for the new MacBookAir3,1 and 3,2 to the bcm5974
+touchpad driver.
 
-Signed-off-by: Michal Nazarewicz <mina86@mina86.com>
----
- drivers/usb/gadget/f_mass_storage.c |   49 +++++++++++++++++------------------
- 1 files changed, 24 insertions(+), 25 deletions(-)
+Signed-off-by: Edgar (gimli) Hucek <gimli@dark-green.com>
+--=_33a3fdaa80ecb282c5299ebba6430df8
+Content-Transfer-Encoding: base64
+Content-Type: text/plain; charset="UTF-8";
+ name="hid_macbookair.patch"; 
+Content-Disposition: attachment;
+ filename="hid_macbookair.patch"; 
 
-Honestly...  I don't know what I was thinking when I wrote those horrible
-macros...
-
-diff --git a/drivers/usb/gadget/f_mass_storage.c b/drivers/usb/gadget/f_mass_storage.c
-index 2a4aca1..c71f69f 100644
---- a/drivers/usb/gadget/f_mass_storage.c
-+++ b/drivers/usb/gadget/f_mass_storage.c
-@@ -692,16 +692,23 @@ static void start_transfer(struct fsg_dev *fsg, struct usb_ep *ep,
- 	}
- }
- 
--#define START_TRANSFER_OR(common, ep_name, req, pbusy, state)		\
--	if (fsg_is_set(common))						\
--		start_transfer((common)->fsg, (common)->fsg->ep_name,	\
--			       req, pbusy, state);			\
--	else
--
--#define START_TRANSFER(common, ep_name, req, pbusy, state)		\
--	START_TRANSFER_OR(common, ep_name, req, pbusy, state) (void)0
--
-+static bool start_in_transfer(struct fsg_common *common, struct fsg_buffhd *bh)
-+{
-+	if (!fsg_is_set(common))
-+		return false;
-+	start_transfer(common->fsg, common->fsg->bulk_in,
-+		       bh->inreq, &bh->inreq_busy, &bh->state);
-+	return true;
-+}
- 
-+static bool start_out_transfer(struct fsg_common *common, struct fsg_buffhd *bh)
-+{
-+	if (!fsg_is_set(common))
-+		return false;
-+	start_transfer(common->fsg, common->fsg->bulk_out,
-+		       bh->outreq, &bh->outreq_busy, &bh->state);
-+	return true;
-+}
- 
- static int sleep_thread(struct fsg_common *common)
- {
-@@ -842,10 +849,8 @@ static int do_read(struct fsg_common *common)
- 
- 		/* Send this buffer and go read some more */
- 		bh->inreq->zero = 0;
--		START_TRANSFER_OR(common, bulk_in, bh->inreq,
--			       &bh->inreq_busy, &bh->state)
--			/* Don't know what to do if
--			 * common->fsg is NULL */
-+		if (!start_in_transfer(common, bh))
-+			/* Don't know what to do if common->fsg is NULL */
- 			return -EIO;
- 		common->next_buffhd_to_fill = bh->next;
- 	}
-@@ -961,8 +966,7 @@ static int do_write(struct fsg_common *common)
- 			bh->outreq->length = amount;
- 			bh->bulk_out_intended_length = amount;
- 			bh->outreq->short_not_ok = 1;
--			START_TRANSFER_OR(common, bulk_out, bh->outreq,
--					  &bh->outreq_busy, &bh->state)
-+			if (!start_out_transfer(common, bh))
- 				/* Don't know what to do if
- 				 * common->fsg is NULL */
- 				return -EIO;
-@@ -1636,8 +1640,7 @@ static int throw_away_data(struct fsg_common *common)
- 			bh->outreq->length = amount;
- 			bh->bulk_out_intended_length = amount;
- 			bh->outreq->short_not_ok = 1;
--			START_TRANSFER_OR(common, bulk_out, bh->outreq,
--					  &bh->outreq_busy, &bh->state)
-+			if (!start_out_transfer(common, bh))
- 				/* Don't know what to do if
- 				 * common->fsg is NULL */
- 				return -EIO;
-@@ -1688,8 +1691,7 @@ static int finish_reply(struct fsg_common *common)
- 		/* If there's no residue, simply send the last buffer */
- 		} else if (common->residue == 0) {
- 			bh->inreq->zero = 0;
--			START_TRANSFER_OR(common, bulk_in, bh->inreq,
--					  &bh->inreq_busy, &bh->state)
-+			if (!start_in_transfer(common, bh))
- 				return -EIO;
- 			common->next_buffhd_to_fill = bh->next;
- 
-@@ -1698,8 +1700,7 @@ static int finish_reply(struct fsg_common *common)
- 		 * stall, pad out the remaining data with 0's. */
- 		} else if (common->can_stall) {
- 			bh->inreq->zero = 1;
--			START_TRANSFER_OR(common, bulk_in, bh->inreq,
--					  &bh->inreq_busy, &bh->state)
-+			if (!start_in_transfer(common, bh))
- 				/* Don't know what to do if
- 				 * common->fsg is NULL */
- 				rc = -EIO;
-@@ -1798,8 +1799,7 @@ static int send_status(struct fsg_common *common)
- 
- 	bh->inreq->length = USB_BULK_CS_WRAP_LEN;
- 	bh->inreq->zero = 0;
--	START_TRANSFER_OR(common, bulk_in, bh->inreq,
--			  &bh->inreq_busy, &bh->state)
-+	if (!start_in_transfer(common, bh))
- 		/* Don't know what to do if common->fsg is NULL */
- 		return -EIO;
- 
-@@ -2287,8 +2287,7 @@ static int get_next_command(struct fsg_common *common)
- 	/* Queue a request to read a Bulk-only CBW */
- 	set_bulk_out_req_length(common, bh, USB_BULK_CB_WRAP_LEN);
- 	bh->outreq->short_not_ok = 1;
--	START_TRANSFER_OR(common, bulk_out, bh->outreq,
--			  &bh->outreq_busy, &bh->state)
-+	if (!start_out_transfer(common, bh))
- 		/* Don't know what to do if common->fsg is NULL */
- 		return -EIO;
- 
--- 
-1.7.1
+ZGlmZiAtdU5yIGxpbnV4LTIuNi4zNS9kcml2ZXJzL2hpZC9oaWQtYXBwbGUuYyBsaW51eC0yLjYu
+MzUtTWFjYm9va0Fpci9kcml2ZXJzL2hpZC9oaWQtYXBwbGUuYwotLS0gbGludXgtMi42LjM1L2Ry
+aXZlcnMvaGlkL2hpZC1hcHBsZS5jCTIwMTAtMDgtMDIgMDA6MTE6MTQuMDAwMDAwMDAwICswMjAw
+CisrKyBsaW51eC0yLjYuMzUtTWFjYm9va0Fpci9kcml2ZXJzL2hpZC9oaWQtYXBwbGUuYwkyMDEw
+LTEwLTI0IDE2OjMzOjIwLjcyMjkxODAwMiArMDIwMApAQCAtNTksNiArNTksMjcgQEAKIAl1OCBm
+bGFnczsKIH07CiAKK3N0YXRpYyBjb25zdCBzdHJ1Y3QgYXBwbGVfa2V5X3RyYW5zbGF0aW9uIG1h
+Y2Jvb2thaXJfZm5fa2V5c1tdID0geworCXsgS0VZX0JBQ0tTUEFDRSwgS0VZX0RFTEVURSB9LAor
+CXsgS0VZX0VOVEVSLAlLRVlfSU5TRVJUIH0sCisJeyBLRVlfRjEsCUtFWV9CUklHSFRORVNTRE9X
+TiwgQVBQTEVfRkxBR19GS0VZIH0sCisJeyBLRVlfRjIsCUtFWV9CUklHSFRORVNTVVAsICAgQVBQ
+TEVfRkxBR19GS0VZIH0sCisJeyBLRVlfRjMsCUtFWV9TQ0FMRSwgICAgICAgICAgQVBQTEVfRkxB
+R19GS0VZIH0sCisJeyBLRVlfRjQsCUtFWV9EQVNIQk9BUkQsICAgICAgQVBQTEVfRkxBR19GS0VZ
+IH0sCisJeyBLRVlfRjYsCUtFWV9QUkVWSU9VU1NPTkcsICAgQVBQTEVfRkxBR19GS0VZIH0sCisJ
+eyBLRVlfRjcsCUtFWV9QTEFZUEFVU0UsICAgICAgQVBQTEVfRkxBR19GS0VZIH0sCisJeyBLRVlf
+RjgsCUtFWV9ORVhUU09ORywgICAgICAgQVBQTEVfRkxBR19GS0VZIH0sCisJeyBLRVlfRjksCUtF
+WV9NVVRFLCAgICAgICAgICAgQVBQTEVfRkxBR19GS0VZIH0sCisJeyBLRVlfRjEwLAlLRVlfVk9M
+VU1FRE9XTiwgICAgIEFQUExFX0ZMQUdfRktFWSB9LAorCXsgS0VZX0YxMSwJS0VZX1ZPTFVNRVVQ
+LCAgICAgICBBUFBMRV9GTEFHX0ZLRVkgfSwKKwl7IEtFWV9GMTIsCUtFWV9FSkVDVENELCAgICAg
+ICAgQVBQTEVfRkxBR19GS0VZIH0sCisJeyBLRVlfVVAsCUtFWV9QQUdFVVAgfSwKKwl7IEtFWV9E
+T1dOLAlLRVlfUEFHRURPV04gfSwKKwl7IEtFWV9MRUZULAlLRVlfSE9NRSB9LAorCXsgS0VZX1JJ
+R0hULAlLRVlfRU5EIH0sCisJeyB9Cit9OworCiBzdGF0aWMgY29uc3Qgc3RydWN0IGFwcGxlX2tl
+eV90cmFuc2xhdGlvbiBhcHBsZV9mbl9rZXlzW10gPSB7CiAJeyBLRVlfQkFDS1NQQUNFLCBLRVlf
+REVMRVRFIH0sCiAJeyBLRVlfRU5URVIsCUtFWV9JTlNFUlQgfSwKQEAgLTE1NywxMCArMTc4LDE0
+IEBACiAJaWYgKGZubW9kZSkgewogCQlpbnQgZG9fdHJhbnNsYXRlOwogCi0JCXRyYW5zID0gYXBw
+bGVfZmluZF90cmFuc2xhdGlvbigoaGlkLT5wcm9kdWN0IDwgMHgyMWQgfHwKKwkJaWYoaGlkLT5w
+cm9kdWN0ID49IDB4MDIzZiAmJiBoaWQtPnByb2R1Y3QgPD0gMHgwMjQ0ICkgeworCQkJdHJhbnMg
+PSBhcHBsZV9maW5kX3RyYW5zbGF0aW9uKG1hY2Jvb2thaXJfZm5fa2V5cywgdXNhZ2UtPmNvZGUp
+OworCQl9IGVsc2UgeworCQkJdHJhbnMgPSBhcHBsZV9maW5kX3RyYW5zbGF0aW9uKChoaWQtPnBy
+b2R1Y3QgPCAweDIxZCB8fAogCQkJCQloaWQtPnByb2R1Y3QgPj0gMHgzMDApID8KIAkJCQkJcG93
+ZXJib29rX2ZuX2tleXMgOiBhcHBsZV9mbl9rZXlzLAogCQkJCQl1c2FnZS0+Y29kZSk7CisJCX0K
+IAkJaWYgKHRyYW5zKSB7CiAJCQlpZiAodGVzdF9iaXQodXNhZ2UtPmNvZGUsIGFzYy0+cHJlc3Nl
+ZF9mbikpCiAJCQkJZG9fdHJhbnNsYXRlID0gMTsKQEAgLTQzOSw2ICs0NjQsMTggQEAKIAkJLmRy
+aXZlcl9kYXRhID0gQVBQTEVfSEFTX0ZOIHwgQVBQTEVfSVNPX0tFWUJPQVJEIH0sCiAJeyBISURf
+VVNCX0RFVklDRShVU0JfVkVORE9SX0lEX0FQUExFLCBVU0JfREVWSUNFX0lEX0FQUExFX1dFTExT
+UFJJTkczX0pJUyksCiAJCS5kcml2ZXJfZGF0YSA9IEFQUExFX0hBU19GTiB8IEFQUExFX1JERVND
+X0pJUyB9LAorCXsgSElEX1VTQl9ERVZJQ0UoVVNCX1ZFTkRPUl9JRF9BUFBMRSwgVVNCX0RFVklD
+RV9JRF9BUFBMRV9XRUxMU1BSSU5HNF9BTlNJKSwKKwkJLmRyaXZlcl9kYXRhID0gQVBQTEVfSEFT
+X0ZOIH0sCisJeyBISURfVVNCX0RFVklDRShVU0JfVkVORE9SX0lEX0FQUExFLCBVU0JfREVWSUNF
+X0lEX0FQUExFX1dFTExTUFJJTkc0X0lTTyksCisJCS5kcml2ZXJfZGF0YSA9IEFQUExFX0hBU19G
+TiB8IEFQUExFX0lTT19LRVlCT0FSRCB9LAorCXsgSElEX1VTQl9ERVZJQ0UoVVNCX1ZFTkRPUl9J
+RF9BUFBMRSwgVVNCX0RFVklDRV9JRF9BUFBMRV9XRUxMU1BSSU5HNF9KSVMpLAorCQkuZHJpdmVy
+X2RhdGEgPSBBUFBMRV9IQVNfRk4gfCBBUFBMRV9SREVTQ19KSVMgfSwKKwl7IEhJRF9VU0JfREVW
+SUNFKFVTQl9WRU5ET1JfSURfQVBQTEUsIFVTQl9ERVZJQ0VfSURfQVBQTEVfV0VMTFNQUklORzVf
+QU5TSSksCisJCS5kcml2ZXJfZGF0YSA9IEFQUExFX0hBU19GTiB9LAorCXsgSElEX1VTQl9ERVZJ
+Q0UoVVNCX1ZFTkRPUl9JRF9BUFBMRSwgVVNCX0RFVklDRV9JRF9BUFBMRV9XRUxMU1BSSU5HNV9J
+U08pLAorCQkuZHJpdmVyX2RhdGEgPSBBUFBMRV9IQVNfRk4gfCBBUFBMRV9JU09fS0VZQk9BUkQg
+fSwKKwl7IEhJRF9VU0JfREVWSUNFKFVTQl9WRU5ET1JfSURfQVBQTEUsIFVTQl9ERVZJQ0VfSURf
+QVBQTEVfV0VMTFNQUklORzVfSklTKSwKKwkJLmRyaXZlcl9kYXRhID0gQVBQTEVfSEFTX0ZOIHwg
+QVBQTEVfUkRFU0NfSklTIH0sCiAJeyBISURfQkxVRVRPT1RIX0RFVklDRShVU0JfVkVORE9SX0lE
+X0FQUExFLCBVU0JfREVWSUNFX0lEX0FQUExFX0FMVV9XSVJFTEVTU18yMDA5X0FOU0kpLAogCQku
+ZHJpdmVyX2RhdGEgPSBBUFBMRV9OVU1MT0NLX0VNVUxBVElPTiB8IEFQUExFX0hBU19GTiB9LAog
+CXsgSElEX0JMVUVUT09USF9ERVZJQ0UoVVNCX1ZFTkRPUl9JRF9BUFBMRSwgVVNCX0RFVklDRV9J
+RF9BUFBMRV9BTFVfV0lSRUxFU1NfMjAwOV9JU08pLApkaWZmIC11TnIgbGludXgtMi42LjM1L2Ry
+aXZlcnMvaGlkL2hpZC1jb3JlLmMgbGludXgtMi42LjM1LU1hY2Jvb2tBaXIvZHJpdmVycy9oaWQv
+aGlkLWNvcmUuYwotLS0gbGludXgtMi42LjM1L2RyaXZlcnMvaGlkL2hpZC1jb3JlLmMJMjAxMC0x
+MC0yMyAwNjo1OTozMS4wMDAwMDAwMDAgKzAyMDAKKysrIGxpbnV4LTIuNi4zNS1NYWNib29rQWly
+L2RyaXZlcnMvaGlkL2hpZC1jb3JlLmMJMjAxMC0xMC0yNCAwNzo0MDo1Ny4wNTU2NzkwMDEgKzAy
+MDAKQEAgLTEyNzYsNiArMTI3NiwxMiBAQAogCXsgSElEX1VTQl9ERVZJQ0UoVVNCX1ZFTkRPUl9J
+RF9BUFBMRSwgVVNCX0RFVklDRV9JRF9BUFBMRV9XRUxMU1BSSU5HM19BTlNJKSB9LAogCXsgSElE
+X1VTQl9ERVZJQ0UoVVNCX1ZFTkRPUl9JRF9BUFBMRSwgVVNCX0RFVklDRV9JRF9BUFBMRV9XRUxM
+U1BSSU5HM19JU08pIH0sCiAJeyBISURfVVNCX0RFVklDRShVU0JfVkVORE9SX0lEX0FQUExFLCBV
+U0JfREVWSUNFX0lEX0FQUExFX1dFTExTUFJJTkczX0pJUykgfSwKKwl7IEhJRF9VU0JfREVWSUNF
+KFVTQl9WRU5ET1JfSURfQVBQTEUsIFVTQl9ERVZJQ0VfSURfQVBQTEVfV0VMTFNQUklORzRfQU5T
+SSkgfSwKKwl7IEhJRF9VU0JfREVWSUNFKFVTQl9WRU5ET1JfSURfQVBQTEUsIFVTQl9ERVZJQ0Vf
+SURfQVBQTEVfV0VMTFNQUklORzRfSVNPKSB9LAorCXsgSElEX1VTQl9ERVZJQ0UoVVNCX1ZFTkRP
+Ul9JRF9BUFBMRSwgVVNCX0RFVklDRV9JRF9BUFBMRV9XRUxMU1BSSU5HNF9KSVMpIH0sCisJeyBI
+SURfVVNCX0RFVklDRShVU0JfVkVORE9SX0lEX0FQUExFLCBVU0JfREVWSUNFX0lEX0FQUExFX1dF
+TExTUFJJTkc1X0FOU0kpIH0sCisJeyBISURfVVNCX0RFVklDRShVU0JfVkVORE9SX0lEX0FQUExF
+LCBVU0JfREVWSUNFX0lEX0FQUExFX1dFTExTUFJJTkc1X0lTTykgfSwKKwl7IEhJRF9VU0JfREVW
+SUNFKFVTQl9WRU5ET1JfSURfQVBQTEUsIFVTQl9ERVZJQ0VfSURfQVBQTEVfV0VMTFNQUklORzVf
+SklTKSB9LAogCXsgSElEX0JMVUVUT09USF9ERVZJQ0UoVVNCX1ZFTkRPUl9JRF9BUFBMRSwgVVNC
+X0RFVklDRV9JRF9BUFBMRV9BTFVfV0lSRUxFU1NfMjAwOV9BTlNJKSB9LAogCXsgSElEX0JMVUVU
+T09USF9ERVZJQ0UoVVNCX1ZFTkRPUl9JRF9BUFBMRSwgVVNCX0RFVklDRV9JRF9BUFBMRV9BTFVf
+V0lSRUxFU1NfMjAwOV9JU08pIH0sCiAJeyBISURfQkxVRVRPT1RIX0RFVklDRShVU0JfVkVORE9S
+X0lEX0FQUExFLCBVU0JfREVWSUNFX0lEX0FQUExFX0FMVV9XSVJFTEVTU18yMDA5X0pJUykgfSwK
+QEAgLTE3MzYsNiArMTc0MiwxMiBAQAogCXsgSElEX1VTQl9ERVZJQ0UoVVNCX1ZFTkRPUl9JRF9B
+UFBMRSwgVVNCX0RFVklDRV9JRF9BUFBMRV9XRUxMU1BSSU5HM19BTlNJKSB9LAogCXsgSElEX1VT
+Ql9ERVZJQ0UoVVNCX1ZFTkRPUl9JRF9BUFBMRSwgVVNCX0RFVklDRV9JRF9BUFBMRV9XRUxMU1BS
+SU5HM19JU08pIH0sCiAJeyBISURfVVNCX0RFVklDRShVU0JfVkVORE9SX0lEX0FQUExFLCBVU0Jf
+REVWSUNFX0lEX0FQUExFX1dFTExTUFJJTkczX0pJUykgfSwKKwl7IEhJRF9VU0JfREVWSUNFKFVT
+Ql9WRU5ET1JfSURfQVBQTEUsIFVTQl9ERVZJQ0VfSURfQVBQTEVfV0VMTFNQUklORzRfQU5TSSkg
+fSwKKwl7IEhJRF9VU0JfREVWSUNFKFVTQl9WRU5ET1JfSURfQVBQTEUsIFVTQl9ERVZJQ0VfSURf
+QVBQTEVfV0VMTFNQUklORzRfSVNPKSB9LAorCXsgSElEX1VTQl9ERVZJQ0UoVVNCX1ZFTkRPUl9J
+RF9BUFBMRSwgVVNCX0RFVklDRV9JRF9BUFBMRV9XRUxMU1BSSU5HNF9KSVMpIH0sCisJeyBISURf
+VVNCX0RFVklDRShVU0JfVkVORE9SX0lEX0FQUExFLCBVU0JfREVWSUNFX0lEX0FQUExFX1dFTExT
+UFJJTkc1X0FOU0kpIH0sCisJeyBISURfVVNCX0RFVklDRShVU0JfVkVORE9SX0lEX0FQUExFLCBV
+U0JfREVWSUNFX0lEX0FQUExFX1dFTExTUFJJTkc1X0lTTykgfSwKKwl7IEhJRF9VU0JfREVWSUNF
+KFVTQl9WRU5ET1JfSURfQVBQTEUsIFVTQl9ERVZJQ0VfSURfQVBQTEVfV0VMTFNQUklORzVfSklT
+KSB9LAogCXsgSElEX1VTQl9ERVZJQ0UoVVNCX1ZFTkRPUl9JRF9BUFBMRSwgVVNCX0RFVklDRV9J
+RF9BUFBMRV9GT1VOVEFJTl9UUF9PTkxZKSB9LAogCXsgSElEX1VTQl9ERVZJQ0UoVVNCX1ZFTkRP
+Ul9JRF9BUFBMRSwgVVNCX0RFVklDRV9JRF9BUFBMRV9HRVlTRVIxX1RQX09OTFkpIH0sCiAJeyB9
+CmRpZmYgLXVOciBsaW51eC0yLjYuMzUvZHJpdmVycy9oaWQvaGlkLWlkcy5oIGxpbnV4LTIuNi4z
+NS1NYWNib29rQWlyL2RyaXZlcnMvaGlkL2hpZC1pZHMuaAotLS0gbGludXgtMi42LjM1L2RyaXZl
+cnMvaGlkL2hpZC1pZHMuaAkyMDEwLTEwLTIzIDA2OjU5OjMxLjAwMDAwMDAwMCArMDIwMAorKysg
+bGludXgtMi42LjM1LU1hY2Jvb2tBaXIvZHJpdmVycy9oaWQvaGlkLWlkcy5oCTIwMTAtMTAtMjQg
+MDc6MzQ6NTIuNjMyNTg2MDAyICswMjAwCkBAIC05NCw2ICs5NCwxMiBAQAogI2RlZmluZSBVU0Jf
+REVWSUNFX0lEX0FQUExFX1dFTExTUFJJTkczX0FOU0kJMHgwMjM2CiAjZGVmaW5lIFVTQl9ERVZJ
+Q0VfSURfQVBQTEVfV0VMTFNQUklORzNfSVNPCTB4MDIzNwogI2RlZmluZSBVU0JfREVWSUNFX0lE
+X0FQUExFX1dFTExTUFJJTkczX0pJUwkweDAyMzgKKyNkZWZpbmUgVVNCX0RFVklDRV9JRF9BUFBM
+RV9XRUxMU1BSSU5HNF9BTlNJCTB4MDI0MgorI2RlZmluZSBVU0JfREVWSUNFX0lEX0FQUExFX1dF
+TExTUFJJTkc0X0lTTwkweDAyNDMKKyNkZWZpbmUgVVNCX0RFVklDRV9JRF9BUFBMRV9XRUxMU1BS
+SU5HNF9KSVMJMHgwMjQ0CisjZGVmaW5lIFVTQl9ERVZJQ0VfSURfQVBQTEVfV0VMTFNQUklORzVf
+QU5TSQkweDAyM2YKKyNkZWZpbmUgVVNCX0RFVklDRV9JRF9BUFBMRV9XRUxMU1BSSU5HNV9JU08J
+MHgwMjQwCisjZGVmaW5lIFVTQl9ERVZJQ0VfSURfQVBQTEVfV0VMTFNQUklORzVfSklTCTB4MDI0
+MQogI2RlZmluZSBVU0JfREVWSUNFX0lEX0FQUExFX0FMVV9XSVJFTEVTU18yMDA5X0FOU0kgIDB4
+MDIzOQogI2RlZmluZSBVU0JfREVWSUNFX0lEX0FQUExFX0FMVV9XSVJFTEVTU18yMDA5X0lTTyAg
+IDB4MDIzYQogI2RlZmluZSBVU0JfREVWSUNFX0lEX0FQUExFX0FMVV9XSVJFTEVTU18yMDA5X0pJ
+UyAgIDB4MDIzYgo=
+--=_33a3fdaa80ecb282c5299ebba6430df8--
 
