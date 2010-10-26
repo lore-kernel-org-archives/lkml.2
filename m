@@ -1,63 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752023Ab0JZAcV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Oct 2010 20:32:21 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:48957 "EHLO smtps.tip.net.au"
+	id S1753307Ab0JZAic (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Oct 2010 20:38:32 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:55230 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751173Ab0JZAcU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Oct 2010 20:32:20 -0400
-Date: Tue, 26 Oct 2010 11:32:13 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: David Woodhouse <dwmw2@infradead.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Arnd Bergmann <arnd@arndb.de>,
-        Maxim Levitsky <maximlevitsky@gmail.com>,
-        Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
-Subject: linux-next: manual merge of the mtd tree with Linus' tree
-Message-Id: <20101026113213.1faaf8a1.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Tue__26_Oct_2010_11_32_13_+1100_g+fZmG692auiXyhh"
+	id S1751031Ab0JZAi3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Oct 2010 20:38:29 -0400
+From: Fernando Guzman Lugo <x0095840@ti.com>
+To: <gregkh@suse.de>
+Cc: <felipe.contreras@nokia.com>, <Hiroshi.DOYU@nokia.com>,
+        <linux-kernel@vger.kernel.org>, <andy.shevchenko@gmail.com>,
+        <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        Fernando Guzman Lugo <x0095840@ti.com>
+Subject: [PATCH 0/8] staging: tidspbridge - misc fixes
+Date: Mon, 25 Oct 2010 19:51:38 -0500
+Message-Id: <1288054306-4361-1-git-send-email-x0095840@ti.com>
+X-Mailer: git-send-email 1.6.3.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__26_Oct_2010_11_32_13_+1100_g+fZmG692auiXyhh
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+This set of patches fix some issues found in lastest tree.
 
-Hi David,
+Fernando Guzman Lugo (8):
+  staging: tidspbridge - remove req_addr from proc_map
+  staging: tidspbridge - add kconfig parameter for DMM size
+  staging: tidspbridge - change mmufault tasklet to a workqueue
+  staging: tidspbridge - fix timeout in dsp_gpt_wait_overflow
+  staging: tidspbridge - use GTP7 for DSP stack dump
+  staging: tidspbridge - remove disabling twl when printing DSP stack
+  staging: tidspbridge - fix some issues after iommu patches
+  staging: tidspbridge - make sync_wait_on_event interruptible
 
-Today's linux-next merge of the mtd tree got a conflict in
-drivers/mtd/mtd_blkdevs.c between commit
-2a48fc0ab24241755dc93bfd4f01d68efab47f5a ("block: autoconvert trivial BKL
-users to private mutex") from the  tree and commit
-480792b7bf188c29b8d4b10fee65c3a06ec5dbf7 ("mtd: blktrans: kill BKL") from
-the mtd tree.
+ drivers/staging/tidspbridge/Kconfig                |    8 +++
+ drivers/staging/tidspbridge/core/dsp-clock.c       |   13 +++--
+ drivers/staging/tidspbridge/core/dsp-mmu.c         |   55 +++++++++++---------
+ drivers/staging/tidspbridge/core/tiomap3430.c      |   20 ++++++-
+ .../staging/tidspbridge/include/dspbridge/clk.h    |    4 +-
+ .../tidspbridge/include/dspbridge/dsp-mmu.h        |    3 +
+ .../tidspbridge/include/dspbridge/dspapi-ioctl.h   |    1 -
+ .../staging/tidspbridge/include/dspbridge/proc.h   |    3 -
+ .../staging/tidspbridge/include/dspbridge/sync.h   |   13 ++++-
+ drivers/staging/tidspbridge/pmgr/dspapi.c          |    2 +-
+ drivers/staging/tidspbridge/rmgr/node.c            |    4 +-
+ drivers/staging/tidspbridge/rmgr/proc.c            |   25 ++++-----
+ 12 files changed, 95 insertions(+), 56 deletions(-)
 
-I fixed it up (by removing all the bits of the former commit) and can
-carry the fix as necessary.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Tue__26_Oct_2010_11_32_13_+1100_g+fZmG692auiXyhh
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQEcBAEBAgAGBQJMxiGNAAoJEDMEi1NhKgbsVkoH/2SeDD+LM1iKJY23V9kDzh/n
-qzhjxxuBQCeklUs52wAKlZMfFr8A3eAI3clJlABk/M1LnFX8pcAqIpbM9b6jmqtn
-TK7AJ1jCM3Nh6hw/bPACu+abWTDpUmeGnDasHlIBkWdGUVG//2DfmUyIpc3l+McD
-9OCkU4j2C8GEvw6EVaghN8lzffHv2/6BjsDo88UF3AYHpYfgstBB0+w7nxGknXz/
-Vfc2ankWEQ/hq1xhfujcGLdYH17c0hD1xOqkWJ1VRpKMmGsu9bVz39HsvwX/LG3a
-Y+JJUcYY6p9wdQVOE+2SnC+N0Bq8PjILYHk+GB8wHuqXDtyobNY0b86jqg3pbZM=
-=hzHA
------END PGP SIGNATURE-----
-
---Signature=_Tue__26_Oct_2010_11_32_13_+1100_g+fZmG692auiXyhh--
