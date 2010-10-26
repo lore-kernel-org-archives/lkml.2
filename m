@@ -1,81 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933181Ab0JZNRJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Oct 2010 09:17:09 -0400
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:40838 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932464Ab0JZNRI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Oct 2010 09:17:08 -0400
-Date: Tue, 26 Oct 2010 15:18:43 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: Markus Trippelsdorf <markus@trippelsdorf.de>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "hpa@linux.intel.com" <hpa@linux.intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Andreas Herrmann <andreas.herrmann3@amd.com>
-Subject: Re: Clocksource tsc unstable (delta = -8589361717 ns) in current
- git
-Message-ID: <20101026131843.GC17852@aftab>
-References: <20101026112052.GA1672@arch.trippelsdorf.de>
+	id S933199Ab0JZNTH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Oct 2010 09:19:07 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:17499 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932857Ab0JZNTF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Oct 2010 09:19:05 -0400
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101026112052.GA1672@arch.trippelsdorf.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 7bit
+From: Roland McGrath <roland@redhat.com>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+X-Fcc: ~/Mail/linus
+Cc: Oleg Nesterov <oleg@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>
+Subject: Re: [resend][PATCH 3/4] move cred_guard_mutex from task_struct to signal_struct
+In-Reply-To: KOSAKI Motohiro's message of  Tuesday, 26 October 2010 22:04:50 +0900 <20101026220314.B7DD.A69D9226@jp.fujitsu.com>
+References: <20101025174220.GA21375@redhat.com>
+	<20101025175113.963CCC9E3C@blackie.sf.frob.com>
+	<20101026220314.B7DD.A69D9226@jp.fujitsu.com>
+X-Antipastobozoticataclysm: When George Bush projectile vomits antipasto on the Japanese.
+Message-Id: <20101026131826.5B262C9E36@blackie.sf.frob.com>
+Date: Tue, 26 Oct 2010 09:18:26 -0400 (EDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 26, 2010 at 07:20:52AM -0400, Markus Trippelsdorf wrote:
-> On my AMD system the following kernel messages are sometimes printed
-> after several hours of uptime:
-> Clocksource tsc unstable (delta = -8589361717 ns)
-> Switching to clocksource hpet
+> Because [4/4] depend on [3/4] and I hope to backport it. Do you dislike it
+> too?
 
-This is strange, tsc is actually stable on your F10h revC.
+Ah, OK.  That is indeed a fix for an important bug.  Not knowing the mm
+code very well, I'm not in a position to judge whether it's safe enough
+for a -stable stream or not.  If it is and it could be done safely
+without relying on 3/4, that would seem safer to me, but it is not a
+strong opinion.
 
-> This happened several times already:
-> # grep "Clocksource" kernel.*
-> kernel.log:Oct 24 18:31:17 arch kernel: Clocksource tsc unstable (delta = -8591703466 ns)
-> kernel.log:Oct 26 12:54:38 arch kernel: Clocksource tsc unstable (delta = -8589361717 ns)
-> kernel.log.1:Oct 22 21:43:51 arch kernel: Clocksource tsc unstable (delta = -25772316650 ns)
 
-Do you have any warnings/oopses before that, can we have the whole dmesg
-with the above messages?
-
-> The computer is nearly unusable afterwards (second long delays, that
-> seem to grow larger and larger) and only a prompt reboot can fix the
-> problem.
-> I'm running the latest git kernel. Version 2.6.36 does not show these
-> symptoms.
-> 
-> Dmesg and kernel config are attached.
-> 
-> -- 
-> Markus
-
-> Initializing cgroup subsys cpu
-> Linux version 2.6.36-05618-gb18cae4-dirty (markus@arch.trippelsdorf.de) (gcc version 4.5.1 (GCC) ) #41 SMP PREEMPT Tue Oct 26 06:51:47 CEST 2010
-
- ...-dirty means you have some changes ontop of b18cae4. What are those?
-
-> Command line: root=/dev/sdb2 fbcon=rotate:3 quiet kexec_jump_back_entry=0x23d64482b7e72bb7
-> BIOS-provided physical RAM map:
-
-otherwise, I don't see anything strange in your dmesg. Unless tglx has a
-better idea, I'd ask you to bisect it. 5618 changesets shouldn't be that
-much but I don't know, if the issue appears every several hours it could
-still be tedious.
-
-Thanks.
-
--- 
-Regards/Gruss,
-Boris.
-
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-General Managers: Alberto Bozzo, Andrew Bowd
-Registration: Dornach, Gemeinde Aschheim, Landkreis Muenchen
-Registergericht Muenchen, HRB Nr. 43632
+Thanks,
+Roland
