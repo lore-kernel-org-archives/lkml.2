@@ -1,117 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758356Ab0JZORu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Oct 2010 10:17:50 -0400
-Received: from fxip-0047f.externet.hu ([88.209.222.127]:35261 "EHLO
-	pomaz-ex.szeredi.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759627Ab0JZORs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Oct 2010 10:17:48 -0400
-Message-Id: <20101026141657.661882965@szeredi.hu>
-References: <20101026141641.315420064@szeredi.hu>
-User-Agent: quilt/0.46-1
-Date: Tue, 26 Oct 2010 16:16:43 +0200
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: viro@zeniv.linux.org.uk
-Cc: dave@linux.vnet.ibm.com, akpm@linux-foundation.org,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 2/4] vfs: keep list of mounts for each superblock
-Content-Disposition: inline; filename=vfs-mount-list.patch
+	id S1759745Ab0JZOS3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Oct 2010 10:18:29 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:55504 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751529Ab0JZOS2 (ORCPT
+	<rfc822;<linux-kernel@vger.kernel.org>>);
+	Tue, 26 Oct 2010 10:18:28 -0400
+Date: Tue, 26 Oct 2010 10:17:39 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Jeremy Fitzhardinge <jeremy@goop.org>
+Cc: xen-devel@lists.xensource.com, Ian Campbell <ian.campbell@citrix.com>,
+        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
+        mingo@elte.hu, tglx@linutronix.de
+Subject: Re: [Xen-devel] Re: [PATCH 1/5] xen: events: use
+ irq_alloc_desc(_at) instead of open-coding an IRQ allocator.
+Message-ID: <20101026141739.GA9557@dumpdata.com>
+References: <1288023736.11153.40.camel@zakaz.uk.xensource.com>
+ <1288023813-31989-1-git-send-email-ian.campbell@citrix.com>
+ <20101025173522.GA5590@dumpdata.com>
+ <4CC60CB7.3070005@goop.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4CC60CB7.3070005@goop.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Miklos Szeredi <mszeredi@suse.cz>
+On Mon, Oct 25, 2010 at 04:03:19PM -0700, Jeremy Fitzhardinge wrote:
+>  On 10/25/2010 10:35 AM, Konrad Rzeszutek Wilk wrote:
+> > On Mon, Oct 25, 2010 at 05:23:29PM +0100, Ian Campbell wrote:
+> >> Encapsulate allocate and free in xen_irq_alloc and xen_irq_free.
+> >>
+> >> Signed-off-by: Ian Campbell <ian.campbell@citrix.com>
+> >> ---
+> >>  drivers/xen/events.c |   68 ++++++++++++++++++++-----------------------------
+> >>  1 files changed, 28 insertions(+), 40 deletions(-)
+> >>
+> >> diff --git a/drivers/xen/events.c b/drivers/xen/events.c
+> >> index 97612f5..c8f3e43 100644
+> >> --- a/drivers/xen/events.c
+> >> +++ b/drivers/xen/events.c
+> >> @@ -394,41 +394,29 @@ static int find_unbound_pirq(void)
+> >>  	return -1;
+> >>  }
+> >>  
+> >> -static int find_unbound_irq(void)
+> >> +static int xen_irq_alloc(void)
+> >>  {
+> >> -	struct irq_data *data;
+> >> -	int irq, res;
+> >> -	int start = get_nr_hw_irqs();
+> >> +	int irq = irq_alloc_desc(0);
+> >>  
+> >> -	if (start == nr_irqs)
+> >> -		goto no_irqs;
+> >> -
+> >> -	/* nr_irqs is a magic value. Must not use it.*/
+> >> -	for (irq = nr_irqs-1; irq > start; irq--) {
+> >> -		data = irq_get_irq_data(irq);
+> >> -		/* only 0->15 have init'd desc; handle irq > 16 */
+> >> -		if (!data)
+> >> -			break;
+> >> -		if (data->chip == &no_irq_chip)
+> >> -			break;
+> >> -		if (data->chip != &xen_dynamic_chip)
+> >> -			continue;
+> >> -		if (irq_info[irq].type == IRQT_UNBOUND)
+> >> -			return irq;
+> >> -	}
+> >> -
+> >> -	if (irq == start)
+> >> -		goto no_irqs;
+> >> +	if (irq < 0)
+> >> +		panic("No available IRQ to bind to: increase nr_irqs!\n");
+> >>  
+> >> -	res = irq_alloc_desc_at(irq, 0);
+> >> +	return irq;
+> >> +}
+> > So I am curious what the /proc/interrupts looks?The issue (and the reason
+> > for this implementation above) was that under PV with PCI devices we would
+> > overlap PCI devices IRQs with Xen event channels. So we could have a USB device
+> > at IRQ 16 _and_ also a xen_spinlock4 handler. That would throw off the system
+> > since the xen_spinlock4 was an edge type handler while the USB device was an
+> > level (at least on my box).
+> 
+> What?  Why?  How?  Surely if we're asking the irq subsystem to allocate
 
-Keep track of vfsmounts belonging to a superblock.  List is protected
-by vfsmount_lock.
+Imagine a PV guest with PCI passthrough. Normally the first 16 IRQs
+are reserved for "legacy" devices. And the IRQs after that are up for grabs.
 
-Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
----
- fs/namespace.c        |    5 +++++
- fs/super.c            |    7 +++++++
- include/linux/fs.h    |    1 +
- include/linux/mount.h |    1 +
- 4 files changed, 14 insertions(+)
+Since the Xen event channels are initialized much much earlier than
+any PCI devices, they end up using the IRQs right after 16 -which is OK
+if you don't have any PCI devices. If you have a PCI device that is
+using IRQ 17 it ends up colliding with an event channel.
 
-Index: linux-2.6/include/linux/fs.h
-===================================================================
---- linux-2.6.orig/include/linux/fs.h	2010-10-26 14:26:57.000000000 +0200
-+++ linux-2.6/include/linux/fs.h	2010-10-26 14:27:02.000000000 +0200
-@@ -1348,6 +1348,7 @@ struct super_block {
- #else
- 	struct list_head	s_files;
- #endif
-+	struct list_head	s_mounts;	/* list of mounts */
- 	/* s_dentry_lru and s_nr_dentry_unused are protected by dcache_lock */
- 	struct list_head	s_dentry_lru;	/* unused dentry lru */
- 	int			s_nr_dentry_unused;	/* # of dentry on lru */
-Index: linux-2.6/include/linux/mount.h
-===================================================================
---- linux-2.6.orig/include/linux/mount.h	2010-10-26 14:26:57.000000000 +0200
-+++ linux-2.6/include/linux/mount.h	2010-10-26 14:27:02.000000000 +0200
-@@ -54,6 +54,7 @@ struct vfsmount {
- 	struct super_block *mnt_sb;	/* pointer to superblock */
- 	struct list_head mnt_mounts;	/* list of children, anchored here */
- 	struct list_head mnt_child;	/* and going through their mnt_child */
-+	struct list_head mnt_instance;	/* mount instance on sb->s_mounts */
- 	int mnt_flags;
- 	/* 4 bytes hole on 64bits arches without fsnotify */
- #ifdef CONFIG_FSNOTIFY
-Index: linux-2.6/fs/namespace.c
-===================================================================
---- linux-2.6.orig/fs/namespace.c	2010-10-26 14:27:01.000000000 +0200
-+++ linux-2.6/fs/namespace.c	2010-10-26 14:27:02.000000000 +0200
-@@ -622,6 +622,10 @@ static struct vfsmount *clone_mnt(struct
- 			if (!list_empty(&old->mnt_expire))
- 				list_add(&mnt->mnt_expire, &old->mnt_expire);
- 		}
-+
-+		br_write_lock(vfsmount_lock);
-+		list_add_tail(&mnt->mnt_instance, &mnt->mnt_sb->s_mounts);
-+		br_write_unlock(vfsmount_lock);
- 	}
- 	return mnt;
- 
-@@ -661,6 +665,7 @@ void mntput_no_expire(struct vfsmount *m
- 		return;
- 	}
- 	if (likely(!mnt->mnt_pinned)) {
-+		list_del(&mnt->mnt_instance);
- 		br_write_unlock(vfsmount_lock);
- 		__mntput(mnt);
- 		return;
-Index: linux-2.6/fs/super.c
-===================================================================
---- linux-2.6.orig/fs/super.c	2010-10-26 14:27:01.000000000 +0200
-+++ linux-2.6/fs/super.c	2010-10-26 14:27:02.000000000 +0200
-@@ -74,6 +74,7 @@ static struct super_block *alloc_super(s
- 		INIT_HLIST_HEAD(&s->s_anon);
- 		INIT_LIST_HEAD(&s->s_inodes);
- 		INIT_LIST_HEAD(&s->s_dentry_lru);
-+		INIT_LIST_HEAD(&s->s_mounts);
- 		init_rwsem(&s->s_umount);
- 		mutex_init(&s->s_lock);
- 		lockdep_set_class(&s->s_umount, &type->s_umount_key);
-@@ -127,6 +128,7 @@ static inline void destroy_super(struct
- 	free_percpu(s->s_files);
- #endif
- 	security_sb_free(s);
-+	WARN_ON(!list_empty(&s->s_mounts));
- 	kfree(s->s_subtype);
- 	kfree(s->s_options);
- 	kfree(s);
-@@ -968,6 +970,11 @@ vfs_kern_mount(struct file_system_type *
- 	mnt->mnt_parent = mnt;
- 	up_write(&mnt->mnt_sb->s_umount);
- 	free_secdata(secdata);
-+
-+	br_write_lock(vfsmount_lock);
-+	list_add_tail(&mnt->mnt_instance, &mnt->mnt_sb->s_mounts);
-+	br_write_unlock(vfsmount_lock);
-+
- 	return mnt;
- out_sb:
- 	dput(mnt->mnt_root);
+Now, I have to confess I did not look carefully at the sparse_irq rework
+so it might be that the IRQ numbur is not as important as it was
+before 2.6.37.
 
--- 
+> us an irq, it will return a fresh never-before-used (and certainly not
+> shared) irq?  Shared irqs only make sense if multiple devices are
+> actually sharing, say, a wire on the board.
+
+Right, and in this case we end up trying to use the IRQ for a physical
+device and find out that the IRQ has/is being aleady used for an
+event channel.
+
+> 
+> Or am I missing something?
+
+Event channels are allocated before PCI devices so they get to usurp
+the IRQ chip for the IRQ that belongs to the PCI device.
+
+Keep in mind that this is not possible under Dom0, as we have the 
+IOAPIC information, so we know that IRQ0-48 are reserved for GSI's
+for three of the IOAPIC. In PV with PCI passthrough such information
+is not present and the kernel assumes no IOAPICs, and hence no
+GSI.
+
+a). Maybe one way to do this is set the GSI high watermark to be the
+same as the host (so move it from the legacy IRQ 16 to 48 for example).
+This would require fiddling with the shared_info structure..
+
+b) Another approach was to allocate event-channel IRQs and virtual IRQs
+from the highest available IRQ and continue down . Physical IRQs would be
+allocated from the legacy IRQ up to whatever is available.
+
+c) 2.6.18 kernels made a division right at 255, so anything under 255 was to be
+used for physical IRQs, while anything above that for event channels and
+vitual IRQs.
+
