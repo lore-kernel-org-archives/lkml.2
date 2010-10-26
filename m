@@ -1,107 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759941Ab0JZPrF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Oct 2010 11:47:05 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:45272 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759909Ab0JZPrE convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Oct 2010 11:47:04 -0400
-From: "Guzman Lugo, Fernando" <fernando.lugo@ti.com>
-To: Felipe Contreras <felipe.contreras@nokia.com>,
-        "gregkh@suse.de" <gregkh@suse.de>
-CC: "hiroshi.doyu@nokia.com" <hiroshi.doyu@nokia.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "andy.shevchenko@gmail.com" <andy.shevchenko@gmail.com>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Date: Tue, 26 Oct 2010 10:46:52 -0500
-Subject: RE: [PATCH 0/8] staging: tidspbridge - misc fixes
-Thread-Topic: [PATCH 0/8] staging: tidspbridge - misc fixes
-Thread-Index: Act1HDMtaXKQ6k1dTCea1/P0rgn7QwAB7yeQ
-Message-ID: <496565EC904933469F292DDA3F1663E602F49E27FD@dlee06.ent.ti.com>
-References: <1288054306-4361-1-git-send-email-x0095840@ti.com>
- <20101026040619.GA8549@suse.de>
- <1288103059-notmuch-felipe.contreras@nokia.com>
-In-Reply-To: <1288103059-notmuch-felipe.contreras@nokia.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1759937Ab0JZPs3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Oct 2010 11:48:29 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:53588 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751123Ab0JZPs2 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Oct 2010 11:48:28 -0400
 MIME-Version: 1.0
+In-Reply-To: <1288078144.7478.9.camel@marge.simson.net>
+References: <1287479765.9920.9.camel@marge.simson.net> <1287487757.24189.40.camel@marge.simson.net>
+ <AANLkTik08s=S7gZOGWEEhPW-zJtNRCse2h6jH3HAjoJH@mail.gmail.com>
+ <1287511983.7417.45.camel@marge.simson.net> <1287514410.7368.10.camel@marge.simson.net>
+ <20101020025652.GB26822@elte.hu> <1287648715.9021.20.camel@marge.simson.net>
+ <20101021105114.GA10216@Krystal> <1287660312.3488.103.camel@twins>
+ <20101021162924.GA3225@redhat.com> <1288076838.11930.1.camel@marge.simson.net>
+ <1288078144.7478.9.camel@marge.simson.net>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Tue, 26 Oct 2010 08:47:08 -0700
+Message-ID: <AANLkTimOJAv2uRfq4bW_QPngkGCmJDjNX5n_izpX=eB8@mail.gmail.com>
+Subject: Re: [RFC/RFT PATCH v3] sched: automated per tty task groups
+To: Mike Galbraith <mgalbraith@suse.de>
+Cc: Oleg Nesterov <oleg@redhat.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
+        Markus Trippelsdorf <markus@trippelsdorf.de>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- 
+On Tue, Oct 26, 2010 at 12:29 AM, Mike Galbraith <mgalbraith@suse.de> wrote:
+> On Tue, 2010-10-26 at 09:07 +0200, Mike Galbraith wrote:
+>> On Thu, 2010-10-21 at 18:29 +0200, Oleg Nesterov wrote:
+>>
+>> > It is not clear to me why do we need rcu_read_lock() and how it can help.
+>> > The tty can go away right after dereferencing signal->tty.
+>>
+>> Which was Marcus' crash.  Didn't happen here only because I didn't have
+>> CONFIG_PREEMPT set.
+>>
+>> Changes since v2:
+>>   - drop
+>
+> Bumped mouse, message escaped.
+>
+> Doesn't matter though, damn thing just blew up during enable/disable
+> plus hackbench stress test, despite holding a reference to the tty at
+> every place tty changes (under sighand lock), and moving the task with
+> that reference held.
 
-> -----Original Message-----
-> From: Felipe Contreras [mailto:felipe.contreras@nokia.com] 
-> Sent: Tuesday, October 26, 2010 9:44 AM
-> To: gregkh@suse.de; Guzman Lugo, Fernando
-> Cc: hiroshi.doyu@nokia.com; linux-kernel@vger.kernel.org; 
-> andy.shevchenko@gmail.com; linux-omap@vger.kernel.org; 
-> linux-arm-kernel@lists.infradead.org
-> Subject: Re: [PATCH 0/8] staging: tidspbridge - misc fixes
-> 
-> gregkh@suse.de wrote:
-> > On Mon, Oct 25, 2010 at 07:51:38PM -0500, Fernando Guzman 
-> Lugo wrote:
-> > > This set of patches fix some issues found in lastest tree.
-> > > 
-> > > Fernando Guzman Lugo (8):
-> > >   staging: tidspbridge - remove req_addr from proc_map
-> > >   staging: tidspbridge - add kconfig parameter for DMM size
-> > >   staging: tidspbridge - change mmufault tasklet to a workqueue
-> > >   staging: tidspbridge - fix timeout in dsp_gpt_wait_overflow
-> > >   staging: tidspbridge - use GTP7 for DSP stack dump
-> > >   staging: tidspbridge - remove disabling twl when 
-> printing DSP stack
-> > >   staging: tidspbridge - fix some issues after iommu patches
-> > >   staging: tidspbridge - make sync_wait_on_event interruptible
-> > 
-> > Are any of these really applicable for .37 after .37-rc1?  
-> Or can they 
-> > wait for .38?
+So I have a suggestion that may not be popular with you, because it
+does end up changing the approach of your patch a lot.
 
-I would like to merge as soon as they can becase most of them
-Some fixes, However the patch 2/7 has a dependency on an iommu
-Patch and if it is no merged first the compilation will be broken.
-So maybe they can be marged as soon as iommu patches are merged.
+And I have to say, I like how your last patch looked. It was
+surprisingly small, simple, and clean. So I hate saying "I think it
+should perhaps do things a bit differently". That said, I would
+suggest:
 
-> 
-> As of right now the dspbridge doesn't work, and there's a 
-> mess of dependencies to get it working.
-> 
->  - omap iommu: linux-omap pull request has already been sent, and
->    there's no target when the omap iommu pull request will be sent...
->    right Hiroshi?
->  - linux-arm: some patches are needed, and it's not clear if they'll
->    make it to .37-rc1, or .37 at all.
-> 
-> So, no, I don't think these patches should considered as of right now.
-> 
-> In fact, these affect mostly iommu, and I think until those 
-> other dependencies are resolved, we should revert back to a 
-> previous point where the driver was actually working.
+ - don't depend on "tsk->signal->tty" at all.
 
-That looks like double work, having the revert now to merge after. If
-Someone needs tidspbridge withouts those patche, they can go back to
-A previous commit. The issues will be fixed as soon as the dependencies
-Are merged.
+ - INSTEAD, introduce a "tsk->signal->sched_group" pointer that points
+to whatever the current auto-task_group is. Remember, long-term, we'd
+want to maybe have other heuristics than just the tty groups, so we'd
+want this separate from the tty logic _anyway_
 
-Regards,
-Fernando.
+ - at fork time, just copy the task_group pointer in copy_signal() if
+it is non-NULL, and increment the refcount (I don't think struct
+task_group is refcounted now, but this would require it).
 
-> 
-> What is guideline in staging when a driver is broken like this?
-> 
-> Cheers.
-> 
-> --
-> Felipe Contreras
-> 
+ - at free_signal_struct(), just do a
+"put_task_group(sig->task_group);" before freeing it.
+
+ - make the scheduler use the "tsk->signal->sched_group" as the
+default group if nothing else exists.
+
+Now, all the basic logic is _entirely_ unaware of any tty logic, and
+it's generic. And none of it has any races with some odd tty release
+logic or anything like that.
+
+Now, after this, the only thing you'd need to do is hook into
+__proc_set_tty(), which already holds the sighand lock, and _there_
+you would attach the task_group to the process. Notice how it would
+never be attached to a tty at all, so tty_release etc would never be
+involved in any taskgroup thing - it's not really the tty that owns
+the taskgroup, it's simply the act of becoming a tty task group leader
+that attaches the task to a new scheduling group.
+
+It also means, for example, that if a process loses its tty (and
+doesn't get a new one - think hangup), it still remains in whatever
+scheduling group it started out with. The tty really is immaterial.
+
+And the nice thing about this is that it should be trivial to make
+other things than tty's trigger this same thing, if we find a pattern
+(or create some new interface to let people ask for it) for something
+that should create a new group (like perhaps spawning a graphical
+application from the window manager rather than from a tty).
+
+Comments?
+
+                                           Linus
