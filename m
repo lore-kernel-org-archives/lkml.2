@@ -1,115 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760137Ab0JZRPj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Oct 2010 13:15:39 -0400
-Received: from na3sys009aog111.obsmtp.com ([74.125.149.205]:45981 "EHLO
-	na3sys009aog111.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758203Ab0JZRPi (ORCPT
+	id S1760151Ab0JZRSa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Oct 2010 13:18:30 -0400
+Received: from mxout1.idt.com ([157.165.5.25]:43811 "EHLO mxout1.idt.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754279Ab0JZRS3 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Oct 2010 13:15:38 -0400
-From: "Yang, Bo" <Bo.Yang@lsi.com>
-To: James Bottomley <James.Bottomley@suse.de>
-CC: bo yang <boyang1288@gmail.com>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        "akpm@osdl.org" <akpm@osdl.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Tue, 26 Oct 2010 11:15:08 -0600
-Subject: RE: [PATCH 5/5] scsi: megaraid_sas - Version and documentation
- update
-Thread-Topic: [PATCH 5/5] scsi: megaraid_sas - Version and documentation
- update
-Thread-Index: Act1KJkKQ0uvtAe3R5S/DxEnQsgVngABEFtw
-Message-ID: <4B6A08C587958942AA3002690DD4F8C3010119E798@cosmail02.lsi.com>
-References: <AANLkTi=praySm1B3dhU+LxhWK2yUccZkzWpd6-6UERYa@mail.gmail.com>
-	 <4B6A08C587958942AA3002690DD4F8C30100FF9FBB@cosmail02.lsi.com>
- <1288109543.8283.139.camel@mulgrave.site>
-In-Reply-To: <1288109543.8283.139.camel@mulgrave.site>
-Accept-Language: en-US
-Content-Language: en-US
+	Tue, 26 Oct 2010 13:18:29 -0400
+X-MimeOLE: Produced By Microsoft Exchange V6.5
+Content-class: urn:content-classes:message
+MIME-Version: 1.0
+Content-Type: text/plain;
+	charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+Subject: RE: [PATCH -mm 0/2] RapidIO: Changes to handling of RIO switches
+Date: Tue, 26 Oct 2010 10:17:50 -0700
+Message-ID: <0CE8B6BE3C4AD74AB97D9D29BD24E5520147D9BA@CORPEXCH1.na.ads.idt.com>
+In-Reply-To: <4CC6E43C.8010104@neli.hopto.org>
 X-MS-Has-Attach: 
 X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
+Thread-Topic: [PATCH -mm 0/2] RapidIO: Changes to handling of RIO switches
+Thread-Index: Act1GU6F7UA1HludQSOmmkPeQiBOBAAB7SWQ
+References: <1287688250-14226-1-git-send-email-alexandre.bounine@idt.com> <4CC0AD74.8070800@neli.hopto.org> <0CE8B6BE3C4AD74AB97D9D29BD24E55201445906@CORPEXCH1.na.ads.idt.com> <4CC1D7DE.7060405@neli.hopto.org> <0CE8B6BE3C4AD74AB97D9D29BD24E55201445A6B@CORPEXCH1.na.ads.idt.com> <4CC20923.8050400@neli.hopto.org> <0CE8B6BE3C4AD74AB97D9D29BD24E55201445BA4@CORPEXCH1.na.ads.idt.com> <4CC5ACAB.7070309@neli.hopto.org> <0CE8B6BE3C4AD74AB97D9D29BD24E5520147D5C2@CORPEXCH1.na.ads.idt.com> <4CC5E354.80009@neli.hopto.org> <0CE8B6BE3C4AD74AB97D9D29BD24E5520147D879@CORPEXCH1.na.ads.idt.com> <4CC6E43C.8010104@neli.hopto.org>
+From: "Bounine, Alexandre" <Alexandre.Bounine@idt.com>
+To: "Micha Nelissen" <micha@neli.hopto.org>
+Cc: <akpm@linux-foundation.org>, <linux-kernel@vger.kernel.org>,
+        <linuxppc-dev@lists.ozlabs.org>,
+        "Matt Porter" <mporter@kernel.crashing.org>,
+        "Li Yang" <leoli@freescale.com>,
+        "Kumar Gala" <galak@kernel.crashing.org>,
+        "Thomas Moll" <thomas.moll@sysgo.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id o9QHFvC5012196
 
-James,
-
-Thanks for correcting that. Did you also applied 2/5, 3/5 and 4/5 patches?
-
-By the way, I always use checkpatch.pl to check the patch before I attach the patch to the e-mail.  Also I just went to the 5/5 patch to verify the patch: the steps:
-
-1. go to  http://marc.info/?l=linux-scsi&m=128688974201201&w=2 
-2. click: ["megasas-version.patch" (application/octet-stream)] to download this patch.  
-3. Used the checkpatch.pl to check (I used the cmd: "checkpatch.pl --no-tree megasas-version.patch") 
-
-It looks OK for me (no errors).  It is maybe the checkpatch.pl I used does not get updated or some steps are not correct.  I will find out the updated one to try and find out the reasons.   
-
-
-Thanks,
-
-Bo Yang
-
-
------Original Message-----
-From: James Bottomley [mailto:James.Bottomley@suse.de] 
-Sent: Tuesday, October 26, 2010 12:12 PM
-To: Yang, Bo
-Cc: bo yang; linux-scsi@vger.kernel.org; akpm@osdl.org; linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 5/5] scsi: megaraid_sas - Version and documentation update
-
-On Tue, 2010-10-12 at 07:21 -0600, Yang, Bo wrote:
-> Re-Submit:
+Micha Nelissen <micha@neli.hopto.org> wrote:
 > 
-> Update the version and documentation.
+> In various parts of the enumeration and routing algorithm, it would
+need
+> to lookup the tag to find the destid, if the destid is in the tag then
+> this lookup is not needed.
 
-This has an impressive set of checkpatch failures:
+Let's keep this discussion within limits of the current implementation.
+Existing method of forming CT may be replaced when that change is
+justified by use.
+Any method that may be implemented later is good if it ensures unique
+identification of RIO devices. At this moment, we just need to define CT
+format now to avoid future conflicts of enumeration methods.
 
-ERROR: trailing whitespace
-#26: FILE: Documentation/scsi/ChangeLog.megaraid_sas:13:
-+^ITo add the OCR support, driver need to do: $
+> Well, we both know "the current mainline implementation" is easily
+> improved to unique identification I proposed. Therefore this statement
+> is misleading.
 
-ERROR: trailing whitespace
-#30: FILE: Documentation/scsi/ChangeLog.megaraid_sas:17:
-+^I^I$
+Your improvement will require assigning separate destID to any switch
+that has no endpoints attached. I prefer to keep changes to enumeration
+for later patches.
 
-ERROR: trailing whitespace
-#35: FILE: Documentation/scsi/ChangeLog.megaraid_sas:22:
-+^I^I$
+Alex.
 
-ERROR: trailing whitespace
-#39: FILE: Documentation/scsi/ChangeLog.megaraid_sas:26:
-+^I^I$
-
-ERROR: trailing whitespace
-#43: FILE: Documentation/scsi/ChangeLog.megaraid_sas:30:
-+^I^I$
-
-ERROR: trailing whitespace
-#46: FILE: Documentation/scsi/ChangeLog.megaraid_sas:33:
-+^I^I $
-
-ERROR: trailing whitespace
-#48: FILE: Documentation/scsi/ChangeLog.megaraid_sas:35:
-+^I^IOCR to see if driver can bring back the FW.      $
-
-ERROR: trailing whitespace
-#54: FILE: Documentation/scsi/ChangeLog.megaraid_sas:41:
-+3.^IIn driver's timeout routine, driver will do three time reset if fw
-is in $
-
-total: 8 errors, 0 warnings, 70 lines checked
-
-I've fixed it up this time, but could you run it through checkpatch.pl
-next time?
-
-Thanks,
-
-James
-
-
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
