@@ -1,193 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932353Ab0JZVEr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Oct 2010 17:04:47 -0400
-Received: from smtp151.iad.emailsrvr.com ([207.97.245.151]:46108 "EHLO
-	smtp151.iad.emailsrvr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757511Ab0JZVEp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Oct 2010 17:04:45 -0400
-Message-ID: <4CC7426C.8040502@triadsys.com>
-Date: Tue, 26 Oct 2010 17:04:44 -0400
-From: Tom Vier <tom@triadsys.com>
-Organization: Triad Systems Engineering, Inc.
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.12) Gecko/20100913 Icedove/3.0.7
-MIME-Version: 1.0
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-CC: Samuel Thibault <sthibault@debian.org>, 594089@bugs.debian.org,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: Bug#594089: keyboard-configuration: caps lock keycode problem
-References: <20100823154353.2805.13525.reportbug@tom.tse> <20100903235540.GA9149@const> <4C866913.3030201@triadsys.com> <4C8E6861.1070502@triadsys.com> <20101024144150.GV24091@const.famille.thibault.fr> <20101025045003.GA1438@core.coreip.homeip.net> <4CC58816.3090301@triadsys.com> <20101025180320.GA4725@const.famille.thibault.fr> <4CC6E9D8.8010201@triadsys.com> <20101026161820.GE13097@core.coreip.homeip.net>
-In-Reply-To: <20101026161820.GE13097@core.coreip.homeip.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1760261Ab0JZVHb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Oct 2010 17:07:31 -0400
+Received: from xenotime.net ([72.52.115.56]:41503 "HELO xenotime.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1753294Ab0JZVHa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Oct 2010 17:07:30 -0400
+Date: Tue, 26 Oct 2010 14:07:26 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+To: lkml <linux-kernel@vger.kernel.org>
+Cc: Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Subject: Re: docbook: fix fatal error in linux/input.h
+Message-Id: <20101026140726.009a254b.rdunlap@xenotime.net>
+In-Reply-To: <20101026135957.62db12d2.rdunlap@xenotime.net>
+References: <20101026114555.4b79977d.rdunlap@xenotime.net>
+	<4CC7283D.3010205@redhat.com>
+	<20101026121747.897eddc9.rdunlap@xenotime.net>
+	<4CC736CE.80305@redhat.com>
+	<20101026135957.62db12d2.rdunlap@xenotime.net>
+Organization: YPO4
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/26/2010 12:18 PM, Dmitry Torokhov wrote:
-> Hmm, it looks like it uses the same usages (MSC_SCAN) for
-> CapsLock/Favorites and RightShift/Previous... What does lsusb say about
-> the keyboard (VID/PID)?
+On Tue, 26 Oct 2010 13:59:57 -0700 Randy Dunlap wrote:
 
-The scroll wheel on the keyboard is a separate device:
+> On Tue, 26 Oct 2010 18:15:10 -0200 Mauro Carvalho Chehab wrote:
+> 
+> > Em 26-10-2010 17:17, Randy Dunlap escreveu:
+> > > On Tue, 26 Oct 2010 17:13:01 -0200 Mauro Carvalho Chehab wrote:
+> > > 
+> > >> Em 26-10-2010 16:45, Randy Dunlap escreveu:
+> > >>> Hi,
+> > >>>
+> > >>> Recent commit 8613e4c2872a87cc309a42de2c7091744dc54d0e:
+> > >>> Author: Mauro Carvalho Chehab <mchehab@redhat.com>
+> > >>> Date:   Thu Sep 9 21:54:22 2010 -0700
+> > >>>     Input: add support for large scancodes
+> > >>>
+> > >>> causes a fatal error in docbook generation:
+> > >>>
+> > >>> linux-2.6.36-git8/DOC1/Documentation/DocBook/device-drivers.xml:40690: parser error : StartTag: invalid element name
+> > >>> #define INPUT_KEYMAP_BY_INDEX	(1 << 0)
+> > >>>                              	    ^
+> > >>>
+> > >>> I think that this message comes from xsltproc, but I'm not positive about that.
+> > >>> I also don't know of a really good fix for it.  However, I did find 2 ways to
+> > >>> work around the error:
+> > >>>
+> > >>> a/ move the #define value to after the end of the struct input_keymap_entry, like:
+> > >>>
+> > >>> /* flags bits: */
+> > >>> #define INPUT_KEYMAP_BY_INDEX	(1 << 0)
+> > >>>
+> > >>> or
+> > >>> b/ don't use the "<< 0" (can leave the #define where it is in this case):
+> > >>> #define INPUT_KEYMAP_BY_INDEX	(1)
+> > >>>
+> > >>> I have tested both of these patches and they work OK.
+> > >>> Are you OK with either of them?  or want to choose one?
+> > >>
+> > >>
+> > >> Hmm... probably, the first one is not correct.
+> > > 
+> > > Why not?  All it does is move the line to after the end of the struct.
+> > > 
+> > >> I suspect that the right way is to use something like:
+> > >>
+> > >> 	#define INPUT_KEYMAP_BY_INDEX	(1 &lt;&lt; 0)
+> > >>
+> > >> Could you please test if this would fix the issue?
+> > > 
+> > > You are suggesting putting that into include/linux/input.h ??
+> > > 
+> > > That would make sense if some tool converted "<<" to "&lt;&lt;".
+> > > And that may be where the problem is, but I don't know those tools.
+> > 
+> > 
+> > Hmm... such rule is already at DocBook/Makefile:
+> > 
+> > %.xml: %.c
+> >         @$($(quiet)gen_xml)
+> >         @(                            \
+> > 	   echo "<programlisting>";   \
+> >            expand --tabs=8 < $< |     \
+> >            sed -e "s/&/\\&amp;/g"     \
+> >                -e "s/</\\&lt;/g"      \
+> >                -e "s/>/\\&gt;/g";     \
+> >            echo "</programlisting>")  > $@
+> > 
+> > Not sure why this didn't work. It should have replaced the < from the c file.
+> > Maybe some patch broke Makefile?
+> 
+> Maybe that rule needs to apply to .h files also.
+> 
+> Would
+> 
+> %.xml: %.[hc]
+> 
+> work?
 
-Bus 005 Device 003: ID 046d:c30a Logitech, Inc. iTouch Composite
-Bus 005 Device 002: ID 046d:c016 Logitech, Inc. Optical Wheel Mouse
+Doesn't work like that or as a separate rule for
+%.xml: %.h
 
+The gen_xml rule isn't firing at all AFAICT.
 
--v:
-
-Bus 005 Device 005: ID 046d:c30a Logitech, Inc. iTouch Composite
-Device Descriptor:
-   bLength                18
-   bDescriptorType         1
-   bcdUSB               1.10
-   bDeviceClass            0 (Defined at Interface level)
-   bDeviceSubClass         0
-   bDeviceProtocol         0
-   bMaxPacketSize0         8
-   idVendor           0x046d Logitech, Inc.
-   idProduct          0xc30a iTouch Composite
-   bcdDevice           15.00
-   iManufacturer           1
-   iProduct                2
-   iSerial                 0
-   bNumConfigurations      1
-   Configuration Descriptor:
-     bLength                 9
-     bDescriptorType         2
-     wTotalLength           59
-     bNumInterfaces          2
-     bConfigurationValue     1
-     iConfiguration          0
-     bmAttributes         0xa0
-       (Bus Powered)
-       Remote Wakeup
-     MaxPower              100mA
-     Interface Descriptor:
-       bLength                 9
-       bDescriptorType         4
-       bInterfaceNumber        0
-       bAlternateSetting       0
-       bNumEndpoints           1
-       bInterfaceClass         3 Human Interface Device
-       bInterfaceSubClass      1 Boot Interface Subclass
-       bInterfaceProtocol      1 Keyboard
-       iInterface              0
-         HID Device Descriptor:
-           bLength                 9
-           bDescriptorType        33
-           bcdHID               1.10
-           bCountryCode            0 Not supported
-           bNumDescriptors         1
-           bDescriptorType        34 Report
-           wDescriptorLength      64
-          Report Descriptors:
-            ** UNAVAILABLE **
-       Endpoint Descriptor:
-         bLength                 7
-         bDescriptorType         5
-         bEndpointAddress     0x81  EP 1 IN
-         bmAttributes            3
-           Transfer Type            Interrupt
-           Synch Type               None
-           Usage Type               Data
-         wMaxPacketSize     0x0008  1x 8 bytes
-         bInterval              10
-     Interface Descriptor:
-       bLength                 9
-       bDescriptorType         4
-       bInterfaceNumber        1
-       bAlternateSetting       0
-       bNumEndpoints           1
-       bInterfaceClass         3 Human Interface Device
-       bInterfaceSubClass      0 No Subclass
-       bInterfaceProtocol      0 None
-       iInterface              0
-         HID Device Descriptor:
-           bLength                 9
-           bDescriptorType        33
-           bcdHID               1.10
-           bCountryCode            0 Not supported
-           bNumDescriptors         1
-           bDescriptorType        34 Report
-           wDescriptorLength     156
-          Report Descriptors:
-            ** UNAVAILABLE **
-       Endpoint Descriptor:
-         bLength                 7
-         bDescriptorType         5
-         bEndpointAddress     0x82  EP 2 IN
-         bmAttributes            3
-           Transfer Type            Interrupt
-           Synch Type               None
-           Usage Type               Data
-         wMaxPacketSize     0x0008  1x 8 bytes
-         bInterval              32
-
-
-
-Bus 005 Device 002: ID 046d:c016 Logitech, Inc. Optical Wheel Mouse
-Device Descriptor:
-   bLength                18
-   bDescriptorType         1
-   bcdUSB               2.00
-   bDeviceClass            0 (Defined at Interface level)
-   bDeviceSubClass         0
-   bDeviceProtocol         0
-   bMaxPacketSize0         8
-   idVendor           0x046d Logitech, Inc.
-   idProduct          0xc016 Optical Wheel Mouse
-   bcdDevice            3.40
-   iManufacturer           1
-   iProduct                2
-   iSerial                 0
-   bNumConfigurations      1
-   Configuration Descriptor:
-     bLength                 9
-     bDescriptorType         2
-     wTotalLength           34
-     bNumInterfaces          1
-     bConfigurationValue     1
-     iConfiguration          0
-     bmAttributes         0xa0
-       (Bus Powered)
-       Remote Wakeup
-     MaxPower              100mA
-     Interface Descriptor:
-       bLength                 9
-       bDescriptorType         4
-       bInterfaceNumber        0
-       bAlternateSetting       0
-       bNumEndpoints           1
-       bInterfaceClass         3 Human Interface Device
-       bInterfaceSubClass      1 Boot Interface Subclass
-       bInterfaceProtocol      2 Mouse
-       iInterface              0
-         HID Device Descriptor:
-           bLength                 9
-           bDescriptorType        33
-           bcdHID               1.10
-           bCountryCode            0 Not supported
-           bNumDescriptors         1
-           bDescriptorType        34 Report
-           wDescriptorLength      52
-          Report Descriptors:
-            ** UNAVAILABLE **
-       Endpoint Descriptor:
-         bLength                 7
-         bDescriptorType         5
-         bEndpointAddress     0x81  EP 1 IN
-         bmAttributes            3
-           Transfer Type            Interrupt
-           Synch Type               None
-           Usage Type               Data
-         wMaxPacketSize     0x0004  1x 4 bytes
-         bInterval              10
-
-
---
-Tom Vier <tom@triadsys.com>
-Senior Net/Sys Admin
-Triad Systems Engineering, Inc.
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
