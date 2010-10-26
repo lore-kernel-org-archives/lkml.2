@@ -1,87 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760041Ab0JZQJp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Oct 2010 12:09:45 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:57760 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760029Ab0JZQJn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Oct 2010 12:09:43 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=hs9YROej/sNYKEy17Z3JqT+aaEojWVobUb6jV3jHOOIyBtP5C9i3HQ60Crp6hnTrQn
-         FgfKirdZla7rLIBlAHCI+PwkSf07fAk4ugQLeTgsYt88GsVJ3rJUENVHdSupQKwG94AH
-         25HsrBGipdMEEDLAoSc+ErdUU6FyOsDiY54/A=
-Date: Tue, 26 Oct 2010 09:09:36 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Ilkka Koskinen <ilkka.koskinen@nokia.com>
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        spi-devel-general@lists.sourceforge.net
-Subject: Re: [PATCH] input: spi: Driver for SPI data stream driven vibrator
-Message-ID: <20101026160936.GD13097@core.coreip.homeip.net>
-References: <1288013463-21722-1-git-send-email-ilkka.koskinen@nokia.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1288013463-21722-1-git-send-email-ilkka.koskinen@nokia.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1760035Ab0JZQMa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Oct 2010 12:12:30 -0400
+Received: from cantor.suse.de ([195.135.220.2]:36525 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759910Ab0JZQM3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Oct 2010 12:12:29 -0400
+Subject: Re: [PATCH 5/5] scsi: megaraid_sas - Version and documentation
+ update
+From: James Bottomley <James.Bottomley@suse.de>
+To: "Yang, Bo" <Bo.Yang@lsi.com>
+Cc: bo yang <boyang1288@gmail.com>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "akpm@osdl.org" <akpm@osdl.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <4B6A08C587958942AA3002690DD4F8C30100FF9FBB@cosmail02.lsi.com>
+References: <AANLkTi=praySm1B3dhU+LxhWK2yUccZkzWpd6-6UERYa@mail.gmail.com>
+	 <4B6A08C587958942AA3002690DD4F8C30100FF9FBB@cosmail02.lsi.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 26 Oct 2010 11:12:23 -0500
+Message-ID: <1288109543.8283.139.camel@mulgrave.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.1.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ilkka,
-
-On Mon, Oct 25, 2010 at 04:31:02PM +0300, Ilkka Koskinen wrote:
-> This driver provides access to drive a vibrator connected
-> to SPI data line via Input layer's Force Feedback interface.
+On Tue, 2010-10-12 at 07:21 -0600, Yang, Bo wrote:
+> Re-Submit:
 > 
-> Client application provides samples (data streams) to be
-> played as CUSTOM_DATA. The samples are stored in driver's
-> internal buffers.
+> Update the version and documentation.
 
-If device is able to do custom waveform can't it also do regular effects
-(constant, periodic, etc. Or is custom is actually random and you are
-doing something like rumble effect?
+This has an impressive set of checkpatch failures:
 
-> 
-> The driver is not able to mix the given samples. Instead, it
-> remembers the currently played sample and next one to be played.
-> 
+ERROR: trailing whitespace
+#26: FILE: Documentation/scsi/ChangeLog.megaraid_sas:13:
++^ITo add the OCR support, driver need to do: $
 
-Why is this driver not using the memoryless FF  library (and extends it
-to handle FF_CUSTOM effects) but rather reimplements it in the driver
-itself?
+ERROR: trailing whitespace
+#30: FILE: Documentation/scsi/ChangeLog.megaraid_sas:17:
++^I^I$
 
-> Signed-off-by: Ilkka Koskinen <ilkka.koskinen@nokia.com>
-> ---
->  drivers/input/misc/Kconfig     |    5 +
->  drivers/input/misc/Makefile    |    2 +-
->  drivers/input/misc/vibra_spi.c |  429 ++++++++++++++++++++++++++++++++++++++++
->  include/linux/spi/vibra.h      |   34 ++++
->  4 files changed, 469 insertions(+), 1 deletions(-)
->  create mode 100644 drivers/input/misc/vibra_spi.c
->  create mode 100644 include/linux/spi/vibra.h
-> 
-> diff --git a/drivers/input/misc/Kconfig b/drivers/input/misc/Kconfig
-> index b49e233..3441832 100644
-> --- a/drivers/input/misc/Kconfig
-> +++ b/drivers/input/misc/Kconfig
-> @@ -438,4 +438,9 @@ config INPUT_ADXL34X_SPI
->  	  To compile this driver as a module, choose M here: the
->  	  module will be called adxl34x-spi.
->  
-> +config INPUT_SPI_VIBRA
-> +	tristate "Support for SPI driven Vibra module"
-> +	help
-> +	  Support for Vibra module that is connected to OMAP SPI bus.
-> +
+ERROR: trailing whitespace
+#35: FILE: Documentation/scsi/ChangeLog.megaraid_sas:22:
++^I^I$
 
-"To compile this driver as a module". Also please keep Kconfig and
-Makefile sorted alphabetically.
+ERROR: trailing whitespace
+#39: FILE: Documentation/scsi/ChangeLog.megaraid_sas:26:
++^I^I$
 
-Thanks.
+ERROR: trailing whitespace
+#43: FILE: Documentation/scsi/ChangeLog.megaraid_sas:30:
++^I^I$
 
--- 
-Dmitry
+ERROR: trailing whitespace
+#46: FILE: Documentation/scsi/ChangeLog.megaraid_sas:33:
++^I^I $
+
+ERROR: trailing whitespace
+#48: FILE: Documentation/scsi/ChangeLog.megaraid_sas:35:
++^I^IOCR to see if driver can bring back the FW.      $
+
+ERROR: trailing whitespace
+#54: FILE: Documentation/scsi/ChangeLog.megaraid_sas:41:
++3.^IIn driver's timeout routine, driver will do three time reset if fw
+is in $
+
+total: 8 errors, 0 warnings, 70 lines checked
+
+I've fixed it up this time, but could you run it through checkpatch.pl
+next time?
+
+Thanks,
+
+James
+
+
