@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757781Ab0JZTZ5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Oct 2010 15:25:57 -0400
-Received: from canuck.infradead.org ([134.117.69.58]:53237 "EHLO
+	id S1759628Ab0JZT0B (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Oct 2010 15:26:01 -0400
+Received: from canuck.infradead.org ([134.117.69.58]:53241 "EHLO
 	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754100Ab0JZTZz (ORCPT
+	with ESMTP id S1757443Ab0JZTZ4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Oct 2010 15:25:55 -0400
+	Tue, 26 Oct 2010 15:25:56 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org, Matt Fleming <matt@console-pimps.org>,
+Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <peterz@infradead.org>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Tom Zanussi <tzanussi@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@felicio.ghostprotocols.net>
-Subject: [PATCH 1/4] perf record: Remove newline character from perror() argument
-Date: Tue, 26 Oct 2010 17:25:42 -0200
-Message-Id: <1288121145-20846-2-git-send-email-acme@infradead.org>
+        Stephane Eranian <eranian@google.com>,
+        Tom Zanussi <tzanussi@gmail.com>
+Subject: [PATCH 2/4] perf scripting: Shut up 'perf record' final status
+Date: Tue, 26 Oct 2010 17:25:43 -0200
+Message-Id: <1288121145-20846-3-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.6.2.5
 In-Reply-To: <1288121145-20846-1-git-send-email-acme@infradead.org>
 References: <1288121145-20846-1-git-send-email-acme@infradead.org>
@@ -27,52 +27,114 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Matt Fleming <matt@console-pimps.org>
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-If we include a newline character in the string argument to perror()
-then the output will be split across two lines like so,
+We want just the script output, not internal details about the record phase.
 
-    Unable to read perf file descriptor
-    : No space left on device
-
-Deleting the newline character prints a much more readable error,
-
-    Unable to read perf file descriptor: No space left on device
-
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Ingo Molnar <mingo@elte.hu>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
 Cc: Tom Zanussi <tzanussi@gmail.com>
-LKML-Reference: <89e77b54659bc3798b23a5596c2debb7f6f4cf27.1283010281.git.matt@console-pimps.org>
-Signed-off-by: Matt Fleming <matt@console-pimps.org>
-Signed-off-by: Arnaldo Carvalho de Melo <acme@felicio.ghostprotocols.net>
+LKML-Reference: <new-submission>
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-record.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+ tools/perf/Documentation/perf-record.txt |    4 ++++
+ tools/perf/builtin-record.c              |    4 ++++
+ tools/perf/builtin-trace.c               |    9 +++++----
+ tools/perf/util/debug.c                  |    4 ++--
+ tools/perf/util/debug.h                  |    2 +-
+ 5 files changed, 16 insertions(+), 7 deletions(-)
 
+diff --git a/tools/perf/Documentation/perf-record.txt b/tools/perf/Documentation/perf-record.txt
+index 3ee27dc..a91f9f9 100644
+--- a/tools/perf/Documentation/perf-record.txt
++++ b/tools/perf/Documentation/perf-record.txt
+@@ -83,6 +83,10 @@ OPTIONS
+ --call-graph::
+ 	Do call-graph (stack chain/backtrace) recording.
+ 
++-q::
++--quiet::
++	Don't print any message, useful for scripting.
++
+ -v::
+ --verbose::
+ 	Be more verbose (show counter open errors, etc).
 diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
-index ff77b80..b530bee 100644
+index b530bee..4e75583 100644
 --- a/tools/perf/builtin-record.c
 +++ b/tools/perf/builtin-record.c
-@@ -353,7 +353,7 @@ try_again:
+@@ -761,6 +761,9 @@ static int __cmd_record(int argc, const char **argv)
  		}
- 
- 		if (read(fd[nr_cpu][counter][thread_index], &read_data, sizeof(read_data)) == -1) {
--			perror("Unable to read perf file descriptor\n");
-+			perror("Unable to read perf file descriptor");
- 			exit(-1);
- 		}
- 
-@@ -626,7 +626,7 @@ static int __cmd_record(int argc, const char **argv)
- 
- 	nr_cpus = read_cpu_map(cpu_list);
- 	if (nr_cpus < 1) {
--		perror("failed to collect number of CPUs\n");
-+		perror("failed to collect number of CPUs");
- 		return -1;
  	}
  
++	if (quiet)
++		return 0;
++
+ 	fprintf(stderr, "[ perf record: Woken up %ld times to write data ]\n", waking);
+ 
+ 	/*
+@@ -820,6 +823,7 @@ static const struct option options[] = {
+ 		    "do call-graph (stack chain/backtrace) recording"),
+ 	OPT_INCR('v', "verbose", &verbose,
+ 		    "be more verbose (show counter open errors, etc)"),
++	OPT_BOOLEAN('q', "quiet", &quiet, "don't print any message"),
+ 	OPT_BOOLEAN('s', "stat", &inherit_stat,
+ 		    "per thread counts"),
+ 	OPT_BOOLEAN('d', "data", &sample_address,
+diff --git a/tools/perf/builtin-trace.c b/tools/perf/builtin-trace.c
+index deda1a9..2f8df45 100644
+--- a/tools/perf/builtin-trace.c
++++ b/tools/perf/builtin-trace.c
+@@ -625,12 +625,13 @@ int cmd_trace(int argc, const char **argv, const char *prefix __used)
+ 			dup2(live_pipe[1], 1);
+ 			close(live_pipe[0]);
+ 
+-			__argv = malloc(5 * sizeof(const char *));
++			__argv = malloc(6 * sizeof(const char *));
+ 			__argv[0] = "/bin/sh";
+ 			__argv[1] = record_script_path;
+-			__argv[2] = "-o";
+-			__argv[3] = "-";
+-			__argv[4] = NULL;
++			__argv[2] = "-q";
++			__argv[3] = "-o";
++			__argv[4] = "-";
++			__argv[5] = NULL;
+ 
+ 			execvp("/bin/sh", (char **)__argv);
+ 			exit(-1);
+diff --git a/tools/perf/util/debug.c b/tools/perf/util/debug.c
+index f9c7e3a..c8d81b0 100644
+--- a/tools/perf/util/debug.c
++++ b/tools/perf/util/debug.c
+@@ -12,8 +12,8 @@
+ #include "debug.h"
+ #include "util.h"
+ 
+-int verbose = 0;
+-bool dump_trace = false;
++int verbose;
++bool dump_trace = false, quiet = false;
+ 
+ int eprintf(int level, const char *fmt, ...)
+ {
+diff --git a/tools/perf/util/debug.h b/tools/perf/util/debug.h
+index 7a17ee0..7b51408 100644
+--- a/tools/perf/util/debug.h
++++ b/tools/perf/util/debug.h
+@@ -6,7 +6,7 @@
+ #include "event.h"
+ 
+ extern int verbose;
+-extern bool dump_trace;
++extern bool quiet, dump_trace;
+ 
+ int dump_printf(const char *fmt, ...) __attribute__((format(printf, 1, 2)));
+ void trace_event(event_t *event);
 -- 
 1.6.2.5
 
