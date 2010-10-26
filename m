@@ -1,49 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759655Ab0JZKt2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Oct 2010 06:49:28 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:44047 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758963Ab0JZKt0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Oct 2010 06:49:26 -0400
-Subject: Re: [PATCH 1/5] Add a global synchronization point for pvclock
-From: Glauber Costa <glommer@redhat.com>
-To: Avi Kivity <avi@redhat.com>
-Cc: Jeremy Fitzhardinge <jeremy@goop.org>, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
-        Zachary Amsden <zamsden@redhat.com>,
-        "Xen-devel@lists.xensource.com" <Xen-devel@lists.xensource.com>
-In-Reply-To: <4CC68DE1.1060604@redhat.com>
-References: <1271356648-5108-1-git-send-email-glommer@redhat.com>
-	 <1271356648-5108-2-git-send-email-glommer@redhat.com>
-	 <4CC6130B.8020908@goop.org>  <4CC68DE1.1060604@redhat.com>
+	id S1759720Ab0JZKt4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Oct 2010 06:49:56 -0400
+Received: from casper.infradead.org ([85.118.1.10]:56286 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759647Ab0JZKty (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Oct 2010 06:49:54 -0400
+Subject: Re: linux-next: build warnings after merge of the final tree (mtd
+ tree related)
+From: David Woodhouse <dwmw2@infradead.org>
+To: Stephen Rothwell <sfr@canb.auug.org.au>,
+        H Hartley Sweeten <hartleys@visionengravers.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <1288083108.29264.14.camel@macbook.infradead.org>
+References: <20101026134959.86b807d1.sfr@canb.auug.org.au>
+	 <1288083108.29264.14.camel@macbook.infradead.org>
 Content-Type: text/plain; charset="UTF-8"
-Organization: Red Hat Inc.
-Date: Tue, 26 Oct 2010 08:49:22 -0200
-Message-ID: <1288090162.3530.0.camel@mothafucka.localdomain>
+Date: Tue, 26 Oct 2010 11:49:40 +0100
+Message-ID: <1288090180.29264.26.camel@macbook.infradead.org>
 Mime-Version: 1.0
+X-Mailer: Evolution 2.32.0 (2.32.0-2.fc14) 
 Content-Transfer-Encoding: 7bit
+X-SRS-Rewrite: SMTP reverse-path rewritten from <dwmw2@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-10-26 at 10:14 +0200, Avi Kivity wrote:
-> On 10/26/2010 01:30 AM, Jeremy Fitzhardinge wrote:
-> > Unfortunately this is breaking Xen save/restore: if you restore on a
-> > host which was booted more recently than the save host, causing the
-> > system time to be smaller.  The effect is that the domain's time leaps
-> > forward to a fixed point, and stays there until the host catches up to
-> > the source host...
+On Tue, 2010-10-26 at 09:51 +0100, David Woodhouse wrote:
+> On Tue, 2010-10-26 at 13:49 +1100, Stephen Rothwell wrote:
+> > 
+> > I am not sure where these came from ... 
 > 
-> Shouldn't save/restore also save the timebase?
+> It's a config issue. You have chosen to build NOR flash support.
 > 
-> > I guess last_time needs to be reset on this type of event.  I guess the
-> > cleanest way would be for pvclock.c to register a sysdev suspend/resume
-> > handler.
+> NOR flash can be wired up many ways. It could be four 8-bit chips in
+> parallel in a 32-bit bus, two 16-bit chips in a 32-bit bus, 2 8-bit
+> chips in a 16-bit bus, one 16-bit chip in a 16-bus bus, etc...
 > 
-> Should be for Xen only; kvm save/restore doesn't involve the guest.
+> You have elected to support *none* of those configurations. No NOR chip
+> support can work.
+> 
+> You don't get to choose individual geometry options unless you set
+> CONFIG_MTD_ADV_OPTIONS -- by default you get a fully versatile driver
+> which can cope with anything at runtime.
+> 
+> I'll build a ppc44x_defconfig and work out what's going wrong. I'd
+> expect this kind of thing with randconfig, but not a defconfig.
 
-the suspend/resume path do adjust the time base. Maybe something similar
-should be done ?
+Fixed by reverting the offending commit:
+http://git.infradead.org/mtd-2.6.git/commitdiff/6411bf6cd
 
+Thanks.
+
+-- 
+David Woodhouse                            Open Source Technology Centre
+David.Woodhouse@intel.com                              Intel Corporation
 
