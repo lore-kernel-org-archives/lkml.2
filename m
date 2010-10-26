@@ -1,87 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760599Ab0JZWTs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Oct 2010 18:19:48 -0400
-Received: from higgs.elka.pw.edu.pl ([194.29.160.5]:48875 "EHLO
-	higgs.elka.pw.edu.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760396Ab0JZWTq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Oct 2010 18:19:46 -0400
-X-Greylist: delayed 508 seconds by postgrey-1.27 at vger.kernel.org; Tue, 26 Oct 2010 18:19:46 EDT
-X-Comment: RFC 2476 MSA function at elektron.elka.pw.edu.pl logged sender identity as: wzabolot
-Message-ID: <4CC751E8.9030505@elektron.elka.pw.edu.pl>
-Date: Wed, 27 Oct 2010 00:10:48 +0200
-From: "wzabolot@elektron.elka.pw.edu.pl" <W.Zabolotny@elka.pw.edu.pl>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.12) Gecko/20100913 Icedove/3.0.7
-MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-Subject: i915 module with modeset=1 freezes machine (kernels 2.6.33 and 2.6.36)
-Content-Type: text/plain; charset=UTF-8; format=flowed
+	id S1758858Ab0JZW2J (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Oct 2010 18:28:09 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:56858 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757691Ab0JZW2H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Oct 2010 18:28:07 -0400
+Subject: Re: [ANNOUNCE] Status of unlocked_qcmds=1 operation for .37
+From: James Bottomley <James.Bottomley@suse.de>
+To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+Cc: Mike Anderson <andmike@linux.vnet.ibm.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        Vasu Dev <vasu.dev@linux.intel.com>,
+        Tim Chen <tim.c.chen@linux.intel.com>, Andi Kleen <ak@linux.intel.com>,
+        Matthew Wilcox <willy@linux.intel.com>,
+        Mike Christie <michaelc@cs.wisc.edu>, Jens Axboe <jaxboe@fusionio.com>,
+        James Smart <james.smart@emulex.com>,
+        Andrew Vasquez <andrew.vasquez@qlogic.com>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Hannes Reinecke <hare@suse.de>, Joe Eykholt <jeykholt@cisco.com>,
+        Christoph Hellwig <hch@lst.de>, Jon Hawley <warthog9@kernel.org>,
+        Brian King <brking@linux.vnet.ibm.com>,
+        Christof Schmitt <christof.schmitt@de.ibm.com>,
+        Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@zytor.com>
+In-Reply-To: <1288130914.5169.97.camel@haakon2.linux-iscsi.org>
+References: <1287607774.10283.78.camel@haakon2.linux-iscsi.org>
+	 <20101021150840.GA24309@linux.vnet.ibm.com>
+	 <1288130914.5169.97.camel@haakon2.linux-iscsi.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 26 Oct 2010 17:27:50 -0500
+Message-ID: <1288132071.8283.689.camel@mulgrave.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.1.2 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Tue, 2010-10-26 at 15:08 -0700, Nicholas A. Bellinger wrote:
+> On Thu, 2010-10-21 at 08:08 -0700, Mike Anderson wrote:
+> > Nicholas A. Bellinger <nab@linux-iscsi.org> wrote:
+> > > *) core drivers/scsi remaining issue(s):
+> > > 
+> > > The issue raised by andmike during RFCv4 described as:
+> > > 
+> > > "If we skip __scsi_try_to_abort_cmd when REQ_ATOM_COMPLETE is set it
+> > > would be correct for the scsi_decide_disposition cases but it would
+> > > appear this would stop __scsi_try_to_abort_cmd from being called in the
+> > > time out case as REQ_ATOM_COMPLETE is set prior to calling
+> > > blk_rq_timed_out."
+> > > 
+> > > The complete discussion is here:
+> > > 
+> > > http://marc.info/?l=linux-scsi&m=128535319915212&w=2
+> > > 
+> > > We still need folks with experience to dig into this code, so you know
+> > > the scsi_error.c code please jump in!
+> > > 
+> > 
+> > I provided two logging traces below for the two cases mentioned in the
+> > above email thread. The second trace used a modified version of
+> > scsi_debug so that I could generate the needed unit attention codes.
+> > 1.) On the check for complete comment the logging below marked with
+> > "***" indicated that during a timeout that the complete bit is set. We
+> > would not want to have a check for complete skip the call to
+> > __scsi_try_to_abort_cmd. 
+> > 
+> > scsi_debug: cmd 28 00 00 00 00 00 00 00 20 00 
+> > sd 1:0:0:0: [sdb] Done: TIMEOUT
+> > sd 1:0:0:0: [sdb]  Result: hostbyte=DID_OK driverbyte=DRIVER_OK
+> > sd 1:0:0:0: [sdb] CDB: Read(10): 28 00 00 00 00 00 00 00 20 00
+> > Waking error handler thread
+> > Error handler scsi_eh_1 waking up
+> > sd 1:0:0:0: scsi_eh_prt_fail_stats: cmds failed: 0, cancel: 1
+> > Total of 1 commands on 1 devices require eh work
+> > scsi_eh_1: aborting cmd:0xffff88019e171b80
+> > 
+> > ***
+> > sd 1:0:0:0: scsi_try_to_abort_cmd: Comp bit set
+> > ***
+> > 
+> > scsi_debug: abort
+> > scsi_debug: cmd 00 00 00 00 00 00 
+> > scsi_eh_done scmd: ffff88019e171b80 result: 0
+> > scsi_send_eh_cmnd: scmd: ffff88019e171b80, timeleft: 10000
+> > scsi_send_eh_cmnd: scsi_eh_completed_normally 2002
+> > scsi_eh_tur: scmd ffff88019e171b80 rtn 2002
+> > scsi_eh_1: flush retry cmd: ffff88019e171b80
+> > scsi_restart_operations: waking up host to restart
+> > scsi_debug: cmd 28 00 00 00 00 00 00 00 20 00 
+> > Error handler scsi_eh_1 sleeping
+> > 
+> 
+> Hi Mike and Co,
+> 
+> After considering a couple of different approches here, I ended up with
+> the following simple patch that has been tested on linus HEAD from this
+> afternoon w/ forcing scsi_debug cmd TIMEOUT during modprobe and via
+> sg_dd ops.  (See comments below)
+> 
+> [PATCH] scsi: Add SCSI_EH_SOFTIRQ_DONE usage
+> 
+> This patch introduces a SCSI_EH_SOFTIRQ_DONE flag that is set in scsi_softirq_done()
+> from block soft_irq context that is used to signal when scsi_try_to_abort_cmd() should
+> be calling __scsi_try_to_abort_cmd() for a timed out struct scsi_cmnd instead of
+> returning SUCCESS via checking only blk_test_rq_complete().  This is done because
+> blk_rq_timed_out_timer() calls blk_mark_rq_complete() before blk_rq_timed_out() ->
+> struct request_queue->rq_timed_out_fn().
 
-I have two machines with intel graphics chipsets.
-Below is the output from the lspci:
-1st machine:
-00:02.0 VGA compatible controller: Intel Corporation 82865G Integrated 
-Graphics Controller (rev 02)
-2nd machine:
-00:02.0 VGA compatible controller: Intel Corporation Mobile 945GM/GMS, 
-943/940GML Express Integrated Graphics Controller (rev 03)
+This is getting pretty far off into the weeds.  I think the first step
+should be queue lock push down into ->queuecommand.  This would still
+necessitate locking around the serial number.  The next step might be
+serial number elimination/reduction which might need to address issues
+like this (or not ... block already knows the information, there's not
+really much need for us to track it twice).  There might also be other
+lock aquisition reduction as part of step 2.
 
-Both machines worked a few years with intel Xorg xserver, with 
-/etc/modprobe.d/i915-kms.conf
-containing the line "options i915 modeset=0"
-Unfortunately last time Xorg removed support for usermode mode setting 
-in intel xserver,
-and I had to change the above line to "options i915 modeset=1".
-After that, both machines during boot simply freeze (screen is blank, no 
-access through ssh, so probably the machine is frozen completely).
+James
 
-I tried to recompile the kernel with support for Intel agpgart and i915 
-compiled in the kernel
-but then the machine freezes even faster (no boot messages appear, 
-screen gets black almost immediately after loading of the kernel).
 
-I've tried to investigate the logs, but no error messages are logged.
-
-Well, there is one warning in the logs, but the system worked with that 
-warning for at least one year and it didn't cause any additional 
-problems...:
-Oct 26 21:10:51 wzab kernel: Pid: 1010, comm: modprobe Not tainted 2.6.36 #1
-Oct 26 21:10:51 wzab kernel: Call Trace:
-Oct 26 21:10:51 wzab kernel:  [<c0133cb8>] ? warn_slowpath_common+0x78/0xb0
-Oct 26 21:10:51 wzab kernel:  [<f8392c18>] ? 
-intelfbhw_active_pipe+0x58/0x60 [intelfb]
-Oct 26 21:10:51 wzab kernel:  [<f8392c18>] ? 
-intelfbhw_active_pipe+0x58/0x60 [intelfb]
-Oct 26 21:10:51 wzab kernel:  [<c0133d0b>] ? warn_slowpath_null+0x1b/0x20
-Oct 26 21:10:51 wzab kernel:  [<f8392c18>] ? 
-intelfbhw_active_pipe+0x58/0x60 [intelfb]
-Oct 26 21:10:51 wzab kernel:  [<f83954e9>] ? 
-intelfb_pci_register+0xc27/0xdc3 [intelfb]
-Oct 26 21:10:51 wzab kernel:  [<f83948c2>] ? 
-intelfb_pci_register+0x0/0xdc3 [intelfb]
-Oct 26 21:10:51 wzab kernel:  [<c026e54b>] ? local_pci_probe+0xb/0x10
-Oct 26 21:10:51 wzab kernel:  [<c026ed71>] ? pci_device_probe+0x61/0x80
-Oct 26 21:10:51 wzab kernel:  [<c02ccfb5>] ? driver_probe_device+0x65/0x170
-Oct 26 21:10:51 wzab kernel:  [<c026e6a0>] ? pci_match_device+0xa0/0xc0
-Oct 26 21:10:51 wzab kernel:  [<c02cd139>] ? __driver_attach+0x79/0x80
-Oct 26 21:10:51 wzab kernel:  [<c02cd0c0>] ? __driver_attach+0x0/0x80
-Oct 26 21:10:51 wzab kernel:  [<c02cc8a2>] ? bus_for_each_dev+0x52/0x80
-Oct 26 21:10:51 wzab kernel:  [<c02cce56>] ? driver_attach+0x16/0x20
-Oct 26 21:10:51 wzab kernel:  [<c02cd0c0>] ? __driver_attach+0x0/0x80
-Oct 26 21:10:51 wzab kernel:  [<c02cc2a7>] ? bus_add_driver+0x177/0x230
-Oct 26 21:10:51 wzab kernel:  [<c026ecb0>] ? pci_device_remove+0x0/0x40
-Oct 26 21:10:51 wzab kernel:  [<c02cd3c3>] ? driver_register+0x63/0x120
-Oct 26 21:10:51 wzab kernel:  [<c026ef9d>] ? __pci_register_driver+0x3d/0xb0
-Oct 26 21:10:51 wzab kernel:  [<c0101132>] ? do_one_initcall+0x32/0x160
-Oct 26 21:10:51 wzab kernel:  [<c0197808>] ? __vunmap+0xa8/0xe0
-Oct 26 21:10:51 wzab kernel:  [<f82ea000>] ? intelfb_init+0x0/0x42 [intelfb]
-Oct 26 21:10:51 wzab kernel:  [<c0162893>] ? sys_init_module+0x123/0xfd0
-Oct 26 21:10:51 wzab kernel:  [<c0102c10>] ? sysenter_do_call+0x12/0x26
-Oct 26 21:10:51 wzab kernel: ---[ end trace ec82370e7b0b3abd ]---
