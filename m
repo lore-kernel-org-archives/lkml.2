@@ -1,96 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758680Ab0JZCuJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Oct 2010 22:50:09 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:49795 "EHLO smtps.tip.net.au"
+	id S1758719Ab0JZCxM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Oct 2010 22:53:12 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:31694 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757219Ab0JZCuH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Oct 2010 22:50:07 -0400
-Date: Tue, 26 Oct 2010 13:49:59 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: David Woodhouse <dwmw2@infradead.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: linux-next: build warnings after merge of the final tree (mtd tree
- related)
-Message-Id: <20101026134959.86b807d1.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Tue__26_Oct_2010_13_49_59_+1100_.BL933etPaTlW+kd"
+	id S1757241Ab0JZCxL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Oct 2010 22:53:11 -0400
+Subject: [PATCH 00/43] MN10300: Add SMP support and AM34 CPU core support
+To: linux-am33-list@redhat.com
+From: David Howells <dhowells@redhat.com>
+Cc: linux-kernel@vger.kernel.org
+Date: Tue, 26 Oct 2010 03:53:02 +0100
+Message-ID: <20101026025301.23512.24525.stgit@warthog.procyon.org.uk>
+User-Agent: StGit/0.15-97-g9680-dirty
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__26_Oct_2010_13_49_59_+1100_.BL933etPaTlW+kd
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
 
-Hi David,
 
-After merging the final tree, today's linux-next build (powerpc
-ppc44x_defconfig) produced these warnings:
+These patches support for the AM34 CPU core variant of the MN10300 arch.  This
+is an SMP capable core, so SMP support is added also.
 
-In file included from drivers/mtd/mtdchar.c:36:
-include/linux/mtd/map.h:145:2: warning: #warning "No CONFIG_MTD_MAP_BANK_WI=
-DTH_xx selected. No NOR chip support can work"
-In file included from drivers/mtd/chips/chipreg.c:11:
-include/linux/mtd/map.h:145:2: warning: #warning "No CONFIG_MTD_MAP_BANK_WI=
-DTH_xx selected. No NOR chip support can work"
-In file included from drivers/mtd/chips/cfi_probe.c:17:
-include/linux/mtd/map.h:145:2: warning: #warning "No CONFIG_MTD_MAP_BANK_WI=
-DTH_xx selected. No NOR chip support can work"
-In file included from drivers/mtd/chips/cfi_probe.c:18:
-include/linux/mtd/cfi.h:75:2: warning: #warning No CONFIG_MTD_CFI_Ix select=
-ed. No NOR chip support can work.
-In file included from drivers/mtd/maps/physmap_of.c:21:
-include/linux/mtd/map.h:145:2: warning: #warning "No CONFIG_MTD_MAP_BANK_WI=
-DTH_xx selected. No NOR chip support can work"
-In file included from drivers/mtd/chips/cfi_cmdset_0002.c:36:
-include/linux/mtd/map.h:145:2: warning: #warning "No CONFIG_MTD_MAP_BANK_WI=
-DTH_xx selected. No NOR chip support can work"
-In file included from drivers/mtd/chips/cfi_cmdset_0002.c:38:
-include/linux/mtd/cfi.h:75:2: warning: #warning No CONFIG_MTD_CFI_Ix select=
-ed. No NOR chip support can work.
-In file included from drivers/mtd/chips/cfi_util.c:23:
-include/linux/mtd/map.h:145:2: warning: #warning "No CONFIG_MTD_MAP_BANK_WI=
-DTH_xx selected. No NOR chip support can work"
-In file included from drivers/mtd/chips/cfi_util.c:24:
-include/linux/mtd/cfi.h:75:2: warning: #warning No CONFIG_MTD_CFI_Ix select=
-ed. No NOR chip support can work.
-In file included from drivers/mtd/chips/gen_probe.c:11:
-include/linux/mtd/map.h:145:2: warning: #warning "No CONFIG_MTD_MAP_BANK_WI=
-DTH_xx selected. No NOR chip support can work"
-In file included from drivers/mtd/chips/gen_probe.c:12:
-include/linux/mtd/cfi.h:75:2: warning: #warning No CONFIG_MTD_CFI_Ix select=
-ed. No NOR chip support can work.
-In file included from drivers/mtd/chips/jedec_probe.c:21:
-include/linux/mtd/map.h:145:2: warning: #warning "No CONFIG_MTD_MAP_BANK_WI=
-DTH_xx selected. No NOR chip support can work"
-In file included from drivers/mtd/chips/jedec_probe.c:22:
-include/linux/mtd/cfi.h:75:2: warning: #warning No CONFIG_MTD_CFI_Ix select=
-ed. No NOR chip support can work.
+Further, support for the MN2WS0060 processor (which is AM34 based), and the
+ASB2364 evaluation board are added to make use of that.
 
-I am not sure where these came from ...
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+I've placed the SMP caching and TLB code into preliminary patches (#15-#24 and
+#26-#29) within the series, though the code in them can't be fully utilised
+until the main SMP patch (#35) is applied.  This makes the main SMP cache patch
+smaller.  Similarly, patches for kernel atomic ops (#31) and SMP FPU support
+(#30) preface the main patch.
 
---Signature=_Tue__26_Oct_2010_13_49_59_+1100_.BL933etPaTlW+kd
-Content-Type: application/pgp-signature
+There are a couple of patches here that touch code outside of the arch:
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
+ (#1) A patch to revert parenthesisation of numbers in asm-offset.h which
+      breaks the MN10300 assembly code.
 
-iQEcBAEBAgAGBQJMxkHXAAoJEDMEi1NhKgbsOhQH/0JdXua643m66LXE3BhAIk7p
-1Ddgbrx4/ZGUnfdGhQZfL7i2O7F48jeyy5JZd4orgrZqUpKXA0IAE4abUd8+O2nb
-XuiwWwv4nVOepiiC60kkMpd+Ittl8klGMgjQxPuwKFg3i+jX7iAYb23vH81QDvTK
-Xve4ff02qohjgmOn1g3tel4gi3xJvWPmbG/XSaxn1dFbYvL57B+o+m+x65lYkSCP
-Aq8ljfZ9zaYubU2+uvPNEE/wIcegZukZFJeZm4Dq/9XNQg/0vi5k24Wje0k5uvTL
-rJtFs0yzEqpNXPT4f7+rMetktSHQy8eDXkw4LqIC3FU+fkeTE4usf0/21N+rUU4=
-=M/SV
------END PGP SIGNATURE-----
+ (#6) A patch to typedef the smpcall function pointer as it's used in many
+      places.
 
---Signature=_Tue__26_Oct_2010_13_49_59_+1100_.BL933etPaTlW+kd--
+(#36) Some changes to the SMSC 911x driver to provide it with hooks by which it
+      can manipulate the interrupt regs on the ASB2364 board FPGA and find the
+      MAC address in an alternate location.
+
+David
