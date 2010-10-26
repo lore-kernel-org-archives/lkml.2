@@ -1,52 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756215Ab0JZTiN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Oct 2010 15:38:13 -0400
-Received: from smtp-out.google.com ([74.125.121.35]:35974 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753150Ab0JZTiM (ORCPT
+	id S1757975Ab0JZTic (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Oct 2010 15:38:32 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:33381
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752865Ab0JZTi3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Oct 2010 15:38:12 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
-         :references:user-agent:mime-version:content-type;
-        b=sw2UI0DADHpOOa2hw3YrtqD+1QCDDQFNWQLKdg6xW1Q3kahbYr0A0S0gy+lScIyMn0
-         28+RdJ3/P5iIvtbzofFg==
-Date: Tue, 26 Oct 2010 12:37:59 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>
-Subject: Re: [resend][PATCH 2/4] Revert "oom: deprecate oom_adj tunable"
-In-Reply-To: <20101026220237.B7DA.A69D9226@jp.fujitsu.com>
-Message-ID: <alpine.DEB.2.00.1010261234230.5578@chino.kir.corp.google.com>
-References: <20101025122723.916D.A69D9226@jp.fujitsu.com> <alpine.DEB.2.00.1010251338081.21737@chino.kir.corp.google.com> <20101026220237.B7DA.A69D9226@jp.fujitsu.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+	Tue, 26 Oct 2010 15:38:29 -0400
+Date: Tue, 26 Oct 2010 12:38:52 -0700 (PDT)
+Message-Id: <20101026.123852.58436932.davem@davemloft.net>
+To: gwurster@scs.carleton.ca
+Cc: kuznet@ms2.inr.ac.ru, pekkas@netcore.fi, jmorris@namei.org,
+        yoshfuji@linux-ipv6.org, kaber@trash.net, shemminger@vyatta.com,
+        eric.dumazet@gmail.com, herbert@gondor.hengli.com.au,
+        ebiederm@xmission.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH linux-2.6 v2] IPv6: Temp addresses are immediately
+ deleted.
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <201010161442.18748.gwurster@scs.carleton.ca>
+References: <20100927171010.GB7106@adams.ccsl.carleton.ca>
+	<20100928.233028.112599117.davem@davemloft.net>
+	<201010161442.18748.gwurster@scs.carleton.ca>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 26 Oct 2010, KOSAKI Motohiro wrote:
+From: Glenn Wurster <gwurster@scs.carleton.ca>
+Date: Sat, 16 Oct 2010 14:42:17 -0400
 
-> > NACK as a logical follow-up to my NACK for "oom: remove totalpage 
-> > normalization from oom_badness()"
+> No, the first patch was to create a temporary address if none exists.  Like 
+> Brian Haley pointed out, that patch accommodates the case where we set 
+> use_tempaddr to a non-zero value after the interface had been brought up.
 > 
-> Huh?
-> 
-> I requested you show us justification. BUT YOU DIDNT. If you have any 
-> usecase, show us RIGHT NOW. 
-> 
+> This patch accommodates the case where the router is only broadcasting 
+> advertisements every x seconds, and yet the user has set the valid_lft to be 
+> something less than x.
 
-The new tunable added in 2.6.36, /proc/pid/oom_score_adj, is necessary for 
-the units that the badness score now uses.  We need a tunable with a much 
-higher resolution than the oom_adj scale from -16 to +15, and one that 
-scales linearly as opposed to exponentially.  Since that tunable is much 
-more powerful than the oom_adj implementation, which never made any real 
-sense for defining oom killing priority for any purpose other than 
-polarization, the old tunable is deprecated for two years.
+Ok, thanks for your patience.
+
+I've applied both of your patches, thanks.
