@@ -1,84 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755128Ab0JZOCX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Oct 2010 10:02:23 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:47291 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751018Ab0JZOCW (ORCPT
+	id S1757672Ab0JZOC3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Oct 2010 10:02:29 -0400
+Received: from Mycroft.westnet.com ([216.187.52.7]:47936 "EHLO
+	mycroft.westnet.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751810Ab0JZOCY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Oct 2010 10:02:22 -0400
-From: Andi Kleen <andi@firstfloor.org>
-To: linux-kernel@vger.kernel.org
-Cc: x86@kernel.org, Andi Kleen <ak@linux.intel.com>, Suresh.b.siddha@intel.com
-Subject: [PATCH] Fix written but not read warnings for x2apic.h
-Date: Tue, 26 Oct 2010 16:02:10 +0200
-Message-Id: <1288101730-14989-1-git-send-email-andi@firstfloor.org>
-X-Mailer: git-send-email 1.7.1
+	Tue, 26 Oct 2010 10:02:24 -0400
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+Message-ID: <19654.57160.616600.480900@quad.stoffel.home>
+Date: Tue, 26 Oct 2010 10:01:44 -0400
+From: "John Stoffel" <john@stoffel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Christoph Hellwig <hch@infradead.org>, "J.H." <warthog9@kernel.org>,
+        John Stoffel <john@stoffel.org>, Eric Paris <eparis@redhat.com>,
+        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, zohar@us.ibm.com, david@fromorbit.com,
+        jmorris@namei.org, kyle@mcmartin.ca, hpa@zytor.com,
+        akpm@linux-foundation.org, mingo@elte.hu, viro@zeniv.linux.org.uk
+Subject: Re: [PATCH 01/11] IMA: use rbtree instead of radix tree for inode
+ information cache
+In-Reply-To: <AANLkTi=0Yag66SwgqhudZ8atU6LjaXmTX62VmQ+JMmhF@mail.gmail.com>
+References: <20101025184118.20504.24290.stgit@paris.rdu.redhat.com>
+	<19653.55494.240658.165153@quad.stoffel.home>
+	<4CC5DCBB.1070505@kernel.org>
+	<AANLkTim5-QDaG3G_8hq3k83csWsdM-4Pt7V92WtmVx3i@mail.gmail.com>
+	<20101025205746.GA6568@infradead.org>
+	<AANLkTi=0Yag66SwgqhudZ8atU6LjaXmTX62VmQ+JMmhF@mail.gmail.com>
+X-Mailer: VM 8.1.1 under 23.2.1 (x86_64-pc-linux-gnu)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andi Kleen <ak@linux.intel.com>
+>>>>> "Linus" == Linus Torvalds <torvalds@linux-foundation.org> writes:
 
-A current linus master build with x2apic and a gcc 4.6 snapshot is very noisy,
-because of a lot of
+Linus> On Mon, Oct 25, 2010 at 1:57 PM, Christoph Hellwig <hch@infradead.org> wrote:
+>> 
+>> Kyle sent a very useful patch to simply disable the ima tracking unless
+>> you enable it on the command line.
 
-arch/x86/include/asm/apic.h:184:11: warning: variable 'msr2' set but not used [-Wunused-but-set-variable]
-In file included from /home/lsrc/git/linux-2.6/arch/x86/include/asm/smp.h:13:0,
-                 from /home/lsrc/git/linux-2.6/arch/x86/include/asm/mmzone_64.h:12,
-                 from /home/lsrc/git/linux-2.6/arch/x86/include/asm/mmzone.h:4,
-                 from /home/lsrc/git/linux-2.6/include/linux/mmzone.h:784,
-                 from /home/lsrc/git/linux-2.6/include/linux/gfp.h:4,
-                 from /home/lsrc/git/linux-2.6/include/linux/mm.h:8,
-                 from /home/lsrc/git/linux-2.6/mm/page_io.c:13:
-/home/lsrc/git/linux-2.6/arch/x86/include/asm/apic.h: In function 'native_apic_msr_read':
-/home/lsrc/git/linux-2.6/arch/x86/include/asm/apic.h:144:11: warning: variable 'high' set but not used [-Wunused-but-set-variable]
-/home/lsrc/git/linux-2.6/arch/x86/include/asm/apic.h: In function 'x2apic_enabled':
-/home/lsrc/git/linux-2.6/arch/x86/include/asm/apic.h:184:11: warning: variable 'msr2' set but not used [-Wunused-but-set-variable]
+Linus> And exactly how does that invalidate _any_ of the patches in
+Linus> the IMA series in question? All of them are basically still
+Linus> equally valid.
 
-in the x2apic code. Use rdmsrl to avoid this warning. This actually
-avoids some code because rdmsr is just a wrapper around rdmsrl.
+Well, if we're going to keep IMA as an option, then this cleanup is
+certainly worthwhile.   And keeping it's impact down as much as
+possible is even better.  
 
-Cc: Suresh.b.siddha@intel.com
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
----
- arch/x86/include/asm/apic.h |    8 ++++----
- 1 files changed, 4 insertions(+), 4 deletions(-)
+Linus> And the "four bytes in 'struct inode' is a total no-no" crowd
+Linus> clearly haven't looked at struct inode. As mentioned, we've got
+Linus> things like quota stuff there too.
 
-diff --git a/arch/x86/include/asm/apic.h b/arch/x86/include/asm/apic.h
-index 286de34..9c4e06b 100644
---- a/arch/x86/include/asm/apic.h
-+++ b/arch/x86/include/asm/apic.h
-@@ -141,12 +141,12 @@ static inline void native_apic_msr_write(u32 reg, u32 v)
- 
- static inline u32 native_apic_msr_read(u32 reg)
- {
--	u32 low, high;
-+	u32 low;
- 
- 	if (reg == APIC_DFR)
- 		return -1;
- 
--	rdmsr(APIC_BASE_MSR + (reg >> 4), low, high);
-+	rdmsrl(APIC_BASE_MSR + (reg >> 4), low);
- 	return low;
- }
- 
-@@ -181,12 +181,12 @@ extern void enable_x2apic(void);
- extern void x2apic_icr_write(u32 low, u32 id);
- static inline int x2apic_enabled(void)
- {
--	int msr, msr2;
-+	int msr;
- 
- 	if (!cpu_has_x2apic)
- 		return 0;
- 
--	rdmsr(MSR_IA32_APICBASE, msr, msr2);
-+	rdmsrl(MSR_IA32_APICBASE, msr);
- 	if (msr & X2APIC_ENABLE)
- 		return 1;
- 	return 0;
--- 
-1.7.1
+Quota is arguably much more useful than IMA, and to a much larger
+audience.  There's a reason it's in there.  As a SysAdmin, one of my
+major gripes is how hard it is to manage disk space usage by my users
+and track it in useful ways.
+
+Quotas allow me to do a quicker, more targeted response when disk
+space fills up and I need to find the biggest users.  Would I like
+better quota reporting?  Sure!  Do I want more overhead, not so much.
+It's a balancing act.
+
+Linus> And quite frankly, it sounds like the right thing to do for
+Linus> Fedora &co is to simply _disable_ CONFIG_IMA. If there is no
+Linus> support for it on a distro level, then you shouldn't enable it.
+
+So the Kconfig should have 'default N' for IMA then?
+
+John
 
