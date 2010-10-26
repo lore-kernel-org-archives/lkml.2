@@ -1,309 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758620Ab0JZC0e (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Oct 2010 22:26:34 -0400
-Received: from mx2.netapp.com ([216.240.18.37]:42299 "EHLO mx2.netapp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756107Ab0JZC0d convert rfc822-to-8bit (ORCPT
+	id S1757072Ab0JZC3x (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Oct 2010 22:29:53 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:46026 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756403Ab0JZC3w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Oct 2010 22:26:33 -0400
-X-IronPort-AV: E=Sophos;i="4.58,239,1286175600"; 
-   d="scan'208";a="472911048"
-Subject: [GIT PULL] Please pull NFSv4.1 and pNFS client changes
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-nfs@vger.kernel.org
+	Mon, 25 Oct 2010 22:29:52 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=UMxbXQOhHrrT7A0PEAFnvt1MoONfU2hev66US8MiRMnCynH5S0IylBgPDNUeeneFNP
+         ue5g5LoQksM6yCIPcnh2vKZbyF7zLbe8SR2jESL4gGfKtMyLMAJEqRp52euaB3E3S+nQ
+         Bw5+dAoDKxaKERmiEkLooVjvaohzueIuBXJfU=
+Subject: Re: [PATCH 23/29] memstick: jmb38x_ms: use DMA for all TPCs with
+ len greater that 8 by default
+From: Maxim Levitsky <maximlevitsky@gmail.com>
+To: Alex Dubov <oakad@yahoo.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <327472.13750.qm@web37607.mail.mud.yahoo.com>
+References: <327472.13750.qm@web37607.mail.mud.yahoo.com>
 Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Organization: NetApp
-Date: Mon, 25 Oct 2010 22:25:30 -0400
-Message-ID: <1288059930.19787.6.camel@heimdal.trondhjem.org>
+Date: Tue, 26 Oct 2010 04:29:46 +0200
+Message-ID: <1288060186.4024.186.camel@maxim-laptop>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 (2.30.3-1.fc13) 
-X-OriginalArrivalTime: 26 Oct 2010 02:26:15.0173 (UTC) FILETIME=[29F0A350:01CB74B5]
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Mon, 2010-10-25 at 09:12 -0700, Alex Dubov wrote:
+> --- On Fri, 22/10/10, Maxim Levitsky <maximlevitsky@gmail.com> wrote:
+> 
+> > From: Maxim Levitsky <maximlevitsky@gmail.com>
+> > Subject: [PATCH 23/29] memstick: jmb38x_ms: use DMA for all TPCs with len greater that 8 by default
+> > To: "Alex Dubov" <oakad@yahoo.com>
+> > Cc: "Andrew Morton" <akpm@linux-foundation.org>, "LKML" <linux-kernel@vger.kernel.org>, "Maxim Levitsky" <maximlevitsky@gmail.com>
+> > Received: Friday, 22 October, 2010, 4:53 PM
+> > This is to workaround a wierd
+> > hardware bug:
+> > 
+> > If PIO write is used, and then after it DMA write is used,
+> > DMA
+> > engine stops doing writes.
+> > That condition even persists after device reset.
+> > 
+> > To be maxumum safe, we do dma to a scratch page
+> > and memcpy from/to it.
+> > 
+> > Besides this change should just improve performance.
+> > 
+> > Signed-off-by: Maxim Levitsky <maximlevitsky@gmail.com>
+> > ---
+> 
+> I have not noticed this one before, and for all I know the driver was
+> tested at Jmicron.
+> Can you explain the issue a bit more?
+Because you didn't test MS standard, or always wrote OOB and param by
+seperate TPCs.
 
-Please pull from the "nfs-for-2.6.37" branch of the repository at
+You really don't read my mail.
 
-   git pull git://git.linux-nfs.org/projects/trondmy/nfs-2.6.git nfs-for-2.6.37
+<quote>
+***Appendix***
 
-This will update the following files through the appended changesets.
+Jmicron hardware bugs (the novel):
 
-  Cheers,
-    Trond
+#1: FIFO write ready bit in INT status register is stuck to 1.
+   It is stuck forever as soon as fifo
+   is used for writing even once.
+   Therefore if interrupt is shared (and here it is), its easy
+   to 'service' the device while it doesn't need any service
 
-----
- Documentation/filesystems/nfs/00-INDEX |    2 +
- Documentation/filesystems/nfs/pnfs.txt |   48 ++
- fs/nfs/Kconfig                         |    8 +-
- fs/nfs/Makefile                        |    4 +
- fs/nfs/callback_proc.c                 |    8 +-
- fs/nfs/client.c                        |   10 +-
- fs/nfs/file.c                          |    5 +
- fs/nfs/inode.c                         |    3 +
- fs/nfs/nfs4filelayout.c                |  280 ++++++++++++
- fs/nfs/nfs4filelayout.h                |   94 ++++
- fs/nfs/nfs4filelayoutdev.c             |  448 ++++++++++++++++++
- fs/nfs/nfs4proc.c                      |  218 ++++++++--
- fs/nfs/nfs4state.c                     |    2 +
- fs/nfs/nfs4xdr.c                       |  360 +++++++++++++++
- fs/nfs/pnfs.c                          |  783 ++++++++++++++++++++++++++++++++
- fs/nfs/pnfs.h                          |  189 ++++++++
- fs/nfs/read.c                          |    3 +
- fs/nfsd/nfs4callback.c                 |    1 -
- include/linux/nfs4.h                   |   62 +++-
- include/linux/nfs_fs.h                 |    5 +
- include/linux/nfs_fs_sb.h              |    3 +
- include/linux/nfs_xdr.h                |   50 ++
- include/linux/sunrpc/xdr.h             |    7 +
- net/sunrpc/auth_gss/gss_krb5_mech.c    |    2 +-
- 24 files changed, 2550 insertions(+), 45 deletions(-)
 
-commit 411b5e05617593efebc06241dbc56f42150f2abe
-Author: Joe Perches <joe@perches.com>
-Date:   Mon Sep 13 12:48:01 2010 -0700
+#2: Its not possible to stuff the FIFO before TPC transfer.
+   One really have to wait for write ready interrupt, even though the
+write ready status is stuck.
 
-    net/sunrpc: Use static const char arrays
-    
-    Signed-off-by: Joe Perches <joe@perches.com>
-    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
 
-commit 43c2e885be25311e6289c7da52e8a03c4453ee03
-Author: J. Bruce Fields <bfields@redhat.com>
-Date:   Sat Oct 2 15:19:01 2010 -0400
+#3: TPCs with non 4 aligned length woes:
+   Facts:
 
-    nfs4: fix channel attribute sanity-checks
-    
-    The sanity checks here are incorrect; in the worst case they allow
-    values that crash the client.
-    
-    They're also over-reliant on the preprocessor.
-    
-    Signed-off-by: J. Bruce Fields <bfields@redhat.com>
-    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+   * non 4 aligned DMA write hangs the system hard, maybe on bus level.
 
-commit 1c787096fce217b5fdd9806dbce96e738c9345c0
-Author: Trond Myklebust <Trond.Myklebust@netapp.com>
-Date:   Thu Oct 21 16:56:48 2010 -0400
+   * PIO read succedes but controller truncates the data stored in the
+FIFO to closest 4 byte boundary.
+   That is if you read 26 bytes, it will save 24 bytes in the FIFO
 
-    NFSv4.1: Use more sensible names for 'initialize_mountpoint'
-    
-    The initialize_mountpoint/uninitialise_mountpoint functions are really about
-    setting or clearing the layout driver to be used on this filesystem. Change
-    the names to the more descriptive 'set_layoutdriver/clear_layoutdriver'.
-    
-    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+   * TPC_P0, TPC_P1 not aligned transfters work just fine despite a
+statement in the datasheet
+   (only mention of this problem)
 
-commit 16b374ca439fb406e46e071f75428f5b033056f8
-Author: Andy Adamson <andros@netapp.com>
-Date:   Wed Oct 20 00:18:04 2010 -0400
 
-    NFSv4.1: pnfs: filelayout: add driver's LAYOUTGET and GETDEVICEINFO infrastructure
-    
-    Implement the driver's io_ops->alloc_lseg and free_lseg functions,
-    which integrate into the deviceid cache and calls out to
-    nfs4_proc_getdeviceinfo when necessary.
-    
-    Signed-off-by: Andy Adamson <andros@netapp.com>
-    Signed-off-by: Dean Hildebrand <dhildebz@umich.edu>
-    Signed-off-by: Marc Eshel <eshel@almaden.ibm.com>
-    Signed-off-by: Mike Sager <sager@netapp.com>
-    Signed-off-by: Oleg Drokin <green@linuxhacker.ru>
-    Signed-off-by: Ricardo Labiaga <ricardo.labiaga@netapp.com>
-    Signed-off-by: Tao Guo <guotao@nrchpc.ac.cn>
-    Signed-off-by: Boaz Harrosh <bharrosh@panasas.com>
-    Signed-off-by: Fred Isaman <iisaman@netapp.com>
-    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+#4: As soon as write PIO is used, then later write DMA fails.
+   Facts:
 
-commit b1f69b754ee312ec75f2c7ead0e6851cd9598cc2
-Author: Andy Adamson <andros@netapp.com>
-Date:   Wed Oct 20 00:18:03 2010 -0400
+   * This is triggered only by PIO write of registers
+   (only happens in ms_block.c when it writes param + oob. Thats why
+mspro_blk isn't affected)
+   Doing short DMA writes is a nice workaround.
 
-    NFSv4.1: pnfs: add LAYOUTGET and GETDEVICEINFO infrastructure
-    
-    Add the ability to actually send LAYOUTGET and GETDEVICEINFO.  This also adds
-    in the machinery to handle layout state and the deviceid cache.  Note that
-    GETDEVICEINFO is not called directly by the generic layer.  Instead it
-    is called by the drivers while parsing the LAYOUTGET opaque data in response
-    to an unknown device id embedded therein.  RFC 5661 only encodes
-    device ids within the driver-specific opaque data.
-    
-    Signed-off-by: Andy Adamson <andros@netapp.com>
-    Signed-off-by: Dean Hildebrand <dhildebz@umich.edu>
-    Signed-off-by: Marc Eshel <eshel@almaden.ibm.com>
-    Signed-off-by: Mike Sager <sager@netapp.com>
-    Signed-off-by: Ricardo Labiaga <ricardo.labiaga@netapp.com>
-    Signed-off-by: Tao Guo <guotao@nrchpc.ac.cn>
-    Signed-off-by: Boaz Harrosh <bharrosh@panasas.com>
-    Signed-off-by: Fred Isaman <iisaman@netapp.com>
-    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+   * Doing PIO writes in h_msb_read_page don't cause the problem.
+     Therefore the bug causing sequence should be similiar to
+h_msb_write_block:
 
-commit 974cec8ca0352eb5d281535b714cf194a606e98f
-Author: Andy Adamson <andros@netapp.com>
-Date:   Wed Oct 20 00:18:02 2010 -0400
+       1. PIO write of param + extra (10 bytes) or even padded to 12 or
+16 bytes
+       2. inline write (TPC_P0) of MS_CMD_BLOCK_WRITE + wait for int
+       3. read of INT register via STATUS
+       3. DMA write of MS_TPC_WRITE_LONG_DATA
+       4. DMA write of MS_TPC_WRITE_LONG_DATA
+           ---------timeout-----------
+ 
+   * In fact first DMA write succedes, but next one fails, and so do all
+following writes
 
-    NFS: client needs to maintain list of inodes with active layouts
-    
-    In particular, server reboot will invalidate all layouts.
-    
-    Note that in order to have an active layout, we must get a successful response
-    from the server.  To avoid adding that machinery, this patch just includes a
-    stub that fakes up a successful return.  Since the layout is never referenced
-    for io, this is not a problem.
-    
-    Signed-off-by: Andy Adamson <andros@netapp.com>
-    Signed-off-by: Benny Halevy <bhalevy@panasas.com>
-    Signed-off-by: Dean Hildebrand <dhildebz@umich.edu>
-    Signed-off-by: Fred Isaman <iisaman@netapp.com>
-    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+   * The problem persits till reboot, and shows up even if PIO isn't
+used again.
+   Other way to "fix" it, is to put device in D3 and back to D0
 
-commit e5e940170b2136ad4d5483ef293ae284b9cc8d53
-Author: Benny Halevy <bhalevy@panasas.com>
-Date:   Wed Oct 20 00:18:01 2010 -0400
+   * Serial/parallel mode don't affect anything.
 
-    NFS: create and destroy inode's layout cache
-    
-    At the start of the io paths, try to grab the relevant layout
-    information.  This will initiate the inode's layout cache, but
-    stubs ensure the cache stays empty.
-    
-    Signed-off-by: Benny Halevy <bhalevy@panasas.com>
-    Signed-off-by: Dean Hildebrand <dhildebz@umich.edu>
-    Signed-off-by: Marc Eshel <eshel@almaden.ibm.com>
-    Signed-off-by: Tao Guo <guotao@nrchpc.ac.cn>
-    Signed-off-by: Ricardo Labiaga <ricardo.labiaga@netapp.com>
-    Signed-off-by: Boaz Harrosh <bharrosh@panasas.com>
-    Signed-off-by: Andy Adamson <andros@netapp.com>
-    Signed-off-by: Fred Isaman <iisaman@netapp.com>
-    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+   After bug reproduction:
 
-commit 7ab672ce312133ee4a5d85b71447b2b334403681
-Author: Dean Hildebrand <dhildebz@umich.edu>
-Date:   Wed Oct 20 00:18:00 2010 -0400
+    * DMA writes stop working completely, therefore mspro_blk looses
+writes as well
 
-    NFSv4.1: pnfs: filelayout: introduce minimal file layout driver
-    
-    This driver just registers itself and supplies trivial mount/umount functions.
-    
-    Signed-off-by: Dean Hildebrand <dhildebz@umich.edu>
-    Signed-off-by: Marc Eshel <eshel@almaden.ibm.com>
-    Signed-off-by: Benny Halevy <bhalevy@panasas.com>
-    Signed-off-by: Fred Isaman <iisaman@netapp.com>
-    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+    * PIO still works just fine. Its possible just to load the driver
+without dma support, and it works correctly.
 
-commit 02c35fca7cf4ea2dfdc6db279e230cacbbf4b870
-Author: Fred Isaman <iisaman@netapp.com>
-Date:   Wed Oct 20 00:17:59 2010 -0400
+    * DMA reads work just fine.
 
-    NFSv4.1: pnfs: full mount/umount infrastructure
-    
-    Allow a module implementing a layout type to register, and
-    have its mount/umount routines called for filesystems that
-    the server declares support it.
-    
-    Signed-off-by: Fred Isaman <iisaman@netapp.com>
-    Signed-off-by: Marc Eshel <eshel@almaden.ibm.com>
-    Signed-off-by: Andy Adamson<andros@netapp.com>
-    Signed-off-by: Bian Naimeng <biannm@cn.fujitsu.com>
-    Signed-off-by: Benny Halevy <bhalevy@panasas.com>
-    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
-
-commit 85e174ba6b786ad336eb2df105b4f66d0932e70a
-Author: Ricardo Labiaga <Ricardo.Labiaga@netapp.com>
-Date:   Wed Oct 20 00:17:58 2010 -0400
-
-    NFS: set layout driver
-    
-    Put in the infrastructure that uses information returned from the
-    server at mount to select a layout driver module.
-    
-    In this patch, a stub is used that always returns "no driver found".
-    
-    Signed-off-by: Ricardo Labiaga <Ricardo.Labiaga@netapp.com>
-    Signed-off-by: Dean Hildebrand <dhildebz@umich.edu>
-    Signed-off-by: Marc Eshel <eshel@almaden.ibm.com>
-    Signed-off-by: Andy Adamson <andros@netapp.com>
-    Signed-off-by: Benny Halevy <bhalevy@panasas.com>
-    Signed-off-by: Fred Isaman <iisaman@netapp.com>
-    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
-
-commit 504913fbc84c00bba7224d73e4aab525c1731f7d
-Author: Andy Adamson <andros@netapp.com>
-Date:   Wed Oct 20 00:17:57 2010 -0400
-
-    NFS: ask for layouttypes during v4 fsinfo call
-    
-    This information will be used to determine which layout driver,
-    if any, to use for subsequent IO on this filesystem.  Each driver
-    is assigned an integer id, with 0 reserved to indicate no driver.
-    
-    The server can in theory return multiple ids.  However, our current
-    client implementation only notes the first entry and ignores the
-    rest.
-    
-    Signed-off-by: Andy Adamson <andros@netapp.com>
-    Signed-off-by: Benny Halevy <bhalevy@panasas.com>
-    Signed-off-by: Fred Isaman <iisaman@netapp.com>
-    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
-
-commit 9449925273933d19235d7d36c1fd970841d055de
-Author: Alexandros Batsakis <batsakis@netapp.com>
-Date:   Wed Oct 20 00:17:56 2010 -0400
-
-    NFS: change stateid to be a union
-    
-    In NFSv4.1 the stateid consists of the other and seqid fields. For layout
-    processing we need to numerically compare the seqid value of layout stateids.
-    To do so, introduce a union to nfs4_stateid to switch between opaque(16 bytes)
-    and opaque(12 bytes) / __be32
-    
-    Signed-off-by: Alexandros Batsakis <batsakis@netapp.com>
-    Signed-off-by: Benny Halevy <bhalevy@panasas.com>
-    Signed-off-by: Fred Isaman <iisaman@netapp.com>
-    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
-
-commit c772567d97fa0fca454eea68aeae915ca1bc732b
-Author: Dean Hildebrand <dhildebz@umich.edu>
-Date:   Wed Oct 20 00:17:55 2010 -0400
-
-    NFSv4.1: pnfsd, pnfs: protocol level pnfs constants
-    
-    Use only layoutreturn constant for both returns and recalls.
-    (return_* works better for recall_type rather the other way around)
-    
-    Signed-off-by: Dean Hildebrand <dhildebz@umich.edu>
-    Signed-off-by: Marc Eshel <eshel@almaden.ibm.com>
-    Signed-off-by: Benny Halevy <bhalevy@panasas.com>
-    Signed-off-by: Fred Isaman <iisaman@netapp.com>
-    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
-
-commit 35b61e63323ccf5fdcdd74b11751b58392c9cce1
-Author: Benny Halevy <bhalevy@panasas.com>
-Date:   Wed Oct 20 00:17:54 2010 -0400
-
-    SUNRPC: define xdr_decode_opaque_fixed
-    
-    A helper for decoding a fixed length opaque value.
-    Returns a pointer to the next item in the xdr stream.
-    
-    Signed-off-by: Benny Halevy <bhalevy@panasas.com>
-    Signed-off-by: Fred Isaman <iisaman@netapp.com>
-    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
-
-commit 3c9101a0575f6078191dae6bb91a834c6aac3557
-Author: Andy Adamson <andros@netapp.com>
-Date:   Wed Oct 20 00:17:53 2010 -0400
-
-    NFSD: remove duplicate NFS4_STATEID_SIZE
-    
-    Already accepted by Bruce
-    
-    Signed-off-by: Andy Adamson <andros@netapp.com>
-    Signed-off-by: Fred Isaman <iisaman@netapp.com>
-    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
-
+#5: Auto_Get_INT feature just doesn't work.
+   Datasheet says that intreg is placed to TPC_P0, but that doesn't
+happen....
+</quote>
 
