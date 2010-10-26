@@ -1,50 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932430Ab0JZLEv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Oct 2010 07:04:51 -0400
-Received: from relay.dotsterhost.com ([72.5.54.243]:34524 "EHLO
-	relay.dotsterhost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932299Ab0JZLEu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Oct 2010 07:04:50 -0400
-X-Greylist: delayed 7121 seconds by postgrey-1.27 at vger.kernel.org; Tue, 26 Oct 2010 07:04:50 EDT
-Date: Tue, 26 Oct 2010 05:59:37 -0700
-Message-Id: <201010261259.o9QCxbSJ031910@relay.dotsterhost.com>
-Sender-ID: y198404
-To: linux-kernel@vger.kernel.org
-Subject: Reply Needed
-From: Dr Carl Lee <vcheng69@yahoo.com.hk>
-Reply-To: carl_leeus69@yahoo.co.jp
+	id S1759846Ab0JZLNo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Oct 2010 07:13:44 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:31076 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756503Ab0JZLNm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Oct 2010 07:13:42 -0400
+Date: Tue, 26 Oct 2010 13:06:44 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Julia Lawall <julia@diku.dk>
+Cc: kernel-janitors@vger.kernel.org, kvm@vger.kernel.org,
+        virtualization@lists.osdl.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/14] drivers/vhost/vhost.c: delete double assignment
+Message-ID: <20101026110644.GA7922@redhat.com>
+References: <1288088743-3725-1-git-send-email-julia@diku.dk>
+ <1288088743-3725-4-git-send-email-julia@diku.dk>
 MIME-Version: 1.0
-Content-Type: text/plain
-Content-Transfer-Encoding: 16bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1288088743-3725-4-git-send-email-julia@diku.dk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
- 
-I have a proposition for you, this however is not mandatory nor will I
-in any manner compel you to honor against your will.Let me start by
-introducing myself. I am Dr.Carl Lee, Director of Operations
-of the Hang Seng Bank Ltd,Sai Wan Ho Branch. I have a mutual beneficial
-business suggestion for you.
- 
-1. Can you handle this project?
-2. Can I give you this trust ?
- 
-Absolute confidentiality is required from you.Besides,I will use my connection
-to get some documents to back up the fund so that the fund can not be
-question by any authority.
- 
-More information await you in my next response to your email message.
- 
- 
-Treat as very urgent.
- 
-Yours Faithfully,
- 
-Dr. Carl Lee.
+On Tue, Oct 26, 2010 at 12:25:32PM +0200, Julia Lawall wrote:
+> From: Julia Lawall <julia@diku.dk>
+> 
+> Delete successive assignments to the same location.
+> 
+> A simplified version of the semantic match that finds this problem is as
+> follows: (http://coccinelle.lip6.fr/)
+> 
+> // <smpl>
+> @@
+> expression i;
+> @@
+> 
+> *i = ...;
+>  i = ...;
+> // </smpl>
+> 
+> Signed-off-by: Julia Lawall <julia@diku.dk>
 
+Thanks, applied.
 
-
+> ---
+>  drivers/vhost/vhost.c |    1 -
+>  1 file changed, 1 deletion(-)
+> 
+> diff --git a/drivers/vhost/vhost.c b/drivers/vhost/vhost.c
+> index 94701ff..ed27727 100644
+> --- a/drivers/vhost/vhost.c
+> +++ b/drivers/vhost/vhost.c
+> @@ -157,7 +157,6 @@ static void vhost_vq_reset(struct vhost_dev *dev,
+>  	vq->avail_idx = 0;
+>  	vq->last_used_idx = 0;
+>  	vq->used_flags = 0;
+> -	vq->used_flags = 0;
+>  	vq->log_used = false;
+>  	vq->log_addr = -1ull;
+>  	vq->vhost_hlen = 0;
