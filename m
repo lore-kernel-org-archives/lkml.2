@@ -1,112 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758195Ab0JZNyj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Oct 2010 09:54:39 -0400
-Received: from Mycroft.westnet.com ([216.187.52.7]:47809 "EHLO
-	mycroft.westnet.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752512Ab0JZNyh (ORCPT
+	id S933254Ab0JZN6P (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Oct 2010 09:58:15 -0400
+Received: from smtp-out-226.synserver.de ([212.40.180.226]:1081 "HELO
+	smtp-out-222.synserver.de" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with SMTP id S1755175Ab0JZN6O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Oct 2010 09:54:37 -0400
+	Tue, 26 Oct 2010 09:58:14 -0400
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: markus@trippelsdorf.de
+X-SynServer-PPID: 32257
+Date: Tue, 26 Oct 2010 15:58:08 +0200
+From: Markus Trippelsdorf <markus@trippelsdorf.de>
+To: Borislav Petkov <bp@amd64.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "hpa@linux.intel.com" <hpa@linux.intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Andreas Herrmann <andreas.herrmann3@amd.com>
+Subject: Re: Clocksource tsc unstable (delta = -8589361717 ns) in current
+ git
+Message-ID: <20101026135808.GB1672@arch.trippelsdorf.de>
+References: <20101026112052.GA1672@arch.trippelsdorf.de>
+ <20101026131843.GC17852@aftab>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-Message-ID: <19654.56681.488563.135215@quad.stoffel.home>
-Date: Tue, 26 Oct 2010 09:53:45 -0400
-From: "John Stoffel" <john@stoffel.org>
-To: Eric Paris <eparis@redhat.com>
-Cc: John Stoffel <john@stoffel.org>, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        hch@infradead.org, zohar@us.ibm.com, warthog9@kernel.org,
-        david@fromorbit.com, jmorris@namei.org, kyle@mcmartin.ca,
-        hpa@zytor.com, akpm@linux-foundation.org,
-        torvalds@linux-foundation.org, mingo@elte.hu, viro@zeniv.linux.org.uk
-Subject: Re: [PATCH 06/11] IMA: use i_writecount rather than a private
- counter
-In-Reply-To: <1288043557.2655.34.camel@localhost.localdomain>
-References: <20101025184118.20504.24290.stgit@paris.rdu.redhat.com>
-	<20101025184152.20504.94048.stgit@paris.rdu.redhat.com>
-	<19653.55831.692904.538148@quad.stoffel.home>
-	<1288043557.2655.34.camel@localhost.localdomain>
-X-Mailer: VM 8.1.1 under 23.2.1 (x86_64-pc-linux-gnu)
+Content-Disposition: inline
+In-Reply-To: <20101026131843.GC17852@aftab>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>>>> "Eric" == Eric Paris <eparis@redhat.com> writes:
+On Tue, Oct 26, 2010 at 03:18:43PM +0200, Borislav Petkov wrote:
+> On Tue, Oct 26, 2010 at 07:20:52AM -0400, Markus Trippelsdorf wrote:
+> > On my AMD system the following kernel messages are sometimes printed
+> > after several hours of uptime:
+> > Clocksource tsc unstable (delta = -8589361717 ns)
+> > Switching to clocksource hpet
+> 
+> This is strange, tsc is actually stable on your F10h revC.
 
-Eric> On Mon, 2010-10-25 at 15:27 -0400, John Stoffel wrote:
->> The problems with kernel.org is a perfect exmaple of how an annocuous
->> feature like this, can kill a system's performance.
+Yes. constant_tsc is among the CPU flags.
 
-Eric> You admit that you don't know what you are talking about and
-Eric> then state that this kills systems performance.  Interesting
-Eric> conclusion.
+> > This happened several times already:
+> > # grep "Clocksource" kernel.*
+> > kernel.log:Oct 24 18:31:17 arch kernel: Clocksource tsc unstable (delta = -8591703466 ns)
+> > kernel.log:Oct 26 12:54:38 arch kernel: Clocksource tsc unstable (delta = -8589361717 ns)
+> > kernel.log.1:Oct 22 21:43:51 arch kernel: Clocksource tsc unstable (delta = -25772316650 ns)
+> 
+> Do you have any warnings/oopses before that, can we have the whole dmesg
+> with the above messages?
 
-I'm basing my observations on the data reported by John "Warthog9"
-who's the kernel.org sysadmin, and the *fact* that IMA was chewing up
-gigs of memory when it wasn't even enabled, but just compiled into the
-system.
+No warning/oopses. The whole dmesg is attached.
 
-It certainly does NOT help system performance to suck up RAM with data
-that is NEVER used by that system.  
+> 
+> > The computer is nearly unusable afterwards (second long delays, that
+> > seem to grow larger and larger) and only a prompt reboot can fix the
+> > problem.
+> > I'm running the latest git kernel. Version 2.6.36 does not show these
+> > symptoms.
+> > 
+> > Dmesg and kernel config are attached.
+> > 
+> > -- 
+> > Markus
+> 
+> > Initializing cgroup subsys cpu
+> > Linux version 2.6.36-05618-gb18cae4-dirty (markus@arch.trippelsdorf.de) (gcc version 4.5.1 (GCC) ) #41 SMP PREEMPT Tue Oct 26 06:51:47 CEST 2010
+> 
+>  ...-dirty means you have some changes ontop of b18cae4. What are those?
 
-Eric> I'm not going to try to refute you point by point but will instead paint
-Eric> a broad picture.  I see 3 possible states:
+The SCHED_AUTOGROUP patches from Mike Galbraith.
 
-Eric> 1) Configured out - 0 overhead.  period.
+> > Command line: root=/dev/sdb2 fbcon=rotate:3 quiet kexec_jump_back_entry=0x23d64482b7e72bb7
+> > BIOS-provided physical RAM map:
+> 
+> otherwise, I don't see anything strange in your dmesg. Unless tglx has a
+> better idea, I'd ask you to bisect it. 5618 changesets shouldn't be that
+> much but I don't know, if the issue appears every several hours it could
+> still be tedious.
 
-Excellent, this should be the default and the Kconfig should be
-updated to default to this.  
+That would be a several week long process, as the issue appears ~ every
+2 days here on this machine running 24/7.
 
-Eric> 2) Configured in but default disabled
-
-And what is the overhead in this case?  That's what I'm concerned
-about.  
-
-Eric> 3) Configured in and enabled by admin intervention
-
-I can't complain about this aspect, though I can still push for the
-lowest possible impact on system performance when *any* of these
-last two states are in force.  
-
-Eric> I have (I think) pretty clearly discussed the overhead and the
-Eric> changes made in case #2.  We expand struct inode by 4 bytes, we
-Eric> increment and decrement those 4 bytes on open/close() and we use
-Eric> a new inode->i_flags.
-
-Then this is a huge improvement!  Don't get me wrong, I'm negative
-about IMA in general, but I'm very happy at how well you've responded
-to the firestorm of criticism (even from me, a non-kernel programmer)
-about this subsystem. 
-
-Eric> In you e-mail you seemed to be asking about case #3 where you
-Eric> explicitly chose to load a measurement policy (either custom or
-Eric> using the imb_tcb=1 boot option).  There are additional
-Eric> overheads in that case if the inode in question matches the
-Eric> measurement policy.  I don't see the need to go into the details
-Eric> of that overhead since you have 0 intention of using this
-Eric> feature no matter what and don't seem to be interested in
-Eric> helping to change those overheads for users of the subsystem.
-Eric> Please correct me if I'm wrong.  I do readily admit there is
-Eric> overhead, and that overhead will be higher if inodes which have
-Eric> been deemed integrity relevant by the measurement policy you
-Eric> chose to load are changed in certain patterns.
-
-No.  What I was trying to get at, and probably poorly, was the comment
-you made about having to keep the IMA data structures around, even if
-IMA has been disabled, so that you could continue to claim integrity
-if IMA was re-enabled.
-
-So my question is really about the following situation:
-
-1.  System boots up, IMA is enabled.
-2.  SysAdmin notices and turns it off.
-    - does the IMA overhead (not the per-inode 4 bytes) go away?
-    - do the various in memory data structures get freed?
-    - does the pointer in the inode get null'ed?
-
-Thanks,
-John
-
-
-
+-- 
+Markus
