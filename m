@@ -1,57 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932889Ab0JZMAa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Oct 2010 08:00:30 -0400
-Received: from redmars.org ([92.243.31.175]:55392 "EHLO deckard.alcopop.org"
+	id S932989Ab0JZMBR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Oct 2010 08:01:17 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:40931 "EHLO mgw2.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932592Ab0JZMA3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Oct 2010 08:00:29 -0400
-Date: Tue, 26 Oct 2010 13:00:26 +0100
-From: Jon Dowland <jmtd@debian.org>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Matthew Garrett <mjg@redhat.com>, platform-driver-x86@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] toshiba_acpi.c: Add key_entry for a lone FN keypress
-Message-ID: <20101026120026.GA27720@deckard.alcopop.org>
-References: <20101023221253.GA4829@hathor> <201010251127.37374.dmitry.torokhov@gmail.com>
+	id S932384Ab0JZMBP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Oct 2010 08:01:15 -0400
+Date: Tue, 26 Oct 2010 14:01:12 +0200 (CEST)
+From: Julia Lawall <julia@diku.dk>
+To: walter harms <wharms@bfs.de>
+Cc: Karsten Keil <isdn@linux-pingi.de>, kernel-janitors@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 10/14] drivers/isdn: delete double assignment
+In-Reply-To: <4CC6C1C0.8020005@bfs.de>
+Message-ID: <Pine.LNX.4.64.1010261401000.25281@ask.diku.dk>
+References: <1288088743-3725-1-git-send-email-julia@diku.dk>
+ <1288088743-3725-11-git-send-email-julia@diku.dk> <4CC6C1C0.8020005@bfs.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <201010251127.37374.dmitry.torokhov@gmail.com>
-X-Challenge-Response: refused
-X-Forelli-filterword: GO1268Op
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 25, 2010 at 11:27:35AM -0700, Dmitry Torokhov wrote:
-> Well, if FN key can generate separate events then we should report
-> KEY_FN, not KEY_UNKNOWN.
+On Tue, 26 Oct 2010, walter harms wrote:
 
-Good point, thanks.  I missed that when I went shopping for an appropriate
-KEY_*.
+> 
+> 
+> Julia Lawall schrieb:
+> > From: Julia Lawall <julia@diku.dk>
+> > 
+> > Delete successive assignments to the same location.  In the first case, the
+> > hscx array has two elements, so change the assignment to initialize the
+> > second one.  In the second case, the two assignments are simply identical.
+> > 
+> > A simplified version of the semantic match that finds this problem is as
+> > follows: (http://coccinelle.lip6.fr/)
+> > 
+> > // <smpl>
+> > @@
+> > expression i;
+> > @@
+> > 
+> > *i = ...;
+> >  i = ...;
+> > // </smpl>
+> > 
+> > Signed-off-by: Julia Lawall <julia@diku.dk>
+> > 
+> > ---
+> > In the first case, the patch changes the semantics and has not been tested.
+> > 
+> >  drivers/isdn/hardware/mISDN/mISDNinfineon.c |    2 +-
+> >  drivers/isdn/hisax/l3_1tr6.c                |    2 --
+> >  2 files changed, 1 insertion(+), 3 deletions(-)
+> > 
+> > diff --git a/drivers/isdn/hardware/mISDN/mISDNinfineon.c b/drivers/isdn/hardware/mISDN/mISDNinfineon.c
+> > index af25e1f..e90db88 100644
+> > --- a/drivers/isdn/hardware/mISDN/mISDNinfineon.c
+> > +++ b/drivers/isdn/hardware/mISDN/mISDNinfineon.c
+> > @@ -563,7 +563,7 @@ reset_inf(struct inf_hw *hw)
+> >  		mdelay(10);
+> >  		hw->ipac.isac.adf2 = 0x87;
+> >  		hw->ipac.hscx[0].slot = 0x1f;
+> > -		hw->ipac.hscx[0].slot = 0x23;
+> > +		hw->ipac.hscx[1].slot = 0x23;
+> >  		break;
+> >  	case INF_GAZEL_R753:
+> >  		val = inl((u32)hw->cfg.start + GAZEL_CNTRL);
+> > diff --git a/drivers/isdn/hisax/l3_1tr6.c b/drivers/isdn/hisax/l3_1tr6.c
+> > index b0554f8..a5c76fc 100644
+> > --- a/drivers/isdn/hisax/l3_1tr6.c
+> > +++ b/drivers/isdn/hisax/l3_1tr6.c
+> > @@ -164,8 +164,6 @@ l3_1tr6_setup(struct l3_process *pc, u_char pr, void *arg)
+> >  	char tmp[80];
+> >  	struct sk_buff *skb = arg;
+> >  
+> > -	p = skb->data;
+> > -
+> >  	/* Channel Identification */
+> >  	p = skb->data;
+> >  	if ((p = findie(p, skb->len, WE0_chanID, 0))) {
+> > 
+> 
+> 
+> perhaps you can move the next assignment out of if also ?
+> 
+> p = findie(skb->data, skb->len, WE0_chanID, 0);
+> if (p) { ....
 
-Adjusted patch to apply on top of current HEAD.
+OK.
 
-A lone FN key press on a Toshiba Portégé R700 without another key in
-conjunction results in an ACPI event and a spurious error message on
-the console.
-
-Add a key entry to map this event to a KEY_UNKNOWN keypress silences
-this message.
-
-Signed-off-by: Jon Dowland <jmtd@debian.org>
-
-----
---- a/drivers/platform/x86/toshiba_acpi.c	2010-10-26 12:56:46.000000000 +0100
-+++ b/drivers/platform/x86/toshiba_acpi.c	2010-10-26 12:58:21.000000000 +0100
-@@ -135,6 +135,7 @@
- 	{ KE_KEY, 0x141, { KEY_BRIGHTNESSUP } },
- 	{ KE_KEY, 0x142, { KEY_WLAN } },
- 	{ KE_KEY, 0x143, { KEY_PROG1 } },
-+	{ KE_KEY, 0x17f, { KEY_FN } },
- 	{ KE_KEY, 0xb05, { KEY_PROG2 } },
- 	{ KE_KEY, 0xb06, { KEY_WWW } },
- 	{ KE_KEY, 0xb07, { KEY_MAIL } },
+julia
