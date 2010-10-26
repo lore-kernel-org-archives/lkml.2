@@ -1,47 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759915Ab0JZOul (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Oct 2010 10:50:41 -0400
-Received: from smtp151.iad.emailsrvr.com ([207.97.245.151]:49457 "EHLO
-	smtp151.iad.emailsrvr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759871Ab0JZOui (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Oct 2010 10:50:38 -0400
-Message-ID: <4CC6EAB5.9020006@triadsys.com>
-Date: Tue, 26 Oct 2010 10:50:29 -0400
-From: Tom Vier <tom@triadsys.com>
-Organization: Triad Systems Engineering, Inc.
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.12) Gecko/20100913 Icedove/3.0.7
-MIME-Version: 1.0
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-CC: Samuel Thibault <sthibault@debian.org>, 594089@bugs.debian.org,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: Bug#594089: keyboard-configuration: caps lock keycode problem
-References: <20100823154353.2805.13525.reportbug@tom.tse> <20100903235540.GA9149@const> <4C866913.3030201@triadsys.com> <4C8E6861.1070502@triadsys.com> <20101024144150.GV24091@const.famille.thibault.fr> <20101025045003.GA1438@core.coreip.homeip.net> <4CC58816.3090301@triadsys.com> <20101025180320.GA4725@const.famille.thibault.fr> <20101025182509.GA13929@core.coreip.homeip.net>
-In-Reply-To: <20101025182509.GA13929@core.coreip.homeip.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1759931Ab0JZOvG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Oct 2010 10:51:06 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:10620 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756652Ab0JZOvD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Oct 2010 10:51:03 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <4CC6C62F.1000804@kernel.org>
+References: <4CC6C62F.1000804@kernel.org> <4CC69B22.2050708@kernel.org> <20101025224111.7798.38960.stgit@warthog.procyon.org.uk> <12101.1288088542@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: dhowells@redhat.com, torvalds@osdl.org, akpm@linux-foundation.org,
+        linux-am33-list@redhat.com, linux-kernel@vger.kernel.org,
+        Akira Takeuchi <takeuchi.akr@jp.panasonic.com>,
+        Mark Salter <msalter@redhat.com>
+Subject: Re: [PATCH] MN10300: Fix the PERCPU() alignment to allow for workqueues
+Date: Tue, 26 Oct 2010 15:50:42 +0100
+Message-ID: <14874.1288104642@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/25/2010 02:25 PM, Dmitry Torokhov wrote:
-> On Mon, Oct 25, 2010 at 08:03:20PM +0200, Samuel Thibault wrote:
->> Could you also post results when pressing the "favorite" and the "prev"
->> internet keys of your keyboard?
->>
->
-> Actually, if these are all the events that evtest reports when pressing
-> CapsLock then I am confused where the "favorites" ghost press is coming
-> from... They are not emitted by the device. Do you have a funky keymap
-> loaded somewhere? Also, was 'showkey -s' issued while in X or in the
-> text console?
+Tejun Heo <tj@kernel.org> wrote:
 
-Console. I just ran it now and caps-lock has the same codes as 
-"favorites" and right-shift has the same as "previous". So it's not an X 
-problem.
+> Ah, I see now.  The actual areas are properly aligned but the percpu
+> address is determined as offset from the percpu output section base so
+> the percpu pointers in the percpu address space end up misaligned with
+> the actual kernel addresses and the code in workqueue checks the
+> address in percpu AS, so, yeap, it's caused by the misalignment of the
+> percpu section. 
 
---
-Tom Vier <tom@triadsys.com>
-Senior Net/Sys Admin
-Triad Systems Engineering, Inc.
+Okay, I see that.
+
+> > FRV's page size is 16KB, so on that we really don't want it to be
+> > PAGE_SIZE.
+> 
+> Why not?  It's in the init section which will be freed anyway and with
+> the kernel image compression it's not even gonna add any noticeable
+> amount to the kernel image size.  There isn't any benefit in using
+> anything smaller than PAGE_SIZE for alignment.  Also, percpu allocator
+> guarantees alignment requirement upto PAGE_SIZE is honored.  If the
+> output section uses smaller alignment, the percpu AS will end up being
+> misaligned.
+
+The bootloader we have doesn't do decompression.  On the other hand, does the
+PERCPU stuff need to be allocated space in the image by the linker?  Can it be
+initialised to anything other than zeros?
+
+David
