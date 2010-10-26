@@ -1,136 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758874Ab0JZXFr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Oct 2010 19:05:47 -0400
-Received: from smtp104.sbc.mail.gq1.yahoo.com ([67.195.15.63]:24225 "HELO
-	smtp104.sbc.mail.gq1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1756444Ab0JZXFq (ORCPT
+	id S1758887Ab0JZXHQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Oct 2010 19:07:16 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:57356 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756396Ab0JZXHP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Oct 2010 19:05:46 -0400
-X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
-X-YMail-OSG: 1NWPnToVM1lpeR2tuiJHEVurBfJUcJ4F9QZsWnWiAV38KjO
- 2R9ym6.LVCFgKlZWBPM6_kBzHDioMRK36PN_ga.9g.BkCciMCUdCSWxO0qax
- 9Hs4LoX8nWPHu53UCCyy.TODiZZ5eWUQEmqz0R59SHs4Y5iFarb5rBMoEOMS
- eu2O4Vd29JNWCn5mkeeQnTWBEudhs1Ft07q0D1nfwcVYYv539E89fDQ1wCI.
- l32p_tA.f4VzWoedaigINJErhEGKGcZPKrdZrEumc4b_RIFg-
-X-Yahoo-Newman-Property: ymail-3
-Subject: Re: [ANNOUNCE] Status of unlocked_qcmds=1 operation for .37
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: James Bottomley <James.Bottomley@suse.de>
-Cc: Mike Anderson <andmike@linux.vnet.ibm.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        Vasu Dev <vasu.dev@linux.intel.com>,
-        Tim Chen <tim.c.chen@linux.intel.com>, Andi Kleen <ak@linux.intel.com>,
-        Matthew Wilcox <willy@linux.intel.com>,
-        Mike Christie <michaelc@cs.wisc.edu>, Jens Axboe <jaxboe@fusionio.com>,
-        James Smart <james.smart@emulex.com>,
-        Andrew Vasquez <andrew.vasquez@qlogic.com>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Hannes Reinecke <hare@suse.de>, Joe Eykholt <jeykholt@cisco.com>,
-        Christoph Hellwig <hch@lst.de>, Jon Hawley <warthog9@kernel.org>,
-        Brian King <brking@linux.vnet.ibm.com>,
-        Christof Schmitt <christof.schmitt@de.ibm.com>,
-        Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>
-In-Reply-To: <1288133450.8283.723.camel@mulgrave.site>
-References: <1287607774.10283.78.camel@haakon2.linux-iscsi.org>
-	 <20101021150840.GA24309@linux.vnet.ibm.com>
-	 <1288130914.5169.97.camel@haakon2.linux-iscsi.org>
-	 <1288132071.8283.689.camel@mulgrave.site>
-	 <1288132464.5169.112.camel@haakon2.linux-iscsi.org>
-	 <1288133450.8283.723.camel@mulgrave.site>
-Content-Type: text/plain
-Date: Tue, 26 Oct 2010 16:00:48 -0700
-Message-Id: <1288134048.5169.132.camel@haakon2.linux-iscsi.org>
+	Tue, 26 Oct 2010 19:07:15 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=FBXWpfmEn8I5VPffsI1CqtVRt8qRJ+NDEd5p2cFbKsBuMT1Bs8jgIBDzGsgImO7JA7
+         aRd0EWnu1TxqWywY2ndLI+w6MTyfHe/OzRdECz+6eyF6Z4ifu+c4JBwTUZyTeYIscXG0
+         HiscCI85E4+6NkWONE9H5zJt8KZcw9ZwttFs8=
+Subject: Re: memstick: Alternative approach to proposed fixes
+From: Maxim Levitsky <maximlevitsky@gmail.com>
+To: Alex Dubov <oakad@yahoo.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+In-Reply-To: <1288133739.15918.3.camel@maxim-laptop>
+References: <1288114871-805-1-git-send-email-oakad@yahoo.com>
+	 <1288133739.15918.3.camel@maxim-laptop>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 27 Oct 2010 01:07:08 +0200
+Message-ID: <1288134428.15918.8.camel@maxim-laptop>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.22.3.1 
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-10-26 at 22:50 +0000, James Bottomley wrote:
-> On Tue, 2010-10-26 at 15:34 -0700, Nicholas A. Bellinger wrote:
-> > On Tue, 2010-10-26 at 17:27 -0500, James Bottomley wrote:
-> > > On Tue, 2010-10-26 at 15:08 -0700, Nicholas A. Bellinger wrote:
-> > > > [PATCH] scsi: Add SCSI_EH_SOFTIRQ_DONE usage
-> > > > 
-> > > > This patch introduces a SCSI_EH_SOFTIRQ_DONE flag that is set in scsi_softirq_done()
-> > > > from block soft_irq context that is used to signal when scsi_try_to_abort_cmd() should
-> > > > be calling __scsi_try_to_abort_cmd() for a timed out struct scsi_cmnd instead of
-> > > > returning SUCCESS via checking only blk_test_rq_complete().  This is done because
-> > > > blk_rq_timed_out_timer() calls blk_mark_rq_complete() before blk_rq_timed_out() ->
-> > > > struct request_queue->rq_timed_out_fn().
-> > > 
-> > > This is getting pretty far off into the weeds.  I think the first step
-> > > should be queue lock push down into ->queuecommand.  This would still
-> > > necessitate locking around the serial number.
+On Wed, 2010-10-27 at 00:55 +0200, Maxim Levitsky wrote:
+> On Wed, 2010-10-27 at 04:41 +1100, Alex Dubov wrote:
+> > As I was not able to convince myself that profound changes proposed by Maxim
+> > are really necessary, I propose to follow a much milder path with this update
+> > round (as I outlined in my previous emails).
+> It is really sad to see that patchset.
+> 
+> 
 > > 
-> > Hmmm, I am not sure I understand what you mean here.  My understanding
-> > is that the whole point of the series was to remove any locking around
-> > the serial number in order to make scsi_dispatch_cmd() lockless,
-> > right..?
+> > In this small patchset, I fix a couple of small omissions as well as introduce
+> > support for "extended command" MSPro transfer method (currently enabled for
+> > JMicron, but I'll clear the TI host for this functionality soon). I expect the
+> > current solution to scale trivially for HG and XC transfer methods (I don't
+> > have the spec for the later yet).
+> Indeed small.
+> All the changes in this patchset are really minor and optional.
+> I could have dropped them.
 > 
-> The point is that several things have to happen for that to be a
-> reality.  The easiest and most obvious thing is lock push down in
-> ->queuecommand.
 > 
-
-Ok, can you please explain to me what you mean here..?  As I really
-thought we came to consensus that:
-
-*) running in unlocked_qcmd=1 was to be made the default for LLDs using
-the legacy optimization of ->queuecommand() -> unlock() ->
-do_some_lld_work() -> lock() -> return to scsi_dispatch_cmd()
-
-*) For the mpt-fusion / mpt2sas drivers which did not use the legacy
-optimization, but Tim Chen has tested with the former and I am awaiting
-an ACK from LSI on the latter.
-
-*) All other drivers will function with host_lock held (eg: legacy mode)
-in scsi_dispatch_cmd().
-
-*) All drivers using cmd->serial_number for anything beyond an
-informational purpose converted to use scsi_cmd_get_serial().
-
-> The next is most likely serial number elimination.
+> I did much more that that.
+> I made the memstick code readable so not only you could understand it
+> I also wrote ms_block.c while adding common support.
+> I made your code use that support.
 > 
-> But the point is that we don't have to do the whole thing all at once
-> (and spend months trying to get the series right).
+> It is really sad that you are doing that.
+To futher add to that you are just resending my patch #7,
+which is just a minor bugfix, and add evem more complexity to mspro when
+you add CMDEX.
+Why you made it host dependant?, could I ask.
 
-Not exactly correct, we have the whole thing ready right now with libfc
-running unlocked_qcmd=0 legacy mode.
+To be honest the ms subsystem is one of most obscure places I have ever
+seen.
+It took me much more time to write the driver that what it took me to
+write xD driver.
 
-Once I verify START_STOP case in scsi_error.c, I am happy to respin a
-mergeable tree from linus HEAD for you to pull ASAP.
+Alex, I really really hope you will accept my work.
 
-> 
-> > That is what the current patch series already does, in that it makes the
-> > use of cmd->serial_number optional and requires LLDs who use this for
-> > anything beyond an informational purpose to explictly call
-> > scsi_cmd_get_serial(). 
-> 
-> OK, so this patch is a corner case where the error handler is using the
-> serial number value to deduce something the block layer already knows
-> (whether the command completed or not). I don't think introducing a
-> substitute flag is the right way, the information should just be
-> extracted properly.
-> 
 
-Well, according to andmike this is two corner cases that are a result of
-the drop-host_lock-v4 series using only blk_test_rq_complete() in
-scsi_try_to_abort_cmd(), which will be true because of:
-
-blk_rq_timed_out_timer() ->  blk_mark_rq_complete()
-
-> But arguments about this don't have to impede the lock push down.
-> 
-
-Sure, but I assume you mean the lock push down only for the legacy LLDs
-that are not already internally unlocking host_lock in
-SHT->queuecommand() in mainline code right..?  
-
---nab
-
+Best regards,
+	Maxim Levitsky
 
