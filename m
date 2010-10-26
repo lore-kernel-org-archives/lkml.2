@@ -1,37 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760187Ab0JZRk4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Oct 2010 13:40:56 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:18126 "EHLO mx1.redhat.com"
+	id S1760170Ab0JZRnc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Oct 2010 13:43:32 -0400
+Received: from freeflow.nu ([178.79.134.28]:47127 "EHLO freeflow.nu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760175Ab0JZRkz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Oct 2010 13:40:55 -0400
-Message-ID: <4CC704E6.2060906@redhat.com>
-Date: Tue, 26 Oct 2010 18:42:14 +0200
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc13 Lightning/1.0b3pre Thunderbird/3.1.4
+	id S1760124Ab0JZRnb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Oct 2010 13:43:31 -0400
+Message-ID: <4CC71345.9050907@kernel.org>
+Date: Tue, 26 Oct 2010 20:43:33 +0300
+From: Pekka Enberg <penberg@kernel.org>
+User-Agent: Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10.4; en-US; rv:1.9.2.11) Gecko/20101013 Thunderbird/3.1.5
 MIME-Version: 1.0
-To: Alexander Graf <agraf@suse.de>
-CC: Scott Wood <scottwood@freescale.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        KVM list <kvm@vger.kernel.org>, Marcelo Tosatti <mtosatti@redhat.com>
-Subject: Re: [GIT PULL] KVM updates for the 2.6.37 merge window
-References: <4CC434A8.1000903@redhat.com> <20101025114924.6c05160c@udp111988uds.am.freescale.net> <4CC5B764.5030007@redhat.com> <AAAC8548-D406-4CAC-8579-D2B5AAB6AC2C@suse.de>
-In-Reply-To: <AAAC8548-D406-4CAC-8579-D2B5AAB6AC2C@suse.de>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Richard Kennedy <richard@rsk.demon.co.uk>
+CC: Christoph Lameter <cl@linux-foundation.org>,
+        lkml <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [PATCH] [v2] slub tracing: move trace calls out of always inlined
+ functions to reduce kernel code size
+References: <1286986178.1901.60.camel@castor.rsk>	 <4CB6ACB7.8060006@kernel.org>  <1287049769.1909.4.camel@castor.rsk> <1287653359.1906.13.camel@castor.rsk>
+In-Reply-To: <1287653359.1906.13.camel@castor.rsk>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  On 10/26/2010 05:55 PM, Alexander Graf wrote:
-> >  Alex, if you want them in, please prepare backports for 2.6.36.1.
+On 21.10.2010 12.29, Richard Kennedy wrote:
+> Having the trace calls defined in the always inlined kmalloc functions
+> in include/linux/slub_def.h causes a lot of code duplication as the
+> trace functions get instantiated for each kamalloc call site. This can
+> simply be removed by pushing the trace calls down into the functions in
+> slub.c.
 >
-> Why backports for 2.6.36.1 when we're talking about 2.6.27? Most of them fix bugs introduced by the PV framework.
+> On my x86_64 built this patch shrinks the code size of the kernel by
+> approx 36K and also shrinks the code size of many modules -- too many to
+> list here ;)
+>
+> size vmlinux (2.6.36) reports
+>         text        data     bss     dec     hex filename
+>      5410611	 743172	 828928	6982711	 6a8c37	vmlinux
+>      5373738	 744244	 828928	6946910	 6a005e	vmlinux + patch
+>
+> The resulting kernel has had some testing&  kmalloc trace still seems to
+> work.
+>
+> This patch
+> - moves trace_kmalloc out of the inlined kmalloc() and pushes it down
+> into kmem_cache_alloc_trace() so this it only get instantiated once.
+>
+> - rename kmem_cache_alloc_notrace()  to kmem_cache_alloc_trace() to
+> indicate that now is does have tracing. (maybe this would better being
+> called something like kmalloc_kmem_cache ?)
+>
+> - adds a new function kmalloc_order() to handle allocation and tracing
+> of large allocations of page order.
+>
+> - removes tracing from the inlined kmalloc_large() replacing them with a
+> call to kmalloc_order();
+>
+> - move tracing out of inlined kmalloc_node() and pushing it down into
+> kmem_cache_alloc_node_trace
+>
+> - rename kmem_cache_alloc_node_notrace() to
+> kmem_cache_alloc_node_trace()
+>
+> - removes the include of trace/events/kmem.h from slub_def.h.
+>
+> v2
+> - keep kmalloc_order_trace inline when !CONFIG_TRACE
+>
+> Signed-off-by: Richard Kennedy<richard@rsk.demon.co.uk>
 
-I should have said 2.6.37-rc1, sorry.
-
--- 
-error compiling committee.c: too many arguments to function
-
+Applied, thanks!
