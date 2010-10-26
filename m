@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758980Ab0JZJut (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Oct 2010 05:50:49 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:46751 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755585Ab0JZJup (ORCPT
+	id S1756281Ab0JZJyM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Oct 2010 05:54:12 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:46990 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751561Ab0JZJyL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Oct 2010 05:50:45 -0400
+	Tue, 26 Oct 2010 05:54:11 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=message-id:date:from:reply-to:user-agent:mime-version:to:cc:subject
          :content-type:content-transfer-encoding;
-        b=aSoO4fG8l93z+8Kke5w+PHJspwTFuoDgkQlXcOgoeh0llOgVjL2cUT09P7KeHnxnJs
-         IsXJ9gYMWA20b6oA1wmKnXbRyo0iLlQnu/FCt7MeedHdWmR8RzlPhJF8OHj2AZ3MShLS
-         HF32fRbrLWdtQg/I0mHD9ywsiqXu9z75JRITE=
-Message-ID: <4CC6A46F.6080409@gmail.com>
-Date: Tue, 26 Oct 2010 17:50:39 +0800
+        b=spHI2I2gAq3gpwYo8MZ6OQBXsQZCDz9O1yI3A7tqkvw0oNYaZpuHi9LjAtTnnUKirw
+         vZBSs/7l1zmRmOJnCqdQwiQ6O7p4Y07w7hNh4dYKy8/+NZGsoYMk+Km71KNGbgKSGVLm
+         IAADuoNIOqVtwxlRFby74E553p8MPz5rOZqyw=
+Message-ID: <4CC6A53C.4030706@gmail.com>
+Date: Tue, 26 Oct 2010 17:54:04 +0800
 From: =?UTF-8?B?IlNpbmdhcG9yZSBDaXRpemVuIE1yLiBUZW8gRW4gTWluZyAoWmhhbmcgRQ==?=
 	 =?UTF-8?B?bm1pbmcpIOW8oOaBqem4oyAi?= 
 	<space.time.universe@gmail.com>
@@ -57,7 +57,8 @@ Thank you very much for your kind attention.
 -- 
 Yours sincerely,
 
-Singapore Citizen Mr. Teo En Ming (Zhang Enming) 张恩鸣 Dip(Mechatronics) BEng(Hons)(Mechanical Engineering)
+Singapore Citizen Mr. Teo En Ming (Zhang Enming) 张恩鸣 
+Dip(Mechatronics) BEng(Hons)(Mechanical Engineering)
 Singapore Identity Card No.: S78*6*2*H
 Location: Bedok Reservoir Road, Singapore
 ZIP: 470103
@@ -67,14 +68,10 @@ My Youtube videos: http://www.youtube.com/user/enmingteo
 Alma Maters:
 [1] Singapore Polytechnic (Graduated 1998)
 [2] National University of Singapore (Graduated 2006)
-My Open Letter (Plea for Medical Help/Assistance) to World Leaders (Updated 28 August 2010):-
+My Open Letter (Plea for Medical Help/Assistance) to World Leaders 
+(Updated 28 August 2010):-
 http://lists.mcs.anl.gov/pipermail/mpich-discuss/2010-August/007811.html
 http://mythtv.org/pipermail/mythtv-users/2010-August/295952.html
 http://archives.gentoo.org/gentoo-user/msg_f6a341d9623fda17880159b137c07335.xml
-Photo of Singapore Citizen Mr. Teo En Ming (Zhang Enming) 张恩鸣 #1: http://i54.tinypic.com/2415z7t.jpg
-Photo of Singapore Citizen Mr. Teo En Ming (Zhang Enming) 张恩鸣 #2: http://img842.imageshack.us/img842/7534/enmingteodscf2511.jpg
-Photo of Singapore Citizen Mr. Teo En Ming (Zhang Enming) 张恩鸣 #3: http://i.imgur.com/qD4OM.jpg
-Photo of Singapore Citizen Mr. Teo En Ming (Zhang Enming) 张恩鸣 #4:
-http://i.imgur.com/FboCX.jpg
 
 
