@@ -1,67 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758787Ab0JZJHZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Oct 2010 05:07:25 -0400
-Received: from zone0.gcu-squad.org ([212.85.147.21]:22153 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757926Ab0JZJHY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Oct 2010 05:07:24 -0400
-Date: Tue, 26 Oct 2010 11:07:13 +0200
-From: Jean Delvare <khali@linux-fr.org>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jesse Barnes <jbarnes@virtuousgeek.org>
-Subject: Re: linux-next: error importing i2c quilt series
-Message-ID: <20101026110713.09d894d5@endymion.delvare>
-In-Reply-To: <20101025211327.9d40f4a1.sfr@canb.auug.org.au>
-References: <20101025105900.83472a69.sfr@canb.auug.org.au>
-	<20101025103404.73c24f45@endymion.delvare>
-	<20101025195349.f5ac62eb.sfr@canb.auug.org.au>
-	<20101025112519.5d932562@endymion.delvare>
-	<20101025211327.9d40f4a1.sfr@canb.auug.org.au>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1755757Ab0JZJLV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Oct 2010 05:11:21 -0400
+Received: from hera.kernel.org ([140.211.167.34]:58945 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751355Ab0JZJLU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Oct 2010 05:11:20 -0400
+Message-ID: <4CC69B22.2050708@kernel.org>
+Date: Tue, 26 Oct 2010 11:10:58 +0200
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.11) Gecko/20101013 Lightning/1.0b2 Thunderbird/3.1.5
+MIME-Version: 1.0
+To: David Howells <dhowells@redhat.com>
+CC: torvalds@osdl.org, akpm@linux-foundation.org, linux-am33-list@redhat.com,
+        linux-kernel@vger.kernel.org,
+        Akira Takeuchi <takeuchi.akr@jp.panasonic.com>,
+        Mark Salter <msalter@redhat.com>
+Subject: Re: [PATCH] MN10300: Fix the PERCPU() alignment to allow for workqueues
+References: <20101025224111.7798.38960.stgit@warthog.procyon.org.uk>
+In-Reply-To: <20101025224111.7798.38960.stgit@warthog.procyon.org.uk>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 26 Oct 2010 09:11:00 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Stephen,
+Hello,
 
-On Mon, 25 Oct 2010 21:13:27 +1100, Stephen Rothwell wrote:
-> Hi Jean,
-> 
-> On Mon, 25 Oct 2010 11:25:19 +0200 Jean Delvare <khali@linux-fr.org> wrote:
-> >
-> > I thought it was NEXT_BASE, with an underscore not dash?
-> 
-> Ah, yes, sorry ... (but my scripts actually handle either)
-> 
-> > And I also expected the trees to be merged in the order shows in:
-> > http://git.kernel.org/?p=linux/kernel/git/sfr/linux-next.git;a=blob;f=Next/Trees;hb=HEAD
-> > 
-> > As pci is listed before i2c, I (wrongly) concluded that everything
-> > would be fine even without using NEXT_BASE. I stand corrected.
-> 
-> What actually happens is
-> 	I fetch all the trees and quilt series
-> 	I import the quilt series to git branches
-> 	I merge the trees.
-> 
-> So you cannot depend on the merge order (which sometimes changes as
-> well).  This makes sense since I have no influence over the order that
-> the trees get merged by Linus ... If there are dependencies, they need to
-> be explicit, sorry, using NEXT_BASE in quilt series or merging (sub)
-> trees for git.
+On 10/26/2010 12:41 AM, David Howells wrote:
+> PERCPU() alignment on MN13000, however, is only 32 bytes as set in
+> vmlinux.lds.S.  So we set this to PAGE_SIZE (4096) to match most other arches
+> and stick a comment in alloc_cwqs() for anyone else who triggers the assertion.
 
-OK, I take note. I seem to remember that last time I used NEXT_BASE, I
-was told that I should only use it if I really had to as it made your
-work more difficult and was normally not needed. Maybe I understood you
-wrong back then, or maybe things changed meanwhile. Either way, I'll
-make sure to use NEXT_BASE from now on each time this seems to be
-needed.
+Ah, okay, but I'm not quite sure how that would affect the alignment
+of dynamically allocated percpu memory.  Is this SMP or UP build?  Can
+you please double check the bug doesn't trigger with the section
+alignment updated?
+
+> -  PERCPU(32)
+> +  PERCPU(PAGE_SIZE)
+
+Hmmm... during initialization, the initial percpu memory is
+re-allocated using bootmem allocator with proper alignment and the
+output section is just used as data source and discarded once init is
+complete.  So, unless I'm mistaken, I don't think this would affect
+anything.  That said, I think it might be better to just remove the
+alignment parameter from the macro and force align to PAGE_SIZE.  It
+doesn't really help anything.
+
+Thanks.
 
 -- 
-Jean Delvare
+tejun
