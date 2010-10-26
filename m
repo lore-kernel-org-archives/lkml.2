@@ -1,74 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759934Ab0JZO5u (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Oct 2010 10:57:50 -0400
-Received: from casper.infradead.org ([85.118.1.10]:41501 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759826Ab0JZO5t convert rfc822-to-8bit (ORCPT
+	id S1759687Ab0JZO6x (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Oct 2010 10:58:53 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:32859 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751529Ab0JZO6v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Oct 2010 10:57:49 -0400
-Subject: Re: [PATCH 5/6] Export ns irqtimes through /proc/stat -v1
-From: Peter Zijlstra <peterz@infradead.org>
-To: Venkatesh Pallipadi <venki@google.com>
-Cc: Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        linux-kernel@vger.kernel.org, Paul Turner <pjt@google.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Shaun Ruffell <sruffell@digium.com>,
-        Yong Zhang <yong.zhang0@gmail.com>
-In-Reply-To: <1288086350.15336.123.camel@twins>
-References: <1288045817-3135-1-git-send-email-venki@google.com>
-	 <1288045817-3135-6-git-send-email-venki@google.com>
-	 <1288086350.15336.123.camel@twins>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Tue, 26 Oct 2010 16:57:26 +0200
-Message-ID: <1288105046.15336.343.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Tue, 26 Oct 2010 10:58:51 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:reply-to:mime-version
+         :content-type:content-disposition:user-agent;
+        b=kOW63oz1NJSq9rUSxKvZ3aOoJpn9/yhMNeHX+goQ9DZL1OiaxKpf8Wm5ukCXwz2qqf
+         UNE8qqtk+qxoV1Qw5Jna7vyT+g4F27nDprXSk6efUQ1rPMTfwcCmytO8I+fUcTcAu1JW
+         m/mmbaHsHvRBqF363kI5Vio48mUpkh3BI3+t8=
+Date: Tue, 26 Oct 2010 18:41:18 +0400
+From: Anton Vorontsov <cbouatmailru@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Tony Lindgren <tony@atomide.com>, linux-kernel@vger.kernel.org
+Subject: [GIT PULL] battery-2.6.git
+Message-ID: <20101026144118.GA9335@oksana.dev.rtsoft.ru>
+Reply-To: cbouatmailru@gmail.com
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-10-26 at 11:45 +0200, Peter Zijlstra wrote:
-> On Mon, 2010-10-25 at 15:30 -0700, Venkatesh Pallipadi wrote:
-> > +static void irqtime_account_process_tick(struct task_struct *p, int user_tick,
-> > +                                               struct rq *rq)
-> > +{
-> > +       cputime_t one_jiffy_scaled = cputime_to_scaled(cputime_one_jiffy);
-> > +       cputime64_t tmp = cputime_to_cputime64(cputime_one_jiffy);
-> > +       struct cpu_usage_stat *cpustat = &kstat_this_cpu.cpustat;
-> > +
-> > +       if (irqtime_account_hi_update()) {
-> > +               cpustat->irq = cputime64_add(cpustat->irq, tmp);
-> > +       } else if (irqtime_account_si_update()) {
-> > +               cpustat->softirq = cputime64_add(cpustat->softirq, tmp);
-> > +       } else 
-> 
-> I'm still not sure about this else stmt, the above two conditions can
-> basically 'eat' user/system ticks. What we need to show is that there is
-> no bias towards either kind so the ratio is not affected -- can we make
-> such an argument?
+Hello Linus,
 
-I think I can made a counter-argument: if either or both of these checks
-are true we had system time in the last tick, hence there is a larger
-chance this tick is a system tick.
+Please pull battery-2.6.git tree to receive changes prepared for
+2.6.37.
 
-Therefore it will not provide the same user/system ratio.
+There are three new drivers, various small cleanups and bug fixes.
 
-Hmm?
+You may notice the arch/arm/ change for Nokia N900 board, though
+it has an appropriate ack from the OMAP maintainer to go through
+the battery tree.
 
-> >                if (user_tick) {
-> > +               account_user_time(p, cputime_one_jiffy, one_jiffy_scaled);
-> > +       } else if (p == rq->idle) {
-> > +               account_idle_time(cputime_one_jiffy);
-> > +       } else if (p->flags & PF_VCPU) { /* System time or guest time */
-> > +               account_guest_time(p, cputime_one_jiffy, one_jiffy_scaled);
-> > +       } else {
-> > +               __account_system_time(p, cputime_one_jiffy, one_jiffy_scaled,
-> > +                                       &cpustat->system);
-> > +       }
-> > +} 
+Thanks!
 
+The following changes since commit 763008c4357b73c8d18396dfd8d79dc58fa3f99d:
+  Linus Torvalds (1):
+        Merge branch 'bugfixes' of git://git.linux-nfs.org/projects/trondmy/nfs-2.6
+
+are available in the git repository at:
+
+  git://git.infradead.org/battery-2.6.git master
+
+Axel Lin (5):
+      pcf50633-charger: Add missing sysfs_remove_group()
+      ds2760_battery: Add missing kfree(di) in ds2760_battery_remove()
+      jz4740-battery: Add missing kfree(jz_battery) in jz_battery_remove()
+      wm831x_power: Add missing kfree(wm831x_power) in wm831x_power_remove()
+      bq27x00_battery: Add missing kfree(di->bus) in bq27x00_battery_remove()
+
+Grazvydas Ignotas (1):
+      power_supply: Add driver for TWL4030/TPS65950 BCI charger
+
+Heikki Krogerus (4):
+      power_supply: Add isp1704 charger detection driver
+      omap: rx51: Add support for USB chargers
+      power_supply: Add types for USB chargers
+      power_supply: Introduce maximum current property
+
+Ian Lartey (1):
+      wm831x_power: Remove duplicate chg mask
+
+Martin Schwidefsky (1):
+      ds2760_battery: Fix W1 and W1_SLAVE_DS2760 dependency
+
+Rhyland Klein (2):
+      power_supply: Add driver for TI BQ20Z75 gas gauge IC
+      bq20z75: Add support for more power supply properties
+
+Richard A. Smith (1):
+      olpc_battery: Fix endian neutral breakage for s16 values
+
+Ryan Mallon (1):
+      ds2782_battery: Fix units
+
+matt mooney (1):
+      power_supply: Makefile cleanup
+
+ arch/arm/mach-omap2/board-rx51-peripherals.c |    5 +
+ drivers/power/Kconfig                        |   23 +-
+ drivers/power/Makefile                       |   19 +-
+ drivers/power/bq20z75.c                      |  493 ++++++++++++++++++++++
+ drivers/power/bq27x00_battery.c              |    1 +
+ drivers/power/ds2760_battery.c               |    1 +
+ drivers/power/ds2782_battery.c               |   12 +-
+ drivers/power/isp1704_charger.c              |  369 +++++++++++++++++
+ drivers/power/jz4740-battery.c               |    1 +
+ drivers/power/olpc_battery.c                 |    8 +-
+ drivers/power/pcf50633-charger.c             |    1 +
+ drivers/power/power_supply_sysfs.c           |    4 +-
+ drivers/power/twl4030_charger.c              |  565 ++++++++++++++++++++++++++
+ drivers/power/wm831x_power.c                 |    2 +-
+ include/linux/power_supply.h                 |    6 +-
+ 15 files changed, 1483 insertions(+), 27 deletions(-)
+ create mode 100644 drivers/power/bq20z75.c
+ create mode 100644 drivers/power/isp1704_charger.c
+ create mode 100644 drivers/power/twl4030_charger.c
