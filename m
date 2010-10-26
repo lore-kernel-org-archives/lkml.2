@@ -1,45 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933159Ab0JZMii (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Oct 2010 08:38:38 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:56982 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932464Ab0JZMih (ORCPT
+	id S1757769Ab0JZMlJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Oct 2010 08:41:09 -0400
+Received: from webhosting01.bon.m2soft.com ([195.38.20.32]:38272 "EHLO
+	webhosting01.bon.m2soft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756176Ab0JZMlH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Oct 2010 08:38:37 -0400
-Date: Tue, 26 Oct 2010 14:38:28 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: linux-kvm@vger.kernel.org, avi@redhat.com, hpa@zytor.com
-Cc: linux-kernel@vger.kernel.org
-Subject: fyi: gcc33-hammer crashes when compiling kvm emulate.c
-Message-ID: <20101026123828.GA30434@basil.fritz.box>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Tue, 26 Oct 2010 08:41:07 -0400
+Date: Tue, 26 Oct 2010 14:36:50 +0200
+From: Nicolas Kaiser <nikai@nikai.net>
+To: Julia Lawall <julia@diku.dk>
+Cc: Tomi Valkeinen <tomi.valkeinen@nokia.com>, kernel-janitors@vger.kernel.org,
+        linux-fbdev@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 12/14] drivers/video/omap/blizzard.c: delete double
+ assignment
+Message-ID: <20101026143650.14c836eb@absol.kitzblitz>
+In-Reply-To: <1288088743-3725-13-git-send-email-julia@diku.dk>
+References: <1288088743-3725-1-git-send-email-julia@diku.dk>
+	<1288088743-3725-13-git-send-email-julia@diku.dk>
+Organization: -
+X-Face: "fF&[w2"Nws:JNH4'g|:gVhgGKLhj|X}}&w&V?]0=,7n`jy8D6e[Jh=7+ca|4~t5e[ItpL5
+ N'y~Mvi-vJm`"1T5fi1^b!&EG]6nW~C!FN},=$G?^U2t~n[3;u\"5-|~H{-5]IQ2
+X-Mailer: Claws Mail (Linux)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+* Julia Lawall <julia@diku.dk>:
+> Delete successive assignments to the same location.  Initialize the out_y
+> field as well as the out_x field, rather than initializing the out_x field
+> twice.
 
-While doing a test run with the minimum supported compiler
-I found:
+Hi there!
 
-An old gcc 3.3-hammer segfaults when compiling the current KVM
-emulate.c (or rather in x86_emulate_insns) on x86-64.
+An identical patch is already in the -mm tree:
 
-The compiler goes into an endless recursion in validate_rtx and then
-eventually overflows the stack and dies.
+> The patch titled
+>      drivers/video/omap/blizzard.c: suspected typo in assignment
+> has been added to the -mm tree.  Its filename is
+>      video-omap-suspected-typo-in-assignment.patch
 
-I minimized a test case, but didn't find a workaround
-(minimized test case http://halobates.de/emulate-min.i)
+> See http://userweb.kernel.org/~akpm/stuff/added-to-mm.txt to find
+> out what to do about this
+> 
+> The current -mm tree may be found at http://userweb.kernel.org/~akpm/mmotm/
+> 
+> ------------------------------------------------------
+> Subject: drivers/video/omap/blizzard.c: suspected typo in assignment
+> From: Nicolas Kaiser <nikai@nikai.net>
+> 
+> Untested, but looks like an obvious typo to me.
+> 
+> Signed-off-by: Nicolas Kaiser <nikai@nikai.net>
+> Cc: Tomi Valkeinen <tomi.valkeinen@nokia.com>
+> Cc: Tony Lindgren <tony@atomide.com>
+> Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 
-My guess it's related to some of the inline assembler uses.
-
-This might be an excuse to bump the minimum compiler version again.
-
--andi
-
--- 
-ak@linux.intel.com -- Speaking for myself only.
+Best regards,
+Nicolas Kaiser
