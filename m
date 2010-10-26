@@ -1,107 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760194Ab0JZS6q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Oct 2010 14:58:46 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:49833 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751529Ab0JZS6o convert rfc822-to-8bit (ORCPT
+	id S1760264Ab0JZTGy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Oct 2010 15:06:54 -0400
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:61116 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756909Ab0JZTGx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Oct 2010 14:58:44 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=LSRt1XciGBomlEDlRDvKmOqTPwqLqDCu6+XVK99H9zw4e6oUVpyZYNr1TjaDHnTUZ8
-         /gte/luKSXmRmqFIie232mlN5YhlsiWLlA4knXFByo7Rh4VFEan7dfy63BLDdPzZB8EJ
-         Hd08Z/k0St0KHfkXv02KZ+Xh4ScId0GID1uQI=
+	Tue, 26 Oct 2010 15:06:53 -0400
+X-Mail-Handler: MailHop Outbound by DynDNS
+X-Originating-IP: 67.188.36.105
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1/1T7ZaecCyoCiGY1k+X+dn
+Date: Tue, 26 Oct 2010 12:06:46 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Ohad Ben-Cohen <ohad@wizery.com>
+Cc: Kevin Hilman <khilman@deeprootsystems.com>, Balaji T K <balajitk@ti.com>,
+        "Kamat, Nishant" <nskamat@ti.com>, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        akpm@linux-foundation.org, Greg KH <greg@kroah.com>,
+        Benoit Cousson <b-cousson@ti.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Hari Kanigeri <h-kanigeri2@ti.com>, Suman Anna <s-anna@ti.com>
+Subject: Re: [PATCH 3/3] omap: add hwspinlock device
+Message-ID: <20101026190645.GH3012@atomide.com>
+References: <87r5fmxghm.fsf@deeprootsystems.com>
+ <AANLkTinZ2+ocJCfUpT15Ow3J9XBa-8XWnVC3gDDJ7s-v@mail.gmail.com>
+ <87bp6pviwf.fsf@deeprootsystems.com>
+ <AANLkTikE1dCXW-7ScVoDgEK3sxai_TyFzstSG+zvNm2F@mail.gmail.com>
+ <8739s0sobc.fsf@deeprootsystems.com>
+ <AANLkTikdjtYtzhgM_=io3SFdUZq=8Xcc8n24bW=SFgTA@mail.gmail.com>
+ <20101022165612.GF9149@atomide.com>
+ <AANLkTimysu4L+ecFvpGAQ0bj3fhLQC1cveWddFNNp=JQ@mail.gmail.com>
+ <20101025190221.GC7206@atomide.com>
+ <AANLkTimkUDwAn-+gmNKMkXY0Uw8evt1_W2saeRKY-Xbd@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20101026184123.GA1616@sig21.net>
-References: <20101025190358.AEC6840F97@repository3.orbit-lab.org>
- <20101026123552.GA4604@sig21.net> <AANLkTimzUKj=C9PxGs1PkQy_KWu0PGKd1zv_m-ZpWaEm@mail.gmail.com>
- <20101026184123.GA1616@sig21.net>
-From: "Luis R. Rodriguez" <mcgrof@gmail.com>
-Date: Tue, 26 Oct 2010 11:51:01 -0700
-Message-ID: <AANLkTimHpyJho6AheQc6zos7Pmr-ECjvaL83mYDC19Yd@mail.gmail.com>
-Subject: Re: Compat-wireless release for 2010-10-25 is baked
-To: Johannes Stezenbach <js@sig21.net>
-Cc: linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Ivo Van Doorn <ivdoorn@gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTimkUDwAn-+gmNKMkXY0Uw8evt1_W2saeRKY-Xbd@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 26, 2010 at 11:41 AM, Johannes Stezenbach <js@sig21.net> wrote:
-> On Tue, Oct 26, 2010 at 08:59:04AM -0700, Luis R. Rodriguez wrote:
->> On Tue, Oct 26, 2010 at 5:35 AM, Johannes Stezenbach <js@sig21.net> wrote:
->> >
->> > I wonder about the different tarballs in
->> > http://wireless.kernel.org/download/compat-wireless-2.6/
->> >
->> > compat-wireless-2010-10-25.tar.bz2
->> > compat-wireless-2010-10-25-p.tar.bz2
->> > compat-wireless-2010-10-25-pc.tar.bz2
->> >
->> > Those -p and -pc postfixes are not explained in
->> > http://wireless.kernel.org/en/users/Download
->>
->> Right, sorry, I haven't updated the docs to add documentation for
->> them. First please read:
->>
->> http://marc.info/?l=linux-wireless&m=128716953726075&w=2
->>
->> -s is for getting and applying pending-stable/ fixes
->> -n is for applying the patches linux-next-cherry-picks directory
->> -p is for applying the patches on the linux-next-pending directory
->> -s is for applying the patches on the crap directory
->  -c
->
->> Hope this helps.
->
-> Definitively, thank you very much.  Meanwhile I also found
-> scripts/admin-update.sh in compat-wireless which seems to
-> generate the release tarballs.
->
-> It looks like, if I want to test the latest rt2x00 code, I could
-> clone git://git.kernel.org/pub/scm/linux/kernel/git/ivd/rt2x00.git,
-> checkout experimental, and then run admin-update.sh with
-> GIT_TREE=path/to/rt2x00-experimental.  Right?
+* Ohad Ben-Cohen <ohad@wizery.com> [101026 04:45]:
+> On Mon, Oct 25, 2010 at 9:02 PM, Tony Lindgren <tony@atomide.com> wrote:
+> >> if you feel that (2) is justifiable/desirable, I would be more
+> >> than happy to submit that version.
+> >
+> > Yes (2) please. I would assume there will be more use of this. And then
+> > we (or probably me again!) don't have to deal with cleaning up the drivers
+> > again in the future.
+> 
+> Sounds good.
+> 
+> >> Or do you mean a variation of (2) with only the specific locking bits
+> >> coming from pdata func pointers ? I guess that in this case we just
+> >> might as well go with the full (2).
+> >
+> > Yes variation of (2) where you only pass the locking function via
+> > platform data would be best.
+> 
+> It feels a bit funky to me because we would still have code that is
+> omap-specific inside the "common" probe()/remove() calls.
+> 
+> I suggest to move everything that is omap-specific to a small omap
+> module that, once probed, would register itself with the common
+> hwspinlock framework (after initializing its hardware).
+> 
+> That small platfom-specific module probably doesn't have to sit in the
+> arch/ folder; we can follow established conventions like
+> mmc/i2c/gpio/spi/etc..
+> 
+> With that in hand, the hwspinlock would really be hardware-agnostic,
+> and then applying s/omap_hwspin/hwspin/ would be justified.
+> 
+> Does this sound reasonable to you ?
 
-Yeap, if rt2x00-experimental is based on linux-next.git. If its based
-on wireless-testing.git then you can use the "wl" branch of
-compat-wireless, but I tend to not keep that as up to date as the
-linux-next.git branch so likely the "wl" branch doesn't apply cleanly
-right now with wireless-testing.git as the GIT_TREE.
+Sounds good to me.
 
-> Or (maybe better?), clone linux-next, merge rt2x00.git and use
-> the merged tree as GIT_TREE for admin-update.sh.
-
-It just depends on the original tree is a clone from and what branch
-you use on compat-wireless. The master branch is for linux-next.git,
-the "wl" branch is for wireless-testing.git. Every now and then I just
-reset the "wl" branch (you'll have to 'git reset --hard wl') to the
-master branch and revert any patches that do not apply.
-
-> Well so just
-> But according to
-> http://rt2x00.serialmonkey.com/pipermail/users_rt2x00.serialmonkey.com/2010-October/002175.html
-> the compat-rt2x00 tarballs seem to be made manually?
-
-Too lazy to check that, best thing might be to just focus on upstream
-development, ensuring patches get into linux-next.git and having your
-users just use the daily tarballs and stable releases for stable
-stuff.
-
-> Sorry for stupid questions, I want to get into rt2x00 development
-> but I need to target a stable 2.6.32 kernel and I'm trying to figure
-> out which git tree to base my work on.
-
-My advice, work on wireless-testing.git, send patches ASAP, and let
-them propagate. Use the daily tarballs for user testing and for stable
-release you can support users using the stable compat-wireless
-releases.
-
-Hope this helps.
-
-  Luis
+Tony
