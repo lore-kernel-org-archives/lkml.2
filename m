@@ -1,57 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759595Ab0JZKlI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Oct 2010 06:41:08 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:57172 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755727Ab0JZKlH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Oct 2010 06:41:07 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Paul Fulghum <paulkf@microgate.com>
-Subject: Re: [PATCH] n_hdlc fix read and write locking
-Date: Tue, 26 Oct 2010 12:40:47 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.35-16-generic; KDE/4.3.2; x86_64; ; )
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Greg KH <greg@kroah.com>
-References: <1288030959.19909.28.camel@x2.microgate.com> <201010252231.06794.arnd@arndb.de> <4CC6104B.7040204@microgate.com>
-In-Reply-To: <4CC6104B.7040204@microgate.com>
+	id S1759616Ab0JZKsS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Oct 2010 06:48:18 -0400
+Received: from mail.sysgo.com ([195.145.229.155]:38491 "EHLO mail.sysgo.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758963Ab0JZKsR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Oct 2010 06:48:17 -0400
+Date: Tue, 26 Oct 2010 12:48:11 +0200
+From: Pavel Machek <pma@sysgo.com>
+To: kernel list <linux-kernel@vger.kernel.org>, chunkeey@googlemail.com,
+        linux-wireless@vger.kernel.org
+Subject: carl9170 disconnects under load
+Message-ID: <20101026104811.GA11357@pma.sysgo.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201010261240.47907.arnd@arndb.de>
-X-Provags-ID: V02:K0:xu2YzIFqE4F6F3KEgmTQotvgzvYXEo9+a+26wB15fms
- 3+a1errB75VgPoEiNrFWq45rSYUHwjwF+cCmYyQAX1HRNTcUNJ
- NIWphxA6JGuffrTVkvrs5y/Mebf+jwPjX0CO6XqjG/IoYfOMI5
- KeDz0AjoU5pLsUWjP+43Q2oOh5hEiyvCVcLIX6GAYPtgj1iW/k
- ySGhzmR7zlc9u28QDnolw==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 26 October 2010, Paul Fulghum wrote:
-> On 10/25/2010 3:31 PM, Arnd Bergmann wrote:
-> 
-> > Would it be possible to express the same using
-> > wait_event_interruptible()?
-> 
-> Yes if I embed an assignment in the event expression:
-> 
-> rc = wait_event_interruptible(&wait, (buf = get_buf()));
-> if (!rc)
->         process_buf(buf);
-> 
-> Is that considered acceptable?
+Hi!
 
-I'd do it if it makes the code more readable. We need the patch
-for the stable release, so it really should be obvious not to
-introduce new bugs. I could not fully understand the version
-you posted, so if you can make it easier to understand by using
-wait_event, please do so. If you think that putting the
-assignment into the macro argument outweighs the advantage from
-the wait_event, just keep your version.
+I'm testing driver from -wireless testing, cca 2.6.26-rc7.
 
-	Arnd
+It seems to work (up to 802.11n speeds -- I've seen iwconfig claiming
+121 MB/sec), but disconnects rather quickly when under load:
+
+telnet 192.168.1.3 chargen > /dev/null
+
+The machine is powerpc mpc5200b board, with OHCI driver -- it is not
+capable of USB2.0 speeds.
+
+Any ideas?
+								Pavel
+
+wlan0: RX AssocResp from 00:23:f8:5d:76:93 (capab=0xc21 status=0
+aid=1)
+wlan0: associated
+ieee80211 phy2: Allocated STA 00:23:f8:5d:76:93
+ieee80211 phy2: Inserted STA 00:23:f8:5d:76:93
+ieee80211 phy2: WMM queue=2 aci=0 acm=0 aifs=3 cWmin=15 cWmax=1023
+txop=0 uapsd=0
+ieee80211 phy2: WMM queue=3 aci=1 acm=0 aifs=7 cWmin=15 cWmax=1023
+txop=0 uapsd=0
+ieee80211 phy2: WMM queue=1 aci=2 acm=0 aifs=2 cWmin=7 cWmax=15
+txop=94 uapsd=0
+ieee80211 phy2: WMM queue=0 aci=3 acm=0 aifs=2 cWmin=3 cWmax=7 txop=47
+uapsd=0
+Open BA session requested for 00:23:f8:5d:76:93 tid 0
+activated addBA response timer on tid 0
+switched off addBA timer for tid 0
+Aggregation is on for tid 0
+Rx A-MPDU request on tid 0 result 0
+ieee80211 phy2: release an RX reorder frame due to timeout on earlier
+frames
+ieee80211 phy2: release an RX reorder frame due to timeout on earlier
+frames
+ieee80211 phy2: release an RX reorder frame due to timeout on earlier
+frames
+ieee80211 phy2: release an RX reorder frame due to timeout on earlier
+frames
+ieee80211 phy2: release an RX reorder frame due to timeout on earlier
+frames
+ieee80211 phy2: release an RX reorder frame due to timeout on earlier
+frames
+ieee80211 phy2: release an RX reorder frame due to timeout on earlier
+frames
+ieee80211 phy2: release an RX reorder frame due to timeout on earlier
+frames
+ieee80211 phy2: release an RX reorder frame due to timeout on earlier
+frames
+ieee80211 phy2: release an RX reorder frame due to timeout on earlier
+frames
+net_ratelimit: 79 callbacks suppressed
+ieee80211 phy2: release an RX reorder frame due to timeout on earlier
+frames
+ieee80211 phy2: release an RX reorder frame due to timeout on earlier
+frames
+ieee80211 phy2: release an RX reorder frame due to timeout on earlier
+frames
+ieee80211 phy2: release an RX reorder frame due to timeout on earlier
+frames
+ieee80211 phy2: release an RX reorder frame due to timeout on earlier
+frames
+ieee80211 phy2: release an RX reorder frame due to timeout on earlier
+frames
+ieee80211 phy2: release an RX reorder frame due to timeout on earlier
+frames
+ieee80211 phy2: release an RX reorder frame due to timeout on earlier
+frames
+ieee80211 phy2: release an RX reorder frame due to timeout on earlier
+frames
+ieee80211 phy2: release an RX reorder frame due to timeout on earlier
+frames
+net_ratelimit: 58 callbacks suppressed
+ieee80211 phy2: release an RX reorder frame due to timeout on earlier
+frames
+ieee80211 phy2: release an RX reorder frame due to timeout on earlier
+frames
+ieee80211 phy2: release an RX reorder frame due to timeout on earlier
+frames
+ieee80211 phy2: release an RX reorder frame due to timeout on earlier
+frames
+ieee80211 phy2: release an RX reorder frame due to timeout on earlier
+frames
+ieee80211 phy2: release an RX reorder frame due to timeout on earlier
+frames
+ieee80211 phy2: release an RX reorder frame due to timeout on earlier
+frames
+ieee80211 phy2: release an RX reorder frame due to timeout on earlier
+frames
+ieee80211 phy2: release an RX reorder frame due to timeout on earlier
+frames
+ieee80211 phy2: release an RX reorder frame due to timeout on earlier
+frames
+usb 1-1: USB disconnect, address 6
+Tx BA session stop requested for 00:23:f8:5d:76:93 tid 0
+Rx BA session stop requested for 00:23:f8:5d:76:93 tid 0
+wlan0: deauthenticating from 00:23:f8:5d:76:93 by local choice
+(reason=3)
+Tx BA session stop requested for 00:23:f8:5d:76:93 tid 0
+ieee80211 phy2: Removed STA 00:23:f8:5d:76:93
+ieee80211 phy2: Destroyed STA 00:23:f8:5d:76:93
+ieee80211 phy2: device now idle
