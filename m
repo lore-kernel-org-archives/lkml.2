@@ -1,68 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759695Ab0JZOzm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Oct 2010 10:55:42 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:62425 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751529Ab0JZOzl convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Oct 2010 10:55:41 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=Trkw/x04m+vgWChh81wHt+Zc2kXBcH4rDZQK+jzdje8Gq8nKJ1bK1bhOOyEAaR7hnb
-         yFgqXcekZQRH8XZHLXOmZvjteqG4/62V+C7G2Mt6adPqeWAw5Wy7MaKLxx/ORez6m6cK
-         dBq0hAjbQ7/t5YGQmOdopPQFH0itNc8Yx27Tg=
+	id S1758544Ab0JZO5Q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Oct 2010 10:57:16 -0400
+Received: from hera.kernel.org ([140.211.167.34]:58527 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751529Ab0JZO5P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Oct 2010 10:57:15 -0400
+Message-ID: <4CC6EC31.4090304@kernel.org>
+Date: Tue, 26 Oct 2010 16:56:49 +0200
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.11) Gecko/20101013 Lightning/1.0b2 Thunderbird/3.1.5
 MIME-Version: 1.0
-In-Reply-To: <1288103059-notmuch-felipe.contreras@nokia.com>
-References: <1288054306-4361-1-git-send-email-x0095840@ti.com>
-	<20101026040619.GA8549@suse.de>
-	<1288103059-notmuch-felipe.contreras@nokia.com>
-Date: Tue, 26 Oct 2010 09:55:39 -0500
-X-Google-Sender-Auth: 49qSOP2nhdQc3xg_nU1NTsyWOo4
-Message-ID: <AANLkTimgpj3iU3xQ8K7iwjMuaH3efgzsZfkzZU-H8Fxc@mail.gmail.com>
-Subject: Re: [PATCH 0/8] staging: tidspbridge - misc fixes
-From: Omar Ramirez Luna <omar.ramirez@ti.com>
-To: Felipe Contreras <felipe.contreras@nokia.com>
-Cc: gregkh@suse.de, x0095840@ti.com, hiroshi.doyu@nokia.com,
-        linux-kernel@vger.kernel.org, andy.shevchenko@gmail.com,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+To: David Howells <dhowells@redhat.com>
+CC: torvalds@osdl.org, akpm@linux-foundation.org, linux-am33-list@redhat.com,
+        linux-kernel@vger.kernel.org,
+        Akira Takeuchi <takeuchi.akr@jp.panasonic.com>,
+        Mark Salter <msalter@redhat.com>
+Subject: Re: [PATCH] MN10300: Fix the PERCPU() alignment to allow for workqueues
+References: <4CC6C62F.1000804@kernel.org> <4CC69B22.2050708@kernel.org> <20101025224111.7798.38960.stgit@warthog.procyon.org.uk> <12101.1288088542@redhat.com> <14874.1288104642@redhat.com>
+In-Reply-To: <14874.1288104642@redhat.com>
+X-Enigmail-Version: 1.1.1
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 26 Oct 2010 14:56:51 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 26, 2010 at 9:43 AM, Felipe Contreras
-<felipe.contreras@nokia.com> wrote:
-> gregkh@suse.de wrote:
->> On Mon, Oct 25, 2010 at 07:51:38PM -0500, Fernando Guzman Lugo wrote:
->> > This set of patches fix some issues found in lastest tree.
->> >
->> > Fernando Guzman Lugo (8):
->> >   staging: tidspbridge - remove req_addr from proc_map
->> >   staging: tidspbridge - add kconfig parameter for DMM size
->> >   staging: tidspbridge - change mmufault tasklet to a workqueue
->> >   staging: tidspbridge - fix timeout in dsp_gpt_wait_overflow
->> >   staging: tidspbridge - use GTP7 for DSP stack dump
->> >   staging: tidspbridge - remove disabling twl when printing DSP stack
->> >   staging: tidspbridge - fix some issues after iommu patches
->> >   staging: tidspbridge - make sync_wait_on_event interruptible
+Hello, David.
+
+On 10/26/2010 04:50 PM, David Howells wrote:
+>>> FRV's page size is 16KB, so on that we really don't want it to be
+>>> PAGE_SIZE.
 >>
->> Are any of these really applicable for .37 after .37-rc1?  Or can they
->> wait for .38?
->
-> As of right now the dspbridge doesn't work, and there's a mess of
-> dependencies to get it working.
+>> Why not?  It's in the init section which will be freed anyway and with
+>> the kernel image compression it's not even gonna add any noticeable
+>> amount to the kernel image size.  There isn't any benefit in using
+>> anything smaller than PAGE_SIZE for alignment.  Also, percpu allocator
+>> guarantees alignment requirement upto PAGE_SIZE is honored.  If the
+>> output section uses smaller alignment, the percpu AS will end up being
+>> misaligned.
+> 
+> The bootloader we have doesn't do decompression.
 
-Just to note that there will be one more dependency for SCM changes[1]
-that will fix compilation, as these need to climb from linux-omap (if
-accepted) before applying tidspbridge chunks.
+I see.  :-(
 
-Regards,
-Omar
+> On the other hand, does the PERCPU stuff need to be allocated space
+> in the image by the linker?  Can it be initialised to anything other
+> than zeros?
 
----
-[1] http://marc.info/?l=linux-omap&m=128779652429922&w=2
+Sure, for example, in kernel/timer.c.
+
+  static DEFINE_PER_CPU(struct tvec_base *, tvec_bases) = &boot_tvec_bases;
+
+It doesn't seem too popular at this point tho.
+
+Thanks.
+
+-- 
+tejun
