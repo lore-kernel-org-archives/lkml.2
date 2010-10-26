@@ -1,47 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758699Ab0JZPqs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Oct 2010 11:46:48 -0400
-Received: from www.tglx.de ([62.245.132.106]:46979 "EHLO www.tglx.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751123Ab0JZPqr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Oct 2010 11:46:47 -0400
-Date: Tue, 26 Oct 2010 17:46:00 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Peter Zijlstra <peterz@infradead.org>
-cc: Markus Trippelsdorf <markus@trippelsdorf.de>,
-        Borislav Petkov <bp@amd64.org>,
+	id S1759941Ab0JZPrF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Oct 2010 11:47:05 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:45272 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759909Ab0JZPrE convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Oct 2010 11:47:04 -0400
+From: "Guzman Lugo, Fernando" <fernando.lugo@ti.com>
+To: Felipe Contreras <felipe.contreras@nokia.com>,
+        "gregkh@suse.de" <gregkh@suse.de>
+CC: "hiroshi.doyu@nokia.com" <hiroshi.doyu@nokia.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "hpa@linux.intel.com" <hpa@linux.intel.com>,
-        Ingo Molnar <mingo@elte.hu>,
-        Andreas Herrmann <andreas.herrmann3@amd.com>
-Subject: Re: Clocksource tsc unstable (delta = -8589361717 ns) in current
- git
-In-Reply-To: <1288103930.15336.321.camel@twins>
-Message-ID: <alpine.LFD.2.00.1010261745260.3115@localhost6.localdomain6>
-References: <20101026112052.GA1672@arch.trippelsdorf.de>  <20101026131843.GC17852@aftab> <20101026135808.GB1672@arch.trippelsdorf.de> <1288103930.15336.321.camel@twins>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+        "andy.shevchenko@gmail.com" <andy.shevchenko@gmail.com>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Date: Tue, 26 Oct 2010 10:46:52 -0500
+Subject: RE: [PATCH 0/8] staging: tidspbridge - misc fixes
+Thread-Topic: [PATCH 0/8] staging: tidspbridge - misc fixes
+Thread-Index: Act1HDMtaXKQ6k1dTCea1/P0rgn7QwAB7yeQ
+Message-ID: <496565EC904933469F292DDA3F1663E602F49E27FD@dlee06.ent.ti.com>
+References: <1288054306-4361-1-git-send-email-x0095840@ti.com>
+ <20101026040619.GA8549@suse.de>
+ <1288103059-notmuch-felipe.contreras@nokia.com>
+In-Reply-To: <1288103059-notmuch-felipe.contreras@nokia.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 26 Oct 2010, Peter Zijlstra wrote:
+ 
 
-> On Tue, 2010-10-26 at 15:58 +0200, Markus Trippelsdorf wrote:
-> > > 
-> > > This is strange, tsc is actually stable on your F10h revC.
-> > 
-> > Yes. constant_tsc is among the CPU flags. 
->  
-> constant_tsc only means the TSC is not affected by cpu freq changes.
+> -----Original Message-----
+> From: Felipe Contreras [mailto:felipe.contreras@nokia.com] 
+> Sent: Tuesday, October 26, 2010 9:44 AM
+> To: gregkh@suse.de; Guzman Lugo, Fernando
+> Cc: hiroshi.doyu@nokia.com; linux-kernel@vger.kernel.org; 
+> andy.shevchenko@gmail.com; linux-omap@vger.kernel.org; 
+> linux-arm-kernel@lists.infradead.org
+> Subject: Re: [PATCH 0/8] staging: tidspbridge - misc fixes
 > 
-> It has zero relevance to cross-cpu sync of the TSC. The clocksource
-> stuff requires your TSC to be synchronous over all your CPUs.
+> gregkh@suse.de wrote:
+> > On Mon, Oct 25, 2010 at 07:51:38PM -0500, Fernando Guzman 
+> Lugo wrote:
+> > > This set of patches fix some issues found in lastest tree.
+> > > 
+> > > Fernando Guzman Lugo (8):
+> > >   staging: tidspbridge - remove req_addr from proc_map
+> > >   staging: tidspbridge - add kconfig parameter for DMM size
+> > >   staging: tidspbridge - change mmufault tasklet to a workqueue
+> > >   staging: tidspbridge - fix timeout in dsp_gpt_wait_overflow
+> > >   staging: tidspbridge - use GTP7 for DSP stack dump
+> > >   staging: tidspbridge - remove disabling twl when 
+> printing DSP stack
+> > >   staging: tidspbridge - fix some issues after iommu patches
+> > >   staging: tidspbridge - make sync_wait_on_event interruptible
+> > 
+> > Are any of these really applicable for .37 after .37-rc1?  
+> Or can they 
+> > wait for .38?
 
-That and not affected by C-States either.
+I would like to merge as soon as they can becase most of them
+Some fixes, However the patch 2/7 has a dependency on an iommu
+Patch and if it is no merged first the compilation will be broken.
+So maybe they can be marged as soon as iommu patches are merged.
 
-Thanks,
+> 
+> As of right now the dspbridge doesn't work, and there's a 
+> mess of dependencies to get it working.
+> 
+>  - omap iommu: linux-omap pull request has already been sent, and
+>    there's no target when the omap iommu pull request will be sent...
+>    right Hiroshi?
+>  - linux-arm: some patches are needed, and it's not clear if they'll
+>    make it to .37-rc1, or .37 at all.
+> 
+> So, no, I don't think these patches should considered as of right now.
+> 
+> In fact, these affect mostly iommu, and I think until those 
+> other dependencies are resolved, we should revert back to a 
+> previous point where the driver was actually working.
 
-	tglx
+That looks like double work, having the revert now to merge after. If
+Someone needs tidspbridge withouts those patche, they can go back to
+A previous commit. The issues will be fixed as soon as the dependencies
+Are merged.
+
+Regards,
+Fernando.
+
+> 
+> What is guideline in staging when a driver is broken like this?
+> 
+> Cheers.
+> 
+> --
+> Felipe Contreras
+> 
