@@ -1,35 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932139Ab0JZVi2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Oct 2010 17:38:28 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:35757 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1760400Ab0JZVi0 (ORCPT
+	id S1758411Ab0JZVlN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Oct 2010 17:41:13 -0400
+Received: from g4t0016.houston.hp.com ([15.201.24.19]:25326 "EHLO
+	g4t0016.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757511Ab0JZVlL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Oct 2010 17:38:26 -0400
+	Tue, 26 Oct 2010 17:41:11 -0400
+Subject: [PATCH v5 0/9] PCI: allocate space top-down, not bottom-up
+To: Jesse Barnes <jbarnes@virtuousgeek.org>
+From: Bjorn Helgaas <bjorn.helgaas@hp.com>
+Cc: Bob Picco <bpicco@redhat.com>, Brian Bloniarz <phunge0@hotmail.com>,
+        Charles Butterfield <charles.butterfield@nextcentury.com>,
+        Denys Vlasenko <dvlasenk@redhat.com>, Ingo Molnar <mingo@elte.hu>,
+        linux-pci@vger.kernel.org,
+        "Horst H. von Brand" <vonbrand@inf.utfsm.cl>,
+        "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org,
+        Stefan Becker <chemobejk@gmail.com>, Chuck Ebbert <cebbert@redhat.com>,
+        Fabrice Bellet <fabrice@bellet.info>, Yinghai Lu <yinghai@kernel.org>,
+        Leann Ogasawara <leann.ogasawara@canonical.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Date: Tue, 26 Oct 2010 15:41:08 -0600
+Message-ID: <20101026214033.29808.15272.stgit@bob.kio>
+User-Agent: StGit/0.15
 MIME-Version: 1.0
-In-Reply-To: <20101026212433.GB1842@fieldses.org>
-References: <20101026164549.GD19445@fieldses.org> <201010262218.36940.arnd@arndb.de>
- <4CC73BA6.1090407@netapp.com> <201010262255.40481.arnd@arndb.de>
- <AANLkTimPBqafDPxYpZjuym8+-yk4vKYTU15Js-Ux_e6Z@mail.gmail.com> <20101026212433.GB1842@fieldses.org>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Tue, 26 Oct 2010 14:37:26 -0700
-Message-ID: <AANLkTinOd9pDVRYDQ5+dqn8LPf4yoOW=j8NxyCfCQAB6@mail.gmail.com>
-Subject: Re: nfsd changes for 2.6.37
-To: "J. Bruce Fields" <bfields@fieldses.org>
-Cc: Arnd Bergmann <arnd@arndb.de>, Bryan Schumaker <bjschuma@netapp.com>,
-        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 26, 2010 at 2:24 PM, J. Bruce Fields <bfields@fieldses.org> wrote:
->
-> I did a couple connectathon runs just now with no obvious ill effects
-> except for some sleep-within-spinlock warnings in the lease code.
+When we move PCI devices, we currently allocate space bottom-up, i.e., we look
+at PCI bus resources in the order we found them, we look at gaps between child
+resources bottom-up, and we align the new space at the bottom of an available
+region.
 
-Hmm. Those sleep-within-spinlock warnings are very likely serious
-bugs. Can you quote the whole warning with stack trace?
+On x86, we move PCI devices more than we used to because we now pay attention
+to the PCI host bridge windows from ACPI.  For example, when we find a device
+that's outside all the known host bridge windows, we try to move it into a
+window, and we look for space starting at the bottom.
 
-                           Linus
+Windows does similar device moves, but it looks for space top-down rather than
+bottom-up.  Since most machines are better-tested with Windows than Linux, this
+difference means that Linux is more likely to trip over BIOS bugs in the PCI
+host bridge window descriptions than Windows is.
+
+We've had several reports of Dell machines where the BIOS leaves the AHCI
+controller outside the host bridge windows (BIOS bug #1), *and* the lowest
+host bridge window includes an area that doesn't actually reach PCI (BIOS
+bug #2).  The result is that Windows (which moves AHCI to the top of a window)
+works fine, while Linux (which moves AHCI to the bottom, buggy, area) doesn't
+work.
+
+These patches change Linux to allocate space more like Windows does:
+
+    1) The x86 pcibios_align_resource() will choose space from the
+       end of an available area, not the beginning.
+
+    2) In the generic allocate_resource() path, we'll look for space
+       between existing children from the top, not from the bottom.
+
+    3) When pci_bus_alloc_resource() looks for available space, it
+       will start from the highest window, not the first one we found.
+
+This series fixes a 2.6.34 regression that prevents many Dell Precision
+workstations from booting:
+
+    https://bugzilla.kernel.org/show_bug.cgi?id=16228
+
+Changes from v4 to v5:
+    - Fix for https://bugzilla.redhat.com/show_bug.cgi?id=646027
+      reported by Fabrice Bellet <fabrice@bellet.info>
+    - Declutter find_resource().
+    - Catch overflow of "ALIGN(tmp.start)".
+
+Changes from v3 to v4:
+    - Use round_down() rather than adding ALIGN_DOWN().
+    - Replace ARCH_HAS_TOP_DOWN_ALLOC #define with a boot-time architecture
+      choice and add a "resource_alloc_from_bottom" command line option to
+      revert to the old behavior (NOTE: this only affects allocate_resource(),
+      not pcibios_align_resource() or pci_bus_alloc_resource()).
+    - Fixed find_resource_from_top() again; it still didn't handle a child
+      that ended at the parent's end correctly.
+
+Changes from v2 to v3:
+    - Fixes for https://bugzilla.redhat.com/show_bug.cgi?id=637647
+      reported by Horst H. von Brand <vonbrand@inf.utfsm.cl>
+    - Updated iomem_resource.end to reflect the end of usable physical address
+      space.  Otherwise, we might allocate right up to 0xffffffff_ffffffff,
+      which isn't usable.
+    - Make allocate_resource() change conditional on ARCH_HAS_TOP_DOWN_ALLOC.
+      Without arch-specific changes like the above, it's too dangerous to
+      make this change for everybody at once.
+    - Fix 64-bit wraparound in find_resource().  If the last child happened
+      to end at ~0, we computed the highest available space as [child->end + 1,
+      root->end], which makes us think the available space started at 0,
+      which makes us return space that may already be allocated.
+
+Changes from v1 to v2:
+    - Moved check for allocating before the available area from
+      pcibios_align_resource() to find_resource().  Better to do it
+      after the alignment callback is done, and make it generic.
+    - Fixed pcibios_align_resource() alignment.  If we start from the
+      end of the available area, we must align *downward*, not upward.
+    - Fixed pcibios_align_resource() ISA alias avoidance.  Again, since
+      the starting point is the end of the area, we must align downward
+      when we avoid aliased areas.
+---
+
+Bjorn Helgaas (9):
+      resources: add a default alignf to simplify find_resource()
+      resources: factor out resource_clip() to simplify find_resource()
+      resources: ensure callback doesn't allocate outside available space
+      resources: handle overflow when aligning start of available area
+      resources: support allocating space within a region from the top down
+      PCI: allocate bus resources from the top down
+      x86/PCI: allocate space from the end of a region, not the beginning
+      x86: update iomem_resource end based on CPU physical address capabilities
+      x86: allocate space within a region top-down
+
+
+ Documentation/kernel-parameters.txt |    5 +
+ arch/x86/kernel/setup.c             |    2 
+ arch/x86/pci/i386.c                 |   17 +++-
+ drivers/pci/bus.c                   |   53 +++++++++++-
+ include/linux/ioport.h              |    1 
+ kernel/resource.c                   |  151 +++++++++++++++++++++++++++++++----
+ 6 files changed, 202 insertions(+), 27 deletions(-)
