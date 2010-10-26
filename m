@@ -1,59 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758821Ab0JZUSm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Oct 2010 16:18:42 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:65365 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755841Ab0JZUSl (ORCPT
+	id S1759801Ab0JZUTQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Oct 2010 16:19:16 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:33825 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756817Ab0JZUTO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Oct 2010 16:18:41 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: "J. Bruce Fields" <bfields@fieldses.org>
-Subject: Re: nfsd changes for 2.6.37
-Date: Tue, 26 Oct 2010 22:18:36 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.36+; KDE/4.5.1; x86_64; ; )
-Cc: Linus Torvalds <torvalds@linux-foundation.org>, linux-nfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Bryan Schumaker <bjschuma@netapp.com>
-References: <20101026164549.GD19445@fieldses.org>
-In-Reply-To: <20101026164549.GD19445@fieldses.org>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201010262218.36940.arnd@arndb.de>
-X-Provags-ID: V02:K0:wMRfm7sPG0ZGRpCb0cSzUrozZwfQOT0RD5pEMHEXMUW
- DaupmgabbHPkaanw6eBuWHfEum0cUY92y9Q0VP4EBPDFZ6+MmP
- kBwUyauHkViazQK4OUx7VxuoEXO3hUICeRLRT9MAqJv2eDegz8
- oiGIWlp6KaygsH8X2D9+iijKoj5bX/yN1I5A3WotARk58gXsi5
- WT8ti3zG36fsa/epj7j2Q==
+	Tue, 26 Oct 2010 16:19:14 -0400
+From: Cyril Chemparathy <cyril@ti.com>
+To: davinci-linux-open-source@linux.davincidsp.com,
+        spi-devel-general@lists.sourceforge.net,
+        broonie@opensource.wolfsonmicro.com, lrg@slimlogic.co.uk,
+        dbrownell@users.sourceforge.net, grant.likely@secretlab.ca,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        rpurdie@rpsys.net
+Cc: Cyril Chemparathy <cyril@ti.com>
+Subject: [PATCH v4 00/12] tnetv107x ssp driver stack
+Date: Tue, 26 Oct 2010 16:18:16 -0400
+Message-Id: <1288124308-14999-1-git-send-email-cyril@ti.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 26 October 2010 18:45:50 J. Bruce Fields wrote:
-> Bryan Schumaker (1):
->       lockd: Mostly remove BKL from the server
+TI's sequencer serial port (TI-SSP) is a jack-of-all-trades type of serial port
+device.  It has a built-in programmable execution engine that can be programmed
+to operate as almost any serial bus (I2C, SPI, EasyScale, and others).
 
-Could you explain the "mostly" part of this commit?
+This patch series implements a driver stack that looks like the following:
 
-The commit message only says "This patch removes all
-but one call to lock_kernel() from the server." This one
-call is what keeps us from removing the BKL from fs/locks.c
-because I can't tell if you still suspect that lockd
-needs to lock against posix file locks or if there was
-a different reason for leaving it in.
+                             +--------+
+                             | eeprom | . . .
+                             +--------+
+   +-----------+             +--------------+ +---------+
+   | regulator | . . .       |   i2c-gpio   | | 1-wire  | . . .
+   +-----------+             +--------------+ +---------+
+   +----------------------+  +--------------------------------+
+   |       ssp-spi        |  |           ssp-gpio             |
+   +----------------------+  +--------------------------------+
+   +----------------------------------------------------------+
+   |                            ssp                           |
+   +----------------------------------------------------------+
 
-I can't think of anything else that this might be locking
-against because everything that might interact with lockd
-now does not use the BKL any more and lockd is
-single-threaded by definition.
+Changes between v3 and v4 of this series:
+  - Replaced polled wait for sequence termination with interrupt
+  - Improved locking within SSP driver
+  - Other minor cleanups
 
-My guess is that the only thing that really needs to
-lock_flocks() in lockd are the nlm_file_inuse and
-nlm_traverse_locks functions because they traverse
-the inode->i_flock list. All the exported functions
-from fs/lock.c take care of locking in their own way
-(possibly not lease_get_time, as I just discovered,
-but that was never called under the BKL...).
+Changes between v2 and v3 of this series:
+  - Minor cleanups in Kconfig and Makefile ordering
 
-	Arnd
+Changes between v1 and v2 of this series:
+  - Replaced open()/close() semantics with dynamic platform_device
+    registration on SSP probe.
+  - Removed user-land interface to regulator registers
+  - More sensible regulator constraints
+  - Other minor cleanups
+
+Cyril Chemparathy (12):
+  misc: add driver for sequencer serial port
+  davinci: add tnetv107x ssp platform device
+  davinci: add ssp config for tnetv107x evm board
+  spi: add ti-ssp spi master driver
+  davinci: add spi devices on tnetv107x evm
+  regulator: add driver for tps6524x regulator
+  davinci: add tnetv107x evm regulators
+  gpio: add ti-ssp gpio driver
+  davinci: add tnetv107x evm ti-ssp gpio device
+  backlight: add support for tps6116x controller
+  davinci: add tnetv107x evm backlight device
+  davinci: add tnetv107x evm i2c eeprom device
+
+ arch/arm/mach-davinci/board-tnetv107x-evm.c    |  199 +++++++
+ arch/arm/mach-davinci/devices-tnetv107x.c      |   25 +
+ arch/arm/mach-davinci/include/mach/ti_ssp.h    |   98 ++++
+ arch/arm/mach-davinci/include/mach/tnetv107x.h |    2 +
+ arch/arm/mach-davinci/tnetv107x.c              |    2 +-
+ drivers/gpio/Kconfig                           |   10 +
+ drivers/gpio/Makefile                          |    1 +
+ drivers/gpio/ti-ssp-gpio.c                     |  200 +++++++
+ drivers/misc/Kconfig                           |   10 +
+ drivers/misc/Makefile                          |    1 +
+ drivers/misc/ti_ssp.c                          |  492 +++++++++++++++++
+ drivers/regulator/Kconfig                      |   10 +
+ drivers/regulator/Makefile                     |    1 +
+ drivers/regulator/tps6524x-regulator.c         |  692 ++++++++++++++++++++++++
+ drivers/spi/Kconfig                            |    7 +
+ drivers/spi/Makefile                           |    1 +
+ drivers/spi/spi_ti_ssp.c                       |  396 ++++++++++++++
+ drivers/video/backlight/Kconfig                |    7 +
+ drivers/video/backlight/Makefile               |    2 +-
+ drivers/video/backlight/tps6116x.c             |  340 ++++++++++++
+ 20 files changed, 2494 insertions(+), 2 deletions(-)
+ create mode 100644 arch/arm/mach-davinci/include/mach/ti_ssp.h
+ create mode 100644 drivers/gpio/ti-ssp-gpio.c
+ create mode 100644 drivers/misc/ti_ssp.c
+ create mode 100644 drivers/regulator/tps6524x-regulator.c
+ create mode 100644 drivers/spi/spi_ti_ssp.c
+ create mode 100644 drivers/video/backlight/tps6116x.c
+
