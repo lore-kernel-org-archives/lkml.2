@@ -1,69 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756000Ab0JZQqy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Oct 2010 12:46:54 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:56578 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753274Ab0JZQqw (ORCPT
+	id S1760078Ab0JZQrx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Oct 2010 12:47:53 -0400
+Received: from webhosting01.bon.m2soft.com ([195.38.20.32]:55492 "EHLO
+	webhosting01.bon.m2soft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754809Ab0JZQrw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Oct 2010 12:46:52 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=HP8Kv87f/TzUuiPYdELsGcrXrBrSiTAjTeP08deAtRa6BpYX/Ac5cU3ZJig2+fwuyQ
-         O/fUoMzefyOhqiPXAZfDsxSxRLSsGGgQi6v9cETOr9iIVZ/gpyAhTwtEhTc+YbiOXKUq
-         GWfYy/jW602c9BVAjX6J0bma1BWY1KwMTmmZE=
-Subject: Re: [PATCH] sparc32: make CONFIG_SPARC_LEON depends on !SMP to fix
- build failure
-From: Namhyung Kim <namhyung@gmail.com>
-To: David Miller <davem@davemloft.net>
-Cc: sparclinux@vger.kernel.org, linux-kernel@vger.kernel.org
-In-Reply-To: <20101026.093213.115933777.davem@davemloft.net>
-References: <20101026.085338.104057457.davem@davemloft.net>
-	 <1288108960.1717.1.camel@leonhard>
-	 <20101026.090428.189722351.davem@davemloft.net>
-	 <20101026.093213.115933777.davem@davemloft.net>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 27 Oct 2010 01:46:43 +0900
-Message-ID: <1288111603.1717.6.camel@leonhard>
+	Tue, 26 Oct 2010 12:47:52 -0400
+Date: Tue, 26 Oct 2010 18:45:05 +0200
+From: Nicolas Kaiser <nikai@nikai.net>
+To: "David S. Miller" <davem@davemloft.net>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] drivers/net: sgiseeq: fix return on error
+Message-ID: <20101026184505.077246a2@absol.kitzblitz>
+Organization: -
+X-Face: "fF&[w2"Nws:JNH4'g|:gVhgGKLhj|X}}&w&V?]0=,7n`jy8D6e[Jh=7+ca|4~t5e[ItpL5
+ N'y~Mvi-vJm`"1T5fi1^b!&EG]6nW~C!FN},=$G?^U2t~n[3;u\"5-|~H{-5]IQ2
+X-Mailer: Claws Mail (Linux)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010-10-26 (화), 09:32 -0700, David Miller:
-> From: David Miller <davem@davemloft.net>
-> Date: Tue, 26 Oct 2010 09:04:28 -0700 (PDT)
-> 
-> > From: Namhyung Kim <namhyung@gmail.com>
-> > Date: Wed, 27 Oct 2010 01:02:40 +0900
-> > 
-> >> 2010-10-26 (화), 08:53 -0700, David Miller:
-> >>> Great, I'll apply all three of your patches thanks.
-> >> 
-> >> Thanks. BTW, can you please take a look below too?
-> >> 
-> >> http://lkml.org/lkml/2010/10/25/13
-> > 
-> > Sure.
-> 
-> I've applied this.
-> 
-> Please CC: sparclinux@vger.kernel.org on such patches next time, so
-> that it gets into my patchwork queue and you don't need to ask me
-> to go looking around in other places for your patches.
-> 
-> Thanks.
+If we continue on error, we'd likely free the IRQ that we
+didn't get, right?
 
-OK. I accidentally missed that, sorry. And thanks again for your quick
-responses and all great works. :-)
+Signed-off-by: Nicolas Kaiser <nikai@nikai.net>
+---
+ drivers/net/sgiseeq.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-
+diff --git a/drivers/net/sgiseeq.c b/drivers/net/sgiseeq.c
+index 9265315..3a0cc63 100644
+--- a/drivers/net/sgiseeq.c
++++ b/drivers/net/sgiseeq.c
+@@ -531,7 +531,7 @@ static int sgiseeq_open(struct net_device *dev)
+ 
+ 	if (request_irq(irq, sgiseeq_interrupt, 0, sgiseeqstr, dev)) {
+ 		printk(KERN_ERR "Seeq8003: Can't get irq %d\n", dev->irq);
+-		err = -EAGAIN;
++		return -EAGAIN;
+ 	}
+ 
+ 	err = init_seeq(dev, sp, sregs);
 -- 
-Regards,
-Namhyung Kim
-
-
+1.7.2.2
