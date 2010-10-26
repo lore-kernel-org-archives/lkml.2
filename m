@@ -1,80 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758919Ab0JZJuo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Oct 2010 05:50:44 -0400
-Received: from canuck.infradead.org ([134.117.69.58]:45683 "EHLO
-	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755585Ab0JZJun convert rfc822-to-8bit (ORCPT
+	id S1758980Ab0JZJut (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Oct 2010 05:50:49 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:46751 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755585Ab0JZJup (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Oct 2010 05:50:43 -0400
-Subject: Re: [PATCH 6/6] Account ksoftirqd time as cpustat softirq -v1
-From: Peter Zijlstra <peterz@infradead.org>
-To: Venkatesh Pallipadi <venki@google.com>
-Cc: Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        linux-kernel@vger.kernel.org, Paul Turner <pjt@google.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Shaun Ruffell <sruffell@digium.com>,
-        Yong Zhang <yong.zhang0@gmail.com>
-In-Reply-To: <1288085632.15336.111.camel@twins>
-References: <1288045817-3135-1-git-send-email-venki@google.com>
-	 <1288045817-3135-7-git-send-email-venki@google.com>
-	 <1288085632.15336.111.camel@twins>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Tue, 26 Oct 2010 11:50:18 +0200
-Message-ID: <1288086618.15336.125.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Tue, 26 Oct 2010 05:50:45 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:reply-to:user-agent:mime-version:to:cc:subject
+         :content-type:content-transfer-encoding;
+        b=aSoO4fG8l93z+8Kke5w+PHJspwTFuoDgkQlXcOgoeh0llOgVjL2cUT09P7KeHnxnJs
+         IsXJ9gYMWA20b6oA1wmKnXbRyo0iLlQnu/FCt7MeedHdWmR8RzlPhJF8OHj2AZ3MShLS
+         HF32fRbrLWdtQg/I0mHD9ywsiqXu9z75JRITE=
+Message-ID: <4CC6A46F.6080409@gmail.com>
+Date: Tue, 26 Oct 2010 17:50:39 +0800
+From: =?UTF-8?B?IlNpbmdhcG9yZSBDaXRpemVuIE1yLiBUZW8gRW4gTWluZyAoWmhhbmcgRQ==?=
+	 =?UTF-8?B?bm1pbmcpIOW8oOaBqem4oyAi?= 
+	<space.time.universe@gmail.com>
+Reply-To: space.time.universe@gmail.com
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.1) Gecko/20090814 Fedora/3.0-2.6.b3.fc11 Thunderbird/3.0b3
+MIME-Version: 1.0
+To: LKML <linux-kernel@vger.kernel.org>
+CC: "space.time.universe@gmail.com" <space.time.universe@gmail.com>,
+        "teoenming@hotmail.com" <teoenming@hotmail.com>,
+        zhang_enming@lavabit.com
+Subject: Photographs of Singapore Citizen Mr. Teo En Ming (Zhang Enming)
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-10-26 at 11:33 +0200, Peter Zijlstra wrote:
-> On Mon, 2010-10-25 at 15:30 -0700, Venkatesh Pallipadi wrote:
-> > softirq time in ksoftirqd context is not accounted in ns granularity
-> > per cpu softirq stats, as we want that to be a part of ksoftirqd
-> > exec_runtime.
-> > 
-> > Accounting them as softirq on /proc/stat separately.
-> > 
-> > Tested-by: Shaun Ruffell <sruffell@digium.com>
-> > 
-> > Signed-off-by: Venkatesh Pallipadi <venki@google.com>
-> > ---
-> >  kernel/sched.c |    8 ++++++++
-> >  1 files changed, 8 insertions(+), 0 deletions(-)
-> > 
-> > diff --git a/kernel/sched.c b/kernel/sched.c
-> > index 49f6f61..0955050 100644
-> > --- a/kernel/sched.c
-> > +++ b/kernel/sched.c
-> > @@ -3617,6 +3617,14 @@ static void irqtime_account_process_tick(struct task_struct *p, int user_tick,
-> >  		cpustat->irq = cputime64_add(cpustat->irq, tmp);
-> >  	} else if (irqtime_account_si_update()) {
-> >  		cpustat->softirq = cputime64_add(cpustat->softirq, tmp);
-> > +	} else if (this_cpu_ksoftirqd() == p) {
-> > +		/*
-> > +		 * ksoftirqd time do not get accounted in cpu_softirq_time.
-> > +		 * So, we have to handle it separately here.
-> > +		 * Also, p->stime needs to be updated for ksoftirqd.
-> > +		 */
-> > +		__account_system_time(p, cputime_one_jiffy, one_jiffy_scaled,
-> > +					&cpustat->softirq);
-> >  	} else if (user_tick) {
-> >  		account_user_time(p, cputime_one_jiffy, one_jiffy_scaled);
-> >  	} else if (p == rq->idle) {
-> 
-> 
-> I'm somewhat confused by this patch.. This is significantly different
-> from the thing proposed last time around, which was to use:
-> 
->   cpustat->softirq + this_cpu_ksoftirqd()->se.sum_exec_runtime
-> 
-> The above looses the fine grained aspect of the accounting and simply
-> charges a whole jiffy if the current process happens to be ksoftirqd.
+Dear All,
 
-Btw, both these solutions can cause si + us + ni + sy > 100%, are we ok
-with that?
+Please click on the following photo links [photographs of Singapore 
+Citizen Mr. Teo En Ming (Zhang Enming)].
+
+[0] http://i.imgur.com/xTfLr.jpg
+
+[1] http://i54.tinypic.com/2415z7t.jpg
+
+[2] http://img842.imageshack.us/img842/7534/enmingteodscf2511.jpg
+
+[3] http://img543.imageshack.us/img543/9185/dscf4036.jpg
+
+[4] http://i.imgur.com/2vZxb.jpg
+
+[5] http://i51.tinypic.com/dqgm8h.jpg
+
+[6] http://imgur.com/Ywca3.jpg
+
+Thank you very much for your kind attention.
+
+-- 
+Yours sincerely,
+
+Singapore Citizen Mr. Teo En Ming (Zhang Enming) 张恩鸣 Dip(Mechatronics) BEng(Hons)(Mechanical Engineering)
+Singapore Identity Card No.: S78*6*2*H
+Location: Bedok Reservoir Road, Singapore
+ZIP: 470103
+Mobile Phone (Starhub Pre-paid): +65-8369-2618
+Windows Live Messenger: teoenming-at-hotmail.com
+My Youtube videos: http://www.youtube.com/user/enmingteo
+Alma Maters:
+[1] Singapore Polytechnic (Graduated 1998)
+[2] National University of Singapore (Graduated 2006)
+My Open Letter (Plea for Medical Help/Assistance) to World Leaders (Updated 28 August 2010):-
+http://lists.mcs.anl.gov/pipermail/mpich-discuss/2010-August/007811.html
+http://mythtv.org/pipermail/mythtv-users/2010-August/295952.html
+http://archives.gentoo.org/gentoo-user/msg_f6a341d9623fda17880159b137c07335.xml
+Photo of Singapore Citizen Mr. Teo En Ming (Zhang Enming) 张恩鸣 #1: http://i54.tinypic.com/2415z7t.jpg
+Photo of Singapore Citizen Mr. Teo En Ming (Zhang Enming) 张恩鸣 #2: http://img842.imageshack.us/img842/7534/enmingteodscf2511.jpg
+Photo of Singapore Citizen Mr. Teo En Ming (Zhang Enming) 张恩鸣 #3: http://i.imgur.com/qD4OM.jpg
+Photo of Singapore Citizen Mr. Teo En Ming (Zhang Enming) 张恩鸣 #4:
+http://i.imgur.com/FboCX.jpg
+
+
