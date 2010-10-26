@@ -1,74 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760355Ab0JZUwQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Oct 2010 16:52:16 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:52731 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755211Ab0JZUwO (ORCPT
+	id S1760422Ab0JZUwu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Oct 2010 16:52:50 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:63894 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755211Ab0JZUwt convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Oct 2010 16:52:14 -0400
+	Tue, 26 Oct 2010 16:52:49 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=sender:subject:from:reply-to:to:cc:in-reply-to:references
-         :content-type:date:message-id:mime-version:x-mailer
-         :content-transfer-encoding;
-        b=m1iEatVsLgBaOrbQtfqv//VDeMonrnnd1+jZ+dahnmIbKbDzWGFFmhH8UfBYNWbeS4
-         5ETOM8qBckvEHK5l2rGeM1e5j57XAEJxXC6nGZUySmtqHuPgaIQZGTKOOP37GS03cylJ
-         cUnNMQPkCqvs4lBtscAywJDS1TQElDDZddUvM=
-Subject: Re: netns patches WAS( Re: [PATCH 8/8] net: Implement socketat.
-From: jamal <hadi@cyberus.ca>
-Reply-To: hadi@cyberus.ca
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Daniel Lezcano <daniel.lezcano@free.fr>,
-        Pavel Emelyanov <xemul@parallels.com>, linux-kernel@vger.kernel.org,
-        Linux Containers <containers@lists.osdl.org>, netdev@vger.kernel.org,
-        netfilter-devel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Michael Kerrisk <mtk.manpages@gmail.com>,
-        Ulrich Drepper <drepper@gmail.com>, Al Viro <viro@ZenIV.linux.org.uk>,
-        David Miller <davem@davemloft.net>,
-        "Serge E. Hallyn" <serge@hallyn.com>,
-        Pavel Emelyanov <xemul@openvz.org>,
-        Ben Greear <greearb@candelatech.com>,
-        Matt Helsley <matthltc@us.ibm.com>, Jonathan Corbet <corbet@lwn.net>,
-        Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>,
-        Jan Engelhardt <jengelh@medozas.de>, Patrick McHardy <kaber@trash.net>
-In-Reply-To: <1287145855.3642.30.camel@bigi>
-References: <m1ocborgq7.fsf@fess.ebiederm.org>
-	 <m1bp7oq1u8.fsf@fess.ebiederm.org>  <4C9B162E.7040201@parallels.com>
-	 <1285240797.5036.5.camel@bigi>  <4C9B3B06.900@parallels.com>
-	 <1285242055.5036.9.camel@bigi> <4C9B3F9C.8080506@parallels.com>
-	 <4CA7A07C.5030504@free.fr>  <1286113441.3812.229.camel@bigi>
-	 <1287145855.3642.30.camel@bigi>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 26 Oct 2010 16:52:06 -0400
-Message-ID: <1288126326.2094.131.camel@mojatatu>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3
-Content-Transfer-Encoding: 7bit
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=jAgoeEDuI1gVYuDO2wi/6MPRbXXAs847Qly/tzGufXSaoxVyBGceM90nNmqeCJG/aP
+         cNABI5+YENf/qDX7eBoCO1TaEQhM0uQ/AG++2ltnFQ7QGWrNKreB41Vu4fj+q/wg4ruh
+         MzRUEgIDvgwMZmTgh7r/1RZ6nBWGO5/EKtz5I=
+MIME-Version: 1.0
+In-Reply-To: <20101026204043.GA2608@sig21.net>
+References: <20101025190358.AEC6840F97@repository3.orbit-lab.org>
+ <20101026123552.GA4604@sig21.net> <AANLkTimzUKj=C9PxGs1PkQy_KWu0PGKd1zv_m-ZpWaEm@mail.gmail.com>
+ <20101026184123.GA1616@sig21.net> <AANLkTimHpyJho6AheQc6zos7Pmr-ECjvaL83mYDC19Yd@mail.gmail.com>
+ <AANLkTi=TPCXXki3jrrFA1HiauDp0rZVtMK9fK4z8B_kv@mail.gmail.com> <20101026204043.GA2608@sig21.net>
+From: "Luis R. Rodriguez" <mcgrof@gmail.com>
+Date: Tue, 26 Oct 2010 13:52:26 -0700
+Message-ID: <AANLkTi=f-mx1Sqv6+PB5rmitkNnsWaQazrDfV7UNCp34@mail.gmail.com>
+Subject: Re: Compat-wireless release for 2010-10-25 is baked
+To: Johannes Stezenbach <js@sig21.net>
+Cc: Ivo Van Doorn <ivdoorn@gmail.com>, linux-wireless@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Eric,
+On Tue, Oct 26, 2010 at 1:40 PM, Johannes Stezenbach <js@sig21.net> wrote:
+> Hi,
+>
+> On Tue, Oct 26, 2010 at 09:48:12PM +0200, Ivo Van Doorn wrote:
+>> For rt2x00 development you can choose between rt2x00.git and
+>> wireless-testing.git,
+>> the trees are usually not that far apart, since smaller patches are pushed quite
+>> quickly upstream. (Also rt2x00.git is rebased frequently, while
+>> wireless-testing.git rarely
+>> is rebased)
+>
+> Thanks for clarification.  I guess I'll start with wireless-testing,
+> that sounds a bit more newbie-friendly.  I just want to avoid
+> searching or reporting bugs which are already fixed, but your description
+> sounds like changes are pushed from rt2x00.git to wireless-testing.git
+> maybe weekly.
 
-Ping?
-If you are too busy to push these in maybe have
-someone clueful like Daniel help out submitting? I think it
-should probably be reasonable to leave out the sockeat
-patch initially if it is deemed controversial..
+Remember, wireless-testing gets stuff from wireless-next.git sucked in
+after wireless-2.6.git bits are pulled in, so really its
+wireless-next.git --> linux-next.git as the daily compat-wireless is
+based on linux-next.git. The wireless-testing.git tree just lets you
+use a stabe RC kernel with the next kernels' 802.11 bits sucked in. So
+you will get your patches merged daily on a good
+John-Linville-and-Stephen-Rothwell-ate-his-wheaties-day :)
 
-cheers,
-jamal
+> I was afraid patches would be pushed to wireless-testing.git
+> only when it's time to get ready for the next merge window.
 
-On Fri, 2010-10-15 at 08:30 -0400, jamal wrote:
-> Eric et al,
-> 
-> Did these patches make it in? I was looking at
-> two Davem net trees and i dont see them.
-> 
-> cheers,
-> jamal
-> 
+Hell no!
 
-
+  Luis
