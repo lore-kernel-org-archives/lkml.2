@@ -1,78 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759981Ab0JZP7E (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Oct 2010 11:59:04 -0400
-Received: from mail-px0-f174.google.com ([209.85.212.174]:57445 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754528Ab0JZP7B (ORCPT
+	id S1760019Ab0JZP71 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Oct 2010 11:59:27 -0400
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:46450 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759948Ab0JZP70 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Oct 2010 11:59:01 -0400
+	Tue, 26 Oct 2010 11:59:26 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:content-transfer-encoding
-         :in-reply-to:user-agent;
-        b=T5nIzNrUulJr0jcwKG33cg2f7EOwpo1vhpN7kNE1GvbsVAMvU1Otu1BwleKPBTnk1J
-         HS92omOCpK921JMgSJ/jGkyiafM7E8QD4RBtiWg8SACsQRDT8nw4Lm6+g8H8xYTSLfPC
-         iLA5ewiWDz53elIOLsyETnAvSkou1TrNb3O6k=
-Date: Tue, 26 Oct 2010 08:56:53 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Jon Dowland <jmtd@debian.org>
-Cc: Matthew Garrett <mjg@redhat.com>, platform-driver-x86@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] toshiba_acpi.c: Add key_entry for a lone FN keypress
-Message-ID: <20101026155653.GC13097@core.coreip.homeip.net>
-References: <20101023221253.GA4829@hathor>
- <201010251127.37374.dmitry.torokhov@gmail.com>
- <20101026120026.GA27720@deckard.alcopop.org>
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=EqIcVxQax7Eu0pRUNYj+d/AQjxuxysNfPwCw//AelrA1n+vUs3YIue4t1Z3cMmF8Kb
+         BXHUMx2jAvZNLaXmrB8fMjP0nhEpvr3pP5Coh302Gd6cUZFdwzIcl8vvTdm9Aoyd/TjX
+         WTYq0lYFCXHk0fW8cPiiTPpvMTrbFIywEUEK4=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20101026120026.GA27720@deckard.alcopop.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20101026123552.GA4604@sig21.net>
+References: <20101025190358.AEC6840F97@repository3.orbit-lab.org> <20101026123552.GA4604@sig21.net>
+From: "Luis R. Rodriguez" <mcgrof@gmail.com>
+Date: Tue, 26 Oct 2010 08:59:04 -0700
+Message-ID: <AANLkTimzUKj=C9PxGs1PkQy_KWu0PGKd1zv_m-ZpWaEm@mail.gmail.com>
+Subject: Re: Compat-wireless release for 2010-10-25 is baked
+To: Johannes Stezenbach <js@sig21.net>
+Cc: linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 26, 2010 at 01:00:26PM +0100, Jon Dowland wrote:
-> On Mon, Oct 25, 2010 at 11:27:35AM -0700, Dmitry Torokhov wrote:
-> > Well, if FN key can generate separate events then we should report
-> > KEY_FN, not KEY_UNKNOWN.
-> 
-> Good point, thanks.  I missed that when I went shopping for an appropriate
-> KEY_*.
-> 
-> Adjusted patch to apply on top of current HEAD.
-> 
-> A lone FN key press on a Toshiba Port�g� R700 without another key in
-> conjunction results in an ACPI event and a spurious error message on
-> the console.
-> 
-> Add a key entry to map this event to a KEY_UNKNOWN keypress silences
+On Tue, Oct 26, 2010 at 5:35 AM, Johannes Stezenbach <js@sig21.net> wrote:
+> On Mon, Oct 25, 2010 at 03:03:57PM -0400, Compat-wireless cronjob account wrote:
+>> From git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next
+>>    d9f241e..e10b307  history    -> origin/history
+>>  + c8b020e...fd4f9b3 master     -> origin/master  (forced update)
+>>    b515316..229aebb  stable     -> origin/stable
+>>  * [new tag]         next-20101025 -> next-20101025
+> ...
+>> Base tree: linux-next.git
+>> Base tree version: next-20101025
+>> compat-wireless release: compat-wireless-2010-10-22-pc
+>
+> I wonder about the different tarballs in
+> http://wireless.kernel.org/download/compat-wireless-2.6/
+>
+> compat-wireless-2010-10-25.tar.bz2
+> compat-wireless-2010-10-25-p.tar.bz2
+> compat-wireless-2010-10-25-pc.tar.bz2
+>
+> Those -p and -pc postfixes are not explained in
+> http://wireless.kernel.org/en/users/Download
 
-                                         ^^^^^^
-Better fix commit log message as well. Otherwise:
+Right, sorry, I haven't updated the docs to add documentation for
+them. First please read:
 
-	Acked-by: Dmitry Torokhov <dtor@mail.ru>
+http://marc.info/?l=linux-wireless&m=128716953726075&w=2
 
-(or whatever tag Matthew might want to change it).
+-s is for getting and applying pending-stable/ fixes
+-n is for applying the patches linux-next-cherry-picks directory
+-p is for applying the patches on the linux-next-pending directory
+-s is for applying the patches on the crap directory
 
-> this message.
-> 
-> Signed-off-by: Jon Dowland <jmtd@debian.org>
-> 
-> ----
-> --- a/drivers/platform/x86/toshiba_acpi.c	2010-10-26 12:56:46.000000000 +0100
-> +++ b/drivers/platform/x86/toshiba_acpi.c	2010-10-26 12:58:21.000000000 +0100
-> @@ -135,6 +135,7 @@
->  	{ KE_KEY, 0x141, { KEY_BRIGHTNESSUP } },
->  	{ KE_KEY, 0x142, { KEY_WLAN } },
->  	{ KE_KEY, 0x143, { KEY_PROG1 } },
-> +	{ KE_KEY, 0x17f, { KEY_FN } },
->  	{ KE_KEY, 0xb05, { KEY_PROG2 } },
->  	{ KE_KEY, 0xb06, { KEY_WWW } },
->  	{ KE_KEY, 0xb07, { KEY_MAIL } },
+> On a related note, I ran across compat-wireless-2.6.36-rc8-1-cs.tar.bz2 in
+> http://www.orbit-lab.org/kernel/compat-wireless-2.6-stable/v2.6.36/
+> which is not linked on
+> http://wireless.kernel.org/en/users/Download/stable/#Releases
 
--- 
-Dmitry
+That was sort of an RC release I made that I was waiting on feedback
+on for some extra linux-next-pending patch merged but I was still
+waiting for one test and no one got back to me yet on that. I'm just
+going to go ahead and release a new tarball today.
+
+> and I wonder about the -s and -cs postfixes?
+
+This is the crap and the stable fixes propagated. I only had one crap
+patch to incorporate though so I will move that to linux-next-pending
+and we'll have at -ps release, which means one linux-next-pending
+patch will be applied and we'll also get all pending stable fixes
+merged.
+
+> Can someone shed a light on this?
+
+Hope this helps.
+
+  Luis
