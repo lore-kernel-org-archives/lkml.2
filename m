@@ -1,40 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758516Ab0JZPJw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Oct 2010 11:09:52 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:47355 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752745Ab0JZPJv (ORCPT
+	id S1757917Ab0JZPOy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Oct 2010 11:14:54 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:57718 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754528Ab0JZPOx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Oct 2010 11:09:51 -0400
+	Tue, 26 Oct 2010 11:14:53 -0400
+Date: Tue, 26 Oct 2010 11:14:52 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: =?utf-8?B?TWljaGHFgiBOYXphcmV3aWN6?= <m.nazarewicz@samsung.com>
+cc: Greg Kroah-Hartman <gregkh@suse.de>, <linux-usb@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, Michal Nazarewicz <mina86@mina86.com>
+Subject: Re: [PATCH 1/7] USB: gadget: file_storage: put_device() in error
+ recovery
+In-Reply-To: <op.vk6urgd87p4s8u@pikus>
+Message-ID: <Pine.LNX.4.44L0.1010261113320.1634-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-In-Reply-To: <AANLkTinUMzMZEredesCH-qr-WBVPmNT+HGOq8T5ikd_G@mail.gmail.com>
-References: <4CC69B22.2050708@kernel.org> <20101025224111.7798.38960.stgit@warthog.procyon.org.uk>
- <12101.1288088542@redhat.com> <4CC6C62F.1000804@kernel.org>
- <4CC6C941.2080003@kernel.org> <4CC6CD4D.3010501@kernel.org>
- <20101026132548.GA14666@elte.hu> <4CC6D8FD.10802@kernel.org> <AANLkTinUMzMZEredesCH-qr-WBVPmNT+HGOq8T5ikd_G@mail.gmail.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Tue, 26 Oct 2010 08:08:56 -0700
-Message-ID: <AANLkTinnc3vBSmewf7ixuOSDYxG+5VNiGaB-vSrDNRiO@mail.gmail.com>
-Subject: Re: [PATCH] x86, percpu: revert commit fe8e0c25
-To: Brian Gerst <brgerst@gmail.com>
-Cc: Tejun Heo <tj@kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        Alexander van Heukelum <heukelum@fastmail.fm>,
-        David Howells <dhowells@redhat.com>, akpm@linux-foundation.org,
-        linux-am33-list@redhat.com, linux-kernel@vger.kernel.org,
-        Akira Takeuchi <takeuchi.akr@jp.panasonic.com>,
-        Mark Salter <msalter@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 26, 2010 at 6:49 AM, Brian Gerst <brgerst@gmail.com> wrote:
->
-> Probably the best fix is to go back to allocating the stacks with
-> get_free_pages(), and only keep the pointers in percpu memory.
+On Tue, 26 Oct 2010, [utf-8] Michał Nazarewicz wrote:
 
-Yes, please do. The "irq stack in percpu area" upsides are almost zero
-afaik, and the complexity required for it has been ridiculous.
+> >> +		if ((rc = device_create_file(&curlun->dev, &dev_attr_ro))  ||
+> >> +		    (rc = device_create_file(&curlun->dev, &dev_attr_nofua)) ||
+> >> +		    (rc = device_create_file(&curlun->dev, &dev_attr_file)))
+> >> +			goto out;
+> >
+> > As long as you're changing these anyway, you may as well use the style
+> > most developers seem to prefer:
+> >
+> > 		rc = device_create_file(&curlun->dev, &dev_attr_ro);
+> > 		if (rc)
+> > 			goto out;
+> > 		...
+> 
+> But then it'd be total of 9 lines consisting of three 3-line ifs.  I decided
+> that it would be more readable with a single if even though it is not compliant
+> with coding style.  What do you think?  I can just resend it.
 
-                                 Linus
+I think you should change it as I suggested.
+
+Alan Stern
+
