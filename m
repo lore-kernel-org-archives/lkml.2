@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756283Ab0JZBMO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Oct 2010 21:12:14 -0400
-Received: from waldorf.bytemark.co.uk ([212.110.162.22]:37295 "EHLO
-	waldorf.bytemark.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756081Ab0JZBMJ (ORCPT
+	id S1757476Ab0JZBN6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Oct 2010 21:13:58 -0400
+Received: from beaker.bytemark.co.uk ([80.68.81.2]:38673 "EHLO
+	beaker.bytemark.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756319Ab0JZBMO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Oct 2010 21:12:09 -0400
+	Mon, 25 Oct 2010 21:12:14 -0400
 From: "Emilio G. Cota" <cota@braap.org>
 To: Martyn Welch <martyn.welch@ge.com>
 Cc: Greg KH <greg@kroah.com>, LKML <linux-kernel@vger.kernel.org>,
         devel@driverdev.osuosl.org,
         Juan David Gonzalez Cobas <david.cobas@gmail.com>,
         Bill Pemberton <wfp5p@virginia.edu>, "Emilio G. Cota" <cota@braap.org>
-Subject: [PATCH 18/30] staging/vme/tsi148: mark the registers' base address pointer as __iomem
-Date: Mon, 25 Oct 2010 21:11:04 -0400
-Message-Id: <1288055476-19438-19-git-send-email-cota@braap.org>
+Subject: [PATCH 22/30] staging/vme/vme_user: use __dev{init,exit} for .probe and .remove
+Date: Mon, 25 Oct 2010 21:11:08 -0400
+Message-Id: <1288055476-19438-23-git-send-email-cota@braap.org>
 X-Mailer: git-send-email 1.7.3.2
 In-Reply-To: <1288055476-19438-1-git-send-email-cota@braap.org>
 References: <1288055476-19438-1-git-send-email-cota@braap.org>
@@ -27,22 +27,51 @@ From: Emilio G. Cota <cota@braap.org>
 
 Signed-off-by: Emilio G. Cota <cota@braap.org>
 ---
- drivers/staging/vme/bridges/vme_tsi148.h |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ drivers/staging/vme/devices/vme_user.c |   10 +++++-----
+ 1 files changed, 5 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/staging/vme/bridges/vme_tsi148.h b/drivers/staging/vme/bridges/vme_tsi148.h
-index bda64ef..9f97fa8 100644
---- a/drivers/staging/vme/bridges/vme_tsi148.h
-+++ b/drivers/staging/vme/bridges/vme_tsi148.h
-@@ -35,7 +35,7 @@
+diff --git a/drivers/staging/vme/devices/vme_user.c b/drivers/staging/vme/devices/vme_user.c
+index a7b97be..5def455 100644
+--- a/drivers/staging/vme/devices/vme_user.c
++++ b/drivers/staging/vme/devices/vme_user.c
+@@ -134,8 +134,8 @@ static ssize_t vme_user_write(struct file *, const char __user *, size_t, loff_t
+ static loff_t vme_user_llseek(struct file *, loff_t, int);
+ static long vme_user_unlocked_ioctl(struct file *, unsigned int, unsigned long);
  
- /* Structure used to hold driver specific information */
- struct tsi148_driver {
--	void *base;	/* Base Address of device registers */
-+	void __iomem *base;	/* Base Address of device registers */
- 	wait_queue_head_t dma_queue[2];
- 	wait_queue_head_t iack_queue;
- 	void (*lm_callback[4])(int);	/* Called in interrupt handler */
+-static int __init vme_user_probe(struct device *, int, int);
+-static int __exit vme_user_remove(struct device *, int, int);
++static int __devinit vme_user_probe(struct device *, int, int);
++static int __devexit vme_user_remove(struct device *, int, int);
+ 
+ static struct file_operations vme_user_fops = {
+ 	.open = vme_user_open,
+@@ -593,7 +593,7 @@ static void buf_unalloc(int num)
+ static struct vme_driver vme_user_driver = {
+ 	.name = driver_name,
+ 	.probe = vme_user_probe,
+-	.remove = vme_user_remove,
++	.remove = __devexit_p(vme_user_remove),
+ };
+ 
+ 
+@@ -663,7 +663,7 @@ err_nocard:
+  * as practical. We will therefore reserve the buffers and request the images
+  * here so that we don't have to do it later.
+  */
+-static int __init vme_user_probe(struct device *dev, int cur_bus, int cur_slot)
++static int __devinit vme_user_probe(struct device *dev, int cur_bus, int cur_slot)
+ {
+ 	int i, err;
+ 	char name[12];
+@@ -838,7 +838,7 @@ err_dev:
+ 	return err;
+ }
+ 
+-static int __exit vme_user_remove(struct device *dev, int cur_bus, int cur_slot)
++static int __devexit vme_user_remove(struct device *dev, int cur_bus, int cur_slot)
+ {
+ 	int i;
+ 
 -- 
 1.7.1
 
