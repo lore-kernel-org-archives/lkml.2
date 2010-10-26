@@ -1,55 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752270Ab0JZEfu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Oct 2010 00:35:50 -0400
-Received: from e23smtp09.au.ibm.com ([202.81.31.142]:44084 "EHLO
-	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751028Ab0JZEft (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Oct 2010 00:35:49 -0400
-From: "Aneesh Kumar K. V" <aneesh.kumar@linux.vnet.ibm.com>
-To: "J. Bruce Fields" <bfields@citi.umich.edu>
-Cc: sfrench@us.ibm.com, ffilz@us.ibm.com, agruen@suse.de, adilger@sun.com,
-        sandeen@redhat.com, tytso@mit.edu, jlayton@redhat.com,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jeremy Allison <jra@samba.org>
-Subject: Re: [PATCH -V4 00/11]  New ACL format for better NFSv4 acl interoperability
-In-Reply-To: <20101025190901.GA13523@fieldses.org>
-References: <1285332494-12756-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <20101012002409.GH16442@fieldses.org> <m3bp6zswvh.fsf@linux.vnet.ibm.com> <20101012153507.GC12752@fieldses.org> <20101025190901.GA13523@fieldses.org>
-User-Agent: Notmuch/0.3.1-90-g8071c5c (http://notmuchmail.org) Emacs/24.0.50.1 (i686-pc-linux-gnu)
-Date: Tue, 26 Oct 2010 10:05:37 +0530
-Message-ID: <m3k4l5lgfa.fsf@linux.vnet.ibm.com>
+	id S1752298Ab0JZEx4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Oct 2010 00:53:56 -0400
+Received: from www.tglx.de ([62.245.132.106]:35818 "EHLO www.tglx.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751045Ab0JZExz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Oct 2010 00:53:55 -0400
+Date: Tue, 26 Oct 2010 06:53:11 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Len Brown <lenb@kernel.org>
+cc: Ingo Molnar <mingo@elte.hu>, Huang Ying <ying.huang@intel.com>,
+        LKML <linux-kernel@vger.kernel.org>, Andi Kleen <andi@firstfloor.org>,
+        linux-acpi@vger.kernel.org, Borislav Petkov <petkovbb@googlemail.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Don Zickus <dzickus@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Tony Luck <tony.luck@intel.com>
+Subject: Re: [NAK] Re: [PATCH -v2 9/9] ACPI, APEI, Generic Hardware Error
+ Source POLL/IRQ/NMI notification type support
+In-Reply-To: <alpine.LFD.2.00.1010252058370.11036@localhost.localdomain>
+Message-ID: <alpine.LFD.2.00.1010260629560.3955@localhost6.localdomain6>
+References: <1287992610-14996-1-git-send-email-ying.huang@intel.com> <1287992610-14996-10-git-send-email-ying.huang@intel.com> <20101025084553.GA27119@elte.hu> <alpine.LFD.2.00.1010252058370.11036@localhost.localdomain>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 25 Oct 2010 15:09:02 -0400, "J. Bruce Fields" <bfields@citi.umich.edu> wrote:
-> On Tue, Oct 12, 2010 at 11:35:07AM -0400, J. Bruce Fields wrote:
-> > On Tue, Oct 12, 2010 at 12:47:38PM +0530, Aneesh Kumar K. V wrote:
-> > > What we need in the first step is to get VFS changes reviewed.Once we
-> > > agree on the VFS changes done, then we can start looking at the changes
-> > > upto NFS richacl nfs support. When get that merged then we can start
-> > > having discussion on how local file system maintainers want to migrate
-> > > the existing file system with posixacl to richacl.
-> > 
-> > OK.  So, personally: I'm resigned to the idea that we want support for
-> > this ACL model.  The vfs changes look OK to me (and wouldn't be changed
-> > by any comments I'd have on the more richacl-specific patches to
-> > follow).  So that's an ACK from me on the first set of these patches,
-> > assuming it's OK with people to merge these things one step at a time.
+B1;2401;0cLen,
+
+On Mon, 25 Oct 2010, Len Brown wrote:
+
+> >  NAKed-by: Ingo Molnar <mingo@elte.hu>
 > 
-> Is there any progress on this?
+> Everybody knows that Linux has a lot to learn about RAS.
 > 
+> I think to catch up, we need to play to Linux's strengths
+> of continuous improvement.  If we halt patches in this area
+> then we could wait forever for the "perfect design".
 
-The next step would be to get Al Viro or Christoph to look at the
-proposed VFS changes and get an ACK on them. Meanwhile i can rebase
-the full series to the latest linux kernel. 
+it's not about perfect design. It's about creating new user space
+ABIs. The patches introduce another error reporting user space ABI
+with an ad hoc "fits the needs" design.
 
-Apart from that is there any specific changes you would like to see
-as a part of richacl patch series. Would you like to see the full
-patchset posted to the list or should we go in steps as mentioned above
-?
+This is my major point of objection. 
 
--aneesh
+I agree that Linux needs improvement on the RAS side, but does this
+lack of features justify a new user space ABI which is totally
+disconnected to existing RAS facilities ?
+
+No, it does not. It's not our problem that Intel wasted time on
+creating another character device driver to report errors to user
+space. The time spent to do so would have been sufficient to do a
+proper integration into the existing infrastructure.
+
+I would not care at all if these patches would just introduce some
+weird in kernel interfaces as we can clean that up at will. But
+introducing a new user space ABI is setting the disconnect of RAS
+related facilities into stone.
+
+>From Kconfig:
+
+  EDAC is designed to report errors in the core system.
+  These are low-level errors that are reported in the CPU or
+  supporting chipset or other subsystems:
+  memory errors, cache errors, PCI errors, thermal throttling, etc..
+  If unsure, select 'Y'.
+
+So please explain why your error reporting is so different from the
+above that it justifies a separate facility. And you better come up
+with a real good explanation other than we looked at EDAC and it did
+not fit our needs.
+
+Thanks,
+
+	tglx
