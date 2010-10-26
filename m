@@ -1,54 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932198Ab0JZOTU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Oct 2010 10:19:20 -0400
-Received: from de01.mail.all-tld.net ([195.140.232.8]:61954 "EHLO
-	de01.mail.all-tld.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754809Ab0JZOTT convert rfc822-to-8bit (ORCPT
+	id S1758426Ab0JZOWz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Oct 2010 10:22:55 -0400
+Received: from edu-smtp-02.edutel.nl ([88.159.1.176]:49433 "EHLO
+	edu-smtp-02.edutel.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758331Ab0JZOWy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Oct 2010 10:19:19 -0400
-Date: Tue, 26 Oct 2010 16:19:05 +0200
-From: Anders Larsen <al@alarsen.net>
-Subject: Re: Strange fsck messages showing up in dmesg
-To: Thomas Fjellstrom <thomas@fjellstrom.ca>
-Cc: linux-kernel@vger.kernel.org, xen-users@lists.xensource.com
-References: <201010260805.37501.thomas@fjellstrom.ca>
-In-Reply-To: <201010260805.37501.thomas@fjellstrom.ca> (from
-	thomas@fjellstrom.ca on Tue Oct 26 16:05:37 2010)
-X-Mailer: Balsa 2.3.14
-Message-Id: <1288102745l.15819l.2l@i-dmzi_al.realan.de>
+	Tue, 26 Oct 2010 10:22:54 -0400
+Message-ID: <4CC6E43C.8010104@neli.hopto.org>
+Date: Tue, 26 Oct 2010 16:22:52 +0200
+From: Micha Nelissen <micha@neli.hopto.org>
+User-Agent: Thunderbird 2.0.0.5 (Windows/20070716)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
-X-ALL-TLD-GmbH-Information: AEV Virus and Spam Secure Mail System
-X-ALL-TLD-GmbH-VirusScanner: Found to be clean
-X-ALL-TLD-GmbH-SpamCheck: 
-X-MailScanner-From: al@alarsen.net
+To: "Bounine, Alexandre" <Alexandre.Bounine@idt.com>
+CC: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org,
+        Matt Porter <mporter@kernel.crashing.org>,
+        Li Yang <leoli@freescale.com>, Kumar Gala <galak@kernel.crashing.org>,
+        Thomas Moll <thomas.moll@sysgo.com>
+Subject: Re: [PATCH -mm 0/2] RapidIO: Changes to handling of RIO switches
+References: <1287688250-14226-1-git-send-email-alexandre.bounine@idt.com> <4CC0AD74.8070800@neli.hopto.org> <0CE8B6BE3C4AD74AB97D9D29BD24E55201445906@CORPEXCH1.na.ads.idt.com> <4CC1D7DE.7060405@neli.hopto.org> <0CE8B6BE3C4AD74AB97D9D29BD24E55201445A6B@CORPEXCH1.na.ads.idt.com> <4CC20923.8050400@neli.hopto.org> <0CE8B6BE3C4AD74AB97D9D29BD24E55201445BA4@CORPEXCH1.na.ads.idt.com> <4CC5ACAB.7070309@neli.hopto.org> <0CE8B6BE3C4AD74AB97D9D29BD24E5520147D5C2@CORPEXCH1.na.ads.idt.com> <4CC5E354.80009@neli.hopto.org> <0CE8B6BE3C4AD74AB97D9D29BD24E5520147D879@CORPEXCH1.na.ads.idt.com>
+In-Reply-To: <0CE8B6BE3C4AD74AB97D9D29BD24E5520147D879@CORPEXCH1.na.ads.idt.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On 2010-10-26 16:05:37, Thomas Fjellstrom wrote:
-> Recently on an Xen based system I've seen some odd messages show up in dmesg.
+Bounine, Alexandre wrote:
+> Micha Nelissen <micha@neli.hopto.org> wrote:
+>> I look at it this way: it prevents the need for another layer of
+>> indirection: translating component tag to a destid.
 > 
-> [3949276.262287] SGI XFS with ACLs, security attributes, realtime, large 
-> block/inode numbers, no debug enabled
-> [3949276.263130] SGI XFS Quota Management subsystem
-> [3949276.276566] JFS: nTxBlock = 8192, nTxLock = 65536
-> [3949276.297503] NTFS driver 2.1.29 [Flags: R/W MODULE].
-> [3949276.333813] QNX4 filesystem 0.2.3 registered.
-> [3949276.476177] Btrfs loaded
-> [3949276.867188] EXT3-fs: INFO: recovery required on readonly filesystem.
+> The destid alone is not enough. You will need an entire rio_dev object
+> for that device anyway.
 
-etc.
+?? I did not say a rio_dev object is not needed; on the contrary, I do 
+have it.
 
-Looks like fairly normal boot messages after an unclean shutdown (crash).
+In various parts of the enumeration and routing algorithm, it would need 
+to lookup the tag to find the destid, if the destid is in the tag then 
+this lookup is not needed.
 
-BTW: Which kernel version?  Is this the host or a guest?
+> I think we are mixing two things together here. I understand your idea
+> but do not see how it prevents me from having one common set of access
+> coordinates for RIO devices (the starting point of our discussion). 
 
-Cheers
-Anders
+I'm trying to argue we do not want redundant identification in the first 
+  place unless absolutely necessary.
 
+> Regardless of an implementation, having a way that ensures unified
+> identification of switches by all processor boards is better than the
+> current mainline implementation. 
+
+Well, we both know "the current mainline implementation" is easily 
+improved to unique identification I proposed. Therefore this statement 
+is misleading.
+
+> Methods of forming a component tag may
+> differ but still serve the same purpose. Personally I prefer to avoid
+> any link of device identification to the destid because it may not be as
+> intuitive as it seems for large systems with hot-plug. I will discuss
+> this with some of RIO TWG guys to get their opinion on the best
+> approach.
+
+Please do, please elaborate: "may not be as intuitive" ... to what? for 
+implementation of ...?
+
+> I will make a patch that defines fields of component tag, probably just
+> one for now - identification field. This will ensure that any method
+> used to assign component tag (id part of it) will be compatible with RIO
+> spec part 8 error management.
+
+Again slightly misleading information. Any unique identification 
+satisfies this requirement.
+
+To prove my point: are you going to recycle the component tags as well 
+in case of hot-swaps, just like the destids?
+
+> As for switch identification, at this moment I still prefer replacing
+> rswitch->switchid with ID portion of the component tag because it is
+> very simple and does not require changes to enumeration algorithm.   
+
+Yes, I agree switchid = tag, that's what I use also.
+
+Micha
