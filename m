@@ -1,62 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933542Ab0JZTPJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Oct 2010 15:15:09 -0400
-Received: from vms173019pub.verizon.net ([206.46.173.19]:50646 "EHLO
-	vms173019pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933504Ab0JZTPH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Oct 2010 15:15:07 -0400
-Date: Tue, 26 Oct 2010 15:14:48 -0400 (EDT)
-From: Len Brown <lenb@kernel.org>
-X-X-Sender: lenb@localhost.localdomain
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, sfi-devel@simplefirmware.org
-Subject: [git pull request] SFI patch for 2.6.37-merge
-Message-id: <alpine.LFD.2.00.1010261512160.11689@localhost.localdomain>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
-MIME-version: 1.0
-Content-type: TEXT/PLAIN; charset=US-ASCII
+	id S933534Ab0JZTR4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Oct 2010 15:17:56 -0400
+Received: from xenotime.net ([72.52.115.56]:53598 "HELO xenotime.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1755976Ab0JZTRz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Oct 2010 15:17:55 -0400
+Date: Tue, 26 Oct 2010 12:17:47 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+To: Mauro Carvalho Chehab <mchehab@redhat.com>
+Cc: lkml <linux-kernel@vger.kernel.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Subject: Re: docbook: fix fatal error in linux/input.h
+Message-Id: <20101026121747.897eddc9.rdunlap@xenotime.net>
+In-Reply-To: <4CC7283D.3010205@redhat.com>
+References: <20101026114555.4b79977d.rdunlap@xenotime.net>
+	<4CC7283D.3010205@redhat.com>
+Organization: YPO4
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Tue, 26 Oct 2010 17:13:01 -0200 Mauro Carvalho Chehab wrote:
 
-please pull from: 
+> Em 26-10-2010 16:45, Randy Dunlap escreveu:
+> > Hi,
+> > 
+> > Recent commit 8613e4c2872a87cc309a42de2c7091744dc54d0e:
+> > Author: Mauro Carvalho Chehab <mchehab@redhat.com>
+> > Date:   Thu Sep 9 21:54:22 2010 -0700
+> >     Input: add support for large scancodes
+> > 
+> > causes a fatal error in docbook generation:
+> > 
+> > linux-2.6.36-git8/DOC1/Documentation/DocBook/device-drivers.xml:40690: parser error : StartTag: invalid element name
+> > #define INPUT_KEYMAP_BY_INDEX	(1 << 0)
+> >                              	    ^
+> > 
+> > I think that this message comes from xsltproc, but I'm not positive about that.
+> > I also don't know of a really good fix for it.  However, I did find 2 ways to
+> > work around the error:
+> > 
+> > a/ move the #define value to after the end of the struct input_keymap_entry, like:
+> > 
+> > /* flags bits: */
+> > #define INPUT_KEYMAP_BY_INDEX	(1 << 0)
+> > 
+> > or
+> > b/ don't use the "<< 0" (can leave the #define where it is in this case):
+> > #define INPUT_KEYMAP_BY_INDEX	(1)
+> > 
+> > I have tested both of these patches and they work OK.
+> > Are you OK with either of them?  or want to choose one?
+> 
+> 
+> Hmm... probably, the first one is not correct.
 
-git://git.kernel.org/pub/scm/linux/kernel/git/lenb/linux-sfi-2.6.git sfi-release
+Why not?  All it does is move the line to after the end of the struct.
 
-This will update the file shown below.
+> I suspect that the right way is to use something like:
+> 
+> 	#define INPUT_KEYMAP_BY_INDEX	(1 &lt;&lt; 0)
+> 
+> Could you please test if this would fix the issue?
 
-thanks!
+You are suggesting putting that into include/linux/input.h ??
 
---
-Len Brown
-Intel Open Source Technology Center
+That would make sense if some tool converted "<<" to "&lt;&lt;".
+And that may be where the problem is, but I don't know those tools.
 
 
-ps. individual patches are available on sfi-devel@simplefirmware.org
-and a consolidated plain patch is available here:
-http://ftp.kernel.org/pub/linux/kernel/people/lenb/sfi/patches/2.6.36/acpi-sfi-release-20100702-2.6.36-rc8.diff.gz
-
- include/linux/sfi.h |   24 ------------------------
- 1 files changed, 0 insertions(+), 24 deletions(-)
-
-through these commits:
-
-Feng Tang (1):
-      SFI: remove the v0.7 related definitions from sfi.h
-
-with this log:
-
-commit 82acf2a8fe4764e21a7ad406590453b004751e58
-Author: Feng Tang <feng.tang@intel.com>
-Date:   Tue Oct 19 10:15:03 2010 +0800
-
-    SFI: remove the v0.7 related definitions from sfi.h
-    
-    SFI v0.8's DEVS and GPIO tables replaces v0.7's SPI/I2C tables.
-    
-    Signed-off-by: Feng Tang <feng.tang@intel.com>
-    Signed-off-by: Len Brown <len.brown@intel.com>
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
