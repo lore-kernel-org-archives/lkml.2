@@ -1,126 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757630Ab0JZTw5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Oct 2010 15:52:57 -0400
-Received: from vms173001pub.verizon.net ([206.46.173.1]:58786 "EHLO
-	vms173001pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753282Ab0JZTw4 (ORCPT
+	id S1758664Ab0JZT4Z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Oct 2010 15:56:25 -0400
+Received: from smtp.eu.citrix.com ([62.200.22.115]:39975 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755484Ab0JZT4Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Oct 2010 15:52:56 -0400
-Date: Tue, 26 Oct 2010 15:52:41 -0400 (EDT)
-From: Len Brown <lenb@kernel.org>
-X-X-Sender: lenb@localhost.localdomain
+	Tue, 26 Oct 2010 15:56:24 -0400
+X-IronPort-AV: E=Sophos;i="4.58,242,1286150400"; 
+   d="scan'208";a="2536602"
+Date: Tue, 26 Oct 2010 20:55:33 +0100
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball-desktop
 To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-pm@lists.linux-foundation.org
-Subject: [git pull request] idle patches for 2.6.37-merge
-Message-id: <alpine.LFD.2.00.1010261551090.14156@localhost.localdomain>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
-MIME-version: 1.0
-Content-type: TEXT/PLAIN; charset=US-ASCII
+CC: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com,
+        Jeremy Fitzhardinge <jeremy@goop.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [GIT PULL] xen PV on HVM and initial domain
+Message-ID: <alpine.DEB.2.00.1010261207180.1407@kaball-desktop>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+Linus,
+I have two patch series that I would like you to pull:
 
-please pull from: 
+PV on HVM: receive interrupts as xen events [1]
+xen: initial domain support [2]
 
-git://git.kernel.org/pub/scm/linux/kernel/git/lenb/linux-idle-2.6.git idle-release
+Please pull from the following branch:
 
-This will update the files shown below.
+git://xenbits.xen.org/people/sstabellini/linux-pvhvm.git for-linus
 
-thanks!
+it contains both series rebased on Konrad's xen-pcifront series [3]
+(they depend on it, unfortunately I cannot produce a working series
+without it) on Linux 2.6.36 rc8; my two patch series start after git
+commit 67ba37293e938208795d6a3562201bdb0cf43393.
 
---
-Len Brown
-Intel Open Source Technology Center
+The first patch series introduces some performance improvements for Xen
+PV on HVM guests: interacting with the emulated APIC is slow because it
+causes traps in the hypervisor while receiving Xen events using the
+vector callback mechanism allow us to skip all that. For this reason we
+remap interrupts and MSIs into Xen pirqs so that from that point on we
+can receive them as Xen events instead.
+
+The second patch series implements the basic support needed to boot
+Linux as initial domain on Xen: the target is not to add full featured
+dom0 support in the kernel but to be able to boot Linux on Xen on
+native.
+
+I have just added a last minute fix at end to solve a vcpu
+initialization problem for pv guests (they would see only a single vcpu
+even though they are given more than one [4]).
 
 
-ps. individual patches are available on linux-pm@lists.linux-foundation.org
-and a consolidated plain patch is available here:
-http://ftp.kernel.org/pub/linux/kernel/people/lenb/idle/patches/2.6.36/idle-release-2.6.36-rc8.diff.gz
+All together the two series introduce the following changes:
 
- drivers/acpi/processor_idle.c |    1 -
- drivers/idle/intel_idle.c     |   61 +++++++++++++++++++++++++++++++----------
- 2 files changed, 46 insertions(+), 16 deletions(-)
+Jeremy Fitzhardinge (5):
+      acpi: use indirect call to register gsi in different modes
+      xen: add xen hvm acpi_register_gsi variant
+      xen: remap GSIs as pirqs when running as initial domain
+      xen: map a dummy page for local apic and ioapic in xen_set_fixmap
+      xen: make hvc_xen console work for dom0.
 
-through these commits:
+Juan Quintela (2):
+      xen: Initialize xenbus for dom0.
+      xen: add the direct mapping area for ISA bus access
 
-Len Brown (5):
-      intel_idle: simplify test for leave_mm()
-      intel_idle: delete bogus data from cpuidle_state.power_usage
-      acpi_idle: delete bogus data from cpuidle_state.power_usage
-      intel_idle: add initial Sandy Bridge support
-      intel_idle: do not use the LAPIC timer for ATOM C2
+Qing He (1):
+      xen: remap MSIs into pirqs when running as initial domain
 
-with this log:
+Stefano Stabellini (10):
+      xen: support pirq != irq
+      xen: get the maximum number of pirqs from xen
+      xen: implement xen_hvm_register_pirq
+      xen: support GSI -> pirq remapping in PV on HVM guests
+      xen: map MSIs into pirqs
+      xen: introduce XEN_DOM0 as a silent option
+      xen: use vcpu_ops to setup cpu masks
+      xen: mask the MTRR feature from the cpuid
+      xen: add a missing #include to arch/x86/pci/xen.c
+      xen: initialize cpu masks for pv guests in xen_smp_init
 
-commit c25d29952b2a8c9aaf00e081c9162a0e383030cd
-Author: Len Brown <len.brown@intel.com>
-Date:   Sat Oct 23 23:25:53 2010 -0400
+ arch/x86/include/asm/acpi.h       |    3 +
+ arch/x86/include/asm/xen/pci.h    |   12 ++
+ arch/x86/kernel/acpi/boot.c       |   60 +++++--
+ arch/x86/pci/xen.c                |  308 ++++++++++++++++++++++++++++++++++--
+ arch/x86/xen/Kconfig              |   10 ++
+ arch/x86/xen/enlighten.c          |    2 +
+ arch/x86/xen/mmu.c                |   47 ++++++-
+ arch/x86/xen/setup.c              |    3 +
+ arch/x86/xen/smp.c                |   26 +++
+ drivers/char/hvc_xen.c            |   98 ++++++++----
+ drivers/xen/events.c              |  195 +++++++++++++++++++++---
+ drivers/xen/xenbus/xenbus_probe.c |   29 ++++-
+ include/xen/events.h              |    8 +
+ include/xen/interface/features.h  |    3 +
+ include/xen/interface/physdev.h   |   46 ++++++
+ 15 files changed, 758 insertions(+), 92 deletions(-)
 
-    intel_idle: do not use the LAPIC timer for ATOM C2
-    
-    If we use the LAPIC timer during ATOM C2 on
-    some nvidia chisets, the system stalls.
-    
-    https://bugzilla.kernel.org/show_bug.cgi?id=21032
-    
-    Signed-off-by: Len Brown <len.brown@intel.com>
+Cheers,
 
-commit 00527cc6bbcac05ab7d54c40bda1ff2a0625ab10
-Merge: 0f3f164 d13780d
-Author: Len Brown <len.brown@intel.com>
-Date:   Sat Oct 23 02:33:50 2010 -0400
+Stefano
 
-    Merge branch 'intel_idle+snb' into idle-release
-    
-    Signed-off-by: Len Brown <len.brown@intel.com>
-
-commit d13780d439d08a57c87c1a07b6e76ddde61da1aa
-Author: Len Brown <len.brown@intel.com>
-Date:   Wed Jul 7 00:12:03 2010 -0400
-
-    intel_idle: add initial Sandy Bridge support
-    
-    Signed-off-by: Len Brown <len.brown@intel.com>
-
-commit 0f3f164d9794f57d8afb033819f508a486c1304d
-Author: Len Brown <len.brown@intel.com>
-Date:   Fri Oct 15 21:25:02 2010 -0400
-
-    acpi_idle: delete bogus data from cpuidle_state.power_usage
-    
-    The mW data in this field comes from AML _CST,
-    which was typed in by a BIOS writer, and is thus
-    considered unreliable.
-    
-    Linux does not use it for making any decisions.
-    We do display it in sysfs where somebody might
-    read it and assume it is meaningful, so delete it.
-    
-    Signed-off-by: Len Brown <len.brown@intel.com>
-
-commit dea44c6b7df7f8bb67cb059b4c14b24288c4cd04
-Author: Len Brown <len.brown@intel.com>
-Date:   Fri Oct 15 21:23:25 2010 -0400
-
-    intel_idle: delete bogus data from cpuidle_state.power_usage
-    
-    The mW data in this field is a total fabrication
-    and serves no purpose other than to mislead
-    those who might see it in sysfs.  Delete it.
-    
-    Signed-off-by: Len Brown <len.brown@intel.com>
-
-commit c8381cc3d8a9cc6c80f65bf60863c776651f245c
-Author: Len Brown <len.brown@intel.com>
-Date:   Fri Oct 15 20:43:06 2010 -0400
-
-    intel_idle: simplify test for leave_mm()
-    
-    A run-time test to invoke leave_mm() for the deepest
-    supported C-state is redundant, since the appropriate
-    C-states already have flags with CPUIDLE_FLAG_TLB_FLUSHED set.
-    
-    Signed-off-by: Len Brown <len.brown@intel.com>
+---
+[1] http://lkml.org/lkml/2010/10/12/246 
+[2] http://lkml.org/lkml/2010/10/19/199
+[3] http://lkml.org/lkml/2010/10/26/231
+[4] http://lkml.org/lkml/2010/10/26/369 
