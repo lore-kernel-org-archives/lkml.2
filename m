@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933049Ab0JZC4x (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Oct 2010 22:56:53 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:6626 "EHLO mx1.redhat.com"
+	id S933113Ab0JZC5A (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Oct 2010 22:57:00 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:16258 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759366Ab0JZC4u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Oct 2010 22:56:50 -0400
+	id S933101Ab0JZC45 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Oct 2010 22:56:57 -0400
 Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
 	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
 	Kingdom.
 	Registered in England and Wales under Company Registration No. 3798903
-Subject: [PATCH 41/43] MN10300: Create a defconfig for the ASB2364 board
+Subject: [PATCH 42/43] MN10300: Change "Matsushita" to "Panasonic".
 To: linux-am33-list@redhat.com
 From: David Howells <dhowells@redhat.com>
 Cc: linux-kernel@vger.kernel.org,
         Akira Takeuchi <takeuchi.akr@jp.panasonic.com>,
         Kiyoshi Owada <owada.kiyoshi@jp.panasonic.com>
-Date: Tue, 26 Oct 2010 03:56:41 +0100
-Message-ID: <20101026025640.23512.90311.stgit@warthog.procyon.org.uk>
+Date: Tue, 26 Oct 2010 03:56:46 +0100
+Message-ID: <20101026025646.23512.57482.stgit@warthog.procyon.org.uk>
 In-Reply-To: <20101026025301.23512.24525.stgit@warthog.procyon.org.uk>
 References: <20101026025301.23512.24525.stgit@warthog.procyon.org.uk>
 User-Agent: StGit/0.15-97-g9680-dirty
@@ -30,120 +30,74 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Akira Takeuchi <takeuchi.akr@jp.panasonic.com>
 
-Create a defconfig for the ASB2364 board.
+Change externally visible "Matsushita" instances to "Panasonic" throughout the
+MN10300 arch code.
 
 Signed-off-by: Akira Takeuchi <takeuchi.akr@jp.panasonic.com>
 Signed-off-by: Kiyoshi Owada <owada.kiyoshi@jp.panasonic.com>
 Signed-off-by: David Howells <dhowells@redhat.com>
 ---
 
- arch/mn10300/configs/asb2364_defconfig |   98 ++++++++++++++++++++++++++++++++
- 1 files changed, 98 insertions(+), 0 deletions(-)
- create mode 100644 arch/mn10300/configs/asb2364_defconfig
+ arch/mn10300/Kconfig                            |    4 ++--
+ arch/mn10300/kernel/setup.c                     |    4 ++--
+ arch/mn10300/proc-mn103e010/include/proc/proc.h |    2 +-
+ 3 files changed, 5 insertions(+), 5 deletions(-)
 
 
-diff --git a/arch/mn10300/configs/asb2364_defconfig b/arch/mn10300/configs/asb2364_defconfig
-new file mode 100644
-index 0000000..83ce2f2
---- /dev/null
-+++ b/arch/mn10300/configs/asb2364_defconfig
-@@ -0,0 +1,98 @@
-+CONFIG_EXPERIMENTAL=y
-+CONFIG_SYSVIPC=y
-+CONFIG_POSIX_MQUEUE=y
-+CONFIG_BSD_PROCESS_ACCT=y
-+CONFIG_TASKSTATS=y
-+CONFIG_TASK_DELAY_ACCT=y
-+CONFIG_TASK_XACCT=y
-+CONFIG_TASK_IO_ACCOUNTING=y
-+CONFIG_LOG_BUF_SHIFT=14
-+CONFIG_CGROUPS=y
-+CONFIG_CGROUP_NS=y
-+CONFIG_CGROUP_FREEZER=y
-+CONFIG_CGROUP_DEVICE=y
-+CONFIG_CGROUP_CPUACCT=y
-+CONFIG_RESOURCE_COUNTERS=y
-+CONFIG_RELAY=y
-+# CONFIG_CC_OPTIMIZE_FOR_SIZE is not set
-+CONFIG_EMBEDDED=y
-+# CONFIG_KALLSYMS is not set
-+# CONFIG_VM_EVENT_COUNTERS is not set
-+CONFIG_SLAB=y
-+CONFIG_PROFILING=y
-+CONFIG_MODULES=y
-+CONFIG_MODULE_UNLOAD=y
-+# CONFIG_BLOCK is not set
-+CONFIG_MN10300_UNIT_ASB2364=y
-+CONFIG_PREEMPT=y
-+# CONFIG_MN10300_USING_JTAG is not set
-+CONFIG_NO_HZ=y
-+CONFIG_HIGH_RES_TIMERS=y
-+CONFIG_MN10300_TTYSM_CONSOLE=y
-+CONFIG_MN10300_TTYSM0=y
-+CONFIG_MN10300_TTYSM0_TIMER2=y
-+CONFIG_MN10300_TTYSM1=y
-+CONFIG_NET=y
-+CONFIG_PACKET=y
-+CONFIG_UNIX=y
-+CONFIG_INET=y
-+CONFIG_IP_MULTICAST=y
-+CONFIG_IP_PNP=y
-+CONFIG_IP_PNP_BOOTP=y
-+# CONFIG_INET_XFRM_MODE_TRANSPORT is not set
-+# CONFIG_INET_XFRM_MODE_TUNNEL is not set
-+# CONFIG_INET_XFRM_MODE_BEET is not set
-+# CONFIG_INET_LRO is not set
-+# CONFIG_INET_DIAG is not set
-+CONFIG_IPV6=y
-+# CONFIG_INET6_XFRM_MODE_TRANSPORT is not set
-+# CONFIG_INET6_XFRM_MODE_TUNNEL is not set
-+# CONFIG_INET6_XFRM_MODE_BEET is not set
-+# CONFIG_FIRMWARE_IN_KERNEL is not set
-+CONFIG_CONNECTOR=y
-+CONFIG_MTD=y
-+CONFIG_MTD_DEBUG=y
-+CONFIG_MTD_PARTITIONS=y
-+CONFIG_MTD_REDBOOT_PARTS=y
-+CONFIG_MTD_REDBOOT_PARTS_UNALLOCATED=y
-+CONFIG_MTD_CHAR=y
-+CONFIG_MTD_CFI=y
-+CONFIG_MTD_JEDECPROBE=y
-+CONFIG_MTD_CFI_ADV_OPTIONS=y
-+CONFIG_MTD_CFI_GEOMETRY=y
-+CONFIG_MTD_CFI_I4=y
-+CONFIG_MTD_CFI_AMDSTD=y
-+CONFIG_MTD_PHYSMAP=y
-+CONFIG_NETDEVICES=y
-+CONFIG_NET_ETHERNET=y
-+CONFIG_SMSC911X=y
-+# CONFIG_NETDEV_1000 is not set
-+# CONFIG_NETDEV_10000 is not set
-+# CONFIG_INPUT_MOUSEDEV is not set
-+# CONFIG_INPUT_KEYBOARD is not set
-+# CONFIG_INPUT_MOUSE is not set
-+# CONFIG_SERIO is not set
-+# CONFIG_VT is not set
-+CONFIG_SERIAL_8250=y
-+CONFIG_SERIAL_8250_CONSOLE=y
-+CONFIG_SERIAL_8250_EXTENDED=y
-+CONFIG_SERIAL_8250_SHARE_IRQ=y
-+# CONFIG_HW_RANDOM is not set
-+# CONFIG_HWMON is not set
-+# CONFIG_HID_SUPPORT is not set
-+# CONFIG_USB_SUPPORT is not set
-+CONFIG_PROC_KCORE=y
-+# CONFIG_PROC_PAGE_MONITOR is not set
-+CONFIG_TMPFS=y
-+CONFIG_TMPFS_POSIX_ACL=y
-+CONFIG_JFFS2_FS=y
-+CONFIG_NFS_FS=y
-+CONFIG_NFS_V3=y
-+CONFIG_ROOT_NFS=y
-+CONFIG_MAGIC_SYSRQ=y
-+CONFIG_STRIP_ASM_SYMS=y
-+CONFIG_DEBUG_KERNEL=y
-+CONFIG_DETECT_HUNG_TASK=y
-+# CONFIG_DEBUG_BUGVERBOSE is not set
-+CONFIG_DEBUG_INFO=y
-+# CONFIG_RCU_CPU_STALL_DETECTOR is not set
+diff --git a/arch/mn10300/Kconfig b/arch/mn10300/Kconfig
+index 129ca49..365766a 100644
+--- a/arch/mn10300/Kconfig
++++ b/arch/mn10300/Kconfig
+@@ -93,14 +93,14 @@ config GENERIC_HARDIRQS
+ config HOTPLUG_CPU
+ 	def_bool n
+ 
+-mainmenu "Matsushita MN10300/AM33 Kernel Configuration"
++mainmenu "Panasonic MN10300/AM33 Kernel Configuration"
+ 
+ source "init/Kconfig"
+ 
+ source "kernel/Kconfig.freezer"
+ 
+ 
+-menu "Matsushita MN10300 system setup"
++menu "Panasonic MN10300 system setup"
+ 
+ choice
+ 	prompt "Unit type"
+diff --git a/arch/mn10300/kernel/setup.c b/arch/mn10300/kernel/setup.c
+index 1251457..9e7a320 100644
+--- a/arch/mn10300/kernel/setup.c
++++ b/arch/mn10300/kernel/setup.c
+@@ -187,7 +187,7 @@ void __init cpu_init(void)
+ 	if (type > mn10300_known_cpus)
+ 		type = mn10300_known_cpus;
+ 
+-	printk(KERN_INFO "Matsushita %s, rev %ld\n",
++	printk(KERN_INFO "Panasonic %s, rev %ld\n",
+ 	       mn10300_cputypes[type],
+ 	       (cpurev & CPUREV_REVISION) >> CPUREV_REVISION_S);
+ 
+@@ -246,7 +246,7 @@ static int show_cpuinfo(struct seq_file *m, void *v)
+ 
+ 	seq_printf(m,
+ 		   "processor  : %ld\n"
+-		   "vendor_id  : Matsushita\n"
++		   "vendor_id  : " PROCESSOR_VENDOR_NAME "\n"
+ 		   "cpu core   : %s\n"
+ 		   "cpu rev    : %lu\n"
+ 		   "model name : " PROCESSOR_MODEL_NAME		"\n"
+diff --git a/arch/mn10300/proc-mn103e010/include/proc/proc.h b/arch/mn10300/proc-mn103e010/include/proc/proc.h
+index 22a2b93..39c4f8e 100644
+--- a/arch/mn10300/proc-mn103e010/include/proc/proc.h
++++ b/arch/mn10300/proc-mn103e010/include/proc/proc.h
+@@ -12,7 +12,7 @@
+ #ifndef _ASM_PROC_PROC_H
+ #define _ASM_PROC_PROC_H
+ 
+-#define PROCESSOR_VENDOR_NAME	"Matsushita"
++#define PROCESSOR_VENDOR_NAME	"Panasonic"
+ #define PROCESSOR_MODEL_NAME	"mn103e010"
+ 
+ #endif /* _ASM_PROC_PROC_H */
 
