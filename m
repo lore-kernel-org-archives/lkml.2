@@ -1,468 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756297Ab0JZKOu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Oct 2010 06:14:50 -0400
-Received: from he.sipsolutions.net ([78.46.109.217]:40773 "EHLO
-	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751018Ab0JZKOt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Oct 2010 06:14:49 -0400
-Subject: Re: mmotm 2010-10-13-17-13 uploaded (leds)
-From: Johannes Berg <johannes@sipsolutions.net>
-To: Randy Dunlap <randy.dunlap@oracle.com>
-Cc: "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        rpurdie@rpsys.net
-In-Reply-To: <4CB768F7.90009@oracle.com>
-References: <201010140044.o9E0iuR3029069@imap1.linux-foundation.org>
-	 <20101013212902.2fec6413.randy.dunlap@oracle.com>
-	 <1287056312.4641.296.camel@jlt3.sipsolutions.net>
-	 <4CB72C62.1030204@oracle.com>
-	 <1287087217.4641.442.camel@jlt3.sipsolutions.net>
-	 <4CB768F7.90009@oracle.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 26 Oct 2010 12:14:41 +0200
-Message-ID: <1288088081.3761.31.camel@jlt3.sipsolutions.net>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1759192Ab0JZKPz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Oct 2010 06:15:55 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:46627 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752695Ab0JZKPw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Oct 2010 06:15:52 -0400
+Date: Tue, 26 Oct 2010 12:15:36 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Huang Ying <ying.huang@intel.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Len Brown <lenb@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Andi Kleen <andi@firstfloor.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        Borislav Petkov <petkovbb@googlemail.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Don Zickus <dzickus@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        "Luck, Tony" <tony.luck@intel.com>
+Subject: Re: [NAK] Re: [PATCH -v2 9/9] ACPI, APEI, Generic Hardware Error
+ Source POLL/IRQ/NMI notification type support
+Message-ID: <20101026101536.GC16552@elte.hu>
+References: <1287992610-14996-1-git-send-email-ying.huang@intel.com>
+ <1287992610-14996-10-git-send-email-ying.huang@intel.com>
+ <20101025084553.GA27119@elte.hu>
+ <alpine.LFD.2.00.1010252058370.11036@localhost.localdomain>
+ <alpine.LFD.2.00.1010260629560.3955@localhost6.localdomain6>
+ <1288083163.2862.592.camel@yhuang-dev>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1288083163.2862.592.camel@yhuang-dev>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-10-14 at 13:32 -0700, Randy Dunlap wrote:
 
-> >> The patch does not apply cleanly to mmotm, but it seems
-> >> like a good plan...
+* Huang Ying <ying.huang@intel.com> wrote:
 
-Here's a version that I prepared against mmotm from the 23rd.
+> Hi, Thomas,
+> 
+> On Tue, 2010-10-26 at 12:53 +0800, Thomas Gleixner wrote:
+> > B1;2401;0cLen,
+> > 
+> > On Mon, 25 Oct 2010, Len Brown wrote:
+> > 
+> > > >  NAKed-by: Ingo Molnar <mingo@elte.hu>
+> > > 
+> > > Everybody knows that Linux has a lot to learn about RAS.
+> > > 
+> > > I think to catch up, we need to play to Linux's strengths
+> > > of continuous improvement.  If we halt patches in this area
+> > > then we could wait forever for the "perfect design".
+> > 
+> > it's not about perfect design. It's about creating new user space
+> > ABIs. The patches introduce another error reporting user space ABI
+> > with an ad hoc "fits the needs" design.
+> > 
+> > This is my major point of objection. 
+> > 
+> > I agree that Linux needs improvement on the RAS side, but does this
+> > lack of features justify a new user space ABI which is totally
+> > disconnected to existing RAS facilities ?
+> > 
+> > No, it does not. It's not our problem that Intel wasted time on
+> > creating another character device driver to report errors to user
+> > space. The time spent to do so would have been sufficient to do a
+> > proper integration into the existing infrastructure.
+> > 
+> > I would not care at all if these patches would just introduce some
+> > weird in kernel interfaces as we can clean that up at will. But
+> > introducing a new user space ABI is setting the disconnect of RAS
+> > related facilities into stone.
+> > 
+> > From Kconfig:
+> > 
+> >   EDAC is designed to report errors in the core system.
+> >   These are low-level errors that are reported in the CPU or
+> >   supporting chipset or other subsystems:
+> >   memory errors, cache errors, PCI errors, thermal throttling, etc..
+> >   If unsure, select 'Y'.
+> > 
+> > So please explain why your error reporting is so different from the
+> > above that it justifies a separate facility. And you better come up
+> > with a real good explanation other than we looked at EDAC and it did
+> > not fit our needs.
+> 
+> As far as I know, EDAC guys plan to use some other "perfect interface" in the 
+> future. So I think the current state is really waiting for the "perfect design".
 
-johannes
+Not sure what you mean by this, but Boris has posted links to his latest patch-set 
+in this thread, see:
 
+  http://kerneltrap.org/mailarchive/linux-kernel/2010/8/6/4603847
 
+The Git coordinates are:
 
-Subject: leds: fix up dependencies
+  git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-2.6-trace.git, branch tip/perf/parse-events
 
-From: Johannes Berg <johannes.berg@intel.com>
+The 'persistent events' facility he has prototyped there appears to be a good 
+potential match for the ERST store.
 
-It's not useful to build LED triggers when
-there's no LEDs that can be triggered by
-them. Therefore, fix up the dependencies
-so that this cannot happen, and fix a few
-users that select triggers to depend on
-LEDS_CLASS as well (there is also one user
-that also selects LEDS_CLASS, which is OK).
+It would be very useful to have another feature there: to mark persistent events as 
+'dump into syslog on bootup', so that for example the contents of the ERST log could 
+be dumped right on bootup. [but ERST would not be the only persistent event that 
+could be marked like that.]
 
-As a result, we can now make everything a
-module again if desired (including the LED
-triggers, which previously could only be
-built in) -- and add back the warning in
-rt2x00's Kconfig I previously removed.
+Note that we dont need/want other ABI accesses to the ERST log (i.e. we dont want 
+/dev/erst-dbg), because we want the benefits of the generalization: tooling (RAS and 
+other tooling) should learn how to deal with persistent events - not learn how to 
+deal with ERST logs ... or with warm bootup RAM-embedded logs ... or to deal with 
+kcrash embedded kernel logs ... etc.
 
-Reported-by: Randy Dunlap <randy.dunlap@oracle.com>
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
----
- drivers/leds/Kconfig                |   57 +++++++++++++++++++++++++++++-------
- drivers/macintosh/Kconfig           |    1 
- drivers/net/wireless/rt2x00/Kconfig |    3 +
- net/mac80211/Kconfig                |    2 -
- 4 files changed, 51 insertions(+), 12 deletions(-)
+There are many obvious advantages from implementing it like that: there's no need to 
+special-code ERST to printk or ERST to whatever other facility cross links - it 
+would be part of a generic/uniform event logging facility to begin with. ERST would 
+only implement its own, narrow, hardware-specific event accessor methods - nothing 
+else. Basically a small 'event driver'. This would be the most optimal, smallest, 
+easiest to maintain approach - with no facility duplication and no fragmentation.
 
---- linux-older.orig/drivers/leds/Kconfig	2010-10-26 12:10:47.000000000 +0200
-+++ linux-older/drivers/leds/Kconfig	2010-10-26 12:12:39.000000000 +0200
-@@ -4,20 +4,20 @@ menuconfig NEW_LEDS
- 	  Say Y to enable Linux LED support.  This allows control of supported
- 	  LEDs from both userspace and optionally, by kernel events (triggers).
- 
--if NEW_LEDS
--
- config LEDS_CLASS
--	bool "LED Class Support"
-+	tristate "LED Class Support"
-+	depends on NEW_LEDS
- 	help
- 	  This option enables the led sysfs class in /sys/class/leds.  You'll
- 	  need this to do anything useful with LEDs.  If unsure, say N.
- 
--if LEDS_CLASS
-+if NEW_LEDS
- 
- comment "LED drivers"
- 
- config LEDS_88PM860X
- 	tristate "LED Support for Marvell 88PM860x PMIC"
-+	depends on LEDS_CLASS
- 	depends on MFD_88PM860X
- 	help
- 	  This option enables support for on-chip LED drivers found on Marvell
-@@ -33,6 +33,7 @@ config LEDS_INPUT
- 
- config LEDS_ATMEL_PWM
- 	tristate "LED Support using Atmel PWM outputs"
-+	depends on LEDS_CLASS
- 	depends on ATMEL_PWM
- 	help
- 	  This option enables support for LEDs driven using outputs
-@@ -40,6 +41,7 @@ config LEDS_ATMEL_PWM
- 
- config LEDS_LOCOMO
- 	tristate "LED Support for Locomo device"
-+	depends on LEDS_CLASS
- 	depends on SHARP_LOCOMO
- 	help
- 	  This option enables support for the LEDs on Sharp Locomo.
-@@ -47,6 +49,7 @@ config LEDS_LOCOMO
- 
- config LEDS_MIKROTIK_RB532
- 	tristate "LED Support for Mikrotik Routerboard 532"
-+	depends on LEDS_CLASS
- 	depends on MIKROTIK_RB532
- 	help
- 	  This option enables support for the so called "User LED" of
-@@ -54,6 +57,7 @@ config LEDS_MIKROTIK_RB532
- 
- config LEDS_S3C24XX
- 	tristate "LED Support for Samsung S3C24XX GPIO LEDs"
-+	depends on LEDS_CLASS
- 	depends on ARCH_S3C2410
- 	help
- 	  This option enables support for LEDs connected to GPIO lines
-@@ -61,12 +65,14 @@ config LEDS_S3C24XX
- 
- config LEDS_AMS_DELTA
- 	tristate "LED Support for the Amstrad Delta (E3)"
-+	depends on LEDS_CLASS
- 	depends on MACH_AMS_DELTA
- 	help
- 	  This option enables support for the LEDs on Amstrad Delta (E3).
- 
- config LEDS_NET48XX
- 	tristate "LED Support for Soekris net48xx series Error LED"
-+	depends on LEDS_CLASS
- 	depends on SCx200_GPIO
- 	help
- 	  This option enables support for the Soekris net4801 and net4826 error
-@@ -84,18 +90,21 @@ config LEDS_NET5501
- 
- config LEDS_FSG
- 	tristate "LED Support for the Freecom FSG-3"
-+	depends on LEDS_CLASS
- 	depends on MACH_FSG
- 	help
- 	  This option enables support for the LEDs on the Freecom FSG-3.
- 
- config LEDS_WRAP
- 	tristate "LED Support for the WRAP series LEDs"
-+	depends on LEDS_CLASS
- 	depends on SCx200_GPIO
- 	help
- 	  This option enables support for the PCEngines WRAP programmable LEDs.
- 
- config LEDS_ALIX2
- 	tristate "LED Support for ALIX.2 and ALIX.3 series"
-+	depends on LEDS_CLASS
- 	depends on X86 && !GPIO_CS5535 && !CS5535_GPIO
- 	help
- 	  This option enables support for the PCEngines ALIX.2 and ALIX.3 LEDs.
-@@ -103,12 +112,14 @@ config LEDS_ALIX2
- 
- config LEDS_H1940
- 	tristate "LED Support for iPAQ H1940 device"
-+	depends on LEDS_CLASS
- 	depends on ARCH_H1940
- 	help
- 	  This option enables support for the LEDs on the h1940.
- 
- config LEDS_COBALT_QUBE
- 	tristate "LED Support for the Cobalt Qube series front LED"
-+	depends on LEDS_CLASS
- 	depends on MIPS_COBALT
- 	help
- 	  This option enables support for the front LED on Cobalt Qube series
-@@ -122,6 +133,7 @@ config LEDS_COBALT_RAQ
- 
- config LEDS_SUNFIRE
- 	tristate "LED support for SunFire servers."
-+	depends on LEDS_CLASS
- 	depends on SPARC64
- 	select LEDS_TRIGGERS
- 	help
-@@ -130,6 +142,7 @@ config LEDS_SUNFIRE
- 
- config LEDS_HP6XX
- 	tristate "LED Support for the HP Jornada 6xx"
-+	depends on LEDS_CLASS
- 	depends on SH_HP6XX
- 	help
- 	  This option enables LED support for the handheld
-@@ -137,6 +150,7 @@ config LEDS_HP6XX
- 
- config LEDS_PCA9532
- 	tristate "LED driver for PCA9532 dimmer"
-+	depends on LEDS_CLASS
- 	depends on I2C && INPUT && EXPERIMENTAL
- 	help
- 	  This option enables support for NXP pca9532
-@@ -145,6 +159,7 @@ config LEDS_PCA9532
- 
- config LEDS_GPIO
- 	tristate "LED Support for GPIO connected LEDs"
-+	depends on LEDS_CLASS
- 	depends on GENERIC_GPIO
- 	help
- 	  This option enables support for the LEDs connected to GPIO
-@@ -155,6 +170,7 @@ config LEDS_GPIO
- 
- config LEDS_GPIO_PLATFORM
- 	bool "Platform device bindings for GPIO LEDs"
-+	depends on LEDS_CLASS
- 	depends on LEDS_GPIO
- 	default y
- 	help
-@@ -163,6 +179,7 @@ config LEDS_GPIO_PLATFORM
- 
- config LEDS_GPIO_OF
- 	bool "OpenFirmware platform device bindings for GPIO LEDs"
-+	depends on LEDS_CLASS
- 	depends on LEDS_GPIO && OF_DEVICE
- 	default y
- 	help
-@@ -172,6 +189,7 @@ config LEDS_GPIO_OF
- 
- config LEDS_LP3944
- 	tristate "LED Support for N.S. LP3944 (Fun Light) I2C chip"
-+	depends on LEDS_CLASS
- 	depends on I2C
- 	help
- 	  This option enables support for LEDs connected to the National
-@@ -201,6 +219,7 @@ config LEDS_LP5523
- 
- config LEDS_CLEVO_MAIL
- 	tristate "Mail LED on Clevo notebook"
-+	depends on LEDS_CLASS
- 	depends on X86 && SERIO_I8042 && DMI
- 	help
- 	  This driver makes the mail LED accessible from userspace
-@@ -231,6 +250,7 @@ config LEDS_CLEVO_MAIL
- 
- config LEDS_PCA955X
- 	tristate "LED Support for PCA955x I2C chips"
-+	depends on LEDS_CLASS
- 	depends on I2C
- 	help
- 	  This option enables support for LEDs connected to PCA955x
-@@ -239,6 +259,7 @@ config LEDS_PCA955X
- 
- config LEDS_WM831X_STATUS
- 	tristate "LED support for status LEDs on WM831x PMICs"
-+	depends on LEDS_CLASS
- 	depends on MFD_WM831X
- 	help
- 	  This option enables support for the status LEDs of the WM831x
-@@ -246,6 +267,7 @@ config LEDS_WM831X_STATUS
- 
- config LEDS_WM8350
- 	tristate "LED Support for WM8350 AudioPlus PMIC"
-+	depends on LEDS_CLASS
- 	depends on MFD_WM8350
- 	help
- 	  This option enables support for LEDs driven by the Wolfson
-@@ -253,6 +275,7 @@ config LEDS_WM8350
- 
- config LEDS_DA903X
- 	tristate "LED Support for DA9030/DA9034 PMIC"
-+	depends on LEDS_CLASS
- 	depends on PMIC_DA903X
- 	help
- 	  This option enables support for on-chip LED drivers found
-@@ -260,6 +283,7 @@ config LEDS_DA903X
- 
- config LEDS_DAC124S085
- 	tristate "LED Support for DAC124S085 SPI DAC"
-+	depends on LEDS_CLASS
- 	depends on SPI
- 	help
- 	  This option enables support for DAC124S085 SPI DAC from NatSemi,
-@@ -267,18 +291,21 @@ config LEDS_DAC124S085
- 
- config LEDS_PWM
- 	tristate "PWM driven LED Support"
-+	depends on LEDS_CLASS
- 	depends on HAVE_PWM
- 	help
- 	  This option enables support for pwm driven LEDs
- 
- config LEDS_REGULATOR
- 	tristate "REGULATOR driven LED support"
-+	depends on LEDS_CLASS
- 	depends on REGULATOR
- 	help
- 	  This option enables support for regulator driven LEDs.
- 
- config LEDS_BD2802
- 	tristate "LED driver for BD2802 RGB LED"
-+	depends on LEDS_CLASS
- 	depends on I2C
- 	help
- 	  This option enables support for BD2802GU RGB LED driver chips
-@@ -286,6 +313,7 @@ config LEDS_BD2802
- 
- config LEDS_INTEL_SS4200
- 	tristate "LED driver for Intel NAS SS4200 series"
-+	depends on LEDS_CLASS
- 	depends on PCI && DMI
- 	help
- 	  This option enables support for the Intel SS4200 series of
-@@ -295,6 +323,7 @@ config LEDS_INTEL_SS4200
- 
- config LEDS_LT3593
- 	tristate "LED driver for LT3593 controllers"
-+	depends on LEDS_CLASS
- 	depends on GENERIC_GPIO
- 	help
- 	  This option enables support for LEDs driven by a Linear Technology
-@@ -303,6 +332,7 @@ config LEDS_LT3593
- 
- config LEDS_ADP5520
- 	tristate "LED Support for ADP5520/ADP5501 PMIC"
-+	depends on LEDS_CLASS
- 	depends on PMIC_ADP5520
- 	help
- 	  This option enables support for on-chip LED drivers found
-@@ -313,6 +343,7 @@ config LEDS_ADP5520
- 
- config LEDS_DELL_NETBOOKS
- 	tristate "External LED on Dell Business Netbooks"
-+	depends on LEDS_CLASS
- 	depends on X86 && ACPI_WMI
- 	help
- 	  This adds support for the Latitude 2100 and similar
-@@ -320,6 +351,7 @@ config LEDS_DELL_NETBOOKS
- 
- config LEDS_MC13783
- 	tristate "LED Support for MC13783 PMIC"
-+	depends on LEDS_CLASS
- 	depends on MFD_MC13783
- 	help
- 	  This option enable support for on-chip LED drivers found
-@@ -327,6 +359,7 @@ config LEDS_MC13783
- 
- config LEDS_NS2
- 	tristate "LED support for Network Space v2 GPIO LEDs"
-+	depends on LEDS_CLASS
- 	depends on MACH_NETSPACE_V2 || MACH_INETSPACE_V2 || MACH_NETSPACE_MAX_V2 || D2NET_V2
- 	default y
- 	help
-@@ -336,6 +369,7 @@ config LEDS_NS2
- 
- config LEDS_NETXBIG
- 	tristate "LED support for Big Network series LEDs"
-+	depends on LEDS_CLASS
- 	depends on MACH_NET2BIG_V2 || MACH_NET5BIG_V2
- 	default y
- 	help
-@@ -344,18 +378,18 @@ config LEDS_NETXBIG
- 	  controlled through a GPIO extension bus.
- 
- config LEDS_TRIGGERS
--	bool "LED Trigger support"
-+	tristate "LED Trigger support"
-+	depends on LEDS_CLASS
- 	help
- 	  This option enables trigger support for the leds class.
- 	  These triggers allow kernel events to drive the LEDs and can
- 	  be configured via sysfs. If unsure, say Y.
- 
--if LEDS_TRIGGERS
--
- comment "LED Triggers"
- 
- config LEDS_TRIGGER_TIMER
- 	tristate "LED Timer Trigger"
-+	depends on LEDS_TRIGGERS
- 	help
- 	  This allows LEDs to be controlled by a programmable timer
- 	  via sysfs. Some LED hardware can be programmed to start
-@@ -367,12 +401,14 @@ config LEDS_TRIGGER_TIMER
- config LEDS_TRIGGER_IDE_DISK
- 	bool "LED IDE Disk Trigger"
- 	depends on IDE_GD_ATA
-+	depends on LEDS_TRIGGERS
- 	help
- 	  This allows LEDs to be controlled by IDE disk activity.
- 	  If unsure, say Y.
- 
- config LEDS_TRIGGER_HEARTBEAT
- 	tristate "LED Heartbeat Trigger"
-+	depends on LEDS_TRIGGERS
- 	help
- 	  This allows LEDs to be controlled by a CPU load average.
- 	  The flash frequency is a hyperbolic function of the 1-minute
-@@ -381,6 +417,7 @@ config LEDS_TRIGGER_HEARTBEAT
- 
- config LEDS_TRIGGER_BACKLIGHT
- 	tristate "LED backlight Trigger"
-+	depends on LEDS_TRIGGERS
- 	help
- 	  This allows LEDs to be controlled as a backlight device: they
- 	  turn off and on when the display is blanked and unblanked.
-@@ -389,6 +426,7 @@ config LEDS_TRIGGER_BACKLIGHT
- 
- config LEDS_TRIGGER_GPIO
- 	tristate "LED GPIO Trigger"
-+	depends on LEDS_TRIGGERS
- 	depends on GPIOLIB
- 	help
- 	  This allows LEDs to be controlled by gpio events. It's good
-@@ -401,6 +439,7 @@ config LEDS_TRIGGER_GPIO
- 
- config LEDS_TRIGGER_DEFAULT_ON
- 	tristate "LED Default ON Trigger"
-+	depends on LEDS_TRIGGERS
- 	help
- 	  This allows LEDs to be initialised in the ON state.
- 	  If unsure, say Y.
-@@ -415,8 +454,4 @@ config LEDS_TRIGGER_INPUT
- comment "iptables trigger is under Netfilter config (LED target)"
- 	depends on LEDS_TRIGGERS
- 
--endif # LEDS_TRIGGERS
--
--endif # LEDS_CLASS
--
- endif # NEW_LEDS
---- linux-older.orig/drivers/macintosh/Kconfig	2010-10-26 12:10:25.000000000 +0200
-+++ linux-older/drivers/macintosh/Kconfig	2010-10-26 12:11:20.000000000 +0200
-@@ -102,6 +102,7 @@ config ADB_PMU_LED
- config ADB_PMU_LED_IDE
- 	bool "Use front LED as IDE LED by default"
- 	depends on ADB_PMU_LED
-+	depends on LEDS_CLASS=y
- 	select LEDS_TRIGGERS
- 	select LEDS_TRIGGER_IDE_DISK
- 	help
---- linux-older.orig/net/mac80211/Kconfig	2010-10-26 12:06:11.000000000 +0200
-+++ linux-older/net/mac80211/Kconfig	2010-10-26 12:11:20.000000000 +0200
-@@ -92,7 +92,7 @@ config MAC80211_MESH
- config MAC80211_LEDS
- 	bool "Enable LED triggers"
- 	depends on MAC80211
--	select NEW_LEDS
-+	depends on LEDS_CLASS=y || LEDS_CLASS=MAC80211
- 	select LEDS_TRIGGERS
- 	---help---
- 	  This option enables a few LED triggers for different
---- linux-older.orig/drivers/net/wireless/rt2x00/Kconfig	2010-10-26 12:10:47.000000000 +0200
-+++ linux-older/drivers/net/wireless/rt2x00/Kconfig	2010-10-26 12:11:20.000000000 +0200
-@@ -221,6 +221,9 @@ config RT2X00_LIB_LEDS
- 	boolean
- 	default y if (RT2X00_LIB=y && LEDS_CLASS=y) || (RT2X00_LIB=m && LEDS_CLASS!=n)
- 
-+comment "rt2x00 leds support disabled due to modularized LEDS_CLASS and built-in rt2x00"
-+	depends on RT2X00_LIB=y && LEDS_CLASS=m
-+
- config RT2X00_LIB_DEBUGFS
- 	bool "Ralink debugfs support"
- 	depends on RT2X00_LIB && MAC80211_DEBUGFS
+It's certainly more work as well _for the first such example_ - but from that point 
+on any new hardware facility can be added with ease, and those too will fit into 
+existing tooling in a very natural way.
 
+So please help out with the persistent events work. If you need any pointers we'd be 
+glad to help.
 
+Thanks,
+
+	Ingo
