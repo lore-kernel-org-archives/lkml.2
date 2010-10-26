@@ -1,130 +1,222 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759047Ab0JZKJ3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Oct 2010 06:09:29 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:34712 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751561Ab0JZKJ2 (ORCPT
+	id S1759095Ab0JZKKa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Oct 2010 06:10:30 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:59363 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751561Ab0JZKK3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Oct 2010 06:09:28 -0400
-Date: Tue, 26 Oct 2010 12:09:23 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Cc: n-horiguchi@ah.jp.nec.com, x86@kernel.org
-Subject: [GIT PULL] Please pull hwpoison updates for 2.6.37
-Message-ID: <20101026100923.GA5118@basil.fritz.box>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Tue, 26 Oct 2010 06:10:29 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Tue, 26 Oct 2010 19:04:58 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "minchan.kim@gmail.com" <minchan.kim@gmail.com>, andi.kleen@intel.com,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        fujita.tomonori@lab.ntt.co.jp, felipe.contreras@gmail.com
+Subject: [RFC][PATCH 2/3] a help function for find physically contiguous
+ block.
+Message-Id: <20101026190458.4e1c0d98.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20101026190042.57f30338.kamezawa.hiroyu@jp.fujitsu.com>
+References: <20101026190042.57f30338.kamezawa.hiroyu@jp.fujitsu.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 
-Linus,
+Unlike memory hotplug, at an allocation of contigous memory range, address
+may not be a problem. IOW, if a requester of memory wants to allocate 100M of
+of contigous memory, placement of allocated memory may not be a problem.
+So, "finding a range of memory which seems to be MOVABLE" is required.
 
-Here are the hwpoison updates for 2.6.37. The main new feature is 
-soft offlining support for huge pages: support to predictively offline 
-hugepages based on corrected memory error statistics.  
-This can be a large win in memory reliability in some setups
-and is transparent to applications.
-We already supported that for small pages, but now have it for 
-large pages too, because some large memory users like to use those.
+This patch adds a functon to isolate a length of memory within [start, end).
+This function returns a pfn which is 1st page of isolated contigous chunk
+of given length within [start, end).
 
-Thanks to Naoya-san for spending a lot of time on that
-and also cleaning up some code on the way.
+After isolation, free memory within this area will never be allocated.
+But some pages will remain as "Used/LRU" pages. They should be dropped by
+page reclaim or migration.
 
-This also is the basis for generic huge page migration (most of
-the infrastructure is there, but not fully hooked up yet), which
-will also give some NUMA tuning benefits.
+Changelog:
+ - zone is added to the argument.
+ - fixed a case that zones are not in linear.
+ - added zone->lock.
 
-Also various cleanups and improvements to hwpoison code.
 
-There are some changes outside the usual hwpoison files,
-which were needed to implement these features:
+Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+---
+ mm/page_isolation.c |  148 ++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 148 insertions(+)
 
-Signals:
-- IA64 signal fix for _addr_lsb. Similar to the earlier MIPS change.
-Acked by Tony.
-- signalfd.h fix (from Seto-san): Same fix as for ia64 for signalfd.
-This is all really just to report the _addr_lsb siginfo field out to
-user space, so that it knows how much memory got corrupted. 
-The code for siginfo is unfortunately scattered all over
-the tree and I didn't find anyone who felt responsible for it.
+Index: mmotm-1024/mm/page_isolation.c
+===================================================================
+--- mmotm-1024.orig/mm/page_isolation.c
++++ mmotm-1024/mm/page_isolation.c
+@@ -7,6 +7,7 @@
+ #include <linux/pageblock-flags.h>
+ #include <linux/memcontrol.h>
+ #include <linux/migrate.h>
++#include <linux/memory_hotplug.h>
+ #include <linux/mm_inline.h>
+ #include "internal.h"
+ 
+@@ -250,3 +251,150 @@ int do_migrate_range(unsigned long start
+ out:
+ 	return ret;
+ }
++
++/*
++ * Functions for getting contiguous MOVABLE pages in a zone.
++ */
++struct page_range {
++	unsigned long base; /* Base address of searching contigouous block */
++	unsigned long end;
++	unsigned long pages;/* Length of contiguous block */
++	int align_order;
++	unsigned long align_mask;
++};
++
++int __get_contig_block(unsigned long pfn, unsigned long nr_pages, void *arg)
++{
++	struct page_range *blockinfo = arg;
++	unsigned long end;
++
++	end = pfn + nr_pages;
++	pfn = ALIGN(pfn, 1 << blockinfo->align_order);
++	end = end & ~(MAX_ORDER_NR_PAGES - 1);
++
++	if (end < pfn)
++		return 0;
++	if (end - pfn >= blockinfo->pages) {
++		blockinfo->base = pfn;
++		blockinfo->end = end;
++		return 1;
++	}
++	return 0;
++}
++
++static void __trim_zone(struct zone *zone, struct page_range *range)
++{
++	unsigned long pfn;
++	/*
++ 	 * skip pages which dones'nt under the zone.
++ 	 * There are some archs which zones are not in linear layout.
++	 */
++	if (page_zone(pfn_to_page(range->base)) != zone) {
++		for (pfn = range->base;
++			pfn < range->end;
++			pfn += MAX_ORDER_NR_PAGES) {
++			if (page_zone(pfn_to_page(pfn)) == zone)
++				break;
++		}
++		range->base = min(pfn, range->end);
++	}
++	/* Here, range-> base is in the zone if range->base != range->end */
++	for (pfn = range->base;
++	     pfn < range->end;
++	     pfn += MAX_ORDER_NR_PAGES) {
++		if (zone != page_zone(pfn_to_page(pfn))) {
++			pfn = pfn - MAX_ORDER_NR_PAGES;
++			break;
++		}
++	}
++	range->end = min(pfn, range->end);
++	return;
++}
++
++/*
++ * This function is for finding a contiguous memory block which has length
++ * of pages and MOVABLE. If it finds, make the range of pages as ISOLATED
++ * and return the first page's pfn.
++ * This checks all pages in the returned range is free of Pg_LRU. To reduce
++ * the risk of false-positive testing, lru_add_drain_all() should be called
++ * before this function to reduce pages on pagevec for zones.
++ */
++
++static unsigned long find_contig_block(unsigned long base,
++		unsigned long end, unsigned long pages,
++		int align_order, struct zone *zone)
++{
++	unsigned long pfn, pos;
++	struct page_range blockinfo;
++	int ret;
++
++	VM_BUG_ON(pages & (MAX_ORDER_NR_PAGES - 1));
++	VM_BUG_ON(base & ((1 << align_order) - 1));
++retry:
++	blockinfo.base = base;
++	blockinfo.end = end;
++	blockinfo.pages = pages;
++	blockinfo.align_order = align_order;
++	blockinfo.align_mask = (1 << align_order) - 1;
++	/*
++	 * At first, check physical page layout and skip memory holes.
++	 */
++	ret = walk_system_ram_range(base, end - base, &blockinfo,
++		__get_contig_block);
++	if (!ret)
++		return 0;
++	/* check contiguous pages in a zone */
++	__trim_zone(zone, &blockinfo);
++
++	/*
++	 * Ok, we found contiguous memory chunk of size. Isolate it.
++	 * We just search MAX_ORDER aligned range.
++	 */
++	for (pfn = blockinfo.base; pfn + pages <= blockinfo.end;
++	     pfn += (1 << align_order)) {
++		struct zone *z = page_zone(pfn_to_page(pfn));
++
++		spin_lock_irq(&z->lock);
++		pos = pfn;
++		/*
++		 * Check the range only contains free pages or LRU pages.
++		 */
++		while (pos < pfn + pages) {
++			struct page *p;
++
++			if (!pfn_valid_within(pos))
++				break;
++			p = pfn_to_page(pos);
++			if (PageReserved(p))
++				break;
++			if (!page_count(p)) {
++				if (!PageBuddy(p))
++					pos++;
++				else if (PageBuddy(p)) {
++					int order = page_order(p);
++					pos += (1 << order);
++				}
++			} else if (PageLRU(p)) {
++				pos++;
++			} else
++				break;
++		}
++		spin_unlock_irq(&z->lock);
++		if ((pos == pfn + pages) &&
++			!start_isolate_page_range(pfn, pfn + pages))
++				return pfn;
++		if (pos & ((1 << align_order) - 1))
++			pfn = ALIGN(pos, (1 << align_order));
++		else
++			pfn = pos + (1 << align_order);
++		cond_resched();
++	}
++
++	/* failed */
++	if (blockinfo.end + pages <= end) {
++		/* Move base address and find the next block of RAM. */
++		base = blockinfo.end;
++		goto retry;
++	}
++	return 0;
++}
 
-- x86 hwpoison signal reporting fix. I tried to get an ack for that,
-but wasn't able to motivate the x86 maintainers to reply to their emails.
-Basically just pass around the address granuality from handle_mm_fault
-to the hwpoison code in fault.c when an error happens.
-
-MM:
-- Some fixes to handle_memory_fault() to pass out the error
-granuality in the return code. Does not affect any non hwpoison path.
-- Migration changes for huge pages.
-The migration code has been reviewed extensively by Christoph Lameter.
-- hugetlb changes for migration. Have been reviewed by Mel.
-- rmap changes for hugetlb migration, including the cleanups you requested 
-in the last review cycle. Acked by Rik and others.
-
-Please consider pulling,
-
-Thanks,
--Andi
-
-The following changes since commit 72e58063d63c5f0a7bf65312f1e3a5ed9bb5c2ff:
-
-  Merge branch 'davinci-for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/khilman/linux-davinci (2010-10-25 10:59:31 -0700)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/ak/linux-mce-2.6.git hwpoison
-
-Andi Kleen (14):
-      Clean up __page_set_anon_rmap
-      hugepage: move is_hugepage_on_freelist inside ifdef to avoid warning
-      Encode huge page size for VM_FAULT_HWPOISON errors
-      x86: HWPOISON: Report correct address granuality for huge hwpoison faults
-      HWPOISON: Improve comments in memory-failure.c
-      HWPOISON: Convert pr_debugs to pr_info
-      HWPOISON: Disable DEBUG by default
-      HWPOISON: Turn addr_valid from bitfield into char
-      HWPOISON: Remove retry loop for try_to_unmap
-      Fix migration.c compilation on s390
-      Add _addr_lsb field to ia64 siginfo
-      Merge branch 'hwpoison-fixes-2.6.37' into hwpoison
-      Merge branch 'hwpoison-cleanups' into hwpoison
-      Merge branch 'hwpoison-hugepages' into hwpoison
-
-Hidetoshi Seto (1):
-      HWPOISON/signalfd: add support for addr_lsb
-
-Naoya Horiguchi (10):
-      hugetlb: fix metadata corruption in hugetlb_fault()
-      hugetlb: add allocate function for hugepage migration
-      hugetlb: redefine hugepage copy functions
-      hugetlb: hugepage migration core
-      HWPOISON, hugetlb: add free check to dequeue_hwpoison_huge_page()
-      hugetlb: move refcounting in hugepage allocation inside hugetlb_lock
-      HWPOSION, hugetlb: recover from free hugepage error when !MF_COUNT_INCREASED
-      HWPOISON, hugetlb: soft offlining for hugepage
-      HWPOISON, hugetlb: fix unpoison for hugepage
-      Fix build error with !CONFIG_MIGRATION
-
- arch/ia64/include/asm/siginfo.h |    1 +
- arch/x86/mm/fault.c             |   19 ++-
- fs/hugetlbfs/inode.c            |   15 +++
- fs/signalfd.c                   |   10 ++
- include/linux/hugetlb.h         |   17 +++-
- include/linux/migrate.h         |   16 +++
- include/linux/mm.h              |   12 ++-
- include/linux/signalfd.h        |    3 +-
- mm/hugetlb.c                    |  233 +++++++++++++++++++++++++++------------
- mm/memory-failure.c             |  175 +++++++++++++++++++++--------
- mm/memory.c                     |    3 +-
- mm/migrate.c                    |  234 ++++++++++++++++++++++++++++++++++++---
- mm/rmap.c                       |   25 ++---
- 13 files changed, 596 insertions(+), 167 deletions(-)
--- 
-ak@linux.intel.com -- Speaking for myself only.
