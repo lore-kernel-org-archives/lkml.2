@@ -1,102 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759001Ab0JZKCI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Oct 2010 06:02:08 -0400
-Received: from www.tglx.de ([62.245.132.106]:49112 "EHLO www.tglx.de"
+	id S932093Ab0JZKD5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Oct 2010 06:03:57 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:52124 "EHLO mx2.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756323Ab0JZKCG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Oct 2010 06:02:06 -0400
-Date: Tue, 26 Oct 2010 12:00:45 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Andi Kleen <andi@firstfloor.org>
-cc: Len Brown <lenb@kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        Huang Ying <ying.huang@intel.com>, LKML <linux-kernel@vger.kernel.org>,
-        linux-acpi@vger.kernel.org, Borislav Petkov <petkovbb@googlemail.com>,
+	id S1756404Ab0JZKDz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Oct 2010 06:03:55 -0400
+Date: Tue, 26 Oct 2010 12:03:29 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Huang Ying <ying.huang@intel.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Len Brown <lenb@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Andi Kleen <andi@firstfloor.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        Borislav Petkov <petkovbb@googlemail.com>,
         "H. Peter Anvin" <hpa@zytor.com>, Don Zickus <dzickus@redhat.com>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Andrew Morton <akpm@linux-foundation.org>,
         Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Tony Luck <tony.luck@intel.com>
+        "Luck, Tony" <tony.luck@intel.com>
 Subject: Re: [NAK] Re: [PATCH -v2 9/9] ACPI, APEI, Generic Hardware Error
  Source POLL/IRQ/NMI notification type support
-In-Reply-To: <20101026083806.GA14103@basil.fritz.box>
-Message-ID: <alpine.LFD.2.00.1010261046390.6129@localhost6.localdomain6>
-References: <1287992610-14996-1-git-send-email-ying.huang@intel.com> <1287992610-14996-10-git-send-email-ying.huang@intel.com> <20101025084553.GA27119@elte.hu> <alpine.LFD.2.00.1010252058370.11036@localhost.localdomain> <alpine.LFD.2.00.1010260629560.3955@localhost6.localdomain6>
- <20101026083806.GA14103@basil.fritz.box>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+Message-ID: <20101026100329.GB16552@elte.hu>
+References: <1287992610-14996-1-git-send-email-ying.huang@intel.com>
+ <1287992610-14996-10-git-send-email-ying.huang@intel.com>
+ <20101025084553.GA27119@elte.hu>
+ <alpine.LFD.2.00.1010252058370.11036@localhost.localdomain>
+ <alpine.LFD.2.00.1010260629560.3955@localhost6.localdomain6>
+ <20101026072210.GE13036@elte.hu>
+ <1288078222.2862.484.camel@yhuang-dev>
+ <20101026075559.GA9798@elte.hu>
+ <1288081966.2862.571.camel@yhuang-dev>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1288081966.2862.571.camel@yhuang-dev>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 26 Oct 2010, Andi Kleen wrote:
-> > So please explain why your error reporting is so different from the
-> > above that it justifies a separate facility. And you better come up
-> > with a real good explanation other than we looked at EDAC and it did
-> > not fit our needs.
+
+* Huang Ying <ying.huang@intel.com> wrote:
+
+> On Tue, 2010-10-26 at 15:55 +0800, Ingo Molnar wrote:
+> > * Huang Ying <ying.huang@intel.com> wrote:
+> > 
+> > > On Tue, 2010-10-26 at 15:22 +0800, Ingo Molnar wrote:
+> > > > * Thomas Gleixner <tglx@linutronix.de> wrote:
+> > > > 
+> > > > > >From Kconfig:
+> > > > > 
+> > > > >   EDAC is designed to report errors in the core system.
+> > > > >   These are low-level errors that are reported in the CPU or
+> > > > >   supporting chipset or other subsystems:
+> > > > >   memory errors, cache errors, PCI errors, thermal throttling, etc..
+> > > > >   If unsure, select 'Y'.
+> > > > > 
+> > > > > So please explain why your error reporting is so different from the above that it 
+> > > > > justifies a separate facility. And you better come up with a real good explanation 
+> > > > > other than we looked at EDAC and it did not fit our needs.
+> > > > 
+> > > > Btw., it's not just about EDAC - the firmware can store Linux events 
+> > > > persistently (beyond allowing the firmware to insert its own RAS events), that 
+> > > > is obviously _hugely_ useful for kernel debugging in general. We could inject 
+> > > > debugging events there and recover them after a crash, etc.
+> > > 
+> > > Yes. It can be used by other kernel subsystems other than RAS. A kernel API is 
+> > > provided already. The design of the kernel API makes it easy to be used by various 
+> > > kernel subsystems. As the first step, we plan to support saving kernel log before 
+> > > panic and reading it back after reboot.
+> > 
+> > And that's the problem: we have good facilities already that deal with similar 
+> > things. We have NMI-safe event logging, event enumeration, dump-on-panic code 
+> > and all sorts of goodies there.
 > 
-> Well it didn't fit the needs at all.  Is that not enough, Mr Inquisitor?
+> We have provided an in-kernel API for ERST now. And we plan to implement a 
+> kmsg_dumper with ERST. And maybe implement some output support (maybe via some 
+> /dev/kmsg extension) for kmsg_dumper if necessary.
 
-No, it's not enough without a reasonable explanation.
+So my argument/objection was:
 
-> Really if you want to nack and maintain and design things you need
-> to do a bit more than just arguing from two lines of
-> high level description.
+ " You are introducing a bad ABI here, amongst other problems. Please work with the
+   people who are maintaining sane RAS/event/error reporting ABIs and facilities.
+   You should have done that to begin with. "
 
-If you want to shove a new facility into the kernel you need to do a
-bit more than sending that stuff to LKML without explaining why you
-can't use existing facilities and why it's impossible to extend those
-existing facilities.
+and your answer to that is:
 
-So the questions arise on the high level because you failed to provide
-a reasonable explanation in the first place.
+ " Hey, we plan to introduce another ad-hoc ABI as well! "
 
-> EDAC enumerates hardware and exports some hardware
-> registers and decodes a few errors in a format into
-> the kernel log that is hard to impossible to post-process.
+... do you really not see the glaring disconnect?
 
-You are well aware that EDAC folks are working on consolidating the
-interfaces and providing better error reporting, but it's out of your
-interest so you just ignore that effort instead of working together?
-
-> APEI does nothing of that, so it doesn't fit into EDAC.
-
-Thanks for this overly detailed explanation.
-
-APEI is about error detection and error reporting, nothing else. So
-it fits into EDAC, which is an existing Error Detection and Correction
-reporting facility by definition.
-
-If you see EDAC has shortcomings, the proper answer to that is to go
-there and work with those folks to make EDAC a fully integrated
-facility. It's not like there's some disagreement with them.
-
-But you did not even try to talk to them about this and went straight
-ahead and implemented your own EDAC facility.
-
-> The main interface in APEI right now is to manage fatal
-> errors after reboot. ...
-
-That's completely irrelevant.
-
-It does not matter at all when and wherefrom error data come and
-whether they were generated before or after reboot. That is the
-hardware/firmware dependend side of things. Nobody is saying that this
-isn't necessary.
-
-But it matters very much how we report those errors. And it's not a
-completely unreasonable request to avoid separate interfaces for the
-very same problem, especially separate user space ABIs. 
-
-If an existing facility has shortcomings, then the usual way is to
-extend it for the sake of all existing users of that facility. We try
-to consolidate stuff all over the place and avoid stuff which is
-artificially separate, and that applies to that area as well.
-
-Of course that might be more work and might change the design a bit,
-but in the end it's a benefit for everyone.
-
-Thanks,
-
-	tglx
+	Ingo
