@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754203Ab0JZBQb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Oct 2010 21:16:31 -0400
-Received: from beaker.bytemark.co.uk ([80.68.81.2]:38655 "EHLO
+	id S1755544Ab0JZBL7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Oct 2010 21:11:59 -0400
+Received: from beaker.bytemark.co.uk ([80.68.81.2]:38624 "EHLO
 	beaker.bytemark.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755367Ab0JZBMC (ORCPT
+	with ESMTP id S1755349Ab0JZBL4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Oct 2010 21:12:02 -0400
+	Mon, 25 Oct 2010 21:11:56 -0400
 From: "Emilio G. Cota" <cota@braap.org>
 To: Martyn Welch <martyn.welch@ge.com>
 Cc: Greg KH <greg@kroah.com>, LKML <linux-kernel@vger.kernel.org>,
         devel@driverdev.osuosl.org,
         Juan David Gonzalez Cobas <david.cobas@gmail.com>,
         Bill Pemberton <wfp5p@virginia.edu>, "Emilio G. Cota" <cota@braap.org>
-Subject: [PATCH 12/30] staging/vme/ca91cx42: declare static functions as such
-Date: Mon, 25 Oct 2010 21:10:58 -0400
-Message-Id: <1288055476-19438-13-git-send-email-cota@braap.org>
+Subject: [PATCH 02/30] staging/vme_user: return the appropriate error code when module_init fails
+Date: Mon, 25 Oct 2010 21:10:48 -0400
+Message-Id: <1288055476-19438-3-git-send-email-cota@braap.org>
 X-Mailer: git-send-email 1.7.3.2
 In-Reply-To: <1288055476-19438-1-git-send-email-cota@braap.org>
 References: <1288055476-19438-1-git-send-email-cota@braap.org>
@@ -25,186 +25,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Emilio G. Cota <cota@braap.org>
 
+When init_module fails, 0 is returned anyway; the module is then installed
+and oopses when we try to remove it:
+
+[ 3236.368009] WARNING: at drivers/base/driver.c:262 driver_unregister+0x36/0x6f()
+[ 3236.368012] Hardware name:
+[ 3236.368014] Unexpected driver unregister!
+[ 3236.368016] Modules linked in: vme_user(-) vme_tsi148 vme e1000e iTCO_wdt iTCO_vendor_support [last unloaded: vme]
+[ 3236.368027] Pid: 16162, comm: rmmod Not tainted 2.6.35 #2
+[ 3236.368029] Call Trace:
+[ 3236.368037]  [<ffffffff81036ea3>] warn_slowpath_common+0x80/0x98
+[ 3236.368044]  [<ffffffff81060a65>] ? __try_stop_module+0x0/0x58
+[ 3236.368049]  [<ffffffff81036f4f>] warn_slowpath_fmt+0x41/0x43
+[ 3236.368054]  [<ffffffff81060a65>] ? __try_stop_module+0x0/0x58
+[ 3236.368059]  [<ffffffff811e8f78>] driver_unregister+0x36/0x6f
+[ 3236.368066]  [<ffffffffa004aa44>] vme_unregister_driver+0xd/0xf [vme]
+[ 3236.368072]  [<ffffffffa00616c8>] vme_user_exit+0x10/0x1e [vme_user]
+[ 3236.368076]  [<ffffffff810612c1>] sys_delete_module+0x1ba/0x226
+[ 3236.368082]  [<ffffffff812d6e14>] ? do_page_fault+0x25d/0x28a
+[ 3236.368088]  [<ffffffff8100202b>] system_call_fastpath+0x16/0x1b
+[ 3236.368092] ---[ end trace cab6d88ebc44c1de ]---
+
+The appended fixes it by returning the appropriate error code in module_init
+whenever something goes wrong, thus cancelling the insertion of the module.
+
 Signed-off-by: Emilio G. Cota <cota@braap.org>
 ---
- drivers/staging/vme/bridges/vme_ca91cx42.c |   38 ++++++++++++++--------------
- 1 files changed, 19 insertions(+), 19 deletions(-)
+ drivers/staging/vme/devices/vme_user.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/staging/vme/bridges/vme_ca91cx42.c b/drivers/staging/vme/bridges/vme_ca91cx42.c
-index 14e10a6..6dd895f 100644
---- a/drivers/staging/vme/bridges/vme_ca91cx42.c
-+++ b/drivers/staging/vme/bridges/vme_ca91cx42.c
-@@ -259,7 +259,7 @@ static void ca91cx42_irq_exit(struct ca91cx42_driver *bridge,
- /*
-  * Set up an VME interrupt
-  */
--void ca91cx42_irq_set(struct vme_bridge *ca91cx42_bridge, int level, int state,
-+static void ca91cx42_irq_set(struct vme_bridge *ca91cx42_bridge, int level, int state,
- 	int sync)
- 
- {
-@@ -287,7 +287,7 @@ void ca91cx42_irq_set(struct vme_bridge *ca91cx42_bridge, int level, int state,
+diff --git a/drivers/staging/vme/devices/vme_user.c b/drivers/staging/vme/devices/vme_user.c
+index cbe2e11..a6f6116 100644
+--- a/drivers/staging/vme/devices/vme_user.c
++++ b/drivers/staging/vme/devices/vme_user.c
+@@ -611,6 +611,7 @@ static int __init vme_user_init(void)
+ 	if (bus_num == 0) {
+ 		printk(KERN_ERR "%s: No cards, skipping registration\n",
+ 			driver_name);
++		retval = -ENODEV;
+ 		goto err_nocard;
  	}
- }
  
--int ca91cx42_irq_generate(struct vme_bridge *ca91cx42_bridge, int level,
-+static int ca91cx42_irq_generate(struct vme_bridge *ca91cx42_bridge, int level,
- 	int statid)
- {
- 	u32 tmp;
-@@ -323,7 +323,7 @@ int ca91cx42_irq_generate(struct vme_bridge *ca91cx42_bridge, int level,
- 	return 0;
- }
+@@ -629,6 +630,7 @@ static int __init vme_user_init(void)
+ 	if (ids == NULL) {
+ 		printk(KERN_ERR "%s: Unable to allocate ID table\n",
+ 			driver_name);
++		retval = -ENOMEM;
+ 		goto err_id;
+ 	}
  
--int ca91cx42_slave_set(struct vme_slave_resource *image, int enabled,
-+static int ca91cx42_slave_set(struct vme_slave_resource *image, int enabled,
- 	unsigned long long vme_base, unsigned long long size,
- 	dma_addr_t pci_base, vme_address_t aspace, vme_cycle_t cycle)
- {
-@@ -429,7 +429,7 @@ int ca91cx42_slave_set(struct vme_slave_resource *image, int enabled,
- 	return 0;
- }
- 
--int ca91cx42_slave_get(struct vme_slave_resource *image, int *enabled,
-+static int ca91cx42_slave_get(struct vme_slave_resource *image, int *enabled,
- 	unsigned long long *vme_base, unsigned long long *size,
- 	dma_addr_t *pci_base, vme_address_t *aspace, vme_cycle_t *cycle)
- {
-@@ -584,7 +584,7 @@ static void ca91cx42_free_resource(struct vme_master_resource *image)
- }
- 
- 
--int ca91cx42_master_set(struct vme_master_resource *image, int enabled,
-+static int ca91cx42_master_set(struct vme_master_resource *image, int enabled,
- 	unsigned long long vme_base, unsigned long long size,
- 	vme_address_t aspace, vme_cycle_t cycle, vme_width_t dwidth)
- {
-@@ -741,7 +741,7 @@ err_window:
- 	return retval;
- }
- 
--int __ca91cx42_master_get(struct vme_master_resource *image, int *enabled,
-+static int __ca91cx42_master_get(struct vme_master_resource *image, int *enabled,
- 	unsigned long long *vme_base, unsigned long long *size,
- 	vme_address_t *aspace, vme_cycle_t *cycle, vme_width_t *dwidth)
- {
-@@ -828,7 +828,7 @@ int __ca91cx42_master_get(struct vme_master_resource *image, int *enabled,
- 	return 0;
- }
- 
--int ca91cx42_master_get(struct vme_master_resource *image, int *enabled,
-+static int ca91cx42_master_get(struct vme_master_resource *image, int *enabled,
- 	unsigned long long *vme_base, unsigned long long *size,
- 	vme_address_t *aspace, vme_cycle_t *cycle, vme_width_t *dwidth)
- {
-@@ -844,7 +844,7 @@ int ca91cx42_master_get(struct vme_master_resource *image, int *enabled,
- 	return retval;
- }
- 
--ssize_t ca91cx42_master_read(struct vme_master_resource *image, void *buf,
-+static ssize_t ca91cx42_master_read(struct vme_master_resource *image, void *buf,
- 	size_t count, loff_t offset)
- {
- 	ssize_t retval;
-@@ -904,7 +904,7 @@ out:
- 	return retval;
- }
- 
--ssize_t ca91cx42_master_write(struct vme_master_resource *image, void *buf,
-+static ssize_t ca91cx42_master_write(struct vme_master_resource *image, void *buf,
- 	size_t count, loff_t offset)
- {
- 	ssize_t retval;
-@@ -959,7 +959,7 @@ out:
- 	return retval;
- }
- 
--unsigned int ca91cx42_master_rmw(struct vme_master_resource *image,
-+static unsigned int ca91cx42_master_rmw(struct vme_master_resource *image,
- 	unsigned int mask, unsigned int compare, unsigned int swap,
- 	loff_t offset)
- {
-@@ -1015,7 +1015,7 @@ out:
- 	return result;
- }
- 
--int ca91cx42_dma_list_add(struct vme_dma_list *list, struct vme_dma_attr *src,
-+static int ca91cx42_dma_list_add(struct vme_dma_list *list, struct vme_dma_attr *src,
- 	struct vme_dma_attr *dest, size_t count)
- {
- 	struct ca91cx42_dma_entry *entry, *prev;
-@@ -1176,7 +1176,7 @@ static int ca91cx42_dma_busy(struct vme_bridge *ca91cx42_bridge)
- 		return 1;
- }
- 
--int ca91cx42_dma_list_exec(struct vme_dma_list *list)
-+static int ca91cx42_dma_list_exec(struct vme_dma_list *list)
- {
- 	struct vme_dma_resource *ctrlr;
- 	struct ca91cx42_dma_entry *entry;
-@@ -1258,7 +1258,7 @@ int ca91cx42_dma_list_exec(struct vme_dma_list *list)
- 
- }
- 
--int ca91cx42_dma_list_empty(struct vme_dma_list *list)
-+static int ca91cx42_dma_list_empty(struct vme_dma_list *list)
- {
- 	struct list_head *pos, *temp;
- 	struct ca91cx42_dma_entry *entry;
-@@ -1280,7 +1280,7 @@ int ca91cx42_dma_list_empty(struct vme_dma_list *list)
-  * This does not enable the LM monitor - that should be done when the first
-  * callback is attached and disabled when the last callback is removed.
-  */
--int ca91cx42_lm_set(struct vme_lm_resource *lm, unsigned long long lm_base,
-+static int ca91cx42_lm_set(struct vme_lm_resource *lm, unsigned long long lm_base,
- 	vme_address_t aspace, vme_cycle_t cycle)
- {
- 	u32 temp_base, lm_ctl = 0;
-@@ -1348,7 +1348,7 @@ int ca91cx42_lm_set(struct vme_lm_resource *lm, unsigned long long lm_base,
- /* Get configuration of the callback monitor and return whether it is enabled
-  * or disabled.
-  */
--int ca91cx42_lm_get(struct vme_lm_resource *lm, unsigned long long *lm_base,
-+static int ca91cx42_lm_get(struct vme_lm_resource *lm, unsigned long long *lm_base,
- 	vme_address_t *aspace, vme_cycle_t *cycle)
- {
- 	u32 lm_ctl, enabled = 0;
-@@ -1391,7 +1391,7 @@ int ca91cx42_lm_get(struct vme_lm_resource *lm, unsigned long long *lm_base,
-  *
-  * Callback will be passed the monitor triggered.
-  */
--int ca91cx42_lm_attach(struct vme_lm_resource *lm, int monitor,
-+static int ca91cx42_lm_attach(struct vme_lm_resource *lm, int monitor,
- 	void (*callback)(int))
- {
- 	u32 lm_ctl, tmp;
-@@ -1440,7 +1440,7 @@ int ca91cx42_lm_attach(struct vme_lm_resource *lm, int monitor,
- /*
-  * Detach a callback function forn a specific location monitor.
-  */
--int ca91cx42_lm_detach(struct vme_lm_resource *lm, int monitor)
-+static int ca91cx42_lm_detach(struct vme_lm_resource *lm, int monitor)
- {
- 	u32 tmp;
- 	struct ca91cx42_driver *bridge;
-@@ -1473,7 +1473,7 @@ int ca91cx42_lm_detach(struct vme_lm_resource *lm, int monitor)
- 	return 0;
- }
- 
--int ca91cx42_slot_get(struct vme_bridge *ca91cx42_bridge)
-+static int ca91cx42_slot_get(struct vme_bridge *ca91cx42_bridge)
- {
- 	u32 slot = 0;
- 	struct ca91cx42_driver *bridge;
-@@ -1833,7 +1833,7 @@ err_struct:
- 
- }
- 
--void ca91cx42_remove(struct pci_dev *pdev)
-+static void ca91cx42_remove(struct pci_dev *pdev)
- {
- 	struct list_head *pos = NULL;
- 	struct vme_master_resource *master_image;
 -- 
 1.7.1
 
