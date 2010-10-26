@@ -1,205 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932166Ab0JZHLF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Oct 2010 03:11:05 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:7417 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756584Ab0JZHLD (ORCPT
+	id S1758007Ab0JZHTk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Oct 2010 03:19:40 -0400
+Received: from 124x34x33x190.ap124.ftth.ucom.ne.jp ([124.34.33.190]:50089 "EHLO
+	master.linux-sh.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756819Ab0JZHTj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Oct 2010 03:11:03 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
-         :references:user-agent:mime-version:content-type;
-        b=cXMwTvgN/vaNclw7VSbJvA/O1yr/03TnAQo+r3CGt2qRcfs6TJzSJY5SoQYuRbr/u0
-         y3InbQ6H0AfF/W+ERQpw==
-Date: Tue, 26 Oct 2010 00:10:43 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@sister.anvils
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Andi Kleen <andi@firstfloor.org>, LKML <linux-kernel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>
-Subject: Re: mem-hotplug + ksm make lockdep warning
-In-Reply-To: <20101025193711.917F.A69D9226@jp.fujitsu.com>
-Message-ID: <alpine.LSU.2.00.1010252248210.2939@sister.anvils>
-References: <20101025193711.917F.A69D9226@jp.fujitsu.com>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
+	Tue, 26 Oct 2010 03:19:39 -0400
+Date: Tue, 26 Oct 2010 16:19:13 +0900
+From: Paul Mundt <lethal@linux-sh.org>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org
+Subject: [PATCH] genirq: Add single IRQ reservation helper.
+Message-ID: <20101026071912.GD4733@linux-sh.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.13 (2006-08-11)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 25 Oct 2010, KOSAKI Motohiro wrote:
-> Hi Hugh,
-> 
-> commit 62b61f611e(ksm: memory hotremove migration only) makes following
-> lockdep warnings. Is this intentional?
+For cases that wish to reserve a single IRQ simply provide a wrapper in
+to the ranged reservation routine.
 
-No, certainly not intentional: thanks for finding this.  Looking back,
-I think the machine I tested memory hotplug versus KSM upon was not
-the machine I habitually ran lockdep on, I bet I forgot to try it.
+Signed-off-by: Paul Mundt <lethal@linux-sh.org>
 
-> 
-> More detail: current lockdep hieralcy is here.
+---
 
-And especial thanks for taking the trouble to present it in a way
-that I find much easier to understand than lockdep's pronouncements.
+I picked irq_reserve_irq() to follow the irq_alloc_descs/desc naming
+scheme, but perhaps irq_reserve() or irq_reserve_at() is less visually
+offensive? Feel free to mangle away as necessary :-)
 
-> 
-> memory_notify
-> 	offline_pages
-> 		lock_system_sleep();
-> 			mutex_lock(&pm_mutex);
-> 		memory_notify(MEM_GOING_OFFLINE)
-> 			__blocking_notifier_call_chain
-> 				down_read(memory_chain.rwsem)
-> 				ksm_memory_callback()
-> 					mutex_lock(&ksm_thread_mutex);  // memory_chain.rmsem -> ksm_thread_mutex order
-> 				up_read(memory_chain.rwsem)
-> 		memory_notify(MEM_OFFLINE)
-> 			__blocking_notifier_call_chain
-> 				down_read(memory_chain.rwsem)		// ksm_thread_mutex -> memory_chain.rmsem order
-> 				ksm_memory_callback()
-> 					mutex_unlock(&ksm_thread_mutex);
-> 				up_read(memory_chain.rwsem)
-> 		unlock_system_sleep();
-> 			mutex_unlock(&pm_mutex);
-> 
-> So, I think pm_mutex protect ABBA deadlock. but it exist only when
-> CONFIG_HIBERNATION=y. IOW, this code is not correct generically. Am I
-> missing something?
+ include/linux/irq.h |    5 +++++
+ 1 file changed, 5 insertions(+)
 
-I do remember taking great comfort from lock_system_sleep() i.e. pm_mutex
-when I did the ksm_memory_callback(); but I think that comfort was more
-along the lines of it making obvious that taking a mutex was okay there,
-than it providing any safety.  I think I was unconscious of the issue you
-raise, perhaps didn't even notice rwsem in __blocking_notifier_call_chain.
-
-But is it really a problem, given that it's down_read(rwsem) in each case?
-Yes, but I had to look up akpm's comment on msync in ChangeLog-2.6.11 to
-remember why:
-
-	And yes, the ranking of down_read() versus down() does matter:
-	
-		Task A			Task B		Task C
-	
-		down_read(rwsem)
-					down(sem)
-							down_write(rwsem)
-		down(sem)
-					down_read(rwsem)
-	
-	C's down_write() will cause B's down_read to block.
-	B holds `sem', so A will never release `rwsem'.
-
-Am I mistaken, or is get_any_page() in mm/memory-failure.c also relying
-on lock_system_sleep() to do real locking, even without CONFIG_HIBERNATION?
-
-If it is, then I think we should solve both problems by making it lock
-unconditionally: though neither "lock_system_sleep" nor "pm_mutex" is an
-appropriate name then... maybe "lock_memory_hotplug", but still using a
-pm_mutex declared outside of CONFIG_PM?  Seems a bit weird.
-
-And some kind of lockdep annotation needed for ksm_memory_callback(),
-to help it understand how the outer mutex makes the inner inversion safe?
-Or does lockdep manage that without help?
-
-I think I'm not going to find time to do the patch for a while,
-so please go ahead if you can.
-
-Thanks,
-Hugh
-
-> 
-> Thanks.
-> 
-> 
-> 
-> =======================================================
-> [ INFO: possible circular locking dependency detected ]
-> 2.6.36-rc7-mm1+ #148
-> -------------------------------------------------------
-> bash/1621 is trying to acquire lock:
->  ((memory_chain).rwsem){.+.+.+}, at: [<ffffffff81079339>] __blocking_notifier_call_chain+0x69/0xc0
-> 
-> but task is already holding lock:
->  (ksm_thread_mutex){+.+.+.}, at: [<ffffffff8113a3aa>] ksm_memory_callback+0x3a/0xc0
-> 
-> which lock already depends on the new lock.
-> 
-> 
-> the existing dependency chain (in reverse order) is:
-> 
-> -> #1 (ksm_thread_mutex){+.+.+.}:
->        [<ffffffff8108b70a>] lock_acquire+0xaa/0x140
->        [<ffffffff81505d74>] __mutex_lock_common+0x44/0x3f0
->        [<ffffffff81506228>] mutex_lock_nested+0x48/0x60
->        [<ffffffff8113a3aa>] ksm_memory_callback+0x3a/0xc0		
->        [<ffffffff8150c21c>] notifier_call_chain+0x8c/0xe0
->        [<ffffffff8107934e>] __blocking_notifier_call_chain+0x7e/0xc0	
->        [<ffffffff810793a6>] blocking_notifier_call_chain+0x16/0x20
->        [<ffffffff813afbfb>] memory_notify+0x1b/0x20
->        [<ffffffff81141b7c>] remove_memory+0x1cc/0x5f0
->        [<ffffffff813af53d>] memory_block_change_state+0xfd/0x1a0
->        [<ffffffff813afd62>] store_mem_state+0xe2/0xf0
->        [<ffffffff813a0bb0>] sysdev_store+0x20/0x30
->        [<ffffffff811bc116>] sysfs_write_file+0xe6/0x170
->        [<ffffffff8114f398>] vfs_write+0xc8/0x190
->        [<ffffffff8114fc14>] sys_write+0x54/0x90
->        [<ffffffff810028b2>] system_call_fastpath+0x16/0x1b
-> 
-> -> #0 ((memory_chain).rwsem){.+.+.+}:
->        [<ffffffff8108b5ba>] __lock_acquire+0x155a/0x1600
->        [<ffffffff8108b70a>] lock_acquire+0xaa/0x140
->        [<ffffffff81506601>] down_read+0x51/0xa0
->        [<ffffffff81079339>] __blocking_notifier_call_chain+0x69/0xc0	
->        [<ffffffff810793a6>] blocking_notifier_call_chain+0x16/0x20
->        [<ffffffff813afbfb>] memory_notify+0x1b/0x20
->        [<ffffffff81141f1e>] remove_memory+0x56e/0x5f0
->        [<ffffffff813af53d>] memory_block_change_state+0xfd/0x1a0
->        [<ffffffff813afd62>] store_mem_state+0xe2/0xf0
->        [<ffffffff813a0bb0>] sysdev_store+0x20/0x30
->        [<ffffffff811bc116>] sysfs_write_file+0xe6/0x170
->        [<ffffffff8114f398>] vfs_write+0xc8/0x190
->        [<ffffffff8114fc14>] sys_write+0x54/0x90
->        [<ffffffff810028b2>] system_call_fastpath+0x16/0x1b
-> 
-> other info that might help us debug this:
-> 
-> 5 locks held by bash/1621:
->  #0:  (&buffer->mutex){+.+.+.}, at: [<ffffffff811bc074>] sysfs_write_file+0x44/0x170
->  #1:  (s_active#110){.+.+.+}, at: [<ffffffff811bc0fd>] sysfs_write_file+0xcd/0x170
->  #2:  (&mem->state_mutex){+.+.+.}, at: [<ffffffff813af478>] memory_block_change_state+0x38/0x1a0
->  #3:  (pm_mutex){+.+.+.}, at: [<ffffffff81141ad9>] remove_memory+0x129/0x5f0
->  #4:  (ksm_thread_mutex){+.+.+.}, at: [<ffffffff8113a3aa>] ksm_memory_callback+0x3a/0xc0
-> 
-> stack backtrace:
-> Pid: 1621, comm: bash Not tainted 2.6.36-rc7-mm1+ #148
-> Call Trace:
->  [<ffffffff81088b5b>] print_circular_bug+0xeb/0xf0
->  [<ffffffff8108b5ba>] __lock_acquire+0x155a/0x1600
->  [<ffffffff8103a1f9>] ? finish_task_switch+0x79/0xe0
->  [<ffffffff815049a9>] ? schedule+0x419/0xa80
->  [<ffffffff8108b70a>] lock_acquire+0xaa/0x140
->  [<ffffffff81079339>] ? __blocking_notifier_call_chain+0x69/0xc0	
->  [<ffffffff81506601>] down_read+0x51/0xa0
->  [<ffffffff81079339>] ? __blocking_notifier_call_chain+0x69/0xc0
->  [<ffffffff81079339>] __blocking_notifier_call_chain+0x69/0xc0
->  [<ffffffff81110f06>] ? next_online_pgdat+0x26/0x50
->  [<ffffffff810793a6>] blocking_notifier_call_chain+0x16/0x20
->  [<ffffffff813afbfb>] memory_notify+0x1b/0x20			
->  [<ffffffff81141f1e>] remove_memory+0x56e/0x5f0
->  [<ffffffff8108ba98>] ? lock_release_non_nested+0x2f8/0x3a0
->  [<ffffffff813af53d>] memory_block_change_state+0xfd/0x1a0
->  [<ffffffff8111705c>] ? might_fault+0x5c/0xb0
->  [<ffffffff813afd62>] store_mem_state+0xe2/0xf0
->  [<ffffffff811bc0fd>] ? sysfs_write_file+0xcd/0x170
->  [<ffffffff813a0bb0>] sysdev_store+0x20/0x30
->  [<ffffffff811bc116>] sysfs_write_file+0xe6/0x170
->  [<ffffffff8114f398>] vfs_write+0xc8/0x190
->  [<ffffffff8114fc14>] sys_write+0x54/0x90
->  [<ffffffff810028b2>] system_call_fastpath+0x16/0x1b
+diff --git a/include/linux/irq.h b/include/linux/irq.h
+index e963911..abde252 100644
+--- a/include/linux/irq.h
++++ b/include/linux/irq.h
+@@ -412,6 +412,11 @@ static inline void irq_free_desc(unsigned int irq)
+ 	irq_free_descs(irq, 1);
+ }
+ 
++static inline int irq_reserve_irq(unsigned int irq)
++{
++	return irq_reserve_irqs(irq, 1);
++}
++
+ #endif /* CONFIG_GENERIC_HARDIRQS */
+ 
+ #endif /* !CONFIG_S390 */
