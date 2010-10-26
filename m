@@ -1,49 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758420Ab0JZIo7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Oct 2010 04:44:59 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:53346 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752552Ab0JZIo6 convert rfc822-to-8bit (ORCPT
+	id S1754469Ab0JZIvx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Oct 2010 04:51:53 -0400
+Received: from casper.infradead.org ([85.118.1.10]:36723 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750950Ab0JZIvw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Oct 2010 04:44:58 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=qmrBDntePcKpyaRK0y71gpv9YL1NcdMYWHssMuc62LUvf7VE+Qojk/y4PAaSsUmCGA
-         dzP0FBmwRwGlzShjWjq2lVES03dz/H9G6tVzbx6GBbtJ/m2WU6xHi+DFxGuZr62+xNkH
-         Ur8HG9j5TRVfOFRv7/Hp4UGHgP8fZdAv022Xw=
-MIME-Version: 1.0
-Date: Tue, 26 Oct 2010 16:44:57 +0800
-Message-ID: <AANLkTi=N__M=Deb70jRb1_G-MZpTVYuroic1m9C=_A8n@mail.gmail.com>
-Subject: [PATCH] pid: remove unused include
-From: jovi zhang <bookjovi@gmail.com>
-To: akpm@linux-foundation.org, andre.goddard@gmail.com, josh@joshtriplett.org
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Tue, 26 Oct 2010 04:51:52 -0400
+Subject: Re: linux-next: build warnings after merge of the final tree (mtd
+ tree related)
+From: David Woodhouse <dwmw2@infradead.org>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <20101026134959.86b807d1.sfr@canb.auug.org.au>
+References: <20101026134959.86b807d1.sfr@canb.auug.org.au>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 26 Oct 2010 09:51:48 +0100
+Message-ID: <1288083108.29264.14.camel@macbook.infradead.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.0 (2.32.0-2.fc14) 
+Content-Transfer-Encoding: 7bit
+X-SRS-Rewrite: SMTP reverse-path rewritten from <dwmw2@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sorry, I forget re-send the new patch.
+On Tue, 2010-10-26 at 13:49 +1100, Stephen Rothwell wrote:
+> 
+> I am not sure where these came from ... 
 
-remove unused include
+It's a config issue. You have chosen to build NOR flash support.
 
-Signed-off-by: bookjovi@gmail.com
-kernel/pid.c |    1 -
-1 files changed, 0 insertions(+), 1 deletions(-)
+NOR flash can be wired up many ways. It could be four 8-bit chips in
+parallel in a 32-bit bus, two 16-bit chips in a 32-bit bus, 2 8-bit
+chips in a 16-bit bus, one 16-bit chip in a 16-bus bus, etc...
 
-diff --git a/kernel/pid.c b/kernel/pid.c
-index 39b65b6..5e8e8c6 100644
---- a/kernel/pid.c
-+++ b/kernel/pid.c
-@@ -35,7 +35,6 @@
-#include <linux/hash.h>
-#include <linux/pid_namespace.h>
-#include <linux/init_task.h>
--#include <linux/syscalls.h>
+You have elected to support *none* of those configurations. No NOR chip
+support can work.
 
-#define pid_hashfn(nr, ns)     \
-       hash_long((unsigned long)nr + (unsigned long)ns, pidhash_shift)
+You don't get to choose individual geometry options unless you set
+CONFIG_MTD_ADV_OPTIONS -- by default you get a fully versatile driver
+which can cope with anything at runtime.
+
+I'll build a ppc44x_defconfig and work out what's going wrong. I'd
+expect this kind of thing with randconfig, but not a defconfig.
+
+-- 
+David Woodhouse                            Open Source Technology Centre
+David.Woodhouse@intel.com                              Intel Corporation
+
