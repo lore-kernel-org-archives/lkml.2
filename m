@@ -1,47 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759900Ab0JZPbj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Oct 2010 11:31:39 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:31289 "EHLO mx1.redhat.com"
+	id S1758699Ab0JZPqs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Oct 2010 11:46:48 -0400
+Received: from www.tglx.de ([62.245.132.106]:46979 "EHLO www.tglx.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751937Ab0JZPbg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Oct 2010 11:31:36 -0400
-Subject: Re: [PATCH 01/11] IMA: use rbtree instead of radix tree for inode
- information cache
-From: Eric Paris <eparis@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: John Stoffel <john@stoffel.org>, Christoph Hellwig <hch@infradead.org>,
-        "J.H." <warthog9@kernel.org>, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        zohar@us.ibm.com, david@fromorbit.com, jmorris@namei.org,
-        kyle@mcmartin.ca, hpa@zytor.com, akpm@linux-foundation.org,
-        mingo@elte.hu, viro@zeniv.linux.org.uk
-In-Reply-To: <AANLkTinywnaMNSABWTBwTmC5ML9BRTGgU0+YCfZJSkCT@mail.gmail.com>
-References: <20101025184118.20504.24290.stgit@paris.rdu.redhat.com>
-	 <19653.55494.240658.165153@quad.stoffel.home> <4CC5DCBB.1070505@kernel.org>
-	 <AANLkTim5-QDaG3G_8hq3k83csWsdM-4Pt7V92WtmVx3i@mail.gmail.com>
-	 <20101025205746.GA6568@infradead.org>
-	 <AANLkTi=0Yag66SwgqhudZ8atU6LjaXmTX62VmQ+JMmhF@mail.gmail.com>
-	 <19654.57160.616600.480900@quad.stoffel.home>
-	 <AANLkTinywnaMNSABWTBwTmC5ML9BRTGgU0+YCfZJSkCT@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 26 Oct 2010 11:30:02 -0400
-Message-ID: <1288107002.2655.102.camel@localhost.localdomain>
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1751123Ab0JZPqr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Oct 2010 11:46:47 -0400
+Date: Tue, 26 Oct 2010 17:46:00 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Peter Zijlstra <peterz@infradead.org>
+cc: Markus Trippelsdorf <markus@trippelsdorf.de>,
+        Borislav Petkov <bp@amd64.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "hpa@linux.intel.com" <hpa@linux.intel.com>,
+        Ingo Molnar <mingo@elte.hu>,
+        Andreas Herrmann <andreas.herrmann3@amd.com>
+Subject: Re: Clocksource tsc unstable (delta = -8589361717 ns) in current
+ git
+In-Reply-To: <1288103930.15336.321.camel@twins>
+Message-ID: <alpine.LFD.2.00.1010261745260.3115@localhost6.localdomain6>
+References: <20101026112052.GA1672@arch.trippelsdorf.de>  <20101026131843.GC17852@aftab> <20101026135808.GB1672@arch.trippelsdorf.de> <1288103930.15336.321.camel@twins>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-10-26 at 08:22 -0700, Linus Torvalds wrote:
+On Tue, 26 Oct 2010, Peter Zijlstra wrote:
 
-> Did I miss any actual _constructive_ criticism of the patches? Is
-> there any reason I shouldn't actually apply them? If there is, I've
-> lost it in the roar of pointlessness.
+> On Tue, 2010-10-26 at 15:58 +0200, Markus Trippelsdorf wrote:
+> > > 
+> > > This is strange, tsc is actually stable on your F10h revC.
+> > 
+> > Yes. constant_tsc is among the CPU flags. 
+>  
+> constant_tsc only means the TSC is not affected by cpu freq changes.
+> 
+> It has zero relevance to cross-cpu sync of the TSC. The clocksource
+> stuff requires your TSC to be synchronous over all your CPUs.
 
-I think dchinner had some comments on what he might like to see in the
-long run to further improve the situation, but I don't think anything he
-requested or commented on precludes this series from being applied...
+That and not affected by C-States either.
 
--Eric
+Thanks,
 
+	tglx
