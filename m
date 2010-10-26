@@ -1,42 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760198Ab0JZRqv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Oct 2010 13:46:51 -0400
-Received: from fieldses.org ([174.143.236.118]:49440 "EHLO fieldses.org"
+	id S1760201Ab0JZRuQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Oct 2010 13:50:16 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:24794 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760165Ab0JZRqt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Oct 2010 13:46:49 -0400
-Date: Tue, 26 Oct 2010 13:46:48 -0400
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: nfsd changes for 2.6.37
-Message-ID: <20101026174648.GA1842@fieldses.org>
-References: <20101026164549.GD19445@fieldses.org>
- <20101026172250.GB526@fieldses.org>
- <AANLkTi=emsmLNFSV=j48d37JQxecQmNGZwY9OYdoKjeS@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTi=emsmLNFSV=j48d37JQxecQmNGZwY9OYdoKjeS@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1760167Ab0JZRuO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Oct 2010 13:50:14 -0400
+Subject: Re: [PATCH] x86/pvclock-xen: zero last_value on resume
+From: Glauber Costa <glommer@redhat.com>
+To: Jeremy Fitzhardinge <jeremy@goop.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>,
+        Linux Virtualization <virtualization@lists.linux-foundation.org>,
+        Avi Kivity <avi@redhat.com>, the arch/x86 maintainers <x86@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "Xen-devel@lists.xensource.com" <Xen-devel@lists.xensource.com>,
+        kvm-devel <kvm@vger.kernel.org>,
+        =?ISO-8859-1?Q?C=E9dric?= Schieli <cschieli@gmail.com>,
+        Eelco Dolstra <e.dolstra@tudelft.nl>,
+        Olivier Hanesse <olivier.hanesse@gmail.com>
+In-Reply-To: <4CC708DE.1070000@goop.org>
+References: <4CC708DE.1070000@goop.org>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Red Hat Inc.
+Date: Tue, 26 Oct 2010 15:48:54 -0200
+Message-ID: <1288115334.3530.7.camel@mothafucka.localdomain>
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 26, 2010 at 10:39:41AM -0700, Linus Torvalds wrote:
-> But even that kind of "both non-merged and pre-merged" pull requests
-> should be reserved just for cases where there really was a somewhat
-> involved conflict. For trivial conflicts like a feature removal doc
-> clash, don't even bother.  I do several trivial merges a day, it's
-> normal and it doesn't really take me any appreciable extra time. Git
-> command line of the day:
+On Tue, 2010-10-26 at 09:59 -0700, Jeremy Fitzhardinge wrote:
 > 
->   git log --oneline v2.6.36.. --merges --author=Torvalds --grep=onflict
+> If the guest domain has been suspend/resumed or migrated, then the
+> system clock backing the pvclock clocksource may revert to a smaller
+> value (ie, can be non-monotonic across the migration/save-restore).
+> Make sure we zero last_value in that case so that the domain
+> continues to see clock updates.
 > 
-> to see at least a partial list of the trivial conflicts I've done in
-> just this merge window. It's 3-4 per day, it's perfectly normal.
+> [ I don't know if kvm needs an analogous fix or not. ]
+After migration, save/restore, etc, we issue an ioctl where we tell
+the host the last clock value. That (in theory) guarantees monotonicity.
 
-Makes sense, thanks!
+I am not opposed to this patch in any way, however.
 
---b.
+
