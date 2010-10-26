@@ -1,48 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933479Ab0JZSTb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Oct 2010 14:19:31 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:33597 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933445Ab0JZSTa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Oct 2010 14:19:30 -0400
-Message-ID: <4CC71B94.2010802@zytor.com>
-Date: Tue, 26 Oct 2010 11:19:00 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc13 Thunderbird/3.1.4
+	id S933492Ab0JZSUM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Oct 2010 14:20:12 -0400
+Received: from s15228384.onlinehome-server.info ([87.106.30.177]:57415 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932875Ab0JZSUK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Oct 2010 14:20:10 -0400
+Date: Tue, 26 Oct 2010 20:19:57 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: Markus Trippelsdorf <markus@trippelsdorf.de>
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "hpa@linux.intel.com" <hpa@linux.intel.com>,
+        Ingo Molnar <mingo@elte.hu>,
+        "Herrmann3, Andreas" <Andreas.Herrmann3@amd.com>,
+        John Stultz <johnstul@us.ibm.com>
+Subject: Re: Clocksource tsc unstable (delta = -8589361717 ns) in current
+ git
+Message-ID: <20101026181957.GC3658@aftab>
+References: <20101026112052.GA1672@arch.trippelsdorf.de>
+ <20101026131843.GC17852@aftab>
+ <20101026135808.GB1672@arch.trippelsdorf.de>
+ <alpine.LFD.2.00.1010261747250.3115@localhost6.localdomain6>
+ <20101026175639.GF1637@arch.trippelsdorf.de>
 MIME-Version: 1.0
-To: Andi Kleen <andi@firstfloor.org>
-CC: kvm@vger.kernel.org, avi@redhat.com, linux-kernel@vger.kernel.org
-Subject: Re: fyi: gcc33-hammer crashes when compiling kvm emulate.c
-References: <20101026123828.GA30434@basil.fritz.box> <4CC70333.80400@zytor.com> <20101026163748.GB29961@basil.fritz.box> <4CC705ED.1020105@zytor.com> <20101026170142.GD29961@basil.fritz.box>
-In-Reply-To: <20101026170142.GD29961@basil.fritz.box>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101026175639.GF1637@arch.trippelsdorf.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/26/2010 10:01 AM, Andi Kleen wrote:
->> Not unless they are actively known to break.  People get huffy about it
-> 
-> Well they do -- i just found out.
+On Tue, Oct 26, 2010 at 01:56:39PM -0400, Markus Trippelsdorf wrote:
+> There is also: acf01734b1747b1ec4be6f159aff579ea5f7f8e2 but I'm not
+> sure if this commit is really relevant.
 
-Sounds like a good reason to put in a warning or error.
+This shouldn't be at fault since your detected core frequency printed
+after the TSC PIT calibration looks fine:
 
->> because even if it is known to have problems it doesn't break *their*
->> particular configuration.  I'm getting to be of the opinion that people
->> who compile modern kernels with ancient compilers and expect it to work
->> are suffering from some particular kind of insanity -- it's nothing the
->> distros do.  The only exception are embedded people who compile with the
->> latest 3.4 gcc; they have explained they do so because newer gccs have
->> too many dependencies (the actual compiler, not the generated code) and
->> for speed.
-> 
-> At least in the old days the main reason for gcc 3 was build speed.
-> AKPM and some others used to be fond of that.
-> 
-> 3.x is apparently much faster than 4.x
+Oct 24 10:19:05 arch kernel: Fast TSC calibration using PIT
+Oct 24 10:19:05 arch kernel: Detected 3211.206 MHz processor.
 
-That is an issue too, as 3.x does a lot fewer optimizations than 4.x.
+The changeset above removes the recalibration which was only required by
+very early F10h's (and yours is not).
 
-	-hpa
+-- 
+Regards/Gruss,
+Boris.
+
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+General Managers: Alberto Bozzo, Andrew Bowd
+Registration: Dornach, Gemeinde Aschheim, Landkreis Muenchen
+Registergericht Muenchen, HRB Nr. 43632
