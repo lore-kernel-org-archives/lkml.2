@@ -1,60 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759506Ab0JZOYL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Oct 2010 10:24:11 -0400
-Received: from tomasu.net ([64.85.170.234]:37271 "EHLO mail.tomasu.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758239Ab0JZOYJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Oct 2010 10:24:09 -0400
-From: Thomas Fjellstrom <thomas@fjellstrom.ca>
-Reply-To: thomas@fjellstrom.ca
-To: Anders Larsen <al@alarsen.net>
-Subject: Re: Strange fsck messages showing up in dmesg
-Date: Tue, 26 Oct 2010 08:24:05 -0600
-User-Agent: KMail/1.13.5 (Linux/2.6.36; KDE/4.5.2; x86_64; svn-1188918; 2010-10-21)
-Cc: linux-kernel@vger.kernel.org, xen-users@lists.xensource.com
-References: <201010260805.37501.thomas@fjellstrom.ca> <1288102745l.15819l.2l@i-dmzi_al.realan.de>
-In-Reply-To: <1288102745l.15819l.2l@i-dmzi_al.realan.de>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201010260824.05826.thomas@fjellstrom.ca>
+	id S1758316Ab0JZO2h (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Oct 2010 10:28:37 -0400
+Received: from asmtpout026.mac.com ([17.148.16.101]:54191 "EHLO
+	asmtpout026.mac.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751529Ab0JZO2g (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Oct 2010 10:28:36 -0400
+MIME-version: 1.0
+Content-transfer-encoding: 7BIT
+Content-type: text/plain; charset=us-ascii
+X-Proofpoint-Spam-Details: rule=notspam policy=default score=0 spamscore=0
+ ipscore=0 suspectscore=0 phishscore=0 bulkscore=0 adultscore=0 classifier=spam
+ adjust=0 reason=mlx engine=6.0.2-1004200000 definitions=main-1010260074
+X-Proofpoint-Virus-Version: vendor=fsecure
+ engine=2.50.10432:5.2.15,1.0.148,0.0.0000
+ definitions=2010-10-26_07:2010-10-26,2010-10-26,1970-01-01 signatures=0
+From: Elvis Dowson <elvis.dowson@mac.com>
+Subject: #ifdef CONFIG_ checks not working
+Date: Tue, 26 Oct 2010 18:28:22 +0400
+Message-id: <47266B0D-0A99-4C5F-BA85-FCC8986E8862@mac.com>
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Luciano Coelho <luciano.coelho@nokia.com>
+X-Mailer: Apple Mail (2.1081)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On October 26, 2010, Anders Larsen wrote:
-> Hi,
-> 
-> On 2010-10-26 16:05:37, Thomas Fjellstrom wrote:
-> > Recently on an Xen based system I've seen some odd messages show up in
-> > dmesg.
-> > 
-> > [3949276.262287] SGI XFS with ACLs, security attributes, realtime, large
-> > block/inode numbers, no debug enabled
-> > [3949276.263130] SGI XFS Quota Management subsystem
-> > [3949276.276566] JFS: nTxBlock = 8192, nTxLock = 65536
-> > [3949276.297503] NTFS driver 2.1.29 [Flags: R/W MODULE].
-> > [3949276.333813] QNX4 filesystem 0.2.3 registered.
-> > [3949276.476177] Btrfs loaded
-> > [3949276.867188] EXT3-fs: INFO: recovery required on readonly filesystem.
-> 
-> etc.
-> 
-> Looks like fairly normal boot messages after an unclean shutdown (crash).
-> 
-> BTW: Which kernel version?  Is this the host or a guest?
+Hi,
+       I just noticed that with the 2.6.36-rc8 kernel, the #ifdef checks aren't working. 
 
-debian's 2.6.32-5-xen-amd64.
+So for example, if I add the following code fragment in my omap3_beagle_init function, CONFIG_WL1271 doesn't get detected, even though in my .config file, CONFIG_WL1271=m.
 
-This is the host/Dom0. Thats after about 45 days of uptime. None of those 
-devices are set to mount in the host by any conventional means.
+This way, the mux settings might also fail, right, which might be the source of a few of the problems that I'm facing. 
 
-> Cheers
-> Anders
+Would you happen to know why this is not working. This type of checks used to work with the 2.6.32 kernel versions.
 
+#ifdef CONFIG_WL1271
+    printk(KERN_INFO "%s: CONFIG_WL1271 detected\n", __func__);
+#else
+    printk(KERN_INFO "%s: CONFIG_WL1271 not detected\n", __func__);
+#endif
 
--- 
-Thomas Fjellstrom
-thomas@fjellstrom.ca
+Boot message: 
+
+[    0.000000] omap3_beagle_init: CONFIG_WL1271 not detected
+
+Best regards,
+
+Elvis Dowson
+
