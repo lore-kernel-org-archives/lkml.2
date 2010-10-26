@@ -1,86 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760019Ab0JZP71 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Oct 2010 11:59:27 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:46450 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759948Ab0JZP70 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Oct 2010 11:59:26 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=EqIcVxQax7Eu0pRUNYj+d/AQjxuxysNfPwCw//AelrA1n+vUs3YIue4t1Z3cMmF8Kb
-         BXHUMx2jAvZNLaXmrB8fMjP0nhEpvr3pP5Coh302Gd6cUZFdwzIcl8vvTdm9Aoyd/TjX
-         WTYq0lYFCXHk0fW8cPiiTPpvMTrbFIywEUEK4=
+	id S1759991Ab0JZQBl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Oct 2010 12:01:41 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:62234 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759948Ab0JZQBj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Oct 2010 12:01:39 -0400
+Date: Tue, 26 Oct 2010 11:57:25 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Gui Jianfeng <guijianfeng@cn.fujitsu.com>
+Cc: Jens Axboe <axboe@kernel.dk>, Nauman Rafique <nauman@google.com>,
+        Chad Talbott <ctalbott@google.com>, Divyesh Shah <dpshah@google.com>,
+        linux kernel mailing list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/4 v2] cfq-iosched: add cfq group hierarchical
+ scheduling support
+Message-ID: <20101026155725.GE31428@redhat.com>
+References: <4CBFA64D.6050800@cn.fujitsu.com>
+ <4CBFA6C9.3040604@cn.fujitsu.com>
+ <20101022205437.GI7020@redhat.com>
+ <4CC4EFFE.8040100@cn.fujitsu.com>
+ <20101025202010.GB23426@redhat.com>
+ <4CC639AD.6090900@cn.fujitsu.com>
 MIME-Version: 1.0
-In-Reply-To: <20101026123552.GA4604@sig21.net>
-References: <20101025190358.AEC6840F97@repository3.orbit-lab.org> <20101026123552.GA4604@sig21.net>
-From: "Luis R. Rodriguez" <mcgrof@gmail.com>
-Date: Tue, 26 Oct 2010 08:59:04 -0700
-Message-ID: <AANLkTimzUKj=C9PxGs1PkQy_KWu0PGKd1zv_m-ZpWaEm@mail.gmail.com>
-Subject: Re: Compat-wireless release for 2010-10-25 is baked
-To: Johannes Stezenbach <js@sig21.net>
-Cc: linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4CC639AD.6090900@cn.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 26, 2010 at 5:35 AM, Johannes Stezenbach <js@sig21.net> wrote:
-> On Mon, Oct 25, 2010 at 03:03:57PM -0400, Compat-wireless cronjob account wrote:
->> From git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next
->>    d9f241e..e10b307  history    -> origin/history
->>  + c8b020e...fd4f9b3 master     -> origin/master  (forced update)
->>    b515316..229aebb  stable     -> origin/stable
->>  * [new tag]         next-20101025 -> next-20101025
-> ...
->> Base tree: linux-next.git
->> Base tree version: next-20101025
->> compat-wireless release: compat-wireless-2010-10-22-pc
->
-> I wonder about the different tarballs in
-> http://wireless.kernel.org/download/compat-wireless-2.6/
->
-> compat-wireless-2010-10-25.tar.bz2
-> compat-wireless-2010-10-25-p.tar.bz2
-> compat-wireless-2010-10-25-pc.tar.bz2
->
-> Those -p and -pc postfixes are not explained in
-> http://wireless.kernel.org/en/users/Download
+On Tue, Oct 26, 2010 at 10:15:09AM +0800, Gui Jianfeng wrote:
 
-Right, sorry, I haven't updated the docs to add documentation for
-them. First please read:
+[..]
+> >>> So I am not yet convinced that we should take the hidden group approach.
+> >> Hi Vivek,
+> >>
+> >> In short, All of the problems are bacause of the fixed weight "Hidden group".
+> >> So how about make the "hidden group" weight becoming dynamic according to
+> >> the cfqq number and priority. Or whether we can export an new user interface
+> >> to make "Hidden group" configurable. Thus, user can configure the "Hidden group".
+> > 
+> > Gui,
+> > 
+> > Even if you do that it will still not solve the problem of RT tread in
+> > root group getting all the disk.
+> 
+> Hi Vivek
+> 
+> Next step, whether we can enable cfq group IO Class and export it in cgroup.
+> So that, hidden group might boost to RT if there're RT cfqqs in it.
 
-http://marc.info/?l=linux-wireless&m=128716953726075&w=2
+We can/should export notion of RT group at some point of time but again,
+doing this for hidden group, again does not appeal to me.
 
--s is for getting and applying pending-stable/ fixes
--n is for applying the patches linux-next-cherry-picks directory
--p is for applying the patches on the linux-next-pending directory
--s is for applying the patches on the crap directory
+Another analogy I was thinking about is, files and directories in a filesystem
+directory. Here files and directories exist at same level. Now it is not the
+case that we have files inside some hidden group which enforces additional
+policies on the files and one can control that policy. Kind of sounds odd to
+me...
 
-> On a related note, I ran across compat-wireless-2.6.36-rc8-1-cs.tar.bz2 in
-> http://www.orbit-lab.org/kernel/compat-wireless-2.6-stable/v2.6.36/
-> which is not linked on
-> http://wireless.kernel.org/en/users/Download/stable/#Releases
+[..]
+> >>> Now coming to the question of how to resolve conflict with the cfqq queue
+> >>> scheduling algorithm. Can we do following.
+> >>>
+> >>> - Give some kind of boost to queue entities based on their weight. So when
+> >>>   queue and group entities are hanging on a service tree, they are
+> >>>   scheduled according to their vdisktime, and vdisktime is calculated
+> >>>   based on entitie's weight and how much time entity spent on disk just
+> >>>   now.
+> >>>
+> >>>   Group entities can continue to follow existing method and we can try
+> >>>   to reduce the vdisktime of queue entities a bit based on their priority.
+> >>>
+> >>>   That way, one might see some service differentiation between ioprio
+> >>>   of queues and also the relative share between groups does not change.
+> >>>   The only problematic part is that when queue and groups are at same
+> >>>   level then it is not very predictable that group gets how much share
+> >>>   and queues get how much share. But I guess this is lesser of a problem
+> >>>   as compared to hidden group approach.
+> >>>
+> >>> Thoughts?
+> >> Do you mean that let cfqq and cfq group schedule at the same service tree. If
+> >> we choose a cfq queue, ok let it run. If we choose the cfq group, we should
+> >> continue to choose a cfq queue in that group.
+> >> If that's the case, I think the original CFQ logic has been broken.
+> >> Am I missing something?
+> >>
+> > 
+> > Can you give more details about what's broken in running CFQ queue and
+> > CFQ group on same service tree?
+> > 
+> > To me only thing which was broken is that how to take care of giving
+> > higher disk share to higher prio queue when idling is disabled. In that
+> > case we don't idle on queue and after request dispatch queue is deleted
+> > from service tree and when new request comes in, queue is put at the end
+> > of service tree (like other entities). And this happens with queues of
+> > all prio and hence the prio difference between queues is lost.
+> > 
+> > Currently we put all new queues at the end of service tree. If we put
+> > some logic to give vdisktime boost based on priority for new queues, 
+> > then we should be able to achieve the similar affect as current CFQ. Isn't
+> > it?
+> 
+> I'm wondering if CFQ queue and CFQ group schedule on a same service tree,
+> How to deal with workload type(SYNC,SYNC_NOIDLE,ASYNC) and IO Class?  
 
-That was sort of an RC release I made that I was waiting on feedback
-on for some extra linux-next-pending patch merged but I was still
-waiting for one test and no one got back to me yet on that. I'm just
-going to go ahead and release a new tarball today.
+For queues we continue to derive IO class and workload type as usual. For
+group entities, in the first step, we can assume them to be of class BE
+and put them probably on SYNC tree. Later we can introduce prio classes
+for groups also so that a user can specify RT, BE or IDLE class of groups.
 
-> and I wonder about the -s and -cs postfixes?
+Regaring workload type of group, it is a tricky business. Again, because
+we idle on the group and SYNC tree contains the entities which we idle on
+it might be the right place to put group entities along with SYNC cfqq
+queues.
 
-This is the crap and the stable fixes propagated. I only had one crap
-patch to incorporate though so I will move that to linux-next-pending
-and we'll have at -ps release, which means one linux-next-pending
-patch will be applied and we'll also get all pending stable fixes
-merged.
+> Currently, different workload type and IO Class cfqqs are put on different
+> trees. If they are scheduling on a same tree, we can't differentiate them.
 
-> Can someone shed a light on this?
+I meant that we will continue to have multiple service trees per group and
+cfq queue entities will continue to go onto respective service tree and
+for group entities I think we can assume these to be of type SYNC. If it
+becomes a problem may be we can later try to put some logic to determine
+the nature of overall traffic in group and classify it as either SYNC or
+SYNC-NOIDLE etc.
 
-Hope this helps.
-
-  Luis
+Thanks
+Vivek
