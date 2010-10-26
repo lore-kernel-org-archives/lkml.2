@@ -1,74 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752902Ab0J3WA0 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Oct 2010 18:00:26 -0400
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:12154 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751525Ab0J3WAX (ORCPT
+	id S1753983Ab0J3Wap (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Oct 2010 18:30:45 -0400
+Received: from relay.dotsterhost.com ([72.5.54.243]:38162 "EHLO
+	relay.dotsterhost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752174Ab0J3Wao (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Oct 2010 18:00:23 -0400
-Date: Sat, 30 Oct 2010 23:50:04 +0200 (CEST)
-From: Jesper Juhl <jj@chaosbits.net>
-To: Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
-cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Tom Zanussi <zanussi@us.ibm.com>, Karim Yaghmour <karim@opersys.com>,
-        Paul Mundt <lethal@linux-sh.org>, Steven Rostedt <rostedt@goodmis.org>,
-        Jens Axboe <axboe@kernel.dk>
-Subject: Re: [PATCH] Optimize relay_alloc_page_array() slightly by using
- vzalloc rather than vmalloc and memset
-In-Reply-To: <20101030214704.GA20005@Krystal>
-Message-ID: <alpine.LNX.2.00.1010302343590.1572@swampdragon.chaosbits.net>
-References: <alpine.LNX.2.00.1010302216550.1572@swampdragon.chaosbits.net> <20101030214704.GA20005@Krystal>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	Sat, 30 Oct 2010 18:30:44 -0400
+Date: Tue, 26 Oct 2010 04:00:56 -0700
+Message-Id: <201010261100.o9QB0uqh013754@relay.dotsterhost.com>
+Sender-ID: y198404
+To: linux-kernel@vger.kernel.org
+Subject: Reply Needed
+From: Dr Carl Lee <vcheng69@yahoo.com.hk>
+Reply-To: carl_leeus69@yahoo.co.jp
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain
+Content-Transfer-Encoding: 16bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 30 Oct 2010, Mathieu Desnoyers wrote:
-
-> * Jesper Juhl (jj@chaosbits.net) wrote:
-> > Hi,
-> > 
-> > We can optimize kernel/relay.c::relay_alloc_page_array() slightly by using 
-> > vzalloc. The patch makes these changes:
-> > 
-> >  - use vzalloc instead of vmalloc+memset.
-> >  - remove redundant local variable 'array'.
-> >  - declare local 'pa_size' as const.
-> 
-> Hrm ? How does declaring a local variable as const helps the compiler in
-> any way ?
-> 
-
-Hmm, probably not very much in this case (but it doesn't hurt either ;) - 
-actually, removing the const yielded the exact same result, so it's 
-"not at all" in this case). 
-That bit came from my "build-in" tendency to declare stuff const when it 
-obviously doesn't change/nor should. It's a habbit..
-
-
-> Moreover, is there anyone still using this code ? LTTng uses the Generic
-> Ring Buffer library which completely deprecates relay.c. Perf and Ftrace
-> each have their own ring buffers, without dependency on relay.c.
-> 
-> BLK_DEV_IO_TRACE seems to still select RELAY. Has it completed its
-> transition to either Ftrace or Perf ? Depending on Jens, moving blktrace
-> relay dependency to the Generic Ring Buffer Library might be a good
-> option to consider.
-> 
-
-I admit I have no idea if this code is actually still used, but as long as 
-it's in the kernel I think we should strive to make it as good as possible 
-- no? If there are still users this is an improvement, if there are no 
-users (who knows if there are out-of-tree ones?) then it should probably 
-just go away (but even then this patch does no harm - except for a bit of 
-churn).
+Hello,
+ 
+I have a proposition for you, this however is not mandatory nor will I
+in any manner compel you to honor against your will.Let me start by
+introducing myself. I am Dr.Carl Lee, Director of Operations
+of the Hang Seng Bank Ltd,Sai Wan Ho Branch. I have a mutual beneficial
+business suggestion for you.
+ 
+1. Can you handle this project?
+2. Can I give you this trust ?
+ 
+Absolute confidentiality is required from you.Besides,I will use my connection
+to get some documents to back up the fund so that the fund can not be
+question by any authority.
+ 
+More information await you in my next response to your email message.
+ 
+ 
+Treat as very urgent.
+ 
+Yours Faithfully,
+ 
+Dr. Carl Lee.
 
 
--- 
-Jesper Juhl <jj@chaosbits.net>             http://www.chaosbits.net/
-Plain text mails only, please      http://www.expita.com/nomime.html
-Don't top-post  http://www.catb.org/~esr/jargon/html/T/top-post.html
 
