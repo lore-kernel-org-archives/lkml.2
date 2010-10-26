@@ -1,157 +1,249 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760581Ab0JZWMB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Oct 2010 18:12:01 -0400
-Received: from fieldses.org ([174.143.236.118]:48299 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760325Ab0JZWMA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Oct 2010 18:12:00 -0400
-Date: Tue, 26 Oct 2010 18:11:56 -0400
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Arnd Bergmann <arnd@arndb.de>, Bryan Schumaker <bjschuma@netapp.com>,
-        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: nfsd changes for 2.6.37
-Message-ID: <20101026221156.GD1842@fieldses.org>
-References: <20101026164549.GD19445@fieldses.org>
- <201010262218.36940.arnd@arndb.de>
- <4CC73BA6.1090407@netapp.com>
- <201010262255.40481.arnd@arndb.de>
- <AANLkTimPBqafDPxYpZjuym8+-yk4vKYTU15Js-Ux_e6Z@mail.gmail.com>
- <20101026212433.GB1842@fieldses.org>
- <AANLkTinOd9pDVRYDQ5+dqn8LPf4yoOW=j8NxyCfCQAB6@mail.gmail.com>
- <20101026214441.GC1842@fieldses.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101026214441.GC1842@fieldses.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1760564Ab0JZWNf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Oct 2010 18:13:35 -0400
+Received: from nm23-vm0.bullet.mail.ne1.yahoo.com ([98.138.91.57]:37572 "HELO
+	nm23-vm0.bullet.mail.ne1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1760157Ab0JZWNd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Oct 2010 18:13:33 -0400
+X-Yahoo-Newman-Id: 48164.19021.bm@omp1051.mail.ne1.yahoo.com
+X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
+X-YMail-OSG: w2wvGl8VM1lvAIHoFfldilmOgkWKC03rFdNn3bVVYWpGbkf
+ C921Yecv.j3PWng0ZoCcyhCxiMR.HO.zChEVM1mYw4AohS3vi4htw18gJHGI
+ dnL5oAAyQ_moXXHlJ49MSyPJjlddZDT.zBs_HuHWhTqJEF97Z_nAwEXXsRKD
+ zZSbTwUoT2c9RJX9OEDlnYICkEpa5NZgq3A3clYr8jlvvbcRqmswUaRNfro8
+ fnDsByHCHQqDpkQNYqpjL_fsoqMRiveajvRcy_O7ExnB5yMMsKyDP3cHBCVG
+ TaA6ju.OmvDkzvWlg3XxzbJJ.b71evynOyltfpg7QbKfEIm2Ba9wsDf4A09i
+ QF7vh_icWmaphjDTJW62vkhoJ62Ca1IGCaQsWpsF_gAw7Po6NIG0X
+X-Yahoo-Newman-Property: ymail-3
+Subject: Re: [ANNOUNCE] Status of unlocked_qcmds=1 operation for .37
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: Mike Anderson <andmike@linux.vnet.ibm.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        Vasu Dev <vasu.dev@linux.intel.com>,
+        Tim Chen <tim.c.chen@linux.intel.com>, Andi Kleen <ak@linux.intel.com>,
+        Matthew Wilcox <willy@linux.intel.com>,
+        James Bottomley <James.Bottomley@suse.de>,
+        Mike Christie <michaelc@cs.wisc.edu>, Jens Axboe <jaxboe@fusionio.com>,
+        James Smart <james.smart@emulex.com>,
+        Andrew Vasquez <andrew.vasquez@qlogic.com>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Hannes Reinecke <hare@suse.de>, Joe Eykholt <jeykholt@cisco.com>,
+        Christoph Hellwig <hch@lst.de>, Jon Hawley <warthog9@kernel.org>,
+        Brian King <brking@linux.vnet.ibm.com>,
+        Christof Schmitt <christof.schmitt@de.ibm.com>,
+        Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@zytor.com>
+In-Reply-To: <20101021150840.GA24309@linux.vnet.ibm.com>
+References: <1287607774.10283.78.camel@haakon2.linux-iscsi.org>
+	 <20101021150840.GA24309@linux.vnet.ibm.com>
+Content-Type: text/plain
+Date: Tue, 26 Oct 2010 15:08:34 -0700
+Message-Id: <1288130914.5169.97.camel@haakon2.linux-iscsi.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.22.3.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 26, 2010 at 05:44:41PM -0400, J. Bruce Fields wrote:
-> On Tue, Oct 26, 2010 at 02:37:26PM -0700, Linus Torvalds wrote:
-> > On Tue, Oct 26, 2010 at 2:24 PM, J. Bruce Fields <bfields@fieldses.org> wrote:
-> > >
-> > > I did a couple connectathon runs just now with no obvious ill effects
-> > > except for some sleep-within-spinlock warnings in the lease code.
+On Thu, 2010-10-21 at 08:08 -0700, Mike Anderson wrote:
+> Nicholas A. Bellinger <nab@linux-iscsi.org> wrote:
+> > *) core drivers/scsi remaining issue(s):
 > > 
-> > Hmm. Those sleep-within-spinlock warnings are very likely serious
-> > bugs.
+> > The issue raised by andmike during RFCv4 described as:
+> > 
+> > "If we skip __scsi_try_to_abort_cmd when REQ_ATOM_COMPLETE is set it
+> > would be correct for the scsi_decide_disposition cases but it would
+> > appear this would stop __scsi_try_to_abort_cmd from being called in the
+> > time out case as REQ_ATOM_COMPLETE is set prior to calling
+> > blk_rq_timed_out."
+> > 
+> > The complete discussion is here:
+> > 
+> > http://marc.info/?l=linux-scsi&m=128535319915212&w=2
+> > 
+> > We still need folks with experience to dig into this code, so you know
+> > the scsi_error.c code please jump in!
+> > 
 > 
-> Yeah, didn't mean to belittle them.
+> I provided two logging traces below for the two cases mentioned in the
+> above email thread. The second trace used a modified version of
+> scsi_debug so that I could generate the needed unit attention codes.
+> 1.) On the check for complete comment the logging below marked with
+> "***" indicated that during a timeout that the complete bit is set. We
+> would not want to have a check for complete skip the call to
+> __scsi_try_to_abort_cmd. 
 > 
-> > Can you quote the whole warning with stack trace?
+> scsi_debug: cmd 28 00 00 00 00 00 00 00 20 00 
+> sd 1:0:0:0: [sdb] Done: TIMEOUT
+> sd 1:0:0:0: [sdb]  Result: hostbyte=DID_OK driverbyte=DRIVER_OK
+> sd 1:0:0:0: [sdb] CDB: Read(10): 28 00 00 00 00 00 00 00 20 00
+> Waking error handler thread
+> Error handler scsi_eh_1 waking up
+> sd 1:0:0:0: scsi_eh_prt_fail_stats: cmds failed: 0, cancel: 1
+> Total of 1 commands on 1 devices require eh work
+> scsi_eh_1: aborting cmd:0xffff88019e171b80
 > 
-> It's just obvious allocations in setlease:
+> ***
+> sd 1:0:0:0: scsi_try_to_abort_cmd: Comp bit set
+> ***
 > 
-> BUG: sleeping function called from invalid context at mm/slab.c:3101
-> in_atomic(): 1, irqs_disabled(): 0, pid: 4345, name: lease_tests
-> 1 lock held by lease_tests/4345:
->  #0:  (file_lock_lock){+.+.+.}, at: [<ffffffff81128be5>] lock_flocks+0x15/0x20
-> Pid: 4345, comm: lease_tests Not tainted 2.6.36-05858-gbd5e20b #1028
-> Call Trace:
->  [<ffffffff8103141d>] __might_sleep+0x10d/0x140
->  [<ffffffff810e3ad3>] kmem_cache_alloc+0x1f3/0x230
->  [<ffffffff8112a4d2>] generic_setlease+0x112/0x2c0
->  [<ffffffff8112a6b5>] __vfs_setlease+0x35/0x40
->  [<ffffffff8112acfe>] fcntl_setlease+0xce/0x180
->  [<ffffffff810f7c2e>] sys_fcntl+0x2fe/0x630
->  [<ffffffff81961999>] ? trace_hardirqs_on_thunk+0x3a/0x3f
->  [<ffffffff81002658>] system_call_fastpath+0x16/0x1b
+> scsi_debug: abort
+> scsi_debug: cmd 00 00 00 00 00 00 
+> scsi_eh_done scmd: ffff88019e171b80 result: 0
+> scsi_send_eh_cmnd: scmd: ffff88019e171b80, timeleft: 10000
+> scsi_send_eh_cmnd: scsi_eh_completed_normally 2002
+> scsi_eh_tur: scmd ffff88019e171b80 rtn 2002
+> scsi_eh_1: flush retry cmd: ffff88019e171b80
+> scsi_restart_operations: waking up host to restart
+> scsi_debug: cmd 28 00 00 00 00 00 00 00 20 00 
+> Error handler scsi_eh_1 sleeping
 > 
-> I'm testing a patch.
 
-This works for me.
+Hi Mike and Co,
 
-I'm not saying it's correct, but it does at least pass my dumb tests
-without complaining.
+After considering a couple of different approches here, I ended up with
+the following simple patch that has been tested on linus HEAD from this
+afternoon w/ forcing scsi_debug cmd TIMEOUT during modprobe and via
+sg_dd ops.  (See comments below)
 
---b.
+[PATCH] scsi: Add SCSI_EH_SOFTIRQ_DONE usage
 
-diff --git a/fs/locks.c b/fs/locks.c
-index 02b6e0e..db3afa0 100644
---- a/fs/locks.c
-+++ b/fs/locks.c
-@@ -1379,7 +1379,9 @@ int generic_setlease(struct file *filp, long arg, struct file_lock **flp)
- 	if (error)
- 		return error;
- 
-+	lock_flocks();
- 	time_out_leases(inode);
-+	unlock_flocks();
- 
- 	BUG_ON(!(*flp)->fl_lmops->fl_break);
- 
-@@ -1400,6 +1402,7 @@ int generic_setlease(struct file *filp, long arg, struct file_lock **flp)
- 			goto out;
- 	}
- 
-+	lock_flocks();
- 	/*
- 	 * At this point, we know that if there is an exclusive
- 	 * lease on this file, then we hold it on this filp
-@@ -1427,28 +1430,31 @@ int generic_setlease(struct file *filp, long arg, struct file_lock **flp)
- 	error = -EAGAIN;
- 	if ((arg == F_RDLCK && (wrlease_count > 0)) ||
- 	    (arg == F_WRLCK && ((rdlease_count + wrlease_count) > 0)))
--		goto out;
-+		goto out_unlock;
- 
- 	if (my_before != NULL) {
- 		*flp = *my_before;
- 		error = lease->fl_lmops->fl_change(my_before, arg);
--		goto out;
-+		goto out_unlock;
- 	}
- 
- 	error = 0;
- 	if (arg == F_UNLCK)
--		goto out;
-+		goto out_unlock;
- 
- 	error = -EINVAL;
- 	if (!leases_enable)
--		goto out;
-+		goto out_unlock;
- 
- 	locks_copy_lock(new_fl, lease);
- 	locks_insert_lock(before, new_fl);
- 
- 	*flp = new_fl;
-+	unlock_flocks();
- 	return 0;
- 
-+out_unlock:
-+	unlock_flocks();
- out:
- 	if (new_fl != NULL)
- 		locks_free_lock(new_fl);
-@@ -1495,9 +1501,7 @@ int vfs_setlease(struct file *filp, long arg, struct file_lock **lease)
- {
- 	int error;
- 
--	lock_flocks();
- 	error = __vfs_setlease(filp, arg, lease);
--	unlock_flocks();
- 
- 	return error;
- }
-@@ -1524,8 +1528,6 @@ int fcntl_setlease(unsigned int fd, struct file *filp, long arg)
- 	if (error)
- 		return error;
- 
--	lock_flocks();
--
- 	error = __vfs_setlease(filp, arg, &flp);
- 	if (error || arg == F_UNLCK)
- 		goto out_unlock;
-@@ -1541,7 +1543,6 @@ int fcntl_setlease(unsigned int fd, struct file *filp, long arg)
- 
- 	error = __f_setown(filp, task_pid(current), PIDTYPE_PID, 0);
- out_unlock:
--	unlock_flocks();
- 	return error;
- }
- 
+This patch introduces a SCSI_EH_SOFTIRQ_DONE flag that is set in scsi_softirq_done()
+from block soft_irq context that is used to signal when scsi_try_to_abort_cmd() should
+be calling __scsi_try_to_abort_cmd() for a timed out struct scsi_cmnd instead of
+returning SUCCESS via checking only blk_test_rq_complete().  This is done because
+blk_rq_timed_out_timer() calls blk_mark_rq_complete() before blk_rq_timed_out() ->
+struct request_queue->rq_timed_out_fn().
+
+Signed-off-by: Nicholas A. Bellinger <nab@linux-iscsi.org>
+---
+ drivers/scsi/scsi_error.c |    3 ++-
+ drivers/scsi/scsi_lib.c   |    6 ++++++
+ drivers/scsi/scsi_priv.h  |    1 +
+ 3 files changed, 9 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/scsi/scsi_error.c b/drivers/scsi/scsi_error.c
+index 6e496c3..e75b388 100644
+--- a/drivers/scsi/scsi_error.c
++++ b/drivers/scsi/scsi_error.c
+@@ -651,7 +651,8 @@ static int scsi_try_to_abort_cmd(struct scsi_cmnd
+*scmd)
+         * block/blk.h:blk_mark_rq_complete() has already been called
+         * from the block softirq
+         */
+-       if (blk_test_rq_complete(scmd->request))
++       if ((blk_test_rq_complete(scmd->request)) &&
++           (scmd->eh_eflags & SCSI_EH_SOFTIRQ_DONE))
+                return SUCCESS;
+
+        return __scsi_try_to_abort_cmd(scmd);
+diff --git a/drivers/scsi/scsi_lib.c b/drivers/scsi/scsi_lib.c
+index 8041fe1..7e3c477 100644
+--- a/drivers/scsi/scsi_lib.c
++++ b/drivers/scsi/scsi_lib.c
+@@ -1402,6 +1402,12 @@ static void scsi_softirq_done(struct request *rq)
+        int disposition;
+
+        INIT_LIST_HEAD(&cmd->eh_entry);
++       /*
++        * Set the SCSI_EH_SOFTIRQ_DONE flag to signal scsi_error.c:
++        * scsi_try_to_abort_cmd() that this cmd has reached
++        * scsi_softirq_done()
++        */
++       cmd->eh_eflags |= SCSI_EH_SOFTIRQ_DONE;
+
+        /*
+         * Set the serial numbers back to zero
+diff --git a/drivers/scsi/scsi_priv.h b/drivers/scsi/scsi_priv.h
+index b4056d1..2f64350 100644
+--- a/drivers/scsi/scsi_priv.h
++++ b/drivers/scsi/scsi_priv.h
+@@ -17,6 +17,7 @@ struct scsi_nl_hdr;
+  * Scsi Error Handler Flags
+  */
+ #define SCSI_EH_CANCEL_CMD     0x0001  /* Cancel this cmd */
++#define SCSI_EH_SOFTIRQ_DONE   0x0002  /* cmd reached
+scsi_softirq_done() */
+
+ #define SCSI_SENSE_VALID(scmd) \
+        (((scmd)->sense_buffer[0] & 0x70) == 0x70)
+
+
+-----------------------------------------------------------------
+
+So far with this patch I see the follow two concerns:
+
+*) SCSI_EH_SOFTIRQ_DONE uses cmd->eh_eflags which gets explictly cleared
+in scsi_eh_finish_cmd().  AFAICT, the checks for scsi_try_to_abort_cmd()
+are always done before scsi_eh_finish_cmd() gets called.   Comments
+here..?
+
+*) A potential race between SCSI_EH_SOFTIRQ_DONE being set in
+scsi_softirq_done(), and the check in scsi_try_to_abort_cmd().  As this
+code originaly used a non atomic cmd->serial_number check here between
+the same two pieces of code, this *should* be OK right..?
+
+> 
+> 2.) In the logging output below my previous comment on the START_UNIT
+> path hitting the serial_number check in scsi_try_to_abort_cmd is shown
+> to be incorrect as the START_UNIT is handled as a failed and not a
+> cancel action.
+> 
+> scsi_debug: cmd 28 00 00 00 00 00 00 00 20 00 
+> scsi_debug:    [sense_key,asc,ascq]: [0x6,0x4,0x2]
+> scsi_debug:    <1 0 0 0> non-zero result=0x8000002
+> sd 1:0:0:0: scsi_check_sense: return FAILED for restart
+> sd 1:0:0:0: [sdb] Done: FAILED
+> sd 1:0:0:0: [sdb]  Result: hostbyte=DID_OK driverbyte=DRIVER_SENSE
+> sd 1:0:0:0: [sdb] CDB: Read(10): 28 00 00 00 00 00 00 00 20 00
+> sd 1:0:0:0: [sdb]  Sense Key : Unit Attention [current] 
+> sd 1:0:0:0: [sdb]  Add. Sense: Logical unit not ready, initializing command required
+> Waking error handler thread
+> Error handler scsi_eh_1 waking up
+> 
+> ***
+> sd 1:0:0:0: scsi_eh_prt_fail_stats: cmds failed: 1, cancel: 0
+> ***
+> 
+> Total of 1 commands on 1 devices require eh work
+> sd 1:0:0:0: scsi_check_sense: return FAILED for restart
+> scsi_eh_1: Sending START_UNIT to sdev: 0xffff8801a2134000
+> scsi_debug: cmd 1b 00 00 00 01 00 
+> scsi_eh_done scmd: ffff8801a1730180 result: 0
+> scsi_send_eh_cmnd: scmd: ffff8801a1730180, timeleft: 29999
+> scsi_send_eh_cmnd: scsi_eh_completed_normally 2002
+> scsi_debug: cmd 00 00 00 00 00 00 
+> scsi_eh_done scmd: ffff8801a1730180 result: 0
+> scsi_send_eh_cmnd: scmd: ffff8801a1730180, timeleft: 10000
+> scsi_send_eh_cmnd: scsi_eh_completed_normally 2002
+> scsi_eh_tur: scmd ffff8801a1730180 rtn 2002
+> scsi_eh_1: flush retry cmd: ffff8801a1730180
+> scsi_restart_operations: waking up host to restart
+> scsi_debug: cmd 28 00 00 00 00 00 00 00 20 00 
+> Error handler scsi_eh_1 sleeping
+> 
+> 
+
+AFAICT this second case should be addressed by above patch
+as well..  I will go ahead and test with your scsi_debug patch to
+trigger this case, and everything looks good for the above two cases I
+will respin against the latest linus HEAD.  Mike still wants to do a
+bunch of testing to this code over the next weeks, and we will continue
+to shake out any remaining items here.
+
+That said, the libfc rport state + host_lock less issue would be the
+only known remaining item to get this series merged for .37.  We can
+always leave unlocked_qcmd=0 for libfc for the initial merge of these
+patches, and have mnc and james smart dig into the nitty gritty details
+post merge window.  Comments please libfc folks..?
+
+Many, many thanks again to Mike Anderson for his detailed explanations
+of these two cases.
+
+--nab
+
+
