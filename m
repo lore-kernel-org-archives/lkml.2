@@ -1,77 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759967Ab0JZSlf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Oct 2010 14:41:35 -0400
-Received: from bar.sig21.net ([80.81.252.164]:55546 "EHLO bar.sig21.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752045Ab0JZSle (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Oct 2010 14:41:34 -0400
-Date: Tue, 26 Oct 2010 20:41:23 +0200
-From: Johannes Stezenbach <js@sig21.net>
-To: "Luis R. Rodriguez" <mcgrof@gmail.com>
-Cc: linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Ivo Van Doorn <ivdoorn@gmail.com>
-Subject: Re: Compat-wireless release for 2010-10-25 is baked
-Message-ID: <20101026184123.GA1616@sig21.net>
-References: <20101025190358.AEC6840F97@repository3.orbit-lab.org>
- <20101026123552.GA4604@sig21.net>
- <AANLkTimzUKj=C9PxGs1PkQy_KWu0PGKd1zv_m-ZpWaEm@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTimzUKj=C9PxGs1PkQy_KWu0PGKd1zv_m-ZpWaEm@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Spam-21-Score: -2.7 (--)
-X-Spam-21-Report: No, score=-2.7 required=5.0 tests=ALL_TRUSTED=-1.8,AWL=-0.194,BAYES_20=-0.74 autolearn=no
+	id S1760145Ab0JZSqA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Oct 2010 14:46:00 -0400
+Received: from xenotime.net ([72.52.115.56]:38426 "HELO xenotime.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1753150Ab0JZSp7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Oct 2010 14:45:59 -0400
+Date: Tue, 26 Oct 2010 11:45:55 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+To: lkml <linux-kernel@vger.kernel.org>
+Cc: Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Subject: docbook: fix fatal error in linux/input.h
+Message-Id: <20101026114555.4b79977d.rdunlap@xenotime.net>
+Organization: YPO4
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 26, 2010 at 08:59:04AM -0700, Luis R. Rodriguez wrote:
-> On Tue, Oct 26, 2010 at 5:35 AM, Johannes Stezenbach <js@sig21.net> wrote:
-> >
-> > I wonder about the different tarballs in
-> > http://wireless.kernel.org/download/compat-wireless-2.6/
-> >
-> > compat-wireless-2010-10-25.tar.bz2
-> > compat-wireless-2010-10-25-p.tar.bz2
-> > compat-wireless-2010-10-25-pc.tar.bz2
-> >
-> > Those -p and -pc postfixes are not explained in
-> > http://wireless.kernel.org/en/users/Download
-> 
-> Right, sorry, I haven't updated the docs to add documentation for
-> them. First please read:
-> 
-> http://marc.info/?l=linux-wireless&m=128716953726075&w=2
-> 
-> -s is for getting and applying pending-stable/ fixes
-> -n is for applying the patches linux-next-cherry-picks directory
-> -p is for applying the patches on the linux-next-pending directory
-> -s is for applying the patches on the crap directory
-  -c
+Hi,
 
-> Hope this helps.
+Recent commit 8613e4c2872a87cc309a42de2c7091744dc54d0e:
+Author: Mauro Carvalho Chehab <mchehab@redhat.com>
+Date:   Thu Sep 9 21:54:22 2010 -0700
+    Input: add support for large scancodes
 
-Definitively, thank you very much.  Meanwhile I also found
-scripts/admin-update.sh in compat-wireless which seems to
-generate the release tarballs.
+causes a fatal error in docbook generation:
 
-It looks like, if I want to test the latest rt2x00 code, I could
-clone git://git.kernel.org/pub/scm/linux/kernel/git/ivd/rt2x00.git,
-checkout experimental, and then run admin-update.sh with
-GIT_TREE=path/to/rt2x00-experimental.  Right?
-Or (maybe better?), clone linux-next, merge rt2x00.git and use
-the merged tree as GIT_TREE for admin-update.sh.
+linux-2.6.36-git8/DOC1/Documentation/DocBook/device-drivers.xml:40690: parser error : StartTag: invalid element name
+#define INPUT_KEYMAP_BY_INDEX	(1 << 0)
+                             	    ^
 
-But according to
-http://rt2x00.serialmonkey.com/pipermail/users_rt2x00.serialmonkey.com/2010-October/002175.html
-the compat-rt2x00 tarballs seem to be made manually?
+I think that this message comes from xsltproc, but I'm not positive about that.
+I also don't know of a really good fix for it.  However, I did find 2 ways to
+work around the error:
 
-Sorry for stupid questions, I want to get into rt2x00 development
-but I need to target a stable 2.6.32 kernel and I'm trying to figure
-out which git tree to base my work on.
+a/ move the #define value to after the end of the struct input_keymap_entry, like:
 
+/* flags bits: */
+#define INPUT_KEYMAP_BY_INDEX	(1 << 0)
 
-Thanks,
-Johannes
+or
+b/ don't use the "<< 0" (can leave the #define where it is in this case):
+#define INPUT_KEYMAP_BY_INDEX	(1)
+
+I have tested both of these patches and they work OK.
+Are you OK with either of them?  or want to choose one?
+
+thanks,
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
