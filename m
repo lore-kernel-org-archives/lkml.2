@@ -1,68 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757355Ab0JZBNr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Oct 2010 21:13:47 -0400
-Received: from bunsen.bytemark.co.uk ([80.68.81.6]:41024 "EHLO
-	bunsen.bytemark.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756386Ab0JZBMQ (ORCPT
+	id S932121Ab0JZBOc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Oct 2010 21:14:32 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:52794 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756403Ab0JZBO2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Oct 2010 21:12:16 -0400
-From: "Emilio G. Cota" <cota@braap.org>
-To: Martyn Welch <martyn.welch@ge.com>
-Cc: Greg KH <greg@kroah.com>, LKML <linux-kernel@vger.kernel.org>,
-        devel@driverdev.osuosl.org,
-        Juan David Gonzalez Cobas <david.cobas@gmail.com>,
-        Bill Pemberton <wfp5p@virginia.edu>, "Emilio G. Cota" <cota@braap.org>
-Subject: [PATCH 23/30] staging/vme_user: fix usage of the slave resources after they've been freed
-Date: Mon, 25 Oct 2010 21:11:09 -0400
-Message-Id: <1288055476-19438-24-git-send-email-cota@braap.org>
-X-Mailer: git-send-email 1.7.3.2
-In-Reply-To: <1288055476-19438-1-git-send-email-cota@braap.org>
-References: <1288055476-19438-1-git-send-email-cota@braap.org>
+	Mon, 25 Oct 2010 21:14:28 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=JHAWafvoLClkYJ2ve/A5WEVA4IfnvQ0wns7n7mGaG54b/UnvtFsajWbxbjN+Nr5W3W
+         l0pYsNL2zGB0A1BvvZCQxfHj44D7LcX7HjIUqpfb+qqy5byTSd9aCFWKwDWKyyCvQk4O
+         6OU6QISI5xJyiP6LIqA8M+O9GOO66Rjbd0XcQ=
+Subject: Re: [PATCH 02/29] memstick: core: reorder functions This patch
+ just reorders functions in memstick.c So that host specific and card driver
+ specific functions are now grouped together. This makes it easier to
+ understand the code.
+From: Maxim Levitsky <maximlevitsky@gmail.com>
+To: Alex Dubov <oakad@yahoo.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <779344.19696.qm@web37603.mail.mud.yahoo.com>
+References: <779344.19696.qm@web37603.mail.mud.yahoo.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 26 Oct 2010 03:14:23 +0200
+Message-ID: <1288055663.4024.25.camel@maxim-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Emilio G. Cota <cota@braap.org>
+On Mon, 2010-10-25 at 07:50 -0700, Alex Dubov wrote:
+> 
+> --- On Fri, 22/10/10, Maxim Levitsky <maximlevitsky@gmail.com> wrote:
+> 
+> > From: Maxim Levitsky <maximlevitsky@gmail.com>
+> > Subject: [PATCH 02/29] memstick: core: reorder functions This patch just reorders functions in memstick.c So that host specific and card driver specific functions are now grouped together. This makes it easier to understand the code.
+> 
+> 
+> I'm not sure this purely subjective patch is of any real utility.
+> And at any rate, it belongs to the end of the patchset (where the clean-up
+> normally go), not to the beginning.
 
-buf_unalloc() frees the memory buffers allocated with vme_alloc_consistent.
-The associated VME resource is needed in both vme_alloc_consistent and
-vme_free_consistent; however the slave VME resources are being freed before
-the calls to vme_free_consistent are made, which means the buffers
-are never returned.
+Could somebody else comment on this?
+I mean memstick.c/h contains two types of functions.
+One is useful only for low level drivers, and other only for high level
+drivers. Whats wrong with at least grouping that together?
+It probably even better to put them to separate files...
 
-Fix this by freeing the VME resources only after the consistent buffers have
-been returned.
+As for doing that late, I exaplained that once in reply to Morton.
+It was much easier to split patches this way, and really doesn't matter
+otherwise.
 
-Signed-off-by: Emilio G. Cota <cota@braap.org>
----
- drivers/staging/vme/devices/vme_user.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/staging/vme/devices/vme_user.c b/drivers/staging/vme/devices/vme_user.c
-index 5def455..95c22ff 100644
---- a/drivers/staging/vme/devices/vme_user.c
-+++ b/drivers/staging/vme/devices/vme_user.c
-@@ -826,8 +826,8 @@ err_master:
- err_slave:
- 	while (i > SLAVE_MINOR) {
- 		i--;
--		vme_slave_free(image[i].resource);
- 		buf_unalloc(i);
-+		vme_slave_free(image[i].resource);
- 	}
- err_class:
- 	cdev_del(vme_user_cdev);
-@@ -852,8 +852,8 @@ static int __devexit vme_user_remove(struct device *dev, int cur_bus, int cur_sl
- 
- 	for (i = SLAVE_MINOR; i < (SLAVE_MAX + 1); i++) {
- 		vme_slave_set(image[i].resource, 0, 0, 0, 0, VME_A32, 0);
--		vme_slave_free(image[i].resource);
- 		buf_unalloc(i);
-+		vme_slave_free(image[i].resource);
- 	}
- 
- 	/* Unregister device driver */
--- 
-1.7.1
+Best regards,
+	Maxim Levitsky
 
