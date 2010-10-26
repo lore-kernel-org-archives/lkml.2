@@ -1,82 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756511Ab0JZIcx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Oct 2010 04:32:53 -0400
-Received: from mga14.intel.com ([143.182.124.37]:26793 "EHLO mga14.intel.com"
+	id S1756427Ab0JZIhN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Oct 2010 04:37:13 -0400
+Received: from hera.kernel.org ([140.211.167.34]:44634 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751856Ab0JZIcv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Oct 2010 04:32:51 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.58,240,1286175600"; 
-   d="scan'208";a="340498708"
-Subject: Re: [NAK] Re: [PATCH -v2 9/9] ACPI, APEI, Generic Hardware Error
- Source POLL/IRQ/NMI notification type support
-From: Huang Ying <ying.huang@intel.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Len Brown <lenb@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Andi Kleen <andi@firstfloor.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        Borislav Petkov <petkovbb@googlemail.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Don Zickus <dzickus@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        "Luck, Tony" <tony.luck@intel.com>
-In-Reply-To: <20101026075559.GA9798@elte.hu>
-References: <1287992610-14996-1-git-send-email-ying.huang@intel.com>
-	 <1287992610-14996-10-git-send-email-ying.huang@intel.com>
-	 <20101025084553.GA27119@elte.hu>
-	 <alpine.LFD.2.00.1010252058370.11036@localhost.localdomain>
-	 <alpine.LFD.2.00.1010260629560.3955@localhost6.localdomain6>
-	 <20101026072210.GE13036@elte.hu> <1288078222.2862.484.camel@yhuang-dev>
-	 <20101026075559.GA9798@elte.hu>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 26 Oct 2010 16:32:46 +0800
-Message-ID: <1288081966.2862.571.camel@yhuang-dev>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1751856Ab0JZIhK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Oct 2010 04:37:10 -0400
+Date: Tue, 26 Oct 2010 08:36:52 GMT
+From: tip-bot for Paul Mundt <lethal@linux-sh.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        lethal@linux-sh.org, tglx@linutronix.de
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        tglx@linutronix.de, lethal@linux-sh.org
+In-Reply-To: <20101026071912.GD4733@linux-sh.org>
+References: <20101026071912.GD4733@linux-sh.org>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:irq/core] genirq: Add single IRQ reservation helper
+Message-ID: <tip-639bd12f778d55a2632fde5af7d0719abc1871b9@git.kernel.org>
+Git-Commit-ID: 639bd12f778d55a2632fde5af7d0719abc1871b9
+X-Mailer: tip-git-log-daemon
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 26 Oct 2010 08:36:53 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-10-26 at 15:55 +0800, Ingo Molnar wrote:
-> * Huang Ying <ying.huang@intel.com> wrote:
-> 
-> > On Tue, 2010-10-26 at 15:22 +0800, Ingo Molnar wrote:
-> > > * Thomas Gleixner <tglx@linutronix.de> wrote:
-> > > 
-> > > > >From Kconfig:
-> > > > 
-> > > >   EDAC is designed to report errors in the core system.
-> > > >   These are low-level errors that are reported in the CPU or
-> > > >   supporting chipset or other subsystems:
-> > > >   memory errors, cache errors, PCI errors, thermal throttling, etc..
-> > > >   If unsure, select 'Y'.
-> > > > 
-> > > > So please explain why your error reporting is so different from the above that it 
-> > > > justifies a separate facility. And you better come up with a real good explanation 
-> > > > other than we looked at EDAC and it did not fit our needs.
-> > > 
-> > > Btw., it's not just about EDAC - the firmware can store Linux events 
-> > > persistently (beyond allowing the firmware to insert its own RAS events), that 
-> > > is obviously _hugely_ useful for kernel debugging in general. We could inject 
-> > > debugging events there and recover them after a crash, etc.
-> > 
-> > Yes. It can be used by other kernel subsystems other than RAS. A kernel API is 
-> > provided already. The design of the kernel API makes it easy to be used by various 
-> > kernel subsystems. As the first step, we plan to support saving kernel log before 
-> > panic and reading it back after reboot.
-> 
-> And that's the problem: we have good facilities already that deal with similar 
-> things. We have NMI-safe event logging, event enumeration, dump-on-panic code and 
-> all sorts of goodies there.
+Commit-ID:  639bd12f778d55a2632fde5af7d0719abc1871b9
+Gitweb:     http://git.kernel.org/tip/639bd12f778d55a2632fde5af7d0719abc1871b9
+Author:     Paul Mundt <lethal@linux-sh.org>
+AuthorDate: Tue, 26 Oct 2010 16:19:13 +0900
+Committer:  Thomas Gleixner <tglx@linutronix.de>
+CommitDate: Tue, 26 Oct 2010 10:33:27 +0200
 
-We have provided an in-kernel API for ERST now. And we plan to implement
-a kmsg_dumper with ERST. And maybe implement some output support (maybe
-via some /dev/kmsg extension) for kmsg_dumper if necessary.
+genirq: Add single IRQ reservation helper
 
-Best Regards,
-Huang Ying
+For cases that wish to reserve a single IRQ at a given place simply
+provide a wrapper in to the ranged reservation routine.
 
+Signed-off-by: Paul Mundt <lethal@linux-sh.org>
+LKML-Reference: <20101026071912.GD4733@linux-sh.org>
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 
+---
+ include/linux/irq.h |    5 +++++
+ 1 files changed, 5 insertions(+), 0 deletions(-)
+
+diff --git a/include/linux/irq.h b/include/linux/irq.h
+index e963911..abde252 100644
+--- a/include/linux/irq.h
++++ b/include/linux/irq.h
+@@ -412,6 +412,11 @@ static inline void irq_free_desc(unsigned int irq)
+ 	irq_free_descs(irq, 1);
+ }
+ 
++static inline int irq_reserve_irq(unsigned int irq)
++{
++	return irq_reserve_irqs(irq, 1);
++}
++
+ #endif /* CONFIG_GENERIC_HARDIRQS */
+ 
+ #endif /* !CONFIG_S390 */
