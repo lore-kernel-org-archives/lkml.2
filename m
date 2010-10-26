@@ -1,87 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932997Ab0JZMPD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Oct 2010 08:15:03 -0400
-Received: from hera.kernel.org ([140.211.167.34]:51706 "EHLO hera.kernel.org"
+	id S933089Ab0JZMVA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Oct 2010 08:21:00 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:36608 "EHLO mgw2.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932478Ab0JZMPB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Oct 2010 08:15:01 -0400
-Message-ID: <4CC6C62F.1000804@kernel.org>
-Date: Tue, 26 Oct 2010 14:14:39 +0200
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.11) Gecko/20101013 Lightning/1.0b2 Thunderbird/3.1.5
+	id S932478Ab0JZMU7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Oct 2010 08:20:59 -0400
+Date: Tue, 26 Oct 2010 14:20:56 +0200 (CEST)
+From: Julia Lawall <julia@diku.dk>
+To: walter harms <wharms@bfs.de>
+Cc: Karsten Keil <isdn@linux-pingi.de>, kernel-janitors@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 10/14] drivers/isdn: delete double assignment
+In-Reply-To: <4CC6C1C0.8020005@bfs.de>
+Message-ID: <Pine.LNX.4.64.1010261419510.25281@ask.diku.dk>
+References: <1288088743-3725-1-git-send-email-julia@diku.dk>
+ <1288088743-3725-11-git-send-email-julia@diku.dk> <4CC6C1C0.8020005@bfs.de>
 MIME-Version: 1.0
-To: David Howells <dhowells@redhat.com>
-CC: torvalds@osdl.org, akpm@linux-foundation.org, linux-am33-list@redhat.com,
-        linux-kernel@vger.kernel.org,
-        Akira Takeuchi <takeuchi.akr@jp.panasonic.com>,
-        Mark Salter <msalter@redhat.com>
-Subject: Re: [PATCH] MN10300: Fix the PERCPU() alignment to allow for workqueues
-References: <4CC69B22.2050708@kernel.org> <20101025224111.7798.38960.stgit@warthog.procyon.org.uk> <12101.1288088542@redhat.com>
-In-Reply-To: <12101.1288088542@redhat.com>
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 26 Oct 2010 12:14:42 +0000 (UTC)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+From: Julia Lawall <julia@diku.dk>
 
-On 10/26/2010 12:22 PM, David Howells wrote:
->> Can you please double check the bug doesn't trigger with the section
->> alignment updated?
-> 
-> It can be made to trigger consistently without the change, and simply updating
-> that alignment makes it go away.  It seems unlikely that it's affecting
-> subsequent stuff in the final link since the PERCPU() is immediately followed
-> by an alignment to PAGE_SIZE:
-> 
-> 	PERCPU(PAGE_SIZE)
-> 	. = ALIGN(PAGE_SIZE);
-> 
-> I've attached the kernel log below.  CPUID is 0 indicating this happened on
-> CPU 0 (the boot CPU).
+Delete successive assignments to the same location.  In the first case, the
+hscx array has two elements, so change the assignment to initialize the
+second one.  In the second case, the two assignments are simply identical.
+Furthermore, neither is necessary, because the effect of the assignment is
+only visible in the next line, in the assignment in the if test.  The patch
+inlines the right hand side value in the latter assignment and pulls that
+assignment out of the if test.
 
-Ah, I see now.  The actual areas are properly aligned but the percpu
-address is determined as offset from the percpu output section base so
-the percpu pointers in the percpu address space end up misaligned with
-the actual kernel addresses and the code in workqueue checks the
-address in percpu AS, so, yeap, it's caused by the misalignment of the
-percpu section.  Except for triggering BUG_ON(), it shouldn't cause a
-real issue tho as work_data points to the translated addresses in the
-kernel AS for specific CPU.  Needs to be fixed anyways.
+A simplified version of the semantic match that finds this problem is as
+follows: (http://coccinelle.lip6.fr/)
 
->> That said, I think it might be better to just remove the alignment parameter
->> from the macro and force align to PAGE_SIZE.
-> 
-> That's not necessarily good.  Two arches to note:
-> 
-> 	arch/x86/kernel/vmlinux.lds.S:  PERCPU(THREAD_SIZE)
+// <smpl>
+@@
+expression i;
+@@
 
-I don't think the current percpu allocator honors alignment larger
-than PAGE_SIZE no matter how large the alignment for the percpu output
-section is.  I'll look into it deeper but I think we might just have
-been lucky and the alignment somehow didn't bite us yet.  The only
-user of THREAD_SIZE mask at this point seems to be cpu_init().  Maybe
-we can remove this requirement.  I'll look into it.
+*i = ...;
+ i = ...;
+// </smpl>
 
-> which may be bigger than PAGE_SIZE and:
-> 
-> 	arch/frv/kernel/vmlinux.lds.S:  PERCPU(4096)
-> 
-> FRV's page size is 16KB, so on that we really don't want it to be PAGE_SIZE.
+Signed-off-by: Julia Lawall <julia@diku.dk>
 
-Why not?  It's in the init section which will be freed anyway and with
-the kernel image compression it's not even gonna add any noticeable
-amount to the kernel image size.  There isn't any benefit in using
-anything smaller than PAGE_SIZE for alignment.  Also, percpu allocator
-guarantees alignment requirement upto PAGE_SIZE is honored.  If the
-output section uses smaller alignment, the percpu AS will end up being
-misaligned.
+---
+In the first case, the patch changes the semantics and has not been tested.
 
-Thanks.
+ drivers/isdn/hardware/mISDN/mISDNinfineon.c |    2 +-
+ drivers/isdn/hisax/l3_1tr6.c                |    6 ++----
+ 2 files changed, 3 insertions(+), 5 deletions(-)
 
--- 
-tejun
+diff --git a/drivers/isdn/hardware/mISDN/mISDNinfineon.c b/drivers/isdn/hardware/mISDN/mISDNinfineon.c
+index af25e1f..e90db88 100644
+--- a/drivers/isdn/hardware/mISDN/mISDNinfineon.c
++++ b/drivers/isdn/hardware/mISDN/mISDNinfineon.c
+@@ -563,7 +563,7 @@ reset_inf(struct inf_hw *hw)
+ 		mdelay(10);
+ 		hw->ipac.isac.adf2 = 0x87;
+ 		hw->ipac.hscx[0].slot = 0x1f;
+-		hw->ipac.hscx[0].slot = 0x23;
++		hw->ipac.hscx[1].slot = 0x23;
+ 		break;
+ 	case INF_GAZEL_R753:
+ 		val = inl((u32)hw->cfg.start + GAZEL_CNTRL);
+diff --git a/drivers/isdn/hisax/l3_1tr6.c b/drivers/isdn/hisax/l3_1tr6.c
+index b0554f8..ee4dae1 100644
+--- a/drivers/isdn/hisax/l3_1tr6.c
++++ b/drivers/isdn/hisax/l3_1tr6.c
+@@ -164,11 +164,9 @@ l3_1tr6_setup(struct l3_process *pc, u_char pr, void *arg)
+ 	char tmp[80];
+ 	struct sk_buff *skb = arg;
+ 
+-	p = skb->data;
+-
+ 	/* Channel Identification */
+-	p = skb->data;
+-	if ((p = findie(p, skb->len, WE0_chanID, 0))) {
++	p = findie(skb->data, skb->len, WE0_chanID, 0);
++	if (p) {
+ 		if (p[1] != 1) {
+ 			l3_1tr6_error(pc, "setup wrong chanID len", skb);
+ 			return;
