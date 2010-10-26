@@ -1,75 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760485Ab0JZVXl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Oct 2010 17:23:41 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:17908 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760453Ab0JZVXi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Oct 2010 17:23:38 -0400
-Date: Tue, 26 Oct 2010 14:20:40 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: lkml <linux-kernel@vger.kernel.org>
-Cc: torvalds <torvalds@linux-foundation.org>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        "James E.J. Bottomley" <James.Bottomley@suse.de>,
-        David Airlie <airlied@linux.ie>,
-        Alexander Shishkin <virtuoso@slind.org>
-Subject: [PATCH] documentation: update sysrq.txt magic sysrq keys
-Message-Id: <20101026142040.2f0b70a1.randy.dunlap@oracle.com>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1760446Ab0JZVYj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Oct 2010 17:24:39 -0400
+Received: from fieldses.org ([174.143.236.118]:56529 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757774Ab0JZVYh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Oct 2010 17:24:37 -0400
+Date: Tue, 26 Oct 2010 17:24:34 -0400
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Arnd Bergmann <arnd@arndb.de>, Bryan Schumaker <bjschuma@netapp.com>,
+        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: nfsd changes for 2.6.37
+Message-ID: <20101026212433.GB1842@fieldses.org>
+References: <20101026164549.GD19445@fieldses.org>
+ <201010262218.36940.arnd@arndb.de>
+ <4CC73BA6.1090407@netapp.com>
+ <201010262255.40481.arnd@arndb.de>
+ <AANLkTimPBqafDPxYpZjuym8+-yk4vKYTU15Js-Ux_e6Z@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTimPBqafDPxYpZjuym8+-yk4vKYTU15Js-Ux_e6Z@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Randy Dunlap <randy.dunlap@oracle.com>
+On Tue, Oct 26, 2010 at 02:02:05PM -0700, Linus Torvalds wrote:
+> On Tue, Oct 26, 2010 at 1:55 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+> >
+> > Finally, we can build fs/locks.c, nfs and nfsd with CONFIG_BKL
+> > disabled.
+> >
+> > *not tested*
+> 
+> Ok, please make this so, so that we finally can effectively get rid of
+> the BKL in this release (I don't really care about the random old
+> drivers that may be "depends on BKL").
+> 
+> But that obviously requires at least some minimal testing by somebody
+> who is using NFS heavily, including locking. I assume that the
+> connectathon tests include file locking? And I presume that the nfs
+> developers run those at least semi-regularly and could do at least
+> that kind of minimal testing?
 
-Update Documentation/sysrq.txt magic sysrq keys:
+I did a couple connectathon runs just now with no obvious ill effects
+except for some sleep-within-spinlock warnings in the lease code.
 
-- 'g' is for kgdb (not arch-specific);
-- add 2 new uses for 'v', remove the Voyager info;
-- add 'y' info (SPARC-64 specific);
+Yeah, connecthon does include lock tests, though they're just basic
+correctness tests.
 
-Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
-Cc:	Jason Wessel <jason.wessel@windriver.com>
-Cc:	"David S. Miller" <davem@davemloft.net>
-Cc:	"James E.J. Bottomley" <James.Bottomley@suse.de>
-Cc:	David Airlie <airlied@linux.ie>
-Acked-by: Alexander Shishkin <virtuoso@slind.org>
----
- Documentation/sysrq.txt |    7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
-
---- lnx-2636-g6-docs.orig/Documentation/sysrq.txt
-+++ lnx-2636-g6-docs/Documentation/sysrq.txt
-@@ -75,7 +75,7 @@ On all -  write a character to /proc/sys
- 
- 'f'	- Will call oom_kill to kill a memory hog process.
- 
--'g'	- Used by kgdb on ppc and sh platforms.
-+'g'	- Used by kgdb (kernel debugger)
- 
- 'h'     - Will display help (actually any other key than those listed
-           here will display help. but 'h' is easy to remember :-)
-@@ -110,12 +110,15 @@ On all -  write a character to /proc/sys
- 
- 'u'     - Will attempt to remount all mounted filesystems read-only.
- 
--'v'	- Dumps Voyager SMP processor info to your console.
-+'v'	- Forcefully restores framebuffer console
-+'v'	- Causes ETM buffer dump [ARM-specific]
- 
- 'w'	- Dumps tasks that are in uninterruptable (blocked) state.
- 
- 'x'	- Used by xmon interface on ppc/powerpc platforms.
- 
-+'y'	- Show global CPU Registers [SPARC-64 specific]
-+
- 'z'	- Dump the ftrace buffer
- 
- '0'-'9' - Sets the console log level, controlling which kernel messages
+--b.
