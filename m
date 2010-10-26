@@ -1,46 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758327Ab0JZOt4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Oct 2010 10:49:56 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:62549 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752527Ab0JZOtz (ORCPT
-	<rfc822;<linux-kernel@vger.kernel.org>>);
-	Tue, 26 Oct 2010 10:49:55 -0400
-Date: Tue, 26 Oct 2010 10:47:28 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+	id S1759729Ab0JZOuO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Oct 2010 10:50:14 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:2153 "EHLO SMTP02.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751796Ab0JZOuM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Oct 2010 10:50:12 -0400
+X-IronPort-AV: E=Sophos;i="4.58,241,1286164800"; 
+   d="scan'208";a="119745268"
+Subject: Re: [PATCH 5/5] xen: events: use per-cpu variable for
+ cpu_evtchn_mask
+From: Ian Campbell <Ian.Campbell@eu.citrix.com>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: Jeremy Fitzhardinge <jeremy@goop.org>,
+        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
         "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Dirk Brandewie <dirk.j.brandewie@intel.com>
-Subject: Re: linux-next: manual merge of the swiotlb-xen tree with the tip
- tree
-Message-ID: <20101026144728.GE9557@dumpdata.com>
-References: <20101026130332.002937e5.sfr@canb.auug.org.au>
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "mingo@elte.hu" <mingo@elte.hu>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "tglx@linutronix.de" <tglx@linutronix.de>
+In-Reply-To: <20101026143615.GD9557@dumpdata.com>
+References: <1288023736.11153.40.camel@zakaz.uk.xensource.com>
+	 <1288023813-31989-5-git-send-email-ian.campbell@citrix.com>
+	 <20101026143615.GD9557@dumpdata.com>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Citrix Systems, Inc.
+Date: Tue, 26 Oct 2010 15:50:08 +0100
+Message-ID: <1288104608.8361.15.camel@zakaz.uk.xensource.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101026130332.002937e5.sfr@canb.auug.org.au>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 26, 2010 at 01:03:32PM +1100, Stephen Rothwell wrote:
-> Hi Konrad,
+On Tue, 2010-10-26 at 15:36 +0100, Konrad Rzeszutek Wilk wrote:
+> On Mon, Oct 25, 2010 at 05:23:33PM +0100, Ian Campbell wrote:
+> > I can't see any reason why it isn't already.
+> > 
+> > Signed-off-by: Ian Campbell <ian.campbell@citrix.com>
+> > ---
+> >  drivers/xen/events.c |   31 +++++++++++--------------------
+> >  1 files changed, 11 insertions(+), 20 deletions(-)
+> > 
+> > diff --git a/drivers/xen/events.c b/drivers/xen/events.c
+> > index 9b58505..144ff72 100644
+> > --- a/drivers/xen/events.c
+> > +++ b/drivers/xen/events.c
+> > @@ -110,19 +110,9 @@ static int *pirq_to_irq;
+> >  static int nr_pirqs;
+> >  
+> >  static int *evtchn_to_irq;
+> > -struct cpu_evtchn_s {
+> > -	unsigned long bits[NR_EVENT_CHANNELS/BITS_PER_LONG];
+> > -};
+> >  
+> > -static __initdata struct cpu_evtchn_s init_evtchn_mask = {
+> > -	.bits[0 ... (NR_EVENT_CHANNELS/BITS_PER_LONG)-1] = ~0ul,
+> > -};
+> > -static struct cpu_evtchn_s *cpu_evtchn_mask_p = &init_evtchn_mask;
+> > -
+> > -static inline unsigned long *cpu_evtchn_mask(int cpu)
+> > -{
+> > -	return cpu_evtchn_mask_p[cpu].bits;
+> > -}
+> > +static DEFINE_PER_CPU(unsigned long [NR_EVENT_CHANNELS/BITS_PER_LONG],
+> > +		      cpu_evtchn_mask);
+> >  
+> >  /* Xen will never allocate port zero for any purpose. */
+> >  #define VALID_EVTCHN(chn)	((chn) != 0)
+> > @@ -301,7 +291,7 @@ static inline unsigned long active_evtchns(unsigned int cpu,
+> >  					   unsigned int idx)
+> >  {
+> >  	return (sh->evtchn_pending[idx] &
+> > -		cpu_evtchn_mask(cpu)[idx] &
+> > +		per_cpu(cpu_evtchn_mask, cpu)[idx] &
+> >  		~sh->evtchn_mask[idx]);
+> >  }
+> >  
+> > @@ -314,8 +304,8 @@ static void bind_evtchn_to_cpu(unsigned int chn, unsigned int cpu)
+> >  	cpumask_copy(irq_to_desc(irq)->affinity, cpumask_of(cpu));
+> >  #endif
+> >  
+> > -	__clear_bit(chn, cpu_evtchn_mask(cpu_from_irq(irq)));
+> > -	__set_bit(chn, cpu_evtchn_mask(cpu));
+> > +	__clear_bit(chn, per_cpu(cpu_evtchn_mask, cpu_from_irq(irq)));
+> > +	__set_bit(chn, per_cpu(cpu_evtchn_mask, cpu));
+> >  
+> >  	info_for_irq(irq)->cpu = cpu;
+> >  }
+> > @@ -332,7 +322,11 @@ static void init_evtchn_cpu_bindings(void)
+> >  	}
+> >  #endif
+> >  
+> > -	memset(cpu_evtchn_mask(0), ~0, sizeof(struct cpu_evtchn_s));
+> > +	printk(KERN_CRIT "%s: CPU0 at %p size %zd\n", __func__,
 > 
-> Today's linux-next merge of the swiotlb-xen tree got a conflict in
-> arch/x86/include/asm/io_apic.h between commit
-> 23f9b267159b4c7ff59d2e6c8ed31693eff841e3 ("x86: apic: Move
-> probe_nr_irqs_gsi() into ioapic_init_mappings()") from the tip tree and
-> commit 7b586d71858091f0958e5808b7e3d5390c2ae47d ("x86/io_apic: add
-> get_nr_irqs_gsi()") from the swiotlb-xen tree.
-> 
-> Just context changes. I fixed it up (see below) and can carry the fix as
-> necessary.
+> If this is per_cpu, wouldn't the comment 'CPU0 at' be improper?
 
-Thank you.
+Oops, that was just debug anyway.
+
+> Hmm, so we use percpu structure, but all of the event channel and such
+> are set for CPU0. So what is the benefit of this, when the interrupts
+> are _only_ happening on CPU0?
+
+All event channels start off bound to VCPU0 so we need to initialise
+cpu_evtchn_mask(0) to have all ones and leave all the other CPU's
+bitmaps with all zeros.
+
+> Oh, right, there is also the rebind cpu function somewhere so that the
+> spinlock, timers, etc are allocated on other CPUs, right?
+
+All evtchn's start off bound to VCPU 0 but the kernel can rebind as
+necessary.
+
+Ian.
 
