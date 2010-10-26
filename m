@@ -1,92 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755395Ab0JZB0L (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Oct 2010 21:26:11 -0400
-Received: from smtp.gentoo.org ([140.211.166.183]:57165 "EHLO smtp.gentoo.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753733Ab0JZB0K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Oct 2010 21:26:10 -0400
-From: Mike Frysinger <vapier@gentoo.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: uclinux-dist-devel@blackfin.uclinux.org, linux-kernel@vger.kernel.org
-Subject: Pull request blackfin.git (for-linus branch)
-Date: Mon, 25 Oct 2010 21:26:19 -0400
-Message-Id: <1288056379-25299-1-git-send-email-vapier@gentoo.org>
-X-Mailer: git-send-email 1.7.3.2
-In-Reply-To: <1287997207-30661-1-git-send-email-vapier@gentoo.org>
-References: <1287997207-30661-1-git-send-email-vapier@gentoo.org>
+	id S1755304Ab0JZBec (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Oct 2010 21:34:32 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:33059 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751914Ab0JZBeb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Oct 2010 21:34:31 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=n/yTv4TbezXFRDcs9UHTNWSwo44FzMDVrFVPKeuN9X9AsKXcd7dl8TdEBgjvUb1iTC
+         dLdHykteK82XKmh9hkjp1VnQKwlj8GUyD/My9X5jDvOUUY1FC/s7gc0wOqUYwJNGAkav
+         HKFxs/Q45hUIcsfObKmNGMzAPj369H9t8uXeY=
+Subject: Re: [PATCH 04/29] memstick: core: rework state machines
+From: Maxim Levitsky <maximlevitsky@gmail.com>
+To: Alex Dubov <oakad@yahoo.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <381457.73980.qm@web37607.mail.mud.yahoo.com>
+References: <381457.73980.qm@web37607.mail.mud.yahoo.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 26 Oct 2010 03:34:23 +0200
+Message-ID: <1288056863.4024.66.camel@maxim-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit 229aebb873e29726b91e076161649cf45154b0bf:
+On Mon, 2010-10-25 at 08:01 -0700, Alex Dubov wrote:
+> --- On Fri, 22/10/10, Maxim Levitsky <maximlevitsky@gmail.com> wrote:
+> 
+> > From: Maxim Levitsky <maximlevitsky@gmail.com>
+> > Subject: [PATCH 04/29] memstick: core: rework state machines
+> > To: "Alex Dubov" <oakad@yahoo.com>
+> > Cc: "Andrew Morton" <akpm@linux-foundation.org>, "LKML" <linux-kernel@vger.kernel.org>, "Maxim Levitsky" <maximlevitsky@gmail.com>
+> > Received: Friday, 22 October, 2010, 4:53 PM
+> > Make state machines in memstick core
+> > follow the
+> > new style.
+> > 
+> 
+> 1. This is an important functional patch. At present, "new style" exists
+> only in your head. You should make an effort to justify it to everybody
+> else by providing a rationale in patch description.
+I already explained that.
+Ok. I add that explanation to patch header.
 
-  Merge branch 'for-next' of git://git.kernel.org/pub/scm/linux/kernel/git/jikos/trivial (2010-10-24 13:41:39 -0700)
 
-are available in the git repository at:
+> 
+> 2. You are using an integer state variable (instead of function pointers
+> which were self-describing by virtue of the referred function names).
+> Please, define an enumerated type for this state variable, giving states
+> human-readable, descriptive names. If you need to do state variable
+> arithmetic, you can provide a couple of simple, descriptive macros to
+> do so:
+> 
+> #define NEXT_STATE(s) (s + 1)
+Do we have a corporate policy of no magic numbers?
+Like this: http://thedailywtf.com/Articles/Avoiding-Magic-Constants.aspx
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/vapier/blackfin.git for-linus
 
-Mike Frysinger (5):
-      Blackfin: bfin_twi.h: start a common TWI header
-      Blackfin: update defconfigs
-      Blackfin: ppi/spi/twi headers: add missing __BFP undef
-      Blackfin: drop unused irq_panic()/DEBUG_ICACHE_CHECK
-      Blackfin: fix inverted anomaly 05000481 logic
+The issue here (I explained it already) is that I often use card-state
+++; to get to next state;
+Other the enforcing the policy the suggested #define it won't help.
 
-Sonic Zhang (1):
-      netdev: bfin_mac: push settings to platform resources
+card->state++ allows me for example to fallback through switch states
+and go by default to next state by default without additional code.
+If I bury state numbers with #defines or enums, the assumptions that
+states appear in switch in ascending order won't be obvious anymore
+and nether that adding 1 to state will bring me to next switch case.
 
- arch/blackfin/Kconfig.debug                       |   11 --
- arch/blackfin/configs/BF518F-EZBRD_defconfig      |    2 +-
- arch/blackfin/configs/BF526-EZBRD_defconfig       |    2 +-
- arch/blackfin/configs/BF527-AD7160-EVAL_defconfig |    2 +-
- arch/blackfin/configs/BF527-EZKIT-V2_defconfig    |    3 +-
- arch/blackfin/configs/BF527-EZKIT_defconfig       |    3 +-
- arch/blackfin/configs/BF527-TLL6527M_defconfig    |    1 -
- arch/blackfin/configs/BF533-EZKIT_defconfig       |    2 +-
- arch/blackfin/configs/BF533-STAMP_defconfig       |    2 +-
- arch/blackfin/configs/BF537-STAMP_defconfig       |    3 +-
- arch/blackfin/configs/BF538-EZKIT_defconfig       |    3 +-
- arch/blackfin/configs/BF548-EZKIT_defconfig       |    4 +-
- arch/blackfin/configs/BF561-ACVILON_defconfig     |    4 +-
- arch/blackfin/configs/BF561-EZKIT_defconfig       |    1 +
- arch/blackfin/configs/BlackStamp_defconfig        |    3 +-
- arch/blackfin/configs/CM-BF527_defconfig          |    4 +-
- arch/blackfin/configs/CM-BF533_defconfig          |    3 +-
- arch/blackfin/configs/CM-BF537E_defconfig         |    3 +-
- arch/blackfin/configs/CM-BF537U_defconfig         |    3 +-
- arch/blackfin/configs/CM-BF548_defconfig          |    3 +-
- arch/blackfin/configs/CM-BF561_defconfig          |    3 +-
- arch/blackfin/configs/H8606_defconfig             |    3 +-
- arch/blackfin/configs/IP0X_defconfig              |    3 +-
- arch/blackfin/configs/PNAV-10_defconfig           |    2 +-
- arch/blackfin/configs/SRV1_defconfig              |    3 +-
- arch/blackfin/configs/TCM-BF518_defconfig         |    1 -
- arch/blackfin/configs/TCM-BF537_defconfig         |    2 +
- arch/blackfin/include/asm/bfin5xx_spi.h           |    2 +
- arch/blackfin/include/asm/bfin_ppi.h              |    2 +
- arch/blackfin/include/asm/bfin_twi.h              |   45 +++++++
- arch/blackfin/include/asm/cdef_LPBlackfin.h       |    2 +-
- arch/blackfin/mach-bf518/boards/ezbrd.c           |   44 ++++++-
- arch/blackfin/mach-bf518/boards/tcm-bf518.c       |   24 ++++-
- arch/blackfin/mach-bf527/boards/cm_bf527.c        |   24 ++++-
- arch/blackfin/mach-bf527/boards/ezbrd.c           |   24 ++++-
- arch/blackfin/mach-bf527/boards/ezkit.c           |   24 ++++-
- arch/blackfin/mach-bf527/boards/tll6527m.c        |   24 ++++-
- arch/blackfin/mach-bf537/boards/cm_bf537e.c       |   24 ++++-
- arch/blackfin/mach-bf537/boards/cm_bf537u.c       |   24 ++++-
- arch/blackfin/mach-bf537/boards/minotaur.c        |   24 ++++-
- arch/blackfin/mach-bf537/boards/pnav10.c          |   24 ++++-
- arch/blackfin/mach-bf537/boards/stamp.c           |   24 ++++-
- arch/blackfin/mach-bf537/boards/tcm_bf537.c       |   24 ++++-
- arch/blackfin/mach-common/Makefile                |    1 -
- arch/blackfin/mach-common/irqpanic.c              |  106 ---------------
- drivers/net/Kconfig                               |    8 -
- drivers/net/bfin_mac.c                            |  145 +++++++++++++-------
- drivers/net/bfin_mac.h                            |    2 +
- include/linux/bfin_mac.h                          |   29 ++++
- 49 files changed, 513 insertions(+), 216 deletions(-)
- create mode 100644 arch/blackfin/include/asm/bfin_twi.h
- delete mode 100644 arch/blackfin/mach-common/irqpanic.c
- create mode 100644 include/linux/bfin_mac.h
+
+
+
+
+> 
+> or something along the line.
+> 
+> 3. Coding style.
+Passed checkpatch.pl. Could you show me the lines affected?
+
+
+Best regards,
+	Maxim Levitsky
+
+
