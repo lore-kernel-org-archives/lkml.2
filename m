@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759259Ab0JZCzK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Oct 2010 22:55:10 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:61445 "EHLO mx1.redhat.com"
+	id S932547Ab0JZCzj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Oct 2010 22:55:39 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:29399 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759083Ab0JZCzE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Oct 2010 22:55:04 -0400
+	id S1756124Ab0JZCzg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Oct 2010 22:55:36 -0400
 Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
 	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
 	Kingdom.
 	Registered in England and Wales under Company Registration No. 3798903
-Subject: [PATCH 21/43] MN10300: AM34: Add cacheflushing by using the AM34
- purge registers
+Subject: [PATCH 27/43] MN10300: Make the use of PIDR to mark TLB entries
+ controllable
 To: linux-am33-list@redhat.com
 From: David Howells <dhowells@redhat.com>
 Cc: linux-kernel@vger.kernel.org,
         Akira Takeuchi <takeuchi.akr@jp.panasonic.com>,
         Kiyoshi Owada <owada.kiyoshi@jp.panasonic.com>
-Date: Tue, 26 Oct 2010 03:54:53 +0100
-Message-ID: <20101026025453.23512.50242.stgit@warthog.procyon.org.uk>
+Date: Tue, 26 Oct 2010 03:55:25 +0100
+Message-ID: <20101026025525.23512.2088.stgit@warthog.procyon.org.uk>
 In-Reply-To: <20101026025301.23512.24525.stgit@warthog.procyon.org.uk>
 References: <20101026025301.23512.24525.stgit@warthog.procyon.org.uk>
 User-Agent: StGit/0.15-97-g9680-dirty
@@ -31,747 +31,270 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Akira Takeuchi <takeuchi.akr@jp.panasonic.com>
 
-The AM34 CPU core provides an automated way of purging the cache rather than
-manually iterating over all the tags in the cache.  Make it possible to use
-these.
+Make controllable the use of the PIDR register to mark TLB entries as belonging
+to particular processes.
 
 Signed-off-by: Akira Takeuchi <takeuchi.akr@jp.panasonic.com>
 Signed-off-by: Kiyoshi Owada <owada.kiyoshi@jp.panasonic.com>
 Signed-off-by: David Howells <dhowells@redhat.com>
 ---
 
- arch/mn10300/mm/Kconfig.cache        |   13 +
- arch/mn10300/mm/Makefile             |    2 
- arch/mn10300/mm/cache-flush-by-reg.S |  308 +++++++++++++++++++++++++++++
- arch/mn10300/mm/cache-inv-by-reg.S   |  356 ++++++++++++++++++++++++++++++++++
- 4 files changed, 678 insertions(+), 1 deletions(-)
- create mode 100644 arch/mn10300/mm/cache-flush-by-reg.S
- create mode 100644 arch/mn10300/mm/cache-inv-by-reg.S
+ arch/mn10300/Kconfig                   |    3 ++
+ arch/mn10300/include/asm/mmu_context.h |   59 ++++++++++++++++----------------
+ arch/mn10300/include/asm/tlbflush.h    |   43 ++++++++++++++++++++++-
+ arch/mn10300/mm/mmu-context.c          |   41 ++++++----------------
+ 4 files changed, 84 insertions(+), 62 deletions(-)
 
 
-diff --git a/arch/mn10300/mm/Kconfig.cache b/arch/mn10300/mm/Kconfig.cache
-index aa6ff07..97adc06 100644
---- a/arch/mn10300/mm/Kconfig.cache
-+++ b/arch/mn10300/mm/Kconfig.cache
-@@ -37,7 +37,8 @@ config MN10300_CACHE_ENABLED
+diff --git a/arch/mn10300/Kconfig b/arch/mn10300/Kconfig
+index dd7b570..7bd920b 100644
+--- a/arch/mn10300/Kconfig
++++ b/arch/mn10300/Kconfig
+@@ -142,6 +142,9 @@ config FPU
  
- choice
- 	prompt "CPU cache flush/invalidate method"
--	default MN10300_CACHE_MANAGE_BY_TAG
-+	default MN10300_CACHE_MANAGE_BY_TAG if !AM34_2
-+	default MN10300_CACHE_MANAGE_BY_REG if AM34_2
- 	depends on MN10300_CACHE_ENABLED
- 	help
- 	  This determines the method by which CPU cache flushing and
-@@ -46,10 +47,20 @@ choice
- config MN10300_CACHE_MANAGE_BY_TAG
- 	bool "Use the cache tag registers directly"
+ source "arch/mn10300/mm/Kconfig.cache"
  
-+config MN10300_CACHE_MANAGE_BY_REG
-+	bool "Flush areas by way of automatic purge registers (AM34 only)"
-+	depends on AM34_2
++config MN10300_TLB_USE_PIDR
++	def_bool y
 +
- endchoice
+ menu "Memory layout options"
  
- config MN10300_CACHE_INV_BY_TAG
- 	def_bool y if MN10300_CACHE_MANAGE_BY_TAG && MN10300_CACHE_ENABLED
+ config KERNEL_RAM_BASE_ADDRESS
+diff --git a/arch/mn10300/include/asm/mmu_context.h b/arch/mn10300/include/asm/mmu_context.h
+index 24d63f0..5fb3648 100644
+--- a/arch/mn10300/include/asm/mmu_context.h
++++ b/arch/mn10300/include/asm/mmu_context.h
+@@ -27,28 +27,22 @@
+ #include <asm/tlbflush.h>
+ #include <asm-generic/mm_hooks.h>
  
-+config MN10300_CACHE_INV_BY_REG
-+	def_bool y if MN10300_CACHE_MANAGE_BY_REG && MN10300_CACHE_ENABLED
++#define MMU_CONTEXT_TLBPID_NR		256
+ #define MMU_CONTEXT_TLBPID_MASK		0x000000ffUL
+ #define MMU_CONTEXT_VERSION_MASK	0xffffff00UL
+ #define MMU_CONTEXT_FIRST_VERSION	0x00000100UL
+ #define MMU_NO_CONTEXT			0x00000000UL
+-
+-extern unsigned long mmu_context_cache[NR_CPUS];
+-#define mm_context(mm)	(mm->context.tlbpid[smp_processor_id()])
++#define MMU_CONTEXT_TLBPID_LOCK_NR	0
+ 
+ #define enter_lazy_tlb(mm, tsk)	do {} while (0)
+ 
+-#ifdef CONFIG_SMP
+-#define cpu_ran_vm(cpu, mm) \
+-	cpumask_set_cpu((cpu), mm_cpumask(mm))
+-#define cpu_maybe_ran_vm(cpu, mm) \
+-	cpumask_test_and_set_cpu((cpu), mm_cpumask(mm))
+-#else
+-#define cpu_ran_vm(cpu, mm)		do {} while (0)
+-#define cpu_maybe_ran_vm(cpu, mm)	true
+-#endif /* CONFIG_SMP */
++#ifdef CONFIG_MN10300_TLB_USE_PIDR
++extern unsigned long mmu_context_cache[NR_CPUS];
++#define mm_context(mm)	(mm->context.tlbpid[smp_processor_id()])
+ 
+-/*
+- * allocate an MMU context
++/**
++ * allocate_mmu_context - Allocate storage for the arch-specific MMU data
++ * @mm: The userspace VM context being set up
+  */
+ static inline unsigned long allocate_mmu_context(struct mm_struct *mm)
+ {
+@@ -101,34 +95,41 @@ static inline int init_new_context(struct task_struct *tsk,
+ }
+ 
+ /*
+- * destroy context related info for an mm_struct that is about to be put to
+- * rest
+- */
+-#define destroy_context(mm)	do { } while (0)
+-
+-/*
+  * after we have set current->mm to a new value, this activates the context for
+  * the new mm so we see the new mappings.
+  */
+-static inline void activate_context(struct mm_struct *mm, int cpu)
++static inline void activate_context(struct mm_struct *mm)
+ {
+ 	PIDR = get_mmu_context(mm) & MMU_CONTEXT_TLBPID_MASK;
+ }
++#else  /* CONFIG_MN10300_TLB_USE_PIDR */
+ 
+-/*
+- * change between virtual memory sets
++#define init_new_context(tsk, mm)	(0)
++#define activate_context(mm)		local_flush_tlb()
 +
- config MN10300_CACHE_FLUSH_BY_TAG
- 	def_bool y if MN10300_CACHE_MANAGE_BY_TAG && MN10300_CACHE_WBACK
++#endif /* CONFIG_MN10300_TLB_USE_PIDR */
 +
-+config MN10300_CACHE_FLUSH_BY_REG
-+	def_bool y if MN10300_CACHE_MANAGE_BY_REG && MN10300_CACHE_WBACK
-diff --git a/arch/mn10300/mm/Makefile b/arch/mn10300/mm/Makefile
-index dc4b9f0..7b99723 100644
---- a/arch/mn10300/mm/Makefile
-+++ b/arch/mn10300/mm/Makefile
-@@ -4,7 +4,9 @@
- 
- cacheflush-y	:= cache.o
- cacheflush-$(CONFIG_MN10300_CACHE_INV_BY_TAG) += cache-inv-by-tag.o
-+cacheflush-$(CONFIG_MN10300_CACHE_INV_BY_REG) += cache-inv-by-reg.o
- cacheflush-$(CONFIG_MN10300_CACHE_FLUSH_BY_TAG) += cache-flush-by-tag.o
-+cacheflush-$(CONFIG_MN10300_CACHE_FLUSH_BY_REG) += cache-flush-by-reg.o
- 
- cacheflush-$(CONFIG_MN10300_CACHE_DISABLED) := cache-disabled.o
- 
-diff --git a/arch/mn10300/mm/cache-flush-by-reg.S b/arch/mn10300/mm/cache-flush-by-reg.S
-new file mode 100644
-index 0000000..1dcae02
---- /dev/null
-+++ b/arch/mn10300/mm/cache-flush-by-reg.S
-@@ -0,0 +1,308 @@
-+/* MN10300 CPU core caching routines, using indirect regs on cache controller
++/**
++ * destroy_context - Destroy mm context information
++ * @mm: The MM being destroyed.
 + *
-+ * Copyright (C) 2007 Red Hat, Inc. All Rights Reserved.
-+ * Written by David Howells (dhowells@redhat.com)
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public Licence
-+ * as published by the Free Software Foundation; either version
-+ * 2 of the Licence, or (at your option) any later version.
++ * Destroy context related info for an mm_struct that is about to be put to
++ * rest
 + */
++#define destroy_context(mm)	do {} while (0)
 +
-+#include <linux/sys.h>
-+#include <linux/linkage.h>
-+#include <asm/smp.h>
-+#include <asm/page.h>
-+#include <asm/cache.h>
-+#include <asm/irqflags.h>
++/**
++ * switch_mm - Change between userspace virtual memory contexts
++ * @prev: The outgoing MM context.
++ * @next: The incoming MM context.
++ * @tsk: The incoming task.
+  */
+ static inline void switch_mm(struct mm_struct *prev, struct mm_struct *next,
+ 			     struct task_struct *tsk)
+ {
+-	int cpu = smp_processor_id();
+-
+ 	if (prev != next) {
+-		cpu_ran_vm(cpu, next);
+-		activate_context(next, cpu);
+ 		PTBR = (unsigned long) next->pgd;
+-	} else if (!cpu_maybe_ran_vm(cpu, next)) {
+-		activate_context(next, cpu);
++		activate_context(next);
+ 	}
+ }
+ 
+diff --git a/arch/mn10300/include/asm/tlbflush.h b/arch/mn10300/include/asm/tlbflush.h
+index 5d54bf5..c3c194d 100644
+--- a/arch/mn10300/include/asm/tlbflush.h
++++ b/arch/mn10300/include/asm/tlbflush.h
+@@ -13,6 +13,12 @@
+ 
+ #include <asm/processor.h>
+ 
++struct tlb_state {
++	struct mm_struct	*active_mm;
++	int			state;
++};
++DECLARE_PER_CPU_SHARED_ALIGNED(struct tlb_state, cpu_tlbstate);
 +
-+	.am33_2
+ /**
+  * local_flush_tlb - Flush the current MM's entries from the local CPU's TLBs
+  */
+@@ -31,20 +37,51 @@ static inline void local_flush_tlb(void)
+ /**
+  * local_flush_tlb_all - Flush all entries from the local CPU's TLBs
+  */
+-#define local_flush_tlb_all()		local_flush_tlb()
++static inline void local_flush_tlb_all(void)
++{
++	local_flush_tlb();
++}
+ 
+ /**
+  * local_flush_tlb_one - Flush one entry from the local CPU's TLBs
+  */
+-#define local_flush_tlb_one(addr)	local_flush_tlb()
++static inline void local_flush_tlb_one(unsigned long addr)
++{
++	local_flush_tlb();
++}
+ 
+ /**
+  * local_flush_tlb_page - Flush a page's entry from the local CPU's TLBs
+  * @mm: The MM to flush for
+  * @addr: The address of the target page in RAM (not its page struct)
+  */
+-extern void local_flush_tlb_page(struct mm_struct *mm, unsigned long addr);
++static inline
++void local_flush_tlb_page(struct mm_struct *mm, unsigned long addr)
++{
++	unsigned long pteu, flags, cnx;
 +
-+#ifndef CONFIG_SMP
-+	.globl mn10300_dcache_flush
-+	.globl mn10300_dcache_flush_page
-+	.globl mn10300_dcache_flush_range
-+	.globl mn10300_dcache_flush_range2
-+	.globl mn10300_dcache_flush_inv
-+	.globl mn10300_dcache_flush_inv_page
-+	.globl mn10300_dcache_flush_inv_range
-+	.globl mn10300_dcache_flush_inv_range2
++	addr &= PAGE_MASK;
+ 
++	local_irq_save(flags);
 +
-+mn10300_dcache_flush		= mn10300_local_dcache_flush
-+mn10300_dcache_flush_page	= mn10300_local_dcache_flush_page
-+mn10300_dcache_flush_range	= mn10300_local_dcache_flush_range
-+mn10300_dcache_flush_range2	= mn10300_local_dcache_flush_range2
-+mn10300_dcache_flush_inv	= mn10300_local_dcache_flush_inv
-+mn10300_dcache_flush_inv_page	= mn10300_local_dcache_flush_inv_page
-+mn10300_dcache_flush_inv_range	= mn10300_local_dcache_flush_inv_range
-+mn10300_dcache_flush_inv_range2	= mn10300_local_dcache_flush_inv_range2
-+
-+#endif /* !CONFIG_SMP */
-+
-+###############################################################################
-+#
-+# void mn10300_local_dcache_flush(void)
-+# Flush the entire data cache back to RAM
-+#
-+###############################################################################
-+	ALIGN
-+	.globl	mn10300_local_dcache_flush
-+        .type	mn10300_local_dcache_flush,@function
-+mn10300_local_dcache_flush:
-+	movhu	(CHCTR),d0
-+	btst	CHCTR_DCEN,d0
-+	beq	mn10300_local_dcache_flush_end
-+
-+	mov	DCPGCR,a0
-+
-+	LOCAL_CLI_SAVE(d1)
-+
-+	# wait for busy bit of area purge
-+	setlb
-+	mov	(a0),d0
-+	btst	DCPGCR_DCPGBSY,d0
-+	lne
-+
-+	# set mask
-+	clr	d0
-+	mov	d0,(DCPGMR)
-+
-+	# area purge
-+	#
-+	# DCPGCR = DCPGCR_DCP
-+	#
-+	mov	DCPGCR_DCP,d0
-+	mov	d0,(a0)
-+
-+	# wait for busy bit of area purge
-+	setlb
-+	mov	(a0),d0
-+	btst	DCPGCR_DCPGBSY,d0
-+	lne
-+
-+	LOCAL_IRQ_RESTORE(d1)
-+
-+mn10300_local_dcache_flush_end:
-+	ret	[],0
-+	.size	mn10300_local_dcache_flush,.-mn10300_local_dcache_flush
-+
-+###############################################################################
-+#
-+# void mn10300_local_dcache_flush_page(unsigned long start)
-+# void mn10300_local_dcache_flush_range(unsigned long start, unsigned long end)
-+# void mn10300_local_dcache_flush_range2(unsigned long start, unsigned long size)
-+# Flush a range of addresses on a page in the dcache
-+#
-+###############################################################################
-+	ALIGN
-+	.globl	mn10300_local_dcache_flush_page
-+	.globl	mn10300_local_dcache_flush_range
-+	.globl	mn10300_local_dcache_flush_range2
-+	.type	mn10300_local_dcache_flush_page,@function
-+	.type	mn10300_local_dcache_flush_range,@function
-+	.type	mn10300_local_dcache_flush_range2,@function
-+mn10300_local_dcache_flush_page:
-+	and	~(PAGE_SIZE-1),d0
-+	mov	PAGE_SIZE,d1
-+mn10300_local_dcache_flush_range2:
-+	add	d0,d1
-+mn10300_local_dcache_flush_range:
-+	movm	[d2,d3,a2],(sp)
-+
-+	movhu	(CHCTR),d2
-+	btst	CHCTR_DCEN,d2
-+	beq	mn10300_local_dcache_flush_range_end
-+
-+	# calculate alignsize
-+	#
-+	# alignsize = L1_CACHE_BYTES;
-+	# for (i = (end - start - 1) / L1_CACHE_BYTES ;  i > 0; i >>= 1)
-+	#     alignsize <<= 1;
-+	# d2 = alignsize;
-+	#
-+	mov	L1_CACHE_BYTES,d2
-+	sub	d0,d1,d3
-+	add	-1,d3
-+	lsr	L1_CACHE_SHIFT,d3
-+	beq	2f
-+1:
-+	add     d2,d2
-+	lsr     1,d3
-+	bne     1b
-+2:
-+	mov	d1,a1		# a1 = end
-+
-+	LOCAL_CLI_SAVE(d3)
-+	mov	DCPGCR,a0
-+
-+	# wait for busy bit of area purge
-+	setlb
-+	mov	(a0),d1
-+	btst	DCPGCR_DCPGBSY,d1
-+	lne
-+
-+	# determine the mask
-+	mov	d2,d1
-+	add	-1,d1
-+	not	d1		# d1 = mask = ~(alignsize-1)
-+	mov	d1,(DCPGMR)
-+
-+	and	d1,d0,a2	# a2 = mask & start
-+
-+dcpgloop:
-+	# area purge
-+	mov	a2,d0
-+	or	DCPGCR_DCP,d0
-+	mov	d0,(a0)		# DCPGCR = (mask & start) | DCPGCR_DCP
-+
-+	# wait for busy bit of area purge
-+	setlb
-+	mov	(a0),d1
-+	btst	DCPGCR_DCPGBSY,d1
-+	lne
-+
-+	# check purge of end address
-+	add	d2,a2		# a2 += alignsize
-+	cmp	a1,a2		# if (a2 < end) goto dcpgloop
-+	bns	dcpgloop
-+
-+	LOCAL_IRQ_RESTORE(d3)
-+
-+mn10300_local_dcache_flush_range_end:
-+	ret	[d2,d3,a2],12
-+
-+	.size	mn10300_local_dcache_flush_page,.-mn10300_local_dcache_flush_page
-+	.size	mn10300_local_dcache_flush_range,.-mn10300_local_dcache_flush_range
-+	.size	mn10300_local_dcache_flush_range2,.-mn10300_local_dcache_flush_range2
-+
-+###############################################################################
-+#
-+# void mn10300_local_dcache_flush_inv(void)
-+# Flush the entire data cache and invalidate all entries
-+#
-+###############################################################################
-+	ALIGN
-+	.globl	mn10300_local_dcache_flush_inv
-+	.type	mn10300_local_dcache_flush_inv,@function
-+mn10300_local_dcache_flush_inv:
-+	movhu	(CHCTR),d0
-+	btst	CHCTR_DCEN,d0
-+	beq	mn10300_local_dcache_flush_inv_end
-+
-+	mov	DCPGCR,a0
-+
-+	LOCAL_CLI_SAVE(d1)
-+
-+	# wait for busy bit of area purge & invalidate
-+	setlb
-+	mov	(a0),d0
-+	btst	DCPGCR_DCPGBSY,d0
-+	lne
-+
-+	# set the mask to cover everything
-+	clr	d0
-+	mov	d0,(DCPGMR)
-+
-+	# area purge & invalidate
-+	mov	DCPGCR_DCP|DCPGCR_DCI,d0
-+	mov	d0,(a0)
-+
-+	# wait for busy bit of area purge & invalidate
-+	setlb
-+	mov	(a0),d0
-+	btst	DCPGCR_DCPGBSY,d0
-+	lne
-+
-+	LOCAL_IRQ_RESTORE(d1)
-+
-+mn10300_local_dcache_flush_inv_end:
-+	ret	[],0
-+	.size	mn10300_local_dcache_flush_inv,.-mn10300_local_dcache_flush_inv
-+
-+###############################################################################
-+#
-+# void mn10300_local_dcache_flush_inv_page(unsigned long start)
-+# void mn10300_local_dcache_flush_inv_range(unsigned long start, unsigned long end)
-+# void mn10300_local_dcache_flush_inv_range2(unsigned long start, unsigned long size)
-+# Flush and invalidate a range of addresses on a page in the dcache
-+#
-+###############################################################################
-+	ALIGN
-+	.globl	mn10300_local_dcache_flush_inv_page
-+	.globl	mn10300_local_dcache_flush_inv_range
-+	.globl	mn10300_local_dcache_flush_inv_range2
-+	.type	mn10300_local_dcache_flush_inv_page,@function
-+	.type	mn10300_local_dcache_flush_inv_range,@function
-+	.type	mn10300_local_dcache_flush_inv_range2,@function
-+mn10300_local_dcache_flush_inv_page:
-+	and	~(PAGE_SIZE-1),d0
-+	mov	PAGE_SIZE,d1
-+mn10300_local_dcache_flush_inv_range2:
-+	add	d0,d1
-+mn10300_local_dcache_flush_inv_range:
-+	movm	[d2,d3,a2],(sp)
-+
-+	movhu	(CHCTR),d2
-+	btst	CHCTR_DCEN,d2
-+	beq	mn10300_local_dcache_flush_inv_range_end
-+
-+	# calculate alignsize
-+	#
-+	# alignsize = L1_CACHE_BYTES;
-+	# for (i = (end - start - 1) / L1_CACHE_BYTES; i > 0; i >>= 1)
-+	#     alignsize <<= 1;
-+	# d2 = alignsize
-+	#
-+	mov	L1_CACHE_BYTES,d2
-+	sub	d0,d1,d3
-+	add	-1,d3
-+	lsr	L1_CACHE_SHIFT,d3
-+	beq	2f
-+1:
-+	add     d2,d2
-+	lsr     1,d3
-+	bne     1b
-+2:
-+	mov	d1,a1		# a1 = end
-+
-+	LOCAL_CLI_SAVE(d3)
-+	mov	DCPGCR,a0
-+
-+	# wait for busy bit of area purge & invalidate
-+	setlb
-+	mov	(a0),d1
-+	btst	DCPGCR_DCPGBSY,d1
-+	lne
-+
-+	# set the mask
-+	mov	d2,d1
-+	add	-1,d1
-+	not	d1		# d1 = mask = ~(alignsize-1)
-+	mov	d1,(DCPGMR)
-+
-+	and	d1,d0,a2	# a2 = mask & start
-+
-+dcpgivloop:
-+	# area purge & invalidate
-+	mov	a2,d0
-+	or	DCPGCR_DCP|DCPGCR_DCI,d0
-+	mov	d0,(a0)		# DCPGCR = (mask & start)|DCPGCR_DCP|DCPGCR_DCI
-+
-+	# wait for busy bit of area purge & invalidate
-+	setlb
-+	mov	(a0),d1
-+	btst	DCPGCR_DCPGBSY,d1
-+	lne
-+
-+	# check purge & invalidate of end address
-+	add	d2,a2		# a2 += alignsize
-+	cmp	a1,a2		# if (a2 < end) goto dcpgivloop
-+	bns	dcpgivloop
-+
-+	LOCAL_IRQ_RESTORE(d3)
-+
-+mn10300_local_dcache_flush_inv_range_end:
-+	ret	[d2,d3,a2],12
-+	.size	mn10300_local_dcache_flush_inv_page,.-mn10300_local_dcache_flush_inv_page
-+	.size	mn10300_local_dcache_flush_inv_range,.-mn10300_local_dcache_flush_inv_range
-+	.size	mn10300_local_dcache_flush_inv_range2,.-mn10300_local_dcache_flush_inv_range2
-diff --git a/arch/mn10300/mm/cache-inv-by-reg.S b/arch/mn10300/mm/cache-inv-by-reg.S
-new file mode 100644
-index 0000000..c895086
---- /dev/null
-+++ b/arch/mn10300/mm/cache-inv-by-reg.S
-@@ -0,0 +1,356 @@
-+/* MN10300 CPU cache invalidation routines, using automatic purge registers
-+ *
-+ * Copyright (C) 2007 Red Hat, Inc. All Rights Reserved.
-+ * Written by David Howells (dhowells@redhat.com)
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public Licence
-+ * as published by the Free Software Foundation; either version
-+ * 2 of the Licence, or (at your option) any later version.
-+ */
-+#include <linux/sys.h>
-+#include <linux/linkage.h>
-+#include <asm/smp.h>
-+#include <asm/page.h>
-+#include <asm/cache.h>
-+#include <asm/irqflags.h>
-+#include <asm/cacheflush.h>
-+
-+#define mn10300_local_dcache_inv_range_intr_interval \
-+	+((1 << MN10300_DCACHE_INV_RANGE_INTR_LOG2_INTERVAL) - 1)
-+
-+#if mn10300_local_dcache_inv_range_intr_interval > 0xff
-+#error MN10300_DCACHE_INV_RANGE_INTR_LOG2_INTERVAL must be 8 or less
++	cnx = 1;
++#ifdef CONFIG_MN10300_TLB_USE_PIDR
++	cnx = mm->context.tlbpid[smp_processor_id()];
 +#endif
-+
-+	.am33_2
-+
-+#ifndef CONFIG_SMP
-+	.globl	mn10300_icache_inv
-+	.globl	mn10300_icache_inv_page
-+	.globl	mn10300_icache_inv_range
-+	.globl	mn10300_icache_inv_range2
-+	.globl	mn10300_dcache_inv
-+	.globl	mn10300_dcache_inv_page
-+	.globl	mn10300_dcache_inv_range
-+	.globl	mn10300_dcache_inv_range2
-+
-+mn10300_icache_inv		= mn10300_local_icache_inv
-+mn10300_icache_inv_page		= mn10300_local_icache_inv_page
-+mn10300_icache_inv_range	= mn10300_local_icache_inv_range
-+mn10300_icache_inv_range2	= mn10300_local_icache_inv_range2
-+mn10300_dcache_inv		= mn10300_local_dcache_inv
-+mn10300_dcache_inv_page		= mn10300_local_dcache_inv_page
-+mn10300_dcache_inv_range	= mn10300_local_dcache_inv_range
-+mn10300_dcache_inv_range2	= mn10300_local_dcache_inv_range2
-+
-+#endif /* !CONFIG_SMP */
-+
-+###############################################################################
-+#
-+# void mn10300_local_icache_inv(void)
-+# Invalidate the entire icache
-+#
-+###############################################################################
-+	ALIGN
-+	.globl	mn10300_local_icache_inv
-+        .type	mn10300_local_icache_inv,@function
-+mn10300_local_icache_inv:
-+	mov	CHCTR,a0
-+
-+	movhu	(a0),d0
-+	btst	CHCTR_ICEN,d0
-+	beq	mn10300_local_icache_inv_end
-+
-+	# invalidate
-+	or	CHCTR_ICINV,d0
-+	movhu	d0,(a0)
-+	movhu	(a0),d0
-+
-+mn10300_local_icache_inv_end:
-+	ret	[],0
-+	.size	mn10300_local_icache_inv,.-mn10300_local_icache_inv
-+
-+###############################################################################
-+#
-+# void mn10300_local_dcache_inv(void)
-+# Invalidate the entire dcache
-+#
-+###############################################################################
-+	ALIGN
-+	.globl	mn10300_local_dcache_inv
-+	.type	mn10300_local_dcache_inv,@function
-+mn10300_local_dcache_inv:
-+	mov	CHCTR,a0
-+
-+	movhu	(a0),d0
-+	btst	CHCTR_DCEN,d0
-+	beq	mn10300_local_dcache_inv_end
-+
-+	# invalidate
-+	or	CHCTR_DCINV,d0
-+	movhu	d0,(a0)
-+	movhu	(a0),d0
-+
-+mn10300_local_dcache_inv_end:
-+	ret	[],0
-+	.size	mn10300_local_dcache_inv,.-mn10300_local_dcache_inv
-+
-+###############################################################################
-+#
-+# void mn10300_local_dcache_inv_range(unsigned long start, unsigned long end)
-+# void mn10300_local_dcache_inv_range2(unsigned long start, unsigned long size)
-+# void mn10300_local_dcache_inv_page(unsigned long start)
-+# Invalidate a range of addresses on a page in the dcache
-+#
-+###############################################################################
-+	ALIGN
-+	.globl	mn10300_local_dcache_inv_page
-+	.globl	mn10300_local_dcache_inv_range
-+	.globl	mn10300_local_dcache_inv_range2
-+	.type	mn10300_local_dcache_inv_page,@function
-+	.type	mn10300_local_dcache_inv_range,@function
-+	.type	mn10300_local_dcache_inv_range2,@function
-+mn10300_local_dcache_inv_page:
-+	and	~(PAGE_SIZE-1),d0
-+	mov	PAGE_SIZE,d1
-+mn10300_local_dcache_inv_range2:
-+	add	d0,d1
-+mn10300_local_dcache_inv_range:
-+	# If we are in writeback mode we check the start and end alignments,
-+	# and if they're not cacheline-aligned, we must flush any bits outside
-+	# the range that share cachelines with stuff inside the range
-+#ifdef CONFIG_MN10300_CACHE_WBACK
-+	btst	~(L1_CACHE_BYTES-1),d0
-+	bne	1f
-+	btst	~(L1_CACHE_BYTES-1),d1
-+	beq	2f
-+1:
-+	bra	mn10300_local_dcache_flush_inv_range
-+2:
-+#endif /* CONFIG_MN10300_CACHE_WBACK */
-+
-+	movm	[d2,d3,a2],(sp)
-+
-+	mov	CHCTR,a0
-+	movhu	(a0),d2
-+	btst	CHCTR_DCEN,d2
-+	beq	mn10300_local_dcache_inv_range_end
-+
-+	# round the addresses out to be full cachelines, unless we're in
-+	# writeback mode, in which case we would be in flush and invalidate by
-+	# now
-+#ifndef CONFIG_MN10300_CACHE_WBACK
-+	and	L1_CACHE_TAG_ADDRESS|L1_CACHE_TAG_ENTRY,d0	# round start
-+								# addr down
-+
-+	mov	L1_CACHE_BYTES-1,d2
-+	add	d2,d1
-+	and	L1_CACHE_TAG_ADDRESS|L1_CACHE_TAG_ENTRY,d1	# round end addr up
-+#endif /* !CONFIG_MN10300_CACHE_WBACK */
-+
-+	sub	d0,d1,d2		# calculate the total size
-+	mov	d0,a2			# A2 = start address
-+	mov	d1,a1			# A1 = end address
-+
-+	LOCAL_CLI_SAVE(d3)
-+
-+	mov	DCPGCR,a0		# make sure the purger isn't busy
-+	setlb
-+	mov	(a0),d0
-+	btst	DCPGCR_DCPGBSY,d0
-+	lne
-+
-+	# skip initial address alignment calculation if address is zero
-+	mov	d2,d1
-+	cmp	0,a2
-+	beq	1f
-+
-+dcivloop:
-+	/* calculate alignsize
-+	 *
-+	 * alignsize = L1_CACHE_BYTES;
-+	 * while (! start & alignsize) {
-+	 *	alignsize <<=1;
-+	 * }
-+	 * d1 = alignsize;
-+	 */
-+	mov	L1_CACHE_BYTES,d1
-+	lsr	1,d1
-+	setlb
-+	add	d1,d1
-+	mov	d1,d0
-+	and	a2,d0
-+	leq
-+
-+1:
-+	/* calculate invsize
-+	 *
-+	 * if (totalsize > alignsize) {
-+	 *	invsize = alignsize;
-+	 * } else {
-+	 *	invsize = totalsize;
-+	 *	tmp = 0x80000000;
-+	 *	while (! invsize & tmp) {
-+	 *		tmp >>= 1;
-+	 *	}
-+	 *	invsize = tmp;
-+	 * }
-+	 * d1 = invsize
-+	 */
-+	cmp	d2,d1
-+	bns	2f
-+	mov	d2,d1
-+
-+	mov	0x80000000,d0		# start from 31bit=1
-+	setlb
-+	lsr	1,d0
-+	mov	d0,e0
-+	and	d1,e0
-+	leq
-+	mov	d0,d1
-+
-+2:
-+	/* set mask
-+	 *
-+	 * mask = ~(invsize-1);
-+	 * DCPGMR = mask;
-+	 */
-+	mov	d1,d0
-+	add	-1,d0
-+	not	d0
-+	mov	d0,(DCPGMR)
-+
-+	# invalidate area
-+	mov	a2,d0
-+	or	DCPGCR_DCI,d0
-+	mov	d0,(a0)			# DCPGCR = (mask & start) | DCPGCR_DCI
-+
-+	setlb				# wait for the purge to complete
-+	mov	(a0),d0
-+	btst	DCPGCR_DCPGBSY,d0
-+	lne
-+
-+	sub	d1,d2			# decrease size remaining
-+	add	d1,a2			# increase next start address
-+
-+	/* check invalidating of end address
-+	 *
-+	 * a2 = a2 + invsize
-+	 * if (a2 < end) {
-+	 *     goto dcivloop;
-+	 * } */
-+	cmp	a1,a2
-+	bns	dcivloop
-+
-+	LOCAL_IRQ_RESTORE(d3)
-+
-+mn10300_local_dcache_inv_range_end:
-+	ret	[d2,d3,a2],12
-+	.size	mn10300_local_dcache_inv_page,.-mn10300_local_dcache_inv_page
-+	.size	mn10300_local_dcache_inv_range,.-mn10300_local_dcache_inv_range
-+	.size	mn10300_local_dcache_inv_range2,.-mn10300_local_dcache_inv_range2
-+
-+###############################################################################
-+#
-+# void mn10300_local_icache_inv_page(unsigned long start)
-+# void mn10300_local_icache_inv_range2(unsigned long start, unsigned long size)
-+# void mn10300_local_icache_inv_range(unsigned long start, unsigned long end)
-+# Invalidate a range of addresses on a page in the icache
-+#
-+###############################################################################
-+	ALIGN
-+	.globl	mn10300_local_icache_inv_page
-+	.globl	mn10300_local_icache_inv_range
-+	.globl	mn10300_local_icache_inv_range2
-+	.type	mn10300_local_icache_inv_page,@function
-+	.type	mn10300_local_icache_inv_range,@function
-+	.type	mn10300_local_icache_inv_range2,@function
-+mn10300_local_icache_inv_page:
-+	and	~(PAGE_SIZE-1),d0
-+	mov	PAGE_SIZE,d1
-+mn10300_local_icache_inv_range2:
-+	add	d0,d1
-+mn10300_local_icache_inv_range:
-+	movm	[d2,d3,a2],(sp)
-+
-+	mov	CHCTR,a0
-+	movhu	(a0),d2
-+	btst	CHCTR_ICEN,d2
-+	beq	mn10300_local_icache_inv_range_reg_end
-+
-+	/* calculate alignsize
-+	 *
-+	 * alignsize = L1_CACHE_BYTES;
-+	 * for (i = (end - start - 1) / L1_CACHE_BYTES ;  i > 0; i >>= 1) {
-+	 *     alignsize <<= 1;
-+	 * }
-+	 * d2 = alignsize;
-+	 */
-+	mov	L1_CACHE_BYTES,d2
-+	sub	d0,d1,d3
-+	add	-1,d3
-+	lsr	L1_CACHE_SHIFT,d3
-+	beq	2f
-+1:
-+	add	d2,d2
-+	lsr	1,d3
-+	bne	1b
-+2:
-+
-+	/* a1 = end */
-+	mov	d1,a1
-+
-+	LOCAL_CLI_SAVE(d3)
-+
-+	mov	ICIVCR,a0
-+	/* wait for busy bit of area invalidation */
-+	setlb
-+	mov	(a0),d1
-+	btst	ICIVCR_ICIVBSY,d1
-+	lne
-+
-+	/* set mask
-+	 *
-+	 * mask = ~(alignsize-1);
-+	 * ICIVMR = mask;
-+	 */
-+	mov	d2,d1
-+	add	-1,d1
-+	not	d1
-+	mov	d1,(ICIVMR)
-+	/* a2 = mask & start */
-+	and	d1,d0,a2
-+
-+icivloop:
-+	/* area invalidate
-+	 *
-+	 * ICIVCR = (mask & start) | ICIVCR_ICI
-+	 */
-+	mov	a2,d0
-+	or	ICIVCR_ICI,d0
-+	mov	d0,(a0)
-+
-+	/* wait for busy bit of area invalidation */
-+	setlb
-+	mov	(a0),d1
-+	btst	ICIVCR_ICIVBSY,d1
-+	lne
-+
-+	/* check invalidating of end address
-+	 *
-+	 * a2 = a2 + alignsize
-+	 * if (a2 < end) {
-+	 *     goto icivloop;
-+	 * } */
-+	add	d2,a2
-+	cmp	a1,a2
-+	bns	icivloop
-+
-+	LOCAL_IRQ_RESTORE(d3)
-+
-+mn10300_local_icache_inv_range_reg_end:
-+	ret	[d2,d3,a2],12
-+	.size	mn10300_local_icache_inv_page,.-mn10300_local_icache_inv_page
-+	.size	mn10300_local_icache_inv_range,.-mn10300_local_icache_inv_range
-+	.size	mn10300_local_icache_inv_range2,.-mn10300_local_icache_inv_range2
++	if (cnx) {
++		pteu = addr;
++#ifdef CONFIG_MN10300_TLB_USE_PIDR
++		pteu |= cnx & xPTEU_PID;
++#endif
++		IPTEU = pteu;
++		DPTEU = pteu;
++		if (IPTEL & xPTEL_V)
++			IPTEL = 0;
++		if (DPTEL & xPTEL_V)
++			DPTEL = 0;
++	}
++	local_irq_restore(flags);
++}
+ 
+ /*
+  * TLB flushing:
+diff --git a/arch/mn10300/mm/mmu-context.c b/arch/mn10300/mm/mmu-context.c
+index 3d83966..a4f7d3d 100644
+--- a/arch/mn10300/mm/mmu-context.c
++++ b/arch/mn10300/mm/mmu-context.c
+@@ -13,40 +13,15 @@
+ #include <asm/mmu_context.h>
+ #include <asm/tlbflush.h>
+ 
++#ifdef CONFIG_MN10300_TLB_USE_PIDR
+ /*
+  * list of the MMU contexts last allocated on each CPU
+  */
+ unsigned long mmu_context_cache[NR_CPUS] = {
+-	[0 ... NR_CPUS - 1] = MMU_CONTEXT_FIRST_VERSION * 2 - 1,
++	[0 ... NR_CPUS - 1] =
++	MMU_CONTEXT_FIRST_VERSION * 2 - (1 - MMU_CONTEXT_TLBPID_LOCK_NR),
+ };
+-
+-/*
+- * flush the specified TLB entry
+- */
+-void local_flush_tlb_page(struct mm_struct *mm, unsigned long addr)
+-{
+-	unsigned long pteu, cnx, flags;
+-
+-	addr &= PAGE_MASK;
+-
+-	/* make sure the context doesn't migrate and defend against
+-	 * interference from vmalloc'd regions */
+-	local_irq_save(flags);
+-
+-	cnx = mm_context(mm);
+-
+-	if (cnx != MMU_NO_CONTEXT) {
+-		pteu = addr | (cnx & 0x000000ffUL);
+-		IPTEU = pteu;
+-		DPTEU = pteu;
+-		if (IPTEL & xPTEL_V)
+-			IPTEL = 0;
+-		if (DPTEL & xPTEL_V)
+-			DPTEL = 0;
+-	}
+-
+-	local_irq_restore(flags);
+-}
++#endif /* CONFIG_MN10300_TLB_USE_PIDR */
+ 
+ /*
+  * preemptively set a TLB entry
+@@ -63,10 +38,16 @@ void update_mmu_cache(struct vm_area_struct *vma, unsigned long addr, pte_t *pte
+ 	 * interference from vmalloc'd regions */
+ 	local_irq_save(flags);
+ 
++	cnx = ~MMU_NO_CONTEXT;
++#ifdef CONFIG_MN10300_TLB_USE_PIDR
+ 	cnx = mm_context(vma->vm_mm);
++#endif
+ 
+ 	if (cnx != MMU_NO_CONTEXT) {
+-		pteu = addr | (cnx & 0x000000ffUL);
++		pteu = addr;
++#ifdef CONFIG_MN10300_TLB_USE_PIDR
++		pteu |= cnx & MMU_CONTEXT_TLBPID_MASK;
++#endif
+ 		if (!(pte_val(pte) & _PAGE_NX)) {
+ 			IPTEU = pteu;
+ 			if (IPTEL & xPTEL_V)
 
