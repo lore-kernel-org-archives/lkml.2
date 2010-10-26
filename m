@@ -1,58 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932147Ab0JZPY2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Oct 2010 11:24:28 -0400
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:49559 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754528Ab0JZPY1 convert rfc822-to-8bit (ORCPT
+	id S1757959Ab0JZP0P (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Oct 2010 11:26:15 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:39684
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753076Ab0JZP0O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Oct 2010 11:24:27 -0400
-Date: Tue, 26 Oct 2010 17:26:47 +0200
-From: =?utf-8?B?TWljaGHFgiBOYXphcmV3aWN6?= <m.nazarewicz@samsung.com>
-Subject: Re: [PATCH 1/7] USB: gadget: file_storage: put_device() in error
- recovery
-In-reply-to: <Pine.LNX.4.44L0.1010261113320.1634-100000@iolanthe.rowland.org>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Michal Nazarewicz <mina86@mina86.com>
-Message-id: <op.vk6vuxix7p4s8u@pikus>
-Organization: Samsung Electronics
-MIME-version: 1.0
-Content-type: text/plain; charset=utf-8; format=flowed; delsp=yes
-Content-transfer-encoding: 8BIT
-User-Agent: Opera Mail/10.62 (Linux)
-References: <Pine.LNX.4.44L0.1010261113320.1634-100000@iolanthe.rowland.org>
+	Tue, 26 Oct 2010 11:26:14 -0400
+Date: Tue, 26 Oct 2010 08:26:37 -0700 (PDT)
+Message-Id: <20101026.082637.193705328.davem@davemloft.net>
+To: elvis.dowson@mac.com
+Cc: linux-kernel@vger.kernel.org, luciano.coelho@nokia.com
+Subject: Re: #ifdef CONFIG_ checks not working
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <47266B0D-0A99-4C5F-BA85-FCC8986E8862@mac.com>
+References: <47266B0D-0A99-4C5F-BA85-FCC8986E8862@mac.com>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 26 Oct 2010 17:14:52 +0200, Alan Stern <stern@rowland.harvard.edu> wrote:
+From: Elvis Dowson <elvis.dowson@mac.com>
+Date: Tue, 26 Oct 2010 18:28:22 +0400
 
-> On Tue, 26 Oct 2010, [utf-8] MichaÅ‚ Nazarewicz wrote:
->
->> >> +		if ((rc = device_create_file(&curlun->dev, &dev_attr_ro))  ||
->> >> +		    (rc = device_create_file(&curlun->dev, &dev_attr_nofua)) ||
->> >> +		    (rc = device_create_file(&curlun->dev, &dev_attr_file)))
->> >> +			goto out;
->> >
->> > As long as you're changing these anyway, you may as well use the style
->> > most developers seem to prefer:
->> >
->> > 		rc = device_create_file(&curlun->dev, &dev_attr_ro);
->> > 		if (rc)
->> > 			goto out;
->> > 		...
->>
->> But then it'd be total of 9 lines consisting of three 3-line ifs.  I decided
->> that it would be more readable with a single if even though it is not compliant
->> with coding style.  What do you think?  I can just resend it.
->
-> I think you should change it as I suggested.
+> #ifdef CONFIG_WL1271
+>     printk(KERN_INFO "%s: CONFIG_WL1271 detected\n", __func__);
+> #else
+>     printk(KERN_INFO "%s: CONFIG_WL1271 not detected\n", __func__);
+> #endif
 
-OK, I'll resend the whole set tomorrow or the day after tomorrow.
+If you set WL1271=m then CONFIG_WL1271_MODULE will be set, not
+CONFIG_WL1271.
 
--- 
-Best regards,                                        _     _
-| Humble Liege of Serenely Enlightened Majesty of  o' \,=./ `o
-| Computer Science,  Michał "mina86" Nazarewicz       (o o)
-+----[mina86*mina86.com]---[mina86*jabber.org]----ooO--(_)--Ooo--
+The latter will only be set if you enable the option with "y".
