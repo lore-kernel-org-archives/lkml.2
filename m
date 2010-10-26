@@ -1,37 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754225Ab0JZBTu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Oct 2010 21:19:50 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:53579 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751518Ab0JZBTt (ORCPT
+	id S1755209Ab0JZBVF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Oct 2010 21:21:05 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:36538 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753733Ab0JZBVE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Oct 2010 21:19:49 -0400
-Date: Mon, 25 Oct 2010 18:19:55 -0700
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        Liam Girdwood <lrg@slimlogic.co.uk>,
-        MyungJoo Ham <myungjoo.ham@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>
-Subject: Re: [PATCH 2/2 v2] regulator: max8952 - fix max8952_set_voltage
-Message-ID: <20101026011955.GA3432@opensource.wolfsonmicro.com>
-References: <1288050954.2323.3.camel@phoenix>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1288050954.2323.3.camel@phoenix>
-X-Cookie: There is a fly on your nose.
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Mon, 25 Oct 2010 21:21:04 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=sy3dW+NA/dHh4Y912cwAqwXKxvx1hnho1RW1nrBI6gFZuQVOwnLH6cF6+CSrAD4svG
+         BP7YGQ4x0ylIwFB3fOd5HSoyJiFGiV/RMap0pLZi55C8ZQszwMaXV+Qdi0Ya2Pt6R1Rk
+         H8jw9pZKibvVNLW3uoGHDM48ze0KjlDHMGqgQ=
+Subject: Re: [PATCH 03/29] memstick: core: add new functions
+From: Maxim Levitsky <maximlevitsky@gmail.com>
+To: Alex Dubov <oakad@yahoo.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <117301.25688.qm@web37608.mail.mud.yahoo.com>
+References: <117301.25688.qm@web37608.mail.mud.yahoo.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 26 Oct 2010 03:20:58 +0200
+Message-ID: <1288056058.4024.39.camel@maxim-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 26, 2010 at 07:55:54AM +0800, Axel Lin wrote:
-> In current implementation, vid is declared as u8,
-> then "vid == -1" is always false, and "vid >= 0" is always true.
-> Thus change it to s8.
+On Mon, 2010-10-25 at 07:56 -0700, Alex Dubov wrote:
+> --- On Fri, 22/10/10, Maxim Levitsky <maximlevitsky@gmail.com> wrote:
 > 
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+> > From: Maxim Levitsky <maximlevitsky@gmail.com>
+> > Subject: [PATCH 03/29] memstick: core: add new functions
+> > To: "Alex Dubov" <oakad@yahoo.com>
+> > Cc: "Andrew Morton" <akpm@linux-foundation.org>, "LKML" <linux-kernel@vger.kernel.org>, "Maxim Levitsky" <maximlevitsky@gmail.com>
+> > Received: Friday, 22 October, 2010, 4:53 PM
+> > Add a lot of support code that will
+> > be used later.
+> > 
+> 
+> You're adding here a lot of temporarily dead code, which, while being
+> useful, should be better added together with the actual driver
+> functionality.
+So what?
+What is wrong with that?
+Why should I mix things together?
 
-Acked-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+
+> 
+> Besides this, the patch has a lot of unneeded clean-ups which are better
+> be set as a separate patch.
+What cleanups?
+So I added the memstick_power_off and make code use it
+If you want even that as separate patch, ok.
+
+And memstick_invalidate_reg_window in memstick_power_on?
+Again at any rate it will be invalid there.
+(Maybe I should have put that in memstick_power_off actually, will do)
+
+If you want me to put these changes in separate patches, ok, I do it.
+
+
+> 
+> And it doesn't conform to the coding guideline either (4 byte indents,
+> instead of tab
+What?
+I checked the patch with checkpatch.pl. It didn't complain.
+I also use 8 byte tabs not 4.
+Will look at that, thanks.
+
+Best regards,
+	Maxim Levitsky
+
