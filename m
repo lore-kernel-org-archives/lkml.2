@@ -1,99 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756044Ab0JZUIQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Oct 2010 16:08:16 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:15735 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754392Ab0JZUIP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Oct 2010 16:08:15 -0400
-Message-ID: <4CC7352B.3070402@redhat.com>
-Date: Tue, 26 Oct 2010 18:08:11 -0200
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100827 Red Hat/3.1.3-1.el6 Lightning/1.0b2 Thunderbird/3.1.3
+	id S1757870Ab0JZUIa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Oct 2010 16:08:30 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:54482 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757262Ab0JZUI2 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Oct 2010 16:08:28 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=EiGMqdeMXIVIYE2CNkzzZj7bFN3smK+XfjHj2p2ikReVE89QT+sbkxT6I0PPee4Mh1
+         p7aEfQ9aqefp3x+8KG31nUeLuR584XDnHXMyH7jBIwHRaYCf9uiljGIhva69K89GMQbX
+         M+hlZNyYiRGKkFivTuVUKOGR2z6gVf/u2Dqe8=
 MIME-Version: 1.0
-To: Randy Dunlap <rdunlap@xenotime.net>
-CC: lkml <linux-kernel@vger.kernel.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Subject: Re: docbook: fix fatal error in linux/input.h
-References: <20101026114555.4b79977d.rdunlap@xenotime.net>	<4CC7283D.3010205@redhat.com> <20101026121747.897eddc9.rdunlap@xenotime.net>
-In-Reply-To: <20101026121747.897eddc9.rdunlap@xenotime.net>
+In-Reply-To: <20101004154633.GA2900@redhat.com>
+References: <AANLkTimF2tcksBkww50MhiO0YY=MCt4rcnfDR+tJhTUJ@mail.gmail.com>
+	<20101004154633.GA2900@redhat.com>
+Date: Tue, 26 Oct 2010 21:08:27 +0100
+X-Google-Sender-Auth: M4_c7xvWEjsfG9v1ExMlgzf_Mkk
+Message-ID: <AANLkTikiQHLAM9GwMF8+spW-RgG9-=rducMLaThQmE+i@mail.gmail.com>
+Subject: Re: Dynamic nop selection breaks boot on Geode LX
+From: Daniel Drake <dsd@laptop.org>
+To: Jason Baron <jbaron@redhat.com>
+Cc: Andres Salomon <dilinger@queued.net>, Chris Ball <cjb@laptop.org>,
+        linux-kernel@vger.kernel.org, rostedt@goodmis.org, mingo@elte.hu,
+        hpa@zytor.com, nick.lowe@gmail.com, Borislav Petkov <bp@alien8.de>,
+        tglx@linutronix.de
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em 26-10-2010 17:17, Randy Dunlap escreveu:
-> On Tue, 26 Oct 2010 17:13:01 -0200 Mauro Carvalho Chehab wrote:
-> 
->> Em 26-10-2010 16:45, Randy Dunlap escreveu:
->>> Hi,
->>>
->>> Recent commit 8613e4c2872a87cc309a42de2c7091744dc54d0e:
->>> Author: Mauro Carvalho Chehab <mchehab@redhat.com>
->>> Date:   Thu Sep 9 21:54:22 2010 -0700
->>>     Input: add support for large scancodes
->>>
->>> causes a fatal error in docbook generation:
->>>
->>> linux-2.6.36-git8/DOC1/Documentation/DocBook/device-drivers.xml:40690: parser error : StartTag: invalid element name
->>> #define INPUT_KEYMAP_BY_INDEX	(1 << 0)
->>>                              	    ^
->>>
->>> I think that this message comes from xsltproc, but I'm not positive about that.
->>> I also don't know of a really good fix for it.  However, I did find 2 ways to
->>> work around the error:
->>>
->>> a/ move the #define value to after the end of the struct input_keymap_entry, like:
->>>
->>> /* flags bits: */
->>> #define INPUT_KEYMAP_BY_INDEX	(1 << 0)
->>>
->>> or
->>> b/ don't use the "<< 0" (can leave the #define where it is in this case):
->>> #define INPUT_KEYMAP_BY_INDEX	(1)
->>>
->>> I have tested both of these patches and they work OK.
->>> Are you OK with either of them?  or want to choose one?
->>
->>
->> Hmm... probably, the first one is not correct.
-> 
-> Why not?  All it does is move the line to after the end of the struct.
-> 
->> I suspect that the right way is to use something like:
->>
->> 	#define INPUT_KEYMAP_BY_INDEX	(1 &lt;&lt; 0)
->>
->> Could you please test if this would fix the issue?
-> 
-> You are suggesting putting that into include/linux/input.h ??
-> 
-> That would make sense if some tool converted "<<" to "&lt;&lt;".
-> And that may be where the problem is, but I don't know those tools.
+Hi,
 
-Well, if you don't do it, you may have other problems ;)
+On 4 October 2010 16:46, Jason Baron <jbaron@redhat.com> wrote:
+> Hi Daniel,
+>
+> looks like I moved dynamic no-op selection way too early in the boot -
+> before the exception tables required to select invalid opcodes were
+> even set up. The patch belows moves them later and should resolve this
+> issue for you. thanks for narrowing it down!
 
-Letting characters like <, > or & source code may generate wrong xml files,
-and may be bad interpreted by the xml tools.
+Bump... This patch has not been merged. I see that there is still some
+lack of consensus in this area but please don't forget about it. The
+offending commit (f49aa448561fe) has ended up in Linus' tree, so
+Linus' tree does not boot on Geode as a result.
 
-Btw, that Makefile patch I did to auto-generate some media files[1] use this
-logic to generate such files:
-
-ESCAPE = \
-	-e "s/&/\\&amp;/g" \
-	-e "s/</\\&lt;/g" \
-	-e "s/>/\\&gt;/g"
-
-$(MEDIA_DIR)/videodev2.h.xml: $(srctree)/include/linux/videodev2.h $(MEDIA_DIR)/v4l2.xml
-	@$($(quiet)gen_xml)
-	@(					\
-	echo "<programlisting>") > $@
-	@(					\
-	expand --tabs=8 < $< |			\
-	  sed $(ESCAPE) $(DOCUMENTED) |		\
-	  sed 's/i\.e\./&ie;/') >> $@
-	@(					\
-	echo "</programlisting>") >> $@
-
-[1] https://patchwork.kernel.org/patch/267932/
+>
+>
+> move arch_init_ideal_nop5 later
+>
+> arch_init_ideal_nop5() was being called from setup_arch() before
+> the exception table was setup. Move it later into
+> alternative_instructions().
+>
+> Fixes a boot hang on OLPC's XO-1 laptop based on Geode LX
+> processor.
+>
+>
+> Reported-by: Daniel Drake <dsd@laptop.org>
+> Signed-off-by: Jason Baron <jbaron@redhat.com>
+> ---
+>  arch/x86/kernel/alternative.c |    5 +++++
+>  arch/x86/kernel/setup.c       |    6 ------
+>  2 files changed, 5 insertions(+), 6 deletions(-)
+>
+> diff --git a/arch/x86/kernel/alternative.c b/arch/x86/kernel/alternative.c
+> index cb0e6d3..d8b5b21 100644
+> --- a/arch/x86/kernel/alternative.c
+> +++ b/arch/x86/kernel/alternative.c
+> @@ -454,6 +454,7 @@ extern struct paravirt_patch_site __start_parainstructions[],
+>
+>  void __init alternative_instructions(void)
+>  {
+> +       unsigned long flags;
+>        /* The patching is not fully atomic, so try to avoid local interruptions
+>           that might execute the to be patched code.
+>           Other CPUs are not running. */
+> @@ -508,6 +509,10 @@ void __init alternative_instructions(void)
+>                                (unsigned long)__smp_locks_end);
+>
+>        restart_nmi();
+> +
+> +       local_irq_save(flags);
+> +       arch_init_ideal_nop5();
+> +       local_irq_restore(flags);
+>  }
+>
+>  /**
+> diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
+> index 468ccd2..85b02b6 100644
+> --- a/arch/x86/kernel/setup.c
+> +++ b/arch/x86/kernel/setup.c
+> @@ -112,7 +112,6 @@
+>  #include <asm/numa_64.h>
+>  #endif
+>  #include <asm/mce.h>
+> -#include <asm/alternative.h>
+>
+>  /*
+>  * end_pfn only includes RAM, while max_pfn_mapped includes all e820 entries.
+> @@ -690,7 +689,6 @@ void __init setup_arch(char **cmdline_p)
+>  {
+>        int acpi = 0;
+>        int k8 = 0;
+> -       unsigned long flags;
+>
+>  #ifdef CONFIG_X86_32
+>        memcpy(&boot_cpu_data, &new_cpu_data, sizeof(new_cpu_data));
+> @@ -1038,10 +1036,6 @@ void __init setup_arch(char **cmdline_p)
+>        x86_init.oem.banner();
+>
+>        mcheck_init();
+> -
+> -       local_irq_save(flags);
+> -       arch_init_ideal_nop5();
+> -       local_irq_restore(flags);
+>  }
+>
+>  #ifdef CONFIG_X86_32
+> --
+> 1.7.1
+>
+>
