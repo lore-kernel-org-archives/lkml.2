@@ -1,81 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760161Ab0JZReP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Oct 2010 13:34:15 -0400
-Received: from eddie.linux-mips.org ([78.24.191.182]:34709 "EHLO
-	cvs.linux-mips.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754261Ab0JZReN (ORCPT
+	id S932482Ab0JZRfM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Oct 2010 13:35:12 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:21002 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754528Ab0JZRfK convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Oct 2010 13:34:13 -0400
-Date: Tue, 26 Oct 2010 18:34:10 +0100 (BST)
-From: "Maciej W. Rozycki" <macro@linux-mips.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Jan Beulich <JBeulich@novell.com>,
-        Alexander van Heukelum <heukelum@fastmail.fm>,
-        Ingo Molnar <mingo@elte.hu>, akpm@linux-foundation.org,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        David Howells <dhowells@redhat.com>, linux-arch@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Partially revert patch that encloses asm-offset.h numbers
- in brackets
-In-Reply-To: <4CC702EB.1000301@zytor.com>
-Message-ID: <alpine.LFD.2.00.1010261759410.15889@eddie.linux-mips.org>
-References: <4CC5B1A1020000780001EF7C@vpn.id2.novell.com> <20101025140218.5092.74117.stgit@warthog.procyon.org.uk> <28707.1288018465@redhat.com> <4CC5B8D3020000780001EFB4@vpn.id2.novell.com> <AANLkTi=mpKRQgZp5zCoCsBtkuWHrpkOq2Zch-OOGu4CC@mail.gmail.com>
- <4CC5A748.6050903@zytor.com> <AANLkTik1HB-P0x0e8ucHz7323F-_qAzkaHrHy1Yq4qwo@mail.gmail.com> <4CC5B246.5070909@zytor.com> <alpine.LFD.2.00.1010261126590.15889@eddie.linux-mips.org> <4CC702EB.1000301@zytor.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	Tue, 26 Oct 2010 13:35:10 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=SEK5EeO0dopP6nn/BvmviHqaoAEs8fkxbJ6gqu2+Oc+dPk6SyfTAOKALI9y0Kz6XXj
+         HWdD3C/4P/4Egjm4qjPA==
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <1288105046.15336.343.camel@twins>
+References: <1288045817-3135-1-git-send-email-venki@google.com>
+	<1288045817-3135-6-git-send-email-venki@google.com>
+	<1288086350.15336.123.camel@twins>
+	<1288105046.15336.343.camel@twins>
+Date: Tue, 26 Oct 2010 10:35:04 -0700
+Message-ID: <AANLkTimFQvszKyXPOSjjQ9ohBd1fSspiGhsqs96Ly2mr@mail.gmail.com>
+Subject: Re: [PATCH 5/6] Export ns irqtimes through /proc/stat -v1
+From: Venkatesh Pallipadi <venki@google.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        linux-kernel@vger.kernel.org, Paul Turner <pjt@google.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Shaun Ruffell <sruffell@digium.com>,
+        Yong Zhang <yong.zhang0@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 26 Oct 2010, H. Peter Anvin wrote:
+On Tue, Oct 26, 2010 at 7:57 AM, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Tue, 2010-10-26 at 11:45 +0200, Peter Zijlstra wrote:
+>> On Mon, 2010-10-25 at 15:30 -0700, Venkatesh Pallipadi wrote:
+>> > +static void irqtime_account_process_tick(struct task_struct *p, int user_tick,
+>> > +                                               struct rq *rq)
+>> > +{
+>> > +       cputime_t one_jiffy_scaled = cputime_to_scaled(cputime_one_jiffy);
+>> > +       cputime64_t tmp = cputime_to_cputime64(cputime_one_jiffy);
+>> > +       struct cpu_usage_stat *cpustat = &kstat_this_cpu.cpustat;
+>> > +
+>> > +       if (irqtime_account_hi_update()) {
+>> > +               cpustat->irq = cputime64_add(cpustat->irq, tmp);
+>> > +       } else if (irqtime_account_si_update()) {
+>> > +               cpustat->softirq = cputime64_add(cpustat->softirq, tmp);
+>> > +       } else
+>>
+>> I'm still not sure about this else stmt, the above two conditions can
+>> basically 'eat' user/system ticks. What we need to show is that there is
+>> no bias towards either kind so the ratio is not affected -- can we make
+>> such an argument?
+>
+> I think I can made a counter-argument: if either or both of these checks
+> are true we had system time in the last tick, hence there is a larger
+> chance this tick is a system tick.
+>
+> Therefore it will not provide the same user/system ratio.
+>
+> Hmm?
+>
 
-> >  Also note that *.*.9x versions are snapshots from the FSF repository (so 
-> > there's no fixed date associated with them), which also delegates 
-> > maintenance responsibility to whoever packages them and makes available to 
-> > people.  In the state as imported from the repository they may have odd 
-> > problems or grave bugs, as exhaustive regression testing is generally only 
-> > made after a release branch has been created and otherwise changes to the 
-> > head of the tree are only tested for a limited subset of targets before 
-> > they are applied.  Therefore local fixes are inevitable for them anyway.
-> 
-> Well, sort of... the x.x.9x releases used in production -- specifically
-> the ones with a numbering scheme like x.x.9x.0.x -- in the Linux world
-> tend to be the ones maintained and released by H.J. Lu:
-> 
-> http://www.kernel.org/pub/linux/devel/binutils/
+This is about task user/system time. Right?
+With the earlier changes, hardirq/softirq won't be part of task
+sum_exec_runtime anymore. So, if we have had significant hardirq or
+softirq during this tick, then the task sum_exec_runtime wouldn't have
+changed much. So, accounting this as task system time will tweak task
+user/system ratio needlessly. So, eating up system time should be the
+right thing to do here :-)
 
- Yeah, in practice this means the packagers have an additional choice to 
-pester H.J. if something goes wrong. ;)
+The other case of significant hardirq/softirq during last tick, but
+not enough to cause the irq folding and so may get accounted as
+system/user and we have a tiny hardirq/softirq in the next tick which
+results in folding and so system/user wont be accounted. So, this can
+affect user/system ratio if last tick was user and current tick is
+system or vice-versa. This I feel, is no different from variation with
+tick instance based sampling we have now.
 
- I used H.J.'s releases once too, then around 2.9.4 I switched over to 
-pristine FSF sources as I figured out I needed to make own fixes for the 
-MIPS port and it was easier for me to propagate them upstream this way.  
-And overall I found no problems (apart from the usual bugs here and there 
-every once in a while) having since used them for the Alpha, MIPS, VAX and 
-x86 ports of Linux (OK, perhaps x86 is not a port ;) ), so the choice 
-between the two flavours is mostly the matter of taste it would seem.
+Only other option I can think of, is to forget about this folding
+business and micro account hardirq/softirq fraction on every tick and
+account the remaining time (one_tick - (hardirq+softirq)) as
+user/idle/guest/system. The problem with that is the task times and
+kstat are done in cputime64, which in x86 is jiffies and so we dont
+have enough resolution for this approach.
 
-> >  And last but not least binutils are one of the easier tools to build from 
-> > sources, so installing a newer version, especially when it comes to native 
-> > tools (hardly anyone uses cross-compilation targeting x86, I believe), 
-> > somewhere under $HOME to use for kernel builds is a trivial effort:
-> > 
-> > $ ./configure --prefix=$HOME/somewhere && make && make install
-> > $ PATH=$HOME/somewhere/bin:$PATH
-> > 
-> > Certainly much easier than building the kernel, especially when it comes 
-> > to selecting the right configuration options.
-> 
-> Yes, although there is also a version dependency between binutils and
-> gcc, as I unhappily found out trying to run an upversion gcc on an old
-> distro at one point.
+Thanks,
+Venki
 
- Fair enough if you do it this way, but switching to a higher version of 
-binutils shouldn't ever be a problem.  GCC detects some binutils features 
-at the configuration time and sets itself up accordingly, but these do not 
-get removed, at least not that I heard of.
-
-  Maciej
+>> >                if (user_tick) {
+>> > +               account_user_time(p, cputime_one_jiffy, one_jiffy_scaled);
+>> > +       } else if (p == rq->idle) {
+>> > +               account_idle_time(cputime_one_jiffy);
+>> > +       } else if (p->flags & PF_VCPU) { /* System time or guest time */
+>> > +               account_guest_time(p, cputime_one_jiffy, one_jiffy_scaled);
+>> > +       } else {
+>> > +               __account_system_time(p, cputime_one_jiffy, one_jiffy_scaled,
+>> > +                                       &cpustat->system);
+>> > +       }
+>> > +}
+>
+>
