@@ -1,58 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758926Ab0JZJrm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Oct 2010 05:47:42 -0400
-Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:32012 "EHLO
-	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758893Ab0JZJrk (ORCPT
+	id S1758919Ab0JZJuo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Oct 2010 05:50:44 -0400
+Received: from canuck.infradead.org ([134.117.69.58]:45683 "EHLO
+	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755585Ab0JZJun convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Oct 2010 05:47:40 -0400
-Message-ID: <001c01cb74f2$d3dd8990$66f8800a@maildom.okisemi.com>
-From: "Tomoya MORINAGA" <tomoya-linux@dsn.okisemi.com>
-To: "Jean Delvare" <khali@linux-fr.org>
-Cc: "Samuel Ortiz" <sameo@linux.intel.com>,
-        "Wolfram Sang" <w.sang@pengutronix.de>,
-        "Ralf Baechle" <ralf@linux-mips.org>, <linux-i2c@vger.kernel.org>,
-        "LKML" <linux-kernel@vger.kernel.org>,
-        "Ben Dooks \(embedded platforms\)" <ben-linux@fluff.org>,
-        "Linus Walleij" <linus.walleij@stericsson.com>,
-        "srinidhi kasagar" <srinidhi.kasagar@stericsson.com>,
-        "Tomoya MORINAGA" <morinaga526@dsn.okisemi.com>,
-        "Wang Qi\"" <qi.wang@intel.com>,
-        "Wang Yong Y\"" <yong.y.wang@intel.com>, <kok.howg.ewe@intel.com>,
-        <joel.clark@intel.com>, <andrew.chih.howe.khor@intel.com>
-References: <4CC645A1.5010509@dsn.okisemi.com><20101026102048.316d0c04@endymion.delvare><001a01cb74ec$e3eb3ea0$66f8800a@maildom.okisemi.com> <20101026111322.738b0b14@endymion.delvare>
-Subject: Re: [PATCH v3] Topcliff: Update PCH_I2C driver to 2.6.36
-Date: Tue, 26 Oct 2010 18:47:37 +0900
-MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.2800.1983
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2800.1983
-X-Hosting-Pf: 0
-X-NAI-Spam-Score: 1
+	Tue, 26 Oct 2010 05:50:43 -0400
+Subject: Re: [PATCH 6/6] Account ksoftirqd time as cpustat softirq -v1
+From: Peter Zijlstra <peterz@infradead.org>
+To: Venkatesh Pallipadi <venki@google.com>
+Cc: Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        linux-kernel@vger.kernel.org, Paul Turner <pjt@google.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Shaun Ruffell <sruffell@digium.com>,
+        Yong Zhang <yong.zhang0@gmail.com>
+In-Reply-To: <1288085632.15336.111.camel@twins>
+References: <1288045817-3135-1-git-send-email-venki@google.com>
+	 <1288045817-3135-7-git-send-email-venki@google.com>
+	 <1288085632.15336.111.camel@twins>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Tue, 26 Oct 2010 11:50:18 +0200
+Message-ID: <1288086618.15336.125.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jean,
+On Tue, 2010-10-26 at 11:33 +0200, Peter Zijlstra wrote:
+> On Mon, 2010-10-25 at 15:30 -0700, Venkatesh Pallipadi wrote:
+> > softirq time in ksoftirqd context is not accounted in ns granularity
+> > per cpu softirq stats, as we want that to be a part of ksoftirqd
+> > exec_runtime.
+> > 
+> > Accounting them as softirq on /proc/stat separately.
+> > 
+> > Tested-by: Shaun Ruffell <sruffell@digium.com>
+> > 
+> > Signed-off-by: Venkatesh Pallipadi <venki@google.com>
+> > ---
+> >  kernel/sched.c |    8 ++++++++
+> >  1 files changed, 8 insertions(+), 0 deletions(-)
+> > 
+> > diff --git a/kernel/sched.c b/kernel/sched.c
+> > index 49f6f61..0955050 100644
+> > --- a/kernel/sched.c
+> > +++ b/kernel/sched.c
+> > @@ -3617,6 +3617,14 @@ static void irqtime_account_process_tick(struct task_struct *p, int user_tick,
+> >  		cpustat->irq = cputime64_add(cpustat->irq, tmp);
+> >  	} else if (irqtime_account_si_update()) {
+> >  		cpustat->softirq = cputime64_add(cpustat->softirq, tmp);
+> > +	} else if (this_cpu_ksoftirqd() == p) {
+> > +		/*
+> > +		 * ksoftirqd time do not get accounted in cpu_softirq_time.
+> > +		 * So, we have to handle it separately here.
+> > +		 * Also, p->stime needs to be updated for ksoftirqd.
+> > +		 */
+> > +		__account_system_time(p, cputime_one_jiffy, one_jiffy_scaled,
+> > +					&cpustat->softirq);
+> >  	} else if (user_tick) {
+> >  		account_user_time(p, cputime_one_jiffy, one_jiffy_scaled);
+> >  	} else if (p == rq->idle) {
+> 
+> 
+> I'm somewhat confused by this patch.. This is significantly different
+> from the thing proposed last time around, which was to use:
+> 
+>   cpustat->softirq + this_cpu_ksoftirqd()->se.sum_exec_runtime
+> 
+> The above looses the fine grained aspect of the accounting and simply
+> charges a whole jiffy if the current process happens to be ksoftirqd.
 
-On Tuesday, October 26, 2010 6:13 PM, Jean Delvare wrote:
-> The _pch becomes redundant then, i2c-topcliff.c would be enough, but
-> both are fine with me, as my initial concern is gone.
-I agree.
-I will modify to "i2c-topcliff.c".
-
-> There's no Reviewed-by, Acked-by or Signed-off-by from anyone at Intel
-> in the patch you posted. 
-Must we get Intel's signature ? 
-We have already got the following. Isn't  this enough ?
-> Reviewed-by: Linus Walleij <linus.walleij@stericsson.com>
-
-Though I haven't heard like the requirement,
-if Intel's signature is mandatory, I will request to Intel.
-
-Thanks, Tomoya(OKI SEMICONDUCTOR CO., LTD.)
+Btw, both these solutions can cause si + us + ni + sy > 100%, are we ok
+with that?
