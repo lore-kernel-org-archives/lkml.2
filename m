@@ -1,56 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933043Ab0JZUCf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Oct 2010 16:02:35 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:39458 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758821Ab0JZT53 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Oct 2010 15:57:29 -0400
-From: =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: trivial@kernel.org
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Subject: [PATCH 10/22] [RFC] trivial: fix typos concerning "function"
-Date: Tue, 26 Oct 2010 21:57:07 +0200
-Message-Id: <1288123039-22368-10-git-send-email-u.kleine-koenig@pengutronix.de>
-X-Mailer: git-send-email 1.7.2.3
-In-Reply-To: <1288123039-22368-1-git-send-email-u.kleine-koenig@pengutronix.de>
-References: <1288123039-22368-1-git-send-email-u.kleine-koenig@pengutronix.de>
+	id S1756044Ab0JZUIQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Oct 2010 16:08:16 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:15735 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754392Ab0JZUIP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Oct 2010 16:08:15 -0400
+Message-ID: <4CC7352B.3070402@redhat.com>
+Date: Tue, 26 Oct 2010 18:08:11 -0200
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100827 Red Hat/3.1.3-1.el6 Lightning/1.0b2 Thunderbird/3.1.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+To: Randy Dunlap <rdunlap@xenotime.net>
+CC: lkml <linux-kernel@vger.kernel.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Subject: Re: docbook: fix fatal error in linux/input.h
+References: <20101026114555.4b79977d.rdunlap@xenotime.net>	<4CC7283D.3010205@redhat.com> <20101026121747.897eddc9.rdunlap@xenotime.net>
+In-Reply-To: <20101026121747.897eddc9.rdunlap@xenotime.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I'm a bit unsure about this patch.  I'm unable to parse both statements.
+Em 26-10-2010 17:17, Randy Dunlap escreveu:
+> On Tue, 26 Oct 2010 17:13:01 -0200 Mauro Carvalho Chehab wrote:
+> 
+>> Em 26-10-2010 16:45, Randy Dunlap escreveu:
+>>> Hi,
+>>>
+>>> Recent commit 8613e4c2872a87cc309a42de2c7091744dc54d0e:
+>>> Author: Mauro Carvalho Chehab <mchehab@redhat.com>
+>>> Date:   Thu Sep 9 21:54:22 2010 -0700
+>>>     Input: add support for large scancodes
+>>>
+>>> causes a fatal error in docbook generation:
+>>>
+>>> linux-2.6.36-git8/DOC1/Documentation/DocBook/device-drivers.xml:40690: parser error : StartTag: invalid element name
+>>> #define INPUT_KEYMAP_BY_INDEX	(1 << 0)
+>>>                              	    ^
+>>>
+>>> I think that this message comes from xsltproc, but I'm not positive about that.
+>>> I also don't know of a really good fix for it.  However, I did find 2 ways to
+>>> work around the error:
+>>>
+>>> a/ move the #define value to after the end of the struct input_keymap_entry, like:
+>>>
+>>> /* flags bits: */
+>>> #define INPUT_KEYMAP_BY_INDEX	(1 << 0)
+>>>
+>>> or
+>>> b/ don't use the "<< 0" (can leave the #define where it is in this case):
+>>> #define INPUT_KEYMAP_BY_INDEX	(1)
+>>>
+>>> I have tested both of these patches and they work OK.
+>>> Are you OK with either of them?  or want to choose one?
+>>
+>>
+>> Hmm... probably, the first one is not correct.
+> 
+> Why not?  All it does is move the line to after the end of the struct.
+> 
+>> I suspect that the right way is to use something like:
+>>
+>> 	#define INPUT_KEYMAP_BY_INDEX	(1 &lt;&lt; 0)
+>>
+>> Could you please test if this would fix the issue?
+> 
+> You are suggesting putting that into include/linux/input.h ??
+> 
+> That would make sense if some tool converted "<<" to "&lt;&lt;".
+> And that may be where the problem is, but I don't know those tools.
 
-Cc: netdev@vger.kernel.org
-Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
----
- drivers/isdn/hisax/isar.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+Well, if you don't do it, you may have other problems ;)
 
-diff --git a/drivers/isdn/hisax/isar.c b/drivers/isdn/hisax/isar.c
-index 40b914b..2e72227 100644
---- a/drivers/isdn/hisax/isar.c
-+++ b/drivers/isdn/hisax/isar.c
-@@ -1427,8 +1427,8 @@ modeisar(struct BCState *bcs, int mode, int bc)
- 					&bcs->hw.isar.reg->Flags))
- 					bcs->hw.isar.dpath = 1;
- 				else {
--					printk(KERN_WARNING"isar modeisar analog funktions only with DP1\n");
--					debugl1(cs, "isar modeisar analog funktions only with DP1");
-+					printk(KERN_WARNING"isar modeisar analog functions only with DP1\n");
-+					debugl1(cs, "isar modeisar analog functions only with DP1");
- 					return(1);
- 				}
- 				break;
--- 
-1.7.2.3
+Letting characters like <, > or & source code may generate wrong xml files,
+and may be bad interpreted by the xml tools.
 
+Btw, that Makefile patch I did to auto-generate some media files[1] use this
+logic to generate such files:
+
+ESCAPE = \
+	-e "s/&/\\&amp;/g" \
+	-e "s/</\\&lt;/g" \
+	-e "s/>/\\&gt;/g"
+
+$(MEDIA_DIR)/videodev2.h.xml: $(srctree)/include/linux/videodev2.h $(MEDIA_DIR)/v4l2.xml
+	@$($(quiet)gen_xml)
+	@(					\
+	echo "<programlisting>") > $@
+	@(					\
+	expand --tabs=8 < $< |			\
+	  sed $(ESCAPE) $(DOCUMENTED) |		\
+	  sed 's/i\.e\./&ie;/') >> $@
+	@(					\
+	echo "</programlisting>") >> $@
+
+[1] https://patchwork.kernel.org/patch/267932/
