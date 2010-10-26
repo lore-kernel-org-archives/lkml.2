@@ -1,56 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755757Ab0JZJLV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Oct 2010 05:11:21 -0400
-Received: from hera.kernel.org ([140.211.167.34]:58945 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751355Ab0JZJLU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Oct 2010 05:11:20 -0400
-Message-ID: <4CC69B22.2050708@kernel.org>
-Date: Tue, 26 Oct 2010 11:10:58 +0200
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.11) Gecko/20101013 Lightning/1.0b2 Thunderbird/3.1.5
-MIME-Version: 1.0
-To: David Howells <dhowells@redhat.com>
-CC: torvalds@osdl.org, akpm@linux-foundation.org, linux-am33-list@redhat.com,
-        linux-kernel@vger.kernel.org,
-        Akira Takeuchi <takeuchi.akr@jp.panasonic.com>,
-        Mark Salter <msalter@redhat.com>
-Subject: Re: [PATCH] MN10300: Fix the PERCPU() alignment to allow for workqueues
-References: <20101025224111.7798.38960.stgit@warthog.procyon.org.uk>
-In-Reply-To: <20101025224111.7798.38960.stgit@warthog.procyon.org.uk>
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 26 Oct 2010 09:11:00 +0000 (UTC)
+	id S1758756Ab0JZJMe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Oct 2010 05:12:34 -0400
+Received: from t1817.greatnet.de ([83.133.124.152]:36540 "EHLO
+	t1817.greatnet.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755175Ab0JZJMd convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Oct 2010 05:12:33 -0400
+X-Greylist: delayed 636 seconds by postgrey-1.27 at vger.kernel.org; Tue, 26 Oct 2010 05:12:33 EDT
+From: Matthias Dunda <user254@t1817.greatnet.de>
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8BIT
+Subject: Reading temperature from another Kernel modules
+Date: Tue, 26 Oct 2010 11:01:56 +0200
+Message-Id: <007FBA04-E52D-497B-A43B-738F15E33558@t1817.greatnet.de>
+To: linux-kernel@vger.kernel.org
+Mime-Version: 1.0 (Apple Message framework v1081)
+X-Mailer: Apple Mail (2.1081)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Hi everybody,
 
-On 10/26/2010 12:41 AM, David Howells wrote:
-> PERCPU() alignment on MN13000, however, is only 32 bytes as set in
-> vmlinux.lds.S.  So we set this to PAGE_SIZE (4096) to match most other arches
-> and stick a comment in alloc_cwqs() for anyone else who triggers the assertion.
+I need to read out the current system temperature from inside my custom kernel module.
 
-Ah, okay, but I'm not quite sure how that would affect the alignment
-of dynamically allocated percpu memory.  Is this SMP or UP build?  Can
-you please double check the bug doesn't trigger with the section
-alignment updated?
+My system works with the jc42.c driver and I can read the temperature perfectly via the proc filesystem in user space.
 
-> -  PERCPU(32)
-> +  PERCPU(PAGE_SIZE)
+How do I query the temperature from another kernel driver?
 
-Hmmm... during initialization, the initial percpu memory is
-re-allocated using bootmem allocator with proper alignment and the
-output section is just used as data source and discarded once init is
-complete.  So, unless I'm mistaken, I don't think this would affect
-anything.  That said, I think it might be better to just remove the
-alignment parameter from the macro and force align to PAGE_SIZE.  It
-doesn't really help anything.
+First of all I added a new function and exported the symbol
 
-Thanks.
+int jc42_get_temperature()
+{
+   int temp;
+   // TODO get the correct temp
+   temp = jc42_read_value(my_local_client, JC42_REG_TEMP);
+   return temp;
+}
+EXPORT_SYMBOL(jc42_get_temperature);
 
--- 
-tejun
+BUT: how do I get the temp? Most of the internal functions require a struct device or a struct i2c_client, which - I assume - are perfectly provided by the kernel when going the way over the proc file system.
+
+I tried to statically save such a struct during the probing process (this is the above my_local_client), but this works neither. When I use the saved struct to call jc42_read_value, I always get a temperature value which is not correct at all.
+
+Kernel is 2.6.29.6-rt24 (yes, jc42 is originally not included there - we ported it from a newer kernel release.)
+
+Thanks for any help!
+Matthias
+
+
