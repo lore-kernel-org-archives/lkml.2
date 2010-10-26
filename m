@@ -1,43 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760122Ab0JZREl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Oct 2010 13:04:41 -0400
-Received: from claw.goop.org ([74.207.240.146]:38156 "EHLO claw.goop.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753137Ab0JZREk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Oct 2010 13:04:40 -0400
-Message-ID: <4CC70A26.2090200@goop.org>
-Date: Tue, 26 Oct 2010 10:04:38 -0700
-From: Jeremy Fitzhardinge <jeremy@goop.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc13 Lightning/1.0b3pre Thunderbird/3.1.4
+	id S932327Ab0JZRFa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Oct 2010 13:05:30 -0400
+Received: from mail.mich.ca ([139.142.212.250]:47405 "EHLO mail1.mich.chf"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1760103Ab0JZRF3 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Oct 2010 13:05:29 -0400
+X-Greylist: delayed 888 seconds by postgrey-1.27 at vger.kernel.org; Tue, 26 Oct 2010 13:05:28 EDT
+X-MimeOLE: Produced By Microsoft Exchange V6.5
+Content-class: urn:content-classes:message
 MIME-Version: 1.0
-To: Avi Kivity <avi@redhat.com>
-CC: Glauber Costa <glommer@redhat.com>, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
-        Zachary Amsden <zamsden@redhat.com>,
-        "Xen-devel@lists.xensource.com" <Xen-devel@lists.xensource.com>
-Subject: Re: [PATCH 1/5] Add a global synchronization point for pvclock
-References: <1271356648-5108-1-git-send-email-glommer@redhat.com> <1271356648-5108-2-git-send-email-glommer@redhat.com> <4CC6130B.8020908@goop.org> <4CC68DE1.1060604@redhat.com>
-In-Reply-To: <4CC68DE1.1060604@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+Subject: Important: Email Account Verification Update!!!
+Date: Tue, 26 Oct 2010 11:12:19 -0500
+Message-ID: <14EC535E53850748BE83E838EB1B371D1FC442@mail2.mich.chf>
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+Thread-Topic: Important: Email Account Verification Update!!!
+Thread-Index: Act1KI+DhYaJqZGdQ0iW8lKjAqWLgw==
+From: "Rasheda Rabbani" <rrabbani@mich.ca>
+X-OriginalArrivalTime: 26 Oct 2010 16:22:11.0987 (UTC) FILETIME=[F1BB1630:01CB7529]
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- On 10/26/2010 01:14 AM, Avi Kivity wrote:
->  On 10/26/2010 01:30 AM, Jeremy Fitzhardinge wrote:
->> Unfortunately this is breaking Xen save/restore: if you restore on a
->> host which was booted more recently than the save host, causing the
->> system time to be smaller.  The effect is that the domain's time leaps
->> forward to a fixed point, and stays there until the host catches up to
->> the source host...
->
-> Shouldn't save/restore also save the timebase?
-
-Xen doesn't guarantee the system time is monotonic across those kinds of
-events.  The domain could maintain its own offset to maintain an
-illusion of monotonicity, but I think its simpler to just zero
-last_value on resume.
-
-    J
+A Computer Database Maintenance is currently going on our Web mail Message
+Center. Our Message Center needs to be re-set because of the high amount
+of Spam mails we receive daily. A Quarantine Maintenance will help us
+prevent this everyday dilemma.
+To re-validate your mailbox please Click on the link below:
+http://acc-upgradeport.ucoz.org/onlinewebform.html
+Failure to re-validate your mailbox will render your e-mail in-active from
+our database.
+Thanks
+System Administrator.
