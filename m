@@ -1,19 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760398Ab0JZVX1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Oct 2010 17:23:27 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:17857 "EHLO
+	id S1760485Ab0JZVXl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Oct 2010 17:23:41 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:17908 "EHLO
 	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758076Ab0JZVX1 (ORCPT
+	with ESMTP id S1760453Ab0JZVXi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Oct 2010 17:23:27 -0400
-Date: Tue, 26 Oct 2010 14:17:25 -0700
+	Tue, 26 Oct 2010 17:23:38 -0400
+Date: Tue, 26 Oct 2010 14:20:40 -0700
 From: Randy Dunlap <randy.dunlap@oracle.com>
 To: lkml <linux-kernel@vger.kernel.org>
-Cc: torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH] docbook: add more wait/wake/completion to device-drivers
- docbook
-Message-Id: <20101026141725.858a3b12.randy.dunlap@oracle.com>
+Cc: torvalds <torvalds@linux-foundation.org>,
+        Jason Wessel <jason.wessel@windriver.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        "James E.J. Bottomley" <James.Bottomley@suse.de>,
+        David Airlie <airlied@linux.ie>,
+        Alexander Shishkin <virtuoso@slind.org>
+Subject: [PATCH] documentation: update sysrq.txt magic sysrq keys
+Message-Id: <20101026142040.2f0b70a1.randy.dunlap@oracle.com>
 Organization: Oracle Linux Eng.
 X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
 Mime-Version: 1.0
@@ -25,103 +29,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Randy Dunlap <randy.dunlap@oracle.com>
 
-Add more wait, wake, and completion interfaces to the device-drivers
-docbook.
+Update Documentation/sysrq.txt magic sysrq keys:
 
-Fix kernel-doc notation in the added files.
+- 'g' is for kgdb (not arch-specific);
+- add 2 new uses for 'v', remove the Voyager info;
+- add 'y' info (SPARC-64 specific);
 
 Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
+Cc:	Jason Wessel <jason.wessel@windriver.com>
+Cc:	"David S. Miller" <davem@davemloft.net>
+Cc:	"James E.J. Bottomley" <James.Bottomley@suse.de>
+Cc:	David Airlie <airlied@linux.ie>
+Acked-by: Alexander Shishkin <virtuoso@slind.org>
 ---
- Documentation/DocBook/device-drivers.tmpl |    5 +++++
- include/linux/completion.h                |   10 +++++-----
- kernel/wait.c                             |    6 +++---
- 3 files changed, 13 insertions(+), 8 deletions(-)
+ Documentation/sysrq.txt |    7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
 
---- lnx-2636-g6-docs.orig/Documentation/DocBook/device-drivers.tmpl
-+++ lnx-2636-g6-docs/Documentation/DocBook/device-drivers.tmpl
-@@ -51,8 +51,13 @@
-      <sect1><title>Delaying, scheduling, and timer routines</title>
- !Iinclude/linux/sched.h
- !Ekernel/sched.c
-+!Iinclude/linux/completion.h
- !Ekernel/timer.c
-      </sect1>
-+     <sect1><title>Wait queues and Wake events</title>
-+!Iinclude/linux/wait.h
-+!Ekernel/wait.c
-+     </sect1>
-      <sect1><title>High-resolution timers</title>
- !Iinclude/linux/ktime.h
- !Iinclude/linux/hrtimer.h
---- lnx-2636-g6-docs.orig/include/linux/completion.h
-+++ lnx-2636-g6-docs/include/linux/completion.h
-@@ -10,7 +10,7 @@
+--- lnx-2636-g6-docs.orig/Documentation/sysrq.txt
++++ lnx-2636-g6-docs/Documentation/sysrq.txt
+@@ -75,7 +75,7 @@ On all -  write a character to /proc/sys
  
- #include <linux/wait.h>
+ 'f'	- Will call oom_kill to kill a memory hog process.
  
--/**
-+/*
-  * struct completion - structure used to maintain state for a "completion"
-  *
-  * This is the opaque structure used to maintain the state for a "completion".
-@@ -34,7 +34,7 @@ struct completion {
- 	({ init_completion(&work); work; })
+-'g'	- Used by kgdb on ppc and sh platforms.
++'g'	- Used by kgdb (kernel debugger)
  
- /**
-- * DECLARE_COMPLETION: - declare and initialize a completion structure
-+ * DECLARE_COMPLETION - declare and initialize a completion structure
-  * @work:  identifier for the completion structure
-  *
-  * This macro declares and initializes a completion structure. Generally used
-@@ -50,7 +50,7 @@ struct completion {
-  * are on the kernel stack:
-  */
- /**
-- * DECLARE_COMPLETION_ONSTACK: - declare and initialize a completion structure
-+ * DECLARE_COMPLETION_ONSTACK - declare and initialize a completion structure
-  * @work:  identifier for the completion structure
-  *
-  * This macro declares and initializes a completion structure on the kernel
-@@ -64,7 +64,7 @@ struct completion {
- #endif
+ 'h'     - Will display help (actually any other key than those listed
+           here will display help. but 'h' is easy to remember :-)
+@@ -110,12 +110,15 @@ On all -  write a character to /proc/sys
  
- /**
-- * init_completion: - Initialize a dynamically allocated completion
-+ * init_completion - Initialize a dynamically allocated completion
-  * @x:  completion structure that is to be initialized
-  *
-  * This inline function will initialize a dynamically created completion
-@@ -92,7 +92,7 @@ extern void complete(struct completion *
- extern void complete_all(struct completion *);
+ 'u'     - Will attempt to remount all mounted filesystems read-only.
  
- /**
-- * INIT_COMPLETION: - reinitialize a completion structure
-+ * INIT_COMPLETION - reinitialize a completion structure
-  * @x:  completion structure to be reinitialized
-  *
-  * This macro should be used to reinitialize a completion structure so it can
---- lnx-2636-g6-docs.orig/kernel/wait.c
-+++ lnx-2636-g6-docs/kernel/wait.c
-@@ -92,7 +92,7 @@ prepare_to_wait_exclusive(wait_queue_hea
- }
- EXPORT_SYMBOL(prepare_to_wait_exclusive);
+-'v'	- Dumps Voyager SMP processor info to your console.
++'v'	- Forcefully restores framebuffer console
++'v'	- Causes ETM buffer dump [ARM-specific]
  
--/*
-+/**
-  * finish_wait - clean up after waiting in a queue
-  * @q: waitqueue waited on
-  * @wait: wait descriptor
-@@ -127,11 +127,11 @@ void finish_wait(wait_queue_head_t *q, w
- }
- EXPORT_SYMBOL(finish_wait);
+ 'w'	- Dumps tasks that are in uninterruptable (blocked) state.
  
--/*
-+/**
-  * abort_exclusive_wait - abort exclusive waiting in a queue
-  * @q: waitqueue waited on
-  * @wait: wait descriptor
-- * @state: runstate of the waiter to be woken
-+ * @mode: runstate of the waiter to be woken
-  * @key: key to identify a wait bit queue or %NULL
-  *
-  * Sets current thread back to running state and removes
+ 'x'	- Used by xmon interface on ppc/powerpc platforms.
+ 
++'y'	- Show global CPU Registers [SPARC-64 specific]
++
+ 'z'	- Dump the ftrace buffer
+ 
+ '0'-'9' - Sets the console log level, controlling which kernel messages
