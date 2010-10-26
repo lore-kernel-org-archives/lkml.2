@@ -1,170 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760477Ab0JZV1c (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Oct 2010 17:27:32 -0400
-Received: from relay1.sgi.com ([192.48.179.29]:50780 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760386Ab0JZV1b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Oct 2010 17:27:31 -0400
-Date: Tue, 26 Oct 2010 16:27:28 -0500
-From: Russ Anderson <rja@sgi.com>
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Cc: Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Jack Steiner <steiner@sgi.com>,
-        Russ Anderson <rja@sgi.com>
-Subject: [PATCH] x86: Enable Westmere support on SGI UV
-Message-ID: <20101026212728.GB15071@sgi.com>
-Reply-To: Russ Anderson <rja@sgi.com>
+	id S1760482Ab0JZVcG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Oct 2010 17:32:06 -0400
+Received: from xenotime.net ([72.52.115.56]:45974 "HELO xenotime.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1759910Ab0JZVcE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Oct 2010 17:32:04 -0400
+Date: Tue, 26 Oct 2010 14:32:02 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+To: lkml <linux-kernel@vger.kernel.org>
+Cc: Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Subject: Re: docbook: fix fatal error in linux/input.h
+Message-Id: <20101026143202.ff45ca25.rdunlap@xenotime.net>
+In-Reply-To: <20101026140726.009a254b.rdunlap@xenotime.net>
+References: <20101026114555.4b79977d.rdunlap@xenotime.net>
+	<4CC7283D.3010205@redhat.com>
+	<20101026121747.897eddc9.rdunlap@xenotime.net>
+	<4CC736CE.80305@redhat.com>
+	<20101026135957.62db12d2.rdunlap@xenotime.net>
+	<20101026140726.009a254b.rdunlap@xenotime.net>
+Organization: YPO4
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.4.2.2i
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Enable Westmere support on SGI UV.  The UV initialization code is dependent on
-the APICID bits.  Westmere-EX uses different APIC bit mapping than Nehalem-EX.
-This code reads the apic shift value from a UV MMR to do the proper bit 
-decoding to determint the pnode.
+On Tue, 26 Oct 2010 14:07:26 -0700 Randy Dunlap wrote:
 
-Signed-off-by: Russ Anderson <rja@sgi.com>
+> On Tue, 26 Oct 2010 13:59:57 -0700 Randy Dunlap wrote:
+> 
+> > On Tue, 26 Oct 2010 18:15:10 -0200 Mauro Carvalho Chehab wrote:
+> > 
+> > > Em 26-10-2010 17:17, Randy Dunlap escreveu:
+> > > > On Tue, 26 Oct 2010 17:13:01 -0200 Mauro Carvalho Chehab wrote:
+> > > > 
+> > > >> Em 26-10-2010 16:45, Randy Dunlap escreveu:
+> > > >>> Hi,
+> > > >>>
+> > > >>> Recent commit 8613e4c2872a87cc309a42de2c7091744dc54d0e:
+> > > >>> Author: Mauro Carvalho Chehab <mchehab@redhat.com>
+> > > >>> Date:   Thu Sep 9 21:54:22 2010 -0700
+> > > >>>     Input: add support for large scancodes
+> > > >>>
+> > > >>> causes a fatal error in docbook generation:
+> > > >>>
+> > > >>> linux-2.6.36-git8/DOC1/Documentation/DocBook/device-drivers.xml:40690: parser error : StartTag: invalid element name
+> > > >>> #define INPUT_KEYMAP_BY_INDEX	(1 << 0)
+> > > >>>                              	    ^
+> > > >>>
+> > > >>> I think that this message comes from xsltproc, but I'm not positive about that.
+> > > >>> I also don't know of a really good fix for it.  However, I did find 2 ways to
+> > > >>> work around the error:
+> > > >>>
+> > > >>> a/ move the #define value to after the end of the struct input_keymap_entry, like:
+> > > >>>
+> > > >>> /* flags bits: */
+> > > >>> #define INPUT_KEYMAP_BY_INDEX	(1 << 0)
+> > > >>>
+> > > >>> or
+> > > >>> b/ don't use the "<< 0" (can leave the #define where it is in this case):
+> > > >>> #define INPUT_KEYMAP_BY_INDEX	(1)
+> > > >>>
+> > > >>> I have tested both of these patches and they work OK.
+> > > >>> Are you OK with either of them?  or want to choose one?
+> > > >>
+> > > >>
+> > > >> Hmm... probably, the first one is not correct.
+> > > > 
+> > > > Why not?  All it does is move the line to after the end of the struct.
+> > > > 
+> > > >> I suspect that the right way is to use something like:
+> > > >>
+> > > >> 	#define INPUT_KEYMAP_BY_INDEX	(1 &lt;&lt; 0)
+> > > >>
+> > > >> Could you please test if this would fix the issue?
+> > > > 
+> > > > You are suggesting putting that into include/linux/input.h ??
+> > > > 
+> > > > That would make sense if some tool converted "<<" to "&lt;&lt;".
+> > > > And that may be where the problem is, but I don't know those tools.
+> > > 
+> > > 
+> > > Hmm... such rule is already at DocBook/Makefile:
+> > > 
+> > > %.xml: %.c
+> > >         @$($(quiet)gen_xml)
+> > >         @(                            \
+> > > 	   echo "<programlisting>";   \
+> > >            expand --tabs=8 < $< |     \
+> > >            sed -e "s/&/\\&amp;/g"     \
+> > >                -e "s/</\\&lt;/g"      \
+> > >                -e "s/>/\\&gt;/g";     \
+> > >            echo "</programlisting>")  > $@
+> > > 
+> > > Not sure why this didn't work. It should have replaced the < from the c file.
+> > > Maybe some patch broke Makefile?
+> > 
+> > Maybe that rule needs to apply to .h files also.
+> > 
+> > Would
+> > 
+> > %.xml: %.[hc]
+> > 
+> > work?
+> 
+> Doesn't work like that or as a separate rule for
+> %.xml: %.h
+> 
+> The gen_xml rule isn't firing at all AFAICT.
+
+That rule was used for procfs_exmaple.c in 2.6.33 and earlier.
+It's no longer used/needed (but I'm in no hurry to delete it either).
+
+It appears that scripts/kernel-doc is the problem with not converting
+<,> to &lt;, &gt; etc.  I'll look into that.
+
 
 ---
- arch/x86/include/asm/uv/uv_hub.h   |   21 ++++++++++++++++++---
- arch/x86/kernel/apic/x2apic_uv_x.c |   25 +++++++++++++++++++++++--
- 2 files changed, 41 insertions(+), 5 deletions(-)
-
-Index: linux/arch/x86/kernel/apic/x2apic_uv_x.c
-===================================================================
---- linux.orig/arch/x86/kernel/apic/x2apic_uv_x.c	2010-10-26 16:24:12.687649188 -0500
-+++ linux/arch/x86/kernel/apic/x2apic_uv_x.c	2010-10-26 16:24:17.059197761 -0500
-@@ -5,7 +5,7 @@
-  *
-  * SGI UV APIC functions (note: not an Intel compatible APIC)
-  *
-- * Copyright (C) 2007-2009 Silicon Graphics, Inc. All rights reserved.
-+ * Copyright (C) 2007-2010 Silicon Graphics, Inc. All rights reserved.
-  */
- #include <linux/cpumask.h>
- #include <linux/hardirq.h>
-@@ -41,6 +41,7 @@ DEFINE_PER_CPU(int, x2apic_extra_bits);
- 
- static enum uv_system_type uv_system_type;
- static u64 gru_start_paddr, gru_end_paddr;
-+static union uvh_apicid uvh_apicid;
- int uv_min_hub_revision_id;
- EXPORT_SYMBOL_GPL(uv_min_hub_revision_id);
- static DEFINE_SPINLOCK(uv_nmi_lock);
-@@ -70,6 +71,22 @@ static int early_get_nodeid(void)
- 	return node_id.s.node_id;
- }
- 
-+static int __init early_get_apic_pnode_shift(void)
-+{
-+	unsigned long *mmr;
-+
-+	mmr = early_ioremap(UV_LOCAL_MMR_BASE | UVH_APICID, sizeof(*mmr));
-+	uvh_apicid.v = *mmr;
-+	early_iounmap(mmr, sizeof(*mmr));
-+	if (!uvh_apicid.v)
-+		/*
-+		 * Old bios, use default value
-+		 */
-+		uvh_apicid.s.pnode_shift = UV_APIC_PNODE_SHIFT;
-+
-+	return uvh_apicid.s.pnode_shift;
-+}
-+
- static int __init uv_acpi_madt_oem_check(char *oem_id, char *oem_table_id)
- {
- 	int nodeid;
-@@ -84,7 +101,7 @@ static int __init uv_acpi_madt_oem_check
- 			uv_system_type = UV_X2APIC;
- 		else if (!strcmp(oem_table_id, "UVH")) {
- 			__get_cpu_var(x2apic_extra_bits) =
--				nodeid << (UV_APIC_PNODE_SHIFT - 1);
-+				nodeid << (early_get_apic_pnode_shift() - 1);
- 			uv_system_type = UV_NON_UNIQUE_APIC;
- 			return 1;
- 		}
-@@ -716,6 +733,10 @@ void __init uv_system_init(void)
- 		int apicid = per_cpu(x86_cpu_to_apicid, cpu);
- 
- 		nid = cpu_to_node(cpu);
-+		/*
-+		 * apic_pnode_shift must be set before calling uv_apicid_to_pnode();
-+		 */
-+		uv_cpu_hub_info(cpu)->apic_pnode_shift = uvh_apicid.s.pnode_shift;
- 		pnode = uv_apicid_to_pnode(apicid);
- 		blade = boot_pnode_to_blade(pnode);
- 		lcpu = uv_blade_info[blade].nr_possible_cpus;
-Index: linux/arch/x86/include/asm/uv/uv_hub.h
-===================================================================
---- linux.orig/arch/x86/include/asm/uv/uv_hub.h	2010-10-26 16:24:12.687649188 -0500
-+++ linux/arch/x86/include/asm/uv/uv_hub.h	2010-10-26 16:24:17.075197875 -0500
-@@ -5,7 +5,7 @@
-  *
-  * SGI UV architectural definitions
-  *
-- * Copyright (C) 2007-2008 Silicon Graphics, Inc. All rights reserved.
-+ * Copyright (C) 2007-2010 Silicon Graphics, Inc. All rights reserved.
-  */
- 
- #ifndef _ASM_X86_UV_UV_HUB_H
-@@ -77,7 +77,8 @@
-  *
-  *		1111110000000000
-  *		5432109876543210
-- *		pppppppppplc0cch
-+ *		pppppppppplc0cch	Nehalem-EX
-+ *		ppppppppplcc0cch	Westmere-EX
-  *		sssssssssss
-  *
-  *			p  = pnode bits
-@@ -148,12 +149,25 @@ struct uv_hub_info_s {
- 	unsigned char		m_val;
- 	unsigned char		n_val;
- 	struct uv_scir_s	scir;
-+	unsigned char		apic_pnode_shift;
- };
- 
- DECLARE_PER_CPU(struct uv_hub_info_s, __uv_hub_info);
- #define uv_hub_info		(&__get_cpu_var(__uv_hub_info))
- #define uv_cpu_hub_info(cpu)	(&per_cpu(__uv_hub_info, cpu))
- 
-+union uvh_apicid {
-+    unsigned long       v;
-+    struct uvh_apicid_s {
-+        unsigned long   local_apic_mask  : 24;
-+        unsigned long   local_apic_shift :  5;
-+        unsigned long   unused1          :  3;
-+        unsigned long   pnode_mask       : 24;
-+        unsigned long   pnode_shift      :  5;
-+        unsigned long   unused2          :  3;
-+    } s;
-+};
-+
- /*
-  * Local & Global MMR space macros.
-  *	Note: macros are intended to be used ONLY by inline functions
-@@ -182,6 +196,7 @@ DECLARE_PER_CPU(struct uv_hub_info_s, __
- #define UV_GLOBAL_MMR64_PNODE_BITS(p)					\
- 	(((unsigned long)(p)) << UV_GLOBAL_MMR64_PNODE_SHIFT)
- 
-+#define UVH_APICID		0x002D0E00L
- #define UV_APIC_PNODE_SHIFT	6
- 
- /* Local Bus from cpu's perspective */
-@@ -280,7 +295,7 @@ static inline void *uv_pnode_offset_to_v
-  */
- static inline int uv_apicid_to_pnode(int apicid)
- {
--	return (apicid >> UV_APIC_PNODE_SHIFT);
-+	return (apicid >> uv_hub_info->apic_pnode_shift);
- }
- 
- /*
--- 
-Russ Anderson, OS RAS/Partitioning Project Lead  
-SGI - Silicon Graphics Inc          rja@sgi.com
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
