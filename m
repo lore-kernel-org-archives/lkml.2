@@ -1,84 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760167Ab0JZSwe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Oct 2010 14:52:34 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:60746 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932875Ab0JZSwd (ORCPT
+	id S1760194Ab0JZS6q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Oct 2010 14:58:46 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:49833 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751529Ab0JZS6o convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Oct 2010 14:52:33 -0400
-Message-ID: <4CC72360.1070608@pengutronix.de>
-Date: Tue, 26 Oct 2010 20:52:16 +0200
-From: Marc Kleine-Budde <mkl@pengutronix.de>
-Organization: Pengutronix
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.14) Gecko/20101006 Thunderbird/3.0.9
+	Tue, 26 Oct 2010 14:58:44 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=LSRt1XciGBomlEDlRDvKmOqTPwqLqDCu6+XVK99H9zw4e6oUVpyZYNr1TjaDHnTUZ8
+         /gte/luKSXmRmqFIie232mlN5YhlsiWLlA4knXFByo7Rh4VFEan7dfy63BLDdPzZB8EJ
+         Hd08Z/k0St0KHfkXv02KZ+Xh4ScId0GID1uQI=
 MIME-Version: 1.0
-To: Wolfgang Grandegger <wg@grandegger.com>
-CC: David Miller <davem@davemloft.net>, andrew.chih.howe.khor@intel.com,
-        masa-korg@dsn.okisemi.com, sameo@linux.intel.com,
-        margie.foster@intel.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, socketcan-core@lists.berlios.de,
-        kok.howg.ewe@intel.com, joel.clark@intel.com,
-        morinaga526@dsn.okisemi.com, yong.y.wang@intel.com, chripell@fsfe.org,
-        qi.wang@intel.com
-Subject: Re: [PATCH net-next-2.6 v2] can: Topcliff: PCH_CAN driver: Fix build
- warnings
-References: <4CC61B1B.3090602@dsn.okisemi.com>	<20101026.105206.15244527.davem@davemloft.net>	<20101026.105545.200376685.davem@davemloft.net> <4CC71DA4.3020600@grandegger.com>
-In-Reply-To: <4CC71DA4.3020600@grandegger.com>
-X-Enigmail-Version: 1.0.1
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="------------enig25F0404BD3A0EB13A51464B9"
-X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
-X-SA-Exim-Mail-From: mkl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+In-Reply-To: <20101026184123.GA1616@sig21.net>
+References: <20101025190358.AEC6840F97@repository3.orbit-lab.org>
+ <20101026123552.GA4604@sig21.net> <AANLkTimzUKj=C9PxGs1PkQy_KWu0PGKd1zv_m-ZpWaEm@mail.gmail.com>
+ <20101026184123.GA1616@sig21.net>
+From: "Luis R. Rodriguez" <mcgrof@gmail.com>
+Date: Tue, 26 Oct 2010 11:51:01 -0700
+Message-ID: <AANLkTimHpyJho6AheQc6zos7Pmr-ECjvaL83mYDC19Yd@mail.gmail.com>
+Subject: Re: Compat-wireless release for 2010-10-25 is baked
+To: Johannes Stezenbach <js@sig21.net>
+Cc: linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Ivo Van Doorn <ivdoorn@gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
---------------enig25F0404BD3A0EB13A51464B9
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+On Tue, Oct 26, 2010 at 11:41 AM, Johannes Stezenbach <js@sig21.net> wrote:
+> On Tue, Oct 26, 2010 at 08:59:04AM -0700, Luis R. Rodriguez wrote:
+>> On Tue, Oct 26, 2010 at 5:35 AM, Johannes Stezenbach <js@sig21.net> wrote:
+>> >
+>> > I wonder about the different tarballs in
+>> > http://wireless.kernel.org/download/compat-wireless-2.6/
+>> >
+>> > compat-wireless-2010-10-25.tar.bz2
+>> > compat-wireless-2010-10-25-p.tar.bz2
+>> > compat-wireless-2010-10-25-pc.tar.bz2
+>> >
+>> > Those -p and -pc postfixes are not explained in
+>> > http://wireless.kernel.org/en/users/Download
+>>
+>> Right, sorry, I haven't updated the docs to add documentation for
+>> them. First please read:
+>>
+>> http://marc.info/?l=linux-wireless&m=128716953726075&w=2
+>>
+>> -s is for getting and applying pending-stable/ fixes
+>> -n is for applying the patches linux-next-cherry-picks directory
+>> -p is for applying the patches on the linux-next-pending directory
+>> -s is for applying the patches on the crap directory
+>  -c
+>
+>> Hope this helps.
+>
+> Definitively, thank you very much.  Meanwhile I also found
+> scripts/admin-update.sh in compat-wireless which seems to
+> generate the release tarballs.
+>
+> It looks like, if I want to test the latest rt2x00 code, I could
+> clone git://git.kernel.org/pub/scm/linux/kernel/git/ivd/rt2x00.git,
+> checkout experimental, and then run admin-update.sh with
+> GIT_TREE=path/to/rt2x00-experimental.  Right?
 
-On 10/26/2010 08:27 PM, Wolfgang Grandegger wrote:
+Yeap, if rt2x00-experimental is based on linux-next.git. If its based
+on wireless-testing.git then you can use the "wl" branch of
+compat-wireless, but I tend to not keep that as up to date as the
+linux-next.git branch so likely the "wl" branch doesn't apply cleanly
+right now with wireless-testing.git as the GIT_TREE.
 
-> Oh, this patch has various other issues, as Marc and I have already
-> pointed out, which should be fixed before the driver hits the user.
-> Unfortunately, the CC to netdev of our reviews got lost somehow, sorry
+> Or (maybe better?), clone linux-next, merge rt2x00.git and use
+> the merged tree as GIT_TREE for admin-update.sh.
 
-After noticing my faul I resend my review to the netdev + socketcan
-mailinglists and the individual persons mentioned in the original patch.
+It just depends on the original tree is a clone from and what branch
+you use on compat-wireless. The master branch is for linux-next.git,
+the "wl" branch is for wireless-testing.git. Every now and then I just
+reset the "wl" branch (you'll have to 'git reset --hard wl') to the
+master branch and revert any patches that do not apply.
 
-> for the inconvenience, but the original author should have received it.=
+> Well so just
+> But according to
+> http://rt2x00.serialmonkey.com/pipermail/users_rt2x00.serialmonkey.com/2010-October/002175.html
+> the compat-rt2x00 tarballs seem to be made manually?
 
-> Tomoya, could you (or somebody else) please also fix the remaining
-> issues quickly?
+Too lazy to check that, best thing might be to just focus on upstream
+development, ensuring patches get into linux-next.git and having your
+users just use the daily tarballs and stable releases for stable
+stuff.
 
-For reference, here it is:
-http://www.spinics.net/lists/netdev/msg144852.html
+> Sorry for stupid questions, I want to get into rt2x00 development
+> but I need to target a stable 2.6.32 kernel and I'm trying to figure
+> out which git tree to base my work on.
 
-Marc
---=20
-Pengutronix e.K.                  | Marc Kleine-Budde           |
-Industrial Linux Solutions        | Phone: +49-231-2826-924     |
-Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
-Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
+My advice, work on wireless-testing.git, send patches ASAP, and let
+them propagate. Use the daily tarballs for user testing and for stable
+release you can support users using the stable compat-wireless
+releases.
 
+Hope this helps.
 
---------------enig25F0404BD3A0EB13A51464B9
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
-
-iEYEARECAAYFAkzHI2QACgkQjTAFq1RaXHM/DwCcCvIFej7VdTLSPUr9ezOmk7Ua
-f7wAn3qmz+Km9M8/Z6XgsfyrHnUepWZY
-=ZbQZ
------END PGP SIGNATURE-----
-
---------------enig25F0404BD3A0EB13A51464B9--
+  Luis
