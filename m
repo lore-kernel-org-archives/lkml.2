@@ -1,213 +1,206 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760490Ab0JZUxE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Oct 2010 16:53:04 -0400
-Received: from sj-iport-6.cisco.com ([171.71.176.117]:15448 "EHLO
-	sj-iport-6.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760472Ab0JZUxD (ORCPT
+	id S1760224Ab0JZUzp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Oct 2010 16:55:45 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:57690 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757631Ab0JZUzo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Oct 2010 16:53:03 -0400
-Authentication-Results: sj-iport-6.cisco.com; dkim=neutral (message not signed) header.i=none
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AisFAE/cxkyrR7Ht/2dsb2JhbACbf4VUcaVwnC6FSASEV4V8
-X-IronPort-AV: E=Sophos;i="4.58,242,1286150400"; 
-   d="scan'208";a="610090513"
-From: Roland Dreier <rdreier@cisco.com>
-To: torvalds@linux-foundation.org, akpm@linux-foundation.org
-Cc: linux-rdma@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [GIT PULL] please pull infiniband.git
-X-Message-Flag: Warning: May contain useful information
-Date: Tue, 26 Oct 2010 13:52:14 -0700
-Message-ID: <ada4oc8fzi9.fsf@cisco.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
+	Tue, 26 Oct 2010 16:55:44 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Bryan Schumaker <bjschuma@netapp.com>
+Subject: Re: nfsd changes for 2.6.37
+Date: Tue, 26 Oct 2010 22:55:40 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.36+; KDE/4.5.1; x86_64; ; )
+Cc: "J. Bruce Fields" <bfields@fieldses.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <20101026164549.GD19445@fieldses.org> <201010262218.36940.arnd@arndb.de> <4CC73BA6.1090407@netapp.com>
+In-Reply-To: <4CC73BA6.1090407@netapp.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201010262255.40481.arnd@arndb.de>
+X-Provags-ID: V02:K0:k3BcdWRPV1zJa+ntcvQEk6Q4U2E/4eRdJwZTsfN8Csj
+ UDPJIWM1ZCp4pAetF3jcNFXCbIw5OkZQ8WwrsnklbwcPptSUt7
+ sv8szlVKDdsz0onPiKOAEnwW6gsZkv/xoOYqXv897UzMJopoLK
+ yD2zjTg+IfFHXd1tgms/mrkAv5C3fwwvius1GZ4Fw2lWlpsjJO
+ Mmfgp4eumu7U5i0out2EA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus, please pull from
+On Tuesday 26 October 2010 22:35:50 Bryan Schumaker wrote:
+> Hi
+> 
+> I left the one call because I was unable to figure out what
+> was being protected with the BKL in that section of the code.
+> I figured I would leave it for the maintainers, since they
+> know more about the code than I do.
 
-    master.kernel.org:/pub/scm/linux/kernel/git/roland/infiniband.git for-linus
+My guess is that we need something like the patch below.
 
-This tree is also available from kernel.org mirrors at:
+This moves the lock_flocks() call into the places where it
+is needed and can be safely converted into a spinlock because
+that code does not sleep.
 
-    git://git.kernel.org/pub/scm/linux/kernel/git/roland/infiniband.git for-linus
+Finally, we can build fs/locks.c, nfs and nfsd with CONFIG_BKL
+disabled.
 
-The big new feature here is support for InfiniBand-over-Ethernet / IBoE
-(aka "RDMA over Converged Ethernet / RoCE").  We also have a new SRP
-initiator submaintainer (thanks Dave!), and various fixes all over.
+*not tested*
 
-Animesh K Trivedi (1):
-      RDMA/iwcm: Fix hang in uninterruptible wait on cm_id destroy
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+---
+ Kconfig         |    1 -
+ lockd/svc.c     |   11 -----------
+ lockd/svcsubs.c |    9 ++++++++-
+ locks.c         |    5 +++--
+ nfs/Kconfig     |    1 -
+ nfsd/Kconfig    |    1 -
+ 6 files changed, 11 insertions(+), 17 deletions(-)
 
-Bart Van Assche (3):
-      IB/srp: Preparation for transmit ring response allocation
-      IB/srp: Reduce number of BUSY conditions
-      IB/srp: Use list_first_entry()
-
-Chien Tung (1):
-      RDMA/nes: Report correct port state if interface is down
-
-Christoph Lameter (1):
-      IPoIB: Set pkt_type correctly for multicast packets (fix IGMP breakage)
-
-Dan Carpenter (1):
-      RDMA/nes: Remove unneeded variable
-
-David Dillow (3):
-      IB/srp: Implement SRP_CRED_REQ and SRP_AER_REQ
-      IB/srp: Eliminate two forward declarations
-      IB/srp: Sync buffer before posting send
-
-Eli Cohen (16):
-      IB/core: Add link layer property to ports
-      mlx4_core: Allow log_mtts_per_seg up to 7
-      IB/mlx4: Limit size of fast registration WRs
-      IPoIB: Skip IBoE ports
-      IB/mad: IBoE supports only QP1 (no QP0)
-      RDMA/cm: Add RDMA CM support for IBoE devices
-      IB/pack: IBoE UD packet packing support
-      IPoIB: Set dev_id field of net_device
-      IB/uverbs: Return link layer type to userspace for query port operation
-      mlx4_core: Allow protocol drivers to find corresponding interfaces
-      mlx4_core: Update data structures and constants for IBoE
-      mlx4_en: Change multicast promiscuous mode to support IBoE
-      IB/mlx4: Add support for IBoE
-      IB/core: Add VLAN support for IBoE
-      IB/mlx4: Add VLAN support for IBoE
-      IB/core: Add link layer type information to sysfs
-
-Jack Morgenstein (1):
-      IB/mlx4: Signal node desc changes to SM by using FW to generate trap 144
-
-Jason Gunthorpe (3):
-      IB/qib: Process RDMA WRITE ONLY with IMMEDIATE properly
-      IB/qib: Fix extra log level in qib_early_err()
-      IB/qib: clean up properly if pci_set_consistent_dma_mask() fails
-
-Joe Perches (4):
-      RDMA/amso1100: Remove KERN_<level> from pr_<level> use
-      IB/qib: Remove unnecessary casts of private_data
-      RDMA/cxgb3: Remove unnecessary KERN_<level> use
-      RDMA/cxgb4: Remove unnecessary KERN_<level> use
-
-Maciej Sosnowski (1):
-      RDMA/nes: Turn carrier off on ifdown
-
-Ralph Campbell (2):
-      IB/qib: Fix uninitialized pointer if CONFIG_PCI_MSI not set
-      IB/qib: Allow driver to load if PCIe AER fails
-
-Roland Dreier (5):
-      RDMA/cxgb4: Fix warnings about casts to/from pointers of different sizes
-      MAINTAINERS: Fix broken link to http://www.openib.org/
-      RDMA/nes: Fix cast-to-pointer warnings on 32-bit
-      MAINTAINERS: Hand off SCSI RDMA Protocol (SRP) initiator to Dave Dillow
-      Merge branches 'amso1100', 'cma', 'cxgb3', 'cxgb4', 'ehca', 'iboe', 'ipoib', 'misc', 'mlx4', 'nes', 'qib' and 'srp' into for-next
-
-Sonny Rao (1):
-      IB/ehca: Fix driver on relocatable kernel
-
-Steve Wise (19):
-      RDMA/cxgb4: Don't use null ep ptr
-      RDMA/cxgb4: Zero out ISGL padding
-      RDMA/cxgb4: Ignore positive return values from cxgb4_*_send() functions
-      RDMA/cxgb4: Ignore TERMINATE CQEs
-      RDMA/cxgb4: Handle CPL_RDMA_TERMINATE messages
-      RDMA/cxgb4: Log HW lack-of-resource errors
-      RDMA/cxgb4: debugfs files for dumping active stags
-      RDMA/cxgb4: Centralize the wait logic
-      RDMA/cxgb4: Support on-chip SQs
-      RDMA/cxgb4: Use a mutex for QP and EP state transitions
-      RDMA/cxgb4: Set the default TCP send window to 128KB
-      RDMA/cxgb4: Don't set completion flag for read requests
-      RDMA/cxgb4: Fastreg NSMR fixes
-      RDMA/cxgb4: Add default_llseek to debugfs files
-      RDMA/cxgb4: Use simple_read_from_buffer() for debugfs handlers
-      RDMA/cxgb4: Export T4 TCP MIB
-      RDMA/cxgb4: Use cxgb4 service for packet gl to skb
-      RDMA/cxgb3: When a user QP is marked in error, also mark the CQs in error
-      RDMA/ucma: Allow tuning the max listen backlog
-
-Thomas Gleixner (1):
-      IB/umad: Make user_mad semaphore a real one
-
-matt mooney (1):
-      IB: Replace EXTRA_CFLAGS with ccflags-y
-
- MAINTAINERS                                 |   12 +-
- drivers/infiniband/core/agent.c             |   29 +-
- drivers/infiniband/core/cma.c               |  313 ++++++++++++++-
- drivers/infiniband/core/iwcm.c              |    4 +
- drivers/infiniband/core/mad.c               |   27 ++-
- drivers/infiniband/core/multicast.c         |   23 +-
- drivers/infiniband/core/sa_query.c          |   30 +-
- drivers/infiniband/core/sysfs.c             |   15 +
- drivers/infiniband/core/ucma.c              |   92 ++++-
- drivers/infiniband/core/ud_header.c         |  138 ++++++--
- drivers/infiniband/core/user_mad.c          |    2 +-
- drivers/infiniband/core/uverbs_cmd.c        |    2 +
- drivers/infiniband/core/verbs.c             |   16 +
- drivers/infiniband/hw/amso1100/Kbuild       |    4 +-
- drivers/infiniband/hw/amso1100/c2_intr.c    |    4 +-
- drivers/infiniband/hw/cxgb3/Makefile        |    6 +-
- drivers/infiniband/hw/cxgb3/cxio_hal.c      |    1 +
- drivers/infiniband/hw/cxgb3/cxio_wr.h       |   16 +
- drivers/infiniband/hw/cxgb3/iwch_cm.c       |    4 +-
- drivers/infiniband/hw/cxgb3/iwch_ev.c       |   17 +-
- drivers/infiniband/hw/cxgb3/iwch_provider.c |   24 +-
- drivers/infiniband/hw/cxgb3/iwch_qp.c       |   25 +-
- drivers/infiniband/hw/cxgb3/iwch_user.h     |    8 +
- drivers/infiniband/hw/cxgb4/Makefile        |    2 +-
- drivers/infiniband/hw/cxgb4/cm.c            |  178 ++++-----
- drivers/infiniband/hw/cxgb4/cq.c            |   28 +-
- drivers/infiniband/hw/cxgb4/device.c        |  191 ++++++----
- drivers/infiniband/hw/cxgb4/ev.c            |    2 +-
- drivers/infiniband/hw/cxgb4/iw_cxgb4.h      |   68 +++-
- drivers/infiniband/hw/cxgb4/mem.c           |   11 +-
- drivers/infiniband/hw/cxgb4/provider.c      |   44 ++-
- drivers/infiniband/hw/cxgb4/qp.c            |  283 ++++++++------
- drivers/infiniband/hw/cxgb4/resource.c      |   62 +++
- drivers/infiniband/hw/cxgb4/t4.h            |   44 ++-
- drivers/infiniband/hw/cxgb4/user.h          |    7 +
- drivers/infiniband/hw/ehca/ehca_mrmw.c      |    6 +-
- drivers/infiniband/hw/ipath/Makefile        |    2 +-
- drivers/infiniband/hw/mlx4/ah.c             |  163 +++++++--
- drivers/infiniband/hw/mlx4/mad.c            |   32 +-
- drivers/infiniband/hw/mlx4/main.c           |  553 +++++++++++++++++++++++++--
- drivers/infiniband/hw/mlx4/mlx4_ib.h        |   32 ++-
- drivers/infiniband/hw/mlx4/mr.c             |    2 +-
- drivers/infiniband/hw/mlx4/qp.c             |  195 ++++++++--
- drivers/infiniband/hw/mthca/mthca_qp.c      |    2 +-
- drivers/infiniband/hw/nes/nes_cm.c          |    3 +-
- drivers/infiniband/hw/nes/nes_nic.c         |    1 +
- drivers/infiniband/hw/nes/nes_verbs.c       |   16 +-
- drivers/infiniband/hw/qib/qib.h             |    2 +-
- drivers/infiniband/hw/qib/qib_file_ops.c    |    4 +-
- drivers/infiniband/hw/qib/qib_init.c        |    1 +
- drivers/infiniband/hw/qib/qib_pcie.c        |    8 +-
- drivers/infiniband/hw/qib/qib_rc.c          |    5 +-
- drivers/infiniband/ulp/ipoib/ipoib_ib.c     |   14 +-
- drivers/infiniband/ulp/ipoib/ipoib_main.c   |    3 +
- drivers/infiniband/ulp/srp/ib_srp.c         |  236 ++++++++----
- drivers/infiniband/ulp/srp/ib_srp.h         |   21 +-
- drivers/net/mlx4/en_main.c                  |   15 +-
- drivers/net/mlx4/en_netdev.c                |   10 +
- drivers/net/mlx4/en_port.c                  |    4 +-
- drivers/net/mlx4/en_port.h                  |    3 +-
- drivers/net/mlx4/fw.c                       |    3 +-
- drivers/net/mlx4/intf.c                     |   21 +
- drivers/net/mlx4/main.c                     |    4 +-
- drivers/net/mlx4/mlx4_en.h                  |    1 +
- drivers/net/mlx4/port.c                     |   19 +
- include/linux/mlx4/cmd.h                    |    2 +
- include/linux/mlx4/device.h                 |   35 ++-
- include/linux/mlx4/driver.h                 |    9 +
- include/linux/mlx4/qp.h                     |    9 +-
- include/rdma/ib_addr.h                      |  134 +++++++-
- include/rdma/ib_pack.h                      |   39 ++-
- include/rdma/ib_user_verbs.h                |    3 +-
- include/rdma/ib_verbs.h                     |   11 +
- include/scsi/srp.h                          |   38 ++
- 74 files changed, 2668 insertions(+), 725 deletions(-)
+diff --git a/fs/Kconfig b/fs/Kconfig
+index 65781de..3d18530 100644
+--- a/fs/Kconfig
++++ b/fs/Kconfig
+@@ -50,7 +50,6 @@ endif # BLOCK
+ config FILE_LOCKING
+ 	bool "Enable POSIX file locking API" if EMBEDDED
+ 	default y
+-	select BKL # while lockd still uses it.
+ 	help
+ 	  This option enables standard file locking support, required
+           for filesystems like NFS and for the flock() system
+diff --git a/fs/lockd/svc.c b/fs/lockd/svc.c
+index b13aabc..abfff9d 100644
+--- a/fs/lockd/svc.c
++++ b/fs/lockd/svc.c
+@@ -22,7 +22,6 @@
+ #include <linux/in.h>
+ #include <linux/uio.h>
+ #include <linux/smp.h>
+-#include <linux/smp_lock.h>
+ #include <linux/mutex.h>
+ #include <linux/kthread.h>
+ #include <linux/freezer.h>
+@@ -130,15 +129,6 @@ lockd(void *vrqstp)
+ 
+ 	dprintk("NFS locking service started (ver " LOCKD_VERSION ").\n");
+ 
+-	/*
+-	 * FIXME: it would be nice if lockd didn't spend its entire life
+-	 * running under the BKL. At the very least, it would be good to
+-	 * have someone clarify what it's intended to protect here. I've
+-	 * seen some handwavy posts about posix locking needing to be
+-	 * done under the BKL, but it's far from clear.
+-	 */
+-	lock_kernel();
+-
+ 	if (!nlm_timeout)
+ 		nlm_timeout = LOCKD_DFLT_TIMEO;
+ 	nlmsvc_timeout = nlm_timeout * HZ;
+@@ -195,7 +185,6 @@ lockd(void *vrqstp)
+ 	if (nlmsvc_ops)
+ 		nlmsvc_invalidate_all();
+ 	nlm_shutdown_hosts();
+-	unlock_kernel();
+ 	return 0;
+ }
+ 
+diff --git a/fs/lockd/svcsubs.c b/fs/lockd/svcsubs.c
+index d0ef94c..1ca0679 100644
+--- a/fs/lockd/svcsubs.c
++++ b/fs/lockd/svcsubs.c
+@@ -170,6 +170,7 @@ nlm_traverse_locks(struct nlm_host *host, struct nlm_file *file,
+ 
+ again:
+ 	file->f_locks = 0;
++	lock_flocks(); /* protects i_flock list */
+ 	for (fl = inode->i_flock; fl; fl = fl->fl_next) {
+ 		if (fl->fl_lmops != &nlmsvc_lock_operations)
+ 			continue;
+@@ -181,6 +182,7 @@ again:
+ 		if (match(lockhost, host)) {
+ 			struct file_lock lock = *fl;
+ 
++			unlock_flocks();
+ 			lock.fl_type  = F_UNLCK;
+ 			lock.fl_start = 0;
+ 			lock.fl_end   = OFFSET_MAX;
+@@ -192,6 +194,7 @@ again:
+ 			goto again;
+ 		}
+ 	}
++	unlock_flocks();
+ 
+ 	return 0;
+ }
+@@ -226,10 +229,14 @@ nlm_file_inuse(struct nlm_file *file)
+ 	if (file->f_count || !list_empty(&file->f_blocks) || file->f_shares)
+ 		return 1;
+ 
++	lock_flocks();
+ 	for (fl = inode->i_flock; fl; fl = fl->fl_next) {
+-		if (fl->fl_lmops == &nlmsvc_lock_operations)
++		if (fl->fl_lmops == &nlmsvc_lock_operations) {
++			unlock_flocks();
+ 			return 1;
++		}
+ 	}
++	unlock_flocks();
+ 	file->f_locks = 0;
+ 	return 0;
+ }
+diff --git a/fs/locks.c b/fs/locks.c
+index 8b2b6ad..a417901 100644
+--- a/fs/locks.c
++++ b/fs/locks.c
+@@ -142,6 +142,7 @@ int lease_break_time = 45;
+ 
+ static LIST_HEAD(file_lock_list);
+ static LIST_HEAD(blocked_list);
++static DEFINE_SPINLOCK(file_lock_lock);
+ 
+ /*
+  * Protects the two list heads above, plus the inode->i_flock list
+@@ -149,13 +150,13 @@ static LIST_HEAD(blocked_list);
+  */
+ void lock_flocks(void)
+ {
+-	lock_kernel();
++	spin_lock(&file_lock_lock);
+ }
+ EXPORT_SYMBOL_GPL(lock_flocks);
+ 
+ void unlock_flocks(void)
+ {
+-	unlock_kernel();
++	spin_unlock(&file_lock_lock);
+ }
+ EXPORT_SYMBOL_GPL(unlock_flocks);
+ 
+diff --git a/fs/nfs/Kconfig b/fs/nfs/Kconfig
+index fd66765..ba30665 100644
+--- a/fs/nfs/Kconfig
++++ b/fs/nfs/Kconfig
+@@ -1,7 +1,6 @@
+ config NFS_FS
+ 	tristate "NFS client support"
+ 	depends on INET && FILE_LOCKING
+-	depends on BKL # fix as soon as lockd is done
+ 	select LOCKD
+ 	select SUNRPC
+ 	select NFS_ACL_SUPPORT if NFS_V3_ACL
+diff --git a/fs/nfsd/Kconfig b/fs/nfsd/Kconfig
+index 31a78fc..18b3e89 100644
+--- a/fs/nfsd/Kconfig
++++ b/fs/nfsd/Kconfig
+@@ -2,7 +2,6 @@ config NFSD
+ 	tristate "NFS server support"
+ 	depends on INET
+ 	depends on FILE_LOCKING
+-	depends on BKL # fix as soon as lockd is done
+ 	select LOCKD
+ 	select SUNRPC
+ 	select EXPORTFS
