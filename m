@@ -1,58 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754984Ab0JZBiu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Oct 2010 21:38:50 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:61050 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751159Ab0JZBit convert rfc822-to-8bit (ORCPT
+	id S1755471Ab0JZBqX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Oct 2010 21:46:23 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:52988 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752052Ab0JZBqW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Oct 2010 21:38:49 -0400
+	Mon, 25 Oct 2010 21:46:22 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=vugW+uM0vuo6UnLZPd7ovXP8K9DxXubs3ge5NL3s/P9m1W29Pdgyx/CnUFDs0RLecM
-         MQeUkzi1K/Ob/SHZAFEAEyCbcMZhuyP7CHeWYKtfuSPvG0qhFVpMNxs0E7o2FIq282Dd
-         VCpPZLEhyhfVegHjlxy6XduES1sdPpTc+qejw=
-MIME-Version: 1.0
-In-Reply-To: <20101026011955.GA3432@opensource.wolfsonmicro.com>
-References: <1288050954.2323.3.camel@phoenix>
-	<20101026011955.GA3432@opensource.wolfsonmicro.com>
-Date: Tue, 26 Oct 2010 10:38:48 +0900
-X-Google-Sender-Auth: y0wuIsuMsBigrr_3J74CaN5BuuQ
-Message-ID: <AANLkTikm5Vsu5kdrS-70LEdoDE1OqzkTo6C=nyPC=oXe@mail.gmail.com>
-Subject: Re: [PATCH 2/2 v2] regulator: max8952 - fix max8952_set_voltage
-From: Kyungmin Park <kyungmin.park@samsung.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Axel Lin <axel.lin@gmail.com>, linux-kernel <linux-kernel@vger.kernel.org>,
-        Liam Girdwood <lrg@slimlogic.co.uk>,
-        MyungJoo Ham <myungjoo.ham@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=ev3gFKvhnyJLoxtw8LPzF78eAuPeWYmxeZIl1t4M/O3wPCi7QR5Z/MjpBGRyqfjOnv
+         GKiB4MkyliOZo/DMZOrMKokQDjwmQ1hgjEWvYzQ1nnJ+VjFnMVNdAA5+faPZcx/k6FhL
+         wqTiKm/J13TV5Av1ukW9vdegSyjITKojVT5vg=
+Subject: Re: [PATCH 05/29] memstick: mspro_block: move declarations to
+ header and refactor things a bit
+From: Maxim Levitsky <maximlevitsky@gmail.com>
+To: Alex Dubov <oakad@yahoo.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <707256.89727.qm@web37601.mail.mud.yahoo.com>
+References: <707256.89727.qm@web37601.mail.mud.yahoo.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 26 Oct 2010 03:46:16 +0200
+Message-ID: <1288057576.4024.90.camel@maxim-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Axel,
+On Mon, 2010-10-25 at 08:07 -0700, Alex Dubov wrote:
+> --- On Fri, 22/10/10, Maxim Levitsky <maximlevitsky@gmail.com> wrote:
+> 
+> > From: Maxim Levitsky <maximlevitsky@gmail.com>
+> > Subject: [PATCH 05/29] memstick: mspro_block: move declarations to header and refactor things a bit
+> > To: "Alex Dubov" <oakad@yahoo.com>
+> > Cc: "Andrew Morton" <akpm@linux-foundation.org>, "LKML" <linux-kernel@vger.kernel.org>, "Maxim Levitsky" <maximlevitsky@gmail.com>
+> > Received: Friday, 22 October, 2010, 4:53 PM
+> > This makes it much easier to lookup
+> > things and reduces size of mspro_block.c
+> 
+> Subjective and irrelevant.
+> My editor makes it easier to look up things when they are in the same file,
+> and this declarations are not expected to be used by any other compilation
+> unit. Belongs to the cosmetic category which should be discussed later.
+I agree that it is subjective.
+However when you have 2 files, you can always open them in different
+copies of an editor, terminal tabs.
+When you have decorations in one file you depend on the editor a lot.
+also its not about finding them.
+Its about distrupting the workflow, because once you find the
+declaration you need to find the place you were before.
+I understand that some editors help with that, yea.
 
-Thank you for your works.
 
-Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
+> 
+> > Also add debbuging macros so that it becames possible to
+> > control
+> > debbuging via module param.
+> > 
+> 
+> Should be done through a common kernel infrastructure, namely DYNAMIC_DEBUG
+> feature (pr_debug and friends).
+How a user can turn DYNAMIC_DEBUG on?
+How about different levels of verbosity?
+Last time I checked DYNAMIC_DEBUG doesn't allow that.
+Besides the macros I add revert to 
+DYNAMIC_DEBUG if user doesn't specify the debug= module param.
 
-On Tue, Oct 26, 2010 at 10:19 AM, Mark Brown
-<broonie@opensource.wolfsonmicro.com> wrote:
-> On Tue, Oct 26, 2010 at 07:55:54AM +0800, Axel Lin wrote:
->> In current implementation, vid is declared as u8,
->> then "vid == -1" is always false, and "vid >= 0" is always true.
->> Thus change it to s8.
->>
->> Signed-off-by: Axel Lin <axel.lin@gmail.com>
->
-> Acked-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
+When dynamic debugs grows that features (I have seen a ddebug= patchset,
+hope it gets merged, I will just trim down these macros).
+Besides the goal of these macros is to reduce typing.
+I need to add/remove the debug printouts very often, and then I don't
+want even to type that '\n' at the end.
+Besides, a lot of drivers are doing that. Just look around.
+
+I already added similiar looking macros to 2 my other driver
+ (r852 sm_ftls and ene_cir) and no complains.
+
+Best regards,
+	Maxim Levitsky
+
