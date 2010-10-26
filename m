@@ -1,320 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758743Ab0JZAEl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Oct 2010 20:04:41 -0400
-Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:24746 "EHLO
-	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753904Ab0JZAEk (ORCPT
+	id S1758571Ab0JZAG3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Oct 2010 20:06:29 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:38706 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757929Ab0JZAG2 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Oct 2010 20:04:40 -0400
-Message-ID: <4CC61B1B.3090602@dsn.okisemi.com>
-Date: Tue, 26 Oct 2010 09:04:43 +0900
-From: Tomoya <tomoya-linux@dsn.okisemi.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; ja; rv:1.9.1.11) Gecko/20100711 Thunderbird/3.0.6
+	Mon, 25 Oct 2010 20:06:28 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=cSkK1t0PKRtel/TyHrqWdK4tgjeoweFsmxBtbEY48Cswdqhzs+ah7JsQN7V4LP3RX9
+         Tx8bgr4BlpQ77EK0WFucH3+VRPnYRrYPvDDXeNHQc1xN0XnUMY2tRdOOpZhosKW4LhUR
+         Gf75sZs1B1Mwsy0XEBbwQ1TTFclIZGKXgJksg=
 MIME-Version: 1.0
-To: Wolfgang Grandegger <wg@grandegger.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Wolfram Sang <w.sang@pengutronix.de>,
-        Christian Pellegrin <chripell@fsfe.org>,
-        Barry Song <21cnbao@gmail.com>, Samuel Ortiz <sameo@linux.intel.com>,
-        socketcan-core@lists.berlios.de, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>
-CC: qi.wang@intel.com, yong.y.wang@intel.com, andrew.chih.howe.khor@intel.com,
-        joel.clark@intel.com, kok.howg.ewe@intel.com,
-        morinaga526@dsn.okisemi.com,
-        Masayuki Ohtake <masa-korg@dsn.okisemi.com>, margie.foster@intel.com
-Subject: [PATCH net-next-2.6 v2] can: Topcliff: PCH_CAN driver: Fix build
- warnings
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <alpine.LFD.2.00.1010250638250.14160@localhost6.localdomain6>
+References: <20101016075703.GO19147@amd>
+	<20101016161642.GC16861@infradead.org>
+	<20101016171213.GC3240@amd>
+	<20101017004610.GB29677@dastard>
+	<20101017022539.GA3317@amd>
+	<87iq0za32l.fsf@basil.nowhere.org>
+	<20101018162105.GB9571@infradead.org>
+	<20101019070057.GA7770@amd>
+	<20101019165044.GA13531@infradead.org>
+	<alpine.LFD.2.00.1010241728510.11642@localhost6.localdomain6>
+	<20101024211735.GB3137@amd>
+	<alpine.LFD.2.00.1010250638250.14160@localhost6.localdomain6>
+Date: Mon, 25 Oct 2010 18:06:26 -0600
+Message-ID: <AANLkTikvXs1LT49eQReq82-CZy2X0jjp25dG6kPcteti@mail.gmail.com>
+Subject: Re: [PATCH 11/18] fs: Introduce per-bucket inode hash locks
+From: Nick Piggin <npiggin@gmail.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Nick Piggin <npiggin@kernel.dk>, Christoph Hellwig <hch@infradead.org>,
+        Andi Kleen <andi@firstfloor.org>, Dave Chinner <david@fromorbit.com>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi David,
+On Sun, Oct 24, 2010 at 10:41 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
+> On Mon, 25 Oct 2010, Nick Piggin wrote:
+>> You do not want to add a bloated mutex to each inode hash bucket and
+>> think you can just dust off your hands and walk away.  You would
+>> probably make a smaller auxiliary hash of locks, sanely sized, and
+>> protect it with that.
+>>
+>> So it would be wrong to just bloat hlist_bl by a factor of several times
+>> (how big is a mutex in -rt?) without doing anything else.
+>
+> Let me worry about it.
 
-> This patch has been corrupted by your email client.
+No, because you simply should almost never turn the hlist locking into anything
+big and bloated, whether it is for -rt or anything else. It is most
+likely going to be
+used as a per-bucket hash lock (or bit of metadata), so anything
+larger than a bit
+(which is essentially free) is way overkill.
 
-Sorry, it seems my e-mail client setting was reset to default.
+You would instead have an auxiliary small hash of locks, not tens of megs of
+mutexes.
 
-Thanks, Tomoya(OKI SEMICONDUCTOR CO., LTD.)
----
 
-From: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
- - Fix build warnings when PM_CONFIG is disabled.
- - Modify Copyright "Co" to "CO".
+>> Although a sane locking macro and structure like I had, would perfectly
+>> allow you to switch locks in a single place just the same.
+>
+> And a locking macro/structure is better in self documenting than a
+> helper function which was proposed by Christoph?
 
-Reported-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
----
- drivers/net/can/pch_can.c |  208 ++++++++++++++++++++++----------------------
- 1 files changed, 104 insertions(+), 104 deletions(-)
+Yes, because you still have the problem that you need to go through and fix up
+all call sites.
 
-diff --git a/drivers/net/can/pch_can.c b/drivers/net/can/pch_can.c
-index 55ec324..2889e11 100755
---- a/drivers/net/can/pch_can.c
-+++ b/drivers/net/can/pch_can.c
-@@ -1,6 +1,6 @@
- /*
-  * Copyright (C) 1999 - 2010 Intel Corporation.
-- * Copyright (C) 2010 OKI SEMICONDUCTOR Co., LTD.
-+ * Copyright (C) 2010 OKI SEMICONDUCTOR CO., LTD.
-  *
-  * This program is free software; you can redistribute it and/or modify
-  * it under the terms of the GNU General Public License as published by
-@@ -255,21 +255,21 @@ static void pch_can_set_optmode(struct pch_can_priv *priv)
- 	iowrite32(reg_val, &priv->regs->opt);
- }
- 
--static void pch_can_set_int_custom(struct pch_can_priv *priv)
-+static void pch_can_check_if_busy(u32 __iomem *creq_addr, u32 num)
- {
--	/* Clearing the IE, SIE and EIE bits of Can control register. */
--	pch_can_bit_clear(&priv->regs->cont, CAN_CTRL_IE_SIE_EIE);
--
--	/* Appropriately setting them. */
--	pch_can_bit_set(&priv->regs->cont,
--			((priv->int_enables & MSK_CTRL_IE_SIE_EIE) << 1));
--}
-+	u32 counter = COUNTER_LIMIT;
-+	u32 ifx_creq;
- 
--/* This function retrieves interrupt enabled for the CAN device. */
--static void pch_can_get_int_enables(struct pch_can_priv *priv, u32 *enables)
--{
--	/* Obtaining the status of IE, SIE and EIE interrupt bits. */
--	*enables = ((ioread32(&priv->regs->cont) & CAN_CTRL_IE_SIE_EIE) >> 1);
-+	iowrite32(num, creq_addr);
-+	while (counter) {
-+		ifx_creq = ioread32(creq_addr) & CAN_IF_CREQ_BUSY;
-+		if (!ifx_creq)
-+			break;
-+		counter--;
-+		udelay(1);
-+	}
-+	if (!counter)
-+		pr_err("%s:IF1 BUSY Flag is set forever.\n", __func__);
- }
- 
- static void pch_can_set_int_enables(struct pch_can_priv *priv,
-@@ -298,23 +298,6 @@ static void pch_can_set_int_enables(struct pch_can_priv *priv,
- 	}
- }
- 
--static void pch_can_check_if_busy(u32 __iomem *creq_addr, u32 num)
--{
--	u32 counter = COUNTER_LIMIT;
--	u32 ifx_creq;
--
--	iowrite32(num, creq_addr);
--	while (counter) {
--		ifx_creq = ioread32(creq_addr) & CAN_IF_CREQ_BUSY;
--		if (!ifx_creq)
--			break;
--		counter--;
--		udelay(1);
--	}
--	if (!counter)
--		pr_err("%s:IF1 BUSY Flag is set forever.\n", __func__);
--}
--
- static void pch_can_set_rx_enable(struct pch_can_priv *priv, u32 buff_num,
- 				  u32 set)
- {
-@@ -417,82 +400,11 @@ static void pch_can_tx_disable_all(struct pch_can_priv *priv)
- 	}
- }
- 
--static void pch_can_get_rx_enable(struct pch_can_priv *priv, u32 buff_num,
--				 u32 *enable)
--{
--	unsigned long flags;
--
--	spin_lock_irqsave(&priv->msgif_reg_lock, flags);
--	iowrite32(CAN_CMASK_RX_TX_GET, &priv->regs->if1_cmask);
--	pch_can_check_if_busy(&priv->regs->if1_creq, buff_num);
--
--	if (((ioread32(&priv->regs->if1_id2)) & CAN_ID_MSGVAL) &&
--			((ioread32(&priv->regs->if1_mcont)) &
--			CAN_IF_MCONT_RXIE))
--		*enable = ENABLE;
--	else
--		*enable = DISABLE;
--	spin_unlock_irqrestore(&priv->msgif_reg_lock, flags);
--}
--
--static void pch_can_get_tx_enable(struct pch_can_priv *priv, u32 buff_num,
--				 u32 *enable)
--{
--	unsigned long flags;
--
--	spin_lock_irqsave(&priv->msgif_reg_lock, flags);
--	iowrite32(CAN_CMASK_RX_TX_GET, &priv->regs->if2_cmask);
--	pch_can_check_if_busy(&priv->regs->if2_creq, buff_num);
--
--	if (((ioread32(&priv->regs->if2_id2)) & CAN_ID_MSGVAL) &&
--			((ioread32(&priv->regs->if2_mcont)) &
--			CAN_IF_MCONT_TXIE)) {
--		*enable = ENABLE;
--	} else {
--		*enable = DISABLE;
--	}
--	spin_unlock_irqrestore(&priv->msgif_reg_lock, flags);
--}
--
- static int pch_can_int_pending(struct pch_can_priv *priv)
- {
- 	return ioread32(&priv->regs->intr) & 0xffff;
- }
- 
--static void pch_can_set_rx_buffer_link(struct pch_can_priv *priv,
--				       u32 buffer_num, u32 set)
--{
--	unsigned long flags;
--
--	spin_lock_irqsave(&priv->msgif_reg_lock, flags);
--	iowrite32(CAN_CMASK_RX_TX_GET, &priv->regs->if1_cmask);
--	pch_can_check_if_busy(&priv->regs->if1_creq, buffer_num);
--	iowrite32(CAN_CMASK_RDWR | CAN_CMASK_CTRL, &priv->regs->if1_cmask);
--	if (set == ENABLE)
--		pch_can_bit_clear(&priv->regs->if1_mcont, CAN_IF_MCONT_EOB);
--	else
--		pch_can_bit_set(&priv->regs->if1_mcont, CAN_IF_MCONT_EOB);
--
--	pch_can_check_if_busy(&priv->regs->if1_creq, buffer_num);
--	spin_unlock_irqrestore(&priv->msgif_reg_lock, flags);
--}
--
--static void pch_can_get_rx_buffer_link(struct pch_can_priv *priv,
--				       u32 buffer_num, u32 *link)
--{
--	unsigned long flags;
--
--	spin_lock_irqsave(&priv->msgif_reg_lock, flags);
--	iowrite32(CAN_CMASK_RX_TX_GET, &priv->regs->if1_cmask);
--	pch_can_check_if_busy(&priv->regs->if1_creq, buffer_num);
--
--	if (ioread32(&priv->regs->if1_mcont) & CAN_IF_MCONT_EOB)
--		*link = DISABLE;
--	else
--		*link = ENABLE;
--	spin_unlock_irqrestore(&priv->msgif_reg_lock, flags);
--}
--
- static void pch_can_clear_buffers(struct pch_can_priv *priv)
- {
- 	int i;
-@@ -1121,13 +1033,13 @@ static netdev_tx_t pch_xmit(struct sk_buff *skb, struct net_device *ndev)
- 	if (can_dropped_invalid_skb(ndev, skb))
- 		return NETDEV_TX_OK;
- 
--	if (priv->tx_obj == (PCH_OBJ_NUM + 1)) { /* Point tail Obj */
-+	if (priv->tx_obj == (PCH_OBJ_NUM + 1)) { /* Point tail Obj + 1 */
- 		while (pch_get_msg_obj_sts(ndev, (((1 << PCH_TX_OBJ_NUM)-1) <<
- 					   PCH_RX_OBJ_NUM)))
- 			udelay(500);
- 
- 		priv->tx_obj = PCH_RX_OBJ_NUM + 1; /* Point head of Tx Obj ID */
--		tx_buffer_avail = priv->tx_obj; /* Point Tail of Tx Obj */
-+		tx_buffer_avail = priv->tx_obj;
- 	} else {
- 		tx_buffer_avail = priv->tx_obj;
- 	}
-@@ -1212,6 +1124,94 @@ static void __devexit pch_can_remove(struct pci_dev *pdev)
- }
- 
- #ifdef CONFIG_PM
-+static void pch_can_set_int_custom(struct pch_can_priv *priv)
-+{
-+	/* Clearing the IE, SIE and EIE bits of Can control register. */
-+	pch_can_bit_clear(&priv->regs->cont, CAN_CTRL_IE_SIE_EIE);
-+
-+	/* Appropriately setting them. */
-+	pch_can_bit_set(&priv->regs->cont,
-+			((priv->int_enables & MSK_CTRL_IE_SIE_EIE) << 1));
-+}
-+
-+/* This function retrieves interrupt enabled for the CAN device. */
-+static void pch_can_get_int_enables(struct pch_can_priv *priv, u32 *enables)
-+{
-+	/* Obtaining the status of IE, SIE and EIE interrupt bits. */
-+	*enables = ((ioread32(&priv->regs->cont) & CAN_CTRL_IE_SIE_EIE) >> 1);
-+}
-+
-+static void pch_can_get_rx_enable(struct pch_can_priv *priv, u32 buff_num,
-+				 u32 *enable)
-+{
-+	unsigned long flags;
-+
-+	spin_lock_irqsave(&priv->msgif_reg_lock, flags);
-+	iowrite32(CAN_CMASK_RX_TX_GET, &priv->regs->if1_cmask);
-+	pch_can_check_if_busy(&priv->regs->if1_creq, buff_num);
-+
-+	if (((ioread32(&priv->regs->if1_id2)) & CAN_ID_MSGVAL) &&
-+			((ioread32(&priv->regs->if1_mcont)) &
-+			CAN_IF_MCONT_RXIE))
-+		*enable = ENABLE;
-+	else
-+		*enable = DISABLE;
-+	spin_unlock_irqrestore(&priv->msgif_reg_lock, flags);
-+}
-+
-+static void pch_can_get_tx_enable(struct pch_can_priv *priv, u32 buff_num,
-+				 u32 *enable)
-+{
-+	unsigned long flags;
-+
-+	spin_lock_irqsave(&priv->msgif_reg_lock, flags);
-+	iowrite32(CAN_CMASK_RX_TX_GET, &priv->regs->if2_cmask);
-+	pch_can_check_if_busy(&priv->regs->if2_creq, buff_num);
-+
-+	if (((ioread32(&priv->regs->if2_id2)) & CAN_ID_MSGVAL) &&
-+			((ioread32(&priv->regs->if2_mcont)) &
-+			CAN_IF_MCONT_TXIE)) {
-+		*enable = ENABLE;
-+	} else {
-+		*enable = DISABLE;
-+	}
-+	spin_unlock_irqrestore(&priv->msgif_reg_lock, flags);
-+}
-+
-+static void pch_can_set_rx_buffer_link(struct pch_can_priv *priv,
-+				       u32 buffer_num, u32 set)
-+{
-+	unsigned long flags;
-+
-+	spin_lock_irqsave(&priv->msgif_reg_lock, flags);
-+	iowrite32(CAN_CMASK_RX_TX_GET, &priv->regs->if1_cmask);
-+	pch_can_check_if_busy(&priv->regs->if1_creq, buffer_num);
-+	iowrite32(CAN_CMASK_RDWR | CAN_CMASK_CTRL, &priv->regs->if1_cmask);
-+	if (set == ENABLE)
-+		pch_can_bit_clear(&priv->regs->if1_mcont, CAN_IF_MCONT_EOB);
-+	else
-+		pch_can_bit_set(&priv->regs->if1_mcont, CAN_IF_MCONT_EOB);
-+
-+	pch_can_check_if_busy(&priv->regs->if1_creq, buffer_num);
-+	spin_unlock_irqrestore(&priv->msgif_reg_lock, flags);
-+}
-+
-+static void pch_can_get_rx_buffer_link(struct pch_can_priv *priv,
-+				       u32 buffer_num, u32 *link)
-+{
-+	unsigned long flags;
-+
-+	spin_lock_irqsave(&priv->msgif_reg_lock, flags);
-+	iowrite32(CAN_CMASK_RX_TX_GET, &priv->regs->if1_cmask);
-+	pch_can_check_if_busy(&priv->regs->if1_creq, buffer_num);
-+
-+	if (ioread32(&priv->regs->if1_mcont) & CAN_IF_MCONT_EOB)
-+		*link = DISABLE;
-+	else
-+		*link = ENABLE;
-+	spin_unlock_irqrestore(&priv->msgif_reg_lock, flags);
-+}
-+
- static int pch_can_suspend(struct pci_dev *pdev, pm_message_t state)
- {
- 	int i;			/* Counter variable. */
--- 
-1.6.0.6
-
+With my abstraction, there is a small inode function for locking an inode hash
+bucket. You have to change 2 places (lock and unlock) to look up an aux hash
+of locks and you're done.
