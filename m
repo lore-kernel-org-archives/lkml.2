@@ -1,123 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758858Ab0JZW2J (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Oct 2010 18:28:09 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:56858 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757691Ab0JZW2H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Oct 2010 18:28:07 -0400
-Subject: Re: [ANNOUNCE] Status of unlocked_qcmds=1 operation for .37
-From: James Bottomley <James.Bottomley@suse.de>
-To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-Cc: Mike Anderson <andmike@linux.vnet.ibm.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        Vasu Dev <vasu.dev@linux.intel.com>,
-        Tim Chen <tim.c.chen@linux.intel.com>, Andi Kleen <ak@linux.intel.com>,
-        Matthew Wilcox <willy@linux.intel.com>,
-        Mike Christie <michaelc@cs.wisc.edu>, Jens Axboe <jaxboe@fusionio.com>,
-        James Smart <james.smart@emulex.com>,
-        Andrew Vasquez <andrew.vasquez@qlogic.com>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Hannes Reinecke <hare@suse.de>, Joe Eykholt <jeykholt@cisco.com>,
-        Christoph Hellwig <hch@lst.de>, Jon Hawley <warthog9@kernel.org>,
-        Brian King <brking@linux.vnet.ibm.com>,
-        Christof Schmitt <christof.schmitt@de.ibm.com>,
-        Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>
-In-Reply-To: <1288130914.5169.97.camel@haakon2.linux-iscsi.org>
-References: <1287607774.10283.78.camel@haakon2.linux-iscsi.org>
-	 <20101021150840.GA24309@linux.vnet.ibm.com>
-	 <1288130914.5169.97.camel@haakon2.linux-iscsi.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 26 Oct 2010 17:27:50 -0500
-Message-ID: <1288132071.8283.689.camel@mulgrave.site>
+	id S1760061Ab0JZWfA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Oct 2010 18:35:00 -0400
+Received: from cpoproxy3-pub.bluehost.com ([67.222.54.6]:41225 "HELO
+	cpoproxy3-pub.bluehost.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1758229Ab0JZWe7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Oct 2010 18:34:59 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
+	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
+	b=JxSI6zeZOJ/IZvWdaFFE0d987RlP3qze6WMl6uYYK1VVnI5qDHVgn+/R1254LduUBK9uEwYfV8NsvPh+tloSAl92Iqn9LCQisEbCI7fxaoEzWf4qcG4+8VhjHLPdo4BY;
+Date: Tue, 26 Oct 2010 15:34:55 -0700
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+To: Bjorn Helgaas <bjorn.helgaas@hp.com>
+Cc: Bob Picco <bpicco@redhat.com>, Brian Bloniarz <phunge0@hotmail.com>,
+        Charles Butterfield <charles.butterfield@nextcentury.com>,
+        Denys Vlasenko <dvlasenk@redhat.com>, Ingo Molnar <mingo@elte.hu>,
+        linux-pci@vger.kernel.org,
+        "Horst H. von Brand" <vonbrand@inf.utfsm.cl>,
+        "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org,
+        Stefan Becker <chemobejk@gmail.com>, Chuck Ebbert <cebbert@redhat.com>,
+        Fabrice Bellet <fabrice@bellet.info>, Yinghai Lu <yinghai@kernel.org>,
+        Leann Ogasawara <leann.ogasawara@canonical.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH v5 9/9] x86: allocate space within a region top-down
+Message-ID: <20101026153455.0fe4847f@jbarnes-desktop>
+In-Reply-To: <20101026214154.29808.58672.stgit@bob.kio>
+References: <20101026214033.29808.15272.stgit@bob.kio>
+	<20101026214154.29808.58672.stgit@bob.kio>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.1.2 
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.174.193.198 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-10-26 at 15:08 -0700, Nicholas A. Bellinger wrote:
-> On Thu, 2010-10-21 at 08:08 -0700, Mike Anderson wrote:
-> > Nicholas A. Bellinger <nab@linux-iscsi.org> wrote:
-> > > *) core drivers/scsi remaining issue(s):
-> > > 
-> > > The issue raised by andmike during RFCv4 described as:
-> > > 
-> > > "If we skip __scsi_try_to_abort_cmd when REQ_ATOM_COMPLETE is set it
-> > > would be correct for the scsi_decide_disposition cases but it would
-> > > appear this would stop __scsi_try_to_abort_cmd from being called in the
-> > > time out case as REQ_ATOM_COMPLETE is set prior to calling
-> > > blk_rq_timed_out."
-> > > 
-> > > The complete discussion is here:
-> > > 
-> > > http://marc.info/?l=linux-scsi&m=128535319915212&w=2
-> > > 
-> > > We still need folks with experience to dig into this code, so you know
-> > > the scsi_error.c code please jump in!
-> > > 
-> > 
-> > I provided two logging traces below for the two cases mentioned in the
-> > above email thread. The second trace used a modified version of
-> > scsi_debug so that I could generate the needed unit attention codes.
-> > 1.) On the check for complete comment the logging below marked with
-> > "***" indicated that during a timeout that the complete bit is set. We
-> > would not want to have a check for complete skip the call to
-> > __scsi_try_to_abort_cmd. 
-> > 
-> > scsi_debug: cmd 28 00 00 00 00 00 00 00 20 00 
-> > sd 1:0:0:0: [sdb] Done: TIMEOUT
-> > sd 1:0:0:0: [sdb]  Result: hostbyte=DID_OK driverbyte=DRIVER_OK
-> > sd 1:0:0:0: [sdb] CDB: Read(10): 28 00 00 00 00 00 00 00 20 00
-> > Waking error handler thread
-> > Error handler scsi_eh_1 waking up
-> > sd 1:0:0:0: scsi_eh_prt_fail_stats: cmds failed: 0, cancel: 1
-> > Total of 1 commands on 1 devices require eh work
-> > scsi_eh_1: aborting cmd:0xffff88019e171b80
-> > 
-> > ***
-> > sd 1:0:0:0: scsi_try_to_abort_cmd: Comp bit set
-> > ***
-> > 
-> > scsi_debug: abort
-> > scsi_debug: cmd 00 00 00 00 00 00 
-> > scsi_eh_done scmd: ffff88019e171b80 result: 0
-> > scsi_send_eh_cmnd: scmd: ffff88019e171b80, timeleft: 10000
-> > scsi_send_eh_cmnd: scsi_eh_completed_normally 2002
-> > scsi_eh_tur: scmd ffff88019e171b80 rtn 2002
-> > scsi_eh_1: flush retry cmd: ffff88019e171b80
-> > scsi_restart_operations: waking up host to restart
-> > scsi_debug: cmd 28 00 00 00 00 00 00 00 20 00 
-> > Error handler scsi_eh_1 sleeping
-> > 
-> 
-> Hi Mike and Co,
-> 
-> After considering a couple of different approches here, I ended up with
-> the following simple patch that has been tested on linus HEAD from this
-> afternoon w/ forcing scsi_debug cmd TIMEOUT during modprobe and via
-> sg_dd ops.  (See comments below)
-> 
-> [PATCH] scsi: Add SCSI_EH_SOFTIRQ_DONE usage
-> 
-> This patch introduces a SCSI_EH_SOFTIRQ_DONE flag that is set in scsi_softirq_done()
-> from block soft_irq context that is used to signal when scsi_try_to_abort_cmd() should
-> be calling __scsi_try_to_abort_cmd() for a timed out struct scsi_cmnd instead of
-> returning SUCCESS via checking only blk_test_rq_complete().  This is done because
-> blk_rq_timed_out_timer() calls blk_mark_rq_complete() before blk_rq_timed_out() ->
-> struct request_queue->rq_timed_out_fn().
+On Tue, 26 Oct 2010 15:41:54 -0600
+Bjorn Helgaas <bjorn.helgaas@hp.com> wrote:
 
-This is getting pretty far off into the weeds.  I think the first step
-should be queue lock push down into ->queuecommand.  This would still
-necessitate locking around the serial number.  The next step might be
-serial number elimination/reduction which might need to address issues
-like this (or not ... block already knows the information, there's not
-really much need for us to track it twice).  There might also be other
-lock aquisition reduction as part of step 2.
+> 
+> Request that allocate_resource() use available space from high addresses
+> first, rather than the default of using low addresses first.
+> 
+> The most common place this makes a difference is when we move or assign
+> new PCI device resources.  Low addresses are generally scarce, so it's
+> better to use high addresses when possible.  This follows Windows practice
+> for PCI allocation.
+> 
+> Reference: https://bugzilla.kernel.org/show_bug.cgi?id=16228#c42
+> Signed-off-by: Bjorn Helgaas <bjorn.helgaas@hp.com>
+> ---
 
-James
+Ok, applied this version to -next.  It's been going through distros and
+lots of testing despite a lack of recent coverage in PCI -next, so I'm
+planning to send it to Linus this week.  We probably won't catch much
+more until it hits his tree anyway...
 
-
+Thanks,
+-- 
+Jesse Barnes, Intel Open Source Technology Center
