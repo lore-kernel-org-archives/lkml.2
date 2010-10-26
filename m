@@ -1,67 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933555Ab0JZTUe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Oct 2010 15:20:34 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:32858 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933467Ab0JZTUd (ORCPT
+	id S1757897Ab0JZTVs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Oct 2010 15:21:48 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:34361 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755976Ab0JZTVr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Oct 2010 15:20:33 -0400
-Date: Tue, 26 Oct 2010 20:20:28 +0100
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: Azael Avalos <coproscefalo@gmail.com>
-Cc: platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: toshiba_acpi.c: Full TOS1900 device support
-Message-ID: <20101026192028.GA17880@srcf.ucam.org>
-References: <AANLkTikff5b9zhCLEmyoHZPTPaREuHE1qp21SLA0v=83@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTikff5b9zhCLEmyoHZPTPaREuHE1qp21SLA0v=83@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+	Tue, 26 Oct 2010 15:21:47 -0400
+Subject: Re: Clocksource tsc unstable (delta = -8589361717 ns) in current
+ git
+From: john stultz <johnstul@us.ibm.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Markus Trippelsdorf <markus@trippelsdorf.de>,
+        Borislav Petkov <bp@amd64.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "hpa@linux.intel.com" <hpa@linux.intel.com>,
+        Ingo Molnar <mingo@elte.hu>,
+        Andreas Herrmann <andreas.herrmann3@amd.com>
+In-Reply-To: <alpine.LFD.2.00.1010261747250.3115@localhost6.localdomain6>
+References: <20101026112052.GA1672@arch.trippelsdorf.de>
+	 <20101026131843.GC17852@aftab> <20101026135808.GB1672@arch.trippelsdorf.de>
+	 <alpine.LFD.2.00.1010261747250.3115@localhost6.localdomain6>
+Content-Type: text/plain; charset="ISO-8859-1"
+Date: Tue, 26 Oct 2010 12:18:56 -0700
+Message-ID: <1288120736.2645.9.camel@localhost>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 26, 2010 at 01:14:25PM -0600, Azael Avalos wrote:
+On Tue, 2010-10-26 at 17:48 +0200, Thomas Gleixner wrote:
+> On Tue, 26 Oct 2010, Markus Trippelsdorf wrote:
+> > On Tue, Oct 26, 2010 at 03:18:43PM +0200, Borislav Petkov wrote:
+> > > otherwise, I don't see anything strange in your dmesg. Unless tglx has a
+> > > better idea, I'd ask you to bisect it. 5618 changesets shouldn't be that
+> > > much but I don't know, if the issue appears every several hours it could
+> > > still be tedious.
+> > 
+> > That would be a several week long process, as the issue appears ~ every
+> > 2 days here on this machine running 24/7.
 > 
-> -	hci_read1(HCI_LCD_BRIGHTNESS, &value, &hci_result);
-> -	if (hci_result == HCI_SUCCESS) {
-> -		return (value >> HCI_LCD_BRIGHTNESS_SHIFT);
-> -	} else
-> -		return -EFAULT;
-> +	if (toshiba_acpi.spfc && toshiba_acpi.video_handle) {
-> +		status = acpi_evaluate_integer(toshiba_acpi.video_handle,
-> +					       "_BQC", NULL, &val);
-> +		if (ACPI_SUCCESS(status))
-> +			return val;
+> There is only a single commit in that area post 2.6.36:
+> 
+>       8af3c153baf95374eff20a37f00c59a295b52756 
+> 
+> But I have a hard time how this should make this happen. John ?
 
-This doesn't look right. Shouldn't _BQC indicate that it's an ACPI spec 
-video device, and thus driven by the ACPI video driver?
+Yea, that one doesn't look connected to me.
 
-> +static void toshiba_input_event(struct input_handle *handle, unsigned int type,
-> +			     unsigned int code, int value)
->  {
-> -	struct key_entry *key;
-> -
-> -	for (key = toshiba_acpi_keymap; key->type != KE_END; key++)
-> -		if (code == key->code)
-> -			return key;
-> -
-> -	return NULL;
-> +	if (type == EV_MSC && code == MSC_SCAN && value == TOSHIBA_FN_SCAN)
-> +		schedule_work(&((struct toshiba_acpi_dev *)handle->private)->hotkey_work);
->  }
+There have been a few cases that I've seen where we can get false
+positives for bad TSCs due to the watchdog clocksource having problems
+(or the clocksource watchdog thread getting delayed for such a long time
+the watchdog clocksource wraps and we then can't validly compare the two
+- although this would be hard to trigger with non-rt kernels).
 
-Ugh. Use i8042_install_filter instead, and just look at the raw i8042 
-stream. That'll avoid the ugly strncmp for the device names in order to 
-find the right device.
+>From your dmesg, I'd guess the hpet is the watchdog clocksource, so I'd
+be on the lookout for hpet related changes. 
 
-Otherwise things seem reasonably good - it's a fair rewrite, so I'll 
-want to read over things a bit more.
+Maybe does reverting 995bd3bb5c78f3ff71339803c0b8337ed36d64fb hide the
+issue?
 
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+thanks
+-john
+
+
+
