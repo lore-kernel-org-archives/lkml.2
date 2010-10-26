@@ -1,92 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933000Ab0JZRz6 (ORCPT <rfc822;w@1wt.eu>);
+	id S933153Ab0JZR4G (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Oct 2010 13:56:06 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:35307 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932520Ab0JZRz6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 26 Oct 2010 13:55:58 -0400
-Received: from mognix.dark-green.com ([88.116.226.179]:59556 "EHLO
-	mognix.dark-green.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932359Ab0JZRz5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Oct 2010 13:55:57 -0400
+Date: Tue, 26 Oct 2010 19:55:19 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, mingo@redhat.com, hpa@zytor.com,
+        rusty@rustcorp.com.au, fweisbec@gmail.com, rostedt@goodmis.org,
+        srostedt@redhat.com, tglx@linutronix.de
+Subject: Re: [tip:perf/urgent] tracing: Prevent unloadable modules from using
+ trace_bprintk()
+Message-ID: <20101026175519.GA12202@elte.hu>
+References: <tip-c3b87c579e5df72a59fe97d77d4c3791dc8154ec@git.kernel.org>
+ <AANLkTin7Daj=HnWXstuWxymjuBfF9axfKZWvei_EKefw@mail.gmail.com>
 MIME-Version: 1.0
-Date: Tue, 26 Oct 2010 19:55:55 +0200
-From: gimli <gimli@dark-green.com>
-To: <linux-kernel@vger.kernel.org>
-Subject: Resend  [PATCH 2/4] MacbookAir3,1 and 3,2 bcm5974 touchpad support
-In-Reply-To: <a6bd5da5b936670a8f5819cbd496e4a5@mognix.dark-green.com>
-References: <a6bd5da5b936670a8f5819cbd496e4a5@mognix.dark-green.com>
-Message-ID: <1589f305d8de6c54fe19a73843703b47@mognix.dark-green.com>
-User-Agent: RoundCube Webmail/0.2.2
-Content-Type: multipart/mixed;
-	boundary="=_11313c3249885b03ef3d3292c79f878c"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTin7Daj=HnWXstuWxymjuBfF9axfKZWvei_EKefw@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---=_11313c3249885b03ef3d3292c79f878c
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset="UTF-8"
 
-This patch adds support for the new MacBookAir3,1 and 3,2 to the bcm5974
-touchpad driver.
+* Linus Torvalds <torvalds@linux-foundation.org> wrote:
 
-Updated names names acording Apples kext.
+> On Tue, Oct 26, 2010 at 3:21 AM, tip-bot for Steven Rostedt
+> <srostedt@redhat.com> wrote:
+> >
+> > tracing: Prevent unloadable modules from using trace_bprintk()
+> 
+> I still don't think this patch makes sense.
 
-Signed-off-by: Edgar (gimli) Hucek <gimli@dark-green.com>
---=_11313c3249885b03ef3d3292c79f878c
-Content-Transfer-Encoding: base64
-Content-Type: text/plain; charset="UTF-8";
- name="bcm5974_macbookair.patch"; 
-Content-Disposition: attachment;
- filename="bcm5974_macbookair.patch"; 
+Yeah, i said that to Steve too in the discussion and essentially NAK-ed that patch - 
+it's just that i pulled the wrong branch. After seeing the commit mail i realized my 
+mistake and unpulled this one and pulled the right one ...
 
-ZGlmZiAtdU5yIGxpbnV4LTIuNi4zNS9kcml2ZXJzL2lucHV0L21vdXNlL2JjbTU5NzQuYyBsaW51
-eC0yLjYuMzUtTWFjYm9va0Fpci9kcml2ZXJzL2lucHV0L21vdXNlL2JjbTU5NzQuYwotLS0gbGlu
-dXgtMi42LjM1L2RyaXZlcnMvaW5wdXQvbW91c2UvYmNtNTk3NC5jCTIwMTAtMTAtMjMgMDY6NTk6
-MzEuMDAwMDAwMDAwICswMjAwCisrKyBsaW51eC0yLjYuMzUtTWFjYm9va0Fpci9kcml2ZXJzL2lu
-cHV0L21vdXNlL2JjbTU5NzQuYwkyMDEwLTEwLTI0IDA3OjM4OjE1Ljc5NTY3OTAwMiArMDIwMApA
-QCAtNTUsNiArNTUsMTQgQEAKICNkZWZpbmUgVVNCX0RFVklDRV9JRF9BUFBMRV9XRUxMU1BSSU5H
-M19BTlNJCTB4MDIzNgogI2RlZmluZSBVU0JfREVWSUNFX0lEX0FQUExFX1dFTExTUFJJTkczX0lT
-TwkweDAyMzcKICNkZWZpbmUgVVNCX0RFVklDRV9JRF9BUFBMRV9XRUxMU1BSSU5HM19KSVMJMHgw
-MjM4CisvKiBNYWNib29rQWlyMywyICh1bmlib2R5KSwgYWthIHdlbGxzcHJpbmc1ICovCisjZGVm
-aW5lIFVTQl9ERVZJQ0VfSURfQVBQTEVfV0VMTFNQUklORzRfQU5TSQkweDAyM2YKKyNkZWZpbmUg
-VVNCX0RFVklDRV9JRF9BUFBMRV9XRUxMU1BSSU5HNF9JU08JMHgwMjQwCisjZGVmaW5lIFVTQl9E
-RVZJQ0VfSURfQVBQTEVfV0VMTFNQUklORzRfSklTCTB4MDI0MQorLyogTWFjYm9va0FpcjMsMSAo
-dW5pYm9keSksIGFrYSB3ZWxsc3ByaW5nNCAqLworI2RlZmluZSBVU0JfREVWSUNFX0lEX0FQUExF
-X1dFTExTUFJJTkc0QV9BTlNJCTB4MDI0MgorI2RlZmluZSBVU0JfREVWSUNFX0lEX0FQUExFX1dF
-TExTUFJJTkc0QV9JU08JMHgwMjQzCisjZGVmaW5lIFVTQl9ERVZJQ0VfSURfQVBQTEVfV0VMTFNQ
-UklORzRBX0pJUwkweDAyNDQKIAogI2RlZmluZSBCQ001OTc0X0RFVklDRShwcm9kKSB7CQkJCQlc
-CiAJLm1hdGNoX2ZsYWdzID0gKFVTQl9ERVZJQ0VfSURfTUFUQ0hfREVWSUNFIHwJCVwKQEAgLTgw
-LDYgKzg4LDE0IEBACiAJQkNNNTk3NF9ERVZJQ0UoVVNCX0RFVklDRV9JRF9BUFBMRV9XRUxMU1BS
-SU5HM19BTlNJKSwKIAlCQ001OTc0X0RFVklDRShVU0JfREVWSUNFX0lEX0FQUExFX1dFTExTUFJJ
-TkczX0lTTyksCiAJQkNNNTk3NF9ERVZJQ0UoVVNCX0RFVklDRV9JRF9BUFBMRV9XRUxMU1BSSU5H
-M19KSVMpLAorCS8qIE1hY2Jvb2tBaXIzLDIgKi8KKwlCQ001OTc0X0RFVklDRShVU0JfREVWSUNF
-X0lEX0FQUExFX1dFTExTUFJJTkc0X0FOU0kpLAorCUJDTTU5NzRfREVWSUNFKFVTQl9ERVZJQ0Vf
-SURfQVBQTEVfV0VMTFNQUklORzRfSVNPKSwKKwlCQ001OTc0X0RFVklDRShVU0JfREVWSUNFX0lE
-X0FQUExFX1dFTExTUFJJTkc0X0pJUyksCisJLyogTWFjYm9va0FpcjMsMSAqLworCUJDTTU5NzRf
-REVWSUNFKFVTQl9ERVZJQ0VfSURfQVBQTEVfV0VMTFNQUklORzRBX0FOU0kpLAorCUJDTTU5NzRf
-REVWSUNFKFVTQl9ERVZJQ0VfSURfQVBQTEVfV0VMTFNQUklORzRBX0lTTyksCisJQkNNNTk3NF9E
-RVZJQ0UoVVNCX0RFVklDRV9JRF9BUFBMRV9XRUxMU1BSSU5HNEFfSklTKSwKIAkvKiBUZXJtaW5h
-dGluZyBlbnRyeSAqLwogCXt9CiB9OwpAQCAtMjI5LDYgKzI0NSwzMCBAQAogCQlIQVNfSU5URUdS
-QVRFRF9CVVRUT04sCiAJCTB4ODQsIHNpemVvZihzdHJ1Y3QgYnRfZGF0YSksCiAJCTB4ODEsIFRZ
-UEUyLCBGSU5HRVJfVFlQRTIsIEZJTkdFUl9UWVBFMiArIFNJWkVPRl9BTExfRklOR0VSUywKKwkJ
-eyBESU1fUFJFU1NVUkUsIERJTV9QUkVTU1VSRSAvIFNOX1BSRVNTVVJFLCAwLCAzMDAgfSwKKwkJ
-eyBESU1fV0lEVEgsIERJTV9XSURUSCAvIFNOX1dJRFRILCAwLCAyMDQ4IH0sCisJCXsgRElNX1gs
-IERJTV9YIC8gU05fQ09PUkQsIC00NDYwLCA1MTY2IH0sCisJCXsgRElNX1ksIERJTV9ZIC8gU05f
-Q09PUkQsIC03NSwgNjcwMCB9CisJfSwKKwl7CisJCVVTQl9ERVZJQ0VfSURfQVBQTEVfV0VMTFNQ
-UklORzRfQU5TSSwKKwkJVVNCX0RFVklDRV9JRF9BUFBMRV9XRUxMU1BSSU5HNF9JU08sCisJCVVT
-Ql9ERVZJQ0VfSURfQVBQTEVfV0VMTFNQUklORzRfSklTLAorCQlIQVNfSU5URUdSQVRFRF9CVVRU
-T04sCisJCTB4ODQsIHNpemVvZihzdHJ1Y3QgYnRfZGF0YSksCisJCTB4ODEsIFRZUEUyLCBGSU5H
-RVJfVFlQRTIsIEZJTkdFUl9UWVBFMiArIFNJWkVPRl9BTExfRklOR0VSUywKKwkJeyBESU1fUFJF
-U1NVUkUsIERJTV9QUkVTU1VSRSAvIFNOX1BSRVNTVVJFLCAwLCAzMDAgfSwKKwkJeyBESU1fV0lE
-VEgsIERJTV9XSURUSCAvIFNOX1dJRFRILCAwLCAyMDQ4IH0sCisJCXsgRElNX1gsIERJTV9YIC8g
-U05fQ09PUkQsIC00NDYwLCA1MTY2IH0sCisJCXsgRElNX1ksIERJTV9ZIC8gU05fQ09PUkQsIC03
-NSwgNjcwMCB9CisJfSwKKwl7CisJCVVTQl9ERVZJQ0VfSURfQVBQTEVfV0VMTFNQUklORzRBX0FO
-U0ksCisJCVVTQl9ERVZJQ0VfSURfQVBQTEVfV0VMTFNQUklORzRBX0lTTywKKwkJVVNCX0RFVklD
-RV9JRF9BUFBMRV9XRUxMU1BSSU5HNEFfSklTLAorCQlIQVNfSU5URUdSQVRFRF9CVVRUT04sCisJ
-CTB4ODQsIHNpemVvZihzdHJ1Y3QgYnRfZGF0YSksCisJCTB4ODEsIFRZUEUyLCBGSU5HRVJfVFlQ
-RTIsIEZJTkdFUl9UWVBFMiArIFNJWkVPRl9BTExfRklOR0VSUywKIAkJeyBESU1fUFJFU1NVUkUs
-IERJTV9QUkVTU1VSRSAvIFNOX1BSRVNTVVJFLCAwLCAzMDAgfSwKIAkJeyBESU1fV0lEVEgsIERJ
-TV9XSURUSCAvIFNOX1dJRFRILCAwLCAyMDQ4IH0sCiAJCXsgRElNX1gsIERJTV9YIC8gU05fQ09P
-UkQsIC00NDYwLCA1MTY2IH0sCg==
---=_11313c3249885b03ef3d3292c79f878c--
+Thanks,
 
+	Ingo
