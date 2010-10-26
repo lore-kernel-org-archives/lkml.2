@@ -1,66 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757850Ab0JZIhR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Oct 2010 04:37:17 -0400
-Received: from element.ksp.sk ([158.195.16.154]:60973 "EHLO ksp.sk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757551Ab0JZIhO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Oct 2010 04:37:14 -0400
-Message-ID: <4CC69335.4090301@dcs.fmph.uniba.sk>
-Date: Tue, 26 Oct 2010 10:37:09 +0200
-From: Richard Kralovic <Richard.Kralovic@dcs.fmph.uniba.sk>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.12) Gecko/20100917 Icedove/3.0.8
+	id S1756286Ab0JZIiO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Oct 2010 04:38:14 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:58152 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751803Ab0JZIiM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Oct 2010 04:38:12 -0400
+Date: Tue, 26 Oct 2010 10:38:07 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Len Brown <lenb@kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        Huang Ying <ying.huang@intel.com>, LKML <linux-kernel@vger.kernel.org>,
+        Andi Kleen <andi@firstfloor.org>, linux-acpi@vger.kernel.org,
+        Borislav Petkov <petkovbb@googlemail.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Don Zickus <dzickus@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Tony Luck <tony.luck@intel.com>
+Subject: Re: [NAK] Re: [PATCH -v2 9/9] ACPI, APEI, Generic Hardware Error
+ Source POLL/IRQ/NMI notification type support
+Message-ID: <20101026083806.GA14103@basil.fritz.box>
+References: <1287992610-14996-1-git-send-email-ying.huang@intel.com>
+ <1287992610-14996-10-git-send-email-ying.huang@intel.com>
+ <20101025084553.GA27119@elte.hu>
+ <alpine.LFD.2.00.1010252058370.11036@localhost.localdomain>
+ <alpine.LFD.2.00.1010260629560.3955@localhost6.localdomain6>
 MIME-Version: 1.0
-To: Vivek Goyal <vgoyal@redhat.com>
-CC: Milan Broz <mbroz@redhat.com>, linux-kernel@vger.kernel.org,
-        device-mapper development <dm-devel@redhat.com>,
-        Greg Thelen <gthelen@google.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: CFQ and dm-crypt
-References: <4CC439ED.8090400@dcs.fmph.uniba.sk> <4CC45BAD.2060308@redhat.com> <4CC553A3.5070308@dcs.fmph.uniba.sk> <20101025205934.GC23426@redhat.com>
-In-Reply-To: <20101025205934.GC23426@redhat.com>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LFD.2.00.1010260629560.3955@localhost6.localdomain6>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/25/10 22:59, Vivek Goyal wrote:
-> Richard,
-> 
-> So what problem are you facing? I know you are referring to CFQ ioprio not
-> working with dm targets but how does it impact you? So it is not about
-> overall disk performance or any slow down with dm-crypt target but just
-> about prioritizing your IO over other?
+> So please explain why your error reporting is so different from the
+> above that it justifies a separate facility. And you better come up
+> with a real good explanation other than we looked at EDAC and it did
+> not fit our needs.
 
-The ioprio not working is probably the biggest problem (since it is used
-quite a lot for background tasks like desktop indexing services). But
-also the overall performance is worse. I didn't do a rigorous
-benchmarking, but tried a following simple test to see the impact of my
-dm-crypt patch:
+Well it didn't fit the needs at all.  Is that not enough, Mr Inquisitor?
 
-test-write:
+Really if you want to nack and maintain and design things you need
+to do a bit more than just arguing from two lines of
+high level description.
 
-SIZE=640
+EDAC enumerates hardware and exports some hardware
+registers and decodes a few errors in a format into
+the kernel log that is hard to impossible to post-process.
 
+APEI does nothing of that, so it doesn't fit into EDAC.
 
-KERN=`uname -r`
-((time /bin/bash -c "dd if=/dev/zero bs=1M count=64 \
-   of=normal.tst oflag=direct") 1>$KERN-write-normal 2>&1) |
-((time /bin/bash -c "ionice -c 3 dd if=/dev/zero bs=1M \
-   count=64 of=idle.tst oflag=direct") 1>$KERN-write-idle 2>&1)
+perf does small parts of it, but a lot of things that are needed
+it doesn't do either. And for the things it does it's incredible 
+overkill in terms of code size, overhead etc. for the task
+at hand.
 
-Times for vanilla kernel (with CFQ) were 5.24s for idle and 5.38s for
-normal, times for patched kernel were 4.9s for idle and 3.13s for
-normal. A similar test for reading showed even bigger differences:
-vanilla kernel has 8.5s for idle as well as 8.5s for normal, patched
-kernel has 4.2s for idle and 2.1s for normal.
+Basically the only facility in perf that could 
+be reused is a simple message passing layer, which 
+is only a few tens lines of code anyways, but only
+at the cost of doing a lot of changes to get the right
+semantics out of it.
 
-So it seems that CFQ is behaving really badly if it is not able to see
-which process is doing the IO (and sees kcryptd everywhere). As far as I
-understood, there is no point in using CFQ in that case and it is much
-better to use other scheduler in this situation.
+The main interface in APEI right now is to manage fatal
+errors after reboot. Short of making it a file system,
+which didn't really fit either, there's no existing interface
+that handles that in a half way sensible way.
+ 
+There's some other stuff but it's reasonably small too.
 
-
-	Richard
+-Andi
