@@ -1,77 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756281Ab0JZJyM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Oct 2010 05:54:12 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:46990 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751561Ab0JZJyL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Oct 2010 05:54:11 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:reply-to:user-agent:mime-version:to:cc:subject
-         :content-type:content-transfer-encoding;
-        b=spHI2I2gAq3gpwYo8MZ6OQBXsQZCDz9O1yI3A7tqkvw0oNYaZpuHi9LjAtTnnUKirw
-         vZBSs/7l1zmRmOJnCqdQwiQ6O7p4Y07w7hNh4dYKy8/+NZGsoYMk+Km71KNGbgKSGVLm
-         IAADuoNIOqVtwxlRFby74E553p8MPz5rOZqyw=
-Message-ID: <4CC6A53C.4030706@gmail.com>
-Date: Tue, 26 Oct 2010 17:54:04 +0800
-From: =?UTF-8?B?IlNpbmdhcG9yZSBDaXRpemVuIE1yLiBUZW8gRW4gTWluZyAoWmhhbmcgRQ==?=
-	 =?UTF-8?B?bm1pbmcpIOW8oOaBqem4oyAi?= 
-	<space.time.universe@gmail.com>
-Reply-To: space.time.universe@gmail.com
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.1) Gecko/20090814 Fedora/3.0-2.6.b3.fc11 Thunderbird/3.0b3
+	id S1759001Ab0JZKCI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Oct 2010 06:02:08 -0400
+Received: from www.tglx.de ([62.245.132.106]:49112 "EHLO www.tglx.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756323Ab0JZKCG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Oct 2010 06:02:06 -0400
+Date: Tue, 26 Oct 2010 12:00:45 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Andi Kleen <andi@firstfloor.org>
+cc: Len Brown <lenb@kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        Huang Ying <ying.huang@intel.com>, LKML <linux-kernel@vger.kernel.org>,
+        linux-acpi@vger.kernel.org, Borislav Petkov <petkovbb@googlemail.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Don Zickus <dzickus@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Tony Luck <tony.luck@intel.com>
+Subject: Re: [NAK] Re: [PATCH -v2 9/9] ACPI, APEI, Generic Hardware Error
+ Source POLL/IRQ/NMI notification type support
+In-Reply-To: <20101026083806.GA14103@basil.fritz.box>
+Message-ID: <alpine.LFD.2.00.1010261046390.6129@localhost6.localdomain6>
+References: <1287992610-14996-1-git-send-email-ying.huang@intel.com> <1287992610-14996-10-git-send-email-ying.huang@intel.com> <20101025084553.GA27119@elte.hu> <alpine.LFD.2.00.1010252058370.11036@localhost.localdomain> <alpine.LFD.2.00.1010260629560.3955@localhost6.localdomain6>
+ <20101026083806.GA14103@basil.fritz.box>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-To: LKML <linux-kernel@vger.kernel.org>
-CC: "space.time.universe@gmail.com" <space.time.universe@gmail.com>,
-        "teoenming@hotmail.com" <teoenming@hotmail.com>,
-        zhang_enming@lavabit.com
-Subject: Photographs of Singapore Citizen Mr. Teo En Ming (Zhang Enming)
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear All,
+On Tue, 26 Oct 2010, Andi Kleen wrote:
+> > So please explain why your error reporting is so different from the
+> > above that it justifies a separate facility. And you better come up
+> > with a real good explanation other than we looked at EDAC and it did
+> > not fit our needs.
+> 
+> Well it didn't fit the needs at all.  Is that not enough, Mr Inquisitor?
 
-Please click on the following photo links [photographs of Singapore 
-Citizen Mr. Teo En Ming (Zhang Enming)].
+No, it's not enough without a reasonable explanation.
 
-[0] http://i.imgur.com/xTfLr.jpg
+> Really if you want to nack and maintain and design things you need
+> to do a bit more than just arguing from two lines of
+> high level description.
 
-[1] http://i54.tinypic.com/2415z7t.jpg
+If you want to shove a new facility into the kernel you need to do a
+bit more than sending that stuff to LKML without explaining why you
+can't use existing facilities and why it's impossible to extend those
+existing facilities.
 
-[2] http://img842.imageshack.us/img842/7534/enmingteodscf2511.jpg
+So the questions arise on the high level because you failed to provide
+a reasonable explanation in the first place.
 
-[3] http://img543.imageshack.us/img543/9185/dscf4036.jpg
+> EDAC enumerates hardware and exports some hardware
+> registers and decodes a few errors in a format into
+> the kernel log that is hard to impossible to post-process.
 
-[4] http://i.imgur.com/2vZxb.jpg
+You are well aware that EDAC folks are working on consolidating the
+interfaces and providing better error reporting, but it's out of your
+interest so you just ignore that effort instead of working together?
 
-[5] http://i51.tinypic.com/dqgm8h.jpg
+> APEI does nothing of that, so it doesn't fit into EDAC.
 
-[6] http://imgur.com/Ywca3.jpg
+Thanks for this overly detailed explanation.
 
-Thank you very much for your kind attention.
+APEI is about error detection and error reporting, nothing else. So
+it fits into EDAC, which is an existing Error Detection and Correction
+reporting facility by definition.
 
--- 
-Yours sincerely,
+If you see EDAC has shortcomings, the proper answer to that is to go
+there and work with those folks to make EDAC a fully integrated
+facility. It's not like there's some disagreement with them.
 
-Singapore Citizen Mr. Teo En Ming (Zhang Enming) 张恩鸣 
-Dip(Mechatronics) BEng(Hons)(Mechanical Engineering)
-Singapore Identity Card No.: S78*6*2*H
-Location: Bedok Reservoir Road, Singapore
-ZIP: 470103
-Mobile Phone (Starhub Pre-paid): +65-8369-2618
-Windows Live Messenger: teoenming-at-hotmail.com
-My Youtube videos: http://www.youtube.com/user/enmingteo
-Alma Maters:
-[1] Singapore Polytechnic (Graduated 1998)
-[2] National University of Singapore (Graduated 2006)
-My Open Letter (Plea for Medical Help/Assistance) to World Leaders 
-(Updated 28 August 2010):-
-http://lists.mcs.anl.gov/pipermail/mpich-discuss/2010-August/007811.html
-http://mythtv.org/pipermail/mythtv-users/2010-August/295952.html
-http://archives.gentoo.org/gentoo-user/msg_f6a341d9623fda17880159b137c07335.xml
+But you did not even try to talk to them about this and went straight
+ahead and implemented your own EDAC facility.
 
+> The main interface in APEI right now is to manage fatal
+> errors after reboot. ...
 
+That's completely irrelevant.
+
+It does not matter at all when and wherefrom error data come and
+whether they were generated before or after reboot. That is the
+hardware/firmware dependend side of things. Nobody is saying that this
+isn't necessary.
+
+But it matters very much how we report those errors. And it's not a
+completely unreasonable request to avoid separate interfaces for the
+very same problem, especially separate user space ABIs. 
+
+If an existing facility has shortcomings, then the usual way is to
+extend it for the sake of all existing users of that facility. We try
+to consolidate stuff all over the place and avoid stuff which is
+artificially separate, and that applies to that area as well.
+
+Of course that might be more work and might change the design a bit,
+but in the end it's a benefit for everyone.
+
+Thanks,
+
+	tglx
