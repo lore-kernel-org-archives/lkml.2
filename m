@@ -1,88 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933156Ab0JZM3y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Oct 2010 08:29:54 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:7545 "EHLO mx1.redhat.com"
+	id S933168Ab0JZMdF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Oct 2010 08:33:05 -0400
+Received: from mx2.netapp.com ([216.240.18.37]:61017 "EHLO mx2.netapp.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933069Ab0JZM3x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Oct 2010 08:29:53 -0400
-Message-ID: <4CC6C99C.8040004@redhat.com>
-Date: Tue, 26 Oct 2010 10:29:16 -0200
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100827 Red Hat/3.1.3-1.el6 Lightning/1.0b2 Thunderbird/3.1.3
-MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Doug Thompson <dougthompson@xmission.com>
-Subject: [GIT PULL for 2.6.36-rc1] i7core/nehalem EDAC driver fixes
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S932079Ab0JZMdC convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Oct 2010 08:33:02 -0400
+X-IronPort-AV: E=Sophos;i="4.58,241,1286175600"; 
+   d="scan'208";a="473121844"
+Subject: Re: linux-next: Tree for October 6
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
+To: Ingo Molnar <mingo@elte.hu>, Charles Edward Lever <Chuck.Lever@oracle.com>
+Cc: Zimny Lech <napohybelskurwysynom2010@gmail.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, linux-nfs@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>
+In-Reply-To: <20101026080822.GA10520@elte.hu>
+References: <20101006163632.c1943a38.sfr@canb.auug.org.au>
+	 <AANLkTimb2NxXcfj-o=F18S1u2rn-o851F+1sgQ_2uOVQ@mail.gmail.com>
+	 <20101026080822.GA10520@elte.hu>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Organization: NetApp
+Date: Tue, 26 Oct 2010 08:32:13 -0400
+Message-ID: <1288096333.3123.9.camel@heimdal.trondhjem.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 (2.30.3-1.fc13) 
+X-OriginalArrivalTime: 26 Oct 2010 12:32:47.0181 (UTC) FILETIME=[E5445FD0:01CB7509]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Tue, 2010-10-26 at 10:08 +0200, Ingo Molnar wrote:
+> * Zimny Lech <napohybelskurwysynom2010@gmail.com> wrote:
+> 
+> > 2010/10/6 Stephen Rothwell <sfr@canb.auug.org.au>:
+> > > Hi all,
+> > >
+> > > Changes since 20101005:
+> > 
+> > It looka like a bug or a beetle or something like that
+> > 
+> > /home/test/linux-2.6/fs/nfs/nfsroot.c: In function 'nfs_root_debug':
+> > /home/test/linux-2.6/fs/nfs/nfsroot.c:110:2: error: 'nfs_debug'
+> > undeclared (first use in this function)
+> > /home/test/linux-2.6/fs/nfs/nfsroot.c:110:2: note: each undeclared
+> > identifier is reported only once for each function it appears in
+> > make[3]: *** [fs/nfs/nfsroot.o] Error 1
+> > make[2]: *** [fs/nfs] Error 2
+> > make[1]: *** [fs] Error 2
+> > make: *** [sub-make] Error 2
+> 
+> This build bug has now been pushed upstream and triggers rather easily. Trond?
+> 
+> Thanks,
+> 
+> 	Ingo
 
-Please pull from:
-   ssh://master.kernel.org/pub/scm/linux/kernel/git/mchehab/i7core.git linux_next
+Grrr.... Chuck, I forwarded this report to you almost 3 weeks ago.
+Anyhow, does the following fix the bug?
 
-For a bunch of fixes at the i7core_edac driver probe/remove logic, and on the 
-sysfs methods added at edac_core in order to simplify private sysfs nodes
-(currently used only by i7core_edac).
+Cheers
+   Trond
 
-The previous logic were leaving some things behind on module remove, so, after
-removing/reinserting the driver a few times, an OOPS/Panic were produced. They
-also do a cleanup at the driver probe/remove logic, making them simpler and easier
-to analyse.
+----------------------------------------------------------------------------------------
+NFS: Fix a compile issue in nfs_root
 
-The following changes since commit f6f94e2ab1b33f0082ac22d71f66385a60d8157f:
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
 
-  Linux 2.6.36 (2010-10-20 13:30:22 -0700)
+Stephen Rothwell reports:
 
-are available in the git repository at:
-  ssh://master.kernel.org/pub/scm/linux/kernel/git/mchehab/i7core.git linux_next
+> /home/test/linux-2.6/fs/nfs/nfsroot.c: In function 'nfs_root_debug':
+> /home/test/linux-2.6/fs/nfs/nfsroot.c:110:2: error: 'nfs_debug'
+> undeclared (first use in this function)
+> /home/test/linux-2.6/fs/nfs/nfsroot.c:110:2: note: each undeclared
+> identifier is reported only once for each function it appears in
+> make[3]: *** [fs/nfs/nfsroot.o] Error 1
+> make[2]: *** [fs/nfs] Error 2
+> make[1]: *** [fs] Error 2
+> make: *** [sub-make] Error 2
 
-Hidetoshi Seto (15):
-      i7core_edac: Fix the logic in i7core_remove()
-      i7core_edac: Reduce args of i7core_get_onedevice
-      i7core_edac: Introduce alloc_i7core_dev
-      i7core_edac: Introduce free_i7core_dev
-      i7core_edac: Introduce i7core_pci_ctl_create/release
-      i7core_edac: Always do get/put for all devices
-      i7core_edac: Fix order of lines in i7core_register_mci
-      i7core_edac: Fix error path of i7core_register_mci
-      i7core_edac: Call pci_dev_put() when alloc_i7core_dev()  failed
-      i7core_edac: Check probe counter in i7core_remove
-      i7core_edac: Use saved pointers
-      i7core_edac: Introduce i7core_unregister_mci
-      i7core_edac: Reduce args of i7core_register_mci
-      i7core_edac: Remove unused arg csrow from get_dimm_config
-      i7core_edac: Remove unused member channels in i7core_pvt
+Which is caused by commit 306a075362a288683f6346185f97dd0e06df19da
+(NFS: Allow NFSROOT debugging messages to be enabled dynamically)
 
-Mauro Carvalho Chehab (19):
-      i7core_edac: Be sure that the edac pci handler will be properly released
-      i7core_edac: move static vars to the beginning of the file
-      i7core_edac: Properly mark const static vars as such
-      i7core_edac: move #if PAGE_SHIFT to edac_core.h
-      i7core_edac: Improve debug to seek for register/remove errors
-      i7core_edac: Initialize all priv vars before start polling
-      i7core_edac: MCE NMI handling should stop first
-      i7core_edac: explicitly remove PCI devices from the devices list
-      edac_core: Do a better job with node removal
-      edac_core: Don't let free(mci) happen while using it
-      edac_core: Print debug messages at release calls
-      i7core_edac: don't use a freed mci struct
-      i7core_edac: Don't do the legacy PCI probe by default
-      i7core_edac: Fix an oops at i7core probe
-      i7core_edac: it is safe to i7core_unregister_mci() when mci=NULL
-      i7core_edac: Fix refcount error at PCI devices
-      i7core_edac: Avoid PCI refcount to reach zero on successive load/reload
-      i7core_edac: properly terminate pci_dev_table
-      i7core_edac: return -ENODEV when devices were already probed
+Fix is to disable this code when RPC_DEBUG is disabled.
 
- drivers/edac/edac_core.h     |   11 +-
- drivers/edac/edac_mc.c       |   12 +-
- drivers/edac/edac_mc_sysfs.c |   82 +++++----
- drivers/edac/i7core_edac.c   |  432 ++++++++++++++++++++++++------------------
- 4 files changed, 313 insertions(+), 224 deletions(-)
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+---
+
+ fs/nfs/nfsroot.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
+
+
+diff --git a/fs/nfs/nfsroot.c b/fs/nfs/nfsroot.c
+index 460df36..903908a 100644
+--- a/fs/nfs/nfsroot.c
++++ b/fs/nfs/nfsroot.c
+@@ -101,6 +101,7 @@ static char nfs_export_path[NFS_MAXPATHLEN + 1] __initdata = "";
+ /* server:export path string passed to super.c */
+ static char nfs_root_device[NFS_MAXPATHLEN + 1] __initdata = "";
+ 
++#ifdef RPC_DEBUG
+ /*
+  * When the "nfsrootdebug" kernel command line option is specified,
+  * enable debugging messages for NFSROOT.
+@@ -112,6 +113,7 @@ static int __init nfs_root_debug(char *__unused)
+ }
+ 
+ __setup("nfsrootdebug", nfs_root_debug);
++#endif
+ 
+ /*
+  *  Parse NFS server and directory information passed on the kernel
+
