@@ -1,80 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933424Ab0JZSBN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Oct 2010 14:01:13 -0400
-Received: from pecan.exetel.com.au ([220.233.0.17]:48958 "EHLO
-	smtp.po.exetel.com.au" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S933313Ab0JZSAF (ORCPT
+	id S1760003Ab0JZR7L (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Oct 2010 13:59:11 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:45041 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758962Ab0JZR7J convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Oct 2010 14:00:05 -0400
-X-Greylist: delayed 1108 seconds by postgrey-1.27 at vger.kernel.org; Tue, 26 Oct 2010 14:00:05 EDT
-From: "Alex Dubov" <oakad@yahoo.com>
-To: "LKML" <linux-kernel@vger.kernel.org>
-Cc: "Andrew Morton" <akpm@linux-foundation.org>,
-        "Maxim Levitsky" <maximlevitsky@gmail.com>,
-        Alex Dubov <oakad@yahoo.com>
-Subject: [PATCH 2/4] memstick: remove mspro_block_mutex
-Date: Wed, 27 Oct 2010 04:41:09 +1100
-Message-Id: <1288114871-805-3-git-send-email-oakad@yahoo.com>
-X-Mailer: git-send-email 1.6.5.1
-In-Reply-To: <1288114871-805-2-git-send-email-oakad@yahoo.com>
-References: <1288114871-805-1-git-send-email-oakad@yahoo.com>
- <1288114871-805-2-git-send-email-oakad@yahoo.com>
+	Tue, 26 Oct 2010 13:59:09 -0400
+From: "Guzman Lugo, Fernando" <fernando.lugo@ti.com>
+To: Felipe Contreras <felipe.contreras@nokia.com>,
+        "felipe.contreras@gmail.com" <felipe.contreras@gmail.com>
+CC: "gregkh@suse.de" <gregkh@suse.de>,
+        "hiroshi.doyu@nokia.com" <hiroshi.doyu@nokia.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "andy.shevchenko@gmail.com" <andy.shevchenko@gmail.com>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Date: Tue, 26 Oct 2010 12:58:56 -0500
+Subject: RE: [PATCH 8/8] staging: tidspbridge - make sync_wait_on_event
+ interruptible
+Thread-Topic: [PATCH 8/8] staging: tidspbridge - make sync_wait_on_event
+ interruptible
+Thread-Index: Act1L7+aRd3PTeshT3OFP9sjsqyhLAABEcdA
+Message-ID: <496565EC904933469F292DDA3F1663E602F49E28AB@dlee06.ent.ti.com>
+References: <1288054306-4361-1-git-send-email-x0095840@ti.com>
+ <1288054306-4361-2-git-send-email-x0095840@ti.com>
+ <1288054306-4361-3-git-send-email-x0095840@ti.com>
+ <1288054306-4361-4-git-send-email-x0095840@ti.com>
+ <1288054306-4361-5-git-send-email-x0095840@ti.com>
+ <1288054306-4361-6-git-send-email-x0095840@ti.com>
+ <1288054306-4361-7-git-send-email-x0095840@ti.com>
+ <1288054306-4361-8-git-send-email-x0095840@ti.com>
+ <1288054306-4361-9-git-send-email-x0095840@ti.com>
+ <AANLkTinnLb9DLMKfxEs_KqMvOmegSDYRuLWh5y=hhBCe@mail.gmail.com>
+ <496565EC904933469F292DDA3F1663E602F49E2802@dlee06.ent.ti.com>
+ <1288112260-notmuch-felipe.contreras@nokia.com>
+In-Reply-To: <1288112260-notmuch-felipe.contreras@nokia.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Alex Dubov <oakad@yahoo.com>
+ 
 
-mspro_block_mutex is identical in scope to mspro_block_disk_lock and therefore
-unnecessary.
+> -----Original Message-----
+> From: Felipe Contreras [mailto:felipe.contreras@nokia.com] 
+> Sent: Tuesday, October 26, 2010 12:03 PM
+> To: Guzman Lugo, Fernando; felipe.contreras@gmail.com
+> Cc: gregkh@suse.de; hiroshi.doyu@nokia.com; 
+> linux-kernel@vger.kernel.org; andy.shevchenko@gmail.com; 
+> linux-omap@vger.kernel.org; linux-arm-kernel@lists.infradead.org
+> Subject: RE: [PATCH 8/8] staging: tidspbridge - make 
+> sync_wait_on_event interruptible
+> 
+> fernando.lugo@ti.com wrote:
+> > > On Tue, Oct 26, 2010 at 3:51 AM, Fernando Guzman Lugo 
+> > > <x0095840@ti.com> wrote:
+> > > > So that avoid non-killable process.
+> > > 
+> > > It would be useful to interrupt these tasks from user-space. 
+> > > A separate ioctl to do that would be needed.
+> > 
+> > I don't see use case where that could be needed. It is only 
+> To avoid a 
+> > nonkillable task in the case the user pass an infinite Timeout.
+> > 
+> > If you have some test case where that ioctl would be needed Please 
+> > share it in order to find the best solution.
+> 
+> Well, imagine the application is using a library to access 
+> the DSP, and the library has a dedicated thread listening for 
+> DSP events in a loop.
+> This happens to be how libomxil-ti and gst-dsp work.
+> 
+> Now, the thread received the last message, but has set a 
+> timeout of 10s, or even worst, no timeout at all.
+> 
+> After realizing that was the last message, the main thread 
+> decides to shut down, but it has to wait for the DSP thread 
+> to join. Unfortunately the DSP thread is stuck waiting for 
+> events, and there's nothing that can be done.
+> 
+> However, if we have a separate ioctl to interrupt that task, 
+> then the main thread can issue that ioctl, and unlock the DSP 
+> thread without having to wait 10s, or forever.
+> 
+> Does that make sense?
 
-Signed-off-by: Alex Dubov <oakad@yahoo.com>
----
- drivers/memstick/core/mspro_block.c |    9 +--------
- 1 files changed, 1 insertions(+), 8 deletions(-)
+Maybe sending a signal to yourselft and having a dummy signal
+Handle should work, it that would not like good. I am thinking
+On having a ioctl to create and set an event the you could
+Something like this:
 
-diff --git a/drivers/memstick/core/mspro_block.c b/drivers/memstick/core/mspro_block.c
-index a167938..b11b2b8 100644
---- a/drivers/memstick/core/mspro_block.c
-+++ b/drivers/memstick/core/mspro_block.c
-@@ -23,7 +23,6 @@
- 
- #define DRIVER_NAME "mspro_block"
- 
--static DEFINE_MUTEX(mspro_block_mutex);
- static int major;
- module_param(major, int, 0644);
- 
-@@ -181,7 +180,6 @@ static int mspro_block_bd_open(struct block_device *bdev, fmode_t mode)
- 	struct mspro_block_data *msb = disk->private_data;
- 	int rc = -ENXIO;
- 
--	mutex_lock(&mspro_block_mutex);
- 	mutex_lock(&mspro_block_disk_lock);
- 
- 	if (msb && msb->card) {
-@@ -193,7 +191,6 @@ static int mspro_block_bd_open(struct block_device *bdev, fmode_t mode)
- 	}
- 
- 	mutex_unlock(&mspro_block_disk_lock);
--	mutex_unlock(&mspro_block_mutex);
- 
- 	return rc;
- }
-@@ -225,11 +222,7 @@ static int mspro_block_disk_release(struct gendisk *disk)
- 
- static int mspro_block_bd_release(struct gendisk *disk, fmode_t mode)
- {
--	int ret;
--	mutex_lock(&mspro_block_mutex);
--	ret = mspro_block_disk_release(disk);
--	mutex_unlock(&mspro_block_mutex);
--	return ret;
-+	return mspro_block_disk_release(disk);
- }
- 
- static int mspro_block_bd_getgeo(struct block_device *bdev,
--- 
-1.6.5.1
+struct dsp_notification events[3];
 
+proc_register_notify(proc, event_type, &events[0]);
+...
+proc_register_notify(proc, event_type, &events[1]);
+...
+Sync_open_event(&events[2]);
+
+
+second thread:
+
+	mgr_wait_for_bridge_events(proc, events, 3, index);
+
+	if (index == 2) 
+		/* main thread force exit */
+
+
+Main thread:
+
+	/* if some execption happened then finish the second thread */
+	sync_set_event(events[2]);
+
+	pthread_join(...);
+
+
+However it is in progess a task for change replacing dspbridge sync.c
+Module with event_fd to signal events to userspace. Where now simple
+File descriptor will be used as event elements. So the mgr_wait_for_bridge_events
+Will be implemented using "select" system call inside to wait for multiple events.
+So you will be able to do something like this:
+
+int events[3];
+
+proc_register_notify(proc, event_type, &events[0]);
+...
+proc_register_notify(proc, event_type, &events[1]);
+...
+events[2] = eventfd(0, 0);
+
+
+second thread:
+
+	mgr_wait_for_bridge_events(proc, events, 3, index);
+
+	if (index == 2) 
+		/* main thread force exit */
+
+Main thread:
+
+	/* if some execption happened then finish the second thread */
+	write(events[2], "s", 1);
+
+	pthread_join(...);
+
+You won't need any aditional ioctl in order to do what you want to do.
+
+So, I think it is not worth to make much changes to some module that will
+Dissapear (my patch is just a fix it is not implementing something new),
+It is just a matter of time to that task is finished and tested properly
+And then send to LO.
+
+Regards,
+Fernando.
+
+> 
+> --
+> Felipe Contreras
+> 
