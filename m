@@ -1,50 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758645Ab0JZJaq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Oct 2010 05:30:46 -0400
-Received: from hera.kernel.org ([140.211.167.34]:36235 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754939Ab0JZJap (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Oct 2010 05:30:45 -0400
-Message-ID: <4CC69FBA.1010001@kernel.org>
-Date: Tue, 26 Oct 2010 11:30:34 +0200
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.11) Gecko/20101013 Lightning/1.0b2 Thunderbird/3.1.5
-MIME-Version: 1.0
-To: Alexey Zaytsev <alexey.zaytsev@gmail.com>, bphilips@suse.de
-CC: Kernel development list <linux-kernel@vger.kernel.org>,
-        Kumar Gala <galak@kernel.crashing.org>
-Subject: Re: Adding more stuff to devres.
-References: <AANLkTikx2TYO_NN91FzOq_0wxOJ_ggQVsxgOHNOpRom5@mail.gmail.com>
-In-Reply-To: <AANLkTikx2TYO_NN91FzOq_0wxOJ_ggQVsxgOHNOpRom5@mail.gmail.com>
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 26 Oct 2010 09:30:36 +0000 (UTC)
+	id S1758813Ab0JZJeO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Oct 2010 05:34:14 -0400
+Received: from casper.infradead.org ([85.118.1.10]:44495 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755647Ab0JZJeN convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Oct 2010 05:34:13 -0400
+Subject: Re: [PATCH 6/6] Account ksoftirqd time as cpustat softirq -v1
+From: Peter Zijlstra <peterz@infradead.org>
+To: Venkatesh Pallipadi <venki@google.com>
+Cc: Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        linux-kernel@vger.kernel.org, Paul Turner <pjt@google.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Shaun Ruffell <sruffell@digium.com>,
+        Yong Zhang <yong.zhang0@gmail.com>
+In-Reply-To: <1288045817-3135-7-git-send-email-venki@google.com>
+References: <1288045817-3135-1-git-send-email-venki@google.com>
+	 <1288045817-3135-7-git-send-email-venki@google.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Tue, 26 Oct 2010 11:33:52 +0200
+Message-ID: <1288085632.15336.111.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding Brandon, Hi.
-
-On 10/25/2010 05:52 PM, Alexey Zaytsev wrote:
-> Would it be a good idea to get things other than resources managed by
-> the devres?
+On Mon, 2010-10-25 at 15:30 -0700, Venkatesh Pallipadi wrote:
+> softirq time in ksoftirqd context is not accounted in ns granularity
+> per cpu softirq stats, as we want that to be a part of ksoftirqd
+> exec_runtime.
 > 
-> In my probe() method, I still have to handle alloc_netdev() and
-> mdiobus_alloc(). Adding corresponding devm_ functions should be
-> trivial. So, should I prepare the patches, or is there something wrong
-> with the approach?
+> Accounting them as softirq on /proc/stat separately.
+> 
+> Tested-by: Shaun Ruffell <sruffell@digium.com>
+> 
+> Signed-off-by: Venkatesh Pallipadi <venki@google.com>
+> ---
+>  kernel/sched.c |    8 ++++++++
+>  1 files changed, 8 insertions(+), 0 deletions(-)
+> 
+> diff --git a/kernel/sched.c b/kernel/sched.c
+> index 49f6f61..0955050 100644
+> --- a/kernel/sched.c
+> +++ b/kernel/sched.c
+> @@ -3617,6 +3617,14 @@ static void irqtime_account_process_tick(struct task_struct *p, int user_tick,
+>  		cpustat->irq = cputime64_add(cpustat->irq, tmp);
+>  	} else if (irqtime_account_si_update()) {
+>  		cpustat->softirq = cputime64_add(cpustat->softirq, tmp);
+> +	} else if (this_cpu_ksoftirqd() == p) {
+> +		/*
+> +		 * ksoftirqd time do not get accounted in cpu_softirq_time.
+> +		 * So, we have to handle it separately here.
+> +		 * Also, p->stime needs to be updated for ksoftirqd.
+> +		 */
+> +		__account_system_time(p, cputime_one_jiffy, one_jiffy_scaled,
+> +					&cpustat->softirq);
+>  	} else if (user_tick) {
+>  		account_user_time(p, cputime_one_jiffy, one_jiffy_scaled);
+>  	} else if (p == rq->idle) {
 
-Hmmm... Unless alloc_netdev() and mdiobus_alloc() are allocating
-something special, I think it probably would be better to make them
-use devres.  Please take a look at how ata_host_alloc() and
-ata_host_start() are doing it.
 
-IIRC, Brandon spent some time thinking about how use devres on network
-drivers.  Brandon, any ideas?
+I'm somewhat confused by this patch.. This is significantly different
+from the thing proposed last time around, which was to use:
 
-Thanks.
+  cpustat->softirq + this_cpu_ksoftirqd()->se.sum_exec_runtime
 
--- 
-tejun
+The above looses the fine grained aspect of the accounting and simply
+charges a whole jiffy if the current process happens to be ksoftirqd.
+
+
