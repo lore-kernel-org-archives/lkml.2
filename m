@@ -1,54 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751848Ab0JZA3a (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Oct 2010 20:29:30 -0400
-Received: from canuck.infradead.org ([134.117.69.58]:33992 "EHLO
-	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751211Ab0JZA33 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Oct 2010 20:29:29 -0400
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        "David S . Miller" <davem@davemloft.net>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>,
-        Tom Zanussi <tzanussi@gmail.com>
-Subject: [GIT PULL 0/5] perf python script improvements
-Date: Mon, 25 Oct 2010 22:29:12 -0200
-Message-Id: <1288052957-14087-1-git-send-email-acme@infradead.org>
-X-Mailer: git-send-email 1.6.2.5
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
-	See http://www.infradead.org/rpr.html
+	id S1752023Ab0JZAcV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Oct 2010 20:32:21 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:48957 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751173Ab0JZAcU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Oct 2010 20:32:20 -0400
+Date: Tue, 26 Oct 2010 11:32:13 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: David Woodhouse <dwmw2@infradead.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Arnd Bergmann <arnd@arndb.de>,
+        Maxim Levitsky <maximlevitsky@gmail.com>,
+        Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
+Subject: linux-next: manual merge of the mtd tree with Linus' tree
+Message-Id: <20101026113213.1faaf8a1.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Tue__26_Oct_2010_11_32_13_+1100_g+fZmG692auiXyhh"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ingo,
+--Signature=_Tue__26_Oct_2010_11_32_13_+1100_g+fZmG692auiXyhh
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-        Please pull from:
+Hi David,
 
-git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux-2.6 perf/core
+Today's linux-next merge of the mtd tree got a conflict in
+drivers/mtd/mtd_blkdevs.c between commit
+2a48fc0ab24241755dc93bfd4f01d68efab47f5a ("block: autoconvert trivial BKL
+users to private mutex") from the  tree and commit
+480792b7bf188c29b8d4b10fee65c3a06ec5dbf7 ("mtd: blktrans: kill BKL") from
+the mtd tree.
 
-	Tested on RHEL6 Beta x86_64, Fedora 11 x86_64 and Fedora 13 i386.
+I fixed it up (by removing all the bits of the former commit) and can
+carry the fix as necessary.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
-Regards,
+--Signature=_Tue__26_Oct_2010_11_32_13_+1100_g+fZmG692auiXyhh
+Content-Type: application/pgp-signature
 
-- Arnaldo
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
 
-Arnaldo Carvalho de Melo (5):
-  perf python scripting: Improve the failed-syscalls-by-pid script
-  perf python scripting: Improve the syscalls-counts script
-  perf python scripting: print the syscall name on sctop
-  perf python scripting: Improve the syscalls-by-pid script
-  perf python scripting: Support fedora 11 (audit 1.7.17)
+iQEcBAEBAgAGBQJMxiGNAAoJEDMEi1NhKgbsVkoH/2SeDD+LM1iKJY23V9kDzh/n
+qzhjxxuBQCeklUs52wAKlZMfFr8A3eAI3clJlABk/M1LnFX8pcAqIpbM9b6jmqtn
+TK7AJ1jCM3Nh6hw/bPACu+abWTDpUmeGnDasHlIBkWdGUVG//2DfmUyIpc3l+McD
+9OCkU4j2C8GEvw6EVaghN8lzffHv2/6BjsDo88UF3AYHpYfgstBB0+w7nxGknXz/
+Vfc2ankWEQ/hq1xhfujcGLdYH17c0hD1xOqkWJ1VRpKMmGsu9bVz39HsvwX/LG3a
+Y+JJUcYY6p9wdQVOE+2SnC+N0Bq8PjILYHk+GB8wHuqXDtyobNY0b86jqg3pbZM=
+=hzHA
+-----END PGP SIGNATURE-----
 
- .../python/Perf-Trace-Util/lib/Perf/Trace/Util.py  |   40 ++++++++++++++++++++
- .../perf/scripts/python/failed-syscalls-by-pid.py  |   21 ++++++----
- tools/perf/scripts/python/sctop.py                 |    7 +--
- tools/perf/scripts/python/syscall-counts-by-pid.py |   21 ++++++----
- tools/perf/scripts/python/syscall-counts.py        |    5 +-
- 5 files changed, 71 insertions(+), 23 deletions(-)
+--Signature=_Tue__26_Oct_2010_11_32_13_+1100_g+fZmG692auiXyhh--
