@@ -1,117 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753626Ab0JZAaL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Oct 2010 20:30:11 -0400
-Received: from casper.infradead.org ([85.118.1.10]:53603 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751265Ab0JZAaK (ORCPT
+	id S1751848Ab0JZA3a (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Oct 2010 20:29:30 -0400
+Received: from canuck.infradead.org ([134.117.69.58]:33992 "EHLO
+	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751211Ab0JZA33 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Oct 2010 20:30:10 -0400
+	Mon, 25 Oct 2010 20:29:29 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+Cc: linux-kernel@vger.kernel.org,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        "David S . Miller" <davem@davemloft.net>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
         Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <peterz@infradead.org>,
         Stephane Eranian <eranian@google.com>,
         Tom Zanussi <tzanussi@gmail.com>
-Subject: [PATCH 2/5] perf python scripting: Improve the syscalls-counts script
-Date: Mon, 25 Oct 2010 22:29:14 -0200
-Message-Id: <1288052957-14087-3-git-send-email-acme@infradead.org>
+Subject: [GIT PULL 0/5] perf python script improvements
+Date: Mon, 25 Oct 2010 22:29:12 -0200
+Message-Id: <1288052957-14087-1-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.6.2.5
-In-Reply-To: <1288052957-14087-1-git-send-email-acme@infradead.org>
-References: <1288052957-14087-1-git-send-email-acme@infradead.org>
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
 	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
+Hi Ingo,
 
-. Print message at script start telling how to get te summary
-. Print the syscall name
+        Please pull from:
 
-Now it looks like this:
+git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux-2.6 perf/core
 
-[root@emilia ~]# perf trace syscall-counts
-Press control+C to stop and show the summary
-^C
-syscall events:
+	Tested on RHEL6 Beta x86_64, Fedora 11 x86_64 and Fedora 13 i386.
 
-event                                          count
-----------------------------------------  -----------
-read                                          102752
-open                                            1293
-close                                            878
-write                                            319
-stat                                             185
-fstat                                            149
-getdents                                         116
-mmap                                              98
-brk                                               80
-rt_sigaction                                      66
-munmap                                            42
-mprotect                                          24
-lseek                                             21
-lstat                                              7
-rt_sigprocmask                                     4
-futex                                              3
-statfs                                             3
-ioctl                                              3
-readlink                                           2
-select                                             2
-getegid                                            1
-geteuid                                            1
-getgid                                             1
-getuid                                             1
-getrlimit                                          1
-fcntl                                              1
-uname                                              1
-[root@emilia ~]#
+Regards,
 
-Cc: David S. Miller <davem@davemloft.net>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Cc: Tom Zanussi <tzanussi@gmail.com>
-LKML-Reference: <new-submission>
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/scripts/python/syscall-counts.py |    5 +++--
- 1 files changed, 3 insertions(+), 2 deletions(-)
+- Arnaldo
 
-diff --git a/tools/perf/scripts/python/syscall-counts.py b/tools/perf/scripts/python/syscall-counts.py
-index f977e85..ea183dc 100644
---- a/tools/perf/scripts/python/syscall-counts.py
-+++ b/tools/perf/scripts/python/syscall-counts.py
-@@ -13,6 +13,7 @@ sys.path.append(os.environ['PERF_EXEC_PATH'] + \
- 
- from perf_trace_context import *
- from Core import *
-+from Util import syscall_name
- 
- usage = "perf trace -s syscall-counts.py [comm]\n";
- 
-@@ -27,7 +28,7 @@ if len(sys.argv) > 1:
- syscalls = autodict()
- 
- def trace_begin():
--	pass
-+	print "Press control+C to stop and show the summary"
- 
- def trace_end():
- 	print_syscall_totals()
-@@ -55,4 +56,4 @@ def print_syscall_totals():
- 
-     for id, val in sorted(syscalls.iteritems(), key = lambda(k, v): (v, k), \
- 				  reverse = True):
--	    print "%-40d  %10d\n" % (id, val),
-+	    print "%-40s  %10d\n" % (syscall_name(id), val),
--- 
-1.6.2.5
+Arnaldo Carvalho de Melo (5):
+  perf python scripting: Improve the failed-syscalls-by-pid script
+  perf python scripting: Improve the syscalls-counts script
+  perf python scripting: print the syscall name on sctop
+  perf python scripting: Improve the syscalls-by-pid script
+  perf python scripting: Support fedora 11 (audit 1.7.17)
 
+ .../python/Perf-Trace-Util/lib/Perf/Trace/Util.py  |   40 ++++++++++++++++++++
+ .../perf/scripts/python/failed-syscalls-by-pid.py  |   21 ++++++----
+ tools/perf/scripts/python/sctop.py                 |    7 +--
+ tools/perf/scripts/python/syscall-counts-by-pid.py |   21 ++++++----
+ tools/perf/scripts/python/syscall-counts.py        |    5 +-
+ 5 files changed, 71 insertions(+), 23 deletions(-)
