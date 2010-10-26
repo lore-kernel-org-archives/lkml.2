@@ -1,108 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932558Ab0JZWlO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Oct 2010 18:41:14 -0400
-Received: from fieldses.org ([174.143.236.118]:52600 "EHLO fieldses.org"
+	id S1758386Ab0JZWu7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Oct 2010 18:50:59 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:57264 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757691Ab0JZWlN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Oct 2010 18:41:13 -0400
-Date: Tue, 26 Oct 2010 18:41:07 -0400
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Arnd Bergmann <arnd@arndb.de>, Bryan Schumaker <bjschuma@netapp.com>,
-        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: nfsd changes for 2.6.37
-Message-ID: <20101026224107.GE1842@fieldses.org>
-References: <20101026164549.GD19445@fieldses.org>
- <201010262218.36940.arnd@arndb.de>
- <4CC73BA6.1090407@netapp.com>
- <201010262255.40481.arnd@arndb.de>
- <AANLkTimPBqafDPxYpZjuym8+-yk4vKYTU15Js-Ux_e6Z@mail.gmail.com>
- <20101026212433.GB1842@fieldses.org>
- <AANLkTinOd9pDVRYDQ5+dqn8LPf4yoOW=j8NxyCfCQAB6@mail.gmail.com>
- <20101026214441.GC1842@fieldses.org>
- <20101026221156.GD1842@fieldses.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101026221156.GD1842@fieldses.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1753216Ab0JZWu6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Oct 2010 18:50:58 -0400
+Subject: Re: [ANNOUNCE] Status of unlocked_qcmds=1 operation for .37
+From: James Bottomley <James.Bottomley@suse.de>
+To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+Cc: Mike Anderson <andmike@linux.vnet.ibm.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        Vasu Dev <vasu.dev@linux.intel.com>,
+        Tim Chen <tim.c.chen@linux.intel.com>, Andi Kleen <ak@linux.intel.com>,
+        Matthew Wilcox <willy@linux.intel.com>,
+        Mike Christie <michaelc@cs.wisc.edu>, Jens Axboe <jaxboe@fusionio.com>,
+        James Smart <james.smart@emulex.com>,
+        Andrew Vasquez <andrew.vasquez@qlogic.com>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Hannes Reinecke <hare@suse.de>, Joe Eykholt <jeykholt@cisco.com>,
+        Christoph Hellwig <hch@lst.de>, Jon Hawley <warthog9@kernel.org>,
+        Brian King <brking@linux.vnet.ibm.com>,
+        Christof Schmitt <christof.schmitt@de.ibm.com>,
+        Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@zytor.com>
+In-Reply-To: <1288132464.5169.112.camel@haakon2.linux-iscsi.org>
+References: <1287607774.10283.78.camel@haakon2.linux-iscsi.org>
+	 <20101021150840.GA24309@linux.vnet.ibm.com>
+	 <1288130914.5169.97.camel@haakon2.linux-iscsi.org>
+	 <1288132071.8283.689.camel@mulgrave.site>
+	 <1288132464.5169.112.camel@haakon2.linux-iscsi.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 26 Oct 2010 22:50:50 +0000
+Message-ID: <1288133450.8283.723.camel@mulgrave.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.1.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 26, 2010 at 06:11:56PM -0400, J. Bruce Fields wrote:
-> On Tue, Oct 26, 2010 at 05:44:41PM -0400, J. Bruce Fields wrote:
-> > On Tue, Oct 26, 2010 at 02:37:26PM -0700, Linus Torvalds wrote:
-> > > On Tue, Oct 26, 2010 at 2:24 PM, J. Bruce Fields <bfields@fieldses.org> wrote:
-> > > >
-> > > > I did a couple connectathon runs just now with no obvious ill effects
-> > > > except for some sleep-within-spinlock warnings in the lease code.
+On Tue, 2010-10-26 at 15:34 -0700, Nicholas A. Bellinger wrote:
+> On Tue, 2010-10-26 at 17:27 -0500, James Bottomley wrote:
+> > On Tue, 2010-10-26 at 15:08 -0700, Nicholas A. Bellinger wrote:
+> > > [PATCH] scsi: Add SCSI_EH_SOFTIRQ_DONE usage
 > > > 
-> > > Hmm. Those sleep-within-spinlock warnings are very likely serious
-> > > bugs.
+> > > This patch introduces a SCSI_EH_SOFTIRQ_DONE flag that is set in scsi_softirq_done()
+> > > from block soft_irq context that is used to signal when scsi_try_to_abort_cmd() should
+> > > be calling __scsi_try_to_abort_cmd() for a timed out struct scsi_cmnd instead of
+> > > returning SUCCESS via checking only blk_test_rq_complete().  This is done because
+> > > blk_rq_timed_out_timer() calls blk_mark_rq_complete() before blk_rq_timed_out() ->
+> > > struct request_queue->rq_timed_out_fn().
 > > 
-> > Yeah, didn't mean to belittle them.
-> > 
-> > > Can you quote the whole warning with stack trace?
-> > 
-> > It's just obvious allocations in setlease:
-> > 
-> > BUG: sleeping function called from invalid context at mm/slab.c:3101
-> > in_atomic(): 1, irqs_disabled(): 0, pid: 4345, name: lease_tests
-> > 1 lock held by lease_tests/4345:
-> >  #0:  (file_lock_lock){+.+.+.}, at: [<ffffffff81128be5>] lock_flocks+0x15/0x20
-> > Pid: 4345, comm: lease_tests Not tainted 2.6.36-05858-gbd5e20b #1028
-> > Call Trace:
-> >  [<ffffffff8103141d>] __might_sleep+0x10d/0x140
-> >  [<ffffffff810e3ad3>] kmem_cache_alloc+0x1f3/0x230
-> >  [<ffffffff8112a4d2>] generic_setlease+0x112/0x2c0
-> >  [<ffffffff8112a6b5>] __vfs_setlease+0x35/0x40
-> >  [<ffffffff8112acfe>] fcntl_setlease+0xce/0x180
-> >  [<ffffffff810f7c2e>] sys_fcntl+0x2fe/0x630
-> >  [<ffffffff81961999>] ? trace_hardirqs_on_thunk+0x3a/0x3f
-> >  [<ffffffff81002658>] system_call_fastpath+0x16/0x1b
-> > 
-> > I'm testing a patch.
+> > This is getting pretty far off into the weeds.  I think the first step
+> > should be queue lock push down into ->queuecommand.  This would still
+> > necessitate locking around the serial number.
 > 
-> This works for me.
+> Hmmm, I am not sure I understand what you mean here.  My understanding
+> is that the whole point of the series was to remove any locking around
+> the serial number in order to make scsi_dispatch_cmd() lockless,
+> right..?
+
+The point is that several things have to happen for that to be a
+reality.  The easiest and most obvious thing is lock push down in
+->queuecommand.
+
+The next is most likely serial number elimination.
+
+But the point is that we don't have to do the whole thing all at once
+(and spend months trying to get the series right).
+
+> That is what the current patch series already does, in that it makes the
+> use of cmd->serial_number optional and requires LLDs who use this for
+> anything beyond an informational purpose to explictly call
+> scsi_cmd_get_serial(). 
+
+OK, so this patch is a corner case where the error handler is using the
+serial number value to deduce something the block layer already knows
+(whether the command completed or not). I don't think introducing a
+substitute flag is the right way, the information should just be
+extracted properly.
+
+But arguments about this don't have to impede the lock push down.
+
+James
+
+> > The next step might be
+> > serial number elimination/reduction which might need to address issues
+> > like this (or not ... block already knows the information, there's not
+> > really much need for us to track it twice).  There might also be other
+> > lock aquisition reduction as part of step 2.
+> > 
 > 
-> I'm not saying it's correct, but it does at least pass my dumb tests
-> without complaining.
+> Correct, with this series cmd->serial_number still exists, but is
+> completly optional and no longer used for any SCSI ML functionality.  It
+> remains used only beyond an information purpose by a handful of LLDs in
+> their legacy error recovery handling, which have been updated in this
+> series to explictly call scsi_cmd_get_serial().
+> 
+> So other than those handful special cases, all of the LLDs included in
+> the series which explict set SHT->unlocked_qcmd=1 to run in
+> scsi_dispatch_cmd() lockless mode will no longer need ->serial_number.
+> 
+> --nab
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-scsi" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-I can't think of any more missing locking, though I did notice this on a
-quick look.
 
---b.
-
-commit fc42117585672abd3cbf247dd311869233d1606a
-Author: J. Bruce Fields <bfields@redhat.com>
-Date:   Tue Oct 26 18:25:30 2010 -0400
-
-    fix nlmsvc_notify_blocked locking
-    
-    Signed-off-by: J. Bruce Fields <bfields@redhat.com>
-
-diff --git a/fs/lockd/svclock.c b/fs/lockd/svclock.c
-index 6f1ef00..c462d34 100644
---- a/fs/lockd/svclock.c
-+++ b/fs/lockd/svclock.c
-@@ -700,14 +700,16 @@ nlmsvc_notify_blocked(struct file_lock *fl)
- 	struct nlm_block	*block;
- 
- 	dprintk("lockd: VFS unblock notification for block %p\n", fl);
-+	spin_lock(&nlm_blocked_lock);
- 	list_for_each_entry(block, &nlm_blocked, b_list) {
- 		if (nlm_compare_locks(&block->b_call->a_args.lock.fl, fl)) {
--			nlmsvc_insert_block(block, 0);
-+			nlmsvc_insert_block_locked(block, 0);
-+			spin_unlock(&nlm_blocked_lock);
- 			svc_wake_up(block->b_daemon);
- 			return;
- 		}
- 	}
--
-+	spin_unlock(&nlm_blocked_lock);
- 	printk(KERN_WARNING "lockd: notification for unknown block!\n");
- }
- 
