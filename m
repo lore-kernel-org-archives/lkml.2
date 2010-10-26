@@ -1,67 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757689Ab0JZBRp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Oct 2010 21:17:45 -0400
-Received: from beaker.bytemark.co.uk ([80.68.81.2]:38637 "EHLO
-	beaker.bytemark.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755373Ab0JZBL5 (ORCPT
+	id S1754225Ab0JZBTu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Oct 2010 21:19:50 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:53579 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751518Ab0JZBTt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Oct 2010 21:11:57 -0400
-From: "Emilio G. Cota" <cota@braap.org>
-To: Martyn Welch <martyn.welch@ge.com>
-Cc: Greg KH <greg@kroah.com>, LKML <linux-kernel@vger.kernel.org>,
-        devel@driverdev.osuosl.org,
-        Juan David Gonzalez Cobas <david.cobas@gmail.com>,
-        Bill Pemberton <wfp5p@virginia.edu>, "Emilio G. Cota" <cota@braap.org>
-Subject: [PATCH 09/30] staging/vme: fill in struct device's .release, even if it's a NOOP
-Date: Mon, 25 Oct 2010 21:10:55 -0400
-Message-Id: <1288055476-19438-10-git-send-email-cota@braap.org>
-X-Mailer: git-send-email 1.7.3.2
-In-Reply-To: <1288055476-19438-1-git-send-email-cota@braap.org>
-References: <1288055476-19438-1-git-send-email-cota@braap.org>
+	Mon, 25 Oct 2010 21:19:49 -0400
+Date: Mon, 25 Oct 2010 18:19:55 -0700
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Axel Lin <axel.lin@gmail.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        Liam Girdwood <lrg@slimlogic.co.uk>,
+        MyungJoo Ham <myungjoo.ham@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>
+Subject: Re: [PATCH 2/2 v2] regulator: max8952 - fix max8952_set_voltage
+Message-ID: <20101026011955.GA3432@opensource.wolfsonmicro.com>
+References: <1288050954.2323.3.camel@phoenix>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1288050954.2323.3.camel@phoenix>
+X-Cookie: There is a fly on your nose.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Emilio G. Cota <cota@braap.org>
+On Tue, Oct 26, 2010 at 07:55:54AM +0800, Axel Lin wrote:
+> In current implementation, vid is declared as u8,
+> then "vid == -1" is always false, and "vid >= 0" is always true.
+> Thus change it to s8.
+> 
+> Signed-off-by: Axel Lin <axel.lin@gmail.com>
 
-Without it we get 32 warnings, one per device being released, when
-removing a bridge module.
-
-After applying this patch, bridge modules can at last be removed
-without any apparent hiccup.
-
-[Note: tested only on the tsi148, it's the only bridge I've got]
-
-Signed-off-by: Emilio G. Cota <cota@braap.org>
----
- drivers/staging/vme/vme.c |    6 ++++++
- 1 files changed, 6 insertions(+), 0 deletions(-)
-
-diff --git a/drivers/staging/vme/vme.c b/drivers/staging/vme/vme.c
-index afd2dbd..59650dd 100644
---- a/drivers/staging/vme/vme.c
-+++ b/drivers/staging/vme/vme.c
-@@ -1352,6 +1352,11 @@ static void vme_free_bus_num(int bus)
- 	mutex_unlock(&vme_bus_num_mtx);
- }
- 
-+/* Note: device_release(dev) throws a warning if dev->release isn't filled in */
-+static void vme_dev_release(struct device *dev)
-+{
-+}
-+
- int vme_register_bridge(struct vme_bridge *bridge)
- {
- 	struct device *dev;
-@@ -1372,6 +1377,7 @@ int vme_register_bridge(struct vme_bridge *bridge)
- 
- 		dev->parent = bridge->parent;
- 		dev->bus = &vme_bus_type;
-+		dev->release = vme_dev_release;
- 		/*
- 		 * We save a pointer to the bridge in platform_data so that we
- 		 * can get to it later. We keep driver_data for use by the
--- 
-1.7.1
-
+Acked-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
