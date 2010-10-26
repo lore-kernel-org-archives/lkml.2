@@ -1,170 +1,354 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760003Ab0JZR7L (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Oct 2010 13:59:11 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:45041 "EHLO bear.ext.ti.com"
+	id S933438Ab0JZSBg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Oct 2010 14:01:36 -0400
+Received: from mx2.netapp.com ([216.240.18.37]:1253 "EHLO mx2.netapp.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758962Ab0JZR7J convert rfc822-to-8bit (ORCPT
+	id S933326Ab0JZR7z convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Oct 2010 13:59:09 -0400
-From: "Guzman Lugo, Fernando" <fernando.lugo@ti.com>
-To: Felipe Contreras <felipe.contreras@nokia.com>,
-        "felipe.contreras@gmail.com" <felipe.contreras@gmail.com>
-CC: "gregkh@suse.de" <gregkh@suse.de>,
-        "hiroshi.doyu@nokia.com" <hiroshi.doyu@nokia.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "andy.shevchenko@gmail.com" <andy.shevchenko@gmail.com>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Date: Tue, 26 Oct 2010 12:58:56 -0500
-Subject: RE: [PATCH 8/8] staging: tidspbridge - make sync_wait_on_event
- interruptible
-Thread-Topic: [PATCH 8/8] staging: tidspbridge - make sync_wait_on_event
- interruptible
-Thread-Index: Act1L7+aRd3PTeshT3OFP9sjsqyhLAABEcdA
-Message-ID: <496565EC904933469F292DDA3F1663E602F49E28AB@dlee06.ent.ti.com>
-References: <1288054306-4361-1-git-send-email-x0095840@ti.com>
- <1288054306-4361-2-git-send-email-x0095840@ti.com>
- <1288054306-4361-3-git-send-email-x0095840@ti.com>
- <1288054306-4361-4-git-send-email-x0095840@ti.com>
- <1288054306-4361-5-git-send-email-x0095840@ti.com>
- <1288054306-4361-6-git-send-email-x0095840@ti.com>
- <1288054306-4361-7-git-send-email-x0095840@ti.com>
- <1288054306-4361-8-git-send-email-x0095840@ti.com>
- <1288054306-4361-9-git-send-email-x0095840@ti.com>
- <AANLkTinnLb9DLMKfxEs_KqMvOmegSDYRuLWh5y=hhBCe@mail.gmail.com>
- <496565EC904933469F292DDA3F1663E602F49E2802@dlee06.ent.ti.com>
- <1288112260-notmuch-felipe.contreras@nokia.com>
-In-Reply-To: <1288112260-notmuch-felipe.contreras@nokia.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
+	Tue, 26 Oct 2010 13:59:55 -0400
+X-IronPort-AV: E=Sophos;i="4.58,242,1286175600"; 
+   d="scan'208";a="473292798"
+Subject: [GIT PULL] Please pull NFSv4.1 and pNFS changes
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+Organization: NetApp
+Date: Tue, 26 Oct 2010 13:58:45 -0400
+Message-ID: <1288115925.15897.6.camel@heimdal.trondhjem.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 (2.30.3-1.fc13) 
+X-OriginalArrivalTime: 26 Oct 2010 17:59:40.0107 (UTC) FILETIME=[8F7B61B0:01CB7537]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- 
+Hi Linus,
 
-> -----Original Message-----
-> From: Felipe Contreras [mailto:felipe.contreras@nokia.com] 
-> Sent: Tuesday, October 26, 2010 12:03 PM
-> To: Guzman Lugo, Fernando; felipe.contreras@gmail.com
-> Cc: gregkh@suse.de; hiroshi.doyu@nokia.com; 
-> linux-kernel@vger.kernel.org; andy.shevchenko@gmail.com; 
-> linux-omap@vger.kernel.org; linux-arm-kernel@lists.infradead.org
-> Subject: RE: [PATCH 8/8] staging: tidspbridge - make 
-> sync_wait_on_event interruptible
-> 
-> fernando.lugo@ti.com wrote:
-> > > On Tue, Oct 26, 2010 at 3:51 AM, Fernando Guzman Lugo 
-> > > <x0095840@ti.com> wrote:
-> > > > So that avoid non-killable process.
-> > > 
-> > > It would be useful to interrupt these tasks from user-space. 
-> > > A separate ioctl to do that would be needed.
-> > 
-> > I don't see use case where that could be needed. It is only 
-> To avoid a 
-> > nonkillable task in the case the user pass an infinite Timeout.
-> > 
-> > If you have some test case where that ioctl would be needed Please 
-> > share it in order to find the best solution.
-> 
-> Well, imagine the application is using a library to access 
-> the DSP, and the library has a dedicated thread listening for 
-> DSP events in a loop.
-> This happens to be how libomxil-ti and gst-dsp work.
-> 
-> Now, the thread received the last message, but has set a 
-> timeout of 10s, or even worst, no timeout at all.
-> 
-> After realizing that was the last message, the main thread 
-> decides to shut down, but it has to wait for the DSP thread 
-> to join. Unfortunately the DSP thread is stuck waiting for 
-> events, and there's nothing that can be done.
-> 
-> However, if we have a separate ioctl to interrupt that task, 
-> then the main thread can issue that ioctl, and unlock the DSP 
-> thread without having to wait 10s, or forever.
-> 
-> Does that make sense?
+Resending request after adding the two patches "NFS: rename nfs.upcall
+-> nfs.idmap" and "NFS: Fix a compile issue in nfs_root".
 
-Maybe sending a signal to yourselft and having a dummy signal
-Handle should work, it that would not like good. I am thinking
-On having a ioctl to create and set an event the you could
-Something like this:
+Please pull from the "nfs-for-2.6.37" branch of the repository at
 
-struct dsp_notification events[3];
+   git pull git://git.linux-nfs.org/projects/trondmy/nfs-2.6.git nfs-for-2.6.37
 
-proc_register_notify(proc, event_type, &events[0]);
-...
-proc_register_notify(proc, event_type, &events[1]);
-...
-Sync_open_event(&events[2]);
+This will update the following files through the appended changesets.
+
+  Cheers,
+    Trond
+
+----
+ Documentation/filesystems/nfs/00-INDEX     |    2 +
+ Documentation/filesystems/nfs/idmapper.txt |   28 +-
+ Documentation/filesystems/nfs/pnfs.txt     |   48 ++
+ fs/nfs/Kconfig                             |    8 +-
+ fs/nfs/Makefile                            |    4 +
+ fs/nfs/callback_proc.c                     |    8 +-
+ fs/nfs/client.c                            |   10 +-
+ fs/nfs/file.c                              |    5 +
+ fs/nfs/inode.c                             |    3 +
+ fs/nfs/nfs4filelayout.c                    |  280 ++++++++++
+ fs/nfs/nfs4filelayout.h                    |   94 ++++
+ fs/nfs/nfs4filelayoutdev.c                 |  448 ++++++++++++++++
+ fs/nfs/nfs4proc.c                          |  218 +++++++--
+ fs/nfs/nfs4state.c                         |    2 +
+ fs/nfs/nfs4xdr.c                           |  360 +++++++++++++
+ fs/nfs/nfsroot.c                           |    2 +
+ fs/nfs/pnfs.c                              |  783 ++++++++++++++++++++++++++++
+ fs/nfs/pnfs.h                              |  189 +++++++
+ fs/nfs/read.c                              |    3 +
+ fs/nfsd/nfs4callback.c                     |    1 -
+ include/linux/nfs4.h                       |   62 +++-
+ include/linux/nfs_fs.h                     |    5 +
+ include/linux/nfs_fs_sb.h                  |    3 +
+ include/linux/nfs_xdr.h                    |   50 ++
+ include/linux/sunrpc/xdr.h                 |    7 +
+ net/sunrpc/auth_gss/gss_krb5_mech.c        |    2 +-
+ 26 files changed, 2566 insertions(+), 59 deletions(-)
+
+commit eb1c86b8b501ad9a073d9d519105979d31fa0ef2
+Author: Bryan Schumaker <bjschuma@netapp.com>
+Date:   Tue Oct 26 13:27:42 2010 -0400
+
+    NFS: rename nfs.upcall -> nfs.idmap
+    
+    This patch renames the idmapper upcall program from nfs.upcall to nfs.idmap in
+    the NFS documentation.  This is because the program has been renamed in the
+    nfs-utils source.
+    
+    Signed-off-by: Bryan Schumaker <bjschuma@netapp.com>
+    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+
+commit 036a1075978e35811f22be3ff86a70cb8d22cb85
+Author: Trond Myklebust <Trond.Myklebust@netapp.com>
+Date:   Tue Oct 26 13:47:04 2010 -0400
+
+    NFS: Fix a compile issue in nfs_root
+    
+    Stephen Rothwell reports:
+    
+    > /home/test/linux-2.6/fs/nfs/nfsroot.c: In function 'nfs_root_debug':
+    > /home/test/linux-2.6/fs/nfs/nfsroot.c:110:2: error: 'nfs_debug'
+    > undeclared (first use in this function)
+    > /home/test/linux-2.6/fs/nfs/nfsroot.c:110:2: note: each undeclared
+    > identifier is reported only once for each function it appears in
+    > make[3]: *** [fs/nfs/nfsroot.o] Error 1
+    > make[2]: *** [fs/nfs] Error 2
+    > make[1]: *** [fs] Error 2
+    > make: *** [sub-make] Error 2
+    
+    Which is caused by commit 306a075362a288683f6346185f97dd0e06df19da
+    (NFS: Allow NFSROOT debugging messages to be enabled dynamically)
+    
+    Fix is to disable this code when RPC_DEBUG is disabled.
+    
+    Reported-by: Zimny Lech <napohybelskurwysynom2010@gmail.com>
+    Tested-by: Ingo Molnar <mingo@elte.hu>
+    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+
+commit 411b5e05617593efebc06241dbc56f42150f2abe
+Author: Joe Perches <joe@perches.com>
+Date:   Mon Sep 13 12:48:01 2010 -0700
+
+    net/sunrpc: Use static const char arrays
+    
+    Signed-off-by: Joe Perches <joe@perches.com>
+    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+
+commit 43c2e885be25311e6289c7da52e8a03c4453ee03
+Author: J. Bruce Fields <bfields@redhat.com>
+Date:   Sat Oct 2 15:19:01 2010 -0400
+
+    nfs4: fix channel attribute sanity-checks
+    
+    The sanity checks here are incorrect; in the worst case they allow
+    values that crash the client.
+    
+    They're also over-reliant on the preprocessor.
+    
+    Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+
+commit 1c787096fce217b5fdd9806dbce96e738c9345c0
+Author: Trond Myklebust <Trond.Myklebust@netapp.com>
+Date:   Thu Oct 21 16:56:48 2010 -0400
+
+    NFSv4.1: Use more sensible names for 'initialize_mountpoint'
+    
+    The initialize_mountpoint/uninitialise_mountpoint functions are really about
+    setting or clearing the layout driver to be used on this filesystem. Change
+    the names to the more descriptive 'set_layoutdriver/clear_layoutdriver'.
+    
+    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+
+commit 16b374ca439fb406e46e071f75428f5b033056f8
+Author: Andy Adamson <andros@netapp.com>
+Date:   Wed Oct 20 00:18:04 2010 -0400
+
+    NFSv4.1: pnfs: filelayout: add driver's LAYOUTGET and GETDEVICEINFO infrastructure
+    
+    Implement the driver's io_ops->alloc_lseg and free_lseg functions,
+    which integrate into the deviceid cache and calls out to
+    nfs4_proc_getdeviceinfo when necessary.
+    
+    Signed-off-by: Andy Adamson <andros@netapp.com>
+    Signed-off-by: Dean Hildebrand <dhildebz@umich.edu>
+    Signed-off-by: Marc Eshel <eshel@almaden.ibm.com>
+    Signed-off-by: Mike Sager <sager@netapp.com>
+    Signed-off-by: Oleg Drokin <green@linuxhacker.ru>
+    Signed-off-by: Ricardo Labiaga <ricardo.labiaga@netapp.com>
+    Signed-off-by: Tao Guo <guotao@nrchpc.ac.cn>
+    Signed-off-by: Boaz Harrosh <bharrosh@panasas.com>
+    Signed-off-by: Fred Isaman <iisaman@netapp.com>
+    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+
+commit b1f69b754ee312ec75f2c7ead0e6851cd9598cc2
+Author: Andy Adamson <andros@netapp.com>
+Date:   Wed Oct 20 00:18:03 2010 -0400
+
+    NFSv4.1: pnfs: add LAYOUTGET and GETDEVICEINFO infrastructure
+    
+    Add the ability to actually send LAYOUTGET and GETDEVICEINFO.  This also adds
+    in the machinery to handle layout state and the deviceid cache.  Note that
+    GETDEVICEINFO is not called directly by the generic layer.  Instead it
+    is called by the drivers while parsing the LAYOUTGET opaque data in response
+    to an unknown device id embedded therein.  RFC 5661 only encodes
+    device ids within the driver-specific opaque data.
+    
+    Signed-off-by: Andy Adamson <andros@netapp.com>
+    Signed-off-by: Dean Hildebrand <dhildebz@umich.edu>
+    Signed-off-by: Marc Eshel <eshel@almaden.ibm.com>
+    Signed-off-by: Mike Sager <sager@netapp.com>
+    Signed-off-by: Ricardo Labiaga <ricardo.labiaga@netapp.com>
+    Signed-off-by: Tao Guo <guotao@nrchpc.ac.cn>
+    Signed-off-by: Boaz Harrosh <bharrosh@panasas.com>
+    Signed-off-by: Fred Isaman <iisaman@netapp.com>
+    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+
+commit 974cec8ca0352eb5d281535b714cf194a606e98f
+Author: Andy Adamson <andros@netapp.com>
+Date:   Wed Oct 20 00:18:02 2010 -0400
+
+    NFS: client needs to maintain list of inodes with active layouts
+    
+    In particular, server reboot will invalidate all layouts.
+    
+    Note that in order to have an active layout, we must get a successful response
+    from the server.  To avoid adding that machinery, this patch just includes a
+    stub that fakes up a successful return.  Since the layout is never referenced
+    for io, this is not a problem.
+    
+    Signed-off-by: Andy Adamson <andros@netapp.com>
+    Signed-off-by: Benny Halevy <bhalevy@panasas.com>
+    Signed-off-by: Dean Hildebrand <dhildebz@umich.edu>
+    Signed-off-by: Fred Isaman <iisaman@netapp.com>
+    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+
+commit e5e940170b2136ad4d5483ef293ae284b9cc8d53
+Author: Benny Halevy <bhalevy@panasas.com>
+Date:   Wed Oct 20 00:18:01 2010 -0400
+
+    NFS: create and destroy inode's layout cache
+    
+    At the start of the io paths, try to grab the relevant layout
+    information.  This will initiate the inode's layout cache, but
+    stubs ensure the cache stays empty.
+    
+    Signed-off-by: Benny Halevy <bhalevy@panasas.com>
+    Signed-off-by: Dean Hildebrand <dhildebz@umich.edu>
+    Signed-off-by: Marc Eshel <eshel@almaden.ibm.com>
+    Signed-off-by: Tao Guo <guotao@nrchpc.ac.cn>
+    Signed-off-by: Ricardo Labiaga <ricardo.labiaga@netapp.com>
+    Signed-off-by: Boaz Harrosh <bharrosh@panasas.com>
+    Signed-off-by: Andy Adamson <andros@netapp.com>
+    Signed-off-by: Fred Isaman <iisaman@netapp.com>
+    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+
+commit 7ab672ce312133ee4a5d85b71447b2b334403681
+Author: Dean Hildebrand <dhildebz@umich.edu>
+Date:   Wed Oct 20 00:18:00 2010 -0400
+
+    NFSv4.1: pnfs: filelayout: introduce minimal file layout driver
+    
+    This driver just registers itself and supplies trivial mount/umount functions.
+    
+    Signed-off-by: Dean Hildebrand <dhildebz@umich.edu>
+    Signed-off-by: Marc Eshel <eshel@almaden.ibm.com>
+    Signed-off-by: Benny Halevy <bhalevy@panasas.com>
+    Signed-off-by: Fred Isaman <iisaman@netapp.com>
+    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+
+commit 02c35fca7cf4ea2dfdc6db279e230cacbbf4b870
+Author: Fred Isaman <iisaman@netapp.com>
+Date:   Wed Oct 20 00:17:59 2010 -0400
+
+    NFSv4.1: pnfs: full mount/umount infrastructure
+    
+    Allow a module implementing a layout type to register, and
+    have its mount/umount routines called for filesystems that
+    the server declares support it.
+    
+    Signed-off-by: Fred Isaman <iisaman@netapp.com>
+    Signed-off-by: Marc Eshel <eshel@almaden.ibm.com>
+    Signed-off-by: Andy Adamson<andros@netapp.com>
+    Signed-off-by: Bian Naimeng <biannm@cn.fujitsu.com>
+    Signed-off-by: Benny Halevy <bhalevy@panasas.com>
+    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+
+commit 85e174ba6b786ad336eb2df105b4f66d0932e70a
+Author: Ricardo Labiaga <Ricardo.Labiaga@netapp.com>
+Date:   Wed Oct 20 00:17:58 2010 -0400
+
+    NFS: set layout driver
+    
+    Put in the infrastructure that uses information returned from the
+    server at mount to select a layout driver module.
+    
+    In this patch, a stub is used that always returns "no driver found".
+    
+    Signed-off-by: Ricardo Labiaga <Ricardo.Labiaga@netapp.com>
+    Signed-off-by: Dean Hildebrand <dhildebz@umich.edu>
+    Signed-off-by: Marc Eshel <eshel@almaden.ibm.com>
+    Signed-off-by: Andy Adamson <andros@netapp.com>
+    Signed-off-by: Benny Halevy <bhalevy@panasas.com>
+    Signed-off-by: Fred Isaman <iisaman@netapp.com>
+    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+
+commit 504913fbc84c00bba7224d73e4aab525c1731f7d
+Author: Andy Adamson <andros@netapp.com>
+Date:   Wed Oct 20 00:17:57 2010 -0400
+
+    NFS: ask for layouttypes during v4 fsinfo call
+    
+    This information will be used to determine which layout driver,
+    if any, to use for subsequent IO on this filesystem.  Each driver
+    is assigned an integer id, with 0 reserved to indicate no driver.
+    
+    The server can in theory return multiple ids.  However, our current
+    client implementation only notes the first entry and ignores the
+    rest.
+    
+    Signed-off-by: Andy Adamson <andros@netapp.com>
+    Signed-off-by: Benny Halevy <bhalevy@panasas.com>
+    Signed-off-by: Fred Isaman <iisaman@netapp.com>
+    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+
+commit 9449925273933d19235d7d36c1fd970841d055de
+Author: Alexandros Batsakis <batsakis@netapp.com>
+Date:   Wed Oct 20 00:17:56 2010 -0400
+
+    NFS: change stateid to be a union
+    
+    In NFSv4.1 the stateid consists of the other and seqid fields. For layout
+    processing we need to numerically compare the seqid value of layout stateids.
+    To do so, introduce a union to nfs4_stateid to switch between opaque(16 bytes)
+    and opaque(12 bytes) / __be32
+    
+    Signed-off-by: Alexandros Batsakis <batsakis@netapp.com>
+    Signed-off-by: Benny Halevy <bhalevy@panasas.com>
+    Signed-off-by: Fred Isaman <iisaman@netapp.com>
+    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+
+commit c772567d97fa0fca454eea68aeae915ca1bc732b
+Author: Dean Hildebrand <dhildebz@umich.edu>
+Date:   Wed Oct 20 00:17:55 2010 -0400
+
+    NFSv4.1: pnfsd, pnfs: protocol level pnfs constants
+    
+    Use only layoutreturn constant for both returns and recalls.
+    (return_* works better for recall_type rather the other way around)
+    
+    Signed-off-by: Dean Hildebrand <dhildebz@umich.edu>
+    Signed-off-by: Marc Eshel <eshel@almaden.ibm.com>
+    Signed-off-by: Benny Halevy <bhalevy@panasas.com>
+    Signed-off-by: Fred Isaman <iisaman@netapp.com>
+    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+
+commit 35b61e63323ccf5fdcdd74b11751b58392c9cce1
+Author: Benny Halevy <bhalevy@panasas.com>
+Date:   Wed Oct 20 00:17:54 2010 -0400
+
+    SUNRPC: define xdr_decode_opaque_fixed
+    
+    A helper for decoding a fixed length opaque value.
+    Returns a pointer to the next item in the xdr stream.
+    
+    Signed-off-by: Benny Halevy <bhalevy@panasas.com>
+    Signed-off-by: Fred Isaman <iisaman@netapp.com>
+    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+
+commit 3c9101a0575f6078191dae6bb91a834c6aac3557
+Author: Andy Adamson <andros@netapp.com>
+Date:   Wed Oct 20 00:17:53 2010 -0400
+
+    NFSD: remove duplicate NFS4_STATEID_SIZE
+    
+    Already accepted by Bruce
+    
+    Signed-off-by: Andy Adamson <andros@netapp.com>
+    Signed-off-by: Fred Isaman <iisaman@netapp.com>
+    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
 
 
-second thread:
-
-	mgr_wait_for_bridge_events(proc, events, 3, index);
-
-	if (index == 2) 
-		/* main thread force exit */
-
-
-Main thread:
-
-	/* if some execption happened then finish the second thread */
-	sync_set_event(events[2]);
-
-	pthread_join(...);
-
-
-However it is in progess a task for change replacing dspbridge sync.c
-Module with event_fd to signal events to userspace. Where now simple
-File descriptor will be used as event elements. So the mgr_wait_for_bridge_events
-Will be implemented using "select" system call inside to wait for multiple events.
-So you will be able to do something like this:
-
-int events[3];
-
-proc_register_notify(proc, event_type, &events[0]);
-...
-proc_register_notify(proc, event_type, &events[1]);
-...
-events[2] = eventfd(0, 0);
-
-
-second thread:
-
-	mgr_wait_for_bridge_events(proc, events, 3, index);
-
-	if (index == 2) 
-		/* main thread force exit */
-
-Main thread:
-
-	/* if some execption happened then finish the second thread */
-	write(events[2], "s", 1);
-
-	pthread_join(...);
-
-You won't need any aditional ioctl in order to do what you want to do.
-
-So, I think it is not worth to make much changes to some module that will
-Dissapear (my patch is just a fix it is not implementing something new),
-It is just a matter of time to that task is finished and tested properly
-And then send to LO.
-
-Regards,
-Fernando.
-
-> 
-> --
-> Felipe Contreras
-> 
