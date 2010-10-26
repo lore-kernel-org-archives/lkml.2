@@ -1,136 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756712Ab0JZTuW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Oct 2010 15:50:22 -0400
-Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:18600 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754539Ab0JZTuV (ORCPT
+	id S1757630Ab0JZTw5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Oct 2010 15:52:57 -0400
+Received: from vms173001pub.verizon.net ([206.46.173.1]:58786 "EHLO
+	vms173001pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753282Ab0JZTw4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Oct 2010 15:50:21 -0400
-X-IronPort-AV: E=Sophos;i="4.58,242,1286150400"; 
-   d="scan'208";a="2536370"
-Date: Tue, 26 Oct 2010 20:49:31 +0100
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball-desktop
-To: Ian Campbell <Ian.Campbell@eu.citrix.com>
-CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Jeremy Fitzhardinge <jeremy@goop.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, "mingo@elte.hu" <mingo@elte.hu>,
-        "tglx@linutronix.de" <tglx@linutronix.de>
-Subject: Re: [Xen-devel] Re: [PATCH 1/5] xen: events: use irq_alloc_desc(_at)
- instead of open-coding an IRQ allocator.
-In-Reply-To: <1288080948.10179.57.camel@localhost.localdomain>
-Message-ID: <alpine.DEB.2.00.1010261847150.1407@kaball-desktop>
-References: <1288023736.11153.40.camel@zakaz.uk.xensource.com>  <1288023813-31989-1-git-send-email-ian.campbell@citrix.com>  <20101025173522.GA5590@dumpdata.com>  <1288029736.10179.35.camel@localhost.localdomain>
- <1288080948.10179.57.camel@localhost.localdomain>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+	Tue, 26 Oct 2010 15:52:56 -0400
+Date: Tue, 26 Oct 2010 15:52:41 -0400 (EDT)
+From: Len Brown <lenb@kernel.org>
+X-X-Sender: lenb@localhost.localdomain
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-pm@lists.linux-foundation.org
+Subject: [git pull request] idle patches for 2.6.37-merge
+Message-id: <alpine.LFD.2.00.1010261551090.14156@localhost.localdomain>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+MIME-version: 1.0
+Content-type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 26 Oct 2010, Ian Campbell wrote:
-> On Mon, 2010-10-25 at 19:02 +0100, Ian Campbell wrote:
-> > 
-> > 
-> > > What do you see when you pass in a PCI device and say give the guest
-> > 32 CPUs??
-> > 
-> > I can try tomorrow and see, based on what you say above without
-> > implementing what I described I suspect the answer will be "carnage". 
-> 
-> Actually, it looks like multi-vcpu is broken, I only see 1 regardless of
-> how many I configured. It's not clear if this is breakage in Linus'
-> tree, something I pulled in from one of Jeremy's, yours or Stefano's
-> trees or some local pebcak. I'll investigate...
- 
-I found the bug, it was introduced by:
+Hi Linus,
 
-"xen: use vcpu_ops to setup cpu masks"
+please pull from: 
 
-I have added the fix at the end of my branch and I am also appending the
-fix here.
+git://git.kernel.org/pub/scm/linux/kernel/git/lenb/linux-idle-2.6.git idle-release
 
----
+This will update the files shown below.
+
+thanks!
+
+--
+Len Brown
+Intel Open Source Technology Center
 
 
-xen: initialize cpu masks for pv guests in xen_smp_init
+ps. individual patches are available on linux-pm@lists.linux-foundation.org
+and a consolidated plain patch is available here:
+http://ftp.kernel.org/pub/linux/kernel/people/lenb/idle/patches/2.6.36/idle-release-2.6.36-rc8.diff.gz
 
-Pv guests don't have ACPI and need the cpu masks to be set
-correctly as early as possible so we call xen_fill_possible_map from
-xen_smp_init.
-On the other hand the initial domain supports ACPI so in this case we skip
-xen_fill_possible_map and rely on it. However Xen might limit the number
-of cpus usable by the domain, so we filter those masks during smp
-initialization using the VCPUOP_is_up hypercall.
-It is important that the filtering is done before
-xen_setup_vcpu_info_placement.
+ drivers/acpi/processor_idle.c |    1 -
+ drivers/idle/intel_idle.c     |   61 +++++++++++++++++++++++++++++++----------
+ 2 files changed, 46 insertions(+), 16 deletions(-)
 
-Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+through these commits:
 
-diff --git a/arch/x86/xen/smp.c b/arch/x86/xen/smp.c
-index 1386767..834dfeb 100644
---- a/arch/x86/xen/smp.c
-+++ b/arch/x86/xen/smp.c
-@@ -28,6 +28,7 @@
- #include <asm/xen/interface.h>
- #include <asm/xen/hypercall.h>
- 
-+#include <xen/xen.h>
- #include <xen/page.h>
- #include <xen/events.h>
- 
-@@ -156,6 +157,25 @@ static void __init xen_fill_possible_map(void)
- {
- 	int i, rc;
- 
-+	if (xen_initial_domain())
-+		return;
-+
-+	for (i = 0; i < nr_cpu_ids; i++) {
-+		rc = HYPERVISOR_vcpu_op(VCPUOP_is_up, i, NULL);
-+		if (rc >= 0) {
-+			num_processors++;
-+			set_cpu_possible(i, true);
-+		}
-+	}
-+}
-+
-+static void __init xen_filter_cpu_maps(void)
-+{
-+	int i, rc;
-+
-+	if (!xen_initial_domain())
-+		return;
-+
- 	num_processors = 0;
- 	disabled_cpus = 0;
- 	for (i = 0; i < nr_cpu_ids; i++) {
-@@ -179,6 +199,7 @@ static void __init xen_smp_prepare_boot_cpu(void)
- 	   old memory can be recycled */
- 	make_lowmem_page_readwrite(xen_initial_gdt);
- 
-+	xen_filter_cpu_maps();
- 	xen_setup_vcpu_info_placement();
- }
- 
-@@ -195,8 +216,6 @@ static void __init xen_smp_prepare_cpus(unsigned int max_cpus)
- 	if (xen_smp_intr_init(0))
- 		BUG();
- 
--	xen_fill_possible_map();
--
- 	if (!alloc_cpumask_var(&xen_cpu_initialized_map, GFP_KERNEL))
- 		panic("could not allocate xen_cpu_initialized_map\n");
- 
-@@ -487,5 +506,6 @@ static const struct smp_ops xen_smp_ops __initdata = {
- void __init xen_smp_init(void)
- {
- 	smp_ops = xen_smp_ops;
-+	xen_fill_possible_map();
- 	xen_init_spinlocks();
- }
+Len Brown (5):
+      intel_idle: simplify test for leave_mm()
+      intel_idle: delete bogus data from cpuidle_state.power_usage
+      acpi_idle: delete bogus data from cpuidle_state.power_usage
+      intel_idle: add initial Sandy Bridge support
+      intel_idle: do not use the LAPIC timer for ATOM C2
+
+with this log:
+
+commit c25d29952b2a8c9aaf00e081c9162a0e383030cd
+Author: Len Brown <len.brown@intel.com>
+Date:   Sat Oct 23 23:25:53 2010 -0400
+
+    intel_idle: do not use the LAPIC timer for ATOM C2
+    
+    If we use the LAPIC timer during ATOM C2 on
+    some nvidia chisets, the system stalls.
+    
+    https://bugzilla.kernel.org/show_bug.cgi?id=21032
+    
+    Signed-off-by: Len Brown <len.brown@intel.com>
+
+commit 00527cc6bbcac05ab7d54c40bda1ff2a0625ab10
+Merge: 0f3f164 d13780d
+Author: Len Brown <len.brown@intel.com>
+Date:   Sat Oct 23 02:33:50 2010 -0400
+
+    Merge branch 'intel_idle+snb' into idle-release
+    
+    Signed-off-by: Len Brown <len.brown@intel.com>
+
+commit d13780d439d08a57c87c1a07b6e76ddde61da1aa
+Author: Len Brown <len.brown@intel.com>
+Date:   Wed Jul 7 00:12:03 2010 -0400
+
+    intel_idle: add initial Sandy Bridge support
+    
+    Signed-off-by: Len Brown <len.brown@intel.com>
+
+commit 0f3f164d9794f57d8afb033819f508a486c1304d
+Author: Len Brown <len.brown@intel.com>
+Date:   Fri Oct 15 21:25:02 2010 -0400
+
+    acpi_idle: delete bogus data from cpuidle_state.power_usage
+    
+    The mW data in this field comes from AML _CST,
+    which was typed in by a BIOS writer, and is thus
+    considered unreliable.
+    
+    Linux does not use it for making any decisions.
+    We do display it in sysfs where somebody might
+    read it and assume it is meaningful, so delete it.
+    
+    Signed-off-by: Len Brown <len.brown@intel.com>
+
+commit dea44c6b7df7f8bb67cb059b4c14b24288c4cd04
+Author: Len Brown <len.brown@intel.com>
+Date:   Fri Oct 15 21:23:25 2010 -0400
+
+    intel_idle: delete bogus data from cpuidle_state.power_usage
+    
+    The mW data in this field is a total fabrication
+    and serves no purpose other than to mislead
+    those who might see it in sysfs.  Delete it.
+    
+    Signed-off-by: Len Brown <len.brown@intel.com>
+
+commit c8381cc3d8a9cc6c80f65bf60863c776651f245c
+Author: Len Brown <len.brown@intel.com>
+Date:   Fri Oct 15 20:43:06 2010 -0400
+
+    intel_idle: simplify test for leave_mm()
+    
+    A run-time test to invoke leave_mm() for the deepest
+    supported C-state is redundant, since the appropriate
+    C-states already have flags with CPUIDLE_FLAG_TLB_FLUSHED set.
+    
+    Signed-off-by: Len Brown <len.brown@intel.com>
