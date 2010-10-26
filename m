@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758289Ab0JZVWW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Oct 2010 17:22:22 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:16634 "EHLO
+	id S1760398Ab0JZVX1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Oct 2010 17:23:27 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:17857 "EHLO
 	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756751Ab0JZVWV (ORCPT
+	with ESMTP id S1758076Ab0JZVX1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Oct 2010 17:22:21 -0400
-Date: Tue, 26 Oct 2010 14:19:08 -0700
+	Tue, 26 Oct 2010 17:23:27 -0400
+Date: Tue, 26 Oct 2010 14:17:25 -0700
 From: Randy Dunlap <randy.dunlap@oracle.com>
 To: lkml <linux-kernel@vger.kernel.org>
-Cc: torvalds <torvalds@linux-foundation.org>, Tejun Heo <tj@kernel.org>
-Subject: [PATCH] docbook: add idr/ida to kernel-api docbook
-Message-Id: <20101026141908.7a1e0e60.randy.dunlap@oracle.com>
+Cc: torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH] docbook: add more wait/wake/completion to device-drivers
+ docbook
+Message-Id: <20101026141725.858a3b12.randy.dunlap@oracle.com>
 Organization: Oracle Linux Eng.
 X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
 Mime-Version: 1.0
@@ -24,186 +25,103 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Randy Dunlap <randy.dunlap@oracle.com>
 
-Add idr/ida to kernel-api docbook.
-Fix typos and kernel-doc notation.
+Add more wait, wake, and completion interfaces to the device-drivers
+docbook.
+
+Fix kernel-doc notation in the added files.
 
 Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
-Acked-by: Tejun Heo <tj@kernel.org>
-Cc: Naohiro Aota <naota@elisp.net>
-Cc: Jiri Kosina <jkosina@suse.cz>
 ---
- Documentation/DocBook/kernel-api.tmpl |    6 ++
- include/linux/idr.h                   |    1 
- lib/idr.c                             |   49 ++++++++++++------------
- 3 files changed, 32 insertions(+), 24 deletions(-)
+ Documentation/DocBook/device-drivers.tmpl |    5 +++++
+ include/linux/completion.h                |   10 +++++-----
+ kernel/wait.c                             |    6 +++---
+ 3 files changed, 13 insertions(+), 8 deletions(-)
 
---- lnx-2636-g6-docs.orig/Documentation/DocBook/kernel-api.tmpl
-+++ lnx-2636-g6-docs/Documentation/DocBook/kernel-api.tmpl
-@@ -93,6 +93,12 @@ X!Ilib/string.c
- !Elib/crc32.c
- !Elib/crc-ccitt.c
+--- lnx-2636-g6-docs.orig/Documentation/DocBook/device-drivers.tmpl
++++ lnx-2636-g6-docs/Documentation/DocBook/device-drivers.tmpl
+@@ -51,8 +51,13 @@
+      <sect1><title>Delaying, scheduling, and timer routines</title>
+ !Iinclude/linux/sched.h
+ !Ekernel/sched.c
++!Iinclude/linux/completion.h
+ !Ekernel/timer.c
       </sect1>
-+
-+     <sect1 id="idr"><title>idr/ida Functions</title>
-+!Pinclude/linux/idr.h idr sync
-+!Plib/idr.c IDA description
-+!Elib/idr.c
++     <sect1><title>Wait queues and Wake events</title>
++!Iinclude/linux/wait.h
++!Ekernel/wait.c
 +     </sect1>
-   </chapter>
+      <sect1><title>High-resolution timers</title>
+ !Iinclude/linux/ktime.h
+ !Iinclude/linux/hrtimer.h
+--- lnx-2636-g6-docs.orig/include/linux/completion.h
++++ lnx-2636-g6-docs/include/linux/completion.h
+@@ -10,7 +10,7 @@
  
-   <chapter id="mm">
---- lnx-2636-g6-docs.orig/include/linux/idr.h
-+++ lnx-2636-g6-docs/include/linux/idr.h
-@@ -81,6 +81,7 @@ struct idr {
- #define _idr_rc_to_errno(rc) ((rc) == -1 ? -EAGAIN : -ENOSPC)
+ #include <linux/wait.h>
+ 
+-/**
++/*
+  * struct completion - structure used to maintain state for a "completion"
+  *
+  * This is the opaque structure used to maintain the state for a "completion".
+@@ -34,7 +34,7 @@ struct completion {
+ 	({ init_completion(&work); work; })
  
  /**
-+ * DOC: idr sync
-  * idr synchronization (stolen from radix-tree.h)
+- * DECLARE_COMPLETION: - declare and initialize a completion structure
++ * DECLARE_COMPLETION - declare and initialize a completion structure
+  * @work:  identifier for the completion structure
   *
-  * idr_find() is able to be called locklessly, using RCU. The caller must
---- lnx-2636-g6-docs.orig/lib/idr.c
-+++ lnx-2636-g6-docs/lib/idr.c
-@@ -106,7 +106,7 @@ static void idr_mark_full(struct idr_lay
+  * This macro declares and initializes a completion structure. Generally used
+@@ -50,7 +50,7 @@ struct completion {
+  * are on the kernel stack:
+  */
+ /**
+- * DECLARE_COMPLETION_ONSTACK: - declare and initialize a completion structure
++ * DECLARE_COMPLETION_ONSTACK - declare and initialize a completion structure
+  * @work:  identifier for the completion structure
+  *
+  * This macro declares and initializes a completion structure on the kernel
+@@ -64,7 +64,7 @@ struct completion {
+ #endif
+ 
+ /**
+- * init_completion: - Initialize a dynamically allocated completion
++ * init_completion - Initialize a dynamically allocated completion
+  * @x:  completion structure that is to be initialized
+  *
+  * This inline function will initialize a dynamically created completion
+@@ -92,7 +92,7 @@ extern void complete(struct completion *
+ extern void complete_all(struct completion *);
+ 
+ /**
+- * INIT_COMPLETION: - reinitialize a completion structure
++ * INIT_COMPLETION - reinitialize a completion structure
+  * @x:  completion structure to be reinitialized
+  *
+  * This macro should be used to reinitialize a completion structure so it can
+--- lnx-2636-g6-docs.orig/kernel/wait.c
++++ lnx-2636-g6-docs/kernel/wait.c
+@@ -92,7 +92,7 @@ prepare_to_wait_exclusive(wait_queue_hea
  }
- 
- /**
-- * idr_pre_get - reserver resources for idr allocation
-+ * idr_pre_get - reserve resources for idr allocation
-  * @idp:	idr handle
-  * @gfp_mask:	memory allocation flags
-  *
-@@ -114,8 +114,8 @@ static void idr_mark_full(struct idr_lay
-  * idr_get_new* functions. It preallocates enough memory to satisfy
-  * the worst possible allocation.
-  *
-- * If the system is REALLY out of memory this function returns 0,
-- * otherwise 1.
-+ * If the system is REALLY out of memory this function returns %0,
-+ * otherwise %1.
-  */
- int idr_pre_get(struct idr *idp, gfp_t gfp_mask)
- {
-@@ -290,11 +290,11 @@ static int idr_get_new_above_int(struct 
-  * This is the allocate id function.  It should be called with any
-  * required locks.
-  *
-- * If memory is required, it will return -EAGAIN, you should unlock
-+ * If memory is required, it will return %-EAGAIN, you should unlock
-  * and go back to the idr_pre_get() call.  If the idr is full, it will
-- * return -ENOSPC.
-+ * return %-ENOSPC.
-  *
-- * @id returns a value in the range @starting_id ... 0x7fffffff
-+ * @id returns a value in the range @starting_id ... %0x7fffffff
-  */
- int idr_get_new_above(struct idr *idp, void *ptr, int starting_id, int *id)
- {
-@@ -321,11 +321,11 @@ EXPORT_SYMBOL(idr_get_new_above);
-  * This is the allocate id function.  It should be called with any
-  * required locks.
-  *
-- * If memory is required, it will return -EAGAIN, you should unlock
-+ * If memory is required, it will return %-EAGAIN, you should unlock
-  * and go back to the idr_pre_get() call.  If the idr is full, it will
-- * return -ENOSPC.
-+ * return %-ENOSPC.
-  *
-- * @id returns a value in the range 0 ... 0x7fffffff
-+ * @id returns a value in the range %0 ... %0x7fffffff
-  */
- int idr_get_new(struct idr *idp, void *ptr, int *id)
- {
-@@ -388,7 +388,7 @@ static void sub_remove(struct idr *idp, 
- }
- 
- /**
-- * idr_remove - remove the given id and free it's slot
-+ * idr_remove - remove the given id and free its slot
-  * @idp: idr handle
-  * @id: unique key
-  */
-@@ -437,7 +437,7 @@ EXPORT_SYMBOL(idr_remove);
-  * function will remove all id mappings and leave all idp_layers
-  * unused.
-  *
-- * A typical clean-up sequence for objects stored in an idr tree, will
-+ * A typical clean-up sequence for objects stored in an idr tree will
-  * use idr_for_each() to free all objects, if necessay, then
-  * idr_remove_all() to remove all ids, and idr_destroy() to free
-  * up the cached idr_layers.
-@@ -542,7 +542,7 @@ EXPORT_SYMBOL(idr_find);
-  * not allowed.
-  *
-  * We check the return of @fn each time. If it returns anything other
-- * than 0, we break out and return that value.
-+ * than %0, we break out and return that value.
-  *
-  * The caller must serialize idr_for_each() vs idr_get_new() and idr_remove().
-  */
-@@ -637,8 +637,8 @@ EXPORT_SYMBOL(idr_get_next);
-  * @id: lookup key
-  *
-  * Replace the pointer registered with an id and return the old value.
-- * A -ENOENT return indicates that @id was not found.
-- * A -EINVAL return indicates that @id was not within valid constraints.
-+ * A %-ENOENT return indicates that @id was not found.
-+ * A %-EINVAL return indicates that @id was not within valid constraints.
-  *
-  * The caller must serialize with writers.
-  */
-@@ -696,10 +696,11 @@ void idr_init(struct idr *idp)
- EXPORT_SYMBOL(idr_init);
- 
+ EXPORT_SYMBOL(prepare_to_wait_exclusive);
  
 -/*
 +/**
-+ * DOC: IDA description
-  * IDA - IDR based ID allocator
+  * finish_wait - clean up after waiting in a queue
+  * @q: waitqueue waited on
+  * @wait: wait descriptor
+@@ -127,11 +127,11 @@ void finish_wait(wait_queue_head_t *q, w
+ }
+ EXPORT_SYMBOL(finish_wait);
+ 
+-/*
++/**
+  * abort_exclusive_wait - abort exclusive waiting in a queue
+  * @q: waitqueue waited on
+  * @wait: wait descriptor
+- * @state: runstate of the waiter to be woken
++ * @mode: runstate of the waiter to be woken
+  * @key: key to identify a wait bit queue or %NULL
   *
-- * this is id allocator without id -> pointer translation.  Memory
-+ * This is id allocator without id -> pointer translation.  Memory
-  * usage is much lower than full blown idr because each id only
-  * occupies a bit.  ida uses a custom leaf node which contains
-  * IDA_BITMAP_BITS slots.
-@@ -732,8 +733,8 @@ static void free_bitmap(struct ida *ida,
-  * following function.  It preallocates enough memory to satisfy the
-  * worst possible allocation.
-  *
-- * If the system is REALLY out of memory this function returns 0,
-- * otherwise 1.
-+ * If the system is REALLY out of memory this function returns %0,
-+ * otherwise %1.
-  */
- int ida_pre_get(struct ida *ida, gfp_t gfp_mask)
- {
-@@ -765,11 +766,11 @@ EXPORT_SYMBOL(ida_pre_get);
-  * Allocate new ID above or equal to @ida.  It should be called with
-  * any required locks.
-  *
-- * If memory is required, it will return -EAGAIN, you should unlock
-+ * If memory is required, it will return %-EAGAIN, you should unlock
-  * and go back to the ida_pre_get() call.  If the ida is full, it will
-- * return -ENOSPC.
-+ * return %-ENOSPC.
-  *
-- * @p_id returns a value in the range @starting_id ... 0x7fffffff.
-+ * @p_id returns a value in the range @starting_id ... %0x7fffffff.
-  */
- int ida_get_new_above(struct ida *ida, int starting_id, int *p_id)
- {
-@@ -851,11 +852,11 @@ EXPORT_SYMBOL(ida_get_new_above);
-  *
-  * Allocate new ID.  It should be called with any required locks.
-  *
-- * If memory is required, it will return -EAGAIN, you should unlock
-+ * If memory is required, it will return %-EAGAIN, you should unlock
-  * and go back to the idr_pre_get() call.  If the idr is full, it will
-- * return -ENOSPC.
-+ * return %-ENOSPC.
-  *
-- * @id returns a value in the range 0 ... 0x7fffffff.
-+ * @id returns a value in the range %0 ... %0x7fffffff.
-  */
- int ida_get_new(struct ida *ida, int *p_id)
- {
+  * Sets current thread back to running state and removes
