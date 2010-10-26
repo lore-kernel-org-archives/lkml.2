@@ -1,90 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933201Ab0JZNjs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Oct 2010 09:39:48 -0400
-Received: from mognix.dark-green.com ([88.116.226.179]:65311 "EHLO
-	mognix.dark-green.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751529Ab0JZNjq (ORCPT
+	id S933270Ab0JZNkF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Oct 2010 09:40:05 -0400
+Received: from mxout1.idt.com ([157.165.5.25]:60872 "EHLO mxout1.idt.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933243Ab0JZNkB convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Oct 2010 09:39:46 -0400
+	Tue, 26 Oct 2010 09:40:01 -0400
+X-MimeOLE: Produced By Microsoft Exchange V6.5
+Content-class: urn:content-classes:message
 MIME-Version: 1.0
-Date: Tue, 26 Oct 2010 15:07:07 +0200
-From: gimli <gimli@dark-green.com>
-To: <linux-kernel@vger.kernel.org>
-Subject: [PATCH 2/4] MacbookAir3,1 and 3,2 bcm5974 touchpad support take 3
-Message-ID: <b6f229aa4abfeb0a9425cca1ac2c1a5e@mognix.dark-green.com>
-User-Agent: RoundCube Webmail/0.2.2
-Content-Type: multipart/mixed;
-	boundary="=_014690d11a70e30db6216fc9ec4c8d68"
+Content-Type: text/plain;
+	charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+Subject: RE: [PATCH -mm 0/2] RapidIO: Changes to handling of RIO switches
+Date: Tue, 26 Oct 2010 06:39:29 -0700
+Message-ID: <0CE8B6BE3C4AD74AB97D9D29BD24E5520147D879@CORPEXCH1.na.ads.idt.com>
+In-Reply-To: <4CC5E354.80009@neli.hopto.org>
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+Thread-Topic: [PATCH -mm 0/2] RapidIO: Changes to handling of RIO switches
+Thread-Index: Act0gD3/+Nm/2BT+R2SDOERtjMDD5gAIpXFg
+References: <1287688250-14226-1-git-send-email-alexandre.bounine@idt.com> <4CC0AD74.8070800@neli.hopto.org> <0CE8B6BE3C4AD74AB97D9D29BD24E55201445906@CORPEXCH1.na.ads.idt.com> <4CC1D7DE.7060405@neli.hopto.org> <0CE8B6BE3C4AD74AB97D9D29BD24E55201445A6B@CORPEXCH1.na.ads.idt.com> <4CC20923.8050400@neli.hopto.org> <0CE8B6BE3C4AD74AB97D9D29BD24E55201445BA4@CORPEXCH1.na.ads.idt.com> <4CC5ACAB.7070309@neli.hopto.org> <0CE8B6BE3C4AD74AB97D9D29BD24E5520147D5C2@CORPEXCH1.na.ads.idt.com> <4CC5E354.80009@neli.hopto.org>
+From: "Bounine, Alexandre" <Alexandre.Bounine@idt.com>
+To: "Micha Nelissen" <micha@neli.hopto.org>
+Cc: <akpm@linux-foundation.org>, <linux-kernel@vger.kernel.org>,
+        <linuxppc-dev@lists.ozlabs.org>,
+        "Matt Porter" <mporter@kernel.crashing.org>,
+        "Li Yang" <leoli@freescale.com>,
+        "Kumar Gala" <galak@kernel.crashing.org>,
+        "Thomas Moll" <thomas.moll@sysgo.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---=_014690d11a70e30db6216fc9ec4c8d68
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset="UTF-8"
+Micha Nelissen <micha@neli.hopto.org> wrote:
+> 
+> I look at it this way: it prevents the need for another layer of
+> indirection: translating component tag to a destid.
 
-Sorry for the noise. Now the real patch.
+The destid alone is not enough. You will need an entire rio_dev object
+for that device anyway.
 
-This patch adds support for the new MacBookAir3,1 and 3,2 to the bcm5974
-touchpad driver.
+> 
+> Why no relation? My experience is that during debugging it's useful to
+> have the destid directly at hand, it's just very practical. (Otherwise
+> any drawing of a random network would need two "identification"
+numbers
+> per drawn node: the component tag (true identification), and destid
+> since that's what everyone uses to identify a device, what needs to
+> programmed into the LUTs of a switch, identification in sysfs, etc.).
 
-Signed-off-by: Edgar (gimli) Hucek <gimli@dark-green.com>
---=_014690d11a70e30db6216fc9ec4c8d68
-Content-Transfer-Encoding: base64
-Content-Type: text/plain; charset="UTF-8";
- name="bcm5974_macbookair.patch"; 
-Content-Disposition: attachment;
- filename="bcm5974_macbookair.patch"; 
+I think we are mixing two things together here. I understand your idea
+but do not see how it prevents me from having one common set of access
+coordinates for RIO devices (the starting point of our discussion). 
 
-ZGlmZiAtdU5yIGxpbnV4LTIuNi4zNS9kcml2ZXJzL2lucHV0L21vdXNlL2JjbTU5NzQuYyBsaW51
-eC0yLjYuMzUtTWFjYm9va0Fpci9kcml2ZXJzL2lucHV0L21vdXNlL2JjbTU5NzQuYwotLS0gbGlu
-dXgtMi42LjM1L2RyaXZlcnMvaW5wdXQvbW91c2UvYmNtNTk3NC5jCTIwMTAtMTAtMjMgMDY6NTk6
-MzEuMDAwMDAwMDAwICswMjAwCisrKyBsaW51eC0yLjYuMzUtTWFjYm9va0Fpci9kcml2ZXJzL2lu
-cHV0L21vdXNlL2JjbTU5NzQuYwkyMDEwLTEwLTI0IDA3OjM4OjE1Ljc5NTY3OTAwMiArMDIwMApA
-QCAtNTUsNiArNTUsMTQgQEAKICNkZWZpbmUgVVNCX0RFVklDRV9JRF9BUFBMRV9XRUxMU1BSSU5H
-M19BTlNJCTB4MDIzNgogI2RlZmluZSBVU0JfREVWSUNFX0lEX0FQUExFX1dFTExTUFJJTkczX0lT
-TwkweDAyMzcKICNkZWZpbmUgVVNCX0RFVklDRV9JRF9BUFBMRV9XRUxMU1BSSU5HM19KSVMJMHgw
-MjM4CisvKiBNYWNib29rQWlyMywxICh1bmlib2R5KSwgYWthIHdlbGxzcHJpbmc0ICovCisjZGVm
-aW5lIFVTQl9ERVZJQ0VfSURfQVBQTEVfV0VMTFNQUklORzRfQU5TSQkweDAyNDIKKyNkZWZpbmUg
-VVNCX0RFVklDRV9JRF9BUFBMRV9XRUxMU1BSSU5HNF9JU08JMHgwMjQzCisjZGVmaW5lIFVTQl9E
-RVZJQ0VfSURfQVBQTEVfV0VMTFNQUklORzRfSklTCTB4MDI0NAorLyogTWFjYm9va0FpcjMsMiAo
-dW5pYm9keSksIGFrYSB3ZWxsc3ByaW5nNSAqLworI2RlZmluZSBVU0JfREVWSUNFX0lEX0FQUExF
-X1dFTExTUFJJTkc1X0FOU0kJMHgwMjNmCisjZGVmaW5lIFVTQl9ERVZJQ0VfSURfQVBQTEVfV0VM
-TFNQUklORzVfSVNPCTB4MDI0MAorI2RlZmluZSBVU0JfREVWSUNFX0lEX0FQUExFX1dFTExTUFJJ
-Tkc1X0pJUwkweDAyNDEKIAogI2RlZmluZSBCQ001OTc0X0RFVklDRShwcm9kKSB7CQkJCQlcCiAJ
-Lm1hdGNoX2ZsYWdzID0gKFVTQl9ERVZJQ0VfSURfTUFUQ0hfREVWSUNFIHwJCVwKQEAgLTgwLDYg
-Kzg4LDE0IEBACiAJQkNNNTk3NF9ERVZJQ0UoVVNCX0RFVklDRV9JRF9BUFBMRV9XRUxMU1BSSU5H
-M19BTlNJKSwKIAlCQ001OTc0X0RFVklDRShVU0JfREVWSUNFX0lEX0FQUExFX1dFTExTUFJJTkcz
-X0lTTyksCiAJQkNNNTk3NF9ERVZJQ0UoVVNCX0RFVklDRV9JRF9BUFBMRV9XRUxMU1BSSU5HM19K
-SVMpLAorCS8qIE1hY2Jvb2tBaXIzLDEgKi8KKwlCQ001OTc0X0RFVklDRShVU0JfREVWSUNFX0lE
-X0FQUExFX1dFTExTUFJJTkc0X0FOU0kpLAorCUJDTTU5NzRfREVWSUNFKFVTQl9ERVZJQ0VfSURf
-QVBQTEVfV0VMTFNQUklORzRfSVNPKSwKKwlCQ001OTc0X0RFVklDRShVU0JfREVWSUNFX0lEX0FQ
-UExFX1dFTExTUFJJTkc0X0pJUyksCisJLyogTWFjYm9va0FpcjMsMiAqLworCUJDTTU5NzRfREVW
-SUNFKFVTQl9ERVZJQ0VfSURfQVBQTEVfV0VMTFNQUklORzVfQU5TSSksCisJQkNNNTk3NF9ERVZJ
-Q0UoVVNCX0RFVklDRV9JRF9BUFBMRV9XRUxMU1BSSU5HNV9JU08pLAorCUJDTTU5NzRfREVWSUNF
-KFVTQl9ERVZJQ0VfSURfQVBQTEVfV0VMTFNQUklORzVfSklTKSwKIAkvKiBUZXJtaW5hdGluZyBl
-bnRyeSAqLwogCXt9CiB9OwpAQCAtMjI5LDYgKzI0NSwzMCBAQAogCQlIQVNfSU5URUdSQVRFRF9C
-VVRUT04sCiAJCTB4ODQsIHNpemVvZihzdHJ1Y3QgYnRfZGF0YSksCiAJCTB4ODEsIFRZUEUyLCBG
-SU5HRVJfVFlQRTIsIEZJTkdFUl9UWVBFMiArIFNJWkVPRl9BTExfRklOR0VSUywKKwkJeyBESU1f
-UFJFU1NVUkUsIERJTV9QUkVTU1VSRSAvIFNOX1BSRVNTVVJFLCAwLCAzMDAgfSwKKwkJeyBESU1f
-V0lEVEgsIERJTV9XSURUSCAvIFNOX1dJRFRILCAwLCAyMDQ4IH0sCisJCXsgRElNX1gsIERJTV9Y
-IC8gU05fQ09PUkQsIC00NDYwLCA1MTY2IH0sCisJCXsgRElNX1ksIERJTV9ZIC8gU05fQ09PUkQs
-IC03NSwgNjcwMCB9CisJfSwKKwl7CisJCVVTQl9ERVZJQ0VfSURfQVBQTEVfV0VMTFNQUklORzRf
-QU5TSSwKKwkJVVNCX0RFVklDRV9JRF9BUFBMRV9XRUxMU1BSSU5HNF9JU08sCisJCVVTQl9ERVZJ
-Q0VfSURfQVBQTEVfV0VMTFNQUklORzRfSklTLAorCQlIQVNfSU5URUdSQVRFRF9CVVRUT04sCisJ
-CTB4ODQsIHNpemVvZihzdHJ1Y3QgYnRfZGF0YSksCisJCTB4ODEsIFRZUEUyLCBGSU5HRVJfVFlQ
-RTIsIEZJTkdFUl9UWVBFMiArIFNJWkVPRl9BTExfRklOR0VSUywKKwkJeyBESU1fUFJFU1NVUkUs
-IERJTV9QUkVTU1VSRSAvIFNOX1BSRVNTVVJFLCAwLCAzMDAgfSwKKwkJeyBESU1fV0lEVEgsIERJ
-TV9XSURUSCAvIFNOX1dJRFRILCAwLCAyMDQ4IH0sCisJCXsgRElNX1gsIERJTV9YIC8gU05fQ09P
-UkQsIC00NDYwLCA1MTY2IH0sCisJCXsgRElNX1ksIERJTV9ZIC8gU05fQ09PUkQsIC03NSwgNjcw
-MCB9CisJfSwKKwl7CisJCVVTQl9ERVZJQ0VfSURfQVBQTEVfV0VMTFNQUklORzVfQU5TSSwKKwkJ
-VVNCX0RFVklDRV9JRF9BUFBMRV9XRUxMU1BSSU5HNV9JU08sCisJCVVTQl9ERVZJQ0VfSURfQVBQ
-TEVfV0VMTFNQUklORzVfSklTLAorCQlIQVNfSU5URUdSQVRFRF9CVVRUT04sCisJCTB4ODQsIHNp
-emVvZihzdHJ1Y3QgYnRfZGF0YSksCisJCTB4ODEsIFRZUEUyLCBGSU5HRVJfVFlQRTIsIEZJTkdF
-Ul9UWVBFMiArIFNJWkVPRl9BTExfRklOR0VSUywKIAkJeyBESU1fUFJFU1NVUkUsIERJTV9QUkVT
-U1VSRSAvIFNOX1BSRVNTVVJFLCAwLCAzMDAgfSwKIAkJeyBESU1fV0lEVEgsIERJTV9XSURUSCAv
-IFNOX1dJRFRILCAwLCAyMDQ4IH0sCiAJCXsgRElNX1gsIERJTV9YIC8gU05fQ09PUkQsIC00NDYw
-LCA1MTY2IH0sCg==
---=_014690d11a70e30db6216fc9ec4c8d68--
+Regardless of an implementation, having a way that ensures unified
+identification of switches by all processor boards is better than the
+current mainline implementation. Methods of forming a component tag may
+differ but still serve the same purpose. Personally I prefer to avoid
+any link of device identification to the destid because it may not be as
+intuitive as it seems for large systems with hot-plug. I will discuss
+this with some of RIO TWG guys to get their opinion on the best
+approach.
 
+I will make a patch that defines fields of component tag, probably just
+one for now - identification field. This will ensure that any method
+used to assign component tag (id part of it) will be compatible with RIO
+spec part 8 error management.
+
+As for switch identification, at this moment I still prefer replacing
+rswitch->switchid with ID portion of the component tag because it is
+very simple and does not require changes to enumeration algorithm.   
+
+Alex.
+
+           
