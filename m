@@ -1,63 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758906Ab0JZJqO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Oct 2010 05:46:14 -0400
-Received: from casper.infradead.org ([85.118.1.10]:54670 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758816Ab0JZJqM convert rfc822-to-8bit (ORCPT
+	id S1758926Ab0JZJrm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Oct 2010 05:47:42 -0400
+Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:32012 "EHLO
+	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758893Ab0JZJrk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Oct 2010 05:46:12 -0400
-Subject: Re: [PATCH 5/6] Export ns irqtimes through /proc/stat -v1
-From: Peter Zijlstra <peterz@infradead.org>
-To: Venkatesh Pallipadi <venki@google.com>
-Cc: Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        linux-kernel@vger.kernel.org, Paul Turner <pjt@google.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Shaun Ruffell <sruffell@digium.com>,
-        Yong Zhang <yong.zhang0@gmail.com>
-In-Reply-To: <1288045817-3135-6-git-send-email-venki@google.com>
-References: <1288045817-3135-1-git-send-email-venki@google.com>
-	 <1288045817-3135-6-git-send-email-venki@google.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Tue, 26 Oct 2010 11:45:50 +0200
-Message-ID: <1288086350.15336.123.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Tue, 26 Oct 2010 05:47:40 -0400
+Message-ID: <001c01cb74f2$d3dd8990$66f8800a@maildom.okisemi.com>
+From: "Tomoya MORINAGA" <tomoya-linux@dsn.okisemi.com>
+To: "Jean Delvare" <khali@linux-fr.org>
+Cc: "Samuel Ortiz" <sameo@linux.intel.com>,
+        "Wolfram Sang" <w.sang@pengutronix.de>,
+        "Ralf Baechle" <ralf@linux-mips.org>, <linux-i2c@vger.kernel.org>,
+        "LKML" <linux-kernel@vger.kernel.org>,
+        "Ben Dooks \(embedded platforms\)" <ben-linux@fluff.org>,
+        "Linus Walleij" <linus.walleij@stericsson.com>,
+        "srinidhi kasagar" <srinidhi.kasagar@stericsson.com>,
+        "Tomoya MORINAGA" <morinaga526@dsn.okisemi.com>,
+        "Wang Qi\"" <qi.wang@intel.com>,
+        "Wang Yong Y\"" <yong.y.wang@intel.com>, <kok.howg.ewe@intel.com>,
+        <joel.clark@intel.com>, <andrew.chih.howe.khor@intel.com>
+References: <4CC645A1.5010509@dsn.okisemi.com><20101026102048.316d0c04@endymion.delvare><001a01cb74ec$e3eb3ea0$66f8800a@maildom.okisemi.com> <20101026111322.738b0b14@endymion.delvare>
+Subject: Re: [PATCH v3] Topcliff: Update PCH_I2C driver to 2.6.36
+Date: Tue, 26 Oct 2010 18:47:37 +0900
+MIME-Version: 1.0
+Content-Type: text/plain;
+	charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Priority: 3
+X-MSMail-Priority: Normal
+X-Mailer: Microsoft Outlook Express 6.00.2800.1983
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2800.1983
+X-Hosting-Pf: 0
+X-NAI-Spam-Score: 1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-10-25 at 15:30 -0700, Venkatesh Pallipadi wrote:
-> +static void irqtime_account_process_tick(struct task_struct *p, int user_tick,
-> +                                               struct rq *rq)
-> +{
-> +       cputime_t one_jiffy_scaled = cputime_to_scaled(cputime_one_jiffy);
-> +       cputime64_t tmp = cputime_to_cputime64(cputime_one_jiffy);
-> +       struct cpu_usage_stat *cpustat = &kstat_this_cpu.cpustat;
-> +
-> +       if (irqtime_account_hi_update()) {
-> +               cpustat->irq = cputime64_add(cpustat->irq, tmp);
-> +       } else if (irqtime_account_si_update()) {
-> +               cpustat->softirq = cputime64_add(cpustat->softirq, tmp);
-> +       } else 
+Hi Jean,
 
-I'm still not sure about this else stmt, the above two conditions can
-basically 'eat' user/system ticks. What we need to show is that there is
-no bias towards either kind so the ratio is not affected -- can we make
-such an argument?
+On Tuesday, October 26, 2010 6:13 PM, Jean Delvare wrote:
+> The _pch becomes redundant then, i2c-topcliff.c would be enough, but
+> both are fine with me, as my initial concern is gone.
+I agree.
+I will modify to "i2c-topcliff.c".
 
->                if (user_tick) {
-> +               account_user_time(p, cputime_one_jiffy, one_jiffy_scaled);
-> +       } else if (p == rq->idle) {
-> +               account_idle_time(cputime_one_jiffy);
-> +       } else if (p->flags & PF_VCPU) { /* System time or guest time */
-> +               account_guest_time(p, cputime_one_jiffy, one_jiffy_scaled);
-> +       } else {
-> +               __account_system_time(p, cputime_one_jiffy, one_jiffy_scaled,
-> +                                       &cpustat->system);
-> +       }
-> +} 
+> There's no Reviewed-by, Acked-by or Signed-off-by from anyone at Intel
+> in the patch you posted. 
+Must we get Intel's signature ? 
+We have already got the following. Isn't  this enough ?
+> Reviewed-by: Linus Walleij <linus.walleij@stericsson.com>
+
+Though I haven't heard like the requirement,
+if Intel's signature is mandatory, I will request to Intel.
+
+Thanks, Tomoya(OKI SEMICONDUCTOR CO., LTD.)
