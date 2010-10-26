@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754275Ab0JZAjm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Oct 2010 20:39:42 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:55231 "EHLO comal.ext.ti.com"
+	id S1755035Ab0JZAj4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Oct 2010 20:39:56 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:55398 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751914Ab0JZAia (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1751265Ab0JZAia (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 25 Oct 2010 20:38:30 -0400
 From: Fernando Guzman Lugo <x0095840@ti.com>
 To: <gregkh@suse.de>
@@ -12,159 +12,112 @@ Cc: <felipe.contreras@nokia.com>, <Hiroshi.DOYU@nokia.com>,
         <linux-kernel@vger.kernel.org>, <andy.shevchenko@gmail.com>,
         <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
         Fernando Guzman Lugo <x0095840@ti.com>
-Subject: [PATCH 1/8] staging: tidspbridge - remove req_addr from proc_map
-Date: Mon, 25 Oct 2010 19:51:39 -0500
-Message-Id: <1288054306-4361-2-git-send-email-x0095840@ti.com>
+Subject: [PATCH 2/8] staging: tidspbridge - add kconfig parameter for DMM size
+Date: Mon, 25 Oct 2010 19:51:40 -0500
+Message-Id: <1288054306-4361-3-git-send-email-x0095840@ti.com>
 X-Mailer: git-send-email 1.6.3.3
-In-Reply-To: <1288054306-4361-1-git-send-email-x0095840@ti.com>
+In-Reply-To: <1288054306-4361-2-git-send-email-x0095840@ti.com>
 References: <1288054306-4361-1-git-send-email-x0095840@ti.com>
+ <1288054306-4361-2-git-send-email-x0095840@ti.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The device address is assigned by tidspbridge no need for that parameter anymore.
+A new kconfig parameter for DMM size is added. Also DMM is
+allocated after the end of SHM area. So that the checks on
+DSP are still valid and we avoid using areas between SHM
+which are not mapped reducing the probability of shared
+memory corruption.
+
+NOTE: This patch has a dependency on this patch:
+
+"omap: iommu - create new api to set valid da range"
 
 Signed-off-by: Fernando Guzman Lugo <x0095840@ti.com>
 ---
- .../tidspbridge/include/dspbridge/dspapi-ioctl.h   |    1 -
- .../staging/tidspbridge/include/dspbridge/proc.h   |    3 --
- drivers/staging/tidspbridge/pmgr/dspapi.c          |    2 +-
- drivers/staging/tidspbridge/rmgr/node.c            |    2 +-
- drivers/staging/tidspbridge/rmgr/proc.c            |   25 +++++++++----------
- 5 files changed, 14 insertions(+), 19 deletions(-)
+ drivers/staging/tidspbridge/Kconfig                |    8 ++++++++
+ drivers/staging/tidspbridge/core/tiomap3430.c      |   20 ++++++++++++++++++--
+ .../tidspbridge/include/dspbridge/dsp-mmu.h        |    3 +++
+ 3 files changed, 29 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/staging/tidspbridge/include/dspbridge/dspapi-ioctl.h b/drivers/staging/tidspbridge/include/dspbridge/dspapi-ioctl.h
-index 8da5bd8..db06468 100644
---- a/drivers/staging/tidspbridge/include/dspbridge/dspapi-ioctl.h
-+++ b/drivers/staging/tidspbridge/include/dspbridge/dspapi-ioctl.h
-@@ -138,7 +138,6 @@ union trapped_args {
- 		void *hprocessor;
- 		void *pmpu_addr;
- 		u32 ul_size;
--		void *req_addr;
- 		void *__user *pp_map_addr;
- 		u32 ul_map_attr;
- 	} args_proc_mapmem;
-diff --git a/drivers/staging/tidspbridge/include/dspbridge/proc.h b/drivers/staging/tidspbridge/include/dspbridge/proc.h
-index 2d12aab..74344bd 100644
---- a/drivers/staging/tidspbridge/include/dspbridge/proc.h
-+++ b/drivers/staging/tidspbridge/include/dspbridge/proc.h
-@@ -524,8 +524,6 @@ extern int proc_invalidate_memory(void *hprocessor,
-  *      hprocessor      :   The processor handle.
-  *      pmpu_addr	:   Starting address of the memory region to map.
-  *      ul_size	  :   Size of the memory region to map.
-- *      req_addr	:   Requested DSP start address. Offset-adjusted actual
-- *			  mapped address is in the last argument.
-  *      pp_map_addr       :   Ptr to DSP side mapped u8 address.
-  *      ul_map_attr       :   Optional endianness attributes, virt to phys flag.
-  *  Returns:
-@@ -546,7 +544,6 @@ extern int proc_invalidate_memory(void *hprocessor,
- extern int proc_map(void *hprocessor,
- 			   void *pmpu_addr,
- 			   u32 ul_size,
--			   void *req_addr,
- 			   void **pp_map_addr, u32 ul_map_attr,
- 			   struct process_context *pr_ctxt);
+diff --git a/drivers/staging/tidspbridge/Kconfig b/drivers/staging/tidspbridge/Kconfig
+index 672008f..37e47f5 100644
+--- a/drivers/staging/tidspbridge/Kconfig
++++ b/drivers/staging/tidspbridge/Kconfig
+@@ -42,6 +42,14 @@ config TIDSPBRIDGE_MEMPOOL_SIZE
+ 	  Allocate specified size of memory at booting time to avoid allocation
+ 	  failure under heavy memory fragmentation after some use time.
  
-diff --git a/drivers/staging/tidspbridge/pmgr/dspapi.c b/drivers/staging/tidspbridge/pmgr/dspapi.c
-index 0187c47..d1e1185 100644
---- a/drivers/staging/tidspbridge/pmgr/dspapi.c
-+++ b/drivers/staging/tidspbridge/pmgr/dspapi.c
-@@ -952,7 +952,7 @@ u32 procwrap_map(union trapped_args *args, void *pr_ctxt)
- 	status = proc_map(args->args_proc_mapmem.hprocessor,
- 			  args->args_proc_mapmem.pmpu_addr,
- 			  args->args_proc_mapmem.ul_size,
--			  args->args_proc_mapmem.req_addr, &map_addr,
-+			  &map_addr,
- 			  args->args_proc_mapmem.ul_map_attr, pr_ctxt);
- 	if (!status) {
- 		if (put_user(map_addr, args->args_proc_mapmem.pp_map_addr)) {
-diff --git a/drivers/staging/tidspbridge/rmgr/node.c b/drivers/staging/tidspbridge/rmgr/node.c
-index a660247..3f5abcf 100644
---- a/drivers/staging/tidspbridge/rmgr/node.c
-+++ b/drivers/staging/tidspbridge/rmgr/node.c
-@@ -430,7 +430,7 @@ int node_allocate(struct proc_object *hprocessor,
- 	map_attrs |= DSP_MAPVIRTUALADDR;
- 	status = proc_map(hprocessor, (void *)attr_in->pgpp_virt_addr,
- 			  pnode->create_args.asa.task_arg_obj.heap_size,
--			  NULL, (void **)&mapped_addr, map_attrs,
-+			  (void **)&mapped_addr, map_attrs,
- 			  pr_ctxt);
- 	if (status)
- 		pr_err("%s: Failed to map memory for Heap: 0x%x\n",
-diff --git a/drivers/staging/tidspbridge/rmgr/proc.c b/drivers/staging/tidspbridge/rmgr/proc.c
-index 7a15a02..5e5eb75 100644
---- a/drivers/staging/tidspbridge/rmgr/proc.c
-+++ b/drivers/staging/tidspbridge/rmgr/proc.c
-@@ -1314,10 +1314,10 @@ func_end:
-  *      Maps a MPU buffer to DSP address space.
-  */
- int proc_map(void *hprocessor, void *pmpu_addr, u32 ul_size,
--		    void *req_addr, void **pp_map_addr, u32 ul_map_attr,
-+		    void **pp_map_addr, u32 ul_map_attr,
- 		    struct process_context *pr_ctxt)
- {
--	u32 va_align;
-+	u32 da;
- 	u32 pa_align;
- 	u32 size_align;
- 	int status = 0;
-@@ -1336,7 +1336,6 @@ int proc_map(void *hprocessor, void *pmpu_addr, u32 ul_size,
- #endif
- 
- 	/* Calculate the page-aligned PA, VA and size */
--	va_align = PG_ALIGN_LOW((u32) req_addr, PG_SIZE4K);
- 	pa_align = PG_ALIGN_LOW((u32) pmpu_addr, PG_SIZE4K);
- 	size_align = PG_ALIGN_HIGH(ul_size + (u32) pmpu_addr - pa_align,
- 				   PG_SIZE4K);
-@@ -1351,26 +1350,26 @@ int proc_map(void *hprocessor, void *pmpu_addr, u32 ul_size,
- 	/* Add mapping to the page tables. */
- 	if (!status) {
- 		/* mapped memory resource tracking */
--		map_obj = add_mapping_info(pr_ctxt, pa_align, va_align,
-+		map_obj = add_mapping_info(pr_ctxt, pa_align, 0,
- 						size_align);
- 		if (!map_obj) {
- 			status = -ENOMEM;
- 		} else {
--			va_align = user_to_dsp_map(
-+			da = user_to_dsp_map(
- 				p_proc_object->hbridge_context->dsp_mmu,
--				pa_align, va_align, size_align,
-+				pa_align, 0, size_align,
- 				map_obj->pages);
--			if (IS_ERR_VALUE(va_align))
--				status = (int)va_align;
-+			if (IS_ERR_VALUE(da))
-+				status = (int)da;
++config TIDSPBRIDGE_DMM_SIZE
++	hex "DMM capable memory size (Byte)"
++	depends on TIDSPBRIDGE
++	default "0x10000000"
++	help
++	  Memory size of DSP virtual address for Dynamic Memory Mapping.
++	  Please make sure the size is 4K aligned.
++
+ config TIDSPBRIDGE_DEBUG
+ 	bool "Debug Support"
+ 	depends on TIDSPBRIDGE
+diff --git a/drivers/staging/tidspbridge/core/tiomap3430.c b/drivers/staging/tidspbridge/core/tiomap3430.c
+index c28dcf1..88c8c71 100644
+--- a/drivers/staging/tidspbridge/core/tiomap3430.c
++++ b/drivers/staging/tidspbridge/core/tiomap3430.c
+@@ -345,7 +345,6 @@ static int bridge_brd_start(struct bridge_dev_context *dev_ctxt,
+ 					OMAP343X_CONTROL_IVA2_BOOTMOD));
  		}
  	}
+-
  	if (!status) {
- 		/* Mapped address = MSB of VA | LSB of PA */
--		map_obj->dsp_addr = (va_align |
-+		map_obj->dsp_addr = (da |
- 					((u32)pmpu_addr & (PG_SIZE4K - 1)));
- 		*pp_map_addr = (void *)map_obj->dsp_addr;
- 	} else {
--		remove_mapping_information(pr_ctxt, va_align);
-+		remove_mapping_information(pr_ctxt, 0);
+ 		(*pdata->dsp_prm_rmw_bits)(OMAP3430_RST2_IVA2_MASK, 0,
+ 					OMAP3430_IVA2_MOD, OMAP2_RM_RSTCTRL);
+@@ -362,6 +361,11 @@ static int bridge_brd_start(struct bridge_dev_context *dev_ctxt,
+ 	if (!status) {
+ 		dev_context->dsp_mmu = mmu;
+ 		sm_sg = &dev_context->sh_s;
++		/* Set valid range to map shared memory */
++		status = iommu_set_da_range(mmu, sm_sg->seg0_da,
++					sm_sg->seg1_da + sm_sg->seg1_size);
++	}
++	if (!status) {
+ 		sg0_da = iommu_kmap(mmu, sm_sg->seg0_da, sm_sg->seg0_pa,
+ 			sm_sg->seg0_size, IOVMF_ENDIAN_LITTLE | IOVMF_ELSZ_32);
+ 		if (IS_ERR_VALUE(sg0_da)) {
+@@ -411,7 +415,19 @@ static int bridge_brd_start(struct bridge_dev_context *dev_ctxt,
+ 			l4_i++;
+ 		}
  	}
- 	mutex_unlock(&proc_lock);
+-
++	if (!status) {
++		/* Set valid range for DMM mappings */
++		if (MAX_DSP_MMU_DA - CONFIG_TIDSPBRIDGE_DMM_SIZE <
++					sm_sg->seg1_da + sm_sg->seg1_size) {
++			dev_err(bridge, "DMM size too big!\n");
++			status = -ENOMEM;
++		} else {
++			status = iommu_set_da_range(mmu,
++				sm_sg->seg1_da + sm_sg->seg1_size,
++				sm_sg->seg1_da + sm_sg->seg1_size +
++				CONFIG_TIDSPBRIDGE_DMM_SIZE);
++		}
++	}
+ 	/* Lock the above TLB entries and get the BIOS and load monitor timer
+ 	 * information */
+ 	if (!status) {
+diff --git a/drivers/staging/tidspbridge/include/dspbridge/dsp-mmu.h b/drivers/staging/tidspbridge/include/dspbridge/dsp-mmu.h
+index cb38d4c..bbbe9e6 100644
+--- a/drivers/staging/tidspbridge/include/dspbridge/dsp-mmu.h
++++ b/drivers/staging/tidspbridge/include/dspbridge/dsp-mmu.h
+@@ -22,6 +22,9 @@
+ #include <plat/iommu.h>
+ #include <plat/iovmm.h>
  
-@@ -1379,10 +1378,10 @@ int proc_map(void *hprocessor, void *pmpu_addr, u32 ul_size,
- 
- func_end:
- 	dev_dbg(bridge, "%s: hprocessor %p, pmpu_addr %p, ul_size %x, "
--		"req_addr %p, ul_map_attr %x, pp_map_addr %p, va_align %x, "
-+		"ul_map_attr %x, pp_map_addr %p, "
- 		"pa_align %x, size_align %x status 0x%x\n", __func__,
--		hprocessor, pmpu_addr, ul_size, req_addr, ul_map_attr,
--		pp_map_addr, va_align, pa_align, size_align, status);
-+		hprocessor, pmpu_addr, ul_size, ul_map_attr,
-+		pp_map_addr, pa_align, size_align, status);
- 
- 	return status;
- }
++/* Last patch is not mapped to detect buffer overflow in DSP side */
++#define MAX_DSP_MMU_DA 0xFFFFF000
++
+ /**
+  * dsp_mmu_init() - initialize dsp_mmu module and returns a handle
+  *
 -- 
 1.6.3.3
 
