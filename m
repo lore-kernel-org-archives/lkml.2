@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933118Ab0JZT5r (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Oct 2010 15:57:47 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:39482 "EHLO
+	id S1760321Ab0JZT5z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Oct 2010 15:57:55 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:39489 "EHLO
 	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760135Ab0JZT5h (ORCPT
+	with ESMTP id S1760165Ab0JZT5x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Oct 2010 15:57:37 -0400
+	Tue, 26 Oct 2010 15:57:53 -0400
 From: =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
 	<u.kleine-koenig@pengutronix.de>
 To: trivial@kernel.org
 Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH 19/22] trivial: fix typos concerning "registration"
-Date: Tue, 26 Oct 2010 21:57:16 +0200
-Message-Id: <1288123039-22368-19-git-send-email-u.kleine-koenig@pengutronix.de>
+Subject: [PATCH 17/22] trivial: fix typos concerning "memory"
+Date: Tue, 26 Oct 2010 21:57:14 +0200
+Message-Id: <1288123039-22368-17-git-send-email-u.kleine-koenig@pengutronix.de>
 X-Mailer: git-send-email 1.7.2.3
 In-Reply-To: <1288123039-22368-1-git-send-email-u.kleine-koenig@pengutronix.de>
 References: <1288123039-22368-1-git-send-email-u.kleine-koenig@pengutronix.de>
@@ -30,155 +30,162 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
 ---
- arch/arm/common/vic.c             |    2 +-
- arch/arm/mach-spear3xx/spear300.c |    4 ++--
- arch/arm/mach-spear3xx/spear310.c |    2 +-
- arch/arm/mach-spear3xx/spear320.c |    2 +-
- arch/arm/mach-spear3xx/spear3xx.c |    6 +++---
- arch/arm/mach-spear6xx/spear6xx.c |    4 ++--
- net/core/dev.c                    |    2 +-
- sound/core/init.c                 |    2 +-
- 8 files changed, 12 insertions(+), 12 deletions(-)
+ arch/arm/mach-u300/Kconfig                  |    2 +-
+ arch/arm/mach-u300/include/mach/coh901318.h |    2 +-
+ arch/mips/mti-malta/malta-memory.c          |    2 +-
+ arch/mips/powertv/memory.c                  |    2 +-
+ drivers/edac/edac_core.h                    |    2 +-
+ drivers/media/video/omap/omap_vout.c        |    2 +-
+ drivers/scsi/lpfc/lpfc_hbadisc.c            |    2 +-
+ drivers/scsi/lpfc/lpfc_sli.c                |    2 +-
+ drivers/usb/musb/musb_gadget.c              |    2 +-
+ kernel/power/swap.c                         |    2 +-
+ mm/sparse-vmemmap.c                         |    2 +-
+ 11 files changed, 11 insertions(+), 11 deletions(-)
 
-diff --git a/arch/arm/common/vic.c b/arch/arm/common/vic.c
-index ba65f6e..cb660bc 100644
---- a/arch/arm/common/vic.c
-+++ b/arch/arm/common/vic.c
-@@ -70,7 +70,7 @@ static inline struct vic_device *to_vic(struct sys_device *sys)
-  * vic_init2 - common initialisation code
-  * @base: Base of the VIC.
-  *
-- * Common initialisation code for registeration
-+ * Common initialisation code for registration
-  * and resume.
- */
- static void vic_init2(void __iomem *base)
-diff --git a/arch/arm/mach-spear3xx/spear300.c b/arch/arm/mach-spear3xx/spear300.c
-index 3560f8c..5aa2d54 100644
---- a/arch/arm/mach-spear3xx/spear300.c
-+++ b/arch/arm/mach-spear3xx/spear300.c
-@@ -371,7 +371,7 @@ struct pmx_driver pmx_driver = {
- };
+diff --git a/arch/arm/mach-u300/Kconfig b/arch/arm/mach-u300/Kconfig
+index 801b21e..32a7b0f 100644
+--- a/arch/arm/mach-u300/Kconfig
++++ b/arch/arm/mach-u300/Kconfig
+@@ -64,7 +64,7 @@ config MACH_U300_DUAL_RAM
+ 	bool "Dual RAM"
+ 	help
+ 		Select this if you want support for Dual RAM phones.
+-		This is two RAM memorys on different EMIFs.
++		This is two RAM memories on different EMIFs.
+ endchoice
  
- /* Add spear300 specific devices here */
--/* arm gpio1 device registeration */
-+/* arm gpio1 device registration */
- static struct pl061_platform_data gpio1_plat_data = {
- 	.gpio_base	= 8,
- 	.irq_base	= SPEAR_GPIO1_INT_BASE,
-@@ -451,7 +451,7 @@ void __init spear300_init(void)
- 	/* call spear3xx family common init function */
- 	spear3xx_init();
- 
--	/* shared irq registeration */
-+	/* shared irq registration */
- 	shirq_ras1.regs.base =
- 		ioremap(SPEAR300_TELECOM_BASE, SPEAR300_TELECOM_REG_SIZE);
- 	if (shirq_ras1.regs.base) {
-diff --git a/arch/arm/mach-spear3xx/spear310.c b/arch/arm/mach-spear3xx/spear310.c
-index 96a1ab8..53b41b5 100644
---- a/arch/arm/mach-spear3xx/spear310.c
-+++ b/arch/arm/mach-spear3xx/spear310.c
-@@ -266,7 +266,7 @@ void __init spear310_init(void)
- 	/* call spear3xx family common init function */
- 	spear3xx_init();
- 
--	/* shared irq registeration */
-+	/* shared irq registration */
- 	base = ioremap(SPEAR310_SOC_CONFIG_BASE, SPEAR310_SOC_CONFIG_SIZE);
- 	if (base) {
- 		/* shirq 1 */
-diff --git a/arch/arm/mach-spear3xx/spear320.c b/arch/arm/mach-spear3xx/spear320.c
-index 6a12195..88b4652 100644
---- a/arch/arm/mach-spear3xx/spear320.c
-+++ b/arch/arm/mach-spear3xx/spear320.c
-@@ -519,7 +519,7 @@ void __init spear320_init(void)
- 	/* call spear3xx family common init function */
- 	spear3xx_init();
- 
--	/* shared irq registeration */
-+	/* shared irq registration */
- 	base = ioremap(SPEAR320_SOC_CONFIG_BASE, SPEAR320_SOC_CONFIG_SIZE);
- 	if (base) {
- 		/* shirq 1 */
-diff --git a/arch/arm/mach-spear3xx/spear3xx.c b/arch/arm/mach-spear3xx/spear3xx.c
-index e87313a..52f553c 100644
---- a/arch/arm/mach-spear3xx/spear3xx.c
-+++ b/arch/arm/mach-spear3xx/spear3xx.c
-@@ -22,7 +22,7 @@
- #include <mach/spear.h>
- 
- /* Add spear3xx machines common devices here */
--/* gpio device registeration */
-+/* gpio device registration */
- static struct pl061_platform_data gpio_plat_data = {
- 	.gpio_base	= 0,
- 	.irq_base	= SPEAR_GPIO_INT_BASE,
-@@ -41,7 +41,7 @@ struct amba_device gpio_device = {
- 	.irq = {IRQ_BASIC_GPIO, NO_IRQ},
- };
- 
--/* uart device registeration */
-+/* uart device registration */
- struct amba_device uart_device = {
- 	.dev = {
- 		.init_name = "uart",
-@@ -543,6 +543,6 @@ void spear_pmx_init(struct pmx_driver *pmx_driver, uint base, uint size)
- 
- pmx_fail:
- 	if (ret)
--		printk(KERN_ERR "padmux: registeration failed. err no: %d\n",
-+		printk(KERN_ERR "padmux: registration failed. err no: %d\n",
- 				ret);
- }
-diff --git a/arch/arm/mach-spear6xx/spear6xx.c b/arch/arm/mach-spear6xx/spear6xx.c
-index baf6bcc..f2fe14e 100644
---- a/arch/arm/mach-spear6xx/spear6xx.c
-+++ b/arch/arm/mach-spear6xx/spear6xx.c
-@@ -23,7 +23,7 @@
- #include <mach/spear.h>
- 
- /* Add spear6xx machines common devices here */
--/* uart device registeration */
-+/* uart device registration */
- struct amba_device uart_device[] = {
- 	{
- 		.dev = {
-@@ -50,7 +50,7 @@ struct amba_device uart_device[] = {
- 	}
- };
- 
--/* gpio device registeration */
-+/* gpio device registration */
- static struct pl061_platform_data gpio_plat_data[] = {
- 	{
- 		.gpio_base	= 0,
-diff --git a/net/core/dev.c b/net/core/dev.c
-index e8a8dc1..e5edf3b 100644
---- a/net/core/dev.c
-+++ b/net/core/dev.c
-@@ -6100,7 +6100,7 @@ static void __net_exit default_device_exit(struct net *net)
- static void __net_exit default_device_exit_batch(struct list_head *net_list)
- {
- 	/* At exit all network devices most be removed from a network
--	 * namespace.  Do this in the reverse order of registeration.
-+	 * namespace.  Do this in the reverse order of registration.
- 	 * Do this across as many network namespaces as possible to
- 	 * improve batching efficiency.
- 	 */
-diff --git a/sound/core/init.c b/sound/core/init.c
-index 57b792e2..3e65da2 100644
---- a/sound/core/init.c
-+++ b/sound/core/init.c
-@@ -642,7 +642,7 @@ static struct device_attribute card_number_attrs =
-  *  external accesses.  Thus, you should call this function at the end
-  *  of the initialization of the card.
-  *
-- *  Returns zero otherwise a negative error code if the registrain failed.
-+ *  Returns zero otherwise a negative error code if the registration failed.
+ config U300_DEBUG
+diff --git a/arch/arm/mach-u300/include/mach/coh901318.h b/arch/arm/mach-u300/include/mach/coh901318.h
+index 2013d2b..6193aaa 100644
+--- a/arch/arm/mach-u300/include/mach/coh901318.h
++++ b/arch/arm/mach-u300/include/mach/coh901318.h
+@@ -90,7 +90,7 @@ struct powersave {
+  * struct coh901318_platform - platform arch structure
+  * @chans_slave: specifying dma slave channels
+  * @chans_memcpy: specifying dma memcpy channels
+- * @access_memory_state: requesting DMA memeory access (on / off)
++ * @access_memory_state: requesting DMA memory access (on / off)
+  * @chan_conf: dma channel configurations
+  * @max_channels: max number of dma chanenls
   */
- int snd_card_register(struct snd_card *card)
- {
+diff --git a/arch/mips/mti-malta/malta-memory.c b/arch/mips/mti-malta/malta-memory.c
+index b27419c..a96d281 100644
+--- a/arch/mips/mti-malta/malta-memory.c
++++ b/arch/mips/mti-malta/malta-memory.c
+@@ -43,7 +43,7 @@ static struct prom_pmemblock mdesc[PROM_MAX_PMEMBLOCKS];
+ static char *mtypes[3] = {
+ 	"Dont use memory",
+ 	"YAMON PROM memory",
+-	"Free memmory",
++	"Free memory",
+ };
+ #endif
+ 
+diff --git a/arch/mips/powertv/memory.c b/arch/mips/powertv/memory.c
+index 73880ad..fb3d296 100644
+--- a/arch/mips/powertv/memory.c
++++ b/arch/mips/powertv/memory.c
+@@ -57,7 +57,7 @@
+ unsigned long ptv_memsize;
+ 
+ /*
+- * struct low_mem_reserved - Items in low memmory that are reserved
++ * struct low_mem_reserved - Items in low memory that are reserved
+  * @start:	Physical address of item
+  * @size:	Size, in bytes, of this item
+  * @is_aliased:	True if this is RAM aliased from another location. If false,
+diff --git a/drivers/edac/edac_core.h b/drivers/edac/edac_core.h
+index d7ca43a..035eaaf 100644
+--- a/drivers/edac/edac_core.h
++++ b/drivers/edac/edac_core.h
+@@ -258,7 +258,7 @@ enum scrub_type {
+  *			for single channel are 64 bits, for dual channel 128
+  *			bits.
+  *
+- * Single-Ranked stick:	A Single-ranked stick has 1 chip-select row of memmory.
++ * Single-Ranked stick:	A Single-ranked stick has 1 chip-select row of memory.
+  *			Motherboards commonly drive two chip-select pins to
+  *			a memory stick. A single-ranked stick, will occupy
+  *			only one of those rows. The other will be unused.
+diff --git a/drivers/media/video/omap/omap_vout.c b/drivers/media/video/omap/omap_vout.c
+index 15f8793..21d7c0d 100644
+--- a/drivers/media/video/omap/omap_vout.c
++++ b/drivers/media/video/omap/omap_vout.c
+@@ -1286,7 +1286,7 @@ static int omap_vout_release(struct file *file)
+ 	videobuf_mmap_free(q);
+ 
+ 	/* Even if apply changes fails we should continue
+-	   freeing allocated memeory */
++	   freeing allocated memory */
+ 	if (vout->streaming) {
+ 		u32 mask = 0;
+ 
+diff --git a/drivers/scsi/lpfc/lpfc_hbadisc.c b/drivers/scsi/lpfc/lpfc_hbadisc.c
+index a345dde..2a6866e 100644
+--- a/drivers/scsi/lpfc/lpfc_hbadisc.c
++++ b/drivers/scsi/lpfc/lpfc_hbadisc.c
+@@ -2614,7 +2614,7 @@ lpfc_mbx_process_link_up(struct lpfc_hba *phba, READ_LA_VAR *la)
+ 			if (unlikely(!fcf_record)) {
+ 				lpfc_printf_log(phba, KERN_ERR,
+ 					LOG_MBOX | LOG_SLI,
+-					"2554 Could not allocate memmory for "
++					"2554 Could not allocate memory for "
+ 					"fcf record\n");
+ 				rc = -ENODEV;
+ 				goto out;
+diff --git a/drivers/scsi/lpfc/lpfc_sli.c b/drivers/scsi/lpfc/lpfc_sli.c
+index 0d1e187..c5614cf 100644
+--- a/drivers/scsi/lpfc/lpfc_sli.c
++++ b/drivers/scsi/lpfc/lpfc_sli.c
+@@ -9619,7 +9619,7 @@ lpfc_sli4_intr_handler(int irq, void *dev_id)
+  * lpfc_sli4_queue_free - free a queue structure and associated memory
+  * @queue: The queue structure to free.
+  *
+- * This function frees a queue structure and the DMAable memeory used for
++ * This function frees a queue structure and the DMAable memory used for
+  * the host resident queue. This function must be called after destroying the
+  * queue on the HBA.
+  **/
+diff --git a/drivers/usb/musb/musb_gadget.c b/drivers/usb/musb/musb_gadget.c
+index 567dbe6..1cbeaa1 100644
+--- a/drivers/usb/musb/musb_gadget.c
++++ b/drivers/usb/musb/musb_gadget.c
+@@ -1715,7 +1715,7 @@ void musb_gadget_cleanup(struct musb *musb)
+  *
+  * -EINVAL something went wrong (not driver)
+  * -EBUSY another gadget is already using the controller
+- * -ENOMEM no memeory to perform the operation
++ * -ENOMEM no memory to perform the operation
+  *
+  * @param driver the gadget driver
+  * @param bind the driver's bind function
+diff --git a/kernel/power/swap.c b/kernel/power/swap.c
+index 916eaa7..ff4f018 100644
+--- a/kernel/power/swap.c
++++ b/kernel/power/swap.c
+@@ -865,7 +865,7 @@ out_finish:
+ /**
+  *	swsusp_read - read the hibernation image.
+  *	@flags_p: flags passed by the "frozen" kernel in the image header should
+- *		  be written into this memeory location
++ *		  be written into this memory location
+  */
+ 
+ int swsusp_read(unsigned int *flags_p)
+diff --git a/mm/sparse-vmemmap.c b/mm/sparse-vmemmap.c
+index 29d6cbf..64b9840 100644
+--- a/mm/sparse-vmemmap.c
++++ b/mm/sparse-vmemmap.c
+@@ -9,7 +9,7 @@
+  *
+  * However, virtual mappings need a page table and TLBs. Many Linux
+  * architectures already map their physical space using 1-1 mappings
+- * via TLBs. For those arches the virtual memmory map is essentially
++ * via TLBs. For those arches the virtual memory map is essentially
+  * for free if we use the same page size as the 1-1 mappings. In that
+  * case the overhead consists of a few additional pages that are
+  * allocated to create a view of memory for vmemmap.
 -- 
 1.7.2.3
 
