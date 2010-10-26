@@ -1,102 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933243Ab0JZNvq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Oct 2010 09:51:46 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:49755 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752512Ab0JZNvq (ORCPT
+	id S1758195Ab0JZNyj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Oct 2010 09:54:39 -0400
+Received: from Mycroft.westnet.com ([216.187.52.7]:47809 "EHLO
+	mycroft.westnet.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752512Ab0JZNyh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Oct 2010 09:51:46 -0400
-Date: Tue, 26 Oct 2010 09:51:45 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Hong Liu <hong.liu@intel.com>
-cc: Alan Cox <alan@linux.intel.com>,
-        Kernel development list <linux-kernel@vger.kernel.org>,
-        Linux-pm mailing list <linux-pm@lists.linux-foundation.org>
-Subject: Re: [PATCH] apds9802als: add runtime PM support
-In-Reply-To: <1288073117.19329.392.camel@hongdev>
-Message-ID: <Pine.LNX.4.44L0.1010260944270.1634-100000@iolanthe.rowland.org>
+	Tue, 26 Oct 2010 09:54:37 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+Message-ID: <19654.56681.488563.135215@quad.stoffel.home>
+Date: Tue, 26 Oct 2010 09:53:45 -0400
+From: "John Stoffel" <john@stoffel.org>
+To: Eric Paris <eparis@redhat.com>
+Cc: John Stoffel <john@stoffel.org>, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        hch@infradead.org, zohar@us.ibm.com, warthog9@kernel.org,
+        david@fromorbit.com, jmorris@namei.org, kyle@mcmartin.ca,
+        hpa@zytor.com, akpm@linux-foundation.org,
+        torvalds@linux-foundation.org, mingo@elte.hu, viro@zeniv.linux.org.uk
+Subject: Re: [PATCH 06/11] IMA: use i_writecount rather than a private
+ counter
+In-Reply-To: <1288043557.2655.34.camel@localhost.localdomain>
+References: <20101025184118.20504.24290.stgit@paris.rdu.redhat.com>
+	<20101025184152.20504.94048.stgit@paris.rdu.redhat.com>
+	<19653.55831.692904.538148@quad.stoffel.home>
+	<1288043557.2655.34.camel@localhost.localdomain>
+X-Mailer: VM 8.1.1 under 23.2.1 (x86_64-pc-linux-gnu)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 26 Oct 2010, Hong Liu wrote:
+>>>>> "Eric" == Eric Paris <eparis@redhat.com> writes:
 
-> > > diff --git a/drivers/misc/apds9802als.c b/drivers/misc/apds9802als.c
-> > > index fbe4960..15f9436 100644
-> > > --- a/drivers/misc/apds9802als.c
-> > > +++ b/drivers/misc/apds9802als.c
-> > 
-> > > @@ -265,13 +274,34 @@ static int apds9802als_suspend(struct i2c_client *client, pm_message_t mesg)
-> > >  
-> > >  static int apds9802als_resume(struct i2c_client *client)
-> > >  {
-> > > -	struct als_data *data = i2c_get_clientdata(client);
-> > > +	als_set_default_config(client);
-> > > +
-> > > +	pm_runtime_get(&client->dev);
-> > > +	pm_runtime_put(&client->dev);
-> > > +	return 0;
-> > > +}
-> > 
-> 
-> Hi, Alan
-> 
-> Thanks for your review.
-> 
-> > This almost certainly does not do what you think.
-> > 
-> > pm_runtime_get() will increment the device's usage count and queue an 
-> > asynchronous resume request.  However, since the PM workqueue is frozen 
-> > during system sleep transitions, the device will remain suspended.
-> > 
-> > The pm_runtime_put() will decrement the usage count again, but since
-> > there is already an async resume on the queue it will not queue an
-> > async suspend.  The final result will be that when tasks are unfrozen,
-> > the device will finally be resumed -- long after it should have been.
-> > 
-> > It looks like what you want to do here is simply call
-> > apds9802als_runtime_resume() directly.  
-> 
-> You mean apds9802als_runtime_suspend()?
+Eric> On Mon, 2010-10-25 at 15:27 -0400, John Stoffel wrote:
+>> The problems with kernel.org is a perfect exmaple of how an annocuous
+>> feature like this, can kill a system's performance.
 
-This is about the function listed above: apds9802als_resume().  It
-should call apds9802als_runtime_resume() directly.  I don't see any
-reason why you would want it to call apds9802als_runtime_suspend() --
-having a resume function that actually suspends the device doesn't make
-any sense.
+Eric> You admit that you don't know what you are talking about and
+Eric> then state that this kills systems performance.  Interesting
+Eric> conclusion.
 
-> I want to put the device into
-> runtime suspended state, can I just call pm_runtime_suspend() directly?
+I'm basing my observations on the data reported by John "Warthog9"
+who's the kernel.org sysadmin, and the *fact* that IMA was chewing up
+gigs of memory when it wasn't even enabled, but just compiled into the
+system.
 
-Why do you want apds9802als_resume() to put the device into a suspended 
-state?  Shouldn't it _resume_ the device?
+It certainly does NOT help system performance to suck up RAM with data
+that is NEVER used by that system.  
 
-> > And according to the advice in
-> > Documentation/power/runtime_pm.txt section 6, you should also call
+Eric> I'm not going to try to refute you point by point but will instead paint
+Eric> a broad picture.  I see 3 possible states:
 
-Have you read that document?
+Eric> 1) Configured out - 0 overhead.  period.
 
-> > 	pm_runtime_disable(dev);
-> > 	pm_runtime_set_active(dev);
-> > 	pm_runtime_enable(dev);
-> > 
-> > You probably also do not want the asynchronous calls to 
-> > pm_runtime_get() and pm_runtime_put() in apds9802als_probe().  A more 
-> > common sequence is:
-> > 
-> > 	pm_runtime_set_active(dev);
-> > 	pm_runtime_enable(dev);
-> 
-> I want to put the device into runtime suspend state after probe, so
-> pm_runtime_suspend() after these two calls is OK?
+Excellent, this should be the default and the Kconfig should be
+updated to default to this.  
 
-No.  Try doing what I said.  You should find that the device _does_ get
-runtime-suspended when the probe function returns.  Assuming you have
-defined a proper apds9802als_runtime_idle() function.
+Eric> 2) Configured in but default disabled
 
-Alan Stern
+And what is the overhead in this case?  That's what I'm concerned
+about.  
+
+Eric> 3) Configured in and enabled by admin intervention
+
+I can't complain about this aspect, though I can still push for the
+lowest possible impact on system performance when *any* of these
+last two states are in force.  
+
+Eric> I have (I think) pretty clearly discussed the overhead and the
+Eric> changes made in case #2.  We expand struct inode by 4 bytes, we
+Eric> increment and decrement those 4 bytes on open/close() and we use
+Eric> a new inode->i_flags.
+
+Then this is a huge improvement!  Don't get me wrong, I'm negative
+about IMA in general, but I'm very happy at how well you've responded
+to the firestorm of criticism (even from me, a non-kernel programmer)
+about this subsystem. 
+
+Eric> In you e-mail you seemed to be asking about case #3 where you
+Eric> explicitly chose to load a measurement policy (either custom or
+Eric> using the imb_tcb=1 boot option).  There are additional
+Eric> overheads in that case if the inode in question matches the
+Eric> measurement policy.  I don't see the need to go into the details
+Eric> of that overhead since you have 0 intention of using this
+Eric> feature no matter what and don't seem to be interested in
+Eric> helping to change those overheads for users of the subsystem.
+Eric> Please correct me if I'm wrong.  I do readily admit there is
+Eric> overhead, and that overhead will be higher if inodes which have
+Eric> been deemed integrity relevant by the measurement policy you
+Eric> chose to load are changed in certain patterns.
+
+No.  What I was trying to get at, and probably poorly, was the comment
+you made about having to keep the IMA data structures around, even if
+IMA has been disabled, so that you could continue to claim integrity
+if IMA was re-enabled.
+
+So my question is really about the following situation:
+
+1.  System boots up, IMA is enabled.
+2.  SysAdmin notices and turns it off.
+    - does the IMA overhead (not the per-inode 4 bytes) go away?
+    - do the various in memory data structures get freed?
+    - does the pointer in the inode get null'ed?
+
+Thanks,
+John
+
+
 
