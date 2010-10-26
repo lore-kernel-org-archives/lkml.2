@@ -1,100 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932093Ab0JZKD5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Oct 2010 06:03:57 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:52124 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756404Ab0JZKDz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Oct 2010 06:03:55 -0400
-Date: Tue, 26 Oct 2010 12:03:29 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Huang Ying <ying.huang@intel.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Len Brown <lenb@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Andi Kleen <andi@firstfloor.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        Borislav Petkov <petkovbb@googlemail.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Don Zickus <dzickus@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        "Luck, Tony" <tony.luck@intel.com>
-Subject: Re: [NAK] Re: [PATCH -v2 9/9] ACPI, APEI, Generic Hardware Error
- Source POLL/IRQ/NMI notification type support
-Message-ID: <20101026100329.GB16552@elte.hu>
-References: <1287992610-14996-1-git-send-email-ying.huang@intel.com>
- <1287992610-14996-10-git-send-email-ying.huang@intel.com>
- <20101025084553.GA27119@elte.hu>
- <alpine.LFD.2.00.1010252058370.11036@localhost.localdomain>
- <alpine.LFD.2.00.1010260629560.3955@localhost6.localdomain6>
- <20101026072210.GE13036@elte.hu>
- <1288078222.2862.484.camel@yhuang-dev>
- <20101026075559.GA9798@elte.hu>
- <1288081966.2862.571.camel@yhuang-dev>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1288081966.2862.571.camel@yhuang-dev>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+	id S1759063Ab0JZKGc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Oct 2010 06:06:32 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:59283 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758944Ab0JZKGb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Oct 2010 06:06:31 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Tue, 26 Oct 2010 19:00:42 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: "linux-mm@kvack.org" <linux-mm@kvack.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "minchan.kim@gmail.com" <minchan.kim@gmail.com>, andi.kleen@intel.com,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        fujita.tomonori@lab.ntt.co.jp, felipe.contreras@gmail.com
+Subject: [RFC][PATCH 0/3] big chunk memory allocator v2
+Message-Id: <20101026190042.57f30338.kamezawa.hiroyu@jp.fujitsu.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi, here is version 2.
 
-* Huang Ying <ying.huang@intel.com> wrote:
+I only did small test and it seems to work (but I think there will be bug...)
+I post this now just because I'll be out of office 10/31-11/15 with ksummit and
+a private trip.
 
-> On Tue, 2010-10-26 at 15:55 +0800, Ingo Molnar wrote:
-> > * Huang Ying <ying.huang@intel.com> wrote:
-> > 
-> > > On Tue, 2010-10-26 at 15:22 +0800, Ingo Molnar wrote:
-> > > > * Thomas Gleixner <tglx@linutronix.de> wrote:
-> > > > 
-> > > > > >From Kconfig:
-> > > > > 
-> > > > >   EDAC is designed to report errors in the core system.
-> > > > >   These are low-level errors that are reported in the CPU or
-> > > > >   supporting chipset or other subsystems:
-> > > > >   memory errors, cache errors, PCI errors, thermal throttling, etc..
-> > > > >   If unsure, select 'Y'.
-> > > > > 
-> > > > > So please explain why your error reporting is so different from the above that it 
-> > > > > justifies a separate facility. And you better come up with a real good explanation 
-> > > > > other than we looked at EDAC and it did not fit our needs.
-> > > > 
-> > > > Btw., it's not just about EDAC - the firmware can store Linux events 
-> > > > persistently (beyond allowing the firmware to insert its own RAS events), that 
-> > > > is obviously _hugely_ useful for kernel debugging in general. We could inject 
-> > > > debugging events there and recover them after a crash, etc.
-> > > 
-> > > Yes. It can be used by other kernel subsystems other than RAS. A kernel API is 
-> > > provided already. The design of the kernel API makes it easy to be used by various 
-> > > kernel subsystems. As the first step, we plan to support saving kernel log before 
-> > > panic and reading it back after reboot.
-> > 
-> > And that's the problem: we have good facilities already that deal with similar 
-> > things. We have NMI-safe event logging, event enumeration, dump-on-panic code 
-> > and all sorts of goodies there.
-> 
-> We have provided an in-kernel API for ERST now. And we plan to implement a 
-> kmsg_dumper with ERST. And maybe implement some output support (maybe via some 
-> /dev/kmsg extension) for kmsg_dumper if necessary.
+Any comments are welcome but please see the interface is enough for use cases or
+not.  For example) If MAX_ORDER alignment is too bad, I need to rewrite almost
+all code.
 
-So my argument/objection was:
+Now interface is:
 
- " You are introducing a bad ABI here, amongst other problems. Please work with the
-   people who are maintaining sane RAS/event/error reporting ABIs and facilities.
-   You should have done that to begin with. "
 
-and your answer to that is:
+struct page *__alloc_contig_pages(unsigned long base, unsigned long end,
+                        unsigned long nr_pages, int align_order,
+                        int node, gfp_t gfpflag, nodemask_t *mask)
 
- " Hey, we plan to introduce another ad-hoc ABI as well! "
+ * @base: the lowest pfn which caller wants.
+ * @end:  the highest pfn which caller wants.
+ * @nr_pages: the length of a chunk of pages to be allocated.
+ * @align_order: alignment of start address of returned chunk in order.
+ *   Returned' page's order will be aligned to (1 << align_order).If smaller
+ *   than MAX_ORDER, it's raised to MAX_ORDER.
+ * @node: allocate near memory to the node, If -1, current node is used.
+ * @gfpflag: see include/linux/gfp.h
+ * @nodemask: allocate memory within the nodemask.
 
-... do you really not see the glaring disconnect?
+If the caller wants a FIXED address, set end - base == nr_pages.
 
-	Ingo
+The patch is based onto the latest mmotm + Bob's 3 patches for fixing
+memory_hotplug.c (they are queued.)
+
+Thanks,
+-Kame
+
+
+
+
