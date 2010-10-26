@@ -1,48 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753307Ab0JZAic (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Oct 2010 20:38:32 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:55230 "EHLO comal.ext.ti.com"
+	id S1754048Ab0JZAij (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Oct 2010 20:38:39 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:46197 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751031Ab0JZAi3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Oct 2010 20:38:29 -0400
+	id S1753874Ab0JZAih (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Oct 2010 20:38:37 -0400
 From: Fernando Guzman Lugo <x0095840@ti.com>
 To: <gregkh@suse.de>
 Cc: <felipe.contreras@nokia.com>, <Hiroshi.DOYU@nokia.com>,
         <linux-kernel@vger.kernel.org>, <andy.shevchenko@gmail.com>,
         <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
         Fernando Guzman Lugo <x0095840@ti.com>
-Subject: [PATCH 0/8] staging: tidspbridge - misc fixes
-Date: Mon, 25 Oct 2010 19:51:38 -0500
-Message-Id: <1288054306-4361-1-git-send-email-x0095840@ti.com>
+Subject: [PATCH 6/8] staging: tidspbridge - remove disabling twl when printing DSP stack
+Date: Mon, 25 Oct 2010 19:51:44 -0500
+Message-Id: <1288054306-4361-7-git-send-email-x0095840@ti.com>
 X-Mailer: git-send-email 1.6.3.3
+In-Reply-To: <1288054306-4361-6-git-send-email-x0095840@ti.com>
+References: <1288054306-4361-1-git-send-email-x0095840@ti.com>
+ <1288054306-4361-2-git-send-email-x0095840@ti.com>
+ <1288054306-4361-3-git-send-email-x0095840@ti.com>
+ <1288054306-4361-4-git-send-email-x0095840@ti.com>
+ <1288054306-4361-5-git-send-email-x0095840@ti.com>
+ <1288054306-4361-6-git-send-email-x0095840@ti.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This set of patches fix some issues found in lastest tree.
+Now the SHM segments are not in lock tlbs, instead
+they are in translation tables. So we cannot disable
+twl in order to get the DSP stack dump.
 
-Fernando Guzman Lugo (8):
-  staging: tidspbridge - remove req_addr from proc_map
-  staging: tidspbridge - add kconfig parameter for DMM size
-  staging: tidspbridge - change mmufault tasklet to a workqueue
-  staging: tidspbridge - fix timeout in dsp_gpt_wait_overflow
-  staging: tidspbridge - use GTP7 for DSP stack dump
-  staging: tidspbridge - remove disabling twl when printing DSP stack
-  staging: tidspbridge - fix some issues after iommu patches
-  staging: tidspbridge - make sync_wait_on_event interruptible
+Signed-off-by: Fernando Guzman Lugo <x0095840@ti.com>
+---
+ drivers/staging/tidspbridge/core/dsp-mmu.c |    8 --------
+ 1 files changed, 0 insertions(+), 8 deletions(-)
 
- drivers/staging/tidspbridge/Kconfig                |    8 +++
- drivers/staging/tidspbridge/core/dsp-clock.c       |   13 +++--
- drivers/staging/tidspbridge/core/dsp-mmu.c         |   55 +++++++++++---------
- drivers/staging/tidspbridge/core/tiomap3430.c      |   20 ++++++-
- .../staging/tidspbridge/include/dspbridge/clk.h    |    4 +-
- .../tidspbridge/include/dspbridge/dsp-mmu.h        |    3 +
- .../tidspbridge/include/dspbridge/dspapi-ioctl.h   |    1 -
- .../staging/tidspbridge/include/dspbridge/proc.h   |    3 -
- .../staging/tidspbridge/include/dspbridge/sync.h   |   13 ++++-
- drivers/staging/tidspbridge/pmgr/dspapi.c          |    2 +-
- drivers/staging/tidspbridge/rmgr/node.c            |    4 +-
- drivers/staging/tidspbridge/rmgr/proc.c            |   25 ++++-----
- 12 files changed, 95 insertions(+), 56 deletions(-)
+diff --git a/drivers/staging/tidspbridge/core/dsp-mmu.c b/drivers/staging/tidspbridge/core/dsp-mmu.c
+index 157b743..3a00087 100644
+--- a/drivers/staging/tidspbridge/core/dsp-mmu.c
++++ b/drivers/staging/tidspbridge/core/dsp-mmu.c
+@@ -43,14 +43,6 @@ static void mmu_fault_print_stack(struct bridge_dev_context *dev_context)
+ 	if (!dummy_addr)
+ 		return;
+ 
+-	/*
+-	 * Before acking the MMU fault, let's make sure MMU can only
+-	 * access entry #0. Then add a new entry so that the DSP OS
+-	 * can continue in order to dump the stack.
+-	 */
+-	tmp = iommu_read_reg(mmu, MMU_CNTL);
+-	tmp &= ~MMU_CNTL_TWL_EN;
+-	iommu_write_reg(mmu, tmp, MMU_CNTL);
+ 	fa = iommu_read_reg(mmu, MMU_FAULT_AD);
+ 	e.da = fa & PAGE_MASK;
+ 	e.pa = virt_to_phys(dummy_addr);
+-- 
+1.6.3.3
 
