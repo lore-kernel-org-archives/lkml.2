@@ -1,61 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760450Ab0JZXZE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Oct 2010 19:25:04 -0400
-Received: from redmars.org ([92.243.31.175]:49942 "EHLO deckard.alcopop.org"
+	id S1760508Ab0JZXZf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Oct 2010 19:25:35 -0400
+Received: from mail.perches.com ([173.55.12.10]:3609 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758225Ab0JZXZC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Oct 2010 19:25:02 -0400
-Date: Wed, 27 Oct 2010 00:24:59 +0100
-From: Jon Dowland <jmtd@debian.org>
+	id S1758229Ab0JZXZd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Oct 2010 19:25:33 -0400
+Subject: Re: [PATCH 06/10] drivers/input/serio/i8042: Use pr_<level>,
+ pr_fmt. Fix dbg and __FILE__ use
+From: Joe Perches <joe@perches.com>
 To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Matthew Garrett <mjg@redhat.com>, platform-driver-x86@vger.kernel.org,
+Cc: Jiri Kosina <trivial@kernel.org>, linux-input@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] toshiba_acpi.c: Add key_entry for a lone FN keypress
-Message-ID: <20101026232459.GA1444@deckard.alcopop.org>
-References: <20101023221253.GA4829@hathor> <201010251127.37374.dmitry.torokhov@gmail.com> <20101026120026.GA27720@deckard.alcopop.org> <20101026155653.GC13097@core.coreip.homeip.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20101026155653.GC13097@core.coreip.homeip.net>
-X-Challenge-Response: refused
-X-Forelli-filterword: GO1268Op
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20101026155028.GA13097@core.coreip.homeip.net>
+References: <cover.1288059486.git.joe@perches.com>
+	 <63a8deabb7c8167128d0415998692d15279ecb8c.1288059486.git.joe@perches.com>
+	 <20101026155028.GA13097@core.coreip.homeip.net>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 26 Oct 2010 16:25:31 -0700
+Message-ID: <1288135531.4145.59.camel@Joe-Laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 26, 2010 at 08:56:53AM -0700, Dmitry Torokhov wrote:
-> > Add a key entry to map this event to a KEY_UNKNOWN keypress silences
+On Tue, 2010-10-26 at 08:50 -0700, Dmitry Torokhov wrote:
+> Hi Joe,
+
+Hi Dmitry.
+
+> On Mon, Oct 25, 2010 at 07:44:24PM -0700, Joe Perches wrote:
+> > Standardized message logging prefixes.
+> > Removed \n from dbg macro, added \n to each dbg call site.
+> Did you test it? It looks for call like:
+> > +             dbg("%02x <- i8042 (flush, %s)\n",
+> > +                 data, str & I8042_STR_AUXDATA ? "aux" : "kbd");
+> the result will be:
+> printk(KERN_DEBUG "i8042: %02x <- i8042 (flush, %s)\n [%d]", ...)
+> which is not exactly what you want...
+
+Right.  My mistake.
+I compile tested only and didn't notice the badly formed string.
+
+Mind if I move the time to the front like this?
+
++#define dbg(format, arg...)                                            \
++do {									\
++	if (i8042_debug)						\
++		printk(KERN_DEBUG KBUILD_MODNAME ": [%d]" format),	\
++                      (int)(jiffies - i8042_start_time), ##arg);	\
++} while (0)
+
+> >  
+> > @@ -1268,7 +1262,7 @@ static void __init i8042_register_ports(void)
+> >  
+> >  	for (i = 0; i < I8042_NUM_PORTS; i++) {
+> >  		if (i8042_ports[i].serio) {
+> > -			printk(KERN_INFO "serio: %s at %#lx,%#lx irq %d\n",
+> > +			pr_info("%s at %#lx,%#lx irq %d\n",
+> >  				i8042_ports[i].serio->name,
+> >  				(unsigned long) I8042_DATA_REG,
+> >  				(unsigned long) I8042_COMMAND_REG,
 > 
->                                          ^^^^^^
-> Better fix commit log message as well. Otherwise:
-> 
-> 	Acked-by: Dmitry Torokhov <dtor@mail.ru>
+> Not quite equivalent conversion, right now every port is registered with
+> message "serio: XXX at YYY". I would be OK with having driver prefix
+> going in front but I'd like to keep word serio in (like "i8042: serio
+> XXX at YYY").
 
-Thanks.
+I'll resubmit a pr_<level> series for drivers/input/serio
+today/tomorrow with this change.
 
-Signed-off-by: Jon Dowland <jmtd@debian.org>
+cheers, Joe
 
-----
-
-A lone FN key press on a Toshiba Portégé R700 without another key in
-conjunction results in an ACPI event and a spurious error message on
-the console.
-
-Add a key entry to map this event to a KEY_FN keypress. This prevents
-the console message.
-
-diff --git a/drivers/platform/x86/toshiba_acpi.c b/drivers/platform/x86/toshiba_acpi.c
-index 06f304f..e10747a 100644
---- a/drivers/platform/x86/toshiba_acpi.c
-+++ b/drivers/platform/x86/toshiba_acpi.c
-@@ -135,6 +135,7 @@ static const struct key_entry toshiba_acpi_keymap[] __initconst = {
- 	{ KE_KEY, 0x141, { KEY_BRIGHTNESSUP } },
- 	{ KE_KEY, 0x142, { KEY_WLAN } },
- 	{ KE_KEY, 0x143, { KEY_PROG1 } },
-+	{ KE_KEY, 0x17f, { KEY_FN } },                                          
- 	{ KE_KEY, 0xb05, { KEY_PROG2 } },
- 	{ KE_KEY, 0xb06, { KEY_WWW } },
- 	{ KE_KEY, 0xb07, { KEY_MAIL } },
