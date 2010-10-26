@@ -1,52 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756808Ab0JZOs4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Oct 2010 10:48:56 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:58625 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751219Ab0JZOsz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Oct 2010 10:48:55 -0400
-Date: Tue, 26 Oct 2010 15:48:00 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Elvis Dowson <elvis.dowson@mac.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Luciano Coelho <luciano.coelho@nokia.com>
-Subject: Re: #ifdef CONFIG_ checks not working
-Message-ID: <20101026154800.18c5cfe6@lxorguk.ukuu.org.uk>
-In-Reply-To: <47266B0D-0A99-4C5F-BA85-FCC8986E8862@mac.com>
-References: <47266B0D-0A99-4C5F-BA85-FCC8986E8862@mac.com>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1758327Ab0JZOt4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Oct 2010 10:49:56 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:62549 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752527Ab0JZOtz (ORCPT
+	<rfc822;<linux-kernel@vger.kernel.org>>);
+	Tue, 26 Oct 2010 10:49:55 -0400
+Date: Tue, 26 Oct 2010 10:47:28 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Dirk Brandewie <dirk.j.brandewie@intel.com>
+Subject: Re: linux-next: manual merge of the swiotlb-xen tree with the tip
+ tree
+Message-ID: <20101026144728.GE9557@dumpdata.com>
+References: <20101026130332.002937e5.sfr@canb.auug.org.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101026130332.002937e5.sfr@canb.auug.org.au>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 26 Oct 2010 18:28:22 +0400
-Elvis Dowson <elvis.dowson@mac.com> wrote:
-
-> Hi,
->        I just noticed that with the 2.6.36-rc8 kernel, the #ifdef checks aren't working. 
-
-They seem to be working fine
-
-> So for example, if I add the following code fragment in my omap3_beagle_init function, CONFIG_WL1271 doesn't get detected, even though in my .config file, CONFIG_WL1271=m.
-
-You are checking for Y/N not for modular (check how other drivers check
-for both)
-
-> Would you happen to know why this is not working. This type of checks used to work with the 2.6.32 kernel versions.
+On Tue, Oct 26, 2010 at 01:03:32PM +1100, Stephen Rothwell wrote:
+> Hi Konrad,
 > 
-> #ifdef CONFIG_WL1271
->     printk(KERN_INFO "%s: CONFIG_WL1271 detected\n", __func__);
-> #else
->     printk(KERN_INFO "%s: CONFIG_WL1271 not detected\n", __func__);
-> #endif
+> Today's linux-next merge of the swiotlb-xen tree got a conflict in
+> arch/x86/include/asm/io_apic.h between commit
+> 23f9b267159b4c7ff59d2e6c8ed31693eff841e3 ("x86: apic: Move
+> probe_nr_irqs_gsi() into ioapic_init_mappings()") from the tip tree and
+> commit 7b586d71858091f0958e5808b7e3d5390c2ae47d ("x86/io_apic: add
+> get_nr_irqs_gsi()") from the swiotlb-xen tree.
+> 
+> Just context changes. I fixed it up (see below) and can carry the fix as
+> necessary.
 
-The code looks wrong anyway - if you didn't compile it in then presumably
-you *did* detect it but didn't have a driver ?
+Thank you.
 
-Alan
