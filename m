@@ -1,78 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755209Ab0JZBVF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Oct 2010 21:21:05 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:36538 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753733Ab0JZBVE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Oct 2010 21:21:04 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=sy3dW+NA/dHh4Y912cwAqwXKxvx1hnho1RW1nrBI6gFZuQVOwnLH6cF6+CSrAD4svG
-         BP7YGQ4x0ylIwFB3fOd5HSoyJiFGiV/RMap0pLZi55C8ZQszwMaXV+Qdi0Ya2Pt6R1Rk
-         H8jw9pZKibvVNLW3uoGHDM48ze0KjlDHMGqgQ=
-Subject: Re: [PATCH 03/29] memstick: core: add new functions
-From: Maxim Levitsky <maximlevitsky@gmail.com>
-To: Alex Dubov <oakad@yahoo.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <117301.25688.qm@web37608.mail.mud.yahoo.com>
-References: <117301.25688.qm@web37608.mail.mud.yahoo.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 26 Oct 2010 03:20:58 +0200
-Message-ID: <1288056058.4024.39.camel@maxim-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1755395Ab0JZB0L (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Oct 2010 21:26:11 -0400
+Received: from smtp.gentoo.org ([140.211.166.183]:57165 "EHLO smtp.gentoo.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753733Ab0JZB0K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Oct 2010 21:26:10 -0400
+From: Mike Frysinger <vapier@gentoo.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: uclinux-dist-devel@blackfin.uclinux.org, linux-kernel@vger.kernel.org
+Subject: Pull request blackfin.git (for-linus branch)
+Date: Mon, 25 Oct 2010 21:26:19 -0400
+Message-Id: <1288056379-25299-1-git-send-email-vapier@gentoo.org>
+X-Mailer: git-send-email 1.7.3.2
+In-Reply-To: <1287997207-30661-1-git-send-email-vapier@gentoo.org>
+References: <1287997207-30661-1-git-send-email-vapier@gentoo.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-10-25 at 07:56 -0700, Alex Dubov wrote:
-> --- On Fri, 22/10/10, Maxim Levitsky <maximlevitsky@gmail.com> wrote:
-> 
-> > From: Maxim Levitsky <maximlevitsky@gmail.com>
-> > Subject: [PATCH 03/29] memstick: core: add new functions
-> > To: "Alex Dubov" <oakad@yahoo.com>
-> > Cc: "Andrew Morton" <akpm@linux-foundation.org>, "LKML" <linux-kernel@vger.kernel.org>, "Maxim Levitsky" <maximlevitsky@gmail.com>
-> > Received: Friday, 22 October, 2010, 4:53 PM
-> > Add a lot of support code that will
-> > be used later.
-> > 
-> 
-> You're adding here a lot of temporarily dead code, which, while being
-> useful, should be better added together with the actual driver
-> functionality.
-So what?
-What is wrong with that?
-Why should I mix things together?
+The following changes since commit 229aebb873e29726b91e076161649cf45154b0bf:
 
+  Merge branch 'for-next' of git://git.kernel.org/pub/scm/linux/kernel/git/jikos/trivial (2010-10-24 13:41:39 -0700)
 
-> 
-> Besides this, the patch has a lot of unneeded clean-ups which are better
-> be set as a separate patch.
-What cleanups?
-So I added the memstick_power_off and make code use it
-If you want even that as separate patch, ok.
+are available in the git repository at:
 
-And memstick_invalidate_reg_window in memstick_power_on?
-Again at any rate it will be invalid there.
-(Maybe I should have put that in memstick_power_off actually, will do)
+  git://git.kernel.org/pub/scm/linux/kernel/git/vapier/blackfin.git for-linus
 
-If you want me to put these changes in separate patches, ok, I do it.
+Mike Frysinger (5):
+      Blackfin: bfin_twi.h: start a common TWI header
+      Blackfin: update defconfigs
+      Blackfin: ppi/spi/twi headers: add missing __BFP undef
+      Blackfin: drop unused irq_panic()/DEBUG_ICACHE_CHECK
+      Blackfin: fix inverted anomaly 05000481 logic
 
+Sonic Zhang (1):
+      netdev: bfin_mac: push settings to platform resources
 
-> 
-> And it doesn't conform to the coding guideline either (4 byte indents,
-> instead of tab
-What?
-I checked the patch with checkpatch.pl. It didn't complain.
-I also use 8 byte tabs not 4.
-Will look at that, thanks.
-
-Best regards,
-	Maxim Levitsky
-
+ arch/blackfin/Kconfig.debug                       |   11 --
+ arch/blackfin/configs/BF518F-EZBRD_defconfig      |    2 +-
+ arch/blackfin/configs/BF526-EZBRD_defconfig       |    2 +-
+ arch/blackfin/configs/BF527-AD7160-EVAL_defconfig |    2 +-
+ arch/blackfin/configs/BF527-EZKIT-V2_defconfig    |    3 +-
+ arch/blackfin/configs/BF527-EZKIT_defconfig       |    3 +-
+ arch/blackfin/configs/BF527-TLL6527M_defconfig    |    1 -
+ arch/blackfin/configs/BF533-EZKIT_defconfig       |    2 +-
+ arch/blackfin/configs/BF533-STAMP_defconfig       |    2 +-
+ arch/blackfin/configs/BF537-STAMP_defconfig       |    3 +-
+ arch/blackfin/configs/BF538-EZKIT_defconfig       |    3 +-
+ arch/blackfin/configs/BF548-EZKIT_defconfig       |    4 +-
+ arch/blackfin/configs/BF561-ACVILON_defconfig     |    4 +-
+ arch/blackfin/configs/BF561-EZKIT_defconfig       |    1 +
+ arch/blackfin/configs/BlackStamp_defconfig        |    3 +-
+ arch/blackfin/configs/CM-BF527_defconfig          |    4 +-
+ arch/blackfin/configs/CM-BF533_defconfig          |    3 +-
+ arch/blackfin/configs/CM-BF537E_defconfig         |    3 +-
+ arch/blackfin/configs/CM-BF537U_defconfig         |    3 +-
+ arch/blackfin/configs/CM-BF548_defconfig          |    3 +-
+ arch/blackfin/configs/CM-BF561_defconfig          |    3 +-
+ arch/blackfin/configs/H8606_defconfig             |    3 +-
+ arch/blackfin/configs/IP0X_defconfig              |    3 +-
+ arch/blackfin/configs/PNAV-10_defconfig           |    2 +-
+ arch/blackfin/configs/SRV1_defconfig              |    3 +-
+ arch/blackfin/configs/TCM-BF518_defconfig         |    1 -
+ arch/blackfin/configs/TCM-BF537_defconfig         |    2 +
+ arch/blackfin/include/asm/bfin5xx_spi.h           |    2 +
+ arch/blackfin/include/asm/bfin_ppi.h              |    2 +
+ arch/blackfin/include/asm/bfin_twi.h              |   45 +++++++
+ arch/blackfin/include/asm/cdef_LPBlackfin.h       |    2 +-
+ arch/blackfin/mach-bf518/boards/ezbrd.c           |   44 ++++++-
+ arch/blackfin/mach-bf518/boards/tcm-bf518.c       |   24 ++++-
+ arch/blackfin/mach-bf527/boards/cm_bf527.c        |   24 ++++-
+ arch/blackfin/mach-bf527/boards/ezbrd.c           |   24 ++++-
+ arch/blackfin/mach-bf527/boards/ezkit.c           |   24 ++++-
+ arch/blackfin/mach-bf527/boards/tll6527m.c        |   24 ++++-
+ arch/blackfin/mach-bf537/boards/cm_bf537e.c       |   24 ++++-
+ arch/blackfin/mach-bf537/boards/cm_bf537u.c       |   24 ++++-
+ arch/blackfin/mach-bf537/boards/minotaur.c        |   24 ++++-
+ arch/blackfin/mach-bf537/boards/pnav10.c          |   24 ++++-
+ arch/blackfin/mach-bf537/boards/stamp.c           |   24 ++++-
+ arch/blackfin/mach-bf537/boards/tcm_bf537.c       |   24 ++++-
+ arch/blackfin/mach-common/Makefile                |    1 -
+ arch/blackfin/mach-common/irqpanic.c              |  106 ---------------
+ drivers/net/Kconfig                               |    8 -
+ drivers/net/bfin_mac.c                            |  145 +++++++++++++-------
+ drivers/net/bfin_mac.h                            |    2 +
+ include/linux/bfin_mac.h                          |   29 ++++
+ 49 files changed, 513 insertions(+), 216 deletions(-)
+ create mode 100644 arch/blackfin/include/asm/bfin_twi.h
+ delete mode 100644 arch/blackfin/mach-common/irqpanic.c
+ create mode 100644 include/linux/bfin_mac.h
