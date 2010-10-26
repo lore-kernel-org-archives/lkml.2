@@ -1,64 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757769Ab0JZMlJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Oct 2010 08:41:09 -0400
-Received: from webhosting01.bon.m2soft.com ([195.38.20.32]:38272 "EHLO
-	webhosting01.bon.m2soft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756176Ab0JZMlH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Oct 2010 08:41:07 -0400
-Date: Tue, 26 Oct 2010 14:36:50 +0200
-From: Nicolas Kaiser <nikai@nikai.net>
-To: Julia Lawall <julia@diku.dk>
-Cc: Tomi Valkeinen <tomi.valkeinen@nokia.com>, kernel-janitors@vger.kernel.org,
-        linux-fbdev@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 12/14] drivers/video/omap/blizzard.c: delete double
- assignment
-Message-ID: <20101026143650.14c836eb@absol.kitzblitz>
-In-Reply-To: <1288088743-3725-13-git-send-email-julia@diku.dk>
-References: <1288088743-3725-1-git-send-email-julia@diku.dk>
-	<1288088743-3725-13-git-send-email-julia@diku.dk>
-Organization: -
-X-Face: "fF&[w2"Nws:JNH4'g|:gVhgGKLhj|X}}&w&V?]0=,7n`jy8D6e[Jh=7+ca|4~t5e[ItpL5
- N'y~Mvi-vJm`"1T5fi1^b!&EG]6nW~C!FN},=$G?^U2t~n[3;u\"5-|~H{-5]IQ2
-X-Mailer: Claws Mail (Linux)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1759887Ab0JZMlg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Oct 2010 08:41:36 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:53199 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759860Ab0JZMle (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Oct 2010 08:41:34 -0400
+Date: Tue, 26 Oct 2010 14:41:13 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Trond Myklebust <Trond.Myklebust@netapp.com>
+Cc: Charles Edward Lever <Chuck.Lever@oracle.com>,
+        Zimny Lech <napohybelskurwysynom2010@gmail.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, linux-nfs@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: linux-next: Tree for October 6
+Message-ID: <20101026124113.GA10872@elte.hu>
+References: <20101006163632.c1943a38.sfr@canb.auug.org.au>
+ <AANLkTimb2NxXcfj-o=F18S1u2rn-o851F+1sgQ_2uOVQ@mail.gmail.com>
+ <20101026080822.GA10520@elte.hu>
+ <1288096333.3123.9.camel@heimdal.trondhjem.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1288096333.3123.9.camel@heimdal.trondhjem.org>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Julia Lawall <julia@diku.dk>:
-> Delete successive assignments to the same location.  Initialize the out_y
-> field as well as the out_x field, rather than initializing the out_x field
-> twice.
 
-Hi there!
+* Trond Myklebust <Trond.Myklebust@netapp.com> wrote:
 
-An identical patch is already in the -mm tree:
+> Anyhow, does the following fix the bug?
 
-> The patch titled
->      drivers/video/omap/blizzard.c: suspected typo in assignment
-> has been added to the -mm tree.  Its filename is
->      video-omap-suspected-typo-in-assignment.patch
+Thanks, trying it.
 
-> See http://userweb.kernel.org/~akpm/stuff/added-to-mm.txt to find
-> out what to do about this
+> Stephen Rothwell reports:
 > 
-> The current -mm tree may be found at http://userweb.kernel.org/~akpm/mmotm/
+> > /home/test/linux-2.6/fs/nfs/nfsroot.c: In function 'nfs_root_debug':
+> > /home/test/linux-2.6/fs/nfs/nfsroot.c:110:2: error: 'nfs_debug'
+> > undeclared (first use in this function)
+> > /home/test/linux-2.6/fs/nfs/nfsroot.c:110:2: note: each undeclared
+> > identifier is reported only once for each function it appears in
+> > make[3]: *** [fs/nfs/nfsroot.o] Error 1
+> > make[2]: *** [fs/nfs] Error 2
+> > make[1]: *** [fs] Error 2
+> > make: *** [sub-make] Error 2
 > 
-> ------------------------------------------------------
-> Subject: drivers/video/omap/blizzard.c: suspected typo in assignment
-> From: Nicolas Kaiser <nikai@nikai.net>
+> Which is caused by commit 306a075362a288683f6346185f97dd0e06df19da
+> (NFS: Allow NFSROOT debugging messages to be enabled dynamically)
 > 
-> Untested, but looks like an obvious typo to me.
+> Fix is to disable this code when RPC_DEBUG is disabled.
 > 
-> Signed-off-by: Nicolas Kaiser <nikai@nikai.net>
-> Cc: Tomi Valkeinen <tomi.valkeinen@nokia.com>
-> Cc: Tony Lindgren <tony@atomide.com>
-> Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+> Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
 
-Best regards,
-Nicolas Kaiser
+The commit also needs this tag:
+
+  Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
+
+Thanks,
+
+	Ingo
