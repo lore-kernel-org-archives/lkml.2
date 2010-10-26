@@ -1,53 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758007Ab0JZHTk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Oct 2010 03:19:40 -0400
-Received: from 124x34x33x190.ap124.ftth.ucom.ne.jp ([124.34.33.190]:50089 "EHLO
-	master.linux-sh.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756819Ab0JZHTj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Oct 2010 03:19:39 -0400
-Date: Tue, 26 Oct 2010 16:19:13 +0900
-From: Paul Mundt <lethal@linux-sh.org>
+	id S1758136Ab0JZHWm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Oct 2010 03:22:42 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:37965 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753249Ab0JZHWk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Oct 2010 03:22:40 -0400
+Date: Tue, 26 Oct 2010 09:22:10 +0200
+From: Ingo Molnar <mingo@elte.hu>
 To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org
-Subject: [PATCH] genirq: Add single IRQ reservation helper.
-Message-ID: <20101026071912.GD4733@linux-sh.org>
+Cc: Len Brown <lenb@kernel.org>, Huang Ying <ying.huang@intel.com>,
+        LKML <linux-kernel@vger.kernel.org>, Andi Kleen <andi@firstfloor.org>,
+        linux-acpi@vger.kernel.org, Borislav Petkov <petkovbb@googlemail.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Don Zickus <dzickus@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Tony Luck <tony.luck@intel.com>
+Subject: Re: [NAK] Re: [PATCH -v2 9/9] ACPI, APEI, Generic Hardware Error
+ Source POLL/IRQ/NMI notification type support
+Message-ID: <20101026072210.GE13036@elte.hu>
+References: <1287992610-14996-1-git-send-email-ying.huang@intel.com>
+ <1287992610-14996-10-git-send-email-ying.huang@intel.com>
+ <20101025084553.GA27119@elte.hu>
+ <alpine.LFD.2.00.1010252058370.11036@localhost.localdomain>
+ <alpine.LFD.2.00.1010260629560.3955@localhost6.localdomain6>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.13 (2006-08-11)
+In-Reply-To: <alpine.LFD.2.00.1010260629560.3955@localhost6.localdomain6>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For cases that wish to reserve a single IRQ simply provide a wrapper in
-to the ranged reservation routine.
 
-Signed-off-by: Paul Mundt <lethal@linux-sh.org>
+* Thomas Gleixner <tglx@linutronix.de> wrote:
 
----
+> >From Kconfig:
+> 
+>   EDAC is designed to report errors in the core system.
+>   These are low-level errors that are reported in the CPU or
+>   supporting chipset or other subsystems:
+>   memory errors, cache errors, PCI errors, thermal throttling, etc..
+>   If unsure, select 'Y'.
+> 
+> So please explain why your error reporting is so different from the above that it 
+> justifies a separate facility. And you better come up with a real good explanation 
+> other than we looked at EDAC and it did not fit our needs.
 
-I picked irq_reserve_irq() to follow the irq_alloc_descs/desc naming
-scheme, but perhaps irq_reserve() or irq_reserve_at() is less visually
-offensive? Feel free to mangle away as necessary :-)
+Btw., it's not just about EDAC - the firmware can store Linux events persistently 
+(beyond allowing the firmware to insert its own RAS events), that is obviously 
+_hugely_ useful for kernel debugging in general. We could inject debugging events 
+there and recover them after a crash, etc.
 
- include/linux/irq.h |    5 +++++
- 1 file changed, 5 insertions(+)
+As long as it's all integrated into the standard event logging facilities it could 
+be very useful (and i dont generally complain about things that are insignificant).
 
-diff --git a/include/linux/irq.h b/include/linux/irq.h
-index e963911..abde252 100644
---- a/include/linux/irq.h
-+++ b/include/linux/irq.h
-@@ -412,6 +412,11 @@ static inline void irq_free_desc(unsigned int irq)
- 	irq_free_descs(irq, 1);
- }
- 
-+static inline int irq_reserve_irq(unsigned int irq)
-+{
-+	return irq_reserve_irqs(irq, 1);
-+}
-+
- #endif /* CONFIG_GENERIC_HARDIRQS */
- 
- #endif /* !CONFIG_S390 */
+As /dev/erst-dbg it's not useful at all - in fact it might close the door to sane 
+future usage of this hw facility if some crappy user-space learns to rely on the 
+/dev/erst-dbg ABI.
+
+Thanks,
+
+	Ingo
