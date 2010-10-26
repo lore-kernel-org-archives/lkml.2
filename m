@@ -1,98 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754296Ab0JZOpi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Oct 2010 10:45:38 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:43358 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751245Ab0JZOph (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Oct 2010 10:45:37 -0400
-Message-ID: <4CC6E962.5000203@gmail.com>
-Date: Tue, 26 Oct 2010 16:44:50 +0200
-From: Edward Shishkin <edward.shishkin@gmail.com>
-User-Agent: Thunderbird 2.0.0.23 (X11/20090825)
+	id S1757230Ab0JZOqx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Oct 2010 10:46:53 -0400
+Received: from smtp151.iad.emailsrvr.com ([207.97.245.151]:49158 "EHLO
+	smtp151.iad.emailsrvr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753447Ab0JZOqu convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Oct 2010 10:46:50 -0400
+Message-ID: <4CC6E9D8.8010201@triadsys.com>
+Date: Tue, 26 Oct 2010 10:46:48 -0400
+From: Tom Vier <tom@triadsys.com>
+Organization: Triad Systems Engineering, Inc.
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.12) Gecko/20100913 Icedove/3.0.7
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>,
-        Al Viro <viro@ZenIV.linux.org.uk>
-CC: linux-fsdevel@vger.kernel.org, Eric Sandeen <sandeen@redhat.com>,
-        lmcilroy@redhat.com, LKML <linux-kernel@vger.kernel.org>,
-        Christoph Hellwig <hch@infradead.org>
-Subject: Re: [patch 2/2] vfs: relax count check in rw_verify_area
-References: <201010132246.21744.edward.shishkin@gmail.com> <20101014163047.d909ad5c.akpm@linux-foundation.org>
-In-Reply-To: <20101014163047.d909ad5c.akpm@linux-foundation.org>
+To: Samuel Thibault <sthibault@debian.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>, 594089@bugs.debian.org,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: Bug#594089: keyboard-configuration: caps lock keycode problem
+References: <20100823154353.2805.13525.reportbug@tom.tse> <20100903235540.GA9149@const> <4C866913.3030201@triadsys.com> <4C8E6861.1070502@triadsys.com> <20101024144150.GV24091@const.famille.thibault.fr> <20101025045003.GA1438@core.coreip.homeip.net> <4CC58816.3090301@triadsys.com> <20101025180320.GA4725@const.famille.thibault.fr>
+In-Reply-To: <20101025180320.GA4725@const.famille.thibault.fr>
 Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andrew Morton wrote:
-> On Wed, 13 Oct 2010 22:46:21 +0200
-> Edward Shishkin <edward.shishkin@gmail.com> wrote:
->
->   
->> Increase count limit in rw_verify_area().
->>
->>     
->
-> OK, now this is a truly awful attempt to describe a patch.
->   
+On 10/25/2010 02:03 PM, Samuel Thibault wrote:
+ > Tom Vier, le Mon 25 Oct 2010 09:37:26 -0400, a écrit :
+ >> On 10/25/2010 12:50 AM, Dmitry Torokhov wrote:
+ >>> On Sun, Oct 24, 2010 at 04:41:51PM +0200, Samuel Thibault wrote:
+ >>>> The short story is: Tom's keyboard sends all that when he presses caps
+ >>>> lock:
+ >>>>
+ >>>> press: 0x3a 0xe0 0x66
+ >>>> repeat: 0x3a
+ >>>> release: 0xba 0xe0 0xe6
+ >>>>
+ >>>> 0xe0 0x66 happens to be the "favorites" key on his keyboard with
+ >>>> internet navigation keys.  I thus believe there's a bug in his 
+keyboard
+ >>>> that needs to be filtered at the kernel level.
+ >>>>
+ >>>> The long story can be read on
+ >>>> http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=594089
+ >>>
+ >>> Hmm, the question is whether the real "favorites" key send the same
+ >>> usage and the fake one after caps lock. Any chance Tom could locate
+ >>> evtest utility and see what MSC_SCAN events being emitted?
+ >>
+ >> Sure. Here's caps-lock:
+ >>
+ >> Event: time 1288013671.633008, -------------- Report Sync ------------
+ >> Event: time 1288013674.171812, type 4 (Misc), code 4 (ScanCode), 
+value 70039
+ >> Event: time 1288013674.171853, type 1 (Key), code 58 (CapsLock), value 1
+ >> Event: time 1288013674.171862, -------------- Report Sync ------------
+ >> Event: time 1288013674.172210, type 17 (LED), code 1 (CapsLock), value 1
+ >> Event: time 1288013674.299553, type 4 (Misc), code 4 (ScanCode), 
+value 70039
+ >> Event: time 1288013674.299580, type 1 (Key), code 58 (CapsLock), value 0
+ >> Event: time 1288013674.299593, -------------- Report Sync ------------
+ >>
+ >>
+ >> Right-shift (the other problem key):
+ >>
+ >> Event: time 1288013798.388025, -------------- Report Sync ------------
+ >> Event: time 1288013800.742088, type 4 (Misc), code 4 (ScanCode), 
+value 700e5
+ >> Event: time 1288013800.742130, type 1 (Key), code 54 (RightShift), 
+value 1
+ >> Event: time 1288013800.742142, -------------- Report Sync ------------
+ >> Event: time 1288013800.861777, type 4 (Misc), code 4 (ScanCode), 
+value 700e5
+ >> Event: time 1288013800.861812, type 1 (Key), code 54 (RightShift), 
+value 0
+ >> Event: time 1288013800.861824, -------------- Report Sync ------------
+ >
+ > Could you also post results when pressing the "favorite" and the "prev"
+ > internet keys of your keyboard?
+ >
+ > Samuel
 
-I was sure I have nicely described everything in the
-"[patch 0/2][RFC] vfs: artefact(?) in rw_verify_area"
-Well, I'll provide more details..
 
-> afaict what the patch does is to change rw_verify_area() so that the
-> kernel now permits single reads and writes of up to 2^63 bytes on
-> 64-bit systems.  Whereas it was previously limited to 2^31.  And the
-> patch also fixes up a couple of callsites which were assuming that
-> rw_verify_area() had that particular behaviour.
->   
+It's returning the same codes. Maybe what's going on here is that they 
+never worked back in Stable and someone tried to fix those keys, not 
+realizing they're the same codes as capslock and right-shift. I'll have 
+to test it on my Stable machine tonight to see if those keys work or 
+not, tho.
 
-I found such assumptions rather strange. Why to not assume
-documentation for read(2), write(2), where we can nominate
-SSIZE_MAX bytes to read/write?
+Favorites:
+Event: time 1288041423.048839, -------------- Report Sync ------------
+Event: time 1288041425.068704, type 4 (Misc), code 4 (ScanCode), value 70039
+Event: time 1288041425.068742, type 1 (Key), code 58 (CapsLock), value 1
+Event: time 1288041425.068754, -------------- Report Sync ------------
+Event: time 1288041425.069105, type 17 (LED), code 1 (CapsLock), value 1
+Event: time 1288041425.260313, type 4 (Misc), code 4 (ScanCode), value 70039
+Event: time 1288041425.260343, type 1 (Key), code 58 (CapsLock), value 0
+Event: time 1288041425.260347, -------------- Report Sync ------------
 
-Now about the bad aspect of this limitation.
-There is a so-called concept of transactions, which is very useful.
-Sometimes we want some operations to be performed atomically. For
-example, when you pay by your credit card. Should I explain what
-can happen, if such operation will be half done?
+Previous:
+Event: time 1288041443.531447, -------------- Report Sync ------------
+Event: time 1288041445.318877, type 4 (Misc), code 4 (ScanCode), value 700e5
+Event: time 1288041445.318915, type 1 (Key), code 54 (RightShift), value 1
+Event: time 1288041445.318932, -------------- Report Sync ------------
+Event: time 1288041445.438567, type 4 (Misc), code 4 (ScanCode), value 700e5
+Event: time 1288041445.438606, type 1 (Key), code 54 (RightShift), value 0
+Event: time 1288041445.438629, -------------- Report Sync ------------
 
-Now note that the 2G restriction in rw_verify_area means that a file
-system can not write more then 2G bytes atomically without a special
-notification from user space. Do we really need such workarounds?
 
-Large transactions are possible, they can be issued, for example,
-by some trusted centre, which has many clients (like commercial
-bank, notary, etc). Actually, 2G is not a large value nowadays..
+--
+Tom Vier <tom@triadsys.com>
+Senior Net/Sys Admin
+Triad Systems Engineering, Inc.
 
-> But that's just my guess, based on a quick read of the implementation. 
-> I didn't check how far this change penetrates.  Does it affect all
-> filesystems, for example?  If so were they all reviewed (or tested!)
-> for correctness?
->   
-
-Currently I have tested 15 callsites, and only 2 of them was failed
-(direct-io and ecryptfs). The direct-io has been fixed already:
-there was a truncation bug (see
-[patch 1/2] vfs: fix overflow in direct-io subsystem).
-
-I am ready to check/fix other ones, if there are any chances, that
-this permit of large IOs will be eventually accepted.
-
-> And why was this patch written?  What motivated you?
-
-Our users ask us.
-
->   What are the user-visible effects?
-
-There must not be any effects: in accordance with documentation
-we can nominate SSIZE_MAX bytes to read/write.
-
->   Do manpages need updating?
->   
-
-No, they don't.
-
-Thanks,
-Edward.
