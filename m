@@ -1,72 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932349Ab0JZPuj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Oct 2010 11:50:39 -0400
-Received: from mail-px0-f174.google.com ([209.85.212.174]:62106 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932308Ab0JZPuh (ORCPT
+	id S1759955Ab0JZPvv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Oct 2010 11:51:51 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:54997 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751123Ab0JZPvu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Oct 2010 11:50:37 -0400
+	Tue, 26 Oct 2010 11:51:50 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=kmcnP3L0o86lW6TmytIrDtZd1xaAuEcrhiHDqlMaV+njFuC8b956HIr6Y8T8oSRC+U
-         OklTBgiWAd06lvqwgtod7D2kqZ/paIM3akRpQ7WdmGy3GfqPZaUVJGVYtS9Ztg0tNCwg
-         VmGgtFreLw74iRh+R/6Z+p4YrLCxlAlShjqg8=
-Date: Tue, 26 Oct 2010 08:50:28 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Joe Perches <joe@perches.com>
-Cc: Jiri Kosina <trivial@kernel.org>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 06/10] drivers/input/serio/i8042: Use pr_<level>, pr_fmt.
-  Fix dbg and __FILE__ use
-Message-ID: <20101026155028.GA13097@core.coreip.homeip.net>
-References: <cover.1288059486.git.joe@perches.com>
- <63a8deabb7c8167128d0415998692d15279ecb8c.1288059486.git.joe@perches.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <63a8deabb7c8167128d0415998692d15279ecb8c.1288059486.git.joe@perches.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=QfrAWmwGaGrWEK1Dp7mxrNUg49J6JDCFeRZMaKZIxBdQQz2snUn6r5hPVKnjl2PFBt
+         ElkzRr4LldEfJRl2D1wc4fdpe29yOqmSxu/QeJjBtTSVXYckddyn2NopQKDuhpVsY798
+         ZHMr/Wm3E3AT1zEYqn7yxBXi+KNDNcaDcnTTQ=
+From: Namhyung Kim <namhyung@gmail.com>
+To: "David S. Miller" <davem@davemloft.net>
+Cc: sparclinux@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] sparc32: make CONFIG_SPARC_LEON depends on !SMP to fix build failure
+Date: Wed, 27 Oct 2010 00:51:43 +0900
+Message-Id: <1288108303-2712-1-git-send-email-namhyung@gmail.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Joe,
+  CC      arch/sparc/kernel/irq_32.o
+arch/sparc/kernel/irq_32.c: In function 'request_fast_irq':
+arch/sparc/kernel/irq_32.c:370:25: error: conflicting types for 'trapbase_cpu1'
+arch/sparc/include/asm/leon.h:366:22: note: previous declaration of 'trapbase_cpu1' was here
+arch/sparc/kernel/irq_32.c:370:40: error: conflicting types for 'trapbase_cpu2'
+arch/sparc/include/asm/leon.h:367:22: note: previous declaration of 'trapbase_cpu2' was here
+arch/sparc/kernel/irq_32.c:370:55: error: conflicting types for 'trapbase_cpu3'
+arch/sparc/include/asm/leon.h:368:22: note: previous declaration of 'trapbase_cpu3' was here
+make[3]: *** [arch/sparc/kernel/irq_32.o] Error 1
+make[2]: *** [arch/sparc/kernel] Error 2
+make[1]: *** [sub-make] Error 2
+make: *** [all] Error 2
 
-On Mon, Oct 25, 2010 at 07:44:24PM -0700, Joe Perches wrote:
-> Standardized message logging prefixes.
-> Removed \n from dbg macro, added \n to each dbg call site.
+Signed-off-by: Namhyung Kim <namhyung@gmail.com>
+---
+ arch/sparc/Kconfig |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Did you test it? It looks for call like:
-
-> +             dbg("%02x <- i8042 (flush, %s)\n",
-> +                 data, str & I8042_STR_AUXDATA ? "aux" : "kbd");
-
-the result will be:
-
-printk(KERN_DEBUG "i8042: %02x <- i8042 (flush, %s)\n [%d]", ...)
-
-which is not exactly what you want...
-
->  
-> @@ -1268,7 +1262,7 @@ static void __init i8042_register_ports(void)
->  
->  	for (i = 0; i < I8042_NUM_PORTS; i++) {
->  		if (i8042_ports[i].serio) {
-> -			printk(KERN_INFO "serio: %s at %#lx,%#lx irq %d\n",
-> +			pr_info("%s at %#lx,%#lx irq %d\n",
->  				i8042_ports[i].serio->name,
->  				(unsigned long) I8042_DATA_REG,
->  				(unsigned long) I8042_COMMAND_REG,
-
-Not quite equivalent conversion, right now every port is registered with
-message "serio: XXX at YYY". I would be OK with having driver prefix
-going in front but I'd like to keep word serio in (like "i8042: serio
-XXX at YYY").
-
-Thanks.
-
+diff --git a/arch/sparc/Kconfig b/arch/sparc/Kconfig
+index 4db8bc0..a6685ba 100644
+--- a/arch/sparc/Kconfig
++++ b/arch/sparc/Kconfig
+@@ -463,7 +463,7 @@ config SERIAL_CONSOLE
+ 
+ config SPARC_LEON
+ 	bool "Sparc Leon processor family"
+-	depends on SPARC32
++	depends on SPARC32 && !SMP
+ 	---help---
+ 	  If you say Y here if you are running on a SPARC-LEON processor.
+ 	  The LEON processor is a synthesizable VHDL model of the
 -- 
-Dmitry
+1.7.0.4
+
