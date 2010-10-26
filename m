@@ -1,101 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760240Ab0JZUvX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Oct 2010 16:51:23 -0400
-Received: from xenotime.net ([72.52.115.56]:55008 "HELO xenotime.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1757655Ab0JZUvW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Oct 2010 16:51:22 -0400
-Date: Tue, 26 Oct 2010 13:51:19 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-To: Mauro Carvalho Chehab <mchehab@redhat.com>
-Cc: lkml <linux-kernel@vger.kernel.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Subject: Re: docbook: fix fatal error in linux/input.h
-Message-Id: <20101026135119.8e1a6a25.rdunlap@xenotime.net>
-In-Reply-To: <4CC736CE.80305@redhat.com>
-References: <20101026114555.4b79977d.rdunlap@xenotime.net>
-	<4CC7283D.3010205@redhat.com>
-	<20101026121747.897eddc9.rdunlap@xenotime.net>
-	<4CC736CE.80305@redhat.com>
-Organization: YPO4
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+	id S1760355Ab0JZUwQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Oct 2010 16:52:16 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:52731 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755211Ab0JZUwO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Oct 2010 16:52:14 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:subject:from:reply-to:to:cc:in-reply-to:references
+         :content-type:date:message-id:mime-version:x-mailer
+         :content-transfer-encoding;
+        b=m1iEatVsLgBaOrbQtfqv//VDeMonrnnd1+jZ+dahnmIbKbDzWGFFmhH8UfBYNWbeS4
+         5ETOM8qBckvEHK5l2rGeM1e5j57XAEJxXC6nGZUySmtqHuPgaIQZGTKOOP37GS03cylJ
+         cUnNMQPkCqvs4lBtscAywJDS1TQElDDZddUvM=
+Subject: Re: netns patches WAS( Re: [PATCH 8/8] net: Implement socketat.
+From: jamal <hadi@cyberus.ca>
+Reply-To: hadi@cyberus.ca
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Daniel Lezcano <daniel.lezcano@free.fr>,
+        Pavel Emelyanov <xemul@parallels.com>, linux-kernel@vger.kernel.org,
+        Linux Containers <containers@lists.osdl.org>, netdev@vger.kernel.org,
+        netfilter-devel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Michael Kerrisk <mtk.manpages@gmail.com>,
+        Ulrich Drepper <drepper@gmail.com>, Al Viro <viro@ZenIV.linux.org.uk>,
+        David Miller <davem@davemloft.net>,
+        "Serge E. Hallyn" <serge@hallyn.com>,
+        Pavel Emelyanov <xemul@openvz.org>,
+        Ben Greear <greearb@candelatech.com>,
+        Matt Helsley <matthltc@us.ibm.com>, Jonathan Corbet <corbet@lwn.net>,
+        Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>,
+        Jan Engelhardt <jengelh@medozas.de>, Patrick McHardy <kaber@trash.net>
+In-Reply-To: <1287145855.3642.30.camel@bigi>
+References: <m1ocborgq7.fsf@fess.ebiederm.org>
+	 <m1bp7oq1u8.fsf@fess.ebiederm.org>  <4C9B162E.7040201@parallels.com>
+	 <1285240797.5036.5.camel@bigi>  <4C9B3B06.900@parallels.com>
+	 <1285242055.5036.9.camel@bigi> <4C9B3F9C.8080506@parallels.com>
+	 <4CA7A07C.5030504@free.fr>  <1286113441.3812.229.camel@bigi>
+	 <1287145855.3642.30.camel@bigi>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 26 Oct 2010 16:52:06 -0400
+Message-ID: <1288126326.2094.131.camel@mojatatu>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Mailer: Evolution 2.28.3
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 26 Oct 2010 18:15:10 -0200 Mauro Carvalho Chehab wrote:
+Eric,
 
-> Em 26-10-2010 17:17, Randy Dunlap escreveu:
-> > On Tue, 26 Oct 2010 17:13:01 -0200 Mauro Carvalho Chehab wrote:
-> > 
-> >> Em 26-10-2010 16:45, Randy Dunlap escreveu:
-> >>> Hi,
-> >>>
-> >>> Recent commit 8613e4c2872a87cc309a42de2c7091744dc54d0e:
-> >>> Author: Mauro Carvalho Chehab <mchehab@redhat.com>
-> >>> Date:   Thu Sep 9 21:54:22 2010 -0700
-> >>>     Input: add support for large scancodes
-> >>>
-> >>> causes a fatal error in docbook generation:
-> >>>
-> >>> linux-2.6.36-git8/DOC1/Documentation/DocBook/device-drivers.xml:40690: parser error : StartTag: invalid element name
-> >>> #define INPUT_KEYMAP_BY_INDEX	(1 << 0)
-> >>>                              	    ^
-> >>>
-> >>> I think that this message comes from xsltproc, but I'm not positive about that.
-> >>> I also don't know of a really good fix for it.  However, I did find 2 ways to
-> >>> work around the error:
-> >>>
-> >>> a/ move the #define value to after the end of the struct input_keymap_entry, like:
-> >>>
-> >>> /* flags bits: */
-> >>> #define INPUT_KEYMAP_BY_INDEX	(1 << 0)
-> >>>
-> >>> or
-> >>> b/ don't use the "<< 0" (can leave the #define where it is in this case):
-> >>> #define INPUT_KEYMAP_BY_INDEX	(1)
-> >>>
-> >>> I have tested both of these patches and they work OK.
-> >>> Are you OK with either of them?  or want to choose one?
-> >>
-> >>
-> >> Hmm... probably, the first one is not correct.
-> > 
-> > Why not?  All it does is move the line to after the end of the struct.
-> > 
-> >> I suspect that the right way is to use something like:
-> >>
-> >> 	#define INPUT_KEYMAP_BY_INDEX	(1 &lt;&lt; 0)
-> >>
-> >> Could you please test if this would fix the issue?
-> > 
-> > You are suggesting putting that into include/linux/input.h ??
-> > 
-> > That would make sense if some tool converted "<<" to "&lt;&lt;".
-> > And that may be where the problem is, but I don't know those tools.
-> 
-> 
-> Hmm... such rule is already at DocBook/Makefile:
-> 
-> %.xml: %.c
->         @$($(quiet)gen_xml)
->         @(                            \
-> 	   echo "<programlisting>";   \
->            expand --tabs=8 < $< |     \
->            sed -e "s/&/\\&amp;/g"     \
->                -e "s/</\\&lt;/g"      \
->                -e "s/>/\\&gt;/g";     \
->            echo "</programlisting>")  > $@
-> 
-> Not sure why this didn't work. It should have replaced the < from the c file.
-> Maybe some patch broke Makefile?
+Ping?
+If you are too busy to push these in maybe have
+someone clueful like Daniel help out submitting? I think it
+should probably be reasonable to leave out the sockeat
+patch initially if it is deemed controversial..
 
-Thanks, I'll look into that.
+cheers,
+jamal
 
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+On Fri, 2010-10-15 at 08:30 -0400, jamal wrote:
+> Eric et al,
+> 
+> Did these patches make it in? I was looking at
+> two Davem net trees and i dont see them.
+> 
+> cheers,
+> jamal
+> 
+
+
