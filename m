@@ -1,30 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757072Ab0JZC3x (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Oct 2010 22:29:53 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:46026 "EHLO
+	id S1757737Ab0JZCcU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Oct 2010 22:32:20 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:40285 "EHLO
 	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756403Ab0JZC3w (ORCPT
+	with ESMTP id S1755655Ab0JZCcS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Oct 2010 22:29:52 -0400
+	Mon, 25 Oct 2010 22:32:18 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=subject:from:to:cc:in-reply-to:references:content-type:date
          :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=UMxbXQOhHrrT7A0PEAFnvt1MoONfU2hev66US8MiRMnCynH5S0IylBgPDNUeeneFNP
-         ue5g5LoQksM6yCIPcnh2vKZbyF7zLbe8SR2jESL4gGfKtMyLMAJEqRp52euaB3E3S+nQ
-         Bw5+dAoDKxaKERmiEkLooVjvaohzueIuBXJfU=
-Subject: Re: [PATCH 23/29] memstick: jmb38x_ms: use DMA for all TPCs with
- len greater that 8 by default
+        b=thA4Ghc6JdVzDFQRndToTSVlT3LDQ/uVMu9i5Vo6WHH2yOGcI7+novq7/oXe3LrLls
+         pcZaveBy5c3G325FjhK5pyrLGigf46RyAh9OskATN7o8YjTB1VnqVztHQS+KAW/WzJVc
+         WCP8Hkxz8lQzi4TYxgS4B5lshKXOujjL0xF2g=
+Subject: Re: [PATCH 0/29] My patch queue for memorystick subsystem
 From: Maxim Levitsky <maximlevitsky@gmail.com>
-To: Alex Dubov <oakad@yahoo.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <327472.13750.qm@web37607.mail.mud.yahoo.com>
-References: <327472.13750.qm@web37607.mail.mud.yahoo.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Alex Dubov <oakad@yahoo.com>, LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <20101025090721.c5d3fdc6.akpm@linux-foundation.org>
+References: <1287972070.5205.12.camel@maxim-laptop>
+	 <408703.12417.qm@web37603.mail.mud.yahoo.com>
+	 <20101025090721.c5d3fdc6.akpm@linux-foundation.org>
 Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 26 Oct 2010 04:29:46 +0200
-Message-ID: <1288060186.4024.186.camel@maxim-laptop>
+Date: Tue, 26 Oct 2010 04:32:13 +0200
+Message-ID: <1288060333.4024.189.camel@maxim-laptop>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
@@ -32,110 +32,62 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-10-25 at 09:12 -0700, Alex Dubov wrote:
-> --- On Fri, 22/10/10, Maxim Levitsky <maximlevitsky@gmail.com> wrote:
+On Mon, 2010-10-25 at 09:07 -0700, Andrew Morton wrote:
+> On Mon, 25 Oct 2010 07:39:58 -0700 (PDT) Alex Dubov <oakad@yahoo.com> wrote:
 > 
-> > From: Maxim Levitsky <maximlevitsky@gmail.com>
-> > Subject: [PATCH 23/29] memstick: jmb38x_ms: use DMA for all TPCs with len greater that 8 by default
-> > To: "Alex Dubov" <oakad@yahoo.com>
-> > Cc: "Andrew Morton" <akpm@linux-foundation.org>, "LKML" <linux-kernel@vger.kernel.org>, "Maxim Levitsky" <maximlevitsky@gmail.com>
-> > Received: Friday, 22 October, 2010, 4:53 PM
-> > This is to workaround a wierd
-> > hardware bug:
-> > 
-> > If PIO write is used, and then after it DMA write is used,
-> > DMA
-> > engine stops doing writes.
-> > That condition even persists after device reset.
-> > 
-> > To be maxumum safe, we do dma to a scratch page
-> > and memcpy from/to it.
-> > 
-> > Besides this change should just improve performance.
-> > 
-> > Signed-off-by: Maxim Levitsky <maximlevitsky@gmail.com>
-> > ---
+> > Normally, functional
+> > patches should precede the cosmetic one, so that the functionality can be
+> > discussed first.
 > 
-> I have not noticed this one before, and for all I know the driver was
-> tested at Jmicron.
-> Can you explain the issue a bit more?
-Because you didn't test MS standard, or always wrote OOB and param by
-seperate TPCs.
+> More usually it's the other way around, actually: cleanups come first.
+> 
+> Because the cleanups are usually uncontroversial, and because
+> substantive changes against cleaner code are easier to
+> review/understand and because the substantive changes are then easier
+> to revert or fix.
 
-You really don't read my mail.
+Exactly.
 
-<quote>
-***Appendix***
-
-Jmicron hardware bugs (the novel):
-
-#1: FIFO write ready bit in INT status register is stuck to 1.
-   It is stuck forever as soon as fifo
-   is used for writing even once.
-   Therefore if interrupt is shared (and here it is), its easy
-   to 'service' the device while it doesn't need any service
-
-
-#2: Its not possible to stuff the FIFO before TPC transfer.
-   One really have to wait for write ready interrupt, even though the
-write ready status is stuck.
+Now let me explain another technical reason why I did it that way.
+First I created one big patch per driver I changed.
+It really wasn't reviewable, but it was intended to review the end
+result (the source file after patch was applied).
+I did that because its really slows you down when you try to edit at
+same time many patches. You have endless conflicts, you do lot of work
+that you just remove in next patch etc.
+Anyway this patchseries is a result of a lot of hard work (about month).
 
 
-#3: TPCs with non 4 aligned length woes:
-   Facts:
 
-   * non 4 aligned DMA write hangs the system hard, maybe on bus level.
+Alex pointer me that that isn't acceptable in linux community.
+OK. I decided to bite the bullet and do that. It took me 2 full days to
+split patches, test them (after all, I do honor the rule of
+bisesctability).
 
-   * PIO read succedes but controller truncates the data stored in the
-FIFO to closest 4 byte boundary.
-   That is if you read 26 bytes, it will save 24 bytes in the FIFO
+Now why I put the cosmetic patches first?
 
-   * TPC_P0, TPC_P1 not aligned transfters work just fine despite a
-statement in the datasheet
-   (only mention of this problem)
+Because that reduces conflicts during patch splitting dramaticly.
+
+Consider this stack:
 
 
-#4: As soon as write PIO is used, then later write DMA fails.
-   Facts:
+3: <top>
+2: <few functions moved>
+1: <few functions rewritten>
+0: <existing source>
 
-   * This is triggered only by PIO write of registers
-   (only happens in ms_block.c when it writes param + oob. Thats why
-mspro_blk isn't affected)
-   Doing short DMA writes is a nice workaround.
+If I want to change patch #1, I will have to redo the patch #2 from the
+start. That really sucks.
 
-   * Doing PIO writes in h_msb_read_page don't cause the problem.
-     Therefore the bug causing sequence should be similiar to
-h_msb_write_block:
 
-       1. PIO write of param + extra (10 bytes) or even padded to 12 or
-16 bytes
-       2. inline write (TPC_P0) of MS_CMD_BLOCK_WRITE + wait for int
-       3. read of INT register via STATUS
-       3. DMA write of MS_TPC_WRITE_LONG_DATA
-       4. DMA write of MS_TPC_WRITE_LONG_DATA
-           ---------timeout-----------
- 
-   * In fact first DMA write succedes, but next one fails, and so do all
-following writes
+Now I could skip the functions that move code around, rename functions
+etc to make Alex happy, but my goal was to minimize differences between
+split-up series and original patch, so I could spare hard debugging.
 
-   * The problem persits till reboot, and shows up even if PIO isn't
-used again.
-   Other way to "fix" it, is to put device in D3 and back to D0
+This is result of lot of hard work.
+I really want to see that in 2.6.37.
 
-   * Serial/parallel mode don't affect anything.
 
-   After bug reproduction:
-
-    * DMA writes stop working completely, therefore mspro_blk looses
-writes as well
-
-    * PIO still works just fine. Its possible just to load the driver
-without dma support, and it works correctly.
-
-    * DMA reads work just fine.
-
-#5: Auto_Get_INT feature just doesn't work.
-   Datasheet says that intreg is placed to TPC_P0, but that doesn't
-happen....
-</quote>
+Best regards,
+	Maxim Levitsky
 
