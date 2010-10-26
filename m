@@ -1,71 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759887Ab0JZMlg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Oct 2010 08:41:36 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:53199 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759860Ab0JZMle (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Oct 2010 08:41:34 -0400
-Date: Tue, 26 Oct 2010 14:41:13 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Trond Myklebust <Trond.Myklebust@netapp.com>
-Cc: Charles Edward Lever <Chuck.Lever@oracle.com>,
-        Zimny Lech <napohybelskurwysynom2010@gmail.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, linux-nfs@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: linux-next: Tree for October 6
-Message-ID: <20101026124113.GA10872@elte.hu>
-References: <20101006163632.c1943a38.sfr@canb.auug.org.au>
- <AANLkTimb2NxXcfj-o=F18S1u2rn-o851F+1sgQ_2uOVQ@mail.gmail.com>
- <20101026080822.GA10520@elte.hu>
- <1288096333.3123.9.camel@heimdal.trondhjem.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1288096333.3123.9.camel@heimdal.trondhjem.org>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+	id S1759836Ab0JZMov (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Oct 2010 08:44:51 -0400
+Received: from canuck.infradead.org ([134.117.69.58]:37931 "EHLO
+	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757791Ab0JZMou convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Oct 2010 08:44:50 -0400
+Subject: Re: High CPU load when machine is idle (related to PROBLEM:
+ Unusually high load average when idle in 2.6.35, 2.6.35.1 and later)
+From: Peter Zijlstra <peterz@infradead.org>
+To: Venkatesh Pallipadi <venki@google.com>
+Cc: Damien Wyart <damien.wyart@free.fr>,
+        Chase Douglas <chase.douglas@canonical.com>,
+        Ingo Molnar <mingo@elte.hu>, tmhikaru@gmail.com,
+        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
+In-Reply-To: <1288001573.15336.52.camel@twins>
+References: <AANLkTin+HE09Oui89uCmG-rrHE14zXfJuRvZgsPCB1De@mail.gmail.com>
+	 <1287788622-25860-1-git-send-email-venki@google.com>
+	 <1288001573.15336.52.camel@twins>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Tue, 26 Oct 2010 14:44:34 +0200
+Message-ID: <1288097074.15336.211.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Trond Myklebust <Trond.Myklebust@netapp.com> wrote:
-
-> Anyhow, does the following fix the bug?
-
-Thanks, trying it.
-
-> Stephen Rothwell reports:
+On Mon, 2010-10-25 at 12:12 +0200, Peter Zijlstra wrote:
+> On Fri, 2010-10-22 at 16:03 -0700, Venkatesh Pallipadi wrote:
+> > I started making small changes to the code, but none of the change helped much.
+> > I think the problem with the current code is that, even though idle CPUs
+> > update load, the fold only happens when one of the CPU is busy
+> > and we end up taking its load into global load.
+> > 
+> > So, I tried to simplify things and doing the updates directly from idle loop.
+> > This is only a test patch, and eventually we need to hook it off somewhere
+> > else, instead of idle loop and also this is expected work only as x86_64
+> > right now.
+> > 
+> > Peter: Do you think something like this will work? loadavg went
+> > quite on two of my test systems after this change (4 cpu and 24 cpu).
 > 
-> > /home/test/linux-2.6/fs/nfs/nfsroot.c: In function 'nfs_root_debug':
-> > /home/test/linux-2.6/fs/nfs/nfsroot.c:110:2: error: 'nfs_debug'
-> > undeclared (first use in this function)
-> > /home/test/linux-2.6/fs/nfs/nfsroot.c:110:2: note: each undeclared
-> > identifier is reported only once for each function it appears in
-> > make[3]: *** [fs/nfs/nfsroot.o] Error 1
-> > make[2]: *** [fs/nfs] Error 2
-> > make[1]: *** [fs] Error 2
-> > make: *** [sub-make] Error 2
+> Not really, CPUs can stay idle for _very_ long times (!x86 cpus that
+> don't have crappy timers like HPET which roll around every 2-4 seconds).
 > 
-> Which is caused by commit 306a075362a288683f6346185f97dd0e06df19da
-> (NFS: Allow NFSROOT debugging messages to be enabled dynamically)
-> 
-> Fix is to disable this code when RPC_DEBUG is disabled.
-> 
-> Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+> But all CPUs staying idle for a long time is exactly the scenario you
+> fix before using the decay_load_misses() stuff, except that is for the
+> load-balancer per-cpu load numbers not the global cpu load avg. Won't a
+> similar approach work here?
 
-The commit also needs this tag:
 
-  Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
+The crude patch would be something like the below.. a smarter patch will
+try and avoid that loop.
 
-Thanks,
+---
+ include/linux/sched.h |    2 +-
+ kernel/sched.c        |   20 +++++++++-----------
+ kernel/timer.c        |    2 +-
+ 3 files changed, 11 insertions(+), 13 deletions(-)
 
-	Ingo
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 7a6e81f..84c1bf1 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -143,7 +143,7 @@ extern unsigned long nr_iowait_cpu(int cpu);
+ extern unsigned long this_cpu_load(void);
+ 
+ 
+-extern void calc_global_load(void);
++extern void calc_global_load(int ticks);
+ 
+ extern unsigned long get_parent_ip(unsigned long addr);
+ 
+diff --git a/kernel/sched.c b/kernel/sched.c
+index 41f1869..49a2baf 100644
+--- a/kernel/sched.c
++++ b/kernel/sched.c
+@@ -3171,22 +3171,20 @@ calc_load(unsigned long load, unsigned long exp, unsigned long active)
+  * calc_load - update the avenrun load estimates 10 ticks after the
+  * CPUs have updated calc_load_tasks.
+  */
+-void calc_global_load(void)
++void calc_global_load(int ticks)
+ {
+-	unsigned long upd = calc_load_update + 10;
+ 	long active;
+ 
+-	if (time_before(jiffies, upd))
+-		return;
+-
+-	active = atomic_long_read(&calc_load_tasks);
+-	active = active > 0 ? active * FIXED_1 : 0;
++	while (!time_before(jiffies, calc_load_update + 10)) {
++		active = atomic_long_read(&calc_load_tasks);
++		active = active > 0 ? active * FIXED_1 : 0;
+ 
+-	avenrun[0] = calc_load(avenrun[0], EXP_1, active);
+-	avenrun[1] = calc_load(avenrun[1], EXP_5, active);
+-	avenrun[2] = calc_load(avenrun[2], EXP_15, active);
++		avenrun[0] = calc_load(avenrun[0], EXP_1, active);
++		avenrun[1] = calc_load(avenrun[1], EXP_5, active);
++		avenrun[2] = calc_load(avenrun[2], EXP_15, active);
+ 
+-	calc_load_update += LOAD_FREQ;
++		calc_load_update += LOAD_FREQ;
++	}
+ }
+ 
+ /*
+diff --git a/kernel/timer.c b/kernel/timer.c
+index d6ccb90..9f82b2a 100644
+--- a/kernel/timer.c
++++ b/kernel/timer.c
+@@ -1297,7 +1297,7 @@ void do_timer(unsigned long ticks)
+ {
+ 	jiffies_64 += ticks;
+ 	update_wall_time();
+-	calc_global_load();
++	calc_global_load(ticks);
+ }
+ 
+ #ifdef __ARCH_WANT_SYS_ALARM
+
