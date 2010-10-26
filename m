@@ -1,76 +1,179 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760508Ab0JZXZf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Oct 2010 19:25:35 -0400
-Received: from mail.perches.com ([173.55.12.10]:3609 "EHLO mail.perches.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758229Ab0JZXZd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Oct 2010 19:25:33 -0400
-Subject: Re: [PATCH 06/10] drivers/input/serio/i8042: Use pr_<level>,
- pr_fmt. Fix dbg and __FILE__ use
-From: Joe Perches <joe@perches.com>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Jiri Kosina <trivial@kernel.org>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <20101026155028.GA13097@core.coreip.homeip.net>
-References: <cover.1288059486.git.joe@perches.com>
-	 <63a8deabb7c8167128d0415998692d15279ecb8c.1288059486.git.joe@perches.com>
-	 <20101026155028.GA13097@core.coreip.homeip.net>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 26 Oct 2010 16:25:31 -0700
-Message-ID: <1288135531.4145.59.camel@Joe-Laptop>
+	id S1757746Ab0JZXnf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Oct 2010 19:43:35 -0400
+Received: from nm26-vm0.bullet.mail.sp2.yahoo.com ([98.139.91.230]:44287 "HELO
+	nm26-vm0.bullet.mail.sp2.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751373Ab0JZXnd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Oct 2010 19:43:33 -0400
+X-Yahoo-Newman-Id: 329040.84451.bm@omp1032.mail.sp2.yahoo.com
+X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
+X-YMail-OSG: XhW9bPYVM1mKZsZNrzVOu_ColJSUu294rUug4q5XrTk2JLv
+ NDvdpBZIQ0XD3337IKq1nz1hQ6Hp5SiWUHoD.ofAGpK3V5BID7xgnyI8TWRy
+ d2FKsIK9Po3d1GQHMX24iM_nzJqsBbZK8IjOXsciNqICwHnYn9sBFCw4OepG
+ mNLnXGLkzv1M1kLaekAYe7tw0NDLDzv8UXrWtssX1cani3I_RtL1WMocvDCr
+ duhImnQmtwtHCOHWJ0Tq72I4.0fN6ursrXGPaY6u2SuvwlTE7GB4NR3Kj0YT
+ TEA--
+X-Yahoo-Newman-Property: ymail-3
+Subject: Re: [ANNOUNCE] Status of unlocked_qcmds=1 operation for .37
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: James Bottomley <James.Bottomley@suse.de>
+Cc: Mike Anderson <andmike@linux.vnet.ibm.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        Vasu Dev <vasu.dev@linux.intel.com>,
+        Tim Chen <tim.c.chen@linux.intel.com>, Andi Kleen <ak@linux.intel.com>,
+        Matthew Wilcox <willy@linux.intel.com>,
+        Mike Christie <michaelc@cs.wisc.edu>, Jens Axboe <jaxboe@fusionio.com>,
+        James Smart <james.smart@emulex.com>,
+        Andrew Vasquez <andrew.vasquez@qlogic.com>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Hannes Reinecke <hare@suse.de>, Joe Eykholt <jeykholt@cisco.com>,
+        Christoph Hellwig <hch@lst.de>, Jon Hawley <warthog9@kernel.org>,
+        Brian King <brking@linux.vnet.ibm.com>,
+        Christof Schmitt <christof.schmitt@de.ibm.com>,
+        Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@zytor.com>
+In-Reply-To: <1288134713.19649.11.camel@mulgrave.site>
+References: <1287607774.10283.78.camel@haakon2.linux-iscsi.org>
+	 <20101021150840.GA24309@linux.vnet.ibm.com>
+	 <1288130914.5169.97.camel@haakon2.linux-iscsi.org>
+	 <1288132071.8283.689.camel@mulgrave.site>
+	 <1288132464.5169.112.camel@haakon2.linux-iscsi.org>
+	 <1288133450.8283.723.camel@mulgrave.site>
+	 <1288134048.5169.132.camel@haakon2.linux-iscsi.org>
+	 <1288134713.19649.11.camel@mulgrave.site>
+Content-Type: text/plain
+Date: Tue, 26 Oct 2010 16:31:58 -0700
+Message-Id: <1288135918.5169.149.camel@haakon2.linux-iscsi.org>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+X-Mailer: Evolution 2.22.3.1 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-10-26 at 08:50 -0700, Dmitry Torokhov wrote:
-> Hi Joe,
-
-Hi Dmitry.
-
-> On Mon, Oct 25, 2010 at 07:44:24PM -0700, Joe Perches wrote:
-> > Standardized message logging prefixes.
-> > Removed \n from dbg macro, added \n to each dbg call site.
-> Did you test it? It looks for call like:
-> > +             dbg("%02x <- i8042 (flush, %s)\n",
-> > +                 data, str & I8042_STR_AUXDATA ? "aux" : "kbd");
-> the result will be:
-> printk(KERN_DEBUG "i8042: %02x <- i8042 (flush, %s)\n [%d]", ...)
-> which is not exactly what you want...
-
-Right.  My mistake.
-I compile tested only and didn't notice the badly formed string.
-
-Mind if I move the time to the front like this?
-
-+#define dbg(format, arg...)                                            \
-+do {									\
-+	if (i8042_debug)						\
-+		printk(KERN_DEBUG KBUILD_MODNAME ": [%d]" format),	\
-+                      (int)(jiffies - i8042_start_time), ##arg);	\
-+} while (0)
-
-> >  
-> > @@ -1268,7 +1262,7 @@ static void __init i8042_register_ports(void)
-> >  
-> >  	for (i = 0; i < I8042_NUM_PORTS; i++) {
-> >  		if (i8042_ports[i].serio) {
-> > -			printk(KERN_INFO "serio: %s at %#lx,%#lx irq %d\n",
-> > +			pr_info("%s at %#lx,%#lx irq %d\n",
-> >  				i8042_ports[i].serio->name,
-> >  				(unsigned long) I8042_DATA_REG,
-> >  				(unsigned long) I8042_COMMAND_REG,
+On Tue, 2010-10-26 at 18:11 -0500, James Bottomley wrote:
+> On Tue, 2010-10-26 at 16:00 -0700, Nicholas A. Bellinger wrote:
+> > On Tue, 2010-10-26 at 22:50 +0000, James Bottomley wrote:
+> > > On Tue, 2010-10-26 at 15:34 -0700, Nicholas A. Bellinger wrote:
+> > > > On Tue, 2010-10-26 at 17:27 -0500, James Bottomley wrote:
+> > > > > On Tue, 2010-10-26 at 15:08 -0700, Nicholas A. Bellinger wrote:
+> > > > > > [PATCH] scsi: Add SCSI_EH_SOFTIRQ_DONE usage
+> > > > > > 
+> > > > > > This patch introduces a SCSI_EH_SOFTIRQ_DONE flag that is set in scsi_softirq_done()
+> > > > > > from block soft_irq context that is used to signal when scsi_try_to_abort_cmd() should
+> > > > > > be calling __scsi_try_to_abort_cmd() for a timed out struct scsi_cmnd instead of
+> > > > > > returning SUCCESS via checking only blk_test_rq_complete().  This is done because
+> > > > > > blk_rq_timed_out_timer() calls blk_mark_rq_complete() before blk_rq_timed_out() ->
+> > > > > > struct request_queue->rq_timed_out_fn().
+> > > > > 
+> > > > > This is getting pretty far off into the weeds.  I think the first step
+> > > > > should be queue lock push down into ->queuecommand.  This would still
+> > > > > necessitate locking around the serial number.
+> > > > 
+> > > > Hmmm, I am not sure I understand what you mean here.  My understanding
+> > > > is that the whole point of the series was to remove any locking around
+> > > > the serial number in order to make scsi_dispatch_cmd() lockless,
+> > > > right..?
+> > > 
+> > > The point is that several things have to happen for that to be a
+> > > reality.  The easiest and most obvious thing is lock push down in
+> > > ->queuecommand.
+> > > 
+> > 
+> > Ok, can you please explain to me what you mean here..?  As I really
+> > thought we came to consensus that:
+> > 
+> > *) running in unlocked_qcmd=1 was to be made the default for LLDs using
+> > the legacy optimization of ->queuecommand() -> unlock() ->
+> > do_some_lld_work() -> lock() -> return to scsi_dispatch_cmd()
 > 
-> Not quite equivalent conversion, right now every port is registered with
-> message "serio: XXX at YYY". I would be OK with having driver prefix
-> going in front but I'd like to keep word serio in (like "i8042: serio
-> XXX at YYY").
+> So I was thinking no flag for changing locking behaviour ... simply push
+> the lock down into the ->queuecommand routines that need it, like we did
+> for the error handler.
+> 
 
-I'll resubmit a pr_<level> series for drivers/input/serio
-today/tomorrow with this change.
+Yes, I think this makes alot of sense as the next step beyond what has
+been currently proposed so far with these series for .37.  The main bit
+with this approach is that is requires touching every single legacy
+LLD's ->queuecommand() which honestly is a bit scary on some of the
+legacy stuff.  This instead of the approach this series has taken so far
+to simply to still be able to use the LLDs we are unsure about running
+in host_lock less mode in mainline+ out of tree (who do not muck with
+host_lock in ->queuecommand of course :) will still 'just work'.
 
-cheers, Joe
+Its hard to say how to say which approach is better at this point, but I
+am still leaning toward IMHO the unlocked_qcmds=1 would be the safest
+incremental first step for .37, and then do the second series for .38 to
+get any LLD needing host_lock using it directly inside of their
+->queuecommand().
+
+This sounds like a pretty reasonable compromise that I think is slightly
+less risky for the LLDs with the ghosts and cob-webs hanging off of
+them.
+
+What do you think..?
+
+--nab
+
+> James
+> 
+> > *) For the mpt-fusion / mpt2sas drivers which did not use the legacy
+> > optimization, but Tim Chen has tested with the former and I am awaiting
+> > an ACK from LSI on the latter.
+> > 
+> > *) All other drivers will function with host_lock held (eg: legacy mode)
+> > in scsi_dispatch_cmd().
+> > 
+> > *) All drivers using cmd->serial_number for anything beyond an
+> > informational purpose converted to use scsi_cmd_get_serial().
+> > 
+> > > The next is most likely serial number elimination.
+> > > 
+> > > But the point is that we don't have to do the whole thing all at once
+> > > (and spend months trying to get the series right).
+> > 
+> > Not exactly correct, we have the whole thing ready right now with libfc
+> > running unlocked_qcmd=0 legacy mode.
+> > 
+> > Once I verify START_STOP case in scsi_error.c, I am happy to respin a
+> > mergeable tree from linus HEAD for you to pull ASAP.
+> > 
+> > > 
+> > > > That is what the current patch series already does, in that it makes the
+> > > > use of cmd->serial_number optional and requires LLDs who use this for
+> > > > anything beyond an informational purpose to explictly call
+> > > > scsi_cmd_get_serial(). 
+> > > 
+> > > OK, so this patch is a corner case where the error handler is using the
+> > > serial number value to deduce something the block layer already knows
+> > > (whether the command completed or not). I don't think introducing a
+> > > substitute flag is the right way, the information should just be
+> > > extracted properly.
+> > > 
+> > 
+> > Well, according to andmike this is two corner cases that are a result of
+> > the drop-host_lock-v4 series using only blk_test_rq_complete() in
+> > scsi_try_to_abort_cmd(), which will be true because of:
+> > 
+> > blk_rq_timed_out_timer() ->  blk_mark_rq_complete()
+> > 
+> > > But arguments about this don't have to impede the lock push down.
+> > > 
+> > 
+> > Sure, but I assume you mean the lock push down only for the legacy LLDs
+> > that are not already internally unlocking host_lock in
+> > SHT->queuecommand() in mainline code right..?  
+> > 
+> > --nab
+> > 
+> > 
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-scsi" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
