@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932547Ab0JZCzj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Oct 2010 22:55:39 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:29399 "EHLO mx1.redhat.com"
+	id S932579Ab0JZCzr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Oct 2010 22:55:47 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:18244 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756124Ab0JZCzg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Oct 2010 22:55:36 -0400
+	id S1755944Ab0JZCzl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Oct 2010 22:55:41 -0400
 Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
 	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
 	Kingdom.
 	Registered in England and Wales under Company Registration No. 3798903
-Subject: [PATCH 27/43] MN10300: Make the use of PIDR to mark TLB entries
- controllable
+Subject: [PATCH 28/43] MN10300: Use the [ID]PTEL2 registers rather than
+ [ID]PTEL for TLB control
 To: linux-am33-list@redhat.com
 From: David Howells <dhowells@redhat.com>
 Cc: linux-kernel@vger.kernel.org,
         Akira Takeuchi <takeuchi.akr@jp.panasonic.com>,
         Kiyoshi Owada <owada.kiyoshi@jp.panasonic.com>
-Date: Tue, 26 Oct 2010 03:55:25 +0100
-Message-ID: <20101026025525.23512.2088.stgit@warthog.procyon.org.uk>
+Date: Tue, 26 Oct 2010 03:55:31 +0100
+Message-ID: <20101026025531.23512.84445.stgit@warthog.procyon.org.uk>
 In-Reply-To: <20101026025301.23512.24525.stgit@warthog.procyon.org.uk>
 References: <20101026025301.23512.24525.stgit@warthog.procyon.org.uk>
 User-Agent: StGit/0.15-97-g9680-dirty
@@ -31,270 +31,201 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Akira Takeuchi <takeuchi.akr@jp.panasonic.com>
 
-Make controllable the use of the PIDR register to mark TLB entries as belonging
-to particular processes.
+Use the [ID]PTEL2 registers rather than [ID]PTEL for TLB control as the bits
+are a more suitable layout.
 
 Signed-off-by: Akira Takeuchi <takeuchi.akr@jp.panasonic.com>
 Signed-off-by: Kiyoshi Owada <owada.kiyoshi@jp.panasonic.com>
 Signed-off-by: David Howells <dhowells@redhat.com>
 ---
 
- arch/mn10300/Kconfig                   |    3 ++
- arch/mn10300/include/asm/mmu_context.h |   59 ++++++++++++++++----------------
- arch/mn10300/include/asm/tlbflush.h    |   43 ++++++++++++++++++++++-
- arch/mn10300/mm/mmu-context.c          |   41 ++++++----------------
- 4 files changed, 84 insertions(+), 62 deletions(-)
+ arch/mn10300/include/asm/cpu-regs.h |   19 +++++-----
+ arch/mn10300/include/asm/pgtable.h  |   66 +++++++++++++++++++----------------
+ arch/mn10300/mm/tlb-mn10300.S       |   27 ++++++++++----
+ 3 files changed, 65 insertions(+), 47 deletions(-)
 
 
-diff --git a/arch/mn10300/Kconfig b/arch/mn10300/Kconfig
-index dd7b570..7bd920b 100644
---- a/arch/mn10300/Kconfig
-+++ b/arch/mn10300/Kconfig
-@@ -142,6 +142,9 @@ config FPU
+diff --git a/arch/mn10300/include/asm/cpu-regs.h b/arch/mn10300/include/asm/cpu-regs.h
+index 00e306c..90ed4a3 100644
+--- a/arch/mn10300/include/asm/cpu-regs.h
++++ b/arch/mn10300/include/asm/cpu-regs.h
+@@ -252,14 +252,6 @@ asm(" .am33_2\n");
+ #define xPTEL_PS_4Mb		0x00000c00	/* - 4Mb page */
+ #define xPTEL_PPN		0xfffff006	/* physical page number */
  
- source "arch/mn10300/mm/Kconfig.cache"
- 
-+config MN10300_TLB_USE_PIDR
-+	def_bool y
-+
- menu "Memory layout options"
- 
- config KERNEL_RAM_BASE_ADDRESS
-diff --git a/arch/mn10300/include/asm/mmu_context.h b/arch/mn10300/include/asm/mmu_context.h
-index 24d63f0..5fb3648 100644
---- a/arch/mn10300/include/asm/mmu_context.h
-+++ b/arch/mn10300/include/asm/mmu_context.h
-@@ -27,28 +27,22 @@
- #include <asm/tlbflush.h>
- #include <asm-generic/mm_hooks.h>
- 
-+#define MMU_CONTEXT_TLBPID_NR		256
- #define MMU_CONTEXT_TLBPID_MASK		0x000000ffUL
- #define MMU_CONTEXT_VERSION_MASK	0xffffff00UL
- #define MMU_CONTEXT_FIRST_VERSION	0x00000100UL
- #define MMU_NO_CONTEXT			0x00000000UL
+-#define xPTEL_V_BIT		0	/* bit numbers corresponding to above masks */
+-#define xPTEL_UNUSED1_BIT	1
+-#define xPTEL_UNUSED2_BIT	2
+-#define xPTEL_C_BIT		3
+-#define xPTEL_PV_BIT		4
+-#define xPTEL_D_BIT		5
+-#define xPTEL_G_BIT		9
 -
--extern unsigned long mmu_context_cache[NR_CPUS];
--#define mm_context(mm)	(mm->context.tlbpid[smp_processor_id()])
-+#define MMU_CONTEXT_TLBPID_LOCK_NR	0
+ #define IPTEU			__SYSREG(0xc00000a4, u32)	/* instruction TLB virtual addr */
+ #define DPTEU			__SYSREG(0xc00000b4, u32)	/* data TLB virtual addr */
+ #define xPTEU_VPN		0xfffffc00	/* virtual page number */
+@@ -283,7 +275,16 @@ asm(" .am33_2\n");
+ #define xPTEL2_PS_128Kb		0x00000100	/* - 128Kb page */
+ #define xPTEL2_PS_1Kb		0x00000200	/* - 1Kb page */
+ #define xPTEL2_PS_4Mb		0x00000300	/* - 4Mb page */
+-#define xPTEL2_PPN		0xfffffc00	/* physical page number */
++#define xPTEL2_CWT		0x00000400	/* cacheable write-through */
++#define xPTEL2_UNUSED1		0x00000800	/* unused bit (broadcast mask) */
++#define xPTEL2_PPN		0xfffff000	/* physical page number */
++
++#define xPTEL2_V_BIT		0	/* bit numbers corresponding to above masks */
++#define xPTEL2_C_BIT		1
++#define xPTEL2_PV_BIT		2
++#define xPTEL2_D_BIT		3
++#define xPTEL2_G_BIT		7
++#define xPTEL2_UNUSED1_BIT	11
  
- #define enter_lazy_tlb(mm, tsk)	do {} while (0)
+ #define MMUFCR			__SYSREGC(0xc000009c, u32)	/* MMU exception cause */
+ #define MMUFCR_IFC		__SYSREGC(0xc000009c, u16)	/* MMU instruction excep cause */
+diff --git a/arch/mn10300/include/asm/pgtable.h b/arch/mn10300/include/asm/pgtable.h
+index 16d8857..93c3294 100644
+--- a/arch/mn10300/include/asm/pgtable.h
++++ b/arch/mn10300/include/asm/pgtable.h
+@@ -98,38 +98,44 @@ extern pgd_t swapper_pg_dir[PTRS_PER_PGD];
+ extern pte_t kernel_vmalloc_ptes[(VMALLOC_END - VMALLOC_START) / PAGE_SIZE];
+ #endif
  
--#ifdef CONFIG_SMP
--#define cpu_ran_vm(cpu, mm) \
--	cpumask_set_cpu((cpu), mm_cpumask(mm))
--#define cpu_maybe_ran_vm(cpu, mm) \
--	cpumask_test_and_set_cpu((cpu), mm_cpumask(mm))
--#else
--#define cpu_ran_vm(cpu, mm)		do {} while (0)
--#define cpu_maybe_ran_vm(cpu, mm)	true
--#endif /* CONFIG_SMP */
-+#ifdef CONFIG_MN10300_TLB_USE_PIDR
-+extern unsigned long mmu_context_cache[NR_CPUS];
-+#define mm_context(mm)	(mm->context.tlbpid[smp_processor_id()])
- 
--/*
-- * allocate an MMU context
-+/**
-+ * allocate_mmu_context - Allocate storage for the arch-specific MMU data
-+ * @mm: The userspace VM context being set up
-  */
- static inline unsigned long allocate_mmu_context(struct mm_struct *mm)
- {
-@@ -101,34 +95,41 @@ static inline int init_new_context(struct task_struct *tsk,
- }
- 
- /*
-- * destroy context related info for an mm_struct that is about to be put to
-- * rest
-- */
--#define destroy_context(mm)	do { } while (0)
+-/* IPTEL/DPTEL bit assignments */
+-#define _PAGE_BIT_VALID		xPTEL_V_BIT
+-#define _PAGE_BIT_ACCESSED	xPTEL_UNUSED1_BIT	/* mustn't be loaded into IPTEL/DPTEL */
+-#define _PAGE_BIT_NX		xPTEL_UNUSED2_BIT	/* mustn't be loaded into IPTEL/DPTEL */
+-#define _PAGE_BIT_CACHE		xPTEL_C_BIT
+-#define _PAGE_BIT_PRESENT	xPTEL_PV_BIT
+-#define _PAGE_BIT_DIRTY		xPTEL_D_BIT
+-#define _PAGE_BIT_GLOBAL	xPTEL_G_BIT
 -
--/*
-  * after we have set current->mm to a new value, this activates the context for
-  * the new mm so we see the new mappings.
-  */
--static inline void activate_context(struct mm_struct *mm, int cpu)
-+static inline void activate_context(struct mm_struct *mm)
- {
- 	PIDR = get_mmu_context(mm) & MMU_CONTEXT_TLBPID_MASK;
- }
-+#else  /* CONFIG_MN10300_TLB_USE_PIDR */
- 
--/*
-- * change between virtual memory sets
-+#define init_new_context(tsk, mm)	(0)
-+#define activate_context(mm)		local_flush_tlb()
-+
-+#endif /* CONFIG_MN10300_TLB_USE_PIDR */
-+
-+/**
-+ * destroy_context - Destroy mm context information
-+ * @mm: The MM being destroyed.
-+ *
-+ * Destroy context related info for an mm_struct that is about to be put to
-+ * rest
-+ */
-+#define destroy_context(mm)	do {} while (0)
-+
-+/**
-+ * switch_mm - Change between userspace virtual memory contexts
-+ * @prev: The outgoing MM context.
-+ * @next: The incoming MM context.
-+ * @tsk: The incoming task.
-  */
- static inline void switch_mm(struct mm_struct *prev, struct mm_struct *next,
- 			     struct task_struct *tsk)
- {
--	int cpu = smp_processor_id();
+-#define _PAGE_VALID		xPTEL_V
+-#define _PAGE_ACCESSED		xPTEL_UNUSED1
+-#define _PAGE_NX		xPTEL_UNUSED2		/* no-execute bit */
+-#define _PAGE_CACHE		xPTEL_C
+-#define _PAGE_PRESENT		xPTEL_PV
+-#define _PAGE_DIRTY		xPTEL_D
+-#define _PAGE_PROT		xPTEL_PR
+-#define _PAGE_PROT_RKNU		xPTEL_PR_ROK
+-#define _PAGE_PROT_WKNU		xPTEL_PR_RWK
+-#define _PAGE_PROT_RKRU		xPTEL_PR_ROK_ROU
+-#define _PAGE_PROT_WKRU		xPTEL_PR_RWK_ROU
+-#define _PAGE_PROT_WKWU		xPTEL_PR_RWK_RWU
+-#define _PAGE_GLOBAL		xPTEL_G
+-#define _PAGE_PSE		xPTEL_PS_4Mb		/* 4MB page */
 -
- 	if (prev != next) {
--		cpu_ran_vm(cpu, next);
--		activate_context(next, cpu);
- 		PTBR = (unsigned long) next->pgd;
--	} else if (!cpu_maybe_ran_vm(cpu, next)) {
--		activate_context(next, cpu);
-+		activate_context(next);
- 	}
- }
- 
-diff --git a/arch/mn10300/include/asm/tlbflush.h b/arch/mn10300/include/asm/tlbflush.h
-index 5d54bf5..c3c194d 100644
---- a/arch/mn10300/include/asm/tlbflush.h
-+++ b/arch/mn10300/include/asm/tlbflush.h
-@@ -13,6 +13,12 @@
- 
- #include <asm/processor.h>
- 
-+struct tlb_state {
-+	struct mm_struct	*active_mm;
-+	int			state;
-+};
-+DECLARE_PER_CPU_SHARED_ALIGNED(struct tlb_state, cpu_tlbstate);
+-#define _PAGE_FILE		xPTEL_UNUSED1_BIT	/* set:pagecache unset:swap */
+-
+-#define __PAGE_PROT_UWAUX	0x040
+-#define __PAGE_PROT_USER	0x080
+-#define __PAGE_PROT_WRITE	0x100
++/* IPTEL2/DPTEL2 bit assignments */
++#define _PAGE_BIT_VALID		xPTEL2_V_BIT
++#define _PAGE_BIT_CACHE		xPTEL2_C_BIT
++#define _PAGE_BIT_PRESENT	xPTEL2_PV_BIT
++#define _PAGE_BIT_DIRTY		xPTEL2_D_BIT
++#define _PAGE_BIT_GLOBAL	xPTEL2_G_BIT
++#define _PAGE_BIT_ACCESSED	xPTEL2_UNUSED1_BIT	/* mustn't be loaded into IPTEL2/DPTEL2 */
 +
- /**
-  * local_flush_tlb - Flush the current MM's entries from the local CPU's TLBs
-  */
-@@ -31,20 +37,51 @@ static inline void local_flush_tlb(void)
- /**
-  * local_flush_tlb_all - Flush all entries from the local CPU's TLBs
-  */
--#define local_flush_tlb_all()		local_flush_tlb()
-+static inline void local_flush_tlb_all(void)
-+{
-+	local_flush_tlb();
-+}
- 
- /**
-  * local_flush_tlb_one - Flush one entry from the local CPU's TLBs
-  */
--#define local_flush_tlb_one(addr)	local_flush_tlb()
-+static inline void local_flush_tlb_one(unsigned long addr)
-+{
-+	local_flush_tlb();
-+}
- 
- /**
-  * local_flush_tlb_page - Flush a page's entry from the local CPU's TLBs
-  * @mm: The MM to flush for
-  * @addr: The address of the target page in RAM (not its page struct)
-  */
--extern void local_flush_tlb_page(struct mm_struct *mm, unsigned long addr);
-+static inline
-+void local_flush_tlb_page(struct mm_struct *mm, unsigned long addr)
-+{
-+	unsigned long pteu, flags, cnx;
++#define _PAGE_VALID		xPTEL2_V
++#define _PAGE_CACHE		xPTEL2_C
++#define _PAGE_PRESENT		xPTEL2_PV
++#define _PAGE_DIRTY		xPTEL2_D
++#define _PAGE_PROT		xPTEL2_PR
++#define _PAGE_PROT_RKNU		xPTEL2_PR_ROK
++#define _PAGE_PROT_WKNU		xPTEL2_PR_RWK
++#define _PAGE_PROT_RKRU		xPTEL2_PR_ROK_ROU
++#define _PAGE_PROT_WKRU		xPTEL2_PR_RWK_ROU
++#define _PAGE_PROT_WKWU		xPTEL2_PR_RWK_RWU
++#define _PAGE_GLOBAL		xPTEL2_G
++#define _PAGE_PS_MASK		xPTEL2_PS
++#define _PAGE_PS_4Kb		xPTEL2_PS_4Kb
++#define _PAGE_PS_128Kb		xPTEL2_PS_128Kb
++#define _PAGE_PS_1Kb		xPTEL2_PS_1Kb
++#define _PAGE_PS_4Mb		xPTEL2_PS_4Mb
++#define _PAGE_PSE		xPTEL2_PS_4Mb		/* 4MB page */
++#define _PAGE_CACHE_WT		xPTEL2_CWT
++#define _PAGE_ACCESSED		xPTEL2_UNUSED1
++#define _PAGE_NX		0			/* no-execute bit */
 +
-+	addr &= PAGE_MASK;
- 
-+	local_irq_save(flags);
++/* If _PAGE_VALID is clear, we use these: */
++#define _PAGE_FILE		xPTEL2_C	/* set:pagecache unset:swap */
++#define _PAGE_PROTNONE		0x000		/* If not present */
 +
-+	cnx = 1;
-+#ifdef CONFIG_MN10300_TLB_USE_PIDR
-+	cnx = mm->context.tlbpid[smp_processor_id()];
++#define __PAGE_PROT_UWAUX	0x010
++#define __PAGE_PROT_USER	0x020
++#define __PAGE_PROT_WRITE	0x040
+ 
+ #define _PAGE_PRESENTV		(_PAGE_PRESENT|_PAGE_VALID)
+-#define _PAGE_PROTNONE		0x000	/* If not present */
+ 
+ #ifndef __ASSEMBLY__
+ 
+diff --git a/arch/mn10300/mm/tlb-mn10300.S b/arch/mn10300/mm/tlb-mn10300.S
+index ccf6229..b994017 100644
+--- a/arch/mn10300/mm/tlb-mn10300.S
++++ b/arch/mn10300/mm/tlb-mn10300.S
+@@ -61,10 +61,16 @@ ENTRY(itlb_miss)
+ 	btst	_PAGE_VALID,d2
+ 	beq	itlb_miss_fault		# jump if doesn't point to a page
+ 					# (might be a swap id)
++#if	((_PAGE_ACCESSED & 0xffffff00) == 0)
+ 	bset	_PAGE_ACCESSED,(0,a2)
+-	and	~(xPTEL_UNUSED1|xPTEL_UNUSED2),d2
++#elif	((_PAGE_ACCESSED & 0xffff00ff) == 0)
++	bset	+(_PAGE_ACCESSED >> 8),(1,a2)
++#else
++#error	"_PAGE_ACCESSED value is out of range"
 +#endif
-+	if (cnx) {
-+		pteu = addr;
-+#ifdef CONFIG_MN10300_TLB_USE_PIDR
-+		pteu |= cnx & xPTEU_PID;
++	and	~xPTEL2_UNUSED1,d2
+ itlb_miss_set:
+-	mov	d2,(IPTEL)		# change the TLB
++	mov	d2,(IPTEL2)		# change the TLB
+ #ifdef CONFIG_GDBSTUB
+ 	movm	(sp),[d2,d3,a2]
+ #endif
+@@ -118,10 +124,16 @@ ENTRY(dtlb_miss)
+ 	btst	_PAGE_VALID,d2
+ 	beq	dtlb_miss_fault		# jump if doesn't point to a page
+ 					# (might be a swap id)
++#if	((_PAGE_ACCESSED & 0xffffff00) == 0)
+ 	bset	_PAGE_ACCESSED,(0,a2)
+-	and	~(xPTEL_UNUSED1|xPTEL_UNUSED2),d2
++#elif	((_PAGE_ACCESSED & 0xffff00ff) == 0)
++	bset	+(_PAGE_ACCESSED >> 8),(1,a2)
++#else
++#error	"_PAGE_ACCESSED value is out of range"
 +#endif
-+		IPTEU = pteu;
-+		DPTEU = pteu;
-+		if (IPTEL & xPTEL_V)
-+			IPTEL = 0;
-+		if (DPTEL & xPTEL_V)
-+			DPTEL = 0;
-+	}
-+	local_irq_restore(flags);
-+}
++	and	~xPTEL2_UNUSED1,d2
+ dtlb_miss_set:
+-	mov	d2,(DPTEL)		# change the TLB
++	mov	d2,(DPTEL2)		# change the TLB
+ #ifdef CONFIG_GDBSTUB
+ 	movm	(sp),[d2,d3,a2]
+ #endif
+@@ -156,13 +168,12 @@ ENTRY(itlb_aerror)
+ 	or	0x00010000,d1			# it's an instruction fetch
  
- /*
-  * TLB flushing:
-diff --git a/arch/mn10300/mm/mmu-context.c b/arch/mn10300/mm/mmu-context.c
-index 3d83966..a4f7d3d 100644
---- a/arch/mn10300/mm/mmu-context.c
-+++ b/arch/mn10300/mm/mmu-context.c
-@@ -13,40 +13,15 @@
- #include <asm/mmu_context.h>
- #include <asm/tlbflush.h>
+ 	# determine the page address
+-	mov	(IPTEU),a2
+-	mov	a2,d0
++	mov	(IPTEU),d0
+ 	and	PAGE_MASK,d0
+ 	mov	d0,(12,sp)
  
-+#ifdef CONFIG_MN10300_TLB_USE_PIDR
- /*
-  * list of the MMU contexts last allocated on each CPU
-  */
- unsigned long mmu_context_cache[NR_CPUS] = {
--	[0 ... NR_CPUS - 1] = MMU_CONTEXT_FIRST_VERSION * 2 - 1,
-+	[0 ... NR_CPUS - 1] =
-+	MMU_CONTEXT_FIRST_VERSION * 2 - (1 - MMU_CONTEXT_TLBPID_LOCK_NR),
- };
--
--/*
-- * flush the specified TLB entry
-- */
--void local_flush_tlb_page(struct mm_struct *mm, unsigned long addr)
--{
--	unsigned long pteu, cnx, flags;
--
--	addr &= PAGE_MASK;
--
--	/* make sure the context doesn't migrate and defend against
--	 * interference from vmalloc'd regions */
--	local_irq_save(flags);
--
--	cnx = mm_context(mm);
--
--	if (cnx != MMU_NO_CONTEXT) {
--		pteu = addr | (cnx & 0x000000ffUL);
--		IPTEU = pteu;
--		DPTEU = pteu;
--		if (IPTEL & xPTEL_V)
--			IPTEL = 0;
--		if (DPTEL & xPTEL_V)
--			DPTEL = 0;
--	}
--
--	local_irq_restore(flags);
--}
-+#endif /* CONFIG_MN10300_TLB_USE_PIDR */
+ 	clr	d0
+-	mov	d0,(IPTEL)
++	mov	d0,(IPTEL2)
  
- /*
-  * preemptively set a TLB entry
-@@ -63,10 +38,16 @@ void update_mmu_cache(struct vm_area_struct *vma, unsigned long addr, pte_t *pte
- 	 * interference from vmalloc'd regions */
- 	local_irq_save(flags);
+ 	or	EPSW_IE,epsw
+ 	mov	fp,d0
+@@ -199,7 +210,7 @@ ENTRY(dtlb_aerror)
+ 	mov	d0,(12,sp)
  
-+	cnx = ~MMU_NO_CONTEXT;
-+#ifdef CONFIG_MN10300_TLB_USE_PIDR
- 	cnx = mm_context(vma->vm_mm);
-+#endif
+ 	clr	d0
+-	mov	d0,(DPTEL)
++	mov	d0,(DPTEL2)
  
- 	if (cnx != MMU_NO_CONTEXT) {
--		pteu = addr | (cnx & 0x000000ffUL);
-+		pteu = addr;
-+#ifdef CONFIG_MN10300_TLB_USE_PIDR
-+		pteu |= cnx & MMU_CONTEXT_TLBPID_MASK;
-+#endif
- 		if (!(pte_val(pte) & _PAGE_NX)) {
- 			IPTEU = pteu;
- 			if (IPTEL & xPTEL_V)
+ 	or	EPSW_IE,epsw
+ 	mov	fp,d0
 
