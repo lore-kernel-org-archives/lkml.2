@@ -1,64 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760132Ab0JZVou (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Oct 2010 17:44:50 -0400
-Received: from fieldses.org ([174.143.236.118]:59315 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754836Ab0JZVot (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Oct 2010 17:44:49 -0400
-Date: Tue, 26 Oct 2010 17:44:41 -0400
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Arnd Bergmann <arnd@arndb.de>, Bryan Schumaker <bjschuma@netapp.com>,
-        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: nfsd changes for 2.6.37
-Message-ID: <20101026214441.GC1842@fieldses.org>
-References: <20101026164549.GD19445@fieldses.org>
- <201010262218.36940.arnd@arndb.de>
- <4CC73BA6.1090407@netapp.com>
- <201010262255.40481.arnd@arndb.de>
- <AANLkTimPBqafDPxYpZjuym8+-yk4vKYTU15Js-Ux_e6Z@mail.gmail.com>
- <20101026212433.GB1842@fieldses.org>
- <AANLkTinOd9pDVRYDQ5+dqn8LPf4yoOW=j8NxyCfCQAB6@mail.gmail.com>
+	id S1760512Ab0JZVsQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Oct 2010 17:48:16 -0400
+Received: from mail.candelatech.com ([208.74.158.172]:42835 "EHLO
+	ns3.lanforge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758159Ab0JZVsP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Oct 2010 17:48:15 -0400
+Message-ID: <4CC74C9F.6040801@candelatech.com>
+Date: Tue, 26 Oct 2010 14:48:15 -0700
+From: Ben Greear <greearb@candelatech.com>
+Organization: Candela Technologies
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc11 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTinOd9pDVRYDQ5+dqn8LPf4yoOW=j8NxyCfCQAB6@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Subject: lockdep:  Invalid subclass: 31, related to mousedev_create
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 26, 2010 at 02:37:26PM -0700, Linus Torvalds wrote:
-> On Tue, Oct 26, 2010 at 2:24 PM, J. Bruce Fields <bfields@fieldses.org> wrote:
-> >
-> > I did a couple connectathon runs just now with no obvious ill effects
-> > except for some sleep-within-spinlock warnings in the lease code.
-> 
-> Hmm. Those sleep-within-spinlock warnings are very likely serious
-> bugs.
+This is coming out of today's wireless-testing tree:
 
-Yeah, didn't mean to belittle them.
-
-> Can you quote the whole warning with stack trace?
-
-It's just obvious allocations in setlease:
-
-BUG: sleeping function called from invalid context at mm/slab.c:3101
-in_atomic(): 1, irqs_disabled(): 0, pid: 4345, name: lease_tests
-1 lock held by lease_tests/4345:
- #0:  (file_lock_lock){+.+.+.}, at: [<ffffffff81128be5>] lock_flocks+0x15/0x20
-Pid: 4345, comm: lease_tests Not tainted 2.6.36-05858-gbd5e20b #1028
+BUG: looking up invalid subclass: 31
+turning off the locking correctness validator.
+Pid: 1, comm: swapper Not tainted 2.6.36-wl+ #33
 Call Trace:
- [<ffffffff8103141d>] __might_sleep+0x10d/0x140
- [<ffffffff810e3ad3>] kmem_cache_alloc+0x1f3/0x230
- [<ffffffff8112a4d2>] generic_setlease+0x112/0x2c0
- [<ffffffff8112a6b5>] __vfs_setlease+0x35/0x40
- [<ffffffff8112acfe>] fcntl_setlease+0xce/0x180
- [<ffffffff810f7c2e>] sys_fcntl+0x2fe/0x630
- [<ffffffff81961999>] ? trace_hardirqs_on_thunk+0x3a/0x3f
- [<ffffffff81002658>] system_call_fastpath+0x16/0x1b
+  [<c076af55>] ? printk+0xf/0x12
+  [<c045535f>] look_up_lock_class+0x2d/0x9e
+  [<c0455bb7>] register_lock_class+0x17/0x2ac
+  [<c0455ed2>] ? lockdep_init_map+0x86/0xf1
+  [<c0454fbe>] ? debug_mutex_init+0x28/0x33
+  [<c0455f2c>] lockdep_init_map+0xe0/0xf1
+  [<c0686d0d>] mousedev_create+0x8d/0x196
+  [<c09b4215>] mousedev_init+0x15/0x51
+  [<c040115e>] do_one_initcall+0x71/0x121
+  [<c09b4200>] ? mousedev_init+0x0/0x51
+  [<c098838c>] kernel_init+0x126/0x1a7
+  [<c0988266>] ? kernel_init+0x0/0x1a7
+  [<c0403586>] kernel_thread_helper+0x6/0x1a
+mice: PS/2 mouse device common for all mice
 
-I'm testing a patch.
+Thanks,
+Ben
 
---b.
+-- 
+Ben Greear <greearb@candelatech.com>
+Candela Technologies Inc  http://www.candelatech.com
+
