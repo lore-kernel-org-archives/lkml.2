@@ -1,54 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758840Ab0JZNDG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Oct 2010 09:03:06 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:37228 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751561Ab0JZNDF (ORCPT
+	id S1759860Ab0JZNE4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Oct 2010 09:04:56 -0400
+Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:49010 "EHLO
+	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756928Ab0JZNEy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Oct 2010 09:03:05 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:content-type:date:message-id:mime-version:x-mailer
-         :content-transfer-encoding;
-        b=wruJIjIaukiML7s1T+cIaP/Vyqysv25RNxHEdhIuxjsz1YlQhYmdIZCDnA2o1TnRxX
-         7SZ5wa6Sh81WdUlXlvqnK1P87gxW0juu1Oih62ZhaFSTudK3zHjEK4ieTDCUOBDbyObh
-         gD8kf2P5NtsdBGAAP0D35hn/pSK/0OwNppobQ=
-Subject: [PATCH]mmu_notifier.h: clean up comment
-From: "Figo.zhang" <figo1802@gmail.com>
-To: lkml <linux-kernel@vger.kernel.org>,
+	Tue, 26 Oct 2010 09:04:54 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: Roland McGrath <roland@redhat.com>
+Subject: Re: [resend][PATCH 3/4] move cred_guard_mutex from task_struct to signal_struct
+Cc: kosaki.motohiro@jp.fujitsu.com, Oleg Nesterov <oleg@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
-        akpm <akpm@linux-foundation.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 26 Oct 2010 21:01:47 +0800
-Message-ID: <1288098107.3221.2.camel@localhost.localdomain>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.0 
+        LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>
+In-Reply-To: <20101025175113.963CCC9E3C@blackie.sf.frob.com>
+References: <20101025174220.GA21375@redhat.com> <20101025175113.963CCC9E3C@blackie.sf.frob.com>
+Message-Id: <20101026220314.B7DD.A69D9226@jp.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="US-ASCII"
 Content-Transfer-Encoding: 7bit
+X-Mailer: Becky! ver. 2.50.07 [ja]
+Date: Tue, 26 Oct 2010 22:04:50 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello,
 
-clean up comment for mmu_notifier.h. 
+> > Except: I am not sure about -stable. At least, this patch should
+> > not go into the <2.6.35 kernels, it relies on misc changes which
+> > changed the scope of task->signal. Before 2.6.35 almost any user
+> > of ->cred_guard_mutex can race with exit and hit ->signal == NULL.
+> 
+> I see no justification for a change like this in any -stable tree.  It's
+> just a cleanup, right?  If it's a prerequisite for the fix we like for an
+> "important" bug, then that's a different story.  In its own right, it's
+> clearly not appropriate for backporting.
 
-Signed-off-by: Figo.zhang <figo1802@gmail.com>
---- 
-include/linux/mmu_notifier.h |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+Because [4/4] depend on [3/4] and I hope to backport it. Do you dislike it
+too?
 
-diff --git a/include/linux/mmu_notifier.h b/include/linux/mmu_notifier.h
-index 4e02ee2..43dcfbd 100644
---- a/include/linux/mmu_notifier.h
-+++ b/include/linux/mmu_notifier.h
-@@ -227,7 +227,7 @@ static inline void mmu_notifier_mm_destroy(struct mm_struct *mm)
- 
- /*
-  * These two macros will sometime replace ptep_clear_flush.
-- * ptep_clear_flush is impleemnted as macro itself, so this also is
-+ * ptep_clear_flush is implemented as macro itself, so this also is
-  * implemented as a macro until ptep_clear_flush will converted to an
-  * inline function, to diminish the risk of compilation failure. The
-  * invalidate_page method over time can be moved outside the PT lock
+
+Thanks.
+
 
 
