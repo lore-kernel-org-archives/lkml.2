@@ -1,41 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933199Ab0JZNTH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Oct 2010 09:19:07 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:17499 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932857Ab0JZNTF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Oct 2010 09:19:05 -0400
+	id S933203Ab0JZNXH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Oct 2010 09:23:07 -0400
+Received: from mognix.dark-green.com ([88.116.226.179]:54242 "EHLO
+	mognix.dark-green.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932116Ab0JZNXG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Oct 2010 09:23:06 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-From: Roland McGrath <roland@redhat.com>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-X-Fcc: ~/Mail/linus
-Cc: Oleg Nesterov <oleg@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>
-Subject: Re: [resend][PATCH 3/4] move cred_guard_mutex from task_struct to signal_struct
-In-Reply-To: KOSAKI Motohiro's message of  Tuesday, 26 October 2010 22:04:50 +0900 <20101026220314.B7DD.A69D9226@jp.fujitsu.com>
-References: <20101025174220.GA21375@redhat.com>
-	<20101025175113.963CCC9E3C@blackie.sf.frob.com>
-	<20101026220314.B7DD.A69D9226@jp.fujitsu.com>
-X-Antipastobozoticataclysm: When George Bush projectile vomits antipasto on the Japanese.
-Message-Id: <20101026131826.5B262C9E36@blackie.sf.frob.com>
-Date: Tue, 26 Oct 2010 09:18:26 -0400 (EDT)
+Date: Tue, 26 Oct 2010 15:02:36 +0200
+From: gimli <gimli@dark-green.com>
+To: <linux-kernel@vger.kernel.org>
+Subject: [PATCH 1/4] MacbookAir3,1 and 3,2 applesmc support
+Message-ID: <ba55b53f6833b3dd852464fd5cf2d281@mognix.dark-green.com>
+User-Agent: RoundCube Webmail/0.2.2
+Content-Type: multipart/mixed;
+	boundary="=_ffd4bfd12c69e41dab94a4e155360b3b"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Because [4/4] depend on [3/4] and I hope to backport it. Do you dislike it
-> too?
+--=_ffd4bfd12c69e41dab94a4e155360b3b
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset="UTF-8"
 
-Ah, OK.  That is indeed a fix for an important bug.  Not knowing the mm
-code very well, I'm not in a position to judge whether it's safe enough
-for a -stable stream or not.  If it is and it could be done safely
-without relying on 3/4, that would seem safer to me, but it is not a
-strong opinion.
+This patch adds support for the new MacBookAir3,1 and 3,2 to the applesmc
+driver.
 
+Signed-off-by: Edgar (gimli) Hucek <gimli@dark-green.com>
+--=_ffd4bfd12c69e41dab94a4e155360b3b
+Content-Transfer-Encoding: base64
+Content-Type: text/plain; charset="UTF-8";
+ name="applesmc_macnbookair.patch"; 
+Content-Disposition: attachment;
+ filename="applesmc_macnbookair.patch"; 
 
-Thanks,
-Roland
+ZGlmZiAtdU5yIGxpbnV4LTIuNi4zNS9kcml2ZXJzL2h3bW9uL2FwcGxlc21jLmMgbGludXgtMi42
+LjM1LU1hY2Jvb2tBaXIvZHJpdmVycy9od21vbi9hcHBsZXNtYy5jCi0tLSBsaW51eC0yLjYuMzUv
+ZHJpdmVycy9od21vbi9hcHBsZXNtYy5jCTIwMTAtMDgtMDIgMDA6MTE6MTQuMDAwMDAwMDAwICsw
+MjAwCisrKyBsaW51eC0yLjYuMzUtTWFjYm9va0Fpci9kcml2ZXJzL2h3bW9uL2FwcGxlc21jLmMJ
+MjAxMC0xMC0yNCAwNzo0NTowMi4wODU2NzkwMDIgKzAyMDAKQEAgLTE2Miw2ICsxNjIsMTAgQEAK
+IC8qIFNldCAyMjogTWFjQm9vayBQcm8gNywxICovCiAJeyAiVEIwVCIsICJUQjFUIiwgIlRCMlQi
+LCAiVEMwRCIsICJUQzBQIiwgIlROMEQiLCAiVE4wUCIsICJUTjBTIiwKIAkgICJUTjFEIiwgIlRO
+MUYiLCAiVE4xRyIsICJUTjFTIiwgIlRoMUgiLCAiVHMwUCIsICJUczBTIiwgTlVMTCB9LAorLyog
+U2V0IDIzOiBNYWNCb29rIEFpciAzLDEgKi8KKwl7ICJUQjBUIiwgIlRCMVQiLCAiVEIyVCIsICJU
+QzBEIiwgIlRDMEUiLCAiVEMwUCIsICJUQzFFIiwgIlRDWjMiLAorCSAgIlRDWjQiLCAiVENaNSIs
+ICJURzBFIiwgIlRHMUUiLCAiVEcyRSIsICJUR1ozIiwgIlRHWjQiLCAiVEdaNSIsCisJICAiVEgw
+RiIsICJUSDBPIiwgIlRNMFAiIH0sCiB9OwogCiAvKiBMaXN0IG9mIGtleXMgdXNlZCB0byByZWFk
+L3dyaXRlIGZhbiBzcGVlZHMgKi8KQEAgLTE1MjQsMTEgKzE1MjgsMjEgQEAKIAl7IC5hY2NlbGVy
+b21ldGVyID0gMSwgLmxpZ2h0ID0gMSwgLnRlbXBlcmF0dXJlX3NldCA9IDIxIH0sCiAvKiBNYWNC
+b29rIFBybyA3LDE6IGFjY2VsZXJvbWV0ZXIsIGJhY2tsaWdodCBhbmQgdGVtcGVyYXR1cmUgc2V0
+IDIyICovCiAJeyAuYWNjZWxlcm9tZXRlciA9IDEsIC5saWdodCA9IDEsIC50ZW1wZXJhdHVyZV9z
+ZXQgPSAyMiB9LAorLyogTWFjQm9vayBBaXIgMywxOiBhY2NlbGVyb21ldGVyLCBiYWNrbGlnaHQg
+YW5kIHRlbXBlcmF0dXJlIHNldCAxNSAqLworCXsgLmFjY2VsZXJvbWV0ZXIgPSAwLCAubGlnaHQg
+PSAwLCAudGVtcGVyYXR1cmVfc2V0ID0gMjMgfSwKIH07CiAKIC8qIE5vdGUgdGhhdCBETUlfTUFU
+Q0goLi4uLCJNYWNCb29rIikgd2lsbCBtYXRjaCAiTWFjQm9va1BybzEsMSIuCiAgKiBTbyB3ZSBu
+ZWVkIHRvIHB1dCAiQXBwbGUgTWFjQm9vayBQcm8iIGJlZm9yZSAiQXBwbGUgTWFjQm9vayIuICov
+CiBzdGF0aWMgX19pbml0ZGF0YSBzdHJ1Y3QgZG1pX3N5c3RlbV9pZCBhcHBsZXNtY193aGl0ZWxp
+c3RbXSA9IHsKKwl7IGFwcGxlc21jX2RtaV9tYXRjaCwgIkFwcGxlIE1hY0Jvb2sgQWlyIDMiLCB7
+CisJICBETUlfTUFUQ0goRE1JX0JPQVJEX1ZFTkRPUiwgIkFwcGxlIiksCisJICBETUlfTUFUQ0go
+RE1JX1BST0RVQ1RfTkFNRSwgIk1hY0Jvb2tBaXIzLDIiKSB9LAorCQkmYXBwbGVzbWNfZG1pX2Rh
+dGFbMjNdfSwKKwl7IGFwcGxlc21jX2RtaV9tYXRjaCwgIkFwcGxlIE1hY0Jvb2sgQWlyIDMiLCB7
+CisJICBETUlfTUFUQ0goRE1JX0JPQVJEX1ZFTkRPUiwgIkFwcGxlIiksCisJICBETUlfTUFUQ0go
+RE1JX1BST0RVQ1RfTkFNRSwgIk1hY0Jvb2tBaXIzLDEiKSB9LAorCQkmYXBwbGVzbWNfZG1pX2Rh
+dGFbMjNdfSwKIAl7IGFwcGxlc21jX2RtaV9tYXRjaCwgIkFwcGxlIE1hY0Jvb2sgQWlyIDIiLCB7
+CiAJICBETUlfTUFUQ0goRE1JX0JPQVJEX1ZFTkRPUiwgIkFwcGxlIiksCiAJICBETUlfTUFUQ0go
+RE1JX1BST0RVQ1RfTkFNRSwgIk1hY0Jvb2tBaXIyIikgfSwK
+--=_ffd4bfd12c69e41dab94a4e155360b3b--
+
