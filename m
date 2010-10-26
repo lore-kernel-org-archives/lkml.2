@@ -1,76 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933286Ab0JZNtr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Oct 2010 09:49:47 -0400
-Received: from na3sys009aog114.obsmtp.com ([74.125.149.211]:60572 "EHLO
-	na3sys009aog114.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933177Ab0JZNtp convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Oct 2010 09:49:45 -0400
-From: "Yang, Bo" <Bo.Yang@lsi.com>
-To: "Yang, Bo" <Bo.Yang@lsi.com>, bo yang <boyang1288@gmail.com>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        "akpm@osdl.org" <akpm@osdl.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "James.Bottomley@suse.de" <James.Bottomley@suse.de>
-CC: "Daftardar, Jayant" <Jayant.Daftardar@lsi.com>
-Date: Tue, 26 Oct 2010 07:49:33 -0600
-Subject: RE: [PATCH 5/5] scsi: megaraid_sas - Version and documentation
- update
-Thread-Topic: [PATCH 5/5] scsi: megaraid_sas - Version and documentation
- update
-Thread-Index: ActazRK7LvyirE4SRzakFA0hPxKZqAPQ0PGwAZa3NVABKk7Y0A==
-Message-ID: <4B6A08C587958942AA3002690DD4F8C3010111FBB8@cosmail02.lsi.com>
-References: <AANLkTi=praySm1B3dhU+LxhWK2yUccZkzWpd6-6UERYa@mail.gmail.com>  
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S933243Ab0JZNvq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Oct 2010 09:51:46 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:49755 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752512Ab0JZNvq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Oct 2010 09:51:46 -0400
+Date: Tue, 26 Oct 2010 09:51:45 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Hong Liu <hong.liu@intel.com>
+cc: Alan Cox <alan@linux.intel.com>,
+        Kernel development list <linux-kernel@vger.kernel.org>,
+        Linux-pm mailing list <linux-pm@lists.linux-foundation.org>
+Subject: Re: [PATCH] apds9802als: add runtime PM support
+In-Reply-To: <1288073117.19329.392.camel@hongdev>
+Message-ID: <Pine.LNX.4.44L0.1010260944270.1634-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-James,
+On Tue, 26 Oct 2010, Hong Liu wrote:
 
-We are waiting for your feedback for patches 2/5 - 5/5.  Did you get the chances to apply them?
+> > > diff --git a/drivers/misc/apds9802als.c b/drivers/misc/apds9802als.c
+> > > index fbe4960..15f9436 100644
+> > > --- a/drivers/misc/apds9802als.c
+> > > +++ b/drivers/misc/apds9802als.c
+> > 
+> > > @@ -265,13 +274,34 @@ static int apds9802als_suspend(struct i2c_client *client, pm_message_t mesg)
+> > >  
+> > >  static int apds9802als_resume(struct i2c_client *client)
+> > >  {
+> > > -	struct als_data *data = i2c_get_clientdata(client);
+> > > +	als_set_default_config(client);
+> > > +
+> > > +	pm_runtime_get(&client->dev);
+> > > +	pm_runtime_put(&client->dev);
+> > > +	return 0;
+> > > +}
+> > 
+> 
+> Hi, Alan
+> 
+> Thanks for your review.
+> 
+> > This almost certainly does not do what you think.
+> > 
+> > pm_runtime_get() will increment the device's usage count and queue an 
+> > asynchronous resume request.  However, since the PM workqueue is frozen 
+> > during system sleep transitions, the device will remain suspended.
+> > 
+> > The pm_runtime_put() will decrement the usage count again, but since
+> > there is already an async resume on the queue it will not queue an
+> > async suspend.  The final result will be that when tasks are unfrozen,
+> > the device will finally be resumed -- long after it should have been.
+> > 
+> > It looks like what you want to do here is simply call
+> > apds9802als_runtime_resume() directly.  
+> 
+> You mean apds9802als_runtime_suspend()?
 
-Thanks,
+This is about the function listed above: apds9802als_resume().  It
+should call apds9802als_runtime_resume() directly.  I don't see any
+reason why you would want it to call apds9802als_runtime_suspend() --
+having a resume function that actually suspends the device doesn't make
+any sense.
 
-Bo Yang
+> I want to put the device into
+> runtime suspended state, can I just call pm_runtime_suspend() directly?
 
------Original Message-----
-From: Yang, Bo 
-Sent: Wednesday, October 20, 2010 11:31 AM
-To: Yang, Bo; 'bo yang'; 'linux-scsi@vger.kernel.org'; 'akpm@osdl.org'; 'linux-kernel@vger.kernel.org'; 'James.Bottomley@suse.de'
-Cc: Daftardar, Jayant
-Subject: RE: [PATCH 5/5] scsi: megaraid_sas - Version and documentation update
+Why do you want apds9802als_resume() to put the device into a suspended 
+state?  Shouldn't it _resume_ the device?
 
-James,
+> > And according to the advice in
+> > Documentation/power/runtime_pm.txt section 6, you should also call
 
-Did you get the chance to apply megaraid sas driver 2/5 to 5/5 patches?
+Have you read that document?
 
-Thanks,
+> > 	pm_runtime_disable(dev);
+> > 	pm_runtime_set_active(dev);
+> > 	pm_runtime_enable(dev);
+> > 
+> > You probably also do not want the asynchronous calls to 
+> > pm_runtime_get() and pm_runtime_put() in apds9802als_probe().  A more 
+> > common sequence is:
+> > 
+> > 	pm_runtime_set_active(dev);
+> > 	pm_runtime_enable(dev);
+> 
+> I want to put the device into runtime suspend state after probe, so
+> pm_runtime_suspend() after these two calls is OK?
 
-Bo Yang
+No.  Try doing what I said.  You should find that the device _does_ get
+runtime-suspended when the probe function returns.  Assuming you have
+defined a proper apds9802als_runtime_idle() function.
 
------Original Message-----
-From: Yang, Bo 
-Sent: Tuesday, October 12, 2010 9:22 AM
-To: 'bo yang'; linux-scsi@vger.kernel.org; akpm@osdl.org; linux-kernel@vger.kernel.org; James.Bottomley@suse.de
-Subject: [PATCH 5/5] scsi: megaraid_sas - Version and documentation update
+Alan Stern
 
-Re-Submit:
-
-Update the version and documentation.
-
-Signed-off-by Bo Yang<bo.yang@lsi.com>
-
----
- Documentation/scsi/ChangeLog.megaraid_sas |   47 ++++++++++++++++++++++++++++++
- drivers/scsi/megaraid/megaraid_sas.c      |    2 -
- drivers/scsi/megaraid/megaraid_sas.h      |    6 +--
- 3 files changed, 51 insertions(+), 4 deletions(-)
