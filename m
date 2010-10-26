@@ -1,94 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760012Ab0JZP4E (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Oct 2010 11:56:04 -0400
-Received: from smtp3.epfl.ch ([128.178.224.226]:36854 "HELO smtp3.epfl.ch"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1753774Ab0JZP4B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Oct 2010 11:56:01 -0400
-X-Greylist: delayed 400 seconds by postgrey-1.27 at vger.kernel.org; Tue, 26 Oct 2010 11:56:01 EDT
-From: Philippe =?iso-8859-1?q?R=E9tornaz?= <philippe.retornaz@epfl.ch>
-Organization: EPFL - STI - LSRO1
-Subject: [PATCH] tty_ldisc: Fix BUG() on hangup
-Date: Tue, 26 Oct 2010 17:49:03 +0200
-User-Agent: KMail/1.12.4 (Linux/2.6.31.13-desktop-1mnb; KDE/4.3.5; x86_64; ; )
+	id S1759981Ab0JZP7E (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Oct 2010 11:59:04 -0400
+Received: from mail-px0-f174.google.com ([209.85.212.174]:57445 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754528Ab0JZP7B (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Oct 2010 11:59:01 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:content-transfer-encoding
+         :in-reply-to:user-agent;
+        b=T5nIzNrUulJr0jcwKG33cg2f7EOwpo1vhpN7kNE1GvbsVAMvU1Otu1BwleKPBTnk1J
+         HS92omOCpK921JMgSJ/jGkyiafM7E8QD4RBtiWg8SACsQRDT8nw4Lm6+g8H8xYTSLfPC
+         iLA5ewiWDz53elIOLsyETnAvSkou1TrNb3O6k=
+Date: Tue, 26 Oct 2010 08:56:53 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Jon Dowland <jmtd@debian.org>
+Cc: Matthew Garrett <mjg@redhat.com>, platform-driver-x86@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] toshiba_acpi.c: Add key_entry for a lone FN keypress
+Message-ID: <20101026155653.GC13097@core.coreip.homeip.net>
+References: <20101023221253.GA4829@hathor>
+ <201010251127.37374.dmitry.torokhov@gmail.com>
+ <20101026120026.GA27720@deckard.alcopop.org>
 MIME-Version: 1.0
-To: Alan Cox <alan@linux.intel.com>
-Cc: "Greg Kroah-Hartman" <gregkh@suse.de>, linux-kernel@vger.kernel.org
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201010261749.03875.philippe.retornaz@epfl.ch>
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20101026120026.GA27720@deckard.alcopop.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello
+On Tue, Oct 26, 2010 at 01:00:26PM +0100, Jon Dowland wrote:
+> On Mon, Oct 25, 2010 at 11:27:35AM -0700, Dmitry Torokhov wrote:
+> > Well, if FN key can generate separate events then we should report
+> > KEY_FN, not KEY_UNKNOWN.
+> 
+> Good point, thanks.  I missed that when I went shopping for an appropriate
+> KEY_*.
+> 
+> Adjusted patch to apply on top of current HEAD.
+> 
+> A lone FN key press on a Toshiba Portégé R700 without another key in
+> conjunction results in an ACPI event and a spurious error message on
+> the console.
+> 
+> Add a key entry to map this event to a KEY_UNKNOWN keypress silences
 
-A kernel BUG when bluetooth rfcomm connection drop while 
-the associated serial port is open is sometime triggered.
+                                         ^^^^^^
+Better fix commit log message as well. Otherwise:
 
-It seems that the line discipline can disappear between the tty_ldisc_put  and 
-tty_ldisc_get. This patch fall back to the N_TTY line discipline if the 
-previous discipline is not available anymore.
+	Acked-by: Dmitry Torokhov <dtor@mail.ru>
 
-This seem to fix the BUG(), but I don't know if it's correct.
+(or whatever tag Matthew might want to change it).
 
-Regards,
+> this message.
+> 
+> Signed-off-by: Jon Dowland <jmtd@debian.org>
+> 
+> ----
+> --- a/drivers/platform/x86/toshiba_acpi.c	2010-10-26 12:56:46.000000000 +0100
+> +++ b/drivers/platform/x86/toshiba_acpi.c	2010-10-26 12:58:21.000000000 +0100
+> @@ -135,6 +135,7 @@
+>  	{ KE_KEY, 0x141, { KEY_BRIGHTNESSUP } },
+>  	{ KE_KEY, 0x142, { KEY_WLAN } },
+>  	{ KE_KEY, 0x143, { KEY_PROG1 } },
+> +	{ KE_KEY, 0x17f, { KEY_FN } },
+>  	{ KE_KEY, 0xb05, { KEY_PROG2 } },
+>  	{ KE_KEY, 0xb06, { KEY_WWW } },
+>  	{ KE_KEY, 0xb07, { KEY_MAIL } },
 
-Philippe
-
----
-
---- linux-2.6.34.x86_64/drivers/char/tty_ldisc.c.orig	2010-05-16 
-23:17:36.000000000 +0200
-+++ linux-2.6.34.x86_64/drivers/char/tty_ldisc.c	2010-10-15 10:48:01.871721197 
-+0200
-@@ -712,9 +712,12 @@ static void tty_reset_termios(struct tty
-  *	state closed
-  */
- 
--static void tty_ldisc_reinit(struct tty_struct *tty, int ldisc)
-+static int tty_ldisc_reinit(struct tty_struct *tty, int ldisc)
- {
--	struct tty_ldisc *ld;
-+	struct tty_ldisc *ld = tty_ldisc_get(ldisc);
-+
-+	if (IS_ERR(ld))
-+		return -1;
- 
- 	tty_ldisc_close(tty, tty->ldisc);
- 	tty_ldisc_put(tty->ldisc);
-@@ -722,10 +725,10 @@ static void tty_ldisc_reinit(struct tty_
- 	/*
- 	 *	Switch the line discipline back
- 	 */
--	ld = tty_ldisc_get(ldisc);
--	BUG_ON(IS_ERR(ld));
- 	tty_ldisc_assign(tty, ld);
- 	tty_set_termios_ldisc(tty, ldisc);
-+
-+	return 0;
- }
- 
- /**
-@@ -787,13 +790,16 @@ void tty_ldisc_hangup(struct tty_struct 
- 	   a FIXME */
- 	if (tty->ldisc) {	/* Not yet closed */
- 		if (reset == 0) {
--			tty_ldisc_reinit(tty, tty->termios->c_line);
--			err = tty_ldisc_open(tty, tty->ldisc);
-+			
-+			if (!tty_ldisc_reinit(tty, tty->termios->c_line))
-+				err = tty_ldisc_open(tty, tty->ldisc);
-+			else
-+				err = 1;
- 		}
- 		/* If the re-open fails or we reset then go to N_TTY. The
- 		   N_TTY open cannot fail */
- 		if (reset || err) {
--			tty_ldisc_reinit(tty, N_TTY);
-+			BUG_ON(tty_ldisc_reinit(tty, N_TTY));
- 			WARN_ON(tty_ldisc_open(tty, tty->ldisc));
- 		}
- 		tty_ldisc_enable(tty);
+-- 
+Dmitry
