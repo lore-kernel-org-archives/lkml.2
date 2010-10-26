@@ -1,134 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760106Ab0JZQxX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Oct 2010 12:53:23 -0400
-Received: from mailrelay001.isp.belgacom.be ([195.238.6.51]:48114 "EHLO
-	mailrelay001.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758096Ab0JZQxW (ORCPT
+	id S1760118Ab0JZQxq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Oct 2010 12:53:46 -0400
+Received: from p01c12o148.mxlogic.net ([208.65.145.71]:45279 "EHLO
+	p01c12o148.mxlogic.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760082Ab0JZQxo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Oct 2010 12:53:22 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Av0EACSjxkzCTtAn/2dsb2JhbACDH54uca8VkhaBIoMydASKUw
-Date: Tue, 26 Oct 2010 18:53:15 +0200
-From: Philippe De Muyter <phdm@macqel.be>
-To: linux-kernel@vger.kernel.org
-Subject: arch/m68knommu/kernel/asm-offsets.c compile error
-Message-ID: <20101026165315.GA25736@frolo.macqel>
+	Tue, 26 Oct 2010 12:53:44 -0400
+X-Greylist: delayed 540 seconds by postgrey-1.27 at vger.kernel.org; Tue, 26 Oct 2010 12:53:43 EDT
+X-MXL-Hash: 4cc707972531ca02-f23e3ed9ae917a997a74cd7db7cad7f395ff9aa5
+X-MXL-Hash: 4cc705701fa4c8a5-7418aaa00f891ddaf0049dad8c0501fce420a05f
+From: H Hartley Sweeten <hartleys@visionengravers.com>
+To: David Woodhouse <dwmw2@infradead.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>
+CC: "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Tue, 26 Oct 2010 11:43:34 -0500
+Subject: RE: linux-next: build warnings after merge of the final tree (mtd
+ tree related)
+Thread-Topic: linux-next: build warnings after merge of the final tree (mtd
+ tree related)
+Thread-Index: Act0+5qHWtTcx3aXTNO97ZiBDPt1VQAMLb0g
+Message-ID: <0D753D10438DA54287A00B027084269764818E2136@AUSP01VMBX24.collaborationhost.net>
+References: <20101026134959.86b807d1.sfr@canb.auug.org.au>
+	 <1288083108.29264.14.camel@macbook.infradead.org>
+ <1288090180.29264.26.camel@macbook.infradead.org>
+In-Reply-To: <1288090180.29264.26.camel@macbook.infradead.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-User-Agent: Mutt/1.5.16 (2007-06-09)
+X-Spam: [F=0.2000000000; CM=0.500; S=0.200(2010073001)]
+X-MAIL-FROM: <hartleys@visionengravers.com>
+X-SOURCE-IP: [216.166.12.32]
+X-AnalysisOut: [v=1.0 c=1 a=U9i-YIPZ4G0A:10 a=BLceEmwcHowA:10 a=IkcTkHD0fZ]
+X-AnalysisOut: [MA:10 a=zbe46bahRtDx8aUBN1lPzQ==:17 a=JfrnYn6hAAAA:8 a=T_m]
+X-AnalysisOut: [ioFW9NUn9M2MFk34A:9 a=y3carnwEiHGXGDJFJHPr55cR490A:4 a=QEX]
+X-AnalysisOut: [dDO2ut3YA:10]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id o9QGrxQQ012051
 
-Hello list readers,
+On Tuesday, October 26, 2010 3:50 AM, David Woodhouse wrote:
+> On Tue, 2010-10-26 at 09:51 +0100, David Woodhouse wrote:
+>> On Tue, 2010-10-26 at 13:49 +1100, Stephen Rothwell wrote:
+>>> 
+>>> I am not sure where these came from ... 
+>> 
+>> It's a config issue. You have chosen to build NOR flash support.
+>> 
+>> NOR flash can be wired up many ways. It could be four 8-bit chips in
+>> parallel in a 32-bit bus, two 16-bit chips in a 32-bit bus, 2 8-bit
+>> chips in a 16-bit bus, one 16-bit chip in a 16-bus bus, etc...
+>> 
+>> You have elected to support *none* of those configurations. No NOR chip
+>> support can work.
+>> 
+>> You don't get to choose individual geometry options unless you set
+>> CONFIG_MTD_ADV_OPTIONS -- by default you get a fully versatile driver
+>> which can cope with anything at runtime.
+>> 
+>> I'll build a ppc44x_defconfig and work out what's going wrong. I'd
+>> expect this kind of thing with randconfig, but not a defconfig.
+>
+> Fixed by reverting the offending commit:
+> http://git.infradead.org/mtd-2.6.git/commitdiff/6411bf6cd
 
-Current vanilla kernel compilation fails very quickly with :
+I didn't follow the logic for the MTD_MAP_BANK_WIDTH_* all the way thru.
 
-  CHK     include/linux/version.h
-  CHK     include/generated/utsrelease.h
-  CC      arch/m68knommu/kernel/asm-offsets.s
-In file included from /archives/linux/git/arch/m68k/include/asm/system.h:2,
-                 from include/linux/wait.h:25,
-                 from include/linux/mmzone.h:9,
-                 from include/linux/gfp.h:4,
-                 from include/linux/irq.h:20,
-                 from include/asm-generic/hardirq.h:12,
-                 from /archives/linux/git/arch/m68k/include/asm/hardirq_no.h:17,
-                 from /archives/linux/git/arch/m68k/include/asm/hardirq.h:2,
-                 from include/linux/hardirq.h:10,
-                 from /archives/linux/git/arch/m68k/include/asm/irqflags.h:5,
-                 from include/linux/irqflags.h:15,
-                 from include/linux/spinlock.h:53,
-                 from include/linux/seqlock.h:29,
-                 from include/linux/time.h:8,
-                 from include/linux/timex.h:56,
-                 from include/linux/sched.h:56,
-                 from arch/m68knommu/kernel/asm-offsets.c:12:
-/archives/linux/git/arch/m68k/include/asm/system_no.h: In function â€˜__xchgâ€™:
-/archives/linux/git/arch/m68k/include/asm/system_no.h:79: error: implicit declaration of function â€˜local_irq_saveâ€™
-/archives/linux/git/arch/m68k/include/asm/system_no.h:101: error: implicit declaration of function â€˜local_irq_restoreâ€™
-In file included from include/linux/mmzone.h:9,
-                 from include/linux/gfp.h:4,
-                 from include/linux/irq.h:20,
-                 from include/asm-generic/hardirq.h:12,
-                 from /archives/linux/git/arch/m68k/include/asm/hardirq_no.h:17,
-                 from /archives/linux/git/arch/m68k/include/asm/hardirq.h:2,
-                 from include/linux/hardirq.h:10,
-                 from /archives/linux/git/arch/m68k/include/asm/irqflags.h:5,
-                 from include/linux/irqflags.h:15,
-                 from include/linux/spinlock.h:53,
-                 from include/linux/seqlock.h:29,
-                 from include/linux/time.h:8,
-                 from include/linux/timex.h:56,
-                 from include/linux/sched.h:56,
-                 from arch/m68knommu/kernel/asm-offsets.c:12:
-include/linux/wait.h: At top level:
-include/linux/wait.h:51: error: expected specifier-qualifier-list before â€˜spinlock_tâ€™
-include/linux/wait.h: In function â€˜waitqueue_activeâ€™:
-include/linux/wait.h:115: error: â€˜wait_queue_head_tâ€™ has no member named â€˜task_listâ€™
-include/linux/wait.h: In function â€˜__add_wait_queueâ€™:
-include/linux/wait.h:124: error: â€˜wait_queue_head_tâ€™ has no member named â€˜task_listâ€™
-include/linux/wait.h: In function â€˜__add_wait_queue_tailâ€™:
-include/linux/wait.h:140: error: â€˜wait_queue_head_tâ€™ has no member named â€˜task_listâ€™
-In file included from include/linux/gfp.h:4,
-                 from include/linux/irq.h:20,
-                 from include/asm-generic/hardirq.h:12,
-                 from /archives/linux/git/arch/m68k/include/asm/hardirq_no.h:17,
-                 from /archives/linux/git/arch/m68k/include/asm/hardirq.h:2,
-                 from include/linux/hardirq.h:10,
-                 from /archives/linux/git/arch/m68k/include/asm/irqflags.h:5,
-                 from include/linux/irqflags.h:15,
-                 from include/linux/spinlock.h:53,
-                 from include/linux/seqlock.h:29,
-                 from include/linux/time.h:8,
-                 from include/linux/timex.h:56,
-                 from include/linux/sched.h:56,
-                 from arch/m68knommu/kernel/asm-offsets.c:12:
-include/linux/mmzone.h: At top level:
-include/linux/mmzone.h:315: error: expected specifier-qualifier-list before â€˜spinlock_tâ€™
-include/linux/mmzone.h: In function â€˜zone_set_flagâ€™:
-include/linux/mmzone.h:428: error: â€˜struct zoneâ€™ has no member named â€˜flagsâ€™
-include/linux/mmzone.h: In function â€˜zone_test_and_set_flagâ€™:
-include/linux/mmzone.h:433: error: â€˜struct zoneâ€™ has no member named â€˜flagsâ€™
-include/linux/mmzone.h: In function â€˜zone_clear_flagâ€™:
-include/linux/mmzone.h:438: error: â€˜struct zoneâ€™ has no member named â€˜flagsâ€™
-include/linux/mmzone.h: In function â€˜zone_is_reclaim_lockedâ€™:
-include/linux/mmzone.h:443: error: â€˜const struct zoneâ€™ has no member named â€˜flagsâ€™
-include/linux/mmzone.h:443: error: â€˜const struct zoneâ€™ has no member named â€˜flagsâ€™
-include/linux/mmzone.h: In function â€˜zone_is_oom_lockedâ€™:
-include/linux/mmzone.h:448: error: â€˜const struct zoneâ€™ has no member named â€˜flagsâ€™
-include/linux/mmzone.h:448: error: â€˜const struct zoneâ€™ has no member named â€˜flagsâ€™
-In file included from include/linux/gfp.h:4,
-                 from include/linux/irq.h:20,
-                 from include/asm-generic/hardirq.h:12,
-                 from /archives/linux/git/arch/m68k/include/asm/hardirq_no.h:17,
-                 from /archives/linux/git/arch/m68k/include/asm/hardirq.h:2,
-                 from include/linux/hardirq.h:10,
-                 from /archives/linux/git/arch/m68k/include/asm/irqflags.h:5,
-                 from include/linux/irqflags.h:15,
-                 from include/linux/spinlock.h:53,
-                 from include/linux/seqlock.h:29,
-                 from include/linux/time.h:8,
-                 from include/linux/timex.h:56,
-                 from include/linux/sched.h:56,
-                 from arch/m68knommu/kernel/asm-offsets.c:12:
-include/linux/mmzone.h: In function â€˜populated_zoneâ€™:
-include/linux/mmzone.h:687: error: â€˜struct zoneâ€™ has no member named â€˜present_pagesâ€™
-include/linux/mmzone.h: In function â€˜is_normalâ€™:
-include/linux/mmzone.h:736: error: â€˜struct zoneâ€™ has no member named â€˜zone_pgdatâ€™
-include/linux/mmzone.h: In function â€˜is_dmaâ€™:
-include/linux/mmzone.h:751: error: â€˜struct zoneâ€™ has no member named â€˜zone_pgdatâ€™
-make[1]: *** [arch/m68knommu/kernel/asm-offsets.s] Error 1
-make: *** [prepare0] Error 2
+Honestly I still don't quite get it.  If MTD_CFI_GEOMETRY is n wouldn't
+all the MTD_MAP_BANK_WIDTH_* also be n?
 
-Any idea ?
+Sorry about the trouble.
 
-Philippe
-
-
--- 
-Philippe De Muyter  phdm at macqel dot be  Tel +32 27029044
-Macq Electronique SA  rue de l'Aeronef 2  B-1140 Bruxelles  Fax +32 27029077
+Hartleyÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
