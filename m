@@ -1,64 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759770Ab0JZOny (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Oct 2010 10:43:54 -0400
-Received: from smtp.nokia.com ([192.100.122.233]:18915 "EHLO
-	mgw-mx06.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757960Ab0JZOnx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Oct 2010 10:43:53 -0400
-From: Felipe Contreras <felipe.contreras@nokia.com>
-Subject: Re: [PATCH 0/8] staging: tidspbridge - misc fixes
-To: gregkh@suse.de, x0095840@ti.com
-Cc: hiroshi.doyu@nokia.com, linux-kernel@vger.kernel.org,
-        andy.shevchenko@gmail.com, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-In-Reply-To: <20101026040619.GA8549@suse.de>
-References: <1288054306-4361-1-git-send-email-x0095840@ti.com> <20101026040619.GA8549@suse.de>
-User-Agent: notmuch 0.3.1-85-ge35d5aa
-Message-ID: <1288103059-notmuch-felipe.contreras@nokia.com>
-Date: Tue, 26 Oct 2010 17:43:34 +0300
-X-OriginalArrivalTime: 26 Oct 2010 14:43:39.0426 (UTC) FILETIME=[2D91E020:01CB751C]
-X-Nokia-AV: Clean
+	id S1754296Ab0JZOpi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Oct 2010 10:45:38 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:43358 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751245Ab0JZOph (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Oct 2010 10:45:37 -0400
+Message-ID: <4CC6E962.5000203@gmail.com>
+Date: Tue, 26 Oct 2010 16:44:50 +0200
+From: Edward Shishkin <edward.shishkin@gmail.com>
+User-Agent: Thunderbird 2.0.0.23 (X11/20090825)
+MIME-Version: 1.0
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Al Viro <viro@ZenIV.linux.org.uk>
+CC: linux-fsdevel@vger.kernel.org, Eric Sandeen <sandeen@redhat.com>,
+        lmcilroy@redhat.com, LKML <linux-kernel@vger.kernel.org>,
+        Christoph Hellwig <hch@infradead.org>
+Subject: Re: [patch 2/2] vfs: relax count check in rw_verify_area
+References: <201010132246.21744.edward.shishkin@gmail.com> <20101014163047.d909ad5c.akpm@linux-foundation.org>
+In-Reply-To: <20101014163047.d909ad5c.akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-gregkh@suse.de wrote:
-> On Mon, Oct 25, 2010 at 07:51:38PM -0500, Fernando Guzman Lugo wrote:
-> > This set of patches fix some issues found in lastest tree.
-> > 
-> > Fernando Guzman Lugo (8):
-> >   staging: tidspbridge - remove req_addr from proc_map
-> >   staging: tidspbridge - add kconfig parameter for DMM size
-> >   staging: tidspbridge - change mmufault tasklet to a workqueue
-> >   staging: tidspbridge - fix timeout in dsp_gpt_wait_overflow
-> >   staging: tidspbridge - use GTP7 for DSP stack dump
-> >   staging: tidspbridge - remove disabling twl when printing DSP stack
-> >   staging: tidspbridge - fix some issues after iommu patches
-> >   staging: tidspbridge - make sync_wait_on_event interruptible
-> 
-> Are any of these really applicable for .37 after .37-rc1?  Or can they
-> wait for .38?
+Andrew Morton wrote:
+> On Wed, 13 Oct 2010 22:46:21 +0200
+> Edward Shishkin <edward.shishkin@gmail.com> wrote:
+>
+>   
+>> Increase count limit in rw_verify_area().
+>>
+>>     
+>
+> OK, now this is a truly awful attempt to describe a patch.
+>   
 
-As of right now the dspbridge doesn't work, and there's a mess of
-dependencies to get it working.
+I was sure I have nicely described everything in the
+"[patch 0/2][RFC] vfs: artefact(?) in rw_verify_area"
+Well, I'll provide more details..
 
- - omap iommu: linux-omap pull request has already been sent, and
-   there's no target when the omap iommu pull request will be sent...
-   right Hiroshi?
- - linux-arm: some patches are needed, and it's not clear if they'll
-   make it to .37-rc1, or .37 at all.
+> afaict what the patch does is to change rw_verify_area() so that the
+> kernel now permits single reads and writes of up to 2^63 bytes on
+> 64-bit systems.  Whereas it was previously limited to 2^31.  And the
+> patch also fixes up a couple of callsites which were assuming that
+> rw_verify_area() had that particular behaviour.
+>   
 
-So, no, I don't think these patches should considered as of right now.
+I found such assumptions rather strange. Why to not assume
+documentation for read(2), write(2), where we can nominate
+SSIZE_MAX bytes to read/write?
 
-In fact, these affect mostly iommu, and I think until those other
-dependencies are resolved, we should revert back to a previous point
-where the driver was actually working.
+Now about the bad aspect of this limitation.
+There is a so-called concept of transactions, which is very useful.
+Sometimes we want some operations to be performed atomically. For
+example, when you pay by your credit card. Should I explain what
+can happen, if such operation will be half done?
 
-What is guideline in staging when a driver is broken like this?
+Now note that the 2G restriction in rw_verify_area means that a file
+system can not write more then 2G bytes atomically without a special
+notification from user space. Do we really need such workarounds?
 
-Cheers.
+Large transactions are possible, they can be issued, for example,
+by some trusted centre, which has many clients (like commercial
+bank, notary, etc). Actually, 2G is not a large value nowadays..
 
--- 
-Felipe Contreras
+> But that's just my guess, based on a quick read of the implementation. 
+> I didn't check how far this change penetrates.  Does it affect all
+> filesystems, for example?  If so were they all reviewed (or tested!)
+> for correctness?
+>   
+
+Currently I have tested 15 callsites, and only 2 of them was failed
+(direct-io and ecryptfs). The direct-io has been fixed already:
+there was a truncation bug (see
+[patch 1/2] vfs: fix overflow in direct-io subsystem).
+
+I am ready to check/fix other ones, if there are any chances, that
+this permit of large IOs will be eventually accepted.
+
+> And why was this patch written?  What motivated you?
+
+Our users ask us.
+
+>   What are the user-visible effects?
+
+There must not be any effects: in accordance with documentation
+we can nominate SSIZE_MAX bytes to read/write.
+
+>   Do manpages need updating?
+>   
+
+No, they don't.
+
+Thanks,
+Edward.
