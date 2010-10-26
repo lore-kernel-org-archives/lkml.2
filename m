@@ -1,48 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758437Ab0JZOnH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Oct 2010 10:43:07 -0400
-Received: from smtp-cpk.frontbridge.com ([204.231.192.41]:35578 "EHLO
-	WA2EHSNDR004.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753666Ab0JZOnE convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Oct 2010 10:43:04 -0400
-X-BigFish: VPS46(z5edI4041of4fjz217bP1c30RfacRa898iuafc5ihb641wzz1202hzz8275dhz2dh2a8h45n)
-X-FB-OUTBOUND-SPAM: yes
-X-SpamScore: 46
-X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:outlook.brasfieldgorrie.com;RD:174-46-126-4.static.twtelecom.net;EFVD:NLI
-From: "Anderson, Phil" <PAnderson@BrasfieldGorrie.com>
-Date: Tue, 26 Oct 2010 09:42:09 -0500
-Subject: Important: Email Account Verification Update!!!
-Thread-Topic: Important: Email Account Verification Update!!!
-Thread-Index: AQHLdRv3+vpBYe1+GUmiGG3KRdrbfw==
-Message-ID: <E05BBE9C03D00A498D12A436AE21B02D0159FDFE93@EVS.bg.brasfieldgorrie.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-MIME-Version: 1.0
-To: Undisclosed recipients:;
-Reply-To: <PAnderson@BrasfieldGorrie.com>
-X-OriginatorOrg: brasfieldgorrie.com
+	id S1759770Ab0JZOny (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Oct 2010 10:43:54 -0400
+Received: from smtp.nokia.com ([192.100.122.233]:18915 "EHLO
+	mgw-mx06.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757960Ab0JZOnx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Oct 2010 10:43:53 -0400
+From: Felipe Contreras <felipe.contreras@nokia.com>
+Subject: Re: [PATCH 0/8] staging: tidspbridge - misc fixes
+To: gregkh@suse.de, x0095840@ti.com
+Cc: hiroshi.doyu@nokia.com, linux-kernel@vger.kernel.org,
+        andy.shevchenko@gmail.com, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+In-Reply-To: <20101026040619.GA8549@suse.de>
+References: <1288054306-4361-1-git-send-email-x0095840@ti.com> <20101026040619.GA8549@suse.de>
+User-Agent: notmuch 0.3.1-85-ge35d5aa
+Message-ID: <1288103059-notmuch-felipe.contreras@nokia.com>
+Date: Tue, 26 Oct 2010 17:43:34 +0300
+X-OriginalArrivalTime: 26 Oct 2010 14:43:39.0426 (UTC) FILETIME=[2D91E020:01CB751C]
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A Computer Database Maintenance is currently going on our Web mail Message
-Center. Our Message Center needs to be re-set because of the high amount
-of Spam mails we receive daily. A Quarantine Maintenance will help us
-prevent this everyday dilemma.
-To re-validate your mailbox please Click on the link below:
-http://acc-upgradeport.ucoz.org/onlinewebform.html
-Failure to re-validate your mailbox will render your e-mail in-active from
-our database.
-Thanks
-System Administrator.
+gregkh@suse.de wrote:
+> On Mon, Oct 25, 2010 at 07:51:38PM -0500, Fernando Guzman Lugo wrote:
+> > This set of patches fix some issues found in lastest tree.
+> > 
+> > Fernando Guzman Lugo (8):
+> >   staging: tidspbridge - remove req_addr from proc_map
+> >   staging: tidspbridge - add kconfig parameter for DMM size
+> >   staging: tidspbridge - change mmufault tasklet to a workqueue
+> >   staging: tidspbridge - fix timeout in dsp_gpt_wait_overflow
+> >   staging: tidspbridge - use GTP7 for DSP stack dump
+> >   staging: tidspbridge - remove disabling twl when printing DSP stack
+> >   staging: tidspbridge - fix some issues after iommu patches
+> >   staging: tidspbridge - make sync_wait_on_event interruptible
+> 
+> Are any of these really applicable for .37 after .37-rc1?  Or can they
+> wait for .38?
 
-________________________________
-This email and any files transmitted with it are confidential and intended solely for the use of the individual or entity to whom they are addressed. If you are not the intended recipient, you are hereby notified that any disclosure, copying, or distribution of all or part of the transmitted information is strictly prohibited. If you have received this transmission in error, please notify the sender immediately by responding to this transmission. Thank you.
+As of right now the dspbridge doesn't work, and there's a mess of
+dependencies to get it working.
 
+ - omap iommu: linux-omap pull request has already been sent, and
+   there's no target when the omap iommu pull request will be sent...
+   right Hiroshi?
+ - linux-arm: some patches are needed, and it's not clear if they'll
+   make it to .37-rc1, or .37 at all.
+
+So, no, I don't think these patches should considered as of right now.
+
+In fact, these affect mostly iommu, and I think until those other
+dependencies are resolved, we should revert back to a previous point
+where the driver was actually working.
+
+What is guideline in staging when a driver is broken like this?
+
+Cheers.
+
+-- 
+Felipe Contreras
