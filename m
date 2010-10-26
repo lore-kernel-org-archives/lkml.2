@@ -1,116 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933168Ab0JZMdF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Oct 2010 08:33:05 -0400
-Received: from mx2.netapp.com ([216.240.18.37]:61017 "EHLO mx2.netapp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932079Ab0JZMdC convert rfc822-to-8bit (ORCPT
+	id S933159Ab0JZMii (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Oct 2010 08:38:38 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:56982 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932464Ab0JZMih (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Oct 2010 08:33:02 -0400
-X-IronPort-AV: E=Sophos;i="4.58,241,1286175600"; 
-   d="scan'208";a="473121844"
-Subject: Re: linux-next: Tree for October 6
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
-To: Ingo Molnar <mingo@elte.hu>, Charles Edward Lever <Chuck.Lever@oracle.com>
-Cc: Zimny Lech <napohybelskurwysynom2010@gmail.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, linux-nfs@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>
-In-Reply-To: <20101026080822.GA10520@elte.hu>
-References: <20101006163632.c1943a38.sfr@canb.auug.org.au>
-	 <AANLkTimb2NxXcfj-o=F18S1u2rn-o851F+1sgQ_2uOVQ@mail.gmail.com>
-	 <20101026080822.GA10520@elte.hu>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Organization: NetApp
-Date: Tue, 26 Oct 2010 08:32:13 -0400
-Message-ID: <1288096333.3123.9.camel@heimdal.trondhjem.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 (2.30.3-1.fc13) 
-X-OriginalArrivalTime: 26 Oct 2010 12:32:47.0181 (UTC) FILETIME=[E5445FD0:01CB7509]
+	Tue, 26 Oct 2010 08:38:37 -0400
+Date: Tue, 26 Oct 2010 14:38:28 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: linux-kvm@vger.kernel.org, avi@redhat.com, hpa@zytor.com
+Cc: linux-kernel@vger.kernel.org
+Subject: fyi: gcc33-hammer crashes when compiling kvm emulate.c
+Message-ID: <20101026123828.GA30434@basil.fritz.box>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-10-26 at 10:08 +0200, Ingo Molnar wrote:
-> * Zimny Lech <napohybelskurwysynom2010@gmail.com> wrote:
-> 
-> > 2010/10/6 Stephen Rothwell <sfr@canb.auug.org.au>:
-> > > Hi all,
-> > >
-> > > Changes since 20101005:
-> > 
-> > It looka like a bug or a beetle or something like that
-> > 
-> > /home/test/linux-2.6/fs/nfs/nfsroot.c: In function 'nfs_root_debug':
-> > /home/test/linux-2.6/fs/nfs/nfsroot.c:110:2: error: 'nfs_debug'
-> > undeclared (first use in this function)
-> > /home/test/linux-2.6/fs/nfs/nfsroot.c:110:2: note: each undeclared
-> > identifier is reported only once for each function it appears in
-> > make[3]: *** [fs/nfs/nfsroot.o] Error 1
-> > make[2]: *** [fs/nfs] Error 2
-> > make[1]: *** [fs] Error 2
-> > make: *** [sub-make] Error 2
-> 
-> This build bug has now been pushed upstream and triggers rather easily. Trond?
-> 
-> Thanks,
-> 
-> 	Ingo
+Hi,
 
-Grrr.... Chuck, I forwarded this report to you almost 3 weeks ago.
-Anyhow, does the following fix the bug?
+While doing a test run with the minimum supported compiler
+I found:
 
-Cheers
-   Trond
+An old gcc 3.3-hammer segfaults when compiling the current KVM
+emulate.c (or rather in x86_emulate_insns) on x86-64.
 
-----------------------------------------------------------------------------------------
-NFS: Fix a compile issue in nfs_root
+The compiler goes into an endless recursion in validate_rtx and then
+eventually overflows the stack and dies.
 
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
+I minimized a test case, but didn't find a workaround
+(minimized test case http://halobates.de/emulate-min.i)
 
-Stephen Rothwell reports:
+My guess it's related to some of the inline assembler uses.
 
-> /home/test/linux-2.6/fs/nfs/nfsroot.c: In function 'nfs_root_debug':
-> /home/test/linux-2.6/fs/nfs/nfsroot.c:110:2: error: 'nfs_debug'
-> undeclared (first use in this function)
-> /home/test/linux-2.6/fs/nfs/nfsroot.c:110:2: note: each undeclared
-> identifier is reported only once for each function it appears in
-> make[3]: *** [fs/nfs/nfsroot.o] Error 1
-> make[2]: *** [fs/nfs] Error 2
-> make[1]: *** [fs] Error 2
-> make: *** [sub-make] Error 2
+This might be an excuse to bump the minimum compiler version again.
 
-Which is caused by commit 306a075362a288683f6346185f97dd0e06df19da
-(NFS: Allow NFSROOT debugging messages to be enabled dynamically)
+-andi
 
-Fix is to disable this code when RPC_DEBUG is disabled.
-
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
----
-
- fs/nfs/nfsroot.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
-
-
-diff --git a/fs/nfs/nfsroot.c b/fs/nfs/nfsroot.c
-index 460df36..903908a 100644
---- a/fs/nfs/nfsroot.c
-+++ b/fs/nfs/nfsroot.c
-@@ -101,6 +101,7 @@ static char nfs_export_path[NFS_MAXPATHLEN + 1] __initdata = "";
- /* server:export path string passed to super.c */
- static char nfs_root_device[NFS_MAXPATHLEN + 1] __initdata = "";
- 
-+#ifdef RPC_DEBUG
- /*
-  * When the "nfsrootdebug" kernel command line option is specified,
-  * enable debugging messages for NFSROOT.
-@@ -112,6 +113,7 @@ static int __init nfs_root_debug(char *__unused)
- }
- 
- __setup("nfsrootdebug", nfs_root_debug);
-+#endif
- 
- /*
-  *  Parse NFS server and directory information passed on the kernel
-
+-- 
+ak@linux.intel.com -- Speaking for myself only.
