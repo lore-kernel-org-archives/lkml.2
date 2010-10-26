@@ -1,97 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756893Ab0JZHxn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Oct 2010 03:53:43 -0400
-Received: from smtp.nokia.com ([192.100.122.233]:62911 "EHLO
-	mgw-mx06.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752850Ab0JZHxm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Oct 2010 03:53:42 -0400
-Subject: [GIT PULL] omap DSS changes for 2.6.27
-From: Tomi Valkeinen <tomi.valkeinen@nokia.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        ext Tony Lindgren <tony@atomide.com>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Nokia
-Date: Tue, 26 Oct 2010 10:53:42 +0300
-Message-ID: <1288079622.2580.130.camel@tubuntu>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 8bit
-X-OriginalArrivalTime: 26 Oct 2010 07:53:21.0815 (UTC) FILETIME=[DC548A70:01CB74E2]
-X-Nokia-AV: Clean
+	id S1757497Ab0JZH42 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Oct 2010 03:56:28 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:34314 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753844Ab0JZH40 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Oct 2010 03:56:26 -0400
+Date: Tue, 26 Oct 2010 09:55:59 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Huang Ying <ying.huang@intel.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Len Brown <lenb@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Andi Kleen <andi@firstfloor.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        Borislav Petkov <petkovbb@googlemail.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Don Zickus <dzickus@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        "Luck, Tony" <tony.luck@intel.com>
+Subject: Re: [NAK] Re: [PATCH -v2 9/9] ACPI, APEI, Generic Hardware Error
+ Source POLL/IRQ/NMI notification type support
+Message-ID: <20101026075559.GA9798@elte.hu>
+References: <1287992610-14996-1-git-send-email-ying.huang@intel.com>
+ <1287992610-14996-10-git-send-email-ying.huang@intel.com>
+ <20101025084553.GA27119@elte.hu>
+ <alpine.LFD.2.00.1010252058370.11036@localhost.localdomain>
+ <alpine.LFD.2.00.1010260629560.3955@localhost6.localdomain6>
+ <20101026072210.GE13036@elte.hu>
+ <1288078222.2862.484.camel@yhuang-dev>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1288078222.2862.484.camel@yhuang-dev>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
 
-Please pull OMAP display subsystem changes:
+* Huang Ying <ying.huang@intel.com> wrote:
 
+> On Tue, 2010-10-26 at 15:22 +0800, Ingo Molnar wrote:
+> > * Thomas Gleixner <tglx@linutronix.de> wrote:
+> > 
+> > > >From Kconfig:
+> > > 
+> > >   EDAC is designed to report errors in the core system.
+> > >   These are low-level errors that are reported in the CPU or
+> > >   supporting chipset or other subsystems:
+> > >   memory errors, cache errors, PCI errors, thermal throttling, etc..
+> > >   If unsure, select 'Y'.
+> > > 
+> > > So please explain why your error reporting is so different from the above that it 
+> > > justifies a separate facility. And you better come up with a real good explanation 
+> > > other than we looked at EDAC and it did not fit our needs.
+> > 
+> > Btw., it's not just about EDAC - the firmware can store Linux events 
+> > persistently (beyond allowing the firmware to insert its own RAS events), that 
+> > is obviously _hugely_ useful for kernel debugging in general. We could inject 
+> > debugging events there and recover them after a crash, etc.
+> 
+> Yes. It can be used by other kernel subsystems other than RAS. A kernel API is 
+> provided already. The design of the kernel API makes it easy to be used by various 
+> kernel subsystems. As the first step, we plan to support saving kernel log before 
+> panic and reading it back after reboot.
 
-The following changes since commit 899611ee7d373e5eeda08e9a8632684e1ebbbf00:
+And that's the problem: we have good facilities already that deal with similar 
+things. We have NMI-safe event logging, event enumeration, dump-on-panic code and 
+all sorts of goodies there.
 
-  Linux 2.6.36-rc6 (2010-09-28 18:01:22 -0700)
+But what did Andi's guidance/design lead you to do instead?
 
-are available in the git repository at:
-  git://gitorious.org/linux-omap-dss2/linux.git for-linus
+You stuck a useful hw feature into a vendor specific area of the kernel and exported 
+it to /dev/erst-dbg via a crappy ABI. You also did it in the worst possible 
+imaginable way: you avoided talking to the people who maintain and know the 
+RAS/EDAC/debugging/instrumentation code, and you tried to create an ABI to export it 
+in the most raw form possible - limiting our future options.
 
-Archit Taneja (2):
-      OMAP: DSS2: Introduce dss_features files
-      OMAP: DSS2: Use dss_features framework on DSS2 code
+All that done so that dealing with those pesky RAS/EDAC, instrumentation and core 
+kernel people can be avoided? ;-)
 
-Grazvydas Ignotas (1):
-      OMAP: DSS2: make filter coefficient tables human readable
+Sucks IMHO.
 
-Jarkko Nikula (1):
-      OMAP: DSS2: Add SPI dependency to Kconfig of ACX565AKM panel
+Thanks,
 
-Nicolas Kaiser (2):
-      video/omap: remove mux.h include
-      arm/omap: simplify conditional
-
-Senthilvadivu Guruswamy (4):
-      OMAP: DSS2: DSI: Remove extra iounmap in error path
-      OMAP: DSS2: OMAPFB: Allow FB_OMAP2 to build without VRFB
-      OMAP: DSS2: OMAPFB: make VRFB depends on OMAP2,3
-      OMAP: DSS2: OMAPFB: Allow usage of def_vrfb only for omap2,3
-
-Stanley.Miao (1):
-      OMAP: DSS2: don't power off a panel twice
-
-Tasslehoff Kjappfot (1):
-      OMAP: DSS2: OMAPFB: swap front and back porches for both hsync and vsync
-
-Uwe Kleine-König (3):
-      ARM: omap/fb: move omap_init_fb to .init.text
-      ARM: omap/fb: move omapfb_reserve_sram to .init.text
-      ARM: omap/fb: move get_fbmem_region() to .init.text
-
- arch/arm/plat-omap/fb.c                            |   14 +-
- arch/arm/plat-omap/include/plat/display.h          |   31 ---
- arch/arm/plat-omap/include/plat/vrfb.h             |   16 ++
- drivers/video/omap/lcd_omap3beagle.c               |    2 -
- drivers/video/omap2/displays/Kconfig               |    2 +-
- drivers/video/omap2/displays/panel-acx565akm.c     |    6 +
- drivers/video/omap2/displays/panel-generic.c       |    6 +
- .../video/omap2/displays/panel-sharp-lq043t1dg01.c |    6 +
- .../video/omap2/displays/panel-sharp-ls037v7dw01.c |    6 +
- .../video/omap2/displays/panel-toppoly-tdo35s.c    |    6 +
- .../video/omap2/displays/panel-tpo-td043mtea1.c    |    6 +
- drivers/video/omap2/dss/Makefile                   |    2 +-
- drivers/video/omap2/dss/core.c                     |    3 +
- drivers/video/omap2/dss/dispc.c                    |  270 +++++++++-----------
- drivers/video/omap2/dss/dsi.c                      |    1 -
- drivers/video/omap2/dss/dss_features.c             |  191 ++++++++++++++
- drivers/video/omap2/dss/dss_features.h             |   50 ++++
- drivers/video/omap2/dss/manager.c                  |   33 ++--
- drivers/video/omap2/dss/overlay.c                  |   24 +-
- drivers/video/omap2/omapfb/Kconfig                 |    2 +-
- drivers/video/omap2/omapfb/omapfb-main.c           |   26 ++-
- 21 files changed, 475 insertions(+), 228 deletions(-)
- create mode 100644 drivers/video/omap2/dss/dss_features.c
- create mode 100644 drivers/video/omap2/dss/dss_features.h
-
-
+	Ingo
