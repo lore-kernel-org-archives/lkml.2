@@ -1,58 +1,162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759751Ab0JZKuI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Oct 2010 06:50:08 -0400
-Received: from smtp.fullrate.dk ([90.185.1.42]:54938 "EHLO smtp.fullrate.dk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756503Ab0JZKuF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Oct 2010 06:50:05 -0400
-Date: Tue, 26 Oct 2010 12:50:02 +0200 (CEST)
-From: Martin Nybo Andersen <tweek@tweek.dk>
-To: Dick Streefland <spam@altium.nl>
-cc: linux-kernel@vger.kernel.org
-Subject: Re: On Linux numbering scheme
-In-Reply-To: <460f.4cc6ac66.4f7ad@altium.nl>
-Message-ID: <alpine.DEB.2.00.1010261245120.10975@odin.tweek.dk>
-References: <4CC548F8.1090307@gmail.com> <234909.335371287999912985.JavaMail.root@mail-zbox20.bo3.lycos.com> <234909.335371287999912985.JavaMail.root@mail-zbox20.bo3.lycos.com> <20101025203057.GA26035@elliptictech.com> <460f.4cc6ac66.4f7ad@altium.nl>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="8323328-1248826026-1288090202=:10975"
+	id S1759736Ab0JZKvI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Oct 2010 06:51:08 -0400
+Received: from fxip-0047f.externet.hu ([88.209.222.127]:47227 "EHLO
+	pomaz-ex.szeredi.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759531Ab0JZKvG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Oct 2010 06:51:06 -0400
+Message-Id: <20101026105028.575362331@szeredi.hu>
+User-Agent: quilt/0.46-1
+Date: Tue, 26 Oct 2010 12:50:28 +0200
+From: Miklos Szeredi <miklos@szeredi.hu>
+To: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: apw@canonical.com
+Subject: [PATCH 0/8 v4] overlay filesystem prototype
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+Here's an updated patch series.  Against latest git (b18cae422) +
+"vfs: fix possible use after free in finish_open()".
 
---8323328-1248826026-1288090202=:10975
-Content-Type: TEXT/PLAIN; charset=ISO-8859-7; format=flowed
-Content-Transfer-Encoding: QUOTED-PRINTABLE
+Thanks to Andy Whitcroft for testing and feedback.
 
-On Tue, 26 Oct 2010, Dick Streefland wrote:
+Git tree is here:
 
-> Nick Bowler <nbowler@elliptictech.com> wrote:
-> |   % less --version
-> |   less 436
-> |
-> |   % xterm -version
-> |   XTerm(262)
-> |
-> | 36 is small fry :)
->
-> Another interesting versioning scheme:
->
-> $ tex --version
-> TeX (Web2C 7.4.5) 3.14159
-> ...
+  git://git.kernel.org/pub/scm/linux/kernel/git/mszeredi/vfs.git overlayfs.v4
 
-You are running an old version there ... Even Debian is closer to =F0 ... ;=
-)
+Thanks,
+Miklos
 
-$ tex --version
-TeX 3.1415926 (TeX Live 2009/Debian)
-=2E..
+------------------------------------------------------------------------------
+Changes from v3 to v4
 
---=20
-Regards
-Martin
---8323328-1248826026-1288090202=:10975--
+- export security_inode_permission to allow overlayfs to be modular
+  (Andy Whitcroft)
+
+- add statfs support (Andy Whitcroft)
+
+- change BUG_ON to WARN_ON
+
+- Revert "vfs: add flag to allow rename to same inode", instead
+  introduce s_op->is_same_inode()
+
+- overlayfs: fix rename to self
+
+- fix whiteout after rename
+
+------------------------------------------------------------------------------
+Changes from v2 to v3
+
+ - Minimal remount support.  As overlayfs reflects the 'readonly'
+   mount status in write-access to the upper filesystem, we must
+   handle remount and either drop or take write access when the ro
+   status changes. (NeilBrown)
+
+ - Use correct seek function for directories.  It is incorrect to call
+   generic_llseek_file on a file from a different filesystem.  For
+   that we must use the seek function that the filesystem defines,
+   which is called by vfs_llseek.  Also, we only want to seek the
+   realfile when is_real is true.  Otherwise we just want to update
+   our own f_pos pointer, so use generic_llseek_file for
+   that. (NeilBrown)
+
+ - Initialise is_real before use.  The previous patch can use
+   od->is_real before it is properly initialised is llseek is called
+   before readdir.  So factor out the initialisation of is_real and
+   call it from both readdir and llseek when f_pos is 0. (NeilBrown)
+
+ - Rename ovl_fill_cache to ovl_dir_read (NeilBrown)
+
+ - Tiny optimisation in open_other handling (NeilBrown)
+
+ - Assorted updates to Documentation/filesystems/overlayfs.txt (NeilBrown)
+
+ - Make copy-up work for >=4G files, make it killable during copy-up.
+   Need to fix recovery after a failed/interrupted copy-up.
+
+ - Store and reference upper/lower dentries in overlay dentries.
+   Store and reference upper/lower vfsmounts in overlay superblock.
+
+ - Add necessary barriers for setting upper dentry in copyup and for
+   retrieving upper dentry locklessly.
+
+ - Make sure the right file is used for directory fsync() after
+   copy-up.
+
+ - Add locking to ovl_dir_llseek() to prevent concurrent call of
+   ovl_dir_reset() with ovl_dir_read().
+
+ - Get rid of ovl_dentry_iput().  The VFS doesn't provide enough
+   locking for this function that the contents of ->d_fsdata could be
+   safely updated.
+
+ - After copying up a non-directory unhash the dentry.  This way the
+   lower dentry ref, which is no longer necessary, can go away.  This
+   revealed a use-after-free bug in truncate handling in
+   fs/namei.c:finish_open().
+
+ - Fix if a copy-up happens between the follow_linka the put_link
+   calls.
+
+ - Replace some WARN_ONs with BUG_ON.  Some things just _really_
+   shouldn't happen.
+
+ - Extract common code from ovl_unlink and ovl_rmdir to a helper
+   function.
+
+ - After unlink and rmdir unhash the dentry.  This will get rid of the
+   lower and upper dentry references after there are no more users of
+   the deleted dentry.  This is a safe replacement for the removed
+   ->d_iput() functionality.
+
+ - Added checks to unlink, rmdir and rename to verify that the
+   parent-child relationship in the upper filesystem matches that of
+   the overlay.  This is necessary to prevent crash and/or corruption
+   if the upper filesystem topology is being modified while part of
+   the overlay.
+
+ - Optimize checking whiteout and opaque attributes.
+
+ - Optimize copy-up on truncate: don't copy up whole file before
+   truncating
+
+ - Misc bug fixes
+
+------------------------------------------------------------------------------
+Changes from v1 to v2
+
+ - rename "hybrid union filesystem" to "overlay filesystem" or overlayfs
+
+ - added documentation written by Neil
+
+ - correct st_dev for directories (reported by Neil)
+
+ - use getattr() to get attributes from the underlying filesystems,
+   this means that now an overlay filesystem itself can be the lower,
+   read-only layer of another overlay
+
+ - listxattr filters out private extended attributes
+
+ - get write ref on the upper layer on mount unless the overlay
+   itself is mounted read-only
+
+ - raise capabilities for copy up, dealing with whiteouts and opaque
+   directories.  Now the overlay works for non-root users as well
+
+ - "rm -rf" didn't work correctly in all cases if the directory was
+   copied up between opendir and the first readdir, this is now fixed
+   (and the directory operations consolidated)
+
+ - simplified copy up, this broke optimization for truncate and
+   open(O_TRUNC) (now file is copied up to be immediately truncated,
+   will fix)
+
+ - st_nlink for merged directories set to 1, this is an "illegal"
+   value that normal filesystems never have but some use it to
+   indicate that the number of subdirectories is unknown.  Utilities
+   (find, ...) seem to tolerate this well.
+
+ - misc fixes I forgot about
