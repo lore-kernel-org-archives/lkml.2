@@ -1,98 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933508Ab0JZSUw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Oct 2010 14:20:52 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:62315 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933455Ab0JZSUu convert rfc822-to-8bit (ORCPT
+	id S933453Ab0JZS0t (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Oct 2010 14:26:49 -0400
+Received: from mail-out.m-online.net ([212.18.0.9]:52908 "EHLO
+	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756342Ab0JZS0r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Oct 2010 14:20:50 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=Rusjx/xMSKeTQ22WasMC4myGktvFnYkDd78f6OEq5oF6SLTqpRSpfSQ3VGehbd+RMT
-         sFYO9UFFyXX66N36kvsFanY2XIt6xuEAzVzVifBEtAB/6/4Sy22WZgnXcufCYypedJJw
-         oGyyG2Rg6bJy6P1+Jq0RU8eQukc/KZzMFhUJE=
+	Tue, 26 Oct 2010 14:26:47 -0400
+X-Auth-Info: JVM2waBNBciUhc0ZSr4flONLfQU5sX1MlAW8bZZ4Aac=
+Message-ID: <4CC71DA4.3020600@grandegger.com>
+Date: Tue, 26 Oct 2010 20:27:48 +0200
+From: Wolfgang Grandegger <wg@grandegger.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.12) Gecko/20100907 Fedora/3.0.7-1.fc12 Thunderbird/3.0.7
 MIME-Version: 1.0
-In-Reply-To: <s5haam24bls.wl%tiwai@suse.de>
-References: <s5haam24bls.wl%tiwai@suse.de>
-Date: Tue, 26 Oct 2010 14:20:49 -0400
-Message-ID: <AANLkTi=DcsSQTeGER5tWjuLV6FpLCizO3ZMajqFCYPGe@mail.gmail.com>
-Subject: Re: [GIT PULL] sound updates for 2.6.37-rc1
-From: Arnaud Lacombe <lacombar@gmail.com>
-To: Takashi Iwai <tiwai@suse.de>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Liam Girdwood <lrg@slimlogic.co.uk>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8BIT
+To: David Miller <davem@davemloft.net>
+CC: tomoya-linux@dsn.okisemi.com, w.sang@pengutronix.de, chripell@fsfe.org,
+        21cnbao@gmail.com, sameo@linux.intel.com,
+        socketcan-core@lists.berlios.de, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, qi.wang@intel.com, yong.y.wang@intel.com,
+        andrew.chih.howe.khor@intel.com, joel.clark@intel.com,
+        kok.howg.ewe@intel.com, morinaga526@dsn.okisemi.com,
+        masa-korg@dsn.okisemi.com, margie.foster@intel.com
+Subject: Re: [PATCH net-next-2.6 v2] can: Topcliff: PCH_CAN driver: Fix build
+ warnings
+References: <4CC61B1B.3090602@dsn.okisemi.com>	<20101026.105206.15244527.davem@davemloft.net> <20101026.105545.200376685.davem@davemloft.net>
+In-Reply-To: <20101026.105545.200376685.davem@davemloft.net>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Hi David,
 
-On Mon, Oct 25, 2010 at 9:59 AM, Takashi Iwai <tiwai@suse.de> wrote:
-> Linus,
->
-> please pull ALSA updates for v2.6.37-rc1 from:
->
->  git://git.kernel.org/pub/scm/linux/kernel/git/tiwai/sound-2.6.git for-linus
->
-> The biggest changes are the update of ASoC core API, in addition to
-> lots of fixes/updates in ASoC drivers.  The summary regarding ASoC
-> are:
->
-> - Overhaul of the core APIs for registration of all kinds of devices,
->  reducing the level of direct coupling between machine drivers and their
->  CODEC and CPU drivers allowing ASoC machines to have multiple CODEC
->  devices and multiple instances of the same CODEC device within a system.
-> - New CODEC drivers for  88PM860x CODEC, MAX98088, WL1273, WM8962, WM8804,
->  and WM8985.
-> - New CPU drivers for EP93xx AC’97 controllers, MPC85xx SSI ports,
->  and SH HDMI controllers.
-> - Machine support for Freescale P1022 DS, Marvell Tavor and Saarb, and
->  Simplemachines Sim.One.
->
-> For HD-audio, the former individual HDMI parsers for ATI, Intel and
-> Nvidia are now unified to a single parser.  Also, the BIOS pin parser
-> was improved so that it can assign multiple input-pins for the same
-> task (e.g. mic-in).
->
-> Another new stuff is the aloop driver.  It's a simple PCM loopback
-> driver for PCM data pass-through.  This has been in external
-> alsa-driver tree for long time, and now it's revised and merged to
-> upstream.
->
-> Other than that, many driver updates including oxygen, USB-audio, and
-> the removal of BKL in OSS code, (and yet-again-new ISA driver :),
-> etc are found.
->
->
-> Thanks!
->
-> Takashi
->
-> ===
-> [...]
->
-> Liam Girdwood (3):
->      ASoC: multi-component - ASoC Multi-Component Support
->  [...]
->  include/sound/soc-of-simple.h                      |   25 -
->  [...]
->  delete mode 100644 include/sound/soc-of-simple.h
->
-`sound/soc/fsl/pcm030-audio-fabric.c' still reference
-`sound/soc-of-simple.h', causing the following build error:
+On 10/26/2010 07:55 PM, David Miller wrote:
+> From: David Miller <davem@davemloft.net>
+> Date: Tue, 26 Oct 2010 10:52:06 -0700 (PDT)
+> 
+>> It doesn't in net-next-2.6 and that is what you should be generating
+>                 ^^^^^^^^^^^^
+>> patches against.
+> 
+> I mean net-2.6 of course.
 
-sound/soc/fsl/pcm030-audio-fabric.c:27:33: fatal error:
-sound/soc-of-simple.h: No such file or directory
+Oh, this patch has various other issues, as Marc and I have already
+pointed out, which should be fixed before the driver hits the user.
+Unfortunately, the CC to netdev of our reviews got lost somehow, sorry
+for the inconvenience, but the original author should have received it.
+Tomoya, could you (or somebody else) please also fix the remaining
+issues quickly?
 
-Confirmed in Linus' tree:
-http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=blob;f=sound/soc/fsl/pcm030-audio-fabric.c;h=fe15bb26e48474e6f9aacb15961d62b59cea704d;hb=HEAD
+Thanks,
 
-Config available if needed.
-
- - Arnaud
+Wolfgang.
