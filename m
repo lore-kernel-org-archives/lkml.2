@@ -1,127 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759836Ab0JZMov (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Oct 2010 08:44:51 -0400
-Received: from canuck.infradead.org ([134.117.69.58]:37931 "EHLO
-	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757791Ab0JZMou convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Oct 2010 08:44:50 -0400
-Subject: Re: High CPU load when machine is idle (related to PROBLEM:
- Unusually high load average when idle in 2.6.35, 2.6.35.1 and later)
-From: Peter Zijlstra <peterz@infradead.org>
-To: Venkatesh Pallipadi <venki@google.com>
-Cc: Damien Wyart <damien.wyart@free.fr>,
-        Chase Douglas <chase.douglas@canonical.com>,
-        Ingo Molnar <mingo@elte.hu>, tmhikaru@gmail.com,
-        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
-In-Reply-To: <1288001573.15336.52.camel@twins>
-References: <AANLkTin+HE09Oui89uCmG-rrHE14zXfJuRvZgsPCB1De@mail.gmail.com>
-	 <1287788622-25860-1-git-send-email-venki@google.com>
-	 <1288001573.15336.52.camel@twins>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Tue, 26 Oct 2010 14:44:34 +0200
-Message-ID: <1288097074.15336.211.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S1759904Ab0JZMpV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Oct 2010 08:45:21 -0400
+Received: from nbd.name ([88.198.39.176]:52055 "EHLO ds10.nbd.name"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757820Ab0JZMpT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Oct 2010 08:45:19 -0400
+X-Greylist: delayed 976 seconds by postgrey-1.27 at vger.kernel.org; Tue, 26 Oct 2010 08:45:19 EDT
+Message-ID: <4CC6C988.4070706@openwrt.org>
+Date: Tue, 26 Oct 2010 14:28:56 +0200
+From: Felix Fietkau <nbd@openwrt.org>
+User-Agent: Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10.6; en-US; rv:1.9.2.11) Gecko/20101013 Thunderbird/3.1.5
+MIME-Version: 1.0
+To: Jaswinder Singh <jaswinderlinux@gmail.com>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-wireless <linux-wireless@vger.kernel.org>,
+        netdev <netdev@vger.kernel.org>, ath9k-devel@venema.h4ckr.net,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        shafi.wireless@gmail.com, "John W. Linville" <linville@tuxdriver.com>
+Subject: Re: ath9k crashing the kernel
+References: <AANLkTim=jD-C4DwDS2=KuQnhPOyP+Cnd-hUTdaZ7Opth@mail.gmail.com> <AANLkTikHTgoJyxm80MuXM9oTvCPTFAPM12zVih1RsTfy@mail.gmail.com>
+In-Reply-To: <AANLkTikHTgoJyxm80MuXM9oTvCPTFAPM12zVih1RsTfy@mail.gmail.com>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-10-25 at 12:12 +0200, Peter Zijlstra wrote:
-> On Fri, 2010-10-22 at 16:03 -0700, Venkatesh Pallipadi wrote:
-> > I started making small changes to the code, but none of the change helped much.
-> > I think the problem with the current code is that, even though idle CPUs
-> > update load, the fold only happens when one of the CPU is busy
-> > and we end up taking its load into global load.
-> > 
-> > So, I tried to simplify things and doing the updates directly from idle loop.
-> > This is only a test patch, and eventually we need to hook it off somewhere
-> > else, instead of idle loop and also this is expected work only as x86_64
-> > right now.
-> > 
-> > Peter: Do you think something like this will work? loadavg went
-> > quite on two of my test systems after this change (4 cpu and 24 cpu).
+On 2010-10-26 9:09 AM, Jaswinder Singh wrote:
+>> ath9k is crashing the kernel :
+>>
+>> [   21.276554] BUG: spinlock bad magic on CPU#1, NetworkManager/1056
+>> [   21.277015]  lock: f5be80a8, .magic: 00000000, .owner: <none>/-1,
+>> .owner_cpu: 0
+>> [   21.277015] Pid: 1056, comm: NetworkManager Not tainted 2.6.36-netbook+ #20
+>> [   21.277015] Call Trace:
+>> [   21.277015]  [<c14767a7>] ? printk+0xf/0x11
+>> [   21.277015]  [<c117b823>] spin_bug+0x7c/0x87
+>> [   21.301365]  [<c117b8bd>] do_raw_spin_lock+0x1e/0x125
+>> [   21.301365]  [<c1478d0a>] ? _raw_spin_unlock_bh+0x1a/0x1c
+>> [   21.301365]  [<c1478dc3>] _raw_spin_lock_irqsave+0x17/0x1c
+>> [   21.318857]  [<c1288a74>] ath9k_config+0x255/0x38b
+>> [   21.318857]  [<c1447bdb>] ieee80211_hw_config+0x10a/0x114
+>> [...]
+>>
+>> Linux 2.6.36 f6f94e2ab1 is good
+>> and
+>> 229aebb873e2972 is bad
+>>
 > 
-> Not really, CPUs can stay idle for _very_ long times (!x86 cpus that
-> don't have crappy timers like HPET which roll around every 2-4 seconds).
+> After further investigation bad commit is :
 > 
-> But all CPUs staying idle for a long time is exactly the scenario you
-> fix before using the decay_load_misses() stuff, except that is for the
-> load-balancer per-cpu load numbers not the global cpu load avg. Won't a
-> similar approach work here?
+> 3430098ae463e31ab16926ac3eb295368a3ca5d9 is the first bad commit
+> commit 3430098ae463e31ab16926ac3eb295368a3ca5d9
+> Author: Felix Fietkau <nbd@openwrt.org>
+> Date:   Sun Oct 10 18:21:52 2010 +0200
+> 
+>     ath9k: implement channel utilization stats for survey
+> 
+
+This should already be fixed in wireless-testing by the following commit
+
+commit 20b25744d1366762c6878d3254f93973cafe1f8e
+Author: Ben Greear <greearb@candelatech.com>
+Date:   Fri Oct 15 15:04:09 2010 -0700
+
+    ath9k: Properly initialize ath_common->cc_lock.
 
 
-The crude patch would be something like the below.. a smarter patch will
-try and avoid that loop.
-
----
- include/linux/sched.h |    2 +-
- kernel/sched.c        |   20 +++++++++-----------
- kernel/timer.c        |    2 +-
- 3 files changed, 11 insertions(+), 13 deletions(-)
-
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 7a6e81f..84c1bf1 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -143,7 +143,7 @@ extern unsigned long nr_iowait_cpu(int cpu);
- extern unsigned long this_cpu_load(void);
- 
- 
--extern void calc_global_load(void);
-+extern void calc_global_load(int ticks);
- 
- extern unsigned long get_parent_ip(unsigned long addr);
- 
-diff --git a/kernel/sched.c b/kernel/sched.c
-index 41f1869..49a2baf 100644
---- a/kernel/sched.c
-+++ b/kernel/sched.c
-@@ -3171,22 +3171,20 @@ calc_load(unsigned long load, unsigned long exp, unsigned long active)
-  * calc_load - update the avenrun load estimates 10 ticks after the
-  * CPUs have updated calc_load_tasks.
-  */
--void calc_global_load(void)
-+void calc_global_load(int ticks)
- {
--	unsigned long upd = calc_load_update + 10;
- 	long active;
- 
--	if (time_before(jiffies, upd))
--		return;
--
--	active = atomic_long_read(&calc_load_tasks);
--	active = active > 0 ? active * FIXED_1 : 0;
-+	while (!time_before(jiffies, calc_load_update + 10)) {
-+		active = atomic_long_read(&calc_load_tasks);
-+		active = active > 0 ? active * FIXED_1 : 0;
- 
--	avenrun[0] = calc_load(avenrun[0], EXP_1, active);
--	avenrun[1] = calc_load(avenrun[1], EXP_5, active);
--	avenrun[2] = calc_load(avenrun[2], EXP_15, active);
-+		avenrun[0] = calc_load(avenrun[0], EXP_1, active);
-+		avenrun[1] = calc_load(avenrun[1], EXP_5, active);
-+		avenrun[2] = calc_load(avenrun[2], EXP_15, active);
- 
--	calc_load_update += LOAD_FREQ;
-+		calc_load_update += LOAD_FREQ;
-+	}
- }
- 
- /*
-diff --git a/kernel/timer.c b/kernel/timer.c
-index d6ccb90..9f82b2a 100644
---- a/kernel/timer.c
-+++ b/kernel/timer.c
-@@ -1297,7 +1297,7 @@ void do_timer(unsigned long ticks)
- {
- 	jiffies_64 += ticks;
- 	update_wall_time();
--	calc_global_load();
-+	calc_global_load(ticks);
- }
- 
- #ifdef __ARCH_WANT_SYS_ALARM
-
+- Felix
