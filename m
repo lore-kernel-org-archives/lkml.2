@@ -1,83 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932264Ab0JZPuS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Oct 2010 11:50:18 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:36956 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751123Ab0JZPuO convert rfc822-to-8bit (ORCPT
+	id S1759987Ab0JZPuN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Oct 2010 11:50:13 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:47207 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751123Ab0JZPuK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Oct 2010 11:50:14 -0400
-From: "Guzman Lugo, Fernando" <fernando.lugo@ti.com>
-To: Felipe Contreras <felipe.contreras@gmail.com>
-CC: "gregkh@suse.de" <gregkh@suse.de>,
-        "felipe.contreras@nokia.com" <felipe.contreras@nokia.com>,
-        "Hiroshi.DOYU@nokia.com" <Hiroshi.DOYU@nokia.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "andy.shevchenko@gmail.com" <andy.shevchenko@gmail.com>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Date: Tue, 26 Oct 2010 10:50:02 -0500
-Subject: RE: [PATCH 8/8] staging: tidspbridge - make sync_wait_on_event
- interruptible
-Thread-Topic: [PATCH 8/8] staging: tidspbridge - make sync_wait_on_event
- interruptible
-Thread-Index: Act0qPq5fMCDEToSSvWkIk3VOK16+wAfA2Iw
-Message-ID: <496565EC904933469F292DDA3F1663E602F49E2802@dlee06.ent.ti.com>
-References: <1288054306-4361-1-git-send-email-x0095840@ti.com>
-	<1288054306-4361-2-git-send-email-x0095840@ti.com>
-	<1288054306-4361-3-git-send-email-x0095840@ti.com>
-	<1288054306-4361-4-git-send-email-x0095840@ti.com>
-	<1288054306-4361-5-git-send-email-x0095840@ti.com>
-	<1288054306-4361-6-git-send-email-x0095840@ti.com>
-	<1288054306-4361-7-git-send-email-x0095840@ti.com>
-	<1288054306-4361-8-git-send-email-x0095840@ti.com>
-	<1288054306-4361-9-git-send-email-x0095840@ti.com>
- <AANLkTinnLb9DLMKfxEs_KqMvOmegSDYRuLWh5y=hhBCe@mail.gmail.com>
-In-Reply-To: <AANLkTinnLb9DLMKfxEs_KqMvOmegSDYRuLWh5y=hhBCe@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Tue, 26 Oct 2010 11:50:10 -0400
+Subject: Re: linux-next: build failure after merge of the scsi tree
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        James Smart <james.smart@emulex.com>,
+        Alex Iannicelli <alex.iannicelli@emulex.com>
+In-Reply-To: <20101026111944.9139ee1b.sfr@canb.auug.org.au>
+References: <20101026111944.9139ee1b.sfr@canb.auug.org.au>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 26 Oct 2010 10:50:08 -0500
+Message-ID: <1288108208.8283.116.camel@mulgrave.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.1.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- 
-
-> -----Original Message-----
-> From: Felipe Contreras [mailto:felipe.contreras@gmail.com] 
-> Sent: Monday, October 25, 2010 7:59 PM
-> To: Guzman Lugo, Fernando
-> Cc: gregkh@suse.de; felipe.contreras@nokia.com; 
-> Hiroshi.DOYU@nokia.com; linux-kernel@vger.kernel.org; 
-> andy.shevchenko@gmail.com; linux-omap@vger.kernel.org; 
-> linux-arm-kernel@lists.infradead.org
-> Subject: Re: [PATCH 8/8] staging: tidspbridge - make 
-> sync_wait_on_event interruptible
+On Tue, 2010-10-26 at 11:19 +1100, Stephen Rothwell wrote:
+> Hi James,
 > 
-> On Tue, Oct 26, 2010 at 3:51 AM, Fernando Guzman Lugo 
-> <x0095840@ti.com> wrote:
-> > So that avoid non-killable process.
+> After merging the scsi tree, today's linux-next build (powerpc
+> ppc64_defconfig) failed like this:
 > 
-> It would be useful to interrupt these tasks from user-space. 
-> A separate ioctl to do that would be needed.
-
-I don't see use case where that could be needed. It is only
-To avoid a nonkillable task in the case the user pass an infinite
-Timeout.
-
-If you have some test case where that ioctl would be needed
-Please share it in order to find the best solution.
-
-Regards,
-Fernando.
-
+> drivers/scsi/lpfc/lpfc_hbadisc.c: In function 'lpfc_mbx_cmpl_fcf_rr_read_fcf_rec':
+> drivers/scsi/lpfc/lpfc_hbadisc.c:2332: error: implicit declaration of function 'msleep'
 > 
-> --
-> Felipe Contreras
+> Caused by commit 2c09c56c0967ff6a0974ebe2b03da39b26073dd0 ("[SCSI] lpfc
+> 8.3.18: Add logic to detect last devloss timeout").
 > 
+> I have used the scsi tree from next-20101025 for today.
+
+I've fixed this up in scsi-misc (by adding an explicit delay.h to
+lpfc_hbadisc.c).  So hopefully the scsi branch should work for the next
+build.
+
+James
+
+
+
