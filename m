@@ -1,94 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757497Ab0JZH42 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Oct 2010 03:56:28 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:34314 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753844Ab0JZH40 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Oct 2010 03:56:26 -0400
-Date: Tue, 26 Oct 2010 09:55:59 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Huang Ying <ying.huang@intel.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Len Brown <lenb@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Andi Kleen <andi@firstfloor.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        Borislav Petkov <petkovbb@googlemail.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Don Zickus <dzickus@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        "Luck, Tony" <tony.luck@intel.com>
-Subject: Re: [NAK] Re: [PATCH -v2 9/9] ACPI, APEI, Generic Hardware Error
- Source POLL/IRQ/NMI notification type support
-Message-ID: <20101026075559.GA9798@elte.hu>
-References: <1287992610-14996-1-git-send-email-ying.huang@intel.com>
- <1287992610-14996-10-git-send-email-ying.huang@intel.com>
- <20101025084553.GA27119@elte.hu>
- <alpine.LFD.2.00.1010252058370.11036@localhost.localdomain>
- <alpine.LFD.2.00.1010260629560.3955@localhost6.localdomain6>
- <20101026072210.GE13036@elte.hu>
- <1288078222.2862.484.camel@yhuang-dev>
+	id S1751957Ab0JZIEe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Oct 2010 04:04:34 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:44843 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750970Ab0JZIEc convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Oct 2010 04:04:32 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=KWrANZHcMzuh3LQdR9kLGD3dIzpcFZjuFUDJ2Lt4JQKIS4rH/FTDupUsTgPdPtrqD/
+         TcWXF+RDfPanqXoo0cztZiV2sYv9Ya7wMTcXJaxCFXLhZBE2Y+jSyQebGRQ2UlvYgnw5
+         EeLi9VmlZ1s4R1YHchVk7Yvn3tkWOMcg4Cmxc=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1288078222.2862.484.camel@yhuang-dev>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+In-Reply-To: <1288042994-27761-1-git-send-email-sven.eckelmann@gmx.de>
+References: <1288042994-27761-1-git-send-email-sven.eckelmann@gmx.de>
+Date: Tue, 26 Oct 2010 11:04:31 +0300
+Message-ID: <AANLkTimiMAeonjLpnuJNpeQhtdLmp+z1uqyjVfZbFmcr@mail.gmail.com>
+Subject: Re: [PATCH] Staging: batman-adv: Remove useless braces
+From: Andy Shevchenko <andy.shevchenko@gmail.com>
+To: Sven Eckelmann <sven.eckelmann@gmx.de>
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org, gregkh@suse.de
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+It's odd.
 
-* Huang Ying <ying.huang@intel.com> wrote:
+I've checked it before submission:
 
-> On Tue, 2010-10-26 at 15:22 +0800, Ingo Molnar wrote:
-> > * Thomas Gleixner <tglx@linutronix.de> wrote:
-> > 
-> > > >From Kconfig:
-> > > 
-> > >   EDAC is designed to report errors in the core system.
-> > >   These are low-level errors that are reported in the CPU or
-> > >   supporting chipset or other subsystems:
-> > >   memory errors, cache errors, PCI errors, thermal throttling, etc..
-> > >   If unsure, select 'Y'.
-> > > 
-> > > So please explain why your error reporting is so different from the above that it 
-> > > justifies a separate facility. And you better come up with a real good explanation 
-> > > other than we looked at EDAC and it did not fit our needs.
-> > 
-> > Btw., it's not just about EDAC - the firmware can store Linux events 
-> > persistently (beyond allowing the firmware to insert its own RAS events), that 
-> > is obviously _hugely_ useful for kernel debugging in general. We could inject 
-> > debugging events there and recover them after a crash, etc.
-> 
-> Yes. It can be used by other kernel subsystems other than RAS. A kernel API is 
-> provided already. The design of the kernel API makes it easy to be used by various 
-> kernel subsystems. As the first step, we plan to support saving kernel log before 
-> panic and reading it back after reboot.
+andy@fs-test:~/prj/linux-2.6(mine)$ git show
+77099f0afe94928b5b0066a7efa5fa9f81696b54 | scripts/checkpatch.pl -
+total: 0 errors, 0 warnings, 177 lines checked
 
-And that's the problem: we have good facilities already that deal with similar 
-things. We have NMI-safe event logging, event enumeration, dump-on-panic code and 
-all sorts of goodies there.
+Your patch has no obvious style problems and is ready for submission.
 
-But what did Andi's guidance/design lead you to do instead?
+On Tue, Oct 26, 2010 at 12:43 AM, Sven Eckelmann <sven.eckelmann@gmx.de> wrote:
+> 77099f0afe94928b5b0066a7efa5fa9f81696b54 added changes to vis.c which
+> trigger a checkpatch.pl warning about braces which are not necessary
+> anymore.
+>
+> WARNING: braces {} are not necessary for any arm of this statement
+> +               if (entry->primary)
+> [...]
+> +               else {
+> [...]
+>
+> Signed-off-by: Sven Eckelmann <sven.eckelmann@gmx.de>
+> Cc: Andy Shevchenko <andy.shevchenko@gmail.com>
+> Cc: Marek Lindner <lindner_marek@yahoo.de>
+> Cc: Simon Wunderlich <siwu@hrz.tu-chemnitz.de>
+> Cc: Andrew Lunn <andrew@lunn.ch>
+> ---
+>  drivers/staging/batman-adv/vis.c |    3 +--
+>  1 files changed, 1 insertions(+), 2 deletions(-)
+>
+> diff --git a/drivers/staging/batman-adv/vis.c b/drivers/staging/batman-adv/vis.c
+> index 3d2c1bc..4473cc8 100644
+> --- a/drivers/staging/batman-adv/vis.c
+> +++ b/drivers/staging/batman-adv/vis.c
+> @@ -135,9 +135,8 @@ static ssize_t vis_data_read_prim_sec(char *buff, struct hlist_head *if_list)
+>        hlist_for_each_entry(entry, pos, if_list, list) {
+>                if (entry->primary)
+>                        len += sprintf(buff + len, "PRIMARY, ");
+> -               else {
+> +               else
+>                        len += sprintf(buff + len,  "SEC %pM, ", entry->addr);
+> -               }
+>        }
+>
+>        return len;
+> --
+> 1.7.2.3
+>
+>
 
-You stuck a useful hw feature into a vendor specific area of the kernel and exported 
-it to /dev/erst-dbg via a crappy ABI. You also did it in the worst possible 
-imaginable way: you avoided talking to the people who maintain and know the 
-RAS/EDAC/debugging/instrumentation code, and you tried to create an ABI to export it 
-in the most raw form possible - limiting our future options.
 
-All that done so that dealing with those pesky RAS/EDAC, instrumentation and core 
-kernel people can be avoided? ;-)
 
-Sucks IMHO.
-
-Thanks,
-
-	Ingo
+-- 
+With Best Regards,
+Andy Shevchenko
