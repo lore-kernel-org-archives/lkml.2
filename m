@@ -1,44 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759843Ab0JZMAS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Oct 2010 08:00:18 -0400
-Received: from emroute4.ornl.gov ([160.91.86.27]:41152 "EHLO emroute4.ornl.gov"
+	id S932889Ab0JZMAa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Oct 2010 08:00:30 -0400
+Received: from redmars.org ([92.243.31.175]:55392 "EHLO deckard.alcopop.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757505Ab0JZMAP convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Oct 2010 08:00:15 -0400
-X-Greylist: delayed 479 seconds by postgrey-1.27 at vger.kernel.org; Tue, 26 Oct 2010 08:00:15 EDT
-Date: Tue, 26 Oct 2010 07:52:12 -0400
-From: David Dillow <dave@thedillows.org>
-Subject: Re: [PATCH 7/14] drivers/net/typhoon.c: delete double assignment
-In-reply-to: <1288088743-3725-8-git-send-email-julia@diku.dk>
-To: Julia Lawall <julia@diku.dk>
-Cc: kernel-janitors@vger.kernel.org, netdev@vger.kernel.org,
+	id S932592Ab0JZMA3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Oct 2010 08:00:29 -0400
+Date: Tue, 26 Oct 2010 13:00:26 +0100
+From: Jon Dowland <jmtd@debian.org>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: Matthew Garrett <mjg@redhat.com>, platform-driver-x86@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Message-id: <1288093932.14943.1.camel@lap75545.ornl.gov>
-MIME-version: 1.0
-X-Mailer: Evolution 2.30.3 (2.30.3-1.fc13)
-Content-type: text/plain; charset=UTF-8
-Content-transfer-encoding: 8BIT
-References: <1288088743-3725-1-git-send-email-julia@diku.dk>
- <1288088743-3725-8-git-send-email-julia@diku.dk>
+Subject: Re: [PATCH] toshiba_acpi.c: Add key_entry for a lone FN keypress
+Message-ID: <20101026120026.GA27720@deckard.alcopop.org>
+References: <20101023221253.GA4829@hathor> <201010251127.37374.dmitry.torokhov@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <201010251127.37374.dmitry.torokhov@gmail.com>
+X-Challenge-Response: refused
+X-Forelli-filterword: GO1268Op
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-10-26 at 12:25 +0200, Julia Lawall wrote:
-> From: Julia Lawall <julia@diku.dk>
-> 
-> Delete successive assignments to the same location.  The current definition
-> does not initialize the respRing structure, which has the same type as the
-> cmdRing structure, so initialize that one instead.
+On Mon, Oct 25, 2010 at 11:27:35AM -0700, Dmitry Torokhov wrote:
+> Well, if FN key can generate separate events then we should report
+> KEY_FN, not KEY_UNKNOWN.
 
-> Signed-off-by: Julia Lawall <julia@diku.dk>
+Good point, thanks.  I missed that when I went shopping for an appropriate
+KEY_*.
 
-Acked-by: David Dillow <dave@thedillows.org>
+Adjusted patch to apply on top of current HEAD.
 
-> ---
-> This changes the semantics and has not been tested.
+A lone FN key press on a Toshiba Portégé R700 without another key in
+conjunction results in an ACPI event and a spurious error message on
+the console.
 
-tp->respRing.lastWrite is only an artifact of using a common struct for
-the rings and is not otherwise used, so no change to semantics.
+Add a key entry to map this event to a KEY_UNKNOWN keypress silences
+this message.
+
+Signed-off-by: Jon Dowland <jmtd@debian.org>
+
+----
+--- a/drivers/platform/x86/toshiba_acpi.c	2010-10-26 12:56:46.000000000 +0100
++++ b/drivers/platform/x86/toshiba_acpi.c	2010-10-26 12:58:21.000000000 +0100
+@@ -135,6 +135,7 @@
+ 	{ KE_KEY, 0x141, { KEY_BRIGHTNESSUP } },
+ 	{ KE_KEY, 0x142, { KEY_WLAN } },
+ 	{ KE_KEY, 0x143, { KEY_PROG1 } },
++	{ KE_KEY, 0x17f, { KEY_FN } },
+ 	{ KE_KEY, 0xb05, { KEY_PROG2 } },
+ 	{ KE_KEY, 0xb06, { KEY_WWW } },
+ 	{ KE_KEY, 0xb07, { KEY_MAIL } },
