@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759436Ab0JZKSU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Oct 2010 06:18:20 -0400
-Received: from mgw2.diku.dk ([130.225.96.92]:60747 "EHLO mgw2.diku.dk"
+	id S1759625Ab0JZKTt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Oct 2010 06:19:49 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:60775 "EHLO mgw2.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752695Ab0JZKSS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Oct 2010 06:18:18 -0400
+	id S1752695Ab0JZKSV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Oct 2010 06:18:21 -0400
 From: Julia Lawall <julia@diku.dk>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: kernel-janitors@vger.kernel.org, kvm@vger.kernel.org,
-        virtualization@lists.osdl.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 3/14] drivers/vhost/vhost.c: delete double assignment
-Date: Tue, 26 Oct 2010 12:25:32 +0200
-Message-Id: <1288088743-3725-4-git-send-email-julia@diku.dk>
+To: Henrique de Moraes Holschuh <ibm-acpi@hmh.eng.br>
+Cc: kernel-janitors@vger.kernel.org, Matthew Garrett <mjg@redhat.com>,
+        ibm-acpi-devel@lists.sourceforge.net,
+        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 8/14] drivers/platform/x86/thinkpad_acpi.c: delete double assignment
+Date: Tue, 26 Oct 2010 12:25:37 +0200
+Message-Id: <1288088743-3725-9-git-send-email-julia@diku.dk>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1288088743-3725-1-git-send-email-julia@diku.dk>
 References: <1288088743-3725-1-git-send-email-julia@diku.dk>
@@ -40,19 +40,19 @@ expression i;
 Signed-off-by: Julia Lawall <julia@diku.dk>
 
 ---
- drivers/vhost/vhost.c |    1 -
+ drivers/platform/x86/thinkpad_acpi.c |    1 -
  1 file changed, 1 deletion(-)
 
-diff --git a/drivers/vhost/vhost.c b/drivers/vhost/vhost.c
-index 94701ff..ed27727 100644
---- a/drivers/vhost/vhost.c
-+++ b/drivers/vhost/vhost.c
-@@ -157,7 +157,6 @@ static void vhost_vq_reset(struct vhost_dev *dev,
- 	vq->avail_idx = 0;
- 	vq->last_used_idx = 0;
- 	vq->used_flags = 0;
--	vq->used_flags = 0;
- 	vq->log_used = false;
- 	vq->log_addr = -1ull;
- 	vq->vhost_hlen = 0;
+diff --git a/drivers/platform/x86/thinkpad_acpi.c b/drivers/platform/x86/thinkpad_acpi.c
+index 2d61186..e8c2199 100644
+--- a/drivers/platform/x86/thinkpad_acpi.c
++++ b/drivers/platform/x86/thinkpad_acpi.c
+@@ -8497,7 +8497,6 @@ static void ibm_exit(struct ibm_struct *ibm)
+ 					   ibm->acpi->type,
+ 					   dispatch_acpi_notify);
+ 		ibm->flags.acpi_notify_installed = 0;
+-		ibm->flags.acpi_notify_installed = 0;
+ 	}
+ 
+ 	if (ibm->flags.proc_created) {
 
