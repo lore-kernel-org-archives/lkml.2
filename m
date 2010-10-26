@@ -1,98 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759920Ab0JZNgu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Oct 2010 09:36:50 -0400
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:41748 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752512Ab0JZNgs (ORCPT
+	id S933209Ab0JZNgx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Oct 2010 09:36:53 -0400
+Received: from mailout4.w1.samsung.com ([210.118.77.14]:35427 "EHLO
+	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759892Ab0JZNgt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Oct 2010 09:36:48 -0400
-Date: Tue, 26 Oct 2010 15:38:52 +0200
+	Tue, 26 Oct 2010 09:36:49 -0400
+MIME-version: 1.0
+Content-transfer-encoding: 7BIT
+Content-type: TEXT/PLAIN
+Date: Tue, 26 Oct 2010 15:38:56 +0200
 From: Michal Nazarewicz <m.nazarewicz@samsung.com>
-Subject: [PATCH 1/7] USB: gadget: file_storage: put_device() in error recovery
+Subject: [PATCH 5/7] USB: gadget: f_mass_storage: remove needless complete()
+In-reply-to: <1fb12ac8cc8a5dfd642353eaf4a5e8ba3e868baa.1288099890.git.m.nazarewicz@samsung.com>
 To: Greg Kroah-Hartman <gregkh@suse.de>
 Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Alan Stern <stern@rowland.harvard.edu>
-Message-id: <7214986593243afb11434ddb86da7e0460dc1f51.1288099890.git.m.nazarewicz@samsung.com>
-MIME-version: 1.0
+        Michal Nazarewicz <mina86@mina86.com>
+Message-id: <21dc34fe596e4d6694f560d3fa823dac758ba0b4.1288099890.git.m.nazarewicz@samsung.com>
 X-Mailer: git-send-email 1.7.1
-Content-type: TEXT/PLAIN
-Content-transfer-encoding: 7BIT
+References: <7214986593243afb11434ddb86da7e0460dc1f51.1288099890.git.m.nazarewicz@samsung.com>
+ <4a6e11ec91ee592689f553dc69df515b4302691b.1288099890.git.m.nazarewicz@samsung.com>
+ <e4d7faa839773178984edc8e17cffed7b44e1411.1288099890.git.m.nazarewicz@samsung.com>
+ <1fb12ac8cc8a5dfd642353eaf4a5e8ba3e868baa.1288099890.git.m.nazarewicz@samsung.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Michal Nazarewicz <mina86@mina86.com>
 
-This commit fixes some issues with File-backed Storage Gadget
-error recovery when registering LUN's devices.
-
-First of all, when device_register() fails the device still
-needs to be put.  However, because lun_release() decreases
-fsg->ref reference counter the counter must be incremented
-beforehand.
-
-Second of all, after any of the device_create_file()s fails,
-device_unregister() is called which in turn (indirectly) calls
-lun_release() which decrements fsg->ref.  So, again, the
-reference counter must be incremented beforehand.
-
-Lastly, if the first or the second device_create_file()
-succeeds, the files are never removed.  To fix it,
-device_remove_file() needs to be called.  This is done by
-simply marking LUN as registered prior to creating files so
-that fsg_unbind() can handle removing files.
+This commit removes call to the complete() function done in
+fsg_unbind() which was never needed there but was a leftover
+form file_storage.c.
 
 Signed-off-by: Michal Nazarewicz <mina86@mina86.com>
-Reported-by: Rahul Ruikar <rahul.ruikar@gmail.com>
-Cc: Alan Stern <stern@rowland.harvard.edu>
 ---
- drivers/usb/gadget/file_storage.c |   20 +++++++++-----------
- 1 files changed, 9 insertions(+), 11 deletions(-)
+ drivers/usb/gadget/f_mass_storage.c |    5 +----
+ 1 files changed, 1 insertions(+), 4 deletions(-)
 
-Rahul sent an invalid fix for the missing put_device() problem some time
-ago.  This is, I believe, a correct one.  It also fixes the problem with
-device files not being removed (as described in commit message); not sure
-if the latter is a big issue though.
+An additional complete() didn't hurt but at the same time it was
+rather useless.
 
-Hope I'm not late for 37?
-
-diff --git a/drivers/usb/gadget/file_storage.c b/drivers/usb/gadget/file_storage.c
-index d4fdf65..e0504a1 100644
---- a/drivers/usb/gadget/file_storage.c
-+++ b/drivers/usb/gadget/file_storage.c
-@@ -3392,21 +3392,19 @@ static int __init fsg_bind(struct usb_gadget *gadget)
- 		dev_set_name(&curlun->dev,"%s-lun%d",
- 			     dev_name(&gadget->dev), i);
+diff --git a/drivers/usb/gadget/f_mass_storage.c b/drivers/usb/gadget/f_mass_storage.c
+index c71f69f..365f1b3 100644
+--- a/drivers/usb/gadget/f_mass_storage.c
++++ b/drivers/usb/gadget/f_mass_storage.c
+@@ -2657,7 +2657,7 @@ static int fsg_main_thread(void *common_)
+ 		up_write(&common->filesem);
+ 	}
  
--		if ((rc = device_register(&curlun->dev)) != 0) {
-+		kref_get(&fsg->ref);
-+		rc = device_register(&curlun->dev);
-+		if (rc) {
- 			INFO(fsg, "failed to register LUN%d: %d\n", i, rc);
--			goto out;
--		}
--		if ((rc = device_create_file(&curlun->dev,
--					&dev_attr_ro)) != 0 ||
--				(rc = device_create_file(&curlun->dev,
--					&dev_attr_nofua)) != 0 ||
--				(rc = device_create_file(&curlun->dev,
--					&dev_attr_file)) != 0) {
--			device_unregister(&curlun->dev);
-+			put_device(&curlun->dev);
- 			goto out;
- 		}
- 		curlun->registered = 1;
--		kref_get(&fsg->ref);
-+
-+		if ((rc = device_create_file(&curlun->dev, &dev_attr_ro))  ||
-+		    (rc = device_create_file(&curlun->dev, &dev_attr_nofua)) ||
-+		    (rc = device_create_file(&curlun->dev, &dev_attr_file)))
-+			goto out;
+-	/* Let the unbind and cleanup routines know the thread has exited */
++	/* Let fsg_unbind() know the thread has exited */
+ 	complete_and_exit(&common->thread_notifier, 0);
+ }
  
- 		if (mod_data.file[i] && *mod_data.file[i]) {
- 			if ((rc = fsg_lun_open(curlun,
+@@ -2906,9 +2906,6 @@ static void fsg_common_release(struct kref *ref)
+ 	if (common->state != FSG_STATE_TERMINATED) {
+ 		raise_exception(common, FSG_STATE_EXIT);
+ 		wait_for_completion(&common->thread_notifier);
+-
+-		/* The cleanup routine waits for this completion also */
+-		complete(&common->thread_notifier);
+ 	}
+ 
+ 	if (likely(common->luns)) {
 -- 
 1.7.1
 
