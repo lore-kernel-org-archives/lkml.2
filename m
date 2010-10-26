@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932533Ab0JZCzc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Oct 2010 22:55:32 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:35730 "EHLO mx1.redhat.com"
+	id S933087Ab0JZC4l (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Oct 2010 22:56:41 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:6578 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932345Ab0JZCz3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Oct 2010 22:55:29 -0400
+	id S932598Ab0JZC42 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Oct 2010 22:56:28 -0400
 Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
 	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
 	Kingdom.
 	Registered in England and Wales under Company Registration No. 3798903
-Subject: [PATCH 26/43] MN10300: Rename __flush_tlb*() to local_flush_tlb*()
+Subject: [PATCH 37/43] MN10300: Map userspace atomic op regs as a vmalloc
+ page
 To: linux-am33-list@redhat.com
 From: David Howells <dhowells@redhat.com>
-Cc: linux-kernel@vger.kernel.org
-Date: Tue, 26 Oct 2010 03:55:20 +0100
-Message-ID: <20101026025520.23512.19909.stgit@warthog.procyon.org.uk>
+Cc: linux-kernel@vger.kernel.org, Mark Salter <msalter@redhat.com>
+Date: Tue, 26 Oct 2010 03:56:19 +0100
+Message-ID: <20101026025619.23512.61850.stgit@warthog.procyon.org.uk>
 In-Reply-To: <20101026025301.23512.24525.stgit@warthog.procyon.org.uk>
 References: <20101026025301.23512.24525.stgit@warthog.procyon.org.uk>
 User-Agent: StGit/0.15-97-g9680-dirty
@@ -26,204 +27,96 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rename __flush_tlb*() to local_flush_tlb*() as it's more appropriate, and ready
-to differentiate local from global TLB flushes when SMP is introduced.
+From: Mark Salter <msalter@redhat.com>
 
-Whilst we're at it, get rid of __flush_tlb_global() and make
-local_flush_tlb_page() take an mm_struct pointer rather than VMA pointer.
+The AM34 processor has an atomic operation that's the equivalent of LL/SC on
+other architectures.  However, rather than being done through a pair of
+instructions, it's driven by writing to a pair of memory-mapped CPU control
+registers.
 
+One set of these registers (AARU/ADRU/ASRU) is available for use by userspace,
+but for userspace to access them a PTE must be set up to cover the region.
+This is done by dedicating the first vmalloc region page to this purpose,
+setting the permissions on its PTE such that userspace can access the page.
+
+glibc is hardcoded to expect the registers to be there.
+
+The way atomic ops are done through these registers is straightforward:
+
+ (1) Write the address of the word you wish to access into AARU.  This causes
+     the CPU to go and fetch that word and load it into ADRU.  The status bits
+     are also cleared in ASRU.
+
+ (2) The current data value is read from the ADRU register and modified.
+
+ (3) To alter the data in RAM, the revised data is written back to the ADRU
+     register, which causes the CPU to attempt to write it back.
+
+ (4) The ASRU.RW flag (ASRU read watch), ASRU.LW flag (bus lock watch),
+     ASRU.IW (interrupt watch) and the ASRU.BW (bus error watch) flags then
+     must be checked to confirm that the operation wasn't aborted.  If any of
+     the watches have been set to true, the operation was aborted.
+
+Signed-off-by: Mark Salter <msalter@redhat.com>
 Signed-off-by: David Howells <dhowells@redhat.com>
 ---
 
- arch/mn10300/include/asm/highmem.h     |    4 +-
- arch/mn10300/include/asm/mmu_context.h |    2 +
- arch/mn10300/include/asm/tlbflush.h    |   56 ++++++++++++++++++++------------
- arch/mn10300/mm/init.c                 |    2 +
- arch/mn10300/mm/mmu-context.c          |    4 +-
- arch/mn10300/mm/pgtable.c              |    2 +
- 6 files changed, 42 insertions(+), 28 deletions(-)
+ arch/mn10300/include/asm/pgtable.h |    3 +++
+ arch/mn10300/mm/init.c             |   21 +++++++++++++++++++++
+ 2 files changed, 24 insertions(+), 0 deletions(-)
 
 
-diff --git a/arch/mn10300/include/asm/highmem.h b/arch/mn10300/include/asm/highmem.h
-index b0b187a..5fd74d8 100644
---- a/arch/mn10300/include/asm/highmem.h
-+++ b/arch/mn10300/include/asm/highmem.h
-@@ -86,7 +86,7 @@ static inline unsigned long kmap_atomic(struct page *page, enum km_type type)
- 		BUG();
- #endif
- 	set_pte(kmap_pte - idx, mk_pte(page, kmap_prot));
--	__flush_tlb_one(vaddr);
-+	local_flush_tlb_one(vaddr);
+diff --git a/arch/mn10300/include/asm/pgtable.h b/arch/mn10300/include/asm/pgtable.h
+index ba66606..b6e77f5 100644
+--- a/arch/mn10300/include/asm/pgtable.h
++++ b/arch/mn10300/include/asm/pgtable.h
+@@ -182,6 +182,9 @@ extern pte_t kernel_vmalloc_ptes[(VMALLOC_END - VMALLOC_START) / PAGE_SIZE];
+ #define PAGE_KERNEL_LARGE	__pgprot(__PAGE_KERNEL_LARGE)
+ #define PAGE_KERNEL_LARGE_EXEC	__pgprot(__PAGE_KERNEL_LARGE_EXEC)
  
- 	return vaddr;
- }
-@@ -107,7 +107,7 @@ static inline void kunmap_atomic_notypecheck(unsigned long vaddr, enum km_type t
- 	 * this pte without first remap it
- 	 */
- 	pte_clear(kmap_pte - idx);
--	__flush_tlb_one(vaddr);
-+	local_flush_tlb_one(vaddr);
- #endif
- }
- 
-diff --git a/arch/mn10300/include/asm/mmu_context.h b/arch/mn10300/include/asm/mmu_context.h
-index cb294c2..24d63f0 100644
---- a/arch/mn10300/include/asm/mmu_context.h
-+++ b/arch/mn10300/include/asm/mmu_context.h
-@@ -58,7 +58,7 @@ static inline unsigned long allocate_mmu_context(struct mm_struct *mm)
- 	if (!(mc & MMU_CONTEXT_TLBPID_MASK)) {
- 		/* we exhausted the TLB PIDs of this version on this CPU, so we
- 		 * flush this CPU's TLB in its entirety and start new cycle */
--		flush_tlb_all();
-+		local_flush_tlb_all();
- 
- 		/* fix the TLB version if needed (we avoid version #0 so as to
- 		 * distingush MMU_NO_CONTEXT) */
-diff --git a/arch/mn10300/include/asm/tlbflush.h b/arch/mn10300/include/asm/tlbflush.h
-index 1a7e292..5d54bf5 100644
---- a/arch/mn10300/include/asm/tlbflush.h
-+++ b/arch/mn10300/include/asm/tlbflush.h
-@@ -13,21 +13,37 @@
- 
- #include <asm/processor.h>
- 
--#define __flush_tlb()						\
--do {								\
--	int w;							\
--	__asm__ __volatile__					\
--		("	mov %1,%0		\n"		\
--		 "	or %2,%0		\n"		\
--		 "	mov %0,%1		\n"		\
--		 : "=d"(w)					\
--		 : "m"(MMUCTR), "i"(MMUCTR_IIV|MMUCTR_DIV)	\
--		 : "cc", "memory"				\
--		 );						\
--} while (0)
-+/**
-+ * local_flush_tlb - Flush the current MM's entries from the local CPU's TLBs
-+ */
-+static inline void local_flush_tlb(void)
-+{
-+	int w;
-+	asm volatile(
-+		"	mov	%1,%0		\n"
-+		"	or	%2,%0		\n"
-+		"	mov	%0,%1		\n"
-+		: "=d"(w)
-+		: "m"(MMUCTR), "i"(MMUCTR_IIV|MMUCTR_DIV)
-+		: "cc", "memory");
-+}
- 
--#define __flush_tlb_all() __flush_tlb()
--#define __flush_tlb_one(addr) __flush_tlb()
-+/**
-+ * local_flush_tlb_all - Flush all entries from the local CPU's TLBs
-+ */
-+#define local_flush_tlb_all()		local_flush_tlb()
++#define __PAGE_USERIO		(__PAGE_KERNEL_BASE | _PAGE_PROT_WKWU | _PAGE_NX)
++#define PAGE_USERIO		__pgprot(__PAGE_USERIO)
 +
-+/**
-+ * local_flush_tlb_one - Flush one entry from the local CPU's TLBs
-+ */
-+#define local_flush_tlb_one(addr)	local_flush_tlb()
-+
-+/**
-+ * local_flush_tlb_page - Flush a page's entry from the local CPU's TLBs
-+ * @mm: The MM to flush for
-+ * @addr: The address of the target page in RAM (not its page struct)
-+ */
-+extern void local_flush_tlb_page(struct mm_struct *mm, unsigned long addr);
- 
- 
  /*
-@@ -43,14 +59,14 @@ do {								\
- #define flush_tlb_all()				\
- do {						\
- 	preempt_disable();			\
--	__flush_tlb_all();			\
-+	local_flush_tlb_all();			\
- 	preempt_enable();			\
- } while (0)
- 
- #define flush_tlb_mm(mm)			\
- do {						\
- 	preempt_disable();			\
--	__flush_tlb_all();			\
-+	local_flush_tlb_all();			\
- 	preempt_enable();			\
- } while (0)
- 
-@@ -59,13 +75,13 @@ do {								\
- 	unsigned long __s __attribute__((unused)) = (start);	\
- 	unsigned long __e __attribute__((unused)) = (end);	\
- 	preempt_disable();					\
--	__flush_tlb_all();					\
-+	local_flush_tlb_all();					\
- 	preempt_enable();					\
- } while (0)
- 
-+#define flush_tlb_page(vma, addr)	local_flush_tlb_page((vma)->vm_mm, addr)
-+#define flush_tlb()			flush_tlb_all()
- 
--#define __flush_tlb_global()			flush_tlb_all()
--#define flush_tlb()				flush_tlb_all()
- #define flush_tlb_kernel_range(start, end)			\
- do {								\
- 	unsigned long __s __attribute__((unused)) = (start);	\
-@@ -73,8 +89,6 @@ do {								\
- 	flush_tlb_all();					\
- } while (0)
- 
--extern void flush_tlb_page(struct vm_area_struct *vma, unsigned long addr);
--
- #define flush_tlb_pgtables(mm, start, end)	do {} while (0)
- 
- #endif /* _ASM_TLBFLUSH_H */
+  * Whilst the MN10300 can do page protection for execute (given separate data
+  * and insn TLBs), we are not supporting it at the moment. Write permission,
 diff --git a/arch/mn10300/mm/init.c b/arch/mn10300/mm/init.c
-index f86c283..1daf97f 100644
+index 1daf97f..48907cc 100644
 --- a/arch/mn10300/mm/init.c
 +++ b/arch/mn10300/mm/init.c
-@@ -73,7 +73,7 @@ void __init paging_init(void)
+@@ -41,6 +41,10 @@ DEFINE_PER_CPU(struct mmu_gather, mmu_gathers);
+ 
+ unsigned long highstart_pfn, highend_pfn;
+ 
++#ifdef CONFIG_MN10300_HAS_ATOMIC_OPS_UNIT
++static struct vm_struct user_iomap_vm;
++#endif
++
+ /*
+  * set up paging
+  */
+@@ -73,6 +77,23 @@ void __init paging_init(void)
  	/* pass the memory from the bootmem allocator to the main allocator */
  	free_area_init(zones_size);
  
--	__flush_tlb_all();
-+	local_flush_tlb_all();
++#ifdef CONFIG_MN10300_HAS_ATOMIC_OPS_UNIT
++	/* The Atomic Operation Unit registers need to be mapped to userspace
++	 * for all processes.  The following uses vm_area_register_early() to
++	 * reserve the first page of the vmalloc area and sets the pte for that
++	 * page.
++	 *
++	 * glibc hardcodes this virtual mapping, so we're pretty much stuck with
++	 * it from now on.
++	 */
++	user_iomap_vm.flags = VM_USERMAP;
++	user_iomap_vm.size = 1 << PAGE_SHIFT;
++	vm_area_register_early(&user_iomap_vm, PAGE_SIZE);
++	ppte = kernel_vmalloc_ptes;
++	set_pte(ppte, pfn_pte(USER_ATOMIC_OPS_PAGE_ADDR >> PAGE_SHIFT,
++			      PAGE_USERIO));
++#endif
++
+ 	local_flush_tlb_all();
  }
  
- /*
-diff --git a/arch/mn10300/mm/mmu-context.c b/arch/mn10300/mm/mmu-context.c
-index 36ba021..3d83966 100644
---- a/arch/mn10300/mm/mmu-context.c
-+++ b/arch/mn10300/mm/mmu-context.c
-@@ -23,7 +23,7 @@ unsigned long mmu_context_cache[NR_CPUS] = {
- /*
-  * flush the specified TLB entry
-  */
--void flush_tlb_page(struct vm_area_struct *vma, unsigned long addr)
-+void local_flush_tlb_page(struct mm_struct *mm, unsigned long addr)
- {
- 	unsigned long pteu, cnx, flags;
- 
-@@ -33,7 +33,7 @@ void flush_tlb_page(struct vm_area_struct *vma, unsigned long addr)
- 	 * interference from vmalloc'd regions */
- 	local_irq_save(flags);
- 
--	cnx = mm_context(vma->vm_mm);
-+	cnx = mm_context(mm);
- 
- 	if (cnx != MMU_NO_CONTEXT) {
- 		pteu = addr | (cnx & 0x000000ffUL);
-diff --git a/arch/mn10300/mm/pgtable.c b/arch/mn10300/mm/pgtable.c
-index 9c1624c..450f7ba 100644
---- a/arch/mn10300/mm/pgtable.c
-+++ b/arch/mn10300/mm/pgtable.c
-@@ -59,7 +59,7 @@ void set_pmd_pfn(unsigned long vaddr, unsigned long pfn, pgprot_t flags)
- 	 * It's enough to flush this one mapping.
- 	 * (PGE mappings get flushed as well)
- 	 */
--	__flush_tlb_one(vaddr);
-+	local_flush_tlb_one(vaddr);
- }
- 
- pte_t *pte_alloc_one_kernel(struct mm_struct *mm, unsigned long address)
 
