@@ -1,52 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761151Ab0J0PAE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Oct 2010 11:00:04 -0400
-Received: from statler.bytemark.co.uk ([212.110.162.18]:56151 "EHLO
-	statler.bytemark.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756725Ab0J0PAB (ORCPT
+	id S1761214Ab0J0PAJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Oct 2010 11:00:09 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:41280 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760949Ab0J0PAD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Oct 2010 11:00:01 -0400
-Date: Wed, 27 Oct 2010 10:59:47 -0400
-From: "Emilio G. Cota" <cota@braap.org>
-To: Martyn Welch <martyn.welch@ge.com>
-Cc: Greg KH <greg@kroah.com>, LKML <linux-kernel@vger.kernel.org>,
-        devel@driverdev.osuosl.org,
-        Juan David Gonzalez Cobas <david.cobas@gmail.com>,
-        Bill Pemberton <wfp5p@virginia.edu>
-Subject: Re: [PATCH 24/30] staging/vme_user: remove unnecessary call to
- vme_slave_set
-Message-ID: <20101027145947.GQ10869@flamenco.cs.columbia.edu>
-References: <1288055476-19438-1-git-send-email-cota@braap.org>
- <1288055476-19438-25-git-send-email-cota@braap.org>
- <4CC81A17.7090805@ge.com>
+	Wed, 27 Oct 2010 11:00:03 -0400
+Date: Wed, 27 Oct 2010 10:59:29 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: "J. Bruce Fields" <bfields@fieldses.org>
+Cc: Arnd Bergmann <arnd@arndb.de>, Christoph Hellwig <hch@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Bryan Schumaker <bjschuma@netapp.com>, linux-nfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: nfsd changes for 2.6.37
+Message-ID: <20101027145929.GA5788@infradead.org>
+References: <20101026164549.GD19445@fieldses.org>
+ <20101027083924.GA28129@infradead.org>
+ <20101027133924.GB6328@fieldses.org>
+ <201010271546.09036.arnd@arndb.de>
+ <20101027145538.GC6328@fieldses.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4CC81A17.7090805@ge.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20101027145538.GC6328@fieldses.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 27, 2010 at 13:24:55 +0100, Martyn Welch wrote:
-> On 26/10/10 02:11, Emilio G. Cota wrote:
-> > From: Emilio G. Cota <cota@braap.org>
-> > 
-> > The resource is about to be freed and therefore it is pointless to
-> > set any of its parameters.
-> 
-> Nope - this is disabling the window, which given that you are about to
-> unalloc the memory that it is using this is quite important.
+On Wed, Oct 27, 2010 at 10:55:39AM -0400, J. Bruce Fields wrote:
+> Hm, two problems:
+> 	- We introduce the possibility of fcntl(fd, F_SETLEASE, F_UNLCK)
+> 	  failing with ENOMEM.
 
-Aah I didn't realise that 
+splitt ->setlease into ->add_least and ->delete_lease.  No need to pass
+in a structure for the later.  No need to return one either.
 
-> > -		vme_slave_set(image[i].resource, 0, 0, 0, 0, VME_A32, 0);
+> 	- fasync_helper(.,.,1,.) sleeps.  Argh.
 
-disables the window. I thought vme_slave_free would disable it as well.
-Forget this one, then.
-
-Thanks
-
-		Emilio
+That's not new..
 
