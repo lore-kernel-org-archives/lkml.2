@@ -1,69 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759626Ab0J0KCv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Oct 2010 06:02:51 -0400
-Received: from exprod5og108.obsmtp.com ([64.18.0.186]:57051 "EHLO
-	exprod5og108.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753538Ab0J0KCt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Oct 2010 06:02:49 -0400
-Message-ID: <4CC7F876.9090106@ge.com>
-Date: Wed, 27 Oct 2010 11:01:26 +0100
-From: Martyn Welch <martyn.welch@ge.com>
-Organization: GE Intelligent Platforms
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.14) Gecko/20101006 Thunderbird/3.0.9
-MIME-Version: 1.0
-To: "Emilio G. Cota" <cota@braap.org>
-CC: Greg KH <greg@kroah.com>, LKML <linux-kernel@vger.kernel.org>,
-        devel@driverdev.osuosl.org,
-        Juan David Gonzalez Cobas <david.cobas@gmail.com>,
-        Bill Pemberton <wfp5p@virginia.edu>
-Subject: Re: [PATCH 07/30] staging/vme/tsi148: remove double freeing of the
- IRQ in .remove
-References: <1288055476-19438-1-git-send-email-cota@braap.org> <1288055476-19438-8-git-send-email-cota@braap.org>
-In-Reply-To: <1288055476-19438-8-git-send-email-cota@braap.org>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1758679Ab0J0KGT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Oct 2010 06:06:19 -0400
+Received: from mga11.intel.com ([192.55.52.93]:62258 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752301Ab0J0KGS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Oct 2010 06:06:18 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.58,245,1286175600"; 
+   d="scan'208";a="620761193"
+Date: Wed, 27 Oct 2010 10:11:27 +0100
+From: Alan Cox <alan@linux.intel.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Greg KH <greg@kroah.com>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: linux-next: build warning after merge of the final tree (tty
+ tree related)
+Message-ID: <20101027101127.6fd49417@linux.intel.com>
+In-Reply-To: <20101027110307.e754ef59.sfr@canb.auug.org.au>
+References: <20100927153151.9bf66022.sfr@canb.auug.org.au>
+	<20101027110307.e754ef59.sfr@canb.auug.org.au>
+Organization: Intel
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 27 Oct 2010 10:02:43.0506 (UTC) FILETIME=[19125920:01CB75BE]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 26/10/10 02:10, Emilio G. Cota wrote:
-> From: Emilio G. Cota <cota@braap.org>
-> 
-> tsi148_irq_exit is called twice in .remove, which causes an oops.
-> 
-> Remove the second call, which apart from being redundant cannot
-> possibly work; the CR/CSR space has been already unmapped.
-> 
-> Signed-off-by: Emilio G. Cota <cota@braap.org>
+On Wed, 27 Oct 2010 11:03:07 +1100
+Stephen Rothwell <sfr@canb.auug.org.au> wrote:
 
-Acked-by: Martyn Welch <martyn.welch@ge.com>
-
-> ---
->  drivers/staging/vme/bridges/vme_tsi148.c |    2 --
->  1 files changed, 0 insertions(+), 2 deletions(-)
+> Hi Greg,
 > 
-> diff --git a/drivers/staging/vme/bridges/vme_tsi148.c b/drivers/staging/vme/bridges/vme_tsi148.c
-> index 660968e..acfbd59 100644
-> --- a/drivers/staging/vme/bridges/vme_tsi148.c
-> +++ b/drivers/staging/vme/bridges/vme_tsi148.c
-> @@ -2612,8 +2612,6 @@ static void tsi148_remove(struct pci_dev *pdev)
->  		kfree(master_image);
->  	}
->  
-> -	tsi148_irq_exit(bridge, pdev);
-> -
->  	iounmap(bridge->base);
->  
->  	pci_release_regions(pdev);
+> On Mon, 27 Sep 2010 15:31:51 +1000 Stephen Rothwell
+> <sfr@canb.auug.org.au> wrote:
+> >
+> > After merging the final tree, today's linux-next build (x86_64
+> > allmodconfig) produced this warning:
+> > 
+> > drivers/char/nozomi.c: In function 'ntty_ioctl':
+> > drivers/char/nozomi.c:1831: warning: unused variable 'argp'
+> > 
+> > Introduced by commit dd612b1a8edb7fb3a117c388bfb520476e04ed18 ("tty:
+> > icount changeover for other main devices").
+> 
+> This warning is now in Linus' tree ...
+
+Already re-sent GregKH the fix. Guess it got eaten in the post last
+time.
+
+Alan
 
 
--- 
-Martyn Welch (Principal Software Engineer)   |   Registered in England and
-GE Intelligent Platforms                     |   Wales (3828642) at 100
-T +44(0)127322748                            |   Barbirolli Square,
-Manchester,
-E martyn.welch@ge.com                        |   M2 3AB  VAT:GB 927559189
