@@ -1,57 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753969Ab0J0Rw1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Oct 2010 13:52:27 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:44011 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753293Ab0J0Rw0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Oct 2010 13:52:26 -0400
-Message-ID: <4CC866C9.2010803@redhat.com>
-Date: Wed, 27 Oct 2010 15:52:09 -0200
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100827 Red Hat/3.1.3-1.el6 Lightning/1.0b2 Thunderbird/3.1.3
+	id S1754086Ab0J0Rwh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Oct 2010 13:52:37 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:58458 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753780Ab0J0Rwg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Oct 2010 13:52:36 -0400
 MIME-Version: 1.0
-To: Hans de Goede <hdegoede@redhat.com>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
+In-Reply-To: <4CC85771.2080307@redhat.com>
+References: <4CC8380D.3040802@redhat.com>
+	<4CC84597.4000204@gmail.com>
+	<4CC84846.6020304@redhat.com>
+	<AANLkTim=RfR3Dq0w+ACYjhGTHCSgapdf35wGW8QoZ38n@mail.gmail.com>
+	<4CC85771.2080307@redhat.com>
+Date: Wed, 27 Oct 2010 13:52:34 -0400
+Message-ID: <AANLkTimS2FwZfruag0rBnbpEQoqTEUSXf14XGpZYQdAO@mail.gmail.com>
+Subject: Re: [GIT PULL for 2.6.37-rc1] V4L/DVB updates
+From: Devin Heitmueller <dheitmueller@kernellabs.com>
+To: Mauro Carvalho Chehab <mchehab@redhat.com>
+Cc: Jiri Slaby <jirislaby@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linux Media Mailing List <linux-media@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [GIT PULL for 2.6.37-rc1] V4L/DVB updates
-References: <4CC8380D.3040802@redhat.com> <4CC863D6.7010404@redhat.com>
-In-Reply-To: <4CC863D6.7010404@redhat.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Michael Krufky <mkrufky@kernellabs.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em 27-10-2010 15:39, Hans de Goede escreveu:
-> Hi,
-> 
-> On 10/27/2010 04:32 PM, Mauro Carvalho Chehab wrote:
->> Linus,
->>
->> Please pull from
->>     ssh://master.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-2.6.git v4l_for_linus
->>
-> 
-> <snip snip>
-> 
-> I see that you did not include the changes from my pull request send today,
-> understandably so, but I wonder if these could still get into 2.6.37 for say
-> rc2 ?
+On Wed, Oct 27, 2010 at 12:46 PM, Mauro Carvalho Chehab
+<mchehab@redhat.com> wrote:
+> The original code is broken, as it doesn't properly honour a max size of 8.
+> Even if we do some optimization at cx231xx, we still need to fix the tda18271
+> code, as it is trying to use more than 8 bytes on some writes.
 >
-> All of them are bug fixes except for the xirlink_cit button support which
-> makes changes to a driver new this cycle, so no chance for causing regressions
-> there.
+> Also, as you noticed, the way cx231xx sends large firmwares to xc5000 is a hack:
+> it requires to identify that the I2C device is a xc5000 and do an special
+> treatment for it.
 
-Before posting patches upstream, I send them to Linux-next in order to be tested there 
-for a while, before sending pull requests upstream. So, yes, patches sent me recently
-will need to wait for the next series of patches.
+Yes, it does currently only get run if it's an xc5000, but I believe
+that code path could be used for *all* devices.  There is no reason
+that it needs to be a hack as that behavior should be the default case
+(presumably Conexant just didn't want to retest against other
+devices).
 
-I can't tell you in advance if I'll merge them for rc2, as I didn't review them yet,
-and I'll be travelling abroad next week for LPC/KS, but bug fixes need to be addressed 
-and merged in time for 2.6.37.
+Devin
 
-Cheers,
-Mauro.
+-- 
+Devin J. Heitmueller - Kernel Labs
+http://www.kernellabs.com
