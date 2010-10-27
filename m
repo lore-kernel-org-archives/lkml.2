@@ -1,114 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760982Ab0J0Ly7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Oct 2010 07:54:59 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:48304 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757702Ab0J0Lyy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Oct 2010 07:54:54 -0400
-Message-ID: <4CC812DD.9050608@redhat.com>
-Date: Wed, 27 Oct 2010 13:54:05 +0200
-From: Tomas Henzl <thenzl@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.12) Gecko/20100907 Fedora/3.0.7-1.fc12 Thunderbird/3.0.7
+	id S1761002Ab0J0L4p (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Oct 2010 07:56:45 -0400
+Received: from mail-out.m-online.net ([212.18.0.10]:56535 "EHLO
+	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753316Ab0J0L4o (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Oct 2010 07:56:44 -0400
+X-Auth-Info: OWJSMPIYIPIsNzLKlwTF+pEiFioxwRVvCDa1iENRmWM=
+Message-ID: <4CC813B9.3080506@grandegger.com>
+Date: Wed, 27 Oct 2010 13:57:45 +0200
+From: Wolfgang Grandegger <wg@grandegger.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.12) Gecko/20100907 Fedora/3.0.7-1.fc12 Thunderbird/3.0.7
 MIME-Version: 1.0
-To: "Yang, Bo" <Bo.Yang@lsi.com>
-CC: James Bottomley <James.Bottomley@suse.de>, bo yang <boyang1288@gmail.com>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        "akpm@osdl.org" <akpm@osdl.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 5/5] scsi: megaraid_sas - Version and documentation update
-References: <AANLkTi=praySm1B3dhU+LxhWK2yUccZkzWpd6-6UERYa@mail.gmail.com>	 <4B6A08C587958942AA3002690DD4F8C30100FF9FBB@cosmail02.lsi.com> <1288109543.8283.139.camel@mulgrave.site> <4B6A08C587958942AA3002690DD4F8C3010119E798@cosmail02.lsi.com>
-In-Reply-To: <4B6A08C587958942AA3002690DD4F8C3010119E798@cosmail02.lsi.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+To: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
+CC: Marc Kleine-Budde <mkl@pengutronix.de>, andrew.chih.howe.khor@intel.com,
+        masa-korg@dsn.okisemi.com, sameo@linux.intel.com,
+        margie.foster@intel.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, yong.y.wang@intel.com,
+        socketcan-core@lists.berlios.de, kok.howg.ewe@intel.com,
+        joel.clark@intel.com, morinaga526@dsn.okisemi.com,
+        David Miller <davem@davemloft.net>, chripell@fsfe.org,
+        qi.wang@intel.com
+Subject: Re: [PATCH net-next-2.6 v2] can: Topcliff: PCH_CAN driver: Fix	buildwarnings
+References: <4CC61B1B.3090602@dsn.okisemi.com>	<20101026.105206.15244527.davem@davemloft.net>	<20101026.105545.200376685.davem@davemloft.net><4CC71DA4.3020600@grandegger.com>	<4CC72360.1070608@pengutronix.de> <008201cb75c9$f27ff720$66f8800a@maildom.okisemi.com>
+In-Reply-To: <008201cb75c9$f27ff720$66f8800a@maildom.okisemi.com>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/26/2010 07:15 PM, Yang, Bo wrote:
-> James,
->
-> Thanks for correcting that. Did you also applied 2/5, 3/5 and 4/5 patches?
->
-> By the way, I always use checkpatch.pl to check the patch before I attach the patch to the e-mail.  Also I just went to the 5/5 patch to verify the patch: the steps:
->
-> 1. go to  http://marc.info/?l=linux-scsi&m=128688974201201&w=2
->   
-Looking carefully at the above page (select the text) you can see the trailing whitespaces
-directly on that page. 
+On 10/27/2010 01:27 PM, Tomoya MORINAGA wrote:
+> On Wednesday, October 27, 2010 3:52 AM :  Marc Kleine-Budde and Wolfgang Grandegge wrote:
+> 
+> The following is some inarticulate points I have for your questions.
+> Please give me more information.
+> 
+>> Do I understand your code correctly? You have a big loop, but only do
+>>  two different things at certain values of the loop? Smells fishy.
+> Uh, I can't understand your intention.
+> Please show in detail.
+> This processing does configuration for all message objects.
 
-> 2. click: ["megasas-version.patch" (application/octet-stream)] to download this patch.  
-> 3. Used the checkpatch.pl to check (I used the cmd: "checkpatch.pl --no-tree megasas-version.patch") 
->   
+Not all, but just a few of them. We believe it can be implemented more
+efficiently.
 
-> It looks OK for me (no errors).  It is maybe the checkpatch.pl I used does not get updated or some steps are not correct.  I will find out the updated one to try and find out the reasons.   
->   
-Use the checkpatch.pl from the scripts directory
+> 
+>> what does this loop do? why is it nessecarry? I don't like delay loops
+>>   in the hot path of a driver.
+> This loop is for waiting for all tx Message Object completion.
+> This is Topcliff CAN HW specification.
 
+What do you mean with "tx Message Object completion"? Is TX done not
+signaled via interrupt? Please explain why you need to wait multiples of
+500us here in the hot TX path.
 
->
-> Thanks,
->
-> Bo Yang
->
->
-> -----Original Message-----
-> From: James Bottomley [mailto:James.Bottomley@suse.de] 
-> Sent: Tuesday, October 26, 2010 12:12 PM
-> To: Yang, Bo
-> Cc: bo yang; linux-scsi@vger.kernel.org; akpm@osdl.org; linux-kernel@vger.kernel.org
-> Subject: Re: [PATCH 5/5] scsi: megaraid_sas - Version and documentation update
->
-> On Tue, 2010-10-12 at 07:21 -0600, Yang, Bo wrote:
->   
->> Re-Submit:
->>
->> Update the version and documentation.
->>     
-> This has an impressive set of checkpatch failures:
->
-> ERROR: trailing whitespace
-> #26: FILE: Documentation/scsi/ChangeLog.megaraid_sas:13:
-> +^ITo add the OCR support, driver need to do: $
->
-> ERROR: trailing whitespace
-> #30: FILE: Documentation/scsi/ChangeLog.megaraid_sas:17:
-> +^I^I$
->
-> ERROR: trailing whitespace
-> #35: FILE: Documentation/scsi/ChangeLog.megaraid_sas:22:
-> +^I^I$
->
-> ERROR: trailing whitespace
-> #39: FILE: Documentation/scsi/ChangeLog.megaraid_sas:26:
-> +^I^I$
->
-> ERROR: trailing whitespace
-> #43: FILE: Documentation/scsi/ChangeLog.megaraid_sas:30:
-> +^I^I$
->
-> ERROR: trailing whitespace
-> #46: FILE: Documentation/scsi/ChangeLog.megaraid_sas:33:
-> +^I^I $
->
-> ERROR: trailing whitespace
-> #48: FILE: Documentation/scsi/ChangeLog.megaraid_sas:35:
-> +^I^IOCR to see if driver can bring back the FW.      $
->
-> ERROR: trailing whitespace
-> #54: FILE: Documentation/scsi/ChangeLog.megaraid_sas:41:
-> +3.^IIn driver's timeout routine, driver will do three time reset if fw
-> is in $
->
-> total: 8 errors, 0 warnings, 70 lines checked
->
-> I've fixed it up this time, but could you run it through checkpatch.pl
-> next time?
->
-> Thanks,
->
-> James
->
->
-> N�����r��y���b�X��ǧv�^�)޺{.n�+����{���"�{ay�ʇڙ�,j��f���h���z��w������j:+v���w�j�m��������zZ+��ݢj"��!tml=
+>> If you figured out how to use the endianess conversion functions from
+>> the cpu_to_{le,be}-{le,to}_to_cpup family use them here, too.
+> Uh,le32_to_cpu have been used already here.
+> I can't understand your intention.
+> Please show in detail.
+> 
+> 
+>>> All these check if busy in the code make me a bit nervous, can you
+>>> please explain why they are needed. A pointer to the manual is okay, too.
+>> Me too. I already ask in my previous mail how long that functions
+>> usually blocks.
+> When accessing read/write from/to Message RAM,
+> Since it takes much time for transferring between Register and Message RAM,
+
+Much time means how many mirco-seconds?
+
+> SW must check busy flag of CAN register.
+> This is a Topcliff HW specification.
+
+Maybe the busy check could also be done *before* the Message RAM is
+accessed to avoid (or minimize) waiting.
+
+>> is there some pdev->name instead of KBUILD_MODNAME that can be used?
+> I can't understand your intention.
+> pdev(struct pci_dev) doesn't have "name" member. 
+> Please show in detail.
+
+Using KBUILD_MODNAME is OK. It does hold the name of the driver as required.
+
+Wolfgang.
+
 
