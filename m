@@ -1,81 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753983Ab0J0R6p (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Oct 2010 13:58:45 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:25021 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752978Ab0J0R6o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Oct 2010 13:58:44 -0400
-X-IronPort-AV: E=Sophos;i="4.58,247,1286164800"; 
-   d="scan'208";a="10837756"
-Subject: Re: [PATCH] x86: use pgd accessors when cloning a pgd range.
-From: Ian Campbell <Ian.Campbell@eu.citrix.com>
-To: Borislav Petkov <bp@alien8.de>
-CC: Jeremy Fitzhardinge <jeremy@goop.org>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "x86@kernel.org" <x86@kernel.org>
-In-Reply-To: <20101027174417.GA19194@a1.tnic>
-References: <1288169413-29065-1-git-send-email-ian.campbell@citrix.com>
-	 <20101027104020.GA16954@a1.tnic> <4CC85839.4000507@goop.org>
-	 <4CC85EE6.7030608@linux.intel.com> <4CC861F9.8080200@goop.org>
-	 <20101027174417.GA19194@a1.tnic>
-Content-Type: text/plain; charset="ISO-8859-1"
-Organization: Citrix Systems, Inc.
-Date: Wed, 27 Oct 2010 18:58:41 +0100
-Message-ID: <1288202321.10179.102.camel@localhost.localdomain>
-MIME-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1754105Ab0J0SAB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Oct 2010 14:00:01 -0400
+Received: from asmtpout024.mac.com ([17.148.16.99]:60625 "EHLO
+	asmtpout024.mac.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752978Ab0J0R76 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Oct 2010 13:59:58 -0400
+MIME-version: 1.0
+Content-transfer-encoding: 7BIT
+Content-type: text/plain; CHARSET=US-ASCII
+X-Proofpoint-Virus-Version: vendor=fsecure
+ engine=2.50.10432:5.2.15,1.0.148,0.0.0000
+ definitions=2010-10-27_08:2010-10-27,2010-10-27,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=notspam policy=default score=0 spamscore=0
+ ipscore=0 suspectscore=0 phishscore=0 bulkscore=0 adultscore=0 classifier=spam
+ adjust=0 reason=mlx engine=6.0.2-1004200000 definitions=main-1010270089
+From: Elvis Dowson <elvis.dowson@mac.com>
+Subject: wl12xx board_ref_clock
+Date: Wed, 27 Oct 2010 21:59:44 +0400
+Message-id: <1C13481E-69E7-4779-B472-42DD49619A89@mac.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+To: Ohad Ben-Cohen <ohad@wizery.com>
+X-Mailer: Apple Mail (2.1081)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-10-27 at 18:44 +0100, Borislav Petkov wrote:
-> On Wed, Oct 27, 2010 at 10:31:37AM -0700, Jeremy Fitzhardinge wrote:
-> > > Xen shouldn't have any users of this, since it's used for low-level
-> > > operations like SMP bootstrap, suspend to RAM, reboot and low-level
-> > > BIOS functionality.
-> > >
-> > Right, but it is being called smack in the middle of setup_arch().  It
-> > looks like they could be hidden away in
-> > native_pagetable_setup_start/done though.
-> 
-> I think I can put the second sync-back clone_pgd_range in
-> native_pagetable_setup_done but the first one needs to take place right
-> at the beginning of setup_arch() because a lot of code in-between relies
-> on swapper_pg_dir containing proper entries.
-> 
-> Just to make sure I understand you correctly: best it would be for xen
-> to not have the copy_pgd_range() calls in setup_arch, correct?
-
-Yes, or to ensure that swapper_pg_dir has not yet been marked as a
-pagetable at this point. Under Xen we are running on swapper_pg_dir when
-setup_arch is called.
-
-I think we could achieve this within the Xen pvops backend but e.g. the
-following would likely work also.
-
-(Note, untested. I also omitted the reindent for clarity at this point)
-
-diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
-index 95a3274..2d89d5a 100644
---- a/arch/x86/kernel/setup.c
-+++ b/arch/x86/kernel/setup.c
-@@ -705,12 +705,14 @@ void __init setup_arch(char **cmdline_p)
- 	 * copy kernel address range established so far and switch
- 	 * to the proper swapper page table
- 	 */
-+	if (read_cr3() != __pa(swapper_pg_dir)) {
- 	clone_pgd_range(swapper_pg_dir     + KERNEL_PGD_BOUNDARY,
- 			initial_page_table + KERNEL_PGD_BOUNDARY,
- 			KERNEL_PGD_PTRS);
+Hi Ohad,
+	          To which device does board_ref_clock refer to? On my board, the SDIO CLK line from the MMC2 controller is connected to the LSR TiWi wlan module. 
+                  
+@@ -164,12 +169,25 @@ static void __init beagle_display_init(void)
  
- 	load_cr3(swapper_pg_dir);
- 	__flush_tlb_all();
-+	}
- #else
- 	printk(KERN_INFO "Command line: %s\n", boot_command_line);
- #endif
+ #include "sdram-micron-mt46h32m32lf-6.h"
+ 
++struct wl12xx_platform_data omap_beagle_wlan_data __initdata = {
++	.irq = OMAP_GPIO_IRQ(OMAP_BEAGLE_WLAN_IRQ_GPIO),
++	.board_ref_clock = 2, /* 38.4 MHz */
++};
 
+What is the impact of not specifying a board_ref_clock?
+
+Best regards,
+
+Elvis Dowson
 
