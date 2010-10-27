@@ -1,61 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752375Ab0J0RAf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Oct 2010 13:00:35 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:53774 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752301Ab0J0RAd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Oct 2010 13:00:33 -0400
-Date: Wed, 27 Oct 2010 19:00:23 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: Avi Kivity <avi@redhat.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Andi Kleen <andi@firstfloor.org>,
-        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: fyi: gcc33-hammer crashes when compiling kvm emulate.c
-Message-ID: <20101027170023.GA22171@basil.fritz.box>
-References: <20101026123828.GA30434@basil.fritz.box>
- <4CC70333.80400@zytor.com>
- <20101026163748.GB29961@basil.fritz.box>
- <4CC705ED.1020105@zytor.com>
- <20101026170142.GD29961@basil.fritz.box>
- <4CC71B94.2010802@zytor.com>
- <20101026202734.GB2603@basil.fritz.box>
- <4CC73C07.3030704@zytor.com>
- <4CC803DD.2010508@redhat.com>
+	id S1752350Ab0J0RGR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Oct 2010 13:06:17 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:3228 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751899Ab0J0RGO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Oct 2010 13:06:14 -0400
+Message-ID: <4CC85BD1.5080907@redhat.com>
+Date: Wed, 27 Oct 2010 15:05:21 -0200
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100827 Red Hat/3.1.3-1.el6 Lightning/1.0b2 Thunderbird/3.1.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4CC803DD.2010508@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Jiri Slaby <jirislaby@gmail.com>
+CC: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        mm-commits@vger.kernel.org, Antti Palosaari <crope@iki.fi>,
+        Greg KH <gregkh@suse.de>, USB list <linux-usb@vger.kernel.org>
+Subject: Re: DVB: af9015 defunct [was: mmotm 2010-10-20-15-01 uploaded]
+References: <201010202233.o9KMXNoL008303@imap1.linux-foundation.org> <4CC07DB4.20205@gmail.com> <4CC1577F.9060207@gmail.com> <4CC19804.1080109@redhat.com> <4CC19A6E.8010909@gmail.com> <4CC84F60.7000409@redhat.com> <4CC85513.5060407@gmail.com>
+In-Reply-To: <4CC85513.5060407@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-2
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Would be good to have __fastpath and __slowpath function attributes.
+Em 27-10-2010 14:36, Jiri Slaby escreveu:
+
+>> It will properly log the size of the message the driver tried to use, and will
+>> reduce the max number of bytes per I2C transfer to 8.
 > 
-> __fastpath would always be optimized for speed, __slowpath always
-> for size, and everything else would use the default (determined by
-> CONFIG_CC_OPTIMIZE_FOR_SIZE).
+> Yes, this one works. And to be sure that 16 doesn't work I unplugged and
+> replugged the device (I didn't last time). And boom, it works too. So
+> .small_i2c = TDA18271_16_BYTE_CHUNK_INIT fixes the issue as well.
 
-> 
-> Looks like gcc has support for this, with __attribute__((hot)),
-> __attribute__((cold)), and __attribute__((optimize)).
+Ok, I'm adding the enclosing patch to the tree, adding a proper description
+about the regression. 
 
-I had patches for a long time, but last time I tried it didn't help too much.
-(basically make __init hot/cold and mark a few functions) 
-Similar things can be also done with unrolling. The Optimize attribute
-is currently quite broken in gcc and shouldn't be used.
+I'll be adding it to the tree.
 
-The main reason I didn't post them is that I didn't want another
-likely/unlikely with people sprinkling them randomly and never
-looking at profile logs. I am to blame for likely()/unlikely() originally
- and it got abused so much that I regretted it alot. So I don't
-think just exposing that is a good idea right now.
+Thanks!
+Mauro
 
-I think there are some other ways to do that better, but they
-will need more work.
+---
 
--Andi
--- 
-ak@linux.intel.com -- Speaking for myself only.
+commit 7655e594945289b418af39f6669fea4666a7b520
+Author: Mauro Carvalho Chehab <mchehab@redhat.com>
+Date:   Wed Oct 27 14:55:34 2010 -0200
+
+    [media] af9015: Fix max I2C message size when used with tda18271
+    
+    Changeset 1724c8fa7eb33d68898e060a08a8e6a88348b62f added an option to change
+    the maximum I2C size to 8 bytes. However, it forgot to replace the previous
+    usage at af9015 to use the newly defined macro value
+    (TDA18271_16_BYTE_CHUNK_INIT).
+    
+    A latter changeset (e350d44fed8eb86a7192a579e3687fcd76a4645b) extended the
+    possible values for .small_i2c field and, instead of using a random sequence
+    of numbers, it used a number that makes more sense (e. g. the actual limit,
+    in terms of bytes).
+    
+    However, as af9015 were using .small_i2c = 1, this become undefined, and the
+    restriction of a max size of 16 was gone.
+    
+    While here, fix the reported msg size at tda18271-common.c.
+    
+    Reported-by: Jiri Slaby <jirislaby@gmail.com>
+    Tested-by: Jiri Slaby <jirislaby@gmail.com>
+    Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+
+diff --git a/drivers/media/common/tuners/tda18271-common.c b/drivers/media/common/tuners/tda18271-common.c
+index 195b30e..5466d47 100644
+--- a/drivers/media/common/tuners/tda18271-common.c
++++ b/drivers/media/common/tuners/tda18271-common.c
+@@ -237,7 +237,7 @@ int tda18271_write_regs(struct dvb_frontend *fe, int idx, int len)
+ 
+ 	if (ret != 1)
+ 		tda_err("ERROR: idx = 0x%x, len = %d, "
+-			"i2c_transfer returned: %d\n", idx, len, ret);
++			"i2c_transfer returned: %d\n", idx, max, ret);
+ 
+ 	return (ret == 1 ? 0 : ret);
+ }
+diff --git a/drivers/media/dvb/dvb-usb/af9015.c b/drivers/media/dvb/dvb-usb/af9015.c
+index 3ef19a8..31c0a0e 100644
+--- a/drivers/media/dvb/dvb-usb/af9015.c
++++ b/drivers/media/dvb/dvb-usb/af9015.c
+@@ -1131,7 +1131,7 @@ static struct qt1010_config af9015_qt1010_config = {
+ 
+ static struct tda18271_config af9015_tda18271_config = {
+ 	.gate = TDA18271_GATE_DIGITAL,
+-	.small_i2c = 1,
++	.small_i2c = TDA18271_16_BYTE_CHUNK_INIT,
+ };
+ 
+ static struct mxl5005s_config af9015_mxl5003_config = {
+
+
