@@ -1,50 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756971Ab0J0OoY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Oct 2010 10:44:24 -0400
-Received: from hera.kernel.org ([140.211.167.34]:52940 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752013Ab0J0OoW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Oct 2010 10:44:22 -0400
-Message-ID: <4CC83A85.3070608@kernel.org>
-Date: Wed, 27 Oct 2010 16:43:17 +0200
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.11) Gecko/20101013 Lightning/1.0b2 Thunderbird/3.1.5
+	id S932607Ab0J0OrD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Oct 2010 10:47:03 -0400
+Received: from beaker.bytemark.co.uk ([80.68.81.2]:39179 "EHLO
+	beaker.bytemark.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755893Ab0J0OrB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Oct 2010 10:47:01 -0400
+Date: Wed, 27 Oct 2010 10:46:42 -0400
+From: "Emilio G. Cota" <cota@braap.org>
+To: Martyn Welch <martyn.welch@ge.com>
+Cc: Greg KH <greg@kroah.com>, LKML <linux-kernel@vger.kernel.org>,
+        devel@driverdev.osuosl.org,
+        Juan David Gonzalez Cobas <david.cobas@gmail.com>,
+        Bill Pemberton <wfp5p@virginia.edu>
+Subject: Re: [PATCH 09/30] staging/vme: fill in struct device's .release,
+ even if it's a NOOP
+Message-ID: <20101027144642.GP10869@flamenco.cs.columbia.edu>
+References: <1288055476-19438-1-git-send-email-cota@braap.org>
+ <1288055476-19438-10-git-send-email-cota@braap.org>
+ <4CC804FF.9050908@ge.com>
 MIME-Version: 1.0
-To: Eric Dumazet <eric.dumazet@gmail.com>
-CC: Peter Zijlstra <peterz@infradead.org>, Brian Gerst <brgerst@gmail.com>,
-        x86@kernel.org, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, mingo@elte.hu
-Subject: Re: [PATCH] x86-32: Allocate irq stacks seperate from percpu area
-References: <AANLkTinnc3vBSmewf7ixuOSDYxG+5VNiGaB-vSrDNRiO@mail.gmail.com>	 <1288158182-1753-1-git-send-email-brgerst@gmail.com>	 <1288159670.2652.181.camel@edumazet-laptop>	 <1288173442.15336.1490.camel@twins>	 <1288186405.2709.117.camel@edumazet-laptop>  <4CC82C2F.1020707@kernel.org>	 <1288187870.2709.128.camel@edumazet-laptop>  <4CC83067.5000009@kernel.org>	 <1288189461.2709.144.camel@edumazet-laptop> <1288190387.2709.147.camel@edumazet-laptop>
-In-Reply-To: <1288190387.2709.147.camel@edumazet-laptop>
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 27 Oct 2010 14:43:19 +0000 (UTC)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4CC804FF.9050908@ge.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/27/2010 04:39 PM, Eric Dumazet wrote:
-> Le mercredi 27 octobre 2010 à 16:24 +0200, Eric Dumazet a écrit :
->> Le mercredi 27 octobre 2010 à 16:00 +0200, Tejun Heo a écrit :
->>
->>> Heh, interesting table.  What does the same code say on 64bit?  Is it
->>> the same?
->>>
->>
->> Yes this is the same
+On Wed, Oct 27, 2010 at 11:54:55 +0100, Martyn Welch wrote:
+> On 26/10/10 02:10, Emilio G. Cota wrote:
+> > From: Emilio G. Cota <cota@braap.org>
+> > 
+> > Without it we get 32 warnings, one per device being released, when
+> > removing a bridge module.
+> > 
+> > After applying this patch, bridge modules can at last be removed
+> > without any apparent hiccup.
+> > 
+> > [Note: tested only on the tsi148, it's the only bridge I've got]
+> > 
 > 
-> Oops sorry :!)
-> 
-> On 64bit kernel, the 16 'possible but not online' cpus are not on node
-> 0, but balanced between two nodes.
+> I guess this is an artifact of the current lack of refcounting?
 
-Ah, okay, that explains it.  So, your NUMA table is screwed up.  It
-would be interesting to dig down where the difference between 32 and
-64bit comes from.  Maybe it's coming from differences in our init code
-rather than from BIOS?
+No, that's orthogonal to this. This has to do with the way the
+devices are allocated.
 
--- 
-tejun
+> This is definitely an issue, however I don't think masking it by adding
+> an empty function is the correct way to go.
+
+We're not masking anything. The release method is there to free the
+struct it protects when its refcount goes to zero; however, in this
+case the struct wasn't allocated dynamically--the 32 devices are
+stored in struct vme_bridge in an array--and therefore there's
+nothing to do in .release, since struct vme_bridge is freed
+elsewhere.
+
+While it's true that empty .release methods are usually frowned
+upon (as stated in Documentation/kobject.txt), due to the way
+things are done here it actually makes sense to have an
+empty .release.
+
+Hope this helps
+
+		Emilio
+
+
