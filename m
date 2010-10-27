@@ -1,80 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753976Ab0J0HVk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Oct 2010 03:21:40 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:58475 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751183Ab0J0HVj (ORCPT
+	id S1754205Ab0J0H1j (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Oct 2010 03:27:39 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:39556 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752124Ab0J0H1h convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Oct 2010 03:21:39 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: "J. Bruce Fields" <bfields@fieldses.org>
-Subject: Re: nfsd changes for 2.6.37
-Date: Wed, 27 Oct 2010 09:21:36 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.36+; KDE/4.5.1; x86_64; ; )
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Bryan Schumaker <bjschuma@netapp.com>, linux-nfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-References: <20101026164549.GD19445@fieldses.org> <20101026214441.GC1842@fieldses.org> <20101026221156.GD1842@fieldses.org>
-In-Reply-To: <20101026221156.GD1842@fieldses.org>
+	Wed, 27 Oct 2010 03:27:37 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=ZxOShQiLbGKKh4uBThM9/QFfKkt2fX9x5xT1wqHcqEMq/8S3qZnPT0zZhjK6GzvpiL
+         0GN1dPUYtbdQE2v4snydg/P4VS6ho2RYMVk82KJrfknrbBz0BRoW9clSBTDzjikegffJ
+         mJNFZt5+6oSH9AGvByXeUB7TXWVrVteB/FdOk=
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201010270921.37032.arnd@arndb.de>
-X-Provags-ID: V02:K0:AQd6TgPpwcwY99mQzLiY9XJ7xDycmKu+7RRN/ViMQMV
- nt2hIpTTj97N1TU+gqeHdUEWhTuB5JtDsTVj6plsw4MM0iHLyz
- MiDP523T3qvpgjLzYU0mrLCx9BlmfIpfqX51CqyAqX4e6gGDtu
- yC4YYzwBCyerzSk5ipRtYHs9GLmf5+2aFC8QFRKFnNvJttmbeK
- V1vVvlxsHfMqceZ2LF0KQ==
+In-Reply-To: <s5hiq0o5gp2.wl%tiwai@suse.de>
+References: <AANLkTinzFbVbzvYDL23G6T_J0gLkbQ3oYXRLFvXAFdyY@mail.gmail.com>
+	<s5hbp6h0yoh.wl%tiwai@suse.de>
+	<AANLkTi=eROZrLq36zX1YRCE1TDWxccs9c+AtrRaLHGsB@mail.gmail.com>
+	<s5hiq0o5gp2.wl%tiwai@suse.de>
+Date: Wed, 27 Oct 2010 12:57:35 +0530
+Message-ID: <AANLkTinVkWexfarMcrT9+zbg-TJ_w27QqUPZKf3hHzdE@mail.gmail.com>
+Subject: Re: ALSA sound/pci/hda/hda_intel.c:2624: no codecs found
+From: Jaswinder Singh <jaswinderlinux@gmail.com>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: Jaroslav Kysela <perex@perex.cz>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 27 October 2010 00:11:56 J. Bruce Fields wrote:
-> > BUG: sleeping function called from invalid context at mm/slab.c:3101
-> > in_atomic(): 1, irqs_disabled(): 0, pid: 4345, name: lease_tests
-> > 1 lock held by lease_tests/4345:
-> >  #0:  (file_lock_lock){+.+.+.}, at: [<ffffffff81128be5>] lock_flocks+0x15/0x20
-> > Pid: 4345, comm: lease_tests Not tainted 2.6.36-05858-gbd5e20b #1028
-> > Call Trace:
-> >  [<ffffffff8103141d>] __might_sleep+0x10d/0x140
-> >  [<ffffffff810e3ad3>] kmem_cache_alloc+0x1f3/0x230
-> >  [<ffffffff8112a4d2>] generic_setlease+0x112/0x2c0
-> >  [<ffffffff8112a6b5>] __vfs_setlease+0x35/0x40
-> >  [<ffffffff8112acfe>] fcntl_setlease+0xce/0x180
-> >  [<ffffffff810f7c2e>] sys_fcntl+0x2fe/0x630
-> >  [<ffffffff81961999>] ? trace_hardirqs_on_thunk+0x3a/0x3f
-> >  [<ffffffff81002658>] system_call_fastpath+0x16/0x1b
-> > 
-> > I'm testing a patch.
-> 
+On Wed, Oct 27, 2010 at 11:18 AM, Takashi Iwai <tiwai@suse.de> wrote:
+> At Wed, 27 Oct 2010 10:05:06 +0530,
+> Jaswinder Singh wrote:
+>>
+>
+> OK, and does it work with other kernel versions or other OS?
+>
 
-Thanks for the report!
+Yes, I also tried with older kernel version but no success.
 
-> @@ -1524,8 +1528,6 @@ int fcntl_setlease(unsigned int fd, struct file *filp, long arg)
->         if (error)
->                 return error;
->  
-> -       lock_flocks();
-> -
->         error = __vfs_setlease(filp, arg, &flp);
->         if (error || arg == F_UNLCK)
->                 goto out_unlock;
-> @@ -1541,7 +1543,6 @@ int fcntl_setlease(unsigned int fd, struct file *filp, long arg)
->  
->         error = __f_setown(filp, task_pid(current), PIDTYPE_PID, 0);
->  out_unlock:
-> -       unlock_flocks();
->         return error;
->  }
+Only Linux OS is installed on this machine.
 
-If you don't hold lock_flocks throughout fcntl_setlease, the flp variable
-points to a flock that may get modified by another thread and you call
-time_out_leases() without holding lock_flocks, which it requires.
+>>
+>> If more information is needed or need to run some tests, please let me know.
+>
+> Try probing as a module.  It makes easier to debug.
 
-The two alternatives I can see are to either use GFP_ATOMIC or to
-take the lock inside of generic_setlease and drop it outside.
-Neither of the two sounds particularly appealing.
+I loaded it as module with debugging :
 
-	Arnd
+$ lsmod
+Module                  Size  Used by
+snd_hda_codec_hdmi     23156  1
+snd_hda_intel          24921  0
+snd_hda_codec          83458  2 snd_hda_codec_hdmi,snd_hda_intel
+snd_hwdep               5916  1 snd_hda_codec
+
+[    7.854510] IOAPIC[0]: Set routing entry (8-22 -> 0xa9 -> IRQ 22
+Mode:1 Active:1)
+[    7.854515] HDA Intel 0000:00:1b.0: PCI INT A -> GSI 22 (level,
+low) -> IRQ 22
+[    7.854569] HDA Intel 0000:00:1b.0: irq 47 for MSI/MSI-X
+[    7.854589] HDA Intel 0000:00:1b.0: setting latency timer to 64
+[    7.854593] ALSA sound/pci/hda/hda_intel.c:2529: chipset global
+capabilities = 0x4401
+[    7.859681] ALSA sound/pci/hda/hda_intel.c:913: codec_mask = 0x0
+[    7.859687] ALSA sound/pci/hda/hda_intel.c:2624: no codecs found!
+[    7.859727] HDA Intel 0000:00:1b.0: PCI INT A disabled
+[    7.859748] HDA Intel 0000:02:00.1: PCI INT B -> GSI 17 (level,
+low) -> IRQ 17
+[    7.859787] HDA Intel 0000:02:00.1: irq 47 for MSI/MSI-X
+[    7.859801] HDA Intel 0000:02:00.1: setting latency timer to 64
+[    7.859804] ALSA sound/pci/hda/hda_intel.c:2529: chipset global
+capabilities = 0x1001
+[    7.863672] ALSA sound/pci/hda/hda_intel.c:913: codec_mask = 0x1
+[    7.863711] ALSA sound/pci/hda/hda_intel.c:1351: codec #0 probed OK
+..
+[   19.359243] [drm] Setting GART location based on new memory map
+[   19.359463] [drm] Loading RV620 CP Microcode
+[   19.453202] [drm] Resetting GPU
+[   19.453261] [drm] writeback test succeeded in 1 usecs
+[   24.314141] ALSA sound/pci/hda/hda_intel.c:1675: azx_pcm_prepare:
+bufsize=0x4b00, format=0x11
+[   24.314150] ALSA sound/pci/hda/hda_codec.c:1227:
+hda_codec_setup_stream: NID=0x2, stream=0x1, channel=0, format=0x11
+[   24.315942] ALSA sound/pci/hda/hda_intel.c:1675: azx_pcm_prepare:
+bufsize=0x4b00, format=0x11
+[   24.315949] ALSA sound/pci/hda/hda_codec.c:1227:
+hda_codec_setup_stream: NID=0x2, stream=0x1, channel=0, format=0x11
+[   24.316604] ALSA sound/pci/hda/hda_codec.c:1290:
+hda_codec_cleanup_stream: NID=0x2
+[   24.316631] ALSA sound/pci/hda/hda_codec.c:1290:
+hda_codec_cleanup_stream: NID=0x2
+[   24.318073] ALSA sound/pci/hda/hda_intel.c:1675: azx_pcm_prepare:
+bufsize=0x10000, format=0x11
+[   24.318082] ALSA sound/pci/hda/hda_codec.c:1227:
+hda_codec_setup_stream: NID=0x2, stream=0x1, channel=0, format=0x11
+[   24.318100] ALSA sound/pci/hda/hda_intel.c:1675: azx_pcm_prepare:
+bufsize=0x10000, format=0x11
+[   24.318106] ALSA sound/pci/hda/hda_codec.c:1227:
+hda_codec_setup_stream: NID=0x2, stream=0x1, channel=0, format=0x11
+[   24.350300] hda-intel: IRQ timing workaround is activated for card
+#0. Suggest a bigger bdl_pos_adj.
+[   27.634907] eth1: no IPv6 routers present
+[   29.044300] ALSA sound/pci/hda/hda_codec.c:1290:
+hda_codec_cleanup_stream: NID=0x2
+[   29.044332] ALSA sound/pci/hda/hda_codec.c:1290:
+hda_codec_cleanup_stream: NID=0x2
+[   31.347000] ALSA sound/pci/hda/hda_intel.c:1675: azx_pcm_prepare:
+bufsize=0x4b00, format=0x11
+[   31.347009] ALSA sound/pci/hda/hda_codec.c:1227:
+hda_codec_setup_stream: NID=0x2, stream=0x1, channel=0, format=0x11
+[   31.347028] ALSA sound/pci/hda/hda_intel.c:1675: azx_pcm_prepare:
+bufsize=0x4b00, format=0x11
+[   31.347035] ALSA sound/pci/hda/hda_codec.c:1227:
+hda_codec_setup_stream: NID=0x2, stream=0x1, channel=0, format=0x11
+[   31.347712] ALSA sound/pci/hda/hda_codec.c:1290:
+hda_codec_cleanup_stream: NID=0x2
+[   31.347742] ALSA sound/pci/hda/hda_codec.c:1290:
+hda_codec_cleanup_stream: NID=0x2
+[   31.363221] ALSA sound/pci/hda/hda_intel.c:1675: azx_pcm_prepare:
+bufsize=0x10000, format=0x11
+[   31.363229] ALSA sound/pci/hda/hda_codec.c:1227:
+hda_codec_setup_stream: NID=0x2, stream=0x1, channel=0, format=0x11
+[   31.363245] ALSA sound/pci/hda/hda_intel.c:1675: azx_pcm_prepare:
+bufsize=0x10000, format=0x11
+[   31.363252] ALSA sound/pci/hda/hda_codec.c:1227:
+hda_codec_setup_stream: NID=0x2, stream=0x1, channel=0, format=0x11
+[   36.564753] ALSA sound/pci/hda/hda_codec.c:1290:
+hda_codec_cleanup_stream: NID=0x2
+[   36.564798] ALSA sound/pci/hda/hda_codec.c:1290:
+hda_codec_cleanup_stream: NID=0x2
+
+Thanks,
+--
+Jaswinder Singh.
