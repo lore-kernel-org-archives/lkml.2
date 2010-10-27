@@ -1,88 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752015Ab0J0QuF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Oct 2010 12:50:05 -0400
-Received: from claw.goop.org ([74.207.240.146]:44372 "EHLO claw.goop.org"
+	id S1752179Ab0J0Qwt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Oct 2010 12:52:49 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:55215 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751696Ab0J0QuD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Oct 2010 12:50:03 -0400
-Message-ID: <4CC85839.4000507@goop.org>
-Date: Wed, 27 Oct 2010 09:50:01 -0700
-From: Jeremy Fitzhardinge <jeremy@goop.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc13 Lightning/1.0b3pre Thunderbird/3.1.4
+	id S1751899Ab0J0Qwr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Oct 2010 12:52:47 -0400
+Message-ID: <4CC858B1.6090408@redhat.com>
+Date: Wed, 27 Oct 2010 14:52:01 -0200
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100827 Red Hat/3.1.3-1.el6 Lightning/1.0b2 Thunderbird/3.1.3
 MIME-Version: 1.0
-To: Borislav Petkov <bp@alien8.de>, Ian Campbell <ian.campbell@citrix.com>,
-        linux-kernel@vger.kernel.org, x86@kernel.org,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: Re: [PATCH] x86: use pgd accessors when cloning a pgd range.
-References: <1288169413-29065-1-git-send-email-ian.campbell@citrix.com> <20101027104020.GA16954@a1.tnic>
-In-Reply-To: <20101027104020.GA16954@a1.tnic>
+To: Jiri Slaby <jirislaby@gmail.com>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux Media Mailing List <linux-media@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Michael Krufky <mkrufky@kernellabs.com>
+Subject: Re: [GIT PULL for 2.6.37-rc1] V4L/DVB updates
+References: <4CC8380D.3040802@redhat.com> <4CC84597.4000204@gmail.com> <4CC84846.6020304@redhat.com> <4CC84B14.1030303@gmail.com> <4CC8550B.4060403@redhat.com> <4CC8558C.3000209@gmail.com>
+In-Reply-To: <4CC8558C.3000209@gmail.com>
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- On 10/27/2010 03:40 AM, Borislav Petkov wrote:
-> On Wed, Oct 27, 2010 at 09:50:13AM +0100, Ian Campbell wrote:
->> Page tables should always be updated using the proper accessor
->> methods. Not doing so bypasses the paravirt infrastructure.
+Em 27-10-2010 14:38, Jiri Slaby escreveu:
+> On 10/27/2010 06:36 PM, Mauro Carvalho Chehab wrote:
+>> Basically, af9015 broke due to (3), as .small_i2c = 1 means nothing. It should be using
+>> .small_i2c = TDA18271_16_BYTE_CHUNK_INIT, instead.
 >>
->> In this case the failure to do so was exposed under Xen by
->> b40827fa7268 "x86-32, mm: Add an initial page table for core
->> bootstrapping".
->>
->> Signed-off-by: Ian Campbell <ian.campbell@citrix.com>
->> Cc: Borislav Petkov <bp@alien8.de>
->> Cc: H. Peter Anvin <hpa@linux.intel.com>
->> Cc: Jeremy Fitzhardinge <jeremy@goop.org>
->> ---
->>  arch/x86/include/asm/pgtable.h |    5 ++++-
->>  1 files changed, 4 insertions(+), 1 deletions(-)
->>
->> diff --git a/arch/x86/include/asm/pgtable.h b/arch/x86/include/asm/pgtable.h
->> index ada823a..0b4c514 100644
->> --- a/arch/x86/include/asm/pgtable.h
->> +++ b/arch/x86/include/asm/pgtable.h
->> @@ -619,7 +619,10 @@ static inline void ptep_set_wrprotect(struct mm_struct *mm,
->>   */
->>  static inline void clone_pgd_range(pgd_t *dst, pgd_t *src, int count)
->>  {
->> -       memcpy(dst, src, count * sizeof(pgd_t));
->> +	int i;
->> +
->> +	for (i=0; i<count; i++)
->> +		set_pgd(&dst[i], src[i]);
-> Hmm, this slows down clone_pgd_range(). It is called at 3 sites total,
-> two of which happen only on boot in setup_arch() so they can be ignored
-> but the callchain
->
-> copy_process()
-> ...
-> mm_init()
-> |->mm_alloc_pgd()
->   |->pgd_alloc()
->     |->pgd_ctor()
->       |->clone_pgd_range()
->
-> could become noticeable. To be on the safe side, I'd make
-> clone_pgd_range() a macro calling either the native or the xen version..
+>> What I don't understand is why a patch doing this change didn't fix the issue. Please
+>> test the patch I posted on the original -next thread. Let's try to identify why
+>> tda18271_write_regs() is not breaking the data into smaller writes.
+> 
+> It helps, but one needs to unplug and replug the device. So care to
+> respin the pull request with the patch included?
 
-Frankly I'd want to see some numbers before getting too worried about
-it; if it were a problem we could make the native set_pgd inlined into
-the callside (it is just a memory write after all), which will be very
-similar to memcpy in performance.
+AH! Yes, this is sometimes needed on some hardware: when a longer or wrong I2C transaction
+is received, the hardware simply stops working. You need to replug it for it to return to
+life.
 
-I am, however, more concerned about the effect on performance under
-Xen.  xen_set_pgd will avoid doing a hypercall in this case (the
-pagetable isn't yet pinned), but it has to do a moderate amount of work
-to avoid doing the hypercall, and could really add some measurable
-latency to process creation (which is not something we need right now). 
-For that a clone_pgd_range() hypercall is the most straightforward
-answer, but I'm loathe to propose that right now.
+Ok, I'll add the patch that changes it to .small_i2c = TDA18271_16_BYTE_CHUNK_INIT
+to the series.
 
-This never used to be a problem.  Perhaps we can change how
-clone_pgd_range is used at boot time to avoid it in the Xen case (since
-we don't care about the secondary pagetable)?
-
-    J
+Thanks,
+Mauro.
