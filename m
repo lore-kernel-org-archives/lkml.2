@@ -1,64 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753523Ab0J0FDP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Oct 2010 01:03:15 -0400
-Received: from mgw2.diku.dk ([130.225.96.92]:51418 "EHLO mgw2.diku.dk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751132Ab0J0FDL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Oct 2010 01:03:11 -0400
-Date: Wed, 27 Oct 2010 07:03:08 +0200 (CEST)
-From: Julia Lawall <julia@diku.dk>
-To: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-Cc: Henrique de Moraes Holschuh <ibm-acpi@hmh.eng.br>,
-        kernel-janitors@vger.kernel.org, Matthew Garrett <mjg@redhat.com>,
-        ibm-acpi-devel@lists.sourceforge.net,
-        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 8/14] drivers/platform/x86/thinkpad_acpi.c: delete double
- assignment
-In-Reply-To: <20101027010908.GA29299@khazad-dum.debian.net>
-Message-ID: <Pine.LNX.4.64.1010270658480.31668@ask.diku.dk>
-References: <1288088743-3725-1-git-send-email-julia@diku.dk>
- <1288088743-3725-9-git-send-email-julia@diku.dk> <20101027010908.GA29299@khazad-dum.debian.net>
+	id S1752826Ab0J0FZ0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Oct 2010 01:25:26 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:41518 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751928Ab0J0FZW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Oct 2010 01:25:22 -0400
+Date: Wed, 27 Oct 2010 06:25:20 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Dave Chinner <david@fromorbit.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/4] fs: remove inode_lock from iput_final and
+ prune_icache
+Message-ID: <20101027052520.GF19804@ZenIV.linux.org.uk>
+References: <1288153384-8878-1-git-send-email-david@fromorbit.com>
+ <1288153384-8878-5-git-send-email-david@fromorbit.com>
+ <20101027044038.GE19804@ZenIV.linux.org.uk>
+ <1288154866.2652.84.camel@edumazet-laptop>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1288154866.2652.84.camel@edumazet-laptop>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 26 Oct 2010, Henrique de Moraes Holschuh wrote:
-
-> On Tue, 26 Oct 2010, Julia Lawall wrote:
-> > From: Julia Lawall <julia@diku.dk>
+On Wed, Oct 27, 2010 at 06:47:46AM +0200, Eric Dumazet wrote:
+> Le mercredi 27 octobre 2010 ?? 05:40 +0100, Al Viro a ??crit :
+> > On Wed, Oct 27, 2010 at 03:23:04PM +1100, Dave Chinner wrote:
+> > > From: Dave Chinner <dchinner@redhat.com>
+> > > 
+> > > Now that inode state changes are protected by the inode->i_lock and
+> > > the inode LRU manipulations by the inode_lru_lock, we can remove the
+> > > inode_lock from prune_icache and the initial part of iput_final().
+> > > 
+> > > instead of using the inode_lock to protect the inode during
+> > > iput_final, use the inode->i_lock instead. This protects the inode
+> > > against new references being taken while we change the inode state
+> > > to I_FREEING, as well as preventing prune_icache from grabbing the
+> > > inode while we are manipulating it. Hence we no longer need the
+> > > i???ode_lock in iput_final prior to setting I_FREEING on the inode.
+> >   ^^^^^^^^^^^^
 > > 
-> > Delete successive assignments to the same location.
+> > ... the hell?  There's more such damage elsewhere in the thread; what's
+> > going on?
+> > --
 > 
-> There are often results of mismerges or other assorted screw ups, often
-> done by the maintainer itself (e.g. me in thinkpad-acpi's case) during
-> development.
-> 
-> The patch is correct, and I thank you for the head's up.  But let me
-> track down what caused it first, hmm?  I also highly recommend that this
-> should be done in all cases you find, instead of just blindly fixing the
-> assignment.  I suggest using git --blame to track down what added the
-> duplicated assignments, and check if it looks sane...
-> 
-> It is often a VERY BAD IDEA to remove such markers of potential
-> brokennes without checking out if they're actually helpfully trying to
-> warn you of worse badness :p
-> 
-> But hey, maybe you've already done that.  If you did, I apologise for
-> preaching to the choir.
+> Maybe its on your side, no problem here on my copy.
 
-I didn't look for the original source of the problem, except in the case 
-of [PATCH 6/14] arch/mips/pmc-sierra/yosemite/setup.c where I found it 
-already in the pre-git era.  Thanks fo rthe suggestion.  On the other 
-hand, I was very selective about which code I changed.  In particular I 
-left a number of cases like:
+"i\xe1\xb9\x89ode_lock", i.e. 'n' turned into U+1E49, aka "latin small letter
+n with line below".  I doubt that it's MTA braindamage.
 
-x = NULL; // or 0 etc
-x = foo(...); // ie a NULL returning function
+In the first patch there's 
 
-I figured that this isn't hurting anything, and perhaps it is informative 
-about what kind of value foo might return.
+- * invalidate_inodes    - attempt to free all inodes on a
++ * nvalidate_inodes    - attempt to free all inodes on a
 
-julia
+and I _really_ doubt that anything in mail system is capable of something
+that elaborate.
